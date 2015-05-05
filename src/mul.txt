@@ -1,0 +1,81 @@
+@define bu = bit + unit
+define private i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y)
+@if N > 4
+noinline
+@endif
+{
+@for i, 0, N
+  %x$(i) = call i$(unit) @extract$(bit)(i$(bit) %x, i$(bit) $(unit*i))
+  %x$(i)y = call i$(unit*2) @mul$(unit)x$(unit)(i$(unit) %x$(i), i$(unit) %y)
+  %x$(i)y0 = zext i$(unit*2) %x$(i)y to i$(bu)
+@endfor
+@for i, 1, N
+  %x$(i)y1 = shl i$(bu) %x$(i)y0, $(unit*i)
+@endfor
+  %t0 = add i$(bu) %x0y0, %x1y1
+@for i, 1, N-1
+  %t$(i) = add i$(bu) %t$(i-1), %x$(i+1)y1
+@endfor
+  ret i$(bu) %t$(N-2)
+}
+define void @mcl_fp_mul$(bit)pre(i$(unit)* %pz, i$(bit)* %px, i$(bit)* %py) {
+  %x = load i$(bit)* %px
+  %y = load i$(bit)* %py
+@for i, 0, N
+  %y$(i) = call i$(unit) @extract$(bit)(i$(bit) %y, i$(bit) $(unit*i))
+@endfor
+  %sum0 = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y0)
+  %t0 = trunc i$(bu) %sum0 to i$(unit)
+  store i$(unit) %t0, i$(unit)* %pz
+@for i, 1, N
+
+  %s$(i-1) = lshr i$(bu) %sum$(i-1), $(unit)
+  %xy$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y$(i))
+  %sum$(i) = add i$(bu) %s$(i-1), %xy$(i)
+  %z$(i) = getelementptr i$(unit)* %pz, i32 $(i)
+  @if i < N - 1
+  %ts$(i) = trunc i$(bu) %sum$(i) to i$(unit)
+  store i$(unit) %ts$(i), i$(unit)* %z$(i)
+  @endif
+@endfor
+  %p = bitcast i$(unit)* %z$(N-1) to i$(bu)*
+  store i$(bu) %sum$(N-1), i$(bu)* %p
+  ret void
+}
+
+@define bu = bit + unit
+@define bu2 = bit + unit * 2
+define void @mcl_fp_mont$(bit)(i$(bit)* %pz, i$(bit)* %px, i$(unit)* %py, i$(bit)* %pp, i$(unit) %r) {
+	%p = load i$(bit)* %pp
+	%x = load i$(bit)* %px
+
+@for i, 0, N
+	%py$(i) = getelementptr i$(unit)* %py, i$(unit) $(i)
+	%y$(i) = load i$(unit)* %py$(i)
+	%xy$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y$(i))
+@if i == 0
+	%a0 = zext i$(bu) %xy0 to i$(bu2)
+
+	%at$(i) = trunc i$(bu) %xy$(i) to i$(unit)
+@else
+	%xye$(i) = zext i$(bu) %xy$(i) to i$(bu2)
+	%a$(i) = add i$(bu2) %s$(i-1), %xye$(i)
+	%at$(i) = trunc i$(bu2) %a$(i) to i$(unit)
+@endif
+	%q$(i) = mul i$(unit) %at$(i), %r
+	%pq$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %p, i$(unit) %q$(i))
+	%pqe$(i) = zext i$(bu) %pq$(i) to i$(bu2)
+	%t$(i) = add i$(bu2) %a$(i), %pqe$(i)
+	%s$(i) = lshr i$(bu2) %t$(i), $(unit)
+@endfor
+	%v = trunc i$(bu2) %s$(N-1) to i$(bu)
+	%pe = zext i$(bit) %p to i$(bu)
+	%vc = sub i$(bu) %v, %pe
+	%c = lshr i$(bu) %vc, $(bit)
+	%c1 = trunc i$(bu) %c to i1
+	%z = select i1 %c1, i$(bu) %v, i$(bu) %vc
+	%zt = trunc i$(bu) %z to i$(bit)
+	store i$(bit) %zt, i$(bit)* %pz
+	ret void
+}
+

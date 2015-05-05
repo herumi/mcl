@@ -1,0 +1,54 @@
+define void @mcl_fp_add$(bit)L(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py, i$(bit)* %pp) {
+	%x = load i$(bit)* %px
+	%y = load i$(bit)* %py
+	%p = load i$(bit)* %pp
+	%x1 = zext i$(bit) %x to i$(bit+unit)
+	%y1 = zext i$(bit) %y to i$(bit+unit)
+	%p1 = zext i$(bit) %p to i$(bit+unit)
+	%t0 = add i$(bit+unit) %x1, %y1 ; x + y
+	%t1 = trunc i$(bit+unit) %t0 to i$(bit)
+	store i$(bit) %t1, i$(bit)* %pz
+	%vc = sub i$(bit+unit) %t0, %p1
+	%c = lshr i$(bit+unit) %vc, $(bit+unit-1)
+	%c1 = trunc i$(bit+unit) %c to i1
+	br i1 %c1, label %carry, label %nocarry
+nocarry:
+	%v = trunc i$(bit+unit) %vc to i$(bit)
+	store i$(bit) %v, i$(bit)* %pz
+	ret void
+carry:
+	ret void
+}
+
+define internal { i$(bit), i$(unit) } @local_sbb$(bit)(i$(bit) %x, i$(bit) %y) {
+	%x1 = zext i$(bit) %x to i$(bit+unit)
+	%y1 = zext i$(bit) %y to i$(bit+unit)
+	%v1 = sub i$(bit+unit) %x1, %y1
+	%v = trunc i$(bit+unit) %v1 to i$(bit)
+	%c = lshr i$(bit+unit) %v1, $(bit)
+	%c1 = trunc i$(bit+unit) %c to i$(unit)
+	%r1 = insertvalue { i$(bit), i$(unit) } undef, i$(bit) %v, 0
+	%r2 = insertvalue { i$(bit), i$(unit) } %r1, i$(unit) %c1, 1
+	ret { i$(bit), i$(unit) } %r2
+}
+
+define void @mcl_fp_sub$(bit)L(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py, i$(bit)* %pp) {
+	%x = load i$(bit)* %px
+	%y = load i$(bit)* %py
+	%x1 = zext i$(bit) %x to i$(bit+unit)
+	%y1 = zext i$(bit) %y to i$(bit+unit)
+	%vc = sub i$(bit+unit) %x1, %y1
+	%v = trunc i$(bit+unit) %vc to i$(bit)
+	%c = lshr i$(bit+unit) %vc, $(bit+unit-1)
+	%c1 = trunc i$(bit+unit) %c to i1
+	store i$(bit) %v, i$(bit)* %pz
+	br i1 %c1, label %carry, label %nocarry
+nocarry:
+	ret void
+carry:
+	%p = load i$(bit)* %pp
+	%t = add i$(bit) %v, %p ; x - y + p
+	store i$(bit) %t, i$(bit)* %pz
+	ret void
+}
+
