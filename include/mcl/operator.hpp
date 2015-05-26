@@ -101,16 +101,6 @@ struct hasIO : E {
 	}
 };
 
-template<class T>
-struct Optimized {
-	bool hasMulMod() const { return false; }
-	void init(const T&) {}
-	static void mulMod(T&, const T&, const T&) {}
-	static void mulMod(T&, const T&, unsigned int) {}
-	bool hasPowMod() const { return false; }
-	static void powMod(T&, const T&, const T&, const T&) {}
-};
-
 } } // mcl::ope
 
 #ifdef _WIN32

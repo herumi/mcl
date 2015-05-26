@@ -361,18 +361,4 @@ public:
 	}
 };
 
-namespace ope {
-
-template<>
-struct Optimized<mpz_class> {
-	void init(const mpz_class&) {}
-	bool hasPowMod() const { return true; }
-	static void powMod(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_class& m)
-	{
-		mpz_powm(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t(), m.get_mpz_t());
-	}
-};
-
-} // mcl::ope
-
 } // mcl
