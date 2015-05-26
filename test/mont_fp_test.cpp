@@ -130,7 +130,6 @@ struct Test {
 		ope();
 		cvtInt();
 		power();
-		neg_power();
 		power_Zn();
 		setRaw();
 		set64bit();
@@ -458,19 +457,6 @@ struct Test {
 			Fp::power(y, x, i);
 			CYBOZU_TEST_EQUAL(y, z);
 			z *= x;
-		}
-	}
-
-	void neg_power()
-	{
-		Fp x, y, z;
-		x = 12345;
-		z = 1;
-		Fp rx = 1 / x;
-		for (int i = 0; i < 100; i++) {
-			Fp::power(y, x, -i);
-			CYBOZU_TEST_EQUAL(y, z);
-			z *= rx;
 		}
 	}
 
