@@ -201,11 +201,11 @@ struct Test {
 		str = x.toStr();
 		CYBOZU_TEST_EQUAL(str, "0");
 		str = x.toStr(2, true);
-		CYBOZU_TEST_EQUAL(str, "0");
+		CYBOZU_TEST_EQUAL(str, "0b0");
 		str = x.toStr(2, false);
 		CYBOZU_TEST_EQUAL(str, "0");
 		str = x.toStr(16, true);
-		CYBOZU_TEST_EQUAL(str, "0");
+		CYBOZU_TEST_EQUAL(str, "0x0");
 		str = x.toStr(16, false);
 		CYBOZU_TEST_EQUAL(str, "0");
 
@@ -526,14 +526,15 @@ struct Test {
 	{
 		const struct {
 			const char *p;
-			uint64_t i;
+			int64_t i;
 		} tbl[] = {
 			{ "0x1234567812345678", uint64_t(0x1234567812345678ull) },
-			{ "0xaaaaaaaaaaaaaaaa", uint64_t(0xaaaaaaaaaaaaaaaaull) },
+			{ "0x1234567812345678", int64_t(0x1234567812345678ll) },
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 			Fp x(tbl[i].p);
 			Fp y(tbl[i].i);
+			if (tbl[i].i < 0) x = -x;
 			CYBOZU_TEST_EQUAL(x, y);
 		}
 	}
