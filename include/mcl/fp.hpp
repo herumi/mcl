@@ -33,6 +33,12 @@
 
 namespace mcl {
 
+namespace fp {
+
+void setOp(mcl::fp::Op& op, const Unit* p, size_t pBitLen);
+
+} // mcl::fp
+
 struct Block {
 	typedef fp::Unit Unit;
 	const Unit *p; // pointer to original FpT.v_
@@ -76,6 +82,8 @@ public:
 		Unit p[maxUnitN] = {};
 		const size_t n = Gmp::getRaw(p, maxUnitN, mp);
 		if (n == 0) throw cybozu::Exception("mcl:FpT:setModulo:bad mstr") << mstr;
+		mcl::fp::setOp(op_, p, pBitLen_);
+#if 1
 #ifdef USE_MONT_FP
 		if (pBitLen_ <= 128) {  op_ = fp::MontFp<tag, 128>::init(p); }
 #if CYBOZU_OS_BIT == 32
@@ -114,6 +122,7 @@ public:
 		else { static fp::FixedFp<tag, maxBitN> f; op_ = f.init(p); }
 #endif
 		assert(op_.N <= maxUnitN);
+#endif
 		sq_.set(mp);
 	}
 	static inline void getModulo(std::string& pstr)

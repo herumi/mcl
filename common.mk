@@ -55,7 +55,7 @@ ifeq ($(DEBUG),0)
   OBJSUF=
 else
   ifeq ($(OS),Linux)
-    LDFLAGS+=-rdynamic
+#    LDFLAGS+=-rdynamic
   endif
   OBJDIR=debug
   OBJSUF=d
@@ -63,14 +63,17 @@ endif
 
 ####################################################
 
+LIB=$(TOPDIR)lib/libmcl$(OBJSUF).a
 LDFLAGS += -lpthread -m$(BIT) -lgmp -lgmpxx
 
 ####################################################
 
 TOPDIR:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))/
-EXTDIR:=$(TOPDIR)../cybozulib_ext/
-CFLAGS+= -I$(TOPDIR)include -I$(TOPDIR)../cybozulib/include/ -I$(TOPDIR)../xbyak/ $(BIT_OPT) $(INC_DIR)
-LDFLAGS+= -L$(TOPDIR)lib $(BIT_OPT) -Wl,-rpath,'$$ORIGIN/../lib' $(LD_DIR)
+PARENTDIR:=$(realpath $(TOPDIR)../)/
+EXTDIR:=$(PARENTDIR)cybozulib_ext/
+CFLAGS+= -I$(TOPDIR)include -I$(PARENTDIR)cybozulib/include/ -I$(PARENTDIR)xbyak/ $(BIT_OPT) $(INC_DIR)
+#LDFLAGS+= -L$(TOPDIR)lib $(BIT_OPT) -Wl,-rpath,'$$ORIGIN/../lib' $(LD_DIR)
+LDFLAGS+= $(BIT_OPT)
 
 MKDEP = sh -ec '$(PRE)$(CC) -MM $(CFLAGS) $< | sed "s@\($*\)\.o[ :]*@$(OBJDIR)/\1.o $@ : @g" > $@; [ -s $@ ] || rm -f $@; touch $@'
 
@@ -90,13 +93,16 @@ endef
 $(OBJDIR)/%.o: %.cpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
+$(OBJDIR)/%.o: %.s
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
+
 $(OBJDIR)/%.d: %.cpp $(OBJDIR)
 	@$(MKDEP)
 
-$(TOPDIR)bin/%$(OBJSUF).exe: $(OBJDIR)/%.o $(LIBS)
-	$(PRE)$(CXX) $< -o $@ $(LIBS) $(LDFLAGS)
+$(TOPDIR)bin/%$(OBJSUF).exe: $(OBJDIR)/%.o $(LIB)
+	$(PRE)$(CXX) $< -o $@ $(LDFLAGS) $(LIB)
 
-OBJS=$(addprefix $(OBJDIR)/,$(SRC:.cpp=.o))
+OBJ=$(addprefix $(OBJDIR)/,$(SRC:.cpp=.o))
 
 DEPEND_FILE=$(addprefix $(OBJDIR)/, $(SRC:.cpp=.d))
 TEST_FILE=$(addprefix $(TOPDIR)bin/, $(SRC:.cpp=$(OBJSUF).exe))

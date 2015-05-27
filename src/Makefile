@@ -1,3 +1,4 @@
+include ../common.mk
 VER=-3.5
 LLC=llc$(VER)
 OPT=opt$(VER)
@@ -5,15 +6,25 @@ DIS=llvm-dis$(VER)
 ASM=llvm-as$(VER)
 OPT_LLC= $(OPT) -O3 -o - | $(LLC) -O3 -o -
 
-SRC = once.txt all.txt long.txt short.txt mul.txt
-TARGET=x64.s x86.s arm.s arm64.s
+SRC_TXT = once.txt all.txt long.txt short.txt mul.txt
+SRC=fp.cpp
+OBJ=$(OBJDIR)/fp.o $(OBJDIR)/x64.o
+#TARGET=x64.s x86.s arm.s arm64.s
+TARGET=$(TOPDIR)lib/libmcl$(OBJSUF).a
 AFLAGS=-mattr=bmi2
 all: $(TARGET)
 
-base64.ll: gen.py $(SRC)
+$(TARGET): $(OBJ)
+	$(MKDIR) ../lib
+	$(AR) $@ $(OBJ)
+
+$(OBJDIR):
+	@$(MKDIR) $(OBJDIR)
+
+base64.ll: gen.py $(SRC_TXT)
 	python gen.py 64
 
-base32.ll: gen.py $(SRC)
+base32.ll: gen.py $(SRC_TXT)
 	python gen.py 32
 
 x64: base64.ll
@@ -39,4 +50,7 @@ arm64.s: base32.ll
 	cat base64.ll|$(OPT_LLC) -march=aarch64 > arm64.s
 clean:
 	rm -rf base*.ll *.s
+	$(CLEAN)
+
+-include $(DEPEND_FILE)
 

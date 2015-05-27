@@ -13,7 +13,6 @@ ifeq ($(USE_LLVM),1)
 endif
 
 TARGET=$(TEST_FILE)
-LIBS=
 
 SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp
 ifeq ($(CPU),x64)
@@ -22,7 +21,7 @@ endif
 
 all: $(TARGET)
 
-test: $(TARGET) $(ASM_OBJ)
+test: $(TARGET)
 	@$(UNIT_TEST)
 
 $(OBJDIR):
@@ -31,7 +30,7 @@ $(OBJDIR):
 clean:
 	$(CLEAN)
 
-$(LIBS):
+$(LIB):
 	$(MAKE) -C ../src
 
 -include $(DEPEND_FILE)
@@ -40,3 +39,5 @@ ifeq ($(USE_LLVM),1)
 $(ASM_OBJ): $(ASM_SRC)
 	$(CXX) $< -o $@ -c
 endif
+
+.PHONY: $(LIB)
