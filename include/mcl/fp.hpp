@@ -37,7 +37,6 @@ namespace fp {
 
 void setOp(mcl::fp::Op& op, const Unit* p, size_t pBitLen);
 
-} // mcl::fp
 
 struct Block {
 	typedef fp::Unit Unit;
@@ -47,6 +46,8 @@ struct Block {
 	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
 	Unit v_[maxUnitN];
 };
+
+} // mcl::fp
 
 template<class tag = fp::TagDefault, size_t maxBitN = MCL_FP_BLOCK_MAX_BIT_N>
 class FpT {
@@ -131,7 +132,7 @@ public:
 	}
 	static inline bool isYodd(const FpT& x)
 	{
-		Block b;
+		fp::Block b;
 		x.getBlock(b);
 		return (b.p[0] & 1) == 1;
 	}
@@ -220,16 +221,16 @@ public:
 		const size_t fpByteN = sizeof(Unit) * op_.N;
 		if (byteN < fpByteN) throw cybozu::Exception("getRaw:bad n") << n << fpByteN;
 		assert(byteN >= fpByteN);
-		Block b;
+		fp::Block b;
 		getBlock(b);
 		memcpy(outBuf, b.p, fpByteN);
 		const size_t writeN = (fpByteN + sizeof(S) - 1) / sizeof(S);
 		memset((char *)outBuf + fpByteN, 0, writeN * sizeof(S) - fpByteN);
 		return writeN;
 	}
-	void getBlock(Block& b) const
+	void getBlock(fp::Block& b) const
 	{
-		assert(maxUnitN <= Block::maxUnitN);
+		assert(maxUnitN <= fp::Block::maxUnitN);
 		b.n = op_.N;
 		if (op_.fromMont) {
 			op_.fromMont(b.v_, v_);
@@ -266,7 +267,7 @@ public:
 	}
 	void toStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
-		Block b;
+		fp::Block b;
 		getBlock(b);
 		toStr(str, b.p, b.n, base, withPrefix);
 	}
@@ -278,7 +279,7 @@ public:
 	}
 	void toGmp(mpz_class& x) const
 	{
-		Block b;
+		fp::Block b;
 		getBlock(b);
 		Gmp::setRaw(x, b.p, b.n);
 	}
@@ -328,7 +329,7 @@ public:
 	template<class tag2, size_t maxBitN2>
 	static inline void power(FpT& z, const FpT& x, const FpT<tag2, maxBitN2>& y)
 	{
-		Block b;
+		fp::Block b;
 		y.getBlock(b);
 		powerArray(z, x, b.p, b.n);
 	}
@@ -349,7 +350,7 @@ public:
 	*/
 	void appendToBitVec(cybozu::BitVector& bv) const
 	{
-		Block b;
+		fp::Block b;
 		getBlock(b);
 		bv.append(b.p, pBitLen_);
 	}
@@ -405,7 +406,7 @@ public:
 	bool operator<(const FpT&) const { return false; }
 	static inline int compare(const FpT& x, const FpT& y)
 	{
-		Block xb, yb;
+		fp::Block xb, yb;
 		x.getBlock(xb);
 		y.getBlock(yb);
 		return fp::local::compareArray(xb.p, yb.p, xb.n);
@@ -429,7 +430,7 @@ namespace power_impl {
 template<class G, class tag, size_t bitN, template<class _tag, size_t _bitN>class FpT>
 void power(G& z, const G& x, const FpT<tag, bitN>& y)
 {
-	Block b;
+	fp::Block b;
 	y.getBlock(b);
 	mcl::power_impl::powerArray(z, x, b.p, b.n);
 }
