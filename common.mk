@@ -21,7 +21,7 @@ else
   endif
 endif
 CFLAGS_WARN=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith
-CFLAGS+= -g -D_FILE_OFFSET_BITS=64
+CFLAGS+= -g
 CFLAGS+=$(CFLAGS_WARN)
 BIT?=64
 ifeq ($(BIT),32)
