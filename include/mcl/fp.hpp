@@ -84,41 +84,41 @@ public:
 		mcl::fp::setOp(op_, p, bitLen);
 #if 1
 #ifdef USE_MONT_FP
-		if (bitLen <= 128) {  op_ = fp::MontFp<tag, 128>::init(p); }
+		if (bitLen <= 128) { fp::MontFp<tag, 128>::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 160) { static fp::MontFp<tag, 160> f; op_ = f.init(p); }
+		else if (bitLen <= 160) { static fp::MontFp<tag, 160> f; f.init(op_, p); }
 #endif
-		else if (bitLen <= 192) { static fp::MontFp<tag, 192> f; op_ = f.init(p); }
+		else if (bitLen <= 192) { static fp::MontFp<tag, 192> f; f.init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 224) { static fp::MontFp<tag, 224> f; op_ = f.init(p); }
+		else if (bitLen <= 224) { static fp::MontFp<tag, 224> f; f.init(op_, p); }
 #endif
-		else if (bitLen <= 256) { static fp::MontFp<tag, 256> f; op_ = f.init(p); }
-		else if (bitLen <= 384) { static fp::MontFp<tag, 384> f; op_ = f.init(p); }
-		else if (bitLen <= 448) { static fp::MontFp<tag, 448> f; op_ = f.init(p); }
+		else if (bitLen <= 256) { static fp::MontFp<tag, 256> f; f.init(op_, p); }
+		else if (bitLen <= 384) { static fp::MontFp<tag, 384> f; f.init(op_, p); }
+		else if (bitLen <= 448) { static fp::MontFp<tag, 448> f; f.init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 544) { static fp::MontFp<tag, 544> f; op_ = f.init(p); }
+		else if (bitLen <= 544) { static fp::MontFp<tag, 544> f; f.init(op_, p); }
 #else
-		else if (bitLen <= 576) { static fp::MontFp<tag, 576> f; op_ = f.init(p); }
+		else if (bitLen <= 576) { static fp::MontFp<tag, 576> f; f.init(op_, p); }
 #endif
-		else { static fp::MontFp<tag, maxBitN> f; op_ = f.init(p); }
+		else { static fp::MontFp<tag, maxBitN> f; f.init(op_, p); }
 #else
-		if (bitLen <= 128) {  op_ = fp::FixedFp<tag, 128>::init(p); }
+		if (bitLen <= 128) {  fp::FixedFp<tag, 128>::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 160) { static fp::FixedFp<tag, 160> f; op_ = f.init(p); }
+		else if (bitLen <= 160) { static fp::FixedFp<tag, 160> f; f.init(op_, p); }
 #endif
-		else if (bitLen <= 192) { static fp::FixedFp<tag, 192> f; op_ = f.init(p); }
+		else if (bitLen <= 192) { static fp::FixedFp<tag, 192> f; f.init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 224) { static fp::FixedFp<tag, 224> f; op_ = f.init(p); }
+		else if (bitLen <= 224) { static fp::FixedFp<tag, 224> f; f.init(op_, p); }
 #endif
-		else if (bitLen <= 256) { static fp::FixedFp<tag, 256> f; op_ = f.init(p); }
-		else if (bitLen <= 384) { static fp::FixedFp<tag, 384> f; op_ = f.init(p); }
-		else if (bitLen <= 448) { static fp::FixedFp<tag, 448> f; op_ = f.init(p); }
+		else if (bitLen <= 256) { static fp::FixedFp<tag, 256> f; f.init(op_, p); }
+		else if (bitLen <= 384) { static fp::FixedFp<tag, 384> f; f.init(op_, p); }
+		else if (bitLen <= 448) { static fp::FixedFp<tag, 448> f; f.init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 544) { static fp::FixedFp<tag, 544> f; op_ = f.init(p); }
+		else if (bitLen <= 544) { static fp::FixedFp<tag, 544> f; f.init(op_, p); }
 #else
-		else if (bitLen <= 576) { static fp::FixedFp<tag, 576> f; op_ = f.init(p); }
+		else if (bitLen <= 576) { static fp::FixedFp<tag, 576> f; f.init(op_, p); }
 #endif
-		else { static fp::FixedFp<tag, maxBitN> f; op_ = f.init(p); }
+		else { static fp::FixedFp<tag, maxBitN> f; f.init(op_, p); }
 #endif
 		assert(op_.N <= maxUnitN);
 #endif
@@ -409,6 +409,17 @@ public:
 		x.getBlock(xb);
 		y.getBlock(yb);
 		return fp::local::compareArray(xb.p, yb.p, xb.n);
+	}
+	/*
+		wrapper function for generic p
+		add(z, x, y)
+		  case 1: op_.add(z.v_, x.v_, y.v_) written by Xbyak with fixed p
+		  case 2: addG(z.v_, x.v_, y.v_)
+		            op_.addG(z, x, y, p) written by GMP/LLVM with generic p
+	*/
+	static inline void addG(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.addG(z, x, y, op_.p);
 	}
 private:
 	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)

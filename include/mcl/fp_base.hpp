@@ -39,7 +39,6 @@ typedef void (*void2op)(Unit*, const Unit*);
 typedef void (*void3op)(Unit*, const Unit*, const Unit*);
 typedef void (*void4op)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef int (*int2op)(Unit*, const Unit*);
-typedef void (*void4Iop)(Unit*, const Unit*, const Unit*, const Unit*, Unit);
 
 } } // mcl::fp
 
@@ -149,6 +148,12 @@ struct Op {
 	// for Montgomery
 	void2op toMont;
 	void2op fromMont;
+	// for generic p
+	void3op negG;
+	void3op invG;
+	void4op addG;
+	void4op subG;
+	void4op mulG;
 	mcl::SquareRoot sq;
 	Op()
 		: p(0), N(0), isZero(0), clear(0), neg(0), inv(0)
@@ -326,10 +331,9 @@ struct FixedFp {
 		}
 		sub(y, p_, x);
 	}
-	static inline Op init(const Unit *p)
+	static inline void init(Op& op, const Unit *p)
 	{
 		setModulo(p);
-		Op op;
 		op.N = N;
 		op.isZero = &isZero;
 		op.clear = &clear;
@@ -342,6 +346,7 @@ struct FixedFp {
 		if (bitN <= 128) {
 			op.add = &add128;
 			op.sub = &sub128;
+			op.addG = mcl_fp_add128S;
 		} else
 #if CYBOZU_OS_BIT == 32
 		if (bitN <= 160) {
@@ -393,7 +398,6 @@ struct FixedFp {
 		}
 		op.mp = mp_;
 		op.p = &p_[0];
-		return op;
 	}
 };
 
@@ -486,11 +490,10 @@ struct MontFp {
 	{
 		mul_(y, x, one_);
 	}
-	static inline Op init(const Unit *p)
+	static inline void init(Op& op, const Unit *p)
 	{
 puts("use MontFp2");
 		setModulo(p);
-		Op op;
 		op.N = N;
 		op.isZero = &isZero;
 		op.clear = &clear;
@@ -511,7 +514,6 @@ puts("use MontFp2");
 //		addNc = Xbyak::CastTo<bool3op>(fg_.addNc_);
 //		subNc = Xbyak::CastTo<bool3op>(fg_.subNc_);
 		initInvTbl(invTbl_);
-		return op;
 	}
 };
 template<class tag, size_t bitN> mpz_class MontFp<tag, bitN>::mp_;
