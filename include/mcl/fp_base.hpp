@@ -136,6 +136,7 @@ struct Op {
 	mpz_class mp;
 	const Unit* p;
 	size_t N;
+	size_t bitLen;
 	bool (*isZero)(const Unit*);
 	void1op clear;
 	void2op neg;
@@ -148,6 +149,7 @@ struct Op {
 	// for Montgomery
 	void2op toMont;
 	void2op fromMont;
+	mcl::SquareRoot sq;
 	Op()
 		: p(0), N(0), isZero(0), clear(0), neg(0), inv(0)
 		, square(0), copy(0),add(0), sub(0), mul(0), toMont(0), fromMont(0)
