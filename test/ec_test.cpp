@@ -134,12 +134,12 @@ struct Test {
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
-		bool odd = Fp::isYodd(y);
+		bool odd = Fp::isOdd(y);
 		Fp yy;
 		Ec::getYfromX(yy, x, odd);
 		CYBOZU_TEST_EQUAL(yy, y);
 		Fp::neg(y, y);
-		odd = Fp::isYodd(y);
+		odd = Fp::isOdd(y);
 		yy.clear();
 		Ec::getYfromX(yy, x, odd);
 		CYBOZU_TEST_EQUAL(yy, y);

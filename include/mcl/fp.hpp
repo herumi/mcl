@@ -130,7 +130,7 @@ public:
 	{
 		Gmp::toStr(pstr, op_.mp);
 	}
-	static inline bool isYodd(const FpT& x)
+	static inline bool isOdd(const FpT& x)
 	{
 		fp::Block b;
 		x.getBlock(b);

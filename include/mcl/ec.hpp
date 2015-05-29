@@ -406,7 +406,7 @@ public:
 			self.normalize();
 			os << self.x.toStr(16) << '_';
 			if (compressedExpression_) {
-				return os << Fp::isYodd(self.y);
+				return os << Fp::isOdd(self.y);
 			} else {
 				return os << self.y.toStr(16);
 			}
@@ -468,7 +468,7 @@ public:
 		}
 		x.appendToBitVec(bv);
 		if (compressedExpression_) {
-			bv.append(Fp::isYodd(y), 1);
+			bv.append(Fp::isOdd(y), 1);
 		} else {
 			y.appendToBitVec(bv);
 		}
@@ -519,7 +519,7 @@ public:
 		t *= x;
 		t += b_;
 		Fp::squareRoot(y, t);
-		if (Fp::isYodd(y) ^ isYodd) {
+		if (Fp::isOdd(y) ^ isYodd) {
 			Fp::neg(y, y);
 		}
 	}
