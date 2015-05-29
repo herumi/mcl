@@ -1,17 +1,5 @@
 include ../common.mk
 
-ifeq ($(USE_MONT_FP),1)
-  CFLAGS += -DUSE_MONT_FP
-endif
-
-ifeq ($(USE_LLVM),1)
-  CFLAGS += -DMIE_USE_LLVM
-  ASM_SRC=../src/$(CPU).s
-  ASM_OBJ=$(ASM_SRC:.s=.o)
-  SRC+=$(ASM_SRC)
-  LDFLAGS+=$(ASM_OBJ)
-endif
-
 TARGET=$(TEST_FILE)
 
 SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp

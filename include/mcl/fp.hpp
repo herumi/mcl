@@ -6,6 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#include <iostream>
 #include <sstream>
 #include <vector>
 #ifdef _MSC_VER
@@ -73,15 +74,20 @@ public:
 	static inline void setModulo(const std::string& mstr, int base = 0)
 	{
 		bool isMinus;
-		mpz_class mp;
-		inFromStr(mp, &isMinus, mstr, base);
+		inFromStr(op_.mp, &isMinus, mstr, base);
 		if (isMinus) throw cybozu::Exception("mcl:FpT:setModulo:mstr is not minus") << mstr;
-		const size_t bitLen = Gmp::getBitLen(mp);
+		const size_t bitLen = Gmp::getBitLen(op_.mp);
 		if (bitLen > maxBitN) throw cybozu::Exception("mcl:FpT:setModulo:too large bitLen") << bitLen << maxBitN;
-		Unit p[maxUnitN] = {};
-		const size_t n = Gmp::getRaw(p, maxUnitN, mp);
+		const size_t n = Gmp::getRaw(op_.p, maxUnitN, op_.mp);
 		if (n == 0) throw cybozu::Exception("mcl:FpT:setModulo:bad mstr") << mstr;
-		mcl::fp::setOp(op_, p, bitLen);
+//		mcl::fp::setOp(op_, p, bitLen);
+		// default
+		op_.neg = negG;
+		op_.inv = invG;
+		op_.add = addG;
+		op_.sub = subG;
+		op_.mul = mulG;
+		const Unit *p = op_.p;
 #if 1
 #ifdef USE_MONT_FP
 		if (bitLen <= 128) { fp::MontFp<tag, 128>::init(op_, p); }
@@ -123,7 +129,8 @@ public:
 		assert(op_.N <= maxUnitN);
 #endif
 		op_.bitLen = bitLen;
-		op_.sq.set(mp);
+std::cout << "QQQ : mp=" << op_.mp << std::endl;
+		op_.sq.set(op_.mp);
 	}
 	static inline void getModulo(std::string& pstr)
 	{
@@ -192,7 +199,7 @@ public:
 		bool isMinus;
 		mpz_class x;
 		inFromStr(x, &isMinus, str, base);
-		if (x >= op_.mp) throw cybozu::Exception("fp:FpT:fromStr:large str") << str;
+		if (x >= op_.mp) throw cybozu::Exception("fp:FpT:fromStr:large str") << str << op_.mp;
 		fp::local::toArray(v_, op_.N, x.get_mpz_t());
 		if (isMinus) {
 			neg(*this, *this);
@@ -297,7 +304,7 @@ public:
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.mul(z.v_, x.v_, y.v_); }
 	static inline void inv(FpT& y, const FpT& x) { op_.inv(y.v_, x.v_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.neg(y.v_, x.v_); }
-	static inline void square(FpT& y, const FpT& x) { op_.square(y.v_, x.v_); }
+	static inline void square(FpT& y, const FpT& x) { mul(y, x, x); }
 	static inline void div(FpT& z, const FpT& x, const FpT& y)
 	{
 		FpT rev;
@@ -420,6 +427,24 @@ public:
 	static inline void addG(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.addG(z, x, y, op_.p);
+	}
+	static inline void subG(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.subG(z, x, y, op_.p);
+	}
+	static inline void mulG(Unit *z, const Unit *x, const Unit *y)
+	{
+		Unit xy[maxUnitN * 2];
+		op_.mulPreG(xy, x, y);
+		op_.modG(z, xy, op_.p);
+	}
+	static inline void negG(Unit *y, const Unit *x)
+	{
+		op_.negG(y, x, op_.p);
+	}
+	static inline void invG(Unit *y, const Unit *x)
+	{
+		op_.invG(y, x, op_.p);
 	}
 private:
 	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)

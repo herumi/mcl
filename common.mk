@@ -66,6 +66,14 @@ endif
 LIB=$(TOPDIR)lib/libmcl$(OBJSUF).a
 LDFLAGS += -lpthread -m$(BIT) -lgmp -lgmpxx
 
+ifeq ($(USE_MONT_FP),1)
+  CFLAGS += -DUSE_MONT_FP
+endif
+
+ifeq ($(USE_LLVM),1)
+  CFLAGS += -DMCL_USE_LLVM
+endif
+
 ####################################################
 
 TOPDIR:=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))/

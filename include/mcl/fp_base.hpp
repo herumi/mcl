@@ -15,6 +15,7 @@
 	#pragma warning(disable : 4512)
 	#pragma warning(disable : 4146)
 #endif
+#include <iostream>
 #include <stdint.h>
 #include <assert.h>
 #include <mcl/gmp_util.hpp>
@@ -51,7 +52,7 @@ void mcl_fp_add ## len ## S(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp:
 void mcl_fp_add ## len ## L(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
 void mcl_fp_sub ## len ## S(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
 void mcl_fp_sub ## len ## L(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fp_mul ## len ## pre(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
+void mcl_fp_mulPre ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
 void mcl_fp_mont ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, mcl::fp::Unit);
 
 MCL_FP_DEF_FUNC(128)
@@ -128,53 +129,82 @@ inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
 	clearArray(y, xn, yn);
 }
 
-} // mcl::fp
+inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
+{
+	z->_mp_alloc = n;
+	int i = n;
+	while (i > 0 && p[i - 1] == 0) {
+		i--;
+	}
+	z->_mp_size = i;
+	z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
+}
+
+inline void set_zero(mpz_t& z, Unit *p, size_t n)
+{
+	z->_mp_alloc = (int)n;
+	z->_mp_size = 0;
+	z->_mp_d = (mp_limb_t*)p;
+}
+
+} // mcl::fp::local
 struct TagDefault;
 
+static inline void modC(Unit *y, const Unit *x, const mpz_class& mp, size_t N)
+{
+	mpz_t mx, my;
+	local::set_mpz_t(mx, x, N * 2);
+	local::set_mpz_t(my, y, N);
+	mpz_mod(my, mx, mp.get_mpz_t());
+	local::clearArray(y, my->_mp_size, N);
+}
+
+#ifndef MCL_FP_BLOCK_MAX_BIT_N
+	#define MCL_FP_BLOCK_MAX_BIT_N 521
+#endif
+
 struct Op {
+	static const size_t UnitByteN = sizeof(Unit);
+	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
 	mpz_class mp;
-	const Unit* p;
+	mcl::SquareRoot sq;
+	Unit p[maxUnitN];
 	size_t N;
 	size_t bitLen;
+	// independent from p
 	bool (*isZero)(const Unit*);
 	void1op clear;
+	void2op copy;
+	// not require p(function having p)
 	void2op neg;
 	void2op inv;
-	void2op square;
-	void2op copy;
 	void3op add;
 	void3op sub;
 	void3op mul;
 	// for Montgomery
 	void2op toMont;
 	void2op fromMont;
-	// for generic p
+	// require p
 	void3op negG;
 	void3op invG;
 	void4op addG;
 	void4op subG;
-	void4op mulG;
-	mcl::SquareRoot sq;
+	void3op mulPreG;
+	void3op modG;
 	Op()
-		: p(0), N(0), isZero(0), clear(0), neg(0), inv(0)
-		, square(0), copy(0),add(0), sub(0), mul(0), toMont(0), fromMont(0)
+		: p(), N(0), bitLen(0)
+		, isZero(0), clear(0), copy(0)
+		, neg(0), inv(0), add(0), sub(0), mul(0)
+		, toMont(0), fromMont(0)
+		, negG(0), invG(0), addG(0), subG(0), mulPreG(0), modG(0)
 	{
 	}
 };
 
-template<class tag, size_t bitN>
-struct FixedFp {
+template<size_t bitN>
+struct OpeFunc {
 	typedef fp::Unit Unit;
 	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
-	static mpz_class mp_;
-	static Unit p_[N];
-	static inline void setModulo(const Unit* p)
-	{
-		assert(N >= 2);
-		assert(sizeof(mp_limb_t) == sizeof(Unit));
-		copy(p_, p);
-		Gmp::setRaw(mp_, p, N);
-	}
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
 		z->_mp_alloc = n;
@@ -191,59 +221,29 @@ struct FixedFp {
 		z->_mp_size = 0;
 		z->_mp_d = (mp_limb_t*)p;
 	}
-	static inline void clear(Unit *x)
+	static inline void clearC(Unit *x)
 	{
 		local::clearArray(x, 0, N);
 	}
-	static inline void copy(Unit *y, const Unit *x)
+	static inline void copyC(Unit *y, const Unit *x)
 	{
 		local::copyArray(y, x, N);
 	}
-	static inline void add(Unit *z, const Unit *x, const Unit *y)
+	static inline void addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N + 2]; // not N + 1
-		mpz_t mz, mx, my;
+		mpz_t mz, mx, my, mp;
 		set_zero(mz, ret, N + 2);
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
+		set_mpz_t(mp, p);
 		mpz_add(mz, mx, my);
-		if (mpz_cmp(mz, mp_.get_mpz_t()) >= 0) {
-			mpz_sub(mz, mz, mp_.get_mpz_t());
+		if (mpz_cmp(mz, mp) >= 0) {
+			mpz_sub(mz, mz, mp);
 		}
 		local::toArray(z, N, mz);
 	}
-#ifdef MCL_USE_LLVM
-#if CYBOZU_OS_BIT == 64
-	static inline void add128(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add128S(z, x, y, p_); }
-	static inline void sub128(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub128S(z, x, y, p_); }
-	static inline void add192(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add192S(z, x, y, p_); }
-	static inline void sub192(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub192S(z, x, y, p_); }
-	static inline void add256(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add256S(z, x, y, p_); }
-	static inline void sub256(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub256S(z, x, y, p_); }
-	static inline void add384(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add384L(z, x, y, p_); }
-	static inline void sub384(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub384L(z, x, y, p_); }
-
-	static inline void add576(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add576L(z, x, y, p_); }
-	static inline void sub576(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub576L(z, x, y, p_); }
-#else
-	static inline void add128(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add128S(z, x, y, p_); }
-	static inline void sub128(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub128S(z, x, y, p_); }
-	static inline void add192(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add192L(z, x, y, p_); }
-	static inline void sub192(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub192L(z, x, y, p_); }
-	static inline void add256(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add256L(z, x, y, p_); }
-	static inline void sub256(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub256L(z, x, y, p_); }
-	static inline void add384(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add384L(z, x, y, p_); }
-	static inline void sub384(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub384L(z, x, y, p_); }
-
-	static inline void add160(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add160L(z, x, y, p_); }
-	static inline void sub160(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub160L(z, x, y, p_); }
-	static inline void add224(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add224L(z, x, y, p_); }
-	static inline void sub224(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub224L(z, x, y, p_); }
-	static inline void add544(Unit *z, const Unit *x, const Unit *y) { mcl_fp_add544L(z, x, y, p_); }
-	static inline void sub544(Unit *z, const Unit *x, const Unit *y) { mcl_fp_sub544L(z, x, y, p_); }
-#endif
-#endif
-	static inline void sub(Unit *z, const Unit *x, const Unit *y)
+	static inline void subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N + 1];
 		mpz_t mz, mx, my;
@@ -252,44 +252,13 @@ struct FixedFp {
 		set_mpz_t(my, y);
 		mpz_sub(mz, mx, my);
 		if (mpz_sgn(mz) < 0) {
-			mpz_add(mz, mz, mp_.get_mpz_t());
+			mpz_t mp;
+			set_mpz_t(mp, p);
+			mpz_add(mz, mz, mp);
 		}
 		local::toArray(z, N, mz);
 	}
-	static inline void mul(Unit *z, const Unit *x, const Unit *y)
-	{
-		Unit ret[N * 2];
-#ifdef MCL_USE_LLVM
-#if CYBOZU_OS_BIT == 64
-		if (bitN <= 128) { mcl_fp_mul128pre(ret, x, y); mod(z, ret); return; }
-		if (bitN <= 192) { mcl_fp_mul192pre(ret, x, y); mod(z, ret); return; }
-		if (bitN <= 256) { mcl_fp_mul256pre(ret, x, y); mod(z, ret); return; }
-		if (bitN <= 384) { mcl_fp_mul384pre(ret, x, y); mod(z, ret); return; }
-//		if (bitN <= 576) { mcl_fp_mul576pre(ret, x, y); mod(z, ret); return; }
-#else
-		if (bitN <= 128) { mcl_fp_mul128pre(ret, x, y); mod(z, ret); return; }
-		if (bitN <= 160) { mcl_fp_mul160pre(ret, x, y); mod(z, ret); return; }
-		if (bitN <= 192) { mcl_fp_mul192pre(ret, x, y); mod(z, ret); return; }
-		if (bitN <= 224) { mcl_fp_mul224pre(ret, x, y); mod(z, ret); return; }
-//		if (bitN <= 256) { mcl_fp_mul256pre(ret, x, y); mod(z, ret); return; }
-//		if (bitN <= 384) { mcl_fp_mul384pre(ret, x, y); mod(z, ret); return; }
-//		if (bitN <= 544) { mcl_fp_mul544pre(ret, x, y); mod(z, ret); return; }
-#endif
-#endif
-#if 0
-		pre_mul(ret, x, y);
-		mod(z, ret);
-#else
-		mpz_t mx, my, mz;
-		set_zero(mz, ret, N * 2);
-		set_mpz_t(mx, x);
-		set_mpz_t(my, y);
-		mpz_mul(mz, mx, my);
-		mpz_mod(mz, mz, mp_.get_mpz_t());
-		local::toArray(z, N, mz);
-#endif
-	}
-	static inline void pre_mul(Unit *z, const Unit *x, const Unit *y)
+	static inline void mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
 		mpz_t mx, my, mz;
 		set_zero(mz, z, N * 2);
@@ -299,110 +268,192 @@ struct FixedFp {
 		local::toArray(z, N * 2, mz);
 	}
 	// x[N * 2] -> y[N]
-	static inline void mod(Unit *y, const Unit *x)
+	static inline void modC(Unit *y, const Unit *x, const Unit *p)
 	{
-		mpz_t mx, my;
+		mpz_t mx, my, mp;
 		set_mpz_t(mx, x, N * 2);
-		set_mpz_t(my, y, N);
-		mpz_mod(my, mx, mp_.get_mpz_t());
+		set_mpz_t(my, y);
+		set_mpz_t(mp, p);
+		mpz_mod(my, mx, mp);
 		local::clearArray(y, my->_mp_size, N);
 	}
-	static inline void square(Unit *z, const Unit *x)
-	{
-		mul(z, x, x); // QQQ : use powMod with 2?
-	}
-	static inline void inv(Unit *y, const Unit *x)
+	static inline void invC(Unit *y, const Unit *x, const Unit *p)
 	{
 		mpz_class my;
-		mpz_t mx;
+		mpz_t mx, mp;
 		set_mpz_t(mx, x);
-		mpz_invert(my.get_mpz_t(), mx, mp_.get_mpz_t());
+		set_mpz_t(mp, p);
+		mpz_invert(my.get_mpz_t(), mx, mp);
 		local::toArray(y, N, my.get_mpz_t());
 	}
-	static inline bool isZero(const Unit *x)
+	static inline bool isZeroC(const Unit *x)
 	{
 		return local::isZeroArray(x, N);
 	}
-	static inline void neg(Unit *y, const Unit *x)
+	static inline void negC(Unit *y, const Unit *x, const Unit *p)
 	{
-		if (isZero(x)) {
-			if (x != y) clear(y);
+		if (isZeroC(x)) {
+			if (x != y) clearC(y);
 			return;
 		}
-		sub(y, p_, x);
-	}
-	static inline void init(Op& op, const Unit *p)
-	{
-		setModulo(p);
-		op.N = N;
-		op.isZero = &isZero;
-		op.clear = &clear;
-		op.neg = &neg;
-		op.inv = &inv;
-		op.square = &square;
-		op.copy = &copy;
-#ifdef MCL_USE_LLVM
-		printf("fp2 use llvm bitN=%zd\n", bitN);
-		if (bitN <= 128) {
-			op.add = &add128;
-			op.sub = &sub128;
-			op.addG = mcl_fp_add128S;
-		} else
-#if CYBOZU_OS_BIT == 32
-		if (bitN <= 160) {
-			op.add = &add160;
-			op.sub = &sub160;
-		} else
-#endif
-		if (bitN <= 192) {
-			op.add = &add192;
-			op.sub = &sub192;
-		} else
-#if CYBOZU_OS_BIT == 32
-		if (bitN <= 224) {
-			op.add = &add224;
-			op.sub = &sub224;
-		} else
-#endif
-		if (bitN <= 256) {
-			op.add = &add256;
-			op.sub = &sub256;
-		} else
-		if (bitN <= 384) {
-			op.add = &add384;
-			op.sub = &sub384;
-		} else
-#if CYBOZU_OS_BIT == 64
-		if (bitN <= 576) {
-			op.add = &add576;
-			op.sub = &sub576;
-		} else
-#else
-		if (bitN <= 544) {
-			op.add = &add544;
-			op.sub = &sub544;
-		} else
-#endif
-#endif
-		{
-			op.add = &add;
-			op.sub = &sub;
-		}
-#ifdef MCL_USE_LLVM
-		if (mp_ == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-			op.mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
-		} else
-#endif
-		{
-			op.mul = &mul;
-		}
-		op.mp = mp_;
-		op.p = &p_[0];
+		subC(y, p, x, p);
 	}
 };
 
-template<class tag, size_t bitN> mpz_class FixedFp<tag, bitN>::mp_;
-template<class tag, size_t bitN> fp::Unit FixedFp<tag, bitN>::p_[FixedFp<tag, bitN>::N];
+template<class tag, size_t bitN>
+struct FixedFp {
+	typedef fp::Unit Unit;
+	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+	static inline void init(Op& op, const Unit*)
+	{
+		assert(N >= 2);
+		assert(sizeof(mp_limb_t) == sizeof(Unit));
+
+		op.N = N;
+		if (bitN <= 128) {
+			op.isZero = OpeFunc<128>::isZeroC;
+			op.clear = OpeFunc<128>::clearC;
+			op.copy = OpeFunc<128>::copyC;
+			op.negG = OpeFunc<128>::negC;
+			op.invG = OpeFunc<128>::invC;
+			op.addG = OpeFunc<128>::addC;
+			op.subG = OpeFunc<128>::subC;
+			op.mulPreG = OpeFunc<128>::mulPreC;
+			op.modG = OpeFunc<128>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add128S;
+			op.subG = mcl_fp_sub128S;
+			op.mulPreG = mcl_fp_mulPre128;
+#endif
+		} else
+#if CYBOZU_OS_BIT == 32
+		if (bitN <= 160) {
+			op.isZero = OpeFunc<160>::isZeroC;
+			op.clear = OpeFunc<160>::clearC;
+			op.copy = OpeFunc<160>::copyC;
+			op.negG = OpeFunc<160>::negC;
+			op.invG = OpeFunc<160>::invC;
+			op.addG = OpeFunc<160>::addC;
+			op.subG = OpeFunc<160>::subC;
+			op.mulPreG = OpeFunc<160>::mulPreC;
+			op.modG = OpeFunc<160>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add160S;
+			op.subG = mcl_fp_sub160S;
+			op.mulPreG = mcl_fp_mulPre160;
+#endif
+		} else
+#endif
+		if (bitN <= 192) {
+			op.isZero = OpeFunc<192>::isZeroC;
+			op.clear = OpeFunc<192>::clearC;
+			op.copy = OpeFunc<192>::copyC;
+			op.negG = OpeFunc<192>::negC;
+			op.invG = OpeFunc<192>::invC;
+			op.addG = OpeFunc<192>::addC;
+			op.subG = OpeFunc<192>::subC;
+			op.mulPreG = OpeFunc<192>::mulPreC;
+			op.modG = OpeFunc<192>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add192S;
+			op.subG = mcl_fp_sub192S;
+			op.mulPreG = mcl_fp_mulPre192;
+#endif
+		} else
+#if CYBOZU_OS_BIT == 32
+		if (bitN <= 224) {
+			op.isZero = OpeFunc<224>::isZeroC;
+			op.clear = OpeFunc<224>::clearC;
+			op.copy = OpeFunc<224>::copyC;
+			op.negG = OpeFunc<224>::negC;
+			op.invG = OpeFunc<224>::invC;
+			op.addG = OpeFunc<224>::addC;
+			op.subG = OpeFunc<224>::subC;
+			op.mulPreG = OpeFunc<224>::mulPreC;
+			op.modG = OpeFunc<224>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add224S;
+			op.subG = mcl_fp_sub224S;
+			op.mulPreG = mcl_fp_mulPre224;
+#endif
+		} else
+#endif
+		if (bitN <= 256) {
+			op.isZero = OpeFunc<256>::isZeroC;
+			op.clear = OpeFunc<256>::clearC;
+			op.copy = OpeFunc<256>::copyC;
+			op.negG = OpeFunc<256>::negC;
+			op.invG = OpeFunc<256>::invC;
+			op.addG = OpeFunc<256>::addC;
+			op.subG = OpeFunc<256>::subC;
+			op.mulPreG = OpeFunc<256>::mulPreC;
+			op.modG = OpeFunc<256>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add256S;
+			op.subG = mcl_fp_sub256S;
+			op.mulPreG = mcl_fp_mulPre256;
+#endif
+		} else
+		if (bitN <= 384) {
+			op.isZero = OpeFunc<384>::isZeroC;
+			op.clear = OpeFunc<384>::clearC;
+			op.copy = OpeFunc<384>::copyC;
+			op.negG = OpeFunc<384>::negC;
+			op.invG = OpeFunc<384>::invC;
+			op.addG = OpeFunc<384>::addC;
+			op.subG = OpeFunc<384>::subC;
+			op.mulPreG = OpeFunc<384>::mulPreC;
+			op.modG = OpeFunc<384>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add384S;
+			op.subG = mcl_fp_sub384S;
+			op.mulPreG = mcl_fp_mulPre384;
+#endif
+		} else
+#if CYBOZU_OS_BIT == 64
+		if (bitN <= 576) {
+			op.isZero = OpeFunc<576>::isZeroC;
+			op.clear = OpeFunc<576>::clearC;
+			op.copy = OpeFunc<576>::copyC;
+			op.negG = OpeFunc<576>::negC;
+			op.invG = OpeFunc<576>::invC;
+			op.addG = OpeFunc<576>::addC;
+			op.subG = OpeFunc<576>::subC;
+			op.mulPreG = OpeFunc<576>::mulPreC;
+			op.modG = OpeFunc<576>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add576S;
+			op.subG = mcl_fp_sub576S;
+			op.mulPreG = mcl_fp_mulPre576;
+#endif
+		}
+#else
+		if (bitN <= 544) {
+			op.isZero = OpeFunc<544>::isZeroC;
+			op.clear = OpeFunc<544>::clearC;
+			op.copy = OpeFunc<544>::copyC;
+			op.negG = OpeFunc<544>::negC;
+			op.invG = OpeFunc<544>::invC;
+			op.addG = OpeFunc<544>::addC;
+			op.subG = OpeFunc<544>::subC;
+			op.mulPreG = OpeFunc<544>::mulPreC;
+			op.modG = OpeFunc<544>::modC;
+#ifdef MCL_USE_LLVM
+			op.addG = mcl_fp_add544S;
+			op.subG = mcl_fp_sub544S;
+			op.mulPreG = mcl_fp_mulPre544;
+#endif
+		}
+#endif
+
+#ifdef MCL_USE_LLVM
+		if (op.mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
+			op.mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
+		}
+#endif
+	}
+};
+
 
 #ifdef USE_MONT_FP
 template<class tag, size_t bitN>
@@ -499,14 +550,17 @@ puts("use MontFp2");
 		op.clear = &clear;
 		op.neg = Xbyak::CastTo<void2op>(fg_.neg_);
 		op.inv = &invC;
-		op.square = Xbyak::CastTo<void2op>(fg_.sqr_);
-		if (op.square == 0) op.square = &squareC;
+//		{
+//			void2op square = Xbyak::CastTo<void2op>(fg_.sqr_);
+//			if (square) op.square = square;
+//		}
 		op.copy = &copy;
 		op.add = add_;
 		op.sub = Xbyak::CastTo<void3op>(fg_.sub_);
 		op.mul = mul_;
 		op.mp = mp_;
-		op.p = &p_[0];
+//		op.p = &p_[0];
+		copy(op.p, p_);
 		op.toMont = &toMont;
 		op.fromMont = &fromMont;
 
