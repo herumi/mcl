@@ -3,7 +3,9 @@
 #include <cybozu/benchmark.hpp>
 #include <time.h>
 
-#define USE_MONT_FP
+#ifndef USE_MONT_FP
+	#define USE_MONT_FP
+#endif
 #include <mcl/fp.hpp>
 typedef mcl::FpT<> Zn;
 typedef mcl::FpT<> MontFp3;

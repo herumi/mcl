@@ -129,24 +129,6 @@ inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
 	clearArray(y, xn, yn);
 }
 
-inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
-{
-	z->_mp_alloc = n;
-	int i = n;
-	while (i > 0 && p[i - 1] == 0) {
-		i--;
-	}
-	z->_mp_size = i;
-	z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
-}
-
-inline void set_zero(mpz_t& z, Unit *p, size_t n)
-{
-	z->_mp_alloc = (int)n;
-	z->_mp_size = 0;
-	z->_mp_d = (mp_limb_t*)p;
-}
-
 } // mcl::fp::local
 struct TagDefault;
 
@@ -200,37 +182,17 @@ struct MontFp {
 	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
 	static const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	static mpz_class mp_;
-//	static mcl::SquareRoot sq_;
 	static Unit p_[N];
 	static Unit one_[N];
-	static Unit R_[N]; // (1 << (N * 64)) % p
 	static Unit RR_[N]; // (R * R) % p
 	static Unit invTbl_[invTblN][N];
-	static size_t modBitLen_;
 	static FpGenerator fg_;
 	static void3op add_;
 	static void3op mul_;
 
-	static inline void fromRawGmp(Unit *y, const mpz_class& x)
+	static inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 	{
-		local::toArray(y, N, x.get_mpz_t());
-	}
-	static inline void setModulo(const Unit *p)
-	{
-		copy(p_, p);
-		Gmp::setRaw(mp_, p, N);
-//		sq_.set(pOrg_);
-
-		mpz_class t = 1;
-		fromRawGmp(one_, t);
-		t = (t << (N * 64)) % mp_;
-		fromRawGmp(R_, t);
-		t = (t * t) % mp_;
-		fromRawGmp(RR_, t);
-		fg_.init(p_, N);
-
-		add_ = Xbyak::CastTo<void3op>(fg_.add_);
-		mul_ = Xbyak::CastTo<void3op>(fg_.mul_);
+		local::toArray(y, n, x.get_mpz_t());
 	}
 	static void initInvTbl(Unit invTbl[invTblN][N])
 	{
@@ -281,8 +243,18 @@ struct MontFp {
 	}
 	static inline void init(Op& op, const Unit *p)
 	{
-puts("use MontFp2");
-		setModulo(p);
+		copy(p_, p);
+		Gmp::setRaw(mp_, p, N);
+
+		mpz_class t = 1;
+		fromRawGmp(one_, N, t);
+		t = (t << (N * 64)) % mp_;
+		t = (t * t) % mp_;
+		fromRawGmp(RR_, N, t);
+		fg_.init(p_, N);
+
+		add_ = Xbyak::CastTo<void3op>(fg_.add_);
+		mul_ = Xbyak::CastTo<void3op>(fg_.mul_);
 		op.N = N;
 		op.isZero = &isZero;
 		op.clear = &clear;
@@ -297,24 +269,18 @@ puts("use MontFp2");
 		op.sub = Xbyak::CastTo<void3op>(fg_.sub_);
 		op.mul = mul_;
 		op.mp = mp_;
-//		op.p = &p_[0];
 		copy(op.p, p_);
 		op.toMont = &toMont;
 		op.fromMont = &fromMont;
 
-//		shr1 = Xbyak::CastTo<void2op>(fg_.shr1_);
-//		addNc = Xbyak::CastTo<bool3op>(fg_.addNc_);
-//		subNc = Xbyak::CastTo<bool3op>(fg_.subNc_);
 		initInvTbl(invTbl_);
 	}
 };
 template<class tag, size_t bitN> mpz_class MontFp<tag, bitN>::mp_;
 template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::p_[MontFp<tag, bitN>::N];
 template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::one_[MontFp<tag, bitN>::N];
-template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::R_[MontFp<tag, bitN>::N];
 template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::RR_[MontFp<tag, bitN>::N];
 template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::invTbl_[MontFp<tag, bitN>::invTblN][MontFp<tag, bitN>::N];
-template<class tag, size_t bitN> size_t MontFp<tag, bitN>::modBitLen_;
 template<class tag, size_t bitN> FpGenerator MontFp<tag, bitN>::fg_;
 template<class tag, size_t bitN> void3op MontFp<tag, bitN>::add_;
 template<class tag, size_t bitN> void3op MontFp<tag, bitN>::mul_;
