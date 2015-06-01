@@ -300,159 +300,162 @@ struct OpeFunc {
 	}
 };
 
-template<class tag, size_t bitN>
-struct FixedFp {
+inline void initOp(Op& op, size_t bitN, const fp::Unit*)
+{
 	typedef fp::Unit Unit;
-	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
-	static inline void init(Op& op, const Unit*)
-	{
-		assert(N >= 2);
-		assert(sizeof(mp_limb_t) == sizeof(Unit));
+	assert(sizeof(mp_limb_t) == sizeof(Unit));
+	const size_t UnitBitN = sizeof(Unit) * 8;
 
-		op.N = N;
-		if (bitN <= 128) {
-			op.isZero = OpeFunc<128>::isZeroC;
-			op.clear = OpeFunc<128>::clearC;
-			op.copy = OpeFunc<128>::copyC;
-			op.negG = OpeFunc<128>::negC;
-			op.invG = OpeFunc<128>::invC;
-			op.addG = OpeFunc<128>::addC;
-			op.subG = OpeFunc<128>::subC;
-			op.mulPreG = OpeFunc<128>::mulPreC;
-			op.modG = OpeFunc<128>::modC;
+	if (bitN <= 128) {
+		op.N = 128 / UnitBitN;
+		op.isZero = OpeFunc<128>::isZeroC;
+		op.clear = OpeFunc<128>::clearC;
+		op.copy = OpeFunc<128>::copyC;
+		op.negG = OpeFunc<128>::negC;
+		op.invG = OpeFunc<128>::invC;
+		op.addG = OpeFunc<128>::addC;
+		op.subG = OpeFunc<128>::subC;
+		op.mulPreG = OpeFunc<128>::mulPreC;
+		op.modG = OpeFunc<128>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add128S;
-			op.subG = mcl_fp_sub128S;
-			op.mulPreG = mcl_fp_mulPre128;
+		op.addG = mcl_fp_add128S;
+		op.subG = mcl_fp_sub128S;
+		op.mulPreG = mcl_fp_mulPre128;
 #endif
-		} else
+	} else
 #if CYBOZU_OS_BIT == 32
-		if (bitN <= 160) {
-			op.isZero = OpeFunc<160>::isZeroC;
-			op.clear = OpeFunc<160>::clearC;
-			op.copy = OpeFunc<160>::copyC;
-			op.negG = OpeFunc<160>::negC;
-			op.invG = OpeFunc<160>::invC;
-			op.addG = OpeFunc<160>::addC;
-			op.subG = OpeFunc<160>::subC;
-			op.mulPreG = OpeFunc<160>::mulPreC;
-			op.modG = OpeFunc<160>::modC;
+	if (bitN <= 160) {
+		op.N = 160 / UnitBitN;
+		op.isZero = OpeFunc<160>::isZeroC;
+		op.clear = OpeFunc<160>::clearC;
+		op.copy = OpeFunc<160>::copyC;
+		op.negG = OpeFunc<160>::negC;
+		op.invG = OpeFunc<160>::invC;
+		op.addG = OpeFunc<160>::addC;
+		op.subG = OpeFunc<160>::subC;
+		op.mulPreG = OpeFunc<160>::mulPreC;
+		op.modG = OpeFunc<160>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add160S;
-			op.subG = mcl_fp_sub160S;
-			op.mulPreG = mcl_fp_mulPre160;
+		op.addG = mcl_fp_add160S;
+		op.subG = mcl_fp_sub160S;
+		op.mulPreG = mcl_fp_mulPre160;
 #endif
-		} else
+	} else
 #endif
-		if (bitN <= 192) {
-			op.isZero = OpeFunc<192>::isZeroC;
-			op.clear = OpeFunc<192>::clearC;
-			op.copy = OpeFunc<192>::copyC;
-			op.negG = OpeFunc<192>::negC;
-			op.invG = OpeFunc<192>::invC;
-			op.addG = OpeFunc<192>::addC;
-			op.subG = OpeFunc<192>::subC;
-			op.mulPreG = OpeFunc<192>::mulPreC;
-			op.modG = OpeFunc<192>::modC;
+	if (bitN <= 192) {
+		op.N = 192 / UnitBitN;
+		op.isZero = OpeFunc<192>::isZeroC;
+		op.clear = OpeFunc<192>::clearC;
+		op.copy = OpeFunc<192>::copyC;
+		op.negG = OpeFunc<192>::negC;
+		op.invG = OpeFunc<192>::invC;
+		op.addG = OpeFunc<192>::addC;
+		op.subG = OpeFunc<192>::subC;
+		op.mulPreG = OpeFunc<192>::mulPreC;
+		op.modG = OpeFunc<192>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add192S;
-			op.subG = mcl_fp_sub192S;
-			op.mulPreG = mcl_fp_mulPre192;
+		op.addG = mcl_fp_add192S;
+		op.subG = mcl_fp_sub192S;
+		op.mulPreG = mcl_fp_mulPre192;
 #endif
-		} else
+	} else
 #if CYBOZU_OS_BIT == 32
-		if (bitN <= 224) {
-			op.isZero = OpeFunc<224>::isZeroC;
-			op.clear = OpeFunc<224>::clearC;
-			op.copy = OpeFunc<224>::copyC;
-			op.negG = OpeFunc<224>::negC;
-			op.invG = OpeFunc<224>::invC;
-			op.addG = OpeFunc<224>::addC;
-			op.subG = OpeFunc<224>::subC;
-			op.mulPreG = OpeFunc<224>::mulPreC;
-			op.modG = OpeFunc<224>::modC;
+	if (bitN <= 224) {
+		op.N = 224 / UnitBitN;
+		op.isZero = OpeFunc<224>::isZeroC;
+		op.clear = OpeFunc<224>::clearC;
+		op.copy = OpeFunc<224>::copyC;
+		op.negG = OpeFunc<224>::negC;
+		op.invG = OpeFunc<224>::invC;
+		op.addG = OpeFunc<224>::addC;
+		op.subG = OpeFunc<224>::subC;
+		op.mulPreG = OpeFunc<224>::mulPreC;
+		op.modG = OpeFunc<224>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add224S;
-			op.subG = mcl_fp_sub224S;
-			op.mulPreG = mcl_fp_mulPre224;
+		op.addG = mcl_fp_add224S;
+		op.subG = mcl_fp_sub224S;
+		op.mulPreG = mcl_fp_mulPre224;
 #endif
-		} else
+	} else
 #endif
-		if (bitN <= 256) {
-			op.isZero = OpeFunc<256>::isZeroC;
-			op.clear = OpeFunc<256>::clearC;
-			op.copy = OpeFunc<256>::copyC;
-			op.negG = OpeFunc<256>::negC;
-			op.invG = OpeFunc<256>::invC;
-			op.addG = OpeFunc<256>::addC;
-			op.subG = OpeFunc<256>::subC;
-			op.mulPreG = OpeFunc<256>::mulPreC;
-			op.modG = OpeFunc<256>::modC;
+	if (bitN <= 256) {
+		op.N = 256 / UnitBitN;
+		op.isZero = OpeFunc<256>::isZeroC;
+		op.clear = OpeFunc<256>::clearC;
+		op.copy = OpeFunc<256>::copyC;
+		op.negG = OpeFunc<256>::negC;
+		op.invG = OpeFunc<256>::invC;
+		op.addG = OpeFunc<256>::addC;
+		op.subG = OpeFunc<256>::subC;
+		op.mulPreG = OpeFunc<256>::mulPreC;
+		op.modG = OpeFunc<256>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add256S;
-			op.subG = mcl_fp_sub256S;
-			op.mulPreG = mcl_fp_mulPre256;
+		op.addG = mcl_fp_add256S;
+		op.subG = mcl_fp_sub256S;
+		op.mulPreG = mcl_fp_mulPre256;
 #endif
-		} else
-		if (bitN <= 384) {
-			op.isZero = OpeFunc<384>::isZeroC;
-			op.clear = OpeFunc<384>::clearC;
-			op.copy = OpeFunc<384>::copyC;
-			op.negG = OpeFunc<384>::negC;
-			op.invG = OpeFunc<384>::invC;
-			op.addG = OpeFunc<384>::addC;
-			op.subG = OpeFunc<384>::subC;
-			op.mulPreG = OpeFunc<384>::mulPreC;
-			op.modG = OpeFunc<384>::modC;
+	} else
+	if (bitN <= 384) {
+		op.N = 384 / UnitBitN;
+		op.isZero = OpeFunc<384>::isZeroC;
+		op.clear = OpeFunc<384>::clearC;
+		op.copy = OpeFunc<384>::copyC;
+		op.negG = OpeFunc<384>::negC;
+		op.invG = OpeFunc<384>::invC;
+		op.addG = OpeFunc<384>::addC;
+		op.subG = OpeFunc<384>::subC;
+		op.mulPreG = OpeFunc<384>::mulPreC;
+		op.modG = OpeFunc<384>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add384S;
-			op.subG = mcl_fp_sub384S;
-			op.mulPreG = mcl_fp_mulPre384;
+		op.addG = mcl_fp_add384S;
+		op.subG = mcl_fp_sub384S;
+		op.mulPreG = mcl_fp_mulPre384;
 #endif
-		} else
+	} else
 #if CYBOZU_OS_BIT == 64
-		if (bitN <= 576) {
-			op.isZero = OpeFunc<576>::isZeroC;
-			op.clear = OpeFunc<576>::clearC;
-			op.copy = OpeFunc<576>::copyC;
-			op.negG = OpeFunc<576>::negC;
-			op.invG = OpeFunc<576>::invC;
-			op.addG = OpeFunc<576>::addC;
-			op.subG = OpeFunc<576>::subC;
-			op.mulPreG = OpeFunc<576>::mulPreC;
-			op.modG = OpeFunc<576>::modC;
+	if (bitN <= 576) {
+		op.N = 576 / UnitBitN;
+		op.isZero = OpeFunc<576>::isZeroC;
+		op.clear = OpeFunc<576>::clearC;
+		op.copy = OpeFunc<576>::copyC;
+		op.negG = OpeFunc<576>::negC;
+		op.invG = OpeFunc<576>::invC;
+		op.addG = OpeFunc<576>::addC;
+		op.subG = OpeFunc<576>::subC;
+		op.mulPreG = OpeFunc<576>::mulPreC;
+		op.modG = OpeFunc<576>::modC;
 #ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add576S;
-			op.subG = mcl_fp_sub576S;
-			op.mulPreG = mcl_fp_mulPre576;
-#endif
-		}
-#else
-		if (bitN <= 544) {
-			op.isZero = OpeFunc<544>::isZeroC;
-			op.clear = OpeFunc<544>::clearC;
-			op.copy = OpeFunc<544>::copyC;
-			op.negG = OpeFunc<544>::negC;
-			op.invG = OpeFunc<544>::invC;
-			op.addG = OpeFunc<544>::addC;
-			op.subG = OpeFunc<544>::subC;
-			op.mulPreG = OpeFunc<544>::mulPreC;
-			op.modG = OpeFunc<544>::modC;
-#ifdef MCL_USE_LLVM
-			op.addG = mcl_fp_add544S;
-			op.subG = mcl_fp_sub544S;
-			op.mulPreG = mcl_fp_mulPre544;
-#endif
-		}
-#endif
-
-#ifdef MCL_USE_LLVM
-		if (op.mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-			op.mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
-		}
+		op.addG = mcl_fp_add576S;
+		op.subG = mcl_fp_sub576S;
+		op.mulPreG = mcl_fp_mulPre576;
 #endif
 	}
-};
+#else
+	if (bitN <= 544) {
+		op.N = 544 / UnitBitN;
+		op.isZero = OpeFunc<544>::isZeroC;
+		op.clear = OpeFunc<544>::clearC;
+		op.copy = OpeFunc<544>::copyC;
+		op.negG = OpeFunc<544>::negC;
+		op.invG = OpeFunc<544>::invC;
+		op.addG = OpeFunc<544>::addC;
+		op.subG = OpeFunc<544>::subC;
+		op.mulPreG = OpeFunc<544>::mulPreC;
+		op.modG = OpeFunc<544>::modC;
+#ifdef MCL_USE_LLVM
+		op.addG = mcl_fp_add544S;
+		op.subG = mcl_fp_sub544S;
+		op.mulPreG = mcl_fp_mulPre544;
+#endif
+	}
+#endif
+
+#ifdef MCL_USE_LLVM
+	if (op.mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
+		op.mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
+	}
+#endif
+}
 
 
 #ifdef USE_MONT_FP

@@ -88,7 +88,6 @@ public:
 		op_.sub = subG;
 		op_.mul = mulG;
 		const Unit *p = op_.p;
-#if 1
 #ifdef USE_MONT_FP
 		if (bitLen <= 128) { fp::MontFp<tag, 128>::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
@@ -108,25 +107,7 @@ public:
 #endif
 		else { static fp::MontFp<tag, maxBitN> f; f.init(op_, p); }
 #else
-		if (bitLen <= 128) {  fp::FixedFp<tag, 128>::init(op_, p); }
-#if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 160) { static fp::FixedFp<tag, 160> f; f.init(op_, p); }
-#endif
-		else if (bitLen <= 192) { static fp::FixedFp<tag, 192> f; f.init(op_, p); }
-#if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 224) { static fp::FixedFp<tag, 224> f; f.init(op_, p); }
-#endif
-		else if (bitLen <= 256) { static fp::FixedFp<tag, 256> f; f.init(op_, p); }
-		else if (bitLen <= 384) { static fp::FixedFp<tag, 384> f; f.init(op_, p); }
-		else if (bitLen <= 448) { static fp::FixedFp<tag, 448> f; f.init(op_, p); }
-#if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 544) { static fp::FixedFp<tag, 544> f; f.init(op_, p); }
-#else
-		else if (bitLen <= 576) { static fp::FixedFp<tag, 576> f; f.init(op_, p); }
-#endif
-		else { static fp::FixedFp<tag, maxBitN> f; f.init(op_, p); }
-#endif
-		assert(op_.N <= maxUnitN);
+		initOp(op_, bitLen, p);
 #endif
 		op_.bitLen = bitLen;
 std::cout << "QQQ : mp=" << op_.mp << std::endl;
