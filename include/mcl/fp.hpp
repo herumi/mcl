@@ -37,6 +37,7 @@ namespace mcl {
 namespace fp {
 
 void setOp(mcl::fp::Op& op, const Unit* p, size_t bitLen);
+void initOpByLLVM(Op& op, const fp::Unit* p, size_t bitLen);
 
 
 struct Block {
@@ -107,10 +108,9 @@ public:
 #endif
 		else { static fp::MontFp<tag, maxBitN> f; f.init(op_, p); }
 #else
-		initOp(op_, bitLen, p);
+		initOpByLLVM(op_, p, bitLen);
 #endif
 		op_.bitLen = bitLen;
-std::cout << "QQQ : mp=" << op_.mp << std::endl;
 		op_.sq.set(op_.mp);
 	}
 	static inline void getModulo(std::string& pstr)
