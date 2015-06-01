@@ -35,8 +35,11 @@ typedef uint32_t Unit;
 typedef uint64_t Unit;
 #endif
 
+struct Op;
+
 typedef void (*void1op)(Unit*);
 typedef void (*void2op)(Unit*, const Unit*);
+typedef void (*void2opOp)(Unit*, const Unit*, const Op&);
 typedef void (*void3op)(Unit*, const Unit*, const Unit*);
 typedef void (*void4op)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef int (*int2op)(Unit*, const Unit*);
@@ -159,7 +162,7 @@ struct Op {
 	void2op fromMont;
 	// require p
 	void3op negG;
-	void3op invG;
+	void2opOp invG;
 	void4op addG;
 	void4op subG;
 	void3op mulPreG;

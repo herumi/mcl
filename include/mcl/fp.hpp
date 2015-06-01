@@ -425,7 +425,7 @@ public:
 	}
 	static inline void invG(Unit *y, const Unit *x)
 	{
-		op_.invG(y, x, op_.p);
+		op_.invG(y, x, op_);
 	}
 private:
 	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)

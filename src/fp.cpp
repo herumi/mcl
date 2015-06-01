@@ -122,12 +122,12 @@ struct OpeFunc {
 		mpz_mod(my, mx, mp);
 		local::clearArray(y, my->_mp_size, N);
 	}
-	static inline void invC(Unit *y, const Unit *x, const Unit *p)
+	static inline void invC(Unit *y, const Unit *x, const Op& op)
 	{
 		mpz_class my;
 		mpz_t mx, mp;
 		set_mpz_t(mx, x);
-		set_mpz_t(mp, p);
+		set_mpz_t(mp, op.p);
 		mpz_invert(my.get_mpz_t(), mx, mp);
 		local::toArray(y, N, my.get_mpz_t());
 	}
