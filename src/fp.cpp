@@ -1,6 +1,15 @@
 #include <mcl/fp_base.hpp>
 
 namespace mcl { namespace fp {
+
+FpGenerator *createFpGenerator()
+{
+	return 0;
+}
+
+void destroyFpGenerator(FpGenerator*)
+{
+}
 //void setOp(mcl::fp::Op& op, const Unit* p, size_t pBitLen)
 void setOp(mcl::fp::Op&, const Unit*, size_t)
 {

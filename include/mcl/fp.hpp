@@ -89,6 +89,7 @@ public:
 		op_.sub = subG;
 		op_.mul = mulG;
 		const Unit *p = op_.p;
+		initOpByLLVM(op_, p, bitLen);
 #ifdef USE_MONT_FP
 		if (bitLen <= 128) { fp::MontFp<tag, 128>::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
@@ -107,8 +108,6 @@ public:
 		else if (bitLen <= 576) { static fp::MontFp<tag, 576> f; f.init(op_, p); }
 #endif
 		else { static fp::MontFp<tag, maxBitN> f; f.init(op_, p); }
-#else
-		initOpByLLVM(op_, p, bitLen);
 #endif
 		op_.bitLen = bitLen;
 		op_.sq.set(op_.mp);

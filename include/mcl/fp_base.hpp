@@ -25,6 +25,10 @@
 #include <cybozu/inttype.hpp>
 #ifdef USE_MONT_FP
 #include <mcl/fp_generator.hpp>
+#else
+namespace mcl {
+struct FpGenerator;
+}
 #endif
 
 namespace mcl { namespace fp {
@@ -139,6 +143,9 @@ struct TagDefault;
 	#define MCL_FP_BLOCK_MAX_BIT_N 521
 #endif
 
+FpGenerator *createFpGenerator();
+void destroyFpGenerator(FpGenerator*);
+
 struct Op {
 	static const size_t UnitByteN = sizeof(Unit);
 	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
@@ -167,13 +174,19 @@ struct Op {
 	void4op subG;
 	void3op mulPreG;
 	void3op modG;
+	FpGenerator *fg;
 	Op()
 		: p(), N(0), bitLen(0)
 		, isZero(0), clear(0), copy(0)
 		, neg(0), inv(0), add(0), sub(0), mul(0)
 		, toMont(0), fromMont(0)
 		, negG(0), invG(0), addG(0), subG(0), mulPreG(0), modG(0)
+		, fg(createFpGenerator())
 	{
+	}
+	~Op()
+	{
+		destroyFpGenerator(fg);
 	}
 };
 
@@ -220,9 +233,9 @@ struct MontFp {
 	{
 		return local::isZeroArray(x, N);
 	}
-	static inline void invC(Unit *y, const Unit *x)
+	static inline void invC(Unit *y, const Unit *x, const Op& op)
 	{
-		const int2op preInv = Xbyak::CastTo<int2op>(fg_.preInv_);
+		const int2op preInv = Xbyak::CastTo<int2op>(op.fg->preInv_);
 		Unit r[N];
 		int k = preInv(r, x);
 		/*
@@ -230,11 +243,7 @@ struct MontFp {
 			R = 2^(N * 64)
 			get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
 		*/
-		mul_(y, r, invTbl_[k]);
-	}
-	static inline void squareC(Unit *y, const Unit *x)
-	{
-		mul_(y, x, x);
+		op.mul(y, r, invTbl_[k]);
 	}
 	static inline void toMont(Unit *y, const Unit *x)
 	{
@@ -262,7 +271,7 @@ struct MontFp {
 		op.isZero = &isZero;
 		op.clear = &clear;
 		op.neg = Xbyak::CastTo<void2op>(fg_.neg_);
-		op.inv = &invC;
+		op.invG = &invC;
 //		{
 //			void2op square = Xbyak::CastTo<void2op>(fg_.sqr_);
 //			if (square) op.square = square;
@@ -277,6 +286,7 @@ struct MontFp {
 		op.fromMont = &fromMont;
 
 		initInvTbl(invTbl_);
+		op.fg = &fg_;
 	}
 };
 template<class tag, size_t bitN> mpz_class MontFp<tag, bitN>::mp_;
