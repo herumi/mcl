@@ -2,6 +2,17 @@
 
 namespace mcl { namespace fp {
 
+#ifdef USE_MONT_FP
+FpGenerator *createFpGenerator()
+{
+	return new FpGenerator();
+}
+
+void destroyFpGenerator(FpGenerator* fg)
+{
+	delete fg;
+}
+#else
 FpGenerator *createFpGenerator()
 {
 	return 0;
@@ -10,6 +21,7 @@ FpGenerator *createFpGenerator()
 void destroyFpGenerator(FpGenerator*)
 {
 }
+#endif
 //void setOp(mcl::fp::Op& op, const Unit* p, size_t pBitLen)
 void setOp(mcl::fp::Op&, const Unit*, size_t)
 {
@@ -131,7 +143,7 @@ struct OpeFunc {
 		mpz_mod(my, mx, mp);
 		local::clearArray(y, my->_mp_size, N);
 	}
-	static inline void invC(Unit *y, const Unit *x, const Op& op)
+	static inline void invOp(Unit *y, const Unit *x, const Op& op)
 	{
 		mpz_class my;
 		mpz_t mx, mp;
@@ -169,7 +181,7 @@ struct OpeFunc {
 		op.clear = OpeFunc<n>::clearC; \
 		op.copy = OpeFunc<n>::copyC; \
 		op.negG = OpeFunc<n>::negC; \
-		op.invG = OpeFunc<n>::invC; \
+		op.invOp = OpeFunc<n>::invOp; \
 		op.addG = OpeFunc<n>::addC; \
 		op.subG = OpeFunc<n>::subC; \
 		op.mulPreG = OpeFunc<n>::mulPreC; \

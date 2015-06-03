@@ -84,32 +84,31 @@ public:
 //		mcl::fp::setOp(op_, p, bitLen);
 		// default
 		op_.neg = negG;
-		op_.inv = invG;
 		op_.add = addG;
 		op_.sub = subG;
 		op_.mul = mulG;
 		const Unit *p = op_.p;
+		op_.bitLen = bitLen;
 		initOpByLLVM(op_, p, bitLen);
 #ifdef USE_MONT_FP
-		if (bitLen <= 128) { fp::MontFp<tag, 128>::init(op_, p); }
+		if (bitLen <= 128) { fp::MontFp::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 160) { static fp::MontFp<tag, 160> f; f.init(op_, p); }
+		else if (bitLen <= 160) { fp::MontFp::init(op_, p); }
 #endif
-		else if (bitLen <= 192) { static fp::MontFp<tag, 192> f; f.init(op_, p); }
+		else if (bitLen <= 192) { fp::MontFp::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 224) { static fp::MontFp<tag, 224> f; f.init(op_, p); }
+		else if (bitLen <= 224) { fp::MontFp::init(op_, p); }
 #endif
-		else if (bitLen <= 256) { static fp::MontFp<tag, 256> f; f.init(op_, p); }
-		else if (bitLen <= 384) { static fp::MontFp<tag, 384> f; f.init(op_, p); }
-		else if (bitLen <= 448) { static fp::MontFp<tag, 448> f; f.init(op_, p); }
+		else if (bitLen <= 256) { fp::MontFp::init(op_, p); }
+		else if (bitLen <= 384) { fp::MontFp::init(op_, p); }
+		else if (bitLen <= 448) { fp::MontFp::init(op_, p); }
 #if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 544) { static fp::MontFp<tag, 544> f; f.init(op_, p); }
+		else if (bitLen <= 544) { fp::MontFp::init(op_, p); }
 #else
-		else if (bitLen <= 576) { static fp::MontFp<tag, 576> f; f.init(op_, p); }
+		else if (bitLen <= 576) { fp::MontFp::init(op_, p); }
 #endif
-		else { static fp::MontFp<tag, maxBitN> f; f.init(op_, p); }
+		else { fp::MontFp::init(op_, p); }
 #endif
-		op_.bitLen = bitLen;
 		op_.sq.set(op_.mp);
 	}
 	static inline void getModulo(std::string& pstr)
@@ -282,7 +281,7 @@ public:
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.add(z.v_, x.v_, y.v_); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.sub(z.v_, x.v_, y.v_); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.mul(z.v_, x.v_, y.v_); }
-	static inline void inv(FpT& y, const FpT& x) { op_.inv(y.v_, x.v_); }
+	static inline void inv(FpT& y, const FpT& x) { op_.invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.neg(y.v_, x.v_); }
 	static inline void square(FpT& y, const FpT& x) { mul(y, x, x); }
 	static inline void div(FpT& z, const FpT& x, const FpT& y)
@@ -422,9 +421,9 @@ public:
 	{
 		op_.negG(y, x, op_.p);
 	}
-	static inline void invG(Unit *y, const Unit *x)
+	static inline void inv(Unit *y, const Unit *x)
 	{
-		op_.invG(y, x, op_);
+		op_.invOp(y, x, op_);
 	}
 private:
 	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)

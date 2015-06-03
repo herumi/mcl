@@ -152,8 +152,15 @@ struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
 	Unit p[maxUnitN];
-	Unit one[maxUnitN]; // 1
-	Unit RR[maxUnitN]; // (R * R) % p
+	/*
+		for Montgomery
+		one = 1
+		R = (1 << (N * sizeof(Unit) * 8)) % p
+		RR = (R * R) % p
+	*/
+	Unit one[maxUnitN];
+	Unit RR[maxUnitN];
+	std::vector<Unit> invTbl;
 	size_t N;
 	size_t bitLen;
 	// independent from p
@@ -162,15 +169,15 @@ struct Op {
 	void2op copy;
 	// not require p(function having p)
 	void2op neg;
-	void2op inv;
 	void3op add;
 	void3op sub;
 	void3op mul;
 	// for Montgomery
 	bool useMont;
+	int2op preInv;
 	// require p
 	void3op negG;
-	void2opOp invG;
+	void2opOp invOp;
 	void4op addG;
 	void4op subG;
 	void3op mulPreG;
@@ -179,9 +186,9 @@ struct Op {
 	Op()
 		: p(), N(0), bitLen(0)
 		, isZero(0), clear(0), copy(0)
-		, neg(0), inv(0), add(0), sub(0), mul(0)
-		, useMont(false)//, toMont(0), fromMont(0)
-		, negG(0), invG(0), addG(0), subG(0), mulPreG(0), modG(0)
+		, neg(0), add(0), sub(0), mul(0)
+		, useMont(false), preInv(0)
+		, negG(0), invOp(0), addG(0), subG(0), mulPreG(0), modG(0)
 		, fg(createFpGenerator())
 	{
 	}
@@ -197,71 +204,67 @@ struct Op {
 	{
 		mul(y, x, RR);
 	}
+	void initInvTbl(size_t N)
+	{
+		assert(N <= maxUnitN);
+		const size_t invTblN = N * sizeof(Unit) * 8 * 2;
+		invTbl.resize(invTblN * N);
+		Unit *tbl = invTbl.data() + (invTblN - 1) * N;
+		Unit t[maxUnitN] = {};
+		t[0] = 2;
+		toMont(tbl, t);
+		for (size_t i = 0; i < invTblN - 1; i++) {
+			add(tbl - N, tbl, tbl);
+			tbl -= N;
+		}
+	}
 };
 
 
 #ifdef USE_MONT_FP
-template<class tag, size_t bitN>
 struct MontFp {
-	typedef fp::Unit Unit;
-	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
-	static const size_t invTblN = N * sizeof(Unit) * 8 * 2;
-	static Unit invTbl_[invTblN][N];
-	static FpGenerator fg_;
+	static const size_t UnitByteN = sizeof(Unit);
+	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
 
 	static inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 	{
 		local::toArray(y, n, x.get_mpz_t());
 	}
-	static void initInvTbl(Unit invTbl[invTblN][N], const Op& op)
+	static inline void invOp(Unit *y, const Unit *x, const Op& op)
 	{
-		Unit t[N];
-		memset(t, 0, sizeof(t));
-		t[0] = 2;
-		op.toMont(t, t);
-		for (int i = 0; i < invTblN; i++) {
-			op.copy(invTbl[invTblN - 1 - i], t);
-			op.add(t, t, t);
-		}
-	}
-	static inline void copy(Unit *y, const Unit *x)
-	{
-		local::copyArray(y, x, N);
-	}
-	static inline void invC(Unit *y, const Unit *x, const Op& op)
-	{
-		const int2op preInv = Xbyak::CastTo<int2op>(op.fg->preInv_);
-		Unit r[N];
-		int k = preInv(r, x);
+		Unit r[maxUnitN];
+		int k = op.preInv(r, x);
 		/*
 			xr = 2^k
 			R = 2^(N * 64)
 			get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
 		*/
-		op.mul(y, r, invTbl_[k]);
+		op.mul(y, r, op.invTbl.data() + k * op.N);
 	}
 	static inline void init(Op& op, const Unit *p)
 	{
+		size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+		if (N < 2) N = 2;
 		mpz_class t = 1;
 		fromRawGmp(op.one, N, t);
 		t = (t << (N * 64)) % op.mp;
 		t = (t * t) % op.mp;
 		fromRawGmp(op.RR, N, t);
-		fg_.init(p, N);
+		FpGenerator *fg = op.fg;
+		if (fg == 0) return;
+		fg->init(p, N);
 
-		op.neg = Xbyak::CastTo<void2op>(fg_.neg_);
-		op.invG = &invC;
-		op.add = Xbyak::CastTo<void3op>(fg_.add_);
-		op.sub = Xbyak::CastTo<void3op>(fg_.sub_);
-		op.mul = Xbyak::CastTo<void3op>(fg_.mul_);
+		op.neg = Xbyak::CastTo<void2op>(fg->neg_);
+		op.add = Xbyak::CastTo<void3op>(fg->add_);
+		op.sub = Xbyak::CastTo<void3op>(fg->sub_);
+		op.mul = Xbyak::CastTo<void3op>(fg->mul_);
+		op.preInv = Xbyak::CastTo<int2op>(op.fg->preInv_);
+		op.invOp = &invOp;
 		op.useMont = true;
 
-		initInvTbl(invTbl_, op);
-		op.fg = &fg_;
+		op.initInvTbl(N);
 	}
 };
-template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::invTbl_[MontFp<tag, bitN>::invTblN][MontFp<tag, bitN>::N];
-template<class tag, size_t bitN> FpGenerator MontFp<tag, bitN>::fg_;
 #endif
 
 } } // mcl::fp
