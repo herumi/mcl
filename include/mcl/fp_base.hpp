@@ -152,6 +152,8 @@ struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
 	Unit p[maxUnitN];
+	Unit one[maxUnitN]; // 1
+	Unit RR[maxUnitN]; // (R * R) % p
 	size_t N;
 	size_t bitLen;
 	// independent from p
@@ -165,8 +167,7 @@ struct Op {
 	void3op sub;
 	void3op mul;
 	// for Montgomery
-	void2op toMont;
-	void2op fromMont;
+	bool useMont;
 	// require p
 	void3op negG;
 	void2opOp invG;
@@ -179,7 +180,7 @@ struct Op {
 		: p(), N(0), bitLen(0)
 		, isZero(0), clear(0), copy(0)
 		, neg(0), inv(0), add(0), sub(0), mul(0)
-		, toMont(0), fromMont(0)
+		, useMont(false)//, toMont(0), fromMont(0)
 		, negG(0), invG(0), addG(0), subG(0), mulPreG(0), modG(0)
 		, fg(createFpGenerator())
 	{
@@ -187,6 +188,14 @@ struct Op {
 	~Op()
 	{
 		destroyFpGenerator(fg);
+	}
+	void fromMont(Unit* y, const Unit *x) const
+	{
+		mul(y, x, one);
+	}
+	void toMont(Unit* y, const Unit *x) const
+	{
+		mul(y, x, RR);
 	}
 };
 
@@ -197,41 +206,27 @@ struct MontFp {
 	typedef fp::Unit Unit;
 	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
 	static const size_t invTblN = N * sizeof(Unit) * 8 * 2;
-	static mpz_class mp_;
-	static Unit p_[N];
-	static Unit one_[N];
-	static Unit RR_[N]; // (R * R) % p
 	static Unit invTbl_[invTblN][N];
 	static FpGenerator fg_;
-	static void3op add_;
-	static void3op mul_;
 
 	static inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 	{
 		local::toArray(y, n, x.get_mpz_t());
 	}
-	static void initInvTbl(Unit invTbl[invTblN][N])
+	static void initInvTbl(Unit invTbl[invTblN][N], const Op& op)
 	{
 		Unit t[N];
-		clear(t);
+		memset(t, 0, sizeof(t));
 		t[0] = 2;
-		toMont(t, t);
+		op.toMont(t, t);
 		for (int i = 0; i < invTblN; i++) {
-			copy(invTbl[invTblN - 1 - i], t);
-			add_(t, t, t);
+			op.copy(invTbl[invTblN - 1 - i], t);
+			op.add(t, t, t);
 		}
-	}
-	static inline void clear(Unit *x)
-	{
-		local::clearArray(x, 0, N);
 	}
 	static inline void copy(Unit *y, const Unit *x)
 	{
 		local::copyArray(y, x, N);
-	}
-	static inline bool isZero(const Unit *x)
-	{
-		return local::isZeroArray(x, N);
 	}
 	static inline void invC(Unit *y, const Unit *x, const Op& op)
 	{
@@ -245,58 +240,28 @@ struct MontFp {
 		*/
 		op.mul(y, r, invTbl_[k]);
 	}
-	static inline void toMont(Unit *y, const Unit *x)
-	{
-		mul_(y, x, RR_);
-	}
-	static inline void fromMont(Unit *y, const Unit *x)
-	{
-		mul_(y, x, one_);
-	}
 	static inline void init(Op& op, const Unit *p)
 	{
-		copy(p_, p);
-		Gmp::setRaw(mp_, p, N);
-
 		mpz_class t = 1;
-		fromRawGmp(one_, N, t);
-		t = (t << (N * 64)) % mp_;
-		t = (t * t) % mp_;
-		fromRawGmp(RR_, N, t);
-		fg_.init(p_, N);
+		fromRawGmp(op.one, N, t);
+		t = (t << (N * 64)) % op.mp;
+		t = (t * t) % op.mp;
+		fromRawGmp(op.RR, N, t);
+		fg_.init(p, N);
 
-		add_ = Xbyak::CastTo<void3op>(fg_.add_);
-		mul_ = Xbyak::CastTo<void3op>(fg_.mul_);
-		op.N = N;
-		op.isZero = &isZero;
-		op.clear = &clear;
 		op.neg = Xbyak::CastTo<void2op>(fg_.neg_);
 		op.invG = &invC;
-//		{
-//			void2op square = Xbyak::CastTo<void2op>(fg_.sqr_);
-//			if (square) op.square = square;
-//		}
-		op.copy = &copy;
-		op.add = add_;
+		op.add = Xbyak::CastTo<void3op>(fg_.add_);
 		op.sub = Xbyak::CastTo<void3op>(fg_.sub_);
-		op.mul = mul_;
-		op.mp = mp_;
-		copy(op.p, p_);
-		op.toMont = &toMont;
-		op.fromMont = &fromMont;
+		op.mul = Xbyak::CastTo<void3op>(fg_.mul_);
+		op.useMont = true;
 
-		initInvTbl(invTbl_);
+		initInvTbl(invTbl_, op);
 		op.fg = &fg_;
 	}
 };
-template<class tag, size_t bitN> mpz_class MontFp<tag, bitN>::mp_;
-template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::p_[MontFp<tag, bitN>::N];
-template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::one_[MontFp<tag, bitN>::N];
-template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::RR_[MontFp<tag, bitN>::N];
 template<class tag, size_t bitN> fp::Unit MontFp<tag, bitN>::invTbl_[MontFp<tag, bitN>::invTblN][MontFp<tag, bitN>::N];
 template<class tag, size_t bitN> FpGenerator MontFp<tag, bitN>::fg_;
-template<class tag, size_t bitN> void3op MontFp<tag, bitN>::add_;
-template<class tag, size_t bitN> void3op MontFp<tag, bitN>::mul_;
 #endif
 
 } } // mcl::fp
