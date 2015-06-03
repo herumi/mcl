@@ -91,23 +91,7 @@ public:
 		op_.bitLen = bitLen;
 		initOpByLLVM(op_, p, bitLen);
 #ifdef USE_MONT_FP
-		if (bitLen <= 128) { fp::MontFp::init(op_, p); }
-#if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 160) { fp::MontFp::init(op_, p); }
-#endif
-		else if (bitLen <= 192) { fp::MontFp::init(op_, p); }
-#if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 224) { fp::MontFp::init(op_, p); }
-#endif
-		else if (bitLen <= 256) { fp::MontFp::init(op_, p); }
-		else if (bitLen <= 384) { fp::MontFp::init(op_, p); }
-		else if (bitLen <= 448) { fp::MontFp::init(op_, p); }
-#if CYBOZU_OS_BIT == 32
-		else if (bitLen <= 544) { fp::MontFp::init(op_, p); }
-#else
-		else if (bitLen <= 576) { fp::MontFp::init(op_, p); }
-#endif
-		else { fp::MontFp::init(op_, p); }
+		fp::initForMont(op_, p);
 #endif
 		op_.sq.set(op_.mp);
 	}
@@ -421,10 +405,12 @@ public:
 	{
 		op_.negG(y, x, op_.p);
 	}
+#if 0
 	static inline void inv(Unit *y, const Unit *x)
 	{
 		op_.invOp(y, x, op_);
 	}
+#endif
 private:
 	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)
 	{

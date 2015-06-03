@@ -222,49 +222,47 @@ struct Op {
 
 
 #ifdef USE_MONT_FP
-struct MontFp {
-	static const size_t UnitByteN = sizeof(Unit);
-	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
+const size_t UnitByteN = sizeof(Unit);
+const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
+inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
+{
+	Unit r[maxUnitN];
+	int k = op.preInv(r, x);
+	/*
+		xr = 2^k
+		R = 2^(N * 64)
+		get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
+	*/
+	op.mul(y, r, op.invTbl.data() + k * op.N);
+}
+inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
+{
+	local::toArray(y, n, x.get_mpz_t());
+}
 
-	static inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
-	{
-		local::toArray(y, n, x.get_mpz_t());
-	}
-	static inline void invOp(Unit *y, const Unit *x, const Op& op)
-	{
-		Unit r[maxUnitN];
-		int k = op.preInv(r, x);
-		/*
-			xr = 2^k
-			R = 2^(N * 64)
-			get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
-		*/
-		op.mul(y, r, op.invTbl.data() + k * op.N);
-	}
-	static inline void init(Op& op, const Unit *p)
-	{
-		size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
-		if (N < 2) N = 2;
-		mpz_class t = 1;
-		fromRawGmp(op.one, N, t);
-		t = (t << (N * 64)) % op.mp;
-		t = (t * t) % op.mp;
-		fromRawGmp(op.RR, N, t);
-		FpGenerator *fg = op.fg;
-		if (fg == 0) return;
-		fg->init(p, N);
+inline void initForMont(Op& op, const Unit *p)
+{
+	size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+	if (N < 2) N = 2;
+	mpz_class t = 1;
+	fromRawGmp(op.one, N, t);
+	t = (t << (N * 64)) % op.mp;
+	t = (t * t) % op.mp;
+	fromRawGmp(op.RR, N, t);
+	FpGenerator *fg = op.fg;
+	if (fg == 0) return;
+	fg->init(p, N);
 
-		op.neg = Xbyak::CastTo<void2op>(fg->neg_);
-		op.add = Xbyak::CastTo<void3op>(fg->add_);
-		op.sub = Xbyak::CastTo<void3op>(fg->sub_);
-		op.mul = Xbyak::CastTo<void3op>(fg->mul_);
-		op.preInv = Xbyak::CastTo<int2op>(op.fg->preInv_);
-		op.invOp = &invOp;
-		op.useMont = true;
+	op.neg = Xbyak::CastTo<void2op>(fg->neg_);
+	op.add = Xbyak::CastTo<void3op>(fg->add_);
+	op.sub = Xbyak::CastTo<void3op>(fg->sub_);
+	op.mul = Xbyak::CastTo<void3op>(fg->mul_);
+	op.preInv = Xbyak::CastTo<int2op>(op.fg->preInv_);
+	op.invOp = &invOpForMont;
+	op.useMont = true;
 
-		op.initInvTbl(N);
-	}
-};
+	op.initInvTbl(N);
+}
 #endif
 
 } } // mcl::fp
