@@ -176,19 +176,19 @@ struct Op {
 	bool useMont;
 	int2op preInv;
 	// require p
-	void3op negG;
+	void3op negP;
 	void2opOp invOp;
-	void4op addG;
-	void4op subG;
-	void3op mulPreG;
-	void3op modG;
+	void4op addP;
+	void4op subP;
+	void3op mulPreP;
+	void3op modP;
 	FpGenerator *fg;
 	Op()
 		: p(), N(0), bitLen(0)
 		, isZero(0), clear(0), copy(0)
 		, neg(0), add(0), sub(0), mul(0)
 		, useMont(false), preInv(0)
-		, negG(0), invOp(0), addG(0), subG(0), mulPreG(0), modG(0)
+		, negP(0), invOp(0), addP(0), subP(0), mulPreP(0), modP(0)
 		, fg(createFpGenerator())
 	{
 	}

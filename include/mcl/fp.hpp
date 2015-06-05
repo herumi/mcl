@@ -81,15 +81,14 @@ public:
 		if (bitLen > maxBitN) throw cybozu::Exception("mcl:FpT:setModulo:too large bitLen") << bitLen << maxBitN;
 		const size_t n = Gmp::getRaw(op_.p, maxUnitN, op_.mp);
 		if (n == 0) throw cybozu::Exception("mcl:FpT:setModulo:bad mstr") << mstr;
-//		mcl::fp::setOp(op_, p, bitLen);
 		// default
-		op_.neg = negG;
-		op_.add = addG;
-		op_.sub = subG;
-		op_.mul = mulG;
+		op_.neg = negW;
+		op_.add = addW;
+		op_.sub = subW;
+		op_.mul = mulW;
 		const Unit *p = op_.p;
 		op_.bitLen = bitLen;
-		initOpByLLVM(op_, p, bitLen);
+		fp::setOp(op_, p, bitLen);
 #ifdef USE_MONT_FP
 		fp::initForMont(op_, p);
 #endif
@@ -384,33 +383,27 @@ public:
 		wrapper function for generic p
 		add(z, x, y)
 		  case 1: op_.add(z.v_, x.v_, y.v_) written by Xbyak with fixed p
-		  case 2: addG(z.v_, x.v_, y.v_)
-		            op_.addG(z, x, y, p) written by GMP/LLVM with generic p
+		  case 2: addW(z.v_, x.v_, y.v_)
+		            op_.addP(z, x, y, p) written by GMP/LLVM with generic p
 	*/
-	static inline void addG(Unit *z, const Unit *x, const Unit *y)
+	static inline void addW(Unit *z, const Unit *x, const Unit *y)
 	{
-		op_.addG(z, x, y, op_.p);
+		op_.addP(z, x, y, op_.p);
 	}
-	static inline void subG(Unit *z, const Unit *x, const Unit *y)
+	static inline void subW(Unit *z, const Unit *x, const Unit *y)
 	{
-		op_.subG(z, x, y, op_.p);
+		op_.subP(z, x, y, op_.p);
 	}
-	static inline void mulG(Unit *z, const Unit *x, const Unit *y)
+	static inline void mulW(Unit *z, const Unit *x, const Unit *y)
 	{
 		Unit xy[maxUnitN * 2];
-		op_.mulPreG(xy, x, y);
-		op_.modG(z, xy, op_.p);
+		op_.mulPreP(xy, x, y);
+		op_.modP(z, xy, op_.p);
 	}
-	static inline void negG(Unit *y, const Unit *x)
+	static inline void negW(Unit *y, const Unit *x)
 	{
-		op_.negG(y, x, op_.p);
+		op_.negP(y, x, op_.p);
 	}
-#if 0
-	static inline void inv(Unit *y, const Unit *x)
-	{
-		op_.invOp(y, x, op_);
-	}
-#endif
 private:
 	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)
 	{
