@@ -41,12 +41,12 @@ typedef uint64_t Unit;
 
 struct Op;
 
-typedef void (*void1op)(Unit*);
-typedef void (*void2op)(Unit*, const Unit*);
-typedef void (*void2opOp)(Unit*, const Unit*, const Op&);
-typedef void (*void3op)(Unit*, const Unit*, const Unit*);
-typedef void (*void4op)(Unit*, const Unit*, const Unit*, const Unit*);
-typedef int (*int2op)(Unit*, const Unit*);
+typedef void (*void1u)(Unit*);
+typedef void (*void2u)(Unit*, const Unit*);
+typedef void (*void2uOp)(Unit*, const Unit*, const Op&);
+typedef void (*void3u)(Unit*, const Unit*, const Unit*);
+typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
+typedef int (*int2u)(Unit*, const Unit*);
 
 } } // mcl::fp
 
@@ -165,23 +165,23 @@ struct Op {
 	size_t bitLen;
 	// independent from p
 	bool (*isZero)(const Unit*);
-	void1op clear;
-	void2op copy;
+	void1u clear;
+	void2u copy;
 	// not require p(function having p)
-	void2op neg;
-	void3op add;
-	void3op sub;
-	void3op mul;
+	void2u neg;
+	void3u add;
+	void3u sub;
+	void3u mul;
 	// for Montgomery
 	bool useMont;
-	int2op preInv;
+	int2u preInv;
 	// require p
-	void3op negP;
-	void2opOp invOp;
-	void4op addP;
-	void4op subP;
-	void3op mulPreP;
-	void3op modP;
+	void3u negP;
+	void2uOp invOp;
+	void4u addP;
+	void4u subP;
+	void3u mulPreP;
+	void3u modP;
 	FpGenerator *fg;
 	Op()
 		: p(), N(0), bitLen(0)
@@ -204,65 +204,7 @@ struct Op {
 	{
 		mul(y, x, RR);
 	}
-	void initInvTbl(size_t N)
-	{
-		assert(N <= maxUnitN);
-		const size_t invTblN = N * sizeof(Unit) * 8 * 2;
-		invTbl.resize(invTblN * N);
-		Unit *tbl = invTbl.data() + (invTblN - 1) * N;
-		Unit t[maxUnitN] = {};
-		t[0] = 2;
-		toMont(tbl, t);
-		for (size_t i = 0; i < invTblN - 1; i++) {
-			add(tbl - N, tbl, tbl);
-			tbl -= N;
-		}
-	}
 };
 
-
-#ifdef USE_MONT_FP
-const size_t UnitByteN = sizeof(Unit);
-const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
-inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
-{
-	Unit r[maxUnitN];
-	int k = op.preInv(r, x);
-	/*
-		xr = 2^k
-		R = 2^(N * 64)
-		get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
-	*/
-	op.mul(y, r, op.invTbl.data() + k * op.N);
-}
-inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
-{
-	local::toArray(y, n, x.get_mpz_t());
-}
-
-inline void initForMont(Op& op, const Unit *p)
-{
-	size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
-	if (N < 2) N = 2;
-	mpz_class t = 1;
-	fromRawGmp(op.one, N, t);
-	t = (t << (N * 64)) % op.mp;
-	t = (t * t) % op.mp;
-	fromRawGmp(op.RR, N, t);
-	FpGenerator *fg = op.fg;
-	if (fg == 0) return;
-	fg->init(p, N);
-
-	op.neg = Xbyak::CastTo<void2op>(fg->neg_);
-	op.add = Xbyak::CastTo<void3op>(fg->add_);
-	op.sub = Xbyak::CastTo<void3op>(fg->sub_);
-	op.mul = Xbyak::CastTo<void3op>(fg->mul_);
-	op.preInv = Xbyak::CastTo<int2op>(op.fg->preInv_);
-	op.invOp = &invOpForMont;
-	op.useMont = true;
-
-	op.initInvTbl(N);
-}
-#endif
 
 } } // mcl::fp

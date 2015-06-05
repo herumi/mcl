@@ -89,9 +89,6 @@ public:
 		const Unit *p = op_.p;
 		op_.bitLen = bitLen;
 		fp::setOp(op_, p, bitLen);
-#ifdef USE_MONT_FP
-		fp::initForMont(op_, p);
-#endif
 		op_.sq.set(op_.mp);
 	}
 	static inline void getModulo(std::string& pstr)

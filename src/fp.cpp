@@ -144,7 +144,66 @@ struct OpeFunc {
 		op.modP = OpeFunc<n>::modC; \
 		SET_OP_LLVM(n)
 
-void setOp(mcl::fp::Op& op, const Unit* /*p*/, size_t bitLen)
+#ifdef USE_MONT_FP
+const size_t UnitByteN = sizeof(Unit);
+const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
+inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
+{
+	Unit r[maxUnitN];
+	int k = op.preInv(r, x);
+	/*
+		xr = 2^k
+		R = 2^(N * 64)
+		get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
+	*/
+	op.mul(y, r, op.invTbl.data() + k * op.N);
+}
+inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
+{
+	local::toArray(y, n, x.get_mpz_t());
+}
+inline void initInvTbl(Op& op, size_t N)
+{
+	assert(N <= maxUnitN);
+	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
+	op.invTbl.resize(invTblN * N);
+	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
+	Unit t[maxUnitN] = {};
+	t[0] = 2;
+	op.toMont(tbl, t);
+	for (size_t i = 0; i < invTblN - 1; i++) {
+		op.add(tbl - N, tbl, tbl);
+		tbl -= N;
+	}
+}
+
+inline void initForMont(Op& op, const Unit *p)
+{
+	size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+	if (N < 2) N = 2;
+	mpz_class t = 1;
+	fromRawGmp(op.one, N, t);
+	t = (t << (N * 64)) % op.mp;
+	t = (t * t) % op.mp;
+	fromRawGmp(op.RR, N, t);
+	FpGenerator *fg = op.fg;
+	if (fg == 0) return;
+	fg->init(p, N);
+
+	op.neg = Xbyak::CastTo<void2u>(fg->neg_);
+	op.add = Xbyak::CastTo<void3u>(fg->add_);
+	op.sub = Xbyak::CastTo<void3u>(fg->sub_);
+	op.mul = Xbyak::CastTo<void3u>(fg->mul_);
+	op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
+	op.invOp = &invOpForMont;
+	op.useMont = true;
+
+	initInvTbl(op, N);
+}
+#endif
+
+
+void setOp(mcl::fp::Op& op, const Unit* p, size_t bitLen)
 {
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 	const size_t UnitBitN = sizeof(Unit) * 8;
@@ -185,6 +244,9 @@ void setOp(mcl::fp::Op& op, const Unit* /*p*/, size_t bitLen)
 	if (op.mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
 		op.mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
 	}
+#endif
+#ifdef USE_MONT_FP
+	fp::initForMont(op, p);
 #endif
 }
 
