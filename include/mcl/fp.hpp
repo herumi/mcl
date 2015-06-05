@@ -36,7 +36,7 @@ struct TagDefault;
 
 } // mcl::fp
 
-template<class tag = fp::TagDefault, size_t maxBitN = MCL_FP_BLOCK_MAX_BIT_N>
+template<class tag = fp::TagDefault, size_t maxBitN = MCL_MAX_OP_BIT_N>
 class FpT {
 	typedef fp::Unit Unit;
 	static const size_t maxN = (maxBitN + fp::UnitBitN - 1) / fp::UnitBitN;
@@ -58,6 +58,7 @@ public:
 	}
 	static inline void setModulo(const std::string& mstr, int base = 0)
 	{
+		assert(maxBitN <= MCL_MAX_OP_BIT_N);
 		bool isMinus;
 		inFromStr(op_.mp, &isMinus, mstr, base);
 		if (isMinus) throw cybozu::Exception("mcl:FpT:setModulo:mstr is not minus") << mstr;
@@ -179,7 +180,6 @@ public:
 	}
 	void getBlock(fp::Block& b) const
 	{
-		assert(maxN <= fp::maxUnitN);
 		b.n = op_.N;
 		if (op_.useMont) {
 			op_.fromMont(b.v_, v_);

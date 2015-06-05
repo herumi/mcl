@@ -27,8 +27,7 @@ void Op::destroyFpGenerator(FpGenerator *)
 
 template<size_t bitN>
 struct OpeFunc {
-	typedef fp::Unit Unit;
-	static const size_t N = (bitN + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+	static const size_t N = (bitN + UnitBitN - 1) / UnitBitN;
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
 		z->_mp_alloc = n;
@@ -149,7 +148,7 @@ struct OpeFunc {
 #ifdef USE_MONT_FP
 inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 {
-	Unit r[maxUnitN];
+	Unit r[maxOpUnitN];
 	int k = op.preInv(r, x);
 	/*
 		xr = 2^k
@@ -164,11 +163,11 @@ static void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 }
 static void initInvTbl(Op& op, size_t N)
 {
-	assert(N <= maxUnitN);
+	assert(N <= maxOpUnitN);
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	op.invTbl.resize(invTblN * N);
 	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
-	Unit t[maxUnitN] = {};
+	Unit t[maxOpUnitN] = {};
 	t[0] = 2;
 	op.toMont(tbl, t);
 	for (size_t i = 0; i < invTblN - 1; i++) {

@@ -24,20 +24,15 @@
 #endif
 #include <cybozu/inttype.hpp>
 
-#ifndef MCL_FP_BLOCK_MAX_BIT_N
-	#define MCL_FP_BLOCK_MAX_BIT_N 521
+#ifndef MCL_MAX_OP_BIT_N
+	#define MCL_MAX_OP_BIT_N 521
 #endif
 
 namespace mcl {
 
 struct FpGenerator;
 
-namespace montgomery {
-
-} } // mcl::montgomery
-
-
-namespace mcl { namespace fp {
+namespace fp {
 
 #if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
 typedef uint32_t Unit;
@@ -45,7 +40,7 @@ typedef uint32_t Unit;
 typedef uint64_t Unit;
 #endif
 const size_t UnitBitN = sizeof(Unit) * 8;
-const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitBitN - 1) / UnitBitN;
+const size_t maxOpUnitN = (MCL_MAX_OP_BIT_N + UnitBitN - 1) / UnitBitN;
 
 struct Op;
 
@@ -56,18 +51,24 @@ typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef int (*int2u)(Unit*, const Unit*);
 
+struct Block {
+	const Unit *p; // pointer to original FpT.v_
+	size_t n;
+	Unit v_[maxOpUnitN];
+};
+
 struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
-	Unit p[maxUnitN];
+	Unit p[maxOpUnitN];
 	/*
 		for Montgomery
 		one = 1
 		R = (1 << (N * sizeof(Unit) * 8)) % p
 		RR = (R * R) % p
 	*/
-	Unit one[maxUnitN];
-	Unit RR[maxUnitN];
+	Unit one[maxOpUnitN];
+	Unit RR[maxOpUnitN];
 	std::vector<Unit> invTbl;
 	size_t N;
 	size_t bitLen;
@@ -123,13 +124,13 @@ struct Op {
 	@param pLow [in] p mod M
 	T is uint32_t or uint64_t
 */
-inline Unit getMontgomeryCoeff(Unit pLow)
+template<class T>
+T getMontgomeryCoeff(T pLow)
 {
-	Unit ret = 0;
-	Unit t = 0;
-	Unit x = 1;
-
-	for (size_t i = 0; i < UnitBitN; i++) {
+	T ret = 0;
+	T t = 0;
+	T x = 1;
+	for (size_t i = 0; i < sizeof(T) * 8; i++) {
 		if ((t & 1) == 0) {
 			t += pLow;
 			ret += x;
@@ -188,11 +189,5 @@ inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
 }
 
 } // mcl::fp::local
-
-struct Block {
-	const Unit *p; // pointer to original FpT.v_
-	size_t n;
-	Unit v_[maxUnitN];
-};
 
 } } // mcl::fp
