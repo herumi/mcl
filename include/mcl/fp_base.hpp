@@ -23,13 +23,19 @@
 	#pragma warning(pop)
 #endif
 #include <cybozu/inttype.hpp>
-#ifdef USE_MONT_FP
-#include <mcl/fp_generator.hpp>
-#else
-namespace mcl {
-struct FpGenerator;
-}
+
+#ifndef MCL_FP_BLOCK_MAX_BIT_N
+	#define MCL_FP_BLOCK_MAX_BIT_N 521
 #endif
+
+namespace mcl {
+
+struct FpGenerator;
+
+namespace montgomery {
+
+} } // mcl::montgomery
+
 
 namespace mcl { namespace fp {
 
@@ -38,6 +44,8 @@ typedef uint32_t Unit;
 #else
 typedef uint64_t Unit;
 #endif
+const size_t UnitBitN = sizeof(Unit) * 8;
+const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitBitN - 1) / UnitBitN;
 
 struct Op;
 
@@ -48,107 +56,7 @@ typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef int (*int2u)(Unit*, const Unit*);
 
-} } // mcl::fp
-
-#ifdef MCL_USE_LLVM
-
-extern "C" {
-
-#define MCL_FP_DEF_FUNC(len) \
-void mcl_fp_add ## len ## S(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fp_add ## len ## L(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fp_sub ## len ## S(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fp_sub ## len ## L(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fp_mulPre ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fp_mont ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, mcl::fp::Unit);
-
-MCL_FP_DEF_FUNC(128)
-MCL_FP_DEF_FUNC(192)
-MCL_FP_DEF_FUNC(256)
-MCL_FP_DEF_FUNC(320)
-MCL_FP_DEF_FUNC(384)
-MCL_FP_DEF_FUNC(448)
-MCL_FP_DEF_FUNC(512)
-#if CYBOZU_OS_BIT == 32
-MCL_FP_DEF_FUNC(160)
-MCL_FP_DEF_FUNC(224)
-MCL_FP_DEF_FUNC(288)
-MCL_FP_DEF_FUNC(352)
-MCL_FP_DEF_FUNC(416)
-MCL_FP_DEF_FUNC(480)
-MCL_FP_DEF_FUNC(544)
-#else
-MCL_FP_DEF_FUNC(576)
-#endif
-
-void mcl_fp_mul_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-
-}
-
-#endif
-
-namespace mcl { namespace fp {
-
-namespace local {
-
-inline int compareArray(const Unit* x, const Unit* y, size_t n)
-{
-	for (size_t i = n - 1; i != size_t(-1); i--) {
-		if (x[i] < y[i]) return -1;
-		if (x[i] > y[i]) return 1;
-	}
-	return 0;
-}
-
-inline bool isEqualArray(const Unit* x, const Unit* y, size_t n)
-{
-	for (size_t i = 0; i < n; i++) {
-		if (x[i] != y[i]) return false;
-	}
-	return true;
-}
-
-inline bool isZeroArray(const Unit *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) {
-		if (x[i]) return false;
-	}
-	return true;
-}
-
-inline void clearArray(Unit *x, size_t begin, size_t end)
-{
-	for (size_t i = begin; i < end; i++) x[i] = 0;
-}
-
-inline void copyArray(Unit *y, const Unit *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) y[i] = x[i];
-}
-
-inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
-{
-	const int xn = x->_mp_size;
-	assert(xn >= 0);
-	const Unit* xp = (const Unit*)x->_mp_d;
-	assert(xn <= (int)yn);
-	copyArray(y, xp, xn);
-	clearArray(y, xn, yn);
-}
-
-} // mcl::fp::local
-struct TagDefault;
-
-#ifndef MCL_FP_BLOCK_MAX_BIT_N
-	#define MCL_FP_BLOCK_MAX_BIT_N 521
-#endif
-
-FpGenerator *createFpGenerator();
-void destroyFpGenerator(FpGenerator*);
-
 struct Op {
-	static const size_t UnitByteN = sizeof(Unit);
-	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
 	mpz_class mp;
 	mcl::SquareRoot sq;
 	Unit p[maxUnitN];
@@ -204,7 +112,87 @@ struct Op {
 	{
 		mul(y, x, RR);
 	}
+	void init(const Unit *p, size_t bitLen);
+	static FpGenerator* createFpGenerator();
+	static void destroyFpGenerator(FpGenerator *fg);
 };
 
+/*
+	get pp such that p * pp = -1 mod M,
+	where p is prime and M = 1 << 64(or 32).
+	@param pLow [in] p mod M
+	T is uint32_t or uint64_t
+*/
+inline Unit getMontgomeryCoeff(Unit pLow)
+{
+	Unit ret = 0;
+	Unit t = 0;
+	Unit x = 1;
+
+	for (size_t i = 0; i < UnitBitN; i++) {
+		if ((t & 1) == 0) {
+			t += pLow;
+			ret += x;
+		}
+		t >>= 1;
+		x <<= 1;
+	}
+	return ret;
+}
+
+namespace local {
+
+inline int compareArray(const Unit* x, const Unit* y, size_t n)
+{
+	for (size_t i = n - 1; i != size_t(-1); i--) {
+		if (x[i] < y[i]) return -1;
+		if (x[i] > y[i]) return 1;
+	}
+	return 0;
+}
+
+inline bool isEqualArray(const Unit* x, const Unit* y, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		if (x[i] != y[i]) return false;
+	}
+	return true;
+}
+
+inline bool isZeroArray(const Unit *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		if (x[i]) return false;
+	}
+	return true;
+}
+
+inline void clearArray(Unit *x, size_t begin, size_t end)
+{
+	for (size_t i = begin; i < end; i++) x[i] = 0;
+}
+
+inline void copyArray(Unit *y, const Unit *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) y[i] = x[i];
+}
+
+inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
+{
+	const int xn = x->_mp_size;
+	assert(xn >= 0);
+	const Unit* xp = (const Unit*)x->_mp_d;
+	assert(xn <= (int)yn);
+	copyArray(y, xp, xn);
+	clearArray(y, xn, yn);
+}
+
+} // mcl::fp::local
+
+struct Block {
+	const Unit *p; // pointer to original FpT.v_
+	size_t n;
+	Unit v_[maxUnitN];
+};
 
 } } // mcl::fp

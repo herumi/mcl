@@ -1,24 +1,26 @@
 #include <mcl/fp_base.hpp>
+#ifdef USE_MONT_FP
+#include <mcl/fp_generator.hpp>
+#endif
+#include <mcl/fp_proto.hpp>
 
 namespace mcl { namespace fp {
 
 #ifdef USE_MONT_FP
-FpGenerator *createFpGenerator()
+FpGenerator *Op::createFpGenerator()
 {
 	return new FpGenerator();
 }
-
-void destroyFpGenerator(FpGenerator* fg)
+void Op::destroyFpGenerator(FpGenerator *fg)
 {
 	delete fg;
 }
 #else
-FpGenerator *createFpGenerator()
+FpGenerator *Op::createFpGenerator()
 {
 	return 0;
 }
-
-void destroyFpGenerator(FpGenerator*)
+void Op::destroyFpGenerator(FpGenerator *)
 {
 }
 #endif
@@ -124,29 +126,27 @@ struct OpeFunc {
 
 #ifdef MCL_USE_LLVM
 	#define SET_OP_LLVM(n) \
-		op.addP = mcl_fp_add ## n ##S; \
-		op.subP = mcl_fp_sub ## n ##S; \
-		op.mulPreP = mcl_fp_mulPre ## n;
+		addP = mcl_fp_add ## n ##S; \
+		subP = mcl_fp_sub ## n ##S; \
+		mulPreP = mcl_fp_mulPre ## n;
 #else
 	#define SET_OP_LLVM(n)
 #endif
 
 #define SET_OP(n) \
-		op.N = n / UnitBitN; \
-		op.isZero = OpeFunc<n>::isZeroC; \
-		op.clear = OpeFunc<n>::clearC; \
-		op.copy = OpeFunc<n>::copyC; \
-		op.negP = OpeFunc<n>::negC; \
-		op.invOp = OpeFunc<n>::invOp; \
-		op.addP = OpeFunc<n>::addC; \
-		op.subP = OpeFunc<n>::subC; \
-		op.mulPreP = OpeFunc<n>::mulPreC; \
-		op.modP = OpeFunc<n>::modC; \
+		N = n / UnitBitN; \
+		isZero = OpeFunc<n>::isZeroC; \
+		clear = OpeFunc<n>::clearC; \
+		copy = OpeFunc<n>::copyC; \
+		negP = OpeFunc<n>::negC; \
+		invOp = OpeFunc<n>::invOp; \
+		addP = OpeFunc<n>::addC; \
+		subP = OpeFunc<n>::subC; \
+		mulPreP = OpeFunc<n>::mulPreC; \
+		modP = OpeFunc<n>::modC; \
 		SET_OP_LLVM(n)
 
 #ifdef USE_MONT_FP
-const size_t UnitByteN = sizeof(Unit);
-const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
 inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 {
 	Unit r[maxUnitN];
@@ -158,11 +158,11 @@ inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 	*/
 	op.mul(y, r, op.invTbl.data() + k * op.N);
 }
-inline void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
+static void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 {
 	local::toArray(y, n, x.get_mpz_t());
 }
-inline void initInvTbl(Op& op, size_t N)
+static void initInvTbl(Op& op, size_t N)
 {
 	assert(N <= maxUnitN);
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
@@ -177,7 +177,7 @@ inline void initInvTbl(Op& op, size_t N)
 	}
 }
 
-inline void initForMont(Op& op, const Unit *p)
+static void initForMont(Op& op, const Unit *p)
 {
 	size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
 	if (N < 2) N = 2;
@@ -203,7 +203,7 @@ inline void initForMont(Op& op, const Unit *p)
 #endif
 
 
-void setOp(mcl::fp::Op& op, const Unit* p, size_t bitLen)
+void Op::init(const Unit* p, size_t bitLen)
 {
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 	const size_t UnitBitN = sizeof(Unit) * 8;
@@ -241,12 +241,12 @@ void setOp(mcl::fp::Op& op, const Unit* p, size_t bitLen)
 #endif
 
 #ifdef MCL_USE_LLVM
-	if (op.mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-		op.mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
+	if (mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
+		mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
 	}
 #endif
 #ifdef USE_MONT_FP
-	fp::initForMont(op, p);
+	fp::initForMont(*this, p);
 #endif
 }
 

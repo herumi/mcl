@@ -28,37 +28,21 @@
 #include <mcl/gmp_util.hpp>
 #include <mcl/power.hpp>
 
-#ifndef MCL_FP_BLOCK_MAX_BIT_N
-	#define MCL_FP_BLOCK_MAX_BIT_N 521
-#endif
-
 namespace mcl {
 
 namespace fp {
 
-void setOp(mcl::fp::Op& op, const Unit* p, size_t bitLen);
-void initOpByLLVM(Op& op, const fp::Unit* p, size_t bitLen);
-
-
-struct Block {
-	typedef fp::Unit Unit;
-	const Unit *p; // pointer to original FpT.v_
-	size_t n;
-	static const size_t UnitByteN = sizeof(Unit);
-	static const size_t maxUnitN = (MCL_FP_BLOCK_MAX_BIT_N + UnitByteN * 8 - 1) / (UnitByteN * 8);
-	Unit v_[maxUnitN];
-};
+struct TagDefault;
 
 } // mcl::fp
 
 template<class tag = fp::TagDefault, size_t maxBitN = MCL_FP_BLOCK_MAX_BIT_N>
 class FpT {
 	typedef fp::Unit Unit;
-	static const size_t UnitByteN = sizeof(Unit);
-	static const size_t maxUnitN = (maxBitN + UnitByteN * 8 - 1) / (UnitByteN * 8);
+	static const size_t maxN = (maxBitN + fp::UnitBitN - 1) / fp::UnitBitN;
 	static fp::Op op_;
 	template<class tag2, size_t maxBitN2> friend class FpT;
-	Unit v_[maxUnitN];
+	Unit v_[maxN];
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
@@ -79,7 +63,7 @@ public:
 		if (isMinus) throw cybozu::Exception("mcl:FpT:setModulo:mstr is not minus") << mstr;
 		const size_t bitLen = Gmp::getBitLen(op_.mp);
 		if (bitLen > maxBitN) throw cybozu::Exception("mcl:FpT:setModulo:too large bitLen") << bitLen << maxBitN;
-		const size_t n = Gmp::getRaw(op_.p, maxUnitN, op_.mp);
+		const size_t n = Gmp::getRaw(op_.p, maxN, op_.mp);
 		if (n == 0) throw cybozu::Exception("mcl:FpT:setModulo:bad mstr") << mstr;
 		// default
 		op_.neg = negW;
@@ -88,7 +72,7 @@ public:
 		op_.mul = mulW;
 		const Unit *p = op_.p;
 		op_.bitLen = bitLen;
-		fp::setOp(op_, p, bitLen);
+		op_.init(p, bitLen);
 		op_.sq.set(op_.mp);
 	}
 	static inline void getModulo(std::string& pstr)
@@ -195,7 +179,7 @@ public:
 	}
 	void getBlock(fp::Block& b) const
 	{
-		assert(maxUnitN <= fp::Block::maxUnitN);
+		assert(maxN <= fp::maxUnitN);
 		b.n = op_.N;
 		if (op_.useMont) {
 			op_.fromMont(b.v_, v_);
@@ -393,7 +377,7 @@ public:
 	}
 	static inline void mulW(Unit *z, const Unit *x, const Unit *y)
 	{
-		Unit xy[maxUnitN * 2];
+		Unit xy[maxN * 2];
 		op_.mulPreP(xy, x, y);
 		op_.modP(z, xy, op_.p);
 	}

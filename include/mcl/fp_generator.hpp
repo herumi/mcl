@@ -9,36 +9,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>
-
-namespace mcl {
-
-namespace montgomery {
-
-/*
-	get pp such that p * pp = -1 mod M,
-	where p is prime and M = 1 << 64(or 32).
-	@param pLow [in] p mod M
-	T is uint32_t or uint64_t
-*/
-template<class T>
-T getCoff(T pLow)
-{
-	T ret = 0;
-	T t = 0;
-	T x = 1;
-
-	for (size_t i = 0; i < sizeof(T) * 8; i++) {
-		if ((t & 1) == 0) {
-			t += pLow;
-			ret += x;
-		}
-		t >>= 1;
-		x <<= 1;
-	}
-	return ret;
-}
-
-} } // mcl::montgomery
+#include <mcl/fp_base.hpp>
 
 #if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
 
@@ -217,7 +188,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	{
 		if (pn < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << pn;
 		p_ = p;
-		pp_ = montgomery::getCoff(p[0]);
+		pp_ = fp::getMontgomeryCoeff(p[0]);
 		pn_ = pn;
 		isFullBit_ = (p_[pn_ - 1] >> 63) != 0;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
