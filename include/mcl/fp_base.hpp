@@ -6,6 +6,8 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#include <assert.h>
+#include <cybozu/inttype.hpp>
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4616)
@@ -15,14 +17,10 @@
 	#pragma warning(disable : 4512)
 	#pragma warning(disable : 4146)
 #endif
-#include <iostream>
-#include <stdint.h>
-#include <assert.h>
 #include <mcl/gmp_util.hpp>
 #ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
-#include <cybozu/inttype.hpp>
 
 #ifndef MCL_MAX_OP_BIT_N
 	#define MCL_MAX_OP_BIT_N 521
