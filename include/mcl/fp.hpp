@@ -23,9 +23,8 @@
 #include <cybozu/itoa.hpp>
 #include <cybozu/atoi.hpp>
 #include <cybozu/bitvector.hpp>
-#include <mcl/fp_base.hpp>
+#include <mcl/op.hpp>
 #include <mcl/fp_util.hpp>
-#include <mcl/gmp_util.hpp>
 #include <mcl/power.hpp>
 
 namespace mcl {

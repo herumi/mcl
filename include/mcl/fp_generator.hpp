@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>
-#include <mcl/fp_base.hpp>
+#include <mcl/op.hpp>
 
 #if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
 

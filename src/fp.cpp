@@ -1,4 +1,4 @@
-#include <mcl/fp_base.hpp>
+#include <mcl/op.hpp>
 #ifdef USE_MONT_FP
 #include <mcl/fp_generator.hpp>
 #endif

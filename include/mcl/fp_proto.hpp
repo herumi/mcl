@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <mcl/fp_base.hpp>
+#include <mcl/op.hpp>
 
 #ifdef MCL_USE_LLVM
 

@@ -1,6 +1,6 @@
 #include <map>
 #define MCL_USE_LLVM
-#include <mcl/fp_base.hpp>
+#include <mcl/op.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
