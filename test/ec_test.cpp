@@ -157,59 +157,6 @@ struct Test {
 			R += P;
 		}
 	}
-	void binaryExpression() const
-	{
-		puts("test binaryExpression");
-		const Fp x(para.gx);
-		const Fp y(para.gy);
-		Ec P(x, y);
-		Ec Q;
-		// not compressed
-		Ec::setCompressedExpression(false);
-		{
-			cybozu::BitVector bv;
-			P.appendToBitVec(bv);
-			Q.fromBitVec(bv);
-			CYBOZU_TEST_EQUAL(P, Q);
-		}
-		{
-			P = -P;
-			cybozu::BitVector bv;
-			P.appendToBitVec(bv);
-			Q.fromBitVec(bv);
-			CYBOZU_TEST_EQUAL(P, Q);
-		}
-		P.clear();
-		{
-			cybozu::BitVector bv;
-			P.appendToBitVec(bv);
-			Q.fromBitVec(bv);
-			CYBOZU_TEST_EQUAL(P, Q);
-		}
-		// compressed
-		Ec::setCompressedExpression(true);
-		P.set(x, y);
-		{
-			cybozu::BitVector bv;
-			P.appendToBitVec(bv);
-			Q.fromBitVec(bv);
-			CYBOZU_TEST_EQUAL(P, Q);
-		}
-		{
-			P = -P;
-			cybozu::BitVector bv;
-			P.appendToBitVec(bv);
-			Q.fromBitVec(bv);
-			CYBOZU_TEST_EQUAL(P, Q);
-		}
-		P.clear();
-		{
-			cybozu::BitVector bv;
-			P.appendToBitVec(bv);
-			Q.fromBitVec(bv);
-			CYBOZU_TEST_EQUAL(P, Q);
-		}
-	}
 	void str() const
 	{
 		puts("test str");
@@ -316,7 +263,6 @@ pow 499.00usec
 		power();
 		neg_power();
 		power_fp();
-		binaryExpression();
 		squareRoot();
 		str();
 #ifdef NDEBUG

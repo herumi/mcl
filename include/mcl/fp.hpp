@@ -22,7 +22,6 @@
 #include <cybozu/hash.hpp>
 #include <cybozu/itoa.hpp>
 #include <cybozu/atoi.hpp>
-#include <cybozu/bitvector.hpp>
 #include <mcl/op.hpp>
 #include <mcl/fp_util.hpp>
 #include <mcl/power.hpp>
@@ -293,23 +292,9 @@ public:
 		powerArray(z, x, Gmp::getBlock(y), Gmp::getBlockSize(x));
 	}
 	bool isZero() const { return op_.isZero(v_); }
-	/*
-		append to bv(not clear bv)
-	*/
-	void appendToBitVec(cybozu::BitVector& bv) const
-	{
-		fp::Block b;
-		getBlock(b);
-		bv.append(b.p, op_.bitLen);
-	}
 	bool isValid() const
 	{
 		return fp::compareArray(v_, op_.p, op_.N) < 0;
-	}
-	void fromBitVec(const cybozu::BitVector& bv)
-	{
-		if (bv.size() != op_.bitLen) throw cybozu::Exception("FpT:fromBitVec:bad size") << bv.size() << op_.bitLen;
-		setRaw(bv.getBlock(), bv.getBlockSize());
 	}
 	static inline size_t getModBitLen() { return op_.bitLen; }
 	static inline size_t getBitVecSize() { return op_.bitLen; }

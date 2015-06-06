@@ -374,41 +374,6 @@ CYBOZU_TEST_AUTO(toStr)
 	}
 }
 
-CYBOZU_TEST_AUTO(binaryRepl)
-{
-	const struct {
-		const char *s;
-		size_t n;
-		uint32_t v[6];
-	} tbl[] = {
-		{ "0", 0, { 0, 0, 0, 0, 0 } },
-		{ "1234", 1, { 1234, 0, 0, 0, 0 } },
-		{ "0xaabbccdd12345678", 2, { 0x12345678, 0xaabbccdd, 0, 0, 0 } },
-		{ "0x11112222333344445555666677778888", 4, { 0x77778888, 0x55556666, 0x33334444, 0x11112222, 0 } },
-		{ "0x9911112222333344445555666677778888", 5, { 0x77778888, 0x55556666, 0x33334444, 0x11112222, 0x99, 0 } },
-	};
-	Fp::setModulo("0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d");
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		Fp x(tbl[i].s);
-		cybozu::BitVector bv;
-		x.appendToBitVec(bv);
-		CYBOZU_TEST_EQUAL(bv.size(), Fp::getModBitLen());
-		CYBOZU_TEST_EQUAL(bv.size(), Fp::getBitVecSize());
-		const Fp::BlockType *block = bv.getBlock();
-		if (sizeof(Fp::BlockType) == 4) {
-			CYBOZU_TEST_EQUAL_ARRAY(block, tbl[i].v, tbl[i].n);
-		} else {
-			const size_t n = (tbl[i].n + 1) / 2;
-			for (size_t j = 0; j < n; j++) {
-				uint64_t v = (uint64_t(tbl[i].v[j * 2 + 1]) << 32) | tbl[i].v[j * 2];
-				CYBOZU_TEST_EQUAL(block[j], v);
-			}
-		}
-		Fp y;
-		y.fromBitVec(bv);
-		CYBOZU_TEST_EQUAL(x, y);
-	}
-}
 #endif
 
 #ifdef NDEBUG

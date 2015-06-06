@@ -8,7 +8,6 @@
 */
 #include <sstream>
 #include <cybozu/exception.hpp>
-#include <cybozu/bitvector.hpp>
 #include <mcl/operator.hpp>
 #include <mcl/power.hpp>
 #include <mcl/gmp_util.hpp>
@@ -449,59 +448,6 @@ public:
 	/*
 		append to bv(not clear bv)
 	*/
-	void appendToBitVec(cybozu::BitVector& bv) const
-	{
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
-		#error "not implemented"
-#else
-		normalize();
-		const size_t bitLen = _Fp::getModBitLen();
-		/*
-				elem |x|y|z|
-				size  n n 1 if not compressed
-				size  n 1 1 if compressed
-		*/
-		const size_t maxBitLen = compressedExpression_ ? (bitLen + 1 + 1) : (bitLen * 2 + 1);
-		if (isZero()) {
-			bv.resize(bv.size() + maxBitLen);
-			return;
-		}
-		x.appendToBitVec(bv);
-		if (compressedExpression_) {
-			bv.append(Fp::isOdd(y), 1);
-		} else {
-			y.appendToBitVec(bv);
-		}
-		bv.append(1, 1); // z = 1
-#endif
-	}
-	void fromBitVec(const cybozu::BitVector& bv)
-	{
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
-		#error "not implemented"
-#else
-		const size_t bitLen = _Fp::getModBitLen();
-		const size_t maxBitLen = compressedExpression_ ? (bitLen + 1 + 1) : (bitLen * 2 + 1);
-		if (bv.size() != maxBitLen) {
-			throw cybozu::Exception("EcT:fromBitVec:bad size") << bv.size() << maxBitLen;
-		}
-		if (!bv.get(maxBitLen - 1)) { // if z = 0
-			clear();
-			return;
-		}
-		cybozu::BitVector t;
-		bv.extract(t, 0, bitLen);
-		x.fromBitVec(t);
-		if (compressedExpression_) {
-			bool odd = bv.get(bitLen); // y
-			getYfromX(y, x, odd);
-		} else {
-			bv.extract(t, bitLen, bitLen);
-			y.fromBitVec(t);
-		}
-		z = 1;
-#endif
-	}
 	static inline size_t getBitVecSize()
 	{
 		const size_t bitLen = _Fp::getModBitLen();

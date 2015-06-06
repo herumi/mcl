@@ -136,7 +136,6 @@ struct Test {
 		setRaw();
 		set64bit();
 		getRaw();
-		binaryExp();
 		bench();
 	}
 	void cstr()
@@ -486,42 +485,6 @@ struct Test {
 		x.setRaw(b2, 2);
 		CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 #endif
-	}
-	void binaryExp()
-	{
-		puts("binaryExp");
-		for (int i = 2; i < 7; i++) {
-			mpz_class g = m / i;
-			Fp x, y;
-//			Fp::toMont(x, g);
-			x.fromGmp(g);
-			cybozu::BitVector bv;
-			x.appendToBitVec(bv);
-			uint64_t buf[N];
-			mcl::Gmp::getRaw(buf, N, g);
-			CYBOZU_TEST_EQUAL(bv.getBlockSize(), N);
-			CYBOZU_TEST_EQUAL(bv.size(), Fp::getModBitLen());
-			CYBOZU_TEST_EQUAL(bv.size(), Fp::getBitVecSize());
-			const uint64_t *p = bv.getBlock();
-			CYBOZU_TEST_EQUAL_ARRAY(p, buf, N);
-		}
-		const mpz_class yy("0x1255556666777788881111222233334444");
-		if (yy > m) {
-			return;
-		}
-		Fp y;
-//		Fp::toMont(y, yy);
-		y.fromGmp(yy);
-		uint64_t b1[N] = { uint64_t(0x1111222233334444ull), uint64_t(0x5555666677778888ull), 0x12 };
-		Fp x;
-		cybozu::BitVector bv;
-		bv.append(b1, Fp::getModBitLen());
-		x.fromBitVec(bv);
-		CYBOZU_TEST_EQUAL(x, y);
-		bv.clear();
-		x.appendToBitVec(bv);
-		const uint64_t *b2 = bv.getBlock();
-		CYBOZU_TEST_EQUAL_ARRAY(b1, b2, N);
 	}
 
 	void set64bit()

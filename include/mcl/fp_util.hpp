@@ -2,7 +2,6 @@
 #include <vector>
 #include <cybozu/itoa.hpp>
 #include <cybozu/atoi.hpp>
-#include <cybozu/bitvector.hpp>
 /**
 	@file
 	@brief utility of Fp
@@ -199,94 +198,6 @@ inline void getRandVal(S *out, RG& rg, const S *in, size_t bitLen)
 		if (rem > 0) out[n - 1] &= (S(1) << rem) - 1;
 		if (compareArray(out, in, n) < 0) return;
 	}
-}
-
-/*
-	z[] = (x[] << shift) | y
-	@param z [out] z[0..n)
-	@param x [in] x[0..n)
-	@param n [in] length of x, z
-	@param shift [in] 0 <= shift < (sizeof(S) * 8)
-	@param y [in]
-	@return (x[] << shift)[n]
-*/
-template<class S>
-S shiftLeftOr(S* z, const S* x, size_t n, size_t shift, S y = 0)
-{
-	if (n == 0) {
-		throw cybozu::Exception("fp:shiftLeftOr:bad n");
-	}
-	if (shift == 0) {
-		for (size_t i = n - 1; i > 0; i--) {
-			z[i] = x[i];
-		}
-		z[0] = x[0] | y;
-		return 0;
-	}
-	const size_t unitSize = sizeof(S) * 8;
-	if (shift >= unitSize) {
-		throw cybozu::Exception("fp:shiftLeftOr:large shift") << shift;
-	}
-	const size_t rev = unitSize - shift;
-	S ret = x[n - 1] >> rev;
-	for (size_t i = n - 1; i > 0; i--) {
-		z[i] = (x[i] << shift) | (x[i - 1] >> rev);
-	}
-	z[0] = (x[0] << shift) | y;
-	return ret;
-}
-template<class S>
-void shiftRight(S* z, const S* x, size_t n, size_t shift)
-{
-	if (n == 0) return;
-	if (shift == 0) {
-		for (size_t i = 0; i < n; i++) {
-			z[i] = x[i];
-		}
-		return;
-	}
-	const size_t unitSize = sizeof(S) * 8;
-	if (shift >= unitSize) {
-		throw cybozu::Exception("fp:shiftRight:large shift") << shift;
-	}
-	const size_t rev = unitSize - shift;
-	S prev = x[0];
-	for (size_t i = 0; i < n - 1; i++) {
-		S t = x[i + 1];
-		z[i] = (prev >> shift) | (t << rev);
-		prev = t;
-	}
-	z[n - 1] = prev >> shift;
-}
-
-template<class Vec, class T>
-size_t splitBitVec(Vec& v, const cybozu::BitVectorT<T>& bv, size_t width)
-{
-	if (width > sizeof(typename Vec::value_type) * 8) {
-		throw cybozu::Exception("fp:splitBitVec:bad width") << width;
-	}
-	const size_t q = bv.size() / width;
-	const size_t r = bv.size() % width;
-	for (size_t i = 0; i < q; i++) {
-		v.push_back(bv.extract(i * width, width));
-	}
-	if (r > 0) {
-		v.push_back(bv.extract(q * width, r));
-	}
-	return r ? r : width;
-}
-
-template<class Vec, class T>
-void concatBitVec(cybozu::BitVectorT<T>& bv, const Vec& v, size_t width, size_t lastWidth)
-{
-	if (width > sizeof(typename Vec::value_type) * 8) {
-		throw cybozu::Exception("fp:splitBitVec:bad width") << width;
-	}
-	bv.clear();
-	for (size_t i = 0; i < v.size() - 1; i++) {
-		bv.append(v[i], width);
-	}
-	bv.append(v[v.size() - 1], lastWidth);
 }
 
 } // mcl::fp
