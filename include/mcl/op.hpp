@@ -16,9 +16,9 @@
 
 namespace mcl {
 
-struct FpGenerator;
-
 namespace fp {
+
+struct FpGenerator;
 
 const size_t maxOpUnitN = (MCL_MAX_OP_BIT_N + UnitBitN - 1) / UnitBitN;
 

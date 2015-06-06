@@ -110,7 +110,7 @@ static inline std::ostream& operator<<(std::ostream& os, const Int& x)
 	return os << x.toStr();
 }
 
-void testAddSub(const mcl::FpGenerator& fg, int pn)
+void testAddSub(const mcl::fp::FpGenerator& fg, int pn)
 {
 	Fp x, y;
 	Int mx(pn), my(pn);
@@ -135,7 +135,7 @@ void testAddSub(const mcl::FpGenerator& fg, int pn)
 	}
 }
 
-void testNeg(const mcl::FpGenerator& fg, int pn)
+void testNeg(const mcl::fp::FpGenerator& fg, int pn)
 {
 	Fp x;
 	Int mx(pn), my(pn);
@@ -154,7 +154,7 @@ void testNeg(const mcl::FpGenerator& fg, int pn)
 	}
 }
 
-void testMulI(const mcl::FpGenerator& fg, int pn)
+void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 {
 	cybozu::XorShift rg;
 	for (int i = 0; i < 100; i++) {
@@ -181,7 +181,7 @@ void testMulI(const mcl::FpGenerator& fg, int pn)
 	}
 }
 
-void testShr1(const mcl::FpGenerator& fg, int pn)
+void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 {
 	cybozu::XorShift rg;
 	for (int i = 0; i < 100; i++) {
@@ -204,7 +204,7 @@ void test(const char *pStr)
 	uint64_t p[MAX_N];
 	const int pn = convertToArray(p, pStr);
 	printf("pn=%d\n", pn);
-	mcl::FpGenerator fg;
+	mcl::fp::FpGenerator fg;
 	fg.init(p, pn);
 	testAddSub(fg, pn);
 	testNeg(fg, pn);

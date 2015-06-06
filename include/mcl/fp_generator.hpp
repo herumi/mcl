@@ -121,6 +121,8 @@ if (rm.isReg()) { \
 	op(qword [rm.getMem()], r); \
 }
 
+namespace fp {
+
 struct FpGenerator : Xbyak::CodeGenerator {
 	typedef Xbyak::RegExp RegExp;
 	typedef Xbyak::Reg64 Reg64;
@@ -1641,6 +1643,6 @@ private:
 	}
 };
 
-} // mcl
+} } // mcl::fp
 
 #endif
