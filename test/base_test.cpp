@@ -29,7 +29,7 @@ void setMpz(mpz_class& mx, const Unit *x, size_t n)
 }
 void getMpz(Unit *x, size_t n, const mpz_class& mx)
 {
-	mcl::fp::local::toArray(x,  n, mx.get_mpz_t());
+	mcl::fp::toArray(x,  n, mx.get_mpz_t());
 }
 
 struct Montgomery {
@@ -105,7 +105,7 @@ void put(const char *msg, const Unit *x, size_t n)
 }
 void verifyEqual(const Unit *x, const Unit *y, size_t n, const char *file, int line)
 {
-	bool ok = mcl::fp::local::isEqualArray(x, y, n);
+	bool ok = mcl::fp::isEqualArray(x, y, n);
 	CYBOZU_TEST_ASSERT(ok);
 	if (ok) return;
 	printf("%s:%d\n", file, line);
@@ -161,7 +161,7 @@ void mulPreC(Unit *z, const Unit *x, const Unit *y, size_t n)
 	set_mpz_t(mx, x, n);
 	set_mpz_t(my, y, n);
 	mpz_mul(mz, mx, my);
-	mcl::fp::local::toArray(z, n * 2, mz);
+	mcl::fp::toArray(z, n * 2, mz);
 #else
 	mpz_class mx, my;
 	setMpz(mx, x, n);
@@ -178,7 +178,7 @@ void modC(Unit *y, const Unit *x, const Unit *p, size_t n)
 	set_mpz_t(my, y, n);
 	set_mpz_t(mp, p, n);
 	mpz_mod(my, mx, mp);
-	mcl::fp::local::clearArray(y, my->_mp_size, n);
+	mcl::fp::clearArray(y, my->_mp_size, n);
 }
 
 void mul(Unit *z, const Unit *x, const Unit *y, const Unit *p, size_t n)
@@ -191,7 +191,7 @@ void mul(Unit *z, const Unit *x, const Unit *y, const Unit *p, size_t n)
 	set_mpz_t(mp, p, n);
 	mpz_mul(mz, mx, my);
 	mpz_mod(mz, mz, mp);
-	mcl::fp::local::toArray(z, n, mz);
+	mcl::fp::toArray(z, n, mz);
 }
 
 typedef mcl::fp::void3op void3op;

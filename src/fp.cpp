@@ -46,11 +46,11 @@ struct OpeFunc {
 	}
 	static inline void clearC(Unit *x)
 	{
-		local::clearArray(x, 0, N);
+		clearArray(x, 0, N);
 	}
 	static inline void copyC(Unit *y, const Unit *x)
 	{
-		local::copyArray(y, x, N);
+		copyArray(y, x, N);
 	}
 	static inline void addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -64,7 +64,7 @@ struct OpeFunc {
 		if (mpz_cmp(mz, mp) >= 0) {
 			mpz_sub(mz, mz, mp);
 		}
-		local::toArray(z, N, mz);
+		toArray(z, N, mz);
 	}
 	static inline void subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -79,7 +79,7 @@ struct OpeFunc {
 			set_mpz_t(mp, p);
 			mpz_add(mz, mz, mp);
 		}
-		local::toArray(z, N, mz);
+		toArray(z, N, mz);
 	}
 	static inline void mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -88,7 +88,7 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
 		mpz_mul(mz, mx, my);
-		local::toArray(z, N * 2, mz);
+		toArray(z, N * 2, mz);
 	}
 	// x[N * 2] -> y[N]
 	static inline void modC(Unit *y, const Unit *x, const Unit *p)
@@ -98,7 +98,7 @@ struct OpeFunc {
 		set_mpz_t(my, y);
 		set_mpz_t(mp, p);
 		mpz_mod(my, mx, mp);
-		local::clearArray(y, my->_mp_size, N);
+		clearArray(y, my->_mp_size, N);
 	}
 	static inline void invOp(Unit *y, const Unit *x, const Op& op)
 	{
@@ -107,11 +107,11 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(mp, op.p);
 		mpz_invert(my.get_mpz_t(), mx, mp);
-		local::toArray(y, N, my.get_mpz_t());
+		toArray(y, N, my.get_mpz_t());
 	}
 	static inline bool isZeroC(const Unit *x)
 	{
-		return local::isZeroArray(x, N);
+		return isZeroArray(x, N);
 	}
 	static inline void negC(Unit *y, const Unit *x, const Unit *p)
 	{
@@ -159,7 +159,7 @@ inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 }
 static void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 {
-	local::toArray(y, n, x.get_mpz_t());
+	toArray(y, n, x.get_mpz_t());
 }
 static void initInvTbl(Op& op, size_t N)
 {

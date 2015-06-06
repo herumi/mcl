@@ -139,8 +139,6 @@ T getMontgomeryCoeff(T pLow)
 	return ret;
 }
 
-namespace local {
-
 inline int compareArray(const Unit* x, const Unit* y, size_t n)
 {
 	for (size_t i = n - 1; i != size_t(-1); i--) {
@@ -185,7 +183,5 @@ inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
 	copyArray(y, xp, xn);
 	clearArray(y, xn, yn);
 }
-
-} // mcl::fp::local
 
 } } // mcl::fp

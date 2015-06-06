@@ -144,7 +144,7 @@ public:
 		mpz_class x;
 		inFromStr(x, &isMinus, str, base);
 		if (x >= op_.mp) throw cybozu::Exception("fp:FpT:fromStr:large str") << str << op_.mp;
-		fp::local::toArray(v_, op_.N, x.get_mpz_t());
+		fp::toArray(v_, op_.N, x.get_mpz_t());
 		if (isMinus) {
 			neg(*this, *this);
 		}
@@ -305,7 +305,7 @@ public:
 	}
 	bool isValid() const
 	{
-		return fp::local::compareArray(v_, op_.p, op_.N) < 0;
+		return fp::compareArray(v_, op_.p, op_.N) < 0;
 	}
 	void fromBitVec(const cybozu::BitVector& bv)
 	{
@@ -314,7 +314,7 @@ public:
 	}
 	static inline size_t getModBitLen() { return op_.bitLen; }
 	static inline size_t getBitVecSize() { return op_.bitLen; }
-	bool operator==(const FpT& rhs) const { return fp::local::isEqualArray(v_, rhs.v_, op_.N); }
+	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	inline friend FpT operator+(const FpT& x, const FpT& y) { FpT z; add(z, x, y); return z; }
 	inline friend FpT operator-(const FpT& x, const FpT& y) { FpT z; sub(z, x, y); return z; }
@@ -358,7 +358,7 @@ public:
 		fp::Block xb, yb;
 		x.getBlock(xb);
 		y.getBlock(yb);
-		return fp::local::compareArray(xb.p, yb.p, xb.n);
+		return fp::compareArray(xb.p, yb.p, xb.n);
 	}
 	/*
 		wrapper function for generic p
