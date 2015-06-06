@@ -445,18 +445,6 @@ public:
 	{
 		compressedExpression_ = compressedExpression;
 	}
-	/*
-		append to bv(not clear bv)
-	*/
-	static inline size_t getBitVecSize()
-	{
-		const size_t bitLen = _Fp::getModBitLen();
-		if (compressedExpression_) {
-			return bitLen + 2;
-		} else {
-			return bitLen * 2 + 1;;
-		}
-	}
 	static inline void getYfromX(Fp& y, const Fp& x, bool isYodd)
 	{
 		Fp t;

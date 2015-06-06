@@ -297,7 +297,6 @@ public:
 		return fp::compareArray(v_, op_.p, op_.N) < 0;
 	}
 	static inline size_t getModBitLen() { return op_.bitLen; }
-	static inline size_t getBitVecSize() { return op_.bitLen; }
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	inline friend FpT operator+(const FpT& x, const FpT& y) { FpT z; add(z, x, y); return z; }
