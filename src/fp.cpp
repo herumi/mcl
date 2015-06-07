@@ -187,7 +187,7 @@ static void initForMont(Op& op, const Unit *p)
 	fromRawGmp(op.RR, N, t);
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
-	fg->init(p, N);
+	fg->init(p, (int)N);
 
 	op.neg = Xbyak::CastTo<void2u>(fg->neg_);
 	op.add = Xbyak::CastTo<void3u>(fg->add_);
