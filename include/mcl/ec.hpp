@@ -495,7 +495,7 @@ public:
 	bool operator==(const EcT& rhs) const
 	{
 		EcT R;
-		sub(R, *this, rhs);
+		sub(R, *this, rhs); // QQQ : optimized later
 		return R.isZero();
 	}
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
