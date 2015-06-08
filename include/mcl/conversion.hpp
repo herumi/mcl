@@ -2,7 +2,7 @@
 #include <vector>
 #include <cybozu/itoa.hpp>
 #include <cybozu/atoi.hpp>
-#include <mcl/unit.hpp>
+#include <mcl/util.hpp>
 /**
 	@file
 	@brief utility of Fp

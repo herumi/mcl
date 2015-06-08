@@ -20,10 +20,8 @@
 //	#define USE_MONT_FP
 #endif
 #include <cybozu/hash.hpp>
-#include <cybozu/itoa.hpp>
-#include <cybozu/atoi.hpp>
 #include <mcl/op.hpp>
-#include <mcl/unit.hpp>
+#include <mcl/util.hpp>
 #include <mcl/power.hpp>
 
 namespace mcl {

@@ -1,6 +1,6 @@
 #include <mcl/op.hpp>
-#include <mcl/unit.hpp>
-#include <mcl/fp_util.hpp>
+#include <mcl/util.hpp>
+#include <mcl/conversion.hpp>
 #ifdef USE_MONT_FP
 #include <mcl/fp_generator.hpp>
 #endif

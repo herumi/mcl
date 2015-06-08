@@ -5,7 +5,7 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/bit_operation.hpp>
-#include <mcl/fp_util.hpp>
+#include <mcl/conversion.hpp>
 #include <mcl/fp.hpp>
 
 #include <mcl/fp_generator.hpp>
