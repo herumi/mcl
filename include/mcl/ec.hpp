@@ -389,7 +389,6 @@ public:
 		if (y < 0) throw cybozu::Exception("EcT:power with negative y is not support") << y;
 		powerArray(z, x, Gmp::getBlock(y), Gmp::getBlockSize(x));
 	}
-#if 0
 	/*
 		0 <= P for any P
 		(Px, Py) <= (P'x, P'y) iff Px < P'x or Px == P'x and Py <= P'y
@@ -418,7 +417,6 @@ public:
 	{
 		return compareFunc(P, Q, _Fp::compareRaw);
 	}
-#endif
 	bool isZero() const
 	{
 #if MCL_EC_COORD == MCL_EC_USE_AFFINE
