@@ -70,7 +70,7 @@ public:
 	}
 	static inline void getModulo(std::string& pstr)
 	{
-		Gmp::toStr(pstr, op_.mp);
+		Gmp::getStr(pstr, op_.mp);
 	}
 	static inline bool isOdd(const FpT& x)
 	{
@@ -81,10 +81,10 @@ public:
 	static inline bool squareRoot(FpT& y, const FpT& x)
 	{
 		mpz_class mx, my;
-		x.toGmp(mx);
+		x.getGmp(mx);
 		bool b = op_.sq.get(my, mx);
 		if (!b) return false;
-		y.fromGmp(my);
+		y.setGmp(my);
 		return true;
 	}
 	FpT() {}
@@ -104,7 +104,7 @@ public:
 	FpT(int64_t x) { operator=(x); }
 	explicit FpT(const std::string& str, int base = 0)
 	{
-		fromStr(str, base);
+		setStr(str, base);
 	}
 	FpT& operator=(int64_t x)
 	{
@@ -130,38 +130,37 @@ public:
 	{
 		if (op_.useMont) op_.fromMont(y.v_, x.v_);
 	}
-	void fromStr(const std::string& str, int base = 0)
+	void setStr(const std::string& str, int base = 0)
 	{
 		bool isMinus;
 		mpz_class x;
 		fp::strToGmp(x, &isMinus, str, base);
-		if (x >= op_.mp) throw cybozu::Exception("fp:FpT:fromStr:large str") << str << op_.mp;
+		if (x >= op_.mp) throw cybozu::Exception("FpT:setStr:large str") << str << op_.mp;
 		fp::toArray(v_, op_.N, x.get_mpz_t());
 		if (isMinus) {
 			neg(*this, *this);
 		}
 		toMont(*this, *this);
 	}
-	// alias of fromStr
-	void set(const std::string& str, int base = 0) { fromStr(str, base); }
+	// alias of setStr
 	template<class S>
-	void setRaw(const S *inBuf, size_t n)
+	void setArray(const S *inBuf, size_t n)
 	{
 		const size_t byteN = sizeof(S) * n;
 		const size_t fpByteN = sizeof(Unit) * op_.N;
-		if (byteN > fpByteN) throw cybozu::Exception("setRaw:bad n") << n << fpByteN;
+		if (byteN > fpByteN) throw cybozu::Exception("FpT:setArray:bad n") << n << fpByteN;
 		assert(byteN <= fpByteN);
 		memcpy(v_, inBuf, byteN);
 		memset((char *)v_ + byteN, 0, fpByteN - byteN);
-		if (!isValid()) throw cybozu::Exception("setRaw:large value");
+		if (!isValid()) throw cybozu::Exception("FpT:setArray:large value");
 		toMont(*this, *this);
 	}
 	template<class S>
-	size_t getRaw(S *outBuf, size_t n) const
+	size_t getArray(S *outBuf, size_t n) const
 	{
 		const size_t byteN = sizeof(S) * n;
 		const size_t fpByteN = sizeof(Unit) * op_.N;
-		if (byteN < fpByteN) throw cybozu::Exception("getRaw:bad n") << n << fpByteN;
+		if (byteN < fpByteN) throw cybozu::Exception("FpT:getArray:bad n") << n << fpByteN;
 		assert(byteN >= fpByteN);
 		fp::Block b;
 		getBlock(b);
@@ -186,33 +185,33 @@ public:
 		fp::getRandVal(v_, rg, op_.p, op_.bitLen);
 		fromMont(*this, *this);
 	}
-	void toStr(std::string& str, int base = 10, bool withPrefix = false) const
+	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
 		fp::Block b;
 		getBlock(b);
 		fp::arrayToStr(str, b.p, b.n, base, withPrefix);
 	}
-	std::string toStr(int base = 10, bool withPrefix = false) const
+	std::string getStr(int base = 10, bool withPrefix = false) const
 	{
 		std::string str;
-		toStr(str, base, withPrefix);
+		getStr(str, base, withPrefix);
 		return str;
 	}
-	void toGmp(mpz_class& x) const
+	void getGmp(mpz_class& x) const
 	{
 		fp::Block b;
 		getBlock(b);
-		Gmp::setRaw(x, b.p, b.n);
+		Gmp::setArray(x, b.p, b.n);
 	}
-	mpz_class toGmp() const
+	mpz_class getGmp() const
 	{
 		mpz_class x;
-		toGmp(x);
+		getGmp(x);
 		return x;
 	}
-	void fromGmp(const mpz_class& x)
+	void setGmp(const mpz_class& x)
 	{
-		setRaw(Gmp::getBlock(x), Gmp::getBlockSize(x));
+		setArray(Gmp::getBlock(x), Gmp::getBlockSize(x));
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.add(z.v_, x.v_, y.v_); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.sub(z.v_, x.v_, y.v_); }
@@ -293,7 +292,7 @@ public:
 		const int base = (f & std::ios_base::hex) ? 16 : 10;
 		const bool showBase = (f & std::ios_base::showbase) != 0;
 		std::string str;
-		self.toStr(str, base, showBase);
+		self.getStr(str, base, showBase);
 		return os << str;
 	}
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)
@@ -303,7 +302,7 @@ public:
 		const int base = (f & std::ios_base::hex) ? 16 : 0;
 		std::string str;
 		is >> str;
-		self.fromStr(str, base);
+		self.setStr(str, base);
 		return is;
 	}
 	/*

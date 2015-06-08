@@ -62,20 +62,20 @@ struct Int {
 		}
 		this->vn = vn;
 	}
-	void set(const char *str) { fromStr(str); }
+	void set(const char *str) { setStr(str); }
 	void set(const Fp& rhs)
 	{
-		convertToArray(v, rhs.toGmp());
+		convertToArray(v, rhs.getGmp());
 	}
 	void set(const uint64_t* x)
 	{
 		for (int i = 0; i < vn; i++) v[i] = x[i];
 	}
-	void fromStr(const char *str)
+	void setStr(const char *str)
 	{
 		convertToArray(v, str);
 	}
-	std::string toStr() const
+	std::string getStr() const
 	{
 		std::string ret;
 		for (int i = 0; i < vn; i++) {
@@ -86,7 +86,7 @@ struct Int {
 	void put(const char *msg = "") const
 	{
 		if (msg) printf("%s=", msg);
-		printf("%s\n", toStr().c_str());
+		printf("%s\n", getStr().c_str());
 	}
 	bool operator==(const Int& rhs) const
 	{
@@ -107,15 +107,15 @@ struct Int {
 };
 static inline std::ostream& operator<<(std::ostream& os, const Int& x)
 {
-	return os << x.toStr();
+	return os << x.getStr();
 }
 
 void testAddSub(const mcl::fp::FpGenerator& fg, int pn)
 {
 	Fp x, y;
 	Int mx(pn), my(pn);
-	x.fromStr("0x8811aabb23427cc");
-	y.fromStr("0x8811aabb23427cc11");
+	x.setStr("0x8811aabb23427cc");
+	y.setStr("0x8811aabb23427cc11");
 	mx.set(x);
 	my.set(y);
 	for (int i = 0; i < 30; i++) {
@@ -146,7 +146,7 @@ void testNeg(const mcl::fp::FpGenerator& fg, int pn)
 		"0x0abbccddeeffaabb0000000000000000",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		x.fromStr(tbl[i]);
+		x.setStr(tbl[i]);
 		mx.set(x);
 		x = -x;
 		fg.neg_(mx.v, mx.v);
@@ -163,13 +163,13 @@ void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 		rg.read(x, pn);
 		uint64_t y = rg.get64();
 		mpz_class mx;
-		mcl::Gmp::setRaw(mx, x, pn);
+		mcl::Gmp::setArray(mx, x, pn);
 		mpz_class my;
 		mcl::Gmp::set(my, y);
 		mx *= my;
 		uint64_t d = fg.mulI_(z, x, y);
 		z[pn] = d;
-		mcl::Gmp::setRaw(my, z, pn + 1);
+		mcl::Gmp::setArray(my, z, pn + 1);
 		CYBOZU_TEST_EQUAL(mx, my);
 	}
 	{
@@ -189,11 +189,11 @@ void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 		uint64_t z[MAX_N];
 		rg.read(x, pn);
 		mpz_class mx;
-		mcl::Gmp::setRaw(mx, x, pn);
+		mcl::Gmp::setArray(mx, x, pn);
 		mx >>= 1;
 		fg.shr1_(z, x);
 		mpz_class my;
-		mcl::Gmp::setRaw(my, z, pn);
+		mcl::Gmp::setArray(my, z, pn);
 		CYBOZU_TEST_EQUAL(mx, my);
 	}
 }

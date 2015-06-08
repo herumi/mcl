@@ -75,7 +75,7 @@ struct Op {
 	void3u modP;
 	FpGenerator *fg;
 	Op()
-		: p(), N(0), bitLen(0)
+		: N(0), bitLen(0)
 		, isZero(0), clear(0), copy(0)
 		, neg(0), add(0), sub(0), mul(0)
 		, useMont(false), preInv(0)

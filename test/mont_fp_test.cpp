@@ -69,16 +69,16 @@ struct Montgomery {
 };
 
 template<class T>
-mpz_class toGmp(const T& x)
+mpz_class getGmp(const T& x)
 {
-	std::string str = x.toStr();
+	std::string str = x.getStr();
 	mpz_class t;
-	mcl::Gmp::fromStr(t, str);
+	mcl::Gmp::setStr(t, str);
 	return t;
 }
 
 template<class T>
-std::string toStr(const T& x)
+std::string getStr(const T& x)
 {
 	std::ostringstream os;
 	os << x;
@@ -89,7 +89,7 @@ template<class T, class U>
 T castTo(const U& x)
 {
 	T t;
-	t.fromStr(toStr(x));
+	t.setStr(getStr(x));
 	return t;
 }
 
@@ -123,8 +123,8 @@ struct Test {
 		Zn::setModulo(p);
 		edge();
 		cstr();
-		toStr();
-		fromStr();
+		getStr();
+		setStr();
 		stream();
 		conv();
 		compare();
@@ -133,9 +133,9 @@ struct Test {
 		cvtInt();
 		power();
 		power_Zn();
-		setRaw();
+		setArray();
 		set64bit();
-		getRaw();
+		getArray();
 		bench();
 	}
 	void cstr()
@@ -178,7 +178,7 @@ struct Test {
 			os << tbl[i].val;
 
 			std::string str;
-			x.toStr(str);
+			x.getStr(str);
 			CYBOZU_TEST_EQUAL(str, os.str());
 		}
 		const struct {
@@ -195,31 +195,31 @@ struct Test {
 			CYBOZU_TEST_EQUAL(x, tbl2[i].val);
 		}
 	}
-	void toStr()
+	void getStr()
 	{
 		Fp x(0);
 		std::string str;
-		str = x.toStr();
+		str = x.getStr();
 		CYBOZU_TEST_EQUAL(str, "0");
-		str = x.toStr(2, true);
+		str = x.getStr(2, true);
 		CYBOZU_TEST_EQUAL(str, "0b0");
-		str = x.toStr(2, false);
+		str = x.getStr(2, false);
 		CYBOZU_TEST_EQUAL(str, "0");
-		str = x.toStr(16, true);
+		str = x.getStr(16, true);
 		CYBOZU_TEST_EQUAL(str, "0x0");
-		str = x.toStr(16, false);
+		str = x.getStr(16, false);
 		CYBOZU_TEST_EQUAL(str, "0");
 
 		x = 123;
-		str = x.toStr();
+		str = x.getStr();
 		CYBOZU_TEST_EQUAL(str, "123");
-		str = x.toStr(2, true);
+		str = x.getStr(2, true);
 		CYBOZU_TEST_EQUAL(str, "0b1111011");
-		str = x.toStr(2, false);
+		str = x.getStr(2, false);
 		CYBOZU_TEST_EQUAL(str, "1111011");
-		str = x.toStr(16, true);
+		str = x.getStr(16, true);
 		CYBOZU_TEST_EQUAL(str, "0x7b");
-		str = x.toStr(16, false);
+		str = x.getStr(16, false);
 		CYBOZU_TEST_EQUAL(str, "7b");
 
 		{
@@ -239,7 +239,7 @@ struct Test {
 		}
 	}
 
-	void fromStr()
+	void setStr()
 	{
 		const struct {
 			const char *in;
@@ -256,13 +256,13 @@ struct Test {
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 			Fp x;
-			x.fromStr(tbl[i].in, tbl[i].base);
+			x.setStr(tbl[i].in, tbl[i].base);
 			CYBOZU_TEST_EQUAL(x, tbl[i].out);
 		}
 		// conflict prefix with base
 		Fp x;
-		CYBOZU_TEST_EXCEPTION(x.fromStr("0b100", 16), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(x.fromStr("0x100", 2), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(x.setStr("0b100", 16), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 2), cybozu::Exception);
 	}
 
 	void stream()
@@ -340,11 +340,11 @@ struct Test {
 		CYBOZU_TEST_EQUAL(b, d);
 
 		std::string str;
-		b.toStr(str, 2, true);
+		b.getStr(str, 2, true);
 		CYBOZU_TEST_EQUAL(str, bin);
-		b.toStr(str);
+		b.getStr(str);
 		CYBOZU_TEST_EQUAL(str, dec);
-		b.toStr(str, 16, true);
+		b.getStr(str, 16, true);
 		CYBOZU_TEST_EQUAL(str, hex);
 	}
 
@@ -441,7 +441,7 @@ struct Test {
 		x = 12345;
 		uint64_t y = x.cvtInt();
 		CYBOZU_TEST_EQUAL(y, 12345u);
-		x.fromStr("123456789012342342342342342");
+		x.setStr("123456789012342342342342342");
 		CYBOZU_TEST_EXCEPTION(x.cvtInt(), cybozu::Exception);
 		bool err = false;
 		CYBOZU_TEST_NO_EXCEPTION(x.cvtInt(&err));
@@ -473,16 +473,16 @@ struct Test {
 		}
 	}
 
-	void setRaw()
+	void setArray()
 	{
 		// QQQ
 #if 0
 		char b1[] = { 0x56, 0x34, 0x12 };
 		Fp x;
-		x.setRaw(b1, 3);
+		x.setArray(b1, 3);
 		CYBOZU_TEST_EQUAL(x, 0x123456);
 		int b2[] = { 0x12, 0x34 };
-		x.setRaw(b2, 2);
+		x.setArray(b2, 2);
 		CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 #endif
 	}
@@ -504,7 +504,7 @@ struct Test {
 		}
 	}
 
-	void getRaw()
+	void getArray()
 	{
 		const struct {
 			const char *s;
@@ -520,7 +520,7 @@ struct Test {
 			mpz_class x(tbl[i].s);
 			const size_t bufN = 8;
 			uint32_t buf[bufN];
-			size_t n = mcl::Gmp::getRaw(buf, bufN, x);
+			size_t n = mcl::Gmp::getArray(buf, bufN, x);
 			CYBOZU_TEST_EQUAL(n, tbl[i].vn);
 			for (size_t j = 0; j < n; j++) {
 				CYBOZU_TEST_EQUAL(buf[j], tbl[i].v[j]);
@@ -566,8 +566,8 @@ put(z);
 		mpz_class p(pStr);
 		Montgomery mont(p);
 		mpz_class xx, yy;
-		mcl::Gmp::setRaw(xx, x, CYBOZU_NUM_OF_ARRAY(x));
-		mcl::Gmp::setRaw(yy, y, CYBOZU_NUM_OF_ARRAY(y));
+		mcl::Gmp::setArray(xx, x, CYBOZU_NUM_OF_ARRAY(x));
+		mcl::Gmp::setArray(yy, y, CYBOZU_NUM_OF_ARRAY(y));
 		mpz_class z;
 		mont.mul(z, xx, yy);
 		std::cout << std::hex << z << std::endl;
@@ -578,7 +578,7 @@ put(z);
 	Zn::setModulo(pStr);
 	Zn s(xStr), t(yStr);
 	s *= t;
-	rOrg = toStr(s);
+	rOrg = getStr(s);
 	{
 		puts("C");
 		mpz_class p(pStr);
@@ -589,14 +589,14 @@ put(z);
 		mpz_class z;
 		mont.mul(z, x, y);
 		mont.fromMont(z);
-		rC = toStr(z);
+		rC = getStr(z);
 	}
 
 	puts("asm");
 	MontFp9::setModulo(pStr);
 	MontFp9 x(xStr), y(yStr);
 	x *= y;
-	rAsm = toStr(x);
+	rAsm = getStr(x);
 	CYBOZU_TEST_EQUAL(rOrg, rC);
 	CYBOZU_TEST_EQUAL(rOrg, rAsm);
 #endif
@@ -698,9 +698,9 @@ CYBOZU_TEST_AUTO(toStr16)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str, str2;
 		MontFp3 x(tbl[i]);
-		x.toStr(str, 16);
+		x.getStr(str, 16);
 		mpz_class y(tbl[i]);
-		mcl::Gmp::toStr(str2, y, 16);
+		mcl::Gmp::getStr(str2, y, 16);
 		CYBOZU_TEST_EQUAL(str, str2);
 	}
 }
@@ -722,9 +722,9 @@ CYBOZU_TEST_AUTO(toStr16bench)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str, str2;
 		MontFp3 x(tbl[i]);
-		CYBOZU_BENCH_C("Mont:toStr", C, x.toStr, str, 16);
+		CYBOZU_BENCH_C("Mont:getStr", C, x.getStr, str, 16);
 		mpz_class y(tbl[i]);
-		CYBOZU_BENCH_C("Gmp:toStr ", C, mcl::Gmp::toStr, str2, y, 16);
+		CYBOZU_BENCH_C("Gmp:getStr ", C, mcl::Gmp::getStr, str2, y, 16);
 		str2.insert(0, "0x");
 		CYBOZU_TEST_EQUAL(str, str2);
 	}
@@ -746,14 +746,14 @@ CYBOZU_TEST_AUTO(fromStr16bench)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str = tbl[i];
 		MontFp3 x;
-		CYBOZU_BENCH_C("Mont:fromStr", C, x.fromStr, str);
+		CYBOZU_BENCH_C("Mont:setStr", C, x.setStr, str);
 
 		mpz_class y;
 		str.erase(0, 2);
-		CYBOZU_BENCH_C("Gmp:fromStr ", C, mcl::Gmp::fromStr, y, str, 16);
-		x.toStr(str, 16);
+		CYBOZU_BENCH_C("Gmp:setStr ", C, mcl::Gmp::setStr, y, str, 16);
+		x.getStr(str, 16);
 		std::string str2;
-		mcl::Gmp::toStr(str2, y, 16);
+		mcl::Gmp::getStr(str2, y, 16);
 		str2.insert(0, "0x");
 		CYBOZU_TEST_EQUAL(str, str2);
 	}

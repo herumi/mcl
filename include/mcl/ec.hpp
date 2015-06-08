@@ -81,8 +81,8 @@ public:
 
 	static inline void setParam(const std::string& astr, const std::string& bstr)
 	{
-		a_.fromStr(astr);
-		b_.fromStr(bstr);
+		a_.setStr(astr);
+		b_.setStr(bstr);
 		if (a_.isZero()) {
 			specialA_ = zero;
 		} else if (a_ == -3) {
@@ -403,11 +403,11 @@ public:
 			return os << '0';
 		} else {
 			self.normalize();
-			os << self.x.toStr(16) << '_';
+			os << self.x.getStr(16) << '_';
 			if (compressedExpression_) {
 				return os << Fp::isOdd(self.y);
 			} else {
-				return os << self.y.toStr(16);
+				return os << self.y.getStr(16);
 			}
 		}
 	}
@@ -426,7 +426,7 @@ public:
 			size_t pos = str.find('_');
 			if (pos == std::string::npos) throw cybozu::Exception("EcT:operator>>:bad format") << str;
 			str[pos] = '\0';
-			self.x.fromStr(&str[0], 16);
+			self.x.setStr(&str[0], 16);
 			if (compressedExpression_) {
 				const char c = str[pos + 1];
 				if ((c == '0' || c == '1') && str.size() == pos + 2) {
@@ -436,7 +436,7 @@ public:
 					throw cybozu::Exception("EcT:operator>>:bad y") << str;
 				}
 			} else {
-				self.y.fromStr(&str[pos + 1], 16);
+				self.y.setStr(&str[pos + 1], 16);
 			}
 		}
 		return is;

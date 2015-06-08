@@ -65,7 +65,7 @@ struct Gmp {
 	// z = [buf[n-1]:..:buf[1]:buf[0]]
 	// eg. buf[] = {0x12345678, 0xaabbccdd}; => z = 0xaabbccdd12345678;
 	template<class T>
-	static void setRaw(mpz_class& z, const T *buf, size_t n)
+	static void setArray(mpz_class& z, const T *buf, size_t n)
 	{
 		mpz_import(z.get_mpz_t(), n, -1, sizeof(*buf), 0, 0, buf);
 	}
@@ -74,7 +74,7 @@ struct Gmp {
 		return 0 if failure
 	*/
 	template<class T>
-	static size_t getRaw(T *buf, size_t maxSize, const mpz_class& x)
+	static size_t getArray(T *buf, size_t maxSize, const mpz_class& x)
 	{
 		const size_t totalSize = sizeof(T) * maxSize;
 		if (getBitLen(x) > totalSize * 8) return 0;
@@ -86,13 +86,13 @@ struct Gmp {
 	}
 	static inline void set(mpz_class& z, uint64_t x)
 	{
-		setRaw(z, &x, 1);
+		setArray(z, &x, 1);
 	}
-	static inline bool fromStr(mpz_class& z, const std::string& str, int base = 0)
+	static inline bool setStr(mpz_class& z, const std::string& str, int base = 0)
 	{
 		return z.set_str(str, base) == 0;
 	}
-	static inline void toStr(std::string& str, const mpz_class& z, int base = 10)
+	static inline void getStr(std::string& str, const mpz_class& z, int base = 10)
 	{
 		str = z.get_str(base);
 	}
@@ -277,7 +277,7 @@ struct Gmp {
 			v |= 1U << (rem - 1);
 		}
 		buf[n - 1] = v;
-		Gmp::setRaw(z, &buf[0], n);
+		Gmp::setArray(z, &buf[0], n);
 	}
 	template<class RG>
 	static void getRandPrime(mpz_class& z, size_t bitLen, RG& rg, bool setSecondBit = false, bool mustBe3mod4 = false)

@@ -86,7 +86,7 @@ struct hasIO : E {
 		const int base = (f & std::ios_base::hex) ? 16 : 10;
 		const bool showBase = (f & std::ios_base::showbase) != 0;
 		std::string str;
-		self.toStr(str, base, showBase);
+		self.getStr(str, base, showBase);
 		return os << str;
 	}
 	friend inline std::istream& operator>>(std::istream& is, T& self)
@@ -96,7 +96,7 @@ struct hasIO : E {
 		const int base = (f & std::ios_base::hex) ? 16 : 0;
 		std::string str;
 		is >> str;
-		self.fromStr(str, base);
+		self.setStr(str, base);
 		return is;
 	}
 };

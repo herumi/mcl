@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 	Map m;
 	for (int i = 0; i < 10000; i++) {
 		x.setRand(rg);
-		m[x.toStr(16)]++;
+		m[x.getStr(16)]++;
 	}
 	for (Map::const_iterator i = m.begin(), ie = m.end(); i != ie; ++i) {
 		printf("%s %d\n", i->first.c_str(), i->second);

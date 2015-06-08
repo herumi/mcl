@@ -25,7 +25,7 @@ size_t getUnitN(size_t bitLen)
 
 void setMpz(mpz_class& mx, const Unit *x, size_t n)
 {
-	mcl::Gmp::setRaw(mx, x, n);
+	mcl::Gmp::setArray(mx, x, n);
 }
 void getMpz(Unit *x, size_t n, const mpz_class& mx)
 {

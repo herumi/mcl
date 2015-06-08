@@ -66,12 +66,12 @@ CYBOZU_TEST_AUTO(cstr)
 		os << tbl[i].val;
 
 		std::string str;
-		x.toStr(str);
+		x.getStr(str);
 		CYBOZU_TEST_EQUAL(str, os.str());
 	}
 }
 
-CYBOZU_TEST_AUTO(fromStr)
+CYBOZU_TEST_AUTO(setStr)
 {
 	const struct {
 		const char *in;
@@ -88,13 +88,13 @@ CYBOZU_TEST_AUTO(fromStr)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Fp x;
-		x.fromStr(tbl[i].in, tbl[i].base);
+		x.setStr(tbl[i].in, tbl[i].base);
 		CYBOZU_TEST_EQUAL(x, tbl[i].out);
 	}
 	// conflict prefix with base
 	Fp x;
-	CYBOZU_TEST_EXCEPTION(x.fromStr("0b100", 16), cybozu::Exception);
-	CYBOZU_TEST_EXCEPTION(x.fromStr("0x100", 2), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(x.setStr("0b100", 16), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 2), cybozu::Exception);
 }
 
 CYBOZU_TEST_AUTO(stream)
@@ -138,11 +138,11 @@ CYBOZU_TEST_AUTO(conv)
 	CYBOZU_TEST_EQUAL(b, d);
 
 	std::string str;
-	b.toStr(str, 2, true);
+	b.getStr(str, 2, true);
 	CYBOZU_TEST_EQUAL(str, bin);
-	b.toStr(str);
+	b.getStr(str);
 	CYBOZU_TEST_EQUAL(str, dec);
-	b.toStr(str, 16, true);
+	b.getStr(str, 16, true);
 	CYBOZU_TEST_EQUAL(str, hex);
 }
 
@@ -283,17 +283,17 @@ CYBOZU_TEST_AUTO(another)
 }
 
 
-CYBOZU_TEST_AUTO(setRaw)
+CYBOZU_TEST_AUTO(setArray)
 {
 	Fp::setModulo("1000000000000000000117");
 	char b1[] = { 0x56, 0x34, 0x12 };
 	Fp x;
-	x.setRaw(b1, 3);
+	x.setArray(b1, 3);
 	CYBOZU_TEST_EQUAL(x, 0x123456);
 	int b2[] = { 0x12, 0x34 };
-	x.setRaw(b2, 2);
+	x.setArray(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
-	x.fromStr("0xffffffffffff");
+	x.setStr("0xffffffffffff");
 
 	Fp::setModulo("0x10000000000001234567a5");
 	const struct {
@@ -305,11 +305,11 @@ CYBOZU_TEST_AUTO(setRaw)
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 2, "0x1234567a4" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		x.setRaw(tbl[i].buf, tbl[i].bufN);
+		x.setArray(tbl[i].buf, tbl[i].bufN);
 		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
 	}
 	uint32_t large[3] = { 0x234567a5, 0x00000001, 0x00100000};
-	CYBOZU_TEST_EXCEPTION(x.setRaw(large, 3), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(x.setArray(large, 3), cybozu::Exception);
 }
 
 
@@ -330,7 +330,7 @@ CYBOZU_TEST_AUTO(set64bit)
 	}
 }
 
-CYBOZU_TEST_AUTO(getRaw)
+CYBOZU_TEST_AUTO(getArray)
 {
 	const struct {
 		const char *s;
@@ -346,13 +346,13 @@ CYBOZU_TEST_AUTO(getRaw)
 		mpz_class x(tbl[i].s);
 		const size_t bufN = 8;
 		uint32_t buf[bufN];
-		size_t n = mcl::Gmp::getRaw(buf, bufN, x);
+		size_t n = mcl::Gmp::getArray(buf, bufN, x);
 		CYBOZU_TEST_EQUAL(n, tbl[i].vn);
 		CYBOZU_TEST_EQUAL_ARRAY(buf, tbl[i].v, n);
 	}
 }
 
-CYBOZU_TEST_AUTO(toStr)
+CYBOZU_TEST_AUTO(getStr)
 {
 	const char *tbl[] = {
 		"0x0",
@@ -368,8 +368,8 @@ CYBOZU_TEST_AUTO(toStr)
 		mpz_class x(tbl[i]);
 		Fp y(tbl[i]);
 		std::string xs, ys;
-		mcl::Gmp::toStr(xs, x, 16);
-		y.toStr(ys, 16);
+		mcl::Gmp::getStr(xs, x, 16);
+		y.getStr(ys, 16);
 		CYBOZU_TEST_EQUAL(xs, ys);
 	}
 }

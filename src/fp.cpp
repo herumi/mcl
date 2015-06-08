@@ -59,7 +59,7 @@ inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base)
 {
 	const char *p = fp::verifyStr(isMinus, &base, str);
-	if (!Gmp::fromStr(x, p, base)) {
+	if (!Gmp::setStr(x, p, base)) {
 		throw cybozu::Exception("fp:FpT:inFromStr") << str;
 	}
 }
@@ -250,7 +250,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitN)
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	bitLen = Gmp::getBitLen(mp);
 	if (bitLen > maxBitN) throw cybozu::Exception("Op:init:too large bitLen") << mstr << bitLen << maxBitN;
-	const size_t n = Gmp::getRaw(p, maxN, mp);
+	const size_t n = Gmp::getArray(p, maxN, mp);
 	if (n == 0) throw cybozu::Exception("Op:init:bad mstr") << mstr;
 
 	if (bitLen <= 128) {
@@ -302,8 +302,8 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 	case 10:
 		{
 			mpz_class t;
-			Gmp::setRaw(t, x, n);
-			Gmp::toStr(str, t, 10);
+			Gmp::setArray(t, x, n);
+			Gmp::getStr(str, t, 10);
 		}
 		return;
 	case 16:
