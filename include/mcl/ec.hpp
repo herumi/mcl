@@ -8,7 +8,6 @@
 */
 #include <sstream>
 #include <cybozu/exception.hpp>
-#include <mcl/operator.hpp>
 #include <mcl/power.hpp>
 #include <mcl/gmp_util.hpp>
 
@@ -29,10 +28,7 @@ namespace mcl {
 	y^2 = x^3 + az^4 + bz^6 (Jacobi) x = X/Z^2, y = Y/Z^3
 */
 template<class _Fp>
-//class EcT : public ope::addsub<EcT<_Fp>,
-//	ope::comparable<EcT<_Fp>,
-class EcT : public ope::addsub<EcT<_Fp>,
-	ope::comparable<EcT<_Fp> > > {
+class EcT {
 	enum {
 		zero,
 		minus3,
@@ -372,11 +368,13 @@ public:
 	{
 		power_impl::power(z, x, y);
 	}
+#if 0
 	/*
 		0 <= P for any P
 		(Px, Py) <= (P'x, P'y) iff Px < P'x or Px == P'x and Py <= P'y
 	*/
-	static inline int compare(const EcT& P, const EcT& Q)
+	template<class F>
+	static inline int compareFunc(const EcT& P, const EcT& Q, F comp)
 	{
 		P.normalize();
 		Q.normalize();
@@ -385,12 +383,21 @@ public:
 			if (QisZero) return 0;
 			return -1;
 		}
-		if (Q.isZero) return 1;
-		int c = _Fp::compare(P.x, Q.x);
+		if (QisZero) return 1;
+		int c = comp(P.x, Q.x);
 		if (c > 0) return 1;
 		if (c < 0) return -1;
-		return _Fp::compare(P.y, Q.y);
+		return comp(P.y, Q.y);
 	}
+	static inline int compare(const EcT& P, const EcT& Q)
+	{
+		return compareFunc(P, Q, _Fp::compare);
+	}
+	static inline int compareRaw(const EcT& P, const EcT& Q)
+	{
+		return compareFunc(P, Q, _Fp::compareRaw);
+	}
+#endif
 	bool isZero() const
 	{
 #if MCL_EC_COORD == MCL_EC_USE_AFFINE
@@ -459,7 +466,18 @@ public:
 			Fp::neg(y, y);
 		}
 	}
+	inline friend EcT operator+(const EcT& x, const EcT& y) { EcT z; add(z, x, y); return z; }
+	inline friend EcT operator-(const EcT& x, const EcT& y) { EcT z; sub(z, x, y); return z; }
+	EcT& operator+=(const EcT& x) { add(*this, *this, x); return *this; }
+	EcT& operator-=(const EcT& x) { sub(*this, *this, x); return *this; }
 	EcT operator-() const { EcT x; neg(x, *this); return x; }
+	bool operator==(const EcT& rhs) const
+	{
+		EcT R;
+		sub(R, *this, rhs);
+		return R.isZero();
+	}
+	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
 };
 
 template<class T>
