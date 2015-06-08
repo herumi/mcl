@@ -6,29 +6,22 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <cybozu/inttype.hpp>
 #include <mcl/gmp_util.hpp>
 
 namespace mcl { namespace fp {
-
-#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
-typedef uint32_t Unit;
-#else
-typedef uint64_t Unit;
-#endif
-const size_t UnitBitN = sizeof(Unit) * 8;
 
 /*
 	get pp such that p * pp = -1 mod M,
 	where p is prime and M = 1 << 64(or 32).
 	@param pLow [in] p mod M
 */
-inline Unit getMontgomeryCoeff(Unit pLow)
+template<class T>
+T getMontgomeryCoeff(T pLow)
 {
-	Unit ret = 0;
-	Unit t = 0;
-	Unit x = 1;
-	for (size_t i = 0; i < UnitBitN; i++) {
+	T ret = 0;
+	T t = 0;
+	T x = 1;
+	for (size_t i = 0; i < sizeof(T) * 8; i++) {
 		if ((t & 1) == 0) {
 			t += pLow;
 			ret += x;
@@ -39,7 +32,8 @@ inline Unit getMontgomeryCoeff(Unit pLow)
 	return ret;
 }
 
-inline int compareArray(const Unit* x, const Unit* y, size_t n)
+template<class T>
+int compareArray(const T* x, const T* y, size_t n)
 {
 	for (size_t i = n - 1; i != size_t(-1); i--) {
 		if (x[i] < y[i]) return -1;
@@ -48,7 +42,8 @@ inline int compareArray(const Unit* x, const Unit* y, size_t n)
 	return 0;
 }
 
-inline bool isEqualArray(const Unit* x, const Unit* y, size_t n)
+template<class T>
+bool isEqualArray(const T* x, const T* y, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		if (x[i] != y[i]) return false;
@@ -56,7 +51,8 @@ inline bool isEqualArray(const Unit* x, const Unit* y, size_t n)
 	return true;
 }
 
-inline bool isZeroArray(const Unit *x, size_t n)
+template<class T>
+bool isZeroArray(const T *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		if (x[i]) return false;
@@ -64,24 +60,47 @@ inline bool isZeroArray(const Unit *x, size_t n)
 	return true;
 }
 
-inline void clearArray(Unit *x, size_t begin, size_t end)
+template<class T>
+void clearArray(T *x, size_t begin, size_t end)
 {
 	for (size_t i = begin; i < end; i++) x[i] = 0;
 }
 
-inline void copyArray(Unit *y, const Unit *x, size_t n)
+template<class T>
+void copyArray(T *y, const T *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) y[i] = x[i];
 }
 
-inline void toArray(Unit *y, size_t yn, const mpz_srcptr x)
+template<class T>
+void toArray(T *y, size_t yn, const mpz_srcptr x)
 {
 	const int xn = x->_mp_size;
 	assert(xn >= 0);
-	const Unit* xp = (const Unit*)x->_mp_d;
+	const T* xp = (const T*)x->_mp_d;
 	assert(xn <= (int)yn);
 	copyArray(y, xp, xn);
 	clearArray(y, xn, yn);
+}
+
+/*
+	get random value less than in[]
+	n = (bitLen + sizeof(T) * 8) / (sizeof(T) * 8)
+	input  in[0..n)
+	output out[n..n)
+	0 <= out < in
+*/
+template<class RG, class T>
+void getRandVal(T *out, RG& rg, const T *in, size_t bitLen)
+{
+	const size_t TBitN = sizeof(T) * 8;
+	const size_t n = (bitLen + TBitN - 1) / TBitN;
+	const size_t rem = bitLen & (TBitN - 1);
+	for (;;) {
+		rg.read(out, n);
+		if (rem > 0) out[n - 1] &= (T(1) << rem) - 1;
+		if (compareArray(out, in, n) < 0) return;
+	}
 }
 
 } } // mcl::fp

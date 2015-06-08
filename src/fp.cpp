@@ -1,4 +1,6 @@
 #include <mcl/op.hpp>
+#include <mcl/unit.hpp>
+#include <mcl/fp_util.hpp>
 #ifdef USE_MONT_FP
 #include <mcl/fp_generator.hpp>
 #endif
@@ -247,6 +249,64 @@ void Op::init(const Unit* p, size_t bitLen)
 #ifdef USE_MONT_FP
 	fp::initForMont(*this, p);
 #endif
+}
+
+void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix)
+{
+	switch (base) {
+	case 10:
+		{
+			mpz_class t;
+			Gmp::setRaw(t, x, n);
+			Gmp::toStr(str, t, 10);
+		}
+		return;
+	case 16:
+		mcl::fp::toStr16(str, x, n, withPrefix);
+		return;
+	case 2:
+		mcl::fp::toStr2(str, x, n, withPrefix);
+		return;
+	default:
+		throw cybozu::Exception("fp:arrayToStr:bad base") << base;
+	}
+}
+
+inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
+{
+	const char *p = str.c_str();
+	if (*p == '-') {
+		*isMinus = true;
+		p++;
+	} else {
+		*isMinus = false;
+	}
+	if (p[0] == '0') {
+		if (p[1] == 'x') {
+			if (*base != 0 && *base != 16) {
+				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
+			}
+			*base = 16;
+			p += 2;
+		} else if (p[1] == 'b') {
+			if (*base != 0 && *base != 2) {
+				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
+			}
+			*base = 2;
+			p += 2;
+		}
+	}
+	if (*base == 0) *base = 10;
+	if (*p == '\0') throw cybozu::Exception("fp:verifyStr:str is empty");
+	return p;
+}
+
+void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base)
+{
+	const char *p = fp::verifyStr(isMinus, &base, str);
+	if (!Gmp::fromStr(x, p, base)) {
+		throw cybozu::Exception("fp:FpT:inFromStr") << str;
+	}
 }
 
 } } // mcl::fp

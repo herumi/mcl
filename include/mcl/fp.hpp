@@ -23,7 +23,7 @@
 #include <cybozu/itoa.hpp>
 #include <cybozu/atoi.hpp>
 #include <mcl/op.hpp>
-#include <mcl/fp_util.hpp>
+#include <mcl/unit.hpp>
 #include <mcl/power.hpp>
 
 namespace mcl {
@@ -31,6 +31,10 @@ namespace mcl {
 namespace fp {
 
 struct TagDefault;
+
+void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix);
+
+void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base);
 
 } // mcl::fp
 
@@ -58,7 +62,7 @@ public:
 	{
 		assert(maxBitN <= MCL_MAX_OP_BIT_N);
 		bool isMinus;
-		inFromStr(op_.mp, &isMinus, mstr, base);
+		fp::strToGmp(op_.mp, &isMinus, mstr, base);
 		if (isMinus) throw cybozu::Exception("mcl:FpT:setModulo:mstr is not minus") << mstr;
 		const size_t bitLen = Gmp::getBitLen(op_.mp);
 		if (bitLen > maxBitN) throw cybozu::Exception("mcl:FpT:setModulo:too large bitLen") << bitLen << maxBitN;
@@ -140,7 +144,7 @@ public:
 	{
 		bool isMinus;
 		mpz_class x;
-		inFromStr(x, &isMinus, str, base);
+		fp::strToGmp(x, &isMinus, str, base);
 		if (x >= op_.mp) throw cybozu::Exception("fp:FpT:fromStr:large str") << str << op_.mp;
 		fp::toArray(v_, op_.N, x.get_mpz_t());
 		if (isMinus) {
@@ -192,31 +196,11 @@ public:
 		fp::getRandVal(v_, rg, op_.p, op_.bitLen);
 		fromMont(*this, *this);
 	}
-	static inline void toStr(std::string& str, const Unit *x, size_t n, int base = 10, bool withPrefix = false)
-	{
-		switch (base) {
-		case 10:
-			{
-				mpz_class t;
-				Gmp::setRaw(t, x, n);
-				Gmp::toStr(str, t, 10);
-			}
-			return;
-		case 16:
-			mcl::fp::toStr16(str, x, n, withPrefix);
-			return;
-		case 2:
-			mcl::fp::toStr2(str, x, n, withPrefix);
-			return;
-		default:
-			throw cybozu::Exception("fp:FpT:toStr:bad base") << base;
-		}
-	}
 	void toStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
 		fp::Block b;
 		getBlock(b);
-		toStr(str, b.p, b.n, base, withPrefix);
+		fp::arrayToStr(str, b.p, b.n, base, withPrefix);
 	}
 	std::string toStr(int base = 10, bool withPrefix = false) const
 	{
@@ -369,13 +353,6 @@ public:
 		op_.negP(y, x, op_.p);
 	}
 private:
-	static inline void inFromStr(mpz_class& x, bool *isMinus, const std::string& str, int base)
-	{
-		const char *p = fp::verifyStr(isMinus, &base, str);
-		if (!Gmp::fromStr(x, p, base)) {
-			throw cybozu::Exception("fp:FpT:inFromStr") << str;
-		}
-	}
 };
 
 template<class tag, size_t maxBitN> fp::Op FpT<tag, maxBitN>::op_;

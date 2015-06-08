@@ -7,21 +7,24 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <assert.h>
-#include <cybozu/inttype.hpp>
-#include <mcl/unit.hpp>
+#include <mcl/gmp_util.hpp>
 
 #ifndef MCL_MAX_OP_BIT_N
 	#define MCL_MAX_OP_BIT_N 521
 #endif
 
-namespace mcl {
+namespace mcl { namespace fp {
 
-namespace fp {
-
-struct FpGenerator;
+#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
+typedef uint32_t Unit;
+#else
+typedef uint64_t Unit;
+#endif
+const size_t UnitBitN = sizeof(Unit) * 8;
 
 const size_t maxOpUnitN = (MCL_MAX_OP_BIT_N + UnitBitN - 1) / UnitBitN;
 
+struct FpGenerator;
 struct Op;
 
 typedef void (*void1u)(Unit*);
