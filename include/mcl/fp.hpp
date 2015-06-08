@@ -20,6 +20,7 @@
 //	#define USE_MONT_FP
 #endif
 #include <cybozu/hash.hpp>
+#include <cybozu/bit_operation.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <mcl/power.hpp>
@@ -240,11 +241,15 @@ public:
 		FpT t(x);
 		for (size_t i = 0; i < yn; i++) {
 			const Unit v = y[i];
-			int m = (int)sizeof(Unit) * 8;
+			int m = (int)fp::UnitBitN;
 			if (i == yn - 1) {
+#if 1
+				m = v ? cybozu::bsr<Unit>(v) + 1 : 0;
+#else
 				while (m > 0 && (v & (Unit(1) << (m - 1))) == 0) {
 					m--;
 				}
+#endif
 			}
 			for (int j = 0; j < m; j++) {
 				if (v & (Unit(1) << j)) {

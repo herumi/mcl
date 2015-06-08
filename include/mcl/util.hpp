@@ -1,7 +1,7 @@
 #pragma once
 /**
 	@file
-	@brief definition of Unit and some functions
+	@brief functions for T[]
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause

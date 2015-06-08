@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <assert.h>
 #include <mcl/gmp_util.hpp>
 
 #ifndef MCL_MAX_OP_BIT_N

@@ -5,7 +5,7 @@
 #include <mcl/util.hpp>
 /**
 	@file
-	@brief utility of Fp
+	@brief convertion from T[] to str2, str16
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
