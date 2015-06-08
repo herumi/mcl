@@ -183,7 +183,7 @@ public:
 	void setRand(RG& rg)
 	{
 		fp::getRandVal(v_, rg, op_.p, op_.bitLen);
-		fromMont(*this, *this);
+		toMont(*this, *this);
 	}
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
