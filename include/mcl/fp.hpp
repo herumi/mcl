@@ -20,10 +20,8 @@
 //	#define USE_MONT_FP
 #endif
 #include <cybozu/hash.hpp>
-#include <cybozu/bit_operation.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
-#include <mcl/power.hpp> // QQQ : removed laster
 
 namespace mcl {
 

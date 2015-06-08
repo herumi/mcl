@@ -112,17 +112,8 @@ public:
 		y.clear();
 	}
 
-	static inline void dbl2(EcT& R, const EcT& P)
+	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
 	{
-		dbl(R, P);
-	}
-	static inline void dbl(EcT& R, const EcT& P, bool verifyInf = true)
-	{
-		if (verifyInf) {
-			if (P.isZero()) {
-				R.clear(); return;
-			}
-		}
 #if MCL_EC_COORD == MCL_EC_USE_JACOBI
 		Fp S, M, t, y2;
 		Fp::square(y2, P.y);
@@ -227,6 +218,14 @@ public:
 		R.inf_ = false;
 #endif
 	}
+	static inline void dbl(EcT& R, const EcT& P)
+	{
+		if (P.isZero()) {
+			R.clear();
+			return;
+		}
+		dblNoVerifyInf(R, P);
+	}
 	static inline void add(EcT& R, const EcT& P, const EcT& Q)
 	{
 		if (P.isZero()) { R = Q; return; }
@@ -245,7 +244,7 @@ public:
 		r -= S1;
 		if (H.isZero()) {
 			if (r.isZero()) {
-				dbl(R, P, false);
+				dblNoVerifyInf(R, P);
 			} else {
 				R.clear();
 			}
@@ -276,7 +275,7 @@ public:
 			if (vv.isZero()) {
 				R.clear();
 			} else {
-				dbl(R, P, false);
+				dblNoVerifyInf(R, P);
 			}
 			return;
 		}
@@ -302,7 +301,7 @@ public:
 		if (P.y == t) { R.clear(); return; }
 		Fp::sub(t, Q.x, P.x);
 		if (t.isZero()) {
-			dbl(R, P, false);
+			dblNoVerifyInf(R, P);
 			return;
 		}
 		Fp s;
@@ -328,7 +327,7 @@ public:
 		Fp t;
 		Fp::sub(t, Q.x, P.x);
 		if (t.isZero()) {
-			dbl(R, P, false);
+			dblNoVerifyInf(R, P);
 			return;
 		}
 		Fp s;
@@ -369,8 +368,7 @@ public:
 	static inline void powerArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn)
 	{
 		EcT out;
-		out.clear();
-		fp::powerArray(out, x, y, yn, EcT::add, EcT::dbl2);
+		fp::powerArray(out, x, y, yn, EcT::add, EcT::dbl);
 		z = out;
 	}
 	template<class tag, size_t maxBitN>
@@ -501,30 +499,6 @@ public:
 		return R.isZero();
 	}
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
-};
-
-template<class T>
-struct TagMultiGr<EcT<T> > {
-	static void square(EcT<T>& z, const EcT<T>& x)
-	{
-		EcT<T>::dbl(z, x);
-	}
-	static void mul(EcT<T>& z, const EcT<T>& x, const EcT<T>& y)
-	{
-		EcT<T>::add(z, x, y);
-	}
-	static void inv(EcT<T>& z, const EcT<T>& x)
-	{
-		EcT<T>::neg(z, x);
-	}
-	static void div(EcT<T>& z, const EcT<T>& x, const EcT<T>& y)
-	{
-		EcT<T>::sub(z, x, y);
-	}
-	static void init(EcT<T>& x)
-	{
-		x.clear();
-	}
 };
 
 template<class _Fp> _Fp EcT<_Fp>::a_;
