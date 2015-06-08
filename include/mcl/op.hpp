@@ -95,7 +95,7 @@ struct Op {
 	{
 		mul(y, x, RR);
 	}
-	void init(const Unit *p, size_t bitLen);
+	void init(const std::string& mstr, int base, size_t maxBitN);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
 private:

@@ -23,7 +23,7 @@
 #include <cybozu/bit_operation.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
-#include <mcl/power.hpp>
+#include <mcl/power.hpp> // QQQ : removed laster
 
 namespace mcl {
 
@@ -60,22 +60,13 @@ public:
 	static inline void setModulo(const std::string& mstr, int base = 0)
 	{
 		assert(maxBitN <= MCL_MAX_OP_BIT_N);
-		bool isMinus;
-		fp::strToGmp(op_.mp, &isMinus, mstr, base);
-		if (isMinus) throw cybozu::Exception("mcl:FpT:setModulo:mstr is not minus") << mstr;
-		const size_t bitLen = Gmp::getBitLen(op_.mp);
-		if (bitLen > maxBitN) throw cybozu::Exception("mcl:FpT:setModulo:too large bitLen") << bitLen << maxBitN;
-		const size_t n = Gmp::getRaw(op_.p, maxN, op_.mp);
-		if (n == 0) throw cybozu::Exception("mcl:FpT:setModulo:bad mstr") << mstr;
-		// default
+		assert(sizeof(mp_limb_t) == sizeof(Unit));
+		// set default wrapper function
 		op_.neg = negW;
 		op_.add = addW;
 		op_.sub = subW;
 		op_.mul = mulW;
-		const Unit *p = op_.p;
-		op_.bitLen = bitLen;
-		op_.init(p, bitLen);
-		op_.sq.set(op_.mp);
+		op_.init(mstr, base, maxBitN);
 	}
 	static inline void getModulo(std::string& pstr)
 	{
@@ -322,7 +313,6 @@ public:
 	/*
 		QQQ : should be removed
 	*/
-	bool operator<(const FpT&) const { return false; }
 	static inline int compare(const FpT& x, const FpT& y)
 	{
 		fp::Block xb, yb;

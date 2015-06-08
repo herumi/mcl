@@ -27,6 +27,44 @@ void Op::destroyFpGenerator(FpGenerator *)
 }
 #endif
 
+inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
+{
+	const char *p = str.c_str();
+	if (*p == '-') {
+		*isMinus = true;
+		p++;
+	} else {
+		*isMinus = false;
+	}
+	if (p[0] == '0') {
+		if (p[1] == 'x') {
+			if (*base != 0 && *base != 16) {
+				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
+			}
+			*base = 16;
+			p += 2;
+		} else if (p[1] == 'b') {
+			if (*base != 0 && *base != 2) {
+				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
+			}
+			*base = 2;
+			p += 2;
+		}
+	}
+	if (*base == 0) *base = 10;
+	if (*p == '\0') throw cybozu::Exception("fp:verifyStr:str is empty");
+	return p;
+}
+
+void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base)
+{
+	const char *p = fp::verifyStr(isMinus, &base, str);
+	if (!Gmp::fromStr(x, p, base)) {
+		throw cybozu::Exception("fp:FpT:inFromStr") << str;
+	}
+}
+
+
 template<size_t bitN>
 struct OpeFunc {
 	static const size_t N = (bitN + UnitBitN - 1) / UnitBitN;
@@ -204,10 +242,16 @@ static void initForMont(Op& op, const Unit *p)
 #endif
 
 
-void Op::init(const Unit* p, size_t bitLen)
+void Op::init(const std::string& mstr, int base, size_t maxBitN)
 {
-	assert(sizeof(mp_limb_t) == sizeof(Unit));
-	const size_t UnitBitN = sizeof(Unit) * 8;
+	static const size_t maxN = (maxBitN + UnitBitN - 1) / UnitBitN;
+	bool isMinus;
+	strToGmp(mp, &isMinus, mstr, base);
+	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
+	bitLen = Gmp::getBitLen(mp);
+	if (bitLen > maxBitN) throw cybozu::Exception("Op:init:too large bitLen") << mstr << bitLen << maxBitN;
+	const size_t n = Gmp::getRaw(p, maxN, mp);
+	if (n == 0) throw cybozu::Exception("Op:init:bad mstr") << mstr;
 
 	if (bitLen <= 128) {
 		SET_OP(128)
@@ -249,6 +293,7 @@ void Op::init(const Unit* p, size_t bitLen)
 #ifdef USE_MONT_FP
 	fp::initForMont(*this, p);
 #endif
+	sq.set(mp);
 }
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix)
@@ -269,43 +314,6 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 		return;
 	default:
 		throw cybozu::Exception("fp:arrayToStr:bad base") << base;
-	}
-}
-
-inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
-{
-	const char *p = str.c_str();
-	if (*p == '-') {
-		*isMinus = true;
-		p++;
-	} else {
-		*isMinus = false;
-	}
-	if (p[0] == '0') {
-		if (p[1] == 'x') {
-			if (*base != 0 && *base != 16) {
-				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
-			}
-			*base = 16;
-			p += 2;
-		} else if (p[1] == 'b') {
-			if (*base != 0 && *base != 2) {
-				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
-			}
-			*base = 2;
-			p += 2;
-		}
-	}
-	if (*base == 0) *base = 10;
-	if (*p == '\0') throw cybozu::Exception("fp:verifyStr:str is empty");
-	return p;
-}
-
-void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base)
-{
-	const char *p = fp::verifyStr(isMinus, &base, str);
-	if (!Gmp::fromStr(x, p, base)) {
-		throw cybozu::Exception("fp:FpT:inFromStr") << str;
 	}
 }
 
