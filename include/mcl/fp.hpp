@@ -306,18 +306,23 @@ public:
 		return is;
 	}
 	/*
-		not support
-		getBitLen, operator<, >
-	*/
-	/*
-		QQQ : should be removed
+		@note
+		this compare functions is slow because of calling mul if useMont is true.
 	*/
 	static inline int compare(const FpT& x, const FpT& y)
 	{
 		fp::Block xb, yb;
 		x.getBlock(xb);
 		y.getBlock(yb);
-		return fp::compareArray(xb.p, yb.p, xb.n);
+		return fp::compareArray(xb.p, yb.p, op_.N);
+	}
+	/*
+		@note
+		return unexpected order if useMont is set.
+	*/
+	static inline int compareRaw(const FpT& x, const FpT& y)
+	{
+		return fp::compareArray(x.v_, y.v_, op_.N);
 	}
 	/*
 		wrapper function for generic p

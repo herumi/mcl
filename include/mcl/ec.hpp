@@ -29,9 +29,10 @@ namespace mcl {
 	y^2 = x^3 + az^4 + bz^6 (Jacobi) x = X/Z^2, y = Y/Z^3
 */
 template<class _Fp>
+//class EcT : public ope::addsub<EcT<_Fp>,
+//	ope::comparable<EcT<_Fp>,
 class EcT : public ope::addsub<EcT<_Fp>,
-	ope::comparable<EcT<_Fp>,
-	ope::hasNegative<EcT<_Fp> > > > {
+	ope::comparable<EcT<_Fp> > > {
 	enum {
 		zero,
 		minus3,
@@ -379,11 +380,12 @@ public:
 	{
 		P.normalize();
 		Q.normalize();
+		const bool QisZero = Q.isZero();
 		if (P.isZero()) {
-			if (Q.isZero()) return 0;
+			if (QisZero) return 0;
 			return -1;
 		}
-		if (Q.isZero()) return 1;
+		if (Q.isZero) return 1;
 		int c = _Fp::compare(P.x, Q.x);
 		if (c > 0) return 1;
 		if (c < 0) return -1;
@@ -457,6 +459,7 @@ public:
 			Fp::neg(y, y);
 		}
 	}
+	EcT operator-() const { EcT x; neg(x, *this); return x; }
 };
 
 template<class T>
