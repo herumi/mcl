@@ -7,6 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/gmp_util.hpp>
+#include <cybozu/bit_operation.hpp>
 
 namespace mcl { namespace fp {
 
@@ -100,6 +101,37 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitLen)
 		rg.read(out, n);
 		if (rem > 0) out[n - 1] &= (T(1) << rem) - 1;
 		if (compareArray(out, in, n) < 0) return;
+	}
+}
+
+/*
+	@param out [inout] : set element of G ; out = x^y[]
+	@param x [in]
+	@param y [in]
+	@param n [in] size of y[]
+*/
+template<class G, class T, class Mul, class Square>
+void powerArray(G& out, const G& x, const T *y, size_t n, Mul mul, Square square)
+{
+	G t(x);
+	for (size_t i = 0; i < n; i++) {
+		T v = y[i];
+		int m = (int)sizeof(T) * 8;
+		if (i == n - 1) {
+#if 1
+			m = v ? cybozu::bsr<T>(v) + 1 : 0;
+#else
+			while (m > 0 && (v & (Unit(1) << (m - 1))) == 0) {
+				m--;
+			}
+#endif
+		}
+		for (int j = 0; j < m; j++) {
+			if (v & (T(1) << j)) {
+				mul(out, out, t);
+			}
+			square(t, t);
+		}
 	}
 }
 

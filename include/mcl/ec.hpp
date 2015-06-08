@@ -8,7 +8,6 @@
 */
 #include <sstream>
 #include <cybozu/exception.hpp>
-#include <mcl/power.hpp>
 #include <mcl/gmp_util.hpp>
 
 namespace mcl {
@@ -113,6 +112,10 @@ public:
 		y.clear();
 	}
 
+	static inline void dbl2(EcT& R, const EcT& P)
+	{
+		dbl(R, P);
+	}
 	static inline void dbl(EcT& R, const EcT& P, bool verifyInf = true)
 	{
 		if (verifyInf) {
@@ -363,10 +366,30 @@ public:
 		R.z = P.z;
 #endif
 	}
-	template<class N>
-	static inline void power(EcT& z, const EcT& x, const N& y)
+	static inline void powerArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn)
 	{
-		power_impl::power(z, x, y);
+		EcT out;
+		out.clear();
+		fp::powerArray(out, x, y, yn, EcT::add, EcT::dbl2);
+		z = out;
+	}
+	template<class tag, size_t maxBitN>
+	static inline void power(EcT& z, const EcT& x, const FpT<tag, maxBitN>& y)
+	{
+		fp::Block b;
+		y.getBlock(b);
+		powerArray(z, x, b.p, b.n);
+	}
+	static inline void power(EcT& z, const EcT& x, int y)
+	{
+		if (y < 0) throw cybozu::Exception("EcT:power with negative y is not support") << y;
+		const fp::Unit u = y;
+		powerArray(z, x, &u, 1);
+	}
+	static inline void power(EcT& z, const EcT& x, const mpz_class& y)
+	{
+		if (y < 0) throw cybozu::Exception("EcT:power with negative y is not support") << y;
+		powerArray(z, x, Gmp::getBlock(y), Gmp::getBlockSize(x));
 	}
 #if 0
 	/*

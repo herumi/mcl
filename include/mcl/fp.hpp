@@ -228,26 +228,7 @@ public:
 	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn)
 	{
 		FpT out(1);
-		FpT t(x);
-		for (size_t i = 0; i < yn; i++) {
-			const Unit v = y[i];
-			int m = (int)fp::UnitBitN;
-			if (i == yn - 1) {
-#if 1
-				m = v ? cybozu::bsr<Unit>(v) + 1 : 0;
-#else
-				while (m > 0 && (v & (Unit(1) << (m - 1))) == 0) {
-					m--;
-				}
-#endif
-			}
-			for (int j = 0; j < m; j++) {
-				if (v & (Unit(1) << j)) {
-					out *= t;
-				}
-				t *= t;
-			}
-		}
+		fp::powerArray(out, x, y, yn, FpT::mul, FpT::square);
 		z = out;
 	}
 	template<class tag2, size_t maxBitN2>
@@ -354,17 +335,6 @@ private:
 
 template<class tag, size_t maxBitN> fp::Op FpT<tag, maxBitN>::op_;
 
-namespace power_impl {
-
-template<class G, class tag, size_t bitN, template<class _tag, size_t _bitN>class FpT>
-void power(G& z, const G& x, const FpT<tag, bitN>& y)
-{
-	fp::Block b;
-	y.getBlock(b);
-	mcl::power_impl::powerArray(z, x, b.p, b.n);
-}
-
-} // mcl::power_impl
 } // mcl
 
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
