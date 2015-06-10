@@ -35,7 +35,6 @@ class EcT {
 	};
 public:
 	typedef _Fp Fp;
-	typedef typename Fp::BlockType BlockType;
 #if MCL_EC_COORD == MCL_EC_USE_AFFINE
 	Fp x, y;
 	bool inf_;

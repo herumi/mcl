@@ -46,7 +46,6 @@ public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
 	size_t getUnitN() const { return op_.N; }
-	typedef Unit BlockType;
 	void dump() const
 	{
 		const size_t N = op_.N;
