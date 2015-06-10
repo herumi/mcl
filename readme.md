@@ -28,6 +28,13 @@ http://opensource.org/licenses/BSD-3-Clause
 The original source of the followings are git://github.com/aistcrypt/Lifted-ElGamal.git .
 These files are licensed by BSD-3-Clause and are used for only tests.
 
+```
+include/mcl/elgamal.hpp
+include/mcl/window_method.hpp
+test/elgamal_test.cpp
+test/window_method_test.cpp
+```
+
 # Author
 
 MITSUNARI Shigeo(herumi@nifyt.com)
