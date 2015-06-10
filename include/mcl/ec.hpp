@@ -388,7 +388,7 @@ public:
 	}
 	static inline void power(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		powerArray(z, x, Gmp::getBlock(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	/*
 		0 <= P for any P

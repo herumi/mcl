@@ -58,9 +58,9 @@ namespace mcl {
 struct Gmp {
 	typedef mpz_class ImplType;
 #if CYBOZU_OS_BIT == 64
-	typedef uint64_t BlockType;
+	typedef uint64_t Unit;
 #else
-	typedef uint32_t BlockType;
+	typedef uint32_t Unit;
 #endif
 	// z = [buf[n-1]:..:buf[1]:buf[0]]
 	// eg. buf[] = {0x12345678, 0xaabbccdd}; => z = 0xaabbccdd12345678;
@@ -248,15 +248,15 @@ struct Gmp {
 	{
 		return mpz_sizeinbase(x.get_mpz_t(), 2);
 	}
-	static inline BlockType getBlock(const mpz_class& x, size_t i)
+	static inline Unit getUnit(const mpz_class& x, size_t i)
 	{
 		return x.get_mpz_t()->_mp_d[i];
 	}
-	static inline const BlockType *getBlock(const mpz_class& x)
+	static inline const Unit *getUnit(const mpz_class& x)
 	{
-		return reinterpret_cast<const BlockType*>(x.get_mpz_t()->_mp_d);
+		return reinterpret_cast<const Unit*>(x.get_mpz_t()->_mp_d);
 	}
-	static inline size_t getBlockSize(const mpz_class& x)
+	static inline size_t getUnitSize(const mpz_class& x)
 	{
 		assert(x.get_mpz_t()->_mp_size >= 0);
 		return x.get_mpz_t()->_mp_size;

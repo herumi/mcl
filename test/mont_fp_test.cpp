@@ -14,18 +14,18 @@ typedef mcl::FpT<> MontFp6;
 typedef mcl::FpT<> MontFp9;
 
 struct Montgomery {
-	typedef mcl::Gmp::BlockType BlockType;
+	typedef mcl::Gmp::Unit Unit;
 	mpz_class p_;
 	mpz_class R_; // (1 << (pn_ * 64)) % p
 	mpz_class RR_; // (R * R) % p
-	BlockType pp_; // p * pp = -1 mod M = 1 << 64
+	Unit pp_; // p * pp = -1 mod M = 1 << 64
 	size_t pn_;
 	Montgomery() {}
 	explicit Montgomery(const mpz_class& p)
 	{
 		p_ = p;
-		pp_ = mcl::fp::getMontgomeryCoeff(mcl::Gmp::getBlock(p, 0));
-		pn_ = mcl::Gmp::getBlockSize(p);
+		pp_ = mcl::fp::getMontgomeryCoeff(mcl::Gmp::getUnit(p, 0));
+		pn_ = mcl::Gmp::getUnitSize(p);
 		R_ = 1;
 		R_ = (R_ << (pn_ * 64)) % p_;
 		RR_ = (R_ * R_) % p_;
@@ -37,18 +37,18 @@ struct Montgomery {
 	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
 	{
 #if 0
-		const size_t ySize = mcl::Gmp::getBlockSize(y);
-		mpz_class c = x * mcl::Gmp::getBlock(y, 0);
-		BlockType q = mcl::Gmp::getBlock(c, 0) * pp_;
+		const size_t ySize = mcl::Gmp::getUnitSize(y);
+		mpz_class c = x * mcl::Gmp::getUnit(y, 0);
+		Unit q = mcl::Gmp::getUnit(c, 0) * pp_;
 		c += p_ * q;
-		c >>= sizeof(BlockType) * 8;
+		c >>= sizeof(Unit) * 8;
 		for (size_t i = 1; i < pn_; i++) {
 			if (i < ySize) {
-				c += x * mcl::Gmp::getBlock(y, i);
+				c += x * mcl::Gmp::getUnit(y, i);
 			}
-			BlockType q = mcl::Gmp::getBlock(c, 0) * pp_;
+			Unit q = mcl::Gmp::getUnit(c, 0) * pp_;
 			c += p_ * q;
-			c >>= sizeof(BlockType) * 8;
+			c >>= sizeof(Unit) * 8;
 		}
 		if (c >= p_) {
 			c -= p_;
@@ -57,9 +57,9 @@ struct Montgomery {
 #else
 		z = x * y;
 		for (size_t i = 0; i < pn_; i++) {
-			BlockType q = mcl::Gmp::getBlock(z, 0) * pp_;
+			Unit q = mcl::Gmp::getUnit(z, 0) * pp_;
 			z += p_ * (mp_limb_t)q;
-			z >>= sizeof(BlockType) * 8;
+			z >>= sizeof(Unit) * 8;
 		}
 		if (z >= p_) {
 			z -= p_;

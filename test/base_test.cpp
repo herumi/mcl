@@ -18,7 +18,7 @@
 const size_t MAX_N = 32;
 typedef mcl::fp::Unit Unit;
 
-size_t getUnitN(size_t bitLen)
+size_t getUnitSize(size_t bitLen)
 {
 	return (bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
 }
@@ -42,8 +42,8 @@ struct Montgomery {
 	explicit Montgomery(const mpz_class& p)
 	{
 		p_ = p;
-		r_ = mcl::montgomery::getCoff(mcl::Gmp::getBlock(p, 0));
-		n_ = mcl::Gmp::getBlockSize(p);
+		r_ = mcl::montgomery::getCoff(mcl::Gmp::getUnit(p, 0));
+		n_ = mcl::Gmp::getUnitSize(p);
 		R_ = 1;
 		R_ = (R_ << (n_ * 64)) % p_;
 		RR_ = (R_ * R_) % p_;
@@ -63,16 +63,16 @@ struct Montgomery {
 	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
 	{
 #if 1
-		const size_t ySize = mcl::Gmp::getBlockSize(y);
-		mpz_class c = y == 0 ? mpz_class(0) : x * mcl::Gmp::getBlock(y, 0);
-		Unit q = c == 0 ? 0 : mcl::Gmp::getBlock(c, 0) * r_;
+		const size_t ySize = mcl::Gmp::getUnitSize(y);
+		mpz_class c = y == 0 ? mpz_class(0) : x * mcl::Gmp::getUnit(y, 0);
+		Unit q = c == 0 ? 0 : mcl::Gmp::getUnit(c, 0) * r_;
 		c += p_ * q;
 		c >>= sizeof(Unit) * 8;
 		for (size_t i = 1; i < n_; i++) {
 			if (i < ySize) {
-				c += x * mcl::Gmp::getBlock(y, i);
+				c += x * mcl::Gmp::getUnit(y, i);
 			}
-			Unit q = c == 0 ? 0 : mcl::Gmp::getBlock(c, 0) * r_;
+			Unit q = c == 0 ? 0 : mcl::Gmp::getUnit(c, 0) * r_;
 			c += p_ * q;
 			c >>= sizeof(Unit) * 8;
 		}
@@ -82,10 +82,10 @@ struct Montgomery {
 		z = c;
 #else
 		z = x * y;
-		const size_t zSize = mcl::Gmp::getBlockSize(z);
+		const size_t zSize = mcl::Gmp::getUnitSize(z);
 		for (size_t i = 0; i < n_; i++) {
 			if (i < zSize) {
-				Unit q = mcl::Gmp::getBlock(z, 0) * r_;
+				Unit q = mcl::Gmp::getUnit(z, 0) * r_;
 				z += p_ * (mp_limb_t)q;
 			}
 			z >>= sizeof(Unit) * 8;
@@ -250,7 +250,7 @@ FuncOp getFuncOp(size_t bitLen)
 void test(const Unit *p, size_t bitLen)
 {
 	printf("bitLen %d\n", (int)bitLen);
-	const size_t n = getUnitN(bitLen);
+	const size_t n = getUnitSize(bitLen);
 #ifdef NDEBUG
 	bool doBench = true;
 #else

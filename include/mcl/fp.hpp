@@ -45,7 +45,7 @@ class FpT {
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
-	size_t getUnitN() const { return op_.N; }
+	size_t getUnitSize() const { return op_.N; }
 	void dump() const
 	{
 		const size_t N = op_.N;
@@ -208,7 +208,7 @@ public:
 	}
 	void setGmp(const mpz_class& x)
 	{
-		setArray(Gmp::getBlock(x), Gmp::getBlockSize(x));
+		setArray(Gmp::getUnit(x), Gmp::getUnitSize(x));
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.add(z.v_, x.v_, y.v_); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.sub(z.v_, x.v_, y.v_); }
@@ -244,7 +244,7 @@ public:
 	static inline void power(FpT& z, const FpT& x, const mpz_class& y)
 	{
 		if (y < 0) throw cybozu::Exception("FpT:power with negative y is not support") << y;
-		powerArray(z, x, Gmp::getBlock(y), Gmp::getBlockSize(x));
+		powerArray(z, x, Gmp::getUnit(y), Gmp::getUnitSize(x));
 	}
 	bool isZero() const { return op_.isZero(v_); }
 	bool isValid() const
@@ -341,7 +341,7 @@ template<class tag, size_t maxBitN>
 struct hash<mcl::FpT<tag, maxBitN> > : public std::unary_function<mcl::FpT<tag, maxBitN>, size_t> {
 	size_t operator()(const mcl::FpT<tag, maxBitN>& x, uint64_t v = 0) const
 	{
-		return static_cast<size_t>(cybozu::hash64(x.getUnit(), x.getUnitN(), v));
+		return static_cast<size_t>(cybozu::hash64(x.getUnit(), x.getUnitSize(), v));
 	}
 };
 

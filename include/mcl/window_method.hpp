@@ -128,7 +128,7 @@ public:
 	}
 	void power(Ec& z, const mpz_class& y) const
 	{
-		powerArray(z, Gmp::getBlock(y), abs(y.get_mpz_t()->_mp_size) * UnitBitN, y < 0);
+		powerArray(z, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size) * UnitBitN, y < 0);
 	}
 	void powerArray(Ec& z, const Unit* y, size_t bitLen, bool isNegative) const
 	{
