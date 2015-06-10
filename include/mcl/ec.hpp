@@ -365,29 +365,31 @@ public:
 		R.z = P.z;
 #endif
 	}
-	static inline void powerArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn)
+	static inline void powerArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
 		EcT out;
 		fp::powerArray(out, x, y, yn, EcT::add, EcT::dbl);
-		z = out;
+		if (isNegative) {
+			neg(z, out);
+		} else {
+			z = out;
+		}
 	}
 	template<class tag, size_t maxBitN>
 	static inline void power(EcT& z, const EcT& x, const FpT<tag, maxBitN>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powerArray(z, x, b.p, b.n);
+		powerArray(z, x, b.p, b.n, false);
 	}
 	static inline void power(EcT& z, const EcT& x, int y)
 	{
-		if (y < 0) throw cybozu::Exception("EcT:power with negative y is not support") << y;
-		const fp::Unit u = y;
-		powerArray(z, x, &u, 1);
+		const fp::Unit u = abs(y);
+		powerArray(z, x, &u, 1, y < 0);
 	}
 	static inline void power(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		if (y < 0) throw cybozu::Exception("EcT:power with negative y is not support") << y;
-		powerArray(z, x, Gmp::getBlock(y), Gmp::getBlockSize(x));
+		powerArray(z, x, Gmp::getBlock(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	/*
 		0 <= P for any P
