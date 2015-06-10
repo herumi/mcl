@@ -108,7 +108,7 @@ $(OBJDIR)/%.d: %.cpp $(OBJDIR)
 	@$(MKDEP)
 
 $(TOPDIR)bin/%$(OBJSUF).exe: $(OBJDIR)/%.o $(LIB)
-	$(PRE)$(CXX) $< -o $@ $(LDFLAGS) $(LIB)
+	$(PRE)$(CXX) $< -o $@ $(LIB) $(LDFLAGS)
 
 OBJ=$(addprefix $(OBJDIR)/,$(SRC:.cpp=.o))
 
