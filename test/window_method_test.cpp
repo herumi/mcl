@@ -1,10 +1,9 @@
 #include <cybozu/test.hpp>
-#include <mcl/power_window.hpp>
+#include <mcl/window_method.hpp>
 #include <mcl/ec.hpp>
 #include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 
-#if 0
 CYBOZU_TEST_AUTO(ArrayIterator)
 {
 	const uint32_t in[2] = { 0x12345678, 0xabcdef89 };
@@ -24,7 +23,6 @@ CYBOZU_TEST_AUTO(ArrayIterator)
 		CYBOZU_TEST_ASSERT(!ai.hasNext());
 	}
 }
-#endif
 
 CYBOZU_TEST_AUTO(int)
 {
@@ -37,11 +35,11 @@ CYBOZU_TEST_AUTO(int)
 	const Fp y(para.gy);
 	const Ec P(x, y);
 
-	typedef mcl::fp::PowerWindow<Ec> PW;
+	typedef mcl::fp::WindowMethod<Ec> PW;
 	const size_t bitLen = 16;
 	Ec Q, R;
 
-	for (size_t winSize = 2; winSize <= 12; winSize += 3) {
+	for (size_t winSize = 2; winSize <= bitLen; winSize += 3) {
 		PW pw(P, bitLen, winSize);
 		for (int i = 0; i < (1 << bitLen); i++) {
 			pw.power(Q, i);

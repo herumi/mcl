@@ -151,11 +151,11 @@ struct ElgamalT {
 		G g;
 		G h;
 		bool enablePowerWindow_;
-		mcl::PowerWindow<G> powf;
-		mcl::PowerWindow<G> powg;
-		mcl::PowerWindow<G> powh;
+		mcl::WindowMethod<G> powf;
+		mcl::WindowMethod<G> powg;
+		mcl::WindowMethod<G> powh;
 		template<class N>
-		void powerSub(G& z, const G& x, const N& n, const mcl::PowerWindow<G>& pw) const
+		void powerSub(G& z, const G& x, const N& n, const mcl::WindowMethod<G>& pw) const
 		{
 			if (enablePowerWindow_) {
 				pw.power(z, n);

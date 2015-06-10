@@ -1,12 +1,8 @@
 #pragma once
 /**
 	@file
-	@brief power window method
+	@brief window method
 	@author MITSUNARI Shigeo(@herumi)
-	@note
-	Copyright (c) 2014, National Institute of Advanced Industrial
-	Science and Technology All rights reserved.
-	This source file is subject to BSD 3-Clause license.
 */
 #include <vector>
 #include <mcl/fp.hpp>
@@ -71,17 +67,17 @@ struct ArrayIterator {
 };
 
 template<class Ec>
-class PowerWindow {
+class WindowMethod {
 public:
 	typedef std::vector<Ec> EcV;
 	size_t bitLen_;
 	size_t winSize_;
 	std::vector<EcV> tbl_;
-	PowerWindow(const Ec& x, size_t bitLen, size_t winSize)
+	WindowMethod(const Ec& x, size_t bitLen, size_t winSize)
 	{
 		init(x, bitLen, winSize);
 	}
-	PowerWindow()
+	WindowMethod()
 		: bitLen_(0)
 		, winSize_(0)
 	{
@@ -95,9 +91,8 @@ public:
 	{
 		bitLen_ = bitLen;
 		winSize_ = winSize;
-		const size_t tblNum = (bitLen + winSize) / winSize;
+		const size_t tblNum = (bitLen + winSize - 1) / winSize;
 		const size_t r = size_t(1) << winSize;
-		// alloc table
 		tbl_.resize(tblNum);
 		Ec t(x);
 		for (size_t i = 0; i < tblNum; i++) {
@@ -112,7 +107,7 @@ public:
 		}
 	}
 	/*
-		@param z [out] x^y
+		@param z [out] x multiplied by y
 		@param y [in] exponent
 	*/
 	template<class tag2, size_t maxBitN2>
@@ -137,13 +132,13 @@ public:
 	}
 	void powerArray(Ec& z, const Unit* y, size_t bitLen, bool isNegative) const
 	{
+		if ((bitLen + winSize_ - 1) / winSize_ > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powerArray:bad value") << bitLen << bitLen_ << winSize_;
 		z.clear();
 		if (bitLen == 0) return;
 		size_t i = 0;
 		ArrayIterator<Unit> ai(y, bitLen, winSize_);
 		do {
 			Unit v = ai.getNext();
-			if (i >= tbl_.size()) throw cybozu::Exception("mcl:PowerWindow:power:bad value") << i << tbl_.size() << bitLen << winSize_;
 			if (v) {
 				Ec::add(z, z, tbl_[i][v]);
 			}
