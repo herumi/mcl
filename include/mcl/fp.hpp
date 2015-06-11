@@ -222,29 +222,31 @@ public:
 		inv(rev, y);
 		mul(z, x, rev);
 	}
-	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn)
+	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn, bool isNegative)
 	{
 		FpT out(1);
-		fp::powerArray(out, x, y, yn, FpT::mul, FpT::square);
-		z = out;
+		fp::powerGeneric(out, x, y, yn, FpT::mul, FpT::square);
+		if (isNegative) {
+			FpT::inv(z, out);
+		} else {
+			z = out;
+		}
 	}
 	template<class tag2, size_t maxBitSize2>
 	static inline void power(FpT& z, const FpT& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powerArray(z, x, b.p, b.n);
+		powerArray(z, x, b.p, b.n, false);
 	}
 	static inline void power(FpT& z, const FpT& x, int y)
 	{
-		if (y < 0) throw cybozu::Exception("FpT:power with negative y is not support") << y;
-		const Unit u = y;
-		powerArray(z, x, &u, 1);
+		const Unit u = abs(y);
+		powerArray(z, x, &u, 1, y < 0);
 	}
 	static inline void power(FpT& z, const FpT& x, const mpz_class& y)
 	{
-		if (y < 0) throw cybozu::Exception("FpT:power with negative y is not support") << y;
-		powerArray(z, x, Gmp::getUnit(y), Gmp::getUnitSize(x));
+		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	bool isZero() const { return op_.isZero(v_); }
 	bool isValid() const

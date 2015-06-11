@@ -367,7 +367,7 @@ public:
 	static inline void powerArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
 		EcT out;
-		fp::powerArray(out, x, y, yn, EcT::add, EcT::dbl);
+		fp::powerGeneric(out, x, y, yn, EcT::add, EcT::dbl);
 		if (isNegative) {
 			neg(z, out);
 		} else {

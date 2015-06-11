@@ -111,8 +111,7 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@param n [in] size of y[]
 */
 template<class G, class T>
-void powerArray(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&), void square(G&, const G&))
-{
+void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void square(G&, const G&)){
 	G t(x);
 	for (size_t i = 0; i < n; i++) {
 		T v = y[i];

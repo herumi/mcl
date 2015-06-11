@@ -117,7 +117,6 @@ struct Test {
 		}
 	}
 
-#if 0
 	void neg_power() const
 	{
 		Fp x(para.gx);
@@ -131,7 +130,6 @@ struct Test {
 			R -= P;
 		}
 	}
-#endif
 	void squareRoot() const
 	{
 		Fp x(para.gx);
@@ -263,6 +261,7 @@ pow 499.00usec
 		cstr();
 		ope();
 		power();
+		neg_power();
 		power_fp();
 		squareRoot();
 		str();
