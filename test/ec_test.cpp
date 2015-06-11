@@ -5,20 +5,16 @@
 #include <mcl/gmp_util.hpp>
 
 #include <mcl/fp.hpp>
-typedef mcl::FpT<> Fp_3;
-typedef mcl::FpT<> Fp_4;
-typedef mcl::FpT<> Fp_6;
-typedef mcl::FpT<> Fp_9;
 #include <mcl/ec.hpp>
 #include <mcl/ecparam.hpp>
 #include <time.h>
 
+typedef mcl::FpT<> Fp;
 struct tagZn;
 typedef mcl::FpT<tagZn> Zn;
+typedef mcl::EcT<Fp> Ec;
 
-template<class Fp>
 struct Test {
-	typedef mcl::EcT<Fp> Ec;
 	const mcl::EcParam& para;
 	Test(const mcl::EcParam& para)
 		: para(para)
@@ -26,7 +22,6 @@ struct Test {
 		Fp::setModulo(para.p);
 		Zn::setModulo(para.n);
 		Ec::setParam(para.a, para.b);
-//		CYBOZU_TEST_EQUAL(para.bitSize, Fp(-1).getBitSize());
 	}
 	void cstr() const
 	{
@@ -274,12 +269,11 @@ private:
 	void operator=(const Test&);
 };
 
-template<class Fp>
 void test_sub(const mcl::EcParam *para, size_t paraNum)
 {
 	for (size_t i = 0; i < paraNum; i++) {
 		puts(para[i].name);
-		Test<Fp>(para[i]).run();
+		Test(para[i]).run();
 	}
 }
 
@@ -299,7 +293,7 @@ CYBOZU_TEST_AUTO(all)
 			mcl::ecparam::secp192k1,
 			mcl::ecparam::NIST_P192,
 		};
-		test_sub<Fp_3>(para3, CYBOZU_NUM_OF_ARRAY(para3));
+		test_sub(para3, CYBOZU_NUM_OF_ARRAY(para3));
 	}
 
 	if (g_partial & (1 << 4)) {
@@ -309,7 +303,7 @@ CYBOZU_TEST_AUTO(all)
 			mcl::ecparam::NIST_P224,
 			mcl::ecparam::NIST_P256,
 		};
-		test_sub<Fp_4>(para4, CYBOZU_NUM_OF_ARRAY(para4));
+		test_sub(para4, CYBOZU_NUM_OF_ARRAY(para4));
 	}
 
 	if (g_partial & (1 << 6)) {
@@ -317,7 +311,7 @@ CYBOZU_TEST_AUTO(all)
 	//		mcl::ecparam::secp384r1,
 			mcl::ecparam::NIST_P384,
 		};
-		test_sub<Fp_6>(para6, CYBOZU_NUM_OF_ARRAY(para6));
+		test_sub(para6, CYBOZU_NUM_OF_ARRAY(para6));
 	}
 
 	if (g_partial & (1 << 9)) {
@@ -325,7 +319,7 @@ CYBOZU_TEST_AUTO(all)
 	//		mcl::ecparam::secp521r1,
 			mcl::ecparam::NIST_P521,
 		};
-		test_sub<Fp_9>(para9, CYBOZU_NUM_OF_ARRAY(para9));
+		test_sub(para9, CYBOZU_NUM_OF_ARRAY(para9));
 	}
 }
 
