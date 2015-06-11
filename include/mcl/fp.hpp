@@ -81,10 +81,10 @@ public:
 	static inline bool squareRoot(FpT& y, const FpT& x)
 	{
 		mpz_class mx, my;
-		x.getGmp(mx);
+		x.getMpz(mx);
 		bool b = op_.sq.get(my, mx);
 		if (!b) return false;
-		y.setGmp(my);
+		y.setMpz(my);
 		return true;
 	}
 	FpT() {}
@@ -203,19 +203,19 @@ public:
 		getStr(str, base, withPrefix);
 		return str;
 	}
-	void getGmp(mpz_class& x) const
+	void getMpz(mpz_class& x) const
 	{
 		fp::Block b;
 		getBlock(b);
 		Gmp::setArray(x, b.p, b.n);
 	}
-	mpz_class getGmp() const
+	mpz_class getMpz() const
 	{
 		mpz_class x;
-		getGmp(x);
+		getMpz(x);
 		return x;
 	}
-	void setGmp(const mpz_class& x)
+	void setMpz(const mpz_class& x)
 	{
 		setArray(Gmp::getUnit(x), Gmp::getUnitSize(x));
 	}

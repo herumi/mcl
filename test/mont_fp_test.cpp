@@ -69,7 +69,7 @@ struct Montgomery {
 };
 
 template<class T>
-mpz_class getGmp(const T& x)
+mpz_class getMpz(const T& x)
 {
 	std::string str = x.getStr();
 	mpz_class t;

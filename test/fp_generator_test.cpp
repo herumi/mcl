@@ -65,7 +65,7 @@ struct Int {
 	void set(const char *str) { setStr(str); }
 	void set(const Fp& rhs)
 	{
-		convertToArray(v, rhs.getGmp());
+		convertToArray(v, rhs.getMpz());
 	}
 	void set(const uint64_t* x)
 	{

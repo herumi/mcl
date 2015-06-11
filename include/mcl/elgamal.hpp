@@ -156,7 +156,7 @@ struct ElgamalT {
 			, enableWindowMethod_(false)
 		{
 		}
-		void enablePowerWindow(size_t winSize = 10)
+		void enableWindowMethod(size_t winSize = 10)
 		{
 			wm_f.init(f, bitSize, winSize);
 			wm_g.init(g, bitSize, winSize);
