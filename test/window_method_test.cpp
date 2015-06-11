@@ -36,10 +36,10 @@ CYBOZU_TEST_AUTO(int)
 	const Ec P(x, y);
 
 	typedef mcl::fp::WindowMethod<Ec> PW;
-	const size_t bitSize = 16;
+	const size_t bitSize = 13;
 	Ec Q, R;
 
-	for (size_t winSize = 2; winSize <= bitSize; winSize += 3) {
+	for (size_t winSize = 10; winSize <= bitSize; winSize++) {
 		PW pw(P, bitSize, winSize);
 		for (int i = 0; i < (1 << bitSize); i++) {
 			pw.mul(Q, i);

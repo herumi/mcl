@@ -33,6 +33,8 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 
 void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base);
 
+bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
+
 } // mcl::fp
 
 template<class tag = fp::TagDefault, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
@@ -45,7 +47,8 @@ class FpT {
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
-	size_t getUnitSize() const { return op_.N; }
+	static inline size_t getUnitSize() { return op_.N; }
+	static inline size_t getBitSize() { return op_.bitSize; }
 	void dump() const
 	{
 		const size_t N = op_.N;
@@ -139,17 +142,23 @@ public:
 		}
 		toMont(*this, *this);
 	}
-	// alias of setStr
+	/*
+		if doMask
+		trim inBuf and sub p if necessary
+		otherwise throw exception if inBuf >= p
+	*/
 	template<class S>
 	void setArray(const S *inBuf, size_t n)
 	{
-		const size_t SbyteSize = sizeof(S) * n;
-		const size_t fpByteSize = sizeof(Unit) * op_.N;
-		if (SbyteSize > fpByteSize) throw cybozu::Exception("FpT:setArray:bad n") << n << fpByteSize;
-		assert(SbyteSize <= fpByteSize);
-		memcpy(v_, inBuf, SbyteSize);
-		memset((char *)v_ + SbyteSize, 0, fpByteSize - SbyteSize);
-		if (!isValid()) throw cybozu::Exception("FpT:setArray:large value");
+		if (!fp::copyAndMask(v_, inBuf, sizeof(S) * n, op_, false)) {
+			throw cybozu::Exception("FpT:setArray:large value") << n;
+		}
+		toMont(*this, *this);
+	}
+	template<class S>
+	void setArrayMask(const S *inBuf, size_t n)
+	{
+		fp::copyAndMask(v_, inBuf, sizeof(S) * n, op_, true);
 		toMont(*this, *this);
 	}
 	template<class S>

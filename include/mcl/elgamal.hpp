@@ -9,31 +9,27 @@
 #include <string>
 #include <sstream>
 #include <cybozu/unordered_map.hpp>
-#include <cybozu/bitvector.hpp>
 #ifndef CYBOZU_UNORDERED_MAP_STD
 #include <map>
 #endif
 #include <cybozu/exception.hpp>
-#include <mcl/tagmultigr.hpp>
-#include <mcl/power_window.hpp>
+#include <mcl/window_method.hpp>
 
 namespace mcl {
 
-template<class _G, class Zn>
+template<class _Ec, class Zn>
 struct ElgamalT {
-	typedef _G G;
-	typedef TagMultiGr<G> TagG;
+	typedef _Ec Ec;
 	struct CipherText {
-		typedef _G G;
-		G c1;
-		G c2;
+		Ec c1;
+		Ec c2;
 		/*
 			(c1, c2) = (0, 0) is trivial valid ciphertext for m = 0
 		*/
 		void clear()
 		{
-			TagG::init(c1);
-			TagG::init(c2);
+			c1.clear();
+			c2.clear();
 		}
 		/*
 			add encoded message with encoded message
@@ -42,8 +38,8 @@ struct ElgamalT {
 		*/
 		void add(const CipherText& c)
 		{
-			TagG::mul(c1, c1, c.c1);
-			TagG::mul(c2, c2, c.c2);
+			Ec::add(c1, c1, c.c1);
+			Ec::add(c2, c2, c.c2);
 		}
 		/*
 			mul by x
@@ -53,8 +49,8 @@ struct ElgamalT {
 		template<class N>
 		void mul(const N& x)
 		{
-			G::power(c1, c1, x);
-			G::power(c2, c2, x);
+			Ec::mul(c1, c1, x);
+			Ec::mul(c2, c2, x);
 		}
 		/*
 			negative encoded message
@@ -63,8 +59,8 @@ struct ElgamalT {
 		*/
 		void neg()
 		{
-			TagG::inv(c1, c1);
-			TagG::inv(c2, c2);
+			Ec::neg(c1, c1);
+			Ec::neg(c2, c2);
 		}
 		std::string toStr() const
 		{
@@ -91,31 +87,12 @@ struct ElgamalT {
 			is.flags(flags);
 			return is;
 		}
-		void appendToBitVec(cybozu::BitVector& bv) const
-		{
-			c1.appendToBitVec(bv);
-			c2.appendToBitVec(bv);
-		}
-		void fromBitVec(const cybozu::BitVector& bv)
-		{
-			size_t bitSize = G::getBitVecSize();
-			cybozu::BitVector t;
-			bv.extract(t, 0, bitSize);
-			c1.fromBitVec(t);
-			bv.extract(t, bitSize, bitSize);
-			c2.fromBitVec(t);
-		}
-		static inline size_t getBitVecSize()
-		{
-			return G::getBitVecSize() * 2;
-		}
 	};
 	/*
 		Zero Knowledge Proof
 		cipher text with ZKP to ensure m = 0 or 1
 	*/
 	struct Zkp {
-		typedef _G G;
 		Zn c0, c1, s0, s1;
 		std::string toStr() const
 		{
@@ -145,51 +122,50 @@ struct ElgamalT {
 	};
 
 	class PublicKey {
-		typedef _G G;
 		size_t bitSize;
-		G f;
-		G g;
-		G h;
-		bool enablePowerWindow_;
-		mcl::WindowMethod<G> powf;
-		mcl::WindowMethod<G> powg;
-		mcl::WindowMethod<G> powh;
+		Ec f;
+		Ec g;
+		Ec h;
+		bool enableWindowMethod_;
+		fp::WindowMethod<Ec> wm_f;
+		fp::WindowMethod<Ec> wm_g;
+		fp::WindowMethod<Ec> wm_h;
 		template<class N>
-		void powerSub(G& z, const G& x, const N& n, const mcl::WindowMethod<G>& pw) const
+		void mulDispatch(Ec& z, const Ec& x, const N& n, const fp::WindowMethod<Ec>& pw) const
 		{
-			if (enablePowerWindow_) {
-				pw.power(z, n);
+			if (enableWindowMethod_) {
+				pw.mul(z, n);
 			} else {
-				G::power(z, x, n);
+				Ec::mul(z, x, n);
 			}
 		}
 		template<class N>
-		void powerF(G& z, const N& n) const { powerSub(z, f, n, powf); }
+		void mulF(Ec& z, const N& n) const { mulDispatch(z, f, n, wm_f); }
 		template<class N>
-		void powerG(G& z, const N& n) const { powerSub(z, g, n, powg); }
+		void mulG(Ec& z, const N& n) const { mulDispatch(z, g, n, wm_g); }
 		template<class N>
-		void powerH(G& z, const N& n) const { powerSub(z, h, n, powh); }
+		void mulH(Ec& z, const N& n) const { mulDispatch(z, h, n, wm_h); }
 	public:
 		PublicKey()
 			: bitSize(0)
-			, enablePowerWindow_(false)
+			, enableWindowMethod_(false)
 		{
 		}
 		void enablePowerWindow(size_t winSize = 10)
 		{
-			powf.init(f, bitSize, winSize);
-			powg.init(g, bitSize, winSize);
-			powh.init(h, bitSize, winSize);
-			enablePowerWindow_ = true;
+			wm_f.init(f, bitSize, winSize);
+			wm_g.init(g, bitSize, winSize);
+			wm_h.init(h, bitSize, winSize);
+			enableWindowMethod_ = true;
 		}
-		const G& getF() const { return f; }
-		void init(size_t bitSize, const G& f, const G& g, const G& h)
+		const Ec& getF() const { return f; }
+		void init(size_t bitSize, const Ec& f, const Ec& g, const Ec& h)
 		{
 			this->bitSize = bitSize;
 			this->f = f;
 			this->g = g;
 			this->h = h;
-			enablePowerWindow_ = false;
+			enableWindowMethod_ = false;
 		}
 		/*
 			encode message
@@ -201,11 +177,11 @@ struct ElgamalT {
 		{
 			Zn u;
 			u.setRand(rg);
-			powerG(c.c1, u);
-			powerH(c.c2, u);
-			G t;
-			powerF(t, m);
-			TagG::mul(c.c2, c.c2, t);
+			mulG(c.c1, u);
+			mulH(c.c2, u);
+			Ec t;
+			mulF(t, m);
+			Ec::add(c.c2, c.c2, t);
 		}
 		/*
 			encode message
@@ -220,30 +196,30 @@ struct ElgamalT {
 			}
 			Zn u;
 			u.setRand(rg);
-			powerG(c.c1, u);
-			powerH(c.c2, u);
+			mulG(c.c1, u);
+			mulH(c.c2, u);
 			if (m) {
-				TagG::mul(c.c2, c.c2, f);
+				Ec::add(c.c2, c.c2, f);
 				Zn r1;
 				r1.setRand(rg);
 				zkp.c0.setRand(rg);
 				zkp.s0.setRand(rg);
-				G R01, R02, R11, R12;
-				G t1, t2;
-				powerG(t1, zkp.s0);
-				G::power(t2, c.c1, zkp.c0);
-				TagG::div(R01, t1, t2);
-				powerH(t1, zkp.s0);
-				G::power(t2, c.c2, zkp.c0);
-				TagG::div(R02, t1, t2);
-				powerG(R11, r1);
-				powerH(R12, r1);
+				Ec R01, R02, R11, R12;
+				Ec t1, t2;
+				mulG(t1, zkp.s0);
+				Ec::mul(t2, c.c1, zkp.c0);
+				Ec::sub(R01, t1, t2);
+				mulH(t1, zkp.s0);
+				Ec::mul(t2, c.c2, zkp.c0);
+				Ec::sub(R02, t1, t2);
+				mulG(R11, r1);
+				mulH(R12, r1);
 				std::ostringstream os;
 				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
 				hash.update(os.str());
 				const std::string digest = hash.digest();
 				Zn cc;
-				cc.setRaw(digest.c_str(), digest.size());
+				cc.setArrayMask(digest.c_str(), digest.size());
 				zkp.c1 = cc - zkp.c0;
 				zkp.s1 = r1 + zkp.c1 * u;
 			} else {
@@ -251,23 +227,23 @@ struct ElgamalT {
 				r0.setRand(rg);
 				zkp.c1.setRand(rg);
 				zkp.s1.setRand(rg);
-				G R01, R02, R11, R12;
-				powerG(R01, r0);
-				powerH(R02, r0);
-				G t1, t2;
-				powerG(t1, zkp.s1);
-				G::power(t2, c.c1, zkp.c1);
-				TagG::div(R11, t1, t2);
-				powerH(t1, zkp.s1);
-				TagG::div(t2, c.c2, f);
-				G::power(t2, t2, zkp.c1);
-				TagG::div(R12, t1, t2);
+				Ec R01, R02, R11, R12;
+				mulG(R01, r0);
+				mulH(R02, r0);
+				Ec t1, t2;
+				mulG(t1, zkp.s1);
+				Ec::mul(t2, c.c1, zkp.c1);
+				Ec::sub(R11, t1, t2);
+				mulH(t1, zkp.s1);
+				Ec::sub(t2, c.c2, f);
+				Ec::mul(t2, t2, zkp.c1);
+				Ec::sub(R12, t1, t2);
 				std::ostringstream os;
 				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
 				hash.update(os.str());
 				const std::string digest = hash.digest();
 				Zn c;
-				c.setRaw(digest.c_str(), digest.size());
+				c.setArrayMask(digest.c_str(), digest.size());
 				zkp.c0 = c - zkp.c1;
 				zkp.s0 = r0 + zkp.c0 * u;
 			}
@@ -278,27 +254,27 @@ struct ElgamalT {
 		template<class Hash>
 		bool verify(const CipherText& c, const Zkp& zkp, Hash& hash) const
 		{
-			G R01, R02, R11, R12;
-			G t1, t2;
-			powerG(t1, zkp.s0);
-			G::power(t2, c.c1, zkp.c0);
-			TagG::div(R01, t1, t2);
-			powerH(t1, zkp.s0);
-			G::power(t2, c.c2, zkp.c0);
-			TagG::div(R02, t1, t2);
-			powerG(t1, zkp.s1);
-			G::power(t2, c.c1, zkp.c1);
-			TagG::div(R11, t1, t2);
-			powerH(t1, zkp.s1);
-			TagG::div(t2, c.c2, f);
-			G::power(t2, t2, zkp.c1);
-			TagG::div(R12, t1, t2);
+			Ec R01, R02, R11, R12;
+			Ec t1, t2;
+			mulG(t1, zkp.s0);
+			Ec::mul(t2, c.c1, zkp.c0);
+			Ec::sub(R01, t1, t2);
+			mulH(t1, zkp.s0);
+			Ec::mul(t2, c.c2, zkp.c0);
+			Ec::sub(R02, t1, t2);
+			mulG(t1, zkp.s1);
+			Ec::mul(t2, c.c1, zkp.c1);
+			Ec::sub(R11, t1, t2);
+			mulH(t1, zkp.s1);
+			Ec::sub(t2, c.c2, f);
+			Ec::mul(t2, t2, zkp.c1);
+			Ec::sub(R12, t1, t2);
 			std::ostringstream os;
 			os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
 			hash.update(os.str());
 			const std::string digest = hash.digest();
 			Zn cc;
-			cc.setRaw(digest.c_str(), digest.size());
+			cc.setArrayMask(digest.c_str(), digest.size());
 			return cc == zkp.c0 + zkp.c1;
 		}
 		/*
@@ -311,11 +287,11 @@ struct ElgamalT {
 		{
 			Zn v;
 			v.setRand(rg);
-			G t;
-			powerG(t, v);
-			TagG::mul(c.c1, c.c1, t);
-			powerH(t, v);
-			TagG::mul(c.c2, c.c2, t);
+			Ec t;
+			mulG(t, v);
+			Ec::add(c.c1, c.c1, t);
+			mulH(t, v);
+			Ec::add(c.c2, c.c2, t);
 		}
 		/*
 			add encoded message with plain message
@@ -325,9 +301,9 @@ struct ElgamalT {
 		template<class N>
 		void add(CipherText& c, const N& m) const
 		{
-			G fm;
-			powerF(fm, m);
-			TagG::mul(c.c2, c.c2, fm);
+			Ec fm;
+			mulF(fm, m);
+			Ec::add(c.c2, c.c2, fm);
 		}
 		std::string toStr() const
 		{
@@ -351,7 +327,7 @@ struct ElgamalT {
 		{
 			std::ios_base::fmtflags flags = is.flags();
 			size_t bitSize;
-			G f, g, h;
+			Ec f, g, h;
 			is >> std::dec >> bitSize >> std::hex >> f >> g >> h;
 			is.flags(flags);
 			self.init(bitSize, f, g, h);
@@ -363,23 +339,22 @@ struct ElgamalT {
 		PublicKey pub;
 		Zn z;
 	public:
-		typedef _G G;
 		/*
 			init
 			input : f
 			output : (g, h, z)
-			G = <f>
-			g in G
+			Ec = <f>
+			g in Ec
 			h = g^z
 		*/
 		template<class RG>
-		void init(const G& f, size_t bitSize, RG& rg)
+		void init(const Ec& f, size_t bitSize, RG& rg)
 		{
-			G g, h;
+			Ec g, h;
 			z.setRand(rg);
-			G::power(g, f, z);
+			Ec::mul(g, f, z);
 			z.setRand(rg);
-			G::power(h, g, z);
+			Ec::mul(h, g, z);
 			pub.init(bitSize, f, g, h);
 		}
 		const PublicKey& getPublicKey() const { return pub; }
@@ -393,22 +368,22 @@ struct ElgamalT {
 		*/
 		void dec(Zn& m, const CipherText& c, int limit = 100000) const
 		{
-			const G& f = pub.getF();
-			G c1z;
-			G::power(c1z, c.c1, z);
+			const Ec& f = pub.getF();
+			Ec c1z;
+			Ec::mul(c1z, c.c1, z);
 			if (c1z == c.c2) {
 				m = 0;
 				return;
 			}
-			G t1(c1z);
-			G t2(c.c2);
+			Ec t1(c1z);
+			Ec t2(c.c2);
 			for (int i = 1; i < limit; i++) {
-				TagG::mul(t1, t1, f);
+				Ec::add(t1, t1, f);
 				if (t1 == c.c2) {
 					m = i;
 					return;
 				}
-				TagG::mul(t2, t2, f);
+				Ec::add(t2, t2, f);
 				if (t2 == c1z) {
 					m = -i;
 					return;
@@ -419,19 +394,19 @@ struct ElgamalT {
 		/*
 			powfm = c2 / c1^z = f^m
 		*/
-		void getPowerf(G& powfm, const CipherText& c) const
+		void getPowerf(Ec& powfm, const CipherText& c) const
 		{
-			G c1z;
-			G::power(c1z, c.c1, z);
-			TagG::div(powfm, c.c2, c1z);
+			Ec c1z;
+			Ec::mul(c1z, c.c1, z);
+			Ec::sub(powfm, c.c2, c1z);
 		}
 		/*
 			check whether c is encrypted zero message
 		*/
 		bool isZeroMessage(const CipherText& c) const
 		{
-			G c1z;
-			G::power(c1z, c.c1, z);
+			Ec c1z;
+			Ec::mul(c1z, c.c1, z);
 			return c.c2 == c1z;
 		}
 		std::string toStr() const
@@ -464,35 +439,34 @@ struct ElgamalT {
 		create table f^i for i in [rangeMin, rangeMax]
 	*/
 	struct PowerCache {
-		typedef _G G;
 #if (CYBOZU_CPP_VERSION > CYBOZU_CPP_VERSION_CP03)
-		typedef CYBOZU_NAMESPACE_STD::unordered_map<G, int> Cache;
+		typedef CYBOZU_NAMESPACE_STD::unordered_map<Ec, int> Cache;
 #else
-		typedef std::map<G, int> Cache;
+		typedef std::map<Ec, int> Cache;
 #endif
 		Cache cache;
-		void init(const G& f, int rangeMin, int rangeMax)
+		void init(const Ec& f, int rangeMin, int rangeMax)
 		{
 			if (rangeMin > rangeMax) throw cybozu::Exception("mcl:ElgamalT:PowerCache:bad range") << rangeMin << rangeMax;
-			G x;
+			Ec x;
 			x.clear();
 			cache[x] = 0;
 			for (int i = 1; i <= rangeMax; i++) {
-				TagG::mul(x, x, f);
+				Ec::add(x, x, f);
 				cache[x] = i;
 			}
-			G nf;
-			TagG::inv(nf, f);
+			Ec nf;
+			Ec::neg(nf, f);
 			x.clear();
 			for (int i = -1; i >= rangeMin; i--) {
-				TagG::mul(x, x, nf);
+				Ec::add(x, x, nf);
 				cache[x] = i;
 			}
 		}
 		/*
 			return m such that f^m = g
 		*/
-		int getExponent(const G& g) const
+		int getExponent(const Ec& g) const
 		{
 			typename Cache::const_iterator i = cache.find(g);
 			if (i == cache.end()) throw cybozu::Exception("Elgamal:PowerCache:getExponent:not found") << g;

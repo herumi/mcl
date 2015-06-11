@@ -317,5 +317,26 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 	}
 }
 
+bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask)
+{
+	const size_t fpByteSize = sizeof(Unit) * op.N;
+	if (xByteSize > fpByteSize) {
+		if (!doMask) return false;
+		xByteSize = fpByteSize;
+	}
+	memcpy(y, x, xByteSize);
+	memset((char *)y + xByteSize, 0, fpByteSize - xByteSize);
+	if (!doMask) return compareArray(y, op.p, op.N) < 0;
+
+	Unit r = op.bitSize % UnitBitSize;
+	if (r) {
+		y[op.N - 1] &= (Unit(1) << r) - 1;
+	}
+	if (compareArray(y, op.p, op.N) >= 0) {
+		op.subP(y, y, op.p, op.p);
+	}
+	return true;
+}
+
 } } // mcl::fp
 
