@@ -248,7 +248,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize)
 	bool isMinus;
 	strToGmp(mp, &isMinus, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
-	bitSize = Gmp::getBitLen(mp);
+	bitSize = Gmp::getBitSize(mp);
 	if (bitSize > maxBitSize) throw cybozu::Exception("Op:init:too large bitSize") << mstr << bitSize << maxBitSize;
 	const size_t n = Gmp::getArray(p, maxN, mp);
 	if (n == 0) throw cybozu::Exception("Op:init:bad mstr") << mstr;

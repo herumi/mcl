@@ -191,7 +191,7 @@ CYBOZU_TEST_AUTO(testEc)
 	Ec::setParam(para.a, para.b);
 	const Fp x0(para.gx);
 	const Fp y0(para.gy);
-	const size_t bitSize = Zn(-1).getBitLen();
+	const size_t bitSize = Zn(-1).getBitSize();
 	const Ec P(x0, y0);
 	/*
 		Zn = <P>

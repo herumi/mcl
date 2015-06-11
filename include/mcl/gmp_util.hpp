@@ -77,7 +77,7 @@ struct Gmp {
 	static size_t getArray(T *buf, size_t maxSize, const mpz_class& x)
 	{
 		const size_t totalSize = sizeof(T) * maxSize;
-		if (getBitLen(x) > totalSize * 8) return 0;
+		if (getBitSize(x) > totalSize * 8) return 0;
 		memset(buf, 0, sizeof(*buf) * maxSize);
 		size_t size;
 		mpz_export(buf, &size, -1, sizeof(T), 0, 0, x.get_mpz_t());
@@ -244,7 +244,7 @@ struct Gmp {
 	{
 		return mpz_probab_prime_p(x.get_mpz_t(), 25) != 0;
 	}
-	static inline size_t getBitLen(const mpz_class& x)
+	static inline size_t getBitSize(const mpz_class& x)
 	{
 		return mpz_sizeinbase(x.get_mpz_t(), 2);
 	}
