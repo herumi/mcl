@@ -64,7 +64,7 @@ endif
 ####################################################
 
 LIB=$(TOPDIR)lib/libmcl$(OBJSUF).a
-LDFLAGS += -lpthread -m$(BIT) -lgmp -lgmpxx
+LDFLAGS += -lpthread -m$(BIT) -lgmp -lgmpxx -lcrypto
 
 ifeq ($(USE_MONT_FP),1)
   CFLAGS += -DUSE_MONT_FP

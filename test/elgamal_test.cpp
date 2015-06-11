@@ -3,9 +3,6 @@
 #include <mcl/gmp_util.hpp>
 #include <mcl/elgamal.hpp>
 #include <cybozu/random_generator.hpp>
-#if defined(_WIN64) || defined(__x86_64__)
-	#define USE_MONT_FP
-#endif
 #include <mcl/ecparam.hpp>
 #include <cybozu/crypto.hpp>
 
