@@ -2,6 +2,11 @@
 /**
 	@file
 	@brief lifted-ElGamal encryption
+	@author MITSUNARI Shigeo(@herumi)
+	@license modified new BSD license
+	http://opensource.org/licenses/BSD-3-Clause
+
+	original:
 	Copyright (c) 2014, National Institute of Advanced Industrial
 	Science and Technology All rights reserved.
 	This source file is subject to BSD 3-Clause license.
@@ -62,16 +67,16 @@ struct ElgamalT {
 			Ec::neg(c1, c1);
 			Ec::neg(c2, c2);
 		}
-		std::string toStr() const
+		std::string getStr() const
 		{
 			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:CipherText:toStr");
+			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:CipherText:getStr");
 			return os.str();
 		}
-		void fromStr(const std::string& str)
+		void setStr(const std::string& str)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:CipherText:fromStr") << str;
+			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:CipherText:setStr") << str;
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const CipherText& self)
 		{
@@ -94,16 +99,16 @@ struct ElgamalT {
 	*/
 	struct Zkp {
 		Zn c0, c1, s0, s1;
-		std::string toStr() const
+		std::string getStr() const
 		{
 			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:Zkp:toStr");
+			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:Zkp:getStr");
 			return os.str();
 		}
-		void fromStr(const std::string& str)
+		void setStr(const std::string& str)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:Zkp:fromStr") << str;
+			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:Zkp:setStr") << str;
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const Zkp& self)
 		{
@@ -305,16 +310,16 @@ struct ElgamalT {
 			mulF(fm, m);
 			Ec::add(c.c2, c.c2, fm);
 		}
-		std::string toStr() const
+		std::string getStr() const
 		{
 			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:PublicKey:toStr");
+			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:PublicKey:getStr");
 			return os.str();
 		}
-		void fromStr(const std::string& str)
+		void setStr(const std::string& str)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PublicKey:fromStr") << str;
+			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PublicKey:setStr") << str;
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
@@ -409,16 +414,16 @@ struct ElgamalT {
 			Ec::mul(c1z, c.c1, z);
 			return c.c2 == c1z;
 		}
-		std::string toStr() const
+		std::string getStr() const
 		{
 			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:toStr");
+			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:getStr");
 			return os.str();
 		}
-		void fromStr(const std::string& str)
+		void setStr(const std::string& str)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:fromStr") << str;
+			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:setStr") << str;
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const PrivateKey& self)
 		{
