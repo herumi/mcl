@@ -412,11 +412,11 @@ public:
 	}
 	static inline int compare(const EcT& P, const EcT& Q)
 	{
-		return compareFunc(P, Q, _Fp::compare);
+		return compareFunc(P, Q, Fp::compare);
 	}
 	static inline int compareRaw(const EcT& P, const EcT& Q)
 	{
-		return compareFunc(P, Q, _Fp::compareRaw);
+		return compareFunc(P, Q, Fp::compareRaw);
 	}
 	bool isZero() const
 	{
@@ -500,10 +500,10 @@ public:
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
 };
 
-template<class _Fp> _Fp EcT<_Fp>::a_;
-template<class _Fp> _Fp EcT<_Fp>::b_;
-template<class _Fp> int EcT<_Fp>::specialA_;
-template<class _Fp> bool EcT<_Fp>::compressedExpression_;
+template<class Fp> Fp EcT<Fp>::a_;
+template<class Fp> Fp EcT<Fp>::b_;
+template<class Fp> int EcT<Fp>::specialA_;
+template<class Fp> bool EcT<Fp>::compressedExpression_;
 
 struct EcParam {
 	const char *name;
@@ -521,14 +521,14 @@ struct EcParam {
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 template<class T> struct hash;
 
-template<class _Fp>
-struct hash<mcl::EcT<_Fp> > {
-	size_t operator()(const mcl::EcT<_Fp>& P) const
+template<class Fp>
+struct hash<mcl::EcT<Fp> > {
+	size_t operator()(const mcl::EcT<Fp>& P) const
 	{
 		if (P.isZero()) return 0;
 		P.normalize();
-		uint64_t v = hash<_Fp>()(P.x);
-		v = hash<_Fp>()(P.y, v);
+		uint64_t v = hash<Fp>()(P.x);
+		v = hash<Fp>()(P.y, v);
 		return static_cast<size_t>(v);
 	}
 };

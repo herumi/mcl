@@ -113,17 +113,16 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 template<class G, class T>
 void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void square(G&, const G&)){
 	G t(x);
+	while (n > 0) {
+		if (y[n - 1]) break;
+		n--;
+	}
 	for (size_t i = 0; i < n; i++) {
 		T v = y[i];
 		int m = (int)sizeof(T) * 8;
 		if (i == n - 1) {
-#if 1
-			m = v ? cybozu::bsr<T>(v) + 1 : 0;
-#else
-			while (m > 0 && (v & (Unit(1) << (m - 1))) == 0) {
-				m--;
-			}
-#endif
+			assert(v);
+			m = cybozu::bsr<T>(v) + 1;
 		}
 		for (int j = 0; j < m; j++) {
 			if (v & (T(1) << j)) {

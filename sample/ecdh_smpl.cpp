@@ -37,7 +37,7 @@ int main()
 	Ec aP;
 
 	a.setRand(rg);
-	Ec::power(aP, P, a); // aP = a * P;
+	Ec::mul(aP, P, a); // aP = a * P;
 
 	std::cout << "aP=" << aP << std::endl;
 
@@ -48,17 +48,17 @@ int main()
 	Ec bP;
 
 	b.setRand(rg);
-	Ec::power(bP, P, b); // bP = b * P;
+	Ec::mul(bP, P, b); // bP = b * P;
 
 	std::cout << "bP=" << bP << std::endl;
 
 	Ec abP, baP;
 
 	// Alice uses bP(B's public key) and a(A's priavte key)
-	Ec::power(abP, bP, a); // abP = a * (bP)
+	Ec::mul(abP, bP, a); // abP = a * (bP)
 
 	// Bob uses aP(A's public key) and b(B's private key)
-	Ec::power(baP, aP, b); // baP = b * (aP)
+	Ec::mul(baP, aP, b); // baP = b * (aP)
 
 	if (abP == baP) {
 		std::cout << "key sharing succeed:" << abP << std::endl;

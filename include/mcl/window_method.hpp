@@ -17,24 +17,24 @@ namespace mcl { namespace fp {
 */
 template<class T>
 struct ArrayIterator {
-	static const size_t TBitN = sizeof(T) * 8;
+	static const size_t TbitSize = sizeof(T) * 8;
 	ArrayIterator(const T *x, size_t bitSize, size_t w)
 		: x(x)
 		, bitSize(bitSize)
 		, w(w)
 		, pos(0)
-		, mask((w == TBitN ? 0 : (T(1) << w)) - 1)
+		, mask((w == TbitSize ? 0 : (T(1) << w)) - 1)
 	{
-		assert(w <= TBitN);
+		assert(w <= TbitSize);
 	}
 	bool hasNext() const { return bitSize > 0; }
 	T getNext()
 	{
-		if (w == TBitN) {
+		if (w == TbitSize) {
 			bitSize -= w;
 			return *x++;
 		}
-		if (pos + w < TBitN) {
+		if (pos + w < TbitSize) {
 			T v = (*x >> pos) & mask;
 			pos += w;
 			if (bitSize < w) {
@@ -44,7 +44,7 @@ struct ArrayIterator {
 			}
 			return v;
 		}
-		if (pos + bitSize <= TBitN) {
+		if (pos + bitSize <= TbitSize) {
 			assert(bitSize <= w);
 			T v = *x >> pos;
 			assert((v >> bitSize) == 0);
@@ -52,9 +52,9 @@ struct ArrayIterator {
 			return v & mask;
 		}
 		assert(pos > 0);
-		T v = (x[0] >> pos) | (x[1] << (TBitN - pos));
+		T v = (x[0] >> pos) | (x[1] << (TbitSize - pos));
 		v &= mask;
-		pos = (pos + w) - TBitN;
+		pos = (pos + w) - TbitSize;
 		bitSize -= w;
 		x++;
 		return v;
@@ -111,30 +111,32 @@ public:
 		@param y [in] exponent
 	*/
 	template<class tag2, size_t maxBitSize2>
-	void power(Ec& z, const FpT<tag2, maxBitSize2>& y) const
+	void mul(Ec& z, const FpT<tag2, maxBitSize2>& y) const
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powerArray(z, b.p, b.n * UnitBitSize, false);
+		powerArray(z, b.p, b.n, false);
 	}
-	void power(Ec& z, int y) const
+	void mul(Ec& z, int y) const
 	{
-		if (y == 0) {
-			z.clear();
-			return;
-		}
 		Unit u = std::abs(y);
-		powerArray(z, &u, cybozu::bsr<Unit>(y) + 1, y < 0);
+		powerArray(z, &u, 1, y < 0);
 	}
-	void power(Ec& z, const mpz_class& y) const
+	void mul(Ec& z, const mpz_class& y) const
 	{
-		powerArray(z, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size) * UnitBitSize, y < 0);
+		powerArray(z, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
-	void powerArray(Ec& z, const Unit* y, size_t bitSize, bool isNegative) const
+	void powerArray(Ec& z, const Unit* y, size_t n, bool isNegative) const
 	{
-		if ((bitSize + winSize_ - 1) / winSize_ > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powerArray:bad value") << bitSize << bitSize_ << winSize_;
 		z.clear();
-		if (bitSize == 0) return;
+		while (n > 0) {
+			if (y[n - 1]) break;
+			n--;
+		}
+		if (n == 0) return;
+		if (n > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powerArray:bad n") << n << tbl_.size();
+		assert(y[n - 1]);
+		const size_t bitSize = (n - 1) * UnitBitSize + cybozu::bsr<Unit>(y[n - 1]) + 1;
 		size_t i = 0;
 		ArrayIterator<Unit> ai(y, bitSize, winSize_);
 		do {

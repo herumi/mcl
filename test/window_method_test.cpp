@@ -42,29 +42,29 @@ CYBOZU_TEST_AUTO(int)
 	for (size_t winSize = 2; winSize <= bitSize; winSize += 3) {
 		PW pw(P, bitSize, winSize);
 		for (int i = 0; i < (1 << bitSize); i++) {
-			pw.power(Q, i);
-			Ec::power(R, P, i);
+			pw.mul(Q, i);
+			Ec::mul(R, P, i);
 			CYBOZU_TEST_EQUAL(Q, R);
 		}
 	}
 	PW pw(P, para.bitSize, 10);
-	pw.power(Q, -12345);
-	Ec::power(R, P, -12345);
+	pw.mul(Q, -12345);
+	Ec::mul(R, P, -12345);
 	CYBOZU_TEST_EQUAL(Q, R);
 	mpz_class t(para.gx);
-	pw.power(Q, t);
-	Ec::power(R, P, t);
+	pw.mul(Q, t);
+	Ec::mul(R, P, t);
 	CYBOZU_TEST_EQUAL(Q, R);
 	t = -t;
-	pw.power(Q, t);
-	Ec::power(R, P, t);
+	pw.mul(Q, t);
+	Ec::mul(R, P, t);
 	CYBOZU_TEST_EQUAL(Q, R);
 
-	pw.power(Q, x);
-	Ec::power(R, P, x);
+	pw.mul(Q, x);
+	Ec::mul(R, P, x);
 	CYBOZU_TEST_EQUAL(Q, R);
 
-	pw.power(Q, y);
-	Ec::power(R, P, y);
+	pw.mul(Q, y);
+	Ec::mul(R, P, y);
 	CYBOZU_TEST_EQUAL(Q, R);
 }
