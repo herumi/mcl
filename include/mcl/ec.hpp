@@ -364,7 +364,7 @@ public:
 		R.z = P.z;
 #endif
 	}
-	static inline void powerArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
 		EcT out;
 		fp::powerGeneric(out, x, y, yn, EcT::add, EcT::dbl);
@@ -375,20 +375,20 @@ public:
 		}
 	}
 	template<class tag, size_t maxBitSize>
-	static inline void power(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
+	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powerArray(z, x, b.p, b.n, false);
+		mulArray(z, x, b.p, b.n, false);
 	}
-	static inline void power(EcT& z, const EcT& x, int y)
+	static inline void mul(EcT& z, const EcT& x, int y)
 	{
 		const fp::Unit u = abs(y);
-		powerArray(z, x, &u, 1, y < 0);
+		mulArray(z, x, &u, 1, y < 0);
 	}
-	static inline void power(EcT& z, const EcT& x, const mpz_class& y)
+	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		mulArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	/*
 		0 <= P for any P

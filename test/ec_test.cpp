@@ -80,12 +80,12 @@ struct Test {
 				RR = RR + RR;
 				CYBOZU_TEST_EQUAL(RR, R2);
 			}
-			Ec::power(R, P, 2);
+			Ec::mul(R, P, 2);
 			CYBOZU_TEST_EQUAL(R, R2);
 			Ec R4L = R3L + R2;
 			Ec R4R = R2 + R3L;
 			CYBOZU_TEST_EQUAL(R4L, R4R);
-			Ec::power(R, P, 5);
+			Ec::mul(R, P, 5);
 			CYBOZU_TEST_EQUAL(R, R4L);
 		}
 		{
@@ -94,16 +94,16 @@ struct Test {
 				R += P;
 			}
 			Ec R2;
-			Ec::power(R2, P, 11);
+			Ec::mul(R2, P, 11);
 			CYBOZU_TEST_EQUAL(R, R2);
 		}
-		Ec::power(R, P, n - 1);
+		Ec::mul(R, P, n - 1);
 		CYBOZU_TEST_EQUAL(R, -P);
-		R += P; // Ec::power(R, P, n);
+		R += P; // Ec::mul(R, P, n);
 		CYBOZU_TEST_ASSERT(R.isZero());
 	}
 
-	void power() const
+	void mul() const
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
@@ -111,13 +111,13 @@ struct Test {
 		Ec Q;
 		Ec R;
 		for (int i = 0; i < 100; i++) {
-			Ec::power(Q, P, i);
+			Ec::mul(Q, P, i);
 			CYBOZU_TEST_EQUAL(Q, R);
 			R += P;
 		}
 	}
 
-	void neg_power() const
+	void neg_mul() const
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
@@ -125,7 +125,7 @@ struct Test {
 		Ec Q;
 		Ec R;
 		for (int i = 0; i < 100; i++) {
-			Ec::power(Q, P, -i);
+			Ec::mul(Q, P, -i);
 			CYBOZU_TEST_EQUAL(Q, R);
 			R -= P;
 		}
@@ -144,7 +144,7 @@ struct Test {
 		Ec::getYfromX(yy, x, odd);
 		CYBOZU_TEST_EQUAL(yy, y);
 	}
-	void power_fp() const
+	void mul_fp() const
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
@@ -152,7 +152,7 @@ struct Test {
 		Ec Q;
 		Ec R;
 		for (int i = 0; i < 100; i++) {
-			Ec::power(Q, P, Zn(i));
+			Ec::mul(Q, P, Zn(i));
 			CYBOZU_TEST_EQUAL(Q, R);
 			R += P;
 		}
@@ -242,27 +242,27 @@ struct Test {
 		CYBOZU_BENCH("sub", Ec::sub, Q, P, Q);
 		CYBOZU_BENCH("dbl", Ec::dbl, P, P);
 		Zn z("-3");
-		CYBOZU_BENCH("pow", Ec::power, P, P, z);
+		CYBOZU_BENCH("mul", Ec::mul, P, P, z);
 	}
 /*
 Affine : sandy-bridge
 add 3.17usec
 sub 2.43usec
 dbl 3.32usec
-pow 905.00usec
+mul 905.00usec
 Jacobi
 add 2.34usec
 sub 2.65usec
 dbl 1.56usec
-pow 499.00usec
+mul 499.00usec
 */
 	void run() const
 	{
 		cstr();
 		ope();
-		power();
-		neg_power();
-		power_fp();
+		mul();
+		neg_mul();
+		mul_fp();
 		squareRoot();
 		str();
 #ifdef NDEBUG
