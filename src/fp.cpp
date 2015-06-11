@@ -65,9 +65,9 @@ void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base)
 }
 
 
-template<size_t bitN>
+template<size_t bitSize>
 struct OpeFunc {
-	static const size_t N = (bitN + UnitBitN - 1) / UnitBitN;
+	static const size_t N = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
 		z->_mp_alloc = n;
@@ -173,7 +173,7 @@ struct OpeFunc {
 #endif
 
 #define SET_OP(n) \
-		N = n / UnitBitN; \
+		N = n / UnitBitSize; \
 		isZero = OpeFunc<n>::isZeroC; \
 		clear = OpeFunc<n>::clearC; \
 		copy = OpeFunc<n>::copyC; \
@@ -188,7 +188,7 @@ struct OpeFunc {
 #ifdef USE_MONT_FP
 inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 {
-	Unit r[maxOpUnitN];
+	Unit r[maxOpUnitSize];
 	int k = op.preInv(r, x);
 	/*
 		xr = 2^k
@@ -203,11 +203,11 @@ static void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
 }
 static void initInvTbl(Op& op, size_t N)
 {
-	assert(N <= maxOpUnitN);
+	assert(N <= maxOpUnitSize);
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	op.invTbl.resize(invTblN * N);
 	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
-	Unit t[maxOpUnitN] = {};
+	Unit t[maxOpUnitSize] = {};
 	t[0] = 2;
 	op.toMont(tbl, t);
 	for (size_t i = 0; i < invTblN - 1; i++) {
@@ -218,7 +218,7 @@ static void initInvTbl(Op& op, size_t N)
 
 static void initForMont(Op& op, const Unit *p)
 {
-	size_t N = (op.bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+	size_t N = (op.bitSize + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
 	if (N < 2) N = 2;
 	mpz_class t = 1;
 	fromRawGmp(op.one, N, t);
@@ -242,45 +242,45 @@ static void initForMont(Op& op, const Unit *p)
 #endif
 
 
-void Op::init(const std::string& mstr, int base, size_t maxBitN)
+void Op::init(const std::string& mstr, int base, size_t maxBitSize)
 {
-	static const size_t maxN = (maxBitN + UnitBitN - 1) / UnitBitN;
+	static const size_t maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 	bool isMinus;
 	strToGmp(mp, &isMinus, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
-	bitLen = Gmp::getBitLen(mp);
-	if (bitLen > maxBitN) throw cybozu::Exception("Op:init:too large bitLen") << mstr << bitLen << maxBitN;
+	bitSize = Gmp::getBitLen(mp);
+	if (bitSize > maxBitSize) throw cybozu::Exception("Op:init:too large bitSize") << mstr << bitSize << maxBitSize;
 	const size_t n = Gmp::getArray(p, maxN, mp);
 	if (n == 0) throw cybozu::Exception("Op:init:bad mstr") << mstr;
 
-	if (bitLen <= 128) {
+	if (bitSize <= 128) {
 		SET_OP(128)
 	} else
 #if CYBOZU_OS_BIT == 32
-	if (bitLen <= 160) {
+	if (bitSize <= 160) {
 		SET_OP(160)
 	} else
 #endif
-	if (bitLen <= 192) {
+	if (bitSize <= 192) {
 		SET_OP(192)
 	} else
 #if CYBOZU_OS_BIT == 32
-	if (bitLen <= 224) {
+	if (bitSize <= 224) {
 		SET_OP(224)
 	} else
 #endif
-	if (bitLen <= 256) {
+	if (bitSize <= 256) {
 		SET_OP(256)
 	} else
-	if (bitLen <= 384) {
+	if (bitSize <= 384) {
 		SET_OP(384)
 	} else
 #if CYBOZU_OS_BIT == 64
-	if (bitLen <= 576) {
+	if (bitSize <= 576) {
 		SET_OP(576)
 	}
 #else
-	if (bitLen <= 544) {
+	if (bitSize <= 544) {
 		SET_OP(544)
 	}
 #endif

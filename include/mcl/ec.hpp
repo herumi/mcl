@@ -374,8 +374,8 @@ public:
 			z = out;
 		}
 	}
-	template<class tag, size_t maxBitN>
-	static inline void power(EcT& z, const EcT& x, const FpT<tag, maxBitN>& y)
+	template<class tag, size_t maxBitSize>
+	static inline void power(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
@@ -513,7 +513,7 @@ struct EcParam {
 	const char *gx;
 	const char *gy;
 	const char *n;
-	size_t bitLen; // bit length of p
+	size_t bitSize; // bit length of p
 };
 
 } // mcl

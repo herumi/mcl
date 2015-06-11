@@ -26,7 +26,7 @@ struct Test {
 		Fp::setModulo(para.p);
 		Zn::setModulo(para.n);
 		Ec::setParam(para.a, para.b);
-//		CYBOZU_TEST_EQUAL(para.bitLen, Fp(-1).getBitLen());
+//		CYBOZU_TEST_EQUAL(para.bitSize, Fp(-1).getBitLen());
 	}
 	void cstr() const
 	{

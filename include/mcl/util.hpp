@@ -86,17 +86,17 @@ void toArray(T *y, size_t yn, const mpz_srcptr x)
 
 /*
 	get random value less than in[]
-	n = (bitLen + sizeof(T) * 8) / (sizeof(T) * 8)
+	n = (bitSize + sizeof(T) * 8) / (sizeof(T) * 8)
 	input  in[0..n)
 	output out[n..n)
 	0 <= out < in
 */
 template<class RG, class T>
-void getRandVal(T *out, RG& rg, const T *in, size_t bitLen)
+void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 {
-	const size_t TBitN = sizeof(T) * 8;
-	const size_t n = (bitLen + TBitN - 1) / TBitN;
-	const size_t rem = bitLen & (TBitN - 1);
+	const size_t TbitSize = sizeof(T) * 8;
+	const size_t n = (bitSize + TbitSize - 1) / TbitSize;
+	const size_t rem = bitSize & (TbitSize - 1);
 	for (;;) {
 		rg.read(out, n);
 		if (rem > 0) out[n - 1] &= (T(1) << rem) - 1;

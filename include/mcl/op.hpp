@@ -8,8 +8,8 @@
 */
 #include <mcl/gmp_util.hpp>
 
-#ifndef MCL_MAX_OP_BIT_N
-	#define MCL_MAX_OP_BIT_N 521
+#ifndef MCL_MAX_OP_BIT_SIZE
+	#define MCL_MAX_OP_BIT_SIZE 521
 #endif
 
 namespace mcl { namespace fp {
@@ -19,9 +19,9 @@ typedef uint32_t Unit;
 #else
 typedef uint64_t Unit;
 #endif
-const size_t UnitBitN = sizeof(Unit) * 8;
+const size_t UnitBitSize = sizeof(Unit) * 8;
 
-const size_t maxOpUnitN = (MCL_MAX_OP_BIT_N + UnitBitN - 1) / UnitBitN;
+const size_t maxOpUnitSize = (MCL_MAX_OP_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
 
 struct FpGenerator;
 struct Op;
@@ -36,24 +36,24 @@ typedef int (*int2u)(Unit*, const Unit*);
 struct Block {
 	const Unit *p; // pointer to original FpT.v_
 	size_t n;
-	Unit v_[maxOpUnitN];
+	Unit v_[maxOpUnitSize];
 };
 
 struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
-	Unit p[maxOpUnitN];
+	Unit p[maxOpUnitSize];
 	/*
 		for Montgomery
 		one = 1
 		R = (1 << (N * sizeof(Unit) * 8)) % p
 		RR = (R * R) % p
 	*/
-	Unit one[maxOpUnitN];
-	Unit RR[maxOpUnitN];
+	Unit one[maxOpUnitSize];
+	Unit RR[maxOpUnitSize];
 	std::vector<Unit> invTbl;
 	size_t N;
-	size_t bitLen;
+	size_t bitSize;
 	// independent from p
 	bool (*isZero)(const Unit*);
 	void1u clear;
@@ -75,7 +75,7 @@ struct Op {
 	void3u modP;
 	FpGenerator *fg;
 	Op()
-		: N(0), bitLen(0)
+		: N(0), bitSize(0)
 		, isZero(0), clear(0), copy(0)
 		, neg(0), add(0), sub(0), mul(0)
 		, useMont(false), preInv(0)
@@ -95,7 +95,7 @@ struct Op {
 	{
 		mul(y, x, RR);
 	}
-	void init(const std::string& mstr, int base, size_t maxBitN);
+	void init(const std::string& mstr, int base, size_t maxBitSize);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
 private:

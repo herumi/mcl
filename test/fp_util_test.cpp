@@ -102,7 +102,7 @@ CYBOZU_TEST_AUTO(getRandVal)
 	const struct {
 		uint32_t r[rn];
 		uint32_t mod[2];
-		size_t bitLen;
+		size_t bitSize;
 		int count;
 		uint32_t expect[2];
 	} tbl[] = {
@@ -114,7 +114,7 @@ CYBOZU_TEST_AUTO(getRandVal)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Rand rg(tbl[i].r, rn);
 		uint32_t out[2];
-		mcl::fp::getRandVal(out, rg, tbl[i].mod, tbl[i].bitLen);
+		mcl::fp::getRandVal(out, rg, tbl[i].mod, tbl[i].bitSize);
 		CYBOZU_TEST_EQUAL(out[0], tbl[i].expect[0]);
 		CYBOZU_TEST_EQUAL(out[1], tbl[i].expect[1]);
 		CYBOZU_TEST_EQUAL(rg.count, tbl[i].count);

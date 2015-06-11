@@ -10,57 +10,57 @@
 namespace mcl { namespace fp {
 
 /*
-	get w-bit size from x[0, bitLen)
+	get w-bit size from x[0, bitSize)
 	@param x [in] data
-	@param bitLen [in] data size
-	@param w [in] split size < UnitBitN
+	@param bitSize [in] data size
+	@param w [in] split size < UnitBitSize
 */
 template<class T>
 struct ArrayIterator {
 	static const size_t TBitN = sizeof(T) * 8;
-	ArrayIterator(const T *x, size_t bitLen, size_t w)
+	ArrayIterator(const T *x, size_t bitSize, size_t w)
 		: x(x)
-		, bitLen(bitLen)
+		, bitSize(bitSize)
 		, w(w)
 		, pos(0)
 		, mask((w == TBitN ? 0 : (T(1) << w)) - 1)
 	{
 		assert(w <= TBitN);
 	}
-	bool hasNext() const { return bitLen > 0; }
+	bool hasNext() const { return bitSize > 0; }
 	T getNext()
 	{
 		if (w == TBitN) {
-			bitLen -= w;
+			bitSize -= w;
 			return *x++;
 		}
 		if (pos + w < TBitN) {
 			T v = (*x >> pos) & mask;
 			pos += w;
-			if (bitLen < w) {
-				bitLen = 0;
+			if (bitSize < w) {
+				bitSize = 0;
 			} else {
-				bitLen -= w;
+				bitSize -= w;
 			}
 			return v;
 		}
-		if (pos + bitLen <= TBitN) {
-			assert(bitLen <= w);
+		if (pos + bitSize <= TBitN) {
+			assert(bitSize <= w);
 			T v = *x >> pos;
-			assert((v >> bitLen) == 0);
-			bitLen = 0;
+			assert((v >> bitSize) == 0);
+			bitSize = 0;
 			return v & mask;
 		}
 		assert(pos > 0);
 		T v = (x[0] >> pos) | (x[1] << (TBitN - pos));
 		v &= mask;
 		pos = (pos + w) - TBitN;
-		bitLen -= w;
+		bitSize -= w;
 		x++;
 		return v;
 	}
 	const T *x;
-	size_t bitLen;
+	size_t bitSize;
 	size_t w;
 	size_t pos;
 	T mask;
@@ -70,28 +70,28 @@ template<class Ec>
 class WindowMethod {
 public:
 	typedef std::vector<Ec> EcV;
-	size_t bitLen_;
+	size_t bitSize_;
 	size_t winSize_;
 	std::vector<EcV> tbl_;
-	WindowMethod(const Ec& x, size_t bitLen, size_t winSize)
+	WindowMethod(const Ec& x, size_t bitSize, size_t winSize)
 	{
-		init(x, bitLen, winSize);
+		init(x, bitSize, winSize);
 	}
 	WindowMethod()
-		: bitLen_(0)
+		: bitSize_(0)
 		, winSize_(0)
 	{
 	}
 	/*
 		@param x [in] base index
-		@param bitLen [in] exponent bit length
+		@param bitSize [in] exponent bit length
 		@param winSize [in] window size
 	*/
-	void init(const Ec& x, size_t bitLen, size_t winSize)
+	void init(const Ec& x, size_t bitSize, size_t winSize)
 	{
-		bitLen_ = bitLen;
+		bitSize_ = bitSize;
 		winSize_ = winSize;
-		const size_t tblNum = (bitLen + winSize - 1) / winSize;
+		const size_t tblNum = (bitSize + winSize - 1) / winSize;
 		const size_t r = size_t(1) << winSize;
 		tbl_.resize(tblNum);
 		Ec t(x);
@@ -110,12 +110,12 @@ public:
 		@param z [out] x multiplied by y
 		@param y [in] exponent
 	*/
-	template<class tag2, size_t maxBitN2>
-	void power(Ec& z, const FpT<tag2, maxBitN2>& y) const
+	template<class tag2, size_t maxBitSize2>
+	void power(Ec& z, const FpT<tag2, maxBitSize2>& y) const
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powerArray(z, b.p, b.n * UnitBitN, false);
+		powerArray(z, b.p, b.n * UnitBitSize, false);
 	}
 	void power(Ec& z, int y) const
 	{
@@ -128,15 +128,15 @@ public:
 	}
 	void power(Ec& z, const mpz_class& y) const
 	{
-		powerArray(z, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size) * UnitBitN, y < 0);
+		powerArray(z, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size) * UnitBitSize, y < 0);
 	}
-	void powerArray(Ec& z, const Unit* y, size_t bitLen, bool isNegative) const
+	void powerArray(Ec& z, const Unit* y, size_t bitSize, bool isNegative) const
 	{
-		if ((bitLen + winSize_ - 1) / winSize_ > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powerArray:bad value") << bitLen << bitLen_ << winSize_;
+		if ((bitSize + winSize_ - 1) / winSize_ > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powerArray:bad value") << bitSize << bitSize_ << winSize_;
 		z.clear();
-		if (bitLen == 0) return;
+		if (bitSize == 0) return;
 		size_t i = 0;
-		ArrayIterator<Unit> ai(y, bitLen, winSize_);
+		ArrayIterator<Unit> ai(y, bitSize, winSize_);
 		do {
 			Unit v = ai.getNext();
 			if (v) {

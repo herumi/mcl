@@ -98,11 +98,11 @@ struct ElgamalT {
 		}
 		void fromBitVec(const cybozu::BitVector& bv)
 		{
-			size_t bitLen = G::getBitVecSize();
+			size_t bitSize = G::getBitVecSize();
 			cybozu::BitVector t;
-			bv.extract(t, 0, bitLen);
+			bv.extract(t, 0, bitSize);
 			c1.fromBitVec(t);
-			bv.extract(t, bitLen, bitLen);
+			bv.extract(t, bitSize, bitSize);
 			c2.fromBitVec(t);
 		}
 		static inline size_t getBitVecSize()
@@ -146,7 +146,7 @@ struct ElgamalT {
 
 	class PublicKey {
 		typedef _G G;
-		size_t bitLen;
+		size_t bitSize;
 		G f;
 		G g;
 		G h;
@@ -171,21 +171,21 @@ struct ElgamalT {
 		void powerH(G& z, const N& n) const { powerSub(z, h, n, powh); }
 	public:
 		PublicKey()
-			: bitLen(0)
+			: bitSize(0)
 			, enablePowerWindow_(false)
 		{
 		}
 		void enablePowerWindow(size_t winSize = 10)
 		{
-			powf.init(f, bitLen, winSize);
-			powg.init(g, bitLen, winSize);
-			powh.init(h, bitLen, winSize);
+			powf.init(f, bitSize, winSize);
+			powg.init(g, bitSize, winSize);
+			powh.init(h, bitSize, winSize);
 			enablePowerWindow_ = true;
 		}
 		const G& getF() const { return f; }
-		void init(size_t bitLen, const G& f, const G& g, const G& h)
+		void init(size_t bitSize, const G& f, const G& g, const G& h)
 		{
-			this->bitLen = bitLen;
+			this->bitSize = bitSize;
 			this->f = f;
 			this->g = g;
 			this->h = h;
@@ -343,18 +343,18 @@ struct ElgamalT {
 		friend inline std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
 			std::ios_base::fmtflags flags = os.flags();
-			os << std::dec << self.bitLen << ' ' << std::hex << self.f << ' ' << self.g << ' ' << self.h;
+			os << std::dec << self.bitSize << ' ' << std::hex << self.f << ' ' << self.g << ' ' << self.h;
 			os.flags(flags);
 			return os;
 		}
 		friend inline std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
 			std::ios_base::fmtflags flags = is.flags();
-			size_t bitLen;
+			size_t bitSize;
 			G f, g, h;
-			is >> std::dec >> bitLen >> std::hex >> f >> g >> h;
+			is >> std::dec >> bitSize >> std::hex >> f >> g >> h;
 			is.flags(flags);
-			self.init(bitLen, f, g, h);
+			self.init(bitSize, f, g, h);
 			return is;
 		}
 	};
@@ -373,14 +373,14 @@ struct ElgamalT {
 			h = g^z
 		*/
 		template<class RG>
-		void init(const G& f, size_t bitLen, RG& rg)
+		void init(const G& f, size_t bitSize, RG& rg)
 		{
 			G g, h;
 			z.setRand(rg);
 			G::power(g, f, z);
 			z.setRand(rg);
 			G::power(h, g, z);
-			pub.init(bitLen, f, g, h);
+			pub.init(bitSize, f, g, h);
 		}
 		const PublicKey& getPublicKey() const { return pub; }
 		/*

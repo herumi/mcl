@@ -191,13 +191,13 @@ CYBOZU_TEST_AUTO(testEc)
 	Ec::setParam(para.a, para.b);
 	const Fp x0(para.gx);
 	const Fp y0(para.gy);
-	const size_t bitLen = Zn(-1).getBitLen();
+	const size_t bitSize = Zn(-1).getBitLen();
 	const Ec P(x0, y0);
 	/*
 		Zn = <P>
 	*/
 	ElgamalEc::PrivateKey prv;
-	prv.init(P, bitLen, rg);
+	prv.init(P, bitSize, rg);
 	const ElgamalEc::PublicKey& pub = prv.getPublicKey();
 
 	const int m1 = 12345;

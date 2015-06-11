@@ -262,11 +262,11 @@ struct Gmp {
 		return x.get_mpz_t()->_mp_size;
 	}
 	template<class RG>
-	static inline void getRand(mpz_class& z, size_t bitLen, RG& rg)
+	static inline void getRand(mpz_class& z, size_t bitSize, RG& rg)
 	{
-		assert(bitLen > 1);
-		const size_t rem = bitLen & 31;
-		const size_t n = (bitLen + 31) / 32;
+		assert(bitSize > 1);
+		const size_t rem = bitSize & 31;
+		const size_t n = (bitSize + 31) / 32;
 		std::vector<uint32_t> buf(n);
 		rg.read(buf.data(), n);
 		uint32_t v = buf[n - 1];
@@ -280,13 +280,13 @@ struct Gmp {
 		Gmp::setArray(z, &buf[0], n);
 	}
 	template<class RG>
-	static void getRandPrime(mpz_class& z, size_t bitLen, RG& rg, bool setSecondBit = false, bool mustBe3mod4 = false)
+	static void getRandPrime(mpz_class& z, size_t bitSize, RG& rg, bool setSecondBit = false, bool mustBe3mod4 = false)
 	{
-		assert(bitLen > 2);
+		assert(bitSize > 2);
 		do {
-			getRand(z, bitLen, rg);
+			getRand(z, bitSize, rg);
 			if (setSecondBit) {
-				z |= mpz_class(1) << (bitLen - 2);
+				z |= mpz_class(1) << (bitSize - 2);
 			}
 			if (mustBe3mod4) {
 				z |= 3;

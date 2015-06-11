@@ -35,13 +35,13 @@ void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base);
 
 } // mcl::fp
 
-template<class tag = fp::TagDefault, size_t maxBitN = MCL_MAX_OP_BIT_N>
+template<class tag = fp::TagDefault, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
 class FpT {
 	typedef fp::Unit Unit;
-	static const size_t maxN = (maxBitN + fp::UnitBitN - 1) / fp::UnitBitN;
+	static const size_t maxSize = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
 	static fp::Op op_;
-	template<class tag2, size_t maxBitN2> friend class FpT;
-	Unit v_[maxN];
+	template<class tag2, size_t maxBitSize2> friend class FpT;
+	Unit v_[maxSize];
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
@@ -56,14 +56,14 @@ public:
 	}
 	static inline void setModulo(const std::string& mstr, int base = 0)
 	{
-		assert(maxBitN <= MCL_MAX_OP_BIT_N);
+		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
 		op_.neg = negW;
 		op_.add = addW;
 		op_.sub = subW;
 		op_.mul = mulW;
-		op_.init(mstr, base, maxBitN);
+		op_.init(mstr, base, maxBitSize);
 	}
 	static inline void getModulo(std::string& pstr)
 	{
@@ -143,27 +143,27 @@ public:
 	template<class S>
 	void setArray(const S *inBuf, size_t n)
 	{
-		const size_t byteN = sizeof(S) * n;
-		const size_t fpByteN = sizeof(Unit) * op_.N;
-		if (byteN > fpByteN) throw cybozu::Exception("FpT:setArray:bad n") << n << fpByteN;
-		assert(byteN <= fpByteN);
-		memcpy(v_, inBuf, byteN);
-		memset((char *)v_ + byteN, 0, fpByteN - byteN);
+		const size_t SbyteSize = sizeof(S) * n;
+		const size_t fpByteSize = sizeof(Unit) * op_.N;
+		if (SbyteSize > fpByteSize) throw cybozu::Exception("FpT:setArray:bad n") << n << fpByteSize;
+		assert(SbyteSize <= fpByteSize);
+		memcpy(v_, inBuf, SbyteSize);
+		memset((char *)v_ + SbyteSize, 0, fpByteSize - SbyteSize);
 		if (!isValid()) throw cybozu::Exception("FpT:setArray:large value");
 		toMont(*this, *this);
 	}
 	template<class S>
 	size_t getArray(S *outBuf, size_t n) const
 	{
-		const size_t byteN = sizeof(S) * n;
-		const size_t fpByteN = sizeof(Unit) * op_.N;
-		if (byteN < fpByteN) throw cybozu::Exception("FpT:getArray:bad n") << n << fpByteN;
-		assert(byteN >= fpByteN);
+		const size_t SbyteSize = sizeof(S) * n;
+		const size_t fpByteSize = sizeof(Unit) * op_.N;
+		if (SbyteSize < fpByteSize) throw cybozu::Exception("FpT:getArray:bad n") << n << fpByteSize;
+		assert(SbyteSize >= fpByteSize);
 		fp::Block b;
 		getBlock(b);
-		memcpy(outBuf, b.p, fpByteN);
-		const size_t writeN = (fpByteN + sizeof(S) - 1) / sizeof(S);
-		memset((char *)outBuf + fpByteN, 0, writeN * sizeof(S) - fpByteN);
+		memcpy(outBuf, b.p, fpByteSize);
+		const size_t writeN = (fpByteSize + sizeof(S) - 1) / sizeof(S);
+		memset((char *)outBuf + fpByteSize, 0, writeN * sizeof(S) - fpByteSize);
 		return writeN;
 	}
 	void getBlock(fp::Block& b) const
@@ -179,7 +179,7 @@ public:
 	template<class RG>
 	void setRand(RG& rg)
 	{
-		fp::getRandVal(v_, rg, op_.p, op_.bitLen);
+		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
 		toMont(*this, *this);
 	}
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
@@ -228,8 +228,8 @@ public:
 		fp::powerArray(out, x, y, yn, FpT::mul, FpT::square);
 		z = out;
 	}
-	template<class tag2, size_t maxBitN2>
-	static inline void power(FpT& z, const FpT& x, const FpT<tag2, maxBitN2>& y)
+	template<class tag2, size_t maxBitSize2>
+	static inline void power(FpT& z, const FpT& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
@@ -251,7 +251,7 @@ public:
 	{
 		return fp::compareArray(v_, op_.p, op_.N) < 0;
 	}
-	static inline size_t getModBitLen() { return op_.bitLen; }
+	static inline size_t getModBitLen() { return op_.bitSize; }
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	inline friend FpT operator+(const FpT& x, const FpT& y) { FpT z; add(z, x, y); return z; }
@@ -319,7 +319,7 @@ public:
 	}
 	static inline void mulW(Unit *z, const Unit *x, const Unit *y)
 	{
-		Unit xy[maxN * 2];
+		Unit xy[maxSize * 2];
 		op_.mulPreP(xy, x, y);
 		op_.modP(z, xy, op_.p);
 	}
@@ -330,16 +330,16 @@ public:
 private:
 };
 
-template<class tag, size_t maxBitN> fp::Op FpT<tag, maxBitN>::op_;
+template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 
 } // mcl
 
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 template<class T> struct hash;
 
-template<class tag, size_t maxBitN>
-struct hash<mcl::FpT<tag, maxBitN> > : public std::unary_function<mcl::FpT<tag, maxBitN>, size_t> {
-	size_t operator()(const mcl::FpT<tag, maxBitN>& x, uint64_t v = 0) const
+template<class tag, size_t maxBitSize>
+struct hash<mcl::FpT<tag, maxBitSize> > : public std::unary_function<mcl::FpT<tag, maxBitSize>, size_t> {
+	size_t operator()(const mcl::FpT<tag, maxBitSize>& x, uint64_t v = 0) const
 	{
 		return static_cast<size_t>(cybozu::hash64(x.getUnit(), x.getUnitSize(), v));
 	}

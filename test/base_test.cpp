@@ -18,9 +18,9 @@
 const size_t MAX_N = 32;
 typedef mcl::fp::Unit Unit;
 
-size_t getUnitSize(size_t bitLen)
+size_t getUnitSize(size_t bitSize)
 {
-	return (bitLen + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
+	return (bitSize + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
 }
 
 void setMpz(mpz_class& mx, const Unit *x, size_t n)
@@ -199,7 +199,7 @@ typedef mcl::fp::void4op void4op;
 typedef mcl::fp::void4Iop void4Iop;
 
 const struct FuncOp {
-	size_t bitLen;
+	size_t bitSize;
 	void4op addS;
 	void4op addL;
 	void4op subS;
@@ -227,7 +227,7 @@ const struct FuncOp {
 #endif
 };
 
-FuncOp getFuncOp(size_t bitLen)
+FuncOp getFuncOp(size_t bitSize)
 {
 	typedef std::map<size_t, FuncOp> Map;
 	static Map map;
@@ -235,28 +235,28 @@ FuncOp getFuncOp(size_t bitLen)
 	if (!init) {
 		init = true;
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(gFuncOpTbl); i++) {
-			map[gFuncOpTbl[i].bitLen] = gFuncOpTbl[i];
+			map[gFuncOpTbl[i].bitSize] = gFuncOpTbl[i];
 		}
 	}
 	for (Map::const_iterator i = map.begin(), ie = map.end(); i != ie; ++i) {
-		if (bitLen <= i->second.bitLen) {
+		if (bitSize <= i->second.bitSize) {
 			return i->second;
 		}
 	}
-	printf("ERR bitLen=%d\n", (int)bitLen);
+	printf("ERR bitSize=%d\n", (int)bitSize);
 	exit(1);
 }
 
-void test(const Unit *p, size_t bitLen)
+void test(const Unit *p, size_t bitSize)
 {
-	printf("bitLen %d\n", (int)bitLen);
-	const size_t n = getUnitSize(bitLen);
+	printf("bitSize %d\n", (int)bitSize);
+	const size_t n = getUnitSize(bitSize);
 #ifdef NDEBUG
 	bool doBench = true;
 #else
 	bool doBench = false;
 #endif
-	const FuncOp funcOp = getFuncOp(bitLen);
+	const FuncOp funcOp = getFuncOp(bitSize);
 	const void4op addS = funcOp.addS;
 	const void4op addL = funcOp.addL;
 	const void4op subS = funcOp.subS;
@@ -269,8 +269,8 @@ void test(const Unit *p, size_t bitLen)
 	mcl::fp::Unit z2[MAX_N * 2];
 	mcl::fp::Unit w2[MAX_N * 2];
 	cybozu::XorShift rg;
-	mcl::fp::getRandVal(x, rg, p, bitLen);
-	mcl::fp::getRandVal(y, rg, p, bitLen);
+	mcl::fp::getRandVal(x, rg, p, bitSize);
+	mcl::fp::getRandVal(y, rg, p, bitSize);
 	const size_t C = 10;
 
 	addC(z, x, y, p, n);
@@ -298,7 +298,7 @@ void test(const Unit *p, size_t bitLen)
 		setMpz(mp, p, n);
 		Montgomery m(mp);
 #ifdef USE_XBYAK
-		if (bitLen > 128) fg.init(p, n);
+		if (bitSize > 128) fg.init(p, n);
 #endif
 		/*
 			real mont
@@ -323,7 +323,7 @@ void test(const Unit *p, size_t bitLen)
 				mont(w, x, y, p, m.r_);
 				VERIFY_EQUAL(z, w, n);
 #ifdef USE_XBYAK
-				if (bitLen > 128) {
+				if (bitSize > 128) {
 					fg.mul_(w, x, y);
 					VERIFY_EQUAL(z, w, n);
 				}
@@ -345,7 +345,7 @@ void test(const Unit *p, size_t bitLen)
 		CYBOZU_BENCH("modC   ", modC, x, w2, p, n);
 	}
 #ifdef USE_XBYAK
-	if (bitLen <= 128) return;
+	if (bitSize <= 128) return;
 	if (doBench) {
 		fg.init(p, n);
 		CYBOZU_BENCH("addA   ", fg.add_, x, y, x);
@@ -353,7 +353,7 @@ void test(const Unit *p, size_t bitLen)
 //		CYBOZU_BENCH("mulA", fg.mul_, x, y, x);
 	}
 #endif
-	printf("mont test %d\n", (int)bitLen);
+	printf("mont test %d\n", (int)bitSize);
 }
 
 CYBOZU_TEST_AUTO(all)
@@ -385,8 +385,8 @@ CYBOZU_TEST_AUTO(all)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const size_t n = tbl[i].n;
-		const size_t bitLen = (n - 1) * 64 + cybozu::bsr<uint64_t>(tbl[i].p[n - 1]) + 1;
-		test((const Unit*)tbl[i].p, bitLen);
+		const size_t bitSize = (n - 1) * 64 + cybozu::bsr<uint64_t>(tbl[i].p[n - 1]) + 1;
+		test((const Unit*)tbl[i].p, bitSize);
 	}
 }
 
