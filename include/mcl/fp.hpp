@@ -16,9 +16,6 @@
 		#define NOMINMAX
 	#endif
 #endif
-#if defined(_WIN64) || defined(__x86_64__)
-//	#define USE_MONT_FP
-#endif
 #include <cybozu/hash.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
@@ -31,7 +28,12 @@ struct TagDefault;
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix);
 
-void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base);
+/*
+	set x and y[] with abs(str)
+	pBitSize is set if not null
+	return true if str is negative
+*/
+bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, const std::string& str, int base);
 
 bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
 
@@ -132,20 +134,16 @@ public:
 	}
 	void setStr(const std::string& str, int base = 0)
 	{
-		bool isMinus;
 		mpz_class x;
-		fp::strToGmp(x, &isMinus, str, base);
+		bool isMinus = fp::strToMpzArray(0, v_, op_.N * fp::UnitBitSize, x, str, base);
 		if (x >= op_.mp) throw cybozu::Exception("FpT:setStr:large str") << str << op_.mp;
-		fp::toArray(v_, op_.N, x.get_mpz_t());
 		if (isMinus) {
 			neg(*this, *this);
 		}
 		toMont(*this, *this);
 	}
 	/*
-		if doMask
-		trim inBuf and sub p if necessary
-		otherwise throw exception if inBuf >= p
+		throw exception if inBuf >= p
 	*/
 	template<class S>
 	void setArray(const S *inBuf, size_t n)
@@ -155,6 +153,9 @@ public:
 		}
 		toMont(*this, *this);
 	}
+	/*
+		mask inBuf with (1 << (bitLen - 1)) - 1
+	*/
 	template<class S>
 	void setArrayMask(const S *inBuf, size_t n)
 	{
@@ -338,7 +339,6 @@ public:
 	{
 		op_.negP(y, x, op_.p);
 	}
-private:
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;

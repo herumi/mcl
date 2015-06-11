@@ -84,6 +84,12 @@ void toArray(T *y, size_t yn, const mpz_srcptr x)
 	clearArray(y, xn, yn);
 }
 
+template<class T>
+void toArray(T *y, size_t yn, const mpz_class& x)
+{
+	toArray(y, yn, x.get_mpz_t());
+}
+
 /*
 	get random value less than in[]
 	n = (bitSize + sizeof(T) * 8) / (sizeof(T) * 8)

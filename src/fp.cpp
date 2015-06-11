@@ -56,14 +56,19 @@ inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 	return p;
 }
 
-void strToGmp(mpz_class& x, bool *isMinus, const std::string& str, int base)
+bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, const std::string& str, int base)
 {
-	const char *p = fp::verifyStr(isMinus, &base, str);
+	bool isMinus;
+	const char *p = verifyStr(&isMinus, &base, str);
 	if (!Gmp::setStr(x, p, base)) {
-		throw cybozu::Exception("fp:FpT:inFromStr") << str;
+		throw cybozu::Exception("fp:strToMpzArray:bad format") << str;
 	}
+	const size_t bitSize = Gmp::getBitSize(x);
+	if (bitSize > maxBitSize) throw cybozu::Exception("fp:strToMpzArray:too large str") << str << bitSize << maxBitSize;
+	if (pBitSize) *pBitSize = bitSize;
+	fp::toArray(y, (maxBitSize + UnitBitSize - 1) / UnitBitSize, x);
+	return isMinus;
 }
-
 
 template<size_t bitSize>
 struct OpeFunc {
@@ -197,13 +202,10 @@ inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 	*/
 	op.mul(y, r, op.invTbl.data() + k * op.N);
 }
-static void fromRawGmp(Unit *y, size_t n, const mpz_class& x)
+
+static void initInvTbl(Op& op)
 {
-	toArray(y, n, x.get_mpz_t());
-}
-static void initInvTbl(Op& op, size_t N)
-{
-	assert(N <= maxOpUnitSize);
+	const size_t N = op.N;
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	op.invTbl.resize(invTblN * N);
 	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
@@ -218,13 +220,13 @@ static void initInvTbl(Op& op, size_t N)
 
 static void initForMont(Op& op, const Unit *p)
 {
-	size_t N = (op.bitSize + sizeof(Unit) * 8 - 1) / (sizeof(Unit) * 8);
-	if (N < 2) N = 2;
+	const size_t N = op.N;
+	assert(N >= 2);
 	mpz_class t = 1;
-	fromRawGmp(op.one, N, t);
+	toArray(op.one, N, t);
 	t = (t << (N * 64)) % op.mp;
 	t = (t * t) % op.mp;
-	fromRawGmp(op.RR, N, t);
+	toArray(op.RR, N, t);
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
 	fg->init(p, (int)N);
@@ -237,21 +239,15 @@ static void initForMont(Op& op, const Unit *p)
 	op.invOp = &invOpForMont;
 	op.useMont = true;
 
-	initInvTbl(op, N);
+	initInvTbl(op);
 }
 #endif
 
-
 void Op::init(const std::string& mstr, int base, size_t maxBitSize)
 {
-	static const size_t maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
-	bool isMinus;
-	strToGmp(mp, &isMinus, mstr, base);
+	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
-	bitSize = Gmp::getBitSize(mp);
-	if (bitSize > maxBitSize) throw cybozu::Exception("Op:init:too large bitSize") << mstr << bitSize << maxBitSize;
-	const size_t n = Gmp::getArray(p, maxN, mp);
-	if (n == 0) throw cybozu::Exception("Op:init:bad mstr") << mstr;
+	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 
 	if (bitSize <= 128) {
 		SET_OP(128)
@@ -328,13 +324,9 @@ bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool do
 	memset((char *)y + xByteSize, 0, fpByteSize - xByteSize);
 	if (!doMask) return compareArray(y, op.p, op.N) < 0;
 
-	Unit r = op.bitSize % UnitBitSize;
-	if (r) {
-		y[op.N - 1] &= (Unit(1) << r) - 1;
-	}
-	if (compareArray(y, op.p, op.N) >= 0) {
-		op.subP(y, y, op.p, op.p);
-	}
+	const Unit r = op.bitSize % UnitBitSize;
+	y[op.N - 1] &= r ? (Unit(1) << (r - 1)) - 1 : Unit(-1);
+	assert(compareArray(y, op.p, op.N) < 0);
 	return true;
 }
 
