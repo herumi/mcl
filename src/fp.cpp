@@ -322,11 +322,7 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool do
 		if (compareArray(y, op.p, op.N) >= 0) throw cybozu::Exception("fp:copyAndMask:large x");
 		return;
 	}
-	/*
-		x &= mask(op.bitSize - 1);
-	*/
-	const Unit r = op.bitSize % UnitBitSize;
-	y[op.N - 1] &= r ? (Unit(1) << (r - 1)) - 1 : Unit(-1);
+	maskArray(y, op.N, op.bitSize - 1);
 	assert(compareArray(y, op.p, op.N) < 0);
 }
 

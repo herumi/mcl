@@ -347,6 +347,7 @@ CYBOZU_TEST_AUTO(setArrayMask)
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 1, "0x234567a4" },
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 2, "0x1234567a4" },
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x00000000000001234567a4" },
+		{ { 0x234567a5, 0xfffffff1, 0xffffffff}, 3, "0x0ffffffffffff1234567a5" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		x.setArrayMask(tbl[i].buf, tbl[i].bufN);
