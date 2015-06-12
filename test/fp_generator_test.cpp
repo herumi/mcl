@@ -23,28 +23,11 @@ const char *primeTable[] = {
 	"2523648240000001ba344d80000000086121000000000013a700000000000013", // 254bit(not full)
 };
 
-/*
-	p is output buffer
-	pStr is hex
-	return the size of p
-*/
-int convertToArray(uint64_t *p, const mpz_class& x)
-{
-	const int pn = int(sizeof(mp_limb_t) * x.get_mpz_t()->_mp_size / sizeof(*p));
-	if (pn > MAX_N) {
-		printf("pn(%d) is too large\n", pn);
-		exit(1);
-	}
-	const uint64_t *q = (const uint64_t*)x.get_mpz_t()->_mp_d;
-	std::copy(q, q + pn, p);
-	std::fill(p + pn, p + MAX_N, 0);
-	return pn;
-}
-int convertToArray(uint64_t *p, const char *pStr)
+void strToArray(uint64_t *p, size_t n, const char *pStr)
 {
 	mpz_class x;
-	x.set_str(pStr, 16);
-	return convertToArray(p, x);
+	mcl::Gmp::setStr(x, pStr, 16);
+	mcl::Gmp::getArray(p, n, x);
 }
 
 struct Int {
@@ -65,7 +48,7 @@ struct Int {
 	void set(const char *str) { setStr(str); }
 	void set(const Fp& rhs)
 	{
-		convertToArray(v, rhs.getMpz());
+		mcl::Gmp::getArray(v, MAX_N, rhs.getMpz());
 	}
 	void set(const uint64_t* x)
 	{
@@ -73,7 +56,7 @@ struct Int {
 	}
 	void setStr(const char *str)
 	{
-		convertToArray(v, str);
+		strToArray(v, MAX_N, str);
 	}
 	std::string getStr() const
 	{
@@ -202,7 +185,8 @@ void test(const char *pStr)
 {
 	Fp::setModulo(pStr, 16);
 	uint64_t p[MAX_N];
-	const int pn = convertToArray(p, pStr);
+	strToArray(p, MAX_N, pStr);
+	const int pn = mcl::fp::getNonZeroArraySize(p, MAX_N);
 	printf("pn=%d\n", pn);
 	mcl::fp::FpGenerator fg;
 	fg.init(p, pn);
