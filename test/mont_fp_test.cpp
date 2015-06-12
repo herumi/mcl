@@ -130,12 +130,10 @@ struct Test {
 		compare();
 		modulo();
 		ope();
-		cvtInt();
 		power();
 		power_Zn();
 		setArray();
 		set64bit();
-		getArray();
 		bench();
 	}
 	void cstr()
@@ -434,21 +432,6 @@ struct Test {
 			CYBOZU_TEST_EQUAL(z, castTo<Fp>(tbl[i].x));
 		}
 	}
-	void cvtInt()
-	{
-#if 0
-		Fp x;
-		x = 12345;
-		uint64_t y = x.cvtInt();
-		CYBOZU_TEST_EQUAL(y, 12345u);
-		x.setStr("123456789012342342342342342");
-		CYBOZU_TEST_EXCEPTION(x.cvtInt(), cybozu::Exception);
-		bool err = false;
-		CYBOZU_TEST_NO_EXCEPTION(x.cvtInt(&err));
-		CYBOZU_TEST_ASSERT(err);
-#endif
-	}
-
 	void power()
 	{
 		Fp x, y, z;
@@ -501,30 +484,6 @@ struct Test {
 			Fp y(tbl[i].i);
 			if (tbl[i].i < 0) x = -x;
 			CYBOZU_TEST_EQUAL(x, y);
-		}
-	}
-
-	void getArray()
-	{
-		const struct {
-			const char *s;
-			uint32_t v[4];
-			size_t vn;
-		} tbl[] = {
-			{ "0", { 0, 0, 0, 0 }, 1 },
-			{ "1234", { 1234, 0, 0, 0 }, 1 },
-			{ "0xaabbccdd12345678", { 0x12345678, 0xaabbccdd, 0, 0 }, 2 },
-			{ "0x11112222333344445555666677778888", { 0x77778888, 0x55556666, 0x33334444, 0x11112222 }, 4 },
-		};
-		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			mpz_class x(tbl[i].s);
-			const size_t bufN = 8;
-			uint32_t buf[bufN];
-			size_t n = mcl::Gmp::getArray(buf, bufN, x);
-			CYBOZU_TEST_EQUAL(n, tbl[i].vn);
-			for (size_t j = 0; j < n; j++) {
-				CYBOZU_TEST_EQUAL(buf[j], tbl[i].v[j]);
-			}
 		}
 	}
 	void bench()

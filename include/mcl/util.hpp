@@ -73,23 +73,38 @@ void copyArray(T *y, const T *x, size_t n)
 	for (size_t i = 0; i < n; i++) y[i] = x[i];
 }
 
+/*
+	x &= (1 << bitSize) - 1
+*/
 template<class T>
-void toArray(T *y, size_t yn, const mpz_srcptr x)
+void maskArray(T *x, size_t n, size_t bitSize)
 {
-	const int xn = x->_mp_size;
-	assert(xn >= 0);
-	const T* xp = (const T*)x->_mp_d;
-	assert(xn <= (int)yn);
-	copyArray(y, xp, xn);
-	clearArray(y, xn, yn);
+	const size_t TbitSize = sizeof(T) * 8;
+	assert(bitSize <= TbitSize * n);
+	const size_t q = bitSize / TbitSize;
+	const size_t r = bitSize % TbitSize;
+	if (r) {
+		x[q] &= (T(1) << r) - 1;
+		clearArray(x, q + 1, n);
+	} else {
+		clearArray(x, q, n);
+	}
 }
 
+/*
+	return non zero size of x[]
+	return 1 if x[] == 0
+*/
 template<class T>
-void toArray(T *y, size_t yn, const mpz_class& x)
+size_t getNonZeroArraySize(const T *x, size_t n)
 {
-	toArray(y, yn, x.get_mpz_t());
+	assert(n > 0);
+	while (n > 0) {
+		if (x[n - 1]) return n;
+		n--;
+	}
+	return 1;
 }
-
 /*
 	get random value less than in[]
 	n = (bitSize + sizeof(T) * 8) / (sizeof(T) * 8)

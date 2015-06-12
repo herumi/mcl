@@ -295,6 +295,7 @@ CYBOZU_TEST_AUTO(another)
 	CYBOZU_TEST_EQUAL(a, 1);
 }
 
+void fff(){}
 
 CYBOZU_TEST_AUTO(setArray)
 {
@@ -306,7 +307,6 @@ CYBOZU_TEST_AUTO(setArray)
 	int b2[] = { 0x12, 0x34 };
 	x.setArray(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
-	x.setStr("0xffffffffffff");
 
 	Fp::setModulo("0x10000000000001234567a5");
 	const struct {
@@ -316,6 +316,8 @@ CYBOZU_TEST_AUTO(setArray)
 	} tbl[] = {
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 1, "0x234567a4" },
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 2, "0x1234567a4" },
+		{ { 0x234567a4, 0x00000001, 0x00080000}, 3, "0x08000000000001234567a4" },
+		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x10000000000001234567a4" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		x.setArray(tbl[i].buf, tbl[i].bufN);
@@ -325,6 +327,32 @@ CYBOZU_TEST_AUTO(setArray)
 	CYBOZU_TEST_EXCEPTION(x.setArray(large, 3), cybozu::Exception);
 }
 
+CYBOZU_TEST_AUTO(setArrayMask)
+{
+	Fp::setModulo("1000000000000000000117");
+	char b1[] = { 0x56, 0x34, 0x12 };
+	Fp x;
+	x.setArrayMask(b1, 3);
+	CYBOZU_TEST_EQUAL(x, 0x123456);
+	int b2[] = { 0x12, 0x34 };
+	x.setArrayMask(b2, 2);
+	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
+
+	Fp::setModulo("0x10000000000001234567a5");
+	const struct {
+		uint32_t buf[3];
+		size_t bufN;
+		const char *expected;
+	} tbl[] = {
+		{ { 0x234567a4, 0x00000001, 0x00100000}, 1, "0x234567a4" },
+		{ { 0x234567a4, 0x00000001, 0x00100000}, 2, "0x1234567a4" },
+		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x00000000000001234567a4" },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		x.setArrayMask(tbl[i].buf, tbl[i].bufN);
+		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
+	}
+}
 
 CYBOZU_TEST_AUTO(set64bit)
 {
@@ -359,7 +387,8 @@ CYBOZU_TEST_AUTO(getArray)
 		mpz_class x(tbl[i].s);
 		const size_t bufN = 8;
 		uint32_t buf[bufN];
-		size_t n = mcl::Gmp::getArray(buf, bufN, x);
+		mcl::Gmp::getArray(buf, bufN, x);
+		size_t n = mcl::fp::getNonZeroArraySize(buf, bufN);
 		CYBOZU_TEST_EQUAL(n, tbl[i].vn);
 		CYBOZU_TEST_EQUAL_ARRAY(buf, tbl[i].v, n);
 	}

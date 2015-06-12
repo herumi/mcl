@@ -121,3 +121,19 @@ CYBOZU_TEST_AUTO(getRandVal)
 	}
 }
 
+CYBOZU_TEST_AUTO(maskArray)
+{
+	const size_t n = 4;
+	uint16_t org[n] = { 0x1234, 0xabce, 0xef32, 0xffff };
+	for (size_t i = 0; i <= sizeof(org) * 8; i++) {
+		uint16_t x[n];
+		memcpy(x, org, sizeof(org));
+		mcl::fp::maskArray(x, n, i);
+		mpz_class t;
+		mcl::Gmp::setArray(t, org, n);
+		t &= (mpz_class(1) << i) - 1;
+		uint16_t y[n];
+		mcl::Gmp::getArray(y, n, t);
+		CYBOZU_TEST_EQUAL_ARRAY(x, y, n);
+	}
+}

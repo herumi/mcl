@@ -35,7 +35,7 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 */
 bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, const std::string& str, int base);
 
-bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
+void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
 
 } // mcl::fp
 
@@ -143,14 +143,12 @@ public:
 		toMont(*this, *this);
 	}
 	/*
-		throw exception if inBuf >= p
+		throw exception if x >= p
 	*/
 	template<class S>
-	void setArray(const S *inBuf, size_t n)
+	void setArray(const S *x, size_t n)
 	{
-		if (!fp::copyAndMask(v_, inBuf, sizeof(S) * n, op_, false)) {
-			throw cybozu::Exception("FpT:setArray:large value") << n;
-		}
+		fp::copyAndMask(v_, x, sizeof(S) * n, op_, false);
 		toMont(*this, *this);
 	}
 	/*

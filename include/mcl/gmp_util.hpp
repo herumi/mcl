@@ -70,19 +70,24 @@ struct Gmp {
 		mpz_import(z.get_mpz_t(), n, -1, sizeof(*buf), 0, 0, buf);
 	}
 	/*
-		return positive written size
-		return 0 if failure
+		buf[0, size) = x
+		buf[size, maxSize) with zero
 	*/
 	template<class T>
-	static size_t getArray(T *buf, size_t maxSize, const mpz_class& x)
+	static void getArray(T *buf, size_t maxSize, const mpz_srcptr x)
 	{
-		const size_t totalSize = sizeof(T) * maxSize;
-		if (getBitSize(x) > totalSize * 8) return 0;
-		memset(buf, 0, sizeof(*buf) * maxSize);
-		size_t size;
-		mpz_export(buf, &size, -1, sizeof(T), 0, 0, x.get_mpz_t());
-		// if x == 0, then size = 0 for gmp, size = 1 for mpir
-		return size == 0 ? 1 : size;
+		const size_t bufByteSize = sizeof(T) * maxSize;
+		const int xn = x->_mp_size;
+		if (xn < 0) throw cybozu::Exception("Gmp:getArray:x is negative");
+		size_t xByteSize = sizeof(*x->_mp_d) * xn;
+		if (xByteSize > bufByteSize) throw cybozu::Exception("Gmp:getArray:too small") << maxSize;
+		memcpy(buf, x->_mp_d, xByteSize);
+		memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
+	}
+	template<class T>
+	static void getArray(T *buf, size_t maxSize, const mpz_class& x)
+	{
+		getArray(buf, maxSize, x.get_mpz_t());
 	}
 	static inline void set(mpz_class& z, uint64_t x)
 	{

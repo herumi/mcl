@@ -66,7 +66,7 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 	const size_t bitSize = Gmp::getBitSize(x);
 	if (bitSize > maxBitSize) throw cybozu::Exception("fp:strToMpzArray:too large str") << str << bitSize << maxBitSize;
 	if (pBitSize) *pBitSize = bitSize;
-	fp::toArray(y, (maxBitSize + UnitBitSize - 1) / UnitBitSize, x);
+	Gmp::getArray(y, (maxBitSize + UnitBitSize - 1) / UnitBitSize, x);
 	return isMinus;
 }
 
@@ -76,11 +76,7 @@ struct OpeFunc {
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
 		z->_mp_alloc = n;
-		int i = n;
-		while (i > 0 && p[i - 1] == 0) {
-			i--;
-		}
-		z->_mp_size = i;
+		z->_mp_size = getNonZeroArraySize(p, n);
 		z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
 	}
 	static inline void set_zero(mpz_t& z, Unit *p, size_t n)
@@ -109,7 +105,7 @@ struct OpeFunc {
 		if (mpz_cmp(mz, mp) >= 0) {
 			mpz_sub(mz, mz, mp);
 		}
-		toArray(z, N, mz);
+		Gmp::getArray(z, N, mz);
 	}
 	static inline void subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -124,7 +120,7 @@ struct OpeFunc {
 			set_mpz_t(mp, p);
 			mpz_add(mz, mz, mp);
 		}
-		toArray(z, N, mz);
+		Gmp::getArray(z, N, mz);
 	}
 	static inline void mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -133,7 +129,7 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
 		mpz_mul(mz, mx, my);
-		toArray(z, N * 2, mz);
+		Gmp::getArray(z, N * 2, mz);
 	}
 	// x[N * 2] -> y[N]
 	static inline void modC(Unit *y, const Unit *x, const Unit *p)
@@ -152,7 +148,7 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(mp, op.p);
 		mpz_invert(my.get_mpz_t(), mx, mp);
-		toArray(y, N, my.get_mpz_t());
+		Gmp::getArray(y, N, my);
 	}
 	static inline bool isZeroC(const Unit *x)
 	{
@@ -223,10 +219,10 @@ static void initForMont(Op& op, const Unit *p)
 	const size_t N = op.N;
 	assert(N >= 2);
 	mpz_class t = 1;
-	toArray(op.one, N, t);
+	Gmp::getArray(op.one, N, t);
 	t = (t << (N * 64)) % op.mp;
 	t = (t * t) % op.mp;
-	toArray(op.RR, N, t);
+	Gmp::getArray(op.RR, N, t);
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
 	fg->init(p, (int)N);
@@ -313,21 +309,25 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 	}
 }
 
-bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask)
+void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask)
 {
 	const size_t fpByteSize = sizeof(Unit) * op.N;
 	if (xByteSize > fpByteSize) {
-		if (!doMask) return false;
+		if (!doMask) throw cybozu::Exception("fp:copyAndMask:bad size") << xByteSize << fpByteSize;
 		xByteSize = fpByteSize;
 	}
 	memcpy(y, x, xByteSize);
 	memset((char *)y + xByteSize, 0, fpByteSize - xByteSize);
-	if (!doMask) return compareArray(y, op.p, op.N) < 0;
-
+	if (!doMask) {
+		if (compareArray(y, op.p, op.N) >= 0) throw cybozu::Exception("fp:copyAndMask:large x");
+		return;
+	}
+	/*
+		x &= mask(op.bitSize - 1);
+	*/
 	const Unit r = op.bitSize % UnitBitSize;
 	y[op.N - 1] &= r ? (Unit(1) << (r - 1)) - 1 : Unit(-1);
 	assert(compareArray(y, op.p, op.N) < 0);
-	return true;
 }
 
 } } // mcl::fp
