@@ -8,10 +8,7 @@
 #endif
 #include <mcl/fp.hpp>
 typedef mcl::FpT<> Zn;
-typedef mcl::FpT<> MontFp3;
-typedef mcl::FpT<> MontFp4;
-typedef mcl::FpT<> MontFp6;
-typedef mcl::FpT<> MontFp9;
+typedef mcl::FpT<> Fp;
 
 struct Montgomery {
 	typedef mcl::Gmp::Unit Unit;
@@ -503,11 +500,11 @@ void customTest(const char *pStr, const char *xStr, const char *yStr)
 #if 0
 	{
 		pStr = "0xfffffffffffffffffffffffffffffffffffffffeffffee37",
-		MontFp3::setModulo(pStr);
+		Fp::setModulo(pStr);
 		static uint64_t x[3] = { 1, 0, 0 };
 		uint64_t z[3];
 std::cout<<std::hex;
-		MontFp3::inv(*(MontFp3*)z, *(const MontFp3*)x);
+		Fp::inv(*(Fp*)z, *(const Fp*)x);
 put(z);
 		exit(1);
 	}
@@ -517,8 +514,8 @@ put(z);
 	uint64_t x[9] = { 0xff7fffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x1ff };
 	uint64_t y[9] = { 0xff7fffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x1ff };
 	uint64_t z1[9], z2[9];
-	MontFp9::setModulo(pStr);
-	MontFp9::fg_.mul_(z2, x, y);
+	Fp::setModulo(pStr);
+	Fp::fg_.mul_(z2, x, y);
 	put(z2);
 	{
 		puts("C");
@@ -552,8 +549,8 @@ put(z);
 	}
 
 	puts("asm");
-	MontFp9::setModulo(pStr);
-	MontFp9 x(xStr), y(yStr);
+	Fp::setModulo(pStr);
+	Fp x(xStr), y(yStr);
 	x *= y;
 	rAsm = getStr(x);
 	CYBOZU_TEST_EQUAL(rOrg, rC);
@@ -653,10 +650,10 @@ CYBOZU_TEST_AUTO(toStr16)
 		"0x100000000000000000000000000000033",
 		"0x11ee12312312940000000000000000000000000002342343"
 	};
-	MontFp3::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str, str2;
-		MontFp3 x(tbl[i]);
+		Fp x(tbl[i]);
 		x.getStr(str, 16);
 		mpz_class y(tbl[i]);
 		mcl::Gmp::getStr(str2, y, 16);
@@ -677,10 +674,10 @@ CYBOZU_TEST_AUTO(toStr16bench)
 		"0x11ee12312312940000000000000000000000000002342343"
 	};
 	const int C = 500000;
-	MontFp3::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str, str2;
-		MontFp3 x(tbl[i]);
+		Fp x(tbl[i]);
 		CYBOZU_BENCH_C("Mont:getStr", C, x.getStr, str, 16);
 		mpz_class y(tbl[i]);
 		CYBOZU_BENCH_C("Gmp:getStr ", C, mcl::Gmp::getStr, str2, y, 16);
@@ -701,10 +698,10 @@ CYBOZU_TEST_AUTO(fromStr16bench)
 		"0x11ee12312312940000000000000000000000000002342343"
 	};
 	const int C = 500000;
-	MontFp3::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str = tbl[i];
-		MontFp3 x;
+		Fp x;
 		CYBOZU_BENCH_C("Mont:setStr", C, x.setStr, str);
 
 		mpz_class y;
