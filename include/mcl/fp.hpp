@@ -37,6 +37,12 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
 
+enum Mode {
+	FP_AUTO,
+	FP_LLVM,
+	FP_XBYAK
+};
+
 } // mcl::fp
 
 template<class tag = fp::TagDefault, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
@@ -59,8 +65,9 @@ public:
 		}
 		printf("\n");
 	}
-	static inline void setModulo(const std::string& mstr, int base = 0)
+	static inline void setModulo(const std::string& mstr, int base = 0, fp::Mode mode = fp::FP_AUTO)
 	{
+		cybozu::disable_warning_unused_variable(mode);
 		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
