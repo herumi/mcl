@@ -37,12 +37,6 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
 
-enum Mode {
-	FP_AUTO,
-	FP_LLVM,
-	FP_XBYAK
-};
-
 } // mcl::fp
 
 template<class tag = fp::TagDefault, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
@@ -67,7 +61,6 @@ public:
 	}
 	static inline void setModulo(const std::string& mstr, int base = 0, fp::Mode mode = fp::FP_AUTO)
 	{
-		cybozu::disable_warning_unused_variable(mode);
 		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
@@ -75,7 +68,13 @@ public:
 		op_.add = addW;
 		op_.sub = subW;
 		op_.mul = mulW;
-		op_.init(mstr, base, maxBitSize);
+#ifdef MCL_USE_LLVM
+//		op_.useMont = !(mode == fp::FP_LLVM);
+		if (op_.useMont) {
+			op_.mul = montW;
+		}
+#endif
+		op_.init(mstr, base, maxBitSize, mode);
 	}
 	static inline void getModulo(std::string& pstr)
 	{
@@ -343,6 +342,11 @@ public:
 	static inline void negW(Unit *y, const Unit *x)
 	{
 		op_.negP(y, x, op_.p);
+	}
+	// wrapper function for mcl_fp_mont by LLVM
+	static inline void montW(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.mont(z, x, y, op_.p, op_.rp);
 	}
 };
 

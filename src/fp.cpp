@@ -168,7 +168,8 @@ struct OpeFunc {
 	#define SET_OP_LLVM(n) \
 		addP = mcl_fp_add ## n ##S; \
 		subP = mcl_fp_sub ## n ##S; \
-		mulPreP = mcl_fp_mulPre ## n;
+		mulPreP = mcl_fp_mulPre ## n; \
+		mont = mcl_fp_mont ## n;
 #else
 	#define SET_OP_LLVM(n)
 #endif
@@ -184,7 +185,7 @@ struct OpeFunc {
 		subP = OpeFunc<n>::subC; \
 		mulPreP = OpeFunc<n>::mulPreC; \
 		modP = OpeFunc<n>::modC; \
-		SET_OP_LLVM(n)
+		SET_OP_LLVM(n) 
 
 #ifdef USE_MONT_FP
 inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
@@ -239,52 +240,51 @@ static void initForMont(Op& op, const Unit *p)
 }
 #endif
 
-void Op::init(const std::string& mstr, int base, size_t maxBitSize)
+void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 {
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 
-	if (bitSize <= 128) {
-		SET_OP(128)
-	} else
-#if CYBOZU_OS_BIT == 32
-	if (bitSize <= 160) {
-		SET_OP(160)
-	} else
+	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
+#ifdef MCL_USE_LLVM
+	rp = getMontgomeryCoeff(p[0]);
 #endif
-	if (bitSize <= 192) {
-		SET_OP(192)
-	} else
-#if CYBOZU_OS_BIT == 32
-	if (bitSize <= 224) {
-		SET_OP(224)
-	} else
-#endif
-	if (bitSize <= 256) {
-		SET_OP(256)
-	} else
-	if (bitSize <= 384) {
-		SET_OP(384)
-	} else
+	switch (roundBit) {
+	case 32:
+	case 64:
+	case 96:
+	case 128: SET_OP(128); break;
+	case 192: SET_OP(192); break;
+	case 256: SET_OP(256); break;
+	case 320: SET_OP(320); break;
+	case 384: SET_OP(384); break;
+	case 448: SET_OP(448); break;
+	case 512: SET_OP(512); break;
 #if CYBOZU_OS_BIT == 64
-	if (bitSize <= 576) {
-		SET_OP(576)
-	}
+	case 576: SET_OP(576); break;
 #else
-	if (bitSize <= 544) {
-		SET_OP(544)
-	}
+	case 160: SET_OP(160); break;
+	case 224: SET_OP(224); break;
+	case 288: SET_OP(288); break;
+	case 352: SET_OP(352); break;
+	case 416: SET_OP(416); break;
+	case 480: SET_OP(480); break;
+	case 544: SET_OP(544); break;
 #endif
-
+	default:
+		throw cybozu::Exception("Op::init:not:support") << mstr;
+	}
 #ifdef MCL_USE_LLVM
 	if (mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
 		mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
 	}
 #endif
+	if (mode == FP_XBYAK) {
 #ifdef USE_MONT_FP
-	fp::initForMont(*this, p);
+		fp::initForMont(*this, p);
 #endif
+	}
 	sq.set(mp);
 }
 

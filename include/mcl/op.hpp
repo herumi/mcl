@@ -39,6 +39,13 @@ struct Block {
 	Unit v_[maxOpUnitSize];
 };
 
+enum Mode {
+	FP_AUTO,
+	FP_LLVM,
+	FP_LLVM_MONT,
+	FP_XBYAK
+};
+
 struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
@@ -66,6 +73,9 @@ struct Op {
 	// for Montgomery
 	bool useMont;
 	int2u preInv;
+	// these two members are for mcl_fp_mont
+	Unit rp;
+	void (*mont)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
 	// require p
 	void3u negP;
 	void2uOp invOp;
@@ -79,6 +89,7 @@ struct Op {
 		, isZero(0), clear(0), copy(0)
 		, neg(0), add(0), sub(0), mul(0)
 		, useMont(false), preInv(0)
+		, rp(0), mont(0)
 		, negP(0), invOp(0), addP(0), subP(0), mulPreP(0), modP(0)
 		, fg(createFpGenerator())
 	{
@@ -95,7 +106,7 @@ struct Op {
 	{
 		mul(y, x, RR);
 	}
-	void init(const std::string& mstr, int base, size_t maxBitSize);
+	void init(const std::string& mstr, int base, size_t maxBitSize, Mode mode);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
 private:
