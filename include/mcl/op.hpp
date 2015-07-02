@@ -100,7 +100,7 @@ struct Op {
 	static void destroyFpGenerator(FpGenerator *fg);
 private:
 	Op(const Op&);
-	void operator==(const Op&);
+	void operator=(const Op&);
 };
 
 } } // mcl::fp
