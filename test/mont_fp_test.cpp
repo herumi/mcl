@@ -3,11 +3,9 @@
 #include <cybozu/benchmark.hpp>
 #include <time.h>
 
-#ifndef USE_MONT_FP
-	#define USE_MONT_FP
-#endif
 #include <mcl/fp.hpp>
-typedef mcl::FpT<> Zn;
+struct ZnTag;
+typedef mcl::FpT<ZnTag> Zn;
 typedef mcl::FpT<> Fp;
 
 struct Montgomery {

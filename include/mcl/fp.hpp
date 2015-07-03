@@ -68,11 +68,31 @@ public:
 		op_.add = addW;
 		op_.sub = subW;
 		op_.mul = mulW;
-#ifdef MCL_USE_LLVM
-//		op_.useMont = !(mode == fp::FP_LLVM);
+#ifndef USE_MONT_FP
+		if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
+#endif
+#ifndef MCL_USE_LLVM
+		if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
+#endif
+#if defined(MCL_USE_LLVM) || defined(USE_MONT_FP)
+		op_.useMont = mode != fp::FP_LLVM;
+#endif
+#if defined(MCL_USE_LLVM) && !defined(USE_MONT_FP)
 		if (op_.useMont) {
 			op_.mul = montW;
 		}
+#endif
+#if 0
+#ifndef NDEBUG
+	fprintf(stderr, "mode=%d, useMont=%d"
+#ifdef USE_MONT_FP
+		" ,USE_MONT_FP"
+#endif
+#ifdef MCL_USE_LLVM
+		" ,MCL_USE_LLVM"
+#endif
+	"\n", mode, useMont);
+#endif
 #endif
 		op_.init(mstr, base, maxBitSize, mode);
 	}

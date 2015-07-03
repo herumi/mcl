@@ -214,6 +214,7 @@ static void initInvTbl(Op& op)
 		tbl -= N;
 	}
 }
+#endif
 
 static void initForMont(Op& op, const Unit *p)
 {
@@ -224,6 +225,8 @@ static void initForMont(Op& op, const Unit *p)
 	t = (t << (N * 64)) % op.mp;
 	t = (t * t) % op.mp;
 	Gmp::getArray(op.RR, N, t);
+	op.rp = getMontgomeryCoeff(p[0]);
+#ifdef USE_MONT_FP
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
 	fg->init(p, (int)N);
@@ -234,22 +237,19 @@ static void initForMont(Op& op, const Unit *p)
 	op.mul = Xbyak::CastTo<void3u>(fg->mul_);
 	op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
 	op.invOp = &invOpForMont;
-	op.useMont = true;
 
 	initInvTbl(op);
-}
 #endif
+}
 
 void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 {
+	cybozu::disable_warning_unused_variable(mode);
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 
 	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
-#ifdef MCL_USE_LLVM
-	rp = getMontgomeryCoeff(p[0]);
-#endif
 	switch (roundBit) {
 	case 32:
 	case 64:
@@ -280,10 +280,8 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
 	}
 #endif
-	if (mode == FP_XBYAK) {
-#ifdef USE_MONT_FP
+	if (useMont) {
 		fp::initForMont(*this, p);
-#endif
 	}
 	sq.set(mp);
 }
