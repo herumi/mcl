@@ -150,6 +150,15 @@ struct OpeFunc {
 		mpz_invert(my.get_mpz_t(), mx, mp);
 		Gmp::getArray(y, N, my);
 	}
+	/*
+		inv(x/R) = (1/x)R -toMont-> 1/x -toMont-> (1/x)R^-1
+	*/
+	static void invMontOp(Unit *y, const Unit *x, const Op& op)
+	{
+		invOp(y, x, op);
+		op.toMont(y, y);
+		op.toMont(y, y);
+	}
 	static inline bool isZeroC(const Unit *x)
 	{
 		return isZeroArray(x, N);
@@ -180,7 +189,11 @@ struct OpeFunc {
 		clear = OpeFunc<n>::clearC; \
 		copy = OpeFunc<n>::copyC; \
 		negP = OpeFunc<n>::negC; \
-		invOp = OpeFunc<n>::invOp; \
+		if (useMont) { \
+			invOp = OpeFunc<n>::invMontOp; \
+		} else { \
+			invOp = OpeFunc<n>::invOp; \
+		} \
 		addP = OpeFunc<n>::addC; \
 		subP = OpeFunc<n>::subC; \
 		mulPreP = OpeFunc<n>::mulPreC; \
