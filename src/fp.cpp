@@ -289,8 +289,9 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		throw cybozu::Exception("Op::init:not:support") << mstr;
 	}
 #ifdef MCL_USE_LLVM
-	if (mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-		mul = &mcl_fp_mul_NIST_P192; // slower than MontFp192
+	if (mode == FP_AUTO && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
+		mul = &mcl_fp_mul_NIST_P192;
+		useMont = false;
 	}
 #endif
 	if (useMont) {
