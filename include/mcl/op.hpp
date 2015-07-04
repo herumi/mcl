@@ -54,10 +54,12 @@ struct Op {
 		for Montgomery
 		one = 1
 		R = (1 << (N * sizeof(Unit) * 8)) % p
-		RR = (R * R) % p
+		R2 = (R * R) % p
+		R3 = RR^3
 	*/
 	Unit one[maxOpUnitSize];
-	Unit RR[maxOpUnitSize];
+	Unit R2[maxOpUnitSize];
+	Unit R3[maxOpUnitSize];
 	std::vector<Unit> invTbl;
 	size_t N;
 	size_t bitSize;
@@ -100,11 +102,18 @@ struct Op {
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{
+		/*
+			M(x, y) = xyR^-1
+			y = M(x, 1) = xR^-1
+		*/
 		mul(y, x, one);
 	}
 	void toMont(Unit* y, const Unit *x) const
 	{
-		mul(y, x, RR);
+		/*
+			y = M(x, R2) = xR^2 R^-1 = xR
+		*/
+		mul(y, x, R2);
 	}
 	void init(const std::string& mstr, int base, size_t maxBitSize, Mode mode);
 	static FpGenerator* createFpGenerator();

@@ -151,13 +151,14 @@ struct OpeFunc {
 		Gmp::getArray(y, N, my);
 	}
 	/*
-		inv(x/R) = (1/x)R -toMont-> 1/x -toMont-> (1/x)R^-1
+		inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
 	*/
 	static void invMontOp(Unit *y, const Unit *x, const Op& op)
 	{
 		invOp(y, x, op);
-		op.toMont(y, y);
-		op.toMont(y, y);
+		op.mul(y, y, op.R3);
+//		op.toMont(y, y);
+//		op.toMont(y, y);
 	}
 	static inline bool isZeroC(const Unit *x)
 	{
@@ -233,11 +234,15 @@ static void initForMont(Op& op, const Unit *p)
 {
 	const size_t N = op.N;
 	assert(N >= 2);
-	mpz_class t = 1;
-	Gmp::getArray(op.one, N, t);
-	t = (t << (N * 64)) % op.mp;
-	t = (t * t) % op.mp;
-	Gmp::getArray(op.RR, N, t);
+	{
+		mpz_class t = 1, R;
+		Gmp::getArray(op.one, N, t);
+		R = (t << (N * 64)) % op.mp;
+		t = (R * R) % op.mp;
+		Gmp::getArray(op.R2, N, t);
+		t = (R * R * R) % op.mp;
+		Gmp::getArray(op.R3, N, t);
+	}
 	op.rp = getMontgomeryCoeff(p[0]);
 #ifdef USE_MONT_FP
 	FpGenerator *fg = op.fg;
