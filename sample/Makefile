@@ -7,8 +7,8 @@ SRC=$(wildcard *.cpp)
 
 all: $(TARGET)
 
-test: $(TARGET)
-	@$(SAMPLE_TEST)
+#test: $(TARGET)
+#	@$(SAMPLE_TEST)
 
 $(OBJDIR):
 	@$(MKDIR) $(OBJDIR)
