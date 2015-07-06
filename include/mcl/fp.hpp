@@ -68,15 +68,23 @@ public:
 		op_.add = addW;
 		op_.sub = subW;
 		op_.mul = mulW;
-#ifndef USE_MONT_FP
+/*
+	priority : USE_MONT_FP > MCL_USE_LLVM > none
+	Xbyak > llvm_opt > llvm > gmp
+*/
+#ifdef USE_MONT_FP
+		if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
+#else
 		if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
 #endif
-#ifndef MCL_USE_LLVM
+#ifdef MCL_USE_LLVM
+		if (mode == fp::FP_AUTO) mode = fp::FP_LLVM_MONT;
+#else
 		if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
 #endif
-#if defined(MCL_USE_LLVM) || defined(USE_MONT_FP)
-		op_.useMont = mode != fp::FP_LLVM;
-#endif
+		if (mode == fp::FP_AUTO) mode = fp::FP_GMP;
+
+		op_.useMont = mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
 #if defined(MCL_USE_LLVM) && !defined(USE_MONT_FP)
 		if (op_.useMont) {
 			op_.mul = montW;
@@ -91,7 +99,7 @@ public:
 #ifdef MCL_USE_LLVM
 		" ,MCL_USE_LLVM"
 #endif
-	"\n", mode, useMont);
+	"\n", mode, op_.useMont);
 #endif
 #endif
 		op_.init(mstr, base, maxBitSize, mode);

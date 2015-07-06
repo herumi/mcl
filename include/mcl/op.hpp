@@ -41,6 +41,7 @@ struct Block {
 
 enum Mode {
 	FP_AUTO,
+	FP_GMP,
 	FP_LLVM,
 	FP_LLVM_MONT,
 	FP_XBYAK
