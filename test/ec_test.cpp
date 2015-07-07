@@ -281,11 +281,6 @@ int g_partial = -1;
 
 CYBOZU_TEST_AUTO(all)
 {
-#ifdef USE_MONT_FP
-	puts("use MontFp");
-#else
-	puts("use GMP");
-#endif
 	if (g_partial & (1 << 3)) {
 		const struct mcl::EcParam para3[] = {
 	//		mcl::ecparam::p160_1,

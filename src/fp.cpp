@@ -1,14 +1,14 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <mcl/conversion.hpp>
-#ifdef USE_MONT_FP
+#ifdef MCL_USE_XBYAK
 #include <mcl/fp_generator.hpp>
 #endif
 #include <mcl/fp_proto.hpp>
 
 namespace mcl { namespace fp {
 
-#ifdef USE_MONT_FP
+#ifdef MCL_USE_XBYAK
 FpGenerator *Op::createFpGenerator()
 {
 	return new FpGenerator();
@@ -203,7 +203,7 @@ struct OpeFunc {
 		modP = OpeFunc<n>::modC; \
 		SET_OP_LLVM(n) 
 
-#ifdef USE_MONT_FP
+#ifdef MCL_USE_XBYAK
 inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
 {
 	Unit r[maxOpUnitSize];
@@ -247,7 +247,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	}
 	op.rp = getMontgomeryCoeff(p[0]);
 	if (mode != FP_XBYAK) return;
-#ifdef USE_MONT_FP
+#ifdef MCL_USE_XBYAK
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
 	fg->init(p, (int)N);

@@ -66,13 +66,13 @@ endif
 LIB=$(TOPDIR)lib/libmcl$(OBJSUF).a
 LDFLAGS += -lpthread -m$(BIT) -lgmp -lgmpxx -lcrypto
 
-ifeq ($(USE_MONT_FP),1)
-  CFLAGS += -DUSE_MONT_FP
+ifeq ($(MARCH),)
+  ifeq ($(BIT),64)
+    CFLAGS += -DMCL_USE_XBYAK
+  endif
 endif
 
-ifeq ($(USE_LLVM),1)
-  CFLAGS += -DMCL_USE_LLVM
-endif
+CFLAGS += -DMCL_USE_LLVM
 
 ####################################################
 

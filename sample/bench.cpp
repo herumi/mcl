@@ -68,7 +68,7 @@ void benchFp(size_t bitSize, int mode)
 		if (mode & (1 << 1)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM);
 		if (mode & (1 << 2)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM_MONT);
 #endif
-#ifdef USE_MONT_FP
+#ifdef MCL_USE_XBYAK
 		if (mode & (1 << 3)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_XBYAK);
 #endif
 	}

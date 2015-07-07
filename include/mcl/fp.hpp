@@ -69,10 +69,10 @@ public:
 		op_.sub = subW;
 		op_.mul = mulW;
 /*
-	priority : USE_MONT_FP > MCL_USE_LLVM > none
+	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_opt > llvm > gmp
 */
-#ifdef USE_MONT_FP
+#ifdef MCL_USE_XBYAK
 		if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
 #else
 		if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
@@ -90,8 +90,8 @@ public:
 		}
 #if 0
 	fprintf(stderr, "mode=%d, useMont=%d"
-#ifdef USE_MONT_FP
-		" ,USE_MONT_FP"
+#ifdef MCL_USE_XBYAK
+		" ,MCL_USE_XBYAK"
 #endif
 #ifdef MCL_USE_LLVM
 		" ,MCL_USE_LLVM"
