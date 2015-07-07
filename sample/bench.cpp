@@ -6,6 +6,14 @@ typedef mcl::FpT<> Fp;
 
 void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
 {
+	const char *s;
+	switch (mode) {
+	case mcl::fp::FP_GMP: s = "gmp"; break;
+	case mcl::fp::FP_LLVM: s = "llvm"; break;
+	case mcl::fp::FP_LLVM_MONT: s = "llvm+mont"; break;
+	case mcl::fp::FP_XBYAK: s = "xbyak"; break;
+	default: throw cybozu::Exception("benchFpSub:bad mode") << mode;
+	}
 	Fp::setModulo(pStr, 0, mode);
 	Fp x(xStr);
 	Fp y(yStr);
@@ -15,10 +23,10 @@ void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::M
 	CYBOZU_BENCH_T(subT, Fp::sub, x, x, y);
 	CYBOZU_BENCH_T(mulT, Fp::mul, x, x, x);
 	CYBOZU_BENCH_T(invT, x += y;Fp::inv, x, x); // avoid same jmp
-	printf("bit % 3d add %8.2f sub %8.2f mul %8.2f inv %8.2f\n", (int)Fp::getBitSize(), addT, subT, mulT, invT);
+	printf("%10s bit % 3d add %8.2f sub %8.2f mul %8.2f inv %8.2f\n", s, (int)Fp::getBitSize(), addT, subT, mulT, invT);
 }
 
-void benchFp(size_t bitSize, int imode)
+void benchFp(size_t bitSize, int mode)
 {
 	const struct {
 		size_t bitSize;
@@ -55,10 +63,14 @@ void benchFp(size_t bitSize, int imode)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (bitSize != 0 && tbl[i].bitSize != bitSize) continue;
-		benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_AUTO);
-		benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM);
-		benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM_MONT);
-		benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_XBYAK);
+		if (mode & (1 << 0)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_GMP);
+#ifdef MCL_USE_LLVM
+		if (mode & (1 << 1)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM);
+		if (mode & (1 << 2)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM_MONT);
+#endif
+#ifdef USE_MONT_FP
+		if (mode & (1 << 3)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_XBYAK);
+#endif
 	}
 }
 
@@ -75,7 +87,7 @@ int main(int argc, char *argv[])
 	bool fpOnly;
 	cybozu::Option opt;
 	opt.appendOpt(&bitSize, 0, "b", ": bitSize");
-	opt.appendOpt(&mode, 0, "m", ": mode(0:auto, 1:llvm, 2:llvm+mont, 3:xbyak");
+	opt.appendOpt(&mode, 0, "m", ": mode(0:all, sum of 1:gmp, 2:llvm, 8:llvm+mont, 8:xbyak");
 	opt.appendBoolOpt(&ecOnly, "ec", ": ec only");
 	opt.appendBoolOpt(&fpOnly, "fp", ": fp only");
 	opt.appendHelp("h", ": show this message");
@@ -83,11 +95,12 @@ int main(int argc, char *argv[])
 		opt.usage();
 		exit(1);
 	}
-	if (mode < 0 || mode > 3) {
+	if (mode < 0 || mode > 15) {
 		printf("bad mode %d\n", mode);
 		opt.usage();
 		exit(1);
 	}
+	if (mode == 0) mode = 15;
 	if (!ecOnly) benchFp(bitSize, mode);
 	if (!fpOnly) benchEc(bitSize, mode);
 } catch (std::exception& e) {

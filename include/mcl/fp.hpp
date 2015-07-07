@@ -85,13 +85,10 @@ public:
 		if (mode == fp::FP_AUTO) mode = fp::FP_GMP;
 
 		op_.useMont = mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
-#if defined(MCL_USE_LLVM) && !defined(USE_MONT_FP)
-		if (op_.useMont) {
+		if (mode == fp::FP_LLVM_MONT) {
 			op_.mul = montW;
 		}
-#endif
 #if 0
-#ifndef NDEBUG
 	fprintf(stderr, "mode=%d, useMont=%d"
 #ifdef USE_MONT_FP
 		" ,USE_MONT_FP"
@@ -100,7 +97,6 @@ public:
 		" ,MCL_USE_LLVM"
 #endif
 	"\n", mode, op_.useMont);
-#endif
 #endif
 		op_.init(mstr, base, maxBitSize, mode);
 	}

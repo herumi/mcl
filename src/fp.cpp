@@ -176,10 +176,12 @@ struct OpeFunc {
 
 #ifdef MCL_USE_LLVM
 	#define SET_OP_LLVM(n) \
-		addP = mcl_fp_add ## n ##S; \
-		subP = mcl_fp_sub ## n ##S; \
-		mulPreP = mcl_fp_mulPre ## n; \
-		mont = mcl_fp_mont ## n;
+		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
+			addP = mcl_fp_add ## n ##S; \
+			subP = mcl_fp_sub ## n ##S; \
+			mulPreP = mcl_fp_mulPre ## n; \
+			mont = mcl_fp_mont ## n; \
+		}
 #else
 	#define SET_OP_LLVM(n)
 #endif
@@ -230,7 +232,7 @@ static void initInvTbl(Op& op)
 }
 #endif
 
-static void initForMont(Op& op, const Unit *p)
+static void initForMont(Op& op, const Unit *p, Mode mode)
 {
 	const size_t N = op.N;
 	assert(N >= 2);
@@ -244,6 +246,7 @@ static void initForMont(Op& op, const Unit *p)
 		Gmp::getArray(op.R3, N, t);
 	}
 	op.rp = getMontgomeryCoeff(p[0]);
+	if (mode != FP_XBYAK) return;
 #ifdef USE_MONT_FP
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
@@ -300,7 +303,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	}
 #endif
 	if (useMont) {
-		fp::initForMont(*this, p);
+		fp::initForMont(*this, p, mode);
 	}
 	sq.set(mp);
 }
