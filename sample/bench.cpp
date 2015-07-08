@@ -1,6 +1,7 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
 #include <mcl/fp.hpp>
+#include <mcl/conversion.hpp>
 
 typedef mcl::FpT<> Fp;
 
@@ -78,6 +79,53 @@ void benchEc(size_t, int)
 {
 }
 
+void benchToStr16()
+{
+	puts("benchToStr16");
+	const char *tbl[] = {
+		"0x0",
+		"0x5",
+		"0x123",
+		"0x123456789012345679adbc",
+		"0xffffffff26f2fc170f69466a74defd8d",
+		"0x100000000000000000000000000000033",
+		"0x11ee12312312940000000000000000000000000002342343"
+	};
+	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		std::string str;
+		Fp x(tbl[i]);
+		CYBOZU_BENCH("fp::toStr16", mcl::fp::toStr16, str, x.getUnit(), x.getUnitSize(), 16);
+		mpz_class y(tbl[i]);
+		CYBOZU_BENCH("Gmp:getStr ", mcl::Gmp::getStr, str, y, 16);
+	}
+}
+
+void benchFromStr16()
+{
+	puts("benchFromStr16");
+	const char *tbl[] = {
+		"0",
+		"5",
+		"123",
+		"123456789012345679adbc",
+		"ffffffff26f2fc170f69466a74defd8d",
+		"100000000000000000000000000000033",
+		"11ee12312312940000000000000000000000000002342343"
+	};
+	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		std::string str = tbl[i];
+		Fp x;
+		const size_t N = 64;
+		mcl::fp::Unit buf[N];
+		CYBOZU_BENCH("fp:fromStr16", mcl::fp::fromStr16, buf, N, str.c_str(), str.size());
+
+		mpz_class y;
+		CYBOZU_BENCH("Gmp:setStr  ", mcl::Gmp::setStr, y, str, 16);
+	}
+}
+
 int main(int argc, char *argv[])
 	try
 {
@@ -85,11 +133,13 @@ int main(int argc, char *argv[])
 	int mode;
 	bool ecOnly;
 	bool fpOnly;
+	bool misc;
 	cybozu::Option opt;
 	opt.appendOpt(&bitSize, 0, "b", ": bitSize");
 	opt.appendOpt(&mode, 0, "m", ": mode(0:all, sum of 1:gmp, 2:llvm, 8:llvm+mont, 8:xbyak");
 	opt.appendBoolOpt(&ecOnly, "ec", ": ec only");
 	opt.appendBoolOpt(&fpOnly, "fp", ": fp only");
+	opt.appendBoolOpt(&misc, "misc", ": other benchmark");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
@@ -101,8 +151,13 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	if (mode == 0) mode = 15;
-	if (!ecOnly) benchFp(bitSize, mode);
-	if (!fpOnly) benchEc(bitSize, mode);
+	if (misc) {
+		benchToStr16();
+		benchFromStr16();
+	} else {
+		if (!ecOnly) benchFp(bitSize, mode);
+		if (!fpOnly) benchEc(bitSize, mode);
+	}
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
 }
