@@ -11,7 +11,10 @@ SRC=fp.cpp
 OBJ=$(OBJDIR)/fp.o $(OBJDIR)/x64.o
 #TARGET=x64.s x86.s arm.s arm64.s
 TARGET=$(TOPDIR)lib/libmcl$(OBJSUF).a
-AFLAGS=-mattr=bmi2
+HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
+ifeq ($(HAS_BMI2),1)
+  AFLAGS=-mattr=bmi2
+endif
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
