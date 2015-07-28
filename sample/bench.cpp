@@ -2,19 +2,26 @@
 #include <cybozu/option.hpp>
 #include <mcl/fp.hpp>
 #include <mcl/conversion.hpp>
+#include <mcl/ecparam.hpp>
 
 typedef mcl::FpT<> Fp;
+struct tagZn;
+typedef mcl::FpT<tagZn> Zn;
+typedef mcl::EcT<Fp> Ec;
 
-void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
+const char *getModeStr(mcl::fp::Mode mode)
 {
-	const char *s;
 	switch (mode) {
-	case mcl::fp::FP_GMP: s = "gmp"; break;
-	case mcl::fp::FP_LLVM: s = "llvm"; break;
-	case mcl::fp::FP_LLVM_MONT: s = "llvm+mont"; break;
-	case mcl::fp::FP_XBYAK: s = "xbyak"; break;
+	case mcl::fp::FP_GMP: return "gmp";
+	case mcl::fp::FP_LLVM: return "llvm";
+	case mcl::fp::FP_LLVM_MONT: return "llvm+mont";
+	case mcl::fp::FP_XBYAK: return "xbyak";
 	default: throw cybozu::Exception("benchFpSub:bad mode") << mode;
 	}
+}
+void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
+{
+	const char *s = getModeStr(mode);
 	Fp::setModulo(pStr, 0, mode);
 	Fp x(xStr);
 	Fp y(yStr);
@@ -75,8 +82,50 @@ void benchFp(size_t bitSize, int mode)
 	}
 }
 
-void benchEc(size_t, int)
+void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode)
 {
+	Fp::setModulo(para.p, 0, mode);
+	Zn::setModulo(para.n);
+	Ec::setParam(para.a, para.b);
+	Fp x(para.gx);
+	Fp y(para.gy);
+	Ec P(x, y);
+	Ec Q = P + P + P;
+	double addT, subT, dblT, mulT;
+	CYBOZU_BENCH_T(addT, Ec::add, Q, P, Q);
+	CYBOZU_BENCH_T(subT, Ec::sub, Q, P, Q);
+	CYBOZU_BENCH_T(dblT, Ec::dbl, P, P);
+	Zn z("-3");
+	CYBOZU_BENCH_T(mulT, Ec::mul, P, P, z);
+	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul %8.2f\n", para.name, getModeStr(mode), addT, subT, dblT, mulT);
+
+}
+void benchEc(size_t bitSize, int mode)
+{
+	const struct mcl::EcParam tbl[] = {
+		mcl::ecparam::secp160k1,
+		mcl::ecparam::secp192k1,
+		mcl::ecparam::NIST_P192,
+		mcl::ecparam::secp224k1,
+		mcl::ecparam::secp256k1,
+		mcl::ecparam::NIST_P224,
+		mcl::ecparam::NIST_P256,
+//		mcl::ecparam::secp384r1,
+		mcl::ecparam::NIST_P384,
+//		mcl::ecparam::secp521r1,
+		mcl::ecparam::NIST_P521,
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		if (bitSize != 0 && tbl[i].bitSize != bitSize) continue;
+		if (mode & (1 << 0)) benchEcSub(tbl[i], mcl::fp::FP_GMP);
+#ifdef MCL_USE_LLVM
+		if (mode & (1 << 1)) benchEcSub(tbl[i], mcl::fp::FP_LLVM);
+		if (mode & (1 << 2)) benchEcSub(tbl[i], mcl::fp::FP_LLVM_MONT);
+#endif
+#ifdef MCL_USE_XBYAK
+		if (mode & (1 << 3)) benchEcSub(tbl[i], mcl::fp::FP_XBYAK);
+#endif
+	}
 }
 
 void benchToStr16()

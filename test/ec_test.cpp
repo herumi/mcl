@@ -221,24 +221,6 @@ struct Test {
 		clock_t end = clock();
 		printf("%s %.2fusec\n", msg, (end - begin) / double(CLOCKS_PER_SEC) / N * 1e6);
 	}
-	/*
-		add 8.71usec -> 6.94
-		sub 6.80usec -> 4.84
-		dbl 9.59usec -> 7.75
-		pos 2730usec -> 2153
-	*/
-	void bench() const
-	{
-		Fp x(para.gx);
-		Fp y(para.gy);
-		Ec P(x, y);
-		Ec Q = P + P + P;
-		CYBOZU_BENCH("add", Ec::add, Q, P, Q);
-		CYBOZU_BENCH("sub", Ec::sub, Q, P, Q);
-		CYBOZU_BENCH("dbl", Ec::dbl, P, P);
-		Zn z("-3");
-		CYBOZU_BENCH("mul", Ec::mul, P, P, z);
-	}
 /*
 Affine : sandy-bridge
 add 3.17usec
@@ -260,9 +242,6 @@ mul 499.00usec
 		mul_fp();
 		squareRoot();
 		str();
-#ifdef NDEBUG
-		bench();
-#endif
 	}
 private:
 	Test(const Test&);
