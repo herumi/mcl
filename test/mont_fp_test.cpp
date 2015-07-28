@@ -107,7 +107,6 @@ void put(const uint64_t (&x)[N])
 	printf("\n");
 }
 
-template<size_t N>
 struct Test {
 	typedef mcl::FpT<> Fp;
 	mpz_class m;
@@ -288,7 +287,6 @@ struct Test {
 	}
 	void edge()
 	{
-#if 0
 		std::cout << std::hex;
 		/*
 			real mont
@@ -299,7 +297,8 @@ struct Test {
 			  -R    -1
 		*/
 		mpz_class t = 1;
-		const mpz_class R = (t << (N * 64)) % m;
+		const size_t N = Fp::getUnitSize();
+		const mpz_class R = (t << (N * mcl::fp::UnitBitSize)) % m;
 		const mpz_class tbl[] = {
 			0, 1, R, m - 1, m - R
 		};
@@ -309,16 +308,15 @@ struct Test {
 				const mpz_class& y = tbl[j];
 				mpz_class z = (x * y) % m;
 				Fp xx, yy;
-				Fp::toMont(xx, x);
-				Fp::toMont(yy, y);
+				xx.setMpz(x);
+				yy.setMpz(y);
 				Fp zz = xx * yy;
 				mpz_class t;
-				Fp::fromMont(t, zz);
+				zz.getMpz(t);
 				CYBOZU_TEST_EQUAL(z, t);
 			}
 		}
 		std::cout << std::dec;
-#endif
 	}
 
 	void conv()
@@ -576,10 +574,11 @@ CYBOZU_TEST_AUTO(customTest)
 	}
 }
 
-CYBOZU_TEST_AUTO(test3)
+CYBOZU_TEST_AUTO(test)
 {
-	Test<3> test;
+	Test test;
 	const char *tbl[] = {
+		// N = 3
 		"0x000000000000000100000000000000000000000000000033", // min prime
 		"0x00000000fffffffffffffffffffffffffffffffeffffac73",
 		"0x0000000100000000000000000001b8fa16dfab9aca16b6b3",
@@ -590,45 +589,18 @@ CYBOZU_TEST_AUTO(test3)
 		"0xfffffffffffffffffffffffffffffffffffffffeffffee37",
 		"0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d",
 		"0xffffffffffffffffffffffffffffffffffffffffffffff13", // max prime
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		printf("prime=%s\n", tbl[i]);
-		test.run(tbl[i]);
-	}
-}
 
-CYBOZU_TEST_AUTO(test4)
-{
-	Test<4> test;
-	const char *tbl[] = {
+		// N = 4
 		"0x0000000000000001000000000000000000000000000000000000000000000085", // min prime
 		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		printf("prime=%s\n", tbl[i]);
-		test.run(tbl[i]);
-	}
-}
 
-CYBOZU_TEST_AUTO(test6)
-{
-	Test<6> test;
-	const char *tbl[] = {
+		// N = 6
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		printf("prime=%s\n", tbl[i]);
-		test.run(tbl[i]);
-	}
-}
 
-CYBOZU_TEST_AUTO(test9)
-{
-	Test<9> test;
-	const char *tbl[] = {
+		// N = 9
 		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
@@ -636,26 +608,3 @@ CYBOZU_TEST_AUTO(test9)
 		test.run(tbl[i]);
 	}
 }
-
-CYBOZU_TEST_AUTO(toStr16)
-{
-	const char *tbl[] = {
-		"0x0",
-		"0x5",
-		"0x123",
-		"0x123456789012345679adbc",
-		"0xffffffff26f2fc170f69466a74defd8d",
-		"0x100000000000000000000000000000033",
-		"0x11ee12312312940000000000000000000000000002342343"
-	};
-	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		std::string str, str2;
-		Fp x(tbl[i]);
-		x.getStr(str, 16);
-		mpz_class y(tbl[i]);
-		mcl::Gmp::getStr(str2, y, 16);
-		CYBOZU_TEST_EQUAL(str, str2);
-	}
-}
-
