@@ -44,9 +44,9 @@ else
 	CFLAGS+=$(MARCH)
 endif
 
-DEBUG=1
-ifeq ($(RELEASE),1)
-	DEBUG=0
+DEBUG=0
+ifeq ($(DEBUG),1)
+	DEBUG=1
 endif
 
 ifeq ($(DEBUG),0)
