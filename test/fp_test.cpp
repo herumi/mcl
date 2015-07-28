@@ -22,7 +22,6 @@ struct Init {
 
 CYBOZU_TEST_SETUP_FIXTURE(Init);
 
-#ifndef MCL_ONLY_BENCH
 CYBOZU_TEST_AUTO(cstr)
 {
 	const struct {
@@ -295,8 +294,6 @@ CYBOZU_TEST_AUTO(another)
 	CYBOZU_TEST_EQUAL(a, 1);
 }
 
-void fff(){}
-
 CYBOZU_TEST_AUTO(setArray)
 {
 	Fp::setModulo("1000000000000000000117");
@@ -417,57 +414,4 @@ CYBOZU_TEST_AUTO(getStr)
 	}
 }
 
-#endif
 
-#ifdef NDEBUG
-void benchSub(const char *pStr, const char *xStr, const char *yStr)
-	try
-{
-	Fp::setModulo(pStr);
-	Fp x(xStr);
-	Fp y(yStr);
-
-	CYBOZU_BENCH("add", Fp::add, x, x, x);
-	CYBOZU_BENCH("sub", Fp::sub, x, x, y);
-	CYBOZU_BENCH("mul", Fp::mul, x, x, x);
-	CYBOZU_BENCH("square", Fp::square, x, x);
-	CYBOZU_BENCH("inv", x += y;Fp::inv, x, x); // avoid same jmp
-	CYBOZU_BENCH("div", x += y;Fp::div, x, y, x);
-	puts("");
-} catch (std::exception& e) {
-	printf("ERR %s\n", e.what());
-}
-
-// square 76clk@sandy
-CYBOZU_TEST_AUTO(bench3)
-{
-	const char *pStr = "0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d";
-	const char *xStr = "0x148094810948190412345678901234567900342423332197";
-	const char *yStr = "0x7fffffffffffffffffffffe26f2fc170f69466a74defd8d";
-	benchSub(pStr, xStr, yStr);
-}
-
-CYBOZU_TEST_AUTO(bench4)
-{
-	const char *pStr = "0x2523648240000001ba344d80000000086121000000000013a700000000000013";
-	const char *xStr = "0x1480948109481904123456789234234242423424201234567900342423332197";
-	const char *yStr = "0x151342342342341517fffffffffffffffffffffe26f2fc170f69466a74defd8d";
-	benchSub(pStr, xStr, yStr);
-}
-
-CYBOZU_TEST_AUTO(bench6)
-{
-	const char *pStr = "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff";
-	const char *xStr = "0x19481084109481094820948209482094820984290482212345678901234567900342308472047204720422423332197";
-	const char *yStr = "0x209348209481094820984209842094820948204204243123456789012345679003423084720472047204224233321972";
-	benchSub(pStr, xStr, yStr);
-}
-
-CYBOZU_TEST_AUTO(bench9)
-{
-	const char *pStr = "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-	const char *xStr = "0x2908209582095820941098410948109482094820984209840294829049240294242498540975555312345678901234567900342308472047204720422423332197";
-	const char *yStr = "0x3948384209834029834092384204920349820948205872380573205782385729385729385723985837ffffffffffffffffffffffe26f2fc170f69466a74defd8d";
-	benchSub(pStr, xStr, yStr);
-}
-#endif
