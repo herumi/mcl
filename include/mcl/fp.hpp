@@ -159,13 +159,14 @@ public:
 		}
 		return *this;
 	}
+	static inline bool useMont() { return op_.useMont; }
 	void toMont(FpT& y, const FpT& x)
 	{
-		if (op_.useMont) op_.toMont(y.v_, x.v_);
+		if (useMont()) op_.toMont(y.v_, x.v_);
 	}
 	void fromMont(FpT& y, const FpT& x)
 	{
-		if (op_.useMont) op_.fromMont(y.v_, x.v_);
+		if (useMont()) op_.fromMont(y.v_, x.v_);
 	}
 	void setStr(const std::string& str, int base = 0)
 	{
@@ -212,7 +213,7 @@ public:
 	void getBlock(fp::Block& b) const
 	{
 		b.n = op_.N;
-		if (op_.useMont) {
+		if (useMont()) {
 			op_.fromMont(b.v_, v_);
 			b.p = &b.v_[0];
 		} else {
