@@ -340,6 +340,13 @@ public:
 		y.getBlock(yb);
 		return fp::compareArray(xb.p, yb.p, op_.N);
 	}
+	static inline bool isLess(const FpT& x, const FpT& y)
+	{
+		fp::Block xb, yb;
+		x.getBlock(xb);
+		y.getBlock(yb);
+		return fp::isLessArray(xb.p, yb.p, op_.N);
+	}
 	/*
 		@note
 		return unexpected order if useMont is set.
@@ -347,6 +354,10 @@ public:
 	static inline int compareRaw(const FpT& x, const FpT& y)
 	{
 		return fp::compareArray(x.v_, y.v_, op_.N);
+	}
+	static inline int isLessRaw(const FpT& x, const FpT& y)
+	{
+		return fp::isLessArray(x.v_, y.v_, op_.N);
 	}
 	/*
 		wrapper function for generic p

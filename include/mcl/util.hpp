@@ -53,6 +53,15 @@ bool isEqualArray(const T* x, const T* y, size_t n)
 }
 
 template<class T>
+bool isLessArray(const T *x, const T* y, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		if (x[n - i - 1] < y[n - i - 1]) return true;
+	}
+	return false;
+}
+
+template<class T>
 bool isZeroArray(const T *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
