@@ -33,6 +33,7 @@ include/mcl/elgamal.hpp
 include/mcl/window_method.hpp
 test/elgamal_test.cpp
 test/window_method_test.cpp
+sample/vote.cpp
 ```
 
 # Author
