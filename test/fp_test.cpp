@@ -166,13 +166,21 @@ CYBOZU_TEST_AUTO(compare)
 		const int cmp = tbl[i].cmp;
 		if (cmp == 0) {
 			CYBOZU_TEST_EQUAL(x, y);
+			CYBOZU_TEST_ASSERT(x >= y);
+			CYBOZU_TEST_ASSERT(x <= y);
+		} else if (cmp > 0) {
+			CYBOZU_TEST_ASSERT(x > y);
+			CYBOZU_TEST_ASSERT(x >= y);
 		} else {
-			CYBOZU_TEST_ASSERT(x != y);
+			CYBOZU_TEST_ASSERT(x < y);
+			CYBOZU_TEST_ASSERT(x <= y);
 		}
 	}
 	{
 		Fp x(5);
+		CYBOZU_TEST_ASSERT(x < 10);
 		CYBOZU_TEST_ASSERT(x == 5);
+		CYBOZU_TEST_ASSERT(x > 2);
 	}
 }
 
