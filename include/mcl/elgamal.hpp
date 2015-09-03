@@ -78,6 +78,8 @@ struct ElgamalT {
 			std::istringstream is(str);
 			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:CipherText:setStr") << str;
 		}
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const CipherText& self)
 		{
 			std::ios_base::fmtflags flags = os.flags();
@@ -110,6 +112,8 @@ struct ElgamalT {
 			std::istringstream is(str);
 			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:Zkp:setStr") << str;
 		}
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const Zkp& self)
 		{
 			std::ios_base::fmtflags flags = os.flags();
@@ -321,6 +325,8 @@ struct ElgamalT {
 			std::istringstream is(str);
 			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PublicKey:setStr") << str;
 		}
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
 			std::ios_base::fmtflags flags = os.flags();
@@ -425,6 +431,8 @@ struct ElgamalT {
 			std::istringstream is(str);
 			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:setStr") << str;
 		}
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const PrivateKey& self)
 		{
 			std::ios_base::fmtflags flags = os.flags();
