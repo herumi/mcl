@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)../cybozulib/include;$(SolutionDir)../cybozulib_ext/mpir/include;$(SolutionDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../cybozulib/include;$(SolutionDir)../cybozulib_ext/mpir/include;$(SolutionDir)include;$(SolutionDir)../xbyak</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
@@ -19,7 +19,7 @@
       <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NOMINMAX</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)../cybozulib_ext/mpir/lib;$(SolutionDir)bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)../cybozulib_ext/mpir/lib;$(SolutionDir)lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

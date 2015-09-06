@@ -76,7 +76,7 @@ struct OpeFunc {
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
 		z->_mp_alloc = n;
-		z->_mp_size = getNonZeroArraySize(p, n);
+		z->_mp_size = (int)getNonZeroArraySize(p, n);
 		z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
 	}
 	static inline void set_zero(mpz_t& z, Unit *p, size_t n)

@@ -11,6 +11,9 @@
 #ifndef MCL_MAX_OP_BIT_SIZE
 	#define MCL_MAX_OP_BIT_SIZE 521
 #endif
+#if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__))
+	#define MCL_USE_XBYAK
+#endif
 
 namespace mcl { namespace fp {
 

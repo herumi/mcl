@@ -18,8 +18,8 @@
 	#ifdef NDEBUG
 		#pragma comment(lib, "mcl.lib")
 	#else
-#pragma comment(lib, "mcld.lib")
-#endif
+		#pragma comment(lib, "mcld.lib")
+	#endif
 #endif
 #include <cybozu/hash.hpp>
 #include <mcl/op.hpp>
