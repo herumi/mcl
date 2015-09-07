@@ -68,7 +68,7 @@ LDFLAGS += -lpthread -m$(BIT) -lgmp -lgmpxx -lcrypto
 
 ifeq ($(MARCH),)
   ifeq ($(BIT),64)
-    CFLAGS += -DMCL_USE_XBYAK
+#    CFLAGS += -DMCL_USE_XBYAK
   endif
 endif
 
