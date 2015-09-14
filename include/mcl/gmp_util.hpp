@@ -26,7 +26,7 @@
 	#pragma warning(pop)
 #endif
 #ifdef _MSC_VER
-#if _MSC_VER == 1900
+#if _MSC_VER == 1900 /* VS2015 */
 #ifdef _DEBUG
 #pragma comment(lib, "14/mpird.lib")
 #pragma comment(lib, "14/mpirxxd.lib")
@@ -34,7 +34,7 @@
 #pragma comment(lib, "14/mpir.lib")
 #pragma comment(lib, "14/mpirxx.lib")
 #endif
-#elif _MSC_VER == 1800
+#elif _MSC_VER == 1800 /* VS2013 */
 #ifdef _DEBUG
 #pragma comment(lib, "12/mpird.lib")
 #pragma comment(lib, "12/mpirxxd.lib")
@@ -42,7 +42,7 @@
 #pragma comment(lib, "12/mpir.lib")
 #pragma comment(lib, "12/mpirxx.lib")
 #endif
-#else
+#else /* assume _MSC_VER == 1700 . VS2012 */
 #ifdef _DEBUG
 #pragma comment(lib, "mpird.lib")
 #pragma comment(lib, "mpirxxd.lib")
