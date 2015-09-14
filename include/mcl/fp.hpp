@@ -15,10 +15,12 @@
 	#ifndef NOMINMAX
 		#define NOMINMAX
 	#endif
-	#ifdef NDEBUG
-		#pragma comment(lib, "mcl.lib")
-	#else
-		#pragma comment(lib, "mcld.lib")
+	#ifndef MCL_NO_AUTOLINK
+		#ifdef NDEBUG
+			#pragma comment(lib, "mcl.lib")
+		#else
+			#pragma comment(lib, "mcld.lib")
+		#endif
 	#endif
 #endif
 #include <cybozu/hash.hpp>
