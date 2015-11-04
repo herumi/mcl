@@ -7,8 +7,10 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <sstream>
+#include <stdlib.h>
 #include <cybozu/exception.hpp>
-#include <mcl/gmp_util.hpp>
+#include <mcl/op.hpp>
+#include <mcl/util.hpp>
 
 namespace mcl {
 
@@ -374,7 +376,7 @@ public:
 			z = out;
 		}
 	}
-	template<class tag, size_t maxBitSize>
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
 		fp::Block b;
