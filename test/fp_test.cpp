@@ -377,6 +377,36 @@ CYBOZU_TEST_AUTO(set64bit)
 	}
 }
 
+CYBOZU_TEST_AUTO(getUint64)
+{
+	Fp::setModulo("0x1000000000000000000f");
+	const uint64_t tbl[] = {
+		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull)
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		uint64_t a = tbl[i];
+		Fp x(a);
+		uint64_t b = x.getUint64();
+		CYBOZU_TEST_EQUAL(a, b);
+	}
+	{
+		Fp x("0xffffffffffffffff");
+		CYBOZU_TEST_EQUAL(x.getUint64(), uint64_t(0xffffffffffffffffull));
+	}
+	{
+		Fp x("0x10000000000000000");
+		CYBOZU_TEST_EXCEPTION(x.getUint64(), cybozu::Exception);
+		x = -1;
+		CYBOZU_TEST_EXCEPTION(x.getUint64(), cybozu::Exception);
+	}
+	{
+		Fp x("0x10000000000000000");
+		bool b = true;
+		CYBOZU_TEST_EQUAL(x.getUint64(&b), 0);
+		CYBOZU_TEST_ASSERT(!b);
+	}
+}
+
 CYBOZU_TEST_AUTO(getArray)
 {
 	const struct {

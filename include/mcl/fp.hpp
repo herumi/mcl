@@ -299,6 +299,33 @@ public:
 	{
 		return fp::compareArray(v_, op_.p, op_.N) < 0;
 	}
+	uint64_t getUint64(bool *pb = 0) const
+	{
+		fp::Block b;
+		getBlock(b);
+#if CYBOZU_OS_BIT == 32
+		const size_t start = 2;
+#else
+		const size_t start = 1;
+#endif
+		for (size_t i = start; i < b.n; i++) {
+			if (b.p[i]) {
+				if (pb) {
+					*pb = false;
+					return 0;
+				}
+				throw cybozu::Exception("fpT::getUint64:large value") << *this;
+			}
+		}
+		if (pb) {
+			*pb = true;
+		}
+#if CYBOZU_OS_BIT == 32
+		return b.p[0] | (uint64_t(b.p[1]) << 32);
+#else
+		return b.p[0];
+#endif
+	}
 	static inline size_t getModBitLen() { return op_.bitSize; }
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
