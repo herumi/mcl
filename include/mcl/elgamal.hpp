@@ -345,10 +345,63 @@ struct ElgamalT {
 			return is;
 		}
 	};
-
+	/*
+		create table f^i for i in [rangeMin, rangeMax]
+	*/
+	struct PowerCache {
+#if (CYBOZU_CPP_VERSION > CYBOZU_CPP_VERSION_CP03)
+		typedef CYBOZU_NAMESPACE_STD::unordered_map<Ec, int> Cache;
+#else
+		typedef std::map<Ec, int> Cache;
+#endif
+		Cache cache;
+		void init(const Ec& f, int rangeMin, int rangeMax)
+		{
+			if (rangeMin > rangeMax) throw cybozu::Exception("mcl:ElgamalT:PowerCache:bad range") << rangeMin << rangeMax;
+			Ec x;
+			x.clear();
+			cache[x] = 0;
+			for (int i = 1; i <= rangeMax; i++) {
+				Ec::add(x, x, f);
+				cache[x] = i;
+			}
+			Ec nf;
+			Ec::neg(nf, f);
+			x.clear();
+			for (int i = -1; i >= rangeMin; i--) {
+				Ec::add(x, x, nf);
+				cache[x] = i;
+			}
+		}
+		/*
+			return m such that f^m = g
+		*/
+		int getExponent(const Ec& g, bool *b = 0) const
+		{
+			typename Cache::const_iterator i = cache.find(g);
+			if (i == cache.end()) {
+				if (b) {
+					*b = false;
+					return 0;
+				}
+				throw cybozu::Exception("Elgamal:PowerCache:getExponent:not found") << g;
+			}
+			if (b) *b = true;
+			return i->second;
+		}
+		void clear()
+		{
+			cache.clear();
+		}
+		bool isEmpty() const
+		{
+			return cache.empty();
+		}
+	};
 	class PrivateKey {
 		PublicKey pub;
 		Zn z;
+		PowerCache cache;
 	public:
 		/*
 			init
@@ -370,7 +423,7 @@ struct ElgamalT {
 		}
 		const PublicKey& getPublicKey() const { return pub; }
 		/*
-			decode message
+			decode message by brute-force attack
 			input : c = (c1, c2)
 			output : m
 			M = c2 / c1^z
@@ -412,6 +465,33 @@ struct ElgamalT {
 			Ec::sub(powfm, c.c2, c1z);
 		}
 		/*
+			set range of message to decode quickly
+		*/
+		void setCache(int rangeMin, int rangeMax)
+		{
+			cache.init(pub.getF(), rangeMin, rangeMax);
+		}
+		/*
+			clear cache
+		*/
+		void clearCache()
+		{
+			cache.clear();
+		}
+		/*
+			decode message by lookup table if !cache.isEmpty()
+			                  brute-force attack otherwise
+			input : c = (c1, c2)
+			        b : set false if not found
+			return m
+		*/
+		int dec(const CipherText& c, bool *b = 0) const
+		{
+			Ec powfm;
+			getPowerf(powfm, c);
+			return cache.getExponent(powfm, b);
+		}
+		/*
 			check whether c is encrypted zero message
 		*/
 		bool isZeroMessage(const CipherText& c) const
@@ -446,44 +526,6 @@ struct ElgamalT {
 			is >> self.pub  >> std::hex >> self.z;
 			is.flags(flags);
 			return is;
-		}
-	};
-	/*
-		create table f^i for i in [rangeMin, rangeMax]
-	*/
-	struct PowerCache {
-#if (CYBOZU_CPP_VERSION > CYBOZU_CPP_VERSION_CP03)
-		typedef CYBOZU_NAMESPACE_STD::unordered_map<Ec, int> Cache;
-#else
-		typedef std::map<Ec, int> Cache;
-#endif
-		Cache cache;
-		void init(const Ec& f, int rangeMin, int rangeMax)
-		{
-			if (rangeMin > rangeMax) throw cybozu::Exception("mcl:ElgamalT:PowerCache:bad range") << rangeMin << rangeMax;
-			Ec x;
-			x.clear();
-			cache[x] = 0;
-			for (int i = 1; i <= rangeMax; i++) {
-				Ec::add(x, x, f);
-				cache[x] = i;
-			}
-			Ec nf;
-			Ec::neg(nf, f);
-			x.clear();
-			for (int i = -1; i >= rangeMin; i--) {
-				Ec::add(x, x, nf);
-				cache[x] = i;
-			}
-		}
-		/*
-			return m such that f^m = g
-		*/
-		int getExponent(const Ec& g) const
-		{
-			typename Cache::const_iterator i = cache.find(g);
-			if (i == cache.end()) throw cybozu::Exception("Elgamal:PowerCache:getExponent:not found") << g;
-			return i->second;
 		}
 	};
 };
