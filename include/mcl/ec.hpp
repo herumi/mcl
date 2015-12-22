@@ -368,12 +368,16 @@ public:
 	}
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
-		EcT out;
-		fp::powerGeneric(out, x, y, yn, EcT::add, EcT::dbl);
+		EcT tmp;
+		const EcT *px = &x;
+		if (&z == &x) {
+			tmp = x;
+			px = &tmp;
+		}
+		z.clear();
+		fp::powerGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
 		if (isNegative) {
-			neg(z, out);
-		} else {
-			z = out;
+			neg(z, z);
 		}
 	}
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>

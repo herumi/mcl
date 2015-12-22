@@ -3,7 +3,7 @@ include ../common.mk
 TARGET=$(TEST_FILE)
 LIBS=
 
-SRC=$(wildcard *.cpp)
+SRC=bench.cpp ecdh.cpp random.cpp vote.cpp
 
 all: $(TARGET)
 

@@ -270,12 +270,16 @@ public:
 	}
 	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn, bool isNegative)
 	{
-		FpT out(1);
-		fp::powerGeneric(out, x, y, yn, FpT::mul, FpT::square);
+		FpT tmp;
+		const FpT *px = &x;
+		if (&z == &x) {
+			tmp = x;
+			px = &tmp;
+		}
+		z = 1;
+		fp::powerGeneric(z, *px, y, yn, FpT::mul, FpT::square);
 		if (isNegative) {
-			FpT::inv(z, out);
-		} else {
-			z = out;
+			FpT::inv(z, z);
 		}
 	}
 	template<class tag2, size_t maxBitSize2>
