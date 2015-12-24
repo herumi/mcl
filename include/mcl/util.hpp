@@ -139,12 +139,12 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@param x [in]
 	@param y [in]
 	@param n [in] size of y[]
+	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
 void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void square(G&, const G&)){
 #if 1
 	assert(&out != &x);
-	G t(x);
 	while (n > 0) {
 		if (y[n - 1]) break;
 		n--;
@@ -165,7 +165,7 @@ void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G
 		for (int j = m - 1; j >= 0; j--) {
 			square(out, out);
 			if (v & (T(1) << j)) {
-				mul(out, out, t);
+				mul(out, out, x);
 			}
 		}
 	}

@@ -368,6 +368,7 @@ public:
 	}
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
+		x.normalize();
 		EcT tmp;
 		const EcT *px = &x;
 		if (&z == &x) {

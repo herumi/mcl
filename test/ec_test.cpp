@@ -31,6 +31,29 @@ struct Test {
 		Ec::neg(P, O);
 		CYBOZU_TEST_EQUAL(P, O);
 	}
+	void pow2(Ec& Q, const Ec& P, int n) const
+	{
+		Q = P;
+		for (int i = 0; i < n; i++) {
+			Q += Q;
+		}
+	}
+	void pow2test(const Ec& P, int n) const
+	{
+		Ec Q, R;
+		pow2(Q, P, n);
+		Q -= P; // Q = (2^n - 1)P
+		Fp x = 1;
+		for (int i = 0; i < n; i++) {
+			x += x;
+		}
+		x -= 1; // x = 2^n - 1
+		Ec::mul(R, P, x);
+		CYBOZU_TEST_EQUAL(Q, R);
+		Q = P;
+		Ec::mul(Q, Q, x);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
 	void ope() const
 	{
 		Fp x(para.gx);
@@ -96,6 +119,22 @@ struct Test {
 		CYBOZU_TEST_EQUAL(R, -P);
 		R += P; // Ec::mul(R, P, n);
 		CYBOZU_TEST_ASSERT(R.isZero());
+		{
+			const int tbl[] = { 1, 2, 63, 64, 65, 127, 128, 129 };
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+				pow2test(P, tbl[i]);
+			}
+		}
+		{
+			Ec::mul(Q, P, 0);
+			CYBOZU_TEST_ASSERT(Q.isZero());
+			Q = P;
+			CYBOZU_TEST_ASSERT(!Q.isZero());
+			Ec::mul(Q, Q, 0);
+			CYBOZU_TEST_ASSERT(Q.isZero());
+			Ec::mul(Q, P, 1);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
 	}
 
 	void mul() const
