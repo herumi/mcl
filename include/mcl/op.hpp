@@ -54,6 +54,8 @@ struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
 	Unit p[maxOpUnitSize];
+	Unit half[maxOpUnitSize]; // (p - 1) / 2
+	Unit oneRep[maxOpUnitSize]; // 1(=inv R if Montgomery)
 	/*
 		for Montgomery
 		one = 1

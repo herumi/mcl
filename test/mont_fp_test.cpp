@@ -365,6 +365,38 @@ struct Test {
 				CYBOZU_TEST_ASSERT(x != y);
 			}
 		}
+		{
+			Fp x(1);
+			CYBOZU_TEST_ASSERT(x.isOne());
+			x = 2;
+			CYBOZU_TEST_ASSERT(!x.isOne());
+		}
+		{
+			const struct {
+				int v;
+				bool expected;
+			} tbl[] = {
+				{ 0, false },
+				{ 1, false },
+				{ -1, true },
+			};
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+				Fp x = tbl[i].v;
+				PUT(x);
+				CYBOZU_TEST_EQUAL(x.isNegative(), tbl[i].expected);
+			}
+			std::string str;
+			Fp::getModulo(str);
+			mpz_class half(str);
+			half = (half - 1) / 2;
+			Fp x;
+			x.setMpz(half - 1);
+			CYBOZU_TEST_ASSERT(!x.isNegative());
+			x.setMpz(half);
+			CYBOZU_TEST_ASSERT(!x.isNegative());
+			x.setMpz(half + 1);
+			CYBOZU_TEST_ASSERT(x.isNegative());
+		}
 	}
 
 	void modulo()

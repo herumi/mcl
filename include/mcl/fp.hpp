@@ -106,6 +106,12 @@ public:
 	"\n", mode, op_.useMont);
 #endif
 		op_.init(mstr, base, maxBitSize, mode);
+		{
+			FpT x = 1;
+			op_.copy(op_.oneRep, x.v_);
+			mpz_class half = (op_.mp - 1) / 2;
+			Gmp::getArray(op_.half, op_.N, half);
+		}
 	}
 	static inline void getModulo(std::string& pstr)
 	{
@@ -299,6 +305,18 @@ public:
 		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	bool isZero() const { return op_.isZero(v_); }
+	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
+	/*
+		return true if p/2 < x < p
+		return false if 0 <= x <= p/2
+		note p/2 == (p-1)/2 because of p is odd
+	*/
+	bool isNegative() const
+	{
+		fp::Block b;
+		getBlock(b);
+		return fp::compareArray(b.p, op_.half, op_.N) > 0;
+	}
 	bool isValid() const
 	{
 		return fp::compareArray(v_, op_.p, op_.N) < 0;
