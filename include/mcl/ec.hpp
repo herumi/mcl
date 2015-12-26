@@ -59,7 +59,7 @@ public:
 	void normalize() const
 	{
 #if MCL_EC_COORD == MCL_EC_USE_JACOBI
-		if (isZero() || z == 1) return;
+		if (isZero() || z.isOne()) return;
 		Fp rz, rz2;
 		Fp::inv(rz, z);
 		rz2 = rz * rz;
@@ -67,7 +67,7 @@ public:
 		y *= rz2 * rz;
 		z = 1;
 #elif MCL_EC_COORD == MCL_EC_USE_PROJ
-		if (isZero() || z == 1) return;
+		if (isZero() || z.isOne()) return;
 		Fp rz;
 		Fp::inv(rz, z);
 		x *= rz;
@@ -107,7 +107,7 @@ public:
 #if MCL_EC_COORD == MCL_EC_USE_AFFINE
 		inf_ = true;
 #else
-		z = 0;
+		z.clear();
 #endif
 		x.clear();
 		y.clear();
