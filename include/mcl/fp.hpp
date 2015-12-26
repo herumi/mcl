@@ -106,9 +106,14 @@ public:
 	"\n", mode, op_.useMont);
 #endif
 		op_.init(mstr, base, maxBitSize, mode);
-		{
-			FpT x = 1;
+		{ // set oneRep
+			FpT x;
+			x.clear();
+			x.v_[0] = 1;
+			op_.toMont(x.v_, x.v_);
 			op_.copy(op_.oneRep, x.v_);
+		}
+		{ // set half
 			mpz_class half = (op_.mp - 1) / 2;
 			Gmp::getArray(op_.half, op_.N, half);
 		}
@@ -154,7 +159,9 @@ public:
 	FpT& operator=(int64_t x)
 	{
 		clear();
-		if (x) {
+		if (x == 1) {
+			op_.copy(v_, op_.oneRep);
+		} else if (x) {
 			int64_t y = x < 0 ? -x : x;
 			if (sizeof(Unit) == 8) {
 				v_[0] = y;
