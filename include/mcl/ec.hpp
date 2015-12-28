@@ -119,6 +119,7 @@ public:
 		Fp S, M, t, y2;
 		Fp::square(y2, P.y);
 		Fp::mul(S, P.x, y2);
+		const bool isPzOne = P.z.isOne();
 		S += S;
 		S += S;
 		Fp::square(M, P.x);
@@ -128,17 +129,25 @@ public:
 			M += t;
 			break;
 		case minus3:
-			Fp::square(t, P.z);
-			Fp::square(t, t);
-			M -= t;
+			if (isPzOne) {
+				M -= P.z;
+			} else {
+				Fp::square(t, P.z);
+				Fp::square(t, t);
+				M -= t;
+			}
 			Fp::add(t, M, M);
 			M += t;
 			break;
 		case generic:
 		default:
-			Fp::square(t, P.z);
-			Fp::square(t, t);
-			t *= a_;
+			if (isPzOne) {
+				t = a_;
+			} else {
+				Fp::square(t, P.z);
+				Fp::square(t, t);
+				t *= a_;
+			}
 			t += M;
 			M += M;
 			M += t;
@@ -147,7 +156,11 @@ public:
 		Fp::square(R.x, M);
 		R.x -= S;
 		R.x -= S;
-		Fp::mul(R.z, P.y, P.z);
+		if (isPzOne) {
+			R.z = P.y;
+		} else {
+			Fp::mul(R.z, P.y, P.z);
+		}
 		R.z += R.z;
 		Fp::square(y2, y2);
 		y2 += y2;
@@ -157,6 +170,7 @@ public:
 		R.y *= M;
 		R.y -= y2;
 #elif MCL_EC_COORD == MCL_EC_USE_PROJ
+		const bool isPzOne = P.z.isOne();
 		Fp w, t, h;
 		switch (specialA_) {
 		case zero:
@@ -166,22 +180,34 @@ public:
 			break;
 		case minus3:
 			Fp::square(w, P.x);
-			Fp::square(t, P.z);
-			w -= t;
+			if (isPzOne) {
+				w -= P.z;
+			} else {
+				Fp::square(t, P.z);
+				w -= t;
+			}
 			Fp::add(t, w, w);
 			w += t;
 			break;
 		case generic:
 		default:
-			Fp::square(w, P.z);
-			w *= a_;
+			if (isPzOne) {
+				w = a_;
+			} else {
+				Fp::square(w, P.z);
+				w *= a_;
+			}
 			Fp::square(t, P.x);
 			w += t;
 			w += t;
 			w += t; // w = a z^2 + 3x^2
 			break;
 		}
-		Fp::mul(R.z, P.y, P.z); // s = yz
+		if (isPzOne) {
+			R.z = P.y;
+		} else {
+			Fp::mul(R.z, P.y, P.z); // s = yz
+		}
 		Fp::mul(t, R.z, P.x);
 		t *= P.y; // xys
 		t += t;
