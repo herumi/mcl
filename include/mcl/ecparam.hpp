@@ -139,6 +139,7 @@ const struct mcl::EcParam NIST_P521 = {
 static inline const mcl::EcParam* getEcParam(const std::string& name)
 {
 	static const mcl::EcParam *tbl[] = {
+		&ecparam::p160_1,
 		&ecparam::secp160k1,
 		&ecparam::secp192k1,
 		&ecparam::secp224k1,

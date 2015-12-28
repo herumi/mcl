@@ -103,6 +103,7 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode)
 void benchEc(size_t bitSize, int mode)
 {
 	const struct mcl::EcParam tbl[] = {
+		mcl::ecparam::p160_1,
 		mcl::ecparam::secp160k1,
 		mcl::ecparam::secp192k1,
 		mcl::ecparam::NIST_P192,
