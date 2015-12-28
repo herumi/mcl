@@ -21,7 +21,7 @@ namespace mcl {
 //#define MCL_EC_COORD MCL_EC_USE_JACOBI
 //#define MCL_EC_COORD MCL_EC_USE_PROJ
 #ifndef MCL_EC_COORD
-	#define MCL_EC_COORD MCL_EC_USE_PROJ
+	#define MCL_EC_COORD MCL_EC_USE_JACOBI
 #endif
 /*
 	elliptic curve
