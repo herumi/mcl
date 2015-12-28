@@ -231,10 +231,10 @@ public:
 	{
 		if (_P.isZero()) { R = _Q; return; }
 		if (_Q.isZero()) { R = _P; return; }
-//		if (&_P == &_Q) {
-//			dblNoVerifyInf(R, _P);
-//			return;
-//		}
+		if (&_P == &_Q) {
+			dblNoVerifyInf(R, _P);
+			return;
+		}
 #if MCL_EC_COORD == MCL_EC_USE_AFFINE
 		const EcT& P(_P);
 		const ECT& Q(_Q);
@@ -246,18 +246,27 @@ public:
 		}
 		const EcT& P(*pP);
 		const EcT& Q(*pQ);
+		const bool isQzOne = Q.z.isOne();
 #endif
 #if MCL_EC_COORD == MCL_EC_USE_JACOBI
 		Fp r, U1, S1, H, H3;
 		Fp::square(r, P.z);
-		Fp::square(S1, Q.z);
-		Fp::mul(U1, P.x, S1);
-		Fp::mul(H, Q.x, r);
-		H -= U1;
-		r *= P.z;
-		S1 *= Q.z;
-		S1 *= P.y;
-		Fp::mul(r, Q.y, r);
+		if (isQzOne) {
+			U1 = P.x;
+			Fp::mul(H, Q.x, r);
+			H -= U1;
+			r *= P.z;
+			S1 = P.y;
+		} else {
+			Fp::square(S1, Q.z);
+			Fp::mul(U1, P.x, S1);
+			Fp::mul(H, Q.x, r);
+			H -= U1;
+			r *= P.z;
+			S1 *= Q.z;
+			S1 *= P.y;
+		}
+		r *= Q.y;
 		r -= S1;
 		if (H.isZero()) {
 			if (r.isZero()) {
@@ -267,8 +276,12 @@ public:
 			}
 			return;
 		}
-		Fp::mul(R.z, P.z, Q.z);
-		R.z *= H;
+		if (isQzOne) {
+			Fp::mul(R.z, P.z, H);
+		} else {
+			Fp::mul(R.z, P.z, Q.z);
+			R.z *= H;
+		}
 		Fp::square(H3, H); // H^2
 		Fp::square(R.y, r); // r^2
 		U1 *= H3; // U1 H^2
@@ -281,69 +294,45 @@ public:
 		H3 *= S1;
 		Fp::sub(R.y, U1, H3);
 #elif MCL_EC_COORD == MCL_EC_USE_PROJ
-		if (Q.z.isOne()) {
-			Fp r, PyQz, v, A, vv;
-			Fp::mul(r, P.x, Q.z);
-			Fp::mul(PyQz, P.y, Q.z);
-			Fp::mul(A, Q.y, P.z);
-			Fp::mul(v, Q.x, P.z);
-			v -= r;
-			if (v.isZero()) {
-				if (A == PyQz) {
-					dblNoVerifyInf(R, P);
-				} else {
-					R.clear();
-				}
-				return;
-			}
-			Fp::sub(R.y, A, PyQz);
-			Fp::square(A, R.y);
-			Fp::square(vv, v);
-			r *= vv;
-			vv *= v;
-			Fp::mul(R.z, P.z, Q.z);
-			A *= R.z;
-			R.z *= vv;
-			A -= vv;
-			vv *= PyQz;
-			A -= r;
-			A -= r;
-			Fp::mul(R.x, v, A);
-			r -= A;
-			R.y *= r;
-			R.y -= vv;
+		Fp r, PyQz, v, A, vv;
+		if (isQzOne) {
+			r = P.x;
+			PyQz = P.y;
 		} else {
-			Fp r, PyQz, v, A, vv;
 			Fp::mul(r, P.x, Q.z);
 			Fp::mul(PyQz, P.y, Q.z);
-			Fp::mul(A, Q.y, P.z);
-			Fp::mul(v, Q.x, P.z);
-			v -= r;
-			if (v.isZero()) {
-				if (A == PyQz) {
-					dblNoVerifyInf(R, P);
-				} else {
-					R.clear();
-				}
-				return;
-			}
-			Fp::sub(R.y, A, PyQz);
-			Fp::square(A, R.y);
-			Fp::square(vv, v);
-			r *= vv;
-			vv *= v;
-			Fp::mul(R.z, P.z, Q.z);
-			A *= R.z;
-			R.z *= vv;
-			A -= vv;
-			vv *= PyQz;
-			A -= r;
-			A -= r;
-			Fp::mul(R.x, v, A);
-			r -= A;
-			R.y *= r;
-			R.y -= vv;
 		}
+		Fp::mul(A, Q.y, P.z);
+		Fp::mul(v, Q.x, P.z);
+		v -= r;
+		if (v.isZero()) {
+			if (A == PyQz) {
+				dblNoVerifyInf(R, P);
+			} else {
+				R.clear();
+			}
+			return;
+		}
+		Fp::sub(R.y, A, PyQz);
+		Fp::square(A, R.y);
+		Fp::square(vv, v);
+		r *= vv;
+		vv *= v;
+		if (isQzOne) {
+			R.z = P.z;
+		} else {
+			Fp::mul(R.z, P.z, Q.z);
+		}
+		A *= R.z;
+		R.z *= vv;
+		A -= vv;
+		vv *= PyQz;
+		A -= r;
+		A -= r;
+		Fp::mul(R.x, v, A);
+		r -= A;
+		R.y *= r;
+		R.y -= vv;
 #else
 		Fp t;
 		Fp::neg(t, Q.y);
