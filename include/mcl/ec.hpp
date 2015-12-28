@@ -12,17 +12,19 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 
+//#define MCL_EC_USE_AFFINE
+
 namespace mcl {
 
-#define MCL_EC_USE_AFFINE 0
-#define MCL_EC_USE_PROJ 1
-#define MCL_EC_USE_JACOBI 2
+namespace ec {
 
-//#define MCL_EC_COORD MCL_EC_USE_JACOBI
-//#define MCL_EC_COORD MCL_EC_USE_PROJ
-#ifndef MCL_EC_COORD
-	#define MCL_EC_COORD MCL_EC_USE_JACOBI
-#endif
+enum Mode {
+	Jacobi,
+	Proj
+};
+
+} // mcl::ecl
+
 /*
 	elliptic curve
 	y^2 = x^3 + ax + b (affine)
@@ -37,18 +39,18 @@ class EcT {
 	};
 public:
 	typedef _Fp Fp;
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 	Fp x, y;
 	bool inf_;
 #else
 	mutable Fp x, y, z;
+	static int mode_;
 #endif
 	static Fp a_;
 	static Fp b_;
 	static int specialA_;
 	static bool compressedExpression_;
-	static int mode_;
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 	EcT() : inf_(true) {}
 #else
 	EcT() { z.clear(); }
@@ -57,6 +59,7 @@ public:
 	{
 		set(_x, _y);
 	}
+#ifndef MCL_EC_USE_AFFINE
 	void normalizeJacobi() const
 	{
 		if (isZero() || z.isOne()) return;
@@ -76,40 +79,21 @@ public:
 		y *= rz;
 		z = 1;
 	}
+#endif
 	void normalize() const
 	{
-#if 1
-#if MCL_EC_COORD != MCL_EC_USE_AFFINE
+#ifndef MCL_EC_USE_AFFINE
 		switch (mode_) {
-		case MCL_EC_USE_JACOBI:
+		case ec::Jacobi:
 			normalizeJacobi();
 			break;
-		case MCL_EC_USE_PROJ:
+		case ec::Proj:
 			normalizeProj();
 			break;
 		}
 #endif
-#else
-#if MCL_EC_COORD == MCL_EC_USE_JACOBI
-		if (isZero() || z.isOne()) return;
-		Fp rz, rz2;
-		Fp::inv(rz, z);
-		rz2 = rz * rz;
-		x *= rz2;
-		y *= rz2 * rz;
-		z = 1;
-#elif MCL_EC_COORD == MCL_EC_USE_PROJ
-		if (isZero() || z.isOne()) return;
-		Fp rz;
-		Fp::inv(rz, z);
-		x *= rz;
-		y *= rz;
-		z = 1;
-#endif
-#endif
 	}
-
-	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = MCL_EC_USE_JACOBI)
+	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
 	{
 		a_.setStr(astr);
 		b_.setStr(bstr);
@@ -120,14 +104,18 @@ public:
 		} else {
 			specialA_ = generic;
 		}
+#ifdef MCL_EC_USE_AFFINE
+		cybozu::disable_warning_unused_variable(mode);
+#else
 		switch (mode) {
-		case MCL_EC_USE_JACOBI:
-		case MCL_EC_USE_PROJ:
+		case ec::Jacobi:
+		case ec::Proj:
 			mode_ = mode;
 			break;
 		default:
 			throw cybozu::Exception("ec:EcT:setParam:bad mode") << mode;
 		}
+#endif
 	}
 	static inline bool isValid(const Fp& _x, const Fp& _y)
 	{
@@ -137,7 +125,7 @@ public:
 	{
 		if (verify && !isValid(_x, _y)) throw cybozu::Exception("ec:EcT:set") << _x << _y;
 		x = _x; y = _y;
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
 #else
 		z = 1;
@@ -145,7 +133,7 @@ public:
 	}
 	void clear()
 	{
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 		inf_ = true;
 #else
 		z.clear();
@@ -153,7 +141,7 @@ public:
 		x.clear();
 		y.clear();
 	}
-
+#ifndef MCL_EC_USE_AFFINE
 	static inline void dblNoVerifyInfJacobi(EcT& R, const EcT& P)
 	{
 		Fp S, M, t, y2;
@@ -269,9 +257,10 @@ public:
 		Fp::sub(R.y, t, w);
 		R.y -= w;
 	}
+#endif
 	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
 	{
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 		Fp t, s;
 		Fp::square(t, P.x);
 		Fp::add(s, t, t);
@@ -290,10 +279,10 @@ public:
 		R.inf_ = false;
 #else
 		switch (mode_) {
-		case MCL_EC_USE_JACOBI:
+		case ec::Jacobi:
 			dblNoVerifyInfJacobi(R, P);
 			break;
-		case MCL_EC_USE_PROJ:
+		case ec::Proj:
 			dblNoVerifyInfProj(R, P);
 			break;
 		}
@@ -307,6 +296,7 @@ public:
 		}
 		dblNoVerifyInf(R, P);
 	}
+#ifndef MCL_EC_USE_AFFINE
 	static inline void addJacobi(EcT& R, const EcT& P, const EcT& Q)
 	{
 		const bool isQzOne = Q.z.isOne();
@@ -398,6 +388,7 @@ public:
 		R.y *= r;
 		R.y -= vv;
 	}
+#endif
 	static inline void add(EcT& R, const EcT& _P, const EcT& _Q)
 	{
 		if (_P.isZero()) { R = _Q; return; }
@@ -406,9 +397,9 @@ public:
 			dblNoVerifyInf(R, _P);
 			return;
 		}
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 		const EcT& P(_P);
-		const ECT& Q(_Q);
+		const EcT& Q(_Q);
 		Fp t;
 		Fp::neg(t, Q.y);
 		if (P.y == t) { R.clear(); return; }
@@ -438,10 +429,10 @@ public:
 		const EcT& P(*pP);
 		const EcT& Q(*pQ);
 		switch (mode_) {
-		case MCL_EC_USE_JACOBI:
+		case ec::Jacobi:
 			addJacobi(R, P, Q);
 			break;
-		case MCL_EC_USE_PROJ:
+		case ec::Proj:
 			addProj(R, P, Q);
 			break;
 		}
@@ -459,13 +450,11 @@ public:
 			R.clear();
 			return;
 		}
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+		R.x = P.x;
+		Fp::neg(R.y, P.y);
+#ifdef MCL_EC_USE_AFFINE
 		R.inf_ = false;
-		R.x = P.x;
-		Fp::neg(R.y, P.y);
 #else
-		R.x = P.x;
-		Fp::neg(R.y, P.y);
 		R.z = P.z;
 #endif
 	}
@@ -530,7 +519,7 @@ public:
 	}
 	bool isZero() const
 	{
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 		return inf_;
 #else
 		return z.isZero();
@@ -557,7 +546,7 @@ public:
 		if (str == "0") {
 			self.clear();
 		} else {
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+#ifdef MCL_EC_USE_AFFINE
 			self.inf_ = false;
 #else
 			self.z = 1;
@@ -614,7 +603,9 @@ template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
 template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> bool EcT<Fp>::compressedExpression_;
-template<class Fp> int EcT<Fp>::mode_;;
+#ifndef MCL_EC_USE_AFFINE
+template<class Fp> int EcT<Fp>::mode_;
+#endif
 
 struct EcParam {
 	const char *name;

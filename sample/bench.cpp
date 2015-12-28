@@ -82,11 +82,11 @@ void benchFp(size_t bitSize, int mode)
 	}
 }
 
-void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode)
+void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMode)
 {
 	Fp::setModulo(para.p, 0, mode);
 	Zn::setModulo(para.n);
-	Ec::setParam(para.a, para.b);
+	Ec::setParam(para.a, para.b, ecMode);
 	Fp x(para.gx);
 	Fp y(para.gy);
 	Ec P(x, y);
@@ -100,7 +100,7 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode)
 	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul %8.2f\n", para.name, getModeStr(mode), addT, subT, dblT, mulT);
 
 }
-void benchEc(size_t bitSize, int mode)
+void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
 {
 	const struct mcl::EcParam tbl[] = {
 		mcl::ecparam::p160_1,
@@ -118,13 +118,13 @@ void benchEc(size_t bitSize, int mode)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (bitSize != 0 && tbl[i].bitSize != bitSize) continue;
-		if (mode & (1 << 0)) benchEcSub(tbl[i], mcl::fp::FP_GMP);
+		if (mode & (1 << 0)) benchEcSub(tbl[i], mcl::fp::FP_GMP, ecMode);
 #ifdef MCL_USE_LLVM
-		if (mode & (1 << 1)) benchEcSub(tbl[i], mcl::fp::FP_LLVM);
-		if (mode & (1 << 2)) benchEcSub(tbl[i], mcl::fp::FP_LLVM_MONT);
+		if (mode & (1 << 1)) benchEcSub(tbl[i], mcl::fp::FP_LLVM, ecMode);
+		if (mode & (1 << 2)) benchEcSub(tbl[i], mcl::fp::FP_LLVM_MONT, ecMode);
 #endif
 #ifdef MCL_USE_XBYAK
-		if (mode & (1 << 3)) benchEcSub(tbl[i], mcl::fp::FP_XBYAK);
+		if (mode & (1 << 3)) benchEcSub(tbl[i], mcl::fp::FP_XBYAK, ecMode);
 #endif
 	}
 }
@@ -184,21 +184,33 @@ int main(int argc, char *argv[])
 	bool ecOnly;
 	bool fpOnly;
 	bool misc;
+	mcl::ec::Mode ecMode;
+	std::string ecModeStr;
 	cybozu::Option opt;
 	opt.appendOpt(&bitSize, 0, "b", ": bitSize");
 	opt.appendOpt(&mode, 0, "m", ": mode(0:all, sum of 1:gmp, 2:llvm, 8:llvm+mont, 8:xbyak");
 	opt.appendBoolOpt(&ecOnly, "ec", ": ec only");
 	opt.appendBoolOpt(&fpOnly, "fp", ": fp only");
 	opt.appendBoolOpt(&misc, "misc", ": other benchmark");
+	opt.appendOpt(&ecModeStr, "jacobi", "ecmode", ": jacobi or proj");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
-		exit(1);
+		return 1;
+	}
+	if (ecModeStr == "jacobi") {
+		ecMode = mcl::ec::Jacobi;
+	} else if (ecModeStr == "proj") {
+		ecMode = mcl::ec::Proj;
+	} else {
+		printf("bad ecstr %s\n", ecModeStr.c_str());
+		opt.usage();
+		return 1;
 	}
 	if (mode < 0 || mode > 15) {
 		printf("bad mode %d\n", mode);
 		opt.usage();
-		exit(1);
+		return 1;
 	}
 	if (mode == 0) mode = 15;
 	if (misc) {
@@ -206,7 +218,10 @@ int main(int argc, char *argv[])
 		benchFromStr16();
 	} else {
 		if (!ecOnly) benchFp(bitSize, mode);
-		if (!fpOnly) benchEc(bitSize, mode);
+		if (!fpOnly) {
+			printf("ecMode=%s\n", ecModeStr.c_str());
+			benchEc(bitSize, mode, ecMode);
+		}
 	}
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
