@@ -37,10 +37,45 @@ template<class T>
 int compareArray(const T* x, const T* y, size_t n)
 {
 	for (size_t i = n - 1; i != size_t(-1); i--) {
-		if (x[i] < y[i]) return -1;
-		if (x[i] > y[i]) return 1;
+		T a = x[i];
+		T b = y[i];
+		if (a != b) return a < b ? -1 : 1;
 	}
 	return 0;
+}
+
+template<class T>
+bool isLessArray(const T *x, const T* y, size_t n)
+{
+	for (size_t i = n - 1; i != size_t(-1); i--) {
+		T a = x[i];
+		T b = y[i];
+		if (a != b) return a < b;
+	}
+	return false;
+}
+
+template<class T>
+bool isGreaterOrEqualArray(const T *x, const T* y, size_t n)
+{
+	return !isLessArray(x, y, n);
+}
+
+template<class T>
+bool isLessOrEqualArray(const T *x, const T* y, size_t n)
+{
+	for (size_t i = n - 1; i != size_t(-1); i--) {
+		T a = x[i];
+		T b = y[i];
+		if (a != b) return a < b;
+	}
+	return true;
+}
+
+template<class T>
+bool isGreaterArray(const T *x, const T* y, size_t n)
+{
+	return !isLessOrEqualArray(x, y, n);
 }
 
 template<class T>
@@ -50,15 +85,6 @@ bool isEqualArray(const T* x, const T* y, size_t n)
 		if (x[i] != y[i]) return false;
 	}
 	return true;
-}
-
-template<class T>
-bool isLessArray(const T *x, const T* y, size_t n)
-{
-	for (size_t i = 0; i < n; i++) {
-		if (x[n - i - 1] < y[n - i - 1]) return true;
-	}
-	return false;
 }
 
 template<class T>
@@ -130,7 +156,7 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	for (;;) {
 		rg.read(out, n);
 		if (rem > 0) out[n - 1] &= (T(1) << rem) - 1;
-		if (compareArray(out, in, n) < 0) return;
+		if (isLessArray(out, in, n)) return;
 	}
 }
 

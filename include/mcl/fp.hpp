@@ -322,11 +322,11 @@ public:
 	{
 		fp::Block b;
 		getBlock(b);
-		return fp::compareArray(b.p, op_.half, op_.N) > 0;
+		return fp::isGreaterArray(b.p, op_.half, op_.N);
 	}
 	bool isValid() const
 	{
-		return fp::compareArray(v_, op_.p, op_.N) < 0;
+		return fp::isLessArray(v_, op_.p, op_.N);
 	}
 	uint64_t getUint64(bool *pb = 0) const
 	{

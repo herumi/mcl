@@ -339,11 +339,11 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool do
 	memcpy(y, x, xByteSize);
 	memset((char *)y + xByteSize, 0, fpByteSize - xByteSize);
 	if (!doMask) {
-		if (compareArray(y, op.p, op.N) >= 0) throw cybozu::Exception("fp:copyAndMask:large x");
+		if (isGreaterOrEqualArray(y, op.p, op.N)) throw cybozu::Exception("fp:copyAndMask:large x");
 		return;
 	}
 	maskArray(y, op.N, op.bitSize - 1);
-	assert(compareArray(y, op.p, op.N) < 0);
+	assert(isLessArray(y, op.p, op.N));
 }
 
 } } // mcl::fp

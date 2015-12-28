@@ -75,6 +75,58 @@ CYBOZU_TEST_AUTO(compareArray)
 	}
 }
 
+CYBOZU_TEST_AUTO(isLessArray)
+{
+	const struct {
+		uint32_t a[4];
+		uint32_t b[4];
+		size_t n;
+		bool expect;
+	} tbl[] = {
+		{ { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, 0, false },
+		{ { 1, 0, 0, 0 }, { 0, 0, 0, 0 }, 1, false },
+		{ { 0, 0, 0, 0 }, { 1, 0, 0, 0 }, 1, true },
+		{ { 1, 0, 0, 0 }, { 1, 0, 0, 0 }, 1, false },
+		{ { 3, 1, 1, 0 }, { 2, 1, 1, 0 }, 4, false },
+		{ { 3, 1, 2, 0 }, { 2, 2, 2, 0 }, 4, true },
+		{ { 9, 2, 1, 1 }, { 1, 3, 1, 1 }, 4, true },
+		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 3, false },
+		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 4, true },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		bool e = mcl::fp::isLessArray(tbl[i].a, tbl[i].b, tbl[i].n);
+		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
+		e = mcl::fp::isGreaterArray(tbl[i].b, tbl[i].a, tbl[i].n);
+		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
+	}
+}
+
+CYBOZU_TEST_AUTO(isLessOrEqualArray)
+{
+	const struct {
+		uint32_t a[4];
+		uint32_t b[4];
+		size_t n;
+		bool expect;
+	} tbl[] = {
+		{ { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, 0, true },
+		{ { 1, 0, 0, 0 }, { 0, 0, 0, 0 }, 1, false },
+		{ { 0, 0, 0, 0 }, { 1, 0, 0, 0 }, 1, true },
+		{ { 1, 0, 0, 0 }, { 1, 0, 0, 0 }, 1, true },
+		{ { 3, 1, 1, 0 }, { 2, 1, 1, 0 }, 4, false },
+		{ { 3, 1, 2, 0 }, { 2, 2, 2, 0 }, 4, true },
+		{ { 9, 2, 1, 1 }, { 1, 3, 1, 1 }, 4, true },
+		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 3, true },
+		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 4, true },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		bool e = mcl::fp::isLessOrEqualArray(tbl[i].a, tbl[i].b, tbl[i].n);
+		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
+		e = mcl::fp::isGreaterOrEqualArray(tbl[i].b, tbl[i].a, tbl[i].n);
+		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
+	}
+}
+
 struct Rand {
 	std::vector<uint32_t> v;
 	size_t pos;
