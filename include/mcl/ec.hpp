@@ -47,6 +47,7 @@ public:
 	static Fp b_;
 	static int specialA_;
 	static bool compressedExpression_;
+	static int mode_;
 #if MCL_EC_COORD == MCL_EC_USE_AFFINE
 	EcT() : inf_(true) {}
 #else
@@ -56,8 +57,39 @@ public:
 	{
 		set(_x, _y);
 	}
+	void normalizeJacobi() const
+	{
+		if (isZero() || z.isOne()) return;
+		Fp rz, rz2;
+		Fp::inv(rz, z);
+		rz2 = rz * rz;
+		x *= rz2;
+		y *= rz2 * rz;
+		z = 1;
+	}
+	void normalizeProj() const
+	{
+		if (isZero() || z.isOne()) return;
+		Fp rz;
+		Fp::inv(rz, z);
+		x *= rz;
+		y *= rz;
+		z = 1;
+	}
 	void normalize() const
 	{
+#if 1
+#if MCL_EC_COORD != MCL_EC_USE_AFFINE
+		switch (mode_) {
+		case MCL_EC_USE_JACOBI:
+			normalizeJacobi();
+			break;
+		case MCL_EC_USE_PROJ:
+			normalizeProj();
+			break;
+		}
+#endif
+#else
 #if MCL_EC_COORD == MCL_EC_USE_JACOBI
 		if (isZero() || z.isOne()) return;
 		Fp rz, rz2;
@@ -74,9 +106,10 @@ public:
 		y *= rz;
 		z = 1;
 #endif
+#endif
 	}
 
-	static inline void setParam(const std::string& astr, const std::string& bstr)
+	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = MCL_EC_USE_JACOBI)
 	{
 		a_.setStr(astr);
 		b_.setStr(bstr);
@@ -86,6 +119,14 @@ public:
 			specialA_ = minus3;
 		} else {
 			specialA_ = generic;
+		}
+		switch (mode) {
+		case MCL_EC_USE_JACOBI:
+		case MCL_EC_USE_PROJ:
+			mode_ = mode;
+			break;
+		default:
+			throw cybozu::Exception("ec:EcT:setParam:bad mode") << mode;
 		}
 	}
 	static inline bool isValid(const Fp& _x, const Fp& _y)
@@ -113,9 +154,8 @@ public:
 		y.clear();
 	}
 
-	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
+	static inline void dblNoVerifyInfJacobi(EcT& R, const EcT& P)
 	{
-#if MCL_EC_COORD == MCL_EC_USE_JACOBI
 		Fp S, M, t, y2;
 		Fp::square(y2, P.y);
 		Fp::mul(S, P.x, y2);
@@ -169,7 +209,9 @@ public:
 		Fp::sub(R.y, S, R.x);
 		R.y *= M;
 		R.y -= y2;
-#elif MCL_EC_COORD == MCL_EC_USE_PROJ
+	}
+	static inline void dblNoVerifyInfProj(EcT& R, const EcT& P)
+	{
 		const bool isPzOne = P.z.isOne();
 		Fp w, t, h;
 		switch (specialA_) {
@@ -226,7 +268,10 @@ public:
 		R.z *= h;
 		Fp::sub(R.y, t, w);
 		R.y -= w;
-#else
+	}
+	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
+	{
+#if MCL_EC_COORD == MCL_EC_USE_AFFINE
 		Fp t, s;
 		Fp::square(t, P.x);
 		Fp::add(s, t, t);
@@ -243,6 +288,15 @@ public:
 		Fp::sub(R.y, s, P.y);
 		R.x = x3;
 		R.inf_ = false;
+#else
+		switch (mode_) {
+		case MCL_EC_USE_JACOBI:
+			dblNoVerifyInfJacobi(R, P);
+			break;
+		case MCL_EC_USE_PROJ:
+			dblNoVerifyInfProj(R, P);
+			break;
+		}
 #endif
 	}
 	static inline void dbl(EcT& R, const EcT& P)
@@ -253,28 +307,9 @@ public:
 		}
 		dblNoVerifyInf(R, P);
 	}
-	static inline void add(EcT& R, const EcT& _P, const EcT& _Q)
+	static inline void addJacobi(EcT& R, const EcT& P, const EcT& Q)
 	{
-		if (_P.isZero()) { R = _Q; return; }
-		if (_Q.isZero()) { R = _P; return; }
-		if (&_P == &_Q) {
-			dblNoVerifyInf(R, _P);
-			return;
-		}
-#if MCL_EC_COORD == MCL_EC_USE_AFFINE
-		const EcT& P(_P);
-		const ECT& Q(_Q);
-#else
-		const EcT *pP = &_P;
-		const EcT *pQ = &_Q;
-		if (pP->z.isOne()) {
-			std::swap(pP, pQ);
-		}
-		const EcT& P(*pP);
-		const EcT& Q(*pQ);
 		const bool isQzOne = Q.z.isOne();
-#endif
-#if MCL_EC_COORD == MCL_EC_USE_JACOBI
 		Fp r, U1, S1, H, H3;
 		Fp::square(r, P.z);
 		if (isQzOne) {
@@ -319,7 +354,10 @@ public:
 		U1 *= r;
 		H3 *= S1;
 		Fp::sub(R.y, U1, H3);
-#elif MCL_EC_COORD == MCL_EC_USE_PROJ
+	}
+	static inline void addProj(EcT& R, const EcT& P, const EcT& Q)
+	{
+		const bool isQzOne = Q.z.isOne();
 		Fp r, PyQz, v, A, vv;
 		if (isQzOne) {
 			r = P.x;
@@ -359,7 +397,18 @@ public:
 		r -= A;
 		R.y *= r;
 		R.y -= vv;
-#else
+	}
+	static inline void add(EcT& R, const EcT& _P, const EcT& _Q)
+	{
+		if (_P.isZero()) { R = _Q; return; }
+		if (_Q.isZero()) { R = _P; return; }
+		if (&_P == &_Q) {
+			dblNoVerifyInf(R, _P);
+			return;
+		}
+#if MCL_EC_COORD == MCL_EC_USE_AFFINE
+		const EcT& P(_P);
+		const ECT& Q(_Q);
 		Fp t;
 		Fp::neg(t, Q.y);
 		if (P.y == t) { R.clear(); return; }
@@ -380,38 +429,29 @@ public:
 		s *= t;
 		Fp::sub(R.y, s, P.y);
 		R.x = x3;
+#else
+		const EcT *pP = &_P;
+		const EcT *pQ = &_Q;
+		if (pP->z.isOne()) {
+			std::swap(pP, pQ);
+		}
+		const EcT& P(*pP);
+		const EcT& Q(*pQ);
+		switch (mode_) {
+		case MCL_EC_USE_JACOBI:
+			addJacobi(R, P, Q);
+			break;
+		case MCL_EC_USE_PROJ:
+			addProj(R, P, Q);
+			break;
+		}
 #endif
 	}
 	static inline void sub(EcT& R, const EcT& P, const EcT& Q)
 	{
-#if 0
-		if (P.inf_) { neg(R, Q); return; }
-		if (Q.inf_) { R = P; return; }
-		if (P.y == Q.y) { R.clear(); return; }
-		Fp t;
-		Fp::sub(t, Q.x, P.x);
-		if (t.isZero()) {
-			dblNoVerifyInf(R, P);
-			return;
-		}
-		Fp s;
-		Fp::add(s, Q.y, P.y);
-		Fp::neg(s, s);
-		Fp::div(t, s, t);
-		R.inf_ = false;
-		Fp x3;
-		Fp::mul(x3, t, t);
-		x3 -= P.x;
-		x3 -= Q.x;
-		Fp::sub(s, P.x, x3);
-		s *= t;
-		Fp::sub(R.y, s, P.y);
-		R.x = x3;
-#else
 		EcT nQ;
 		neg(nQ, Q);
 		add(R, P, nQ);
-#endif
 	}
 	static inline void neg(EcT& R, const EcT& P)
 	{
@@ -574,6 +614,7 @@ template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
 template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> bool EcT<Fp>::compressedExpression_;
+template<class Fp> int EcT<Fp>::mode_;;
 
 struct EcParam {
 	const char *name;
