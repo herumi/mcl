@@ -1,5 +1,6 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
+#include <cybozu/xorshift.hpp>
 #include <mcl/fp.hpp>
 #include <mcl/conversion.hpp>
 #include <mcl/ecparam.hpp>
@@ -91,13 +92,16 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMo
 	Fp y(para.gy);
 	Ec P(x, y);
 	Ec Q = P + P + P;
-	double addT, subT, dblT, mulT;
+	double addT, subT, dblT, mulT, mulRandT;
 	CYBOZU_BENCH_T(addT, Ec::add, Q, P, Q);
 	CYBOZU_BENCH_T(subT, Ec::sub, Q, P, Q);
 	CYBOZU_BENCH_T(dblT, Ec::dbl, P, P);
 	Zn z("-3");
 	CYBOZU_BENCH_T(mulT, Ec::mul, P, P, z);
-	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul %8.2f\n", para.name, getModeStr(mode), addT, subT, dblT, mulT);
+	cybozu::XorShift rg;
+	z.setRand(rg);
+	CYBOZU_BENCH_T(mulRandT, Ec::mul, P, P, z);
+	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul(-3) %8.2f mul(rand) %8.2f\n", para.name, getModeStr(mode), addT, subT, dblT, mulT, mulRandT);
 
 }
 void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
