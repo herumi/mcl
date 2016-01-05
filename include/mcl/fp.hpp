@@ -44,20 +44,8 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
 
-inline bool isInUint64(uint64_t *pv, const fp::Block& b)
-{
-	assert(fp::UnitBitSize == 32 || fp::UnitBitSize == 64);
-	const size_t start = 64 / fp::UnitBitSize;
-	for (size_t i = start; i < b.n; i++) {
-		if (b.p[i]) return false;
-	}
-#if CYBOZU_OS_BIT == 32
-	*pv = b.p[0] | (uint64_t(b.p[1]) << 32);
-#else
-	*pv = b.p[0];
-#endif
-	return true;
-}
+uint64_t getUint64(bool *pb, const fp::Block& b);
+int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
 } // mcl::fp
 
@@ -347,42 +335,13 @@ public:
 	{
 		fp::Block b;
 		getBlock(b);
-		uint64_t v;
-		if (fp::isInUint64(&v, b)) {
-			if (pb) *pb = true;
-			return v;
-		}
-		if (!pb) throw cybozu::Exception("fpT::getUint64:large value") << *this;
-		*pb = false;
-		return 0;
+		return fp::getUint64(pb, b);
 	}
 	int64_t getInt64(bool *pb = 0) const
 	{
 		fp::Block b;
 		getBlock(b);
-		bool isNegative = false;
-		if (fp::isGreaterArray(b.p, op_.half, op_.N)) {
-			op_.neg(b.p, b.p);
-			isNegative = true;
-		}
-		uint64_t v;
-		if (fp::isInUint64(&v, b)) {
-			const uint64_t c = uint64_t(1) << 63;
-			if (isNegative) {
-				if (v >= c) {
-					if (pb) *pb = true;
-					return int64_t(-v);
-				}
-			} else {
-				if (v < c) {
-					if (pb) *pb = true;
-					return int64_t(v);
-				}
-			}
-		}
-		if (!pb) throw cybozu::Exception("fpT::getInt64:large value") << *this;
-		*pb = false;
-		return 0;
+		return fp::getInt64(pb, b, op_);
 	}
 	static inline size_t getModBitLen() { return op_.bitSize; }
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }

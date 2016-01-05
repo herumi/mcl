@@ -346,5 +346,68 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool do
 	assert(isLessArray(y, op.p, op.N));
 }
 
+static bool isInUint64(uint64_t *pv, const fp::Block& b)
+{
+	assert(fp::UnitBitSize == 32 || fp::UnitBitSize == 64);
+	const size_t start = 64 / fp::UnitBitSize;
+	for (size_t i = start; i < b.n; i++) {
+		if (b.p[i]) return false;
+	}
+#if CYBOZU_OS_BIT == 32
+	*pv = b.p[0] | (uint64_t(b.p[1]) << 32);
+#else
+	*pv = b.p[0];
+#endif
+	return true;
+}
+
+uint64_t getUint64(bool *pb, const fp::Block& b)
+{
+	uint64_t v;
+	if (isInUint64(&v, b)) {
+		if (pb) *pb = true;
+		return v;
+	}
+	if (!pb) {
+		std::string str;
+		arrayToStr(str, b.p, b.n, 10, false);
+		throw cybozu::Exception("fp::getUint64:large value") << str;
+	}
+	*pb = false;
+	return 0;
+}
+
+int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
+{
+	bool isNegative = false;
+	if (fp::isGreaterArray(b.p, op.half, op.N)) {
+		op.neg(b.v_, b.p);
+		b.p = b.v_;
+		isNegative = true;
+	}
+	uint64_t v;
+	if (fp::isInUint64(&v, b)) {
+		const uint64_t c = uint64_t(1) << 63;
+		if (isNegative) {
+			if (v <= c) { // include c
+				if (pb) *pb = true;
+				return int64_t(-v);
+			}
+		} else {
+			if (v < c) { // not include c
+				if (pb) *pb = true;
+				return int64_t(v);
+			}
+		}
+	}
+	if (!pb) {
+		std::string str;
+		arrayToStr(str, b.p, b.n, 10, false);
+		throw cybozu::Exception("fp::getInt64:large value") << str << isNegative;
+	}
+	*pb = false;
+	return 0;
+}
+
 } } // mcl::fp
 

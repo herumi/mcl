@@ -387,6 +387,7 @@ CYBOZU_TEST_AUTO(getUint64)
 		uint64_t a = tbl[i];
 		Fp x(a);
 		uint64_t b = x.getUint64();
+		CYBOZU_TEST_ASSERT(!x.isNegative());
 		CYBOZU_TEST_EQUAL(a, b);
 	}
 	{
@@ -403,6 +404,32 @@ CYBOZU_TEST_AUTO(getUint64)
 		Fp x("0x10000000000000000");
 		bool b = true;
 		CYBOZU_TEST_EQUAL(x.getUint64(&b), 0);
+		CYBOZU_TEST_ASSERT(!b);
+	}
+}
+
+CYBOZU_TEST_AUTO(getInt64)
+{
+	Fp::setModulo("0x1000000000000000000f");
+	const int64_t tbl[] = {
+		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull),
+		-1, -2, -12345678, int64_t(-9223372036854775808ull),
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		int64_t a = tbl[i];
+		Fp x(a);
+		CYBOZU_TEST_EQUAL(x.isNegative(), a < 0);
+		int64_t b = x.getInt64();
+		CYBOZU_TEST_EQUAL(a, b);
+	}
+	{
+		Fp x("0x8000000000000000");
+		CYBOZU_TEST_EXCEPTION(x.getInt64(), cybozu::Exception);
+	}
+	{
+		Fp x("0x8000000000000000");
+		bool b = true;
+		CYBOZU_TEST_EQUAL(x.getInt64(&b), 0);
 		CYBOZU_TEST_ASSERT(!b);
 	}
 }
