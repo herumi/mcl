@@ -169,7 +169,7 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 */
 template<class G, class T>
 void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void square(G&, const G&)){
-#if 1
+#if 0
 	assert(&out != &x);
 	while (n > 0) {
 		if (y[n - 1]) break;
@@ -196,24 +196,55 @@ void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G
 		}
 	}
 #else
-	G t(x);
+	assert(&out != &x);
 	while (n > 0) {
 		if (y[n - 1]) break;
 		n--;
 	}
-	for (size_t i = 0; i < n; i++) {
+	if (n == 0) return;
+	if (n == 1) {
+		switch (y[0]) {
+		case 1:
+			out = x;
+			return;
+		case 2:
+			mul(out, x, x);
+			return;
+		case 3:
+			mul(out, x, x);
+			mul(out, out, x);
+			return;
+		case 4:
+			mul(out, x, x);
+			mul(out, out, out);
+			return;
+		}
+	}
+	G tbl[3]; // tbl = { x, x^2, x^3 }
+	tbl[0] = x;
+	mul(tbl[1], x, x); tbl[1].normalize();
+	mul(tbl[2], tbl[1], x); tbl[2].normalize();
+	T v = y[n - 1];
+	int m = cybozu::bsr<T>(v);
+	if (m & 1) {
+		m--;
+		T idx = (v >> m) & 3;
+		assert(idx > 0);
+		out = tbl[idx - 1];
+	} else {
+		out = x;
+	}
+	for (int i = (int)n - 1; i >= 0; i--) {
 		T v = y[i];
-		int m = (int)sizeof(T) * 8;
-		if (i == n - 1) {
-			assert(v);
-			m = cybozu::bsr<T>(v) + 1;
-		}
-		for (int j = 0; j < m; j++) {
-			if (v & (T(1) << j)) {
-				mul(out, out, t);
+		for (int j = m - 2; j >= 0; j -= 2) {
+			square(out, out);
+			square(out, out);
+			T idx = (v >> j) & 3;
+			if (idx > 0) {
+				mul(out, out, tbl[idx - 1]);
 			}
-			square(t, t);
 		}
+		m = (int)sizeof(T) * 8;
 	}
 #endif
 }

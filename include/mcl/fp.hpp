@@ -439,6 +439,7 @@ public:
 	{
 		op_.mont(z, x, y, op_.p, op_.rp);
 	}
+	void normalize() {} // dummy method
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
