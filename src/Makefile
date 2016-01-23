@@ -1,5 +1,5 @@
 include ../common.mk
-VER=-3.5
+VER=-3.6
 LLC=llc$(VER)
 OPT=opt$(VER)
 DIS=llvm-dis$(VER)
