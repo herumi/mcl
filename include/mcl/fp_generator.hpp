@@ -219,9 +219,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_mul();
 		align(16);
 		sqr_ = getCurr<void2op>();
-		if (!gen_sqr()) {
-			sqr_ = 0;
-		}
+		gen_sqr();
 		align(16);
 		shr1_ = getCurr<void2op>();
 		gen_shr1();
@@ -547,13 +545,19 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			throw cybozu::Exception("mcl:FpGenerator:gen_mul:not implemented for") << pn_;
 		}
 	}
-	bool gen_sqr()
+	void gen_sqr()
 	{
 		if (pn_ == 3) {
 			gen_montSqr3(p_, pp_);
-			return true;
+			return;
 		}
-		return false;
+		// sqr(y, x) = mul(y, x, x)
+#ifdef XBYAK_WIN
+		mov(r8, rdx);
+#else
+		mov(rdx, rsi);
+#endif
+		jmp((void*)mul_);
 	}
 	/*
 		input (pz[], px[], py[])

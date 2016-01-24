@@ -133,12 +133,11 @@ struct OpeFunc {
 	}
 	static inline void sqrPreC(Unit *y, const Unit *x)
 	{
-//		mpz_t mx, my;
-//		set_zero(my, y, N * 2);
-//		set_mpz_t(mx, x);
-//		mpz_mul(my, mx, mx);
-//		Gmp::getArray(y, N * 2, my);
-		mulPreC(y, x, x);
+		mpz_t mx, my;
+		set_zero(my, y, N * 2);
+		set_mpz_t(mx, x);
+		mpz_mul(my, mx, mx);
+		Gmp::getArray(y, N * 2, my);
 	}
 	// x[N * 2] -> y[N]
 	static inline void modC(Unit *y, const Unit *x, const Unit *p)
@@ -270,9 +269,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	op.add = Xbyak::CastTo<void3u>(fg->add_);
 	op.sub = Xbyak::CastTo<void3u>(fg->sub_);
 	op.mul = Xbyak::CastTo<void3u>(fg->mul_);
-//	if (fg->sqr_) {
-//		op.sqr = Xbyak::CastTo<void2u>(fg->sqr_);
-//	}
+	op.sqr = Xbyak::CastTo<void2u>(fg->sqr_);
 	op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
 	op.invOp = &invOpForMont;
 

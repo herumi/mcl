@@ -98,6 +98,7 @@ public:
 		op_.useMont = mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
 		if (mode == fp::FP_LLVM_MONT) {
 			op_.mul = montW;
+			op_.sqr = montSqrW;
 		}
 #if 0
 	fprintf(stderr, "mode=%d, useMont=%d"
@@ -278,7 +279,7 @@ public:
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.mul(z.v_, x.v_, y.v_); }
 	static inline void inv(FpT& y, const FpT& x) { op_.invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.neg(y.v_, x.v_); }
-	static inline void square(FpT& y, const FpT& x) { op_.mul(y.v_, x.v_, x.v_); }
+	static inline void square(FpT& y, const FpT& x) { op_.sqr(y.v_, x.v_); }
 	static inline void div(FpT& z, const FpT& x, const FpT& y)
 	{
 		FpT rev;
@@ -433,10 +434,9 @@ public:
 	}
 	static inline void sqrW(Unit *y, const Unit *x)
 	{
-//		Unit xx[maxSize * 2];
-//		op_.sqrPreP(xx, x);
-//		op_.modP(y, xx, op_.p);
-		mulW(y, x, x);
+		Unit xx[maxSize * 2];
+		op_.sqrPreP(xx, x);
+		op_.modP(y, xx, op_.p);
 	}
 	static inline void negW(Unit *y, const Unit *x)
 	{
@@ -446,6 +446,10 @@ public:
 	static inline void montW(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.mont(z, x, y, op_.p, op_.rp);
+	}
+	static inline void montSqrW(Unit *y, const Unit *x)
+	{
+		op_.mont(y, x, x, op_.p, op_.rp);
 	}
 	void normalize() {} // dummy method
 };
