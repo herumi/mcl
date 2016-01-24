@@ -75,6 +75,7 @@ public:
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
 		op_.neg = negW;
+		op_.sqr = sqrW;
 		op_.add = addW;
 		op_.sub = subW;
 		op_.mul = mulW;
@@ -277,7 +278,7 @@ public:
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.mul(z.v_, x.v_, y.v_); }
 	static inline void inv(FpT& y, const FpT& x) { op_.invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.neg(y.v_, x.v_); }
-	static inline void square(FpT& y, const FpT& x) { mul(y, x, x); }
+	static inline void square(FpT& y, const FpT& x) { op_.mul(y.v_, x.v_, x.v_); }
 	static inline void div(FpT& z, const FpT& x, const FpT& y)
 	{
 		FpT rev;
@@ -429,6 +430,13 @@ public:
 		Unit xy[maxSize * 2];
 		op_.mulPreP(xy, x, y);
 		op_.modP(z, xy, op_.p);
+	}
+	static inline void sqrW(Unit *y, const Unit *x)
+	{
+//		Unit xx[maxSize * 2];
+//		op_.sqrPreP(xx, x);
+//		op_.modP(y, xx, op_.p);
+		mulW(y, x, x);
 	}
 	static inline void negW(Unit *y, const Unit *x)
 	{

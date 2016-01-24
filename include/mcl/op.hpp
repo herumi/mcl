@@ -75,6 +75,7 @@ struct Op {
 	void2u copy;
 	// not require p(function having p)
 	void2u neg;
+	void2u sqr;
 	void3u add;
 	void3u sub;
 	void3u mul;
@@ -86,6 +87,7 @@ struct Op {
 	void (*mont)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
 	// require p
 	void3u negP;
+	void2u sqrPreP;
 	void2uOp invOp;
 	void4u addP;
 	void4u subP;
@@ -95,10 +97,10 @@ struct Op {
 	Op()
 		: N(0), bitSize(0)
 		, isZero(0), clear(0), copy(0)
-		, neg(0), add(0), sub(0), mul(0)
+		, neg(0), sqr(0), add(0), sub(0), mul(0)
 		, useMont(false), preInv(0)
 		, rp(0), mont(0)
-		, negP(0), invOp(0), addP(0), subP(0), mulPreP(0), modP(0)
+		, negP(0), sqrPreP(0), invOp(0), addP(0), subP(0), mulPreP(0), modP(0)
 		, fg(createFpGenerator())
 	{
 	}

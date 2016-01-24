@@ -131,6 +131,15 @@ struct OpeFunc {
 		mpz_mul(mz, mx, my);
 		Gmp::getArray(z, N * 2, mz);
 	}
+	static inline void sqrPreC(Unit *y, const Unit *x)
+	{
+//		mpz_t mx, my;
+//		set_zero(my, y, N * 2);
+//		set_mpz_t(mx, x);
+//		mpz_mul(my, mx, mx);
+//		Gmp::getArray(y, N * 2, my);
+		mulPreC(y, x, x);
+	}
 	// x[N * 2] -> y[N]
 	static inline void modC(Unit *y, const Unit *x, const Unit *p)
 	{
@@ -172,6 +181,10 @@ struct OpeFunc {
 		}
 		subC(y, p, x, p);
 	}
+	static inline void sqrC(Unit *y, const Unit *x, const Unit *p)
+	{
+		sqrC(y, p, x, p);
+	}
 };
 
 #ifdef MCL_USE_LLVM
@@ -200,8 +213,9 @@ struct OpeFunc {
 		addP = OpeFunc<n>::addC; \
 		subP = OpeFunc<n>::subC; \
 		mulPreP = OpeFunc<n>::mulPreC; \
+		sqrPreP = OpeFunc<n>::sqrPreC; \
 		modP = OpeFunc<n>::modC; \
-		SET_OP_LLVM(n) 
+		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK
 inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
@@ -256,6 +270,9 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	op.add = Xbyak::CastTo<void3u>(fg->add_);
 	op.sub = Xbyak::CastTo<void3u>(fg->sub_);
 	op.mul = Xbyak::CastTo<void3u>(fg->mul_);
+//	if (fg->sqr_) {
+//		op.sqr = Xbyak::CastTo<void2u>(fg->sqr_);
+//	}
 	op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
 	op.invOp = &invOpForMont;
 
