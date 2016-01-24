@@ -580,7 +580,7 @@ public:
 		t += a_;
 		t *= x;
 		t += b_;
-		Fp::sqrRoot(y, t);
+		Fp::squareRoot(y, t);
 		if (Fp::isOdd(y) ^ isYodd) {
 			Fp::neg(y, y);
 		}

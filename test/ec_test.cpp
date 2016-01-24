@@ -164,7 +164,7 @@ struct Test {
 			R -= P;
 		}
 	}
-	void sqrRoot() const
+	void squareRoot() const
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
@@ -279,7 +279,7 @@ mul 499.00usec
 		mul();
 		neg_mul();
 		mul_fp();
-		sqrRoot();
+		squareRoot();
 		str();
 	}
 private:

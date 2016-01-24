@@ -133,7 +133,7 @@ public:
 		x.getBlock(b);
 		return (b.p[0] & 1) == 1;
 	}
-	static inline bool sqrRoot(FpT& y, const FpT& x)
+	static inline bool squareRoot(FpT& y, const FpT& x)
 	{
 		mpz_class mx, my;
 		x.getMpz(mx);
