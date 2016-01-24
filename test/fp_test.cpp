@@ -232,7 +232,7 @@ CYBOZU_TEST_AUTO(ope)
 		z = x * y;
 		CYBOZU_TEST_EQUAL(z, tbl[i].mul);
 
-		Fp::square(z, x);
+		Fp::sqr(z, x);
 		CYBOZU_TEST_EQUAL(z, tbl[i].sqr);
 
 		z = x / y;

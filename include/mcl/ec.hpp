@@ -145,12 +145,12 @@ public:
 	static inline void dblNoVerifyInfJacobi(EcT& R, const EcT& P)
 	{
 		Fp S, M, t, y2;
-		Fp::square(y2, P.y);
+		Fp::sqr(y2, P.y);
 		Fp::mul(S, P.x, y2);
 		const bool isPzOne = P.z.isOne();
 		S += S;
 		S += S;
-		Fp::square(M, P.x);
+		Fp::sqr(M, P.x);
 		switch (specialA_) {
 		case zero:
 			Fp::add(t, M, M);
@@ -160,8 +160,8 @@ public:
 			if (isPzOne) {
 				M -= P.z;
 			} else {
-				Fp::square(t, P.z);
-				Fp::square(t, t);
+				Fp::sqr(t, P.z);
+				Fp::sqr(t, t);
 				M -= t;
 			}
 			Fp::add(t, M, M);
@@ -172,8 +172,8 @@ public:
 			if (isPzOne) {
 				t = a_;
 			} else {
-				Fp::square(t, P.z);
-				Fp::square(t, t);
+				Fp::sqr(t, P.z);
+				Fp::sqr(t, t);
 				t *= a_;
 			}
 			t += M;
@@ -181,7 +181,7 @@ public:
 			M += t;
 			break;
 		}
-		Fp::square(R.x, M);
+		Fp::sqr(R.x, M);
 		R.x -= S;
 		R.x -= S;
 		if (isPzOne) {
@@ -190,7 +190,7 @@ public:
 			Fp::mul(R.z, P.y, P.z);
 		}
 		R.z += R.z;
-		Fp::square(y2, y2);
+		Fp::sqr(y2, y2);
 		y2 += y2;
 		y2 += y2;
 		y2 += y2;
@@ -204,16 +204,16 @@ public:
 		Fp w, t, h;
 		switch (specialA_) {
 		case zero:
-			Fp::square(w, P.x);
+			Fp::sqr(w, P.x);
 			Fp::add(t, w, w);
 			w += t;
 			break;
 		case minus3:
-			Fp::square(w, P.x);
+			Fp::sqr(w, P.x);
 			if (isPzOne) {
 				w -= P.z;
 			} else {
-				Fp::square(t, P.z);
+				Fp::sqr(t, P.z);
 				w -= t;
 			}
 			Fp::add(t, w, w);
@@ -224,10 +224,10 @@ public:
 			if (isPzOne) {
 				w = a_;
 			} else {
-				Fp::square(w, P.z);
+				Fp::sqr(w, P.z);
 				w *= a_;
 			}
-			Fp::square(t, P.x);
+			Fp::sqr(t, P.x);
 			w += t;
 			w += t;
 			w += t; // w = a z^2 + 3x^2
@@ -242,16 +242,16 @@ public:
 		t *= P.y; // xys
 		t += t;
 		t += t; // 4(xys) ; 4B
-		Fp::square(h, w);
+		Fp::sqr(h, w);
 		h -= t;
 		h -= t; // w^2 - 8B
 		Fp::mul(R.x, h, R.z);
 		t -= h; // h is free
 		t *= w;
-		Fp::square(w, P.y);
+		Fp::sqr(w, P.y);
 		R.x += R.x;
 		R.z += R.z;
-		Fp::square(h, R.z);
+		Fp::sqr(h, R.z);
 		w *= h;
 		R.z *= h;
 		Fp::sub(R.y, t, w);
@@ -262,13 +262,13 @@ public:
 	{
 #ifdef MCL_EC_USE_AFFINE
 		Fp t, s;
-		Fp::square(t, P.x);
+		Fp::sqr(t, P.x);
 		Fp::add(s, t, t);
 		t += s;
 		t += a_;
 		Fp::add(s, P.y, P.y);
 		t /= s;
-		Fp::square(s, t);
+		Fp::sqr(s, t);
 		s -= P.x;
 		Fp x3;
 		Fp::sub(x3, s, P.x);
@@ -301,7 +301,7 @@ public:
 	{
 		const bool isQzOne = Q.z.isOne();
 		Fp r, U1, S1, H, H3;
-		Fp::square(r, P.z);
+		Fp::sqr(r, P.z);
 		if (isQzOne) {
 			U1 = P.x;
 			Fp::mul(H, Q.x, r);
@@ -309,7 +309,7 @@ public:
 			r *= P.z;
 			S1 = P.y;
 		} else {
-			Fp::square(S1, Q.z);
+			Fp::sqr(S1, Q.z);
 			Fp::mul(U1, P.x, S1);
 			Fp::mul(H, Q.x, r);
 			H -= U1;
@@ -333,8 +333,8 @@ public:
 			Fp::mul(R.z, P.z, Q.z);
 			R.z *= H;
 		}
-		Fp::square(H3, H); // H^2
-		Fp::square(R.y, r); // r^2
+		Fp::sqr(H3, H); // H^2
+		Fp::sqr(R.y, r); // r^2
 		U1 *= H3; // U1 H^2
 		H3 *= H; // H^3
 		R.y -= U1;
@@ -368,8 +368,8 @@ public:
 			return;
 		}
 		Fp::sub(R.y, A, PyQz);
-		Fp::square(A, R.y);
-		Fp::square(vv, v);
+		Fp::sqr(A, R.y);
+		Fp::sqr(vv, v);
 		r *= vv;
 		vv *= v;
 		if (isQzOne) {
@@ -413,7 +413,7 @@ public:
 		Fp::div(t, s, t);
 		R.inf_ = false;
 		Fp x3;
-		Fp::square(x3, t);
+		Fp::sqr(x3, t);
 		x3 -= P.x;
 		x3 -= Q.x;
 		Fp::sub(s, P.x, x3);
@@ -576,11 +576,11 @@ public:
 	static inline void getYfromX(Fp& y, const Fp& x, bool isYodd)
 	{
 		Fp t;
-		Fp::square(t, x);
+		Fp::sqr(t, x);
 		t += a_;
 		t *= x;
 		t += b_;
-		Fp::squareRoot(y, t);
+		Fp::sqrRoot(y, t);
 		if (Fp::isOdd(y) ^ isYodd) {
 			Fp::neg(y, y);
 		}

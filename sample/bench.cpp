@@ -31,7 +31,7 @@ void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::M
 	CYBOZU_BENCH_T(addT, Fp::add, x, x, x);
 	CYBOZU_BENCH_T(subT, Fp::sub, x, x, y);
 	CYBOZU_BENCH_T(mulT, Fp::mul, x, x, x);
-	CYBOZU_BENCH_T(sqrT, Fp::square, x, x);
+	CYBOZU_BENCH_T(sqrT, Fp::sqr, x, x);
 	CYBOZU_BENCH_T(invT, x += y;Fp::inv, x, x); // avoid same jmp
 	printf("%10s bit % 3d add %8.2f sub %8.2f mul %8.2f sqr %8.2f inv %8.2f\n", s, (int)Fp::getBitSize(), addT, subT, mulT, sqrT, invT);
 }

@@ -449,7 +449,7 @@ struct Test {
 			CYBOZU_TEST_EQUAL(z, castTo<Fp>(tbl[i].sub));
 			z = x * y;
 			CYBOZU_TEST_EQUAL(z, castTo<Fp>(tbl[i].mul));
-			Fp::square(z, x);
+			Fp::sqr(z, x);
 			CYBOZU_TEST_EQUAL(z, castTo<Fp>(tbl[i].sqr));
 
 			z = x / y;
@@ -518,7 +518,7 @@ struct Test {
 		CYBOZU_BENCH("add", operator+, x, x);
 		CYBOZU_BENCH("sub", operator-, x, y);
 		CYBOZU_BENCH("mul", operator*, x, x);
-		CYBOZU_BENCH("sqr", Fp::square, x, x);
+		CYBOZU_BENCH("sqr", Fp::sqr, x, x);
 		CYBOZU_BENCH("div", y += x; operator/, x, y);
 	}
 };

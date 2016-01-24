@@ -133,7 +133,7 @@ public:
 		x.getBlock(b);
 		return (b.p[0] & 1) == 1;
 	}
-	static inline bool squareRoot(FpT& y, const FpT& x)
+	static inline bool sqrRoot(FpT& y, const FpT& x)
 	{
 		mpz_class mx, my;
 		x.getMpz(mx);
@@ -279,7 +279,7 @@ public:
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.mul(z.v_, x.v_, y.v_); }
 	static inline void inv(FpT& y, const FpT& x) { op_.invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.neg(y.v_, x.v_); }
-	static inline void square(FpT& y, const FpT& x) { op_.sqr(y.v_, x.v_); }
+	static inline void sqr(FpT& y, const FpT& x) { op_.sqr(y.v_, x.v_); }
 	static inline void div(FpT& z, const FpT& x, const FpT& y)
 	{
 		FpT rev;
@@ -295,7 +295,7 @@ public:
 			px = &tmp;
 		}
 		z = 1;
-		fp::powerGeneric(z, *px, y, yn, FpT::mul, FpT::square);
+		fp::powerGeneric(z, *px, y, yn, FpT::mul, FpT::sqr);
 		if (isNegative) {
 			FpT::inv(z, z);
 		}
