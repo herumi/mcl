@@ -122,6 +122,7 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N, mz);
 	}
+	// z[N * 2] <- x[N] * y[N]
 	static inline void mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
 		mpz_t mx, my, mz;
@@ -129,17 +130,18 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
 		mpz_mul(mz, mx, my);
-		Gmp::getArray(z, N * 2, mz);
+		clearArray(z, mz->_mp_size, N * 2);
 	}
+	// y[N * 2] <- x[N]^2
 	static inline void sqrPreC(Unit *y, const Unit *x)
 	{
 		mpz_t mx, my;
 		set_zero(my, y, N * 2);
 		set_mpz_t(mx, x);
 		mpz_mul(my, mx, mx);
-		Gmp::getArray(y, N * 2, my);
+		clearArray(y, my->_mp_size, N * 2);
 	}
-	// x[N * 2] -> y[N]
+	// y[N] <- x[N * 2] mod p[N]
 	static inline void modC(Unit *y, const Unit *x, const Unit *p)
 	{
 		mpz_t mx, my, mp;
