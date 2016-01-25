@@ -194,6 +194,9 @@ struct OpeFunc {
 			addP = mcl_fp_add ## n ##S; \
 			subP = mcl_fp_sub ## n ##S; \
 			mulPreP = mcl_fp_mulPre ## n; \
+			if (n <= 256) { \
+				sqrPreP = mcl_fp_sqrPre ## n; \
+			} \
 			mont = mcl_fp_mont ## n; \
 		}
 #else
@@ -272,10 +275,12 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	op.sub = Xbyak::CastTo<void3u>(fg->sub_);
 	op.mul = Xbyak::CastTo<void3u>(fg->mul_);
 	op.sqr = Xbyak::CastTo<void2u>(fg->sqr_);
-	op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
-	op.invOp = &invOpForMont;
+	if (N <= 4) {
+		op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
+		op.invOp = &invOpForMont;
+		initInvTbl(op);
+	}
 
-	initInvTbl(op);
 #endif
 }
 
