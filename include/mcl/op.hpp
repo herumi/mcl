@@ -131,4 +131,19 @@ private:
 	void operator=(const Op&);
 };
 
+/*
+	for Fp2 = F[u] / (u^2 + 1)
+	x = a + bu
+*/
+struct Op2 {
+	int xi_c; // xi = u + xi_c
+	void3u add;
+	void3u sub;
+	void3u mul;
+	void2u inv;
+	void2u neg;
+	void2u sqr;
+	void2u mul_xi;
+};
+
 } } // mcl::fp
