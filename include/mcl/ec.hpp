@@ -525,48 +525,62 @@ public:
 		return z.isZero();
 #endif
 	}
-	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
+	void getStr(std::string& str) const
 	{
-		if (self.isZero()) {
-			return os << '0';
+		if (isZero()) {
+			str = '0';
 		} else {
-			self.normalize();
-			os << self.x.getStr(16) << '_';
+			normalize();
+			x.getStr(str, 16);
+			str += '_';
 			if (compressedExpression_) {
-				return os << Fp::isOdd(self.y);
+				char c = Fp::isOdd(y) ? '1' : '0';
+				str += c;
 			} else {
-				return os << self.y.getStr(16);
+				str += y.getStr(16);
 			}
 		}
+	}
+	std::string getStr() const
+	{
+		std::string str;
+		getStr(str);
+		return str;
+	}
+	void setStr(const std::string& str)
+	{
+		if (str == "0") {
+			clear();
+		} else {
+#ifdef MCL_EC_USE_AFFINE
+			inf_ = false;
+#else
+			z = 1;
+#endif
+			size_t pos = str.find('_');
+			if (pos == std::string::npos) throw cybozu::Exception("EcT:setStr") << str;
+			x.setStr(str.substr(0, pos), 16);
+			if (compressedExpression_) {
+				const char c = str[pos + 1];
+				if ((c == '0' || c == '1') && str.size() == pos + 2) {
+					getYfromX(y, x, c == '1');
+				} else {
+					throw cybozu::Exception("EcT:operator>>:bad y") << str;
+				}
+			} else {
+				y.setStr(&str[pos + 1], 16);
+			}
+		}
+	}
+	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
+	{
+		return os << self.getStr();
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
 		std::string str;
 		is >> str;
-		if (str == "0") {
-			self.clear();
-		} else {
-#ifdef MCL_EC_USE_AFFINE
-			self.inf_ = false;
-#else
-			self.z = 1;
-#endif
-			size_t pos = str.find('_');
-			if (pos == std::string::npos) throw cybozu::Exception("EcT:operator>>:bad format") << str;
-			str[pos] = '\0';
-			self.x.setStr(&str[0], 16);
-			if (compressedExpression_) {
-				const char c = str[pos + 1];
-				if ((c == '0' || c == '1') && str.size() == pos + 2) {
-					getYfromX(self.y, self.x, c == '1');
-				} else {
-					str[pos] = '_';
-					throw cybozu::Exception("EcT:operator>>:bad y") << str;
-				}
-			} else {
-				self.y.setStr(&str[pos + 1], 16);
-			}
-		}
+		self.setStr(str);
 		return is;
 	}
 	static inline void setCompressedExpression(bool compressedExpression)
