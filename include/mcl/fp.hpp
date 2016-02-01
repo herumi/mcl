@@ -286,20 +286,6 @@ public:
 		inv(rev, y);
 		mul(z, x, rev);
 	}
-	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn, bool isNegative)
-	{
-		FpT tmp;
-		const FpT *px = &x;
-		if (&z == &x) {
-			tmp = x;
-			px = &tmp;
-		}
-		z = 1;
-		fp::powerGeneric(z, *px, y, yn, FpT::mul, FpT::sqr);
-		if (isNegative) {
-			FpT::inv(z, z);
-		}
-	}
 	template<class tag2, size_t maxBitSize2>
 	static inline void power(FpT& z, const FpT& x, const FpT<tag2, maxBitSize2>& y)
 	{
@@ -411,6 +397,22 @@ public:
 	{
 		return fp::isLessArray(v_, rhs.v_, op_.N);
 	}
+	void normalize() {} // dummy method
+private:
+	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn, bool isNegative)
+	{
+		FpT tmp;
+		const FpT *px = &x;
+		if (&z == &x) {
+			tmp = x;
+			px = &tmp;
+		}
+		z = 1;
+		fp::powerGeneric(z, *px, y, yn, FpT::mul, FpT::sqr);
+		if (isNegative) {
+			FpT::inv(z, z);
+		}
+	}
 	/*
 		wrapper function for generic p
 		add(z, x, y)
@@ -451,7 +453,6 @@ public:
 	{
 		op_.mont(y, x, x, op_.p, op_.rp);
 	}
-	void normalize() {} // dummy method
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
