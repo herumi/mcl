@@ -98,6 +98,7 @@ struct ElgamalT {
 	/*
 		Zero Knowledge Proof
 		cipher text with ZKP to ensure m = 0 or 1
+		http://dx.doi.org/10.1587/transfun.E96.A.1156
 	*/
 	struct Zkp {
 		Zn c0, c1, s0, s1;
