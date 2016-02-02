@@ -74,11 +74,11 @@ public:
 		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
-		op_.neg = negW;
-		op_.sqr = sqrW;
-		op_.add = addW;
-		op_.sub = subW;
-		op_.mul = mulW;
+		op_.fp_neg = fp_negW;
+		op_.fp_sqr = fp_sqrW;
+		op_.fp_add = fp_addW;
+		op_.fp_sub = fp_subW;
+		op_.fp_mul = fp_mulW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_opt > llvm > gmp
@@ -97,8 +97,8 @@ public:
 
 		op_.useMont = mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
 		if (mode == fp::FP_LLVM_MONT) {
-			op_.mul = montW;
-			op_.sqr = montSqrW;
+			op_.fp_mul = fp_montW;
+			op_.fp_sqr = fp_montSqrW;
 		}
 #if 0
 	fprintf(stderr, "mode=%d, useMont=%d"
@@ -116,7 +116,7 @@ public:
 			x.clear();
 			x.v_[0] = 1;
 			op_.toMont(x.v_, x.v_);
-			op_.copy(op_.oneRep, x.v_);
+			op_.fp_copy(op_.oneRep, x.v_);
 		}
 		{ // set half
 			mpz_class half = (op_.mp - 1) / 2;
@@ -145,16 +145,16 @@ public:
 	FpT() {}
 	FpT(const FpT& x)
 	{
-		op_.copy(v_, x.v_);
+		op_.fp_copy(v_, x.v_);
 	}
 	FpT& operator=(const FpT& x)
 	{
-		op_.copy(v_, x.v_);
+		op_.fp_copy(v_, x.v_);
 		return *this;
 	}
 	void clear()
 	{
-		op_.clear(v_);
+		op_.fp_clear(v_);
 	}
 	FpT(int64_t x) { operator=(x); }
 	explicit FpT(const std::string& str, int base = 0)
@@ -165,7 +165,7 @@ public:
 	{
 		clear();
 		if (x == 1) {
-			op_.copy(v_, op_.oneRep);
+			op_.fp_copy(v_, op_.oneRep);
 		} else if (x) {
 			int64_t y = x < 0 ? -x : x;
 			if (sizeof(Unit) == 8) {
@@ -274,12 +274,12 @@ public:
 	{
 		setArray(Gmp::getUnit(x), Gmp::getUnitSize(x));
 	}
-	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.add(z.v_, x.v_, y.v_); }
-	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.sub(z.v_, x.v_, y.v_); }
-	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.mul(z.v_, x.v_, y.v_); }
-	static inline void inv(FpT& y, const FpT& x) { op_.invOp(y.v_, x.v_, op_); }
-	static inline void neg(FpT& y, const FpT& x) { op_.neg(y.v_, x.v_); }
-	static inline void sqr(FpT& y, const FpT& x) { op_.sqr(y.v_, x.v_); }
+	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_); }
+	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_); }
+	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_); }
+	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
+	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_); }
+	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
 	static inline void div(FpT& z, const FpT& x, const FpT& y)
 	{
 		FpT rev;
@@ -302,7 +302,7 @@ public:
 	{
 		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
-	bool isZero() const { return op_.isZero(v_); }
+	bool isZero() const { return op_.fp_isZero(v_); }
 	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
 	/*
 		return true if p/2 < x < p
@@ -416,40 +416,40 @@ private:
 	/*
 		wrapper function for generic p
 		add(z, x, y)
-		  case 1: op_.add(z.v_, x.v_, y.v_) written by Xbyak with fixed p
-		  case 2: addW(z.v_, x.v_, y.v_)
-		            op_.addP(z, x, y, p) written by GMP/LLVM with generic p
+		  case 1: op_.fp_add(z.v_, x.v_, y.v_) written by Xbyak with fixed p
+		  case 2: fp_addW(z.v_, x.v_, y.v_)
+		            op_.fp_addP(z, x, y, p) written by GMP/LLVM with generic p
 	*/
-	static inline void addW(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_addW(Unit *z, const Unit *x, const Unit *y)
 	{
-		op_.addP(z, x, y, op_.p);
+		op_.fp_addP(z, x, y, op_.p);
 	}
-	static inline void subW(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_subW(Unit *z, const Unit *x, const Unit *y)
 	{
-		op_.subP(z, x, y, op_.p);
+		op_.fp_subP(z, x, y, op_.p);
 	}
-	static inline void mulW(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
 		Unit xy[maxSize * 2];
-		op_.mulPreP(xy, x, y);
-		op_.modP(z, xy, op_.p);
+		op_.fp_mulPreP(xy, x, y);
+		op_.fp_modP(z, xy, op_.p);
 	}
-	static inline void sqrW(Unit *y, const Unit *x)
+	static inline void fp_sqrW(Unit *y, const Unit *x)
 	{
 		Unit xx[maxSize * 2];
-		op_.sqrPreP(xx, x);
-		op_.modP(y, xx, op_.p);
+		op_.fp_sqrPreP(xx, x);
+		op_.fp_modP(y, xx, op_.p);
 	}
-	static inline void negW(Unit *y, const Unit *x)
+	static inline void fp_negW(Unit *y, const Unit *x)
 	{
-		op_.negP(y, x, op_.p);
+		op_.fp_negP(y, x, op_.p);
 	}
 	// wrapper function for mcl_fp_mont by LLVM
-	static inline void montW(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.mont(z, x, y, op_.p, op_.rp);
 	}
-	static inline void montSqrW(Unit *y, const Unit *x)
+	static inline void fp_montSqrW(Unit *y, const Unit *x)
 	{
 		op_.mont(y, x, x, op_.p, op_.rp);
 	}

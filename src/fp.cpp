@@ -85,15 +85,15 @@ struct OpeFunc {
 		z->_mp_size = 0;
 		z->_mp_d = (mp_limb_t*)p;
 	}
-	static inline void clearC(Unit *x)
+	static inline void fp_clearC(Unit *x)
 	{
 		clearArray(x, 0, N);
 	}
-	static inline void copyC(Unit *y, const Unit *x)
+	static inline void fp_copyC(Unit *y, const Unit *x)
 	{
 		copyArray(y, x, N);
 	}
-	static inline void addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N + 2]; // not N + 1
 		mpz_t mz, mx, my, mp;
@@ -107,7 +107,7 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N, mz);
 	}
-	static inline void subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N + 1];
 		mpz_t mz, mx, my;
@@ -123,7 +123,7 @@ struct OpeFunc {
 		Gmp::getArray(z, N, mz);
 	}
 	// z[N * 2] <- x[N] * y[N]
-	static inline void mulPreC(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
 		mpz_t mx, my, mz;
 		set_zero(mz, z, N * 2);
@@ -133,7 +133,7 @@ struct OpeFunc {
 		clearArray(z, mz->_mp_size, N * 2);
 	}
 	// y[N * 2] <- x[N]^2
-	static inline void sqrPreC(Unit *y, const Unit *x)
+	static inline void fp_sqrPreC(Unit *y, const Unit *x)
 	{
 		mpz_t mx, my;
 		set_zero(my, y, N * 2);
@@ -142,7 +142,7 @@ struct OpeFunc {
 		clearArray(y, my->_mp_size, N * 2);
 	}
 	// y[N] <- x[N * 2] mod p[N]
-	static inline void modC(Unit *y, const Unit *x, const Unit *p)
+	static inline void fp_modC(Unit *y, const Unit *x, const Unit *p)
 	{
 		mpz_t mx, my, mp;
 		set_mpz_t(mx, x, N * 2);
@@ -151,7 +151,7 @@ struct OpeFunc {
 		mpz_mod(my, mx, mp);
 		clearArray(y, my->_mp_size, N);
 	}
-	static inline void invOp(Unit *y, const Unit *x, const Op& op)
+	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
 		mpz_class my;
 		mpz_t mx, mp;
@@ -163,39 +163,33 @@ struct OpeFunc {
 	/*
 		inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
 	*/
-	static void invMontOp(Unit *y, const Unit *x, const Op& op)
+	static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
 	{
-		invOp(y, x, op);
-		op.mul(y, y, op.R3);
-//		op.toMont(y, y);
-//		op.toMont(y, y);
+		fp_invOpC(y, x, op);
+		op.fp_mul(y, y, op.R3);
 	}
-	static inline bool isZeroC(const Unit *x)
+	static inline bool fp_isZeroC(const Unit *x)
 	{
 		return isZeroArray(x, N);
 	}
-	static inline void negC(Unit *y, const Unit *x, const Unit *p)
+	static inline void fp_negC(Unit *y, const Unit *x, const Unit *p)
 	{
-		if (isZeroC(x)) {
-			if (x != y) clearC(y);
+		if (fp_isZeroC(x)) {
+			if (x != y) fp_clearC(y);
 			return;
 		}
-		subC(y, p, x, p);
-	}
-	static inline void sqrC(Unit *y, const Unit *x, const Unit *p)
-	{
-		sqrC(y, p, x, p);
+		fp_subC(y, p, x, p);
 	}
 };
 
 #ifdef MCL_USE_LLVM
 	#define SET_OP_LLVM(n) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			addP = mcl_fp_add ## n ##S; \
-			subP = mcl_fp_sub ## n ##S; \
-			mulPreP = mcl_fp_mulPre ## n; \
+			fp_addP = mcl_fp_add ## n ##S; \
+			fp_subP = mcl_fp_sub ## n ##S; \
+			fp_mulPreP = mcl_fp_mulPre ## n; \
 			if (n <= 256) { \
-				sqrPreP = mcl_fp_sqrPre ## n; \
+				fp_sqrPreP = mcl_fp_sqrPre ## n; \
 			} \
 			mont = mcl_fp_mont ## n; \
 		}
@@ -205,33 +199,33 @@ struct OpeFunc {
 
 #define SET_OP(n) \
 		N = n / UnitBitSize; \
-		isZero = OpeFunc<n>::isZeroC; \
-		clear = OpeFunc<n>::clearC; \
-		copy = OpeFunc<n>::copyC; \
-		negP = OpeFunc<n>::negC; \
+		fp_isZero = OpeFunc<n>::fp_isZeroC; \
+		fp_clear = OpeFunc<n>::fp_clearC; \
+		fp_copy = OpeFunc<n>::fp_copyC; \
+		fp_negP = OpeFunc<n>::fp_negC; \
 		if (useMont) { \
-			invOp = OpeFunc<n>::invMontOp; \
+			fp_invOp = OpeFunc<n>::fp_invMontOpC; \
 		} else { \
-			invOp = OpeFunc<n>::invOp; \
+			fp_invOp = OpeFunc<n>::fp_invOpC; \
 		} \
-		addP = OpeFunc<n>::addC; \
-		subP = OpeFunc<n>::subC; \
-		mulPreP = OpeFunc<n>::mulPreC; \
-		sqrPreP = OpeFunc<n>::sqrPreC; \
-		modP = OpeFunc<n>::modC; \
+		fp_addP = OpeFunc<n>::fp_addC; \
+		fp_subP = OpeFunc<n>::fp_subC; \
+		fp_mulPreP = OpeFunc<n>::fp_mulPreC; \
+		fp_sqrPreP = OpeFunc<n>::fp_sqrPreC; \
+		fp_modP = OpeFunc<n>::fp_modC; \
 		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK
-inline void invOpForMont(Unit *y, const Unit *x, const Op& op)
+inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 {
 	Unit r[maxOpUnitSize];
-	int k = op.preInv(r, x);
+	int k = op.fp_preInv(r, x);
 	/*
 		xr = 2^k
 		R = 2^(N * 64)
 		get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
 	*/
-	op.mul(y, r, op.invTbl.data() + k * op.N);
+	op.fp_mul(y, r, op.invTbl.data() + k * op.N);
 }
 
 static void initInvTbl(Op& op)
@@ -244,7 +238,7 @@ static void initInvTbl(Op& op)
 	t[0] = 2;
 	op.toMont(tbl, t);
 	for (size_t i = 0; i < invTblN - 1; i++) {
-		op.add(tbl - N, tbl, tbl);
+		op.fp_add(tbl - N, tbl, tbl);
 		tbl -= N;
 	}
 }
@@ -270,14 +264,14 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	if (fg == 0) return;
 	fg->init(p, (int)N);
 
-	op.neg = Xbyak::CastTo<void2u>(fg->neg_);
-	op.add = Xbyak::CastTo<void3u>(fg->add_);
-	op.sub = Xbyak::CastTo<void3u>(fg->sub_);
-	op.mul = Xbyak::CastTo<void3u>(fg->mul_);
-	op.sqr = Xbyak::CastTo<void2u>(fg->sqr_);
+	op.fp_neg = Xbyak::CastTo<void2u>(fg->neg_);
+	op.fp_add = Xbyak::CastTo<void3u>(fg->add_);
+	op.fp_sub = Xbyak::CastTo<void3u>(fg->sub_);
+	op.fp_mul = Xbyak::CastTo<void3u>(fg->mul_);
+	op.fp_sqr = Xbyak::CastTo<void2u>(fg->sqr_);
 	if (N <= 4) {
-		op.preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
-		op.invOp = &invOpForMont;
+		op.fp_preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
+		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
 
@@ -319,7 +313,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	}
 #ifdef MCL_USE_LLVM
 	if (mode == FP_AUTO && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-		mul = &mcl_fp_mul_NIST_P192;
+		fp_mul = &mcl_fp_mul_NIST_P192;
 		useMont = false;
 	}
 #endif
@@ -327,6 +321,12 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		fp::initForMont(*this, p, mode);
 	}
 	sq.set(mp);
+}
+
+void Op2::init(Op *op, int xi_c)
+{
+	if (op->N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << op->N;
+	this->op = op;
 }
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix)
@@ -402,7 +402,7 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 {
 	bool isNegative = false;
 	if (fp::isGreaterArray(b.p, op.half, op.N)) {
-		op.neg(b.v_, b.p);
+		op.fp_neg(b.v_, b.p);
 		b.p = b.v_;
 		isNegative = true;
 	}
