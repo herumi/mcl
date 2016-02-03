@@ -323,12 +323,6 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	sq.set(mp);
 }
 
-void Op2::init(Op *op, int xi_c)
-{
-	if (op->N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << op->N;
-	this->op = op;
-}
-
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix)
 {
 	switch (base) {
@@ -429,6 +423,12 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	}
 	*pb = false;
 	return 0;
+}
+
+void Op::initFp2(int xi_c)
+{
+	if (N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << N;
+	this->xi_c = xi_c;
 }
 
 } } // mcl::fp

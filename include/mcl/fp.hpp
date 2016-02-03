@@ -79,6 +79,12 @@ public:
 		op_.fp_add = fp_addW;
 		op_.fp_sub = fp_subW;
 		op_.fp_mul = fp_mulW;
+		// Fp2
+		op_.fp2_add = fp2_addW;
+		op_.fp2_sub = fp2_subW;
+		op_.fp2_mul = fp2_mulW;
+		op_.fp2_inv = fp2_invW;
+		op_.fp2_sqr = fp2_sqrW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_opt > llvm > gmp
@@ -452,6 +458,106 @@ private:
 	static inline void fp_montSqrW(Unit *y, const Unit *x)
 	{
 		op_.mont(y, x, x, op_.p, op_.rp);
+	}
+	/*
+		default Fp2 operator
+		Fp2 = Fp[u]/(u^2 + 1)
+	*/
+	static inline void fp2_addW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const fp::void3u fp_add = op_.fp_add;
+		const size_t N = op_.N;
+		fp_add(z, x, y);
+		fp_add(z + N, x + N, y + N);
+	}
+	static inline void fp2_subW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const fp::void3u fp_sub = op_.fp_sub;
+		const size_t N = op_.N;
+		fp_sub(z, x, y);
+		fp_sub(z + N, x + N, y + N);
+	}
+	static inline void fp2_negW(Unit *y, const Unit *x)
+	{
+		const fp::void2u fp_neg = op_.fp_neg;
+		const size_t N = op_.N;
+		fp_neg(y, x);
+		fp_neg(y + N, x + N);
+	}
+	/*
+		x = a + bu, y = c + du, u^2 = -1
+		z = xy = (a + bu)(c + du) = (ac - bd) + (ad + bc)u
+		ad+bc = (a + b)(c + d) - ac - bd
+	*/
+	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const fp::void3u fp_add = op_.fp_add;
+		const fp::void3u fp_sub = op_.fp_sub;
+		const fp::void3u fp_mul = op_.fp_mul;
+		const size_t N = op_.N;
+		const Unit *a = x;
+		const Unit *b = x + N;
+		const Unit *c = y;
+		const Unit *d = y + N;
+		Unit t1[maxSize];
+		Unit t2[maxSize];
+		Unit ac[maxSize];
+		Unit bd[maxSize];
+		fp_add(t1, a, b);
+		fp_add(t2, c, d);
+		fp_mul(t1, t1, t2); // (a + b)(c + d)
+		fp_mul(ac, a, c);
+		fp_mul(bd, b, d);
+		fp_sub(z, ac, bd); // ac - bd
+		fp_sub(z, z, bd);
+		fp_sub(z + N, t1, ac);
+		fp_sub(z + N, z + N, bd);
+	}
+	/*
+		x = a + bu, u^2 = -1
+		y = x^2 = (a + bu)^2 = (a^2 - b^2) + 2abu
+	*/
+	static inline void fp2_sqrW(Unit *y, const Unit *x)
+	{
+		const fp::void3u fp_add = op_.fp_add;
+		const fp::void3u fp_sub = op_.fp_sub;
+		const fp::void2u fp_sqr = op_.fp_sqr;
+		const fp::void3u fp_mul = op_.fp_mul;
+		const size_t N = op_.N;
+		const Unit *a = x;
+		const Unit *b = x + N;
+		Unit aa[maxSize];
+		Unit bb[maxSize];
+		Unit t[maxSize];
+		fp_sqr(aa, a);
+		fp_sqr(bb, b);
+		fp_mul(t, a, b);
+		fp_sub(y, aa, bb); // a^2 - b^2
+		fp_add(y + N, t, t); // 2ab
+	}
+	/*
+		x = a + bu
+		1 / x = (a - bu) / (a^2 + b^2)
+	*/
+	static inline void fp2_invW(Unit *y, const Unit *x)
+	{
+		const fp::void3u fp_add = op_.fp_add;
+		const fp::void2u fp_sqr = op_.fp_sqr;
+		const fp::void3u fp_mul = op_.fp_mul;
+		const fp::void2uOp fp_invOp = op_.fp_invOp;
+		const fp::void2u fp_neg = op_.fp_neg;
+		const size_t N = op_.N;
+		const Unit *a = x;
+		const Unit *b = x + N;
+		Unit aa[maxSize];
+		Unit bb[maxSize];
+		fp_sqr(aa, a);
+		fp_sqr(bb, b);
+		fp_add(aa, aa, bb);
+		fp_invOp(aa, aa, op_); // aa = 1 / (a^2 + b^2)
+		fp_mul(y, y, aa);
+		fp_mul(y + N, y + N, aa);
+		fp_neg(y + N, y + N);
 	}
 };
 

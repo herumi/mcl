@@ -94,6 +94,20 @@ struct Op {
 	void3u fp_mulPreP;
 	void3u fp_modP;
 	FpGenerator *fg;
+
+	/*
+		for Fp2 = F[u] / (u^2 + 1)
+		x = a + bu
+	*/
+	int xi_c; // xi = u + xi_c
+	void3u fp2_add;
+	void3u fp2_sub;
+	void3u fp2_mul;
+	void2u fp2_neg;
+	void2u fp2_inv;
+	void2u fp2_sqr;
+	void2u fp2_mul_xi;
+
 	Op()
 		: N(0), bitSize(0)
 		, fp_isZero(0), fp_clear(0), fp_copy(0)
@@ -102,6 +116,9 @@ struct Op {
 		, rp(0), mont(0)
 		, fp_negP(0), fp_sqrPreP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_mulPreP(0), fp_modP(0)
 		, fg(createFpGenerator())
+		, xi_c(0)
+		, fp2_add(0), fp2_sub(0), fp2_mul(0), fp2_neg(0)
+		, fp2_sqr(0), fp2_mul_xi(0)
 	{
 	}
 	~Op()
@@ -124,31 +141,12 @@ struct Op {
 		fp_mul(y, x, R2);
 	}
 	void init(const std::string& mstr, int base, size_t maxBitSize, Mode mode);
+	void initFp2(int xi_c);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
 private:
 	Op(const Op&);
 	void operator=(const Op&);
-};
-
-/*
-	for Fp2 = F[u] / (u^2 + 1)
-	x = a + bu
-*/
-struct Op2 {
-	Op *op;
-	int xi_c; // xi = u + xi_c
-	void3u add;
-	void3u sub;
-	void3u mul;
-	void2u neg;
-	void2u sqr;
-	void2u mul_xi;
-	Op2()
-		: op(0), xi_c(0), add(0), sub(0), mul(0), neg(0), sqr(0), mul_xi(0)
-	{
-	}
-	void init(Op *op, int xi_c);
 };
 
 } } // mcl::fp
