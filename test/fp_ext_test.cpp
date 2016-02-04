@@ -32,8 +32,8 @@ void testFp2()
 	z = x * x;
 	Fp2::sqr(y, x);
 	CYBOZU_TEST_EQUAL(z, y);
-	x.a.setStr("-1234567894");
-	x.b.setStr("-464652165165");
+	x.a = -123456789;
+	x.b = 464652165165;
 	y = x * x;
 	Fp2::sqr(x, x);
 	CYBOZU_TEST_EQUAL(x, y);

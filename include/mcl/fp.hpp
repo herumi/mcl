@@ -510,7 +510,6 @@ private:
 		fp_mul(ac, a, c);
 		fp_mul(bd, b, d);
 		fp_sub(z, ac, bd); // ac - bd
-		fp_sub(z, z, bd);
 		fp_sub(z + n, t1, ac);
 		fp_sub(z + n, z + n, bd);
 	}
