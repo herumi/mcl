@@ -56,6 +56,7 @@ class FpT {
 	static fp::Op op_;
 	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
+	template<class Fp> friend class Fp2T;
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
@@ -466,23 +467,23 @@ private:
 	static inline void fp2_addW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const fp::void3u fp_add = op_.fp_add;
-		const size_t N = op_.N;
+		const size_t n = maxSize;
 		fp_add(z, x, y);
-		fp_add(z + N, x + N, y + N);
+		fp_add(z + n, x + n, y + n);
 	}
 	static inline void fp2_subW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const fp::void3u fp_sub = op_.fp_sub;
-		const size_t N = op_.N;
+		const size_t n = maxSize;
 		fp_sub(z, x, y);
-		fp_sub(z + N, x + N, y + N);
+		fp_sub(z + n, x + n, y + n);
 	}
 	static inline void fp2_negW(Unit *y, const Unit *x)
 	{
 		const fp::void2u fp_neg = op_.fp_neg;
-		const size_t N = op_.N;
+		const size_t n = maxSize;
 		fp_neg(y, x);
-		fp_neg(y + N, x + N);
+		fp_neg(y + n, x + n);
 	}
 	/*
 		x = a + bu, y = c + du, u^2 = -1
@@ -494,11 +495,11 @@ private:
 		const fp::void3u fp_add = op_.fp_add;
 		const fp::void3u fp_sub = op_.fp_sub;
 		const fp::void3u fp_mul = op_.fp_mul;
-		const size_t N = op_.N;
+		const size_t n = maxSize;
 		const Unit *a = x;
-		const Unit *b = x + N;
+		const Unit *b = x + n;
 		const Unit *c = y;
-		const Unit *d = y + N;
+		const Unit *d = y + n;
 		Unit t1[maxSize];
 		Unit t2[maxSize];
 		Unit ac[maxSize];
@@ -510,8 +511,8 @@ private:
 		fp_mul(bd, b, d);
 		fp_sub(z, ac, bd); // ac - bd
 		fp_sub(z, z, bd);
-		fp_sub(z + N, t1, ac);
-		fp_sub(z + N, z + N, bd);
+		fp_sub(z + n, t1, ac);
+		fp_sub(z + n, z + n, bd);
 	}
 	/*
 		x = a + bu, u^2 = -1
@@ -523,9 +524,9 @@ private:
 		const fp::void3u fp_sub = op_.fp_sub;
 		const fp::void2u fp_sqr = op_.fp_sqr;
 		const fp::void3u fp_mul = op_.fp_mul;
-		const size_t N = op_.N;
+		const size_t n = maxSize;
 		const Unit *a = x;
-		const Unit *b = x + N;
+		const Unit *b = x + n;
 		Unit aa[maxSize];
 		Unit bb[maxSize];
 		Unit t[maxSize];
@@ -533,7 +534,7 @@ private:
 		fp_sqr(bb, b);
 		fp_mul(t, a, b);
 		fp_sub(y, aa, bb); // a^2 - b^2
-		fp_add(y + N, t, t); // 2ab
+		fp_add(y + n, t, t); // 2ab
 	}
 	/*
 		x = a + bu
@@ -546,9 +547,9 @@ private:
 		const fp::void3u fp_mul = op_.fp_mul;
 		const fp::void2uOp fp_invOp = op_.fp_invOp;
 		const fp::void2u fp_neg = op_.fp_neg;
-		const size_t N = op_.N;
+		const size_t n = maxSize;
 		const Unit *a = x;
-		const Unit *b = x + N;
+		const Unit *b = x + n;
 		Unit aa[maxSize];
 		Unit bb[maxSize];
 		fp_sqr(aa, a);
@@ -556,8 +557,8 @@ private:
 		fp_add(aa, aa, bb);
 		fp_invOp(aa, aa, op_); // aa = 1 / (a^2 + b^2)
 		fp_mul(y, y, aa);
-		fp_mul(y + N, y + N, aa);
-		fp_neg(y + N, y + N);
+		fp_mul(y + n, y + n, aa);
+		fp_neg(y + n, y + n);
 	}
 };
 

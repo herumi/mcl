@@ -2,7 +2,7 @@ include ../common.mk
 
 TARGET=$(TEST_FILE)
 
-SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp
+SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_ext_test.cpp
 ifeq ($(CPU),x64)
   SRC+=fp_generator_test.cpp mont_fp_test.cpp
 endif

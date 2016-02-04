@@ -24,10 +24,9 @@ public:
 		: a(x), b(0)
 	{
 	}
-	Fp2T(const Fp& a, const Fp& b)
-		: a(a), b(b)
-	{
-	}
+	Fp2T(const Fp& a, const Fp& b) : a(a), b(b) { }
+	Fp2T(int64_t a, int64_t b) : a(a), b(b) { }
+	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
 	Fp* get() { return &a; }
 	const Fp* get() const { return &a; }
 	void clear()
@@ -72,7 +71,7 @@ public:
 		const size_t size = str.size();
 		const size_t pos = str.find(',');
 		if (size >= 5 && str[0] == '[' && pos != std::string::npos && str[size - 1] == ']') {
-			a.setStr(str.substr(1, pos), base);
+			a.setStr(str.substr(1, pos - 1), base);
 			b.setStr(str.substr(pos + 1, size - pos - 2), base);
 			return;
 		}
