@@ -169,26 +169,22 @@ private:
 	*/
 	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
-		const fp::void3u fp_add = Fp::op_.fp_add;
-		const fp::void3u fp_sub = Fp::op_.fp_sub;
-		const fp::void3u fp_mul = Fp::op_.fp_mul;
-		const size_t n = Fp::maxSize;
-		const Unit *a = x;
-		const Unit *b = x + n;
-		const Unit *c = y;
-		const Unit *d = y + n;
-		Unit t1[Fp::maxSize];
-		Unit t2[Fp::maxSize];
-		Unit ac[Fp::maxSize];
-		Unit bd[Fp::maxSize];
-		fp_add(t1, a, b);
-		fp_add(t2, c, d);
-		fp_mul(t1, t1, t2); // (a + b)(c + d)
-		fp_mul(ac, a, c);
-		fp_mul(bd, b, d);
-		fp_sub(z, ac, bd); // ac - bd
-		fp_sub(z + n, t1, ac);
-		fp_sub(z + n, z + n, bd);
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		const Fp *py = reinterpret_cast<const Fp*>(y);
+		Fp *pz = reinterpret_cast<Fp*>(z);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		const Fp& c = py[0];
+		const Fp& d = py[1];
+		Fp t1, t2, ac, bd;
+		Fp::add(t1, a, b);
+		Fp::add(t2, c, d);
+		t1 *= t2; // (a + b)(c + d)
+		Fp::mul(ac, a, c);
+		Fp::mul(bd, b, d);
+		Fp::sub(pz[0], ac, bd); // ac - bd
+		Fp::sub(pz[1], t1, ac);
+		pz[1] -= bd;
 	}
 	/*
 		x = a + bu, u^2 = -1
@@ -196,21 +192,16 @@ private:
 	*/
 	static inline void fp2_sqrW(Unit *y, const Unit *x)
 	{
-		const fp::void3u fp_add = Fp::op_.fp_add;
-		const fp::void3u fp_sub = Fp::op_.fp_sub;
-		const fp::void2u fp_sqr = Fp::op_.fp_sqr;
-		const fp::void3u fp_mul = Fp::op_.fp_mul;
-		const size_t n = Fp::maxSize;
-		const Unit *a = x;
-		const Unit *b = x + n;
-		Unit aa[Fp::maxSize];
-		Unit bb[Fp::maxSize];
-		Unit t[Fp::maxSize];
-		fp_sqr(aa, a);
-		fp_sqr(bb, b);
-		fp_mul(t, a, b);
-		fp_sub(y, aa, bb); // a^2 - b^2
-		fp_add(y + n, t, t); // 2ab
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		Fp *py = reinterpret_cast<Fp*>(y);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		Fp aa, bb, t;
+		Fp::sqr(aa, a);
+		Fp::sqr(bb, b);
+		Fp::mul(t, a, b);
+		Fp::sub(py[0], aa, bb); // a^2 - b^2
+		Fp::add(py[1], t, t); // 2ab
 	}
 	/*
 		x = a + bu
@@ -236,23 +227,18 @@ private:
 	*/
 	static inline void fp2_invW(Unit *y, const Unit *x)
 	{
-		const fp::void3u fp_add = Fp::op_.fp_add;
-		const fp::void2u fp_sqr = Fp::op_.fp_sqr;
-		const fp::void3u fp_mul = Fp::op_.fp_mul;
-		const fp::void2uOp fp_invOp = Fp::op_.fp_invOp;
-		const fp::void2u fp_neg = Fp::op_.fp_neg;
-		const size_t n = Fp::maxSize;
-		const Unit *a = x;
-		const Unit *b = x + n;
-		Unit aa[Fp::maxSize];
-		Unit bb[Fp::maxSize];
-		fp_sqr(aa, a);
-		fp_sqr(bb, b);
-		fp_add(aa, aa, bb);
-		fp_invOp(aa, aa, Fp::op_); // aa = 1 / (a^2 + b^2)
-		fp_mul(y, y, aa);
-		fp_mul(y + n, y + n, aa);
-		fp_neg(y + n, y + n);
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		Fp *py = reinterpret_cast<Fp*>(y);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		Fp aa, bb;
+		Fp::sqr(aa, a);
+		Fp::sqr(bb, b);
+		aa += bb;
+		Fp::inv(aa, aa); // aa = 1 / (a^2 + b^2)
+		py[0] *= aa;
+		py[1] *= aa;
+		Fp::neg(py[1], py[1]);
 	}
 	static inline void powerArray(Fp2T& z, const Fp2T& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
