@@ -99,7 +99,7 @@ struct Op {
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
 	*/
-	int xi_c; // xi = u + xi_c
+	int xi_c; // xi = xi_c + u
 	void3u fp2_add;
 	void3u fp2_sub;
 	void3u fp2_mul;

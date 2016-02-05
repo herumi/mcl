@@ -17,6 +17,8 @@ namespace mcl {
 */
 template<class Fp>
 class Fp2T {
+	typedef fp::Unit Unit;
+	static Fp xi_c_;
 public:
 	Fp a, b;
 	Fp2T() { }
@@ -121,7 +123,137 @@ public:
 	{
 		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
+	static inline void init(int xi_c)
+	{
+		xi_c_ = xi_c;
+		Fp::op_.fp2_add = fp2_addW;
+		Fp::op_.fp2_sub = fp2_subW;
+		Fp::op_.fp2_mul = fp2_mulW;
+		Fp::op_.fp2_neg = fp2_negW;
+		Fp::op_.fp2_inv = fp2_invW;
+		Fp::op_.fp2_sqr = fp2_sqrW;
+		Fp::op_.fp2_mul_xi = fp2_mul_xiW;
+	}
 private:
+	/*
+		default Fp2 operator
+		Fp2 = Fp[u]/(u^2 + 1)
+	*/
+	static inline void fp2_addW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		const Fp *py = reinterpret_cast<const Fp*>(y);
+		Fp *pz = reinterpret_cast<Fp*>(z);
+		Fp::add(pz[0], px[0], py[0]);
+		Fp::add(pz[1], px[1], py[1]);
+	}
+	static inline void fp2_subW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		const Fp *py = reinterpret_cast<const Fp*>(y);
+		Fp *pz = reinterpret_cast<Fp*>(z);
+		Fp::sub(pz[0], px[0], py[0]);
+		Fp::sub(pz[1], px[1], py[1]);
+	}
+	static inline void fp2_negW(Unit *y, const Unit *x)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		Fp *py = reinterpret_cast<Fp*>(y);
+		Fp::neg(py[0], px[0]);
+		Fp::neg(py[1], px[1]);
+	}
+	/*
+		x = a + bu, y = c + du, u^2 = -1
+		z = xy = (a + bu)(c + du) = (ac - bd) + (ad + bc)u
+		ad+bc = (a + b)(c + d) - ac - bd
+	*/
+	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const fp::void3u fp_add = Fp::op_.fp_add;
+		const fp::void3u fp_sub = Fp::op_.fp_sub;
+		const fp::void3u fp_mul = Fp::op_.fp_mul;
+		const size_t n = Fp::maxSize;
+		const Unit *a = x;
+		const Unit *b = x + n;
+		const Unit *c = y;
+		const Unit *d = y + n;
+		Unit t1[Fp::maxSize];
+		Unit t2[Fp::maxSize];
+		Unit ac[Fp::maxSize];
+		Unit bd[Fp::maxSize];
+		fp_add(t1, a, b);
+		fp_add(t2, c, d);
+		fp_mul(t1, t1, t2); // (a + b)(c + d)
+		fp_mul(ac, a, c);
+		fp_mul(bd, b, d);
+		fp_sub(z, ac, bd); // ac - bd
+		fp_sub(z + n, t1, ac);
+		fp_sub(z + n, z + n, bd);
+	}
+	/*
+		x = a + bu, u^2 = -1
+		y = x^2 = (a + bu)^2 = (a^2 - b^2) + 2abu
+	*/
+	static inline void fp2_sqrW(Unit *y, const Unit *x)
+	{
+		const fp::void3u fp_add = Fp::op_.fp_add;
+		const fp::void3u fp_sub = Fp::op_.fp_sub;
+		const fp::void2u fp_sqr = Fp::op_.fp_sqr;
+		const fp::void3u fp_mul = Fp::op_.fp_mul;
+		const size_t n = Fp::maxSize;
+		const Unit *a = x;
+		const Unit *b = x + n;
+		Unit aa[Fp::maxSize];
+		Unit bb[Fp::maxSize];
+		Unit t[Fp::maxSize];
+		fp_sqr(aa, a);
+		fp_sqr(bb, b);
+		fp_mul(t, a, b);
+		fp_sub(y, aa, bb); // a^2 - b^2
+		fp_add(y + n, t, t); // 2ab
+	}
+	/*
+		x = a + bu
+		y = (a + bu)xi = (a + bu)(xi_c + u)
+		=(a * x_ic - b) + (a + b xi_c)u
+	*/
+	static inline void fp2_mul_xiW(Unit *y, const Unit *x)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		Fp *py = reinterpret_cast<Fp*>(y);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		Fp t;
+		Fp::mul(t, a, xi_c_);
+		t -= b;
+		Fp::mul(py[1], b, xi_c_);
+		py[1] += a;
+		py[0] = t;
+	}
+	/*
+		x = a + bu
+		1 / x = (a - bu) / (a^2 + b^2)
+	*/
+	static inline void fp2_invW(Unit *y, const Unit *x)
+	{
+		const fp::void3u fp_add = Fp::op_.fp_add;
+		const fp::void2u fp_sqr = Fp::op_.fp_sqr;
+		const fp::void3u fp_mul = Fp::op_.fp_mul;
+		const fp::void2uOp fp_invOp = Fp::op_.fp_invOp;
+		const fp::void2u fp_neg = Fp::op_.fp_neg;
+		const size_t n = Fp::maxSize;
+		const Unit *a = x;
+		const Unit *b = x + n;
+		Unit aa[Fp::maxSize];
+		Unit bb[Fp::maxSize];
+		fp_sqr(aa, a);
+		fp_sqr(bb, b);
+		fp_add(aa, aa, bb);
+		fp_invOp(aa, aa, Fp::op_); // aa = 1 / (a^2 + b^2)
+		fp_mul(y, y, aa);
+		fp_mul(y + n, y + n, aa);
+		fp_neg(y + n, y + n);
+	}
 	static inline void powerArray(Fp2T& z, const Fp2T& x, const fp::Unit *y, size_t yn, bool isNegative)
 	{
 		Fp2T tmp;
@@ -137,6 +269,8 @@ private:
 		}
 	}
 };
+
+template<class Fp> Fp Fp2T<Fp>::xi_c_;
 
 } // mcl
 
