@@ -312,12 +312,12 @@ class SquareRoot {
 	mpz_class s; // s = g^q
 public:
 	SquareRoot() : isPrime(false) {}
-	void set(const mpz_class& p)
+	void set(const mpz_class& _p)
 	{
+		p = _p;
 		if (p <= 2) throw cybozu::Exception("SquareRoot:bad p") << p;
 		isPrime = Gmp::isPrime(p);
 		if (!isPrime) return; // don't throw until get() is called
-		this->p = p;
 		// g is quadratic nonresidue
 		g = 2;
 		while (Gmp::legendre(g, p) > 0) {

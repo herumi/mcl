@@ -18,6 +18,11 @@
 #endif
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4127)
+	#pragma warning(disable : 4458)
+#endif
 
 namespace mcl {
 
@@ -1648,5 +1653,9 @@ private:
 };
 
 } } // mcl::fp
+
+#ifdef _WIN32
+	#pragma warning(pop)
+#endif
 
 #endif

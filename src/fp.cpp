@@ -392,6 +392,11 @@ uint64_t getUint64(bool *pb, const fp::Block& b)
 	return 0;
 }
 
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4146)
+#endif
+
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 {
 	bool isNegative = false;
@@ -425,10 +430,14 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	return 0;
 }
 
-void Op::initFp2(int xi_c)
+#ifdef _WIN32
+	#pragma warning(pop)
+#endif
+
+void Op::initFp2(int _xi_c)
 {
-	if (N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << N;
-	this->xi_c = xi_c;
+	this->xi_c = _xi_c;
+//	if (N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << N;
 }
 
 } } // mcl::fp
