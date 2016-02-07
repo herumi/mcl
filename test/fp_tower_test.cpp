@@ -3,7 +3,7 @@
 #include <cybozu/benchmark.hpp>
 #include <time.h>
 #include <mcl/fp.hpp>
-#include <mcl/fp_ext.hpp>
+#include <mcl/fp_tower.hpp>
 struct FpTag;
 typedef mcl::FpT<FpTag, 256> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
