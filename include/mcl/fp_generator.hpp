@@ -557,7 +557,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			return;
 		}
 		// sqr(y, x) = mul(y, x, x)
-#ifdef XBYAK_WIN
+#ifdef XBYAK64_WIN
 		mov(r8, rdx);
 #else
 		mov(rdx, rsi);
