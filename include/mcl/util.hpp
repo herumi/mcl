@@ -168,7 +168,8 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
-void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&)){
+void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&))
+{
 #if 0
 	assert(&out != &x);
 	while (n > 0) {
