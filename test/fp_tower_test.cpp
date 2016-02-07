@@ -11,7 +11,7 @@ typedef mcl::Fp2T<Fp> Fp2;
 void testFp2()
 {
 	puts(__FUNCTION__);
-	const int xi_c = 1;
+	const int xi_c = 9;
 	Fp2::init(xi_c);
 	Fp2 x, y, z;
 	x.a = 1;
@@ -33,6 +33,13 @@ void testFp2()
 	CYBOZU_TEST_EQUAL(z, Fp2(-5, 10));
 	Fp2::neg(z, z);
 	CYBOZU_TEST_EQUAL(z, Fp2(5, -10));
+	/*
+		xi = 9 + u
+		(1 - 2u)(9 + u) = (9 + 2) + (1 - 18)u = 11 - 17u
+	*/
+	z = Fp2(1, -2);
+	Fp2::mul_xi(z, z);
+	CYBOZU_TEST_EQUAL(z, Fp2(11, -17));
 	z = x * x;
 	Fp2::sqr(y, x);
 	CYBOZU_TEST_EQUAL(z, y);
