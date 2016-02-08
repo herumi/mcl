@@ -129,6 +129,14 @@ public:
 	{
 		Gmp::getStr(pstr, op_.mp);
 	}
+	/*
+		binary patter of p
+		@note the value of p is zero
+	*/
+	static inline const FpT& getP()
+	{
+		return *reinterpret_cast<const FpT*>(op_.p);
+	}
 	static inline bool isOdd(const FpT& x)
 	{
 		fp::Block b;

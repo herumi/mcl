@@ -122,12 +122,12 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N, mz);
 	}
-	// z = x + y
+	// z = x + y without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
 	{
-		Unit ret[N + 2]; // not N + 1
+		Unit ret[N + 1];
 		mpz_t mz, mx, my;
-		set_zero(mz, ret, N + 2);
+		set_zero(mz, ret, N + 1);
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
 		mpz_add(mz, mx, my);
@@ -140,6 +140,7 @@ struct OpeFunc {
 		set_zero(mz, ret, N + 1);
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
+		assert(mx >= my);
 		mpz_sub(mz, mx, my);
 		Gmp::getArray(z, N, mz);
 	}

@@ -459,9 +459,15 @@ struct Test {
 		{
 			Fp x(5), y(3), z;
 			Fp::addNC(z, x, y);
+			if (Fp::compareRaw(z, Fp::getP()) >= 0) {
+				Fp::subNC(z, z, Fp::getP());
+			}
 			CYBOZU_TEST_EQUAL(z, Fp(8));
-//			Fp::subNC(z, x, y);
-//			CYBOZU_TEST_EQUAL(z, Fp(2));
+			if (Fp::compareRaw(x, y) < 0) {
+				Fp::addNC(x, x, Fp::getP());
+			}
+			Fp::subNC(x, x, y);
+			CYBOZU_TEST_EQUAL(x, Fp(2));
 		}
 	}
 	void power()
