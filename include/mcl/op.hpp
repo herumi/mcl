@@ -79,6 +79,13 @@ struct Op {
 	void3u fp_add;
 	void3u fp_sub;
 	void3u fp_mul;
+
+	bool fullBit; // true if bitSize % uniSize == 0
+	/*
+		same fp_add, fp_sub if fullBit
+	*/
+	void3u fp_addNC; // assume no carry if !fullBit
+	void3u fp_subNC; // assume x > y
 	// for Montgomery
 	bool useMont;
 	int2u fp_preInv;
@@ -112,6 +119,7 @@ struct Op {
 		: N(0), bitSize(0)
 		, fp_isZero(0), fp_clear(0), fp_copy(0)
 		, fp_neg(0), fp_sqr(0), fp_add(0), fp_sub(0), fp_mul(0)
+		, fullBit(true), fp_addNC(0), fp_subNC(0)
 		, useMont(false), fp_preInv(0)
 		, rp(0), mont(0)
 		, fp_negP(0), fp_sqrPreP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_mulPreP(0), fp_modP(0)

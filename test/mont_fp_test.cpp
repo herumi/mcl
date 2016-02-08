@@ -456,6 +456,13 @@ struct Test {
 			z *= y;
 			CYBOZU_TEST_EQUAL(z, castTo<Fp>(tbl[i].x));
 		}
+		{
+			Fp x(5), y(3), z;
+			Fp::addNC(z, x, y);
+			CYBOZU_TEST_EQUAL(z, Fp(8));
+//			Fp::subNC(z, x, y);
+//			CYBOZU_TEST_EQUAL(z, Fp(2));
+		}
 	}
 	void power()
 	{

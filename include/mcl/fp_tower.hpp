@@ -126,6 +126,9 @@ public:
 	}
 	static inline void init(int xi_c)
 	{
+		if (Fp::maxSize > 256) {
+			throw cybozu::Exception("Fp2T:init:not support size") << Fp::maxSize;
+		}
 		xi_c_ = xi_c;
 		Fp::op_.fp2_add = fp2_addW;
 		Fp::op_.fp2_sub = fp2_subW;
@@ -258,6 +261,18 @@ private:
 };
 
 template<class Fp> Fp Fp2T<Fp>::xi_c_;
+
+/*
+	Fp6T = Fp2[v] / (v^3 - xi)
+	xi = -u - 1
+	x = a + b v + c v^2
+*/
+template<class Fp>
+class Fp6T {
+	typedef Fp2T<Fp> Fp2;
+public:
+};
+
 
 } // mcl
 

@@ -122,6 +122,27 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N, mz);
 	}
+	// z = x + y
+	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
+	{
+		Unit ret[N + 2]; // not N + 1
+		mpz_t mz, mx, my;
+		set_zero(mz, ret, N + 2);
+		set_mpz_t(mx, x);
+		set_mpz_t(my, y);
+		mpz_add(mz, mx, my);
+		Gmp::getArray(z, N, mz);
+	}
+	static inline void fp_subNCC(Unit *z, const Unit *x, const Unit *y)
+	{
+		Unit ret[N + 1];
+		mpz_t mz, mx, my;
+		set_zero(mz, ret, N + 1);
+		set_mpz_t(mx, x);
+		set_mpz_t(my, y);
+		mpz_sub(mz, mx, my);
+		Gmp::getArray(z, N, mz);
+	}
 	// z[N * 2] <- x[N] * y[N]
 	static inline void fp_mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -210,6 +231,13 @@ struct OpeFunc {
 		} \
 		fp_addP = OpeFunc<n>::fp_addC; \
 		fp_subP = OpeFunc<n>::fp_subC; \
+		if (fullBit) { \
+			fp_addNC = fp_add; \
+			fp_subNC = fp_sub; \
+		} else { \
+			fp_addNC = OpeFunc<n>::fp_addNCC; \
+			fp_subNC = OpeFunc<n>::fp_subNCC; \
+		} \
 		fp_mulPreP = OpeFunc<n>::fp_mulPreC; \
 		fp_sqrPreP = OpeFunc<n>::fp_sqrPreC; \
 		fp_modP = OpeFunc<n>::fp_modC; \
@@ -284,6 +312,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
+	fullBit = (bitSize % UnitBitSize) == 0;
 
 	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
 	switch (roundBit) {

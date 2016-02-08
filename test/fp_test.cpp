@@ -239,6 +239,11 @@ CYBOZU_TEST_AUTO(ope)
 		z *= y;
 		CYBOZU_TEST_EQUAL(z, tbl[i].x);
 	}
+	Fp x(5), y(3), z;
+	Fp::addNC(z, x, y);
+	CYBOZU_TEST_EQUAL(z, Fp(8));
+	Fp::subNC(z, x, y);
+	CYBOZU_TEST_EQUAL(z, Fp(2));
 }
 
 struct tag2;
