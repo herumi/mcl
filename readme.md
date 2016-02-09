@@ -38,5 +38,5 @@ sample/vote.cpp
 
 # Author
 
-MITSUNARI Shigeo(herumi@nifyt.com)
+MITSUNARI Shigeo(herumi@nifty.com)
 
