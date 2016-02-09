@@ -5,3 +5,18 @@ define i$(unit) @extract$(bit+unit)(i$(bit+unit) %x, i$(bit+unit) %shift) {
 	%t1 = trunc i$(bit+unit) %t0 to i$(unit)
 	ret i$(unit) %t1
 }
+
+define void @mcl_fp_addNC$(bit)(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py) {
+	%x = load i$(bit)* %px
+	%y = load i$(bit)* %py
+	%z = add i$(bit) %x, %y
+	store i$(bit) %z, i$(bit)* %pz
+	ret void
+}
+define void @mcl_fp_subNC$(bit)(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py) {
+	%x = load i$(bit)* %px
+	%y = load i$(bit)* %py
+	%z = sub i$(bit) %x, %y
+	store i$(bit) %z, i$(bit)* %pz
+	ret void
+}

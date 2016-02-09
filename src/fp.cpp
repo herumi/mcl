@@ -209,6 +209,10 @@ struct OpeFunc {
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
 			fp_addP = mcl_fp_add ## n ##S; \
 			fp_subP = mcl_fp_sub ## n ##S; \
+			if (!fullBit) { \
+				fp_addNC = mcl_fp_addNC ## n; \
+				fp_subNC = mcl_fp_subNC ## n; \
+			} \
 			fp_mulPreP = mcl_fp_mulPre ## n; \
 			if (n <= 256) { \
 				fp_sqrPreP = mcl_fp_sqrPre ## n; \
@@ -296,6 +300,8 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	op.fp_neg = Xbyak::CastTo<void2u>(fg->neg_);
 	op.fp_add = Xbyak::CastTo<void3u>(fg->add_);
 	op.fp_sub = Xbyak::CastTo<void3u>(fg->sub_);
+	op.fp_addNC = Xbyak::CastTo<void3u>(fg->addNC_);
+	op.fp_subNC = Xbyak::CastTo<void3u>(fg->subNC_);
 	op.fp_mul = Xbyak::CastTo<void3u>(fg->mul_);
 	op.fp_sqr = Xbyak::CastTo<void2u>(fg->sqr_);
 	if (N <= 4) {

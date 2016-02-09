@@ -159,8 +159,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 	// preInv
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
-	bool3op addNc_;
-	bool3op subNc_;
+	bool3op addNC_;
+	bool3op subNC_;
 	void3op add_;
 	void3op sub_;
 	void3op mul_;
@@ -175,8 +175,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, pp_(0)
 		, pn_(0)
 		, isFullBit_(0)
-		, addNc_(0)
-		, subNc_(0)
+		, addNC_(0)
+		, subNC_(0)
 		, add_(0)
 		, sub_(0)
 		, mul_(0)
@@ -202,11 +202,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 		setSize(0); // reset code
 		align(16);
-		addNc_ = getCurr<bool3op>();
-		gen_addSubNc(true);
+		addNC_ = getCurr<bool3op>();
+		gen_addSubNC(true);
 		align(16);
-		subNc_ = getCurr<bool3op>();
-		gen_addSubNc(false);
+		subNC_ = getCurr<bool3op>();
+		gen_addSubNC(false);
 		align(16);
 		add_ = getCurr<void3op>();
 		gen_addMod();
@@ -231,7 +231,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		preInv_ = getCurr<int2op>();
 		gen_preInv();
 	}
-	void gen_addSubNc(bool isAdd)
+	void gen_addSubNC(bool isAdd)
 	{
 		StackFrame sf(this, 3);
 		if (isAdd) {
@@ -239,8 +239,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		} else {
 			gen_raw_sub(sf.p[0], sf.p[1], sf.p[2], rax);
 		}
-		setc(al);
-		movzx(eax, al);
+//		setc(al);
+//		movzx(eax, al);
 	}
 	/*
 		pz[] = px[] + py[]
