@@ -126,9 +126,7 @@ public:
 	}
 	static inline void init(int xi_c)
 	{
-		if (Fp::maxSize > 256) {
-			throw cybozu::Exception("Fp2T:init:not support size") << Fp::maxSize;
-		}
+		assert(Fp::maxSize <= 256);
 		xi_c_ = xi_c;
 		Fp::op_.fp2_add = fp2_addW;
 		Fp::op_.fp2_sub = fp2_subW;
