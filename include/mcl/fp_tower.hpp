@@ -22,10 +22,7 @@ class Fp2T {
 public:
 	Fp a, b;
 	Fp2T() { }
-	Fp2T(int x)
-		: a(x), b(0)
-	{
-	}
+	Fp2T(int64_t a) : a(a), b(0) { }
 	Fp2T(const Fp& a, const Fp& b) : a(a), b(b) { }
 	Fp2T(int64_t a, int64_t b) : a(a), b(b) { }
 	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
@@ -269,6 +266,34 @@ template<class Fp>
 class Fp6T {
 	typedef Fp2T<Fp> Fp2;
 public:
+	Fp2 a, b, c;
+	Fp6T() { }
+	Fp6T(int64_t a) : a(a) , b(0) , c(0) { }
+	Fp6T(int64_t a, int64_t b, int64_t c) : a(a) , b(b) , c(c) { }
+	Fp6T(const Fp2& a, const Fp2& b, const Fp2& c) : a(a) , b(b) , c(c) { }
+	void clear()
+	{
+		a.clear();
+		b.clear();
+		c.clear();
+	}
+
+	Fp* get() { return a.get(); }
+	const Fp* get() const { return a.get(); }
+	Fp2* getFp2() { return &a; }
+	const Fp2* getFp2() const { return &a; }
+	static inline void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	{
+		Fp2::add(z.a, x.a, y.a);
+		Fp2::add(z.b, x.b, y.b);
+		Fp2::add(z.c, x.c, y.c);
+	}
+	static inline void sub(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	{
+		Fp2::sub(z.a, x.a, y.a);
+		Fp2::sub(z.b, x.b, y.b);
+		Fp2::sub(z.c, x.c, y.c);
+	}
 };
 
 
