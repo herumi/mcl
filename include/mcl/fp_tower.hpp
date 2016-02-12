@@ -282,6 +282,49 @@ public:
 	const Fp* get() const { return a.get(); }
 	Fp2* getFp2() { return &a; }
 	const Fp2* getFp2() const { return &a; }
+	bool isZero() const
+	{
+		return a.isZero() && b.isZero() && c.isZero();
+	}
+	bool operator==(const Fp6T& rhs) const
+	{
+		return a == rhs.a && b == rhs.b && c == rhs.c;
+	}
+	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
+	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
+	{
+		str = '[';
+		str += a.getStr(base, withPrefix);
+		str += ',';
+		str += b.getStr(base, withPrefix);
+		str += ',';
+		str += c.getStr(base, withPrefix);
+		str += ']';
+	}
+	void setStr(const std::string& str, int base = 0)
+	{
+		const size_t size = str.size();
+		if (size >= 4 + 5 * 3 && str[0] == '[' && str[size - 1] == ']') { // '[' + <a> + ',' + <b> + ',' + <c> + ']'
+		}
+		throw cybozu::Exception("Fp6T:setStr:bad format") << str;
+	}
+	std::string getStr(int base = 10, bool withPrefix = false) const
+	{
+		std::string str;
+		getStr(str, base, withPrefix);
+		return str;
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Fp6T& x)
+	{
+		return os << "[" << x.a_ << ",\n " << x.b_ << ",\n " << x.c_ << "]";
+	}
+	friend std::istream& operator>>(std::istream& is, Fp6T& x)
+	{
+		char c1, c2, c3, c4;
+		is >> c1 >> x.a_ >> c2 >> x.b_ >> c3 >> x.c_ >> c4;
+		if (c1 == '[' && c2 == ',' && c3 == ',' && c4 == ']') return is;
+		throw std::ios_base::failure("bad Fp6");
+	}
 	static inline void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
@@ -293,6 +336,34 @@ public:
 		Fp2::sub(z.a, x.a, y.a);
 		Fp2::sub(z.b, x.b, y.b);
 		Fp2::sub(z.c, x.c, y.c);
+	}
+	static inline void neg(Fp6T& y, const Fp6T& x)
+	{
+		Fp2::neg(y.a, x.a);
+		Fp2::neg(y.b, x.b);
+		Fp2::neg(y.c, x.c);
+	}
+	static void sqr(Fp6T& z, const Fp6T& x)
+	{
+		assert(&z != &x);
+		Fp2 v3, v4, v5;
+		Fp2::add(v4, x.a, x.a);
+		Fp2::mul(v4, v4, x.b);
+		Fp2::sqr(v5, x.c);
+		Fp2::mulxi(z.b, v5);
+		z.b += v4;
+		Fp2::sub(z.c, v4, v5);
+		Fp2::sqr(v3, x.a);
+		Fp2::sub(v4, x.a, x.b);
+		v4 += x.c;
+		Fp2::add(v5, x.b, x.b);
+		Fp2::mul(v5, v5, x.c);
+		Fp2::sqr(v4, v4);
+		Fp2::mul_xi(z.a, v5);
+		z.a += v3;
+		z.c += v4;
+		z.c += v5;
+		z.c -= v3;
 	}
 };
 
