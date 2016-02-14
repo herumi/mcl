@@ -350,7 +350,7 @@ public:
 		Fp2::add(v4, x.a, x.a);
 		Fp2::mul(v4, v4, x.b);
 		Fp2::sqr(v5, x.c);
-		Fp2::mulxi(z.b, v5);
+		Fp2::mul_xi(z.b, v5);
 		z.b += v4;
 		Fp2::sub(z.c, v4, v5);
 		Fp2::sqr(v3, x.a);
