@@ -6,7 +6,8 @@
 #include <mcl/fp_tower.hpp>
 struct FpTag;
 typedef mcl::FpT<FpTag, 256> Fp;
-typedef mcl::Fp2T<Fp> Fp2;
+typedef mcl::BnT<Fp> bn;
+typedef bn::Fp2 Fp2;
 
 void testFp2()
 {
