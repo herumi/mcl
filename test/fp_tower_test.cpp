@@ -4,8 +4,8 @@
 #include <time.h>
 #include <mcl/fp.hpp>
 #include <mcl/fp_tower.hpp>
-struct FpTag;
-typedef mcl::FpT<FpTag, 256> Fp;
+
+typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::BnT<Fp> bn;
 typedef bn::Fp2 Fp2;
 

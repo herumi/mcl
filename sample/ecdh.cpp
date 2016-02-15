@@ -9,12 +9,10 @@
 #include <mcl/ecparam.hpp>
 #include <mcl/ec.hpp>
 #include <mcl/fp.hpp>
+
 typedef mcl::FpT<> Fp;
-
-struct ZnTag;
-
+typedef mcl::FpT<mcl::ZnTag> Zn;
 typedef mcl::EcT<Fp> Ec;
-typedef mcl::FpT<ZnTag> Zn;
 
 int main()
 {

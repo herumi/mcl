@@ -17,9 +17,8 @@
 #include <mcl/elgamal.hpp>
 #include <mcl/ecparam.hpp>
 
-struct TagZn;
 typedef mcl::FpT<> Fp;
-typedef mcl::FpT<TagZn> Zn; // use ZnTag because Zn is different class with Fp
+typedef mcl::FpT<mcl::ZnTag> Zn; // use ZnTag because Zn is different class with Fp
 typedef mcl::EcT<Fp> Ec;
 typedef mcl::ElgamalT<Ec, Zn> Elgamal;
 

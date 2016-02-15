@@ -6,8 +6,7 @@
 #include <mcl/ecparam.hpp>
 
 typedef mcl::FpT<> Fp;
-struct tagZn;
-typedef mcl::FpT<tagZn> Zn;
+typedef mcl::FpT<mcl::ZnTag> Zn;
 typedef mcl::EcT<Fp> Ec;
 
 const char *getModeStr(mcl::fp::Mode mode)

@@ -30,10 +30,10 @@
 
 namespace mcl {
 
-namespace fp {
-
 struct FpTag;
 struct ZnTag;
+
+namespace fp {
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix);
 
@@ -51,7 +51,7 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
 } // mcl::fp
 
-template<class tag = fp::FpTag, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
+template<class tag = FpTag, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
 class FpT {
 	typedef fp::Unit Unit;
 	static const size_t maxSize = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
