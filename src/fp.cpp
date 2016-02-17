@@ -160,7 +160,7 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N * 2, mz);
 	}
-	// z = x + y without carry
+	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
 	{
 		Unit ret[N + 1];
@@ -274,12 +274,20 @@ struct OpeFunc {
 		} \
 		fp_addP = OpeFunc<n>::fp_addPC; \
 		fp_subP = OpeFunc<n>::fp_subPC; \
+		fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
+		fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
 		if (fullBit) { \
 			fp_addNC = fp_add; \
 			fp_subNC = fp_sub; \
+			fpDbl_addNC = fpDbl_add; \
+			fpDbl_subNC = fpDbl_sub; \
 		} else { \
 			fp_addNC = OpeFunc<n>::fp_addNCC; \
 			fp_subNC = OpeFunc<n>::fp_subNCC; \
+			if (n <= 128) { \
+				fpDbl_addNC = OpeFunc<n * 2>::fp_addNCC; \
+				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
+			} \
 		} \
 		fp_mulPreP = OpeFunc<n>::fp_mulPreC; \
 		fp_sqrPreP = OpeFunc<n>::fp_sqrPreC; \
