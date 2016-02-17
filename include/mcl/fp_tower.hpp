@@ -13,6 +13,12 @@ namespace mcl {
 template<class Fp>
 struct BnT {
 	typedef fp::Unit Unit;
+	class FpDbl {
+		Unit v_[Fp::maxSize * 2];
+	public:
+		static inline void add(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
+		static inline void sub(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
+	};
 	/*
 		beta = -1
 		Fp2 = F[u] / (u^2 + 1)

@@ -81,6 +81,8 @@ public:
 		op_.fp_sqr = fp_sqrW;
 		op_.fp_add = fp_addW;
 		op_.fp_sub = fp_subW;
+		op_.fpDbl_add = fpDbl_addW;
+		op_.fpDbl_sub = fpDbl_subW;
 		op_.fp_mul = fp_mulW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
@@ -440,6 +442,14 @@ private:
 	static inline void fp_subW(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.fp_subP(z, x, y, op_.p);
+	}
+	static inline void fpDbl_addW(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.fpDbl_addP(z, x, y, op_.p);
+	}
+	static inline void fpDbl_subW(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.fpDbl_subP(z, x, y, op_.p);
 	}
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{

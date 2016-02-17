@@ -93,7 +93,7 @@ struct OpeFunc {
 	{
 		copyArray(y, x, N);
 	}
-	static inline void fp_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N + 2]; // not N + 1
 		mpz_t mz, mx, my, mp;
@@ -107,7 +107,7 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N, mz);
 	}
-	static inline void fp_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N + 1];
 		mpz_t mz, mx, my;
@@ -121,6 +121,44 @@ struct OpeFunc {
 			mpz_add(mz, mz, mp);
 		}
 		Gmp::getArray(z, N, mz);
+	}
+	/*
+		z[N * 2] <- x[N * 2] + y[N * 2] mod p[N] << (N * UnitBitSize)
+	*/
+	static inline void fpDbl_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+		Unit ret[N * 2 + 2]; // not N + 1
+		Unit pDbl[N * 2];
+		mpz_t mz, mx, my, mp;
+		set_zero(mz, ret, N * 2 + 2);
+		set_mpz_t(mx, x, N * 2);
+		set_mpz_t(my, y, N * 2);
+		memset(pDbl, 0, N * sizeof(Unit));
+		memcpy(pDbl + N, p, N * sizeof(Unit));
+		set_mpz_t(mp, p, N * 2);
+		mpz_add(mz, mx, my);
+		if (mpz_cmp(mz, mp) >= 0) {
+			mpz_sub(mz, mz, mp);
+		}
+		Gmp::getArray(z, N * 2, mz);
+	}
+	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+		Unit ret[N * 2 + 1];
+		Unit pDbl[N * 2];
+		mpz_t mz, mx, my;
+		set_zero(mz, ret, N * 2 + 1);
+		set_mpz_t(mx, x, N * 2);
+		set_mpz_t(my, y, N * 2);
+		mpz_sub(mz, mx, my);
+		if (mpz_sgn(mz) < 0) {
+			mpz_t mp;
+			memset(pDbl, 0, N * sizeof(Unit));
+			memcpy(pDbl + N, p, N * sizeof(Unit));
+			set_mpz_t(mp, p, N * 2);
+			mpz_add(mz, mz, mp);
+		}
+		Gmp::getArray(z, N * 2, mz);
 	}
 	// z = x + y without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
@@ -200,7 +238,7 @@ struct OpeFunc {
 			if (x != y) fp_clearC(y);
 			return;
 		}
-		fp_subC(y, p, x, p);
+		fp_subPC(y, p, x, p);
 	}
 };
 
@@ -234,8 +272,8 @@ struct OpeFunc {
 		} else { \
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
 		} \
-		fp_addP = OpeFunc<n>::fp_addC; \
-		fp_subP = OpeFunc<n>::fp_subC; \
+		fp_addP = OpeFunc<n>::fp_addPC; \
+		fp_subP = OpeFunc<n>::fp_subPC; \
 		if (fullBit) { \
 			fp_addNC = fp_add; \
 			fp_subNC = fp_sub; \

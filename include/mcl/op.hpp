@@ -103,6 +103,16 @@ struct Op {
 	FpGenerator *fg;
 
 	/*
+		for FpDbl
+	*/
+	void3u fpDbl_add;
+	void3u fpDbl_sub;
+	void4u fpDbl_addP;
+	void4u fpDbl_subP;
+	void3u fpDbl_addNC;
+	void3u fpDbl_subNC;
+
+	/*
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
 	*/
@@ -124,6 +134,9 @@ struct Op {
 		, rp(0), mont(0)
 		, fp_negP(0), fp_sqrPreP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_mulPreP(0), fp_modP(0)
 		, fg(createFpGenerator())
+		, fpDbl_add(0), fpDbl_sub()
+		, fpDbl_addP(0), fpDbl_subP()
+		, fpDbl_addNC(0), fpDbl_subNC()
 		, xi_c(0)
 		, fp2_add(0), fp2_sub(0), fp2_mul(0), fp2_neg(0)
 		, fp2_sqr(0), fp2_mul_xi(0)
