@@ -257,8 +257,16 @@ struct OpeFunc {
 			} \
 			mont = mcl_fp_mont ## n; \
 		}
+	#define SET_OP_DBL_LLVM(n2) \
+		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
+			if (!fullBit && n2 <= 512) { \
+				fpDbl_addNC = mcl_fp_addNC ## n2; \
+				fpDbl_subNC = mcl_fp_subNC ## n2; \
+			} \
+		}
 #else
 	#define SET_OP_LLVM(n)
+	#define SET_OP_DBL_LLVM(n2)
 #endif
 
 #define SET_OP(n) \
@@ -274,8 +282,10 @@ struct OpeFunc {
 		} \
 		fp_addP = OpeFunc<n>::fp_addPC; \
 		fp_subP = OpeFunc<n>::fp_subPC; \
-		fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
-		fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
+		if (n <= 256) { \
+			fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
+			fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
+		} \
 		if (fullBit) { \
 			fp_addNC = fp_add; \
 			fp_subNC = fp_sub; \
@@ -284,7 +294,7 @@ struct OpeFunc {
 		} else { \
 			fp_addNC = OpeFunc<n>::fp_addNCC; \
 			fp_subNC = OpeFunc<n>::fp_subNCC; \
-			if (n <= 128) { \
+			if (n <= 256) { \
 				fpDbl_addNC = OpeFunc<n * 2>::fp_addNCC; \
 				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 			} \
@@ -372,9 +382,9 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	case 32:
 	case 64:
 	case 96:
-	case 128: SET_OP(128); break;
-	case 192: SET_OP(192); break;
-	case 256: SET_OP(256); break;
+	case 128: SET_OP(128); SET_OP_DBL_LLVM(256); break;
+	case 192: SET_OP(192); SET_OP_DBL_LLVM(384); break;
+	case 256: SET_OP(256); SET_OP_DBL_LLVM(512); break;
 	case 320: SET_OP(320); break;
 	case 384: SET_OP(384); break;
 	case 448: SET_OP(448); break;
@@ -382,8 +392,8 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 #if CYBOZU_OS_BIT == 64
 	case 576: SET_OP(576); break;
 #else
-	case 160: SET_OP(160); break;
-	case 224: SET_OP(224); break;
+	case 160: SET_OP(160); SET_OP_DBL_LLVM(320); break;
+	case 224: SET_OP(224); SET_OP_DBL_LLVM(448); break;
 	case 288: SET_OP(288); break;
 	case 352: SET_OP(352); break;
 	case 416: SET_OP(416); break;

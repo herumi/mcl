@@ -8,6 +8,7 @@
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::BnT<Fp> bn;
 typedef bn::Fp2 Fp2;
+typedef bn::FpDbl FpDbl;
 
 void testFp2()
 {
@@ -63,11 +64,32 @@ void testFp2()
 	CYBOZU_TEST_EQUAL(y, 1);
 }
 
+void testFpDbl()
+{
+	puts(__FUNCTION__);
+	{
+		const char *tbl[] = {
+			"0", "1", "123456", "123456789012345668909",
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			const char *p = tbl[i];
+			mpz_class x(p), y;
+			FpDbl a;
+			a.setMpz(x);
+			a.getMpz(y);
+			CYBOZU_TEST_EQUAL(x, y);
+		}
+	}
+}
+
 void test(const char *p)
 {
 	printf("prime=%s\n", p);
 	Fp::setModulo(p);
 	testFp2();
+	if (Fp::getBitSize() <= 256) {
+		testFpDbl();
+	}
 }
 #if 0
 void benchFp2()

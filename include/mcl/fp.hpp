@@ -285,6 +285,7 @@ public:
 	}
 	void setMpz(const mpz_class& x)
 	{
+		if (x < 0) throw cybozu::Exception("Fp:setMpz:negative is not supported") << x;
 		setArray(Gmp::getUnit(x), Gmp::getUnitSize(x));
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_); }
