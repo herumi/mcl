@@ -68,16 +68,36 @@ void testFpDbl()
 {
 	puts(__FUNCTION__);
 	{
+		std::string pstr;
+		Fp::getModulo(pstr);
+		mpz_class mp(pstr);
+		mp <<= Fp::getUnitSize() * mcl::fp::UnitBitSize;
+		mpz_class mp1 = mp - 1;
+		mcl::Gmp::getStr(pstr, mp1);
 		const char *tbl[] = {
-			"0", "1", "123456", "123456789012345668909",
+			"0", "1", "123456", "123456789012345668909", pstr.c_str(),
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			const char *p = tbl[i];
-			mpz_class x(p), y;
-			FpDbl a;
-			a.setMpz(x);
-			a.getMpz(y);
-			CYBOZU_TEST_EQUAL(x, y);
+			mpz_class mx(tbl[i]), my;
+			FpDbl x;
+			x.setMpz(mx);
+			x.getMpz(my);
+			CYBOZU_TEST_EQUAL(mx, my);
+			for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+				FpDbl y, z;
+				mpz_class mz, mo;
+				my = tbl[j];
+				y.setMpz(my);
+				FpDbl::add(z, x, y);
+				mcl::Gmp::addMod(mo, mx, my, mp);
+				z.getMpz(mz);
+				CYBOZU_TEST_EQUAL(mz, mo);
+
+				mcl::Gmp::subMod(mo, mx, my, mp);
+				FpDbl::sub(z, x, y);
+				z.getMpz(mz);
+				CYBOZU_TEST_EQUAL(mz, mo);
+			}
 		}
 	}
 }

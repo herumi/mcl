@@ -127,6 +127,12 @@ struct OpeFunc {
 		}
 		Gmp::getArray(z, N, mz);
 	}
+	static inline void set_pDbl(mpz_t& mp, Unit *pDbl, const Unit *p)
+	{
+		memset(pDbl, 0, N * sizeof(Unit));
+		memcpy(pDbl + N, p, N * sizeof(Unit));
+		set_mpz_t(mp, pDbl, N * 2);
+	}
 	/*
 		z[N * 2] <- x[N * 2] + y[N * 2] mod p[N] << (N * UnitBitSize)
 	*/
@@ -138,34 +144,28 @@ struct OpeFunc {
 		set_zero(mz, ret, N * 2 + 2);
 		set_mpz_t(mx, x, N * 2);
 		set_mpz_t(my, y, N * 2);
-		memset(pDbl, 0, N * sizeof(Unit));
-		memcpy(pDbl + N, p, N * sizeof(Unit));
-		set_mpz_t(mp, p, N * 2);
+		set_pDbl(mp, pDbl, p);
 		mpz_add(mz, mx, my);
 		if (mpz_cmp(mz, mp) >= 0) {
 			mpz_sub(mz, mz, mp);
 		}
 		Gmp::getArray(z, N * 2, mz);
-		clearArray(z, mz->_mp_size, N * 2);
 	}
 	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit ret[N * 2 + 1];
-		Unit pDbl[N * 2];
 		mpz_t mz, mx, my;
 		set_zero(mz, ret, N * 2 + 1);
 		set_mpz_t(mx, x, N * 2);
 		set_mpz_t(my, y, N * 2);
 		mpz_sub(mz, mx, my);
 		if (mpz_sgn(mz) < 0) {
+			Unit pDbl[N * 2];
 			mpz_t mp;
-			memset(pDbl, 0, N * sizeof(Unit));
-			memcpy(pDbl + N, p, N * sizeof(Unit));
-			set_mpz_t(mp, p, N * 2);
+			set_pDbl(mp, pDbl, p);
 			mpz_add(mz, mz, mp);
 		}
 		Gmp::getArray(z, N * 2, mz);
-		clearArray(z, mz->_mp_size, N * 2);
 	}
 	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)

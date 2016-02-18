@@ -30,8 +30,8 @@ struct BnT {
 			if (x < 0) throw cybozu::Exception("FpDbl:_setMpz:negative is not supported") << x;
 			const size_t xn = Gmp::getUnitSize(x);
 			const size_t N2 = getUnitSize();
-			if (xn >= N2) {
-				throw cybozu::Exception("FpDbl:_setMpz:too large") << x;
+			if (xn > N2) {
+				throw cybozu::Exception("FpDbl:setMpz:too large") << x;
 			}
 			memcpy(v_, Gmp::getUnit(x), xn * sizeof(Unit));
 			memset(v_ + xn, 0, (N2 - xn) * sizeof(Unit));
