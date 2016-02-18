@@ -75,8 +75,13 @@ struct OpeFunc {
 	static const size_t N = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
+		int s = n;
+		while (s > 0) {
+			if (p[s - 1]) break;
+			s--;
+		}
 		z->_mp_alloc = n;
-		z->_mp_size = (int)getNonZeroArraySize(p, n);
+		z->_mp_size = s;
 		z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
 	}
 	static inline void set_zero(mpz_t& z, Unit *p, size_t n)
