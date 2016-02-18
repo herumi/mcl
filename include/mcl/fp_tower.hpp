@@ -16,20 +16,29 @@ struct BnT {
 	class FpDbl {
 		Unit v_[Fp::maxSize * 2];
 	public:
+		static inline size_t getUnitSize() { return Fp::op_.N * 2; }
+		void dump() const
+		{
+			for (size_t i = 0; i < getUnitSize(); i++) {
+				printf("%016llx ", (long long)v_[i]);
+			}
+			printf("\n");
+		}
 		// QQQ : does not check range of x strictly(use for debug)
 		void setMpz(const mpz_class& x)
 		{
 			if (x < 0) throw cybozu::Exception("FpDbl:_setMpz:negative is not supported") << x;
-			const size_t xByte = Gmp::getUnitSize(x) * sizeof(Unit);
-			if (xByte >= sizeof(v_)) {
+			const size_t xn = Gmp::getUnitSize(x);
+			const size_t N2 = getUnitSize();
+			if (xn >= N2) {
 				throw cybozu::Exception("FpDbl:_setMpz:too large") << x;
 			}
-			memcpy(v_, Gmp::getUnit(x), xByte);
-			memset(v_ + xByte / sizeof(Unit), 0, sizeof(v_) - xByte);
+			memcpy(v_, Gmp::getUnit(x), xn * sizeof(Unit));
+			memset(v_ + xn, 0, (N2 - xn) * sizeof(Unit));
 		}
 		void getMpz(mpz_class& x) const
 		{
-			Gmp::setArray(x, v_, CYBOZU_NUM_OF_ARRAY(v_));
+			Gmp::setArray(x, v_, Fp::op_.N * 2);
 		}
 		static inline void add(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
 		static inline void sub(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }

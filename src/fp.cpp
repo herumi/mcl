@@ -146,6 +146,7 @@ struct OpeFunc {
 			mpz_sub(mz, mz, mp);
 		}
 		Gmp::getArray(z, N * 2, mz);
+		clearArray(z, mz->_mp_size, N * 2);
 	}
 	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -164,6 +165,7 @@ struct OpeFunc {
 			mpz_add(mz, mz, mp);
 		}
 		Gmp::getArray(z, N * 2, mz);
+		clearArray(z, mz->_mp_size, N * 2);
 	}
 	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
