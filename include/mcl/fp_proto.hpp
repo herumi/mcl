@@ -30,6 +30,12 @@ MCL_FP_DEF_FUNC(320)
 MCL_FP_DEF_FUNC(384)
 MCL_FP_DEF_FUNC(448)
 MCL_FP_DEF_FUNC(512)
+void mcl_fpDbl_add128(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_sub128(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_add192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_sub192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_add256(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_sub256(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 #if CYBOZU_OS_BIT == 32
 MCL_FP_DEF_FUNC(160)
 MCL_FP_DEF_FUNC(224)
@@ -38,6 +44,10 @@ MCL_FP_DEF_FUNC(352)
 MCL_FP_DEF_FUNC(416)
 MCL_FP_DEF_FUNC(480)
 MCL_FP_DEF_FUNC(544)
+void mcl_fpDbl_add160(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_sub160(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_add224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+void mcl_fpDbl_sub224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 #else
 MCL_FP_DEF_FUNC(576)
 #endif
