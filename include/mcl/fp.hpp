@@ -192,10 +192,18 @@ public:
 		return *this;
 	}
 	static inline bool useMont() { return op_.useMont; }
+	/*
+		convert normal value to Montgomery value
+		do nothing is !useMont()
+	*/
 	void toMont()
 	{
 		if (useMont()) op_.toMont(v_, v_);
 	}
+	/*
+		convert Montgomery value to normal value
+		do nothing is !useMont()
+	*/
 	void fromMont()
 	{
 		if (useMont()) op_.fromMont(v_, v_);

@@ -105,7 +105,8 @@ void testFpDbl()
 void test(const char *p)
 {
 	printf("prime=%s\n", p);
-	Fp::setModulo(p);
+//	Fp::setModulo(p);
+	Fp::setModulo(p, 0, mcl::fp::FP_LLVM); // QQQ
 	testFp2();
 	if (Fp::getBitSize() <= 256) {
 		testFpDbl();
