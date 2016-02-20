@@ -101,11 +101,9 @@ void testFpDbl()
 	}
 }
 
-void test(const char *p)
+void test(const char *p, mcl::fp::Mode mode)
 {
-	printf("prime=%s\n", p);
-	Fp::setModulo(p);
-//	Fp::setModulo(p, 0, mcl::fp::FP_LLVM); // QQQ
+	Fp::setModulo(p, 0, mode);
 	testFp2();
 	if (Fp::getBitSize() <= 256) {
 		testFpDbl();
@@ -156,7 +154,16 @@ CYBOZU_TEST_AUTO(test)
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		test(tbl[i]);
+		const char *p = tbl[i];
+		printf("prime=%s\n", p);
+		test(tbl[i], mcl::fp::FP_GMP);
+#ifdef MCL_USE_LLVM
+		test(tbl[i], mcl::fp::FP_LLVM);
+		test(tbl[i], mcl::fp::FP_LLVM_MONT);
+#endif
+#ifdef MCL_USE_XBYAK
+		test(tbl[i], mcl::fp::FP_XBYAK);
+#endif
 	}
 }
 
