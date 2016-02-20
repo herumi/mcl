@@ -117,11 +117,10 @@ public:
 #endif
 		op_.init(mstr, base, maxBitSize, mode);
 		{ // set oneRep
-			FpT x;
-			x.clear();
-			x.v_[0] = 1;
-			op_.toMont(x.v_, x.v_);
-			op_.fp_copy(op_.oneRep, x.v_);
+			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
+			one.clear();
+			one.v_[0] = 1;
+			one.toMont();
 		}
 		{ // set half
 			mpz_class half = (op_.mp - 1) / 2;
@@ -188,18 +187,18 @@ public:
 				v_[1] = (uint32_t)(y >> 32);
 			}
 			if (x < 0) neg(*this, *this);
-			toMont(*this, *this);
+			toMont();
 		}
 		return *this;
 	}
 	static inline bool useMont() { return op_.useMont; }
-	void toMont(FpT& y, const FpT& x)
+	void toMont()
 	{
-		if (useMont()) op_.toMont(y.v_, x.v_);
+		if (useMont()) op_.toMont(v_, v_);
 	}
-	void fromMont(FpT& y, const FpT& x)
+	void fromMont()
 	{
-		if (useMont()) op_.fromMont(y.v_, x.v_);
+		if (useMont()) op_.fromMont(v_, v_);
 	}
 	void setStr(const std::string& str, int base = 0)
 	{
@@ -209,7 +208,7 @@ public:
 		if (isMinus) {
 			neg(*this, *this);
 		}
-		toMont(*this, *this);
+		toMont();
 	}
 	/*
 		throw exception if x >= p
@@ -218,7 +217,7 @@ public:
 	void setArray(const S *x, size_t n)
 	{
 		fp::copyAndMask(v_, x, sizeof(S) * n, op_, false);
-		toMont(*this, *this);
+		toMont();
 	}
 	/*
 		mask inBuf with (1 << (bitLen - 1)) - 1
@@ -227,7 +226,7 @@ public:
 	void setArrayMask(const S *inBuf, size_t n)
 	{
 		fp::copyAndMask(v_, inBuf, sizeof(S) * n, op_, true);
-		toMont(*this, *this);
+		toMont();
 	}
 	template<class S>
 	size_t getArray(S *outBuf, size_t n) const
@@ -257,7 +256,7 @@ public:
 	void setRand(RG& rg)
 	{
 		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
-		toMont(*this, *this);
+		toMont();
 	}
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
