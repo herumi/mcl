@@ -138,7 +138,6 @@ struct OpeFunc {
 	*/
 	static inline void fpDbl_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-puts("BBB");
 		Unit ret[N * 2 + 2]; // not N + 1
 		Unit pDbl[N * 2];
 		mpz_t mz, mx, my, mp;

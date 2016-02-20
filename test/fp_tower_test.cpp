@@ -92,7 +92,6 @@ void testFpDbl()
 				mcl::Gmp::addMod(mo, mx, my, mp);
 				z.getMpz(mz);
 				CYBOZU_TEST_EQUAL(mz, mo);
-
 				mcl::Gmp::subMod(mo, mx, my, mp);
 				FpDbl::sub(z, x, y);
 				z.getMpz(mz);
@@ -105,8 +104,8 @@ void testFpDbl()
 void test(const char *p)
 {
 	printf("prime=%s\n", p);
-//	Fp::setModulo(p);
-	Fp::setModulo(p, 0, mcl::fp::FP_LLVM); // QQQ
+	Fp::setModulo(p);
+//	Fp::setModulo(p, 0, mcl::fp::FP_LLVM); // QQQ
 	testFp2();
 	if (Fp::getBitSize() <= 256) {
 		testFpDbl();

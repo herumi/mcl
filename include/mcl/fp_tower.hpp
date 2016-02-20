@@ -19,8 +19,9 @@ struct BnT {
 		static inline size_t getUnitSize() { return Fp::op_.N * 2; }
 		void dump() const
 		{
-			for (size_t i = 0; i < getUnitSize(); i++) {
-				printf("%016llx ", (long long)v_[i]);
+			const size_t n = getUnitSize();
+			for (size_t i = 0; i < n; i++) {
+				printf("%016llx ", (long long)v_[n - 1 - i]);
 			}
 			printf("\n");
 		}

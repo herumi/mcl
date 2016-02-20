@@ -56,7 +56,8 @@ entry:
 	%t0 = add i$(b2u) %x1, %y1 ; x + y = [H:L]
 	%t1 = trunc i$(b2u) %t0 to i$(bit) ; t1 = L
 	store i$(bit) %t1, i$(bit)* %pz ; store L
-	%t2 = shl i$(b2u) %t0, $(bit)
+
+	%t2 = lshr i$(b2u) %t0, $(bit)
 	%H = trunc i$(b2u) %t2 to i$(bu)
 
 	%p = load i$(bit)* %pp
