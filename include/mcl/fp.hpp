@@ -58,7 +58,9 @@ class FpT {
 	static fp::Op op_;
 	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
-	template<class Fp> friend struct BnT;
+	template<class Fp> friend class FpDblT;
+	template<class Fp> friend class Fp2T;
+	template<class Fp> friend class Fp6T;
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
