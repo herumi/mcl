@@ -95,6 +95,18 @@ void testFpDbl()
 				FpDbl::sub(z, x, y);
 				z.getMpz(mz);
 				CYBOZU_TEST_EQUAL(mz, mo);
+				if (!Fp::isFullBit()) {
+					FpDbl::addNC(z, x, y);
+					mo = mx + my;
+					z.getMpz(mz);
+					CYBOZU_TEST_EQUAL(mz, mo);
+					if (mx >= my) {
+						FpDbl::subNC(z, x, y);
+						mo = mx - my;
+						z.getMpz(mz);
+						CYBOZU_TEST_EQUAL(mz, mo);
+					}
+				}
 			}
 		}
 	}
@@ -103,10 +115,13 @@ void testFpDbl()
 void test(const char *p, mcl::fp::Mode mode)
 {
 	Fp::setModulo(p, 0, mode);
-	testFp2();
-	if (Fp::getBitSize() <= 256) {
-		testFpDbl();
+	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
+	if (Fp::getBitSize() > 256) {
+		printf("not support p=%s\n", p);
+		return;
 	}
+	testFp2();
+	testFpDbl();
 }
 #if 0
 void benchFp2()
