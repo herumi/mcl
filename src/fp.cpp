@@ -254,7 +254,7 @@ struct OpeFunc {
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
 			fp_addP = mcl_fp_add ## n ##S; \
 			fp_subP = mcl_fp_sub ## n ##S; \
-			if (!fullBit) { \
+			if (!isFullBit) { \
 				fp_addNC = mcl_fp_addNC ## n; \
 				fp_subNC = mcl_fp_subNC ## n; \
 			} \
@@ -269,7 +269,7 @@ struct OpeFunc {
 			if (n <= 256) { \
 				fpDbl_addP = mcl_fpDbl_add ## n; \
 				fpDbl_subP = mcl_fpDbl_sub ## n; \
-				if (!fullBit) { \
+				if (!isFullBit) { \
 					fpDbl_addNC = mcl_fp_addNC ## n2; \
 					fpDbl_subNC = mcl_fp_subNC ## n2; \
 				} \
@@ -297,7 +297,7 @@ struct OpeFunc {
 			fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
 			fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
 		} \
-		if (fullBit) { \
+		if (isFullBit) { \
 			fp_addNC = fp_add; \
 			fp_subNC = fp_sub; \
 			fpDbl_addNC = fpDbl_add; \
@@ -386,7 +386,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
-	fullBit = (bitSize % UnitBitSize) == 0;
+	isFullBit = (bitSize % UnitBitSize) == 0;
 
 	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
 	switch (roundBit) {

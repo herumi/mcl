@@ -133,6 +133,7 @@ public:
 	{
 		Gmp::getStr(pstr, op_.mp);
 	}
+	static inline bool isFullBit() { return op_.isFullBit; }
 	/*
 		binary patter of p
 		@note the value of p is zero
