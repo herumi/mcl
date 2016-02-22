@@ -50,6 +50,19 @@ enum Mode {
 	FP_XBYAK
 };
 
+static inline const char *ModeToStr(Mode mode)
+{
+	switch (mode) {
+	case FP_AUTO: return "auto";
+	case FP_GMP: return "gmp";
+	case FP_LLVM: return "llvm";
+	case FP_LLVM_MONT: return "llvm_mont";
+	case FP_XBYAK: return "xbyak";
+	default:
+		throw cybozu::Exception("ModeToStr") << mode;
+	}
+}
+
 struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
