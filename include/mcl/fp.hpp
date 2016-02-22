@@ -86,6 +86,7 @@ public:
 		op_.fpDbl_add = fpDbl_addW;
 		op_.fpDbl_sub = fpDbl_subW;
 		op_.fp_mul = fp_mulW;
+		op_.fp_mod = fp_modW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_opt > llvm > gmp
@@ -462,17 +463,21 @@ private:
 	{
 		op_.fpDbl_subP(z, x, y, op_.p);
 	}
+	static inline void fp_modW(Unit *y, const Unit *x)
+	{
+		op_.fp_modP(y, x, op_.p);
+	}
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
 		Unit xy[maxSize * 2];
-		op_.fp_mulPreP(xy, x, y);
-		op_.fp_modP(z, xy, op_.p);
+		op_.fp_mulPre(xy, x, y);
+		fp_modW(z, xy);
 	}
 	static inline void fp_sqrW(Unit *y, const Unit *x)
 	{
 		Unit xx[maxSize * 2];
-		op_.fp_sqrPreP(xx, x);
-		op_.fp_modP(y, xx, op_.p);
+		op_.fp_sqrPre(xx, x);
+		fp_modW(y, xx);
 	}
 	static inline void fp_negW(Unit *y, const Unit *x)
 	{

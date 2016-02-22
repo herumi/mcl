@@ -209,7 +209,7 @@ struct OpeFunc {
 		clearArray(y, my->_mp_size, N * 2);
 	}
 	// y[N] <- x[N * 2] mod p[N]
-	static inline void fp_modC(Unit *y, const Unit *x, const Unit *p)
+	static inline void fp_modPC(Unit *y, const Unit *x, const Unit *p)
 	{
 		mpz_t mx, my, mp;
 		set_mpz_t(mx, x, N * 2);
@@ -258,9 +258,9 @@ struct OpeFunc {
 				fp_addNC = mcl_fp_addNC ## n; \
 				fp_subNC = mcl_fp_subNC ## n; \
 			} \
-			fp_mulPreP = mcl_fp_mulPre ## n; \
+			fp_mulPre = mcl_fp_mulPre ## n; \
 			if (n <= 256) { \
-				fp_sqrPreP = mcl_fp_sqrPre ## n; \
+				fp_sqrPre = mcl_fp_sqrPre ## n; \
 			} \
 			mont = mcl_fp_mont ## n; \
 		}
@@ -310,9 +310,9 @@ struct OpeFunc {
 				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 			} \
 		} \
-		fp_mulPreP = OpeFunc<n>::fp_mulPreC; \
-		fp_sqrPreP = OpeFunc<n>::fp_sqrPreC; \
-		fp_modP = OpeFunc<n>::fp_modC; \
+		fp_mulPre = OpeFunc<n>::fp_mulPreC; \
+		fp_sqrPre = OpeFunc<n>::fp_sqrPreC; \
+		fp_modP = OpeFunc<n>::fp_modPC; \
 		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK

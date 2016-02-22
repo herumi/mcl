@@ -105,13 +105,12 @@ struct Op {
 	// these two members are for mcl_fp_mont
 	Unit rp;
 	void (*mont)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
+
 	// require p
 	void3u fp_negP;
-	void2u fp_sqrPreP;
 	void2uOp fp_invOp;
 	void4u fp_addP;
 	void4u fp_subP;
-	void3u fp_mulPreP;
 	void3u fp_modP;
 	FpGenerator *fg;
 
@@ -124,6 +123,13 @@ struct Op {
 	void4u fpDbl_subP;
 	void3u fpDbl_addNC;
 	void3u fpDbl_subNC;
+
+	/*
+		FpDbl <=> Fp
+	*/
+	void2u fp_sqrPre;
+	void3u fp_mulPre;
+	void2u fp_mod;
 
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
@@ -145,11 +151,12 @@ struct Op {
 		, isFullBit(true), fp_addNC(0), fp_subNC(0)
 		, useMont(false), fp_preInv(0)
 		, rp(0), mont(0)
-		, fp_negP(0), fp_sqrPreP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_mulPreP(0), fp_modP(0)
+		, fp_negP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_modP(0)
 		, fg(createFpGenerator())
 		, fpDbl_add(0), fpDbl_sub()
 		, fpDbl_addP(0), fpDbl_subP()
 		, fpDbl_addNC(0), fpDbl_subNC()
+		, fp_sqrPre(0), fp_mulPre(0), fp_mod(0)
 		, xi_c(0)
 		, fp2_add(0), fp2_sub(0), fp2_mul(0), fp2_neg(0)
 		, fp2_sqr(0), fp2_mul_xi(0)
