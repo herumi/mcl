@@ -1,4 +1,5 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
+#define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
@@ -10,11 +11,11 @@ typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 
+bool g_benchOnly = false;
+
 void testFp2()
 {
 	puts(__FUNCTION__);
-	const int xi_c = 9;
-	Fp2::init(xi_c);
 	Fp2 x, y, z;
 	x.a = 1;
 	x.b = 2;
@@ -137,40 +138,45 @@ void testFpDbl()
 	}
 }
 
+void benchFp2()
+{
+	Fp2 x, y;
+	x.a.setStr("4");
+	x.b.setStr("464652165165");
+	y = x * x;
+	double addT, subT, mulT, sqrT, invT, mul_xiT;
+	CYBOZU_BENCH_T(addT,    Fp2::add, x, x, y);
+	CYBOZU_BENCH_T(subT,    Fp2::sub, x, x, y);
+	CYBOZU_BENCH_T(mulT,    Fp2::mul, x, x, y);
+	CYBOZU_BENCH_T(sqrT,    Fp2::sqr, x, x);
+	CYBOZU_BENCH_T(invT,    Fp2::inv, x, x);
+	CYBOZU_BENCH_T(mul_xiT, Fp2::mul_xi, x, x);
+//	CYBOZU_BENCH("Fp2::mul_Fp_0", Fp2::mul_Fp_0, x, x, Param::half);
+//	CYBOZU_BENCH("Fp2::mul_Fp_1", Fp2::mul_Fp_1, x, Param::half);
+//	CYBOZU_BENCH("Fp2::divBy2  ", Fp2::divBy2, x, x);
+//	CYBOZU_BENCH("Fp2::divBy4  ", Fp2::divBy4, x, x);
+	printf("add %8.2f sub %8.2f mul %8.2f sqr %8.2f inv %8.2f mul_xi %8.2f\n", addT, subT, mulT, sqrT, invT, mul_xiT);
+}
+
 void test(const char *p, mcl::fp::Mode mode)
 {
 	Fp::setModulo(p, 0, mode);
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
+	const int xi_c = 9;
+	Fp2::init(xi_c);
 	if (Fp::getBitSize() > 256) {
 		printf("not support p=%s\n", p);
+		return;
+	}
+	if (g_benchOnly) {
+		benchFp2();
 		return;
 	}
 	testFp2();
 	testFpDbl();
 }
-#if 0
-void benchFp2()
-{
-	Fp2 x, y;
-	x.a.set("4");
-	x.b.set("464652165165");
-	y = x * x;
-	CYBOZU_BENCH("Fp2::add     ", Fp2::add, x, x, y);
-	CYBOZU_BENCH("Fp2::addNC   ", Fp2::addNC, x, x, y);
-	CYBOZU_BENCH("Fp2::sub     ", Fp2::sub, x, x, y);
-	CYBOZU_BENCH("Fp2::neg     ", Fp2::neg, x, x);
-	CYBOZU_BENCH("Fp2::mul     ", Fp2::mul, x, x, y);
-	CYBOZU_BENCH("Fp2::inverse ", x.inverse);
-	CYBOZU_BENCH("Fp2::square  ", Fp2::square, x, x);
-	CYBOZU_BENCH("Fp2::mul_xi  ", Fp2::mul_xi, x, x);
-	CYBOZU_BENCH("Fp2::mul_Fp_0", Fp2::mul_Fp_0, x, x, Param::half);
-	CYBOZU_BENCH("Fp2::mul_Fp_1", Fp2::mul_Fp_1, x, Param::half);
-	CYBOZU_BENCH("Fp2::divBy2  ", Fp2::divBy2, x, x);
-	CYBOZU_BENCH("Fp2::divBy4  ", Fp2::divBy4, x, x);
-}
-#endif
 
-CYBOZU_TEST_AUTO(test)
+void testAll()
 {
 	const char *tbl[] = {
 		// N = 3
@@ -206,3 +212,15 @@ CYBOZU_TEST_AUTO(test)
 	}
 }
 
+int main(int argc, char *argv[])
+{
+	if (argc > 1 && strcmp(argv[1], "-bench") == 0) {
+		g_benchOnly = true;
+	}
+	if (g_benchOnly) {
+		testAll();
+		return 0;
+	} else {
+		return cybozu::test::autoRun.run(argc, argv);
+	}
+}
