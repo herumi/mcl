@@ -207,7 +207,7 @@ private:
 	*/
 	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
-#if 1
+#if 0
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);
 		const Fp& a = px[0];
