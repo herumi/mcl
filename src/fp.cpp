@@ -286,7 +286,7 @@ struct OpeFunc {
 		fp_clear = OpeFunc<n>::fp_clearC; \
 		fp_copy = OpeFunc<n>::fp_copyC; \
 		fp_negP = OpeFunc<n>::fp_negC; \
-		if (useMont) { \
+		if (isMont) { \
 			fp_invOp = OpeFunc<n>::fp_invMontOpC; \
 		} else { \
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
@@ -417,10 +417,10 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 #ifdef MCL_USE_LLVM
 	if (mode == FP_AUTO && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
 		fp_mul = &mcl_fp_mul_NIST_P192;
-		useMont = false;
+		isMont = false;
 	}
 #endif
-	if (useMont) {
+	if (isMont) {
 		fp::initForMont(*this, p, mode);
 	}
 	sq.set(mp);

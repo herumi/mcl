@@ -103,20 +103,20 @@ public:
 #endif
 		if (mode == fp::FP_AUTO) mode = fp::FP_GMP;
 
-		op_.useMont = mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
+		op_.isMont = mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
 		if (mode == fp::FP_LLVM_MONT) {
 			op_.fp_mul = fp_montW;
 			op_.fp_sqr = fp_montSqrW;
 		}
 #if 0
-	fprintf(stderr, "mode=%d, useMont=%d"
+	fprintf(stderr, "mode=%d, isMont=%d"
 #ifdef MCL_USE_XBYAK
 		" ,MCL_USE_XBYAK"
 #endif
 #ifdef MCL_USE_LLVM
 		" ,MCL_USE_LLVM"
 #endif
-	"\n", mode, op_.useMont);
+	"\n", mode, op_.isMont);
 #endif
 		op_.init(mstr, base, maxBitSize, mode);
 		{ // set oneRep
@@ -195,22 +195,22 @@ public:
 		}
 		return *this;
 	}
-	static inline bool useMont() { return op_.useMont; }
+	static inline bool isMont() { return op_.isMont; }
 	/*
 		convert normal value to Montgomery value
-		do nothing is !useMont()
+		do nothing is !isMont()
 	*/
 	void toMont()
 	{
-		if (useMont()) op_.toMont(v_, v_);
+		if (isMont()) op_.toMont(v_, v_);
 	}
 	/*
 		convert Montgomery value to normal value
-		do nothing is !useMont()
+		do nothing is !isMont()
 	*/
 	void fromMont()
 	{
-		if (useMont()) op_.fromMont(v_, v_);
+		if (isMont()) op_.fromMont(v_, v_);
 	}
 	void setStr(const std::string& str, int base = 0)
 	{
@@ -257,7 +257,7 @@ public:
 	void getBlock(fp::Block& b) const
 	{
 		b.n = op_.N;
-		if (useMont()) {
+		if (isMont()) {
 			op_.fromMont(b.v_, v_);
 			b.p = &b.v_[0];
 		} else {
@@ -392,7 +392,7 @@ public:
 	}
 	/*
 		@note
-		this compare functions is slow because of calling mul if useMont is true.
+		this compare functions is slow because of calling mul if isMont is true.
 	*/
 	static inline int compare(const FpT& x, const FpT& y)
 	{
@@ -414,7 +414,7 @@ public:
 	bool operator<=(const FpT& rhs) const { return !operator>(rhs); }
 	/*
 		@note
-		return unexpected order if useMont is set.
+		return unexpected order if isMont is set.
 	*/
 	static inline int compareRaw(const FpT& x, const FpT& y)
 	{

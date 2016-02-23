@@ -1,6 +1,7 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
+#include <cybozu/xorshift.hpp>
 #include <time.h>
 #include <mcl/fp.hpp>
 #include <mcl/fp_tower.hpp>
@@ -108,6 +109,30 @@ void testFpDbl()
 					}
 				}
 			}
+		}
+	}
+	{
+		std::string pstr;
+		Fp::getModulo(pstr);
+		const mpz_class mp(pstr);
+		cybozu::XorShift rg;
+		for (int i = 0; i < 3; i++) {
+			Fp x, y, z;
+			mpz_class mx, my, mz, mo;
+			x.setRand(rg);
+			x.fromMont();
+			x.getMpz(mx);
+			y.setRand(rg);
+			y.fromMont();
+			y.getMpz(my);
+			mo = mx * my;
+			FpDbl xy;
+			FpDbl::mulPre(xy, x, y);
+			FpDbl::mod(z, xy);
+			z.fromMont();
+			z.getMpz(mz);
+			mo %= mp;
+			CYBOZU_TEST_EQUAL(mz, mo);
 		}
 	}
 }

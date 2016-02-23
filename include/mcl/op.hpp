@@ -100,7 +100,7 @@ struct Op {
 	void3u fp_addNC; // assume no carry if !isFullBit
 	void3u fp_subNC; // assume x > y
 	// for Montgomery
-	bool useMont;
+	bool isMont;
 	int2u fp_preInv;
 	// these two members are for mcl_fp_mont
 	Unit rp;
@@ -149,7 +149,7 @@ struct Op {
 		, fp_isZero(0), fp_clear(0), fp_copy(0)
 		, fp_neg(0), fp_sqr(0), fp_add(0), fp_sub(0), fp_mul(0)
 		, isFullBit(true), fp_addNC(0), fp_subNC(0)
-		, useMont(false), fp_preInv(0)
+		, isMont(false), fp_preInv(0)
 		, rp(0), mont(0)
 		, fp_negP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_modP(0)
 		, fg(createFpGenerator())
