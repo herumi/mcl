@@ -405,29 +405,28 @@ struct Fp6T {
 		x = a + bv + cv^2, v^3 = xi
 		x^2 = (a^2 + 2bc xi) + (c^2 xi + 2ab)v + (b^2 + 2ac)v^2
 
-		(a - b + c)^2 = (b^2 + 2ac) + a^2 -2ab + c^2 - 2bc
+		b^2 + 2ac = (a + c - b)^2 + 2bc - a^2 - c^2 + 2ab
 	*/
 	static inline void sqr(Fp6T& z, const Fp6T& x)
 	{
-		assert(&z != &x);
-		Fp2 v3, v4, v5;
-		Fp2::add(v4, x.a, x.a);
-		Fp2::mul(v4, v4, x.b); // 2ab
-		Fp2::sqr(v5, x.c);
-		Fp2::mul_xi(z.b, v5); // c^2 xi
-		z.b += v4;
-		Fp2::sub(z.c, v4, v5);
-		Fp2::sqr(v3, x.a);
-		Fp2::sub(v4, x.a, x.b);
-		v4 += x.c;
-		Fp2::add(v5, x.b, x.b);
-		Fp2::mul(v5, v5, x.c);
-		Fp2::sqr(v4, v4);
-		Fp2::mul_xi(z.a, v5);
-		z.a += v3;
-		z.c += v4;
-		z.c += v5;
-		z.c -= v3;
+		Fp2 t1, t2, t3;
+		Fp2::mul(t1, x.a, x.b);
+		t1 += t1; // 2ab
+		Fp2::mul(t2, x.b, x.c);
+		t2 += t2; // 2bc
+		Fp2::sqr(t3, x.c); // c^2
+		Fp2::add(z.c, x.a, x.c); // a + c, destroy z.c
+		z.c -= x.b; // a - b + c
+		Fp2::sqr(z.b, z.c); // (a + c - b)^2, destroy z.b
+		z.b += t2; // (a + c - b)^2 + 2bc
+		Fp2::mul_xi(t2, t2); // 2bc xi
+		Fp2::sqr(z.a, x.a); // a^2, destroy z.a
+		z.b -= z.a; // (a + c - b)^2 + 2bc - a^2
+		z.a += t2; // a^2 + 2bc xi
+		Fp2::sub(z.c, z.b, t3); // (a + c - b)^2 + 2bc - a^2 - c^2
+		Fp2::mul_xi(z.b, t3); // c^2 xi
+		z.b += t1; // c^2 xi + 2ab
+		z.c += t1; // b^2 + 2ab
 	}
 };
 

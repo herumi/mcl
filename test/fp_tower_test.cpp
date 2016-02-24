@@ -75,9 +75,9 @@ void testFp6sqr(const Fp2& a, const Fp2& b, const Fp2& c, const Fp6& x)
 	CYBOZU_TEST_EQUAL(x.a, t);
 	t = c * c;
 	Fp2::mul_xi(t, t);
-	t += 2 * a * b;
+	t += a * b * 2;
 	CYBOZU_TEST_EQUAL(x.b, t);
-	t = b * b + 2 * a * c;
+	t = b * b + a * c * 2;
 	CYBOZU_TEST_EQUAL(x.c, t);
 }
 
@@ -96,7 +96,7 @@ void testFp6()
 	testFp6sqr(a, b, c, z);
 	z = x;
 	Fp6::sqr(z, z);
-//	testFp6sqr(a, b, c, z);
+	testFp6sqr(a, b, c, z);
 }
 
 void testFpDbl()
