@@ -50,8 +50,8 @@ public:
 
 /*
 	beta = -1
-	Fp2 = F[u] / (u^2 + 1)
-	x = a_ + b u
+	Fp2 = F[i] / (i^2 + 1)
+	x = a + bi
 */
 template<class Fp>
 class Fp2T {
@@ -175,7 +175,7 @@ public:
 private:
 	/*
 		default Fp2T operator
-		Fp2T = Fp[u]/(u^2 + 1)
+		Fp2T = Fp[i]/(i^2 + 1)
 	*/
 	static inline void fp2_addW(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -201,8 +201,8 @@ private:
 		Fp::neg(py[1], px[1]);
 	}
 	/*
-		x = a + bu, y = c + du, u^2 = -1
-		z = xy = (a + bu)(c + du) = (ac - bd) + (ad + bc)u
+		x = a + bi, y = c + di, i^2 = -1
+		z = xy = (a + bi)(c + di) = (ac - bd) + (ad + bc)i
 		ad+bc = (a + b)(c + d) - ac - bd
 	*/
 	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
@@ -247,8 +247,8 @@ private:
 #endif
 	}
 	/*
-		x = a + bu, u^2 = -1
-		y = x^2 = (a + bu)^2 = (a^2 - b^2) + 2abu
+		x = a + bi, i^2 = -1
+		y = x^2 = (a + bi)^2 = (a^2 - b^2) + 2abi
 	*/
 	static inline void fp2_sqrW(Unit *y, const Unit *x)
 	{
@@ -264,9 +264,10 @@ private:
 		Fp::add(py[1], t, t); // 2ab
 	}
 	/*
-		x = a + bu
-		y = (a + bu)xi = (a + bu)(xi_c + u)
-		=(a * x_ic - b) + (a + b xi_c)u
+		xi = xi_c + i
+		x = a + bi
+		y = (a + bi)xi = (a + bi)(xi_c + i)
+		=(a * x_ic - b) + (a + b xi_c)i
 	*/
 	static inline void fp2_mul_xiW(Unit *y, const Unit *x)
 	{
@@ -282,8 +283,8 @@ private:
 		py[0] = t;
 	}
 	/*
-		x = a + bu
-		1 / x = (a - bu) / (a^2 + b^2)
+		x = a + bi
+		1 / x = (a - bi) / (a^2 + b^2)
 	*/
 	static inline void fp2_invW(Unit *y, const Unit *x)
 	{
@@ -320,7 +321,6 @@ template<class Fp> Fp Fp2T<Fp>::xi_c_;
 
 /*
 	Fp6T = Fp2[v] / (v^3 - xi)
-	xi = -u - 1
 	x = a + b v + c v^2
 */
 template<class Fp>
@@ -329,7 +329,6 @@ struct Fp6T {
 	Fp2 a, b, c;
 	Fp6T() { }
 	Fp6T(int64_t a) : a(a) , b(0) , c(0) { }
-	Fp6T(int64_t a, int64_t b, int64_t c) : a(a) , b(b) , c(c) { }
 	Fp6T(const Fp2& a, const Fp2& b, const Fp2& c) : a(a) , b(b) , c(c) { }
 	void clear()
 	{
@@ -375,7 +374,7 @@ struct Fp6T {
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp6T& x)
 	{
-		return os << "[" << x.a_ << ",\n " << x.b_ << ",\n " << x.c_ << "]";
+		return os << "[" << x.a << ",\n " << x.b << ",\n " << x.c << "]";
 	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& x)
 	{
@@ -402,14 +401,20 @@ struct Fp6T {
 		Fp2::neg(y.b, x.b);
 		Fp2::neg(y.c, x.c);
 	}
-	static void sqr(Fp6T& z, const Fp6T& x)
+	/*
+		x = a + bv + cv^2, v^3 = xi
+		x^2 = (a^2 + 2bc xi) + (c^2 xi + 2ab)v + (b^2 + 2ac)v^2
+
+		(a - b + c)^2 = (b^2 + 2ac) + a^2 -2ab + c^2 - 2bc
+	*/
+	static inline void sqr(Fp6T& z, const Fp6T& x)
 	{
 		assert(&z != &x);
 		Fp2 v3, v4, v5;
 		Fp2::add(v4, x.a, x.a);
-		Fp2::mul(v4, v4, x.b);
+		Fp2::mul(v4, v4, x.b); // 2ab
 		Fp2::sqr(v5, x.c);
-		Fp2::mul_xi(z.b, v5);
+		Fp2::mul_xi(z.b, v5); // c^2 xi
 		z.b += v4;
 		Fp2::sub(z.c, v4, v5);
 		Fp2::sqr(v3, x.a);

@@ -10,6 +10,7 @@
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
+typedef mcl::Fp6T<Fp> Fp6;
 
 bool g_benchOnly = false;
 
@@ -63,6 +64,39 @@ void testFp2()
 	Fp2::inv(y, x);
 	y *= x;
 	CYBOZU_TEST_EQUAL(y, 1);
+}
+
+void testFp6sqr(const Fp2& a, const Fp2& b, const Fp2& c, const Fp6& x)
+{
+	Fp2 t;
+	t = b * c * 2;
+	Fp2::mul_xi(t, t);
+	t += a * a;
+	CYBOZU_TEST_EQUAL(x.a, t);
+	t = c * c;
+	Fp2::mul_xi(t, t);
+	t += 2 * a * b;
+	CYBOZU_TEST_EQUAL(x.b, t);
+	t = b * b + 2 * a * c;
+	CYBOZU_TEST_EQUAL(x.c, t);
+}
+
+void testFp6()
+{
+	puts(__FUNCTION__);
+	Fp2 a(1, 2), b(3, 4), c(5, 6);
+	Fp6 x(a, b, c);
+	Fp6 y(Fp2(-1, 1), Fp2(4, -3), Fp2(-6, 2));
+	Fp6 z;
+	Fp6::add(z, x, y);
+	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(0, 3), Fp2(7, 1), Fp2(-1, 8)));
+	Fp6::sub(z, x, y);
+	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(2, 1), Fp2(-1, 7), Fp2(11, 4)));
+	Fp6::sqr(z, x);
+	testFp6sqr(a, b, c, z);
+	z = x;
+	Fp6::sqr(z, z);
+//	testFp6sqr(a, b, c, z);
 }
 
 void testFpDbl()
@@ -155,7 +189,7 @@ void benchFp2()
 //	CYBOZU_BENCH("Fp2::mul_Fp_1", Fp2::mul_Fp_1, x, Param::half);
 //	CYBOZU_BENCH("Fp2::divBy2  ", Fp2::divBy2, x, x);
 //	CYBOZU_BENCH("Fp2::divBy4  ", Fp2::divBy4, x, x);
-	printf("add %8.2f sub %8.2f mul %8.2f sqr %8.2f inv %8.2f mul_xi %8.2f\n", addT, subT, mulT, sqrT, invT, mul_xiT);
+	printf("add %8.2f|sub %8.2f|mul %8.2f|sqr %8.2f|inv %8.2f|mul_xi %8.2f\n", addT, subT, mulT, sqrT, invT, mul_xiT);
 }
 
 void test(const char *p, mcl::fp::Mode mode)
@@ -174,6 +208,7 @@ void test(const char *p, mcl::fp::Mode mode)
 	}
 	testFp2();
 	testFpDbl();
+	testFp6();
 }
 
 void testAll()
@@ -210,6 +245,11 @@ void testAll()
 		test(tbl[i], mcl::fp::FP_XBYAK);
 #endif
 	}
+}
+
+CYBOZU_TEST_AUTO(testAll)
+{
+	testAll();
 }
 
 int main(int argc, char *argv[])
