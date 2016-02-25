@@ -407,7 +407,7 @@ struct Fp6T {
 
 		b^2 + 2ac = (a + c - b)^2 + 2bc - a^2 - c^2 + 2ab
 	*/
-	static inline void sqr(Fp6T& z, const Fp6T& x)
+	static inline void sqr(Fp6T& y, const Fp6T& x)
 	{
 		Fp2 t1, t2, t3;
 		Fp2::mul(t1, x.a, x.b);
@@ -415,18 +415,59 @@ struct Fp6T {
 		Fp2::mul(t2, x.b, x.c);
 		t2 += t2; // 2bc
 		Fp2::sqr(t3, x.c); // c^2
-		Fp2::add(z.c, x.a, x.c); // a + c, destroy z.c
-		z.c -= x.b; // a - b + c
-		Fp2::sqr(z.b, z.c); // (a + c - b)^2, destroy z.b
-		z.b += t2; // (a + c - b)^2 + 2bc
+		Fp2::add(y.c, x.a, x.c); // a + c, destroy y.c
+		y.c -= x.b; // a - b + c
+		Fp2::sqr(y.b, y.c); // (a + c - b)^2, destroy y.b
+		y.b += t2; // (a + c - b)^2 + 2bc
 		Fp2::mul_xi(t2, t2); // 2bc xi
-		Fp2::sqr(z.a, x.a); // a^2, destroy z.a
-		z.b -= z.a; // (a + c - b)^2 + 2bc - a^2
-		z.a += t2; // a^2 + 2bc xi
-		Fp2::sub(z.c, z.b, t3); // (a + c - b)^2 + 2bc - a^2 - c^2
-		Fp2::mul_xi(z.b, t3); // c^2 xi
-		z.b += t1; // c^2 xi + 2ab
-		z.c += t1; // b^2 + 2ab
+		Fp2::sqr(y.a, x.a); // a^2, destroy y.a
+		y.b -= y.a; // (a + c - b)^2 + 2bc - a^2
+		y.a += t2; // a^2 + 2bc xi
+		Fp2::sub(y.c, y.b, t3); // (a + c - b)^2 + 2bc - a^2 - c^2
+		Fp2::mul_xi(y.b, t3); // c^2 xi
+		y.b += t1; // c^2 xi + 2ab
+		y.c += t1; // b^2 + 2ab
+	}
+	/*
+		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
+		xy = (ad + (bf + ce)xi) + (ae + bd + cf xi)v + (af + be + cd)v^2
+		bf + ce = (b + c)(e + f) - be - cf
+		ae + bd = (a + b)(e + d) - ad - be
+		af + cd = (a + c)(d + f) - ad - cf
+	*/
+	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	{
+		const Fp2& a = x.a;
+		const Fp2& b = x.b;
+		const Fp2& c = x.c;
+		const Fp2& d = y.a;
+		const Fp2& e = y.b;
+		const Fp2& f = y.c;
+		Fp2 ad, be, cf;
+		Fp2::mul(ad, a, d);
+		Fp2::mul(be, b, e);
+		Fp2::mul(cf, c, f);
+		Fp2 t1, t2, t3, t4;
+		Fp2::add(t1, b, c);
+		Fp2::add(t2, e, f);
+		t1 *= t2; // (b + c)(e + f)
+		t1 -= be;
+		t1 -= cf;
+		Fp2::mul_xi(t1, t1);
+		Fp2::add(z.a, ad, t1);
+		Fp2::add(t1, a, b);
+		Fp2::add(t2, e, d);
+		t1 *= t2; // (a + b)(e + d)
+		t1 -= ad;
+		t1 -= be;
+		Fp2::mul_xi(t2, cf);
+		Fp2::add(z.b, t1, t2);
+		Fp2::add(t1, a, c);
+		Fp2::add(t2, d, f);
+		t1 *= t2; // (a + c)(d + f)
+		t1 -= ad;
+		t1 -= cf;
+		Fp2::add(z.c, t1, be);
 	}
 };
 

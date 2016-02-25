@@ -87,16 +87,20 @@ void testFp6()
 	Fp2 a(1, 2), b(3, 4), c(5, 6);
 	Fp6 x(a, b, c);
 	Fp6 y(Fp2(-1, 1), Fp2(4, -3), Fp2(-6, 2));
-	Fp6 z;
+	Fp6 z, w;
 	Fp6::add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(0, 3), Fp2(7, 1), Fp2(-1, 8)));
 	Fp6::sub(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(2, 1), Fp2(-1, 7), Fp2(11, 4)));
 	Fp6::sqr(z, x);
+	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
+	testFp6sqr(a, b, c, w);
 	z = x;
 	Fp6::sqr(z, z);
+	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
+	testFp6sqr(a, b, c, w);
 }
 
 void testFpDbl()
