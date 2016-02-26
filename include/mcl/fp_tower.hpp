@@ -383,6 +383,13 @@ struct Fp6T {
 		if (c1 == '[' && c2 == ',' && c3 == ',' && c4 == ']') return is;
 		throw std::ios_base::failure("bad Fp6T");
 	}
+	inline friend Fp6T operator+(const Fp6T& x, const Fp6T& y) { Fp6T z; add(z, x, y); return z; }
+	inline friend Fp6T operator-(const Fp6T& x, const Fp6T& y) { Fp6T z; sub(z, x, y); return z; }
+	inline friend Fp6T operator*(const Fp6T& x, const Fp6T& y) { Fp6T z; mul(z, x, y); return z; }
+	Fp6T& operator+=(const Fp6T& x) { add(*this, *this, x); return *this; }
+	Fp6T& operator-=(const Fp6T& x) { sub(*this, *this, x); return *this; }
+	Fp6T& operator*=(const Fp6T& x) { mul(*this, *this, x); return *this; }
+	Fp6T operator-() const { Fp6T x; neg(x, *this); return x; }
 	static inline void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
@@ -468,6 +475,82 @@ struct Fp6T {
 		t1 -= ad;
 		t1 -= cf;
 		Fp2::add(z.c, t1, be);
+	}
+};
+
+/*
+	Fp12T = Fp6[w] / (w^2 - v)
+	x = a + b w
+*/
+template<class Fp>
+struct Fp12T {
+	typedef Fp2T<Fp> Fp2;
+	typedef Fp6T<Fp> Fp6;
+	Fp6 a, b;
+	Fp12T() {}
+	Fp12T(int64_t a) : a(a), b(0) {}
+	Fp12T(const Fp6& a, const Fp6& b) : a(a), b(b) {}
+	void clear()
+	{
+		a.clear();
+		b.clear();
+	}
+
+	Fp* get() { return a.get(); }
+	const Fp* get() const { return a.get(); }
+	Fp2* getFp2() { return a.getFp2(); }
+	const Fp2* getFp2() const { return a.getFp2(); }
+	void set(const Fp2& v0, const Fp2& v1, const Fp2& v2, const Fp2& v3, const Fp2& v4, const Fp2& v5)
+	{
+		a.set(v0, v1, v2);
+		b.set(v3, v4, v5);
+	}
+
+	bool isZero() const
+	{
+		return a.isZero() && b.isZero();
+	}
+	bool operator==(const Fp12T& rhs) const
+	{
+		return a == rhs.a && b == rhs.b;
+	}
+	bool operator!=(const Fp12T& rhs) const { return !operator==(rhs); }
+	static inline void add(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	{
+		Fp6::add(z.a, x.a, y.a);
+		Fp6::add(z.b, x.b, y.b);
+	}
+	static inline void sub(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	{
+		Fp6::sub(z.a, x.a, y.a);
+		Fp6::sub(z.b, x.b, y.b);
+	}
+	static inline void neg(Fp12T& z, const Fp12T& x)
+	{
+		Fp6::neg(z.a, x.a);
+		Fp6::neg(z.b, x.b);
+	}
+	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
+	{
+		str = '[';
+		str += a.getStr(base, withPrefix);
+		str += ',';
+		str += b.getStr(base, withPrefix);
+		str += ']';
+	}
+	std::string getStr(int base = 10, bool withPrefix = false) const
+	{
+		std::string str;
+		getStr(str, base, withPrefix);
+		return str;
+	}
+	friend inline std::ostream& operator<<(std::ostream& os, const Fp12T& self)
+	{
+		const std::ios_base::fmtflags f = os.flags();
+		if (f & std::ios_base::oct) throw cybozu::Exception("Fp12T:operator<<:oct is not supported");
+		const int base = (f & std::ios_base::hex) ? 16 : 10;
+		const bool showBase = (f & std::ios_base::showbase) != 0;
+		return os << self.getStr(base, showBase);
 	}
 };
 

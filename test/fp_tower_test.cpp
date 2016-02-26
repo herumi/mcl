@@ -11,6 +11,7 @@ typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
+typedef mcl::Fp12T<Fp> Fp12;
 
 bool g_benchOnly = false;
 
@@ -92,6 +93,8 @@ void testFp6()
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(0, 3), Fp2(7, 1), Fp2(-1, 8)));
 	Fp6::sub(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(2, 1), Fp2(-1, 7), Fp2(11, 4)));
+	Fp6::neg(z, x);
+	CYBOZU_TEST_EQUAL(z, Fp6(-a, -b, -c));
 	Fp6::sqr(z, x);
 	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
@@ -101,6 +104,24 @@ void testFp6()
 	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
 	testFp6sqr(a, b, c, w);
+}
+
+void testFp12()
+{
+	puts(__FUNCTION__);
+	Fp6 xa(Fp2(1, 2), Fp2(3, 4), Fp2(5, 6));
+	Fp6 xb(Fp2(3, 1), Fp2(6, -1), Fp2(-2, 5));
+	Fp12 x(xa, xb);
+	Fp6 ya(Fp2(2, 1), Fp2(5, 3), Fp2(4, 1));
+	Fp6 yb(Fp2(1, -3), Fp2(2, -1), Fp2(-3, 1));
+	Fp12 y(ya, yb);
+	Fp12 z;
+	Fp12::add(z, x, y);
+	CYBOZU_TEST_EQUAL(z, Fp12(Fp6(Fp2(3, 3), Fp2(8, 7), Fp2(9, 7)), Fp6(Fp2(4, -2), Fp2(8, -2), Fp2(-5, 6))));
+	Fp12::sub(z, x, y);
+	CYBOZU_TEST_EQUAL(z, Fp12(Fp6(Fp2(-1, 1), Fp2(-2, 1), Fp2(1, 5)), Fp6(Fp2(2, 4), Fp2(4, 0), Fp2(1, 4))));
+	Fp12::neg(z, x);
+	CYBOZU_TEST_EQUAL(z, Fp12(-xa, -xb));
 }
 
 void testFpDbl()
@@ -213,6 +234,7 @@ void test(const char *p, mcl::fp::Mode mode)
 	testFp2();
 	testFpDbl();
 	testFp6();
+	testFp12();
 }
 
 void testAll()
