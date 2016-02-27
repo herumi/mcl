@@ -60,7 +60,7 @@ class FpT {
 	Unit v_[maxSize];
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
-	template<class Fp> friend class Fp6T;
+	template<class Fp> friend struct Fp6T;
 public:
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
