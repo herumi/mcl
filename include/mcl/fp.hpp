@@ -107,6 +107,7 @@ public:
 		if (mode == fp::FP_LLVM_MONT) {
 			op_.fp_mul = fp_montW;
 			op_.fp_sqr = fp_montSqrW;
+			op_.fp_mod = fp_montRedW;
 		}
 #if 0
 	fprintf(stderr, "mode=%d, isMont=%d"
