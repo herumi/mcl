@@ -373,6 +373,9 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	op.fp_mul = Xbyak::CastTo<void3u>(fg->mul_);
 	op.fp_sqr = Xbyak::CastTo<void2u>(fg->sqr_);
 	if (N <= 4) {
+		if (fg->montRed_) {
+			op.fp_mod = Xbyak::CastTo<void2u>(fg->montRed_);
+		}
 		op.fp_preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);

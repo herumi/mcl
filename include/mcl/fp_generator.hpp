@@ -165,6 +165,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void3op sub_;
 	void3op mul_;
 	uint3opI mulI_;
+	void *montRedRaw_;
+	void2op montRed_;
 	void2op sqr_;
 	void2op neg_;
 	void2op shr1_;
@@ -181,6 +183,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, sub_(0)
 		, mul_(0)
 		, mulI_(0)
+		, montRedRaw_(0)
+		, montRed_(0)
 		, neg_(0)
 		, shr1_(0)
 		, preInv_(0)
@@ -222,6 +226,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		mul_ = getCurr<void3op>();
 		gen_mul();
+		align(16);
+		montRed_ = getCurr<void2op>();
+		if (!gen_montRed()) {
+			montRed_ = 0;
+		}
 		align(16);
 		sqr_ = getCurr<void2op>();
 		gen_sqr();
@@ -549,6 +558,121 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		} else {
 			throw cybozu::Exception("mcl:FpGenerator:gen_mul:not implemented for") << pn_;
 		}
+	}
+	/*
+		@input (z, x)
+		z[3..0] <- montgomery reduction(x[7..0])
+		@note destroy rax, rdx, t0, ..., t10, xm0, xm1
+	*/
+	void gen_montRed4()
+	{
+		StackFrame sf(this, 3, 10 | UseRDX);
+		const Reg64& z = sf.p[0];
+		const Reg64& x = sf.p[1];
+
+		const Reg64& t0 = sf.t[0];
+		const Reg64& t1 = sf.t[1];
+		const Reg64& t2 = sf.t[2];
+		const Reg64& t3 = sf.t[3];
+		const Reg64& t4 = sf.t[4];
+		const Reg64& t5 = sf.t[5];
+		const Reg64& t6 = sf.t[6];
+		const Reg64& t7 = sf.t[7];
+		const Reg64& t8 = sf.t[8];
+		const Reg64& t9 = sf.t[9];
+		const Reg64& t10 = sf.p[2];
+
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+
+		movq(xm0, z);
+		mov(z, ptr [x + 8 * 0]);
+
+		mov(a, pp_);
+		mul(z);
+		mov(t0, (uint64_t)&p_[1]);
+		mov(t7, a); // q
+
+		// [d:t7:t3:t2:t1] = p * q
+		mul4x1(t0, t7, t4, t3, t2, t1, t8);
+
+		add(t1, z);
+		adc(t2, qword [x + 8 * 1]);
+		adc(t3, qword [x + 8 * 2]);
+		adc(t7, qword [x + 8 * 3]);
+		mov(t4, ptr [x + 8 * 4]);
+		adc(t4, d);
+		mov(t8, ptr [x + 8 * 5]);
+		adc(t8, 0);
+		mov(t9, ptr [x + 8 * 6]);
+		adc(t9, 0);
+		mov(t10, ptr [x + 8 * 7]);
+		adc(t10, 0); // c' = [t10:t9:t8:t4:t7:t3:t2]
+
+		// free z, t1, t5, x, t6
+
+		mov(a, pp_);
+		mul(t2);
+		mov(z, a); // q
+
+		movq(xm1, t10);
+		// [d:z:t5:x:t6] = p * q
+		mul4x1(t0, z, t1, t5, x, t6, t10);
+		movq(t10, xm1);
+
+		add_rr(Pack(t4, t7, t3, t2), Pack(z, t5, x, t6));
+		adc(t8, d);
+		adc(t9, 0);
+		adc(t10, 0); // c' = [t10:t9:t8:t4:t7:t3]
+
+		// free z, t1, t2, t5, x, t6
+
+		mov(a, pp_);
+		mul(t3);
+		mov(z, a); // q
+
+		// [d:z:t5:x:t6] = p * q
+		mul4x1(t0, z, t1, t5, x, t6, t2);
+
+		add_rr(Pack(t8, t4, t7, t3), Pack(z, t5, x, t6));
+		adc(t9, d);
+		adc(t10, 0); // c' = [t10:t9:t8:t4:t7]
+
+		// free z, t1, t2, t7, t5, x, t6
+
+		mov(a, pp_);
+		mul(t7);
+		mov(z, a); // q
+
+		// [d:z:t5:x:t6] = p * q
+		mul4x1(t0, z, t1, t5, x, t6, t2);
+
+		add_rr(Pack(t9, t8, t4, t7), Pack(z, t5, x, t6));
+		adc(t10, d); // c' = [t10:t9:t8:t4]
+
+		mov(z, t4);
+		mov(t1, t8);
+		mov(t2, t9);
+		mov(t3, t10);
+		sub_rm(Pack(t10, t9, t8, t4), t0);
+		cmovc(t4, z);
+		cmovc(t8, t1);
+		cmovc(t9, t2);
+		cmovc(t10, t3);
+
+		movq(z, xm0);
+		store_mr(z, Pack(t10, t9, t8, t4));
+	}
+
+	bool gen_montRed()
+	{
+		if (pn_ == 3) {
+		} else if (pn_ == 4) {
+			montRed_ = getCurr<void2op>();
+			gen_montRed4();
+			return true;
+		}
+		return false;
 	}
 	void gen_sqr()
 	{
