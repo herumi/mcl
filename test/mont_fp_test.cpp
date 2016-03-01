@@ -13,13 +13,13 @@ struct Montgomery {
 	mpz_class p_;
 	mpz_class R_; // (1 << (pn_ * 64)) % p
 	mpz_class RR_; // (R * R) % p
-	Unit pp_; // p * pp = -1 mod M = 1 << 64
+	Unit rp_; // rp * p = -1 mod M = 1 << 64
 	size_t pn_;
 	Montgomery() {}
 	explicit Montgomery(const mpz_class& p)
 	{
 		p_ = p;
-		pp_ = mcl::fp::getMontgomeryCoeff(mcl::Gmp::getUnit(p, 0));
+		rp_ = mcl::fp::getMontgomeryCoeff(mcl::Gmp::getUnit(p, 0));
 		pn_ = mcl::Gmp::getUnitSize(p);
 		R_ = 1;
 		R_ = (R_ << (pn_ * 64)) % p_;
@@ -34,14 +34,14 @@ struct Montgomery {
 #if 0
 		const size_t ySize = mcl::Gmp::getUnitSize(y);
 		mpz_class c = x * mcl::Gmp::getUnit(y, 0);
-		Unit q = mcl::Gmp::getUnit(c, 0) * pp_;
+		Unit q = mcl::Gmp::getUnit(c, 0) * rp_;
 		c += p_ * q;
 		c >>= sizeof(Unit) * 8;
 		for (size_t i = 1; i < pn_; i++) {
 			if (i < ySize) {
 				c += x * mcl::Gmp::getUnit(y, i);
 			}
-			Unit q = mcl::Gmp::getUnit(c, 0) * pp_;
+			Unit q = mcl::Gmp::getUnit(c, 0) * rp_;
 			c += p_ * q;
 			c >>= sizeof(Unit) * 8;
 		}
@@ -52,7 +52,7 @@ struct Montgomery {
 #else
 		z = x * y;
 		for (size_t i = 0; i < pn_; i++) {
-			Unit q = mcl::Gmp::getUnit(z, 0) * pp_;
+			Unit q = mcl::Gmp::getUnit(z, 0) * rp_;
 			z += p_ * (mp_limb_t)q;
 			z >>= sizeof(Unit) * 8;
 		}

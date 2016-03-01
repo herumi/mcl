@@ -21,7 +21,8 @@ void mcl_fp_addNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp
 void mcl_fp_subNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fp_mulPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fp_sqrPre ## len(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
-void mcl_fp_mont ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p, mcl::fp::Unit r);
+void mcl_fp_mont ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p, mcl::fp::Unit r); \
+void mcl_fp_montRed ## len(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p, mcl::fp::Unit r);
 
 MCL_FP_DEF_FUNC(128)
 MCL_FP_DEF_FUNC(192)
@@ -51,6 +52,8 @@ void mcl_fpDbl_sub224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*
 #else
 MCL_FP_DEF_FUNC(576)
 #endif
+
+#undef MCL_FP_DEF_FUNC
 
 void mcl_fp_mul_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 

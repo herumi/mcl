@@ -104,7 +104,10 @@ struct Op {
 	int2u fp_preInv;
 	// these two members are for mcl_fp_mont
 	Unit rp;
-	void (*mont)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
+	// z = montRed(xy)
+	void (*montRedPU)(Unit *z, const Unit *xy, const Unit *p, Unit rp);
+	// z = mont(x, y) = montRed(fp_mulPre(x, y))
+	void (*montPU)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
 
 	// require p
 	void3u fp_negP;
@@ -150,7 +153,7 @@ struct Op {
 		, fp_neg(0), fp_sqr(0), fp_add(0), fp_sub(0), fp_mul(0)
 		, isFullBit(true), fp_addNC(0), fp_subNC(0)
 		, isMont(false), fp_preInv(0)
-		, rp(0), mont(0)
+		, rp(0), montRedPU(0), montPU(0)
 		, fp_negP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fp_modP(0)
 		, fg(createFpGenerator())
 		, fpDbl_add(0), fpDbl_sub()

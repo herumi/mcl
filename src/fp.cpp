@@ -262,7 +262,8 @@ struct OpeFunc {
 			if (n <= 256) { \
 				fp_sqrPre = mcl_fp_sqrPre ## n; \
 			} \
-			mont = mcl_fp_mont ## n; \
+			montPU = mcl_fp_mont ## n; \
+			montRedPU = mcl_fp_montRed ## n; \
 		}
 	#define SET_OP_DBL_LLVM(n, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \

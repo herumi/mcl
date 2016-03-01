@@ -463,9 +463,15 @@ private:
 	{
 		op_.fpDbl_subP(z, x, y, op_.p);
 	}
-	static inline void fp_modW(Unit *y, const Unit *x)
+	// z[N] <- xy[N * 2] % p[N]
+	static inline void fp_modW(Unit *z, const Unit *xy)
 	{
-		op_.fp_modP(y, x, op_.p);
+		op_.fp_modP(z, xy, op_.p);
+	}
+	// z[N] <- montRed(xy[N * 2])
+	static inline void fp_montRedW(Unit *z, const Unit *xy)
+	{
+		op_.montRedPU(z, xy, op_.p, op_.rp);
 	}
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -486,11 +492,23 @@ private:
 	// wrapper function for mcl_fp_mont by LLVM
 	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y)
 	{
-		op_.mont(z, x, y, op_.p, op_.rp);
+#if 1
+		op_.montPU(z, x, y, op_.p, op_.rp);
+#else
+		Unit xy[maxSize * 2];
+		op_.fp_mulPre(xy, x, y);
+		fp_montRedW(z, xy);
+#endif
 	}
 	static inline void fp_montSqrW(Unit *y, const Unit *x)
 	{
-		op_.mont(y, x, x, op_.p, op_.rp);
+#if 1
+		op_.montPU(y, x, x, op_.p, op_.rp);
+#else
+		Unit xx[maxSize * 2];
+		op_.fp_sqrPre(xx, x);
+		fp_montRedW(y, xx);
+#endif
 	}
 };
 
