@@ -590,7 +590,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 		mov(a, pp_);
 		mul(z);
-		mov(t0, (uint64_t)&p_[1]);
+		mov(t0, (uint64_t)p_);
 		mov(t7, a); // q
 
 		// [d:t7:t3:t2:t1] = p * q
