@@ -142,7 +142,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	Xbyak::util::Cpu cpu_;
 	bool useMulx_;
 	const uint64_t *p_;
-	uint64_t pp_;
+	uint64_t rp_;
 	int pn_;
 	bool isFullBit_;
 	// add/sub without carry. return true if overflow
@@ -174,7 +174,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	FpGenerator()
 		: CodeGenerator(4096 * 8)
 		, p_(0)
-		, pp_(0)
+		, rp_(0)
 		, pn_(0)
 		, isFullBit_(0)
 		, addNC_(0)
@@ -199,7 +199,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	{
 		if (pn < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << pn;
 		p_ = p;
-		pp_ = fp::getMontgomeryCoeff(p[0]);
+		rp_ = fp::getMontgomeryCoeff(p[0]);
 		pn_ = pn;
 		isFullBit_ = (p_[pn_ - 1] >> 63) != 0;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
@@ -550,17 +550,17 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void gen_mul()
 	{
 		if (pn_ == 3) {
-			gen_montMul3(p_, pp_);
+			gen_montMul3(p_, rp_);
 		} else if (pn_ == 4) {
-			gen_montMul4(p_, pp_);
+			gen_montMul4(p_, rp_);
 		} else if (pn_ <= 9) {
-			gen_montMulN(p_, pp_, pn_);
+			gen_montMulN(p_, rp_, pn_);
 		} else {
 			throw cybozu::Exception("mcl:FpGenerator:gen_mul:not implemented for") << pn_;
 		}
 	}
 	/*
-		@input (z, x)
+		@input (z, xy)
 		z[3..0] <- montgomery reduction(x[7..0])
 		@note destroy rax, rdx, t0, ..., t10, xm0, xm1
 	*/
@@ -568,7 +568,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	{
 		StackFrame sf(this, 3, 10 | UseRDX);
 		const Reg64& z = sf.p[0];
-		const Reg64& x = sf.p[1];
+		const Reg64& xy = sf.p[1];
 
 		const Reg64& t0 = sf.t[0];
 		const Reg64& t1 = sf.t[1];
@@ -586,9 +586,9 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& d = rdx;
 
 		movq(xm0, z);
-		mov(z, ptr [x + 8 * 0]);
+		mov(z, ptr [xy + 8 * 0]);
 
-		mov(a, pp_);
+		mov(a, rp_);
 		mul(z);
 		mov(t0, (uint64_t)p_);
 		mov(t7, a); // q
@@ -597,57 +597,57 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mul4x1(t0, t7, t4, t3, t2, t1, t8);
 
 		add(t1, z);
-		adc(t2, qword [x + 8 * 1]);
-		adc(t3, qword [x + 8 * 2]);
-		adc(t7, qword [x + 8 * 3]);
-		mov(t4, ptr [x + 8 * 4]);
+		adc(t2, qword [xy + 8 * 1]);
+		adc(t3, qword [xy + 8 * 2]);
+		adc(t7, qword [xy + 8 * 3]);
+		mov(t4, ptr [xy + 8 * 4]);
 		adc(t4, d);
-		mov(t8, ptr [x + 8 * 5]);
+		mov(t8, ptr [xy + 8 * 5]);
 		adc(t8, 0);
-		mov(t9, ptr [x + 8 * 6]);
+		mov(t9, ptr [xy + 8 * 6]);
 		adc(t9, 0);
-		mov(t10, ptr [x + 8 * 7]);
+		mov(t10, ptr [xy + 8 * 7]);
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7:t3:t2]
 
-		// free z, t1, t5, x, t6
+		// free z, t0, t1, t5, t6, xy
 
-		mov(a, pp_);
+		mov(a, rp_);
 		mul(t2);
 		mov(z, a); // q
 
 		movq(xm1, t10);
-		// [d:z:t5:x:t6] = p * q
-		mul4x1(t0, z, t1, t5, x, t6, t10);
+		// [d:z:t5:xy:t6] = p * q
+		mul4x1(t0, z, t1, t5, xy, t6, t10);
 		movq(t10, xm1);
 
-		add_rr(Pack(t4, t7, t3, t2), Pack(z, t5, x, t6));
+		add_rr(Pack(t4, t7, t3, t2), Pack(z, t5, xy, t6));
 		adc(t8, d);
 		adc(t9, 0);
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7:t3]
 
-		// free z, t1, t2, t5, x, t6
+		// free z, t1, t2, t5, xy, t6
 
-		mov(a, pp_);
+		mov(a, rp_);
 		mul(t3);
 		mov(z, a); // q
 
-		// [d:z:t5:x:t6] = p * q
-		mul4x1(t0, z, t1, t5, x, t6, t2);
+		// [d:z:t5:xy:t6] = p * q
+		mul4x1(t0, z, t1, t5, xy, t6, t2);
 
-		add_rr(Pack(t8, t4, t7, t3), Pack(z, t5, x, t6));
+		add_rr(Pack(t8, t4, t7, t3), Pack(z, t5, xy, t6));
 		adc(t9, d);
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7]
 
-		// free z, t1, t2, t7, t5, x, t6
+		// free z, t1, t2, t7, t5, xy, t6
 
-		mov(a, pp_);
+		mov(a, rp_);
 		mul(t7);
 		mov(z, a); // q
 
-		// [d:z:t5:x:t6] = p * q
-		mul4x1(t0, z, t1, t5, x, t6, t2);
+		// [d:z:t5:xy:t6] = p * q
+		mul4x1(t0, z, t1, t5, xy, t6, t2);
 
-		add_rr(Pack(t9, t8, t4, t7), Pack(z, t5, x, t6));
+		add_rr(Pack(t9, t8, t4, t7), Pack(z, t5, xy, t6));
 		adc(t10, d); // c' = [t10:t9:t8:t4]
 
 		mov_rr(Pack(t3, t2, t1, z), Pack(t10, t9, t8, t4));
@@ -674,7 +674,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void gen_sqr()
 	{
 		if (pn_ == 3) {
-			gen_montSqr3(p_, pp_);
+			gen_montSqr3(p_, rp_);
 			return;
 		}
 		// sqr(y, x) = mul(y, x, x)
