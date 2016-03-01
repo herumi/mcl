@@ -650,10 +650,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		add_rr(Pack(t9, t8, t4, t7), Pack(z, t5, x, t6));
 		adc(t10, d); // c' = [t10:t9:t8:t4]
 
-		mov(z, t4);
-		mov(t1, t8);
-		mov(t2, t9);
-		mov(t3, t10);
+		mov_rr(Pack(t3, t2, t1, z), Pack(t10, t9, t8, t4));
 		sub_rm(Pack(t10, t9, t8, t4), t0);
 		cmovc(t4, z);
 		cmovc(t8, t1);
