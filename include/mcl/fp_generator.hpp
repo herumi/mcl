@@ -561,8 +561,116 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	/*
 		@input (z, xy)
+		z[2..0] <- montgomery reduction(x[5..0])
+		@note destroy rax, rdx, t0, ..., t10
+	*/
+	void gen_montRed3()
+	{
+		StackFrame sf(this, 3, 10 | UseRDX);
+		const Reg64& z = sf.p[0];
+		const Reg64& xy = sf.p[1];
+
+		const Reg64& t0 = sf.t[0];
+		const Reg64& t1 = sf.t[1];
+		const Reg64& t2 = sf.t[2];
+		const Reg64& t3 = sf.t[3];
+		const Reg64& t4 = sf.t[4];
+		const Reg64& t5 = sf.t[5];
+		const Reg64& t6 = sf.t[6];
+		const Reg64& t7 = sf.t[7];
+		const Reg64& t8 = sf.t[8];
+		const Reg64& t9 = sf.t[9];
+		const Reg64& t10 = sf.p[2];
+
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+
+		mov(t10, ptr [xy + 8 * 0]);
+
+		mov(a, rp_);
+		mul(t10);
+		mov(t0, (uint64_t)p_);
+		mov(t7, a); // q
+
+		// [d:t7:t2:t1] = p * q
+		mul3x1(t0, t7, t4, t2, t1, t8);
+
+		add(t1, t10);
+		adc(t2, qword [xy + 8 * 1]);
+		adc(t7, qword [xy + 8 * 2]);
+		mov(t4, ptr [xy + 8 * 3]);
+		adc(t4, d);
+		mov(t8, ptr [xy + 8 * 4]);
+		adc(t8, 0);
+		mov(t9, ptr [xy + 8 * 5]);
+		adc(t9, 0);// c' = [t9:t8:t4:t7:t2]
+		if (isFullBit_) {
+			mov(t5, 0);
+			adc(t5, 0);
+		}
+
+		// free t10, t0, t1, t3, t6, t10, xy
+
+		mov(a, rp_);
+		mul(t2);
+		mov(t10, a); // q
+
+		// [d:t10:t6:xy] = p * q
+		mul3x1(t0, t10, t1, t6, xy, t3);
+
+		add_rr(Pack(t4, t7, t2), Pack(t10, t6, xy));
+		adc(t8, d);
+		adc(t9, 0); // c' = [t9:t8:t4:t7]
+		if (isFullBit_) {
+			adc(t5, 0);
+		}
+
+		// free t10, t0, t1, t2, t3, t6, t10, xy
+
+		mov(a, rp_);
+		mul(t7);
+		mov(t10, a); // q
+
+		// [d:t10:xy:t6] = p * q
+		mul3x1(t0, t10, t1, xy, t6, t2);
+
+		add_rr(Pack(t8, t4, t7), Pack(t10, xy, t6));
+		adc(t9, d); // c' = [t9:t8:t4:t7]
+		if (isFullBit_) {
+			adc(t5, 0);
+		}
+
+		// free t10, t0, t1, t2, t3, t6, t10, xy
+
+		mov(a, rp_);
+		mul(t7);
+		mov(t10, a); // q
+
+		// [d:t10:xy:t6] = p * q
+		mul3x1(t0, t10, t1, xy, t6, t2);
+
+		add_rr(Pack(t9, t8, t4, t7), Pack(d, t10, xy, t6));
+		// c' = [t9:t8:t4]
+		if (isFullBit_) {
+			adc(t5, 0);
+		}
+
+		mov_rr(Pack(t2, t1, t10), Pack(t9, t8, t4));
+		sub_rm(Pack(t9, t8, t4), t0);
+		if (isFullBit_) {
+			sbb(t5, 0);
+		}
+		cmovc(t4, t10);
+		cmovc(t8, t1);
+		cmovc(t9, t2);
+
+		store_mr(z, Pack(t9, t8, t4));
+	}
+	/*
+		@input (z, xy)
 		z[3..0] <- montgomery reduction(x[7..0])
 		@note destroy rax, rdx, t0, ..., t10, xm0, xm1
+		xm2 if isFullBit_
 	*/
 	void gen_montRed4()
 	{
@@ -608,6 +716,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		adc(t9, 0);
 		mov(t10, ptr [xy + 8 * 7]);
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7:t3:t2]
+		if (isFullBit_) {
+			mov(t5, 0);
+			adc(t5, 0);
+			movq(xm2, t5);
+		}
 
 		// free z, t0, t1, t5, t6, xy
 
@@ -616,16 +729,21 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mov(z, a); // q
 
 		movq(xm1, t10);
-		// [d:z:t5:xy:t6] = p * q
-		mul4x1(t0, z, t1, t5, xy, t6, t10);
+		// [d:z:t5:t6:xy] = p * q
+		mul4x1(t0, z, t1, t5, t6, xy, t10);
 		movq(t10, xm1);
 
-		add_rr(Pack(t4, t7, t3, t2), Pack(z, t5, xy, t6));
+		add_rr(Pack(t4, t7, t3, t2), Pack(z, t5, t6, xy));
 		adc(t8, d);
 		adc(t9, 0);
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7:t3]
+		if (isFullBit_) {
+			movq(t5, xm2);
+			adc(t5, 0);
+			movq(xm2, t5);
+		}
 
-		// free z, t1, t2, t5, xy, t6
+		// free z, t0, t1, t2, t5, t6, xy
 
 		mov(a, rp_);
 		mul(t3);
@@ -637,6 +755,10 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		add_rr(Pack(t8, t4, t7, t3), Pack(z, t5, xy, t6));
 		adc(t9, d);
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7]
+		if (isFullBit_) {
+			movq(t3, xm2);
+			adc(t3, 0);
+		}
 
 		// free z, t1, t2, t7, t5, xy, t6
 
@@ -649,23 +771,29 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 		add_rr(Pack(t9, t8, t4, t7), Pack(z, t5, xy, t6));
 		adc(t10, d); // c' = [t10:t9:t8:t4]
+		if (isFullBit_) {
+			adc(t3, 0);
+		}
 
-		mov_rr(Pack(t3, t2, t1, z), Pack(t10, t9, t8, t4));
+		mov_rr(Pack(t6, t2, t1, z), Pack(t10, t9, t8, t4));
 		sub_rm(Pack(t10, t9, t8, t4), t0);
+		if (isFullBit_) {
+			sbb(t3, 0);
+		}
 		cmovc(t4, z);
 		cmovc(t8, t1);
 		cmovc(t9, t2);
-		cmovc(t10, t3);
+		cmovc(t10, t6);
 
 		movq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-
 	bool gen_montRed()
 	{
 		if (pn_ == 3) {
+			gen_montRed3();
+			return true;
 		} else if (pn_ == 4) {
-			montRed_ = getCurr<void2op>();
 			gen_montRed4();
 			return true;
 		}
