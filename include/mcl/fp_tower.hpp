@@ -75,6 +75,7 @@ public:
 	static inline void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_add(z.a.v_, x.a.v_, y.a.v_); }
 	static inline void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_sub(z.a.v_, x.a.v_, y.a.v_); }
 	static inline void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_mul(z.a.v_, x.a.v_, y.a.v_); }
+	static inline void mul2(Fp2T& z, const Fp2T& x, const Fp2T& y) { fp2_mulByFpDblW(z.a.v_, x.a.v_, y.a.v_); }
 	static inline void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
 	static inline void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
 	static inline void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
@@ -207,7 +208,25 @@ private:
 	*/
 	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
-#if 0
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		const Fp *py = reinterpret_cast<const Fp*>(y);
+		Fp *pz = reinterpret_cast<Fp*>(z);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		const Fp& c = py[0];
+		const Fp& d = py[1];
+		Fp t1, t2, ac, bd;
+		Fp::add(t1, a, b);
+		Fp::add(t2, c, d);
+		t1 *= t2; // (a + b)(c + d)
+		Fp::mul(ac, a, c);
+		Fp::mul(bd, b, d);
+		Fp::sub(pz[0], ac, bd); // ac - bd
+		Fp::sub(pz[1], t1, ac);
+		pz[1] -= bd;
+	}
+	static inline void fp2_mulByFpDblW(Unit *z, const Unit *x, const Unit *y)
+	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);
 		const Fp& a = px[0];
@@ -227,24 +246,6 @@ private:
 		FpDbl::mod(pz[1], d0);
 		FpDbl::sub(d1, d1, d2); // ac - bd
 		FpDbl::mod(pz[0], d1); // set z0
-#else
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		const Fp *py = reinterpret_cast<const Fp*>(y);
-		Fp *pz = reinterpret_cast<Fp*>(z);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
-		const Fp& c = py[0];
-		const Fp& d = py[1];
-		Fp t1, t2, ac, bd;
-		Fp::add(t1, a, b);
-		Fp::add(t2, c, d);
-		t1 *= t2; // (a + b)(c + d)
-		Fp::mul(ac, a, c);
-		Fp::mul(bd, b, d);
-		Fp::sub(pz[0], ac, bd); // ac - bd
-		Fp::sub(pz[1], t1, ac);
-		pz[1] -= bd;
-#endif
 	}
 	/*
 		x = a + bi, i^2 = -1

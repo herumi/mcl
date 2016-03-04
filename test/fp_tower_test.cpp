@@ -196,14 +196,16 @@ void testFpDbl()
 
 void benchFp2()
 {
+	puts(__FUNCTION__);
 	Fp2 x, y;
 	x.a.setStr("4");
 	x.b.setStr("464652165165");
 	y = x * x;
-	double addT, subT, mulT, sqrT, invT, mul_xiT;
+	double addT, subT, mul2T, mulT, sqrT, invT, mul_xiT;
 	CYBOZU_BENCH_T(addT,    Fp2::add, x, x, y);
 	CYBOZU_BENCH_T(subT,    Fp2::sub, x, x, y);
 	CYBOZU_BENCH_T(mulT,    Fp2::mul, x, x, y);
+	CYBOZU_BENCH_T(mul2T,    Fp2::mul2, x, x, y);
 	CYBOZU_BENCH_T(sqrT,    Fp2::sqr, x, x);
 	CYBOZU_BENCH_T(invT,    Fp2::inv, x, x);
 	CYBOZU_BENCH_T(mul_xiT, Fp2::mul_xi, x, x);
@@ -211,7 +213,7 @@ void benchFp2()
 //	CYBOZU_BENCH("Fp2::mul_Fp_1", Fp2::mul_Fp_1, x, Param::half);
 //	CYBOZU_BENCH("Fp2::divBy2  ", Fp2::divBy2, x, x);
 //	CYBOZU_BENCH("Fp2::divBy4  ", Fp2::divBy4, x, x);
-	printf("add %8.2f|sub %8.2f|mul %8.2f|sqr %8.2f|inv %8.2f|mul_xi %8.2f\n", addT, subT, mulT, sqrT, invT, mul_xiT);
+	printf("add %8.2f|sub %8.2f|mul %8.2f|mul2 %8.2f|sqr %8.2f|inv %8.2f|mul_xi %8.2f\n", addT, subT, mulT, mul2T, sqrT, invT, mul_xiT);
 }
 
 void test(const char *p, mcl::fp::Mode mode)
