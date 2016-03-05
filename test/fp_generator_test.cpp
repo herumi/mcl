@@ -189,7 +189,8 @@ void test(const char *pStr)
 	const int pn = mcl::fp::getNonZeroArraySize(p, MAX_N);
 	printf("pn=%d\n", pn);
 	mcl::fp::FpGenerator fg;
-	fg.init(p, pn);
+	mcl::fp::Op op;
+	fg.init(op, p, pn);
 	testAddSub(fg, pn);
 	testNeg(fg, pn);
 	testMulI(fg, pn);

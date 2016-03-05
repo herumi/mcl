@@ -363,7 +363,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
-	fg->init(p, (int)N);
+	fg->init(op, p, (int)N);
 
 	op.fp_neg = Xbyak::CastTo<void2u>(fg->neg_);
 	op.fp_add = Xbyak::CastTo<void3u>(fg->add_);

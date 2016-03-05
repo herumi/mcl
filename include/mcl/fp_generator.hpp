@@ -195,7 +195,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		@param p [in] pointer to prime
 		@param pn [in] length of prime
 	*/
-	void init(const uint64_t *p, int pn)
+	void init(Op& /*op*/, const uint64_t *p, int pn)
 	{
 		if (pn < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << pn;
 		p_ = p;
@@ -244,7 +244,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	{
 		StackFrame sf(this, 3);
 		if (isAdd) {
-			gen_raw_add(sf.p[0], sf.p[1], sf.p[2], rax);
+			gen_raw_add(sf.p[0], sf.p[1], sf.p[2], rax, pn_);
 		} else {
 			gen_raw_sub(sf.p[0], sf.p[1], sf.p[2], rax);
 		}
@@ -254,12 +254,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	/*
 		pz[] = px[] + py[]
 	*/
-	void gen_raw_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& t)
+	void gen_raw_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& t, int n)
 	{
 		mov(t, ptr [px]);
 		add(t, ptr [py]);
 		mov(ptr [pz], t);
-		for (int i = 1; i < pn_; i++) {
+		for (int i = 1; i < n; i++) {
 			mov(t, ptr [px + i * 8]);
 			adc(t, ptr [py + i * 8]);
 			mov(ptr [pz + i * 8], t);
@@ -474,7 +474,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Xbyak::CodeGenerator::LabelType jmpMode = pn_ < 5 ? T_AUTO : T_NEAR;
 
 		inLocalLabel();
-		gen_raw_add(pz, px, py, rax);
+		gen_raw_add(pz, px, py, rax, pn_);
 		mov(px, (size_t)p_); // destroy px
 		if (isFullBit_) {
 			jc(".over", jmpMode);
@@ -518,7 +518,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_raw_sub(pz, px, py, rax);
 		jnc(".exit", jmpMode);
 		mov(px, (size_t)p_);
-		gen_raw_add(pz, pz, px, rax);
+		gen_raw_add(pz, pz, px, rax, pn_);
 	L(".exit");
 		outLocalLabel();
 	}
