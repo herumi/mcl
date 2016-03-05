@@ -161,14 +161,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
 	bool3op addNC_;
 	bool3op subNC_;
-	void3op add_;
-	void3op sub_;
-	void3op mul_;
+	void3u mul_;
 	uint3opI mulI_;
 	void *montRedRaw_;
 	void2op montRed_;
 	void2op sqr_;
-	void2op neg_;
 	void2op shr1_;
 	int2op preInv_;
 	FpGenerator()
@@ -179,28 +176,24 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, isFullBit_(0)
 		, addNC_(0)
 		, subNC_(0)
-		, add_(0)
-		, sub_(0)
 		, mul_(0)
 		, mulI_(0)
 		, montRedRaw_(0)
 		, montRed_(0)
-		, neg_(0)
 		, shr1_(0)
 		, preInv_(0)
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 	}
 	/*
-		@param p [in] pointer to prime
-		@param pn [in] length of prime
+		@param op [in] ; use op.p and op.N
 	*/
-	void init(Op& op, const uint64_t *p, int pn)
+	void init(Op& op)
 	{
-		if (pn < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << pn;
-		p_ = p;
-		rp_ = fp::getMontgomeryCoeff(p[0]);
-		pn_ = pn;
+		if (op.N < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << op.N;
+		p_ = op.p;
+		rp_ = fp::getMontgomeryCoeff(p_[0]);
+		pn_ = (int)op.N;
 		isFullBit_ = (p_[pn_ - 1] >> 63) != 0;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
 
@@ -212,19 +205,20 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		subNC_ = getCurr<bool3op>();
 		gen_addSubNC(false);
 		align(16);
-		add_ = getCurr<void3op>();
+		op.fp_add = getCurr<void3u>();
 		gen_addMod();
 		align(16);
-		sub_ = getCurr<void3op>();
+		op.fp_sub = getCurr<void3u>();
 		gen_sub();
 		align(16);
-		neg_ = getCurr<void2op>();
+		op.fp_neg = getCurr<void2u>();
 		gen_neg();
 		align(16);
 		mulI_ = getCurr<uint3opI>();
 		gen_mulI();
 		align(16);
-		mul_ = getCurr<void3op>();
+		mul_ = getCurr<void3u>();
+		op.fp_mul = mul_;
 		gen_mul();
 		align(16);
 		montRed_ = getCurr<void2op>();
@@ -240,15 +234,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		preInv_ = getCurr<int2op>();
 		gen_preInv();
 
-		op.fp_neg = Xbyak::CastTo<void2u>(neg_);
-		op.fp_add = Xbyak::CastTo<void3u>(add_);
-		op.fp_sub = Xbyak::CastTo<void3u>(sub_);
 		op.fp_addNC = Xbyak::CastTo<void3u>(addNC_);
 		op.fp_subNC = Xbyak::CastTo<void3u>(subNC_);
-		op.fp_mul = Xbyak::CastTo<void3u>(mul_);
 		op.fp_sqr = Xbyak::CastTo<void2u>(sqr_);
 
-		if (pn <= 4) {
+		if (op.N <= 4) {
 			if (montRed_) {
 				op.fp_mod = Xbyak::CastTo<void2u>(montRed_);
 			}

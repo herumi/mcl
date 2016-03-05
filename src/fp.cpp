@@ -363,7 +363,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg = op.fg;
 	if (fg == 0) return;
-	fg->init(op, p, (int)N);
+	fg->init(op);
 
 	if (N <= 4) {
 		op.fp_invOp = &invOpForMontC;

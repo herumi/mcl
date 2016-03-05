@@ -93,10 +93,10 @@ static inline std::ostream& operator<<(std::ostream& os, const Int& x)
 	return os << x.getStr();
 }
 
-void testAddSub(const mcl::fp::FpGenerator& fg, int pn)
+void testAddSub(const mcl::fp::Op& op)
 {
 	Fp x, y;
-	Int mx(pn), my(pn);
+	Int mx(op.N), my(op.N);
 	x.setStr("0x8811aabb23427cc");
 	y.setStr("0x8811aabb23427cc11");
 	mx.set(x);
@@ -104,24 +104,24 @@ void testAddSub(const mcl::fp::FpGenerator& fg, int pn)
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(mx, x);
 		x += x;
-		fg.add_(mx.v, mx.v, mx.v);
+		op.fp_add(mx.v, mx.v, mx.v);
 	}
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(mx, x);
 		x += y;
-		fg.add_(mx.v, mx.v, my.v);
+		op.fp_add(mx.v, mx.v, my.v);
 	}
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(my, y);
 		y -= x;
-		fg.sub_(my.v, my.v, mx.v);
+		op.fp_sub(my.v, my.v, mx.v);
 	}
 }
 
-void testNeg(const mcl::fp::FpGenerator& fg, int pn)
+void testNeg(const mcl::fp::Op& op)
 {
 	Fp x;
-	Int mx(pn), my(pn);
+	Int mx(op.N), my(op.N);
 	const char *tbl[] = {
 		"0",
 		"0x12346",
@@ -132,7 +132,7 @@ void testNeg(const mcl::fp::FpGenerator& fg, int pn)
 		x.setStr(tbl[i]);
 		mx.set(x);
 		x = -x;
-		fg.neg_(mx.v, mx.v);
+		op.fp_neg(mx.v, mx.v);
 		CYBOZU_TEST_EQUAL(mx, x);
 	}
 }
@@ -183,18 +183,13 @@ void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 
 void test(const char *pStr)
 {
-	Fp::setModulo(pStr, 16);
-	uint64_t p[MAX_N];
-	strToArray(p, MAX_N, pStr);
-	const int pn = mcl::fp::getNonZeroArraySize(p, MAX_N);
-	printf("pn=%d\n", pn);
-	mcl::fp::FpGenerator fg;
-	mcl::fp::Op op;
-	fg.init(op, p, pn);
-	testAddSub(fg, pn);
-	testNeg(fg, pn);
-	testMulI(fg, pn);
-	testShr1(fg, pn);
+	Fp::setModulo(pStr, 16, mcl::fp::FP_XBYAK);
+	const mcl::fp::Op& op = Fp::getOp();
+	const int pn = (int)op.N;
+	testAddSub(op);
+	testNeg(op);
+	testMulI(*op.fg, pn);
+	testShr1(*op.fg, pn);
 }
 
 CYBOZU_TEST_AUTO(all)

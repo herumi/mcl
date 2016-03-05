@@ -66,6 +66,7 @@ public:
 	const Unit *getUnit() const { return v_; }
 	static inline size_t getUnitSize() { return op_.N; }
 	static inline size_t getBitSize() { return op_.bitSize; }
+	static inline const fp::Op& getOp() { return op_; }
 	void dump() const
 	{
 		const size_t N = op_.N;
