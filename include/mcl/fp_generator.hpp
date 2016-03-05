@@ -195,7 +195,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		@param p [in] pointer to prime
 		@param pn [in] length of prime
 	*/
-	void init(Op& /*op*/, const uint64_t *p, int pn)
+	void init(Op& op, const uint64_t *p, int pn)
 	{
 		if (pn < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << pn;
 		p_ = p;
@@ -239,6 +239,21 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_shr1();
 		preInv_ = getCurr<int2op>();
 		gen_preInv();
+
+		op.fp_neg = Xbyak::CastTo<void2u>(neg_);
+		op.fp_add = Xbyak::CastTo<void3u>(add_);
+		op.fp_sub = Xbyak::CastTo<void3u>(sub_);
+		op.fp_addNC = Xbyak::CastTo<void3u>(addNC_);
+		op.fp_subNC = Xbyak::CastTo<void3u>(subNC_);
+		op.fp_mul = Xbyak::CastTo<void3u>(mul_);
+		op.fp_sqr = Xbyak::CastTo<void2u>(sqr_);
+
+		if (pn <= 4) {
+			if (montRed_) {
+				op.fp_mod = Xbyak::CastTo<void2u>(montRed_);
+			}
+			op.fp_preInv = Xbyak::CastTo<int2u>(preInv_);
+		}
 	}
 	void gen_addSubNC(bool isAdd)
 	{

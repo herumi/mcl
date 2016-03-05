@@ -365,22 +365,10 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	if (fg == 0) return;
 	fg->init(op, p, (int)N);
 
-	op.fp_neg = Xbyak::CastTo<void2u>(fg->neg_);
-	op.fp_add = Xbyak::CastTo<void3u>(fg->add_);
-	op.fp_sub = Xbyak::CastTo<void3u>(fg->sub_);
-	op.fp_addNC = Xbyak::CastTo<void3u>(fg->addNC_);
-	op.fp_subNC = Xbyak::CastTo<void3u>(fg->subNC_);
-	op.fp_mul = Xbyak::CastTo<void3u>(fg->mul_);
-	op.fp_sqr = Xbyak::CastTo<void2u>(fg->sqr_);
 	if (N <= 4) {
-		if (fg->montRed_) {
-			op.fp_mod = Xbyak::CastTo<void2u>(fg->montRed_);
-		}
-		op.fp_preInv = Xbyak::CastTo<int2u>(op.fg->preInv_);
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
-
 #endif
 }
 
