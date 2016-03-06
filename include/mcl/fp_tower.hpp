@@ -44,8 +44,11 @@ public:
 	static inline void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
 	static inline void addNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
 	static inline void subNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
-	static inline void mulPre(FpDblT& z, const Fp& x, const Fp& y) { Fp::op_.fp_mulPre(z.v_, x.v_, y.v_); }
-	static inline void mod(Fp& y, const FpDblT& x) { Fp::op_.fp_mod(y.v_, x.v_); }
+	/*
+		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
+	*/
+	static inline void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fp_mulPre(xy.v_, x.v_, y.v_); }
+	static inline void mod(Fp& z, const FpDblT& xy) { Fp::op_.fp_mod(z.v_, xy.v_); }
 };
 
 /*

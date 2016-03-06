@@ -207,6 +207,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fp_subNC = getCurr<void3u>();
 			gen_addSubNC(false, pn_);
 		}
+
 		align(16);
 		op.fp_neg = getCurr<void2u>();
 		gen_neg();
@@ -223,15 +224,30 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		shr1_ = getCurr<void2op>();
 		gen_shr1();
+		if (op.N <= 4) { // support general op.N but not fast for op.N > 4
+			align(16);
+			op.fp_preInv = getCurr<int2u>();
+			gen_preInv();
+		}
+		// setup fp_tower
+		if (op.N > 4) return;
+		align(16);
+//		op.fpDbl_add = getCurr<void3u>();
+//		gen_fpDbl_add();
+		if (op.isFullBit) {
+//			op.fpDbl_addNC = op.fpDbl_add;
+		} else {
+			align(16);
+			op.fpDbl_addNC = getCurr<void3u>();
+			gen_addSubNC(true, pn_ * 2);
+			align(16);
+			op.fpDbl_subNC = getCurr<void3u>();
+			gen_addSubNC(false, pn_ * 2);
+		}
 		if (op.N == 3 || op.N == 4) {
 			align(16);
 			op.fp_mod = getCurr<void2u>();
 			gen_montRed();
-		}
-		if (op.N <= 4) { // support general op.N but not fast
-			align(16);
-			op.fp_preInv = getCurr<int2u>();
-			gen_preInv();
 		}
 	}
 	void gen_addSubNC(bool isAdd, int n)
@@ -493,6 +509,14 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		L(".exit");
 #endif
 		outLocalLabel();
+	}
+	void gen_fpDbl_add()
+	{
+		StackFrame sf(this, 3, 0);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		gen_raw_add(pz, px, py, rax, pn_);
 	}
 	void gen_sub()
 	{
