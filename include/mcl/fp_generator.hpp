@@ -162,10 +162,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void3u mul_;
 	uint3opI mulI_;
 	void *montRedRaw_;
-	void2op montRed_;
-	void2op sqr_;
 	void2op shr1_;
-	int2op preInv_;
 	FpGenerator()
 		: CodeGenerator(4096 * 8)
 		, p_(0)
@@ -175,9 +172,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, mul_(0)
 		, mulI_(0)
 		, montRedRaw_(0)
-		, montRed_(0)
 		, shr1_(0)
-		, preInv_(0)
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 	}
@@ -223,26 +218,20 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		op.fp_mul = mul_;
 		gen_mul();
 		align(16);
-		montRed_ = getCurr<void2op>();
-		if (!gen_montRed()) {
-			montRed_ = 0;
-		}
-		align(16);
-		sqr_ = getCurr<void2op>();
+		op.fp_sqr = getCurr<void2u>();
 		gen_sqr();
 		align(16);
 		shr1_ = getCurr<void2op>();
 		gen_shr1();
-		preInv_ = getCurr<int2op>();
-		gen_preInv();
-
-		op.fp_sqr = Xbyak::CastTo<void2u>(sqr_);
-
-		if (op.N <= 4) {
-			if (montRed_) {
-				op.fp_mod = Xbyak::CastTo<void2u>(montRed_);
-			}
-			op.fp_preInv = Xbyak::CastTo<int2u>(preInv_);
+		if (op.N == 3 || op.N == 4) {
+			align(16);
+			op.fp_mod = getCurr<void2u>();
+			gen_montRed();
+		}
+		if (op.N <= 4) { // support general op.N but not fast
+			align(16);
+			op.fp_preInv = getCurr<int2u>();
+			gen_preInv();
 		}
 	}
 	void gen_addSubNC(bool isAdd, int n)
@@ -791,16 +780,14 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		movq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-	bool gen_montRed()
+	void gen_montRed()
 	{
+		assert(pn_ == 3 || pn_ == 4);
 		if (pn_ == 3) {
 			gen_montRed3();
-			return true;
 		} else if (pn_ == 4) {
 			gen_montRed4();
-			return true;
 		}
-		return false;
 	}
 	void gen_sqr()
 	{
