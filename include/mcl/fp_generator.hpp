@@ -159,8 +159,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 	// preInv
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
-	bool3op addNC_;
-	bool3op subNC_;
 	void3u mul_;
 	uint3opI mulI_;
 	void *montRedRaw_;
@@ -174,8 +172,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, rp_(0)
 		, pn_(0)
 		, isFullBit_(0)
-		, addNC_(0)
-		, subNC_(0)
 		, mul_(0)
 		, mulI_(0)
 		, montRedRaw_(0)
@@ -186,7 +182,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 	}
 	/*
-		@param op [in] ; use op.p and op.N
+		@param op [in] ; use op.p, op.N, op.isFullBit
 	*/
 	void init(Op& op)
 	{
@@ -199,17 +195,23 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 		setSize(0); // reset code
 		align(16);
-		addNC_ = getCurr<bool3op>();
-		gen_addSubNC(true);
-		align(16);
-		subNC_ = getCurr<bool3op>();
-		gen_addSubNC(false);
-		align(16);
 		op.fp_add = getCurr<void3u>();
-		gen_addMod();
+		gen_add();
 		align(16);
 		op.fp_sub = getCurr<void3u>();
 		gen_sub();
+
+		if (op.isFullBit) {
+			op.fp_addNC = op.fp_add;
+			op.fp_subNC = op.fp_sub;
+		} else {
+			align(16);
+			op.fp_addNC = getCurr<void3u>();
+			gen_addSubNC(true, pn_);
+			align(16);
+			op.fp_subNC = getCurr<void3u>();
+			gen_addSubNC(false, pn_);
+		}
 		align(16);
 		op.fp_neg = getCurr<void2u>();
 		gen_neg();
@@ -234,8 +236,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		preInv_ = getCurr<int2op>();
 		gen_preInv();
 
-		op.fp_addNC = Xbyak::CastTo<void3u>(addNC_);
-		op.fp_subNC = Xbyak::CastTo<void3u>(subNC_);
 		op.fp_sqr = Xbyak::CastTo<void2u>(sqr_);
 
 		if (op.N <= 4) {
@@ -245,16 +245,14 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fp_preInv = Xbyak::CastTo<int2u>(preInv_);
 		}
 	}
-	void gen_addSubNC(bool isAdd)
+	void gen_addSubNC(bool isAdd, int n)
 	{
 		StackFrame sf(this, 3);
 		if (isAdd) {
-			gen_raw_add(sf.p[0], sf.p[1], sf.p[2], rax, pn_);
+			gen_raw_add(sf.p[0], sf.p[1], sf.p[2], rax, n);
 		} else {
-			gen_raw_sub(sf.p[0], sf.p[1], sf.p[2], rax);
+			gen_raw_sub(sf.p[0], sf.p[1], sf.p[2], rax, n);
 		}
-//		setc(al);
-//		movzx(eax, al);
 	}
 	/*
 		pz[] = px[] + py[]
@@ -273,12 +271,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	/*
 		pz[] = px[] - py[]
 	*/
-	void gen_raw_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& t)
+	void gen_raw_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& t, int n)
 	{
 		mov(t, ptr [px]);
 		sub(t, ptr [py]);
 		mov(ptr [pz], t);
-		for (int i = 1; i < pn_; i++) {
+		for (int i = 1; i < n; i++) {
 			mov(t, ptr [px + i * 8]);
 			sbb(t, ptr [py + i * 8]);
 			mov(ptr [pz + i * 8], t);
@@ -306,7 +304,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		jmp(".exit");
 	L(".neg");
 		mov(t1, (size_t)p_);
-		gen_raw_sub(pz, t1, px, t0);
+		gen_raw_sub(pz, t1, px, t0, pn_);
 	L(".exit");
 		outLocalLabel();
 	}
@@ -466,7 +464,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 #endif
 		store_mr(pz, rx);
 	}
-	void gen_addMod()
+	void gen_add()
 	{
 		if (pn_ == 3) {
 			gen_addMod3();
@@ -492,16 +490,16 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			jnz(".over", jmpMode);
 		}
 		L(".over");
-			gen_raw_sub(pz, pz, px, rax);
+			gen_raw_sub(pz, pz, px, rax, pn_);
 		L(".exit");
 #else
-		gen_raw_sub(rsp, pz, px, rax);
+		gen_raw_sub(rsp, pz, px, rax, pn_);
 		jc(".exit", jmpMode);
 		gen_mov(pz, rsp, rax, pn_);
 		if (isFullBit_) {
 			jmp(".exit", jmpMode);
 			L(".over");
-			gen_raw_sub(pz, pz, px, rax);
+			gen_raw_sub(pz, pz, px, rax, pn_);
 		}
 		L(".exit");
 #endif
@@ -520,7 +518,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Xbyak::CodeGenerator::LabelType jmpMode = pn_ < 5 ? T_AUTO : T_NEAR;
 
 		inLocalLabel();
-		gen_raw_sub(pz, px, py, rax);
+		gen_raw_sub(pz, px, py, rax, pn_);
 		jnc(".exit", jmpMode);
 		mov(px, (size_t)p_);
 		gen_raw_add(pz, pz, px, rax, pn_);
@@ -847,7 +845,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			montgomeryN_1(pp, n, pc, px, y, pAddr, t, pw1, pw2, i == 0);
 		}
 		// pz[] = pc[] - p[]
-		gen_raw_sub(pz, pc, pAddr, t);
+		gen_raw_sub(pz, pc, pAddr, t, n);
 		if (isFullBit_) sbb(qword[pc + n * 8], 0);
 		jnc("@f");
 		for (int i = 0; i < n; i++) {
