@@ -230,12 +230,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			gen_preInv();
 		}
 		// setup fp_tower
-		if (op.N > 4) return;
+		if (op.N == 2 || op.N > 4) return;
 		align(16);
-//		op.fpDbl_add = getCurr<void3u>();
-//		gen_fpDbl_add();
+		op.fpDbl_add = getCurr<void3u>();
+		gen_fpDbl_add();
 		if (op.isFullBit) {
-//			op.fpDbl_addNC = op.fpDbl_add;
+			op.fpDbl_addNC = op.fpDbl_add;
 		} else {
 			align(16);
 			op.fpDbl_addNC = getCurr<void3u>();
@@ -417,13 +417,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& t4 = sf.t[4];
 		const Reg64& t5 = sf.t[5];
 
-		if (isFullBit_) {
-			xor_(sf.t[6], sf.t[6]);
-		}
 		load_rm(Pack(t2, t1, t0), px);
 		add_rm(Pack(t2, t1, t0), py, withCarry);
 		mov_rr(Pack(t5, t4, t3), Pack(t2, t1, t0));
 		if (isFullBit_) {
+			mov(sf.t[6], 0);
 			adc(sf.t[6], 0);
 		}
 		mov(rax, (size_t)p_);
@@ -447,13 +445,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& t6 = sf.t[6];
 		const Reg64& t7 = sf.t[7];
 
-		if (isFullBit_) {
-			xor_(sf.t[8], sf.t[8]);
-		}
 		load_rm(Pack(t3, t2, t1, t0), px);
 		add_rm(Pack(t3, t2, t1, t0), py, withCarry);
 		mov_rr(Pack(t7, t6, t5, t4), Pack(t3, t2, t1, t0));
 		if (isFullBit_) {
+			mov(sf.t[8], 0);
 			adc(sf.t[8], 0);
 		}
 		mov(rax, (size_t)p_);
@@ -564,11 +560,22 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void gen_fpDbl_add()
 	{
 		assert(pn_ <= 4);
-		StackFrame sf(this, 3, 0);
+		int tn = 0;
+		if (pn_ == 3) {
+			tn = isFullBit_ ? 7 : 6;
+		} else if (pn_ == 4) {
+			tn = isFullBit_ ? 9 : 8;
+		}
+		StackFrame sf(this, 3, tn);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		gen_raw_add(pz, px, py, rax, pn_);
+		if (pn_ == 3) {
+			gen_inAddMod3(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf, true);
+		} else {
+			gen_inAddMod4(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf, true);
+		}
 	}
 	void gen_sub()
 	{
