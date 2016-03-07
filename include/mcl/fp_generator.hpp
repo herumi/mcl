@@ -416,7 +416,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		pz[] = px[] + py[] mod p[]
 		use rax, t
 	*/
-	void gen_in_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
+	void gen_raw_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
 	{
 		const Pack& p0 = t.sub(0, pn_);
 		const Pack& p1 = t.sub(pn_, pn_);
@@ -442,7 +442,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		pz[] = px[] - py[] mod p[]
 		use rax, t
 	*/
-	void gen_in_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
+	void gen_raw_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
 	{
 		const Pack& p0 = t.sub(0, pn_);
 		const Pack& p1 = t.sub(pn_, pn_);
@@ -465,7 +465,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		gen_in_fp_add(pz, px, py, sf.t, false);
+		gen_raw_fp_add(pz, px, py, sf.t, false);
 	}
 	void gen_fp_sub_le4()
 	{
@@ -475,7 +475,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		gen_in_fp_sub(pz, px, py, sf.t, false);
+		gen_raw_fp_sub(pz, px, py, sf.t, false);
 	}
 	void gen_fp_add()
 	{
@@ -527,7 +527,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		gen_raw_add(pz, px, py, rax, pn_);
-		gen_in_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+		gen_raw_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
 	}
 	void gen_fpDbl_sub()
 	{
@@ -538,7 +538,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		gen_raw_sub(pz, px, py, rax, pn_);
-		gen_in_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+		gen_raw_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
 	}
 	void gen_fp_sub()
 	{
