@@ -253,10 +253,10 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fp_mod = getCurr<void2u>();
 			gen_fp_mod();
 		}
-		if (op.N == 4) {
+		if (op.N == 3 || op.N == 4) {
 			align(16);
 			op.fp_mulPre = getCurr<void3u>();
-			gen_fp_mulPre4();
+			gen_fp_mulPre();
 		}
 	}
 	void gen_addSubNC(bool isAdd, int n)
@@ -1049,6 +1049,73 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(pz, Pack(t2, t0, t3));
 	}
 	/*
+		pz[5..0] <- px[2..0] * py[2..0]
+	*/
+	void mul3x3(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
+	{
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+		const Reg64& t8 = t[8];
+		const Reg64& t9 = t[9];
+
+		if (useMulx_) {
+			mov(d, ptr [px]);
+			mulx(t0, a, ptr [py + 8 * 0]);
+			mov(ptr [pz + 8 * 0], a);
+			mulx(t1, a, ptr [py + 8 * 1]);
+			add(t0, a);
+			mulx(t2, a, ptr [py + 8 * 2]);
+			adc(t1, a);
+			adc(t2, 0);
+		} else {
+			mov(t5, ptr [px]);
+			mov(a, ptr [py + 8 * 0]);
+			mul(t5);
+			mov(ptr [pz + 8 * 0], a);
+			mov(t0, d);
+			mov(a, ptr [py + 8 * 1]);
+			mul(t5);
+			mov(t3, a);
+			mov(t1, d);
+			mov(a, ptr [py + 8 * 2]);
+			mul(t5);
+			mov(t4, a);
+			mov(t2, d);
+			add(t0, t3);
+			mov(t2, 0);
+			adc(t1, a);
+			adc(t2, d); // [t2:t1:t0:pz[0]] = px[0] * py[2..0]
+		}
+
+		// here [t2:t1:t0]
+
+		mov(t9, ptr [px + 8]);
+
+		// [d:t9:t6:t5] = px[1] * py[2..0]
+		mul3x1(py, t9, t7, t6, t5, t4);
+		add_rr(Pack(t2, t1, t0), Pack(t9, t6, t5));
+		adc(d, 0);
+		mov(t8, d);
+		mov(ptr [pz + 8], t0);
+		// here [t8:t2:t1]
+
+		mov(t9, ptr [px + 16]);
+
+		// [d:t9:t5:t4]
+		mul3x1(py, t9, t6, t5, t4, t0);
+		add_rr(Pack(t8, t2, t1), Pack(t9, t5, t4));
+		adc(d, 0);
+		store_mr(pz + 8 * 2, Pack(d, t8, t2, t1));
+	}
+	/*
 		pz[7..0] <- px[3..0] * py[3..0]
 	*/
 	void mul4x4(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
@@ -1130,10 +1197,15 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(pz + 8 * 3, Pack(t7, t8, t3, t2));
 		mov(ptr [pz + 8 * 7], d);
 	}
-	void gen_fp_mulPre4()
+	void gen_fp_mulPre()
 	{
-		StackFrame sf(this, 3, 10 | UseRDX);
-		mul4x4(sf.p[0], sf.p[1], sf.p[2], sf.t);
+		if (pn_ == 3) {
+			StackFrame sf(this, 3, 10 | UseRDX);
+			mul3x3(sf.p[0], sf.p[1], sf.p[2], sf.t);
+		} else if (pn_ == 4) {
+			StackFrame sf(this, 3, 10 | UseRDX);
+			mul4x4(sf.p[0], sf.p[1], sf.p[2], sf.t);
+		}
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
 	{
