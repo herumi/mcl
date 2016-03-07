@@ -194,7 +194,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_fp_add();
 		align(16);
 		op.fp_sub = getCurr<void3u>();
-		gen_sub();
+		gen_fp_sub();
 
 		if (op.isFullBit) {
 			op.fp_addNC = op.fp_add;
@@ -234,8 +234,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		op.fpDbl_add = getCurr<void3u>();
 		gen_fpDbl_add();
+		align(16);
+		op.fpDbl_sub = getCurr<void3u>();
+		gen_fpDbl_sub();
 		if (op.isFullBit) {
 			op.fpDbl_addNC = op.fpDbl_add;
+			op.fpDbl_subNC = op.fpDbl_sub;
 		} else {
 			align(16);
 			op.fpDbl_addNC = getCurr<void3u>();
@@ -429,69 +433,49 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (fullReg) {
 			sbb(*fullReg, 0);
 		}
-		cmovc_rr(p1, p0);
+		for (size_t i = 0; i < p1.size(); i++) {
+			cmovc(p1[i], p0[i]);
+		}
 		store_mr(pz, p1);
 	}
-	void gen_in_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& p0, const Pack& p1, bool withCarry, const Reg64 *fullReg)
+	/*
+		pz[] = px[] - py[] mod p[]
+		use rax, t
+	*/
+	void gen_in_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
 	{
+		const Pack& p0 = t.sub(0, pn_);
+		const Pack& p1 = t.sub(pn_, pn_);
 		load_rm(p0, px);
-		add_rm(p0, py, withCarry);
-		mov_rr(p1, p0);
-		if (isFullBit_) {
-			mov(*fullReg, 0);
-			adc(*fullReg, 0);
-		}
+		sub_rm(p0, py, withCarry);
 		mov(rax, (size_t)p_);
-		sub_rm(p1, rax);
-		if (isFullBit_) {
-			sbb(*fullReg, 0);
+		load_rm(p1, rax);
+		sbb(rax, rax); // rax = (x > y) ? 0 : -1
+		for (size_t i = 0; i < p1.size(); i++) {
+			and_(p1[i], rax);
 		}
-		cmovc_rr(p1, p0);
-		store_mr(pz, p1);
+		add_rr(p0, p1);
+		store_mr(pz, p0);
 	}
 	void gen_fp_add_le4()
 	{
-		const bool withCarry = false;
 		assert(pn_ <= 4);
 		const int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
 		StackFrame sf(this, 3, tn);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		gen_in_fp_add(pz, px, py, sf.t, withCarry);
+		gen_in_fp_add(pz, px, py, sf.t, false);
 	}
-	void gen_subMod_le4(int n)
+	void gen_fp_sub_le4()
 	{
-		assert(2 <= n && n <= 4);
-		StackFrame sf(this, 3, (n - 1) * 2);
+		assert(pn_ <= 4);
+		const int tn = pn_ * 2;
+		StackFrame sf(this, 3, tn);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-
-		Pack rx = sf.t.sub(0, n - 1);
-		rx.append(px); // rx = [px, t1, t0]
-		Pack ry = sf.t.sub(n - 1, n - 1);
-		ry.append(rax); // ry = [rax, t3, t2]
-
-		load_rm(rx, px); // destroy px
-		sub_rm(rx, py);
-#if 0
-		sbb(ry[0], ry[0]); // rx[0] = (x > y) ? 0 : -1
-		for (int i = 1; i < n; i++) mov(ry[i], ry[0]);
-		mov(py, (size_t)p_);
-		for (int i = 0; i < n; i++) and_(ry[i], qword [py + 8 * i]);
-		add_rr(rx, ry);
-#else
-		// a little faster
-		sbb(py, py); // py = (x > y) ? 0 : -1
-		mov(rax, (size_t)p_);
-		load_rm(ry, rax); // destroy rax
-		for (size_t i = 0; i < ry.size(); i++) {
-			and_(ry[i], py);
-		}
-		add_rr(rx, ry);
-#endif
-		store_mr(pz, rx);
+		gen_in_fp_sub(pz, px, py, sf.t, false);
 	}
 	void gen_fp_add()
 	{
@@ -545,10 +529,21 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_raw_add(pz, px, py, rax, pn_);
 		gen_in_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
 	}
-	void gen_sub()
+	void gen_fpDbl_sub()
+	{
+		assert(pn_ <= 4);
+		int tn = pn_ * 2;
+		StackFrame sf(this, 3, tn);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		gen_raw_sub(pz, px, py, rax, pn_);
+		gen_in_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+	}
+	void gen_fp_sub()
 	{
 		if (pn_ <= 4) {
-			gen_subMod_le4(pn_);
+			gen_fp_sub_le4();
 			return;
 		}
 		StackFrame sf(this, 3);
@@ -1594,9 +1589,13 @@ private:
 	/*
 		z[] -= m[]
 	*/
-	void sub_rm(const Pack& z, const RegExp& m)
+	void sub_rm(const Pack& z, const RegExp& m, bool withCarry = false)
 	{
-		sub(z[0], ptr [m + 8 * 0]);
+		if (withCarry) {
+			sbb(z[0], ptr [m + 8 * 0]);
+		} else {
+			sub(z[0], ptr [m + 8 * 0]);
+		}
 		for (int i = 1, n = (int)z.size(); i < n; i++) {
 			sbb(z[i], ptr [m + 8 * i]);
 		}
