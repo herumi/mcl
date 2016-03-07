@@ -191,7 +191,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		setSize(0); // reset code
 		align(16);
 		op.fp_add = getCurr<void3u>();
-		gen_add();
+		gen_fp_add();
 		align(16);
 		op.fp_sub = getCurr<void3u>();
 		gen_sub();
@@ -408,76 +408,57 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			mov(ptr [pz + i * 8], t);
 		}
 	}
-	void gen_inAddMod3(const RegExp& pz, const RegExp& px, const RegExp& py, const StackFrame& sf, bool withCarry)
+	/*
+		pz[] = px[] + py[] mod p[]
+		use rax, t
+	*/
+	void gen_in_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
 	{
-		const Reg64& t0 = sf.t[0];
-		const Reg64& t1 = sf.t[1];
-		const Reg64& t2 = sf.t[2];
-		const Reg64& t3 = sf.t[3];
-		const Reg64& t4 = sf.t[4];
-		const Reg64& t5 = sf.t[5];
-
-		load_rm(Pack(t2, t1, t0), px);
-		add_rm(Pack(t2, t1, t0), py, withCarry);
-		mov_rr(Pack(t5, t4, t3), Pack(t2, t1, t0));
-		if (isFullBit_) {
-			mov(sf.t[6], 0);
-			adc(sf.t[6], 0);
+		const Pack& p0 = t.sub(0, pn_);
+		const Pack& p1 = t.sub(pn_, pn_);
+		const Reg64 *fullReg = isFullBit_ ? &t[pn_ * 2] : 0;
+		load_rm(p0, px);
+		add_rm(p0, py, withCarry);
+		mov_rr(p1, p0);
+		if (fullReg) {
+			mov(*fullReg, 0);
+			adc(*fullReg, 0);
 		}
 		mov(rax, (size_t)p_);
-		sub_rm(Pack(t5, t4, t3), rax);
-		if (isFullBit_) {
-			sbb(sf.t[6], 0);
+		sub_rm(p1, rax);
+		if (fullReg) {
+			sbb(*fullReg, 0);
 		}
-		cmovc(t5, t2);
-		cmovc(t4, t1);
-		cmovc(t3, t0);
-		store_mr(pz, Pack(t5, t4, t3));
+		cmovc_rr(p1, p0);
+		store_mr(pz, p1);
 	}
-	void gen_inAddMod4(const RegExp& pz, const RegExp& px, const RegExp& py, const StackFrame& sf, bool withCarry)
+	void gen_in_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& p0, const Pack& p1, bool withCarry, const Reg64 *fullReg)
 	{
-		const Reg64& t0 = sf.t[0];
-		const Reg64& t1 = sf.t[1];
-		const Reg64& t2 = sf.t[2];
-		const Reg64& t3 = sf.t[3];
-		const Reg64& t4 = sf.t[4];
-		const Reg64& t5 = sf.t[5];
-		const Reg64& t6 = sf.t[6];
-		const Reg64& t7 = sf.t[7];
-
-		load_rm(Pack(t3, t2, t1, t0), px);
-		add_rm(Pack(t3, t2, t1, t0), py, withCarry);
-		mov_rr(Pack(t7, t6, t5, t4), Pack(t3, t2, t1, t0));
+		load_rm(p0, px);
+		add_rm(p0, py, withCarry);
+		mov_rr(p1, p0);
 		if (isFullBit_) {
-			mov(sf.t[8], 0);
-			adc(sf.t[8], 0);
+			mov(*fullReg, 0);
+			adc(*fullReg, 0);
 		}
 		mov(rax, (size_t)p_);
-		sub_rm(Pack(t7, t6, t5, t4), rax);
+		sub_rm(p1, rax);
 		if (isFullBit_) {
-			sbb(sf.t[8], 0);
+			sbb(*fullReg, 0);
 		}
-		cmovc(t7, t3);
-		cmovc(t6, t2);
-		cmovc(t5, t1);
-		cmovc(t4, t0);
-		store_mr(pz, Pack(t7, t6, t5, t4));
+		cmovc_rr(p1, p0);
+		store_mr(pz, p1);
 	}
-	void gen_addMod3()
+	void gen_fp_add_le4()
 	{
-		StackFrame sf(this, 3, isFullBit_ ? 7 : 6);
+		const bool withCarry = false;
+		assert(pn_ <= 4);
+		const int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
+		StackFrame sf(this, 3, tn);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		gen_inAddMod3(pz, px, py, sf, false);
-	}
-	void gen_addMod4()
-	{
-		StackFrame sf(this, 3, isFullBit_ ? 9 : 8);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		gen_inAddMod4(pz, px, py, sf, false);
+		gen_in_fp_add(pz, px, py, sf.t, withCarry);
 	}
 	void gen_subMod_le4(int n)
 	{
@@ -512,14 +493,10 @@ struct FpGenerator : Xbyak::CodeGenerator {
 #endif
 		store_mr(pz, rx);
 	}
-	void gen_add()
+	void gen_fp_add()
 	{
-		if (pn_ == 3) {
-			gen_addMod3();
-			return;
-		}
-		if (pn_ == 4) {
-			gen_addMod4();
+		if (pn_ <= 4) {
+			gen_fp_add_le4();
 			return;
 		}
 		StackFrame sf(this, 3, 0, pn_ * 8);
@@ -560,22 +537,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void gen_fpDbl_add()
 	{
 		assert(pn_ <= 4);
-		int tn = 0;
-		if (pn_ == 3) {
-			tn = isFullBit_ ? 7 : 6;
-		} else if (pn_ == 4) {
-			tn = isFullBit_ ? 9 : 8;
-		}
+		int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
 		StackFrame sf(this, 3, tn);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		gen_raw_add(pz, px, py, rax, pn_);
-		if (pn_ == 3) {
-			gen_inAddMod3(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf, true);
-		} else {
-			gen_inAddMod4(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf, true);
-		}
+		gen_in_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
 	}
 	void gen_sub()
 	{
@@ -1631,6 +1599,12 @@ private:
 		sub(z[0], ptr [m + 8 * 0]);
 		for (int i = 1, n = (int)z.size(); i < n; i++) {
 			sbb(z[i], ptr [m + 8 * i]);
+		}
+	}
+	void cmovc_rr(const Pack& z, const Pack& x)
+	{
+		for (int i = 0, n = (int)z.size(); i < n; i++) {
+			cmovc(z[i], x[i]);
 		}
 	}
 	/*
