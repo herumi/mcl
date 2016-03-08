@@ -21,25 +21,11 @@ const char *getModeStr(mcl::fp::Mode mode)
 	default: throw cybozu::Exception("bad mode") << mode;
 	}
 }
-void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
-{
-	const char *s = getModeStr(mode);
-	Fp::setModulo(pStr, 0, mode);
-	Fp x(xStr);
-	Fp y(yStr);
-
-	double addT, subT, mulT, sqrT, invT;
-	CYBOZU_BENCH_T(addT, Fp::add, x, x, x);
-	CYBOZU_BENCH_T(subT, Fp::sub, x, x, y);
-	CYBOZU_BENCH_T(mulT, Fp::mul, x, x, x);
-	CYBOZU_BENCH_T(sqrT, Fp::sqr, x, x);
-	CYBOZU_BENCH_T(invT, x += y;Fp::inv, x, x); // avoid same jmp
-	printf("%10s bit % 3d add %8.2f sub %8.2f mul %8.2f sqr %8.2f inv %8.2f\n", s, (int)Fp::getBitSize(), addT, subT, mulT, sqrT, invT);
-}
 
 void benchRaw(const char *p, mcl::fp::Mode mode)
 {
 	Fp::setModulo(p, 0, mode);
+	Fp2::init(1);
 	typedef mcl::fp::Unit Unit;
 	const size_t maxN = sizeof(Fp) / sizeof(Unit);
 	const mcl::fp::Op& op = Fp::getOp();
@@ -55,6 +41,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	double fp_sqrT, fp_addT, fp_subT, fp_mulT;
 	double fpDbl_addT, fpDbl_subT;
 	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
+	double fp2_sqrT, fp2_mulT, fp2_mul2T;
 //	double fp2_mulT, fp2_sqrT;
 //	double fp_addNCT, fp_subNCT, fpDbl_addNCT,fpDbl_subNCT;
 	CYBOZU_BENCH_T(fp_sqrT, op.fp_sqr, ux, ux);
@@ -66,11 +53,19 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	CYBOZU_BENCH_T(fpDbl_sqrPreT, op.fpDbl_sqrPre, ux, ux);
 	CYBOZU_BENCH_T(fpDbl_mulPreT, op.fpDbl_mulPre, ux, ux, ux);
 	CYBOZU_BENCH_T(fpDbl_modT, op.fpDbl_mod, ux, uy);
+	Fp2 f2x, f2y;
+	f2x.a = fx;
+	f2x.b = fy;
+	f2y = f2x;
+	CYBOZU_BENCH_T(fp2_sqrT, Fp2::sqr, f2x, f2x);
+	CYBOZU_BENCH_T(fp2_mulT, Fp2::mul, f2x, f2x, f2y);
+	CYBOZU_BENCH_T(fp2_mul2T, Fp2::mul2, f2x, f2x, f2y);
 	printf("%s\n", getModeStr(mode));
 	const char *tStrTbl[] = {
 		"fp_add", "fp_sub", "fp_sqr", "fp_mul",
 		"D_add", "D_sub",
 		"D_sqrPre", "D_mulPre", "D_mod",
+		"fp2_sqr", "fp2_mul", "fp2_mul2",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tStrTbl); i++) {
 		printf(" %8s", tStrTbl[i]);
@@ -80,6 +75,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 		fp_addT, fp_subT, fp_sqrT, fp_mulT,
 		fpDbl_addT, fpDbl_subT,
 		fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT,
+		fp2_sqrT, fp2_mulT, fp2_mul2T,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tTbl); i++) {
 		printf(" %8.2f", tTbl[i]);
@@ -95,6 +91,7 @@ int main()
 		"0x70000000000000000000000000000000000000000000001f",
 		"0x800000000000000000000000000000000000000000000005",
 		"0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d",
+		"0xfffffffffffffffffffffffffffffffeffffffffffffffff",
 		"0xffffffffffffffffffffffffffffffffffffffffffffff13", // max prime
 
 		// N = 4
