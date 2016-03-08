@@ -19,8 +19,8 @@ void mcl_fp_sub ## len ## S(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl:
 void mcl_fp_sub ## len ## L(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
 void mcl_fp_addNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fp_subNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
-void mcl_fp_mulPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
-void mcl_fp_sqrPre ## len(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
+void mcl_fpDbl_mulPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
+void mcl_fpDbl_sqrPre ## len(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
 void mcl_fp_mont ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p, mcl::fp::Unit r); \
 void mcl_fp_montRed ## len(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p, mcl::fp::Unit r);
 

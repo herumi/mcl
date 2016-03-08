@@ -52,7 +52,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	memcpy(uy, fy.getUnit(), sizeof(fy));
 	double fp_sqrT, fp_addT, fp_subT, fp_mulT;
 	double fpDbl_addT, fpDbl_subT;
-//	double fp_sqrPreT, fp_mulPreT, fp_modT;
+//	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
 //	double fp2_mulT, fp2_sqrT;
 //	double fp_addNCT, fp_subNCT, fpDbl_addNCT,fpDbl_subNCT;
 	CYBOZU_BENCH_T(fp_sqrT, op.fp_sqr, ux, ux);

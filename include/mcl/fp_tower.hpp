@@ -47,8 +47,8 @@ public:
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
-	static inline void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fp_mulPre(xy.v_, x.v_, y.v_); }
-	static inline void mod(Fp& z, const FpDblT& xy) { Fp::op_.fp_mod(z.v_, xy.v_); }
+	static inline void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
+	static inline void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_); }
 };
 
 /*

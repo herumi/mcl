@@ -190,7 +190,7 @@ struct OpeFunc {
 		Gmp::getArray(z, N, mz);
 	}
 	// z[N * 2] <- x[N] * y[N]
-	static inline void fp_mulPreC(Unit *z, const Unit *x, const Unit *y)
+	static inline void fpDbl_mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
 		mpz_t mx, my, mz;
 		set_zero(mz, z, N * 2);
@@ -200,7 +200,7 @@ struct OpeFunc {
 		clearArray(z, mz->_mp_size, N * 2);
 	}
 	// y[N * 2] <- x[N]^2
-	static inline void fp_sqrPreC(Unit *y, const Unit *x)
+	static inline void fpDbl_sqrPreC(Unit *y, const Unit *x)
 	{
 		mpz_t mx, my;
 		set_zero(my, y, N * 2);
@@ -209,7 +209,7 @@ struct OpeFunc {
 		clearArray(y, my->_mp_size, N * 2);
 	}
 	// y[N] <- x[N * 2] mod p[N]
-	static inline void fp_modPC(Unit *y, const Unit *x, const Unit *p)
+	static inline void fpDbl_modPC(Unit *y, const Unit *x, const Unit *p)
 	{
 		mpz_t mx, my, mp;
 		set_mpz_t(mx, x, N * 2);
@@ -258,9 +258,9 @@ struct OpeFunc {
 				fp_addNC = mcl_fp_addNC ## n; \
 				fp_subNC = mcl_fp_subNC ## n; \
 			} \
-			fp_mulPre = mcl_fp_mulPre ## n; \
+			fpDbl_mulPre = mcl_fpDbl_mulPre ## n; \
 			if (n <= 256) { \
-				fp_sqrPre = mcl_fp_sqrPre ## n; \
+				fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
 			} \
 			montPU = mcl_fp_mont ## n; \
 			montRedPU = mcl_fp_montRed ## n; \
@@ -311,9 +311,9 @@ struct OpeFunc {
 				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 			} \
 		} \
-		fp_mulPre = OpeFunc<n>::fp_mulPreC; \
-		fp_sqrPre = OpeFunc<n>::fp_sqrPreC; \
-		fp_modP = OpeFunc<n>::fp_modPC; \
+		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
+		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
+		fpDbl_modP = OpeFunc<n>::fpDbl_modPC; \
 		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK

@@ -87,7 +87,7 @@ public:
 		op_.fpDbl_add = fpDbl_addW;
 		op_.fpDbl_sub = fpDbl_subW;
 		op_.fp_mul = fp_mulW;
-		op_.fp_mod = fp_modW;
+		op_.fpDbl_mod = fpDbl_modW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_opt > llvm > gmp
@@ -108,7 +108,7 @@ public:
 		if (mode == fp::FP_LLVM_MONT) {
 			op_.fp_mul = fp_montW;
 			op_.fp_sqr = fp_montSqrW;
-			op_.fp_mod = fp_montRedW;
+			op_.fpDbl_mod = fp_montRedW;
 		}
 #if 0
 	fprintf(stderr, "mode=%d, isMont=%d"
@@ -466,9 +466,9 @@ private:
 		op_.fpDbl_subP(z, x, y, op_.p);
 	}
 	// z[N] <- xy[N * 2] % p[N]
-	static inline void fp_modW(Unit *z, const Unit *xy)
+	static inline void fpDbl_modW(Unit *z, const Unit *xy)
 	{
-		op_.fp_modP(z, xy, op_.p);
+		op_.fpDbl_modP(z, xy, op_.p);
 	}
 	// z[N] <- montRed(xy[N * 2])
 	static inline void fp_montRedW(Unit *z, const Unit *xy)
@@ -478,14 +478,14 @@ private:
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
 		Unit xy[maxSize * 2];
-		op_.fp_mulPre(xy, x, y);
-		fp_modW(z, xy);
+		op_.fpDbl_mulPre(xy, x, y);
+		fpDbl_modW(z, xy);
 	}
 	static inline void fp_sqrW(Unit *y, const Unit *x)
 	{
 		Unit xx[maxSize * 2];
-		op_.fp_sqrPre(xx, x);
-		fp_modW(y, xx);
+		op_.fpDbl_sqrPre(xx, x);
+		fpDbl_modW(y, xx);
 	}
 	static inline void fp_negW(Unit *y, const Unit *x)
 	{
@@ -498,7 +498,7 @@ private:
 		op_.montPU(z, x, y, op_.p, op_.rp);
 #else
 		Unit xy[maxSize * 2];
-		op_.fp_mulPre(xy, x, y);
+		op_.fpDbl_mulPre(xy, x, y);
 		fp_montRedW(z, xy);
 #endif
 	}
@@ -508,7 +508,7 @@ private:
 		op_.montPU(y, x, x, op_.p, op_.rp);
 #else
 		Unit xx[maxSize * 2];
-		op_.fp_sqrPre(xx, x);
+		op_.fpDbl_sqrPre(xx, x);
 		fp_montRedW(y, xx);
 #endif
 	}

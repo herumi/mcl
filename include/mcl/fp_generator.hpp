@@ -250,13 +250,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		}
 		if (op.N == 3 || op.N == 4) {
 			align(16);
-			op.fp_mod = getCurr<void2u>();
-			gen_fp_mod();
+			op.fpDbl_mod = getCurr<void2u>();
+			gen_fpDbl_mod();
 		}
 		if (op.N == 3 || op.N == 4) {
 			align(16);
-			op.fp_mulPre = getCurr<void3u>();
-			gen_fp_mulPre();
+			op.fpDbl_mulPre = getCurr<void3u>();
+			gen_fpDbl_mulPre();
 		}
 	}
 	void gen_addSubNC(bool isAdd, int n)
@@ -607,7 +607,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		z[2..0] <- montgomery reduction(x[5..0])
 		@note destroy rax, rdx, t0, ..., t10
 	*/
-	void gen_fp_mod3()
+	void gen_fpDbl_mod3()
 	{
 		StackFrame sf(this, 3, 10 | UseRDX);
 		const Reg64& z = sf.p[0];
@@ -715,7 +715,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		@note destroy rax, rdx, t0, ..., t10, xm0, xm1
 		xm2 if isFullBit_
 	*/
-	void gen_fp_mod4()
+	void gen_fpDbl_mod4()
 	{
 		StackFrame sf(this, 3, 10 | UseRDX);
 		const Reg64& z = sf.p[0];
@@ -831,13 +831,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		movq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-	void gen_fp_mod()
+	void gen_fpDbl_mod()
 	{
 		assert(pn_ == 3 || pn_ == 4);
 		if (pn_ == 3) {
-			gen_fp_mod3();
+			gen_fpDbl_mod3();
 		} else if (pn_ == 4) {
-			gen_fp_mod4();
+			gen_fpDbl_mod4();
 		}
 	}
 	void gen_sqr()
@@ -1197,7 +1197,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(pz + 8 * 3, Pack(t7, t8, t3, t2));
 		mov(ptr [pz + 8 * 7], d);
 	}
-	void gen_fp_mulPre()
+	void gen_fpDbl_mulPre()
 	{
 		if (pn_ == 3) {
 			StackFrame sf(this, 3, 10 | UseRDX);

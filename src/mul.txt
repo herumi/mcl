@@ -18,7 +18,7 @@ noinline
 @endfor
   ret i$(bu) %t$(N-2)
 }
-define void @mcl_fp_mulPre$(bit)(i$(unit)* %pz, i$(bit)* %px, i$(bit)* %py) {
+define void @mcl_fpDbl_mulPre$(bit)(i$(unit)* %pz, i$(bit)* %px, i$(bit)* %py) {
   %x = load i$(bit)* %px
   %y = load i$(bit)* %py
 @for i, 0, N
@@ -42,7 +42,7 @@ define void @mcl_fp_mulPre$(bit)(i$(unit)* %pz, i$(bit)* %px, i$(bit)* %py) {
   store i$(bu) %sum$(N-1), i$(bu)* %p
   ret void
 }
-define void @mcl_fp_sqrPre$(bit)(i$(unit)* %py, i$(bit)* %px) {
+define void @mcl_fpDbl_sqrPre$(bit)(i$(unit)* %py, i$(bit)* %px) {
   %x = load i$(bit)* %px
 @for i, 0, N
   %x$(i) = call i$(unit) @extract$(bit)(i$(bit) %x, i$(bit) $(unit*i))

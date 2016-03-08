@@ -30,7 +30,7 @@ define internal i64 @extract192to64(i192 %x, i192 %shift) {
 	ret i64 %t1
 }
 
-define internal void @modNIST_P192(i192* %out, i192* %px) {
+define internal void @fpDbl_modNIST_P192(i192* %out, i192* %px) {
 	%L192 = load i192* %px
 	%L = zext i192 %L192 to i256
 
@@ -68,7 +68,7 @@ define internal void @modNIST_P192(i192* %out, i192* %px) {
 define void @mcl_fp_mul_NIST_P192(i192* %pz, i192* %px, i192* %py) {
 	%buf = alloca i192, i32 2
 	%p = bitcast i192* %buf to i$(unit)*
-	call void @mcl_fp_mulPre192(i$(unit)* %p, i192* %px, i192* %py)
-	call void @modNIST_P192(i192* %pz, i192* %buf)
+	call void @mcl_fpDbl_mulPre192(i$(unit)* %p, i192* %px, i192* %py)
+	call void @fpDbl_modNIST_P192(i192* %pz, i192* %buf)
 	ret void
 }
