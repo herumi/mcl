@@ -40,15 +40,18 @@ void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::M
 void benchRaw(const char *p, mcl::fp::Mode mode)
 {
 	Fp::setModulo(p, 0, mode);
+	typedef mcl::fp::Unit Unit;
+	const size_t maxN = sizeof(Fp) / sizeof(Unit);
 	const mcl::fp::Op& op = Fp::getOp();
 	Fp fx = -1, fy;
 	mpz_class mp(p);
 	fy.setMpz(mp / 2);
-	const size_t maxN = sizeof(Fp) / sizeof(mcl::fp::Unit);
-	mcl::fp::Unit ux[maxN * 2] = {};
-	mcl::fp::Unit uy[maxN * 2] = {};
-	memcpy(ux, fx.getUnit(), sizeof(fx));
-	memcpy(uy, fy.getUnit(), sizeof(fy));
+	Unit ux[maxN * 2] = {};
+	Unit uy[maxN * 2] = {};
+	memcpy(ux, fx.getUnit(), sizeof(Unit) * op.N);
+	memcpy(uy, fy.getUnit(), sizeof(Unit) * op.N);
+	fy.setMpz(mp - 1);
+	memcpy(uy + op.N, fy.getUnit(), sizeof(Unit) * op.N);
 	double fp_sqrT, fp_addT, fp_subT, fp_mulT;
 	double fpDbl_addT, fpDbl_subT;
 	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
@@ -62,7 +65,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	CYBOZU_BENCH_T(fpDbl_subT, op.fpDbl_sub, ux, uy, ux);
 	CYBOZU_BENCH_T(fpDbl_sqrPreT, op.fpDbl_sqrPre, ux, ux);
 	CYBOZU_BENCH_T(fpDbl_mulPreT, op.fpDbl_mulPre, ux, ux, ux);
-	CYBOZU_BENCH_T(fpDbl_modT, op.fpDbl_mod, ux, ux);
+	CYBOZU_BENCH_T(fpDbl_modT, op.fpDbl_mod, ux, uy);
 	printf("%s\n", getModeStr(mode));
 	const char *tStrTbl[] = {
 		"fp_add", "fp_sub", "fp_sqr", "fp_mul",
