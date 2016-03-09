@@ -183,12 +183,17 @@ void testFpDbl()
 			y.setRand(rg);
 			x.getMpz(mx);
 			y.getMpz(my);
-			mo = mx * my;
-			FpDbl xy;
-			FpDbl::mulPre(xy, x, y);
-			FpDbl::mod(z, xy);
+			mo = (mx * my) % mp;
+			FpDbl d;
+			FpDbl::mulPre(d, x, y);
+			FpDbl::mod(z, d);
 			z.getMpz(mz);
-			mo %= mp;
+			CYBOZU_TEST_EQUAL(mz, mo);
+
+			mo = (mx * mx) % mp;
+			FpDbl::sqrPre(d, x);
+			FpDbl::mod(z, d);
+			z.getMpz(mz);
 			CYBOZU_TEST_EQUAL(mz, mo);
 		}
 	}

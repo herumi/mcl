@@ -258,6 +258,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fpDbl_mulPre = getCurr<void3u>();
 			gen_fpDbl_mulPre();
 		}
+		if (op.N == 3) {
+			align(16);
+			op.fpDbl_sqrPre = getCurr<void2u>();
+			gen_fpDbl_sqrPre();
+		}
 	}
 	void gen_addSubNC(bool isAdd, int n)
 	{
@@ -1049,6 +1054,80 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(pz, Pack(t2, t0, t3));
 	}
 	/*
+		py[5..0] <- px[2..0]^2
+	*/
+	void sqr3x3(const RegExp& py, const RegExp& px, const Pack& t)
+	{
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+		const Reg64& c = rcx;
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+		const Reg64& t8 = t[8];
+		const Reg64& t9 = t[9];
+
+		mov(t9, ptr [px + 8 * 0]);
+		mov(a, t9);
+		mul(t9);
+		mov(ptr [py + 8 * 0], a);
+		mov(t0, d);
+		mov(a, ptr [px + 8 * 1]);
+		mul(t9);
+		mov(t1, a);
+		mov(t2, d);
+		mov(a, ptr [px + 8 * 2]);
+		mul(t9);
+		mov(t3, a);
+		mov(t4, d);
+
+		mov(t5, t2);
+		mov(t6, t4);
+
+		add(t0, t1);
+		adc(t5, t3);
+		adc(t6, 0); // [t6:t5:t0]
+
+
+		mov(t9, ptr [px + 8 * 1]);
+		mov(a, t9);
+		mul(t9);
+		mov(t7, a);
+		mov(t8, d);
+		mov(a, ptr [px + 8 * 2]);
+		mul(t9);
+		mov(t9, a);
+		mov(c, d);
+
+		add(t2, t7);
+		adc(t8, t9);
+		mov(t7, c);
+		adc(t7, 0); // [t7:t8:t2:t1]
+
+		add(t0, t1);
+		adc(t2, t5);
+		adc(t6, t8);
+		adc(t7, 0);
+		mov(ptr [py + 8 * 1], t0); // [t7:t6:t2]
+
+		mov(a, ptr [px + 8 * 2]);
+		mul(a);
+		add(t4, t9);
+		adc(a, c);
+		adc(d, 0); // [d:a:t4:t3]
+
+		add(t2, t3);
+		adc(t6, t4);
+		adc(t7, a);
+		adc(d, 0);
+		store_mr(py + 8 * 2, Pack(d, t7, t6, t2));
+	}
+	/*
 		pz[5..0] <- px[2..0] * py[2..0]
 	*/
 	void mul3x3(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
@@ -1196,6 +1275,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		adc(d, 0);
 		store_mr(pz + 8 * 3, Pack(t7, t8, t3, t2));
 		mov(ptr [pz + 8 * 7], d);
+	}
+	void gen_fpDbl_sqrPre()
+	{
+		if (pn_ == 3) {
+			StackFrame sf(this, 2, 10 | UseRDX | UseRCX);
+			sqr3x3(sf.p[0], sf.p[1], sf.t);
+		}
 	}
 	void gen_fpDbl_mulPre()
 	{
