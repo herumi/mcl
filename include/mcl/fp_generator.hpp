@@ -1215,6 +1215,88 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(pz + 8 * 2, Pack(d, t8, t2, t1));
 	}
 	/*
+		[y3:y2:y1:y0] = [x1:x0] ^ 2
+		use rax, rdx
+	*/
+	void sqr2(const Reg64& y3, const Reg64& y2, const Reg64& y1, const Reg64& y0, const Reg64& x1, const Reg64& x0, const Reg64& t1, const Reg64& t0)
+	{
+		mov(rdx, x0);
+		mulx(y1, y0, x0); // x0^2
+		mov(rdx, x1);
+		mulx(y3, y2, x1); // x1^2
+		mulx(t1, t0, x0); // x0 x1
+		add(y1, t0);
+		adc(y2, t1);
+		adc(y3, 0);
+		add(y1, t0);
+		adc(y2, t1);
+		adc(y3, 0);
+	}
+	/*
+		[t3:t2:t1:t0] = px[1, 0] * py[1, 0]
+		use rax, rdx
+	*/
+	void mul2x2(const RegExp& px, const RegExp& py, const Reg64& t4, const Reg64& t3, const Reg64& t2, const Reg64& t1, const Reg64& t0)
+	{
+		mov(rdx, ptr [py + 8 * 0]);
+		mulx(t1, t0, ptr [px + 8 * 0]);
+		mov(rdx, ptr [px + 8 * 1]);
+		mulx(t2, t3, ptr [px + 8 * 0]);
+		add(t1, t3);
+		adc(t2, 0); // [t2:t1:t0]
+
+		mov(rdx, ptr [py + 8 * 1]);
+		mulx(rax, t4, ptr [px + 8 * 0]);
+		mulx(t3, rdx, ptr [px + 8 * 1]);
+		add(rax, rdx);
+		adc(t3, 0); // [t3:rax:t4]
+		add(t1, t4);
+		adc(t2, rax);
+		adc(t3, 0); // t3:t2:t1:t0]
+	}
+	/*
+		py[7..0] = px[3..0] ^ 2
+	*/
+	void sqrPre4(const RegExp& py, const RegExp& px, const Pack& t)
+	{
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+		const Reg64& t8 = t[8];
+		const Reg64& t9 = t[9];
+
+		// (AN + B)^2 = A^2N^2 + 2AB + B^2
+
+		mul2x2(px + 8 * 0, px + 8 * 2, t4, t3, t2, t1, t0);
+		// [t3:t2:t1:t0] = AB
+		xor_(t4, t4);
+		add_rr(Pack(t3, t2, t1, t0), Pack(t3, t2, t1, t0));
+		adc(t4, 0);
+		// [t4:t3:t2:t1:t0] = 2AB
+		store_mr(py + 8 * 2, Pack(t4, t3, t2, t1, t0));
+
+		mov(t8, ptr [px + 8 * 0]);
+		mov(t9, ptr [px + 8 * 1]);
+		sqr2(t1, t0, t7, t6, t9, t8, rax, rcx);
+		// B^2 = [t1:t0:t7:t6]
+		store_mr(py + 8 * 0, Pack(t7, t6));
+		// [t1:t0]
+
+		mov(t8, ptr [px + 8 * 2]);
+		mov(t9, ptr [px + 8 * 3]);
+		sqr2(t5, t4, t3, t2, t9, t8, rax, rcx);
+		// [t5:t4:t3:t2]
+		add_rm(Pack(t3, t2, t1, t0), py + 8 * 2);
+		adc(t8, 0);
+		adc(t9, 0);
+		store_mr(py + 8 * 2, Pack(t9, t8, t3, t2, t1, t0));
+	}
+	/*
 		pz[7..0] <- px[3..0] * py[3..0]
 	*/
 	void mulPre4(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
@@ -1303,6 +1385,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			sqrPre3(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
+#if 0
+		if (pn_ == 4) {
+			StackFrame sf(this, 2, 10 | UseRDX | UseRCX);
+			sqrPre4(sf.p[0], sf.p[1], sf.t);
+			return;
+		}
+#endif
 #ifdef XBYAK64_WIN
 		mov(r8, rdx);
 #else
