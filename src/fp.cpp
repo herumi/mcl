@@ -6,6 +6,10 @@
 #endif
 #include <mcl/fp_proto.hpp>
 
+#ifdef _MSC_VER
+	#pragma warning(disable : 4127)
+#endif
+
 namespace mcl { namespace fp {
 
 #ifdef MCL_USE_XBYAK
