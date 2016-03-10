@@ -1279,7 +1279,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	/*
 		[y3:y2:y1:y0] = [x1:x0] ^ 2
-		use rax, rdx
+		use rdx
 	*/
 	void sqr2(const Reg64& y3, const Reg64& y2, const Reg64& y1, const Reg64& y0, const Reg64& x1, const Reg64& x0, const Reg64& t1, const Reg64& t0)
 	{
@@ -1365,10 +1365,9 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mov(t9, ptr [px + 8 * 3]);
 		sqr2(t5, t4, t3, t2, t9, t8, rax, rcx);
 		// [t5:t4:t3:t2]
-		add_rm(Pack(t3, t2, t1, t0), py + 8 * 2);
-		adc(t8, 0);
-		adc(t9, 0);
-		store_mr(py + 8 * 2, Pack(t9, t8, t3, t2, t1, t0));
+		add_rm(Pack(t4, t3, t2, t1, t0), py + 8 * 2);
+		adc(t5, 0);
+		store_mr(py + 8 * 2, Pack(t5, t4, t3, t2, t1, t0));
 	}
 	/*
 		pz[7..0] <- px[3..0] * py[3..0]
@@ -1464,13 +1463,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			sqrPre3(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
-#if 0
-		if (pn_ == 4) {
+		if (useMulx_ && pn_ == 4) {
 			StackFrame sf(this, 2, 10 | UseRDX | UseRCX);
 			sqrPre4(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
-#endif
 #ifdef XBYAK64_WIN
 		mov(r8, rdx);
 #else
