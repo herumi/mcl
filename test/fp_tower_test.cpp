@@ -183,18 +183,45 @@ void testFpDbl()
 			y.setRand(rg);
 			x.getMpz(mx);
 			y.getMpz(my);
-			mo = (mx * my) % mp;
 			FpDbl d;
 			FpDbl::mulPre(d, x, y);
-			FpDbl::mod(z, d);
-			z.getMpz(mz);
+			d.getMpz(mz);
+			{
+				Fp tx, ty;
+				tx = x;
+				ty = y;
+				tx.toMont();
+				ty.toMont();
+				mpz_class mtx, mty;
+				tx.getMpz(mtx);
+				ty.getMpz(mty);
+				mo = mtx * mty;
+			}
 			CYBOZU_TEST_EQUAL(mz, mo);
 
-			mo = (mx * mx) % mp;
-			FpDbl::sqrPre(d, x);
 			FpDbl::mod(z, d);
 			z.getMpz(mz);
+			mo = (mx * my) % mp;
 			CYBOZU_TEST_EQUAL(mz, mo);
+			CYBOZU_TEST_EQUAL(z, x * y);
+
+			FpDbl::sqrPre(d, x);
+			d.getMpz(mz);
+			{
+				Fp tx;
+				tx = x;
+				tx.toMont();
+				mpz_class mtx;
+				tx.getMpz(mtx);
+				mo = mtx * mtx;
+			}
+			CYBOZU_TEST_EQUAL(mz, mo);
+
+			FpDbl::mod(z, d);
+			z.getMpz(mz);
+			mo = (mx * mx) % mp;
+			CYBOZU_TEST_EQUAL(mz, mo);
+			CYBOZU_TEST_EQUAL(z, x * x);
 		}
 	}
 }
@@ -244,6 +271,13 @@ void test(const char *p, mcl::fp::Mode mode)
 void testAll()
 {
 	const char *tbl[] = {
+		// N = 2
+#if 0
+		"0x0000000000000001000000000000000d",
+		"0x7fffffffffffffffffffffffffffffff",
+		"0x8000000000000000000000000000001d",
+		"0xffffffffffffffffffffffffffffff61",
+#endif
 		// N = 3
 		"0x000000000000000100000000000000000000000000000033", // min prime
 		"0x00000000fffffffffffffffffffffffffffffffeffffac73",
