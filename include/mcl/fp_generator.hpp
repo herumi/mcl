@@ -2072,7 +2072,7 @@ private:
 			mov(rdx, x);
 			mulx(rax, t0, ptr [py]); // [rax:t0] = py[0] * x
 			mulx(rdx, x, ptr [py + 8]); // [t:t1] = py[1] * x
-			adc(x, rax);
+			add(x, rax);
 			adc(rdx, 0);
 		} else {
 			mov(rax, ptr [py]);
