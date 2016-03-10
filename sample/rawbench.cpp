@@ -35,6 +35,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	fy.setRand(rg);
 	Unit ux[maxN * 2] = {};
 	Unit uy[maxN * 2] = {};
+	Unit uz[maxN * 2] = {};
 	memcpy(ux, fx.getUnit(), sizeof(Unit) * op.N);
 	memcpy(ux + op.N, fx.getUnit(), sizeof(Unit) * op.N);
 	memcpy(uy, fy.getUnit(), sizeof(Unit) * op.N);
@@ -43,15 +44,15 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	double fpDbl_addT, fpDbl_subT;
 	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
 	double fp2_sqrT, fp2_mulT, fp2_mul2T;
-	CYBOZU_BENCH_T(fp_sqrT, op.fp_sqr, ux, ux);
-	CYBOZU_BENCH_T(fp_addT, op.fp_add, ux, ux, ux);
-	CYBOZU_BENCH_T(fp_subT, op.fp_sub, ux, uy, ux);
-	CYBOZU_BENCH_T(fp_mulT, op.fp_mul, ux, ux, ux);
-	CYBOZU_BENCH_T(fpDbl_addT, op.fpDbl_add, ux, ux, ux);
-	CYBOZU_BENCH_T(fpDbl_subT, op.fpDbl_sub, ux, uy, ux);
-	CYBOZU_BENCH_T(fpDbl_sqrPreT, op.fpDbl_sqrPre, ux, ux);
-	CYBOZU_BENCH_T(fpDbl_mulPreT, op.fpDbl_mulPre, ux, ux, ux);
-	CYBOZU_BENCH_T(fpDbl_modT, op.fpDbl_mod, ux, uy);
+	CYBOZU_BENCH_T(fp_sqrT, op.fp_sqr, uz, ux);
+	CYBOZU_BENCH_T(fp_addT, op.fp_add, uz, ux, uy);
+	CYBOZU_BENCH_T(fp_subT, op.fp_sub, uz, uy, ux);
+	CYBOZU_BENCH_T(fp_mulT, op.fp_mul, uz, ux, uy);
+	CYBOZU_BENCH_T(fpDbl_addT, op.fpDbl_add, uz, ux, uy);
+	CYBOZU_BENCH_T(fpDbl_subT, op.fpDbl_sub, uz, uy, ux);
+	CYBOZU_BENCH_T(fpDbl_sqrPreT, op.fpDbl_sqrPre, uz, ux);
+	CYBOZU_BENCH_T(fpDbl_mulPreT, op.fpDbl_mulPre, uz, ux, uy);
+	CYBOZU_BENCH_T(fpDbl_modT, op.fpDbl_mod, uz, ux);
 	Fp2 f2x, f2y;
 	f2x.a = fx;
 	f2x.b = fy;
@@ -85,6 +86,12 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 int main()
 {
 	const char *tbl[] = {
+		// N = 2
+		"0x0000000000000001000000000000000d",
+		"0x7fffffffffffffffffffffffffffffff",
+		"0x8000000000000000000000000000001d",
+		"0xffffffffffffffffffffffffffffff61",
+
 		// N = 3
 		"0x000000000000000100000000000000000000000000000033", // min prime
 		"0x70000000000000000000000000000000000000000000001f",

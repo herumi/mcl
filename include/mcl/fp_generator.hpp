@@ -258,7 +258,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fpDbl_mulPre = getCurr<void3u>();
 			gen_fpDbl_mulPre();
 		}
-		if (op.N == 3 || op.N == 4) {
+		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_sqrPre = getCurr<void2u>();
 			gen_fpDbl_sqrPre(op);
@@ -1263,6 +1263,20 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		adc(d, 0);
 		store_mr(pz + 8 * 2, Pack(d, t8, t2, t1));
 	}
+	void sqrPre2(const Reg64& py, const Reg64& px, const Pack& t)
+	{
+		// QQQ
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		load_rm(Pack(px, t0), px); // x = [px:t0]
+		sqr2(t4, t3, t2, t1, px, t0, t5, t6);
+		store_mr(py, Pack(t4, t3, t2, t1));
+	}
 	/*
 		[y3:y2:y1:y0] = [x1:x0] ^ 2
 		use rax, rdx
@@ -1336,8 +1350,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mul2x2(px + 8 * 0, px + 8 * 2, t4, t3, t2, t1, t0);
 		// [t3:t2:t1:t0] = AB
 		xor_(t4, t4);
-		add_rr(Pack(t3, t2, t1, t0), Pack(t3, t2, t1, t0));
-		adc(t4, 0);
+		add_rr(Pack(t4, t3, t2, t1, t0), Pack(t4, t3, t2, t1, t0));
 		// [t4:t3:t2:t1:t0] = 2AB
 		store_mr(py + 8 * 2, Pack(t4, t3, t2, t1, t0));
 
@@ -1441,6 +1454,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_fpDbl_sqrPre(mcl::fp::Op& op)
 	{
+		if (pn_ == 2) {
+			StackFrame sf(this, 2, 7 | UseRDX);
+			sqrPre2(sf.p[0], sf.p[1], sf.t);
+			return;
+		}
 		if (pn_ == 3) {
 			StackFrame sf(this, 2, 10 | UseRDX | UseRCX);
 			sqrPre3(sf.p[0], sf.p[1], sf.t);
