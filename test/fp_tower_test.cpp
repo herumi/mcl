@@ -272,12 +272,11 @@ void testAll()
 {
 	const char *tbl[] = {
 		// N = 2
-#if 0
 		"0x0000000000000001000000000000000d",
 		"0x7fffffffffffffffffffffffffffffff",
 		"0x8000000000000000000000000000001d",
 		"0xffffffffffffffffffffffffffffff61",
-#endif
+
 		// N = 3
 		"0x000000000000000100000000000000000000000000000033", // min prime
 		"0x00000000fffffffffffffffffffffffffffffffeffffac73",

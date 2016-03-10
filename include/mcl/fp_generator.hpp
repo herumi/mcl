@@ -248,12 +248,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fpDbl_subNC = getCurr<void3u>();
 			gen_addSubNC(false, pn_ * 2);
 		}
-		if (op.N == 3 || op.N == 4) {
+		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_mod = getCurr<void2u>();
 			gen_fpDbl_mod();
 		}
-		if (/*op.N == 2 ||*/ op.N == 3 || op.N == 4) {
+		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_mulPre = getCurr<void3u>();
 			gen_fpDbl_mulPre();
@@ -610,11 +610,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	/*
 		@input (z, xy)
 		z[1..0] <- montgomery reduction(x[3..0])
-		@note destroy rax, rdx, t0, ..., t10
+		@note destroy rax, rdx, t0, ..., t8
 	*/
 	void gen_fpDbl_mod2()
 	{
-		StackFrame sf(this, 3, 10 | UseRDX);
+		StackFrame sf(this, 2, 9 | UseRDX);
 		const Reg64& z = sf.p[0];
 		const Reg64& xy = sf.p[1];
 
@@ -627,41 +627,40 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& t6 = sf.t[6];
 		const Reg64& t7 = sf.t[7];
 		const Reg64& t8 = sf.t[8];
-		const Reg64& t9 = sf.t[9];
-		const Reg64& t10 = sf.p[2];
 
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
 
-		mov(t10, ptr [xy + 8 * 0]);
+		mov(t6, ptr [xy + 8 * 0]);
 
 		mov(a, rp_);
-		mul(t10);
+		mul(t6);
 		mov(t0, (uint64_t)p_);
 		mov(t7, a); // q
 
 		// [d:t7:t1] = p * q
 		mul2x1(t0, t7, t1, t8);
 
-		add(t1, t10);
-		adc(t7, qword [xy + 8 * 1]);
-		mov(t4, ptr [xy + 8 * 2]);
-		adc(t4, d);
-		mov(t8, ptr [xy + 8 * 3]);
-		adc(t8, 0);// c' = [t8:t4:t7]
+		xor_(t8, t8);
 		if (isFullBit_) {
-			mov(t5, 0);
+			xor_(t5, t5);
+		}
+		mov(t4, d);
+		add(t1, t6);
+		add_rm(Pack(t8, t4, t7), xy + 8 * 1, true);
+		// [t8:t4:t7]
+		if (isFullBit_) {
 			adc(t5, 0);
 		}
 
 		mov(a, rp_);
-		mul(t2);
-		mov(t10, a); // q
+		mul(t7);
+		mov(t6, a); // q
 
-		// [d:t10:xy] = p * q
-		mul2x1(t0, t10, xy, t3);
+		// [d:t6:xy] = p * q
+		mul2x1(t0, t6, xy, t3);
 
-		add_rr(Pack(t8, t4, t7), Pack(d, t10, xy));
+		add_rr(Pack(t8, t4, t7), Pack(d, t6, xy));
 		// [t8:t4]
 		if (isFullBit_) {
 			adc(t5, 0);
@@ -673,7 +672,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			sbb(t5, 0);
 		}
 		cmovc_rr(Pack(t8, t4), Pack(t2, t1));
-
 		store_mr(z, Pack(t8, t4));
 	}
 	/*
@@ -756,10 +754,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (isFullBit_) {
 			sbb(t5, 0);
 		}
-		cmovc(t4, t10);
-		cmovc(t8, t1);
-		cmovc(t9, t2);
-
+		cmovc_rr(Pack(t9, t8, t4), Pack(t2, t1, t10));
 		store_mr(z, Pack(t9, t8, t4));
 	}
 	/*
@@ -1292,10 +1287,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void mul2x2(const RegExp& px, const RegExp& py, const Reg64& t4, const Reg64& t3, const Reg64& t2, const Reg64& t1, const Reg64& t0)
 	{
+		if (!useMulx_) {
+			throw cybozu::Exception("mul2x2:not support mulx");
+		}
 		mov(rdx, ptr [py + 8 * 0]);
 		mulx(t1, t0, ptr [px + 8 * 0]);
-		mov(rdx, ptr [px + 8 * 1]);
-		mulx(t2, t3, ptr [px + 8 * 0]);
+		mulx(t2, t3, ptr [px + 8 * 1]);
 		add(t1, t3);
 		adc(t2, 0); // [t2:t1:t0]
 
