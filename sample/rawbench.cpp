@@ -83,8 +83,16 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	printf("\n");
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+	cybozu::Option opt;
+	size_t bitSize;
+	opt.appendOpt(&bitSize, 0, "s", ": bitSize");
+	opt.appendHelp("h", ": show this message");
+	if (!opt.parse(argc, argv)) {
+		opt.usage();
+		return 1;
+	}
 	const char *tbl[] = {
 		// N = 2
 		"0x0000000000000001000000000000000d",
@@ -109,6 +117,9 @@ int main()
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
+		if (bitSize > 0 && (strlen(p) - 2) * 4 != bitSize) {
+			continue;
+		}
 		printf("prime=%s\n", p);
 		benchRaw(tbl[i], mcl::fp::FP_GMP);
 #ifdef MCL_USE_LLVM
