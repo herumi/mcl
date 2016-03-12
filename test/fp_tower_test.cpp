@@ -138,15 +138,13 @@ void testFpDbl()
 			"0", "1", "123456", "123456789012345668909", pstr.c_str(),
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			mpz_class mx(tbl[i]), my;
+			mpz_class mx(tbl[i]);
 			FpDbl x;
 			x.setMpz(mx);
-			x.getMpz(my);
-			CYBOZU_TEST_EQUAL(mx, my);
 			for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
 				FpDbl y, z;
 				mpz_class mz, mo;
-				my = tbl[j];
+				mpz_class my(tbl[j]);
 				y.setMpz(my);
 				FpDbl::add(z, x, y);
 				mcl::Gmp::addMod(mo, mx, my, mp);
@@ -284,6 +282,7 @@ void testAll()
 		"0x30000000000000000000000000000000000000000000002b",
 		"0x70000000000000000000000000000000000000000000001f",
 		"0x800000000000000000000000000000000000000000000005",
+		"0xfffffffffffffffffffffffffffffffeffffffffffffffff",
 		"0xfffffffffffffffffffffffffffffffffffffffeffffee37",
 		"0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d",
 		"0xffffffffffffffffffffffffffffffffffffffffffffff13", // max prime

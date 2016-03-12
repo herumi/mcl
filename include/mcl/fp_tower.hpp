@@ -247,6 +247,7 @@ private:
 	/*
 		x = a + bi, i^2 = -1
 		y = x^2 = (a + bi)^2 = (a^2 - b^2) + 2abi
+		  = (a + b)(a - b) + 2abi
 	*/
 	static inline void fp2_sqrW(Unit *y, const Unit *x)
 	{
@@ -254,12 +255,22 @@ private:
 		Fp *py = reinterpret_cast<Fp*>(y);
 		const Fp& a = px[0];
 		const Fp& b = px[1];
+#if 1
 		Fp aa, bb, t;
 		Fp::sqr(aa, a);
 		Fp::sqr(bb, b);
 		Fp::mul(t, a, b);
 		Fp::sub(py[0], aa, bb); // a^2 - b^2
 		Fp::add(py[1], t, t); // 2ab
+#else
+		Fp t1, t2;
+		Fp::addNC(t1, b, b); // 2b
+		t1 *= a; // 2ab
+		Fp::sub(t2, a, b); // a - b
+		Fp::addNC(py[0], a, b); // a + b
+		py[0] *= t2; // (a + b)(a - b)
+		py[1] = t1; // 2ab
+#endif
 	}
 	/*
 		xi = xi_c + i
