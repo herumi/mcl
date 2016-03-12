@@ -189,7 +189,7 @@ struct OpeFunc {
 		set_zero(mz, ret, N + 1);
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
-		assert(mx >= my);
+		assert(mpz_cmp(mx, my) >= 0);
 		mpz_sub(mz, mx, my);
 		Gmp::getArray(z, N, mz);
 	}
