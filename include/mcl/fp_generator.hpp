@@ -1304,20 +1304,38 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (!useMulx_) {
 			throw cybozu::Exception("mul2x2:not support mulx");
 		}
+#if 0
+		// # of add is less, but a little slower
+		mov(t4, ptr [py + 8 * 0]);
+		mov(rdx, ptr [px + 8 * 1]);
+		mulx(t2, t1, t4);
+		mov(rdx, ptr [px + 8 * 0]);
+		mulx(t0, rax, ptr [py + 8 * 1]);
+		xor_(t3, t3);
+		add_rr(Pack(t3, t2, t1), Pack(t3, t0, rax));
+		// [t3:t2:t1] = ad + bc
+		mulx(t4, t0, t4);
+		mov(rax, ptr [px + 8 * 1]);
+		mul(qword [py + 8 * 1]);
+		add_rr(Pack(t3, t2, t1), Pack(rdx, rax, t4));
+#else
 		mov(rdx, ptr [py + 8 * 0]);
-		mulx(t1, t0, ptr [px + 8 * 0]);
-		mulx(t2, t3, ptr [px + 8 * 1]);
-		add(t1, t3);
+		mov(rax, ptr [px + 8 * 0]);
+		mulx(t1, t0, rax);
+		mov(t3, ptr [px + 8 * 1]);
+		mulx(t2, rdx, t3);
+		add(t1, rdx);
 		adc(t2, 0); // [t2:t1:t0]
 
 		mov(rdx, ptr [py + 8 * 1]);
-		mulx(rax, t4, ptr [px + 8 * 0]);
-		mulx(t3, rdx, ptr [px + 8 * 1]);
+		mulx(rax, t4, rax);
+		mulx(t3, rdx, t3);
 		add(rax, rdx);
 		adc(t3, 0); // [t3:rax:t4]
 		add(t1, t4);
 		adc(t2, rax);
 		adc(t3, 0); // t3:t2:t1:t0]
+#endif
 	}
 	void mulPre2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
 	{
@@ -1387,6 +1405,28 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
 
+#if 0
+		// a little slower
+		if (!useMulx_) {
+			throw cybozu::Exception("mulPre4:not support mulx");
+		}
+		mul2x2(px + 8 * 0, py + 8 * 2, t4, t3, t2, t1, t0);
+		mul2x2(px + 8 * 2, py + 8 * 0, t9, t8, t7, t6, t5);
+		xor_(t4, t4);
+		add_rr(Pack(t4, t3, t2, t1, t0), Pack(t4, t8, t7, t6, t5));
+		// [t4:t3:t2:t1:t0]
+		mul2x2(px + 8 * 0, py + 8 * 0, t9, t8, t7, t6, t5);
+		store_mr(pz, Pack(t6, t5));
+		// [t8:t7]
+		movq(xm0, t7);
+		movq(xm1, t8);
+		mul2x2(px + 8 * 2, py + 8 * 2, t8, t7, t9, t6, t5);
+		movq(a, xm0);
+		movq(d, xm1);
+		add_rr(Pack(t4, t3, t2, t1, t0), Pack(t9, t6, t5, d, a));
+		adc(t7, 0);
+		store_mr(pz + 8 * 2, Pack(t7, t4, t3, t2, t1, t0));
+#else
 		if (useMulx_) {
 			mov(d, ptr [px]);
 			mulx(t0, a, ptr [py + 8 * 0]);
@@ -1450,6 +1490,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		adc(d, 0);
 		store_mr(pz + 8 * 3, Pack(t7, t8, t3, t2));
 		mov(ptr [pz + 8 * 7], d);
+#endif
 	}
 	void gen_fpDbl_sqrPre(mcl::fp::Op& op)
 	{

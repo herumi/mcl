@@ -298,7 +298,7 @@ void testAll()
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
-		printf("prime=%s\n", p);
+		printf("prime=%s %d\n", p, (int)(strlen(p) - 2) * 4);
 		test(tbl[i], mcl::fp::FP_GMP);
 #ifdef MCL_USE_LLVM
 		test(tbl[i], mcl::fp::FP_LLVM);
