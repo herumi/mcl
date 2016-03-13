@@ -1283,6 +1283,9 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void sqr2(const Reg64& y3, const Reg64& y2, const Reg64& y1, const Reg64& y0, const Reg64& x1, const Reg64& x0, const Reg64& t1, const Reg64& t0)
 	{
+		if (!useMulx_) {
+			throw cybozu::Exception("sqr2:not support mulx");
+		}
 		mov(rdx, x0);
 		mulx(y1, y0, x0); // x0^2
 		mov(rdx, x1);
@@ -1494,7 +1497,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_fpDbl_sqrPre(mcl::fp::Op& op)
 	{
-		if (pn_ == 2) {
+		if (useMulx_ && pn_ == 2) {
 			StackFrame sf(this, 2, 7 | UseRDX);
 			sqrPre2(sf.p[0], sf.p[1], sf.t);
 			return;
@@ -1518,7 +1521,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_fpDbl_mulPre()
 	{
-		if (pn_ == 2) {
+		if (useMulx_ && pn_ == 2) {
 			StackFrame sf(this, 3, 5 | UseRDX);
 			mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
 		} else if (pn_ == 3) {
