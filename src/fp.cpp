@@ -413,6 +413,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 #ifdef MCL_USE_LLVM
 	if ((mode == FP_AUTO || mode == FP_LLVM) && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
 		fp_mul = &mcl_fp_mul_NIST_P192;
+//		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192;
 		isMont = false;
 	}
 #endif

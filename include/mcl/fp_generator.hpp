@@ -253,12 +253,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fpDbl_mod = getCurr<void2u>();
 			gen_fpDbl_mod();
 		}
-		if (op.N == 2 || op.N == 3 || op.N == 4) {
+		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_mulPre = getCurr<void3u>();
 			gen_fpDbl_mulPre();
 		}
-		if (op.N == 2 || op.N == 3 || op.N == 4) {
+		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_sqrPre = getCurr<void2u>();
 			gen_fpDbl_sqrPre(op);
