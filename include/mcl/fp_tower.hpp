@@ -267,7 +267,7 @@ private:
 		Fp *py = reinterpret_cast<Fp*>(y);
 		const Fp& a = px[0];
 		const Fp& b = px[1];
-#if 1
+#if 0
 		Fp aa, bb, t;
 		Fp::sqr(aa, a);
 		Fp::sqr(bb, b);
@@ -276,12 +276,14 @@ private:
 		Fp::add(py[1], t, t); // 2ab
 #else
 		Fp t1, t2;
+		FpDbl d1, d2;
 		Fp::addNC(t1, b, b); // 2b
-		t1 *= a; // 2ab
+		FpDbl::mulPre(d2, t1, a); // 2ab
+		Fp::addNC(t1, a, b); // a + b
 		Fp::sub(t2, a, b); // a - b
-		Fp::addNC(py[0], a, b); // a + b
-		py[0] *= t2; // (a + b)(a - b)
-		py[1] = t1; // 2ab
+		FpDbl::mulPre(d1, t1, t2); // (a + b)(a - b)
+		FpDbl::mod(py[0], d1);
+		FpDbl::mod(py[1], d2);
 #endif
 	}
 	/*
