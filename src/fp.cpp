@@ -385,6 +385,13 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	isFullBit = (bitSize % UnitBitSize) == 0;
 
 	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
+#ifdef MCL_USE_LLVM
+	const bool isNIST_P192 = (mode == FP_AUTO || mode == FP_LLVM) && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff");
+	if (isNIST_P192) {
+		isMont = false;
+		isFastMod = true;
+	}
+#endif
 	switch (roundBit) {
 	case 32:
 	case 64:
@@ -411,10 +418,10 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		throw cybozu::Exception("Op::init:not:support") << mstr;
 	}
 #ifdef MCL_USE_LLVM
-	if ((mode == FP_AUTO || mode == FP_LLVM) && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
+	if (isNIST_P192) {
 		fp_mul = &mcl_fp_mul_NIST_P192;
-//		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192;
-		isMont = false;
+		fp_sqr = &mcl_fp_sqr_NIST_P192;
+		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192;
 	}
 #endif
 	if (isMont) {

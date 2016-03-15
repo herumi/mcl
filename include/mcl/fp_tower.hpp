@@ -168,13 +168,14 @@ public:
 	{
 		assert(Fp::maxSize <= 256);
 		xi_c_ = xi_c;
-		Fp::op_.fp2_add = fp2_addW;
-		Fp::op_.fp2_sub = fp2_subW;
-		Fp::op_.fp2_mul = fp2_mulW;
-		Fp::op_.fp2_neg = fp2_negW;
-		Fp::op_.fp2_inv = fp2_invW;
-		Fp::op_.fp2_sqr = fp2_sqrW;
-		Fp::op_.fp2_mul_xi = fp2_mul_xiW;
+		mcl::fp::Op& op = Fp::op_;
+		op.fp2_add = fp2_addW;
+		op.fp2_sub = fp2_subW;
+		op.fp2_mul = op.isFastMod ? fp2_mulW : fp2_mulUseDblW;
+		op.fp2_neg = fp2_negW;
+		op.fp2_inv = fp2_invW;
+		op.fp2_sqr = fp2_sqrW;
+		op.fp2_mul_xi = fp2_mul_xiW;
 	}
 private:
 	/*
@@ -208,6 +209,7 @@ private:
 		x = a + bi, y = c + di, i^2 = -1
 		z = xy = (a + bi)(c + di) = (ac - bd) + (ad + bc)i
 		ad+bc = (a + b)(c + d) - ac - bd
+		# mod = 3
 	*/
 	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -217,7 +219,6 @@ private:
 		const Fp& b = px[1];
 		const Fp& c = py[0];
 		const Fp& d = py[1];
-#if 0
 		Fp *pz = reinterpret_cast<Fp*>(z);
 		Fp t1, t2, ac, bd;
 		Fp::add(t1, a, b);
@@ -228,7 +229,19 @@ private:
 		Fp::sub(pz[0], ac, bd); // ac - bd
 		Fp::sub(pz[1], t1, ac);
 		pz[1] -= bd;
-#else
+	}
+	/*
+		# mod = 2
+		@note mod of NIST_P192 is fast
+	*/
+	static inline void fp2_mulUseDblW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		const Fp *py = reinterpret_cast<const Fp*>(y);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		const Fp& c = py[0];
+		const Fp& d = py[1];
 		FpDbl d0, d1, d2;
 		Fp s, t;
 		Fp::addNC(s, a, b);
@@ -242,7 +255,6 @@ private:
 		FpDbl::mod(pz[1], d0);
 		FpDbl::sub(d1, d1, d2); // ac - bd
 		FpDbl::mod(pz[0], d1); // set z0
-#endif
 	}
 	/*
 		x = a + bi, i^2 = -1

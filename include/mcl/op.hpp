@@ -94,13 +94,14 @@ struct Op {
 	void3u fp_mul;
 
 	bool isFullBit; // true if bitSize % uniSize == 0
+	bool isMont; // true if use Montgomery
+	bool isFastMod; // true if modulo is fast
 	/*
 		same fp_add, fp_sub if isFullBit
 	*/
 	void3u fp_addNC; // assume no carry if !isFullBit
 	void3u fp_subNC; // assume x > y
 	// for Montgomery
-	bool isMont;
 	int2u fp_preInv;
 	// these two members are for mcl_fp_mont
 	Unit rp;
@@ -151,8 +152,11 @@ struct Op {
 		: N(0), bitSize(0)
 		, fp_isZero(0), fp_clear(0), fp_copy(0)
 		, fp_neg(0), fp_sqr(0), fp_add(0), fp_sub(0), fp_mul(0)
-		, isFullBit(true), fp_addNC(0), fp_subNC(0)
-		, isMont(false), fp_preInv(0)
+		, isFullBit(true)
+		, isMont(false)
+		, isFastMod(false)
+		, fp_addNC(0), fp_subNC(0)
+		, fp_preInv(0)
 		, rp(0), montRedPU(0), montPU(0)
 		, fp_negP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fpDbl_modP(0)
 		, fg(createFpGenerator())
