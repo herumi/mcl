@@ -275,6 +275,15 @@ private:
 		Fp::sub(py[0], aa, bb); // a^2 - b^2
 		Fp::add(py[1], t, t); // 2ab
 #else
+#if 1 // faster than using FpDbl
+		Fp t1, t2, t3;
+		Fp::add(t1, b, b); // 2b
+		t1 *= a; // 2ab
+		Fp::add(t2, a, b); // a + b
+		Fp::sub(t3, a, b); // a - b
+		Fp::mul(py[0], t2, t3); // (a + b)(a - b)
+		py[1] = t1;
+#else
 		Fp t1, t2;
 		FpDbl d1, d2;
 		Fp::addNC(t1, b, b); // 2b
@@ -284,6 +293,7 @@ private:
 		FpDbl::mulPre(d1, t1, t2); // (a + b)(a - b)
 		FpDbl::mod(py[0], d1);
 		FpDbl::mod(py[1], d2);
+#endif
 #endif
 	}
 	/*
