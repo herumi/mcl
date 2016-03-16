@@ -1,6 +1,6 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
-#include <mcl/conversion.hpp>
+#include "conversion.hpp"
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
 #endif

@@ -1,5 +1,5 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
-#include <mcl/conversion.hpp>
+#include "../src/conversion.hpp"
 #include <cybozu/test.hpp>
 
 CYBOZU_TEST_AUTO(toStr16)
