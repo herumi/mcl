@@ -8,7 +8,7 @@
 #include <mcl/conversion.hpp>
 #include <mcl/fp.hpp>
 
-#include <mcl/fp_generator.hpp>
+#include "fp_generator.hpp"
 #if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
 	#define USE_XBYAK
 	static mcl::FpGenerator fg;

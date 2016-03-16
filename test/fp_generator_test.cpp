@@ -7,7 +7,7 @@
 #include <string>
 #include <cybozu/itoa.hpp>
 #include <mcl/fp.hpp>
-#include <mcl/fp_generator.hpp>
+#include "../src/fp_generator.hpp"
 #include <iostream>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>

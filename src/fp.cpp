@@ -2,7 +2,7 @@
 #include <mcl/util.hpp>
 #include <mcl/conversion.hpp>
 #ifdef MCL_USE_XBYAK
-#include <mcl/fp_generator.hpp>
+#include "fp_generator.hpp"
 #endif
 #include <mcl/fp_proto.hpp>
 
