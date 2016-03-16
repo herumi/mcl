@@ -4,7 +4,7 @@
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
 #endif
-#include <mcl/fp_proto.hpp>
+#include "fp_proto.hpp"
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
