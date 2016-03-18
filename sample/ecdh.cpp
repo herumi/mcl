@@ -5,10 +5,7 @@
 #include <fstream>
 #include <cybozu/random_generator.hpp>
 #include <mcl/fp.hpp>
-#include <mcl/gmp_util.hpp>
 #include <mcl/ecparam.hpp>
-#include <mcl/ec.hpp>
-#include <mcl/fp.hpp>
 
 typedef mcl::FpT<> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
