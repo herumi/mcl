@@ -1,10 +1,9 @@
 #include <cybozu/test.hpp>
-#include <mcl/fp.hpp>
-#include <mcl/gmp_util.hpp>
-#include <mcl/elgamal.hpp>
 #include <cybozu/random_generator.hpp>
-#include <mcl/ecparam.hpp>
 #include <cybozu/crypto.hpp>
+#include <mcl/fp.hpp>
+#include <mcl/ecparam.hpp>
+#include <mcl/elgamal.hpp>
 
 struct TagZn;
 typedef mcl::FpT<> Fp;
