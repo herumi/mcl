@@ -8,7 +8,10 @@ import com.herumi.mcl.*;
 */
 public class MclTest {
 	static {
-		System.loadLibrary("mcl_if_wrap");
+		String lib = "mcl_if_wrap";
+		String libName = System.mapLibraryName(lib);
+		System.out.println("libName : " + libName);
+		System.loadLibrary(lib);
 	}
 	public static void assertEquals(String msg, int x, int y) {
 		if (x == y) {

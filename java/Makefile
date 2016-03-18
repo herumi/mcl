@@ -9,12 +9,12 @@ else
   CFLAGS+=-z noexecstack
   LIB+=-lrt
 endif
-CFLAGS+= -shared -fPIC $(JAVA_INC)
+CFLAGS+= -shared -fPIC $(JAVA_INC) -Wno-strict-aliasing
 
 PACKAGE_NAME=com.herumi.mcl
 PACKAGE_DIR=$(subst .,/,$(PACKAGE_NAME))
 
-TARGET=../bin/mcl_if_wrap.$(LIB_SUF)
+TARGET=../bin/libmcl_if_wrap.$(LIB_SUF)
 JAVA_EXE=cd ../bin && LD_LIBRARY_PATH=./:$(LD_LIBRARY_PATH) java -classpath ../java
 all: $(TARGET)
 
