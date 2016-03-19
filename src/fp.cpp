@@ -378,6 +378,9 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 
 void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 {
+	if (maxBitSize > MCL_MAX_OP_BIT_SIZE) {
+		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_OP_BIT_SIZE;
+	}
 	cybozu::disable_warning_unused_variable(mode);
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
