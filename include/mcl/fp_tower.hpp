@@ -396,6 +396,25 @@ struct Fp6T {
 	{
 		const size_t size = str.size();
 		if (size >= 4 + 5 * 3 && str[0] == '[' && str[size - 1] == ']') { // '[' + <a> + ',' + <b> + ',' + <c> + ']'
+			size_t pos = str.find(']', 1);
+			if (pos != std::string::npos) {
+				a.setStr(str.substr(1, pos - 1 + 1), base);
+				if (str[pos + 1] == ',') {
+					pos += 2;
+					size_t pos2 = str.find(']', pos);
+					if (pos2 != std::string::npos) {
+						b.setStr(str.substr(pos, pos2 - pos + 1), base);
+						if (str[pos2 + 1] == ',') {
+							pos = pos2 + 2;
+							pos2 = str.find(']', pos);
+							if (pos2 != std::string::npos) {
+								c.setStr(str.substr(pos, pos2 - pos + 1), base);
+								return;
+							}
+						}
+					}
+				}
+			}
 		}
 		throw cybozu::Exception("Fp6T:setStr:bad format") << str;
 	}

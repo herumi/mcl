@@ -21,6 +21,13 @@ void testFp2()
 	Fp2 x, y, z;
 	x.a = 1;
 	x.b = 2;
+
+	{
+		std::string s;
+		s = x.getStr();
+		y.setStr(s);
+		CYBOZU_TEST_EQUAL(x, y);
+	}
 	y.a = 3;
 	y.b = 4;
 	/*
@@ -89,6 +96,12 @@ void testFp6()
 	Fp6 x(a, b, c);
 	Fp6 y(Fp2(-1, 1), Fp2(4, -3), Fp2(-6, 2));
 	Fp6 z, w;
+	{
+		std::string s;
+		s = x.getStr();
+		z.setStr(s);
+		CYBOZU_TEST_EQUAL(x, z);
+	}
 	Fp6::add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(0, 3), Fp2(7, 1), Fp2(-1, 8)));
 	Fp6::sub(z, x, y);
