@@ -27,6 +27,7 @@ struct Test {
 	{
 		Ec O;
 		CYBOZU_TEST_ASSERT(O.isZero());
+		CYBOZU_TEST_ASSERT(O.isValid());
 		Ec P;
 		Ec::neg(P, O);
 		CYBOZU_TEST_EQUAL(P, O);
@@ -220,6 +221,9 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
+		CYBOZU_TEST_NO_EXCEPTION(P.setStr("3_5", false));
+		CYBOZU_TEST_ASSERT(!P.isValid());
+		CYBOZU_TEST_EXCEPTION_MESSAGE(P.setStr("3_5"), cybozu::Exception, "bad value");
 		// compressed
 		Ec::setCompressedExpression(true);
 		P.set(x, y);

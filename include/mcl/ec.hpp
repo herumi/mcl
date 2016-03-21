@@ -121,6 +121,12 @@ public:
 	{
 		return _y * _y == (_x * _x + a_) * _x + b_;
 	}
+	bool isValid() const
+	{
+		if (isZero()) return true;
+		normalize();
+		return isValid(x, y);
+	}
 	void set(const Fp& _x, const Fp& _y, bool verify = true)
 	{
 		if (verify && !isValid(_x, _y)) throw cybozu::Exception("ec:EcT:set") << _x << _y;
@@ -547,7 +553,7 @@ public:
 		getStr(str);
 		return str;
 	}
-	void setStr(const std::string& str)
+	void setStr(const std::string& str, bool verify = true)
 	{
 		if (str == "0") {
 			clear();
@@ -558,17 +564,20 @@ public:
 			z = 1;
 #endif
 			size_t pos = str.find('_');
-			if (pos == std::string::npos) throw cybozu::Exception("EcT:setStr") << str;
+			if (pos == std::string::npos) throw cybozu::Exception("EcT:setStr:bad format") << str;
 			x.setStr(str.substr(0, pos), 16);
 			if (compressedExpression_) {
 				const char c = str[pos + 1];
 				if ((c == '0' || c == '1') && str.size() == pos + 2) {
 					getYfromX(y, x, c == '1');
 				} else {
-					throw cybozu::Exception("EcT:operator>>:bad y") << str;
+					throw cybozu::Exception("EcT:setStr:bad y") << str;
 				}
 			} else {
 				y.setStr(&str[pos + 1], 16);
+			}
+			if (verify && !isValid(x, y)) {
+				throw cybozu::Exception("EcT:setStr:bad value") << x << y;
 			}
 		}
 	}
