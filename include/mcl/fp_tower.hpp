@@ -164,7 +164,7 @@ public:
 	{
 		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
-	static inline void init(int xi_c)
+	static inline void init(uint32_t xi_c)
 	{
 		assert(Fp::maxSize <= 256);
 		xi_c_ = xi_c;

@@ -193,6 +193,15 @@ struct OpeFunc {
 		mpz_sub(mz, mx, my);
 		Gmp::getArray(z, N, mz);
 	}
+	// z[N + 1] <- x[N] * y
+	static inline void fp_mulIPreC(Unit *z, const Unit *x, Unit y)
+	{
+		mpz_t mx, mz;
+		set_zero(mz, z, N + 1);
+		set_mpz_t(mx, x);
+		mpz_mul_ui(mz, mx, y);
+		clearArray(z, mz->_mp_size, N + 1);
+	}
 	// z[N * 2] <- x[N] * y[N]
 	static inline void fpDbl_mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -211,6 +220,16 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		mpz_mul(my, mx, mx);
 		clearArray(y, my->_mp_size, N * 2);
+	}
+	// y[N] <- x[N + 1] mod p[N]
+	static inline void fpN1_modPC(Unit *y, const Unit *x, const Unit *p)
+	{
+		mpz_t mx, my, mp;
+		set_mpz_t(mx, x, N + 1);
+		set_mpz_t(my, y);
+		set_mpz_t(mp, p);
+		mpz_mod(my, mx, mp);
+		clearArray(y, my->_mp_size, N);
 	}
 	// y[N] <- x[N * 2] mod p[N]
 	static inline void fpDbl_modPC(Unit *y, const Unit *x, const Unit *p)
@@ -315,6 +334,8 @@ struct OpeFunc {
 				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 			} \
 		} \
+		fp_mulIPre = OpeFunc<n>::fp_mulIPreC; \
+		fpN1_modP = OpeFunc<n>::fpN1_modPC; \
 		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
 		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
 		fpDbl_modP = OpeFunc<n>::fpDbl_modPC; \

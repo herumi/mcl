@@ -87,6 +87,7 @@ public:
 		op_.fpDbl_add = fpDbl_addW;
 		op_.fpDbl_sub = fpDbl_subW;
 		op_.fp_mul = fp_mulW;
+		op_.fp_mulI = fp_mulIW;
 		op_.fpDbl_mod = fpDbl_modW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
@@ -306,6 +307,7 @@ public:
 	static inline void addNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_addNC(z.v_, x.v_, y.v_); }
 	static inline void subNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_subNC(z.v_, x.v_, y.v_); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_); }
+	static inline void mulI(FpT& z, const FpT& x, const Unit y) { op_.fp_mulI(z.v_, x.v_, y); }
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
@@ -465,15 +467,26 @@ private:
 	{
 		op_.fpDbl_subP(z, x, y, op_.p);
 	}
-	// z[N] <- xy[N * 2] % p[N]
-	static inline void fpDbl_modW(Unit *z, const Unit *xy)
+	// y[N] <- x[N + 1] % p[N]
+	static inline void fpN1_modW(Unit *y, const Unit *x)
 	{
-		op_.fpDbl_modP(z, xy, op_.p);
+		op_.fpN1_modP(y, x, op_.p);
+	}
+	// y[N] <- x[N * 2] % p[N]
+	static inline void fpDbl_modW(Unit *y, const Unit *x)
+	{
+		op_.fpDbl_modP(y, x, op_.p);
 	}
 	// z[N] <- montRed(xy[N * 2])
 	static inline void fp_montRedW(Unit *z, const Unit *xy)
 	{
 		op_.montRedPU(z, xy, op_.p, op_.rp);
+	}
+	static inline void fp_mulIW(Unit *z, const Unit *x, Unit y)
+	{
+		Unit xy[maxSize + 1];
+		op_.fp_mulIPre(xy, x, y);
+		fpN1_modW(z, xy);
 	}
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
