@@ -40,7 +40,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	memcpy(ux + op.N, fx.getUnit(), sizeof(Unit) * op.N);
 	memcpy(uy, fy.getUnit(), sizeof(Unit) * op.N);
 	memcpy(ux + op.N, fx.getUnit(), sizeof(Unit) * op.N);
-	double fp_sqrT, fp_addT, fp_subT, fp_mulT;
+	double fp_sqrT, fp_addT, fp_subT, fp_mulT, fp_mulIT;
 	double fpDbl_addT, fpDbl_subT;
 	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
 	double fp2_sqrT, fp2_mulT;
@@ -48,6 +48,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	CYBOZU_BENCH_T(fp_addT, op.fp_add, uz, ux, uy);
 	CYBOZU_BENCH_T(fp_subT, op.fp_sub, uz, uy, ux);
 	CYBOZU_BENCH_T(fp_mulT, op.fp_mul, uz, ux, uy);
+	CYBOZU_BENCH_T(fp_mulIT, op.fp_mulI, uz, ux, 12345678);
 	CYBOZU_BENCH_T(fpDbl_addT, op.fpDbl_add, uz, ux, uy);
 	CYBOZU_BENCH_T(fpDbl_subT, op.fpDbl_sub, uz, uy, ux);
 	CYBOZU_BENCH_T(fpDbl_sqrPreT, op.fpDbl_sqrPre, uz, ux);
@@ -61,7 +62,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	CYBOZU_BENCH_T(fp2_mulT, Fp2::mul, f2x, f2x, f2y);
 	printf("%s\n", getModeStr(mode));
 	const char *tStrTbl[] = {
-		"fp_add", "fp_sub", "fp_sqr", "fp_mul",
+		"fp_add", "fp_sub", "fp_sqr", "fp_mul", "fp_mulI",
 		"D_add", "D_sub",
 		"D_sqrPre", "D_mulPre", "D_mod",
 		"fp2_sqr", "fp2_mul",
@@ -71,7 +72,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	}
 	printf("\n");
 	const double tTbl[] = {
-		fp_addT, fp_subT, fp_sqrT, fp_mulT,
+		fp_addT, fp_subT, fp_sqrT, fp_mulT, fp_mulIT,
 		fpDbl_addT, fpDbl_subT,
 		fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT,
 		fp2_sqrT, fp2_mulT,
