@@ -282,6 +282,7 @@ struct OpeFunc {
 				fp_subNC = mcl_fp_subNC ## n; \
 			} \
 			fpDbl_mulPre = mcl_fpDbl_mulPre ## n; \
+			fp_mulIPre = mcl_fp_mulIPre ## n; \
 			if (n <= 256) { \
 				fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
 			} \
