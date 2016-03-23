@@ -9,6 +9,12 @@
 #include <mcl/gmp_util.hpp>
 #include <cybozu/bit_operation.hpp>
 
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4456)
+	#pragma warning(disable : 4459)
+#endif
+
 namespace mcl { namespace fp {
 
 /*
@@ -252,3 +258,6 @@ void powerGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G
 
 } } // mcl::fp
 
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif

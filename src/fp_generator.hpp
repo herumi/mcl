@@ -141,6 +141,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	static const int UseRCX = Xbyak::util::UseRCX;
 	Xbyak::util::Cpu cpu_;
 	bool useMulx_;
+	const mcl::fp::Op *op_;
 	const uint64_t *p_;
 	uint64_t rp_;
 	int pn_;
@@ -165,6 +166,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void2op shr1_;
 	FpGenerator()
 		: CodeGenerator(4096 * 8)
+		, op_(0)
 		, p_(0)
 		, rp_(0)
 		, pn_(0)
@@ -182,6 +184,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	void init(Op& op)
 	{
 		if (op.N < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << op.N;
+		op_ = &op;
 		p_ = op.p;
 		rp_ = fp::getMontgomeryCoeff(p_[0]);
 		pn_ = (int)op.N;
@@ -224,7 +227,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		shr1_ = getCurr<void2op>();
 		gen_shr1();
-		if (op.N <= 4) { // support general op.N but not fast for op.N > 4
+		if (!op.isNIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
@@ -251,7 +254,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_mod = getCurr<void2u>();
-			gen_fpDbl_mod();
+			gen_fpDbl_mod(op);
 		}
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
 			align(16);
@@ -597,6 +600,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_mul()
 	{
+		if (op_->isNIST_P192) {
+			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
+			mulPre3(rsp, sf.p[1], sf.p[2], sf.t);
+			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
+		}
 		if (pn_ == 3) {
 			gen_montMul3(p_, rp_);
 		} else if (pn_ == 4) {
@@ -878,8 +886,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		movq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-	void gen_fpDbl_mod()
+	void gen_fpDbl_mod(const mcl::fp::Op& op)
 	{
+		if (op.isNIST_P192) {
+			StackFrame sf(this, 2, 6 | UseRDX);
+			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
+			return;
+		}
 		switch (pn_) {
 		case 2:
 			gen_fpDbl_mod2();
@@ -896,6 +909,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_sqr()
 	{
+		if (op_->isNIST_P192) {
+			StackFrame sf(this, 2, 10 | UseRDX | UseRCX, 8 * 6);
+			sqrPre3(rsp, sf.p[1], sf.t);
+			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
+		}
 		if (pn_ == 3) {
 			gen_montSqr3(p_, rp_);
 			return;
@@ -1104,6 +1122,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	/*
 		py[5..0] <- px[2..0]^2
+		@note use rax, rdx, rcx!
 	*/
 	void sqrPre3(const RegExp& py, const RegExp& px, const Pack& t)
 	{
@@ -1932,6 +1951,42 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		add_m_m(t3, t2, t, pn_);
 	L("@@");
 		outLocalLabel();
+	}
+	void fpDbl_mod_NIST_P192(const RegExp &py, const RegExp& px, const Pack& t)
+	{
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		load_rm(Pack(t2, t1, t0), px); // L=[t2:t1:t0]
+		load_rm(Pack(rax, t5, t4), px + 8 * 3); // H = [rax:t5:t4]
+		xor_(t3, t3);
+		add_rr(Pack(t3, t2, t1, t0), Pack(t3, rax, t5, t4)); // [t3:t2:t1:t0] = L + H
+		add_rr(Pack(t2, t1, t0), Pack(t5, t4, rax));
+		adc(t3, 0); // [t3:t2:t1:t0] = L + H + [H1:H0:H2]
+		add(t1, rax);
+		adc(t2, 0);
+		adc(t3, 0); // e = t3, t = [t2:t1:t0]
+		xor_(t4, t4);
+		add(t0, t3);
+		adc(t1, 0);
+		adc(t2, 0);
+		adc(t4, 0); // t + e
+		add(t1, t3);
+		adc(t2, 0);
+		adc(t4, 0); // t + e + (e << 64)
+		// p = [ffffffffffffffff:fffffffffffffffe:ffffffffffffffff]
+		mov(rax, size_t(-1));
+		mov(rdx, size_t(-2));
+		jz("@f");
+		sub_rr(Pack(t2, t1, t0), Pack(rax, rdx, rax));
+	L("@@");
+		mov_rr(Pack(t5, t4, t3), Pack(t2, t1, t0));
+		sub_rr(Pack(t2, t1, t0), Pack(rax, rax, rax));
+		cmovc_rr(Pack(t2, t1, t0), Pack(t5, t4, t3));
+		store_mr(py, Pack(t2, t1, t0));
 	}
 	void mov32c(const Reg64& r, uint64_t c)
 	{

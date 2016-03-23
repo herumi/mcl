@@ -391,7 +391,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	if (fg == 0) return;
 	fg->init(op);
 
-	if (N <= 4) {
+	if (op.isMont && N <= 4) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
@@ -410,8 +410,9 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	isFullBit = (bitSize % UnitBitSize) == 0;
 
 	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
-#ifdef MCL_USE_LLVM
-	const bool isNIST_P192 = (mode == FP_AUTO || mode == FP_LLVM) && mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff");
+#if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
+	isNIST_P192 = (mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
+		&& mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff");
 	if (isNIST_P192) {
 		isMont = false;
 		isFastMod = true;
@@ -449,9 +450,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192;
 	}
 #endif
-	if (isMont) {
-		fp::initForMont(*this, p, mode);
-	}
+	fp::initForMont(*this, p, mode);
 	sq.set(mp);
 }
 

@@ -99,6 +99,7 @@ struct Op {
 
 	bool isFullBit; // true if bitSize % uniSize == 0
 	bool isMont; // true if use Montgomery
+	bool isNIST_P192; // true if p is NIST_P192
 	bool isFastMod; // true if modulo is fast
 	/*
 		same fp_add, fp_sub if isFullBit
@@ -161,6 +162,7 @@ struct Op {
 		, fp_mulI(0)
 		, isFullBit(true)
 		, isMont(false)
+		, isNIST_P192(false)
 		, isFastMod(false)
 		, fp_addNC(0), fp_subNC(0)
 		, fp_preInv(0)

@@ -14,6 +14,11 @@
 
 //#define MCL_EC_USE_AFFINE
 
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4458)
+#endif
+
 namespace mcl {
 
 namespace ec {
@@ -659,3 +664,7 @@ struct hash<mcl::EcT<Fp> > {
 };
 
 CYBOZU_NAMESPACE_TR1_END } // std
+
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
