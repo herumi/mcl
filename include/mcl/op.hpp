@@ -51,6 +51,11 @@ enum Mode {
 	FP_XBYAK
 };
 
+enum PrimeMode {
+	PM_GENERIC = 0,
+	PM_NICT_P192
+};
+
 static inline const char *ModeToStr(Mode mode)
 {
 	switch (mode) {
@@ -99,7 +104,7 @@ struct Op {
 
 	bool isFullBit; // true if bitSize % uniSize == 0
 	bool isMont; // true if use Montgomery
-	bool isNIST_P192; // true if p is NIST_P192
+	PrimeMode primeMode;
 	bool isFastMod; // true if modulo is fast
 	/*
 		same fp_add, fp_sub if isFullBit
@@ -160,9 +165,9 @@ struct Op {
 		, fp_mulIPre(0)
 		, fpN1_modP(0)
 		, fp_mulI(0)
-		, isFullBit(true)
+		, isFullBit(false)
 		, isMont(false)
-		, isNIST_P192(false)
+		, primeMode(PM_GENERIC)
 		, isFastMod(false)
 		, fp_addNC(0), fp_subNC(0)
 		, fp_preInv(0)
