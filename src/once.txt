@@ -104,3 +104,26 @@ define void @mcl_fp_mul_NIST_P192(i192* %pz, i192* %px, i192* %py) {
 	call void @mcl_fpDbl_mod_NIST_P192(i192* %pz, i192* %buf)
 	ret void
 }
+
+; NIST_P521
+; p = (1 << 521) - 1
+; x = [H:L]
+; x % p = (L + H) % p
+@if unit == 64
+@define bit = 576
+@else
+@define bit = 544
+@endif
+@define b2 = bit * 2
+@define bu = bit + unit
+define void @mcl_fpDbl_mod_NIST_P521(i$(bit)* %py, i$(bit)* %px) {
+	%L0 = load i$(bit)* %px
+	%px1 = getelementptr i$(bit)* %px, i32 1
+	%H0 = load i$(bit)* %px1
+	%L = zext i$(bit) %L0 to i$(bu)
+	%H = zext i$(bit) %H0 to i$(bu)
+	%t = add i$(bu) %L, %H
+	%t1 = lshr i$(bu) %t, $(bu-1)
+	%t2 = add i$(bu) %t, %t1
+	ret void
+}
