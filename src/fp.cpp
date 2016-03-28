@@ -418,9 +418,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		isMont = false;
 		isFastMod = true;
 	}
-#endif
-#if defined(MCL_USE_LLVM)
-	if ((mode == FP_AUTO || mode == FP_LLVM)
+	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
 		&& mp == mpz_class("0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
 		primeMode = PM_NICT_P521;
 		isMont = false;

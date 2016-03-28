@@ -210,23 +210,30 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fp_subNC = getCurr<void3u>();
 			gen_addSubNC(false, pn_);
 		}
+		align(16);
+		shr1_ = getCurr<void2op>();
+		gen_shr1();
 
 		align(16);
 		op.fp_neg = getCurr<void2u>();
 		gen_neg();
+
 		align(16);
 		mulI_ = getCurr<uint3opI>();
 		gen_mulI();
-		align(16);
-		mul_ = getCurr<void3u>();
-		op.fp_mul = mul_;
-		gen_mul();
-		align(16);
-		op.fp_sqr = getCurr<void2u>();
-		gen_sqr();
-		align(16);
-		shr1_ = getCurr<void2op>();
-		gen_shr1();
+		if (op.primeMode == PM_NICT_P521) {
+			align(16);
+			op.fpDbl_mod = getCurr<void2u>();
+			gen_fpDbl_mod(op);
+		} else {
+			align(16);
+			mul_ = getCurr<void3u>();
+			op.fp_mul = mul_;
+			gen_mul();
+			align(16);
+			op.fp_sqr = getCurr<void2u>();
+			gen_sqr();
+		}
 		if (op.primeMode != PM_NICT_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
@@ -891,6 +898,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (op.primeMode == PM_NICT_P192) {
 			StackFrame sf(this, 2, 6 | UseRDX);
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
+			return;
+		}
+		if (op.primeMode == PM_NICT_P521) {
+			StackFrame sf(this, 2, 8 | UseRDX);
+			fpDbl_mod_NIST_P521(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
 		switch (pn_) {
@@ -1987,6 +1999,73 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		sub_rr(Pack(t2, t1, t0), Pack(rax, rax, rax));
 		cmovc_rr(Pack(t2, t1, t0), Pack(t5, t4, t3));
 		store_mr(py, Pack(t2, t1, t0));
+	}
+	/*
+		p = (1 << 521) - 1
+		x = [H:L]
+		x % p = (L + H) % p
+	*/
+	void fpDbl_mod_NIST_P521(const RegExp& py, const RegExp& px, const Pack& t)
+	{
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+		const int c = 9;
+		const uint32_t mask = (1 << c) - 1;
+		const Pack pack(rdx, rax, t6, t5, t4, t3, t2, t1, t0);
+		load_rm(pack, px + 64);
+		mov(t7, mask);
+		and_(t7, t0);
+		shrd(t0, t1, c);
+		shrd(t1, t2, c);
+		shrd(t2, t3, c);
+		shrd(t3, t4, c);
+		shrd(t4, t5, c);
+		shrd(t5, t6, c);
+		shrd(t6, rax, c);
+		shrd(rax, rdx, c);
+		shr(rdx, c);
+		// pack = L + H
+		add_rm(Pack(rax, t6, t5, t4, t3, t2, t1, t0), px);
+		adc(rdx, t7);
+
+		// t = (L + H) >> 521, add t
+		mov(t7, rdx);
+		shr(t7, c);
+		add(t0, t7);
+		adc(t1, 0);
+		adc(t2, 0);
+		adc(t3, 0);
+		adc(t4, 0);
+		adc(t5, 0);
+		adc(t6, 0);
+		adc(rax, 0);
+		adc(rdx, 0);
+		and_(rdx, mask);
+		store_mr(py, pack);
+
+		// if [rdx..t0] == p then 0
+		and_(rax, t0);
+		and_(rax, t1);
+		and_(rax, t2);
+		and_(rax, t3);
+		and_(rax, t4);
+		and_(rax, t5);
+		and_(rax, t6);
+		not_(rax);
+		xor_(rdx, (1 << c) - 1);
+		or_(rax, rdx);
+		jnz("@f");
+		xor_(rax, rax);
+		for (int i = 0; i < 9; i++) {
+			mov(ptr[py + i * 8], rax);
+		}
+	L("@@");
 	}
 	void mov32c(const Reg64& r, uint64_t c)
 	{

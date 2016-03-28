@@ -485,7 +485,8 @@ CYBOZU_TEST_AUTO(getStr)
 	}
 }
 
-#ifdef MCL_USE_LLVM
+#include <iostream>
+#if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
 CYBOZU_TEST_AUTO(mod_NIST_P521)
 {
 	const size_t len = 521;
@@ -502,17 +503,28 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 		"0x11111111111111112222222222222222333333333333333344444444444444445555555555555555666666666666666677777777777777778888888888888888aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccddddddddddddddddeeeeeeeeeeeeeeeeffffffffffffffff1234712341234123412341234123412341234",
 		"0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
-	const mpz_class p("0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+	const char *p = "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+#ifdef MCL_USE_LLVM
+	Fp::setModulo(p, 0, mcl::fp::FP_XBYAK);
+	const mcl::fp::Op& op = Fp::getOp();
+#endif
+	const mpz_class mp(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		mpz_class x(tbl[i]);
-		mcl::fp::Unit in[N * 2 + 1];
-		mcl::fp::Unit my[N + 1];
-		mcl::Gmp::getArray(in, N * 2 + 1, x);
-		mcl_fpDbl_mod_NIST_P521(my, in);
-		mpz_class y = x % p;
+		mpz_class mx(tbl[i]);
+		mcl::fp::Unit in[N * 2 + 1] = {};
 		mcl::fp::Unit ok[N + 1];
-		mcl::Gmp::getArray(ok, N + 1, y);
-		CYBOZU_TEST_ASSERT(memcmp(my, ok, sizeof(my)) == 0);
+		mcl::fp::Unit ex[N + 1];
+		mcl::Gmp::getArray(in, N * 2 + 1, mx);
+		mpz_class my = mx % mp;
+		mcl::Gmp::getArray(ok, N + 1, my);
+#ifdef MCL_USE_LLVM
+		mcl_fpDbl_mod_NIST_P521(ex, in);
+		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);
+#endif
+#ifdef MCL_USE_XBYAK
+		op.fpDbl_mod(ex, in);
+		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);
+#endif
 	}
 }
 #endif
