@@ -492,13 +492,13 @@ private:
 	{
 		Unit xy[maxSize * 2];
 		op_.fpDbl_mulPre(xy, x, y);
-		fpDbl_modW(z, xy);
+		op_.fpDbl_mod(z, xy);
 	}
 	static inline void fp_sqrW(Unit *y, const Unit *x)
 	{
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
-		fpDbl_modW(y, xx);
+		op_.fpDbl_mod(y, xx);
 	}
 	static inline void fp_negW(Unit *y, const Unit *x)
 	{

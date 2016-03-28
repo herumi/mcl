@@ -1,14 +1,14 @@
+// not compiled
 #include <map>
-#define MCL_USE_LLVM
 #include <mcl/op.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/bit_operation.hpp>
-#include "conversion.hpp"
+#include "../src/conversion.hpp"
 #include <mcl/fp.hpp>
 
-#include "fp_generator.hpp"
+#include "../src/fp_generator.hpp"
 #if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
 	#define USE_XBYAK
 	static mcl::FpGenerator fg;

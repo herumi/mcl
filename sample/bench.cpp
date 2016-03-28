@@ -12,6 +12,7 @@ typedef mcl::EcT<Fp> Ec;
 const char *getModeStr(mcl::fp::Mode mode)
 {
 	switch (mode) {
+	case mcl::fp::FP_AUTO: return "auto";
 	case mcl::fp::FP_GMP: return "gmp";
 	case mcl::fp::FP_LLVM: return "llvm";
 	case mcl::fp::FP_LLVM_MONT: return "llvm+mont";
@@ -122,6 +123,7 @@ void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (bitSize != 0 && tbl[i].bitSize != bitSize) continue;
+		benchEcSub(tbl[i], mcl::fp::FP_AUTO, ecMode);
 		if (mode & (1 << 0)) benchEcSub(tbl[i], mcl::fp::FP_GMP, ecMode);
 #ifdef MCL_USE_LLVM
 		if (mode & (1 << 1)) benchEcSub(tbl[i], mcl::fp::FP_LLVM, ecMode);

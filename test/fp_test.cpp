@@ -2,6 +2,7 @@
 #include <cybozu/test.hpp>
 #include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
+#include "../src/fp_proto.hpp"
 #include <time.h>
 
 #ifdef _MSC_VER
@@ -484,4 +485,34 @@ CYBOZU_TEST_AUTO(getStr)
 	}
 }
 
-
+#ifdef MCL_USE_LLVM
+CYBOZU_TEST_AUTO(mod_NIST_P521)
+{
+	const size_t len = 521;
+	const size_t N = len / mcl::fp::UnitBitSize;
+	const char *tbl[] = {
+		"0",
+		"0xffffffff",
+		"0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0",
+		"0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
+		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"0x20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		"0x20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00111423424",
+		"0x11111111111111112222222222222222333333333333333344444444444444445555555555555555666666666666666677777777777777778888888888888888aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccddddddddddddddddeeeeeeeeeeeeeeeeffffffffffffffff1234712341234123412341234123412341234",
+		"0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	};
+	const mpz_class p("0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		mpz_class x(tbl[i]);
+		mcl::fp::Unit in[N * 2 + 1];
+		mcl::fp::Unit my[N + 1];
+		mcl::Gmp::getArray(in, N * 2 + 1, x);
+		mcl_fpDbl_mod_NIST_P521(my, in);
+		mpz_class y = x % p;
+		mcl::fp::Unit ok[N + 1];
+		mcl::Gmp::getArray(ok, N + 1, y);
+		CYBOZU_TEST_ASSERT(memcmp(my, ok, sizeof(my)) == 0);
+	}
+}
+#endif

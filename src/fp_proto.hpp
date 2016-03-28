@@ -60,6 +60,8 @@ void mcl_fpDbl_mod_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*);
 void mcl_fp_mul_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 void mcl_fp_sqr_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*);
 
+void mcl_fpDbl_mod_NIST_P521(mcl::fp::Unit*, const mcl::fp::Unit*);
+
 }
 
 #endif

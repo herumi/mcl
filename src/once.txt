@@ -109,21 +109,36 @@ define void @mcl_fp_mul_NIST_P192(i192* %pz, i192* %px, i192* %py) {
 ; p = (1 << 521) - 1
 ; x = [H:L]
 ; x % p = (L + H) % p
-@if unit == 64
-@define bit = 576
-@else
-@define bit = 544
-@endif
-@define b2 = bit * 2
-@define bu = bit + unit
-define void @mcl_fpDbl_mod_NIST_P521(i$(bit)* %py, i$(bit)* %px) {
-	%L0 = load i$(bit)* %px
-	%px1 = getelementptr i$(bit)* %px, i32 1
-	%H0 = load i$(bit)* %px1
-	%L = zext i$(bit) %L0 to i$(bu)
-	%H = zext i$(bit) %H0 to i$(bu)
-	%t = add i$(bu) %L, %H
-	%t1 = lshr i$(bu) %t, $(bu-1)
-	%t2 = add i$(bu) %t, %t1
+@define len = 521
+@define n = len / unit
+@define round = unit * (n + 1)
+@define round2 = unit * (n * 2 + 1)
+@define rem = len - n * unit
+@define mask = ((1 << unit) - (1 << rem))
+define void @mcl_fpDbl_mod_NIST_P521(i$(round)* %py, i$(round2)* %px) {
+	%x = load i$(round2)* %px
+	%L0 = trunc i$(round2) %x to i$(len)
+	%L = zext i$(len) %L0 to i$(round)
+	%H0 = lshr i$(round2) %x, $(len)
+	%H = trunc i$(round2) %H0 to i$(round) ; x = [H:L]
+	%t = add i$(round) %L, %H ; t = L + H
+	%t0 = lshr i$(round) %t, $(len)
+	%t1 = and i$(round) %t0, 1
+	%t2 = add i$(round) %t, %t1
+	%t3 = trunc i$(round) %t2 to i$(len)
+	%z0 = zext i$(len) %t3 to i$(round)
+	%z1 = call i$(unit) @extract$(round)(i$(round) %z0, i$(round) $(n * unit))
+	%m0 = or i$(unit) %z1, $(mask)
+@for i, 0, n
+	%s$(i) = call i$(unit) @extract$(round)(i$(round) %z0, i$(round) $(unit*i))
+	%m$(i+1) = and i$(unit) %m$(i), %s$(i)
+@endfor
+	%c = icmp eq i$(unit) %m$(n), -1
+	br i1 %c, label %zero, label %nonzero
+zero:
+	store i$(round) 0, i$(round)* %py
+	ret void
+nonzero:
+	store i$(round) %z0, i$(round)* %py
 	ret void
 }

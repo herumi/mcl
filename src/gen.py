@@ -42,7 +42,6 @@ def parseFor(s, envG):
 	v
 	@define i = 0
 	<exp>
-	exp
 	@define i = 1
 	<exp>
 	@define i = 2
@@ -68,8 +67,8 @@ def parseFor(s, envG):
 			p = RE_FOR.search(stripped)
 			if p:
 				v = p.group(1).strip()
-				b = eval(p.group(2), envG)
-				e = eval(p.group(3), envG)
+				b = eval(p.group(2), envG, envL)
+				e = eval(p.group(3), envG, envL)
 				sub = ""
 				inFor = True
 			else:
