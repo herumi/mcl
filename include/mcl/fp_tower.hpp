@@ -506,7 +506,7 @@ struct Fp6T {
 		Fp2::mul(ad, a, d);
 		Fp2::mul(be, b, e);
 		Fp2::mul(cf, c, f);
-		Fp2 t1, t2, t3, t4;
+		Fp2 t1, t2;
 		Fp2::add(t1, b, c);
 		Fp2::add(t2, e, f);
 		t1 *= t2; // (b + c)(e + f)
