@@ -23,7 +23,7 @@ mcl_if_wrap.cxx: mcl_if.i mcl_if.hpp
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl_if.i
 
 $(TARGET): mcl_if_wrap.cxx
-	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) ../lib/libmcl.a
+	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 
 %.class: %.java
