@@ -22,7 +22,7 @@ mcl_if_wrap.cxx: mcl_if.i mcl_if.hpp
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl_if.i
 
 $(TARGET): mcl_if_wrap.cxx
-	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) ../src/fp.cpp ../src/x64.s
+	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) ../src/fp.cpp ../src/$(CPU).s -I ../include -I ../../xbyak -I ../../cybozulib/include
 
 
 %.class: %.java
