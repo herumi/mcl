@@ -54,5 +54,5 @@ CFLAGS+=$(CFLAGS_OPT)
 endif
 LDFLAGS+=-lgmp -lgmpxx -lcrypto $(BIT_OPT)
 
-CFLAGS += -DMCL_USE_LLVM
+CFLAGS += -DMCL_USE_LLVM -fPIC
 

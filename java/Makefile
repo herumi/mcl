@@ -7,9 +7,10 @@ else
 #JAVA_INC=-I/usr/lib/jvm/java-7-openjdk-amd64/include
   LIB_SUF=so
   CFLAGS+=-z noexecstack
-  LIB+=-lrt
+  LDFLAGS+=-lrt
 endif
-CFLAGS+= -shared -fPIC $(JAVA_INC) -Wno-strict-aliasing
+CFLAGS+= -shared $(JAVA_INC) -I ../include -I ../../xbyak -I ../../cybozulib/include -Wno-strict-aliasing
+LDFLAGS+=../lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl
 PACKAGE_DIR=$(subst .,/,$(PACKAGE_NAME))
@@ -22,7 +23,7 @@ mcl_if_wrap.cxx: mcl_if.i mcl_if.hpp
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl_if.i
 
 $(TARGET): mcl_if_wrap.cxx
-	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) ../src/fp.cpp ../src/$(CPU).s -I ../include -I ../../xbyak -I ../../cybozulib/include
+	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) ../lib/libmcl.a
 
 
 %.class: %.java
