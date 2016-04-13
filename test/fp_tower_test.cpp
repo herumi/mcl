@@ -117,6 +117,17 @@ void testFp6()
 	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
 	testFp6sqr(a, b, c, w);
+	for (int i = 0; i < 10; i++) {
+		Fp6::inv(y, x);
+		Fp6::mul(z, y, x);
+		CYBOZU_TEST_EQUAL(z, 1);
+		x += y;
+		y = x;
+		Fp6::inv(y, x);
+		Fp6::mul(z, y, x);
+		y *= x;
+		CYBOZU_TEST_EQUAL(z, 1);
+	}
 }
 
 void testFp12()
