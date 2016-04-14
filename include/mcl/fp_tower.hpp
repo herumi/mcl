@@ -489,7 +489,7 @@ struct Fp6T {
 	}
 	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
-		xy = (ad + (bf + ce)xi) + (ae + bd + cf xi)v + (af + be + cd)v^2
+		xy = (ad + (bf + ce)xi) + ((ae + bd) + cf xi)v + ((af + cd) + be)v^2
 		bf + ce = (b + c)(e + f) - be - cf
 		ae + bd = (a + b)(e + d) - ad - be
 		af + cd = (a + c)(d + f) - ad - cf
@@ -506,27 +506,31 @@ struct Fp6T {
 		Fp2::mul(ad, a, d);
 		Fp2::mul(be, b, e);
 		Fp2::mul(cf, c, f);
-		Fp2 t1, t2;
+
+		Fp2 t1, t2, t3, t4;
 		Fp2::add(t1, b, c);
 		Fp2::add(t2, e, f);
-		t1 *= t2; // (b + c)(e + f)
+		t1 *= t2;
 		t1 -= be;
 		t1 -= cf;
 		Fp2::mul_xi(t1, t1);
+
+		Fp2::add(t2, a, b);
+		Fp2::add(t3, e, d);
+		t2 *= t3;
+		t2 -= ad;
+		t2 -= be;
+
+		Fp2::add(t3, a, c);
+		Fp2::add(t4, d, f);
+		t3 *= t4;
+		t3 -= ad;
+		t3 -= cf;
+
 		Fp2::add(z.a, ad, t1);
-		Fp2::add(t1, a, b);
-		Fp2::add(t2, e, d);
-		t1 *= t2; // (a + b)(e + d)
-		t1 -= ad;
-		t1 -= be;
-		Fp2::mul_xi(t2, cf);
-		Fp2::add(z.b, t1, t2);
-		Fp2::add(t1, a, c);
-		Fp2::add(t2, d, f);
-		t1 *= t2; // (a + c)(d + f)
-		t1 -= ad;
-		t1 -= cf;
-		Fp2::add(z.c, t1, be);
+		Fp2::mul_xi(z.b, cf);
+		z.b += t2;
+		Fp2::add(z.c, t3, be);
 	}
 	/*
 		x = a + bv + cv^2, v^3 = xi

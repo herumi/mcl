@@ -123,10 +123,9 @@ void testFp6()
 		CYBOZU_TEST_EQUAL(z, 1);
 		x += y;
 		y = x;
-		Fp6::inv(y, x);
-		Fp6::mul(z, y, x);
+		Fp6::inv(y, y);
 		y *= x;
-		CYBOZU_TEST_EQUAL(z, 1);
+		CYBOZU_TEST_EQUAL(y, 1);
 	}
 }
 
