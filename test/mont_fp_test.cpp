@@ -488,6 +488,11 @@ struct Test {
 			CYBOZU_TEST_EQUAL(y, z);
 			z *= x;
 		}
+		x = z;
+		Fp::power(z, x, Fp::getOp().mp - 1);
+		CYBOZU_TEST_EQUAL(z, 1);
+		Fp::power(z, x, Fp::getOp().mp);
+		CYBOZU_TEST_EQUAL(z, x);
 	}
 	void mulU()
 	{

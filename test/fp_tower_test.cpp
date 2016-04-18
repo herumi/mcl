@@ -78,9 +78,19 @@ void testFp2()
 		CYBOZU_TEST_EQUAL(z, y);
 		y *= x;
 	}
-	y = x;
-	Fp2::power(z, y, Fp::getOp().mp);
-	CYBOZU_TEST_EQUAL(z, y);
+	/*
+		(a + bi)^p = a + bi if p % 4 = 1
+		(a + bi)^p = a - bi if p % 4 = 3
+	*/
+	{
+		const mpz_class& mp = Fp::getOp().mp;
+		y = x;
+		Fp2::power(z, y, mp);
+		if ((mp % 4) == 3) {
+			Fp::neg(z.b, z.b);
+		}
+		CYBOZU_TEST_EQUAL(z, y);
+	}
 	y = x;
 	Fp2::inv(y, x);
 	y *= x;
