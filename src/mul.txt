@@ -18,7 +18,7 @@ noinline
 @endfor
   ret i$(bu) %t$(N-2)
 }
-define void @mcl_fp_mulIPre$(bit)(i$(bu)* %pz, i$(bit)* %px, i$(unit) %y)
+define void @mcl_fp_mulUPre$(bit)(i$(bu)* %pz, i$(bit)* %px, i$(unit) %y)
 {
   %x = load i$(bit)* %px
   %z = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y)

@@ -99,9 +99,9 @@ struct Op {
 	void3u fp_add;
 	void3u fp_sub;
 	void3u fp_mul;
-	void2uI fp_mulIPre; // z[N + 1] = x[N] * y
+	void2uI fp_mulUPre; // z[N + 1] = x[N] * y
 	void3u fpN1_modP; // y[N] = x[N + 1] % p[N]
-	void2uI fp_mulI; // fpN1_modP + fp_mulIPre
+	void2uI fp_mulU; // fpN1_modP + fp_mulUPre
 
 	bool isFullBit; // true if bitSize % uniSize == 0
 	bool isMont; // true if use Montgomery
@@ -163,9 +163,9 @@ struct Op {
 		: N(0), bitSize(0)
 		, fp_isZero(0), fp_clear(0), fp_copy(0)
 		, fp_neg(0), fp_sqr(0), fp_add(0), fp_sub(0), fp_mul(0)
-		, fp_mulIPre(0)
+		, fp_mulUPre(0)
 		, fpN1_modP(0)
-		, fp_mulI(0)
+		, fp_mulU(0)
 		, isFullBit(false)
 		, isMont(false)
 		, primeMode(PM_GENERIC)

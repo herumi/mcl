@@ -125,7 +125,7 @@ struct Test {
 		modulo();
 		ope();
 		power();
-		mulI();
+		mulU();
 		power_Zn();
 		setArray();
 		set64bit();
@@ -489,12 +489,12 @@ struct Test {
 			z *= x;
 		}
 	}
-	void mulI()
+	void mulU()
 	{
 		Fp x(-1), y, z;
-		for (int i = 0; i < 20; i++) {
-			Fp::mul(y, x, i);
-			Fp::mulI(z, x, i);
+		for (unsigned int u = 0; u < 20; u++) {
+			Fp::mul(y, x, u);
+			Fp::mulU(z, x, u);
 			CYBOZU_TEST_EQUAL(y, z);
 		}
 	}
