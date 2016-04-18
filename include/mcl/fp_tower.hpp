@@ -99,50 +99,15 @@ public:
 	Fp2T& operator/=(const Fp2T& x) { div(*this, *this, x); return *this; }
 	Fp2T operator-() const { Fp2T x; neg(x, *this); return x; }
 	/*
-		Fp2T = '[' + <a> + ',' + <b> + ']'
+		Fp2T = <a> + ' ' + <b>
 	*/
-	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
-	{
-		str = '[';
-		str += a.getStr(base, withPrefix);
-		str += ',';
-		str += b.getStr(base, withPrefix);
-		str += ']';
-	}
-	void setStr(const std::string& str, int base = 0)
-	{
-		const size_t size = str.size();
-		const size_t pos = str.find(',');
-		if (size >= 5 && str[0] == '[' && pos != std::string::npos && str[size - 1] == ']') {
-			a.setStr(str.substr(1, pos - 1), base);
-			b.setStr(str.substr(pos + 1, size - pos - 2), base);
-			return;
-		}
-		throw cybozu::Exception("Fp2T:setStr:bad format") << str;
-	}
-	std::string getStr(int base = 10, bool withPrefix = false) const
-	{
-		std::string str;
-		getStr(str, base, withPrefix);
-		return str;
-	}
 	friend inline std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
-		const std::ios_base::fmtflags f = os.flags();
-		if (f & std::ios_base::oct) throw cybozu::Exception("Fp2T:operator<<:oct is not supported");
-		const int base = (f & std::ios_base::hex) ? 16 : 10;
-		const bool showBase = (f & std::ios_base::showbase) != 0;
-		return os << self.getStr(base, showBase);
+		return os << self.a << ' ' << self.b;
 	}
 	friend inline std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
-		const std::ios_base::fmtflags f = is.flags();
-		if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator>>:oct is not supported");
-		const int base = (f & std::ios_base::hex) ? 16 : 0;
-		std::string str;
-		is >> str;
-		self.setStr(str, base);
-		return is;
+		return is >> self.a >> self.b;
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool operator==(const Fp2T& rhs) const { return a == rhs.a && b == rhs.b; }
@@ -382,58 +347,13 @@ struct Fp6T {
 		return a == rhs.a && b == rhs.b && c == rhs.c;
 	}
 	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
-	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
-	{
-		str = '[';
-		str += a.getStr(base, withPrefix);
-		str += ',';
-		str += b.getStr(base, withPrefix);
-		str += ',';
-		str += c.getStr(base, withPrefix);
-		str += ']';
-	}
-	void setStr(const std::string& str, int base = 0)
-	{
-		const size_t size = str.size();
-		if (size >= 4 + 5 * 3 && str[0] == '[' && str[size - 1] == ']') { // '[' + <a> + ',' + <b> + ',' + <c> + ']'
-			size_t pos = str.find(']', 1);
-			if (pos != std::string::npos) {
-				a.setStr(str.substr(1, pos - 1 + 1), base);
-				if (str[pos + 1] == ',') {
-					pos += 2;
-					size_t pos2 = str.find(']', pos);
-					if (pos2 != std::string::npos) {
-						b.setStr(str.substr(pos, pos2 - pos + 1), base);
-						if (str[pos2 + 1] == ',') {
-							pos = pos2 + 2;
-							pos2 = str.find(']', pos);
-							if (pos2 != std::string::npos) {
-								c.setStr(str.substr(pos, pos2 - pos + 1), base);
-								return;
-							}
-						}
-					}
-				}
-			}
-		}
-		throw cybozu::Exception("Fp6T:setStr:bad format") << str;
-	}
-	std::string getStr(int base = 10, bool withPrefix = false) const
-	{
-		std::string str;
-		getStr(str, base, withPrefix);
-		return str;
-	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp6T& x)
 	{
-		return os << "[" << x.a << ",\n " << x.b << ",\n " << x.c << "]";
+		return os << x.a << ' ' << x.b << ' ' << x.c;
 	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& x)
 	{
-		char c1, c2, c3, c4;
-		is >> c1 >> x.a_ >> c2 >> x.b_ >> c3 >> x.c_ >> c4;
-		if (c1 == '[' && c2 == ',' && c3 == ',' && c4 == ']') return is;
-		throw std::ios_base::failure("bad Fp6T");
+		return is >> x.a >> x.b >> x.c;
 	}
 	inline friend Fp6T operator+(const Fp6T& x, const Fp6T& y) { Fp6T z; add(z, x, y); return z; }
 	inline friend Fp6T operator-(const Fp6T& x, const Fp6T& y) { Fp6T z; sub(z, x, y); return z; }
@@ -628,27 +548,13 @@ struct Fp12T {
 		Fp6::neg(z.a, x.a);
 		Fp6::neg(z.b, x.b);
 	}
-	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
-	{
-		str = '[';
-		str += a.getStr(base, withPrefix);
-		str += ',';
-		str += b.getStr(base, withPrefix);
-		str += ']';
-	}
-	std::string getStr(int base = 10, bool withPrefix = false) const
-	{
-		std::string str;
-		getStr(str, base, withPrefix);
-		return str;
-	}
 	friend inline std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
-		const std::ios_base::fmtflags f = os.flags();
-		if (f & std::ios_base::oct) throw cybozu::Exception("Fp12T:operator<<:oct is not supported");
-		const int base = (f & std::ios_base::hex) ? 16 : 10;
-		const bool showBase = (f & std::ios_base::showbase) != 0;
-		return os << self.getStr(base, showBase);
+		return os << self.a << ' ' << self.b;
+	}
+	friend inline std::istream& operator>>(std::istream& is, Fp12T& self)
+	{
+		return is >> self.a >> self.b;
 	}
 };
 

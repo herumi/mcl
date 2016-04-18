@@ -23,9 +23,9 @@ void testFp2()
 	x.b = 2;
 
 	{
-		std::string s;
-		s = x.getStr();
-		y.setStr(s);
+		std::stringstream os;
+		os << x;
+		os >> y;
 		CYBOZU_TEST_EQUAL(x, y);
 	}
 	y.a = 3;
@@ -97,9 +97,9 @@ void testFp6()
 	Fp6 y(Fp2(-1, 1), Fp2(4, -3), Fp2(-6, 2));
 	Fp6 z, w;
 	{
-		std::string s;
-		s = x.getStr();
-		z.setStr(s);
+		std::stringstream ss;
+		ss << x;
+		ss >> z;
 		CYBOZU_TEST_EQUAL(x, z);
 	}
 	Fp6::add(z, x, y);
