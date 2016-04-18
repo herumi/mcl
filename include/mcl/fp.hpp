@@ -27,6 +27,7 @@
 #include <cybozu/hash.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#include <mcl/operator.hpp>
 
 namespace mcl {
 
@@ -52,8 +53,9 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
-class FpT {
+class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	typedef fp::Unit Unit;
+	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
 	static const size_t maxSize = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
 	static fp::Op op_;
 	template<class tag2, size_t maxBitSize2> friend class FpT;
@@ -311,28 +313,6 @@ public:
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
-	static inline void div(FpT& z, const FpT& x, const FpT& y)
-	{
-		FpT rev;
-		inv(rev, y);
-		mul(z, x, rev);
-	}
-	template<class tag2, size_t maxBitSize2>
-	static inline void power(FpT& z, const FpT& x, const FpT<tag2, maxBitSize2>& y)
-	{
-		fp::Block b;
-		y.getBlock(b);
-		powerArray(z, x, b.p, b.n, false);
-	}
-	static inline void power(FpT& z, const FpT& x, int y)
-	{
-		const Unit u = abs(y);
-		powerArray(z, x, &u, 1, y < 0);
-	}
-	static inline void power(FpT& z, const FpT& x, const mpz_class& y)
-	{
-		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
-	}
 	bool isZero() const { return op_.fp_isZero(v_); }
 	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
 	/*
@@ -365,15 +345,6 @@ public:
 	static inline size_t getModBitLen() { return op_.bitSize; }
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
-	inline friend FpT operator+(const FpT& x, const FpT& y) { FpT z; add(z, x, y); return z; }
-	inline friend FpT operator-(const FpT& x, const FpT& y) { FpT z; sub(z, x, y); return z; }
-	inline friend FpT operator*(const FpT& x, const FpT& y) { FpT z; mul(z, x, y); return z; }
-	inline friend FpT operator/(const FpT& x, const FpT& y) { FpT z; div(z, x, y); return z; }
-	FpT& operator+=(const FpT& x) { add(*this, *this, x); return *this; }
-	FpT& operator-=(const FpT& x) { sub(*this, *this, x); return *this; }
-	FpT& operator*=(const FpT& x) { mul(*this, *this, x); return *this; }
-	FpT& operator/=(const FpT& x) { div(*this, *this, x); return *this; }
-	FpT operator-() const { FpT x; neg(x, *this); return x; }
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
 	{
 		const std::ios_base::fmtflags f = os.flags();
@@ -430,20 +401,6 @@ public:
 	}
 	void normalize() {} // dummy method
 private:
-	static inline void powerArray(FpT& z, const FpT& x, const Unit *y, size_t yn, bool isNegative)
-	{
-		FpT tmp;
-		const FpT *px = &x;
-		if (&z == &x) {
-			tmp = x;
-			px = &tmp;
-		}
-		z = 1;
-		fp::powerGeneric(z, *px, y, yn, mul, sqr);
-		if (isNegative) {
-			FpT::inv(z, z);
-		}
-	}
 	/*
 		wrapper function for generic p
 		add(z, x, y)
