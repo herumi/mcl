@@ -124,6 +124,21 @@ CYBOZU_TEST_AUTO(stream)
 	std::istringstream is("0b100");
 	Fp x;
 	CYBOZU_TEST_EXCEPTION(is >> std::hex >> x, cybozu::Exception);
+	{
+		std::ostringstream os;
+		os << Fp(123);
+		CYBOZU_TEST_EQUAL(os.str(), "123");
+	}
+	{
+		std::ostringstream os;
+		os << std::hex << Fp(0x123);
+		CYBOZU_TEST_EQUAL(os.str(), "123");
+	}
+	{
+		std::ostringstream os;
+		os << std::hex << std::showbase << Fp(0x123);
+		CYBOZU_TEST_EQUAL(os.str(), "0x123");
+	}
 }
 
 CYBOZU_TEST_AUTO(conv)

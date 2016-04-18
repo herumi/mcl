@@ -217,6 +217,15 @@ struct Test {
 				bool withPrefix = j == 0;
 				std::string expected = "1 " + x.getStr(base, withPrefix) + " " + y.getStr(base, withPrefix);
 				CYBOZU_TEST_EQUAL(P.getStr(base, withPrefix), expected);
+				std::ostringstream os;
+				if (base == 16) {
+					os << std::hex;
+				}
+				if (withPrefix) {
+					os << std::showbase;
+				}
+				os << P;
+				CYBOZU_TEST_EQUAL(os.str(), expected);
 			}
 		}
 		{

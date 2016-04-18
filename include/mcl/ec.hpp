@@ -541,32 +541,36 @@ public:
 		"1 <x> <y is odd ? 1 : 0>" ; compressed
 		"1 <x> <y>" ; not compressed
 	*/
-	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
+	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
-		if (self.isZero()) {
-			return os << '0';
+		if (isZero()) {
+			str = '0';
+			return;
 		}
-		self.normalize();
-		os << "1 " << self.x << ' ';
+		normalize();
+		str = "1 ";
+		str += x.getStr(base, withPrefix);
+		str += ' ';
 		if (compressedExpression_) {
-			char c = Fp::isOdd(self.y) ? '1' : '0';
-			os << c;
+			char c = Fp::isOdd(y) ? '1' : '0';
+			str += c;
 		} else {
-			os << self.y;
+			str += y.getStr(base, withPrefix);
 		}
-		return os;
 	}
 	std::string getStr(int base = 10, bool withPrefix = false) const
 	{
-		std::ostringstream os;
-		if (base == 16) os << std::hex;
-		if (withPrefix) os << std::showbase;
-		os << *this;
-		return os.str();
+		std::string str;
+		getStr(str, base, withPrefix);
+		return str;
 	}
-	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
+	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
-		str = getStr(base, withPrefix);
+		const std::ios_base::fmtflags f = os.flags();
+		if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
+		const int base = (f & std::ios_base::hex) ? 16 : 10;
+		const bool withPrefix = (f & std::ios_base::showbase) != 0;
+		return os << self.getStr(base, withPrefix);
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
