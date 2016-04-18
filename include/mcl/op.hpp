@@ -157,7 +157,7 @@ struct Op {
 	void2u fp2_neg;
 	void2u fp2_inv;
 	void2u fp2_sqr;
-	void2u fp2_mul_xi;
+	void2u fp2_mulXi;
 
 	Op()
 		: N(0), bitSize(0)
@@ -181,7 +181,7 @@ struct Op {
 		, fpDbl_sqrPre(0), fpDbl_mulPre(0), fpDbl_mod(0)
 		, xi_c(0)
 		, fp2_add(0), fp2_sub(0), fp2_mul(0), fp2_neg(0)
-		, fp2_sqr(0), fp2_mul_xi(0)
+		, fp2_sqr(0), fp2_mulXi(0)
 	{
 	}
 	~Op()

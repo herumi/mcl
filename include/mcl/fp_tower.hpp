@@ -82,7 +82,7 @@ public:
 	static inline void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
 	static inline void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
 	static inline void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
-	static inline void mul_xi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mul_xi(y.a.v_, x.a.v_); }
+	static inline void mulXi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mulXi(y.a.v_, x.a.v_); }
 	static inline void div(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		Fp2T rev;
@@ -140,7 +140,7 @@ public:
 		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		op.fp2_sqr = fp2_sqrW;
-		op.fp2_mul_xi = fp2_mul_xiW;
+		op.fp2_mulXi = fp2_mulXiW;
 	}
 private:
 	/*
@@ -267,7 +267,7 @@ private:
 		y = (a + bi)xi = (a + bi)(xi_c + i)
 		=(a * x_ic - b) + (a + b xi_c)i
 	*/
-	static inline void fp2_mul_xiW(Unit *y, const Unit *x)
+	static inline void fp2_mulXiW(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
@@ -398,12 +398,12 @@ struct Fp6T {
 		y.c += x.b; // a + b + c
 		Fp2::sqr(y.b, y.c); // (a + b + c)^2, destroy y.b
 		y.b -= t2; // (a + b + c)^2 - 2bc
-		Fp2::mul_xi(t2, t2); // 2bc xi
+		Fp2::mulXi(t2, t2); // 2bc xi
 		Fp2::sqr(y.a, x.a); // a^2, destroy y.a
 		y.b -= y.a; // (a + b + c)^2 - 2bc - a^2
 		y.a += t2; // a^2 + 2bc xi
 		Fp2::sub(y.c, y.b, t3); // (a + b + c)^2 - 2bc - a^2 - c^2
-		Fp2::mul_xi(y.b, t3); // c^2 xi
+		Fp2::mulXi(y.b, t3); // c^2 xi
 		y.b += t1; // c^2 xi + 2ab
 		y.c -= t1; // b^2 + 2ac
 	}
@@ -433,7 +433,7 @@ struct Fp6T {
 		t1 *= t2;
 		t1 -= be;
 		t1 -= cf;
-		Fp2::mul_xi(t1, t1);
+		Fp2::mulXi(t1, t1);
 
 		Fp2::add(t2, a, b);
 		Fp2::add(t3, e, d);
@@ -448,7 +448,7 @@ struct Fp6T {
 		t3 -= cf;
 
 		Fp2::add(z.a, ad, t1);
-		Fp2::mul_xi(z.b, cf);
+		Fp2::mulXi(z.b, cf);
 		z.b += t2;
 		Fp2::add(z.c, t3, be);
 	}
@@ -471,10 +471,10 @@ struct Fp6T {
 		Fp2::mul(bc, b, c);
 		Fp2::mul(ac, c, a);
 		Fp2 t;
-		Fp2::mul_xi(t, bc);
+		Fp2::mulXi(t, bc);
 		Fp6T p;
 		Fp2::sub(p.a, aa, t);
-		Fp2::mul_xi(t, cc);
+		Fp2::mulXi(t, cc);
 		Fp2::sub(p.b, t, ab);
 		Fp2::sub(p.c, bb, ac);
 		Fp2 q;
@@ -483,11 +483,11 @@ struct Fp6T {
 		t += ac; // t = 3ac
 		Fp2::sub(t, bb, t); // t = b^2 - 3ac
 		t *= b;
-		Fp2::mul_xi(t, t); // b(b^2 - 3ac)xi
+		Fp2::mulXi(t, t); // b(b^2 - 3ac)xi
 		q += t;
 		Fp2::mul(t, cc, c);
-		Fp2::mul_xi(t, t);
-		Fp2::mul_xi(t, t); // QQQ : c^3 xi^2
+		Fp2::mulXi(t, t);
+		Fp2::mulXi(t, t); // QQQ : c^3 xi^2
 		q += t;
 		Fp2::inv(q, q);
 		Fp2::mul(y.a, p.a, q);
