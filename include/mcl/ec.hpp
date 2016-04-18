@@ -536,68 +536,80 @@ public:
 		return z.isZero();
 #endif
 	}
-	void getStr(std::string& str) const
-	{
-		if (isZero()) {
-			str = '0';
-		} else {
-			normalize();
-			x.getStr(str, 16);
-			str += '_';
-			if (compressedExpression_) {
-				char c = Fp::isOdd(y) ? '1' : '0';
-				str += c;
-			} else {
-				str += y.getStr(16);
-			}
-		}
-	}
-	std::string getStr() const
-	{
-		std::string str;
-		getStr(str);
-		return str;
-	}
-	void setStr(const std::string& str, bool verify = true)
-	{
-		if (str == "0") {
-			clear();
-		} else {
-#ifdef MCL_EC_USE_AFFINE
-			inf_ = false;
-#else
-			z = 1;
-#endif
-			size_t pos = str.find('_');
-			if (pos == std::string::npos) throw cybozu::Exception("EcT:setStr:bad format") << str;
-			x.setStr(str.substr(0, pos), 16);
-			if (compressedExpression_) {
-				const char c = str[pos + 1];
-				if ((c == '0' || c == '1') && str.size() == pos + 2) {
-					getYfromX(y, x, c == '1');
-				} else {
-					throw cybozu::Exception("EcT:setStr:bad y") << str;
-				}
-			} else {
-				y.setStr(&str[pos + 1], 16);
-			}
-			if (verify && !isValid(x, y)) {
-				throw cybozu::Exception("EcT:setStr:bad value") << x << y;
-			}
-		}
-	}
+	/*
+		"0" ; infinity
+		"1 <x> <y is odd ? 1 : 0>" ; compressed
+		"1 <x> <y>" ; not compressed
+	*/
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
-		return os << self.getStr();
+		if (self.isZero()) {
+			return os << '0';
+		}
+		self.normalize();
+		os << "1 " << self.x << ' ';
+		if (compressedExpression_) {
+			char c = Fp::isOdd(self.y) ? '1' : '0';
+			os << c;
+		} else {
+			os << self.y;
+		}
+		return os;
+	}
+	std::string getStr(int base = 10, bool withPrefix = false) const
+	{
+		std::ostringstream os;
+		if (base == 16) os << std::hex;
+		if (withPrefix) os << std::showbase;
+		os << *this;
+		return os.str();
+	}
+	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
+	{
+		str = getStr(base, withPrefix);
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
 		std::string str;
 		is >> str;
-		self.setStr(str);
+		if (str == "0") {
+			self.clear();
+			return is;
+		}
+		if (str != "1") {
+			throw cybozu::Exception("EcT:operator>>:not begin with 1") << str;
+		}
+#ifdef MCL_EC_USE_AFFINE
+		self.inf_ = false;
+#else
+		self.z = 1;
+#endif
+		is >> self.x;
+		if (compressedExpression_) {
+			is >> str;
+			if (str == "0") {
+				getYfromX(self.y, self.x, false);
+			} else if (str == "1") {
+				getYfromX(self.y, self.x, true);
+			} else {
+				throw cybozu::Exception("EcT:operator>>:bad y") << str;
+			}
+		} else {
+			is >> self.y;
+			if (!isValid(self.x, self.y)) {
+				throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
+			}
+		}
 		return is;
 	}
-	static inline void setCompressedExpression(bool compressedExpression)
+	void setStr(const std::string& str)
+	{
+		std::istringstream is(str);
+		if (!(is >> *this)) {
+			throw cybozu::Exception("EcT:setStr:bad str") << str;
+		}
+	}
+	static inline void setCompressedExpression(bool compressedExpression = true)
 	{
 		compressedExpression_ = compressedExpression;
 	}

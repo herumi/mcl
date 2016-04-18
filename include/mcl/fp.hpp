@@ -379,9 +379,9 @@ public:
 		const std::ios_base::fmtflags f = os.flags();
 		if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
 		const int base = (f & std::ios_base::hex) ? 16 : 10;
-		const bool showBase = (f & std::ios_base::showbase) != 0;
+		const bool withPrefix = (f & std::ios_base::showbase) != 0;
 		std::string str;
-		self.getStr(str, base, showBase);
+		self.getStr(str, base, withPrefix);
 		return os << str;
 	}
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)

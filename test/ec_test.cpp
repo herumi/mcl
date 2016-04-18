@@ -208,6 +208,18 @@ struct Test {
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		{
+			Q.clear();
+			CYBOZU_TEST_EQUAL(Q.getStr(), "0");
+		}
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				int base = i == 0 ? 10 : 16;
+				bool withPrefix = j == 0;
+				std::string expected = "1 " + x.getStr(base, withPrefix) + " " + y.getStr(base, withPrefix);
+				CYBOZU_TEST_EQUAL(P.getStr(base, withPrefix), expected);
+			}
+		}
+		{
 			P = -P;
 			std::stringstream ss;
 			ss << P;
@@ -221,9 +233,7 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
-		CYBOZU_TEST_NO_EXCEPTION(P.setStr("3_5", false));
-		CYBOZU_TEST_ASSERT(!P.isValid());
-		CYBOZU_TEST_EXCEPTION_MESSAGE(P.setStr("3_5"), cybozu::Exception, "bad value");
+		CYBOZU_TEST_EXCEPTION_MESSAGE(P.setStr("1 3 5"), cybozu::Exception, "bad value");
 		// compressed
 		Ec::setCompressedExpression(true);
 		P.set(x, y);
