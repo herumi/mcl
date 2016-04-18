@@ -439,7 +439,7 @@ private:
 			px = &tmp;
 		}
 		z = 1;
-		fp::powerGeneric(z, *px, y, yn, FpT::mul, FpT::sqr);
+		fp::powerGeneric(z, *px, y, yn, mul, sqr);
 		if (isNegative) {
 			FpT::inv(z, z);
 		}

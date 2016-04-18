@@ -58,7 +58,7 @@ public:
 	x = a + bi
 */
 template<class Fp>
-class Fp2T {
+class Fp2T : public fp::Operator<Fp2T<Fp> > {
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
 	static Fp xi_c_;
@@ -83,21 +83,6 @@ public:
 	static inline void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
 	static inline void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
 	static inline void mulXi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mulXi(y.a.v_, x.a.v_); }
-	static inline void div(Fp2T& z, const Fp2T& x, const Fp2T& y)
-	{
-		Fp2T rev;
-		inv(rev, y);
-		mul(z, x, rev);
-	}
-	inline friend Fp2T operator+(const Fp2T& x, const Fp2T& y) { Fp2T z; add(z, x, y); return z; }
-	inline friend Fp2T operator-(const Fp2T& x, const Fp2T& y) { Fp2T z; sub(z, x, y); return z; }
-	inline friend Fp2T operator*(const Fp2T& x, const Fp2T& y) { Fp2T z; mul(z, x, y); return z; }
-	inline friend Fp2T operator/(const Fp2T& x, const Fp2T& y) { Fp2T z; div(z, x, y); return z; }
-	Fp2T& operator+=(const Fp2T& x) { add(*this, *this, x); return *this; }
-	Fp2T& operator-=(const Fp2T& x) { sub(*this, *this, x); return *this; }
-	Fp2T& operator*=(const Fp2T& x) { mul(*this, *this, x); return *this; }
-	Fp2T& operator/=(const Fp2T& x) { div(*this, *this, x); return *this; }
-	Fp2T operator-() const { Fp2T x; neg(x, *this); return x; }
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
@@ -223,8 +208,7 @@ private:
 	}
 	/*
 		x = a + bi, i^2 = -1
-		y = x^2 = (a + bi)^2 = (a^2 - b^2) + 2abi
-		  = (a + b)(a - b) + 2abi
+		y = x^2 = (a + bi)^2 = (a + b)(a - b) + 2abi
 	*/
 	static inline void fp2_sqrW(Unit *y, const Unit *x)
 	{
@@ -232,14 +216,6 @@ private:
 		Fp *py = reinterpret_cast<Fp*>(y);
 		const Fp& a = px[0];
 		const Fp& b = px[1];
-#if 0
-		Fp aa, bb, t;
-		Fp::sqr(aa, a);
-		Fp::sqr(bb, b);
-		Fp::mul(t, a, b);
-		Fp::sub(py[0], aa, bb); // a^2 - b^2
-		Fp::add(py[1], t, t); // 2ab
-#else
 #if 1 // faster than using FpDbl
 		Fp t1, t2, t3;
 		Fp::add(t1, b, b); // 2b
@@ -258,7 +234,6 @@ private:
 		FpDbl::mulPre(d1, t1, t2); // (a + b)(a - b)
 		FpDbl::mod(py[0], d1);
 		FpDbl::mod(py[1], d2);
-#endif
 #endif
 	}
 	/*
@@ -322,7 +297,7 @@ template<class Fp> Fp Fp2T<Fp>::xi_c_;
 	x = a + b v + c v^2
 */
 template<class Fp>
-struct Fp6T {
+struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	typedef Fp2T<Fp> Fp2;
 	Fp2 a, b, c;
 	Fp6T() { }
@@ -355,13 +330,6 @@ struct Fp6T {
 	{
 		return is >> x.a >> x.b >> x.c;
 	}
-	inline friend Fp6T operator+(const Fp6T& x, const Fp6T& y) { Fp6T z; add(z, x, y); return z; }
-	inline friend Fp6T operator-(const Fp6T& x, const Fp6T& y) { Fp6T z; sub(z, x, y); return z; }
-	inline friend Fp6T operator*(const Fp6T& x, const Fp6T& y) { Fp6T z; mul(z, x, y); return z; }
-	Fp6T& operator+=(const Fp6T& x) { add(*this, *this, x); return *this; }
-	Fp6T& operator-=(const Fp6T& x) { sub(*this, *this, x); return *this; }
-	Fp6T& operator*=(const Fp6T& x) { mul(*this, *this, x); return *this; }
-	Fp6T operator-() const { Fp6T x; neg(x, *this); return x; }
 	static inline void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
@@ -501,7 +469,7 @@ struct Fp6T {
 	x = a + b w
 */
 template<class Fp>
-struct Fp12T {
+struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
 	Fp6 a, b;
@@ -609,13 +577,6 @@ struct Fp12T {
 	{
 		return is >> self.a >> self.b;
 	}
-	inline friend Fp12T operator+(const Fp12T& x, const Fp12T& y) { Fp12T z; add(z, x, y); return z; }
-	inline friend Fp12T operator-(const Fp12T& x, const Fp12T& y) { Fp12T z; sub(z, x, y); return z; }
-	inline friend Fp12T operator*(const Fp12T& x, const Fp12T& y) { Fp12T z; mul(z, x, y); return z; }
-	Fp12T& operator+=(const Fp12T& x) { add(*this, *this, x); return *this; }
-	Fp12T& operator-=(const Fp12T& x) { sub(*this, *this, x); return *this; }
-	Fp12T& operator*=(const Fp12T& x) { mul(*this, *this, x); return *this; }
-	Fp12T operator-() const { Fp12T x; neg(x, *this); return x; }
 };
 
 } // mcl

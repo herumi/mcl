@@ -18,6 +18,10 @@ bool g_benchOnly = false;
 void testFp2()
 {
 	puts(__FUNCTION__);
+	CYBOZU_TEST_EQUAL(sizeof(Fp), 32);
+	CYBOZU_TEST_EQUAL(sizeof(Fp2), 32 * 2);
+	CYBOZU_TEST_EQUAL(sizeof(Fp6), 32 * 6);
+	CYBOZU_TEST_EQUAL(sizeof(Fp12), 32 * 12);
 	Fp2 x, y, z;
 	x.a = 1;
 	x.b = 2;
