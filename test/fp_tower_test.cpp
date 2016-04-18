@@ -72,6 +72,15 @@ void testFp2()
 		iss >> w;
 		CYBOZU_TEST_EQUAL(x, w);
 	}
+	y = 1;
+	for (int i = 0; i < 10; i++) {
+		Fp2::power(z, x, i);
+		CYBOZU_TEST_EQUAL(z, y);
+		y *= x;
+	}
+	y = x;
+	Fp2::power(z, y, Fp::getOp().mp);
+	CYBOZU_TEST_EQUAL(z, y);
 	y = x;
 	Fp2::inv(y, x);
 	y *= x;

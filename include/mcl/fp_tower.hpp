@@ -98,22 +98,6 @@ public:
 	bool operator==(const Fp2T& rhs) const { return a == rhs.a && b == rhs.b; }
 	bool operator!=(const Fp2T& rhs) const { return !operator==(rhs); }
 	void normalize() {} // dummy method
-	template<class tag2, size_t maxBitSize2>
-	static inline void power(Fp2T& z, const Fp2T& x, const FpT<tag2, maxBitSize2>& y)
-	{
-		fp::Block b;
-		y.getBlock(b);
-		powerArray(z, x, b.p, b.n, false);
-	}
-	static inline void power(Fp2T& z, const Fp2T& x, int y)
-	{
-		const fp::Unit u = abs(y);
-		powerArray(z, x, &u, 1, y < 0);
-	}
-	static inline void power(Fp2T& z, const Fp2T& x, const mpz_class& y)
-	{
-		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
-	}
 	static inline void init(uint32_t xi_c)
 	{
 		assert(Fp::maxSize <= 256);
@@ -273,20 +257,6 @@ private:
 		py[0] *= aa;
 		py[1] *= aa;
 		Fp::neg(py[1], py[1]);
-	}
-	static inline void powerArray(Fp2T& z, const Fp2T& x, const fp::Unit *y, size_t yn, bool isNegative)
-	{
-		Fp2T tmp;
-		const Fp2T *px = &x;
-		if (&z == &x) {
-			tmp = x;
-			px = &tmp;
-		}
-		z = 1;
-		fp::powerGeneric(z, *px, y, yn, Fp2T::mul, Fp2T::sqr);
-		if (isNegative) {
-			Fp2T::inv(z, z);
-		}
 	}
 };
 
