@@ -215,7 +215,7 @@ struct Test {
 			for (int j = 0; j < 2; j++) {
 				int base = i == 0 ? 10 : 16;
 				bool withPrefix = j == 0;
-				std::string expected = "1 " + x.getStr(base, withPrefix) + " " + y.getStr(base, withPrefix);
+				std::string expected = "2 " + x.getStr(base, withPrefix) + " " + y.getStr(base, withPrefix);
 				CYBOZU_TEST_EQUAL(P.getStr(base, withPrefix), expected);
 				std::ostringstream os;
 				if (base == 16) {
@@ -242,7 +242,7 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
-		CYBOZU_TEST_EXCEPTION_MESSAGE(P.setStr("1 3 5"), cybozu::Exception, "bad value");
+		CYBOZU_TEST_EXCEPTION_MESSAGE(P.setStr("2 3 5"), cybozu::Exception, "bad value");
 		// compressed
 		Ec::setCompressedExpression(true);
 		P.set(x, y);

@@ -539,7 +539,7 @@ public:
 	/*
 		"0" ; infinity
 		"1 <x> <y is odd ? 1 : 0>" ; compressed
-		"1 <x> <y>" ; not compressed
+		"2 <x> <y>" ; not compressed
 	*/
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
@@ -548,13 +548,15 @@ public:
 			return;
 		}
 		normalize();
-		str = "1 ";
-		str += x.getStr(base, withPrefix);
-		str += ' ';
 		if (compressedExpression_) {
-			char c = Fp::isOdd(y) ? '1' : '0';
-			str += c;
+			str = "1 ";
+			str += x.getStr(base, withPrefix);
+			const char *p = Fp::isOdd(y) ? " 1" : " 0";
+			str += p;
 		} else {
+			str = "2 ";
+			str += x.getStr(base, withPrefix);
+			str += ' ';
 			str += y.getStr(base, withPrefix);
 		}
 	}
@@ -580,16 +582,13 @@ public:
 			self.clear();
 			return is;
 		}
-		if (str != "1") {
-			throw cybozu::Exception("EcT:operator>>:not begin with 1") << str;
-		}
 #ifdef MCL_EC_USE_AFFINE
 		self.inf_ = false;
 #else
 		self.z = 1;
 #endif
 		is >> self.x;
-		if (compressedExpression_) {
+		if (str == "1") {
 			is >> str;
 			if (str == "0") {
 				getYfromX(self.y, self.x, false);
@@ -598,11 +597,13 @@ public:
 			} else {
 				throw cybozu::Exception("EcT:operator>>:bad y") << str;
 			}
-		} else {
+		} else if (str == "2") {
 			is >> self.y;
 			if (!isValid(self.x, self.y)) {
 				throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
 			}
+		} else {
+			throw cybozu::Exception("EcT:operator>>:bad format") << str;
 		}
 		return is;
 	}
