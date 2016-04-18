@@ -174,7 +174,7 @@ private:
 		x = a + bi, y = c + di, i^2 = -1
 		z = xy = (a + bi)(c + di) = (ac - bd) + (ad + bc)i
 		ad+bc = (a + b)(c + d) - ac - bd
-		# mod = 3
+		# of mod = 3
 	*/
 	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -196,7 +196,7 @@ private:
 		pz[1] -= bd;
 	}
 	/*
-		# mod = 2
+		# of mod = 2
 		@note mod of NIST_P192 is fast
 	*/
 	static inline void fp2_mulUseDblW(Unit *z, const Unit *x, const Unit *y)
@@ -547,6 +547,33 @@ struct Fp12T {
 	{
 		Fp6::neg(z.a, x.a);
 		Fp6::neg(z.b, x.b);
+	}
+	/*
+		x = a + bw, y = c + dw, w^2 = v
+		z = xy = (a + bw)(c + dw) = (ac + bdv) + (ad + bc)w
+		ad+bc = (a + b)(c + d) - ac - bd
+
+		in Fp6 : (a + bv + cv^2)v = cv^3 + av + bv^2 = cxi + av + bv^2
+	*/
+	static inline void mul(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	{
+		const Fp6& a = x.a;
+		const Fp6& b = x.b;
+		const Fp6& c = y.a;
+		const Fp6& d = y.b;
+		Fp6 t1, t2, ac, bd;
+		Fp6::add(t1, a, b);
+		Fp6::add(t2, c, d);
+		t1 *= t2; // (a + b)(c + d)
+		Fp6::mul(ac, a, c);
+		Fp6::mul(bd, b, d);
+
+		Fp2::mulXi(z.a.a, bd.c);
+		z.a.b = bd.a;
+		z.a.c = bd.b;
+		z.a += ac;
+		t1 -= ac;
+		Fp6::sub(z.a, t1, bd);
 	}
 	friend inline std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
