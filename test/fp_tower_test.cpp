@@ -145,6 +145,24 @@ void testFp12()
 	CYBOZU_TEST_EQUAL(z, Fp12(Fp6(Fp2(-1, 1), Fp2(-2, 1), Fp2(1, 5)), Fp6(Fp2(2, 4), Fp2(4, 0), Fp2(1, 4))));
 	Fp12::neg(z, x);
 	CYBOZU_TEST_EQUAL(z, Fp12(-xa, -xb));
+
+	y.b.clear();
+	z = y;
+	Fp12::sqr(z, z);
+	CYBOZU_TEST_EQUAL(z.a, y.a * y.a);
+	z = y * y;
+	CYBOZU_TEST_EQUAL(z.a, y.a * y.a);
+	CYBOZU_TEST_ASSERT(z.b.isZero());
+	Fp12 w;
+	y = x;
+	z = x * x;
+	w = x;
+	Fp12::sqr(w, w);
+	CYBOZU_TEST_EQUAL(z, w);
+	y = x;
+	y *= y;
+	Fp12::sqr(x, x);
+	CYBOZU_TEST_EQUAL(x, y);
 }
 
 void testFpDbl()

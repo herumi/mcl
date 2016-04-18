@@ -549,6 +549,18 @@ struct Fp12T {
 		Fp6::neg(z.b, x.b);
 	}
 	/*
+		z = x v + y
+		in Fp6 : (a + bv + cv^2)v = cv^3 + av + bv^2 = cxi + av + bv^2
+	*/
+	static inline void mulVadd(Fp6& z, const Fp6& x, const Fp6& y)
+	{
+		Fp2 t;
+		Fp2::mulXi(t, x.c);
+		Fp2::add(z.c, x.b, y.c);
+		Fp2::add(z.b, x.a, y.b);
+		Fp2::add(z.a, t, y.a);
+	}
+	/*
 		x = a + bw, y = c + dw, w^2 = v
 		z = xy = (a + bw)(c + dw) = (ac + bdv) + (ad + bc)w
 		ad+bc = (a + b)(c + d) - ac - bd
@@ -567,13 +579,27 @@ struct Fp12T {
 		t1 *= t2; // (a + b)(c + d)
 		Fp6::mul(ac, a, c);
 		Fp6::mul(bd, b, d);
-
-		Fp2::mulXi(z.a.a, bd.c);
-		z.a.b = bd.a;
-		z.a.c = bd.b;
-		z.a += ac;
+		mulVadd(z.a, bd, ac);
 		t1 -= ac;
-		Fp6::sub(z.a, t1, bd);
+		Fp6::sub(z.b, t1, bd);
+	}
+	/*
+		x = a + bw, w^2 = v
+		y = x^2 = (a + bw)^2 = (a^2 + b^2v) + 2abw
+		a^2 + b^2v = (a + b)(bv + a) - (abv + ab)
+	*/
+	static inline void sqr(Fp12T& y, const Fp12T& x)
+	{
+		const Fp6& a = x.a;
+		const Fp6& b = x.b;
+		Fp6 t0, t1;
+		Fp6::add(t0, a, b); // a + b
+		mulVadd(t1, b, a); // bv + a
+		t0 *= t1; // (a + b)(bv + a)
+		Fp6::mul(t1, a, b); // ab
+		Fp6::add(y.b, t1, t1); // 2ab
+		mulVadd(y.a, t1, t1); // abv + ab
+		Fp6::sub(y.a, t0, y.a);
 	}
 	friend inline std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
@@ -583,6 +609,13 @@ struct Fp12T {
 	{
 		return is >> self.a >> self.b;
 	}
+	inline friend Fp12T operator+(const Fp12T& x, const Fp12T& y) { Fp12T z; add(z, x, y); return z; }
+	inline friend Fp12T operator-(const Fp12T& x, const Fp12T& y) { Fp12T z; sub(z, x, y); return z; }
+	inline friend Fp12T operator*(const Fp12T& x, const Fp12T& y) { Fp12T z; mul(z, x, y); return z; }
+	Fp12T& operator+=(const Fp12T& x) { add(*this, *this, x); return *this; }
+	Fp12T& operator-=(const Fp12T& x) { sub(*this, *this, x); return *this; }
+	Fp12T& operator*=(const Fp12T& x) { mul(*this, *this, x); return *this; }
+	Fp12T operator-() const { Fp12T x; neg(x, *this); return x; }
 };
 
 } // mcl
