@@ -204,7 +204,7 @@ void testFpDbl()
 		mpz_class mp(pstr);
 		mp <<= Fp::getUnitSize() * mcl::fp::UnitBitSize;
 		mpz_class mp1 = mp - 1;
-		mcl::Gmp::getStr(pstr, mp1);
+		mcl::gmp::getStr(pstr, mp1);
 		const char *tbl[] = {
 			"0", "1", "123456", "123456789012345668909", pstr.c_str(),
 		};
@@ -218,10 +218,10 @@ void testFpDbl()
 				mpz_class my(tbl[j]);
 				y.setMpz(my);
 				FpDbl::add(z, x, y);
-				mcl::Gmp::addMod(mo, mx, my, mp);
+				mcl::gmp::addMod(mo, mx, my, mp);
 				z.getMpz(mz);
 				CYBOZU_TEST_EQUAL(mz, mo);
-				mcl::Gmp::subMod(mo, mx, my, mp);
+				mcl::gmp::subMod(mo, mx, my, mp);
 				FpDbl::sub(z, x, y);
 				z.getMpz(mz);
 				CYBOZU_TEST_EQUAL(mz, mo);

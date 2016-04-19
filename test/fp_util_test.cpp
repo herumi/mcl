@@ -182,10 +182,10 @@ CYBOZU_TEST_AUTO(maskArray)
 		memcpy(x, org, sizeof(org));
 		mcl::fp::maskArray(x, n, i);
 		mpz_class t;
-		mcl::Gmp::setArray(t, org, n);
+		mcl::gmp::setArray(t, org, n);
 		t &= (mpz_class(1) << i) - 1;
 		uint16_t y[n];
-		mcl::Gmp::getArray(y, n, t);
+		mcl::gmp::getArray(y, n, t);
 		CYBOZU_TEST_EQUAL_ARRAY(x, y, n);
 	}
 }

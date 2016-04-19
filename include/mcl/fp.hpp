@@ -132,12 +132,12 @@ public:
 		}
 		{ // set half
 			mpz_class half = (op_.mp - 1) / 2;
-			Gmp::getArray(op_.half, op_.N, half);
+			gmp::getArray(op_.half, op_.N, half);
 		}
 	}
 	static inline void getModulo(std::string& pstr)
 	{
-		Gmp::getStr(pstr, op_.mp);
+		gmp::getStr(pstr, op_.mp);
 	}
 	static inline bool isFullBit() { return op_.isFullBit; }
 	/*
@@ -291,7 +291,7 @@ public:
 	{
 		fp::Block b;
 		getBlock(b);
-		Gmp::setArray(x, b.p, b.n);
+		gmp::setArray(x, b.p, b.n);
 	}
 	mpz_class getMpz() const
 	{
@@ -302,7 +302,7 @@ public:
 	void setMpz(const mpz_class& x)
 	{
 		if (x < 0) throw cybozu::Exception("Fp:setMpz:negative is not supported") << x;
-		setArray(Gmp::getUnit(x), Gmp::getUnitSize(x));
+		setArray(gmp::getUnit(x), gmp::getUnitSize(x));
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_); }

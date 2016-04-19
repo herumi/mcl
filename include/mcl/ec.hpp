@@ -498,7 +498,7 @@ public:
 	}
 	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		mulArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	/*
 		0 <= P for any P

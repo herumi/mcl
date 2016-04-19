@@ -28,17 +28,17 @@ public:
 	void setMpz(const mpz_class& x)
 	{
 		if (x < 0) throw cybozu::Exception("FpDblT:_setMpz:negative is not supported") << x;
-		const size_t xn = Gmp::getUnitSize(x);
+		const size_t xn = gmp::getUnitSize(x);
 		const size_t N2 = getUnitSize();
 		if (xn > N2) {
 			throw cybozu::Exception("FpDblT:setMpz:too large") << x;
 		}
-		memcpy(v_, Gmp::getUnit(x), xn * sizeof(Unit));
+		memcpy(v_, gmp::getUnit(x), xn * sizeof(Unit));
 		memset(v_ + xn, 0, (N2 - xn) * sizeof(Unit));
 	}
 	void getMpz(mpz_class& x) const
 	{
-		Gmp::setArray(x, v_, Fp::op_.N * 2);
+		gmp::setArray(x, v_, Fp::op_.N * 2);
 	}
 	static inline void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
 	static inline void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }

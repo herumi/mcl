@@ -55,7 +55,7 @@
 
 namespace mcl {
 
-struct Gmp {
+struct gmp {
 	typedef mpz_class ImplType;
 #if CYBOZU_OS_BIT == 64
 	typedef uint64_t Unit;
@@ -78,9 +78,9 @@ struct Gmp {
 	{
 		const size_t bufByteSize = sizeof(T) * maxSize;
 		const int xn = x->_mp_size;
-		if (xn < 0) throw cybozu::Exception("Gmp:getArray:x is negative");
+		if (xn < 0) throw cybozu::Exception("gmp:getArray:x is negative");
 		size_t xByteSize = sizeof(*x->_mp_d) * xn;
-		if (xByteSize > bufByteSize) throw cybozu::Exception("Gmp:getArray:too small") << maxSize;
+		if (xByteSize > bufByteSize) throw cybozu::Exception("gmp:getArray:too small") << maxSize;
 		memcpy(buf, x->_mp_d, xByteSize);
 		memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
 	}
@@ -253,6 +253,10 @@ struct Gmp {
 	{
 		return mpz_sizeinbase(x.get_mpz_t(), 2);
 	}
+	static inline bool testBit(const mpz_class& x, size_t pos)
+	{
+		return mpz_tstbit(x.get_mpz_t(), pos) != 0;
+	}
 	static inline Unit getUnit(const mpz_class& x, size_t i)
 	{
 		return x.get_mpz_t()->_mp_d[i];
@@ -282,7 +286,7 @@ struct Gmp {
 			v |= 1U << (rem - 1);
 		}
 		buf[n - 1] = v;
-		Gmp::setArray(z, &buf[0], n);
+		gmp::setArray(z, &buf[0], n);
 	}
 	template<class RG>
 	static void getRandPrime(mpz_class& z, size_t bitSize, RG& rg, bool setSecondBit = false, bool mustBe3mod4 = false)
@@ -316,11 +320,11 @@ public:
 	{
 		p = _p;
 		if (p <= 2) throw cybozu::Exception("SquareRoot:bad p") << p;
-		isPrime = Gmp::isPrime(p);
+		isPrime = gmp::isPrime(p);
 		if (!isPrime) return; // don't throw until get() is called
 		// g is quadratic nonresidue
 		g = 2;
-		while (Gmp::legendre(g, p) > 0) {
+		while (gmp::legendre(g, p) > 0) {
 			g++;
 		}
 		// p - 1 = 2^r q, q is odd
@@ -330,7 +334,7 @@ public:
 			r++;
 			q /= 2;
 		}
-		Gmp::powMod(s, g, q, p);
+		gmp::powMod(s, g, q, p);
 	}
 	/*
 		solve x^2 = a mod p
@@ -338,15 +342,15 @@ public:
 	bool get(mpz_class& x, const mpz_class& a) const
 	{
 		if (!isPrime) throw cybozu::Exception("SquareRoot:get:not prime") << p;
-		if (Gmp::legendre(a, p) < 0) return false;
+		if (gmp::legendre(a, p) < 0) return false;
 		if (r == 1) {
-			Gmp::powMod(x, a, (p + 1) / 4, p);
+			gmp::powMod(x, a, (p + 1) / 4, p);
 			return true;
 		}
 		mpz_class c = s, d;
 		int e = r;
-		Gmp::powMod(d, a, q, p);
-		Gmp::powMod(x, a, (q + 1) / 2, p); // destroy a if &x == &a
+		gmp::powMod(d, a, q, p);
+		gmp::powMod(x, a, (q + 1) / 2, p); // destroy a if &x == &a
 		while (d != 1) {
 			int i = 1;
 			mpz_class dd = (d * d) % p;
@@ -356,7 +360,7 @@ public:
 			}
 			mpz_class b = 1;
 			b <<= e - i - 1;
-			Gmp::powMod(b, c, b, p);
+			gmp::powMod(b, c, b, p);
 			x = (x * b) % p;
 			c = (b * b) % p;
 			d = (d * c) % p;

@@ -153,7 +153,7 @@ void benchToStr16()
 		Fp x(tbl[i]);
 		CYBOZU_BENCH("fp::toStr16", mcl::fp::toStr16, str, x.getUnit(), x.getUnitSize(), 16);
 		mpz_class y(tbl[i]);
-		CYBOZU_BENCH("Gmp:getStr ", mcl::Gmp::getStr, str, y, 16);
+		CYBOZU_BENCH("gmp:getStr ", mcl::gmp::getStr, str, y, 16);
 	}
 }
 
@@ -178,7 +178,7 @@ void benchFromStr16()
 		CYBOZU_BENCH("fp:fromStr16", mcl::fp::fromStr16, buf, N, str.c_str(), str.size());
 
 		mpz_class y;
-		CYBOZU_BENCH("Gmp:setStr  ", mcl::Gmp::setStr, y, str, 16);
+		CYBOZU_BENCH("gmp:setStr  ", mcl::gmp::setStr, y, str, 16);
 	}
 }
 

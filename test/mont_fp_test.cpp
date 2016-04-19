@@ -9,7 +9,7 @@ typedef mcl::FpT<ZnTag> Zn;
 typedef mcl::FpT<> Fp;
 
 struct Montgomery {
-	typedef mcl::Gmp::Unit Unit;
+	typedef mcl::gmp::Unit Unit;
 	mpz_class p_;
 	mpz_class R_; // (1 << (pn_ * 64)) % p
 	mpz_class RR_; // (R * R) % p
@@ -19,8 +19,8 @@ struct Montgomery {
 	explicit Montgomery(const mpz_class& p)
 	{
 		p_ = p;
-		rp_ = mcl::fp::getMontgomeryCoeff(mcl::Gmp::getUnit(p, 0));
-		pn_ = mcl::Gmp::getUnitSize(p);
+		rp_ = mcl::fp::getMontgomeryCoeff(mcl::gmp::getUnit(p, 0));
+		pn_ = mcl::gmp::getUnitSize(p);
 		R_ = 1;
 		R_ = (R_ << (pn_ * 64)) % p_;
 		RR_ = (R_ * R_) % p_;
@@ -32,16 +32,16 @@ struct Montgomery {
 	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
 	{
 #if 0
-		const size_t ySize = mcl::Gmp::getUnitSize(y);
-		mpz_class c = x * mcl::Gmp::getUnit(y, 0);
-		Unit q = mcl::Gmp::getUnit(c, 0) * rp_;
+		const size_t ySize = mcl::gmp::getUnitSize(y);
+		mpz_class c = x * mcl::gmp::getUnit(y, 0);
+		Unit q = mcl::gmp::getUnit(c, 0) * rp_;
 		c += p_ * q;
 		c >>= sizeof(Unit) * 8;
 		for (size_t i = 1; i < pn_; i++) {
 			if (i < ySize) {
-				c += x * mcl::Gmp::getUnit(y, i);
+				c += x * mcl::gmp::getUnit(y, i);
 			}
-			Unit q = mcl::Gmp::getUnit(c, 0) * rp_;
+			Unit q = mcl::gmp::getUnit(c, 0) * rp_;
 			c += p_ * q;
 			c >>= sizeof(Unit) * 8;
 		}
@@ -52,7 +52,7 @@ struct Montgomery {
 #else
 		z = x * y;
 		for (size_t i = 0; i < pn_; i++) {
-			Unit q = mcl::Gmp::getUnit(z, 0) * rp_;
+			Unit q = mcl::gmp::getUnit(z, 0) * rp_;
 			z += p_ * (mp_limb_t)q;
 			z >>= sizeof(Unit) * 8;
 		}
@@ -68,7 +68,7 @@ mpz_class getMpz(const T& x)
 {
 	std::string str = x.getStr();
 	mpz_class t;
-	mcl::Gmp::setStr(t, str);
+	mcl::gmp::setStr(t, str);
 	return t;
 }
 
@@ -584,8 +584,8 @@ put(z);
 		mpz_class p(pStr);
 		Montgomery mont(p);
 		mpz_class xx, yy;
-		mcl::Gmp::setArray(xx, x, CYBOZU_NUM_OF_ARRAY(x));
-		mcl::Gmp::setArray(yy, y, CYBOZU_NUM_OF_ARRAY(y));
+		mcl::gmp::setArray(xx, x, CYBOZU_NUM_OF_ARRAY(x));
+		mcl::gmp::setArray(yy, y, CYBOZU_NUM_OF_ARRAY(y));
 		mpz_class z;
 		mont.mul(z, xx, yy);
 		std::cout << std::hex << z << std::endl;

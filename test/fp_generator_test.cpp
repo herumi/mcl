@@ -26,8 +26,8 @@ const char *primeTable[] = {
 void strToArray(uint64_t *p, size_t n, const char *pStr)
 {
 	mpz_class x;
-	mcl::Gmp::setStr(x, pStr, 16);
-	mcl::Gmp::getArray(p, n, x);
+	mcl::gmp::setStr(x, pStr, 16);
+	mcl::gmp::getArray(p, n, x);
 }
 
 struct Int {
@@ -48,7 +48,7 @@ struct Int {
 	void set(const char *str) { setStr(str); }
 	void set(const Fp& rhs)
 	{
-		mcl::Gmp::getArray(v, MAX_N, rhs.getMpz());
+		mcl::gmp::getArray(v, MAX_N, rhs.getMpz());
 	}
 	void set(const uint64_t* x)
 	{
@@ -146,13 +146,13 @@ void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 		rg.read(x, pn);
 		uint64_t y = rg.get64();
 		mpz_class mx;
-		mcl::Gmp::setArray(mx, x, pn);
+		mcl::gmp::setArray(mx, x, pn);
 		mpz_class my;
-		mcl::Gmp::set(my, y);
+		mcl::gmp::set(my, y);
 		mx *= my;
 		uint64_t d = fg.mulU_(z, x, y);
 		z[pn] = d;
-		mcl::Gmp::setArray(my, z, pn + 1);
+		mcl::gmp::setArray(my, z, pn + 1);
 		CYBOZU_TEST_EQUAL(mx, my);
 	}
 	{
@@ -172,11 +172,11 @@ void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 		uint64_t z[MAX_N];
 		rg.read(x, pn);
 		mpz_class mx;
-		mcl::Gmp::setArray(mx, x, pn);
+		mcl::gmp::setArray(mx, x, pn);
 		mx >>= 1;
 		fg.shr1_(z, x);
 		mpz_class my;
-		mcl::Gmp::setArray(my, z, pn);
+		mcl::gmp::setArray(my, z, pn);
 		CYBOZU_TEST_EQUAL(mx, my);
 	}
 }

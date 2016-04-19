@@ -471,7 +471,7 @@ CYBOZU_TEST_AUTO(getArray)
 		mpz_class x(tbl[i].s);
 		const size_t bufN = 8;
 		uint32_t buf[bufN];
-		mcl::Gmp::getArray(buf, bufN, x);
+		mcl::gmp::getArray(buf, bufN, x);
 		size_t n = mcl::fp::getNonZeroArraySize(buf, bufN);
 		CYBOZU_TEST_EQUAL(n, tbl[i].vn);
 		CYBOZU_TEST_EQUAL_ARRAY(buf, tbl[i].v, n);
@@ -494,7 +494,7 @@ CYBOZU_TEST_AUTO(getStr)
 		mpz_class x(tbl[i]);
 		Fp y(tbl[i]);
 		std::string xs, ys;
-		mcl::Gmp::getStr(xs, x, 16);
+		mcl::gmp::getStr(xs, x, 16);
 		y.getStr(ys, 16);
 		CYBOZU_TEST_EQUAL(xs, ys);
 	}
@@ -527,9 +527,9 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 		mcl::fp::Unit in[N * 2 + 1] = {};
 		mcl::fp::Unit ok[N + 1];
 		mcl::fp::Unit ex[N + 1];
-		mcl::Gmp::getArray(in, N * 2 + 1, mx);
+		mcl::gmp::getArray(in, N * 2 + 1, mx);
 		mpz_class my = mx % mp;
-		mcl::Gmp::getArray(ok, N + 1, my);
+		mcl::gmp::getArray(ok, N + 1, my);
 #ifdef MCL_USE_LLVM
 		mcl_fpDbl_mod_NIST_P521(ex, in);
 		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);

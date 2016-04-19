@@ -11,7 +11,7 @@ CYBOZU_TEST_AUTO(ArrayIterator)
 	for (size_t w = 1; w <= 32; w++) {
 		const uint32_t mask = uint32_t((uint64_t(1) << w) - 1);
 		mpz_class x;
-		mcl::Gmp::setArray(x, in, 2);
+		mcl::gmp::setArray(x, in, 2);
 		mcl::fp::ArrayIterator<uint32_t> ai(in, bitSize, w);
 		size_t n = (bitSize + w - 1) / w;
 		for (size_t j = 0; j < n; j++) {

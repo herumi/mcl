@@ -124,7 +124,7 @@ public:
 	}
 	void mul(Ec& z, const mpz_class& y) const
 	{
-		powerArray(z, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		powerArray(z, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	void powerArray(Ec& z, const Unit* y, size_t n, bool isNegative) const
 	{

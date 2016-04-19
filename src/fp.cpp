@@ -64,13 +64,13 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 {
 	bool isMinus;
 	const char *p = verifyStr(&isMinus, &base, str);
-	if (!Gmp::setStr(x, p, base)) {
+	if (!gmp::setStr(x, p, base)) {
 		throw cybozu::Exception("fp:strToMpzArray:bad format") << str;
 	}
-	const size_t bitSize = Gmp::getBitSize(x);
+	const size_t bitSize = gmp::getBitSize(x);
 	if (bitSize > maxBitSize) throw cybozu::Exception("fp:strToMpzArray:too large str") << str << bitSize << maxBitSize;
 	if (pBitSize) *pBitSize = bitSize;
-	Gmp::getArray(y, (maxBitSize + UnitBitSize - 1) / UnitBitSize, x);
+	gmp::getArray(y, (maxBitSize + UnitBitSize - 1) / UnitBitSize, x);
 	return isMinus;
 }
 
@@ -114,7 +114,7 @@ struct OpeFunc {
 		if (mpz_cmp(mz, mp) >= 0) {
 			mpz_sub(mz, mz, mp);
 		}
-		Gmp::getArray(z, N, mz);
+		gmp::getArray(z, N, mz);
 	}
 	static inline void fp_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -129,7 +129,7 @@ struct OpeFunc {
 			set_mpz_t(mp, p);
 			mpz_add(mz, mz, mp);
 		}
-		Gmp::getArray(z, N, mz);
+		gmp::getArray(z, N, mz);
 	}
 	static inline void set_pDbl(mpz_t& mp, Unit *pDbl, const Unit *p)
 	{
@@ -153,7 +153,7 @@ struct OpeFunc {
 		if (mpz_cmp(mz, mp) >= 0) {
 			mpz_sub(mz, mz, mp);
 		}
-		Gmp::getArray(z, N * 2, mz);
+		gmp::getArray(z, N * 2, mz);
 	}
 	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -169,7 +169,7 @@ struct OpeFunc {
 			set_pDbl(mp, pDbl, p);
 			mpz_add(mz, mz, mp);
 		}
-		Gmp::getArray(z, N * 2, mz);
+		gmp::getArray(z, N * 2, mz);
 	}
 	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
@@ -180,7 +180,7 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(my, y);
 		mpz_add(mz, mx, my);
-		Gmp::getArray(z, N, mz);
+		gmp::getArray(z, N, mz);
 	}
 	static inline void fp_subNCC(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -191,7 +191,7 @@ struct OpeFunc {
 		set_mpz_t(my, y);
 		assert(mpz_cmp(mx, my) >= 0);
 		mpz_sub(mz, mx, my);
-		Gmp::getArray(z, N, mz);
+		gmp::getArray(z, N, mz);
 	}
 	// z[N + 1] <- x[N] * y
 	static inline void fp_mulUPreC(Unit *z, const Unit *x, Unit y)
@@ -248,7 +248,7 @@ struct OpeFunc {
 		set_mpz_t(mx, x);
 		set_mpz_t(mp, op.p);
 		mpz_invert(my.get_mpz_t(), mx, mp);
-		Gmp::getArray(y, N, my);
+		gmp::getArray(y, N, my);
 	}
 	/*
 		inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
@@ -377,12 +377,12 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	assert(N >= 2);
 	{
 		mpz_class t = 1, R;
-		Gmp::getArray(op.one, N, t);
+		gmp::getArray(op.one, N, t);
 		R = (t << (N * 64)) % op.mp;
 		t = (R * R) % op.mp;
-		Gmp::getArray(op.R2, N, t);
+		gmp::getArray(op.R2, N, t);
 		t = (R * R * R) % op.mp;
-		Gmp::getArray(op.R3, N, t);
+		gmp::getArray(op.R3, N, t);
 	}
 	op.rp = getMontgomeryCoeff(p[0]);
 	if (mode != FP_XBYAK) return;
@@ -470,8 +470,8 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 	case 10:
 		{
 			mpz_class t;
-			Gmp::setArray(t, x, n);
-			Gmp::getStr(str, t, 10);
+			gmp::setArray(t, x, n);
+			gmp::getStr(str, t, 10);
 		}
 		return;
 	case 16:

@@ -54,7 +54,7 @@ struct Operator : E {
 	}
 	static inline void power(T& z, const T& x, const mpz_class& y)
 	{
-		powerArray(z, x, Gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		powerArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 private:
 	static inline void powerArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative)
