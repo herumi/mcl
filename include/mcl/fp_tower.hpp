@@ -61,7 +61,7 @@ template<class Fp>
 class Fp2T : public fp::Operator<Fp2T<Fp> > {
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
-	static Fp xi_c_;
+	static Fp xi_a_;
 public:
 	Fp a, b;
 	Fp2T() { }
@@ -98,10 +98,10 @@ public:
 	bool operator==(const Fp2T& rhs) const { return a == rhs.a && b == rhs.b; }
 	bool operator!=(const Fp2T& rhs) const { return !operator==(rhs); }
 	void normalize() {} // dummy method
-	static inline void init(uint32_t xi_c)
+	static inline void init(uint32_t xi_a)
 	{
 		assert(Fp::maxSize <= 256);
-		xi_c_ = xi_c;
+		xi_a_ = xi_a;
 		mcl::fp::Op& op = Fp::op_;
 		op.fp2_add = fp2_addW;
 		op.fp2_sub = fp2_subW;
@@ -221,10 +221,10 @@ private:
 #endif
 	}
 	/*
-		xi = xi_c + i
+		xi = xi_a + i
 		x = a + bi
-		y = (a + bi)xi = (a + bi)(xi_c + i)
-		=(a * x_ic - b) + (a + b xi_c)i
+		y = (a + bi)xi = (a + bi)(xi_a + i)
+		=(a * x_ic - b) + (a + b xi_a)i
 	*/
 	static inline void fp2_mulXiW(Unit *y, const Unit *x)
 	{
@@ -233,9 +233,9 @@ private:
 		const Fp& a = px[0];
 		const Fp& b = px[1];
 		Fp t;
-		Fp::mul(t, a, xi_c_);
+		Fp::mul(t, a, xi_a_);
 		t -= b;
-		Fp::mul(py[1], b, xi_c_);
+		Fp::mul(py[1], b, xi_a_);
 		py[1] += a;
 		py[0] = t;
 	}
@@ -260,7 +260,7 @@ private:
 	}
 };
 
-template<class Fp> Fp Fp2T<Fp>::xi_c_;
+template<class Fp> Fp Fp2T<Fp>::xi_a_;
 
 /*
 	Fp6T = Fp2[v] / (v^3 - xi)
