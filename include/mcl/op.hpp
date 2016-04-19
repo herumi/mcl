@@ -150,7 +150,7 @@ struct Op {
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
 	*/
-	int xi_c; // xi = xi_c + u
+	int xi_a; // xi = xi_a + u
 	void3u fp2_add;
 	void3u fp2_sub;
 	void3u fp2_mul;
@@ -179,7 +179,7 @@ struct Op {
 		, fpDbl_addP(0), fpDbl_subP(0)
 		, fpDbl_addNC(0), fpDbl_subNC(0)
 		, fpDbl_sqrPre(0), fpDbl_mulPre(0), fpDbl_mod(0)
-		, xi_c(0)
+		, xi_a(0)
 		, fp2_add(0), fp2_sub(0), fp2_mul(0), fp2_neg(0)
 		, fp2_sqr(0), fp2_mulXi(0)
 	{
@@ -204,7 +204,7 @@ struct Op {
 		fp_mul(y, x, R2);
 	}
 	void init(const std::string& mstr, int base, size_t maxBitSize, Mode mode);
-	void initFp2(int xi_c);
+	void initFp2(int xi_a);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
 private:

@@ -575,9 +575,9 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	#pragma warning(pop)
 #endif
 
-void Op::initFp2(int _xi_c)
+void Op::initFp2(int _xi_a)
 {
-	this->xi_c = _xi_c;
+	this->xi_a = _xi_a;
 //	if (N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << N;
 }
 

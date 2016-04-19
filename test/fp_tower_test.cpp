@@ -320,8 +320,8 @@ void test(const char *p, mcl::fp::Mode mode)
 {
 	Fp::setModulo(p, 0, mode);
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
-	const int xi_c = 9;
-	Fp2::init(xi_c);
+	const int xi_a = 9;
+	Fp2::init(xi_a);
 	if (Fp::getBitSize() > 256) {
 		printf("not support p=%s\n", p);
 		return;
