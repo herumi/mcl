@@ -539,6 +539,26 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		mulVadd(y.a, t1, t1); // abv + ab
 		Fp6::sub(y.a, t0, y.a);
 	}
+	/*
+		x = a + bw, w^2 = v
+		y = 1/x = (a - bw) / (a^2 - b^2v)
+	*/
+	static inline void inv(Fp12T& y, const Fp12T& x)
+	{
+		const Fp6& a = x.a;
+		const Fp6& b = x.b;
+		Fp6 t0, t1;
+		Fp6::sqr(t0, a);
+		Fp6::sqr(t1, b);
+		Fp2::mulXi(t1.c, t1.c);
+		t0.a -= t1.c;
+		t0.b -= t1.a;
+		t0.c -= t1.b; // t0 = a^2 - b^2v
+		Fp6::inv(t0, t0);
+		Fp6::mul(y.a, x.a, t0);
+		Fp6::mul(y.b, x.b, t0);
+		Fp6::neg(y.b, y.b);
+	}
 	friend inline std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
 		return os << self.a << ' ' << self.b;

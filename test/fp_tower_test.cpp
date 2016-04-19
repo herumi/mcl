@@ -186,6 +186,13 @@ void testFp12()
 	y *= y;
 	Fp12::sqr(x, x);
 	CYBOZU_TEST_EQUAL(x, y);
+	for (int i = 0; i < 10; i++) {
+		w = x;
+		Fp12::inv(w, w);
+		Fp12::mul(y, w, x);
+		CYBOZU_TEST_EQUAL(y, 1);
+		x += y;
+	}
 }
 
 void testFpDbl()
