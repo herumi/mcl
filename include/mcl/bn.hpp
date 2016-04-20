@@ -16,7 +16,7 @@ struct bnFpTag;
 
 typedef mcl::FpT<mcl::bn::bnFpTag, 256> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
-typedef mcl::FpDblT<Fp> FpDbl;
+typedef Fp::Dbl FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp> Fp12;
 
@@ -154,22 +154,19 @@ struct Param {
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_invxi = Fp2(b) / xi;
-		Fp2::power(gammar[0], xi, (p - 1) / 6);
+		power(gammar[0], xi, (p - 1) / 6);
 
-		for (size_t i = 1; i < gammarN; ++i) {
+		for (size_t i = 1; i < gammarN; i++) {
 			gammar[i] = gammar[i - 1] * gammar[0];
 		}
 
-		for (size_t i = 0; i < gammarN; ++i) {
+		for (size_t i = 0; i < gammarN; i++) {
 			gammar2[i] = Fp2(gammar[i].a, -gammar[i].b) * gammar[i];
-		}
-
-		for (size_t i = 0; i < gammarN; ++i) {
 			gammar3[i] = gammar[i] * gammar2[i];
 		}
 
-		Fp2::power(W2p, xi, (p - 1) / 3);
-		Fp2::power(W3p, xi, (p - 1) / 2);
+		power(W2p, xi, (p - 1) / 3);
+		power(W3p, xi, (p - 1) / 2);
 		Fp2 tmp;
 		Fp2::power(tmp, xi, (p * p - 1) / 6);
 		assert(tmp.b.isZero());
