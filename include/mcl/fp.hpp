@@ -64,6 +64,7 @@ class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	template<class Fp> friend class Fp2T;
 	template<class Fp> friend struct Fp6T;
 public:
+	class Dbl;
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
 	static inline size_t getUnitSize() { return op_.N; }

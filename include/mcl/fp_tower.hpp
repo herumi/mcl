@@ -10,9 +10,10 @@
 
 namespace mcl {
 
-template<class Fp>
-class FpDblT {
+template<class tag, size_t maxBitSize>
+class FpT<tag, maxBitSize>::Dbl {
 	typedef fp::Unit Unit;
+	typedef FpT<tag, maxBitSize> Fp;
 	Unit v_[Fp::maxSize * 2];
 public:
 	static inline size_t getUnitSize() { return Fp::op_.N * 2; }
@@ -27,11 +28,11 @@ public:
 	// QQQ : does not check range of x strictly(use for debug)
 	void setMpz(const mpz_class& x)
 	{
-		if (x < 0) throw cybozu::Exception("FpDblT:_setMpz:negative is not supported") << x;
+		if (x < 0) throw cybozu::Exception("Dbl:_setMpz:negative is not supported") << x;
 		const size_t xn = gmp::getUnitSize(x);
 		const size_t N2 = getUnitSize();
 		if (xn > N2) {
-			throw cybozu::Exception("FpDblT:setMpz:too large") << x;
+			throw cybozu::Exception("Dbl:setMpz:too large") << x;
 		}
 		memcpy(v_, gmp::getUnit(x), xn * sizeof(Unit));
 		memset(v_ + xn, 0, (N2 - xn) * sizeof(Unit));
@@ -40,16 +41,16 @@ public:
 	{
 		gmp::setArray(x, v_, Fp::op_.N * 2);
 	}
-	static inline void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
-	static inline void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
-	static inline void addNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
-	static inline void subNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
+	static inline void add(Dbl& z, const Dbl& x, const Dbl& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
+	static inline void sub(Dbl& z, const Dbl& x, const Dbl& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
+	static inline void addNC(Dbl& z, const Dbl& x, const Dbl& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
+	static inline void subNC(Dbl& z, const Dbl& x, const Dbl& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
-	static inline void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
-	static inline void sqrPre(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
-	static inline void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_); }
+	static inline void mulPre(Dbl& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
+	static inline void sqrPre(Dbl& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
+	static inline void mod(Fp& z, const Dbl& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_); }
 };
 
 /*
@@ -60,7 +61,7 @@ public:
 template<class Fp>
 class Fp2T : public fp::Operator<Fp2T<Fp> > {
 	typedef fp::Unit Unit;
-	typedef FpDblT<Fp> FpDbl;
+	typedef typename Fp::Dbl FpDbl;
 	static Fp xi_a_;
 public:
 	Fp a, b;
