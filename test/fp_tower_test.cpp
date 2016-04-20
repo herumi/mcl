@@ -38,16 +38,16 @@ void testFp2()
 		x = 1 + 2u
 		y = 3 + 4u
 	*/
-	Fp2::add(z, x, y);
+	mcl::add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp2(4, 6));
-	Fp2::sub(z, x, y);
+	mcl::sub(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp2(-2, -2));
-	Fp2::mul(z, x, y);
+	mcl::mul(z, x, y);
 	/*
 		(1 + 2u)(3 + 4u) = (3 - 8) + (4 + 6)u = -5 + 10u
 	*/
 	CYBOZU_TEST_EQUAL(z, Fp2(-5, 10));
-	Fp2::neg(z, z);
+	mcl::neg(z, z);
 	CYBOZU_TEST_EQUAL(z, Fp2(5, -10));
 	/*
 		xi = 9 + u
@@ -57,12 +57,12 @@ void testFp2()
 	Fp2::mulXi(z, z);
 	CYBOZU_TEST_EQUAL(z, Fp2(11, -17));
 	z = x * x;
-	Fp2::sqr(y, x);
+	mcl::sqr(y, x);
 	CYBOZU_TEST_EQUAL(z, y);
 	x.a = -123456789;
 	x.b = 464652165165;
 	y = x * x;
-	Fp2::sqr(x, x);
+	mcl::sqr(x, x);
 	CYBOZU_TEST_EQUAL(x, y);
 	{
 		std::ostringstream oss;
@@ -74,7 +74,7 @@ void testFp2()
 	}
 	y = 1;
 	for (int i = 0; i < 10; i++) {
-		Fp2::power(z, x, i);
+		mcl::power(z, x, i);
 		CYBOZU_TEST_EQUAL(z, y);
 		y *= x;
 	}
@@ -85,14 +85,14 @@ void testFp2()
 	{
 		const mpz_class& mp = Fp::getOp().mp;
 		y = x;
-		Fp2::power(z, y, mp);
+		mcl::power(z, y, mp);
 		if ((mp % 4) == 3) {
 			Fp::neg(z.b, z.b);
 		}
 		CYBOZU_TEST_EQUAL(z, y);
 	}
 	y = x;
-	Fp2::inv(y, x);
+	mcl::inv(y, x);
 	y *= x;
 	CYBOZU_TEST_EQUAL(y, 1);
 }
@@ -125,14 +125,14 @@ void testFp6()
 		ss >> z;
 		CYBOZU_TEST_EQUAL(x, z);
 	}
-	Fp6::add(z, x, y);
+	mcl::add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(0, 3), Fp2(7, 1), Fp2(-1, 8)));
-	Fp6::sub(z, x, y);
+	mcl::sub(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(2, 1), Fp2(-1, 7), Fp2(11, 4)));
-	Fp6::neg(z, x);
+	mcl::neg(z, x);
 	CYBOZU_TEST_EQUAL(z, Fp6(-a, -b, -c));
-	Fp6::sqr(z, x);
-	Fp6::mul(w, x, x);
+	mcl::sqr(z, x);
+	mcl::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
 	testFp6sqr(a, b, c, w);
 	z = x;

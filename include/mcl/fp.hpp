@@ -487,6 +487,16 @@ private:
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 
+
+template<class T> void add(T& z, const T& x, const T& y) { T::add(z, x, y); }
+template<class T> void sub(T& z, const T& x, const T& y) { T::sub(z, x, y); }
+template<class T> void mul(T& z, const T& x, const T& y) { T::mul(z, x, y); }
+template<class T> void div(T& z, const T& x, const T& y) { T::div(z, x, y); }
+template<class T> void neg(T& y, const T& x) { T::neg(y, x); }
+template<class T> void inv(T& y, const T& x) { T::inv(y, x); }
+template<class T> void sqr(T& y, const T& x) { T::sqr(y, x); }
+template<class T, class S> void power(T& z, const T& x, const S& y) { T::power(z, x, y); }
+
 } // mcl
 
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
