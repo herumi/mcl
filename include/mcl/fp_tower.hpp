@@ -396,6 +396,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		y = 1/x = p/q where
 		p = (a^2 - bc xi) + (c^2 xi - ab)v + (b^2 - ac)v^2
 		q = c^3 xi^2 + b(b^2 - 3ac)xi + a^3
+		  = (a^2 - bc xi)a + ((c^2 xi - ab)c + (b^2 - ac)b) xi
 	*/
 	static inline void inv(Fp6T& y, const Fp6T& x)
 	{
@@ -409,26 +410,22 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		Fp2::mul(ab, a, b);
 		Fp2::mul(bc, b, c);
 		Fp2::mul(ac, c, a);
-		Fp2 t;
-		Fp2::mulXi(t, bc);
+
 		Fp6T p;
-		Fp2::sub(p.a, aa, t);
-		Fp2::mulXi(t, cc);
-		Fp2::sub(p.b, t, ab);
-		Fp2::sub(p.c, bb, ac);
-		Fp2 q;
-		Fp2::mul(q, aa, a); // a^3
-		Fp2::add(t, ac, ac); // t = 2ac
-		t += ac; // t = 3ac
-		Fp2::sub(t, bb, t); // t = b^2 - 3ac
-		t *= b;
-		Fp2::mulXi(t, t); // b(b^2 - 3ac)xi
+		Fp2::mulXi(p.a, bc);
+		Fp2::sub(p.a, aa, p.a); // a^2 - bc xi
+		Fp2::mulXi(p.b, cc);
+		p.b -= ab; // c^2 xi - ab
+		Fp2::sub(p.c, bb, ac); // b^2 - ac
+		Fp2 q, t;
+		Fp2::mul(q, p.b, c);
+		Fp2::mul(t, p.c, b);
 		q += t;
-		Fp2::mul(t, cc, c);
-		Fp2::mulXi(t, t);
-		Fp2::mulXi(t, t); // QQQ : c^3 xi^2
+		Fp2::mulXi(q, q);
+		Fp2::mul(t, p.a, a);
 		q += t;
 		Fp2::inv(q, q);
+
 		Fp2::mul(y.a, p.a, q);
 		Fp2::mul(y.b, p.b, q);
 		Fp2::mul(y.c, p.c, q);
