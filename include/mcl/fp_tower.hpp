@@ -259,6 +259,39 @@ private:
 		py[1] *= aa;
 		Fp::neg(py[1], py[1]);
 	}
+	struct Dbl;
+};
+
+template<class Fp>
+struct Fp2T<Fp>::Dbl {
+	typedef fp::Unit Unit;
+	typedef typename Fp::Dbl FpDbl;
+	FpDbl a, b;
+	static inline void add(Dbl& z, const Dbl& x, const Dbl& y)
+	{
+		FpDbl::add(z.a, x.a, y.a);
+		FpDbl::add(z.b, x.b, y.b);
+	}
+	static inline void addNC(Dbl& z, const Dbl& x, const Dbl& y)
+	{
+		FpDbl::addNC(z.a, x.a, y.a);
+		FpDbl::addNC(z.b, x.b, y.b);
+	}
+	static inline void sub(Dbl& z, const Dbl& x, const Dbl& y)
+	{
+		FpDbl::sub(z.a, x.a, y.a);
+		FpDbl::sub(z.b, x.b, y.b);
+	}
+	static inline void subNC(Dbl& z, const Dbl& x, const Dbl& y)
+	{
+		FpDbl::subNC(z.a, x.a, y.a);
+		FpDbl::subNC(z.b, x.b, y.b);
+	}
+	static inline void neg(Dbl& y, const Dbl& x)
+	{
+		FpDbl::neg(y.a, x.a);
+		FpDbl::neg(y.b, x.b);
+	}
 };
 
 template<class Fp> Fp Fp2T<Fp>::xi_a_;
