@@ -292,6 +292,20 @@ struct Fp2T<Fp>::Dbl {
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
+	static inline void sqr(Dbl& y, const Fp2T& x)
+	{
+		Fp t1, t2;
+		Fp::addNC(t1, x.b, x.b); // 2b
+		FpDbl::mulPre(y.b, t1, x.a); // 2ab
+		Fp::addNC(t1, x.a, x.b); // a + b
+		Fp::sub(t2, x.a, x.b); // a - b
+		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
+	}
+	static inline void mod(Fp2T& y, const Dbl& x)
+	{
+		FpDbl::mod(y.a, x.a);
+		FpDbl::mod(y.b, x.b);
+	}
 };
 
 template<class Fp> Fp Fp2T<Fp>::xi_a_;
