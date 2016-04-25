@@ -9,7 +9,7 @@
 
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
-typedef Fp::Dbl FpDbl;
+typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp> Fp12;
 
