@@ -12,14 +12,6 @@
 
 namespace mcl { namespace bn {
 
-struct bnFpTag;
-
-typedef mcl::FpT<mcl::bn::bnFpTag, 256> Fp;
-typedef mcl::Fp2T<Fp> Fp2;
-typedef Fp::Dbl FpDbl;
-typedef mcl::Fp6T<Fp> Fp6;
-typedef mcl::Fp12T<Fp> Fp12;
-
 struct CurveParam {
 	/*
 		y^2 = x^3 + b
@@ -116,7 +108,9 @@ bool getGoodRepl(Vec& v, const mpz_class& x)
 	}
 }
 
-struct Param {
+template<class Fp>
+struct ParamT {
+	typedef Fp2T<Fp> Fp2;
 	mpz_class z;
 	mpz_class p;
 	mpz_class r;
@@ -128,8 +122,6 @@ struct Param {
 	Fp2 gammar[gammarN];
 	Fp2 gammar2[gammarN];
 	Fp2 gammar3[gammarN];
-	Fp i0; // 0
-	Fp i1; // 1
 	int b;
 	Fp2 b_invxi; // b_invxi = b/xi of twist E' : Y^2 = X^3 + b/xi
 	Fp half;
@@ -171,8 +163,6 @@ struct Param {
 		Fp2::power(tmp, xi, (p * p - 1) / 6);
 		assert(tmp.b.isZero());
 		Fp::sqr(Z, tmp.a);
-		i0 = 0;
-		i1 = 1;
 		const mpz_class largest_c = abs(6 * z + 2);
 		useNAF = getGoodRepl(siTbl, largest_c);
 		getGoodRepl(zReplTbl, abs(z)); // QQQ : snark
