@@ -469,21 +469,6 @@ public:
 		R.z = P.z;
 #endif
 	}
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
-	{
-		x.normalize();
-		EcT tmp;
-		const EcT *px = &x;
-		if (&z == &x) {
-			tmp = x;
-			px = &tmp;
-		}
-		z.clear();
-		fp::powerGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
-		if (isNegative) {
-			neg(z, z);
-		}
-	}
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
@@ -642,6 +627,22 @@ public:
 		return R.isZero();
 	}
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
+private:
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
+	{
+		x.normalize();
+		EcT tmp;
+		const EcT *px = &x;
+		if (&z == &x) {
+			tmp = x;
+			px = &tmp;
+		}
+		z.clear();
+		fp::powerGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
+		if (isNegative) {
+			neg(z, z);
+		}
+	}
 };
 
 template<class Fp> Fp EcT<Fp>::a_;
