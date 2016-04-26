@@ -94,10 +94,20 @@ public:
 	{
 		return is >> self.a >> self.b;
 	}
+	std::string getStr(int base = 10, bool withPrefix = false)
+	{
+		return a.getStr(base, withPrefix) + ' ' + b.getStr(base, withPrefix);
+	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
+	bool isOne() const { return a.isOne() && b.isZero(); }
 	bool operator==(const Fp2T& rhs) const { return a == rhs.a && b == rhs.b; }
 	bool operator!=(const Fp2T& rhs) const { return !operator==(rhs); }
 	void normalize() {} // dummy method
+	/*
+		this function is for only compressed reprezentation of EC
+		isOdd() is not good naming. QQQ
+	*/
+	bool isOdd() const { return a.isOdd(); }
 	static inline void init(uint32_t xi_a)
 	{
 		assert(Fp::maxSize <= 256);
@@ -476,6 +486,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		Fp2::mul(y.b, p.b, q);
 		Fp2::mul(y.c, p.c, q);
 	}
+	void normalize() {} // dummy
 };
 
 /*
@@ -611,6 +622,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	{
 		return is >> self.a >> self.b;
 	}
+	void normalize() {} // dummy
 };
 
 } // mcl
