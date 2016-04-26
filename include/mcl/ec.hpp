@@ -540,7 +540,7 @@ public:
 		if (compressedExpression_) {
 			str = "1 ";
 			str += x.getStr(base, withPrefix);
-			const char *p = Fp::isOdd(y) ? " 1" : " 0";
+			const char *p = y.isOdd() ? " 1" : " 0";
 			str += p;
 		} else {
 			str = "2 ";
@@ -615,7 +615,7 @@ public:
 		t *= x;
 		t += b_;
 		Fp::squareRoot(y, t);
-		if (Fp::isOdd(y) ^ isYodd) {
+		if (y.isOdd() ^ isYodd) {
 			Fp::neg(y, y);
 		}
 	}

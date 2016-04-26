@@ -148,10 +148,10 @@ public:
 	{
 		return *reinterpret_cast<const FpT*>(op_.p);
 	}
-	static inline bool isOdd(const FpT& x)
+	bool isOdd() const
 	{
 		fp::Block b;
-		x.getBlock(b);
+		getBlock(b);
 		return (b.p[0] & 1) == 1;
 	}
 	static inline bool squareRoot(FpT& y, const FpT& x)
