@@ -265,8 +265,8 @@ private:
 		Fp::sqr(bb, b);
 		aa += bb;
 		Fp::inv(aa, aa); // aa = 1 / (a^2 + b^2)
-		py[0] *= aa;
-		py[1] *= aa;
+		Fp::mul(py[0], a, aa);
+		Fp::mul(py[1], b, aa);
 		Fp::neg(py[1], py[1]);
 	}
 	struct Dbl;
