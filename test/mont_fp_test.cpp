@@ -317,7 +317,14 @@ struct Test {
 				CYBOZU_TEST_EQUAL(z, t);
 			}
 		}
-		std::cout << std::dec;
+		t = Fp::getOp().mp;
+		t /= 2;
+		Fp x;
+		x.setMpz(t);
+		CYBOZU_TEST_EQUAL(x * 2, -1);
+		t += 1;
+		x.setMpz(t);
+		CYBOZU_TEST_EQUAL(x * 2, 1);
 	}
 
 	void conv()
