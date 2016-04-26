@@ -98,10 +98,10 @@ public:
 		}
 #endif
 	}
-	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
+	static inline void setParam(const Fp& a, const Fp& b, int mode = ec::Jacobi)
 	{
-		a_.setStr(astr);
-		b_.setStr(bstr);
+		a_ = a;
+		b_ = b;
 		if (a_.isZero()) {
 			specialA_ = zero;
 		} else if (a_ == -3) {
@@ -121,6 +121,10 @@ public:
 			throw cybozu::Exception("ec:EcT:setParam:bad mode") << mode;
 		}
 #endif
+	}
+	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
+	{
+		setParam(Fp(astr), Fp(bstr), mode);
 	}
 	static inline bool isValid(const Fp& _x, const Fp& _y)
 	{
