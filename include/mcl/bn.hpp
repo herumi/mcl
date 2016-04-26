@@ -111,6 +111,8 @@ bool getGoodRepl(Vec& v, const mpz_class& x)
 template<class Fp>
 struct ParamT {
 	typedef Fp2T<Fp> Fp2;
+	typedef mcl::EcT<Fp> G1;
+	typedef mcl::EcT<Fp2> G2;
 	mpz_class z;
 	mpz_class p;
 	mpz_class r;
@@ -147,6 +149,8 @@ struct ParamT {
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_invxi = Fp2(b) / xi;
+		G1::setParam(Fp(0), Fp(b));
+		G2::setParam(Fp2(0), b_invxi);
 		power(gammar[0], xi, (p - 1) / 6);
 
 		for (size_t i = 1; i < gammarN; i++) {
@@ -175,78 +179,85 @@ struct ParamT {
 	}
 };
 
-namespace naive {
-/*
-	v is the line arising in the addition of Q1 and Q2 in G2 evaluated at point P in G1
-*/
-template<class Fp12, class G2, class G1>
-void evalLine(Fp12& v, const G2& Q1, const G2& Q2, const G1& P)
-{
-	typedef typename G2::Fp Fp2;
-	Q1.normalize();
-	Q2.normalize();
-	P.normalize();
-	Fp2 lambda;
-	if (Q1.x == Q2.x) {
-		lambda = Q1.x * Q1.x / (Q1.y + Q1.y);
-	} else {
-		lambda = (Q1.y - Q2.y) / (Q1.x - Q1.x);
-	}
-	v = lambda * (P.x - Q1.x) + Q1.y;
-}
-
 template<class G>
-void Frobenius(G& y, const G& x)
+void Frobenius(G& y, const G& x, const mpz_class& p)
 {
-	typedef typename G::Fp Fp;
-	mpz_class& mp = Fp::getOp().mp;
-	Fp::power(y.x, x.x, mp);
-	Fp::power(y.y, x.y, mp);
-	Fp::power(y.z, x.z, mp);
+	using namespace mcl;
+	power(y.x, x.x, p);
+	power(y.y, x.y, p);
+	power(y.z, x.z, p);
 }
 
-template<class Fp12, class G2, class G1>
-void optimalAtePairing(Fp12& f, const G2& Q, const G1& P, const mpz_class& u)
-{
-	mpz_class r = abs(6 * u + 2);
-	mpz_class p = (((36 * u + 36) * u + 24) * u + 6) * u + 1;
-	mpz_class n = (((36 * u + 36) * u + 18) * u + 6) * u + 1;
-	G2 T = Q;
-	Fp12 t;
-	f = 1;
-	const int c = (int)mcl::gmp::getBitSize(r);
-	for (int i = c - 1; i >= 0; i--) {
-		Fp12::sqr(f, f);
-		evalLine(t, T, T, P);
-		f *= t;
-		G2::dbl(T, T);
-		if (mcl::gmp::testBit(r, i)) {
-			evalLine(t, T, Q, P);
-			f *= t;
-			T += Q;
+template<class Fp>
+struct Naive {
+	typedef mcl::Fp2T<Fp> Fp2;
+	typedef mcl::Fp6T<Fp> Fp6;
+	typedef mcl::Fp12T<Fp> Fp12;
+	typedef mcl::EcT<Fp> G1;
+	typedef mcl::EcT<Fp2> G2;
+	/*
+		v is the line arising in the addition of Q1 and Q2 in G2 evaluated at point P in G1
+	*/
+	static void evalLine(Fp12& v, const G2& Q1, const G2& Q2, const G1& P)
+	{
+		Fp2 t;
+		Q1.normalize();
+		Q2.normalize();
+		P.normalize();
+		if (Q1.x == Q2.x) {
+			t = Q1.x * Q1.x * 3 / (Q1.y + Q1.y);
+		} else {
+			t = (Q1.y - Q2.y) / (Q1.x - Q2.x);
 		}
+		t *= Fp2(P.x, 0) - Q1.x;
+		t += Q1.y;
+		v.clear();
+		v.a.a = t;
 	}
-	G2 Q1, Q2;
-	Frobenius(Q1, Q);
-	Frobenius(Q2, Q1);
-	if (u < 0) {
-		G2::neg(T, T);
-		Fp12::inv(f, f);
+	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P, const mpz_class& u)
+	{
+		const mpz_class r = abs(6 * u + 2);
+		const mpz_class p = (((36 * u + 36) * u + 24) * u + 6) * u + 1;
+		const mpz_class n = (((36 * u + 36) * u + 18) * u + 6) * u + 1;
+		G2 T = Q;
+		Fp12 t;
+		f = 1;
+		const int c = (int)mcl::gmp::getBitSize(r);
+		for (int i = c - 2; i >= 0; i--) {
+printf("i=%d\n", i);
+			Fp12::sqr(f, f);
+			evalLine(t, T, T, P);
+PUT(t);
+			f *= t;
+			G2::dbl(T, T);
+PUT(T);
+			if (mcl::gmp::testBit(r, i)) {
+				evalLine(t, T, Q, P);
+puts("in");
+PUT(t);
+				f *= t;
+				T += Q;
+			}
+		}
+		G2 Q1, Q2;
+		Frobenius(Q1, Q, p);
+		Frobenius(Q2, Q1, p);
+		if (u < 0) {
+			G2::neg(T, T);
+			Fp12::inv(f, f);
+		}
+		evalLine(t, T, Q1, P);
+		f *= t;
+		T += Q1;
+		evalLine(t, T, -Q2, P);
+		f *= t;
+		mpz_class a = p * p * p;
+		a *= a;
+		a *= a;
+		a = (a - 1) / n;
+		Fp12::power(f, f, a);
 	}
-	evalLine(t, T, Q1, P);
-	f *= t;
-	T += Q1;
-	evalLine(t, T, -Q2, P);
-	f *= t;
-	mpz_class a = p * p * p;
-	a *= a;
-	a *= a;
-	a = (a - 1) / n;
-	Fp12::power(f, f, a);
-}
-
-} // mcl::bn::naive
-
+};
 
 } } // mcl::bn
 
