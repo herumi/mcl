@@ -108,6 +108,7 @@ public:
 		isOdd() is not good naming. QQQ
 	*/
 	bool isOdd() const { return a.isOdd(); }
+	static inline const Fp& getXi_a() { return xi_a_; }
 	static inline void init(uint32_t xi_a)
 	{
 		assert(Fp::maxSize <= 256);
