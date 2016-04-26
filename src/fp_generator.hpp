@@ -1985,7 +1985,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		add(t0, t3);
 		adc(t1, 0);
 		adc(t2, 0);
-		adc(t4, 0); // t + e
+		adc(t4, 0); // t + e = [t4:t2:t1:t0]
 		add(t1, t3);
 		adc(t2, 0);
 		adc(t4, 0); // t + e + (e << 64)
@@ -1996,7 +1996,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		sub_rr(Pack(t2, t1, t0), Pack(rax, rdx, rax));
 	L("@@");
 		mov_rr(Pack(t5, t4, t3), Pack(t2, t1, t0));
-		sub_rr(Pack(t2, t1, t0), Pack(rax, rax, rax));
+		sub_rr(Pack(t2, t1, t0), Pack(rax, rdx, rax));
 		cmovc_rr(Pack(t2, t1, t0), Pack(t5, t4, t3));
 		store_mr(py, Pack(t2, t1, t0));
 	}
