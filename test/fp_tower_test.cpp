@@ -36,8 +36,8 @@ void testFp2()
 	y.a = 3;
 	y.b = 4;
 	/*
-		x = 1 + 2u
-		y = 3 + 4u
+		x = 1 + 2i
+		y = 3 + 4i
 	*/
 	add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp2(4, 6));
@@ -45,18 +45,18 @@ void testFp2()
 	CYBOZU_TEST_EQUAL(z, Fp2(-2, -2));
 	mul(z, x, y);
 	/*
-		(1 + 2u)(3 + 4u) = (3 - 8) + (4 + 6)u = -5 + 10u
+		(1 + 2i)(3 + 4i) = (3 - 8) + (4 + 6)i = -5 + 10i
 	*/
 	CYBOZU_TEST_EQUAL(z, Fp2(-5, 10));
 	neg(z, z);
 	CYBOZU_TEST_EQUAL(z, Fp2(5, -10));
 	/*
-		xi = 9 + u
-		(1 - 2u)(9 + u) = (9 + 2) + (1 - 18)u = 11 - 17u
+		xi = xi_a + i
+		(1 - 2i)(xi_a + i) = (xi_a + 2) + (1 - 2 xi_a)i
 	*/
 	z = Fp2(1, -2);
 	Fp2::mulXi(z, z);
-	CYBOZU_TEST_EQUAL(z, Fp2(11, -17));
+	CYBOZU_TEST_EQUAL(z, Fp2(Fp2::getXi_a() + 2, Fp2::getXi_a() * (-2) + 1));
 	z = x * x;
 	sqr(y, x);
 	CYBOZU_TEST_EQUAL(z, y);
@@ -91,6 +91,24 @@ void testFp2()
 			neg(z.b, z.b);
 		}
 		CYBOZU_TEST_EQUAL(z, y);
+	}
+	{
+		mpz_class t = Fp::getOp().mp;
+		t /= 2;
+		Fp x;
+		x.setMpz(t);
+		CYBOZU_TEST_EQUAL(x * 2, Fp(-1));
+		t += 1;
+		x.setMpz(t);
+		CYBOZU_TEST_EQUAL(x * 2, 1);
+	}
+	{
+		Fp2 a(1, 1);
+		Fp2 b(1, -1);
+		Fp2 c(Fp2(2) / a);
+		CYBOZU_TEST_EQUAL(c, b);
+		CYBOZU_TEST_EQUAL(a * b, Fp2(2));
+		CYBOZU_TEST_EQUAL(a * c, Fp2(2));
 	}
 	y = x;
 	inv(y, x);
@@ -322,7 +340,7 @@ void test(const char *p, mcl::fp::Mode mode)
 {
 	Fp::setModulo(p, 0, mode);
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
-	const int xi_a = 9;
+	const int xi_a = 1;
 	Fp2::init(xi_a);
 	if (Fp::getBitSize() > 256) {
 		printf("not support p=%s\n", p);
@@ -370,13 +388,13 @@ void testAll()
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
 		printf("prime=%s %d\n", p, (int)(strlen(p) - 2) * 4);
-		test(tbl[i], mcl::fp::FP_GMP);
+		test(p, mcl::fp::FP_GMP);
 #ifdef MCL_USE_LLVM
-		test(tbl[i], mcl::fp::FP_LLVM);
-		test(tbl[i], mcl::fp::FP_LLVM_MONT);
+		test(p, mcl::fp::FP_LLVM);
+		test(p, mcl::fp::FP_LLVM_MONT);
 #endif
 #ifdef MCL_USE_XBYAK
-		test(tbl[i], mcl::fp::FP_XBYAK);
+		test(p, mcl::fp::FP_XBYAK);
 #endif
 	}
 }

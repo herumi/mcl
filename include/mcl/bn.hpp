@@ -149,8 +149,8 @@ struct ParamT {
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_invxi = Fp2(b) / xi;
-		G1::setParam(Fp(0), Fp(b));
-		G2::setParam(Fp2(0), b_invxi);
+		G1::setParam(0, b);
+		G2::setParam(0, b_invxi);
 		power(gammar[0], xi, (p - 1) / 6);
 
 		for (size_t i = 1; i < gammarN; i++) {
@@ -224,17 +224,12 @@ struct Naive {
 		f = 1;
 		const int c = (int)mcl::gmp::getBitSize(r);
 		for (int i = c - 2; i >= 0; i--) {
-printf("i=%d\n", i);
 			Fp12::sqr(f, f);
 			evalLine(t, T, T, P);
-PUT(t);
 			f *= t;
 			G2::dbl(T, T);
-PUT(T);
 			if (mcl::gmp::testBit(r, i)) {
 				evalLine(t, T, Q, P);
-puts("in");
-PUT(t);
 				f *= t;
 				T += Q;
 			}
