@@ -116,7 +116,6 @@ struct ParamT {
 	mpz_class z;
 	mpz_class p;
 	mpz_class r;
-	mpz_class t; /* trace of Frobenius */
 	Fp Z;
 	Fp2 W2p;
 	Fp2 W3p;
@@ -140,9 +139,9 @@ struct ParamT {
 		const int pCoff[] = { 1, 6, 24, 36, 36 };
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
 		const int tCoff[] = { 1, 0,  6,  0,  0 };
-		eval(p, z, pCoff);
-		eval(r, z, rCoff);
-		eval(t, z, tCoff);
+		p = eval(pCoff, z);
+		r = eval(rCoff, z);
+		mpz_class t = eval(tCoff, z);
 		Fp::setModulo(p.get_str(), 10, mode);
 		Fp2::init(cp.xi_a);
 		b = cp.b; // set b before calling Fp::setModulo
@@ -173,9 +172,9 @@ struct ParamT {
 		useNAF = getGoodRepl(siTbl, largest_c);
 		getGoodRepl(zReplTbl, abs(z)); // QQQ : snark
 	}
-	void eval(mpz_class& y, const mpz_class& x, const int c[5]) const
+	mpz_class eval(const int c[5], const mpz_class& x) const
 	{
-		y = (((c[4] * x + c[3]) * x + c[2]) * x + c[1]) * x + c[0];
+		return (((c[4] * x + c[3]) * x + c[2]) * x + c[1]) * x + c[0];
 	}
 };
 
@@ -189,12 +188,40 @@ void Frobenius(G& y, const G& x, const mpz_class& p)
 }
 
 template<class Fp>
-struct Naive {
+struct BNT {
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::Fp6T<Fp> Fp6;
 	typedef mcl::Fp12T<Fp> Fp12;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
+	typedef ParamT<Fp> Param;
+	static Param param;
+	static void init(const mcl::bn::CurveParam& cp)
+	{
+		param.init(cp);
+	}
+	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
+	{
+	}
+};
+
+template<class Fp>
+ParamT<Fp> BNT<Fp>::param;
+
+#if 0
+template<class Fp>
+struct NaiveT {
+	typedef mcl::Fp2T<Fp> Fp2;
+	typedef mcl::Fp6T<Fp> Fp6;
+	typedef mcl::Fp12T<Fp> Fp12;
+	typedef mcl::EcT<Fp> G1;
+	typedef mcl::EcT<Fp2> G2;
+	typedef ParamT<Fp> Param;
+	static Param param;
+	static void init(const mcl::bn::CurveParam& cp)
+	{
+		param.init(cp);
+	}
 	/*
 		v is the line arising in the addition of Q1 and Q2 in G2 evaluated at point P in G1
 	*/
@@ -214,21 +241,20 @@ struct Naive {
 		v.clear();
 		v.a.a = t;
 	}
-	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P, const mpz_class& u)
+	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
 	{
-		const mpz_class r = abs(6 * u + 2);
-		const mpz_class p = (((36 * u + 36) * u + 24) * u + 6) * u + 1;
-		const mpz_class n = (((36 * u + 36) * u + 18) * u + 6) * u + 1;
+		const mpz_class& p = param.p;
+		const mpz_class s = abs(6 * param.z + 2);
 		G2 T = Q;
 		Fp12 t;
 		f = 1;
-		const int c = (int)mcl::gmp::getBitSize(r);
+		const int c = (int)mcl::gmp::getBitSize(s);
 		for (int i = c - 2; i >= 0; i--) {
 			Fp12::sqr(f, f);
 			evalLine(t, T, T, P);
 			f *= t;
 			G2::dbl(T, T);
-			if (mcl::gmp::testBit(r, i)) {
+			if (mcl::gmp::testBit(s, i)) {
 				evalLine(t, T, Q, P);
 				f *= t;
 				T += Q;
@@ -237,7 +263,7 @@ struct Naive {
 		G2 Q1, Q2;
 		Frobenius(Q1, Q, p);
 		Frobenius(Q2, Q1, p);
-		if (u < 0) {
+		if (param.z < 0) {
 			G2::neg(T, T);
 			Fp12::inv(f, f);
 		}
@@ -249,10 +275,14 @@ struct Naive {
 		mpz_class a = p * p * p;
 		a *= a;
 		a *= a;
-		a = (a - 1) / n;
+		a = (a - 1) / param.r;
 		Fp12::power(f, f, a);
 	}
 };
+
+template<class Fp>
+ParamT<Fp> NaiveT<Fp>::param;
+#endif
 
 } } // mcl::bn
 
