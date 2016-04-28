@@ -60,6 +60,7 @@ class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	static fp::Op op_;
 	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
+	static FpT<tag, maxBitSize> inv2_;
 public:
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
@@ -134,6 +135,7 @@ public:
 			mpz_class half = (op_.mp - 1) / 2;
 			gmp::getArray(op_.half, op_.N, half);
 		}
+		inv(inv2_, 2);
 	}
 	static inline void getModulo(std::string& pstr)
 	{
@@ -313,6 +315,10 @@ public:
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
+	static inline void divBy2(FpT& y, const FpT& x)
+	{
+		mul(y, x, inv2_); // QQQ : optimize later
+	}
 	bool isZero() const { return op_.fp_isZero(v_); }
 	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
 	/*
@@ -485,6 +491,7 @@ private:
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
+template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
 
 
 template<class T> void add(T& z, const T& x, const T& y) { T::add(z, x, y); }

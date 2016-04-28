@@ -129,6 +129,7 @@ struct Test {
 		power_Zn();
 		setArray();
 		set64bit();
+		divBy2();
 		bench();
 	}
 	void cstr()
@@ -550,6 +551,20 @@ struct Test {
 			Fp y(tbl[i].i);
 			if (tbl[i].i < 0) x = -x;
 			CYBOZU_TEST_EQUAL(x, y);
+		}
+	}
+	void divBy2()
+	{
+		const int tbl[] = { -4, -3, -2, -1, 0, 1, 2, 3 };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			Fp x(tbl[i]), y;
+			Fp::divBy2(y, x);
+			y *= 2;
+			CYBOZU_TEST_EQUAL(y, x);
+			y = x;
+			Fp::divBy2(y, y);
+			y *= 2;
+			CYBOZU_TEST_EQUAL(y, x);
 		}
 	}
 	void bench()
