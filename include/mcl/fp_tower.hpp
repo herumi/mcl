@@ -83,6 +83,11 @@ public:
 	static inline void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
 	static inline void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
 	static inline void mulXi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mulXi(y.a.v_, x.a.v_); }
+	static inline void divBy2(Fp2T& y, const Fp2T& x)
+	{
+		Fp::divBy2(y.a, x.a);
+		Fp::divBy2(y.b, x.b);
+	}
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/

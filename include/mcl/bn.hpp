@@ -148,8 +148,8 @@ struct ParamT {
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_invxi = Fp2(b) / xi;
-		G1::setParam(0, b);
-		G2::setParam(0, b_invxi);
+		G1::setParam(0, b, mcl::ec::Proj);
+		G2::setParam(0, b_invxi, mcl::ec::Proj);
 		power(gammar[0], xi, (p - 1) / 6);
 
 		for (size_t i = 1; i < gammarN; i++) {
@@ -200,58 +200,206 @@ struct BNT {
 	{
 		param.init(cp);
 	}
-	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
-	{
-	}
-};
-
-template<class Fp>
-ParamT<Fp> BNT<Fp>::param;
-
-#if 0
-template<class Fp>
-struct NaiveT {
-	typedef mcl::Fp2T<Fp> Fp2;
-	typedef mcl::Fp6T<Fp> Fp6;
-	typedef mcl::Fp12T<Fp> Fp12;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
-	typedef ParamT<Fp> Param;
-	static Param param;
-	static void init(const mcl::bn::CurveParam& cp)
-	{
-		param.init(cp);
-	}
 	/*
-		v is the line arising in the addition of Q1 and Q2 in G2 evaluated at point P in G1
+		l = (a, b, c) => (a, b * P.y, c * P.x)
 	*/
-	static void evalLine(Fp12& v, const G2& Q1, const G2& Q2, const G1& P)
+	static void updateLine(Fp6& l, const G1& P)
 	{
-		Fp2 t;
-		Q1.normalize();
-		Q2.normalize();
-		P.normalize();
-		if (Q1.x == Q2.x) {
-			t = Q1.x * Q1.x * 3 / (Q1.y + Q1.y);
-		} else {
-			t = (Q1.y - Q2.y) / (Q1.x - Q2.x);
-		}
-		t *= Fp2(P.x, 0) - Q1.x;
-		t += Q1.y;
-		v.clear();
-		v.a.a = t;
+		l.b.a *= P.y;
+		l.b.b *= P.y;
+		l.c.a *= P.x;
+		l.c.b *= P.x;
+	}
+	static void mulB_invxi(Fp2& y, const Fp2& x)
+	{
+		Fp2::mul(y, x, param.b_invxi); // QQQ
+	}
+	static void dblLineWithoutP(Fp6& l, const G2& Q)
+	{
+		Fp2 A, B, C, D, E, F, X3, G, Y3, H, Z3, I, J;
+		Fp2::mul(A, Q.x, Q.y);
+		Fp2::divBy2(A, A);
+		Fp2::sqr(B, Q.y);
+		Fp2::sqr(C, Q.z);
+		Fp2::add(D, C, C); D += C; // D = 3C
+		mulB_invxi(E, D);
+		Fp2::sqr(J, Q.x);
+		Fp2::add(F, E, E); F += E; // F = 3E
+		Fp2::add(H, Q.y, Q.z);
+		Fp2::sqr(H, H);
+		H -= B;
+		H -= C;
+		Fp2::sub(Q.x, B, F);
+		Q.x *= A;
+		Fp2::add(G, B, F);
+		Fp2::divBy2(G, G);
+		Fp2::sqr(Q.y, G); // G^2
+		F *= E;// F = 3E^2
+		Q.y -= F;
+		Fp2::mul(Q.z, B, H);
+		Fp2::sub(I, E, B);
+		l.clear();
+		l.a.a = I.a - I.b;
+		l.a.b = I.a + I.b;
+		l.b = -H;
+		Fp2::add(l.c, J, J);
+		l.c += J;
+	}
+	static void mulOpt1(Fp2& z, const Fp2& x, const Fp2& y)
+	{
+		Fp d0;
+		Fp s, t;
+		Fp::add(s, x.a, x.b);
+		Fp::add(t, y.a, y.b);
+		Fp::mul(d0, x.b, y.b);
+		Fp::mul(z.a, x.a, y.a);
+		Fp::mul(z.b, s, t);
+		z.b -= z.a;
+		z.b -= d0;
+		z.a -= d0;
+	}
+	static void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
+	{
+#if 1
+		const Fp2& X1 = R.x;
+		const Fp2& Y1 = R.y;
+		const Fp2& Z1 = R.z;
+		const Fp2& X2 = Q.x;
+		const Fp2& Y2 = Q.y;
+		Fp2 theta, lambda;
+		theta = Y1 - Y2 * Z1;
+		lambda = X1 - X2 * Z1;
+		Fp2 lambda2;
+		Fp2::sqr(lambda2, lambda);
+		Fp2 t1, t2, t3, t4;
+		t1 = X1 * lambda2;
+		t2 = t1 + t1; // 2 X1 lambda^2
+		t3 = lambda2 * lambda; // lambda^3
+		Fp2::sqr(t4, theta);
+		t4 *= Z1; // t4 = Z1 theta^2
+		R.x = lambda * (t3 + t4 - t2);
+		R.y = theta * (t2 + t1 - t3 - t4) - Y1 * t3;
+		R.z = Z1 * t3;
+		l.a = theta * X2 - lambda * Y2;
+		Fp2::mulXi(l.a, l.a);
+		l.b = lambda;
+		l.c = -theta;
+#else
+		Fp2 t1, t2, t3, t4, T1, T2;
+		Fp2::mul(t1, R.z, Q.x);
+		Fp2::mul(t2, R.z, Q.y);
+		Fp2::sub(t1, R.x, t1);
+		Fp2::sub(t2, R.y, t2);
+		Fp2::sqr(t3, t1);
+		Fp2::mul(R.x, t3, R.x);
+		Fp2::sqr(t4, t2);
+		t3 *= t1;
+		t4 *= R.z;
+		t4 += t3;
+		t4 -= R.x;
+		t4 -= R.x;
+		R.x -= t4;
+		mulOpt1(T1, t2, R.x);
+		mulOpt1(T2, t3, R.y);
+		Fp2::sub(R.y, T1, T2);
+		Fp2::mul(R.x, t1, t4);
+		Fp2::mul(R.z, t3, R.z);
+		Fp2::neg(l.c, t2);
+		mulOpt1(T1, t2, Q.x);
+		mulOpt1(T2, t1, Q.y);
+		Fp2::sub(t2, T1, T2);
+		Fp2::mulXi(l.a, t2);
+		l.b = t1;
+#endif
+	}
+	static void dblLine(Fp6& l, G2& Q, const G1& P)
+	{
+		dblLineWithoutP(l, Q);
+		updateLine(l, P);
+	}
+	static void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
+	{
+		addLineWithoutP(l, R, Q);
+		updateLine(l, P);
+	}
+	static void convertFp6toFp12(Fp12& y, const Fp6& x)
+	{
+		y.clear();
+		y.a.a = x.a;
+		y.a.c = x.c;
+		y.b.b = x.b;
+	}
+	static void mul_024(Fp12&y, const Fp6& x)
+	{
+		Fp12 t;
+		convertFp6toFp12(t, x);
+		y *= t;
+	}
+	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
+	{
+		Fp12 x2, y2;
+		convertFp6toFp12(x2, x);
+		convertFp6toFp12(y2, y);
+		Fp12::mul(z, x2, y2);
 	}
 	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
 	{
+#if 1
+		P.normalize();
+		Q.normalize();
+		const mpz_class& p = param.p;
+		Fp6 l;
+		G2 T = Q;
+		f = 1;
+		G2 negQ;
+		G2::neg(negQ, Q);
+		Fp6 d;
+		dblLine(d, T, P);
+		Fp6 e;
+		assert(param.siTbl[1] == 1);
+		addLine(e, T, Q, P);
+		mul_024_024(f, d, e);
+		for (size_t i = 2; i < param.siTbl.size(); i++) {
+			dblLine(l, T, P);
+			Fp12::sqr(f, f);
+			mul_024(f, l);
+			if (param.siTbl[i] > 0) {
+				addLine(l, T, Q, P);
+				mul_024(f, l);
+			} else if (param.siTbl[i] < 0) {
+				addLine(l, T, negQ, P);
+				mul_024(f, l);
+			}
+		}
+		G2 Q1, Q2;
+		Frobenius(Q1, Q, p);
+		Frobenius(Q2, Q1, p);
+		if (param.z < 0) {
+			G2::neg(T, T);
+			Fp12::inv(f, f);
+		}
+		addLine(l, T, Q1, P);
+		mul_024(f, l);
+		T += Q1;
+		addLine(l, T, -Q2, P);
+		mul_024(f, l);
+		mpz_class a = p * p * p;
+		a *= a;
+		a *= a;
+		a = (a - 1) / param.r;
+		Fp12::power(f, f, a);
+#else
+		P.normalize();
 		const mpz_class& p = param.p;
 		const mpz_class s = abs(6 * param.z + 2);
 		G2 T = Q;
-		Fp12 t;
+		Fp6 l;
 		f = 1;
 		const int c = (int)mcl::gmp::getBitSize(s);
 		for (int i = c - 2; i >= 0; i--) {
 			Fp12::sqr(f, f);
-			evalLine(t, T, T, P);
+			dblLine(l, T, P);
+			mul(f, t);
 			f *= t;
 			G2::dbl(T, T);
 			if (mcl::gmp::testBit(s, i)) {
@@ -277,12 +425,12 @@ struct NaiveT {
 		a *= a;
 		a = (a - 1) / param.r;
 		Fp12::power(f, f, a);
+#endif
 	}
 };
 
 template<class Fp>
-ParamT<Fp> NaiveT<Fp>::param;
-#endif
+ParamT<Fp> BNT<Fp>::param;
 
 } } // mcl::bn
 
