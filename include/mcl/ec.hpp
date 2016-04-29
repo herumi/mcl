@@ -64,30 +64,39 @@ public:
 	{
 		set(_x, _y);
 	}
+	bool isNormalized() const
+	{
+#ifdef MCL_EC_USE_AFFINE
+		return true;
+#else
+		return isZero() || z.isOne();
+#endif
+	}
 #ifndef MCL_EC_USE_AFFINE
+private:
 	void normalizeJacobi() const
 	{
-		if (isZero() || z.isOne()) return;
-		Fp rz, rz2;
-		Fp::inv(rz, z);
-		rz2 = rz * rz;
+		Fp rz2;
+		Fp::inv(z, z);
+		Fp::sqr(rz2, z);
 		x *= rz2;
-		y *= rz2 * rz;
+		y *= rz2;
+		y *= z;
 		z = 1;
 	}
 	void normalizeProj() const
 	{
-		if (isZero() || z.isOne()) return;
-		Fp rz;
-		Fp::inv(rz, z);
-		x *= rz;
-		y *= rz;
+		Fp::inv(z, z);
+		x *= z;
+		y *= z;
 		z = 1;
 	}
+public:
 #endif
 	void normalize() const
 	{
 #ifndef MCL_EC_USE_AFFINE
+		if (isNormalized()) return;
 		switch (mode_) {
 		case ec::Jacobi:
 			normalizeJacobi();
