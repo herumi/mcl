@@ -19,6 +19,7 @@ struct Test {
 	Test(const mcl::EcParam& para, mcl::fp::Mode fpMode, mcl::ec::Mode ecMode)
 		: para(para)
 	{
+		printf("fpMode=%s\n", mcl::fp::ModeToStr(fpMode));
 		Fp::init(para.p, fpMode);
 		Zn::init(para.n, fpMode);
 		Ec::init(para.a, para.b, ecMode);
@@ -316,14 +317,26 @@ private:
 	void operator=(const Test&);
 };
 
+void test_sub_sub(const mcl::EcParam& para, mcl::fp::Mode fpMode)
+{
+	puts("Proj");
+	Test(para, fpMode, mcl::ec::Proj).run();
+	puts("Jacobi");
+	Test(para, fpMode, mcl::ec::Jacobi).run();
+}
+
 void test_sub(const mcl::EcParam *para, size_t paraNum)
 {
 	for (size_t i = 0; i < paraNum; i++) {
 		puts(para[i].name);
-		puts("Jacobi");
-		Test(para[i], mcl::fp::FP_AUTO, mcl::ec::Jacobi).run();
-		puts("Proj");
-		Test(para[i], mcl::fp::FP_AUTO, mcl::ec::Proj).run();
+		test_sub_sub(para[i], mcl::fp::FP_GMP);
+#ifdef MCL_USE_LLVM
+		test_sub_sub(para[i], mcl::fp::FP_LLVM);
+		test_sub_sub(para[i], mcl::fp::FP_LLVM_MONT);
+#endif
+#ifdef MCL_USE_XBYAK
+		test_sub_sub(para[i], mcl::fp::FP_XBYAK);
+#endif
 	}
 }
 
