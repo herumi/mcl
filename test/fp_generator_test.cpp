@@ -17,10 +17,10 @@ typedef mcl::FpT<> Fp;
 const int MAX_N = 4;
 
 const char *primeTable[] = {
-	"7fffffffffffffffffffffffffffffff", // 127bit(not full)
-	"ffffffffffffffffffffffffffffff61", // 128bit(full)
-	"fffffffffffffffffffffffffffffffffffffffeffffee37", // 192bit(full)
-	"2523648240000001ba344d80000000086121000000000013a700000000000013", // 254bit(not full)
+	"0x7fffffffffffffffffffffffffffffff", // 127bit(not full)
+	"0xffffffffffffffffffffffffffffff61", // 128bit(full)
+	"0xfffffffffffffffffffffffffffffffffffffffeffffee37", // 192bit(full)
+	"0x2523648240000001ba344d80000000086121000000000013a700000000000013", // 254bit(not full)
 };
 
 void strToArray(uint64_t *p, size_t n, const char *pStr)
@@ -183,7 +183,7 @@ void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 
 void test(const char *pStr)
 {
-	Fp::setModulo(pStr, 16, mcl::fp::FP_XBYAK);
+	Fp::init(pStr, mcl::fp::FP_XBYAK);
 	const mcl::fp::Op& op = Fp::getOp();
 	const int pn = (int)op.N;
 	testAddSub(op);

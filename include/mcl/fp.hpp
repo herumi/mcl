@@ -78,7 +78,16 @@ public:
 		}
 		printf("\n");
 	}
-	static inline void setModulo(const std::string& mstr, int base = 0, fp::Mode mode = fp::FP_AUTO)
+	// backward compatibility
+	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		init(mstr, mode);
+	}
+	static inline void init(const mpz_class& m, fp::Mode mode = fp::FP_AUTO)
+	{
+		init(m.get_str(), mode);
+	}
+	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
 		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
@@ -124,6 +133,7 @@ public:
 #endif
 	"\n", mode, op_.isMont);
 #endif
+		int base = 0;
 		op_.init(mstr, base, maxBitSize, mode);
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);

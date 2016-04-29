@@ -338,7 +338,7 @@ void benchFp2()
 
 void test(const char *p, mcl::fp::Mode mode)
 {
-	Fp::setModulo(p, 0, mode);
+	Fp::init(p, mode);
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	const int xi_a = 1;
 	Fp2::init(xi_a);

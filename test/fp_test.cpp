@@ -17,7 +17,7 @@ struct Init {
 	{
 		std::ostringstream ms;
 		ms << m;
-		Fp::setModulo(ms.str());
+		Fp::init(ms.str());
 	}
 };
 
@@ -275,7 +275,7 @@ CYBOZU_TEST_AUTO(power)
 		z *= x;
 	}
 	typedef mcl::FpT<tag2, 128> Fp2;
-	Fp2::setModulo("1009");
+	Fp2::init("1009");
 	x = 5;
 	Fp2 n = 3;
 	z = 3;
@@ -316,7 +316,7 @@ struct TagAnother;
 CYBOZU_TEST_AUTO(another)
 {
 	typedef mcl::FpT<TagAnother, 128> G;
-	G::setModulo("13");
+	G::init("13");
 	G a = 3;
 	G b = 9;
 	a *= b;
@@ -325,7 +325,7 @@ CYBOZU_TEST_AUTO(another)
 
 CYBOZU_TEST_AUTO(setArray)
 {
-	Fp::setModulo("1000000000000000000117");
+	Fp::init("1000000000000000000117");
 	char b1[] = { 0x56, 0x34, 0x12 };
 	Fp x;
 	x.setArray(b1, 3);
@@ -334,7 +334,7 @@ CYBOZU_TEST_AUTO(setArray)
 	x.setArray(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 
-	Fp::setModulo("0x10000000000001234567a5");
+	Fp::init("0x10000000000001234567a5");
 	const struct {
 		uint32_t buf[3];
 		size_t bufN;
@@ -355,7 +355,7 @@ CYBOZU_TEST_AUTO(setArray)
 
 CYBOZU_TEST_AUTO(setArrayMask)
 {
-	Fp::setModulo("1000000000000000000117");
+	Fp::init("1000000000000000000117");
 	char b1[] = { 0x56, 0x34, 0x12 };
 	Fp x;
 	x.setArrayMask(b1, 3);
@@ -364,7 +364,7 @@ CYBOZU_TEST_AUTO(setArrayMask)
 	x.setArrayMask(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 
-	Fp::setModulo("0x10000000000001234567a5");
+	Fp::init("0x10000000000001234567a5");
 	const struct {
 		uint32_t buf[3];
 		size_t bufN;
@@ -383,7 +383,7 @@ CYBOZU_TEST_AUTO(setArrayMask)
 
 CYBOZU_TEST_AUTO(set64bit)
 {
-	Fp::setModulo("0x1000000000000000000f");
+	Fp::init("0x1000000000000000000f");
 	const struct {
 		const char *p;
 		int64_t i;
@@ -400,7 +400,7 @@ CYBOZU_TEST_AUTO(set64bit)
 
 CYBOZU_TEST_AUTO(getUint64)
 {
-	Fp::setModulo("0x1000000000000000000f");
+	Fp::init("0x1000000000000000000f");
 	const uint64_t tbl[] = {
 		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull)
 	};
@@ -431,7 +431,7 @@ CYBOZU_TEST_AUTO(getUint64)
 
 CYBOZU_TEST_AUTO(getInt64)
 {
-	Fp::setModulo("0x1000000000000000000f");
+	Fp::init("0x1000000000000000000f");
 	const int64_t tbl[] = {
 		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull),
 		-1, -2, -12345678, -int64_t(1) << 63,
@@ -489,7 +489,7 @@ CYBOZU_TEST_AUTO(getStr)
 		"0x100000000000000000000000000000033",
 		"0x11ee12312312940000000000000000000000000002342343"
 	};
-	Fp::setModulo("0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d");
+	Fp::init("0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		mpz_class x(tbl[i]);
 		Fp y(tbl[i]);
@@ -519,7 +519,7 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 		"0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
 	const char *p = "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-	Fp::setModulo(p, 0, mcl::fp::FP_XBYAK);
+	Fp::init(p, mcl::fp::FP_XBYAK);
 	const mcl::fp::Op& op = Fp::getOp();
 	const mpz_class mp(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {

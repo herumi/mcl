@@ -23,7 +23,7 @@ const char *getModeStr(mcl::fp::Mode mode)
 void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
 {
 	const char *s = getModeStr(mode);
-	Fp::setModulo(pStr, 0, mode);
+	Fp::init(pStr, mode);
 	Fp x(xStr);
 	Fp y(yStr);
 
@@ -86,8 +86,8 @@ void benchFp(size_t bitSize, int mode)
 
 void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMode)
 {
-	Fp::setModulo(para.p, 0, mode);
-	Zn::setModulo(para.n);
+	Fp::init(para.p, mode);
+	Zn::init(para.n);
 	Ec::init(para.a, para.b, ecMode);
 	Fp x(para.gx);
 	Fp y(para.gy);
@@ -147,7 +147,7 @@ void benchToStr16()
 		"0x100000000000000000000000000000033",
 		"0x11ee12312312940000000000000000000000000002342343"
 	};
-	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	Fp::init("0xffffffffffffffffffffffffffffffffffffffffffffff13");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str;
 		Fp x(tbl[i]);
@@ -169,7 +169,7 @@ void benchFromStr16()
 		"100000000000000000000000000000033",
 		"11ee12312312940000000000000000000000000002342343"
 	};
-	Fp::setModulo("0xffffffffffffffffffffffffffffffffffffffffffffff13");
+	Fp::init("0xffffffffffffffffffffffffffffffffffffffffffffff13");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		std::string str = tbl[i];
 		Fp x;

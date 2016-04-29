@@ -112,9 +112,9 @@ struct Test {
 	mpz_class m;
 	void run(const char *p)
 	{
-		Fp::setModulo(p);
+		Fp::init(p);
 		m = p;
-		Zn::setModulo(p);
+		Zn::init(p);
 		edge();
 		cstr();
 		getStr();
@@ -584,7 +584,7 @@ void customTest(const char *pStr, const char *xStr, const char *yStr)
 #if 0
 	{
 		pStr = "0xfffffffffffffffffffffffffffffffffffffffeffffee37",
-		Fp::setModulo(pStr);
+		Fp::init(pStr);
 		static uint64_t x[3] = { 1, 0, 0 };
 		uint64_t z[3];
 std::cout<<std::hex;
@@ -598,7 +598,7 @@ put(z);
 	uint64_t x[9] = { 0xff7fffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x1ff };
 	uint64_t y[9] = { 0xff7fffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0x1ff };
 	uint64_t z1[9], z2[9];
-	Fp::setModulo(pStr);
+	Fp::init(pStr);
 	Fp::fg_.mul_(z2, x, y);
 	put(z2);
 	{
@@ -615,7 +615,7 @@ put(z);
 	exit(1);
 #else
 	std::string rOrg, rC, rAsm;
-	Zn::setModulo(pStr);
+	Zn::init(pStr);
 	Zn s(xStr), t(yStr);
 	s *= t;
 	rOrg = getStr(s);
@@ -633,7 +633,7 @@ put(z);
 	}
 
 	puts("asm");
-	Fp::setModulo(pStr);
+	Fp::init(pStr);
 	Fp x(xStr), y(yStr);
 	x *= y;
 	rAsm = getStr(x);

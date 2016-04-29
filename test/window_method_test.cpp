@@ -29,7 +29,7 @@ CYBOZU_TEST_AUTO(int)
 	typedef mcl::FpT<> Fp;
 	typedef mcl::EcT<Fp> Ec;
 	const struct mcl::EcParam& para = mcl::ecparam::secp192k1;
-	Fp::setModulo(para.p);
+	Fp::init(para.p);
 	Ec::init(para.a, para.b);
 	const Fp x(para.gx);
 	const Fp y(para.gy);

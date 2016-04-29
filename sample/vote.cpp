@@ -61,8 +61,8 @@ struct Param {
 void SysInit()
 {
 	const mcl::EcParam& para = mcl::ecparam::secp192k1;
-	Zn::setModulo(para.n);
-	Fp::setModulo(para.p);
+	Zn::init(para.n);
+	Fp::init(para.p);
 	Ec::init(para.a, para.b);
 }
 

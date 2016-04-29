@@ -24,7 +24,7 @@ const char *getModeStr(mcl::fp::Mode mode)
 
 void benchRaw(const char *p, mcl::fp::Mode mode)
 {
-	Fp::setModulo(p, 0, mode);
+	Fp::init(p, mode);
 	Fp2::init(1);
 	typedef mcl::fp::Unit Unit;
 	const size_t maxN = sizeof(Fp) / sizeof(Unit);

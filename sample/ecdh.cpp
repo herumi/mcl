@@ -20,8 +20,8 @@ int main()
 		the cyclic group of <P> is isomorphic to Zn
 	*/
 	const mcl::EcParam& para = mcl::ecparam::secp192k1;
-	Zn::setModulo(para.n);
-	Fp::setModulo(para.p);
+	Zn::init(para.n);
+	Fp::init(para.p);
 	Ec::init(para.a, para.b);
 	const Ec P(Fp(para.gx), Fp(para.gy));
 

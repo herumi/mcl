@@ -16,12 +16,12 @@ typedef mcl::EcT<Fp> Ec;
 
 struct Test {
 	const mcl::EcParam& para;
-	Test(const mcl::EcParam& para, mcl::ec::Mode mode)
+	Test(const mcl::EcParam& para, mcl::fp::Mode fpMode, mcl::ec::Mode ecMode)
 		: para(para)
 	{
-		Fp::setModulo(para.p);
-		Zn::setModulo(para.n);
-		Ec::init(para.a, para.b, mode);
+		Fp::init(para.p, fpMode);
+		Zn::init(para.n, fpMode);
+		Ec::init(para.a, para.b, ecMode);
 	}
 	void cstr() const
 	{
@@ -321,9 +321,9 @@ void test_sub(const mcl::EcParam *para, size_t paraNum)
 	for (size_t i = 0; i < paraNum; i++) {
 		puts(para[i].name);
 		puts("Jacobi");
-		Test(para[i], mcl::ec::Jacobi).run();
+		Test(para[i], mcl::fp::FP_AUTO, mcl::ec::Jacobi).run();
 		puts("Proj");
-		Test(para[i], mcl::ec::Proj).run();
+		Test(para[i], mcl::fp::FP_AUTO, mcl::ec::Proj).run();
 	}
 }
 

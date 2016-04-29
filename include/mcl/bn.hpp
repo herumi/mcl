@@ -142,14 +142,14 @@ struct ParamT {
 		p = eval(pCoff, z);
 		r = eval(rCoff, z);
 		mpz_class t = eval(tCoff, z);
-		Fp::setModulo(p.get_str(), 10, mode);
+		Fp::init(p.get_str(), mode);
 		Fp2::init(cp.xi_a);
-		b = cp.b; // set b before calling Fp::setModulo
+		b = cp.b; // set b before calling Fp::init
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_invxi = Fp2(b) / xi;
-		G1::setParam(0, b, mcl::ec::Proj);
-		G2::setParam(0, b_invxi, mcl::ec::Proj);
+		G1::init(0, b, mcl::ec::Proj);
+		G2::init(0, b_invxi, mcl::ec::Proj);
 		power(gammar[0], xi, (p - 1) / 6);
 
 		for (size_t i = 1; i < gammarN; i++) {
@@ -373,6 +373,7 @@ struct BNT {
 		}
 		G2 Q1, Q2;
 		Frobenius(Q1, Q, p);
+PUT(Q1);
 		Frobenius(Q2, Q1, p);
 		if (param.z < 0) {
 			G2::neg(T, T);

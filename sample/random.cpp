@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	if (argc == 2) {
 		p = argv[1];
 	}
-	Fp::setModulo(p);
+	Fp::init(p);
 	Fp x;
 	printf("p=%s\n", p);
 	Map m;
