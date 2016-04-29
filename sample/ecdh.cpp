@@ -22,7 +22,7 @@ int main()
 	const mcl::EcParam& para = mcl::ecparam::secp192k1;
 	Zn::setModulo(para.n);
 	Fp::setModulo(para.p);
-	Ec::setParam(para.a, para.b);
+	Ec::init(para.a, para.b);
 	const Ec P(Fp(para.gx), Fp(para.gy));
 
 	/*

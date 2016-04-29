@@ -88,7 +88,7 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMo
 {
 	Fp::setModulo(para.p, 0, mode);
 	Zn::setModulo(para.n);
-	Ec::setParam(para.a, para.b, ecMode);
+	Ec::init(para.a, para.b, ecMode);
 	Fp x(para.gx);
 	Fp y(para.gy);
 	Ec P(x, y);

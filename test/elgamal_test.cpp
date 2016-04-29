@@ -18,7 +18,7 @@ CYBOZU_TEST_AUTO(testEc)
 {
 	Fp::setModulo(para.p);
 	Zn::setModulo(para.n);
-	Ec::setParam(para.a, para.b);
+	Ec::init(para.a, para.b);
 	const Fp x0(para.gx);
 	const Fp y0(para.gy);
 	const size_t bitSize = Zn::getBitSize();

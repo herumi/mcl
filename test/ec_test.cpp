@@ -16,12 +16,12 @@ typedef mcl::EcT<Fp> Ec;
 
 struct Test {
 	const mcl::EcParam& para;
-	Test(const mcl::EcParam& para)
+	Test(const mcl::EcParam& para, mcl::ec::Mode mode)
 		: para(para)
 	{
 		Fp::setModulo(para.p);
 		Zn::setModulo(para.n);
-		Ec::setParam(para.a, para.b);
+		Ec::init(para.a, para.b, mode);
 	}
 	void cstr() const
 	{
@@ -61,7 +61,9 @@ struct Test {
 		Fp y(para.gy);
 		Zn n = 0;
 		CYBOZU_TEST_ASSERT(Ec::isValid(x, y));
+		CYBOZU_TEST_ASSERT(!Ec::isValid(x, y + 1));
 		Ec P(x, y), Q, R, O;
+		CYBOZU_TEST_ASSERT(P.isNormalized());
 		{
 			Ec::neg(Q, P);
 			CYBOZU_TEST_EQUAL(Q.x, P.x);
@@ -69,6 +71,8 @@ struct Test {
 
 			R = P + Q;
 			CYBOZU_TEST_ASSERT(R.isZero());
+			CYBOZU_TEST_ASSERT(R.isNormalized());
+			CYBOZU_TEST_ASSERT(R.isValid());
 
 			R = P + O;
 			CYBOZU_TEST_EQUAL(R, P);
@@ -78,6 +82,8 @@ struct Test {
 
 		{
 			Ec::dbl(R, P);
+			CYBOZU_TEST_ASSERT(!R.isNormalized());
+			CYBOZU_TEST_ASSERT(R.isValid());
 			Ec R2 = P + P;
 			CYBOZU_TEST_EQUAL(R, R2);
 			{
@@ -314,7 +320,10 @@ void test_sub(const mcl::EcParam *para, size_t paraNum)
 {
 	for (size_t i = 0; i < paraNum; i++) {
 		puts(para[i].name);
-		Test(para[i]).run();
+		puts("Jacobi");
+		Test(para[i], mcl::ec::Jacobi).run();
+		puts("Proj");
+		Test(para[i], mcl::ec::Proj).run();
 	}
 }
 

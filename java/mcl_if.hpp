@@ -31,7 +31,7 @@ void SystemInit(const std::string& param) throw(std::exception)
 		p.ecParam = mcl::getEcParam(ecParamStr);
 		Zn::setModulo(p.ecParam->n);
 		Fp::setModulo(p.ecParam->p);
-		Ec::setParam(p.ecParam->a, p.ecParam->b);
+		Ec::init(p.ecParam->a, p.ecParam->b);
 		p.hashName = cybozu::crypto::Hash::getName(hashNameStr);
 		return;
 	}

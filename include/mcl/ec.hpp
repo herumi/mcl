@@ -76,6 +76,7 @@ public:
 private:
 	void normalizeJacobi() const
 	{
+		assert(!z.isZero());
 		Fp rz2;
 		Fp::inv(z, z);
 		Fp::sqr(rz2, z);
@@ -86,10 +87,44 @@ private:
 	}
 	void normalizeProj() const
 	{
+		assert(!z.isZero());
 		Fp::inv(z, z);
 		x *= z;
 		y *= z;
 		z = 1;
+	}
+	// Y^2 == X(X^2 + aZ^4) + bZ^6
+	bool isValidJacobi() const
+	{
+puts("isValidJacobi");
+		Fp y2, x2, z2, z4, t;
+		Fp::sqr(x2, x);
+		Fp::sqr(y2, y);
+		Fp::sqr(z2, z);
+		Fp::sqr(z4, z2);
+		Fp::mul(t, z4, a_);
+		t += x2;
+		t *= x;
+		z4 *= z2;
+		z4 *= b_;
+		t += z4;
+		return y2 == t;
+	}
+	// (Y^2 - bZ^2)Z = X^2(X + aZ)
+	bool isValidProj() const
+	{
+puts("isValidProj");
+		Fp y2, x2, z2, t;
+		Fp::sqr(x2, x);
+		Fp::sqr(y2, y);
+		Fp::sqr(z2, z);
+		Fp::mul(t, a_, z);
+		t += x;
+		t *= x2;
+		z2 *= b_;
+		y2 -= z2;
+		y2 *= z;
+		return y2 == t;
 	}
 public:
 #endif
@@ -107,7 +142,7 @@ public:
 		}
 #endif
 	}
-	static inline void setParam(const Fp& a, const Fp& b, int mode = ec::Jacobi)
+	static inline void init(const Fp& a, const Fp& b, int mode = ec::Jacobi)
 	{
 		a_ = a;
 		b_ = b;
@@ -127,22 +162,43 @@ public:
 			mode_ = mode;
 			break;
 		default:
-			throw cybozu::Exception("ec:EcT:setParam:bad mode") << mode;
+			throw cybozu::Exception("ec:EcT:init:bad mode") << mode;
 		}
 #endif
 	}
+	// backward compatilibity
 	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
 	{
-		setParam(Fp(astr), Fp(bstr), mode);
+		init(astr, bstr, mode);
 	}
+	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
+	{
+		init(Fp(astr), Fp(bstr), mode);
+	}
+	// y^2 == (x^2 + a)x + b
 	static inline bool isValid(const Fp& _x, const Fp& _y)
 	{
-		return _y * _y == (_x * _x + a_) * _x + b_;
+		Fp y2, t;
+		Fp::sqr(y2, _y);
+		Fp::sqr(t, _x);
+		t += a_;
+		t *= _x;
+		t += b_;
+		return y2 == t;
 	}
 	bool isValid() const
 	{
 		if (isZero()) return true;
-		normalize();
+#ifndef MCL_EC_USE_AFFINE
+		if (!z.isOne()) {
+			switch (mode_) {
+			case ec::Jacobi:
+				return isValidJacobi();
+			case ec::Proj:
+				return isValidProj();
+			}
+		}
+#endif
 		return isValid(x, y);
 	}
 	void set(const Fp& _x, const Fp& _y, bool verify = true)
