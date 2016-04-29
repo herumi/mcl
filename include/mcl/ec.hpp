@@ -96,7 +96,6 @@ private:
 	// Y^2 == X(X^2 + aZ^4) + bZ^6
 	bool isValidJacobi() const
 	{
-puts("isValidJacobi");
 		Fp y2, x2, z2, z4, t;
 		Fp::sqr(x2, x);
 		Fp::sqr(y2, y);
@@ -110,17 +109,16 @@ puts("isValidJacobi");
 		t += z4;
 		return y2 == t;
 	}
-	// (Y^2 - bZ^2)Z = X^2(X + aZ)
+	// (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
 	bool isValidProj() const
 	{
-puts("isValidProj");
 		Fp y2, x2, z2, t;
 		Fp::sqr(x2, x);
 		Fp::sqr(y2, y);
 		Fp::sqr(z2, z);
-		Fp::mul(t, a_, z);
-		t += x;
-		t *= x2;
+		Fp::mul(t, a_, z2);
+		t += x2;
+		t *= x;
 		z2 *= b_;
 		y2 -= z2;
 		y2 *= z;
