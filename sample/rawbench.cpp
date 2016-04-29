@@ -11,17 +11,6 @@ typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp> Fp12;
 
-const char *getModeStr(mcl::fp::Mode mode)
-{
-	switch (mode) {
-	case mcl::fp::FP_GMP: return "gmp";
-	case mcl::fp::FP_LLVM: return "llvm";
-	case mcl::fp::FP_LLVM_MONT: return "llvm+mont";
-	case mcl::fp::FP_XBYAK: return "xbyak";
-	default: throw cybozu::Exception("bad mode") << mode;
-	}
-}
-
 void benchRaw(const char *p, mcl::fp::Mode mode)
 {
 	Fp::init(p, mode);
@@ -60,7 +49,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	f2y = f2x;
 	CYBOZU_BENCH_T(fp2_sqrT, Fp2::sqr, f2x, f2x);
 	CYBOZU_BENCH_T(fp2_mulT, Fp2::mul, f2x, f2x, f2y);
-	printf("%s\n", getModeStr(mode));
+	printf("%s\n", mcl::fp::ModeToStr(mode));
 	const char *tStrTbl[] = {
 		"fp_add", "fp_sub", "fp_sqr", "fp_mul", "fp_mulU",
 		"D_add", "D_sub",
