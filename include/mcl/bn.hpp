@@ -116,6 +116,7 @@ struct ParamT {
 	mpz_class z;
 	mpz_class p;
 	mpz_class r;
+	uint32_t pmod4;
 	Fp Z;
 	Fp2 W2p;
 	Fp2 W3p;
@@ -124,7 +125,15 @@ struct ParamT {
 	Fp2 gammar2[gammarN];
 	Fp2 gammar3[gammarN];
 	int b;
-	Fp2 b_invxi; // b_invxi = b/xi of twist E' : Y^2 = X^3 + b/xi
+	/*
+		twist
+		(x', y') = phi(x, y) = (x/w^2, y/w^3)
+		y^2 = x^3 + b
+		=> (y'w^3)^2 = (x'w^2)^3 + b
+		=> y'^2 = x'^3 + b / w^6 ; w^6 = xi
+		=> y'^2 = x'^3 + b_div_xi;
+	*/
+	Fp2 b_div_xi;
 	Fp half;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
@@ -140,6 +149,7 @@ struct ParamT {
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
 		const int tCoff[] = { 1, 0,  6,  0,  0 };
 		p = eval(pCoff, z);
+		pmod4 = mcl::gmp::getUnit(p, 0) % 4;
 		r = eval(rCoff, z);
 		mpz_class t = eval(tCoff, z);
 		Fp::init(p.get_str(), mode);
@@ -147,9 +157,9 @@ struct ParamT {
 		b = cp.b; // set b before calling Fp::init
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
-		b_invxi = Fp2(b) / xi;
+		b_div_xi = Fp2(b) / xi;
 		G1::init(0, b, mcl::ec::Proj);
-		G2::init(0, b_invxi, mcl::ec::Proj);
+		G2::init(0, b_div_xi, mcl::ec::Proj);
 		power(gammar[0], xi, (p - 1) / 6);
 
 		for (size_t i = 1; i < gammarN; i++) {
@@ -178,13 +188,14 @@ struct ParamT {
 	}
 };
 
+
 template<class G>
 void Frobenius(G& y, const G& x, const mpz_class& p)
 {
+	assert(x.isNormalized());
 	using namespace mcl;
 	power(y.x, x.x, p);
 	power(y.y, x.y, p);
-	power(y.z, x.z, p);
 }
 
 template<class Fp>
@@ -200,6 +211,38 @@ struct BNT {
 	{
 		param.init(cp);
 	}
+	static void Frobenius(Fp2& y, const Fp2& x)
+	{
+		if (param.pmod4 == 1) {
+			y = x;
+		} else {
+			y.a = x.a;
+			Fp::neg(y.b, x.b);
+		}
+	}
+	/*
+		p mod 6 = 1, w^6 = xi
+		Frob(x', y') = phi Frob phi^-1(x', y')
+		= phi Frob (x' w^2, y' w^3)
+		= phi (x'^p w^2p, y'^p w^3p)
+		= (x'^p w^2(p - 1), y'^p w^3(p - 1))
+
+		x = a + bi in Fp2
+		x^p = a + b i^p
+		= a + bi if p mod 4 = 1
+		= a - bi if p mod 4 = 3
+
+		w^(p - 1) = w^(6 (p - 1) / 6) = xi^((p - 1) / 6)
+	*/
+	static void FrobeniusOnTwist(G2& D, const G2& S)
+	{
+		assert(S.isNormalized());
+		Frobenius(D.x, S.x);
+		Frobenius(D.y, S.y);
+		D.z = S.z;
+		D.x *= param.W2p;
+		D.y *= param.W3p;
+	}
 	/*
 		l = (a, b, c) => (a, b * P.y, c * P.x)
 	*/
@@ -210,9 +253,9 @@ struct BNT {
 		l.c.a *= P.x;
 		l.c.b *= P.x;
 	}
-	static void mulB_invxi(Fp2& y, const Fp2& x)
+	static void mul_b_div_xi(Fp2& y, const Fp2& x)
 	{
-		Fp2::mul(y, x, param.b_invxi); // QQQ
+		Fp2::mul(y, x, param.b_div_xi); // QQQ
 	}
 	static void dblLineWithoutP(Fp6& l, const G2& Q)
 	{
@@ -222,7 +265,7 @@ struct BNT {
 		Fp2::sqr(B, Q.y);
 		Fp2::sqr(C, Q.z);
 		Fp2::add(D, C, C); D += C; // D = 3C
-		mulB_invxi(E, D);
+		mul_b_div_xi(E, D);
 		Fp2::sqr(J, Q.x);
 		Fp2::add(F, E, E); F += E; // F = 3E
 		Fp2::add(H, Q.y, Q.z);
@@ -372,9 +415,9 @@ struct BNT {
 			}
 		}
 		G2 Q1, Q2;
-		Frobenius(Q1, Q, p);
+		FrobeniusOnTwist(Q1, Q);
 PUT(Q1);
-		Frobenius(Q2, Q1, p);
+		FrobeniusOnTwist(Q2, Q1);
 		if (param.z < 0) {
 			G2::neg(T, T);
 			Fp12::inv(f, f);
