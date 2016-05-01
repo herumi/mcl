@@ -385,12 +385,23 @@ struct BNT {
 		convertFp6toFp12(y2, y);
 		Fp12::mul(z, x2, y2);
 	}
+	static void finalExp(Fp12& y, const Fp12& x)
+	{
+		/*
+			(p^12 - 1) / r = (p^6 - 1) (p^2 + 1) (p^4 - p^2 + 1)/r
+		*/
+		const mpz_class& p = param.p;
+		mpz_class p2 = p * p;
+		Fp12::power(y, x, p2 + 1);
+		mpz_class p4 = p2 * p2;
+		Fp12::power(y, y, (p4 - p2 + 1) / param.r);
+		Fp12::power(y, y, p4 * p2 - 1);
+	}
 	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
 	{
 #if 1
 		P.normalize();
 		Q.normalize();
-		const mpz_class& p = param.p;
 		Fp6 l;
 		G2 T = Q;
 		f = 1;
@@ -416,22 +427,19 @@ struct BNT {
 		}
 		G2 Q1, Q2;
 		FrobeniusOnTwist(Q1, Q);
-PUT(Q1);
 		FrobeniusOnTwist(Q2, Q1);
+		G2::neg(Q2, Q2);
 		if (param.z < 0) {
 			G2::neg(T, T);
-			Fp12::inv(f, f);
+//			Fp12::inv(f, f);
+			Fp6::neg(f.b, f.b);
 		}
-		addLine(l, T, Q1, P);
-		mul_024(f, l);
-		T += Q1;
-		addLine(l, T, -Q2, P);
-		mul_024(f, l);
-		mpz_class a = p * p * p;
-		a *= a;
-		a *= a;
-		a = (a - 1) / param.r;
-		Fp12::power(f, f, a);
+		addLine(d, T, Q1, P);
+		addLine(e, T, Q2, P);
+		Fp12 ft;
+		mul_024_024(ft, d, e);
+		f *= ft;
+		finalExp(f, f);
 #else
 		P.normalize();
 		const mpz_class& p = param.p;
