@@ -401,6 +401,8 @@ struct BNT {
 	/*
 		y = x^((p^12 - 1) / r)
 		(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
+		(a + bw)^(p^6) = a - bw in Fp12
+		(p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
 	*/
 	static void finalExp(Fp12& y, const Fp12& x)
 	{
@@ -413,14 +415,26 @@ struct BNT {
 		Fp12::inv(rv, z);
 		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
 		Fp12::mul(y, z, rv);
+
+		mpz_class c0 = -2 + param.z * (-18 + param.z * (-30 - 36 *param.z));
+		mpz_class c1 = 1 + param.z * (-12 + param.z * (-18 - 36 * param.z));
+		mpz_class c2 = 6 * param.z * param.z + 1;
+		Fp12 t0, t1, t2, t3;
+		Fp12::power(t0, y, c0);
+		Frobenius(t1, y);
+		Frobenius(t2, t1);
+		Frobenius(t3, t2);
+		Fp12::power(t1, t1, c1);
+		Fp12::power(t2, t2, c2);
+		y = t0 * t1 * t2 * t3;
 #else
-		Fp12::power(y, x, p2 + 1);
-		Fp12::power(y, y, p4 * p2 - 1);
-#endif
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
 		mpz_class p4 = p2 * p2;
+		Fp12::power(y, x, p2 + 1);
+		Fp12::power(y, y, p4 * p2 - 1);
 		Fp12::power(y, y, (p4 - p2 + 1) / param.r);
+#endif
 	}
 	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
 	{
