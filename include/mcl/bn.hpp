@@ -118,10 +118,10 @@ struct ParamT {
 	mpz_class r;
 	uint32_t pmod4;
 	Fp Z;
-	static const size_t gammaN = 5;
-	Fp2 gamma[gammaN]; // gamma[0] = xi^((p - 1) / 6), gamma[i] = gamma[i]^(i + 1)
-	Fp2 gamma2[gammaN];
-	Fp2 gamma3[gammaN];
+	static const size_t gN = 5;
+	Fp2 g[gN]; // g[0] = xi^((p - 1) / 6), g[i] = g[i]^(i + 1)
+	Fp2 g2[gN];
+	Fp2 g3[gN];
 	int b;
 	/*
 		twist
@@ -160,14 +160,14 @@ struct ParamT {
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
 
-		power(gamma[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
-		for (size_t i = 1; i < gammaN; i++) {
-			gamma[i] = gamma[i - 1] * gamma[0];
+		power(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
+		for (size_t i = 1; i < gN; i++) {
+			g[i] = g[i - 1] * g[0];
 		}
 
-		for (size_t i = 0; i < gammaN; i++) {
-			gamma2[i] = Fp2(gamma[i].a, -gamma[i].b) * gamma[i];
-			gamma3[i] = gamma[i] * gamma2[i];
+		for (size_t i = 0; i < gN; i++) {
+			g2[i] = Fp2(g[i].a, -g[i].b) * g[i];
+			g3[i] = g[i] * g2[i];
 		}
 		Fp2 tmp;
 		Fp2::power(tmp, xi, (p * p - 1) / 6);
@@ -233,11 +233,11 @@ struct BNT {
 		for (int i = 0; i < 6; i++) {
 			Frobenius(y.getFp2()[i], x.getFp2()[i]);
 		}
-		y.getFp2()[1] *= param.gamma[1];
-		y.getFp2()[2] *= param.gamma[3];
-		y.getFp2()[3] *= param.gamma[0];
-		y.getFp2()[4] *= param.gamma[2];
-		y.getFp2()[5] *= param.gamma[4];
+		y.getFp2()[1] *= param.g[1];
+		y.getFp2()[2] *= param.g[3];
+		y.getFp2()[3] *= param.g[0];
+		y.getFp2()[4] *= param.g[2];
+		y.getFp2()[5] *= param.g[4];
 	}
 	/*
 		p mod 6 = 1, w^6 = xi
@@ -253,8 +253,8 @@ struct BNT {
 		Frobenius(D.x, S.x);
 		Frobenius(D.y, S.y);
 		D.z = S.z;
-		D.x *= param.gamma[1];
-		D.y *= param.gamma[2];
+		D.x *= param.g[1];
+		D.y *= param.g[2];
 	}
 	/*
 		l = (a, b, c) => (a, b * P.y, c * P.x)
