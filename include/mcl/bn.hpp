@@ -406,20 +406,13 @@ struct BNT {
 	{
 #if 1
 		Fp12 z;
-		Fp12 xp2;
-		Frobenius(xp2, x);
-		Frobenius(xp2, xp2); // xp2 = x^(p^2)
-		Fp12::mul(z, xp2, x); // x^(p^2 + 1)
-		Fp12 xp6;
-		Frobenius(xp6, z); // z^p
-		Frobenius(xp6, xp6); // p^2
-		Frobenius(xp6, xp6); // p^3
-		Frobenius(xp6, xp6); // p^4
-		Frobenius(xp6, xp6); // p^5
-		Frobenius(xp6, xp6); // p^6
-		Fp12::inv(z, z);
-		Fp12::mul(y, xp6, z);
-//		Fp12::div(y, xp6, z);
+		Frobenius(z, x);
+		Frobenius(z, z); // z = x^(p^2)
+		Fp12::mul(z, z, x); // x^(p^2 + 1)
+		Fp12 rv;
+		Fp12::inv(rv, z);
+		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
+		Fp12::mul(y, z, rv);
 #else
 		Fp12::power(y, x, p2 + 1);
 		Fp12::power(y, y, p4 * p2 - 1);
