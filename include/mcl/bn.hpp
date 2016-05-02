@@ -142,7 +142,11 @@ struct ParamT {
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		gmp::setArray(z, &cp.z, 1);
+		uint64_t absz = std::abs(cp.z);
+		gmp::setArray(z, &absz, 1);
+		if (cp.z < 0) {
+			z = -z;
+		}
 		const int pCoff[] = { 1, 6, 24, 36, 36 };
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
 		const int tCoff[] = { 1, 0,  6,  0,  0 };
