@@ -49,12 +49,12 @@ else
   BIT_OPT=-m$(BIT)
 endif
 INC_OPT=-I include -I test -I ../xbyak -I ../cybozulib/include
-CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT)
+CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT) $(CFLAGS_USER)
 DEBUG=0
 ifeq ($(DEBUG),0)
 CFLAGS+=$(CFLAGS_OPT)
 endif
-LDFLAGS+=-lgmp -lgmpxx -lcrypto $(BIT_OPT)
+LDFLAGS+=-lgmp -lgmpxx -lcrypto $(BIT_OPT) $(LDFLAGS_USER)
 
 CFLAGS += -DMCL_USE_LLVM -fPIC
 
