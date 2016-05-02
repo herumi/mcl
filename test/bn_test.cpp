@@ -81,6 +81,9 @@ CYBOZU_TEST_AUTO(naive)
 	{
 		std::stringstream ss(ts.e);
 		ss >> e2;
+//		mpz_class x = BN::param.z;
+//		x = 2 * x * (6 * x * x + 3 * x + 1);
+//		Fp12::power(e1, e1, x);
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
 	CYBOZU_BENCH_C("pairing", 100, BN::optimalAtePairing, e1, Q, P); // 27Mclk
