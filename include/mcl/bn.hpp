@@ -324,7 +324,7 @@ struct BNT {
 		R.y = theta * (t2 + t1 - t3 - t4) - Y1 * t3;
 		R.z = Z1 * t3;
 		l.a = theta * X2 - lambda * Y2;
-		Fp2::mulXi(l.a, l.a);
+		Fp2::mul_xi(l.a, l.a);
 		l.b = lambda;
 		l.c = -theta;
 #else
@@ -351,7 +351,7 @@ struct BNT {
 		mulOpt1(T1, t2, Q.x);
 		mulOpt1(T2, t1, Q.y);
 		Fp2::sub(t2, T1, T2);
-		Fp2::mulXi(l.a, t2);
+		Fp2::mul_xi(l.a, t2);
 		l.b = t1;
 #endif
 	}
