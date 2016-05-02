@@ -419,6 +419,7 @@ struct BNT {
 		Frobenius(xp6, xp6); // p^6
 		Fp12::inv(z, z);
 		Fp12::mul(y, xp6, z);
+//		Fp12::div(y, xp6, z);
 #else
 		Fp12::power(y, x, p2 + 1);
 		Fp12::power(y, y, p4 * p2 - 1);
