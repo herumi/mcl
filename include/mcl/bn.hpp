@@ -118,12 +118,10 @@ struct ParamT {
 	mpz_class r;
 	uint32_t pmod4;
 	Fp Z;
-	Fp2 W2p;
-	Fp2 W3p;
-	static const size_t gammarN = 5;
-	Fp2 gammar[gammarN];
-	Fp2 gammar2[gammarN];
-	Fp2 gammar3[gammarN];
+	static const size_t gammaN = 5;
+	Fp2 gamma[gammaN]; // gamma[0] = xi^((p - 1) / 6), gamma[i] = gamma[i]^(i + 1)
+	Fp2 gamma2[gammaN];
+	Fp2 gamma3[gammaN];
 	int b;
 	/*
 		twist
@@ -149,6 +147,7 @@ struct ParamT {
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
 		const int tCoff[] = { 1, 0,  6,  0,  0 };
 		p = eval(pCoff, z);
+		assert((p % 6) == 1);
 		pmod4 = mcl::gmp::getUnit(p, 0) % 4;
 		r = eval(rCoff, z);
 		mpz_class t = eval(tCoff, z);
@@ -160,19 +159,16 @@ struct ParamT {
 		b_div_xi = Fp2(b) / xi;
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
-		power(gammar[0], xi, (p - 1) / 6);
 
-		for (size_t i = 1; i < gammarN; i++) {
-			gammar[i] = gammar[i - 1] * gammar[0];
+		power(gamma[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
+		for (size_t i = 1; i < gammaN; i++) {
+			gamma[i] = gamma[i - 1] * gamma[0];
 		}
 
-		for (size_t i = 0; i < gammarN; i++) {
-			gammar2[i] = Fp2(gammar[i].a, -gammar[i].b) * gammar[i];
-			gammar3[i] = gammar[i] * gammar2[i];
+		for (size_t i = 0; i < gammaN; i++) {
+			gamma2[i] = Fp2(gamma[i].a, -gamma[i].b) * gamma[i];
+			gamma3[i] = gamma[i] * gamma2[i];
 		}
-
-		power(W2p, xi, (p - 1) / 3);
-		power(W3p, xi, (p - 1) / 2);
 		Fp2 tmp;
 		Fp2::power(tmp, xi, (p * p - 1) / 6);
 		assert(tmp.b.isZero());
@@ -188,16 +184,6 @@ struct ParamT {
 	}
 };
 
-
-template<class G>
-void Frobenius(G& y, const G& x, const mpz_class& p)
-{
-	assert(x.isNormalized());
-	using namespace mcl;
-	power(y.x, x.x, p);
-	power(y.y, x.y, p);
-}
-
 template<class Fp>
 struct BNT {
 	typedef mcl::Fp2T<Fp> Fp2;
@@ -211,28 +197,55 @@ struct BNT {
 	{
 		param.init(cp);
 	}
+	/*
+		Frobenius
+		i^2 = -1
+		(a + bi)^p = a + bi^p in Fp
+		= a + bi if p = 1 mod 4
+		= a - bi if p = 3 mod 4
+
+		g = xi^(p - 1) / 6
+		v^3 = xi in Fp2
+		v^p = ((v^6) ^ (p-1)/6) v = g^2 v
+		v^2p = g^4 v^2
+		(a + bv + cv^2)^p in Fp6
+		= F(a) + F(b)g^2 v + F(c) g^4 v^2
+
+		w^p = ((w^6) ^ (p-1)/6) w = g w
+		((a + bv + cv^2)w)^p in Fp12
+		= (F(a) g + F(b) g^3 v + F(c) g^5 v^2)w
+	*/
 	static void Frobenius(Fp2& y, const Fp2& x)
 	{
 		if (param.pmod4 == 1) {
-			y = x;
+			if (&y != &x) {
+				y = x;
+			}
 		} else {
-			y.a = x.a;
+			if (&y != &x) {
+				y.a = x.a;
+			}
 			Fp::neg(y.b, x.b);
 		}
+	}
+	static void Frobenius(Fp12& y, const Fp12& x)
+	{
+		for (int i = 0; i < 6; i++) {
+			Frobenius(y.getFp2()[i], x.getFp2()[i]);
+		}
+		y.getFp2()[1] *= param.gamma[1];
+		y.getFp2()[2] *= param.gamma[3];
+		y.getFp2()[3] *= param.gamma[0];
+		y.getFp2()[4] *= param.gamma[2];
+		y.getFp2()[5] *= param.gamma[4];
 	}
 	/*
 		p mod 6 = 1, w^6 = xi
 		Frob(x', y') = phi Frob phi^-1(x', y')
 		= phi Frob (x' w^2, y' w^3)
 		= phi (x'^p w^2p, y'^p w^3p)
-		= (x'^p w^2(p - 1), y'^p w^3(p - 1))
-
-		x = a + bi in Fp2
-		x^p = a + b i^p
-		= a + bi if p mod 4 = 1
-		= a - bi if p mod 4 = 3
-
-		w^(p - 1) = w^(6 (p - 1) / 6) = xi^((p - 1) / 6)
+		= (F(x') w^2(p - 1), F(y') w^3(p - 1))
+		= (F(x') g^2, F(y') g^3)
 	*/
 	static void FrobeniusOnTwist(G2& D, const G2& S)
 	{
@@ -240,8 +253,8 @@ struct BNT {
 		Frobenius(D.x, S.x);
 		Frobenius(D.y, S.y);
 		D.z = S.z;
-		D.x *= param.W2p;
-		D.y *= param.W3p;
+		D.x *= param.gamma[1];
+		D.y *= param.gamma[2];
 	}
 	/*
 		l = (a, b, c) => (a, b * P.y, c * P.x)
@@ -385,17 +398,35 @@ struct BNT {
 		convertFp6toFp12(y2, y);
 		Fp12::mul(z, x2, y2);
 	}
+	/*
+		y = x^((p^12 - 1) / r)
+		(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
+	*/
 	static void finalExp(Fp12& y, const Fp12& x)
 	{
-		/*
-			(p^12 - 1) / r = (p^6 - 1) (p^2 + 1) (p^4 - p^2 + 1)/r
-		*/
+#if 1
+		Fp12 z;
+		Fp12 xp2;
+		Frobenius(xp2, x);
+		Frobenius(xp2, xp2); // xp2 = x^(p^2)
+		Fp12::mul(z, xp2, x); // x^(p^2 + 1)
+		Fp12 xp6;
+		Frobenius(xp6, z); // z^p
+		Frobenius(xp6, xp6); // p^2
+		Frobenius(xp6, xp6); // p^3
+		Frobenius(xp6, xp6); // p^4
+		Frobenius(xp6, xp6); // p^5
+		Frobenius(xp6, xp6); // p^6
+		Fp12::inv(z, z);
+		Fp12::mul(y, xp6, z);
+#else
+		Fp12::power(y, x, p2 + 1);
+		Fp12::power(y, y, p4 * p2 - 1);
+#endif
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
-		Fp12::power(y, x, p2 + 1);
 		mpz_class p4 = p2 * p2;
 		Fp12::power(y, y, (p4 - p2 + 1) / param.r);
-		Fp12::power(y, y, p4 * p2 - 1);
 	}
 	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
 	{

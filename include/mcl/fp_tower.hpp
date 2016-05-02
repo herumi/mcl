@@ -15,7 +15,7 @@ class FpDblT {
 	typedef fp::Unit Unit;
 	Unit v_[Fp::maxSize * 2];
 public:
-	static inline size_t getUnitSize() { return Fp::op_.N * 2; }
+	static size_t getUnitSize() { return Fp::op_.N * 2; }
 	void dump() const
 	{
 		const size_t n = getUnitSize();
@@ -40,16 +40,16 @@ public:
 	{
 		gmp::setArray(x, v_, Fp::op_.N * 2);
 	}
-	static inline void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
-	static inline void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
-	static inline void addNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
-	static inline void subNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
+	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
+	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
+	static void addNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
+	static void subNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
-	static inline void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
-	static inline void sqrPre(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
-	static inline void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_); }
+	static void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
+	static void sqrPre(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
+	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_); }
 };
 
 /*
@@ -76,14 +76,14 @@ public:
 		a.clear();
 		b.clear();
 	}
-	static inline void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_add(z.a.v_, x.a.v_, y.a.v_); }
-	static inline void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_sub(z.a.v_, x.a.v_, y.a.v_); }
-	static inline void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_mul(z.a.v_, x.a.v_, y.a.v_); }
-	static inline void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
-	static inline void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
-	static inline void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
-	static inline void mul_xi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mul_xi(y.a.v_, x.a.v_); }
-	static inline void divBy2(Fp2T& y, const Fp2T& x)
+	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_add(z.a.v_, x.a.v_, y.a.v_); }
+	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_sub(z.a.v_, x.a.v_, y.a.v_); }
+	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_mul(z.a.v_, x.a.v_, y.a.v_); }
+	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
+	static void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
+	static void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
+	static void mul_xi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mul_xi(y.a.v_, x.a.v_); }
+	static void divBy2(Fp2T& y, const Fp2T& x)
 	{
 		Fp::divBy2(y.a, x.a);
 		Fp::divBy2(y.b, x.b);
@@ -91,11 +91,11 @@ public:
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
-	friend inline std::ostream& operator<<(std::ostream& os, const Fp2T& self)
+	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
 		return os << self.a << ' ' << self.b;
 	}
-	friend inline std::istream& operator>>(std::istream& is, Fp2T& self)
+	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
 		return is >> self.a >> self.b;
 	}
@@ -113,8 +113,8 @@ public:
 		isOdd() is not good naming. QQQ
 	*/
 	bool isOdd() const { return a.isOdd(); }
-	static inline const Fp& getXi_a() { return xi_a_; }
-	static inline void init(uint32_t xi_a)
+	static const Fp& getXi_a() { return xi_a_; }
+	static void init(uint32_t xi_a)
 	{
 		assert(Fp::maxSize <= 256);
 		xi_a_ = xi_a;
@@ -132,7 +132,7 @@ private:
 		default Fp2T operator
 		Fp2T = Fp[i]/(i^2 + 1)
 	*/
-	static inline void fp2_addW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_addW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);
@@ -140,7 +140,7 @@ private:
 		Fp::add(pz[0], px[0], py[0]);
 		Fp::add(pz[1], px[1], py[1]);
 	}
-	static inline void fp2_subW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_subW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);
@@ -148,7 +148,7 @@ private:
 		Fp::sub(pz[0], px[0], py[0]);
 		Fp::sub(pz[1], px[1], py[1]);
 	}
-	static inline void fp2_negW(Unit *y, const Unit *x)
+	static void fp2_negW(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
@@ -161,7 +161,7 @@ private:
 		ad+bc = (a + b)(c + d) - ac - bd
 		# of mod = 3
 	*/
-	static inline void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);
@@ -184,7 +184,7 @@ private:
 		# of mod = 2
 		@note mod of NIST_P192 is fast
 	*/
-	static inline void fp2_mulUseDblW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_mulUseDblW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);
@@ -210,7 +210,7 @@ private:
 		x = a + bi, i^2 = -1
 		y = x^2 = (a + bi)^2 = (a + b)(a - b) + 2abi
 	*/
-	static inline void fp2_sqrW(Unit *y, const Unit *x)
+	static void fp2_sqrW(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
@@ -242,7 +242,7 @@ private:
 		y = (a + bi)xi = (a + bi)(xi_a + i)
 		=(a * x_ic - b) + (a + b xi_a)i
 	*/
-	static inline void fp2_mul_xiW(Unit *y, const Unit *x)
+	static void fp2_mul_xiW(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
@@ -259,7 +259,7 @@ private:
 		x = a + bi
 		1 / x = (a - bi) / (a^2 + b^2)
 	*/
-	static inline void fp2_invW(Unit *y, const Unit *x)
+	static void fp2_invW(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
@@ -282,32 +282,32 @@ struct Fp2T<Fp>::Dbl {
 	typedef fp::Unit Unit;
 	typedef typename Fp::Dbl FpDbl;
 	FpDbl a, b;
-	static inline void add(Dbl& z, const Dbl& x, const Dbl& y)
+	static void add(Dbl& z, const Dbl& x, const Dbl& y)
 	{
 		FpDbl::add(z.a, x.a, y.a);
 		FpDbl::add(z.b, x.b, y.b);
 	}
-	static inline void addNC(Dbl& z, const Dbl& x, const Dbl& y)
+	static void addNC(Dbl& z, const Dbl& x, const Dbl& y)
 	{
 		FpDbl::addNC(z.a, x.a, y.a);
 		FpDbl::addNC(z.b, x.b, y.b);
 	}
-	static inline void sub(Dbl& z, const Dbl& x, const Dbl& y)
+	static void sub(Dbl& z, const Dbl& x, const Dbl& y)
 	{
 		FpDbl::sub(z.a, x.a, y.a);
 		FpDbl::sub(z.b, x.b, y.b);
 	}
-	static inline void subNC(Dbl& z, const Dbl& x, const Dbl& y)
+	static void subNC(Dbl& z, const Dbl& x, const Dbl& y)
 	{
 		FpDbl::subNC(z.a, x.a, y.a);
 		FpDbl::subNC(z.b, x.b, y.b);
 	}
-	static inline void neg(Dbl& y, const Dbl& x)
+	static void neg(Dbl& y, const Dbl& x)
 	{
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
-	static inline void sqr(Dbl& y, const Fp2T& x)
+	static void sqr(Dbl& y, const Fp2T& x)
 	{
 		Fp t1, t2;
 		Fp::addNC(t1, x.b, x.b); // 2b
@@ -316,7 +316,7 @@ struct Fp2T<Fp>::Dbl {
 		Fp::sub(t2, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
 	}
-	static inline void mod(Fp2T& y, const Dbl& x)
+	static void mod(Fp2T& y, const Dbl& x)
 	{
 		FpDbl::mod(y.a, x.a);
 		FpDbl::mod(y.b, x.b);
@@ -363,19 +363,19 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	{
 		return is >> x.a >> x.b >> x.c;
 	}
-	static inline void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
 		Fp2::add(z.b, x.b, y.b);
 		Fp2::add(z.c, x.c, y.c);
 	}
-	static inline void sub(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	static void sub(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::sub(z.a, x.a, y.a);
 		Fp2::sub(z.b, x.b, y.b);
 		Fp2::sub(z.c, x.c, y.c);
 	}
-	static inline void neg(Fp6T& y, const Fp6T& x)
+	static void neg(Fp6T& y, const Fp6T& x)
 	{
 		Fp2::neg(y.a, x.a);
 		Fp2::neg(y.b, x.b);
@@ -387,7 +387,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 
 		b^2 + 2ac = (a + b + c)^2 - a^2 - 2bc - c^2 - 2ab
 	*/
-	static inline void sqr(Fp6T& y, const Fp6T& x)
+	static void sqr(Fp6T& y, const Fp6T& x)
 	{
 		Fp2 t1, t2, t3;
 		Fp2::mul(t1, x.a, x.b);
@@ -415,7 +415,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		ae + bd = (a + b)(e + d) - ad - be
 		af + cd = (a + c)(d + f) - ad - cf
 	*/
-	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	static void mul(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
@@ -460,7 +460,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		q = c^3 xi^2 + b(b^2 - 3ac)xi + a^3
 		  = (a^2 - bc xi)a + ((c^2 xi - ab)c + (b^2 - ac)b) xi
 	*/
-	static inline void inv(Fp6T& y, const Fp6T& x)
+	static void inv(Fp6T& y, const Fp6T& x)
 	{
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
@@ -532,17 +532,17 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		return a == rhs.a && b == rhs.b;
 	}
 	bool operator!=(const Fp12T& rhs) const { return !operator==(rhs); }
-	static inline void add(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	static void add(Fp12T& z, const Fp12T& x, const Fp12T& y)
 	{
 		Fp6::add(z.a, x.a, y.a);
 		Fp6::add(z.b, x.b, y.b);
 	}
-	static inline void sub(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	static void sub(Fp12T& z, const Fp12T& x, const Fp12T& y)
 	{
 		Fp6::sub(z.a, x.a, y.a);
 		Fp6::sub(z.b, x.b, y.b);
 	}
-	static inline void neg(Fp12T& z, const Fp12T& x)
+	static void neg(Fp12T& z, const Fp12T& x)
 	{
 		Fp6::neg(z.a, x.a);
 		Fp6::neg(z.b, x.b);
@@ -551,7 +551,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		z = x v + y
 		in Fp6 : (a + bv + cv^2)v = cv^3 + av + bv^2 = cxi + av + bv^2
 	*/
-	static inline void mulVadd(Fp6& z, const Fp6& x, const Fp6& y)
+	static void mulVadd(Fp6& z, const Fp6& x, const Fp6& y)
 	{
 		Fp2 t;
 		Fp2::mul_xi(t, x.c);
@@ -566,7 +566,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 
 		in Fp6 : (a + bv + cv^2)v = cv^3 + av + bv^2 = cxi + av + bv^2
 	*/
-	static inline void mul(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	static void mul(Fp12T& z, const Fp12T& x, const Fp12T& y)
 	{
 		const Fp6& a = x.a;
 		const Fp6& b = x.b;
@@ -587,7 +587,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		y = x^2 = (a + bw)^2 = (a^2 + b^2v) + 2abw
 		a^2 + b^2v = (a + b)(bv + a) - (abv + ab)
 	*/
-	static inline void sqr(Fp12T& y, const Fp12T& x)
+	static void sqr(Fp12T& y, const Fp12T& x)
 	{
 		const Fp6& a = x.a;
 		const Fp6& b = x.b;
@@ -604,7 +604,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		x = a + bw, w^2 = v
 		y = 1/x = (a - bw) / (a^2 - b^2v)
 	*/
-	static inline void inv(Fp12T& y, const Fp12T& x)
+	static void inv(Fp12T& y, const Fp12T& x)
 	{
 		const Fp6& a = x.a;
 		const Fp6& b = x.b;
@@ -620,11 +620,11 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		Fp6::mul(y.b, x.b, t0);
 		Fp6::neg(y.b, y.b);
 	}
-	friend inline std::ostream& operator<<(std::ostream& os, const Fp12T& self)
+	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
 		return os << self.a << ' ' << self.b;
 	}
-	friend inline std::istream& operator>>(std::istream& is, Fp12T& self)
+	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
 		return is >> self.a >> self.b;
 	}
