@@ -403,6 +403,92 @@ struct BNT {
 		Fp12::mul(z, x2, y2);
 	}
 	/*
+		y = x^d
+		d = (p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
+	*/
+	static void exp_d(Fp12& y, const Fp12& x)
+	{
+#if 1
+		mpz_class c0 = -2 + param.z * (-18 + param.z * (-30 - 36 *param.z));
+		mpz_class c1 = 1 + param.z * (-12 + param.z * (-18 - 36 * param.z));
+		mpz_class c2 = 6 * param.z * param.z + 1;
+		Fp12 t0, t1, t2, t3;
+		Fp12::power(t0, x, c0);
+		Frobenius(t1, x);
+		Frobenius(t2, t1);
+		Frobenius(t3, t2);
+		Fp12::power(t1, t1, c1);
+		Fp12::power(t2, t2, c2);
+		t0 *= t1;
+		t0 *= t2;
+		Fp12::mul(y, t0, t3);
+#else
+		const mpz_class& p = param.p;
+		mpz_class p2 = p * p;
+		mpz_class p4 = p2 * p2;
+		Fp12::power(y, x, (p4 - p2 + 1) / param.r);
+#endif
+	}
+	/*
+		y = 1 / x = conjugate of x if |x| = 1
+	*/
+	static void unitaryInv(Fp12& y, const Fp12& x)
+	{
+		y.a = x.a;
+		Fp6::neg(y.b, x.b);
+	}
+	/*
+		Faster Hashing to G2
+		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
+		section 4.1
+		y = x^(d 2z(6z^2 + 3z + 1)) where
+		p = p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1
+		r = r(z) = 36z^4 + 36z^3 + 18z^2 + 6z + 1
+		d = (p^4 - p^2 + 1) / r
+		d1 = d 2z(6z^2 + 3z + 1)
+		= c0 + c1 p + c2 p^2 + c3 p^3
+
+		c0 = 1 + 6z + 12z^2 + 12z^3
+		c1 = 4z + 6z^2 + 12z^3
+		c2 = 6z + 6z^2 + 12z^3
+		c3 = -1 + 4z + 6z^2 + 12z^3
+		x -> x^z -> x^2z -> x^4z -> x^6z -> x^(6z^2) -> x^(12z^2) -> x^(12z^3)
+		a = x^(6z) x^(6z^2) x^(12z^3)
+		b = a / (x^2z)
+		x^d1 = (a x^(6z^2) x) b^p a^(p^2) (b / x)^(p^3)
+	*/
+	static void exp_d1(Fp12& y, const Fp12& x)
+	{
+		const mpz_class& z = param.z;
+		Fp12 a0, a1, a2, a3;
+		Fp12::power(a0, x, z); // x^z
+		Fp12::sqr(a0, a0); // x^2z
+		Fp12::sqr(a1, a0); // x^4z
+		a1 *= a0; // x^6z
+		Fp12::power(a2, a1, z); // x^(6z^2)
+		Fp12::sqr(a3, a2); // x^(12z^2)
+		Fp12::power(a3, a3, z); // x^(12z^3)
+		Fp12 a, b;
+		Fp12::mul(a, a1, a2);
+		a *= a3;
+		unitaryInv(b, a0);
+		b *= a;
+		Fp12 c0, c1, c2, c3;
+		Fp12::mul(c0, a, a2);
+		c0 *= x;
+		Frobenius(c1, b);
+		Frobenius(c2, a);
+		Frobenius(c2, c2);
+		unitaryInv(c3, x);
+		c3 *= b;
+		Frobenius(c3, c3);
+		Frobenius(c3, c3);
+		Frobenius(c3, c3);
+		Fp12::mul(y, c0, c1);
+		y *= c2;
+		y *= c3;
+	}
+	/*
 		y = x^((p^12 - 1) / r)
 		(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
 		(a + bw)^(p^6) = a - bw in Fp12
@@ -419,30 +505,17 @@ struct BNT {
 		Fp12::inv(rv, z);
 		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
 		Fp12::mul(y, z, rv);
-
-		mpz_class c0 = -2 + param.z * (-18 + param.z * (-30 - 36 *param.z));
-		mpz_class c1 = 1 + param.z * (-12 + param.z * (-18 - 36 * param.z));
-		mpz_class c2 = 6 * param.z * param.z + 1;
-		Fp12 t0, t1, t2, t3;
-		Fp12::power(t0, y, c0);
-		Frobenius(t1, y);
-		Frobenius(t2, t1);
-		Frobenius(t3, t2);
-		Fp12::power(t1, t1, c1);
-		Fp12::power(t2, t2, c2);
-		y = t0 * t1 * t2 * t3;
 #else
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
 		mpz_class p4 = p2 * p2;
 		Fp12::power(y, x, p2 + 1);
 		Fp12::power(y, y, p4 * p2 - 1);
-		Fp12::power(y, y, (p4 - p2 + 1) / param.r);
 #endif
+		exp_d1(y, y);
 	}
 	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
 	{
-#if 1
 		P.normalize();
 		Q.normalize();
 		Fp6 l;
@@ -474,7 +547,6 @@ struct BNT {
 		G2::neg(Q2, Q2);
 		if (param.z < 0) {
 			G2::neg(T, T);
-//			Fp12::inv(f, f);
 			Fp6::neg(f.b, f.b);
 		}
 		addLine(d, T, Q1, P);
@@ -483,44 +555,6 @@ struct BNT {
 		mul_024_024(ft, d, e);
 		f *= ft;
 		finalExp(f, f);
-#else
-		P.normalize();
-		const mpz_class& p = param.p;
-		const mpz_class s = abs(6 * param.z + 2);
-		G2 T = Q;
-		Fp6 l;
-		f = 1;
-		const int c = (int)mcl::gmp::getBitSize(s);
-		for (int i = c - 2; i >= 0; i--) {
-			Fp12::sqr(f, f);
-			dblLine(l, T, P);
-			mul(f, t);
-			f *= t;
-			G2::dbl(T, T);
-			if (mcl::gmp::testBit(s, i)) {
-				evalLine(t, T, Q, P);
-				f *= t;
-				T += Q;
-			}
-		}
-		G2 Q1, Q2;
-		Frobenius(Q1, Q, p);
-		Frobenius(Q2, Q1, p);
-		if (param.z < 0) {
-			G2::neg(T, T);
-			Fp12::inv(f, f);
-		}
-		evalLine(t, T, Q1, P);
-		f *= t;
-		T += Q1;
-		evalLine(t, T, -Q2, P);
-		f *= t;
-		mpz_class a = p * p * p;
-		a *= a;
-		a *= a;
-		a = (a - 1) / param.r;
-		Fp12::power(f, f, a);
-#endif
 	}
 };
 
