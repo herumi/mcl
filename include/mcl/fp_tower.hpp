@@ -125,7 +125,11 @@ public:
 		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		op.fp2_sqr = fp2_sqrW;
-		op.fp2_mul_xi = fp2_mul_xiW;
+		if (xi_a == 1) {
+			op.fp2_mul_xi = fp2_mul_xi_1;
+		} else {
+			op.fp2_mul_xi = fp2_mul_xiW;
+		}
 	}
 private:
 	/*
@@ -240,7 +244,7 @@ private:
 		xi = xi_a + i
 		x = a + bi
 		y = (a + bi)xi = (a + bi)(xi_a + i)
-		=(a * x_ic - b) + (a + b xi_a)i
+		=(a * x_ia - b) + (a + b xi_a)i
 	*/
 	static void fp2_mul_xiW(Unit *y, const Unit *x)
 	{
@@ -254,6 +258,21 @@ private:
 		Fp::mul(py[1], b, xi_a_);
 		py[1] += a;
 		py[0] = t;
+	}
+	/*
+		xi = 1 + i ; xi_a = 1
+		y = (a + bi)xi = (a - b) + (a + b)i
+	*/
+	static void fp2_mul_xi_1(Unit *y, const Unit *x)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		Fp *py = reinterpret_cast<Fp*>(y);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		Fp t;
+		Fp::add(t, a, b);
+		Fp::sub(py[0], a, b);
+		py[1] = t;
 	}
 	/*
 		x = a + bi
