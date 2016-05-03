@@ -121,7 +121,7 @@ public:
 		mcl::fp::Op& op = Fp::op_;
 		op.fp2_add = fp2_addW;
 		op.fp2_sub = fp2_subW;
-		op.fp2_mul = op.isFastMod ? fp2_mulW : fp2_mulUseDblW;
+		op.fp2_mul = op.isFastMod ? fp2_mulW : fp2_mul_UnitseDblW;
 		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		op.fp2_sqr = fp2_sqrW;
@@ -184,7 +184,7 @@ private:
 		# of mod = 2
 		@note mod of NIST_P192 is fast
 	*/
-	static void fp2_mulUseDblW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_mul_UnitseDblW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);

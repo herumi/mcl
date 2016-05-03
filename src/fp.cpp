@@ -194,7 +194,7 @@ struct OpeFunc {
 		gmp::getArray(z, N, mz);
 	}
 	// z[N + 1] <- x[N] * y
-	static inline void fp_mulUPreC(Unit *z, const Unit *x, Unit y)
+	static inline void fp_mul_UnitPreC(Unit *z, const Unit *x, Unit y)
 	{
 		mpz_t mx, mz;
 		set_zero(mz, z, N + 1);
@@ -282,7 +282,7 @@ struct OpeFunc {
 				fp_subNC = mcl_fp_subNC ## n; \
 			} \
 			fpDbl_mulPre = mcl_fpDbl_mulPre ## n; \
-			fp_mulUPre = mcl_fp_mulUPre ## n; \
+			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n; \
 			if (n <= 256) { \
 				fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
 			} \
@@ -335,7 +335,7 @@ struct OpeFunc {
 				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 			} \
 		} \
-		fp_mulUPre = OpeFunc<n>::fp_mulUPreC; \
+		fp_mul_UnitPre = OpeFunc<n>::fp_mul_UnitPreC; \
 		fpN1_modP = OpeFunc<n>::fpN1_modPC; \
 		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
 		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \

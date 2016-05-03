@@ -125,7 +125,7 @@ struct Test {
 		modulo();
 		ope();
 		power();
-		mulU();
+		mul_Unit();
 		power_Zn();
 		setArray();
 		set64bit();
@@ -502,12 +502,12 @@ struct Test {
 		Fp::power(z, x, Fp::getOp().mp);
 		CYBOZU_TEST_EQUAL(z, x);
 	}
-	void mulU()
+	void mul_Unit()
 	{
 		Fp x(-1), y, z;
 		for (unsigned int u = 0; u < 20; u++) {
 			Fp::mul(y, x, u);
-			Fp::mulU(z, x, u);
+			Fp::mul_Unit(z, x, u);
 			CYBOZU_TEST_EQUAL(y, z);
 		}
 	}

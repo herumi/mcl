@@ -99,7 +99,7 @@ public:
 		op_.fpDbl_add = fpDbl_addW;
 		op_.fpDbl_sub = fpDbl_subW;
 		op_.fp_mul = fp_mulW;
-		op_.fp_mulU = fp_mulUW;
+		op_.fp_mul_Unit = fp_mul_UnitW;
 		op_.fpDbl_mod = fpDbl_modW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
@@ -321,7 +321,7 @@ public:
 	static inline void addNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_addNC(z.v_, x.v_, y.v_); }
 	static inline void subNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_subNC(z.v_, x.v_, y.v_); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_); }
-	static inline void mulU(FpT& z, const FpT& x, const Unit y) { op_.fp_mulU(z.v_, x.v_, y); }
+	static inline void mul_Unit(FpT& z, const FpT& x, const Unit y) { op_.fp_mul_Unit(z.v_, x.v_, y); }
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
@@ -455,10 +455,10 @@ private:
 	{
 		op_.montRedPU(z, xy, op_.p, op_.rp);
 	}
-	static inline void fp_mulUW(Unit *z, const Unit *x, Unit y)
+	static inline void fp_mul_UnitW(Unit *z, const Unit *x, Unit y)
 	{
 		Unit xy[maxSize + 1];
-		op_.fp_mulUPre(xy, x, y);
+		op_.fp_mul_UnitPre(xy, x, y);
 		fpN1_modW(z, xy);
 	}
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
