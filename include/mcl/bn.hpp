@@ -394,6 +394,10 @@ struct BNT {
 		y = (y0, y4, y2) -> (y0, 0, y2, 0, y4, 0)
 		z = xy = (x0y0 + (x1y2 + x4y4)xi) + (x1y0 + (x2y2 + x5y4)xi)v + (x0y2 + x2y0 + x3y4)v^2
 		+ (x3y0 + (x2y4 + x4y2)xi)w + (x0y4 + x4y0 + x5y2xi)vw + (x1y4 + x3y2 + x5y0)v^2w
+
+		x1y2 + x4y4 = (x1 + x4)(y2 + y4) - x1y4 - x4y2
+		x2y2 + x5y4 = (x2 + x5)(y2 + y4) - x2y4 - x5y2
+		x0y2 + x3y4 = (x0 + x3)(y2 + y4) - x0y4 - x3y2
 	*/
 	static void mul_024(Fp12& z, const Fp12&x, const Fp6& y)
 	{
@@ -407,6 +411,7 @@ struct BNT {
 		const Fp2& y0 = y.a;
 		const Fp2& y2 = y.c;
 		const Fp2& y4 = y.b;
+#if 0
 		Fp2 t;
 		t = x1 * y2 + x4 * y4;
 		Fp2::mul_xi(t, t);
@@ -422,6 +427,58 @@ struct BNT {
 		Fp2::mul_xi(t, t);
 		z.b.b = x0 * y4 + x4 * y0 + t;
 		z.b.c = x1 * y4 + x3 * y2 + x5 * y0;
+#else
+
+		Fp2 y2_add_y4;
+		Fp2::add(y2_add_y4, y2, y4);
+		Fp2 x0y4, x1y4, x2y4, x3y2, x4y2, x5y2;
+		Fp2::mul(x0y4, x0, y4);
+		Fp2::mul(x1y4, x1, y4);
+		Fp2::mul(x2y4, x2, y4);
+		Fp2::mul(x3y2, x3, y2);
+		Fp2::mul(x4y2, x4, y2);
+		Fp2::mul(x5y2, x5, y2);
+
+		Fp2 x1_add_x4;
+		Fp2 x2_add_x5;
+		Fp2 x0_add_x3;
+		Fp2::add(x1_add_x4, x1, x4);
+		Fp2::add(x2_add_x5, x2, x5);
+		Fp2::add(x0_add_x3, x0, x3);
+		Fp2 t1, t2;
+		Fp2::mul(t1, x1_add_x4, y2_add_y4);
+		t1 -= x1y4;
+		t1 -= x4y2;
+		Fp2::mul_xi(t1, t1);
+		Fp2::mul(t2, x0, y0);
+		Fp2::add(z.a.a, t1, t2);
+
+		Fp2::mul(t1, x2_add_x5, y2_add_y4);
+		t1 -= x2y4;
+		t1 -= x5y2;
+		Fp2::mul_xi(t1, t1);
+		Fp2::mul(t2, x1, y0);
+		Fp2::add(z.a.b, t1, t2);
+		Fp2::mul(t1, x0_add_x3, y2_add_y4);
+		t1 -= x0y4;
+		t1 -= x3y2;
+		Fp2::mul(t2, x2, y0);
+		Fp2::add(z.a.c, t1, t2);
+
+		Fp2::add(t1, x2y4, x4y2);
+		Fp2::mul_xi(t1, t1);
+		Fp2::mul(t2, x3, y0);
+		Fp2::add(z.b.a, t1, t2);
+
+		Fp2::mul_xi(t1, x5y2);
+		Fp2::mul(z.b.b, x4, y0);
+		z.b.b += x0y4;
+		z.b.b += t1;
+
+		Fp2::mul(z.b.c, x5, y0);
+		z.b.c += x3y2;
+		z.b.c += x1y4;
+#endif
 #else
 		Fp12 t;
 		convertFp6toFp12(t, y);
