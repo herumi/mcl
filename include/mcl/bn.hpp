@@ -389,11 +389,44 @@ struct BNT {
 		y.a.c = x.c;
 		y.b.b = x.b;
 	}
-	static void mul_024(Fp12&y, const Fp6& x)
+	/*
+		x = (x0 + x1 + x2^2) + (x3 + x4v + x5v^2)w
+		y = (y0, y4, y2) -> (y0, 0, y2, 0, y4, 0)
+		z = xy = (x0y0 + (x1y2 + x4y4)xi) + (x1y0 + (x2y2 + x5y4)xi)v + (x0y2 + x2y0 + x3y4)v^2
+		+ (x3y0 + (x2y4 + x4y2)xi)w + (x0y4 + x4y0 + x5y2xi)vw + (x1y4 + x3y2 + x5y0)v^2w
+	*/
+	static void mul_024(Fp12& z, const Fp12&x, const Fp6& y)
 	{
+#if 1
+		const Fp2 x0 = x.a.a;
+		const Fp2 x1 = x.a.b;
+		const Fp2 x2 = x.a.c;
+		const Fp2 x3 = x.b.a;
+		const Fp2 x4 = x.b.b;
+		const Fp2 x5 = x.b.c;
+		const Fp2& y0 = y.a;
+		const Fp2& y2 = y.c;
+		const Fp2& y4 = y.b;
+		Fp2 t;
+		t = x1 * y2 + x4 * y4;
+		Fp2::mul_xi(t, t);
+		z.a.a = x0 * y0 + t;
+		t = x2 * y2 + x5 * y4;
+		Fp2::mul_xi(t, t);
+		z.a.b = x1 * y0 + t;
+		z.a.c = x0 * y2 + x2 * y0 + x3 * y4;
+		t = x2 * y4 + x4 * y2;
+		Fp2::mul_xi(t, t);
+		z.b.a = x3 * y0 + t;
+		t = x5 * y2;
+		Fp2::mul_xi(t, t);
+		z.b.b = x0 * y4 + x4 * y0 + t;
+		z.b.c = x1 * y4 + x3 * y2 + x5 * y0;
+#else
 		Fp12 t;
-		convertFp6toFp12(t, x);
-		y *= t;
+		convertFp6toFp12(t, y);
+		Fp12::mul(z, x, t);
+#endif
 	}
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
 	{
@@ -532,13 +565,14 @@ struct BNT {
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
 			dblLine(l, T, P);
 			Fp12::sqr(f, f);
-			mul_024(f, l);
-			if (param.siTbl[i] > 0) {
-				addLine(l, T, Q, P);
-				mul_024(f, l);
-			} else if (param.siTbl[i] < 0) {
-				addLine(l, T, negQ, P);
-				mul_024(f, l);
+			mul_024(f, f, l);
+			if (param.siTbl[i]) {
+				if (param.siTbl[i] > 0) {
+					addLine(l, T, Q, P);
+				} else {
+					addLine(l, T, negQ, P);
+				}
+				mul_024(f, f, l);
 			}
 		}
 		G2 Q1, Q2;
