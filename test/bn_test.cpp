@@ -86,5 +86,11 @@ CYBOZU_TEST_AUTO(naive)
 //		Fp12::power(e1, e1, x);
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
-	CYBOZU_BENCH("pairing", BN::optimalAtePairing, e1, Q, P); // 27Mclk
+	/*
+		ate-pairing
+		miller loop : 700Kclk
+		final exp   : 460Kclk
+	*/
+	CYBOZU_BENCH("pairing", BN::optimalAtePairing, e1, Q, P); // 2.4Mclk
+	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 }
