@@ -1,6 +1,6 @@
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 #include <cybozu/benchmark.hpp>
-cybozu::CpuClock clk;
+//cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
 #include <mcl/gmp_util.hpp>
 #include <mcl/bn.hpp>
@@ -94,5 +94,4 @@ CYBOZU_TEST_AUTO(naive)
 	*/
 	CYBOZU_BENCH("pairing", BN::optimalAtePairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
-	clk.put();
 }

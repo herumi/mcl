@@ -608,12 +608,10 @@ struct BNT {
 	*/
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
-clk.begin();
 		Fp12::pow(y, x, param.abs_z);
 		if (param.isNegative) {
 			unitaryInv(y, y);
 		}
-clk.end();
 	}
 	/*
 		Faster Hashing to G2
