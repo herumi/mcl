@@ -109,6 +109,7 @@ public:
 	bool operator!=(const Fp2T& rhs) const { return !operator==(rhs); }
 	void normalize() {} // dummy method
 	/*
+		return true is a is odd (do not consider b)
 		this function is for only compressed reprezentation of EC
 		isOdd() is not good naming. QQQ
 	*/
