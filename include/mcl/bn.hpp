@@ -114,6 +114,8 @@ struct ParamT {
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
 	mpz_class z;
+	mpz_class abs_z;
+	bool isNegative;
 	mpz_class p;
 	mpz_class r;
 	uint32_t pmod4;
@@ -142,10 +144,15 @@ struct ParamT {
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		uint64_t absz = std::abs(cp.z);
-		gmp::setArray(z, &absz, 1);
-		if (cp.z < 0) {
-			z = -z;
+		{
+			uint64_t t = std::abs(cp.z);
+			isNegative = cp.z < 0;
+			gmp::setArray(abs_z, &t, 1);
+			if (isNegative) {
+				z = -abs_z;
+			} else {
+				z = abs_z;
+			}
 		}
 		const int pCoff[] = { 1, 6, 24, 36, 36 };
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
@@ -537,6 +544,17 @@ struct BNT {
 		Fp6::neg(y.b, x.b);
 	}
 	/*
+		y = x^z if z > 0
+		  = unitaryInv(x^(-z)) if z < 0
+	*/
+	static void power_z(Fp12& y, const Fp12& x)
+	{
+		Fp12::power(y, x, param.abs_z);
+		if (param.isNegative) {
+			unitaryInv(y, y);
+		}
+	}
+	/*
 		Faster Hashing to G2
 		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
 		section 4.1
@@ -558,15 +576,14 @@ struct BNT {
 	*/
 	static void exp_d1(Fp12& y, const Fp12& x)
 	{
-		const mpz_class& z = param.z;
 		Fp12 a0, a1, a2, a3;
-		Fp12::power(a0, x, z); // x^z
+		power_z(a0, x); // x^z
 		Fp12::sqr(a0, a0); // x^2z
 		Fp12::sqr(a1, a0); // x^4z
 		a1 *= a0; // x^6z
-		Fp12::power(a2, a1, z); // x^(6z^2)
+		power_z(a2, a1); // x^(6z^2)
 		Fp12::sqr(a3, a2); // x^(12z^2)
-		Fp12::power(a3, a3, z); // x^(12z^3)
+		power_z(a3, a3); // x^(12z^3)
 		Fp12 a, b;
 		Fp12::mul(a, a1, a2);
 		a *= a3;
