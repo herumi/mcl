@@ -299,9 +299,8 @@ struct BNT {
 		Fp2::mul(Q.z, B, H);
 		Fp2::sub(I, E, B);
 		l.clear();
-		l.a.a = I.a - I.b;
-		l.a.b = I.a + I.b;
-		l.b = -H;
+		Fp2::mul_xi(l.a, I);
+		Fp2::neg(l.b, H);
 		Fp2::add(l.c, J, J);
 		l.c += J;
 	}
@@ -332,15 +331,25 @@ struct BNT {
 		Fp2 lambda2;
 		Fp2::sqr(lambda2, lambda);
 		Fp2 t1, t2, t3, t4;
-		t1 = X1 * lambda2;
-		t2 = t1 + t1; // 2 X1 lambda^2
-		t3 = lambda2 * lambda; // lambda^3
+		Fp2 t;
+		Fp2::mul(t1, X1, lambda2);
+		Fp2::add(t2, t1, t1); // 2 X1 lambda^2
+		Fp2::mul(t3, lambda2, lambda); // lambda^3
 		Fp2::sqr(t4, theta);
 		t4 *= Z1; // t4 = Z1 theta^2
-		R.x = lambda * (t3 + t4 - t2);
-		R.y = theta * (t2 + t1 - t3 - t4) - Y1 * t3;
-		R.z = Z1 * t3;
-		l.a = theta * X2 - lambda * Y2;
+		Fp2::add(R.x, t3, t4);
+		R.x -= t2;
+		R.x *= lambda;
+		Fp2::mul(t, Y1, t3);
+		Fp2::add(R.y, t1, t2);
+		R.y -= t3;
+		R.y -= t4;
+		R.y *= theta;
+		R.y -= t;
+		Fp2::mul(R.z, Z1, t3);
+		Fp2::mul(l.a, theta, X2);
+		Fp2::mul(t, lambda, Y2);
+		l.a -= t;
 		Fp2::mul_xi(l.a, l.a);
 		l.b = lambda;
 		l.c = -theta;
