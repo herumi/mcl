@@ -171,7 +171,7 @@ struct ParamT {
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
 
-		power(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
+		pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
 		for (size_t i = 1; i < gN; i++) {
 			g[i] = g[i - 1] * g[0];
 		}
@@ -181,7 +181,7 @@ struct ParamT {
 			g3[i] = g[i] * g2[i];
 		}
 		Fp2 tmp;
-		Fp2::power(tmp, xi, (p * p - 1) / 6);
+		Fp2::pow(tmp, xi, (p * p - 1) / 6);
 		assert(tmp.b.isZero());
 		Fp::sqr(Z, tmp.a);
 
@@ -519,12 +519,12 @@ struct BNT {
 		mpz_class c1 = 1 + param.z * (-12 + param.z * (-18 - 36 * param.z));
 		mpz_class c2 = 6 * param.z * param.z + 1;
 		Fp12 t0, t1, t2, t3;
-		Fp12::power(t0, x, c0);
+		Fp12::pow(t0, x, c0);
 		Frobenius(t1, x);
 		Frobenius(t2, t1);
 		Frobenius(t3, t2);
-		Fp12::power(t1, t1, c1);
-		Fp12::power(t2, t2, c2);
+		Fp12::pow(t1, t1, c1);
+		Fp12::pow(t2, t2, c2);
 		t0 *= t1;
 		t0 *= t2;
 		Fp12::mul(y, t0, t3);
@@ -532,7 +532,7 @@ struct BNT {
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
 		mpz_class p4 = p2 * p2;
-		Fp12::power(y, x, (p4 - p2 + 1) / param.r);
+		Fp12::pow(y, x, (p4 - p2 + 1) / param.r);
 #endif
 	}
 	/*
@@ -547,9 +547,9 @@ struct BNT {
 		y = x^z if z > 0
 		  = unitaryInv(x^(-z)) if z < 0
 	*/
-	static void power_z(Fp12& y, const Fp12& x)
+	static void pow_z(Fp12& y, const Fp12& x)
 	{
-		Fp12::power(y, x, param.abs_z);
+		Fp12::pow(y, x, param.abs_z);
 		if (param.isNegative) {
 			unitaryInv(y, y);
 		}
@@ -577,13 +577,13 @@ struct BNT {
 	static void exp_d1(Fp12& y, const Fp12& x)
 	{
 		Fp12 a0, a1, a2, a3;
-		power_z(a0, x); // x^z
+		pow_z(a0, x); // x^z
 		Fp12::sqr(a0, a0); // x^2z
 		Fp12::sqr(a1, a0); // x^4z
 		a1 *= a0; // x^6z
-		power_z(a2, a1); // x^(6z^2)
+		pow_z(a2, a1); // x^(6z^2)
 		Fp12::sqr(a3, a2); // x^(12z^2)
-		power_z(a3, a3); // x^(12z^3)
+		pow_z(a3, a3); // x^(12z^3)
 		Fp12 a, b;
 		Fp12::mul(a, a1, a2);
 		a *= a3;
@@ -625,8 +625,8 @@ struct BNT {
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
 		mpz_class p4 = p2 * p2;
-		Fp12::power(y, x, p2 + 1);
-		Fp12::power(y, y, p4 * p2 - 1);
+		Fp12::pow(y, x, p2 + 1);
+		Fp12::pow(y, y, p4 * p2 - 1);
 #endif
 		exp_d1(y, y);
 	}

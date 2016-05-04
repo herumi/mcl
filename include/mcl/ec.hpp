@@ -705,7 +705,7 @@ private:
 			px = &tmp;
 		}
 		z.clear();
-		fp::powerGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
+		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
 		if (isNegative) {
 			neg(z, z);
 		}

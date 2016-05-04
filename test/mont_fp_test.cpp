@@ -124,9 +124,9 @@ struct Test {
 		compare();
 		modulo();
 		ope();
-		power();
+		pow();
 		mul_Unit();
-		power_Zn();
+		pow_Zn();
 		setArray();
 		set64bit();
 		divBy2();
@@ -486,20 +486,20 @@ struct Test {
 			CYBOZU_TEST_EQUAL(x, Fp(2));
 		}
 	}
-	void power()
+	void pow()
 	{
 		Fp x, y, z;
 		x = 12345;
 		z = 1;
 		for (int i = 0; i < 100; i++) {
-			Fp::power(y, x, i);
+			Fp::pow(y, x, i);
 			CYBOZU_TEST_EQUAL(y, z);
 			z *= x;
 		}
 		x = z;
-		Fp::power(z, x, Fp::getOp().mp - 1);
+		Fp::pow(z, x, Fp::getOp().mp - 1);
 		CYBOZU_TEST_EQUAL(z, 1);
-		Fp::power(z, x, Fp::getOp().mp);
+		Fp::pow(z, x, Fp::getOp().mp);
 		CYBOZU_TEST_EQUAL(z, x);
 	}
 	void mul_Unit()
@@ -511,13 +511,13 @@ struct Test {
 			CYBOZU_TEST_EQUAL(y, z);
 		}
 	}
-	void power_Zn()
+	void pow_Zn()
 	{
 		Fp x, y, z;
 		x = 12345;
 		z = 1;
 		for (int i = 0; i < 100; i++) {
-			Fp::power(y, x, Zn(i));
+			Fp::pow(y, x, Zn(i));
 			CYBOZU_TEST_EQUAL(y, z);
 			z *= x;
 		}

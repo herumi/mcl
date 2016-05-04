@@ -264,13 +264,13 @@ CYBOZU_TEST_AUTO(ope)
 
 struct tag2;
 
-CYBOZU_TEST_AUTO(power)
+CYBOZU_TEST_AUTO(pow)
 {
 	Fp x, y, z;
 	x = 12345;
 	z = 1;
 	for (int i = 0; i < 100; i++) {
-		Fp::power(y, x, i);
+		Fp::pow(y, x, i);
 		CYBOZU_TEST_EQUAL(y, z);
 		z *= x;
 	}
@@ -279,33 +279,33 @@ CYBOZU_TEST_AUTO(power)
 	x = 5;
 	Fp2 n = 3;
 	z = 3;
-	Fp::power(x, x, z);
+	Fp::pow(x, x, z);
 	CYBOZU_TEST_EQUAL(x, 125);
 	x = 5;
-	Fp::power(x, x, n);
+	Fp::pow(x, x, n);
 	CYBOZU_TEST_EQUAL(x, 125);
 }
 
-CYBOZU_TEST_AUTO(neg_power)
+CYBOZU_TEST_AUTO(neg_pow)
 {
 	Fp x, y, z;
 	x = 12345;
 	z = 1;
 	Fp rx = 1 / x;
 	for (int i = 0; i < 100; i++) {
-		Fp::power(y, x, -i);
+		Fp::pow(y, x, -i);
 		CYBOZU_TEST_EQUAL(y, z);
 		z *= rx;
 	}
 }
 
-CYBOZU_TEST_AUTO(power_fp)
+CYBOZU_TEST_AUTO(pow_fp)
 {
 	Fp x, y, z;
 	x = 12345;
 	z = 1;
 	for (int i = 0; i < 100; i++) {
-		Fp::power(y, x, Fp(i));
+		Fp::pow(y, x, Fp(i));
 		CYBOZU_TEST_EQUAL(y, z);
 		z *= x;
 	}

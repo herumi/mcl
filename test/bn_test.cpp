@@ -83,7 +83,7 @@ CYBOZU_TEST_AUTO(naive)
 		ss >> e2;
 //		mpz_class x = BN::param.z;
 //		x = 2 * x * (6 * x * x + 3 * x + 1);
-//		Fp12::power(e1, e1, x);
+//		Fp12::pow(e1, e1, x);
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
 	/*

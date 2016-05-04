@@ -511,7 +511,7 @@ template<class T> void div(T& z, const T& x, const T& y) { T::div(z, x, y); }
 template<class T> void neg(T& y, const T& x) { T::neg(y, x); }
 template<class T> void inv(T& y, const T& x) { T::inv(y, x); }
 template<class T> void sqr(T& y, const T& x) { T::sqr(y, x); }
-template<class T, class S> void power(T& z, const T& x, const S& y) { T::power(z, x, y); }
+template<class T, class S> void pow(T& z, const T& x, const S& y) { T::pow(z, x, y); }
 
 } // mcl
 

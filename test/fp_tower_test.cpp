@@ -75,7 +75,7 @@ void testFp2()
 	}
 	y = 1;
 	for (int i = 0; i < 10; i++) {
-		power(z, x, i);
+		pow(z, x, i);
 		CYBOZU_TEST_EQUAL(z, y);
 		y *= x;
 	}
@@ -86,7 +86,7 @@ void testFp2()
 	{
 		const mpz_class& mp = Fp::getOp().mp;
 		y = x;
-		power(z, y, mp);
+		pow(z, y, mp);
 		if ((mp % 4) == 3) {
 			neg(z.b, z.b);
 		}

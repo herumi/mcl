@@ -115,18 +115,18 @@ public:
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powerArray(z, b.p, b.n, false);
+		powArray(z, b.p, b.n, false);
 	}
 	void mul(Ec& z, int y) const
 	{
 		Unit u = std::abs(y);
-		powerArray(z, &u, 1, y < 0);
+		powArray(z, &u, 1, y < 0);
 	}
 	void mul(Ec& z, const mpz_class& y) const
 	{
-		powerArray(z, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		powArray(z, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
-	void powerArray(Ec& z, const Unit* y, size_t n, bool isNegative) const
+	void powArray(Ec& z, const Unit* y, size_t n, bool isNegative) const
 	{
 		z.clear();
 		while (n > 0) {
@@ -134,7 +134,7 @@ public:
 			n--;
 		}
 		if (n == 0) return;
-		if (n > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powerArray:bad n") << n << tbl_.size();
+		if (n > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powArray:bad n") << n << tbl_.size();
 		assert(y[n - 1]);
 		const size_t bitSize = (n - 1) * UnitBitSize + cybozu::bsr<Unit>(y[n - 1]) + 1;
 		size_t i = 0;
