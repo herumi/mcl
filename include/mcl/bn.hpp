@@ -544,15 +544,76 @@ struct BNT {
 		Fp6::neg(y.b, x.b);
 	}
 	/*
+		Faster Squaring in the Cyclotomic Subgroup of Sixth Degree Extensions
+		Robert Granger, Michael Scott
+	*/
+	static void sqrFp4(Fp2& z0, Fp2& z1, const Fp2& x0, const Fp2& x1)
+	{
+		Fp2 t0, t1, t2;
+		Fp2::sqr(t0, x0);
+		Fp2::sqr(t1, x1);
+		Fp2::mul_xi(z0, t1);
+		z0 += t0;
+		Fp2::add(z1, x0, x1);
+		Fp2::sqr(z1, z1);
+		z1 -= t0;
+		z1 -= t1;
+	}
+	static void fasterSqr(Fp12& y, const Fp12& x)
+	{
+#if 1
+		Fp12::sqr(y, x);
+#else
+		const Fp2& x0(x.a.a);
+		const Fp2& x4(x.a.b);
+		const Fp2& x3(x.a.c);
+		const Fp2& x2(x.b.a);
+		const Fp2& x1(x.b.b);
+		const Fp2& x5(x.b.c);
+		Fp2& y0(y.a.a);
+		Fp2& y4(y.a.b);
+		Fp2& y3(y.a.c);
+		Fp2& y2(y.b.a);
+		Fp2& y1(y.b.b);
+		Fp2& y5(y.b.c);
+		Fp2 t0, t1;
+		sqrFp4(t0, t1, x0, x1);
+		Fp2::sub(y0, t0, x0);
+		y0 += y0;
+		y0 += t0;
+		Fp2::add(y1, t1, x1);
+		y1 += y1;
+		y1 += t1;
+		Fp2 t2, t3;
+		sqrFp4(t0, t1, x2, x3);
+		sqrFp4(t2, t3, x4, x5);
+		Fp2::sub(y4, t0, x4);
+		y4 += y4;
+		y4 += t0;
+		Fp2::add(y5, t1, x5);
+		y5 += y5;
+		y5 += t1;
+		Fp2::mul_xi(t0, t3);
+		Fp2::add(y2, t0, x2);
+		y2 += y2;
+		y2 += t0;
+		Fp2::sub(y3, t2, x3);
+		y3 += y3;
+		y3 += t2;
+#endif
+	}
+	/*
 		y = x^z if z > 0
 		  = unitaryInv(x^(-z)) if z < 0
 	*/
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
+clk.begin();
 		Fp12::pow(y, x, param.abs_z);
 		if (param.isNegative) {
 			unitaryInv(y, y);
 		}
+clk.end();
 	}
 	/*
 		Faster Hashing to G2
@@ -578,11 +639,11 @@ struct BNT {
 	{
 		Fp12 a0, a1, a2, a3;
 		pow_z(a0, x); // x^z
-		Fp12::sqr(a0, a0); // x^2z
-		Fp12::sqr(a1, a0); // x^4z
+		fasterSqr(a0, a0); // x^2z
+		fasterSqr(a1, a0); // x^4z
 		a1 *= a0; // x^6z
 		pow_z(a2, a1); // x^(6z^2)
-		Fp12::sqr(a3, a2); // x^(12z^2)
+		fasterSqr(a3, a2); // x^(12z^2)
 		pow_z(a3, a3); // x^(12z^3)
 		Fp12 a, b;
 		Fp12::mul(a, a1, a2);
