@@ -127,7 +127,7 @@ public:
 		op.fp2_inv = fp2_invW;
 		op.fp2_sqr = fp2_sqrW;
 		if (xi_a == 1) {
-			op.fp2_mul_xi = fp2_mul_xi_1;
+			op.fp2_mul_xi = fp2_mul_xi_1_1i;
 		} else {
 			op.fp2_mul_xi = fp2_mul_xiW;
 		}
@@ -264,7 +264,7 @@ private:
 		xi = 1 + i ; xi_a = 1
 		y = (a + bi)xi = (a - b) + (a + b)i
 	*/
-	static void fp2_mul_xi_1(Unit *y, const Unit *x)
+	static void fp2_mul_xi_1_1i(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
