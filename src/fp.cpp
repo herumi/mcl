@@ -348,9 +348,10 @@ inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 	Unit r[maxOpUnitSize];
 	int k = op.fp_preInv(r, x);
 	/*
+		S = UnitBitSize
 		xr = 2^k
-		R = 2^(N * 64)
-		get r2^(-k)R^2 = r 2^(N * 64 * 2 - k)
+		R = 2^(N * S)
+		get r2^(-k)R^2 = r 2^(N * S * 2 - k)
 	*/
 	op.fp_mul(y, r, op.invTbl.data() + k * op.N);
 }
@@ -378,7 +379,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	{
 		mpz_class t = 1, R;
 		gmp::getArray(op.one, N, t);
-		R = (t << (N * 64)) % op.mp;
+		R = (t << (N * UnitBitSize)) % op.mp;
 		t = (R * R) % op.mp;
 		gmp::getArray(op.R2, N, t);
 		t = (R * R * R) % op.mp;
