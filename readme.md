@@ -30,6 +30,13 @@ To make sample programs, run
 make sample
 ```
 
+## Build for 32-bit Linux
+Build openssl and gmp for 32-bit mode and install <lib32>
+```
+cd mcl
+make BIT=32 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
+```
+
 # License
 
 modified new BSD License
