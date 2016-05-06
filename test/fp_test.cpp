@@ -274,10 +274,10 @@ CYBOZU_TEST_AUTO(pow)
 		CYBOZU_TEST_EQUAL(y, z);
 		z *= x;
 	}
-	typedef mcl::FpT<tag2, 128> Fp2;
-	Fp2::init("1009");
+	typedef mcl::FpT<tag2, 128> Fp_other;
+	Fp_other::init("1009");
 	x = 5;
-	Fp2 n = 3;
+	Fp_other n = 3;
 	z = 3;
 	Fp::pow(x, x, z);
 	CYBOZU_TEST_EQUAL(x, 125);
@@ -520,7 +520,6 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 	};
 	const char *p = "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 	Fp::init(p, mcl::fp::FP_XBYAK);
-	const mcl::fp::Op& op = Fp::getOp();
 	const mpz_class mp(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		mpz_class mx(tbl[i]);
@@ -535,6 +534,7 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);
 #endif
 #ifdef MCL_USE_XBYAK
+		const mcl::fp::Op& op = Fp::getOp();
 		op.fpDbl_mod(ex, in);
 		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);
 #endif
