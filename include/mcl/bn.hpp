@@ -333,8 +333,10 @@ struct BNT {
 		const Fp2& X2 = Q.x;
 		const Fp2& Y2 = Q.y;
 		Fp2 theta, lambda;
-		theta = Y1 - Y2 * Z1;
-		lambda = X1 - X2 * Z1;
+		Fp2::mul(theta, Y2, Z1);
+		Fp2::sub(theta, Y1, theta);
+		Fp2::mul(lambda, X2, Z1);
+		Fp2::sub(lambda, X1, lambda);
 		Fp2 lambda2;
 		Fp2::sqr(lambda2, lambda);
 		Fp2 t1, t2, t3, t4;
@@ -359,7 +361,7 @@ struct BNT {
 		l.a -= t;
 		Fp2::mul_xi(l.a, l.a);
 		l.b = lambda;
-		l.c = -theta;
+		Fp2::neg(l.c, theta);
 #else
 		Fp2 t1, t2, t3, t4, T1, T2;
 		Fp2::mul(t1, R.z, Q.x);
