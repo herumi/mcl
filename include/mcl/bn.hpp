@@ -134,6 +134,7 @@ struct ParamT {
 		=> y'^2 = x'^3 + b_div_xi;
 	*/
 	Fp2 b_div_xi;
+	bool is_b_div_xi_1_m1i;
 	Fp half;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
@@ -156,18 +157,17 @@ struct ParamT {
 		}
 		const int pCoff[] = { 1, 6, 24, 36, 36 };
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
-		const int tCoff[] = { 1, 0,  6,  0,  0 };
 		p = eval(pCoff, z);
 		assert((p % 6) == 1);
 		pmod4 = mcl::gmp::getUnit(p, 0) % 4;
 		r = eval(rCoff, z);
-		mpz_class t = eval(tCoff, z);
 		Fp::init(p.get_str(), mode);
 		Fp2::init(cp.xi_a);
-		b = cp.b; // set b before calling Fp::init
+		b = cp.b;
 		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_div_xi = Fp2(b) / xi;
+		is_b_div_xi_1_m1i =  b_div_xi == Fp2(1, -1);
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
 
@@ -279,7 +279,18 @@ struct BNT {
 	}
 	static void mul_b_div_xi(Fp2& y, const Fp2& x)
 	{
-		Fp2::mul(y, x, param.b_div_xi); // QQQ
+		if (param.is_b_div_xi_1_m1i) {
+			/*
+				b / xi = 1 - 1i
+				(a + bi)(1 - 1i) = (a + b) + (b - a)i
+			*/
+			Fp t;
+			Fp::add(t, x.a, x.b);
+			Fp::sub(y.b, x.b, x.a);
+			y.a = t;
+		} else {
+			Fp2::mul(y, x, param.b_div_xi);
+		}
 	}
 	static void dblLineWithoutP(Fp6& l, const G2& Q)
 	{
