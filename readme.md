@@ -37,6 +37,12 @@ cd mcl
 make BIT=32 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
 ```
 
+## Build for 64-bit Windows
+open mcl.sln and build or if you have msbuild.exe
+```
+msbuild /p:Configuration=Release
+```
+
 # License
 
 modified new BSD License

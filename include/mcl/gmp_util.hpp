@@ -24,33 +24,7 @@
 #include <stdint.h>
 #ifdef _MSC_VER
 	#pragma warning(pop)
-#endif
-#ifdef _MSC_VER
-#if _MSC_VER == 1900 /* VS2015 */
-#ifdef _DEBUG
-#pragma comment(lib, "14/mpird.lib")
-#pragma comment(lib, "14/mpirxxd.lib")
-#else
-#pragma comment(lib, "14/mpir.lib")
-#pragma comment(lib, "14/mpirxx.lib")
-#endif
-#elif _MSC_VER == 1800 /* VS2013 */
-#ifdef _DEBUG
-#pragma comment(lib, "12/mpird.lib")
-#pragma comment(lib, "12/mpirxxd.lib")
-#else
-#pragma comment(lib, "12/mpir.lib")
-#pragma comment(lib, "12/mpirxx.lib")
-#endif
-#else /* assume _MSC_VER == 1700 . VS2012 */
-#ifdef _DEBUG
-#pragma comment(lib, "mpird.lib")
-#pragma comment(lib, "mpirxxd.lib")
-#else
-#pragma comment(lib, "mpir.lib")
-#pragma comment(lib, "mpirxx.lib")
-#endif
-#endif
+	#include <cybozu/link_mpir.hpp>
 #endif
 
 namespace mcl {
