@@ -48,7 +48,7 @@ msbuild /p:Configuration=Release
 modified new BSD License
 http://opensource.org/licenses/BSD-3-Clause
 
-The original source of the followings are git://github.com/aistcrypt/Lifted-ElGamal.git .
+The original source of the followings are https://github.com/aistcrypt/Lifted-ElGamal .
 These files are licensed by BSD-3-Clause and are used for only tests.
 
 ```
