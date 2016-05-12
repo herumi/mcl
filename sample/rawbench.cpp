@@ -73,6 +73,7 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 }
 
 int main(int argc, char *argv[])
+	try
 {
 	cybozu::Option opt;
 	size_t bitSize;
@@ -119,5 +120,7 @@ int main(int argc, char *argv[])
 		benchRaw(tbl[i], mcl::fp::FP_XBYAK);
 #endif
 	}
+} catch (std::exception& e) {
+	printf("ERR %s\n", e.what());
+	return 1;
 }
-
