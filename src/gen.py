@@ -1,7 +1,7 @@
 import sys, re
 
 # @for <var>, <begin>, <end>
-RE_FOR = re.compile(r'@for\s+(\w+)\s*,\s*([^ ]+)\s*,\s*([^ ]+)')
+RE_FOR = re.compile(r'@for\s+(\w+)\s*,\s*([^,]+)\s*,\s*([^,]+)')
 # $(<exp>)
 RE_VAL = re.compile(r'\$\(([^)]+)\)')
 # @define <var>=<exp>
