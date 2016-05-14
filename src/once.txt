@@ -6,6 +6,27 @@ define i$(unit*2) @mul$(unit)x$(unit)(i$(unit) %x, i$(unit) %y) {
 	ret i$(unit*2) %z
 }
 
+@define u2 = unit * 2
+define private i$(unit) @extractLow$(unit)(i$(u2) %x)
+{
+	%t0 = lshr i$(unit*2) %x, $(unit)
+	%t1 = trunc i$(unit*2) %t0 to i$(unit)
+	ret i$(unit) %t1
+}
+define private void @storePos$(unit)(i$(unit) *%p, i$(unit) %v, i$(unit) %i)
+{
+	%pp = getelementptr i$(unit) *%p, i$(unit) %i
+	store i$(unit) %v, i$(unit)* %pp
+	ret void
+}
+define i$(u2) @mulPos$(unit)x$(unit)(i$(unit) *%px, i$(unit) %y, i$(unit) %i)
+{
+	%p = getelementptr i$(unit)* %px, i$(unit) %i
+	%x = load i$(unit)* %p
+	%xy = call i$(u2) @mul$(unit)x$(unit)(i$(unit) %x, i$(unit) %y)
+	ret i$(u2) %xy
+}
+
 ; NIST_P192
 ; 0xfffffffffffffffffffffffffffffffeffffffffffffffff
 ;

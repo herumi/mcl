@@ -18,12 +18,48 @@ noinline
 @endfor
   ret i$(bu) %t$(N-2)
 }
-define void @mcl_fp_mul_UnitPre$(bit)(i$(bu)* %pz, i$(bit)* %px, i$(unit) %y)
+
+@define u2 = unit*2
+define void @mcl_fp_mul_UnitPre$(bit)(i$(unit) *%pz, i$(unit) *%px, i$(unit) %y)
 {
-  %x = load i$(bit)* %px
-  %z = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y)
-  store i$(bu) %z, i$(bu)* %pz
-  ret void
+@for i, 0, N
+	%x$(i)y = call i$(u2) @mulPos$(unit)x$(unit)(i$(unit) *%px, i$(unit) %y, i$(unit) $(i))
+	%L$(i) = trunc i$(u2) %x$(i)y to i$(unit)
+	%H$(i) = call i$(unit) @extractLow$(unit)(i$(u2) %x$(i)y)
+	call void @storePos$(unit)(i$(unit) *%pz, i$(unit) %L$(i), i$(unit) $(i))
+@endfor
+
+@for i, 1, N
+	%L$(i)e = zext i$(unit) %L$(i) to i$(bit)
+@if i > 1
+	%L$(i)es = shl i$(bit) %L$(i)e, $(unit * i - unit)
+@endif
+@endfor
+@if N > 2
+	%Lt1 = or i$(bit) %L1e, %L2es
+@endif
+@for i, 1, N - 2
+	%Lt$(i+1) = or i$(bit) %Lt$(i), %L$(i+2)es
+@endfor
+
+	%H0e = zext i$(unit) %H0 to i$(bit)
+@for i, 1, N
+	%H$(i)e = zext i$(unit) %H$(i) to i$(bit)
+	%H$(i)es = shl i$(bit) %H$(i)e, $(unit * i)
+@endfor
+	%Ht1 = or i$(bit) %H0e, %H1es
+@for i, 2, N
+	%Ht$(i) = or i$(bit) %Ht$(i-1), %H$(i)es
+@endfor
+@if N == 2
+	%t = add i$(bit) %Ht$(N-1), %L1e
+@else
+	%t = add i$(bit) %Ht$(N-1), %Lt$(N-2)
+@endif
+	%pz1 = getelementptr i$(unit)* %pz, i$(unit) 1
+	%pz2 = bitcast i$(unit)* %pz1 to i$(bit)*
+	store i$(bit) %t, i$(bit)* %pz2
+	ret void
 }
 define void @mcl_fpDbl_mulPre$(bit)(i$(unit)* %pz, i$(bit)* %px, i$(bit)* %py) {
   %x = load i$(bit)* %px
