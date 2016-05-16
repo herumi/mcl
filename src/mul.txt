@@ -98,40 +98,42 @@ define void @mcl_fpDbl_mulPre$(bit)(i$(unit)* %pz, i$(unit)* %px, i$(unit)* %py)
   ret void
 }
 
-define void @mcl_fpDbl_sqrPre$(bit)(i$(unit)* %py, i$(bit)* %px) {
-  %x = load i$(bit)* %px
-@for i, 0, N
-  %x$(i) = call i$(unit) @extract$(bit)(i$(bit) %x, i$(bit) $(unit*i))
-@endfor
-  %sum0 = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %x0)
-  %t0 = trunc i$(bu) %sum0 to i$(unit)
-  store i$(unit) %t0, i$(unit)* %py
-@for i, 1, N
+define void @mcl_fpDbl_sqrPre$(bit)(i$(unit)* %py, i$(unit)* %px) {
+  %x0 = load i$(unit)* %px
+  %xx0 = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit) *%px, i$(unit) %x0)
+  %s0 = trunc i$(bu) %xx0 to i$(unit)
+  store i$(unit) %s0, i$(unit)* %py
+  %t0 = lshr i$(bu) %xx0, $(unit)
 
-  %s$(i-1) = lshr i$(bu) %sum$(i-1), $(unit)
-  %xx$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %x$(i))
-  %sum$(i) = add i$(bu) %s$(i-1), %xx$(i)
-  %y$(i) = getelementptr i$(unit)* %py, i32 $(i)
+@for i, 1, N
+  %px$(i) = getelementptr i$(unit)* %px, i32 $(i)
+  %x$(i) = load i$(unit)* %px$(i)
+  %xx$(i) = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %px, i$(unit) %x$(i))
+  %a$(i) = add i$(bu) %t$(i-1), %xx$(i)
+  %s$(i) = trunc i$(bu) %a$(i) to i$(unit)
+  %py$(i) = getelementptr i$(unit)* %py, i32 $(i)
   @if i < N - 1
-  %ts$(i) = trunc i$(bu) %sum$(i) to i$(unit)
-  store i$(unit) %ts$(i), i$(unit)* %y$(i)
+    store i$(unit) %s$(i), i$(unit)* %py$(i)
+    %t$(i) = lshr i$(bu) %a$(i), $(unit)
   @endif
 @endfor
-  %p = bitcast i$(unit)* %y$(N-1) to i$(bu)*
-  store i$(bu) %sum$(N-1), i$(bu)* %p
+
+  %py$(N-1)e = bitcast i$(unit)* %py$(N-1) to i$(bu)*
+  store i$(bu) %a$(N-1), i$(bu)* %py$(N-1)e
+
   ret void
 }
 
 @define bu = bit + unit
 @define bu2 = bit + unit * 2
-define void @mcl_fp_mont$(bit)(i$(bit)* %pz, i$(bit)* %px, i$(unit)* %py, i$(bit)* %pp, i$(unit) %r) {
-	%p = load i$(bit)* %pp
-	%x = load i$(bit)* %px
+define void @mcl_fp_mont$(bit)(i$(bit)* %pz, i$(unit)* %px, i$(unit)* %py, i$(unit)* %pp, i$(unit) %r) {
+	%ppt = bitcast i$(unit)* %py to i$(bit)*
+	%p = load i$(bit)* %ppt
 
 @for i, 0, N
 	%py$(i) = getelementptr i$(unit)* %py, i$(unit) $(i)
 	%y$(i) = load i$(unit)* %py$(i)
-	%xy$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y$(i))
+	%xy$(i) = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %px, i$(unit) %y$(i))
 @if i == 0
 	%a0 = zext i$(bu) %xy0 to i$(bu2)
 
@@ -142,7 +144,7 @@ define void @mcl_fp_mont$(bit)(i$(bit)* %pz, i$(bit)* %px, i$(unit)* %py, i$(bit
 	%at$(i) = trunc i$(bu2) %a$(i) to i$(unit)
 @endif
 	%q$(i) = mul i$(unit) %at$(i), %r
-	%pq$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %p, i$(unit) %q$(i))
+	%pq$(i) = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %pp, i$(unit) %q$(i))
 	%pqe$(i) = zext i$(bu) %pq$(i) to i$(bu2)
 	%t$(i) = add i$(bu2) %a$(i), %pqe$(i)
 	%s$(i) = lshr i$(bu2) %t$(i), $(unit)

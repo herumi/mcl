@@ -111,10 +111,10 @@ define void @mcl_fpDbl_mod_NIST_P192(i192* %out, i192* %px) {
 	ret void
 }
 
-define void @mcl_fp_sqr_NIST_P192(i192* %py, i192* %px) {
+define void @mcl_fp_sqr_NIST_P192(i192* %py, i$(unit)* %px) {
 	%buf = alloca i192, i32 2
 	%p = bitcast i192* %buf to i$(unit)*
-	call void @mcl_fpDbl_sqrPre192(i$(unit)* %p, i192* %px)
+	call void @mcl_fpDbl_sqrPre192(i$(unit)* %p, i$(unit)* %px)
 	call void @mcl_fpDbl_mod_NIST_P192(i192* %py, i192* %buf)
 	ret void
 }
