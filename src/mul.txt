@@ -1,25 +1,4 @@
 @define bu = bit + unit
-define private i$(bu) @mul$(bit)x$(unit)(i$(bit) %x, i$(unit) %y)
-@if N > 4
-noinline
-@endif
-{
-@for i, 0, N
-  %x$(i) = call i$(unit) @extract$(bit)(i$(bit) %x, i$(bit) $(unit*i))
-  %x$(i)y = call i$(unit*2) @mul$(unit)x$(unit)(i$(unit) %x$(i), i$(unit) %y)
-  %x$(i)y0 = zext i$(unit*2) %x$(i)y to i$(bu)
-@endfor
-@for i, 1, N
-  %x$(i)y1 = shl i$(bu) %x$(i)y0, $(unit*i)
-@endfor
-  %t0 = add i$(bu) %x0y0, %x1y1
-@for i, 1, N-1
-  %t$(i) = add i$(bu) %t$(i-1), %x$(i+1)y1
-@endfor
-  ret i$(bu) %t$(N-2)
-}
-
-@define bu = bit + unit
 @define u2 = unit*2
 define i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %px, i$(unit) %y)
 {
@@ -127,7 +106,7 @@ define void @mcl_fpDbl_sqrPre$(bit)(i$(unit)* %py, i$(unit)* %px) {
 @define bu = bit + unit
 @define bu2 = bit + unit * 2
 define void @mcl_fp_mont$(bit)(i$(bit)* %pz, i$(unit)* %px, i$(unit)* %py, i$(unit)* %pp, i$(unit) %r) {
-	%ppt = bitcast i$(unit)* %py to i$(bit)*
+	%ppt = bitcast i$(unit)* %pp to i$(bit)*
 	%p = load i$(bit)* %ppt
 
 @for i, 0, N
@@ -162,15 +141,16 @@ define void @mcl_fp_mont$(bit)(i$(bit)* %pz, i$(unit)* %px, i$(unit)* %py, i$(un
 
 @define b2 = bit * 2
 @define b2u = b2 + unit
-define void @mcl_fp_montRed$(bit)(i$(bit)* %pz, i$(b2)* %pxy, i$(bit)* %pp, i$(unit) %r) {
-	%p = load i$(bit)* %pp
+define void @mcl_fp_montRed$(bit)(i$(bit)* %pz, i$(b2)* %pxy, i$(unit)* %pp, i$(unit) %r) {
+	%ppt = bitcast i$(unit)* %pp to i$(bit)*
+	%p = load i$(bit)* %ppt
 	%xy = load i$(b2)* %pxy
 	%t0 = zext i$(b2) %xy to i$(b2+unit)
 
 @for i, 0, N
 	%z0$(i+1) = trunc i$(b2u - unit * i) %t$(i) to i$(unit)
 	%q$(i) = mul i$(unit) %z0$(i+1), %r
-	%pq$(i) = call i$(bu) @mul$(bit)x$(unit)(i$(bit) %p, i$(unit) %q$(i))
+	%pq$(i) = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %pp, i$(unit) %q$(i))
 	%pqe$(i) = zext i$(bu) %pq$(i) to i$(b2u - unit * i)
 	%z$(i+1) = add i$(b2u - unit * i) %t$(i), %pqe$(i)
 	%zt$(i+1) = lshr i$(b2u - unit * i) %z$(i+1), $(unit)
