@@ -7,7 +7,7 @@ define i$(unit*2) @mul$(unit)x$(unit)(i$(unit) %x, i$(unit) %y) {
 }
 
 @define u2 = unit * 2
-define private i$(unit) @extractLow$(unit)(i$(u2) %x)
+define private i$(unit) @extractHigh$(unit)(i$(u2) %x)
 {
 	%t0 = lshr i$(unit*2) %x, $(unit)
 	%t1 = trunc i$(unit*2) %t0 to i$(unit)
@@ -118,10 +118,10 @@ define void @mcl_fp_sqr_NIST_P192(i192* %py, i192* %px) {
 	call void @mcl_fpDbl_mod_NIST_P192(i192* %py, i192* %buf)
 	ret void
 }
-define void @mcl_fp_mul_NIST_P192(i192* %pz, i192* %px, i192* %py) {
+define void @mcl_fp_mul_NIST_P192(i192* %pz, i$(unit)* %px, i$(unit)* %py) {
 	%buf = alloca i192, i32 2
 	%p = bitcast i192* %buf to i$(unit)*
-	call void @mcl_fpDbl_mulPre192(i$(unit)* %p, i192* %px, i192* %py)
+	call void @mcl_fpDbl_mulPre192(i$(unit)* %p, i$(unit)* %px, i$(unit)* %py)
 	call void @mcl_fpDbl_mod_NIST_P192(i192* %pz, i192* %buf)
 	ret void
 }
