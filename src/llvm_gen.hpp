@@ -10,18 +10,58 @@
 #include <vector>
 #include <cybozu/exception.hpp>
 #include <cybozu/itoa.hpp>
+#include <stdio.h>
 
 namespace mcl {
 
-struct Generator {
-	int unit;
-	int N;
-	int bit;
-	Generator()
-		: unit(sizeof(uint64_t) * 8)
-		, N(4)
-		, bit(unit * N)
+namespace impl {
+
+struct File {
+	FILE *fp;
+	File() : fp(stdout) {}
+	~File() { if (fp != stdout) fclose(fp); }
+	void open(const std::string& file)
 	{
+#ifdef _MSC_VER
+		bool isOK = fopen_s(&fp, file.c_str(), "wb") != 0;
+#else
+		fp = fopen(file.c_str(), "wb");
+		bool isOK = fp != NULL;
+#endif
+		if (!isOK) throw cybozu::Exception("File:open") << file;
+	}
+	void write(const std::string& str)
+	{
+		int ret = fprintf(fp, "%s\n", str.c_str());
+		if (ret < 0) {
+			throw cybozu::Exception("File:write") << str;
+		}
+	}
+};
+template<size_t dummy=0>
+struct Param {
+	static File f;
+};
+
+template<size_t dummy>
+File Param<dummy>::f;
+
+} // mcl::impl
+
+struct Generator {
+	uint32_t unit;
+	uint32_t bit;
+	uint32_t N;
+	Generator() : unit(0), bit(0), N(0) {}
+	void set(uint32_t unit, uint32_t bit)
+	{
+		this->unit = unit;
+		this->bit = bit;
+		this->N = bit / unit;
+	}
+	void open(const std::string& file)
+	{
+		impl::Param<>::f.open(file);
 	}
 	enum Type {
 		Void = 0,
@@ -32,14 +72,23 @@ struct Generator {
 	struct Operand;
 	struct Function;
 	struct Eval;
-	static inline std::string getGlobalName()
+	static inline int& getGlobalIdx()
 	{
 		static int globalIdx = 0;
-		return std::string("reg") + cybozu::itoa(globalIdx++);
+		return globalIdx;
+	}
+	static inline void resetGlobalIdx()
+	{
+		getGlobalIdx() = 0;
+	}
+	static inline std::string getGlobalName()
+	{
+		int& idx = getGlobalIdx();
+		return std::string("reg") + cybozu::itoa(idx++);
 	}
 	static inline void put(const std::string& str)
 	{
-		printf("%s\n", str.c_str());
+		impl::Param<>::f.write(str);
 	}
 	void beginFunc(const Function& f);
 	void endFunc()
@@ -49,6 +98,8 @@ struct Generator {
 	Eval zext(const Operand& x, uint32_t size);
 	Eval mul(const Operand& x, const Operand& y);
 	void ret(const Operand& r);
+	Eval lshr(const Operand& x, uint32_t size);
+	Eval trunc(const Operand& x, uint32_t size);
 };
 
 struct Generator::Operand {
@@ -150,32 +201,42 @@ struct Generator::Function {
 	std::string name;
 	Generator::Operand ret;
 	OperandVec opv;
-	explicit Function(const std::string& name = "") : name(name) {}
+	bool isPrivate;
+	explicit Function(const std::string& name = "") : name(name), isPrivate(false) {}
 	Function(const std::string& name, const Operand& ret, const Operand& op1)
-		: name(name), ret(ret) {
+		: name(name), ret(ret), isPrivate(false) {
 			opv.push_back(op1);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2)
-		: name(name), ret(ret) {
+		: name(name), ret(ret), isPrivate(false) {
 			opv.push_back(op1);
 			opv.push_back(op2);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2, const Operand& op3)
-		: name(name), ret(ret) {
+		: name(name), ret(ret), isPrivate(false) {
 			opv.push_back(op1);
 			opv.push_back(op2);
 			opv.push_back(op3);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4)
-		: name(name), ret(ret) {
+		: name(name), ret(ret), isPrivate(false) {
 			opv.push_back(op1);
 			opv.push_back(op2);
 			opv.push_back(op3);
 			opv.push_back(op4);
 	}
+	void setPrivate()
+	{
+		isPrivate = true;
+	}
 	std::string toStr() const
 	{
-		std::string str = std::string("define ") + ret.getType() + " @" + name + "(";
+		std::string str = std::string("define ");
+		if (isPrivate) {
+			str += "private ";
+		}
+		str += ret.getType();
+		str += " @" + name + "(";
 		for (size_t i = 0; i < opv.size(); i++) {
 			if (i > 0) str += ", ";
 			str += opv[i].toStr();
@@ -192,7 +253,7 @@ inline void Generator::beginFunc(const Generator::Function& f)
 
 inline Generator::Eval Generator::zext(const Generator::Operand& x, uint32_t size)
 {
-	if (x.bit >= size) throw cybozu::Exception("zext:bad size") << x.bit << size;
+	if (x.bit >= size) throw cybozu::Exception("Generator:zext:bad size") << x.bit << size;
 	Eval e;
 	e.op = x;
 	e.op.bit = size;
@@ -203,11 +264,30 @@ inline Generator::Eval Generator::zext(const Generator::Operand& x, uint32_t siz
 
 inline Generator::Eval Generator::mul(const Generator::Operand& x, const Generator::Operand& y)
 {
-	if (x.bit != y.bit) throw cybozu::Exception("mul:bad size") << x.bit << y.bit;
+	if (x.bit != y.bit) throw cybozu::Exception("Generator:mul:bad size") << x.bit << y.bit;
 	Eval e;
 	e.op = x;
 	e.s = "mul ";
 	e.s += x.toStr() + ", " + y.getName();
+	return e;
+}
+
+inline Generator::Eval Generator::lshr(const Generator::Operand& x, uint32_t size)
+{
+	Eval e;
+	e.op = x;
+	e.s = "lshr ";
+	e.s += x.toStr() + ", " + cybozu::itoa(size);
+	return e;
+}
+
+inline Generator::Eval Generator::trunc(const Generator::Operand& x, uint32_t size)
+{
+	Eval e;
+	e.op = x;
+	e.op.bit = size;
+	e.s = "trunc ";
+	e.s += x.toStr() + " to i" + cybozu::itoa(size);
 	return e;
 }
 
