@@ -13,12 +13,6 @@ define private i$(unit) @extractHigh$(unit)(i$(u2) %x)
 	%t1 = trunc i$(unit*2) %t0 to i$(unit)
 	ret i$(unit) %t1
 }
-define private void @storePos$(unit)(i$(unit) *%p, i$(unit) %v, i$(unit) %i)
-{
-	%pp = getelementptr i$(unit) *%p, i$(unit) %i
-	store i$(unit) %v, i$(unit)* %pp
-	ret void
-}
 define i$(u2) @mulPos$(unit)x$(unit)(i$(unit) *%px, i$(unit) %y, i$(unit) %i)
 {
 	%p = getelementptr i$(unit)* %px, i$(unit) %i
