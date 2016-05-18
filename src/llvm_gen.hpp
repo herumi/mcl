@@ -11,6 +11,10 @@
 #include <cybozu/exception.hpp>
 #include <cybozu/itoa.hpp>
 #include <stdio.h>
+#ifdef _MSC_VER
+//	#pragma warning(push)
+	#pragma warning(disable : 4458)
+#endif
 
 namespace mcl {
 
@@ -49,6 +53,25 @@ File Param<dummy>::f;
 } // mcl::impl
 
 struct Generator {
+	static const uint8_t Void = 0;
+	static const uint8_t Int = 1;
+	static const uint8_t Imm = 2;
+	static const uint8_t Ptr = 1 << 7;
+	static const uint8_t IntPtr = Int | Ptr;
+	struct Type {
+		uint8_t type;
+		bool isPtr;
+		Type(int type = 0)
+			: type(static_cast<uint8_t>(type & ~Ptr))
+			, isPtr((type & Ptr) != 0)
+		{
+		}
+		static inline friend std::ostream& operator<<(std::ostream& os, const Type& self)
+		{
+			return os << (self.type | (self.isPtr ? Ptr : 0));
+		}
+	};
+	Type type;
 	uint32_t unit;
 	uint32_t bit;
 	uint32_t N;
@@ -63,12 +86,6 @@ struct Generator {
 	{
 		impl::Param<>::f.open(file);
 	}
-	enum Type {
-		Void = 0,
-		Int = 1,
-		Pointer = 2,
-		Imm = 3
-	};
 	struct Operand;
 	struct Function;
 	struct Eval;
@@ -100,6 +117,12 @@ struct Generator {
 	void ret(const Operand& r);
 	Eval lshr(const Operand& x, uint32_t size);
 	Eval trunc(const Operand& x, uint32_t size);
+	Eval getelementptr(const Operand& p, const Operand& i);
+	Eval load(const Operand& p);
+	Eval call(const Function& f, const Operand& op1);
+	Eval call(const Function& f, const Operand& op1, const Operand& op2);
+	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3);
+	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4);
 };
 
 struct Generator::Operand {
@@ -129,11 +152,13 @@ struct Generator::Operand {
 	void update() { idx++; }
 	std::string toStr() const
 	{
-		switch (type) {
+		if (type.isPtr) {
+			return getType() + " " + getName();
+		}
+		switch (type.type) {
 		default:
 			return "void";
 		case Int:
-		case Pointer:
 			return getType() + " " + getName();
 		case Imm:
 			return cybozu::itoa(imm);
@@ -141,22 +166,25 @@ struct Generator::Operand {
 	}
 	std::string getType() const
 	{
-		switch (type) {
+		std::string s;
+		switch (type.type) {
 		default:
 			return "";
 		case Int:
-			return std::string("i") + cybozu::itoa(bit);
-		case Pointer:
-			return std::string("i") + cybozu::itoa(bit) + "*";
+			s = std::string("i") + cybozu::itoa(bit);
+			break;
 		}
+		if (type.isPtr) {
+			s += "*";
+		}
+		return s;
 	}
 	std::string getName() const
 	{
-		switch (type) {
+		switch (type.type) {
 		default:
 			return "";
 		case Int:
-		case Pointer:
 			std::string str("%");
 			str += name;
 			if (idx > 0) str += "_" + cybozu::itoa(idx);
@@ -272,6 +300,12 @@ inline Generator::Eval Generator::mul(const Generator::Operand& x, const Generat
 	return e;
 }
 
+inline void Generator::ret(const Generator::Operand& x)
+{
+	std::string s = "ret " + x.toStr();
+	put(s);
+}
+
 inline Generator::Eval Generator::lshr(const Generator::Operand& x, uint32_t size)
 {
 	Eval e;
@@ -291,12 +325,76 @@ inline Generator::Eval Generator::trunc(const Generator::Operand& x, uint32_t si
 	return e;
 }
 
-inline void Generator::ret(const Generator::Operand& x)
+inline Generator::Eval Generator::getelementptr(const Generator::Operand& p, const Generator::Operand& i)
 {
-	std::string s = "ret " + x.toStr();
-	put(s);
+	Eval e;
+	e.op = p;
+	e.s = "getelementptr ";
+	e.s += p.toStr() + ", " + i.toStr();
+	return e;
+}
+
+inline Generator::Eval Generator::load(const Generator::Operand& p)
+{
+	if (!p.type.isPtr) throw cybozu::Exception("Generator:load:not pointer") << p.type;
+	Eval e;
+	e.op = p;
+	e.op.type.isPtr = false;
+	e.s = "load ";
+	e.s += p.toStr();
+	return e;
+}
+
+namespace impl {
+
+static inline Generator::Eval callSub(const Generator::Function& f, const Generator::Operand **opTbl, size_t opNum)
+{
+	if (f.opv.size() != opNum) throw cybozu::Exception("implcallSub:bad num of arg") << f.opv.size() << opNum;
+	Generator::Eval e;
+	e.op = f.ret;
+	e.s = "call ";
+	e.s += f.ret.getType();
+	e.s += " @" + f.name + "(";
+	for (size_t i = 0; i < opNum; i++) {
+		if (i > 0) {
+			e.s += ", ";
+		}
+		e.s += opTbl[i]->toStr();
+	}
+	e.s += ")";
+	return e;
+}
+
+}
+
+inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1)
+{
+	const Operand *tbl[] = { &op1 };
+	return impl::callSub(f, tbl, CYBOZU_NUM_OF_ARRAY(tbl));
+}
+
+inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1, const Generator::Operand& op2)
+{
+	const Operand *tbl[] = { &op1, &op2 };
+	return impl::callSub(f, tbl, CYBOZU_NUM_OF_ARRAY(tbl));
+}
+
+inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1, const Generator::Operand& op2, const Generator::Operand& op3)
+{
+	const Operand *tbl[] = { &op1, &op2, &op3 };
+	return impl::callSub(f, tbl, CYBOZU_NUM_OF_ARRAY(tbl));
+}
+
+inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1, const Generator::Operand& op2, const Generator::Operand& op3, const Generator::Operand& op4)
+{
+	const Operand *tbl[] = { &op1, &op2, &op3, &op4 };
+	return impl::callSub(f, tbl, CYBOZU_NUM_OF_ARRAY(tbl));
 }
 
 #define MCL_GEN_FUNCTION(name, ...) Function name(#name, __VA_ARGS__)
 
 } // mcl
+
+#ifdef _MSC_VER
+//	#pragma warning(pop)
+#endif

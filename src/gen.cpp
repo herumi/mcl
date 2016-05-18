@@ -2,13 +2,17 @@
 
 struct OnceCode : public mcl::Generator {
 	uint32_t unit2;
-	Function gen_mulUU()
+	Function mulUU;
+	Function extractHigh;
+	Function mulPos;
+
+	void gen_mulUU()
 	{
 		resetGlobalIdx();
 		Operand z(Int, unit2);
 		Operand x(Int, unit);
 		Operand y(Int, unit);
-		Function mulUU("mulUU", z, x, y);
+		mulUU = Function("mulUU", z, x, y);
 		beginFunc(mulUU);
 
 		x = zext(x, unit2);
@@ -16,14 +20,13 @@ struct OnceCode : public mcl::Generator {
 		z= mul(x, y);
 		ret(z);
 		endFunc();
-		return mulUU;
 	}
-	Function gen_extractHigh()
+	void gen_extractHigh()
 	{
 		resetGlobalIdx();
 		Operand z(Int, unit);
 		Operand x(Int, unit2);
-		Function extractHigh("extractHigh", z, x);
+		extractHigh = Function("extractHigh", z, x);
 		extractHigh.setPrivate();
 		beginFunc(extractHigh);
 
@@ -31,25 +34,31 @@ struct OnceCode : public mcl::Generator {
 		z = trunc(x, unit);
 		ret(z);
 		endFunc();
-		return extractHigh;
 	}
-	Function gen_mulPv(int bu)
+	void gen_mulPos()
 	{
-		Operand z(Int, bu);
-		Operand px(Pointer, unit);
+		resetGlobalIdx();
+		Operand xy(Int, unit2);
+		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
-		Function mulPv("mulPv", z, px, y);
-		beginFunc(mulPv);
+		Operand i(Int, unit);
+		mulPos = Function("mulPos", xy, px, y, i);
+		mulPos.setPrivate();
+		beginFunc(mulPos);
+
+		px = getelementptr(px, i);
+		Operand x = load(px);
+		xy = call(mulUU, x, y);
+		ret(xy);
 		endFunc();
-		return mulPv;
 	}
 	void gen(uint32_t unit, uint32_t bit)
 	{
 		set(unit, bit);
 		unit2 = unit * 2;
-		Function mulUU = gen_mulUU();
-		Function extractHigh = gen_extractHigh();
-//		Function mulPv = gen_mulPv(bu);
+		gen_mulUU();
+		gen_extractHigh();
+		gen_mulPos();
 	}
 };
 
