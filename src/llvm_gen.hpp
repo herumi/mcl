@@ -103,15 +103,21 @@ struct Generator {
 	}
 	Eval zext(const Operand& x, uint32_t size);
 	Eval mul(const Operand& x, const Operand& y);
+	Eval add(const Operand& x, const Operand& y);
+	Eval sub(const Operand& x, const Operand& y);
 	void ret(const Operand& r);
 	Eval lshr(const Operand& x, uint32_t size);
+	Eval shl(const Operand& x, uint32_t size);
 	Eval trunc(const Operand& x, uint32_t size);
 	Eval getelementptr(const Operand& p, const Operand& i);
 	Eval load(const Operand& p);
+	Eval call(const Function& f);
 	Eval call(const Function& f, const Operand& op1);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4);
+
+	static inline Operand makeImm(uint32_t bit, uint64_t imm);
 };
 
 struct Generator::Operand {
@@ -148,9 +154,8 @@ struct Generator::Operand {
 		default:
 			return "void";
 		case Int:
-			return getType() + " " + getName();
 		case Imm:
-			return cybozu::itoa(imm);
+			return getType() + " " + getName();
 		}
 	}
 	std::string getType() const
@@ -160,6 +165,7 @@ struct Generator::Operand {
 		default:
 			return "";
 		case Int:
+		case Imm:
 			s = std::string("i") + cybozu::itoa(bit);
 			break;
 		}
@@ -174,13 +180,24 @@ struct Generator::Operand {
 		default:
 			return "";
 		case Int:
-			std::string str("%");
-			str += name;
-			if (idx > 0) str += "_" + cybozu::itoa(idx);
-			return str;
+			{
+				std::string str("%");
+				str += name;
+				if (idx > 0) str += "_" + cybozu::itoa(idx);
+				return str;
+			}
+		case Imm:
+			return cybozu::itoa(imm);
 		}
 	}
 };
+
+inline Generator::Operand Generator::makeImm(uint32_t bit, uint64_t imm)
+{
+	Generator::Operand v(Generator::Imm, bit);
+	v.imm = imm;
+	return v;
+}
 
 struct Generator::Eval {
 	std::string s;
@@ -220,6 +237,9 @@ struct Generator::Function {
 	OperandVec opv;
 	bool isPrivate;
 	explicit Function(const std::string& name = "") : name(name), isPrivate(false) {}
+	Function(const std::string& name, const Operand& ret)
+		: name(name), ret(ret), isPrivate(false) {
+	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1)
 		: name(name), ret(ret), isPrivate(false) {
 			opv.push_back(op1);
@@ -263,6 +283,52 @@ struct Generator::Function {
 	}
 };
 
+namespace impl {
+
+inline Generator::Eval callSub(const Generator::Function& f, const Generator::Operand **opTbl, size_t opNum)
+{
+	if (f.opv.size() != opNum) throw cybozu::Exception("impl:callSub:bad num of arg") << f.opv.size() << opNum;
+	if (f.name.empty()) throw cybozu::Exception("impl:callSub:no name");
+	Generator::Eval e;
+	e.op = f.ret;
+	e.s = "call ";
+	e.s += f.ret.getType();
+	e.s += " @" + f.name + "(";
+	for (size_t i = 0; i < opNum; i++) {
+		if (i > 0) {
+			e.s += ", ";
+		}
+		e.s += opTbl[i]->toStr();
+	}
+	e.s += ")";
+	return e;
+}
+
+inline Generator::Eval aluSub(const char *name, const Generator::Operand& x, const Generator::Operand& y)
+{
+	if (x.bit != y.bit) throw cybozu::Exception("Generator:aluSub:bad size") << name << x.bit << y.bit;
+	Generator::Eval e;
+	e.op.type = Generator::Int;
+	e.op.bit = x.bit;
+	e.op.name = x.name;
+	e.s = name;
+	e.s += " ";
+	e.s += x.toStr() + ", " + y.getName();
+	return e;
+}
+
+inline Generator::Eval shiftSub(const char *name, const Generator::Operand& x, uint32_t size)
+{
+	Generator::Eval e;
+	e.op = x;
+	e.s = name;
+	e.s += " ";
+	e.s += x.toStr() + ", " + cybozu::itoa(size);
+	return e;
+}
+
+} // mcl::impl
+
 inline void Generator::beginFunc(const Generator::Function& f)
 {
 	put(f.toStr() + "\n{");
@@ -281,12 +347,17 @@ inline Generator::Eval Generator::zext(const Generator::Operand& x, uint32_t siz
 
 inline Generator::Eval Generator::mul(const Generator::Operand& x, const Generator::Operand& y)
 {
-	if (x.bit != y.bit) throw cybozu::Exception("Generator:mul:bad size") << x.bit << y.bit;
-	Eval e;
-	e.op = x;
-	e.s = "mul ";
-	e.s += x.toStr() + ", " + y.getName();
-	return e;
+	return impl::aluSub("mul", x, y);
+}
+
+inline Generator::Eval Generator::add(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::aluSub("add", x, y);
+}
+
+inline Generator::Eval Generator::sub(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::aluSub("sub", x, y);
 }
 
 inline void Generator::ret(const Generator::Operand& x)
@@ -297,11 +368,12 @@ inline void Generator::ret(const Generator::Operand& x)
 
 inline Generator::Eval Generator::lshr(const Generator::Operand& x, uint32_t size)
 {
-	Eval e;
-	e.op = x;
-	e.s = "lshr ";
-	e.s += x.toStr() + ", " + cybozu::itoa(size);
-	return e;
+	return impl::shiftSub("lshr", x, size);
+}
+
+inline Generator::Eval Generator::shl(const Generator::Operand& x, uint32_t size)
+{
+	return impl::shiftSub("shl", x, size);
 }
 
 inline Generator::Eval Generator::trunc(const Generator::Operand& x, uint32_t size)
@@ -334,26 +406,9 @@ inline Generator::Eval Generator::load(const Generator::Operand& p)
 	return e;
 }
 
-namespace impl {
-
-static inline Generator::Eval callSub(const Generator::Function& f, const Generator::Operand **opTbl, size_t opNum)
+inline Generator::Eval Generator::call(const Generator::Function& f)
 {
-	if (f.opv.size() != opNum) throw cybozu::Exception("implcallSub:bad num of arg") << f.opv.size() << opNum;
-	Generator::Eval e;
-	e.op = f.ret;
-	e.s = "call ";
-	e.s += f.ret.getType();
-	e.s += " @" + f.name + "(";
-	for (size_t i = 0; i < opNum; i++) {
-		if (i > 0) {
-			e.s += ", ";
-		}
-		e.s += opTbl[i]->toStr();
-	}
-	e.s += ")";
-	return e;
-}
-
+	return impl::callSub(f, 0, 0);
 }
 
 inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1)

@@ -8,6 +8,7 @@ struct OnceCode : public mcl::Generator {
 	Function mulUU;
 	Function extractHigh;
 	Function mulPos;
+	Function makeNIST_P192;
 
 	void gen_mulUU()
 	{
@@ -55,7 +56,31 @@ struct OnceCode : public mcl::Generator {
 		ret(xy);
 		endFunc();
 	}
-	void gen(uint32_t unit, uint32_t bit)
+	void gen_makeNIST_P192()
+	{
+		resetGlobalIdx();
+		Operand p0(Int, 64);
+		Operand p1(Int, 64);
+		Operand p2(Int, 64);
+		Operand _0 = makeImm(64, 0);
+		Operand _1 = makeImm(64, 1);
+		Operand _2 = makeImm(64, 2);
+		makeNIST_P192 = Function("makeNIST_P192", Operand());
+		beginFunc(makeNIST_P192);
+		p0 = sub(_0, _1);
+		p1 = sub(_0, _2);
+		p2 = sub(_0, _1);
+		p0 = zext(p0, 192);
+		p1 = zext(p1, 192);
+		p2 = zext(p2, 192);
+		p1 = shl(p1, 64);
+		p2 = shl(p2, 128);
+		p0 = add(p0, p1);
+		p0 = add(p0, p2);
+		ret(p0);
+		endFunc();
+	}
+	void run(uint32_t unit, uint32_t bit)
 	{
 		this->unit = unit;
 		this->bit = bit;
@@ -64,6 +89,7 @@ struct OnceCode : public mcl::Generator {
 		gen_mulUU();
 		gen_extractHigh();
 		gen_mulPos();
+		gen_makeNIST_P192();
 	}
 };
 
@@ -72,7 +98,7 @@ int main()
 	try
 {
 	OnceCode c;
-	c.gen(64, 256);
+	c.run(64, 256);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
 	return 1;
