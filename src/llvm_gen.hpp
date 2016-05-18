@@ -66,22 +66,11 @@ struct Generator {
 			, isPtr((type & Ptr) != 0)
 		{
 		}
-		static inline friend std::ostream& operator<<(std::ostream& os, const Type& self)
+		inline friend std::ostream& operator<<(std::ostream& os, const Type& self)
 		{
 			return os << (self.type | (self.isPtr ? Ptr : 0));
 		}
 	};
-	Type type;
-	uint32_t unit;
-	uint32_t bit;
-	uint32_t N;
-	Generator() : unit(0), bit(0), N(0) {}
-	void set(uint32_t unit, uint32_t bit)
-	{
-		this->unit = unit;
-		this->bit = bit;
-		this->N = bit / unit;
-	}
 	void open(const std::string& file)
 	{
 		impl::Param<>::f.open(file);

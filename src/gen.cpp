@@ -1,6 +1,9 @@
 #include "llvm_gen.hpp"
 
 struct OnceCode : public mcl::Generator {
+	uint32_t unit;
+	uint32_t bit;
+	uint32_t N;
 	uint32_t unit2;
 	Function mulUU;
 	Function extractHigh;
@@ -54,7 +57,9 @@ struct OnceCode : public mcl::Generator {
 	}
 	void gen(uint32_t unit, uint32_t bit)
 	{
-		set(unit, bit);
+		this->unit = unit;
+		this->bit = bit;
+		N = bit / unit;
 		unit2 = unit * 2;
 		gen_mulUU();
 		gen_extractHigh();
