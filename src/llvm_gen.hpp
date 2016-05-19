@@ -6,6 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+//#define CYBOZU_EXCEPTION_WITH_STACKTRACE
 #include <string>
 #include <vector>
 #include <cybozu/exception.hpp>
@@ -53,7 +54,7 @@ File Param<dummy>::f;
 } // mcl::impl
 
 struct Generator {
-	static const uint8_t Void = 0;
+	static const uint8_t None = 0;
 	static const uint8_t Int = 1;
 	static const uint8_t Imm = 2;
 	static const uint8_t Ptr = 1 << 7;
@@ -81,16 +82,11 @@ struct Generator {
 	static inline int& getGlobalIdx()
 	{
 		static int globalIdx = 0;
-		return globalIdx;
+		return ++globalIdx;
 	}
 	static inline void resetGlobalIdx()
 	{
 		getGlobalIdx() = 0;
-	}
-	static inline std::string getGlobalName()
-	{
-		int& idx = getGlobalIdx();
-		return std::string("reg") + cybozu::itoa(idx++);
 	}
 	static inline void put(const std::string& str)
 	{
@@ -105,46 +101,53 @@ struct Generator {
 	Eval mul(const Operand& x, const Operand& y);
 	Eval add(const Operand& x, const Operand& y);
 	Eval sub(const Operand& x, const Operand& y);
+	Eval _and(const Operand& x, const Operand& y);
+	Eval _or(const Operand& x, const Operand& y);
 	void ret(const Operand& r);
 	Eval lshr(const Operand& x, uint32_t size);
 	Eval shl(const Operand& x, uint32_t size);
 	Eval trunc(const Operand& x, uint32_t size);
 	Eval getelementptr(const Operand& p, const Operand& i);
 	Eval load(const Operand& p);
+	void store(const Operand& r, const Operand& p);
+	Eval select(const Operand& c, const Operand& r1, const Operand& r2);
 	Eval call(const Function& f);
 	Eval call(const Function& f, const Operand& op1);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4);
 
-	static inline Operand makeImm(uint32_t bit, uint64_t imm);
+	Operand makeImm(uint32_t bit, int64_t imm);
 };
 
 struct Generator::Operand {
 	Type type;
 	uint32_t bit;
-	uint64_t imm;
+	int64_t imm;
 	uint32_t idx;
-	std::string name;
-	Operand() : type(Void), bit(0), imm(0), idx(0) {}
-	Operand(Type type, uint32_t bit, const std::string& name = "")
-		: type(type), bit(bit), imm(0), idx(0), name(name)
+	Operand() : type(None), bit(0), imm(0), idx(0) {}
+	Operand(Type type, uint32_t bit)
+		: type(type), bit(bit), imm(0), idx(getGlobalIdx())
 	{
-		if (name.empty()) {
-			this->name = getGlobalName();
-		}
+	}
+	Operand(const Operand& rhs)
+		: type(rhs.type), bit(rhs.bit), imm(rhs.imm), idx(rhs.idx)
+	{
+	}
+	void operator=(const Operand& rhs)
+	{
+		type = rhs.type;
+		bit = rhs.bit;
+		imm = rhs.imm;
+		idx = rhs.idx;
+	}
+	void update()
+	{
+		idx = getGlobalIdx();
 	}
 	Operand(const Eval& e);
 	void operator=(const Eval& e);
 
-	// set (bit, type, imm) by rhs
-	void set(const Operand& rhs)
-	{
-		bit = rhs.bit;
-		type = rhs.type;
-		imm = rhs.imm;
-	}
-	void update() { idx++; }
 	std::string toStr() const
 	{
 		if (type.isPtr) {
@@ -180,19 +183,14 @@ struct Generator::Operand {
 		default:
 			return "";
 		case Int:
-			{
-				std::string str("%");
-				str += name;
-				if (idx > 0) str += "_" + cybozu::itoa(idx);
-				return str;
-			}
+			return std::string("%r") + cybozu::itoa(idx);
 		case Imm:
 			return cybozu::itoa(imm);
 		}
 	}
 };
 
-inline Generator::Operand Generator::makeImm(uint32_t bit, uint64_t imm)
+inline Generator::Operand Generator::makeImm(uint32_t bit, int64_t imm)
 {
 	Generator::Operand v(Generator::Imm, bit);
 	v.imm = imm;
@@ -221,10 +219,7 @@ inline Generator::Operand::Operand(const Generator::Eval& e)
 
 inline void Generator::Operand::operator=(const Generator::Eval& e)
 {
-	type = e.op.type;
-	bit = e.op.bit;
-	imm = e.op.imm;
-	if (name.empty()) name = e.op.name;
+	*this = e.op;
 	update();
 	put(getName() + " = " + e.s);
 	e.used = true;
@@ -310,7 +305,6 @@ inline Generator::Eval aluSub(const char *name, const Generator::Operand& x, con
 	Generator::Eval e;
 	e.op.type = Generator::Int;
 	e.op.bit = x.bit;
-	e.op.name = x.name;
 	e.s = name;
 	e.s += " ";
 	e.s += x.toStr() + ", " + y.getName();
@@ -360,6 +354,16 @@ inline Generator::Eval Generator::sub(const Generator::Operand& x, const Generat
 	return impl::aluSub("sub", x, y);
 }
 
+inline Generator::Eval Generator::_and(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::aluSub("and", x, y);
+}
+
+inline Generator::Eval Generator::_or(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::aluSub("or", x, y);
+}
+
 inline void Generator::ret(const Generator::Operand& x)
 {
 	std::string s = "ret " + x.toStr();
@@ -403,6 +407,30 @@ inline Generator::Eval Generator::load(const Generator::Operand& p)
 	e.op.type.isPtr = false;
 	e.s = "load ";
 	e.s += p.toStr();
+	return e;
+}
+
+inline void Generator::store(const Generator::Operand& r, const Generator::Operand& p)
+{
+	if (!p.type.isPtr) throw cybozu::Exception("Generator:store:not pointer") << p.type;
+	std::string s = "store ";
+	s += r.toStr();
+	s += ", ";
+	s += p.toStr();
+	put(s);
+}
+
+inline Generator::Eval Generator::select(const Generator::Operand& c, const Generator::Operand& r1, const Generator::Operand& r2)
+{
+	if (c.bit != 1) throw cybozu::Exception("Generator:select:bad bit") << c.bit;
+	Eval e;
+	e.op = r1;
+	e.s = "select ";
+	e.s += c.toStr();
+	e.s += ", ";
+	e.s += r1.toStr();
+	e.s += ", ";
+	e.s += r2.toStr();
 	return e;
 }
 
