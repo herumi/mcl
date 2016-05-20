@@ -111,6 +111,9 @@ struct Generator {
 	Eval load(const Operand& p);
 	void store(const Operand& r, const Operand& p);
 	Eval select(const Operand& c, const Operand& r1, const Operand& r2);
+	Eval _alloca(uint32_t bit, uint32_t n);
+	// QQQ : type of type must be Type
+	Eval bitcast(const Operand& r, const Operand& type);
 	Eval call(const Function& f);
 	Eval call(const Function& f, const Operand& op1);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2);
@@ -431,6 +434,28 @@ inline Generator::Eval Generator::select(const Generator::Operand& c, const Gene
 	e.s += r1.toStr();
 	e.s += ", ";
 	e.s += r2.toStr();
+	return e;
+}
+
+inline Generator::Eval Generator::_alloca(uint32_t bit, uint32_t n)
+{
+	Eval e;
+	e.op = Operand(IntPtr, bit);
+	e.s = "alloca i";
+	e.s += cybozu::itoa(bit);
+	e.s += ", i32 ";
+	e.s += cybozu::itoa(n);
+	return e;
+}
+
+inline Generator::Eval Generator::bitcast(const Generator::Operand& r, const Generator::Operand& type)
+{
+	Eval e;
+	e.op = type;
+	e.s = "bitcast ";
+	e.s += r.toStr();
+	e.s += " to ";
+	e.s += type.getType();
 	return e;
 }
 

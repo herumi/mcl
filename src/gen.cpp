@@ -15,6 +15,7 @@ struct Code : public mcl::Generator {
 	Function mulPos;
 	Function makeNIST_P192;
 	Function mcl_fpDbl_mod_NIST_P192;
+	Function mcl_fp_sqr_NIST_P192;
 	FunctionMap mcl_fp_addNCM;
 	FunctionMap mcl_fp_subNCM;
 	FunctionMap mcl_fp_addM;
@@ -151,6 +152,21 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	void gen_mcl_fp_sqr_NIST_P192()
+	{
+		resetGlobalIdx();
+		Operand py(IntPtr, 192);
+		Operand px(IntPtr, unit);
+		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192", Void, py, px);
+		beginFunc(mcl_fp_sqr_NIST_P192);
+		Operand buf = _alloca(192, 2);
+		Operand p = bitcast(buf, Operand(IntPtr, unit));
+		Function mcl_fpDbl_sqrPre192("mcl_fpDbl_sqrPre192", Void, p, px);
+		call(mcl_fpDbl_sqrPre192, p, px);
+		call(mcl_fpDbl_mod_NIST_P192, py, buf);
+		ret(Void);
+		endFunc();
+	}
 	void gen_once()
 	{
 		gen_mulUU();
@@ -158,6 +174,7 @@ struct Code : public mcl::Generator {
 		gen_mulPos();
 		gen_makeNIST_P192();
 		gen_mcl_fpDbl_mod_NIST_P192();
+		gen_mcl_fp_sqr_NIST_P192();
 	}
 	Operand extract(const Operand& x, uint32_t shift)
 	{
