@@ -145,10 +145,8 @@ struct Code : public mcl::Generator {
 		Operand p = call(makeNIST_P192);
 		p = zext(p, 256);
 		Operand zp = sub(z, p);
-		Operand c = lshr(zp, 192);
-		c = trunc(c, 1);
-		z = select(c, z, zp);
-		z = trunc(z, 192);
+		Operand c = trunc(lshr(zp, 192), 1);
+		z = trunc(select(c, z, zp), 192);
 		store(z, out);
 		ret(Void);
 		endFunc();
