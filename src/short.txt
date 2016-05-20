@@ -16,18 +16,6 @@ entry:
 	ret void
 }
 
-define internal { i$(bit), i$(unit) } @mcl_local_sbb$(bit)(i$(bit) %x, i$(bit) %y) {
-	%x1 = zext i$(bit) %x to i$(bit+unit)
-	%y1 = zext i$(bit) %y to i$(bit+unit)
-	%v1 = sub i$(bit+unit) %x1, %y1
-	%v = trunc i$(bit+unit) %v1 to i$(bit)
-	%c = lshr i$(bit+unit) %v1, $(bit)
-	%c1 = trunc i$(bit+unit) %c to i$(unit)
-	%r1 = insertvalue { i$(bit), i$(unit) } undef, i$(bit) %v, 0
-	%r2 = insertvalue { i$(bit), i$(unit) } %r1, i$(unit) %c1, 1
-	ret { i$(bit), i$(unit) } %r2
-}
-
 define void @mcl_fp_sub$(bit)S(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py, i$(bit)* %pp) {
 	%x = load i$(bit)* %px
 	%y = load i$(bit)* %py
