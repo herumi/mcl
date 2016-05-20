@@ -160,7 +160,7 @@ struct Code : public mcl::Generator {
 		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192", Void, py, px);
 		beginFunc(mcl_fp_sqr_NIST_P192);
 		Operand buf = _alloca(192, 2);
-		Operand p = bitcast(buf, Operand(IntPtr, unit));
+		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
 		Function mcl_fpDbl_sqrPre192("mcl_fpDbl_sqrPre192", Void, p, px);
 		call(mcl_fpDbl_sqrPre192, p, px);
 		call(mcl_fpDbl_mod_NIST_P192, py, buf);
