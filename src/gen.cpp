@@ -1,13 +1,15 @@
 #include "llvm_gen.hpp"
 #include <map>
+#include <cybozu/option.hpp>
 
-struct OnceCode : public mcl::Generator {
+struct Code : public mcl::Generator {
 	typedef std::map<int, Function> FunctionMap;
 	Operand Void;
 	uint32_t unit;
+	uint32_t unit2;
 	uint32_t bit;
 	uint32_t N;
-	uint32_t unit2;
+	std::string unitStr;
 	Function mulUU;
 	Function extractHigh;
 	Function mulPos;
@@ -17,6 +19,7 @@ struct OnceCode : public mcl::Generator {
 	FunctionMap mcl_fp_subNCM;
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
+	Code() : unit(0), unit2(0), bit(0), N(0) { }
 
 	void gen_mulUU()
 	{
@@ -24,7 +27,9 @@ struct OnceCode : public mcl::Generator {
 		Operand z(Int, unit2);
 		Operand x(Int, unit);
 		Operand y(Int, unit);
-		mulUU = Function("mulUU", z, x, y);
+		std::string name = "mul";
+		name += unitStr + "x" + unitStr;
+		mulUU = Function(name, z, x, y);
 		beginFunc(mulUU);
 
 		x = zext(x, unit2);
@@ -38,7 +43,9 @@ struct OnceCode : public mcl::Generator {
 		resetGlobalIdx();
 		Operand z(Int, unit);
 		Operand x(Int, unit2);
-		extractHigh = Function("extractHigh", z, x);
+		std::string name = "extractHigh";
+		name += unitStr;
+		extractHigh = Function(name, z, x);
 		extractHigh.setPrivate();
 		beginFunc(extractHigh);
 
@@ -54,7 +61,9 @@ struct OnceCode : public mcl::Generator {
 		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
 		Operand i(Int, unit);
-		mulPos = Function("mulPos", xy, px, y, i);
+		std::string name = "mulPos";
+		name += unitStr + "x" + unitStr;
+		mulPos = Function(name, xy, px, y, i);
 		mulPos.setPrivate();
 		beginFunc(mulPos);
 
@@ -247,30 +256,40 @@ struct OnceCode : public mcl::Generator {
 		gen_mcl_fp_add();
 		gen_mcl_fp_sub();
 	}
-	void set(uint32_t unit, uint32_t bit)
+	void setBit(uint32_t bit)
 	{
-		this->unit = unit;
 		this->bit = bit;
 		N = bit / unit;
+	}
+	void setUnit(uint32_t unit)
+	{
+		this->unit = unit;
 		unit2 = unit * 2;
+		unitStr = cybozu::itoa(unit);
 	}
 	void gen()
 	{
-		set(64, 128);
-		gen_short();
 		gen_once();
 		for (int i = 128; i < 256; i += unit) {
-			set(64, i);
-			gen_all();
-			gen_short();
+//			gen_all();
+//			gen_short();
 		}
 	}
 };
 
-int main()
+int main(int argc, char *argv[])
 	try
 {
-	OnceCode c;
+	uint32_t unit;
+	cybozu::Option opt;
+	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", "unit");
+	opt.appendHelp("h");
+	if (!opt.parse(argc, argv)) {
+		opt.usage();
+		return 1;
+	}
+	Code c;
+	c.setUnit(unit);
 	c.gen();
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());

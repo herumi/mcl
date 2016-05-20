@@ -155,7 +155,7 @@ struct Generator::Operand {
 		}
 		switch (type.type) {
 		default:
-			return "void";
+			return getType();
 		case Int:
 		case Imm:
 			return getType() + " " + getName();
@@ -166,7 +166,7 @@ struct Generator::Operand {
 		std::string s;
 		switch (type.type) {
 		default:
-			return "";
+			return "void";
 		case Int:
 		case Imm:
 			s = std::string("i") + cybozu::itoa(bit);

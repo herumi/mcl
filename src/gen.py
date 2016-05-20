@@ -163,14 +163,22 @@ def main():
 	argv = sys.argv
 	args = len(argv)
 	unitL = 64
-	if args == 2:
-		unitL = int(argv[1])
+	if args < 3:
+		print "gen.py inFile [32, 64]"
+		return 1
+	inFile = argv[1]
+	if args == 3:
+		unitL = int(argv[2])
 	if unitL not in [32, 64]:
 		print "bad unitL", unitL
 		exit(1)
 
 	outLame = 'base%d.ll' % unitL
 	fo = open(outLame, 'w')
+	fi = open(inFile, 'r')
+	a = fi.read()
+	fi.close()
+	fo.write(a)
 #	gen(fo, 't.txt', unitL, [unitL * 4])
 #	exit(1)
 	gen(fo, 'once.txt', unitL, [unitL * 2])
