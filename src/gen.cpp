@@ -161,9 +161,27 @@ struct Code : public mcl::Generator {
 		beginFunc(mcl_fp_sqr_NIST_P192);
 		Operand buf = _alloca(192, 2);
 		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
+		// QQQ define later
 		Function mcl_fpDbl_sqrPre192("mcl_fpDbl_sqrPre192", Void, p, px);
 		call(mcl_fpDbl_sqrPre192, p, px);
 		call(mcl_fpDbl_mod_NIST_P192, py, buf);
+		ret(Void);
+		endFunc();
+	}
+	void gen_mcl_fp_mul_NIST_P192()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, 192);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		Function f("mcl_fp_mul_NIST_P192", Void, pz, px, py);
+		beginFunc(f);
+		Operand buf = _alloca(192, 2);
+		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
+		// QQQ define later
+		Function mcl_fpDbl_mulPre192("mcl_fpDbl_mulPre192", Void, p, px, py);
+		call(mcl_fpDbl_mulPre192, p, px, py);
+		call(mcl_fpDbl_mod_NIST_P192, pz, buf);
 		ret(Void);
 		endFunc();
 	}
@@ -175,6 +193,7 @@ struct Code : public mcl::Generator {
 		gen_makeNIST_P192();
 		gen_mcl_fpDbl_mod_NIST_P192();
 		gen_mcl_fp_sqr_NIST_P192();
+		gen_mcl_fp_mul_NIST_P192();
 	}
 	Operand extract(const Operand& x, uint32_t shift)
 	{

@@ -1,11 +1,3 @@
-define void @mcl_fp_mul_NIST_P192(i192* %pz, i$(unit)* %px, i$(unit)* %py) {
-	%buf = alloca i192, i32 2
-	%p = bitcast i192* %buf to i$(unit)*
-	call void @mcl_fpDbl_mulPre192(i$(unit)* %p, i$(unit)* %px, i$(unit)* %py)
-	call void @mcl_fpDbl_mod_NIST_P192(i192* %pz, i192* %buf)
-	ret void
-}
-
 ; NIST_P521
 ; p = (1 << 521) - 1
 ; x = [H:L]
