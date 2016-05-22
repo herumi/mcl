@@ -170,6 +170,53 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	/*
+		NIST_P521
+		p = (1 << 521) - 1
+		x = [H:L]
+		x % p = (L + H) % p
+	*/
+	void gen_mcl_fpDbl_mod_NIST_P521()
+	{
+		const uint32_t len = 521;
+		const uint32_t n = len / unit;
+		const uint32_t round = unit * (n + 1);
+		const uint32_t round2 = unit * (n * 2 + 1);
+		const uint32_t rem = len - n * unit;
+		const uint32_t mask = ((1 << unit) - (1 << rem));
+		const Operand py(IntPtr, round);
+		const Operand px(IntPtr, round2);
+		Function f("mcl_fpDbl_mod_NIST_P521", Void, py, px);
+		beginFunc(f);
+		Operand x = load(px);
+		Operand L = trunc(x, len);
+		L = zext(L, round);
+		Operand H = lshr(x, len);
+		H = trunc(H, round); // x = [H:L]
+		Operand t = add(L, H);
+		Operand t0 = lshr(t, len);
+		t0 = _and(t0, makeImm(round, 1));
+		t = add(t, t0);
+		t = trunc(t, len);
+		Operand z0 = zext(t, round);
+		t = extract(z0, n * unit);
+		Operand m = _or(t, makeImm(unit, mask));
+		for (uint32_t i = 0; i < n; i++) {
+			Operand s = extract(z0, unit * i);
+			m = _and(m, s);
+		}
+		Operand c = icmp(eq, m, makeImm(unit, -1));
+		Label zero("zero");
+		Label nonzero("nonzero");
+		br(c, zero, nonzero);
+	putLabel(zero);
+		store(makeImm(round, 0), py);
+		ret(Void);
+	putLabel(nonzero);
+		store(z0, py);
+		ret(Void);
+		endFunc();
+	}
 	void gen_mcl_fp_sqr_NIST_P192()
 	{
 		resetGlobalIdx();
@@ -212,6 +259,7 @@ struct Code : public mcl::Generator {
 		gen_mcl_fpDbl_mod_NIST_P192();
 		gen_mcl_fp_sqr_NIST_P192();
 		gen_mcl_fp_mul_NIST_P192();
+//		gen_mcl_fpDbl_mod_NIST_P521();
 	}
 	Operand extract(const Operand& x, uint32_t shift)
 	{

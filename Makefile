@@ -44,7 +44,7 @@ src/$(CPU).s: src/base$(BIT).ll
 	$(LLVM_OPT) -O3 -o - $< | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
 
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS)
+	$(CXX) -o $@ $< $(CFLAGS) -O0
 
 $(FUNC_LL): $(GEN_EXE)
 	$(GEN_EXE) > $(FUNC_LL)
