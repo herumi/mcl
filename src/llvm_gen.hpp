@@ -496,6 +496,7 @@ inline Generator::Eval Generator::icmp(Generator::CondType type, const Generator
 	e.op.bit = 1;
 	e.s = "icmp ";
 	e.s += toStr(type);
+	e.s += " ";
 	e.s += r1.toStr();
 	e.s += ", ";
 	e.s += r2.getName();
