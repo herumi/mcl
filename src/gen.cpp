@@ -105,6 +105,24 @@ struct Code : public mcl::Generator {
 		ret(p);
 		endFunc();
 	}
+	/*
+		NIST_P192
+		p = 0xfffffffffffffffffffffffffffffffeffffffffffffffff
+		      0                1                2
+		ffffffffffffffff fffffffffffffffe ffffffffffffffff
+
+		p = (1 << 192) - (1 << 64) - 1
+		(1 << 192) % p = (1 << 64) + 1
+		L : 192bit
+		Hi: 64bit
+		x = [H:L] = [H2:H1:H0:L]
+		mod p
+		x = L + H + (H << 64)
+		  = L + H + [H1:H0:0] + H2 + (H2 << 64)
+		[e:t] = L + H + [H1:H0:H2] + [H2:0] ; 2bit(e) over
+		y = t + e + (e << 64)
+		if (y >= p) y -= p
+	*/
 	void gen_mcl_fpDbl_mod_NIST_P192()
 	{
 		resetGlobalIdx();
