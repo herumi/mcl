@@ -72,6 +72,25 @@ struct Generator {
 			return os << (self.type | (self.isPtr ? Ptr : 0));
 		}
 	};
+	enum CondType {
+		eq = 1,
+		neq = 2,
+		ugt = 3,
+		uge = 4,
+		ult = 5,
+		ule = 6,
+		sgt = 7,
+		sge = 8,
+		slt = 9,
+		sle = 10
+	};
+	static inline const std::string& toStr(CondType type)
+	{
+		static const std::string tbl[] = {
+			"eq", "neq", "ugt", "uge", "ult", "ule", "sgt", "sge", "slt", "sle"
+		};
+		return tbl[type - 1];
+	}
 	void open(const std::string& file)
 	{
 		impl::Param<>::f.open(file);
@@ -79,6 +98,15 @@ struct Generator {
 	struct Operand;
 	struct Function;
 	struct Eval;
+	struct Label {
+		std::string name;
+		explicit Label(const std::string& name = "") : name(name) {}
+		std::string toStr() const { return std::string("label %") + name; }
+	};
+	void putLabel(const Label& label)
+	{
+		put(label.name + ":");
+	}
 	static inline int& getGlobalIdx()
 	{
 		static int globalIdx = 0;
@@ -114,6 +142,8 @@ struct Generator {
 	Eval _alloca(uint32_t bit, uint32_t n);
 	// QQQ : type of type must be Type
 	Eval bitcast(const Operand& r, const Operand& type);
+	Eval icmp(CondType type, const Operand& r1, const Operand& r2);
+	void br(const Operand& op, const Label& ifTrue, const Label& ifFalse);
 	Eval call(const Function& f);
 	Eval call(const Function& f, const Operand& op1);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2);
@@ -457,6 +487,31 @@ inline Generator::Eval Generator::bitcast(const Generator::Operand& r, const Gen
 	e.s += " to ";
 	e.s += type.getType();
 	return e;
+}
+
+inline Generator::Eval Generator::icmp(Generator::CondType type, const Generator::Operand& r1, const Generator::Operand& r2)
+{
+	Eval e;
+	e.op.type = Int;
+	e.op.bit = 1;
+	e.s = "icmp ";
+	e.s += toStr(type);
+	e.s += r1.toStr();
+	e.s += ", ";
+	e.s += r2.getName();
+	return e;
+}
+
+inline void Generator::br(const Generator::Operand& op, const Generator::Label& ifTrue, const Generator::Label& ifFalse)
+{
+	if (op.bit != 1) throw cybozu::Exception("Generator:br:bad reg size") << op.bit;
+	std::string s = "br i1";
+	s += op.getName();
+	s += ", ";
+	s += ifTrue.toStr();
+	s += ", ";
+	s += ifFalse.toStr();
+	put(s);
 }
 
 inline Generator::Eval Generator::call(const Generator::Function& f)
