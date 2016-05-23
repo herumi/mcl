@@ -287,9 +287,9 @@ struct Code : public mcl::Generator {
 		Operand y = load(py);
 		Operand z;
 		if (isAdd) {
-			add(x, y);
+			z = add(x, y);
 		} else {
-			sub(x, y);
+			z = sub(x, y);
 		}
 		store(z, pz);
 		ret(Void);
@@ -370,8 +370,10 @@ struct Code : public mcl::Generator {
 	void gen()
 	{
 		gen_once();
-		for (int i = 128; i < 256; i += unit) {
-//			gen_all();
+		uint32_t end = ((576 + unit - 1) / unit) * unit;
+		for (uint32_t i = 64; i <= end; i += unit) {
+			setBit(i);
+			gen_all();
 //			gen_short();
 		}
 	}
