@@ -183,7 +183,7 @@ struct Code : public mcl::Generator {
 		const uint32_t round = unit * (n + 1);
 		const uint32_t round2 = unit * (n * 2 + 1);
 		const uint32_t rem = len - n * unit;
-		const uint32_t mask = ((1 << unit) - (1 << rem));
+		const size_t mask = -(1 << rem);
 		const Operand py(IntPtr, round);
 		const Operand px(IntPtr, round2);
 		Function f("mcl_fpDbl_mod_NIST_P521", Void, py, px);
@@ -259,7 +259,7 @@ struct Code : public mcl::Generator {
 		gen_mcl_fpDbl_mod_NIST_P192();
 		gen_mcl_fp_sqr_NIST_P192();
 		gen_mcl_fp_mul_NIST_P192();
-//		gen_mcl_fpDbl_mod_NIST_P521();
+		gen_mcl_fpDbl_mod_NIST_P521();
 	}
 	Operand extract(const Operand& x, uint32_t shift)
 	{

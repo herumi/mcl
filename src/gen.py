@@ -179,9 +179,6 @@ def main():
 	a = fi.read()
 	fi.close()
 	fo.write(a)
-#	gen(fo, 't.txt', unitL, [unitL * 4])
-#	exit(1)
-	gen(fo, 'once.txt', unitL, [unitL * 2])
 
 	bitLL = range(unitL, 576 + 1, unitL)
 	gen(fo, 'all.txt', unitL, bitLL)
