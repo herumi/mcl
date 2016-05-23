@@ -59,6 +59,17 @@ test/window_method_test.cpp
 sample/vote.cpp
 ```
 
+# References
+* [ate-pairing](https://github.com/herumi/ate-pairing/)
+* [_Faster Explicit Formulas for Computing Pairings over Ordinary Curves_](http://dx.doi.org/10.1007/978-3-642-20465-4_5),
+ D.F. Aranha, K. Karabina, P. Longa, C.H. Gebotys, J. Lopez,
+ EUROCRYPTO 2011, ([preprint](http://eprint.iacr.org/2010/526))
+* [_High-Speed Software Implementation of the Optimal Ate Pairing over Barreto-Naehrig Curves_](http://dx.doi.org/10.1007/978-3-642-17455-1_2),
+   Jean-Luc Beuchat, Jorge Enrique Gonzé√é°lez Dé√é≠az, Shigeo Mitsunari, Eiji Okamoto, Francisco Rodré√é≠guez-Henré√é≠quez, Tadanori Teruya,
+  Pairing 2010, ([preprint](http://eprint.iacr.org/2010/354))
+* [_Faster hashing to G2_](http://dx.doi.org/10.1007/978-3-642-28496-0_25),Laura Fuentes-Castaé√é±eda,  Edward Knapp,  Francisco Rodré√é≠guez-Henré√é≠quez,
+  SAC 2011, ([preprint](https://eprint.iacr.org/2008/530))
+
 # Author
 
 MITSUNARI Shigeo(herumi@nifty.com)
