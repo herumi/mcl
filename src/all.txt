@@ -1,11 +1,3 @@
-declare { i$(bit), i1 } @llvm.usub.with.overflow.i$(bit)(i$(bit) %x, i$(bit) %y)
-
-define i$(unit) @extract$(bit+unit)(i$(bit+unit) %x, i$(bit+unit) %shift) {
-	%t0 = lshr i$(bit+unit) %x, %shift
-	%t1 = trunc i$(bit+unit) %t0 to i$(unit)
-	ret i$(unit) %t1
-}
-
 define void @mcl_fp_addNC$(bit)(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py) {
 	%x = load i$(bit)* %px
 	%y = load i$(bit)* %py
