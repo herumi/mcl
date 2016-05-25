@@ -302,7 +302,7 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, bit);
 		Operand py(IntPtr, bit);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_add" + cybozu::itoa(bit);
+		std::string name = "mcl_fp_add" + cybozu::itoa(bit) + "S";
 		mcl_fp_addM[bit] = Function(name, Void, pz, px, py, pp);
 		beginFunc(mcl_fp_addM[bit]);
 		Operand x = load(px);
@@ -354,7 +354,7 @@ struct Code : public mcl::Generator {
 	void gen_short()
 	{
 		gen_mcl_fp_add();
-		gen_mcl_fp_sub();
+//		gen_mcl_fp_sub();
 	}
 	void setBit(uint32_t bit)
 	{
@@ -374,7 +374,7 @@ struct Code : public mcl::Generator {
 		for (uint32_t i = 64; i <= end; i += unit) {
 			setBit(i);
 			gen_all();
-//			gen_short();
+			gen_short();
 		}
 	}
 };
