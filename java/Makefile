@@ -10,7 +10,7 @@ else
   LDFLAGS+=-lrt
 endif
 CFLAGS+= -shared $(JAVA_INC) -I ../include -I ../../xbyak -I ../../cybozulib/include -Wno-strict-aliasing
-LDFLAGS+=../lib/libmcl.a
+MCL_LIB=../lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl
 PACKAGE_DIR=$(subst .,/,$(PACKAGE_NAME))
@@ -23,8 +23,11 @@ mcl_if_wrap.cxx: mcl_if.i mcl_if.hpp
 	$(MKDIR) $(PACKAGE_DIR)
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl_if.i
 
-$(TARGET): mcl_if_wrap.cxx
-	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS)
+$(MCL_LIB):
+	make -C ..
+
+$(TARGET): mcl_if_wrap.cxx $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) $(MCL_LIB)
 
 
 %.class: %.java

@@ -24,7 +24,7 @@ FUNC_LL=src/generated.ll
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
-LLVM_FLAGS=-march=$(CPU)
+LLVM_FLAGS=-march=$(CPU) -relocation-model=pic
 
 HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
 ifeq ($(HAS_BMI2),1)
