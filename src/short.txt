@@ -1,19 +1,3 @@
-define void @mcl_fp_sub$(bit)S(i$(bit)* %pz, i$(bit)* %px, i$(bit)* %py, i$(bit)* %pp) {
-	%x = load i$(bit)* %px
-	%y = load i$(bit)* %py
-	%x1 = zext i$(bit) %x to i$(bit+unit)
-	%y1 = zext i$(bit) %y to i$(bit+unit)
-	%vc = sub i$(bit+unit) %x1, %y1
-	%v = trunc i$(bit+unit) %vc to i$(bit)
-	%c = lshr i$(bit+unit) %vc, $(bit+unit-1)
-	%c1 = trunc i$(bit+unit) %c to i1
-	%p = load i$(bit)* %pp
-	%a = select i1 %c1, i$(bit) %p, i$(bit) 0
-	%v1 = add i$(bit) %v, %a
-	store i$(bit) %v1, i$(bit)* %pz
-	ret void
-}
-
 @define bu = bit + unit
 @define b2 = bit * 2
 @define b2u = b2 + unit
