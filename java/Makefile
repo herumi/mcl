@@ -20,6 +20,7 @@ JAVA_EXE=cd ../bin && LD_LIBRARY_PATH=./:$(LD_LIBRARY_PATH) java -classpath ../j
 all: $(TARGET)
 
 mcl_if_wrap.cxx: mcl_if.i mcl_if.hpp
+	$(MKDIR) $(PACKAGE_DIR)
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl_if.i
 
 $(TARGET): mcl_if_wrap.cxx

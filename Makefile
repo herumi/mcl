@@ -1,4 +1,5 @@
 include common.mk
+LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 
@@ -10,7 +11,7 @@ endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp
 
 ##################################################################
-MCL_LIB=lib/libmcl.a
+MCL_LIB=$(LIB_DIR)/libmcl.a
 all: $(MCL_LIB)
 
 ASM_SRC_TXT=long.txt short.txt mul.txt
@@ -31,6 +32,7 @@ ifeq ($(HAS_BMI2),1)
 endif
 
 $(MCL_LIB): $(LIB_OBJ) $(GEN_EXE)
+	$(MKDIR) $(LIB_DIR)
 	$(AR) $@ $(LIB_OBJ)
 
 $(OBJ_DIR)/$(CPU).o: src/$(CPU).s
