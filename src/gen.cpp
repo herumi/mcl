@@ -321,6 +321,39 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	void gen_mcl_fp_addL()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, bit);
+		Operand px(IntPtr, bit);
+		Operand py(IntPtr, bit);
+		Operand pp(IntPtr, bit);
+		std::string name = "mcl_fp_add" + cybozu::itoa(bit) + "L";
+		mcl_fp_addM[bit] = Function(name, Void, pz, px, py, pp);
+		beginFunc(mcl_fp_addM[bit]);
+		Operand x = load(px);
+		Operand y = load(py);
+		Operand p = load(pp);
+		x = zext(x, bit + unit);
+		y = zext(y, bit + unit);
+		p = zext(p, bit + unit);
+		Operand t0 = add(x, y);
+		Operand t1 = trunc(t0, bit);
+		store(t1, pz);
+		Operand vc = sub(t0, p);
+		Operand c = lshr(vc, bit + unit - 1);
+		c = trunc(c, 1);
+	Label carry("carry");
+	Label nocarry("nocarry");
+		br(c, carry, nocarry);
+	putLabel(nocarry);
+		Operand v = trunc(vc, bit);
+		store(v, pz);
+		ret(Void);
+	putLabel(carry);
+		ret(Void);
+		endFunc();
+	}
 	void gen_mcl_fp_subS()
 	{
 		resetGlobalIdx();
@@ -427,6 +460,10 @@ struct Code : public mcl::Generator {
 		gen_mcl_fpDbl_add();
 		gen_mcl_fpDbl_sub();
 	}
+	void gen_long()
+	{
+		gen_mcl_fp_addL();
+	}
 	void setBit(uint32_t bit)
 	{
 		this->bit = bit;
@@ -446,6 +483,7 @@ struct Code : public mcl::Generator {
 			setBit(i);
 			gen_all();
 			gen_short();
+			gen_long();
 		}
 	}
 };
