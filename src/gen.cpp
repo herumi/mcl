@@ -348,6 +348,7 @@ struct Code : public mcl::Generator {
 	}
 	void gen_mcl_fpDbl_add()
 	{
+		// QQQ : generate unnecessary memory copy for large bit
 		const int bu = bit + unit;
 		const int b2 = bit * 2;
 		const int b2u = b2 + unit;
@@ -381,6 +382,39 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	void gen_mcl_fpDbl_sub()
+	{
+		// QQQ : rol is used?
+		const int b2 = bit * 2;
+		const int b2u = b2 + unit;
+		resetGlobalIdx();
+		Operand pz(IntPtr, bit);
+		Operand px(IntPtr, b2);
+		Operand py(IntPtr, b2);
+		Operand pp(IntPtr, bit);
+		std::string name = "mcl_fpDbl_sub" + cybozu::itoa(bit);
+		Function f(name, Void, pz, px, py, pp);
+		beginFunc(f);
+		Operand x = load(px);
+		Operand y = load(py);
+		x = zext(x, b2u);
+		y = zext(y, b2u);
+		Operand vc = sub(x, y); // x - y = [H:L]
+		Operand L = trunc(vc, bit);
+		store(L, pz);
+
+		Operand H = lshr(vc, bit);
+		H = trunc(H, bit);
+		Operand c = lshr(vc, b2u - 1);
+		c = trunc(c, 1);
+		Operand p = load(pp);
+		c = select(c, p, makeImm(bit, 0));
+		Operand t = add(H, c);
+		pz = getelementptr(pz, makeImm(32, 1));
+		store(t, pz);
+		ret(Void);
+		endFunc();
+	}
 	void gen_all()
 	{
 		gen_mcl_fp_addsubNC(true);
@@ -391,6 +425,7 @@ struct Code : public mcl::Generator {
 		gen_mcl_fp_add();
 		gen_mcl_fp_sub();
 		gen_mcl_fpDbl_add();
+		gen_mcl_fpDbl_sub();
 	}
 	void setBit(uint32_t bit)
 	{
