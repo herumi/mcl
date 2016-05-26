@@ -295,7 +295,7 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_add()
+	void gen_mcl_fp_addS()
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, bit);
@@ -321,7 +321,7 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_sub()
+	void gen_mcl_fp_subS()
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, bit);
@@ -422,8 +422,8 @@ struct Code : public mcl::Generator {
 	}
 	void gen_short()
 	{
-		gen_mcl_fp_add();
-		gen_mcl_fp_sub();
+		gen_mcl_fp_addS();
+		gen_mcl_fp_subS();
 		gen_mcl_fpDbl_add();
 		gen_mcl_fpDbl_sub();
 	}
