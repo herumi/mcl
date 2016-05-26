@@ -181,7 +181,6 @@ def main():
 	fo.write(a)
 
 	bitLL = range(unitL, 576 + 1, unitL)
-	gen(fo, 'long.txt', unitL, bitLL)
 	gen(fo, 'mul.txt', unitL, bitLL[1:])
 	fo.close()
 

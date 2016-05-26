@@ -14,7 +14,7 @@ SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp
 MCL_LIB=$(LIB_DIR)/libmcl.a
 all: $(MCL_LIB)
 
-ASM_SRC_TXT=long.txt mul.txt
+ASM_SRC_TXT=mul.txt
 LIB_OBJ=$(OBJ_DIR)/$(CPU).o $(OBJ_DIR)/fp.o
 LLVM_VER=-3.6
 LLVM_LLC=llc$(LLVM_VER)

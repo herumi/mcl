@@ -379,6 +379,37 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	void gen_mcl_fp_subL()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, bit);
+		Operand px(IntPtr, bit);
+		Operand py(IntPtr, bit);
+		Operand pp(IntPtr, bit);
+		std::string name = "mcl_fp_sub" + cybozu::itoa(bit) + "L";
+		mcl_fp_subM[bit] = Function(name, Void, pz, px, py, pp);
+		beginFunc(mcl_fp_subM[bit]);
+		Operand x = load(px);
+		Operand y = load(py);
+		x = zext(x, bit + unit);
+		y = zext(y, bit + unit);
+		Operand vc = sub(x, y);
+		Operand v = trunc(vc, bit);
+		Operand c = lshr(vc, bit + unit - 1);
+		c = trunc(c, 1);
+		store(v, pz);
+	Label carry("carry");
+	Label nocarry("nocarry");
+		br(c, carry, nocarry);
+	putLabel(nocarry);
+		ret(Void);
+	putLabel(carry);
+		Operand p = load(pp);
+		Operand t = add(v, p);
+		store(t, pz);
+		ret(Void);
+		endFunc();
+	}
 	void gen_mcl_fpDbl_add()
 	{
 		// QQQ : generate unnecessary memory copy for large bit
@@ -463,6 +494,7 @@ struct Code : public mcl::Generator {
 	void gen_long()
 	{
 		gen_mcl_fp_addL();
+		gen_mcl_fp_subL();
 	}
 	void setBit(uint32_t bit)
 	{
