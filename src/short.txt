@@ -1,30 +1,6 @@
 @define bu = bit + unit
 @define b2 = bit * 2
 @define b2u = b2 + unit
-define void @mcl_fpDbl_add$(bit)(i$(bit)* %pz, i$(b2)* %px, i$(b2)* %py, i$(bit)* %pp) {
-entry:
-	%x = load i$(b2)* %px
-	%y = load i$(b2)* %py
-	%x1 = zext i$(b2) %x to i$(b2u)
-	%y1 = zext i$(b2) %y to i$(b2u)
-	%t0 = add i$(b2u) %x1, %y1 ; x + y = [H:L]
-	%t1 = trunc i$(b2u) %t0 to i$(bit) ; t1 = L
-	store i$(bit) %t1, i$(bit)* %pz ; store L
-
-	%t2 = lshr i$(b2u) %t0, $(bit)
-	%H = trunc i$(b2u) %t2 to i$(bu)
-
-	%p = load i$(bit)* %pp
-	%p1 = zext i$(bit) %p to i$(bu)
-	%Hp = sub i$(bu) %H, %p1 ; H - p
-	%t3 = lshr i$(bu) %Hp, $(bit)
-	%t4 = trunc i$(bu) %t3 to i1
-	%t5 = select i1 %t4, i$(bu) %H, i$(bu) %Hp
-	%t6 = trunc i$(bu) %t5 to i$(bit)
-	%pz1 = getelementptr i$(bit)* %pz, i32 1
-	store i$(bit) %t6, i$(bit)* %pz1
-	ret void
-}
 
 define void @mcl_fpDbl_sub$(bit)(i$(bit)* %pz, i$(b2)* %px, i$(b2)* %py, i$(bit)* %pp) {
 	%x = load i$(b2)* %px

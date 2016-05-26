@@ -346,6 +346,41 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	void gen_mcl_fpDbl_add()
+	{
+		const int bu = bit + unit;
+		const int b2 = bit * 2;
+		const int b2u = b2 + unit;
+		resetGlobalIdx();
+		Operand pz(IntPtr, bit);
+		Operand px(IntPtr, b2);
+		Operand py(IntPtr, b2);
+		Operand pp(IntPtr, bit);
+		std::string name = "mcl_fpDbl_add" + cybozu::itoa(bit);
+		Function f(name, Void, pz, px, py, pp);
+		beginFunc(f);
+		Operand x = load(px);
+		Operand y = load(py);
+		x = zext(x, b2u);
+		y = zext(y, b2u);
+		Operand t = add(x, y); // x + y = [H:L]
+		Operand L = trunc(t, bit);
+		store(L, pz);
+
+		Operand H = lshr(t, bit);
+		H = trunc(H, bu);
+		Operand p = load(pp);
+		p = zext(p, bu);
+		Operand Hp = sub(H, p);
+		t = lshr(Hp, bit);
+		t = trunc(t, 1);
+		t = select(t, H, Hp);
+		t = trunc(t, bit);
+		pz = getelementptr(pz, makeImm(32, 1));
+		store(t, pz);
+		ret(Void);
+		endFunc();
+	}
 	void gen_all()
 	{
 		gen_mcl_fp_addsubNC(true);
@@ -355,6 +390,7 @@ struct Code : public mcl::Generator {
 	{
 		gen_mcl_fp_add();
 		gen_mcl_fp_sub();
+		gen_mcl_fpDbl_add();
 	}
 	void setBit(uint32_t bit)
 	{
