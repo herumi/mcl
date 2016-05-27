@@ -178,6 +178,7 @@ struct Code : public mcl::Generator {
 	*/
 	void gen_mcl_fpDbl_mod_NIST_P521()
 	{
+		resetGlobalIdx();
 		const uint32_t len = 521;
 		const uint32_t n = len / unit;
 		const uint32_t round = unit * (n + 1);
