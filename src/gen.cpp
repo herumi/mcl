@@ -4,6 +4,7 @@
 
 struct Code : public mcl::Generator {
 	typedef std::map<int, Function> FunctionMap;
+	typedef std::vector<Operand> OperandVec;
 	Operand Void;
 	uint32_t unit;
 	uint32_t unit2;
@@ -20,6 +21,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_subNCM;
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
+	FunctionMap mulPvM;
 	Code() : unit(0), unit2(0), bit(0), N(0) { }
 
 	void gen_mulUU()
@@ -480,6 +482,52 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	/*
+		return [px[n-1]:px[n-2]:...:px[0]]
+	*/
+	Operand pack(const Operand *px, size_t n)
+	{
+		Operand x = px[0];
+		for (size_t i = 1; i < n; i++) {
+			Operand y = px[i];
+			size_t shift = x.bit;
+			size_t size = x.bit + y.bit;
+			x = zext(x, size);
+			y = zext(y, size);
+			y = shl(y, shift);
+			x = _or(x, y);
+		}
+		return x;
+	}
+	/*
+		z = px[0..N] * y
+	*/
+	void gen_mulPv()
+	{
+		const int bu = bit + unit;
+		const int u2 = unit * 2;
+		resetGlobalIdx();
+		Operand z(Int, bu);
+		Operand px(IntPtr, unit);
+		Operand y(Int, unit);
+		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit);
+		mulPvM[bit] = Function(name, z, px, y);
+		beginFunc(mulPvM[bit]);
+		OperandVec L(N), H(N);
+		for (uint32_t i = 0; i < N; i++) {
+			Operand xy = call(mulPos, px, y, makeImm(unit, i));
+			L[i] = trunc(xy, unit);
+			H[i] = call(extractHigh, xy);
+		}
+		Operand LL = pack(&L[0], N);
+		Operand HH = pack(&H[0], N);
+		LL = zext(LL, bu);
+		HH = zext(HH, bu);
+		HH = shl(HH, unit);
+		z = add(LL, HH);
+		ret(z);
+		endFunc();
+	}
 	void gen_all()
 	{
 		gen_mcl_fp_addsubNC(true);
@@ -496,6 +544,10 @@ struct Code : public mcl::Generator {
 	{
 		gen_mcl_fp_addL();
 		gen_mcl_fp_subL();
+	}
+	void gen_mul()
+	{
+		gen_mulPv();
 	}
 	void setBit(uint32_t bit)
 	{
@@ -517,6 +569,9 @@ struct Code : public mcl::Generator {
 			gen_all();
 			gen_short();
 			gen_long();
+			if (i > 64) {
+				gen_mul();
+			}
 		}
 	}
 };

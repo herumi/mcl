@@ -1,47 +1,5 @@
 @define bu = bit + unit
 @define u2 = unit*2
-define i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %px, i$(unit) %y)
-{
-@for i, 0, N
-	%x$(i)y = call i$(u2) @mulPos$(unit)x$(unit)(i$(unit) *%px, i$(unit) %y, i$(unit) $(i))
-	%L$(i) = trunc i$(u2) %x$(i)y to i$(unit)
-	%H$(i) = call i$(unit) @extractHigh$(unit)(i$(u2) %x$(i)y)
-@endfor
-
-@for i, 1, N
-	%L$(i)e = zext i$(unit) %L$(i) to i$(bit)
-@if i > 1
-	%L$(i)es = shl i$(bit) %L$(i)e, $(unit * i - unit)
-@endif
-@endfor
-@if N > 2
-	%Lt1 = or i$(bit) %L1e, %L2es
-@endif
-@for i, 1, N - 2
-	%Lt$(i+1) = or i$(bit) %Lt$(i), %L$(i+2)es
-@endfor
-
-	%H0e = zext i$(unit) %H0 to i$(bit)
-@for i, 1, N
-	%H$(i)e = zext i$(unit) %H$(i) to i$(bit)
-	%H$(i)es = shl i$(bit) %H$(i)e, $(unit * i)
-@endfor
-	%Ht1 = or i$(bit) %H0e, %H1es
-@for i, 2, N
-	%Ht$(i) = or i$(bit) %Ht$(i-1), %H$(i)es
-@endfor
-@if N == 2
-	%t = add i$(bit) %Ht$(N-1), %L1e
-@else
-	%t = add i$(bit) %Ht$(N-1), %Lt$(N-2)
-@endif
-
-	%t1 = zext i$(bit) %t to i$(bu)
-	%t2 = shl i$(bu) %t1, $(unit)
-	%t3 = zext i$(unit) %L0 to i$(bu)
-	%t4 = or i$(bu) %t2, %t3
-	ret i$(bu) %t4
-}
 
 @define u2 = unit*2
 define void @mcl_fp_mul_UnitPre$(bit)(i$(bu) *%pz, i$(unit) *%px, i$(unit) %y)
