@@ -2,12 +2,6 @@
 @define u2 = unit*2
 
 @define u2 = unit*2
-define void @mcl_fp_mul_UnitPre$(bit)(i$(bu) *%pz, i$(unit) *%px, i$(unit) %y)
-{
-  %z = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %px, i$(unit) %y)
-  store i$(bu) %z, i$(bu) *%pz
-  ret void
-}
 
 define void @mcl_fpDbl_mulPre$(bit)(i$(unit)* %pz, i$(unit)* %px, i$(unit)* %py) {
   %y0 = load i$(unit)* %py

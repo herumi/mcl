@@ -22,6 +22,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
+	FunctionMap mcl_fp_mul_UnitPreM;
 	Code() : unit(0), unit2(0), bit(0), N(0) { }
 
 	void gen_mulUU()
@@ -505,7 +506,6 @@ struct Code : public mcl::Generator {
 	void gen_mulPv()
 	{
 		const int bu = bit + unit;
-		const int u2 = unit * 2;
 		resetGlobalIdx();
 		Operand z(Int, bu);
 		Operand px(IntPtr, unit);
@@ -528,6 +528,21 @@ struct Code : public mcl::Generator {
 		ret(z);
 		endFunc();
 	}
+	void gen_mcl_fp_mul_UnitPre()
+	{
+		const int bu = bit + unit;
+		resetGlobalIdx();
+		Operand pz(IntPtr, bu);
+		Operand px(IntPtr, unit);
+		Operand y(Int, unit);
+		std::string name = "mcl_fp_mul_UnitPre" + cybozu::itoa(bit);
+		mcl_fp_mul_UnitPreM[bit] = Function(name, Void, pz, px, y);
+		beginFunc(mcl_fp_mul_UnitPreM[bit]);
+		Operand z = call(mulPvM[bit], px, y);
+		store(z, pz);
+		ret(Void);
+		endFunc();
+	}
 	void gen_all()
 	{
 		gen_mcl_fp_addsubNC(true);
@@ -548,6 +563,7 @@ struct Code : public mcl::Generator {
 	void gen_mul()
 	{
 		gen_mulPv();
+		gen_mcl_fp_mul_UnitPre();
 	}
 	void setBit(uint32_t bit)
 	{
