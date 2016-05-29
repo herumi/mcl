@@ -1,4 +1,0 @@
-@define bu = bit + unit
-
-@define bu = bit + unit
-@define bu2 = bit + unit * 2
