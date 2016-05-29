@@ -25,6 +25,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_mul_UnitPreM;
 	FunctionMap mcl_fpDbl_mulPreM;
 	FunctionMap mcl_fpDbl_sqrPreM;
+	FunctionMap mcl_fp_montRedM;
 	Code() : unit(0), unit2(0), bit(0), N(0) { }
 
 	void gen_mulUU()
@@ -592,6 +593,41 @@ struct Code : public mcl::Generator {
 		generic_fpDbl_mul(py, px, px);
 		endFunc();
 	}
+	void gen_mcl_fp_montRed()
+	{
+		const int bu = bit + unit;
+		const int b2 = bit * 2;
+		const int b2u = b2 + unit;
+		resetGlobalIdx();
+		Operand pz(IntPtr, bit);
+		Operand pxy(IntPtr, b2);
+		Operand pp(IntPtr, unit);
+		Operand r(Int, unit);
+		std::string name = "mcl_fp_montRed" + cybozu::itoa(bit);
+		mcl_fp_montRedM[bit] = Function(name, Void, pz, pxy, pp, r);
+		beginFunc(mcl_fp_montRedM[bit]);
+		Operand p = load(bitcast(pp, Operand(IntPtr, bit)));
+		Operand xy = load(pxy);
+		Operand t = zext(xy, b2 + unit);
+		Operand z;
+		for (uint32_t i = 0; i < N; i++) {
+			Operand z = trunc(t, unit);
+			Operand q = mul(z, r);
+			Operand pq = call(mulPvM[bit], pp, q);
+			pq = zext(pq, b2u - unit * i);
+			z = add(t, pq);
+			z = lshr(z, unit);
+			t = trunc(z, b2 - unit * i);
+		}
+		p = zext(p, bu);
+		Operand vc = sub(t, p);
+		Operand c = trunc(lshr(vc, bit), 1);
+		z = select(c, t, vc);
+		z = trunc(z, bit);
+		store(z, pz);
+		ret(Void);
+		endFunc();
+	}
 	void gen_all()
 	{
 		gen_mcl_fp_addsubNC(true);
@@ -615,6 +651,7 @@ struct Code : public mcl::Generator {
 		gen_mcl_fp_mul_UnitPre();
 		gen_mcl_fpDbl_mulPre();
 		gen_mcl_fpDbl_sqrPre();
+		gen_mcl_fp_montRed();
 	}
 	void setBit(uint32_t bit)
 	{
