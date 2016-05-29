@@ -149,6 +149,7 @@ struct Generator {
 	Eval call(const Function& f, const Operand& op1, const Operand& op2);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3);
 	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4);
+	Eval call(const Function& f, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4, const Operand& op5);
 
 	Operand makeImm(uint32_t bit, int64_t imm);
 };
@@ -289,6 +290,14 @@ struct Generator::Function {
 			opv.push_back(op2);
 			opv.push_back(op3);
 			opv.push_back(op4);
+	}
+	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4, const Operand& op5)
+		: name(name), ret(ret), isPrivate(false) {
+			opv.push_back(op1);
+			opv.push_back(op2);
+			opv.push_back(op3);
+			opv.push_back(op4);
+			opv.push_back(op5);
 	}
 	void setPrivate()
 	{
@@ -541,6 +550,12 @@ inline Generator::Eval Generator::call(const Generator::Function& f, const Gener
 inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1, const Generator::Operand& op2, const Generator::Operand& op3, const Generator::Operand& op4)
 {
 	const Operand *tbl[] = { &op1, &op2, &op3, &op4 };
+	return impl::callSub(f, tbl, CYBOZU_NUM_OF_ARRAY(tbl));
+}
+
+inline Generator::Eval Generator::call(const Generator::Function& f, const Generator::Operand& op1, const Generator::Operand& op2, const Generator::Operand& op3, const Generator::Operand& op4, const Generator::Operand& opt5)
+{
+	const Operand *tbl[] = { &op1, &op2, &op3, &op4, &opt5 };
 	return impl::callSub(f, tbl, CYBOZU_NUM_OF_ARRAY(tbl));
 }
 
