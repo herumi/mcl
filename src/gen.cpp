@@ -545,7 +545,7 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void generic_fpDbl_mul(Operand& pz, Operand& px, Operand& py)
+	void generic_fpDbl_mul(Operand pz, const Operand& px, Operand py)
 	{
 		const int bu = bit + unit;
 		Operand y = load(py);
@@ -614,7 +614,7 @@ struct Code : public mcl::Generator {
 		gen_mulPv();
 		gen_mcl_fp_mul_UnitPre();
 		gen_mcl_fpDbl_mulPre();
-//		gen_mcl_fpDbl_sqrPre();
+		gen_mcl_fpDbl_sqrPre();
 	}
 	void setBit(uint32_t bit)
 	{
