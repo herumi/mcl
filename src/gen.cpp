@@ -614,7 +614,7 @@ struct Code : public mcl::Generator {
 		gen_mulPv();
 		gen_mcl_fp_mul_UnitPre();
 		gen_mcl_fpDbl_mulPre();
-		gen_mcl_fpDbl_sqrPre();
+//		gen_mcl_fpDbl_sqrPre();
 	}
 	void setBit(uint32_t bit)
 	{
