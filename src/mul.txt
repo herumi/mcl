@@ -1,33 +1,4 @@
 @define bu = bit + unit
-@define u2 = unit*2
-
-@define u2 = unit*2
-
-define void @mcl_fpDbl_mulPre$(bit)(i$(unit)* %pz, i$(unit)* %px, i$(unit)* %py) {
-  %y0 = load i$(unit)* %py
-  %xy0 = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit) *%px, i$(unit) %y0)
-  %z0 = trunc i$(bu) %xy0 to i$(unit)
-  store i$(unit) %z0, i$(unit)* %pz
-  %t0 = lshr i$(bu) %xy0, $(unit)
-
-@for i, 1, N
-  %py$(i) = getelementptr i$(unit)* %py, i32 $(i)
-  %y$(i) = load i$(unit)* %py$(i)
-  %xy$(i) = call i$(bu) @mulPv$(bit)x$(unit)(i$(unit)* %px, i$(unit) %y$(i))
-  %a$(i) = add i$(bu) %t$(i-1), %xy$(i)
-  %z$(i) = trunc i$(bu) %a$(i) to i$(unit)
-  %pz$(i) = getelementptr i$(unit)* %pz, i32 $(i)
-  @if i < N - 1
-    store i$(unit) %z$(i), i$(unit)* %pz$(i)
-    %t$(i) = lshr i$(bu) %a$(i), $(unit)
-  @endif
-@endfor
-
-  %pz$(N-1)e = bitcast i$(unit)* %pz$(N-1) to i$(bu)*
-  store i$(bu) %a$(N-1), i$(bu)* %pz$(N-1)e
-
-  ret void
-}
 
 define void @mcl_fpDbl_sqrPre$(bit)(i$(unit)* %py, i$(unit)* %px) {
   %x0 = load i$(unit)* %px

@@ -23,6 +23,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
 	FunctionMap mcl_fp_mul_UnitPreM;
+	FunctionMap mcl_fpDbl_mulPreM;
 	Code() : unit(0), unit2(0), bit(0), N(0) { }
 
 	void gen_mulUU()
@@ -543,6 +544,38 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	void gen_mcl_fpDbl_mulPre()
+	{
+		const int bu = bit + unit;
+		resetGlobalIdx();
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		std::string name = "mcl_fpDbl_mulPre" + cybozu::itoa(bit);
+		mcl_fpDbl_mulPreM[bit] = Function(name, Void, pz, px, py);
+		beginFunc(mcl_fpDbl_mulPreM[bit]);
+		Operand y = load(py);
+		Operand xy = call(mulPvM[bit], px, y);
+		store(trunc(xy, unit), pz);
+		Operand t = lshr(xy, unit);
+		Operand z;
+		for (uint32_t i = 1; i < N; i++) {
+			py = getelementptr(py, makeImm(32, 1));
+			y = load(py);
+			xy = call(mulPvM[bit], px, y);
+			t = add(t, xy);
+			z = trunc(t, unit);
+			pz = getelementptr(pz, makeImm(32, 1));
+			if (i < N - 1) {
+				store(z, pz);
+				t = lshr(t, unit);
+			}
+		}
+		pz = bitcast(pz, Operand(IntPtr, bu));
+		store(t, pz);
+		ret(Void);
+		endFunc();
+	}
 	void gen_all()
 	{
 		gen_mcl_fp_addsubNC(true);
@@ -564,6 +597,7 @@ struct Code : public mcl::Generator {
 	{
 		gen_mulPv();
 		gen_mcl_fp_mul_UnitPre();
+		gen_mcl_fpDbl_mulPre();
 	}
 	void setBit(uint32_t bit)
 	{
