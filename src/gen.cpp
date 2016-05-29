@@ -24,6 +24,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mulPvM;
 	FunctionMap mcl_fp_mul_UnitPreM;
 	FunctionMap mcl_fpDbl_mulPreM;
+	FunctionMap mcl_fpDbl_sqrPreM;
 	Code() : unit(0), unit2(0), bit(0), N(0) { }
 
 	void gen_mulUU()
@@ -544,16 +545,9 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fpDbl_mulPre()
+	void generic_fpDbl_mul(Operand& pz, Operand& px, Operand& py)
 	{
 		const int bu = bit + unit;
-		resetGlobalIdx();
-		Operand pz(IntPtr, unit);
-		Operand px(IntPtr, unit);
-		Operand py(IntPtr, unit);
-		std::string name = "mcl_fpDbl_mulPre" + cybozu::itoa(bit);
-		mcl_fpDbl_mulPreM[bit] = Function(name, Void, pz, px, py);
-		beginFunc(mcl_fpDbl_mulPreM[bit]);
 		Operand y = load(py);
 		Operand xy = call(mulPvM[bit], px, y);
 		store(trunc(xy, unit), pz);
@@ -574,6 +568,28 @@ struct Code : public mcl::Generator {
 		pz = bitcast(pz, Operand(IntPtr, bu));
 		store(t, pz);
 		ret(Void);
+	}
+	void gen_mcl_fpDbl_mulPre()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		std::string name = "mcl_fpDbl_mulPre" + cybozu::itoa(bit);
+		mcl_fpDbl_mulPreM[bit] = Function(name, Void, pz, px, py);
+		beginFunc(mcl_fpDbl_mulPreM[bit]);
+		generic_fpDbl_mul(pz, px, py);
+		endFunc();
+	}
+	void gen_mcl_fpDbl_sqrPre()
+	{
+		resetGlobalIdx();
+		Operand py(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		std::string name = "mcl_fpDbl_sqrPre" + cybozu::itoa(bit);
+		mcl_fpDbl_sqrPreM[bit] = Function(name, Void, py, px);
+		beginFunc(mcl_fpDbl_sqrPreM[bit]);
+		generic_fpDbl_mul(py, px, px);
 		endFunc();
 	}
 	void gen_all()
@@ -598,6 +614,7 @@ struct Code : public mcl::Generator {
 		gen_mulPv();
 		gen_mcl_fp_mul_UnitPre();
 		gen_mcl_fpDbl_mulPre();
+		gen_mcl_fpDbl_sqrPre();
 	}
 	void setBit(uint32_t bit)
 	{
