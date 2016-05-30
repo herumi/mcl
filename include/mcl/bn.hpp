@@ -702,7 +702,7 @@ struct BNT {
 #endif
 		exp_d1(y, y);
 	}
-	static void optimalAtePairing(Fp12& f, const G2& Q, const G1& P)
+	static void pairing(Fp12& f, const G2& Q, const G1& P)
 	{
 		P.normalize();
 		Q.normalize();

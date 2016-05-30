@@ -72,7 +72,7 @@ CYBOZU_TEST_AUTO(naive)
 	G1 P(ts.g1.a, ts.g1.b);
 	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 	Fp12 e1;
-	BN::optimalAtePairing(e1, Q, P);
+	BN::pairing(e1, Q, P);
 	Fp12 e2;
 	{
 		std::stringstream ss(ts.e);
@@ -87,6 +87,6 @@ CYBOZU_TEST_AUTO(naive)
 		miller loop : 700Kclk
 		final exp   : 460Kclk
 	*/
-	CYBOZU_BENCH("pairing", BN::optimalAtePairing, e1, Q, P); // 2.4Mclk
+	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 }

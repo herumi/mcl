@@ -25,10 +25,10 @@ void minimum_sample()
 	const mpz_class a = 123;
 	const mpz_class b = 456;
 	Fp12 e1, e2;
-	BN::optimalAtePairing(e1, Q, P);
+	BN::pairing(e1, Q, P);
 	G2::mul(Q, Q, a);
 	G1::mul(P, P, b);
-	BN::optimalAtePairing(e2, Q, P);
+	BN::pairing(e2, Q, P);
 	Fp12::pow(e1, e1, a * b);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
