@@ -204,7 +204,7 @@ struct BNT {
 	typedef mcl::EcT<Fp2> G2;
 	typedef ParamT<Fp> Param;
 	static Param param;
-	static void init(const mcl::bn::CurveParam& cp, fp::Mode mode = fp::FP_AUTO)
+	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		param.init(cp, mode);
 	}
