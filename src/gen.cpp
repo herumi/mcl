@@ -547,28 +547,28 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void generic_fpDbl_mul(Operand pz, const Operand& px, Operand py)
+	void generic_fpDbl_mul(const Operand& pz, const Operand& px, const Operand& py)
 	{
 		const int bu = bit + unit;
 		Operand y = load(py);
 		Operand xy = call(mulPvM[bit], px, y);
 		store(trunc(xy, unit), pz);
 		Operand t = lshr(xy, unit);
-		Operand z;
+		Operand z, pzi;
 		for (uint32_t i = 1; i < N; i++) {
-			py = getelementptr(py, makeImm(32, 1));
-			y = load(py);
+			Operand pyi = getelementptr(py, makeImm(32, i));
+			y = load(pyi);
 			xy = call(mulPvM[bit], px, y);
 			t = add(t, xy);
 			z = trunc(t, unit);
-			pz = getelementptr(pz, makeImm(32, 1));
+			pzi = getelementptr(pz, makeImm(32, i));
 			if (i < N - 1) {
-				store(z, pz);
+				store(z, pzi);
 				t = lshr(t, unit);
 			}
 		}
-		pz = bitcast(pz, Operand(IntPtr, bu));
-		store(t, pz);
+		pzi = bitcast(pzi, Operand(IntPtr, bu));
+		store(t, pzi);
 		ret(Void);
 	}
 	void gen_mcl_fpDbl_mulPre()
