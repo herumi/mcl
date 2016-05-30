@@ -1,5 +1,3 @@
-#include <cybozu/benchmark.hpp>
-#include <cybozu/option.hpp>
 #include <mcl/bn.hpp>
 
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
