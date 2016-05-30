@@ -2,10 +2,7 @@
 #include <cybozu/benchmark.hpp>
 //cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
-#include <mcl/gmp_util.hpp>
 #include <mcl/bn.hpp>
-#include <mcl/ec.hpp>
-
 
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::bn::BNT<Fp> BN;
@@ -14,8 +11,6 @@ typedef BN::Fp6 Fp6;
 typedef BN::Fp12 Fp12;
 typedef BN::G1 G1;
 typedef BN::G2 G2;
-
-typedef mcl::bn::ParamT<Fp> Param;
 
 const struct TestSet {
 	mcl::bn::CurveParam cp;
