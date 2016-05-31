@@ -9,20 +9,9 @@ typedef mcl::FpT<> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
 typedef mcl::EcT<Fp> Ec;
 
-const char *getModeStr(mcl::fp::Mode mode)
-{
-	switch (mode) {
-	case mcl::fp::FP_AUTO: return "auto";
-	case mcl::fp::FP_GMP: return "gmp";
-	case mcl::fp::FP_LLVM: return "llvm";
-	case mcl::fp::FP_LLVM_MONT: return "llvm+mont";
-	case mcl::fp::FP_XBYAK: return "xbyak";
-	default: throw cybozu::Exception("benchFpSub:bad mode") << mode;
-	}
-}
 void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
 {
-	const char *s = getModeStr(mode);
+	const char *s = mcl::fp::ModeToStr(mode);
 	Fp::init(pStr, mode);
 	Fp x(xStr);
 	Fp y(yStr);
@@ -102,7 +91,7 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMo
 	cybozu::XorShift rg;
 	z.setRand(rg);
 	CYBOZU_BENCH_T(mulRandT, Ec::mul, P, P, z);
-	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul(-3) %8.2f mul(rand) %8.2f\n", para.name, getModeStr(mode), addT, subT, dblT, mulT, mulRandT);
+	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul(-3) %8.2f mul(rand) %8.2f\n", para.name, mcl::fp::ModeToStr(mode), addT, subT, dblT, mulT, mulRandT);
 
 }
 void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
