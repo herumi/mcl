@@ -52,6 +52,11 @@ $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
+asm-misc: $(LLVM_SRC)
+	$(CXX) -o misc/test $(CFLAGS) -O0 misc/test.cpp -Isrc
+	misc/test > misc/t.ll
+	$(LLVM_OPT) -O3 -o - misc/t.ll | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
+
 ##################################################################
 
 VPATH=test sample src
