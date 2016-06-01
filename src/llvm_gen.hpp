@@ -182,10 +182,10 @@ struct Generator::Operand {
 	Operand(const Eval& e);
 	void operator=(const Eval& e);
 
-	std::string toStr() const
+	std::string toStr(bool noAlias = false) const
 	{
 		if (type.isPtr) {
-			return getType() + " " + getName();
+			return getType(noAlias) + " " + getName();
 		}
 		switch (type.type) {
 		default:
@@ -195,7 +195,7 @@ struct Generator::Operand {
 			return getType() + " " + getName();
 		}
 	}
-	std::string getType() const
+	std::string getType(bool noAlias = false) const
 	{
 		std::string s;
 		switch (type.type) {
@@ -208,6 +208,9 @@ struct Generator::Operand {
 		}
 		if (type.isPtr) {
 			s += "*";
+			if (noAlias) {
+				s += " noalias ";
+			}
 		}
 		return s;
 	}
@@ -265,43 +268,65 @@ struct Generator::Function {
 	Generator::Operand ret;
 	OperandVec opv;
 	bool isPrivate;
-	explicit Function(const std::string& name = "") : name(name), isPrivate(false) {}
+	bool isNoalias;
+	void clear()
+	{
+		isPrivate = false;
+		isNoalias = false;
+	}
+	explicit Function(const std::string& name = "") : name(name) { clear(); }
 	Function(const std::string& name, const Operand& ret)
-		: name(name), ret(ret), isPrivate(false) {
+		: name(name), ret(ret)
+	{
+		clear();
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1)
-		: name(name), ret(ret), isPrivate(false) {
-			opv.push_back(op1);
+		: name(name), ret(ret)
+	{
+		clear();
+		opv.push_back(op1);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2)
-		: name(name), ret(ret), isPrivate(false) {
-			opv.push_back(op1);
-			opv.push_back(op2);
+		: name(name), ret(ret)
+	{
+		clear();
+		opv.push_back(op1);
+		opv.push_back(op2);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2, const Operand& op3)
-		: name(name), ret(ret), isPrivate(false) {
-			opv.push_back(op1);
-			opv.push_back(op2);
-			opv.push_back(op3);
+		: name(name), ret(ret)
+	{
+		clear();
+		opv.push_back(op1);
+		opv.push_back(op2);
+		opv.push_back(op3);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4)
-		: name(name), ret(ret), isPrivate(false) {
-			opv.push_back(op1);
-			opv.push_back(op2);
-			opv.push_back(op3);
-			opv.push_back(op4);
+		: name(name), ret(ret)
+	{
+		clear();
+		opv.push_back(op1);
+		opv.push_back(op2);
+		opv.push_back(op3);
+		opv.push_back(op4);
 	}
 	Function(const std::string& name, const Operand& ret, const Operand& op1, const Operand& op2, const Operand& op3, const Operand& op4, const Operand& op5)
-		: name(name), ret(ret), isPrivate(false) {
-			opv.push_back(op1);
-			opv.push_back(op2);
-			opv.push_back(op3);
-			opv.push_back(op4);
-			opv.push_back(op5);
+		: name(name), ret(ret)
+	{
+		clear();
+		opv.push_back(op1);
+		opv.push_back(op2);
+		opv.push_back(op3);
+		opv.push_back(op4);
+		opv.push_back(op5);
 	}
 	void setPrivate()
 	{
 		isPrivate = true;
+	}
+	void setNoalias()
+	{
+		isNoalias = true;
 	}
 	std::string toStr() const
 	{
@@ -313,7 +338,7 @@ struct Generator::Function {
 		str += " @" + name + "(";
 		for (size_t i = 0; i < opv.size(); i++) {
 			if (i > 0) str += ", ";
-			str += opv[i].toStr();
+			str += opv[i].toStr(isNoalias);
 		}
 		str += ")";
 		return str;
