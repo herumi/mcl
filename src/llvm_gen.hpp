@@ -51,7 +51,12 @@ struct Param {
 template<size_t dummy>
 File Param<dummy>::f;
 
+bool isOldLLVM;
+
 } // mcl::impl
+
+inline void setOldLLVM() { impl::isOldLLVM = true; }
+inline bool isOldLLVM() { return impl::isOldLLVM; }
 
 struct Generator {
 	static const uint8_t None = 0;
@@ -462,6 +467,9 @@ inline Generator::Eval Generator::getelementptr(const Generator::Operand& p, con
 	Eval e;
 	e.op = p;
 	e.s = "getelementptr ";
+	if (!isOldLLVM()) {
+		e.s += "i" + cybozu::itoa(p.bit) + ", ";
+	}
 	e.s += p.toStr() + ", " + i.toStr();
 	return e;
 }
@@ -473,6 +481,9 @@ inline Generator::Eval Generator::load(const Generator::Operand& p)
 	e.op = p;
 	e.op.type.isPtr = false;
 	e.s = "load ";
+	if (!isOldLLVM()) {
+		e.s += "i" + cybozu::itoa(p.bit) + ", ";
+	}
 	e.s += p.toStr();
 	return e;
 }

@@ -14,7 +14,7 @@ SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp
 MCL_LIB=$(LIB_DIR)/libmcl.a
 all: $(MCL_LIB)
 
-LLVM_VER=-3.6
+LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 GEN_EXE=src/gen
@@ -25,7 +25,7 @@ LLVM_SRC=src/base$(BIT).ll
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
-LLVM_FLAGS=-march=$(CPU) -relocation-model=pic
+LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
 
 HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
 ifeq ($(HAS_BMI2),1)
