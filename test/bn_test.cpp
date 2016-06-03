@@ -1,8 +1,10 @@
 #define PUT(x) std::cout << #x "=" << x << std::endl;
+#define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/benchmark.hpp>
 //cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
 #include <mcl/bn.hpp>
+#include <cybozu/option.hpp>
 
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::bn::BNT<Fp> BN;
@@ -11,6 +13,8 @@ typedef BN::Fp6 Fp6;
 typedef BN::Fp12 Fp12;
 typedef BN::G1 G1;
 typedef BN::G2 G2;
+
+mcl::fp::Mode g_mode;
 
 const struct TestSet {
 	mcl::bn::CurveParam cp;
@@ -68,7 +72,7 @@ CYBOZU_TEST_AUTO(size)
 CYBOZU_TEST_AUTO(naive)
 {
 	const TestSet& ts = g_testSetTbl[0];
-	BN::init(ts.cp);
+	BN::init(ts.cp, g_mode);
 	G1 P(ts.g1.a, ts.g1.b);
 	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 	Fp12 e1;
@@ -89,4 +93,21 @@ CYBOZU_TEST_AUTO(naive)
 	*/
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
+}
+
+int main(int argc, char *argv[])
+	try
+{
+	cybozu::Option opt;
+	std::string mode;
+	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/llvm/llvm_mont/xbyak)");
+	if (!opt.parse(argc, argv)) {
+		opt.usage();
+		return 1;
+	}
+	g_mode = mcl::fp::StrToMode(mode);
+	return cybozu::test::autoRun.run(argc, argv);
+} catch (std::exception& e) {
+	printf("ERR %s\n", e.what());
+	return 1;
 }
