@@ -172,22 +172,14 @@ struct OpeFunc {
 	// y[N] <- x[N + 1] mod p[N]
 	static inline void fpN1_modPC(Unit *y, const Unit *x, const Unit *p)
 	{
-		mpz_t mx, my, mp;
-		set_mpz_t(mx, x, N + 1);
-		set_mpz_t(my, y);
-		set_mpz_t(mp, p);
-		mpz_mod(my, mx, mp);
-		clearArray(y, my->_mp_size, N);
+		Unit q[2]; // not used
+		mpn_tdiv_qr(q, y, 0, x, N + 1, p, N);
 	}
 	// y[N] <- x[N * 2] mod p[N]
 	static inline void fpDbl_modPC(Unit *y, const Unit *x, const Unit *p)
 	{
-		mpz_t mx, my, mp;
-		set_mpz_t(mx, x, N * 2);
-		set_mpz_t(my, y);
-		set_mpz_t(mp, p);
-		mpz_mod(my, mx, mp);
-		clearArray(y, my->_mp_size, N);
+		Unit q[N + 1]; // not used
+		mpn_tdiv_qr(q, y, 0, x, N * 2, p, N);
 	}
 	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
