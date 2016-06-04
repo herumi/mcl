@@ -130,6 +130,16 @@ struct OpeFunc {
 	*/
 	static inline void fpDbl_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
+#if 0
+		if (mpn_add_n(z, x, y, N * 2)) {
+			mpn_sub_n(z + N, z + N, p, N);
+			return;
+		}
+		Unit tmp[N];
+		if (mpn_sub_n(tmp, z + N, p, N) == 0) {
+			memcpy(z, tmp, sizeof(tmp));
+		}
+#else
 		Unit ret[N * 2 + 2]; // not N + 1
 		Unit pDbl[N * 2];
 		mpz_t mz, mx, my, mp;
@@ -142,22 +152,13 @@ struct OpeFunc {
 			mpz_sub(mz, mz, mp);
 		}
 		gmp::getArray(z, N * 2, mz);
+#endif
 	}
 	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		Unit ret[N * 2 + 1];
-		mpz_t mz, mx, my;
-		set_zero(mz, ret, N * 2 + 1);
-		set_mpz_t(mx, x, N * 2);
-		set_mpz_t(my, y, N * 2);
-		mpz_sub(mz, mx, my);
-		if (mpz_sgn(mz) < 0) {
-			Unit pDbl[N * 2];
-			mpz_t mp;
-			set_pDbl(mp, pDbl, p);
-			mpz_add(mz, mz, mp);
+		if (mpn_sub_n(z, x, y, N * 2)) {
+			mpn_add_n(z + N, z + N, p, N);
 		}
-		gmp::getArray(z, N * 2, mz);
 	}
 	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
