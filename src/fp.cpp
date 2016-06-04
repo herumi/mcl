@@ -119,12 +119,6 @@ struct OpeFunc {
 			mpn_add_n(z, z, p, N);
 		}
 	}
-	static inline void set_pDbl(mpz_t& mp, Unit *pDbl, const Unit *p)
-	{
-		memset(pDbl, 0, N * sizeof(Unit));
-		memcpy(pDbl + N, p, N * sizeof(Unit));
-		set_mpz_t(mp, pDbl, N * 2);
-	}
 	/*
 		z[N * 2] <- x[N * 2] + y[N * 2] mod p[N] << (N * UnitBitSize)
 	*/
