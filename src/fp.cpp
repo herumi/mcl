@@ -104,7 +104,6 @@ struct OpeFunc {
 	}
 	static inline void fp_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-#if 1
 		if (mpn_add_n(z, x, y, N)) {
 			mpn_sub_n(z, z, p, N);
 			return;
@@ -113,40 +112,12 @@ struct OpeFunc {
 		if (mpn_sub_n(tmp, z, p, N) == 0) {
 			memcpy(z, tmp, sizeof(tmp));
 		}
-#else
-		Unit ret[N + 2]; // not N + 1
-		mpz_t mz, mx, my, mp;
-		set_zero(mz, ret, N + 2);
-		set_mpz_t(mx, x);
-		set_mpz_t(my, y);
-		set_mpz_t(mp, p);
-		mpz_add(mz, mx, my);
-		if (mpz_cmp(mz, mp) >= 0) {
-			mpz_sub(mz, mz, mp);
-		}
-		gmp::getArray(z, N, mz);
-#endif
 	}
 	static inline void fp_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-#if 1
 		if (mpn_sub_n(z, x, y, N)) {
 			mpn_add_n(z, z, p, N);
 		}
-#else
-		Unit ret[N + 1];
-		mpz_t mz, mx, my;
-		set_zero(mz, ret, N + 1);
-		set_mpz_t(mx, x);
-		set_mpz_t(my, y);
-		mpz_sub(mz, mx, my);
-		if (mpz_sgn(mz) < 0) {
-			mpz_t mp;
-			set_mpz_t(mp, p);
-			mpz_add(mz, mz, mp);
-		}
-		gmp::getArray(z, N, mz);
-#endif
 	}
 	static inline void set_pDbl(mpz_t& mp, Unit *pDbl, const Unit *p)
 	{
@@ -191,72 +162,26 @@ struct OpeFunc {
 	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
 	{
-#if 1
 		mpn_add_n(z, x, y, N);
-#else
-		Unit ret[N + 1];
-		mpz_t mz, mx, my;
-		set_zero(mz, ret, N + 1);
-		set_mpz_t(mx, x);
-		set_mpz_t(my, y);
-		mpz_add(mz, mx, my);
-		gmp::getArray(z, N, mz);
-#endif
 	}
 	static inline void fp_subNCC(Unit *z, const Unit *x, const Unit *y)
 	{
-#if 1
 		mpn_sub_n(z, x, y, N);
-#else
-		Unit ret[N + 1];
-		mpz_t mz, mx, my;
-		set_zero(mz, ret, N + 1);
-		set_mpz_t(mx, x);
-		set_mpz_t(my, y);
-		assert(mpz_cmp(mx, my) >= 0);
-		mpz_sub(mz, mx, my);
-		gmp::getArray(z, N, mz);
-#endif
 	}
 	// z[N + 1] <- x[N] * y
 	static inline void fp_mul_UnitPreC(Unit *z, const Unit *x, Unit y)
 	{
-#if 1
 		z[N] = mpn_mul_1(z, x, N, y);
-#else
-		mpz_t mx, mz;
-		set_zero(mz, z, N + 1);
-		set_mpz_t(mx, x);
-		mpz_mul_ui(mz, mx, y);
-		clearArray(z, mz->_mp_size, N + 1);
-#endif
 	}
 	// z[N * 2] <- x[N] * y[N]
 	static inline void fpDbl_mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
-#if 1
 		mpn_mul_n(z, x, y, N);
-#else
-		mpz_t mx, my, mz;
-		set_zero(mz, z, N * 2);
-		set_mpz_t(mx, x);
-		set_mpz_t(my, y);
-		mpz_mul(mz, mx, my);
-		clearArray(z, mz->_mp_size, N * 2);
-#endif
 	}
 	// y[N * 2] <- x[N]^2
 	static inline void fpDbl_sqrPreC(Unit *y, const Unit *x)
 	{
-#if 1
 		mpn_sqr(y, x, N);
-#else
-		mpz_t mx, my;
-		set_zero(my, y, N * 2);
-		set_mpz_t(mx, x);
-		mpz_mul(my, mx, mx);
-		clearArray(y, my->_mp_size, N * 2);
-#endif
 	}
 	// y[N] <- x[N + 1] mod p[N]
 	static inline void fpN1_modPC(Unit *y, const Unit *x, const Unit *p)
