@@ -188,6 +188,7 @@ struct OpeFunc {
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			t[N] = mpn_mul_1(t, x, N, y[i]);
+			c[N + 1] = 0;
 			mpn_add_n(c, c, t, N + 1);
 			q = c[0] * rp;
 			t[N] = mpn_mul_1(t, p, N, q);
