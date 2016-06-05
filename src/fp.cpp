@@ -182,17 +182,17 @@ struct OpeFunc {
 		Unit *c = buf;
 		c[N] = mpn_mul_1(c, x, N, y[0]); // x * y[0]
 		Unit q = c[0] * rp;
-		Unit t[N + 1];
+		Unit t[N + 2];
 		t[N] = mpn_mul_1(t, p, N, q); // p * q
+		t[N + 1] = 0; // always zero
 		c[N + 1] = mpn_add_n(c, c, t, N + 1);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			t[N] = mpn_mul_1(t, x, N, y[i]);
-			c[N + 1] = 0;
-			mpn_add_n(c, c, t, N + 1);
+			c[N + 1] = mpn_add_n(c, c, t, N + 1);
 			q = c[0] * rp;
 			t[N] = mpn_mul_1(t, p, N, q);
-			mpn_add_n(c, c, t, N + 1);
+			mpn_add_n(c, c, t, N + 2);
 			c++;
 		}
 		if (c[N]) {
