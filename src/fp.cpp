@@ -175,6 +175,33 @@ struct OpeFunc {
 		Unit q[N + 1]; // not used
 		mpn_tdiv_qr(q, y, 0, x, N * 2, p, N);
 	}
+	// z[N] <- mont(x[N], y[N])
+	static inline void fp_montPUC(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp)
+	{
+		Unit buf[N * 2 + 2];
+		Unit *c = buf;
+		c[N] = mpn_mul_1(c, x, N, y[0]); // x * y[0]
+		Unit q = c[0] * rp;
+		Unit t[N + 1];
+		t[N] = mpn_mul_1(t, p, N, q); // p * q
+		c[N + 1] = mpn_add_n(c, c, t, N + 1);
+		c++;
+		for (size_t i = 1; i < N; i++) {
+			t[N] = mpn_mul_1(t, x, N, y[i]);
+			mpn_add_n(c, c, t, N + 1);
+			q = c[0] * rp;
+			t[N] = mpn_mul_1(t, p, N, q);
+			mpn_add_n(c, c, t, N + 1);
+			c++;
+		}
+		if (c[N]) {
+			mpn_sub_n(z, c, p, N);
+		} else {
+			if (mpn_sub_n(z, c, p, N)) {
+				memcpy(z, c, N * sizeof(Unit));
+			}
+		}
+	}
 	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
 		mpz_class my;
