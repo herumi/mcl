@@ -62,13 +62,14 @@ void benchFp(size_t bitSize, int mode)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (bitSize != 0 && tbl[i].bitSize != bitSize) continue;
-		if (mode & (1 << 0)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_GMP);
+		if (mode & 1) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_GMP);
+		if (mode & 2) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_GMP_MONT);
 #ifdef MCL_USE_LLVM
-		if (mode & (1 << 1)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM);
-		if (mode & (1 << 2)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM_MONT);
+		if (mode & 4) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM);
+		if (mode & 8) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM_MONT);
 #endif
 #ifdef MCL_USE_XBYAK
-		if (mode & (1 << 3)) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_XBYAK);
+		if (mode & 16) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_XBYAK);
 #endif
 	}
 }
@@ -113,13 +114,14 @@ void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (bitSize != 0 && tbl[i].bitSize != bitSize) continue;
 		benchEcSub(tbl[i], mcl::fp::FP_AUTO, ecMode);
-		if (mode & (1 << 0)) benchEcSub(tbl[i], mcl::fp::FP_GMP, ecMode);
+		if (mode & 1) benchEcSub(tbl[i], mcl::fp::FP_GMP, ecMode);
+		if (mode & 2) benchEcSub(tbl[i], mcl::fp::FP_GMP_MONT, ecMode);
 #ifdef MCL_USE_LLVM
-		if (mode & (1 << 1)) benchEcSub(tbl[i], mcl::fp::FP_LLVM, ecMode);
-		if (mode & (1 << 2)) benchEcSub(tbl[i], mcl::fp::FP_LLVM_MONT, ecMode);
+		if (mode & 4) benchEcSub(tbl[i], mcl::fp::FP_LLVM, ecMode);
+		if (mode & 8) benchEcSub(tbl[i], mcl::fp::FP_LLVM_MONT, ecMode);
 #endif
 #ifdef MCL_USE_XBYAK
-		if (mode & (1 << 3)) benchEcSub(tbl[i], mcl::fp::FP_XBYAK, ecMode);
+		if (mode & 16) benchEcSub(tbl[i], mcl::fp::FP_XBYAK, ecMode);
 #endif
 	}
 }
@@ -183,7 +185,7 @@ int main(int argc, char *argv[])
 	std::string ecModeStr;
 	cybozu::Option opt;
 	opt.appendOpt(&bitSize, 0, "b", ": bitSize");
-	opt.appendOpt(&mode, 0, "m", ": mode(0:all, sum of 1:gmp, 2:llvm, 8:llvm+mont, 8:xbyak");
+	opt.appendOpt(&mode, 0, "m", ": mode(0:all, sum of 1:gmp, 2:gmp+mont, 4:llvm, 8:llvm+mont, 16:xbyak");
 	opt.appendBoolOpt(&ecOnly, "ec", ": ec only");
 	opt.appendBoolOpt(&fpOnly, "fp", ": fp only");
 	opt.appendBoolOpt(&misc, "misc", ": other benchmark");
@@ -202,12 +204,12 @@ int main(int argc, char *argv[])
 		opt.usage();
 		return 1;
 	}
-	if (mode < 0 || mode > 15) {
+	if (mode < 0 || mode > 31) {
 		printf("bad mode %d\n", mode);
 		opt.usage();
 		return 1;
 	}
-	if (mode == 0) mode = 15;
+	if (mode == 0) mode = 31;
 	if (misc) {
 		benchToStr16();
 		benchFromStr16();

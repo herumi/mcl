@@ -277,6 +277,32 @@ struct OpeFunc {
 			}
 		}
 	}
+	// z[N] <- montRed(xy[N * 2])
+	static inline void fp_montRedPUC(Unit *z, const Unit *xy, const Unit *p, Unit rp)
+	{
+		Unit t[N * 2];
+		Unit buf[N * 2 + 1];
+		clearArray(t, N + 1, N * 2);
+		Unit *c = buf;
+		Unit q = xy[0] * rp;
+		low_mul_Unit<N>(t, p, q);
+		buf[N * 2] = low_add<N * 2>(buf, xy, t);
+		c++;
+		for (size_t i = 1; i < N; i++) {
+			q = c[0] * rp;
+			low_mul_Unit<N>(t, p, q);
+			// QQQ
+			mpn_add_n((mp_limb_t*)c, (const mp_limb_t*)c, (const mp_limb_t*)t, N * 2 + 1 - i);
+			c++;
+		}
+		if (c[N]) {
+			low_sub<N>(z, c, p);
+		} else {
+			if (low_sub<N>(z, c, p)) {
+				memcpy(z, c, N * sizeof(Unit));
+			}
+		}
+	}
 	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
 		mpz_class my;
@@ -376,6 +402,8 @@ struct OpeFunc {
 		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
 		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
 		fpDbl_modP = OpeFunc<n>::fpDbl_modPC; \
+		montPU = OpeFunc<n>::fp_montPUC; \
+		montRedPU = OpeFunc<n>::fp_montRedPUC; \
 		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK

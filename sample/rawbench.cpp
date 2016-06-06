@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
 		}
 		printf("prime=%s\n", p);
 		benchRaw(tbl[i], mcl::fp::FP_GMP);
+		benchRaw(tbl[i], mcl::fp::FP_GMP_MONT);
 #ifdef MCL_USE_LLVM
 		benchRaw(tbl[i], mcl::fp::FP_LLVM);
 		benchRaw(tbl[i], mcl::fp::FP_LLVM_MONT);

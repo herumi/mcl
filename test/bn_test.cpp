@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 {
 	cybozu::Option opt;
 	std::string mode;
-	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/llvm/llvm_mont/xbyak)");
+	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/gmp_mont/llvm/llvm_mont/xbyak)");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
