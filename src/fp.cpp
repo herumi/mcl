@@ -74,6 +74,48 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 	return isMinus;
 }
 
+template<size_t N>
+Unit low_add(Unit *z, const Unit *x, const Unit *y)
+{
+	return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+}
+template<size_t N>
+Unit low_sub(Unit *z, const Unit *x, const Unit *y)
+{
+	return mpn_sub_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+}
+// Z[N * 2]
+template<size_t N>
+void low_mul(Unit *z, const Unit *x, const Unit *y)
+{
+	return mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+}
+template<size_t N>
+void low_sqr(Unit *y, const Unit *x)
+{
+	return mpn_sqr((mp_limb_t*)y, (const mp_limb_t*)x, N);
+}
+// Z[N + 1]
+template<size_t N>
+void low_mul_Unit(Unit *z, const Unit *x, Unit y)
+{
+	z[N] = mpn_mul_1((mp_limb_t*)z, (const mp_limb_t*)x, N, y);
+}
+// y[N] <- X[N + 1] mod p[N]
+template<size_t N>
+void low_N1_mod(Unit *y, const Unit *x, const Unit *p)
+{
+	mp_limb_t q[2]; // not used
+	mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N + 1, (const mp_limb_t*)p, N);
+}
+// y[N] <- X[N * 2] mod p[N]
+template<size_t N>
+void low_mod(Unit *y, const Unit *x, const Unit *p)
+{
+	Unit q[N + 1]; // not used
+	mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N * 2, (const mp_limb_t*)p, N);
+}
+
 template<size_t bitSize>
 struct OpeFunc {
 	static const size_t N = (bitSize + UnitBitSize - 1) / UnitBitSize;
@@ -104,19 +146,19 @@ struct OpeFunc {
 	}
 	static inline void fp_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (mpn_add_n(z, x, y, N)) {
-			mpn_sub_n(z, z, p, N);
+		if (low_add<N>(z, x, y)) {
+			low_sub<N>(z, z, p);
 			return;
 		}
 		Unit tmp[N];
-		if (mpn_sub_n(tmp, z, p, N) == 0) {
+		if (low_sub<N>(tmp, z, p) == 0) {
 			memcpy(z, tmp, sizeof(tmp));
 		}
 	}
 	static inline void fp_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (mpn_sub_n(z, x, y, N)) {
-			mpn_add_n(z, z, p, N);
+		if (low_sub<N>(z, x, y)) {
+			low_add<N>(z, z, p);
 		}
 	}
 	/*
@@ -124,81 +166,79 @@ struct OpeFunc {
 	*/
 	static inline void fpDbl_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (mpn_add_n(z, x, y, N * 2)) {
-			mpn_sub_n(z + N, z + N, p, N);
+		if (low_add<N * 2>(z, x, y)) {
+			low_sub<N>(z + N, z + N, p);
 			return;
 		}
 		Unit tmp[N];
-		if (mpn_sub_n(tmp, z + N, p, N) == 0) {
+		if (low_sub<N>(tmp, z + N, p) == 0) {
 			memcpy(z + N, tmp, sizeof(tmp));
 		}
 	}
 	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (mpn_sub_n(z, x, y, N * 2)) {
-			mpn_add_n(z + N, z + N, p, N);
+		if (low_sub<N * 2>(z, x, y)) {
+			low_add<N>(z + N, z + N, p);
 		}
 	}
 	// z[N] <- x[N] + y[N] without carry
 	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
 	{
-		mpn_add_n(z, x, y, N);
+		low_add<N>(z, x, y);
 	}
 	static inline void fp_subNCC(Unit *z, const Unit *x, const Unit *y)
 	{
-		mpn_sub_n(z, x, y, N);
+		low_sub<N>(z, x, y);
 	}
 	// z[N + 1] <- x[N] * y
 	static inline void fp_mul_UnitPreC(Unit *z, const Unit *x, Unit y)
 	{
-		z[N] = mpn_mul_1(z, x, N, y);
+		low_mul_Unit<N>(z, x, y);
 	}
 	// z[N * 2] <- x[N] * y[N]
 	static inline void fpDbl_mulPreC(Unit *z, const Unit *x, const Unit *y)
 	{
-		mpn_mul_n(z, x, y, N);
+		low_mul<N>(z, x, y);
 	}
 	// y[N * 2] <- x[N]^2
 	static inline void fpDbl_sqrPreC(Unit *y, const Unit *x)
 	{
-		mpn_sqr(y, x, N);
+		low_sqr<N>(y, x);
 	}
 	// y[N] <- x[N + 1] mod p[N]
 	static inline void fpN1_modPC(Unit *y, const Unit *x, const Unit *p)
 	{
-		Unit q[2]; // not used
-		mpn_tdiv_qr(q, y, 0, x, N + 1, p, N);
+		low_N1_mod<N>(y, x, p);
 	}
 	// y[N] <- x[N * 2] mod p[N]
 	static inline void fpDbl_modPC(Unit *y, const Unit *x, const Unit *p)
 	{
-		Unit q[N + 1]; // not used
-		mpn_tdiv_qr(q, y, 0, x, N * 2, p, N);
+		low_mod<N>(y, x, p);
 	}
 	// z[N] <- mont(x[N], y[N])
 	static inline void fp_montPUC(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp)
 	{
 		Unit buf[N * 2 + 2];
 		Unit *c = buf;
-		c[N] = mpn_mul_1(c, x, N, y[0]); // x * y[0]
+		low_mul_Unit<N>(c, x, y[0]); // x * y[0]
 		Unit q = c[0] * rp;
 		Unit t[N + 2];
-		t[N] = mpn_mul_1(t, p, N, q); // p * q
+		low_mul_Unit<N>(t, p, q); // p * q
 		t[N + 1] = 0; // always zero
-		c[N + 1] = mpn_add_n(c, c, t, N + 1);
+		c[N + 1] = low_add<N + 1>(c, c, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
-			t[N] = mpn_mul_1(t, x, N, y[i]);
-			c[N + 1] = mpn_add_n(c, c, t, N + 1);
+			low_mul_Unit<N>(t, x, y[i]);
+			c[N + 1] = low_add<N + 1>(c, c, t);
 			q = c[0] * rp;
-			t[N] = mpn_mul_1(t, p, N, q);
-			mpn_add_n(c, c, t, N + 2);
+			low_mul_Unit<N>(t, p, q);
+			low_add<N + 2>(c, c, t);
 			c++;
 		}
 		if (c[N]) {
-			mpn_sub_n(z, c, p, N);
+			low_sub<N>(z, c, p);
 		} else {
-			if (mpn_sub_n(z, c, p, N)) {
+			if (low_sub<N>(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
