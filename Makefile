@@ -32,12 +32,11 @@ ifeq ($(HAS_BMI2),1)
   LLVM_FLAGS+=-mattr=bmi2
 endif
 
-$(MCL_LIB): $(LIB_OBJ)
-	$(MKDIR) $(LIB_DIR)
+
+$(MCL_LIB): $(LIB_OBJ) $(LIB_DIR)
 	$(AR) $@ $(LIB_OBJ)
 
-$(ASM_OBJ): $(ASM_SRC)
-	$(MKDIR) $(OBJ_DIR) $(EXE_DIR)
+$(ASM_OBJ): $(ASM_SRC) $(OBJ_DIR)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
 $(ASM_SRC): $(LLVM_SRC)
@@ -58,10 +57,19 @@ VPATH=test sample src
 
 .SUFFIXES: .cpp .d .exe
 
-$(OBJ_DIR)/%.o: %.cpp
+$(OBJ_DIR):
+	$(MKDIR) $(OBJ_DIR)
+
+$(LIB_DIR):
+	$(MKDIR) $(LIB_DIR)
+
+$(EXE_DIR):
+	$(MKDIR) $(EXE_DIR)
+
+$(OBJ_DIR)/%.o: %.cpp $(OBJ_DIR)
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
-$(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
+$(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB) $(EXE_DIR)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(SAMPLE_SRC:.cpp=.exe))
