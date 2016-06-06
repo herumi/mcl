@@ -10,7 +10,8 @@ mkdir %PACKAGE_DIR%
 echo %SWIG% -java -package %PACKAGE_NAME% -outdir %PACKAGE_DIR% -c++ -Wall mcl_if.i
 %SWIG% -java -package %PACKAGE_NAME% -outdir %PACKAGE_DIR% -c++ -Wall mcl_if.i
 echo [[make dll]]
-cl /MT /DNOMINMAX /LD /Ox /DNDEBUG /EHsc mcl_if_wrap.cxx -I%JAVA_INCLUDE% -I%JAVA_INCLUDE%\win32 -I../include -I../../cybozulib/include -I../../cybozulib_ext/include -I../../xbyak /link /LIBPATH:../../cybozulib_ext/lib /LIBPATH:../lib /OUT:../bin/mcl_if_wrap.dll
+rem cl /MT /DNOMINMAX /LD /Ox /DNDEBUG /EHsc mcl_if_wrap.cxx -I%JAVA_INCLUDE% -I%JAVA_INCLUDE%\win32 -I../include -I../../cybozulib/include -I../../cybozulib_ext/include -I../../xbyak /link /LIBPATH:../../cybozulib_ext/lib /LIBPATH:../lib /OUT:../bin/mcl_if_wrap.dll
+cl /MT /DNOMINMAX /LD /Ox /DNDEBUG /EHsc mcl_if_wrap.cxx ../src/fp.cpp -DMCL_NO_AUTOLINK -I%JAVA_INCLUDE% -I%JAVA_INCLUDE%\win32 -I../include -I../../cybozulib/include -I../../cybozulib_ext/include -I../../xbyak /link /LIBPATH:../../cybozulib_ext/lib /OUT:../bin/mcl_if_wrap.dll
 
 call run-mcl.bat
 
