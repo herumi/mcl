@@ -14,7 +14,7 @@ SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp
 MCL_LIB=$(LIB_DIR)/libmcl.a
 all: $(MCL_LIB)
 
-LLVM_VER=-3.8
+#LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 GEN_EXE=src/gen

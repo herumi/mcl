@@ -9,9 +9,11 @@ endif
 BIT?=64
 ifeq ($(BIT),32)
   CPU?=x86
+  BIT_OPT=-m32
 else
   ifeq ($(BIT),64)
     CPU?=x86-64
+    BIT_OPT=-m64
   endif
 endif
 
@@ -34,20 +36,15 @@ ifneq ($(DEBUG),1)
     endif
   endif
   ifeq ($(MARCH),)
-  ifeq ($(shell expr $(GCC_VER) \> 4.2.1),1)
-    CFLAGS_OPT+=-march=native
-  endif
+    ifeq (,$(findstring x86,$(CPU)))
+      CFLAGS_OPT+=-march=native
+    endif
   else
     CFLAGS_OPT+=$(MARCH)
   endif
 endif
 CFLAGS_WARN=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith
-CFLAGS+= -g3
-ifeq ($(BIT),0)
-  BIT_OPT=
-else
-  BIT_OPT=-m$(BIT)
-endif
+CFLAGS+=-g3
 INC_OPT=-I include -I test -I ../xbyak -I ../cybozulib/include
 CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT) $(CFLAGS_USER)
 DEBUG=0
@@ -56,5 +53,9 @@ CFLAGS+=$(CFLAGS_OPT)
 endif
 LDFLAGS+=-lgmp -lgmpxx -lcrypto $(BIT_OPT) $(LDFLAGS_USER)
 
-CFLAGS += -DMCL_USE_LLVM -fPIC
+CFLAGS+=-fPIC
+USE_LLVM?=1
+ifeq ($(USE_LLVM),1)
+  CFLAGS+=-DMCL_USE_LLVM
+endif
 
