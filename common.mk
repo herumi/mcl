@@ -5,7 +5,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 ARCH?=$(shell arch)
 ifeq ($(ARCH),x86_64)
-  CPU=x64-64
+  CPU=x86-64
   BIT=64
   BIT_OPT=-m64
 endif
