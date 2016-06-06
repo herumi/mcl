@@ -20,7 +20,12 @@ LLVM_OPT=opt$(LLVM_VER)
 GEN_EXE=src/gen
 ASM_SRC=src/$(CPU).s
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
-LIB_OBJ=$(ASM_OBJ) $(OBJ_DIR)/fp.o
+LIB_OBJ=$(OBJ_DIR)/fp.o
+USE_LLVM?=1
+ifeq ($(USE_LLVM),1)
+  CFLAGS+=-DMCL_USE_LLVM
+  LIB_OBJ+=$(ASM_OBJ)
+endif
 LLVM_SRC=src/base$(BIT).ll
 
 # CPU is used for llvm
@@ -31,7 +36,6 @@ HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
 ifeq ($(HAS_BMI2),1)
   LLVM_FLAGS+=-mattr=bmi2
 endif
-
 
 $(MCL_LIB): $(LIB_OBJ) $(LIB_DIR)
 	$(AR) $@ $(LIB_OBJ)

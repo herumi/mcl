@@ -54,8 +54,4 @@ endif
 LDFLAGS+=-lgmp -lgmpxx -lcrypto $(BIT_OPT) $(LDFLAGS_USER)
 
 CFLAGS+=-fPIC
-USE_LLVM?=1
-ifeq ($(USE_LLVM),1)
-  CFLAGS+=-DMCL_USE_LLVM
-endif
 
