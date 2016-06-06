@@ -46,6 +46,7 @@ struct Block {
 enum Mode {
 	FP_AUTO,
 	FP_GMP,
+	FP_GMP_MONT,
 	FP_LLVM,
 	FP_LLVM_MONT,
 	FP_XBYAK
@@ -56,37 +57,6 @@ enum PrimeMode {
 	PM_NICT_P192,
 	PM_NICT_P521,
 };
-
-static inline const char *ModeToStr(Mode mode)
-{
-	switch (mode) {
-	case FP_AUTO: return "auto";
-	case FP_GMP: return "gmp";
-	case FP_LLVM: return "llvm";
-	case FP_LLVM_MONT: return "llvm_mont";
-	case FP_XBYAK: return "xbyak";
-	default:
-		throw cybozu::Exception("ModeToStr") << mode;
-	}
-}
-
-static inline Mode StrToMode(const std::string& s)
-{
-	static const struct {
-		const char *s;
-		Mode mode;
-	} tbl[] = {
-		{ "auto", FP_AUTO },
-		{ "gmp", FP_GMP },
-		{ "llvm", FP_LLVM },
-		{ "llvm_mont", FP_LLVM_MONT },
-		{ "xbyak", FP_XBYAK },
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		if (s == tbl[i].s) return tbl[i].mode;
-	}
-	throw cybozu::Exception("StrToMode") << s;
-}
 
 struct Op {
 	mpz_class mp;

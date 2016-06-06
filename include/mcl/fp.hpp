@@ -50,6 +50,10 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool do
 uint64_t getUint64(bool *pb, const fp::Block& b);
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
+const char *ModeToStr(Mode mode);
+
+Mode StrToMode(const std::string& s);
+
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>

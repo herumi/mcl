@@ -74,6 +74,40 @@ bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, c
 	return isMinus;
 }
 
+const char *ModeToStr(Mode mode)
+{
+	switch (mode) {
+	case FP_AUTO: return "auto";
+	case FP_GMP: return "gmp";
+	case FP_GMP_MONT: return "gmp_mont";
+	case FP_LLVM: return "llvm";
+	case FP_LLVM_MONT: return "llvm_mont";
+	case FP_XBYAK: return "xbyak";
+	default:
+		throw cybozu::Exception("ModeToStr") << mode;
+	}
+}
+
+Mode StrToMode(const std::string& s)
+{
+	static const struct {
+		const char *s;
+		Mode mode;
+	} tbl[] = {
+		{ "auto", FP_AUTO },
+		{ "gmp", FP_GMP },
+		{ "gmp_mont", FP_GMP_MONT },
+		{ "llvm", FP_LLVM },
+		{ "llvm_mont", FP_LLVM_MONT },
+		{ "xbyak", FP_XBYAK },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		if (s == tbl[i].s) return tbl[i].mode;
+	}
+	throw cybozu::Exception("StrToMode") << s;
+}
+
+
 template<size_t N>
 Unit low_add(Unit *z, const Unit *x, const Unit *y)
 {
