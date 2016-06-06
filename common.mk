@@ -3,20 +3,24 @@ UNAME_S=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
   OS=Linux
 endif
+ARCH?=$(shell arch)
+ifeq ($(ARCH),x86_64)
+  CPU=x64-64
+  BIT=64
+  BIT_OPT=-m64
+endif
+ifeq ($(ARCH),x86)
+  CPU=x86
+  BIT=32
+  BIT_OPT=-m32
+endif
+ifeq ($(ARCH),armv71)
+  CPU=armv71
+  BIT=32
+endif
 ifneq ($(UNAME_S),Darwin)
   LDFLAGS+=-lrt
 endif
-BIT?=64
-ifeq ($(BIT),32)
-  CPU?=x86
-  BIT_OPT=-m32
-else
-  ifeq ($(BIT),64)
-    CPU?=x86-64
-    BIT_OPT=-m64
-  endif
-endif
-
 
 CP=cp -f
 AR=ar r
