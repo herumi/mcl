@@ -146,7 +146,7 @@ void low_N1_mod(Unit *y, const Unit *x, const Unit *p)
 template<size_t N>
 void low_mod(Unit *y, const Unit *x, const Unit *p)
 {
-	Unit q[N + 1]; // not used
+	mp_limb_t q[N + 1]; // not used
 	mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N * 2, (const mp_limb_t*)p, N);
 }
 
