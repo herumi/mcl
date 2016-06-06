@@ -424,7 +424,7 @@ CYBOZU_TEST_AUTO(getUint64)
 	{
 		Fp x("0x10000000000000000");
 		bool b = true;
-		CYBOZU_TEST_EQUAL(x.getUint64(&b), 0);
+		CYBOZU_TEST_EQUAL(x.getUint64(&b), 0u);
 		CYBOZU_TEST_ASSERT(!b);
 	}
 }
@@ -450,7 +450,7 @@ CYBOZU_TEST_AUTO(getInt64)
 	{
 		Fp x("0x8000000000000000");
 		bool b = true;
-		CYBOZU_TEST_EQUAL(x.getInt64(&b), 0);
+		CYBOZU_TEST_EQUAL(x.getInt64(&b), 0u);
 		CYBOZU_TEST_ASSERT(!b);
 	}
 }
