@@ -51,11 +51,10 @@ struct Param {
 template<size_t dummy>
 File Param<dummy>::f;
 
-bool isOldLLVM;
+bool isOldLLVM = false;
 
 } // mcl::impl
 
-inline void setOldLLVM() { impl::isOldLLVM = true; }
 inline bool isOldLLVM() { return impl::isOldLLVM; }
 
 struct Generator {
@@ -64,6 +63,7 @@ struct Generator {
 	static const uint8_t Imm = 2;
 	static const uint8_t Ptr = 1 << 7;
 	static const uint8_t IntPtr = Int | Ptr;
+	void setOldLLVM() { impl::isOldLLVM = true; }
 	struct Type {
 		uint8_t type;
 		bool isPtr;
@@ -277,7 +277,7 @@ struct Generator::Function {
 	void clear()
 	{
 		isPrivate = false;
-		isAlias = true;
+		isAlias = false;
 	}
 	explicit Function(const std::string& name = "") : name(name) { clear(); }
 	Function(const std::string& name, const Operand& ret)
@@ -328,10 +328,6 @@ struct Generator::Function {
 	void setPrivate()
 	{
 		isPrivate = true;
-	}
-	void setNoalias()
-	{
-		isAlias = false;
 	}
 	void setAlias()
 	{

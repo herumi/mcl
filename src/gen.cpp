@@ -678,6 +678,7 @@ struct Code : public mcl::Generator {
 		Operand r(Int, unit);
 		std::string name = "mcl_fp_mont" + cybozu::itoa(bit);
 		mcl_fp_montM[bit] = Function(name, Void, pz, px, py, pp, r);
+		mcl_fp_montM[bit].setAlias();
 		beginFunc(mcl_fp_montM[bit]);
 		Operand p = load(bitcast(pp, Operand(IntPtr, bit)));
 		Operand z, s, a;
@@ -801,14 +802,19 @@ int main(int argc, char *argv[])
 	try
 {
 	uint32_t unit;
+	bool oldLLVM;
 	cybozu::Option opt;
-	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", "unit");
+	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", ": unit");
+	opt.appendBoolOpt(&oldLLVM, "old", ": old LLVM(before 3.8)");
 	opt.appendHelp("h");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
 	}
 	Code c;
+	if (oldLLVM) {
+		c.setOldLLVM();
+	}
 	c.setUnit(unit);
 	c.gen();
 } catch (std::exception& e) {
