@@ -187,10 +187,10 @@ struct Generator::Operand {
 	Operand(const Eval& e);
 	void operator=(const Eval& e);
 
-	std::string toStr(bool noAlias = false) const
+	std::string toStr(bool isAlias = true) const
 	{
 		if (type.isPtr) {
-			return getType(noAlias) + " " + getName();
+			return getType(isAlias) + " " + getName();
 		}
 		switch (type.type) {
 		default:
@@ -200,7 +200,7 @@ struct Generator::Operand {
 			return getType() + " " + getName();
 		}
 	}
-	std::string getType(bool noAlias = false) const
+	std::string getType(bool isAlias = true) const
 	{
 		std::string s;
 		switch (type.type) {
@@ -213,7 +213,7 @@ struct Generator::Operand {
 		}
 		if (type.isPtr) {
 			s += "*";
-			if (noAlias) {
+			if (!isAlias) {
 				s += " noalias ";
 			}
 		}
@@ -273,11 +273,11 @@ struct Generator::Function {
 	Generator::Operand ret;
 	OperandVec opv;
 	bool isPrivate;
-	bool isNoalias;
+	bool isAlias;
 	void clear()
 	{
 		isPrivate = false;
-		isNoalias = false;
+		isAlias = true;
 	}
 	explicit Function(const std::string& name = "") : name(name) { clear(); }
 	Function(const std::string& name, const Operand& ret)
@@ -331,7 +331,11 @@ struct Generator::Function {
 	}
 	void setNoalias()
 	{
-		isNoalias = true;
+		isAlias = false;
+	}
+	void setAlias()
+	{
+		isAlias = true;
 	}
 	std::string toStr() const
 	{
@@ -343,7 +347,7 @@ struct Generator::Function {
 		str += " @" + name + "(";
 		for (size_t i = 0; i < opv.size(); i++) {
 			if (i > 0) str += ", ";
-			str += opv[i].toStr(isNoalias);
+			str += opv[i].toStr(isAlias);
 		}
 		str += ")";
 		return str;
