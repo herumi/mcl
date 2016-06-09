@@ -338,40 +338,34 @@ struct BNT {
 	static void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 	{
 #if 1
-		const Fp2& X1 = R.x;
-		const Fp2& Y1 = R.y;
-		const Fp2& Z1 = R.z;
-		const Fp2& X2 = Q.x;
-		const Fp2& Y2 = Q.y;
-		Fp2 theta, lambda;
-		Fp2::mul(theta, Y2, Z1);
-		Fp2::sub(theta, Y1, theta);
-		Fp2::mul(lambda, X2, Z1);
-		Fp2::sub(lambda, X1, lambda);
+		Fp2 theta;
+		Fp2::mul(theta, Q.y, R.z);
+		Fp2::sub(theta, R.y, theta);
+		Fp2::mul(l.b, Q.x, R.z);
+		Fp2::sub(l.b, R.x, l.b);
 		Fp2 lambda2;
-		Fp2::sqr(lambda2, lambda);
+		Fp2::sqr(lambda2, l.b);
 		Fp2 t1, t2, t3, t4;
 		Fp2 t;
-		Fp2::mul(t1, X1, lambda2);
-		Fp2::add(t2, t1, t1); // 2 X1 lambda^2
-		Fp2::mul(t3, lambda2, lambda); // lambda^3
+		Fp2::mul(t1, R.x, lambda2);
+		Fp2::add(t2, t1, t1); // 2 R.x lambda^2
+		Fp2::mul(t3, lambda2, l.b); // lambda^3
 		Fp2::sqr(t4, theta);
-		t4 *= Z1; // t4 = Z1 theta^2
+		t4 *= R.z; // t4 = R.z theta^2
 		Fp2::add(R.x, t3, t4);
 		R.x -= t2;
-		R.x *= lambda;
-		Fp2::mul(t, Y1, t3);
+		R.x *= l.b;
+		Fp2::mul(t, R.y, t3);
 		Fp2::add(R.y, t1, t2);
 		R.y -= t3;
 		R.y -= t4;
 		R.y *= theta;
 		R.y -= t;
-		Fp2::mul(R.z, Z1, t3);
-		Fp2::mul(l.a, theta, X2);
-		Fp2::mul(t, lambda, Y2);
+		Fp2::mul(R.z, R.z, t3);
+		Fp2::mul(l.a, theta, Q.x);
+		Fp2::mul(t, l.b, Q.y);
 		l.a -= t;
 		Fp2::mul_xi(l.a, l.a);
-		l.b = lambda;
 		Fp2::neg(l.c, theta);
 #else
 		Fp2 t1, t2, t3, t4, T1, T2;
