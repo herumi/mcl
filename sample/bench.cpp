@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 	mcl::ec::Mode ecMode;
 	std::string ecModeStr;
 	cybozu::Option opt;
-	opt.appendOpt(&bitSize, 0, "b", ": bitSize");
+	opt.appendOpt(&bitSize, 0, "s", ": bitSize");
 	opt.appendOpt(&mode, 0, "m", ": mode(0:all, sum of 1:gmp, 2:gmp+mont, 4:llvm, 8:llvm+mont, 16:xbyak");
 	opt.appendBoolOpt(&ecOnly, "ec", ": ec only");
 	opt.appendBoolOpt(&fpOnly, "fp", ": fp only");
