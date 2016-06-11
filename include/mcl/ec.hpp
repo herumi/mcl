@@ -693,6 +693,20 @@ public:
 		sub(R, *this, rhs); // QQQ : optimized later
 		return R.isZero();
 	}
+	bool operator<(const EcT& rhs) const
+	{
+		if (isZero()) {
+			return !rhs.isZero();
+		}
+		if (rhs.isZero()) return false;
+		int cmp = Fp::compare(x, rhs.x);
+		if (cmp < 0) return true;
+		if (cmp > 0) return false;
+		return y < rhs.y;
+	}
+	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
+	bool operator>(const EcT& rhs) const { return rhs < *this; }
+	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
 private:
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
