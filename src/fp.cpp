@@ -337,8 +337,8 @@ struct OpeFunc {
 #ifdef MCL_USE_LLVM
 	#define SET_OP_LLVM(n) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fp_addP = mcl_fp_add ## n ##S; \
-			fp_subP = mcl_fp_sub ## n ##S; \
+			fp_addP = mcl_fp_add ## n ##L; \
+			fp_subP = mcl_fp_sub ## n ##L; \
 			if (!isFullBit) { \
 				fp_addNC = mcl_fp_addNC ## n; \
 				fp_subNC = mcl_fp_subNC ## n; \

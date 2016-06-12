@@ -349,7 +349,7 @@ struct Code : public mcl::Generator {
 		Operand t1 = trunc(t0, bit);
 		store(t1, pz);
 		Operand vc = sub(t0, p);
-		Operand c = lshr(vc, bit + unit - 1);
+		Operand c = lshr(vc, bit);
 		c = trunc(c, 1);
 	Label carry("carry");
 	Label nocarry("nocarry");
@@ -378,7 +378,7 @@ struct Code : public mcl::Generator {
 		y = zext(y, bit + unit);
 		Operand vc = sub(x, y);
 		Operand v = trunc(vc, bit); // v = x - y
-		Operand c = lshr(vc, bit + unit - 1);
+		Operand c = lshr(vc, bit);
 		c = trunc(c, 1);
 		Operand p = load(pp);
 		Operand z = select(c, p, makeImm(bit, 0));

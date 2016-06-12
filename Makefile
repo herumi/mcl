@@ -31,6 +31,7 @@ LLVM_SRC=src/base$(BIT).ll
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
+#LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128
 
 HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
 ifeq ($(HAS_BMI2),1)
