@@ -303,6 +303,7 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+#if 0
 	void gen_mcl_fp_addS()
 	{
 		resetGlobalIdx();
@@ -329,14 +330,15 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_addL()
+#endif
+	void gen_mcl_fp_add()
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, bit);
 		Operand px(IntPtr, bit);
 		Operand py(IntPtr, bit);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_add" + cybozu::itoa(bit) + "L";
+		std::string name = "mcl_fp_add" + cybozu::itoa(bit);
 		mcl_fp_addM[bit] = Function(name, Void, pz, px, py, pp);
 		beginFunc(mcl_fp_addM[bit]);
 		Operand x = load(px);
@@ -362,6 +364,7 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+#if 0
 	void gen_mcl_fp_subS()
 	{
 		resetGlobalIdx();
@@ -387,14 +390,15 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_subL()
+#endif
+	void gen_mcl_fp_sub()
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, bit);
 		Operand px(IntPtr, bit);
 		Operand py(IntPtr, bit);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_sub" + cybozu::itoa(bit) + "L";
+		std::string name = "mcl_fp_sub" + cybozu::itoa(bit);
 		mcl_fp_subM[bit] = Function(name, Void, pz, px, py, pp);
 		beginFunc(mcl_fp_subM[bit]);
 		Operand x = load(px);
@@ -403,7 +407,7 @@ struct Code : public mcl::Generator {
 		y = zext(y, bit + unit);
 		Operand vc = sub(x, y);
 		Operand v = trunc(vc, bit);
-		Operand c = lshr(vc, bit + unit - 1);
+		Operand c = lshr(vc, bit);
 		c = trunc(c, 1);
 		store(v, pz);
 	Label carry("carry");
@@ -477,7 +481,7 @@ struct Code : public mcl::Generator {
 
 		Operand H = lshr(vc, bit);
 		H = trunc(H, bit);
-		Operand c = lshr(vc, b2u - 1);
+		Operand c = lshr(vc, b2);
 		c = trunc(c, 1);
 		Operand p = load(pp);
 		c = select(c, p, makeImm(bit, 0));
@@ -750,17 +754,12 @@ struct Code : public mcl::Generator {
 		gen_mcl_fp_addsubNC(true);
 		gen_mcl_fp_addsubNC(false);
 	}
-	void gen_short()
+	void gen_addsub()
 	{
-		gen_mcl_fp_addS();
-		gen_mcl_fp_subS();
+		gen_mcl_fp_add();
+		gen_mcl_fp_sub();
 		gen_mcl_fpDbl_add();
 		gen_mcl_fpDbl_sub();
-	}
-	void gen_long()
-	{
-		gen_mcl_fp_addL();
-		gen_mcl_fp_subL();
 	}
 	void gen_mul()
 	{
@@ -789,8 +788,7 @@ struct Code : public mcl::Generator {
 		for (uint32_t i = 64; i <= end; i += unit) {
 			setBit(i);
 			gen_all();
-			gen_short();
-			gen_long();
+			gen_addsub();
 			if (i > 64) {
 				gen_mul();
 			}

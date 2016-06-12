@@ -13,10 +13,8 @@
 extern "C" {
 
 #define MCL_FP_DEF_FUNC(len) \
-void mcl_fp_add ## len ## S(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-void mcl_fp_add ## len ## L(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-void mcl_fp_sub ## len ## S(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-void mcl_fp_sub ## len ## L(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
+void mcl_fp_add ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
+void mcl_fp_sub ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
 void mcl_fp_addNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fp_subNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fp_mul_UnitPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, mcl::fp::Unit y); \
