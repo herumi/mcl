@@ -28,6 +28,7 @@ CYBOZU_TEST_AUTO(testEc)
 	*/
 	ElgamalEc::PrivateKey prv;
 	prv.init(P, bitSize, rg);
+	prv.setCache(0, 60000);
 	const ElgamalEc::PublicKey& pub = prv.getPublicKey();
 
 	const int m1 = 12345;
@@ -41,6 +42,8 @@ CYBOZU_TEST_AUTO(testEc)
 	// dec(enc) = id
 	CYBOZU_TEST_EQUAL(dec1, m1);
 	CYBOZU_TEST_EQUAL(dec2, m2);
+	CYBOZU_TEST_EQUAL(prv.dec(c1), m1);
+	CYBOZU_TEST_EQUAL(prv.dec(c2), m2);
 	// iostream
 	{
 		ElgamalEc::PublicKey pub2;
