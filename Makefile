@@ -21,7 +21,7 @@ GEN_EXE=src/gen
 ASM_SRC=src/$(CPU).s
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
-USE_LLVM?=1
+USE_LLVM?=0
 ifeq ($(USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM
   LIB_OBJ+=$(ASM_OBJ)

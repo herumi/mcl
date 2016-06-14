@@ -30,11 +30,6 @@ To make sample programs, run
 make sample
 ```
 
-If clang is not installed, then
-```
-make USE_LLVM=0
-```
-
 ## Build for 32-bit Linux
 Build openssl and gmp for 32-bit mode and install <lib32>
 ```
