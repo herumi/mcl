@@ -9,7 +9,7 @@ else
   CFLAGS+=-z noexecstack
   LDFLAGS+=-lrt
 endif
-CFLAGS+= -shared $(JAVA_INC) $(JAVA_INC)/linux -I ../include -I ../../xbyak -I ../../cybozulib/include -Wno-strict-aliasing
+CFLAGS+=$(JAVA_INC) $(JAVA_INC)/linux -I ../include -I ../../xbyak -I ../../cybozulib/include -Wno-strict-aliasing
 MCL_LIB=../lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl
