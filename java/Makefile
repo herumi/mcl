@@ -27,7 +27,7 @@ $(MCL_LIB):
 	make -C ..
 
 $(TARGET): mcl_if_wrap.cxx $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) $(MCL_LIB) -shared
 
 
 %.class: %.java
