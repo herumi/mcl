@@ -57,3 +57,24 @@ mcl_fp_addNC128:
 	pop		{r4, lr}
 	bx		lr
 
+	.globl	mcl_fp_addNC256
+	.align	2
+mcl_fp_addNC256:
+	push	{r4, r5, r6, r7, r8, lr}
+	ldm		r1!, {r3, r4, r5, r6}
+	ldm		r2!, {r7, r8, r12, lr}
+	adds	r3, r3, r7
+	adcs	r4, r4, r8
+	adcs	r5, r5, r12
+	adcs	r6, r6, lr
+	stm		r0!, {r3, r4, r5, r6}
+
+	ldm		r1!, {r3, r4, r5, r6}
+	ldm		r2!, {r7, r8, r12, lr}
+	adcs	r3, r3, r7
+	adcs	r4, r4, r8
+	adcs	r5, r5, r12
+	adcs	r6, r6, lr
+	stm		r0!, {r3, r4, r5, r6}
+	pop		{r4, r5, r6, r7, r8, lr}
+	bx		lr
