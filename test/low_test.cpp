@@ -19,7 +19,7 @@ void addNC(uint32_t *z, const uint32_t *x, const uint32_t *y);
 
 DEF_ADD(64)
 DEF_ADD(96)
-//DEF_ADD(128)
+DEF_ADD(128)
 
 #define CAT(S, BIT) "S##BIT"
 
@@ -42,12 +42,29 @@ void benchAdd()
 	CYBOZU_BENCH(name.c_str(), addNC<bit>, x, x, y);
 }
 
-CYBOZU_TEST_AUTO(addNC64)
+CYBOZU_TEST_AUTO(addNC64) { benchAdd<64>(); }
+CYBOZU_TEST_AUTO(addNC96) { benchAdd<96>(); }
+CYBOZU_TEST_AUTO(addNC128) { benchAdd<128>(); }
+#if 0
+CYBOZU_TEST_AUTO(addNC128)
 {
-	benchAdd<64>();
+	using namespace mcl::fp;
+	const size_t bit = 128;
+	const size_t N = bit / UnitBitSize;
+	Unit x[N], y[N];
+	for (int i = 0; i < 10; i++) {
+		Unit z[N];
+		Unit w[N];
+		rg.read(x, N);
+		rg.read(y, N);
+		low_add<N>(z, x, y);
+		addNC<bit>(w, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
+		mcl_fp_addNC128_2(w, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
+	}
+	std::string name = "name" + cybozu::itoa(bit);
+	CYBOZU_BENCH(name.c_str(), addNC<bit>, x, x, y);
+	CYBOZU_BENCH("ad128", mcl_fp_addNC128_2, x, x, y);
 }
-CYBOZU_TEST_AUTO(addNC96)
-{
-	benchAdd<96>();
-}
-
+#endif
