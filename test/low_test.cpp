@@ -8,7 +8,7 @@
 cybozu::XorShift rg;
 
 extern "C" void mcl_fp_addNC64(uint32_t *z, const uint32_t *x, const uint32_t *y);
-extern "C" void mcl_fp_addNC96_1(uint32_t *z, const uint32_t *x, const uint32_t *y);
+extern "C" void mcl_fp_addNC96(uint32_t *z, const uint32_t *x, const uint32_t *y);
 extern "C" void mcl_fp_addNC96_2(uint32_t *z, const uint32_t *x, const uint32_t *y);
 
 CYBOZU_TEST_AUTO(addNC64)
@@ -38,12 +38,12 @@ CYBOZU_TEST_AUTO(addNC)
 		rg.read(x, N);
 		rg.read(y, N);
 		low_add<N>(z, x, y);
-		mcl_fp_addNC96_1(w, x, y);
+		mcl_fp_addNC96(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 		mcl_fp_addNC96_2(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 	}
-	CYBOZU_BENCH("add96_1", mcl_fp_addNC96_1, x, x, y);
+	CYBOZU_BENCH("add96", mcl_fp_addNC96, x, x, y);
 	CYBOZU_BENCH("add96_2", mcl_fp_addNC96_2, x, x, y);
 }
 
