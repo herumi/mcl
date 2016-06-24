@@ -72,6 +72,65 @@ cl_fp_addNC128_2:
 	pop		{r4, r5, r6, lr}
 	bx		lr
 
+	.globl	mcl_fp_addNC160
+	.align	2
+mcl_fp_addNC160:
+	push	{r4, lr}
+	ldm		r1!, {r3, r4}
+	ldm		r2!, {r12, lr}
+	adds	r3, r3, r12
+	adcs	r4, r4, lr
+	stm		r0!, {r3, r4}
+	ldm		r1, {r1, r3, r4}
+	ldm		r2, {r2, r12, lr}
+	adcs	r1, r1, r2
+	adcs	r3, r3, r12
+	adcs	r4, r4, lr
+	stm		r0, {r1, r3, r4}
+	pop		{r4, lr}
+	bx		lr
+
+	.globl	mcl_fp_addNC192
+	.align	2
+mcl_fp_addNC192:
+	push	{r4, r5, r6, lr}
+	ldm		r1!, {r3, r4, r5}
+	ldm		r2!, {r6, r12, lr}
+	adds	r3, r3, r6
+	adcs	r4, r4, r12
+	adcs	r5, r5, lr
+	stm		r0!, {r3, r4, r5}
+
+	ldm		r1, {r3, r4, r5}
+	ldm		r2, {r6, r12, lr}
+	adcs	r3, r3, r6
+	adcs	r4, r4, r12
+	adcs	r5, r5, lr
+	stm		r0, {r3, r4, r5}
+	pop		{r4, r5, r6, lr}
+	bx		lr
+
+	.globl	mcl_fp_addNC224
+	.align	2
+mcl_fp_addNC224:
+	push	{r4, r5, r6, lr}
+	ldm		r1!, {r3, r4, r5}
+	ldm		r2!, {r6, r12, lr}
+	adds	r3, r3, r6
+	adcs	r4, r4, r12
+	adcs	r5, r5, lr
+	stm		r0!, {r3, r4, r5}
+
+	ldm		r1, {r1, r3, r4, r5}
+	ldm		r2, {r2, r6, r12, lr}
+	adcs	r1, r1, r2
+	adcs	r3, r3, r6
+	adcs	r4, r4, r12
+	adcs	r5, r5, lr
+	stm		r0, {r1, r3, r4, r5}
+	pop		{r4, r5, r6, lr}
+	bx		lr
+
 	.globl	mcl_fp_addNC256
 	.align	2
 mcl_fp_addNC256:
@@ -84,12 +143,12 @@ mcl_fp_addNC256:
 	adcs	r6, r6, lr
 	stm		r0!, {r3, r4, r5, r6}
 
-	ldm		r1!, {r3, r4, r5, r6}
-	ldm		r2!, {r7, r8, r12, lr}
+	ldm		r1, {r3, r4, r5, r6}
+	ldm		r2, {r7, r8, r12, lr}
 	adcs	r3, r3, r7
 	adcs	r4, r4, r8
 	adcs	r5, r5, r12
 	adcs	r6, r6, lr
-	stm		r0!, {r3, r4, r5, r6}
+	stm		r0, {r3, r4, r5, r6}
 	pop		{r4, r5, r6, r7, r8, lr}
 	bx		lr
