@@ -18,9 +18,12 @@ all: $(MCL_LIB)
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 GEN_EXE=src/gen
-ASM_SRC=src/$(CPU).s
+ifneq ($(CPU),)
+  ASM_SRC=src/$(CPU).s
+endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
+FUNC_LIST=src/func.list
 USE_LLVM?=0
 ifeq ($(USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM
@@ -47,8 +50,11 @@ $(ASM_OBJ): $(ASM_SRC) $(OBJ_DIR)
 $(ASM_SRC): $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $< | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
 
-$(LLVM_SRC): $(GEN_EXE)
-	$(GEN_EXE) > $@
+$(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
+	$(GEN_EXE) -f $(FUNC_LIST) > $@
+
+$(FUNC_LIST): $(LOW_ASM_SRC)
+	$(shell awk '/global/ { print $$2}' $(LOW_ASM_SRC) > $(FUNC_LIST) || touch $(FUNC_LIST))
 
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS) -O0

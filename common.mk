@@ -8,15 +8,18 @@ ifeq ($(ARCH),x86_64)
   CPU=x86-64
   BIT=64
   BIT_OPT=-m64
+  LOW_ASM_SRC=src/asm/low_x86-64.asm
 endif
 ifeq ($(ARCH),x86)
   CPU=x86
   BIT=32
   BIT_OPT=-m32
+  LOW_ASM_SRC=src/asm/low_x86.asm
 endif
 ifeq ($(ARCH),armv71)
   CPU=armv71
   BIT=32
+  LOW_ASM_SRC=src/asm/low_arm.s
 endif
 ifneq ($(UNAME_S),Darwin)
   LDFLAGS+=-lrt
