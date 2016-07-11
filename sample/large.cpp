@@ -23,6 +23,10 @@ int main()
 {
 	test(mcl::fp::FP_GMP);
 	test(mcl::fp::FP_GMP_MONT);
+#ifdef MCL_USE_LLVM
+	test(mcl::fp::FP_LLVM);
+	test(mcl::fp::FP_LLVM_MONT);
+#endif
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	puts("make clean");

@@ -119,8 +119,13 @@ public:
 #else
 		if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
 #endif
-		if (mode == fp::FP_AUTO) mode = fp::FP_GMP_MONT;
-		if (maxBitSize > 576 && mode != fp::FP_GMP_MONT) mode = fp::FP_GMP;
+		if (mode == fp::FP_AUTO) {
+			if (maxBitSize > 576) {
+				mode = fp::FP_GMP; // QQQ : slower than FP_GMP_MONT if maxBitSize == 768
+			} else {
+				mode = fp::FP_GMP_MONT;
+			}
+		}
 
 		op_.isMont = mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
 		if (mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT) {

@@ -50,6 +50,9 @@ void mcl_fpDbl_add224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*
 void mcl_fpDbl_sub224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 #else
 MCL_FP_DEF_FUNC(576)
+MCL_FP_DEF_FUNC(640)
+MCL_FP_DEF_FUNC(704)
+MCL_FP_DEF_FUNC(768)
 #endif
 
 #undef MCL_FP_DEF_FUNC

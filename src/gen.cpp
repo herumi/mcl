@@ -1,5 +1,6 @@
 #include "llvm_gen.hpp"
 #include <cybozu/option.hpp>
+#include <mcl/op.hpp>
 #include <map>
 #include <set>
 #include <fstream>
@@ -810,11 +811,11 @@ struct Code : public mcl::Generator {
 		unit2 = unit * 2;
 		unitStr = cybozu::itoa(unit);
 	}
-	void gen(const StrSet& privateFuncList)
+	void gen(const StrSet& privateFuncList, uint32_t maxBitSize)
 	{
 		this->privateFuncList = &privateFuncList;
 		gen_once();
-		uint32_t end = ((576 + unit - 1) / unit) * unit;
+		uint32_t end = ((maxBitSize + unit - 1) / unit) * unit;
 		for (uint32_t i = 64; i <= end; i += unit) {
 			setBit(i);
 			gen_all();
@@ -854,7 +855,8 @@ int main(int argc, char *argv[])
 		c.setOldLLVM();
 	}
 	c.setUnit(unit);
-	c.gen(privateFuncList);
+	uint32_t maxBitSize = MCL_MAX_OP_BIT_SIZE;
+	c.gen(privateFuncList, maxBitSize);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
 	return 1;
