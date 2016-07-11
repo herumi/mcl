@@ -462,6 +462,9 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	case 512: SET_OP(512); break;
 #if CYBOZU_OS_BIT == 64
 	case 576: SET_OP(576); break;
+	case 640: SET_OP(640); break;
+	case 704: SET_OP(704); break;
+	case 768: SET_OP(768); break;
 #else
 	case 160: SET_OP(160); SET_OP_DBL_LLVM(160, 320); break;
 	case 224: SET_OP(224); SET_OP_DBL_LLVM(224, 448); break;

@@ -8,7 +8,7 @@ TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal
 ifeq ($(CPU),x86-64)
   TEST_SRC+=fp_generator_test.cpp mont_fp_test.cpp
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp
 
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
