@@ -96,7 +96,6 @@ void test(const std::string& pStr, mcl::fp::Mode mode)
 	CYBOZU_BENCH("sqrPre", op.fpDbl_sqrPre, ux, ux);
 	CYBOZU_BENCH("mont", op.fpDbl_mod, ux, ux);
 	CYBOZU_BENCH("mul", Fp::mul, x, x, x);
-	compareGmp(pStr);
 }
 
 void testAll(const std::string& pStr)
@@ -107,6 +106,7 @@ void testAll(const std::string& pStr)
 	test(pStr, mcl::fp::FP_LLVM);
 	test(pStr, mcl::fp::FP_LLVM_MONT);
 #endif
+	compareGmp(pStr);
 }
 int main()
 	try
