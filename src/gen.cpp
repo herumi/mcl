@@ -824,6 +824,10 @@ struct Code : public mcl::Generator {
 				gen_mul();
 			}
 		}
+		if (maxBitSize == 768) {
+			setBit(1536);
+			gen_all();
+		}
 	}
 };
 

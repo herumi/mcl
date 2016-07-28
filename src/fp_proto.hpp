@@ -21,7 +21,9 @@ void mcl_fp_mul_UnitPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, mcl::fp
 void mcl_fpDbl_mulPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fpDbl_sqrPre ## len(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
 void mcl_fp_mont ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p, mcl::fp::Unit r); \
-void mcl_fp_montRed ## len(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p, mcl::fp::Unit r);
+void mcl_fp_montRed ## len(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p, mcl::fp::Unit r); \
+void mcl_fpDbl_add ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
+void mcl_fpDbl_sub ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 
 MCL_FP_DEF_FUNC(128)
 MCL_FP_DEF_FUNC(192)
@@ -30,12 +32,6 @@ MCL_FP_DEF_FUNC(320)
 MCL_FP_DEF_FUNC(384)
 MCL_FP_DEF_FUNC(448)
 MCL_FP_DEF_FUNC(512)
-void mcl_fpDbl_add128(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_sub128(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_add192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_sub192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_add256(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_sub256(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 #if CYBOZU_OS_BIT == 32
 MCL_FP_DEF_FUNC(160)
 MCL_FP_DEF_FUNC(224)
@@ -44,15 +40,12 @@ MCL_FP_DEF_FUNC(352)
 MCL_FP_DEF_FUNC(416)
 MCL_FP_DEF_FUNC(480)
 MCL_FP_DEF_FUNC(544)
-void mcl_fpDbl_add160(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_sub160(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_add224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
-void mcl_fpDbl_sub224(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 #else
 MCL_FP_DEF_FUNC(576)
 MCL_FP_DEF_FUNC(640)
 MCL_FP_DEF_FUNC(704)
 MCL_FP_DEF_FUNC(768)
+MCL_FP_DEF_FUNC(1536)
 #endif
 
 #undef MCL_FP_DEF_FUNC

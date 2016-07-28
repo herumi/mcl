@@ -304,21 +304,17 @@ struct OpeFunc {
 			} \
 			fpDbl_mulPre = mcl_fpDbl_mulPre ## n; \
 			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n; \
-			if (n <= 256) { \
-				fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
-			} \
+			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
 			montPU = mcl_fp_mont ## n; \
 			montRedPU = mcl_fp_montRed ## n; \
 		}
 	#define SET_OP_DBL_LLVM(n, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			if (n <= 256) { \
-				fpDbl_addP = mcl_fpDbl_add ## n; \
-				fpDbl_subP = mcl_fpDbl_sub ## n; \
-				if (!isFullBit) { \
-					fpDbl_addNC = mcl_fp_addNC ## n2; \
-					fpDbl_subNC = mcl_fp_subNC ## n2; \
-				} \
+			fpDbl_addP = mcl_fpDbl_add ## n; \
+			fpDbl_subP = mcl_fpDbl_sub ## n; \
+			if (!isFullBit) { \
+				fpDbl_addNC = mcl_fp_addNC ## n2; \
+				fpDbl_subNC = mcl_fp_subNC ## n2; \
 			} \
 		}
 #else
@@ -339,10 +335,8 @@ struct OpeFunc {
 		} \
 		fp_addP = OpeFunc<n>::fp_addPC; \
 		fp_subP = OpeFunc<n>::fp_subPC; \
-		if (n <= 256) { \
-			fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
-			fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
-		} \
+		fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
+		fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
 		if (isFullBit) { \
 			fp_addNC = fp_add; \
 			fp_subNC = fp_sub; \
@@ -351,10 +345,8 @@ struct OpeFunc {
 		} else { \
 			fp_addNC = OpeFunc<n>::fp_addNCC; \
 			fp_subNC = OpeFunc<n>::fp_subNCC; \
-			if (n <= 256) { \
-				fpDbl_addNC = OpeFunc<n * 2>::fp_addNCC; \
-				fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
-			} \
+			fpDbl_addNC = OpeFunc<n * 2>::fp_addNCC; \
+			fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 		} \
 		fp_mul_UnitPre = OpeFunc<n>::fp_mul_UnitPreC; \
 		fpN1_modP = OpeFunc<n>::fpN1_modPC; \
@@ -464,7 +456,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	case 576: SET_OP(576); break;
 	case 640: SET_OP(640); break;
 	case 704: SET_OP(704); break;
-	case 768: SET_OP(768); break;
+	case 768: SET_OP(768); SET_OP_DBL_LLVM(768, 1536); break;
 #else
 	case 160: SET_OP(160); SET_OP_DBL_LLVM(160, 320); break;
 	case 224: SET_OP(224); SET_OP_DBL_LLVM(224, 448); break;

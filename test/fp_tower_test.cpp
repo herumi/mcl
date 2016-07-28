@@ -7,7 +7,11 @@
 #include <mcl/fp.hpp>
 #include <mcl/fp_tower.hpp>
 
+#if MCL_MAX_OP_BIT_SIZE == 768
+typedef mcl::FpT<mcl::FpTag, 768> Fp;
+#else
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
+#endif
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
@@ -19,10 +23,12 @@ void testFp2()
 {
 	using namespace mcl;
 	puts(__FUNCTION__);
+#if MCL_MAX_OP_BIT_SIZE != 768
 	CYBOZU_TEST_EQUAL(sizeof(Fp), 32);
 	CYBOZU_TEST_EQUAL(sizeof(Fp2), 32 * 2);
 	CYBOZU_TEST_EQUAL(sizeof(Fp6), 32 * 6);
 	CYBOZU_TEST_EQUAL(sizeof(Fp12), 32 * 12);
+#endif
 	Fp2 x, y, z;
 	x.a = 1;
 	x.b = 2;
@@ -342,10 +348,12 @@ void test(const char *p, mcl::fp::Mode mode)
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	const int xi_a = 1;
 	Fp2::init(xi_a);
+#if 0
 	if (Fp::getBitSize() > 256) {
 		printf("not support p=%s\n", p);
 		return;
 	}
+#endif
 	if (g_benchOnly) {
 		benchFp2();
 		return;
@@ -384,6 +392,9 @@ void testAll()
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+#if MCL_MAX_OP_BIT_SIZE == 768
+		"776259046150354467574489744231251277628443008558348305569526019013025476343188443165439204414323238975243865348565536603085790022057407195722143637520590569602227488010424952775132642815799222412631499596858234375446423426908029627",
+#endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];

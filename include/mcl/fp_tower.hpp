@@ -117,7 +117,7 @@ public:
 	static const Fp& getXi_a() { return xi_a_; }
 	static void init(uint32_t xi_a)
 	{
-		assert(Fp::maxSize <= 256);
+//		assert(Fp::maxSize <= 256);
 		xi_a_ = xi_a;
 		mcl::fp::Op& op = Fp::op_;
 		op.fp2_add = fp2_addW;
