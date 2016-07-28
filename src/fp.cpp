@@ -451,11 +451,11 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	case 320: SET_OP(320); break;
 	case 384: SET_OP(384); break;
 	case 448: SET_OP(448); break;
-	case 512: SET_OP(512); break;
+	case 512: SET_OP(512); SET_OP_DBL_LLVM(512, 1024); break; // QQQ : need refactor for large prime
 #if CYBOZU_OS_BIT == 64
-	case 576: SET_OP(576); break;
-	case 640: SET_OP(640); break;
-	case 704: SET_OP(704); break;
+	case 576: SET_OP(576); SET_OP_DBL_LLVM(576, 1152); break;
+	case 640: SET_OP(640); SET_OP_DBL_LLVM(640, 1280); break;
+	case 704: SET_OP(704); SET_OP_DBL_LLVM(704, 1408); break;
 	case 768: SET_OP(768); SET_OP_DBL_LLVM(768, 1536); break;
 #else
 	case 160: SET_OP(160); SET_OP_DBL_LLVM(160, 320); break;
