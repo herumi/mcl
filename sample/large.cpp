@@ -116,6 +116,7 @@ void testAll(const std::string& pStr)
 	test(pStr, mcl::fp::FP_LLVM);
 	test(pStr, mcl::fp::FP_LLVM_MONT);
 #endif
+	compareGmp(pStr);
 }
 int main()
 	try
