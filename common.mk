@@ -43,7 +43,7 @@ ifneq ($(DEBUG),1)
     endif
   endif
   ifeq ($(MARCH),)
-    ifeq (,$(findstring x86,$(CPU)))
+    ifeq (x86,$(findstring x86,$(CPU)))
       CFLAGS_OPT+=-march=native
     endif
   else
