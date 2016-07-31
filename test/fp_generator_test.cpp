@@ -140,6 +140,7 @@ void testNeg(const mcl::fp::Op& op)
 void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 {
 	cybozu::XorShift rg;
+printf("pn=%d, %p\n", pn, fg.mul_Unit_);
 	for (int i = 0; i < 100; i++) {
 		uint64_t x[MAX_N];
 		uint64_t z[MAX_N + 1];
@@ -183,6 +184,7 @@ void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 
 void test(const char *pStr)
 {
+	printf("test %s\n", pStr);
 	Fp::init(pStr, mcl::fp::FP_XBYAK);
 	const mcl::fp::Op& op = Fp::getOp();
 	const int pn = (int)op.N;
@@ -195,7 +197,6 @@ void test(const char *pStr)
 CYBOZU_TEST_AUTO(all)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(primeTable); i++) {
-		printf("test prime i=%d\n", (int)i);
 		test(primeTable[i]);
 	}
 }
