@@ -61,6 +61,7 @@ enum PrimeMode {
 struct Op {
 	mpz_class mp;
 	mcl::SquareRoot sq;
+	FpGenerator *fg;
 	Unit p[maxOpUnitSize];
 	Unit half[maxOpUnitSize]; // (p - 1) / 2
 	Unit oneRep[maxOpUnitSize]; // 1(=inv R if Montgomery)
@@ -115,7 +116,6 @@ struct Op {
 	void4u fp_addP;
 	void4u fp_subP;
 	void3u fpDbl_modP;
-	FpGenerator *fg;
 
 	/*
 		for FpDbl
@@ -148,33 +148,65 @@ struct Op {
 	void2u fp2_mul_xi;
 
 	Op()
-		: N(0), bitSize(0)
-		, fp_isZero(0), fp_clear(0), fp_copy(0)
-		, fp_neg(0), fp_sqr(0), fp_add(0), fp_sub(0), fp_mul(0)
-		, fp_mul_UnitPre(0)
-		, fpN1_modP(0)
-		, fp_mul_Unit(0)
-		, isFullBit(false)
-		, isMont(false)
-		, primeMode(PM_GENERIC)
-		, isFastMod(false)
-		, fp_addNC(0), fp_subNC(0)
-		, fp_preInv(0)
-		, rp(0), montRedPU(0), montPU(0)
-		, fp_negP(0), fp_invOp(0), fp_addP(0), fp_subP(0), fpDbl_modP(0)
-		, fg(createFpGenerator())
-		, fpDbl_add(0), fpDbl_sub(0)
-		, fpDbl_addP(0), fpDbl_subP(0)
-		, fpDbl_addNC(0), fpDbl_subNC(0)
-		, fpDbl_sqrPre(0), fpDbl_mulPre(0), fpDbl_mod(0)
-		, xi_a(0)
-		, fp2_add(0), fp2_sub(0), fp2_mul(0), fp2_neg(0)
-		, fp2_sqr(0), fp2_mul_xi(0)
 	{
+		clear();
+		fg = createFpGenerator();
 	}
 	~Op()
 	{
 		destroyFpGenerator(fg);
+	}
+	void clear()
+	{
+		mp = 0;
+		sq.clear();
+		// fg is not set
+		invTbl.clear();
+		N = 0;
+		bitSize = 0;
+		fp_isZero = 0;
+		fp_clear = 0;
+		fp_copy = 0;
+		fp_neg = 0;
+		fp_sqr = 0;
+		fp_add = 0;
+		fp_sub = 0;
+		fp_mul = 0;
+		fp_mul_UnitPre = 0;
+		fpN1_modP = 0;
+		fp_mul_Unit = 0;
+		isFullBit = false;
+		isMont = false;
+		primeMode = PM_GENERIC;
+		isFastMod = false;
+		fp_addNC = 0;
+		fp_subNC = 0;
+		fp_preInv = 0;
+		rp = 0;
+		montRedPU = 0;
+		montPU = 0;
+		fp_negP = 0;
+		fp_invOp = 0;
+		fp_addP = 0;
+		fp_subP = 0;
+		fpDbl_modP = 0;
+		fpDbl_add = 0;
+		fpDbl_sub = 0;
+		fpDbl_addP = 0;
+		fpDbl_subP = 0;
+		fpDbl_addNC = 0;
+		fpDbl_subNC = 0;
+		fpDbl_sqrPre = 0;
+		fpDbl_mulPre = 0;
+		fpDbl_mod = 0;
+		xi_a = 0;
+		fp2_add = 0;
+		fp2_sub = 0;
+		fp2_mul = 0;
+		fp2_neg = 0;
+		fp2_inv = 0;
+		fp2_sqr = 0;
+		fp2_mul_xi = 0;
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{
