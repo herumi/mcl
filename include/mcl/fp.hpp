@@ -515,7 +515,7 @@ namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 template<class T> struct hash;
 
 template<class tag, size_t maxBitSize>
-struct hash<mcl::FpT<tag, maxBitSize> > : public std::unary_function<mcl::FpT<tag, maxBitSize>, size_t> {
+struct hash<mcl::FpT<tag, maxBitSize> > {
 	size_t operator()(const mcl::FpT<tag, maxBitSize>& x, uint64_t v = 0) const
 	{
 		return static_cast<size_t>(cybozu::hash64(x.getUnit(), x.getUnitSize(), v));
