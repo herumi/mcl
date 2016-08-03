@@ -289,7 +289,16 @@ class SquareRoot {
 	mpz_class q; // p - 1 = 2^r q
 	mpz_class s; // s = g^q
 public:
-	SquareRoot() : isPrime(false) {}
+	SquareRoot() { clear(); }
+	void clear()
+	{
+		isPrime = false;
+		p = 0;
+		g = 0;
+		r = 0;
+		q = 0;
+		s = 0;
+	}
 	void set(const mpz_class& _p)
 	{
 		p = _p;

@@ -96,6 +96,7 @@ public:
 		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
+		op_.clear();
 		op_.fp_neg = fp_negW;
 		op_.fp_sqr = fp_sqrW;
 		op_.fp_add = fp_addW;
@@ -111,7 +112,7 @@ public:
 */
 #ifdef MCL_USE_XBYAK
 		if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
-		if (mode == fp::FP_XBYAK && maxBitSize > 256) {
+		if (mode == fp::FP_XBYAK && maxBitSize > 521) {
 			mode = fp::FP_AUTO;
 		}
 #else
@@ -128,16 +129,6 @@ public:
 			op_.fp_sqr = fp_montSqrW;
 			op_.fpDbl_mod = fp_montRedW;
 		}
-#if 0
-	fprintf(stderr, "mode=%d, isMont=%d"
-#ifdef MCL_USE_XBYAK
-		" ,MCL_USE_XBYAK"
-#endif
-#ifdef MCL_USE_LLVM
-		" ,MCL_USE_LLVM"
-#endif
-	"\n", mode, op_.isMont);
-#endif
 		int base = 0;
 		op_.init(mstr, base, maxBitSize, mode);
 		{ // set oneRep
