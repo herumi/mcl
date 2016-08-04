@@ -95,6 +95,17 @@ CYBOZU_TEST_AUTO(naive)
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 }
 
+CYBOZU_TEST_AUTO(HashMapToG1)
+{
+	mcl::bn::HashMapToG1<Fp> hash;
+
+	for (int i = 0; i < 10; i++) {
+		G1 g;
+		hash.calc(g, i, 2);
+		std::cout << i << ':' << g << std::endl;
+	}
+}
+
 int main(int argc, char *argv[])
 	try
 {
