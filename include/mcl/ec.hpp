@@ -749,8 +749,19 @@ struct EcParam {
 
 } // mcl
 
+#ifdef CYBOZU_USE_BOOST
+namespace mcl {
+template<class Fp>
+size_t hash_value(const mcl::EcT<Fp>& P)
+{
+	if (P.isZero()) return 0;
+	P.normalize();
+	return mcl::hash_value(P.y, mcl::hash_value(P.x));
+}
+
+}
+#else
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
-template<class T> struct hash;
 
 template<class Fp>
 struct hash<mcl::EcT<Fp> > {
@@ -758,13 +769,12 @@ struct hash<mcl::EcT<Fp> > {
 	{
 		if (P.isZero()) return 0;
 		P.normalize();
-		uint64_t v = hash<Fp>()(P.x);
-		v = hash<Fp>()(P.y, v);
-		return static_cast<size_t>(v);
+		return hash<Fp>()(P.y, hash<Fp>()(P.x));
 	}
 };
 
 CYBOZU_NAMESPACE_TR1_END } // std
+#endif
 
 #ifdef _MSC_VER
 	#pragma warning(pop)

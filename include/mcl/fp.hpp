@@ -511,8 +511,18 @@ template<class T, class S> void pow(T& z, const T& x, const S& y) { T::pow(z, x,
 
 } // mcl
 
+#ifdef CYBOZU_USE_BOOST
+namespace mcl {
+
+template<class tag, size_t maxBitSize>
+size_t hash_value(const mcl::FpT<tag, maxBitSize>& x, size_t v = 0)
+{
+	return static_cast<size_t>(cybozu::hash64(x.getUnit(), x.getUnitSize(), v));
+}
+
+}
+#else
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
-template<class T> struct hash;
 
 template<class tag, size_t maxBitSize>
 struct hash<mcl::FpT<tag, maxBitSize> > {
@@ -523,6 +533,7 @@ struct hash<mcl::FpT<tag, maxBitSize> > {
 };
 
 CYBOZU_NAMESPACE_TR1_END } // std::tr1
+#endif
 
 #ifdef _WIN32
 	#pragma warning(pop)
