@@ -112,26 +112,30 @@ template<class Fp>
 struct HashMapToG1 {
 	Fp c1; // sqrt(-3)
 	Fp c2; // (-1 + sqrt(-3)) / 2
+	int legendre(const Fp& x) const
+	{
+		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
+	}
 	HashMapToG1()
 	{
 		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("HashMapToG1:c1");
 		c2 = (c1 - 1) / 2;
 	}
-	int legendre(const Fp& x) const
-	{
-		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
-	}
 	/*
 		P.-A. Fouque and M. Tibouchi,
 		"Indifferentiable hashing to Barreto Naehrig curves, " in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
-		algorithm 1 in "Software Implementation of an Attribute-Based Encryption Scheme", IEEE. trans. on computesr, vol. 64, No.5, May 2015
+
+		w = sqrt(-3) t / (1 + b + t^2)
+		Remark: throw exception if t = 0, c1, -c1
 	*/
 	void calc(mcl::EcT<Fp>& P, const Fp& t, int b) const
 	{
-		Fp w = t * t + b;
-		w = (t / (w + 1)) * c1;
+		Fp x, y, w;
 		bool negative = legendre(t) < 0;
-		Fp x, y;
+		if (t.isZero()) goto ERR_POINT;
+		w = t * t + b + 1;
+		if (w.isZero()) goto ERR_POINT;
+		w = c1 * t / w;
 		for (int i = 0; i < 3; i++) {
 			switch (i) {
 			case 0: x = c2 - t * w; break;
@@ -145,6 +149,8 @@ struct HashMapToG1 {
 				return;
 			}
 		}
+	ERR_POINT:
+		throw cybozu::Exception("HashMapToG1:calc:bad") << t << b;
 	}
 };
 

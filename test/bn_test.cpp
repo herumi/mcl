@@ -99,11 +99,13 @@ CYBOZU_TEST_AUTO(HashMapToG1)
 {
 	mcl::bn::HashMapToG1<Fp> hash;
 
-	for (int i = 0; i < 10; i++) {
-		G1 g;
+	G1 g;
+	for (int i = 1; i < 10; i++) {
 		hash.calc(g, i, 2);
-		std::cout << i << ':' << g << std::endl;
 	}
+	CYBOZU_TEST_EXCEPTION(hash.calc(g, 0, 2), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(hash.calc(g, hash.c1, 2), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(hash.calc(g, -hash.c1, 2), cybozu::Exception);
 }
 
 int main(int argc, char *argv[])
