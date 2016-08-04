@@ -670,14 +670,18 @@ public:
 	{
 		compressedExpression_ = compressedExpression;
 	}
-	static inline void getYfromX(Fp& y, const Fp& x, bool isYodd)
+	static inline void getWeierstrass(Fp& yy, const Fp& x)
 	{
 		Fp t;
 		Fp::sqr(t, x);
 		t += a_;
 		t *= x;
-		t += b_;
-		Fp::squareRoot(y, t);
+		Fp::add(yy, t, b_);
+	}
+	static inline void getYfromX(Fp& y, const Fp& x, bool isYodd)
+	{
+		getWeierstrass(y, x);
+		if (!Fp::squareRoot(y, y)) throw cybozu::Exception("EcT:getYfromX") << x << isYodd;
 		if (y.isOdd() ^ isYodd) {
 			Fp::neg(y, y);
 		}
