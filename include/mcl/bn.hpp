@@ -108,8 +108,9 @@ bool getGoodRepl(Vec& v, const mpz_class& x)
 	}
 }
 
-template<class Fp>
+template<class Ec>
 struct HashMapToG1 {
+	typedef typename Ec::Fp Fp;
 	Fp c1; // sqrt(-3)
 	Fp c2; // (-1 + sqrt(-3)) / 2
 	int legendre(const Fp& x) const
@@ -128,12 +129,12 @@ struct HashMapToG1 {
 		w = sqrt(-3) t / (1 + b + t^2)
 		Remark: throw exception if t = 0, c1, -c1
 	*/
-	void calc(mcl::EcT<Fp>& P, const Fp& t, int b) const
+	void calc(Ec& P, const Fp& t) const
 	{
 		Fp x, y, w;
 		bool negative = legendre(t) < 0;
 		if (t.isZero()) goto ERR_POINT;
-		w = t * t + b + 1;
+		w = t * t + Ec::b_ + 1;
 		if (w.isZero()) goto ERR_POINT;
 		w = c1 * t / w;
 		for (int i = 0; i < 3; i++) {
@@ -142,7 +143,7 @@ struct HashMapToG1 {
 			case 1: x = -1 - x; break;
 			case 2: x = 1 + 1 / (w * w); break;
 			}
-			y = x * x * x + b;
+			Ec::getWeierstrass(y, x);
 			if (Fp::squareRoot(y, y)) {
 				if (negative) Fp::neg(y, y);
 				P.set(x, y);
@@ -150,7 +151,7 @@ struct HashMapToG1 {
 			}
 		}
 	ERR_POINT:
-		throw cybozu::Exception("HashMapToG1:calc:bad") << t << b;
+		throw cybozu::Exception("HashMapToG1:calc:bad") << t << Ec::b_;
 	}
 };
 

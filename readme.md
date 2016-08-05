@@ -43,6 +43,12 @@ open mcl.sln and build or if you have msbuild.exe
 msbuild /p:Configuration=Release
 ```
 
+### Build with LLVM
+require clang 3.8 or over.
+```
+make USE_LLVM=1 LLVM_VER=-3.8
+```
+
 # License
 
 modified new BSD License
