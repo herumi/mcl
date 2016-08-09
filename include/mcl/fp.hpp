@@ -327,6 +327,7 @@ public:
 	}
 	bool isZero() const { return op_.fp_isZero(v_); }
 	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
+	static const inline FpT& one() { return *reinterpret_cast<const FpT*>(op_.oneRep); }
 	/*
 		return true if p/2 < x < p
 		return false if 0 <= x <= p/2
