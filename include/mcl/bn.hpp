@@ -108,18 +108,20 @@ bool getGoodRepl(Vec& v, const mpz_class& x)
 	}
 }
 
-template<class Ec>
-struct HashMapToG1 {
-	typedef typename Ec::Fp Fp;
+template<class Fp>
+struct MapTo {
+	typedef mcl::Fp2T<Fp> Fp2;
+	typedef mcl::EcT<Fp> G1;
+	typedef mcl::EcT<Fp2> G2;
 	Fp c1; // sqrt(-3)
 	Fp c2; // (-1 + sqrt(-3)) / 2
 	int legendre(const Fp& x) const
 	{
 		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
 	}
-	HashMapToG1()
+	MapTo()
 	{
-		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("HashMapToG1:c1");
+		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("MapTo:c1");
 		c2 = (c1 - 1) / 2;
 	}
 	/*
@@ -129,21 +131,22 @@ struct HashMapToG1 {
 		w = sqrt(-3) t / (1 + b + t^2)
 		Remark: throw exception if t = 0, c1, -c1
 	*/
-	void calc(Ec& P, const Fp& t) const
+	void calcG1(G1& P, const Fp& t) const
 	{
 		Fp x, y, w;
 		bool negative = legendre(t) < 0;
 		if (t.isZero()) goto ERR_POINT;
-		w = t * t + Ec::b_ + 1;
+		Fp::sqr(w, t);
+		w += G1::b_ + Fp::one();
 		if (w.isZero()) goto ERR_POINT;
 		w = c1 * t / w;
 		for (int i = 0; i < 3; i++) {
 			switch (i) {
 			case 0: x = c2 - t * w; break;
-			case 1: x = -1 - x; break;
-			case 2: x = 1 + 1 / (w * w); break;
+			case 1: x = - x - 1; break;
+			case 2: Fp::sqr(x, w); Fp::inv(x, x); x += Fp::one(); break;
 			}
-			Ec::getWeierstrass(y, x);
+			G1::getWeierstrass(y, x);
 			if (Fp::squareRoot(y, y)) {
 				if (negative) Fp::neg(y, y);
 				P.set(x, y);
@@ -151,7 +154,7 @@ struct HashMapToG1 {
 			}
 		}
 	ERR_POINT:
-		throw cybozu::Exception("HashMapToG1:calc:bad") << t << Ec::b_;
+		throw cybozu::Exception("MapTo:calcG1:bad") << t;
 	}
 };
 

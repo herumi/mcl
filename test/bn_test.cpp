@@ -95,17 +95,17 @@ CYBOZU_TEST_AUTO(naive)
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 }
 
-CYBOZU_TEST_AUTO(HashMapToG1)
+CYBOZU_TEST_AUTO(MapTo)
 {
-	mcl::bn::HashMapToG1<G1> hash;
+	mcl::bn::MapTo<Fp> mapTo;
 
 	G1 g;
 	for (int i = 1; i < 10; i++) {
-		hash.calc(g, i);
+		mapTo.calcG1(g, i);
 	}
-	CYBOZU_TEST_EXCEPTION(hash.calc(g, 0), cybozu::Exception);
-	CYBOZU_TEST_EXCEPTION(hash.calc(g, hash.c1), cybozu::Exception);
-	CYBOZU_TEST_EXCEPTION(hash.calc(g, -hash.c1), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, 0), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, mapTo.c1), cybozu::Exception);
+	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, -mapTo.c1), cybozu::Exception);
 }
 
 int main(int argc, char *argv[])
