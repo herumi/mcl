@@ -114,6 +114,11 @@ public:
 		isOdd() is not good naming. QQQ
 	*/
 	bool isOdd() const { return a.isOdd(); }
+	static inline bool squareRoot(Fp2T& /*y*/, const Fp2T& /*x*/)
+	{
+		throw cybozu::Exception("Fp2T:squareRoot:not supported");
+	}
+
 	static const Fp& getXi_a() { return xi_a_; }
 	static void init(uint32_t xi_a)
 	{
