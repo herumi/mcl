@@ -231,6 +231,18 @@ struct gmp {
 	{
 		return mpz_tstbit(x.get_mpz_t(), pos) != 0;
 	}
+	static inline void setBit(mpz_class& x, size_t pos, bool v = true)
+	{
+		if (v) {
+			mpz_setbit(x.get_mpz_t(), pos);
+		} else {
+			resetBit(x, pos);
+		}
+	}
+	static inline void resetBit(mpz_class& x, size_t pos)
+	{
+		mpz_clrbit(x.get_mpz_t(), pos);
+	}
 	static inline Unit getUnit(const mpz_class& x, size_t i)
 	{
 		return x.get_mpz_t()->_mp_d[i];
