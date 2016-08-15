@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 /**
 	@file
 	@brief util function for gmp
@@ -340,6 +341,10 @@ public:
 	bool get(mpz_class& x, const mpz_class& a) const
 	{
 		if (!isPrime) throw cybozu::Exception("SquareRoot:get:not prime") << p;
+		if (a == 0) {
+			x = 0;
+			return true;
+		}
 		if (gmp::legendre(a, p) < 0) return false;
 		if (r == 1) {
 			// (p + 1) / 4 = (q + 1) / 2

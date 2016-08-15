@@ -120,6 +120,26 @@ void testFp2()
 	inv(y, x);
 	y *= x;
 	CYBOZU_TEST_EQUAL(y, 1);
+
+	// square root
+	for (int i = 0; i < 3; i++) {
+		x.a = i * i + i * 2;
+		x.b = i;
+		Fp2::sqr(y, x);
+		CYBOZU_TEST_ASSERT(Fp2::squareRoot(z, y));
+		CYBOZU_TEST_EQUAL(z * z, y);
+		CYBOZU_TEST_ASSERT(Fp2::squareRoot(y, y));
+		CYBOZU_TEST_EQUAL(z * z, y * y);
+		x.b = 0;
+		Fp2::sqr(y, x);
+		CYBOZU_TEST_ASSERT(Fp2::squareRoot(z, y));
+		CYBOZU_TEST_EQUAL(z * z, y);
+		x.a = 0;
+		x.b = i * i + i * 3;
+		Fp2::sqr(y, x);
+		CYBOZU_TEST_ASSERT(Fp2::squareRoot(z, y));
+		CYBOZU_TEST_EQUAL(z * z, y);
+	}
 }
 
 void testFp6sqr(const Fp2& a, const Fp2& b, const Fp2& c, const Fp6& x)

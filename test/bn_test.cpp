@@ -108,6 +108,20 @@ CYBOZU_TEST_AUTO(MapTo)
 	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, -mapTo.c1), cybozu::Exception);
 }
 
+CYBOZU_TEST_AUTO(stream)
+{
+	const TestSet& ts = g_testSetTbl[0];
+	G2 Q0(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+	G2::setCompressedExpression();
+	G2 Q;
+	for (int i = 0; i < 10; i++) {
+		G2 R;
+		R.setStr(Q.getStr());
+		CYBOZU_TEST_EQUAL(Q, R);
+		G2::add(Q, Q, Q0);
+	}
+}
+
 int main(int argc, char *argv[])
 	try
 {

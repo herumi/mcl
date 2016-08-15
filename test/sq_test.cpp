@@ -9,7 +9,7 @@ CYBOZU_TEST_AUTO(sqrt)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class p = tbl[i];
 		sq.set(p);
-		for (mpz_class a = 1; a < p; a++) {
+		for (mpz_class a = 0; a < p; a++) {
 			mpz_class x;
 			if (sq.get(x, a)) {
 				mpz_class y;

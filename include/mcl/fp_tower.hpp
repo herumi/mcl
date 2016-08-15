@@ -114,9 +114,43 @@ public:
 		isOdd() is not good naming. QQQ
 	*/
 	bool isOdd() const { return a.isOdd(); }
-	static inline bool squareRoot(Fp2T& /*y*/, const Fp2T& /*x*/)
+	/*
+		(a + bi)^2 = (a^2 - b^2) + 2ab i = c + di
+		A = a^2
+		B = b^2
+		A = (c +/- sqrt(c^2 + d^2))/2
+		b = d / 2a
+	*/
+	static inline bool squareRoot(Fp2T& y, const Fp2T& x)
 	{
-		throw cybozu::Exception("Fp2T:squareRoot:not supported");
+		Fp t1, t2;
+		if (x.b.isZero()) {
+			if (Fp::squareRoot(t1, x.a)) {
+				y.a = t1;
+				y.b.clear();
+			} else {
+				if (!Fp::squareRoot(t1, -x.a)) throw cybozu::Exception("Fp2T:squareRoot:internal error1") << x;
+				y.a.clear();
+				y.b = t1;
+			}
+			return true;
+		}
+		Fp::sqr(t1, x.a);
+		Fp::sqr(t2, x.b);
+		t1 += t2; // c^2 + d^2
+		if (!Fp::squareRoot(t1, t1)) return false;
+		Fp::add(t2, x.a, t1);
+		Fp::divBy2(t2, t2);
+		if (!Fp::squareRoot(t2, t2)) {
+			Fp::sub(t2, x.a, t1);
+			Fp::divBy2(t2, t2);
+			if (!Fp::squareRoot(t2, t2)) throw cybozu::Exception("Fp2T:squareRoot:internal error2") << x;
+		}
+		y.a = t2;
+		t2 += t2;
+		Fp::inv(t2, t2);
+		Fp::mul(y.b, x.b, t2);
+		return true;
 	}
 
 	static const Fp& getXi_a() { return xi_a_; }
