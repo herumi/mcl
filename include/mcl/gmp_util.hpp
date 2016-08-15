@@ -300,6 +300,7 @@ class SquareRoot {
 	int r;
 	mpz_class q; // p - 1 = 2^r q
 	mpz_class s; // s = g^q
+	mpz_class q_add_1_div_2;
 public:
 	SquareRoot() { clear(); }
 	void clear()
@@ -310,6 +311,7 @@ public:
 		r = 0;
 		q = 0;
 		s = 0;
+		q_add_1_div_2 = 0;
 	}
 	void set(const mpz_class& _p)
 	{
@@ -330,6 +332,7 @@ public:
 			q /= 2;
 		}
 		gmp::powMod(s, g, q, p);
+		q_add_1_div_2 = (q + 1) / 2;
 	}
 	/*
 		solve x^2 = a mod p
@@ -339,26 +342,29 @@ public:
 		if (!isPrime) throw cybozu::Exception("SquareRoot:get:not prime") << p;
 		if (gmp::legendre(a, p) < 0) return false;
 		if (r == 1) {
-			gmp::powMod(x, a, (p + 1) / 4, p);
+			// (p + 1) / 4 = (q + 1) / 2
+			gmp::powMod(x, a, q_add_1_div_2, p);
 			return true;
 		}
 		mpz_class c = s, d;
 		int e = r;
 		gmp::powMod(d, a, q, p);
-		gmp::powMod(x, a, (q + 1) / 2, p); // destroy a if &x == &a
+		gmp::powMod(x, a, q_add_1_div_2, p); // destroy a if &x == &a
+		mpz_class dd;
+		mpz_class b;
 		while (d != 1) {
 			int i = 1;
-			mpz_class dd = (d * d) % p;
+			dd = d * d; dd %= p;
 			while (dd != 1) {
-				dd = (dd * dd) % p;
+				dd *= dd; dd %= p;
 				i++;
 			}
-			mpz_class b = 1;
+			b = 1;
 			b <<= e - i - 1;
 			gmp::powMod(b, c, b, p);
-			x = (x * b) % p;
-			c = (b * b) % p;
-			d = (d * c) % p;
+			x *= b; x %= p;
+			c = b * b; c %= p;
+			d *= c; d %= p;
 			e = i;
 		}
 		return true;
