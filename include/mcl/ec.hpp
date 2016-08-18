@@ -467,17 +467,17 @@ public:
 		R.y -= vv;
 	}
 #endif
-	static inline void add(EcT& R, const EcT& _P, const EcT& _Q)
+	static inline void add(EcT& R, const EcT& P0, const EcT& Q0)
 	{
-		if (_P.isZero()) { R = _Q; return; }
-		if (_Q.isZero()) { R = _P; return; }
-		if (&_P == &_Q) {
-			dblNoVerifyInf(R, _P);
+		if (P0.isZero()) { R = Q0; return; }
+		if (Q0.isZero()) { R = P0; return; }
+		if (&P0 == &Q0) {
+			dblNoVerifyInf(R, P0);
 			return;
 		}
 #ifdef MCL_EC_USE_AFFINE
-		const EcT& P(_P);
-		const EcT& Q(_Q);
+		const EcT& P(P0);
+		const EcT& Q(Q0);
 		Fp t;
 		Fp::neg(t, Q.y);
 		if (P.y == t) { R.clear(); return; }
@@ -499,8 +499,8 @@ public:
 		Fp::sub(R.y, s, P.y);
 		R.x = x3;
 #else
-		const EcT *pP = &_P;
-		const EcT *pQ = &_Q;
+		const EcT *pP = &P0;
+		const EcT *pQ = &Q0;
 		if (pP->z.isOne()) {
 			std::swap(pP, pQ);
 		}
