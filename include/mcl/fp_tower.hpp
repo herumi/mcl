@@ -88,12 +88,18 @@ public:
 		Fp::divBy2(y.a, x.a);
 		Fp::divBy2(y.b, x.b);
 	}
+	static inline fp::IoMode getIoMode() { return Fp::getIoMode(); }
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
 	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
-		return os << self.a << ' ' << self.b;
+		fp::IoMode ioMode = Fp::getIoMode();
+		if (ioMode == fp::IoArray || ioMode == fp::IoArrayRaw) {
+			return os << self.a << self.b;
+		} else {
+			return os << self.a << ' ' << self.b;
+		}
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
@@ -416,7 +422,12 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
 	friend std::ostream& operator<<(std::ostream& os, const Fp6T& x)
 	{
-		return os << x.a << ' ' << x.b << ' ' << x.c;
+		fp::IoMode ioMode = Fp::getIoMode();
+		if (ioMode == fp::IoArray || ioMode == fp::IoArrayRaw) {
+			return os << x.a << x.b << x.c;
+		} else {
+			return os << x.a << ' ' << x.b << ' ' << x.c;
+		}
 	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& x)
 	{
@@ -681,7 +692,12 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
-		return os << self.a << ' ' << self.b;
+		fp::IoMode ioMode = Fp::getIoMode();
+		if (ioMode == fp::IoArray || ioMode == fp::IoArrayRaw) {
+			return os << self.a << self.b;
+		} else {
+			return os << self.a << ' ' << self.b;
+		}
 	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{

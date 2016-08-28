@@ -620,14 +620,73 @@ public:
 	}
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
-		const std::ios_base::fmtflags f = os.flags();
-		if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
-		const int base = (f & std::ios_base::hex) ? 16 : 10;
-		const bool withPrefix = (f & std::ios_base::showbase) != 0;
-		return os << self.getStr(base, withPrefix);
+		fp::IoMode ioMode = Fp::getIoMode();
+		switch (ioMode) {
+		default:
+		case fp::IoAuto:
+		case fp::IoBinary:
+		case fp::IoDecimal:
+		case fp::IoHeximal:
+			{
+				int base = ioMode;
+				bool withPrefix = false;
+				if (ioMode == fp::IoAuto) {
+					const std::ios_base::fmtflags f = os.flags();
+					if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
+					base = (f & std::ios_base::hex) ? 16 : 10;
+					withPrefix = (f & std::ios_base::showbase) != 0;
+				}
+				return os << self.getStr(base, withPrefix);
+			}
+		case fp::IoArray:
+		case fp::IoArrayRaw:
+			if (self.isZero()) {
+				return os << '0';
+			}
+			self.normalize();
+			if (compressedExpression_) {
+				return os << '1' << self.x << (self.y.isOdd() ? '1' : '0');
+			} else {
+				return os << '2' << self.x << self.y;
+			}
+		}
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
+		fp::IoMode ioMode = Fp::getIoMode();
+		if (ioMode == fp::IoArray || ioMode == fp::IoArrayRaw) {
+			char c = 0;
+			is >> c;
+			if (c == '0') {
+				self.clear();
+				return is;
+			}
+#ifdef MCL_EC_USE_AFFINE
+			self.inf_ = false;
+#else
+			self.z = 1;
+#endif
+			is >> self.x;
+			if (c == '1') {
+				char odd;
+				is >> odd;
+				if (odd == '0') {
+					getYfromX(self.y, self.x, false);
+				} else if (odd == '1') {
+					getYfromX(self.y, self.x, true);
+				} else {
+					throw cybozu::Exception("EcT:operator>>:bad y") << odd;
+				}
+			} else if (c == '2') {
+				is >> self.y;
+				if (!isValid(self.x, self.y)) {
+					throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
+				}
+			} else {
+				throw cybozu::Exception("EcT:operator>>:bad format") << ioMode;
+			}
+			return is;
+		}
 		std::string str;
 		is >> str;
 		if (str == "0") {
