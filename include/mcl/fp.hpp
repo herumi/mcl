@@ -59,8 +59,8 @@ enum IoMode {
 	IoBinary = 2, // binary number without prefix
 	IoDecimal = 10, // decimal number without prefix
 	IoHeximal = 16, // heximal number without prefix
-	IoArray = 17, // array of Unit
-	IoArrayRaw = 18, // raw array of Unit without Montgomery conversion
+	IoArray = -1, // array of Unit
+	IoArrayRaw = -2, // raw array of Unit without Montgomery conversion
 };
 
 } // mcl::fp
@@ -293,10 +293,25 @@ public:
 		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
 		toMont();
 	}
+	/*
+		may use IoMode for base
+		ignore withPrefix if base = IoArray or IoArrayRaw
+	*/
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
+		if (base == 0) base = 10;
+		if (base == fp::IoArrayRaw) {
+			str.resize(getBitSize() / 8);
+			memcpy(&str[0], v_, str.size());
+			return;
+		}
 		fp::Block b;
 		getBlock(b);
+		if (base == fp::IoArray) {
+			str.resize(getBitSize() / 8);
+			memcpy(&str[0], b.p, str.size());
+			return;
+		}
 		fp::arrayToStr(str, b.p, b.n, base, withPrefix);
 	}
 	std::string getStr(int base = 10, bool withPrefix = false) const

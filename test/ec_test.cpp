@@ -274,6 +274,39 @@ struct Test {
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 	}
+	void ioMode() const
+	{
+		puts("test ioMode");
+		const Fp x(para.gx);
+		const Fp y(para.gy);
+		Ec P(x, y);
+		const mcl::fp::IoMode tbl[] = {
+			mcl::fp::IoBinary,
+			mcl::fp::IoDecimal,
+			mcl::fp::IoHeximal,
+			mcl::fp::IoArray,
+			mcl::fp::IoArrayRaw,
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			Fp::setIoMode(tbl[i]);
+			{
+				std::stringstream ss;
+				ss << P;
+				Ec Q;
+				ss >> Q;
+				CYBOZU_TEST_EQUAL(P, Q);
+			}
+			{
+				std::stringstream ss;
+				Ec Q;
+				ss << Q;
+				Ec R;
+				ss >> R;
+				CYBOZU_TEST_EQUAL(Q, R);
+			}
+		}
+		Fp::setIoMode(mcl::fp::IoAuto);
+	}
 
 	template<class F>
 	void test(F f, const char *msg) const
@@ -311,6 +344,7 @@ mul 499.00usec
 		mul_fp();
 		squareRoot();
 		str();
+		ioMode();
 	}
 private:
 	Test(const Test&);
