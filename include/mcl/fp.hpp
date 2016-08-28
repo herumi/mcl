@@ -54,6 +54,15 @@ const char *ModeToStr(Mode mode);
 
 Mode StrToMode(const std::string& s);
 
+enum IoMode {
+	IoAuto = 0, // dec or hex according to ios_base::fmtflags
+	IoBinary = 2, // binary number without prefix
+	IoDecimal = 10, // decimal number without prefix
+	IoHeximal = 16, // heximal number without prefix
+	IoArray = 17, // array of Unit
+	IoArrayRaw = 18, // raw array of Unit without Montgomery conversion
+};
+
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
@@ -65,6 +74,7 @@ class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
 	static FpT<tag, maxBitSize> inv2_;
+	static fp::IoMode ioMode_;
 public:
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
@@ -360,24 +370,74 @@ public:
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
 	{
-		const std::ios_base::fmtflags f = os.flags();
-		if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
-		const int base = (f & std::ios_base::hex) ? 16 : 10;
-		const bool withPrefix = (f & std::ios_base::showbase) != 0;
-		std::string str;
-		self.getStr(str, base, withPrefix);
-		return os << str;
+		switch (ioMode_) {
+		default:
+		case fp::IoAuto:
+		case fp::IoBinary:
+		case fp::IoDecimal:
+		case fp::IoHeximal:
+			{
+				int base = ioMode_;
+				bool withPrefix = false;
+				if (ioMode_ == fp::IoAuto) {
+					const std::ios_base::fmtflags f = os.flags();
+					if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
+					base = (f & std::ios_base::hex) ? 16 : 10;
+					withPrefix = (f & std::ios_base::showbase) != 0;
+				}
+				std::string str;
+				self.getStr(str, base, withPrefix);
+				return os << str;
+			}
+		case fp::IoArray:
+			{
+				fp::Block b;
+				self.getBlock(b);
+				return os.write(reinterpret_cast<const char*>(b.p), getBitSize() / 8);
+			}
+		case fp::IoArrayRaw:
+			return os.write(reinterpret_cast<const char*>(self.v_), getBitSize() / 8);
+		}
 	}
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)
 	{
-		const std::ios_base::fmtflags f = is.flags();
-		if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator>>:oct is not supported");
-		const int base = (f & std::ios_base::hex) ? 16 : 0;
-		std::string str;
-		is >> str;
-		self.setStr(str, base);
-		return is;
+		switch (ioMode_) {
+		default:
+		case fp::IoAuto:
+		case fp::IoBinary:
+		case fp::IoDecimal:
+		case fp::IoHeximal:
+			{
+				int base = ioMode_;
+				if (ioMode_ == fp::IoAuto) {
+					const std::ios_base::fmtflags f = is.flags();
+					if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator>>:oct is not supported");
+					base = (f & std::ios_base::hex) ? 16 : 0;
+				}
+				std::string str;
+				is >> str;
+				self.setStr(str, base);
+				return is;
+			}
+		case fp::IoArray:
+			{
+				char buf[maxBitSize / 8];
+				is.read(buf, getBitSize() / 8);
+				if (!is) throw cybozu::Exception("fpT:operator>>:bad value for IoArray") << self;
+				self.setArray(buf, getBitSize() / 8);
+				return is;
+			}
+		case fp::IoArrayRaw:
+			is.read(reinterpret_cast<char*>(self.v_), getBitSize() / 8);
+			if (!is || !self.isValid()) throw cybozu::Exception("fpT:operator>>:bad value for IoArrayRaw") << self;
+			return is;
+		}
 	}
+	static inline void setIoMode(fp::IoMode ioMode)
+	{
+		ioMode_ = ioMode;
+	}
+	static inline fp::IoMode getIoMode() { return ioMode_; }
 	/*
 		@note
 		this compare functions is slow because of calling mul if isMont is true.
@@ -499,6 +559,7 @@ private:
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
+template<class tag, size_t maxBitSize> fp::IoMode FpT<tag, maxBitSize>::ioMode_ = fp::IoAuto;
 
 
 template<class T> void add(T& z, const T& x, const T& y) { T::add(z, x, y); }

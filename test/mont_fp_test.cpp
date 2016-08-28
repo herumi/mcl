@@ -120,6 +120,7 @@ struct Test {
 		getStr();
 		setStr();
 		stream();
+		ioMode();
 		conv();
 		compare();
 		modulo();
@@ -286,6 +287,47 @@ struct Test {
 		std::istringstream is("0b100");
 		Fp x;
 		CYBOZU_TEST_EXCEPTION(is >> std::hex >> x, cybozu::Exception);
+	}
+	void ioMode()
+	{
+		Fp x(123);
+		const struct {
+			mcl::fp::IoMode ioMode;
+			std::string expected;
+		} tbl[] = {
+			{ mcl::fp::IoBinary, "1111011" },
+			{ mcl::fp::IoDecimal, "123" },
+			{ mcl::fp::IoHeximal, "7b" },
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			Fp::setIoMode(tbl[i].ioMode);
+			for (int j = 0; j < 2; j++) {
+				std::stringstream ss;
+				if (j == 1) {
+					ss << std::hex;
+				}
+				ss << x;
+				CYBOZU_TEST_EQUAL(ss.str(), tbl[i].expected);
+				Fp y;
+				y.clear();
+				ss >> y;
+				CYBOZU_TEST_EQUAL(x, y);
+			}
+		}
+		for (int i = 0; i < 2; i++) {
+			if (i == 0) {
+				Fp::setIoMode(mcl::fp::IoArray);
+			} else {
+				Fp::setIoMode(mcl::fp::IoArrayRaw);
+			}
+			std::stringstream ss;
+			ss << x;
+			CYBOZU_TEST_EQUAL(ss.str().size(), Fp::getBitSize() / 8);
+			Fp y;
+			ss >> y;
+			CYBOZU_TEST_EQUAL(x, y);
+		}
+		Fp::setIoMode(mcl::fp::IoAuto);
 	}
 	void edge()
 	{
