@@ -604,8 +604,7 @@ public:
 		normalize();
 		const char *sep = getIoSeparator();
 		if (compressedExpression_) {
-			bool odd = y.isOdd();
-			str = odd ? '3' : '2';
+			str = y.isOdd() ? '3' : '2';
 			str += sep;
 			str += x.getStr(base, withPrefix);
 		} else {
@@ -639,35 +638,16 @@ public:
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
 		IoMode ioMode = mcl::getIoMode();
+		char c = 0;
 		if (ioMode == IoArray || ioMode == IoArrayRaw) {
-			char c = 0;
-			is >> c;
-			if (c == '0') {
-				self.clear();
-				return is;
-			}
-#ifdef MCL_EC_USE_AFFINE
-			self.inf_ = false;
-#else
-			self.z = 1;
-#endif
-			is >> self.x;
-			if (c == '1') {
-				is >> self.y;
-				if (!isValid(self.x, self.y)) {
-					throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
-				}
-		 	} else if (c == '2' || c == '3') {
-				bool isYodd = c == '3';
-				getYfromX(self.y, self.x, isYodd);
-			} else {
-				throw cybozu::Exception("EcT:operator>>:bad format") << ioMode;
-			}
-			return is;
+			is.read(&c, 1);
+		} else {
+			std::string str;
+			is >> str;
+			if (str.size() != 1) throw cybozu::Exception("EcT:operator>>:bad format") << str;
+			c = str[0];
 		}
-		std::string str;
-		is >> str;
-		if (str == "0") {
+		if (c == '0') {
 			self.clear();
 			return is;
 		}
@@ -677,16 +657,16 @@ public:
 		self.z = 1;
 #endif
 		is >> self.x;
-		if (str == "1") {
+		if (c == '1') {
 			is >> self.y;
 			if (!isValid(self.x, self.y)) {
-				throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
+				throw cybozu::Exception("EcT:operator>>:bad value") << self.x << self.y;
 			}
-		} else if (str == "2" || str == "3") {
-			bool isYodd = str == "3";
+		} else if (c == '2' || c == '3') {
+			bool isYodd = c == '3';
 			getYfromX(self.y, self.x, isYodd);
 		} else {
-			throw cybozu::Exception("EcT:operator>>:bad format") << str;
+			throw cybozu::Exception("EcT:operator>>:bad format") << c;
 		}
 		return is;
 	}
