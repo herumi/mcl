@@ -590,8 +590,9 @@ public:
 	}
 	/*
 		"0" ; infinity
-		"1 <x> <y is odd ? 1 : 0>" ; compressed
-		"2 <x> <y>" ; not compressed
+		"1 <x> <y>" ; not compressed
+		"2 <x>" ; compressed for even y
+		"3 <x>" ; compressed for odd y
 	*/
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
@@ -603,13 +604,12 @@ public:
 		normalize();
 		const char *sep = getIoSeparator();
 		if (compressedExpression_) {
-			str = '1';
+			bool odd = y.isOdd();
+			str = odd ? '3' : '2';
 			str += sep;
 			str += x.getStr(base, withPrefix);
-			str += sep;
-			str += y.isOdd() ? '1' : '0';
 		} else {
-			str = '2';
+			str = '1';
 			str += sep;
 			str += x.getStr(base, withPrefix);
 			str += sep;
@@ -653,20 +653,13 @@ public:
 #endif
 			is >> self.x;
 			if (c == '1') {
-				char odd;
-				is >> odd;
-				if (odd == '0') {
-					getYfromX(self.y, self.x, false);
-				} else if (odd == '1') {
-					getYfromX(self.y, self.x, true);
-				} else {
-					throw cybozu::Exception("EcT:operator>>:bad y") << odd;
-				}
-			} else if (c == '2') {
 				is >> self.y;
 				if (!isValid(self.x, self.y)) {
 					throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
 				}
+		 	} else if (c == '2' || c == '3') {
+				bool isYodd = c == '3';
+				getYfromX(self.y, self.x, isYodd);
 			} else {
 				throw cybozu::Exception("EcT:operator>>:bad format") << ioMode;
 			}
@@ -685,19 +678,13 @@ public:
 #endif
 		is >> self.x;
 		if (str == "1") {
-			is >> str;
-			if (str == "0") {
-				getYfromX(self.y, self.x, false);
-			} else if (str == "1") {
-				getYfromX(self.y, self.x, true);
-			} else {
-				throw cybozu::Exception("EcT:operator>>:bad y") << str;
-			}
-		} else if (str == "2") {
 			is >> self.y;
 			if (!isValid(self.x, self.y)) {
 				throw cybozu::Exception("EcT:setStr:bad value") << self.x << self.y;
 			}
+		} else if (str == "2" || str == "3") {
+			bool isYodd = str == "3";
+			getYfromX(self.y, self.x, isYodd);
 		} else {
 			throw cybozu::Exception("EcT:operator>>:bad format") << str;
 		}
