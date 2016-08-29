@@ -11,7 +11,21 @@
 	#pragma warning(disable : 4127)
 #endif
 
-namespace mcl { namespace fp {
+namespace mcl {
+
+static IoMode g_ioMode = mcl::IoAuto;
+
+void setIoMode(IoMode ioMode) { g_ioMode = ioMode; }
+
+IoMode getIoMode() { return g_ioMode; }
+
+const char* getIoSeparator()
+{
+	if (g_ioMode == IoArray || g_ioMode == IoArrayRaw) return "";
+	return " ";
+}
+
+namespace fp {
 
 #ifdef MCL_USE_XBYAK
 FpGenerator *Op::createFpGenerator()

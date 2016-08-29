@@ -280,15 +280,15 @@ struct Test {
 		const Fp x(para.gx);
 		const Fp y(para.gy);
 		Ec P(x, y);
-		const mcl::fp::IoMode tbl[] = {
-			mcl::fp::IoBinary,
-			mcl::fp::IoDecimal,
-			mcl::fp::IoHeximal,
-			mcl::fp::IoArray,
-			mcl::fp::IoArrayRaw,
+		const mcl::IoMode tbl[] = {
+			mcl::IoBinary,
+			mcl::IoDecimal,
+			mcl::IoHeximal,
+			mcl::IoArray,
+			mcl::IoArrayRaw,
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			Fp::setIoMode(tbl[i]);
+			mcl::setIoMode(tbl[i]);
 			{
 				std::stringstream ss;
 				ss << P;
@@ -305,7 +305,7 @@ struct Test {
 				CYBOZU_TEST_EQUAL(Q, R);
 			}
 		}
-		Fp::setIoMode(mcl::fp::IoAuto);
+		mcl::setIoMode(mcl::IoAuto);
 	}
 
 	template<class F>

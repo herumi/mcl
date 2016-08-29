@@ -595,20 +595,24 @@ public:
 	*/
 	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
 	{
+		if (base == 0) base = 10;
 		if (isZero()) {
 			str = '0';
 			return;
 		}
 		normalize();
+		const char *sep = getIoSeparator();
 		if (compressedExpression_) {
-			str = "1 ";
+			str = '1';
+			str += sep;
 			str += x.getStr(base, withPrefix);
-			const char *p = y.isOdd() ? " 1" : " 0";
-			str += p;
+			str += sep;
+			str += y.isOdd() ? '1' : '0';
 		} else {
-			str = "2 ";
+			str = '2';
+			str += sep;
 			str += x.getStr(base, withPrefix);
-			str += ' ';
+			str += sep;
 			str += y.getStr(base, withPrefix);
 		}
 	}
@@ -620,41 +624,22 @@ public:
 	}
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
-		fp::IoMode ioMode = Fp::getIoMode();
-		switch (ioMode) {
-		default:
-		case fp::IoAuto:
-		case fp::IoBinary:
-		case fp::IoDecimal:
-		case fp::IoHeximal:
-			{
-				int base = ioMode;
-				bool withPrefix = false;
-				if (ioMode == fp::IoAuto) {
-					const std::ios_base::fmtflags f = os.flags();
-					if (f & std::ios_base::oct) throw cybozu::Exception("fpT:operator<<:oct is not supported");
-					base = (f & std::ios_base::hex) ? 16 : 10;
-					withPrefix = (f & std::ios_base::showbase) != 0;
-				}
-				return os << self.getStr(base, withPrefix);
-			}
-		case fp::IoArray:
-		case fp::IoArrayRaw:
-			if (self.isZero()) {
-				return os << '0';
-			}
-			self.normalize();
-			if (compressedExpression_) {
-				return os << '1' << self.x << (self.y.isOdd() ? '1' : '0');
-			} else {
-				return os << '2' << self.x << self.y;
-			}
+		int base = mcl::getIoMode();
+		bool withPrefix = false;
+		if (base == IoAuto) {
+			const std::ios_base::fmtflags f = os.flags();
+			if (f & std::ios_base::oct) throw cybozu::Exception("EcT:operator<<:oct is not supported");
+			base = (f & std::ios_base::hex) ? 16 : 10;
+			withPrefix = (f & std::ios_base::showbase) != 0;
 		}
+		std::string str;
+		self.getStr(str, base, withPrefix);
+		return os << str;
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
-		fp::IoMode ioMode = Fp::getIoMode();
-		if (ioMode == fp::IoArray || ioMode == fp::IoArrayRaw) {
+		IoMode ioMode = mcl::getIoMode();
+		if (ioMode == IoArray || ioMode == IoArrayRaw) {
 			char c = 0;
 			is >> c;
 			if (c == '0') {

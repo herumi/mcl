@@ -292,15 +292,15 @@ struct Test {
 	{
 		Fp x(123);
 		const struct {
-			mcl::fp::IoMode ioMode;
+			mcl::IoMode ioMode;
 			std::string expected;
 		} tbl[] = {
-			{ mcl::fp::IoBinary, "1111011" },
-			{ mcl::fp::IoDecimal, "123" },
-			{ mcl::fp::IoHeximal, "7b" },
+			{ mcl::IoBinary, "1111011" },
+			{ mcl::IoDecimal, "123" },
+			{ mcl::IoHeximal, "7b" },
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			Fp::setIoMode(tbl[i].ioMode);
+			mcl::setIoMode(tbl[i].ioMode);
 			for (int j = 0; j < 2; j++) {
 				std::stringstream ss;
 				if (j == 1) {
@@ -316,9 +316,9 @@ struct Test {
 		}
 		for (int i = 0; i < 2; i++) {
 			if (i == 0) {
-				Fp::setIoMode(mcl::fp::IoArray);
+				mcl::setIoMode(mcl::IoArray);
 			} else {
-				Fp::setIoMode(mcl::fp::IoArrayRaw);
+				mcl::setIoMode(mcl::IoArrayRaw);
 			}
 			std::stringstream ss;
 			ss << x;
@@ -327,7 +327,7 @@ struct Test {
 			ss >> y;
 			CYBOZU_TEST_EQUAL(x, y);
 		}
-		Fp::setIoMode(mcl::fp::IoAuto);
+		mcl::setIoMode(mcl::IoAuto);
 	}
 	void edge()
 	{

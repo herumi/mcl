@@ -15,7 +15,18 @@
 	#define MCL_USE_XBYAK
 #endif
 
-namespace mcl { namespace fp {
+namespace mcl {
+
+enum IoMode {
+	IoAuto = 0, // dec or hex according to ios_base::fmtflags
+	IoBinary = 2, // binary number without prefix
+	IoDecimal = 10, // decimal number without prefix
+	IoHeximal = 16, // heximal number without prefix
+	IoArray = -1, // array of Unit
+	IoArrayRaw = -2, // raw array of Unit without Montgomery conversion
+};
+
+namespace fp {
 
 #if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
 typedef uint32_t Unit;
