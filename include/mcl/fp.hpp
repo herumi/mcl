@@ -34,8 +34,12 @@ namespace mcl {
 struct FpTag;
 struct ZnTag;
 
-void setIoMode(IoMode ioMode);
+/*
+	set global parameter for operator<<(), operator>>()
+*/
+void setIoMode(IoMode ioMode, bool withPrefix = false);
 IoMode getIoMode();
+bool getIoPrefix();
 const char* getIoSeparator();
 
 namespace fp {
@@ -391,7 +395,7 @@ public:
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
 	{
 		int base = getIoMode();
-		bool withPrefix = false;
+		bool withPrefix = getIoPrefix();
 		if (base == IoAuto) {
 			const std::ios_base::fmtflags f = os.flags();
 			if (f & std::ios_base::oct) throw cybozu::Exception("FpT:operator<<:oct is not supported");

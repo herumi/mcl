@@ -14,10 +14,12 @@
 namespace mcl {
 
 static IoMode g_ioMode = mcl::IoAuto;
+static bool g_withPrefix = false;
 
-void setIoMode(IoMode ioMode) { g_ioMode = ioMode; }
+void setIoMode(IoMode ioMode, bool withPrefix) { g_ioMode = ioMode; g_withPrefix = withPrefix; }
 
 IoMode getIoMode() { return g_ioMode; }
+bool getIoPrefix() { return g_withPrefix; }
 
 const char* getIoSeparator()
 {

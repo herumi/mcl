@@ -624,7 +624,7 @@ public:
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
 		int base = mcl::getIoMode();
-		bool withPrefix = false;
+		bool withPrefix = getIoPrefix();
 		if (base == IoAuto) {
 			const std::ios_base::fmtflags f = os.flags();
 			if (f & std::ios_base::oct) throw cybozu::Exception("EcT:operator<<:oct is not supported");
