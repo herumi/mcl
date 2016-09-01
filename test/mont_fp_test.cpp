@@ -295,9 +295,9 @@ struct Test {
 			mcl::IoMode ioMode;
 			std::string expected;
 		} tbl[] = {
-			{ mcl::IoBinary, "1111011" },
-			{ mcl::IoDecimal, "123" },
-			{ mcl::IoHeximal, "7b" },
+			{ mcl::IoBin, "1111011" },
+			{ mcl::IoDec, "123" },
+			{ mcl::IoHex, "7b" },
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 			mcl::setIoMode(tbl[i].ioMode);

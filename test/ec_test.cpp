@@ -279,9 +279,9 @@ struct Test {
 		const Fp y(para.gy);
 		Ec P(x, y);
 		const mcl::IoMode tbl[] = {
-			mcl::IoBinary,
-			mcl::IoDecimal,
-			mcl::IoHeximal,
+			mcl::IoBin,
+			mcl::IoDec,
+			mcl::IoHex,
 			mcl::IoArray,
 			mcl::IoArrayRaw,
 		};
