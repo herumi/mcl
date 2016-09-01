@@ -614,7 +614,8 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 		if (isNegative) {
 			if (v <= c) { // include c
 				if (pb) *pb = true;
-				if (v == c) return int64_t(-1) << 63;
+				// -1 << 63
+				if (v == c) return int64_t(-9223372036854775807ll - 1);
 				return int64_t(-v);
 			}
 		} else {
