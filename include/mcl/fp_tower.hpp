@@ -63,6 +63,7 @@ class Fp2T : public fp::Operator<Fp2T<Fp> > {
 	typedef FpDblT<Fp> FpDbl;
 	static Fp xi_a_;
 public:
+	typedef typename Fp::BaseFp BaseFp;
 	Fp a, b;
 	Fp2T() { }
 	Fp2T(int64_t a) : a(a), b(0) { }
@@ -93,15 +94,15 @@ public:
 	*/
 	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
-		return os << self.a << mcl::getIoSeparator() << self.b;
+		return os << self.a << Fp::getIoSeparator() << self.b;
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
 		return is >> self.a >> self.b;
 	}
-	std::string getStr(int base = 10, bool withPrefix = false)
+	std::string getStr(int ioMode)
 	{
-		return a.getStr(base, withPrefix) + ' ' + b.getStr(base, withPrefix);
+		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -416,7 +417,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
 	friend std::ostream& operator<<(std::ostream& os, const Fp6T& x)
 	{
-		const char *sep = mcl::getIoSeparator();
+		const char *sep = Fp::getIoSeparator();
 		return os << x.a << sep << x.b << sep << x.c;
 	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& x)
@@ -682,7 +683,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
-		return os << self.a << mcl::getIoSeparator() << self.b;
+		return os << self.a << Fp::getIoSeparator() << self.b;
 	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{

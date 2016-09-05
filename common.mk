@@ -9,6 +9,7 @@ ifeq ($(ARCH),x86_64)
   BIT=64
   BIT_OPT=-m64
   LOW_ASM_SRC=src/asm/low_x86-64.asm
+  ASM=nasm -felf64
 endif
 ifeq ($(ARCH),x86)
   CPU=x86

@@ -41,6 +41,11 @@ ifeq ($(HAS_BMI2),1)
   LLVM_FLAGS+=-mattr=bmi2
 endif
 
+ifneq ($(ASM),)
+  LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
+  LIB_OBJ+=$(LOW_ASM_OBJ)
+endif
+
 $(MCL_LIB): $(LIB_OBJ)
 	-$(MKDIR) $(@D)
 	$(AR) $@ $(LIB_OBJ)
@@ -57,12 +62,16 @@ $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
 
 $(FUNC_LIST): $(LOW_ASM_SRC)
 	$(shell awk '/global/ { print $$2}' $(LOW_ASM_SRC) > $(FUNC_LIST) || touch $(FUNC_LIST))
+	$(shell awk '/proc/ { print $$2}' $(LOW_ASM_SRC) >> $(FUNC_LIST))
 
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS) -O0
 
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
+
+$(LOW_ASM_OBJ): $(LOW_ASM_SRC)
+	$(ASM) $<
 
 ##################################################################
 
