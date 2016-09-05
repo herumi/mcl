@@ -48,6 +48,9 @@ void Op::destroyFpGenerator(FpGenerator *)
 }
 #endif
 
+/*
+	use prefix if base conflicts with prefix
+*/
 inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 {
 	const char *p = str.c_str();
@@ -59,15 +62,9 @@ inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 	}
 	if (p[0] == '0') {
 		if (p[1] == 'x') {
-			if (*base != 0 && *base != 16) {
-				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
-			}
 			*base = 16;
 			p += 2;
 		} else if (p[1] == 'b') {
-			if (*base != 0 && *base != 2) {
-				throw cybozu::Exception("fp:verifyStr:bad base") << *base << str;
-			}
 			*base = 2;
 			p += 2;
 		}

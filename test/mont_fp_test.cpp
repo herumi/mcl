@@ -248,16 +248,15 @@ struct Test {
 			{ "0b100", 4, 2 },
 			{ "0x100", 256, 0 },
 			{ "0x100", 256, 16 },
+			// use prefix if base conflicts with prefix
+			{ "0b100", 4, 16 },
+			{ "0x100", 256, 2 },
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 			Fp x;
 			x.setStr(tbl[i].in, tbl[i].base);
 			CYBOZU_TEST_EQUAL(x, tbl[i].out);
 		}
-		// conflict prefix with base
-		Fp x;
-		CYBOZU_TEST_EXCEPTION(x.setStr("0b100", 16), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 2), cybozu::Exception);
 	}
 
 	void stream()
@@ -286,7 +285,9 @@ struct Test {
 		}
 		std::istringstream is("0b100");
 		Fp x;
-		CYBOZU_TEST_EXCEPTION(is >> std::hex >> x, cybozu::Exception);
+		// use prefix if base conflicts with prefix
+		is >> std::hex >> x;
+		CYBOZU_TEST_EQUAL(x, 4);
 	}
 	void ioMode()
 	{
