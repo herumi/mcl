@@ -4,6 +4,7 @@
 */
 #include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
+#include <sstream>
 
 typedef mcl::FpT<> Fp;
 
@@ -63,16 +64,24 @@ void compareGmp(const std::string& pStr)
 {
 	Fp::init(pStr);
 	std::string xStr = "2104871209348712947120947102843728";
+	std::string s1, s2;
 	{
 		Fp x(xStr);
 		CYBOZU_BENCH_C("mul by mcl", 1000, Fp::mul, x, x, x);
-		std::cout << "ret=" << x << std::endl;
+		std::ostringstream os;
+		os << x;
+		s1 = os.str();
 	}
 	{
 		const mpz_class p(pStr);
 		mpz_class x(xStr);
 		CYBOZU_BENCH_C("mul by GMP", 1000, mulGmp, x, x, x, p);
-		std::cout << "ret=" << x << std::endl;
+		std::ostringstream os;
+		os << x;
+		s2 = os.str();
+	}
+	if (s1 != s2) {
+		puts("ERR");
 	}
 }
 

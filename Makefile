@@ -41,7 +41,7 @@ ifeq ($(HAS_BMI2),1)
   LLVM_FLAGS+=-mattr=bmi2
 endif
 
-ifneq ($(ASM),)
+ifeq ($(USE_LOW_ASM),1)
   LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
   LIB_OBJ+=$(LOW_ASM_OBJ)
 endif
