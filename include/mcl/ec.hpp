@@ -594,52 +594,42 @@ public:
 		"2 <x>" ; compressed for even y
 		"3 <x>" ; compressed for odd y
 	*/
-	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
+	void getStr(std::string& str, int ioMode = 10) const
 	{
-		if (base == 0) base = 10;
 		if (isZero()) {
 			str = '0';
 			return;
 		}
 		normalize();
-		const char *sep = getIoSeparator();
+		const char *sep = Fp::BaseFp::getIoSeparator();
 		if (compressedExpression_) {
 			str = y.isOdd() ? '3' : '2';
 			str += sep;
-			str += x.getStr(base, withPrefix);
+			str += x.getStr(ioMode);
 		} else {
 			str = '1';
 			str += sep;
-			str += x.getStr(base, withPrefix);
+			str += x.getStr(ioMode);
 			str += sep;
-			str += y.getStr(base, withPrefix);
+			str += y.getStr(ioMode);
 		}
 	}
-	std::string getStr(int base = 10, bool withPrefix = false) const
+	std::string getStr(int ioMode = 10) const
 	{
 		std::string str;
-		getStr(str, base, withPrefix);
+		getStr(str, ioMode);
 		return str;
 	}
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
-		int base = mcl::getIoMode();
-		bool withPrefix = getIoPrefix();
-		if (base == IoAuto) {
-			const std::ios_base::fmtflags f = os.flags();
-			if (f & std::ios_base::oct) throw cybozu::Exception("EcT:operator<<:oct is not supported");
-			base = (f & std::ios_base::hex) ? 16 : 10;
-			withPrefix = (f & std::ios_base::showbase) != 0;
-		}
-		std::string str;
-		self.getStr(str, base, withPrefix);
-		return os << str;
+		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), os);
+		return os << self.getStr(ioMode);
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
-		IoMode ioMode = mcl::getIoMode();
+		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), is);
 		char c = 0;
-		if (ioMode == IoArray || ioMode == IoArrayRaw) {
+		if (ioMode & (IoArray | IoArrayRaw)) {
 			is.read(&c, 1);
 		} else {
 			std::string str;

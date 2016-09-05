@@ -17,15 +17,6 @@
 
 namespace mcl {
 
-enum IoMode {
-	IoAuto = 0, // dec or hex according to ios_base::fmtflags
-	IoBin = 2, // binary number without prefix
-	IoDec = 10, // decimal number without prefix
-	IoHex = 16, // hexadecimal number without prefix
-	IoArray = -1, // array of Unit
-	IoArrayRaw = -2, // raw array of Unit without Montgomery conversion
-};
-
 namespace fp {
 
 #if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)

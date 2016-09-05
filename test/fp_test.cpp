@@ -154,11 +154,11 @@ CYBOZU_TEST_AUTO(conv)
 	CYBOZU_TEST_EQUAL(b, d);
 
 	std::string str;
-	b.getStr(str, 2, true);
+	b.getStr(str, mcl::IoBinPrefix);
 	CYBOZU_TEST_EQUAL(str, bin);
 	b.getStr(str);
 	CYBOZU_TEST_EQUAL(str, dec);
-	b.getStr(str, 16, true);
+	b.getStr(str, mcl::IoHexPrefix);
 	CYBOZU_TEST_EQUAL(str, hex);
 }
 

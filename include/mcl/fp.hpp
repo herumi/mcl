@@ -34,15 +34,37 @@ namespace mcl {
 struct FpTag;
 struct ZnTag;
 
-/*
-	set global parameter for operator<<(), operator>>()
-*/
-void setIoMode(IoMode ioMode, bool withPrefix = false);
-IoMode getIoMode();
-bool getIoPrefix();
-const char* getIoSeparator();
+enum IoMode {
+	IoAuto = 0, // dec or hex according to ios_base::fmtflags
+	IoPrefix = 1, // append '0b'(bin) or '0x'(hex)
+	IoBin = 2, // binary number without prefix
+	IoDec = 10, // decimal number without prefix
+	IoHex = 16, // hexadecimal number without prefix
+	IoBinPrefix = IoBin | IoPrefix,
+	IoHexPrefix = IoHex | IoPrefix,
+	IoArray = 32, // array of Unit(fixed size)
+	IoArrayRaw = 64 // raw array of Unit without Montgomery conversion
+};
 
 namespace fp {
+
+static inline const char* getIoSeparator(int ioMode)
+{
+	return (ioMode & (IoArray | IoArrayRaw)) ? "" : " ";
+}
+
+static inline int detectIoMode(int ioMode, const std::ios_base& ios)
+{
+	if (ioMode & ~IoPrefix) return ioMode;
+	// IoAuto or IoPrefix
+	const std::ios_base::fmtflags f = ios.flags();
+	if (f & std::ios_base::oct) throw cybozu::Exception("mcl:fp:detectIoMode:oct is not supported");
+	ioMode |= (f & std::ios_base::hex) ? IoHex : IoDec;
+	if (f & std::ios_base::showbase) {
+		ioMode |= IoPrefix;
+	}
+	return ioMode;
+}
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix);
 
@@ -69,11 +91,13 @@ class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	typedef fp::Unit Unit;
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
 	static const size_t maxSize = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
-	static fp::Op op_;
 	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
+	static fp::Op op_;
 	static FpT<tag, maxBitSize> inv2_;
+	static IoMode ioMode_;
 public:
+	typedef FpT<tag, maxBitSize> BaseFp;
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
 	template<class Fp> friend struct Fp6T;
@@ -233,21 +257,21 @@ public:
 	{
 		if (isMont()) op_.fromMont(v_, v_);
 	}
-	void setStr(const std::string& str, int base = 0)
+	void setStr(const std::string& str, int ioMode = 0)
 	{
-		if (base == IoArray || base == IoArrayRaw) {
+		if (ioMode & (IoArray | IoArrayRaw)) {
 			const size_t n = getBitSize() / 8;
-			if (str.size() != n) throw cybozu::Exception("FpT:setStr:bad size") << str.size() << n << base;
-			if (base == IoArray) {
-				setArray(&str[0], n);
-			} else {
+			if (str.size() != n) throw cybozu::Exception("FpT:setStr:bad size") << str.size() << n << ioMode;
+			if (ioMode & IoArrayRaw) {
 				memcpy(v_, str.c_str(), n);
 				if (!isValid()) throw cybozu::Exception("FpT:setStr:bad value") << str;
+			} else {
+				setArray(&str[0], n);
 			}
 			return;
 		}
 		mpz_class x;
-		bool isMinus = fp::strToMpzArray(0, v_, op_.N * fp::UnitBitSize, x, str, base);
+		bool isMinus = fp::strToMpzArray(0, v_, op_.N * fp::UnitBitSize, x, str, ioMode & ~IoPrefix);
 		if (x >= op_.mp) throw cybozu::Exception("FpT:setStr:large str") << str << op_.mp;
 		if (isMinus) {
 			neg(*this, *this);
@@ -302,31 +326,26 @@ public:
 		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
 		toMont();
 	}
-	/*
-		may use IoMode for base
-		ignore withPrefix if base = IoArray or IoArrayRaw
-	*/
-	void getStr(std::string& str, int base = 10, bool withPrefix = false) const
+	void getStr(std::string& str, int ioMode = 10) const
 	{
-		if (base == 0) base = 10;
-		if (base == IoArrayRaw) {
+		if (ioMode & IoArrayRaw) {
 			str.resize(getBitSize() / 8);
 			memcpy(&str[0], v_, str.size());
 			return;
 		}
 		fp::Block b;
 		getBlock(b);
-		if (base == IoArray) {
+		if (ioMode & IoArray) {
 			str.resize(getBitSize() / 8);
 			memcpy(&str[0], b.p, str.size());
 			return;
 		}
-		fp::arrayToStr(str, b.p, b.n, base, withPrefix);
+		fp::arrayToStr(str, b.p, b.n, ioMode & ~IoPrefix, (ioMode & IoPrefix) != 0);
 	}
-	std::string getStr(int base = 10, bool withPrefix = false) const
+	std::string getStr(int ioMode = 10) const
 	{
 		std::string str;
-		getStr(str, base, withPrefix);
+		getStr(str, ioMode);
 		return str;
 	}
 	void getMpz(mpz_class& x) const
@@ -394,34 +413,19 @@ public:
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
 	{
-		int base = getIoMode();
-		bool withPrefix = getIoPrefix();
-		if (base == IoAuto) {
-			const std::ios_base::fmtflags f = os.flags();
-			if (f & std::ios_base::oct) throw cybozu::Exception("FpT:operator<<:oct is not supported");
-			base = (f & std::ios_base::hex) ? 16 : 10;
-			withPrefix = (f & std::ios_base::showbase) != 0;
-		}
-		std::string str;
-		self.getStr(str, base, withPrefix);
-		return os << str;
+		return os << self.getStr(fp::detectIoMode(getIoMode(), os));
 	}
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)
 	{
-		int base = getIoMode();
-		if (base == IoAuto) {
-			const std::ios_base::fmtflags f = is.flags();
-			if (f & std::ios_base::oct) throw cybozu::Exception("FpT:operator>>:oct is not supported");
-			base = (f & std::ios_base::hex) ? 16 : 0;
-		}
+		int ioMode = fp::detectIoMode(getIoMode(), is);
 		std::string str;
-		if (base == IoArray || base == IoArrayRaw) {
+		if (ioMode & (IoArray | IoArrayRaw)) {
 			str.resize(getBitSize() / 8);
 			is.read(&str[0], str.size());
 		} else {
 			is >> str;
 		}
-		self.setStr(str, base);
+		self.setStr(str, ioMode);
 		return is;
 	}
 	/*
@@ -459,6 +463,15 @@ public:
 		return fp::isLessArray(v_, rhs.v_, op_.N);
 	}
 	void normalize() {} // dummy method
+	/*
+		set IoMode for operator<<(), or operator>>()
+	*/
+	static inline void setIoMode(IoMode ioMode)
+	{
+		ioMode_ = ioMode;
+	}
+	static inline IoMode getIoMode() { return ioMode_; }
+	static inline const char* getIoSeparator() { return fp::getIoSeparator(ioMode_); }
 private:
 	/*
 		wrapper function for generic p
@@ -545,6 +558,7 @@ private:
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
+template<class tag, size_t maxBitSize> IoMode FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 
 template<class T> void add(T& z, const T& x, const T& y) { T::add(z, x, y); }
 template<class T> void sub(T& z, const T& x, const T& y) { T::sub(z, x, y); }

@@ -196,25 +196,25 @@ struct Test {
 		std::string str;
 		str = x.getStr();
 		CYBOZU_TEST_EQUAL(str, "0");
-		str = x.getStr(2, true);
+		str = x.getStr(mcl::IoBinPrefix);
 		CYBOZU_TEST_EQUAL(str, "0b0");
-		str = x.getStr(2, false);
+		str = x.getStr(mcl::IoBin);
 		CYBOZU_TEST_EQUAL(str, "0");
-		str = x.getStr(16, true);
+		str = x.getStr(mcl::IoHexPrefix);
 		CYBOZU_TEST_EQUAL(str, "0x0");
-		str = x.getStr(16, false);
+		str = x.getStr(mcl::IoHex);
 		CYBOZU_TEST_EQUAL(str, "0");
 
 		x = 123;
 		str = x.getStr();
 		CYBOZU_TEST_EQUAL(str, "123");
-		str = x.getStr(2, true);
+		str = x.getStr(mcl::IoBinPrefix);
 		CYBOZU_TEST_EQUAL(str, "0b1111011");
-		str = x.getStr(2, false);
+		str = x.getStr(mcl::IoBin);
 		CYBOZU_TEST_EQUAL(str, "1111011");
-		str = x.getStr(16, true);
+		str = x.getStr(mcl::IoHexPrefix);
 		CYBOZU_TEST_EQUAL(str, "0x7b");
-		str = x.getStr(16, false);
+		str = x.getStr(mcl::IoHex);
 		CYBOZU_TEST_EQUAL(str, "7b");
 
 		{
@@ -301,7 +301,7 @@ struct Test {
 			{ mcl::IoHex, "7b" },
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			mcl::setIoMode(tbl[i].ioMode);
+			Fp::setIoMode(tbl[i].ioMode);
 			for (int j = 0; j < 2; j++) {
 				std::stringstream ss;
 				if (j == 1) {
@@ -317,9 +317,9 @@ struct Test {
 		}
 		for (int i = 0; i < 2; i++) {
 			if (i == 0) {
-				mcl::setIoMode(mcl::IoArray);
+				Fp::setIoMode(mcl::IoArray);
 			} else {
-				mcl::setIoMode(mcl::IoArrayRaw);
+				Fp::setIoMode(mcl::IoArrayRaw);
 			}
 			std::stringstream ss;
 			ss << x;
@@ -328,7 +328,7 @@ struct Test {
 			ss >> y;
 			CYBOZU_TEST_EQUAL(x, y);
 		}
-		mcl::setIoMode(mcl::IoAuto);
+		Fp::setIoMode(mcl::IoAuto);
 	}
 	void edge()
 	{
@@ -390,11 +390,11 @@ struct Test {
 		CYBOZU_TEST_EQUAL(b, d);
 
 		std::string str;
-		b.getStr(str, 2, true);
+		b.getStr(str, mcl::IoBinPrefix);
 		CYBOZU_TEST_EQUAL(str, bin);
 		b.getStr(str);
 		CYBOZU_TEST_EQUAL(str, dec);
-		b.getStr(str, 16, true);
+		b.getStr(str, mcl::IoHexPrefix);
 		CYBOZU_TEST_EQUAL(str, hex);
 	}
 

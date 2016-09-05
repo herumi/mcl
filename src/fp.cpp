@@ -13,20 +13,6 @@
 
 namespace mcl {
 
-static IoMode g_ioMode = mcl::IoAuto;
-static bool g_withPrefix = false;
-
-void setIoMode(IoMode ioMode, bool withPrefix) { g_ioMode = ioMode; g_withPrefix = withPrefix; }
-
-IoMode getIoMode() { return g_ioMode; }
-bool getIoPrefix() { return g_withPrefix; }
-
-const char* getIoSeparator()
-{
-	if (g_ioMode == IoArray || g_ioMode == IoArrayRaw) return "";
-	return " ";
-}
-
 namespace fp {
 
 #ifdef MCL_USE_XBYAK
@@ -526,6 +512,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix)
 {
 	switch (base) {
+	case 0:
 	case 10:
 		{
 			mpz_class t;

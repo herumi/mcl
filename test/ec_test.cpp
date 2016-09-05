@@ -221,8 +221,9 @@ struct Test {
 			for (int j = 0; j < 2; j++) {
 				int base = i == 0 ? 10 : 16;
 				bool withPrefix = j == 0;
-				std::string expected = "1 " + x.getStr(base, withPrefix) + " " + y.getStr(base, withPrefix);
-				CYBOZU_TEST_EQUAL(P.getStr(base, withPrefix), expected);
+				int ioMode = base | (withPrefix ? mcl::IoPrefix : 0);
+				std::string expected = "1 " + x.getStr(ioMode) + " " + y.getStr(ioMode);
+				CYBOZU_TEST_EQUAL(P.getStr(ioMode), expected);
 				std::ostringstream os;
 				if (base == 16) {
 					os << std::hex;
@@ -286,7 +287,7 @@ struct Test {
 			mcl::IoArrayRaw,
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			mcl::setIoMode(tbl[i]);
+			Fp::setIoMode(tbl[i]);
 			{
 				std::stringstream ss;
 				ss << P;
@@ -303,7 +304,7 @@ struct Test {
 				CYBOZU_TEST_EQUAL(Q, R);
 			}
 		}
-		mcl::setIoMode(mcl::IoAuto);
+		Fp::setIoMode(mcl::IoAuto);
 	}
 
 	template<class F>
