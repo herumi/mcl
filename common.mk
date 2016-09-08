@@ -31,8 +31,10 @@ AR=ar r
 MKDIR=mkdir -p
 RM=rm -rf
 
-
-ifneq ($(DEBUG),1)
+ifeq ($(DEBUG),1)
+  CFLAGS+=-fsanitize=address
+  LDFLAGS+=-fsanitize=address
+else
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG
   ifeq ($(CXX),clang++)
     CFLAGS_OPT+=-O3
