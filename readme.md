@@ -5,6 +5,7 @@ A class library of finite field and elliptic curve.
 # Abstract
 
 This is a library to make a protocol for elliptic curve cryptography.
+This library contains [mie](https://github.com/herumi/mie/) and [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal/).
 
 # Installation Requirements
 
