@@ -820,9 +820,7 @@ struct Code : public mcl::Generator {
 			setBit(i);
 			gen_all();
 			gen_addsub();
-			if (i > 64) {
-				gen_mul();
-			}
+			gen_mul();
 		}
 		if (unit == 64 && maxBitSize == 768) {
 			for (uint32_t i = maxBitSize + unit * 2; i <= maxBitSize * 2; i += unit * 2) {

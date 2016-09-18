@@ -25,6 +25,7 @@ void mcl_fp_montRed ## len(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl:
 void mcl_fpDbl_add ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
 void mcl_fpDbl_sub ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
 
+MCL_FP_DEF_FUNC(64)
 MCL_FP_DEF_FUNC(128)
 MCL_FP_DEF_FUNC(192)
 MCL_FP_DEF_FUNC(256)

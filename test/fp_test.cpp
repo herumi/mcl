@@ -1,9 +1,11 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
+#define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <mcl/fp.hpp>
-#include <cybozu/benchmark.hpp>
 #include "../src/fp_proto.hpp"
 #include <time.h>
+#include <cybozu/benchmark.hpp>
+#include <cybozu/option.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4127) // const condition
@@ -11,20 +13,10 @@
 
 typedef mcl::FpT<> Fp;
 
-const int m = 65537;
-struct Init {
-	Init()
-	{
-		std::ostringstream ms;
-		ms << m;
-		Fp::init(ms.str());
-	}
-};
-
-CYBOZU_TEST_SETUP_FIXTURE(Init);
-
-CYBOZU_TEST_AUTO(cstr)
+void cstrTest(mcl::fp::Mode mode)
 {
+	const int m = 65537;
+	Fp::init(mpz_class(m), mode);
 	const struct {
 		const char *str;
 		int val;
@@ -34,7 +26,7 @@ CYBOZU_TEST_AUTO(cstr)
 		{ "123", 123 },
 		{ "0x123", 0x123 },
 		{ "0b10101", 21 },
-		{ "-123", m - 123 },
+		{ "-123",  m - 123 },
 		{ "-0x123", m - 0x123 },
 		{ "-0b10101", m - 21 },
 	};
@@ -71,7 +63,7 @@ CYBOZU_TEST_AUTO(cstr)
 	}
 }
 
-CYBOZU_TEST_AUTO(setStr)
+void setStrTest()
 {
 	const struct {
 		const char *in;
@@ -96,7 +88,7 @@ CYBOZU_TEST_AUTO(setStr)
 	}
 }
 
-CYBOZU_TEST_AUTO(stream)
+void streamTest()
 {
 	const struct {
 		const char *in;
@@ -142,7 +134,7 @@ CYBOZU_TEST_AUTO(stream)
 	}
 }
 
-CYBOZU_TEST_AUTO(conv)
+void convTest()
 {
 	const char *bin = "0b1001000110100";
 	const char *hex = "0x1234";
@@ -162,7 +154,7 @@ CYBOZU_TEST_AUTO(conv)
 	CYBOZU_TEST_EQUAL(str, hex);
 }
 
-CYBOZU_TEST_AUTO(compare)
+void compareTest()
 {
 	const struct {
 		int lhs;
@@ -201,18 +193,17 @@ CYBOZU_TEST_AUTO(compare)
 	}
 }
 
-CYBOZU_TEST_AUTO(modulo)
+void moduloTest(const char *pStr)
 {
-	std::ostringstream ms;
-	ms << m;
-
 	std::string str;
 	Fp::getModulo(str);
-	CYBOZU_TEST_EQUAL(str, ms.str());
+	CYBOZU_TEST_EQUAL(str, mpz_class(pStr).get_str());
 }
 
-CYBOZU_TEST_AUTO(ope)
+void opeTest(mcl::fp::Mode mode)
 {
+	const int m = 65537;
+	Fp::init(mpz_class(m), mode);
 	const struct {
 		int x;
 		int y;
@@ -265,7 +256,7 @@ CYBOZU_TEST_AUTO(ope)
 
 struct tag2;
 
-CYBOZU_TEST_AUTO(pow)
+void powTest()
 {
 	Fp x, y, z;
 	x = 12345;
@@ -287,7 +278,7 @@ CYBOZU_TEST_AUTO(pow)
 	CYBOZU_TEST_EQUAL(x, 125);
 }
 
-CYBOZU_TEST_AUTO(neg_pow)
+void powNegTest()
 {
 	Fp x, y, z;
 	x = 12345;
@@ -300,7 +291,7 @@ CYBOZU_TEST_AUTO(neg_pow)
 	}
 }
 
-CYBOZU_TEST_AUTO(pow_fp)
+void powFpTest()
 {
 	Fp x, y, z;
 	x = 12345;
@@ -314,19 +305,18 @@ CYBOZU_TEST_AUTO(pow_fp)
 
 struct TagAnother;
 
-CYBOZU_TEST_AUTO(another)
+void anotherFpTest(mcl::fp::Mode mode)
 {
 	typedef mcl::FpT<TagAnother, 128> G;
-	G::init("13");
+	G::init("13", mode);
 	G a = 3;
 	G b = 9;
 	a *= b;
 	CYBOZU_TEST_EQUAL(a, 1);
 }
 
-CYBOZU_TEST_AUTO(setArray)
+void setArrayTest1()
 {
-	Fp::init("1000000000000000000117");
 	char b1[] = { 0x56, 0x34, 0x12 };
 	Fp x;
 	x.setArray(b1, 3);
@@ -334,8 +324,11 @@ CYBOZU_TEST_AUTO(setArray)
 	int b2[] = { 0x12, 0x34 };
 	x.setArray(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
+}
 
-	Fp::init("0x10000000000001234567a5");
+void setArrayTest2(mcl::fp::Mode mode)
+{
+	Fp::init("0x10000000000001234567a5", mode);
 	const struct {
 		uint32_t buf[3];
 		size_t bufN;
@@ -346,6 +339,7 @@ CYBOZU_TEST_AUTO(setArray)
 		{ { 0x234567a4, 0x00000001, 0x00080000}, 3, "0x08000000000001234567a4" },
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x10000000000001234567a4" },
 	};
+	Fp x;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		x.setArray(tbl[i].buf, tbl[i].bufN);
 		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
@@ -354,9 +348,8 @@ CYBOZU_TEST_AUTO(setArray)
 	CYBOZU_TEST_EXCEPTION(x.setArray(large, 3), cybozu::Exception);
 }
 
-CYBOZU_TEST_AUTO(setArrayMask)
+void setArrayMaskTest1()
 {
-	Fp::init("1000000000000000000117");
 	char b1[] = { 0x56, 0x34, 0x12 };
 	Fp x;
 	x.setArrayMask(b1, 3);
@@ -364,8 +357,11 @@ CYBOZU_TEST_AUTO(setArrayMask)
 	int b2[] = { 0x12, 0x34 };
 	x.setArrayMask(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
+}
 
-	Fp::init("0x10000000000001234567a5");
+void setArrayMaskTest2(mcl::fp::Mode mode)
+{
+	Fp::init("0x10000000000001234567a5", mode);
 	const struct {
 		uint32_t buf[3];
 		size_t bufN;
@@ -376,6 +372,7 @@ CYBOZU_TEST_AUTO(setArrayMask)
 		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x00000000000001234567a4" },
 		{ { 0x234567a5, 0xfffffff1, 0xffffffff}, 3, "0x0ffffffffffff1234567a5" },
 	};
+	Fp x;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		x.setArrayMask(tbl[i].buf, tbl[i].bufN);
 		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
@@ -399,9 +396,8 @@ CYBOZU_TEST_AUTO(set64bit)
 	}
 }
 
-CYBOZU_TEST_AUTO(getUint64)
+void getUint64Test()
 {
-	Fp::init("0x1000000000000000000f");
 	const uint64_t tbl[] = {
 		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull)
 	};
@@ -430,9 +426,8 @@ CYBOZU_TEST_AUTO(getUint64)
 	}
 }
 
-CYBOZU_TEST_AUTO(getInt64)
+void getInt64Test()
 {
-	Fp::init("0x1000000000000000000f");
 	const int64_t tbl[] = {
 		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull),
 		-1, -2, -12345678, -int64_t(1) << 63,
@@ -453,6 +448,29 @@ CYBOZU_TEST_AUTO(getInt64)
 		bool b = true;
 		CYBOZU_TEST_EQUAL(x.getInt64(&b), 0u);
 		CYBOZU_TEST_ASSERT(!b);
+	}
+}
+
+void getStrTest()
+{
+	const char *tbl[] = {
+		"0x0",
+		"0x5",
+		"0x123",
+		"0x123456789012345679adbc",
+		"0xffffffff26f2fc170f69466a74defd8d",
+		"0x100000000000000000000000000000033",
+		"0x11ee12312312940000000000000000000000000002342343"
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const char *s = tbl[i];
+		mpz_class x(s);
+		if (x >= Fp::getOp().mp) continue;
+		Fp y(s);
+		std::string xs, ys;
+		mcl::gmp::getStr(xs, x, 16);
+		y.getStr(ys, 16);
+		CYBOZU_TEST_EQUAL(xs, ys);
 	}
 }
 
@@ -479,27 +497,6 @@ CYBOZU_TEST_AUTO(getArray)
 	}
 }
 
-CYBOZU_TEST_AUTO(getStr)
-{
-	const char *tbl[] = {
-		"0x0",
-		"0x5",
-		"0x123",
-		"0x123456789012345679adbc",
-		"0xffffffff26f2fc170f69466a74defd8d",
-		"0x100000000000000000000000000000033",
-		"0x11ee12312312940000000000000000000000000002342343"
-	};
-	Fp::init("0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d");
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		mpz_class x(tbl[i]);
-		Fp y(tbl[i]);
-		std::string xs, ys;
-		mcl::gmp::getStr(xs, x, 16);
-		y.getStr(ys, 16);
-		CYBOZU_TEST_EQUAL(xs, ys);
-	}
-}
 
 #include <iostream>
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
@@ -542,3 +539,107 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 	}
 }
 #endif
+
+void sub(mcl::fp::Mode mode)
+{
+	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
+	const char *tbl[] = {
+		// N = 2
+		"0x0000000000000001000000000000000d",
+		"0x7fffffffffffffffffffffffffffffff",
+		"0x8000000000000000000000000000001d",
+		"0xffffffffffffffffffffffffffffff61",
+
+		// N = 3
+		"0x000000000000000100000000000000000000000000000033", // min prime
+		"0x00000000fffffffffffffffffffffffffffffffeffffac73",
+		"0x0000000100000000000000000001b8fa16dfab9aca16b6b3",
+		"0x000000010000000000000000000000000000000000000007",
+		"0x30000000000000000000000000000000000000000000002b",
+		"0x70000000000000000000000000000000000000000000001f",
+		"0x800000000000000000000000000000000000000000000005",
+		"0xfffffffffffffffffffffffffffffffffffffffeffffee37",
+		"0xfffffffffffffffffffffffe26f2fc170f69466a74defd8d",
+		"0xffffffffffffffffffffffffffffffffffffffffffffff13", // max prime
+
+		// N = 4
+		"0x0000000000000001000000000000000000000000000000000000000000000085", // min prime
+		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
+		"0x800000000000000000000000000000000000000000000000000000000000005f",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+
+		// N = 6
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+
+		// N = 9
+		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const char *pStr = tbl[i];
+		printf("prime=%s\n", pStr);
+		Fp::init(pStr, mode);
+		setStrTest();
+		streamTest();
+		convTest();
+		compareTest();
+		moduloTest(pStr);
+		powTest();
+		powNegTest();
+		powFpTest();
+		setArrayTest1();
+		setArrayMaskTest1();
+		getUint64Test();
+		getInt64Test();
+		getStrTest();
+	}
+	cstrTest(mode);
+	opeTest(mode);
+	anotherFpTest(mode);
+	setArrayTest2(mode);
+	setArrayMaskTest2(mode);
+}
+
+std::string g_mode;
+
+CYBOZU_TEST_AUTO(main)
+{
+	if (g_mode.empty() || g_mode == "auto") {
+		sub(mcl::fp::FP_AUTO);
+	}
+	if (g_mode.empty() || g_mode == "gmp") {
+		sub(mcl::fp::FP_GMP);
+	}
+	if (g_mode.empty() || g_mode == "gmp_mont") {
+		sub(mcl::fp::FP_GMP_MONT);
+	}
+#ifdef MCL_USE_LLVM
+	if (g_mode.empty() || g_mode == "llvm") {
+		sub(mcl::fp::FP_LLVM);
+	}
+	if (g_mode.empty() || g_mode == "llvm_mont") {
+		sub(mcl::fp::FP_LLVM_MONT);
+	}
+#endif
+#ifdef MCL_USE_XBYAK
+	if (g_mode.empty() || g_mode == "xbyak") {
+		sub(mcl::fp::FP_XBYAK);
+	}
+#endif
+}
+
+int main(int argc, char *argv[])
+	try
+{
+	cybozu::Option opt;
+	opt.appendOpt(&g_mode, "", "m", ": mode(auto/gmp/gmp_mont/llvm/llvm_mont/xbyak)");
+	opt.appendHelp("h", ": show this message");
+	if (!opt.parse(argc, argv)) {
+		opt.usage();
+		return 1;
+	}
+	return cybozu::test::autoRun.run(argc, argv);
+} catch (std::exception& e) {
+	printf("ERR %s\n", e.what());
+	return 1;
+}

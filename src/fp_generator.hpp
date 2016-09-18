@@ -183,7 +183,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void init(Op& op)
 	{
-		if (op.N < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << op.N;
+//		if (op.N < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << op.N;
 		op_ = &op;
 		p_ = op.p;
 		rp_ = fp::getMontgomeryCoeff(p_[0]);
@@ -347,7 +347,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void gen_raw_mul_Unit(const RegExp& pz, const RegExp& px, const Reg64& y, const MixPack& wk, const Reg64& t, size_t n)
 	{
-		assert(n >= 2);
+		if (n == 1) {
+			mov(rax, ptr [px]);
+			mul(y);
+			mov(ptr [pz], rax);
+			return;
+		}
 		if (n == 2) {
 			mov(rax, ptr [px]);
 			mul(y);
@@ -409,7 +414,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_mul_Unit()
 	{
-		assert(pn_ >= 2);
+//		assert(pn_ >= 2);
 		const int regNum = useMulx_ ? 2 : (1 + std::min(pn_ - 1, 8));
 		const int stackSize = useMulx_ ? 0 : (pn_ - 1) * 8;
 		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
@@ -944,7 +949,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void gen_montMulN(const uint64_t *p, uint64_t pp, int n)
 	{
-		assert(2 <= pn_ && pn_ <= 9);
+		assert(1 <= pn_ && pn_ <= 9);
 		const int regNum = useMulx_ ? 4 : 3 + std::min(n - 1, 7);
 		const int stackSize = (n * 3 + (isFullBit_ ? 2 : 1)) * 8;
 		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
@@ -1791,7 +1796,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void gen_preInv()
 	{
-		assert(pn_ >= 2);
+		assert(pn_ >= 1);
 		const int freeRegNum = 13;
 		if (pn_ > 9) {
 			throw cybozu::Exception("mcl:FpGenerator:gen_preInv:large pn_") << pn_;
@@ -1943,9 +1948,9 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		}
 #endif
 	L(".exit");
-		assert(ss.isReg(0) && ss.isReg(1));
+		assert(ss.isReg(0));
 		const Reg64& t2 = ss.getReg(0);
-		const Reg64& t3 = ss.getReg(1);
+		const Reg64& t3 = rdx;
 
 		mov(t2, (size_t)p_);
 		if (isFullBit_) {

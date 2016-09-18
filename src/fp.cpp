@@ -389,7 +389,6 @@ static void initInvTbl(Op& op)
 static void initForMont(Op& op, const Unit *p, Mode mode)
 {
 	const size_t N = op.N;
-	assert(N >= 2);
 	{
 		mpz_class t = 1, R;
 		gmp::getArray(op.one, N, t);
@@ -451,9 +450,7 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	}
 #endif
 	switch (roundBit) {
-	case 32:
-	case 64:
-	case 96:
+	case 64: SET_OP(64); SET_OP_DBL_LLVM(64, 128); break;
 	case 128: SET_OP(128); SET_OP_DBL_LLVM(128, 256); break;
 	case 192: SET_OP(192); SET_OP_DBL_LLVM(192, 384); break;
 	case 256: SET_OP(256); SET_OP_DBL_LLVM(256, 512); break;
@@ -484,6 +481,8 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 		break;
 #endif
 #else
+	case 32: SET_OP(32); SET_OP_DBL_LLVM(32, 64); break;
+	case 96: SET_OP(96); SET_OP_DBL_LLVM(96, 192); break;
 	case 160: SET_OP(160); SET_OP_DBL_LLVM(160, 320); break;
 	case 224: SET_OP(224); SET_OP_DBL_LLVM(224, 448); break;
 	case 288: SET_OP(288); break;
