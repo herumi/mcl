@@ -61,8 +61,12 @@ $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
 	$(GEN_EXE) -f $(FUNC_LIST) > $@
 
 $(FUNC_LIST): $(LOW_ASM_SRC)
-	$(shell awk '/global/ { print $$2}' $(LOW_ASM_SRC) > $(FUNC_LIST) || touch $(FUNC_LIST))
+ifeq ($(USE_LOW_ASM),1)
+	$(shell awk '/global/ { print $$2}' $(LOW_ASM_SRC) > $(FUNC_LIST))
 	$(shell awk '/proc/ { print $$2}' $(LOW_ASM_SRC) >> $(FUNC_LIST))
+else
+	$(shell touch $(FUNC_LIST))
+endif
 
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS) -O0
@@ -97,7 +101,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt || echo "all unit tests are ok"
 
 clean:
-	$(RM) $(MCL_LIB) $(OBJ_DIR)/* $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC)
+	$(RM) $(MCL_LIB) $(OBJ_DIR)/* $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST)
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
