@@ -13,10 +13,8 @@
 
 typedef mcl::FpT<> Fp;
 
-void cstrTest(mcl::fp::Mode mode)
+void cstrTest()
 {
-	const int m = 65537;
-	Fp::init(mpz_class(m), mode);
 	const struct {
 		const char *str;
 		int val;
@@ -26,9 +24,6 @@ void cstrTest(mcl::fp::Mode mode)
 		{ "123", 123 },
 		{ "0x123", 0x123 },
 		{ "0b10101", 21 },
-		{ "-123",  m - 123 },
-		{ "-0x123", m - 0x123 },
-		{ "-0b10101", m - 21 },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		// string cstr
@@ -60,6 +55,19 @@ void cstrTest(mcl::fp::Mode mode)
 		std::string str;
 		x.getStr(str);
 		CYBOZU_TEST_EQUAL(str, os.str());
+	}
+	const struct {
+		const char *str;
+		int val;
+	} tbl2[] = {
+		{ "-123", 123 },
+		{ "-0x123", 0x123 },
+		{ "-0b10101", 21 },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl2); i++) {
+		Fp x(tbl2[i].str);
+		x = -x;
+		CYBOZU_TEST_EQUAL(x, tbl2[i].val);
 	}
 }
 
@@ -134,11 +142,107 @@ void streamTest()
 	}
 }
 
+void ioModeTest()
+{
+	Fp x(123);
+	const struct {
+		mcl::IoMode ioMode;
+		std::string expected;
+	} tbl[] = {
+		{ mcl::IoBin, "1111011" },
+		{ mcl::IoDec, "123" },
+		{ mcl::IoHex, "7b" },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Fp::setIoMode(tbl[i].ioMode);
+		for (int j = 0; j < 2; j++) {
+			std::stringstream ss;
+			if (j == 1) {
+				ss << std::hex;
+			}
+			ss << x;
+			CYBOZU_TEST_EQUAL(ss.str(), tbl[i].expected);
+			Fp y;
+			y.clear();
+			ss >> y;
+			CYBOZU_TEST_EQUAL(x, y);
+		}
+	}
+	for (int i = 0; i < 2; i++) {
+		if (i == 0) {
+			Fp::setIoMode(mcl::IoArray);
+		} else {
+			Fp::setIoMode(mcl::IoArrayRaw);
+		}
+		std::stringstream ss;
+		ss << x;
+		CYBOZU_TEST_EQUAL(ss.str().size(), Fp::getBitSize() / 8);
+		Fp y;
+		ss >> y;
+		CYBOZU_TEST_EQUAL(x, y);
+	}
+	Fp::setIoMode(mcl::IoAuto);
+}
+
+void edgeTest()
+{
+	const mpz_class& m = Fp::getOp().mp;
+	/*
+		real mont
+		   0    0
+		   1    R^-1
+		   R    1
+		  -1    -R^-1
+		  -R    -1
+	*/
+	mpz_class t = 1;
+	const size_t N = Fp::getUnitSize();
+	const mpz_class R = (t << (N * mcl::fp::UnitBitSize)) % m;
+	const mpz_class tbl[] = {
+		0, 1, R, m - 1, m - R
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const mpz_class& x = tbl[i];
+		for (size_t j = i; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+			const mpz_class& y = tbl[j];
+			mpz_class z = (x * y) % m;
+			Fp xx, yy;
+			xx.setMpz(x);
+			yy.setMpz(y);
+			Fp zz = xx * yy;
+			mpz_class t;
+			zz.getMpz(t);
+			CYBOZU_TEST_EQUAL(z, t);
+		}
+	}
+	t = m;
+	t /= 2;
+	Fp x;
+	x.setMpz(t);
+	CYBOZU_TEST_EQUAL(x * 2, -1);
+	t += 1;
+	x.setMpz(t);
+	CYBOZU_TEST_EQUAL(x * 2, 1);
+}
+
 void convTest()
 {
+#if 1
+	const char *bin, *hex, *dec;
+	if (Fp::getBitSize() <= 117) {
+		bin = "0b1000000000000000000000000000000000000000000000000000000000001110";
+		hex = "0x800000000000000e";
+		dec = "9223372036854775822";
+	} else {
+		bin = "0b100100011010001010110011110001001000000010010001101000101011001111000100100000001001000110100010101100111100010010000";
+		hex = "0x123456789012345678901234567890";
+		dec = "94522879687365475552814062743484560";
+	}
+#else
 	const char *bin = "0b1001000110100";
 	const char *hex = "0x1234";
 	const char *dec = "4660";
+#endif
 	Fp b(bin);
 	Fp h(hex);
 	Fp d(dec);
@@ -191,6 +295,37 @@ void compareTest()
 		CYBOZU_TEST_ASSERT(x == 5);
 		CYBOZU_TEST_ASSERT(x > 2);
 	}
+	{
+		Fp x(1);
+		CYBOZU_TEST_ASSERT(x.isOne());
+		x = 2;
+		CYBOZU_TEST_ASSERT(!x.isOne());
+	}
+	{
+		const struct {
+			int v;
+			bool expected;
+		} tbl[] = {
+			{ 0, false },
+			{ 1, false },
+			{ -1, true },
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			Fp x = tbl[i].v;
+			CYBOZU_TEST_EQUAL(x.isNegative(), tbl[i].expected);
+		}
+		std::string str;
+		Fp::getModulo(str);
+		mpz_class half(str);
+		half = (half - 1) / 2;
+		Fp x;
+		x.setMpz(half - 1);
+		CYBOZU_TEST_ASSERT(!x.isNegative());
+		x.setMpz(half);
+		CYBOZU_TEST_ASSERT(!x.isNegative());
+		x.setMpz(half + 1);
+		CYBOZU_TEST_ASSERT(x.isNegative());
+	}
 }
 
 void moduloTest(const char *pStr)
@@ -200,10 +335,8 @@ void moduloTest(const char *pStr)
 	CYBOZU_TEST_EQUAL(str, mpz_class(pStr).get_str());
 }
 
-void opeTest(mcl::fp::Mode mode)
+void opeTest()
 {
-	const int m = 65537;
-	Fp::init(mpz_class(m), mode);
 	const struct {
 		int x;
 		int y;
@@ -212,11 +345,11 @@ void opeTest(mcl::fp::Mode mode)
 		int mul; // x * y
 		int sqr; // x^2
 	} tbl[] = {
-		{ 0, 1, 1, m - 1, 0, 0 },
+		{ 0, 1, 1, -1, 0, 0 },
 		{ 9, 5, 14, 4, 45, 81 },
-		{ 10, 13, 23, m - 3, 130, 100 },
-		{ 2000, 1000, 3000, 1000, (2000 * 1000) % m, (2000 * 2000) % m },
-		{ 12345, 9999, 12345 + 9999, 12345 - 9999, (12345 * 9999) % m, (12345 * 12345) % m },
+		{ 10, 13, 23,  -3, 130, 100 },
+		{ 2000, 1000, 3000, 1000, 2000 * 1000, 2000 * 2000 },
+		{ 12345, 9999, 12345 + 9999, 12345 - 9999, 12345 * 9999, 12345 * 12345 },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const Fp x(tbl[i].x);
@@ -247,11 +380,19 @@ void opeTest(mcl::fp::Mode mode)
 		z *= y;
 		CYBOZU_TEST_EQUAL(z, tbl[i].x);
 	}
-	Fp x(5), y(3), z;
-	Fp::addNC(z, x, y);
-	CYBOZU_TEST_EQUAL(z, Fp(8));
-	Fp::subNC(z, x, y);
-	CYBOZU_TEST_EQUAL(z, Fp(2));
+	{
+		Fp x(5), y(3), z;
+		Fp::addNC(z, x, y);
+		if (Fp::compareRaw(z, Fp::getP()) >= 0) {
+			Fp::subNC(z, z, Fp::getP());
+		}
+		CYBOZU_TEST_EQUAL(z, Fp(8));
+		if (Fp::compareRaw(x, y) < 0) {
+			Fp::addNC(x, x, Fp::getP());
+		}
+		Fp::subNC(x, x, y);
+		CYBOZU_TEST_EQUAL(x, Fp(2));
+	}
 }
 
 struct tag2;
@@ -266,6 +407,11 @@ void powTest()
 		CYBOZU_TEST_EQUAL(y, z);
 		z *= x;
 	}
+	x = z;
+	Fp::pow(z, x, Fp::getOp().mp - 1);
+	CYBOZU_TEST_EQUAL(z, 1);
+	Fp::pow(z, x, Fp::getOp().mp);
+	CYBOZU_TEST_EQUAL(z, x);
 	typedef mcl::FpT<tag2, 128> Fp_other;
 	Fp_other::init("1009");
 	x = 5;
@@ -276,6 +422,16 @@ void powTest()
 	x = 5;
 	Fp::pow(x, x, n);
 	CYBOZU_TEST_EQUAL(x, 125);
+}
+
+void mul_UnitTest()
+{
+	Fp x(-1), y, z;
+	for (unsigned int u = 0; u < 20; u++) {
+		Fp::mul(y, x, u);
+		Fp::mul_Unit(z, x, u);
+		CYBOZU_TEST_EQUAL(y, z);
+	}
 }
 
 void powNegTest()
@@ -298,6 +454,18 @@ void powFpTest()
 	z = 1;
 	for (int i = 0; i < 100; i++) {
 		Fp::pow(y, x, Fp(i));
+		CYBOZU_TEST_EQUAL(y, z);
+		z *= x;
+	}
+}
+
+void powGmp()
+{
+	Fp x, y, z;
+	x = 12345;
+	z = 1;
+	for (int i = 0; i < 100; i++) {
+		Fp::pow(y, x, mpz_class(i));
 		CYBOZU_TEST_EQUAL(y, z);
 		z *= x;
 	}
@@ -451,8 +619,63 @@ void getInt64Test()
 	}
 }
 
+void divBy2Test()
+{
+	const int tbl[] = { -4, -3, -2, -1, 0, 1, 2, 3 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Fp x(tbl[i]), y;
+		Fp::divBy2(y, x);
+		y *= 2;
+		CYBOZU_TEST_EQUAL(y, x);
+		y = x;
+		Fp::divBy2(y, y);
+		y *= 2;
+		CYBOZU_TEST_EQUAL(y, x);
+	}
+}
+
 void getStrTest()
 {
+	Fp x(0);
+	std::string str;
+	str = x.getStr();
+	CYBOZU_TEST_EQUAL(str, "0");
+	str = x.getStr(mcl::IoBinPrefix);
+	CYBOZU_TEST_EQUAL(str, "0b0");
+	str = x.getStr(mcl::IoBin);
+	CYBOZU_TEST_EQUAL(str, "0");
+	str = x.getStr(mcl::IoHexPrefix);
+	CYBOZU_TEST_EQUAL(str, "0x0");
+	str = x.getStr(mcl::IoHex);
+	CYBOZU_TEST_EQUAL(str, "0");
+
+	x = 123;
+	str = x.getStr();
+	CYBOZU_TEST_EQUAL(str, "123");
+	str = x.getStr(mcl::IoBinPrefix);
+	CYBOZU_TEST_EQUAL(str, "0b1111011");
+	str = x.getStr(mcl::IoBin);
+	CYBOZU_TEST_EQUAL(str, "1111011");
+	str = x.getStr(mcl::IoHexPrefix);
+	CYBOZU_TEST_EQUAL(str, "0x7b");
+	str = x.getStr(mcl::IoHex);
+	CYBOZU_TEST_EQUAL(str, "7b");
+
+	{
+		std::ostringstream os;
+		os << x;
+		CYBOZU_TEST_EQUAL(os.str(), "123");
+	}
+	{
+		std::ostringstream os;
+		os << std::hex << std::showbase << x;
+		CYBOZU_TEST_EQUAL(os.str(), "0x7b");
+	}
+	{
+		std::ostringstream os;
+		os << std::hex << x;
+		CYBOZU_TEST_EQUAL(os.str(), "7b");
+	}
 	const char *tbl[] = {
 		"0x0",
 		"0x5",
@@ -579,22 +802,27 @@ void sub(mcl::fp::Mode mode)
 		const char *pStr = tbl[i];
 		printf("prime=%s\n", pStr);
 		Fp::init(pStr, mode);
+		cstrTest();
 		setStrTest();
 		streamTest();
+		ioModeTest();
+		edgeTest();
 		convTest();
 		compareTest();
 		moduloTest(pStr);
+		opeTest();
+		mul_UnitTest();
 		powTest();
 		powNegTest();
 		powFpTest();
+		powGmp();
 		setArrayTest1();
 		setArrayMaskTest1();
 		getUint64Test();
 		getInt64Test();
+		divBy2Test();
 		getStrTest();
 	}
-	cstrTest(mode);
-	opeTest(mode);
 	anotherFpTest(mode);
 	setArrayTest2(mode);
 	setArrayMaskTest2(mode);
