@@ -37,6 +37,22 @@ segment .text
 	ret
 %endmacro
 
+%imacro subNC 1
+	mov rax, [p2org]
+	sub rax, [p3org]
+	mov [p1org], rax
+%assign i 1
+%rep %1
+	mov rax, [p2org + i * 8]
+	sbb rax, [p3org + i * 8]
+	mov [p1org + i * 8], rax
+%assign i (i+1)
+%endrep
+	setc al
+	movzx eax, al
+	ret
+%endmacro
+
 proc mcl_fp_addNC64
         addNC 0
 proc mcl_fp_addNC128
@@ -85,4 +101,53 @@ proc mcl_fp_addNC1472
         addNC 22
 proc mcl_fp_addNC1536
         addNC 23
+
+proc mcl_fp_subNC64
+        subNC 0
+proc mcl_fp_subNC128
+        subNC 1
+proc mcl_fp_subNC192
+        subNC 2
+proc mcl_fp_subNC256
+        subNC 3
+proc mcl_fp_subNC320
+        subNC 4
+proc mcl_fp_subNC384
+        subNC 5
+proc mcl_fp_subNC448
+        subNC 6
+proc mcl_fp_subNC512
+        subNC 7
+proc mcl_fp_subNC576
+        subNC 8
+proc mcl_fp_subNC640
+        subNC 9
+proc mcl_fp_subNC704
+        subNC 10
+proc mcl_fp_subNC768
+        subNC 11
+proc mcl_fp_subNC832
+        subNC 12
+proc mcl_fp_subNC896
+        subNC 13
+proc mcl_fp_subNC960
+        subNC 14
+proc mcl_fp_subNC1024
+        subNC 15
+proc mcl_fp_subNC1088
+        subNC 16
+proc mcl_fp_subNC1152
+        subNC 17
+proc mcl_fp_subNC1216
+        subNC 18
+proc mcl_fp_subNC1280
+        subNC 19
+proc mcl_fp_subNC1344
+        subNC 20
+proc mcl_fp_subNC1408
+        subNC 21
+proc mcl_fp_subNC1472
+        subNC 22
+proc mcl_fp_subNC1536
+        subNC 23
 

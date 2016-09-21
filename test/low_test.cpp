@@ -10,36 +10,32 @@
 
 cybozu::XorShift rg;
 
-extern "C" void mcl_fp_addNC64(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
-extern "C" void mcl_fp_addNC96(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
-extern "C" void mcl_fp_addNC128(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
-extern "C" void mcl_fp_addNC160(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
-extern "C" void mcl_fp_addNC192(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
-extern "C" void mcl_fp_addNC224(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
-extern "C" void mcl_fp_addNC256(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
 extern "C" void add_test(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
 
 template<size_t N>
 void addNC(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
 
-#define DEF_ADD(BIT) template<> void addNC<BIT>(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y) { mcl_fp_addNC ## BIT(z, x, y); }
+template<size_t N>
+void subNC(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
 
-DEF_ADD(64)
-DEF_ADD(128)
-DEF_ADD(192)
-DEF_ADD(256)
-DEF_ADD(320)
-DEF_ADD(384)
-DEF_ADD(448)
-DEF_ADD(512)
-//DEF_ADD(96)
-//DEF_ADD(160)
-//DEF_ADD(224)
+#define DEF_FUNC(BIT) \
+	template<> void addNC<BIT>(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y) { mcl_fp_addNC ## BIT(z, x, y); } \
+	template<> void subNC<BIT>(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y) { mcl_fp_subNC ## BIT(z, x, y); }
 
-#define CAT(S, BIT) "S##BIT"
+DEF_FUNC(64)
+DEF_FUNC(128)
+DEF_FUNC(192)
+DEF_FUNC(256)
+DEF_FUNC(320)
+DEF_FUNC(384)
+DEF_FUNC(448)
+DEF_FUNC(512)
+//DEF_FUNC(96)
+//DEF_FUNC(160)
+//DEF_FUNC(224)
 
 template<size_t bit>
-void benchAdd()
+void bench()
 {
 	using namespace mcl::fp;
 	const size_t N = bit / UnitBitSize;
@@ -52,22 +48,28 @@ void benchAdd()
 		low_add<N>(z, x, y);
 		addNC<bit>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
+
+		low_sub<N>(z, x, y);
+		subNC<bit>(w, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 	}
-	std::string name = "add" + cybozu::itoa(bit);
-	CYBOZU_BENCH(name.c_str(), addNC<bit>, x, x, y);
+	const std::string bitS = cybozu::itoa(bit);
+	std::string name;
+	name = "add" + bitS; CYBOZU_BENCH(name.c_str(), addNC<bit>, x, x, y);
+	name = "sub" + bitS; CYBOZU_BENCH(name.c_str(), subNC<bit>, x, x, y);
 }
 
-CYBOZU_TEST_AUTO(addNC64) { benchAdd<64>(); }
-CYBOZU_TEST_AUTO(addNC128) { benchAdd<128>(); }
-CYBOZU_TEST_AUTO(addNC192) { benchAdd<192>(); }
-CYBOZU_TEST_AUTO(addNC256) { benchAdd<256>(); }
-CYBOZU_TEST_AUTO(addNC320) { benchAdd<320>(); }
-CYBOZU_TEST_AUTO(addNC384) { benchAdd<384>(); }
-CYBOZU_TEST_AUTO(addNC448) { benchAdd<448>(); }
-CYBOZU_TEST_AUTO(addNC512) { benchAdd<512>(); }
-//CYBOZU_TEST_AUTO(addNC96) { benchAdd<96>(); }
-//CYBOZU_TEST_AUTO(addNC160) { benchAdd<160>(); }
-//CYBOZU_TEST_AUTO(addNC224) { benchAdd<224>(); }
+CYBOZU_TEST_AUTO(addNC64) { bench<64>(); }
+CYBOZU_TEST_AUTO(addNC128) { bench<128>(); }
+CYBOZU_TEST_AUTO(addNC192) { bench<192>(); }
+CYBOZU_TEST_AUTO(addNC256) { bench<256>(); }
+CYBOZU_TEST_AUTO(addNC320) { bench<320>(); }
+CYBOZU_TEST_AUTO(addNC384) { bench<384>(); }
+CYBOZU_TEST_AUTO(addNC448) { bench<448>(); }
+CYBOZU_TEST_AUTO(addNC512) { bench<512>(); }
+//CYBOZU_TEST_AUTO(addNC96) { bench<96>(); }
+//CYBOZU_TEST_AUTO(addNC160) { bench<160>(); }
+//CYBOZU_TEST_AUTO(addNC224) { bench<224>(); }
 #if 0
 CYBOZU_TEST_AUTO(addNC)
 {
