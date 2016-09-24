@@ -210,7 +210,6 @@ void edgeTest()
 			xx.setMpz(x);
 			yy.setMpz(y);
 			Fp zz = xx * yy;
-			mpz_class t;
 			zz.getMpz(t);
 			CYBOZU_TEST_EQUAL(z, t);
 		}
@@ -260,33 +259,35 @@ void convTest()
 
 void compareTest()
 {
-	const struct {
-		int lhs;
-		int rhs;
-		int cmp;
-	} tbl[] = {
-		{ 0, 0, 0 },
-		{ 1, 0, 1 },
-		{ 0, 1, -1 },
-		{ -1, 0, 1 }, // m-1, 0
-		{ 0, -1, -1 }, // 0, m-1
-		{ 123, 456, -1 },
-		{ 456, 123, 1 },
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const Fp x(tbl[i].lhs);
-		const Fp y(tbl[i].rhs);
-		const int cmp = tbl[i].cmp;
-		if (cmp == 0) {
-			CYBOZU_TEST_EQUAL(x, y);
-			CYBOZU_TEST_ASSERT(x >= y);
-			CYBOZU_TEST_ASSERT(x <= y);
-		} else if (cmp > 0) {
-			CYBOZU_TEST_ASSERT(x > y);
-			CYBOZU_TEST_ASSERT(x >= y);
-		} else {
-			CYBOZU_TEST_ASSERT(x < y);
-			CYBOZU_TEST_ASSERT(x <= y);
+	{
+		const struct {
+			int lhs;
+			int rhs;
+			int cmp;
+		} tbl[] = {
+			{ 0, 0, 0 },
+			{ 1, 0, 1 },
+			{ 0, 1, -1 },
+			{ -1, 0, 1 }, // m-1, 0
+			{ 0, -1, -1 }, // 0, m-1
+			{ 123, 456, -1 },
+			{ 456, 123, 1 },
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			const Fp x(tbl[i].lhs);
+			const Fp y(tbl[i].rhs);
+			const int cmp = tbl[i].cmp;
+			if (cmp == 0) {
+				CYBOZU_TEST_EQUAL(x, y);
+				CYBOZU_TEST_ASSERT(x >= y);
+				CYBOZU_TEST_ASSERT(x <= y);
+			} else if (cmp > 0) {
+				CYBOZU_TEST_ASSERT(x > y);
+				CYBOZU_TEST_ASSERT(x >= y);
+			} else {
+				CYBOZU_TEST_ASSERT(x < y);
+				CYBOZU_TEST_ASSERT(x <= y);
+			}
 		}
 	}
 	{
@@ -687,11 +688,11 @@ void getStrTest()
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *s = tbl[i];
-		mpz_class x(s);
-		if (x >= Fp::getOp().mp) continue;
+		mpz_class mx(s);
+		if (mx >= Fp::getOp().mp) continue;
 		Fp y(s);
 		std::string xs, ys;
-		mcl::gmp::getStr(xs, x, 16);
+		mcl::gmp::getStr(xs, mx, 16);
 		y.getStr(ys, 16);
 		CYBOZU_TEST_EQUAL(xs, ys);
 	}
