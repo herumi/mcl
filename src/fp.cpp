@@ -296,7 +296,7 @@ struct OpeFunc {
 	#define SET_OP_LLVM(n) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
 			fp_add = mcl_fp_add ## n; \
-			fp_subP = mcl_fp_sub ## n; \
+			fp_sub = mcl_fp_sub ## n; \
 			if (!isFullBit) { \
 				fp_addNC = mcl_fp_addNC ## n; \
 				fp_subNC = mcl_fp_subNC ## n; \
@@ -333,7 +333,7 @@ struct OpeFunc {
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
 		} \
 		fp_add = OpeFunc<n>::fp_addPC; \
-		fp_subP = OpeFunc<n>::fp_subPC; \
+		fp_sub = OpeFunc<n>::fp_subPC; \
 		fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
 		fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
 		if (isFullBit) { \

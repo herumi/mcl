@@ -88,7 +88,7 @@ struct Op {
 	void2u fp_neg;
 	void2u fp_sqr;
 	void4u fp_add;
-	void3u fp_sub;
+	void4u fp_sub;
 	void3u fp_mul;
 	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
 	void3u fpN1_modP; // y[N] = x[N + 1] % p[N]

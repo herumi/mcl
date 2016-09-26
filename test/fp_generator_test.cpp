@@ -115,7 +115,7 @@ void testAddSub(const mcl::fp::Op& op)
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(my, y);
 		y -= x;
-		op.fp_sub(my.v, my.v, mx.v);
+		op.fp_sub(my.v, my.v, mx.v, p);
 	}
 }
 
