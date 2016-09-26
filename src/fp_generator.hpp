@@ -193,15 +193,15 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 		setSize(0); // reset code
 		align(16);
-		op.fp_add = getCurr<void3u>();
+		op.fp_add = getCurr<void4u>();
 		gen_fp_add();
 		align(16);
 		op.fp_sub = getCurr<void3u>();
 		gen_fp_sub();
 
 		if (op.isFullBit) {
-			op.fp_addNC = op.fp_add;
-			op.fp_subNC = op.fp_sub;
+			op.fp_addNC = 0;
+			op.fp_subNC = 0;
 		} else {
 			align(16);
 			op.fp_addNC = getCurr<void3u>();

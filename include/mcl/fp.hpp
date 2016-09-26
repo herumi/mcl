@@ -131,7 +131,7 @@ public:
 		op_.clear();
 		op_.fp_neg = fp_negW;
 		op_.fp_sqr = fp_sqrW;
-		op_.fp_add = fp_addW;
+		op_.fp_add = 0;
 		op_.fp_sub = fp_subW;
 		op_.fpDbl_add = fpDbl_addW;
 		op_.fpDbl_sub = fpDbl_subW;
@@ -365,7 +365,7 @@ public:
 		if (x < 0) throw cybozu::Exception("Fp:setMpz:negative is not supported") << x;
 		setArray(gmp::getUnit(x), gmp::getUnitSize(x));
 	}
-	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_); }
+	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_); }
 	static inline void addNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_addNC(z.v_, x.v_, y.v_); }
 	static inline void subNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_subNC(z.v_, x.v_, y.v_); }
@@ -480,10 +480,12 @@ private:
 		  case 2: fp_addW(z.v_, x.v_, y.v_)
 		            op_.fp_addP(z, x, y, p) written by GMP/LLVM with generic p
 	*/
+#if 0
 	static inline void fp_addW(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.fp_addP(z, x, y, op_.p);
 	}
+#endif
 	static inline void fp_subW(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.fp_subP(z, x, y, op_.p);

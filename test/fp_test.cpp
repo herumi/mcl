@@ -381,7 +381,7 @@ void opeTest()
 		z *= y;
 		CYBOZU_TEST_EQUAL(z, tbl[i].x);
 	}
-	{
+	if (!Fp::isFullBit()) {
 		Fp x(5), y(3), z;
 		Fp::addNC(z, x, y);
 		if (Fp::compareRaw(z, Fp::getP()) >= 0) {

@@ -6,7 +6,10 @@ EXE_DIR=bin
 SRC_SRC=fp.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp
 ifeq ($(CPU),x86-64)
-  TEST_SRC+=fp_generator_test.cpp mont_fp_test.cpp sq_test.cpp low_test.cpp
+  TEST_SRC+=fp_generator_test.cpp mont_fp_test.cpp sq_test.cpp
+  ifeq ($(USE_LOW_ASM),1)
+    TEST_SRC+=low_test.cpp
+  endif
 endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp
 
@@ -106,6 +109,8 @@ clean:
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
 -include $(DEPEND_FILE)
+
+.PHONY: test
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))

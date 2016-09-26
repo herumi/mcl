@@ -87,7 +87,7 @@ struct Op {
 	// not require p(function having p)
 	void2u fp_neg;
 	void2u fp_sqr;
-	void3u fp_add;
+	void4u fp_add;
 	void3u fp_sub;
 	void3u fp_mul;
 	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y

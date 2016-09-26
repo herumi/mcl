@@ -96,6 +96,7 @@ static inline std::ostream& operator<<(std::ostream& os, const Int& x)
 void testAddSub(const mcl::fp::Op& op)
 {
 	Fp x, y;
+	const uint64_t *p = op.p;
 	Int mx(op.N), my(op.N);
 	x.setStr("0x8811aabb23427cc");
 	y.setStr("0x8811aabb23427cc11");
@@ -104,12 +105,12 @@ void testAddSub(const mcl::fp::Op& op)
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(mx, x);
 		x += x;
-		op.fp_add(mx.v, mx.v, mx.v);
+		op.fp_add(mx.v, mx.v, mx.v, p);
 	}
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(mx, x);
 		x += y;
-		op.fp_add(mx.v, mx.v, my.v);
+		op.fp_add(mx.v, mx.v, my.v, p);
 	}
 	for (int i = 0; i < 30; i++) {
 		CYBOZU_TEST_EQUAL(my, y);
@@ -140,7 +141,7 @@ void testNeg(const mcl::fp::Op& op)
 void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 {
 	cybozu::XorShift rg;
-printf("pn=%d, %p\n", pn, fg.mul_Unit_);
+//printf("pn=%d, %p\n", pn, fg.mul_Unit_);
 	for (int i = 0; i < 100; i++) {
 		uint64_t x[MAX_N];
 		uint64_t z[MAX_N + 1];

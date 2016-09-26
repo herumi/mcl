@@ -162,7 +162,13 @@ public:
 		mcl::fp::Op& op = Fp::op_;
 		op.fp2_add = fp2_addW;
 		op.fp2_sub = fp2_subW;
-		op.fp2_mul = op.isFastMod ? fp2_mulW : fp2_mulUseDblW;
+		if (op.isFastMod) {
+			op.fp2_mul = fp2_mulW;
+		} else if (!op.isFullBit) {
+			op.fp2_mul = fp2_mulUseDblUseNCW;
+		} else {
+			op.fp2_mul = fp2_mulUseDblW;
+		}
 		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		op.fp2_sqr = fp2_sqrW;
@@ -230,6 +236,28 @@ private:
 		@note mod of NIST_P192 is fast
 	*/
 	static void fp2_mulUseDblW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const Fp *px = reinterpret_cast<const Fp*>(x);
+		const Fp *py = reinterpret_cast<const Fp*>(y);
+		const Fp& a = px[0];
+		const Fp& b = px[1];
+		const Fp& c = py[0];
+		const Fp& d = py[1];
+		FpDbl d0, d1, d2;
+		Fp s, t;
+		Fp::add(s, a, b);
+		Fp::add(t, c, d);
+		FpDbl::mulPre(d0, s, t); // (a + b)(c + d)
+		FpDbl::mulPre(d1, a, c);
+		FpDbl::mulPre(d2, b, d);
+		FpDbl::sub(d0, d0, d1); // (a + b)(c + d) - ac
+		FpDbl::sub(d0, d0, d2); // (a + b)(c + d) - ac - bd
+		Fp *pz = reinterpret_cast<Fp*>(z);
+		FpDbl::mod(pz[1], d0);
+		FpDbl::sub(d1, d1, d2); // ac - bd
+		FpDbl::mod(pz[0], d1); // set z0
+	}
+	static void fp2_mulUseDblUseNCW(Unit *z, const Unit *x, const Unit *y)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		const Fp *py = reinterpret_cast<const Fp*>(y);

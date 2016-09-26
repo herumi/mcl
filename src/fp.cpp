@@ -295,7 +295,7 @@ struct OpeFunc {
 #ifdef MCL_USE_LLVM
 	#define SET_OP_LLVM(n) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fp_addP = mcl_fp_add ## n; \
+			fp_add = mcl_fp_add ## n; \
 			fp_subP = mcl_fp_sub ## n; \
 			if (!isFullBit) { \
 				fp_addNC = mcl_fp_addNC ## n; \
@@ -332,15 +332,15 @@ struct OpeFunc {
 		} else { \
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
 		} \
-		fp_addP = OpeFunc<n>::fp_addPC; \
+		fp_add = OpeFunc<n>::fp_addPC; \
 		fp_subP = OpeFunc<n>::fp_subPC; \
 		fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
 		fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
 		if (isFullBit) { \
-			fp_addNC = fp_add; \
-			fp_subNC = fp_sub; \
-			fpDbl_addNC = fpDbl_add; \
-			fpDbl_subNC = fpDbl_sub; \
+			fp_addNC = 0; \
+			fp_subNC = 0; \
+			fpDbl_addNC = 0; \
+			fpDbl_subNC = 0; \
 		} else { \
 			fp_addNC = OpeFunc<n>::fp_addNCC; \
 			fp_subNC = OpeFunc<n>::fp_subNCC; \
@@ -373,6 +373,7 @@ inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 static void initInvTbl(Op& op)
 {
 	const size_t N = op.N;
+	const Unit *p = op.p;
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	op.invTbl.resize(invTblN * N);
 	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
@@ -380,7 +381,7 @@ static void initInvTbl(Op& op)
 	t[0] = 2;
 	op.toMont(tbl, t);
 	for (size_t i = 0; i < invTblN - 1; i++) {
-		op.fp_add(tbl - N, tbl, tbl);
+		op.fp_add(tbl - N, tbl, tbl, p);
 		tbl -= N;
 	}
 }
