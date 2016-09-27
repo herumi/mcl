@@ -121,8 +121,6 @@ struct Op {
 	*/
 	void4u fpDbl_add;
 	void4u fpDbl_sub;
-	void4u fpDbl_addP;
-	void4u fpDbl_subP;
 	void3u fpDbl_addNC;
 	void3u fpDbl_subNC;
 
@@ -188,8 +186,6 @@ struct Op {
 		fpDbl_modP = 0;
 		fpDbl_add = 0;
 		fpDbl_sub = 0;
-		fpDbl_addP = 0;
-		fpDbl_subP = 0;
 		fpDbl_addNC = 0;
 		fpDbl_subNC = 0;
 		fpDbl_sqrPre = 0;

@@ -136,7 +136,7 @@ struct OpeFunc {
 	{
 		copyArray(y, x, N);
 	}
-	static inline void fp_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (low_add<N>(z, x, y)) {
 			low_sub<N>(z, z, p);
@@ -147,7 +147,7 @@ struct OpeFunc {
 			memcpy(z, tmp, sizeof(tmp));
 		}
 	}
-	static inline void fp_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (low_sub<N>(z, x, y)) {
 			low_add<N>(z, z, p);
@@ -156,7 +156,7 @@ struct OpeFunc {
 	/*
 		z[N * 2] <- x[N * 2] + y[N * 2] mod p[N] << (N * UnitBitSize)
 	*/
-	static inline void fpDbl_addPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fpDbl_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (low_add<N * 2>(z, x, y)) {
 			low_sub<N>(z + N, z + N, p);
@@ -167,7 +167,7 @@ struct OpeFunc {
 			memcpy(z + N, tmp, sizeof(tmp));
 		}
 	}
-	static inline void fpDbl_subPC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fpDbl_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (low_sub<N * 2>(z, x, y)) {
 			low_add<N>(z + N, z + N, p);
@@ -288,7 +288,7 @@ struct OpeFunc {
 			if (x != y) fp_clearC(y);
 			return;
 		}
-		fp_subPC(y, p, x, p);
+		fp_subC(y, p, x, p);
 	}
 };
 
@@ -310,7 +310,7 @@ struct OpeFunc {
 	#define SET_OP_DBL_LLVM(n, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
 			fpDbl_add = mcl_fpDbl_add ## n; \
-			fpDbl_subP = mcl_fpDbl_sub ## n; \
+			fpDbl_sub = mcl_fpDbl_sub ## n; \
 			if (!isFullBit) { \
 				fpDbl_addNC = mcl_fp_addNC ## n2; \
 				fpDbl_subNC = mcl_fp_subNC ## n2; \
@@ -332,10 +332,10 @@ struct OpeFunc {
 		} else { \
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
 		} \
-		fp_add = OpeFunc<n>::fp_addPC; \
-		fp_sub = OpeFunc<n>::fp_subPC; \
-		fpDbl_add = OpeFunc<n>::fpDbl_addPC; \
-		fpDbl_sub = OpeFunc<n>::fpDbl_subPC; \
+		fp_add = OpeFunc<n>::fp_addC; \
+		fp_sub = OpeFunc<n>::fp_subC; \
+		fpDbl_add = OpeFunc<n>::fpDbl_addC; \
+		fpDbl_sub = OpeFunc<n>::fpDbl_subC; \
 		if (isFullBit) { \
 			fp_addNC = 0; \
 			fp_subNC = 0; \
