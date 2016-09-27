@@ -40,8 +40,8 @@ public:
 	{
 		gmp::setArray(x, v_, Fp::op_.N * 2);
 	}
-	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_); }
-	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_); }
+	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
+	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void addNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
 	static void subNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
 	/*

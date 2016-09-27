@@ -129,12 +129,7 @@ public:
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
 		op_.clear();
-		op_.fp_neg = 0;
 		op_.fp_sqr = fp_sqrW;
-		op_.fp_add = 0;
-		op_.fp_sub = 0;
-		op_.fpDbl_add = fpDbl_addW;
-		op_.fpDbl_sub = fpDbl_subW;
 		op_.fp_mul = fp_mulW;
 		op_.fp_mul_Unit = fp_mul_UnitW;
 		op_.fpDbl_mod = fpDbl_modW;
@@ -475,19 +470,7 @@ public:
 private:
 	/*
 		wrapper function for generic p
-		add(z, x, y)
-		  case 1: op_.fp_add(z.v_, x.v_, y.v_) written by Xbyak with fixed p
-		  case 2: fp_addW(z.v_, x.v_, y.v_)
-		            op_.fp_addP(z, x, y, p) written by GMP/LLVM with generic p
 	*/
-	static inline void fpDbl_addW(Unit *z, const Unit *x, const Unit *y)
-	{
-		op_.fpDbl_addP(z, x, y, op_.p);
-	}
-	static inline void fpDbl_subW(Unit *z, const Unit *x, const Unit *y)
-	{
-		op_.fpDbl_subP(z, x, y, op_.p);
-	}
 	// y[N] <- x[N + 1] % p[N]
 	static inline void fpN1_modW(Unit *y, const Unit *x)
 	{

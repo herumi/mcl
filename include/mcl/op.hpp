@@ -113,17 +113,14 @@ struct Op {
 	void (*montPU)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
 
 	// require p
-	void3u fp_negP;
 	void2uOp fp_invOp;
-	void4u fp_addP;
-	void4u fp_subP;
 	void3u fpDbl_modP;
 
 	/*
 		for FpDbl
 	*/
-	void3u fpDbl_add;
-	void3u fpDbl_sub;
+	void4u fpDbl_add;
+	void4u fpDbl_sub;
 	void4u fpDbl_addP;
 	void4u fpDbl_subP;
 	void3u fpDbl_addNC;
@@ -187,10 +184,7 @@ struct Op {
 		rp = 0;
 		montRedPU = 0;
 		montPU = 0;
-		fp_negP = 0;
 		fp_invOp = 0;
-		fp_addP = 0;
-		fp_subP = 0;
 		fpDbl_modP = 0;
 		fpDbl_add = 0;
 		fpDbl_sub = 0;

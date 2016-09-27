@@ -242,14 +242,14 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		// setup fp_tower
 		if (op.N > 4) return;
 		align(16);
-		op.fpDbl_add = getCurr<void3u>();
+		op.fpDbl_add = getCurr<void4u>();
 		gen_fpDbl_add();
 		align(16);
-		op.fpDbl_sub = getCurr<void3u>();
+		op.fpDbl_sub = getCurr<void4u>();
 		gen_fpDbl_sub();
 		if (op.isFullBit) {
-			op.fpDbl_addNC = op.fpDbl_add;
-			op.fpDbl_subNC = op.fpDbl_sub;
+			op.fpDbl_addNC = 0;
+			op.fpDbl_subNC = 0;
 		} else {
 			align(16);
 			op.fpDbl_addNC = getCurr<void3u>();

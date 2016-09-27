@@ -309,7 +309,7 @@ struct OpeFunc {
 		}
 	#define SET_OP_DBL_LLVM(n, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fpDbl_addP = mcl_fpDbl_add ## n; \
+			fpDbl_add = mcl_fpDbl_add ## n; \
 			fpDbl_subP = mcl_fpDbl_sub ## n; \
 			if (!isFullBit) { \
 				fpDbl_addNC = mcl_fp_addNC ## n2; \
@@ -334,8 +334,8 @@ struct OpeFunc {
 		} \
 		fp_add = OpeFunc<n>::fp_addPC; \
 		fp_sub = OpeFunc<n>::fp_subPC; \
-		fpDbl_addP = OpeFunc<n>::fpDbl_addPC; \
-		fpDbl_subP = OpeFunc<n>::fpDbl_subPC; \
+		fpDbl_add = OpeFunc<n>::fpDbl_addPC; \
+		fpDbl_sub = OpeFunc<n>::fpDbl_subPC; \
 		if (isFullBit) { \
 			fp_addNC = 0; \
 			fp_subNC = 0; \
