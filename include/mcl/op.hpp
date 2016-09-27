@@ -111,9 +111,6 @@ struct Op {
 	// for Montgomery
 	int2u fp_preInv;
 
-	void3u fpDbl_modP;
-	// z = montRed(xy)
-	void3u montRedPU;
 	// z = mont(x, y) = montRed(fpDbl_mulPre(x, y))
 	void (*montPU)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
 
@@ -132,7 +129,7 @@ struct Op {
 	*/
 	void2u fpDbl_sqrPre;
 	void3u fpDbl_mulPre;
-	void2u fpDbl_mod;
+	void3u fpDbl_mod;
 
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
@@ -183,8 +180,6 @@ struct Op {
 		fp_addNC = 0;
 		fp_subNC = 0;
 		fp_preInv = 0;
-		fpDbl_modP = 0;
-		montRedPU = 0;
 		montPU = 0;
 		fp_invOp = 0;
 		fpDbl_add = 0;

@@ -752,12 +752,12 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 		mpz_class my = mx % mp;
 		mcl::gmp::getArray(ok, N + 1, my);
 #ifdef MCL_USE_LLVM
-		mcl_fpDbl_mod_NIST_P521(ex, in);
+		mcl_fpDbl_mod_NIST_P521(ex, in, Fp::getOp().p);
 		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);
 #endif
 #ifdef MCL_USE_XBYAK
 		const mcl::fp::Op& op = Fp::getOp();
-		op.fpDbl_mod(ex, in);
+		op.fpDbl_mod(ex, in, op.p);
 		CYBOZU_TEST_ASSERT(memcmp(ex, ok, sizeof(ex)) == 0);
 #endif
 	}

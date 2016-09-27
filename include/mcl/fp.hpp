@@ -132,7 +132,6 @@ public:
 		op_.fp_sqr = fp_sqrW;
 		op_.fp_mul = fp_mulW;
 		op_.fp_mul_Unit = fp_mul_UnitW;
-		op_.fpDbl_mod = fpDbl_modW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_opt > llvm > gmp
@@ -154,7 +153,6 @@ public:
 		if (mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT) {
 			op_.fp_mul = fp_montW;
 			op_.fp_sqr = fp_montSqrW;
-			op_.fpDbl_mod = fp_montRedW;
 		}
 		int base = 0;
 		op_.init(mstr, base, maxBitSize, mode);
@@ -468,16 +466,6 @@ public:
 	static inline IoMode getIoMode() { return ioMode_; }
 	static inline const char* getIoSeparator() { return fp::getIoSeparator(ioMode_); }
 private:
-	// y[N] <- x[N * 2] % p[N]
-	static inline void fpDbl_modW(Unit *y, const Unit *x)
-	{
-		op_.fpDbl_modP(y, x, op_.p);
-	}
-	// z[N] <- montRed(xy[N * 2])
-	static inline void fp_montRedW(Unit *z, const Unit *xy)
-	{
-		op_.montRedPU(z, xy, op_.p);
-	}
 	static inline void fp_mul_UnitW(Unit *z, const Unit *x, Unit y)
 	{
 		Unit xy[maxSize + 1];
@@ -489,13 +477,13 @@ private:
 	{
 		Unit xy[maxSize * 2];
 		op_.fpDbl_mulPre(xy, x, y);
-		op_.fpDbl_mod(z, xy);
+		op_.fpDbl_mod(z, xy, op_.p);
 	}
 	static inline void fp_sqrW(Unit *y, const Unit *x)
 	{
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
-		op_.fpDbl_mod(y, xx);
+		op_.fpDbl_mod(y, xx, op_.p);
 	}
 	// wrapper function for mcl_fp_mont by LLVM
 	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y)
@@ -505,7 +493,7 @@ private:
 #else
 		Unit xy[maxSize * 2];
 		op_.fpDbl_mulPre(xy, x, y);
-		fp_montRedW(z, xy);
+		op_.fpDbl_mod(z, xy, op_.p);
 #endif
 	}
 	static inline void fp_montSqrW(Unit *y, const Unit *x)
@@ -515,7 +503,7 @@ private:
 #else
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
-		fp_montRedW(y, xx);
+		op_.fpDbl_mod(y, xx, op_.p);
 #endif
 	}
 };

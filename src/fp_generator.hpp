@@ -223,7 +223,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_mul_Unit();
 		if (op.primeMode == PM_NICT_P521) {
 			align(16);
-			op.fpDbl_mod = getCurr<void2u>();
+			op.fpDbl_mod = getCurr<void3u>();
 			gen_fpDbl_mod(op);
 		} else {
 			align(16);
@@ -260,7 +260,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		}
 		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
-			op.fpDbl_mod = getCurr<void2u>();
+			op.fpDbl_mod = getCurr<void3u>();
 			gen_fpDbl_mod(op);
 		}
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {

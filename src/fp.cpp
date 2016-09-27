@@ -203,7 +203,7 @@ struct OpeFunc {
 		low_N1_mod<N>(y, x, p);
 	}
 	// y[N] <- x[N * 2] mod p[N]
-	static inline void fpDbl_modPC(Unit *y, const Unit *x, const Unit *p)
+	static inline void fpDbl_modC(Unit *y, const Unit *x, const Unit *p)
 	{
 		low_mod<N>(y, x, p);
 	}
@@ -239,7 +239,7 @@ struct OpeFunc {
 		z[N] <- montRed(xy[N * 2])
 		REMARK : assume p[-1] = rp
 	*/
-	static inline void fp_montRedPUC(Unit *z, const Unit *xy, const Unit *p)
+	static inline void fp_montRedC(Unit *z, const Unit *xy, const Unit *p)
 	{
 		const Unit rp = p[-1];
 		Unit t[N * 2];
@@ -309,7 +309,9 @@ struct OpeFunc {
 			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n; \
 			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
 			montPU = mcl_fp_mont ## n; \
-			montRedPU = mcl_fp_montRed ## n; \
+			if (mode == FP_LLVM_MONT) { \
+				fpDbl_mod = mcl_fp_montRed ## n; \
+			} \
 		}
 	#define SET_OP_DBL_LLVM(n, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
@@ -333,8 +335,10 @@ struct OpeFunc {
 		fp_neg = OpeFunc<n>::fp_negC; \
 		if (isMont) { \
 			fp_invOp = OpeFunc<n>::fp_invMontOpC; \
+			fpDbl_mod = OpeFunc<n>::fp_montRedC; \
 		} else { \
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
+			fpDbl_mod = OpeFunc<n>::fpDbl_modC; \
 		} \
 		fp_add = OpeFunc<n>::fp_addC; \
 		fp_sub = OpeFunc<n>::fp_subC; \
@@ -355,9 +359,7 @@ struct OpeFunc {
 		fpN1_mod = OpeFunc<n>::fpN1_modC; \
 		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
 		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
-		fpDbl_modP = OpeFunc<n>::fpDbl_modPC; \
 		montPU = OpeFunc<n>::fp_montPUC; \
-		montRedPU = OpeFunc<n>::fp_montRedPUC; \
 		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK
