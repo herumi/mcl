@@ -61,10 +61,15 @@ enum PrimeMode {
 };
 
 struct Op {
+	/*
+		don't change the layout of rp and p
+		asm code assumes &rp == &op and p == (Unit*)&op + 1
+	*/
+	Unit rp;
+	Unit p[maxOpUnitSize];
 	mpz_class mp;
 	mcl::SquareRoot sq;
 	FpGenerator *fg;
-	Unit p[maxOpUnitSize];
 	Unit half[maxOpUnitSize]; // (p - 1) / 2
 	Unit oneRep[maxOpUnitSize]; // 1(=inv R if Montgomery)
 	/*
@@ -91,8 +96,8 @@ struct Op {
 	void4u fp_sub;
 	void3u fp_mul;
 	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
-	void3u fpN1_modP; // y[N] = x[N + 1] % p[N]
-	void2uI fp_mul_Unit; // fpN1_modP + fp_mul_UnitPre
+	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
+	void2uI fp_mul_Unit; // fpN1_mod + fp_mul_UnitPre
 
 	bool isFullBit; // true if bitSize % uniSize == 0
 	bool isMont; // true if use Montgomery
@@ -106,7 +111,6 @@ struct Op {
 	// for Montgomery
 	int2u fp_preInv;
 	// these two members are for mcl_fp_mont
-	Unit rp;
 	// z = montRed(xy)
 	void (*montRedPU)(Unit *z, const Unit *xy, const Unit *p, Unit rp);
 	// z = mont(x, y) = montRed(fpDbl_mulPre(x, y))
@@ -155,6 +159,7 @@ struct Op {
 	}
 	void clear()
 	{
+		rp = 0;
 		mp = 0;
 		sq.clear();
 		// fg is not set
@@ -170,7 +175,7 @@ struct Op {
 		fp_sub = 0;
 		fp_mul = 0;
 		fp_mul_UnitPre = 0;
-		fpN1_modP = 0;
+		fpN1_mod = 0;
 		fp_mul_Unit = 0;
 		isFullBit = false;
 		isMont = false;
@@ -179,7 +184,6 @@ struct Op {
 		fp_addNC = 0;
 		fp_subNC = 0;
 		fp_preInv = 0;
-		rp = 0;
 		montRedPU = 0;
 		montPU = 0;
 		fp_invOp = 0;

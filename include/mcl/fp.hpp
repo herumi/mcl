@@ -471,11 +471,6 @@ private:
 	/*
 		wrapper function for generic p
 	*/
-	// y[N] <- x[N + 1] % p[N]
-	static inline void fpN1_modW(Unit *y, const Unit *x)
-	{
-		op_.fpN1_modP(y, x, op_.p);
-	}
 	// y[N] <- x[N * 2] % p[N]
 	static inline void fpDbl_modW(Unit *y, const Unit *x)
 	{
@@ -490,7 +485,8 @@ private:
 	{
 		Unit xy[maxSize + 1];
 		op_.fp_mul_UnitPre(xy, x, y);
-		fpN1_modW(z, xy);
+		// z[N] <- xy[N + 1] % p[N]
+		op_.fpN1_mod(z, xy, op_.p);
 	}
 	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
 	{

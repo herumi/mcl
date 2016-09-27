@@ -198,7 +198,7 @@ struct OpeFunc {
 		low_sqr<N>(y, x);
 	}
 	// y[N] <- x[N + 1] mod p[N]
-	static inline void fpN1_modPC(Unit *y, const Unit *x, const Unit *p)
+	static inline void fpN1_modC(Unit *y, const Unit *x, const Unit *p)
 	{
 		low_N1_mod<N>(y, x, p);
 	}
@@ -348,7 +348,7 @@ struct OpeFunc {
 			fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
 		} \
 		fp_mul_UnitPre = OpeFunc<n>::fp_mul_UnitPreC; \
-		fpN1_modP = OpeFunc<n>::fpN1_modPC; \
+		fpN1_mod = OpeFunc<n>::fpN1_modC; \
 		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
 		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
 		fpDbl_modP = OpeFunc<n>::fpDbl_modPC; \
