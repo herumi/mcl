@@ -221,7 +221,7 @@ struct ParamT {
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
 
-		pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
+		Fp2::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
 		for (size_t i = 1; i < gN; i++) {
 			g[i] = g[i - 1] * g[0];
 		}

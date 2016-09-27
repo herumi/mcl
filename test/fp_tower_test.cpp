@@ -45,16 +45,16 @@ void testFp2()
 		x = 1 + 2i
 		y = 3 + 4i
 	*/
-	add(z, x, y);
+	Fp2::add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp2(4, 6));
-	sub(z, x, y);
+	Fp2::sub(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp2(-2, -2));
-	mul(z, x, y);
+	Fp2::mul(z, x, y);
 	/*
 		(1 + 2i)(3 + 4i) = (3 - 8) + (4 + 6)i = -5 + 10i
 	*/
 	CYBOZU_TEST_EQUAL(z, Fp2(-5, 10));
-	neg(z, z);
+	Fp2::neg(z, z);
 	CYBOZU_TEST_EQUAL(z, Fp2(5, -10));
 	/*
 		xi = xi_a + i
@@ -64,12 +64,12 @@ void testFp2()
 	Fp2::mul_xi(z, z);
 	CYBOZU_TEST_EQUAL(z, Fp2(Fp2::getXi_a() + 2, Fp2::getXi_a() * (-2) + 1));
 	z = x * x;
-	sqr(y, x);
+	Fp2::sqr(y, x);
 	CYBOZU_TEST_EQUAL(z, y);
 	x.a = -123456789;
 	x.b = 464652165165;
 	y = x * x;
-	sqr(x, x);
+	Fp2::sqr(x, x);
 	CYBOZU_TEST_EQUAL(x, y);
 	{
 		std::ostringstream oss;
@@ -81,7 +81,7 @@ void testFp2()
 	}
 	y = 1;
 	for (int i = 0; i < 10; i++) {
-		pow(z, x, i);
+		Fp2::pow(z, x, i);
 		CYBOZU_TEST_EQUAL(z, y);
 		y *= x;
 	}
@@ -92,9 +92,9 @@ void testFp2()
 	{
 		const mpz_class& mp = Fp::getOp().mp;
 		y = x;
-		pow(z, y, mp);
+		Fp2::pow(z, y, mp);
 		if ((mp % 4) == 3) {
-			neg(z.b, z.b);
+			Fp::neg(z.b, z.b);
 		}
 		CYBOZU_TEST_EQUAL(z, y);
 	}
@@ -117,7 +117,7 @@ void testFp2()
 		CYBOZU_TEST_EQUAL(a * c, Fp2(2));
 	}
 	y = x;
-	inv(y, x);
+	Fp2::inv(y, x);
 	y *= x;
 	CYBOZU_TEST_EQUAL(y, 1);
 
@@ -171,28 +171,28 @@ void testFp6()
 		ss >> z;
 		CYBOZU_TEST_EQUAL(x, z);
 	}
-	add(z, x, y);
+	Fp6::add(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(0, 3), Fp2(7, 1), Fp2(-1, 8)));
-	sub(z, x, y);
+	Fp6::sub(z, x, y);
 	CYBOZU_TEST_EQUAL(z, Fp6(Fp2(2, 1), Fp2(-1, 7), Fp2(11, 4)));
-	neg(z, x);
+	Fp6::neg(z, x);
 	CYBOZU_TEST_EQUAL(z, Fp6(-a, -b, -c));
-	sqr(z, x);
-	mul(w, x, x);
+	Fp6::sqr(z, x);
+	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
 	testFp6sqr(a, b, c, w);
 	z = x;
-	sqr(z, z);
-	mul(w, x, x);
+	Fp6::sqr(z, z);
+	Fp6::mul(w, x, x);
 	testFp6sqr(a, b, c, z);
 	testFp6sqr(a, b, c, w);
 	for (int i = 0; i < 10; i++) {
-		inv(y, x);
-		mul(z, y, x);
+		Fp6::inv(y, x);
+		Fp6::mul(z, y, x);
 		CYBOZU_TEST_EQUAL(z, 1);
 		x += y;
 		y = x;
-		inv(y, y);
+		Fp6::inv(y, y);
 		y *= x;
 		CYBOZU_TEST_EQUAL(y, 1);
 	}
