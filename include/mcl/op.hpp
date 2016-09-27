@@ -85,7 +85,7 @@ struct Op {
 	void1u fp_clear;
 	void2u fp_copy;
 	// not require p(function having p)
-	void2u fp_neg;
+	void3u fp_neg;
 	void2u fp_sqr;
 	void4u fp_add;
 	void4u fp_sub;

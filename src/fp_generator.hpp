@@ -215,7 +215,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_shr1();
 
 		align(16);
-		op.fp_neg = getCurr<void2u>();
+		op.fp_neg = getCurr<void3u>();
 		gen_neg();
 
 		align(16);

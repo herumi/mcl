@@ -133,7 +133,7 @@ void testNeg(const mcl::fp::Op& op)
 		x.setStr(tbl[i]);
 		mx.set(x);
 		x = -x;
-		op.fp_neg(mx.v, mx.v);
+		op.fp_neg(mx.v, mx.v, op.p);
 		CYBOZU_TEST_EQUAL(mx, x);
 	}
 }

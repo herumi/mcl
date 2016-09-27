@@ -326,7 +326,7 @@ struct OpeFunc {
 		fp_isZero = OpeFunc<n>::fp_isZeroC; \
 		fp_clear = OpeFunc<n>::fp_clearC; \
 		fp_copy = OpeFunc<n>::fp_copyC; \
-		fp_negP = OpeFunc<n>::fp_negC; \
+		fp_neg = OpeFunc<n>::fp_negC; \
 		if (isMont) { \
 			fp_invOp = OpeFunc<n>::fp_invMontOpC; \
 		} else { \
@@ -588,7 +588,7 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 {
 	bool isNegative = false;
 	if (fp::isGreaterArray(b.p, op.half, op.N)) {
-		op.fp_neg(b.v_, b.p);
+		op.fp_neg(b.v_, b.p, op.p);
 		b.p = b.v_;
 		isNegative = true;
 	}

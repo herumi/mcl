@@ -129,7 +129,7 @@ public:
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
 		op_.clear();
-		op_.fp_neg = fp_negW;
+		op_.fp_neg = 0;
 		op_.fp_sqr = fp_sqrW;
 		op_.fp_add = 0;
 		op_.fp_sub = 0;
@@ -372,7 +372,7 @@ public:
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_); }
 	static inline void mul_Unit(FpT& z, const FpT& x, const Unit y) { op_.fp_mul_Unit(z.v_, x.v_, y); }
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
-	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_); }
+	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
 	static inline void divBy2(FpT& y, const FpT& x)
 	{
@@ -520,10 +520,6 @@ private:
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
 		op_.fpDbl_mod(y, xx);
-	}
-	static inline void fp_negW(Unit *y, const Unit *x)
-	{
-		op_.fp_negP(y, x, op_.p);
 	}
 	// wrapper function for mcl_fp_mont by LLVM
 	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y)
