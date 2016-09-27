@@ -235,9 +235,13 @@ struct OpeFunc {
 			}
 		}
 	}
-	// z[N] <- montRed(xy[N * 2])
-	static inline void fp_montRedPUC(Unit *z, const Unit *xy, const Unit *p, Unit rp)
+	/*
+		z[N] <- montRed(xy[N * 2])
+		REMARK : assume p[-1] = rp
+	*/
+	static inline void fp_montRedPUC(Unit *z, const Unit *xy, const Unit *p)
 	{
+		const Unit rp = p[-1];
 		Unit t[N * 2];
 		Unit buf[N * 2 + 1];
 		clearArray(t, N + 1, N * 2);

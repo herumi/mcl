@@ -63,7 +63,7 @@ enum PrimeMode {
 struct Op {
 	/*
 		don't change the layout of rp and p
-		asm code assumes &rp == &op and p == (Unit*)&op + 1
+		asm code assumes &rp + 1 == p
 	*/
 	Unit rp;
 	Unit p[maxOpUnitSize];
@@ -110,15 +110,14 @@ struct Op {
 	void3u fp_subNC; // assume x > y
 	// for Montgomery
 	int2u fp_preInv;
-	// these two members are for mcl_fp_mont
+
+	void3u fpDbl_modP;
 	// z = montRed(xy)
-	void (*montRedPU)(Unit *z, const Unit *xy, const Unit *p, Unit rp);
+	void3u montRedPU;
 	// z = mont(x, y) = montRed(fpDbl_mulPre(x, y))
 	void (*montPU)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
 
-	// require p
 	void2uOp fp_invOp;
-	void3u fpDbl_modP;
 
 	/*
 		for FpDbl
@@ -184,10 +183,10 @@ struct Op {
 		fp_addNC = 0;
 		fp_subNC = 0;
 		fp_preInv = 0;
+		fpDbl_modP = 0;
 		montRedPU = 0;
 		montPU = 0;
 		fp_invOp = 0;
-		fpDbl_modP = 0;
 		fpDbl_add = 0;
 		fpDbl_sub = 0;
 		fpDbl_addNC = 0;

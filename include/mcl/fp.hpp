@@ -468,9 +468,6 @@ public:
 	static inline IoMode getIoMode() { return ioMode_; }
 	static inline const char* getIoSeparator() { return fp::getIoSeparator(ioMode_); }
 private:
-	/*
-		wrapper function for generic p
-	*/
 	// y[N] <- x[N * 2] % p[N]
 	static inline void fpDbl_modW(Unit *y, const Unit *x)
 	{
@@ -479,7 +476,7 @@ private:
 	// z[N] <- montRed(xy[N * 2])
 	static inline void fp_montRedW(Unit *z, const Unit *xy)
 	{
-		op_.montRedPU(z, xy, op_.p, op_.rp);
+		op_.montRedPU(z, xy, op_.p);
 	}
 	static inline void fp_mul_UnitW(Unit *z, const Unit *x, Unit y)
 	{

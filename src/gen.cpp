@@ -752,18 +752,18 @@ struct Code : public mcl::Generator {
 		Operand pz(IntPtr, bit);
 		Operand pxy(IntPtr, b2);
 		Operand pp(IntPtr, unit);
-		Operand r(Int, unit);
 		std::string name = "mcl_fp_montRed" + cybozu::itoa(bit);
-		mcl_fp_montRedM[bit] = Function(name, Void, pz, pxy, pp, r);
+		mcl_fp_montRedM[bit] = Function(name, Void, pz, pxy, pp);
 		verifyAndSetPrivate(mcl_fp_montRedM[bit]);
 		beginFunc(mcl_fp_montRedM[bit]);
+		Operand rp = load(getelementptr(pp, makeImm(unit, -1)));
 		Operand p = load(bitcast(pp, Operand(IntPtr, bit)));
 		Operand xy = load(pxy);
 		Operand t = zext(xy, b2 + unit);
 		Operand z;
 		for (uint32_t i = 0; i < N; i++) {
 			Operand z = trunc(t, unit);
-			Operand q = mul(z, r);
+			Operand q = mul(z, rp);
 			Operand pq = call(mulPvM[bit], pp, q);
 			pq = zext(pq, b2u - unit * i);
 			z = add(t, pq);
