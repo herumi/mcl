@@ -91,10 +91,10 @@ struct Op {
 	void2u fp_copy;
 	// not require p(function having p)
 	void3u fp_neg;
-	void2u fp_sqr;
+	void3u fp_sqr;
 	void4u fp_add;
 	void4u fp_sub;
-	void3u fp_mul;
+	void4u fp_mul;
 	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
 	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
 	void2uI fp_mul_Unit; // fpN1_mod + fp_mul_UnitPre
@@ -112,7 +112,7 @@ struct Op {
 	int2u fp_preInv;
 
 	// z = mont(x, y) = montRed(fpDbl_mulPre(x, y))
-	void (*montPU)(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp);
+	void4u montPU;
 
 	void2uOp fp_invOp;
 
@@ -204,14 +204,14 @@ struct Op {
 			M(x, y) = xyR^-1
 			y = M(x, 1) = xR^-1
 		*/
-		fp_mul(y, x, one);
+		fp_mul(y, x, one, p);
 	}
 	void toMont(Unit* y, const Unit *x) const
 	{
 		/*
 			y = M(x, R2) = xR^2 R^-1 = xR
 		*/
-		fp_mul(y, x, R2);
+		fp_mul(y, x, R2, p);
 	}
 	void init(const std::string& mstr, int base, size_t maxBitSize, Mode mode);
 	void initFp2(int xi_a);

@@ -208,8 +208,9 @@ struct OpeFunc {
 		low_mod<N>(y, x, p);
 	}
 	// z[N] <- mont(x[N], y[N])
-	static inline void fp_montPUC(Unit *z, const Unit *x, const Unit *y, const Unit *p, Unit rp)
+	static inline void fp_montPUC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
+		const Unit rp = p[-1];
 		Unit buf[N * 2 + 2];
 		Unit *c = buf;
 		low_mul_Unit<N>(c, x, y[0]); // x * y[0]
@@ -280,7 +281,7 @@ struct OpeFunc {
 	static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
 	{
 		fp_invOpC(y, x, op);
-		op.fp_mul(y, y, op.R3);
+		op.fp_mul(y, y, op.R3, op.p);
 	}
 	static inline bool fp_isZeroC(const Unit *x)
 	{
@@ -373,7 +374,7 @@ inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 		R = 2^(N * S)
 		get r2^(-k)R^2 = r 2^(N * S * 2 - k)
 	*/
-	op.fp_mul(y, r, op.invTbl.data() + k * op.N);
+	op.fp_mul(y, r, op.invTbl.data() + k * op.N, op.p);
 }
 
 static void initInvTbl(Op& op)

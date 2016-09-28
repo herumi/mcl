@@ -160,7 +160,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 	// preInv
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
-	void3u mul_;
+	void4u mul_;
 	uint3opI mul_Unit_;
 	void *montRedRaw_;
 	void2op shr1_;
@@ -227,11 +227,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			gen_fpDbl_mod(op);
 		} else {
 			align(16);
-			mul_ = getCurr<void3u>();
+			mul_ = getCurr<void4u>();
 			op.fp_mul = mul_;
 			gen_mul();
 			align(16);
-			op.fp_sqr = getCurr<void2u>();
+			op.fp_sqr = getCurr<void3u>();
 			gen_sqr();
 		}
 		if (op.primeMode != PM_NICT_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4

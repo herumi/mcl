@@ -362,11 +362,11 @@ public:
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
 	static inline void addNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_addNC(z.v_, x.v_, y.v_); }
 	static inline void subNC(FpT& z, const FpT& x, const FpT& y) { op_.fp_subNC(z.v_, x.v_, y.v_); }
-	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_); }
+	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
 	static inline void mul_Unit(FpT& z, const FpT& x, const Unit y) { op_.fp_mul_Unit(z.v_, x.v_, y); }
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
-	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_); }
+	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }
 	static inline void divBy2(FpT& y, const FpT& x)
 	{
 		mul(y, x, inv2_); // QQQ : optimize later
@@ -473,37 +473,37 @@ private:
 		// z[N] <- xy[N + 1] % p[N]
 		op_.fpN1_mod(z, xy, op_.p);
 	}
-	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit xy[maxSize * 2];
 		op_.fpDbl_mulPre(xy, x, y);
-		op_.fpDbl_mod(z, xy, op_.p);
+		op_.fpDbl_mod(z, xy, p);
 	}
-	static inline void fp_sqrW(Unit *y, const Unit *x)
+	static inline void fp_sqrW(Unit *y, const Unit *x, const Unit *p)
 	{
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
-		op_.fpDbl_mod(y, xx, op_.p);
+		op_.fpDbl_mod(y, xx, p);
 	}
 	// wrapper function for mcl_fp_mont by LLVM
-	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y)
+	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 #if 1
-		op_.montPU(z, x, y, op_.p, op_.rp);
+		op_.montPU(z, x, y, p);
 #else
 		Unit xy[maxSize * 2];
 		op_.fpDbl_mulPre(xy, x, y);
-		op_.fpDbl_mod(z, xy, op_.p);
+		op_.fpDbl_mod(z, xy, p);
 #endif
 	}
-	static inline void fp_montSqrW(Unit *y, const Unit *x)
+	static inline void fp_montSqrW(Unit *y, const Unit *x, const Unit *p)
 	{
 #if 1
-		op_.montPU(y, x, x, op_.p, op_.rp);
+		op_.montPU(y, x, x, p);
 #else
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
-		op_.fpDbl_mod(y, xx, op_.p);
+		op_.fpDbl_mod(y, xx, p);
 #endif
 	}
 };

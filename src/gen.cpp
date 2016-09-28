@@ -707,12 +707,12 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
 		Operand pp(IntPtr, unit);
-		Operand r(Int, unit);
 		std::string name = "mcl_fp_mont" + cybozu::itoa(bit);
-		mcl_fp_montM[bit] = Function(name, Void, pz, px, py, pp, r);
+		mcl_fp_montM[bit] = Function(name, Void, pz, px, py, pp);
 		mcl_fp_montM[bit].setAlias();
 		verifyAndSetPrivate(mcl_fp_montM[bit]);
 		beginFunc(mcl_fp_montM[bit]);
+		Operand rp = load(getelementptr(pp, makeImm(unit, -1)));
 		Operand p = load(bitcast(pp, Operand(IntPtr, bit)));
 		Operand z, s, a;
 		for (uint32_t i = 0; i < N; i++) {
@@ -727,7 +727,7 @@ struct Code : public mcl::Generator {
 				a = add(s, xy);
 				at = trunc(a, unit);
 			}
-			Operand q = mul(at, r);
+			Operand q = mul(at, rp);
 			Operand pq = call(mulPvM[bit], pp, q);
 			pq = zext(pq, bu2);
 			Operand t = add(a, pq);
