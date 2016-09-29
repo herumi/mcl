@@ -300,27 +300,27 @@ struct OpeFunc {
 #ifdef MCL_USE_LLVM
 	#define SET_OP_LLVM(n) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fp_add = mcl_fp_add ## n; \
-			fp_sub = mcl_fp_sub ## n; \
+			fp_add = mcl_fp_add ## n ## L; \
+			fp_sub = mcl_fp_sub ## n ## L; \
 			if (!isFullBit) { \
-				fp_addNC = mcl_fp_addNC ## n; \
-				fp_subNC = mcl_fp_subNC ## n; \
+				fp_addNC = mcl_fp_addNC ## n ## L; \
+				fp_subNC = mcl_fp_subNC ## n ## L; \
 			} \
-			fpDbl_mulPre = mcl_fpDbl_mulPre ## n; \
-			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n; \
-			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
+			fpDbl_mulPre = mcl_fpDbl_mulPre ## n ## L; \
+			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n ## L; \
+			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n ## L; \
 			if (mode == FP_LLVM_MONT) { \
-				fpDbl_mod = mcl_fp_montRed ## n; \
-				fp_mul = mcl_fp_mont ## n; \
+				fpDbl_mod = mcl_fp_montRed ## n ## L; \
+				fp_mul = mcl_fp_mont ## n ## L; \
 			} \
 		}
 	#define SET_OP_DBL_LLVM(n, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fpDbl_add = mcl_fpDbl_add ## n; \
-			fpDbl_sub = mcl_fpDbl_sub ## n; \
+			fpDbl_add = mcl_fpDbl_add ## n ## L; \
+			fpDbl_sub = mcl_fpDbl_sub ## n ## L; \
 			if (!isFullBit) { \
-				fpDbl_addNC = mcl_fp_addNC ## n2; \
-				fpDbl_subNC = mcl_fp_subNC ## n2; \
+				fpDbl_addNC = mcl_fp_addNC ## n2 ## L; \
+				fpDbl_subNC = mcl_fp_subNC ## n2 ## L; \
 			} \
 		}
 #else
@@ -506,12 +506,12 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	}
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NICT_P192) {
-		fp_mul = &mcl_fp_mul_NIST_P192;
-		fp_sqr = &mcl_fp_sqr_NIST_P192;
-		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192;
+		fp_mul = &mcl_fp_mul_NIST_P192L;
+		fp_sqr = &mcl_fp_sqr_NIST_P192L;
+		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192L;
 	}
 	if (primeMode == PM_NICT_P521) {
-		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521;
+		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521L;
 	}
 #endif
 	fp::initForMont(*this, p, mode);

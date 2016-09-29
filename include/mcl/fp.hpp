@@ -213,19 +213,21 @@ public:
 	}
 	FpT& operator=(int64_t x)
 	{
-		clear();
 		if (x == 1) {
 			op_.fp_copy(v_, op_.oneRep);
-		} else if (x) {
-			int64_t y = x < 0 ? -x : x;
-			if (sizeof(Unit) == 8) {
-				v_[0] = y;
-			} else {
-				v_[0] = (uint32_t)y;
-				v_[1] = (uint32_t)(y >> 32);
+		} else {
+			clear();
+			if (x) {
+				int64_t y = x < 0 ? -x : x;
+				if (sizeof(Unit) == 8) {
+					v_[0] = y;
+				} else {
+					v_[0] = (uint32_t)y;
+					v_[1] = (uint32_t)(y >> 32);
+				}
+				if (x < 0) neg(*this, *this);
+				toMont();
 			}
-			if (x < 0) neg(*this, *this);
-			toMont();
 		}
 		return *this;
 	}

@@ -12,18 +12,29 @@
 
 extern "C" {
 
+#define MCL_FP_DEF_FUNC_SUB(len, suf) \
+void mcl_fp_add ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
+void mcl_fp_sub ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
+void mcl_fp_addNC ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
+void mcl_fp_subNC ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
+void mcl_fp_mul_UnitPre ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, mcl::fp::Unit y); \
+void mcl_fpDbl_mulPre ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
+void mcl_fpDbl_sqrPre ## len ## suf(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
+void mcl_fp_mont ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
+void mcl_fp_montRed ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p); \
+void mcl_fpDbl_add ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
+void mcl_fpDbl_sub ## len ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p);
+
 #define MCL_FP_DEF_FUNC(len) \
-void mcl_fp_add ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-void mcl_fp_sub ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-void mcl_fp_addNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
-void mcl_fp_subNC ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
-void mcl_fp_mul_UnitPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, mcl::fp::Unit y); \
-void mcl_fpDbl_mulPre ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
-void mcl_fpDbl_sqrPre ## len(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
-void mcl_fp_mont ## len(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-void mcl_fp_montRed ## len(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p); \
-void mcl_fpDbl_add ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*); \
-void mcl_fpDbl_sub ## len(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*);
+	MCL_FP_DEF_FUNC_SUB(len, G) \
+	MCL_FP_DEF_FUNC_SUB(len, L) \
+	MCL_FP_DEF_FUNC_SUB(len, A)
+
+#define MCL_FP_DEF_FUNC_SPECIAL(suf) \
+	void mcl_fpDbl_mod_NIST_P192 ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* /* dummy */); \
+	void mcl_fp_mul_NIST_P192 ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* /* dummy */); \
+	void mcl_fp_sqr_NIST_P192 ## suf(mcl::fp::Unit* y, const mcl::fp::Unit* x, const mcl::fp::Unit* /* dummy */); \
+	void mcl_fpDbl_mod_NIST_P521 ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* /* dummy */);
 
 MCL_FP_DEF_FUNC(64)
 MCL_FP_DEF_FUNC(128)
@@ -53,13 +64,12 @@ MCL_FP_DEF_FUNC(1408)
 MCL_FP_DEF_FUNC(1536)
 #endif
 
+MCL_FP_DEF_FUNC_SPECIAL(G)
+MCL_FP_DEF_FUNC_SPECIAL(L)
+MCL_FP_DEF_FUNC_SPECIAL(A)
+
+#undef MCL_FP_DEF_FUNC_SUB
 #undef MCL_FP_DEF_FUNC
-
-void mcl_fpDbl_mod_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit* /* dummy */);
-void mcl_fp_mul_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit* /* dummy */);
-void mcl_fp_sqr_NIST_P192(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit* /* dummy */);
-
-void mcl_fpDbl_mod_NIST_P521(mcl::fp::Unit*, const mcl::fp::Unit*, const mcl::fp::Unit* /* dummy */);
 
 }
 
