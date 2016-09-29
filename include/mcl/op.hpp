@@ -34,6 +34,7 @@ struct Op;
 typedef void (*void1u)(Unit*);
 typedef void (*void2u)(Unit*, const Unit*);
 typedef void (*void2uI)(Unit*, const Unit*, Unit);
+typedef void (*void2uIu)(Unit*, const Unit*, Unit, const Unit*);
 typedef void (*void2uOp)(Unit*, const Unit*, const Op&);
 typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
@@ -85,11 +86,9 @@ struct Op {
 	std::vector<Unit> invTbl;
 	size_t N;
 	size_t bitSize;
-	// independent from p
 	bool (*fp_isZero)(const Unit*);
 	void1u fp_clear;
 	void2u fp_copy;
-	// not require p(function having p)
 	void3u fp_neg;
 	void3u fp_sqr;
 	void4u fp_add;
@@ -97,7 +96,7 @@ struct Op {
 	void4u fp_mul;
 	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
 	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
-	void2uI fp_mul_Unit; // fpN1_mod + fp_mul_UnitPre
+	void2uIu fp_mul_Unit; // fpN1_mod + fp_mul_UnitPre
 
 	bool isFullBit; // true if bitSize % uniSize == 0
 	bool isMont; // true if use Montgomery
