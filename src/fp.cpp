@@ -309,9 +309,9 @@ struct OpeFunc {
 			fpDbl_mulPre = mcl_fpDbl_mulPre ## n; \
 			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n; \
 			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n; \
-			montPU = mcl_fp_mont ## n; \
 			if (mode == FP_LLVM_MONT) { \
 				fpDbl_mod = mcl_fp_montRed ## n; \
+				fp_mul = mcl_fp_mont ## n; \
 			} \
 		}
 	#define SET_OP_DBL_LLVM(n, n2) \
@@ -360,7 +360,9 @@ struct OpeFunc {
 		fpN1_mod = OpeFunc<n>::fpN1_modC; \
 		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
 		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
-		montPU = OpeFunc<n>::fp_montPUC; \
+		if (mode == fp::FP_GMP_MONT) { \
+			fp_mul = OpeFunc<n>::fp_montPUC; \
+		} \
 		SET_OP_LLVM(n)
 
 #ifdef MCL_USE_XBYAK

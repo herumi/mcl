@@ -129,8 +129,8 @@ public:
 		assert(sizeof(mp_limb_t) == sizeof(Unit));
 		// set default wrapper function
 		op_.clear();
-		op_.fp_sqr = fp_sqrW;
 		op_.fp_mul = fp_mulW;
+		op_.fp_sqr = fp_sqrW;
 		op_.fp_mul_Unit = fp_mul_UnitW;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
@@ -150,10 +150,6 @@ public:
 		if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
 #endif
 		op_.isMont = mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
-		if (mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT) {
-			op_.fp_mul = fp_montW;
-			op_.fp_sqr = fp_montSqrW;
-		}
 		int base = 0;
 		op_.init(mstr, base, maxBitSize, mode);
 		{ // set oneRep
@@ -484,27 +480,6 @@ private:
 		Unit xx[maxSize * 2];
 		op_.fpDbl_sqrPre(xx, x);
 		op_.fpDbl_mod(y, xx, p);
-	}
-	// wrapper function for mcl_fp_mont by LLVM
-	static inline void fp_montW(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-#if 1
-		op_.montPU(z, x, y, p);
-#else
-		Unit xy[maxSize * 2];
-		op_.fpDbl_mulPre(xy, x, y);
-		op_.fpDbl_mod(z, xy, p);
-#endif
-	}
-	static inline void fp_montSqrW(Unit *y, const Unit *x, const Unit *p)
-	{
-#if 1
-		op_.montPU(y, x, x, p);
-#else
-		Unit xx[maxSize * 2];
-		op_.fpDbl_sqrPre(xx, x);
-		op_.fpDbl_mod(y, xx, p);
-#endif
 	}
 };
 

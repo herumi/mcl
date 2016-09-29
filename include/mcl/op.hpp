@@ -110,10 +110,6 @@ struct Op {
 	void3u fp_subNC; // assume x > y
 	// for Montgomery
 	int2u fp_preInv;
-
-	// z = mont(x, y) = montRed(fpDbl_mulPre(x, y))
-	void4u montPU;
-
 	void2uOp fp_invOp;
 
 	/*
@@ -180,7 +176,6 @@ struct Op {
 		fp_addNC = 0;
 		fp_subNC = 0;
 		fp_preInv = 0;
-		montPU = 0;
 		fp_invOp = 0;
 		fpDbl_add = 0;
 		fpDbl_sub = 0;
