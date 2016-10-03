@@ -114,11 +114,6 @@ public:
 		}
 		printf("\n");
 	}
-	// backward compatibility
-	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(mstr, mode);
-	}
 	static inline void init(const mpz_class& m, fp::Mode mode = fp::FP_AUTO)
 	{
 		init(m.get_str(), mode);
@@ -126,32 +121,7 @@ public:
 	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
 		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
-		assert(sizeof(mp_limb_t) == sizeof(Unit));
-		// set default wrapper function
-		op_.clear();
-		op_.fp_mul = fp_mulW;
-		op_.fp_sqr = fp_sqrW;
-		op_.fp_mul_Unit = fp_mul_UnitW;
-/*
-	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
-	Xbyak > llvm_opt > llvm > gmp
-*/
-#ifdef MCL_USE_XBYAK
-		if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
-		if (mode == fp::FP_XBYAK && maxBitSize > 521) {
-			mode = fp::FP_AUTO;
-		}
-#else
-		if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
-#endif
-#ifdef MCL_USE_LLVM
-		if (mode == fp::FP_AUTO) mode = fp::FP_LLVM_MONT;
-#else
-		if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
-#endif
-		op_.isMont = mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
-		int base = 0;
-		op_.init(mstr, base, maxBitSize, mode);
+		op_.init(mstr, maxBitSize, mode);
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
 			one.clear();
@@ -399,7 +369,6 @@ public:
 		getBlock(b);
 		return fp::getInt64(pb, b, op_);
 	}
-	static inline size_t getModBitLen() { return op_.bitSize; }
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
@@ -463,6 +432,13 @@ public:
 	}
 	static inline IoMode getIoMode() { return ioMode_; }
 	static inline const char* getIoSeparator() { return fp::getIoSeparator(ioMode_); }
+	// backward compatibility
+	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		init(mstr, mode);
+	}
+	static inline size_t getModBitLen() { return getBitSize(); }
+#if 0
 private:
 	static inline void fp_mul_UnitW(Unit *z, const Unit *x, Unit y, const Unit *p)
 	{
@@ -483,6 +459,7 @@ private:
 		op_.fpDbl_sqrPre(xx, x);
 		op_.fpDbl_mod(y, xx, p);
 	}
+#endif
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;

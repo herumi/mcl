@@ -208,8 +208,13 @@ struct OpeFunc {
 		low_mod<N>(y, x, p);
 	}
 	// z[N] <- mont(x[N], y[N])
-	static inline void fp_montPUC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	static inline void fp_mulMontC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
+#if 0
+		Unit xy[N * 2];
+		fpDbl_mulPreC(xy, x, y);
+		fpDbl_modMontC(z, xy, p);
+#else
 		const Unit rp = p[-1];
 		Unit buf[N * 2 + 2];
 		Unit *c = buf;
@@ -235,12 +240,13 @@ struct OpeFunc {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
+#endif
 	}
 	/*
 		z[N] <- montRed(xy[N * 2])
 		REMARK : assume p[-1] = rp
 	*/
-	static inline void fp_montRedC(Unit *z, const Unit *xy, const Unit *p)
+	static inline void fpDbl_modMontC(Unit *z, const Unit *xy, const Unit *p)
 	{
 		const Unit rp = p[-1];
 		Unit t[N * 2];
@@ -265,6 +271,30 @@ struct OpeFunc {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
+	}
+	static inline void fp_mul_UnitC(Unit *z, const Unit *x, Unit y, const Unit *p)
+	{
+		Unit xy[N + 1];
+		fp_mul_UnitPreC(xy, x, y);
+		fpN1_modC(z, xy, p);
+	}
+	static inline void fp_mulC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+		Unit xy[N * 2];
+		fpDbl_mulPreC(xy, x, y);
+		fpDbl_modC(z, xy, p);
+	}
+	static inline void fp_sqrC(Unit *y, const Unit *x, const Unit *p)
+	{
+		Unit xx[N * 2];
+		fpDbl_sqrPreC(xx, x);
+		fpDbl_modC(y, xx, p);
+	}
+	static inline void fp_sqrMontC(Unit *y, const Unit *x, const Unit *p)
+	{
+		Unit xx[N * 2];
+		fpDbl_sqrPreC(xx, x);
+		fpDbl_modMontC(y, xx, p);
 	}
 	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
@@ -334,34 +364,31 @@ struct OpeFunc {
 		fp_clear = OpeFunc<n>::fp_clearC; \
 		fp_copy = OpeFunc<n>::fp_copyC; \
 		fp_neg = OpeFunc<n>::fp_negC; \
+		fp_add = OpeFunc<n>::fp_addC; \
+		fp_sub = OpeFunc<n>::fp_subC; \
 		if (isMont) { \
+			fp_mul = OpeFunc<n>::fp_mulMontC; \
+			fp_sqr = OpeFunc<n>::fp_sqrMontC; \
 			fp_invOp = OpeFunc<n>::fp_invMontOpC; \
-			fpDbl_mod = OpeFunc<n>::fp_montRedC; \
+			fpDbl_mod = OpeFunc<n>::fpDbl_modMontC; \
 		} else { \
+			fp_mul = OpeFunc<n>::fp_mulC; \
+			fp_sqr = OpeFunc<n>::fp_sqrC; \
 			fp_invOp = OpeFunc<n>::fp_invOpC; \
 			fpDbl_mod = OpeFunc<n>::fpDbl_modC; \
 		} \
-		fp_add = OpeFunc<n>::fp_addC; \
-		fp_sub = OpeFunc<n>::fp_subC; \
+		fp_mul_Unit = OpeFunc<n>::fp_mul_UnitC; \
+		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
+		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
+		fp_mul_UnitPre = OpeFunc<n>::fp_mul_UnitPreC; \
+		fpN1_mod = OpeFunc<n>::fpN1_modC; \
 		fpDbl_add = OpeFunc<n>::fpDbl_addC; \
 		fpDbl_sub = OpeFunc<n>::fpDbl_subC; \
-		if (isFullBit) { \
-			fp_addNC = 0; \
-			fp_subNC = 0; \
-			fpDbl_addNC = 0; \
-			fpDbl_subNC = 0; \
-		} else { \
+		if (!isFullBit) { \
 			fp_addNC = OpeFunc<n>::fp_addNCC; \
 			fp_subNC = OpeFunc<n>::fp_subNCC; \
 			fpDbl_addNC = OpeFunc<n * 2>::fp_addNCC; \
 			fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
-		} \
-		fp_mul_UnitPre = OpeFunc<n>::fp_mul_UnitPreC; \
-		fpN1_mod = OpeFunc<n>::fpN1_modC; \
-		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
-		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
-		if (mode == fp::FP_GMP_MONT) { \
-			fp_mul = OpeFunc<n>::fp_montPUC; \
 		} \
 		SET_OP_LLVM(n)
 
@@ -422,8 +449,28 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #endif
 }
 
-void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
+void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 {
+	assert(sizeof(mp_limb_t) == sizeof(Unit));
+	clear();
+/*
+	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
+	Xbyak > llvm_opt > llvm > gmp
+*/
+#ifdef MCL_USE_XBYAK
+	if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
+	if (mode == fp::FP_XBYAK && maxBitSize > 521) {
+		mode = fp::FP_AUTO;
+	}
+#else
+	if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
+#endif
+#ifdef MCL_USE_LLVM
+	if (mode == fp::FP_AUTO) mode = fp::FP_LLVM_MONT;
+#else
+	if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
+#endif
+	isMont = mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
 #if 0
 	fprintf(stderr, "mode=%s, isMont=%d, maxBitSize=%d"
 #ifdef MCL_USE_XBYAK
@@ -437,8 +484,8 @@ void Op::init(const std::string& mstr, int base, size_t maxBitSize, Mode mode)
 	if (maxBitSize > MCL_MAX_OP_BIT_SIZE) {
 		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_OP_BIT_SIZE;
 	}
-	cybozu::disable_warning_unused_variable(mode);
-	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, base);
+	(void)mode;
+	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, 0);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	isFullBit = (bitSize % UnitBitSize) == 0;

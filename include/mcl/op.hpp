@@ -90,42 +90,27 @@ struct Op {
 	void1u fp_clear;
 	void2u fp_copy;
 	void3u fp_neg;
-	void3u fp_sqr;
 	void4u fp_add;
 	void4u fp_sub;
 	void4u fp_mul;
-	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
-	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
+	void3u fp_sqr;
+	void2uOp fp_invOp;
 	void2uIu fp_mul_Unit; // fpN1_mod + fp_mul_UnitPre
 
-	bool isFullBit; // true if bitSize % uniSize == 0
-	bool isMont; // true if use Montgomery
-	PrimeMode primeMode;
-	bool isFastMod; // true if modulo is fast
-	/*
-		same fp_add, fp_sub if isFullBit
-	*/
-	void3u fp_addNC; // assume no carry if !isFullBit
-	void3u fp_subNC; // assume x > y
-	// for Montgomery
+	void3u fpDbl_mulPre;
+	void2u fpDbl_sqrPre;
 	int2u fp_preInv;
-	void2uOp fp_invOp;
+	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
+	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
 
-	/*
-		for FpDbl
-	*/
 	void4u fpDbl_add;
 	void4u fpDbl_sub;
-	void3u fpDbl_addNC;
-	void3u fpDbl_subNC;
-
-	/*
-		FpDbl <=> Fp
-	*/
-	void2u fpDbl_sqrPre;
-	void3u fpDbl_mulPre;
 	void3u fpDbl_mod;
 
+	void3u fp_addNC; // 0 if isFullBit
+	void3u fp_subNC; // assume x > y
+	void3u fpDbl_addNC;
+	void3u fpDbl_subNC;
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
@@ -139,6 +124,11 @@ struct Op {
 	void2u fp2_sqr;
 	void2u fp2_mul_xi;
 
+	PrimeMode primeMode;
+	bool isFullBit; // true if bitSize % uniSize == 0
+	bool isMont; // true if use Montgomery
+	bool isFastMod; // true if modulo is fast
+
 	Op()
 	{
 		clear();
@@ -151,9 +141,15 @@ struct Op {
 	void clear()
 	{
 		rp = 0;
+		memset(p, 0, sizeof(p));
 		mp = 0;
 		sq.clear();
 		// fg is not set
+		memset(half, 0, sizeof(half));
+		memset(oneRep, 0, sizeof(oneRep));
+		memset(one, 0, sizeof(one));
+		memset(R2, 0, sizeof(R2));
+		memset(R3, 0, sizeof(R3));
 		invTbl.clear();
 		N = 0;
 		bitSize = 0;
@@ -161,28 +157,28 @@ struct Op {
 		fp_clear = 0;
 		fp_copy = 0;
 		fp_neg = 0;
-		fp_sqr = 0;
 		fp_add = 0;
 		fp_sub = 0;
 		fp_mul = 0;
+		fp_sqr = 0;
+		fp_invOp = 0;
+		fp_mul_Unit = 0;
+
+		fpDbl_mulPre = 0;
+		fpDbl_sqrPre = 0;
+		fp_preInv = 0;
 		fp_mul_UnitPre = 0;
 		fpN1_mod = 0;
-		fp_mul_Unit = 0;
-		isFullBit = false;
-		isMont = false;
-		primeMode = PM_GENERIC;
-		isFastMod = false;
-		fp_addNC = 0;
-		fp_subNC = 0;
-		fp_preInv = 0;
-		fp_invOp = 0;
+
 		fpDbl_add = 0;
 		fpDbl_sub = 0;
+		fpDbl_mod = 0;
+
+		fp_addNC = 0;
+		fp_subNC = 0;
 		fpDbl_addNC = 0;
 		fpDbl_subNC = 0;
-		fpDbl_sqrPre = 0;
-		fpDbl_mulPre = 0;
-		fpDbl_mod = 0;
+
 		xi_a = 0;
 		fp2_add = 0;
 		fp2_sub = 0;
@@ -191,6 +187,11 @@ struct Op {
 		fp2_inv = 0;
 		fp2_sqr = 0;
 		fp2_mul_xi = 0;
+
+		primeMode = PM_GENERIC;
+		isFullBit = false;
+		isMont = false;
+		isFastMod = false;
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{
@@ -207,7 +208,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	void init(const std::string& mstr, int base, size_t maxBitSize, Mode mode);
+	void init(const std::string& mstr, size_t maxBitSize, Mode mode);
 	void initFp2(int xi_a);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
