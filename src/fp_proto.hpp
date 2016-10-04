@@ -8,6 +8,25 @@
 */
 #include <mcl/op.hpp>
 
+namespace mcl { namespace fp {
+
+// (carry, z[N]) <- x[N] + y[N]
+template<size_t N, class Tag>class AddPre { static const u3u f; };
+// (carry, z[N]) <- x[N] - y[N]
+template<size_t N, class Tag>class SubPre { static const u3u f; };
+// z[N * 2] <- x[N] * y[N]
+template<size_t N, class Tag>class MulPre { static const void3u f; };
+// z[N * 2] <- x[N] * x[N]
+template<size_t N, class Tag>class SqrPre { static const void2u f; };
+// z[N + 1] <- x[N] * y
+template<size_t N, class Tag>class Mul_UnitPre { static const void2uI f; };
+// z[N] <- x[N + 1] % p[N]
+template<size_t N, class Tag>class N1_Mod { static const void3u f; };
+// z[N] <- x[N * 2] % p[N]
+template<size_t N, class Tag>class Dbl_Mod { static const void3u f; };
+
+} } // mcl::fp
+
 #ifdef MCL_USE_LLVM
 
 extern "C" {

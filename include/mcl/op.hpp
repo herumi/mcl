@@ -40,6 +40,8 @@ typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef int (*int2u)(Unit*, const Unit*);
 
+typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
+
 struct Block {
 	const Unit *p; // pointer to original FpT.v_
 	size_t n;

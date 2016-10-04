@@ -45,11 +45,11 @@ void bench()
 		Unit w[N];
 		rg.read(x, N);
 		rg.read(y, N);
-		low_add<N>(z, x, y);
+		low_addNC_G<N>(z, x, y);
 		addNC<bit>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 
-		low_sub<N>(z, x, y);
+		low_subNC_G<N>(z, x, y);
 		subNC<bit>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 	}
@@ -82,7 +82,7 @@ CYBOZU_TEST_AUTO(addNC)
 		Unit w[N];
 		rg.read(x, N);
 		rg.read(y, N);
-		low_add<N>(z, x, y);
+		low_addNC_G<N>(z, x, y);
 		addNC<bit>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 		add_test(w, x, y);

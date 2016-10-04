@@ -23,19 +23,19 @@ void mulPre768(Unit *pz, const Unit *px, const Unit *py)
 		ad + bc = (a + b)(c + d) - ac - bd
 	*/
 	const size_t H = N / 2;
-	low_mul<H>(pz, px, py); // bd
-	low_mul<H>(pz + N, px + H, py + H); // ac
+	low_mul_G<H>(pz, px, py); // bd
+	low_mul_G<H>(pz + N, px + H, py + H); // ac
 	Unit a_b[H + 1];
 	Unit c_d[H + 1];
-	a_b[H] = low_add<H>(a_b, px, px + H); // a + b
-	c_d[H] = low_add<H>(c_d, py, py + H); // c + d
+	a_b[H] = low_addNC_G<H>(a_b, px, px + H); // a + b
+	c_d[H] = low_addNC_G<H>(c_d, py, py + H); // c + d
 	Unit work[N + H] = {};
-	low_mul<H>(work, a_b, c_d);
-	if (c_d[H]) low_add<H + 1>(work + H, work + H, c_d);
-	if (a_b[H]) low_add<H + 1>(work + H, work + H, a_b);
-	work[N] -= low_sub<H>(work, work, pz);
-	work[N] -= low_sub<H>(work, work, pz + N);
-	low_add<H + N>(pz + H, pz + H, work);
+	low_mul_G<H>(work, a_b, c_d);
+	if (c_d[H]) low_addNC_G<H + 1>(work + H, work + H, c_d);
+	if (a_b[H]) low_addNC_G<H + 1>(work + H, work + H, a_b);
+	work[N] -= low_subNC_G<H>(work, work, pz);
+	work[N] -= low_subNC_G<H>(work, work, pz + N);
+	low_addNC_G<H + N>(pz + H, pz + H, work);
 }
 void testMul()
 {
@@ -44,7 +44,7 @@ void testMul()
 		ux[i] = -i * i + 5;
 		uy[i] = -i * i + 9;
 	}
-	low_mul<12>(a, ux, uy);
+	low_mul_G<12>(a, ux, uy);
 	mulPre768(b, ux, uy);
 	for (size_t i = 0; i < N * 2; i++) {
 		if (a[i] != b[i]) {
