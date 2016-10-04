@@ -109,10 +109,10 @@ struct Op {
 	void4u fpDbl_sub;
 	void3u fpDbl_mod;
 
-	void3u fp_addNC; // 0 if isFullBit
-	void3u fp_subNC; // assume x > y
-	void3u fpDbl_addNC;
-	void3u fpDbl_subNC;
+	u3u fp_addNC; // without modulo p
+	u3u fp_subNC; // without modulo p
+	u3u fpDbl_addNC;
+	u3u fpDbl_subNC;
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu

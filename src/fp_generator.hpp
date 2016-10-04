@@ -204,10 +204,10 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fp_subNC = 0;
 		} else {
 			align(16);
-			op.fp_addNC = getCurr<void3u>();
+			op.fp_addNC = getCurr<u3u>();
 			gen_addSubNC(true, pn_);
 			align(16);
-			op.fp_subNC = getCurr<void3u>();
+			op.fp_subNC = getCurr<u3u>();
 			gen_addSubNC(false, pn_);
 		}
 		align(16);
@@ -252,10 +252,10 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fpDbl_subNC = 0;
 		} else {
 			align(16);
-			op.fpDbl_addNC = getCurr<void3u>();
+			op.fpDbl_addNC = getCurr<u3u>();
 			gen_addSubNC(true, pn_ * 2);
 			align(16);
-			op.fpDbl_subNC = getCurr<void3u>();
+			op.fpDbl_subNC = getCurr<u3u>();
 			gen_addSubNC(false, pn_ * 2);
 		}
 		if (op.N == 2 || op.N == 3 || op.N == 4) {

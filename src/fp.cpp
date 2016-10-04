@@ -138,19 +138,19 @@ struct OpeFunc {
 	}
 	static inline void fp_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (AddPre<N, GTag>::f(z, x, y)) {
-			low_subNC_G<N>(z, z, p);
+		if (AddPre<N, Gtag>::f(z, x, y)) {
+			SubPre<N, Gtag>::f(z, z, p);
 			return;
 		}
 		Unit tmp[N];
-		if (low_subNC_G<N>(tmp, z, p) == 0) {
+		if (SubPre<N, Gtag>::f(tmp, z, p) == 0) {
 			memcpy(z, tmp, sizeof(tmp));
 		}
 	}
 	static inline void fp_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (low_subNC_G<N>(z, x, y)) {
-			AddPre<N, GTag>::f(z, z, p);
+		if (SubPre<N, Gtag>::f(z, x, y)) {
+			AddPre<N, Gtag>::f(z, z, p);
 		}
 	}
 	/*
@@ -158,85 +158,51 @@ struct OpeFunc {
 	*/
 	static inline void fpDbl_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (AddPre<N * 2, GTag>::f(z, x, y)) {
-			low_subNC_G<N>(z + N, z + N, p);
+		if (AddPre<N * 2, Gtag>::f(z, x, y)) {
+			SubPre<N, Gtag>::f(z + N, z + N, p);
 			return;
 		}
 		Unit tmp[N];
-		if (low_subNC_G<N>(tmp, z + N, p) == 0) {
+		if (SubPre<N, Gtag>::f(tmp, z + N, p) == 0) {
 			memcpy(z + N, tmp, sizeof(tmp));
 		}
 	}
 	static inline void fpDbl_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (low_subNC_G<N * 2>(z, x, y)) {
-			AddPre<N, GTag>::f(z + N, z + N, p);
+		if (SubPre<N * 2, Gtag>::f(z, x, y)) {
+			AddPre<N, Gtag>::f(z + N, z + N, p);
 		}
-	}
-	// z[N] <- x[N] + y[N] without carry
-	static inline void fp_addNCC(Unit *z, const Unit *x, const Unit *y)
-	{
-		AddPre<N, GTag>::f(z, x, y);
-	}
-	static inline void fp_subNCC(Unit *z, const Unit *x, const Unit *y)
-	{
-		low_subNC_G<N>(z, x, y);
-	}
-	// z[N + 1] <- x[N] * y
-	static inline void fp_mul_UnitPreC(Unit *z, const Unit *x, Unit y)
-	{
-		low_mul_Unit_G<N>(z, x, y);
-	}
-	// z[N * 2] <- x[N] * y[N]
-	static inline void fpDbl_mulPreC(Unit *z, const Unit *x, const Unit *y)
-	{
-		low_mul_G<N>(z, x, y);
-	}
-	// y[N * 2] <- x[N]^2
-	static inline void fpDbl_sqrPreC(Unit *y, const Unit *x)
-	{
-		low_sqr_G<N>(y, x);
-	}
-	// y[N] <- x[N + 1] mod p[N]
-	static inline void fpN1_modC(Unit *y, const Unit *x, const Unit *p)
-	{
-		low_N1_mod_G<N>(y, x, p);
-	}
-	// y[N] <- x[N * 2] mod p[N]
-	static inline void fpDbl_modC(Unit *y, const Unit *x, const Unit *p)
-	{
-		low_mod_G<N>(y, x, p);
 	}
 	// z[N] <- mont(x[N], y[N])
 	static inline void fp_mulMontC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 #if 0
 		Unit xy[N * 2];
-		fpDbl_mulPreC(xy, x, y);
+		MulPre<N, Gtag>::f(xy, x, y);
 		fpDbl_modMontC(z, xy, p);
 #else
 		const Unit rp = p[-1];
 		Unit buf[N * 2 + 2];
 		Unit *c = buf;
-		low_mul_Unit_G<N>(c, x, y[0]); // x * y[0]
+		Mul_UnitPre<N, Gtag>::f(c, x, y[0]); // x * y[0]
 		Unit q = c[0] * rp;
 		Unit t[N + 2];
-		low_mul_Unit_G<N>(t, p, q); // p * q
+		Mul_UnitPre<N, Gtag>::f(t, p, q); // p * q
 		t[N + 1] = 0; // always zero
-		c[N + 1] = AddPre<N + 1, GTag>::f(c, c, t);
+		c[N + 1] = AddPre<N + 1, Gtag>::f(c, c, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
-			low_mul_Unit_G<N>(t, x, y[i]);
-			c[N + 1] = AddPre<N + 1, GTag>::f(c, c, t);
+			Mul_UnitPre<N, Gtag>::f(t, x, y[i]);
+			c[N + 1] = AddPre<N + 1, Gtag>::f(c, c, t);
 			q = c[0] * rp;
-			low_mul_Unit_G<N>(t, p, q);
-			AddPre<N + 2, GTag>::f(c, c, t);
+			Mul_UnitPre<N, Gtag>::f(t, p, q);
+			AddPre<N + 2, Gtag>::f(c, c, t);
 			c++;
 		}
 		if (c[N]) {
-			low_subNC_G<N>(z, c, p);
+			SubPre<N, Gtag>::f(z, c, p);
 		} else {
-			if (low_subNC_G<N>(z, c, p)) {
+			if (SubPre<N, Gtag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -254,20 +220,20 @@ struct OpeFunc {
 		clearArray(t, N + 1, N * 2);
 		Unit *c = buf;
 		Unit q = xy[0] * rp;
-		low_mul_Unit_G<N>(t, p, q);
-		buf[N * 2] = AddPre<N * 2, GTag>::f(buf, xy, t);
+		Mul_UnitPre<N, Gtag>::f(t, p, q);
+		buf[N * 2] = AddPre<N * 2, Gtag>::f(buf, xy, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
-			low_mul_Unit_G<N>(t, p, q);
+			Mul_UnitPre<N, Gtag>::f(t, p, q);
 			// QQQ
 			mpn_add_n((mp_limb_t*)c, (const mp_limb_t*)c, (const mp_limb_t*)t, N * 2 + 1 - i);
 			c++;
 		}
 		if (c[N]) {
-			low_subNC_G<N>(z, c, p);
+			SubPre<N, Gtag>::f(z, c, p);
 		} else {
-			if (low_subNC_G<N>(z, c, p)) {
+			if (SubPre<N, Gtag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -275,53 +241,27 @@ struct OpeFunc {
 	static inline void fp_mul_UnitC(Unit *z, const Unit *x, Unit y, const Unit *p)
 	{
 		Unit xy[N + 1];
-		fp_mul_UnitPreC(xy, x, y);
-		fpN1_modC(z, xy, p);
+		Mul_UnitPre<N, Gtag>::f(xy, x, y);
+		N1_Mod<N, Gtag>::f(z, xy, p);
 	}
 	static inline void fp_mulC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit xy[N * 2];
-		fpDbl_mulPreC(xy, x, y);
-		fpDbl_modC(z, xy, p);
+		MulPre<N, Gtag>::f(xy, x, y);
+		Dbl_Mod<N, Gtag>::f(z, xy, p);
 	}
 	static inline void fp_sqrC(Unit *y, const Unit *x, const Unit *p)
 	{
 		Unit xx[N * 2];
-		fpDbl_sqrPreC(xx, x);
-		fpDbl_modC(y, xx, p);
+		SqrPre<N, Gtag>::f(xx, x);
+		Dbl_Mod<N, Gtag>::f(y, xx, p);
 	}
 	static inline void fp_sqrMontC(Unit *y, const Unit *x, const Unit *p)
 	{
 		Unit xx[N * 2];
-		fpDbl_sqrPreC(xx, x);
+		SqrPre<N, Gtag>::f(xx, x);
 		fpDbl_modMontC(y, xx, p);
 	}
-#if 0 //#ifdef MCL_USE_LLVM
-	static inline void fp_mul_UnitL(Unit *z, const Unit *x, Unit y, const Unit *p)
-	{
-		Unit xy[N + 1];
-		fp_mul_UnitPreC(xy, x, y);
-		fpN1_modC(z, xy, p);
-	}
-	static inline void fp_mulL(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		Unit xy[N * 2];
-		fpDbl_mulPreC(xy, x, y);
-		fpDbl_modC(z, xy, p);
-	}
-	static inline void fp_sqrL(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[N * 2];
-		fpDbl_sqrPreC(xx, x);
-		fpDbl_modC(y, xx, p);
-	}
-	static inline void fp_sqrMontL(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[N * 2];
-		fpDbl_sqrPreC(xx, x);
-		fpDbl_modMontC(y, xx, p);
-	}
-#endif
 	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
 		mpz_class my;
@@ -354,69 +294,72 @@ struct OpeFunc {
 };
 
 #ifdef MCL_USE_LLVM
-	#define SET_OP_LLVM(n) \
+	#define SET_OP_LLVM(bit) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fp_add = mcl_fp_add ## n ## L; \
-			fp_sub = mcl_fp_sub ## n ## L; \
+			fp_add = mcl_fp_add ## bit ## L; \
+			fp_sub = mcl_fp_sub ## bit ## L; \
 			if (!isFullBit) { \
-				fp_addNC = mcl_fp_addNC ## n ## L; \
-				fp_subNC = mcl_fp_subNC ## n ## L; \
+				fp_addNC = mcl_fp_addNC ## bit ## L; \
+				fp_subNC = mcl_fp_subNC ## bit ## L; \
 			} \
-			fpDbl_mulPre = mcl_fpDbl_mulPre ## n ## L; \
-			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## n ## L; \
-			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## n ## L; \
+			fpDbl_mulPre = mcl_fpDbl_mulPre ## bit ## L; \
+			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## bit ## L; \
+			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## bit ## L; \
 			if (mode == FP_LLVM_MONT) { \
-				fpDbl_mod = mcl_fp_montRed ## n ## L; \
-				fp_mul = mcl_fp_mont ## n ## L; \
+				fpDbl_mod = mcl_fp_montRed ## bit ## L; \
+				fp_mul = mcl_fp_mont ## bit ## L; \
 			} \
 		}
-	#define SET_OP_DBL_LLVM(n, n2) \
+	#define SET_OP_DBL_LLVM(bit, n2) \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fpDbl_add = mcl_fpDbl_add ## n ## L; \
-			fpDbl_sub = mcl_fpDbl_sub ## n ## L; \
+			fpDbl_add = mcl_fpDbl_add ## bit ## L; \
+			fpDbl_sub = mcl_fpDbl_sub ## bit ## L; \
 			if (!isFullBit) { \
 				fpDbl_addNC = mcl_fp_addNC ## n2 ## L; \
 				fpDbl_subNC = mcl_fp_subNC ## n2 ## L; \
 			} \
 		}
 #else
-	#define SET_OP_LLVM(n)
-	#define SET_OP_DBL_LLVM(n, n2)
+	#define SET_OP_LLVM(bit)
+	#define SET_OP_DBL_LLVM(bit, n2)
 #endif
 
-#define SET_OP(n) \
-		N = n / UnitBitSize; \
-		fp_isZero = OpeFunc<n>::fp_isZeroC; \
-		fp_clear = OpeFunc<n>::fp_clearC; \
-		fp_copy = OpeFunc<n>::fp_copyC; \
-		fp_neg = OpeFunc<n>::fp_negC; \
-		fp_add = OpeFunc<n>::fp_addC; \
-		fp_sub = OpeFunc<n>::fp_subC; \
+#define SET_OP(bit) \
+	{ \
+		const int n = bit / UnitBitSize; \
+		N = n; \
+		fp_isZero = OpeFunc<bit>::fp_isZeroC; \
+		fp_clear = OpeFunc<bit>::fp_clearC; \
+		fp_copy = OpeFunc<bit>::fp_copyC; \
+		fp_neg = OpeFunc<bit>::fp_negC; \
+		fp_add = OpeFunc<bit>::fp_addC; \
+		fp_sub = OpeFunc<bit>::fp_subC; \
 		if (isMont) { \
-			fp_mul = OpeFunc<n>::fp_mulMontC; \
-			fp_sqr = OpeFunc<n>::fp_sqrMontC; \
-			fp_invOp = OpeFunc<n>::fp_invMontOpC; \
-			fpDbl_mod = OpeFunc<n>::fpDbl_modMontC; \
+			fp_mul = OpeFunc<bit>::fp_mulMontC; \
+			fp_sqr = OpeFunc<bit>::fp_sqrMontC; \
+			fp_invOp = OpeFunc<bit>::fp_invMontOpC; \
+			fpDbl_mod = OpeFunc<bit>::fpDbl_modMontC; \
 		} else { \
-			fp_mul = OpeFunc<n>::fp_mulC; \
-			fp_sqr = OpeFunc<n>::fp_sqrC; \
-			fp_invOp = OpeFunc<n>::fp_invOpC; \
-			fpDbl_mod = OpeFunc<n>::fpDbl_modC; \
+			fp_mul = OpeFunc<bit>::fp_mulC; \
+			fp_sqr = OpeFunc<bit>::fp_sqrC; \
+			fp_invOp = OpeFunc<bit>::fp_invOpC; \
+			fpDbl_mod = Dbl_Mod<n, Gtag>::f; \
 		} \
-		fp_mul_Unit = OpeFunc<n>::fp_mul_UnitC; \
-		fpDbl_mulPre = OpeFunc<n>::fpDbl_mulPreC; \
-		fpDbl_sqrPre = OpeFunc<n>::fpDbl_sqrPreC; \
-		fp_mul_UnitPre = OpeFunc<n>::fp_mul_UnitPreC; \
-		fpN1_mod = OpeFunc<n>::fpN1_modC; \
-		fpDbl_add = OpeFunc<n>::fpDbl_addC; \
-		fpDbl_sub = OpeFunc<n>::fpDbl_subC; \
+		fp_mul_Unit = OpeFunc<bit>::fp_mul_UnitC; \
+		fpDbl_mulPre = MulPre<n, Gtag>::f; \
+		fpDbl_sqrPre = SqrPre<n, Gtag>::f; \
+		fp_mul_UnitPre = Mul_UnitPre<n, Gtag>::f; \
+		fpN1_mod = N1_Mod<n, Gtag>::f; \
+		fpDbl_add = OpeFunc<bit>::fpDbl_addC; \
+		fpDbl_sub = OpeFunc<bit>::fpDbl_subC; \
 		if (!isFullBit) { \
-			fp_addNC = OpeFunc<n>::fp_addNCC; \
-			fp_subNC = OpeFunc<n>::fp_subNCC; \
-			fpDbl_addNC = OpeFunc<n * 2>::fp_addNCC; \
-			fpDbl_subNC = OpeFunc<n * 2>::fp_subNCC; \
+			fp_addNC = AddPre<n, Gtag>::f; \
+			fp_subNC = SubPre<n, Gtag>::f; \
+			fpDbl_addNC = AddPre<n * 2, Gtag>::f; \
+			fpDbl_subNC = SubPre<n * 2, Gtag>::f; \
 		} \
-		SET_OP_LLVM(n)
+		SET_OP_LLVM(bit) \
+	}
 
 #ifdef MCL_USE_XBYAK
 inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
