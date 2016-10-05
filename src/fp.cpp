@@ -107,6 +107,70 @@ Mode StrToMode(const std::string& s)
 	throw cybozu::Exception("StrToMode") << s;
 }
 
+#ifdef MCL_USE_LLVM
+
+#define MCL_DEF_LLVM_FUNC(bit) \
+template<>const u3u AddNC<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_addNC ## bit ## L; \
+template<>const u3u SubNC<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_subNC ## bit ## L; \
+template<>const void3u MulPre<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_mulPre ## bit ## L; \
+template<>const void2u SqrPre<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_sqrPre ## bit ## L; \
+template<>const void2uI Mul_UnitPre<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_mul_UnitPre ## bit ## L; \
+template<>const void4u Add<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_add ## bit ## L; \
+template<>const void4u Sub<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_sub ## bit ## L; \
+template<>const void4u Mont<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_mont ## bit ## L; \
+template<>const void3u MontRed<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_montRed ## bit ## L; \
+template<>const void4u DblAdd<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_add ## bit ## L; \
+template<>const void4u DblSub<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_sub ## bit ## L; \
+
+template<size_t N>
+struct Mul<N, Ltag> {
+	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+		Unit xy[N * 2];
+		MulPre<N, Ltag>::f(xy, x, y);
+		Dbl_Mod<N, Gtag>::f(z, xy, p);
+	}
+	static const void4u f;
+};
+
+template<size_t N>
+const void4u Mul<N, Ltag>::f = Mul<N, Ltag>::func;
+
+template<size_t N>
+struct Sqr<N, Ltag> {
+	static inline void func(Unit *y, const Unit *x, const Unit *p)
+	{
+		Unit xx[N * 2];
+		SqrPre<N, Ltag>::f(xx, x);
+		Dbl_Mod<N, Gtag>::f(y, xx, p);
+	}
+	static const void3u f;
+};
+
+template<size_t N>
+const void3u Sqr<N, Ltag>::f = Sqr<N, Ltag>::func;
+
+MCL_DEF_LLVM_FUNC(64)
+MCL_DEF_LLVM_FUNC(128)
+MCL_DEF_LLVM_FUNC(192)
+MCL_DEF_LLVM_FUNC(256)
+MCL_DEF_LLVM_FUNC(320)
+MCL_DEF_LLVM_FUNC(384)
+MCL_DEF_LLVM_FUNC(448)
+MCL_DEF_LLVM_FUNC(512)
+#if CYBOZU_OS_BIT == 32
+MCL_DEF_LLVM_FUNC(160)
+MCL_DEF_LLVM_FUNC(224)
+MCL_DEF_LLVM_FUNC(288)
+MCL_DEF_LLVM_FUNC(352)
+MCL_DEF_LLVM_FUNC(416)
+MCL_DEF_LLVM_FUNC(480)
+MCL_DEF_LLVM_FUNC(544)
+#else
+MCL_DEF_LLVM_FUNC(576)
+#endif
+
+#endif
 
 template<size_t bitSize>
 struct OpeFunc {
@@ -136,43 +200,6 @@ struct OpeFunc {
 	{
 		copyArray(y, x, N);
 	}
-	static inline void fp_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		if (AddPre<N, Gtag>::f(z, x, y)) {
-			SubPre<N, Gtag>::f(z, z, p);
-			return;
-		}
-		Unit tmp[N];
-		if (SubPre<N, Gtag>::f(tmp, z, p) == 0) {
-			memcpy(z, tmp, sizeof(tmp));
-		}
-	}
-	static inline void fp_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		if (SubPre<N, Gtag>::f(z, x, y)) {
-			AddPre<N, Gtag>::f(z, z, p);
-		}
-	}
-	/*
-		z[N * 2] <- x[N * 2] + y[N * 2] mod p[N] << (N * UnitBitSize)
-	*/
-	static inline void fpDbl_addC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		if (AddPre<N * 2, Gtag>::f(z, x, y)) {
-			SubPre<N, Gtag>::f(z + N, z + N, p);
-			return;
-		}
-		Unit tmp[N];
-		if (SubPre<N, Gtag>::f(tmp, z + N, p) == 0) {
-			memcpy(z + N, tmp, sizeof(tmp));
-		}
-	}
-	static inline void fpDbl_subC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		if (SubPre<N * 2, Gtag>::f(z, x, y)) {
-			AddPre<N, Gtag>::f(z + N, z + N, p);
-		}
-	}
 	// z[N] <- mont(x[N], y[N])
 	static inline void fp_mulMontC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -189,20 +216,20 @@ struct OpeFunc {
 		Unit t[N + 2];
 		Mul_UnitPre<N, Gtag>::f(t, p, q); // p * q
 		t[N + 1] = 0; // always zero
-		c[N + 1] = AddPre<N + 1, Gtag>::f(c, c, t);
+		c[N + 1] = AddNC<N + 1, Gtag>::f(c, c, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			Mul_UnitPre<N, Gtag>::f(t, x, y[i]);
-			c[N + 1] = AddPre<N + 1, Gtag>::f(c, c, t);
+			c[N + 1] = AddNC<N + 1, Gtag>::f(c, c, t);
 			q = c[0] * rp;
 			Mul_UnitPre<N, Gtag>::f(t, p, q);
-			AddPre<N + 2, Gtag>::f(c, c, t);
+			AddNC<N + 2, Gtag>::f(c, c, t);
 			c++;
 		}
 		if (c[N]) {
-			SubPre<N, Gtag>::f(z, c, p);
+			SubNC<N, Gtag>::f(z, c, p);
 		} else {
-			if (SubPre<N, Gtag>::f(z, c, p)) {
+			if (SubNC<N, Gtag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -221,7 +248,7 @@ struct OpeFunc {
 		Unit *c = buf;
 		Unit q = xy[0] * rp;
 		Mul_UnitPre<N, Gtag>::f(t, p, q);
-		buf[N * 2] = AddPre<N * 2, Gtag>::f(buf, xy, t);
+		buf[N * 2] = AddNC<N * 2, Gtag>::f(buf, xy, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
@@ -231,9 +258,9 @@ struct OpeFunc {
 			c++;
 		}
 		if (c[N]) {
-			SubPre<N, Gtag>::f(z, c, p);
+			SubNC<N, Gtag>::f(z, c, p);
 		} else {
-			if (SubPre<N, Gtag>::f(z, c, p)) {
+			if (SubNC<N, Gtag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -289,39 +316,48 @@ struct OpeFunc {
 			if (x != y) fp_clearC(y);
 			return;
 		}
-		fp_subC(y, p, x, p);
+		SubNC<N, Gtag>::f(y, p, x);
 	}
 };
 
 #ifdef MCL_USE_LLVM
-	#define SET_OP_LLVM(bit) \
+	#define SET_OP_LLVM /* assume n */ \
 		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fp_add = mcl_fp_add ## bit ## L; \
-			fp_sub = mcl_fp_sub ## bit ## L; \
-			if (!isFullBit) { \
-				fp_addNC = mcl_fp_addNC ## bit ## L; \
-				fp_subNC = mcl_fp_subNC ## bit ## L; \
-			} \
-			fpDbl_mulPre = mcl_fpDbl_mulPre ## bit ## L; \
-			fp_mul_UnitPre = mcl_fp_mul_UnitPre ## bit ## L; \
-			fpDbl_sqrPre = mcl_fpDbl_sqrPre ## bit ## L; \
+			fp_add = Add<n, Ltag>::f; \
+			fp_sub = Sub<n, Ltag>::f; \
+			fpDbl_add = DblAdd<n, Ltag>::f; \
+			fpDbl_sub = DblSub<n, Ltag>::f; \
 			if (mode == FP_LLVM_MONT) { \
-				fpDbl_mod = mcl_fp_montRed ## bit ## L; \
-				fp_mul = mcl_fp_mont ## bit ## L; \
+				fp_mul = Mont<n, Ltag>::f; \
+				fp_sqr = SqrMont<n, Ltag>::f; \
+				fpDbl_mod = MontRed<n, Ltag>::f; \
+			} else { \
+				fp_mul = Mul<n, Ltag>::f; \
+				fp_sqr = Sqr<n, Ltag>::f; \
 			} \
-		}
-	#define SET_OP_DBL_LLVM(bit, n2) \
-		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fpDbl_add = mcl_fpDbl_add ## bit ## L; \
-			fpDbl_sub = mcl_fpDbl_sub ## bit ## L; \
+			fpDbl_mulPre = MulPre<n, Ltag>::f; \
+			fpDbl_sqrPre = SqrPre<n, Ltag>::f; \
+			fp_mul_UnitPre = Mul_UnitPre<n, Ltag>::f; \
 			if (!isFullBit) { \
-				fpDbl_addNC = mcl_fp_addNC ## n2 ## L; \
-				fpDbl_subNC = mcl_fp_subNC ## n2 ## L; \
+				fp_addNC = AddNC<n, Ltag>::f; \
+				fp_subNC = SubNC<n, Ltag>::f; \
 			} \
 		}
+
+#define SET_OP_LLVM2(bit) \
+	{ \
+		const int n = bit / UnitBitSize; \
+		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
+			if (!isFullBit) { \
+				fpDbl_addNC = AddNC<n * 2, Ltag>::f; \
+				fpDbl_subNC = SubNC<n * 2, Ltag>::f; \
+			} \
+		} \
+	}
+
 #else
-	#define SET_OP_LLVM(bit)
-	#define SET_OP_DBL_LLVM(bit, n2)
+	#define SET_OP_LLVM
+	#define SET_OP_LLVM2(bit)
 #endif
 
 #define SET_OP(bit) \
@@ -332,8 +368,8 @@ struct OpeFunc {
 		fp_clear = OpeFunc<bit>::fp_clearC; \
 		fp_copy = OpeFunc<bit>::fp_copyC; \
 		fp_neg = OpeFunc<bit>::fp_negC; \
-		fp_add = OpeFunc<bit>::fp_addC; \
-		fp_sub = OpeFunc<bit>::fp_subC; \
+		fp_add = Add<n, Gtag>::f; \
+		fp_sub = Sub<n, Gtag>::f; \
 		if (isMont) { \
 			fp_mul = OpeFunc<bit>::fp_mulMontC; \
 			fp_sqr = OpeFunc<bit>::fp_sqrMontC; \
@@ -350,15 +386,15 @@ struct OpeFunc {
 		fpDbl_sqrPre = SqrPre<n, Gtag>::f; \
 		fp_mul_UnitPre = Mul_UnitPre<n, Gtag>::f; \
 		fpN1_mod = N1_Mod<n, Gtag>::f; \
-		fpDbl_add = OpeFunc<bit>::fpDbl_addC; \
-		fpDbl_sub = OpeFunc<bit>::fpDbl_subC; \
+		fpDbl_add = DblAdd<n, Gtag>::f; \
+		fpDbl_sub = DblSub<n, Gtag>::f; \
 		if (!isFullBit) { \
-			fp_addNC = AddPre<n, Gtag>::f; \
-			fp_subNC = SubPre<n, Gtag>::f; \
-			fpDbl_addNC = AddPre<n * 2, Gtag>::f; \
-			fpDbl_subNC = SubPre<n * 2, Gtag>::f; \
+			fp_addNC = AddNC<n, Gtag>::f; \
+			fp_subNC = SubNC<n, Gtag>::f; \
+			fpDbl_addNC = AddNC<n * 2, Gtag>::f; \
+			fpDbl_subNC = SubNC<n * 2, Gtag>::f; \
 		} \
-		SET_OP_LLVM(bit) \
+		SET_OP_LLVM \
 	}
 
 #ifdef MCL_USE_XBYAK
@@ -476,41 +512,26 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	}
 #endif
 	switch (roundBit) {
-	case 64: SET_OP(64); SET_OP_DBL_LLVM(64, 128); break;
-	case 128: SET_OP(128); SET_OP_DBL_LLVM(128, 256); break;
-	case 192: SET_OP(192); SET_OP_DBL_LLVM(192, 384); break;
-	case 256: SET_OP(256); SET_OP_DBL_LLVM(256, 512); break;
+	case 64:  SET_OP(64);  SET_OP_LLVM2(64);  break;
+	case 128: SET_OP(128); SET_OP_LLVM2(128); break;
+	case 192: SET_OP(192); SET_OP_LLVM2(192); break;
+	case 256: SET_OP(256); SET_OP_LLVM2(256); break;
 	case 320: SET_OP(320); break;
 	case 384: SET_OP(384); break;
 	case 448: SET_OP(448); break;
-	case 512: SET_OP(512);
-		// QQQ : need refactor for large prime
-#if MCL_MAX_OP_BIT_SIZE == 768
-		SET_OP_DBL_LLVM(512, 1024);
-#endif
-		break;
+	case 512: SET_OP(512); break;
 #if CYBOZU_OS_BIT == 64
-	case 576: SET_OP(576);
+	case 576: SET_OP(576); break;
 #if MCL_MAX_OP_BIT_SIZE == 768
-		SET_OP_DBL_LLVM(576, 1152);
-#endif
-		break;
-#if MCL_MAX_OP_BIT_SIZE == 768
-	case 640: SET_OP(640);
-		SET_OP_DBL_LLVM(640, 1280);
-		break;
-	case 704: SET_OP(704);
-		SET_OP_DBL_LLVM(704, 1408);
-		break;
-	case 768: SET_OP(768);
-		SET_OP_DBL_LLVM(768, 1536);
-		break;
+	case 640: SET_OP(640); break;
+	case 704: SET_OP(704); break;
+	case 768: SET_OP(768); break;
 #endif
 #else
-	case 32: SET_OP(32); SET_OP_DBL_LLVM(32, 64); break;
-	case 96: SET_OP(96); SET_OP_DBL_LLVM(96, 192); break;
-	case 160: SET_OP(160); SET_OP_DBL_LLVM(160, 320); break;
-	case 224: SET_OP(224); SET_OP_DBL_LLVM(224, 448); break;
+	case 32:  SET_OP(32);  SET_OP_LLVM2(32);  break;
+	case 96:  SET_OP(96);  SET_OP_LLVM2(96);  break;
+	case 160: SET_OP(160); SET_OP_LLVM2(160); break;
+	case 224: SET_OP(224); SET_OP_LLVM2(224); break;
 	case 288: SET_OP(288); break;
 	case 352: SET_OP(352); break;
 	case 416: SET_OP(416); break;

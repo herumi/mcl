@@ -108,11 +108,11 @@ void test(const std::string& pStr, mcl::fp::Mode mode)
 	}
 	CYBOZU_BENCH("mulPre", op.fpDbl_mulPre, ux, ux, uy);
 	CYBOZU_BENCH("sqrPre", op.fpDbl_sqrPre, ux, ux);
-	CYBOZU_BENCH("add", op.fpDbl_add, ux, ux, ux);
-	CYBOZU_BENCH("sub", op.fpDbl_sub, ux, ux, ux);
+	CYBOZU_BENCH("add", op.fpDbl_add, ux, ux, ux, op.p);
+	CYBOZU_BENCH("sub", op.fpDbl_sub, ux, ux, ux, op.p);
 	CYBOZU_BENCH("addNC", op.fpDbl_addNC, ux, ux, ux);
 	CYBOZU_BENCH("subNC", op.fpDbl_subNC, ux, ux, ux);
-	CYBOZU_BENCH("mont", op.fpDbl_mod, ux, ux);
+	CYBOZU_BENCH("mont", op.fpDbl_mod, ux, ux, op.p);
 	CYBOZU_BENCH("mul", Fp::mul, x, x, x);
 	compareGmp(pStr);
 }

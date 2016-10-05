@@ -7,7 +7,7 @@ namespace mcl { namespace fp {
 struct Gtag;
 
 template<size_t N>
-struct AddPre<N, Gtag> {
+struct AddNC<N, Gtag> {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
 		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
@@ -16,10 +16,10 @@ struct AddPre<N, Gtag> {
 };
 
 template<size_t N>
-const u3u AddPre<N, Gtag>::f = &AddPre<N, Gtag>::func;
+const u3u AddNC<N, Gtag>::f = &AddNC<N, Gtag>::func;
 
 template<size_t N>
-struct SubPre<N, Gtag> {
+struct SubNC<N, Gtag> {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
 		return mpn_sub_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
@@ -28,7 +28,7 @@ struct SubPre<N, Gtag> {
 };
 
 template<size_t N>
-const u3u SubPre<N, Gtag>::f = &SubPre<N, Gtag>::func;
+const u3u SubNC<N, Gtag>::f = &SubNC<N, Gtag>::func;
 
 template<size_t N>
 struct MulPre<N, Gtag> {

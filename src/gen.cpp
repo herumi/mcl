@@ -296,6 +296,41 @@ struct Code : public mcl::Generator {
 	void gen_mcl_fp_addsubNC(bool isAdd)
 	{
 		resetGlobalIdx();
+		Operand r(Int, unit);
+		Operand pz(IntPtr, bit);
+		Operand px(IntPtr, bit);
+		Operand py(IntPtr, bit);
+		std::string name;
+		if (isAdd) {
+			name = "mcl_fp_addNC" + cybozu::itoa(bit) + "L";
+			mcl_fp_addNCM[bit] = Function(name, r, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_addNCM[bit]);
+			beginFunc(mcl_fp_addNCM[bit]);
+		} else {
+			name = "mcl_fp_subNC" + cybozu::itoa(bit) + "L";
+			mcl_fp_subNCM[bit] = Function(name, r, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_subNCM[bit]);
+			beginFunc(mcl_fp_subNCM[bit]);
+		}
+		Operand x = zext(load(px), bit + unit);
+		Operand y = zext(load(py), bit + unit);
+		Operand z;
+		if (isAdd) {
+			z = add(x, y);
+			store(trunc(z, bit), pz);
+			r = trunc(lshr(z, bit), unit);
+		} else {
+			z = sub(x, y);
+			store(trunc(z, bit), pz);
+			r = _and(trunc(lshr(z, bit), unit), makeImm(unit, 1));
+		}
+		ret(r);
+		endFunc();
+	}
+#if 0 // void-return version
+	void gen_mcl_fp_addsubNC(bool isAdd)
+	{
+		resetGlobalIdx();
 		Operand pz(IntPtr, bit);
 		Operand px(IntPtr, bit);
 		Operand py(IntPtr, bit);
@@ -320,33 +355,6 @@ struct Code : public mcl::Generator {
 			z = sub(x, y);
 		}
 		store(z, pz);
-		ret(Void);
-		endFunc();
-	}
-#if 0
-	void gen_mcl_fp_addS()
-	{
-		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
-		Operand px(IntPtr, bit);
-		Operand py(IntPtr, bit);
-		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_add" + cybozu::itoa(bit) + "S";
-		mcl_fp_addM[bit] = Function(name, Void, pz, px, py, pp);
-		beginFunc(mcl_fp_addM[bit]);
-		Operand x = load(px);
-		Operand y = load(py);
-		Operand p = load(pp);
-		x = zext(x, bit + unit);
-		y = zext(y, bit + unit);
-		p = zext(p, bit + unit);
-		Operand t0 = add(x, y);
-		Operand t1 = sub(t0, p);
-		Operand t = lshr(t1, bit);
-		t = trunc(t, 1);
-		t = select(t, t0, t1);
-		t = trunc(t, bit);
-		store(t, pz);
 		ret(Void);
 		endFunc();
 	}
@@ -385,33 +393,6 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-#if 0
-	void gen_mcl_fp_subS()
-	{
-		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
-		Operand px(IntPtr, bit);
-		Operand py(IntPtr, bit);
-		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_sub" + cybozu::itoa(bit) + "S";
-		mcl_fp_subM[bit] = Function(name, Void, pz, px, py, pp);
-		beginFunc(mcl_fp_subM[bit]);
-		Operand x = load(px);
-		Operand y = load(py);
-		x = zext(x, bit + unit);
-		y = zext(y, bit + unit);
-		Operand vc = sub(x, y);
-		Operand v = trunc(vc, bit); // v = x - y
-		Operand c = lshr(vc, bit);
-		c = trunc(c, 1);
-		Operand p = load(pp);
-		Operand z = select(c, p, makeImm(bit, 0));
-		v = add(v, z);
-		store(v, pz);
-		ret(Void);
-		endFunc();
-	}
-#endif
 	void gen_mcl_fp_sub()
 	{
 		resetGlobalIdx();
