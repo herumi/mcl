@@ -159,6 +159,8 @@ MCL_DEF_LLVM_FUNC(384)
 MCL_DEF_LLVM_FUNC(448)
 MCL_DEF_LLVM_FUNC(512)
 #if CYBOZU_OS_BIT == 32
+MCL_DEF_LLVM_FUNC(32)
+MCL_DEF_LLVM_FUNC(96)
 MCL_DEF_LLVM_FUNC(160)
 MCL_DEF_LLVM_FUNC(224)
 MCL_DEF_LLVM_FUNC(288)
@@ -320,82 +322,92 @@ struct OpeFunc {
 	}
 };
 
-#ifdef MCL_USE_LLVM
-	#define SET_OP_LLVM /* assume n */ \
-		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			fp_add = Add<n, Ltag>::f; \
-			fp_sub = Sub<n, Ltag>::f; \
-			fpDbl_add = DblAdd<n, Ltag>::f; \
-			fpDbl_sub = DblSub<n, Ltag>::f; \
-			if (mode == FP_LLVM_MONT) { \
-				fp_mul = Mont<n, Ltag>::f; \
-				fp_sqr = SqrMont<n, Ltag>::f; \
-				fpDbl_mod = MontRed<n, Ltag>::f; \
-			} else { \
-				fp_mul = Mul<n, Ltag>::f; \
-				fp_sqr = Sqr<n, Ltag>::f; \
-			} \
-			fpDbl_mulPre = MulPre<n, Ltag>::f; \
-			fpDbl_sqrPre = SqrPre<n, Ltag>::f; \
-			fp_mul_UnitPre = Mul_UnitPre<n, Ltag>::f; \
-			if (!isFullBit) { \
-				fp_addNC = AddNC<n, Ltag>::f; \
-				fp_subNC = SubNC<n, Ltag>::f; \
-			} \
+template<size_t bit, bool enable>
+struct SetOpLLVM2 {
+	static inline void set(Op&, Mode) {}
+};
+
+template<size_t bit>
+struct SetOpLLVM2<bit, true> {
+	static inline void set(Op& op, Mode mode)
+	{
+		const int n = bit / UnitBitSize;
+		if (mode != FP_LLVM && mode != FP_LLVM_MONT) return;
+		if (!op.isFullBit) {
+			op.fpDbl_addNC = AddNC<n * 2, Ltag>::f;
+			op.fpDbl_subNC = SubNC<n * 2, Ltag>::f;
 		}
-
-#define SET_OP_LLVM2(bit) \
-	{ \
-		const int n = bit / UnitBitSize; \
-		if (mode == FP_LLVM || mode == FP_LLVM_MONT) { \
-			if (!isFullBit) { \
-				fpDbl_addNC = AddNC<n * 2, Ltag>::f; \
-				fpDbl_subNC = SubNC<n * 2, Ltag>::f; \
-			} \
-		} \
 	}
+};
 
+template<size_t bit>
+void setOpLLVM(Op& op, Mode mode)
+{
+	const int n = bit / UnitBitSize;
+	if (mode != FP_LLVM && mode != FP_LLVM_MONT) return;
+	op.fp_add = Add<n, Ltag>::f;
+	op.fp_sub = Sub<n, Ltag>::f;
+	op.fpDbl_add = DblAdd<n, Ltag>::f;
+	op.fpDbl_sub = DblSub<n, Ltag>::f;
+	if (mode == FP_LLVM_MONT) {
+		op.fp_mul = Mont<n, Ltag>::f;
+		op.fp_sqr = SqrMont<n, Ltag>::f;
+		op.fpDbl_mod = MontRed<n, Ltag>::f;
+	} else {
+		op.fp_mul = Mul<n, Ltag>::f;
+		op.fp_sqr = Sqr<n, Ltag>::f;
+	}
+	op.fpDbl_mulPre = MulPre<n, Ltag>::f;
+	op.fpDbl_sqrPre = SqrPre<n, Ltag>::f;
+	op.fp_mul_UnitPre = Mul_UnitPre<n, Ltag>::f;
+	if (!op.isFullBit) {
+		op.fp_addNC = AddNC<n, Ltag>::f;
+		op.fp_subNC = SubNC<n, Ltag>::f;
+	}
+}
+
+template<size_t bit>
+void setOp(Op& op, Mode mode)
+{
+	const int n = bit / UnitBitSize;
+	op.N = n;
+	op.fp_isZero = OpeFunc<bit>::fp_isZeroC;
+	op.fp_clear = OpeFunc<bit>::fp_clearC;
+	op.fp_copy = OpeFunc<bit>::fp_copyC;
+	op.fp_neg = OpeFunc<bit>::fp_negC;
+	op.fp_add = Add<n, Gtag>::f;
+	op.fp_sub = Sub<n, Gtag>::f;
+	if (op.isMont) {
+		op.fp_mul = OpeFunc<bit>::fp_mulMontC;
+		op.fp_sqr = OpeFunc<bit>::fp_sqrMontC;
+		op.fp_invOp = OpeFunc<bit>::fp_invMontOpC;
+		op.fpDbl_mod = OpeFunc<bit>::fpDbl_modMontC;
+	} else {
+		op.fp_mul = OpeFunc<bit>::fp_mulC;
+		op.fp_sqr = OpeFunc<bit>::fp_sqrC;
+		op.fp_invOp = OpeFunc<bit>::fp_invOpC;
+		op.fpDbl_mod = Dbl_Mod<n, Gtag>::f;
+	}
+	op.fp_mul_Unit = OpeFunc<bit>::fp_mul_UnitC;
+	op.fpDbl_mulPre = MulPre<n, Gtag>::f;
+	op.fpDbl_sqrPre = SqrPre<n, Gtag>::f;
+	op.fp_mul_UnitPre = Mul_UnitPre<n, Gtag>::f;
+	op.fpN1_mod = N1_Mod<n, Gtag>::f;
+	op.fpDbl_add = DblAdd<n, Gtag>::f;
+	op.fpDbl_sub = DblSub<n, Gtag>::f;
+	if (!op.isFullBit) {
+		op.fp_addNC = AddNC<n, Gtag>::f;
+		op.fp_subNC = SubNC<n, Gtag>::f;
+		op.fpDbl_addNC = AddNC<n * 2, Gtag>::f;
+		op.fpDbl_subNC = SubNC<n * 2, Gtag>::f;
+	}
+#ifdef MCL_USE_LLVM
+	setOpLLVM<bit>(op, mode);
+	SetOpLLVM2<bit, (bit <= 256)>::set(op, mode);
 #else
-	#define SET_OP_LLVM
-	#define SET_OP_LLVM2(bit)
+	(void)mode;
 #endif
-
-#define SET_OP(bit) \
-	{ \
-		const int n = bit / UnitBitSize; \
-		N = n; \
-		fp_isZero = OpeFunc<bit>::fp_isZeroC; \
-		fp_clear = OpeFunc<bit>::fp_clearC; \
-		fp_copy = OpeFunc<bit>::fp_copyC; \
-		fp_neg = OpeFunc<bit>::fp_negC; \
-		fp_add = Add<n, Gtag>::f; \
-		fp_sub = Sub<n, Gtag>::f; \
-		if (isMont) { \
-			fp_mul = OpeFunc<bit>::fp_mulMontC; \
-			fp_sqr = OpeFunc<bit>::fp_sqrMontC; \
-			fp_invOp = OpeFunc<bit>::fp_invMontOpC; \
-			fpDbl_mod = OpeFunc<bit>::fpDbl_modMontC; \
-		} else { \
-			fp_mul = OpeFunc<bit>::fp_mulC; \
-			fp_sqr = OpeFunc<bit>::fp_sqrC; \
-			fp_invOp = OpeFunc<bit>::fp_invOpC; \
-			fpDbl_mod = Dbl_Mod<n, Gtag>::f; \
-		} \
-		fp_mul_Unit = OpeFunc<bit>::fp_mul_UnitC; \
-		fpDbl_mulPre = MulPre<n, Gtag>::f; \
-		fpDbl_sqrPre = SqrPre<n, Gtag>::f; \
-		fp_mul_UnitPre = Mul_UnitPre<n, Gtag>::f; \
-		fpN1_mod = N1_Mod<n, Gtag>::f; \
-		fpDbl_add = DblAdd<n, Gtag>::f; \
-		fpDbl_sub = DblSub<n, Gtag>::f; \
-		if (!isFullBit) { \
-			fp_addNC = AddNC<n, Gtag>::f; \
-			fp_subNC = SubNC<n, Gtag>::f; \
-			fpDbl_addNC = AddNC<n * 2, Gtag>::f; \
-			fpDbl_subNC = SubNC<n * 2, Gtag>::f; \
-		} \
-		SET_OP_LLVM \
-	}
+}
 
 #ifdef MCL_USE_XBYAK
 inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
@@ -512,31 +524,31 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	}
 #endif
 	switch (roundBit) {
-	case 64:  SET_OP(64);  SET_OP_LLVM2(64);  break;
-	case 128: SET_OP(128); SET_OP_LLVM2(128); break;
-	case 192: SET_OP(192); SET_OP_LLVM2(192); break;
-	case 256: SET_OP(256); SET_OP_LLVM2(256); break;
-	case 320: SET_OP(320); break;
-	case 384: SET_OP(384); break;
-	case 448: SET_OP(448); break;
-	case 512: SET_OP(512); break;
+	case 64:  setOp<64>(*this, mode);  break;
+	case 128: setOp<128>(*this, mode); break;
+	case 192: setOp<192>(*this, mode); break;
+	case 256: setOp<256>(*this, mode); break;
+	case 320: setOp<320>(*this, mode); break;
+	case 384: setOp<384>(*this, mode); break;
+	case 448: setOp<448>(*this, mode); break;
+	case 512: setOp<512>(*this, mode); break;
 #if CYBOZU_OS_BIT == 64
-	case 576: SET_OP(576); break;
+	case 576: setOp<576>(*this, mode); break;
 #if MCL_MAX_OP_BIT_SIZE == 768
-	case 640: SET_OP(640); break;
-	case 704: SET_OP(704); break;
-	case 768: SET_OP(768); break;
+	case 640: setOp<640>(*this, mode); break;
+	case 704: setOp<704>(*this, mode); break;
+	case 768: setOp<768>(*this, mode); break;
 #endif
 #else
-	case 32:  SET_OP(32);  SET_OP_LLVM2(32);  break;
-	case 96:  SET_OP(96);  SET_OP_LLVM2(96);  break;
-	case 160: SET_OP(160); SET_OP_LLVM2(160); break;
-	case 224: SET_OP(224); SET_OP_LLVM2(224); break;
-	case 288: SET_OP(288); break;
-	case 352: SET_OP(352); break;
-	case 416: SET_OP(416); break;
-	case 480: SET_OP(480); break;
-	case 544: SET_OP(544); break;
+	case 32:  setOp<32>(*this, mode);  break;
+	case 96:  setOp<96>(*this, mode);  break;
+	case 160: setOp<160>(*this, mode); break;
+	case 224: setOp<224>(*this, mode); break;
+	case 288: setOp<288>(*this, mode); break;
+	case 352: setOp<352>(*this, mode); break;
+	case 416: setOp<416>(*this, mode); break;
+	case 480: setOp<480>(*this, mode); break;
+	case 544: setOp<544>(*this, mode); break;
 #endif
 	default:
 		throw cybozu::Exception("Op::init:not:support") << mstr;
