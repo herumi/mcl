@@ -796,9 +796,9 @@ struct Code : public mcl::Generator {
 	{
 		this->privateFuncList = &privateFuncList;
 		gen_once();
-		uint32_t end = ((maxBitSize + unit - 1) / unit) * unit;
-		for (uint32_t i = 64; i <= end; i += unit) {
-			setBit(i);
+		uint32_t end = ((maxBitSize + unit - 1) / unit);
+		for (uint32_t n = 1; n <= end; n++) {
+			setBit(n * unit);
 			gen_all();
 			gen_addsub();
 			gen_mul();

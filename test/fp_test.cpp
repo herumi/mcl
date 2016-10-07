@@ -176,7 +176,7 @@ void ioModeTest()
 		}
 		std::stringstream ss;
 		ss << x;
-		CYBOZU_TEST_EQUAL(ss.str().size(), Fp::getBitSize() / 8);
+		CYBOZU_TEST_EQUAL(ss.str().size(), Fp::getByteSize());
 		Fp y;
 		ss >> y;
 		CYBOZU_TEST_EQUAL(x, y);

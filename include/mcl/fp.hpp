@@ -105,6 +105,7 @@ public:
 	const Unit *getUnit() const { return v_; }
 	static inline size_t getUnitSize() { return op_.N; }
 	static inline size_t getBitSize() { return op_.bitSize; }
+	static inline size_t getByteSize() { return (op_.bitSize + 7) / 8; }
 	static inline const fp::Op& getOp() { return op_; }
 	void dump() const
 	{
@@ -221,7 +222,7 @@ public:
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		if (ioMode & (IoArray | IoArrayRaw)) {
-			const size_t n = getBitSize() / 8;
+			const size_t n = getByteSize();
 			if (str.size() != n) throw cybozu::Exception("FpT:setStr:bad size") << str.size() << n << ioMode;
 			if (ioMode & IoArrayRaw) {
 				memcpy(v_, str.c_str(), n);
@@ -289,15 +290,16 @@ public:
 	}
 	void getStr(std::string& str, int ioMode = 10) const
 	{
+		const size_t n = getByteSize();
 		if (ioMode & IoArrayRaw) {
-			str.resize(getBitSize() / 8);
+			str.resize(n);
 			memcpy(&str[0], v_, str.size());
 			return;
 		}
 		fp::Block b;
 		getBlock(b);
 		if (ioMode & IoArray) {
-			str.resize(getBitSize() / 8);
+			str.resize(n);
 			memcpy(&str[0], b.p, str.size());
 			return;
 		}
@@ -380,7 +382,7 @@ public:
 		int ioMode = fp::detectIoMode(getIoMode(), is);
 		std::string str;
 		if (ioMode & (IoArray | IoArrayRaw)) {
-			str.resize(getBitSize() / 8);
+			str.resize(getByteSize());
 			is.read(&str[0], str.size());
 		} else {
 			is >> str;
