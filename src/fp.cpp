@@ -109,18 +109,18 @@ Mode StrToMode(const std::string& s)
 
 #ifdef MCL_USE_LLVM
 
-#define MCL_DEF_LLVM_FUNC(bit) \
-template<>const u3u AddNC<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_addNC ## bit ## L; \
-template<>const u3u SubNC<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_subNC ## bit ## L; \
-template<>const void3u MulPre<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_mulPre ## bit ## L; \
-template<>const void2u SqrPre<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_sqrPre ## bit ## L; \
-template<>const void2uI Mul_UnitPre<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_mul_UnitPre ## bit ## L; \
-template<>const void4u Add<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_add ## bit ## L; \
-template<>const void4u Sub<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_sub ## bit ## L; \
-template<>const void4u Mont<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_mont ## bit ## L; \
-template<>const void3u MontRed<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fp_montRed ## bit ## L; \
-template<>const void4u DblAdd<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_add ## bit ## L; \
-template<>const void4u DblSub<bit / mcl::fp::UnitBitSize, Ltag>::f = &mcl_fpDbl_sub ## bit ## L; \
+#define MCL_DEF_LLVM_FUNC(n) \
+template<>const u3u AddNC<n, Ltag>::f = &mcl_fp_addNC ## n ## L; \
+template<>const u3u SubNC<n, Ltag>::f = &mcl_fp_subNC ## n ## L; \
+template<>const void3u MulPre<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
+template<>const void2u SqrPre<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
+template<>const void2uI Mul_UnitPre<n, Ltag>::f = &mcl_fp_mul_UnitPre ## n ## L; \
+template<>const void4u Add<n, Ltag>::f = &mcl_fp_add ## n ## L; \
+template<>const void4u Sub<n, Ltag>::f = &mcl_fp_sub ## n ## L; \
+template<>const void4u Mont<n, Ltag>::f = &mcl_fp_mont ## n ## L; \
+template<>const void3u MontRed<n, Ltag>::f = &mcl_fp_montRed ## n ## L; \
+template<>const void4u DblAdd<n, Ltag>::f = &mcl_fpDbl_add ## n ## L; \
+template<>const void4u DblSub<n, Ltag>::f = &mcl_fpDbl_sub ## n ## L; \
 
 template<size_t N>
 struct Mul<N, Ltag> {
@@ -150,26 +150,26 @@ struct Sqr<N, Ltag> {
 template<size_t N>
 const void3u Sqr<N, Ltag>::f = Sqr<N, Ltag>::func;
 
-MCL_DEF_LLVM_FUNC(64)
-MCL_DEF_LLVM_FUNC(128)
-MCL_DEF_LLVM_FUNC(192)
-MCL_DEF_LLVM_FUNC(256)
-MCL_DEF_LLVM_FUNC(320)
-MCL_DEF_LLVM_FUNC(384)
-MCL_DEF_LLVM_FUNC(448)
-MCL_DEF_LLVM_FUNC(512)
+MCL_DEF_LLVM_FUNC(1)
+MCL_DEF_LLVM_FUNC(2)
+MCL_DEF_LLVM_FUNC(3)
+MCL_DEF_LLVM_FUNC(4)
+MCL_DEF_LLVM_FUNC(5)
+MCL_DEF_LLVM_FUNC(6)
+MCL_DEF_LLVM_FUNC(7)
+MCL_DEF_LLVM_FUNC(8)
+MCL_DEF_LLVM_FUNC(9)
+#if CYBOZU_OS_BIT == 32 || MCL_MAX_OP_BIT_SIZE == 768
+MCL_DEF_LLVM_FUNC(10)
+MCL_DEF_LLVM_FUNC(11)
+MCL_DEF_LLVM_FUNC(12)
+#endif
 #if CYBOZU_OS_BIT == 32
-MCL_DEF_LLVM_FUNC(32)
-MCL_DEF_LLVM_FUNC(96)
-MCL_DEF_LLVM_FUNC(160)
-MCL_DEF_LLVM_FUNC(224)
-MCL_DEF_LLVM_FUNC(288)
-MCL_DEF_LLVM_FUNC(352)
-MCL_DEF_LLVM_FUNC(416)
-MCL_DEF_LLVM_FUNC(480)
-MCL_DEF_LLVM_FUNC(544)
-#else
-MCL_DEF_LLVM_FUNC(576)
+MCL_DEF_LLVM_FUNC(13)
+MCL_DEF_LLVM_FUNC(14)
+MCL_DEF_LLVM_FUNC(15)
+MCL_DEF_LLVM_FUNC(16)
+MCL_DEF_LLVM_FUNC(17)
 #endif
 
 #endif

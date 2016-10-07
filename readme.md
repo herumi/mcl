@@ -35,7 +35,7 @@ make sample
 Build openssl and gmp for 32-bit mode and install <lib32>
 ```
 cd mcl
-make BIT=32 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
+make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
 ```
 
 ## Build for 64-bit Windows

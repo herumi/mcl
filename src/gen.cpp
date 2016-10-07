@@ -252,8 +252,8 @@ struct Code : public mcl::Generator {
 		Operand buf = _alloca(192, 2);
 		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
 		// QQQ define later
-		Function mcl_fpDbl_sqrPre192("mcl_fpDbl_sqrPre192L", Void, p, px);
-		call(mcl_fpDbl_sqrPre192, p, px);
+		Function mcl_fpDbl_sqrPre("mcl_fpDbl_sqrPre" + cybozu::itoa(192 / unit) + "L", Void, p, px);
+		call(mcl_fpDbl_sqrPre, p, px);
 		call(mcl_fpDbl_mod_NIST_P192, py, buf);
 		ret(Void);
 		endFunc();
@@ -270,8 +270,8 @@ struct Code : public mcl::Generator {
 		Operand buf = _alloca(192, 2);
 		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
 		// QQQ define later
-		Function mcl_fpDbl_mulPre192("mcl_fpDbl_mulPre192L", Void, p, px, py);
-		call(mcl_fpDbl_mulPre192, p, px, py);
+		Function mcl_fpDbl_mulPre("mcl_fpDbl_mulPre" + cybozu::itoa(192 / unit) + "L", Void, p, px, py);
+		call(mcl_fpDbl_mulPre, p, px, py);
 		call(mcl_fpDbl_mod_NIST_P192, pz, buf);
 		ret(Void);
 		endFunc();
@@ -302,15 +302,15 @@ struct Code : public mcl::Generator {
 		Operand py(IntPtr, bit);
 		std::string name;
 		if (isAdd) {
-			name = "mcl_fp_addNC" + cybozu::itoa(bit) + "L";
-			mcl_fp_addNCM[bit] = Function(name, r, pz, px, py);
-			verifyAndSetPrivate(mcl_fp_addNCM[bit]);
-			beginFunc(mcl_fp_addNCM[bit]);
+			name = "mcl_fp_addNC" + cybozu::itoa(N) + "L";
+			mcl_fp_addNCM[N] = Function(name, r, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_addNCM[N]);
+			beginFunc(mcl_fp_addNCM[N]);
 		} else {
-			name = "mcl_fp_subNC" + cybozu::itoa(bit) + "L";
-			mcl_fp_subNCM[bit] = Function(name, r, pz, px, py);
-			verifyAndSetPrivate(mcl_fp_subNCM[bit]);
-			beginFunc(mcl_fp_subNCM[bit]);
+			name = "mcl_fp_subNC" + cybozu::itoa(N) + "L";
+			mcl_fp_subNCM[N] = Function(name, r, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_subNCM[N]);
+			beginFunc(mcl_fp_subNCM[N]);
 		}
 		Operand x = zext(load(px), bit + unit);
 		Operand y = zext(load(py), bit + unit);
@@ -366,10 +366,10 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, bit);
 		Operand py(IntPtr, bit);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_add" + cybozu::itoa(bit) + "L";
-		mcl_fp_addM[bit] = Function(name, Void, pz, px, py, pp);
-		verifyAndSetPrivate(mcl_fp_addM[bit]);
-		beginFunc(mcl_fp_addM[bit]);
+		std::string name = "mcl_fp_add" + cybozu::itoa(N) + "L";
+		mcl_fp_addM[N] = Function(name, Void, pz, px, py, pp);
+		verifyAndSetPrivate(mcl_fp_addM[N]);
+		beginFunc(mcl_fp_addM[N]);
 		Operand x = load(px);
 		Operand y = load(py);
 		Operand p = load(pp);
@@ -400,10 +400,10 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, bit);
 		Operand py(IntPtr, bit);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fp_sub" + cybozu::itoa(bit) + "L";
-		mcl_fp_subM[bit] = Function(name, Void, pz, px, py, pp);
-		verifyAndSetPrivate(mcl_fp_subM[bit]);
-		beginFunc(mcl_fp_subM[bit]);
+		std::string name = "mcl_fp_sub" + cybozu::itoa(N) + "L";
+		mcl_fp_subM[N] = Function(name, Void, pz, px, py, pp);
+		verifyAndSetPrivate(mcl_fp_subM[N]);
+		beginFunc(mcl_fp_subM[N]);
 		Operand x = load(px);
 		Operand y = load(py);
 		x = zext(x, bit + unit);
@@ -436,7 +436,7 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, b2);
 		Operand py(IntPtr, b2);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fpDbl_add" + cybozu::itoa(bit) + "L";
+		std::string name = "mcl_fpDbl_add" + cybozu::itoa(N) + "L";
 		Function f(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
@@ -472,7 +472,7 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, b2);
 		Operand py(IntPtr, b2);
 		Operand pp(IntPtr, bit);
-		std::string name = "mcl_fpDbl_sub" + cybozu::itoa(bit) + "L";
+		std::string name = "mcl_fpDbl_sub" + cybozu::itoa(N) + "L";
 		Function f(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
@@ -549,10 +549,10 @@ struct Code : public mcl::Generator {
 		Operand pz(IntPtr, bu);
 		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
-		std::string name = "mcl_fp_mul_UnitPre" + cybozu::itoa(bit) + "L";
-		mcl_fp_mul_UnitPreM[bit] = Function(name, Void, pz, px, y);
-		verifyAndSetPrivate(mcl_fp_mul_UnitPreM[bit]);
-		beginFunc(mcl_fp_mul_UnitPreM[bit]);
+		std::string name = "mcl_fp_mul_UnitPre" + cybozu::itoa(N) + "L";
+		mcl_fp_mul_UnitPreM[N] = Function(name, Void, pz, px, y);
+		verifyAndSetPrivate(mcl_fp_mul_UnitPreM[N]);
+		beginFunc(mcl_fp_mul_UnitPreM[N]);
 		Operand z = call(mulPvM[bit], px, y);
 		store(z, pz);
 		ret(Void);
@@ -578,8 +578,8 @@ struct Code : public mcl::Generator {
 			Operand pxW = getelementptr(px, makeImm(32, N / 2));
 			Operand pyW = getelementptr(py, makeImm(32, N / 2));
 			Operand pzWW = getelementptr(pz, makeImm(32, N));
-			call(mcl_fpDbl_mulPreM[half], pz, px, py); // bd
-			call(mcl_fpDbl_mulPreM[half], pzWW, pxW, pyW); // ac
+			call(mcl_fpDbl_mulPreM[N / 2], pz, px, py); // bd
+			call(mcl_fpDbl_mulPreM[N / 2], pzWW, pxW, pyW); // ac
 
 			Operand pa = bitcast(pxW, Operand(IntPtr, half));
 			Operand pb = bitcast(px, Operand(IntPtr, half));
@@ -605,7 +605,7 @@ struct Code : public mcl::Generator {
 			store(t2L, buf2);
 			buf1 = bitcast(buf1, Operand(IntPtr, unit));
 			buf2 = bitcast(buf2, Operand(IntPtr, unit));
-			call(mcl_fpDbl_mulPreM[half], buf, buf1, buf2);
+			call(mcl_fpDbl_mulPreM[N / 2], buf, buf1, buf2);
 			buf = bitcast(buf, Operand(IntPtr, bit));
 			Operand t = load(buf);
 			t = zext(t, bit + unit);
@@ -660,10 +660,10 @@ struct Code : public mcl::Generator {
 		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
-		std::string name = "mcl_fpDbl_mulPre" + cybozu::itoa(bit) + "L";
-		mcl_fpDbl_mulPreM[bit] = Function(name, Void, pz, px, py);
-		verifyAndSetPrivate(mcl_fpDbl_mulPreM[bit]);
-		beginFunc(mcl_fpDbl_mulPreM[bit]);
+		std::string name = "mcl_fpDbl_mulPre" + cybozu::itoa(N) + "L";
+		mcl_fpDbl_mulPreM[N] = Function(name, Void, pz, px, py);
+		verifyAndSetPrivate(mcl_fpDbl_mulPreM[N]);
+		beginFunc(mcl_fpDbl_mulPreM[N]);
 		generic_fpDbl_mul(pz, px, py);
 		endFunc();
 	}
@@ -672,10 +672,10 @@ struct Code : public mcl::Generator {
 		resetGlobalIdx();
 		Operand py(IntPtr, unit);
 		Operand px(IntPtr, unit);
-		std::string name = "mcl_fpDbl_sqrPre" + cybozu::itoa(bit) + "L";
-		mcl_fpDbl_sqrPreM[bit] = Function(name, Void, py, px);
-		verifyAndSetPrivate(mcl_fpDbl_sqrPreM[bit]);
-		beginFunc(mcl_fpDbl_sqrPreM[bit]);
+		std::string name = "mcl_fpDbl_sqrPre" + cybozu::itoa(N) + "L";
+		mcl_fpDbl_sqrPreM[N] = Function(name, Void, py, px);
+		verifyAndSetPrivate(mcl_fpDbl_sqrPreM[N]);
+		beginFunc(mcl_fpDbl_sqrPreM[N]);
 		generic_fpDbl_mul(py, px, px);
 		endFunc();
 	}
@@ -688,11 +688,11 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
 		Operand pp(IntPtr, unit);
-		std::string name = "mcl_fp_mont" + cybozu::itoa(bit) + "L";
-		mcl_fp_montM[bit] = Function(name, Void, pz, px, py, pp);
-		mcl_fp_montM[bit].setAlias();
-		verifyAndSetPrivate(mcl_fp_montM[bit]);
-		beginFunc(mcl_fp_montM[bit]);
+		std::string name = "mcl_fp_mont" + cybozu::itoa(N) + "L";
+		mcl_fp_montM[N] = Function(name, Void, pz, px, py, pp);
+		mcl_fp_montM[N].setAlias();
+		verifyAndSetPrivate(mcl_fp_montM[N]);
+		beginFunc(mcl_fp_montM[N]);
 		Operand rp = load(getelementptr(pp, makeImm(unit, -1)));
 		Operand p = load(bitcast(pp, Operand(IntPtr, bit)));
 		Operand z, s, a;
@@ -733,10 +733,10 @@ struct Code : public mcl::Generator {
 		Operand pz(IntPtr, bit);
 		Operand pxy(IntPtr, b2);
 		Operand pp(IntPtr, unit);
-		std::string name = "mcl_fp_montRed" + cybozu::itoa(bit) + "L";
-		mcl_fp_montRedM[bit] = Function(name, Void, pz, pxy, pp);
-		verifyAndSetPrivate(mcl_fp_montRedM[bit]);
-		beginFunc(mcl_fp_montRedM[bit]);
+		std::string name = "mcl_fp_montRed" + cybozu::itoa(N) + "L";
+		mcl_fp_montRedM[N] = Function(name, Void, pz, pxy, pp);
+		verifyAndSetPrivate(mcl_fp_montRedM[N]);
+		beginFunc(mcl_fp_montRedM[N]);
 		Operand rp = load(getelementptr(pp, makeImm(unit, -1)));
 		Operand p = load(bitcast(pp, Operand(IntPtr, bit)));
 		Operand xy = load(pxy);
