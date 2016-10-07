@@ -174,9 +174,8 @@ MCL_DEF_LLVM_FUNC(576)
 
 #endif
 
-template<size_t bitSize>
+template<size_t N>
 struct OpeFunc {
-	static const size_t N = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
 	{
 		int s = n;
@@ -322,88 +321,84 @@ struct OpeFunc {
 	}
 };
 
-template<size_t bit, bool enable>
+template<size_t N, bool enable>
 struct SetOpLLVM2 {
 	static inline void set(Op&, Mode) {}
 };
 
-template<size_t bit>
-struct SetOpLLVM2<bit, true> {
+template<size_t N>
+struct SetOpLLVM2<N, true> {
 	static inline void set(Op& op, Mode mode)
 	{
-		const int n = bit / UnitBitSize;
 		if (mode != FP_LLVM && mode != FP_LLVM_MONT) return;
 		if (!op.isFullBit) {
-			op.fpDbl_addNC = AddNC<n * 2, Ltag>::f;
-			op.fpDbl_subNC = SubNC<n * 2, Ltag>::f;
+			op.fpDbl_addNC = AddNC<N * 2, Ltag>::f;
+			op.fpDbl_subNC = SubNC<N * 2, Ltag>::f;
 		}
 	}
 };
 
-template<size_t bit>
+template<size_t N>
 void setOpLLVM(Op& op, Mode mode)
 {
-	const int n = bit / UnitBitSize;
 	if (mode != FP_LLVM && mode != FP_LLVM_MONT) return;
-	op.fp_add = Add<n, Ltag>::f;
-	op.fp_sub = Sub<n, Ltag>::f;
-	op.fpDbl_add = DblAdd<n, Ltag>::f;
-	op.fpDbl_sub = DblSub<n, Ltag>::f;
+	op.fp_add = Add<N, Ltag>::f;
+	op.fp_sub = Sub<N, Ltag>::f;
+	op.fpDbl_add = DblAdd<N, Ltag>::f;
+	op.fpDbl_sub = DblSub<N, Ltag>::f;
 	if (mode == FP_LLVM_MONT) {
-		op.fp_mul = Mont<n, Ltag>::f;
-		op.fp_sqr = SqrMont<n, Ltag>::f;
-		op.fpDbl_mod = MontRed<n, Ltag>::f;
+		op.fp_mul = Mont<N, Ltag>::f;
+		op.fp_sqr = SqrMont<N, Ltag>::f;
+		op.fpDbl_mod = MontRed<N, Ltag>::f;
 	} else {
-		op.fp_mul = Mul<n, Ltag>::f;
-		op.fp_sqr = Sqr<n, Ltag>::f;
+		op.fp_mul = Mul<N, Ltag>::f;
+		op.fp_sqr = Sqr<N, Ltag>::f;
 	}
-	op.fpDbl_mulPre = MulPre<n, Ltag>::f;
-	op.fpDbl_sqrPre = SqrPre<n, Ltag>::f;
-	op.fp_mul_UnitPre = Mul_UnitPre<n, Ltag>::f;
+	op.fpDbl_mulPre = MulPre<N, Ltag>::f;
+	op.fpDbl_sqrPre = SqrPre<N, Ltag>::f;
+	op.fp_mul_UnitPre = Mul_UnitPre<N, Ltag>::f;
 	if (!op.isFullBit) {
-		op.fp_addNC = AddNC<n, Ltag>::f;
-		op.fp_subNC = SubNC<n, Ltag>::f;
+		op.fp_addNC = AddNC<N, Ltag>::f;
+		op.fp_subNC = SubNC<N, Ltag>::f;
 	}
 }
 
-template<size_t bit>
+template<size_t N>
 void setOp(Op& op, Mode mode)
 {
-	const int n = bit / UnitBitSize;
-	op.N = n;
-	op.fp_isZero = OpeFunc<bit>::fp_isZeroC;
-	op.fp_clear = OpeFunc<bit>::fp_clearC;
-	op.fp_copy = OpeFunc<bit>::fp_copyC;
-	op.fp_neg = OpeFunc<bit>::fp_negC;
-	op.fp_add = Add<n, Gtag>::f;
-	op.fp_sub = Sub<n, Gtag>::f;
+	op.fp_isZero = OpeFunc<N>::fp_isZeroC;
+	op.fp_clear = OpeFunc<N>::fp_clearC;
+	op.fp_copy = OpeFunc<N>::fp_copyC;
+	op.fp_neg = OpeFunc<N>::fp_negC;
+	op.fp_add = Add<N, Gtag>::f;
+	op.fp_sub = Sub<N, Gtag>::f;
 	if (op.isMont) {
-		op.fp_mul = OpeFunc<bit>::fp_mulMontC;
-		op.fp_sqr = OpeFunc<bit>::fp_sqrMontC;
-		op.fp_invOp = OpeFunc<bit>::fp_invMontOpC;
-		op.fpDbl_mod = OpeFunc<bit>::fpDbl_modMontC;
+		op.fp_mul = OpeFunc<N>::fp_mulMontC;
+		op.fp_sqr = OpeFunc<N>::fp_sqrMontC;
+		op.fp_invOp = OpeFunc<N>::fp_invMontOpC;
+		op.fpDbl_mod = OpeFunc<N>::fpDbl_modMontC;
 	} else {
-		op.fp_mul = OpeFunc<bit>::fp_mulC;
-		op.fp_sqr = OpeFunc<bit>::fp_sqrC;
-		op.fp_invOp = OpeFunc<bit>::fp_invOpC;
-		op.fpDbl_mod = Dbl_Mod<n, Gtag>::f;
+		op.fp_mul = OpeFunc<N>::fp_mulC;
+		op.fp_sqr = OpeFunc<N>::fp_sqrC;
+		op.fp_invOp = OpeFunc<N>::fp_invOpC;
+		op.fpDbl_mod = Dbl_Mod<N, Gtag>::f;
 	}
-	op.fp_mul_Unit = OpeFunc<bit>::fp_mul_UnitC;
-	op.fpDbl_mulPre = MulPre<n, Gtag>::f;
-	op.fpDbl_sqrPre = SqrPre<n, Gtag>::f;
-	op.fp_mul_UnitPre = Mul_UnitPre<n, Gtag>::f;
-	op.fpN1_mod = N1_Mod<n, Gtag>::f;
-	op.fpDbl_add = DblAdd<n, Gtag>::f;
-	op.fpDbl_sub = DblSub<n, Gtag>::f;
+	op.fp_mul_Unit = OpeFunc<N>::fp_mul_UnitC;
+	op.fpDbl_mulPre = MulPre<N, Gtag>::f;
+	op.fpDbl_sqrPre = SqrPre<N, Gtag>::f;
+	op.fp_mul_UnitPre = Mul_UnitPre<N, Gtag>::f;
+	op.fpN1_mod = N1_Mod<N, Gtag>::f;
+	op.fpDbl_add = DblAdd<N, Gtag>::f;
+	op.fpDbl_sub = DblSub<N, Gtag>::f;
 	if (!op.isFullBit) {
-		op.fp_addNC = AddNC<n, Gtag>::f;
-		op.fp_subNC = SubNC<n, Gtag>::f;
-		op.fpDbl_addNC = AddNC<n * 2, Gtag>::f;
-		op.fpDbl_subNC = SubNC<n * 2, Gtag>::f;
+		op.fp_addNC = AddNC<N, Gtag>::f;
+		op.fp_subNC = SubNC<N, Gtag>::f;
+		op.fpDbl_addNC = AddNC<N * 2, Gtag>::f;
+		op.fpDbl_subNC = SubNC<N * 2, Gtag>::f;
 	}
 #ifdef MCL_USE_LLVM
-	setOpLLVM<bit>(op, mode);
-	SetOpLLVM2<bit, (bit <= 256)>::set(op, mode);
+	setOpLLVM<N>(op, mode);
+	SetOpLLVM2<N, (N * UnitBitSize <= 256)>::set(op, mode);
 #else
 	(void)mode;
 #endif
@@ -472,7 +467,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	clear();
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
-	Xbyak > llvm_opt > llvm > gmp
+	Xbyak > llvm_mont > llvm > gmp_mont > gmp
 */
 #ifdef MCL_USE_XBYAK
 	if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
@@ -501,13 +496,11 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	if (maxBitSize > MCL_MAX_OP_BIT_SIZE) {
 		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_OP_BIT_SIZE;
 	}
-	(void)mode;
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, 0);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	isFullBit = (bitSize % UnitBitSize) == 0;
 
-	const size_t roundBit = (bitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
 	primeMode = PM_GENERIC;
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
 	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
@@ -523,35 +516,31 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 		isFastMod = true;
 	}
 #endif
-	switch (roundBit) {
-	case 64:  setOp<64>(*this, mode);  break;
-	case 128: setOp<128>(*this, mode); break;
-	case 192: setOp<192>(*this, mode); break;
-	case 256: setOp<256>(*this, mode); break;
-	case 320: setOp<320>(*this, mode); break;
-	case 384: setOp<384>(*this, mode); break;
-	case 448: setOp<448>(*this, mode); break;
-	case 512: setOp<512>(*this, mode); break;
-#if CYBOZU_OS_BIT == 64
-	case 576: setOp<576>(*this, mode); break;
-#if MCL_MAX_OP_BIT_SIZE == 768
-	case 640: setOp<640>(*this, mode); break;
-	case 704: setOp<704>(*this, mode); break;
-	case 768: setOp<768>(*this, mode); break;
+	N = (bitSize + UnitBitSize - 1) / UnitBitSize;
+	switch (N) {
+	case 1:  setOp<1>(*this, mode);  break;
+	case 2:  setOp<2>(*this, mode);  break;
+	case 3:  setOp<3>(*this, mode);  break;
+	case 4:  setOp<4>(*this, mode);  break; // 256 if 64-bit
+	case 5:  setOp<5>(*this, mode);  break;
+	case 6:  setOp<6>(*this, mode);  break;
+	case 7:  setOp<7>(*this, mode);  break;
+	case 8:  setOp<8>(*this, mode);  break;
+	case 9:  setOp<9>(*this, mode);  break; // 576 if 64-bit
+#if CYBOZU_OS_BIT == 32 || MCL_MAX_OP_BIT_SIZE == 768
+	case 10:  setOp<10>(*this, mode);  break;
+	case 11:  setOp<11>(*this, mode);  break;
+	case 12:  setOp<12>(*this, mode);  break; // 768 if 64-bit
 #endif
-#else
-	case 32:  setOp<32>(*this, mode);  break;
-	case 96:  setOp<96>(*this, mode);  break;
-	case 160: setOp<160>(*this, mode); break;
-	case 224: setOp<224>(*this, mode); break;
-	case 288: setOp<288>(*this, mode); break;
-	case 352: setOp<352>(*this, mode); break;
-	case 416: setOp<416>(*this, mode); break;
-	case 480: setOp<480>(*this, mode); break;
-	case 544: setOp<544>(*this, mode); break;
+#if CYBOZU_OS_BIT == 32
+	case 13:  setOp<13>(*this, mode);  break;
+	case 14:  setOp<14>(*this, mode);  break;
+	case 15:  setOp<15>(*this, mode);  break;
+	case 16:  setOp<16>(*this, mode);  break;
+	case 17:  setOp<17>(*this, mode);  break; // 544 if 32-bit
 #endif
 	default:
-		throw cybozu::Exception("Op::init:not:support") << mstr;
+		throw cybozu::Exception("Op::init:not:support") << N << mstr;
 	}
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NICT_P192) {
