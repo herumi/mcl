@@ -50,11 +50,9 @@ ifeq ($(USE_LOW_ASM),1)
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
-	-$(MKDIR) $(@D)
 	$(AR) $@ $(LIB_OBJ)
 
 $(ASM_OBJ): $(ASM_SRC)
-	-$(MKDIR) $(@D)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
 $(ASM_SRC): $(LLVM_SRC)
@@ -87,11 +85,9 @@ VPATH=test sample src
 .SUFFIXES: .cpp .d .exe
 
 $(OBJ_DIR)/%.o: %.cpp
-	-$(MKDIR) $(@D)
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
-	-$(MKDIR) $(@D)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(SAMPLE_SRC:.cpp=.exe))

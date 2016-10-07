@@ -122,33 +122,14 @@ template<>const void3u MontRed<n, Ltag>::f = &mcl_fp_montRed ## n ## L; \
 template<>const void4u DblAdd<n, Ltag>::f = &mcl_fpDbl_add ## n ## L; \
 template<>const void4u DblSub<n, Ltag>::f = &mcl_fpDbl_sub ## n ## L; \
 
+// use Dbl_Mod of gmp
 template<size_t N>
-struct Mul<N, Ltag> {
-	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		Unit xy[N * 2];
-		MulPre<N, Ltag>::f(xy, x, y);
-		Dbl_Mod<N, Gtag>::f(z, xy, p);
-	}
-	static const void4u f;
-};
-
-template<size_t N>
-const void4u Mul<N, Ltag>::f = Mul<N, Ltag>::func;
-
-template<size_t N>
-struct Sqr<N, Ltag> {
-	static inline void func(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[N * 2];
-		SqrPre<N, Ltag>::f(xx, x);
-		Dbl_Mod<N, Gtag>::f(y, xx, p);
-	}
+struct Dbl_Mod<N, Ltag> {
 	static const void3u f;
 };
 
 template<size_t N>
-const void3u Sqr<N, Ltag>::f = Sqr<N, Ltag>::func;
+const void3u Dbl_Mod<N, Ltag>::f = Dbl_Mod<N, Gtag>::f;
 
 MCL_DEF_LLVM_FUNC(1)
 MCL_DEF_LLVM_FUNC(2)
@@ -201,41 +182,6 @@ struct OpeFunc {
 	{
 		copyArray(y, x, N);
 	}
-	// z[N] <- mont(x[N], y[N])
-	static inline void fp_mulMontC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-#if 0
-		Unit xy[N * 2];
-		MulPre<N, Gtag>::f(xy, x, y);
-		fpDbl_modMontC(z, xy, p);
-#else
-		const Unit rp = p[-1];
-		Unit buf[N * 2 + 2];
-		Unit *c = buf;
-		Mul_UnitPre<N, Gtag>::f(c, x, y[0]); // x * y[0]
-		Unit q = c[0] * rp;
-		Unit t[N + 2];
-		Mul_UnitPre<N, Gtag>::f(t, p, q); // p * q
-		t[N + 1] = 0; // always zero
-		c[N + 1] = AddNC<N + 1, Gtag>::f(c, c, t);
-		c++;
-		for (size_t i = 1; i < N; i++) {
-			Mul_UnitPre<N, Gtag>::f(t, x, y[i]);
-			c[N + 1] = AddNC<N + 1, Gtag>::f(c, c, t);
-			q = c[0] * rp;
-			Mul_UnitPre<N, Gtag>::f(t, p, q);
-			AddNC<N + 2, Gtag>::f(c, c, t);
-			c++;
-		}
-		if (c[N]) {
-			SubNC<N, Gtag>::f(z, c, p);
-		} else {
-			if (SubNC<N, Gtag>::f(z, c, p)) {
-				memcpy(z, c, N * sizeof(Unit));
-			}
-		}
-#endif
-	}
 	/*
 		z[N] <- montRed(xy[N * 2])
 		REMARK : assume p[-1] = rp
@@ -271,24 +217,6 @@ struct OpeFunc {
 		Unit xy[N + 1];
 		Mul_UnitPre<N, Gtag>::f(xy, x, y);
 		N1_Mod<N, Gtag>::f(z, xy, p);
-	}
-	static inline void fp_mulC(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		Unit xy[N * 2];
-		MulPre<N, Gtag>::f(xy, x, y);
-		Dbl_Mod<N, Gtag>::f(z, xy, p);
-	}
-	static inline void fp_sqrC(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[N * 2];
-		SqrPre<N, Gtag>::f(xx, x);
-		Dbl_Mod<N, Gtag>::f(y, xx, p);
-	}
-	static inline void fp_sqrMontC(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[N * 2];
-		SqrPre<N, Gtag>::f(xx, x);
-		fpDbl_modMontC(y, xx, p);
 	}
 	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	{
@@ -373,13 +301,13 @@ void setOp(Op& op, Mode mode)
 	op.fp_add = Add<N, Gtag>::f;
 	op.fp_sub = Sub<N, Gtag>::f;
 	if (op.isMont) {
-		op.fp_mul = OpeFunc<N>::fp_mulMontC;
-		op.fp_sqr = OpeFunc<N>::fp_sqrMontC;
+		op.fp_mul = Mont<N, Gtag>::f;
+		op.fp_sqr = SqrMont<N, Gtag>::f;
 		op.fp_invOp = OpeFunc<N>::fp_invMontOpC;
 		op.fpDbl_mod = OpeFunc<N>::fpDbl_modMontC;
 	} else {
-		op.fp_mul = OpeFunc<N>::fp_mulC;
-		op.fp_sqr = OpeFunc<N>::fp_sqrC;
+		op.fp_mul = Mul<N, Gtag>::f;
+		op.fp_sqr = Sqr<N, Gtag>::f;
 		op.fp_invOp = OpeFunc<N>::fp_invOpC;
 		op.fpDbl_mod = Dbl_Mod<N, Gtag>::f;
 	}

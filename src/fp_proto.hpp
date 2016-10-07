@@ -27,27 +27,8 @@ template<size_t N, class Tag>struct Mul_UnitPre { static const void2uI f; };
 template<size_t N, class Tag>struct N1_Mod { static const void3u f; };
 // z[N] <- x[N * 2] % p[N]
 template<size_t N, class Tag>struct Dbl_Mod { static const void3u f; };
-// z[N] <- Montgomery(x[N], y[N], p[N])
-template<size_t N, class Tag>struct Mont { static const void4u f; };
 // z[N] <- MontRed(xy[N], p[N])
 template<size_t N, class Tag>struct MontRed { static const void3u f; };
-
-// z[N] <- (x[N] * y[N]) % p[N]
-template<size_t N, class Tag>struct Mul { static const void4u f; };
-// z[N] <- (x[N] ^ 2) % p[N]
-template<size_t N, class Tag>struct Sqr { static const void3u f; };
-
-// z[N] <- Montgomery(x[N], x[N], p[N])
-template<size_t N, class Tag>
-struct SqrMont {
-	static inline void func(Unit *y, const Unit *x, const Unit *p)
-	{
-		Mont<N, Tag>::f(y, x, x, p);
-	}
-	static const void3u f;
-};
-template<size_t N, class Tag>
-const void3u SqrMont<N, Tag>::f = SqrMont<N, Tag>::func;
 
 // z[N] <- (x[N] + y[N]) % p[N]
 template<size_t N, class Tag>
@@ -118,6 +99,96 @@ struct DblSub {
 
 template<size_t N, class Tag>
 const void4u DblSub<N, Tag>::f = DblSub<N, Tag>::func;
+
+// z[N] <- Montgomery(x[N], y[N], p[N])
+template<size_t N, class Tag>
+struct Mont {
+	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+#if 0
+		Unit xy[N * 2];
+		MulPre<N, Gtag>::f(xy, x, y);
+		fpDbl_modMontC(z, xy, p);
+#else
+		const Unit rp = p[-1];
+		Unit buf[N * 2 + 2];
+		Unit *c = buf;
+		Mul_UnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+		Unit q = c[0] * rp;
+		Unit t[N + 2];
+		Mul_UnitPre<N, Tag>::f(t, p, q); // p * q
+		t[N + 1] = 0; // always zero
+		c[N + 1] = AddNC<N + 1, Tag>::f(c, c, t);
+		c++;
+		for (size_t i = 1; i < N; i++) {
+			Mul_UnitPre<N, Tag>::f(t, x, y[i]);
+			c[N + 1] = AddNC<N + 1, Tag>::f(c, c, t);
+			q = c[0] * rp;
+			Mul_UnitPre<N, Tag>::f(t, p, q);
+			AddNC<N + 2, Tag>::f(c, c, t);
+			c++;
+		}
+		if (c[N]) {
+			SubNC<N, Tag>::f(z, c, p);
+		} else {
+			if (SubNC<N, Tag>::f(z, c, p)) {
+				memcpy(z, c, N * sizeof(Unit));
+			}
+		}
+#endif
+	}
+	static const void4u f;
+};
+
+template<size_t N, class Tag>
+const void4u Mont<N, Tag>::f = Mont<N, Tag>::func;
+
+// z[N] <- Montgomery(x[N], x[N], p[N])
+template<size_t N, class Tag>
+struct SqrMont {
+	static inline void func(Unit *y, const Unit *x, const Unit *p)
+	{
+#if 0
+		Unit xx[N * 2];
+		SqrPre<N, Tag>::f(xx, x);
+		MontRed<N, Tag>(y, xx, p);
+#else
+		Mont<N, Tag>::f(y, x, x, p);
+#endif
+	}
+	static const void3u f;
+};
+template<size_t N, class Tag>
+const void3u SqrMont<N, Tag>::f = SqrMont<N, Tag>::func;
+
+// z[N] <- (x[N] * y[N]) % p[N]
+template<size_t N, class Tag>
+struct Mul {
+	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+		Unit xy[N * 2];
+		MulPre<N, Tag>::f(xy, x, y);
+		Dbl_Mod<N, Tag>::f(z, xy, p);
+	}
+	static const void4u f;
+};
+template<size_t N, class Tag>
+const void4u Mul<N, Tag>::f = Mul<N, Tag>::func;
+
+// y[N] <- (x[N] * x[N]) % p[N]
+template<size_t N, class Tag>
+struct Sqr {
+	static inline void func(Unit *y, const Unit *x, const Unit *p)
+	{
+		Unit xx[N * 2];
+		SqrPre<N, Tag>::f(xx, x);
+		Dbl_Mod<N, Tag>::f(y, xx, p);
+	}
+	static const void3u f;
+};
+template<size_t N, class Tag>
+const void3u Sqr<N, Tag>::f = Sqr<N, Tag>::func;
+
 
 } } // mcl::fp
 
