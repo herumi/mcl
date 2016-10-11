@@ -7,12 +7,31 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/op.hpp>
+#include <mcl/util.hpp>
 
 namespace mcl { namespace fp {
 
 struct Gtag; // GMP
 struct Ltag; // LLVM
 struct Atag; // asm
+
+template<size_t N>
+void clearC(Unit *x)
+{
+	clearArray(x, 0, N);
+}
+
+template<size_t N>
+bool isZeroC(const Unit *x)
+{
+	return isZeroArray(x, N);
+}
+
+template<size_t N>
+void copyC(Unit *y, const Unit *x)
+{
+	copyArray(y, x, N);
+}
 
 // (carry, z[N]) <- x[N] + y[N]
 template<size_t N, class Tag = Gtag>
@@ -38,6 +57,23 @@ struct SubNC {
 
 template<size_t N, class Tag>
 const u3u SubNC<N, Tag>::f = &SubNC<N, Tag>::func;
+
+// y[N] <- (-x[N]) % p[N]
+template<size_t N, class Tag = Gtag>
+struct Neg {
+	static inline void func(Unit *y, const Unit *x, const Unit *p)
+	{
+		if (isZeroC<N>(x)) {
+			if (x != y) clearC<N>(y);
+			return;
+		}
+		SubNC<N, Tag>::f(y, p, x);
+	}
+	static const void3u f;
+};
+
+template<size_t N, class Tag>
+const void3u Neg<N, Tag>::f = Neg<N, Tag>::func;
 
 // z[N * 2] <- x[N] * y[N]
 template<size_t N, class Tag = Gtag>
@@ -92,6 +128,21 @@ struct N1_Mod {
 template<size_t N, class Tag>
 const void3u N1_Mod<N, Tag>::f = &N1_Mod<N, Tag>::func;
 
+// z[N] <- (x[N] * y) % p[N]
+template<size_t N, class Tag = Gtag>
+struct Mul_Unit {
+	static inline void func(Unit *z, const Unit *x, Unit y, const Unit *p)
+	{
+		Unit xy[N + 1];
+		Mul_UnitPre<N, Tag>::f(xy, x, y);
+		N1_Mod<N, Tag>::f(z, xy, p);
+	}
+	static const void2uIu f;
+};
+
+template<size_t N, class Tag>
+const void2uIu Mul_Unit<N, Tag>::f = &Mul_Unit<N, Tag>::func;
+
 // z[N] <- x[N * 2] % p[N]
 template<size_t N, class Tag = Gtag>
 struct Dbl_Mod {
@@ -105,12 +156,6 @@ struct Dbl_Mod {
 
 template<size_t N, class Tag>
 const void3u Dbl_Mod<N, Tag>::f = &Dbl_Mod<N, Tag>::func;
-
-// z[N] <- MontRed(xy[N], p[N])
-template<size_t N, class Tag = Gtag>
-struct MontRed {
-	static const void3u f;
-};
 
 // z[N] <- (x[N] + y[N]) % p[N]
 template<size_t N, class Tag = Gtag>
@@ -182,7 +227,10 @@ struct DblSub {
 template<size_t N, class Tag>
 const void4u DblSub<N, Tag>::f = DblSub<N, Tag>::func;
 
-// z[N] <- Montgomery(x[N], y[N], p[N])
+/*
+	z[N] <- Montgomery(x[N], y[N], p[N])
+	REMARK : assume p[-1] = rp
+*/
 template<size_t N, class Tag = Gtag>
 struct Mont {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
@@ -224,6 +272,44 @@ struct Mont {
 
 template<size_t N, class Tag>
 const void4u Mont<N, Tag>::f = Mont<N, Tag>::func;
+
+/*
+	z[N] <- montRed(xy[N * 2], p[N])
+	REMARK : assume p[-1] = rp
+*/
+template<size_t N, class Tag = Gtag>
+struct MontRed {
+	static inline void func(Unit *z, const Unit *xy, const Unit *p)
+	{
+		const Unit rp = p[-1];
+		Unit t[N * 2];
+		Unit buf[N * 2 + 1];
+		clearArray(t, N + 1, N * 2);
+		Unit *c = buf;
+		Unit q = xy[0] * rp;
+		Mul_UnitPre<N, Tag>::f(t, p, q);
+		buf[N * 2] = AddNC<N * 2, Tag>::f(buf, xy, t);
+		c++;
+		for (size_t i = 1; i < N; i++) {
+			q = c[0] * rp;
+			Mul_UnitPre<N, Tag>::f(t, p, q);
+			// QQQ
+			mpn_add_n((mp_limb_t*)c, (const mp_limb_t*)c, (const mp_limb_t*)t, N * 2 + 1 - i);
+			c++;
+		}
+		if (c[N]) {
+			SubNC<N, Tag>::f(z, c, p);
+		} else {
+			if (SubNC<N, Tag>::f(z, c, p)) {
+				memcpy(z, c, N * sizeof(Unit));
+			}
+		}
+	}
+	static const void3u f;
+};
+
+template<size_t N, class Tag>
+const void3u MontRed<N, Tag>::f = MontRed<N, Tag>::func;
 
 // z[N] <- Montgomery(x[N], x[N], p[N])
 template<size_t N, class Tag = Gtag>

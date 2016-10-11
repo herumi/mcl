@@ -145,99 +145,37 @@ MCL_DEF_LLVM_FUNC(17)
 
 #endif
 
-template<size_t N>
-struct OpeFunc {
-	static inline void set_mpz_t(mpz_t& z, const Unit* p, int n = (int)N)
-	{
-		int s = n;
-		while (s > 0) {
-			if (p[s - 1]) break;
-			s--;
-		}
-		z->_mp_alloc = n;
-		z->_mp_size = s;
-		z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
+static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
+{
+	int s = n;
+	while (s > 0) {
+		if (p[s - 1]) break;
+		s--;
 	}
-	static inline void set_zero(mpz_t& z, Unit *p, size_t n)
-	{
-		z->_mp_alloc = (int)n;
-		z->_mp_size = 0;
-		z->_mp_d = (mp_limb_t*)p;
-	}
-	static inline void fp_clearC(Unit *x)
-	{
-		clearArray(x, 0, N);
-	}
-	static inline void fp_copyC(Unit *y, const Unit *x)
-	{
-		copyArray(y, x, N);
-	}
-	/*
-		z[N] <- montRed(xy[N * 2])
-		REMARK : assume p[-1] = rp
-	*/
-	static inline void fpDbl_modMontC(Unit *z, const Unit *xy, const Unit *p)
-	{
-		const Unit rp = p[-1];
-		Unit t[N * 2];
-		Unit buf[N * 2 + 1];
-		clearArray(t, N + 1, N * 2);
-		Unit *c = buf;
-		Unit q = xy[0] * rp;
-		Mul_UnitPre<N, Gtag>::f(t, p, q);
-		buf[N * 2] = AddNC<N * 2, Gtag>::f(buf, xy, t);
-		c++;
-		for (size_t i = 1; i < N; i++) {
-			q = c[0] * rp;
-			Mul_UnitPre<N, Gtag>::f(t, p, q);
-			// QQQ
-			mpn_add_n((mp_limb_t*)c, (const mp_limb_t*)c, (const mp_limb_t*)t, N * 2 + 1 - i);
-			c++;
-		}
-		if (c[N]) {
-			SubNC<N, Gtag>::f(z, c, p);
-		} else {
-			if (SubNC<N, Gtag>::f(z, c, p)) {
-				memcpy(z, c, N * sizeof(Unit));
-			}
-		}
-	}
-	static inline void fp_mul_UnitC(Unit *z, const Unit *x, Unit y, const Unit *p)
-	{
-		Unit xy[N + 1];
-		Mul_UnitPre<N, Gtag>::f(xy, x, y);
-		N1_Mod<N, Gtag>::f(z, xy, p);
-	}
-	static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
-	{
-		mpz_class my;
-		mpz_t mx, mp;
-		set_mpz_t(mx, x);
-		set_mpz_t(mp, op.p);
-		mpz_invert(my.get_mpz_t(), mx, mp);
-		gmp::getArray(y, N, my);
-	}
-	/*
-		inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
-	*/
-	static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
-	{
-		fp_invOpC(y, x, op);
-		op.fp_mul(y, y, op.R3, op.p);
-	}
-	static inline bool fp_isZeroC(const Unit *x)
-	{
-		return isZeroArray(x, N);
-	}
-	static inline void fp_negC(Unit *y, const Unit *x, const Unit *p)
-	{
-		if (fp_isZeroC(x)) {
-			if (x != y) fp_clearC(y);
-			return;
-		}
-		SubNC<N, Gtag>::f(y, p, x);
-	}
-};
+	z->_mp_alloc = n;
+	z->_mp_size = s;
+	z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
+}
+
+static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
+{
+	const int N = (int)op.N;
+	mpz_class my;
+	mpz_t mx, mp;
+	set_mpz_t(mx, x, N);
+	set_mpz_t(mp, op.p, N);
+	mpz_invert(my.get_mpz_t(), mx, mp);
+	gmp::getArray(y, N, my);
+}
+
+/*
+	inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
+*/
+static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
+{
+	fp_invOpC(y, x, op);
+	op.fp_mul(y, y, op.R3, op.p);
+}
 
 template<size_t N, bool enable>
 struct SetOpLLVM2 {
@@ -284,24 +222,24 @@ void setOpLLVM(Op& op, Mode mode)
 template<size_t N>
 void setOp(Op& op, Mode mode)
 {
-	op.fp_isZero = OpeFunc<N>::fp_isZeroC;
-	op.fp_clear = OpeFunc<N>::fp_clearC;
-	op.fp_copy = OpeFunc<N>::fp_copyC;
-	op.fp_neg = OpeFunc<N>::fp_negC;
+	op.fp_isZero = isZeroC<N>;
+	op.fp_clear = clearC<N>;
+	op.fp_copy = copyC<N>;
+	op.fp_neg = Neg<N, Gtag>::f;
 	op.fp_add = Add<N, Gtag>::f;
 	op.fp_sub = Sub<N, Gtag>::f;
 	if (op.isMont) {
 		op.fp_mul = Mont<N, Gtag>::f;
 		op.fp_sqr = SqrMont<N, Gtag>::f;
-		op.fp_invOp = OpeFunc<N>::fp_invMontOpC;
-		op.fpDbl_mod = OpeFunc<N>::fpDbl_modMontC;
+		op.fp_invOp = fp_invMontOpC;
+		op.fpDbl_mod = MontRed<N, Gtag>::f;
 	} else {
 		op.fp_mul = Mul<N, Gtag>::f;
 		op.fp_sqr = Sqr<N, Gtag>::f;
-		op.fp_invOp = OpeFunc<N>::fp_invOpC;
+		op.fp_invOp = fp_invOpC;
 		op.fpDbl_mod = Dbl_Mod<N, Gtag>::f;
 	}
-	op.fp_mul_Unit = OpeFunc<N>::fp_mul_UnitC;
+	op.fp_mul_Unit = Mul_Unit<N, Gtag>::f;
 	op.fpDbl_mulPre = MulPre<N, Gtag>::f;
 	op.fpDbl_sqrPre = SqrPre<N, Gtag>::f;
 	op.fp_mul_UnitPre = Mul_UnitPre<N, Gtag>::f;
