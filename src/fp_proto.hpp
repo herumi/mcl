@@ -10,28 +10,110 @@
 
 namespace mcl { namespace fp {
 
-struct Ltag;
-struct Atag;
+struct Gtag; // GMP
+struct Ltag; // LLVM
+struct Atag; // asm
 
 // (carry, z[N]) <- x[N] + y[N]
-template<size_t N, class Tag>struct AddNC { static const u3u f; };
+template<size_t N, class Tag = Gtag>
+struct AddNC {
+	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
+	{
+		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+	}
+	static const u3u f;
+};
+template<size_t N, class Tag>
+const u3u AddNC<N, Tag>::f = &AddNC<N, Tag>::func;
+
 // (carry, z[N]) <- x[N] - y[N]
-template<size_t N, class Tag>struct SubNC { static const u3u f; };
+template<size_t N, class Tag = Gtag>
+struct SubNC {
+	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
+	{
+		return mpn_sub_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+	}
+	static const u3u f;
+};
+
+template<size_t N, class Tag>
+const u3u SubNC<N, Tag>::f = &SubNC<N, Tag>::func;
+
 // z[N * 2] <- x[N] * y[N]
-template<size_t N, class Tag>struct MulPre { static const void3u f; };
+template<size_t N, class Tag = Gtag>
+struct MulPre {
+	static inline void func(Unit *z, const Unit *x, const Unit *y)
+	{
+		return mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+	}
+	static const void3u f;
+};
+
+template<size_t N, class Tag>
+const void3u MulPre<N, Tag>::f = &MulPre<N, Tag>::func;
+
 // z[N * 2] <- x[N] * x[N]
-template<size_t N, class Tag>struct SqrPre { static const void2u f; };
+template<size_t N, class Tag = Gtag>
+struct SqrPre {
+	static inline void func(Unit *y, const Unit *x)
+	{
+		return mpn_sqr((mp_limb_t*)y, (const mp_limb_t*)x, N);
+	}
+	static const void2u f;
+};
+
+template<size_t N, class Tag>
+const void2u SqrPre<N, Tag>::f = &SqrPre<N, Tag>::func;
+
 // z[N + 1] <- x[N] * y
-template<size_t N, class Tag>struct Mul_UnitPre { static const void2uI f; };
+template<size_t N, class Tag = Gtag>
+struct Mul_UnitPre {
+	static inline void func(Unit *z, const Unit *x, Unit y)
+	{
+		z[N] = mpn_mul_1((mp_limb_t*)z, (const mp_limb_t*)x, N, y);
+	}
+	static const void2uI f;
+};
+
+template<size_t N, class Tag>
+const void2uI Mul_UnitPre<N, Tag>::f = &Mul_UnitPre<N, Tag>::func;
+
 // z[N] <- x[N + 1] % p[N]
-template<size_t N, class Tag>struct N1_Mod { static const void3u f; };
+template<size_t N, class Tag = Gtag>
+struct N1_Mod {
+	static inline void func(Unit *y, const Unit *x, const Unit *p)
+	{
+		mp_limb_t q[2]; // not used
+		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N + 1, (const mp_limb_t*)p, N);
+	}
+	static const void3u f;
+};
+
+template<size_t N, class Tag>
+const void3u N1_Mod<N, Tag>::f = &N1_Mod<N, Tag>::func;
+
 // z[N] <- x[N * 2] % p[N]
-template<size_t N, class Tag>struct Dbl_Mod { static const void3u f; };
+template<size_t N, class Tag = Gtag>
+struct Dbl_Mod {
+	static inline void func(Unit *y, const Unit *x, const Unit *p)
+	{
+		mp_limb_t q[N + 1]; // not used
+		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N * 2, (const mp_limb_t*)p, N);
+	}
+	static const void3u f;
+};
+
+template<size_t N, class Tag>
+const void3u Dbl_Mod<N, Tag>::f = &Dbl_Mod<N, Tag>::func;
+
 // z[N] <- MontRed(xy[N], p[N])
-template<size_t N, class Tag>struct MontRed { static const void3u f; };
+template<size_t N, class Tag = Gtag>
+struct MontRed {
+	static const void3u f;
+};
 
 // z[N] <- (x[N] + y[N]) % p[N]
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct Add {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -51,7 +133,7 @@ template<size_t N, class Tag>
 const void4u Add<N, Tag>::f = Add<N, Tag>::func;
 
 // z[N] <- (x[N] - y[N]) % p[N]
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct Sub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -66,7 +148,7 @@ template<size_t N, class Tag>
 const void4u Sub<N, Tag>::f = Sub<N, Tag>::func;
 
 //	z[N * 2] <- (x[N * 2] + y[N * 2]) mod p[N] << (N * UnitBitSize)
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct DblAdd {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -86,7 +168,7 @@ template<size_t N, class Tag>
 const void4u DblAdd<N, Tag>::f = DblAdd<N, Tag>::func;
 
 //	z[N * 2] <- (x[N * 2] - y[N * 2]) mod p[N] << (N * UnitBitSize)
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct DblSub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -101,13 +183,13 @@ template<size_t N, class Tag>
 const void4u DblSub<N, Tag>::f = DblSub<N, Tag>::func;
 
 // z[N] <- Montgomery(x[N], y[N], p[N])
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct Mont {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 #if 0
 		Unit xy[N * 2];
-		MulPre<N, Gtag>::f(xy, x, y);
+		MulPre<N, Tag>::f(xy, x, y);
 		fpDbl_modMontC(z, xy, p);
 #else
 		const Unit rp = p[-1];
@@ -144,7 +226,7 @@ template<size_t N, class Tag>
 const void4u Mont<N, Tag>::f = Mont<N, Tag>::func;
 
 // z[N] <- Montgomery(x[N], x[N], p[N])
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct SqrMont {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
@@ -162,7 +244,7 @@ template<size_t N, class Tag>
 const void3u SqrMont<N, Tag>::f = SqrMont<N, Tag>::func;
 
 // z[N] <- (x[N] * y[N]) % p[N]
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct Mul {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -176,7 +258,7 @@ template<size_t N, class Tag>
 const void4u Mul<N, Tag>::f = Mul<N, Tag>::func;
 
 // y[N] <- (x[N] * x[N]) % p[N]
-template<size_t N, class Tag>
+template<size_t N, class Tag = Gtag>
 struct Sqr {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{

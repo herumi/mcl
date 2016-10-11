@@ -5,7 +5,6 @@
 #include <cybozu/xorshift.hpp>
 #include <cybozu/itoa.hpp>
 #include "../src/fp_proto.hpp"
-#include "../src/low_gmp.hpp"
 #include <cybozu/benchmark.hpp>
 
 cybozu::XorShift rg;

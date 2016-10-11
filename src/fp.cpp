@@ -5,7 +5,6 @@
 #include "fp_generator.hpp"
 #endif
 #include "fp_proto.hpp"
-#include "low_gmp.hpp"
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
@@ -121,15 +120,6 @@ template<>const void4u Mont<n, Ltag>::f = &mcl_fp_mont ## n ## L; \
 template<>const void3u MontRed<n, Ltag>::f = &mcl_fp_montRed ## n ## L; \
 template<>const void4u DblAdd<n, Ltag>::f = &mcl_fpDbl_add ## n ## L; \
 template<>const void4u DblSub<n, Ltag>::f = &mcl_fpDbl_sub ## n ## L; \
-
-// use Dbl_Mod of gmp
-template<size_t N>
-struct Dbl_Mod<N, Ltag> {
-	static const void3u f;
-};
-
-template<size_t N>
-const void3u Dbl_Mod<N, Ltag>::f = Dbl_Mod<N, Gtag>::f;
 
 MCL_DEF_LLVM_FUNC(1)
 MCL_DEF_LLVM_FUNC(2)
