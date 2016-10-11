@@ -177,16 +177,18 @@ static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
 	op.fp_mul(y, y, op.R3, op.p);
 }
 
+/*
+	large (N * 2) specification of AddNC, SubNC
+*/
 template<size_t N, bool enable>
-struct SetOpLLVM2 {
-	static inline void set(Op&, Mode) {}
+struct SetFpDbl {
+	static inline void exec(Op&) {}
 };
 
 template<size_t N>
-struct SetOpLLVM2<N, true> {
-	static inline void set(Op& op, Mode mode)
+struct SetFpDbl<N, true> {
+	static inline void exec(Op& op)
 	{
-		if (mode != FP_LLVM && mode != FP_LLVM_MONT) return;
 		if (!op.isFullBit) {
 			op.fpDbl_addNC = AddNC<N * 2, Ltag>::f;
 			op.fpDbl_subNC = SubNC<N * 2, Ltag>::f;
@@ -194,67 +196,52 @@ struct SetOpLLVM2<N, true> {
 	}
 };
 
-template<size_t N>
-void setOpLLVM(Op& op, Mode mode)
+template<size_t N, class Tag, bool enableFpDbl>
+void setOpSub(Op& op)
 {
-	if (mode != FP_LLVM && mode != FP_LLVM_MONT) return;
-	op.fp_add = Add<N, Ltag>::f;
-	op.fp_sub = Sub<N, Ltag>::f;
-	op.fpDbl_add = DblAdd<N, Ltag>::f;
-	op.fpDbl_sub = DblSub<N, Ltag>::f;
-	if (mode == FP_LLVM_MONT) {
-		op.fp_mul = Mont<N, Ltag>::f;
-		op.fp_sqr = SqrMont<N, Ltag>::f;
-		op.fpDbl_mod = MontRed<N, Ltag>::f;
+	op.fp_neg = Neg<N, Tag>::f;
+	op.fp_add = Add<N, Tag>::f;
+	op.fp_sub = Sub<N, Tag>::f;
+	if (op.isMont) {
+		op.fp_mul = Mont<N, Tag>::f;
+		op.fp_sqr = SqrMont<N, Tag>::f;
+		op.fpDbl_mod = MontRed<N, Tag>::f;
 	} else {
-		op.fp_mul = Mul<N, Ltag>::f;
-		op.fp_sqr = Sqr<N, Ltag>::f;
+		op.fp_mul = Mul<N, Tag>::f;
+		op.fp_sqr = Sqr<N, Tag>::f;
+		op.fpDbl_mod = Dbl_Mod<N, Tag>::f;
 	}
-	op.fpDbl_mulPre = MulPre<N, Ltag>::f;
-	op.fpDbl_sqrPre = SqrPre<N, Ltag>::f;
-	op.fp_mul_UnitPre = Mul_UnitPre<N, Ltag>::f;
+	op.fp_mul_Unit = Mul_Unit<N, Tag>::f;
+	op.fpDbl_mulPre = MulPre<N, Tag>::f;
+	op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
+	op.fp_mul_UnitPre = Mul_UnitPre<N, Tag>::f;
+	op.fpN1_mod = N1_Mod<N, Tag>::f;
+	op.fpDbl_add = DblAdd<N, Tag>::f;
+	op.fpDbl_sub = DblSub<N, Tag>::f;
 	if (!op.isFullBit) {
-		op.fp_addNC = AddNC<N, Ltag>::f;
-		op.fp_subNC = SubNC<N, Ltag>::f;
+		op.fp_addNC = AddNC<N, Tag>::f;
+		op.fp_subNC = SubNC<N, Tag>::f;
 	}
+	SetFpDbl<N, enableFpDbl>::exec(op);
 }
 
 template<size_t N>
 void setOp(Op& op, Mode mode)
 {
+	// generic setup
 	op.fp_isZero = isZeroC<N>;
 	op.fp_clear = clearC<N>;
 	op.fp_copy = copyC<N>;
-	op.fp_neg = Neg<N, Gtag>::f;
-	op.fp_add = Add<N, Gtag>::f;
-	op.fp_sub = Sub<N, Gtag>::f;
 	if (op.isMont) {
-		op.fp_mul = Mont<N, Gtag>::f;
-		op.fp_sqr = SqrMont<N, Gtag>::f;
 		op.fp_invOp = fp_invMontOpC;
-		op.fpDbl_mod = MontRed<N, Gtag>::f;
 	} else {
-		op.fp_mul = Mul<N, Gtag>::f;
-		op.fp_sqr = Sqr<N, Gtag>::f;
 		op.fp_invOp = fp_invOpC;
-		op.fpDbl_mod = Dbl_Mod<N, Gtag>::f;
 	}
-	op.fp_mul_Unit = Mul_Unit<N, Gtag>::f;
-	op.fpDbl_mulPre = MulPre<N, Gtag>::f;
-	op.fpDbl_sqrPre = SqrPre<N, Gtag>::f;
-	op.fp_mul_UnitPre = Mul_UnitPre<N, Gtag>::f;
-	op.fpN1_mod = N1_Mod<N, Gtag>::f;
-	op.fpDbl_add = DblAdd<N, Gtag>::f;
-	op.fpDbl_sub = DblSub<N, Gtag>::f;
-	if (!op.isFullBit) {
-		op.fp_addNC = AddNC<N, Gtag>::f;
-		op.fp_subNC = SubNC<N, Gtag>::f;
-		op.fpDbl_addNC = AddNC<N * 2, Gtag>::f;
-		op.fpDbl_subNC = SubNC<N * 2, Gtag>::f;
-	}
+	setOpSub<N, Gtag, true>(op);
 #ifdef MCL_USE_LLVM
-	setOpLLVM<N>(op, mode);
-	SetOpLLVM2<N, (N * UnitBitSize <= 256)>::set(op, mode);
+	if (mode == FP_LLVM || mode == FP_LLVM_MONT) {
+		setOpSub<N, Ltag, (N * UnitBitSize <= 256)>(op);
+	}
 #else
 	(void)mode;
 #endif
