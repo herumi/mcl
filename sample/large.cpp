@@ -11,7 +11,7 @@ typedef mcl::FpT<> Fp;
 typedef mcl::fp::Unit Unit;
 using namespace mcl::fp;
 
-#include "../src/low_gmp.hpp"
+//#include "../src/low_gmp.hpp"
 const size_t N = 12;
 
 #if 0
@@ -110,8 +110,10 @@ void test(const std::string& pStr, mcl::fp::Mode mode)
 	CYBOZU_BENCH("sqrPre", op.fpDbl_sqrPre, ux, ux);
 	CYBOZU_BENCH("add", op.fpDbl_add, ux, ux, ux, op.p);
 	CYBOZU_BENCH("sub", op.fpDbl_sub, ux, ux, ux, op.p);
-	CYBOZU_BENCH("addNC", op.fpDbl_addNC, ux, ux, ux);
-	CYBOZU_BENCH("subNC", op.fpDbl_subNC, ux, ux, ux);
+	if (op.fpDbl_addNC) {
+		CYBOZU_BENCH("addNC", op.fpDbl_addNC, ux, ux, ux);
+		CYBOZU_BENCH("subNC", op.fpDbl_subNC, ux, ux, ux);
+	}
 	CYBOZU_BENCH("mont", op.fpDbl_mod, ux, ux, op.p);
 	CYBOZU_BENCH("mul", Fp::mul, x, x, x);
 	compareGmp(pStr);
