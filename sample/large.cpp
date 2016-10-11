@@ -1,6 +1,6 @@
 /*
 	large prime sample for 64-bit arch
-	make USE_LLVM=1 CFLAGS_USER="-DMCL_MAX_OP_BIT_SIZE=768"
+	make MCL_USE_LLVM=1 MCL_MAX_OP_BIT_SIZE=768
 */
 #include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>

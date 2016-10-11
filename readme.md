@@ -47,7 +47,7 @@ msbuild /p:Configuration=Release
 ### Build with LLVM
 require clang 3.8 or over.
 ```
-make USE_LLVM=1 LLVM_VER=-3.8
+make MCL_USE_LLVM=1 LLVM_VER=-3.8
 ```
 
 # License

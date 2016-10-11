@@ -13,6 +13,9 @@ ifeq ($(CPU),x86-64)
 endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp
 
+ifneq ($(MCL_MAX_OP_BIT_SIZE),)
+  CFLAGS+=-DMCL_MAX_OP_BIT_SIZE=$(MCL_MAX_OP_BIT_SIZE)
+endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
 all: $(MCL_LIB)
@@ -27,9 +30,9 @@ endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
 FUNC_LIST=src/func.list
-USE_LLVM?=0
-ifeq ($(USE_LLVM),1)
-  CFLAGS+=-DMCL_USE_LLVM
+MCL_USE_LLVM?=0
+ifeq ($(MCL_USE_LLVM),1)
+  CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(ASM_OBJ)
 endif
 LLVM_SRC=src/base$(BIT).ll
