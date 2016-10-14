@@ -35,7 +35,7 @@ void copyC(Unit *y, const Unit *x)
 
 // (carry, z[N]) <- x[N] + y[N]
 template<size_t N, class Tag = Gtag>
-struct AddNC {
+struct AddPre {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
 		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
@@ -43,11 +43,11 @@ struct AddNC {
 	static const u3u f;
 };
 template<size_t N, class Tag>
-const u3u AddNC<N, Tag>::f = &AddNC<N, Tag>::func;
+const u3u AddPre<N, Tag>::f = &AddPre<N, Tag>::func;
 
 // (carry, z[N]) <- x[N] - y[N]
 template<size_t N, class Tag = Gtag>
-struct SubNC {
+struct SubPre {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
 		return mpn_sub_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
@@ -56,7 +56,7 @@ struct SubNC {
 };
 
 template<size_t N, class Tag>
-const u3u SubNC<N, Tag>::f = &SubNC<N, Tag>::func;
+const u3u SubPre<N, Tag>::f = &SubPre<N, Tag>::func;
 
 // y[N] <- (-x[N]) % p[N]
 template<size_t N, class Tag = Gtag>
@@ -67,7 +67,7 @@ struct Neg {
 			if (x != y) clearC<N>(y);
 			return;
 		}
-		SubNC<N, Tag>::f(y, p, x);
+		SubPre<N, Tag>::f(y, p, x);
 	}
 	static const void3u f;
 };
@@ -162,12 +162,12 @@ template<size_t N, class Tag = Gtag>
 struct Add {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (AddNC<N, Tag>::f(z, x, y)) {
-			SubNC<N, Tag>::f(z, z, p);
+		if (AddPre<N, Tag>::f(z, x, y)) {
+			SubPre<N, Tag>::f(z, z, p);
 			return;
 		}
 		Unit tmp[N];
-		if (SubNC<N, Tag>::f(tmp, z, p) == 0) {
+		if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
 			memcpy(z, tmp, sizeof(tmp));
 		}
 	}
@@ -182,8 +182,8 @@ template<size_t N, class Tag = Gtag>
 struct Sub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (SubNC<N, Tag>::f(z, x, y)) {
-			AddNC<N, Tag>::f(z, z, p);
+		if (SubPre<N, Tag>::f(z, x, y)) {
+			AddPre<N, Tag>::f(z, z, p);
 		}
 	}
 	static const void4u f;
@@ -197,12 +197,12 @@ template<size_t N, class Tag = Gtag>
 struct DblAdd {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (AddNC<N * 2, Tag>::f(z, x, y)) {
-			SubNC<N, Tag>::f(z + N, z + N, p);
+		if (AddPre<N * 2, Tag>::f(z, x, y)) {
+			SubPre<N, Tag>::f(z + N, z + N, p);
 			return;
 		}
 		Unit tmp[N];
-		if (SubNC<N, Tag>::f(tmp, z + N, p) == 0) {
+		if (SubPre<N, Tag>::f(tmp, z + N, p) == 0) {
 			memcpy(z + N, tmp, sizeof(tmp));
 		}
 	}
@@ -217,8 +217,8 @@ template<size_t N, class Tag = Gtag>
 struct DblSub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (SubNC<N * 2, Tag>::f(z, x, y)) {
-			AddNC<N, Tag>::f(z + N, z + N, p);
+		if (SubPre<N * 2, Tag>::f(z, x, y)) {
+			AddPre<N, Tag>::f(z + N, z + N, p);
 		}
 	}
 	static const void4u f;
@@ -248,20 +248,20 @@ struct Mont {
 		Unit t[N + 2];
 		Mul_UnitPre<N, Tag>::f(t, p, q); // p * q
 		t[N + 1] = 0; // always zero
-		c[N + 1] = AddNC<N + 1, Tag>::f(c, c, t);
+		c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			Mul_UnitPre<N, Tag>::f(t, x, y[i]);
-			c[N + 1] = AddNC<N + 1, Tag>::f(c, c, t);
+			c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
 			q = c[0] * rp;
 			Mul_UnitPre<N, Tag>::f(t, p, q);
-			AddNC<N + 2, Tag>::f(c, c, t);
+			AddPre<N + 2, Tag>::f(c, c, t);
 			c++;
 		}
 		if (c[N]) {
-			SubNC<N, Tag>::f(z, c, p);
+			SubPre<N, Tag>::f(z, c, p);
 		} else {
-			if (SubNC<N, Tag>::f(z, c, p)) {
+			if (SubPre<N, Tag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -288,7 +288,7 @@ struct MontRed {
 		Unit *c = buf;
 		Unit q = xy[0] * rp;
 		Mul_UnitPre<N, Tag>::f(t, p, q);
-		buf[N * 2] = AddNC<N * 2, Tag>::f(buf, xy, t);
+		buf[N * 2] = AddPre<N * 2, Tag>::f(buf, xy, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
@@ -298,9 +298,9 @@ struct MontRed {
 			c++;
 		}
 		if (c[N]) {
-			SubNC<N, Tag>::f(z, c, p);
+			SubPre<N, Tag>::f(z, c, p);
 		} else {
-			if (SubNC<N, Tag>::f(z, c, p)) {
+			if (SubPre<N, Tag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -365,8 +365,8 @@ const void3u Sqr<N, Tag>::f = Sqr<N, Tag>::func;
 #define MCL_FP_DEF_FUNC_SUB(n, suf) \
 void mcl_fp_add ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
 void mcl_fp_sub ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
-mcl::fp::Unit mcl_fp_addNC ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
-mcl::fp::Unit mcl_fp_subNC ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
+mcl::fp::Unit mcl_fp_addPre ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
+mcl::fp::Unit mcl_fp_subPre ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fp_mul_UnitPre ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, mcl::fp::Unit y); \
 void mcl_fpDbl_mulPre ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y); \
 void mcl_fpDbl_sqrPre ## n ## suf(mcl::fp::Unit* y, const mcl::fp::Unit* x); \

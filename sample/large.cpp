@@ -27,15 +27,15 @@ void mulPre768(Unit *pz, const Unit *px, const Unit *py)
 	low_mul_G<H>(pz + N, px + H, py + H); // ac
 	Unit a_b[H + 1];
 	Unit c_d[H + 1];
-	a_b[H] = low_addNC_G<H>(a_b, px, px + H); // a + b
-	c_d[H] = low_addNC_G<H>(c_d, py, py + H); // c + d
+	a_b[H] = low_addPre_G<H>(a_b, px, px + H); // a + b
+	c_d[H] = low_addPre_G<H>(c_d, py, py + H); // c + d
 	Unit work[N + H] = {};
 	low_mul_G<H>(work, a_b, c_d);
-	if (c_d[H]) low_addNC_G<H + 1>(work + H, work + H, c_d);
-	if (a_b[H]) low_addNC_G<H + 1>(work + H, work + H, a_b);
-	work[N] -= low_subNC_G<H>(work, work, pz);
-	work[N] -= low_subNC_G<H>(work, work, pz + N);
-	low_addNC_G<H + N>(pz + H, pz + H, work);
+	if (c_d[H]) low_addPre_G<H + 1>(work + H, work + H, c_d);
+	if (a_b[H]) low_addPre_G<H + 1>(work + H, work + H, a_b);
+	work[N] -= low_subPre_G<H>(work, work, pz);
+	work[N] -= low_subPre_G<H>(work, work, pz + N);
+	low_addPre_G<H + N>(pz + H, pz + H, work);
 }
 void testMul()
 {
@@ -110,9 +110,9 @@ void test(const std::string& pStr, mcl::fp::Mode mode)
 	CYBOZU_BENCH("sqrPre", op.fpDbl_sqrPre, ux, ux);
 	CYBOZU_BENCH("add", op.fpDbl_add, ux, ux, ux, op.p);
 	CYBOZU_BENCH("sub", op.fpDbl_sub, ux, ux, ux, op.p);
-	if (op.fpDbl_addNC) {
-		CYBOZU_BENCH("addNC", op.fpDbl_addNC, ux, ux, ux);
-		CYBOZU_BENCH("subNC", op.fpDbl_subNC, ux, ux, ux);
+	if (op.fpDbl_addPre) {
+		CYBOZU_BENCH("addPre", op.fpDbl_addPre, ux, ux, ux);
+		CYBOZU_BENCH("subPre", op.fpDbl_subPre, ux, ux, ux);
 	}
 	CYBOZU_BENCH("mont", op.fpDbl_mod, ux, ux, op.p);
 	CYBOZU_BENCH("mul", Fp::mul, x, x, x);

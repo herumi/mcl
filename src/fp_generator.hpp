@@ -200,15 +200,15 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_fp_sub();
 
 		if (op.isFullBit) {
-			op.fp_addNC = 0;
-			op.fp_subNC = 0;
+			op.fp_addPre = 0;
+			op.fp_subPre = 0;
 		} else {
 			align(16);
-			op.fp_addNC = getCurr<u3u>();
-			gen_addSubNC(true, pn_);
+			op.fp_addPre = getCurr<u3u>();
+			gen_addSubPre(true, pn_);
 			align(16);
-			op.fp_subNC = getCurr<u3u>();
-			gen_addSubNC(false, pn_);
+			op.fp_subPre = getCurr<u3u>();
+			gen_addSubPre(false, pn_);
 		}
 		align(16);
 		shr1_ = getCurr<void2op>();
@@ -248,15 +248,15 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		op.fpDbl_sub = getCurr<void4u>();
 		gen_fpDbl_sub();
 		if (op.isFullBit) {
-			op.fpDbl_addNC = 0;
-			op.fpDbl_subNC = 0;
+			op.fpDbl_addPre = 0;
+			op.fpDbl_subPre = 0;
 		} else {
 			align(16);
-			op.fpDbl_addNC = getCurr<u3u>();
-			gen_addSubNC(true, pn_ * 2);
+			op.fpDbl_addPre = getCurr<u3u>();
+			gen_addSubPre(true, pn_ * 2);
 			align(16);
-			op.fpDbl_subNC = getCurr<u3u>();
-			gen_addSubNC(false, pn_ * 2);
+			op.fpDbl_subPre = getCurr<u3u>();
+			gen_addSubPre(false, pn_ * 2);
 		}
 		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
@@ -274,7 +274,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			gen_fpDbl_sqrPre(op);
 		}
 	}
-	void gen_addSubNC(bool isAdd, int n)
+	void gen_addSubPre(bool isAdd, int n)
 	{
 		StackFrame sf(this, 3);
 		if (isAdd) {

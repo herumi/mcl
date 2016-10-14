@@ -1,8 +1,8 @@
 	.arch armv7-a
 
 	.align 2
-	.global mcl_fp_addNC64
-mcl_fp_addNC64:
+	.global mcl_fp_addPre64
+mcl_fp_addPre64:
 	ldm		r1, {r3, r12}
 	ldm		r2, {r1, r2}
 	adds	r1, r1, r3
@@ -12,8 +12,8 @@ mcl_fp_addNC64:
 
 
 	.align 2
-	.global mcl_fp_addNC96
-mcl_fp_addNC96:
+	.global mcl_fp_addPre96
+mcl_fp_addPre96:
 	push	{r4, lr}
 	ldm		r1, {r1, r3, r12}
 	ldm		r2, {r2, r4, lr}
@@ -26,8 +26,8 @@ mcl_fp_addNC96:
 
 # slower
 	.align 2
-	.global mcl_fp_addNC96_2
-mcl_fp_addNC96_2:
+	.global mcl_fp_addPre96_2
+mcl_fp_addPre96_2:
 	ldr		r3, [r1], #4
 	ldr		r12, [r2], #4
 	adds	r3, r3, r12
@@ -40,9 +40,9 @@ mcl_fp_addNC96_2:
 	stm		r0, {r1, r3}
 	bx		lr
 
-	.globl	mcl_fp_addNC128
+	.globl	mcl_fp_addPre128
 	.align	2
-mcl_fp_addNC128:
+mcl_fp_addPre128:
 	push	{r4, lr}
 	ldm		r1!, {r3, r4}
 	ldm		r2!, {r12, lr}
@@ -58,9 +58,9 @@ mcl_fp_addNC128:
 	bx		lr
 
 	# almost same
-	.globl	mcl_fp_addNC128_2
+	.globl	mcl_fp_addPre128_2
 	.align	2
-cl_fp_addNC128_2:
+cl_fp_addPre128_2:
 	push	{r4, r5, r6, lr}
 	ldm		r1, {r1, r3, r4, r5}
 	ldm		r2, {r2, r6, r12, lr}
@@ -72,9 +72,9 @@ cl_fp_addNC128_2:
 	pop		{r4, r5, r6, lr}
 	bx		lr
 
-	.globl	mcl_fp_addNC160
+	.globl	mcl_fp_addPre160
 	.align	2
-mcl_fp_addNC160:
+mcl_fp_addPre160:
 	push	{r4, lr}
 	ldm		r1!, {r3, r4}
 	ldm		r2!, {r12, lr}
@@ -90,9 +90,9 @@ mcl_fp_addNC160:
 	pop		{r4, lr}
 	bx		lr
 
-	.globl	mcl_fp_addNC192
+	.globl	mcl_fp_addPre192
 	.align	2
-mcl_fp_addNC192:
+mcl_fp_addPre192:
 	push	{r4, r5, r6, lr}
 	ldm		r1!, {r3, r4, r5}
 	ldm		r2!, {r6, r12, lr}
@@ -110,9 +110,9 @@ mcl_fp_addNC192:
 	pop		{r4, r5, r6, lr}
 	bx		lr
 
-	.globl	mcl_fp_addNC224
+	.globl	mcl_fp_addPre224
 	.align	2
-mcl_fp_addNC224:
+mcl_fp_addPre224:
 	push	{r4, r5, r6, lr}
 	ldm		r1!, {r3, r4, r5}
 	ldm		r2!, {r6, r12, lr}
@@ -131,9 +131,9 @@ mcl_fp_addNC224:
 	pop		{r4, r5, r6, lr}
 	bx		lr
 
-	.globl	mcl_fp_addNC256
+	.globl	mcl_fp_addPre256
 	.align	2
-mcl_fp_addNC256:
+mcl_fp_addPre256:
 	push	{r4, r5, r6, r7, r8, lr}
 	ldm		r1!, {r3, r4, r5, r6}
 	ldm		r2!, {r7, r8, r12, lr}

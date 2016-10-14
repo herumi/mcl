@@ -42,8 +42,8 @@ public:
 	}
 	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
-	static void addNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addNC(z.v_, x.v_, y.v_); }
-	static void subNC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subNC(z.v_, x.v_, y.v_); }
+	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
+	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
@@ -267,13 +267,13 @@ private:
 		const Fp& d = py[1];
 		FpDbl d0, d1, d2;
 		Fp s, t;
-		Fp::addNC(s, a, b);
-		Fp::addNC(t, c, d);
+		Fp::addPre(s, a, b);
+		Fp::addPre(t, c, d);
 		FpDbl::mulPre(d0, s, t); // (a + b)(c + d)
 		FpDbl::mulPre(d1, a, c);
 		FpDbl::mulPre(d2, b, d);
-		FpDbl::subNC(d0, d0, d1); // (a + b)(c + d) - ac
-		FpDbl::subNC(d0, d0, d2); // (a + b)(c + d) - ac - bd
+		FpDbl::subPre(d0, d0, d1); // (a + b)(c + d) - ac
+		FpDbl::subPre(d0, d0, d2); // (a + b)(c + d) - ac - bd
 		Fp *pz = reinterpret_cast<Fp*>(z);
 		FpDbl::mod(pz[1], d0);
 		FpDbl::sub(d1, d1, d2); // ac - bd
@@ -300,9 +300,9 @@ private:
 #else
 		Fp t1, t2;
 		FpDbl d1, d2;
-		Fp::addNC(t1, b, b); // 2b
+		Fp::addPre(t1, b, b); // 2b
 		FpDbl::mulPre(d2, t1, a); // 2ab
-		Fp::addNC(t1, a, b); // a + b
+		Fp::addPre(t1, a, b); // a + b
 		Fp::sub(t2, a, b); // a - b
 		FpDbl::mulPre(d1, t1, t2); // (a + b)(a - b)
 		FpDbl::mod(py[0], d1);
@@ -375,20 +375,20 @@ struct Fp2T<Fp>::Dbl {
 		FpDbl::add(z.a, x.a, y.a);
 		FpDbl::add(z.b, x.b, y.b);
 	}
-	static void addNC(Dbl& z, const Dbl& x, const Dbl& y)
+	static void addPre(Dbl& z, const Dbl& x, const Dbl& y)
 	{
-		FpDbl::addNC(z.a, x.a, y.a);
-		FpDbl::addNC(z.b, x.b, y.b);
+		FpDbl::addPre(z.a, x.a, y.a);
+		FpDbl::addPre(z.b, x.b, y.b);
 	}
 	static void sub(Dbl& z, const Dbl& x, const Dbl& y)
 	{
 		FpDbl::sub(z.a, x.a, y.a);
 		FpDbl::sub(z.b, x.b, y.b);
 	}
-	static void subNC(Dbl& z, const Dbl& x, const Dbl& y)
+	static void subPre(Dbl& z, const Dbl& x, const Dbl& y)
 	{
-		FpDbl::subNC(z.a, x.a, y.a);
-		FpDbl::subNC(z.b, x.b, y.b);
+		FpDbl::subPre(z.a, x.a, y.a);
+		FpDbl::subPre(z.b, x.b, y.b);
 	}
 	static void neg(Dbl& y, const Dbl& x)
 	{
@@ -398,9 +398,9 @@ struct Fp2T<Fp>::Dbl {
 	static void sqr(Dbl& y, const Fp2T& x)
 	{
 		Fp t1, t2;
-		Fp::addNC(t1, x.b, x.b); // 2b
+		Fp::addPre(t1, x.b, x.b); // 2b
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
-		Fp::addNC(t1, x.a, x.b); // a + b
+		Fp::addPre(t1, x.a, x.b); // a + b
 		Fp::sub(t2, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
 	}

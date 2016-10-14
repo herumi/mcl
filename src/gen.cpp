@@ -23,8 +23,8 @@ struct Code : public mcl::Generator {
 	Function makeNIST_P192;
 	Function mcl_fpDbl_mod_NIST_P192;
 	Function mcl_fp_sqr_NIST_P192;
-	FunctionMap mcl_fp_addNCM;
-	FunctionMap mcl_fp_subNCM;
+	FunctionMap mcl_fp_addPreM;
+	FunctionMap mcl_fp_subPreM;
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
@@ -293,7 +293,7 @@ struct Code : public mcl::Generator {
 		t = trunc(t, unit);
 		return t;
 	}
-	void gen_mcl_fp_addsubNC(bool isAdd)
+	void gen_mcl_fp_addsubPre(bool isAdd)
 	{
 		resetGlobalIdx();
 		Operand r(Int, unit);
@@ -302,15 +302,15 @@ struct Code : public mcl::Generator {
 		Operand py(IntPtr, bit);
 		std::string name;
 		if (isAdd) {
-			name = "mcl_fp_addNC" + cybozu::itoa(N) + "L";
-			mcl_fp_addNCM[N] = Function(name, r, pz, px, py);
-			verifyAndSetPrivate(mcl_fp_addNCM[N]);
-			beginFunc(mcl_fp_addNCM[N]);
+			name = "mcl_fp_addPre" + cybozu::itoa(N) + "L";
+			mcl_fp_addPreM[N] = Function(name, r, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_addPreM[N]);
+			beginFunc(mcl_fp_addPreM[N]);
 		} else {
-			name = "mcl_fp_subNC" + cybozu::itoa(N) + "L";
-			mcl_fp_subNCM[N] = Function(name, r, pz, px, py);
-			verifyAndSetPrivate(mcl_fp_subNCM[N]);
-			beginFunc(mcl_fp_subNCM[N]);
+			name = "mcl_fp_subPre" + cybozu::itoa(N) + "L";
+			mcl_fp_subPreM[N] = Function(name, r, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_subPreM[N]);
+			beginFunc(mcl_fp_subPreM[N]);
 		}
 		Operand x = zext(load(px), bit + unit);
 		Operand y = zext(load(py), bit + unit);
@@ -328,7 +328,7 @@ struct Code : public mcl::Generator {
 		endFunc();
 	}
 #if 0 // void-return version
-	void gen_mcl_fp_addsubNC(bool isAdd)
+	void gen_mcl_fp_addsubPre(bool isAdd)
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, bit);
@@ -336,15 +336,15 @@ struct Code : public mcl::Generator {
 		Operand py(IntPtr, bit);
 		std::string name;
 		if (isAdd) {
-			name = "mcl_fp_addNC" + cybozu::itoa(bit) + "L";
-			mcl_fp_addNCM[bit] = Function(name, Void, pz, px, py);
-			verifyAndSetPrivate(mcl_fp_addNCM[bit]);
-			beginFunc(mcl_fp_addNCM[bit]);
+			name = "mcl_fp_addPre" + cybozu::itoa(bit) + "L";
+			mcl_fp_addPreM[bit] = Function(name, Void, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_addPreM[bit]);
+			beginFunc(mcl_fp_addPreM[bit]);
 		} else {
-			name = "mcl_fp_subNC" + cybozu::itoa(bit) + "L";
-			mcl_fp_subNCM[bit] = Function(name, Void, pz, px, py);
-			verifyAndSetPrivate(mcl_fp_subNCM[bit]);
-			beginFunc(mcl_fp_subNCM[bit]);
+			name = "mcl_fp_subPre" + cybozu::itoa(bit) + "L";
+			mcl_fp_subPreM[bit] = Function(name, Void, pz, px, py);
+			verifyAndSetPrivate(mcl_fp_subPreM[bit]);
+			beginFunc(mcl_fp_subPreM[bit]);
 		}
 		Operand x = load(px);
 		Operand y = load(py);
@@ -762,8 +762,8 @@ struct Code : public mcl::Generator {
 	}
 	void gen_all()
 	{
-		gen_mcl_fp_addsubNC(true);
-		gen_mcl_fp_addsubNC(false);
+		gen_mcl_fp_addsubPre(true);
+		gen_mcl_fp_addsubPre(false);
 	}
 	void gen_addsub()
 	{

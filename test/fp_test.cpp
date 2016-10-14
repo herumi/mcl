@@ -383,15 +383,15 @@ void opeTest()
 	}
 	if (!Fp::isFullBit()) {
 		Fp x(5), y(3), z;
-		Fp::addNC(z, x, y);
+		Fp::addPre(z, x, y);
 		if (Fp::compareRaw(z, Fp::getP()) >= 0) {
-			Fp::subNC(z, z, Fp::getP());
+			Fp::subPre(z, z, Fp::getP());
 		}
 		CYBOZU_TEST_EQUAL(z, Fp(8));
 		if (Fp::compareRaw(x, y) < 0) {
-			Fp::addNC(x, x, Fp::getP());
+			Fp::addPre(x, x, Fp::getP());
 		}
-		Fp::subNC(x, x, y);
+		Fp::subPre(x, x, y);
 		CYBOZU_TEST_EQUAL(x, Fp(2));
 	}
 }

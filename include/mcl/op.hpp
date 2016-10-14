@@ -109,10 +109,10 @@ struct Op {
 	void4u fpDbl_sub;
 	void3u fpDbl_mod;
 
-	u3u fp_addNC; // without modulo p
-	u3u fp_subNC; // without modulo p
-	u3u fpDbl_addNC;
-	u3u fpDbl_subNC;
+	u3u fp_addPre; // without modulo p
+	u3u fp_subPre; // without modulo p
+	u3u fpDbl_addPre;
+	u3u fpDbl_subPre;
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
@@ -176,10 +176,10 @@ struct Op {
 		fpDbl_sub = 0;
 		fpDbl_mod = 0;
 
-		fp_addNC = 0;
-		fp_subNC = 0;
-		fpDbl_addNC = 0;
-		fpDbl_subNC = 0;
+		fp_addPre = 0;
+		fp_subPre = 0;
+		fpDbl_addPre = 0;
+		fpDbl_subPre = 0;
 
 		xi_a = 0;
 		fp2_add = 0;

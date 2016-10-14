@@ -21,7 +21,7 @@ global %1
 
 segment .text
 
-%imacro addNC 1
+%imacro addPre 1
 	mov rax, [p2org]
 	add rax, [p3org]
 	mov [p1org], rax
@@ -53,54 +53,54 @@ segment .text
 	ret
 %endmacro
 
-proc mcl_fp_addNC64
-        addNC 0
-proc mcl_fp_addNC128
-        addNC 1
-proc mcl_fp_addNC192
-        addNC 2
-proc mcl_fp_addNC256
-        addNC 3
-proc mcl_fp_addNC320
-        addNC 4
-proc mcl_fp_addNC384
-        addNC 5
-proc mcl_fp_addNC448
-        addNC 6
-proc mcl_fp_addNC512
-        addNC 7
-proc mcl_fp_addNC576
-        addNC 8
-proc mcl_fp_addNC640
-        addNC 9
-proc mcl_fp_addNC704
-        addNC 10
-proc mcl_fp_addNC768
-        addNC 11
-proc mcl_fp_addNC832
-        addNC 12
-proc mcl_fp_addNC896
-        addNC 13
-proc mcl_fp_addNC960
-        addNC 14
-proc mcl_fp_addNC1024
-        addNC 15
-proc mcl_fp_addNC1088
-        addNC 16
-proc mcl_fp_addNC1152
-        addNC 17
-proc mcl_fp_addNC1216
-        addNC 18
-proc mcl_fp_addNC1280
-        addNC 19
-proc mcl_fp_addNC1344
-        addNC 20
-proc mcl_fp_addNC1408
-        addNC 21
-proc mcl_fp_addNC1472
-        addNC 22
-proc mcl_fp_addNC1536
-        addNC 23
+proc mcl_fp_addPre64
+        addPre 0
+proc mcl_fp_addPre128
+        addPre 1
+proc mcl_fp_addPre192
+        addPre 2
+proc mcl_fp_addPre256
+        addPre 3
+proc mcl_fp_addPre320
+        addPre 4
+proc mcl_fp_addPre384
+        addPre 5
+proc mcl_fp_addPre448
+        addPre 6
+proc mcl_fp_addPre512
+        addPre 7
+proc mcl_fp_addPre576
+        addPre 8
+proc mcl_fp_addPre640
+        addPre 9
+proc mcl_fp_addPre704
+        addPre 10
+proc mcl_fp_addPre768
+        addPre 11
+proc mcl_fp_addPre832
+        addPre 12
+proc mcl_fp_addPre896
+        addPre 13
+proc mcl_fp_addPre960
+        addPre 14
+proc mcl_fp_addPre1024
+        addPre 15
+proc mcl_fp_addPre1088
+        addPre 16
+proc mcl_fp_addPre1152
+        addPre 17
+proc mcl_fp_addPre1216
+        addPre 18
+proc mcl_fp_addPre1280
+        addPre 19
+proc mcl_fp_addPre1344
+        addPre 20
+proc mcl_fp_addPre1408
+        addPre 21
+proc mcl_fp_addPre1472
+        addPre 22
+proc mcl_fp_addPre1536
+        addPre 23
 
 proc mcl_fp_subNC64
         subNC 0

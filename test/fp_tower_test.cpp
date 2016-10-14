@@ -272,12 +272,12 @@ void testFpDbl()
 				z.getMpz(mz);
 				CYBOZU_TEST_EQUAL(mz, mo);
 				if (!Fp::isFullBit()) {
-					FpDbl::addNC(z, x, y);
+					FpDbl::addPre(z, x, y);
 					mo = mx + my;
 					z.getMpz(mz);
 					CYBOZU_TEST_EQUAL(mz, mo);
 					if (mx >= my) {
-						FpDbl::subNC(z, x, y);
+						FpDbl::subPre(z, x, y);
 						mo = mx - my;
 						z.getMpz(mz);
 						CYBOZU_TEST_EQUAL(mz, mo);

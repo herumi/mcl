@@ -109,8 +109,8 @@ Mode StrToMode(const std::string& s)
 #ifdef MCL_USE_LLVM
 
 #define MCL_DEF_LLVM_FUNC(n) \
-template<>const u3u AddNC<n, Ltag>::f = &mcl_fp_addNC ## n ## L; \
-template<>const u3u SubNC<n, Ltag>::f = &mcl_fp_subNC ## n ## L; \
+template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
+template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
 template<>const void3u MulPre<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
 template<>const void2u SqrPre<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
 template<>const void2uI Mul_UnitPre<n, Ltag>::f = &mcl_fp_mul_UnitPre ## n ## L; \
@@ -178,7 +178,7 @@ static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
 }
 
 /*
-	large (N * 2) specification of AddNC, SubNC
+	large (N * 2) specification of AddPre, SubPre
 */
 template<size_t N, bool enable>
 struct SetFpDbl {
@@ -190,8 +190,8 @@ struct SetFpDbl<N, true> {
 	static inline void exec(Op& op)
 	{
 		if (!op.isFullBit) {
-			op.fpDbl_addNC = AddNC<N * 2, Ltag>::f;
-			op.fpDbl_subNC = SubNC<N * 2, Ltag>::f;
+			op.fpDbl_addPre = AddPre<N * 2, Ltag>::f;
+			op.fpDbl_subPre = SubPre<N * 2, Ltag>::f;
 		}
 	}
 };
@@ -219,8 +219,8 @@ void setOpSub(Op& op)
 	op.fpDbl_add = DblAdd<N, Tag>::f;
 	op.fpDbl_sub = DblSub<N, Tag>::f;
 	if (!op.isFullBit) {
-		op.fp_addNC = AddNC<N, Tag>::f;
-		op.fp_subNC = SubNC<N, Tag>::f;
+		op.fp_addPre = AddPre<N, Tag>::f;
+		op.fp_subPre = SubPre<N, Tag>::f;
 	}
 	SetFpDbl<N, enableFpDbl>::exec(op);
 }
