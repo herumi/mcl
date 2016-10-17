@@ -95,7 +95,7 @@ CYBOZU_TEST_AUTO(naive)
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 }
 
-CYBOZU_TEST_AUTO(MapTo)
+CYBOZU_TEST_AUTO(MapToG1)
 {
 	mcl::bn::MapTo<Fp> mapTo;
 
@@ -106,6 +106,16 @@ CYBOZU_TEST_AUTO(MapTo)
 	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, 0), cybozu::Exception);
 	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, mapTo.c1), cybozu::Exception);
 	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, -mapTo.c1), cybozu::Exception);
+}
+
+CYBOZU_TEST_AUTO(MapToG2)
+{
+	mcl::bn::MapTo<Fp> mapTo;
+
+	G2 g;
+	for (int i = 1; i < 10; i++) {
+		mapTo.calcG2(g, i);
+	}
 }
 
 CYBOZU_TEST_AUTO(stream)

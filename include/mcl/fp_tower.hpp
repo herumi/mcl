@@ -153,6 +153,13 @@ public:
 		Fp::mul(y.b, x.b, t2);
 		return true;
 	}
+	static void inline norm(Fp& y, const Fp2T& x)
+	{
+		Fp aa, bb;
+		Fp::sqr(aa, x.a);
+		Fp::sqr(bb, x.b);
+		Fp::add(y, aa, bb);
+	}
 
 	static const Fp& getXi_a() { return xi_a_; }
 	static void init(uint32_t xi_a)

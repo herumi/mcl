@@ -119,6 +119,12 @@ struct MapTo {
 	{
 		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
 	}
+	int legendre(const Fp2& x) const
+	{
+		Fp y;
+		Fp2::norm(y, x);
+		return legendre(y);
+	}
 	MapTo()
 	{
 		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("MapTo:c1");
@@ -126,7 +132,7 @@ struct MapTo {
 	}
 	/*
 		P.-A. Fouque and M. Tibouchi,
-		"Indifferentiable hashing to Barreto Naehrig curves, " in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
+		"Indifferentiable hashing to Barreto Naehrig curves," in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
 
 		w = sqrt(-3) t / (1 + b + t^2)
 		Remark: throw exception if t = 0, c1, -c1
@@ -155,6 +161,35 @@ struct MapTo {
 		}
 	ERR_POINT:
 		throw cybozu::Exception("MapTo:calcG1:bad") << t;
+	}
+	void calcG2(G2& P, const Fp2& t) const
+	{
+		Fp2 x, y, w;
+		bool negative = legendre(t) < 0;
+		if (t.isZero()) goto ERR_POINT;
+		Fp2::sqr(w, t);
+		w += G2::b_;
+		w.a += Fp::one();
+		if (w.isZero()) goto ERR_POINT;
+		Fp2::inv(w, w);
+		w.a *= c1;
+		w.b *= c1;
+		w *= t;
+		for (int i = 0; i < 3; i++) {
+			switch (i) {
+			case 0: x = - t * w; x.a += c2; break;
+			case 1: Fp2::neg(x, x); x.a -= Fp::one(); break;
+			case 2: Fp2::sqr(x, w); Fp2::inv(x, x); x.a += Fp::one(); break;
+			}
+			G2::getWeierstrass(y, x);
+			if (Fp2::squareRoot(y, y)) {
+				if (negative) Fp2::neg(y, y);
+				P.set(x, y);
+				return;
+			}
+		}
+	ERR_POINT:
+		throw cybozu::Exception("MapTo:calcG2:bad") << t;
 	}
 };
 
