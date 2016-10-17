@@ -116,6 +116,7 @@ CYBOZU_TEST_AUTO(MapToG2)
 	for (int i = 1; i < 10; i++) {
 		mapTo.calcG2(g, i);
 	}
+	CYBOZU_TEST_EXCEPTION(mapTo.calcG2(g, 0), cybozu::Exception);
 }
 
 CYBOZU_TEST_AUTO(stream)

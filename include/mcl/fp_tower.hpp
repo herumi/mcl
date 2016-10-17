@@ -70,8 +70,8 @@ public:
 	Fp2T(const Fp& a, const Fp& b) : a(a), b(b) { }
 	Fp2T(int64_t a, int64_t b) : a(a), b(b) { }
 	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
-	Fp* get() { return &a; }
-	const Fp* get() const { return &a; }
+	Fp* getFp0() { return &a; }
+	const Fp* getFp0() const { return &a; }
 	void clear()
 	{
 		a.clear();
@@ -437,8 +437,8 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		b.clear();
 		c.clear();
 	}
-	Fp* get() { return a.get(); }
-	const Fp* get() const { return a.get(); }
+	Fp* getFp0() { return a.getFp0(); }
+	const Fp* getFp0() const { return a.getFp0(); }
 	Fp2* getFp2() { return &a; }
 	const Fp2* getFp2() const { return &a; }
 	bool isZero() const
@@ -609,8 +609,8 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		b.clear();
 	}
 
-	Fp* get() { return a.get(); }
-	const Fp* get() const { return a.get(); }
+	Fp* getFp0() { return a.getFp0(); }
+	const Fp* getFp0() const { return a.getFp0(); }
 	Fp2* getFp2() { return a.getFp2(); }
 	const Fp2* getFp2() const { return a.getFp2(); }
 	void set(const Fp2& v0, const Fp2& v1, const Fp2& v2, const Fp2& v3, const Fp2& v4, const Fp2& v5)

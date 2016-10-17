@@ -96,13 +96,15 @@ class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	static fp::Op op_;
 	static FpT<tag, maxBitSize> inv2_;
 	static IoMode ioMode_;
-public:
-	typedef FpT<tag, maxBitSize> BaseFp;
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
 	template<class Fp> friend struct Fp6T;
+public:
+	typedef FpT<tag, maxBitSize> BaseFp;
 	// return pointer to array v_[]
 	const Unit *getUnit() const { return v_; }
+	FpT* getFp0() { return this; }
+	const FpT* getFp0() const { return this; }
 	static inline size_t getUnitSize() { return op_.N; }
 	static inline size_t getBitSize() { return op_.bitSize; }
 	static inline size_t getByteSize() { return (op_.bitSize + 7) / 8; }

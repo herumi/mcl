@@ -125,6 +125,44 @@ struct MapTo {
 		Fp2::norm(y, x);
 		return legendre(y);
 	}
+	void mulFp(Fp& x, const Fp& y) const
+	{
+		x *= y;
+	}
+	void mulFp(Fp2& x, const Fp& y) const
+	{
+		x.a *= y;
+		x.b *= y;
+	}
+	template<class G, class F>
+	void calc(G& P, const F& t) const
+	{
+		F x, y, w;
+		bool negative = legendre(t) < 0;
+		if (t.isZero()) goto ERR_POINT;
+		F::sqr(w, t);
+		w += G::b_;
+		*w.getFp0() += Fp::one();
+		if (w.isZero()) goto ERR_POINT;
+		F::inv(w, w);
+		mulFp(w, c1);
+		w *= t;
+		for (int i = 0; i < 3; i++) {
+			switch (i) {
+			case 0: F::mul(x, t, w); F::neg(x, x); *x.getFp0() += c2; break;
+			case 1: F::neg(x, x); *x.getFp0() -= Fp::one(); break;
+			case 2: F::sqr(x, w); F::inv(x, x); *x.getFp0() += Fp::one(); break;
+			}
+			G::getWeierstrass(y, x);
+			if (F::squareRoot(y, y)) {
+				if (negative) F::neg(y, y);
+				P.set(x, y);
+				return;
+			}
+		}
+	ERR_POINT:
+		throw cybozu::Exception("MapTo:calc:bad") << t;
+	}
 	MapTo()
 	{
 		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("MapTo:c1");
@@ -139,57 +177,11 @@ struct MapTo {
 	*/
 	void calcG1(G1& P, const Fp& t) const
 	{
-		Fp x, y, w;
-		bool negative = legendre(t) < 0;
-		if (t.isZero()) goto ERR_POINT;
-		Fp::sqr(w, t);
-		w += G1::b_ + Fp::one();
-		if (w.isZero()) goto ERR_POINT;
-		w = c1 * t / w;
-		for (int i = 0; i < 3; i++) {
-			switch (i) {
-			case 0: x = c2 - t * w; break;
-			case 1: x = - x - 1; break;
-			case 2: Fp::sqr(x, w); Fp::inv(x, x); x += Fp::one(); break;
-			}
-			G1::getWeierstrass(y, x);
-			if (Fp::squareRoot(y, y)) {
-				if (negative) Fp::neg(y, y);
-				P.set(x, y);
-				return;
-			}
-		}
-	ERR_POINT:
-		throw cybozu::Exception("MapTo:calcG1:bad") << t;
+		calc<G1, Fp>(P, t);
 	}
 	void calcG2(G2& P, const Fp2& t) const
 	{
-		Fp2 x, y, w;
-		bool negative = legendre(t) < 0;
-		if (t.isZero()) goto ERR_POINT;
-		Fp2::sqr(w, t);
-		w += G2::b_;
-		w.a += Fp::one();
-		if (w.isZero()) goto ERR_POINT;
-		Fp2::inv(w, w);
-		w.a *= c1;
-		w.b *= c1;
-		w *= t;
-		for (int i = 0; i < 3; i++) {
-			switch (i) {
-			case 0: x = - t * w; x.a += c2; break;
-			case 1: Fp2::neg(x, x); x.a -= Fp::one(); break;
-			case 2: Fp2::sqr(x, w); Fp2::inv(x, x); x.a += Fp::one(); break;
-			}
-			G2::getWeierstrass(y, x);
-			if (Fp2::squareRoot(y, y)) {
-				if (negative) Fp2::neg(y, y);
-				P.set(x, y);
-				return;
-			}
-		}
-	ERR_POINT:
-		throw cybozu::Exception("MapTo:calcG2:bad") << t;
+		calc<G2, Fp2>(P, t);
 	}
 };
 
