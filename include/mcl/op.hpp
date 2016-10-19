@@ -97,12 +97,12 @@ struct Op {
 	void4u fp_mul;
 	void3u fp_sqr;
 	void2uOp fp_invOp;
-	void2uIu fp_mul_Unit; // fpN1_mod + fp_mul_UnitPre
+	void2uIu fp_mulUnit; // fpN1_mod + fp_mulUnitPre
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;
 	int2u fp_preInv;
-	void2uI fp_mul_UnitPre; // z[N + 1] = x[N] * y
+	void2uI fp_mulUnitPre; // z[N + 1] = x[N] * y
 	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
 
 	void4u fpDbl_add;
@@ -164,12 +164,12 @@ struct Op {
 		fp_mul = 0;
 		fp_sqr = 0;
 		fp_invOp = 0;
-		fp_mul_Unit = 0;
+		fp_mulUnit = 0;
 
 		fpDbl_mulPre = 0;
 		fpDbl_sqrPre = 0;
 		fp_preInv = 0;
-		fp_mul_UnitPre = 0;
+		fp_mulUnitPre = 0;
 		fpN1_mod = 0;
 
 		fpDbl_add = 0;

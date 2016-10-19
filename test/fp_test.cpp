@@ -425,12 +425,12 @@ void powTest()
 	CYBOZU_TEST_EQUAL(x, 125);
 }
 
-void mul_UnitTest()
+void mulUnitTest()
 {
 	Fp x(-1), y, z;
 	for (unsigned int u = 0; u < 20; u++) {
 		Fp::mul(y, x, u);
-		Fp::mul_Unit(z, x, u);
+		Fp::mulUnit(z, x, u);
 		CYBOZU_TEST_EQUAL(y, z);
 	}
 }
@@ -812,7 +812,7 @@ void sub(mcl::fp::Mode mode)
 		compareTest();
 		moduloTest(pStr);
 		opeTest();
-		mul_UnitTest();
+		mulUnitTest();
 		powTest();
 		powNegTest();
 		powFpTest();

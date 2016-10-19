@@ -161,7 +161,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	// preInv
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
 	void4u mul_;
-	uint3opI mul_Unit_;
+	uint3opI mulUnit_;
 	void *montRedRaw_;
 	void2op shr1_;
 	FpGenerator()
@@ -172,7 +172,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, pn_(0)
 		, isFullBit_(0)
 		, mul_(0)
-		, mul_Unit_(0)
+		, mulUnit_(0)
 		, montRedRaw_(0)
 		, shr1_(0)
 	{
@@ -219,8 +219,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		gen_neg();
 
 		align(16);
-		mul_Unit_ = getCurr<uint3opI>();
-		gen_mul_Unit();
+		mulUnit_ = getCurr<uint3opI>();
+		gen_mulUnit();
 		if (op.primeMode == PM_NICT_P521) {
 			align(16);
 			op.fpDbl_mod = getCurr<void3u>();
@@ -345,7 +345,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		wk[0] if useMulx_
 		wk[0..n-2] otherwise
 	*/
-	void gen_raw_mul_Unit(const RegExp& pz, const RegExp& px, const Reg64& y, const MixPack& wk, const Reg64& t, size_t n)
+	void gen_raw_mulUnit(const RegExp& pz, const RegExp& px, const Reg64& y, const MixPack& wk, const Reg64& t, size_t n)
 	{
 		if (n == 1) {
 			mov(rax, ptr [px]);
@@ -412,7 +412,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mov(ptr [pz + (n - 1) * 8], rax);
 		adc(rdx, 0);
 	}
-	void gen_mul_Unit()
+	void gen_mulUnit()
 	{
 //		assert(pn_ >= 2);
 		const int regNum = useMulx_ ? 2 : (1 + std::min(pn_ - 1, 8));
@@ -424,7 +424,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		size_t rspPos = 0;
 		Pack remain = sf.t.sub(1);
 		MixPack wk(remain, rspPos, pn_ - 1);
-		gen_raw_mul_Unit(pz, px, y, wk, sf.t[0], pn_);
+		gen_raw_mulUnit(pz, px, y, wk, sf.t[0], pn_);
 		mov(rax, rdx);
 	}
 	/*
@@ -2477,10 +2477,10 @@ private:
 	{
 		// pc[] += x[] * y
 		if (isFirst) {
-			gen_raw_mul_Unit(pc, px, y, pw1, t, n);
+			gen_raw_mulUnit(pc, px, y, pw1, t, n);
 			mov(ptr [pc + n * 8], rdx);
 		} else {
-			gen_raw_mul_Unit(pw2, px, y, pw1, t, n);
+			gen_raw_mulUnit(pw2, px, y, pw1, t, n);
 			mov(t, ptr [pw2 + 0 * 8]);
 			add(ptr [pc + 0 * 8], t);
 			for (int i = 1; i < n; i++) {
@@ -2497,7 +2497,7 @@ private:
 		mov(rax, pp);
 		mul(qword [pc]);
 		mov(y, rax); // y = q
-		gen_raw_mul_Unit(pw2, p, y, pw1, t, n);
+		gen_raw_mulUnit(pw2, p, y, pw1, t, n);
 		// c[] = (c[] + pw2[]) >> 64
 		mov(t, ptr [pw2 + 0 * 8]);
 		add(t, ptr [pc + 0 * 8]);

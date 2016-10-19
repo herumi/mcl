@@ -28,7 +28,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
-	FunctionMap mcl_fp_mul_UnitPreM;
+	FunctionMap mcl_fp_mulUnitPreM;
 	FunctionMap mcl_fpDbl_mulPreM;
 	FunctionMap mcl_fpDbl_sqrPreM;
 	FunctionMap mcl_fp_montM;
@@ -258,13 +258,13 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_mul_NIST_P192()
+	void gen_mcl_fp_mulNIST_P192()
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, 192);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
-		Function f("mcl_fp_mul_NIST_P192L", Void, pz, px, py);
+		Function f("mcl_fp_mulNIST_P192L", Void, pz, px, py);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
 		Operand buf = _alloca(192, 2);
@@ -284,7 +284,7 @@ struct Code : public mcl::Generator {
 		gen_makeNIST_P192();
 		gen_mcl_fpDbl_mod_NIST_P192();
 		gen_mcl_fp_sqr_NIST_P192();
-		gen_mcl_fp_mul_NIST_P192();
+		gen_mcl_fp_mulNIST_P192();
 		gen_mcl_fpDbl_mod_NIST_P521();
 	}
 	Operand extract(const Operand& x, uint32_t shift)
@@ -542,17 +542,17 @@ struct Code : public mcl::Generator {
 		ret(z);
 		endFunc();
 	}
-	void gen_mcl_fp_mul_UnitPre()
+	void gen_mcl_fp_mulUnitPre()
 	{
 		const int bu = bit + unit;
 		resetGlobalIdx();
 		Operand pz(IntPtr, bu);
 		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
-		std::string name = "mcl_fp_mul_UnitPre" + cybozu::itoa(N) + "L";
-		mcl_fp_mul_UnitPreM[N] = Function(name, Void, pz, px, y);
-		verifyAndSetPrivate(mcl_fp_mul_UnitPreM[N]);
-		beginFunc(mcl_fp_mul_UnitPreM[N]);
+		std::string name = "mcl_fp_mulUnitPre" + cybozu::itoa(N) + "L";
+		mcl_fp_mulUnitPreM[N] = Function(name, Void, pz, px, y);
+		verifyAndSetPrivate(mcl_fp_mulUnitPreM[N]);
+		beginFunc(mcl_fp_mulUnitPreM[N]);
 		Operand z = call(mulPvM[bit], px, y);
 		store(z, pz);
 		ret(Void);
@@ -775,7 +775,7 @@ struct Code : public mcl::Generator {
 	void gen_mul()
 	{
 		gen_mulPv();
-		gen_mcl_fp_mul_UnitPre();
+		gen_mcl_fp_mulUnitPre();
 		gen_mcl_fpDbl_mulPre();
 		gen_mcl_fpDbl_sqrPre();
 		gen_mcl_fp_mont();
