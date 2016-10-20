@@ -228,52 +228,6 @@ template<size_t N, class Tag>
 const void4u DblSub<N, Tag>::f = DblSub<N, Tag>::func;
 
 /*
-	z[N] <- Montgomery(x[N], y[N], p[N])
-	REMARK : assume p[-1] = rp
-*/
-template<size_t N, class Tag = Gtag>
-struct Mont {
-	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-#if 0
-		Unit xy[N * 2];
-		MulPre<N, Tag>::f(xy, x, y);
-		fpDbl_modMontC(z, xy, p);
-#else
-		const Unit rp = p[-1];
-		Unit buf[N * 2 + 2];
-		Unit *c = buf;
-		Mul_UnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
-		Unit q = c[0] * rp;
-		Unit t[N + 2];
-		Mul_UnitPre<N, Tag>::f(t, p, q); // p * q
-		t[N + 1] = 0; // always zero
-		c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
-		c++;
-		for (size_t i = 1; i < N; i++) {
-			Mul_UnitPre<N, Tag>::f(t, x, y[i]);
-			c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
-			q = c[0] * rp;
-			Mul_UnitPre<N, Tag>::f(t, p, q);
-			AddPre<N + 2, Tag>::f(c, c, t);
-			c++;
-		}
-		if (c[N]) {
-			SubPre<N, Tag>::f(z, c, p);
-		} else {
-			if (SubPre<N, Tag>::f(z, c, p)) {
-				memcpy(z, c, N * sizeof(Unit));
-			}
-		}
-#endif
-	}
-	static const void4u f;
-};
-
-template<size_t N, class Tag>
-const void4u Mont<N, Tag>::f = Mont<N, Tag>::func;
-
-/*
 	z[N] <- montRed(xy[N * 2], p[N])
 	REMARK : assume p[-1] = rp
 */
@@ -310,6 +264,52 @@ struct MontRed {
 
 template<size_t N, class Tag>
 const void3u MontRed<N, Tag>::f = MontRed<N, Tag>::func;
+
+/*
+	z[N] <- Montgomery(x[N], y[N], p[N])
+	REMARK : assume p[-1] = rp
+*/
+template<size_t N, class Tag = Gtag>
+struct Mont {
+	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+#if 0
+		Unit xy[N * 2];
+		MulPre<N, Tag>::f(xy, x, y);
+		MontRed<N, Tag>::f(z, xy, p);
+#else
+		const Unit rp = p[-1];
+		Unit buf[N * 2 + 2];
+		Unit *c = buf;
+		Mul_UnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+		Unit q = c[0] * rp;
+		Unit t[N + 2];
+		Mul_UnitPre<N, Tag>::f(t, p, q); // p * q
+		t[N + 1] = 0; // always zero
+		c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
+		c++;
+		for (size_t i = 1; i < N; i++) {
+			Mul_UnitPre<N, Tag>::f(t, x, y[i]);
+			c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
+			q = c[0] * rp;
+			Mul_UnitPre<N, Tag>::f(t, p, q);
+			AddPre<N + 2, Tag>::f(c, c, t);
+			c++;
+		}
+		if (c[N]) {
+			SubPre<N, Tag>::f(z, c, p);
+		} else {
+			if (SubPre<N, Tag>::f(z, c, p)) {
+				memcpy(z, c, N * sizeof(Unit));
+			}
+		}
+#endif
+	}
+	static const void4u f;
+};
+
+template<size_t N, class Tag>
+const void4u Mont<N, Tag>::f = Mont<N, Tag>::func;
 
 // z[N] <- Montgomery(x[N], x[N], p[N])
 template<size_t N, class Tag = Gtag>
