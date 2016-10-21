@@ -103,7 +103,7 @@ const void2u SqrPre<N, Tag>::f = &SqrPre<N, Tag>::func;
 
 // z[N + 1] <- x[N] * y
 template<size_t N, class Tag = Gtag>
-struct Mul_UnitPre {
+struct MulUnitPre {
 	static inline void func(Unit *z, const Unit *x, Unit y)
 	{
 		z[N] = mpn_mul_1((mp_limb_t*)z, (const mp_limb_t*)x, N, y);
@@ -112,7 +112,7 @@ struct Mul_UnitPre {
 };
 
 template<size_t N, class Tag>
-const void2uI Mul_UnitPre<N, Tag>::f = &Mul_UnitPre<N, Tag>::func;
+const void2uI MulUnitPre<N, Tag>::f = &MulUnitPre<N, Tag>::func;
 
 // z[N] <- x[N + 1] % p[N]
 template<size_t N, class Tag = Gtag>
@@ -134,7 +134,7 @@ struct Mul_Unit {
 	static inline void func(Unit *z, const Unit *x, Unit y, const Unit *p)
 	{
 		Unit xy[N + 1];
-		Mul_UnitPre<N, Tag>::f(xy, x, y);
+		MulUnitPre<N, Tag>::f(xy, x, y);
 		N1_Mod<N, Tag>::f(z, xy, p);
 	}
 	static const void2uIu f;
@@ -241,12 +241,12 @@ struct MontRed {
 		clearArray(t, N + 1, N * 2);
 		Unit *c = buf;
 		Unit q = xy[0] * rp;
-		Mul_UnitPre<N, Tag>::f(t, p, q);
+		MulUnitPre<N, Tag>::f(t, p, q);
 		buf[N * 2] = AddPre<N * 2, Tag>::f(buf, xy, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
-			Mul_UnitPre<N, Tag>::f(t, p, q);
+			MulUnitPre<N, Tag>::f(t, p, q);
 			// QQQ
 			mpn_add_n((mp_limb_t*)c, (const mp_limb_t*)c, (const mp_limb_t*)t, N * 2 + 1 - i);
 			c++;
@@ -281,18 +281,18 @@ struct Mont {
 		const Unit rp = p[-1];
 		Unit buf[N * 2 + 2];
 		Unit *c = buf;
-		Mul_UnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+		MulUnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
 		Unit q = c[0] * rp;
 		Unit t[N + 2];
-		Mul_UnitPre<N, Tag>::f(t, p, q); // p * q
+		MulUnitPre<N, Tag>::f(t, p, q); // p * q
 		t[N + 1] = 0; // always zero
 		c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
 		c++;
 		for (size_t i = 1; i < N; i++) {
-			Mul_UnitPre<N, Tag>::f(t, x, y[i]);
+			MulUnitPre<N, Tag>::f(t, x, y[i]);
 			c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
 			q = c[0] * rp;
-			Mul_UnitPre<N, Tag>::f(t, p, q);
+			MulUnitPre<N, Tag>::f(t, p, q);
 			AddPre<N + 2, Tag>::f(c, c, t);
 			c++;
 		}

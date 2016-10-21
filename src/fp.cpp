@@ -113,7 +113,7 @@ template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
 template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
 template<>const void3u MulPre<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
 template<>const void2u SqrPre<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
-template<>const void2uI Mul_UnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
+template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
 template<>const void4u Add<n, Ltag>::f = &mcl_fp_add ## n ## L; \
 template<>const void4u Sub<n, Ltag>::f = &mcl_fp_sub ## n ## L; \
 template<>const void4u Mont<n, Ltag>::f = &mcl_fp_mont ## n ## L; \
@@ -214,7 +214,7 @@ void setOpSub(Op& op)
 	op.fp_mulUnit = Mul_Unit<N, Tag>::f;
 	op.fpDbl_mulPre = MulPre<N, Tag>::f;
 	op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
-	op.fp_mulUnitPre = Mul_UnitPre<N, Tag>::f;
+	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
 	op.fpN1_mod = N1_Mod<N, Tag>::f;
 	op.fpDbl_add = DblAdd<N, Tag>::f;
 	op.fpDbl_sub = DblSub<N, Tag>::f;
