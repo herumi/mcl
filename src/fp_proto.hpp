@@ -9,6 +9,11 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4127)
+#endif
+
 namespace mcl { namespace fp {
 
 struct Gtag; // GMP
@@ -38,12 +43,25 @@ template<size_t N, class Tag = Gtag>
 struct AddPre {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
+		if (N == 0) return 0;
 		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
 	}
 	static const u3u f;
 };
 template<size_t N, class Tag>
 const u3u AddPre<N, Tag>::f = &AddPre<N, Tag>::func;
+
+// (carry, x[N]) <- x[N] + y
+template<class Tag = Gtag>
+struct AddUnitPre {
+	static inline Unit func(Unit *x, Unit n, Unit y)
+	{
+		return mpn_add_1((mp_limb_t*)x, (const mp_limb_t*)x, (int)n, y);
+	}
+	static const u1uII f;
+};
+template<class Tag>
+const u1uII AddUnitPre<Tag>::f = &AddUnitPre<Tag>::func;
 
 // (carry, z[N]) <- x[N] - y[N]
 template<size_t N, class Tag = Gtag>
@@ -78,15 +96,69 @@ const void3u Neg<N, Tag>::f = Neg<N, Tag>::func;
 // z[N * 2] <- x[N] * y[N]
 template<size_t N, class Tag = Gtag>
 struct MulPre {
+	/*
+		W = 1 << H
+		x = aW + b, y = cW + d
+		xy = acW^2 + (ad + bc)W + bd
+		ad + bc = (a + b)(c + d) - ac - bd
+	*/
+	static inline void karatsuba(Unit *z, const Unit *x, const Unit *y)
+	{
+		const size_t H = N / 2;
+		MulPre<H, Tag>::f(z, x, y); // bd
+		MulPre<H, Tag>::f(z + N, x + H, y + H); // ac
+		Unit a_b[H];
+		Unit c_d[H];
+		Unit c1 = AddPre<H, Tag>::f(a_b, x, x + H); // a + b
+		Unit c2 = AddPre<H, Tag>::f(c_d, y, y + H); // c + d
+		Unit tmp[N + H];
+		MulPre<H, Tag>::f(tmp, a_b, c_d);
+		Unit c = c1 & c2;
+		if (c1) {
+			c += AddPre<H, Tag>::f(tmp + H, tmp + H, c_d);
+		}
+		if (c2) {
+			c += AddPre<H, Tag>::f(tmp + H, tmp + H, a_b);
+		}
+		// c:tmp[N] = (a + b)(c + d)
+		c -= SubPre<N, Tag>::f(tmp, tmp, z);
+		c -= SubPre<N, Tag>::f(tmp, tmp, z + N);
+		// c:tmp[N] = ad + bc
+		c += AddPre<N, Tag>::f(z + H, z + H, tmp);
+		AddUnitPre<Tag>::f(z + H, N, c);
+	}
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
-		return mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+#if 0
+		if (N == 0) return;
+		if (N > 2 && (N % 2) == 0) {
+			karatsuba(z, x, y);
+			return;
+		}
+#endif
+		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
 	}
 	static const void3u f;
 };
 
 template<size_t N, class Tag>
 const void3u MulPre<N, Tag>::f = &MulPre<N, Tag>::func;
+
+
+#if 0
+template<class Tag>
+struct MulPre<0, Tag> {
+	static inline void f(Unit*, const Unit*, const Unit*){}
+};
+
+template<class Tag>
+struct MulPre<1, Tag> {
+	static inline void f(Unit* z, const Unit* x, const Unit* y)
+	{
+		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, 1);
+	}
+};
+#endif
 
 // z[N * 2] <- x[N] * x[N]
 template<size_t N, class Tag = Gtag>
@@ -419,3 +491,6 @@ MCL_FP_DEF_FUNC_SPECIAL(A)
 
 #endif
 
+#ifdef _WIN32
+	#pragma warning(pop)
+#endif
