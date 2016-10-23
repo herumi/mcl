@@ -111,7 +111,7 @@ struct MulPre {
 		Unit c_d[H];
 		Unit c1 = AddPre<H, Tag>::f(a_b, x, x + H); // a + b
 		Unit c2 = AddPre<H, Tag>::f(c_d, y, y + H); // c + d
-		Unit tmp[N + H];
+		Unit tmp[N];
 		MulPre<H, Tag>::f(tmp, a_b, c_d);
 		Unit c = c1 & c2;
 		if (c1) {
@@ -125,7 +125,7 @@ struct MulPre {
 		c -= SubPre<N, Tag>::f(tmp, tmp, z + N);
 		// c:tmp[N] = ad + bc
 		c += AddPre<N, Tag>::f(z + H, z + H, tmp);
-		AddUnitPre<Tag>::f(z + H, N, c);
+		AddUnitPre<Tag>::f(z + N + H, H, c);
 	}
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
@@ -145,7 +145,6 @@ template<size_t N, class Tag>
 const void3u MulPre<N, Tag>::f = &MulPre<N, Tag>::func;
 
 
-#if 0
 template<class Tag>
 struct MulPre<0, Tag> {
 	static inline void f(Unit*, const Unit*, const Unit*){}
@@ -158,7 +157,6 @@ struct MulPre<1, Tag> {
 		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, 1);
 	}
 };
-#endif
 
 // z[N * 2] <- x[N] * x[N]
 template<size_t N, class Tag = Gtag>
