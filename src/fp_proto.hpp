@@ -93,6 +93,10 @@ struct Neg {
 template<size_t N, class Tag>
 const void3u Neg<N, Tag>::f = Neg<N, Tag>::func;
 
+static inline void mulPreGmp(Unit *z, const Unit *x, const Unit *y, size_t N)
+{
+	mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+}
 // z[N * 2] <- x[N] * y[N]
 template<size_t N, class Tag = Gtag>
 struct MulPre {
@@ -131,20 +135,20 @@ struct MulPre {
 	{
 #if 0
 		if (N == 0) return;
-		if (N > 2 && (N % 2) == 0) {
+		if (N >= 6 && (N % 2) == 0) {
 			karatsuba(z, x, y);
 			return;
 		}
 #endif
-		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
+		mulPreGmp(z, x, y, N);
 	}
 	static const void3u f;
 };
 
 template<size_t N, class Tag>
-const void3u MulPre<N, Tag>::f = &MulPre<N, Tag>::func;
+const void3u MulPre<N, Tag>::f = MulPre<N, Tag>::func;
 
-
+#if 0
 template<class Tag>
 struct MulPre<0, Tag> {
 	static inline void f(Unit*, const Unit*, const Unit*){}
@@ -154,9 +158,10 @@ template<class Tag>
 struct MulPre<1, Tag> {
 	static inline void f(Unit* z, const Unit* x, const Unit* y)
 	{
-		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, 1);
+		mulPreGmp(z, x, y, 1);
 	}
 };
+#endif
 
 // z[N * 2] <- x[N] * x[N]
 template<size_t N, class Tag = Gtag>

@@ -5,56 +5,31 @@
 #include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
 #include <sstream>
+#include "../src/fp_proto.hpp"
 
 typedef mcl::FpT<> Fp;
 
-typedef mcl::fp::Unit Unit;
 using namespace mcl::fp;
-
-//#include "../src/low_gmp.hpp"
 const size_t N = 12;
 
-#if 0
-void mulPre768(Unit *pz, const Unit *px, const Unit *py)
-{
-	/*
-		W = 1 << H
-		(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
-		ad + bc = (a + b)(c + d) - ac - bd
-	*/
-	const size_t H = N / 2;
-	low_mul_G<H>(pz, px, py); // bd
-	low_mul_G<H>(pz + N, px + H, py + H); // ac
-	Unit a_b[H + 1];
-	Unit c_d[H + 1];
-	a_b[H] = low_addPre_G<H>(a_b, px, px + H); // a + b
-	c_d[H] = low_addPre_G<H>(c_d, py, py + H); // c + d
-	Unit work[N + H] = {};
-	low_mul_G<H>(work, a_b, c_d);
-	if (c_d[H]) low_addPre_G<H + 1>(work + H, work + H, c_d);
-	if (a_b[H]) low_addPre_G<H + 1>(work + H, work + H, a_b);
-	work[N] -= low_subPre_G<H>(work, work, pz);
-	work[N] -= low_subPre_G<H>(work, work, pz + N);
-	low_addPre_G<H + N>(pz + H, pz + H, work);
-}
 void testMul()
 {
-	mcl::fp::Unit ux[N], uy[N], a[N * 2], b[N * 2];
+	Unit ux[N], uy[N], a[N * 2], b[N * 2];
 	for (size_t i = 0; i < N; i++) {
 		ux[i] = -i * i + 5;
 		uy[i] = -i * i + 9;
 	}
-	low_mul_G<12>(a, ux, uy);
-	mulPre768(b, ux, uy);
+	mulPreGmp(a, ux, uy, N);
+	MulPre<N, Gtag>::f(b, ux, uy);
 	for (size_t i = 0; i < N * 2; i++) {
 		if (a[i] != b[i]) {
 			printf("ERR %016llx %016llx\n", (long long)a[i], (long long)b[i]);
 		}
 	}
 	puts("end testMul");
-	CYBOZU_BENCH("mulPre768", mulPre768, ux, ux, uy);
+	CYBOZU_BENCH("gmp ", mulPreGmp, ux, ux, uy, N);
+	CYBOZU_BENCH("kara", (MulPre<N, Gtag>), ux, ux, uy);
 }
-#endif
 
 void mulGmp(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_class& p)
 {
@@ -140,11 +115,11 @@ int main()
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(pTbl); i++) {
 		testAll(pTbl[i]);
 	}
-//	testMul();
+	testMul();
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	puts("make clean");
-	puts("make CFLAGS_USER=\"-DMCL_MAX_OP_BIT_SIZE=768\"");
+	puts("make -DMCL_MAX_OP_BIT_SIZE=768");
 	return 1;
 }
 
