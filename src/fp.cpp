@@ -5,6 +5,9 @@
 #include "fp_generator.hpp"
 #endif
 #include "fp_proto.hpp"
+#ifdef MCL_USE_LLVM
+#include "fp_llvm.hpp"
+#endif
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
