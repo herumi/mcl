@@ -1,4 +1,5 @@
 /*
+	sudo cpufreq-set -c 0 -g performance
 	mycl karatsuba.cpp -DMCL_USE_LLVM=1 ../lib/libmcl.a && ./a.out
 */
 #include <stdio.h>
@@ -49,7 +50,10 @@ CYBOZU_TEST_AUTO(karatsuba)
 	benchKaratsuba<4>();
 	benchKaratsuba<6>();
 	benchKaratsuba<8>();
+#if MCL_MAX_OP_BIT_SIZE == 768
 	benchKaratsuba<10>();
+	benchKaratsuba<12>();
+#endif
 }
 
 CYBOZU_TEST_AUTO(mulPre)
