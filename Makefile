@@ -13,8 +13,8 @@ ifeq ($(CPU),x86-64)
 endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp
 
-ifneq ($(MCL_MAX_OP_BIT_SIZE),)
-  CFLAGS+=-DMCL_MAX_OP_BIT_SIZE=$(MCL_MAX_OP_BIT_SIZE)
+ifneq ($(MCL_MAX_BIT_SIZE),)
+  CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
 endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
