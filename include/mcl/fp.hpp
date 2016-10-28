@@ -86,7 +86,7 @@ Mode StrToMode(const std::string& s);
 
 } // mcl::fp
 
-template<class tag = FpTag, size_t maxBitSize = MCL_MAX_OP_BIT_SIZE>
+template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
 class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
 	typedef fp::Unit Unit;
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
@@ -123,7 +123,7 @@ public:
 	}
 	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
-		assert(maxBitSize <= MCL_MAX_OP_BIT_SIZE);
+		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
 		op_.init(mstr, maxBitSize, mode);
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);

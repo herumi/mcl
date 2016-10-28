@@ -300,8 +300,8 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 #endif
 	"\n", ModeToStr(mode), isMont, (int)maxBitSize);
 #endif
-	if (maxBitSize > MCL_MAX_OP_BIT_SIZE) {
-		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_OP_BIT_SIZE;
+	if (maxBitSize > MCL_MAX_BIT_SIZE) {
+		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_BIT_SIZE;
 	}
 	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, 0);
 	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
@@ -334,7 +334,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	case 7:  setOp<7>(*this, mode);  break;
 	case 8:  setOp<8>(*this, mode);  break;
 	case 9:  setOp<9>(*this, mode);  break; // 576 if 64-bit
-#if CYBOZU_OS_BIT == 32 || MCL_MAX_OP_BIT_SIZE == 768
+#if CYBOZU_OS_BIT == 32 || MCL_MAX_BIT_SIZE == 768
 	case 10:  setOp<10>(*this, mode);  break;
 	case 11:  setOp<11>(*this, mode);  break;
 	case 12:  setOp<12>(*this, mode);  break; // 768 if 64-bit

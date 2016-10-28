@@ -8,8 +8,8 @@
 */
 #include <mcl/gmp_util.hpp>
 
-#ifndef MCL_MAX_OP_BIT_SIZE
-	#define MCL_MAX_OP_BIT_SIZE 521
+#ifndef MCL_MAX_BIT_SIZE
+	#define MCL_MAX_BIT_SIZE 521
 #endif
 #if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__))
 	#define MCL_USE_XBYAK
@@ -26,7 +26,7 @@ typedef uint64_t Unit;
 #endif
 const size_t UnitBitSize = sizeof(Unit) * 8;
 
-const size_t maxOpUnitSize = (MCL_MAX_OP_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
+const size_t maxOpUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
 
 struct FpGenerator;
 struct Op;

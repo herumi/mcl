@@ -50,7 +50,7 @@ CYBOZU_TEST_AUTO(karatsuba)
 	benchKaratsuba<4>();
 	benchKaratsuba<6>();
 	benchKaratsuba<8>();
-#if MCL_MAX_OP_BIT_SIZE == 768
+#if MCL_MAX_BIT_SIZE == 768
 	benchKaratsuba<10>();
 	benchKaratsuba<12>();
 #endif

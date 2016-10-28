@@ -1,6 +1,6 @@
 /*
 	large prime sample for 64-bit arch
-	make MCL_USE_LLVM=1 MCL_MAX_OP_BIT_SIZE=768
+	make MCL_USE_LLVM=1 MCL_MAX_BIT_SIZE=768
 */
 #include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
@@ -119,7 +119,7 @@ int main()
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	puts("make clean");
-	puts("make -DMCL_MAX_OP_BIT_SIZE=768");
+	puts("make -DMCL_MAX_BIT_SIZE=768");
 	return 1;
 }
 

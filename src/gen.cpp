@@ -840,7 +840,7 @@ int main(int argc, char *argv[])
 		c.setOldLLVM();
 	}
 	c.setUnit(unit);
-	uint32_t maxBitSize = MCL_MAX_OP_BIT_SIZE;
+	uint32_t maxBitSize = MCL_MAX_BIT_SIZE;
 	c.gen(privateFuncList, maxBitSize);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
