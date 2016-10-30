@@ -61,7 +61,7 @@ enum Mode {
 enum PrimeMode {
 	PM_GENERIC = 0,
 	PM_NICT_P192,
-	PM_NICT_P521,
+	PM_NICT_P521
 };
 
 struct Op {

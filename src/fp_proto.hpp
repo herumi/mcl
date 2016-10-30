@@ -146,7 +146,7 @@ struct MulPre {
 	}
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
-#if 0
+#if 1
 		if (N >= 8 && (N % 2) == 0) {
 			karatsuba(z, x, y);
 			return;
@@ -159,6 +159,21 @@ struct MulPre {
 
 template<size_t N, class Tag>
 const void3u MulPre<N, Tag>::f = MulPre<N, Tag>::func;
+
+static inline void MulPre0(Unit*, const Unit*, const Unit*) {}
+
+template<class Tag>
+struct MulPre<0, Tag> {
+	static inline void f(Unit*, const Unit*, const Unit*) {}
+};
+
+template<class Tag>
+struct MulPre<1, Tag> {
+	static inline void f(Unit* z, const Unit* x, const Unit* y)
+	{
+		MulPreCore<1, Tag>::f(z, x, y);
+	}
+};
 
 // z[N * 2] <- x[N] * x[N]
 template<size_t N, class Tag = Gtag>
