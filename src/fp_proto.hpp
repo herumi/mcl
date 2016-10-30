@@ -49,7 +49,7 @@ struct AddPre {
 	static const u3u f;
 };
 template<size_t N, class Tag>
-const u3u AddPre<N, Tag>::f = &AddPre<N, Tag>::func;
+const u3u AddPre<N, Tag>::f = AddPre<N, Tag>::func;
 
 // (carry, x[N]) <- x[N] + y
 template<class Tag = Gtag>
@@ -61,7 +61,7 @@ struct AddUnitPre {
 	static const u1uII f;
 };
 template<class Tag>
-const u1uII AddUnitPre<Tag>::f = &AddUnitPre<Tag>::func;
+const u1uII AddUnitPre<Tag>::f = AddUnitPre<Tag>::func;
 
 // (carry, z[N]) <- x[N] - y[N]
 template<size_t N, class Tag = Gtag>
@@ -74,7 +74,7 @@ struct SubPre {
 };
 
 template<size_t N, class Tag>
-const u3u SubPre<N, Tag>::f = &SubPre<N, Tag>::func;
+const u3u SubPre<N, Tag>::f = SubPre<N, Tag>::func;
 
 // y[N] <- (-x[N]) % p[N]
 template<size_t N, class Tag = Gtag>
@@ -97,7 +97,20 @@ static inline void mulPreGmp(Unit *z, const Unit *x, const Unit *y, size_t N)
 {
 	mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
 }
+
 // z[N * 2] <- x[N] * y[N]
+template<size_t N, class Tag = Gtag>
+struct MulPreCore {
+	static inline void func(Unit *z, const Unit *x, const Unit *y)
+	{
+		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	}
+	static const void3u f;
+};
+
+template<size_t N, class Tag>
+const void3u MulPreCore<N, Tag>::f = MulPreCore<N, Tag>::func;
+
 template<size_t N, class Tag = Gtag>
 struct MulPre {
 	/*
@@ -109,14 +122,14 @@ struct MulPre {
 	static inline void karatsuba(Unit *z, const Unit *x, const Unit *y)
 	{
 		const size_t H = N / 2;
-		MulPre<H, Tag>::f(z, x, y); // bd
-		MulPre<H, Tag>::f(z + N, x + H, y + H); // ac
+		MulPreCore<H, Tag>::f(z, x, y); // bd
+		MulPreCore<H, Tag>::f(z + N, x + H, y + H); // ac
 		Unit a_b[H];
 		Unit c_d[H];
 		Unit c1 = AddPre<H, Tag>::f(a_b, x, x + H); // a + b
 		Unit c2 = AddPre<H, Tag>::f(c_d, y, y + H); // c + d
 		Unit tmp[N];
-		MulPre<H, Tag>::f(tmp, a_b, c_d);
+		MulPreCore<H, Tag>::f(tmp, a_b, c_d);
 		Unit c = c1 & c2;
 		if (c1) {
 			c += AddPre<H, Tag>::f(tmp + H, tmp + H, c_d);
@@ -134,34 +147,18 @@ struct MulPre {
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
 #if 0
-		if (N == 0) return;
-		if (N >= 6 && (N % 2) == 0) {
+		if (N >= 8 && (N % 2) == 0) {
 			karatsuba(z, x, y);
 			return;
 		}
 #endif
-		mulPreGmp(z, x, y, N);
+		MulPreCore<N, Tag>::f(z, x, y);
 	}
 	static const void3u f;
 };
 
 template<size_t N, class Tag>
 const void3u MulPre<N, Tag>::f = MulPre<N, Tag>::func;
-
-#if 0
-template<class Tag>
-struct MulPre<0, Tag> {
-	static inline void f(Unit*, const Unit*, const Unit*){}
-};
-
-template<class Tag>
-struct MulPre<1, Tag> {
-	static inline void f(Unit* z, const Unit* x, const Unit* y)
-	{
-		mulPreGmp(z, x, y, 1);
-	}
-};
-#endif
 
 // z[N * 2] <- x[N] * x[N]
 template<size_t N, class Tag = Gtag>
