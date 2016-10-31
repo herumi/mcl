@@ -122,14 +122,14 @@ struct MulPre {
 	static inline void karatsuba(Unit *z, const Unit *x, const Unit *y)
 	{
 		const size_t H = N / 2;
-		MulPreCore<H, Tag>::f(z, x, y); // bd
-		MulPreCore<H, Tag>::f(z + N, x + H, y + H); // ac
+		MulPre<H, Tag>::f(z, x, y); // bd
+		MulPre<H, Tag>::f(z + N, x + H, y + H); // ac
 		Unit a_b[H];
 		Unit c_d[H];
 		Unit c1 = AddPre<H, Tag>::f(a_b, x, x + H); // a + b
 		Unit c2 = AddPre<H, Tag>::f(c_d, y, y + H); // c + d
 		Unit tmp[N];
-		MulPreCore<H, Tag>::f(tmp, a_b, c_d);
+		MulPre<H, Tag>::f(tmp, a_b, c_d);
 		Unit c = c1 & c2;
 		if (c1) {
 			c += AddPre<H, Tag>::f(tmp + H, tmp + H, c_d);
@@ -186,7 +186,7 @@ struct SqrPre {
 };
 
 template<size_t N, class Tag>
-const void2u SqrPre<N, Tag>::f = &SqrPre<N, Tag>::func;
+const void2u SqrPre<N, Tag>::f = SqrPre<N, Tag>::func;
 
 // z[N + 1] <- x[N] * y
 template<size_t N, class Tag = Gtag>
@@ -199,7 +199,7 @@ struct MulUnitPre {
 };
 
 template<size_t N, class Tag>
-const void2uI MulUnitPre<N, Tag>::f = &MulUnitPre<N, Tag>::func;
+const void2uI MulUnitPre<N, Tag>::f = MulUnitPre<N, Tag>::func;
 
 // z[N] <- x[N + 1] % p[N]
 template<size_t N, class Tag = Gtag>
@@ -213,7 +213,7 @@ struct N1_Mod {
 };
 
 template<size_t N, class Tag>
-const void3u N1_Mod<N, Tag>::f = &N1_Mod<N, Tag>::func;
+const void3u N1_Mod<N, Tag>::f = N1_Mod<N, Tag>::func;
 
 // z[N] <- (x[N] * y) % p[N]
 template<size_t N, class Tag = Gtag>
@@ -228,7 +228,7 @@ struct Mul_Unit {
 };
 
 template<size_t N, class Tag>
-const void2uIu Mul_Unit<N, Tag>::f = &Mul_Unit<N, Tag>::func;
+const void2uIu Mul_Unit<N, Tag>::f = Mul_Unit<N, Tag>::func;
 
 // z[N] <- x[N * 2] % p[N]
 template<size_t N, class Tag = Gtag>
@@ -242,7 +242,7 @@ struct Dbl_Mod {
 };
 
 template<size_t N, class Tag>
-const void3u Dbl_Mod<N, Tag>::f = &Dbl_Mod<N, Tag>::func;
+const void3u Dbl_Mod<N, Tag>::f = Dbl_Mod<N, Tag>::func;
 
 // z[N] <- (x[N] + y[N]) % p[N]
 template<size_t N, class Tag = Gtag>
@@ -323,19 +323,24 @@ struct MontRed {
 	static inline void func(Unit *z, const Unit *xy, const Unit *p)
 	{
 		const Unit rp = p[-1];
-		Unit t[N * 2];
+		Unit pq[N + 1];
 		Unit buf[N * 2 + 1];
-		clearArray(t, N + 1, N * 2);
-		Unit *c = buf;
+		copyArray(buf + N + 1, xy + N + 1, N - 1);
+		buf[N * 2] = 0;
 		Unit q = xy[0] * rp;
-		MulUnitPre<N, Tag>::f(t, p, q);
-		buf[N * 2] = AddPre<N * 2, Tag>::f(buf, xy, t);
-		c++;
+		MulUnitPre<N, Tag>::f(pq, p, q);
+		Unit up = AddPre<N + 1, Tag>::f(buf, xy, pq);
+		if (up) {
+			buf[N * 2] = AddUnitPre<Tag>::f(buf + N + 1, N - 1, 1);
+		}
+		Unit *c = buf + 1;
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
-			MulUnitPre<N, Tag>::f(t, p, q);
-			// QQQ
-			mpn_add_n((mp_limb_t*)c, (const mp_limb_t*)c, (const mp_limb_t*)t, N * 2 + 1 - i);
+			MulUnitPre<N, Tag>::f(pq, p, q);
+			Unit up = AddPre<N + 1, Tag>::f(c, c, pq);
+			if (up) {
+				AddUnitPre<Tag>::f(c + N + 1, N - i, 1);
+			}
 			c++;
 		}
 		if (c[N]) {
