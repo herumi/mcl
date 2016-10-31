@@ -103,7 +103,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt || echo "all unit tests are ok"
 
 clean:
-	$(RM) $(MCL_LIB) $(OBJ_DIR)/* $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST)
+	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(DEPEND_FILE) $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST)
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
