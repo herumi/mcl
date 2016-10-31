@@ -337,7 +337,7 @@ struct MontRed {
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
 			MulUnitPre<N, Tag>::f(pq, p, q);
-			Unit up = AddPre<N + 1, Tag>::f(c, c, pq);
+			up = AddPre<N + 1, Tag>::f(c, c, pq);
 			if (up) {
 				AddUnitPre<Tag>::f(c + N + 1, N - i, 1);
 			}
