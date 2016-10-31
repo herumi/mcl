@@ -2070,14 +2070,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		}
 	L("@@");
 	}
-	void mov32c(const Reg64& r, uint64_t c)
-	{
-		if (c & 0xffffffff00000000ULL) {
-			mov(r, c);
-		} else {
-			mov(Xbyak::Reg32(r.getIdx()), (uint32_t)c);
-		}
-	}
 private:
 	FpGenerator(const FpGenerator&);
 	void operator=(const FpGenerator&);
