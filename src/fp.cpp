@@ -272,13 +272,21 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 {
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 	clear();
+	if (maxBitSize > MCL_MAX_BIT_SIZE) {
+		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_BIT_SIZE;
+	}
+	{
+		bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, 0);
+		if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
+	}
+	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
 */
 #ifdef MCL_USE_XBYAK
 	if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
-	if (mode == fp::FP_XBYAK && maxBitSize > 521) {
+	if (mode == fp::FP_XBYAK && bitSize > 521) {
 		mode = fp::FP_AUTO;
 	}
 #else
@@ -300,15 +308,8 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 #endif
 	"\n", ModeToStr(mode), isMont, (int)maxBitSize);
 #endif
-	if (maxBitSize > MCL_MAX_BIT_SIZE) {
-		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_BIT_SIZE;
-	}
-	bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, 0);
-	if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
-	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	isFullBit = (bitSize % UnitBitSize) == 0;
 
-	primeMode = PM_GENERIC;
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
 	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
 		&& mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
