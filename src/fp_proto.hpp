@@ -56,7 +56,18 @@ template<class Tag = Gtag>
 struct AddUnitPre {
 	static inline Unit func(Unit *x, Unit n, Unit y)
 	{
+#if 0
+		Unit t = x[0] + y;
+		if (t >= y) return 0;
+		for (size_t i = 1; i < n; i++) {
+			t = x[i] + 1;
+			x[i] = t;
+			if (t != 0) return 0;
+		}
+		return 1;
+#else
 		return mpn_add_1((mp_limb_t*)x, (const mp_limb_t*)x, (int)n, y);
+#endif
 	}
 	static const u1uII f;
 };
