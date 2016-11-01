@@ -165,8 +165,6 @@ struct MulPre {
 template<size_t N, class Tag>
 const void3u MulPre<N, Tag>::f = MulPre<N, Tag>::func;
 
-static inline void MulPre0(Unit*, const Unit*, const Unit*) {}
-
 template<class Tag>
 struct MulPre<0, Tag> {
 	static inline void f(Unit*, const Unit*, const Unit*) {}
@@ -227,6 +225,19 @@ struct SqrPre {
 };
 template<size_t N, class Tag>
 const void2u SqrPre<N, Tag>::f = SqrPre<N, Tag>::func;
+
+template<class Tag>
+struct SqrPre<0, Tag> {
+	static inline void f(Unit*, const Unit*) {}
+};
+
+template<class Tag>
+struct SqrPre<1, Tag> {
+	static inline void f(Unit* y, const Unit* x)
+	{
+		SqrPreCore<1, Tag>::f(y, x);
+	}
+};
 
 // z[N + 1] <- x[N] * y
 template<size_t N, class Tag = Gtag>
