@@ -24,9 +24,9 @@ void dump(const Unit *x, size_t N)
 	printf("\n");
 }
 
-void gggKara(uint64_t *z, const uint64_t *x, const uint64_t *y)
+void gggKara(uint64_t *z, const uint64_t *x, const uint64_t *)
 {
-	MulPre<8, Gtag>::f(z, x, y);
+	SqrPre<8, Gtag>::f(z, x);
 }
 void gggLLVM(uint64_t *z, const uint64_t *x, const uint64_t *y)
 {
@@ -41,12 +41,16 @@ void benchKaratsuba()
 	Unit x[N], z[N * 2];
 	rg.read(x, N);
 	rg.read(z, N);
-	CYBOZU_BENCH("g:mulpre", (MulPreCore<N, Gtag>::f), z, z, x);
-	CYBOZU_BENCH("g:kara  ", (MulPre<N, Gtag>::karatsuba), z, z, x);
+	CYBOZU_BENCH("g:mulPre ", (MulPreCore<N, Gtag>::f), z, z, x);
+	CYBOZU_BENCH("g:mulKara", (MulPre<N, Gtag>::karatsuba), z, z, x);
+	CYBOZU_BENCH("g:sqrPre ", (SqrPreCore<N, Gtag>::f), z, z);
+	CYBOZU_BENCH("g:sqrKara", (SqrPre<N, Gtag>::karatsuba), z, z);
 
 #ifdef MCL_USE_LLVM
-	CYBOZU_BENCH("l:mulpre", (MulPreCore<N, Ltag>::f), z, z, x);
-	CYBOZU_BENCH("l:kara  ", (MulPre<N, Ltag>::karatsuba), z, z, x);
+	CYBOZU_BENCH("l:mulPre ", (MulPreCore<N, Ltag>::f), z, z, x);
+	CYBOZU_BENCH("l:mulKara", (MulPre<N, Ltag>::karatsuba), z, z, x);
+	CYBOZU_BENCH("l:sqrPre ", (SqrPreCore<N, Ltag>::f), z, z);
+	CYBOZU_BENCH("l:sqrKara", (SqrPre<N, Ltag>::karatsuba), z, z);
 #endif
 }
 

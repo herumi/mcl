@@ -93,11 +93,6 @@ struct Neg {
 template<size_t N, class Tag>
 const void3u Neg<N, Tag>::f = Neg<N, Tag>::func;
 
-static inline void mulPreGmp(Unit *z, const Unit *x, const Unit *y, size_t N)
-{
-	mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
-}
-
 // z[N * 2] <- x[N] * y[N]
 template<size_t N, class Tag = Gtag>
 struct MulPreCore {
@@ -113,8 +108,11 @@ const void3u MulPreCore<N, Tag>::f = MulPreCore<N, Tag>::func;
 
 template<class Tag = Gtag>
 struct EnableKaratsuba {
-	static const size_t minN = 100; /* always use mpn_mul_n for Gtag */
+	/* always use mpn* for Gtag */
+	static const size_t minMulN = 100;
+	static const size_t minSqrN = 100;
 };
+
 template<size_t N, class Tag = Gtag>
 struct MulPre {
 	/*
@@ -154,7 +152,7 @@ struct MulPre {
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
 #if 1
-		if (N >= EnableKaratsuba<Tag>::minN && (N % 2) == 0) {
+		if (N >= EnableKaratsuba<Tag>::minMulN && (N % 2) == 0) {
 			karatsuba(z, x, y);
 			return;
 		}
@@ -184,14 +182,49 @@ struct MulPre<1, Tag> {
 
 // z[N * 2] <- x[N] * x[N]
 template<size_t N, class Tag = Gtag>
-struct SqrPre {
+struct SqrPreCore {
 	static inline void func(Unit *y, const Unit *x)
 	{
-		return mpn_sqr((mp_limb_t*)y, (const mp_limb_t*)x, N);
+		mpn_sqr((mp_limb_t*)y, (const mp_limb_t*)x, N);
 	}
 	static const void2u f;
 };
 
+template<size_t N, class Tag>
+const void2u SqrPreCore<N, Tag>::f = SqrPreCore<N, Tag>::func;
+
+template<size_t N, class Tag = Gtag>
+struct SqrPre {
+	/*
+		W = 1 << H
+		x = aW + b
+		x^2 = aaW^2 + 2abW + bb
+	*/
+	static inline void karatsuba(Unit *z, const Unit *x)
+	{
+		const size_t H = N / 2;
+		SqrPre<H, Tag>::f(z, x); // b^2
+		SqrPre<H, Tag>::f(z + N, x + H); // a^2
+		Unit ab[N];
+		MulPre<H, Tag>::f(ab, x, x + H); // ab
+		Unit c = AddPre<N, Tag>::f(ab, ab, ab);
+		c += AddPre<N, Tag>::f(z + H, z + H, ab);
+		if (c) {
+			AddUnitPre<Tag>::f(z + N + H, H, c);
+		}
+	}
+	static inline void func(Unit *y, const Unit *x)
+	{
+#if 1
+		if (N >= EnableKaratsuba<Tag>::minSqrN && (N % 2) == 0) {
+			karatsuba(y, x);
+			return;
+		}
+#endif
+		SqrPreCore<N, Tag>::f(y, x);
+	}
+	static const void2u f;
+};
 template<size_t N, class Tag>
 const void2u SqrPre<N, Tag>::f = SqrPre<N, Tag>::func;
 

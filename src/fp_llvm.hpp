@@ -4,7 +4,8 @@ namespace mcl { namespace fp {
 
 template<>
 struct EnableKaratsuba<Ltag> {
-	static const size_t minN = 8; /* use karatsuba if N >= 8 */
+	static const size_t minMulN = 8;
+	static const size_t minSqrN = 6;
 };
 
 #define MCL_DEF_LLVM_FUNC(n) \
