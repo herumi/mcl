@@ -2,6 +2,11 @@
 
 namespace mcl { namespace fp {
 
+template<>
+struct EnableKaratsuba<Ltag> {
+	static const size_t minN = 8; /* use karatsuba if N >= 8 */
+};
+
 #define MCL_DEF_LLVM_FUNC(n) \
 template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
 template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \

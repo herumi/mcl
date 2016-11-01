@@ -111,6 +111,10 @@ struct MulPreCore {
 template<size_t N, class Tag>
 const void3u MulPreCore<N, Tag>::f = MulPreCore<N, Tag>::func;
 
+template<class Tag = Gtag>
+struct EnableKaratsuba {
+	static const size_t minN = 100; /* always use mpn_mul_n for Gtag */
+};
 template<size_t N, class Tag = Gtag>
 struct MulPre {
 	/*
@@ -147,7 +151,7 @@ struct MulPre {
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
 #if 1
-		if (N >= 8 && (N % 2) == 0) {
+		if (N >= EnableKaratsuba<Tag>::minN && (N % 2) == 0) {
 			karatsuba(z, x, y);
 			return;
 		}

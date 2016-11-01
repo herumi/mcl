@@ -26,11 +26,11 @@ void dump(const Unit *x, size_t N)
 
 void gggKara(uint64_t *z, const uint64_t *x, const uint64_t *y)
 {
-	MulPre<6, Gtag>::karatsuba(z, x, y);
+	MulPre<8, Gtag>::f(z, x, y);
 }
 void gggLLVM(uint64_t *z, const uint64_t *x, const uint64_t *y)
 {
-	MulPre<6, Ltag>::f(z, x, y);
+	MulPre<8, Ltag>::f(z, x, y);
 }
 
 template<size_t N>
