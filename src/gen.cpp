@@ -568,7 +568,7 @@ struct Code : public mcl::Generator {
 			Operand z = mul(x, y);
 			store(z, bitcast(pz, Operand(IntPtr, unit * 2)));
 			ret(Void);
-		} else if (N >= 32 && (N % 2) == 0) {
+		} else if (N >= 8 && (N % 2) == 0) {
 			/*
 				W = 1 << half
 				(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
