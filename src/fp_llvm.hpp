@@ -12,7 +12,7 @@ struct EnableKaratsuba<Ltag> {
 template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
 template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
 template<>const void3u MulPreCore<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
-template<>const void2u SqrPre<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
+template<>const void2u SqrPreCore<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
 template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
 template<>const void4u Add<n, Ltag>::f = &mcl_fp_add ## n ## L; \
 template<>const void4u Sub<n, Ltag>::f = &mcl_fp_sub ## n ## L; \
