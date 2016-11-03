@@ -55,7 +55,7 @@ struct gmp {
 		const int xn = x->_mp_size;
 		if (xn < 0) throw cybozu::Exception("gmp:getArray:x is negative");
 		size_t xByteSize = sizeof(*x->_mp_d) * xn;
-		if (xByteSize > bufByteSize) throw cybozu::Exception("gmp:getArray:too small") << maxSize;
+		if (xByteSize > bufByteSize) throw cybozu::Exception("gmp:getArray:too small") << xn << maxSize;
 		memcpy(buf, x->_mp_d, xByteSize);
 		memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
 	}
