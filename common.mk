@@ -6,6 +6,7 @@ endif
 ARCH?=$(shell arch)
 ifeq ($(ARCH),x86_64)
   CPU=x86-64
+  INTEL=1
   BIT=64
   BIT_OPT=-m64
   LOW_ASM_SRC=src/asm/low_x86-64.asm
@@ -13,6 +14,7 @@ ifeq ($(ARCH),x86_64)
 endif
 ifeq ($(ARCH),x86)
   CPU=x86
+  INTEL=1
   BIT=32
   BIT_OPT=-m32
   LOW_ASM_SRC=src/asm/low_x86.asm
@@ -32,8 +34,10 @@ MKDIR=mkdir -p
 RM=rm -rf
 
 ifeq ($(DEBUG),1)
-  CFLAGS+=-fsanitize=address
-  LDFLAGS+=-fsanitize=address
+  ifeq ($(INTEL),1)
+    CFLAGS+=-fsanitize=address
+    LDFLAGS+=-fsanitize=address
+  endif
 else
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG
   ifeq ($(CXX),clang++)
@@ -46,7 +50,7 @@ else
     endif
   endif
   ifeq ($(MARCH),)
-    ifeq (x86,$(findstring x86,$(CPU)))
+    ifeq ($(INTEL),1)
       CFLAGS_OPT+=-march=native
     endif
   else
