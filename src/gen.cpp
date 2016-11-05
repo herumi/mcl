@@ -40,6 +40,15 @@ struct Code : public mcl::Generator {
 			f.setPrivate();
 		}
 	}
+	/*
+		return (Unit*)p + unitN
+	*/
+	Operand getPointerOffset(const Operand& p, int unitN)
+	{
+		Operand r1 = bitcast(p, Operand(IntPtr, unit));
+		Operand r2 = getelementptr(r1, makeImm(32, unitN));
+		return bitcast(r2, Operand(IntPtr, p.bit));
+	}
 
 	void gen_mulUU()
 	{
@@ -156,7 +165,7 @@ struct Code : public mcl::Generator {
 		Operand L = load(px);
 		L = zext(L, 256);
 
-		Operand pH = getelementptr(px, makeImm(32, 1));
+		Operand pH = getPointerOffset(px, 192 / unit);
 		Operand H192 = load(pH);
 		Operand H = zext(H192, 256);
 
@@ -457,7 +466,7 @@ struct Code : public mcl::Generator {
 		t = trunc(t, 1);
 		t = select(t, H, Hp);
 		t = trunc(t, bit);
-		pz = getelementptr(pz, makeImm(32, 1));
+		pz = getPointerOffset(pz, N);
 		store(t, pz);
 		ret(Void);
 		endFunc();
@@ -491,7 +500,7 @@ struct Code : public mcl::Generator {
 		Operand p = load(pp);
 		c = select(c, p, makeImm(bit, 0));
 		Operand t = add(H, c);
-		pz = getelementptr(pz, makeImm(32, 1));
+		pz = getPointerOffset(pz, N);
 		store(t, pz);
 		ret(Void);
 		endFunc();
@@ -619,7 +628,7 @@ struct Code : public mcl::Generator {
 			t = add(t, c1);
 			t = add(t, c2);
 			Operand pzL = bitcast(pz, Operand(IntPtr, bit));
-			Operand pzH = getelementptr(pzL, makeImm(32, 1));
+			Operand pzH = getelementptr(pz, makeImm(32, N));
 			t = sub(t, zext(load(pzL), bit + unit));
 			t = sub(t, zext(load(pzH), bit + unit));
 			pzL = getelementptr(pz, makeImm(32, N / 2));
