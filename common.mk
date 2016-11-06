@@ -24,6 +24,10 @@ ifeq ($(ARCH),armv71)
   BIT=32
   LOW_ASM_SRC=src/asm/low_arm.s
 endif
+ifeq ($(ARCH),aarch64)
+  CPU=aarch64
+  BIT=64
+endif
 ifneq ($(UNAME_S),Darwin)
   LDFLAGS+=-lrt
 endif
