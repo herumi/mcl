@@ -141,6 +141,7 @@ struct Generator {
 	Eval shl(const Operand& x, uint32_t size);
 	Eval trunc(const Operand& x, uint32_t size);
 	Eval getelementptr(const Operand& p, const Operand& i);
+	Eval getelementptr(const Operand& p, int n);
 	Eval load(const Operand& p);
 	void store(const Operand& r, const Operand& p);
 	Eval select(const Operand& c, const Operand& r1, const Operand& r2);
@@ -472,6 +473,11 @@ inline Generator::Eval Generator::getelementptr(const Generator::Operand& p, con
 	}
 	e.s += p.toStr() + ", " + i.toStr();
 	return e;
+}
+
+inline Generator::Eval Generator::getelementptr(const Generator::Operand& p, int n)
+{
+	return Generator::getelementptr(p, makeImm(32, n));
 }
 
 inline Generator::Eval Generator::load(const Generator::Operand& p)
