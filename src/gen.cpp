@@ -66,6 +66,9 @@ struct Code : public mcl::Generator {
 	}
 	void storeN(Operand r, Operand p, size_t offset = 0)
 	{
+		if (p.bit != unit) {
+			throw cybozu::Exception("bad IntPtr size") << p.bit;
+		}
 		if (offset > 0) {
 			p = getelementptr(p, offset);
 		}
@@ -98,25 +101,24 @@ struct Code : public mcl::Generator {
 		}
 		return v;
 	}
-#if 0
-	Operand loadN(const Operand& p, size_t n, size_t offset = 0)
+	Operand loadN(Operand p, size_t n, size_t offset = 0)
 	{
-		if (p.bit == unit) {
-			return load(getelementptr(p, offset);
+		if (p.bit != unit) {
+			throw cybozu::Exception("bad IntPtr size") << p.bit;
 		}
-		const size_t n = p.bit / unit;
-		Operand a = bitcast(p, Operand(IntPtr, unit));
-		Operand v = load(a);
+		if (offset > 0) {
+			p = getelementptr(p, offset);
+		}
+		Operand v = load(p);
 		for (size_t i = 1; i < n; i++) {
 			v = zext(v, v.bit + unit);
-			Operand t = load(getelementptr(a, i));
+			Operand t = load(getelementptr(p, i));
 			t = zext(t, v.bit);
 			t = shl(t, unit * i);
 			v = _or(v, t);
 		}
 		return v;
 	}
-#endif
 	void gen_mulUU()
 	{
 		resetGlobalIdx();
@@ -546,17 +548,14 @@ struct Code : public mcl::Generator {
 		resetGlobalIdx();
 		std::string name = "mcl_fpDbl_sub" + cybozu::itoa(N) + "L";
 		Operand pz(IntPtr, unit);
-		Operand _px(IntPtr, unit);
-		Operand _py(IntPtr, unit);
-		Operand _pp(IntPtr, unit);
-		Function f(name, Void, pz, _px, _py, _pp);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		Operand pp(IntPtr, unit);
+		Function f(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
-		Operand px = bitcast(_px, Operand(IntPtr, b2));
-		Operand py = bitcast(_py, Operand(IntPtr, b2));
-		Operand pp = bitcast(_pp, Operand(IntPtr, bit));
-		Operand x = safeLoad(px);
-		Operand y = safeLoad(py);
+		Operand x = loadN(px, N * 2);
+		Operand y = loadN(py, N * 2);
 		x = zext(x, b2u);
 		y = zext(y, b2u);
 		Operand vc = sub(x, y); // x - y = [H:L]
@@ -567,7 +566,7 @@ struct Code : public mcl::Generator {
 		H = trunc(H, bit);
 		Operand c = lshr(vc, b2);
 		c = trunc(c, 1);
-		Operand p = safeLoad(pp);
+		Operand p = loadN(pp, N);
 		c = select(c, p, makeImm(bit, 0));
 		Operand t = add(H, c);
 		storeN(t, pz, N);
