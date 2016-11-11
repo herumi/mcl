@@ -40,31 +40,7 @@ struct Code : public mcl::Generator {
 			f.setPrivate();
 		}
 	}
-	/*
-		return (Unit*)p + unitN
-	*/
-	Operand getPointerOffset(const Operand& p, int unitN)
-	{
-		Operand r1 = bitcast(p, Operand(IntPtr, unit));
-		Operand r2 = getelementptr(r1, unitN);
-		return bitcast(r2, Operand(IntPtr, p.bit));
-	}
-	void safeStore(Operand r, const Operand& p)
-	{
-		if (r.bit == unit) {
-			store(r, p);
-			return;
-		}
-		Operand pp = bitcast(p, Operand(IntPtr, unit));
-		const size_t n = r.bit / unit;
-		for (size_t i = 0; i < n; i++) {
-			store(trunc(r, unit), getelementptr(pp, i));
-			if (i < n - 1) {
-				r = lshr(r, unit);
-			}
-		}
-	}
-	void storeN(Operand r, Operand p, size_t offset = 0)
+	void storeN(Operand r, Operand p, int offset = 0)
 	{
 		if (p.bit != unit) {
 			throw cybozu::Exception("bad IntPtr size") << p.bit;
@@ -84,24 +60,7 @@ struct Code : public mcl::Generator {
 			}
 		}
 	}
-	Operand safeLoad(const Operand& p)
-	{
-		if (p.bit == unit) {
-			return load(p);
-		}
-		const size_t n = p.bit / unit;
-		Operand a = bitcast(p, Operand(IntPtr, unit));
-		Operand v = load(a);
-		for (size_t i = 1; i < n; i++) {
-			v = zext(v, v.bit + unit);
-			Operand t = load(getelementptr(a, i));
-			t = zext(t, v.bit);
-			t = shl(t, unit * i);
-			v = _or(v, t);
-		}
-		return v;
-	}
-	Operand loadN(Operand p, size_t n, size_t offset = 0)
+	Operand loadN(Operand p, size_t n, int offset = 0)
 	{
 		if (p.bit != unit) {
 			throw cybozu::Exception("bad IntPtr size") << p.bit;
@@ -166,8 +125,7 @@ struct Code : public mcl::Generator {
 		mulPos.setPrivate();
 		beginFunc(mulPos);
 
-		px = getelementptr(px, i);
-		Operand x = safeLoad(px);
+		Operand x = load(getelementptr(px, i));
 		xy = call(mulUU, x, y);
 		ret(xy);
 		endFunc();
@@ -225,17 +183,17 @@ struct Code : public mcl::Generator {
 	void gen_mcl_fpDbl_mod_NIST_P192()
 	{
 		resetGlobalIdx();
-		Operand out(IntPtr, 192);
-		Operand px(IntPtr, 192);
+		Operand out(IntPtr, unit);
+		Operand px(IntPtr, unit);
 		mcl_fpDbl_mod_NIST_P192 = Function("mcl_fpDbl_mod_NIST_P192L", Void, out, px);
 		verifyAndSetPrivate(mcl_fpDbl_mod_NIST_P192);
 		beginFunc(mcl_fpDbl_mod_NIST_P192);
 
-		Operand L = safeLoad(px);
+		const int n = 192 / unit;
+		Operand L = loadN(px, n);
 		L = zext(L, 256);
 
-		Operand pH = getPointerOffset(px, 192 / unit);
-		Operand H192 = safeLoad(pH);
+		Operand H192 = loadN(px, n, n);
 		Operand H = zext(H192, 256);
 
 		Operand H10 = shl(H192, 64);
@@ -266,7 +224,7 @@ struct Code : public mcl::Generator {
 		Operand zp = sub(z, p);
 		Operand c = trunc(lshr(zp, 192), 1);
 		z = trunc(select(c, z, zp), 192);
-		safeStore(z, out);
+		storeN(z, out);
 		ret(Void);
 		endFunc();
 	}
@@ -282,15 +240,14 @@ struct Code : public mcl::Generator {
 		const uint32_t len = 521;
 		const uint32_t n = len / unit;
 		const uint32_t round = unit * (n + 1);
-		const uint32_t round2 = unit * (n * 2 + 1);
 		const uint32_t rem = len - n * unit;
 		const size_t mask = -(1 << rem);
-		const Operand py(IntPtr, round);
-		const Operand px(IntPtr, round2);
+		const Operand py(IntPtr, unit);
+		const Operand px(IntPtr, unit);
 		Function f("mcl_fpDbl_mod_NIST_P521L", Void, py, px);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
-		Operand x = safeLoad(px);
+		Operand x = loadN(px, n * 2 + 1);
 		Operand L = trunc(x, len);
 		L = zext(L, round);
 		Operand H = lshr(x, len);
@@ -312,26 +269,27 @@ struct Code : public mcl::Generator {
 		Label nonzero("nonzero");
 		br(c, zero, nonzero);
 	putLabel(zero);
-		store(makeImm(round, 0), py);
+		for (uint32_t i = 0; i < n + 1; i++) {
+			storeN(makeImm(unit, 0), py, i); 
+		}
 		ret(Void);
 	putLabel(nonzero);
-		store(z0, py);
+		storeN(z0, py);
 		ret(Void);
 		endFunc();
 	}
 	void gen_mcl_fp_sqr_NIST_P192()
 	{
 		resetGlobalIdx();
-		Operand py(IntPtr, 192);
+		Operand py(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192L", Void, py, px);
 		verifyAndSetPrivate(mcl_fp_sqr_NIST_P192);
 		beginFunc(mcl_fp_sqr_NIST_P192);
-		Operand buf = _alloca(192, 2);
-		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
+		Operand buf = _alloca(unit, 192 * 2 / unit);
 		// QQQ define later
-		Function mcl_fpDbl_sqrPre("mcl_fpDbl_sqrPre" + cybozu::itoa(192 / unit) + "L", Void, p, px);
-		call(mcl_fpDbl_sqrPre, p, px);
+		Function mcl_fpDbl_sqrPre("mcl_fpDbl_sqrPre" + cybozu::itoa(192 / unit) + "L", Void, buf, px);
+		call(mcl_fpDbl_sqrPre, buf, px);
 		call(mcl_fpDbl_mod_NIST_P192, py, buf);
 		ret(Void);
 		endFunc();
@@ -339,17 +297,16 @@ struct Code : public mcl::Generator {
 	void gen_mcl_fp_mulNIST_P192()
 	{
 		resetGlobalIdx();
-		Operand pz(IntPtr, 192);
+		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
 		Function f("mcl_fp_mulNIST_P192L", Void, pz, px, py);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
-		Operand buf = _alloca(192, 2);
-		Operand p = bitcast(buf, Operand(IntPtr, unit)); // QQQ : use makeType()
+		Operand buf = _alloca(unit, 192 * 2 / unit);
 		// QQQ define later
-		Function mcl_fpDbl_mulPre("mcl_fpDbl_mulPre" + cybozu::itoa(192 / unit) + "L", Void, p, px, py);
-		call(mcl_fpDbl_mulPre, p, px, py);
+		Function mcl_fpDbl_mulPre("mcl_fpDbl_mulPre" + cybozu::itoa(192 / unit) + "L", Void, buf, px, py);
+		call(mcl_fpDbl_mulPre, buf, px, py);
 		call(mcl_fpDbl_mod_NIST_P192, pz, buf);
 		ret(Void);
 		endFunc();
@@ -375,9 +332,9 @@ struct Code : public mcl::Generator {
 	{
 		resetGlobalIdx();
 		Operand r(Int, unit);
-		Operand pz(IntPtr, bit);
-		Operand px(IntPtr, bit);
-		Operand py(IntPtr, bit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
 		std::string name;
 		if (isAdd) {
 			name = "mcl_fp_addPre" + cybozu::itoa(N) + "L";
@@ -390,16 +347,16 @@ struct Code : public mcl::Generator {
 			verifyAndSetPrivate(mcl_fp_subPreM[N]);
 			beginFunc(mcl_fp_subPreM[N]);
 		}
-		Operand x = zext(safeLoad(px), bit + unit);
-		Operand y = zext(safeLoad(py), bit + unit);
+		Operand x = zext(loadN(px, N), bit + unit);
+		Operand y = zext(loadN(py, N), bit + unit);
 		Operand z;
 		if (isAdd) {
 			z = add(x, y);
-			safeStore(trunc(z, bit), pz);
+			storeN(trunc(z, bit), pz);
 			r = trunc(lshr(z, bit), unit);
 		} else {
 			z = sub(x, y);
-			safeStore(trunc(z, bit), pz);
+			storeN(trunc(z, bit), pz);
 			r = _and(trunc(lshr(z, bit), unit), makeImm(unit, 1));
 		}
 		ret(r);
@@ -440,23 +397,23 @@ struct Code : public mcl::Generator {
 	void gen_mcl_fp_add()
 	{
 		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
-		Operand px(IntPtr, bit);
-		Operand py(IntPtr, bit);
-		Operand pp(IntPtr, bit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		Operand pp(IntPtr, unit);
 		std::string name = "mcl_fp_add" + cybozu::itoa(N) + "L";
 		mcl_fp_addM[N] = Function(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(mcl_fp_addM[N]);
 		beginFunc(mcl_fp_addM[N]);
-		Operand x = safeLoad(px);
-		Operand y = safeLoad(py);
-		Operand p = safeLoad(pp);
+		Operand x = loadN(px, N);
+		Operand y = loadN(py, N);
+		Operand p = loadN(pp, N);
 		x = zext(x, bit + unit);
 		y = zext(y, bit + unit);
 		p = zext(p, bit + unit);
 		Operand t0 = add(x, y);
 		Operand t1 = trunc(t0, bit);
-		safeStore(t1, pz);
+		storeN(t1, pz);
 		Operand vc = sub(t0, p);
 		Operand c = lshr(vc, bit);
 		c = trunc(c, 1);
@@ -464,8 +421,7 @@ struct Code : public mcl::Generator {
 	Label nocarry("nocarry");
 		br(c, carry, nocarry);
 	putLabel(nocarry);
-		Operand v = trunc(vc, bit);
-		safeStore(v, pz);
+		storeN(trunc(vc, bit), pz);
 		ret(Void);
 	putLabel(carry);
 		ret(Void);
@@ -474,32 +430,32 @@ struct Code : public mcl::Generator {
 	void gen_mcl_fp_sub()
 	{
 		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
-		Operand px(IntPtr, bit);
-		Operand py(IntPtr, bit);
-		Operand pp(IntPtr, bit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		Operand pp(IntPtr, unit);
 		std::string name = "mcl_fp_sub" + cybozu::itoa(N) + "L";
 		mcl_fp_subM[N] = Function(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(mcl_fp_subM[N]);
 		beginFunc(mcl_fp_subM[N]);
-		Operand x = safeLoad(px);
-		Operand y = safeLoad(py);
+		Operand x = loadN(px, N);
+		Operand y = loadN(py, N);
 		x = zext(x, bit + unit);
 		y = zext(y, bit + unit);
 		Operand vc = sub(x, y);
 		Operand v = trunc(vc, bit);
 		Operand c = lshr(vc, bit);
 		c = trunc(c, 1);
-		safeStore(v, pz);
+		storeN(v, pz);
 	Label carry("carry");
 	Label nocarry("nocarry");
 		br(c, carry, nocarry);
 	putLabel(nocarry);
 		ret(Void);
 	putLabel(carry);
-		Operand p = safeLoad(pp);
+		Operand p = loadN(pp, N);
 		Operand t = add(v, p);
-		safeStore(t, pz);
+		storeN(t, pz);
 		ret(Void);
 		endFunc();
 	}
@@ -510,33 +466,32 @@ struct Code : public mcl::Generator {
 		const int b2 = bit * 2;
 		const int b2u = b2 + unit;
 		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
-		Operand px(IntPtr, b2);
-		Operand py(IntPtr, b2);
-		Operand pp(IntPtr, bit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		Operand pp(IntPtr, unit);
 		std::string name = "mcl_fpDbl_add" + cybozu::itoa(N) + "L";
 		Function f(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
-		Operand x = safeLoad(px);
-		Operand y = safeLoad(py);
+		Operand x = loadN(px, N * 2);
+		Operand y = loadN(py, N * 2);
 		x = zext(x, b2u);
 		y = zext(y, b2u);
 		Operand t = add(x, y); // x + y = [H:L]
 		Operand L = trunc(t, bit);
-		safeStore(L, pz);
+		storeN(L, pz);
 
 		Operand H = lshr(t, bit);
 		H = trunc(H, bu);
-		Operand p = safeLoad(pp);
+		Operand p = loadN(pp, N);
 		p = zext(p, bu);
 		Operand Hp = sub(H, p);
 		t = lshr(Hp, bit);
 		t = trunc(t, 1);
 		t = select(t, H, Hp);
 		t = trunc(t, bit);
-		pz = getPointerOffset(pz, N);
-		safeStore(t, pz);
+		storeN(t, pz, N);
 		ret(Void);
 		endFunc();
 	}
@@ -621,9 +576,8 @@ struct Code : public mcl::Generator {
 	}
 	void gen_mcl_fp_mulUnitPre()
 	{
-		const int bu = bit + unit;
 		resetGlobalIdx();
-		Operand pz(IntPtr, bu);
+		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
 		std::string name = "mcl_fp_mulUnitPre" + cybozu::itoa(N) + "L";
@@ -631,19 +585,19 @@ struct Code : public mcl::Generator {
 		verifyAndSetPrivate(mcl_fp_mulUnitPreM[N]);
 		beginFunc(mcl_fp_mulUnitPreM[N]);
 		Operand z = call(mulPvM[bit], px, y);
-		safeStore(z, pz);
+		storeN(z, pz);
 		ret(Void);
 		endFunc();
 	}
 	void generic_fpDbl_mul(const Operand& pz, const Operand& px, const Operand& py)
 	{
 		if (N == 1) {
-			Operand x = safeLoad(px);
-			Operand y = safeLoad(py);
+			Operand x = load(px);
+			Operand y = load(py);
 			x = zext(x, unit * 2);
 			y = zext(y, unit * 2);
 			Operand z = mul(x, y);
-			safeStore(z, bitcast(pz, Operand(IntPtr, unit * 2)));
+			storeN(z, pz);
 			ret(Void);
 		} else if (N >= 8 && (N % 2) == 0) {
 			/*
@@ -651,21 +605,18 @@ struct Code : public mcl::Generator {
 				(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
 				ad + bc = (a + b)(c + d) - ac - bd
 			*/
+			const int H = N / 2;
 			const int half = bit / 2;
-			Operand pxW = getelementptr(px, N / 2);
-			Operand pyW = getelementptr(py, N / 2);
+			Operand pxW = getelementptr(px, H);
+			Operand pyW = getelementptr(py, H);
 			Operand pzWW = getelementptr(pz, N);
-			call(mcl_fpDbl_mulPreM[N / 2], pz, px, py); // bd
-			call(mcl_fpDbl_mulPreM[N / 2], pzWW, pxW, pyW); // ac
+			call(mcl_fpDbl_mulPreM[H], pz, px, py); // bd
+			call(mcl_fpDbl_mulPreM[H], pzWW, pxW, pyW); // ac
 
-			Operand pa = bitcast(pxW, Operand(IntPtr, half));
-			Operand pb = bitcast(px, Operand(IntPtr, half));
-			Operand pc = bitcast(pyW, Operand(IntPtr, half));
-			Operand pd = bitcast(py, Operand(IntPtr, half));
-			Operand a = zext(safeLoad(pa), half + unit);
-			Operand b = zext(safeLoad(pb), half + unit);
-			Operand c = zext(safeLoad(pc), half + unit);
-			Operand d = zext(safeLoad(pd), half + unit);
+			Operand a = zext(loadN(pxW, H), half + unit);
+			Operand b = zext(loadN(px, H), half + unit);
+			Operand c = zext(loadN(pyW, H), half + unit);
+			Operand d = zext(loadN(py, H), half + unit);
 			Operand t1 = add(a, b);
 			Operand t2 = add(c, d);
 			Operand buf = _alloca(unit, N);
@@ -676,15 +627,12 @@ struct Code : public mcl::Generator {
 			Operand c0 = _and(c1, c2);
 			c1 = select(c1, t2L, makeImm(half, 0));
 			c2 = select(c2, t1L, makeImm(half, 0));
-			Operand buf1 = _alloca(half, 1);
-			Operand buf2 = _alloca(half, 1);
-			safeStore(t1L, buf1);
-			safeStore(t2L, buf2);
-			buf1 = bitcast(buf1, Operand(IntPtr, unit));
-			buf2 = bitcast(buf2, Operand(IntPtr, unit));
+			Operand buf1 = _alloca(unit, half / unit);
+			Operand buf2 = _alloca(unit, half / unit);
+			storeN(t1L, buf1);
+			storeN(t2L, buf2);
 			call(mcl_fpDbl_mulPreM[N / 2], buf, buf1, buf2);
-			buf = bitcast(buf, Operand(IntPtr, bit));
-			Operand t = safeLoad(buf);
+			Operand t = loadN(buf, N);
 			t = zext(t, bit + unit);
 			c0 = zext(c0, bit + unit);
 			c0 = shl(c0, bit);
@@ -695,39 +643,29 @@ struct Code : public mcl::Generator {
 			c2 = shl(c2, half);
 			t = add(t, c1);
 			t = add(t, c2);
-			Operand pzL = bitcast(pz, Operand(IntPtr, bit));
-			Operand pzH = getelementptr(pz, N);
-			t = sub(t, zext(safeLoad(pzL), bit + unit));
-			t = sub(t, zext(safeLoad(pzH), bit + unit));
-			pzL = getelementptr(pz, N / 2);
-			pzL = bitcast(pzL, Operand(IntPtr, bit + half));
+			t = sub(t, zext(loadN(pz, N), bit + unit));
+			t = sub(t, zext(loadN(pz, N, N), bit + unit));
 			if (bit + half > t.bit) {
 				t = zext(t, bit + half);
 			}
-			t = add(t, safeLoad(pzL));
-			safeStore(t, pzL);
+			t = add(t, loadN(pz, N + H, H));
+			storeN(t, pz, H);
 			ret(Void);
 		} else {
-			const int bu = bit + unit;
-			Operand y = safeLoad(py);
+			Operand y = load(py);
 			Operand xy = call(mulPvM[bit], px, y);
-			safeStore(trunc(xy, unit), pz);
+			store(trunc(xy, unit), pz);
 			Operand t = lshr(xy, unit);
-			Operand z, pzi;
 			for (uint32_t i = 1; i < N; i++) {
-				Operand pyi = getelementptr(py, i);
-				y = safeLoad(pyi);
+				y = loadN(py, 1, i);
 				xy = call(mulPvM[bit], px, y);
 				t = add(t, xy);
-				z = trunc(t, unit);
-				pzi = getelementptr(pz, i);
 				if (i < N - 1) {
-					safeStore(z, pzi);
+					storeN(trunc(t, unit), pz, i);
 					t = lshr(t, unit);
 				}
 			}
-			pzi = bitcast(pzi, Operand(IntPtr, bu));
-			safeStore(t, pzi);
+			storeN(t, pz, N - 1);
 			ret(Void);
 		}
 	}
@@ -761,7 +699,7 @@ struct Code : public mcl::Generator {
 		const int bu = bit + unit;
 		const int bu2 = bit + unit * 2;
 		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
+		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
 		Operand pp(IntPtr, unit);
@@ -770,11 +708,11 @@ struct Code : public mcl::Generator {
 		mcl_fp_montM[N].setAlias();
 		verifyAndSetPrivate(mcl_fp_montM[N]);
 		beginFunc(mcl_fp_montM[N]);
-		Operand rp = safeLoad(getelementptr(pp, -1));
-		Operand p = safeLoad(bitcast(pp, Operand(IntPtr, bit)));
+		Operand rp = load(getelementptr(pp, -1));
+		Operand p = loadN(pp, N);
 		Operand z, s, a;
 		for (uint32_t i = 0; i < N; i++) {
-			Operand y = safeLoad(getelementptr(py, i));
+			Operand y = load(getelementptr(py, i));
 			Operand xy = call(mulPvM[bit], px, y);
 			Operand at;
 			if (i == 0) {
@@ -797,7 +735,7 @@ struct Code : public mcl::Generator {
 		Operand c = trunc(lshr(vc, bit), 1);
 		z = select(c, s, vc);
 		z = trunc(z, bit);
-		safeStore(z, pz);
+		storeN(z, pz);
 		ret(Void);
 		endFunc();
 	}
@@ -807,16 +745,16 @@ struct Code : public mcl::Generator {
 		const int b2 = bit * 2;
 		const int b2u = b2 + unit;
 		resetGlobalIdx();
-		Operand pz(IntPtr, bit);
-		Operand pxy(IntPtr, b2);
+		Operand pz(IntPtr, unit);
+		Operand pxy(IntPtr, unit);
 		Operand pp(IntPtr, unit);
 		std::string name = "mcl_fp_montRed" + cybozu::itoa(N) + "L";
 		mcl_fp_montRedM[N] = Function(name, Void, pz, pxy, pp);
 		verifyAndSetPrivate(mcl_fp_montRedM[N]);
 		beginFunc(mcl_fp_montRedM[N]);
-		Operand rp = safeLoad(getelementptr(pp, -1));
-		Operand p = safeLoad(bitcast(pp, Operand(IntPtr, bit)));
-		Operand xy = safeLoad(pxy);
+		Operand rp = load(getelementptr(pp, -1));
+		Operand p = loadN(pp, N);
+		Operand xy = loadN(pxy, N * 2);
 		Operand t = zext(xy, b2 + unit);
 		Operand z;
 		for (uint32_t i = 0; i < N; i++) {
@@ -833,7 +771,7 @@ struct Code : public mcl::Generator {
 		Operand c = trunc(lshr(vc, bit), 1);
 		z = select(c, t, vc);
 		z = trunc(z, bit);
-		safeStore(z, pz);
+		storeN(z, pz);
 		ret(Void);
 		endFunc();
 	}
