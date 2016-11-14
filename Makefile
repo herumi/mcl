@@ -2,25 +2,25 @@ include common.mk
 LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
-ifeq ($(MCL_USE_XBYAK),0)
-  CFLAGS+=-DMCL_DONT_USE_XBYAK
-endif
-
 SRC_SRC=fp.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp
 ifeq ($(CPU),x86-64)
+  MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
   ifeq ($(USE_LOW_ASM),1)
     TEST_SRC+=low_test.cpp
   endif
-  ifneq ($(MCL_USE_XBYAK),0)
-    TEST_SRC+=generator_test.cpp
+  ifeq ($(MCL_USE_XBYAK),1)
+    TEST_SRC+=fp_generator_test.cpp
   endif
 endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
   CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
+endif
+ifeq ($(MCL_USE_XBYAK),0)
+  CFLAGS+=-DMCL_DONT_USE_XBYAK
 endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
@@ -109,7 +109,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt || echo "all unit tests are ok"
 
 clean:
-	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(DEPEND_FILE) $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST)
+	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST)
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
