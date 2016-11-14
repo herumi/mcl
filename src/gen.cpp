@@ -23,6 +23,7 @@ struct Code : public mcl::Generator {
 	Function makeNIST_P192;
 	Function mcl_fpDbl_mod_NIST_P192;
 	Function mcl_fp_sqr_NIST_P192;
+	FunctionMap mcl_fp_shr1_M;
 	FunctionMap mcl_fp_addPreM;
 	FunctionMap mcl_fp_subPreM;
 	FunctionMap mcl_fp_addM;
@@ -394,6 +395,21 @@ struct Code : public mcl::Generator {
 		endFunc();
 	}
 #endif
+	void gen_mcl_fp_shr1()
+	{
+		resetGlobalIdx();
+		Operand py(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		std::string name = "mcl_fp_shr1_" + cybozu::itoa(N) + "L";
+		mcl_fp_shr1_M[N] = Function(name, Void, py, px);
+		verifyAndSetPrivate(mcl_fp_shr1_M[N]);
+		beginFunc(mcl_fp_shr1_M[N]);
+		Operand x = loadN(px, N);
+		x = lshr(x, 1);
+		storeN(x, py);
+		ret(Void);
+		endFunc();
+	}
 	void gen_mcl_fp_add()
 	{
 		resetGlobalIdx();
@@ -779,6 +795,7 @@ struct Code : public mcl::Generator {
 	{
 		gen_mcl_fp_addsubPre(true);
 		gen_mcl_fp_addsubPre(false);
+		gen_mcl_fp_shr1();
 	}
 	void gen_addsub()
 	{
