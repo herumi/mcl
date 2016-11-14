@@ -132,7 +132,7 @@ public:
 			one.toMont();
 		}
 		{ // set half
-			mpz_class half = (op_.mp - 1) / 2;
+			mpz_class half = (op_.mp + 1) / 2;
 			gmp::getArray(op_.half, op_.N, half);
 		}
 		inv(inv2_, 2);
@@ -347,15 +347,15 @@ public:
 	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
 	static const inline FpT& one() { return *reinterpret_cast<const FpT*>(op_.oneRep); }
 	/*
-		return true if p/2 < x < p
-		return false if 0 <= x <= p/2
-		note p/2 == (p-1)/2 because of p is odd
+		half = (p + 1) / 2
+		return true if half <= x < p
+		return false if 0 <= x < half
 	*/
 	bool isNegative() const
 	{
 		fp::Block b;
 		getBlock(b);
-		return fp::isGreaterArray(b.p, op_.half, op_.N);
+		return fp::isGreaterOrEqualArray(b.p, op_.half, op_.N);
 	}
 	bool isValid() const
 	{
