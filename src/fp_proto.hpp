@@ -43,7 +43,6 @@ template<size_t N, class Tag = Gtag>
 struct AddPre {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
-		if (N == 0) return 0;
 		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
 	}
 	static const u3u f;
@@ -86,6 +85,19 @@ struct SubPre {
 
 template<size_t N, class Tag>
 const u3u SubPre<N, Tag>::f = SubPre<N, Tag>::func;
+
+// y[N] <- (x[N] >> 1)
+template<size_t N, class Tag = Gtag>
+struct Shr1 {
+	static inline void func(Unit *y, const Unit *x)
+	{
+		mpn_rshift((mp_limb_t*)y, (const mp_limb_t*)x, (int)N, 1);
+	}
+	static const void2u f;
+};
+
+template<size_t N, class Tag>
+const void2u Shr1<N, Tag>::f = Shr1<N, Tag>::func;
 
 // y[N] <- (-x[N]) % p[N]
 template<size_t N, class Tag = Gtag>

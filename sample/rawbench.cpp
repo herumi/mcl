@@ -38,13 +38,8 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	double fp2_sqrT, fp2_mulT;
 	CYBOZU_BENCH_T(fp_addT, op.fp_add, uz, ux, uy, op.p);
 	CYBOZU_BENCH_T(fp_subT, op.fp_sub, uz, uy, ux, op.p);
-	if (op.fp_addPre) {
-		CYBOZU_BENCH_T(fp_addPreT, op.fp_addPre, uz, ux, uy);
-		CYBOZU_BENCH_T(fp_subPreT, op.fp_subPre, uz, uy, ux);
-	} else {
-		fp_addPreT = 0;
-		fp_subPreT = 0;
-	}
+	CYBOZU_BENCH_T(fp_addPreT, op.fp_addPre, uz, ux, uy);
+	CYBOZU_BENCH_T(fp_subPreT, op.fp_subPre, uz, uy, ux);
 	CYBOZU_BENCH_T(fp_sqrT, op.fp_sqr, uz, ux, op.p);
 	CYBOZU_BENCH_T(fp_mulT, op.fp_mul, uz, ux, uy, op.p);
 	CYBOZU_BENCH_T(fp_mulUnitT, op.fp_mulUnit, uz, ux, 12345678, op.p);

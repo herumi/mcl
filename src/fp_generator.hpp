@@ -197,17 +197,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		op.fp_sub = getCurr<void4u>();
 		gen_fp_sub();
 
-		if (op.isFullBit) {
-			op.fp_addPre = 0;
-			op.fp_subPre = 0;
-		} else {
-			align(16);
-			op.fp_addPre = getCurr<u3u>();
-			gen_addSubPre(true, pn_);
-			align(16);
-			op.fp_subPre = getCurr<u3u>();
-			gen_addSubPre(false, pn_);
-		}
+		align(16);
+		op.fp_addPre = getCurr<u3u>();
+		gen_addSubPre(true, pn_);
+		align(16);
+		op.fp_subPre = getCurr<u3u>();
+		gen_addSubPre(false, pn_);
 		align(16);
 		shr1_ = getCurr<void2op>();
 		gen_shr1();

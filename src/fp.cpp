@@ -153,16 +153,17 @@ template<size_t N>
 struct SetFpDbl<N, true> {
 	static inline void exec(Op& op)
 	{
-		if (!op.isFullBit) {
+//		if (!op.isFullBit) {
 			op.fpDbl_addPre = AddPre<N * 2, Ltag>::f;
 			op.fpDbl_subPre = SubPre<N * 2, Ltag>::f;
-		}
+//		}
 	}
 };
 
 template<size_t N, class Tag, bool enableFpDbl>
 void setOpSub(Op& op)
 {
+	op.fp_shr1 = Shr1<N, Tag>::f;
 	op.fp_neg = Neg<N, Tag>::f;
 	op.fp_add = Add<N, Tag>::f;
 	op.fp_sub = Sub<N, Tag>::f;
@@ -182,10 +183,8 @@ void setOpSub(Op& op)
 	op.fpN1_mod = N1_Mod<N, Tag>::f;
 	op.fpDbl_add = DblAdd<N, Tag>::f;
 	op.fpDbl_sub = DblSub<N, Tag>::f;
-	if (!op.isFullBit) {
-		op.fp_addPre = AddPre<N, Tag>::f;
-		op.fp_subPre = SubPre<N, Tag>::f;
-	}
+	op.fp_addPre = AddPre<N, Tag>::f;
+	op.fp_subPre = SubPre<N, Tag>::f;
 	SetFpDbl<N, enableFpDbl>::exec(op);
 }
 

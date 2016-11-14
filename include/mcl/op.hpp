@@ -92,6 +92,7 @@ struct Op {
 	bool (*fp_isZero)(const Unit*);
 	void1u fp_clear;
 	void2u fp_copy;
+	void2u fp_shr1;
 	void3u fp_neg;
 	void4u fp_add;
 	void4u fp_sub;
@@ -159,6 +160,7 @@ struct Op {
 		fp_isZero = 0;
 		fp_clear = 0;
 		fp_copy = 0;
+		fp_shr1 = 0;
 		fp_neg = 0;
 		fp_add = 0;
 		fp_sub = 0;
