@@ -4,8 +4,9 @@
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
 #endif
-#include "fp_proto.hpp"
+#include "low_func.hpp"
 #ifdef MCL_USE_LLVM
+#include "proto.hpp"
 #include "fp_llvm.hpp"
 #endif
 

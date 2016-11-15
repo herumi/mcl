@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <mcl/fp.hpp>
 #include <cybozu/xorshift.hpp>
-#include "../src/fp_proto.hpp"
+#include "../src/low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "../src/fp_llvm.hpp"
 #endif
