@@ -7,7 +7,7 @@
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "proto.hpp"
-#include "fp_llvm.hpp"
+#include "low_func_llvm.hpp"
 #endif
 
 #ifdef _MSC_VER

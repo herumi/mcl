@@ -7,7 +7,7 @@
 #include <cybozu/xorshift.hpp>
 #include "../src/low_func.hpp"
 #ifdef MCL_USE_LLVM
-#include "../src/fp_llvm.hpp"
+#include "../src/low_func_llvm.hpp"
 #endif
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
