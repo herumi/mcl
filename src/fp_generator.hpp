@@ -162,7 +162,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
 	void4u mul_;
 	uint3opI mulUnit_;
-	void2op shr1_;
 	FpGenerator()
 		: CodeGenerator(4096 * 8)
 		, op_(0)
@@ -172,7 +171,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, isFullBit_(0)
 		, mul_(0)
 		, mulUnit_(0)
-		, shr1_(0)
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 	}
@@ -204,7 +202,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		op.fp_subPre = getCurr<u3u>();
 		gen_addSubPre(false, pn_);
 		align(16);
-		shr1_ = getCurr<void2op>();
+		op.fp_shr1 = getCurr<void2u>();
 		gen_shr1();
 
 		align(16);

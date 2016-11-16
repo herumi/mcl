@@ -166,7 +166,7 @@ void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 	}
 }
 
-void testShr1(const mcl::fp::FpGenerator& fg, int pn)
+void testShr1(const mcl::fp::Op& op, int pn)
 {
 	cybozu::XorShift rg;
 	for (int i = 0; i < 100; i++) {
@@ -176,7 +176,7 @@ void testShr1(const mcl::fp::FpGenerator& fg, int pn)
 		mpz_class mx;
 		mcl::gmp::setArray(mx, x, pn);
 		mx >>= 1;
-		fg.shr1_(z, x);
+		op.fp_shr1(z, x);
 		mpz_class my;
 		mcl::gmp::setArray(my, z, pn);
 		CYBOZU_TEST_EQUAL(mx, my);
@@ -192,7 +192,7 @@ void test(const char *pStr)
 	testAddSub(op);
 	testNeg(op);
 	testMulI(*op.fg, pn);
-	testShr1(*op.fg, pn);
+	testShr1(op, pn);
 }
 
 CYBOZU_TEST_AUTO(all)
