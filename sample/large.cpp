@@ -19,16 +19,16 @@ void testMul()
 		ux[i] = -i * i + 5;
 		uy[i] = -i * i + 9;
 	}
-	mulPreGmp(a, ux, uy, N);
-	MulPre<N, Gtag>::f(b, ux, uy);
+	MulPreCore<N, Gtag>::f(a, ux, uy);
+	MulPreCore<N, Ltag>::f(b, ux, uy);
 	for (size_t i = 0; i < N * 2; i++) {
 		if (a[i] != b[i]) {
 			printf("ERR %016llx %016llx\n", (long long)a[i], (long long)b[i]);
 		}
 	}
 	puts("end testMul");
-	CYBOZU_BENCH("gmp ", mulPreGmp, ux, ux, uy, N);
-	CYBOZU_BENCH("kara", (MulPre<N, Gtag>), ux, ux, uy);
+	CYBOZU_BENCH("gmp ", (MulPreCore<N, Gtag>::f), ux, ux, uy);
+	CYBOZU_BENCH("kara", (MulPre<N, Gtag>::karatsuba), ux, ux, uy);
 }
 
 void mulGmp(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_class& p)
