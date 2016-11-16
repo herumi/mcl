@@ -11,6 +11,7 @@ struct EnableKaratsuba<Ltag> {
 #define MCL_DEF_LLVM_FUNC(n) \
 template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
 template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
+template<>const void2u Shr1<n, Ltag>::f = &mcl_fp_shr1_ ## n ## L; \
 template<>const void3u MulPreCore<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
 template<>const void2u SqrPreCore<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
 template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
