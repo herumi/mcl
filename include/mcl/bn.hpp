@@ -212,7 +212,7 @@ struct ParamT {
 	*/
 	Fp2 b_div_xi;
 	bool is_b_div_xi_1_m1i;
-	Fp half;
+//	Fp half;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
@@ -241,7 +241,7 @@ struct ParamT {
 		Fp::init(p.get_str(), mode);
 		Fp2::init(cp.xi_a);
 		b = cp.b;
-		half = Fp(1) / Fp(2);
+//		half = Fp(1) / Fp(2);
 		Fp2 xi(cp.xi_a, 1);
 		b_div_xi = Fp2(b) / xi;
 		is_b_div_xi_1_m1i =  b_div_xi == Fp2(1, -1);
