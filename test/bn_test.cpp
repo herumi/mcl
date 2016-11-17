@@ -90,9 +90,50 @@ CYBOZU_TEST_AUTO(size)
 	CYBOZU_TEST_EQUAL(sizeof(G2), sizeof(Fp2) * 3);
 }
 
+void testSetStr(const TestSet& ts)
+{
+	G2 Q0(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+	G2::setCompressedExpression();
+	G2 Q;
+	for (int i = 0; i < 10; i++) {
+		G2 R;
+		R.setStr(Q.getStr());
+		CYBOZU_TEST_EQUAL(Q, R);
+		G2::add(Q, Q, Q0);
+	}
+}
+
+void testMapToG1()
+{
+	mcl::bn::MapTo<Fp> mapTo;
+
+	G1 g;
+	for (int i = 1; i < 10; i++) {
+		mapTo.calcG1(g, i);
+	}
+	if (BN::param.b == 2) {
+		CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, 0), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, mapTo.c1), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, -mapTo.c1), cybozu::Exception);
+	}
+}
+
+void testMapToG2()
+{
+	mcl::bn::MapTo<Fp> mapTo;
+
+	G2 g;
+	for (int i = 1; i < 10; i++) {
+		mapTo.calcG2(g, i);
+	}
+	if (BN::param.b == 2) {
+		CYBOZU_TEST_EXCEPTION(mapTo.calcG2(g, 0), cybozu::Exception);
+	}
+}
+
+
 void test(const TestSet& ts)
 {
-	BN::init(ts.cp, g_mode);
 	G1 P(ts.g1.a, ts.g1.b);
 	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 	Fp12 e1;
@@ -113,51 +154,18 @@ void test(const TestSet& ts)
 	*/
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
+
 }
 
 CYBOZU_TEST_AUTO(naive)
 {
-//	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
-	for (size_t i = 0; i < 1; i++) {
-		test(g_testSetTbl[i]);
-	}
-}
-
-CYBOZU_TEST_AUTO(MapToG1)
-{
-	mcl::bn::MapTo<Fp> mapTo;
-
-	G1 g;
-	for (int i = 1; i < 10; i++) {
-		mapTo.calcG1(g, i);
-	}
-	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, 0), cybozu::Exception);
-	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, mapTo.c1), cybozu::Exception);
-	CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, -mapTo.c1), cybozu::Exception);
-}
-
-CYBOZU_TEST_AUTO(MapToG2)
-{
-	mcl::bn::MapTo<Fp> mapTo;
-
-	G2 g;
-	for (int i = 1; i < 10; i++) {
-		mapTo.calcG2(g, i);
-	}
-	CYBOZU_TEST_EXCEPTION(mapTo.calcG2(g, 0), cybozu::Exception);
-}
-
-CYBOZU_TEST_AUTO(stream)
-{
-	const TestSet& ts = g_testSetTbl[0];
-	G2 Q0(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
-	G2::setCompressedExpression();
-	G2 Q;
-	for (int i = 0; i < 10; i++) {
-		G2 R;
-		R.setStr(Q.getStr());
-		CYBOZU_TEST_EQUAL(Q, R);
-		G2::add(Q, Q, Q0);
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
+		const TestSet& ts = g_testSetTbl[i];
+		BN::init(ts.cp, g_mode);
+		testSetStr(ts);
+		testMapToG1();
+		testMapToG2();
+		test(ts);
 	}
 }
 

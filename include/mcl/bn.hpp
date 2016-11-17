@@ -139,7 +139,6 @@ struct MapTo {
 	{
 		F x, y, w;
 		bool negative = legendre(t) < 0;
-		if (t.isZero()) goto ERR_POINT;
 		F::sqr(w, t);
 		w += G::b_;
 		*w.getFp0() += Fp::one();
@@ -173,7 +172,7 @@ struct MapTo {
 		"Indifferentiable hashing to Barreto Naehrig curves," in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
 
 		w = sqrt(-3) t / (1 + b + t^2)
-		Remark: throw exception if t = 0, c1, -c1
+		Remark: throw exception if t = 0, c1, -c1 and b = 2
 	*/
 	void calcG1(G1& P, const Fp& t) const
 	{
