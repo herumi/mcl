@@ -335,7 +335,22 @@ public:
 	static inline void addPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_addPre(z.v_, x.v_, y.v_); }
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
-	static inline void mulUnit(FpT& z, const FpT& x, const Unit y) { op_.fp_mulUnit(z.v_, x.v_, y, op_.p); }
+	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
+	{
+		switch (y) {
+		case 0: z.clear(); return;
+		case 1: z = x; return;
+		case 2: add(z, x, x); return;
+		case 3: { FpT t; add(t, x, x); add(z, t, x); return; }
+		case 4: add(z, x, x); add(z, z, z); return;
+		case 5: { FpT t; add(t, x, x); add(t, t, t); add(z, t, x); return; }
+		case 6: { FpT t; add(t, x, x); add(t, t, x); add(z, t, t); return; }
+		case 7: { FpT t; add(t, x, x); add(t, t, t); add(t, t, t); sub(z, t, x); return; }
+		case 8: add(z, x, x); add(z, z, z); add(z, z, z); return;
+		case 9: { FpT t; add(t, x, x); add(t, t, t); add(t, t, t); add(z, t, x); return; }
+		}
+		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
+	}
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }

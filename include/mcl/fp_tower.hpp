@@ -61,7 +61,7 @@ template<class Fp>
 class Fp2T : public fp::Operator<Fp2T<Fp> > {
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
-	static Fp xi_a_;
+	static uint32_t xi_a_;
 public:
 	typedef typename Fp::BaseFp BaseFp;
 	Fp a, b;
@@ -161,7 +161,7 @@ public:
 		Fp::add(y, aa, bb);
 	}
 
-	static const Fp& getXi_a() { return xi_a_; }
+	static uint32_t getXi_a() { return xi_a_; }
 	static void init(uint32_t xi_a)
 	{
 //		assert(Fp::maxSize <= 256);
@@ -329,9 +329,9 @@ private:
 		const Fp& a = px[0];
 		const Fp& b = px[1];
 		Fp t;
-		Fp::mul(t, a, xi_a_);
+		Fp::mulUnit(t, a, xi_a_);
 		t -= b;
-		Fp::mul(py[1], b, xi_a_);
+		Fp::mulUnit(py[1], b, xi_a_);
 		py[1] += a;
 		py[0] = t;
 	}
@@ -418,7 +418,7 @@ struct Fp2T<Fp>::Dbl {
 	}
 };
 
-template<class Fp> Fp Fp2T<Fp>::xi_a_;
+template<class Fp> uint32_t Fp2T<Fp>::xi_a_;
 
 /*
 	Fp6T = Fp2[v] / (v^3 - xi)
