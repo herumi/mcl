@@ -11,11 +11,22 @@ typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp> Fp12;
 
+typedef mcl::fp::Unit Unit;
+
+void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)
+{
+	const size_t maxN = sizeof(Fp) / sizeof(Unit);
+	Unit tmp[maxN];
+	op.fp_add(tmp, x, x, p); // 2x
+	op.fp_add(tmp, tmp, tmp, p); // 4x
+	op.fp_add(tmp, tmp, tmp, p); // 8x
+	op.fp_add(y, tmp, x, p); // 9x
+}
+
 void benchRaw(const char *p, mcl::fp::Mode mode)
 {
 	Fp::init(p, mode);
 	Fp2::init(1);
-	typedef mcl::fp::Unit Unit;
 	const size_t maxN = sizeof(Fp) / sizeof(Unit);
 	const mcl::fp::Op& op = Fp::getOp();
 	cybozu::XorShift rg;
@@ -32,7 +43,9 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	double fp_addT, fp_subT;
 	double fp_addPreT, fp_subPreT;
 	double fp_sqrT, fp_mulT;
-	double fp_mulUnitT, fp_mulUnitPreT;
+	double fp_mulUnitT;
+	double mul9T;
+	double fp_mulUnitPreT;
 	double fpN1_modT;
 	double fpDbl_addT, fpDbl_subT;
 	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
@@ -43,8 +56,9 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	CYBOZU_BENCH_T(fp_subPreT, op.fp_subPre, uz, uy, ux);
 	CYBOZU_BENCH_T(fp_sqrT, op.fp_sqr, uz, ux, op.p);
 	CYBOZU_BENCH_T(fp_mulT, op.fp_mul, uz, ux, uy, op.p);
-	CYBOZU_BENCH_T(fp_mulUnitT, op.fp_mulUnit, uz, ux, 12345678, op.p);
-	CYBOZU_BENCH_T(fp_mulUnitPreT, op.fp_mulUnitPre, ux, ux, 12345678);
+	CYBOZU_BENCH_T(fp_mulUnitT, op.fp_mulUnit, uz, ux, 9, op.p);
+	CYBOZU_BENCH_T(mul9T, mul9, op, uz, ux, op.p);
+	CYBOZU_BENCH_T(fp_mulUnitPreT, op.fp_mulUnitPre, ux, ux, 9);
 	CYBOZU_BENCH_T(fpN1_modT, op.fpN1_mod, ux, uy, op.p);
 	CYBOZU_BENCH_T(fpDbl_addT, op.fpDbl_add, uz, ux, uy, op.p);
 	CYBOZU_BENCH_T(fpDbl_subT, op.fpDbl_sub, uz, uy, ux, op.p);
@@ -62,7 +76,9 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 		"fp_add", "fp_sub",
 		"addPre", "subPre",
 		"fp_sqr", "fp_mul",
-		"mulUnit", "mulUnitP",
+		"mulUnit",
+		"mul9",
+		"mulUnitP",
 		"fpN1_mod",
 		"D_add", "D_sub",
 		"D_sqrPre", "D_mulPre", "D_mod",
@@ -76,7 +92,9 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 		fp_addT, fp_subT,
 		fp_addPreT, fp_subPreT,
 		fp_sqrT, fp_mulT,
-		fp_mulUnitT, fp_mulUnitPreT,
+		fp_mulUnitT,
+		mul9T,
+		fp_mulUnitPreT,
 		fpN1_modT,
 		fpDbl_addT, fpDbl_subT,
 		fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT,
@@ -116,7 +134,8 @@ int main(int argc, char *argv[])
 
 		// N = 4
 		"0x0000000000000001000000000000000000000000000000000000000000000085", // min prime
-		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"0x2523648240000001ba344d80000000086121000000000013a700000000000013", // BN254
+		"0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47", // Snark
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime

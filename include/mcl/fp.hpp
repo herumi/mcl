@@ -450,28 +450,6 @@ public:
 		init(mstr, mode);
 	}
 	static inline size_t getModBitLen() { return getBitSize(); }
-#if 0
-private:
-	static inline void fp_mulUnitW(Unit *z, const Unit *x, Unit y, const Unit *p)
-	{
-		Unit xy[maxSize + 1];
-		op_.fp_mulUnitPre(xy, x, y);
-		// z[N] <- xy[N + 1] % p[N]
-		op_.fpN1_mod(z, xy, p);
-	}
-	static inline void fp_mulW(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		Unit xy[maxSize * 2];
-		op_.fpDbl_mulPre(xy, x, y);
-		op_.fpDbl_mod(z, xy, p);
-	}
-	static inline void fp_sqrW(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[maxSize * 2];
-		op_.fpDbl_sqrPre(xx, x);
-		op_.fpDbl_mod(y, xx, p);
-	}
-#endif
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;

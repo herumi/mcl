@@ -8,6 +8,7 @@
 */
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#include <cybozu/bit_operation.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -291,18 +292,48 @@ const void3u N1_Mod<N, Tag>::f = N1_Mod<N, Tag>::func;
 
 // z[N] <- (x[N] * y) % p[N]
 template<size_t N, class Tag = Gtag>
-struct Mul_Unit {
+struct MulUnit {
 	static inline void func(Unit *z, const Unit *x, Unit y, const Unit *p)
 	{
 		Unit xy[N + 1];
 		MulUnitPre<N, Tag>::f(xy, x, y);
+#if 1
+		Unit len = UnitBitSize - 1 - cybozu::bsr(p[N - 1]);
+		Unit v = xy[N];
+		if (N > 1 && len < 3 && v < 0xff) {
+			for (;;) {
+				if (len == 0) {
+					v = xy[N];
+				} else {
+					v = (xy[N] << len) | (xy[N - 1] >> (UnitBitSize - len));
+				}
+				if (v == 0) break;
+				if (v == 1) {
+					xy[N] -= SubPre<N, Tag>::f(xy, xy, p);
+				} else {
+					Unit t[N + 1];
+					MulUnitPre<N, Tag>::f(t, p, v);
+					SubPre<N + 1, Tag>::f(xy, xy, t);
+				}
+			}
+			for (;;) {
+				if (SubPre<N, Tag>::f(z, xy, p)) {
+					copyC<N>(z, xy);
+					return;
+				}
+				if (SubPre<N, Tag>::f(xy, z, p)) {
+					return;
+				}
+			}
+		}
+#endif
 		N1_Mod<N, Tag>::f(z, xy, p);
 	}
 	static const void2uIu f;
 };
 
 template<size_t N, class Tag>
-const void2uIu Mul_Unit<N, Tag>::f = Mul_Unit<N, Tag>::func;
+const void2uIu MulUnit<N, Tag>::f = MulUnit<N, Tag>::func;
 
 // z[N] <- x[N * 2] % p[N]
 template<size_t N, class Tag = Gtag>

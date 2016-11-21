@@ -177,7 +177,7 @@ void setOpSub(Op& op)
 		op.fp_sqr = Sqr<N, Tag>::f;
 		op.fpDbl_mod = Dbl_Mod<N, Tag>::f;
 	}
-	op.fp_mulUnit = Mul_Unit<N, Tag>::f;
+	op.fp_mulUnit = MulUnit<N, Tag>::f;
 	op.fpDbl_mulPre = MulPre<N, Tag>::f;
 	op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
 	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
