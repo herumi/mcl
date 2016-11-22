@@ -62,7 +62,7 @@ void testFp2()
 	*/
 	z = Fp2(1, -2);
 	Fp2::mul_xi(z, z);
-	Fp a = Fp2::getXi_a();
+	Fp a = Fp2::get_xi_a();
 	CYBOZU_TEST_EQUAL(z, Fp2(a + 2, a * (-2) + 1));
 	z = x * x;
 	Fp2::sqr(y, x);

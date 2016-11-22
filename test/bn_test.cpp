@@ -1,7 +1,7 @@
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/benchmark.hpp>
-//cybozu::CpuClock clk;
+cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
 #include <mcl/bn.hpp>
 #include <cybozu/option.hpp>
@@ -152,9 +152,14 @@ void test(const TestSet& ts)
 		miller loop : 700Kclk
 		final exp   : 460Kclk
 	*/
+#if 0
+	for (int i = 0; i < 100; i++) {
+		BN::pairing(e1, Q, P);
+	}
+#else
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
-
+#endif
 }
 
 CYBOZU_TEST_AUTO(naive)
@@ -166,6 +171,11 @@ CYBOZU_TEST_AUTO(naive)
 		testMapToG1();
 		testMapToG2();
 		test(ts);
+	}
+	int count = (int)clk.getCount();
+	if (count) {
+		printf("count=%d ", count);
+		clk.put();
 	}
 }
 
