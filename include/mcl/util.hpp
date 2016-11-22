@@ -256,6 +256,30 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 #endif
 }
 
+/*
+	shortcut of multiplication by Unit
+*/
+template<class T, class U>
+bool mulSmallUnit(T& z, const T& x, U y)
+{
+	switch (y) {
+	case 0: z.clear(); break;
+	case 1: z = x; break;
+	case 2: T::add(z, x, x); break;
+	case 3: { T t; T::add(t, x, x); T::add(z, t, x); break; }
+	case 4: T::add(z, x, x); T::add(z, z, z); break;
+	case 5: { T t; T::add(t, x, x); T::add(t, t, t); T::add(z, t, x); break; }
+	case 6: { T t; T::add(t, x, x); T::add(t, t, x); T::add(z, t, t); break; }
+	case 7: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::sub(z, t, x); break; }
+	case 8: T::add(z, x, x); T::add(z, z, z); T::add(z, z, z); break;
+	case 9: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::add(z, t, x); break; }
+	case 10: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, x); T::add(z, t, t); break; }
+	default:
+		return false;
+	}
+	return true;
+}
+
 } } // mcl::fp
 
 #ifdef _MSC_VER
