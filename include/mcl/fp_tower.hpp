@@ -588,7 +588,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		const Fp2& d = y.a;
 		const Fp2& e = y.b;
 		const Fp2& f = y.c;
-#if 0
+#if 1
 		Fp2Dbl AD, BE, CF;
 		Fp2Dbl::mulPre(AD, a, d);
 		Fp2Dbl::mulPre(BE, b, e);
