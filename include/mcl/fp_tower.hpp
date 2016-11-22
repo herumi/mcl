@@ -454,16 +454,29 @@ struct Fp2DblT {
 		const Fp& b = x.b;
 		const Fp& c = y.a;
 		const Fp& d = y.b;
-		FpDbl BD;
-		Fp s, t;
-		Fp::addPre(s, a, b); // s = a + b
-		Fp::addPre(t, c, d); // t = c + d
-		FpDbl::mulPre(BD, b, d); // BD = bd
-		FpDbl::mulPre(z.a, a, c); // z.a = ac
-		FpDbl::mulPre(z.b, s, t); // z.b = st
-		FpDbl::subPre(z.b, z.b, z.a); // z.b = st - ac
-		FpDbl::subPre(z.b, z.b, BD); // z.b = st - ac - bd = ad + bc
-		FpDbl::sub(z.a, z.a, BD); // ac - bd
+		if (Fp::isFullBit()) {
+			FpDbl BD;
+			Fp s, t;
+			Fp::add(s, a, b); // s = a + b
+			Fp::add(t, c, d); // t = c + d
+			FpDbl::mulPre(BD, b, d); // BD = bd
+			FpDbl::mulPre(z.a, a, c); // z.a = ac
+			FpDbl::mulPre(z.b, s, t); // z.b = st
+			FpDbl::sub(z.b, z.b, z.a); // z.b = st - ac
+			FpDbl::sub(z.b, z.b, BD); // z.b = st - ac - bd = ad + bc
+			FpDbl::sub(z.a, z.a, BD); // ac - bd
+		} else {
+			FpDbl BD;
+			Fp s, t;
+			Fp::addPre(s, a, b); // s = a + b
+			Fp::addPre(t, c, d); // t = c + d
+			FpDbl::mulPre(BD, b, d); // BD = bd
+			FpDbl::mulPre(z.a, a, c); // z.a = ac
+			FpDbl::mulPre(z.b, s, t); // z.b = st
+			FpDbl::subPre(z.b, z.b, z.a); // z.b = st - ac
+			FpDbl::subPre(z.b, z.b, BD); // z.b = st - ac - bd = ad + bc
+			FpDbl::sub(z.a, z.a, BD); // ac - bd
+		}
 	}
 	static void mod(Fp2& y, const Fp2DblT& x)
 	{
@@ -575,7 +588,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		const Fp2& d = y.a;
 		const Fp2& e = y.b;
 		const Fp2& f = y.c;
-#if 1
+#if 0
 		Fp2Dbl AD, BE, CF;
 		Fp2Dbl::mulPre(AD, a, d);
 		Fp2Dbl::mulPre(BE, b, e);
