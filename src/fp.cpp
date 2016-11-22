@@ -162,7 +162,7 @@ struct SetFpDbl<N, true> {
 };
 
 template<size_t N, class Tag, bool enableFpDbl>
-void setOpSub(Op& op)
+void setOp2(Op& op)
 {
 	op.fp_shr1 = Shr1<N, Tag>::f;
 	op.fp_neg = Neg<N, Tag>::f;
@@ -190,7 +190,7 @@ void setOpSub(Op& op)
 }
 
 template<size_t N>
-void setOp(Op& op, Mode mode)
+void setOp(Op& op)
 {
 	// generic setup
 	op.fp_isZero = isZeroC<N>;
@@ -201,13 +201,9 @@ void setOp(Op& op, Mode mode)
 	} else {
 		op.fp_invOp = fp_invOpC;
 	}
-	setOpSub<N, Gtag, true>(op);
+	setOp2<N, Gtag, true>(op);
 #ifdef MCL_USE_LLVM
-	if (mode == FP_LLVM || mode == FP_LLVM_MONT) {
-		setOpSub<N, Ltag, (N * UnitBitSize <= 256)>(op);
-	}
-#else
-	(void)mode;
+	setOp2<N, Ltag, (N * UnitBitSize <= 256)>(op);
 #endif
 }
 
@@ -326,26 +322,26 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 #endif
 	N = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	switch (N) {
-	case 1:  setOp<1>(*this, mode);  break;
-	case 2:  setOp<2>(*this, mode);  break;
-	case 3:  setOp<3>(*this, mode);  break;
-	case 4:  setOp<4>(*this, mode);  break; // 256 if 64-bit
-	case 5:  setOp<5>(*this, mode);  break;
-	case 6:  setOp<6>(*this, mode);  break;
-	case 7:  setOp<7>(*this, mode);  break;
-	case 8:  setOp<8>(*this, mode);  break;
-	case 9:  setOp<9>(*this, mode);  break; // 576 if 64-bit
+	case 1:  setOp<1>(*this); break;
+	case 2:  setOp<2>(*this); break;
+	case 3:  setOp<3>(*this); break;
+	case 4:  setOp<4>(*this); break; // 256 if 64-bit
+	case 5:  setOp<5>(*this); break;
+	case 6:  setOp<6>(*this); break;
+	case 7:  setOp<7>(*this); break;
+	case 8:  setOp<8>(*this); break;
+	case 9:  setOp<9>(*this); break; // 576 if 64-bit
 #if CYBOZU_OS_BIT == 32 || MCL_MAX_BIT_SIZE == 768
-	case 10:  setOp<10>(*this, mode);  break;
-	case 11:  setOp<11>(*this, mode);  break;
-	case 12:  setOp<12>(*this, mode);  break; // 768 if 64-bit
+	case 10:  setOp<10>(*this); break;
+	case 11:  setOp<11>(*this); break;
+	case 12:  setOp<12>(*this); break; // 768 if 64-bit
 #endif
 #if CYBOZU_OS_BIT == 32
-	case 13:  setOp<13>(*this, mode);  break;
-	case 14:  setOp<14>(*this, mode);  break;
-	case 15:  setOp<15>(*this, mode);  break;
-	case 16:  setOp<16>(*this, mode);  break;
-	case 17:  setOp<17>(*this, mode);  break; // 544 if 32-bit
+	case 13:  setOp<13>(*this); break;
+	case 14:  setOp<14>(*this); break;
+	case 15:  setOp<15>(*this); break;
+	case 16:  setOp<16>(*this); break;
+	case 17:  setOp<17>(*this); break; // 544 if 32-bit
 #endif
 	default:
 		throw cybozu::Exception("Op::init:not:support") << N << mstr;
