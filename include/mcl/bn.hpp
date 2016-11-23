@@ -278,6 +278,7 @@ struct BNT {
 	typedef mcl::Fp12T<Fp> Fp12;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
+	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 	typedef ParamT<Fp> Param;
 	static Param param;
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
@@ -368,8 +369,61 @@ struct BNT {
 			Fp2::mul(y, x, param.b_div_xi);
 		}
 	}
-	static void dblLineWithoutP(Fp6& l, const G2& Q)
+	static void dblLineWithoutP(Fp6& l, G2& Q)
 	{
+		// 3K x 129
+//clk.begin();
+#if 0
+		Fp2 t0, t1, t2, t3, t4, t5;
+		Fp2Dbl T0, T1, T2;
+		// X1, Y1, Z1 == Q.x, Q.y, Q.z
+		// xp, yp = P[0], P[1]
+
+		// # 1
+		Fp2::sqr(t0, Q.z);
+		Fp2::mul(t4, Q.x, Q.y);
+		Fp2::sqr(t1, Q.y);
+		// # 2
+		Fp2::add(t3, t0, t0);
+		Fp2::divBy2(t4, t4);
+		Fp2::add(t5, t0, t1);
+		// # 3
+		t0 += t3;
+		// # 4
+		Fp2::mul_xi(t2, t0);
+		Fp2::sqr(t0, Q.x);
+		Fp2::add(t3, t2, t2);
+		// ## 6
+		t3 += t2;
+		Fp2::addPre(l.c, t0, t0);
+		// ## 7
+		Fp2::sub(Q.x, t1, t3);
+		Fp2::addPre(l.c, l.c, t0);
+		t3 += t1;
+		// # 8
+		Q.x *= t4;
+		Fp2::divBy2(t3, t3);
+		// ## 9
+		Fp2Dbl::sqrPre(T0, t3);
+		Fp2Dbl::sqrPre(T1, t2);
+		// # 10
+		Fp2Dbl::addPre(T2, T1, T1);
+		Fp2::add(t3, Q.y, Q.z);
+		// # 11
+		Fp2Dbl::add(T2, T2, T1);
+		Fp2::sqr(t3, t3);
+		// # 12
+		t3 -= t5;
+		// # 13
+		Fp2Dbl::sub(T0, T0, T2);
+		// # 14
+		Fp2Dbl::mod(Q.y, T0);
+		Fp2::mul(Q.z, t1, t3);
+		t2 -= t1;
+		// # 15
+		Fp2::mul_xi(l.a, t2);
+		Fp2::neg(l.b, t3);
+#else
 		Fp2 A, B, C, D, E, F, X3, G, Y3, H, Z3, I, J;
 		Fp2::mul(A, Q.x, Q.y);
 		Fp2::divBy2(A, A);
@@ -397,6 +451,8 @@ struct BNT {
 		Fp2::neg(l.b, H);
 		Fp2::add(l.c, J, J);
 		l.c += J;
+#endif
+//clk.end();
 	}
 	static void mulOpt1(Fp2& z, const Fp2& x, const Fp2& y)
 	{
@@ -413,6 +469,7 @@ struct BNT {
 	}
 	static void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 	{
+		// 4Kclk x 30
 #if 1
 		Fp2 theta;
 		Fp2::mul(theta, Q.y, R.z);
