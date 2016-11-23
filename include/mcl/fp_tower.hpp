@@ -442,9 +442,14 @@ struct Fp2DblT {
 	static void sqrPre(Fp2DblT& y, const Fp2& x)
 	{
 		Fp t1, t2;
-		Fp::addPre(t1, x.b, x.b); // 2b
+		if (Fp::isFullBit()) {
+			Fp::add(t1, x.b, x.b); // 2b
+			Fp::add(t1, x.a, x.b); // a + b
+		} else {
+			Fp::addPre(t1, x.b, x.b); // 2b
+			Fp::addPre(t1, x.a, x.b); // a + b
+		}
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
-		Fp::addPre(t1, x.a, x.b); // a + b
 		Fp::sub(t2, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
 	}
