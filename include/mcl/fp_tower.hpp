@@ -24,6 +24,16 @@ public:
 		}
 		printf("\n");
 	}
+	friend std::ostream& operator<<(std::ostream& os, const FpDblT& x)
+	{
+		char buf[20];
+		const size_t n = getUnitSize();
+		for (size_t i = 0; i < n; i++) {
+			CYBOZU_SNPRINTF(buf, sizeof(buf), "%016llx", (long long)x.v_[n - 1 - i]);
+			os << buf;
+		}
+		return os;
+	}
 	void clear()
 	{
 		const size_t n = getUnitSize();
@@ -394,7 +404,6 @@ private:
 
 template<class Fp>
 struct Fp2DblT {
-//	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2T<Fp> Fp2;
 	FpDbl a, b;
@@ -488,6 +497,10 @@ struct Fp2DblT {
 	{
 		FpDbl::mod(y.a, x.a);
 		FpDbl::mod(y.b, x.b);
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Fp2DblT& x)
+	{
+		return os << x.a << ' ' << x.b;
 	}
 };
 

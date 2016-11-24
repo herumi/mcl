@@ -446,7 +446,6 @@ struct BNT {
 		Q.y -= F;
 		Fp2::mul(Q.z, B, H);
 		Fp2::sub(I, E, B);
-		l.clear();
 		Fp2::mul_xi(l.a, I);
 		Fp2::neg(l.b, H);
 		Fp2::add(l.c, J, J);
