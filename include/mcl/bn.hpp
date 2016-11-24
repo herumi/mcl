@@ -390,7 +390,7 @@ struct BNT {
 		// # 3
 		t0 += t3;
 		// # 4
-		Fp2::mul_xi(t2, t0);
+		mul_b_div_xi(t2, t0);
 		Fp2::sqr(t0, Q.x);
 		Fp2::add(t3, t2, t2);
 		// ## 6
