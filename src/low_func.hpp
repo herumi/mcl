@@ -168,9 +168,9 @@ struct MulPre {
 		c -= SubPre<N, Tag>::f(tmp, tmp, z + N);
 		// c:tmp[N] = ad + bc
 		c += AddPre<N, Tag>::f(z + H, z + H, tmp);
-		assert(c <= 1);
+		assert(c <= 2);
 		if (c) {
-			AddUnitPre<Tag>::f(z + N + H, H, 1);
+			AddUnitPre<Tag>::f(z + N + H, H, c);
 		}
 	}
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
