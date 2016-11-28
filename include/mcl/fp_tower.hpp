@@ -65,6 +65,12 @@ public:
 	{
 		gmp::setArray(x, v_, Fp::op_.N * 2);
 	}
+	mpz_class getMpz() const
+	{
+		mpz_class x;
+		getMpz(x);
+		return x;
+	}
 	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
