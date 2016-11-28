@@ -110,6 +110,23 @@ Mode StrToMode(const std::string& s)
 	throw cybozu::Exception("StrToMode") << s;
 }
 
+void dumpUnit(Unit x)
+{
+#if CYBOZU_OS_BIT == 32
+	printf("%08x", (uint32_t)x);
+#else
+	printf("%016llx", (unsigned long long)x);
+#endif
+}
+void UnitToHex(char *buf, size_t maxBufSize, Unit x)
+{
+#if CYBOZU_OS_BIT == 32
+	CYBOZU_SNPRINTF(buf, maxBufSize, "%08x", (uint32_t)x);
+#else
+	CYBOZU_SNPRINTF(buf, maxBufSize, "%016llx ", (unsigned long long)x);
+#endif
+}
+
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 {
 	int s = n;

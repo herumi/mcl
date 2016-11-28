@@ -20,7 +20,7 @@ public:
 	{
 		const size_t n = getUnitSize();
 		for (size_t i = 0; i < n; i++) {
-			printf("%016llx ", (long long)v_[n - 1 - i]);
+			mcl::fp::dumpUnit(v_[n - 1 - i]);
 		}
 		printf("\n");
 	}
@@ -29,7 +29,7 @@ public:
 		char buf[20];
 		const size_t n = getUnitSize();
 		for (size_t i = 0; i < n; i++) {
-			CYBOZU_SNPRINTF(buf, sizeof(buf), "%016llx", (long long)x.v_[n - 1 - i]);
+			mcl::fp::UnitToHex(buf, sizeof(buf), x.v_[n - 1 - i]);
 			os << buf;
 		}
 		return os;

@@ -84,6 +84,9 @@ const char *ModeToStr(Mode mode);
 
 Mode StrToMode(const std::string& s);
 
+void dumpUnit(Unit x);
+void UnitToHex(char *buf, size_t maxBufSize, Unit x);
+
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
@@ -113,7 +116,7 @@ public:
 	{
 		const size_t N = op_.N;
 		for (size_t i = 0; i < N; i++) {
-			printf("%016llx ", (long long)v_[N - 1 - i]);
+			dumpUnit(v_[N - 1 - i]);
 		}
 		printf("\n");
 	}
