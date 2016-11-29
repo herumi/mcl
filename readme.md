@@ -1,25 +1,40 @@
 # mcl
 
-A class library of finite field and elliptic curve.
+A class library of finite field, elliptic curve and pairing
 
 # Abstract
 
-This is a library to make a protocol for elliptic curve cryptography.
-This library contains [mie](https://github.com/herumi/mie/) and [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal/).
+mcl is a library for pairing-based cryptography.
+The current version supports the optimal Ate pairing over BN curves.
+
+# Support architecture
+
+* 64-bit Windows + Visual Studio
+* x86, x86-64 Linux + gcc/clang
+* ARM
+* ARM64
+* (maybe any platoform to be supported by LLVM)
 
 # Installation Requirements
+
+* [GMP](https://gmplib.org/) must
+```
+apt install libgmp-dev
+```
+* [OpenSSL](https://www.openssl.org/) must
+* [LLVM](http://llvm.org/) optional
 
 Create a working directory (e.g., work) and clone the following repositories.
 ```
 mkdir work
 cd work
-git clone git://github.com/herumi/xbyak.git
+git clone git://github.com/herumi/mcl.git
 git clone git://github.com/herumi/cybozulib.git
+git clone git://github.com/herumi/xbyak.git
 git clone git://github.com/herumi/cybozulib_ext.git
 ```
+* Xbyak is a prerequisite for optimizing the operations in the finite field on x86-64.
 * Cybozulib_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
-* Xbyak is a prerequisite for optimizing the operations in the finite field on Intel CPUs.
-* OpenSSL and libgmp-dev are available via apt-get (or other similar commands) if using Linux.
 
 # Build and test
 To make lib/libmcl.a and test, run
@@ -30,11 +45,15 @@ To make sample programs, run
 ```
 make sample
 ```
+If LLVM is installed, then
+```
+make MCL_USE_LLVM=1 LLVM_VER=-3.8
+```
+Change `LLVM_VER=-3.8` to `LLVM_VER=-3.7` if the version of LLVM is 3.7.
 
 ## Build for 32-bit Linux
 Build openssl and gmp for 32-bit mode and install <lib32>
 ```
-cd mcl
 make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
 ```
 
@@ -46,13 +65,11 @@ msbuild /p:Configuration=Release
 
 ## Build for ARM64 Linux
 ```
-make MCL_USE_LLVM=1 LLVM_VER=-3.7 CPU=aarch64
+make MCL_USE_LLVM=1 LLVM_VER=-3.7 ARCH=aarch64
 ```
-
-### Build with LLVM
-require clang 3.8 or over.
+## Build for ARM Linux
 ```
-make MCL_USE_LLVM=1 LLVM_VER=-3.8
+make MCL_USE_LLVM=1 LLVM_VER=-3.8 ARCH=arm
 ```
 
 # License
@@ -70,6 +87,7 @@ test/elgamal_test.cpp
 test/window_method_test.cpp
 sample/vote.cpp
 ```
+This library contains [mie](https://github.com/herumi/mie/) and [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal/).
 
 # References
 * [ate-pairing](https://github.com/herumi/ate-pairing/)
