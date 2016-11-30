@@ -41,6 +41,10 @@ To make lib/libmcl.a and test, run
 ```
 make test
 ```
+To measure pairing, run
+```
+bin/bn_test.exe
+```
 To make sample programs, run
 ```
 make sample
@@ -71,6 +75,22 @@ make MCL_USE_LLVM=1 LLVM_VER=-3.7 ARCH=aarch64
 ```
 make MCL_USE_LLVM=1 LLVM_VER=-3.8 ARCH=arm
 ```
+
+## Benchmark
+
+* x64 ; Haswell
+* x86 ; Haswell
+* arm ; 900MHz quad-core ARM Cortex-A7 on Raspberry Pi2, Linux 4.4.11-v7+
+* arm64 ; 1.2GHz ARM Cortex-A53 [HiKey](http://www.96boards.org/product/hikey/)
+
+software                                                |x64(Haswell)|x86(Haswell)|arm|arm64
+--------------------------------------------------------|------|-----|----|-----
+[ate-pairing](https://github.com/herumi/ate-pairing)    | 0.34 |   - |  - |    -
+mcl                                                     | 0.62 | 2.9 | 32 |  6.2
+[TEPLA](http://www.cipher.risk.tsukuba.ac.jp/tepla/)    | 2.3  | 4.8 | 37 | 17.9
+[RELIC](https://github.com/relic-toolkit/relic)PRIME=254| 1.4  | 4.0 | 36 |    -
+[MIRACL](https://github.com/miracl/MIRACL)ake12bnx      | 4.6  |     | 78 |    -
+[NEONabe](http://sandia.cs.cinvestav.mx/Site/NEONabe)   |   -  |   - | 16 |    -
 
 # License
 
