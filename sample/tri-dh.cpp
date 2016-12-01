@@ -4,29 +4,15 @@
 #include <iostream>
 #include <fstream>
 #include <cybozu/random_generator.hpp>
-#include <mcl/bn.hpp>
+#include <mcl/bn256.hpp>
 #include <cybozu/option.hpp>
-
-typedef mcl::FpT<mcl::FpTag, 256> Fp;
-typedef mcl::bn::BNT<Fp> BN;
-typedef BN::Fp2 Fp2;
-typedef BN::Fp12 Fp12;
-typedef BN::G1 G1;
-typedef BN::G2 G2;
-
-struct FrTag;
-typedef mcl::FpT<FrTag, 256> Fr;
 
 static cybozu::RandomGenerator rg;
 
 const std::string skSuf = ".sk.txt";
 const std::string pkSuf = ".pk.txt";
 
-void setup()
-{
-	BN::init();
-	Fr::init(BN::param.r);
-}
+using namespace mcl::bn256;
 
 void keygen(const std::string& user)
 {
@@ -38,7 +24,8 @@ void keygen(const std::string& user)
 	const char *ba = "13891744915211034074451795021214165905772212241412891944830863846330766296736";
 	const char *bb = "7937318970632701341203597196594272556916396164729705624521405069090520231616";
 
-	setup();
+
+	bn256init();
 	G2 Q(Fp2(aa, ab), Fp2(ba, bb));
 	G1 P(-1, 1);
 
@@ -67,7 +54,7 @@ void load(G1& P, G2& Q, const std::string& fileName)
 
 void share(const std::string& skFile, const std::string& pk1File, const std::string& pk2File)
 {
-	setup();
+	bn256init();
 	Fr s;
 	G1 P1, P2;
 	G2 Q1, Q2;

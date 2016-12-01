@@ -3,16 +3,10 @@
 #include <cybozu/benchmark.hpp>
 cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
-#include <mcl/bn.hpp>
+#include <mcl/bn256.hpp>
 #include <cybozu/option.hpp>
 
-typedef mcl::FpT<mcl::FpTag, 256> Fp;
-typedef mcl::bn::BNT<Fp> BN;
-typedef BN::Fp2 Fp2;
-typedef BN::Fp6 Fp6;
-typedef BN::Fp12 Fp12;
-typedef BN::G1 G1;
-typedef BN::G2 G2;
+using namespace mcl::bn256;
 
 mcl::fp::Mode g_mode;
 
@@ -166,7 +160,7 @@ CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
-		BN::init(ts.cp, g_mode);
+		bn256init(ts.cp, g_mode);
 		testSetStr(ts);
 		testMapToG1();
 		testMapToG2();
