@@ -62,6 +62,15 @@ make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,
 ```
 
 ## Build for 64-bit Windows
+1) make library
+```
+>mklib.bat
+```
+2) make exe binary of sample\pairing.cpp
+```
+>mk sample\pairing.cpp
+```
+
 open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
