@@ -13,7 +13,7 @@ The current version supports the optimal Ate pairing over BN curves.
 * x86, x86-64 Linux + gcc/clang
 * ARM
 * ARM64
-* (maybe any platoform to be supported by LLVM)
+* (maybe any platform to be supported by LLVM)
 
 # Installation Requirements
 
