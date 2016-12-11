@@ -4,16 +4,32 @@ namespace mcl { namespace fp {
 
 template<>
 struct EnableKaratsuba<Ltag> {
+#if CYBOZU_OS_BIT ==  32
+	static const size_t minMulN = 10;
+	static const size_t minSqrN = 10;
+#else
 	static const size_t minMulN = 8;
 	static const size_t minSqrN = 6;
+#endif
 };
+
+#if CYBOZU_OS_BIT == 32
+	#define MCL_GMP_IS_FASTER_THAN_LLVM
+#endif
+
+#ifdef MCL_GMP_IS_FASTER_THAN_LLVM
+#define MCL_DEF_MUL(n)
+#else
+#define MCL_DEF_MUL(n) \
+template<>const void3u MulPreCore<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
+template<>const void2u SqrPreCore<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L;
+#endif
 
 #define MCL_DEF_LLVM_FUNC(n) \
 template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
 template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
 template<>const void2u Shr1<n, Ltag>::f = &mcl_fp_shr1_ ## n ## L; \
-template<>const void3u MulPreCore<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
-template<>const void2u SqrPreCore<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L; \
+MCL_DEF_MUL(n) \
 template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
 template<>const void4u Add<n, Ltag>::f = &mcl_fp_add ## n ## L; \
 template<>const void4u Sub<n, Ltag>::f = &mcl_fp_sub ## n ## L; \

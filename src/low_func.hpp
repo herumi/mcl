@@ -475,7 +475,7 @@ template<size_t N, class Tag = Gtag>
 struct Mont {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-#if 0
+#if CYBOZU_OS_BIT == 32 // check speed
 		Unit xy[N * 2];
 		MulPre<N, Tag>::f(xy, x, y);
 		MontRed<N, Tag>::f(z, xy, p);
@@ -518,10 +518,10 @@ template<size_t N, class Tag = Gtag>
 struct SqrMont {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
-#if 0
+#if CYBOZU_OS_BIT == 32 // check speed
 		Unit xx[N * 2];
 		SqrPre<N, Tag>::f(xx, x);
-		MontRed<N, Tag>(y, xx, p);
+		MontRed<N, Tag>::f(y, xx, p);
 #else
 		Mont<N, Tag>::f(y, x, x, p);
 #endif
