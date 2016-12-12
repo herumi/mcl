@@ -58,7 +58,8 @@ public:
 #ifdef MCL_EC_USE_AFFINE
 	EcT() : inf_(true) {}
 #else
-	EcT() { z.clear(); }
+	/* can't call z.clear() beforing Fp::init() */
+	EcT() { memset(&z, 0, sizeof(z)); }
 #endif
 	EcT(const Fp& _x, const Fp& _y)
 	{
