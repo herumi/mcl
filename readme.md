@@ -93,8 +93,7 @@ A benchmark of a BN curve over the 254-bit prime.
 * arm ; 900MHz quad-core ARM Cortex-A7 on Raspberry Pi2, Linux 4.4.11-v7+
 * arm64 ; 1.2GHz ARM Cortex-A53 [HiKey](http://www.96boards.org/product/hikey/)
 
-                                                         |                   msec
-software                                                 |   x64|  x86| arm|arm64
+software                                                 |   x64|  x86| arm|arm64(msec)
 ---------------------------------------------------------|------|-----|----|-----
 [ate-pairing](https://github.com/herumi/ate-pairing)     | 0.21 |   - |  - |    -
 mcl                                                      | 0.42 | 2.2 | 31 |  5.7
