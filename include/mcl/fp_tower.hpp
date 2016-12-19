@@ -460,13 +460,13 @@ struct Fp2DblT {
 		Fp t1, t2;
 		if (Fp::isFullBit()) {
 			Fp::add(t1, x.b, x.b); // 2b
-			Fp::add(t1, x.a, x.b); // a + b
+			Fp::add(t2, x.a, x.b); // a + b
 		} else {
 			Fp::addPre(t1, x.b, x.b); // 2b
-			Fp::addPre(t1, x.a, x.b); // a + b
+			Fp::addPre(t2, x.a, x.b); // a + b
 		}
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
-		Fp::sub(t2, x.a, x.b); // a - b
+		Fp::sub(t1, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
 	}
 	static void mulPre(Fp2DblT& z, const Fp2& x, const Fp2& y)
