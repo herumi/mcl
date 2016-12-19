@@ -370,86 +370,38 @@ struct BNT {
 	static void dblLineWithoutP(Fp6& l, G2& Q)
 	{
 		// 3K x 129
-//clk.begin();
-#if 0
 		Fp2 t0, t1, t2, t3, t4, t5;
-		Fp2Dbl T0, T1, T2;
-		// X1, Y1, Z1 == Q.x, Q.y, Q.z
-		// xp, yp = P[0], P[1]
-
-		// # 1
+		Fp2Dbl T0, T1;
 		Fp2::sqr(t0, Q.z);
 		Fp2::mul(t4, Q.x, Q.y);
 		Fp2::sqr(t1, Q.y);
-		// # 2
 		Fp2::add(t3, t0, t0);
 		Fp2::divBy2(t4, t4);
 		Fp2::add(t5, t0, t1);
-		// # 3
 		t0 += t3;
-		// # 4
 		mul_b_div_xi(t2, t0);
 		Fp2::sqr(t0, Q.x);
 		Fp2::add(t3, t2, t2);
-		// ## 6
 		t3 += t2;
-		Fp2::addPre(l.c, t0, t0);
-		// ## 7
+		Fp2::add(l.c, t0, t0);
 		Fp2::sub(Q.x, t1, t3);
-		Fp2::addPre(l.c, l.c, t0);
+		Fp2::add(l.c, l.c, t0);
 		t3 += t1;
-		// # 8
 		Q.x *= t4;
 		Fp2::divBy2(t3, t3);
-		// ## 9
 		Fp2Dbl::sqrPre(T0, t3);
 		Fp2Dbl::sqrPre(T1, t2);
-		// # 10
-		Fp2Dbl::addPre(T2, T1, T1);
+		Fp2Dbl::sub(T0, T0, T1);
+		Fp2Dbl::add(T1, T1, T1);
+		Fp2Dbl::sub(T0, T0, T1);
 		Fp2::add(t3, Q.y, Q.z);
-		// # 11
-		Fp2Dbl::add(T2, T2, T1);
-		Fp2::sqr(t3, t3);
-		// # 12
-		t3 -= t5;
-		// # 13
-		Fp2Dbl::sub(T0, T0, T2);
-		// # 14
 		Fp2Dbl::mod(Q.y, T0);
+		Fp2::sqr(t3, t3);
+		t3 -= t5;
 		Fp2::mul(Q.z, t1, t3);
 		t2 -= t1;
-		// # 15
 		Fp2::mul_xi(l.a, t2);
 		Fp2::neg(l.b, t3);
-#else
-		Fp2 A, B, C, D, E, F, X3, G, Y3, H, Z3, I, J;
-		Fp2::mul(A, Q.x, Q.y);
-		Fp2::divBy2(A, A);
-		Fp2::sqr(B, Q.y);
-		Fp2::sqr(C, Q.z);
-		Fp2::add(D, C, C); D += C; // D = 3C
-		mul_b_div_xi(E, D);
-		Fp2::sqr(J, Q.x);
-		Fp2::add(F, E, E); F += E; // F = 3E
-		Fp2::add(H, Q.y, Q.z);
-		Fp2::sqr(H, H);
-		H -= B;
-		H -= C;
-		Fp2::sub(Q.x, B, F);
-		Q.x *= A;
-		Fp2::add(G, B, F);
-		Fp2::divBy2(G, G);
-		Fp2::sqr(Q.y, G); // G^2
-		F *= E;// F = 3E^2
-		Q.y -= F;
-		Fp2::mul(Q.z, B, H);
-		Fp2::sub(I, E, B);
-		Fp2::mul_xi(l.a, I);
-		Fp2::neg(l.b, H);
-		Fp2::add(l.c, J, J);
-		l.c += J;
-#endif
-//clk.end();
 	}
 	static void mulOpt1(Fp2& z, const Fp2& x, const Fp2& y)
 	{
@@ -564,24 +516,6 @@ struct BNT {
 		const Fp2& y0 = y.a;
 		const Fp2& y2 = y.c;
 		const Fp2& y4 = y.b;
-#if 0
-		Fp2 t;
-		t = x1 * y2 + x4 * y4;
-		Fp2::mul_xi(t, t);
-		z.a.a = x0 * y0 + t;
-		t = x2 * y2 + x5 * y4;
-		Fp2::mul_xi(t, t);
-		z.a.b = x1 * y0 + t;
-		z.a.c = x0 * y2 + x2 * y0 + x3 * y4;
-		t = x2 * y4 + x4 * y2;
-		Fp2::mul_xi(t, t);
-		z.b.a = x3 * y0 + t;
-		t = x5 * y2;
-		Fp2::mul_xi(t, t);
-		z.b.b = x0 * y4 + x4 * y0 + t;
-		z.b.c = x1 * y4 + x3 * y2 + x5 * y0;
-#else
-
 		Fp2 y2_add_y4;
 		Fp2::add(y2_add_y4, y2, y4);
 		Fp2 x0y4, x1y4, x2y4, x3y2, x4y2, x5y2;
@@ -631,7 +565,6 @@ struct BNT {
 		Fp2::mul(z.b.c, x5, y0);
 		z.b.c += x3y2;
 		z.b.c += x1y4;
-#endif
 #else
 		Fp12 t;
 		convertFp6toFp12(t, y);
