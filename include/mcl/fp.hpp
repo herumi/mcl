@@ -116,7 +116,7 @@ public:
 	{
 		const size_t N = op_.N;
 		for (size_t i = 0; i < N; i++) {
-			dumpUnit(v_[N - 1 - i]);
+			fp::dumpUnit(v_[N - 1 - i]);
 		}
 		printf("\n");
 	}
