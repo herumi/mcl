@@ -249,9 +249,25 @@ struct ParamT {
 		for (size_t i = 1; i < gN; i++) {
 			g[i] = g[i - 1] * g[0];
 		}
-
+		/*
+			permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
+			g[0] = g^2
+			g[1] = g^4
+			g[2] = g^1
+			g[3] = g^3
+			g[4] = g^5
+		*/
+		{
+			Fp2 t = g[0];
+			g[0] = g[1];
+			g[1] = g[3];
+			g[3] = g[2];
+			g[2] = t;
+		}
 		for (size_t i = 0; i < gN; i++) {
-			g2[i] = Fp2(g[i].a, -g[i].b) * g[i];
+			Fp2 t(g[i].a, g[i].b);
+			if (pmod4 == 3) Fp::neg(t.b, t.b);
+			Fp2::mul(g2[i], t, g[i]);
 			g3[i] = g[i] * g2[i];
 		}
 		Fp2 tmp;
@@ -319,11 +335,27 @@ struct BNT {
 		for (int i = 0; i < 6; i++) {
 			Frobenius(y.getFp2()[i], x.getFp2()[i]);
 		}
-		y.getFp2()[1] *= param.g[1];
-		y.getFp2()[2] *= param.g[3];
-		y.getFp2()[3] *= param.g[0];
-		y.getFp2()[4] *= param.g[2];
-		y.getFp2()[5] *= param.g[4];
+		for (int i = 1; i < 6; i++) {
+			y.getFp2()[i] *= param.g[i - 1];
+		}
+	}
+	static  void Frobenius2(Fp12& y, const Fp12& x)
+	{
+#if 0
+		Frobenius(y, x);
+		Frobenius(y, y);
+#else
+		y.getFp2()[0] = x.getFp2()[0];
+		if (param.pmod4 == 1) {
+			for (int i = 1; i < 6; i++) {
+				Fp2::mul(y.getFp2()[i], x.getFp2()[i], param.g2[i]);
+			}
+		} else {
+			for (int i = 1; i < 6; i++) {
+				Fp2::mulFp(y.getFp2()[i], x.getFp2()[i], param.g2[i - 1].a);
+			}
+		}
+#endif
 	}
 	/*
 		p mod 6 = 1, w^6 = xi
@@ -339,8 +371,8 @@ struct BNT {
 		Frobenius(D.x, S.x);
 		Frobenius(D.y, S.y);
 		D.z = S.z;
-		D.x *= param.g[1];
-		D.y *= param.g[2];
+		D.x *= param.g[0];
+		D.y *= param.g[3];
 	}
 	/*
 		l = (a, b, c) => (a, b * P.y, c * P.x)
@@ -743,8 +775,7 @@ struct BNT {
 	{
 #if 1
 		Fp12 z;
-		Frobenius(z, x);
-		Frobenius(z, z); // z = x^(p^2)
+		Frobenius2(z, x); // z = x^(p^2)
 		Fp12::mul(z, z, x); // x^(p^2 + 1)
 		Fp12 rv;
 		Fp12::inv(rv, z);

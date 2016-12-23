@@ -126,6 +126,11 @@ public:
 		Fp::divBy2(y.a, x.a);
 		Fp::divBy2(y.b, x.b);
 	}
+	static void mulFp(Fp2T& z, const Fp2T& x, const Fp& y)
+	{
+		Fp::mul(z.a, x.a, y);
+		Fp::mul(z.b, x.b, y);
+	}
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
