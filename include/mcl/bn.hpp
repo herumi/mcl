@@ -357,6 +357,21 @@ struct BNT {
 		}
 #endif
 	}
+	static void Frobenius3(Fp12& y, const Fp12& x)
+	{
+#if 0
+		Frobenius(y, x);
+		Frobenius(y, y);
+		Frobenius(y, y);
+#else
+		for (int i = 0; i < 6; i++) {
+			Frobenius(y.getFp2()[i], x.getFp2()[i]);
+		}
+		for (int i = 1; i < 6; i++) {
+			y.getFp2()[i] *= param.g3[i - 1];
+		}
+#endif
+	}
 	/*
 		p mod 6 = 1, w^6 = xi
 		Frob(x', y') = phi Frob phi^-1(x', y')
@@ -754,13 +769,10 @@ struct BNT {
 		Fp12::mul(c0, a, a2);
 		c0 *= x;
 		Frobenius(c1, b);
-		Frobenius(c2, a);
-		Frobenius(c2, c2);
+		Frobenius2(c2, a);
 		unitaryInv(c3, x);
 		c3 *= b;
-		Frobenius(c3, c3);
-		Frobenius(c3, c3);
-		Frobenius(c3, c3);
+		Frobenius3(c3, c3);
 		Fp12::mul(y, c0, c1);
 		y *= c2;
 		y *= c3;
