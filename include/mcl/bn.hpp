@@ -663,7 +663,7 @@ struct BNT {
 	}
 	static void fasterSqr(Fp12& y, const Fp12& x)
 	{
-#if 1
+#if 0
 		Fp12::sqr(y, x);
 #else
 		const Fp2& x0(x.a.a);
