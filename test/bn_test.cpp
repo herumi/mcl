@@ -147,9 +147,8 @@ void test(const TestSet& ts)
 		final exp   : 460Kclk
 	*/
 #if 0
-	for (int i = 0; i < 100; i++) {
-		BN::pairing(e1, Q, P);
-	}
+	for (int i = 0; i < 1000; i++) BN::pairing(e1, Q, P);
+//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, Q, P); // 2.4Mclk
 #else
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
@@ -159,12 +158,14 @@ void test(const TestSet& ts)
 CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
+//i=1;
 		const TestSet& ts = g_testSetTbl[i];
 		bn256init(ts.cp, g_mode);
 		testSetStr(ts);
 		testMapToG1();
 		testMapToG2();
 		test(ts);
+//break;
 	}
 	int count = (int)clk.getCount();
 	if (count) {
