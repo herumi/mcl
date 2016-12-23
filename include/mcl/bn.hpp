@@ -725,7 +725,23 @@ struct BNT {
 	*/
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
+#if 1
+		Fp12 orgX = x;
+		y = x;
+		Fp12 conj;
+		conj.a = x.a;
+		Fp6::neg(conj.b, x.b);
+		for (size_t i = 1; i < param.zReplTbl.size(); i++) {
+			fasterSqr(y, y);
+			if (param.zReplTbl[i] > 0) {
+				y *= orgX;
+			} else if (param.zReplTbl[i] < 0) {
+				y *= conj;
+			}
+		}
+#else
 		Fp12::pow(y, x, param.abs_z);
+#endif
 		if (param.isNegative) {
 			unitaryInv(y, y);
 		}
