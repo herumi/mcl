@@ -374,6 +374,14 @@ struct Add {
 template<size_t N, class Tag>
 const void4u Add<N, Tag>::f = Add<N, Tag>::func;
 
+/* Add for not full bit prime */
+template<size_t N, class Tag = Gtag>
+struct AddNF {
+	static const void4u f;
+};
+template<size_t N, class Tag>
+const void4u AddNF<N, Tag>::f = Add<N, Tag>::f;
+
 // z[N] <- (x[N] - y[N]) % p[N]
 template<size_t N, class Tag = Gtag>
 struct Sub {
@@ -388,6 +396,15 @@ struct Sub {
 
 template<size_t N, class Tag>
 const void4u Sub<N, Tag>::f = Sub<N, Tag>::func;
+
+/* Sub for not full bit prime */
+template<size_t N, class Tag = Gtag>
+struct SubNF {
+	static const void4u f;
+};
+
+template<size_t N, class Tag>
+const void4u SubNF<N, Tag>::f = Sub<N, Tag>::f;
 
 //	z[N * 2] <- (x[N * 2] + y[N * 2]) mod p[N] << (N * UnitBitSize)
 template<size_t N, class Tag = Gtag>

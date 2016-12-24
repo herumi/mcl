@@ -184,7 +184,11 @@ void setOp2(Op& op)
 	op.fp_shr1 = Shr1<N, Tag>::f;
 	op.fp_neg = Neg<N, Tag>::f;
 	op.fp_add = Add<N, Tag>::f;
-	op.fp_sub = Sub<N, Tag>::f;
+	if (op.isFullBit) {
+		op.fp_sub = Sub<N, Tag>::f;
+	} else {
+		op.fp_sub = SubNF<N, Tag>::f;
+	}
 	if (op.isMont) {
 		op.fp_mul = Mont<N, Tag>::f;
 		op.fp_sqr = SqrMont<N, Tag>::f;

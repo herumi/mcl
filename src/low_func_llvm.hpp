@@ -33,6 +33,7 @@ MCL_DEF_MUL(n) \
 template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
 template<>const void4u Add<n, Ltag>::f = &mcl_fp_add ## n ## L; \
 template<>const void4u Sub<n, Ltag>::f = &mcl_fp_sub ## n ## L; \
+template<>const void4u SubNF<n, Ltag>::f = &mcl_fp_subNF ## n ## L; \
 template<>const void4u Mont<n, Ltag>::f = &mcl_fp_mont ## n ## L; \
 template<>const void3u MontRed<n, Ltag>::f = &mcl_fp_montRed ## n ## L; \
 template<>const void4u DblAdd<n, Ltag>::f = &mcl_fpDbl_add ## n ## L; \
