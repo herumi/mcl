@@ -410,36 +410,49 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_add()
+	void gen_mcl_fp_add(bool isFullBit = true)
 	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
 		Operand pp(IntPtr, unit);
-		std::string name = "mcl_fp_add" + cybozu::itoa(N) + "L";
+		std::string name = "mcl_fp_add";
+		if (!isFullBit) {
+			name += "NF";
+		}
+		name += cybozu::itoa(N) + "L";
 		mcl_fp_addM[N] = Function(name, Void, pz, px, py, pp);
 		verifyAndSetPrivate(mcl_fp_addM[N]);
 		beginFunc(mcl_fp_addM[N]);
 		Operand x = loadN(px, N);
 		Operand y = loadN(py, N);
-		Operand p = loadN(pp, N);
-		x = zext(x, bit + unit);
-		y = zext(y, bit + unit);
-		p = zext(p, bit + unit);
-		Operand t0 = add(x, y);
-		Operand t1 = trunc(t0, bit);
-		storeN(t1, pz);
-		Operand vc = sub(t0, p);
-		Operand c = lshr(vc, bit);
-		c = trunc(c, 1);
-	Label carry("carry");
-	Label nocarry("nocarry");
-		br(c, carry, nocarry);
-	putLabel(nocarry);
-		storeN(trunc(vc, bit), pz);
-		ret(Void);
-	putLabel(carry);
+		if (isFullBit) {
+			x = zext(x, bit + unit);
+			y = zext(y, bit + unit);
+			Operand t0 = add(x, y);
+			Operand t1 = trunc(t0, bit);
+			storeN(t1, pz);
+			Operand p = loadN(pp, N);
+			p = zext(p, bit + unit);
+			Operand vc = sub(t0, p);
+			Operand c = lshr(vc, bit);
+			c = trunc(c, 1);
+		Label carry("carry");
+		Label nocarry("nocarry");
+			br(c, carry, nocarry);
+		putLabel(nocarry);
+			storeN(trunc(vc, bit), pz);
+			ret(Void);
+		putLabel(carry);
+		} else {
+			x = add(x, y);
+			Operand p = loadN(pp, N);
+			y = sub(x, p);
+			Operand c = trunc(lshr(y, bit - 1), 1);
+			x = select(c, x, y);
+			storeN(x, pz);
+		}
 		ret(Void);
 		endFunc();
 	}
@@ -814,7 +827,8 @@ struct Code : public mcl::Generator {
 	}
 	void gen_addsub()
 	{
-		gen_mcl_fp_add();
+		gen_mcl_fp_add(true);
+		gen_mcl_fp_add(false);
 		gen_mcl_fp_sub(true);
 		gen_mcl_fp_sub(false);
 		gen_mcl_fpDbl_add();
