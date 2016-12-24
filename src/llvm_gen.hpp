@@ -138,6 +138,7 @@ struct Generator {
 	Eval _or(const Operand& x, const Operand& y);
 	void ret(const Operand& r);
 	Eval lshr(const Operand& x, uint32_t size);
+	Eval ashr(const Operand& x, uint32_t size);
 	Eval shl(const Operand& x, uint32_t size);
 	Eval trunc(const Operand& x, uint32_t size);
 	Eval getelementptr(const Operand& p, const Operand& i);
@@ -446,6 +447,11 @@ inline void Generator::ret(const Generator::Operand& x)
 inline Generator::Eval Generator::lshr(const Generator::Operand& x, uint32_t size)
 {
 	return impl::shiftSub("lshr", x, size);
+}
+
+inline Generator::Eval Generator::ashr(const Generator::Operand& x, uint32_t size)
+{
+	return impl::shiftSub("ashr", x, size);
 }
 
 inline Generator::Eval Generator::shl(const Generator::Operand& x, uint32_t size)
