@@ -359,32 +359,40 @@ template<size_t N, class Tag>
 const void3u Dbl_Mod<N, Tag>::f = Dbl_Mod<N, Tag>::func;
 
 // z[N] <- (x[N] + y[N]) % p[N]
-template<size_t N, class Tag = Gtag>
+template<size_t N, bool isFullBit, class Tag = Gtag>
 struct Add {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (AddPre<N, Tag>::f(z, x, y)) {
-			SubPre<N, Tag>::f(z, z, p);
-			return;
-		}
-		Unit tmp[N];
-		if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
-			memcpy(z, tmp, sizeof(tmp));
+		if (isFullBit) {
+			if (AddPre<N, Tag>::f(z, x, y)) {
+				SubPre<N, Tag>::f(z, z, p);
+				return;
+			}
+			Unit tmp[N];
+			if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
+				memcpy(z, tmp, sizeof(tmp));
+			}
+		} else {
+			AddPre<N, Tag>::f(z, x, y);
+			Unit a = z[N - 1];
+			Unit b = p[N - 1];
+			if (a < b) return;
+			if (a > b) {
+				SubPre<N, Tag>::f(z, z, p);
+				return;
+			}
+			Unit tmp[N - 1];
+			if (SubPre<N - 1, Tag>::f(tmp, z, p) == 0) {
+				memcpy(z, tmp, sizeof(tmp));
+				z[N - 1] = 0;
+			}
 		}
 	}
 	static const void4u f;
 };
 
-template<size_t N, class Tag>
-const void4u Add<N, Tag>::f = Add<N, Tag>::func;
-
-/* Add for not full bit prime */
-template<size_t N, class Tag = Gtag>
-struct AddNF {
-	static const void4u f;
-};
-template<size_t N, class Tag>
-const void4u AddNF<N, Tag>::f = Add<N, Tag>::f;
+template<size_t N, bool isFullBit, class Tag>
+const void4u Add<N, isFullBit, Tag>::f = Add<N, isFullBit, Tag>::func;
 
 // z[N] <- (x[N] - y[N]) % p[N]
 template<size_t N, class Tag = Gtag>

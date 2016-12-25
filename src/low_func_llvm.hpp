@@ -31,8 +31,8 @@ template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
 template<>const void2u Shr1<n, Ltag>::f = &mcl_fp_shr1_ ## n ## L; \
 MCL_DEF_MUL(n) \
 template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
-template<>const void4u Add<n, Ltag>::f = &mcl_fp_add ## n ## L; \
-template<>const void4u AddNF<n, Ltag>::f = &mcl_fp_addNF ## n ## L; \
+template<>const void4u Add<n, true, Ltag>::f = &mcl_fp_add ## n ## L; \
+template<>const void4u Add<n, false, Ltag>::f = &mcl_fp_addNF ## n ## L; \
 template<>const void4u Sub<n, Ltag>::f = &mcl_fp_sub ## n ## L; \
 template<>const void4u SubNF<n, Ltag>::f = &mcl_fp_subNF ## n ## L; \
 template<>const void4u Mont<n, Ltag>::f = &mcl_fp_mont ## n ## L; \
