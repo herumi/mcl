@@ -370,7 +370,7 @@ struct Add {
 			}
 			Unit tmp[N];
 			if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
-				memcpy(z, tmp, sizeof(tmp));
+				copyC<N>(z, tmp);
 			}
 		} else {
 			AddPre<N, Tag>::f(z, x, y);
@@ -383,7 +383,7 @@ struct Add {
 			}
 			Unit tmp[N - 1];
 			if (SubPre<N - 1, Tag>::f(tmp, z, p) == 0) {
-				memcpy(z, tmp, sizeof(tmp));
+				copyC<N - 1>(z, tmp);
 				z[N - 1] = 0;
 			}
 		}
@@ -395,7 +395,7 @@ template<size_t N, bool isFullBit, class Tag>
 const void4u Add<N, isFullBit, Tag>::f = Add<N, isFullBit, Tag>::func;
 
 // z[N] <- (x[N] - y[N]) % p[N]
-template<size_t N, class Tag = Gtag>
+template<size_t N, bool isFullBit, class Tag = Gtag>
 struct Sub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -406,17 +406,8 @@ struct Sub {
 	static const void4u f;
 };
 
-template<size_t N, class Tag>
-const void4u Sub<N, Tag>::f = Sub<N, Tag>::func;
-
-/* Sub for not full bit prime */
-template<size_t N, class Tag = Gtag>
-struct SubNF {
-	static const void4u f;
-};
-
-template<size_t N, class Tag>
-const void4u SubNF<N, Tag>::f = Sub<N, Tag>::f;
+template<size_t N, bool isFullBit, class Tag>
+const void4u Sub<N, isFullBit, Tag>::f = Sub<N, isFullBit, Tag>::func;
 
 //	z[N * 2] <- (x[N * 2] + y[N * 2]) mod p[N] << (N * UnitBitSize)
 template<size_t N, class Tag = Gtag>

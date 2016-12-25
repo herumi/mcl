@@ -185,10 +185,10 @@ void setOp2(Op& op)
 	op.fp_neg = Neg<N, Tag>::f;
 	if (op.isFullBit) {
 		op.fp_add = Add<N, true, Tag>::f;
-		op.fp_sub = Sub<N, Tag>::f;
+		op.fp_sub = Sub<N, true, Tag>::f;
 	} else {
 		op.fp_add = Add<N, false, Tag>::f;
-		op.fp_sub = SubNF<N, Tag>::f;
+		op.fp_sub = Sub<N, false, Tag>::f;
 	}
 	if (op.isMont) {
 		op.fp_mul = Mont<N, Tag>::f;
