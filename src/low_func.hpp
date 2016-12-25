@@ -381,10 +381,9 @@ struct Add {
 				SubPre<N, Tag>::f(z, z, p);
 				return;
 			}
-			Unit tmp[N - 1];
-			if (SubPre<N - 1, Tag>::f(tmp, z, p) == 0) {
-				copyC<N - 1>(z, tmp);
-				z[N - 1] = 0;
+			Unit tmp[N];
+			if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
+				copyC<N>(z, tmp);
 			}
 		}
 	}
@@ -455,7 +454,7 @@ struct MontRed {
 		const Unit rp = p[-1];
 		Unit pq[N + 1];
 		Unit buf[N * 2 + 1];
-		copyArray(buf + N + 1, xy + N + 1, N - 1);
+		copyC<N - 1>(buf + N + 1, xy + N + 1);
 		buf[N * 2] = 0;
 		Unit q = xy[0] * rp;
 		MulUnitPre<N, Tag>::f(pq, p, q);
