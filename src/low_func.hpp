@@ -358,6 +358,25 @@ struct Dbl_Mod {
 template<size_t N, class Tag>
 const void3u Dbl_Mod<N, Tag>::f = Dbl_Mod<N, Tag>::func;
 
+template<size_t N, class Tag>
+struct SubIfPossible {
+	static inline void f(Unit *z, const Unit *p)
+	{
+		Unit tmp[N - 1];
+		if (SubPre<N - 1, Tag>::f(tmp, z, p) == 0) {
+			copyC<N - 1>(z, tmp);
+			z[N - 1] = 0;
+		}
+	}
+};
+template<class Tag>
+struct SubIfPossible<1, Tag> {
+	static inline void f(Unit *, const Unit *)
+	{
+	}
+};
+
+
 // z[N] <- (x[N] + y[N]) % p[N]
 template<size_t N, bool isFullBit, class Tag = Gtag>
 struct Add {
@@ -381,10 +400,8 @@ struct Add {
 				SubPre<N, Tag>::f(z, z, p);
 				return;
 			}
-			Unit tmp[N];
-			if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
-				copyC<N>(z, tmp);
-			}
+			/* the top of z and p are same */
+			SubIfPossible<N, Tag>::f(z, p);
 		}
 	}
 	static const void4u f;
