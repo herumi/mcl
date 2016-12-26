@@ -543,6 +543,17 @@ struct Mont {
 				}
 			}
 		} else {
+			/*
+				R = 1 << 64
+				L % 64 = 63 ; not full bit
+				F = 1 << (L + 1)
+				max p = (1 << L) - 1
+				x, y <= p - 1
+				max x * y[0], p * q <= ((1 << L) - 1)(R - 1)
+				t = x * y[i] + p * q <= 2((1 << L) - 1)(R - 1) = (F - 2)(R - 1)
+				t >> 64 <= (F - 2)(R - 1)/R = (F - 2) - (F - 2)/R
+				t + (t >> 64) = (F - 2)R - (F - 2)/R < FR
+			*/
 			Unit carry;
 			(void)carry;
 			Unit buf[N * 2 + 1];
