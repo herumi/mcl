@@ -89,7 +89,7 @@ make MCL_USE_LLVM=1 LLVM_VER=-3.8 ARCH=arm
 
 A benchmark of a BN curve over the 254-bit prime.
 * x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz
-    ```
+    * ```
     sudo cpufreq-set -g performance
     ```
 * arm ; 900MHz quad-core ARM Cortex-A7 on Raspberry Pi2, Linux 4.4.11-v7+
