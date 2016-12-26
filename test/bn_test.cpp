@@ -145,8 +145,13 @@ void test(const TestSet& ts)
 		Fp12 e = e1, ea;
 		G1 Pa;
 		G2 Qa;
+#if CYBOZU_OS_BIT == 64
+		const int count = 1000;
+#else
+		const int count = 100;
+#endif
 		mpz_class a("0x18b48dddfb2f81cc829b4b9acd393ccb1e90909aabe126bcdbe6a96438eaf313");
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < count; i++) {
 			Fp12::pow(ea, e, a);
 			G1::mul(Pa, P, a);
 			G2::mul(Qa, Q, a);
