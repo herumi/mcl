@@ -96,7 +96,7 @@ A benchmark of a BN curve over the 254-bit prime.
 software                                                 |   x64|  x86| arm|arm64(msec)
 ---------------------------------------------------------|------|-----|----|-----
 [ate-pairing](https://github.com/herumi/ate-pairing)     | 0.21 |   - |  - |    -
-mcl                                                      | 0.35 | 2.0 | 27 |  4.5
+mcl                                                      | 0.35 | 2.0 | 27 |  4.4
 [TEPLA](http://www.cipher.risk.tsukuba.ac.jp/tepla/)     | 1.76 | 3.7 | 37 | 17.9
 [RELIC](https://github.com/relic-toolkit/relic) PRIME=254| 1.31 | 3.5 | 36 |    -
 [MIRACL](https://github.com/miracl/MIRACL) ake12bnx      | 4.2  |   - | 78 |    -
