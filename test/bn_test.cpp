@@ -141,6 +141,22 @@ void test(const TestSet& ts)
 //		Fp12::pow(e1, e1, x);
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
+	{
+		Fp12 e = e1, ea;
+		G1 Pa;
+		G2 Qa;
+		mpz_class a("0x18b48dddfb2f81cc829b4b9acd393ccb1e90909aabe126bcdbe6a96438eaf313");
+		for (int i = 0; i < 1000; i++) {
+			Fp12::pow(ea, e, a);
+			G1::mul(Pa, P, a);
+			G2::mul(Qa, Q, a);
+			BN::pairing(e1, Q, Pa);
+			BN::pairing(e2, Qa, P);
+			CYBOZU_TEST_EQUAL(ea, e1);
+			CYBOZU_TEST_EQUAL(ea, e2);
+			a--;
+		}
+	}
 	/*
 		ate-pairing on Haswell
 		miller loop : 700Kclk
