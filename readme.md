@@ -88,7 +88,7 @@ make MCL_USE_LLVM=1 LLVM_VER=-3.8 ARCH=arm
 ## Benchmark
 
 A benchmark of a BN curve over the 254-bit prime.
-* x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake)
+* x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz
     ```
     sudo cpufreq-set -g performance
     ```
