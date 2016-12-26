@@ -364,10 +364,9 @@ struct BNT {
 		Frobenius(y, y);
 		Frobenius(y, y);
 #else
-		for (int i = 0; i < 6; i++) {
-			Frobenius(y.getFp2()[i], x.getFp2()[i]);
-		}
+		Frobenius(y.getFp2()[0], x.getFp2()[0]);
 		for (int i = 1; i < 6; i++) {
+			Frobenius(y.getFp2()[i], x.getFp2()[i]);
 			y.getFp2()[i] *= param.g3[i - 1];
 		}
 #endif
