@@ -507,7 +507,7 @@ const void3u MontRed<N, Tag>::f = MontRed<N, Tag>::func;
 	z[N] <- Montgomery(x[N], y[N], p[N])
 	REMARK : assume p[-1] = rp
 */
-template<size_t N, class Tag = Gtag>
+template<size_t N, bool isFullBit, class Tag = Gtag>
 struct Mont {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
@@ -517,26 +517,56 @@ struct Mont {
 		MontRed<N, Tag>::f(z, xy, p);
 #else
 		const Unit rp = p[-1];
-		Unit buf[N * 2 + 2];
-		Unit *c = buf;
-		MulUnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
-		Unit q = c[0] * rp;
-		Unit t[N + 2];
-		MulUnitPre<N, Tag>::f(t, p, q); // p * q
-		t[N + 1] = 0; // always zero
-		c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
-		c++;
-		for (size_t i = 1; i < N; i++) {
-			MulUnitPre<N, Tag>::f(t, x, y[i]);
+		if (isFullBit) {
+			Unit buf[N * 2 + 2];
+			Unit *c = buf;
+			MulUnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+			Unit q = c[0] * rp;
+			Unit t[N + 2];
+			MulUnitPre<N, Tag>::f(t, p, q); // p * q
+			t[N + 1] = 0; // always zero
 			c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
-			q = c[0] * rp;
-			MulUnitPre<N, Tag>::f(t, p, q);
-			AddPre<N + 2, Tag>::f(c, c, t);
 			c++;
-		}
-		if (c[N]) {
-			SubPre<N, Tag>::f(z, c, p);
+			for (size_t i = 1; i < N; i++) {
+				MulUnitPre<N, Tag>::f(t, x, y[i]);
+				c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
+				q = c[0] * rp;
+				MulUnitPre<N, Tag>::f(t, p, q);
+				AddPre<N + 2, Tag>::f(c, c, t);
+				c++;
+			}
+			if (c[N]) {
+				SubPre<N, Tag>::f(z, c, p);
+			} else {
+				if (SubPre<N, Tag>::f(z, c, p)) {
+					memcpy(z, c, N * sizeof(Unit));
+				}
+			}
 		} else {
+			Unit carry;
+			(void)carry;
+			Unit buf[N * 2 + 1];
+			Unit *c = buf;
+			MulUnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+			Unit q = c[0] * rp;
+			Unit t[N + 1];
+			MulUnitPre<N, Tag>::f(t, p, q); // p * q
+			carry = AddPre<N + 1, Tag>::f(c, c, t);
+			assert(carry == 0);
+			c++;
+			c[N] = 0;
+			for (size_t i = 1; i < N; i++) {
+				c[N + 1] = 0;
+				MulUnitPre<N, Tag>::f(t, x, y[i]);
+				carry = AddPre<N + 1, Tag>::f(c, c, t);
+				assert(carry == 0);
+				q = c[0] * rp;
+				MulUnitPre<N, Tag>::f(t, p, q);
+				carry = AddPre<N + 1, Tag>::f(c, c, t);
+				assert(carry == 0);
+				c++;
+			}
+			assert(c[N] == 0);
 			if (SubPre<N, Tag>::f(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
@@ -546,11 +576,11 @@ struct Mont {
 	static const void4u f;
 };
 
-template<size_t N, class Tag>
-const void4u Mont<N, Tag>::f = Mont<N, Tag>::func;
+template<size_t N, bool isFullBit, class Tag>
+const void4u Mont<N, isFullBit, Tag>::f = Mont<N, isFullBit, Tag>::func;
 
 // z[N] <- Montgomery(x[N], x[N], p[N])
-template<size_t N, class Tag = Gtag>
+template<size_t N, bool isFullBit, class Tag = Gtag>
 struct SqrMont {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
@@ -559,13 +589,13 @@ struct SqrMont {
 		SqrPre<N, Tag>::f(xx, x);
 		MontRed<N, Tag>::f(y, xx, p);
 #else
-		Mont<N, Tag>::f(y, x, x, p);
+		Mont<N, isFullBit, Tag>::f(y, x, x, p);
 #endif
 	}
 	static const void3u f;
 };
-template<size_t N, class Tag>
-const void3u SqrMont<N, Tag>::f = SqrMont<N, Tag>::func;
+template<size_t N, bool isFullBit, class Tag>
+const void3u SqrMont<N, isFullBit, Tag>::f = SqrMont<N, isFullBit, Tag>::func;
 
 // z[N] <- (x[N] * y[N]) % p[N]
 template<size_t N, class Tag = Gtag>

@@ -191,8 +191,13 @@ void setOp2(Op& op)
 		op.fp_sub = Sub<N, false, Tag>::f;
 	}
 	if (op.isMont) {
-		op.fp_mul = Mont<N, Tag>::f;
-		op.fp_sqr = SqrMont<N, Tag>::f;
+		if (op.isFullBit) {
+			op.fp_mul = Mont<N, true, Tag>::f;
+			op.fp_sqr = SqrMont<N, true, Tag>::f;
+		} else {
+			op.fp_mul = Mont<N, false, Tag>::f;
+			op.fp_sqr = SqrMont<N, false, Tag>::f;
+		}
 		op.fpDbl_mod = MontRed<N, Tag>::f;
 	} else {
 		op.fp_mul = Mul<N, Tag>::f;

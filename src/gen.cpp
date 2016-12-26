@@ -738,7 +738,7 @@ struct Code : public mcl::Generator {
 		generic_fpDbl_mul(py, px, px);
 		endFunc();
 	}
-	void gen_mcl_fp_mont()
+	void gen_mcl_fp_mont(bool isFullBit = true)
 	{
 		const int bu = bit + unit;
 		const int bu2 = bit + unit * 2;
@@ -747,39 +747,75 @@ struct Code : public mcl::Generator {
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
 		Operand pp(IntPtr, unit);
-		std::string name = "mcl_fp_mont" + cybozu::itoa(N) + "L";
+		std::string name = "mcl_fp_mont";
+		if (!isFullBit) {
+			name += "NF";
+		}
+		name += cybozu::itoa(N) + "L";
 		mcl_fp_montM[N] = Function(name, Void, pz, px, py, pp);
 		mcl_fp_montM[N].setAlias();
 		verifyAndSetPrivate(mcl_fp_montM[N]);
 		beginFunc(mcl_fp_montM[N]);
 		Operand rp = load(getelementptr(pp, -1));
-		Operand p = loadN(pp, N);
 		Operand z, s, a;
-		for (uint32_t i = 0; i < N; i++) {
-			Operand y = load(getelementptr(py, i));
-			Operand xy = call(mulPvM[bit], px, y);
-			Operand at;
-			if (i == 0) {
-				a = zext(xy, bu2);
-				at = trunc(xy, unit);
-			} else {
-				xy = zext(xy, bu2);
-				a = add(s, xy);
-				at = trunc(a, unit);
+		if (1 || isFullBit) {
+			for (uint32_t i = 0; i < N; i++) {
+				Operand y = load(getelementptr(py, i));
+				Operand xy = call(mulPvM[bit], px, y);
+				Operand at;
+				if (i == 0) {
+					a = zext(xy, bu2);
+					at = trunc(xy, unit);
+				} else {
+					xy = zext(xy, bu2);
+					a = add(s, xy);
+					at = trunc(a, unit);
+				}
+				Operand q = mul(at, rp);
+				Operand pq = call(mulPvM[bit], pp, q);
+				pq = zext(pq, bu2);
+				Operand t = add(a, pq);
+				s = lshr(t, unit);
 			}
-			Operand q = mul(at, rp);
-			Operand pq = call(mulPvM[bit], pp, q);
-			pq = zext(pq, bu2);
-			Operand t = add(a, pq);
-			s = lshr(t, unit);
+			s = trunc(s, bu);
+			Operand p = zext(loadN(pp, N), bu);
+			Operand vc = sub(s, p);
+			Operand c = trunc(lshr(vc, bit), 1);
+			z = select(c, s, vc);
+			z = trunc(z, bit);
+			storeN(z, pz);
+		} else {
+			for (uint32_t i = 0; i < N; i++) {
+				Operand y = load(getelementptr(py, i));
+				Operand xy = call(mulPvM[bit], px, y);
+				Operand at;
+				if (i == 0) {
+					a = xy;
+					at = trunc(xy, unit);
+					Operand q = mul(at, rp);
+					Operand pq = call(mulPvM[bit], pp, q);
+					pq = zext(pq, bu2);
+					Operand t = add(a, pq);
+					s = lshr(t, unit);
+				} else {
+					xy = zext(xy, bu2);
+					a = add(s, xy);
+					at = trunc(a, unit);
+					Operand q = mul(at, rp);
+					Operand pq = call(mulPvM[bit], pp, q);
+					pq = zext(pq, bu2);
+					Operand t = add(a, pq);
+					s = lshr(t, unit);
+				}
+			}
+			s = trunc(s, bu);
+			Operand p = zext(loadN(pp, N), bu);
+			Operand vc = sub(s, p);
+			Operand c = trunc(lshr(vc, bit), 1);
+			z = select(c, s, vc);
+			z = trunc(z, bit);
+			storeN(z, pz);
 		}
-		s = trunc(s, bu);
-		p = zext(p, bu);
-		Operand vc = sub(s, p);
-		Operand c = trunc(lshr(vc, bit), 1);
-		z = select(c, s, vc);
-		z = trunc(z, bit);
-		storeN(z, pz);
 		ret(Void);
 		endFunc();
 	}
@@ -840,7 +876,8 @@ struct Code : public mcl::Generator {
 		gen_mcl_fp_mulUnitPre();
 		gen_mcl_fpDbl_mulPre();
 		gen_mcl_fpDbl_sqrPre();
-		gen_mcl_fp_mont();
+		gen_mcl_fp_mont(true);
+		gen_mcl_fp_mont(false);
 		gen_mcl_fp_montRed();
 	}
 	void setBit(uint32_t bit)
