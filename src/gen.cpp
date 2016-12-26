@@ -758,7 +758,7 @@ struct Code : public mcl::Generator {
 		beginFunc(mcl_fp_montM[N]);
 		Operand rp = load(getelementptr(pp, -1));
 		Operand z, s, a;
-		if (1 || isFullBit) {
+		if (isFullBit) {
 			for (uint32_t i = 0; i < N; i++) {
 				Operand y = load(getelementptr(py, i));
 				Operand xy = call(mulPvM[bit], px, y);
@@ -785,35 +785,27 @@ struct Code : public mcl::Generator {
 			z = trunc(z, bit);
 			storeN(z, pz);
 		} else {
-			for (uint32_t i = 0; i < N; i++) {
-				Operand y = load(getelementptr(py, i));
-				Operand xy = call(mulPvM[bit], px, y);
-				Operand at;
-				if (i == 0) {
-					a = xy;
-					at = trunc(xy, unit);
-					Operand q = mul(at, rp);
-					Operand pq = call(mulPvM[bit], pp, q);
-					pq = zext(pq, bu2);
-					Operand t = add(a, pq);
-					s = lshr(t, unit);
-				} else {
-					xy = zext(xy, bu2);
-					a = add(s, xy);
-					at = trunc(a, unit);
-					Operand q = mul(at, rp);
-					Operand pq = call(mulPvM[bit], pp, q);
-					pq = zext(pq, bu2);
-					Operand t = add(a, pq);
-					s = lshr(t, unit);
-				}
+			Operand y = load(py);
+			Operand xy = call(mulPvM[bit], px, y);
+			Operand c0 = trunc(xy, unit);
+			Operand q = mul(c0, rp);
+			Operand pq = call(mulPvM[bit], pp, q);
+			Operand t = add(xy, pq);
+			t = lshr(t, unit); // bu-bit
+			for (uint32_t i = 1; i < N; i++) {
+				y = load(getelementptr(py, i));
+				xy = call(mulPvM[bit], px, y);
+				t = add(t, xy);
+				c0 = trunc(t, unit);
+				q = mul(c0, rp);
+				pq = call(mulPvM[bit], pp, q);
+				t = add(t, pq);
+				t = lshr(t, unit);
 			}
-			s = trunc(s, bu);
-			Operand p = zext(loadN(pp, N), bu);
-			Operand vc = sub(s, p);
-			Operand c = trunc(lshr(vc, bit), 1);
-			z = select(c, s, vc);
-			z = trunc(z, bit);
+			t = trunc(t, bit);
+			Operand vc = sub(t, loadN(pp, N));
+			Operand c = trunc(lshr(vc, bit - 1), 1);
+			z = select(c, t, vc);
 			storeN(z, pz);
 		}
 		ret(Void);
