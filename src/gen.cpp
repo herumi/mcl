@@ -883,17 +883,25 @@ struct Code : public mcl::Generator {
 		unit2 = unit * 2;
 		unitStr = cybozu::itoa(unit);
 	}
-	void gen(const StrSet& privateFuncList, uint32_t maxBitSize)
+	void gen(const StrSet& privateFuncList, uint32_t maxBitSize, const std::string& putMode)
 	{
+		if (putMode != "all" && putMode != "mul" && putMode != "etc") throw cybozu::Exception("gen:putMode") << putMode;
+		bool putMul = putMode == "all" || putMode == "mul";
+		bool putEtc = putMode == "all" || putMode == "etc";
 		this->privateFuncList = &privateFuncList;
 		gen_once();
 		uint32_t end = ((maxBitSize + unit - 1) / unit);
 		for (uint32_t n = 1; n <= end; n++) {
 			setBit(n * unit);
-			gen_all();
-			gen_addsub();
-			gen_mul();
+			if (putMul) {
+				gen_mul();
+			}
+			if (putEtc) {
+				gen_all();
+				gen_addsub();
+			}
 		}
+		if (!putEtc) return;
 		if (unit == 64 && maxBitSize == 768) {
 			for (uint32_t i = maxBitSize + unit * 2; i <= maxBitSize * 2; i += unit * 2) {
 				setBit(i);
@@ -908,10 +916,12 @@ int main(int argc, char *argv[])
 {
 	uint32_t unit;
 	bool oldLLVM;
+	std::string putMode;
 	std::string privateFile;
 	cybozu::Option opt;
 	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", ": unit");
 	opt.appendBoolOpt(&oldLLVM, "old", ": old LLVM(before 3.8)");
+	opt.appendOpt(&putMode, "all", "put", ": all/mul/etc");
 	opt.appendOpt(&privateFile, "", "f", ": private function list file");
 	opt.appendHelp("h");
 	if (!opt.parse(argc, argv)) {
@@ -932,7 +942,7 @@ int main(int argc, char *argv[])
 	}
 	c.setUnit(unit);
 	uint32_t maxBitSize = MCL_MAX_BIT_SIZE;
-	c.gen(privateFuncList, maxBitSize);
+	c.gen(privateFuncList, maxBitSize, putMode);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
 	return 1;
