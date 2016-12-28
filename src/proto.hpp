@@ -27,7 +27,7 @@ void mcl_fpDbl_sub ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const m
 
 #define MCL_FP_DEF_FUNC(n) \
 	MCL_FP_DEF_FUNC_SUB(n, L) \
-	MCL_FP_DEF_FUNC_SUB(n, A)
+	MCL_FP_DEF_FUNC_SUB(n, Lbmi2)
 
 #define MCL_FP_DEF_FUNC_SPECIAL(suf) \
 void mcl_fpDbl_mod_NIST_P192 ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* /* dummy */); \
@@ -60,7 +60,7 @@ MCL_FP_DEF_FUNC(17)
 #endif
 
 MCL_FP_DEF_FUNC_SPECIAL(L)
-MCL_FP_DEF_FUNC_SPECIAL(A)
+MCL_FP_DEF_FUNC_SPECIAL(Lbmi2)
 
 }
 

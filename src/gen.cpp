@@ -149,7 +149,7 @@ struct Code : public mcl::Generator {
 		Operand _0 = makeImm(64, 0);
 		Operand _1 = makeImm(64, 1);
 		Operand _2 = makeImm(64, 2);
-		makeNIST_P192 = Function("makeNIST_P192L", p);
+		makeNIST_P192 = Function("makeNIST_P192L" + suf, p);
 		verifyAndSetPrivate(makeNIST_P192);
 		beginFunc(makeNIST_P192);
 		p0 = sub(_0, _1);
@@ -188,7 +188,7 @@ struct Code : public mcl::Generator {
 		resetGlobalIdx();
 		Operand out(IntPtr, unit);
 		Operand px(IntPtr, unit);
-		mcl_fpDbl_mod_NIST_P192 = Function("mcl_fpDbl_mod_NIST_P192L", Void, out, px);
+		mcl_fpDbl_mod_NIST_P192 = Function("mcl_fpDbl_mod_NIST_P192L" + suf, Void, out, px);
 		verifyAndSetPrivate(mcl_fpDbl_mod_NIST_P192);
 		beginFunc(mcl_fpDbl_mod_NIST_P192);
 
@@ -247,7 +247,7 @@ struct Code : public mcl::Generator {
 		const size_t mask = -(1 << rem);
 		const Operand py(IntPtr, unit);
 		const Operand px(IntPtr, unit);
-		Function f("mcl_fpDbl_mod_NIST_P521L", Void, py, px);
+		Function f("mcl_fpDbl_mod_NIST_P521L" + suf, Void, py, px);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
 		Operand x = loadN(px, n * 2 + 1);
@@ -286,7 +286,7 @@ struct Code : public mcl::Generator {
 		resetGlobalIdx();
 		Operand py(IntPtr, unit);
 		Operand px(IntPtr, unit);
-		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192L", Void, py, px);
+		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192L" + suf, Void, py, px);
 		verifyAndSetPrivate(mcl_fp_sqr_NIST_P192);
 		beginFunc(mcl_fp_sqr_NIST_P192);
 		Operand buf = _alloca(unit, 192 * 2 / unit);
@@ -303,7 +303,7 @@ struct Code : public mcl::Generator {
 		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
-		Function f("mcl_fp_mulNIST_P192L", Void, pz, px, py);
+		Function f("mcl_fp_mulNIST_P192L" + suf, Void, pz, px, py);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
 		Operand buf = _alloca(unit, 192 * 2 / unit);
@@ -603,6 +603,7 @@ struct Code : public mcl::Generator {
 		Operand y(Int, unit);
 		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit);
 		mulPvM[bit] = Function(name, z, px, y);
+		mulPvM[bit].setPrivate();
 		verifyAndSetPrivate(mulPvM[bit]);
 		beginFunc(mulPvM[bit]);
 		OperandVec L(N), H(N);

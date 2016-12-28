@@ -50,12 +50,16 @@ LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128
 
 HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
 ifeq ($(HAS_BMI2),1)
-  LLVM_FLAGS+=-mattr=bmi2
+#  LLVM_FLAGS+=-mattr=bmi2
 endif
 
 ifeq ($(USE_LOW_ASM),1)
   LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
   LIB_OBJ+=$(LOW_ASM_OBJ)
+endif
+# special case for intel with bmi2
+ifeq ($(INTEL),1)
+  LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
@@ -69,6 +73,15 @@ $(ASM_SRC): $(LLVM_SRC)
 
 $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
 	$(GEN_EXE) -f $(FUNC_LIST) > $@
+
+$(OBJ_DIR)/$(CPU).bmi2.o: src/$(CPU).bmi2.s
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
+
+src/$(CPU).bmi2.s: src/base$(BIT).bmi2.ll
+	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS) -mattr=bmi2
+
+src/base$(BIT).bmi2.ll: $(GEN_EXE)
+	$(GEN_EXE) -f $(FUNC_LIST) -s bmi2 > $@
 
 $(FUNC_LIST): $(LOW_ASM_SRC)
 ifeq ($(USE_LOW_ASM),1)
@@ -109,7 +122,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt || echo "all unit tests are ok"
 
 clean:
-	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST)
+	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll src/*.s
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))

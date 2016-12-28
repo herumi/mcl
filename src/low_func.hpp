@@ -19,11 +19,13 @@ namespace mcl { namespace fp {
 
 struct Gtag; // GMP
 struct Ltag; // LLVM
+struct LBMI2tag; // LLVM with Intel BMI2 instruction
 struct Atag; // asm
 
 template<class Tag> struct TagToStr { };
 template<> struct TagToStr<Gtag> { static const char *f() { return "Gtag"; } };
 template<> struct TagToStr<Ltag> { static const char *f() { return "Ltag"; } };
+template<> struct TagToStr<LBMI2tag> { static const char *f() { return "LBMI2tag"; } };
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
 template<size_t N>

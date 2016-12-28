@@ -231,7 +231,7 @@ void setOp(Op& op, Mode mode)
 	setOp2<N, Gtag, true>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-		setOp2<N, Ltag, (N * UnitBitSize <= 256)>(op);
+		setOp2<N, LBMI2tag, (N * UnitBitSize <= 256)>(op);
 	}
 #else
 	(void)mode;

@@ -18,28 +18,37 @@ struct EnableKaratsuba<Ltag> {
 #endif
 
 #ifdef MCL_GMP_IS_FASTER_THAN_LLVM
-#define MCL_DEF_MUL(n)
+#define MCL_DEF_MUL(n, tag, suf)
 #else
-#define MCL_DEF_MUL(n) \
-template<>const void3u MulPreCore<n, Ltag>::f = &mcl_fpDbl_mulPre ## n ## L; \
-template<>const void2u SqrPreCore<n, Ltag>::f = &mcl_fpDbl_sqrPre ## n ## L;
+#define MCL_DEF_MUL(n, tag, suf) \
+template<>const void3u MulPreCore<n, tag>::f = &mcl_fpDbl_mulPre ## n ## suf; \
+template<>const void2u SqrPreCore<n, tag>::f = &mcl_fpDbl_sqrPre ## n ## suf;
 #endif
 
+#define MCL_DEF_LLVM_FUNC2(n, tag, suf) \
+template<>const u3u AddPre<n, tag>::f = &mcl_fp_addPre ## n ## suf; \
+template<>const u3u SubPre<n, tag>::f = &mcl_fp_subPre ## n ## suf; \
+template<>const void2u Shr1<n, tag>::f = &mcl_fp_shr1_ ## n ## suf; \
+MCL_DEF_MUL(n, tag, suf) \
+template<>const void2uI MulUnitPre<n, tag>::f = &mcl_fp_mulUnitPre ## n ## suf; \
+template<>const void4u Add<n, true, tag>::f = &mcl_fp_add ## n ## suf; \
+template<>const void4u Add<n, false, tag>::f = &mcl_fp_addNF ## n ## suf; \
+template<>const void4u Sub<n, true, tag>::f = &mcl_fp_sub ## n ## suf; \
+template<>const void4u Sub<n, false, tag>::f = &mcl_fp_subNF ## n ## suf; \
+template<>const void4u Mont<n, true, tag>::f = &mcl_fp_mont ## n ## suf; \
+template<>const void4u Mont<n, false, tag>::f = &mcl_fp_montNF ## n ## suf; \
+template<>const void3u MontRed<n, tag>::f = &mcl_fp_montRed ## n ## suf; \
+template<>const void4u DblAdd<n, tag>::f = &mcl_fpDbl_add ## n ## suf; \
+template<>const void4u DblSub<n, tag>::f = &mcl_fpDbl_sub ## n ## suf; \
+
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
 #define MCL_DEF_LLVM_FUNC(n) \
-template<>const u3u AddPre<n, Ltag>::f = &mcl_fp_addPre ## n ## L; \
-template<>const u3u SubPre<n, Ltag>::f = &mcl_fp_subPre ## n ## L; \
-template<>const void2u Shr1<n, Ltag>::f = &mcl_fp_shr1_ ## n ## L; \
-MCL_DEF_MUL(n) \
-template<>const void2uI MulUnitPre<n, Ltag>::f = &mcl_fp_mulUnitPre ## n ## L; \
-template<>const void4u Add<n, true, Ltag>::f = &mcl_fp_add ## n ## L; \
-template<>const void4u Add<n, false, Ltag>::f = &mcl_fp_addNF ## n ## L; \
-template<>const void4u Sub<n, true, Ltag>::f = &mcl_fp_sub ## n ## L; \
-template<>const void4u Sub<n, false, Ltag>::f = &mcl_fp_subNF ## n ## L; \
-template<>const void4u Mont<n, true, Ltag>::f = &mcl_fp_mont ## n ## L; \
-template<>const void4u Mont<n, false, Ltag>::f = &mcl_fp_montNF ## n ## L; \
-template<>const void3u MontRed<n, Ltag>::f = &mcl_fp_montRed ## n ## L; \
-template<>const void4u DblAdd<n, Ltag>::f = &mcl_fpDbl_add ## n ## L; \
-template<>const void4u DblSub<n, Ltag>::f = &mcl_fpDbl_sub ## n ## L; \
+	MCL_DEF_LLVM_FUNC2(n, Ltag, L) \
+	MCL_DEF_LLVM_FUNC2(n, LBMI2tag, Lbmi2)
+#else
+#define MCL_DEF_LLVM_FUNC(n) \
+	MCL_DEF_LLVM_FUNC2(n, Ltag, L)
+#endif
 
 MCL_DEF_LLVM_FUNC(1)
 MCL_DEF_LLVM_FUNC(2)
