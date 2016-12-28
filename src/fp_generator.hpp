@@ -9,15 +9,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>
-#include <mcl/op.hpp>
 
 #if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
 
-#ifndef XBYAK_NO_OP_NAMES
-	#define XBYAK_NO_OP_NAMES
-#endif
-#include <xbyak/xbyak.h>
-#include <xbyak/xbyak_util.h>
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4127)

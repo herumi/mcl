@@ -1,8 +1,10 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include "conversion.hpp"
-#ifdef MCL_USE_XBYAK
-#include "fp_generator.hpp"
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+	#define XBYAK_NO_OP_NAMES
+	#include <xbyak/xbyak_util.h>
+	#include "fp_generator.hpp"
 #endif
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
@@ -231,7 +233,15 @@ void setOp(Op& op, Mode mode)
 	setOp2<N, Gtag, true>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-		setOp2<N, LBMI2tag, (N * UnitBitSize <= 256)>(op);
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+		Xbyak::util::Cpu cpu;
+		if (0&&cpu.has(Xbyak::util::Cpu::tBMI2)) {
+			setOp2<N, LBMI2tag, (N * UnitBitSize <= 256)>(op);
+		} else
+#endif
+		{
+			setOp2<N, Ltag, (N * UnitBitSize <= 256)>(op);
+		}
 	}
 #else
 	(void)mode;
