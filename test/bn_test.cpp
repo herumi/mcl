@@ -141,6 +141,15 @@ void test(const TestSet& ts)
 //		Fp12::pow(e1, e1, x);
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
+	/*
+		ate-pairing on Haswell
+		miller loop : 700Kclk
+		final exp   : 460Kclk
+	*/
+#if 0
+	for (int i = 0; i < 1000; i++) BN::pairing(e1, Q, P);
+//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, Q, P); // 2.4Mclk
+#else
 	{
 		Fp12 e = e1, ea;
 		G1 Pa;
@@ -162,15 +171,6 @@ void test(const TestSet& ts)
 			a--;
 		}
 	}
-	/*
-		ate-pairing on Haswell
-		miller loop : 700Kclk
-		final exp   : 460Kclk
-	*/
-#if 0
-	for (int i = 0; i < 1000; i++) BN::pairing(e1, Q, P);
-//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, Q, P); // 2.4Mclk
-#else
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 #endif
