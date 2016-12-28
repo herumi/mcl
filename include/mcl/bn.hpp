@@ -665,6 +665,19 @@ struct BNT {
 	*/
 	static void sqrFp4(Fp2& z0, Fp2& z1, const Fp2& x0, const Fp2& x1)
 	{
+#if 1
+		Fp2Dbl T0, T1, T2;
+		Fp2Dbl::sqrPre(T0, x0);
+		Fp2Dbl::sqrPre(T1, x1);
+		Fp2Dbl::mul_xi(T2, T1);
+		Fp2Dbl::add(T2, T2, T0);
+		Fp2::add(z1, x0, x1);
+		Fp2Dbl::mod(z0, T2);
+		Fp2Dbl::sqrPre(T2, z1);
+		Fp2Dbl::sub(T2, T2, T0);
+		Fp2Dbl::sub(T2, T2, T1);
+		Fp2Dbl::mod(z1, T2);
+#else
 		Fp2 t0, t1, t2;
 		Fp2::sqr(t0, x0);
 		Fp2::sqr(t1, x1);
@@ -674,6 +687,7 @@ struct BNT {
 		Fp2::sqr(z1, z1);
 		z1 -= t0;
 		z1 -= t1;
+#endif
 	}
 	static void fasterSqr(Fp12& y, const Fp12& x)
 	{
