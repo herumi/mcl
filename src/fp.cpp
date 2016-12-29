@@ -1,11 +1,7 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include "conversion.hpp"
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL
-	#define XBYAK_NO_OP_NAMES
-	#include <xbyak/xbyak_util.h>
-	#include "fp_generator.hpp"
-#endif
+#include "fp_generator.hpp"
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "proto.hpp"

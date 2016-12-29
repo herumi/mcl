@@ -6,11 +6,14 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+#define XBYAK_NO_OP_NAMES
+#include <xbyak/xbyak_util.h>
+
+#if CYBOZU_OS_BIT == 64
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>
-
-#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -2595,4 +2598,5 @@ private:
 	#pragma warning(pop)
 #endif
 
+#endif
 #endif
