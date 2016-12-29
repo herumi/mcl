@@ -30,13 +30,14 @@ all: $(MCL_LIB)
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 GEN_EXE=src/gen
+ASM_SRC_PATH_NAME=src/asm/$(CPU)
 ifneq ($(CPU),)
-  ASM_SRC=src/$(CPU).s
+  ASM_SRC=$(ASM_SRC_PATH_NAME).s
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
 FUNC_LIST=src/func.list
-MCL_USE_LLVM?=0
+MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(ASM_OBJ)
@@ -48,10 +49,10 @@ LLVM_SRC=src/base$(BIT).ll
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128
 
-HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
-ifeq ($(HAS_BMI2),1)
+#HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
+#ifeq ($(HAS_BMI2),1)
 #  LLVM_FLAGS+=-mattr=bmi2
-endif
+#endif
 
 ifeq ($(USE_LOW_ASM),1)
   LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
@@ -62,23 +63,31 @@ ifeq ($(INTEL),1)
   LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
 endif
 
+ifeq ($(UPDATE_ASM),1)
+  ASM_SRC_DEP=$(LLVM_SRC)
+  ASM_BMI2_SRC_DEP=src/base$(BIT).bmi2.ll
+else
+  ASM_SRC_DEP=
+  ASM_BMI2_SRC_DEP=
+endif
+
 $(MCL_LIB): $(LIB_OBJ)
 	$(AR) $@ $(LIB_OBJ)
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
-$(ASM_SRC): $(LLVM_SRC)
+$(ASM_SRC): $(ASM_SRC_DEP)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
 
 $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
 	$(GEN_EXE) -f $(FUNC_LIST) > $@
 
-$(OBJ_DIR)/$(CPU).bmi2.o: src/$(CPU).bmi2.s
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
-
-src/$(CPU).bmi2.s: src/base$(BIT).bmi2.ll
+$(ASM_SRC_PATH_NAME).bmi2.s: $(ASM_BMI2_SRC_DEP)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS) -mattr=bmi2
+
+$(OBJ_DIR)/$(CPU).bmi2.o: $(ASM_SRC_PATH_NAME).bmi2.s
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
 src/base$(BIT).bmi2.ll: $(GEN_EXE)
 	$(GEN_EXE) -f $(FUNC_LIST) -s bmi2 > $@
@@ -122,7 +131,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt || echo "all unit tests are ok"
 
 clean:
-	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll src/*.s
+	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
