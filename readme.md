@@ -9,20 +9,18 @@ The current version supports the optimal Ate pairing over BN curves.
 
 # Support architecture
 
-* 64-bit Windows + Visual Studio
+* x86-64 Windows + Visual Studio
 * x86, x86-64 Linux + gcc/clang
-* ARM
-* ARM64
+* ARM Linux
+* ARM64 Linux
 * (maybe any platform to be supported by LLVM)
 
 # Installation Requirements
 
-* [GMP](https://gmplib.org/) must
+* [GMP](https://gmplib.org/)
 ```
 apt install libgmp-dev
 ```
-* [OpenSSL](https://www.openssl.org/) must
-* [LLVM](http://llvm.org/) optional
 
 Create a working directory (e.g., work) and clone the following repositories.
 ```
@@ -30,33 +28,27 @@ mkdir work
 cd work
 git clone git://github.com/herumi/mcl.git
 git clone git://github.com/herumi/cybozulib.git
-git clone git://github.com/herumi/xbyak.git
-git clone git://github.com/herumi/cybozulib_ext.git
+git clone git://github.com/herumi/xbyak.git ; for only x86/x64
+git clone git://github.com/herumi/cybozulib_ext.git ; for only Windows
 ```
-* Xbyak is a prerequisite for optimizing the operations in the finite field on x86-64.
 * Cybozulib_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
 
-# Build and test
-To make lib/libmcl.a and test, run
+# Build and test on x86-64, ARM and ARM64 Linux
+To make lib/libmcl.a and test it:
 ```
 make test
 ```
-To measure pairing, run
+To benchmark a pairing:
 ```
 bin/bn_test.exe
 ```
-To make sample programs, run
+To make sample programs:
 ```
 make sample
 ```
-If LLVM is installed, then
-```
-make MCL_USE_LLVM=1 LLVM_VER=-3.8
-```
-Change `LLVM_VER=-3.8` to `LLVM_VER=-3.7` if the version of LLVM is 3.7.
 
 ## Build for 32-bit Linux
-Build openssl and gmp for 32-bit mode and install <lib32>
+Build openssl and gmp for 32-bit mode and install `<lib32>`
 ```
 make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
 ```
@@ -75,19 +67,10 @@ open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
 ```
-
-## Build for ARM64 Linux
-```
-make MCL_USE_LLVM=1 LLVM_VER=-3.7 ARCH=aarch64
-```
-## Build for ARM Linux
-```
-make MCL_USE_LLVM=1 LLVM_VER=-3.8 ARCH=arm
-```
-
 ## Benchmark
 
-A benchmark of a BN curve over the 254-bit prime.
+A benchmark of a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1).
+
 * x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz
     * `sudo cpufreq-set -g performance`
 * arm ; 900MHz quad-core ARM Cortex-A7 on Raspberry Pi2, Linux 4.4.11-v7+
@@ -96,11 +79,19 @@ A benchmark of a BN curve over the 254-bit prime.
 software                                                 |   x64|  x86| arm|arm64(msec)
 ---------------------------------------------------------|------|-----|----|-----
 [ate-pairing](https://github.com/herumi/ate-pairing)     | 0.21 |   - |  - |    -
-mcl                                                      | 0.35 | 2.0 | 27 |  4.4
+mcl                                                      | 0.34 | 1.8 | 25 |  4.4
 [TEPLA](http://www.cipher.risk.tsukuba.ac.jp/tepla/)     | 1.76 | 3.7 | 37 | 17.9
 [RELIC](https://github.com/relic-toolkit/relic) PRIME=254| 1.31 | 3.5 | 36 |    -
 [MIRACL](https://github.com/miracl/MIRACL) ake12bnx      | 4.2  |   - | 78 |    -
 [NEONabe](http://sandia.cs.cinvestav.mx/Site/NEONabe)    |   -  |   - | 16 |    -
+
+## How to make asm files
+
+Install [LLVM](http://llvm.org/).
+```
+make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1
+```
+For example, specify `-3.8` for `<llvm-version>` if `opt-3.8` and `llc-3.8` are installed.
 
 # License
 
