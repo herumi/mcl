@@ -231,7 +231,7 @@ void setOp(Op& op, Mode mode)
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL
 		Xbyak::util::Cpu cpu;
-		if (0&&cpu.has(Xbyak::util::Cpu::tBMI2)) {
+		if (cpu.has(Xbyak::util::Cpu::tBMI2)) {
 			setOp2<N, LBMI2tag, (N * UnitBitSize <= 256)>(op);
 		} else
 #endif
