@@ -36,6 +36,7 @@ git clone git://github.com/herumi/cybozulib_ext ; for only Windows
 # Build and test on x86-64, ARM and ARM64 Linux
 To make lib/libmcl.a and test it:
 ```
+cod work/mcl
 make test
 ```
 To benchmark a pairing:
@@ -56,11 +57,11 @@ make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,
 ## Build for 64-bit Windows
 1) make library
 ```
->mklib.bat
+mklib.bat
 ```
 2) make exe binary of sample\pairing.cpp
 ```
->mk sample\pairing.cpp
+mk sample\pairing.cpp
 ```
 
 open mcl.sln and build or if you have msbuild.exe
