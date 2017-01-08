@@ -1,4 +1,4 @@
-%module Mcl
+%module MclElgamal
 
 %include "std_string.i"
 %include "std_except.i"
@@ -20,9 +20,9 @@ static inline Param& getParam()
 }
 };
 
-#include "mcl_if.hpp"
+#include "mcl_elgamal.hpp"
 %}
 %include cpointer.i
 %pointer_functions(bool, p_bool);
 
-%include "mcl_if.hpp"
+%include "mcl_elgamal.hpp"

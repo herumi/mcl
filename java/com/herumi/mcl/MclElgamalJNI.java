@@ -8,7 +8,7 @@
 
 package com.herumi.mcl;
 
-public class MclJNI {
+public class MclElgamalJNI {
   public final static native long new_p_bool();
   public final static native long copy_p_bool(boolean jarg1);
   public final static native void delete_p_bool(long jarg1);
