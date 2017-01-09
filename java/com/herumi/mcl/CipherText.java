@@ -29,38 +29,38 @@ public class CipherText {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        MclElgamalJNI.delete_CipherText(swigCPtr);
+        ElgamalJNI.delete_CipherText(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public String toStr() {
-    return MclElgamalJNI.CipherText_toStr(swigCPtr, this);
+    return ElgamalJNI.CipherText_toStr(swigCPtr, this);
   }
 
   public String toString() {
-    return MclElgamalJNI.CipherText_toString(swigCPtr, this);
+    return ElgamalJNI.CipherText_toString(swigCPtr, this);
   }
 
   public void fromStr(String str) {
-    MclElgamalJNI.CipherText_fromStr(swigCPtr, this, str);
+    ElgamalJNI.CipherText_fromStr(swigCPtr, this, str);
   }
 
   public void add(CipherText c) {
-    MclElgamalJNI.CipherText_add(swigCPtr, this, CipherText.getCPtr(c), c);
+    ElgamalJNI.CipherText_add(swigCPtr, this, CipherText.getCPtr(c), c);
   }
 
   public void mul(int m) {
-    MclElgamalJNI.CipherText_mul__SWIG_0(swigCPtr, this, m);
+    ElgamalJNI.CipherText_mul__SWIG_0(swigCPtr, this, m);
   }
 
   public void mul(String str) {
-    MclElgamalJNI.CipherText_mul__SWIG_1(swigCPtr, this, str);
+    ElgamalJNI.CipherText_mul__SWIG_1(swigCPtr, this, str);
   }
 
   public CipherText() {
-    this(MclElgamalJNI.new_CipherText(), true);
+    this(ElgamalJNI.new_CipherText(), true);
   }
 
 }

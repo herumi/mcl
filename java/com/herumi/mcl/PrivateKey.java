@@ -29,58 +29,58 @@ public class PrivateKey {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        MclElgamalJNI.delete_PrivateKey(swigCPtr);
+        ElgamalJNI.delete_PrivateKey(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public String toStr() {
-    return MclElgamalJNI.PrivateKey_toStr(swigCPtr, this);
+    return ElgamalJNI.PrivateKey_toStr(swigCPtr, this);
   }
 
   public String toString() {
-    return MclElgamalJNI.PrivateKey_toString(swigCPtr, this);
+    return ElgamalJNI.PrivateKey_toString(swigCPtr, this);
   }
 
   public void fromStr(String str) {
-    MclElgamalJNI.PrivateKey_fromStr(swigCPtr, this, str);
+    ElgamalJNI.PrivateKey_fromStr(swigCPtr, this, str);
   }
 
   public void save(String fileName) {
-    MclElgamalJNI.PrivateKey_save(swigCPtr, this, fileName);
+    ElgamalJNI.PrivateKey_save(swigCPtr, this, fileName);
   }
 
   public void load(String fileName) {
-    MclElgamalJNI.PrivateKey_load(swigCPtr, this, fileName);
+    ElgamalJNI.PrivateKey_load(swigCPtr, this, fileName);
   }
 
   public void init() {
-    MclElgamalJNI.PrivateKey_init(swigCPtr, this);
+    ElgamalJNI.PrivateKey_init(swigCPtr, this);
   }
 
   public PublicKey getPublicKey() {
-    return new PublicKey(MclElgamalJNI.PrivateKey_getPublicKey(swigCPtr, this), true);
+    return new PublicKey(ElgamalJNI.PrivateKey_getPublicKey(swigCPtr, this), true);
   }
 
   public int dec(CipherText c, SWIGTYPE_p_bool b) {
-    return MclElgamalJNI.PrivateKey_dec__SWIG_0(swigCPtr, this, CipherText.getCPtr(c), c, SWIGTYPE_p_bool.getCPtr(b));
+    return ElgamalJNI.PrivateKey_dec__SWIG_0(swigCPtr, this, CipherText.getCPtr(c), c, SWIGTYPE_p_bool.getCPtr(b));
   }
 
   public int dec(CipherText c) {
-    return MclElgamalJNI.PrivateKey_dec__SWIG_1(swigCPtr, this, CipherText.getCPtr(c), c);
+    return ElgamalJNI.PrivateKey_dec__SWIG_1(swigCPtr, this, CipherText.getCPtr(c), c);
   }
 
   public void setCache(int rangeMin, int rangeMax) {
-    MclElgamalJNI.PrivateKey_setCache(swigCPtr, this, rangeMin, rangeMax);
+    ElgamalJNI.PrivateKey_setCache(swigCPtr, this, rangeMin, rangeMax);
   }
 
   public void clearCache() {
-    MclElgamalJNI.PrivateKey_clearCache(swigCPtr, this);
+    ElgamalJNI.PrivateKey_clearCache(swigCPtr, this);
   }
 
   public PrivateKey() {
-    this(MclElgamalJNI.new_PrivateKey(), true);
+    this(ElgamalJNI.new_PrivateKey(), true);
   }
 
 }

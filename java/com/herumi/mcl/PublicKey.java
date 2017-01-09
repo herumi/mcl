@@ -29,54 +29,54 @@ public class PublicKey {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        MclElgamalJNI.delete_PublicKey(swigCPtr);
+        ElgamalJNI.delete_PublicKey(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public String toStr() {
-    return MclElgamalJNI.PublicKey_toStr(swigCPtr, this);
+    return ElgamalJNI.PublicKey_toStr(swigCPtr, this);
   }
 
   public String toString() {
-    return MclElgamalJNI.PublicKey_toString(swigCPtr, this);
+    return ElgamalJNI.PublicKey_toString(swigCPtr, this);
   }
 
   public void fromStr(String str) {
-    MclElgamalJNI.PublicKey_fromStr(swigCPtr, this, str);
+    ElgamalJNI.PublicKey_fromStr(swigCPtr, this, str);
   }
 
   public void save(String fileName) {
-    MclElgamalJNI.PublicKey_save(swigCPtr, this, fileName);
+    ElgamalJNI.PublicKey_save(swigCPtr, this, fileName);
   }
 
   public void load(String fileName) {
-    MclElgamalJNI.PublicKey_load(swigCPtr, this, fileName);
+    ElgamalJNI.PublicKey_load(swigCPtr, this, fileName);
   }
 
   public void enc(CipherText c, int m) {
-    MclElgamalJNI.PublicKey_enc__SWIG_0(swigCPtr, this, CipherText.getCPtr(c), c, m);
+    ElgamalJNI.PublicKey_enc__SWIG_0(swigCPtr, this, CipherText.getCPtr(c), c, m);
   }
 
   public void enc(CipherText c, String str) {
-    MclElgamalJNI.PublicKey_enc__SWIG_1(swigCPtr, this, CipherText.getCPtr(c), c, str);
+    ElgamalJNI.PublicKey_enc__SWIG_1(swigCPtr, this, CipherText.getCPtr(c), c, str);
   }
 
   public void rerandomize(CipherText c) {
-    MclElgamalJNI.PublicKey_rerandomize(swigCPtr, this, CipherText.getCPtr(c), c);
+    ElgamalJNI.PublicKey_rerandomize(swigCPtr, this, CipherText.getCPtr(c), c);
   }
 
   public void add(CipherText c, int m) {
-    MclElgamalJNI.PublicKey_add__SWIG_0(swigCPtr, this, CipherText.getCPtr(c), c, m);
+    ElgamalJNI.PublicKey_add__SWIG_0(swigCPtr, this, CipherText.getCPtr(c), c, m);
   }
 
   public void add(CipherText c, String str) {
-    MclElgamalJNI.PublicKey_add__SWIG_1(swigCPtr, this, CipherText.getCPtr(c), c, str);
+    ElgamalJNI.PublicKey_add__SWIG_1(swigCPtr, this, CipherText.getCPtr(c), c, str);
   }
 
   public PublicKey() {
-    this(MclElgamalJNI.new_PublicKey(), true);
+    this(ElgamalJNI.new_PublicKey(), true);
   }
 
 }

@@ -8,31 +8,31 @@
 
 package com.herumi.mcl;
 
-public class MclElgamal {
+public class Elgamal {
   public static SWIGTYPE_p_bool new_p_bool() {
-    long cPtr = MclElgamalJNI.new_p_bool();
+    long cPtr = ElgamalJNI.new_p_bool();
     return (cPtr == 0) ? null : new SWIGTYPE_p_bool(cPtr, false);
   }
 
   public static SWIGTYPE_p_bool copy_p_bool(boolean value) {
-    long cPtr = MclElgamalJNI.copy_p_bool(value);
+    long cPtr = ElgamalJNI.copy_p_bool(value);
     return (cPtr == 0) ? null : new SWIGTYPE_p_bool(cPtr, false);
   }
 
   public static void delete_p_bool(SWIGTYPE_p_bool obj) {
-    MclElgamalJNI.delete_p_bool(SWIGTYPE_p_bool.getCPtr(obj));
+    ElgamalJNI.delete_p_bool(SWIGTYPE_p_bool.getCPtr(obj));
   }
 
   public static void p_bool_assign(SWIGTYPE_p_bool obj, boolean value) {
-    MclElgamalJNI.p_bool_assign(SWIGTYPE_p_bool.getCPtr(obj), value);
+    ElgamalJNI.p_bool_assign(SWIGTYPE_p_bool.getCPtr(obj), value);
   }
 
   public static boolean p_bool_value(SWIGTYPE_p_bool obj) {
-    return MclElgamalJNI.p_bool_value(SWIGTYPE_p_bool.getCPtr(obj));
+    return ElgamalJNI.p_bool_value(SWIGTYPE_p_bool.getCPtr(obj));
   }
 
   public static void SystemInit(String param) {
-    MclElgamalJNI.SystemInit(param);
+    ElgamalJNI.SystemInit(param);
   }
 
 }

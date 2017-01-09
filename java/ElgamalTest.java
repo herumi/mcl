@@ -2,13 +2,13 @@ import java.io.*;
 import com.herumi.mcl.*;
 
 /*
-	MclElgamalTest [ecParam]
+	ElgamalTest [ecParam]
 	ecParam = secp192k1, NIST_P224, ...
 	hashParam = hash224, hash384, ...
 */
-public class MclElgamalTest {
+public class ElgamalTest {
 	static {
-		String lib = "mcl_elgamal_wrap";
+		String lib = "mcl_elgamal";
 		String libName = System.mapLibraryName(lib);
 		System.out.println("libName : " + libName);
 		System.loadLibrary(lib);
@@ -43,7 +43,7 @@ public class MclElgamalTest {
 			}
 			String param = ecStr + " " + hashStr;
 			System.out.println("param=" + param);
-			MclElgamal.SystemInit(param);
+			Elgamal.SystemInit(param);
 
 			String prvStr = "";
 			String pubStr = "";
@@ -124,19 +124,19 @@ public class MclElgamalTest {
 			String m3 = "-2000000";
 			String m4 =  "2001234";
 			CipherText c2 = new CipherText();
-			SWIGTYPE_p_bool b = MclElgamal.new_p_bool();
+			SWIGTYPE_p_bool b = Elgamal.new_p_bool();
 			pub.enc(c, m3);
 			dec = prv.dec(c, b);
-			assertBool("expect dec fail", !MclElgamal.p_bool_value(b));
+			assertBool("expect dec fail", !Elgamal.p_bool_value(b));
 			pub.enc(c2, m4);
 			dec = prv.dec(c2, b);
-			assertBool("expect dec fail", !MclElgamal.p_bool_value(b));
+			assertBool("expect dec fail", !Elgamal.p_bool_value(b));
 			c.add(c2); // m3 + m4
 
 			dec = prv.dec(c, b);
 			assertEquals("int add", 1234, dec);
-			assertBool("expect dec success", MclElgamal.p_bool_value(b));
-			MclElgamal.delete_p_bool(b);
+			assertBool("expect dec success", Elgamal.p_bool_value(b));
+			Elgamal.delete_p_bool(b);
 		} catch (RuntimeException e) {
 			System.out.println("unknown exception :" + e);
 		}
