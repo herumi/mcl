@@ -19,7 +19,7 @@ TARGET=../bin/libmcl_elgamal.$(LIB_SUF)
 JAVA_EXE=cd ../bin && LD_LIBRARY_PATH=./:$(LD_LIBRARY_PATH) java -classpath ../java
 all: $(TARGET)
 
-elgamal_wrap.cxx: elgamal.i elgamal.hpp
+elgamal_wrap.cxx: elgamal.i elgamal_impl.hpp
 	$(MKDIR) $(PACKAGE_DIR)
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall elgamal.i
 

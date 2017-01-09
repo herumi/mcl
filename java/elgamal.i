@@ -20,9 +20,9 @@ static inline Param& getParam()
 }
 };
 
-#include "elgamal.hpp"
+#include "elgamal_impl.hpp"
 %}
 %include cpointer.i
 %pointer_functions(bool, p_bool);
 
-%include "elgamal.hpp"
+%include "elgamal_impl.hpp"
