@@ -54,7 +54,7 @@ public class Bn256Test {
 
 			G2 Q = new G2(xa, xb, ya, yb);
 
-			P.hashAndMap("This is a pen");
+			P.hashAndMapToG1("This is a pen");
 			{
 				String s = P.toString();
 				G1 P1 = new G1();
@@ -77,8 +77,29 @@ public class Bn256Test {
 			Bn256.mul(cP, P, c); // cP = P * c
 			Bn256.pairing(e1, Q, cP);
 			assertBool("e1 == e2", e1.equals(e2));
+
+			BLSsignature(Q);
 		} catch (RuntimeException e) {
 			System.out.println("unknown exception :" + e);
 		}
+	}
+	public static void BLSsignature(G2 Q)
+	{
+		Fr s = new Fr();
+		s.setRand(); // secret key
+		G2 pub = new G2();
+		Bn256.mul(pub, Q, s); // public key = sQ
+
+		String m = "signature test";
+		G1 H = new G1();
+		H.hashAndMapToG1(m); // H = Hash(m)
+		G1 sign = new G1();
+		Bn256.mul(sign, H, s); // signature of m = s H
+
+		GT e1 = new GT();
+		GT e2 = new GT();
+		Bn256.pairing(e1, pub, H); // e1 = e(s Q, H)
+		Bn256.pairing(e2, Q, sign); // e2 = e(Q, s H);
+		assertBool("verify signature", e1.equals(e2));
 	}
 }

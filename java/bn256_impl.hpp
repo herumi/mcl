@@ -103,7 +103,7 @@ public:
 	{
 		self_.set(mcl::bn256::Fp(x), mcl::bn256::Fp(y));
 	}
-	void hashAndMap(const std::string& m) throw(std::exception)
+	void hashAndMapToG1(const std::string& m) throw(std::exception)
 	{
 		HashAndMapToG1(self_, m);
 	}
