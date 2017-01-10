@@ -2,9 +2,7 @@ import java.io.*;
 import com.herumi.mcl.*;
 
 /*
-	Bn256Test [ecParam]
-	ecParam = secp192k1, NIST_P224, ...
-	hashParam = hash224, hash384, ...
+	Bn256Test
 */
 public class Bn256Test {
 	static {
