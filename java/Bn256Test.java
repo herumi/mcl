@@ -85,6 +85,7 @@ public class Bn256Test {
 	{
 		Fr s = new Fr();
 		s.setRand(); // secret key
+		System.out.println("secret key " + s);
 		G2 pub = new G2();
 		Bn256.mul(pub, Q, s); // public key = sQ
 
