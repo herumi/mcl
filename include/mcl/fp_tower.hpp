@@ -142,7 +142,7 @@ public:
 	{
 		return is >> self.a >> self.b;
 	}
-	std::string getStr(int ioMode)
+	std::string getStr(int ioMode = 10)
 	{
 		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
 	}
