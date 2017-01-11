@@ -86,6 +86,8 @@ public:
 		if (mulSmallUnit(z, x, y)) return;
 		throw cybozu::Exception("mulUnit:not supported") << y;
 	}
+	void operator+=(const FpDblT& x) { add(*this, *this, x); }
+	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
 };
 
 /*
@@ -125,6 +127,11 @@ public:
 	{
 		Fp::divBy2(y.a, x.a);
 		Fp::divBy2(y.b, x.b);
+	}
+	static void divBy4(Fp2T& y, const Fp2T& x)
+	{
+		divBy2(y, x);
+		divBy2(y, y); // QQQ : optimize later
 	}
 	static void mulFp(Fp2T& z, const Fp2T& x, const Fp& y)
 	{
@@ -522,6 +529,8 @@ struct Fp2DblT {
 	{
 		return os << x.a << ' ' << x.b;
 	}
+	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
+	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
 };
 
 template<class Fp> uint32_t Fp2T<Fp>::xi_a_;
