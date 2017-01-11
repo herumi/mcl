@@ -56,6 +56,10 @@ test_elgamal: ElgamalTest.class $(ELGAMAL_LIB)
 test_bn256: Bn256Test.class $(BN256_LIB)
 	$(JAVA_EXE) Bn256Test
 
+test:
+	$(MAKE) test_elgamal
+	$(MAKE) test_bn256
+
 clean:
 	rm -rf *.class $(ELGAMAL_LIB) $(PACKAGE_DIR)/*.class *_wrap.cxx
 
