@@ -123,6 +123,7 @@ struct Op {
 	void3u fp2_add;
 	void3u fp2_sub;
 	void3u fp2_mul;
+	void4u fp2_mulNF;
 	void2u fp2_neg;
 	void2u fp2_inv;
 	void2u fp2_sqr;
@@ -188,6 +189,7 @@ struct Op {
 		fp2_add = 0;
 		fp2_sub = 0;
 		fp2_mul = 0;
+		fp2_mulNF = 0;
 		fp2_neg = 0;
 		fp2_inv = 0;
 		fp2_sqr = 0;

@@ -638,6 +638,35 @@ struct Sqr {
 template<size_t N, class Tag>
 const void3u Sqr<N, Tag>::f = Sqr<N, Tag>::func;
 
+template<size_t N, class Tag = Gtag>
+struct Fp2MulNF {
+	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+	{
+		const Unit *const a = x;
+		const Unit *const b = x + N;
+		const Unit *const c = y;
+		const Unit *const d = y + N;
+		Unit d0[N * 2];
+		Unit d1[N * 2];
+		Unit d2[N * 2];
+		Unit s[N];
+		Unit t[N];
+		AddPre<N, Tag>::f(s, a, b);
+		AddPre<N, Tag>::f(t, c, d);
+		MulPre<N, Tag>::f(d0, s, t);
+		MulPre<N, Tag>::f(d1, a, c);
+		MulPre<N, Tag>::f(d2, b, d);
+		SubPre<N * 2, Tag>::f(d0, d0, d1);
+		SubPre<N * 2, Tag>::f(d0, d0, d2);
+		MontRed<N, Tag>::f(z + N, d0, p);
+		DblSub<N, Tag>::f(d1, d1, d2, p);
+		MontRed<N, Tag>::f(z, d1, p);
+	}
+	static const void4u f;
+};
+template<size_t N, class Tag>
+const void4u Fp2MulNF<N, Tag>::f = Fp2MulNF<N, Tag>::func;
+
 } } // mcl::fp
 
 #ifdef _WIN32

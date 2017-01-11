@@ -214,7 +214,11 @@ public:
 		if (op.isFastMod) {
 			op.fp2_mul = fp2_mulW;
 		} else if (!op.isFullBit) {
-			op.fp2_mul = fp2_mulUseDblUseNCW;
+			if (sizeof(Fp) * 8 == op.N * fp::UnitBitSize && op.fp2_mulNF) {
+				op.fp2_mul = fp2_mulNFW;
+			} else {
+				op.fp2_mul = fp2_mulUseDblUseNCW;
+			}
 		} else {
 			op.fp2_mul = fp2_mulUseDblW;
 		}
@@ -305,6 +309,11 @@ private:
 		FpDbl::mod(pz[1], d0);
 		FpDbl::sub(d1, d1, d2); // ac - bd
 		FpDbl::mod(pz[0], d1); // set z0
+	}
+	static void fp2_mulNFW(Unit *z, const Unit *x, const Unit *y)
+	{
+		const fp::Op& op = Fp::op_;
+		op.fp2_mulNF(z, x, y, op.p);
 	}
 	static void fp2_mulUseDblUseNCW(Unit *z, const Unit *x, const Unit *y)
 	{

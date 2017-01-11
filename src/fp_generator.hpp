@@ -229,6 +229,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		}
 		// setup fp_tower
 		if (op.N > 4) return;
+		op.fp2_mulNF = 0;
 		align(16);
 		op.fpDbl_add = getCurr<void4u>();
 		gen_fpDbl_add();

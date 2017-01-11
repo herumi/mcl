@@ -211,6 +211,7 @@ void setOp2(Op& op)
 	op.fpDbl_sub = DblSub<N, Tag>::f;
 	op.fp_addPre = AddPre<N, Tag>::f;
 	op.fp_subPre = SubPre<N, Tag>::f;
+	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
 	SetFpDbl<N, enableFpDbl>::exec(op);
 }
 
