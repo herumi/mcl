@@ -211,12 +211,15 @@ struct ParamT {
 	*/
 	Fp2 b_div_xi;
 	bool is_b_div_xi_1_m1i;
+	mpz_class exp_c0;
+	mpz_class exp_c1;
+	mpz_class exp_c2;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
 	SignVec siTbl;
 	bool useNAF;
-	SignVec zReplTbl; // QQQ : snark
+	SignVec zReplTbl;
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
@@ -278,6 +281,9 @@ struct ParamT {
 		const mpz_class largest_c = abs(6 * z + 2);
 		useNAF = getGoodRepl(siTbl, largest_c);
 		getGoodRepl(zReplTbl, abs(z)); // QQQ : snark
+		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
+		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
+		exp_c2 = 6 * z * z + 1;
 	}
 	mpz_class eval(const int c[5], const mpz_class& x) const
 	{
@@ -631,19 +637,16 @@ struct BNT {
 	static void exp_d(Fp12& y, const Fp12& x)
 	{
 #if 1
-		mpz_class c0 = -2 + param.z * (-18 + param.z * (-30 - 36 *param.z));
-		mpz_class c1 = 1 + param.z * (-12 + param.z * (-18 - 36 * param.z));
-		mpz_class c2 = 6 * param.z * param.z + 1;
-		Fp12 t0, t1, t2, t3;
-		Fp12::pow(t0, x, c0);
+		Fp12 t1, t2, t3;
 		Frobenius(t1, x);
 		Frobenius(t2, t1);
 		Frobenius(t3, t2);
-		Fp12::pow(t1, t1, c1);
-		Fp12::pow(t2, t2, c2);
-		t0 *= t1;
-		t0 *= t2;
-		Fp12::mul(y, t0, t3);
+		Fp12::pow(t1, t1, param.exp_c1);
+		Fp12::pow(t2, t2, param.exp_c2);
+		Fp12::pow(y, x, param.exp_c0);
+		y *= t1;
+		y *= t2;
+		y *= t3;
 #else
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
