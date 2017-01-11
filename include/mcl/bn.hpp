@@ -784,30 +784,29 @@ struct BNT {
 	*/
 	static void exp_d1(Fp12& y, const Fp12& x)
 	{
-		Fp12 a0, a1, a2, a3;
-		pow_z(a0, x); // x^z
-		fasterSqr(a0, a0); // x^2z
-		fasterSqr(a1, a0); // x^4z
-		a1 *= a0; // x^6z
-		pow_z(a2, a1); // x^(6z^2)
+		Fp12 a, b;
+		Fp12 a2, a3;
+		pow_z(b, x); // x^z
+		fasterSqr(b, b); // x^2z
+		fasterSqr(a, b); // x^4z
+		a *= b; // x^6z
+		pow_z(a2, a); // x^(6z^2)
+		a *= a2;
 		fasterSqr(a3, a2); // x^(12z^2)
 		pow_z(a3, a3); // x^(12z^3)
-		Fp12 a, b;
-		Fp12::mul(a, a1, a2);
 		a *= a3;
-		unitaryInv(b, a0);
+		unitaryInv(b, b);
 		b *= a;
-		Fp12 c0, c1, c2, c3;
-		Fp12::mul(c0, a, a2);
-		c0 *= x;
-		Frobenius(c1, b);
-		Frobenius2(c2, a);
-		unitaryInv(c3, x);
-		c3 *= b;
-		Frobenius3(c3, c3);
-		Fp12::mul(y, c0, c1);
-		y *= c2;
-		y *= c3;
+		a2 *= a;
+		Frobenius2(a, a);
+		a *= a2;
+		a *= x;
+		unitaryInv(y, x);
+		y *= b;
+		Frobenius(b, b);
+		a *= b;
+		Frobenius3(y, y);
+		y *= a;
 	}
 	/*
 		y = x^((p^12 - 1) / r)
@@ -820,11 +819,10 @@ struct BNT {
 #if 1
 		Fp12 z;
 		Frobenius2(z, x); // z = x^(p^2)
-		Fp12::mul(z, z, x); // x^(p^2 + 1)
-		Fp12 rv;
-		Fp12::inv(rv, z);
+		z *= x; // x^(p^2 + 1)
+		Fp12::inv(y, z);
 		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
-		Fp12::mul(y, z, rv);
+		y *= z;
 #else
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
