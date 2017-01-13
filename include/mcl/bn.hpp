@@ -972,6 +972,15 @@ struct BNT {
 		Frobenius3(y, y);
 		y *= a;
 	}
+	static void mapToCyclotomic(Fp12& y, const Fp12& x)
+	{
+		Fp12 z;
+		Frobenius2(z, x); // z = x^(p^2)
+		z *= x; // x^(p^2 + 1)
+		Fp12::inv(y, z);
+		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
+		y *= z;
+	}
 	/*
 		y = x^((p^12 - 1) / r)
 		(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
@@ -981,12 +990,7 @@ struct BNT {
 	static void finalExp(Fp12& y, const Fp12& x)
 	{
 #if 1
-		Fp12 z;
-		Frobenius2(z, x); // z = x^(p^2)
-		z *= x; // x^(p^2 + 1)
-		Fp12::inv(y, z);
-		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
-		y *= z;
+		mapToCyclotomic(y, x);
 #else
 		const mpz_class& p = param.p;
 		mpz_class p2 = p * p;
