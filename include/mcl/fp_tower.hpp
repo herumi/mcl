@@ -221,7 +221,7 @@ public:
 		if (op.isFastMod) {
 			op.fp2_mul = fp2_mulW;
 		} else if (!op.isFullBit) {
-			if (sizeof(Fp) * 8 == op.N * fp::UnitBitSize && op.fp2_mulNF) {
+			if (0 && sizeof(Fp) * 8 == op.N * fp::UnitBitSize && op.fp2_mulNF) {
 				op.fp2_mul = fp2_mulNFW;
 			} else {
 				op.fp2_mul = fp2_mulUseDblUseNCW;
