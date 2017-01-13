@@ -349,7 +349,7 @@ public:
 	static inline void divBy2(FpT& y, const FpT& x)
 	{
 #if 0
-		mul(y, x, inv2_); // QQQ : optimize later
+		mul(y, x, inv2_);
 #else
 		bool odd = (x.v_[0] & 1) != 0;
 		op_.fp_shr1(y.v_, x.v_);
@@ -357,6 +357,11 @@ public:
 			op_.fp_addPre(y.v_, y.v_, op_.half);
 		}
 #endif
+	}
+	static inline void divBy4(FpT& y, const FpT& x)
+	{
+		divBy2(y, x); // QQQ : optimize later
+		divBy2(y, y);
 	}
 	bool isZero() const { return op_.fp_isZero(v_); }
 	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }

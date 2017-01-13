@@ -130,8 +130,8 @@ public:
 	}
 	static void divBy4(Fp2T& y, const Fp2T& x)
 	{
-		divBy2(y, x);
-		divBy2(y, y); // QQQ : optimize later
+		Fp::divBy4(y.a, x.a);
+		Fp::divBy4(y.b, x.b);
 	}
 	static void mulFp(Fp2T& z, const Fp2T& x, const Fp& y)
 	{

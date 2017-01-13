@@ -853,7 +853,7 @@ struct BNT {
 			Fp2::sub(z.g4_, t0, z.g4_);
 			z.g4_ += z.g4_;
 			z.g4_ += t0;
-			Fp2Dbl::add(T2, T2, T1);
+			Fp2Dbl::addPre(T2, T2, T1);
 			T3 -= T2;
 			Fp2Dbl::mod(t0, T3);
 			z.g5_ += t0;
@@ -872,7 +872,7 @@ struct BNT {
 		*/
 		static void fixed_power(Fp12& z, const Fp12& x)
 		{
-			assert(&z != &x);
+			Fp12 x_org = x;
 			Fp12 d62;
 			Fp2 c55nume, c55denomi, c62nume, c62denomi;
 			Compress c55(z, x);
@@ -891,7 +891,7 @@ struct BNT {
 			Fp2::mul(t, acc, c55denomi);
 			Fp2::mul(c62.g1_, c62nume, t);
 			c62.decompressAfterInv();
-			z *= x;
+			z *= x_org;
 			z *= d62;
 		}
 	};
