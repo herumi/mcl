@@ -28,7 +28,7 @@ struct CurveParam {
 };
 
 const CurveParam CurveSNARK1 = { 4965661367192848881, 3, 9 };
-const CurveParam CurveSNARK2 = { 4965661367192848881, 82, 9 };
+//const CurveParam CurveSNARK2 = { 4965661367192848881, 82, 9 };
 const CurveParam CurveFp254BNb = { -((1LL << 62) + (1LL << 55) + (1LL << 0)), 2, 1 };
 
 template<class Vec>
@@ -189,6 +189,7 @@ struct ParamT {
 	typedef Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
+	bool isCurveFp254BNb;
 	mpz_class z;
 	mpz_class abs_z;
 	bool isNegative;
@@ -223,6 +224,7 @@ struct ParamT {
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
+		isCurveFp254BNb = cp == CurveFp254BNb;
 		{
 			uint64_t t = std::abs(cp.z);
 			isNegative = cp.z < 0;
@@ -280,7 +282,7 @@ struct ParamT {
 
 		const mpz_class largest_c = abs(6 * z + 2);
 		useNAF = getGoodRepl(siTbl, largest_c);
-		getGoodRepl(zReplTbl, abs(z)); // QQQ : snark
+		getGoodRepl(zReplTbl, abs(z));
 		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
 		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
 		exp_c2 = 6 * z * z + 1;
@@ -809,16 +811,14 @@ struct BNT {
 		}
 
 	public:
-		// not used
-		void decompress()
+		void decompress() // for test
 		{
 			Fp2 nume, denomi;
 			decompressBeforeInv(nume, denomi);
-			denomi.inverse();
+			Fp2::inv(denomi, denomi);
 			g1_ = nume * denomi; // g1 is recoverd.
 			decompressAfterInv();
 		}
-
 		/*
 			2275clk * 186 = 423Kclk QQQ
 		*/
@@ -872,6 +872,7 @@ struct BNT {
 		*/
 		static void fixed_power(Fp12& z, const Fp12& x)
 		{
+			assert(param.isCurveFp254BNb);
 			Fp12 x_org = x;
 			Fp12 d62;
 			Fp2 c55nume, c55denomi, c62nume, c62denomi;
@@ -902,7 +903,7 @@ struct BNT {
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
 #if 1
-		if (0) {
+		if (param.isCurveFp254BNb) {
 			Compress::fixed_power(y, x);
 		} else {
 			Fp12 orgX = x;

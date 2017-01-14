@@ -6,6 +6,7 @@ cybozu::CpuClock clk;
 #include <mcl/bn256.hpp>
 #include <cybozu/option.hpp>
 
+typedef mcl::bn256::BN::Compress Compress;
 using namespace mcl::bn256;
 
 mcl::fp::Mode g_mode;
@@ -125,6 +126,40 @@ void testMapToG2()
 	}
 }
 
+void testCyclotomic()
+{
+	Fp12 a;
+	for (int i = 0; i < 12; ++i) {
+		a.getFp0()[i] = i * i;
+	}
+	BN::mapToCyclotomic(a, a);
+	Fp12 d;
+	Compress b(d, a);
+	a *= a;
+	Fp12 d2;
+	Compress c(d2, b);
+	Compress::square_n(c, 1);
+	c.decompress();
+	CYBOZU_TEST_EQUAL(a, d2);
+	Compress::square_n(b, 1);
+	b.decompress();
+	CYBOZU_TEST_EQUAL(a, d);
+}
+
+void testCompress()
+{
+	if (!BN::param.isCurveFp254BNb) return;
+	Fp12 a;
+	for (int i = 0; i < 12; ++i) {
+		a.getFp0()[i] = i;
+	}
+	BN::mapToCyclotomic(a, a);
+	Fp12 b;
+	Compress::fixed_power(b, a);
+	Fp12 c;
+	Fp12::pow(c, a, BN::param.abs_z);
+	CYBOZU_TEST_EQUAL(b, c);
+}
 
 void test(const TestSet& ts)
 {
@@ -185,6 +220,8 @@ CYBOZU_TEST_AUTO(naive)
 		testSetStr(ts);
 		testMapToG1();
 		testMapToG2();
+		testCyclotomic();
+		testCompress();
 		test(ts);
 //break;
 	}
