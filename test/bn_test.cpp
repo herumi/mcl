@@ -161,7 +161,18 @@ void testCompress()
 	CYBOZU_TEST_EQUAL(b, c);
 }
 
-void test(const TestSet& ts)
+void testPrecomputed(const G2& Q, const G1& P)
+{
+	Fp12 e1, e2;
+	BN::pairing(e1, Q, P);
+	std::vector<Fp6> Qcoeff;
+	BN::precomputeG2(Qcoeff, Q);
+	BN::precomputedMillerLoop(e2, Qcoeff, P);
+	BN::finalExp(e2, e2);
+	CYBOZU_TEST_EQUAL(e1, e2);
+}
+
+void testPairing(const TestSet& ts)
 {
 	G1 P(ts.g1.a, ts.g1.b);
 	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
@@ -171,16 +182,8 @@ void test(const TestSet& ts)
 	{
 		std::stringstream ss(ts.e);
 		ss >> e2;
-//		mpz_class x = BN::param.z;
-//		x = 2 * x * (6 * x * x + 3 * x + 1);
-//		Fp12::pow(e1, e1, x);
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
-	/*
-		ate-pairing on Haswell
-		miller loop : 700Kclk
-		final exp   : 460Kclk
-	*/
 #if 0
 	for (int i = 0; i < 1000; i++) BN::pairing(e1, Q, P);
 //	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, Q, P); // 2.4Mclk
@@ -209,6 +212,7 @@ void test(const TestSet& ts)
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 #endif
+	testPrecomputed(Q, P);
 }
 
 CYBOZU_TEST_AUTO(naive)
@@ -222,7 +226,7 @@ CYBOZU_TEST_AUTO(naive)
 		testMapToG2();
 		testCyclotomic();
 		testCompress();
-		test(ts);
+		testPairing(ts);
 //break;
 	}
 	int count = (int)clk.getCount();
