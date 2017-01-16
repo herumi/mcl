@@ -541,11 +541,12 @@ struct BNT {
 		addLineWithoutP(l, R, Q);
 		updateLine(l, P);
 	}
-	static void Fp6_cb_mul_G1_xy(Fp6& l, const G1& P)
+	static void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 	{
 		assert(P.isNormalized());
-		Fp2::mulFp(l.c, l.c, P.x);
-		Fp2::mulFp(l.b, l.b, P.y);
+		if (&y != &x) y.a = x.a;
+		Fp2::mulFp(y.c, x.c, P.x);
+		Fp2::mulFp(y.b, x.b, P.y);
 	}
 
 	static void convertFp6toFp12(Fp12& y, const Fp6& x)
@@ -1056,6 +1057,12 @@ struct BNT {
 		millerLoop(f, Q, P);
 		finalExp(f, f);
 	}
+	/*
+		millerLoop(e, Q, P) is same as the following
+		std::vector<Fp6> Qcoeff;
+		precomputeG2(Qcoeff, Q);
+		precomputedMillerLoop(e, Qcoeff, P);
+	*/
 	static void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	{
 		Qcoeff.clear();
@@ -1101,31 +1108,32 @@ struct BNT {
 	{
 		P.normalize();
 		size_t idx = 0;
-		Fp6 d = Qcoeff[idx++];
-		Fp6_cb_mul_G1_xy(d, P);
+		Fp6 d, e;
+		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
+		idx++;
 
-		Fp6 e = Qcoeff[idx++];
-		Fp6_cb_mul_G1_xy(e, P);
+		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
+		idx++;
 		mul_024_024(f, d, e);
 		Fp6 l;
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
-			l = Qcoeff[idx++];
-			Fp6_cb_mul_G1_xy(l, P);
+			mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
+			idx++;
 			Fp12::sqr(f, f);
 			mul_024(f, f, l);
 			if (param.siTbl[i]) {
-				l = Qcoeff[idx++];
-				Fp6_cb_mul_G1_xy(l, P);
+				mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
+				idx++;
 				mul_024(f, f, l);
 			}
 		}
 		if (param.z < 0) {
 			Fp6::neg(f.b, f.b);
 		}
-		d = Qcoeff[idx++];
-		Fp6_cb_mul_G1_xy(d, P);
-		e = Qcoeff[idx++];
-		Fp6_cb_mul_G1_xy(e, P);
+		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
+		idx++;
+		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
+		idx++;
 		Fp12 ft;
 		mul_024_024(ft, d, e);
 		f *= ft;
