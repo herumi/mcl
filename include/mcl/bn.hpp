@@ -1138,6 +1138,58 @@ struct BNT {
 		mul_024_024(ft, d, e);
 		f *= ft;
 	}
+	/*
+		f = MillerLoop((Q1, P1) x MillerLoop(Q2, P2)
+	*/
+	static void precomputedMillerLoop2(Fp12& f, const std::vector<Fp6>& Q1coeff, const G1& P1, const std::vector<Fp6>& Q2coeff, const G1& P2)
+	{
+		P1.normalize();
+		P2.normalize();
+		size_t idx = 0;
+		Fp6 d1, d2;
+		mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
+		mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
+		idx++;
+
+		Fp6 e1, e2;
+		Fp12 f1, f2;
+		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
+		mul_024_024(f1, d1, e1);
+
+		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
+		mul_024_024(f2, d2, e2);
+		Fp12::mul(f, f1, f2);
+		idx++;
+		Fp6 l1, l2;
+		for (size_t i = 2; i < param.siTbl.size(); i++) {
+			mulFp6cb_by_G1xy(l1, Q1coeff[idx], P1);
+			mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
+			idx++;
+			Fp12::sqr(f, f);
+			mul_024_024(f1, l1, l2);
+			f *= f1;
+			if (param.siTbl[i]) {
+				mulFp6cb_by_G1xy(l1, Q1coeff[idx], P1);
+				mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
+				idx++;
+				mul_024_024(f1, l1, l2);
+				f *= f1;
+			}
+		}
+		if (param.z < 0) {
+			Fp6::neg(f.b, f.b);
+		}
+		mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
+		mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
+		idx++;
+		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
+		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
+		idx++;
+		mul_024_024(f1, d1, e1);
+		mul_024_024(f2, d2, e2);
+		f *= f1;
+		f *= f2;
+	}
 };
 
 template<class Fp>

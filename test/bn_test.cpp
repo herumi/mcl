@@ -85,9 +85,8 @@ CYBOZU_TEST_AUTO(size)
 	CYBOZU_TEST_EQUAL(sizeof(G2), sizeof(Fp2) * 3);
 }
 
-void testSetStr(const TestSet& ts)
+void testSetStr(const G2& Q0)
 {
-	G2 Q0(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 	G2::setCompressedExpression();
 	G2 Q;
 	for (int i = 0; i < 10; i++) {
@@ -172,15 +171,34 @@ void testPrecomputed(const G2& Q, const G1& P)
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
-void testPairing(const TestSet& ts)
+void testMillerLoop2(const G2& Q1, const G1& P1)
 {
-	G1 P(ts.g1.a, ts.g1.b);
-	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+	Fp12 e1, e2;
+	mpz_class c1("12342342423442");
+	mpz_class c2("329428049820348209482");
+	G2 Q2;
+	G1 P2;
+	G2::mul(Q2, Q1, c1);
+	G1::mul(P2, P1, c2);
+	BN::pairing(e1, Q1, P1);
+	BN::pairing(e2, Q2, P2);
+	e1 *= e2;
+
+	std::vector<Fp6> Q1coeff, Q2coeff;
+	BN::precomputeG2(Q1coeff, Q1);
+	BN::precomputeG2(Q2coeff, Q2);
+	BN::precomputedMillerLoop2(e2, Q1coeff, P1, Q2coeff, P2);
+	BN::finalExp(e2, e2);
+	CYBOZU_TEST_EQUAL(e1, e2);
+}
+
+void testPairing(const G2& Q, const G1& P, const char *eStr)
+{
 	Fp12 e1;
 	BN::pairing(e1, Q, P);
 	Fp12 e2;
 	{
-		std::stringstream ss(ts.e);
+		std::stringstream ss(eStr);
 		ss >> e2;
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
@@ -212,7 +230,6 @@ void testPairing(const TestSet& ts)
 	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 #endif
-	testPrecomputed(Q, P);
 }
 
 CYBOZU_TEST_AUTO(naive)
@@ -221,12 +238,16 @@ CYBOZU_TEST_AUTO(naive)
 //i=1;
 		const TestSet& ts = g_testSetTbl[i];
 		bn256init(ts.cp, g_mode);
-		testSetStr(ts);
+		G1 P(ts.g1.a, ts.g1.b);
+		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+		testSetStr(Q);
 		testMapToG1();
 		testMapToG2();
 		testCyclotomic();
 		testCompress();
-		testPairing(ts);
+		testPairing(Q, P, ts.e);
+		testPrecomputed(Q, P);
+		testMillerLoop2(Q, P);
 //break;
 	}
 	int count = (int)clk.getCount();
