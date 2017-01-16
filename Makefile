@@ -30,7 +30,11 @@ all: $(MCL_LIB)
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 GEN_EXE=src/gen
-ASM_SRC_PATH_NAME=src/asm/$(CPU)
+ifeq ($(OS),mac)
+  ASM_SRC_PATH_NAME=src/asm/$(CPU)mac
+else
+  ASM_SRC_PATH_NAME=src/asm/$(CPU)
+endif
 ifneq ($(CPU),)
   ASM_SRC=$(ASM_SRC_PATH_NAME).s
 endif

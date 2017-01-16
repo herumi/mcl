@@ -4,7 +4,10 @@ ifeq ($(UNAME_S),Linux)
   OS=Linux
 endif
 ifeq ($(UNAME_S),Darwin)
+  OS=mac
   ARCH=x86_64
+  CFLAGS+=-I/usr/local/opt/openssl/include
+  LDFLAGS+=-L/usr/local/opt/openssl/lib
 endif
 ARCH?=$(shell arch)
 ifeq ($(ARCH),x86_64)
