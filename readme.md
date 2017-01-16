@@ -68,6 +68,14 @@ open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
 ```
+
+## Build for MacOS
+Install openssl and [llvm](http://releases.llvm.org/download.html) and add `<installed llvm dir>/bin/` to the path.
+```
+make UPDATE_ASM=1
+make -j test CFLAGS_USER=-I/usr/local/opt/openssl/include LDFLAGS_USER=-L/usr/local/opt/openssl/lib
+```
+
 ## Benchmark
 
 A benchmark of a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1).

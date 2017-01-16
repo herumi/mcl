@@ -3,6 +3,9 @@ UNAME_S=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
   OS=Linux
 endif
+ifeq ($(UNAME_S),Darwin)
+  ARCH=x86_64
+endif
 ARCH?=$(shell arch)
 ifeq ($(ARCH),x86_64)
   CPU=x86-64
@@ -10,7 +13,7 @@ ifeq ($(ARCH),x86_64)
   BIT=64
   BIT_OPT=-m64
   #LOW_ASM_SRC=src/asm/low_x86-64.asm
-  ASM=nasm -felf64
+  #ASM=nasm -felf64
 endif
 ifeq ($(ARCH),x86)
   CPU=x86
