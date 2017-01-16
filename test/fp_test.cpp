@@ -600,7 +600,7 @@ void getInt64Test()
 {
 	const int64_t tbl[] = {
 		0, 1, 123, 0xffffffff, int64_t(0x7fffffffffffffffull),
-		-1, -2, -12345678, -int64_t(1) << 63,
+		-1, -2, -12345678, int64_t(-9223372036854775808ull)/*-int64_t(1) << 63*/,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		int64_t a = tbl[i];
