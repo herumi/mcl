@@ -758,8 +758,10 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 #endif
 #ifdef MCL_USE_XBYAK
 		const mcl::fp::Op& op = Fp::getOp();
-		op.fpDbl_mod(ex, in, op.p);
-		CYBOZU_TEST_EQUAL_ARRAY(ex, ok, N + 1);
+		if (!op.isMont) {
+			op.fpDbl_mod(ex, in, op.p);
+			CYBOZU_TEST_EQUAL_ARRAY(ex, ok, N + 1);
+		}
 #endif
 	}
 }
