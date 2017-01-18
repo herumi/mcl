@@ -137,7 +137,7 @@ struct Op {
 	Op()
 	{
 		clear();
-		fg = createFpGenerator();
+		fg = 0;
 	}
 	~Op()
 	{

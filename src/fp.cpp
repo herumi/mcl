@@ -125,6 +125,25 @@ void UnitToHex(char *buf, size_t maxBufSize, Unit x)
 #endif
 }
 
+bool isEnableJIT()
+{
+#if defined(MCL_USE_XBYAK)
+	/* -1:not init, 0:disable, 1:enable */
+	static int status = -1;
+	if (status == -1) {
+		const size_t size = 4096;
+		uint8_t *p = (uint8_t*)malloc(size * 2);
+		uint8_t *aligned = Xbyak::CodeArray::getAlignedAddress(p, size);
+		bool ret = Xbyak::CodeArray::protect(aligned, size, true);
+		status = ret ? 1 : 0;
+		free(p);
+	}
+	return status != 0;
+#else
+	return false;
+#endif
+}
+
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 {
 	int s = n;
@@ -292,7 +311,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return;
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg = op.fg;
-	if (fg == 0) return;
+	if (fg == 0) fg = Op::createFpGenerator();
 	fg->init(op);
 
 	if (op.isMont && N <= 4) {
@@ -323,6 +342,9 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	if (mode == fp::FP_XBYAK && bitSize > 521) {
 		mode = fp::FP_AUTO;
 	}
+	if (!fp::isEnableJIT()) {
+		mode = fp::FP_AUTO;
+	}
 #else
 	if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
 #endif
@@ -332,7 +354,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
 #endif
 	isMont = mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
-#if 0
+#ifndef NDEBUG
 	fprintf(stderr, "mode=%s, isMont=%d, maxBitSize=%d"
 #ifdef MCL_USE_XBYAK
 		" MCL_USE_XBYAK"

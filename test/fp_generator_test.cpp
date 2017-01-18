@@ -197,6 +197,7 @@ void test(const char *pStr)
 
 CYBOZU_TEST_AUTO(all)
 {
+	if (!mcl::fp::isEnableJIT()) return;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(primeTable); i++) {
 		test(primeTable[i]);
 	}
