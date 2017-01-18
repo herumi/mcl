@@ -268,6 +268,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	g_mode = mcl::fp::StrToMode(mode);
+	printf("JIT %d\n", mcl::fp::isEnableJIT());
 	return cybozu::test::autoRun.run(argc, argv);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
