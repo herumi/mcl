@@ -310,9 +310,8 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 	op.rp = getMontgomeryCoeff(p[0]);
 	if (mode != FP_XBYAK) return;
 #ifdef MCL_USE_XBYAK
-	FpGenerator *fg = op.fg;
-	if (fg == 0) fg = Op::createFpGenerator();
-	fg->init(op);
+	if (op.fg == 0) op.fg = Op::createFpGenerator();
+	op.fg->init(op);
 
 	if (op.isMont && N <= 4) {
 		op.fp_invOp = &invOpForMontC;
