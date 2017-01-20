@@ -94,7 +94,7 @@ finalExp 546.259Kclk
 
 A benchmark of a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1).
 
-* x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz
+* x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz on Ubuntu 16.04.
     * `sudo cpufreq-set -g performance`
 * arm ; 900MHz quad-core ARM Cortex-A7 on Raspberry Pi2, Linux 4.4.11-v7+
 * arm64 ; 1.2GHz ARM Cortex-A53 [HiKey](http://www.96boards.org/product/hikey/)
