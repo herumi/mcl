@@ -90,9 +90,25 @@ pairing   1.394Mclk
 finalExp 546.259Kclk
 ```
 
+# How to initialize pairing library
+Call `mcl::bn256::bn256init` before calling any operations.
+```
+#include <mcl/bn256.hpp>
+mcl::bn::CurveParam cp = mcl::bn::CurveFp254BNb; // or mcl::bn::CurveSNARK1
+mcl::bn256::bn256init(cp);
+mcl::bn256::G1 P(...);
+mcl::bn256::G2 Q(...);
+mcl::bn256::Fp12 e;
+mcl::bn256::BN::pairing(e, Q, P);
+```
+1. (CurveFp254BNb) a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1).
+2. (CurveSNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
+
+See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
+
 # Benchmark
 
-A benchmark of a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1).
+A benchmark of a BN curve CurveFp254BNb.
 
 * x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz on Ubuntu 16.04.
     * `sudo cpufreq-set -g performance`
@@ -119,21 +135,6 @@ For example, specify `-3.8` for `<llvm-version>` if `opt-3.8` and `llc-3.8` are 
 
 # Java API
 See [java.md](https://github.com/herumi/mcl/blob/master/java/java.md)
-
-# How to initialize pairing library
-```
-#include <mcl/bn256.hpp>
-mcl::bn::CurveParam cp = mcl::bn::CurveFp254BNb; // or mcl::bn::CurveSNARK1
-mcl::bn256::bn256init(cp);
-mcl::bn256::G1 P(...);
-mcl::bn256::G2 Q(...);
-mcl::bn256::Fp12 e;
-mcl::bn256::BN::pairing(e, Q, P);
-```
-1. (CurveFp254BNb) a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1); and
-2. (CurveSNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-
-see [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
 
 # License
 
