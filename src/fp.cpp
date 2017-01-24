@@ -136,6 +136,9 @@ bool isEnableJIT()
 		uint8_t *aligned = Xbyak::CodeArray::getAlignedAddress(p, size);
 		bool ret = Xbyak::CodeArray::protect(aligned, size, true);
 		status = ret ? 1 : 0;
+		if (ret) {
+			Xbyak::CodeArray::protect(aligned, size, false);
+		}
 		free(p);
 	}
 	return status != 0;
