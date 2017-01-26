@@ -14,7 +14,7 @@ struct EnableKaratsuba<Ltag> {
 };
 
 #if CYBOZU_OS_BIT == 32
-	#define MCL_GMP_IS_FASTER_THAN_LLVM
+	#define MCL_GMP_IS_FASTER_THAN_LLVM // QQQ : check later
 #endif
 
 #ifdef MCL_GMP_IS_FASTER_THAN_LLVM
@@ -70,6 +70,9 @@ MCL_DEF_LLVM_FUNC(14)
 MCL_DEF_LLVM_FUNC(15)
 MCL_DEF_LLVM_FUNC(16)
 MCL_DEF_LLVM_FUNC(17)
+#endif
+#if CYBOZU_OS_BIT == 64 && MCL_MAX_BIT_SIZE == 1024
+MCL_DEF_LLVM_FUNC(16)
 #endif
 
 } } // mcl::fp

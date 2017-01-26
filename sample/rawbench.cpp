@@ -5,7 +5,7 @@
 #include <mcl/fp.hpp>
 #include <mcl/fp_tower.hpp>
 
-typedef mcl::FpT<mcl::FpTag, 512> Fp;
+typedef mcl::FpT<mcl::FpTag> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
@@ -151,6 +151,10 @@ int main(int argc, char *argv[])
 		// N = 8
 		"0x8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdc7",
+#if MCL_MAX_BIT_SIZE == 1024
+		"0xc70b1ddda9b96e3965e5855942aa5852d8f8e052c760ac32cdfec16a2ed3d56981e1a475e20a70144ed2f5061ba64900f69451492803f815d446ee133d0668f7a7f3276d6301c95ce231f0e4b0d0f3882f10014fca04454cff55d2e2d4cfc1aad33b8d38397e2fc8b623177e63d0b783269c40a85b8f105654783b8ed2e737df",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff97",
+#endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
@@ -165,7 +169,9 @@ int main(int argc, char *argv[])
 		benchRaw(tbl[i], mcl::fp::FP_LLVM_MONT);
 #endif
 #ifdef MCL_USE_XBYAK
-		benchRaw(tbl[i], mcl::fp::FP_XBYAK);
+		if (bitSize <= 256) {
+			benchRaw(tbl[i], mcl::fp::FP_XBYAK);
+		}
 #endif
 	}
 } catch (std::exception& e) {
