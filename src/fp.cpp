@@ -393,7 +393,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	case 7:  setOp<7>(*this, mode); break;
 	case 8:  setOp<8>(*this, mode); break;
 	case 9:  setOp<9>(*this, mode); break; // 576 if 64-bit
-#if CYBOZU_OS_BIT == 32 || MCL_MAX_BIT_SIZE == 768
+#if CYBOZU_OS_BIT == 32 || MCL_MAX_BIT_SIZE >= 768
 	case 10: setOp<10>(*this, mode); break;
 	case 11: setOp<11>(*this, mode); break;
 	case 12: setOp<12>(*this, mode); break; // 768 if 64-bit
@@ -406,6 +406,9 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	case 17: setOp<17>(*this, mode); break; // 544 if 32-bit
 #endif
 #if CYBOZU_OS_BIT == 64 && MCL_MAX_BIT_SIZE == 1024
+	case 13: setOp<13>(*this, mode); break;
+	case 14: setOp<14>(*this, mode); break;
+	case 15: setOp<15>(*this, mode); break;
 	case 16: setOp<16>(*this, mode); break;
 #endif
 	default:

@@ -59,7 +59,7 @@ MCL_DEF_LLVM_FUNC(6)
 MCL_DEF_LLVM_FUNC(7)
 MCL_DEF_LLVM_FUNC(8)
 MCL_DEF_LLVM_FUNC(9)
-#if CYBOZU_OS_BIT == 32 || MCL_MAX_BIT_SIZE == 768
+#if CYBOZU_OS_BIT == 32 || MCL_MAX_BIT_SIZE >= 768
 MCL_DEF_LLVM_FUNC(10)
 MCL_DEF_LLVM_FUNC(11)
 MCL_DEF_LLVM_FUNC(12)
@@ -72,7 +72,11 @@ MCL_DEF_LLVM_FUNC(16)
 MCL_DEF_LLVM_FUNC(17)
 #endif
 #if CYBOZU_OS_BIT == 64 && MCL_MAX_BIT_SIZE == 1024
-MCL_DEF_LLVM_FUNC(16)
+MCL_DEF_LLVM_FUNC(14)
+//MCL_DEF_LLVM_FUNC(16)
+/// QQQ : check speed
+template<>const void3u MontRed<16, Ltag>::f = &mcl_fp_montRed16L;
+template<>const void3u MontRed<16, LBMI2tag>::f = &mcl_fp_montRed16Lbmi2;
 #endif
 
 } } // mcl::fp
