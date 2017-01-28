@@ -99,11 +99,15 @@ void testSetStr(const G2& Q0)
 
 void testMapToG1()
 {
-	mcl::bn::MapTo<Fp> mapTo;
+	const mcl::bn::MapToT<Fp>& mapTo = BN::param.mapTo;
 
 	G1 g;
 	for (int i = 1; i < 10; i++) {
 		mapTo.calcG1(g, i);
+		CYBOZU_TEST_ASSERT(!g.isZero());
+		G1 gr;
+		G1::mul(gr, g, BN::param.r);
+		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 	if (BN::param.b == 2) {
 		CYBOZU_TEST_EXCEPTION(mapTo.calcG1(g, 0), cybozu::Exception);
@@ -114,11 +118,15 @@ void testMapToG1()
 
 void testMapToG2()
 {
-	mcl::bn::MapTo<Fp> mapTo;
+	const mcl::bn::MapToT<Fp>& mapTo = BN::param.mapTo;
 
 	G2 g;
 	for (int i = 1; i < 10; i++) {
 		mapTo.calcG2(g, i);
+		CYBOZU_TEST_ASSERT(!g.isZero());
+		G2 gr;
+		G2::mul(gr, g, BN::param.r);
+		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 	if (BN::param.b == 2) {
 		CYBOZU_TEST_EXCEPTION(mapTo.calcG2(g, 0), cybozu::Exception);

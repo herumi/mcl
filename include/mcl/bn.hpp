@@ -109,12 +109,13 @@ bool getGoodRepl(Vec& v, const mpz_class& x)
 }
 
 template<class Fp>
-struct MapTo {
+struct MapToT {
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
 	Fp c1; // sqrt(-3)
 	Fp c2; // (-1 + sqrt(-3)) / 2
+	mpz_class cofactor;
 	int legendre(const Fp& x) const
 	{
 		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
@@ -160,12 +161,16 @@ struct MapTo {
 			}
 		}
 	ERR_POINT:
-		throw cybozu::Exception("MapTo:calc:bad") << t;
+		throw cybozu::Exception("MapToT:calc:bad") << t;
 	}
-	MapTo()
+	/*
+		cofactor is for G2
+	*/
+	void init(const mpz_class& cofactor)
 	{
-		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("MapTo:c1");
+		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("MapToT:init:c1");
 		c2 = (c1 - 1) / 2;
+		this->cofactor = cofactor;
 	}
 	/*
 		P.-A. Fouque and M. Tibouchi,
@@ -178,9 +183,15 @@ struct MapTo {
 	{
 		calc<G1, Fp>(P, t);
 	}
+	/*
+		get the element in G2 by multiplying the cofactor
+	*/
 	void calcG2(G2& P, const Fp2& t) const
 	{
 		calc<G2, Fp2>(P, t);
+		assert(cofactor != 0);
+		G2::mul(P, P, cofactor);
+		assert(!P.isZero());
 	}
 };
 
@@ -215,6 +226,7 @@ struct ParamT {
 	mpz_class exp_c0;
 	mpz_class exp_c1;
 	mpz_class exp_c2;
+	MapToT<Fp> mapTo;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
@@ -249,6 +261,8 @@ struct ParamT {
 		is_b_div_xi_1_m1i =  b_div_xi == Fp2(1, -1);
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
+		G2::setOrder(r);
+		mapTo.init(2 * p - r);
 
 		Fp2::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
 		for (size_t i = 1; i < gN; i++) {

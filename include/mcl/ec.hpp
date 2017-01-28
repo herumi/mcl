@@ -55,6 +55,12 @@ public:
 	static Fp b_;
 	static int specialA_;
 	static bool compressedExpression_;
+	/*
+		order_ is the order of G2 which is the subgroup of EcT<Fp2>.
+		check the order of the elements if verifyOrder_ is true
+	*/
+	static bool verifyOrder_;
+	static mpz_class order_;
 #ifdef MCL_EC_USE_AFFINE
 	EcT() : inf_(true) {}
 #else
@@ -152,6 +158,8 @@ public:
 		} else {
 			specialA_ = generic;
 		}
+		verifyOrder_ = false;
+		order_ = 0;
 #ifdef MCL_EC_USE_AFFINE
 		cybozu::disable_warning_unused_variable(mode);
 #else
@@ -164,6 +172,11 @@ public:
 			throw cybozu::Exception("ec:EcT:init:bad mode") << mode;
 		}
 #endif
+	}
+	static  inline void setOrder(const mpz_class& order)
+	{
+		verifyOrder_ = true;
+		order_ = order;
 	}
 	// backward compatilibity
 	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
@@ -738,6 +751,8 @@ template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
 template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> bool EcT<Fp>::compressedExpression_;
+template<class Fp> bool EcT<Fp>::verifyOrder_;
+template<class Fp> mpz_class EcT<Fp>::order_;
 #ifndef MCL_EC_USE_AFFINE
 template<class Fp> int EcT<Fp>::mode_;
 #endif
