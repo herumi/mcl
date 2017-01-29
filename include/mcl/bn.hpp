@@ -156,7 +156,7 @@ struct MapToT {
 			G::getWeierstrass(y, x);
 			if (F::squareRoot(y, y)) {
 				if (negative) F::neg(y, y);
-				P.set(x, y);
+				P.set(x, y, false);
 				return;
 			}
 		}
@@ -182,6 +182,7 @@ struct MapToT {
 	void calcG1(G1& P, const Fp& t) const
 	{
 		calc<G1, Fp>(P, t);
+		assert(P.isValid());
 	}
 	/*
 		get the element in G2 by multiplying the cofactor

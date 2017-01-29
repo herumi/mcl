@@ -131,6 +131,17 @@ private:
 		y2 *= z;
 		return y2 == t;
 	}
+	// y^2 == (x^2 + a)x + b
+	static inline bool isValid(const Fp& _x, const Fp& _y)
+	{
+		Fp y2, t;
+		Fp::sqr(y2, _y);
+		Fp::sqr(t, _x);
+		t += a_;
+		t *= _x;
+		t += b_;
+		return y2 == t;
+	}
 public:
 #endif
 	void normalize() const
@@ -173,9 +184,13 @@ public:
 		}
 #endif
 	}
+	/*
+		verify the order of *this is equal to order if order != 0
+		in constructor, set, setStr, operator<<().
+	*/
 	static  inline void setOrder(const mpz_class& order)
 	{
-		verifyOrder_ = true;
+		verifyOrder_ = order != 0;
 		order_ = order;
 	}
 	// backward compatilibity
@@ -187,31 +202,35 @@ public:
 	{
 		init(Fp(astr), Fp(bstr), mode);
 	}
-	// y^2 == (x^2 + a)x + b
-	static inline bool isValid(const Fp& _x, const Fp& _y)
+	// verify the order
+	bool isValidOrder() const
 	{
-		Fp y2, t;
-		Fp::sqr(y2, _y);
-		Fp::sqr(t, _x);
-		t += a_;
-		t *= _x;
-		t += b_;
-		return y2 == t;
+		EcT Q;
+		EcT::mul(Q, *this, order_);
+		return Q.isZero();
 	}
 	bool isValid() const
 	{
 		if (isZero()) return true;
+		bool isOK = false;
 #ifndef MCL_EC_USE_AFFINE
 		if (!z.isOne()) {
 			switch (mode_) {
 			case ec::Jacobi:
-				return isValidJacobi();
+				isOK = isValidJacobi();
+				break;
 			case ec::Proj:
-				return isValidProj();
+				isOK = isValidProj();
+				break;
 			}
-		}
+		} else
 #endif
-		return isValid(x, y);
+		{
+			isOK = isValid(x, y);
+		}
+		if (!isOK) return false;
+		if (verifyOrder_) return isValidOrder();
+		return true;
 	}
 	void set(const Fp& _x, const Fp& _y, bool verify = true)
 	{
@@ -222,6 +241,9 @@ public:
 #else
 		z = 1;
 #endif
+		if (verify && verifyOrder_ && !isValidOrder()) {
+			throw cybozu::Exception("EcT:set:bad order") << *this;
+		}
 	}
 	void clear()
 	{
@@ -671,6 +693,9 @@ public:
 			getYfromX(self.y, self.x, isYodd);
 		} else {
 			throw cybozu::Exception("EcT:operator>>:bad format") << c;
+		}
+		if (verifyOrder_ && !self.isValidOrder()) {
+			throw cybozu::Exception("EcT:operator>>:bad order") << self;
 		}
 		return is;
 	}

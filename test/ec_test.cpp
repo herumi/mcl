@@ -61,8 +61,8 @@ struct Test {
 		Fp x(para.gx);
 		Fp y(para.gy);
 		Zn n = 0;
-		CYBOZU_TEST_ASSERT(Ec::isValid(x, y));
-		CYBOZU_TEST_ASSERT(!Ec::isValid(x, y + 1));
+		CYBOZU_TEST_NO_EXCEPTION(Ec(x, y));
+		CYBOZU_TEST_EXCEPTION(Ec(x, y  + 1), cybozu::Exception);
 		Ec P(x, y), Q, R, O;
 		CYBOZU_TEST_ASSERT(P.isNormalized());
 		{
