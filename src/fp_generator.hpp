@@ -138,6 +138,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	static const int UseRCX = Xbyak::util::UseRCX;
 	Xbyak::util::Cpu cpu_;
 	bool useMulx_;
+	bool  useAdx_;
 	const mcl::fp::Op *op_;
 	const uint64_t *p_;
 	uint64_t rp_;
@@ -170,6 +171,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, mulUnit_(0)
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
+		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
 	}
 	/*
 		@param op [in] ; use op.p, op.N, op.isFullBit
@@ -1222,6 +1224,27 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(py + 8 * 2, Pack(d, t7, t6, t2));
 	}
 	/*
+		[d3:d2:d1:pz[0]] <- [d2:d1:d0] + py[2..0] * px[0]
+	*/
+	void mul3x1add(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& d3, const Reg64& d2, const Reg64& d1, const Reg64& d0, const Reg64& t)
+	{
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+		xor_(t, t);
+		mov(d, ptr [px]);
+		mulx(d3, a, ptr [py + 8 * 0]);
+		adox(d0, a);
+		mov(ptr [pz], d0);
+		adcx(d1, d3);
+		mulx(d3, a, ptr [py + 8 * 1]);
+		adox(d1, a);
+		adcx(d2, d3);
+		mulx(d3, a, ptr [py + 8 * 2]);
+		adox(d2, a);
+		adcx(d3, t);
+		adox(d3, t);
+	}
+	/*
 		pz[5..0] <- px[2..0] * py[2..0]
 	*/
 	void mulPre3(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
@@ -1239,6 +1262,23 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
 
+		if (useAdx_) {
+			mov(d, ptr [px]);
+			mulx(t0, a, ptr [py + 8 * 0]);
+			mov(ptr [pz + 8 * 0], a);
+			mulx(t1, a, ptr [py + 8 * 1]);
+			add(t0, a);
+			mulx(t2, a, ptr [py + 8 * 2]);
+			adc(t1, a);
+			adc(t2, 0);
+			// [t2:t1:t0]
+			mul3x1add(pz + 8 * 1, px + 8 * 1, py, t3, t2, t1, t0, t4);
+			// [t3:t2:t1]
+			mul3x1add(pz + 8 * 2, px + 8 * 2, py, t4, t3, t2, t1, t0);
+			// [t4:t3:t2]
+			store_mr(pz + 8 * 3, Pack(t4, t3, t2));
+			return;
+		}
 		if (useMulx_) {
 			mov(d, ptr [px]);
 			mulx(t0, a, ptr [py + 8 * 0]);
