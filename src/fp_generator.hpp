@@ -1262,23 +1262,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
 
-		if (useAdx_) {
-			mov(d, ptr [px]);
-			mulx(t0, a, ptr [py + 8 * 0]);
-			mov(ptr [pz + 8 * 0], a);
-			mulx(t1, a, ptr [py + 8 * 1]);
-			add(t0, a);
-			mulx(t2, a, ptr [py + 8 * 2]);
-			adc(t1, a);
-			adc(t2, 0);
-			// [t2:t1:t0]
-			mul3x1add(pz + 8 * 1, px + 8 * 1, py, t3, t2, t1, t0, t4);
-			// [t3:t2:t1]
-			mul3x1add(pz + 8 * 2, px + 8 * 2, py, t4, t3, t2, t1, t0);
-			// [t4:t3:t2]
-			store_mr(pz + 8 * 3, Pack(t4, t3, t2));
-			return;
-		}
 		if (useMulx_) {
 			mov(d, ptr [px]);
 			mulx(t0, a, ptr [py + 8 * 0]);
@@ -1288,6 +1271,15 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			mulx(t2, a, ptr [py + 8 * 2]);
 			adc(t1, a);
 			adc(t2, 0);
+			if (useAdx_) {
+				// [t2:t1:t0]
+				mul3x1add(pz + 8 * 1, px + 8 * 1, py, t3, t2, t1, t0, t4);
+				// [t3:t2:t1]
+				mul3x1add(pz + 8 * 2, px + 8 * 2, py, t4, t3, t2, t1, t0);
+				// [t4:t3:t2]
+				store_mr(pz + 8 * 3, Pack(t4, t3, t2));
+				return;
+			}
 		} else {
 			mov(t5, ptr [px]);
 			mov(a, ptr [py + 8 * 0]);
@@ -1456,6 +1448,30 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		store_mr(py + 8 * 2, Pack(t5, t4, t3, t2, t1, t0));
 	}
 	/*
+		[d4:d3:d2:d1:pz[0]] <- [d3:d2:d1:d0] + py[3..0] * px[0]
+	*/
+	void mul4x1add(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& d4, const Reg64& d3, const Reg64& d2, const Reg64& d1, const Reg64& d0, const Reg64& t)
+	{
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+		xor_(t, t);
+		mov(d, ptr [px]);
+		mulx(d4, a, ptr [py + 8 * 0]);
+		adox(d0, a);
+		mov(ptr [pz], d0);
+		adcx(d1, d4);
+		mulx(d4, a, ptr [py + 8 * 1]);
+		adox(d1, a);
+		adcx(d2, d4);
+		mulx(d4, a, ptr [py + 8 * 2]);
+		adox(d2, a);
+		adcx(d3, d4);
+		mulx(d4, a, ptr [py + 8 * 3]);
+		adox(d3, a);
+		adcx(d4, t);
+		adox(d4, t);
+	}
+	/*
 		pz[7..0] <- px[3..0] * py[3..0]
 	*/
 	void mulPre4(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
@@ -1506,6 +1522,17 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			mulx(t3, a, ptr [py + 8 * 3]);
 			adc(t2, a);
 			adc(t3, 0);
+			if (0 && useAdx_) { // a little slower?
+				// [t3:t2:t1:t0]
+				mul4x1add(pz + 8 * 1, px + 8 * 1, py, t4, t3, t2, t1, t0, t5);
+				// [t4:t3:t2:t1]
+				mul4x1add(pz + 8 * 2, px + 8 * 2, py, t5, t4, t3, t2, t1, t0);
+				// [t5:t4:t3:t2]
+				mul4x1add(pz + 8 * 3, px + 8 * 3, py, t0, t5, t4, t3, t2, t1);
+				// [t0:t5:t4:t3]
+				store_mr(pz + 8 * 4, Pack(t0, t5, t4, t3));
+				return;
+			}
 		} else {
 			mov(t5, ptr [px]);
 			mov(a, ptr [py + 8 * 0]);
