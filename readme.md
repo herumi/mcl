@@ -133,6 +133,11 @@ make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1
 ```
 For example, specify `-3.8` for `<llvm-version>` if `opt-3.8` and `llc-3.8` are installed.
 
+If you want to use Fp with 1024-bit prime on x86-64, then
+```
+make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1 MCL_MAX_BIT_SIZE=1024
+```
+
 # Java API
 See [java.md](https://github.com/herumi/mcl/blob/master/java/java.md)
 
