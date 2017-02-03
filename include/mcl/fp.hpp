@@ -89,6 +89,9 @@ void UnitToHex(char *buf, size_t maxBufSize, Unit x);
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
+// hash msg
+std::string hash(size_t bitSize, const char *msg, size_t msgSize);
+
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
@@ -294,6 +297,18 @@ public:
 	{
 		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
 		toMont();
+	}
+	/*
+		hash msg and mask with (1 << (bitLen - 1)) - 1
+	*/
+	void setMsg(const char *msg, size_t msgSize)
+	{
+		std::string digest = mcl::fp::hash(op_.bitSize, msg, msgSize);
+		setArrayMask(digest.c_str(), digest.size());
+	}
+	void setMsg(const std::string& msg)
+	{
+		setMsg(msg.data(), msg.size());
 	}
 	void getStr(std::string& str, int ioMode = 10) const
 	{

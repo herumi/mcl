@@ -7,6 +7,7 @@
 #include <time.h>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
+#include <cybozu/crypto.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4127) // const condition
@@ -699,6 +700,33 @@ void getStrTest()
 	}
 }
 
+void setMsgTest()
+{
+	const std::string msgTbl[] = {
+		"", "abc", "111111111111111111111111111111111111",
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(msgTbl); i++) {
+		size_t bitSize = Fp::getBitSize();
+		cybozu::crypto::Hash::Name name;
+		if (bitSize <= 160) {
+			name = cybozu::crypto::Hash::N_SHA1;
+		} else if (bitSize <= 224) {
+			name = cybozu::crypto::Hash::N_SHA224;
+		} else if (bitSize <= 256) {
+			name = cybozu::crypto::Hash::N_SHA256;
+		} else if (bitSize <= 384) {
+			name = cybozu::crypto::Hash::N_SHA384;
+		} else {
+			name = cybozu::crypto::Hash::N_SHA512;
+		}
+		std::string digest = cybozu::crypto::Hash::digest(name, msgTbl[i]);
+		Fp x, y;
+		x.setArrayMask(digest.c_str(), digest.size());
+		y.setMsg(msgTbl[i]);
+		CYBOZU_TEST_EQUAL(x, y);
+	}
+}
+
 CYBOZU_TEST_AUTO(getArray)
 {
 	const struct {
@@ -826,6 +854,7 @@ void sub(mcl::fp::Mode mode)
 		getInt64Test();
 		divBy2Test();
 		getStrTest();
+		setMsgTest();
 	}
 	anotherFpTest(mode);
 	setArrayTest2(mode);

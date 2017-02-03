@@ -1,5 +1,6 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#include <cybozu/crypto.hpp>
 #include "conversion.hpp"
 #include "fp_generator.hpp"
 #include "low_func.hpp"
@@ -145,6 +146,23 @@ bool isEnableJIT()
 #else
 	return false;
 #endif
+}
+
+std::string hash(size_t bitSize, const char *msg, size_t msgSize)
+{
+	cybozu::crypto::Hash::Name name;
+	if (bitSize <= 160) {
+		name = cybozu::crypto::Hash::N_SHA1;
+	} else if (bitSize <= 224) {
+		name = cybozu::crypto::Hash::N_SHA224;
+	} else if (bitSize <= 256) {
+		name = cybozu::crypto::Hash::N_SHA256;
+	} else if (bitSize <= 384) {
+		name = cybozu::crypto::Hash::N_SHA384;
+	} else {
+		name = cybozu::crypto::Hash::N_SHA512;
+	}
+	return cybozu::crypto::Hash::digest(name, msg, msgSize);
 }
 
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
