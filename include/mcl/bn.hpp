@@ -1024,6 +1024,10 @@ struct BNT {
 #endif
 		exp_d1(y, y);
 	}
+	static void millerLoop(Fp12& f, const G1& P, const G2& Q)
+	{
+		millerLoop(f, P, Q);
+	}
 	static void millerLoop(Fp12& f, const G2& Q, const G1& P)
 	{
 		P.normalize();
@@ -1066,6 +1070,10 @@ struct BNT {
 		Fp12 ft;
 		mul_024_024(ft, d, e);
 		f *= ft;
+	}
+	static void pairing(Fp12& f, const G1& P, const G2& Q)
+	{
+		pairing(f, Q, P);
 	}
 	static void pairing(Fp12& f, const G2& Q, const G1& P)
 	{
@@ -1119,6 +1127,10 @@ struct BNT {
 		addLineWithoutP(e, T, Q2);
 		Qcoeff.push_back(e);
 	}
+	static void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
+	{
+		precomputedMillerLoop(f, P, Qcoeff);
+	}
 	static void precomputedMillerLoop(Fp12& f, const std::vector<Fp6>& Qcoeff, const G1& P)
 	{
 		P.normalize();
@@ -1156,6 +1168,10 @@ struct BNT {
 	/*
 		f = MillerLoop((Q1, P1) x MillerLoop(Q2, P2)
 	*/
+	static void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
+	{
+		precomputedMillerLoop2(f, Q1coeff, P1, Q2coeff, P2);
+	}
 	static void precomputedMillerLoop2(Fp12& f, const std::vector<Fp6>& Q1coeff, const G1& P1, const std::vector<Fp6>& Q2coeff, const G1& P2)
 	{
 		P1.normalize();
