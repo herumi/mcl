@@ -561,6 +561,10 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	{
 		return a.isZero() && b.isZero() && c.isZero();
 	}
+	bool isOne() const
+	{
+		return a.isOne() && b.isZero() && c.isZero();
+	}
 	bool operator==(const Fp6T& rhs) const
 	{
 		return a == rhs.a && b == rhs.b && c == rhs.c;
@@ -778,6 +782,10 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	bool isZero() const
 	{
 		return a.isZero() && b.isZero();
+	}
+	bool isOne() const
+	{
+		return a.isOne() && b.isZero();
 	}
 	bool operator==(const Fp12T& rhs) const
 	{
