@@ -168,18 +168,18 @@ void testCompress()
 	CYBOZU_TEST_EQUAL(b, c);
 }
 
-void testPrecomputed(const G2& Q, const G1& P)
+void testPrecomputed(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BN::pairing(e1, Q, P);
+	BN::pairing(e1, P, Q);
 	std::vector<Fp6> Qcoeff;
 	BN::precomputeG2(Qcoeff, Q);
-	BN::precomputedMillerLoop(e2, Qcoeff, P);
+	BN::precomputedMillerLoop(e2, P, Qcoeff);
 	BN::finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
-void testMillerLoop2(const G2& Q1, const G1& P1)
+void testMillerLoop2(const G1& P1, const G2& Q1)
 {
 	Fp12 e1, e2;
 	mpz_class c1("12342342423442");
@@ -188,22 +188,22 @@ void testMillerLoop2(const G2& Q1, const G1& P1)
 	G1 P2;
 	G2::mul(Q2, Q1, c1);
 	G1::mul(P2, P1, c2);
-	BN::pairing(e1, Q1, P1);
-	BN::pairing(e2, Q2, P2);
+	BN::pairing(e1, P1, Q1);
+	BN::pairing(e2, P2, Q2);
 	e1 *= e2;
 
 	std::vector<Fp6> Q1coeff, Q2coeff;
 	BN::precomputeG2(Q1coeff, Q1);
 	BN::precomputeG2(Q2coeff, Q2);
-	BN::precomputedMillerLoop2(e2, Q1coeff, P1, Q2coeff, P2);
+	BN::precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
 	BN::finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
-void testPairing(const G2& Q, const G1& P, const char *eStr)
+void testPairing(const G1& P, const G2& Q, const char *eStr)
 {
 	Fp12 e1;
-	BN::pairing(e1, Q, P);
+	BN::pairing(e1, P, Q);
 	Fp12 e2;
 	{
 		std::stringstream ss(eStr);
@@ -211,8 +211,8 @@ void testPairing(const G2& Q, const G1& P, const char *eStr)
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
 #if 0
-	for (int i = 0; i < 1000; i++) BN::pairing(e1, Q, P);
-//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, Q, P); // 2.4Mclk
+	for (int i = 0; i < 1000; i++) BN::pairing(e1, P, Q);
+//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, P, Q); // 2.4Mclk
 #else
 	{
 		Fp12 e = e1, ea;
@@ -228,14 +228,14 @@ void testPairing(const G2& Q, const G1& P, const char *eStr)
 			Fp12::pow(ea, e, a);
 			G1::mul(Pa, P, a);
 			G2::mul(Qa, Q, a);
-			BN::pairing(e1, Q, Pa);
-			BN::pairing(e2, Qa, P);
+			BN::pairing(e1, Pa, Q);
+			BN::pairing(e2, P, Qa);
 			CYBOZU_TEST_EQUAL(ea, e1);
 			CYBOZU_TEST_EQUAL(ea, e2);
 			a--;
 		}
 	}
-	CYBOZU_BENCH("pairing", BN::pairing, e1, Q, P); // 2.4Mclk
+	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
 #endif
 }
@@ -253,9 +253,9 @@ CYBOZU_TEST_AUTO(naive)
 		testMapToG2();
 		testCyclotomic();
 		testCompress();
-		testPairing(Q, P, ts.e);
-		testPrecomputed(Q, P);
-		testMillerLoop2(Q, P);
+		testPairing(P, Q, ts.e);
+		testPrecomputed(P, Q);
+		testMillerLoop2(P, Q);
 //break;
 	}
 	int count = (int)clk.getCount();

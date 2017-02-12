@@ -1026,10 +1026,6 @@ struct BNT {
 	}
 	static void millerLoop(Fp12& f, const G1& P, const G2& Q)
 	{
-		millerLoop(f, P, Q);
-	}
-	static void millerLoop(Fp12& f, const G2& Q, const G1& P)
-	{
 		P.normalize();
 		Q.normalize();
 		G2 T = Q;
@@ -1073,18 +1069,14 @@ struct BNT {
 	}
 	static void pairing(Fp12& f, const G1& P, const G2& Q)
 	{
-		pairing(f, Q, P);
-	}
-	static void pairing(Fp12& f, const G2& Q, const G1& P)
-	{
-		millerLoop(f, Q, P);
+		millerLoop(f, P, Q);
 		finalExp(f, f);
 	}
 	/*
-		millerLoop(e, Q, P) is same as the following
+		millerLoop(e, P, Q) is same as the following
 		std::vector<Fp6> Qcoeff;
 		precomputeG2(Qcoeff, Q);
-		precomputedMillerLoop(e, Qcoeff, P);
+		precomputedMillerLoop(e, P, Qcoeff);
 	*/
 	static void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	{
@@ -1129,10 +1121,6 @@ struct BNT {
 	}
 	static void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
 	{
-		precomputedMillerLoop(f, P, Qcoeff);
-	}
-	static void precomputedMillerLoop(Fp12& f, const std::vector<Fp6>& Qcoeff, const G1& P)
-	{
 		P.normalize();
 		size_t idx = 0;
 		Fp6 d, e;
@@ -1166,13 +1154,9 @@ struct BNT {
 		f *= ft;
 	}
 	/*
-		f = MillerLoop((Q1, P1) x MillerLoop(Q2, P2)
+		f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
 	*/
 	static void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
-	{
-		precomputedMillerLoop2(f, Q1coeff, P1, Q2coeff, P2);
-	}
-	static void precomputedMillerLoop2(Fp12& f, const std::vector<Fp6>& Q1coeff, const G1& P1, const std::vector<Fp6>& Q2coeff, const G1& P2)
 	{
 		P1.normalize();
 		P2.normalize();
@@ -1221,6 +1205,25 @@ struct BNT {
 		f *= f1;
 		f *= f2;
 	}
+#if 1 // duplicated later
+	// old order of P and Q
+	static void millerLoop(Fp12& f, const G2& Q, const G1& P)
+	{
+		millerLoop(f, P, Q);
+	}
+	static void pairing(Fp12& f, const G2& Q, const G1& P)
+	{
+		pairing(f, P, Q);
+	}
+	static void precomputedMillerLoop(Fp12& f, const std::vector<Fp6>& Qcoeff, const G1& P)
+	{
+		precomputedMillerLoop(f, P, Qcoeff);
+	}
+	static void precomputedMillerLoop2(Fp12& f, const std::vector<Fp6>& Q1coeff, const G1& P1, const std::vector<Fp6>& Q2coeff, const G1& P2)
+	{
+		precomputedMillerLoop2(f, P1, Q1coeff, P2, Q2coeff);
+	}
+#endif
 };
 
 template<class Fp>

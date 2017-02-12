@@ -7,38 +7,38 @@ const char *ab = "41687836088149321545364279345098957822465737152979115539641713
 const char *ba = "13891744915211034074451795021214165905772212241412891944830863846330766296736";
 const char *bb = "7937318970632701341203597196594272556916396164729705624521405069090520231616";
 
-void minimum_sample(const G2& Q, const G1& P)
+void minimum_sample(const G1& P, const G2& Q)
 {
 	const mpz_class a = 123;
 	const mpz_class b = 456;
 	Fp12 e1, e2;
-	BN::pairing(e1, Q, P);
+	BN::pairing(e1, P, Q);
 	G2 aQ;
 	G1 bP;
 	G2::mul(aQ, Q, a);
 	G1::mul(bP, P, b);
-	BN::pairing(e2, aQ, bP);
+	BN::pairing(e2, aP, aQ);
 	Fp12::pow(e1, e1, a * b);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
 
-void miller_and_finel_exp(const G2& Q, const G1& P)
+void miller_and_finel_exp(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BN::pairing(e1, Q, P);
+	BN::pairing(e1, P, Q);
 
-	BN::millerLoop(e2, Q, P);
+	BN::millerLoop(e2, P, Q);
 	BN::finalExp(e2, e2);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
 
-void precomputed(const G2& Q, const G1& P)
+void precomputed(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BN::pairing(e1, Q, P);
+	BN::pairing(e1, P, Q);
 	std::vector<Fp6> Qcoeff;
 	BN::precomputeG2(Qcoeff, Q);
-	BN::precomputedMillerLoop(e2, Qcoeff, P);
+	BN::precomputedMillerLoop(e2, P, Qcoeff);
 	BN::finalExp(e2, e2);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
@@ -49,8 +49,8 @@ int main()
 	G2 Q(Fp2(aa, ab), Fp2(ba, bb));
 	G1 P(-1, 1);
 
-	minimum_sample(Q, P);
-	miller_and_finel_exp(Q, P);
-	precomputed(Q, P);
+	minimum_sample(P, Q);
+	miller_and_finel_exp(P, Q);
+	precomputed(P, Q);
 }
 

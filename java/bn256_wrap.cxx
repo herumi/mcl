@@ -795,8 +795,8 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_Bn256JNI_sub_1_1SWIG_11(JNIEnv *jenv
 
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_Bn256JNI_pairing(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   GT *arg1 = 0 ;
-  G2 *arg2 = 0 ;
-  G1 *arg3 = 0 ;
+  G1 *arg2 = 0 ;
+  G2 *arg3 = 0 ;
   
   (void)jenv;
   (void)jcls;
@@ -808,17 +808,17 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_Bn256JNI_pairing(JNIEnv *jenv, jclas
     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "GT & reference is null");
     return ;
   } 
-  arg2 = *(G2 **)&jarg2;
+  arg2 = *(G1 **)&jarg2;
   if (!arg2) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G2 const & reference is null");
-    return ;
-  } 
-  arg3 = *(G1 **)&jarg3;
-  if (!arg3) {
     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G1 const & reference is null");
     return ;
   } 
-  pairing(*arg1,(G2 const &)*arg2,(G1 const &)*arg3);
+  arg3 = *(G2 **)&jarg3;
+  if (!arg3) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G2 const & reference is null");
+    return ;
+  } 
+  pairing(*arg1,(G1 const &)*arg2,(G2 const &)*arg3);
 }
 
 

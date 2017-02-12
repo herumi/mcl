@@ -61,19 +61,19 @@ public class Bn256Test {
 			}
 
 			GT e = new GT();
-			Bn256.pairing(e, Q, P);
+			Bn256.pairing(e, P, Q);
 			GT e1 = new GT();
 			GT e2 = new GT();
 			Fr c = new Fr("1234567890123234928348230428394234");
 			G2 cQ = new G2(Q);
 			Bn256.mul(cQ, Q, c); // cQ = Q * c
-			Bn256.pairing(e1, cQ, P);
+			Bn256.pairing(e1, P, cQ);
 			Bn256.pow(e2, e, c); // e2 = e^c
 			assertBool("e1 == e2", e1.equals(e2));
 
 			G1 cP = new G1(P);
 			Bn256.mul(cP, P, c); // cP = P * c
-			Bn256.pairing(e1, Q, cP);
+			Bn256.pairing(e1, cP, Q);
 			assertBool("e1 == e2", e1.equals(e2));
 
 			BLSsignature(Q);
@@ -97,8 +97,8 @@ public class Bn256Test {
 
 		GT e1 = new GT();
 		GT e2 = new GT();
-		Bn256.pairing(e1, pub, H); // e1 = e(s Q, H)
-		Bn256.pairing(e2, Q, sign); // e2 = e(Q, s H);
+		Bn256.pairing(e1, H, pub); // e1 = e(H, s Q)
+		Bn256.pairing(e2, sign, Q); // e2 = e(s H, Q);
 		assertBool("verify signature", e1.equals(e2));
 	}
 }

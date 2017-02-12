@@ -99,7 +99,7 @@ mcl::bn256::bn256init(cp);
 mcl::bn256::G1 P(...);
 mcl::bn256::G2 Q(...);
 mcl::bn256::Fp12 e;
-mcl::bn256::BN::pairing(e, Q, P);
+mcl::bn256::BN::pairing(e, P, Q);
 ```
 1. (CurveFp254BNb) a BN curve over the 254-bit prime p = 36z^4 + 36z^3 + 24z^2 + 6z + 1 where z = -(2^62 + 2^55 + 1).
 2. (CurveSNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.

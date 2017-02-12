@@ -90,7 +90,7 @@ class G1 {
 	friend void add(G1& z, const G1& x, const G1& y);
 	friend void sub(G1& z, const G1& x, const G1& y);
 	friend void mul(G1& z, const G1& x, const Fr& y);
-	friend void pairing(GT& e, const G2& Q, const G1& P);
+	friend void pairing(GT& e, const G1& P, const G2& Q);
 public:
 	G1() {}
 	G1(const G1& rhs) : self_(rhs.self_) {}
@@ -155,7 +155,7 @@ class G2 {
 	friend void add(G2& z, const G2& x, const G2& y);
 	friend void sub(G2& z, const G2& x, const G2& y);
 	friend void mul(G2& z, const G2& x, const Fr& y);
-	friend void pairing(GT& e, const G2& Q, const G1& P);
+	friend void pairing(GT& e, const G1& P, const G2& Q);
 public:
 	G2() {}
 	G2(const G2& rhs) : self_(rhs.self_) {}
@@ -213,7 +213,7 @@ class GT {
 	mcl::bn256::Fp12 self_;
 	friend void mul(GT& z, const GT& x, const GT& y);
 	friend void pow(GT& z, const GT& x, const Fr& y);
-	friend void pairing(GT& e, const G2& Q, const G1& P);
+	friend void pairing(GT& e, const G1& P, const G2& Q);
 public:
 	GT() {}
 	GT(const GT& rhs) : self_(rhs.self_) {}
@@ -243,7 +243,7 @@ void pow(GT& z, const GT& x, const Fr& y)
 {
 	mcl::bn256::Fp12::pow(z.self_, x.self_, y.self_);
 }
-void pairing(GT& e, const G2& Q, const G1& P)
+void pairing(GT& e, const G1& P, const G2& Q)
 {
-	mcl::bn256::BN::pairing(e.self_, Q.self_, P.self_);
+	mcl::bn256::BN::pairing(e.self_, P.self_, Q.self_);
 }
