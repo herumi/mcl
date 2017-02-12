@@ -17,7 +17,7 @@ void minimum_sample(const G1& P, const G2& Q)
 	G1 bP;
 	G2::mul(aQ, Q, a);
 	G1::mul(bP, P, b);
-	BN::pairing(e2, aP, aQ);
+	BN::pairing(e2, bP, aQ);
 	Fp12::pow(e1, e1, a * b);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
