@@ -1205,6 +1205,8 @@ struct BNT {
 		f *= f1;
 		f *= f2;
 	}
+	static void mapToG1(G1& P, const Fp& x) { param.mapTo.calcG1(P, x); }
+	static void mapToG2(G2& P, const Fp2& x) { param.mapTo.calcG2(P, x); }
 #if 1 // duplicated later
 	// old order of P and Q
 	static void millerLoop(Fp12& f, const G2& Q, const G1& P)
