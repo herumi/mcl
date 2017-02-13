@@ -14,7 +14,7 @@ System.loadLibrary("mcl_bn256");
 * `G1` ; The cyclic group instantiated as E(Fp)[r] where where r = p + 1 - t.
 * `G2` ; The cyclic group instantiated as the inverse image of E'(Fp^2)[r].
 * `GT` ; The cyclic group in the image of the optimal ate pairing.
-    * `e : G2 x G1 -> GT`
+    * `e : G1 x G2 -> GT`
 * `Fr` ; The finite field with characteristic r.
 
 # Methods and Functions
@@ -56,7 +56,7 @@ System.loadLibrary("mcl_bn256");
 * `Bn256.pow(GT z, GT x, Fr y)` ; `z = x ^ y`
 
 ## pairing
-* `Bn256.pairing(GT e, G2 Q, G1 P)` ; e = e(Q, P)
+* `Bn256.pairing(GT e, G1 P, G2 Q)` ; e = e(P, Q)
 
 # BLS signature sample
 ```
@@ -80,8 +80,8 @@ Bn256.mul(sign, H, s); // signature of m = s H
 
 GT e1 = new GT();
 GT e2 = new GT();
-Bn256.pairing(e1, pub, H); // e1 = e(s Q, H)
-Bn256.pairing(e2, Q, sign); // e2 = e(Q, s H);
+Bn256.pairing(e1, H, pub); // e1 = e(H, s Q)
+Bn256.pairing(e2, sign, Q); // e2 = e(s H, Q);
 assertBool("verify signature", e1.equals(e2));
 ```
 
