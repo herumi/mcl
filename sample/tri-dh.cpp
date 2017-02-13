@@ -65,11 +65,11 @@ void share(const std::string& skFile, const std::string& pk1File, const std::str
 	load(P1, Q1, pk1File);
 	load(P2, Q2, pk2File);
 	Fp12 e;
-	BN::pairing(e, Q2, P1);
+	BN::pairing(e, P1, Q2);
 	{
 		// verify(not necessary)
 		Fp12 e2;
-		BN::pairing(e2, Q1, P2);
+		BN::pairing(e2, P2, Q1);
 		if (e != e2) {
 			throw cybozu::Exception("share:bad public key file") << e << e2;
 		}

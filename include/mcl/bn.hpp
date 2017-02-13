@@ -1209,21 +1209,9 @@ struct BNT {
 	static void mapToG2(G2& P, const Fp2& x) { param.mapTo.calcG2(P, x); }
 #if 1 // duplicated later
 	// old order of P and Q
-	static void millerLoop(Fp12& f, const G2& Q, const G1& P)
-	{
-		millerLoop(f, P, Q);
-	}
 	static void pairing(Fp12& f, const G2& Q, const G1& P)
 	{
 		pairing(f, P, Q);
-	}
-	static void precomputedMillerLoop(Fp12& f, const std::vector<Fp6>& Qcoeff, const G1& P)
-	{
-		precomputedMillerLoop(f, P, Qcoeff);
-	}
-	static void precomputedMillerLoop2(Fp12& f, const std::vector<Fp6>& Q1coeff, const G1& P1, const std::vector<Fp6>& Q2coeff, const G1& P2)
-	{
-		precomputedMillerLoop2(f, P1, Q1coeff, P2, Q2coeff);
 	}
 #endif
 };
