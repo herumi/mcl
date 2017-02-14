@@ -156,7 +156,7 @@ static void readN(T* out, size_t n, RG& rg)
 		for (size_t i = 0; i < n; i++) {
 			T L = rg();
 			T H = rg();
-			out[i] = L | (H << 32);
+			out[i] = L | (uint64_t(H) << 32);
 		}
 	} else {
 		for (size_t i = 0; i < n; i++) {
