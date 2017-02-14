@@ -130,17 +130,20 @@ CYBOZU_TEST_AUTO(isLessOrEqualArray)
 struct Rand {
 	std::vector<uint32_t> v;
 	size_t pos;
-	int count;
 	void read(uint32_t *x, size_t n)
 	{
 		if (v.size() < pos + n) throw cybozu::Exception("Rand:get:bad n") << v.size() << pos << n;
 		std::copy(v.begin() + pos, v.begin() + pos + n, x);
 		pos += n;
-		count++;
+	}
+	uint32_t operator()()
+	{
+		if (pos >= v.size()) throw cybozu::Exception("Rand:get:bad n") << v.size() << pos;
+		pos++;
+		return v[pos - 1];
 	}
 	Rand(const uint32_t *x, size_t n)
 		: pos(0)
-		, count(0)
 	{
 		for (size_t i = 0; i < n; i++) {
 			v.push_back(x[i]);
@@ -155,13 +158,12 @@ CYBOZU_TEST_AUTO(getRandVal)
 		uint32_t r[rn];
 		uint32_t mod[2];
 		size_t bitSize;
-		int count;
 		uint32_t expect[2];
 	} tbl[] = {
-		{ { 1, 2, 3, 4, 5, 6, 7, 8 }, { 5, 6 }, 64, 1, { 1, 2 } },
-		{ { 0xfffffffc, 0x7, 3, 4, 5, 6, 7, 8 }, { 0xfffffffe, 0x3 }, 34, 1, { 0xfffffffc, 0x3 } },
-		{ { 0xfffffffc, 0x7, 3, 4, 5, 6, 7, 8 }, { 0xfffffffb, 0x3 }, 34, 2, { 3, 0 } },
-		{ { 2, 3, 5, 7, 4, 3, 0, 3 }, { 1, 0x3 }, 34, 4, { 0, 3 } },
+		{ { 1, 2, 3, 4, 5, 6, 7, 8 }, { 5, 6 }, 64, { 1, 2 } },
+		{ { 0xfffffffc, 0x7, 3, 4, 5, 6, 7, 8 }, { 0xfffffffe, 0x3 }, 34, { 0xfffffffc, 0x3 } },
+		{ { 0xfffffffc, 0x7, 3, 4, 5, 6, 7, 8 }, { 0xfffffffb, 0x3 }, 34, { 3, 0 } },
+		{ { 2, 3, 5, 7, 4, 3, 0, 3 }, { 1, 0x3 }, 34, { 0, 3 } },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Rand rg(tbl[i].r, rn);
@@ -169,7 +171,6 @@ CYBOZU_TEST_AUTO(getRandVal)
 		mcl::fp::getRandVal(out, rg, tbl[i].mod, tbl[i].bitSize);
 		CYBOZU_TEST_EQUAL(out[0], tbl[i].expect[0]);
 		CYBOZU_TEST_EQUAL(out[1], tbl[i].expect[1]);
-		CYBOZU_TEST_EQUAL(rg.count, tbl[i].count);
 	}
 }
 

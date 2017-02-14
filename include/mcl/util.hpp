@@ -154,9 +154,9 @@ static void readN(T* out, size_t n, RG& rg)
 {
 	if (sizeof(T) == 8) {
 		for (size_t i = 0; i < n; i++) {
-			T v = rg();
-			v = (v << 32) | rg();
-			out[i] = v;
+			T L = rg();
+			T H = rg();
+			out[i] = L | (H << 32);
 		}
 	} else {
 		for (size_t i = 0; i < n; i++) {
@@ -181,6 +181,7 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	const size_t rem = bitSize & (TbitSize - 1);
 	for (;;) {
 		impl::readN(out, n, rg);
+//		rg.read(out, n);
 		if (rem > 0) out[n - 1] &= (T(1) << rem) - 1;
 		if (isLessArray(out, in, n)) return;
 	}
