@@ -149,7 +149,7 @@ public:
 	{
 		return is >> self.a >> self.b;
 	}
-	std::string getStr(int ioMode = 10)
+	std::string getStr(int ioMode = 10) const
 	{
 		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
 	}
@@ -579,6 +579,11 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	{
 		return is >> x.a >> x.b >> x.c;
 	}
+	std::string getStr(int ioMode = 10) const
+	{
+		const char *sep = fp::getIoSeparator(ioMode);
+		return a.getStr(ioMode) + sep + b.getStr(ioMode) + sep + c.getStr(ioMode);
+	}
 	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
@@ -887,6 +892,10 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
 		return is >> self.a >> self.b;
+	}
+	std::string getStr(int ioMode = 10) const
+	{
+		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
 	}
 	void normalize() {} // dummy
 };
