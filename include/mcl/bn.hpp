@@ -1081,6 +1081,7 @@ struct BNT {
 	static void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	{
 		Qcoeff.clear();
+		Qcoeff.reserve(param.siTbl.size() * 2);
 		Q.normalize();
 		G2 T = Q;
 		G2 negQ;
