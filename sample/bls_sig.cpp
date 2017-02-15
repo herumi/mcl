@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
 
 	// setup parameter
 	bn256init();
-	G1 P(-1, 1);
 	G2 Q;
 	BN::mapToG2(Q, 1);
 
