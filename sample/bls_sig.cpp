@@ -26,6 +26,29 @@ void Hash(G1& P, const std::string& m)
 	BN::mapToG1(P, t);
 }
 
+void KeyGen(Fr& s, G2& pub, const G2& Q)
+{
+	s.setRand(g_rg);
+	G2::mul(pub, Q, s); // pub = sQ
+}
+
+void Sign(G1& sign, const Fr& s, const std::string& m)
+{
+	G1 Hm;
+	Hash(Hm, m);
+	G1::mul(sign, Hm, s); // sign = s H(m)
+}
+
+bool Verify(const G1& sign, const G2& Q, const G2& pub, const std::string& m)
+{
+	Fp12 e1, e2;
+	G1 Hm;
+	Hash(Hm, m);
+	BN::pairing(e1, sign, Q); // e1 = e(sign, Q)
+	BN::pairing(e2, Hm, pub); // e2 = e(Hm, sQ)
+	return e1 == e2;
+}
+
 int main(int argc, char *argv[])
 {
 	std::string m = argc == 1 ? "hello mcl" : argv[1];
@@ -37,29 +60,18 @@ int main(int argc, char *argv[])
 
 	// generate secret key and public key
 	Fr s;
-	s.setRand(g_rg);
-	std::cout << "secret key " << s << std::endl;
 	G2 pub;
-	G2::mul(pub, Q, s); // pub = sQ
+	KeyGen(s, pub, Q);
+	std::cout << "secret key " << s << std::endl;
 	std::cout << "public key " << pub << std::endl;
 
 	// sign
 	G1 sign;
-	{
-		G1 Hm;
-		Hash(Hm, m);
-		G1::mul(sign, Hm, s); // sign = s H(m)
-	}
+	Sign(sign, s, m);
 	std::cout << "msg " << m << std::endl;
 	std::cout << "sign " << sign << std::endl;
 
 	// verify
-	{
-		Fp12 e1, e2;
-		G1 Hm;
-		Hash(Hm, m);
-		BN::pairing(e1, sign, Q); // e1 = e(sign, Q)
-		BN::pairing(e2, Hm, pub); // e2 = e(Hm, sQ)
-		std::cout << "verify " << (e1 == e2 ? "ok" : "ng") << std::endl;
-	}
+	bool ok = Verify(sign, Q, pub, m);
+	std::cout << "verify " << (ok ? "ok" : "ng") << std::endl;
 }
