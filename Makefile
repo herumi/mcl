@@ -14,7 +14,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
   CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
