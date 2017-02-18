@@ -25,7 +25,7 @@ typedef ElgamalEc::PrivateKey SecretKey;
 typedef ElgamalEc::PublicKey PublicKey;
 typedef ElgamalEc::CipherText CipherText;
 
-static inline void ahe192init()
+static inline void initAhe()
 {
 	Fp::init(para.p);
 	Zn::init(para.n);
@@ -55,7 +55,7 @@ typedef ElgamalEc::PrivateKey SecretKey;
 typedef ElgamalEc::PublicKey PublicKey;
 typedef ElgamalEc::CipherText CipherText;
 
-static inline void ahe256init()
+static inline void initAhe()
 {
 	Fp::init(para.p);
 	Zn::init(para.n);
