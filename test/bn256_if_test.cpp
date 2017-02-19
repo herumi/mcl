@@ -86,9 +86,15 @@ CYBOZU_TEST_AUTO(Fr)
 	CYBOZU_TEST_ASSERT(!BN256_Fr_getStr(buf, sizeof(buf), &x));
 	CYBOZU_TEST_EQUAL(buf, "23");
 
-	BN256_Fr_setStr(&x, "12345678901234567");
-	BN256_Fr_setStr(&y, "20000000000000000");
+	CYBOZU_TEST_ASSERT(!BN256_Fr_setStr(&x, "12345678901234567"));
+	CYBOZU_TEST_ASSERT(!BN256_Fr_setStr(&y, "20000000000000000"));
 	BN256_Fr_add(&x, &x, &y);
 	CYBOZU_TEST_ASSERT(!BN256_Fr_getStr(buf, sizeof(buf), &x));
 	CYBOZU_TEST_EQUAL(buf, "32345678901234567");
+
+	BN256_Fr_setInt(&x, 1);
+	BN256_Fr_neg(&x, &x);
+	CYBOZU_TEST_ASSERT(!BN256_Fr_getStr(buf, sizeof(buf), &x));
+	CYBOZU_TEST_ASSERT(!BN256_Fr_setStr(&y, buf));
+	CYBOZU_TEST_ASSERT(BN256_Fr_isSame(&x, &y));
 }
