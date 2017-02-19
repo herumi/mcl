@@ -118,6 +118,8 @@ int BN256_G2_setStr(BN256_G2 *x, const char *str);
 int BN256_G2_isSame(const BN256_G2 *x, const BN256_G2 *y);
 int BN256_G2_isZero(const BN256_G2 *x);
 
+int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *str);
+
 // return 0 if success
 int BN256_G2_getStr(char *buf, size_t maxBufSize, const BN256_G2 *x);
 
