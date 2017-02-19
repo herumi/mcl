@@ -93,7 +93,11 @@ int BN256_Fr_setStr(BN256_Fr *x, const char *str)
 	return 1;
 }
 
-// return 1 if same
+// return 1 if true
+int BN256_Fr_isValid(const BN256_Fr *x)
+{
+	return cast(x)->isValid();
+}
 int BN256_Fr_isSame(const BN256_Fr *x, const BN256_Fr *y)
 {
 	return *cast(x) == *cast(y);
@@ -182,7 +186,11 @@ int BN256_G1_setStr(BN256_G1 *x, const char *str)
 	return 1;
 }
 
-// return 1 if same
+// return 1 if true
+int BN256_G1_isValid(const BN256_G1 *x)
+{
+	return cast(x)->isValid();
+}
 int BN256_G1_isSame(const BN256_G1 *x, const BN256_G1 *y)
 {
 	return *cast(x) == *cast(y);
@@ -264,7 +272,11 @@ int BN256_G2_setStr(BN256_G2 *x, const char *str)
 	return 1;
 }
 
-// return 1 if same
+// return 1 if true
+int BN256_G2_isValid(const BN256_G2 *x)
+{
+	return cast(x)->isValid();
+}
 int BN256_G2_isSame(const BN256_G2 *x, const BN256_G2 *y)
 {
 	return *cast(x) == *cast(y);
@@ -347,7 +359,7 @@ int BN256_GT_setStr(BN256_GT *x, const char *str)
 	return 1;
 }
 
-// return 1 if same
+// return 1 if true
 int BN256_GT_isSame(const BN256_GT *x, const BN256_GT *y)
 {
 	return *cast(x) == *cast(y);

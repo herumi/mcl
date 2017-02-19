@@ -37,7 +37,10 @@ CYBOZU_TEST_AUTO(init)
 CYBOZU_TEST_AUTO(Fr)
 {
 	BN256_Fr x, y;
+	memset(&x, 0xff, sizeof(x));
+	CYBOZU_TEST_ASSERT(!BN256_Fr_isValid(&x));
 	memset(&x, 1, sizeof(x));
+	CYBOZU_TEST_ASSERT(BN256_Fr_isValid(&x));
 	CYBOZU_TEST_ASSERT(!BN256_Fr_isZero(&x));
 
 	BN256_Fr_clear(&x);
@@ -102,7 +105,10 @@ CYBOZU_TEST_AUTO(Fr)
 CYBOZU_TEST_AUTO(G1)
 {
 	BN256_G1 x, y, z;
+	memset(&x, 0xff, sizeof(x));
+	CYBOZU_TEST_ASSERT(!BN256_G1_isValid(&x));
 	BN256_G1_clear(&x);
+	CYBOZU_TEST_ASSERT(BN256_G1_isValid(&x));
 	BN256_G1_setStr(&y, "0");
 	CYBOZU_TEST_ASSERT(BN256_G1_isZero(&x));
 	CYBOZU_TEST_ASSERT(BN256_G1_isZero(&y));
@@ -142,7 +148,10 @@ CYBOZU_TEST_AUTO(G1)
 CYBOZU_TEST_AUTO(G2)
 {
 	BN256_G2 x, y, z;
+	memset(&x, 0xff, sizeof(x));
+	CYBOZU_TEST_ASSERT(!BN256_G2_isValid(&x));
 	BN256_G2_clear(&x);
+	CYBOZU_TEST_ASSERT(BN256_G2_isValid(&x));
 	BN256_G2_setStr(&y, "0");
 	CYBOZU_TEST_ASSERT(BN256_G2_isZero(&x));
 	CYBOZU_TEST_ASSERT(BN256_G2_isZero(&y));
