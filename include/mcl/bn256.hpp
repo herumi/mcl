@@ -22,6 +22,7 @@ typedef BN::Fp6 Fp6;
 typedef BN::Fp12 Fp12;
 typedef BN::G1 G1;
 typedef BN::G2 G2;
+typedef BN::Fp12 GT;
 
 /* the order of G1 is r */
 typedef mcl::FpT<local::FrTag, 256> Fr;
