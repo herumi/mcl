@@ -242,3 +242,9 @@ CYBOZU_TEST_AUTO(pairing)
 	BN256_pairing(&e2, &P, &bQ);
 	CYBOZU_TEST_ASSERT(BN256_GT_isSame(&e1, &e2));
 }
+
+CYBOZU_TEST_AUTO(end)
+{
+	int ret = BN256_setErrFile("");
+	CYBOZU_TEST_EQUAL(ret, 0);
+}
