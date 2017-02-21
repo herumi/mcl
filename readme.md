@@ -112,6 +112,17 @@ mcl::bn256::BN::pairing(e, P, Q);
 
 See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
 
+## string format of G1 and G2
+G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
+normalize() method normalize it to affine coordinate (x, y, 1) or (0, 0, 0).
+G1::setCompressedExpression(bool) sets whether uncompressed(false) or compressed(true) format.
+getStr() method gets
+
+* "0" ; infinity
+* "1 <x> <y>" ; not compressed format
+* "2 <x>" ; compressed format for even y
+* "3 <x>" ; compressed format for odd y
+
 # Benchmark
 
 A benchmark of a BN curve CurveFp254BNb.
