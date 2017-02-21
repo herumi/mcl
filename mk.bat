@@ -1,2 +1,9 @@
 @echo off
-cl /MT /DNOMINMAX /Ox /DNDEBUG /W4 /Zi /EHsc -I ./include -I../xbyak -I../cybozulib/include -I../cybozulib_ext/include %1 %2 /link /LIBPATH:..\cybozulib_ext\lib /LIBPATH:.\lib
+call setvar.bat
+set SRC=%1
+set EXE=%SRC:.cpp=.exe%
+set EXE=%EXE:.c=.exe%
+set EXE=%EXE:test\=bin\%
+set EXE=%EXE:sample\=bin\%
+echo cl %CFLAGS% %1 %2 %3 /Fe:%EXE% /link %LDFLAGS%
+cl %CFLAGS% %1 %2 %3 /Fe:%EXE% /link %LDFLAGS%

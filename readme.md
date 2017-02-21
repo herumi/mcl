@@ -62,6 +62,7 @@ mklib.bat
 2) make exe binary of sample\pairing.cpp
 ```
 mk sample\pairing.cpp
+bin/bn_test.exe
 ```
 
 open mcl.sln and build or if you have msbuild.exe
