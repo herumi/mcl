@@ -91,6 +91,11 @@ pairing   1.394Mclk
 finalExp 546.259Kclk
 ```
 
+# Libraries
+
+* libmcl.a, libmcl.so ; core library for C++
+* libbn256_if.a, libbn256_if.so ; `mcl/bn256_if.h` which is wrapped bn256.hpp for C interface
+
 # How to initialize pairing library
 Call `mcl::bn256::bn256init` before calling any operations.
 ```

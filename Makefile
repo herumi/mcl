@@ -3,7 +3,7 @@ LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn256_if_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -14,7 +14,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp pairing_if.c
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
   CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
@@ -24,7 +24,10 @@ ifeq ($(MCL_USE_XBYAK),0)
 endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
-all: $(MCL_LIB)
+MCL_SLIB=$(LIB_DIR)/libmcl.so
+BN256_LIB=$(LIB_DIR)/libbn256_if.a
+BN256_SLIB=$(LIB_DIR)/libbn256_if.so
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -40,6 +43,7 @@ ifneq ($(CPU),)
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
+BN256_OBJ=$(OBJ_DIR)/bn256_if.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
@@ -77,6 +81,15 @@ endif
 
 $(MCL_LIB): $(LIB_OBJ)
 	$(AR) $@ $(LIB_OBJ)
+
+$(MCL_SLIB): $(LIB_OBJ)
+	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared
+
+$(BN256_LIB): $(LIB_OBJ) $(BN256_OBJ)
+	$(AR) $@ $(LIB_OBJ) $(BN256_OBJ)
+
+$(BN256_SLIB): $(LIB_OBJ) $(BN256_OBJ)
+	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN256_OBJ) -shared
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -117,15 +130,24 @@ $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 
 VPATH=test sample src
 
-.SUFFIXES: .cpp .d .exe
+.SUFFIXES: .cpp .d .exe .c
 
 $(OBJ_DIR)/%.o: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
+$(OBJ_DIR)/%.o: %.c
+	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
+
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(SAMPLE_SRC:.cpp=.exe))
+$(EXE_DIR)/bn256_if_test.exe: $(OBJ_DIR)/bn256_if_test.o $(BN256_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
+
+$(EXE_DIR)/pairing_if.exe: $(OBJ_DIR)/pairing_if.o $(BN256_LIB)
+	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(LDFLAGS) -lstdc++
+
+SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
 TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.cpp=.exe))
@@ -135,10 +157,10 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt || echo "all unit tests are ok"
 
 clean:
-	$(RM) $(MCL_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
+	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
-DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
+DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
 -include $(DEPEND_FILE)
 
 .PHONY: test
