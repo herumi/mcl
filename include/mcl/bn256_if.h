@@ -7,6 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
