@@ -43,7 +43,7 @@ int BN256_setErrFile(const char *name)
 		return ret;
 	}
 	if (ret) return ret;
-	if (strcmp(name, "strerr") == 0) {
+	if (strcmp(name, "stderr") == 0) {
 		g_fp = stderr;
 		return 0;
 	}
