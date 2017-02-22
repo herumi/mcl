@@ -73,7 +73,7 @@ BN256_DLL_API void BN256_Fr_setInt(BN256_Fr *y, int x);
 BN256_DLL_API void BN256_Fr_copy(BN256_Fr *y, const BN256_Fr *x);
 
 // return 0 if success
-BN256_DLL_API int BN256_Fr_setStr(BN256_Fr *x, const char *str);
+BN256_DLL_API int BN256_Fr_setStr(BN256_Fr *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN256_DLL_API int BN256_Fr_isValid(const BN256_Fr *x);
@@ -83,8 +83,8 @@ BN256_DLL_API int BN256_Fr_isOne(const BN256_Fr *x);
 
 BN256_DLL_API void BN256_Fr_setRand(BN256_Fr *x);
 
-// hash(str) and set x
-BN256_DLL_API void BN256_Fr_setMsg(BN256_Fr *x, const char *str);
+// hash(s) and set x
+BN256_DLL_API void BN256_Fr_setMsg(BN256_Fr *x, const char *s);
 
 // return 0 if success
 BN256_DLL_API int BN256_Fr_getStr(char *buf, size_t maxBufSize, const BN256_Fr *x);
@@ -103,14 +103,14 @@ BN256_DLL_API void BN256_G1_clear(BN256_G1 *x);
 BN256_DLL_API void BN256_G1_copy(BN256_G1 *y, const BN256_G1 *x);
 
 // return 0 if success
-BN256_DLL_API int BN256_G1_setStr(BN256_G1 *x, const char *str);
+BN256_DLL_API int BN256_G1_setStr(BN256_G1 *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN256_DLL_API int BN256_G1_isValid(const BN256_G1 *x);
 BN256_DLL_API int BN256_G1_isSame(const BN256_G1 *x, const BN256_G1 *y);
 BN256_DLL_API int BN256_G1_isZero(const BN256_G1 *x);
 
-BN256_DLL_API int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *str);
+BN256_DLL_API int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *s);
 
 // return 0 if success
 BN256_DLL_API int BN256_G1_getStr(char *buf, size_t maxBufSize, const BN256_G1 *x);
@@ -128,14 +128,14 @@ BN256_DLL_API void BN256_G2_clear(BN256_G2 *x);
 BN256_DLL_API void BN256_G2_copy(BN256_G2 *y, const BN256_G2 *x);
 
 // return 0 if success
-BN256_DLL_API int BN256_G2_setStr(BN256_G2 *x, const char *str);
+BN256_DLL_API int BN256_G2_setStr(BN256_G2 *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN256_DLL_API int BN256_G2_isValid(const BN256_G2 *x);
 BN256_DLL_API int BN256_G2_isSame(const BN256_G2 *x, const BN256_G2 *y);
 BN256_DLL_API int BN256_G2_isZero(const BN256_G2 *x);
 
-BN256_DLL_API int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *str);
+BN256_DLL_API int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *s);
 
 // return 0 if success
 BN256_DLL_API int BN256_G2_getStr(char *buf, size_t maxBufSize, const BN256_G2 *x);
@@ -153,7 +153,7 @@ BN256_DLL_API void BN256_GT_clear(BN256_GT *x);
 BN256_DLL_API void BN256_GT_copy(BN256_GT *y, const BN256_GT *x);
 
 // return 0 if success
-BN256_DLL_API int BN256_GT_setStr(BN256_GT *x, const char *str);
+BN256_DLL_API int BN256_GT_setStr(BN256_GT *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN256_DLL_API int BN256_GT_isSame(const BN256_GT *x, const BN256_GT *y);
