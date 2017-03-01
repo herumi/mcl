@@ -5,12 +5,9 @@ using System.Runtime.InteropServices;
 namespace bn256 {
 	class X {
 		[DllImport("bn256_if.dll")] public static extern int BN256_setErrFile([In][MarshalAs(UnmanagedType.LPStr)] string name);
-
 		[DllImport("bn256_if.dll")] public static extern int BN256_init();
-
 		[DllImport("bn256_if.dll")] public static extern void BN256_Fr_clear([Out] Fr x);
 		[DllImport("bn256_if.dll")] public static extern void BN256_Fr_setInt([Out] Fr y, int x);
-		[DllImport("bn256_if.dll")] public static extern void BN256_Fr_copy([Out] Fr y, [In] Fr x);
 		[DllImport("bn256_if.dll")] public static extern int BN256_Fr_setStr([Out] Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256_if.dll")] public static extern int BN256_Fr_isValid([In] Fr x);
 		[DllImport("bn256_if.dll")] public static extern int BN256_Fr_isSame([In] Fr x, [In] Fr y);
@@ -28,12 +25,22 @@ namespace bn256 {
 		[DllImport("bn256_if.dll")] public static extern void BN256_Fr_mul([Out] Fr z, [In] Fr x, [In] Fr y);
 		[DllImport("bn256_if.dll")] public static extern void BN256_Fr_div([Out] Fr z, [In] Fr x, [In] Fr y);
 
+		[DllImport("bn256_if.dll")] public static extern void BN256_G1_clear([Out] G1 x);
+		[DllImport("bn256_if.dll")] public static extern int BN256_G1_setStr([Out] G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
+		[DllImport("bn256_if.dll")] public static extern int BN256_G1_isValid([In] G1 x);
+		[DllImport("bn256_if.dll")] public static extern int BN256_G1_isSame([In] G1 x, [In] G1 y);
+		[DllImport("bn256_if.dll")] public static extern int BN256_G1_isZero([In] G1 x);
+		[DllImport("bn256_if.dll")] public static extern int BN256_G1_hashAndMapTo([Out] G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
+		[DllImport("bn256_if.dll")] public static extern int BN256_G1_getStr([Out]StringBuilder buf, long maxBufSize, [In] G1 x);
+		[DllImport("bn256_if.dll")] public static extern void BN256_G1_neg([Out] G1 y, [In] G1 x);
+		[DllImport("bn256_if.dll")] public static extern void BN256_G1_dbl([Out] G1 y, [In] G1 x);
+		[DllImport("bn256_if.dll")] public static extern void BN256_G1_add([Out] G1 z, [In] G1 x, [In] G1 y);
+		[DllImport("bn256_if.dll")] public static extern void BN256_G1_sub([Out] G1 z, [In] G1 x, [In] G1 y);
+		[DllImport("bn256_if.dll")] public static extern void BN256_G1_mul([Out] G1 z, [In] G1 x, [In] Fr y);
+
 		[StructLayout(LayoutKind.Sequential)]
 		public class Fr {
-			private ulong v0;
-			private ulong v1;
-			private ulong v2;
-			private ulong v3;
+			private ulong v0, v1, v2, v3;
 			public void Clear()
 			{
 				BN256_Fr_clear(this);
@@ -139,6 +146,10 @@ namespace bn256 {
 				return z;
 			}
 		}
+		[StructLayout(LayoutKind.Sequential)]
+		public class G1 {
+			private ulong v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11;
+		}
 
 		static void Main(string[] args)
 		{
@@ -148,7 +159,10 @@ namespace bn256 {
 			Console.WriteLine("ret= {0}", ret);
 			ret = BN256_setErrFile("c:/tmp/abc.txt");
 			Console.WriteLine("ret= {0}", ret);
-
+			TestFr();
+		}
+		static void TestFr()
+		{
 			Fr x = new Fr();
 			x.Clear();
 			Console.WriteLine("x = {0}", x);
