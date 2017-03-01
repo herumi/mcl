@@ -10,7 +10,14 @@ ifeq ($(UNAME_S),Darwin)
   LDFLAGS+=-L/usr/local/opt/openssl/lib
 endif
 ARCH?=$(shell arch)
+DO_IT=0
 ifeq ($(ARCH),x86_64)
+  DO_IT=1
+endif
+ifeq ($(ARCH),amd64)
+  DO_IT=1
+endif
+ifeq ($(DO_IT),1)
   CPU=x86-64
   INTEL=1
   BIT=64
