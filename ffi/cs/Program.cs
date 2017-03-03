@@ -219,9 +219,66 @@ namespace bn256 {
 				BN256_G1_mul(z, y, x);
 			}
 		}
+		[StructLayout(LayoutKind.Sequential)]
 		public class G2 {
 			private ulong v00, v01, v02, v03, v04, v05, v06, v07, v08, v09, v10, v11;
 			private ulong v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23;
+			public void Clear()
+			{
+				BN256_G2_clear(this);
+			}
+			public void setStr(String s)
+			{
+				if (BN256_G2_setStr(this, s) != 0) {
+					throw new ArgumentException("BN256_G2_setStr", s);
+				}
+			}
+			public bool IsValid()
+			{
+				return BN256_G2_isValid(this) == 1;
+			}
+			public bool Equals(G2 rhs)
+			{
+				return BN256_G2_isSame(this, rhs) == 1;
+			}
+			public bool IsZero()
+			{
+				return BN256_G2_isZero(this) == 1;
+			}
+			public void HashAndMapTo(String s)
+			{
+				if (BN256_G2_hashAndMapTo(this, s) != 0) {
+					throw new ArgumentException("BN256_G2_hashAndMapTo", s);
+				}
+			}
+			public override string ToString()
+			{
+				StringBuilder sb = new StringBuilder(1024);
+				if (BN256_G2_getStr(sb, sb.Capacity + 1, this) != 0) {
+					throw new ArgumentException("BN256_G2_getStr");
+				}
+				return sb.ToString();
+			}
+			public static void Neg(G2 y, G2 x)
+			{
+				BN256_G2_neg(y, x);
+			}
+			public static void Dbl(G2 y, G2 x)
+			{
+				BN256_G2_dbl(y, x);
+			}
+			public static void Add(G2 z, G2 y, G2 x)
+			{
+				BN256_G2_add(z, y, x);
+			}
+			public static void Sub(G2 z, G2 y, G2 x)
+			{
+				BN256_G2_sub(z, y, x);
+			}
+			public static void Mul(G2 z, G2 y, Fr x)
+			{
+				BN256_G2_mul(z, y, x);
+			}
 		}
 
 		static void Main(string[] args)
@@ -235,12 +292,14 @@ namespace bn256 {
 				Console.WriteLine("ret= {0}", ret);
 				TestFr();
 				TestG1();
+				TestG2();
 			} catch (Exception e) {
 				Console.WriteLine("ERR={0}", e);
 			}
 		}
 		static void TestFr()
 		{
+			Console.WriteLine("TestFr");
 			Fr x = new Fr();
 			x.Clear();
 			Console.WriteLine("x = {0}", x);
@@ -272,6 +331,7 @@ namespace bn256 {
 		}
 		static void TestG1()
 		{
+			Console.WriteLine("TestG1");
 			G1 P = new G1();
 			P.Clear();
 			Console.WriteLine("P = {0}", P);
@@ -298,6 +358,37 @@ namespace bn256 {
 			x.SetInt(3);
 			G1.Add(R, R, P);
 			G1.Mul(Q, P, x);
+			Console.WriteLine("Q == R {0}", Q.Equals(R));
+		}
+		static void TestG2()
+		{
+			Console.WriteLine("TestG2");
+			G2 P = new G2();
+			P.Clear();
+			Console.WriteLine("P = {0}", P);
+			Console.WriteLine("P is valid {0}", P.IsValid());
+			Console.WriteLine("P is zero {0}", P.IsZero());
+			P.HashAndMapTo("abc");
+			Console.WriteLine("P = {0}", P);
+			Console.WriteLine("P is valid {0}", P.IsValid());
+			Console.WriteLine("P is zero {0}", P.IsZero());
+			G2 Q = new G2();
+			G2.Neg(Q, P);
+			Console.WriteLine("Q = {0}", Q);
+			G2.Add(Q, Q, P);
+			Console.WriteLine("Q = {0}", Q);
+			G2.Dbl(Q, P);
+			G2 R = new G2();
+			G2.Add(R, P, P);
+			Console.WriteLine("P == R {0}", P.Equals(P));
+			Console.WriteLine("P == R {0}", P.Equals(R));
+			Console.WriteLine("Q == R {0}", Q.Equals(R));
+			Console.WriteLine("Q = {0}", Q);
+			Console.WriteLine("R = {0}", R);
+			Fr x = new Fr();
+			x.SetInt(3);
+			G2.Add(R, R, P);
+			G2.Mul(Q, P, x);
 			Console.WriteLine("Q == R {0}", Q.Equals(R));
 		}
 	}
