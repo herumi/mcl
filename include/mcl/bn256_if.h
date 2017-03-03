@@ -29,7 +29,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t d[4 * 12];
-} BN256_GT; // sizeof(BN256_GT) == 768
+} BN256_GT; // sizeof(BN256_GT) == 384
 
 #else
 
