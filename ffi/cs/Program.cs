@@ -439,9 +439,11 @@ namespace mcl {
 			Console.WriteLine("TestFr");
 			Fr x = new Fr();
 			x.Clear();
-			Console.WriteLine("x = {0}", x);
+			Console.WriteLine("x = {0}, isZero = {1}, isOne = {2}", x, x.IsZero(), x.IsOne());
+			x.SetInt(1);
+			Console.WriteLine("x = {0}, isZero = {1}, isOne = {2}", x, x.IsZero(), x.IsOne());
 			x.SetInt(3);
-			Console.WriteLine("x = {0}", x);
+			Console.WriteLine("x = {0}, isZero = {1}, isOne = {2}", x, x.IsZero(), x.IsOne());
 			x.SetInt(-5);
 			Console.WriteLine("x = {0}", x);
 			x = -x;
