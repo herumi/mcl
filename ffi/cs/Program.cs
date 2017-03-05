@@ -430,6 +430,7 @@ namespace mcl {
 				TestFr();
 				TestG1();
 				TestG2();
+				TestPairing();
 			} catch (Exception e) {
 				Console.WriteLine("ERR={0}", e);
 			}
@@ -529,6 +530,32 @@ namespace mcl {
 			G2.Add(R, R, P);
 			G2.Mul(Q, P, x);
 			Console.WriteLine("Q == R {0}", Q.Equals(R));
+		}
+		static void TestPairing()
+		{
+			Console.WriteLine("TestG2");
+			G1 P = new G1();
+			P.setStr("1 -1 1");
+			G2 Q = new G2();
+			Q.HashAndMapTo("1");
+			Fr a = new Fr();
+			Fr b = new Fr();
+			a.SetStr("12345678912345673453");
+			b.SetStr("230498230982394243424");
+			G1 aP = new G1();
+			G2 bQ = new G2();
+			G1.Mul(aP, P, a);
+			G2.Mul(bQ, Q, b);
+			GT e1 = new GT();
+			GT e2 = new GT();
+			GT e3 = new GT();
+			Pairing(e1, P, Q);
+			Pairing(e2, aP, Q);
+			GT.Pow(e3, e1, a);
+			Console.WriteLine("e2.Equals(e3) {0}", e2.Equals(e3));
+			Pairing(e2, P, bQ);
+			GT.Pow(e3, e1, b);
+			Console.WriteLine("e2.Equals(e3) {0}", e2.Equals(e3));
 		}
 	}
 }
