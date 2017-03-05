@@ -10,7 +10,7 @@ namespace mcl {
 				int ret;
 				ret = BN256_init();
 				Console.WriteLine("ret= {0}", ret);
-				ret = BN256_setErrFile("c:/tmp/abc.txt");
+				ret = BN256_setErrFile("bn256_test.txt");
 				Console.WriteLine("ret= {0}", ret);
 				TestFr();
 				TestG1();
