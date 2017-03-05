@@ -24,7 +24,7 @@ ifeq ($(MCL_USE_XBYAK),0)
 endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
-MCL_SLIB=$(LIB_DIR)/libmcl.so
+MCL_SLIB=$(LIB_DIR)/libmcls.so
 BN256_LIB=$(LIB_DIR)/libbn256_if.a
 BN256_SLIB=$(LIB_DIR)/libbn256_if.so
 all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB)
