@@ -114,21 +114,22 @@ mcl::bn256::BN::pairing(e, P, Q);
 
 See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
 
-## string format of G1 and G2
+## String format of G1 and G2
 G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
-normalize() method normalize it to affine coordinate (x, y, 1) or (0, 0, 0).
+normalize() method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).
 G1::setCompressedExpression(bool) sets whether uncompressed(false) or compressed(true) format.
+
 getStr() method gets
 
-* "0" ; infinity
-* "1 <x> <y>" ; not compressed format
-* "2 <x>" ; compressed format for even y
-* "3 <x>" ; compressed format for odd y
+* `0` ; infinity
+* `1 <x> <y>` ; not compressed format
+* `2 <x>` ; compressed format for even y
+* `3 <x>` ; compressed format for odd y
 
-## verify an element in G2
-`G2::isValid()` check that the element is in the curve of G2 and the order of it is r.
-`G2::set()`, `G2::setStr`, `operator<<` also check the order.
-If you check it out of the library, then you can stop it by calling `G2::setOrder(0)`.
+## Verify an element in G2
+`G2::isValid()` checks that the element is in the curve of G2 and the order of it is r.
+`G2::set()`, `G2::setStr` and `operator<<` also check the order.
+If you check it out of the library, then you can stop the verification by calling `G2::setOrder(0)`.
 
 # Benchmark
 
