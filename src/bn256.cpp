@@ -1,7 +1,7 @@
 #include <mcl/bn256.hpp>
 #define BN256_DLL_EXPORT
 #define BN256_DEFINE_STRUCT
-#include <mcl/bn256_if.h>
+#include <mcl/bn256.h>
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
 static std::random_device g_rg;

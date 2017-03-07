@@ -46,7 +46,7 @@ typedef struct BN256_GT BN256_GT;
 #else
 #define BN256_DLL_API __declspec(dllimport)
 #ifndef MCL_NO_AUTOLINK
-	#pragma comment(lib, "bn256_if.lib")
+	#pragma comment(lib, "bn256.lib")
 #endif
 #endif
 #else

@@ -93,10 +93,10 @@ finalExp 546.259Kclk
 
 # Libraries
 
-* libmcl.a ; static library of mcl for C++
-* libmcls.so ; shared library of mcl for C++
-* libbn256_if.a ; static library for C. include `mcl/bn256_if.h`
-* libbn256_ifs.so ; shared library for C.
+* libmcl.a ; static C++ library of mcl
+* libmcl_dy.so ; shared C++ library of mcl
+* libbn256.a ; static C library for `mcl/bn256f.h`
+* libbn256_dy.so ; shared C library
 
 # How to initialize pairing library
 Call `mcl::bn256::bn256init` before calling any operations.

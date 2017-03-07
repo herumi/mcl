@@ -6,8 +6,11 @@ endif
 ifeq ($(UNAME_S),Darwin)
   OS=mac
   ARCH=x86_64
+  LIB_SUF=dylib
   CFLAGS+=-I/usr/local/opt/openssl/include
   LDFLAGS+=-L/usr/local/opt/openssl/lib
+else
+  LIB_SUF=so
 endif
 ARCH?=$(shell arch)
 DO_IT=0

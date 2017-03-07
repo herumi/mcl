@@ -5,7 +5,7 @@ g_lib = None
 
 def BN256_init():
 	global g_lib
-	g_lib = cdll.LoadLibrary("../../bin/bn256_if.dll")
+	g_lib = cdll.LoadLibrary("../../bin/bn256.dll")
 	ret = g_lib.BN256_init()
 	if ret:
 		print "ERR BN256_init"

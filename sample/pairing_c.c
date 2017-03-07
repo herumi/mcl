@@ -1,5 +1,5 @@
 #define BN256_DEFINE_STRUCT
-#include <mcl/bn256_if.h>
+#include <mcl/bn256.h>
 #include <stdio.h>
 
 int g_err = 0;

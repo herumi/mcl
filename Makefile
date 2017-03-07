@@ -3,7 +3,7 @@ LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn256_if_test.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn256_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -14,7 +14,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp pairing_if.c
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp pairing_c.c
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
   CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
@@ -24,9 +24,9 @@ ifeq ($(MCL_USE_XBYAK),0)
 endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
-MCL_SLIB=$(LIB_DIR)/libmcls.so
-BN256_LIB=$(LIB_DIR)/libbn256_if.a
-BN256_SLIB=$(LIB_DIR)/libbn256_if.so
+MCL_SLIB=$(LIB_DIR)/libmcl_dy.$(LIB_SUF)
+BN256_LIB=$(LIB_DIR)/libbn256.a
+BN256_SLIB=$(LIB_DIR)/libbn256_dy.$(LIB_SUF)
 all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB)
 
 #LLVM_VER=-3.8
@@ -43,7 +43,7 @@ ifneq ($(CPU),)
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
-BN256_OBJ=$(OBJ_DIR)/bn256_if.o
+BN256_OBJ=$(OBJ_DIR)/bn256.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
@@ -141,10 +141,10 @@ $(OBJ_DIR)/%.o: %.c
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn256_if_test.exe: $(OBJ_DIR)/bn256_if_test.o $(BN256_LIB)
+$(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
 	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/pairing_if.exe: $(OBJ_DIR)/pairing_if.o $(BN256_LIB)
+$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(LDFLAGS) -lstdc++
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))

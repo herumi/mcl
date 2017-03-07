@@ -4,127 +4,127 @@ using System.Runtime.InteropServices;
 
 namespace mcl {
 	class BN256 {
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_setErrFile([In][MarshalAs(UnmanagedType.LPStr)] string name);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_init();
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_clear([Out] Fr x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_setInt([Out] Fr y, int x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_setStr([Out] Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isValid([In] Fr x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isSame([In] Fr x, [In] Fr y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isZero([In] Fr x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isOne([In] Fr x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_setRand([Out] Fr x);
 
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_setMsg([Out] Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_getStr([Out]StringBuilder buf, long maxBufSize, [In] Fr x);
 
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_neg([Out] Fr y, [In] Fr x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_inv([Out] Fr y, [In] Fr x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_add([Out] Fr z, [In] Fr x, [In] Fr y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_sub([Out] Fr z, [In] Fr x, [In] Fr y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_mul([Out] Fr z, [In] Fr x, [In] Fr y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_div([Out] Fr z, [In] Fr x, [In] Fr y);
 
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_clear([Out] G1 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_setStr([Out] G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_isValid([In] G1 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_isSame([In] G1 x, [In] G1 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_isZero([In] G1 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_hashAndMapTo([Out] G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_getStr([Out]StringBuilder buf, long maxBufSize, [In] G1 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_neg([Out] G1 y, [In] G1 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_dbl([Out] G1 y, [In] G1 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_add([Out] G1 z, [In] G1 x, [In] G1 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_sub([Out] G1 z, [In] G1 x, [In] G1 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_mul([Out] G1 z, [In] G1 x, [In] Fr y);
 
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_clear([Out] G2 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_setStr([Out] G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_isValid([In] G2 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_isSame([In] G2 x, [In] G2 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_isZero([In] G2 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_hashAndMapTo([Out] G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_getStr([Out]StringBuilder buf, long maxBufSize, [In] G2 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_neg([Out] G2 y, [In] G2 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_dbl([Out] G2 y, [In] G2 x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_add([Out] G2 z, [In] G2 x, [In] G2 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_sub([Out] G2 z, [In] G2 x, [In] G2 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_mul([Out] G2 z, [In] G2 x, [In] Fr y);
 
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_clear([Out] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_setStr([Out] GT x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_isSame([In] GT x, [In] GT y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_isZero([In] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_isOne([In] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_getStr([Out]StringBuilder buf, long maxBufSize, [In] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_neg([Out] GT y, [In] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_inv([Out] GT y, [In] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_add([Out] GT z, [In] GT x, [In] GT y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_sub([Out] GT z, [In] GT x, [In] GT y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_mul([Out] GT z, [In] GT x, [In] GT y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_div([Out] GT z, [In] GT x, [In] GT y);
 
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_finalExp([Out] GT y, [In] GT x);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_pow([Out] GT z, [In] GT x, [In] Fr y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_pairing([Out] GT z, [In] G1 x, [In] G2 y);
-		[DllImport("bn256_if.dll")]
+		[DllImport("bn256.dll")]
 		public static extern void BN256_millerLoop([Out] GT z, [In] G1 x, [In] G2 y);
 
 		[StructLayout(LayoutKind.Sequential)]
