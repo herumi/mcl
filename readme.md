@@ -125,6 +125,11 @@ getStr() method gets
 * "2 <x>" ; compressed format for even y
 * "3 <x>" ; compressed format for odd y
 
+## verify an element in G2
+`G2::isValid()` check that the element is in the curve of G2 and the order of it is r.
+`G2::set()`, `G2::setStr`, `operator<<` also check the order.
+If you check it out of the library, then you can stop it by calling `G2::setOrder(0)`.
+
 # Benchmark
 
 A benchmark of a BN curve CurveFp254BNb.
