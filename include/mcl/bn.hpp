@@ -1091,32 +1091,32 @@ struct BNT {
 	*/
 	static void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	{
-		Qcoeff.clear();
-		Qcoeff.reserve(param.siTbl.size() * 2);
+		Qcoeff.resize(param.precomputedQcoeffSize);
+		precomputeG2(Qcoeff.data(), Q);
+	}
+	/*
+		allocate param.precomputedQcoeffSize elements of Fp6 for Qcoeff
+	*/
+	static void precomputeG2(Fp6 *Qcoeff, const G2& Q)
+	{
+		size_t idx = 0;
 		Q.normalize();
 		G2 T = Q;
 		G2 negQ;
 		if (param.useNAF) {
 			G2::neg(negQ, Q);
 		}
-		Fp6 d;
-		dblLineWithoutP(d, T);
-		Qcoeff.push_back(d);
-		Fp6 e;
 		assert(param.siTbl[1] == 1);
-		addLineWithoutP(e, T, Q);
-		Qcoeff.push_back(e);
-		Fp6 l;
+		dblLineWithoutP(Qcoeff[idx++], T);
+		addLineWithoutP(Qcoeff[idx++], T, Q);
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
-			dblLineWithoutP(l, T);
-			Qcoeff.push_back(l);
+			dblLineWithoutP(Qcoeff[idx++], T);
 			if (param.siTbl[i]) {
 				if (param.siTbl[i] > 0) {
-					addLineWithoutP(l, T, Q);
+					addLineWithoutP(Qcoeff[idx++], T, Q);
 				} else {
-					addLineWithoutP(l, T, negQ);
+					addLineWithoutP(Qcoeff[idx++], T, negQ);
 				}
-				Qcoeff.push_back(l);
 			}
 		}
 		G2 Q1, Q2;
@@ -1126,12 +1126,15 @@ struct BNT {
 		if (param.z < 0) {
 			G2::neg(T, T);
 		}
-		addLineWithoutP(d, T, Q1);
-		Qcoeff.push_back(d);
-		addLineWithoutP(e, T, Q2);
-		Qcoeff.push_back(e);
+		addLineWithoutP(Qcoeff[idx++], T, Q1);
+		addLineWithoutP(Qcoeff[idx++], T, Q2);
+		assert(idx == param.precomputedQcoeffSize);
 	}
 	static void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
+	{
+		precomputedMillerLoop(f, P, Qcoeff.data());
+	}
+	static void precomputedMillerLoop(Fp12& f, const G1& P, const Fp6* Qcoeff)
 	{
 		P.normalize();
 		size_t idx = 0;
@@ -1169,6 +1172,10 @@ struct BNT {
 		f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
 	*/
 	static void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
+	{
+		precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
+	}
+	static void precomputedMillerLoop2(Fp12& f, const G1& P1, const Fp6* Q1coeff, const G1& P2, const Fp6* Q2coeff)
 	{
 		P1.normalize();
 		P2.normalize();
