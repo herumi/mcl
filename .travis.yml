@@ -1,0 +1,11 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+script:
+  - git clone https://github.com/herumi/cybozulib.git
+  - git clone https://github.com/herumi/xbyak.git
+  - git clone https://github.com/herumi/mcl.git
+  - cd mcl
+  - make test
+ 
