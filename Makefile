@@ -141,7 +141,7 @@ $(OBJ_DIR)/%.o: %.c
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-$(OBJ_DIR)/bn256_test.o: test/bn256_test.cpp
+$(OBJ_DIR)/bn256_test.o: bn256_test.cpp
 $(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
 	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
 
