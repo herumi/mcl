@@ -130,7 +130,7 @@ $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 
 VPATH=test sample src
 
-.SUFFIXES: .cpp .d .exe .c
+.SUFFIXES: .cpp .d .exe .c .o
 
 $(OBJ_DIR)/%.o: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
