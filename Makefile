@@ -3,7 +3,7 @@ LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp #bn256_test.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn256_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -132,6 +132,9 @@ VPATH=test sample src
 
 .SUFFIXES: .cpp .d .exe .c .o
 
+$(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
+
 $(OBJ_DIR)/%.o: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
@@ -140,9 +143,6 @@ $(OBJ_DIR)/%.o: %.c
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
-
-$(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(LDFLAGS) -lstdc++
