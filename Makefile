@@ -132,9 +132,6 @@ VPATH=test sample src
 
 .SUFFIXES: .cpp .d .exe .c .o
 
-$(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
-
 $(OBJ_DIR)/%.o: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
@@ -143,6 +140,10 @@ $(OBJ_DIR)/%.o: %.c
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
+
+$(OBJ_DIR)/bn256_test.o: test/bn256_test.cpp
+$(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(LDFLAGS) -lstdc++
