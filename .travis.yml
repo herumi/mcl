@@ -3,6 +3,7 @@ dist: trusty
 language: cpp
 compiler:
   - gcc
+  - clang
 before_install:
   - sudo apt install -y libgmp-dev
 script:
@@ -10,5 +11,5 @@ script:
   - git clone https://github.com/herumi/xbyak.git
   - git clone https://github.com/herumi/mcl.git
   - cd mcl
-  - make test IGNORE_BN256_TEST=1
+  - make test IGNORE_BN256_TEST=1 DEBUG=1
  
