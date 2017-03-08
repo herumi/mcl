@@ -232,6 +232,7 @@ struct ParamT {
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
 	SignVec siTbl;
+	size_t precomputedQcoeffSize;
 	bool useNAF;
 	SignVec zReplTbl;
 
@@ -297,6 +298,7 @@ struct ParamT {
 
 		const mpz_class largest_c = abs(6 * z + 2);
 		useNAF = getGoodRepl(siTbl, largest_c);
+		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
 		getGoodRepl(zReplTbl, abs(z));
 		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
 		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
@@ -305,6 +307,15 @@ struct ParamT {
 	mpz_class eval(const int c[5], const mpz_class& x) const
 	{
 		return (((c[4] * x + c[3]) * x + c[2]) * x + c[1]) * x + c[0];
+	}
+	size_t getPrecomputeQcoeffSize(const SignVec& sv) const
+	{
+		size_t idx = 2 + 2;
+		for (size_t i = 2; i < sv.size(); i++) {
+			idx++;
+			if (sv[i]) idx++;
+		}
+		return idx;
 	}
 };
 
