@@ -10,5 +10,5 @@ script:
   - git clone https://github.com/herumi/xbyak.git
   - git clone https://github.com/herumi/mcl.git
   - cd mcl
-  - make -d test
+  - make test
  
