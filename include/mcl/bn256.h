@@ -7,7 +7,6 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdint.h>
-#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,7 +86,7 @@ BN256_DLL_API void BN256_Fr_setRand(BN256_Fr *x);
 BN256_DLL_API void BN256_Fr_setMsg(BN256_Fr *x, const char *s);
 
 // return 0 if success
-BN256_DLL_API int BN256_Fr_getStr(char *buf, size_t maxBufSize, const BN256_Fr *x);
+BN256_DLL_API int BN256_Fr_getStr(char *buf, int maxBufSize, const BN256_Fr *x);
 
 BN256_DLL_API void BN256_Fr_neg(BN256_Fr *y, const BN256_Fr *x);
 BN256_DLL_API void BN256_Fr_inv(BN256_Fr *y, const BN256_Fr *x);
@@ -113,7 +112,7 @@ BN256_DLL_API int BN256_G1_isZero(const BN256_G1 *x);
 BN256_DLL_API int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *s);
 
 // return 0 if success
-BN256_DLL_API int BN256_G1_getStr(char *buf, size_t maxBufSize, const BN256_G1 *x);
+BN256_DLL_API int BN256_G1_getStr(char *buf, int maxBufSize, const BN256_G1 *x);
 
 BN256_DLL_API void BN256_G1_neg(BN256_G1 *y, const BN256_G1 *x);
 BN256_DLL_API void BN256_G1_dbl(BN256_G1 *y, const BN256_G1 *x);
@@ -138,7 +137,7 @@ BN256_DLL_API int BN256_G2_isZero(const BN256_G2 *x);
 BN256_DLL_API int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *s);
 
 // return 0 if success
-BN256_DLL_API int BN256_G2_getStr(char *buf, size_t maxBufSize, const BN256_G2 *x);
+BN256_DLL_API int BN256_G2_getStr(char *buf, int maxBufSize, const BN256_G2 *x);
 
 BN256_DLL_API void BN256_G2_neg(BN256_G2 *y, const BN256_G2 *x);
 BN256_DLL_API void BN256_G2_dbl(BN256_G2 *y, const BN256_G2 *x);
@@ -161,7 +160,7 @@ BN256_DLL_API int BN256_GT_isZero(const BN256_GT *x);
 BN256_DLL_API int BN256_GT_isOne(const BN256_GT *x);
 
 // return 0 if success
-BN256_DLL_API int BN256_GT_getStr(char *buf, size_t maxBufSize, const BN256_GT *x);
+BN256_DLL_API int BN256_GT_getStr(char *buf, int maxBufSize, const BN256_GT *x);
 
 BN256_DLL_API void BN256_GT_neg(BN256_GT *y, const BN256_GT *x);
 BN256_DLL_API void BN256_GT_inv(BN256_GT *y, const BN256_GT *x);

@@ -28,7 +28,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_setMsg([Out] Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_Fr_getStr([Out]StringBuilder buf, long maxBufSize, [In] Fr x);
+		public static extern int BN256_Fr_getStr([Out]StringBuilder buf, int maxBufSize, [In] Fr x);
 
 		[DllImport("bn256.dll")]
 		public static extern void BN256_Fr_neg([Out] Fr y, [In] Fr x);
@@ -56,7 +56,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_hashAndMapTo([Out] G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_G1_getStr([Out]StringBuilder buf, long maxBufSize, [In] G1 x);
+		public static extern int BN256_G1_getStr([Out]StringBuilder buf, int maxBufSize, [In] G1 x);
 		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_neg([Out] G1 y, [In] G1 x);
 		[DllImport("bn256.dll")]
@@ -81,7 +81,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_hashAndMapTo([Out] G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_G2_getStr([Out]StringBuilder buf, long maxBufSize, [In] G2 x);
+		public static extern int BN256_G2_getStr([Out]StringBuilder buf, int maxBufSize, [In] G2 x);
 		[DllImport("bn256.dll")]
 		public static extern void BN256_G2_neg([Out] G2 y, [In] G2 x);
 		[DllImport("bn256.dll")]
@@ -104,7 +104,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_isOne([In] GT x);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_GT_getStr([Out]StringBuilder buf, long maxBufSize, [In] GT x);
+		public static extern int BN256_GT_getStr([Out]StringBuilder buf, int maxBufSize, [In] GT x);
 		[DllImport("bn256.dll")]
 		public static extern void BN256_GT_neg([Out] GT y, [In] GT x);
 		[DllImport("bn256.dll")]

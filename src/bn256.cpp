@@ -124,12 +124,12 @@ void BN256_Fr_setMsg(BN256_Fr *x, const char *str)
 }
 
 // return 0 if success
-int BN256_Fr_getStr(char *buf, size_t maxBufSize, const BN256_Fr *x)
+int BN256_Fr_getStr(char *buf, int maxBufSize, const BN256_Fr *x)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str);
-	if (str.size() < maxBufSize) {
+	if ((int)str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}
@@ -214,12 +214,12 @@ int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *str)
 }
 
 // return 0 if success
-int BN256_G1_getStr(char *buf, size_t maxBufSize, const BN256_G1 *x)
+int BN256_G1_getStr(char *buf, int maxBufSize, const BN256_G1 *x)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str);
-	if (str.size() < maxBufSize) {
+	if ((int)str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}
@@ -300,12 +300,12 @@ int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *str)
 }
 
 // return 0 if success
-int BN256_G2_getStr(char *buf, size_t maxBufSize, const BN256_G2 *x)
+int BN256_G2_getStr(char *buf, int maxBufSize, const BN256_G2 *x)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str);
-	if (str.size() < maxBufSize) {
+	if ((int)str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}
@@ -375,11 +375,11 @@ int BN256_GT_isOne(const BN256_GT *x)
 }
 
 // return 0 if success
-int BN256_GT_getStr(char *buf, size_t maxBufSize, const BN256_GT *x)
+int BN256_GT_getStr(char *buf, int maxBufSize, const BN256_GT *x)
 	try
 {
 	std::string str = cast(x)->getStr();
-	if (str.size() < maxBufSize) {
+	if ((int)str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}
