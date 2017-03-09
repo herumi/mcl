@@ -11,5 +11,5 @@ script:
   - git clone https://github.com/herumi/xbyak.git
   - git clone https://github.com/herumi/mcl.git
   - cd mcl
-  - make test IGNORE_BN256_TEST=1 DEBUG=1
+  - make test DEBUG=1
  
