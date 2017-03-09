@@ -175,6 +175,15 @@ BN256_DLL_API void BN256_GT_pow(BN256_GT *z, const BN256_GT *x, const BN256_Fr *
 BN256_DLL_API void BN256_pairing(BN256_GT *z, const BN256_G1 *x, const BN256_G2 *y);
 BN256_DLL_API void BN256_millerLoop(BN256_GT *z, const BN256_G1 *x, const BN256_G2 *y);
 
+// return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)
+BN256_DLL_API int BN256_getUint64NumToPrecompute(void);
+
+// allocate Qbuf[BN256_getUint64NumToPrecompute()] before calling this
+BN256_DLL_API void BN256_precomputeG2(uint64_t *Qbuf, const BN256_G2 *Q);
+
+BN256_DLL_API void BN256_precomputedMillerLoop(BN256_GT *f, const BN256_G1 *P, const uint64_t *Qbuf);
+BN256_DLL_API void BN256_precomputedMillerLoop2(BN256_GT *f, const BN256_G1 *P1, const uint64_t *Q1buf, const BN256_G1 *P2, const uint64_t *Q2buf);
+
 #ifdef __cplusplus
 }
 #endif

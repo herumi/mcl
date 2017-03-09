@@ -26,6 +26,9 @@ static const G2 *cast(const BN256_G2 *p) { return reinterpret_cast<const G2*>(p)
 static Fp12 *cast(BN256_GT *p) { return reinterpret_cast<Fp12*>(p); }
 static const Fp12 *cast(const BN256_GT *p) { return reinterpret_cast<const Fp12*>(p); }
 
+static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
+static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
+
 static int closeErrFile()
 {
 	if (g_fp == NULL || g_fp == stderr) {
@@ -430,4 +433,23 @@ void BN256_pairing(BN256_GT *z, const BN256_G1 *x, const BN256_G2 *y)
 void BN256_millerLoop(BN256_GT *z, const BN256_G1 *x, const BN256_G2 *y)
 {
 	BN::millerLoop(*cast(z), *cast(x), *cast(y));
+}
+int BN256_getUint64NumToPrecompute(void)
+{
+	return int(BN::param.precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t));
+}
+
+void BN256_precomputeG2(uint64_t *Qbuf, const BN256_G2 *Q)
+{
+	BN::precomputeG2(cast(Qbuf), *cast(Q));
+}
+
+void BN256_precomputedMillerLoop(BN256_GT *f, const BN256_G1 *P, const uint64_t *Qbuf)
+{
+	BN::precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
+}
+
+void BN256_precomputedMillerLoop2(BN256_GT *f, const BN256_G1 *P1, const uint64_t  *Q1buf, const BN256_G1 *P2, const uint64_t *Q2buf)
+{
+	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }
