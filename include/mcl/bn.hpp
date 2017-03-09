@@ -20,7 +20,7 @@ struct CurveParam {
 		v^3 = xi
 		w^2 = v
 	*/
-	int64_t z;
+	mpz_class z;
 	int b; // y^2 = x^3 + b
 	int xi_a; // xi = xi_a + i
 	bool operator==(const CurveParam& rhs) const { return z == rhs.z && b == rhs.b && xi_a == rhs.xi_a; }
@@ -239,15 +239,12 @@ struct ParamT {
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		isCurveFp254BNb = cp == CurveFp254BNb;
-		{
-			uint64_t t = std::abs(cp.z);
-			isNegative = cp.z < 0;
-			gmp::setArray(abs_z, &t, 1);
-			if (isNegative) {
-				z = -abs_z;
-			} else {
-				z = abs_z;
-			}
+		z = cp.z;
+		isNegative = cp.z < 0;
+		if (isNegative) {
+			abs_z = -z;
+		} else {
+			abs_z = z;
 		}
 		const int pCoff[] = { 1, 6, 24, 36, 36 };
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
