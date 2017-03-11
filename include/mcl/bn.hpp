@@ -20,18 +20,19 @@ struct CurveParam {
 		v^3 = xi
 		w^2 = v
 	*/
-	mpz_class z;
+	const char *z;
 	int b; // y^2 = x^3 + b
 	int xi_a; // xi = xi_a + i
 	bool operator==(const CurveParam& rhs) const { return z == rhs.z && b == rhs.b && xi_a == rhs.xi_a; }
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
 
-const CurveParam CurveSNARK1 = { mpz_class("4965661367192848881"), 3, 9 };
-//const CurveParam CurveSNARK2 = { 4965661367192848881, 82, 9 };
-const CurveParam CurveFp254BNb = { mpz_class("-0x4080000000000001"), 2, 1 }; // -(2^62 + 2^55 + 1)
-const CurveParam CurveFp382_1 = { mpz_class("-0x400011000000000000000001"), 2, 1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam CurveFp382_2 = { mpz_class("-0x400040090001000000000001"), 2, 1 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
+const CurveParam CurveSNARK1 = { "4965661367192848881", 3, 9 };
+//const CurveParam CurveSNARK2 = { "4965661367192848881", 82, 9 };
+const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1 }; // -(2^62 + 2^55 + 1)
+// provisional(experimental) param with maxBitSize = 384
+const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
+const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
 
 template<class Vec>
 void convertToBinary(Vec& v, const mpz_class& x)
@@ -241,8 +242,8 @@ struct ParamT {
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		isCurveFp254BNb = cp == CurveFp254BNb;
-		z = cp.z;
-		isNegative = cp.z < 0;
+		z = mpz_class(cp.z);
+		isNegative = z < 0;
 		if (isNegative) {
 			abs_z = -z;
 		} else {
