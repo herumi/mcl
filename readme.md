@@ -135,7 +135,7 @@ If you check it out of the library, then you can stop the verification by callin
 
 # Benchmark
 
-A benchmark of a BN curve CurveFp254BNb.
+A benchmark of a BN curve CurveFp254BNb(2016/12/25).
 
 * x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz on Ubuntu 16.04.
     * `sudo cpufreq-set -g performance`
@@ -154,6 +154,24 @@ mcl                                                      | 0.31 | 1.6 |22.6|  4.
 * compile option for RELIC
 ```
 cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_METHD="LAZYR;OATEP"
+```
+# 384-bit curve (experimental)
+see `test/bn384_test.cpp`
+Benchmark on Skylake(3.4GHz)
+
+```
+# mcl::bn::CurveFp382_1 ; -(2^94 + 2^76 + 2^72 + 1)
+pairing   3.534Mclk  ; 1.039msec
+finalExp   1.478Mclk
+
+# mcl::bn::CurveFp382_2 ; -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1)
+pairing   3.635Mclk  ; 1.069msec
+finalExp   1.536Mclk
+```
+```
+# 2017/3/11
+replic with cmake -DFP_PRIME=382 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_METHD="LAZYR;OATEP"
+BENCH: pp_map_oatep_k12                 = 2654673 nanosec
 ```
 
 # How to make asm files (optional)

@@ -12,18 +12,15 @@ typedef BN::G1 G1;
 typedef BN::G2 G2;
 typedef BN::Fp12 GT;
 
-CYBOZU_TEST_AUTO(pairing)
+void testCurve(const mcl::bn::CurveParam& cp)
 {
-	BN::init(mcl::bn::CurveFp382_1);
+	BN::init(cp);
 	G1 P;
 	G2 Q;
 	BN::mapToG1(P, 1);
 	BN::mapToG2(Q, 1);
-	std::cout << P << std::endl;
-	std::cout << Q << std::endl;
 	GT e1, e2;
 	BN::pairing(e1, P, Q);
-	std::cout << e1 << std::endl;
 	mpz_class a("293842098420840298420842342342449");
 	mpz_class b("2035739487659287420847209482048");
 	G1 aP;
@@ -36,4 +33,10 @@ CYBOZU_TEST_AUTO(pairing)
 	CYBOZU_TEST_EQUAL(e1, e2);
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q);
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1);
+}
+
+CYBOZU_TEST_AUTO(pairing)
+{
+	testCurve(mcl::bn::CurveFp382_1);
+	testCurve(mcl::bn::CurveFp382_2);
 }
