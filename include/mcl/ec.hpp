@@ -588,6 +588,17 @@ public:
 	{
 		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void mul_s(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
+	{
+		fp::Block b;
+		y.getBlock(b);
+		mulArray(z, x, b.p, b.n, false, true);
+	}
+	static inline void mul_s(EcT& z, const EcT& x, const mpz_class& y)
+	{
+		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
+	}
 	/*
 		0 <= P for any P
 		(Px, Py) <= (P'x, P'y) iff Px < P'x or Px == P'x and Py <= P'y
@@ -755,7 +766,7 @@ public:
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
 private:
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative)
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
 	{
 		x.normalize();
 		EcT tmp;
@@ -765,7 +776,7 @@ private:
 			px = &tmp;
 		}
 		z.clear();
-		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
+		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, constTime);
 		if (isNegative) {
 			neg(z, z);
 		}
