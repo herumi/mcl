@@ -1,20 +1,13 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
+#include <mcl/bn384.hpp>
 #include <mcl/bn.hpp>
 
-typedef mcl::FpT<mcl::FpTag, 384> Fp;
-typedef mcl::FpT<mcl::ZnTag, 384> Fr;
-typedef mcl::bn::BNT<Fp> BN;
-typedef BN::Fp2 Fp2;
-typedef BN::Fp6 Fp6;
-typedef BN::Fp12 Fp12;
-typedef BN::G1 G1;
-typedef BN::G2 G2;
-typedef BN::Fp12 GT;
+using namespace mcl::bn384;
 
 void testCurve(const mcl::bn::CurveParam& cp)
 {
-	BN::init(cp);
+	bn384init(cp);
 	G1 P;
 	G2 Q;
 	BN::mapToG1(P, 1);
@@ -39,4 +32,6 @@ CYBOZU_TEST_AUTO(pairing)
 {
 	testCurve(mcl::bn::CurveFp382_1);
 	testCurve(mcl::bn::CurveFp382_2);
+	// support 256-bit pairing
+	testCurve(mcl::bn::CurveFp254BNb);
 }
