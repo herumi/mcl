@@ -289,6 +289,14 @@ struct gmp {
 			}
 		} while (!(isPrime(z)));
 	}
+	static inline mpz_class getQuadraticNonResidue(const mpz_class& p)
+	{
+		mpz_class g = 2;
+		while (gmp::legendre(g, p) > 0) {
+			g++;
+		}
+		return g;
+	}
 };
 
 /*
@@ -320,11 +328,7 @@ public:
 		if (p <= 2) throw cybozu::Exception("SquareRoot:bad p") << p;
 		isPrime = gmp::isPrime(p);
 		if (!isPrime) return; // don't throw until get() is called
-		// g is quadratic nonresidue
-		g = 2;
-		while (gmp::legendre(g, p) > 0) {
-			g++;
-		}
+		g = gmp::getQuadraticNonResidue(p);
 		// p - 1 = 2^r q, q is odd
 		r = 0;
 		q = p - 1;
