@@ -2,7 +2,6 @@
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
-#include <cybozu/xorshift.hpp>
 #include <mcl/gmp_util.hpp>
 
 #include <mcl/fp.hpp>
@@ -308,38 +307,17 @@ struct Test {
 		}
 		Fp::setIoMode(mcl::IoAuto);
 	}
-	void bench_mul_s(void f(Ec&, const Ec&, const Zn&)) const
+	void mulCT() const
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
-		Ec P(x, y);
-		cybozu::XorShift rg;
-		std::vector<double> tv(100);
-		for (size_t i = 0; i < tv.size(); i++) {
-			Zn r;
-			r.setRand(rg);
-			CYBOZU_BENCH_C("", 30, f, P, P, r);
-			tv[i] = cybozu::bench::g_clk.getClock();
-printf("%.1f\n", tv[i]);
+		Ec P(x, y), Q1, Q2;
+		for (int i = 0; i < 100; i++) {
+			Zn r = i;
+			Ec::mul(Q1, P, r);
+			Ec::mulCT(Q2, P, r);
+			CYBOZU_TEST_EQUAL(Q1, Q2);
 		}
-		double ave = 0;
-		for (size_t i = 0; i < tv.size(); i++) {
-			ave += tv[i];
-		}
-		ave /= tv.size();
-		double v = 0;
-		for (size_t i = 0; i < tv.size(); i++) {
-			double t = tv[i] - ave;
-			v += t * t;
-		}
-		v /= tv.size();
-		v = sqrt(v);
-		printf("ave %.2f v %.2f\n", ave, v);
-	}
-	void mul_s() const
-	{
-		bench_mul_s(Ec::mul);
-		bench_mul_s(Ec::mul_s);
 	}
 
 	template<class F>
@@ -379,7 +357,7 @@ mul 499.00usec
 		squareRoot();
 		str();
 		ioMode();
-//		mul_s();
+		mulCT();
 	}
 private:
 	Test(const Test&);

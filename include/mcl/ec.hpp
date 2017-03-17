@@ -589,13 +589,18 @@ public:
 		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mul_s(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
+	static inline void mulCT(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
 		mulArray(z, x, b.p, b.n, false, true);
 	}
-	static inline void mul_s(EcT& z, const EcT& x, const mpz_class& y)
+	static inline void mulCT(EcT& z, const EcT& x, int y)
+	{
+		const fp::Unit u = abs(y);
+		mulArray(z, x, &u, 1, y < 0, true);
+	}
+	static inline void mulCT(EcT& z, const EcT& x, const mpz_class& y)
 	{
 		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
 	}
@@ -776,7 +781,11 @@ private:
 			px = &tmp;
 		}
 		z.clear();
-		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, constTime);
+		if (constTime) {
+			fp::powGenericCT(z, *px, y, yn, EcT::add, EcT::dbl);
+		} else {
+			fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
+		}
 		if (isNegative) {
 			neg(z, z);
 		}

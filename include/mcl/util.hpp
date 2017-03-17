@@ -195,7 +195,7 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), bool constTime = false)
+void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&))
 {
 #if 0
 	assert(&out != &x);
@@ -262,10 +262,6 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 	} else {
 		out = x;
 	}
-	G dummy;
-	if (constTime) {
-		dummy = x;
-	}
 	for (int i = (int)n - 1; i >= 0; i--) {
 		T v = y[i];
 		for (int j = m - 2; j >= 0; j -= 2) {
@@ -274,13 +270,53 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 			T idx = (v >> j) & 3;
 			if (idx > 0) {
 				mul(out, out, tbl[idx - 1]);
-			} else if (constTime) {
-				mul(dummy, dummy, tbl[0]);
 			}
 		}
 		m = (int)sizeof(T) * 8;
 	}
 #endif
+}
+
+/*
+	constant time pow
+	@note depends on bit length of y[n]
+*/
+template<class G, class T>
+void powGenericCT(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&))
+{
+	assert(&out != &x);
+	while (n > 0) {
+		if (y[n - 1]) break;
+		n--;
+	}
+	if (n == 0) return;
+	G tbl[4]; // tbl = { x, x^2, x^3 }
+	tbl[0] = x; // discard
+	tbl[1] = x;
+	mul(tbl[2], x, x); tbl[2].normalize();
+	mul(tbl[3], tbl[2], x); tbl[3].normalize();
+	T v = y[n - 1];
+	int m = cybozu::bsr<T>(v);
+	if (m & 1) {
+		m--;
+		T idx = (v >> m) & 3;
+		assert(idx > 0);
+		out = tbl[idx];
+	} else {
+		out = x;
+	}
+	G *pTbl[] = { &tbl[0], &out, &out, &out };
+
+	for (int i = (int)n - 1; i >= 0; i--) {
+		T v = y[i];
+		for (int j = m - 2; j >= 0; j -= 2) {
+			sqr(out, out);
+			sqr(out, out);
+			T idx = (v >> j) & 3;
+			mul(*pTbl[idx], *pTbl[idx], tbl[idx]);
+		}
+		m = (int)sizeof(T) * 8;
+	}
 }
 
 /*
