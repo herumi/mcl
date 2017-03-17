@@ -28,9 +28,11 @@ struct Test {
 	void cstr() const
 	{
 		Ec O;
+		O.clear();
 		CYBOZU_TEST_ASSERT(O.isZero());
 		CYBOZU_TEST_ASSERT(O.isValid());
 		Ec P;
+		P.clear();
 		Ec::neg(P, O);
 		CYBOZU_TEST_EQUAL(P, O);
 	}
@@ -63,8 +65,9 @@ struct Test {
 		Fp y(para.gy);
 		Zn n = 0;
 		CYBOZU_TEST_NO_EXCEPTION(Ec(x, y));
-		CYBOZU_TEST_EXCEPTION(Ec(x, y  + 1), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(Ec(x, y + 1), cybozu::Exception);
 		Ec P(x, y), Q, R, O;
+		O.clear();
 		CYBOZU_TEST_ASSERT(P.isNormalized());
 		{
 			Ec::neg(Q, P);
@@ -153,6 +156,7 @@ struct Test {
 		Ec P(x, y);
 		Ec Q;
 		Ec R;
+		R.clear();
 		for (int i = 0; i < 100; i++) {
 			Ec::mul(Q, P, i);
 			CYBOZU_TEST_EQUAL(Q, R);
@@ -167,6 +171,7 @@ struct Test {
 		Ec P(x, y);
 		Ec Q;
 		Ec R;
+		R.clear();
 		for (int i = 0; i < 100; i++) {
 			Ec::mul(Q, P, -i);
 			CYBOZU_TEST_EQUAL(Q, R);
@@ -194,6 +199,7 @@ struct Test {
 		Ec P(x, y);
 		Ec Q;
 		Ec R;
+		R.clear();
 		for (int i = 0; i < 100; i++) {
 			Ec::mul(Q, P, Zn(i));
 			CYBOZU_TEST_EQUAL(Q, R);
@@ -299,6 +305,7 @@ struct Test {
 			{
 				std::stringstream ss;
 				Ec Q;
+				Q.clear();
 				ss << Q;
 				Ec R;
 				ss >> R;

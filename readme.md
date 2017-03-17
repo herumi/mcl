@@ -116,6 +116,10 @@ mcl::bn256::BN::pairing(e, P, Q);
 
 See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
 
+## Default constructor of Fp, Ec, etc.
+A default constructor does not initialize the instance.
+Set a valid value before reffering it.
+
 ## String format of G1 and G2
 G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
 normalize() method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).

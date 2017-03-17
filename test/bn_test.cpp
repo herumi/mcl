@@ -89,6 +89,7 @@ void testSetStr(const G2& Q0)
 {
 	G2::setCompressedExpression();
 	G2 Q;
+	Q.clear();
 	for (int i = 0; i < 10; i++) {
 		G2 R;
 		R.setStr(Q.getStr());

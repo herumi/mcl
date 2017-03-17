@@ -98,6 +98,7 @@ public:
 		for (size_t i = 0; i < tblNum; i++) {
 			tbl_[i].resize(r);
 			EcV& w = tbl_[i];
+			w[0].clear();
 			for (size_t d = 1; d < r; d *= 2) {
 				for (size_t j = 0; j < d; j++) {
 					Ec::add(w[j + d], w[j], t);

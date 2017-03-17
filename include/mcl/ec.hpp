@@ -61,12 +61,8 @@ public:
 	*/
 	static bool verifyOrder_;
 	static mpz_class order_;
-#ifdef MCL_EC_USE_AFFINE
-	EcT() : inf_(true) {}
-#else
-	/* can't call z.clear() beforing Fp::init() */
-	EcT() { memset(&z, 0, sizeof(z)); }
-#endif
+	/* default constructor is undefined value */
+	EcT() {}
 	EcT(const Fp& _x, const Fp& _y)
 	{
 		set(_x, _y);
@@ -737,7 +733,9 @@ public:
 	static inline void getYfromX(Fp& y, const Fp& x, bool isYodd)
 	{
 		getWeierstrass(y, x);
-		if (!Fp::squareRoot(y, y)) throw cybozu::Exception("EcT:getYfromX") << x << isYodd;
+		if (!Fp::squareRoot(y, y)) {
+			throw cybozu::Exception("EcT:getYfromX") << x << isYodd;
+		}
 		if (y.isOdd() ^ isYodd) {
 			Fp::neg(y, y);
 		}
