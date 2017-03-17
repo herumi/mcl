@@ -290,8 +290,8 @@ void powGenericCT(G& out, const G& x, const T *y, size_t n, void mul(G&, const G
 		n--;
 	}
 	if (n == 0) return;
-	G tbl[4]; // tbl = { x, x^2, x^3 }
-	tbl[0] = x; // discard
+	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
+	tbl[0] = x;
 	tbl[1] = x;
 	mul(tbl[2], x, x); tbl[2].normalize();
 	mul(tbl[3], tbl[2], x); tbl[3].normalize();
