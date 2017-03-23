@@ -3,19 +3,31 @@ using System;
 namespace mcl {
 	using static BN256;
 	class BN256Test {
+		static int err = 0;
+		static void assert(string msg, bool b)
+		{
+			if (b) return;
+			Console.WriteLine("ERR {0}", msg);
+			err++;
+		}
 		static void Main(string[] args)
 		{
 			try {
-				Console.WriteLine("64bit = {0}", System.Environment.Is64BitProcess);
+				assert("64bit system", System.Environment.Is64BitProcess);
 				int ret;
 				ret = BN256_init();
-				Console.WriteLine("ret= {0}", ret);
+				assert("BN256_init", ret == 0);
 				ret = BN256_setErrFile("bn256_test.txt");
-				Console.WriteLine("ret= {0}", ret);
+				assert("BN256_setErrFile", ret == 0);
 				TestFr();
 				TestG1();
 				TestG2();
 				TestPairing();
+				if (err == 0) {
+					Console.WriteLine("all tests succeed");
+				} else {
+					Console.WriteLine("err={0}", err);
+				}
 			} catch (Exception e) {
 				Console.WriteLine("ERR={0}", e);
 			}
@@ -25,96 +37,91 @@ namespace mcl {
 			Console.WriteLine("TestFr");
 			Fr x = new Fr();
 			x.Clear();
-			Console.WriteLine("x = {0}, isZero = {1}, isOne = {2}", x, x.IsZero(), x.IsOne());
+			assert("0", x.ToString() == "0");
+			assert("0.IzZero", x.IsZero());
+			assert("!0.IzOne", !x.IsOne());
 			x.SetInt(1);
-			Console.WriteLine("x = {0}, isZero = {1}, isOne = {2}", x, x.IsZero(), x.IsOne());
+			assert("1", x.ToString() == "1");
+			assert("!1.IzZero", !x.IsZero());
+			assert("1.IzOne", x.IsOne());
 			x.SetInt(3);
-			Console.WriteLine("x = {0}, isZero = {1}, isOne = {2}", x, x.IsZero(), x.IsOne());
+			assert("3", x.ToString() == "3");
+			assert("!3.IzZero", !x.IsZero());
+			assert("!3.IzOne", !x.IsOne());
 			x.SetInt(-5);
-			Console.WriteLine("x = {0}", x);
 			x = -x;
-			Console.WriteLine("x = {0}", x);
+			assert("5", x.ToString() == "5");
 			x.SetInt(4);
 			x = x * x;
-			Console.WriteLine("x = {0}", x);
-			Fr y;// = new Fr();
-				 //			y = x;
+			assert("16", x.ToString() == "16");
+			Fr y;
 			y = x.Clone();
-			Console.WriteLine("y = {0}", y);
-			Console.WriteLine("x == y {0}", x.Equals(y));
+			assert("x == y", x.Equals(y));
 			x.SetInt(123);
-			Console.WriteLine("y = {0}", y);
-			Console.WriteLine("x == y {0}", x.Equals(y));
+			assert("123", x.ToString() == "123");
+			assert("y != x", !x.Equals(y));
 			try {
 				x.SetStr("1234567891234x");
 				Console.WriteLine("x = {0}", x);
 			} catch (Exception e) {
-				Console.WriteLine("exception test {0}", e);
+				Console.WriteLine("exception test OK\n'{0}'", e);
 			}
 			x.SetStr("1234567891234");
-			Console.WriteLine("x = {0}", x);
+			assert("1234567891234", x.ToString() == "1234567891234");
 		}
 		static void TestG1()
 		{
 			Console.WriteLine("TestG1");
 			G1 P = new G1();
 			P.Clear();
-			Console.WriteLine("P = {0}", P);
-			Console.WriteLine("P is valid {0}", P.IsValid());
-			Console.WriteLine("P is zero {0}", P.IsZero());
+			assert("P = 0", P.ToString() == "0");
+			assert("P.IsValid", P.IsValid());
+			assert("P.IsZero", P.IsZero());
 			P.HashAndMapTo("abc");
-			Console.WriteLine("P = {0}", P);
-			Console.WriteLine("P is valid {0}", P.IsValid());
-			Console.WriteLine("P is zero {0}", P.IsZero());
+			assert("P.IsValid", P.IsValid());
+			assert("!P.IsZero", !P.IsZero());
 			G1 Q = new G1();
+			Q = P.Clone();
+			assert("P == Q", Q.Equals(P));
 			G1.Neg(Q, P);
-			Console.WriteLine("Q = {0}", Q);
 			G1.Add(Q, Q, P);
-			Console.WriteLine("Q = {0}", Q);
+			assert("P = Q", Q.IsZero());
 			G1.Dbl(Q, P);
 			G1 R = new G1();
 			G1.Add(R, P, P);
-			Console.WriteLine("P == R {0}", P.Equals(P));
-			Console.WriteLine("P == R {0}", P.Equals(R));
-			Console.WriteLine("Q == R {0}", Q.Equals(R));
-			Console.WriteLine("Q = {0}", Q);
-			Console.WriteLine("R = {0}", R);
+			assert("Q == R", Q.Equals(R));
 			Fr x = new Fr();
 			x.SetInt(3);
 			G1.Add(R, R, P);
 			G1.Mul(Q, P, x);
-			Console.WriteLine("Q == R {0}", Q.Equals(R));
+			assert("Q == R", Q.Equals(R));
 		}
 		static void TestG2()
 		{
 			Console.WriteLine("TestG2");
 			G2 P = new G2();
 			P.Clear();
-			Console.WriteLine("P = {0}", P);
-			Console.WriteLine("P is valid {0}", P.IsValid());
-			Console.WriteLine("P is zero {0}", P.IsZero());
+			assert("P = 0", P.ToString() == "0");
+			assert("P is valid", P.IsValid());
+			assert("P is zero", P.IsZero());
 			P.HashAndMapTo("abc");
-			Console.WriteLine("P = {0}", P);
-			Console.WriteLine("P is valid {0}", P.IsValid());
-			Console.WriteLine("P is zero {0}", P.IsZero());
+			assert("P is valid", P.IsValid());
+			assert("P is not zero", !P.IsZero());
 			G2 Q = new G2();
+			Q = P.Clone();
+			assert("P == Q", Q.Equals(P));
 			G2.Neg(Q, P);
-			Console.WriteLine("Q = {0}", Q);
 			G2.Add(Q, Q, P);
-			Console.WriteLine("Q = {0}", Q);
+			assert("Q is zero", Q.IsZero());
 			G2.Dbl(Q, P);
 			G2 R = new G2();
 			G2.Add(R, P, P);
-			Console.WriteLine("P == R {0}", P.Equals(P));
-			Console.WriteLine("P == R {0}", P.Equals(R));
-			Console.WriteLine("Q == R {0}", Q.Equals(R));
-			Console.WriteLine("Q = {0}", Q);
-			Console.WriteLine("R = {0}", R);
+			assert("Q == R", Q.Equals(R));
 			Fr x = new Fr();
 			x.SetInt(3);
 			G2.Add(R, R, P);
 			G2.Mul(Q, P, x);
-			Console.WriteLine("Q == R {0}", Q.Equals(R));
+			assert("Q == R", Q.Equals(R));
 		}
 		static void TestPairing()
 		{
@@ -137,10 +144,10 @@ namespace mcl {
 			Pairing(e1, P, Q);
 			Pairing(e2, aP, Q);
 			GT.Pow(e3, e1, a);
-			Console.WriteLine("e2.Equals(e3) {0}", e2.Equals(e3));
+			assert("e2.Equals(e3)", e2.Equals(e3));
 			Pairing(e2, P, bQ);
 			GT.Pow(e3, e1, b);
-			Console.WriteLine("e2.Equals(e3) {0}", e2.Equals(e3));
+			assert("e2.Equals(e3)", e2.Equals(e3));
 		}
 	}
 }
