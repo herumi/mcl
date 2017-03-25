@@ -26,7 +26,6 @@ void testCurve(const mcl::bn::CurveParam& cp)
 	G2::mul(bQ, Q, b);
 	BN::pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
-	std::cout << e1 << std::endl;
 	CYBOZU_TEST_EQUAL(e1, e2);
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q);
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1);

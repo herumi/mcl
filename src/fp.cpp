@@ -359,7 +359,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 */
 #ifdef MCL_USE_XBYAK
 	if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
-	if (mode == fp::FP_XBYAK && bitSize > 521) {
+	if (mode == fp::FP_XBYAK && bitSize > 256) {
 		mode = fp::FP_AUTO;
 	}
 	if (!fp::isEnableJIT()) {
