@@ -165,12 +165,10 @@ Benchmark on Skylake(3.4GHz)
 
 ```
 # mcl::bn::CurveFp382_1 ; -(2^94 + 2^76 + 2^72 + 1)
-pairing   3.534Mclk  ; 1.039msec
-finalExp   1.478Mclk
+pairing   3.163Mclk  ; 0.93msec
 
 # mcl::bn::CurveFp382_2 ; -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1)
-pairing   3.635Mclk  ; 1.069msec
-finalExp   1.536Mclk
+pairing   3.261Mclk  ; 0.96msec
 ```
 
 # How to make asm files (optional)
