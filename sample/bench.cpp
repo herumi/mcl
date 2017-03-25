@@ -82,9 +82,12 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMo
 	Fp x(para.gx);
 	Fp y(para.gy);
 	Ec P(x, y);
+	Ec P2; Ec::add(P2, P, P);
 	Ec Q = P + P + P;
-	double addT, subT, dblT, mulT, mulRandT;
-	CYBOZU_BENCH_T(addT, Ec::add, Q, P, Q);
+	double addT, add2T, subT, dblT, mulT, mulRandT, normT;
+	CYBOZU_BENCH_T(addT, P = P2; Ec::add, Q, P, Q);
+	P.normalize();
+	CYBOZU_BENCH_T(add2T, Ec::add, Q, P, Q);
 	CYBOZU_BENCH_T(subT, Ec::sub, Q, P, Q);
 	CYBOZU_BENCH_T(dblT, Ec::dbl, P, P);
 	Zn z("-3");
@@ -92,7 +95,8 @@ void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMo
 	cybozu::XorShift rg;
 	z.setRand(rg);
 	CYBOZU_BENCH_T(mulRandT, Ec::mul, P, P, z);
-	printf("%10s %10s add %8.2f sub %8.2f dbl %8.2f mul(-3) %8.2f mul(rand) %8.2f\n", para.name, mcl::fp::ModeToStr(mode), addT, subT, dblT, mulT, mulRandT);
+	CYBOZU_BENCH_T(normT, Q = P; Q.normalize);
+	printf("%10s %10s add %8.2f add2 %8.2f sub %8.2f dbl %8.2f mul(-3) %8.2f mul(rand) %8.2f norm %8.2f\n", para.name, mcl::fp::ModeToStr(mode), addT, add2T, subT, dblT, mulT, mulRandT, normT);
 
 }
 void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
