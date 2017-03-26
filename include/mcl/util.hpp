@@ -192,10 +192,11 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@param x [in]
 	@param y [in]
 	@param n [in] size of y[]
+	@param constTime [in] use const-time method depending on only bit length of y if true
 	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&))
+void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), bool constTime = false)
 {
 	assert(&out != &x);
 	while (n > 0) {
@@ -209,63 +210,23 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 			out = x;
 			return;
 		case 2:
-			mul(out, x, x);
+			sqr(out, x);
 			return;
 		case 3:
-			mul(out, x, x);
+			sqr(out, x);
 			mul(out, out, x);
 			return;
 		case 4:
-			mul(out, x, x);
-			mul(out, out, out);
+			sqr(out, x);
+			sqr(out, out);
 			return;
 		}
 	}
-	G tbl[3]; // tbl = { x, x^2, x^3 }
-	tbl[0] = x;
-	mul(tbl[1], x, x); tbl[1].normalize();
-	mul(tbl[2], tbl[1], x); tbl[2].normalize();
-	T v = y[n - 1];
-	int m = cybozu::bsr<T>(v);
-	if (m & 1) {
-		m--;
-		T idx = (v >> m) & 3;
-		assert(idx > 0);
-		out = tbl[idx - 1];
-	} else {
-		out = x;
-	}
-	for (int i = (int)n - 1; i >= 0; i--) {
-		T v = y[i];
-		for (int j = m - 2; j >= 0; j -= 2) {
-			sqr(out, out);
-			sqr(out, out);
-			T idx = (v >> j) & 3;
-			if (idx > 0) {
-				mul(out, out, tbl[idx - 1]);
-			}
-		}
-		m = (int)sizeof(T) * 8;
-	}
-}
-
-/*
-	constant time pow
-	@note depends on bit length of y[n]
-*/
-template<class G, class T>
-void powGenericCT(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&))
-{
-	assert(&out != &x);
-	while (n > 0) {
-		if (y[n - 1]) break;
-		n--;
-	}
-	if (n == 0) return;
 	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
+	x.normalize();
 	tbl[0] = x;
 	tbl[1] = x;
-	mul(tbl[2], x, x); tbl[2].normalize();
+	sqr(tbl[2], tbl[1]); tbl[2].normalize();
 	mul(tbl[3], tbl[2], x); tbl[3].normalize();
 	T v = y[n - 1];
 	int m = cybozu::bsr<T>(v);
@@ -277,17 +238,31 @@ void powGenericCT(G& out, const G& x, const T *y, size_t n, void mul(G&, const G
 	} else {
 		out = x;
 	}
-	G *pTbl[] = { &tbl[0], &out, &out, &out };
-
-	for (int i = (int)n - 1; i >= 0; i--) {
-		T v = y[i];
-		for (int j = m - 2; j >= 0; j -= 2) {
-			sqr(out, out);
-			sqr(out, out);
-			T idx = (v >> j) & 3;
-			mul(*pTbl[idx], *pTbl[idx], tbl[idx]);
+	if (constTime) {
+		G *pTbl[] = { &tbl[0], &out, &out, &out };
+		for (int i = (int)n - 1; i >= 0; i--) {
+			T v = y[i];
+			for (int j = m - 2; j >= 0; j -= 2) {
+				sqr(out, out);
+				sqr(out, out);
+				T idx = (v >> j) & 3;
+				mul(*pTbl[idx], *pTbl[idx], tbl[idx]);
+			}
+			m = (int)sizeof(T) * 8;
 		}
-		m = (int)sizeof(T) * 8;
+	} else {
+		for (int i = (int)n - 1; i >= 0; i--) {
+			T v = y[i];
+			for (int j = m - 2; j >= 0; j -= 2) {
+				sqr(out, out);
+				sqr(out, out);
+				T idx = (v >> j) & 3;
+				if (idx > 0) {
+					mul(out, out, tbl[idx]);
+				}
+			}
+			m = (int)sizeof(T) * 8;
+		}
 	}
 }
 

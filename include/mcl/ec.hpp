@@ -591,11 +591,6 @@ public:
 		y.getBlock(b);
 		mulArray(z, x, b.p, b.n, false, true);
 	}
-	static inline void mulCT(EcT& z, const EcT& x, int y)
-	{
-		const fp::Unit u = abs(y);
-		mulArray(z, x, &u, 1, y < 0, true);
-	}
 	static inline void mulCT(EcT& z, const EcT& x, const mpz_class& y)
 	{
 		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
@@ -771,7 +766,6 @@ public:
 private:
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
 	{
-		x.normalize();
 		EcT tmp;
 		const EcT *px = &x;
 		if (&z == &x) {
@@ -779,11 +773,7 @@ private:
 			px = &tmp;
 		}
 		z.clear();
-		if (constTime) {
-			fp::powGenericCT(z, *px, y, yn, EcT::add, EcT::dbl);
-		} else {
-			fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl);
-		}
+		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, constTime);
 		if (isNegative) {
 			neg(z, z);
 		}
