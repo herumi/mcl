@@ -197,33 +197,6 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 template<class G, class T>
 void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&))
 {
-#if 0
-	assert(&out != &x);
-	while (n > 0) {
-		if (y[n - 1]) break;
-		n--;
-	}
-	if (n == 0) return;
-	out = x;
-	int m = cybozu::bsr<T>(y[n - 1]);
-	if (m == 0) {
-		if (n == 1) return;
-		n--;
-		m = (int)sizeof(T) * 8;
-	}
-	for (int i = (int)n - 1; i >= 0; i--) {
-		T v = y[i];
-		if (i < n - 1) {
-			m = (int)sizeof(T) * 8;
-		}
-		for (int j = m - 1; j >= 0; j--) {
-			sqr(out, out);
-			if (v & (T(1) << j)) {
-				mul(out, out, x);
-			}
-		}
-	}
-#else
 	assert(&out != &x);
 	while (n > 0) {
 		if (y[n - 1]) break;
@@ -274,7 +247,6 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 		}
 		m = (int)sizeof(T) * 8;
 	}
-#endif
 }
 
 /*
