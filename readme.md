@@ -215,6 +215,8 @@ This library contains [mie](https://github.com/herumi/mie/) and [Lifted-ElGamal]
   Pairing 2010, ([preprint](http://eprint.iacr.org/2010/354))
 * [_Faster hashing to G2_](http://dx.doi.org/10.1007/978-3-642-28496-0_25),Laura Fuentes-Castañeda,  Edward Knapp,  Francisco Rodríguez-Henríquez,
   SAC 2011, ([preprint](https://eprint.iacr.org/2008/530))
+* [_Skew Frobenius Map and Efficient Scalar Multiplication for Pairing–Based Cryptography_](https://www.researchgate.net/publication/221282560_Skew_Frobenius_Map_and_Efficient_Scalar_Multiplication_for_Pairing-Based_Cryptography),
+Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 # Author
 

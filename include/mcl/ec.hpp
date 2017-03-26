@@ -61,6 +61,7 @@ public:
 	*/
 	static bool verifyOrder_;
 	static mpz_class order_;
+	static void (*mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 	/* default constructor is undefined value */
 	EcT() {}
 	EcT(const Fp& _x, const Fp& _y)
@@ -786,6 +787,7 @@ template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> bool EcT<Fp>::compressedExpression_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
+template<class Fp> static void (*mulArrayGLV)(EcT<Fp>& z, const EcT<Fp>& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 #ifndef MCL_EC_USE_AFFINE
 template<class Fp> int EcT<Fp>::mode_;
 #endif

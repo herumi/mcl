@@ -199,6 +199,111 @@ struct MapToT {
 	}
 };
 
+/*
+	Skew Frobenius Map and Efficient Scalar Multiplication for Pairing-Based Cryptography
+	Y. Sakemi, Y. Nogami, K. Okeya, H. Kato, Y. Morikawa
+*/
+template<class Fp>
+struct GLV {
+	typedef mcl::EcT<Fp> G1;
+	Fp w; // (-1 + sqrt(-3)) / 2
+	mpz_class r;
+	mpz_class z;
+	bool isNegative;
+	mpz_class v; // 6z^2 + 4z + 1 > 0
+	mpz_class c; // 2z + 1
+	void init(const mpz_class& r, const mpz_class& z, bool isNegative)
+	{
+		if (!Fp::squareRoot(w, -3)) throw cybozu::Exception("GLV:init");
+		w = (w - 1) / 2;
+		this->r = r;
+		this->z = z;
+		this->isNegative = isNegative;
+		v = 1 + z * (4 + z * 6);
+		c = 2 * z + 1;
+	}
+	/*
+		(p^2 mod r) (x, y) = (wx, -y)
+	*/
+	void mulP2(G1& Q, const G1& P) const
+	{
+		Fp::mul(Q.x, P.x, w);
+		Fp::neg(Q.y, P.y);
+		Q.z = P.z;
+	}
+	/*
+		s = ap^2 + b mod r
+		assume(s < r);
+	*/
+	void getAB(mpz_class& a, mpz_class& b, const mpz_class& s) const
+	{
+		assert(0 < s && s < r);
+		/*
+			s = s1 * v + s2                  // s1 = s / v, s2 = s % v
+			= s1 * c * p^2 + s2              // vP = cp^2 P
+			= (s3 * v + s4) * p^2 + s2       // s3 = (s1 * c) / v, s4 = (s1 * c) % v
+			= (s3 * c * p^2 + s4) * p^2 + s2
+			= (s3 * c) * p^4 + s4 * p^2 + s2 // s5 = s3 * c, p^4 = p^2 - 1
+			= s5 * (p^2 - 1) + s4 * p^2 + s2
+			= (s4 + s5) * p^2 + (s2 - s5)
+		*/
+		mpz_class t;
+		mcl::gmp::divmod(a, t, s, v); // a = t / v, t = t % v
+		a *= c;
+		mcl::gmp::divmod(b, a, a, v); // b = a / v, a = a % v
+		b *= c;
+		a += b;
+		b = t - b;
+	}
+	void mul(G1& Q, G1 P, mpz_class x) const
+	{
+		if (x == 0) {
+			Q.clear();
+			return;
+		}
+		if (x < 0) {
+			G1::neg(P, P);
+			x = -x;
+		}
+		x %= r;
+		mpz_class a, b;
+		getAB(a, b, x);
+		// Q = (ap^2 + b)P
+		G1 A, B;
+		mulP2(A, P);
+		if (b < 0) {
+			b = -b;
+			G1::neg(P, P);
+		}
+		assert(a >= 0);
+		assert(b >= 0);
+#if 1
+		size_t nA = mcl::gmp::getBitSize(a);
+		size_t nB = mcl::gmp::getBitSize(b);
+		size_t n = std::max(nA, nB);
+		assert(n > 0);
+		G1 tbl[4];
+		tbl[1] = A; tbl[1].normalize();
+		tbl[2] = P; tbl[2].normalize();
+		tbl[3] = A + P; tbl[3].normalize();
+		Q.clear();
+		for (int i = (int)n - 1; i >= 0; i--) {
+			G1::dbl(Q, Q);
+			bool ai = mcl::gmp::testBit(a, i);
+			bool bi = mcl::gmp::testBit(b, i);
+			int c = bi * 2 + ai;
+			if (c > 0) {
+				Q += tbl[c];
+			}
+		}
+#else
+		G1::mul(A, A, a);
+		G1::mul(B, P, b);
+		G1::add(Q, A, B);
+#endif
+	}
+};
+
 template<class Fp>
 struct ParamT {
 	typedef Fp2T<Fp> Fp2;
