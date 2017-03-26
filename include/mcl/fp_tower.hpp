@@ -157,7 +157,7 @@ public:
 	bool isOne() const { return a.isOne() && b.isZero(); }
 	bool operator==(const Fp2T& rhs) const { return a == rhs.a && b == rhs.b; }
 	bool operator!=(const Fp2T& rhs) const { return !operator==(rhs); }
-	void normalize() {} // dummy method
+	void normalize() const {} // dummy method
 	/*
 		return true is a is odd (do not consider b)
 		this function is for only compressed reprezentation of EC
@@ -753,7 +753,7 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		Fp2::mul(y.b, p.b, q);
 		Fp2::mul(y.c, p.c, q);
 	}
-	void normalize() {} // dummy
+	void normalize() const {} // dummy
 };
 
 /*
@@ -897,7 +897,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	{
 		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
 	}
-	void normalize() {} // dummy
+	void normalize() const {} // dummy
 };
 
 } // mcl
