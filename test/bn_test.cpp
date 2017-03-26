@@ -128,6 +128,10 @@ void testMapToG2()
 	if (BN::param.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG2(g, 0), cybozu::Exception);
 	}
+	Fp x;
+	x.setMsg("abc");
+	BN::mapToG2(g, Fp2(x, 0));
+	CYBOZU_TEST_ASSERT(g.isValid());
 }
 
 void testCyclotomic()
