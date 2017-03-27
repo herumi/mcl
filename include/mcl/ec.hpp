@@ -185,10 +185,14 @@ public:
 		verify the order of *this is equal to order if order != 0
 		in constructor, set, setStr, operator<<().
 	*/
-	static  inline void setOrder(const mpz_class& order)
+	static void setOrder(const mpz_class& order)
 	{
 		verifyOrder_ = order != 0;
 		order_ = order;
+	}
+	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime))
+	{
+		mulArrayGLV = f;
 	}
 	// backward compatilibity
 	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
@@ -764,8 +768,15 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-private:
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
+	{
+		if (!constTime && mulArrayGLV && yn * 2 > Fp::BaseFp::getOp().N) {
+			mulArrayGLV(z, x, y, yn, isNegative, constTime);
+			return;
+		}
+		mulArrayBase(z, x, y, yn, isNegative, constTime);
+	}
+	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		EcT tmp;
 		const EcT *px = &x;

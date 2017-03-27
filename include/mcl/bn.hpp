@@ -282,6 +282,43 @@ struct GLV {
 		size_t nB = mcl::gmp::getBitSize(b);
 		size_t n = std::max(nA, nB);
 		assert(n > 0);
+#if 0 // slow
+		G1 tbl[16];
+		tbl[0].clear();
+		tbl[1] = A;
+		G1::dbl(tbl[2], tbl[1]);
+		G1::add(tbl[3], tbl[2], tbl[1]);
+		for (int i = 1; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				G1::add(tbl[i * 4 + j], tbl[(i - 1) * 4 + j], P);
+			}
+		}
+		for (int i = 1; i < 16; i++) {
+			tbl[i].normalize();
+		}
+		if (n & 1) {
+			n--;
+			bool ai = mcl::gmp::testBit(a, n);
+			bool bi = mcl::gmp::testBit(b, n);
+			unsigned int idx = bi * 4 + ai;
+			Q = tbl[idx];
+			if (n == 0) return;
+		} else {
+			Q.clear();
+		}
+		for (int i = (int)n - 2; i >= 0; i -= 2) {
+			G1::dbl(Q, Q);
+			G1::dbl(Q, Q);
+			bool a0 = mcl::gmp::testBit(a, i + 0);
+			bool a1 = mcl::gmp::testBit(a, i + 1);
+			bool b0 = mcl::gmp::testBit(b, i + 0);
+			bool b1 = mcl::gmp::testBit(b, i + 1);
+			unsigned int c = b1 * 8 + b0 * 4 + a1 * 2 + a0;
+			if (c > 0) {
+				Q += tbl[c];
+			}
+		}
+#else
 		G1 tbl[4];
 		tbl[1] = A; tbl[1].normalize();
 		tbl[2] = P; tbl[2].normalize();
@@ -291,11 +328,12 @@ struct GLV {
 			G1::dbl(Q, Q);
 			bool ai = mcl::gmp::testBit(a, i);
 			bool bi = mcl::gmp::testBit(b, i);
-			int c = bi * 2 + ai;
+			unsigned int c = bi * 2 + ai;
 			if (c > 0) {
 				Q += tbl[c];
 			}
 		}
+#endif
 #else
 		G1::mul(A, A, a);
 		G1::mul(B, P, b);
@@ -336,6 +374,7 @@ struct ParamT {
 	mpz_class exp_c1;
 	mpz_class exp_c2;
 	MapToT<Fp> mapTo;
+	GLV<Fp> glv;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
@@ -370,6 +409,7 @@ struct ParamT {
 		G2::init(0, b_div_xi, mcl::ec::Proj);
 		G2::setOrder(r);
 		mapTo.init(2 * p - r);
+		glv.init(r, z, isNegative);
 
 		Fp2::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
 		for (size_t i = 1; i < gN; i++) {
@@ -434,9 +474,18 @@ struct BNT {
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 	typedef ParamT<Fp> Param;
 	static Param param;
+	static void mulArrayGLV(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		(void)constTime;
+		mpz_class s;
+		mcl::gmp::setArray(s, y, yn);
+		if (isNegative) s = -s;
+		param.glv.mul(z, x, s);
+	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		param.init(cp, mode);
+		G1::setMulArrayGLV(mulArrayGLV);
 	}
 	/*
 		Frobenius
