@@ -257,6 +257,7 @@ struct GLV {
 	}
 	void mul(G1& Q, G1 P, mpz_class x) const
 	{
+		x %= r;
 		if (x == 0) {
 			Q.clear();
 			return;
@@ -265,7 +266,6 @@ struct GLV {
 			G1::neg(P, P);
 			x = -x;
 		}
-		x %= r;
 		mpz_class a, b;
 		getAB(a, b, x);
 		// Q = (ap^2 + b)P
