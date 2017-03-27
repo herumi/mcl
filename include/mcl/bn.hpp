@@ -255,7 +255,7 @@ struct GLV {
 		a += b;
 		b = t - b;
 	}
-	void mul(G1& Q, G1 P, mpz_class x) const
+	void mul(G1& Q, G1 P, mpz_class x, bool constTime = false) const
 	{
 		x %= r;
 		if (x == 0) {
@@ -324,13 +324,24 @@ struct GLV {
 		tbl[2] = P; tbl[2].normalize();
 		tbl[3] = A + P; tbl[3].normalize();
 		Q.clear();
-		for (int i = (int)n - 1; i >= 0; i--) {
-			G1::dbl(Q, Q);
-			bool ai = mcl::gmp::testBit(a, i);
-			bool bi = mcl::gmp::testBit(b, i);
-			unsigned int c = bi * 2 + ai;
-			if (c > 0) {
+		if (constTime) {
+			tbl[0] = tbl[1];
+			for (int i = (int)n - 1; i >= 0; i--) {
+				G1::dbl(Q, Q);
+				bool ai = mcl::gmp::testBit(a, i);
+				bool bi = mcl::gmp::testBit(b, i);
+				unsigned int c = bi * 2 + ai;
 				Q += tbl[c];
+			}
+		} else {
+			for (int i = (int)n - 1; i >= 0; i--) {
+				G1::dbl(Q, Q);
+				bool ai = mcl::gmp::testBit(a, i);
+				bool bi = mcl::gmp::testBit(b, i);
+				unsigned int c = bi * 2 + ai;
+				if (c > 0) {
+					Q += tbl[c];
+				}
 			}
 		}
 #endif
@@ -476,11 +487,10 @@ struct BNT {
 	static Param param;
 	static void mulArrayGLV(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
-		(void)constTime;
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv.mul(z, x, s);
+		param.glv.mul(z, x, s, constTime);
 	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
