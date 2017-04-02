@@ -325,13 +325,14 @@ struct GLV {
 		tbl[3] = A + P; tbl[3].normalize();
 		Q.clear();
 		if (constTime) {
+			G1 *pTbl[] = { &tbl[0], &Q, &Q, &Q };
 			tbl[0] = tbl[1];
 			for (int i = (int)n - 1; i >= 0; i--) {
 				G1::dbl(Q, Q);
 				bool ai = mcl::gmp::testBit(a, i);
 				bool bi = mcl::gmp::testBit(b, i);
 				unsigned int c = bi * 2 + ai;
-				Q += tbl[c];
+				*pTbl[c] += tbl[c];
 			}
 		} else {
 			for (int i = (int)n - 1; i >= 0; i--) {

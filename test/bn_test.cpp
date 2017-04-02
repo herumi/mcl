@@ -229,6 +229,9 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 			Fp12::pow(ea, e, a);
 			G1::mul(Pa, P, a);
 			G2::mul(Qa, Q, a);
+			G1 T;
+			G1::mulCT(T, P, a);
+			CYBOZU_TEST_EQUAL(Pa, T);
 			BN::pairing(e1, Pa, Q);
 			BN::pairing(e2, P, Qa);
 			CYBOZU_TEST_EQUAL(ea, e1);
