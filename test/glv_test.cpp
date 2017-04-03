@@ -1,3 +1,4 @@
+#define PUT(x) std::cout << #x "=" << (x) << std::endl;
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
@@ -18,6 +19,7 @@ void testGLV(const mcl::bn::CurveParam& cp)
 	G1::setCompressedExpression(false);
 
 	G1 P0, P1, P2;
+	BN::mapToG1(P0, 1);
 	cybozu::XorShift rg;
 	mcl::bn::GLV<Fp> glv;
 	glv.init(BN::param.r, BN::param.z, BN::param.isNegative);
@@ -26,8 +28,34 @@ void testGLV(const mcl::bn::CurveParam& cp)
 		Fr s;
 		s.setRand(rg);
 		mpz_class ss = s.getMpz();
-		G1::mul(P1, P0, ss);
+		G1::mulBase(P1, P0, ss);
 		glv.mul(P2, P0, ss);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		glv.mul(P2, P0, ss, true);
+		CYBOZU_TEST_EQUAL(P1, P2);
+	}
+	for (int i = -100; i < 100; i++) {
+		mpz_class ss = i;
+		G1::mulBase(P1, P0, ss);
+		glv.mul(P2, P0, ss);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		glv.mul(P2, P0, ss, true);
+		CYBOZU_TEST_EQUAL(P1, P2);
+	}
+	for (int i = -100; i < 100; i++) {
+		mpz_class ss = i * glv.v;
+		G1::mulBase(P1, P0, ss);
+		glv.mul(P2, P0, ss);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		glv.mul(P2, P0, ss, true);
+		CYBOZU_TEST_EQUAL(P1, P2);
+	}
+	for (int i = -100; i < 100; i++) {
+		mpz_class ss = -i * glv.v + -i * glv.c;
+		G1::mulBase(P1, P0, ss);
+		glv.mul(P2, P0, ss);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		glv.mul(P2, P0, ss, true);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
 	Fr s;

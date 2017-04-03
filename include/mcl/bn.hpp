@@ -263,13 +263,14 @@ struct GLV {
 			return;
 		}
 		if (x < 0) {
-			G1::neg(P, P);
-			x = -x;
+//			G1::neg(P, P);
+//			x = -x;
+			x += r;
 		}
 		mpz_class a, b;
 		getAB(a, b, x);
 		// Q = (ap^2 + b)P
-		G1 A, B;
+		G1 A;
 		mulP2(A, P);
 		if (b < 0) {
 			b = -b;
@@ -277,12 +278,18 @@ struct GLV {
 		}
 		assert(a >= 0);
 		assert(b >= 0);
-#if 1
+#if 0
+		G1::mul(A, A, a);
+		G1 B;
+		G1::mul(B, P, b);
+		G1::add(Q, A, B);
+		return;
+#endif
+#if 0 // slow
 		size_t nA = mcl::gmp::getBitSize(a);
 		size_t nB = mcl::gmp::getBitSize(b);
 		size_t n = std::max(nA, nB);
 		assert(n > 0);
-#if 0 // slow
 		G1 tbl[16];
 		tbl[0].clear();
 		tbl[1] = A;
@@ -319,37 +326,51 @@ struct GLV {
 			}
 		}
 #else
-		G1 tbl[4];
-		tbl[1] = A; tbl[1].normalize();
-		tbl[2] = P; tbl[2].normalize();
-		tbl[3] = A + P; tbl[3].normalize();
-		Q.clear();
-		if (constTime) {
-			G1 *pTbl[] = { &tbl[0], &Q, &Q, &Q };
-			tbl[0] = tbl[1];
-			for (int i = (int)n - 1; i >= 0; i--) {
-				G1::dbl(Q, Q);
-				bool ai = mcl::gmp::testBit(a, i);
-				bool bi = mcl::gmp::testBit(b, i);
-				unsigned int c = bi * 2 + ai;
-				*pTbl[c] += tbl[c];
-			}
+		A.normalize();
+		P.normalize();
+		G1 tbl[4] = { A, A, P, A + P }; // tbl[0] : dummy
+		tbl[3].normalize();
+		typedef mcl::fp::Unit Unit;
+		const int aN = (int)mcl::gmp::getUnitSize(a);
+		const int bN = (int)mcl::gmp::getUnitSize(b);
+		const Unit *pa = mcl::gmp::getUnit(a);
+		const Unit *pb = mcl::gmp::getUnit(b);
+		const int maxN = std::max(aN, bN);
+		assert(maxN > 0);
+		int ma = -1, mb = -1;
+		if (aN == maxN) {
+			ma = cybozu::bsr<Unit>(pa[maxN - 1]);
+		}
+		if (bN == maxN) {
+			mb = cybozu::bsr<Unit>(pb[maxN - 1]);
+		}
+		int m = ma;
+		if (ma > mb) {
+			Q = tbl[1];
+		} else if (ma < mb) {
+			Q = tbl[2];
+			m = mb;
 		} else {
-			for (int i = (int)n - 1; i >= 0; i--) {
+			assert(ma == mb);
+			Q = tbl[3];
+		}
+		G1 *pTbl[] = { &tbl[0], &Q, &Q, &Q };
+		for (int i = maxN - 1; i >= 0; i--) {
+			Unit va = i < aN ? pa[i] : 0;
+			Unit vb = i < bN ? pb[i] : 0;
+			for (int j = m - 1; j >= 0; j -= 1) {
 				G1::dbl(Q, Q);
-				bool ai = mcl::gmp::testBit(a, i);
-				bool bi = mcl::gmp::testBit(b, i);
-				unsigned int c = bi * 2 + ai;
-				if (c > 0) {
+				Unit ai = (va >> j) & 1;
+				Unit bi = (vb >> j) & 1;
+				Unit c = bi * 2 + ai;
+				if (constTime) {
+					*pTbl[c] += tbl[c];
+				} else if (c > 0) {
 					Q += tbl[c];
 				}
 			}
+			m = (int)sizeof(Unit) * 8;
 		}
-#endif
-#else
-		G1::mul(A, A, a);
-		G1::mul(B, P, b);
-		G1::add(Q, A, B);
 #endif
 	}
 };

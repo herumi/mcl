@@ -5,6 +5,7 @@ cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
 #include <mcl/bn256.hpp>
 #include <cybozu/option.hpp>
+#include <cybozu/xorshift.hpp>
 
 typedef mcl::bn256::BN::Compress Compress;
 using namespace mcl::bn256;
@@ -224,8 +225,12 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 #else
 		const int count = 100;
 #endif
-		mpz_class a("0x18b48dddfb2f81cc829b4b9acd393ccb1e90909aabe126bcdbe6a96438eaf313");
+		mpz_class a;
+		cybozu::XorShift rg;
 		for (int i = 0; i < count; i++) {
+			Fr r;
+			r.setRand(rg);
+			a = r.getMpz();
 			Fp12::pow(ea, e, a);
 			G1::mul(Pa, P, a);
 			G2::mul(Qa, Q, a);
@@ -236,8 +241,9 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 			BN::pairing(e2, P, Qa);
 			CYBOZU_TEST_EQUAL(ea, e1);
 			CYBOZU_TEST_EQUAL(ea, e2);
-			a--;
 		}
+		CYBOZU_BENCH_C("G1::mul  ", 500, G1::mul, Pa, P, a);
+		CYBOZU_BENCH_C("G1::mulCT", 500, G1::mul, Pa, P, a);
 	}
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
@@ -252,6 +258,7 @@ CYBOZU_TEST_AUTO(naive)
 		bn256init(ts.cp, g_mode);
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+//G1::mul(P, P, Fr::getOp().mp - 1);exit(0);
 		testSetStr(Q);
 		testMapToG1();
 		testMapToG2();
