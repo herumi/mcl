@@ -200,8 +200,7 @@ struct MapToT {
 };
 
 /*
-	Skew Frobenius Map and Efficient Scalar Multiplication for Pairing-Based Cryptography
-	Y. Sakemi, Y. Nogami, K. Okeya, H. Kato, Y. Morikawa
+	Software implementation of Attribute-Based Encryption: Appendixes
 */
 template<class Fp>
 struct GLV {
