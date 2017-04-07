@@ -206,14 +206,14 @@ template<class Fp>
 struct GLV {
 	typedef mcl::EcT<Fp> G1;
 	Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
-	int m;
+	size_t m;
 	mpz_class v0, v1;
 	mpz_class B[2][2];
 	mpz_class r;
 	void init(const mpz_class& r, const mpz_class& z)
 	{
 		if (!Fp::squareRoot(rw, -3)) throw cybozu::Exception("GLV:init");
-		rw = (-1 - rw) / 2;
+		rw = -(rw + 1) / 2;
 		this->r = r;
 		m = gmp::getBitSize(r);
 		m = (m + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
