@@ -75,6 +75,10 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPr
 */
 bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, const std::string& str, int base);
 
+// copy src to dst as little endian
+void copyUnitToByteAsLE(void *dst, const Unit *src, size_t byteSize);
+// copy src to dst as little endian
+void copyByteToUnitAsLE(Unit *dst, const void *src, size_t byteSize);
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
 
 uint64_t getUint64(bool *pb, const fp::Block& b);
@@ -235,7 +239,7 @@ public:
 			const size_t n = getByteSize();
 			if (str.size() != n) throw cybozu::Exception("FpT:setStr:bad size") << str.size() << n << ioMode;
 			if (ioMode & IoArrayRaw) {
-				memcpy(v_, str.c_str(), n);
+				fp::copyByteToUnitAsLE(v_, str.c_str(), n);
 				if (!isValid()) throw cybozu::Exception("FpT:setStr:bad value") << str;
 			} else {
 				setArray(&str[0], n);
@@ -315,14 +319,14 @@ public:
 		const size_t n = getByteSize();
 		if (ioMode & IoArrayRaw) {
 			str.resize(n);
-			memcpy(&str[0], v_, str.size());
+			fp::copyUnitToByteAsLE(&str[0], v_, str.size());
 			return;
 		}
 		fp::Block b;
 		getBlock(b);
 		if (ioMode & IoArray) {
 			str.resize(n);
-			memcpy(&str[0], b.p, str.size());
+			fp::copyUnitToByteAsLE(&str[0], b.p, str.size());
 			return;
 		}
 		fp::arrayToStr(str, b.p, b.n, ioMode & ~IoPrefix, (ioMode & IoPrefix) != 0);

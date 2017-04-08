@@ -889,6 +889,46 @@ CYBOZU_TEST_AUTO(main)
 #endif
 }
 
+CYBOZU_TEST_AUTO(copyUnitToByteAsLE)
+{
+	using namespace mcl::fp;
+#if CYBOZU_OS_BIT == 32
+	const Unit src[] = { 0x12345678, 0xaabbccdd, 0xffeeddcc, 0x87654321 };
+#else
+	const Unit src[] = { uint64_t(0xaabbccdd12345678ull), uint64_t(0x87654321ffeeddcc) };
+#endif
+	const uint8_t ok[] = { 0x78, 0x56, 0x34, 0x12, 0xdd, 0xcc, 0xbb, 0xaa, 0xcc, 0xdd, 0xee, 0xff, 0x21, 0x43, 0x65, 0x87 };
+	const size_t okN = CYBOZU_NUM_OF_ARRAY(ok);
+	for (size_t i = 0; i < okN; i++) {
+		uint8_t buf[okN] = {};
+		copyUnitToByteAsLE(buf, src, i);
+		CYBOZU_TEST_EQUAL_ARRAY(ok, buf, i);
+	}
+	mcl::fp::Unit dst[2];
+	for (size_t i = 1; i <= sizeof(dst); i++) {
+		memset(dst, 0xff, sizeof(dst));
+		mcl::fp::copyByteToUnitAsLE(dst, ok, i);
+		if (i < sizeof(Unit)) {
+			CYBOZU_TEST_EQUAL(src[0] & ((uint64_t(1) << (i * 8)) - 1), dst[0]);
+			CYBOZU_TEST_EQUAL(dst[1], Unit(-1));
+			continue;
+		}
+		CYBOZU_TEST_EQUAL(dst[0], src[0]);
+		if (i == sizeof(Unit)) {
+			CYBOZU_TEST_EQUAL(dst[1], Unit(-1));
+			continue;
+		}
+		if (i < sizeof(dst)) {
+			CYBOZU_TEST_EQUAL(src[1] & ((uint64_t(1) << ((i - sizeof(Unit)) * 8)) - 1), dst[1]);
+			continue;
+		}
+		CYBOZU_TEST_EQUAL(src[1], dst[1]);
+	}
+	dst[0] = 1;
+	copyByteToUnitAsLE(dst, ok, 0);
+	CYBOZU_TEST_EQUAL(dst[0], 1);
+}
+
 int main(int argc, char *argv[])
 	try
 {
