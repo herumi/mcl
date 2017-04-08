@@ -272,20 +272,6 @@ public:
 		fp::copyAndMask(v_, inBuf, sizeof(S) * n, op_, true);
 		toMont();
 	}
-	template<class S>
-	size_t getArray(S *outBuf, size_t n) const
-	{
-		const size_t SbyteSize = sizeof(S) * n;
-		const size_t fpByteSize = sizeof(Unit) * op_.N;
-		if (SbyteSize < fpByteSize) throw cybozu::Exception("FpT:getArray:bad n") << n << fpByteSize;
-		assert(SbyteSize >= fpByteSize);
-		fp::Block b;
-		getBlock(b);
-		memcpy(outBuf, b.p, fpByteSize);
-		const size_t writeN = (fpByteSize + sizeof(S) - 1) / sizeof(S);
-		memset((char *)outBuf + fpByteSize, 0, writeN * sizeof(S) - fpByteSize);
-		return writeN;
-	}
 	void getBlock(fp::Block& b) const
 	{
 		b.n = op_.N;
