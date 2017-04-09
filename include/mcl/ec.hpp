@@ -636,19 +636,43 @@ public:
 		return z.isZero();
 #endif
 	}
+	static inline bool isIoTightSupported()
+	{
+		return !b_.isZero() && (Fp::getBitSize() & 7) != 0;
+	}
 	/*
 		"0" ; infinity
 		"1 <x> <y>" ; not compressed
 		"2 <x>" ; compressed for even y
 		"3 <x>" ; compressed for odd y
+
+		tight repl of EC over a prime
+		the size of str must be equal to Fp::getByteSize()
+		[0]   ; infinity
+		<x>   ; for even y
+		<x>|1 ; for odd y ; |1 means set MSB of x
 	*/
 	void getStr(std::string& str, int ioMode = 10) const
 	{
+		normalize();
+		if (ioMode & IoTight) {
+			if (!isIoTightSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
+			const size_t n = Fp::getByteSize();
+			if (isZero()) {
+				str.resize(n, 0);
+				return;
+			}
+			x.getStr(str, ioMode);
+			assert(str.size() == n && (str[n - 1] & 0x80) != 0);
+			if (y.isOdd()) {
+				str[n - 1] |= 0x80;
+			}
+			return;
+		}
 		if (isZero()) {
 			str = '0';
 			return;
 		}
-		normalize();
 		const char *sep = Fp::BaseFp::getIoSeparator();
 		if (compressedExpression_) {
 			str = y.isOdd() ? '3' : '2';
@@ -711,8 +735,34 @@ public:
 		}
 		return is;
 	}
-	void setStr(const std::string& str)
+	void setStr(const std::string& str, int ioMode = 0)
 	{
+		if (ioMode & IoTight) {
+			if (!isIoTightSupported()) throw cybozu::Exception("EcT:operator>>:not supported ioMode") << ioMode;
+			uint8_t buf[Fp::maxSize * sizeof(fp::Unit)];
+			const size_t n = Fp::getByteSize();
+			if (str.size() != n) {
+				throw cybozu::Exception("EcT:setStr:bad size") << str.size() << n;
+			}
+			memcpy(buf, str.c_str(), n);
+			if (fp::isZeroArray(buf, n)) {
+				clear();
+				return;
+			}
+#ifdef MCL_EC_USE_AFFINE
+			inf_ = false;
+#else
+			z = 1;
+#endif
+			bool isYodd = (buf[n - 1] >> 7) != 0;
+			buf[n - 1] &= 0x7f;
+			x.setArray(buf, n);
+			getYfromX(y, x, isYodd);
+			if (verifyOrder_ && !isValidOrder()) {
+				throw cybozu::Exception("EcT:setStr:bad order") << *this;
+			}
+			return;
+		}
 		std::istringstream is(str);
 		if (!(is >> *this)) {
 			throw cybozu::Exception("EcT:setStr:bad str") << str;

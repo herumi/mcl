@@ -280,6 +280,30 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
+		// tight
+		if (!Ec::isIoTightSupported()) return;
+		P.set(x, y);
+		{
+			std::string s = P.getStr(mcl::IoTight);
+			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
+			Q.setStr(s, mcl::IoTight);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
+		{
+			P = -P;
+			std::string s = P.getStr(mcl::IoTight);
+			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
+			Q.setStr(s, mcl::IoTight);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
+		P.clear();
+		{
+			std::string s = P.getStr(mcl::IoTight);
+			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
+			CYBOZU_TEST_ASSERT(mcl::fp::isZeroArray(s.c_str(), s.size()));
+			Q.setStr(s, mcl::IoTight);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
 	}
 	void ioMode() const
 	{
