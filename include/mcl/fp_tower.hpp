@@ -102,6 +102,10 @@ class Fp2T : public fp::Operator<Fp2T<Fp> > {
 	static uint32_t xi_a_;
 public:
 	typedef typename Fp::BaseFp BaseFp;
+	static const size_t maxSize = Fp::maxSize * 2;
+	// not Fp::getBitSize() * 2
+	static inline size_t getBitSize() { return Fp::getByteSize() * 8 + Fp::getBitSize(); }
+	static inline size_t getByteSize() { return Fp::getByteSize() * 2; }
 	Fp a, b;
 	Fp2T() { }
 	Fp2T(int64_t a) : a(a), b(0) { }
@@ -138,6 +142,14 @@ public:
 		Fp::mul(z.a, x.a, y);
 		Fp::mul(z.b, x.b, y);
 	}
+	template<class S>
+	void setArray(const S *buf, size_t n)
+	{
+		if ((n & 1) != 0) throw cybozu::Exception("Fp2T:setArray:bad size") << n;
+		n /= 2;
+		a.setArray(buf, n);
+		b.setArray(buf + n, n);
+	}
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
@@ -149,9 +161,15 @@ public:
 	{
 		return is >> self.a >> self.b;
 	}
+	void getStr(std::string& str, int ioMode = 10) const
+	{
+		str = a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
+	}
 	std::string getStr(int ioMode = 10) const
 	{
-		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
+		std::string str;
+		getStr(str, ioMode);
+		return str;
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
