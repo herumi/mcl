@@ -663,7 +663,7 @@ public:
 				return;
 			}
 			x.getStr(str, ioMode);
-			assert(str.size() == n && (str[n - 1] & 0x80) != 0);
+			assert(str.size() == n && (str[n - 1] & 0x80) == 0);
 			if (y.isOdd()) {
 				str[n - 1] |= 0x80;
 			}
