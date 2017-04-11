@@ -24,9 +24,9 @@ ifeq ($(MCL_USE_XBYAK),0)
 endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
-MCL_SLIB=$(LIB_DIR)/libmcl_dy.$(LIB_SUF)
+MCL_SLIB=$(LIB_DIR)/libmcl.$(LIB_SUF)
 BN256_LIB=$(LIB_DIR)/libbn256.a
-BN256_SLIB=$(LIB_DIR)/libbn256_dy.$(LIB_SUF)
+BN256_SLIB=$(LIB_DIR)/libbn256.$(LIB_SUF)
 all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB)
 
 #LLVM_VER=-3.8
