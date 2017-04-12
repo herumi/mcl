@@ -196,9 +196,9 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), bool constTime = false)
+void powGeneric(G& out, const G& x_, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), bool constTime = false)
 {
-	assert(&out != &x);
+	assert(&out != &x_);
 	while (n > 0) {
 		if (y[n - 1]) break;
 		n--;
@@ -207,22 +207,23 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 	if (n == 1) {
 		switch (y[0]) {
 		case 1:
-			out = x;
+			out = x_;
 			return;
 		case 2:
-			sqr(out, x);
+			sqr(out, x_);
 			return;
 		case 3:
-			sqr(out, x);
-			mul(out, out, x);
+			sqr(out, x_);
+			mul(out, out, x_);
 			return;
 		case 4:
-			sqr(out, x);
+			sqr(out, x_);
 			sqr(out, out);
 			return;
 		}
 	}
 	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
+	G x(x_);
 	x.normalize();
 	tbl[0] = x;
 	tbl[1] = x;
