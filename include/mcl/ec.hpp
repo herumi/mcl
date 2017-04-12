@@ -48,7 +48,7 @@ public:
 	Fp x, y;
 	bool inf_;
 #else
-	mutable Fp x, y, z;
+	Fp x, y, z;
 	static int mode_;
 #endif
 	static Fp a_;
@@ -78,7 +78,7 @@ public:
 	}
 #ifndef MCL_EC_USE_AFFINE
 private:
-	void normalizeJacobi() const
+	void normalizeJacobi()
 	{
 		assert(!z.isZero());
 		Fp rz2;
@@ -89,7 +89,7 @@ private:
 		y *= z;
 		z = 1;
 	}
-	void normalizeProj() const
+	void normalizeProj()
 	{
 		assert(!z.isZero());
 		Fp::inv(z, z);
@@ -141,7 +141,7 @@ private:
 	}
 public:
 #endif
-	void normalize() const
+	void normalize()
 	{
 #ifndef MCL_EC_USE_AFFINE
 		if (isNormalized()) return;
@@ -652,7 +652,7 @@ public:
 		<x>   ; for even y
 		<x>|1 ; for odd y ; |1 means set MSB of x
 	*/
-	void getStr(std::string& str, int ioMode = 10) const
+	void getStr(std::string& str, int ioMode = 10)
 	{
 		normalize();
 		if (ioMode & IoTight) {
@@ -686,7 +686,7 @@ public:
 			str += y.getStr(ioMode);
 		}
 	}
-	std::string getStr(int ioMode = 10) const
+	std::string getStr(int ioMode = 10)
 	{
 		std::string str;
 		getStr(str, ioMode);
@@ -695,7 +695,7 @@ public:
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
 		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), os);
-		return os << self.getStr(ioMode);
+		return os << EcT(self).getStr(ioMode);
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{

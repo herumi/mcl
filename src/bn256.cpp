@@ -221,7 +221,7 @@ int BN256_G1_getStr(char *buf, int maxBufSize, const BN256_G1 *x)
 	try
 {
 	std::string str;
-	cast(x)->getStr(str);
+	G1(*cast(x)).getStr(str);
 	if ((int)str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
@@ -307,7 +307,7 @@ int BN256_G2_getStr(char *buf, int maxBufSize, const BN256_G2 *x)
 	try
 {
 	std::string str;
-	cast(x)->getStr(str);
+	G2(*cast(x)).getStr(str);
 	if ((int)str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
