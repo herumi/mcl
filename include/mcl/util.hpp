@@ -196,7 +196,7 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), bool constTime = false)
+void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), void normalize(G&, const G&), bool constTime = false)
 {
 	assert(&out != &x);
 	while (n > 0) {
@@ -223,11 +223,16 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 		}
 	}
 	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
-	x.normalize();
-	tbl[0] = x;
-	tbl[1] = x;
-	sqr(tbl[2], tbl[1]); tbl[2].normalize();
-	mul(tbl[3], tbl[2], x); tbl[3].normalize();
+	if (normalize) {
+		normalize(tbl[0], x);
+	} else {
+		tbl[0] = x;
+	}
+	tbl[1] = tbl[0];
+	sqr(tbl[2], tbl[1]);
+	if (normalize) { normalize(tbl[2], tbl[2]); }
+	mul(tbl[3], tbl[2], x);
+	if (normalize) { normalize(tbl[3], tbl[3]); }
 	T v = y[n - 1];
 	int m = cybozu::bsr<T>(v);
 	if (m & 1) {

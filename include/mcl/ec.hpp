@@ -155,6 +155,11 @@ public:
 		}
 #endif
 	}
+	static void normalize(EcT& y, const EcT& x)
+	{
+		y = x;
+		y.normalize();
+	}
 	static inline void init(const Fp& a, const Fp& b, int mode = ec::Jacobi)
 	{
 		a_ = a;
@@ -835,7 +840,7 @@ public:
 			px = &tmp;
 		}
 		z.clear();
-		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, constTime);
+		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, EcT::normalize, constTime);
 		if (isNegative) {
 			neg(z, z);
 		}

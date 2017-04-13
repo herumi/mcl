@@ -66,7 +66,7 @@ private:
 			px = &tmp;
 		}
 		z = 1;
-		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr);
+		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0);
 		if (isNegative) {
 			T::inv(z, z);
 		}

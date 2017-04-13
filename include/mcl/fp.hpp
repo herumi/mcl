@@ -455,7 +455,6 @@ public:
 	{
 		return fp::isLessArray(v_, rhs.v_, op_.N);
 	}
-	void normalize() const {} // dummy method
 	/*
 		set IoMode for operator<<(), or operator>>()
 	*/
