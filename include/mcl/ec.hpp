@@ -48,7 +48,7 @@ public:
 	Fp x, y;
 	bool inf_;
 #else
-	mutable Fp x, y, z;
+	Fp x, y, z;
 	static int mode_;
 #endif
 	static Fp a_;
@@ -78,7 +78,7 @@ public:
 	}
 #ifndef MCL_EC_USE_AFFINE
 private:
-	void normalizeJacobi() const
+	void normalizeJacobi()
 	{
 		assert(!z.isZero());
 		Fp rz2;
@@ -89,7 +89,7 @@ private:
 		y *= z;
 		z = 1;
 	}
-	void normalizeProj() const
+	void normalizeProj()
 	{
 		assert(!z.isZero());
 		Fp::inv(z, z);
@@ -141,7 +141,7 @@ private:
 	}
 public:
 #endif
-	void normalize() const
+	void normalize()
 	{
 #ifndef MCL_EC_USE_AFFINE
 		if (isNormalized()) return;
@@ -608,18 +608,20 @@ public:
 	/*
 		0 <= P for any P
 		(Px, Py) <= (P'x, P'y) iff Px < P'x or Px == P'x and Py <= P'y
+		@note compare function calls normalize()
 	*/
 	template<class F>
-	static inline int compareFunc(const EcT& P, const EcT& Q, F comp)
+	static inline int compareFunc(const EcT& P_, const EcT& Q_, F comp)
 	{
-		P.normalize();
-		Q.normalize();
-		const bool QisZero = Q.isZero();
-		if (P.isZero()) {
+		const bool QisZero = Q_.isZero();
+		if (P_.isZero()) {
 			if (QisZero) return 0;
 			return -1;
 		}
 		if (QisZero) return 1;
+		EcT P(P_), Q(Q_);
+		P.normalize();
+		Q.normalize();
 		int c = comp(P.x, Q.x);
 		if (c > 0) return 1;
 		if (c < 0) return -1;
@@ -659,7 +661,7 @@ public:
 	*/
 	void getStr(std::string& str, int ioMode = 10) const
 	{
-		normalize();
+		EcT P(*this); P.normalize();
 		if (ioMode & IoTight) {
 			if (!isIoTightSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
@@ -667,9 +669,9 @@ public:
 				str.resize(n, 0);
 				return;
 			}
-			x.getStr(str, ioMode);
+			P.x.getStr(str, ioMode);
 			assert(str.size() == n && (str[n - 1] & 0x80) == 0);
-			if (y.isOdd()) {
+			if (P.y.isOdd()) {
 				str[n - 1] |= 0x80;
 			}
 			return;
@@ -680,15 +682,15 @@ public:
 		}
 		const char *sep = Fp::BaseFp::getIoSeparator();
 		if (compressedExpression_) {
-			str = y.isOdd() ? '3' : '2';
+			str = P.y.isOdd() ? '3' : '2';
 			str += sep;
-			str += x.getStr(ioMode);
+			str += P.x.getStr(ioMode);
 		} else {
 			str = '1';
 			str += sep;
-			str += x.getStr(ioMode);
+			str += P.x.getStr(ioMode);
 			str += sep;
-			str += y.getStr(ioMode);
+			str += P.y.getStr(ioMode);
 		}
 	}
 	std::string getStr(int ioMode = 10) const
@@ -809,16 +811,7 @@ public:
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
 	bool operator<(const EcT& rhs) const
 	{
-		if (isZero()) {
-			return !rhs.isZero();
-		}
-		if (rhs.isZero()) return false;
-		normalize();
-		rhs.normalize();
-		int cmp = Fp::compare(x, rhs.x);
-		if (cmp < 0) return true;
-		if (cmp > 0) return false;
-		return y < rhs.y;
+		return compare(*this, rhs) < 0;
 	}
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
@@ -879,10 +872,10 @@ struct EcParam {
 #ifdef CYBOZU_USE_BOOST
 namespace mcl {
 template<class Fp>
-size_t hash_value(const mcl::EcT<Fp>& P)
+size_t hash_value(const mcl::EcT<Fp>& P_)
 {
-	if (P.isZero()) return 0;
-	P.normalize();
+	if (P_.isZero()) return 0;
+	mcl::EcT<Fp> P(P_); P.normalize();
 	return mcl::hash_value(P.y, mcl::hash_value(P.x));
 }
 
@@ -892,10 +885,10 @@ namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 
 template<class Fp>
 struct hash<mcl::EcT<Fp> > {
-	size_t operator()(const mcl::EcT<Fp>& P) const
+	size_t operator()(const mcl::EcT<Fp>& P_) const
 	{
-		if (P.isZero()) return 0;
-		P.normalize();
+		if (P_.isZero()) return 0;
+		mcl::EcT<Fp> P(P_); P.normalize();
 		return hash<Fp>()(P.y, hash<Fp>()(P.x));
 	}
 };

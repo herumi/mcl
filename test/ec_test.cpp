@@ -350,6 +350,29 @@ struct Test {
 			CYBOZU_TEST_EQUAL(Q1, Q2);
 		}
 	}
+	void compare() const
+	{
+		Fp x(para.gx);
+		Fp y(para.gy);
+		Ec P1(x, y);
+		Ec P2(x, -y);
+		int c = Ec::compare(P1, P2);
+		int cx = Fp::compare(y, -y);
+		CYBOZU_TEST_EQUAL(c, cx);
+		c = Ec::compare(P2, P1);
+		cx = Fp::compare(-y, y);
+		CYBOZU_TEST_EQUAL(c, cx);
+		CYBOZU_TEST_EQUAL(Ec::compare(P1, P1), 0);
+		bool b1, b2;
+		b1 = P1 <= P2;
+		b2 = y <= -y;
+		CYBOZU_TEST_EQUAL(b1, b2);
+		b1 = P1 < P2;
+		b2 = y < -y;
+		CYBOZU_TEST_EQUAL(b1, b2);
+		CYBOZU_TEST_ASSERT(!(P1 < P1));
+		CYBOZU_TEST_ASSERT((P1 <= P1));
+	}
 
 	template<class F>
 	void test(F f, const char *msg) const
@@ -389,6 +412,7 @@ mul 499.00usec
 		str();
 		ioMode();
 		mulCT();
+		compare();
 	}
 private:
 	Test(const Test&);
