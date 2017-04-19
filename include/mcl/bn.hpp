@@ -1178,6 +1178,10 @@ struct BNT {
 		G2 Q(Q_);
 		P.normalize();
 		Q.normalize();
+		if (Q.isZero()) {
+			f = 1;
+			return;
+		}
 		G2 T = Q;
 		G2 negQ;
 		if (param.useNAF) {
@@ -1241,6 +1245,12 @@ struct BNT {
 		size_t idx = 0;
 		G2 Q(Q_);
 		Q.normalize();
+		if (Q.isZero()) {
+			for (size_t i = 0; i < param.precomputedQcoeffSize; i++) {
+				Qcoeff[i] = 1;
+			}
+			return;
+		}
 		G2 T = Q;
 		G2 negQ;
 		if (param.useNAF) {

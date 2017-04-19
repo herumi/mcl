@@ -250,6 +250,30 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 #endif
 }
 
+void testTrivial(const G1& P, const G2& Q)
+{
+	G1 Z1; Z1.clear();
+	G2 Z2; Z2.clear();
+	Fp12 e;
+	BN::pairing(e, Z1, Q);
+	CYBOZU_TEST_EQUAL(e, 1);
+	BN::pairing(e, P, Z2);
+	CYBOZU_TEST_EQUAL(e, 1);
+	BN::pairing(e, Z1, Z2);
+	CYBOZU_TEST_EQUAL(e, 1);
+
+	std::vector<Fp6> Qcoeff;
+	BN::precomputeG2(Qcoeff, Z2);
+	BN::precomputedMillerLoop(e, P, Qcoeff);
+	BN::finalExp(e, e);
+	CYBOZU_TEST_EQUAL(e, 1);
+
+	BN::precomputeG2(Qcoeff, Q);
+	BN::precomputedMillerLoop(e, Z1, Qcoeff);
+	BN::finalExp(e, e);
+	CYBOZU_TEST_EQUAL(e, 1);
+}
+
 CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
@@ -259,6 +283,7 @@ CYBOZU_TEST_AUTO(naive)
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 //G1::mul(P, P, Fr::getOp().mp - 1);exit(0);
+		testTrivial(P, Q);
 		testSetStr(Q);
 		testMapToG1();
 		testMapToG2();
