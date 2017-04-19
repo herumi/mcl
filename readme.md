@@ -19,9 +19,9 @@ The current version supports the optimal Ate pairing over BN curves.
 
 # Installation Requirements
 
-* [GMP](https://gmplib.org/)
+* [GMP](https://gmplib.org/) and OpenSSL
 ```
-apt install libgmp-dev
+apt install libgmp-dev libssl-dev
 ```
 
 Create a working directory (e.g., work) and clone the following repositories.
