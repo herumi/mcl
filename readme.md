@@ -50,6 +50,11 @@ To make sample programs:
 make sample
 ```
 
+if you want to change compiler options for optimization, then set `CFLAGS_OPT_USER`.
+```
+make CLFAGS_OPT_USER="-O2"
+```
+
 ## Build for 32-bit Linux
 Build openssl and gmp for 32-bit mode and install `<lib32>`
 ```
