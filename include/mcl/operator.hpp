@@ -45,7 +45,7 @@ struct Operator : E {
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powArray(z, x, b.p, b.n, false);
+		powArray(z, x, b.p, b.n, false, false);
 	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void powCT(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
@@ -57,11 +57,11 @@ struct Operator : E {
 	static void pow(T& z, const T& x, int y)
 	{
 		const Unit u = abs(y);
-		powArray(z, x, &u, 1, y < 0);
+		powArray(z, x, &u, 1, y < 0, false);
 	}
-	static void pow(T& z, const T& x, const mpz_class& y, bool constTime = false)
+	static void pow(T& z, const T& x, const mpz_class& y)
 	{
-		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, constTime);
+		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, false);
 	}
 	static void powCT(T& z, const T& x, const mpz_class& y)
 	{
