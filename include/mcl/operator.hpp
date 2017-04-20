@@ -41,23 +41,23 @@ struct Operator : E {
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
-	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
+	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y, bool constTime = false)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powArray(z, x, b.p, b.n, false);
+		powArray(z, x, b.p, b.n, false, constTime);
 	}
-	static void pow(T& z, const T& x, int y)
+	static void pow(T& z, const T& x, int y, bool constTime = false)
 	{
 		const Unit u = abs(y);
-		powArray(z, x, &u, 1, y < 0);
+		powArray(z, x, &u, 1, y < 0, constTime);
 	}
-	static void pow(T& z, const T& x, const mpz_class& y)
+	static void pow(T& z, const T& x, const mpz_class& y, bool constTime = false)
 	{
-		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, constTime);
 	}
 private:
-	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative)
+	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		T tmp;
 		const T *px = &x;
@@ -66,7 +66,7 @@ private:
 			px = &tmp;
 		}
 		z = 1;
-		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0);
+		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, constTime);
 		if (isNegative) {
 			T::inv(z, z);
 		}
