@@ -105,6 +105,9 @@ public:
 				}
 				Ec::dbl(t, t);
 			}
+			for (size_t j = 0; j < w.size(); j++) {
+				w[j].normalize();
+			}
 		}
 	}
 	/*
