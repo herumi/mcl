@@ -932,13 +932,25 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		Fp6::mul(y.b, x.b, t0);
 		Fp6::neg(y.b, y.b);
 	}
-	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
+	void readStream(std::istream& is, int ioMode)
 	{
-		return os << self.a << Fp::getIoSeparator() << self.b;
+		a.readStream(is, ioMode);
+		b.readStream(is, ioMode);
+	}
+	void setStr(const std::string& str, int ioMode = 0)
+	{
+		std::istringstream is(str);
+		readStream(is, ioMode);
 	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
-		return is >> self.a >> self.b;
+		int ioMode = fp::detectIoMode(Fp::getIoMode(), is);
+		self.readStream(is, ioMode);
+		return is;
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
+	{
+		return os << self.a << Fp::getIoSeparator() << self.b;
 	}
 	std::string getStr(int ioMode = 0) const
 	{
