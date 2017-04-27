@@ -659,7 +659,7 @@ public:
 		<x>   ; for even y
 		<x>|1 ; for odd y ; |1 means set MSB of x
 	*/
-	void getStr(std::string& str, int ioMode = 10) const
+	void getStr(std::string& str, int ioMode = 0) const
 	{
 		EcT P(*this); P.normalize();
 		if (ioMode & IoTight) {
@@ -693,7 +693,7 @@ public:
 			str += P.y.getStr(ioMode);
 		}
 	}
-	std::string getStr(int ioMode = 10) const
+	std::string getStr(int ioMode = 0) const
 	{
 		std::string str;
 		getStr(str, ioMode);

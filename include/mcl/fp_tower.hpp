@@ -160,12 +160,11 @@ public:
 		a.readStream(is, ioMode);
 		b.readStream(is, ioMode);
 	}
-	/*
-		Fp2T = <a> + ' ' + <b>
-	*/
-	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
+	std::string getStr(int ioMode = 0) const
 	{
-		return os << self.a << Fp::getIoSeparator() << self.b;
+		std::string str;
+		getStr(str, ioMode);
+		return str;
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
@@ -173,15 +172,16 @@ public:
 		self.readStream(is, ioMode);
 		return is;
 	}
-	void getStr(std::string& str, int ioMode = 10) const
+	/*
+		Fp2T = <a> + ' ' + <b>
+	*/
+	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
+	{
+		return os << self.a << Fp::getIoSeparator() << self.b;
+	}
+	void getStr(std::string& str, int ioMode = 0) const
 	{
 		str = a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
-	}
-	std::string getStr(int ioMode = 10) const
-	{
-		std::string str;
-		getStr(str, ioMode);
-		return str;
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -610,11 +610,24 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		const char *sep = Fp::getIoSeparator();
 		return os << x.a << sep << x.b << sep << x.c;
 	}
-	friend std::istream& operator>>(std::istream& is, Fp6T& x)
+	void readStream(std::istream& is, int ioMode)
 	{
-		return is >> x.a >> x.b >> x.c;
+		a.readStream(is, ioMode);
+		b.readStream(is, ioMode);
+		c.readStream(is, ioMode);
 	}
-	std::string getStr(int ioMode = 10) const
+	void setStr(const std::string& str, int ioMode = 0)
+	{
+		std::istringstream is(str);
+		readStream(is, ioMode);
+	}
+	friend std::istream& operator>>(std::istream& is, Fp6T& self)
+	{
+		int ioMode = fp::detectIoMode(Fp::getIoMode(), is);
+		self.readStream(is, ioMode);
+		return is;
+	}
+	std::string getStr(int ioMode = 0) const
 	{
 		const char *sep = fp::getIoSeparator(ioMode);
 		return a.getStr(ioMode) + sep + b.getStr(ioMode) + sep + c.getStr(ioMode);
@@ -927,7 +940,7 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	{
 		return is >> self.a >> self.b;
 	}
-	std::string getStr(int ioMode = 10) const
+	std::string getStr(int ioMode = 0) const
 	{
 		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
 	}

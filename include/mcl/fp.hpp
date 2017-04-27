@@ -261,7 +261,7 @@ public:
 	{
 		setMsg(msg.data(), msg.size());
 	}
-	void getStr(std::string& str, int ioMode = 10) const
+	void getStr(std::string& str, int ioMode = 0) const
 	{
 		fp::Block b;
 		const size_t n = getByteSize();
@@ -278,7 +278,7 @@ public:
 		// use low [1-4]-bit ioMode for base
 		fp::arrayToStr(str, b.p, b.n, ioMode & 30, (ioMode & IoPrefix) != 0);
 	}
-	std::string getStr(int ioMode = 10) const
+	std::string getStr(int ioMode = 0) const
 	{
 		std::string str;
 		getStr(str, ioMode);
