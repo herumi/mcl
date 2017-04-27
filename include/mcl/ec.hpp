@@ -704,9 +704,8 @@ public:
 		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), os);
 		return os << self.getStr(ioMode);
 	}
-	friend inline std::istream& operator>>(std::istream& is, EcT& self)
+	void readStream(std::istream& is, int ioMode)
 	{
-		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), is);
 		char c = 0;
 		if (ioMode & (IoArray | IoArrayRaw)) {
 			is.read(&c, 1);
@@ -717,29 +716,34 @@ public:
 			c = str[0];
 		}
 		if (c == '0') {
-			self.clear();
-			return is;
+			clear();
+			return;
 		}
 #ifdef MCL_EC_USE_AFFINE
-		self.inf_ = false;
+		inf_ = false;
 #else
-		self.z = 1;
+		z = 1;
 #endif
-		is >> self.x;
+		is >> x;
 		if (c == '1') {
-			is >> self.y;
-			if (!isValid(self.x, self.y)) {
-				throw cybozu::Exception("EcT:operator>>:bad value") << self.x << self.y;
+			is >> y;
+			if (!isValid(x, y)) {
+				throw cybozu::Exception("EcT:operator>>:bad value") << x << y;
 			}
 		} else if (c == '2' || c == '3') {
 			bool isYodd = c == '3';
-			getYfromX(self.y, self.x, isYodd);
+			getYfromX(y, x, isYodd);
 		} else {
 			throw cybozu::Exception("EcT:operator>>:bad format") << c;
 		}
-		if (verifyOrder_ && !self.isValidOrder()) {
-			throw cybozu::Exception("EcT:operator>>:bad order") << self;
+		if (verifyOrder_ && !isValidOrder()) {
+			throw cybozu::Exception("EcT:operator>>:bad order") << *this;
 		}
+	}
+	friend inline std::istream& operator>>(std::istream& is, EcT& self)
+	{
+		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), is);
+		self.readStream(is, ioMode);
 		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
