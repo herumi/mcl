@@ -706,14 +706,35 @@ public:
 	}
 	void readStream(std::istream& is, int ioMode)
 	{
+		if (ioMode & IoTight) {
+			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
+			std::string str;
+			const size_t n = Fp::getByteSize();
+			str.resize(n);
+			is.read(&str[0], n);
+			if (fp::isZeroArray(&str[0], n)) {
+				clear();
+				return;
+			}
+#ifdef MCL_EC_USE_AFFINE
+			inf_ = false;
+#else
+			z = 1;
+#endif
+			bool isYodd = (str[n - 1] >> 7) != 0;
+			str[n - 1] &= 0x7f;
+			x.setArray(&str[0], n);
+			getYfromX(y, x, isYodd);
+			if (verifyOrder_ && !isValidOrder()) {
+				throw cybozu::Exception("EcT:setStr:bad order") << *this;
+			}
+			return;
+		}
 		char c = 0;
 		if (ioMode & (IoArray | IoArrayRaw)) {
 			is.read(&c, 1);
 		} else {
-			std::string str;
-			is >> str;
-			if (str.size() != 1) throw cybozu::Exception("EcT:operator>>:bad format") << str;
-			c = str[0];
+			is >> c;
 		}
 		if (c == '0') {
 			clear();
@@ -748,36 +769,8 @@ public:
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		if (ioMode & IoTight) {
-			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:operator>>:not supported ioMode") << ioMode;
-			uint8_t buf[Fp::maxSize * sizeof(fp::Unit)];
-			const size_t n = Fp::getByteSize();
-			if (str.size() != n) {
-				throw cybozu::Exception("EcT:setStr:bad size") << str.size() << n;
-			}
-			memcpy(buf, str.c_str(), n);
-			if (fp::isZeroArray(buf, n)) {
-				clear();
-				return;
-			}
-#ifdef MCL_EC_USE_AFFINE
-			inf_ = false;
-#else
-			z = 1;
-#endif
-			bool isYodd = (buf[n - 1] >> 7) != 0;
-			buf[n - 1] &= 0x7f;
-			x.setArray(buf, n);
-			getYfromX(y, x, isYodd);
-			if (verifyOrder_ && !isValidOrder()) {
-				throw cybozu::Exception("EcT:setStr:bad order") << *this;
-			}
-			return;
-		}
 		std::istringstream is(str);
-		if (!(is >> *this)) {
-			throw cybozu::Exception("EcT:setStr:bad str") << str;
-		}
+		readStream(is, ioMode);
 	}
 	static inline void setCompressedExpression(bool compressedExpression = true)
 	{
