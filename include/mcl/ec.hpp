@@ -706,6 +706,11 @@ public:
 	}
 	void readStream(std::istream& is, int ioMode)
 	{
+#ifdef MCL_EC_USE_AFFINE
+		inf_ = false;
+#else
+		z = 1;
+#endif
 		if (ioMode & IoTight) {
 			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
 			std::string str;
@@ -716,49 +721,32 @@ public:
 				clear();
 				return;
 			}
-#ifdef MCL_EC_USE_AFFINE
-			inf_ = false;
-#else
-			z = 1;
-#endif
 			bool isYodd = (str[n - 1] >> 7) != 0;
 			str[n - 1] &= 0x7f;
 			x.setArray(&str[0], n);
 			getYfromX(y, x, isYodd);
-			if (verifyOrder_ && !isValidOrder()) {
-				throw cybozu::Exception("EcT:setStr:bad order") << *this;
-			}
-			return;
-		}
-		char c = 0;
-		if (ioMode & (IoArray | IoArrayRaw)) {
-			is.read(&c, 1);
 		} else {
+			char c = 0;
 			is >> c;
-		}
-		if (c == '0') {
-			clear();
-			return;
-		}
-#ifdef MCL_EC_USE_AFFINE
-		inf_ = false;
-#else
-		z = 1;
-#endif
-		is >> x;
-		if (c == '1') {
-			is >> y;
-			if (!isValid(x, y)) {
-				throw cybozu::Exception("EcT:operator>>:bad value") << x << y;
+			if (c == '0') {
+				clear();
+				return;
 			}
-		} else if (c == '2' || c == '3') {
-			bool isYodd = c == '3';
-			getYfromX(y, x, isYodd);
-		} else {
-			throw cybozu::Exception("EcT:operator>>:bad format") << c;
+			x.readStream(is, ioMode);
+			if (c == '1') {
+				y.readStream(is, ioMode);
+				if (!isValid(x, y)) {
+					throw cybozu::Exception("EcT:readStream:bad value") << x << y;
+				}
+			} else if (c == '2' || c == '3') {
+				bool isYodd = c == '3';
+				getYfromX(y, x, isYodd);
+			} else {
+				throw cybozu::Exception("EcT:readStream:bad format") << c;
+			}
 		}
 		if (verifyOrder_ && !isValidOrder()) {
-			throw cybozu::Exception("EcT:operator>>:bad order") << *this;
+			throw cybozu::Exception("EcT:readStream:bad order") << *this;
 		}
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)

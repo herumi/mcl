@@ -155,6 +155,11 @@ public:
 		a.setArray(buf, n);
 		b.setArray(buf + n, n);
 	}
+	void readStream(std::istream& is, int ioMode)
+	{
+		a.readStream(is, ioMode);
+		b.readStream(is, ioMode);
+	}
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
@@ -164,7 +169,9 @@ public:
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
-		return is >> self.a >> self.b;
+		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), is);
+		self.readStream(is, ioMode);
+		return is;
 	}
 	void getStr(std::string& str, int ioMode = 10) const
 	{

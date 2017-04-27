@@ -536,8 +536,9 @@ void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, i
 		is >> str;
 		const char *p = verifyStr(pIsMinus, &ioMode, str);
 		mpz_class mx;
-		if (!gmp::setStr(mx, p, ioMode & ~IoPrefix)) {
-			throw cybozu::Exception("fp:streamToArray:bad format") << str;
+		// check low 5-bit of ioMode
+		if (!gmp::setStr(mx, p, ioMode & (31 & ~IoPrefix))) {
+			throw cybozu::Exception("fp:streamToArray:bad format") << ioMode << str;
 		}
 		const size_t n = (byteSize + sizeof(Unit) - 1) / sizeof(Unit);
 		gmp::getArray(x, n, mx);
