@@ -17,6 +17,70 @@
 
 namespace mcl {
 
+/*
+	specifies available string format mode.
+	// for Fp
+	default(0) : IoDec
+	printable string(zero terminated, variable size)
+	IoBin(2) | IoDec(10) | IoHex(16) | IoBinPrefix | IoHexPrefix
+
+	byte string(not zero terminated, fixed size)
+	IoArray | IoArrayRaw
+
+	// for Ec
+	affine(0) | IoEcCompY | IoComp
+	default : affine
+
+	affine and IoEcCompY are available with ioMode for Fp
+	IoEcComp ignores ioMode for Fp
+
+	IoAuto
+		dec or hex according to ios_base::fmtflags
+	IoBin
+		binary number([01]+)
+	IoDec
+		decimal number
+	IoHex
+		hexadecimal number([0-9a-fA-F]+)
+	IoBinPrefix
+		0b + <binary number>
+	IoHexPrefix
+		0x + <hexadecimal number>
+	IoArray
+		array of Unit(fixed size = Fp::getByteSize())
+	IoArrayRaw
+		array of Unit(fixed size = Fp::getByteSize()) without Montgomery convresion
+
+	// for Ec
+	// affine coordinate(default)
+	"0" ; infinity
+	"1 <x> <y>" ; affine coordinate
+
+	IoEcCompY
+		1-bit y prepresentation of elliptic curve
+		"2 <x>" ; compressed for even y
+		"3 <x>" ; compressed for odd y
+	IoComp(fixed size = Fp::getByteSize())
+		use MSB of array of x for 1-bit y for prime p where (p % 8 != 0)
+		[0] ; infinity
+		<x> ; for even y
+		<x>|1 ; for odd y ; |1 means set MSB of x
+*/
+enum IoMode {
+	IoAuto = 0, // dec or hex according to ios_base::fmtflags
+	IoPrefix = 1, // append '0b'(bin) or '0x'(hex)
+	IoBin = 2, // binary number without prefix
+	IoDec = 10, // decimal number without prefix
+	IoHex = 16, // hexadecimal number without prefix
+	IoBinPrefix = IoBin | IoPrefix,
+	IoHexPrefix = IoHex | IoPrefix,
+	IoArray = 32, // array of Unit(fixed size)
+	IoArrayRaw = 64, // raw array of Unit without Montgomery conversion
+	IoEcCompY = 128, // 1-bit y representation of elliptic curve
+	IoEcComp = 256, // use MBS for 1-bit y
+	IoTight = IoEcComp // tight repr of Ec(obsolete)
+};
+
 namespace fp {
 
 #if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
@@ -223,5 +287,18 @@ private:
 	Op(const Op&);
 	void operator=(const Op&);
 };
+
+/*
+	read data from is according to ioMode,
+	and set x[0, n) with abs(buf[0, bufSize/sizeof(Unit)))
+*/
+void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode);
+
+inline const char* getIoSeparator(int ioMode)
+{
+	return (ioMode & (IoArray | IoArrayRaw | IoTight)) ? "" : " ";
+}
+
+int detectIoMode(int ioMode, const std::ios_base& ios);
 
 } } // mcl::fp

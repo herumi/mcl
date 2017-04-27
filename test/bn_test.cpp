@@ -274,15 +274,31 @@ void testTrivial(const G1& P, const G2& Q)
 	CYBOZU_TEST_EQUAL(e, 1);
 }
 
+void testIo(const G1& P, const G2& Q)
+{
+	int tbl[] = { mcl::IoEcCompY, mcl::IoEcComp };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		int ioMode = tbl[i];
+		G1 P2;
+		G2 Q2;
+		std::string s;
+		s = P.getStr(ioMode);
+		P2.setStr(s, ioMode);
+		CYBOZU_TEST_EQUAL(P, P2);
+		s = Q.getStr(ioMode);
+		Q2.setStr(s, ioMode);
+		CYBOZU_TEST_EQUAL(Q, Q2);
+	}
+}
+
 CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
-//i=1;
 		const TestSet& ts = g_testSetTbl[i];
 		bn256init(ts.cp, g_mode);
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
-//G1::mul(P, P, Fr::getOp().mp - 1);exit(0);
+		testIo(P, Q);
 		testTrivial(P, Q);
 		testSetStr(Q);
 		testMapToG1();
@@ -292,7 +308,6 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-//break;
 	}
 	int count = (int)clk.getCount();
 	if (count) {

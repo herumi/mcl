@@ -281,7 +281,7 @@ struct Test {
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		// tight
-		if (!Ec::isIoTightSupported()) return;
+		if (!Ec::isIoEcCompSupported()) return;
 		P.set(x, y);
 		{
 			std::string s = P.getStr(mcl::IoTight);

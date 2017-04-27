@@ -34,47 +34,9 @@ namespace mcl {
 struct FpTag;
 struct ZnTag;
 
-enum IoMode {
-	IoAuto = 0, // dec or hex according to ios_base::fmtflags
-	IoPrefix = 1, // append '0b'(bin) or '0x'(hex)
-	IoBin = 2, // binary number without prefix
-	IoDec = 10, // decimal number without prefix
-	IoHex = 16, // hexadecimal number without prefix
-	IoBinPrefix = IoBin | IoPrefix,
-	IoHexPrefix = IoHex | IoPrefix,
-	IoArray = 32, // array of Unit(fixed size)
-	IoArrayRaw = 64, // raw array of Unit without Montgomery conversion
-	IoTight = 128 // tight repr of Ec
-};
-
 namespace fp {
 
-static inline const char* getIoSeparator(int ioMode)
-{
-	return (ioMode & (IoArray | IoArrayRaw | IoTight)) ? "" : " ";
-}
-
-static inline int detectIoMode(int ioMode, const std::ios_base& ios)
-{
-	if (ioMode & ~IoPrefix) return ioMode;
-	// IoAuto or IoPrefix
-	const std::ios_base::fmtflags f = ios.flags();
-	if (f & std::ios_base::oct) throw cybozu::Exception("mcl:fp:detectIoMode:oct is not supported");
-	ioMode |= (f & std::ios_base::hex) ? IoHex : IoDec;
-	if (f & std::ios_base::showbase) {
-		ioMode |= IoPrefix;
-	}
-	return ioMode;
-}
-
 void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix);
-
-/*
-	set x and y[] with abs(str)
-	pBitSize is set if not null
-	return true if str is negative
-*/
-bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, const std::string& str, int base);
 
 // copy src to dst as little endian
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize);
@@ -236,26 +198,22 @@ public:
 	{
 		if (isMont()) op_.fromMont(v_, v_);
 	}
+	void readStream(std::istream& is, int ioMode)
+	{
+		bool isMinus;
+		fp::streamToArray(&isMinus, v_, FpT::getByteSize(), is, ioMode);
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) throw cybozu::Exception("FpT:readStream:large value");
+		if (!(ioMode & IoArrayRaw)) {
+			if (isMinus) {
+				neg(*this, *this);
+			}
+			toMont();
+		}
+	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		if (ioMode & (IoArray | IoArrayRaw | IoTight)) {
-			const size_t n = getByteSize();
-			if (str.size() != n) throw cybozu::Exception("FpT:setStr:bad size") << str.size() << n << ioMode;
-			if (ioMode & IoArrayRaw) {
-				fp::copyByteToUnitAsLE(v_, reinterpret_cast<const uint8_t*>(str.c_str()), n);
-				if (!isValid()) throw cybozu::Exception("FpT:setStr:bad value") << str;
-			} else {
-				setArray(&str[0], n);
-			}
-			return;
-		}
-		mpz_class x;
-		bool isMinus = fp::strToMpzArray(0, v_, op_.N * fp::UnitBitSize, x, str, ioMode & ~IoPrefix);
-		if (x >= op_.mp) throw cybozu::Exception("FpT:setStr:large str") << str << op_.mp;
-		if (isMinus) {
-			neg(*this, *this);
-		}
-		toMont();
+		std::istringstream is(str);
+		readStream(is, ioMode);
 	}
 	/*
 		throw exception if x >= p
@@ -317,7 +275,8 @@ public:
 			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), p, str.size());
 			return;
 		}
-		fp::arrayToStr(str, b.p, b.n, ioMode & ~IoPrefix, (ioMode & IoPrefix) != 0);
+		// use low [1-4]-bit ioMode for base
+		fp::arrayToStr(str, b.p, b.n, ioMode & 30, (ioMode & IoPrefix) != 0);
 	}
 	std::string getStr(int ioMode = 10) const
 	{
@@ -411,14 +370,7 @@ public:
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)
 	{
 		int ioMode = fp::detectIoMode(getIoMode(), is);
-		std::string str;
-		if (ioMode & (IoArray | IoArrayRaw | IoTight)) {
-			str.resize(getByteSize());
-			is.read(&str[0], str.size());
-		} else {
-			is >> str;
-		}
-		self.setStr(str, ioMode);
+		self.readStream(is, ioMode);
 		return is;
 	}
 	/*

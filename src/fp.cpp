@@ -2,6 +2,7 @@
 #include <mcl/util.hpp>
 #include <cybozu/crypto.hpp>
 #include <cybozu/endian.hpp>
+#include <cybozu/stream.hpp>
 #include "conversion.hpp"
 #include "fp_generator.hpp"
 #include "low_func.hpp"
@@ -53,10 +54,11 @@ inline Unit getUnitAsLE(const void *p)
 	return cybozu::Get64bitAsLE(p);
 #endif
 }
+
 /*
 	use prefix if base conflicts with prefix
 */
-inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
+const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 {
 	const char *p = str.c_str();
 	if (*p == '-') {
@@ -77,20 +79,6 @@ inline const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 	if (*base == 0) *base = 10;
 	if (*p == '\0') throw cybozu::Exception("fp:verifyStr:str is empty");
 	return p;
-}
-
-bool strToMpzArray(size_t *pBitSize, Unit *y, size_t maxBitSize, mpz_class& x, const std::string& str, int base)
-{
-	bool isMinus;
-	const char *p = verifyStr(&isMinus, &base, str);
-	if (!gmp::setStr(x, p, base)) {
-		throw cybozu::Exception("fp:strToMpzArray:bad format") << str;
-	}
-	const size_t bitSize = gmp::getBitSize(x);
-	if (bitSize > maxBitSize) throw cybozu::Exception("fp:strToMpzArray:too large str") << str << bitSize << maxBitSize;
-	if (pBitSize) *pBitSize = bitSize;
-	gmp::getArray(y, (maxBitSize + UnitBitSize - 1) / UnitBitSize, x);
-	return isMinus;
 }
 
 const char *ModeToStr(Mode mode)
@@ -365,11 +353,18 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	if (maxBitSize > MCL_MAX_BIT_SIZE) {
 		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_BIT_SIZE;
 	}
-	{
-		bool isMinus = fp::strToMpzArray(&bitSize, p, maxBitSize, mp, mstr, 0);
+	{ // set mp and p
+		bool isMinus = false;
+		int base = 0;
+		const char *pstr = verifyStr(&isMinus, &base, mstr);
 		if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
+		if (!gmp::setStr(mp, pstr, base)) {
+			throw cybozu::Exception("Op:init:bad str") << mstr;
+		}
+		if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	}
-	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
+	gmp::getArray(p, maxOpUnitSize, mp);
+	bitSize = gmp::getBitSize(mp);
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
@@ -515,6 +510,43 @@ void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize)
 	}
 	*dst = x;
 }
+
+int detectIoMode(int ioMode, const std::ios_base& ios)
+{
+	if (ioMode & ~IoPrefix) return ioMode;
+	// IoAuto or IoPrefix
+	const std::ios_base::fmtflags f = ios.flags();
+	if (f & std::ios_base::oct) throw cybozu::Exception("mcl:fp:detectIoMode:oct is not supported");
+	ioMode |= (f & std::ios_base::hex) ? IoHex : IoDec;
+	if (f & std::ios_base::showbase) {
+		ioMode |= IoPrefix;
+	}
+	return ioMode;
+}
+
+void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode)
+{
+	std::string str;
+	if (ioMode & (IoArray | IoArrayRaw | IoEcComp)) {
+		str.resize(byteSize);
+		is.read(&str[0], byteSize);
+		*pIsMinus = false;
+		fp::copyByteToUnitAsLE(x, reinterpret_cast<const uint8_t*>(str.c_str()), byteSize);
+	} else {
+		is >> str;
+		const char *p = verifyStr(pIsMinus, &ioMode, str);
+		mpz_class mx;
+		if (!gmp::setStr(mx, p, ioMode & ~IoPrefix)) {
+			throw cybozu::Exception("fp:streamToArray:bad format") << str;
+		}
+		const size_t n = (byteSize + sizeof(Unit) - 1) / sizeof(Unit);
+		gmp::getArray(x, n, mx);
+	}
+	if (!is) {
+		throw cybozu::Exception("streamToArray:can't read") << byteSize;
+	}
+}
+
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask)
 {
 	const size_t fpByteSize = sizeof(Unit) * op.N;

@@ -643,7 +643,7 @@ public:
 		return z.isZero();
 #endif
 	}
-	static inline bool isIoTightSupported()
+	static inline bool isIoEcCompSupported()
 	{
 		return !b_.isZero() && (Fp::getBitSize() & 7) != 0;
 	}
@@ -663,7 +663,7 @@ public:
 	{
 		EcT P(*this); P.normalize();
 		if (ioMode & IoTight) {
-			if (!isIoTightSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
+			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
 			if (isZero()) {
 				str.resize(n, 0);
@@ -745,7 +745,7 @@ public:
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		if (ioMode & IoTight) {
-			if (!isIoTightSupported()) throw cybozu::Exception("EcT:operator>>:not supported ioMode") << ioMode;
+			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:operator>>:not supported ioMode") << ioMode;
 			uint8_t buf[Fp::maxSize * sizeof(fp::Unit)];
 			const size_t n = Fp::getByteSize();
 			if (str.size() != n) {
