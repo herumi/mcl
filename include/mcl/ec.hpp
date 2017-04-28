@@ -652,6 +652,17 @@ public:
 	*/
 	void getStr(std::string& str, int ioMode = 0) const
 	{
+		const char *sep = Fp::BaseFp::getIoSeparator();
+		if (ioMode & IoEcProj) {
+			str = '4';
+			str += sep;
+			str += x.getStr(ioMode);
+			str += sep;
+			str += y.getStr(ioMode);
+			str += sep;
+			str += z.getStr(ioMode);
+			return;
+		}
 		EcT P(*this);
 		P.normalize();
 		if (ioMode & IoEcComp) {
@@ -672,7 +683,6 @@ public:
 			str = '0';
 			return;
 		}
-		const char *sep = Fp::BaseFp::getIoSeparator();
 		if (ioMode & IoEcCompY) {
 			str = P.y.isOdd() ? '3' : '2';
 			str += sep;
@@ -734,6 +744,9 @@ public:
 			} else if (c == '2' || c == '3') {
 				bool isYodd = c == '3';
 				getYfromX(y, x, isYodd);
+			} else if (c == '4') {
+				y.readStream(is, ioMode);
+				z.readStream(is, ioMode);
 			} else {
 				throw cybozu::Exception("EcT:readStream:bad format") << c;
 			}
