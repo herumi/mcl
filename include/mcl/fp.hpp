@@ -410,6 +410,7 @@ public:
 	*/
 	static inline void setIoMode(IoMode ioMode)
 	{
+		if (ioMode_ & ~0xff) throw cybozu::Exception("FpT:setIoMode:bad mode") << ioMode;
 		ioMode_ = ioMode;
 	}
 	static inline IoMode getIoMode() { return ioMode_; }

@@ -54,7 +54,7 @@ public:
 	static Fp a_;
 	static Fp b_;
 	static int specialA_;
-	static bool compressedExpression_;
+	static int ioMode_;
 	/*
 		order_ is the order of G2 which is the subgroup of EcT<Fp2>.
 		check the order of the elements if verifyOrder_ is true
@@ -648,21 +648,13 @@ public:
 		return !b_.isZero() && (Fp::getBitSize() & 7) != 0;
 	}
 	/*
-		"0" ; infinity
-		"1 <x> <y>" ; not compressed
-		"2 <x>" ; compressed for even y
-		"3 <x>" ; compressed for odd y
-
-		tight repl of EC over a prime
-		the size of str must be equal to Fp::getByteSize()
-		[0]   ; infinity
-		<x>   ; for even y
-		<x>|1 ; for odd y ; |1 means set MSB of x
+		see mcl/op.hpp for the format of ioMode
 	*/
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		EcT P(*this); P.normalize();
-		if (ioMode & IoTight) {
+		EcT P(*this);
+		P.normalize();
+		if (ioMode & IoEcComp) {
 			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
 			if (isZero()) {
@@ -681,7 +673,7 @@ public:
 			return;
 		}
 		const char *sep = Fp::BaseFp::getIoSeparator();
-		if (compressedExpression_) {
+		if (ioMode & IoEcCompY) {
 			str = P.y.isOdd() ? '3' : '2';
 			str += sep;
 			str += P.x.getStr(ioMode);
@@ -702,6 +694,7 @@ public:
 	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
 	{
 		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), os);
+		ioMode |= ioMode_;
 		return os << self.getStr(ioMode);
 	}
 	void readStream(std::istream& is, int ioMode)
@@ -760,9 +753,22 @@ public:
 		std::istringstream is(str);
 		readStream(is, ioMode);
 	}
-	static inline void setCompressedExpression(bool compressedExpression = true)
+	// deplicated
+	static void setCompressedExpression(bool compressedExpression = true)
 	{
-		compressedExpression_ = compressedExpression;
+		if (compressedExpression) {
+			ioMode_ |= IoEcCompY;
+		} else {
+			ioMode_ &= ~IoEcCompY;
+		}
+	}
+	/*
+		set IoMode for operator<<(), or operator>>()
+	*/
+	static void setIoMode(int ioMode)
+	{
+		if (ioMode & 0xff) throw cybozu::Exception("EcT:setIoMode:use Fp::setIomode") << ioMode;
+		ioMode_ = ioMode;
 	}
 	static inline void getWeierstrass(Fp& yy, const Fp& x)
 	{
@@ -833,7 +839,7 @@ public:
 template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
 template<class Fp> int EcT<Fp>::specialA_;
-template<class Fp> bool EcT<Fp>::compressedExpression_;
+template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
 template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);

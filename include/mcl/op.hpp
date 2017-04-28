@@ -18,8 +18,8 @@
 namespace mcl {
 
 /*
-	specifies available string format mode.
-	// for Fp
+	specifies available string format mode for X::setIoMode()
+	// for Fp, Fp2, Fp6, Fp12
 	default(0) : IoDec
 	printable string(zero terminated, variable size)
 	IoBin(2) | IoDec(10) | IoHex(16) | IoBinPrefix | IoHexPrefix
@@ -51,15 +51,19 @@ namespace mcl {
 	IoArrayRaw
 		array of Unit(fixed size = Fp::getByteSize()) without Montgomery convresion
 
-	// for Ec
-	// affine coordinate(default)
+	// for Ec::setIoMode()
+	IoEcAffine(default)
 	"0" ; infinity
 	"1 <x> <y>" ; affine coordinate
+
+	IoEcProj
+	"4" <x> <y> <z> ; projective or jacobi coordinate
 
 	IoEcCompY
 		1-bit y prepresentation of elliptic curve
 		"2 <x>" ; compressed for even y
 		"3 <x>" ; compressed for odd y
+
 	IoComp(fixed size = Fp::getByteSize())
 		use MSB of array of x for 1-bit y for prime p where (p % 8 != 0)
 		[0] ; infinity
@@ -76,8 +80,10 @@ enum IoMode {
 	IoHexPrefix = IoHex | IoPrefix,
 	IoArray = 32, // array of Unit(fixed size)
 	IoArrayRaw = 64, // raw array of Unit without Montgomery conversion
+	IoEcAffine = 0, // affine coordinate
 	IoEcCompY = 128, // 1-bit y representation of elliptic curve
 	IoEcComp = 256, // use MBS for 1-bit y
+	IoEcProj = 512, // projective or jacobi coordinate
 	IoTight = IoEcComp // tight repr of Ec(obsolete)
 };
 
