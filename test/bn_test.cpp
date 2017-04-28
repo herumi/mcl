@@ -276,18 +276,18 @@ void testTrivial(const G1& P, const G2& Q)
 
 void testIo(const G1& P, const G2& Q)
 {
-	int tbl[] = { mcl::IoEcCompY, mcl::IoEcComp };
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		int ioMode = tbl[i];
-		G1 P2;
-		G2 Q2;
-		std::string s;
-		s = P.getStr(ioMode);
-		P2.setStr(s, ioMode);
-		CYBOZU_TEST_EQUAL(P, P2);
-		s = Q.getStr(ioMode);
-		Q2.setStr(s, ioMode);
-		CYBOZU_TEST_EQUAL(Q, Q2);
+	int FpTbl[] = { 0, 2, 2|mcl::IoPrefix, 10, 16, 16|mcl::IoPrefix, mcl::IoArray, mcl::IoArrayRaw };
+	int EcTbl[] = { mcl::IoEcAffine, mcl::IoEcProj, mcl::IoEcCompY, mcl::IoEcComp };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(FpTbl); i++) {
+		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(EcTbl); j++) {
+			G1 P2 = P, P3;
+			G2 Q2 = Q, Q3;
+			int ioMode = FpTbl[i] | FpTbl[j];
+			P3.setStr(P2.getStr(ioMode));
+			CYBOZU_TEST_EQUAL(P2, P3);
+			Q3.setStr(Q2.getStr(ioMode));
+			CYBOZU_TEST_EQUAL(Q2, Q3);
+		}
 	}
 }
 
