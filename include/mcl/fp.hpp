@@ -36,8 +36,6 @@ struct ZnTag;
 
 namespace fp {
 
-void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix);
-
 // copy src to dst as little endian
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize);
 // copy src to dst as little endian
@@ -275,8 +273,8 @@ public:
 			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), p, str.size());
 			return;
 		}
-		// use low [1-4]-bit ioMode for base
-		fp::arrayToStr(str, b.p, b.n, ioMode & 30, (ioMode & IoPrefix) != 0);
+		// use low 5-bit ioMode for base
+		fp::arrayToStr(str, b.p, b.n, ioMode & 31);
 	}
 	std::string getStr(int ioMode = 0) const
 	{

@@ -458,8 +458,10 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	sq.set(mp);
 }
 
-void arrayToStr(std::string& str, const Unit *x, size_t n, int base, bool withPrefix)
+void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode)
 {
+	int base = ioMode & ~IoPrefix;
+	bool withPrefix = ioMode & IoPrefix;
 	switch (base) {
 	case 0:
 	case 10:
@@ -592,7 +594,7 @@ uint64_t getUint64(bool *pb, const fp::Block& b)
 	}
 	if (!pb) {
 		std::string str;
-		arrayToStr(str, b.p, b.n, 10, false);
+		arrayToStr(str, b.p, b.n, 10);
 		throw cybozu::Exception("fp::getUint64:large value") << str;
 	}
 	*pb = false;
@@ -631,7 +633,7 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	}
 	if (!pb) {
 		std::string str;
-		arrayToStr(str, b.p, b.n, 10, false);
+		arrayToStr(str, b.p, b.n, 10);
 		throw cybozu::Exception("fp::getInt64:large value") << str << isNegative;
 	}
 	*pb = false;

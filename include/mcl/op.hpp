@@ -291,8 +291,11 @@ private:
 /*
 	read data from is according to ioMode,
 	and set x[0, n) with abs(buf[0, bufSize/sizeof(Unit)))
+	@note byteSize is not num of Unit
 */
 void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode);
+
+void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode);
 
 inline const char* getIoSeparator(int ioMode)
 {
