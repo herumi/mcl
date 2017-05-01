@@ -70,7 +70,7 @@ private:
 	Unit v_[maxSize];
 	static fp::Op op_;
 	static FpT<tag, maxBitSize> inv2_;
-	static IoMode ioMode_;
+	static int ioMode_;
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
 	template<class Fp> friend struct Fp6T;
@@ -407,12 +407,12 @@ public:
 	/*
 		set IoMode for operator<<(), or operator>>()
 	*/
-	static inline void setIoMode(IoMode ioMode)
+	static inline void setIoMode(int ioMode)
 	{
 		if (ioMode_ & ~0xff) throw cybozu::Exception("FpT:setIoMode:bad mode") << ioMode;
 		ioMode_ = ioMode;
 	}
-	static inline IoMode getIoMode() { return ioMode_; }
+	static inline int getIoMode() { return ioMode_; }
 	// backward compatibility
 	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
@@ -423,7 +423,7 @@ public:
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
-template<class tag, size_t maxBitSize> IoMode FpT<tag, maxBitSize>::ioMode_ = IoAuto;
+template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 
 } // mcl
 

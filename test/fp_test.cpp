@@ -87,14 +87,19 @@ void setStrTest()
 		{ "0b100", 4, 2 },
 		{ "0x100", 256, 0 },
 		{ "0x100", 256, 16 },
-		// use prefix if base conflicts with prefix
-		{ "0b100", 4, 16 },
-		{ "0x100", 256, 2 },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Fp x;
 		x.setStr(tbl[i].in, tbl[i].base);
 		CYBOZU_TEST_EQUAL(x, tbl[i].out);
+	}
+	// use prefix if base conflicts with prefix
+	{
+		Fp x;
+		CYBOZU_TEST_EXCEPTION(x.setStr("0b100", 16), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(x.setStr("0b100", 10), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 2), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 10), cybozu::Exception);
 	}
 }
 
@@ -108,6 +113,7 @@ void streamTest()
 		{ "100", 100, 256 }, // set base = 10 if base = 0
 		{ "0x100", 256, 256 },
 	};
+	Fp::setIoMode(0);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		{
 			std::istringstream is(tbl[i].in);
@@ -125,8 +131,7 @@ void streamTest()
 	// use prefix if base conflicts with prefix
 	std::istringstream is("0b100");
 	Fp x;
-	is >> std::hex >> x;
-	CYBOZU_TEST_EQUAL(x, 4);
+	CYBOZU_TEST_EXCEPTION(is >> std::hex >> x, cybozu::Exception);
 	{
 		std::ostringstream os;
 		os << Fp(123);

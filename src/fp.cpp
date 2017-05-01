@@ -55,9 +55,6 @@ inline Unit getUnitAsLE(const void *p)
 #endif
 }
 
-/*
-	use prefix if base conflicts with prefix
-*/
 const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 {
 	const char *p = str.c_str();
@@ -69,11 +66,19 @@ const char *verifyStr(bool *isMinus, int *base, const std::string& str)
 	}
 	if (p[0] == '0') {
 		if (p[1] == 'x') {
-			*base = 16;
-			p += 2;
+			if (*base == 0 || *base == 16 || *base == (16 | IoPrefix)) {
+				*base = 16;
+				p += 2;
+			} else {
+				throw cybozu::Exception("fp:verifyStr:0x conflicts with") << *base;
+			}
 		} else if (p[1] == 'b') {
-			*base = 2;
-			p += 2;
+			if (*base == 0 || *base == 2 || *base == (2 | IoPrefix)) {
+				*base = 2;
+				p += 2;
+			} else {
+				throw cybozu::Exception("fp:verifyStr:0b conflicts with") << *base;
+			}
 		}
 	}
 	if (*base == 0) *base = 10;
@@ -519,7 +524,7 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	// IoAuto or IoPrefix
 	const std::ios_base::fmtflags f = ios.flags();
 	if (f & std::ios_base::oct) throw cybozu::Exception("mcl:fp:detectIoMode:oct is not supported");
-	ioMode |= (f & std::ios_base::hex) ? IoHex : IoDec;
+	ioMode |= (f & std::ios_base::hex) ? IoHex : 0;
 	if (f & std::ios_base::showbase) {
 		ioMode |= IoPrefix;
 	}
@@ -536,10 +541,11 @@ void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, i
 		fp::copyByteToUnitAsLE(x, reinterpret_cast<const uint8_t*>(str.c_str()), byteSize);
 	} else {
 		is >> str;
+		// use low 8-bit ioMode for Fp
+		ioMode &= 0xff;
 		const char *p = verifyStr(pIsMinus, &ioMode, str);
 		mpz_class mx;
-		// use low 8-bit ioMode for Fp
-		if (!gmp::setStr(mx, p, ioMode & (255 & ~IoPrefix))) {
+		if (!gmp::setStr(mx, p, ioMode)) {
 			throw cybozu::Exception("fp:streamToArray:bad format") << ioMode << str;
 		}
 		const size_t n = (byteSize + sizeof(Unit) - 1) / sizeof(Unit);
