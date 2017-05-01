@@ -652,7 +652,7 @@ public:
 	*/
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		const char *sep = Fp::BaseFp::getIoSeparator();
+		const char *sep = fp::getIoSeparator(ioMode);
 		if (ioMode & IoEcProj) {
 			str = '4';
 			str += sep;
@@ -669,7 +669,8 @@ public:
 			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
 			if (isZero()) {
-				str.resize(n, 0);
+				str.clear();
+				str.resize(n);
 				return;
 			}
 			P.x.getStr(str, ioMode);
@@ -707,14 +708,14 @@ public:
 		ioMode |= ioMode_;
 		return os << self.getStr(ioMode);
 	}
-	void readStream(std::istream& is, int ioMode)
+	std::istream& readStream(std::istream& is, int ioMode)
 	{
 #ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
 #else
 		z = 1;
 #endif
-		if (ioMode & IoTight) {
+		if (ioMode & IoEcComp) {
 			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
 			std::string str;
 			const size_t n = Fp::getByteSize();
@@ -722,18 +723,20 @@ public:
 			is.read(&str[0], n);
 			if (fp::isZeroArray(&str[0], n)) {
 				clear();
-				return;
+				return is;
 			}
 			bool isYodd = (str[n - 1] >> 7) != 0;
 			str[n - 1] &= 0x7f;
-			x.setArray(&str[0], n);
+			x.setStr(str, ioMode);
 			getYfromX(y, x, isYodd);
 		} else {
 			char c = 0;
-			is >> c;
+			if (!(is >> c)) {
+				throw cybozu::Exception("EcT:readStream:no header");
+			}
 			if (c == '0') {
 				clear();
-				return;
+				return is;
 			}
 			x.readStream(is, ioMode);
 			if (c == '1') {
@@ -748,18 +751,17 @@ public:
 				y.readStream(is, ioMode);
 				z.readStream(is, ioMode);
 			} else {
-				throw cybozu::Exception("EcT:readStream:bad format") << c;
+				throw cybozu::Exception("EcT:readStream:bad format") << (int)c;
 			}
 		}
 		if (verifyOrder_ && !isValidOrder()) {
 			throw cybozu::Exception("EcT:readStream:bad order") << *this;
 		}
+		return is;
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
-		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), is);
-		self.readStream(is, ioMode);
-		return is;
+		return self.readStream(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{

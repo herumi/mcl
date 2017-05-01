@@ -106,6 +106,11 @@ public:
 	// not Fp::getBitSize() * 2
 	static inline size_t getBitSize() { return Fp::getByteSize() * 8 + Fp::getBitSize(); }
 	static inline size_t getByteSize() { return Fp::getByteSize() * 2; }
+	void dump() const
+	{
+		a.dump();
+		b.dump();
+	}
 	Fp a, b;
 	Fp2T() { }
 	Fp2T(int64_t a) : a(a), b(0) { }
@@ -155,10 +160,26 @@ public:
 		a.setArray(buf, n);
 		b.setArray(buf + n, n);
 	}
-	void readStream(std::istream& is, int ioMode)
+	std::istream& readStream(std::istream& is, int ioMode)
 	{
 		a.readStream(is, ioMode);
 		b.readStream(is, ioMode);
+		return is;
+	}
+	void setStr(const std::string& str, int ioMode = 0)
+	{
+		std::istringstream is(str);
+		readStream(is, ioMode);
+	}
+	/*
+		Fp2T = <a> + ' ' + <b>
+	*/
+	void getStr(std::string& str, int ioMode = 0) const
+	{
+		const char *sep = fp::getIoSeparator(ioMode);
+		str = a.getStr(ioMode);
+		str += sep;
+		str += b.getStr(ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
@@ -168,20 +189,11 @@ public:
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
-		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), is);
-		self.readStream(is, ioMode);
-		return is;
+		return self.readStream(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
 	}
-	/*
-		Fp2T = <a> + ' ' + <b>
-	*/
 	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
-		return os << self.a << Fp::getIoSeparator() << self.b;
-	}
-	void getStr(std::string& str, int ioMode = 0) const
-	{
-		str = a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
+		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -605,32 +617,40 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		return a == rhs.a && b == rhs.b && c == rhs.c;
 	}
 	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
-	friend std::ostream& operator<<(std::ostream& os, const Fp6T& x)
-	{
-		const char *sep = Fp::getIoSeparator();
-		return os << x.a << sep << x.b << sep << x.c;
-	}
-	void readStream(std::istream& is, int ioMode)
+	std::istream& readStream(std::istream& is, int ioMode)
 	{
 		a.readStream(is, ioMode);
 		b.readStream(is, ioMode);
 		c.readStream(is, ioMode);
+		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		std::istringstream is(str);
 		readStream(is, ioMode);
 	}
-	friend std::istream& operator>>(std::istream& is, Fp6T& self)
+	void getStr(std::string& str, int ioMode = 0) const
 	{
-		int ioMode = fp::detectIoMode(Fp::getIoMode(), is);
-		self.readStream(is, ioMode);
-		return is;
+		const char *sep = fp::getIoSeparator(ioMode);
+		str = a.getStr(ioMode);
+		str += sep;
+		str += b.getStr(ioMode);
+		str += sep;
+		str += c.getStr(ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
-		const char *sep = fp::getIoSeparator(ioMode);
-		return a.getStr(ioMode) + sep + b.getStr(ioMode) + sep + c.getStr(ioMode);
+		std::string str;
+		getStr(str, ioMode);
+		return str;
+	}
+	friend std::istream& operator>>(std::istream& is, Fp6T& self)
+	{
+		return self.readStream(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Fp6T& self)
+	{
+		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 	}
 	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
@@ -932,29 +952,37 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		Fp6::mul(y.b, x.b, t0);
 		Fp6::neg(y.b, y.b);
 	}
-	void readStream(std::istream& is, int ioMode)
+	std::istream& readStream(std::istream& is, int ioMode)
 	{
 		a.readStream(is, ioMode);
 		b.readStream(is, ioMode);
+		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		std::istringstream is(str);
 		readStream(is, ioMode);
 	}
-	friend std::istream& operator>>(std::istream& is, Fp12T& self)
+	void getStr(std::string& str, int ioMode = 0) const
 	{
-		int ioMode = fp::detectIoMode(Fp::getIoMode(), is);
-		self.readStream(is, ioMode);
-		return is;
-	}
-	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
-	{
-		return os << self.a << Fp::getIoSeparator() << self.b;
+		const char *sep = fp::getIoSeparator(ioMode);
+		str = a.getStr(ioMode);
+		str += sep;
+		str += b.getStr(ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
-		return a.getStr(ioMode) + fp::getIoSeparator(ioMode) + b.getStr(ioMode);
+		std::string str;
+		getStr(str, ioMode);
+		return str;
+	}
+	friend std::istream& operator>>(std::istream& is, Fp12T& self)
+	{
+		return self.readStream(is, fp::detectIoMode(Fp::getIoMode(), is));
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
+	{
+		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 	}
 };
 

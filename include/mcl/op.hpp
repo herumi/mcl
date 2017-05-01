@@ -305,9 +305,22 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode);
 
 inline const char* getIoSeparator(int ioMode)
 {
-	return (ioMode & (IoArray | IoArrayRaw | IoTight)) ? "" : " ";
+	return (ioMode & (IoArray | IoArrayRaw | IoEcComp)) ? "" : " ";
 }
 
 int detectIoMode(int ioMode, const std::ios_base& ios);
+
+inline void dump(const char *s, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		printf("%02x ", (uint8_t)s[i]);
+	}
+	printf("\n");
+}
+
+inline void dump(const std::string& s)
+{
+	dump(s.c_str(), s.size());
+}
 
 } } // mcl::fp

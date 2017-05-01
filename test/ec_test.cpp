@@ -286,14 +286,14 @@ struct Test {
 		{
 			std::string s = P.getStr(mcl::IoEcComp);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
-			Q.setStr(s, mcl::IoTight);
+			Q.setStr(s, mcl::IoEcComp);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		{
 			P = -P;
 			std::string s = P.getStr(mcl::IoEcComp);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
-			Q.setStr(s, mcl::IoTight);
+			Q.setStr(s, mcl::IoEcComp);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		P.clear();
@@ -301,7 +301,7 @@ struct Test {
 			std::string s = P.getStr(mcl::IoEcComp);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
 			CYBOZU_TEST_ASSERT(mcl::fp::isZeroArray(s.c_str(), s.size()));
-			Q.setStr(s, mcl::IoTight);
+			Q.setStr(s, mcl::IoEcComp);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 	}

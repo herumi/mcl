@@ -274,7 +274,7 @@ void testTrivial(const G1& P, const G2& Q)
 	CYBOZU_TEST_EQUAL(e, 1);
 }
 
-void testIo(const G1& P, const G2& Q)
+void testIoAll(const G1& P, const G2& Q)
 {
 	int FpTbl[] = { 0, 2, 2|mcl::IoPrefix, 10, 16, 16|mcl::IoPrefix, mcl::IoArray, mcl::IoArrayRaw };
 	int EcTbl[] = { mcl::IoEcAffine, mcl::IoEcProj, mcl::IoEcCompY, mcl::IoEcComp };
@@ -282,13 +282,25 @@ void testIo(const G1& P, const G2& Q)
 		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(EcTbl); j++) {
 			G1 P2 = P, P3;
 			G2 Q2 = Q, Q3;
-			int ioMode = FpTbl[i] | FpTbl[j];
-			P3.setStr(P2.getStr(ioMode));
+			int ioMode = FpTbl[i] | EcTbl[j];
+			std::string s = P2.getStr(ioMode);
+			P3.setStr(s, ioMode);
 			CYBOZU_TEST_EQUAL(P2, P3);
-			Q3.setStr(Q2.getStr(ioMode));
+			s = Q2.getStr(ioMode);
+			Q3.setStr(s, ioMode);
 			CYBOZU_TEST_EQUAL(Q2, Q3);
 		}
 	}
+}
+
+void testIo(const G1& P, const G2& Q)
+{
+	testIoAll(P, Q);
+	G1 Z1;
+	G2 Z2;
+	Z1.clear();
+	Z2.clear();
+	testIoAll(Z1, Z2);
 }
 
 CYBOZU_TEST_AUTO(naive)

@@ -342,6 +342,22 @@ void testFpDbl()
 	}
 }
 
+void testIo()
+{
+	int modeTbl[] = { 0, 2, 2 | mcl::IoPrefix, 10, 16, 16 | mcl::IoPrefix, mcl::IoArray, mcl::IoArrayRaw };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(modeTbl); i++) {
+		int ioMode = modeTbl[i];
+		Fp12 x;
+		for (int j = 0; j < 12; j++) {
+			x.getFp0()[j] = j * j;
+		}
+		std::string s = x.getStr(ioMode);
+		Fp12 y;
+		y.setStr(s, ioMode);
+		CYBOZU_TEST_EQUAL(x, y);
+	}
+}
+
 void benchFp2()
 {
 	puts(__FUNCTION__);
@@ -383,6 +399,7 @@ void test(const char *p, mcl::fp::Mode mode)
 	testFpDbl();
 	testFp6();
 	testFp12();
+	testIo();
 }
 
 void testAll()

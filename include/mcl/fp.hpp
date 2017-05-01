@@ -196,7 +196,7 @@ public:
 	{
 		if (isMont()) op_.fromMont(v_, v_);
 	}
-	void readStream(std::istream& is, int ioMode)
+	std::istream& readStream(std::istream& is, int ioMode)
 	{
 		bool isMinus;
 		fp::streamToArray(&isMinus, v_, FpT::getByteSize(), is, ioMode);
@@ -207,6 +207,7 @@ public:
 			}
 			toMont();
 		}
+		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
@@ -268,7 +269,7 @@ public:
 			getBlock(b);
 			p = b.p;
 		}
-		if (ioMode & (IoArray | IoArrayRaw | IoTight)) {
+		if (ioMode & (IoArray | IoArrayRaw | IoEcComp)) {
 			str.resize(n);
 			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), p, str.size());
 			return;
@@ -367,9 +368,7 @@ public:
 	}
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)
 	{
-		int ioMode = fp::detectIoMode(getIoMode(), is);
-		self.readStream(is, ioMode);
-		return is;
+		return self.readStream(is, fp::detectIoMode(getIoMode(), is));
 	}
 	/*
 		@note
@@ -414,7 +413,6 @@ public:
 		ioMode_ = ioMode;
 	}
 	static inline IoMode getIoMode() { return ioMode_; }
-	static inline const char* getIoSeparator() { return fp::getIoSeparator(ioMode_); }
 	// backward compatibility
 	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
