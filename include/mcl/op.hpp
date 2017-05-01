@@ -72,18 +72,18 @@ namespace mcl {
 */
 enum IoMode {
 	IoAuto = 0, // dec or hex according to ios_base::fmtflags
-	IoPrefix = 1, // append '0b'(bin) or '0x'(hex)
 	IoBin = 2, // binary number without prefix
 	IoDec = 10, // decimal number without prefix
 	IoHex = 16, // hexadecimal number without prefix
-	IoBinPrefix = IoBin | IoPrefix,
-	IoHexPrefix = IoHex | IoPrefix,
 	IoArray = 32, // array of Unit(fixed size)
 	IoArrayRaw = 64, // raw array of Unit without Montgomery conversion
+	IoPrefix = 128, // append '0b'(bin) or '0x'(hex)
+	IoBinPrefix = IoBin | IoPrefix,
+	IoHexPrefix = IoHex | IoPrefix,
 	IoEcAffine = 0, // affine coordinate
-	IoEcCompY = 128, // 1-bit y representation of elliptic curve
-	IoEcComp = 256, // use MBS for 1-bit y
-	IoEcProj = 512, // projective or jacobi coordinate
+	IoEcCompY = 256, // 1-bit y representation of elliptic curve
+	IoEcComp = 512, // use MBS for 1-bit y
+	IoEcProj = 1024, // projective or jacobi coordinate
 	IoTight = IoEcComp // tight repr of Ec(obsolete)
 };
 

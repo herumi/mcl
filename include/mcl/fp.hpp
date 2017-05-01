@@ -274,8 +274,8 @@ public:
 			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), p, str.size());
 			return;
 		}
-		// use low 5-bit ioMode for base
-		fp::arrayToStr(str, b.p, b.n, ioMode & 31);
+		// use low 8-bit ioMode for Fp
+		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
