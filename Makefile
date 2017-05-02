@@ -163,6 +163,14 @@ ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
 -include $(DEPEND_FILE)
 
+PREFIX?=/usr/local
+install: lib/libmcl.a lib/libmcl_dy.$(LIB_SUF)
+	$(MAKE) -C ../cybozulib install PREFIX=$(PREFIX)
+	$(MKDIR) $(PREFIX)/include/mcl
+	cp -a include/mcl/ $(PREFIX)/include/
+	$(MKDIR) $(PREFIX)/lib
+	cp -a lib/libmcl.a lib/libmcl_dy.$(LIB_SUF) $(PREFIX)/lib/
+
 .PHONY: test
 
 # don't remove these files automatically
