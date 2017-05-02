@@ -37,13 +37,21 @@ elseif(UNIX)
 endif()
 
 include_directories(
-	include
-	../cybozulib/include
-	../xbyak
+	${mcl_SOURCE_DIR}/include
+	${mcl_SOURCE_DIR}/../cybozulib/include
+	${mcl_SOURCE_DIR}/../xbyak
 )
 
 add_library(mcl STATIC ${SRCS})
 add_library(mcl_dy SHARED ${SRCS})
+
+file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/*.h)
+file(GLOB CYBOZULIB_HEADERS ../cybozulib/include/cybozu/*.hpp)
+
+install(TARGETS mcl DESTINATION lib)
+install(TARGETS mcl_dy DESTINATION lib)
+install(FILES ${MCL_HEADERS} DESTINATION include/mcl)
+install(FILES ${CYBOZULIB_HEADERS} DESTINATION include/cybozu)
 
 set(TEST_BASE fp_test ec_test fp_util_test window_method_test elgamal_test fp_tower_test gmp_test bn_test glv_test)
 foreach(base IN ITEMS ${TEST_BASE})
