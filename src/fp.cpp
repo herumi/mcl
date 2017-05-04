@@ -2,7 +2,6 @@
 #include <mcl/util.hpp>
 #include <cybozu/crypto.hpp>
 #include <cybozu/endian.hpp>
-#include <cybozu/stream.hpp>
 #include "conversion.hpp"
 #include "fp_generator.hpp"
 #include "low_func.hpp"
