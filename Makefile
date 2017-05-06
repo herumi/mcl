@@ -22,11 +22,12 @@ endif
 ifeq ($(MCL_USE_XBYAK),0)
   CFLAGS+=-DMCL_DONT_USE_XBYAK
 endif
+SHARE_BASENAME_SUF?=_dy
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
-MCL_SLIB=$(LIB_DIR)/libmcl_dy.$(LIB_SUF)
+MCL_SLIB=$(LIB_DIR)/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
 BN256_LIB=$(LIB_DIR)/libbn256.a
-BN256_SLIB=$(LIB_DIR)/libbn256_dy.$(LIB_SUF)
+BN256_SLIB=$(LIB_DIR)/libbn256$(SHARE_BASENAME_SUF).$(LIB_SUF)
 all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB)
 
 #LLVM_VER=-3.8
@@ -164,12 +165,12 @@ DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
 -include $(DEPEND_FILE)
 
 PREFIX?=/usr/local
-install: lib/libmcl.a lib/libmcl_dy.$(LIB_SUF)
+install: lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
 	$(MAKE) -C ../cybozulib install PREFIX=$(PREFIX)
 	$(MKDIR) $(PREFIX)/include/mcl
 	cp -a include/mcl/ $(PREFIX)/include/
 	$(MKDIR) $(PREFIX)/lib
-	cp -a lib/libmcl.a lib/libmcl_dy.$(LIB_SUF) $(PREFIX)/lib/
+	cp -a lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF) $(PREFIX)/lib/
 
 .PHONY: test
 
