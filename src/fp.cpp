@@ -465,7 +465,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode)
 {
 	int base = ioMode & ~IoPrefix;
-	bool withPrefix = ioMode & IoPrefix;
+	bool withPrefix = (ioMode & IoPrefix) != 0;
 	switch (base) {
 	case 0:
 	case 10:
