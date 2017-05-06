@@ -35,7 +35,7 @@ namespace mcl {
 		static void TestFr()
 		{
 			Console.WriteLine("TestFr");
-			Fr x = new Fr();
+			Fr x;
 			x.Clear();
 			assert("0", x.ToString() == "0");
 			assert("0.IzZero", x.IsZero());
@@ -55,7 +55,7 @@ namespace mcl {
 			x = x * x;
 			assert("16", x.ToString() == "16");
 			Fr y;
-			y = x.Clone();
+			y = x;
 			assert("x == y", x.Equals(y));
 			x.SetInt(123);
 			assert("123", x.ToString() == "123");
