@@ -4,19 +4,18 @@ using System.Runtime.InteropServices;
 
 namespace mcl {
 	class BN256 {
-		public const int N = 4;
 		[DllImport("bn256.dll")]
 		public static extern int BN256_setErrFile([In][MarshalAs(UnmanagedType.LPStr)] string name);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_init();
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_clear(out Fr x);
+		public static extern void BN256_Fr_clear([Out] Fr x);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_setInt(out Fr y, int x);
+		public static extern void BN256_Fr_setInt([Out] Fr y, int x);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_Fr_setStr(out Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
+		public static extern int BN256_Fr_setStr([Out] Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_Fr_isValid(ref Fr x);
+		public static extern int BN256_Fr_isValid([In] Fr x);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isSame([In] Fr x, [In] Fr y);
 		[DllImport("bn256.dll")]
@@ -24,25 +23,25 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isOne([In] Fr x);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_setRand(out Fr x);
+		public static extern void BN256_Fr_setRand([Out] Fr x);
 
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_setMsg(out Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
+		public static extern void BN256_Fr_setMsg([Out] Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_getStr([Out]StringBuilder buf, int maxBufSize, [In] Fr x);
 
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_neg(out Fr y, [In] Fr x);
+		public static extern void BN256_Fr_neg([Out] Fr y, [In] Fr x);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_inv(out Fr y, [In] Fr x);
+		public static extern void BN256_Fr_inv([Out] Fr y, [In] Fr x);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_add(out Fr z, [In] Fr x, [In] Fr y);
+		public static extern void BN256_Fr_add([Out] Fr z, [In] Fr x, [In] Fr y);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_sub(out Fr z, [In] Fr x, [In] Fr y);
+		public static extern void BN256_Fr_sub([Out] Fr z, [In] Fr x, [In] Fr y);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_mul(out Fr z, [In] Fr x, [In] Fr y);
+		public static extern void BN256_Fr_mul([Out] Fr z, [In] Fr x, [In] Fr y);
 		[DllImport("bn256.dll")]
-		public static extern void BN256_Fr_div(out Fr z, [In] Fr x, [In] Fr y);
+		public static extern void BN256_Fr_div([Out] Fr z, [In] Fr x, [In] Fr y);
 
 		[DllImport("bn256.dll")]
 		public static extern void BN256_G1_clear([Out] G1 x);
@@ -129,15 +128,15 @@ namespace mcl {
 		public static extern void BN256_millerLoop([Out] GT z, [In] G1 x, [In] G2 y);
 
 		[StructLayout(LayoutKind.Sequential)]
-		public struct Fr {
-			private unsafe fixed ulong v[N];
+		public class Fr {
+			private ulong v0, v1, v2, v3;
 			public void Clear()
 			{
-				BN256_Fr_clear(out this);
+				BN256_Fr_clear(this);
 			}
 			public void SetInt(int x)
 			{
-				BN256_Fr_setInt(out this, x);
+				BN256_Fr_setInt(this, x);
 			}
 			public Fr Clone()
 			{
@@ -145,15 +144,15 @@ namespace mcl {
 			}
 			public void SetStr(string s)
 			{
-				if (BN256_Fr_setStr(out this, s) != 0) {
+				if (BN256_Fr_setStr(this, s) != 0) {
 					throw new ArgumentException("BN256_Fr_setStr", s);
 				}
 			}
 			public bool IsValid()
 			{
-				return BN256_Fr_isValid(ref this) == 1;
+				return BN256_Fr_isValid(this) == 1;
 			}
-			public bool Equals([In] Fr rhs)
+			public bool Equals(Fr rhs)
 			{
 				return BN256_Fr_isSame(this, rhs) == 1;
 			}
@@ -167,11 +166,11 @@ namespace mcl {
 			}
 			public void SetRand()
 			{
-				BN256_Fr_setRand(out this);
+				BN256_Fr_setRand(this);
 			}
 			public void SetMsg(String s)
 			{
-				BN256_Fr_setMsg(out this, s);
+				BN256_Fr_setMsg(this, s);
 			}
 			public override string ToString()
 			{
@@ -181,58 +180,58 @@ namespace mcl {
 				}
 				return sb.ToString();
 			}
-			public static void Neg(out Fr y, [In] Fr x)
+			public static void Neg(Fr y, Fr x)
 			{
-				BN256_Fr_neg(out y, x);
+				BN256_Fr_neg(y, x);
 			}
-			public static void Inv(out Fr y, [In] Fr x)
+			public static void Inv(Fr y, Fr x)
 			{
-				BN256_Fr_inv(out y, x);
+				BN256_Fr_inv(y, x);
 			}
-			public static void Add(out Fr z, [In] Fr x, [In] Fr y)
+			public static void Add(Fr z, Fr y, Fr x)
 			{
-				BN256_Fr_add(out z, x, y);
+				BN256_Fr_add(z, y, x);
 			}
-			public static void Sub(out Fr z, [In] Fr x, [In] Fr y)
+			public static void Sub(Fr z, Fr y, Fr x)
 			{
-				BN256_Fr_sub(out z, x, y);
+				BN256_Fr_sub(z, y, x);
 			}
-			public static void Mul(out Fr z, [In] Fr x, [In] Fr y)
+			public static void Mul(Fr z, Fr y, Fr x)
 			{
-				BN256_Fr_mul(out z, x, y);
+				BN256_Fr_mul(z, y, x);
 			}
-			public static void Div(out Fr z, [In] Fr x, [In] Fr y)
+			public static void Div(Fr z, Fr y, Fr x)
 			{
-				BN256_Fr_div(out z, x, y);
+				BN256_Fr_div(z, y, x);
 			}
-			public static Fr operator -([In] Fr x)
+			public static Fr operator -(Fr x)
 			{
-				Fr y;
-				Neg(out y, x);
+				Fr y = new Fr();
+				Neg(y, x);
 				return y;
 			}
-			public static Fr operator +([In] Fr x, [In] Fr y)
+			public static Fr operator +(Fr x, Fr y)
 			{
-				Fr z;
-				Add(out z, x, y);
+				Fr z = new Fr();
+				Add(z, x, y);
 				return z;
 			}
-			public static Fr operator -([In] Fr x, [In] Fr y)
+			public static Fr operator -(Fr x, Fr y)
 			{
-				Fr z;
-				Sub(out z, x, y);
+				Fr z = new Fr();
+				Sub(z, x, y);
 				return z;
 			}
-			public static Fr operator *([In] Fr x, [In] Fr y)
+			public static Fr operator *(Fr x, Fr y)
 			{
-				Fr z;
-				Mul(out z, x, y);
+				Fr z = new Fr();
+				Mul(z, x, y);
 				return z;
 			}
-			public static Fr operator /([In] Fr x, [In] Fr y)
+			public static Fr operator /(Fr x, Fr y)
 			{
-				Fr z;
-				Div(out z, x, y);
+				Fr z = new Fr();
+				Div(z, x, y);
 				return z;
 			}
 		}
@@ -380,6 +379,10 @@ namespace mcl {
 				if (BN256_GT_setStr(this, s) != 0) {
 					throw new ArgumentException("BN256_GT_setStr", s);
 				}
+			}
+			public GT Clone()
+			{
+				return (GT)MemberwiseClone();
 			}
 			public bool Equals(GT rhs)
 			{
