@@ -426,13 +426,17 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 	case 5:  setOp<5>(*this, mode); break;
 	case 6:  setOp<6>(*this, mode); break;
 #endif
-#if MCL_MAX_UNIT_SIZE >= 9
+#if MCL_MAX_UNIT_SIZE >= 8
 	case 7:  setOp<7>(*this, mode); break;
 	case 8:  setOp<8>(*this, mode); break;
+#endif
+#if MCL_MAX_UNIT_SIZE >= 9
 	case 9:  setOp<9>(*this, mode); break; // 521 if 64-bit
 #endif
-#if MCL_MAX_UNIT_SIZE >= 12
+#if MCL_MAX_UNIT_SIZE >= 10
 	case 10: setOp<10>(*this, mode); break;
+#endif
+#if MCL_MAX_UNIT_SIZE >= 12
 	case 11: setOp<11>(*this, mode); break;
 	case 12: setOp<12>(*this, mode); break; // 768 if 64-bit
 #endif
