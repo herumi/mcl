@@ -262,7 +262,7 @@ public:
 	}
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		fp::Block b = {}; // disable warning of vc
+		fp::Block b;
 		const size_t n = getByteSize();
 		const Unit *p = v_;
 		if (!(ioMode & IoArrayRaw)) {
