@@ -297,7 +297,7 @@ void setOp(Op& op, Mode mode)
 #ifdef MCL_USE_XBYAK
 inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 {
-	Unit r[maxOpUnitSize];
+	Unit r[maxUnitSize];
 	int k = op.fp_preInv(r, x);
 	/*
 		S = UnitBitSize
@@ -315,7 +315,7 @@ static void initInvTbl(Op& op)
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	op.invTbl.resize(invTblN * N);
 	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
-	Unit t[maxOpUnitSize] = {};
+	Unit t[maxUnitSize] = {};
 	t[0] = 2;
 	op.toMont(tbl, t);
 	for (size_t i = 0; i < invTblN - 1; i++) {
@@ -367,7 +367,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 		}
 		if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	}
-	gmp::getArray(p, maxOpUnitSize, mp);
+	gmp::getArray(p, maxUnitSize, mp);
 	bitSize = gmp::getBitSize(mp);
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none

@@ -96,7 +96,7 @@ typedef uint64_t Unit;
 #endif
 const size_t UnitBitSize = sizeof(Unit) * 8;
 
-const size_t maxOpUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
+const size_t maxUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
 #define MCL_MAX_UNIT_SIZE ((MCL_MAX_BIT_SIZE + CYBOZU_OS_BIT - 1) / CYBOZU_OS_BIT)
 
 struct FpGenerator;
@@ -117,7 +117,7 @@ typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
 struct Block {
 	const Unit *p; // pointer to original FpT.v_
 	size_t n;
-	Unit v_[maxOpUnitSize];
+	Unit v_[maxUnitSize];
 };
 
 enum Mode {
@@ -141,12 +141,12 @@ struct Op {
 		asm code assumes &rp + 1 == p
 	*/
 	Unit rp;
-	Unit p[maxOpUnitSize];
+	Unit p[maxUnitSize];
 	mpz_class mp;
 	mcl::SquareRoot sq;
 	FpGenerator *fg;
-	Unit half[maxOpUnitSize]; // (p + 1) / 2
-	Unit oneRep[maxOpUnitSize]; // 1(=inv R if Montgomery)
+	Unit half[maxUnitSize]; // (p + 1) / 2
+	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
 	/*
 		for Montgomery
 		one = 1
@@ -154,9 +154,9 @@ struct Op {
 		R2 = (R * R) % p
 		R3 = RR^3
 	*/
-	Unit one[maxOpUnitSize];
-	Unit R2[maxOpUnitSize];
-	Unit R3[maxOpUnitSize];
+	Unit one[maxUnitSize];
+	Unit R2[maxUnitSize];
+	Unit R3[maxUnitSize];
 	std::vector<Unit> invTbl;
 	size_t N;
 	size_t bitSize;
