@@ -97,6 +97,7 @@ typedef uint64_t Unit;
 const size_t UnitBitSize = sizeof(Unit) * 8;
 
 const size_t maxOpUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
+#define MCL_MAX_UNIT_SIZE ((MCL_MAX_BIT_SIZE + CYBOZU_OS_BIT - 1) / CYBOZU_OS_BIT)
 
 struct FpGenerator;
 struct Op;
