@@ -55,7 +55,7 @@ namespace mcl {
 			x = x * x;
 			assert("16", x.ToString() == "16");
 			Fr y;
-			y = x.Clone();
+			y = x;
 			assert("x == y", x.Equals(y));
 			x.SetInt(123);
 			assert("123", x.ToString() == "123");
@@ -81,19 +81,19 @@ namespace mcl {
 			assert("P.IsValid", P.IsValid());
 			assert("!P.IsZero", !P.IsZero());
 			G1 Q = new G1();
-			Q = P.Clone();
+			Q = P;
 			assert("P == Q", Q.Equals(P));
-			G1.Neg(Q, P);
-			G1.Add(Q, Q, P);
+			Q.Neg(P);
+			Q.Add(Q, P);
 			assert("P = Q", Q.IsZero());
-			G1.Dbl(Q, P);
+			Q.Dbl(P);
 			G1 R = new G1();
-			G1.Add(R, P, P);
+			R.Add(P, P);
 			assert("Q == R", Q.Equals(R));
 			Fr x = new Fr();
 			x.SetInt(3);
-			G1.Add(R, R, P);
-			G1.Mul(Q, P, x);
+			R.Add(R, P);
+			Q.Mul(P, x);
 			assert("Q == R", Q.Equals(R));
 		}
 		static void TestG2()
@@ -108,19 +108,19 @@ namespace mcl {
 			assert("P is valid", P.IsValid());
 			assert("P is not zero", !P.IsZero());
 			G2 Q = new G2();
-			Q = P.Clone();
+			Q = P;
 			assert("P == Q", Q.Equals(P));
-			G2.Neg(Q, P);
-			G2.Add(Q, Q, P);
+			Q.Neg(P);
+			Q.Add(Q, P);
 			assert("Q is zero", Q.IsZero());
-			G2.Dbl(Q, P);
+			Q.Dbl(P);
 			G2 R = new G2();
-			G2.Add(R, P, P);
+			R.Add(P, P);
 			assert("Q == R", Q.Equals(R));
 			Fr x = new Fr();
 			x.SetInt(3);
-			G2.Add(R, R, P);
-			G2.Mul(Q, P, x);
+			R.Add(R, P);
+			Q.Mul(P, x);
 			assert("Q == R", Q.Equals(R));
 		}
 		static void TestPairing()
@@ -136,17 +136,17 @@ namespace mcl {
 			b.SetStr("230498230982394243424");
 			G1 aP = new G1();
 			G2 bQ = new G2();
-			G1.Mul(aP, P, a);
-			G2.Mul(bQ, Q, b);
+			aP.Mul(P, a);
+			bQ.Mul(Q, b);
 			GT e1 = new GT();
 			GT e2 = new GT();
 			GT e3 = new GT();
-			Pairing(e1, P, Q);
-			Pairing(e2, aP, Q);
-			GT.Pow(e3, e1, a);
+			e1.Pairing(P, Q);
+			e2.Pairing(aP, Q);
+			e3.Pow(e1, a);
 			assert("e2.Equals(e3)", e2.Equals(e3));
-			Pairing(e2, P, bQ);
-			GT.Pow(e3, e1, b);
+			e2.Pairing(P, bQ);
+			e3.Pow(e1, b);
 			assert("e2.Equals(e3)", e2.Equals(e3));
 		}
 	}
