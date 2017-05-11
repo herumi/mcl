@@ -349,9 +349,9 @@ struct ParamT {
 		Fp::sqr(Z, tmp.a);
 
 		const mpz_class largest_c = abs(6 * z + 2);
-		useNAF = getNAF(siTbl, largest_c);
+		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
-		getNAF(zReplTbl, abs(z));
+		gmp::getNAF(zReplTbl, abs(z));
 		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
 		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
 		exp_c2 = 6 * z * z + 1;
