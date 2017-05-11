@@ -34,83 +34,6 @@ const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1 }; // -(2^62 + 2^
 const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
 const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
 
-template<class Vec>
-void convertToBinary(Vec& v, const mpz_class& x)
-{
-	const size_t len = mcl::gmp::getBitSize(x);
-	v.clear();
-	for (size_t i = 0; i < len; i++) {
-		v.push_back(mcl::gmp::testBit(x, len - 1 - i) ? 1 : 0);
-	}
-}
-
-template<class Vec>
-size_t getContinuousVal(const Vec& v, size_t pos, int val)
-{
-	while (pos >= 2) {
-		if (v[pos] != val) break;
-		pos--;
-	}
-	return pos;
-}
-
-template<class Vec>
-void convertToNAF(Vec& v, const Vec& in)
-{
-	v = in;
-	size_t pos = v.size() - 1;
-	for (;;) {
-		size_t p = getContinuousVal(v, pos, 0);
-		if (p == 1) return;
-		assert(v[p] == 1);
-		size_t q = getContinuousVal(v, p, 1);
-		if (q == 1) return;
-		assert(v[q] == 0);
-		if (p - q <= 1) {
-			pos = p - 1;
-			continue;
-		}
-		v[q] = 1;
-		for (size_t i = q + 1; i < p; i++) {
-			v[i] = 0;
-		}
-		v[p] = -1;
-		pos = q;
-	}
-}
-
-template<class Vec>
-size_t getNumOfNonZeroElement(const Vec& v)
-{
-	size_t w = 0;
-	for (size_t i = 0; i < v.size(); i++) {
-		if (v[i]) w++;
-	}
-	return w;
-}
-
-/*
-	compute a repl of x which has smaller Hamming weights.
-	return true if naf is selected
-*/
-template<class Vec>
-bool getGoodRepl(Vec& v, const mpz_class& x)
-{
-	Vec bin;
-	convertToBinary(bin, x);
-	Vec naf;
-	convertToNAF(naf, bin);
-	const size_t binW = getNumOfNonZeroElement(bin);
-	const size_t nafW = getNumOfNonZeroElement(naf);
-	if (nafW < binW) {
-		v.swap(naf);
-		return true;
-	} else {
-		v.swap(bin);
-		return false;
-	}
-}
-
 template<class Fp>
 struct MapToT {
 	typedef mcl::Fp2T<Fp> Fp2;
@@ -426,9 +349,9 @@ struct ParamT {
 		Fp::sqr(Z, tmp.a);
 
 		const mpz_class largest_c = abs(6 * z + 2);
-		useNAF = getGoodRepl(siTbl, largest_c);
+		useNAF = getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
-		getGoodRepl(zReplTbl, abs(z));
+		getNAF(zReplTbl, abs(z));
 		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
 		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
 		exp_c2 = 6 * z * z + 1;

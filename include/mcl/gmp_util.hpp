@@ -299,6 +299,87 @@ struct gmp {
 	}
 };
 
+namespace impl {
+
+template<class Vec>
+void convertToBinary(Vec& v, const mpz_class& x)
+{
+	const size_t len = mcl::gmp::getBitSize(x);
+	v.clear();
+	for (size_t i = 0; i < len; i++) {
+		v.push_back(mcl::gmp::testBit(x, len - 1 - i) ? 1 : 0);
+	}
+}
+
+template<class Vec>
+size_t getContinuousVal(const Vec& v, size_t pos, int val)
+{
+	while (pos >= 2) {
+		if (v[pos] != val) break;
+		pos--;
+	}
+	return pos;
+}
+
+template<class Vec>
+void convertToNAF(Vec& v, const Vec& in)
+{
+	v = in;
+	size_t pos = v.size() - 1;
+	for (;;) {
+		size_t p = getContinuousVal(v, pos, 0);
+		if (p == 1) return;
+		assert(v[p] == 1);
+		size_t q = getContinuousVal(v, p, 1);
+		if (q == 1) return;
+		assert(v[q] == 0);
+		if (p - q <= 1) {
+			pos = p - 1;
+			continue;
+		}
+		v[q] = 1;
+		for (size_t i = q + 1; i < p; i++) {
+			v[i] = 0;
+		}
+		v[p] = -1;
+		pos = q;
+	}
+}
+
+template<class Vec>
+size_t getNumOfNonZeroElement(const Vec& v)
+{
+	size_t w = 0;
+	for (size_t i = 0; i < v.size(); i++) {
+		if (v[i]) w++;
+	}
+	return w;
+}
+
+} // impl
+
+/*
+	compute a repl of x which has smaller Hamming weights.
+	return true if naf is selected
+*/
+template<class Vec>
+bool getNAF(Vec& v, const mpz_class& x)
+{
+	Vec bin;
+	impl::convertToBinary(bin, x);
+	Vec naf;
+	impl::convertToNAF(naf, bin);
+	const size_t binW = impl::getNumOfNonZeroElement(bin);
+	const size_t nafW = impl::getNumOfNonZeroElement(naf);
+	if (nafW < binW) {
+		v.swap(naf);
+		return true;
+	} else {
+		v.swap(bin);
+		return false;
+	}
+}
+
 /*
 	Tonelli-Shanks
 */
