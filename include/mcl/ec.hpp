@@ -647,7 +647,7 @@ public:
 	}
 	static inline bool isIoEcCompSupported()
 	{
-		return !b_.isZero() && (Fp::getBitSize() & 7) != 0;
+		return !b_.isZero() && (Fp::BaseFp::getBitSize() & 7) != 0;
 	}
 	/*
 		see mcl/op.hpp for the format of ioMode

@@ -103,8 +103,6 @@ class Fp2T : public fp::Operator<Fp2T<Fp> > {
 public:
 	typedef typename Fp::BaseFp BaseFp;
 	static const size_t maxSize = Fp::maxSize * 2;
-	// not Fp::getBitSize() * 2
-	static inline size_t getBitSize() { return Fp::getByteSize() * 8 + Fp::getBitSize(); }
 	static inline size_t getByteSize() { return Fp::getByteSize() * 2; }
 	void dump() const
 	{
