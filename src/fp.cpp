@@ -367,7 +367,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
 		}
 		if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	}
-	gmp::getArray(p, maxUnitSize, mp);
+	gmp::getArray(p, (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize, mp);
 	bitSize = gmp::getBitSize(mp);
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
