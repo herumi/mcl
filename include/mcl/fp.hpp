@@ -260,6 +260,10 @@ public:
 	{
 		setMsg(msg.data(), msg.size());
 	}
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable:4701)
+#endif
 	void getStr(std::string& str, int ioMode = 0) const
 	{
 		fp::Block b;
@@ -277,6 +281,9 @@ public:
 		// use low 8-bit ioMode for Fp
 		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
 	}
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
 	std::string getStr(int ioMode = 0) const
 	{
 		std::string str;
