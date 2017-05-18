@@ -221,7 +221,7 @@ inline int legendre(const mpz_class& a, const mpz_class& p)
 }
 inline bool isPrime(const mpz_class& x)
 {
-	return mpz_probab_prime_p(x.get_mpz_t(), 25) != 0;
+	return mpz_probab_prime_p(x.get_mpz_t(), 32) != 0;
 }
 inline size_t getBitSize(const mpz_class& x)
 {
