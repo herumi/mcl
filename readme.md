@@ -78,11 +78,19 @@ msbuild /p:Configuration=Release
 ```
 
 ## Build with cmake
+For Linux,
 ```
 mkdir build
 cd build
 cmake ..
 make
+```
+For Visual Studio,
+```
+mkdir build
+cd build
+cmake .. -A x64
+msbuild mcl.sln /p:Configuration=Release /m
 ```
 ### SELinux
 mcl uses Xbyak JIT engine if it is available on x64 architecture,
