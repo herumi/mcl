@@ -36,10 +36,23 @@ elseif(UNIX)
 	set(CPU x86-64)
 endif()
 
+set(XBYAK_TAG v5.43)
+foreach(file IN ITEMS xbyak.h xbyak_util.h xbyak_mnemonic.h)
+	file(DOWNLOAD https://raw.githubusercontent.com/herumi/xbyak/${XBYAK_TAG}/xbyak/${file} ${mcl_SOURCE_DIR}/include/xbyak/${file})
+	message("download xbyak/" ${file})
+endforeach()
+
+set(CYBOZULIB_TAG release20170521)
+set(CYBOZULIB_FILES atoi.hpp bit_operation.hpp endian.hpp hash.hpp itoa.hpp random_generator.hpp unordered_map.hpp benchmark.hpp crypto.hpp exception.hpp inttype.hpp option.hpp test.hpp xorshift.hpp)
+foreach(file IN ITEMS ${CYBOZULIB_FILES})
+	file(DOWNLOAD https://raw.githubusercontent.com/herumi/cybozulib/${CYBOZULIB_TAG}/include/cybozu/${file} ${mcl_SOURCE_DIR}/include/cybozu/${file})
+	message("download cybozu/" ${file})
+endforeach()
+
 include_directories(
 	${mcl_SOURCE_DIR}/include
-	${mcl_SOURCE_DIR}/../cybozulib/include
-	${mcl_SOURCE_DIR}/../xbyak
+#	${mcl_SOURCE_DIR}/../cybozulib/include
+#	${mcl_SOURCE_DIR}/../xbyak
 )
 
 add_library(mcl STATIC ${SRCS})
