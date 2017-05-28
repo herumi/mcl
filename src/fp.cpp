@@ -9,6 +9,8 @@
 #include "proto.hpp"
 #include "low_func_llvm.hpp"
 #endif
+#include <cybozu/atoi.hpp>
+#include <cybozu/itoa.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
@@ -133,6 +135,34 @@ void UnitToHex(char *buf, size_t maxBufSize, Unit x)
 #else
 	CYBOZU_SNPRINTF(buf, maxBufSize, "%016llx ", (unsigned long long)x);
 #endif
+}
+
+// "123af" => { 0xaf, 0x23, 0x01 }
+std::string hexStrToLittleEndian(const char *buf, size_t bufSize)
+{
+	std::string s;
+	s.reserve((bufSize + 1) / 2);
+	while (bufSize >= 2) {
+		uint8_t c = cybozu::hextoi(&buf[bufSize - 2], 2);
+		s += char(c);
+		bufSize -= 2;
+	}
+	if (bufSize == 1) {
+		uint8_t c = cybozu::hextoi(&buf[0], 1);
+		s += char(c);
+	}
+	return s;
+}
+
+// { 0xaf, 0x23, 0x01 } => "0123af"
+std::string littleEndianToHexStr(const char *buf, size_t bufSize)
+{
+	std::string s;
+	s.resize(bufSize * 2);
+	for (size_t i = 0; i < bufSize; i++) {
+		cybozu::itohex(&s[i * 2], 2, (uint8_t)buf[bufSize - 1 - i], false);
+	}
+	return s;
 }
 
 bool isEnableJIT()

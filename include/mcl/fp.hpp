@@ -51,6 +51,8 @@ Mode StrToMode(const std::string& s);
 
 void dumpUnit(Unit x);
 void UnitToHex(char *buf, size_t maxBufSize, Unit x);
+std::string hexStrToLittleEndian(const char *buf, size_t bufSize);
+std::string littleEndianToHexStr(const char *buf, size_t bufSize);
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
