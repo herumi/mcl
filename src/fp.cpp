@@ -539,7 +539,7 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode)
 {
 	std::string str;
-	if (ioMode & (IoArray | IoArrayRaw | IoEcComp)) {
+	if (ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)) {
 		str.resize(byteSize);
 		is.read(&str[0], byteSize);
 		*pIsMinus = false;

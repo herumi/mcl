@@ -273,7 +273,7 @@ public:
 			getBlock(b);
 			p = b.p;
 		}
-		if (ioMode & (IoArray | IoArrayRaw | IoEcComp)) {
+		if (ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)) {
 			str.resize(n);
 			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), p, str.size());
 			return;

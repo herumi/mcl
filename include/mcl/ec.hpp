@@ -645,7 +645,7 @@ public:
 		return z.isZero();
 #endif
 	}
-	static inline bool isIoEcCompSupported()
+	static inline bool isFixedSizeByteSeq()
 	{
 		return !b_.isZero() && (Fp::BaseFp::getBitSize() & 7) != 0;
 	}
@@ -667,8 +667,8 @@ public:
 		}
 		EcT P(*this);
 		P.normalize();
-		if (ioMode & IoEcComp) {
-			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
+		if (ioMode & IoFixedSizeByteSeq) {
+			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
 			if (isZero()) {
 				str.clear();
@@ -717,8 +717,8 @@ public:
 #else
 		z = 1;
 #endif
-		if (ioMode & IoEcComp) {
-			if (!isIoEcCompSupported()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
+		if (ioMode & IoFixedSizeByteSeq) {
+			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
 			std::string str;
 			const size_t n = Fp::getByteSize();
 			str.resize(n);

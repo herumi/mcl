@@ -26,13 +26,14 @@ namespace mcl {
 
 	byte string(not zero terminated, fixed size)
 	IoArray | IoArrayRaw
+	IoArray = IoFixedSizeByteSeq
 
 	// for Ec
 	affine(0) | IoEcCompY | IoComp
 	default : affine
 
 	affine and IoEcCompY are available with ioMode for Fp
-	IoEcComp ignores ioMode for Fp
+	IoFixedSizeByteSeq ignores ioMode for Fp
 
 	IoAuto
 		dec or hex according to ios_base::fmtflags
@@ -64,7 +65,7 @@ namespace mcl {
 		"2 <x>" ; compressed for even y
 		"3 <x>" ; compressed for odd y
 
-	IoComp(fixed size = Fp::getByteSize())
+	IoFixedSizeByteSeq(fixed size = Fp::getByteSize())
 		use MSB of array of x for 1-bit y for prime p where (p % 8 != 0)
 		[0] ; infinity
 		<x> ; for even y
@@ -82,9 +83,8 @@ enum IoMode {
 	IoHexPrefix = IoHex | IoPrefix,
 	IoEcAffine = 0, // affine coordinate
 	IoEcCompY = 256, // 1-bit y representation of elliptic curve
-	IoEcComp = 512, // use MBS for 1-bit y
-	IoEcProj = 1024, // projective or jacobi coordinate
-	IoTight = IoEcComp // tight repr of Ec(obsolete)
+	IoFixedSizeByteSeq = 512, // use MBS for 1-bit y
+	IoEcProj = 1024 // projective or jacobi coordinate
 };
 
 namespace fp {
@@ -306,7 +306,7 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode);
 
 inline const char* getIoSeparator(int ioMode)
 {
-	return (ioMode & (IoArray | IoArrayRaw | IoEcComp)) ? "" : " ";
+	return (ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)) ? "" : " ";
 }
 
 int detectIoMode(int ioMode, const std::ios_base& ios);

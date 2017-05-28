@@ -277,7 +277,7 @@ void testTrivial(const G1& P, const G2& Q)
 void testIoAll(const G1& P, const G2& Q)
 {
 	int FpTbl[] = { 0, 2, 2|mcl::IoPrefix, 10, 16, 16|mcl::IoPrefix, mcl::IoArray, mcl::IoArrayRaw };
-	int EcTbl[] = { mcl::IoEcAffine, mcl::IoEcProj, mcl::IoEcCompY, mcl::IoEcComp };
+	int EcTbl[] = { mcl::IoEcAffine, mcl::IoEcProj, mcl::IoEcCompY, mcl::IoFixedSizeByteSeq };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(FpTbl); i++) {
 		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(EcTbl); j++) {
 			G1 P2 = P, P3;
