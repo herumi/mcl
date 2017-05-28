@@ -226,7 +226,7 @@ public:
 		toMont();
 	}
 	/*
-		mask inBuf with (1 << (bitLen - 1)) - 1
+		mask inBuf with (1 << (bitLen - 1)) - 1 if x >= p
 	*/
 	template<class S>
 	void setArrayMask(const S *inBuf, size_t n)
