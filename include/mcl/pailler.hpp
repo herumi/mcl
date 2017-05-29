@@ -11,15 +11,15 @@
 namespace mcl { namespace pailler {
 
 class PublicKey {
-	size_t bitSize;
+	size_t primeBitSize;
 	mpz_class g;
 	mpz_class n;
 	mpz_class n2;
 public:
-	PublicKey() : bitSize(0) {}
-	void init(size_t _bitSize, const mpz_class& _n)
+	PublicKey() : primeBitSize(0) {}
+	void init(size_t _primeBitSize, const mpz_class& _n)
 	{
-		bitSize = _bitSize;
+		primeBitSize = _primeBitSize;
 		n = _n;
 		g = 1 + _n;
 		n2 = _n * _n;
@@ -27,9 +27,9 @@ public:
 	template<class RG>
 	void enc(mpz_class& c, const mpz_class& m, RG& rg) const
 	{
-		if (bitSize == 0) throw cybozu::Exception("pailler:PublicKey:not init");
+		if (primeBitSize == 0) throw cybozu::Exception("pailler:PublicKey:not init");
 		mpz_class r;
-		mcl::gmp::getRand(r, bitSize, rg);
+		mcl::gmp::getRand(r, primeBitSize, rg);
 		mpz_class a, b;
 		mcl::gmp::powMod(a, g, m, n2);
 		mcl::gmp::powMod(b, r, n, n2);
@@ -46,20 +46,23 @@ public:
 };
 
 class SecretKey {
-	size_t bitSize;
+	size_t primeBitSize;
 	mpz_class n;
 	mpz_class n2;
 	mpz_class lambda;
 	mpz_class invLambda;
 public:
-	SecretKey() : bitSize(0) {}
+	SecretKey() : primeBitSize(0) {}
+	/*
+		the size of prime is half of bitSize
+	*/
 	template<class RG>
 	void init(size_t bitSize, RG& rg)
 	{
-		this->bitSize = bitSize;
+		primeBitSize = bitSize / 2;
 		mpz_class p, q;
-		mcl::gmp::getRandPrime(p, bitSize, rg);
-		mcl::gmp::getRandPrime(q, bitSize, rg);
+		mcl::gmp::getRandPrime(p, primeBitSize, rg);
+		mcl::gmp::getRandPrime(q, primeBitSize, rg);
 		lambda = (p - 1) * (q - 1);
 		n = p * q;
 		n2 = n * n;
@@ -67,7 +70,7 @@ public:
 	}
 	void getPublicKey(PublicKey& pub) const
 	{
-		pub.init(bitSize, n);
+		pub.init(primeBitSize, n);
 	}
 	void dec(mpz_class& m, const mpz_class& c) const
 	{
