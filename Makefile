@@ -3,7 +3,7 @@ LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn256_test.cpp bn384_test.cpp glv_test.cpp pailler_test.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn_if256_test.cpp bn384_test.cpp glv_test.cpp pailler_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -26,9 +26,11 @@ SHARE_BASENAME_SUF?=_dy
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
 MCL_SLIB=$(LIB_DIR)/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
-BN256_LIB=$(LIB_DIR)/libbn256.a
-BN256_SLIB=$(LIB_DIR)/libbn256$(SHARE_BASENAME_SUF).$(LIB_SUF)
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB)
+BN256_LIB=$(LIB_DIR)/libbn_if256.a
+BN256_SLIB=$(LIB_DIR)/libbn_if256$(SHARE_BASENAME_SUF).$(LIB_SUF)
+BN384_LIB=$(LIB_DIR)/libbn_if384.a
+BN384_SLIB=$(LIB_DIR)/libbn_if384$(SHARE_BASENAME_SUF).$(LIB_SUF)
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -44,7 +46,7 @@ ifneq ($(CPU),)
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
-BN256_OBJ=$(OBJ_DIR)/bn256.o
+BN256_OBJ=$(OBJ_DIR)/bn_if256.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
@@ -91,6 +93,18 @@ $(BN256_LIB): $(LIB_OBJ) $(BN256_OBJ)
 
 $(BN256_SLIB): $(LIB_OBJ) $(BN256_OBJ)
 	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN256_OBJ) -shared
+
+$(BN256_OBJ): src/bn_if.cpp
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -DBN_MAX_FP_UNIT_SIZE=4
+
+$(BN384_LIB): $(LIB_OBJ) $(BN384_OBJ)
+	$(AR) $@ $(LIB_OBJ) $(BN384_OBJ)
+
+$(BN384_SLIB): $(LIB_OBJ) $(BN384_OBJ)
+	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN384_OBJ) -shared
+
+$(BN384_OBJ): src/bn_if.cpp
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -DBN_MAX_FP_UNIT_SIZE=6
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -142,7 +156,7 @@ $(OBJ_DIR)/%.o: %.c
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn256_test.exe: $(OBJ_DIR)/bn256_test.o $(BN256_LIB)
+$(EXE_DIR)/bn_if256_test.exe: $(OBJ_DIR)/bn_if256_test.o $(BN256_LIB)
 	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB)
@@ -158,7 +172,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
 clean:
-	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
+	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
