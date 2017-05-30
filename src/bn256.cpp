@@ -1,8 +1,8 @@
-#include <mcl/bn256.hpp>
 #define BN_DLL_EXPORT
 #define BN_DEFINE_STRUCT
-#include <mcl/bn256.h>
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#define BN_MAX_FP_UNIT_SIZE 4
+#include <mcl/bn_if.h>
+#if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
 static std::random_device g_rg;
 #else
@@ -10,7 +10,13 @@ static std::random_device g_rg;
 static cybozu::RandomGenerator g_rg;
 #endif
 
+#if BN_MAX_FP_UNIT_SIZE == 4
+#include <mcl/bn256.hpp>
 using namespace mcl::bn256;
+#else
+#include <mcl/bn384.hpp>
+using namespace mcl::bn384;
+#endif
 
 static FILE *g_fp = NULL;
 
@@ -61,7 +67,11 @@ int BN_setErrFile(const char *name)
 int BN_init(void)
 	try
 {
+#if BN_MAX_FP_UNIT_SIZE == 4
 	bn256init();
+#else
+	bn384init();
+#endif
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "%s\n", e.what());
@@ -102,7 +112,7 @@ int BN_Fr_isValid(const BN_Fr *x)
 {
 	return cast(x)->isValid();
 }
-int BN_Fr_isSame(const BN_Fr *x, const BN_Fr *y)
+int BN_Fr_isEqual(const BN_Fr *x, const BN_Fr *y)
 {
 	return *cast(x) == *cast(y);
 }
@@ -195,7 +205,7 @@ int BN_G1_isValid(const BN_G1 *x)
 {
 	return cast(x)->isValid();
 }
-int BN_G1_isSame(const BN_G1 *x, const BN_G1 *y)
+int BN_G1_isEqual(const BN_G1 *x, const BN_G1 *y)
 {
 	return *cast(x) == *cast(y);
 }
@@ -281,7 +291,7 @@ int BN_G2_isValid(const BN_G2 *x)
 {
 	return cast(x)->isValid();
 }
-int BN_G2_isSame(const BN_G2 *x, const BN_G2 *y)
+int BN_G2_isEqual(const BN_G2 *x, const BN_G2 *y)
 {
 	return *cast(x) == *cast(y);
 }
@@ -364,7 +374,7 @@ int BN_GT_setStr(BN_GT *x, const char *str)
 }
 
 // return 1 if true
-int BN_GT_isSame(const BN_GT *x, const BN_GT *y)
+int BN_GT_isEqual(const BN_GT *x, const BN_GT *y)
 {
 	return *cast(x) == *cast(y);
 }

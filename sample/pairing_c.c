@@ -1,5 +1,6 @@
 #define BN256_DEFINE_STRUCT
-#include <mcl/bn256.h>
+#define BN_MAX_FP_UNIT_SIZE 4
+#include <mcl/bn_if.h>
 #include <stdio.h>
 
 int g_err = 0;
@@ -36,11 +37,11 @@ int main()
 	printf("e = %s\n", buf);
 	BN256_GT_pow(&e1, &e, &a);
 	BN256_pairing(&e2, &aP, &Q);
-	ASSERT(BN256_GT_isSame(&e1, &e2));
+	ASSERT(BN256_GT_isEqual(&e1, &e2));
 
 	BN256_GT_pow(&e1, &e, &b);
 	BN256_pairing(&e2, &P, &bQ);
-	ASSERT(BN256_GT_isSame(&e1, &e2));
+	ASSERT(BN256_GT_isEqual(&e1, &e2));
 	ASSERT(BN256_setErrFile("") == 0);
 	if (g_err) {
 		printf("err %d\n", g_err);

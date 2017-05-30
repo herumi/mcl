@@ -17,7 +17,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isValid(ref Fr x);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_Fr_isSame(ref Fr x, ref Fr y);
+		public static extern int BN256_Fr_isEqual(ref Fr x, ref Fr y);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_Fr_isZero(ref Fr x);
 		[DllImport("bn256.dll")]
@@ -50,7 +50,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_isValid(ref G1 x);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_G1_isSame(ref G1 x, ref G1 y);
+		public static extern int BN256_G1_isEqual(ref G1 x, ref G1 y);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_G1_isZero(ref G1 x);
 		[DllImport("bn256.dll")]
@@ -75,7 +75,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_isValid(ref G2 x);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_G2_isSame(ref G2 x, ref G2 y);
+		public static extern int BN256_G2_isEqual(ref G2 x, ref G2 y);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_G2_isZero(ref G2 x);
 		[DllImport("bn256.dll")]
@@ -98,7 +98,7 @@ namespace mcl {
 		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string s);
 		[DllImport("bn256.dll")]
-		public static extern int BN256_GT_isSame(ref GT x, ref GT y);
+		public static extern int BN256_GT_isEqual(ref GT x, ref GT y);
 		[DllImport("bn256.dll")]
 		public static extern int BN256_GT_isZero(ref GT x);
 		[DllImport("bn256.dll")]
@@ -150,7 +150,7 @@ namespace mcl {
 			}
 			public bool Equals(Fr rhs)
 			{
-				return BN256_Fr_isSame(ref this, ref rhs) == 1;
+				return BN256_Fr_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
@@ -250,7 +250,7 @@ namespace mcl {
 			}
 			public bool Equals(G1 rhs)
 			{
-				return BN256_G1_isSame(ref this, ref rhs) == 1;
+				return BN256_G1_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
@@ -311,7 +311,7 @@ namespace mcl {
 			}
 			public bool Equals(G2 rhs)
 			{
-				return BN256_G2_isSame(ref this, ref rhs) == 1;
+				return BN256_G2_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
@@ -370,7 +370,7 @@ namespace mcl {
 			}
 			public bool Equals(GT rhs)
 			{
-				return BN256_GT_isSame(ref this, ref rhs) == 1;
+				return BN256_GT_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{

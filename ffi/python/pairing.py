@@ -30,7 +30,7 @@ class Fr(Structure):
 	def isOne(self, rhs):
 		return g_lib.BN256_Fr_isOne(self.v) != 0
 	def __eq__(self, rhs):
-		return g_lib.BN256_Fr_isSame(self.v, rhs.v) != 0
+		return g_lib.BN256_Fr_isEqual(self.v, rhs.v) != 0
 	def __ne__(self, rhs):
 		return not(P == Q)
 	def __add__(self, rhs):

@@ -18,20 +18,20 @@ extern "C" {
 #ifdef BN_DEFINE_STRUCT
 
 typedef struct {
-	uint64_t d[4];
-} BN_Fr; // sizeof(BN_Fr) = 32
+	uint64_t d[BN_MAX_FP_UNIT_SIZE];
+} BN_Fr;
 
 typedef struct {
-	uint64_t d[4 * 3];
-} BN_G1; // sizeof(BN_G1) = 96
+	uint64_t d[BN_MAX_FP_UNIT_SIZE * 3];
+} BN_G1;
 
 typedef struct {
-	uint64_t d[4 * 2 * 3];
-} BN_G2; // sizeof(BN_G2) == 192
+	uint64_t d[BN_MAX_FP_UNIT_SIZE * 2 * 3];
+} BN_G2;
 
 typedef struct {
-	uint64_t d[4 * 12];
-} BN_GT; // sizeof(BN_GT) == 384
+	uint64_t d[BN_MAX_FP_UNIT_SIZE * 12];
+} BN_GT;
 
 #else
 
@@ -48,7 +48,11 @@ typedef struct BN_GT BN_GT;
 #else
 #define BN_DLL_API __declspec(dllimport)
 #ifndef MCL_NO_AUTOLINK
-	#pragma comment(lib, "bn256.lib")
+	#if BN_MAX_FP_UNIT_SIZE == 4
+		#pragma comment(lib, "bn_if256.lib")
+	#else
+		#pragma comment(lib, "bn_if384.lib")
+	#endif
 #endif
 #endif
 #else
@@ -79,7 +83,7 @@ BN_DLL_API int BN_Fr_setStr(BN_Fr *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_Fr_isValid(const BN_Fr *x);
-BN_DLL_API int BN_Fr_isSame(const BN_Fr *x, const BN_Fr *y);
+BN_DLL_API int BN_Fr_isEqual(const BN_Fr *x, const BN_Fr *y);
 BN_DLL_API int BN_Fr_isZero(const BN_Fr *x);
 BN_DLL_API int BN_Fr_isOne(const BN_Fr *x);
 
@@ -109,7 +113,7 @@ BN_DLL_API int BN_G1_setStr(BN_G1 *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_G1_isValid(const BN_G1 *x);
-BN_DLL_API int BN_G1_isSame(const BN_G1 *x, const BN_G1 *y);
+BN_DLL_API int BN_G1_isEqual(const BN_G1 *x, const BN_G1 *y);
 BN_DLL_API int BN_G1_isZero(const BN_G1 *x);
 
 BN_DLL_API int BN_G1_hashAndMapTo(BN_G1 *x, const char *s);
@@ -134,7 +138,7 @@ BN_DLL_API int BN_G2_setStr(BN_G2 *x, const char *s);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_G2_isValid(const BN_G2 *x);
-BN_DLL_API int BN_G2_isSame(const BN_G2 *x, const BN_G2 *y);
+BN_DLL_API int BN_G2_isEqual(const BN_G2 *x, const BN_G2 *y);
 BN_DLL_API int BN_G2_isZero(const BN_G2 *x);
 
 BN_DLL_API int BN_G2_hashAndMapTo(BN_G2 *x, const char *s);
@@ -158,7 +162,7 @@ BN_DLL_API void BN_GT_copy(BN_GT *y, const BN_GT *x);
 BN_DLL_API int BN_GT_setStr(BN_GT *x, const char *s);
 
 // return 1 if true and 0 otherwise
-BN_DLL_API int BN_GT_isSame(const BN_GT *x, const BN_GT *y);
+BN_DLL_API int BN_GT_isEqual(const BN_GT *x, const BN_GT *y);
 BN_DLL_API int BN_GT_isZero(const BN_GT *x);
 BN_DLL_API int BN_GT_isOne(const BN_GT *x);
 
