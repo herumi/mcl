@@ -6,9 +6,28 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <stdint.h>
 #ifndef BN_MAX_FP_UNIT_SIZE
 	#error "define BN_MAX_FP_UNIT_SIZE 4(or 6)"
+#endif
+
+#include <stdint.h> // for uint64_t, uint8_t
+#include <stdlib.h> // for size_t
+
+#ifdef _MSC_VER
+#ifdef BN_DLL_EXPORT
+#define BN_DLL_API __declspec(dllexport)
+#else
+#define BN_DLL_API __declspec(dllimport)
+#ifndef MCL_NO_AUTOLINK
+	#if BN_MAX_FP_UNIT_SIZE == 4
+		#pragma comment(lib, "bn_if256.lib")
+	#else
+		#pragma comment(lib, "bn_if384.lib")
+	#endif
+#endif
+#endif
+#else
+#define BN_DLL_API
 #endif
 
 #ifdef __cplusplus
@@ -42,23 +61,6 @@ typedef struct BN_GT BN_GT;
 
 #endif
 
-#ifdef _MSC_VER
-#ifdef BN_DLL_EXPORT
-#define BN_DLL_API __declspec(dllexport)
-#else
-#define BN_DLL_API __declspec(dllimport)
-#ifndef MCL_NO_AUTOLINK
-	#if BN_MAX_FP_UNIT_SIZE == 4
-		#pragma comment(lib, "bn_if256.lib")
-	#else
-		#pragma comment(lib, "bn_if384.lib")
-	#endif
-#endif
-#endif
-#else
-#define BN_DLL_API
-#endif
-
 /*
 	set errlog file name
 	use stderr if name == "stderr"
@@ -90,7 +92,7 @@ BN_DLL_API int BN_Fr_isOne(const BN_Fr *x);
 BN_DLL_API void BN_Fr_setRand(BN_Fr *x);
 
 // hash(s) and set x
-BN_DLL_API void BN_Fr_setHashOf(BN_Fr *x, const char *s);
+BN_DLL_API void BN_hashToFr(BN_Fr *x, const void *buf, size_t bufSize);
 
 // return 0 if success
 BN_DLL_API int BN_Fr_getStr(char *buf, int maxBufSize, const BN_Fr *x);
@@ -119,7 +121,7 @@ BN_DLL_API int BN_G1_isZero(const BN_G1 *x);
 BN_DLL_API int BN_G1_hashAndMapTo(BN_G1 *x, const char *s);
 
 // return 0 if success
-BN_DLL_API int BN_G1_getStr(char *buf, int maxBufSize, const BN_G1 *x);
+BN_DLL_API int BN_G1_getStr(char *buf, size_t maxBufSize, const BN_G1 *x);
 
 BN_DLL_API void BN_G1_neg(BN_G1 *y, const BN_G1 *x);
 BN_DLL_API void BN_G1_dbl(BN_G1 *y, const BN_G1 *x);
@@ -144,7 +146,7 @@ BN_DLL_API int BN_G2_isZero(const BN_G2 *x);
 BN_DLL_API int BN_G2_hashAndMapTo(BN_G2 *x, const char *s);
 
 // return 0 if success
-BN_DLL_API int BN_G2_getStr(char *buf, int maxBufSize, const BN_G2 *x);
+BN_DLL_API int BN_G2_getStr(char *buf, size_t maxBufSize, const BN_G2 *x);
 
 BN_DLL_API void BN_G2_neg(BN_G2 *y, const BN_G2 *x);
 BN_DLL_API void BN_G2_dbl(BN_G2 *y, const BN_G2 *x);
@@ -167,7 +169,7 @@ BN_DLL_API int BN_GT_isZero(const BN_GT *x);
 BN_DLL_API int BN_GT_isOne(const BN_GT *x);
 
 // return 0 if success
-BN_DLL_API int BN_GT_getStr(char *buf, int maxBufSize, const BN_GT *x);
+BN_DLL_API int BN_GT_getStr(char *buf, size_t maxBufSize, const BN_GT *x);
 
 BN_DLL_API void BN_GT_neg(BN_GT *y, const BN_GT *x);
 BN_DLL_API void BN_GT_inv(BN_GT *y, const BN_GT *x);

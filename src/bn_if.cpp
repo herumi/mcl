@@ -130,10 +130,10 @@ void BN_Fr_setRand(BN_Fr *x)
 	cast(x)->setRand(g_rg);
 }
 
-// hash(str) and set x
-void BN_Fr_setHashOf(BN_Fr *x, const char *str)
+// hash(buf) and set x
+void BN_hashToFr(BN_Fr *x, const void *buf, size_t bufSize)
 {
-	cast(x)->setHashOf(str);
+	cast(x)->setHashOf(buf, bufSize);
 }
 
 // return 0 if success
@@ -227,12 +227,12 @@ int BN_G1_hashAndMapTo(BN_G1 *x, const char *str)
 }
 
 // return 0 if success
-int BN_G1_getStr(char *buf, int maxBufSize, const BN_G1 *x)
+int BN_G1_getStr(char *buf, size_t maxBufSize, const BN_G1 *x)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str);
-	if ((int)str.size() < maxBufSize) {
+	if (str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}
@@ -313,12 +313,12 @@ int BN_G2_hashAndMapTo(BN_G2 *x, const char *str)
 }
 
 // return 0 if success
-int BN_G2_getStr(char *buf, int maxBufSize, const BN_G2 *x)
+int BN_G2_getStr(char *buf, size_t maxBufSize, const BN_G2 *x)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str);
-	if ((int)str.size() < maxBufSize) {
+	if (str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}
@@ -388,11 +388,11 @@ int BN_GT_isOne(const BN_GT *x)
 }
 
 // return 0 if success
-int BN_GT_getStr(char *buf, int maxBufSize, const BN_GT *x)
+int BN_GT_getStr(char *buf, size_t maxBufSize, const BN_GT *x)
 	try
 {
 	std::string str = cast(x)->getStr();
-	if ((int)str.size() < maxBufSize) {
+	if (str.size() < maxBufSize) {
 		memcpy(buf, str.c_str(), str.size() + 1);
 		return 0;
 	}

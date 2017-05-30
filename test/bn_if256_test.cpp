@@ -56,10 +56,10 @@ CYBOZU_TEST_AUTO(Fr)
 	BN_Fr_copy(&y, &x);
 	CYBOZU_TEST_ASSERT(BN_Fr_isEqual(&x, &y));
 
-	BN_Fr_setHashOf(&x, "");
-	BN_Fr_setHashOf(&y, "abc");
+	BN_hashToFr(&x, "", 0);
+	BN_hashToFr(&y, "abc", 3);
 	CYBOZU_TEST_ASSERT(!BN_Fr_isEqual(&x, &y));
-	BN_Fr_setHashOf(&x, "abc");
+	BN_hashToFr(&x, "abc", 3);
 	CYBOZU_TEST_ASSERT(BN_Fr_isEqual(&x, &y));
 
 	char buf[1024];
