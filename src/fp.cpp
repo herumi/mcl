@@ -187,7 +187,7 @@ bool isEnableJIT()
 #endif
 }
 
-std::string hash(size_t bitSize, const char *msg, size_t msgSize)
+std::string hash(size_t bitSize, const void *msg, size_t msgSize)
 {
 	cybozu::crypto::Hash::Name name;
 	if (bitSize <= 160) {
@@ -201,7 +201,7 @@ std::string hash(size_t bitSize, const char *msg, size_t msgSize)
 	} else {
 		name = cybozu::crypto::Hash::N_SHA512;
 	}
-	return cybozu::crypto::Hash::digest(name, msg, msgSize);
+	return cybozu::crypto::Hash::digest(name, (const char *)msg, msgSize);
 }
 
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)

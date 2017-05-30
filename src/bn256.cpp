@@ -121,9 +121,9 @@ void BN256_Fr_setRand(BN256_Fr *x)
 }
 
 // hash(str) and set x
-void BN256_Fr_setMsg(BN256_Fr *x, const char *str)
+void BN256_Fr_setHashOf(BN256_Fr *x, const char *str)
 {
-	cast(x)->setMsg(str);
+	cast(x)->setHashOf(str);
 }
 
 // return 0 if success
@@ -208,7 +208,7 @@ int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *str)
 	try
 {
 	Fp y;
-	y.setMsg(str);
+	y.setHashOf(str);
 	BN::mapToG1(*cast(x), y);
 	return 0;
 } catch (std::exception& e) {
@@ -294,7 +294,7 @@ int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *str)
 	try
 {
 	Fp y;
-	y.setMsg(str);
+	y.setHashOf(str);
 	BN::mapToG2(*cast(x), Fp2(y, 0));
 	return 0;
 } catch (std::exception& e) {

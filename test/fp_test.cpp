@@ -705,7 +705,7 @@ void getStrTest()
 	}
 }
 
-void setMsgTest()
+void setHashOfTest()
 {
 	const std::string msgTbl[] = {
 		"", "abc", "111111111111111111111111111111111111",
@@ -727,7 +727,7 @@ void setMsgTest()
 		std::string digest = cybozu::crypto::Hash::digest(name, msgTbl[i]);
 		Fp x, y;
 		x.setArrayMask(digest.c_str(), digest.size());
-		y.setMsg(msgTbl[i]);
+		y.setHashOf(msgTbl[i]);
 		CYBOZU_TEST_EQUAL(x, y);
 	}
 }
@@ -859,7 +859,7 @@ void sub(mcl::fp::Mode mode)
 		getInt64Test();
 		divBy2Test();
 		getStrTest();
-		setMsgTest();
+		setHashOfTest();
 	}
 	anotherFpTest(mode);
 	setArrayTest2(mode);

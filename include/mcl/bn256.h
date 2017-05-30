@@ -83,7 +83,7 @@ BN256_DLL_API int BN256_Fr_isOne(const BN256_Fr *x);
 BN256_DLL_API void BN256_Fr_setRand(BN256_Fr *x);
 
 // hash(s) and set x
-BN256_DLL_API void BN256_Fr_setMsg(BN256_Fr *x, const char *s);
+BN256_DLL_API void BN256_Fr_setHashOf(BN256_Fr *x, const char *s);
 
 // return 0 if success
 BN256_DLL_API int BN256_Fr_getStr(char *buf, int maxBufSize, const BN256_Fr *x);

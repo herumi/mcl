@@ -130,7 +130,7 @@ void testMapToG2()
 		CYBOZU_TEST_EXCEPTION(BN::mapToG2(g, 0), cybozu::Exception);
 	}
 	Fp x;
-	x.setMsg("abc");
+	x.setHashOf("abc");
 	BN::mapToG2(g, Fp2(x, 0));
 	CYBOZU_TEST_ASSERT(g.isValid());
 }

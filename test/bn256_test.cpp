@@ -55,10 +55,10 @@ CYBOZU_TEST_AUTO(Fr)
 	BN256_Fr_copy(&y, &x);
 	CYBOZU_TEST_ASSERT(BN256_Fr_isSame(&x, &y));
 
-	BN256_Fr_setMsg(&x, "");
-	BN256_Fr_setMsg(&y, "abc");
+	BN256_Fr_setHashOf(&x, "");
+	BN256_Fr_setHashOf(&y, "abc");
 	CYBOZU_TEST_ASSERT(!BN256_Fr_isSame(&x, &y));
-	BN256_Fr_setMsg(&x, "abc");
+	BN256_Fr_setHashOf(&x, "abc");
 	CYBOZU_TEST_ASSERT(BN256_Fr_isSame(&x, &y));
 
 	char buf[1024];

@@ -57,7 +57,7 @@ std::string littleEndianToHexStr(const char *buf, size_t bufSize);
 bool isEnableJIT(); // 1st call is not threadsafe
 
 // hash msg
-std::string hash(size_t bitSize, const char *msg, size_t msgSize);
+std::string hash(size_t bitSize, const void *msg, size_t msgSize);
 
 } // mcl::fp
 
@@ -253,14 +253,14 @@ public:
 	/*
 		hash msg and mask with (1 << (bitLen - 1)) - 1
 	*/
-	void setMsg(const char *msg, size_t msgSize)
+	void setHashOf(const void *msg, size_t msgSize)
 	{
 		std::string digest = mcl::fp::hash(op_.bitSize, msg, msgSize);
 		setArrayMask(digest.c_str(), digest.size());
 	}
-	void setMsg(const std::string& msg)
+	void setHashOf(const std::string& msg)
 	{
-		setMsg(msg.data(), msg.size());
+		setHashOf(msg.data(), msg.size());
 	}
 #ifdef _MSC_VER
 	#pragma warning(push)

@@ -22,7 +22,7 @@ using namespace mcl::bn256;
 void Hash(G1& P, const std::string& m)
 {
 	Fp t;
-	t.setMsg(m);
+	t.setHashOf(m);
 	BN::mapToG1(P, t);
 }
 
