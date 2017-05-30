@@ -214,11 +214,11 @@ int BN_G1_isZero(const BN_G1 *x)
 	return cast(x)->isZero();
 }
 
-int BN_G1_hashAndMapTo(BN_G1 *x, const char *str)
+int BN_hashAndMapToG1(BN_G1 *x, const void *buf, size_t bufSize)
 	try
 {
 	Fp y;
-	y.setHashOf(str);
+	y.setHashOf(buf, bufSize);
 	BN::mapToG1(*cast(x), y);
 	return 0;
 } catch (std::exception& e) {
@@ -300,11 +300,11 @@ int BN_G2_isZero(const BN_G2 *x)
 	return cast(x)->isZero();
 }
 
-int BN_G2_hashAndMapTo(BN_G2 *x, const char *str)
+int BN_hashAndMapToG2(BN_G2 *x, const void *buf, size_t bufSize)
 	try
 {
 	Fp y;
-	y.setHashOf(str);
+	y.setHashOf(buf, bufSize);
 	BN::mapToG2(*cast(x), Fp2(y, 0));
 	return 0;
 } catch (std::exception& e) {

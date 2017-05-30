@@ -129,7 +129,7 @@ CYBOZU_TEST_AUTO(G1)
 	BN_G1_neg(&x, &x);
 	CYBOZU_TEST_ASSERT(BN_G1_isEqual(&x, &y));
 
-	CYBOZU_TEST_ASSERT(!BN_G1_hashAndMapTo(&y, "abc"));
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&y, "abc", 3));
 
 	BN_G1_dbl(&x, &y); // x = 2y
 	BN_G1_add(&z, &y, &y);
@@ -157,7 +157,7 @@ CYBOZU_TEST_AUTO(G2)
 	CYBOZU_TEST_ASSERT(BN_G2_isZero(&x));
 	CYBOZU_TEST_ASSERT(BN_G2_isZero(&y));
 
-	CYBOZU_TEST_ASSERT(!BN_G2_hashAndMapTo(&x, "abc"));
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&x, "abc", 3));
 
 	char buf[1024];
 	CYBOZU_TEST_ASSERT(!BN_G2_getStr(buf, sizeof(buf), &x));
@@ -238,7 +238,7 @@ CYBOZU_TEST_AUTO(pairing)
 	BN_GT e, e1, e2;
 
 	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&P, "1 -1 1")); // "1 <x> <y>"
-	CYBOZU_TEST_ASSERT(!BN_G2_hashAndMapTo(&Q, "1"));
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&Q, "1", 1));
 
 	BN_G1_mul(&aP, &P, &a);
 	BN_G2_mul(&bQ, &Q, &b);
@@ -258,9 +258,9 @@ CYBOZU_TEST_AUTO(precomputed)
 	BN_G1 P1, P2;
 	BN_G2 Q1, Q2;
 	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&P1, "1 -1 1")); // "1 <x> <y>"
-	CYBOZU_TEST_ASSERT(!BN_G1_hashAndMapTo(&P2, "123"));
-	CYBOZU_TEST_ASSERT(!BN_G2_hashAndMapTo(&Q1, "1"));
-	CYBOZU_TEST_ASSERT(!BN_G2_hashAndMapTo(&Q2, "2"));
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&P2, "123", 3));
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&Q1, "1", 1));
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&Q2, "2", 1));
 
 	const int size = BN_getUint64NumToPrecompute();
 	std::vector<uint64_t> Q1buf, Q2buf;

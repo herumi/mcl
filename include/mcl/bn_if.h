@@ -118,7 +118,7 @@ BN_DLL_API int BN_G1_isValid(const BN_G1 *x);
 BN_DLL_API int BN_G1_isEqual(const BN_G1 *x, const BN_G1 *y);
 BN_DLL_API int BN_G1_isZero(const BN_G1 *x);
 
-BN_DLL_API int BN_G1_hashAndMapTo(BN_G1 *x, const char *s);
+BN_DLL_API int BN_hashAndMapToG1(BN_G1 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
 BN_DLL_API int BN_G1_getStr(char *buf, size_t maxBufSize, const BN_G1 *x);
@@ -143,7 +143,7 @@ BN_DLL_API int BN_G2_isValid(const BN_G2 *x);
 BN_DLL_API int BN_G2_isEqual(const BN_G2 *x, const BN_G2 *y);
 BN_DLL_API int BN_G2_isZero(const BN_G2 *x);
 
-BN_DLL_API int BN_G2_hashAndMapTo(BN_G2 *x, const char *s);
+BN_DLL_API int BN_hashAndMapToG2(BN_G2 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
 BN_DLL_API int BN_G2_getStr(char *buf, size_t maxBufSize, const BN_G2 *x);
