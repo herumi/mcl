@@ -1,6 +1,6 @@
 #include <mcl/bn256.hpp>
-#define BN256_DLL_EXPORT
-#define BN256_DEFINE_STRUCT
+#define BN_DLL_EXPORT
+#define BN_DEFINE_STRUCT
 #include <mcl/bn256.h>
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
@@ -14,17 +14,17 @@ using namespace mcl::bn256;
 
 static FILE *g_fp = NULL;
 
-static Fr *cast(BN256_Fr *p) { return reinterpret_cast<Fr*>(p); }
-static const Fr *cast(const BN256_Fr *p) { return reinterpret_cast<const Fr*>(p); }
+static Fr *cast(BN_Fr *p) { return reinterpret_cast<Fr*>(p); }
+static const Fr *cast(const BN_Fr *p) { return reinterpret_cast<const Fr*>(p); }
 
-static G1 *cast(BN256_G1 *p) { return reinterpret_cast<G1*>(p); }
-static const G1 *cast(const BN256_G1 *p) { return reinterpret_cast<const G1*>(p); }
+static G1 *cast(BN_G1 *p) { return reinterpret_cast<G1*>(p); }
+static const G1 *cast(const BN_G1 *p) { return reinterpret_cast<const G1*>(p); }
 
-static G2 *cast(BN256_G2 *p) { return reinterpret_cast<G2*>(p); }
-static const G2 *cast(const BN256_G2 *p) { return reinterpret_cast<const G2*>(p); }
+static G2 *cast(BN_G2 *p) { return reinterpret_cast<G2*>(p); }
+static const G2 *cast(const BN_G2 *p) { return reinterpret_cast<const G2*>(p); }
 
-static Fp12 *cast(BN256_GT *p) { return reinterpret_cast<Fp12*>(p); }
-static const Fp12 *cast(const BN256_GT *p) { return reinterpret_cast<const Fp12*>(p); }
+static Fp12 *cast(BN_GT *p) { return reinterpret_cast<Fp12*>(p); }
+static const Fp12 *cast(const BN_GT *p) { return reinterpret_cast<const Fp12*>(p); }
 
 static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
 static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
@@ -39,7 +39,7 @@ static int closeErrFile()
 	return ret;
 }
 
-int BN256_setErrFile(const char *name)
+int BN_setErrFile(const char *name)
 {
 	int ret = closeErrFile();
 	if (name == NULL || *name == '\0') {
@@ -58,7 +58,7 @@ int BN256_setErrFile(const char *name)
 #endif
 }
 
-int BN256_init(void)
+int BN_init(void)
 	try
 {
 	bn256init();
@@ -70,24 +70,24 @@ int BN256_init(void)
 
 ////////////////////////////////////////////////
 // set zero
-void BN256_Fr_clear(BN256_Fr *x)
+void BN_Fr_clear(BN_Fr *x)
 {
 	cast(x)->clear();
 }
 
 // set x to y
-void BN256_Fr_setInt(BN256_Fr *y, int x)
+void BN_Fr_setInt(BN_Fr *y, int x)
 {
 	*cast(y) = x;
 }
 
-void BN256_Fr_copy(BN256_Fr *y, const BN256_Fr *x)
+void BN_Fr_copy(BN_Fr *y, const BN_Fr *x)
 {
 	*cast(y) = *cast(x);
 }
 
 // return 0 if success
-int BN256_Fr_setStr(BN256_Fr *x, const char *str)
+int BN_Fr_setStr(BN_Fr *x, const char *str)
 	try
 {
 	cast(x)->setStr(str);
@@ -98,36 +98,36 @@ int BN256_Fr_setStr(BN256_Fr *x, const char *str)
 }
 
 // return 1 if true
-int BN256_Fr_isValid(const BN256_Fr *x)
+int BN_Fr_isValid(const BN_Fr *x)
 {
 	return cast(x)->isValid();
 }
-int BN256_Fr_isSame(const BN256_Fr *x, const BN256_Fr *y)
+int BN_Fr_isSame(const BN_Fr *x, const BN_Fr *y)
 {
 	return *cast(x) == *cast(y);
 }
-int BN256_Fr_isZero(const BN256_Fr *x)
+int BN_Fr_isZero(const BN_Fr *x)
 {
 	return cast(x)->isZero();
 }
-int BN256_Fr_isOne(const BN256_Fr *x)
+int BN_Fr_isOne(const BN_Fr *x)
 {
 	return cast(x)->isOne();
 }
 
-void BN256_Fr_setRand(BN256_Fr *x)
+void BN_Fr_setRand(BN_Fr *x)
 {
 	cast(x)->setRand(g_rg);
 }
 
 // hash(str) and set x
-void BN256_Fr_setHashOf(BN256_Fr *x, const char *str)
+void BN_Fr_setHashOf(BN_Fr *x, const char *str)
 {
 	cast(x)->setHashOf(str);
 }
 
 // return 0 if success
-int BN256_Fr_getStr(char *buf, int maxBufSize, const BN256_Fr *x)
+int BN_Fr_getStr(char *buf, int maxBufSize, const BN_Fr *x)
 	try
 {
 	std::string str;
@@ -142,45 +142,45 @@ int BN256_Fr_getStr(char *buf, int maxBufSize, const BN256_Fr *x)
 	return 1;
 }
 
-void BN256_Fr_neg(BN256_Fr *y, const BN256_Fr *x)
+void BN_Fr_neg(BN_Fr *y, const BN_Fr *x)
 {
 	Fr::neg(*cast(y), *cast(x));
 }
-void BN256_Fr_inv(BN256_Fr *y, const BN256_Fr *x)
+void BN_Fr_inv(BN_Fr *y, const BN_Fr *x)
 {
 	Fr::inv(*cast(y), *cast(x));
 }
-void BN256_Fr_add(BN256_Fr *z, const BN256_Fr *x, const BN256_Fr *y)
+void BN_Fr_add(BN_Fr *z, const BN_Fr *x, const BN_Fr *y)
 {
 	Fr::add(*cast(z),*cast(x), *cast(y));
 }
-void BN256_Fr_sub(BN256_Fr *z, const BN256_Fr *x, const BN256_Fr *y)
+void BN_Fr_sub(BN_Fr *z, const BN_Fr *x, const BN_Fr *y)
 {
 	Fr::sub(*cast(z),*cast(x), *cast(y));
 }
-void BN256_Fr_mul(BN256_Fr *z, const BN256_Fr *x, const BN256_Fr *y)
+void BN_Fr_mul(BN_Fr *z, const BN_Fr *x, const BN_Fr *y)
 {
 	Fr::mul(*cast(z),*cast(x), *cast(y));
 }
-void BN256_Fr_div(BN256_Fr *z, const BN256_Fr *x, const BN256_Fr *y)
+void BN_Fr_div(BN_Fr *z, const BN_Fr *x, const BN_Fr *y)
 {
 	Fr::div(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
 // set zero
-void BN256_G1_clear(BN256_G1 *x)
+void BN_G1_clear(BN_G1 *x)
 {
 	cast(x)->clear();
 }
 
-void BN256_G1_copy(BN256_G1 *y, const BN256_G1 *x)
+void BN_G1_copy(BN_G1 *y, const BN_G1 *x)
 {
 	*cast(y) = *cast(x);
 }
 
 // return 0 if success
-int BN256_G1_setStr(BN256_G1 *x, const char *str)
+int BN_G1_setStr(BN_G1 *x, const char *str)
 	try
 {
 	cast(x)->setStr(str);
@@ -191,20 +191,20 @@ int BN256_G1_setStr(BN256_G1 *x, const char *str)
 }
 
 // return 1 if true
-int BN256_G1_isValid(const BN256_G1 *x)
+int BN_G1_isValid(const BN_G1 *x)
 {
 	return cast(x)->isValid();
 }
-int BN256_G1_isSame(const BN256_G1 *x, const BN256_G1 *y)
+int BN_G1_isSame(const BN_G1 *x, const BN_G1 *y)
 {
 	return *cast(x) == *cast(y);
 }
-int BN256_G1_isZero(const BN256_G1 *x)
+int BN_G1_isZero(const BN_G1 *x)
 {
 	return cast(x)->isZero();
 }
 
-int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *str)
+int BN_G1_hashAndMapTo(BN_G1 *x, const char *str)
 	try
 {
 	Fp y;
@@ -217,7 +217,7 @@ int BN256_G1_hashAndMapTo(BN256_G1 *x, const char *str)
 }
 
 // return 0 if success
-int BN256_G1_getStr(char *buf, int maxBufSize, const BN256_G1 *x)
+int BN_G1_getStr(char *buf, int maxBufSize, const BN_G1 *x)
 	try
 {
 	std::string str;
@@ -232,41 +232,41 @@ int BN256_G1_getStr(char *buf, int maxBufSize, const BN256_G1 *x)
 	return 1;
 }
 
-void BN256_G1_neg(BN256_G1 *y, const BN256_G1 *x)
+void BN_G1_neg(BN_G1 *y, const BN_G1 *x)
 {
 	G1::neg(*cast(y), *cast(x));
 }
-void BN256_G1_dbl(BN256_G1 *y, const BN256_G1 *x)
+void BN_G1_dbl(BN_G1 *y, const BN_G1 *x)
 {
 	G1::dbl(*cast(y), *cast(x));
 }
-void BN256_G1_add(BN256_G1 *z, const BN256_G1 *x, const BN256_G1 *y)
+void BN_G1_add(BN_G1 *z, const BN_G1 *x, const BN_G1 *y)
 {
 	G1::add(*cast(z),*cast(x), *cast(y));
 }
-void BN256_G1_sub(BN256_G1 *z, const BN256_G1 *x, const BN256_G1 *y)
+void BN_G1_sub(BN_G1 *z, const BN_G1 *x, const BN_G1 *y)
 {
 	G1::sub(*cast(z),*cast(x), *cast(y));
 }
-void BN256_G1_mul(BN256_G1 *z, const BN256_G1 *x, const BN256_Fr *y)
+void BN_G1_mul(BN_G1 *z, const BN_G1 *x, const BN_Fr *y)
 {
 	G1::mul(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
 // set zero
-void BN256_G2_clear(BN256_G2 *x)
+void BN_G2_clear(BN_G2 *x)
 {
 	cast(x)->clear();
 }
 
-void BN256_G2_copy(BN256_G2 *y, const BN256_G2 *x)
+void BN_G2_copy(BN_G2 *y, const BN_G2 *x)
 {
 	*cast(y) = *cast(x);
 }
 
 // return 0 if success
-int BN256_G2_setStr(BN256_G2 *x, const char *str)
+int BN_G2_setStr(BN_G2 *x, const char *str)
 	try
 {
 	cast(x)->setStr(str);
@@ -277,20 +277,20 @@ int BN256_G2_setStr(BN256_G2 *x, const char *str)
 }
 
 // return 1 if true
-int BN256_G2_isValid(const BN256_G2 *x)
+int BN_G2_isValid(const BN_G2 *x)
 {
 	return cast(x)->isValid();
 }
-int BN256_G2_isSame(const BN256_G2 *x, const BN256_G2 *y)
+int BN_G2_isSame(const BN_G2 *x, const BN_G2 *y)
 {
 	return *cast(x) == *cast(y);
 }
-int BN256_G2_isZero(const BN256_G2 *x)
+int BN_G2_isZero(const BN_G2 *x)
 {
 	return cast(x)->isZero();
 }
 
-int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *str)
+int BN_G2_hashAndMapTo(BN_G2 *x, const char *str)
 	try
 {
 	Fp y;
@@ -303,7 +303,7 @@ int BN256_G2_hashAndMapTo(BN256_G2 *x, const char *str)
 }
 
 // return 0 if success
-int BN256_G2_getStr(char *buf, int maxBufSize, const BN256_G2 *x)
+int BN_G2_getStr(char *buf, int maxBufSize, const BN_G2 *x)
 	try
 {
 	std::string str;
@@ -318,41 +318,41 @@ int BN256_G2_getStr(char *buf, int maxBufSize, const BN256_G2 *x)
 	return 1;
 }
 
-void BN256_G2_neg(BN256_G2 *y, const BN256_G2 *x)
+void BN_G2_neg(BN_G2 *y, const BN_G2 *x)
 {
 	G2::neg(*cast(y), *cast(x));
 }
-void BN256_G2_dbl(BN256_G2 *y, const BN256_G2 *x)
+void BN_G2_dbl(BN_G2 *y, const BN_G2 *x)
 {
 	G2::dbl(*cast(y), *cast(x));
 }
-void BN256_G2_add(BN256_G2 *z, const BN256_G2 *x, const BN256_G2 *y)
+void BN_G2_add(BN_G2 *z, const BN_G2 *x, const BN_G2 *y)
 {
 	G2::add(*cast(z),*cast(x), *cast(y));
 }
-void BN256_G2_sub(BN256_G2 *z, const BN256_G2 *x, const BN256_G2 *y)
+void BN_G2_sub(BN_G2 *z, const BN_G2 *x, const BN_G2 *y)
 {
 	G2::sub(*cast(z),*cast(x), *cast(y));
 }
-void BN256_G2_mul(BN256_G2 *z, const BN256_G2 *x, const BN256_Fr *y)
+void BN_G2_mul(BN_G2 *z, const BN_G2 *x, const BN_Fr *y)
 {
 	G2::mul(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
 // set zero
-void BN256_GT_clear(BN256_GT *x)
+void BN_GT_clear(BN_GT *x)
 {
 	cast(x)->clear();
 }
 
-void BN256_GT_copy(BN256_GT *y, const BN256_GT *x)
+void BN_GT_copy(BN_GT *y, const BN_GT *x)
 {
 	*cast(y) = *cast(x);
 }
 
 // return 0 if success
-int BN256_GT_setStr(BN256_GT *x, const char *str)
+int BN_GT_setStr(BN_GT *x, const char *str)
 	try
 {
 	std::istringstream is(str);
@@ -364,21 +364,21 @@ int BN256_GT_setStr(BN256_GT *x, const char *str)
 }
 
 // return 1 if true
-int BN256_GT_isSame(const BN256_GT *x, const BN256_GT *y)
+int BN_GT_isSame(const BN_GT *x, const BN_GT *y)
 {
 	return *cast(x) == *cast(y);
 }
-int BN256_GT_isZero(const BN256_GT *x)
+int BN_GT_isZero(const BN_GT *x)
 {
 	return cast(x)->isZero();
 }
-int BN256_GT_isOne(const BN256_GT *x)
+int BN_GT_isOne(const BN_GT *x)
 {
 	return cast(x)->isOne();
 }
 
 // return 0 if success
-int BN256_GT_getStr(char *buf, int maxBufSize, const BN256_GT *x)
+int BN_GT_getStr(char *buf, int maxBufSize, const BN_GT *x)
 	try
 {
 	std::string str = cast(x)->getStr();
@@ -392,64 +392,64 @@ int BN256_GT_getStr(char *buf, int maxBufSize, const BN256_GT *x)
 	return 1;
 }
 
-void BN256_GT_neg(BN256_GT *y, const BN256_GT *x)
+void BN_GT_neg(BN_GT *y, const BN_GT *x)
 {
 	Fp12::neg(*cast(y), *cast(x));
 }
-void BN256_GT_inv(BN256_GT *y, const BN256_GT *x)
+void BN_GT_inv(BN_GT *y, const BN_GT *x)
 {
 	Fp12::inv(*cast(y), *cast(x));
 }
-void BN256_GT_add(BN256_GT *z, const BN256_GT *x, const BN256_GT *y)
+void BN_GT_add(BN_GT *z, const BN_GT *x, const BN_GT *y)
 {
 	Fp12::add(*cast(z),*cast(x), *cast(y));
 }
-void BN256_GT_sub(BN256_GT *z, const BN256_GT *x, const BN256_GT *y)
+void BN_GT_sub(BN_GT *z, const BN_GT *x, const BN_GT *y)
 {
 	Fp12::sub(*cast(z),*cast(x), *cast(y));
 }
-void BN256_GT_mul(BN256_GT *z, const BN256_GT *x, const BN256_GT *y)
+void BN_GT_mul(BN_GT *z, const BN_GT *x, const BN_GT *y)
 {
 	Fp12::mul(*cast(z),*cast(x), *cast(y));
 }
-void BN256_GT_div(BN256_GT *z, const BN256_GT *x, const BN256_GT *y)
+void BN_GT_div(BN_GT *z, const BN_GT *x, const BN_GT *y)
 {
 	Fp12::div(*cast(z),*cast(x), *cast(y));
 }
 
-void BN256_GT_finalExp(BN256_GT *y, const BN256_GT *x)
+void BN_GT_finalExp(BN_GT *y, const BN_GT *x)
 {
 	BN::finalExp(*cast(y), *cast(x));
 }
-void BN256_GT_pow(BN256_GT *z, const BN256_GT *x, const BN256_Fr *y)
+void BN_GT_pow(BN_GT *z, const BN_GT *x, const BN_Fr *y)
 {
 	Fp12::pow(*cast(z), *cast(x), *cast(y));
 }
 
-void BN256_pairing(BN256_GT *z, const BN256_G1 *x, const BN256_G2 *y)
+void BN_pairing(BN_GT *z, const BN_G1 *x, const BN_G2 *y)
 {
 	BN::pairing(*cast(z), *cast(x), *cast(y));
 }
-void BN256_millerLoop(BN256_GT *z, const BN256_G1 *x, const BN256_G2 *y)
+void BN_millerLoop(BN_GT *z, const BN_G1 *x, const BN_G2 *y)
 {
 	BN::millerLoop(*cast(z), *cast(x), *cast(y));
 }
-int BN256_getUint64NumToPrecompute(void)
+int BN_getUint64NumToPrecompute(void)
 {
 	return int(BN::param.precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t));
 }
 
-void BN256_precomputeG2(uint64_t *Qbuf, const BN256_G2 *Q)
+void BN_precomputeG2(uint64_t *Qbuf, const BN_G2 *Q)
 {
 	BN::precomputeG2(cast(Qbuf), *cast(Q));
 }
 
-void BN256_precomputedMillerLoop(BN256_GT *f, const BN256_G1 *P, const uint64_t *Qbuf)
+void BN_precomputedMillerLoop(BN_GT *f, const BN_G1 *P, const uint64_t *Qbuf)
 {
 	BN::precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
 }
 
-void BN256_precomputedMillerLoop2(BN256_GT *f, const BN256_G1 *P1, const uint64_t  *Q1buf, const BN256_G1 *P2, const uint64_t *Q2buf)
+void BN_precomputedMillerLoop2(BN_GT *f, const BN_G1 *P1, const uint64_t  *Q1buf, const BN_G1 *P2, const uint64_t *Q2buf)
 {
 	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }
