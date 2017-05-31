@@ -242,8 +242,12 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 			CYBOZU_TEST_EQUAL(ea, e1);
 			CYBOZU_TEST_EQUAL(ea, e2);
 		}
-		CYBOZU_BENCH_C("G1::mul  ", 500, G1::mul, Pa, P, a);
-		CYBOZU_BENCH_C("G1::mulCT", 500, G1::mul, Pa, P, a);
+		CYBOZU_BENCH_C("G1::mulCT", 500, G1::mul, Pa, Pa, a);
+		CYBOZU_BENCH_C("G1::add", 500, G1::add, Pa, Pa, P);
+		CYBOZU_BENCH_C("G1::dbl", 500, G1::dbl, Pa, Pa);
+		CYBOZU_BENCH_C("G2::mulCT", 500, G2::mul, Qa, Qa, a);
+		CYBOZU_BENCH_C("G2::add", 500, G2::add, Qa, Qa, Q);
+		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
 	}
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
