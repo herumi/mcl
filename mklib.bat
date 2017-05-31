@@ -8,7 +8,7 @@ cl /c %CFLAGS% src\fp.cpp /Foobj\fp.obj
 echo lib /nologo /OUT:lib\mcl.lib /nodefaultlib obj\fp.obj
 lib /nologo /OUT:lib\mcl.lib /nodefaultlib obj\fp.obj
 
-echo cl /c %CFLAGS% src\bn256.cpp /Foobj\bn256.obj
-cl /c %CFLAGS% src\bn256.cpp /Foobj\bn256.obj
-echo link /nologo /DLL /OUT:bin\bn256.dll obj\bn256.obj obj\fp.obj %LDFLAGS% /implib:lib\bn256.lib
-link /nologo /DLL /OUT:bin\bn256.dll obj\bn256.obj obj\fp.obj %LDFLAGS% /implib:lib\bn256.lib
+echo cl /c %CFLAGS% src\bn_if.cpp /Foobj\bn_if256.obj /DBLS_MAX_OP_UNIT_SIZE=4
+cl /c %CFLAGS% src\bn_if.cpp /Foobj\bn_if256.obj /DBLS_MAX_OP_UNIT_SIZE=4
+echo link /nologo /DLL /OUT:bin\bn_if256.dll obj\bn_if256.obj obj\fp.obj %LDFLAGS% /implib:lib\bn_if256.lib
+link /nologo /DLL /OUT:bin\bn_if256.dll obj\bn_if256.obj obj\fp.obj %LDFLAGS% /implib:lib\bn_if256.lib

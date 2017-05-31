@@ -31,7 +31,7 @@ CYBOZU_TEST_AUTO(init)
 	ret = BN_setErrFile("stderr");
 	CYBOZU_TEST_EQUAL(ret, 0);
 
-	ret = BN_init(BN_curveFp254BNb, BN_MAX_FP_UNIT_SIZE);
+	ret = BN_initLib(BN_curveFp254BNb, BN_MAX_FP_UNIT_SIZE);
 	CYBOZU_TEST_EQUAL(ret, 0);
 }
 

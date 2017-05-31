@@ -83,8 +83,9 @@ enum {
 	curve = BN_CurveFp254BNb is allowed if maxUnitSize = 4
 	curve = BN_CurveFp254BNb/BN_CurveFp382_1/BN_CurveFp382_2 are allowed if maxUnitSize = 6
 	@note not threadsafe
+	@note BN_init is used in libeay32
 */
-BN_DLL_API int BN_init(int curve, int maxUnitSize);
+BN_DLL_API int BN_initLib(int curve, int maxUnitSize);
 
 ////////////////////////////////////////////////
 // set zero

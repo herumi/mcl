@@ -70,7 +70,7 @@ size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const cha
 }
 
 template<class T>
-size_t deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *msg, bool convertFromHex)
+int deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *msg, bool convertFromHex)
 	try
 {
 	std::string str;
@@ -105,11 +105,11 @@ int BN_setErrFile(const char *name)
 #endif
 }
 
-int BN_init(int curve, int maxUnitSize)
+int BN_initLib(int curve, int maxUnitSize)
 	try
 {
 	if (maxUnitSize != BN_MAX_FP_UNIT_SIZE) {
-		if (g_fp) fprintf(g_fp, "BN_Init:maxUnitSize is mismatch %d %d\n", maxUnitSize, BN_MAX_FP_UNIT_SIZE);
+		if (g_fp) fprintf(g_fp, "BN_initLib:maxUnitSize is mismatch %d %d\n", maxUnitSize, BN_MAX_FP_UNIT_SIZE);
 		return -1;
 	}
 	mcl::bn::CurveParam cp;
@@ -126,7 +126,7 @@ int BN_init(int curve, int maxUnitSize)
 		break;
 #endif
 	default:
-		if (g_fp) fprintf(g_fp, "BN_Init:not supported curve %d\n", curve);
+		if (g_fp) fprintf(g_fp, "BN_initLib:not supported curve %d\n", curve);
 		return -1;
 	}
 #if BN_MAX_FP_UNIT_SIZE == 4
