@@ -45,6 +45,47 @@ static int closeErrFile()
 	return ret;
 }
 
+template<class T>
+size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const char *msg, bool convertToHex)
+	try
+{
+	std::string str;
+	cast(x)->getStr(str, ioMode);
+	if (convertToHex) {
+		str = mcl::fp::littleEndianToHexStr(str.c_str(), str.size());
+	}
+	size_t terminate = (convertToHex || ioMode == 10 || ioMode == 16) ? 1 : 0;
+	if (str.size() + terminate > maxBufSize) {
+		if (g_fp) fprintf(g_fp, "%s:serialize:small maxBufSize %d %d %d\n", msg, (int)maxBufSize, (int)str.size(), (int)terminate);
+		return 0;
+	}
+	memcpy(buf, str.c_str(), str.size());
+	if (terminate) {
+		((char *)buf)[str.size()] = '\0';
+	}
+	return str.size();
+} catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
+	return 0;
+}
+
+template<class T>
+size_t deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *msg, bool convertFromHex)
+	try
+{
+	std::string str;
+	if (convertFromHex) {
+		str = mcl::fp::hexStrToLittleEndian((const char *)buf, bufSize);
+	} else {
+		str.assign((const char *)buf, bufSize);
+	}
+	cast(x)->setStr(str, ioMode);
+	return 0;
+} catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
+	return -1;
+}
+
 int BN_setErrFile(const char *name)
 {
 	int ret = closeErrFile();
@@ -64,18 +105,39 @@ int BN_setErrFile(const char *name)
 #endif
 }
 
-int BN_init(void)
+int BN_init(int curve, int maxUnitSize)
 	try
 {
+	if (maxUnitSize != BN_MAX_FP_UNIT_SIZE) {
+		if (g_fp) fprintf(g_fp, "BN_Init:maxUnitSize is mismatch %d %d\n", maxUnitSize, BN_MAX_FP_UNIT_SIZE);
+		return -1;
+	}
+	mcl::bn::CurveParam cp;
+	switch (curve) {
+	case BN_curveFp254BNb:
+		cp = mcl::bn::CurveFp254BNb;
+		break;
+#if BLS_MAX_OP_UNIT_SIZE == 6
+	case BN_curveFp382_1:
+		cp = mcl::bn::CurveFp382_1;
+		break;
+	case BN_curveFp382_2:
+		cp = mcl::bn::CurveFp382_2;
+		break;
+#endif
+	default:
+		if (g_fp) fprintf(g_fp, "BN_Init:not supported curve %d\n", curve);
+		return -1;
+	}
 #if BN_MAX_FP_UNIT_SIZE == 4
-	bn256init();
+	bn256init(cp);
 #else
-	bn384init();
+	bn384init(cp);
 #endif
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return -1;
 }
 
 ////////////////////////////////////////////////
@@ -91,20 +153,21 @@ void BN_Fr_setInt(BN_Fr *y, int x)
 	*cast(y) = x;
 }
 
-void BN_Fr_copy(BN_Fr *y, const BN_Fr *x)
+int BN_Fr_setDecStr(BN_Fr *x, const char *s)
 {
-	*cast(y) = *cast(x);
+	return deserialize(x, s, strlen(s), 10, "BN_Fr_setDecStr", false);
 }
-
-// return 0 if success
-int BN_Fr_setStr(BN_Fr *x, const char *str)
-	try
+int BN_Fr_setHexStr(BN_Fr *x, const char *s)
 {
-	cast(x)->setStr(str);
-	return 0;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return deserialize(x, s, strlen(s), 16, "BN_Fr_setHexStr", false);
+}
+int BN_Fr_setLittleEndian(BN_Fr *x, const void *buf, size_t bufSize)
+{
+	const size_t byteSize = cast(x)->getByteSize();
+	if (bufSize > byteSize) bufSize = byteSize;
+	std::string s((const char *)buf, bufSize);
+	s.resize(byteSize);
+	return deserialize(x, s.c_str(), s.size(), mcl::IoFixedSizeByteSeq, "BN_Fr_setLittleEndian", false);
 }
 
 // return 1 if true
@@ -125,7 +188,7 @@ int BN_Fr_isOne(const BN_Fr *x)
 	return cast(x)->isOne();
 }
 
-void BN_Fr_setRand(BN_Fr *x)
+void BN_Fr_setByCSPRNG(BN_Fr *x)
 {
 	cast(x)->setRand(g_rg);
 }
@@ -136,20 +199,17 @@ void BN_hashToFr(BN_Fr *x, const void *buf, size_t bufSize)
 	cast(x)->setHashOf(buf, bufSize);
 }
 
-// return 0 if success
-int BN_Fr_getStr(char *buf, int maxBufSize, const BN_Fr *x)
-	try
+size_t BN_Fr_getDecStr(char *buf, size_t maxBufSize, const BN_Fr *x)
 {
-	std::string str;
-	cast(x)->getStr(str);
-	if ((int)str.size() < maxBufSize) {
-		memcpy(buf, str.c_str(), str.size() + 1);
-		return 0;
-	}
-	return 1;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return serialize(buf, maxBufSize, x, 10, "BN_Fr_getDecStr", false);
+}
+size_t BN_Fr_getHexStr(char *buf, size_t maxBufSize, const BN_Fr *x)
+{
+	return serialize(buf, maxBufSize, x, 16, "BN_Fr_getHexStr", false);
+}
+size_t BN_Fr_getLittleEndian(void *buf, size_t maxBufSize, const BN_Fr *x)
+{
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "BN_Fr_getLittleEndian", false);
 }
 
 void BN_Fr_neg(BN_Fr *y, const BN_Fr *x)
@@ -184,20 +244,13 @@ void BN_G1_clear(BN_G1 *x)
 	cast(x)->clear();
 }
 
-void BN_G1_copy(BN_G1 *y, const BN_G1 *x)
+int BN_G1_setHexStr(BN_G1 *x, const char *s)
 {
-	*cast(y) = *cast(x);
+	return deserialize(x, s, strlen(s), mcl::IoFixedSizeByteSeq, "BN_G1_setHexStr", true);
 }
-
-// return 0 if success
-int BN_G1_setStr(BN_G1 *x, const char *str)
-	try
+int BN_G1_deserialize(BN_G1 *x, const char *buf, size_t bufSize)
 {
-	cast(x)->setStr(str);
-	return 0;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "BN_G1_setHexStr", false);
 }
 
 // return 1 if true
@@ -222,24 +275,18 @@ int BN_hashAndMapToG1(BN_G1 *x, const void *buf, size_t bufSize)
 	BN::mapToG1(*cast(x), y);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
+	if (g_fp) fprintf(g_fp, "BN_hashAndMapToG1 %s\n", e.what());
 	return 1;
 }
 
-// return 0 if success
-int BN_G1_getStr(char *buf, size_t maxBufSize, const BN_G1 *x)
-	try
+size_t BN_G1_getHexStr(char *buf, size_t maxBufSize, const BN_G1 *x)
 {
-	std::string str;
-	cast(x)->getStr(str);
-	if (str.size() < maxBufSize) {
-		memcpy(buf, str.c_str(), str.size() + 1);
-		return 0;
-	}
-	return 1;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "BN_G1_getHexStr", true);
+}
+
+size_t BN_G1_serialize(void *buf, size_t maxBufSize, const BN_G1 *x)
+{
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "BN_G1_serialize", false);
 }
 
 void BN_G1_neg(BN_G1 *y, const BN_G1 *x)
@@ -270,20 +317,13 @@ void BN_G2_clear(BN_G2 *x)
 	cast(x)->clear();
 }
 
-void BN_G2_copy(BN_G2 *y, const BN_G2 *x)
+int BN_G2_setHexStr(BN_G2 *x, const char *s)
 {
-	*cast(y) = *cast(x);
+	return deserialize(x, s, strlen(s), mcl::IoFixedSizeByteSeq, "BN_G2_setHexStr", true);
 }
-
-// return 0 if success
-int BN_G2_setStr(BN_G2 *x, const char *str)
-	try
+int BN_G2_deserialize(BN_G2 *x, const char *buf, size_t bufSize)
 {
-	cast(x)->setStr(str);
-	return 0;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "BN_G2_setHexStr", false);
 }
 
 // return 1 if true
@@ -308,24 +348,18 @@ int BN_hashAndMapToG2(BN_G2 *x, const void *buf, size_t bufSize)
 	BN::mapToG2(*cast(x), Fp2(y, 0));
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
+	if (g_fp) fprintf(g_fp, "BN_hashAndMapToG2 %s\n", e.what());
 	return 1;
 }
 
-// return 0 if success
-int BN_G2_getStr(char *buf, size_t maxBufSize, const BN_G2 *x)
-	try
+size_t BN_G2_getHexStr(char *buf, size_t maxBufSize, const BN_G2 *x)
 {
-	std::string str;
-	cast(x)->getStr(str);
-	if (str.size() < maxBufSize) {
-		memcpy(buf, str.c_str(), str.size() + 1);
-		return 0;
-	}
-	return 1;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "BN_G2_getHexStr", true);
+}
+
+size_t BN_G2_serialize(void *buf, size_t maxBufSize, const BN_G2 *x)
+{
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "BN_G2_serialize", false);
 }
 
 void BN_G2_neg(BN_G2 *y, const BN_G2 *x)
@@ -356,21 +390,17 @@ void BN_GT_clear(BN_GT *x)
 	cast(x)->clear();
 }
 
-void BN_GT_copy(BN_GT *y, const BN_GT *x)
+int BN_GT_setDecStr(BN_GT *x, const char *s)
 {
-	*cast(y) = *cast(x);
+	return deserialize(x, s, strlen(s), 10, "BN_GT_setDecStr", false);
 }
-
-// return 0 if success
-int BN_GT_setStr(BN_GT *x, const char *str)
-	try
+int BN_GT_setHexStr(BN_GT *x, const char *s)
 {
-	std::istringstream is(str);
-	is >> *cast(x);
-	return is ? 0 : 1;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return deserialize(x, s, strlen(s), 16, "BN_GT_setHexStr", false);
+}
+int BN_GT_deserialize(BN_GT *x, const char *buf, size_t bufSize)
+{
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "BN_GT_setHexStr", false);
 }
 
 // return 1 if true
@@ -387,19 +417,19 @@ int BN_GT_isOne(const BN_GT *x)
 	return cast(x)->isOne();
 }
 
-// return 0 if success
-int BN_GT_getStr(char *buf, size_t maxBufSize, const BN_GT *x)
-	try
+size_t BN_GT_getDecStr(char *buf, size_t maxBufSize, const BN_GT *x)
 {
-	std::string str = cast(x)->getStr();
-	if (str.size() < maxBufSize) {
-		memcpy(buf, str.c_str(), str.size() + 1);
-		return 0;
-	}
-	return 1;
-} catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
-	return 1;
+	return serialize(buf, maxBufSize, x, 10, "BN_GT_getDecStr", false);
+}
+
+size_t BN_GT_getHexStr(char *buf, size_t maxBufSize, const BN_GT *x)
+{
+	return serialize(buf, maxBufSize, x, 16, "BN_GT_getHexStr", false);
+}
+
+size_t BN_GT_serialize(void *buf, size_t maxBufSize, const BN_GT *x)
+{
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "BN_GT_serialize", false);
 }
 
 void BN_GT_neg(BN_GT *y, const BN_GT *x)
@@ -427,10 +457,6 @@ void BN_GT_div(BN_GT *z, const BN_GT *x, const BN_GT *y)
 	Fp12::div(*cast(z),*cast(x), *cast(y));
 }
 
-void BN_GT_finalExp(BN_GT *y, const BN_GT *x)
-{
-	BN::finalExp(*cast(y), *cast(x));
-}
 void BN_GT_pow(BN_GT *z, const BN_GT *x, const BN_Fr *y)
 {
 	Fp12::pow(*cast(z), *cast(x), *cast(y));
@@ -439,6 +465,10 @@ void BN_GT_pow(BN_GT *z, const BN_GT *x, const BN_Fr *y)
 void BN_pairing(BN_GT *z, const BN_G1 *x, const BN_G2 *y)
 {
 	BN::pairing(*cast(z), *cast(x), *cast(y));
+}
+void BN_finalExp(BN_GT *y, const BN_GT *x)
+{
+	BN::finalExp(*cast(y), *cast(x));
 }
 void BN_millerLoop(BN_GT *z, const BN_G1 *x, const BN_G2 *y)
 {

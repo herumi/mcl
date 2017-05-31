@@ -66,10 +66,25 @@ typedef struct BN_GT BN_GT;
 	use stderr if name == "stderr"
 	close if name == ""
 	return 0 if success
+	@note not threadsafe
 */
 BN_DLL_API int BN_setErrFile(const char *name);
 
-BN_DLL_API int BN_init(void);
+enum {
+	BN_curveFp254BNb = 0,
+	BN_curveFp382_1 = 1,
+	BN_curveFp382_2 = 2
+};
+
+/*
+	init library
+	@param curve [in] type of bn curve
+	@param maxUnitSize [in] 4 or 6
+	curve = BN_CurveFp254BNb is allowed if maxUnitSize = 4
+	curve = BN_CurveFp254BNb/BN_CurveFp382_1/BN_CurveFp382_2 are allowed if maxUnitSize = 6
+	@note not threadsafe
+*/
+BN_DLL_API int BN_init(int curve, int maxUnitSize);
 
 ////////////////////////////////////////////////
 // set zero
@@ -78,10 +93,11 @@ BN_DLL_API void BN_Fr_clear(BN_Fr *x);
 // set x to y
 BN_DLL_API void BN_Fr_setInt(BN_Fr *y, int x);
 
-BN_DLL_API void BN_Fr_copy(BN_Fr *y, const BN_Fr *x);
-
 // return 0 if success
-BN_DLL_API int BN_Fr_setStr(BN_Fr *x, const char *s);
+BN_DLL_API int BN_Fr_setDecStr(BN_Fr *x, const char *s);
+BN_DLL_API int BN_Fr_setHexStr(BN_Fr *x, const char *s);
+// mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
+BN_DLL_API int BN_Fr_setLittleEndian(BN_Fr *x, const void *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_Fr_isValid(const BN_Fr *x);
@@ -89,13 +105,16 @@ BN_DLL_API int BN_Fr_isEqual(const BN_Fr *x, const BN_Fr *y);
 BN_DLL_API int BN_Fr_isZero(const BN_Fr *x);
 BN_DLL_API int BN_Fr_isOne(const BN_Fr *x);
 
-BN_DLL_API void BN_Fr_setRand(BN_Fr *x);
+BN_DLL_API void BN_Fr_setByCSPRNG(BN_Fr *x);
 
 // hash(s) and set x
 BN_DLL_API void BN_hashToFr(BN_Fr *x, const void *buf, size_t bufSize);
 
-// return 0 if success
-BN_DLL_API int BN_Fr_getStr(char *buf, int maxBufSize, const BN_Fr *x);
+// return strlen(buf) if sucess else 0
+BN_DLL_API size_t BN_Fr_getDecStr(char *buf, size_t maxBufSize, const BN_Fr *x);
+BN_DLL_API size_t BN_Fr_getHexStr(char *buf, size_t maxBufSize, const BN_Fr *x);
+// return written byte if sucess else 0
+BN_DLL_API size_t BN_Fr_getLittleEndian(void *buf, size_t bufSize, const BN_Fr *x);
 
 BN_DLL_API void BN_Fr_neg(BN_Fr *y, const BN_Fr *x);
 BN_DLL_API void BN_Fr_inv(BN_Fr *y, const BN_Fr *x);
@@ -108,10 +127,9 @@ BN_DLL_API void BN_Fr_div(BN_Fr *z, const BN_Fr *x, const BN_Fr *y);
 // set zero
 BN_DLL_API void BN_G1_clear(BN_G1 *x);
 
-BN_DLL_API void BN_G1_copy(BN_G1 *y, const BN_G1 *x);
-
 // return 0 if success
-BN_DLL_API int BN_G1_setStr(BN_G1 *x, const char *s);
+BN_DLL_API int BN_G1_setHexStr(BN_G1 *x, const char *s);
+BN_DLL_API int BN_G1_deserialize(BN_G1 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_G1_isValid(const BN_G1 *x);
@@ -121,7 +139,9 @@ BN_DLL_API int BN_G1_isZero(const BN_G1 *x);
 BN_DLL_API int BN_hashAndMapToG1(BN_G1 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
-BN_DLL_API int BN_G1_getStr(char *buf, size_t maxBufSize, const BN_G1 *x);
+BN_DLL_API size_t BN_G1_getHexStr(char *buf, size_t maxBufSize, const BN_G1 *x);
+// return written size if sucess else 0
+BN_DLL_API size_t BN_G1_serialize(void *buf, size_t maxBufSize, const BN_G1 *x);
 
 BN_DLL_API void BN_G1_neg(BN_G1 *y, const BN_G1 *x);
 BN_DLL_API void BN_G1_dbl(BN_G1 *y, const BN_G1 *x);
@@ -133,10 +153,9 @@ BN_DLL_API void BN_G1_mul(BN_G1 *z, const BN_G1 *x, const BN_Fr *y);
 // set zero
 BN_DLL_API void BN_G2_clear(BN_G2 *x);
 
-BN_DLL_API void BN_G2_copy(BN_G2 *y, const BN_G2 *x);
-
 // return 0 if success
-BN_DLL_API int BN_G2_setStr(BN_G2 *x, const char *s);
+BN_DLL_API int BN_G2_setHexStr(BN_G2 *x, const char *s);
+BN_DLL_API int BN_G2_deserialize(BN_G2 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_G2_isValid(const BN_G2 *x);
@@ -146,7 +165,9 @@ BN_DLL_API int BN_G2_isZero(const BN_G2 *x);
 BN_DLL_API int BN_hashAndMapToG2(BN_G2 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
-BN_DLL_API int BN_G2_getStr(char *buf, size_t maxBufSize, const BN_G2 *x);
+BN_DLL_API size_t BN_G2_getHexStr(char *buf, size_t maxBufSize, const BN_G2 *x);
+// return written size if sucess else 0
+BN_DLL_API size_t BN_G2_serialize(void *buf, size_t maxBufSize, const BN_G2 *x);
 
 BN_DLL_API void BN_G2_neg(BN_G2 *y, const BN_G2 *x);
 BN_DLL_API void BN_G2_dbl(BN_G2 *y, const BN_G2 *x);
@@ -158,10 +179,10 @@ BN_DLL_API void BN_G2_mul(BN_G2 *z, const BN_G2 *x, const BN_Fr *y);
 // set zero
 BN_DLL_API void BN_GT_clear(BN_GT *x);
 
-BN_DLL_API void BN_GT_copy(BN_GT *y, const BN_GT *x);
-
 // return 0 if success
-BN_DLL_API int BN_GT_setStr(BN_GT *x, const char *s);
+BN_DLL_API int BN_GT_setDecStr(BN_GT *x, const char *s);
+BN_DLL_API int BN_GT_setHexStr(BN_GT *x, const char *s);
+BN_DLL_API int BN_GT_deserialize(BN_GT *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
 BN_DLL_API int BN_GT_isEqual(const BN_GT *x, const BN_GT *y);
@@ -169,7 +190,10 @@ BN_DLL_API int BN_GT_isZero(const BN_GT *x);
 BN_DLL_API int BN_GT_isOne(const BN_GT *x);
 
 // return 0 if success
-BN_DLL_API int BN_GT_getStr(char *buf, size_t maxBufSize, const BN_GT *x);
+BN_DLL_API size_t BN_GT_getDecStr(char *buf, size_t maxBufSize, const BN_GT *x);
+BN_DLL_API size_t BN_GT_getHexStr(char *buf, size_t maxBufSize, const BN_GT *x);
+// return written size if sucess else 0
+BN_DLL_API size_t BN_GT_serialize(void *buf, size_t maxBufSize, const BN_GT *x);
 
 BN_DLL_API void BN_GT_neg(BN_GT *y, const BN_GT *x);
 BN_DLL_API void BN_GT_inv(BN_GT *y, const BN_GT *x);
@@ -178,10 +202,10 @@ BN_DLL_API void BN_GT_sub(BN_GT *z, const BN_GT *x, const BN_GT *y);
 BN_DLL_API void BN_GT_mul(BN_GT *z, const BN_GT *x, const BN_GT *y);
 BN_DLL_API void BN_GT_div(BN_GT *z, const BN_GT *x, const BN_GT *y);
 
-BN_DLL_API void BN_GT_finalExp(BN_GT *y, const BN_GT *x);
 BN_DLL_API void BN_GT_pow(BN_GT *z, const BN_GT *x, const BN_Fr *y);
 
 BN_DLL_API void BN_pairing(BN_GT *z, const BN_G1 *x, const BN_G2 *y);
+BN_DLL_API void BN_finalExp(BN_GT *y, const BN_GT *x);
 BN_DLL_API void BN_millerLoop(BN_GT *z, const BN_G1 *x, const BN_G2 *y);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)

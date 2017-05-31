@@ -31,7 +31,7 @@ CYBOZU_TEST_AUTO(init)
 	ret = BN_setErrFile("stderr");
 	CYBOZU_TEST_EQUAL(ret, 0);
 
-	ret = BN_init();
+	ret = BN_init(BN_curveFp254BNb, BN_MAX_FP_UNIT_SIZE);
 	CYBOZU_TEST_EQUAL(ret, 0);
 }
 
@@ -53,7 +53,7 @@ CYBOZU_TEST_AUTO(Fr)
 	BN_Fr_setInt(&y, -1);
 	CYBOZU_TEST_ASSERT(!BN_Fr_isEqual(&x, &y));
 
-	BN_Fr_copy(&y, &x);
+	y = x;
 	CYBOZU_TEST_ASSERT(BN_Fr_isEqual(&x, &y));
 
 	BN_hashToFr(&x, "", 0);
@@ -64,42 +64,50 @@ CYBOZU_TEST_AUTO(Fr)
 
 	char buf[1024];
 	BN_Fr_setInt(&x, 12345678);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size_t size;
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 8);
 	CYBOZU_TEST_EQUAL(buf, "12345678");
 
 	BN_Fr_setInt(&x, -7654321);
 	BN_Fr_neg(&x, &x);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 7);
 	CYBOZU_TEST_EQUAL(buf, "7654321");
 
 	BN_Fr_setInt(&y, 123 - 7654321);
 	BN_Fr_add(&x, &x, &y);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 3);
 	CYBOZU_TEST_EQUAL(buf, "123");
 
 	BN_Fr_setInt(&y, 100);
 	BN_Fr_sub(&x, &x, &y);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 2);
 	CYBOZU_TEST_EQUAL(buf, "23");
 
 	BN_Fr_mul(&x, &x, &y);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 4);
 	CYBOZU_TEST_EQUAL(buf, "2300");
 
 	BN_Fr_div(&x, &x, &y);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 2);
 	CYBOZU_TEST_EQUAL(buf, "23");
 
-	CYBOZU_TEST_ASSERT(!BN_Fr_setStr(&x, "12345678901234567"));
-	CYBOZU_TEST_ASSERT(!BN_Fr_setStr(&y, "20000000000000000"));
+	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&x, "12345678901234567"));
+	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&y, "20000000000000000"));
 	BN_Fr_add(&x, &x, &y);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_EQUAL(size, 17);
 	CYBOZU_TEST_EQUAL(buf, "32345678901234567");
 
 	BN_Fr_setInt(&x, 1);
 	BN_Fr_neg(&x, &x);
-	CYBOZU_TEST_ASSERT(!BN_Fr_getStr(buf, sizeof(buf), &x));
-	CYBOZU_TEST_ASSERT(!BN_Fr_setStr(&y, buf));
+	CYBOZU_TEST_ASSERT(BN_Fr_getDecStr(buf, sizeof(buf), &x) > 0);
+	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&y, buf));
 	CYBOZU_TEST_ASSERT(BN_Fr_isEqual(&x, &y));
 }
 
@@ -110,26 +118,18 @@ CYBOZU_TEST_AUTO(G1)
 	CYBOZU_TEST_ASSERT(!BN_G1_isValid(&x));
 	BN_G1_clear(&x);
 	CYBOZU_TEST_ASSERT(BN_G1_isValid(&x));
-	BN_G1_setStr(&y, "0");
 	CYBOZU_TEST_ASSERT(BN_G1_isZero(&x));
-	CYBOZU_TEST_ASSERT(BN_G1_isZero(&y));
-	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&y, "1 -1 1")); // "1 <x> <y>"
-	CYBOZU_TEST_ASSERT(!BN_G1_isZero(&y));
-	char buf[1024];
-	CYBOZU_TEST_ASSERT(!BN_G1_getStr(buf, sizeof(buf), &y));
-	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&x, buf));
-	CYBOZU_TEST_ASSERT(BN_G1_isEqual(&x, &y));
-
-	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&x, "1 -1 -1")); // "1 <x> <y>"
-	CYBOZU_TEST_ASSERT(!BN_G1_isZero(&x));
-	BN_G1_add(&x, &x, &y);
-	CYBOZU_TEST_ASSERT(BN_G1_isZero(&x));
-
-	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&x, "1 -1 -1")); // "1 <x> <y>"
-	BN_G1_neg(&x, &x);
-	CYBOZU_TEST_ASSERT(BN_G1_isEqual(&x, &y));
 
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&y, "abc", 3));
+
+	char buf[1024];
+	CYBOZU_TEST_ASSERT(BN_G1_getHexStr(buf, sizeof(buf), &x) > 0);
+	CYBOZU_TEST_ASSERT(!BN_G1_setHexStr(&y, buf));
+	CYBOZU_TEST_ASSERT(BN_G1_isEqual(&x, &y));
+
+	BN_G1_neg(&x, &x);
+	BN_G1_add(&x, &x, &y);
+	CYBOZU_TEST_ASSERT(BN_G1_isZero(&x));
 
 	BN_G1_dbl(&x, &y); // x = 2y
 	BN_G1_add(&z, &y, &y);
@@ -153,15 +153,13 @@ CYBOZU_TEST_AUTO(G2)
 	CYBOZU_TEST_ASSERT(!BN_G2_isValid(&x));
 	BN_G2_clear(&x);
 	CYBOZU_TEST_ASSERT(BN_G2_isValid(&x));
-	BN_G2_setStr(&y, "0");
 	CYBOZU_TEST_ASSERT(BN_G2_isZero(&x));
-	CYBOZU_TEST_ASSERT(BN_G2_isZero(&y));
 
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&x, "abc", 3));
 
 	char buf[1024];
-	CYBOZU_TEST_ASSERT(!BN_G2_getStr(buf, sizeof(buf), &x));
-	CYBOZU_TEST_ASSERT(!BN_G2_setStr(&y, buf));
+	CYBOZU_TEST_ASSERT(BN_G2_getHexStr(buf, sizeof(buf), &x) > 0);
+	CYBOZU_TEST_ASSERT(!BN_G2_setHexStr(&y, buf));
 	CYBOZU_TEST_ASSERT(BN_G2_isEqual(&x, &y));
 
 	BN_G2_neg(&x, &x);
@@ -193,16 +191,16 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_ASSERT(BN_GT_isZero(&x));
 
 	char buf[1024];
-	CYBOZU_TEST_ASSERT(!BN_GT_setStr(&x, "1 2 3 4 5 6 7 8 9 10 11 12"));
-	CYBOZU_TEST_ASSERT(!BN_GT_getStr(buf, sizeof(buf), &x));
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&x, "1 2 3 4 5 6 7 8 9 10 11 12"));
+	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &x) > 0);
 	CYBOZU_TEST_EQUAL(buf, "1 2 3 4 5 6 7 8 9 10 11 12");
 
-	BN_GT_copy(&y, &x);
+	y = x;
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&x, &y));
 
-	CYBOZU_TEST_ASSERT(!BN_GT_setStr(&z, "-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12"));
-	CYBOZU_TEST_ASSERT(!BN_GT_getStr(buf, sizeof(buf), &z));
-	CYBOZU_TEST_ASSERT(!BN_GT_setStr(&y, buf));
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&z, "-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12"));
+	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &z) > 0);
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&y, buf));
 
 	BN_GT_neg(&z, &y);
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&x, &z));
@@ -210,13 +208,13 @@ CYBOZU_TEST_AUTO(GT)
 	BN_GT_add(&y, &x, &y);
 	CYBOZU_TEST_ASSERT(BN_GT_isZero(&y));
 
-	CYBOZU_TEST_ASSERT(!BN_GT_setStr(&y, "2 0 0 0 0 0 0 0 0 0 0 0"));
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&y, "2 0 0 0 0 0 0 0 0 0 0 0"));
 	BN_GT_mul(&z, &x, &y);
-	CYBOZU_TEST_ASSERT(!BN_GT_getStr(buf, sizeof(buf), &z));
+	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &z) > 0);
 	CYBOZU_TEST_EQUAL(buf, "2 4 6 8 10 12 14 16 18 20 22 24");
 
 	BN_GT_div(&z, &z, &y);
-	CYBOZU_TEST_ASSERT(!BN_GT_getStr(buf, sizeof(buf), &x));
+	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &x) > 0);
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&x, &z));
 
 	BN_Fr n;
@@ -237,7 +235,7 @@ CYBOZU_TEST_AUTO(pairing)
 	BN_G2 Q, bQ;
 	BN_GT e, e1, e2;
 
-	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&P, "1 -1 1")); // "1 <x> <y>"
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&P, "1", 1));
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&Q, "1", 1));
 
 	BN_G1_mul(&aP, &P, &a);
@@ -257,7 +255,7 @@ CYBOZU_TEST_AUTO(precomputed)
 {
 	BN_G1 P1, P2;
 	BN_G2 Q1, Q2;
-	CYBOZU_TEST_ASSERT(!BN_G1_setStr(&P1, "1 -1 1")); // "1 <x> <y>"
+	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&P1, "1", 1));
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&P2, "123", 3));
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&Q1, "1", 1));
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&Q2, "2", 1));
@@ -272,16 +270,16 @@ CYBOZU_TEST_AUTO(precomputed)
 	BN_GT e1, e2, f1, f2, f3;
 	BN_pairing(&e1, &P1, &Q1);
 	BN_precomputedMillerLoop(&f1, &P1, Q1buf.data());
-	BN_GT_finalExp(&f1, &f1);
+	BN_finalExp(&f1, &f1);
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&e1, &f1));
 
 	BN_pairing(&e2, &P2, &Q2);
 	BN_precomputedMillerLoop(&f2, &P2, Q2buf.data());
-	BN_GT_finalExp(&f2, &f2);
+	BN_finalExp(&f2, &f2);
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&e2, &f2));
 
 	BN_precomputedMillerLoop2(&f3, &P1, Q1buf.data(), &P2, Q2buf.data());
-	BN_GT_finalExp(&f3, &f3);
+	BN_finalExp(&f3, &f3);
 
 	BN_GT_mul(&e1, &e1, &e2);
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&e1, &f3));
@@ -289,6 +287,6 @@ CYBOZU_TEST_AUTO(precomputed)
 
 CYBOZU_TEST_AUTO(end)
 {
-	int ret = BN_setErrFile("");
+	int ret = BN_setErrFile("bn_if.log");
 	CYBOZU_TEST_EQUAL(ret, 0);
 }
