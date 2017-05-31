@@ -1,6 +1,5 @@
 #define BN_DLL_EXPORT
 #define BN_DEFINE_STRUCT
-#define BN_MAX_FP_UNIT_SIZE 4
 #include <mcl/bn_if.h>
 #if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
@@ -117,7 +116,7 @@ int BN_initLib(int curve, int maxUnitSize)
 	case BN_curveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;
 		break;
-#if BLS_MAX_OP_UNIT_SIZE == 6
+#if BN_MAX_FP_UNIT_SIZE == 6
 	case BN_curveFp382_1:
 		cp = mcl::bn::CurveFp382_1;
 		break;
