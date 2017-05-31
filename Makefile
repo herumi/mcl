@@ -96,7 +96,7 @@ $(BN256_SLIB): $(LIB_OBJ) $(BN256_OBJ)
 	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN256_OBJ) -shared
 
 $(BN256_OBJ): src/bn_if.cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -DBN_MAX_FP_UNIT_SIZE=4
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -DBN_MAX_OP_UNIT_SIZE=4
 
 $(BN384_LIB): $(LIB_OBJ) $(BN384_OBJ)
 	$(AR) $@ $(LIB_OBJ) $(BN384_OBJ)
@@ -105,7 +105,7 @@ $(BN384_SLIB): $(LIB_OBJ) $(BN384_OBJ)
 	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN384_OBJ) -shared
 
 $(BN384_OBJ): src/bn_if.cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -DBN_MAX_FP_UNIT_SIZE=6
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -DBN_MAX_OP_UNIT_SIZE=6
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)

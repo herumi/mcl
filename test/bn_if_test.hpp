@@ -27,12 +27,12 @@ CYBOZU_TEST_AUTO(init)
 	ret = BN_setErrFile("stderr");
 	CYBOZU_TEST_EQUAL(ret, 0);
 
-#if BN_MAX_FP_UNIT_SIZE == 4
-	printf("test BN_curveFp254BNb %d\n", BN_MAX_FP_UNIT_SIZE);
-	ret = BN_initLib(BN_curveFp254BNb, BN_MAX_FP_UNIT_SIZE);
+#if BN_MAX_OP_UNIT_SIZE == 4
+	printf("test BN_curveFp254BNb %d\n", BN_MAX_OP_UNIT_SIZE);
+	ret = BN_initLib(BN_curveFp254BNb, BN_MAX_OP_UNIT_SIZE);
 #else
-	printf("test BN_curveFp382_1 %d\n", BN_MAX_FP_UNIT_SIZE);
-	ret = BN_initLib(BN_curveFp382_1, BN_MAX_FP_UNIT_SIZE);
+	printf("test BN_curveFp382_1 %d\n", BN_MAX_OP_UNIT_SIZE);
+	ret = BN_initLib(BN_curveFp382_1, BN_MAX_OP_UNIT_SIZE);
 #endif
 	CYBOZU_TEST_EQUAL(ret, 0);
 }

@@ -6,8 +6,8 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#ifndef BN_MAX_FP_UNIT_SIZE
-	#error "define BN_MAX_FP_UNIT_SIZE 4(or 6)"
+#ifndef BN_MAX_OP_UNIT_SIZE
+	#error "define BN_MAX_OP_UNIT_SIZE 4(or 6)"
 #endif
 
 #include <stdint.h> // for uint64_t, uint8_t
@@ -19,7 +19,7 @@
 #else
 #define BN_DLL_API __declspec(dllimport)
 #ifndef MCL_NO_AUTOLINK
-	#if BN_MAX_FP_UNIT_SIZE == 4
+	#if BN_MAX_OP_UNIT_SIZE == 4
 		#pragma comment(lib, "bn_if256.lib")
 	#else
 		#pragma comment(lib, "bn_if384.lib")
@@ -37,19 +37,19 @@ extern "C" {
 #ifdef BN_DEFINE_STRUCT
 
 typedef struct {
-	uint64_t d[BN_MAX_FP_UNIT_SIZE];
+	uint64_t d[BN_MAX_OP_UNIT_SIZE];
 } BN_Fr;
 
 typedef struct {
-	uint64_t d[BN_MAX_FP_UNIT_SIZE * 3];
+	uint64_t d[BN_MAX_OP_UNIT_SIZE * 3];
 } BN_G1;
 
 typedef struct {
-	uint64_t d[BN_MAX_FP_UNIT_SIZE * 2 * 3];
+	uint64_t d[BN_MAX_OP_UNIT_SIZE * 2 * 3];
 } BN_G2;
 
 typedef struct {
-	uint64_t d[BN_MAX_FP_UNIT_SIZE * 12];
+	uint64_t d[BN_MAX_OP_UNIT_SIZE * 12];
 } BN_GT;
 
 #else

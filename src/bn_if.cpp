@@ -9,7 +9,7 @@ static std::random_device g_rg;
 static cybozu::RandomGenerator g_rg;
 #endif
 
-#if BN_MAX_FP_UNIT_SIZE == 4
+#if BN_MAX_OP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
 using namespace mcl::bn256;
 #else
@@ -107,8 +107,8 @@ int BN_setErrFile(const char *name)
 int BN_initLib(int curve, int maxUnitSize)
 	try
 {
-	if (maxUnitSize != BN_MAX_FP_UNIT_SIZE) {
-		if (g_fp) fprintf(g_fp, "BN_initLib:maxUnitSize is mismatch %d %d\n", maxUnitSize, BN_MAX_FP_UNIT_SIZE);
+	if (maxUnitSize != BN_MAX_OP_UNIT_SIZE) {
+		if (g_fp) fprintf(g_fp, "BN_initLib:maxUnitSize is mismatch %d %d\n", maxUnitSize, BN_MAX_OP_UNIT_SIZE);
 		return -1;
 	}
 	mcl::bn::CurveParam cp;
@@ -116,7 +116,7 @@ int BN_initLib(int curve, int maxUnitSize)
 	case BN_curveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;
 		break;
-#if BN_MAX_FP_UNIT_SIZE == 6
+#if BN_MAX_OP_UNIT_SIZE == 6
 	case BN_curveFp382_1:
 		cp = mcl::bn::CurveFp382_1;
 		break;
@@ -128,7 +128,7 @@ int BN_initLib(int curve, int maxUnitSize)
 		if (g_fp) fprintf(g_fp, "BN_initLib:not supported curve %d\n", curve);
 		return -1;
 	}
-#if BN_MAX_FP_UNIT_SIZE == 4
+#if BN_MAX_OP_UNIT_SIZE == 4
 	bn256init(cp);
 #else
 	bn384init(cp);
