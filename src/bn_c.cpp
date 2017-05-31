@@ -104,11 +104,11 @@ int MCLBN_setErrFile(const char *name)
 #endif
 }
 
-int MCLBN_initLib(int curve, int maxUnitSize)
+int MCLBN_init(int curve, int maxUnitSize)
 	try
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
-		if (g_fp) fprintf(g_fp, "MCLBN_initLib:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
+		if (g_fp) fprintf(g_fp, "MCLBN_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
 	mcl::bn::CurveParam cp;
@@ -125,7 +125,7 @@ int MCLBN_initLib(int curve, int maxUnitSize)
 		break;
 #endif
 	default:
-		if (g_fp) fprintf(g_fp, "MCLBN_initLib:not supported curve %d\n", curve);
+		if (g_fp) fprintf(g_fp, "MCLBN_init:not supported curve %d\n", curve);
 		return -1;
 	}
 #if MCLBN_FP_UNIT_SIZE == 4

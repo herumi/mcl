@@ -85,7 +85,7 @@ enum {
 	@note not threadsafe
 	@note MCLBN_init is used in libeay32
 */
-MCLBN_DLL_API int MCLBN_initLib(int curve, int maxUnitSize);
+MCLBN_DLL_API int MCLBN_init(int curve, int maxUnitSize);
 
 ////////////////////////////////////////////////
 // set zero

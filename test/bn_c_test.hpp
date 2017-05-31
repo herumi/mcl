@@ -29,10 +29,10 @@ CYBOZU_TEST_AUTO(init)
 
 #if MCLBN_FP_UNIT_SIZE == 4
 	printf("test MCLBN_curveFp254BNb %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = MCLBN_initLib(MCLBN_curveFp254BNb, MCLBN_FP_UNIT_SIZE);
+	ret = MCLBN_init(MCLBN_curveFp254BNb, MCLBN_FP_UNIT_SIZE);
 #else
 	printf("test MCLBN_curveFp382_1 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = MCLBN_initLib(MCLBN_curveFp382_1, MCLBN_FP_UNIT_SIZE);
+	ret = MCLBN_init(MCLBN_curveFp382_1, MCLBN_FP_UNIT_SIZE);
 #endif
 	CYBOZU_TEST_EQUAL(ret, 0);
 }
