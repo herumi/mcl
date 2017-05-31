@@ -6,8 +6,8 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#ifndef MCLBN_MAX_OP_UNIT_SIZE
-	#error "define MCLBN_MAX_OP_UNIT_SIZE 4(or 6)"
+#ifndef MCLBN_FP_UNIT_SIZE
+	#error "define MCLBN_FP_UNIT_SIZE 4(or 6)"
 #endif
 
 #include <stdint.h> // for uint64_t, uint8_t
@@ -19,10 +19,10 @@
 #else
 #define MCLBN_DLL_API __declspec(dllimport)
 #ifndef MCL_NO_AUTOLINK
-	#if MCLBN_MAX_OP_UNIT_SIZE == 4
-		#pragma comment(lib, "bn_if256.lib")
+	#if MCLBN_FP_UNIT_SIZE == 4
+		#pragma comment(lib, "mclbn256.lib")
 	#else
-		#pragma comment(lib, "bn_if384.lib")
+		#pragma comment(lib, "mclbn384.lib")
 	#endif
 #endif
 #endif
@@ -37,19 +37,19 @@ extern "C" {
 #ifdef MCLBN_DEFINE_STRUCT
 
 typedef struct {
-	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE];
+	uint64_t d[MCLBN_FP_UNIT_SIZE];
 } MCLBN_Fr;
 
 typedef struct {
-	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE * 3];
+	uint64_t d[MCLBN_FP_UNIT_SIZE * 3];
 } MCLBN_G1;
 
 typedef struct {
-	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE * 2 * 3];
+	uint64_t d[MCLBN_FP_UNIT_SIZE * 2 * 3];
 } MCLBN_G2;
 
 typedef struct {
-	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE * 12];
+	uint64_t d[MCLBN_FP_UNIT_SIZE * 12];
 } MCLBN_GT;
 
 #else
