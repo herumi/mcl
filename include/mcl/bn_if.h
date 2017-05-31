@@ -95,8 +95,8 @@ BN_DLL_API void BN_Fr_clear(BN_Fr *x);
 BN_DLL_API void BN_Fr_setInt(BN_Fr *y, int x);
 
 // return 0 if success
-BN_DLL_API int BN_Fr_setDecStr(BN_Fr *x, const char *s);
-BN_DLL_API int BN_Fr_setHexStr(BN_Fr *x, const char *s);
+BN_DLL_API int BN_Fr_setDecStr(BN_Fr *x, const char *buf, size_t bufSize);
+BN_DLL_API int BN_Fr_setHexStr(BN_Fr *x, const char *buf, size_t bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 BN_DLL_API int BN_Fr_setLittleEndian(BN_Fr *x, const void *buf, size_t bufSize);
 
@@ -129,7 +129,7 @@ BN_DLL_API void BN_Fr_div(BN_Fr *z, const BN_Fr *x, const BN_Fr *y);
 BN_DLL_API void BN_G1_clear(BN_G1 *x);
 
 // return 0 if success
-BN_DLL_API int BN_G1_setHexStr(BN_G1 *x, const char *s);
+BN_DLL_API int BN_G1_setHexStr(BN_G1 *x, const char *buf, size_t bufSize);
 BN_DLL_API int BN_G1_deserialize(BN_G1 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
@@ -155,7 +155,7 @@ BN_DLL_API void BN_G1_mul(BN_G1 *z, const BN_G1 *x, const BN_Fr *y);
 BN_DLL_API void BN_G2_clear(BN_G2 *x);
 
 // return 0 if success
-BN_DLL_API int BN_G2_setHexStr(BN_G2 *x, const char *s);
+BN_DLL_API int BN_G2_setHexStr(BN_G2 *x, const char *buf, size_t bufSize);
 BN_DLL_API int BN_G2_deserialize(BN_G2 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
@@ -181,8 +181,8 @@ BN_DLL_API void BN_G2_mul(BN_G2 *z, const BN_G2 *x, const BN_Fr *y);
 BN_DLL_API void BN_GT_clear(BN_GT *x);
 
 // return 0 if success
-BN_DLL_API int BN_GT_setDecStr(BN_GT *x, const char *s);
-BN_DLL_API int BN_GT_setHexStr(BN_GT *x, const char *s);
+BN_DLL_API int BN_GT_setDecStr(BN_GT *x, const char *buf, size_t bufSize);
+BN_DLL_API int BN_GT_setHexStr(BN_GT *x, const char *buf, size_t bufSize);
 BN_DLL_API int BN_GT_deserialize(BN_GT *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise

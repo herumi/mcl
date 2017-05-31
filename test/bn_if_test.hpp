@@ -99,8 +99,8 @@ CYBOZU_TEST_AUTO(Fr)
 	CYBOZU_TEST_EQUAL(size, 2);
 	CYBOZU_TEST_EQUAL(buf, "23");
 
-	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&x, "12345678901234567"));
-	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&y, "20000000000000000"));
+	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&x, "12345678901234567", 17));
+	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&y, "20000000000000000", 17));
 	BN_Fr_add(&x, &x, &y);
 	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
 	CYBOZU_TEST_EQUAL(size, 17);
@@ -108,8 +108,10 @@ CYBOZU_TEST_AUTO(Fr)
 
 	BN_Fr_setInt(&x, 1);
 	BN_Fr_neg(&x, &x);
-	CYBOZU_TEST_ASSERT(BN_Fr_getDecStr(buf, sizeof(buf), &x) > 0);
-	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&y, buf));
+	size = BN_Fr_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	CYBOZU_TEST_ASSERT(!BN_Fr_setDecStr(&y, buf, size));
 	CYBOZU_TEST_ASSERT(BN_Fr_isEqual(&x, &y));
 }
 
@@ -125,8 +127,11 @@ CYBOZU_TEST_AUTO(G1)
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG1(&y, "abc", 3));
 
 	char buf[1024];
-	CYBOZU_TEST_ASSERT(BN_G1_getHexStr(buf, sizeof(buf), &x) > 0);
-	CYBOZU_TEST_ASSERT(!BN_G1_setHexStr(&y, buf));
+	size_t size;
+	size = BN_G1_getHexStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	CYBOZU_TEST_ASSERT(!BN_G1_setHexStr(&y, buf, strlen(buf)));
 	CYBOZU_TEST_ASSERT(BN_G1_isEqual(&x, &y));
 
 	BN_G1_neg(&x, &x);
@@ -160,8 +165,11 @@ CYBOZU_TEST_AUTO(G2)
 	CYBOZU_TEST_ASSERT(!BN_hashAndMapToG2(&x, "abc", 3));
 
 	char buf[1024];
-	CYBOZU_TEST_ASSERT(BN_G2_getHexStr(buf, sizeof(buf), &x) > 0);
-	CYBOZU_TEST_ASSERT(!BN_G2_setHexStr(&y, buf));
+	size_t size;
+	size = BN_G2_getHexStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	CYBOZU_TEST_ASSERT(!BN_G2_setHexStr(&y, buf, strlen(buf)));
 	CYBOZU_TEST_ASSERT(BN_G2_isEqual(&x, &y));
 
 	BN_G2_neg(&x, &x);
@@ -193,16 +201,23 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_ASSERT(BN_GT_isZero(&x));
 
 	char buf[2048];
-	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&x, "1 2 3 4 5 6 7 8 9 10 11 12"));
-	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &x) > 0);
-	CYBOZU_TEST_EQUAL(buf, "1 2 3 4 5 6 7 8 9 10 11 12");
+	const char *s = "1 2 3 4 5 6 7 8 9 10 11 12";
+	size_t size;
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&x,s , strlen(s)));
+	size = BN_GT_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	CYBOZU_TEST_EQUAL(buf, s);
 
 	y = x;
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&x, &y));
 
-	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&z, "-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12"));
-	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &z) > 0);
-	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&y, buf));
+	s = "-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12";
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&z, s, strlen(s)));
+	size = BN_GT_getDecStr(buf, sizeof(buf), &z);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&y, buf, size));
 
 	BN_GT_neg(&z, &y);
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&x, &z));
@@ -210,13 +225,18 @@ CYBOZU_TEST_AUTO(GT)
 	BN_GT_add(&y, &x, &y);
 	CYBOZU_TEST_ASSERT(BN_GT_isZero(&y));
 
-	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&y, "2 0 0 0 0 0 0 0 0 0 0 0"));
+	s = "2 0 0 0 0 0 0 0 0 0 0 0";
+	CYBOZU_TEST_ASSERT(!BN_GT_setDecStr(&y, s, strlen(s)));
 	BN_GT_mul(&z, &x, &y);
-	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &z) > 0);
+	size = BN_GT_getDecStr(buf, sizeof(buf), &z);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_EQUAL(buf, "2 4 6 8 10 12 14 16 18 20 22 24");
 
 	BN_GT_div(&z, &z, &y);
-	CYBOZU_TEST_ASSERT(BN_GT_getDecStr(buf, sizeof(buf), &x) > 0);
+	size = BN_GT_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_ASSERT(BN_GT_isEqual(&x, &z));
 
 	BN_Fr n;

@@ -152,13 +152,13 @@ void BN_Fr_setInt(BN_Fr *y, int x)
 	*cast(y) = x;
 }
 
-int BN_Fr_setDecStr(BN_Fr *x, const char *s)
+int BN_Fr_setDecStr(BN_Fr *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, s, strlen(s), 10, "BN_Fr_setDecStr", false);
+	return deserialize(x, buf, bufSize, 10, "BN_Fr_setDecStr", false);
 }
-int BN_Fr_setHexStr(BN_Fr *x, const char *s)
+int BN_Fr_setHexStr(BN_Fr *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, s, strlen(s), 16, "BN_Fr_setHexStr", false);
+	return deserialize(x, buf, bufSize, 16, "BN_Fr_setHexStr", false);
 }
 int BN_Fr_setLittleEndian(BN_Fr *x, const void *buf, size_t bufSize)
 {
@@ -243,9 +243,9 @@ void BN_G1_clear(BN_G1 *x)
 	cast(x)->clear();
 }
 
-int BN_G1_setHexStr(BN_G1 *x, const char *s)
+int BN_G1_setHexStr(BN_G1 *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, s, strlen(s), mcl::IoFixedSizeByteSeq, "BN_G1_setHexStr", true);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "BN_G1_setHexStr", true);
 }
 int BN_G1_deserialize(BN_G1 *x, const char *buf, size_t bufSize)
 {
@@ -316,9 +316,9 @@ void BN_G2_clear(BN_G2 *x)
 	cast(x)->clear();
 }
 
-int BN_G2_setHexStr(BN_G2 *x, const char *s)
+int BN_G2_setHexStr(BN_G2 *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, s, strlen(s), mcl::IoFixedSizeByteSeq, "BN_G2_setHexStr", true);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "BN_G2_setHexStr", true);
 }
 int BN_G2_deserialize(BN_G2 *x, const char *buf, size_t bufSize)
 {
@@ -389,13 +389,13 @@ void BN_GT_clear(BN_GT *x)
 	cast(x)->clear();
 }
 
-int BN_GT_setDecStr(BN_GT *x, const char *s)
+int BN_GT_setDecStr(BN_GT *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, s, strlen(s), 10, "BN_GT_setDecStr", false);
+	return deserialize(x, buf, bufSize, 10, "BN_GT_setDecStr", false);
 }
-int BN_GT_setHexStr(BN_GT *x, const char *s)
+int BN_GT_setHexStr(BN_GT *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, s, strlen(s), 16, "BN_GT_setHexStr", false);
+	return deserialize(x, buf, bufSize, 16, "BN_GT_setHexStr", false);
 }
 int BN_GT_deserialize(BN_GT *x, const char *buf, size_t bufSize)
 {
