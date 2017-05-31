@@ -6,20 +6,20 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#ifndef BN_MAX_OP_UNIT_SIZE
-	#error "define BN_MAX_OP_UNIT_SIZE 4(or 6)"
+#ifndef MCLBN_MAX_OP_UNIT_SIZE
+	#error "define MCLBN_MAX_OP_UNIT_SIZE 4(or 6)"
 #endif
 
 #include <stdint.h> // for uint64_t, uint8_t
 #include <stdlib.h> // for size_t
 
 #ifdef _MSC_VER
-#ifdef BN_DLL_EXPORT
-#define BN_DLL_API __declspec(dllexport)
+#ifdef MCLBN_DLL_EXPORT
+#define MCLBN_DLL_API __declspec(dllexport)
 #else
-#define BN_DLL_API __declspec(dllimport)
+#define MCLBN_DLL_API __declspec(dllimport)
 #ifndef MCL_NO_AUTOLINK
-	#if BN_MAX_OP_UNIT_SIZE == 4
+	#if MCLBN_MAX_OP_UNIT_SIZE == 4
 		#pragma comment(lib, "bn_if256.lib")
 	#else
 		#pragma comment(lib, "bn_if384.lib")
@@ -27,37 +27,37 @@
 #endif
 #endif
 #else
-#define BN_DLL_API
+#define MCLBN_DLL_API
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef BN_DEFINE_STRUCT
+#ifdef MCLBN_DEFINE_STRUCT
 
 typedef struct {
-	uint64_t d[BN_MAX_OP_UNIT_SIZE];
-} BN_Fr;
+	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE];
+} MCLBN_Fr;
 
 typedef struct {
-	uint64_t d[BN_MAX_OP_UNIT_SIZE * 3];
-} BN_G1;
+	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE * 3];
+} MCLBN_G1;
 
 typedef struct {
-	uint64_t d[BN_MAX_OP_UNIT_SIZE * 2 * 3];
-} BN_G2;
+	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE * 2 * 3];
+} MCLBN_G2;
 
 typedef struct {
-	uint64_t d[BN_MAX_OP_UNIT_SIZE * 12];
-} BN_GT;
+	uint64_t d[MCLBN_MAX_OP_UNIT_SIZE * 12];
+} MCLBN_GT;
 
 #else
 
-typedef struct BN_Fr BN_Fr;
-typedef struct BN_G1 BN_G1;
-typedef struct BN_G2 BN_G2;
-typedef struct BN_GT BN_GT;
+typedef struct MCLBN_Fr MCLBN_Fr;
+typedef struct MCLBN_G1 MCLBN_G1;
+typedef struct MCLBN_G2 MCLBN_G2;
+typedef struct MCLBN_GT MCLBN_GT;
 
 #endif
 
@@ -68,155 +68,155 @@ typedef struct BN_GT BN_GT;
 	return 0 if success
 	@note not threadsafe
 */
-BN_DLL_API int BN_setErrFile(const char *name);
+MCLBN_DLL_API int MCLBN_setErrFile(const char *name);
 
 enum {
-	BN_curveFp254BNb = 0,
-	BN_curveFp382_1 = 1,
-	BN_curveFp382_2 = 2
+	MCLBN_curveFp254BNb = 0,
+	MCLBN_curveFp382_1 = 1,
+	MCLBN_curveFp382_2 = 2
 };
 
 /*
 	init library
 	@param curve [in] type of bn curve
 	@param maxUnitSize [in] 4 or 6
-	curve = BN_CurveFp254BNb is allowed if maxUnitSize = 4
-	curve = BN_CurveFp254BNb/BN_CurveFp382_1/BN_CurveFp382_2 are allowed if maxUnitSize = 6
+	curve = MCLBN_CurveFp254BNb is allowed if maxUnitSize = 4
+	curve = MCLBN_CurveFp254BNb/MCLBN_CurveFp382_1/MCLBN_CurveFp382_2 are allowed if maxUnitSize = 6
 	@note not threadsafe
-	@note BN_init is used in libeay32
+	@note MCLBN_init is used in libeay32
 */
-BN_DLL_API int BN_initLib(int curve, int maxUnitSize);
+MCLBN_DLL_API int MCLBN_initLib(int curve, int maxUnitSize);
 
 ////////////////////////////////////////////////
 // set zero
-BN_DLL_API void BN_Fr_clear(BN_Fr *x);
+MCLBN_DLL_API void MCLBN_Fr_clear(MCLBN_Fr *x);
 
 // set x to y
-BN_DLL_API void BN_Fr_setInt(BN_Fr *y, int x);
+MCLBN_DLL_API void MCLBN_Fr_setInt(MCLBN_Fr *y, int x);
 
 // return 0 if success
-BN_DLL_API int BN_Fr_setDecStr(BN_Fr *x, const char *buf, size_t bufSize);
-BN_DLL_API int BN_Fr_setHexStr(BN_Fr *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_Fr_setDecStr(MCLBN_Fr *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_Fr_setHexStr(MCLBN_Fr *x, const char *buf, size_t bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
-BN_DLL_API int BN_Fr_setLittleEndian(BN_Fr *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_Fr_setLittleEndian(MCLBN_Fr *x, const void *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
-BN_DLL_API int BN_Fr_isValid(const BN_Fr *x);
-BN_DLL_API int BN_Fr_isEqual(const BN_Fr *x, const BN_Fr *y);
-BN_DLL_API int BN_Fr_isZero(const BN_Fr *x);
-BN_DLL_API int BN_Fr_isOne(const BN_Fr *x);
+MCLBN_DLL_API int MCLBN_Fr_isValid(const MCLBN_Fr *x);
+MCLBN_DLL_API int MCLBN_Fr_isEqual(const MCLBN_Fr *x, const MCLBN_Fr *y);
+MCLBN_DLL_API int MCLBN_Fr_isZero(const MCLBN_Fr *x);
+MCLBN_DLL_API int MCLBN_Fr_isOne(const MCLBN_Fr *x);
 
-BN_DLL_API void BN_Fr_setByCSPRNG(BN_Fr *x);
+MCLBN_DLL_API void MCLBN_Fr_setByCSPRNG(MCLBN_Fr *x);
 
 // hash(s) and set x
-BN_DLL_API void BN_hashToFr(BN_Fr *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API void MCLBN_hashToFr(MCLBN_Fr *x, const void *buf, size_t bufSize);
 
 // return strlen(buf) if sucess else 0
-BN_DLL_API size_t BN_Fr_getDecStr(char *buf, size_t maxBufSize, const BN_Fr *x);
-BN_DLL_API size_t BN_Fr_getHexStr(char *buf, size_t maxBufSize, const BN_Fr *x);
+MCLBN_DLL_API size_t MCLBN_Fr_getDecStr(char *buf, size_t maxBufSize, const MCLBN_Fr *x);
+MCLBN_DLL_API size_t MCLBN_Fr_getHexStr(char *buf, size_t maxBufSize, const MCLBN_Fr *x);
 // return written byte if sucess else 0
-BN_DLL_API size_t BN_Fr_getLittleEndian(void *buf, size_t bufSize, const BN_Fr *x);
+MCLBN_DLL_API size_t MCLBN_Fr_getLittleEndian(void *buf, size_t bufSize, const MCLBN_Fr *x);
 
-BN_DLL_API void BN_Fr_neg(BN_Fr *y, const BN_Fr *x);
-BN_DLL_API void BN_Fr_inv(BN_Fr *y, const BN_Fr *x);
-BN_DLL_API void BN_Fr_add(BN_Fr *z, const BN_Fr *x, const BN_Fr *y);
-BN_DLL_API void BN_Fr_sub(BN_Fr *z, const BN_Fr *x, const BN_Fr *y);
-BN_DLL_API void BN_Fr_mul(BN_Fr *z, const BN_Fr *x, const BN_Fr *y);
-BN_DLL_API void BN_Fr_div(BN_Fr *z, const BN_Fr *x, const BN_Fr *y);
-
-////////////////////////////////////////////////
-// set zero
-BN_DLL_API void BN_G1_clear(BN_G1 *x);
-
-// return 0 if success
-BN_DLL_API int BN_G1_setHexStr(BN_G1 *x, const char *buf, size_t bufSize);
-BN_DLL_API int BN_G1_deserialize(BN_G1 *x, const char *buf, size_t bufSize);
-
-// return 1 if true and 0 otherwise
-BN_DLL_API int BN_G1_isValid(const BN_G1 *x);
-BN_DLL_API int BN_G1_isEqual(const BN_G1 *x, const BN_G1 *y);
-BN_DLL_API int BN_G1_isZero(const BN_G1 *x);
-
-BN_DLL_API int BN_hashAndMapToG1(BN_G1 *x, const void *buf, size_t bufSize);
-
-// return 0 if success
-BN_DLL_API size_t BN_G1_getHexStr(char *buf, size_t maxBufSize, const BN_G1 *x);
-// return written size if sucess else 0
-BN_DLL_API size_t BN_G1_serialize(void *buf, size_t maxBufSize, const BN_G1 *x);
-
-BN_DLL_API void BN_G1_neg(BN_G1 *y, const BN_G1 *x);
-BN_DLL_API void BN_G1_dbl(BN_G1 *y, const BN_G1 *x);
-BN_DLL_API void BN_G1_add(BN_G1 *z, const BN_G1 *x, const BN_G1 *y);
-BN_DLL_API void BN_G1_sub(BN_G1 *z, const BN_G1 *x, const BN_G1 *y);
-BN_DLL_API void BN_G1_mul(BN_G1 *z, const BN_G1 *x, const BN_Fr *y);
+MCLBN_DLL_API void MCLBN_Fr_neg(MCLBN_Fr *y, const MCLBN_Fr *x);
+MCLBN_DLL_API void MCLBN_Fr_inv(MCLBN_Fr *y, const MCLBN_Fr *x);
+MCLBN_DLL_API void MCLBN_Fr_add(MCLBN_Fr *z, const MCLBN_Fr *x, const MCLBN_Fr *y);
+MCLBN_DLL_API void MCLBN_Fr_sub(MCLBN_Fr *z, const MCLBN_Fr *x, const MCLBN_Fr *y);
+MCLBN_DLL_API void MCLBN_Fr_mul(MCLBN_Fr *z, const MCLBN_Fr *x, const MCLBN_Fr *y);
+MCLBN_DLL_API void MCLBN_Fr_div(MCLBN_Fr *z, const MCLBN_Fr *x, const MCLBN_Fr *y);
 
 ////////////////////////////////////////////////
 // set zero
-BN_DLL_API void BN_G2_clear(BN_G2 *x);
+MCLBN_DLL_API void MCLBN_G1_clear(MCLBN_G1 *x);
 
 // return 0 if success
-BN_DLL_API int BN_G2_setHexStr(BN_G2 *x, const char *buf, size_t bufSize);
-BN_DLL_API int BN_G2_deserialize(BN_G2 *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_G1_setHexStr(MCLBN_G1 *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_G1_deserialize(MCLBN_G1 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
-BN_DLL_API int BN_G2_isValid(const BN_G2 *x);
-BN_DLL_API int BN_G2_isEqual(const BN_G2 *x, const BN_G2 *y);
-BN_DLL_API int BN_G2_isZero(const BN_G2 *x);
+MCLBN_DLL_API int MCLBN_G1_isValid(const MCLBN_G1 *x);
+MCLBN_DLL_API int MCLBN_G1_isEqual(const MCLBN_G1 *x, const MCLBN_G1 *y);
+MCLBN_DLL_API int MCLBN_G1_isZero(const MCLBN_G1 *x);
 
-BN_DLL_API int BN_hashAndMapToG2(BN_G2 *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_hashAndMapToG1(MCLBN_G1 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
-BN_DLL_API size_t BN_G2_getHexStr(char *buf, size_t maxBufSize, const BN_G2 *x);
+MCLBN_DLL_API size_t MCLBN_G1_getHexStr(char *buf, size_t maxBufSize, const MCLBN_G1 *x);
 // return written size if sucess else 0
-BN_DLL_API size_t BN_G2_serialize(void *buf, size_t maxBufSize, const BN_G2 *x);
+MCLBN_DLL_API size_t MCLBN_G1_serialize(void *buf, size_t maxBufSize, const MCLBN_G1 *x);
 
-BN_DLL_API void BN_G2_neg(BN_G2 *y, const BN_G2 *x);
-BN_DLL_API void BN_G2_dbl(BN_G2 *y, const BN_G2 *x);
-BN_DLL_API void BN_G2_add(BN_G2 *z, const BN_G2 *x, const BN_G2 *y);
-BN_DLL_API void BN_G2_sub(BN_G2 *z, const BN_G2 *x, const BN_G2 *y);
-BN_DLL_API void BN_G2_mul(BN_G2 *z, const BN_G2 *x, const BN_Fr *y);
+MCLBN_DLL_API void MCLBN_G1_neg(MCLBN_G1 *y, const MCLBN_G1 *x);
+MCLBN_DLL_API void MCLBN_G1_dbl(MCLBN_G1 *y, const MCLBN_G1 *x);
+MCLBN_DLL_API void MCLBN_G1_add(MCLBN_G1 *z, const MCLBN_G1 *x, const MCLBN_G1 *y);
+MCLBN_DLL_API void MCLBN_G1_sub(MCLBN_G1 *z, const MCLBN_G1 *x, const MCLBN_G1 *y);
+MCLBN_DLL_API void MCLBN_G1_mul(MCLBN_G1 *z, const MCLBN_G1 *x, const MCLBN_Fr *y);
 
 ////////////////////////////////////////////////
 // set zero
-BN_DLL_API void BN_GT_clear(BN_GT *x);
+MCLBN_DLL_API void MCLBN_G2_clear(MCLBN_G2 *x);
 
 // return 0 if success
-BN_DLL_API int BN_GT_setDecStr(BN_GT *x, const char *buf, size_t bufSize);
-BN_DLL_API int BN_GT_setHexStr(BN_GT *x, const char *buf, size_t bufSize);
-BN_DLL_API int BN_GT_deserialize(BN_GT *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_G2_setHexStr(MCLBN_G2 *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_G2_deserialize(MCLBN_G2 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
-BN_DLL_API int BN_GT_isEqual(const BN_GT *x, const BN_GT *y);
-BN_DLL_API int BN_GT_isZero(const BN_GT *x);
-BN_DLL_API int BN_GT_isOne(const BN_GT *x);
+MCLBN_DLL_API int MCLBN_G2_isValid(const MCLBN_G2 *x);
+MCLBN_DLL_API int MCLBN_G2_isEqual(const MCLBN_G2 *x, const MCLBN_G2 *y);
+MCLBN_DLL_API int MCLBN_G2_isZero(const MCLBN_G2 *x);
+
+MCLBN_DLL_API int MCLBN_hashAndMapToG2(MCLBN_G2 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
-BN_DLL_API size_t BN_GT_getDecStr(char *buf, size_t maxBufSize, const BN_GT *x);
-BN_DLL_API size_t BN_GT_getHexStr(char *buf, size_t maxBufSize, const BN_GT *x);
+MCLBN_DLL_API size_t MCLBN_G2_getHexStr(char *buf, size_t maxBufSize, const MCLBN_G2 *x);
 // return written size if sucess else 0
-BN_DLL_API size_t BN_GT_serialize(void *buf, size_t maxBufSize, const BN_GT *x);
+MCLBN_DLL_API size_t MCLBN_G2_serialize(void *buf, size_t maxBufSize, const MCLBN_G2 *x);
 
-BN_DLL_API void BN_GT_neg(BN_GT *y, const BN_GT *x);
-BN_DLL_API void BN_GT_inv(BN_GT *y, const BN_GT *x);
-BN_DLL_API void BN_GT_add(BN_GT *z, const BN_GT *x, const BN_GT *y);
-BN_DLL_API void BN_GT_sub(BN_GT *z, const BN_GT *x, const BN_GT *y);
-BN_DLL_API void BN_GT_mul(BN_GT *z, const BN_GT *x, const BN_GT *y);
-BN_DLL_API void BN_GT_div(BN_GT *z, const BN_GT *x, const BN_GT *y);
+MCLBN_DLL_API void MCLBN_G2_neg(MCLBN_G2 *y, const MCLBN_G2 *x);
+MCLBN_DLL_API void MCLBN_G2_dbl(MCLBN_G2 *y, const MCLBN_G2 *x);
+MCLBN_DLL_API void MCLBN_G2_add(MCLBN_G2 *z, const MCLBN_G2 *x, const MCLBN_G2 *y);
+MCLBN_DLL_API void MCLBN_G2_sub(MCLBN_G2 *z, const MCLBN_G2 *x, const MCLBN_G2 *y);
+MCLBN_DLL_API void MCLBN_G2_mul(MCLBN_G2 *z, const MCLBN_G2 *x, const MCLBN_Fr *y);
 
-BN_DLL_API void BN_GT_pow(BN_GT *z, const BN_GT *x, const BN_Fr *y);
+////////////////////////////////////////////////
+// set zero
+MCLBN_DLL_API void MCLBN_GT_clear(MCLBN_GT *x);
 
-BN_DLL_API void BN_pairing(BN_GT *z, const BN_G1 *x, const BN_G2 *y);
-BN_DLL_API void BN_finalExp(BN_GT *y, const BN_GT *x);
-BN_DLL_API void BN_millerLoop(BN_GT *z, const BN_G1 *x, const BN_G2 *y);
+// return 0 if success
+MCLBN_DLL_API int MCLBN_GT_setDecStr(MCLBN_GT *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_GT_setHexStr(MCLBN_GT *x, const char *buf, size_t bufSize);
+MCLBN_DLL_API int MCLBN_GT_deserialize(MCLBN_GT *x, const char *buf, size_t bufSize);
+
+// return 1 if true and 0 otherwise
+MCLBN_DLL_API int MCLBN_GT_isEqual(const MCLBN_GT *x, const MCLBN_GT *y);
+MCLBN_DLL_API int MCLBN_GT_isZero(const MCLBN_GT *x);
+MCLBN_DLL_API int MCLBN_GT_isOne(const MCLBN_GT *x);
+
+// return 0 if success
+MCLBN_DLL_API size_t MCLBN_GT_getDecStr(char *buf, size_t maxBufSize, const MCLBN_GT *x);
+MCLBN_DLL_API size_t MCLBN_GT_getHexStr(char *buf, size_t maxBufSize, const MCLBN_GT *x);
+// return written size if sucess else 0
+MCLBN_DLL_API size_t MCLBN_GT_serialize(void *buf, size_t maxBufSize, const MCLBN_GT *x);
+
+MCLBN_DLL_API void MCLBN_GT_neg(MCLBN_GT *y, const MCLBN_GT *x);
+MCLBN_DLL_API void MCLBN_GT_inv(MCLBN_GT *y, const MCLBN_GT *x);
+MCLBN_DLL_API void MCLBN_GT_add(MCLBN_GT *z, const MCLBN_GT *x, const MCLBN_GT *y);
+MCLBN_DLL_API void MCLBN_GT_sub(MCLBN_GT *z, const MCLBN_GT *x, const MCLBN_GT *y);
+MCLBN_DLL_API void MCLBN_GT_mul(MCLBN_GT *z, const MCLBN_GT *x, const MCLBN_GT *y);
+MCLBN_DLL_API void MCLBN_GT_div(MCLBN_GT *z, const MCLBN_GT *x, const MCLBN_GT *y);
+
+MCLBN_DLL_API void MCLBN_GT_pow(MCLBN_GT *z, const MCLBN_GT *x, const MCLBN_Fr *y);
+
+MCLBN_DLL_API void MCLBN_pairing(MCLBN_GT *z, const MCLBN_G1 *x, const MCLBN_G2 *y);
+MCLBN_DLL_API void MCLBN_finalExp(MCLBN_GT *y, const MCLBN_GT *x);
+MCLBN_DLL_API void MCLBN_millerLoop(MCLBN_GT *z, const MCLBN_G1 *x, const MCLBN_G2 *y);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)
-BN_DLL_API int BN_getUint64NumToPrecompute(void);
+MCLBN_DLL_API int MCLBN_getUint64NumToPrecompute(void);
 
-// allocate Qbuf[BN_getUint64NumToPrecompute()] before calling this
-BN_DLL_API void BN_precomputeG2(uint64_t *Qbuf, const BN_G2 *Q);
+// allocate Qbuf[MCLBN_getUint64NumToPrecompute()] before calling this
+MCLBN_DLL_API void MCLBN_precomputeG2(uint64_t *Qbuf, const MCLBN_G2 *Q);
 
-BN_DLL_API void BN_precomputedMillerLoop(BN_GT *f, const BN_G1 *P, const uint64_t *Qbuf);
-BN_DLL_API void BN_precomputedMillerLoop2(BN_GT *f, const BN_G1 *P1, const uint64_t *Q1buf, const BN_G1 *P2, const uint64_t *Q2buf);
+MCLBN_DLL_API void MCLBN_precomputedMillerLoop(MCLBN_GT *f, const MCLBN_G1 *P, const uint64_t *Qbuf);
+MCLBN_DLL_API void MCLBN_precomputedMillerLoop2(MCLBN_GT *f, const MCLBN_G1 *P1, const uint64_t *Q1buf, const MCLBN_G1 *P2, const uint64_t *Q2buf);
 
 #ifdef __cplusplus
 }

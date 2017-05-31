@@ -1,6 +1,6 @@
 #define BN256_DEFINE_STRUCT
 #define BN_MAX_FP_UNIT_SIZE 4
-#include <mcl/bn_if.h>
+#include <mcl/bn.h>
 #include <stdio.h>
 
 int g_err = 0;
