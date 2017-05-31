@@ -1,7 +1,7 @@
 /*
 	include from bn_if256_test.cpp and bn_if384_test.cpp
 */
-#include <mcl/bn_if.h>
+#include <mcl/bn.h>
 #include <cybozu/test.hpp>
 #include <iostream>
 

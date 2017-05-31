@@ -1,6 +1,6 @@
 #define BN_DLL_EXPORT
 #define BN_DEFINE_STRUCT
-#include <mcl/bn_if.h>
+#include <mcl/bn.h>
 #if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
 static std::random_device g_rg;
