@@ -43,10 +43,13 @@ void testCurve(const mcl::bn::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(pairing)
 {
-	testCurve(mcl::bn::CurveFp382_1);
-	testCurve(mcl::bn::CurveFp382_2);
+	puts("CurveFp254BNb");
 	// support 256-bit pairing
 	testCurve(mcl::bn::CurveFp254BNb);
+	puts("CurveFp382_1");
+	testCurve(mcl::bn::CurveFp382_1);
+	puts("CurveFp382_2");
+	testCurve(mcl::bn::CurveFp382_2);
 }
 
 int main(int argc, char *argv[])

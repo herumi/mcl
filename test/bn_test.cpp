@@ -14,6 +14,7 @@ mcl::fp::Mode g_mode;
 
 const struct TestSet {
 	mcl::bn::CurveParam cp;
+	const char *name;
 	struct G2 {
 		const char *aa;
 		const char *ab;
@@ -28,6 +29,7 @@ const struct TestSet {
 } g_testSetTbl[] = {
 	{
 		mcl::bn::CurveFp254BNb,
+		"CurveFp254BNb",
 		{
 			"12723517038133731887338407189719511622662176727675373276651903807414909099441",
 			"4168783608814932154536427934509895782246573715297911553964171371032945126671",
@@ -52,6 +54,7 @@ const struct TestSet {
 	},
 	{
 		mcl::bn::CurveSNARK1,
+		"CurveSNARK1",
 		{
 			"15267802884793550383558706039165621050290089775961208824303765753922461897946",
 			"9034493566019742339402378670461897774509967669562610788113215988055021632533",
@@ -311,6 +314,7 @@ CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
+		printf("curve=%s\n", ts.name);
 		bn256init(ts.cp, g_mode);
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
