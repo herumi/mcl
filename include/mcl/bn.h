@@ -101,6 +101,7 @@ MBN_DLL_API void mbnFr_setInt(mbnFr *y, int x);
 */
 // return 0 if success
 MBN_DLL_API int mbnFr_setStr(mbnFr *x, const char *buf, size_t bufSize, int ioMode);
+MBN_DLL_API int mbnFr_deserialize(mbnFr *x, const char *buf, size_t bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 MBN_DLL_API int mbnFr_setLittleEndian(mbnFr *x, const void *buf, size_t bufSize);
 
@@ -118,7 +119,7 @@ MBN_DLL_API int mbnFr_setHashOf(mbnFr *x, const void *buf, size_t bufSize);
 // return strlen(buf) if sucess else 0
 MBN_DLL_API size_t mbnFr_getStr(char *buf, size_t maxBufSize, const mbnFr *x, int ioMode);
 // return written byte if sucess else 0
-MBN_DLL_API size_t mbnFr_getLittleEndian(void *buf, size_t bufSize, const mbnFr *x);
+MBN_DLL_API size_t mbnFr_serialize(void *buf, size_t maxBufSize, const mbnFr *x);
 
 MBN_DLL_API void mbnFr_neg(mbnFr *y, const mbnFr *x);
 MBN_DLL_API void mbnFr_inv(mbnFr *y, const mbnFr *x);

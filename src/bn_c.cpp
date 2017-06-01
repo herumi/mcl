@@ -164,7 +164,10 @@ int mbnFr_setLittleEndian(mbnFr *x, const void *buf, size_t bufSize)
 	s.resize(byteSize);
 	return deserialize(x, s.c_str(), s.size(), mcl::IoFixedSizeByteSeq, "mbnFr_setLittleEndian", false);
 }
-
+int mbnFr_deserialize(mbnFr *x, const char *buf, size_t bufSize)
+{
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnFr_deserialize", false);
+}
 // return 1 if true
 int mbnFr_isValid(const mbnFr *x)
 {
@@ -203,9 +206,9 @@ size_t mbnFr_getStr(char *buf, size_t maxBufSize, const mbnFr *x, int ioMode)
 {
 	return serialize(buf, maxBufSize, x, ioMode, "mbnFr_getStr", false);
 }
-size_t mbnFr_getLittleEndian(void *buf, size_t maxBufSize, const mbnFr *x)
+size_t mbnFr_serialize(void *buf, size_t maxBufSize, const mbnFr *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnFr_getLittleEndian", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnFr_serialize", false);
 }
 
 void mbnFr_neg(mbnFr *y, const mbnFr *x)
