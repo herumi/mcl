@@ -152,13 +152,9 @@ void mbnFr_setInt(mbnFr *y, int x)
 	*cast(y) = x;
 }
 
-int mbnFr_setDecStr(mbnFr *x, const char *buf, size_t bufSize)
+int mbnFr_setStr(mbnFr *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, 10, "mbnFr_setDecStr", false);
-}
-int mbnFr_setHexStr(mbnFr *x, const char *buf, size_t bufSize)
-{
-	return deserialize(x, buf, bufSize, 16, "mbnFr_setHexStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mbnFr_setStr", false);
 }
 int mbnFr_setLittleEndian(mbnFr *x, const void *buf, size_t bufSize)
 {
@@ -203,13 +199,9 @@ int mbnFr_setHashOf(mbnFr *x, const void *buf, size_t bufSize)
 	return -1;
 }
 
-size_t mbnFr_getDecStr(char *buf, size_t maxBufSize, const mbnFr *x)
+size_t mbnFr_getStr(char *buf, size_t maxBufSize, const mbnFr *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, 10, "mbnFr_getDecStr", false);
-}
-size_t mbnFr_getHexStr(char *buf, size_t maxBufSize, const mbnFr *x)
-{
-	return serialize(buf, maxBufSize, x, 16, "mbnFr_getHexStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mbnFr_getStr", false);
 }
 size_t mbnFr_getLittleEndian(void *buf, size_t maxBufSize, const mbnFr *x)
 {
@@ -248,13 +240,9 @@ void mbnG1_clear(mbnG1 *x)
 	cast(x)->clear();
 }
 
-int mbnG1_setHexStr(mbnG1 *x, const char *buf, size_t bufSize)
+int mbnG1_setStr(mbnG1 *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnG1_setHexStr", true);
-}
-int mbnG1_deserialize(mbnG1 *x, const char *buf, size_t bufSize)
-{
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnG1_setHexStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mbnG1_setStr", false);
 }
 
 // return 1 if true
@@ -283,9 +271,9 @@ int mbnG1_hashAndMapTo(mbnG1 *x, const void *buf, size_t bufSize)
 	return 1;
 }
 
-size_t mbnG1_getHexStr(char *buf, size_t maxBufSize, const mbnG1 *x)
+size_t mbnG1_getStr(char *buf, size_t maxBufSize, const mbnG1 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnG1_getHexStr", true);
+	return serialize(buf, maxBufSize, x, ioMode, "mbnG1_getStr", false);
 }
 
 size_t mbnG1_serialize(void *buf, size_t maxBufSize, const mbnG1 *x)
@@ -321,13 +309,9 @@ void mbnG2_clear(mbnG2 *x)
 	cast(x)->clear();
 }
 
-int mbnG2_setHexStr(mbnG2 *x, const char *buf, size_t bufSize)
+int mbnG2_setStr(mbnG2 *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnG2_setHexStr", true);
-}
-int mbnG2_deserialize(mbnG2 *x, const char *buf, size_t bufSize)
-{
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnG2_setHexStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mbnG2_setStr", false);
 }
 
 // return 1 if true
@@ -356,14 +340,9 @@ int mbnG2_hashAndMapTo(mbnG2 *x, const void *buf, size_t bufSize)
 	return 1;
 }
 
-size_t mbnG2_getHexStr(char *buf, size_t maxBufSize, const mbnG2 *x)
+size_t mbnG2_getStr(char *buf, size_t maxBufSize, const mbnG2 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnG2_getHexStr", true);
-}
-
-size_t mbnG2_serialize(void *buf, size_t maxBufSize, const mbnG2 *x)
-{
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnG2_serialize", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mbnG2_getStr", false);
 }
 
 void mbnG2_neg(mbnG2 *y, const mbnG2 *x)
@@ -394,17 +373,13 @@ void mbnGT_clear(mbnGT *x)
 	cast(x)->clear();
 }
 
-int mbnGT_setDecStr(mbnGT *x, const char *buf, size_t bufSize)
+int mbnGT_setStr(mbnGT *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, 10, "mbnGT_setDecStr", false);
-}
-int mbnGT_setHexStr(mbnGT *x, const char *buf, size_t bufSize)
-{
-	return deserialize(x, buf, bufSize, 16, "mbnGT_setHexStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mbnGT_setStr", false);
 }
 int mbnGT_deserialize(mbnGT *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnGT_setHexStr", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnGT_deserialize", false);
 }
 
 // return 1 if true
@@ -421,14 +396,9 @@ int mbnGT_isOne(const mbnGT *x)
 	return cast(x)->isOne();
 }
 
-size_t mbnGT_getDecStr(char *buf, size_t maxBufSize, const mbnGT *x)
+size_t mbnGT_getStr(char *buf, size_t maxBufSize, const mbnGT *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, 10, "mbnGT_getDecStr", false);
-}
-
-size_t mbnGT_getHexStr(char *buf, size_t maxBufSize, const mbnGT *x)
-{
-	return serialize(buf, maxBufSize, x, 16, "mbnGT_getHexStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mbnGT_getStr", false);
 }
 
 size_t mbnGT_serialize(void *buf, size_t maxBufSize, const mbnGT *x)

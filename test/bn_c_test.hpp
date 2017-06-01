@@ -67,51 +67,53 @@ CYBOZU_TEST_AUTO(Fr)
 	char buf[1024];
 	mbnFr_setInt(&x, 12345678);
 	size_t size;
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 8);
 	CYBOZU_TEST_EQUAL(buf, "12345678");
 
 	mbnFr_setInt(&x, -7654321);
 	mbnFr_neg(&x, &x);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 7);
 	CYBOZU_TEST_EQUAL(buf, "7654321");
 
 	mbnFr_setInt(&y, 123 - 7654321);
 	mbnFr_add(&x, &x, &y);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 3);
 	CYBOZU_TEST_EQUAL(buf, "123");
 
 	mbnFr_setInt(&y, 100);
 	mbnFr_sub(&x, &x, &y);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 2);
 	CYBOZU_TEST_EQUAL(buf, "23");
 
 	mbnFr_mul(&x, &x, &y);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 4);
 	CYBOZU_TEST_EQUAL(buf, "2300");
 
 	mbnFr_div(&x, &x, &y);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 2);
 	CYBOZU_TEST_EQUAL(buf, "23");
 
-	CYBOZU_TEST_ASSERT(!mbnFr_setDecStr(&x, "12345678901234567", 17));
-	CYBOZU_TEST_ASSERT(!mbnFr_setDecStr(&y, "20000000000000000", 17));
+	const char *s = "12345678901234567";
+	CYBOZU_TEST_ASSERT(!mbnFr_setStr(&x, s, strlen(s), 10));
+	s = "20000000000000000";
+	CYBOZU_TEST_ASSERT(!mbnFr_setStr(&y, s, strlen(s), 10));
 	mbnFr_add(&x, &x, &y);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_EQUAL(size, 17);
 	CYBOZU_TEST_EQUAL(buf, "32345678901234567");
 
 	mbnFr_setInt(&x, 1);
 	mbnFr_neg(&x, &x);
-	size = mbnFr_getDecStr(buf, sizeof(buf), &x);
+	size = mbnFr_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
-	CYBOZU_TEST_ASSERT(!mbnFr_setDecStr(&y, buf, size));
+	CYBOZU_TEST_ASSERT(!mbnFr_setStr(&y, buf, size, 10));
 	CYBOZU_TEST_ASSERT(mbnFr_isEqual(&x, &y));
 }
 
@@ -128,10 +130,10 @@ CYBOZU_TEST_AUTO(G1)
 
 	char buf[1024];
 	size_t size;
-	size = mbnG1_getHexStr(buf, sizeof(buf), &x);
+	size = mbnG1_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
-	CYBOZU_TEST_ASSERT(!mbnG1_setHexStr(&y, buf, strlen(buf)));
+	CYBOZU_TEST_ASSERT(!mbnG1_setStr(&y, buf, strlen(buf), 10));
 	CYBOZU_TEST_ASSERT(mbnG1_isEqual(&x, &y));
 
 	mbnG1_neg(&x, &x);
@@ -166,10 +168,10 @@ CYBOZU_TEST_AUTO(G2)
 
 	char buf[1024];
 	size_t size;
-	size = mbnG2_getHexStr(buf, sizeof(buf), &x);
+	size = mbnG2_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
-	CYBOZU_TEST_ASSERT(!mbnG2_setHexStr(&y, buf, strlen(buf)));
+	CYBOZU_TEST_ASSERT(!mbnG2_setStr(&y, buf, strlen(buf), 10));
 	CYBOZU_TEST_ASSERT(mbnG2_isEqual(&x, &y));
 
 	mbnG2_neg(&x, &x);
@@ -203,8 +205,8 @@ CYBOZU_TEST_AUTO(GT)
 	char buf[2048];
 	const char *s = "1 2 3 4 5 6 7 8 9 10 11 12";
 	size_t size;
-	CYBOZU_TEST_ASSERT(!mbnGT_setDecStr(&x,s , strlen(s)));
-	size = mbnGT_getDecStr(buf, sizeof(buf), &x);
+	CYBOZU_TEST_ASSERT(!mbnGT_setStr(&x,s , strlen(s), 10));
+	size = mbnGT_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_EQUAL(buf, s);
@@ -213,11 +215,11 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_ASSERT(mbnGT_isEqual(&x, &y));
 
 	s = "-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12";
-	CYBOZU_TEST_ASSERT(!mbnGT_setDecStr(&z, s, strlen(s)));
-	size = mbnGT_getDecStr(buf, sizeof(buf), &z);
+	CYBOZU_TEST_ASSERT(!mbnGT_setStr(&z, s, strlen(s), 10));
+	size = mbnGT_getStr(buf, sizeof(buf), &z, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
-	CYBOZU_TEST_ASSERT(!mbnGT_setDecStr(&y, buf, size));
+	CYBOZU_TEST_ASSERT(!mbnGT_setStr(&y, buf, size, 10));
 
 	mbnGT_neg(&z, &y);
 	CYBOZU_TEST_ASSERT(mbnGT_isEqual(&x, &z));
@@ -226,15 +228,15 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_ASSERT(mbnGT_isZero(&y));
 
 	s = "2 0 0 0 0 0 0 0 0 0 0 0";
-	CYBOZU_TEST_ASSERT(!mbnGT_setDecStr(&y, s, strlen(s)));
+	CYBOZU_TEST_ASSERT(!mbnGT_setStr(&y, s, strlen(s), 10));
 	mbnGT_mul(&z, &x, &y);
-	size = mbnGT_getDecStr(buf, sizeof(buf), &z);
+	size = mbnGT_getStr(buf, sizeof(buf), &z, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_EQUAL(buf, "2 4 6 8 10 12 14 16 18 20 22 24");
 
 	mbnGT_div(&z, &z, &y);
-	size = mbnGT_getDecStr(buf, sizeof(buf), &x);
+	size = mbnGT_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_ASSERT(mbnGT_isEqual(&x, &z));

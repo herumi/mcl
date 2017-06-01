@@ -94,9 +94,13 @@ MBN_DLL_API void mbnFr_clear(mbnFr *x);
 // set x to y
 MBN_DLL_API void mbnFr_setInt(mbnFr *y, int x);
 
+/*
+	ioMode
+	10 : decimal number
+	16 : hexadecimal number
+*/
 // return 0 if success
-MBN_DLL_API int mbnFr_setDecStr(mbnFr *x, const char *buf, size_t bufSize);
-MBN_DLL_API int mbnFr_setHexStr(mbnFr *x, const char *buf, size_t bufSize);
+MBN_DLL_API int mbnFr_setStr(mbnFr *x, const char *buf, size_t bufSize, int ioMode);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 MBN_DLL_API int mbnFr_setLittleEndian(mbnFr *x, const void *buf, size_t bufSize);
 
@@ -112,8 +116,7 @@ MBN_DLL_API void mbnFr_setByCSPRNG(mbnFr *x);
 MBN_DLL_API int mbnFr_setHashOf(mbnFr *x, const void *buf, size_t bufSize);
 
 // return strlen(buf) if sucess else 0
-MBN_DLL_API size_t mbnFr_getDecStr(char *buf, size_t maxBufSize, const mbnFr *x);
-MBN_DLL_API size_t mbnFr_getHexStr(char *buf, size_t maxBufSize, const mbnFr *x);
+MBN_DLL_API size_t mbnFr_getStr(char *buf, size_t maxBufSize, const mbnFr *x, int ioMode);
 // return written byte if sucess else 0
 MBN_DLL_API size_t mbnFr_getLittleEndian(void *buf, size_t bufSize, const mbnFr *x);
 
@@ -129,7 +132,7 @@ MBN_DLL_API void mbnFr_div(mbnFr *z, const mbnFr *x, const mbnFr *y);
 MBN_DLL_API void mbnG1_clear(mbnG1 *x);
 
 // return 0 if success
-MBN_DLL_API int mbnG1_setHexStr(mbnG1 *x, const char *buf, size_t bufSize);
+MBN_DLL_API int mbnG1_setStr(mbnG1 *x, const char *buf, size_t bufSize, int ioMode);
 MBN_DLL_API int mbnG1_deserialize(mbnG1 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
@@ -140,7 +143,7 @@ MBN_DLL_API int mbnG1_isZero(const mbnG1 *x);
 MBN_DLL_API int mbnG1_hashAndMapTo(mbnG1 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
-MBN_DLL_API size_t mbnG1_getHexStr(char *buf, size_t maxBufSize, const mbnG1 *x);
+MBN_DLL_API size_t mbnG1_getStr(char *buf, size_t maxBufSize, const mbnG1 *x, int ioMode);
 // return written size if sucess else 0
 MBN_DLL_API size_t mbnG1_serialize(void *buf, size_t maxBufSize, const mbnG1 *x);
 
@@ -155,7 +158,7 @@ MBN_DLL_API void mbnG1_mul(mbnG1 *z, const mbnG1 *x, const mbnFr *y);
 MBN_DLL_API void mbnG2_clear(mbnG2 *x);
 
 // return 0 if success
-MBN_DLL_API int mbnG2_setHexStr(mbnG2 *x, const char *buf, size_t bufSize);
+MBN_DLL_API int mbnG2_setStr(mbnG2 *x, const char *buf, size_t bufSize, int ioMode);
 MBN_DLL_API int mbnG2_deserialize(mbnG2 *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
@@ -166,7 +169,7 @@ MBN_DLL_API int mbnG2_isZero(const mbnG2 *x);
 MBN_DLL_API int mbnG2_hashAndMapTo(mbnG2 *x, const void *buf, size_t bufSize);
 
 // return 0 if success
-MBN_DLL_API size_t mbnG2_getHexStr(char *buf, size_t maxBufSize, const mbnG2 *x);
+MBN_DLL_API size_t mbnG2_getStr(char *buf, size_t maxBufSize, const mbnG2 *x, int ioMode);
 // return written size if sucess else 0
 MBN_DLL_API size_t mbnG2_serialize(void *buf, size_t maxBufSize, const mbnG2 *x);
 
@@ -181,8 +184,7 @@ MBN_DLL_API void mbnG2_mul(mbnG2 *z, const mbnG2 *x, const mbnFr *y);
 MBN_DLL_API void mbnGT_clear(mbnGT *x);
 
 // return 0 if success
-MBN_DLL_API int mbnGT_setDecStr(mbnGT *x, const char *buf, size_t bufSize);
-MBN_DLL_API int mbnGT_setHexStr(mbnGT *x, const char *buf, size_t bufSize);
+MBN_DLL_API int mbnGT_setStr(mbnGT *x, const char *buf, size_t bufSize, int ioMode);
 MBN_DLL_API int mbnGT_deserialize(mbnGT *x, const char *buf, size_t bufSize);
 
 // return 1 if true and 0 otherwise
@@ -191,8 +193,7 @@ MBN_DLL_API int mbnGT_isZero(const mbnGT *x);
 MBN_DLL_API int mbnGT_isOne(const mbnGT *x);
 
 // return 0 if success
-MBN_DLL_API size_t mbnGT_getDecStr(char *buf, size_t maxBufSize, const mbnGT *x);
-MBN_DLL_API size_t mbnGT_getHexStr(char *buf, size_t maxBufSize, const mbnGT *x);
+MBN_DLL_API size_t mbnGT_getStr(char *buf, size_t maxBufSize, const mbnGT *x, int ioMode);
 // return written size if sucess else 0
 MBN_DLL_API size_t mbnGT_serialize(void *buf, size_t maxBufSize, const mbnGT *x);
 
