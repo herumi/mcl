@@ -193,9 +193,13 @@ void MBN_Fr_setByCSPRNG(MBN_Fr *x)
 }
 
 // hash(buf) and set x
-void MBN_hashToFr(MBN_Fr *x, const void *buf, size_t bufSize)
+int MBN_hashToFr(MBN_Fr *x, const void *buf, size_t bufSize)
+	try
 {
 	cast(x)->setHashOf(buf, bufSize);
+	return 0;
+} catch (std::exception& e) {
+	return -1;
 }
 
 size_t MBN_Fr_getDecStr(char *buf, size_t maxBufSize, const MBN_Fr *x)

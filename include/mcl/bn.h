@@ -109,7 +109,7 @@ MBN_DLL_API int MBN_Fr_isOne(const MBN_Fr *x);
 MBN_DLL_API void MBN_Fr_setByCSPRNG(MBN_Fr *x);
 
 // hash(s) and set x
-MBN_DLL_API void MBN_hashToFr(MBN_Fr *x, const void *buf, size_t bufSize);
+MBN_DLL_API int MBN_hashToFr(MBN_Fr *x, const void *buf, size_t bufSize);
 
 // return strlen(buf) if sucess else 0
 MBN_DLL_API size_t MBN_Fr_getDecStr(char *buf, size_t maxBufSize, const MBN_Fr *x);
