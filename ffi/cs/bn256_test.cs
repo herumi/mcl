@@ -15,9 +15,9 @@ namespace mcl {
 			try {
 				assert("64bit system", System.Environment.Is64BitProcess);
 				init();
-                int ret;
-                ret = MBN_setErrFile("MBN_test.txt");
-				assert("MBN_setErrFile", ret == 0);
+				int ret;
+				ret = mbn_setErrFile("mbn_test.txt");
+				assert("mbn_setErrFile", ret == 0);
 				TestFr();
 				TestG1();
 				TestG2();
@@ -36,38 +36,39 @@ namespace mcl {
 			Console.WriteLine("TestFr");
 			Fr x = new Fr();
 			x.Clear();
-			assert("0", x.GetDecStr() == "0");
+			assert("0", x.GetStr(10) == "0");
 			assert("0.IzZero", x.IsZero());
 			assert("!0.IzOne", !x.IsOne());
 			x.SetInt(1);
-			assert("1", x.GetDecStr() == "1");
+			assert("1", x.GetStr(10) == "1");
 			assert("!1.IzZero", !x.IsZero());
 			assert("1.IzOne", x.IsOne());
 			x.SetInt(3);
-			assert("3", x.GetDecStr() == "3");
+			assert("3", x.GetStr(10) == "3");
 			assert("!3.IzZero", !x.IsZero());
 			assert("!3.IzOne", !x.IsOne());
 			x.SetInt(-5);
 			x = -x;
-			assert("5", x.GetDecStr() == "5");
+			assert("5", x.GetStr(10) == "5");
 			x.SetInt(4);
 			x = x * x;
-			assert("16", x.GetDecStr() == "16");
-            assert("10", x.GetHexStr() == "10");
-            Fr y;
+			assert("16", x.GetStr(10) == "16");
+			assert("10", x.GetStr(16) == "10");
+			Fr y;
 			y = x;
 			assert("x == y", x.Equals(y));
 			x.SetInt(123);
-			assert("123", x.GetDecStr() == "123");
+			assert("123", x.GetStr(10) == "123");
+			assert("7b", x.GetStr(16) == "7b");
 			assert("y != x", !x.Equals(y));
 			try {
-				x.SetDecStr("1234567891234x");
+				x.SetStr("1234567891234x", 10);
 				Console.WriteLine("x = {0}", x);
 			} catch (Exception e) {
 				Console.WriteLine("exception test OK\n'{0}'", e);
 			}
-			x.SetDecStr("1234567891234");
-			assert("1234567891234", x.GetDecStr() == "1234567891234");
+			x.SetStr("1234567891234", 10);
+			assert("1234567891234", x.GetStr(10) == "1234567891234");
 		}
 		static void TestG1()
 		{
@@ -130,8 +131,8 @@ namespace mcl {
 			Q.HashAndMapTo("1");
 			Fr a = new Fr();
 			Fr b = new Fr();
-			a.SetDecStr("12345678912345673453");
-			b.SetDecStr("230498230982394243424");
+			a.SetStr("12345678912345673453", 10);
+			b.SetStr("230498230982394243424", 10);
 			G1 aP = new G1();
 			G2 bQ = new G2();
 			aP.Mul(P, a);

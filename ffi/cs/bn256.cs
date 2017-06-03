@@ -4,235 +4,212 @@ using System.Runtime.InteropServices;
 
 namespace mcl {
 	class BN256 {
-        [DllImport("mclbn256.dll")]
-		public static extern int MBN_setErrFile([In][MarshalAs(UnmanagedType.LPStr)] string name);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_init(int curve, int maxUnitSize);
+		public static extern int mbn_setErrFile([In][MarshalAs(UnmanagedType.LPStr)] string name);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_clear(ref Fr x);
+		public static extern int mbn_init(int curve, int maxUnitSize);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_setInt(ref Fr y, int x);
+		public static extern void mbnFr_clear(ref Fr x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_setDecStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern void mbnFr_setInt(ref Fr y, int x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_setHexStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern int mbnFr_setStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_isValid(ref Fr x);
+		public static extern int mbnFr_isValid(ref Fr x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_isEqual(ref Fr x, ref Fr y);
+		public static extern int mbnFr_isEqual(ref Fr x, ref Fr y);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_isZero(ref Fr x);
+		public static extern int mbnFr_isZero(ref Fr x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_isOne(ref Fr x);
+		public static extern int mbnFr_isOne(ref Fr x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_setByCSPRNG(ref Fr x);
+		public static extern void mbnFr_setByCSPRNG(ref Fr x);
 
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_hashToFr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern int mbnFr_setHashOf(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_getHexStr([Out]StringBuilder buf, long maxBufSize, ref Fr x);
-		[DllImport("mclbn256.dll")]
-		public static extern int MBN_Fr_getDecStr([Out]StringBuilder buf, long maxBufSize, ref Fr x);
+		public static extern int mbnFr_getStr([Out]StringBuilder buf, long maxBufSize, ref Fr x, int ioMode);
 
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_neg(ref Fr y, ref Fr x);
+		public static extern void mbnFr_neg(ref Fr y, ref Fr x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_inv(ref Fr y, ref Fr x);
+		public static extern void mbnFr_inv(ref Fr y, ref Fr x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_add(ref Fr z, ref Fr x, ref Fr y);
+		public static extern void mbnFr_add(ref Fr z, ref Fr x, ref Fr y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_sub(ref Fr z, ref Fr x, ref Fr y);
+		public static extern void mbnFr_sub(ref Fr z, ref Fr x, ref Fr y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_mul(ref Fr z, ref Fr x, ref Fr y);
+		public static extern void mbnFr_mul(ref Fr z, ref Fr x, ref Fr y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_Fr_div(ref Fr z, ref Fr x, ref Fr y);
+		public static extern void mbnFr_div(ref Fr z, ref Fr x, ref Fr y);
 
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G1_clear(ref G1 x);
+		public static extern void mbnG1_clear(ref G1 x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G1_setHexStr(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern int mbnG1_setStr(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G1_isValid(ref G1 x);
+		public static extern int mbnG1_isValid(ref G1 x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G1_isEqual(ref G1 x, ref G1 y);
+		public static extern int mbnG1_isEqual(ref G1 x, ref G1 y);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G1_isZero(ref G1 x);
+		public static extern int mbnG1_isZero(ref G1 x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_hashAndMapToG1(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern int mbnG1_hashAndMapTo(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
 		[DllImport("mclbn256.dll")]
-		public static extern long MBN_G1_getHexStr([Out]StringBuilder buf, long maxBufSize, ref G1 x);
+		public static extern long mbnG1_getStr([Out]StringBuilder buf, long maxBufSize, ref G1 x, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G1_neg(ref G1 y, ref G1 x);
+		public static extern void mbnG1_neg(ref G1 y, ref G1 x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G1_dbl(ref G1 y, ref G1 x);
+		public static extern void mbnG1_dbl(ref G1 y, ref G1 x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G1_add(ref G1 z, ref G1 x, ref G1 y);
+		public static extern void mbnG1_add(ref G1 z, ref G1 x, ref G1 y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G1_sub(ref G1 z, ref G1 x, ref G1 y);
+		public static extern void mbnG1_sub(ref G1 z, ref G1 x, ref G1 y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G1_mul(ref G1 z, ref G1 x, ref Fr y);
+		public static extern void mbnG1_mul(ref G1 z, ref G1 x, ref Fr y);
 
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G2_clear(ref G2 x);
+		public static extern void mbnG2_clear(ref G2 x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G2_setHexStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern int mbnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G2_isValid(ref G2 x);
+		public static extern int mbnG2_isValid(ref G2 x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G2_isEqual(ref G2 x, ref G2 y);
+		public static extern int mbnG2_isEqual(ref G2 x, ref G2 y);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_G2_isZero(ref G2 x);
+		public static extern int mbnG2_isZero(ref G2 x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_hashAndMapToG2(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern int mbnG2_hashAndMapTo(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
 		[DllImport("mclbn256.dll")]
-		public static extern long MBN_G2_getHexStr([Out]StringBuilder buf, long maxBufSize, ref G2 x);
+		public static extern long mbnG2_getStr([Out]StringBuilder buf, long maxBufSize, ref G2 x, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G2_neg(ref G2 y, ref G2 x);
+		public static extern void mbnG2_neg(ref G2 y, ref G2 x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G2_dbl(ref G2 y, ref G2 x);
+		public static extern void mbnG2_dbl(ref G2 y, ref G2 x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G2_add(ref G2 z, ref G2 x, ref G2 y);
+		public static extern void mbnG2_add(ref G2 z, ref G2 x, ref G2 y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G2_sub(ref G2 z, ref G2 x, ref G2 y);
+		public static extern void mbnG2_sub(ref G2 z, ref G2 x, ref G2 y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_G2_mul(ref G2 z, ref G2 x, ref Fr y);
+		public static extern void mbnG2_mul(ref G2 z, ref G2 x, ref Fr y);
 
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_clear(ref GT x);
-        [DllImport("mclbn256.dll")]
-        public static extern int MBN_GT_setDecStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
-        [DllImport("mclbn256.dll")]
-		public static extern int MBN_GT_setHexStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+		public static extern void mbnGT_clear(ref GT x);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_GT_isEqual(ref GT x, ref GT y);
+		public static extern int mbnGT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_GT_isZero(ref GT x);
+		public static extern int mbnGT_isEqual(ref GT x, ref GT y);
 		[DllImport("mclbn256.dll")]
-		public static extern int MBN_GT_isOne(ref GT x);
-        [DllImport("mclbn256.dll")]
-        public static extern long MBN_GT_getDecStr([Out]StringBuilder buf, long maxBufSize, ref GT x);
-        [DllImport("mclbn256.dll")]
-		public static extern long MBN_GT_getHexStr([Out]StringBuilder buf, long maxBufSize, ref GT x);
+		public static extern int mbnGT_isZero(ref GT x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_neg(ref GT y, ref GT x);
+		public static extern int mbnGT_isOne(ref GT x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_inv(ref GT y, ref GT x);
+		public static extern long mbnGT_getStr([Out]StringBuilder buf, long maxBufSize, ref GT x, int ioMode);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_add(ref GT z, ref GT x, ref GT y);
+		public static extern void mbnGT_neg(ref GT y, ref GT x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_sub(ref GT z, ref GT x, ref GT y);
+		public static extern void mbnGT_inv(ref GT y, ref GT x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_mul(ref GT z, ref GT x, ref GT y);
+		public static extern void mbnGT_add(ref GT z, ref GT x, ref GT y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_div(ref GT z, ref GT x, ref GT y);
+		public static extern void mbnGT_sub(ref GT z, ref GT x, ref GT y);
+		[DllImport("mclbn256.dll")]
+		public static extern void mbnGT_mul(ref GT z, ref GT x, ref GT y);
+		[DllImport("mclbn256.dll")]
+		public static extern void mbnGT_div(ref GT z, ref GT x, ref GT y);
 
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_GT_pow(ref GT z, ref GT x, ref Fr y);
+		public static extern void mbnGT_pow(ref GT z, ref GT x, ref Fr y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_pairing(ref GT z, ref G1 x, ref G2 y);
+		public static extern void mbn_pairing(ref GT z, ref G1 x, ref G2 y);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_finalExp(ref GT y, ref GT x);
+		public static extern void mbn_finalExp(ref GT y, ref GT x);
 		[DllImport("mclbn256.dll")]
-		public static extern void MBN_millerLoop(ref GT z, ref G1 x, ref G2 y);
+		public static extern void mbn_millerLoop(ref GT z, ref G1 x, ref G2 y);
 
-        public static void init()
-        {
-            const int curveFp254BNb = 0;
-            const int maxUnitSize = 4;
-            if (MBN_init(curveFp254BNb, maxUnitSize) != 0) {
-                throw new InvalidOperationException("MBN_init");
-            }
-        }
-        [StructLayout(LayoutKind.Sequential)]
+		public static void init()
+		{
+			const int curveFp254BNb = 0;
+			const int maxUnitSize = 4;
+			if (mbn_init(curveFp254BNb, maxUnitSize) != 0) {
+				throw new InvalidOperationException("mbn_init");
+			}
+		}
+		[StructLayout(LayoutKind.Sequential)]
 		public struct Fr {
 			private ulong v0, v1, v2, v3;
 			public void Clear()
 			{
-				MBN_Fr_clear(ref this);
+				mbnFr_clear(ref this);
 			}
 			public void SetInt(int x)
 			{
-				MBN_Fr_setInt(ref this, x);
+				mbnFr_setInt(ref this, x);
 			}
-			public void SetDecStr(string s)
+			public void SetStr(string s, int ioMode)
 			{
-				if (MBN_Fr_setDecStr(ref this, s, s.Length) != 0) {
-					throw new ArgumentException("MBN_Fr_setDecStr", s);
+				if (mbnFr_setStr(ref this, s, s.Length, ioMode) != 0) {
+					throw new ArgumentException("mbnFr_setStr" + s);
 				}
 			}
-            public void SetHexStr(string s)
-            {
-                if (MBN_Fr_setHexStr(ref this, s, s.Length) != 0) {
-                    throw new ArgumentException("MBN_Fr_setHexStr", s);
-                }
-            }
-            public bool IsValid()
+			public bool IsValid()
 			{
-				return MBN_Fr_isValid(ref this) == 1;
+				return mbnFr_isValid(ref this) == 1;
 			}
 			public bool Equals(Fr rhs)
 			{
-				return MBN_Fr_isEqual(ref this, ref rhs) == 1;
+				return mbnFr_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
-				return MBN_Fr_isZero(ref this) == 1;
+				return mbnFr_isZero(ref this) == 1;
 			}
 			public bool IsOne()
 			{
-				return MBN_Fr_isOne(ref this) == 1;
+				return mbnFr_isOne(ref this) == 1;
 			}
 			public void SetByCSPRNG()
 			{
-				MBN_Fr_setByCSPRNG(ref this);
+				mbnFr_setByCSPRNG(ref this);
 			}
 			public void SetHashOf(String s)
 			{
-                if (MBN_hashToFr(ref this, s, s.Length) != 0) {
-                    throw new InvalidOperationException("MBN_hashToFr:" + s);
-                }
+				if (mbnFr_setHashOf(ref this, s, s.Length) != 0) {
+					throw new InvalidOperationException("mbnFr_setHashOf:" + s);
+				}
 			}
-			public string GetDecStr()
+			public string GetStr(int ioMode)
 			{
 				StringBuilder sb = new StringBuilder(1024);
-                long size = MBN_Fr_getDecStr(sb, sb.Capacity, ref this);
-                if (size == 0) {
-                    throw new InvalidOperationException("MBN_Fr_getDecStr:");
-                }
-                return sb.ToString();
+				long size = mbnFr_getStr(sb, sb.Capacity, ref this, ioMode);
+				if (size == 0) {
+					throw new InvalidOperationException("mbnFr_getStr:");
+				}
+				return sb.ToString();
 			}
-            public string GetHexStr()
-            {
-                StringBuilder sb = new StringBuilder(1024);
-                long size = MBN_Fr_getHexStr(sb, sb.Capacity, ref this);
-                if (size == 0) {
-                    throw new InvalidOperationException("MBN_Fr_getHexStr:");
-                }
-                return sb.ToString();
-            }
-            public void Neg(Fr x)
+			public void Neg(Fr x)
 			{
-				MBN_Fr_neg(ref this, ref x);
+				mbnFr_neg(ref this, ref x);
 			}
 			public void Inv(Fr x)
 			{
-				MBN_Fr_inv(ref this, ref x);
+				mbnFr_inv(ref this, ref x);
 			}
 			public void Add(Fr x, Fr y)
 			{
-				MBN_Fr_add(ref this, ref x, ref y);
+				mbnFr_add(ref this, ref x, ref y);
 			}
-			public  void Sub(Fr x, Fr y)
+			public void Sub(Fr x, Fr y)
 			{
-				MBN_Fr_sub(ref this, ref x, ref y);
+				mbnFr_sub(ref this, ref x, ref y);
 			}
-			public  void Mul(Fr x, Fr y)
+			public void Mul(Fr x, Fr y)
 			{
-				MBN_Fr_mul(ref this, ref x, ref y);
+				mbnFr_mul(ref this, ref x, ref y);
 			}
-			public  void Div(Fr x, Fr y)
+			public void Div(Fr x, Fr y)
 			{
-				MBN_Fr_div(ref this, ref x, ref y);
+				mbnFr_div(ref this, ref x, ref y);
 			}
 			public static Fr operator -(Fr x)
 			{
@@ -270,60 +247,60 @@ namespace mcl {
 			private ulong v00, v01, v02, v03, v04, v05, v06, v07, v08, v09, v10, v11;
 			public void Clear()
 			{
-				MBN_G1_clear(ref this);
+				mbnG1_clear(ref this);
 			}
-			public void setHexStr(String s)
+			public void setStr(String s, int ioMode)
 			{
-				if (MBN_G1_setHexStr(ref this, s, s.Length) != 0) {
-					throw new ArgumentException("MBN_G1_setStr:" + s);
+				if (mbnG1_setStr(ref this, s, s.Length, ioMode) != 0) {
+					throw new ArgumentException("mbnG1_setStr:" + s);
 				}
 			}
 			public bool IsValid()
 			{
-				return MBN_G1_isValid(ref this) == 1;
+				return mbnG1_isValid(ref this) == 1;
 			}
 			public bool Equals(G1 rhs)
 			{
-				return MBN_G1_isEqual(ref this, ref rhs) == 1;
+				return mbnG1_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
-				return MBN_G1_isZero(ref this) == 1;
+				return mbnG1_isZero(ref this) == 1;
 			}
 			public void HashAndMapTo(String s)
 			{
-				if (MBN_hashAndMapToG1(ref this, s, s.Length) != 0) {
-					throw new ArgumentException("MBN_hashAndMapToG1:" + s);
+				if (mbnG1_hashAndMapTo(ref this, s, s.Length) != 0) {
+					throw new ArgumentException("mbnG1_hashAndMapTo:" + s);
 				}
 			}
-			public string GetHexStr()
+			public string GetStr(int ioMode)
 			{
 				StringBuilder sb = new StringBuilder(1024);
-                long size = MBN_G1_getHexStr(sb, sb.Capacity, ref this);
-                if (size == 0) {
-                    throw new InvalidOperationException("MBN_G1_getHexStr:");
-                }
-                return sb.ToString();
+				long size = mbnG1_getStr(sb, sb.Capacity, ref this, ioMode);
+				if (size == 0) {
+					throw new InvalidOperationException("mbnG1_getStr:");
+				}
+				return sb.ToString();
 			}
 			public void Neg(G1 x)
 			{
-				MBN_G1_neg(ref this, ref x);
+				mbnG1_neg(ref this, ref x);
 			}
 			public void Dbl(G1 x)
 			{
-				MBN_G1_dbl(ref this, ref x);
+				mbnG1_dbl(ref this, ref x);
 			}
 			public void Add(G1 x, G1 y)
 			{
-				MBN_G1_add(ref this, ref x, ref y);
+				mbnG1_add(ref this, ref x, ref y);
 			}
 			public void Sub(G1 x, G1 y)
 			{
-				MBN_G1_sub(ref this, ref x, ref y);
+				mbnG1_sub(ref this, ref x, ref y);
 			}
 			public void Mul(G1 x, Fr y)
 			{
-				MBN_G1_mul(ref this, ref x, ref y);
+				mbnG1_mul(ref this, ref x, ref y);
 			}
 		}
 		[StructLayout(LayoutKind.Sequential)]
@@ -332,60 +309,60 @@ namespace mcl {
 			private ulong v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23;
 			public void Clear()
 			{
-				MBN_G2_clear(ref this);
+				mbnG2_clear(ref this);
 			}
-			public void setStr(String s)
+			public void setStr(String s, int ioMode)
 			{
-				if (MBN_G2_setHexStr(ref this, s, s.Length) != 0) {
-					throw new ArgumentException("MBN_G2_setHexStr:" + s);
+				if (mbnG2_setStr(ref this, s, s.Length, ioMode) != 0) {
+					throw new ArgumentException("mbnG2_setStr:" + s);
 				}
 			}
 			public bool IsValid()
 			{
-				return MBN_G2_isValid(ref this) == 1;
+				return mbnG2_isValid(ref this) == 1;
 			}
 			public bool Equals(G2 rhs)
 			{
-				return MBN_G2_isEqual(ref this, ref rhs) == 1;
+				return mbnG2_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
-				return MBN_G2_isZero(ref this) == 1;
+				return mbnG2_isZero(ref this) == 1;
 			}
 			public void HashAndMapTo(String s)
 			{
-				if (MBN_hashAndMapToG2(ref this, s, s.Length) != 0) {
-					throw new ArgumentException("MBN_hashAndMapToG2:" + s);
+				if (mbnG2_hashAndMapTo(ref this, s, s.Length) != 0) {
+					throw new ArgumentException("mbnG2_hashAndMapTo:" + s);
 				}
 			}
-            public string GetHexStr()
-            {
-                StringBuilder sb = new StringBuilder(1024);
-                long size = MBN_G2_getHexStr(sb, sb.Capacity, ref this);
-                if (size == 0) {
-                    throw new InvalidOperationException("MBN_G2_getHexStr:");
-                }
-                return sb.ToString();
-            }
-            public void Neg(G2 x)
+			public string GetStr(int ioMode)
 			{
-				MBN_G2_neg(ref this, ref x);
+				StringBuilder sb = new StringBuilder(1024);
+				long size = mbnG2_getStr(sb, sb.Capacity, ref this, ioMode);
+				if (size == 0) {
+					throw new InvalidOperationException("mbnG2_getStr:");
+				}
+				return sb.ToString();
+			}
+			public void Neg(G2 x)
+			{
+				mbnG2_neg(ref this, ref x);
 			}
 			public void Dbl(G2 x)
 			{
-				MBN_G2_dbl(ref this, ref x);
+				mbnG2_dbl(ref this, ref x);
 			}
 			public void Add(G2 x, G2 y)
 			{
-				MBN_G2_add(ref this, ref x, ref y);
+				mbnG2_add(ref this, ref x, ref y);
 			}
 			public void Sub(G2 x, G2 y)
 			{
-				MBN_G2_sub(ref this, ref x, ref y);
+				mbnG2_sub(ref this, ref x, ref y);
 			}
 			public void Mul(G2 x, Fr y)
 			{
-				MBN_G2_mul(ref this, ref x, ref y);
+				mbnG2_mul(ref this, ref x, ref y);
 			}
 		}
 		[StructLayout(LayoutKind.Sequential)]
@@ -396,73 +373,58 @@ namespace mcl {
 			private ulong v36, v37, v38, v39, v40, v41, v42, v43, v44, v45, v46, v47;
 			public void Clear()
 			{
-				MBN_GT_clear(ref this);
+				mbnGT_clear(ref this);
 			}
-            public void setDecStr(String s)
-            {
-                if (MBN_GT_setDecStr(ref this, s, s.Length) != 0) {
-                    throw new ArgumentException("MBN_GT_setDecStr:" + s);
-                }
-            }
-            public void setHexStr(String s)
+			public void setStr(String s, int ioMode)
 			{
-				if (MBN_GT_setHexStr(ref this, s, s.Length) != 0) {
-					throw new ArgumentException("MBN_GT_setHexStr:" + s);
+				if (mbnGT_setStr(ref this, s, s.Length, ioMode) != 0) {
+					throw new ArgumentException("mbnGT_setStr:" + s);
 				}
 			}
 			public bool Equals(GT rhs)
 			{
-				return MBN_GT_isEqual(ref this, ref rhs) == 1;
+				return mbnGT_isEqual(ref this, ref rhs) == 1;
 			}
 			public bool IsZero()
 			{
-				return MBN_GT_isZero(ref this) == 1;
+				return mbnGT_isZero(ref this) == 1;
 			}
 			public bool IsOne()
 			{
-				return MBN_GT_isOne(ref this) == 1;
+				return mbnGT_isOne(ref this) == 1;
 			}
-            public string GetDecStr()
-            {
-                StringBuilder sb = new StringBuilder(1024);
-                long size = MBN_GT_getDecStr(sb, sb.Capacity, ref this);
-                if (size == 0) {
-                    throw new InvalidOperationException("MBN_GT_getDecStr:");
-                }
-                return sb.ToString();
-            }
-            public string GetHexStr()
-            {
-                StringBuilder sb = new StringBuilder(1024);
-                long size = MBN_GT_getHexStr(sb, sb.Capacity, ref this);
-                if (size == 0) {
-                    throw new InvalidOperationException("MBN_GT_getHexStr:");
-                }
-                return sb.ToString();
-            }
-            public void Neg(GT x)
+			public string GetStr(int ioMode)
 			{
-				MBN_GT_neg(ref this, ref x);
+				StringBuilder sb = new StringBuilder(1024);
+				long size = mbnGT_getStr(sb, sb.Capacity, ref this, ioMode);
+				if (size == 0) {
+					throw new InvalidOperationException("mbnGT_getStr:");
+				}
+				return sb.ToString();
+			}
+			public void Neg(GT x)
+			{
+				mbnGT_neg(ref this, ref x);
 			}
 			public void Inv(GT x)
 			{
-				MBN_GT_inv(ref this, ref x);
+				mbnGT_inv(ref this, ref x);
 			}
 			public void Add(GT x, GT y)
 			{
-				MBN_GT_add(ref this, ref x, ref this);
+				mbnGT_add(ref this, ref x, ref this);
 			}
 			public void Sub(GT x, GT y)
 			{
-				MBN_GT_sub(ref this, ref x, ref this);
+				mbnGT_sub(ref this, ref x, ref this);
 			}
 			public void Mul(GT x, GT y)
 			{
-				MBN_GT_mul(ref this, ref x, ref this);
+				mbnGT_mul(ref this, ref x, ref this);
 			}
 			public void Div(GT x, GT y)
 			{
-				MBN_GT_div(ref this, ref x, ref this);
+				mbnGT_div(ref this, ref x, ref this);
 			}
 			public static GT operator -(GT x)
 			{
@@ -496,19 +458,19 @@ namespace mcl {
 			}
 			public void Pow(GT x, Fr y)
 			{
-				MBN_GT_pow(ref this, ref x, ref y);
+				mbnGT_pow(ref this, ref x, ref y);
 			}
 			public void Pairing(G1 x, G2 y)
 			{
-				MBN_pairing(ref this, ref x, ref y);
+				mbn_pairing(ref this, ref x, ref y);
 			}
-            public void FinalExp(GT x)
-            {
-                MBN_finalExp(ref this, ref x);
-            }
-            public void MillerLoop(G1 x, G2 y)
+			public void FinalExp(GT x)
 			{
-				MBN_millerLoop(ref this, ref x, ref y);
+				mbn_finalExp(ref this, ref x);
+			}
+			public void MillerLoop(G1 x, G2 y)
+			{
+				mbn_millerLoop(ref this, ref x, ref y);
 			}
 		}
 	}
