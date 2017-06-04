@@ -1,5 +1,5 @@
-#define MBN_DLL_EXPORT
-#define MBN_DEFINE_STRUCT
+#define MCLBN_DLL_EXPORT
+#define MCLBN_DEFINE_STRUCT
 #include <mcl/bn.h>
 #if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
@@ -9,7 +9,7 @@ static std::random_device g_rg;
 static cybozu::RandomGenerator g_rg;
 #endif
 
-#if MBN_FP_UNIT_SIZE == 4
+#if MCLBN_OP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
 using namespace mcl::bn256;
 #else
@@ -19,17 +19,17 @@ using namespace mcl::bn384;
 
 static FILE *g_fp = NULL;
 
-static Fr *cast(mbnFr *p) { return reinterpret_cast<Fr*>(p); }
-static const Fr *cast(const mbnFr *p) { return reinterpret_cast<const Fr*>(p); }
+static Fr *cast(mclBnFr *p) { return reinterpret_cast<Fr*>(p); }
+static const Fr *cast(const mclBnFr *p) { return reinterpret_cast<const Fr*>(p); }
 
-static G1 *cast(mbnG1 *p) { return reinterpret_cast<G1*>(p); }
-static const G1 *cast(const mbnG1 *p) { return reinterpret_cast<const G1*>(p); }
+static G1 *cast(mclBnG1 *p) { return reinterpret_cast<G1*>(p); }
+static const G1 *cast(const mclBnG1 *p) { return reinterpret_cast<const G1*>(p); }
 
-static G2 *cast(mbnG2 *p) { return reinterpret_cast<G2*>(p); }
-static const G2 *cast(const mbnG2 *p) { return reinterpret_cast<const G2*>(p); }
+static G2 *cast(mclBnG2 *p) { return reinterpret_cast<G2*>(p); }
+static const G2 *cast(const mclBnG2 *p) { return reinterpret_cast<const G2*>(p); }
 
-static Fp12 *cast(mbnGT *p) { return reinterpret_cast<Fp12*>(p); }
-static const Fp12 *cast(const mbnGT *p) { return reinterpret_cast<const Fp12*>(p); }
+static Fp12 *cast(mclBnGT *p) { return reinterpret_cast<Fp12*>(p); }
+static const Fp12 *cast(const mclBnGT *p) { return reinterpret_cast<const Fp12*>(p); }
 
 static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
 static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
@@ -85,7 +85,7 @@ int deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *m
 	return -1;
 }
 
-int mbn_setErrFile(const char *name)
+int mclBn_setErrFile(const char *name)
 {
 	int ret = closeErrFile();
 	if (name == NULL || *name == '\0') {
@@ -104,31 +104,31 @@ int mbn_setErrFile(const char *name)
 #endif
 }
 
-int mbn_init(int curve, int maxUnitSize)
+int mclBn_init(int curve, int maxUnitSize)
 	try
 {
-	if (maxUnitSize != MBN_FP_UNIT_SIZE) {
-		if (g_fp) fprintf(g_fp, "mbn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MBN_FP_UNIT_SIZE);
+	if (maxUnitSize != MCLBN_OP_UNIT_SIZE) {
+		if (g_fp) fprintf(g_fp, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_OP_UNIT_SIZE);
 		return -1;
 	}
 	mcl::bn::CurveParam cp;
 	switch (curve) {
-	case mbn_curveFp254BNb:
+	case mclBn_curveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;
 		break;
-#if MBN_FP_UNIT_SIZE == 6
-	case mbn_curveFp382_1:
+#if MCLBN_OP_UNIT_SIZE == 6
+	case mclBn_curveFp382_1:
 		cp = mcl::bn::CurveFp382_1;
 		break;
-	case mbn_curveFp382_2:
+	case mclBn_curveFp382_2:
 		cp = mcl::bn::CurveFp382_2;
 		break;
 #endif
 	default:
-		if (g_fp) fprintf(g_fp, "MBN_init:not supported curve %d\n", curve);
+		if (g_fp) fprintf(g_fp, "MCLBN_init:not supported curve %d\n", curve);
 		return -1;
 	}
-#if MBN_FP_UNIT_SIZE == 4
+#if MCLBN_OP_UNIT_SIZE == 4
 	bn256init(cp);
 #else
 	bn384init(cp);
@@ -141,128 +141,128 @@ int mbn_init(int curve, int maxUnitSize)
 
 ////////////////////////////////////////////////
 // set zero
-void mbnFr_clear(mbnFr *x)
+void mclBnFr_clear(mclBnFr *x)
 {
 	cast(x)->clear();
 }
 
 // set x to y
-void mbnFr_setInt(mbnFr *y, int x)
+void mclBnFr_setInt(mclBnFr *y, int x)
 {
 	*cast(y) = x;
 }
 
-int mbnFr_setStr(mbnFr *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mbnFr_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnFr_setStr", false);
 }
-int mbnFr_setLittleEndian(mbnFr *x, const void *buf, size_t bufSize)
+int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize)
 {
 	const size_t byteSize = cast(x)->getByteSize();
 	if (bufSize > byteSize) bufSize = byteSize;
 	std::string s((const char *)buf, bufSize);
 	s.resize(byteSize);
-	return deserialize(x, s.c_str(), s.size(), mcl::IoFixedSizeByteSeq, "mbnFr_setLittleEndian", false);
+	return deserialize(x, s.c_str(), s.size(), mcl::IoFixedSizeByteSeq, "mclBnFr_setLittleEndian", false);
 }
-int mbnFr_deserialize(mbnFr *x, const char *buf, size_t bufSize)
+int mclBnFr_deserialize(mclBnFr *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnFr_deserialize", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnFr_deserialize", false);
 }
 // return 1 if true
-int mbnFr_isValid(const mbnFr *x)
+int mclBnFr_isValid(const mclBnFr *x)
 {
 	return cast(x)->isValid();
 }
-int mbnFr_isEqual(const mbnFr *x, const mbnFr *y)
+int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y)
 {
 	return *cast(x) == *cast(y);
 }
-int mbnFr_isZero(const mbnFr *x)
+int mclBnFr_isZero(const mclBnFr *x)
 {
 	return cast(x)->isZero();
 }
-int mbnFr_isOne(const mbnFr *x)
+int mclBnFr_isOne(const mclBnFr *x)
 {
 	return cast(x)->isOne();
 }
 
-void mbnFr_setByCSPRNG(mbnFr *x)
+void mclBnFr_setByCSPRNG(mclBnFr *x)
 {
 	cast(x)->setRand(g_rg);
 }
 
 // hash(buf) and set x
-int mbnFr_setHashOf(mbnFr *x, const void *buf, size_t bufSize)
+int mclBnFr_setHashOf(mclBnFr *x, const void *buf, size_t bufSize)
 	try
 {
 	cast(x)->setHashOf(buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mbnFr_setHashOf %s\n", e.what());
+	if (g_fp) fprintf(g_fp, "mclBnFr_setHashOf %s\n", e.what());
 	return -1;
 }
 
-size_t mbnFr_getStr(char *buf, size_t maxBufSize, const mbnFr *x, int ioMode)
+size_t mclBnFr_getStr(char *buf, size_t maxBufSize, const mclBnFr *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mbnFr_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnFr_getStr", false);
 }
-size_t mbnFr_serialize(void *buf, size_t maxBufSize, const mbnFr *x)
+size_t mclBnFr_serialize(void *buf, size_t maxBufSize, const mclBnFr *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnFr_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnFr_serialize", false);
 }
 
-void mbnFr_neg(mbnFr *y, const mbnFr *x)
+void mclBnFr_neg(mclBnFr *y, const mclBnFr *x)
 {
 	Fr::neg(*cast(y), *cast(x));
 }
-void mbnFr_inv(mbnFr *y, const mbnFr *x)
+void mclBnFr_inv(mclBnFr *y, const mclBnFr *x)
 {
 	Fr::inv(*cast(y), *cast(x));
 }
-void mbnFr_add(mbnFr *z, const mbnFr *x, const mbnFr *y)
+void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::add(*cast(z),*cast(x), *cast(y));
 }
-void mbnFr_sub(mbnFr *z, const mbnFr *x, const mbnFr *y)
+void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::sub(*cast(z),*cast(x), *cast(y));
 }
-void mbnFr_mul(mbnFr *z, const mbnFr *x, const mbnFr *y)
+void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::mul(*cast(z),*cast(x), *cast(y));
 }
-void mbnFr_div(mbnFr *z, const mbnFr *x, const mbnFr *y)
+void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::div(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
 // set zero
-void mbnG1_clear(mbnG1 *x)
+void mclBnG1_clear(mclBnG1 *x)
 {
 	cast(x)->clear();
 }
 
-int mbnG1_setStr(mbnG1 *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnG1_setStr(mclBnG1 *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mbnG1_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnG1_setStr", false);
 }
 
 // return 1 if true
-int mbnG1_isValid(const mbnG1 *x)
+int mclBnG1_isValid(const mclBnG1 *x)
 {
 	return cast(x)->isValid();
 }
-int mbnG1_isEqual(const mbnG1 *x, const mbnG1 *y)
+int mclBnG1_isEqual(const mclBnG1 *x, const mclBnG1 *y)
 {
 	return *cast(x) == *cast(y);
 }
-int mbnG1_isZero(const mbnG1 *x)
+int mclBnG1_isZero(const mclBnG1 *x)
 {
 	return cast(x)->isZero();
 }
 
-int mbnG1_hashAndMapTo(mbnG1 *x, const void *buf, size_t bufSize)
+int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, size_t bufSize)
 	try
 {
 	Fp y;
@@ -270,68 +270,68 @@ int mbnG1_hashAndMapTo(mbnG1 *x, const void *buf, size_t bufSize)
 	BN::mapToG1(*cast(x), y);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mbnG1_hashAndMapTo %s\n", e.what());
+	if (g_fp) fprintf(g_fp, "mclBnG1_hashAndMapTo %s\n", e.what());
 	return 1;
 }
 
-size_t mbnG1_getStr(char *buf, size_t maxBufSize, const mbnG1 *x, int ioMode)
+size_t mclBnG1_getStr(char *buf, size_t maxBufSize, const mclBnG1 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mbnG1_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnG1_getStr", false);
 }
 
-size_t mbnG1_serialize(void *buf, size_t maxBufSize, const mbnG1 *x)
+size_t mclBnG1_serialize(void *buf, size_t maxBufSize, const mclBnG1 *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnG1_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG1_serialize", false);
 }
 
-void mbnG1_neg(mbnG1 *y, const mbnG1 *x)
+void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x)
 {
 	G1::neg(*cast(y), *cast(x));
 }
-void mbnG1_dbl(mbnG1 *y, const mbnG1 *x)
+void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x)
 {
 	G1::dbl(*cast(y), *cast(x));
 }
-void mbnG1_add(mbnG1 *z, const mbnG1 *x, const mbnG1 *y)
+void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y)
 {
 	G1::add(*cast(z),*cast(x), *cast(y));
 }
-void mbnG1_sub(mbnG1 *z, const mbnG1 *x, const mbnG1 *y)
+void mclBnG1_sub(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y)
 {
 	G1::sub(*cast(z),*cast(x), *cast(y));
 }
-void mbnG1_mul(mbnG1 *z, const mbnG1 *x, const mbnFr *y)
+void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y)
 {
 	G1::mul(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
 // set zero
-void mbnG2_clear(mbnG2 *x)
+void mclBnG2_clear(mclBnG2 *x)
 {
 	cast(x)->clear();
 }
 
-int mbnG2_setStr(mbnG2 *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnG2_setStr(mclBnG2 *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mbnG2_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnG2_setStr", false);
 }
 
 // return 1 if true
-int mbnG2_isValid(const mbnG2 *x)
+int mclBnG2_isValid(const mclBnG2 *x)
 {
 	return cast(x)->isValid();
 }
-int mbnG2_isEqual(const mbnG2 *x, const mbnG2 *y)
+int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y)
 {
 	return *cast(x) == *cast(y);
 }
-int mbnG2_isZero(const mbnG2 *x)
+int mclBnG2_isZero(const mclBnG2 *x)
 {
 	return cast(x)->isZero();
 }
 
-int mbnG2_hashAndMapTo(mbnG2 *x, const void *buf, size_t bufSize)
+int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, size_t bufSize)
 	try
 {
 	Fp y;
@@ -339,134 +339,134 @@ int mbnG2_hashAndMapTo(mbnG2 *x, const void *buf, size_t bufSize)
 	BN::mapToG2(*cast(x), Fp2(y, 0));
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mbnG2_hashAndMapTo %s\n", e.what());
+	if (g_fp) fprintf(g_fp, "mclBnG2_hashAndMapTo %s\n", e.what());
 	return 1;
 }
 
-size_t mbnG2_getStr(char *buf, size_t maxBufSize, const mbnG2 *x, int ioMode)
+size_t mclBnG2_getStr(char *buf, size_t maxBufSize, const mclBnG2 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mbnG2_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnG2_getStr", false);
 }
 
-void mbnG2_neg(mbnG2 *y, const mbnG2 *x)
+void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x)
 {
 	G2::neg(*cast(y), *cast(x));
 }
-void mbnG2_dbl(mbnG2 *y, const mbnG2 *x)
+void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x)
 {
 	G2::dbl(*cast(y), *cast(x));
 }
-void mbnG2_add(mbnG2 *z, const mbnG2 *x, const mbnG2 *y)
+void mclBnG2_add(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y)
 {
 	G2::add(*cast(z),*cast(x), *cast(y));
 }
-void mbnG2_sub(mbnG2 *z, const mbnG2 *x, const mbnG2 *y)
+void mclBnG2_sub(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y)
 {
 	G2::sub(*cast(z),*cast(x), *cast(y));
 }
-void mbnG2_mul(mbnG2 *z, const mbnG2 *x, const mbnFr *y)
+void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y)
 {
 	G2::mul(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
 // set zero
-void mbnGT_clear(mbnGT *x)
+void mclBnGT_clear(mclBnGT *x)
 {
 	cast(x)->clear();
 }
 
-int mbnGT_setStr(mbnGT *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mbnGT_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnGT_setStr", false);
 }
-int mbnGT_deserialize(mbnGT *x, const char *buf, size_t bufSize)
+int mclBnGT_deserialize(mclBnGT *x, const char *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mbnGT_deserialize", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnGT_deserialize", false);
 }
 
 // return 1 if true
-int mbnGT_isEqual(const mbnGT *x, const mbnGT *y)
+int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y)
 {
 	return *cast(x) == *cast(y);
 }
-int mbnGT_isZero(const mbnGT *x)
+int mclBnGT_isZero(const mclBnGT *x)
 {
 	return cast(x)->isZero();
 }
-int mbnGT_isOne(const mbnGT *x)
+int mclBnGT_isOne(const mclBnGT *x)
 {
 	return cast(x)->isOne();
 }
 
-size_t mbnGT_getStr(char *buf, size_t maxBufSize, const mbnGT *x, int ioMode)
+size_t mclBnGT_getStr(char *buf, size_t maxBufSize, const mclBnGT *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mbnGT_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnGT_getStr", false);
 }
 
-size_t mbnGT_serialize(void *buf, size_t maxBufSize, const mbnGT *x)
+size_t mclBnGT_serialize(void *buf, size_t maxBufSize, const mclBnGT *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mbnGT_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnGT_serialize", false);
 }
 
-void mbnGT_neg(mbnGT *y, const mbnGT *x)
+void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)
 {
 	Fp12::neg(*cast(y), *cast(x));
 }
-void mbnGT_inv(mbnGT *y, const mbnGT *x)
+void mclBnGT_inv(mclBnGT *y, const mclBnGT *x)
 {
 	Fp12::inv(*cast(y), *cast(x));
 }
-void mbnGT_add(mbnGT *z, const mbnGT *x, const mbnGT *y)
+void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y)
 {
 	Fp12::add(*cast(z),*cast(x), *cast(y));
 }
-void mbnGT_sub(mbnGT *z, const mbnGT *x, const mbnGT *y)
+void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y)
 {
 	Fp12::sub(*cast(z),*cast(x), *cast(y));
 }
-void mbnGT_mul(mbnGT *z, const mbnGT *x, const mbnGT *y)
+void mclBnGT_mul(mclBnGT *z, const mclBnGT *x, const mclBnGT *y)
 {
 	Fp12::mul(*cast(z),*cast(x), *cast(y));
 }
-void mbnGT_div(mbnGT *z, const mbnGT *x, const mbnGT *y)
+void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y)
 {
 	Fp12::div(*cast(z),*cast(x), *cast(y));
 }
 
-void mbnGT_pow(mbnGT *z, const mbnGT *x, const mbnFr *y)
+void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
 {
 	Fp12::pow(*cast(z), *cast(x), *cast(y));
 }
 
-void mbn_pairing(mbnGT *z, const mbnG1 *x, const mbnG2 *y)
+void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
 	BN::pairing(*cast(z), *cast(x), *cast(y));
 }
-void mbn_finalExp(mbnGT *y, const mbnGT *x)
+void mclBn_finalExp(mclBnGT *y, const mclBnGT *x)
 {
 	BN::finalExp(*cast(y), *cast(x));
 }
-void mbn_millerLoop(mbnGT *z, const mbnG1 *x, const mbnG2 *y)
+void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
 	BN::millerLoop(*cast(z), *cast(x), *cast(y));
 }
-int mbn_getUint64NumToPrecompute(void)
+int mclBn_getUint64NumToPrecompute(void)
 {
 	return int(BN::param.precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t));
 }
 
-void mbn_precomputeG2(uint64_t *Qbuf, const mbnG2 *Q)
+void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q)
 {
 	BN::precomputeG2(cast(Qbuf), *cast(Q));
 }
 
-void mbn_precomputedMillerLoop(mbnGT *f, const mbnG1 *P, const uint64_t *Qbuf)
+void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf)
 {
 	BN::precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
 }
 
-void mbn_precomputedMillerLoop2(mbnGT *f, const mbnG1 *P1, const uint64_t  *Q1buf, const mbnG1 *P2, const uint64_t *Q2buf)
+void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t  *Q1buf, const mclBnG1 *P2, const uint64_t *Q2buf)
 {
 	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }

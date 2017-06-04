@@ -16,8 +16,8 @@ namespace mcl {
 				assert("64bit system", System.Environment.Is64BitProcess);
 				init();
 				int ret;
-				ret = mbn_setErrFile("mbn_test.txt");
-				assert("mbn_setErrFile", ret == 0);
+				ret = mclBn_setErrFile("mclbn_test.txt");
+				assert("mclbn_setErrFile", ret == 0);
 				TestFr();
 				TestG1();
 				TestG2();
