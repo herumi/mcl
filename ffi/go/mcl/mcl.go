@@ -1,7 +1,7 @@
 package mcl
 
 /*
-#cgo CFLAGS:-D"MCLBN_OP_UNIT_SIZE=6"
+#cgo CFLAGS:-D"MCLBN_FP_UNIT_SIZE=6"
 #cgo LDFLAGS:-lmclbn384_dy -lmcl -lgmpxx -lstdc++ -lgmp -lcrypto
 #include <mcl/bn.h>
 */
@@ -22,7 +22,7 @@ const CurveFp382_2 = 2
 // call this function before calling all the other operations
 // this function is not thread safe
 func Init(curve int) error {
-	err := C.mclBn_init(C.int(curve), C.MCLBN_OP_UNIT_SIZE)
+	err := C.mclBn_init(C.int(curve), C.MCLBN_FP_UNIT_SIZE)
 	if err != 0 {
 		return fmt.Errorf("ERR mclBn_init curve=%d", curve)
 	}
@@ -32,7 +32,7 @@ func Init(curve int) error {
 ////////////////////////////////////////////////
 // Fr --
 type Fr struct {
-	v [C.MCLBN_OP_UNIT_SIZE]C.uint64_t
+	v C.mclBnFr
 }
 
 // getPointer --
@@ -168,7 +168,7 @@ func FrDiv(out *Fr, x *Fr, y *Fr) {
 ////////////////////////////////////////////
 // G1 --
 type G1 struct {
-	v [C.MCLBN_OP_UNIT_SIZE * 3]C.uint64_t
+	v C.mclBnG1
 }
 
 // getPointer --
@@ -274,7 +274,7 @@ func G1Mul(out *G1, x *G1, y *Fr) {
 ////////////////////////////////////////////
 // G2 --
 type G2 struct {
-	v [C.MCLBN_OP_UNIT_SIZE * 2 * 3]C.uint64_t
+	v C.mclBnG1
 }
 
 // getPointer --
@@ -380,7 +380,7 @@ func G2Mul(out *G2, x *G2, y *Fr) {
 ///////////////////////////////////////////////////////
 // GT --
 type GT struct {
-	v [C.MCLBN_OP_UNIT_SIZE * 12]C.uint64_t
+	v C.mclBnGT
 }
 
 // getPointer --

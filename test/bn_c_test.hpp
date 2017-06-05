@@ -27,12 +27,12 @@ CYBOZU_TEST_AUTO(init)
 	ret = mclBn_setErrFile("stderr");
 	CYBOZU_TEST_EQUAL(ret, 0);
 
-#if MCLBN_OP_UNIT_SIZE == 4
-	printf("test MCLBN_curveFp254BNb %d\n", MCLBN_OP_UNIT_SIZE);
-	ret = mclBn_init(mclBn_curveFp254BNb, MCLBN_OP_UNIT_SIZE);
+#if MCLBN_FP_UNIT_SIZE == 4
+	printf("test MCLBN_curveFp254BNb %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(mclBn_curveFp254BNb, MCLBN_FP_UNIT_SIZE);
 #else
-	printf("test MCLBN_curveFp382_1 %d\n", MCLBN_OP_UNIT_SIZE);
-	ret = mclBn_init(mclBn_curveFp382_1, MCLBN_OP_UNIT_SIZE);
+	printf("test MCLBN_curveFp382_1 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(mclBn_curveFp382_1, MCLBN_FP_UNIT_SIZE);
 #endif
 	CYBOZU_TEST_EQUAL(ret, 0);
 }

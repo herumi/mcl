@@ -6,8 +6,8 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#ifndef MCLBN_OP_UNIT_SIZE
-	#error "define MCLBN_OP_UNIT_SIZE 4(or 6)"
+#ifndef MCLBN_FP_UNIT_SIZE
+	#error "define MCLBN_FP_UNIT_SIZE 4(or 6)"
 #endif
 
 #include <stdint.h> // for uint64_t, uint8_t
@@ -19,7 +19,7 @@
 #else
 #define MCLBN_DLL_API __declspec(dllimport)
 #ifndef MCL_NO_AUTOLINK
-	#if MCLBN_OP_UNIT_SIZE == 4
+	#if MCLBN_FP_UNIT_SIZE == 4
 		#pragma comment(lib, "mclbn256.lib")
 	#else
 		#pragma comment(lib, "mclbn384.lib")
@@ -34,30 +34,30 @@
 extern "C" {
 #endif
 
-#ifdef MCLBN_DEFINE_STRUCT
-
-typedef struct {
-	uint64_t d[MCLBN_OP_UNIT_SIZE];
-} mclBnFr;
-
-typedef struct {
-	uint64_t d[MCLBN_OP_UNIT_SIZE * 3];
-} mclBnG1;
-
-typedef struct {
-	uint64_t d[MCLBN_OP_UNIT_SIZE * 2 * 3];
-} mclBnG2;
-
-typedef struct {
-	uint64_t d[MCLBN_OP_UNIT_SIZE * 12];
-} mclBnGT;
-
-#else
+#ifdef MCLBN_NOT_DEFINE_STRUCT
 
 typedef struct mclBnFr mclBnFr;
 typedef struct mclBnG1 mclBnG1;
 typedef struct mclBnG2 mclBnG2;
 typedef struct mclBnGT mclBnGT;
+
+#else
+
+typedef struct {
+	uint64_t d[MCLBN_FP_UNIT_SIZE];
+} mclBnFr;
+
+typedef struct {
+	uint64_t d[MCLBN_FP_UNIT_SIZE * 3];
+} mclBnG1;
+
+typedef struct {
+	uint64_t d[MCLBN_FP_UNIT_SIZE * 2 * 3];
+} mclBnG2;
+
+typedef struct {
+	uint64_t d[MCLBN_FP_UNIT_SIZE * 12];
+} mclBnGT;
 
 #endif
 

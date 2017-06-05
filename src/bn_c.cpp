@@ -1,5 +1,4 @@
 #define MCLBN_DLL_EXPORT
-#define MCLBN_DEFINE_STRUCT
 #include <mcl/bn.h>
 #if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
@@ -9,7 +8,7 @@ static std::random_device g_rg;
 static cybozu::RandomGenerator g_rg;
 #endif
 
-#if MCLBN_OP_UNIT_SIZE == 4
+#if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
 using namespace mcl::bn256;
 #else
@@ -107,8 +106,8 @@ int mclBn_setErrFile(const char *name)
 int mclBn_init(int curve, int maxUnitSize)
 	try
 {
-	if (maxUnitSize != MCLBN_OP_UNIT_SIZE) {
-		if (g_fp) fprintf(g_fp, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_OP_UNIT_SIZE);
+	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
+		if (g_fp) fprintf(g_fp, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
 	mcl::bn::CurveParam cp;
@@ -116,7 +115,7 @@ int mclBn_init(int curve, int maxUnitSize)
 	case mclBn_curveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;
 		break;
-#if MCLBN_OP_UNIT_SIZE == 6
+#if MCLBN_FP_UNIT_SIZE == 6
 	case mclBn_curveFp382_1:
 		cp = mcl::bn::CurveFp382_1;
 		break;
@@ -128,7 +127,7 @@ int mclBn_init(int curve, int maxUnitSize)
 		if (g_fp) fprintf(g_fp, "MCLBN_init:not supported curve %d\n", curve);
 		return -1;
 	}
-#if MCLBN_OP_UNIT_SIZE == 4
+#if MCLBN_FP_UNIT_SIZE == 4
 	bn256init(cp);
 #else
 	bn384init(cp);
