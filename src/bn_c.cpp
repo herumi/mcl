@@ -112,14 +112,14 @@ int mclBn_init(int curve, int maxUnitSize)
 	}
 	mcl::bn::CurveParam cp;
 	switch (curve) {
-	case mclBn_curveFp254BNb:
+	case mclBn_CurveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;
 		break;
 #if MCLBN_FP_UNIT_SIZE == 6
-	case mclBn_curveFp382_1:
+	case mclBn_CurveFp382_1:
 		cp = mcl::bn::CurveFp382_1;
 		break;
-	case mclBn_curveFp382_2:
+	case mclBn_CurveFp382_2:
 		cp = mcl::bn::CurveFp382_2;
 		break;
 #endif
