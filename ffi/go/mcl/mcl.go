@@ -77,7 +77,7 @@ func (x *Fr) Deserialize(buf []byte) error {
 // SetLittleEndian --
 func (x *Fr) SetLittleEndian(buf []byte) error {
 	// #nosec
-	err := C.mclBnFr_setLittleEndian(x.getPointer(), (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+	err := C.mclBnFr_setLittleEndian(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
 	if err != 0 {
 		return fmt.Errorf("err mclBnFr_setLittleEndian %x", err)
 	}
@@ -217,7 +217,7 @@ func (x *G1) IsZero(rhs *G1) bool {
 // HashAndMapTo --
 func (x *G1) HashAndMapTo(buf []byte) error {
 	// #nosec
-	err := C.mclBnG1_hashAndMapTo(x.getPointer(), (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+	err := C.mclBnG1_hashAndMapTo(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
 	if err != 0 {
 		return fmt.Errorf("err mclBnG1_hashAndMapTo %x", err)
 	}
@@ -323,7 +323,7 @@ func (x *G2) IsZero(rhs *G2) bool {
 // HashAndMapTo --
 func (x *G2) HashAndMapTo(buf []byte) error {
 	// #nosec
-	err := C.mclBnG2_hashAndMapTo(x.getPointer(), (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+	err := C.mclBnG2_hashAndMapTo(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
 	if err != 0 {
 		return fmt.Errorf("err mclBnG2_hashAndMapTo %x", err)
 	}
