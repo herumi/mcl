@@ -143,7 +143,7 @@ asm: $(LLVM_SRC)
 $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 	$(ASM) $<
 
-go: $(MCL_SLIB) $(BN384_SLIB)
+test_go: $(MCL_SLIB) $(BN384_SLIB)
 	cd ffi/go/mcl && env CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib" LD_LIBRARY_PATH=../../../lib go test .
 
 ##################################################################
