@@ -143,8 +143,15 @@ asm: $(LLVM_SRC)
 $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 	$(ASM) $<
 
-test_go: $(MCL_SLIB) $(BN384_SLIB)
-	cd ffi/go/mcl && env CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib" LD_LIBRARY_PATH=../../../lib go test .
+test_go256: $(MCL_SLIB) $(BN256_SLIB)
+	cd ffi/go/mcl && env CGO_CFLAGS="-I../../../include -DMCLBN_FP_UNIT_SIZE=4" CGO_LDFLAGS="-L../../../lib" LD_LIBRARY_PATH=../../../lib go test -tags bn256 .
+
+test_go384: $(MCL_SLIB) $(BN384_SLIB)
+	cd ffi/go/mcl && env CGO_CFLAGS="-I../../../include -DMCLBN_FP_UNIT_SIZE=6" CGO_LDFLAGS="-L../../../lib" LD_LIBRARY_PATH=../../../lib go test -tags bn384 .
+
+test_go:
+	$(MAKE) test_go256
+	$(MAKE) test_go384
 
 ##################################################################
 
