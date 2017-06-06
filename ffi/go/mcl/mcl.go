@@ -1,8 +1,8 @@
 package mcl
 
 /*
-#cgo CFLAGS:-D"MCLBN_FP_UNIT_SIZE=6"
-#cgo LDFLAGS:-lmclbn384_dy -lmcl -lgmpxx -lstdc++ -lgmp -lcrypto
+#cgo bn256 LDFLAGS:-lmclbn256_dy -lmcl_dy -lgmpxx -lstdc++ -lgmp -lcrypto
+#cgo bn384 LDFLAGS:-lmclbn384_dy -lmcl_dy -lgmpxx -lstdc++ -lgmp -lcrypto
 #include <mcl/bn.h>
 */
 import "C"
@@ -274,7 +274,7 @@ func G1Mul(out *G1, x *G1, y *Fr) {
 ////////////////////////////////////////////
 // G2 --
 type G2 struct {
-	v C.mclBnG1
+	v C.mclBnG2
 }
 
 // getPointer --
@@ -495,13 +495,13 @@ func Pairing(out *GT, x *G1, y *G2) {
 }
 
 // FinalExp --
-func FinalExp(out *GT, x *G1, y *G2) {
-	C.mclBn_pairing(out.getPointer(), x.getPointer(), y.getPointer())
+func FinalExp(out *GT, x *GT) {
+	C.mclBn_finalExp(out.getPointer(), x.getPointer())
 }
 
 // MillerLoop --
 func MillerLoop(out *GT, x *G1, y *G2) {
-	C.mclBn_pairing(out.getPointer(), x.getPointer(), y.getPointer())
+	C.mclBn_millerLoop(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
 // GetUint64NumToPrecompute --
@@ -524,10 +524,3 @@ func PrecomputedMillerLoop2(out *GT, P1 *G1, Q1buf []uint64, P2 *G1, Q2buf []uin
 	C.mclBn_precomputedMillerLoop2(out.getPointer(), P1.getPointer(), (*C.uint64_t)(unsafe.Pointer(&Q1buf[0])), P1.getPointer(), (*C.uint64_t)(unsafe.Pointer(&Q1buf[0])))
 }
 
-func main() {
-	err := Init(CurveFp254BNb)
-	if err != nil {
-		fmt.Printf("err:Init", err)
-		return
-	}
-}
