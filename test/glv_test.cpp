@@ -153,8 +153,32 @@ void testGLV(const mcl::bn::CurveParam& cp)
 	CYBOZU_BENCH_C("Ec::glv", 100, P1 = P0; s.setRand(rg); glv.mul, P2, P1, s.getMpz());
 }
 
+void testGLV2(const mcl::bn::CurveParam& cp)
+{
+	bn384init(cp);
+	G2::setCompressedExpression(false);
+	G2 Q0, Q1;
+	const mpz_class& z = BN::param.z;
+	mpz_class lambda = 6 * z * z;
+	lambda *= lambda;
+	lambda -= 1;
+	std::cout << std::hex;
+	Fp2 t;
+	for (int i = 1; i < 10; i++) {
+		BN::mapToG2(Q0, i);
+		G2::mul(Q1, Q0, lambda);
+		printf("i=%d\n", i);
+		Q0.normalize();
+		Q1.normalize();
+		PUT(Q0);
+		PUT(Q1);
+
+	}
+}
+
 CYBOZU_TEST_AUTO(glv)
 {
+//	testGLV2(mcl::bn::CurveFp254BNb);
 	testGLV(mcl::bn::CurveFp254BNb);
 	testGLV(mcl::bn::CurveFp382_1);
 	testGLV(mcl::bn::CurveFp382_2);

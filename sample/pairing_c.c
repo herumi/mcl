@@ -1,7 +1,7 @@
-#define BN256_DEFINE_STRUCT
-#define BN_MAX_FP_UNIT_SIZE 4
-#include <mcl/bn.h>
 #include <stdio.h>
+#include <string.h>
+#define MCLBN_FP_UNIT_SIZE 4
+#include <mcl/bn.h>
 
 int g_err = 0;
 #define ASSERT(x) { if (!(x)) { printf("err %s:%d\n", __FILE__, __LINE__); g_err++; } }
@@ -9,40 +9,40 @@ int g_err = 0;
 int main()
 {
 	char buf[1024];
-	const char *aStr = "1234567788234243234234";
-	const char *bStr = "239482098243";
-	BN256_init();
-	BN256_Fr a, b, ab;
-	BN256_G1 P, aP;
-	BN256_G2 Q, bQ;
-	BN256_GT e, e1, e2;
-	BN256_Fr_setStr(&a, aStr);
-	BN256_Fr_setStr(&b, bStr);
-	BN256_Fr_mul(&ab, &a, &b);
-	BN256_Fr_getStr(buf, sizeof(buf), &ab);
+	const char *aStr = "123";
+	const char *bStr = "456";
+	mclBn_init(mclBn_CurveFp254BNb, MCLBN_FP_UNIT_SIZE);
+	mclBnFr a, b, ab;
+	mclBnG1 P, aP;
+	mclBnG2 Q, bQ;
+	mclBnGT e, e1, e2;
+	mclBnFr_setStr(&a, aStr, strlen(aStr), 10);
+	mclBnFr_setStr(&b, bStr, strlen(bStr), 10);
+	mclBnFr_mul(&ab, &a, &b);
+	mclBnFr_getStr(buf, sizeof(buf), &ab, 10);
 	printf("%s x %s = %s\n", aStr, bStr, buf);
 
-	ASSERT(!BN256_G1_setStr(&P, "1 -1 1")); // "1 <x> <y>"
-	ASSERT(!BN256_G2_hashAndMapTo(&Q, "1"));
-	BN256_G1_getStr(buf, sizeof(buf), &P);
+	ASSERT(!mclBnG1_hashAndMapTo(&P, "this", 4));
+	ASSERT(!mclBnG2_hashAndMapTo(&Q, "that", 4));
+	mclBnG1_getStr(buf, sizeof(buf), &P, 16);
 	printf("P = %s\n", buf);
-	BN256_G2_getStr(buf, sizeof(buf), &Q);
+	mclBnG2_getStr(buf, sizeof(buf), &Q, 16);
 	printf("Q = %s\n", buf);
 
-	BN256_G1_mul(&aP, &P, &a);
-	BN256_G2_mul(&bQ, &Q, &b);
+	mclBnG1_mul(&aP, &P, &a);
+	mclBnG2_mul(&bQ, &Q, &b);
 
-	BN256_pairing(&e, &P, &Q);
-	BN256_GT_getStr(buf, sizeof(buf), &e);
+	mclBn_pairing(&e, &P, &Q);
+	mclBnGT_getStr(buf, sizeof(buf), &e, 16);
 	printf("e = %s\n", buf);
-	BN256_GT_pow(&e1, &e, &a);
-	BN256_pairing(&e2, &aP, &Q);
-	ASSERT(BN256_GT_isEqual(&e1, &e2));
+	mclBnGT_pow(&e1, &e, &a);
+	mclBn_pairing(&e2, &aP, &Q);
+	ASSERT(mclBnGT_isEqual(&e1, &e2));
 
-	BN256_GT_pow(&e1, &e, &b);
-	BN256_pairing(&e2, &P, &bQ);
-	ASSERT(BN256_GT_isEqual(&e1, &e2));
-	ASSERT(BN256_setErrFile("") == 0);
+	mclBnGT_pow(&e1, &e, &b);
+	mclBn_pairing(&e2, &P, &bQ);
+	ASSERT(mclBnGT_isEqual(&e1, &e2));
+	ASSERT(mclBn_setErrFile("") == 0);
 	if (g_err) {
 		printf("err %d\n", g_err);
 		return 1;
