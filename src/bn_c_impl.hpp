@@ -273,9 +273,7 @@ int mclBnG1_isZero(const mclBnG1 *x)
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, size_t bufSize)
 	try
 {
-	Fp y;
-	y.setHashOf(buf, bufSize);
-	BN::mapToG1(*cast(x), y);
+	BN::hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnG1_hashAndMapTo %s\n", e.what());
@@ -346,9 +344,7 @@ int mclBnG2_isZero(const mclBnG2 *x)
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, size_t bufSize)
 	try
 {
-	Fp y;
-	y.setHashOf(buf, bufSize);
-	BN::mapToG2(*cast(x), Fp2(y, 0));
+	BN::hashAndMapToG2(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnG2_hashAndMapTo %s\n", e.what());

@@ -1301,6 +1301,19 @@ struct BNT {
 	}
 	static void mapToG1(G1& P, const Fp& x) { param.mapTo.calcG1(P, x); }
 	static void mapToG2(G2& P, const Fp2& x) { param.mapTo.calcG2(P, x); }
+	static void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
+	{
+		Fp t;
+		t.setHashOf(buf, bufSize);
+		mapToG1(P, t);
+	}
+	static void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
+	{
+		Fp2 t;
+		t.a.setHashOf(buf, bufSize);
+		t.b.clear();
+		mapToG2(P, t);
+	}
 #if 1 // duplicated later
 	// old order of P and Q
 	static void pairing(Fp12& f, const G2& Q, const G1& P)
