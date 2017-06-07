@@ -157,22 +157,21 @@ void testGLV2(const mcl::bn::CurveParam& cp)
 {
 	bn384init(cp);
 	G2::setCompressedExpression(false);
-	G2 Q0, Q1;
+	G2 Q0, Q1, Q2;
+	const mpz_class& p = BN::param.p;
+	const mpz_class& r = BN::param.r;
 	const mpz_class& z = BN::param.z;
 	mpz_class lambda = 6 * z * z;
-	lambda *= lambda;
-	lambda -= 1;
 	std::cout << std::hex;
 	Fp2 t;
-	for (int i = 1; i < 10; i++) {
+	for (int i = 1; i < 5; i++) {
 		BN::mapToG2(Q0, i);
-		G2::mul(Q1, Q0, lambda);
+		G2::mul(Q1, Q0, lambda * lambda);
+		BN::FrobeniusOnTwist(Q2, Q0);
+		BN::FrobeniusOnTwist(Q2, Q2);
 		printf("i=%d\n", i);
-		Q0.normalize();
-		Q1.normalize();
-		PUT(Q0);
 		PUT(Q1);
-
+		PUT(Q2);
 	}
 }
 

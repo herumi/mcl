@@ -30,7 +30,8 @@ static inline void initAhe()
 	Fp::init(para.p);
 	Zn::init(para.n);
 	Ec::init(para.a, para.b);
-//	Fp::setIoMode(mcl::IoArrayRaw);
+	Ec::setIoMode(16);
+	Zn::setIoMode(16);
 }
 
 static inline void initSecretKey(SecretKey& sec)
@@ -60,7 +61,8 @@ static inline void initAhe()
 	Fp::init(para.p);
 	Zn::init(para.n);
 	Ec::init(para.a, para.b);
-//	Fp::setIoMode(mcl::IoArrayRaw);
+	Ec::setIoMode(16);
+	Zn::setIoMode(16);
 }
 
 static inline void initSecretKey(SecretKey& sec)

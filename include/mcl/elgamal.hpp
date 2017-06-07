@@ -18,6 +18,8 @@
 #include <map>
 #endif
 #include <cybozu/exception.hpp>
+#include <cybozu/itoa.hpp>
+#include <cybozu/atoi.hpp>
 #include <mcl/window_method.hpp>
 
 namespace mcl {
@@ -67,33 +69,44 @@ struct ElgamalT {
 			Ec::neg(c1, c1);
 			Ec::neg(c2, c2);
 		}
-		std::string getStr() const
+		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:CipherText:getStr");
-			return os.str();
+			c1.readStream(is, ioMode);
+			c2.readStream(is, ioMode);
+			if (!is) throw cybozu::Exception("ElgamalT:CipherText:readStream");
+			return is;
 		}
-		void setStr(const std::string& str)
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = c1.getStr(ioMode);
+			str += sep;
+			str += c2.getStr(ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		void setStr(const std::string& str, int ioMode = 0)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:CipherText:setStr") << str;
+			readStream(is, ioMode);
 		}
-		std::string toStr() const { return getStr(); }
-		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const CipherText& self)
 		{
-			std::ios_base::fmtflags flags = os.flags();
-			os << std::hex << self.c1 << ' ' << self.c2;
-			os.flags(flags);
-			return os;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, CipherText& self)
 		{
-			std::ios_base::fmtflags flags = is.flags();
-			is >> std::hex >> self.c1 >> self.c2;
-			is.flags(flags);
-			return is;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			return self.readStream(is, ioMode);
 		}
+		// obsolete
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 	};
 	/*
 		Zero Knowledge Proof
@@ -102,33 +115,50 @@ struct ElgamalT {
 	*/
 	struct Zkp {
 		Zn c0, c1, s0, s1;
-		std::string getStr() const
+		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:Zkp:getStr");
-			return os.str();
+			c0.readStream(is, ioMode);
+			c1.readStream(is, ioMode);
+			s0.readStream(is, ioMode);
+			s1.readStream(is, ioMode);
+			if (!is) throw cybozu::Exception("ElgamalT:Zkp:readStream");
+			return is;
 		}
-		void setStr(const std::string& str)
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = c0.getStr(ioMode);
+			str += sep;
+			str += c1.getStr(ioMode);
+			str += sep;
+			str += s0.getStr(ioMode);
+			str += sep;
+			str += s1.getStr(ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		void setStr(const std::string& str, int ioMode = 0)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:Zkp:setStr") << str;
+			readStream(is, ioMode);
 		}
-		std::string toStr() const { return getStr(); }
-		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const Zkp& self)
 		{
-			std::ios_base::fmtflags flags = os.flags();
-			os << std::hex << self.c0 << ' ' << self.c1 << ' ' << self.s0 << ' ' << self.s1;
-			os.flags(flags);
-			return os;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, Zkp& self)
 		{
-			std::ios_base::fmtflags flags = is.flags();
-			is >> std::hex >> self.c0 >> self.c1 >> self.s0 >> self.s1;
-			is.flags(flags);
-			return is;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			return self.readStream(is, ioMode);
 		}
+		// obsolete
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 	};
 
 	class PublicKey {
@@ -315,36 +345,56 @@ struct ElgamalT {
 			mulF(fm, m);
 			Ec::add(c.c2, c.c2, fm);
 		}
-		std::string getStr() const
+		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:PublicKey:getStr");
-			return os.str();
+			std::string s;
+			is >> s;
+			bitSize = cybozu::atoi(s);
+			char c;
+			is.read(&c, 1);
+			if (c != ' ') throw cybozu::Exception("ElgamalT:PublicKey:readStream:bad separator") << int(c);
+			f.readStream(is, ioMode);
+			g.readStream(is, ioMode);
+			h.readStream(is, ioMode);
+			if (!is) throw cybozu::Exception("ElgamalT:PublicKey:readStream");
+			init(bitSize, f, g, h);
+			return is;
 		}
-		void setStr(const std::string& str)
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = cybozu::itoa(bitSize);
+			str += ' ';
+			str += f.getStr(ioMode);
+			str += sep;
+			str += g.getStr(ioMode);
+			str += sep;
+			str += h.getStr(ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		void setStr(const std::string& str, int ioMode = 0)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PublicKey:setStr") << str;
+			readStream(is, ioMode);
 		}
-		std::string toStr() const { return getStr(); }
-		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
-			std::ios_base::fmtflags flags = os.flags();
-			os << std::dec << self.bitSize << ' ' << std::hex << self.f << ' ' << self.g << ' ' << self.h;
-			os.flags(flags);
-			return os;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
-			std::ios_base::fmtflags flags = is.flags();
-			size_t bitSize;
-			Ec f, g, h;
-			is >> std::dec >> bitSize >> std::hex >> f >> g >> h;
-			is.flags(flags);
-			self.init(bitSize, f, g, h);
-			return is;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			return self.readStream(is, ioMode);
 		}
+		// obsolete
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 	};
 	/*
 		create table f^i for i in [rangeMin, rangeMax]
@@ -501,33 +551,43 @@ struct ElgamalT {
 			Ec::mul(c1z, c.c1, z);
 			return c.c2 == c1z;
 		}
-		std::string getStr() const
+		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			std::ostringstream os;
-			if (!(os << (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:getStr");
-			return os.str();
+			pub.readStream(is, ioMode);
+			z.readStream(is, ioMode);
+			if (!is) throw cybozu::Exception("ElgamalT:CipherText:readStream");
+			return is;
 		}
-		void setStr(const std::string& str)
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = pub.getStr(ioMode);
+			str += sep;
+			str += z.getStr(ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		void setStr(const std::string& str, int ioMode = 0)
 		{
 			std::istringstream is(str);
-			if (!(is >> (*this))) throw cybozu::Exception("ElgamalT:PrivateKey:setStr") << str;
+			readStream(is, ioMode);
 		}
-		std::string toStr() const { return getStr(); }
-		void fromStr(const std::string& str) { setStr(str); }
 		friend inline std::ostream& operator<<(std::ostream& os, const PrivateKey& self)
 		{
-			std::ios_base::fmtflags flags = os.flags();
-			os << self.pub << ' ' << std::hex << self.z;
-			os.flags(flags);
-			return os;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, PrivateKey& self)
 		{
-			std::ios_base::fmtflags flags = is.flags();
-			is >> self.pub  >> std::hex >> self.z;
-			is.flags(flags);
-			return is;
+			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			return self.readStream(is, ioMode);
 		}
+		std::string toStr() const { return getStr(); }
+		void fromStr(const std::string& str) { setStr(str); }
 	};
 };
 
