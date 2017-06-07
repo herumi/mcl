@@ -124,9 +124,10 @@ struct MapToT {
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
+	GLV for G1
 */
 template<class Fp>
-struct GLV {
+struct GLV1 {
 	typedef mcl::EcT<Fp> G1;
 	Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	size_t m;
@@ -135,7 +136,7 @@ struct GLV {
 	mpz_class r;
 	void init(const mpz_class& r, const mpz_class& z)
 	{
-		if (!Fp::squareRoot(rw, -3)) throw cybozu::Exception("GLV:init");
+		if (!Fp::squareRoot(rw, -3)) throw cybozu::Exception("GLV1:init");
 		rw = -(rw + 1) / 2;
 		this->r = r;
 		m = gmp::getBitSize(r);
@@ -281,7 +282,7 @@ struct ParamT {
 	mpz_class exp_c1;
 	mpz_class exp_c2;
 	MapToT<Fp> mapTo;
-	GLV<Fp> glv;
+	GLV1<Fp> glv1;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
@@ -316,7 +317,7 @@ struct ParamT {
 		G2::init(0, b_div_xi, mcl::ec::Proj);
 		G2::setOrder(r);
 		mapTo.init(2 * p - r);
-		glv.init(r, z);
+		glv1.init(r, z);
 
 		Fp2::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
 		for (size_t i = 1; i < gN; i++) {
@@ -386,7 +387,7 @@ struct BNT {
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv.mul(z, x, s, constTime);
+		param.glv1.mul(z, x, s, constTime);
 	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
@@ -475,10 +476,9 @@ struct BNT {
 	*/
 	static void FrobeniusOnTwist(G2& D, const G2& S)
 	{
-		assert(S.isNormalized());
 		Frobenius(D.x, S.x);
 		Frobenius(D.y, S.y);
-		D.z = S.z;
+		Frobenius(D.z, S.z);
 		D.x *= param.g[0];
 		D.y *= param.g[3];
 	}

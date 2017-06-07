@@ -24,7 +24,7 @@ struct oldGLV {
 	mpz_class c; // 2z + 1
 	void init(const mpz_class& r, const mpz_class& z)
 	{
-		if (!Fp::squareRoot(w, -3)) throw cybozu::Exception("GLV:init");
+		if (!Fp::squareRoot(w, -3)) throw cybozu::Exception("oldGLV:init");
 		w = (w - 1) / 2;
 		this->r = r;
 		v = 1 + z * (4 + z * 6);
@@ -122,7 +122,7 @@ void testGLV(const mcl::bn::CurveParam& cp)
 	oldGLV oldGlv;
 	oldGlv.init(BN::param.r, BN::param.z);
 
-	mcl::bn::GLV<Fp> glv;
+	mcl::bn::GLV1<Fp> glv;
 	glv.init(BN::param.r, BN::param.z);
 	compareLength(glv, oldGlv);
 
@@ -152,23 +152,25 @@ void testGLV(const mcl::bn::CurveParam& cp)
 	CYBOZU_BENCH_C("Ec::mul", 100, P1 = P0; s.setRand(rg); G1::mul, P2, P1, s.getMpz());
 	CYBOZU_BENCH_C("Ec::glv", 100, P1 = P0; s.setRand(rg); glv.mul, P2, P1, s.getMpz());
 }
-
+/*
+	lambda = 6 * z * z
+	mul (lambda * 2) = FrobeniusOnTwist * 2
+*/
 void testGLV2(const mcl::bn::CurveParam& cp)
 {
 	bn384init(cp);
 	G2::setCompressedExpression(false);
 	G2 Q0, Q1, Q2;
-	const mpz_class& p = BN::param.p;
-	const mpz_class& r = BN::param.r;
 	const mpz_class& z = BN::param.z;
 	mpz_class lambda = 6 * z * z;
 	std::cout << std::hex;
 	Fp2 t;
 	for (int i = 1; i < 5; i++) {
 		BN::mapToG2(Q0, i);
-		G2::mul(Q1, Q0, lambda * lambda);
+		G2::mul(Q1, Q0, lambda);
 		BN::FrobeniusOnTwist(Q2, Q0);
-		BN::FrobeniusOnTwist(Q2, Q2);
+//		Q1.normalize();
+//		Q2.normalize();
 		printf("i=%d\n", i);
 		PUT(Q1);
 		PUT(Q2);
@@ -177,7 +179,8 @@ void testGLV2(const mcl::bn::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(glv)
 {
-//	testGLV2(mcl::bn::CurveFp254BNb);
+	testGLV2(mcl::bn::CurveFp254BNb);
+return;
 	testGLV(mcl::bn::CurveFp254BNb);
 	testGLV(mcl::bn::CurveFp382_1);
 	testGLV(mcl::bn::CurveFp382_2);
