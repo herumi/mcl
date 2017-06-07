@@ -152,6 +152,61 @@ void testGLV(const mcl::bn::CurveParam& cp)
 	CYBOZU_BENCH_C("Ec::mul", 100, P1 = P0; s.setRand(rg); G1::mul, P2, P1, s.getMpz());
 	CYBOZU_BENCH_C("Ec::glv", 100, P1 = P0; s.setRand(rg); glv.mul, P2, P1, s.getMpz());
 }
+
+template<class Fp2>
+struct GLV2 {
+	typedef mcl::EcT<Fp2> G2;
+	size_t m;
+	mpz_class B[4][4];
+	mpz_class r;
+	mpz_class v[4];
+	void init(const mpz_class& r, const mpz_class& z)
+	{
+		this->r = r;
+		m = mcl::gmp::getBitSize(r);
+//		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
+		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
+		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
+		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
+		v[3] = -((z * (1 + z)) << m) / r;
+		PUT(v[0]);
+		PUT(v[1]);
+		PUT(v[2]);
+		PUT(v[3]);
+		{
+			const mpz_class z2p1 = z * 2 + 1;
+			B[0][0] = z + 1;
+			B[0][1] = z;
+			B[0][2] = z;
+			B[0][3] = -2 * z;
+			B[1][0] = z2p1;
+			B[1][1] = -z;
+			B[1][2] = -(z + 1);
+			B[1][3] = -z;
+			B[2][0] = 2 * z;
+			B[2][1] = z2p1;
+			B[2][2] = z2p1;
+			B[2][3] = z2p1;
+			B[3][0] = z - 1;
+			B[3][1] = 2 * z2p1;
+			B[3][2] =  -2 * z + 1;
+			B[3][3] = z - 1;
+		}
+	}
+	void split(mpz_class u[4], const mpz_class& n) const
+	{
+		mpz_class t[4];
+		for (int i = 0; i < 4; i++) {
+			t[i] = (n * v[i]) >> m;
+		}
+		for (int i = 0; i < 4; i++) {
+			u[i] = (i == 0) ? n : 0;
+			for (int j = 0; j < 4; j++) {
+				u[i] -= t[j] * B[j][i];
+			}
+		}
+	}
+};
 /*
 	lambda = 6 * z * z
 	mul (lambda * 2) = FrobeniusOnTwist * 2
@@ -162,18 +217,24 @@ void testGLV2(const mcl::bn::CurveParam& cp)
 	G2::setCompressedExpression(false);
 	G2 Q0, Q1, Q2;
 	const mpz_class& z = BN::param.z;
+	const mpz_class& r = BN::param.r;
 	mpz_class lambda = 6 * z * z;
-	std::cout << std::hex;
-	Fp2 t;
-	for (int i = 1; i < 5; i++) {
-		BN::mapToG2(Q0, i);
-		G2::mul(Q1, Q0, lambda);
-		BN::FrobeniusOnTwist(Q2, Q0);
-//		Q1.normalize();
-//		Q2.normalize();
-		printf("i=%d\n", i);
-		PUT(Q1);
-		PUT(Q2);
+	GLV2<Fp2> glv2;
+	glv2.init(r, z);
+	mpz_class u[4];
+	mpz_class n;
+	cybozu::XorShift rg;
+	for (int i = 0; i < 10; i++) {
+		mcl::gmp::getRand(n, glv2.m, rg);
+		n %= r;
+		glv2.split(u, n);
+		PUT(n);
+		PUT(u[0]);
+		PUT(u[1]);
+		PUT(u[2]);
+		PUT(u[3]);
+		mpz_class v = u[0] + lambda * (u[1] + lambda * (u[2] + lambda * u[3]));
+		PUT((n - v) % r);
 	}
 }
 
