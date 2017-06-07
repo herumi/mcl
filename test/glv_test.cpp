@@ -165,10 +165,17 @@ struct GLV2 {
 		this->r = r;
 		m = mcl::gmp::getBitSize(r);
 //		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
+#if 1
+		v[0] = (1 + z * (3 + z * 2));
+		v[1] = (z * (1 + z * (8 + z * 12)));
+		v[2] = (z * (1 + z * (4 + z * 6)));
+		v[3] = -(z * (1 + z * 2));
+#else
 		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
 		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
 		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
-		v[3] = -((z * (1 + z)) << m) / r;
+		v[3] = -((z * (1 + z * 2)) << m) / r;
+#endif
 		PUT(v[0]);
 		PUT(v[1]);
 		PUT(v[2]);
@@ -197,7 +204,10 @@ struct GLV2 {
 	{
 		mpz_class t[4];
 		for (int i = 0; i < 4; i++) {
-			t[i] = (n * v[i]) >> m;
+//			t[i] = (n * v[i]) >> m;
+			t[i] = (n * v[i]) / r;
+PUT(n * v[i]);
+PUT(t[i]);
 		}
 		for (int i = 0; i < 4; i++) {
 			u[i] = (i == 0) ? n : 0;
@@ -216,20 +226,24 @@ void testGLV2(const mcl::bn::CurveParam& cp)
 	bn384init(cp);
 	G2::setCompressedExpression(false);
 	G2 Q0, Q1, Q2;
-	const mpz_class& z = BN::param.z;
-	const mpz_class& r = BN::param.r;
+	mpz_class z = BN::param.z;
+	mpz_class r = BN::param.r;
+//z = 10267;
+r = 36*z*z*z*z+36*z*z*z+18*z*z+6*z+1;
 	mpz_class lambda = 6 * z * z;
 	GLV2<Fp2> glv2;
 	glv2.init(r, z);
 	mpz_class u[4];
 	mpz_class n;
 	cybozu::XorShift rg;
-	for (int i = 0; i < 10; i++) {
+//	std::cout << std::hex;
+	for (int i = 0; i < 3; i++) {
 		mcl::gmp::getRand(n, glv2.m, rg);
 		n %= r;
+//n.set_str("123456789123456789", 10);
 		glv2.split(u, n);
 		PUT(n);
-		PUT(u[0]);
+		PUT(u[0]); PUT(mcl::gmp::getBitSize(u[0]));
 		PUT(u[1]);
 		PUT(u[2]);
 		PUT(u[3]);
@@ -240,8 +254,8 @@ void testGLV2(const mcl::bn::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(glv)
 {
-	testGLV2(mcl::bn::CurveFp254BNb);
-return;
+//	testGLV2(mcl::bn::CurveFp254BNb);
+//return;
 	testGLV(mcl::bn::CurveFp254BNb);
 	testGLV(mcl::bn::CurveFp382_1);
 	testGLV(mcl::bn::CurveFp382_2);
