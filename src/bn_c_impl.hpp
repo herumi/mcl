@@ -143,7 +143,7 @@ int mclBn_getOpUnitSize()
 	return Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
 }
 
-size_t copyStrAndReturnSize(chat *buf, size_t maxBufSize, const std::string& str)
+size_t copyStrAndReturnSize(char *buf, size_t maxBufSize, const std::string& str)
 {
 	if (str.size() >= maxBufSize) return 0;
 	strcpy(buf, str.c_str());
