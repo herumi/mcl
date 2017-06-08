@@ -47,10 +47,10 @@ func (x *Fr) Clear() {
 	C.mclBnFr_clear(x.getPointer())
 }
 
-// SetInt --
-func (x *Fr) SetInt(v int) {
+// SetInt64 --
+func (x *Fr) SetInt64(v int64) {
 	// #nosec
-	C.mclBnFr_setInt(x.getPointer(), C.int(v))
+	C.mclBnFr_setInt(x.getPointer(), C.int64_t(v))
 }
 
 // SetString --
