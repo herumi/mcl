@@ -82,10 +82,41 @@ enum {
 	@param maxUnitSize [in] 4 or 6
 	curve = MCLBN_CurveFp254BNb is allowed if maxUnitSize = 4
 	curve = MCLBN_CurveFp254BNb/MCLBN_CurveFp382_1/MCLBN_CurveFp382_2 are allowed if maxUnitSize = 6
+	This parameter is used to detect a library compiled with different MCLBN_FP_UNIT_SIZE for safety.
 	@note not threadsafe
 	@note MCLBN_init is used in libeay32
 */
 MCLBN_DLL_API int mclBn_init(int curve, int maxUnitSize);
+
+
+/*
+	pairing : G1 x G2 -> GT
+	#G1 = #G2 = r
+	G1 is a curve defined on Fp
+
+	serialized size of elements
+	|Fr| = |G1| = 32 bytes (if CurveFp254BNb), 48 bytes (if CurevFp382_{1,2})
+	|G2| = |G1| * 2
+	|GT| = |G1| * 12
+*/
+/*
+	return the num of Unit(=uint64_t) to store Fr
+	4 if curve is mclBn_CurveFp254BNb
+	6 if curve is mclBn_CurveFp382_{1,2}
+*/
+MCLBN_DLL_API int mclBn_getOpUnitSize();
+
+/*
+	return decimal string of the order of the curve(=the characteristic of Fr)
+	return str(buf) if success
+*/
+MCLBN_DLL_API size_t mclBn_getCurveOrder(char *buf, size_t maxBufSize);
+
+/*
+	return decimal string of the characteristic of Fp
+	return str(buf) if success
+*/
+MCLBN_DLL_API size_t mclBn_getFieldOrder(char *buf, size_t maxBufSize);
 
 ////////////////////////////////////////////////
 // set zero
@@ -101,6 +132,7 @@ MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, int x);
 */
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode);
+// return error if buf >= r
 MCLBN_DLL_API int mclBnFr_deserialize(mclBnFr *x, const void *buf, size_t bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize);

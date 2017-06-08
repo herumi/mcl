@@ -138,6 +138,31 @@ int mclBn_init(int curve, int maxUnitSize)
 	return -1;
 }
 
+int mclBn_getOpUnitSize()
+{
+	return Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
+}
+
+size_t copyStrAndReturnSize(chat *buf, size_t maxBufSize, const std::string& str)
+{
+	if (str.size() >= maxBufSize) return 0;
+	strcpy(buf, str.c_str());
+	return str.size();
+}
+
+size_t mclBn_getCurveOrder(char *buf, size_t maxBufSize)
+{
+	std::string str;
+	Fr::getModulo(str);
+	return copyStrAndReturnSize(buf, maxBufSize, str);
+}
+
+size_t mclBn_getFieldOrder(char *buf, size_t maxBufSize)
+{
+	std::string str;
+	Fp::getModulo(str);
+	return copyStrAndReturnSize(buf, maxBufSize, str);
+}
 ////////////////////////////////////////////////
 // set zero
 void mclBnFr_clear(mclBnFr *x)
