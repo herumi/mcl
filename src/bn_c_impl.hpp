@@ -171,7 +171,7 @@ void mclBnFr_clear(mclBnFr *x)
 }
 
 // set x to y
-void mclBnFr_setInt(mclBnFr *y, int x)
+void mclBnFr_setInt(mclBnFr *y, int64_t x)
 {
 	*cast(y) = x;
 }

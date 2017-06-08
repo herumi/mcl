@@ -123,7 +123,7 @@ MCLBN_DLL_API size_t mclBn_getFieldOrder(char *buf, size_t maxBufSize);
 MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
 
 // set x to y
-MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, int x);
+MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, int64_t x);
 
 /*
 	ioMode
