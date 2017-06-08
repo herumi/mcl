@@ -264,7 +264,11 @@ struct ParamT {
 	uint32_t pmod4;
 	Fp Z;
 	static const size_t gN = 5;
-	Fp2 g[gN]; // g[0] = xi^((p - 1) / 6), g[i] = g[i]^(i + 1)
+	/*
+		g = xi^((p - 1) / 6)
+		g[] = { g^2, g^4, g^1, g^3, g^5 }
+	*/
+	Fp2 g[gN];
 	Fp2 g2[gN];
 	Fp2 g3[gN];
 	int b;
@@ -434,7 +438,7 @@ struct BNT {
 			y.getFp2()[i] *= param.g[i - 1];
 		}
 	}
-	static  void Frobenius2(Fp12& y, const Fp12& x)
+	static void Frobenius2(Fp12& y, const Fp12& x)
 	{
 #if 0
 		Frobenius(y, x);
