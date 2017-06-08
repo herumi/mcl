@@ -110,11 +110,8 @@ void compareLength(const GLV1& rhs, const GLV2& lhs)
 	printf("eq=%d small is better rhs=%d, lhs=%d\n", eq, Rc, Lc);
 }
 
-void testGLV(const mcl::bn::CurveParam& cp)
+void testGLV1()
 {
-	bn384init(cp);
-	G1::setCompressedExpression(false);
-
 	G1 P0, P1, P2;
 	BN::mapToG1(P0, 1);
 	cybozu::XorShift rg;
@@ -164,99 +161,192 @@ struct GLV2 {
 	{
 		this->r = r;
 		m = mcl::gmp::getBitSize(r);
-//		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
-#if 1
-		v[0] = (1 + z * (3 + z * 2));
-		v[1] = (z * (1 + z * (8 + z * 12)));
-		v[2] = (z * (1 + z * (4 + z * 6)));
-		v[3] = -(z * (1 + z * 2));
-#else
+		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
+		/*
+			v[] = [1, 0, 0, 0] * B^(-1) = [2z^2+3z+1, 12z^3+8z^2+z, 6z^3+4z^2+z, -(2z+1)]
+		*/
 		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
 		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
 		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
 		v[3] = -((z * (1 + z * 2)) << m) / r;
-#endif
-		PUT(v[0]);
-		PUT(v[1]);
-		PUT(v[2]);
-		PUT(v[3]);
-		{
-			const mpz_class z2p1 = z * 2 + 1;
-			B[0][0] = z + 1;
-			B[0][1] = z;
-			B[0][2] = z;
-			B[0][3] = -2 * z;
-			B[1][0] = z2p1;
-			B[1][1] = -z;
-			B[1][2] = -(z + 1);
-			B[1][3] = -z;
-			B[2][0] = 2 * z;
-			B[2][1] = z2p1;
-			B[2][2] = z2p1;
-			B[2][3] = z2p1;
-			B[3][0] = z - 1;
-			B[3][1] = 2 * z2p1;
-			B[3][2] =  -2 * z + 1;
-			B[3][3] = z - 1;
-		}
+		const mpz_class z2p1 = z * 2 + 1;
+		B[0][0] = z + 1;
+		B[0][1] = z;
+		B[0][2] = z;
+		B[0][3] = -2 * z;
+		B[1][0] = z2p1;
+		B[1][1] = -z;
+		B[1][2] = -(z + 1);
+		B[1][3] = -z;
+		B[2][0] = 2 * z;
+		B[2][1] = z2p1;
+		B[2][2] = z2p1;
+		B[2][3] = z2p1;
+		B[3][0] = z - 1;
+		B[3][1] = 2 * z2p1;
+		B[3][2] =  -2 * z + 1;
+		B[3][3] = z - 1;
 	}
-	void split(mpz_class u[4], const mpz_class& n) const
+	/*
+		u[] = [x, 0, 0, 0] - v[] * x * B
+	*/
+	void split(mpz_class u[4], const mpz_class& x) const
 	{
 		mpz_class t[4];
 		for (int i = 0; i < 4; i++) {
-//			t[i] = (n * v[i]) >> m;
-			t[i] = (n * v[i]) / r;
-PUT(n * v[i]);
-PUT(t[i]);
+			t[i] = (x * v[i]) >> m;
 		}
 		for (int i = 0; i < 4; i++) {
-			u[i] = (i == 0) ? n : 0;
+			u[i] = (i == 0) ? x : 0;
 			for (int j = 0; j < 4; j++) {
 				u[i] -= t[j] * B[j][i];
 			}
 		}
+	}
+	void mulOrg(G2& Q, const G2& P, mpz_class x) const
+	{
+		x %= r;
+		if (x == 0) {
+			Q.clear();
+			return;
+		}
+		if (x < 0) {
+			x += r;
+		}
+		mpz_class u[4];
+		split(u, x);
+		G2 in[4];
+		in[0] = P;
+		BN::FrobeniusOnTwist(in[1], in[0]);
+		BN::FrobeniusOnTwist(in[2], in[1]);
+		BN::FrobeniusOnTwist(in[3], in[2]);
+		for (int i = 0; i < 4; i++) {
+			G2::mul(in[i], in[i], u[i]);
+		}
+		G2::add(Q, in[0], in[1]);
+		Q += in[2];
+		Q += in[3];
+	}
+	void mul(G2& Q, const G2& P, mpz_class x) const
+	{
+		x %= r;
+		if (x == 0) {
+			Q.clear();
+			return;
+		}
+		if (x < 0) {
+			x += r;
+		}
+		mpz_class u[4];
+		split(u, x);
+		G2 in[4];
+		in[0] = P;
+		BN::FrobeniusOnTwist(in[1], in[0]);
+		BN::FrobeniusOnTwist(in[2], in[1]);
+		BN::FrobeniusOnTwist(in[3], in[2]);
+		for (int i = 0; i < 4; i++) {
+			if (u[i] < 0) {
+				u[i] = -u[i];
+				G2::neg(in[i], in[i]);
+			}
+			in[i].normalize();
+		}
+#if 0
+		for (int i = 0; i < 4; i++) {
+			G2::mul(in[i], in[i], u[i]);
+		}
+		G2::add(Q, in[0], in[1]);
+		Q += in[2];
+		Q += in[3];
+#else
+		G2 tbl[16];
+		for (size_t i = 0; i < 16; i++) {
+			tbl[i].clear();
+		}
+		for (size_t i = 0; i < 16; i++) {
+			if (i & 1) {
+				tbl[i] += in[0];
+			}
+			if (i & 2) {
+				tbl[i] += in[1];
+			}
+			if (i & 4) {
+				tbl[i] += in[2];
+			}
+			if (i & 8) {
+				tbl[i] += in[3];
+			}
+		}
+		for (size_t i = 0; i < 16; i++) {
+			tbl[i].normalize();
+		}
+		typedef mcl::fp::Unit Unit;
+		const size_t maxUnit = 4;
+		int bitTbl[4]; // bit size of u[i]
+		Unit w[4][maxUnit]; // unit array of u[i]
+		for (int i = 0; i < 4; i++) {
+			mcl::gmp::getArray(w[i], maxUnit, u[i]);
+			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
+		}
+		int maxBit = bitTbl[0]; // max bit of u[i]
+		for (int i = 1; i < 4; i++) {
+			maxBit = std::max(maxBit, bitTbl[i]);
+		}
+		assert(maxBit > 0);
+		int maxN = maxBit / mcl::fp::UnitBitSize;
+		int m = maxBit % mcl::fp::UnitBitSize;
+		Q.clear();
+		for (int i = maxN - 1; i >= 0; i--) {
+			for (int j = m; j >= 0; j--) {
+				G2::dbl(Q, Q);
+				Unit b0 = (w[0][i] >> j) & 1;
+				Unit b1 = (w[1][i] >> j) & 1;
+				Unit b2 = (w[2][i] >> j) & 1;
+				Unit b3 = (w[3][i] >> j) & 1;
+				Unit c = b3 * 8 + b2 * 4 + b1 * 2 + b0;
+				Q += tbl[c];
+			}
+			m = (int)mcl::fp::UnitBitSize - 1;
+		}
+#endif
 	}
 };
 /*
 	lambda = 6 * z * z
 	mul (lambda * 2) = FrobeniusOnTwist * 2
 */
-void testGLV2(const mcl::bn::CurveParam& cp)
+void testGLV2()
 {
-	bn384init(cp);
-	G2::setCompressedExpression(false);
 	G2 Q0, Q1, Q2;
 	mpz_class z = BN::param.z;
 	mpz_class r = BN::param.r;
-//z = 10267;
-r = 36*z*z*z*z+36*z*z*z+18*z*z+6*z+1;
 	mpz_class lambda = 6 * z * z;
 	GLV2<Fp2> glv2;
 	glv2.init(r, z);
 	mpz_class u[4];
 	mpz_class n;
 	cybozu::XorShift rg;
-//	std::cout << std::hex;
-	for (int i = 0; i < 3; i++) {
+	for (int i = 1; i < 5; i++) {
 		mcl::gmp::getRand(n, glv2.m, rg);
 		n %= r;
-//n.set_str("123456789123456789", 10);
-		glv2.split(u, n);
-		PUT(n);
-		PUT(u[0]); PUT(mcl::gmp::getBitSize(u[0]));
-		PUT(u[1]);
-		PUT(u[2]);
-		PUT(u[3]);
-		mpz_class v = u[0] + lambda * (u[1] + lambda * (u[2] + lambda * u[3]));
-		PUT((n - v) % r);
+		BN::mapToG2(Q0, i);
+		G2::mul(Q1, Q0, n);
+		glv2.mul(Q2, Q0, n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
 }
 
 CYBOZU_TEST_AUTO(glv)
 {
-//	testGLV2(mcl::bn::CurveFp254BNb);
-//return;
-	testGLV(mcl::bn::CurveFp254BNb);
-	testGLV(mcl::bn::CurveFp382_1);
-	testGLV(mcl::bn::CurveFp382_2);
+	const mcl::bn::CurveParam tbl[] = {
+		mcl::bn::CurveFp254BNb,
+		mcl::bn::CurveFp382_1,
+		mcl::bn::CurveFp382_2,
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const mcl::bn::CurveParam& cp = tbl[i];
+		bn384init(cp);
+		testGLV1();
+//		testGLV2();
+	}
 }
