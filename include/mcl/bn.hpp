@@ -117,7 +117,10 @@ struct MapToT {
 	{
 		calc<G2, Fp2>(P, t);
 		assert(cofactor != 0);
-		G2::mul(P, P, cofactor);
+		/*
+			G2::mul (GLV method) can't be used because P is not on G2
+		*/
+		G2::mulGeneric(P, P, cofactor);
 		assert(!P.isZero());
 	}
 };
@@ -197,8 +200,8 @@ struct GLV1 {
 		}
 		mulLambda(Q, Q);
 #if 0
-		G1::mulBase(A, A, a);
-		G1::mulBase(Q, Q, b);
+		G1::mulGeneric(A, A, a);
+		G1::mulGeneric(Q, Q, b);
 		Q += A;
 #else
 		A.normalize();
@@ -250,6 +253,159 @@ struct GLV1 {
 	}
 };
 
+template<class Fp2>
+struct GLV2 {
+	typedef mcl::EcT<Fp2> G2;
+	size_t m;
+	mpz_class B[4][4];
+	mpz_class r;
+	mpz_class v[4];
+	void (*FrobeniusOnTwist)(G2&, const G2&);
+	GLV2() : m(0), FrobeniusOnTwist(0) {}
+	void init(const mpz_class& r, const mpz_class& z, void FrobeniusOnTwist(G2&, const G2&))
+	{
+		this->r = r;
+		this->FrobeniusOnTwist = FrobeniusOnTwist;
+		m = mcl::gmp::getBitSize(r);
+		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
+		/*
+			v[] = [1, 0, 0, 0] * B^(-1) = [2z^2+3z+1, 12z^3+8z^2+z, 6z^3+4z^2+z, -(2z+1)]
+		*/
+		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
+		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
+		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
+		v[3] = -((z * (1 + z * 2)) << m) / r;
+		mpz_class z2p1 = z * 2 + 1;
+		B[0][0] = z + 1;
+		B[0][1] = z;
+		B[0][2] = z;
+		B[0][3] = -2 * z;
+		B[1][0] = z2p1;
+		B[1][1] = -z;
+		B[1][2] = -(z + 1);
+		B[1][3] = -z;
+		B[2][0] = 2 * z;
+		B[2][1] = z2p1;
+		B[2][2] = z2p1;
+		B[2][3] = z2p1;
+		B[3][0] = z - 1;
+		B[3][1] = 2 * z2p1;
+		B[3][2] =  -2 * z + 1;
+		B[3][3] = z - 1;
+	}
+	/*
+		u[] = [x, 0, 0, 0] - v[] * x * B
+	*/
+	void split(mpz_class u[4], const mpz_class& x) const
+	{
+		mpz_class t[4];
+		for (int i = 0; i < 4; i++) {
+			t[i] = (x * v[i]) >> m;
+		}
+		for (int i = 0; i < 4; i++) {
+			u[i] = (i == 0) ? x : 0;
+			for (int j = 0; j < 4; j++) {
+				u[i] -= t[j] * B[j][i];
+			}
+		}
+	}
+	void mul(G2& Q, const G2& P, mpz_class x) const
+	{
+#ifndef NDEBUG
+		{
+			G2 R;
+			G2::mulGeneric(R, P, r);
+			assert(R.isZero());
+		}
+#endif
+		x %= r;
+		if (x == 0) {
+			Q.clear();
+			return;
+		}
+		if (x < 0) {
+			x += r;
+		}
+		mpz_class u[4];
+		split(u, x);
+		G2 in[4];
+		in[0] = P;
+		FrobeniusOnTwist(in[1], in[0]);
+		FrobeniusOnTwist(in[2], in[1]);
+		FrobeniusOnTwist(in[3], in[2]);
+		for (int i = 0; i < 4; i++) {
+			if (u[i] < 0) {
+				u[i] = -u[i];
+				G2::neg(in[i], in[i]);
+			}
+			in[i].normalize();
+		}
+#if 0
+		for (int i = 0; i < 4; i++) {
+			G2::mulGeneric(in[i], in[i], u[i]);
+		}
+		G2::add(Q, in[0], in[1]);
+		Q += in[2];
+		Q += in[3];
+#else
+		G2 tbl[16];
+		for (size_t i = 0; i < 16; i++) {
+			tbl[i].clear();
+		}
+		for (size_t i = 0; i < 16; i++) {
+			if (i & 1) {
+				tbl[i] += in[0];
+			}
+			if (i & 2) {
+				tbl[i] += in[1];
+			}
+			if (i & 4) {
+				tbl[i] += in[2];
+			}
+			if (i & 8) {
+				tbl[i] += in[3];
+			}
+		}
+		for (size_t i = 0; i < 16; i++) {
+			tbl[i].normalize();
+		}
+		typedef mcl::fp::Unit Unit;
+		const size_t maxUnit = 3;
+		int bitTbl[4]; // bit size of u[i]
+		Unit w[4][maxUnit]; // unit array of u[i]
+		int maxBit = -1; // max bit of u[i]
+		for (int i = 0; i < 4; i++) {
+			mcl::gmp::getArray(w[i], maxUnit, u[i]);
+			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
+			maxBit = std::max(maxBit, bitTbl[i]);
+		}
+		maxBit--;
+		/*
+			maxBit = maxN * UnitBitSize + m
+			0 < m <= UnitBitSize
+		*/
+		int maxN = maxBit / mcl::fp::UnitBitSize;
+		int m = maxBit % mcl::fp::UnitBitSize;
+		m++;
+		Q.clear();
+		for (int i = maxN; i >= 0; i--) {
+			for (int j = m - 1; j >= 0; j--) {
+				G2::dbl(Q, Q);
+				uint32_t b0 = (w[0][i] >> j) & 1;
+				uint32_t b1 = (w[1][i] >> j) & 1;
+				uint32_t b2 = (w[2][i] >> j) & 1;
+				uint32_t b3 = (w[3][i] >> j) & 1;
+				uint32_t c = b3 * 8 + b2 * 4 + b1 * 2 + b0;
+				if (c) {
+					Q += tbl[c];
+				}
+			}
+			m = (int)mcl::fp::UnitBitSize;
+		}
+#endif
+	}
+};
+
 template<class Fp>
 struct ParamT {
 	typedef Fp2T<Fp> Fp2;
@@ -287,6 +443,7 @@ struct ParamT {
 	mpz_class exp_c2;
 	MapToT<Fp> mapTo;
 	GLV1<Fp> glv1;
+	GLV2<Fp2> glv2;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	typedef std::vector<int8_t> SignVec;
@@ -386,17 +543,26 @@ struct BNT {
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 	typedef ParamT<Fp> Param;
 	static Param param;
-	static void mulArrayGLV(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	static void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
 		param.glv1.mul(z, x, s, constTime);
 	}
+	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool)
+	{
+		mpz_class s;
+		mcl::gmp::setArray(s, y, yn);
+		if (isNegative) s = -s;
+		param.glv2.mul(z, x, s);
+	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		param.init(cp, mode);
-		G1::setMulArrayGLV(mulArrayGLV);
+		G1::setMulArrayGLV(mulArrayGLV1);
+		param.glv2.init(param.r, param.z, FrobeniusOnTwist);
+		G2::setMulArrayGLV(mulArrayGLV2);
 	}
 	/*
 		Frobenius

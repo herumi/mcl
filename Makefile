@@ -2,7 +2,7 @@ include common.mk
 LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
-SRC_SRC=fp.cpp
+SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp pailler_test.cpp
 TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp
 ifeq ($(CPU),x86-64)
@@ -90,23 +90,17 @@ $(MCL_LIB): $(LIB_OBJ)
 $(MCL_SLIB): $(LIB_OBJ)
 	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared
 
-$(BN256_LIB): $(LIB_OBJ) $(BN256_OBJ)
-	$(AR) $@ $(LIB_OBJ) $(BN256_OBJ)
+$(BN256_LIB): $(BN256_OBJ)
+	$(AR) $@ $(BN256_OBJ)
 
-$(BN256_SLIB): $(LIB_OBJ) $(BN256_OBJ)
-	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN256_OBJ) -shared
+$(BN256_SLIB): $(BN256_OBJ)
+	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared
 
-$(BN256_OBJ): src/bn_c.cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -D"MCLBN_FP_UNIT_SIZE=4"
+$(BN384_LIB): $(BN384_OBJ)
+	$(AR) $@ $(BN384_OBJ)
 
-$(BN384_LIB): $(LIB_OBJ) $(BN384_OBJ)
-	$(AR) $@ $(LIB_OBJ) $(BN384_OBJ)
-
-$(BN384_SLIB): $(LIB_OBJ) $(BN384_OBJ)
-	$(PRE)$(CXX) -o $@ $(LIB_OBJ) $(BN384_OBJ) -shared
-
-$(BN384_OBJ): src/bn_c.cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -D"MCLBN_FP_UNIT_SIZE=6"
+$(BN384_SLIB): $(BN384_OBJ)
+	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -168,14 +162,14 @@ $(OBJ_DIR)/%.o: %.c
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn_c256_test.exe: $(OBJ_DIR)/bn_c256_test.o $(BN256_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(LDFLAGS)
+$(EXE_DIR)/bn_c256_test.exe: $(OBJ_DIR)/bn_c256_test.o $(BN256_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn_c384_test.exe: $(OBJ_DIR)/bn_c384_test.o $(BN384_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN384_LIB) $(LDFLAGS)
+$(EXE_DIR)/bn_c384_test.exe: $(OBJ_DIR)/bn_c384_test.o $(BN384_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN384_LIB) $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB)
-	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(LDFLAGS) -lstdc++
+$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB) $(MCL_LIB)
+	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)

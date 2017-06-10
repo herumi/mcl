@@ -140,13 +140,14 @@ int mclBn_init(int curve, int maxUnitSize)
 
 int mclBn_getOpUnitSize()
 {
-	return Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
+	return (int)Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
 }
 
 size_t copyStrAndReturnSize(char *buf, size_t maxBufSize, const std::string& str)
 {
 	if (str.size() >= maxBufSize) return 0;
-	strcpy(buf, str.c_str());
+	memcpy(buf, str.c_str(), str.size());
+	buf[str.size()] = '\0';
 	return str.size();
 }
 
@@ -181,12 +182,13 @@ int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode)
 	return deserialize(x, buf, bufSize, ioMode, "mclBnFr_setStr", false);
 }
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize)
+	try
 {
-	const size_t byteSize = cast(x)->getByteSize();
-	if (bufSize > byteSize) bufSize = byteSize;
-	std::string s((const char *)buf, bufSize);
-	s.resize(byteSize);
-	return deserialize(x, s.c_str(), s.size(), mcl::IoFixedSizeByteSeq, "mclBnFr_setLittleEndian", false);
+	cast(x)->setArrayMask((const char *)buf, bufSize);
+	return 0;
+} catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "setArrayMask %s\n", e.what());
+	return -1;
 }
 int mclBnFr_deserialize(mclBnFr *x, const void *buf, size_t bufSize)
 {

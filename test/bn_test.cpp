@@ -248,7 +248,7 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		CYBOZU_BENCH_C("G1::mulCT", 500, G1::mul, Pa, Pa, a);
 		CYBOZU_BENCH_C("G1::add", 500, G1::add, Pa, Pa, P);
 		CYBOZU_BENCH_C("G1::dbl", 500, G1::dbl, Pa, Pa);
-		CYBOZU_BENCH_C("G2::mulCT", 500, G2::mul, Qa, Qa, a);
+		CYBOZU_BENCH_C("G2::mul", 500, G2::mul, Qa, Qa, a);
 		CYBOZU_BENCH_C("G2::add", 500, G2::add, Qa, Qa, Q);
 		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
 	}

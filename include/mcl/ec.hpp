@@ -846,8 +846,10 @@ public:
 			neg(z, z);
 		}
 	}
-	// for debug
-	static inline void mulBase(EcT& z, const EcT& x, const mpz_class& y, bool constTime = false)
+	/*
+		generic mul
+	*/
+	static inline void mulGeneric(EcT& z, const EcT& x, const mpz_class& y, bool constTime = false)
 	{
 		mulArrayBase(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, constTime);
 	}
