@@ -337,6 +337,10 @@ void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y)
 {
 	G1::mul(*cast(z),*cast(x), *cast(y));
 }
+void mclBnG1_mulCT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y)
+{
+	G1::mulCT(*cast(z),*cast(x), *cast(y));
+}
 
 ////////////////////////////////////////////////
 // set zero

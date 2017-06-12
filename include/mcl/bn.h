@@ -188,6 +188,12 @@ MCLBN_DLL_API void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
 MCLBN_DLL_API void mclBnG1_sub(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
 MCLBN_DLL_API void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
 
+/*
+	constant time mul
+	@note depending on bit length of y
+*/
+MCLBN_DLL_API void mclBnG1_mulCT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
+
 ////////////////////////////////////////////////
 // set zero
 MCLBN_DLL_API void mclBnG2_clear(mclBnG2 *x);
