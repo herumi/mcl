@@ -202,9 +202,17 @@ CYBOZU_TEST_AUTO(GT)
 	mclBnGT_clear(&x);
 	CYBOZU_TEST_ASSERT(mclBnGT_isZero(&x));
 
+	mclBnGT_setInt(&x, 1);
+	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&x));
 	char buf[2048];
-	const char *s = "1 2 3 4 5 6 7 8 9 10 11 12";
 	size_t size;
+	size = mclBnGT_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	const char *s = "1 0 0 0 0 0 0 0 0 0 0 0";
+	CYBOZU_TEST_EQUAL(buf, s);
+
+	s = "1 2 3 4 5 6 7 8 9 10 11 12";
 	CYBOZU_TEST_ASSERT(!mclBnGT_setStr(&x,s , strlen(s), 10));
 	size = mclBnGT_getStr(buf, sizeof(buf), &x, 10);
 	CYBOZU_TEST_ASSERT(size > 0);

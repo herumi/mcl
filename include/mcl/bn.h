@@ -223,6 +223,8 @@ MCLBN_DLL_API void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
 ////////////////////////////////////////////////
 // set zero
 MCLBN_DLL_API void mclBnGT_clear(mclBnGT *x);
+// set x to y
+MCLBN_DLL_API void mclBnGT_setInt(mclBnGT *y, int64_t x);
 
 // return 0 if success
 MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode);

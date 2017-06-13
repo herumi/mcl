@@ -418,6 +418,11 @@ void mclBnGT_clear(mclBnGT *x)
 {
 	cast(x)->clear();
 }
+void mclBnGT_setInt(mclBnGT *y, int64_t x)
+{
+	cast(y)->clear();
+	*(cast(y)->getFp0()) = x;
+}
 
 int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode)
 {
