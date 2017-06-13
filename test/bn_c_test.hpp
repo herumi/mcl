@@ -309,6 +309,19 @@ CYBOZU_TEST_AUTO(precomputed)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &f3));
 }
 
+#if MCLBN_FP_UNIT_SIZE == 6
+CYBOZU_TEST_AUTO(badG2)
+{
+	int ret;
+	ret = mclBn_init(mclBn_CurveFp382_1, MCLBN_FP_UNIT_SIZE);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	const char *s = "1 18d3d8c085a5a5e7553c3a4eb628e88b8465bf4de2612e35a0a4eb018fb0c82e9698896031e62fd7633ffd824a859474 1dc6edfcf33e29575d4791faed8e7203832217423bf7f7fbf1f6b36625b12e7132c15fbc15562ce93362a322fb83dd0d 65836963b1f7b6959030ddfa15ab38ce056097e91dedffd996c1808624fa7e2644a77be606290aa555cda8481cfb3cb 1b77b708d3d4f65aeedf54b58393463a42f0dc5856baadb5ce608036baeca398c5d9e6b169473a8838098fd72fd28b50";
+	mclBnG2 Q;
+	ret = mclBnG2_setStr(&Q, s, strlen(s), 16);
+	CYBOZU_TEST_ASSERT(ret != 0);
+}
+#endif
+
 CYBOZU_TEST_AUTO(end)
 {
 	int ret = mclBn_setErrFile("bn_if.log");
