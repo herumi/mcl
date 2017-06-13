@@ -212,7 +212,7 @@ public:
 	bool isValidOrder() const
 	{
 		EcT Q;
-		EcT::mul(Q, *this, order_);
+		EcT::mulGeneric(Q, *this, order_);
 		return Q.isZero();
 	}
 	bool isValid() const
