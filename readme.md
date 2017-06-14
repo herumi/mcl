@@ -121,6 +121,8 @@ finalExp 546.259Kclk
 * libbn256.a ; static C library for `mcl/bn256f.h`
 * libbn256_dy.so ; shared C library
 
+If you want to remove '_dy` of so files, then `makeSHARE_BASENAME_SUF=`.
+
 # How to initialize pairing library
 Call `mcl::bn256::bn256init` before calling any operations.
 ```
@@ -144,7 +146,6 @@ Set a valid value before reffering it.
 ## String format of G1 and G2
 G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
 normalize() method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).
-G1::setCompressedExpression(bool) sets whether uncompressed(false) or compressed(true) format.
 
 getStr() method gets
 
