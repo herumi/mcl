@@ -826,7 +826,7 @@ public:
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
 	{
-		if (mulArrayGLV && yn * 2 > Fp::BaseFp::getOp().N) {
+		if (mulArrayGLV && (constTime || yn > 1)) {
 			mulArrayGLV(z, x, y, yn, isNegative, constTime);
 			return;
 		}

@@ -173,88 +173,94 @@ struct GLV1 {
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
-	void mul(G1& Q, G1 P, mpz_class x, bool constTime = false) const
+	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
 	{
+		typedef mcl::fp::Unit Unit;
+		const size_t maxUnit = 3;
+		const int splitN = 2;
+		mpz_class u[splitN];
+		G1 in[splitN];
+		G1 tbl[4];
+		int bitTbl[splitN]; // bit size of u[i]
+		Unit w[splitN][maxUnit]; // unit array of u[i]
+		int maxBit = 0; // max bit of u[i]
+		int maxN = 0;
+		int m = 0;
+
 		x %= r;
 		if (x == 0) {
 			Q.clear();
+			if (constTime) goto DummyLoop;
 			return;
 		}
 		if (x < 0) {
 			x += r;
 		}
-		mpz_class a, b;
-		split(a, b, x);
-		G1 A;
-		if (a < 0) {
-			G1::neg(A, P);
-			a = -a;
-		} else {
-			A = P;
+		split(u[0], u[1], x);
+		in[0] = P;
+		mulLambda(in[1], in[0]);
+		for (int i = 0; i < splitN; i++) {
+			if (u[i] < 0) {
+				u[i] = -u[i];
+				G1::neg(in[i], in[i]);
+			}
+			in[i].normalize();
 		}
-		if (b < 0) {
-			G1::neg(Q, P);
-			b = -b;
-		} else {
-			Q = P;
-		}
-		mulLambda(Q, Q);
 #if 0
-		G1::mulGeneric(A, A, a);
-		G1::mulGeneric(Q, Q, b);
-		Q += A;
+		G1::mulGeneric(in[0], in[0], u[0]);
+		G1::mulGeneric(in[1], in[1], u[1]);
+		G1::add(Q, in[0], in[1]);
+		return;
 #else
-		A.normalize();
-		Q.normalize();
-		G1 tbl[4] = { A, A, Q, A + Q }; // tbl[0] : dummy
+		tbl[0] = in[0]; // dummy
+		tbl[1] = in[0];
+		tbl[2] = in[1];
+		G1::add(tbl[3], in[0], in[1]);
 		tbl[3].normalize();
-		typedef mcl::fp::Unit Unit;
-		const int aN = (int)mcl::gmp::getUnitSize(a);
-		const int bN = (int)mcl::gmp::getUnitSize(b);
-		const Unit *pa = mcl::gmp::getUnit(a);
-		const Unit *pb = mcl::gmp::getUnit(b);
-		const int maxN = std::max(aN, bN);
-		assert(maxN > 0);
-		int ma = -1, mb = -1;
-		if (aN == maxN) {
-			ma = cybozu::bsr<Unit>(pa[maxN - 1]);
+		for (int i = 0; i < splitN; i++) {
+			mcl::gmp::getArray(w[i], maxUnit, u[i]);
+			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
+			maxBit = std::max(maxBit, bitTbl[i]);
 		}
-		if (bN == maxN) {
-			mb = cybozu::bsr<Unit>(pb[maxN - 1]);
-		}
-		int m = ma;
-		if (ma > mb) {
-			Q = tbl[1];
-		} else if (ma < mb) {
-			Q = tbl[2];
-			m = mb;
-		} else {
-			assert(ma == mb);
-			Q = tbl[3];
-		}
-		G1 *pTbl[] = { &tbl[0], &Q, &Q, &Q };
-		for (int i = maxN - 1; i >= 0; i--) {
-			Unit va = i < aN ? pa[i] : 0;
-			Unit vb = i < bN ? pb[i] : 0;
-			for (int j = m - 1; j >= 0; j -= 1) {
+		assert(maxBit > 0);
+		maxBit--;
+		/*
+			maxBit = maxN * UnitBitSize + m
+			0 < m <= UnitBitSize
+		*/
+		maxN = maxBit / mcl::fp::UnitBitSize;
+		m = maxBit % mcl::fp::UnitBitSize;
+		m++;
+		Q.clear();
+		for (int i = maxN; i >= 0; i--) {
+			for (int j = m - 1; j >= 0; j--) {
 				G1::dbl(Q, Q);
-				Unit ai = (va >> j) & 1;
-				Unit bi = (vb >> j) & 1;
-				Unit c = bi * 2 + ai;
-				if (constTime) {
-					*pTbl[c] += tbl[c];
-				} else if (c > 0) {
+				uint32_t b0 = (w[0][i] >> j) & 1;
+				uint32_t b1 = (w[1][i] >> j) & 1;
+				uint32_t c = b1 * 2 + b0;
+				if (c == 0) {
+					if (constTime) tbl[0] += tbl[c];
+				} else {
 					Q += tbl[c];
 				}
 			}
-			m = (int)sizeof(Unit) * 8;
+			m = (int)mcl::fp::UnitBitSize;
 		}
 #endif
+	DummyLoop:
+		if (!constTime) return;
+		const int limitBit = (int)Fp::getBitSize() / splitN;
+		G1 D = tbl[0];
+		for (int i = maxBit + 1; i < limitBit; i++) {
+			G1::dbl(D, D);
+			D += tbl[0];
+		}
 	}
 };
 
 template<class Fp2>
 struct GLV2 {
+	typedef typename Fp2::BaseFp Fp;
 	typedef mcl::EcT<Fp2> G2;
 	size_t m;
 	mpz_class B[4][4];
@@ -309,7 +315,7 @@ struct GLV2 {
 			}
 		}
 	}
-	void mul(G2& Q, const G2& P, mpz_class x) const
+	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
 	{
 #ifndef NDEBUG
 		{
@@ -318,41 +324,51 @@ struct GLV2 {
 			assert(R.isZero());
 		}
 #endif
+		typedef mcl::fp::Unit Unit;
+		const size_t maxUnit = 3;
+		const int splitN = 4;
+		mpz_class u[splitN];
+		G2 in[splitN];
+		G2 tbl[16];
+		int bitTbl[splitN]; // bit size of u[i]
+		Unit w[splitN][maxUnit]; // unit array of u[i]
+		int maxBit = 0; // max bit of u[i]
+		int maxN = 0;
+		int m = 0;
+
 		x %= r;
 		if (x == 0) {
 			Q.clear();
+			if (constTime) goto DummyLoop;
 			return;
 		}
 		if (x < 0) {
 			x += r;
 		}
-		mpz_class u[4];
 		split(u, x);
-		G2 in[4];
 		in[0] = P;
 		FrobeniusOnTwist(in[1], in[0]);
 		FrobeniusOnTwist(in[2], in[1]);
 		FrobeniusOnTwist(in[3], in[2]);
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < splitN; i++) {
 			if (u[i] < 0) {
 				u[i] = -u[i];
 				G2::neg(in[i], in[i]);
 			}
-			in[i].normalize();
+//			in[i].normalize(); // slow
 		}
 #if 0
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < splitN; i++) {
 			G2::mulGeneric(in[i], in[i], u[i]);
 		}
 		G2::add(Q, in[0], in[1]);
 		Q += in[2];
 		Q += in[3];
+		return;
 #else
-		G2 tbl[16];
-		for (size_t i = 0; i < 16; i++) {
+		tbl[0] = in[0];
+		for (size_t i = 1; i < 16; i++) {
 			tbl[i].clear();
-		}
-		for (size_t i = 0; i < 16; i++) {
 			if (i & 1) {
 				tbl[i] += in[0];
 			}
@@ -365,16 +381,9 @@ struct GLV2 {
 			if (i & 8) {
 				tbl[i] += in[3];
 			}
+//			tbl[i].normalize();
 		}
-		for (size_t i = 0; i < 16; i++) {
-			tbl[i].normalize();
-		}
-		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 3;
-		int bitTbl[4]; // bit size of u[i]
-		Unit w[4][maxUnit]; // unit array of u[i]
-		int maxBit = -1; // max bit of u[i]
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < splitN; i++) {
 			mcl::gmp::getArray(w[i], maxUnit, u[i]);
 			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
 			maxBit = std::max(maxBit, bitTbl[i]);
@@ -384,8 +393,8 @@ struct GLV2 {
 			maxBit = maxN * UnitBitSize + m
 			0 < m <= UnitBitSize
 		*/
-		int maxN = maxBit / mcl::fp::UnitBitSize;
-		int m = maxBit % mcl::fp::UnitBitSize;
+		maxN = maxBit / mcl::fp::UnitBitSize;
+		m = maxBit % mcl::fp::UnitBitSize;
 		m++;
 		Q.clear();
 		for (int i = maxN; i >= 0; i--) {
@@ -396,13 +405,23 @@ struct GLV2 {
 				uint32_t b2 = (w[2][i] >> j) & 1;
 				uint32_t b3 = (w[3][i] >> j) & 1;
 				uint32_t c = b3 * 8 + b2 * 4 + b1 * 2 + b0;
-				if (c) {
+				if (c == 0) {
+					if (constTime) tbl[0] += tbl[c];
+				} else {
 					Q += tbl[c];
 				}
 			}
 			m = (int)mcl::fp::UnitBitSize;
 		}
 #endif
+	DummyLoop:
+		if (!constTime) return;
+		const int limitBit = (int)Fp::getBitSize() / splitN;
+		G2 D = tbl[0];
+		for (int i = maxBit + 1; i < limitBit; i++) {
+			G2::dbl(D, D);
+			D += tbl[0];
+		}
 	}
 };
 
@@ -550,12 +569,12 @@ struct BNT {
 		if (isNegative) s = -s;
 		param.glv1.mul(z, x, s, constTime);
 	}
-	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool)
+	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv2.mul(z, x, s);
+		param.glv2.mul(z, x, s, constTime);
 	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{

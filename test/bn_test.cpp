@@ -245,10 +245,17 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 			CYBOZU_TEST_EQUAL(ea, e1);
 			CYBOZU_TEST_EQUAL(ea, e2);
 		}
-		CYBOZU_BENCH_C("G1::mulCT", 500, G1::mul, Pa, Pa, a);
+		mpz_class z = 3;
+		CYBOZU_BENCH_C("G1::mulCT  ", 500, G1::mulCT, Pa, P, a);
+		CYBOZU_BENCH_C("G1::mulCT z", 500, G1::mulCT, Pa, P, z);
+		CYBOZU_BENCH_C("G1::mul  ", 500, G1::mul, Pa, Pa, a);
+		CYBOZU_BENCH_C("G1::mul z", 500, G1::mul, Pa, Pa, z);
 		CYBOZU_BENCH_C("G1::add", 500, G1::add, Pa, Pa, P);
 		CYBOZU_BENCH_C("G1::dbl", 500, G1::dbl, Pa, Pa);
-		CYBOZU_BENCH_C("G2::mul", 500, G2::mul, Qa, Qa, a);
+		CYBOZU_BENCH_C("G2::mulCT  ", 500, G2::mulCT, Qa, Q, a);
+		CYBOZU_BENCH_C("G2::mulCT z", 500, G2::mulCT, Qa, Q, z);
+		CYBOZU_BENCH_C("G2::mul  ", 500, G2::mul, Qa, Qa, a);
+		CYBOZU_BENCH_C("G2::mul z", 500, G2::mul, Qa, Qa, z);
 		CYBOZU_BENCH_C("G2::add", 500, G2::add, Qa, Qa, Q);
 		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
 	}
