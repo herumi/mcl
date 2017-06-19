@@ -239,7 +239,7 @@ struct GLV1 {
 				uint32_t b1 = (w[1][i] >> j) & 1;
 				uint32_t c = b1 * 2 + b0;
 				if (c == 0) {
-					if (constTime) tbl[0] += tbl[c];
+					if (constTime) tbl[0] += tbl[1];
 				} else {
 					Q += tbl[c];
 				}
@@ -406,7 +406,7 @@ struct GLV2 {
 				uint32_t b3 = (w[3][i] >> j) & 1;
 				uint32_t c = b3 * 8 + b2 * 4 + b1 * 2 + b0;
 				if (c == 0) {
-					if (constTime) tbl[0] += tbl[c];
+					if (constTime) tbl[0] += tbl[1];
 				} else {
 					Q += tbl[c];
 				}

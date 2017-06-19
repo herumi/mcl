@@ -192,19 +192,27 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@param x [in]
 	@param y [in]
 	@param n [in] size of y[]
-	@param constTime [in] use const-time method depending on only bit length of y if true
+	@param limitBit [in] const time version if the value is positive
 	@note &out != x and out = the unit element of G
 */
 template<class G, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), void normalize(G&, const G&), bool constTime = false)
+void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), void normalize(G&, const G&), size_t limitBit = 0)
 {
 	assert(&out != &x);
+	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
+	T v;
+	bool constTime = limitBit > 0;
+	int maxBit = 0;
+	int m = 0;
 	while (n > 0) {
 		if (y[n - 1]) break;
 		n--;
 	}
-	if (n == 0) return;
-	if (n == 1) {
+	if (n == 0) {
+		if (constTime) goto DummyLoop;
+		return;
+	}
+	if (!constTime && n == 1) {
 		switch (y[0]) {
 		case 1:
 			out = x;
@@ -222,7 +230,6 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 			return;
 		}
 	}
-	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
 	if (normalize != 0) {
 		normalize(tbl[0], x);
 	} else {
@@ -233,8 +240,10 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 	if (normalize != 0) { normalize(tbl[2], tbl[2]); }
 	mul(tbl[3], tbl[2], x);
 	if (normalize != 0) { normalize(tbl[3], tbl[3]); }
-	T v = y[n - 1];
-	int m = cybozu::bsr<T>(v);
+	v = y[n - 1];
+	assert(v);
+	m = cybozu::bsr<T>(v);
+	maxBit = int(m + (n - 1) * sizeof(T) * 8);
 	if (m & 1) {
 		m--;
 		T idx = (v >> m) & 3;
@@ -243,31 +252,27 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&,
 	} else {
 		out = x;
 	}
-	if (constTime) {
-		G *pTbl[] = { &tbl[0], &out, &out, &out };
-		for (int i = (int)n - 1; i >= 0; i--) {
-			T v = y[i];
-			for (int j = m - 2; j >= 0; j -= 2) {
-				sqr(out, out);
-				sqr(out, out);
-				T idx = (v >> j) & 3;
-				mul(*pTbl[idx], *pTbl[idx], tbl[idx]);
+	for (int i = (int)n - 1; i >= 0; i--) {
+		T v = y[i];
+		for (int j = m - 2; j >= 0; j -= 2) {
+			sqr(out, out);
+			sqr(out, out);
+			T idx = (v >> j) & 3;
+			if (idx == 0) {
+				if (constTime) mul(tbl[0], tbl[0], tbl[1]);
+			} else {
+				mul(out, out, tbl[idx]);
 			}
-			m = (int)sizeof(T) * 8;
 		}
-	} else {
-		for (int i = (int)n - 1; i >= 0; i--) {
-			T v = y[i];
-			for (int j = m - 2; j >= 0; j -= 2) {
-				sqr(out, out);
-				sqr(out, out);
-				T idx = (v >> j) & 3;
-				if (idx > 0) {
-					mul(out, out, tbl[idx]);
-				}
-			}
-			m = (int)sizeof(T) * 8;
-		}
+		m = (int)sizeof(T) * 8;
+	}
+DummyLoop:
+	if (!constTime) return;
+	G D = out;
+	for (size_t i = maxBit + 1; i < limitBit; i += 2) {
+		sqr(D, D);
+		sqr(D, D);
+		mul(D, D, tbl[1]);
 	}
 }
 

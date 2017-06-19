@@ -582,6 +582,7 @@ template<class Fp>
 struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp2DblT<Fp> Fp2Dbl;
+	typedef Fp BaseFp;
 	Fp2 a, b, c;
 	Fp6T() { }
 	Fp6T(int64_t a) : a(a) , b(0) , c(0) { }
@@ -829,6 +830,7 @@ template<class Fp>
 struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
+	typedef Fp BaseFp;
 	Fp6 a, b;
 	Fp12T() {}
 	Fp12T(int64_t a) : a(a), b(0) {}

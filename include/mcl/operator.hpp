@@ -47,7 +47,6 @@ struct Operator : E {
 		y.getBlock(b);
 		powArray(z, x, b.p, b.n, false, false);
 	}
-	// @note time is depend on bitlength of y
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void powCT(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
@@ -64,7 +63,6 @@ struct Operator : E {
 	{
 		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, false);
 	}
-	// @note time is depend on bitlength of y
 	static void powCT(T& z, const T& x, const mpz_class& y)
 	{
 		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
@@ -79,7 +77,7 @@ private:
 			px = &tmp;
 		}
 		z = 1;
-		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, constTime);
+		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, constTime ? T::BaseFp::getBitSize() : 0);
 		if (isNegative) {
 			T::inv(z, z);
 		}

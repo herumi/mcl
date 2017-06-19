@@ -594,7 +594,6 @@ public:
 	{
 		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
 	}
-	// @note time is depend on bitlength of y
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mulCT(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
@@ -602,7 +601,6 @@ public:
 		y.getBlock(b);
 		mulArray(z, x, b.p, b.n, false, true);
 	}
-	// @note time is depend on bitlength of y
 	static inline void mulCT(EcT& z, const EcT& x, const mpz_class& y)
 	{
 		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
@@ -841,7 +839,7 @@ public:
 			px = &tmp;
 		}
 		z.clear();
-		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, EcT::normalize, constTime);
+		fp::powGeneric(z, *px, y, yn, EcT::add, EcT::dbl, EcT::normalize, constTime ? Fp::BaseFp::getBitSize() : 0);
 		if (isNegative) {
 			neg(z, z);
 		}
