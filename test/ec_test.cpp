@@ -466,6 +466,7 @@ CYBOZU_TEST_AUTO(all)
 		test_sub(para4, CYBOZU_NUM_OF_ARRAY(para4));
 	}
 
+#if MCL_MAX_BIT_SIZE >= 384
 	if (g_partial & (1 << 6)) {
 		const struct mcl::EcParam para6[] = {
 	//		mcl::ecparam::secp384r1,
@@ -473,7 +474,9 @@ CYBOZU_TEST_AUTO(all)
 		};
 		test_sub(para6, CYBOZU_NUM_OF_ARRAY(para6));
 	}
+#endif
 
+#if MCL_MAX_BIT_SIZE >= 521
 	if (g_partial & (1 << 9)) {
 		const struct mcl::EcParam para9[] = {
 	//		mcl::ecparam::secp521r1,
@@ -481,6 +484,7 @@ CYBOZU_TEST_AUTO(all)
 		};
 		test_sub(para9, CYBOZU_NUM_OF_ARRAY(para9));
 	}
+#endif
 }
 
 int main(int argc, char *argv[])

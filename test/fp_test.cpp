@@ -757,7 +757,7 @@ CYBOZU_TEST_AUTO(getArray)
 
 
 #include <iostream>
-#if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
+#if (defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)) && (MCL_MAX_BIT_SIZE >= 521)
 CYBOZU_TEST_AUTO(mod_NIST_P521)
 {
 	const size_t len = 521;
@@ -828,12 +828,16 @@ void sub(mcl::fp::Mode mode)
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+#if MCL_MAX_BIT_SIZE >= 384
 
 		// N = 6
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+#endif
 
+#if MCL_MAX_BIT_SIZE >= 521
 		// N = 9
 		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+#endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *pStr = tbl[i];

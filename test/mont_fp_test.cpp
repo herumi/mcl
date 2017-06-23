@@ -185,6 +185,7 @@ put(z);
 #endif
 }
 
+#if MCL_MAX_BIT_SIZE >= 521
 CYBOZU_TEST_AUTO(customTest)
 {
 	const struct {
@@ -204,6 +205,7 @@ CYBOZU_TEST_AUTO(customTest)
 		customTest(tbl[i].p, tbl[i].x, tbl[i].y);
 	}
 }
+#endif
 
 CYBOZU_TEST_AUTO(test)
 {
@@ -234,11 +236,15 @@ CYBOZU_TEST_AUTO(test)
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
 
+#if MCL_MAX_BIT_SIZE >= 384
 		// N = 6
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+#endif
 
+#if MCL_MAX_BIT_SIZE >= 521
 		// N = 9
 		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+#endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		printf("prime=%s\n", tbl[i]);
