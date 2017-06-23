@@ -1503,6 +1503,14 @@ struct BNT {
 		t.b.clear();
 		mapToG2(P, t);
 	}
+	static void hashAndMapToG1(G1& P, const std::string& str)
+	{
+		hashAndMapToG1(P, str.c_str(), str.size());
+	}
+	static void hashAndMapToG2(G2& P, const std::string& str)
+	{
+		hashAndMapToG2(P, str.c_str(), str.size());
+	}
 #if 1 // duplicated later
 	// old order of P and Q
 	static void pairing(Fp12& f, const G2& Q, const G1& P)
