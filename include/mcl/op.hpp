@@ -286,7 +286,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	void init(const std::string& mstr, size_t maxBitSize, Mode mode);
+	void init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
 	void initFp2(int xi_a);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);

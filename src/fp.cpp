@@ -380,8 +380,11 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #endif
 }
 
-void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode)
+void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
 {
+	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) {
+		throw cybozu::Exception("Op:init:mismatch between header and library of MCL_MAX_BIT_SIZE") << mclMaxBitSize << MCL_MAX_BIT_SIZE;
+	}
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 	clear();
 	if (maxBitSize > MCL_MAX_BIT_SIZE) {
