@@ -952,6 +952,14 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		Fp6::mul(y.b, x.b, t0);
 		Fp6::neg(y.b, y.b);
 	}
+	/*
+		y = 1 / x = conjugate of x if |x| = 1
+	*/
+	static void unitaryInv(Fp12T& y, const Fp12T& x)
+	{
+		if (&y != &x) y.a = x.a;
+		Fp6::neg(y.b, x.b);
+	}
 	std::istream& readStream(std::istream& is, int ioMode)
 	{
 		a.readStream(is, ioMode);

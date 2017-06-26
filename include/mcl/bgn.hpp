@@ -110,13 +110,13 @@ struct BGNT {
 			if (y == 1) return 0;
 			if (y == x) return 1;
 			GT inv;
-			BN::unitaryInv(inv, x);
+			GT::unitaryInv(inv, x);
 			if (y == inv) return -1;
 			GT t = x;
 			for (int i = 2; i < 100; i++) {
 				t *= x;
 				if (y == t) return i;
-				BN::unitaryInv(inv, t);
+				GT::unitaryInv(inv, t);
 				if (y == inv) return -i;
 			}
 			throw cybozu::Exception("BGN:dec:logGT:not found");
@@ -158,7 +158,7 @@ struct BGNT {
 			GT::pow(t, c.g[1], x1);
 			GT::pow(u, c.g[2], x2);
 			t *= u;
-			BN::unitaryInv(t, t);
+			GT::unitaryInv(t, t);
 			s *= t;
 			return logGT(g, s);
 		}

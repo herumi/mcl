@@ -940,14 +940,6 @@ struct BNT {
 #endif
 	}
 	/*
-		y = 1 / x = conjugate of x if |x| = 1
-	*/
-	static void unitaryInv(Fp12& y, const Fp12& x)
-	{
-		y.a = x.a;
-		Fp6::neg(y.b, x.b);
-	}
-	/*
 		Faster Squaring in the Cyclotomic Subgroup of Sixth Degree Extensions
 		Robert Granger, Michael Scott
 	*/
@@ -1207,7 +1199,7 @@ struct BNT {
 		Fp12::pow(y, x, param.abs_z);
 #endif
 		if (param.isNegative) {
-			unitaryInv(y, y);
+			Fp12::unitaryInv(y, y);
 		}
 	}
 	/*
@@ -1243,13 +1235,13 @@ struct BNT {
 		fasterSqr(a3, a2); // x^(12z^2)
 		pow_z(a3, a3); // x^(12z^3)
 		a *= a3;
-		unitaryInv(b, b);
+		Fp12::unitaryInv(b, b);
 		b *= a;
 		a2 *= a;
 		Frobenius2(a, a);
 		a *= a2;
 		a *= x;
-		unitaryInv(y, x);
+		Fp12::unitaryInv(y, x);
 		y *= b;
 		Frobenius(b, b);
 		a *= b;
