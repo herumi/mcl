@@ -123,7 +123,7 @@ struct BGNT {
 		}
 		int dec(const CipherText& c) const
 		{
-			if (c.g.empty()) {
+			if (!c.isMultiplied()) {
 				/*
 					S = myP + rP
 					T = mzP + rxP
@@ -169,20 +169,20 @@ struct BGNT {
 		G2 xQ, yQ, zQ;
 		friend class SecretKey;
 		/*
-			(S1, T1) = (m yP + rP, m zP + r xP)
+			(S, T) = (m yP + rP, m zP + r xP)
 		*/
 		template<class G, class RG>
-		static void enc1(G& C0, G& C1, const G& P, const G& xP, const G& yP, const G& zP, int m, RG& rg)
+		static void enc1(G& S, G& T, const G& P, const G& xP, const G& yP, const G& zP, int m, RG& rg)
 		{
 			Fr r;
 			r.setRand(rg);
 			G C;
-			G::mul(C0, yP, m);
+			G::mul(S, yP, m);
 			G::mul(C, P, r);
-			C0 += C;
-			G::mul(C1, zP, m);
+			S += C;
+			G::mul(T, zP, m);
 			G::mul(C, xP, r);
-			C1 += C;
+			T += C;
 		}
 	public:
 		template<class RG>
@@ -190,6 +190,34 @@ struct BGNT {
 		{
 			enc1(c.S1, c.T1, P, xP, yP, zP, m, rg);
 			enc1(c.S2, c.T2, Q, xQ, yQ, zQ, m, rg);
+		}
+		template<class RG>
+		void rerandomize(CipherText& c, RG& rg) const
+		{
+			if (c.isMultiplied()) {
+				G1 S1, T1;
+				G2 S2, T2;
+				Fr r;
+				r.setRand(rg);
+				G1::mul(S1, P, r);
+				G1::mul(T1, xP, r);
+				r.setRand(rg);
+				G2::mul(S2, Q, r);
+				G2::mul(T2, xQ, r);
+				GT e;
+				BN::pairing(e, S1, S2);
+				c.g[0] *= e;
+				BN::pairing(e, S1, T2);
+				c.g[1] *= e;
+				BN::pairing(e, T1, S2);
+				c.g[2] *= e;
+				BN::pairing(e, T1, T2);
+				c.g[3] *= e;
+			} else {
+				CipherText c0;
+				enc(c0, 0, rg);
+				c.add(c0);
+			}
 		}
 	};
 
@@ -201,9 +229,10 @@ struct BGNT {
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
+		bool isMultiplied() const { return !g.empty(); }
 		static inline void add(CipherText& z, const CipherText& x, const CipherText& y)
 		{
-			if (x.g.empty() && y.g.empty()) {
+			if (!x.isMultiplied() && !y.isMultiplied()) {
 				/*
 					(S, T) + (S', T') = (S + S', T + T')
 				*/
@@ -213,7 +242,7 @@ struct BGNT {
 				G2::add(z.T2, x.T2, y.T2);
 				return;
 			}
-			if (!x.g.empty() && !y.g.empty()) {
+			if (x.isMultiplied() && y.isMultiplied()) {
 				/*
 					(g[i]) * (g'[i]) = (g[i] * g'[i])
 				*/
@@ -227,7 +256,7 @@ struct BGNT {
 		}
 		static inline void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
-			if (!x.g.empty() || !y.g.empty()) {
+			if (x.isMultiplied() || y.isMultiplied()) {
 				throw cybozu::Exception("bgn:CipherText:mul:already mul");
 			}
 			/*

@@ -37,6 +37,8 @@ CYBOZU_TEST_AUTO(enc_dec)
 	for (int i = -5; i < 5; i++) {
 		pub.enc(c, i, rg);
 		CYBOZU_TEST_EQUAL(sec.dec(c), i);
+		pub.rerandomize(c, rg);
+		CYBOZU_TEST_EQUAL(sec.dec(c), i);
 	}
 }
 
@@ -53,7 +55,11 @@ CYBOZU_TEST_AUTO(add_mul)
 			pub.enc(c2, m2, rg);
 			CipherText::add(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
+			pub.rerandomize(c3, rg);
+			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 			CipherText::mul(c3, c1, c2);
+			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
+			pub.rerandomize(c3, rg);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 		}
 	}
