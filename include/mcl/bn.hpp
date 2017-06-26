@@ -436,7 +436,6 @@ struct ParamT {
 	bool isNegative;
 	mpz_class p;
 	mpz_class r;
-	Fp Z;
 	static const size_t gN = 5;
 	/*
 		g = xi^((p - 1) / 6)
@@ -522,11 +521,6 @@ struct ParamT {
 			Fp2::mul(g2[i], t, g[i]);
 			g3[i] = g[i] * g2[i];
 		}
-		Fp2 tmp;
-		Fp2::pow(tmp, xi, (p * p - 1) / 6);
-		assert(tmp.b.isZero());
-		Fp::sqr(Z, tmp.a);
-
 		const mpz_class largest_c = abs(6 * z + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
