@@ -402,6 +402,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	}
 	gmp::getArray(p, (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize, mp);
 	bitSize = gmp::getBitSize(mp);
+	pmod4 = gmp::getUnit(mp, 0) % 4;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp

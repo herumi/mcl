@@ -143,6 +143,7 @@ struct Op {
 	Unit rp;
 	Unit p[maxUnitSize];
 	mpz_class mp;
+	uint32_t pmod4;
 	mcl::SquareRoot sq;
 	FpGenerator *fg;
 	Unit half[maxUnitSize]; // (p + 1) / 2
@@ -219,6 +220,7 @@ struct Op {
 		rp = 0;
 		memset(p, 0, sizeof(p));
 		mp = 0;
+		pmod4 = 0;
 		sq.clear();
 		// fg is not set
 		memset(half, 0, sizeof(half));

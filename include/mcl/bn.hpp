@@ -436,7 +436,6 @@ struct ParamT {
 	bool isNegative;
 	mpz_class p;
 	mpz_class r;
-	uint32_t pmod4;
 	Fp Z;
 	static const size_t gN = 5;
 	/*
@@ -485,7 +484,6 @@ struct ParamT {
 		const int rCoff[] = { 1, 6, 18, 36, 36 };
 		p = eval(pCoff, z);
 		assert((p % 6) == 1);
-		pmod4 = mcl::gmp::getUnit(p, 0) % 4;
 		r = eval(rCoff, z);
 		Fp::init(p.get_str(), mode);
 		Fp2::init(cp.xi_a);
@@ -520,7 +518,7 @@ struct ParamT {
 		}
 		for (size_t i = 0; i < gN; i++) {
 			Fp2 t(g[i].a, g[i].b);
-			if (pmod4 == 3) Fp::neg(t.b, t.b);
+			if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
 			Fp2::mul(g2[i], t, g[i]);
 			g3[i] = g[i] * g2[i];
 		}
@@ -601,23 +599,10 @@ struct BNT {
 		((a + bv + cv^2)w)^p in Fp12
 		= (F(a) g + F(b) g^3 v + F(c) g^5 v^2)w
 	*/
-	static void Frobenius(Fp2& y, const Fp2& x)
-	{
-		if (param.pmod4 == 1) {
-			if (&y != &x) {
-				y = x;
-			}
-		} else {
-			if (&y != &x) {
-				y.a = x.a;
-			}
-			Fp::neg(y.b, x.b);
-		}
-	}
 	static void Frobenius(Fp12& y, const Fp12& x)
 	{
 		for (int i = 0; i < 6; i++) {
-			Frobenius(y.getFp2()[i], x.getFp2()[i]);
+			Fp2::Frobenius(y.getFp2()[i], x.getFp2()[i]);
 		}
 		for (int i = 1; i < 6; i++) {
 			y.getFp2()[i] *= param.g[i - 1];
@@ -630,7 +615,7 @@ struct BNT {
 		Frobenius(y, y);
 #else
 		y.getFp2()[0] = x.getFp2()[0];
-		if (param.pmod4 == 1) {
+		if (Fp::getOp().pmod4 == 1) {
 			for (int i = 1; i < 6; i++) {
 				Fp2::mul(y.getFp2()[i], x.getFp2()[i], param.g2[i]);
 			}
@@ -648,9 +633,9 @@ struct BNT {
 		Frobenius(y, y);
 		Frobenius(y, y);
 #else
-		Frobenius(y.getFp2()[0], x.getFp2()[0]);
+		Fp2::Frobenius(y.getFp2()[0], x.getFp2()[0]);
 		for (int i = 1; i < 6; i++) {
-			Frobenius(y.getFp2()[i], x.getFp2()[i]);
+			Fp2::Frobenius(y.getFp2()[i], x.getFp2()[i]);
 			y.getFp2()[i] *= param.g3[i - 1];
 		}
 #endif
@@ -665,9 +650,9 @@ struct BNT {
 	*/
 	static void FrobeniusOnTwist(G2& D, const G2& S)
 	{
-		Frobenius(D.x, S.x);
-		Frobenius(D.y, S.y);
-		Frobenius(D.z, S.z);
+		Fp2::Frobenius(D.x, S.x);
+		Fp2::Frobenius(D.y, S.y);
+		Fp2::Frobenius(D.z, S.z);
 		D.x *= param.g[0];
 		D.y *= param.g[3];
 	}

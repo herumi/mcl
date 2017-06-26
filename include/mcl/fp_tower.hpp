@@ -248,6 +248,26 @@ public:
 		Fp::sqr(bb, x.b);
 		Fp::add(y, aa, bb);
 	}
+	/*
+		Frobenius
+		i^2 = -1
+		(a + bi)^p = a + bi^p in Fp
+		= a + bi if p = 1 mod 4
+		= a - bi if p = 3 mod 4
+	*/
+	static void Frobenius(Fp2T& y, const Fp2T& x)
+	{
+		if (Fp::getOp().pmod4 == 1) {
+			if (&y != &x) {
+				y = x;
+			}
+		} else {
+			if (&y != &x) {
+				y.a = x.a;
+			}
+			Fp::neg(y.b, x.b);
+		}
+	}
 
 	static uint32_t get_xi_a() { return xi_a_; }
 	static void init(uint32_t xi_a)
