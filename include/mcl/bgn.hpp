@@ -287,6 +287,7 @@ struct BGNT {
 			t *= u;
 			GT::unitaryInv(t, t);
 			s *= t;
+			BN::finalExp(s, s);
 			return log(g, s);
 		}
 	};
@@ -336,13 +337,13 @@ struct BGNT {
 				G2::mul(S2, Q, r);
 				G2::mul(T2, xQ, r);
 				GT e;
-				BN::pairing(e, S1, S2);
+				BN::millerLoop(e, S1, S2);
 				c.g[0] *= e;
-				BN::pairing(e, S1, T2);
+				BN::millerLoop(e, S1, T2);
 				c.g[1] *= e;
-				BN::pairing(e, T1, S2);
+				BN::millerLoop(e, T1, S2);
 				c.g[2] *= e;
-				BN::pairing(e, T1, T2);
+				BN::millerLoop(e, T1, T2);
 				c.g[3] *= e;
 			} else {
 				CipherText c0;
@@ -392,12 +393,13 @@ struct BGNT {
 			}
 			/*
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
+				call finalExp at once in decrypting c
 			*/
 			z.g.resize(4);
-			BN::pairing(z.g[0], x.S1, y.S2);
-			BN::pairing(z.g[1], x.S1, y.T2);
-			BN::pairing(z.g[2], x.T1, y.S2);
-			BN::pairing(z.g[3], x.T1, y.T2);
+			BN::millerLoop(z.g[0], x.S1, y.S2);
+			BN::millerLoop(z.g[1], x.S1, y.T2);
+			BN::millerLoop(z.g[2], x.T1, y.S2);
+			BN::millerLoop(z.g[3], x.T1, y.T2);
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
