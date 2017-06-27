@@ -142,7 +142,116 @@ public:
 				return negCenter + c;
 			}
 		}
-		throw cybozu::Exception("HashTable:log:not found");
+		throw cybozu::Exception("EcHashTable:log:not found");
+	}
+};
+
+template<class GT>
+class GTHashTable {
+	typedef std::vector<KeyCount> KeyCountVec;
+	KeyCountVec kcv;
+	GT g;
+	GT nextg;
+	GT nextgInv;
+	int hashSize;
+	size_t tryNum;
+public:
+	GTHashTable() : hashSize(0), tryNum(0) {}
+	/*
+		compute log_P(g^x) for |x| <= hashSize * (tryNum + 1)
+	*/
+	void init(const GT& g, int hashSize, size_t tryNum = 0)
+	{
+		if (hashSize == 0) throw cybozu::Exception("GTHashTable:init:zero hashSize");
+		this->g = g;
+		this->hashSize = hashSize;
+		this->tryNum = tryNum;
+		kcv.resize(hashSize);
+		GT gx = 1;
+		for (int i = 1; i <= hashSize; i++) {
+			gx *= g;
+			kcv[i - 1].key = uint32_t(*gx.getFp0()->getUnit());
+			kcv[i - 1].count = gx.b.a.a.isOdd() ? i : -i;
+		}
+		nextg = gx;
+		GT::sqr(nextg, nextg);
+		nextg *= g; // nextg = g^(hasSize * 2 + 1)
+		GT::unitaryInv(nextgInv, nextg);
+		/*
+			ascending order of abs(count) for same key
+		*/
+		std::stable_sort(kcv.begin(), kcv.end());
+	}
+	/*
+		log_P(g^x)
+		find range which has same hash of gx in kcv,
+		and detect it
+	*/
+	int basicLog(const GT& gx, bool *ok = 0) const
+	{
+		if (ok) *ok = true;
+		if (gx.isOne()) return 0;
+		typedef KeyCountVec::const_iterator Iter;
+		KeyCount kc;
+		kc.key = uint32_t(*gx.getFp0()->getUnit());
+		kc.count = 0;
+		std::pair<Iter, Iter> p = std::equal_range(kcv.begin(), kcv.end(), kc);
+		GT Q = 1;
+		int prev = 0;
+		/*
+			check range which has same hash
+		*/
+		while (p.first != p.second) {
+			int count = p.first->count;
+			int abs_c = std::abs(count);
+			assert(abs_c >= prev); // assume ascending order
+			bool neg = count < 0;
+			GT T;
+			GT::pow(T, g, abs_c - prev);
+			Q *= T;
+			if (Q.a == gx.a) {
+				if (Q.b.a.a.isOdd() ^ gx.b.a.a.isOdd() ^ neg) return -count;
+				return count;
+			}
+			prev = abs_c;
+			++p.first;
+		}
+		if (ok) {
+			*ok = false;
+			return 0;
+		}
+		throw cybozu::Exception("GTHashTable:basicLog:not found");
+	}
+	/*
+		compute log_P(g^x)
+		call basicLog at most 2 * tryNum + 1
+	*/
+	int64_t log(const GT& gx) const
+	{
+		bool ok;
+		int c = basicLog(gx, &ok);
+		if (ok) {
+			return c;
+		}
+		GT pos = gx, neg = gx;
+		int64_t posCenter = 0;
+		int64_t negCenter = 0;
+		int64_t next = hashSize * 2 + 1;
+		for (size_t i = 0; i < tryNum; i++) {
+			pos *= nextgInv;
+			posCenter += next;
+			c = basicLog(pos, &ok);
+			if (ok) {
+				return posCenter + c;
+			}
+			neg *= nextg;
+			negCenter -= next;
+			c = basicLog(neg, &ok);
+			if (ok) {
+				return negCenter + c;
+			}
+		}
+		throw cybozu::Exception("GTHashTable:log:not found");
 	}
 };
 
@@ -198,7 +307,8 @@ struct BGNT {
 		G2 B2; // (x2 y2 - z2) Q
 		Fr x1x2;
 		GT g; // e(B1, B2)
-		local::EcHashTable<G1> hashTbl;
+		local::EcHashTable<G1> ecHashTbl;
+		local::GTHashTable<GT> gtHashTbl;
 	public:
 		template<class RG>
 		void setByCSPRNG(RG& rg)
@@ -216,7 +326,8 @@ struct BGNT {
 		}
 		void setDecodeRange(size_t hashSize)
 		{
-			hashTbl.init(B1, hashSize);
+			ecHashTbl.init(B1, hashSize);
+			gtHashTbl.init(g, hashSize);
 		}
 		/*
 			set (xP, yP, zP) and (xQ, yQ, zQ)
@@ -259,7 +370,7 @@ struct BGNT {
 				G1::mul(R1, c.S1, x1);
 				R1 -= c.T1;
 //				int m1 = local::log(B1, R1);
-				int m1 = hashTbl.log(R1);
+				int m1 = ecHashTbl.log(R1);
 #if 0 // for debug
 				G2 R2;
 				G2::mul(R2, c.S2, x2);
@@ -288,7 +399,8 @@ struct BGNT {
 			GT::unitaryInv(t, t);
 			s *= t;
 			BN::finalExp(s, s);
-			return log(g, s);
+			return gtHashTbl.log(s);
+//			return log(g, s);
 		}
 	};
 

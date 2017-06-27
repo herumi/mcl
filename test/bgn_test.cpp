@@ -34,7 +34,7 @@ CYBOZU_TEST_AUTO(EcHashTable)
 	mcl::bgn::local::EcHashTable<G1> hashTbl;
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
-	const int maxSize = 10;
+	const int maxSize = 100;
 	const int tryNum = 3;
 	hashTbl.init(P, maxSize, tryNum);
 	for (int i = -maxSize; i <= maxSize; i++) {
@@ -46,6 +46,32 @@ CYBOZU_TEST_AUTO(EcHashTable)
 		G1 xP;
 		G1::mul(xP, P, i);
 		CYBOZU_TEST_EQUAL(hashTbl.log(xP), i);
+	}
+}
+
+CYBOZU_TEST_AUTO(GTHashTable)
+{
+	mcl::bgn::local::GTHashTable<GT> hashTbl;
+	GT g;
+	{
+		G1 P;
+		BN::hashAndMapToG1(P, "abc");
+		G2 Q;
+		BN::hashAndMapToG2(Q, "abc");
+		BN::pairing(g, P, Q);
+	}
+	const int maxSize = 100;
+	const int tryNum = 3;
+	hashTbl.init(g, maxSize, tryNum);
+	for (int i = -maxSize; i <= maxSize; i++) {
+		GT gx;
+		GT::pow(gx, g, i);
+		CYBOZU_TEST_EQUAL(hashTbl.basicLog(gx), i);
+	}
+	for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
+		GT gx;
+		GT::pow(gx, g, i);
+		CYBOZU_TEST_EQUAL(hashTbl.log(gx), i);
 	}
 }
 
