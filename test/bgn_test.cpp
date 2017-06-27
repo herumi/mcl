@@ -96,6 +96,12 @@ CYBOZU_TEST_AUTO(add_mul_add)
 	CipherText c[8];
 	for (int i = 0; i < 8; i++) {
 		pub.enc(c[i], m[i], rg);
+		CYBOZU_TEST_EQUAL(sec.dec(c[i]), m[i]);
+		CYBOZU_TEST_ASSERT(!c[i].isMultiplied());
+		CipherText mc;
+		pub.mulEnc1(mc, c[i], rg);
+		CYBOZU_TEST_ASSERT(mc.isMultiplied());
+		CYBOZU_TEST_EQUAL(sec.dec(mc), m[i]);
 	}
 	int ok1 = (m[0] + m[1]) * (m[2] + m[3]);
 	int ok2 = (m[4] + m[5]) * (m[6] + m[7]);
@@ -111,3 +117,4 @@ CYBOZU_TEST_AUTO(add_mul_add)
 	c[0].add(c[4]);
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok);
 }
+

@@ -319,6 +319,35 @@ struct BGNT {
 			enc1(c.S1, c.T1, P, xP, yP, zP, m, rg);
 			enc1(c.S2, c.T2, Q, xQ, yQ, zQ, m, rg);
 		}
+		/*
+			cy = cx * Enc(1)
+		*/
+		template<class RG>
+		void mulEnc1(CipherText& cy, const CipherText& cx, RG& rg) const
+		{
+			if (cx.isMultiplied()) throw cybozu::Exception("PublicKey:mulEnc1:already multiplied");
+			/*
+				Enc(1) = (S, T) = (yP + rP, zP + r xP)
+			*/
+			G1 S, T;
+			Fr r;
+			r.setRand(rg);
+			G1::mul(S, P, r);
+			S += yP;
+			G1::mul(T, xP, r);
+			T += zP;
+			/*
+				cy = cx * (S, T)
+			*/
+			cy.g.resize(4);
+			BN::millerLoop(cy.g[0], S, cx.S2);
+			BN::millerLoop(cy.g[1], S, cx.T2);
+			BN::millerLoop(cy.g[2], T, cx.S2);
+			BN::millerLoop(cy.g[3], T, cx.T2);
+		}
+		/*
+			c += Enc(0)
+		*/
 		template<class RG>
 		void rerandomize(CipherText& c, RG& rg) const
 		{
@@ -364,6 +393,15 @@ struct BGNT {
 		bool isMultiplied() const { return !g.empty(); }
 		static inline void add(CipherText& z, const CipherText& x, const CipherText& y)
 		{
+			if (x.isMultiplied() && y.isMultiplied()) {
+				/*
+					(g[i]) * (g'[i]) = (g[i] * g'[i])
+				*/
+				for (size_t i = 0; i < z.g.size(); i++) {
+					GT::mul(z.g[i], x.g[i], y.g[i]);
+				}
+				return;
+			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
 				/*
 					(S, T) + (S', T') = (S + S', T + T')
@@ -374,17 +412,7 @@ struct BGNT {
 				G2::add(z.T2, x.T2, y.T2);
 				return;
 			}
-			if (x.isMultiplied() && y.isMultiplied()) {
-				/*
-					(g[i]) * (g'[i]) = (g[i] * g'[i])
-				*/
-				for (size_t i = 0; i < z.g.size(); i++) {
-					GT::mul(z.g[i], x.g[i], y.g[i]);
-				}
-				return;
-			}
-			// QQQ
-			throw cybozu::Exception("bgn:CipherText:add:not supported");
+			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText") << x.isMultiplied() << y.isMultiplied();
 		}
 		static inline void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
