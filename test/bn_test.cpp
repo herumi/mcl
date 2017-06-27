@@ -258,6 +258,7 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		CYBOZU_BENCH_C("G2::mul z", 500, G2::mul, Qa, Qa, z);
 		CYBOZU_BENCH_C("G2::add", 500, G2::add, Qa, Qa, Q);
 		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
+		CYBOZU_BENCH_C("GT::pow", 500, GT::pow, e1, e1, a);
 	}
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
