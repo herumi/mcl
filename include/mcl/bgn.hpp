@@ -40,14 +40,14 @@ class EcHashTable {
 	KeyCountVec kcv;
 	G P;
 	G nextP;
-	size_t hashSize;
+	int hashSize;
 	size_t tryNum;
 public:
 	EcHashTable() : hashSize(0), tryNum(0) {}
 	/*
-		compute log_P(xP) for |x| <= hashSize * tryNum
+		compute log_P(xP) for |x| <= hashSize * (tryNum + 1)
 	*/
-	void init(const G& P, size_t hashSize, size_t tryNum = 1)
+	void init(const G& P, int hashSize, size_t tryNum = 0)
 	{
 		if (hashSize == 0) throw cybozu::Exception("EcHashTable:init:zero hashSize");
 		this->P = P;
@@ -56,7 +56,7 @@ public:
 		kcv.resize(hashSize);
 		G xP;
 		xP.clear();
-		for (int i = 1; i <= (int)hashSize; i++) {
+		for (int i = 1; i <= hashSize; i++) {
 			xP += P;
 			xP.normalize();
 			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
@@ -72,6 +72,8 @@ public:
 	}
 	/*
 		log_P(xP)
+		find range which has same hash of xP in kcv,
+		and detect it
 	*/
 	int basicLog(G xP, bool *ok = 0) const
 	{
@@ -86,10 +88,13 @@ public:
 		G Q;
 		Q.clear();
 		int prev = 0;
+		/*
+			check range which has same hash
+		*/
 		while (p.first != p.second) {
 			int count = p.first->count;
 			int abs_c = std::abs(count);
-			assert(abs_c >= prev);
+			assert(abs_c >= prev); // assume ascending order
 			bool neg = count < 0;
 			G T;
 			G::mul(T, P, abs_c - prev);
@@ -108,7 +113,11 @@ public:
 		}
 		throw cybozu::Exception("HashTable:basicLog:not found");
 	}
-	int log(const G& xP) const
+	/*
+		compute log_P(xP)
+		call basicLog at most 2 * tryNum + 1
+	*/
+	int64_t log(const G& xP) const
 	{
 		bool ok;
 		int c = basicLog(xP, &ok);
@@ -116,9 +125,9 @@ public:
 			return c;
 		}
 		G posP = xP, negP = xP;
-		int posCenter = 0;
-		int negCenter = 0;
-		int next = hashSize * 2 + 1;
+		int64_t posCenter = 0;
+		int64_t negCenter = 0;
+		int64_t next = hashSize * 2 + 1;
 		for (size_t i = 0; i < tryNum; i++) {
 			posP -= nextP;
 			posCenter += next;
