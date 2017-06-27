@@ -17,7 +17,7 @@ using namespace mcl::bn256;
 
 SecretKey g_sec;
 
-CYBOZU_TEST_AUTO(logG)
+CYBOZU_TEST_AUTO(log)
 {
 	BGN::init();
 	G1 P;
@@ -25,21 +25,27 @@ CYBOZU_TEST_AUTO(logG)
 	for (int i = -5; i < 5; i++) {
 		G1 iP;
 		G1::mul(iP, P, i);
-		CYBOZU_TEST_EQUAL(mcl::bgn::local::logG(P, iP), i);
+		CYBOZU_TEST_EQUAL(mcl::bgn::local::log(P, iP), i);
 	}
 }
 
-CYBOZU_TEST_AUTO(MulTbl)
+CYBOZU_TEST_AUTO(EcHashTable)
 {
-	mcl::bgn::local::MulTbl<G1> mulTbl;
+	mcl::bgn::local::EcHashTable<G1> hashTbl;
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
-	const int maxSize = 100;
-	mulTbl.init(P, maxSize);
-	for (int i = -maxSize + 1; i < maxSize; i++) {
+	const int maxSize = 10;
+	const int tryNum = 3;
+	hashTbl.init(P, maxSize, tryNum);
+	for (int i = -maxSize; i <= maxSize; i++) {
 		G1 xP;
 		G1::mul(xP, P, i);
-		CYBOZU_TEST_EQUAL(mulTbl.logG(xP), i);
+		CYBOZU_TEST_EQUAL(hashTbl.basicLog(xP), i);
+	}
+	for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
+		G1 xP;
+		G1::mul(xP, P, i);
+		CYBOZU_TEST_EQUAL(hashTbl.log(xP), i);
 	}
 }
 

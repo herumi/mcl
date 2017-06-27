@@ -35,31 +35,47 @@ struct KeyCount {
 };
 
 template<class G>
-class MulTbl {
+class EcHashTable {
 	typedef std::vector<KeyCount> KeyCountVec;
 	KeyCountVec kcv;
-	G P_;
+	G P;
+	G nextP;
+	size_t hashSize;
+	size_t tryNum;
 public:
-	void init(const G& P, size_t hashSize)
+	EcHashTable() : hashSize(0), tryNum(0) {}
+	/*
+		compute log_P(xP) for |x| <= hashSize * tryNum
+	*/
+	void init(const G& P, size_t hashSize, size_t tryNum = 1)
 	{
-		if (hashSize == 0) throw cybozu::Exception("MulTbl:init:zero hashSize");
-		P_ = P;
-		kcv.resize(hashSize - 1);
+		if (hashSize == 0) throw cybozu::Exception("EcHashTable:init:zero hashSize");
+		this->P = P;
+		this->hashSize = hashSize;
+		this->tryNum = tryNum;
+		kcv.resize(hashSize);
 		G xP;
 		xP.clear();
-		for (int i = 1; i < (int)hashSize; i++) {
+		for (int i = 1; i <= (int)hashSize; i++) {
 			xP += P;
 			xP.normalize();
 			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
 			kcv[i - 1].count = xP.y.isOdd() ? i : -i;
 		}
+		nextP = xP;
+		G::dbl(nextP, nextP);
+		nextP += P; // nextP = (hasSize * 2 + 1)P
 		/*
 			ascending order of abs(count) for same key
 		*/
 		std::stable_sort(kcv.begin(), kcv.end());
 	}
-	int logG(G xP) const
+	/*
+		log_P(xP)
+	*/
+	int basicLog(G xP, bool *ok = 0) const
 	{
+		if (ok) *ok = true;
 		if (xP.isZero()) return 0;
 		typedef KeyCountVec::const_iterator Iter;
 		KeyCount kc;
@@ -76,7 +92,7 @@ public:
 			assert(abs_c >= prev);
 			bool neg = count < 0;
 			G T;
-			G::mul(T, P_, abs_c - prev);
+			G::mul(T, P, abs_c - prev);
 			Q += T;
 			Q.normalize();
 			if (Q.x == xP.x) {
@@ -86,12 +102,43 @@ public:
 			prev = abs_c;
 			++p.first;
 		}
-		throw cybozu::Exception("MuTbl:logG:not found");
+		if (ok) {
+			*ok = false;
+			return 0;
+		}
+		throw cybozu::Exception("HashTable:basicLog:not found");
+	}
+	int log(const G& xP) const
+	{
+		bool ok;
+		int c = basicLog(xP, &ok);
+		if (ok) {
+			return c;
+		}
+		G posP = xP, negP = xP;
+		int posCenter = 0;
+		int negCenter = 0;
+		int next = hashSize * 2 + 1;
+		for (size_t i = 0; i < tryNum; i++) {
+			posP -= nextP;
+			posCenter += next;
+			c = basicLog(posP, &ok);
+			if (ok) {
+				return posCenter + c;
+			}
+			negP += nextP;
+			negCenter -= next;
+			c = basicLog(negP, &ok);
+			if (ok) {
+				return negCenter + c;
+			}
+		}
+		throw cybozu::Exception("HashTable:log:not found");
 	}
 };
 
 template<class G>
-int logG(const G& P, const G& xP)
+int log(const G& P, const G& xP)
 {
 	if (xP.isZero()) return 0;
 	if (xP == P) return 1;
@@ -105,7 +152,7 @@ int logG(const G& P, const G& xP)
 		G::neg(negT, T);
 		if (xP == negT) return -i;
 	}
-	throw cybozu::Exception("BGN:logG:not found");
+	throw cybozu::Exception("BGN:log:not found");
 }
 
 } // mcl::bgn::local
@@ -142,7 +189,7 @@ struct BGNT {
 		G2 B2; // (x2 y2 - z2) Q
 		Fr x1x2;
 		GT g; // e(B1, B2)
-		local::MulTbl<G1> mulTbl;
+		local::EcHashTable<G1> hashTbl;
 	public:
 		template<class RG>
 		void setByCSPRNG(RG& rg)
@@ -160,7 +207,7 @@ struct BGNT {
 		}
 		void setDecodeRange(size_t hashSize)
 		{
-			mulTbl.init(B1, hashSize);
+			hashTbl.init(B1, hashSize);
 		}
 		/*
 			set (xP, yP, zP) and (xQ, yQ, zQ)
@@ -175,7 +222,7 @@ struct BGNT {
 			G2::mul(pub.zQ, Q, z2);
 		}
 		// log_x(y)
-		int logGT(const GT& x, const GT& y) const
+		int log(const GT& x, const GT& y) const
 		{
 			if (y == 1) return 0;
 			if (y == x) return 1;
@@ -189,7 +236,7 @@ struct BGNT {
 				GT::unitaryInv(inv, t);
 				if (y == inv) return -i;
 			}
-			throw cybozu::Exception("BGN:dec:logGT:not found");
+			throw cybozu::Exception("BGN:dec:log:not found");
 		}
 		int dec(const CipherText& c) const
 		{
@@ -202,13 +249,13 @@ struct BGNT {
 				G1 R1;
 				G1::mul(R1, c.S1, x1);
 				R1 -= c.T1;
-//				int m1 = local::logG(B1, R1);
-				int m1 = mulTbl.logG(R1);
+//				int m1 = local::log(B1, R1);
+				int m1 = hashTbl.log(R1);
 #if 0 // for debug
 				G2 R2;
 				G2::mul(R2, c.S2, x2);
 				R2 -= c.T2;
-				int m2 = local::logG(B2, R2);
+				int m2 = local::log(B2, R2);
 				if (m1 != m2) {
 					throw cybozu::Exception("bad dec") << m1 << m2;
 				}
@@ -231,7 +278,7 @@ struct BGNT {
 			t *= u;
 			GT::unitaryInv(t, t);
 			s *= t;
-			return logGT(g, s);
+			return log(g, s);
 		}
 	};
 
