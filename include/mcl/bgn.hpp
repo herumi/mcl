@@ -322,28 +322,18 @@ struct BGNT {
 		/*
 			cy = cx * Enc(1)
 		*/
-		template<class RG>
-		void mulEnc1(CipherText& cy, const CipherText& cx, RG& rg) const
+		void mulEnc1(CipherText& cy, const CipherText& cx) const
 		{
 			if (cx.isMultiplied()) throw cybozu::Exception("PublicKey:mulEnc1:already multiplied");
 			/*
-				Enc(1) = (S, T) = (yP + rP, zP + r xP)
-			*/
-			G1 S, T;
-			Fr r;
-			r.setRand(rg);
-			G1::mul(S, P, r);
-			S += yP;
-			G1::mul(T, xP, r);
-			T += zP;
-			/*
-				cy = cx * (S, T)
+				Enc(1) = (S, T) = (yP + rP, zP + r xP) = (yP, zP) if r = 0
+				cy = cx * (yP, zP)
 			*/
 			cy.g.resize(4);
-			BN::millerLoop(cy.g[0], S, cx.S2);
-			BN::millerLoop(cy.g[1], S, cx.T2);
-			BN::millerLoop(cy.g[2], T, cx.S2);
-			BN::millerLoop(cy.g[3], T, cx.T2);
+			BN::millerLoop(cy.g[0], yP, cx.S2);
+			BN::millerLoop(cy.g[1], yP, cx.T2);
+			BN::millerLoop(cy.g[2], zP, cx.S2);
+			BN::millerLoop(cy.g[3], zP, cx.T2);
 		}
 		/*
 			c += Enc(0)
