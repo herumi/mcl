@@ -25,6 +25,71 @@ namespace mcl { namespace bgn {
 
 namespace local {
 
+struct KeyCount {
+	uint32_t key;
+	int32_t count; // power
+	bool operator<(const KeyCount& rhs) const
+	{
+		return key < rhs.key;
+	}
+};
+
+template<class G>
+class MulTbl {
+	typedef std::vector<KeyCount> KeyCountVec;
+	KeyCountVec kcv;
+	G P_;
+public:
+	void init(const G& P, size_t maxSize)
+	{
+		if (maxSize == 0) throw cybozu::Exception("MulTbl:init:zero maxSize");
+		P_ = P;
+		kcv.resize(maxSize - 1);
+		G xP;
+		xP.clear();
+		for (int i = 1; i < (int)maxSize; i++) {
+			xP += P;
+			xP.normalize();
+			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
+			kcv[i - 1].count = xP.y.isOdd() ? i : -i;
+		}
+		/*
+			ascending order of abs(count) for same key
+		*/
+		std::stable_sort(kcv.begin(), kcv.end());
+	}
+	int logG(G xP) const
+	{
+		if (xP.isZero()) return 0;
+		typedef KeyCountVec::const_iterator Iter;
+		KeyCount kc;
+		xP.normalize();
+		kc.key = uint32_t(*xP.x.getUnit());
+		kc.count = 0;
+		std::pair<Iter, Iter> p = std::equal_range(kcv.begin(), kcv.end(), kc);
+		G Q;
+		Q.clear();
+		int prev = 0;
+		while (p.first != p.second) {
+			int count = p.first->count;
+			int abs_c = std::abs(count);
+			assert(abs_c >= prev);
+			bool neg = count < 0;
+			G T;
+			G::mul(T, P_, abs_c - prev);
+			Q += T;
+			Q.normalize();
+			if (Q.x == xP.x) {
+				if (Q.y.isOdd() ^ xP.y.isOdd() ^ neg) return -count;
+				return count;
+			}
+			prev = abs_c;
+			++p.first;
+		}
+		throw cybozu::Exception("MuTbl:logG:not found");
+	}
+};
+
 template<class G>
 int logG(const G& P, const G& xP)
 {
@@ -77,9 +142,10 @@ struct BGNT {
 		G2 B2; // (x2 y2 - z2) Q
 		Fr x1x2;
 		GT g; // e(B1, B2)
+		local::MulTbl<G1> mulTbl;
 	public:
 		template<class RG>
-		void setRand(RG& rg)
+		void init(size_t maxSize, RG& rg)
 		{
 			x1.setRand(rg);
 			y1.setRand(rg);
@@ -91,6 +157,7 @@ struct BGNT {
 			G2::mul(B2, Q, x2 * y2 - z2);
 			x1x2 = x1 * x2;
 			BN::pairing(g, B1, B2);
+			mulTbl.init(B1, maxSize);
 		}
 		/*
 			set (xP, yP, zP) and (xQ, yQ, zQ)
@@ -132,8 +199,9 @@ struct BGNT {
 				G1 R1;
 				G1::mul(R1, c.S1, x1);
 				R1 -= c.T1;
-				int m1 = local::logG(B1, R1);
-#if 1 // for debug
+//				int m1 = local::logG(B1, R1);
+				int m1 = mulTbl.logG(R1);
+#if 0 // for debug
 				G2 R2;
 				G2::mul(R2, c.S2, x2);
 				R2 -= c.T2;
@@ -195,6 +263,10 @@ struct BGNT {
 		void rerandomize(CipherText& c, RG& rg) const
 		{
 			if (c.isMultiplied()) {
+				/*
+					add Enc(0) * Enc(0)
+					(S1, T1) * (S2, T2) = (rP, rxP) * (r'Q, r'xQ)
+				*/
 				G1 S1, T1;
 				G2 S2, T2;
 				Fr r;
@@ -260,7 +332,7 @@ struct BGNT {
 				throw cybozu::Exception("bgn:CipherText:mul:already mul");
 			}
 			/*
-				(S, T) * (S', T') = (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
+				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 			*/
 			z.g.resize(4);
 			BN::pairing(z.g[0], x.S1, y.S2);

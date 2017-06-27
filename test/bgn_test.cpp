@@ -13,11 +13,13 @@ typedef BGN::PublicKey PublicKey;
 typedef BGN::CipherText CipherText;
 
 using namespace mcl::bgn;
+using namespace mcl::bn256;
+
+SecretKey g_sec;
 
 CYBOZU_TEST_AUTO(logG)
 {
 	BGN::init();
-	using namespace mcl::bn256;
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
 	for (int i = -5; i < 5; i++) {
@@ -27,10 +29,24 @@ CYBOZU_TEST_AUTO(logG)
 	}
 }
 
+CYBOZU_TEST_AUTO(MulTbl)
+{
+	mcl::bgn::local::MulTbl<G1> mulTbl;
+	G1 P;
+	BN::hashAndMapToG1(P, "abc");
+	const int maxSize = 100;
+	mulTbl.init(P, maxSize);
+	for (int i = -maxSize + 1; i < maxSize; i++) {
+		G1 xP;
+		G1::mul(xP, P, i);
+		CYBOZU_TEST_EQUAL(mulTbl.logG(xP), i);
+	}
+}
+
 CYBOZU_TEST_AUTO(enc_dec)
 {
-	SecretKey sec;
-	sec.setRand(rg);
+	SecretKey& sec = g_sec;
+	sec.init(100, rg);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
@@ -44,8 +60,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 
 CYBOZU_TEST_AUTO(add_mul)
 {
-	SecretKey sec;
-	sec.setRand(rg);
+	const SecretKey& sec = g_sec;
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	for (int m1 = -5; m1 < 5; m1++) {
@@ -67,8 +82,7 @@ CYBOZU_TEST_AUTO(add_mul)
 
 CYBOZU_TEST_AUTO(add_mul_add)
 {
-	SecretKey sec;
-	sec.setRand(rg);
+	const SecretKey& sec = g_sec;
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	int m[8] = { 1, -2, 3, 4, -5, 6, -7, 8 };
