@@ -46,7 +46,8 @@ CYBOZU_TEST_AUTO(MulTbl)
 CYBOZU_TEST_AUTO(enc_dec)
 {
 	SecretKey& sec = g_sec;
-	sec.init(100, rg);
+	sec.setByCSPRNG(rg);
+	sec.setDecodeRange(1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;

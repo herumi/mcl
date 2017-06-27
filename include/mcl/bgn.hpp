@@ -40,14 +40,14 @@ class MulTbl {
 	KeyCountVec kcv;
 	G P_;
 public:
-	void init(const G& P, size_t maxSize)
+	void init(const G& P, size_t hashSize)
 	{
-		if (maxSize == 0) throw cybozu::Exception("MulTbl:init:zero maxSize");
+		if (hashSize == 0) throw cybozu::Exception("MulTbl:init:zero hashSize");
 		P_ = P;
-		kcv.resize(maxSize - 1);
+		kcv.resize(hashSize - 1);
 		G xP;
 		xP.clear();
-		for (int i = 1; i < (int)maxSize; i++) {
+		for (int i = 1; i < (int)hashSize; i++) {
 			xP += P;
 			xP.normalize();
 			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
@@ -145,7 +145,7 @@ struct BGNT {
 		local::MulTbl<G1> mulTbl;
 	public:
 		template<class RG>
-		void init(size_t maxSize, RG& rg)
+		void setByCSPRNG(RG& rg)
 		{
 			x1.setRand(rg);
 			y1.setRand(rg);
@@ -157,7 +157,10 @@ struct BGNT {
 			G2::mul(B2, Q, x2 * y2 - z2);
 			x1x2 = x1 * x2;
 			BN::pairing(g, B1, B2);
-			mulTbl.init(B1, maxSize);
+		}
+		void setDecodeRange(size_t hashSize)
+		{
+			mulTbl.init(B1, hashSize);
 		}
 		/*
 			set (xP, yP, zP) and (xQ, yQ, zQ)
