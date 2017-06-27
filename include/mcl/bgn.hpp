@@ -355,24 +355,22 @@ struct BGNT {
 				/*
 					add Enc(0) * Enc(0)
 					(S1, T1) * (S2, T2) = (rP, rxP) * (r'Q, r'xQ)
+					replace r <- rr'
+					= (r P, rxP) * (Q, xQ)
 				*/
 				G1 S1, T1;
-				G2 S2, T2;
 				Fr r;
 				r.setRand(rg);
 				G1::mul(S1, P, r);
 				G1::mul(T1, xP, r);
-				r.setRand(rg);
-				G2::mul(S2, Q, r);
-				G2::mul(T2, xQ, r);
 				GT e;
-				BN::millerLoop(e, S1, S2);
+				BN::millerLoop(e, S1, Q);
 				c.g[0] *= e;
-				BN::millerLoop(e, S1, T2);
+				BN::millerLoop(e, S1, xQ);
 				c.g[1] *= e;
-				BN::millerLoop(e, T1, S2);
+				BN::millerLoop(e, T1, Q);
 				c.g[2] *= e;
-				BN::millerLoop(e, T1, T2);
+				BN::millerLoop(e, T1, xQ);
 				c.g[3] *= e;
 			} else {
 				CipherText c0;
