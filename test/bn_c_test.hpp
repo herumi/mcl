@@ -6,7 +6,7 @@
 #include <iostream>
 
 template<size_t N>
-std::ostream dump(std::ostream& os, const uint64_t (&x)[N])
+std::ostream& dump(std::ostream& os, const uint64_t (&x)[N])
 {
 	for (size_t i = 0; i < N; i++) {
 		char buf[64];
