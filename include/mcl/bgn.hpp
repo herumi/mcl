@@ -283,9 +283,10 @@ struct BGNT {
 
 	class SecretKey;
 	class PublicKey;
-	class CipherTextA; // additive HE
+	// additive HE
+	class CipherTextA; // = CipherTextG1 + CipherTextG2
 	class CipherTextM; // multiplicative HE
-	class CipherText;
+	class CipherText; // CipherTextA + CipherTextM
 
 	static G1 P;
 	static G2 Q;
@@ -301,6 +302,27 @@ struct BGNT {
 		BN::hashAndMapToG1(P, "0");
 		BN::hashAndMapToG2(Q, "0");
 	}
+
+	template<class G>
+	class CipherTextAT {
+		G S, T;
+		friend class SecretKey;
+		friend class PublicKey;
+		friend class CipherTextA;
+	public:
+		static inline void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
+		{
+			/*
+				(S, T) + (S', T') = (S + S', T + T')
+			*/
+			G::add(z.S, x.S, y.S);
+			G::add(z.T, x.T, y.T);
+		}
+		void add(const CipherTextAT& c) { add(*this, *this, c); }
+	};
+
+	typedef CipherTextAT<G1> CipherTextG1;
+	typedef CipherTextAT<G2> CipherTextG2;
 
 	class SecretKey {
 		Fr x1, y1, z1;
@@ -362,28 +384,21 @@ struct BGNT {
 			throw cybozu::Exception("BGN:dec:log:not found");
 		}
 #endif
-		int64_t dec(const CipherTextA& c) const
+		int64_t dec(const CipherTextG1& c) const
 		{
 			/*
 				S = myP + rP
 				T = mzP + rxP
 				R = xS - T = m(xy - z)P = mB
 			*/
-			G1 R1;
-			G1::mul(R1, c.S1, x1);
-			R1 -= c.T1;
-//			int m1 = local::log(B1, R1);
-			int64_t m1 = ecHashTbl.log(R1);
-#if 0 // for debug
-			G2 R2;
-			G2::mul(R2, c.S2, x2);
-			R2 -= c.T2;
-			int m2 = local::log(B2, R2);
-			if (m1 != m2) {
-				throw cybozu::Exception("bad dec") << m1 << m2;
-			}
-#endif
-			return m1;
+			G1 R;
+			G1::mul(R, c.S, x1);
+			R -= c.T;
+			return ecHashTbl.log(R);
+		}
+		int64_t dec(const CipherTextA& c) const
+		{
+			return dec(c.c1);
 		}
 		int64_t dec(const CipherTextM& c) const
 		{
@@ -441,8 +456,8 @@ struct BGNT {
 		template<class RG>
 		void enc(CipherTextA& c, int m, RG& rg) const
 		{
-			enc1(c.S1, c.T1, P, xP, yP, zP, m, rg);
-			enc1(c.S2, c.T2, Q, xQ, yQ, zQ, m, rg);
+			enc1(c.c1.S, c.c1.T, P, xP, yP, zP, m, rg);
+			enc1(c.c2.S, c.c2.T, Q, xQ, yQ, zQ, m, rg);
 		}
 		template<class RG>
 		void enc(CipherText& c, int m, RG& rg) const
@@ -460,10 +475,10 @@ struct BGNT {
 				Enc(1) = (S, T) = (yP + rP, zP + r xP) = (yP, zP) if r = 0
 				cm = ca * (yP, zP)
 			*/
-			BN::millerLoop(cm.g[0], yP, ca.S2);
-			BN::millerLoop(cm.g[1], yP, ca.T2);
-			BN::millerLoop(cm.g[2], zP, ca.S2);
-			BN::millerLoop(cm.g[3], zP, ca.T2);
+			BN::millerLoop(cm.g[0], yP, ca.c2.S);
+			BN::millerLoop(cm.g[1], yP, ca.c2.T);
+			BN::millerLoop(cm.g[2], zP, ca.c2.S);
+			BN::millerLoop(cm.g[3], zP, ca.c2.T);
 		}
 		void convertCipherText(CipherText& cm, const CipherText& ca) const
 		{
@@ -517,20 +532,15 @@ struct BGNT {
 	};
 
 	class CipherTextA {
-		G1 S1, T1;
-		G2 S2, T2;
+		CipherTextG1 c1;
+		CipherTextG2 c2;
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
 		static inline void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
-			/*
-				(S, T) + (S', T') = (S + S', T + T')
-			*/
-			G1::add(z.S1, x.S1, y.S1);
-			G1::add(z.T1, x.T1, y.T1);
-			G2::add(z.S2, x.S2, y.S2);
-			G2::add(z.T2, x.T2, y.T2);
+			CipherTextG1::add(z.c1, x.c1, y.c1);
+			CipherTextG2::add(z.c2, x.c2, y.c2);
 		}
 		static inline void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
 		{
@@ -538,10 +548,10 @@ struct BGNT {
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 				call finalExp at once in decrypting c
 			*/
-			BN::millerLoop(z.g[0], x.S1, y.S2);
-			BN::millerLoop(z.g[1], x.S1, y.T2);
-			BN::millerLoop(z.g[2], x.T1, y.S2);
-			BN::millerLoop(z.g[3], x.T1, y.T2);
+			BN::millerLoop(z.g[0], x.c1.S, y.c2.S);
+			BN::millerLoop(z.g[1], x.c1.S, y.c2.T);
+			BN::millerLoop(z.g[2], x.c1.T, y.c2.S);
+			BN::millerLoop(z.g[3], x.c1.T, y.c2.T);
 		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 	};
