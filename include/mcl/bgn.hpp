@@ -283,6 +283,8 @@ struct BGNT {
 
 	class SecretKey;
 	class PublicKey;
+	class CipherTextA; // additive HE
+	class CipherTextM; // multiplicative HE
 	class CipherText;
 
 	static G1 P;
@@ -341,6 +343,7 @@ struct BGNT {
 			G2::mul(pub.yQ, Q, y2);
 			G2::mul(pub.zQ, Q, z2);
 		}
+#if 0
 		// log_x(y)
 		int log(const GT& x, const GT& y) const
 		{
@@ -358,30 +361,32 @@ struct BGNT {
 			}
 			throw cybozu::Exception("BGN:dec:log:not found");
 		}
-		int dec(const CipherText& c) const
-		{
-			if (!c.isMultiplied()) {
-				/*
-					S = myP + rP
-					T = mzP + rxP
-					R = xS - T = m(xy - z)P = mB
-				*/
-				G1 R1;
-				G1::mul(R1, c.S1, x1);
-				R1 -= c.T1;
-//				int m1 = local::log(B1, R1);
-				int m1 = ecHashTbl.log(R1);
-#if 0 // for debug
-				G2 R2;
-				G2::mul(R2, c.S2, x2);
-				R2 -= c.T2;
-				int m2 = local::log(B2, R2);
-				if (m1 != m2) {
-					throw cybozu::Exception("bad dec") << m1 << m2;
-				}
 #endif
-				return m1;
+		int64_t dec(const CipherTextA& c) const
+		{
+			/*
+				S = myP + rP
+				T = mzP + rxP
+				R = xS - T = m(xy - z)P = mB
+			*/
+			G1 R1;
+			G1::mul(R1, c.S1, x1);
+			R1 -= c.T1;
+//			int m1 = local::log(B1, R1);
+			int64_t m1 = ecHashTbl.log(R1);
+#if 0 // for debug
+			G2 R2;
+			G2::mul(R2, c.S2, x2);
+			R2 -= c.T2;
+			int m2 = local::log(B2, R2);
+			if (m1 != m2) {
+				throw cybozu::Exception("bad dec") << m1 << m2;
 			}
+#endif
+			return m1;
+		}
+		int64_t dec(const CipherTextM& c) const
+		{
 			/*
 				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
 				s^(xx') v / (t^x u^x')
@@ -401,6 +406,14 @@ struct BGNT {
 			BN::finalExp(s, s);
 			return gtHashTbl.log(s);
 //			return log(g, s);
+		}
+		int64_t dec(const CipherText& c) const
+		{
+			if (c.isMultiplied()) {
+				return dec(c.m);
+			} else {
+				return dec(c.a);
+			}
 		}
 	};
 
@@ -426,108 +439,161 @@ struct BGNT {
 		}
 	public:
 		template<class RG>
-		void enc(CipherText& c, int m, RG& rg) const
+		void enc(CipherTextA& c, int m, RG& rg) const
 		{
 			enc1(c.S1, c.T1, P, xP, yP, zP, m, rg);
 			enc1(c.S2, c.T2, Q, xQ, yQ, zQ, m, rg);
 		}
-		/*
-			cy = cx * Enc(1)
-		*/
-		void mulEnc1(CipherText& cy, const CipherText& cx) const
+		template<class RG>
+		void enc(CipherText& c, int m, RG& rg) const
 		{
-			if (cx.isMultiplied()) throw cybozu::Exception("PublicKey:mulEnc1:already multiplied");
+			c.isMultiplied_ = false;
+			enc(c.a, m, rg);
+		}
+		/*
+			convert from CipherTextA to CipherTextM
+			cm = ca * Enc(1)
+		*/
+		void convertCipherText(CipherTextM& cm, const CipherTextA& ca) const
+		{
 			/*
 				Enc(1) = (S, T) = (yP + rP, zP + r xP) = (yP, zP) if r = 0
-				cy = cx * (yP, zP)
+				cm = ca * (yP, zP)
 			*/
-			cy.g.resize(4);
-			BN::millerLoop(cy.g[0], yP, cx.S2);
-			BN::millerLoop(cy.g[1], yP, cx.T2);
-			BN::millerLoop(cy.g[2], zP, cx.S2);
-			BN::millerLoop(cy.g[3], zP, cx.T2);
+			BN::millerLoop(cm.g[0], yP, ca.S2);
+			BN::millerLoop(cm.g[1], yP, ca.T2);
+			BN::millerLoop(cm.g[2], zP, ca.S2);
+			BN::millerLoop(cm.g[3], zP, ca.T2);
+		}
+		void convertCipherText(CipherText& cm, const CipherText& ca) const
+		{
+			if (ca.isMultiplied()) throw cybozu::Exception("bgn:PublicKey:convertCipherText:already isMultiplied");
+			cm.isMultiplied_ = true;
+			convertCipherText(cm.m, ca.a);
 		}
 		/*
 			c += Enc(0)
 		*/
 		template<class RG>
+		void rerandomize(CipherTextA& c, RG& rg) const
+		{
+			CipherTextA c0;
+			enc(c0, 0, rg);
+			addA(c, c, c0);
+		}
+		template<class RG>
+		void rerandomize(CipherTextM& c, RG& rg) const
+		{
+			/*
+				add Enc(0) * Enc(0)
+				(S1, T1) * (S2, T2) = (rP, rxP) * (r'Q, r'xQ)
+				replace r <- rr'
+				= (r P, rxP) * (Q, xQ)
+			*/
+			G1 S1, T1;
+			Fr r;
+			r.setRand(rg);
+			G1::mul(S1, P, r);
+			G1::mul(T1, xP, r);
+			GT e;
+			BN::millerLoop(e, S1, Q);
+			c.g[0] *= e;
+			BN::millerLoop(e, S1, xQ);
+			c.g[1] *= e;
+			BN::millerLoop(e, T1, Q);
+			c.g[2] *= e;
+			BN::millerLoop(e, T1, xQ);
+			c.g[3] *= e;
+		}
+		template<class RG>
 		void rerandomize(CipherText& c, RG& rg) const
 		{
 			if (c.isMultiplied()) {
-				/*
-					add Enc(0) * Enc(0)
-					(S1, T1) * (S2, T2) = (rP, rxP) * (r'Q, r'xQ)
-					replace r <- rr'
-					= (r P, rxP) * (Q, xQ)
-				*/
-				G1 S1, T1;
-				Fr r;
-				r.setRand(rg);
-				G1::mul(S1, P, r);
-				G1::mul(T1, xP, r);
-				GT e;
-				BN::millerLoop(e, S1, Q);
-				c.g[0] *= e;
-				BN::millerLoop(e, S1, xQ);
-				c.g[1] *= e;
-				BN::millerLoop(e, T1, Q);
-				c.g[2] *= e;
-				BN::millerLoop(e, T1, xQ);
-				c.g[3] *= e;
+				rerandomize(c.m, rg);
 			} else {
-				CipherText c0;
-				enc(c0, 0, rg);
-				c.add(c0);
+				rerandomize(c.a, rg);
 			}
 		}
 	};
 
-	class CipherText {
-		typedef std::vector<GT> GTVec;
+	class CipherTextA {
+	public:
 		G1 S1, T1;
 		G2 S2, T2;
-		GTVec g;
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
-		bool isMultiplied() const { return !g.empty(); }
+		void add(const CipherTextA& c) { add(*this, *this, c); }
+	};
+
+	class CipherTextM {
+	public:
+		GT g[4];
+		friend class SecretKey;
+		friend class PublicKey;
+	public:
+	};
+
+	static inline void addA(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
+	{
+		/*
+			(S, T) + (S', T') = (S + S', T + T')
+		*/
+		G1::add(z.S1, x.S1, y.S1);
+		G1::add(z.T1, x.T1, y.T1);
+		G2::add(z.S2, x.S2, y.S2);
+		G2::add(z.T2, x.T2, y.T2);
+	}
+	static inline void addM(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+	{
+		/*
+			(g[i]) * (g'[i]) = (g[i] * g'[i])
+		*/
+		for (size_t i = 0; i < 4; i++) {
+			GT::mul(z.g[i], x.g[i], y.g[i]);
+		}
+	}
+	static inline void mulA(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
+	{
+		/*
+			(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
+			call finalExp at once in decrypting c
+		*/
+		BN::millerLoop(z.g[0], x.S1, y.S2);
+		BN::millerLoop(z.g[1], x.S1, y.T2);
+		BN::millerLoop(z.g[2], x.T1, y.S2);
+		BN::millerLoop(z.g[3], x.T1, y.T2);
+	}
+	class CipherText {
+		CipherTextA a;
+		CipherTextM m;
+		bool isMultiplied_;
+		friend class SecretKey;
+		friend class PublicKey;
+	public:
+		CipherText() : isMultiplied_(false) {}
+		bool isMultiplied() const { return isMultiplied_; }
 		static inline void add(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
-				/*
-					(g[i]) * (g'[i]) = (g[i] * g'[i])
-				*/
-				for (size_t i = 0; i < z.g.size(); i++) {
-					GT::mul(z.g[i], x.g[i], y.g[i]);
-				}
+				z.isMultiplied_ = true;
+				addM(z.m, x.m, y.m);
 				return;
 			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
-				/*
-					(S, T) + (S', T') = (S + S', T + T')
-				*/
-				G1::add(z.S1, x.S1, y.S1);
-				G1::add(z.T1, x.T1, y.T1);
-				G2::add(z.S2, x.S2, y.S2);
-				G2::add(z.T2, x.T2, y.T2);
+				z.isMultiplied_ = false;
+				addA(z.a, x.a, y.a);
 				return;
 			}
-			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText") << x.isMultiplied() << y.isMultiplied();
+			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText");
 		}
 		static inline void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() || y.isMultiplied()) {
-				throw cybozu::Exception("bgn:CipherText:mul:already mul");
+				throw cybozu::Exception("bgn:CipherText:mul:mixed CipherText");
 			}
-			/*
-				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
-				call finalExp at once in decrypting c
-			*/
-			z.g.resize(4);
-			BN::millerLoop(z.g[0], x.S1, y.S2);
-			BN::millerLoop(z.g[1], x.S1, y.T2);
-			BN::millerLoop(z.g[2], x.T1, y.S2);
-			BN::millerLoop(z.g[3], x.T1, y.T2);
+			z.isMultiplied_ = true;
+			mulA(z.m, x.a, y.a);
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
