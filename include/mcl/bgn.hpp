@@ -479,7 +479,7 @@ struct BGNT {
 		{
 			CipherTextA c0;
 			enc(c0, 0, rg);
-			addA(c, c, c0);
+			CipherTextA::add(c, c, c0);
 		}
 		template<class RG>
 		void rerandomize(CipherTextM& c, RG& rg) const
@@ -517,53 +517,53 @@ struct BGNT {
 	};
 
 	class CipherTextA {
-	public:
 		G1 S1, T1;
 		G2 S2, T2;
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
+		static inline void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
+		{
+			/*
+				(S, T) + (S', T') = (S + S', T + T')
+			*/
+			G1::add(z.S1, x.S1, y.S1);
+			G1::add(z.T1, x.T1, y.T1);
+			G2::add(z.S2, x.S2, y.S2);
+			G2::add(z.T2, x.T2, y.T2);
+		}
+		static inline void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
+		{
+			/*
+				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
+				call finalExp at once in decrypting c
+			*/
+			BN::millerLoop(z.g[0], x.S1, y.S2);
+			BN::millerLoop(z.g[1], x.S1, y.T2);
+			BN::millerLoop(z.g[2], x.T1, y.S2);
+			BN::millerLoop(z.g[3], x.T1, y.T2);
+		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 	};
 
 	class CipherTextM {
-	public:
 		GT g[4];
 		friend class SecretKey;
 		friend class PublicKey;
+		friend class CipherTextA;
 	public:
+		static inline void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+		{
+			/*
+				(g[i]) * (g'[i]) = (g[i] * g'[i])
+			*/
+			for (size_t i = 0; i < 4; i++) {
+				GT::mul(z.g[i], x.g[i], y.g[i]);
+			}
+		}
+		void add(const CipherTextM& c) { add(*this, *this, c); }
 	};
 
-	static inline void addA(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
-	{
-		/*
-			(S, T) + (S', T') = (S + S', T + T')
-		*/
-		G1::add(z.S1, x.S1, y.S1);
-		G1::add(z.T1, x.T1, y.T1);
-		G2::add(z.S2, x.S2, y.S2);
-		G2::add(z.T2, x.T2, y.T2);
-	}
-	static inline void addM(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
-	{
-		/*
-			(g[i]) * (g'[i]) = (g[i] * g'[i])
-		*/
-		for (size_t i = 0; i < 4; i++) {
-			GT::mul(z.g[i], x.g[i], y.g[i]);
-		}
-	}
-	static inline void mulA(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
-	{
-		/*
-			(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
-			call finalExp at once in decrypting c
-		*/
-		BN::millerLoop(z.g[0], x.S1, y.S2);
-		BN::millerLoop(z.g[1], x.S1, y.T2);
-		BN::millerLoop(z.g[2], x.T1, y.S2);
-		BN::millerLoop(z.g[3], x.T1, y.T2);
-	}
 	class CipherText {
 		CipherTextA a;
 		CipherTextM m;
@@ -577,12 +577,12 @@ struct BGNT {
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
-				addM(z.m, x.m, y.m);
+				CipherTextM::add(z.m, x.m, y.m);
 				return;
 			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
 				z.isMultiplied_ = false;
-				addA(z.a, x.a, y.a);
+				CipherTextA::add(z.a, x.a, y.a);
 				return;
 			}
 			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText");
@@ -593,7 +593,7 @@ struct BGNT {
 				throw cybozu::Exception("bgn:CipherText:mul:mixed CipherText");
 			}
 			z.isMultiplied_ = true;
-			mulA(z.m, x.a, y.a);
+			CipherTextA::mul(z.m, x.a, y.a);
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
