@@ -469,7 +469,7 @@ struct BGNT {
 			convert from CipherTextA to CipherTextM
 			cm = ca * Enc(1)
 		*/
-		void convertCipherText(CipherTextM& cm, const CipherTextA& ca) const
+		void convertCipherTextAtoM(CipherTextM& cm, const CipherTextA& ca) const
 		{
 			/*
 				Enc(1) = (S, T) = (yP + rP, zP + r xP) = (yP, zP) if r = 0
@@ -480,11 +480,11 @@ struct BGNT {
 			BN::millerLoop(cm.g[2], zP, ca.c2.S);
 			BN::millerLoop(cm.g[3], zP, ca.c2.T);
 		}
-		void convertCipherText(CipherText& cm, const CipherText& ca) const
+		void convertCipherTextAtoM(CipherText& cm, const CipherText& ca) const
 		{
 			if (ca.isMultiplied()) throw cybozu::Exception("bgn:PublicKey:convertCipherText:already isMultiplied");
 			cm.isMultiplied_ = true;
-			convertCipherText(cm.m, ca.a);
+			convertCipherTextAtoM(cm.m, ca.a);
 		}
 		/*
 			c += Enc(0)
