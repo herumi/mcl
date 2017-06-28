@@ -91,7 +91,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 	}
 }
 
-CYBOZU_TEST_AUTO(add_mul)
+CYBOZU_TEST_AUTO(add_sub_mul)
 {
 	const SecretKey& sec = g_sec;
 	PublicKey pub;
@@ -103,17 +103,23 @@ CYBOZU_TEST_AUTO(add_mul)
 			pub.enc(c2, m2, rg);
 			CipherText::add(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
+
 			pub.rerandomize(c3, rg);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
+
+			CipherText::sub(c3, c1, c2);
+			CYBOZU_TEST_EQUAL(m1 - m2, sec.dec(c3));
+
 			CipherText::mul(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
+
 			pub.rerandomize(c3, rg);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 		}
 	}
 }
 
-CYBOZU_TEST_AUTO(add_mul_add)
+CYBOZU_TEST_AUTO(add_mul_add_sub)
 {
 	const SecretKey& sec = g_sec;
 	PublicKey pub;
@@ -142,5 +148,7 @@ CYBOZU_TEST_AUTO(add_mul_add)
 	CYBOZU_TEST_EQUAL(sec.dec(c[4]), ok2);
 	c[0].add(c[4]);
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok);
+	c[0].sub(c[4]);
+	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok1);
 }
 

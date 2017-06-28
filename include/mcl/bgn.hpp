@@ -307,7 +307,21 @@ private:
 			G::add(z.S, x.S, y.S);
 			G::add(z.T, x.T, y.T);
 		}
+		static inline void sub(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
+		{
+			/*
+				(S, T) - (S', T') = (S - S', T - T')
+			*/
+			G::sub(z.S, x.S, y.S);
+			G::sub(z.T, x.T, y.T);
+		}
+		static inline void neg(CipherTextAT& y, const CipherTextAT& x)
+		{
+			G::neg(y.S, x.S);
+			G::neg(y.T, x.T);
+		}
 		void add(const CipherTextAT& c) { add(*this, *this, c); }
+		void sub(const CipherTextAT& c) { sub(*this, *this, c); }
 	};
 	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
 	{
@@ -575,6 +589,16 @@ public:
 			CipherTextG1::add(z.c1, x.c1, y.c1);
 			CipherTextG2::add(z.c2, x.c2, y.c2);
 		}
+		static inline void sub(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
+		{
+			CipherTextG1::sub(z.c1, x.c1, y.c1);
+			CipherTextG2::sub(z.c2, x.c2, y.c2);
+		}
+		static inline void neg(CipherTextA& y, const CipherTextA& x)
+		{
+			CipherTextG1::neg(y.c1, x.c1);
+			CipherTextG2::neg(y.c2, x.c2);
+		}
 		static inline void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
 		{
 			/*
@@ -584,6 +608,7 @@ public:
 			tensorProduct(z.g, x.c1.S, x.c1.T, y.c2.S, y.c2.T);
 		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
+		void sub(const CipherTextA& c) { sub(*this, *this, c); }
 	};
 
 	class CipherTextM {
@@ -595,13 +620,25 @@ public:
 		static inline void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
 		{
 			/*
-				(g[i]) * (g'[i]) = (g[i] * g'[i])
+				(g[i]) + (g'[i]) = (g[i] * g'[i])
 			*/
 			for (size_t i = 0; i < 4; i++) {
 				GT::mul(z.g[i], x.g[i], y.g[i]);
 			}
 		}
+		static inline void sub(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+		{
+			/*
+				(g[i]) - (g'[i]) = (g[i] / g'[i])
+			*/
+			GT t;
+			for (size_t i = 0; i < 4; i++) {
+				GT::unitaryInv(t, y.g[i]);
+				GT::mul(z.g[i], x.g[i], t);
+			}
+		}
 		void add(const CipherTextM& c) { add(*this, *this, c); }
+		void sub(const CipherTextM& c) { sub(*this, *this, c); }
 	};
 
 	class CipherText {
@@ -627,6 +664,20 @@ public:
 			}
 			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText");
 		}
+		static inline void sub(CipherText& z, const CipherText& x, const CipherText& y)
+		{
+			if (x.isMultiplied() && y.isMultiplied()) {
+				z.isMultiplied_ = true;
+				CipherTextM::sub(z.m, x.m, y.m);
+				return;
+			}
+			if (!x.isMultiplied() && !y.isMultiplied()) {
+				z.isMultiplied_ = false;
+				CipherTextA::sub(z.a, x.a, y.a);
+				return;
+			}
+			throw cybozu::Exception("bgn:CipherText:sub:mixed CipherText");
+		}
 		static inline void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() || y.isMultiplied()) {
@@ -636,6 +687,7 @@ public:
 			CipherTextA::mul(z.m, x.a, y.a);
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
+		void sub(const CipherText& c) { sub(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
 	};
 };
