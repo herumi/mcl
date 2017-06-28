@@ -454,10 +454,20 @@ struct BGNT {
 		}
 	public:
 		template<class RG>
+		void enc(CipherTextG1& c, int m, RG& rg) const
+		{
+			enc1(c.S, c.T, P, xP, yP, zP, m, rg);
+		}
+		template<class RG>
+		void enc(CipherTextG2& c, int m, RG& rg) const
+		{
+			enc1(c.S, c.T, Q, xQ, yQ, zQ, m, rg);
+		}
+		template<class RG>
 		void enc(CipherTextA& c, int m, RG& rg) const
 		{
-			enc1(c.c1.S, c.c1.T, P, xP, yP, zP, m, rg);
-			enc1(c.c2.S, c.c2.T, Q, xQ, yQ, zQ, m, rg);
+			enc(c.c1, m, rg);
+			enc(c.c2, m, rg);
 		}
 		template<class RG>
 		void enc(CipherText& c, int m, RG& rg) const
