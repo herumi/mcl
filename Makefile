@@ -88,19 +88,19 @@ $(MCL_LIB): $(LIB_OBJ)
 	$(AR) $@ $(LIB_OBJ)
 
 $(MCL_SLIB): $(LIB_OBJ)
-	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared
+	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(LDFLAGS)
 
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $@ $(BN256_OBJ)
 
-$(BN256_SLIB): $(BN256_OBJ)
-	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared
+$(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
+	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(MCL_SLIB)
 
 $(BN384_LIB): $(BN384_OBJ)
 	$(AR) $@ $(BN384_OBJ)
 
-$(BN384_SLIB): $(BN384_OBJ)
-	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared
+$(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
+	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(MCL_SLIB)
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
