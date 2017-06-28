@@ -374,10 +374,14 @@ public:
 			x1x2 = x1 * x2;
 			BN::pairing(g, B1, B2);
 		}
-		void setDecodeRange(size_t hashSize)
+		/*
+			decode message m for |m| <= hasSize * (tryNum + 1)
+			decode time = O(log(hasSize) * tryNum)
+		*/
+		void setDecodeRange(size_t hashSize, size_t tryNum = 0)
 		{
-			ecHashTbl.init(B1, hashSize);
-			gtHashTbl.init(g, hashSize);
+			ecHashTbl.init(B1, hashSize, tryNum);
+			gtHashTbl.init(g, hashSize, tryNum);
 		}
 		/*
 			set (xP, yP, zP) and (xQ, yQ, zQ)
