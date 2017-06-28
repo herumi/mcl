@@ -24,8 +24,8 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(sizeof(mclBnG2), sizeof(G2));
 	CYBOZU_TEST_EQUAL(sizeof(mclBnGT), sizeof(Fp12));
 
-	ret = mclBn_setErrFile("stderr");
-	CYBOZU_TEST_EQUAL(ret, 0);
+//	ret = mclBn_setErrFile("stderr");
+//	CYBOZU_TEST_EQUAL(ret, 0);
 
 #if MCLBN_FP_UNIT_SIZE == 4
 	printf("test MCLBN_curveFp254BNb %d\n", MCLBN_FP_UNIT_SIZE);
