@@ -935,7 +935,7 @@ CYBOZU_TEST_AUTO(copyUnitToByteAsLE)
 	}
 	dst[0] = 1;
 	copyByteToUnitAsLE(dst, ok, 0);
-	CYBOZU_TEST_EQUAL(dst[0], 1);
+	CYBOZU_TEST_EQUAL(dst[0], 1u);
 }
 
 CYBOZU_TEST_AUTO(hexStrToLittleEndian)
