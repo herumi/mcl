@@ -125,7 +125,7 @@ CYBOZU_TEST_AUTO(add_mul_add)
 		CYBOZU_TEST_EQUAL(sec.dec(c[i]), m[i]);
 		CYBOZU_TEST_ASSERT(!c[i].isMultiplied());
 		CipherText mc;
-		pub.convertCipherTextAtoM(mc, c[i]);
+		pub.convertToCipherTextM(mc, c[i]);
 		CYBOZU_TEST_ASSERT(mc.isMultiplied());
 		CYBOZU_TEST_EQUAL(sec.dec(mc), m[i]);
 	}

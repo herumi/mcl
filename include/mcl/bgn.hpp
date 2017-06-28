@@ -291,18 +291,7 @@ struct BGNT {
 	static G1 P;
 	static G2 Q;
 
-	static inline void init(const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb)
-	{
-#ifdef MCL_USE_BN256
-		mcl::bn256::bn256init(cp);
-#endif
-#ifdef MCL_USE_BN384
-		mcl::bn384::bn384init(cp);
-#endif
-		BN::hashAndMapToG1(P, "0");
-		BN::hashAndMapToG2(Q, "0");
-	}
-
+private:
 	template<class G>
 	class CipherTextAT {
 		G S, T;
@@ -320,9 +309,32 @@ struct BGNT {
 		}
 		void add(const CipherTextAT& c) { add(*this, *this, c); }
 	};
+	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
+	{
+		/*
+			(S1, T1) x (S2, T2)
+		*/
+		BN::millerLoop(g[0], S1, S2);
+		BN::millerLoop(g[1], S1, T2);
+		BN::millerLoop(g[2], T1, S2);
+		BN::millerLoop(g[3], T1, T2);
+	}
+public:
 
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
+
+	static inline void init(const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb)
+	{
+#ifdef MCL_USE_BN256
+		mcl::bn256::bn256init(cp);
+#endif
+#ifdef MCL_USE_BN384
+		mcl::bn384::bn384init(cp);
+#endif
+		BN::hashAndMapToG1(P, "0");
+		BN::hashAndMapToG2(Q, "0");
+	}
 
 	class SecretKey {
 		Fr x1, y1, z1;
@@ -476,25 +488,36 @@ struct BGNT {
 			enc(c.a, m, rg);
 		}
 		/*
-			convert from CipherTextA to CipherTextM
-			cm = ca * Enc(1)
+			convert from CipherTextG1 to CipherTextM
 		*/
-		void convertCipherTextAtoM(CipherTextM& cm, const CipherTextA& ca) const
+		void convertToCipherTextM(CipherTextM& cm, const CipherTextG1& c1) const
+		{
+			/*
+				Enc(1) = (S, T) = (yQ + rQ, zQ + r xQ) = (yQ, zQ) if r = 0
+				cm = c1 * (yQ, zQ)
+			*/
+			tensorProduct(cm.g, c1.S, c1.T, yQ, zQ);
+		}
+		/*
+			convert from CipherTextG2 to CipherTextM
+		*/
+		void convertToCipherTextM(CipherTextM& cm, const CipherTextG2& c2) const
 		{
 			/*
 				Enc(1) = (S, T) = (yP + rP, zP + r xP) = (yP, zP) if r = 0
-				cm = ca * (yP, zP)
+				cm = (yP, zP) * c2
 			*/
-			BN::millerLoop(cm.g[0], yP, ca.c2.S);
-			BN::millerLoop(cm.g[1], yP, ca.c2.T);
-			BN::millerLoop(cm.g[2], zP, ca.c2.S);
-			BN::millerLoop(cm.g[3], zP, ca.c2.T);
+			tensorProduct(cm.g, yP, zP, c2.S, c2.T);
 		}
-		void convertCipherTextAtoM(CipherText& cm, const CipherText& ca) const
+		void convertToCipherTextM(CipherTextM& cm, const CipherTextA& ca) const
+		{
+			convertToCipherTextM(cm, ca.c1);
+		}
+		void convertToCipherTextM(CipherText& cm, const CipherText& ca) const
 		{
 			if (ca.isMultiplied()) throw cybozu::Exception("bgn:PublicKey:convertCipherText:already isMultiplied");
 			cm.isMultiplied_ = true;
-			convertCipherTextAtoM(cm.m, ca.a);
+			convertToCipherTextM(cm.m, ca.a);
 		}
 		/*
 			c += Enc(0)
@@ -558,10 +581,7 @@ struct BGNT {
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 				call finalExp at once in decrypting c
 			*/
-			BN::millerLoop(z.g[0], x.c1.S, y.c2.S);
-			BN::millerLoop(z.g[1], x.c1.S, y.c2.T);
-			BN::millerLoop(z.g[2], x.c1.T, y.c2.S);
-			BN::millerLoop(z.g[3], x.c1.T, y.c2.T);
+			tensorProduct(z.g, x.c1.S, x.c1.T, y.c2.S, y.c2.T);
 		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 	};
