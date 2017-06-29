@@ -860,6 +860,11 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		a.clear();
 		b.clear();
 	}
+	void setOne()
+	{
+		clear();
+		a.a.a = 1;
+	}
 
 	Fp* getFp0() { return a.getFp0(); }
 	const Fp* getFp0() const { return a.getFp0(); }

@@ -307,6 +307,11 @@ private:
 		friend class CipherTextA;
 		friend class CipherTextM;
 	public:
+		void clear()
+		{
+			S.clear();
+			T.clear();
+		}
 		static inline void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
 			/*
@@ -754,6 +759,11 @@ public:
 		friend class PublicKey;
 		friend class CipherTextM;
 	public:
+		void clear()
+		{
+			c1.clear();
+			c2.clear();
+		}
 		static inline void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
 			CipherTextG1::add(z.c1, x.c1, y.c1);
@@ -816,12 +826,18 @@ public:
 		friend class PublicKey;
 		friend class CipherTextA;
 	public:
+		void clear()
+		{
+			for (int i = 0; i < 4; i++) {
+				g[i].setOne();
+			}
+		}
 		static inline void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
 		{
 			/*
 				(g[i]) + (g'[i]) = (g[i] * g'[i])
 			*/
-			for (size_t i = 0; i < 4; i++) {
+			for (int i = 0; i < 4; i++) {
 				GT::mul(z.g[i], x.g[i], y.g[i]);
 			}
 		}
@@ -861,7 +877,7 @@ public:
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
 			str = g[0].getStr(ioMode);
-			for (size_t i = 1; i < 4; i++) {
+			for (int i = 1; i < 4; i++) {
 				str += sep;
 				str += g[i].getStr(ioMode);
 			}
@@ -903,6 +919,16 @@ public:
 		friend class PublicKey;
 	public:
 		CipherText() : isMultiplied_(false) {}
+		void clearAsAdded()
+		{
+			isMultiplied_ = false;
+			a.clear();
+		}
+		void clearAsMultiplied()
+		{
+			isMultiplied_ = true;
+			m.clear();
+		}
 		bool isMultiplied() const { return isMultiplied_; }
 		static inline void add(CipherText& z, const CipherText& x, const CipherText& y)
 		{
