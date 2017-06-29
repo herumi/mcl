@@ -88,7 +88,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG(rg);
-	sec.setDecodeRange(1024);
+	sec.setRangeForDLP(1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
@@ -182,7 +182,7 @@ CYBOZU_TEST_AUTO(io)
 		}
 		SecretKey sec;
 		sec.setByCSPRNG(rg);
-		sec.setDecodeRange(100, 2);
+		sec.setRangeForDLP(100, 2);
 		testIo(sec);
 		PublicKey pub;
 		sec.getPublicKey(pub);

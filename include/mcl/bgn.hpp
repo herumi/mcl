@@ -15,7 +15,6 @@
 */
 #include <vector>
 #include <iosfwd>
-#include <cybozu/itoa.hpp>
 #ifdef MCL_USE_BN384
 #include <mcl/bn384.hpp>
 #else
@@ -47,7 +46,7 @@ class EcHashTable {
 public:
 	EcHashTable() : hashSize(0), tryNum(0) {}
 	/*
-		compute log_P(xP) for |x| <= hashSize * (tryNum + 1)
+		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
 	void init(const G& P, int hashSize, size_t tryNum = 0)
 	{
@@ -120,7 +119,7 @@ public:
 	}
 	/*
 		compute log_P(xP)
-		call basicLog at most 2 * tryNum + 1
+		call basicLog at most 2 * tryNum
 	*/
 	int64_t log(const G& xP) const
 	{
@@ -133,7 +132,7 @@ public:
 		int64_t posCenter = 0;
 		int64_t negCenter = 0;
 		int64_t next = hashSize * 2 + 1;
-		for (size_t i = 0; i < tryNum; i++) {
+		for (size_t i = 1; i < tryNum; i++) {
 			posP -= nextP;
 			posCenter += next;
 			c = basicLog(posP, &ok);
@@ -163,7 +162,7 @@ class GTHashTable {
 public:
 	GTHashTable() : hashSize(0), tryNum(0) {}
 	/*
-		compute log_P(g^x) for |x| <= hashSize * (tryNum + 1)
+		compute log_P(g^x) for |x| <= hashSize * tryNum
 	*/
 	void init(const GT& g, int hashSize, size_t tryNum = 0)
 	{
@@ -232,7 +231,7 @@ public:
 	}
 	/*
 		compute log_P(g^x)
-		call basicLog at most 2 * tryNum + 1
+		call basicLog at most 2 * tryNum
 	*/
 	int64_t log(const GT& gx) const
 	{
@@ -245,7 +244,7 @@ public:
 		int64_t posCenter = 0;
 		int64_t negCenter = 0;
 		int64_t next = hashSize * 2 + 1;
-		for (size_t i = 0; i < tryNum; i++) {
+		for (size_t i = 1; i < tryNum; i++) {
 			pos *= nextgInv;
 			posCenter += next;
 			c = basicLog(pos, &ok);
@@ -399,13 +398,11 @@ public:
 	class SecretKey {
 		Fr x1, y1, z1;
 		Fr x2, y2, z2;
-		size_t hashSize;
-		size_t tryNum;
 		G1 B1; // (x1 y1 - z1) P
 		G2 B2; // (x2 y2 - z2) Q
 		Fr x1x2;
 		GT g; // e(B1, B2)
-		local::EcHashTable<G1> ecHashTbl;
+		local::EcHashTable<G1> g1HashTbl;
 		local::GTHashTable<GT> gtHashTbl;
 		void initInner()
 		{
@@ -415,7 +412,6 @@ public:
 			BN::pairing(g, B1, B2);
 		}
 	public:
-		SecretKey() : hashSize(0), tryNum(0) {}
 		template<class RG>
 		void setByCSPRNG(RG& rg)
 		{
@@ -428,15 +424,29 @@ public:
 			initInner();
 		}
 		/*
-			decode message m for |m| <= hasSize * (tryNum + 1)
-			decode time = O(log(hasSize) * tryNum)
+			set range for G1-DLP
 		*/
-		void setDecodeRange(size_t hashSize, size_t tryNum = 0)
+		void setRangeForG1DLP(size_t hashSize, size_t tryNum = 0)
 		{
-			this->hashSize = hashSize;
-			this->tryNum = tryNum;
-			ecHashTbl.init(B1, hashSize, tryNum);
+			g1HashTbl.init(B1, hashSize, tryNum);
+		}
+		/*
+			set range for GT-DLP
+		*/
+		void setRangeForGTDLP(size_t hashSize, size_t tryNum = 0)
+		{
 			gtHashTbl.init(g, hashSize, tryNum);
+		}
+		/*
+			set range for G1/GT DLP
+			decode message m for |m| <= hasSize * tryNum
+			decode time = O(log(hasSize) * tryNum)
+			@note if tryNum = 0 then fast but require more memory(TBD)
+		*/
+		void setRangeForDLP(size_t hashSize, size_t tryNum = 0)
+		{
+			setRangeForG1DLP(hashSize, tryNum);
+			setRangeForGTDLP(hashSize, tryNum);
 		}
 		/*
 			set (xP, yP, zP) and (xQ, yQ, zQ)
@@ -479,7 +489,7 @@ public:
 			G1 R;
 			G1::mul(R, c.S, x1);
 			R -= c.T;
-			return ecHashTbl.log(R);
+			return g1HashTbl.log(R);
 		}
 		int64_t dec(const CipherTextA& c) const
 		{
@@ -523,8 +533,6 @@ public:
 			x2.readStream(is, ioMode);
 			y2.readStream(is, ioMode);
 			z2.readStream(is, ioMode);
-			is >> hashSize >> tryNum;
-			setDecodeRange(hashSize, tryNum);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
@@ -541,10 +549,6 @@ public:
 			str += y2.getStr(ioMode);
 			str += sep;
 			str += z2.getStr(ioMode);
-			str += ' ';
-			str += cybozu::itoa(hashSize);
-			str += ' ';
-			str += cybozu::itoa(tryNum);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -568,8 +572,7 @@ public:
 		bool operator==(const SecretKey& rhs) const
 		{
 			return x1 == rhs.x1 && y1 == rhs.y1 && z1 == rhs.z1
-			    && x2 == rhs.x2 && y2 == rhs.y2 && z2 == rhs.z2
-			    && hashSize == rhs.hashSize && tryNum == rhs.tryNum;
+			    && x2 == rhs.x2 && y2 == rhs.y2 && z2 == rhs.z2;
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
 	};
