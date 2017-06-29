@@ -785,7 +785,7 @@ public:
 		if (ioMode & 0xff) throw cybozu::Exception("EcT:setIoMode:use Fp::setIomode") << ioMode;
 		ioMode_ = ioMode;
 	}
-	static inline int getIoMode() { return Fp::getIoMode() | ioMode_; }
+	static inline int getIoMode() { return Fp::BaseFp::getIoMode() | ioMode_; }
 	static inline void getWeierstrass(Fp& yy, const Fp& x)
 	{
 		Fp t;
