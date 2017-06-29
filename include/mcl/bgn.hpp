@@ -48,23 +48,24 @@ public:
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
-	void init(const G& P, int hashSize, size_t tryNum = 0)
+	void init(const G& P, size_t hashSize, size_t tryNum = 0)
 	{
 		if (hashSize == 0) {
 			kcv.clear();
 			return;
 		}
+		if (hashSize >= 0x80000000u) throw cybozu::Exception("EcHashTable:init:hashSize is too large");
 		this->P = P;
-		this->hashSize = hashSize;
+		this->hashSize = (int)hashSize;
 		this->tryNum = tryNum;
 		kcv.resize(hashSize);
 		G xP;
 		xP.clear();
-		for (int i = 1; i <= hashSize; i++) {
+		for (size_t i = 1; i <= (int)hashSize; i++) {
 			xP += P;
 			xP.normalize();
 			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
-			kcv[i - 1].count = xP.y.isOdd() ? i : -i;
+			kcv[i - 1].count = xP.y.isOdd() ? i : -1;
 		}
 		nextP = xP;
 		G::dbl(nextP, nextP);
@@ -121,7 +122,7 @@ public:
 		compute log_P(xP)
 		call basicLog at most 2 * tryNum
 	*/
-	int64_t log(const G& xP) const
+	int log(const G& xP) const
 	{
 		bool ok;
 		int c = basicLog(xP, &ok);
@@ -129,9 +130,9 @@ public:
 			return c;
 		}
 		G posP = xP, negP = xP;
-		int64_t posCenter = 0;
-		int64_t negCenter = 0;
-		int64_t next = hashSize * 2 + 1;
+		int posCenter = 0;
+		int negCenter = 0;
+		int next = hashSize * 2 + 1;
 		for (size_t i = 1; i < tryNum; i++) {
 			posP -= nextP;
 			posCenter += next;
@@ -164,18 +165,19 @@ public:
 	/*
 		compute log_P(g^x) for |x| <= hashSize * tryNum
 	*/
-	void init(const GT& g, int hashSize, size_t tryNum = 0)
+	void init(const GT& g, size_t hashSize, size_t tryNum = 0)
 	{
 		if (hashSize == 0) {
 			kcv.clear();
 			return;
 		}
+		if (hashSize >= 0x80000000u) throw cybozu::Exception("GTHashTable:init:hashSize is too large");
 		this->g = g;
-		this->hashSize = hashSize;
+		this->hashSize = (int)hashSize;
 		this->tryNum = tryNum;
 		kcv.resize(hashSize);
 		GT gx = 1;
-		for (int i = 1; i <= hashSize; i++) {
+		for (int i = 1; i <= (int)hashSize; i++) {
 			gx *= g;
 			kcv[i - 1].key = uint32_t(*gx.getFp0()->getUnit());
 			kcv[i - 1].count = gx.b.a.a.isOdd() ? i : -i;
@@ -233,7 +235,7 @@ public:
 		compute log_P(g^x)
 		call basicLog at most 2 * tryNum
 	*/
-	int64_t log(const GT& gx) const
+	int log(const GT& gx) const
 	{
 		bool ok;
 		int c = basicLog(gx, &ok);
@@ -241,9 +243,9 @@ public:
 			return c;
 		}
 		GT pos = gx, neg = gx;
-		int64_t posCenter = 0;
-		int64_t negCenter = 0;
-		int64_t next = hashSize * 2 + 1;
+		int posCenter = 0;
+		int negCenter = 0;
+		int next = hashSize * 2 + 1;
 		for (size_t i = 1; i < tryNum; i++) {
 			pos *= nextgInv;
 			posCenter += next;
@@ -484,7 +486,7 @@ public:
 			throw cybozu::Exception("BGN:dec:log:not found");
 		}
 #endif
-		int64_t dec(const CipherTextG1& c) const
+		int dec(const CipherTextG1& c) const
 		{
 			/*
 				S = myP + rP
@@ -496,11 +498,11 @@ public:
 			R -= c.T;
 			return g1HashTbl.log(R);
 		}
-		int64_t dec(const CipherTextA& c) const
+		int dec(const CipherTextA& c) const
 		{
 			return dec(c.c1);
 		}
-		int64_t dec(const CipherTextM& c) const
+		int dec(const CipherTextM& c) const
 		{
 			/*
 				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
@@ -522,7 +524,7 @@ public:
 			return gtHashTbl.log(s);
 //			return log(g, s);
 		}
-		int64_t dec(const CipherText& c) const
+		int dec(const CipherText& c) const
 		{
 			if (c.isMultiplied()) {
 				return dec(c.m);
