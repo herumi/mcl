@@ -761,7 +761,9 @@ public:
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
-		return self.readStream(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+		int ioMode = fp::detectIoMode(Fp::BaseFp::getIoMode(), os);
+		ioMode |= ioMode_;
+		return self.readStream(is, ioMode);
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
