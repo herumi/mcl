@@ -17,7 +17,6 @@ cybozu::RandomGenerator g_rg;
 typedef mcl::bgn::BGNT<mcl::bn256::BN, mcl::bn256::Fr> BGN;
 
 using namespace mcl::bgn;
-using namespace mcl::bn256;
 
 void miniSample()
 {
