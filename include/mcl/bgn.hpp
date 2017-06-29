@@ -380,10 +380,24 @@ private:
 		/*
 			(S1, T1) x (S2, T2)
 		*/
+#if 1
+#ifdef MCL_USE_BN384
+		std::vector<bn384::Fp6> Qcoeff;
+#else
+		std::vector<bn256::Fp6> Qcoeff;
+#endif
+		BN::precomputeG2(Qcoeff, S2);
+		BN::precomputedMillerLoop(g[0], S1, Qcoeff);
+		BN::precomputedMillerLoop(g[2], T1, Qcoeff);
+		BN::precomputeG2(Qcoeff, T2);
+		BN::precomputedMillerLoop(g[1], S1, Qcoeff);
+		BN::precomputedMillerLoop(g[3], T1, Qcoeff);
+#else
 		BN::millerLoop(g[0], S1, S2);
 		BN::millerLoop(g[1], S1, T2);
 		BN::millerLoop(g[2], T1, S2);
 		BN::millerLoop(g[3], T1, T2);
+#endif
 	}
 public:
 
