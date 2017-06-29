@@ -61,11 +61,11 @@ public:
 		kcv.resize(hashSize);
 		G xP;
 		xP.clear();
-		for (size_t i = 1; i <= (int)hashSize; i++) {
+		for (int i = 1; i <= (int)hashSize; i++) {
 			xP += P;
 			xP.normalize();
 			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
-			kcv[i - 1].count = xP.y.isOdd() ? i : -1;
+			kcv[i - 1].count = xP.y.isOdd() ? i : -i;
 		}
 		nextP = xP;
 		G::dbl(nextP, nextP);
