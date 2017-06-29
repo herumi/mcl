@@ -5,11 +5,20 @@
 #include <mcl/bn256.hpp>
 #include <mcl/bgn.hpp>
 
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#include <random>
+std::random_device rg;
+#else
 cybozu::RandomGenerator rg;
+#endif
 
 typedef mcl::bgn::BGNT<mcl::bn256::BN, mcl::bn256::Fr> BGN;
 typedef BGN::SecretKey SecretKey;
 typedef BGN::PublicKey PublicKey;
+typedef BGN::CipherTextG1 CipherTextG1;
+typedef BGN::CipherTextG2 CipherTextG2;
+typedef BGN::CipherTextA CipherTextA;
+typedef BGN::CipherTextM CipherTextM;
 typedef BGN::CipherText CipherText;
 
 using namespace mcl::bgn;
@@ -150,5 +159,49 @@ CYBOZU_TEST_AUTO(add_mul_add_sub)
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok);
 	c[0].sub(c[4]);
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok1);
+}
+
+template<class T>
+T testIo(const T& x)
+{
+	std::stringstream ss;
+	ss << x;
+	T y;
+	ss >> y;
+	CYBOZU_TEST_EQUAL(x, y);
+	return y;
+}
+
+CYBOZU_TEST_AUTO(io)
+{
+	int m;
+	for (int i = 0; i < 2; i++) {
+		if (i == 1) {
+			Fp::setIoMode(mcl::IoFixedSizeByteSeq);
+			G1::setIoMode(mcl::IoFixedSizeByteSeq);
+		}
+		SecretKey sec;
+		sec.setByCSPRNG(rg);
+		sec.setDecodeRange(100, 2);
+		testIo(sec);
+		PublicKey pub;
+		sec.getPublicKey(pub);
+		testIo(pub);
+		CipherTextG1 g1;
+		pub.enc(g1, 3, rg);
+		m = sec.dec(testIo(g1));
+		CYBOZU_TEST_EQUAL(m, 3);
+		CipherTextG2 g2;
+		pub.enc(g2, 5, rg);
+		testIo(g2);
+		CipherTextA ca;
+		pub.enc(ca, -4, rg);
+		m = sec.dec(testIo(ca));
+		CYBOZU_TEST_EQUAL(m, -4);
+		CipherTextM cm;
+		CipherTextM::mul(cm, g1, g2);
+		m = sec.dec(testIo(cm));
+		CYBOZU_TEST_EQUAL(m, 15);
+	}
 }
 

@@ -14,6 +14,8 @@
 	http://theory.stanford.edu/~dfreeman/cs259c-f11/lectures/bgn
 */
 #include <vector>
+#include <iosfwd>
+#include <cybozu/itoa.hpp>
 #ifdef MCL_USE_BN384
 #include <mcl/bn384.hpp>
 #else
@@ -49,7 +51,10 @@ public:
 	*/
 	void init(const G& P, int hashSize, size_t tryNum = 0)
 	{
-		if (hashSize == 0) throw cybozu::Exception("EcHashTable:init:zero hashSize");
+		if (hashSize == 0) {
+			kcv.clear();
+			return;
+		}
 		this->P = P;
 		this->hashSize = hashSize;
 		this->tryNum = tryNum;
@@ -162,7 +167,10 @@ public:
 	*/
 	void init(const GT& g, int hashSize, size_t tryNum = 0)
 	{
-		if (hashSize == 0) throw cybozu::Exception("GTHashTable:init:zero hashSize");
+		if (hashSize == 0) {
+			kcv.clear();
+			return;
+		}
 		this->g = g;
 		this->hashSize = hashSize;
 		this->tryNum = tryNum;
@@ -298,6 +306,7 @@ private:
 		friend class SecretKey;
 		friend class PublicKey;
 		friend class CipherTextA;
+		friend class CipherTextM;
 	public:
 		static inline void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
@@ -322,6 +331,43 @@ private:
 		}
 		void add(const CipherTextAT& c) { add(*this, *this, c); }
 		void sub(const CipherTextAT& c) { sub(*this, *this, c); }
+		std::istream& readStream(std::istream& is, int ioMode)
+		{
+			S.readStream(is, ioMode);
+			T.readStream(is, ioMode);
+			return is;
+		}
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = S.getStr(ioMode);
+			str += sep;
+			str += T.getStr(ioMode);
+		}
+		void setStr(const std::string& str, int ioMode = 0)
+		{
+			std::istringstream is(str);
+			readStream(is, ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		friend std::istream& operator>>(std::istream& is, CipherTextAT& self)
+		{
+			return self.readStream(is, fp::detectIoMode(G::getIoMode(), is));
+		}
+		friend std::ostream& operator<<(std::ostream& os, const CipherTextAT& self)
+		{
+			return os << self.getStr(fp::detectIoMode(G::getIoMode(), os));
+		}
+		bool operator==(const CipherTextAT& rhs) const
+		{
+			return S == rhs.S && T == rhs.T;
+		}
+		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
 	};
 	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
 	{
@@ -353,13 +399,23 @@ public:
 	class SecretKey {
 		Fr x1, y1, z1;
 		Fr x2, y2, z2;
+		size_t hashSize;
+		size_t tryNum;
 		G1 B1; // (x1 y1 - z1) P
 		G2 B2; // (x2 y2 - z2) Q
 		Fr x1x2;
 		GT g; // e(B1, B2)
 		local::EcHashTable<G1> ecHashTbl;
 		local::GTHashTable<GT> gtHashTbl;
+		void initInner()
+		{
+			G1::mul(B1, P, x1 * y1 - z1);
+			G2::mul(B2, Q, x2 * y2 - z2);
+			x1x2 = x1 * x2;
+			BN::pairing(g, B1, B2);
+		}
 	public:
+		SecretKey() : hashSize(0), tryNum(0) {}
 		template<class RG>
 		void setByCSPRNG(RG& rg)
 		{
@@ -369,10 +425,7 @@ public:
 			x2.setRand(rg);
 			y2.setRand(rg);
 			z2.setRand(rg);
-			G1::mul(B1, P, x1 * y1 - z1);
-			G2::mul(B2, Q, x2 * y2 - z2);
-			x1x2 = x1 * x2;
-			BN::pairing(g, B1, B2);
+			initInner();
 		}
 		/*
 			decode message m for |m| <= hasSize * (tryNum + 1)
@@ -380,6 +433,8 @@ public:
 		*/
 		void setDecodeRange(size_t hashSize, size_t tryNum = 0)
 		{
+			this->hashSize = hashSize;
+			this->tryNum = tryNum;
 			ecHashTbl.init(B1, hashSize, tryNum);
 			gtHashTbl.init(g, hashSize, tryNum);
 		}
@@ -460,6 +515,63 @@ public:
 				return dec(c.a);
 			}
 		}
+		std::istream& readStream(std::istream& is, int ioMode)
+		{
+			x1.readStream(is, ioMode);
+			y1.readStream(is, ioMode);
+			z1.readStream(is, ioMode);
+			x2.readStream(is, ioMode);
+			y2.readStream(is, ioMode);
+			z2.readStream(is, ioMode);
+			is >> hashSize >> tryNum;
+			setDecodeRange(hashSize, tryNum);
+			return is;
+		}
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = x1.getStr(ioMode);
+			str += sep;
+			str += y1.getStr(ioMode);
+			str += sep;
+			str += z1.getStr(ioMode);
+			str += sep;
+			str += x2.getStr(ioMode);
+			str += sep;
+			str += y2.getStr(ioMode);
+			str += sep;
+			str += z2.getStr(ioMode);
+			str += ' ';
+			str += cybozu::itoa(hashSize);
+			str += ' ';
+			str += cybozu::itoa(tryNum);
+		}
+		void setStr(const std::string& str, int ioMode = 0)
+		{
+			std::istringstream is(str);
+			readStream(is, ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		friend std::istream& operator>>(std::istream& is, SecretKey& self)
+		{
+			return self.readStream(is, fp::detectIoMode(Fr::getIoMode(), is));
+		}
+		friend std::ostream& operator<<(std::ostream& os, const SecretKey& self)
+		{
+			return os << self.getStr(fp::detectIoMode(Fr::getIoMode(), os));
+		}
+		bool operator==(const SecretKey& rhs) const
+		{
+			return x1 == rhs.x1 && y1 == rhs.y1 && z1 == rhs.z1
+			    && x2 == rhs.x2 && y2 == rhs.y2 && z2 == rhs.z2
+			    && hashSize == rhs.hashSize && tryNum == rhs.tryNum;
+		}
+		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
 	};
 
 	class PublicKey {
@@ -580,6 +692,56 @@ public:
 				rerandomize(c.a, rg);
 			}
 		}
+		std::istream& readStream(std::istream& is, int ioMode)
+		{
+			xP.readStream(is, ioMode);
+			yP.readStream(is, ioMode);
+			zP.readStream(is, ioMode);
+			xQ.readStream(is, ioMode);
+			yQ.readStream(is, ioMode);
+			zQ.readStream(is, ioMode);
+			return is;
+		}
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = xP.getStr(ioMode);
+			str += sep;
+			str += yP.getStr(ioMode);
+			str += sep;
+			str += zP.getStr(ioMode);
+			str += sep;
+			str += xQ.getStr(ioMode);
+			str += sep;
+			str += yQ.getStr(ioMode);
+			str += sep;
+			str += zQ.getStr(ioMode);
+		}
+		void setStr(const std::string& str, int ioMode = 0)
+		{
+			std::istringstream is(str);
+			readStream(is, ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		friend std::istream& operator>>(std::istream& is, PublicKey& self)
+		{
+			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+		}
+		friend std::ostream& operator<<(std::ostream& os, const PublicKey& self)
+		{
+			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+		}
+		bool operator==(const PublicKey& rhs) const
+		{
+			return xP == rhs.xP && yP == rhs.yP && zP == rhs.zP
+			    && xQ == rhs.xQ && yQ == rhs.yQ && zQ == rhs.zQ;
+		}
+		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
 	};
 
 	class CipherTextA {
@@ -587,6 +749,7 @@ public:
 		CipherTextG2 c2;
 		friend class SecretKey;
 		friend class PublicKey;
+		friend class CipherTextM;
 	public:
 		static inline void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
@@ -603,16 +766,45 @@ public:
 			CipherTextG1::neg(y.c1, x.c1);
 			CipherTextG2::neg(y.c2, x.c2);
 		}
-		static inline void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
-		{
-			/*
-				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
-				call finalExp at once in decrypting c
-			*/
-			tensorProduct(z.g, x.c1.S, x.c1.T, y.c2.S, y.c2.T);
-		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 		void sub(const CipherTextA& c) { sub(*this, *this, c); }
+		std::istream& readStream(std::istream& is, int ioMode)
+		{
+			c1.readStream(is, ioMode);
+			c2.readStream(is, ioMode);
+			return is;
+		}
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = c1.getStr(ioMode);
+			str += sep;
+			str += c2.getStr(ioMode);
+		}
+		void setStr(const std::string& str, int ioMode = 0)
+		{
+			std::istringstream is(str);
+			readStream(is, ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		friend std::istream& operator>>(std::istream& is, CipherTextA& self)
+		{
+			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+		}
+		friend std::ostream& operator<<(std::ostream& os, const CipherTextA& self)
+		{
+			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+		}
+		bool operator==(const CipherTextA& rhs) const
+		{
+			return c1 == rhs.c1 && c2 == rhs.c2;
+		}
+		bool operator!=(const CipherTextA& rhs) const { return !operator==(rhs); }
 	};
 
 	class CipherTextM {
@@ -641,14 +833,69 @@ public:
 				GT::mul(z.g[i], x.g[i], t);
 			}
 		}
+		static inline void mul(CipherTextM& z, const CipherTextG1& x, const CipherTextG2& y)
+		{
+			/*
+				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
+				call finalExp at once in decrypting c
+			*/
+			tensorProduct(z.g, x.S, x.T, y.S, y.T);
+		}
+		static inline void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
+		{
+			mul(z, x.c1, y.c2);
+		}
 		void add(const CipherTextM& c) { add(*this, *this, c); }
 		void sub(const CipherTextM& c) { sub(*this, *this, c); }
+		std::istream& readStream(std::istream& is, int ioMode)
+		{
+			for (size_t i = 0; i < 4; i++) {
+				g[i].readStream(is, ioMode);
+			}
+			return is;
+		}
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = g[0].getStr(ioMode);
+			for (size_t i = 1; i < 4; i++) {
+				str += sep;
+				str += g[i].getStr(ioMode);
+			}
+		}
+		void setStr(const std::string& str, int ioMode = 0)
+		{
+			std::istringstream is(str);
+			readStream(is, ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		friend std::istream& operator>>(std::istream& is, CipherTextM& self)
+		{
+			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+		}
+		friend std::ostream& operator<<(std::ostream& os, const CipherTextM& self)
+		{
+			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+		}
+		bool operator==(const CipherTextM& rhs) const
+		{
+			for (int i = 0; i < 4; i++) {
+				if (g[i] != rhs.g[i]) return false;
+			}
+			return true;
+		}
+		bool operator!=(const CipherTextM& rhs) const { return !operator==(rhs); }
 	};
 
 	class CipherText {
+		bool isMultiplied_;
 		CipherTextA a;
 		CipherTextM m;
-		bool isMultiplied_;
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
@@ -688,11 +935,60 @@ public:
 				throw cybozu::Exception("bgn:CipherText:mul:mixed CipherText");
 			}
 			z.isMultiplied_ = true;
-			CipherTextA::mul(z.m, x.a, y.a);
+			CipherTextM::mul(z.m, x.a, y.a);
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
 		void sub(const CipherText& c) { sub(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
+		std::istream& readStream(std::istream& is, int ioMode)
+		{
+			is >> isMultiplied_;
+			if (isMultiplied()) {
+				m.readStream(is, ioMode);
+			} else {
+				a.readStream(is, ioMode);
+			}
+			return is;
+		}
+		void getStr(std::string& str, int ioMode = 0) const
+		{
+			const char *sep = fp::getIoSeparator(ioMode);
+			str = isMultiplied() ? "1" : "0";
+			str += sep;
+			if (isMultiplied()) {
+				str += m.getStr(ioMode);
+			} else {
+				str += a.getStr(ioMode);
+			}
+		}
+		void setStr(const std::string& str, int ioMode = 0)
+		{
+			std::istringstream is(str);
+			readStream(is, ioMode);
+		}
+		std::string getStr(int ioMode = 0) const
+		{
+			std::string str;
+			getStr(str, ioMode);
+			return str;
+		}
+		friend std::istream& operator>>(std::istream& is, CipherText& self)
+		{
+			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+		}
+		friend std::ostream& operator<<(std::ostream& os, const CipherText& self)
+		{
+			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+		}
+		bool operator==(const CipherTextM& rhs) const
+		{
+			if (isMultiplied() != rhs.isMultiplied()) return false;
+			if (isMultiplied()) {
+				return m == rhs.m;
+			}
+			return a == rhs.a;
+		}
+		bool operator!=(const CipherTextM& rhs) const { return !operator==(rhs); }
 	};
 };
 
