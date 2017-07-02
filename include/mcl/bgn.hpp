@@ -22,9 +22,22 @@
 #define MCL_USE_BN256
 #endif
 
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#include <random>
+#else
+#include <cybozu/random_generator.hpp>
+#endif
+
 namespace mcl { namespace bgn {
 
 namespace local {
+
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+typedef std::random_device RandomDevice;
+static thread_local std::random_device g_rg;
+#else
+static cybozu::RandomGenerator g_rg;
+#endif
 
 struct KeyCount {
 	uint32_t key;
@@ -444,6 +457,7 @@ public:
 			z2.setRand(rg);
 			initInner();
 		}
+		void setByCSPRNG() { setByCSPRNG(local::g_rg); }
 		/*
 			set range for G1-DLP
 		*/
@@ -641,6 +655,10 @@ public:
 			c.isMultiplied_ = false;
 			enc(c.a, m, rg);
 		}
+		void enc(CipherTextG1& c, int m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextG2& c, int m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextA& c, int m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherText& c, int m) const { return enc(c, m, local::g_rg); }
 		/*
 			convert from CipherTextG1 to CipherTextM
 		*/
@@ -716,6 +734,10 @@ public:
 				rerandomize(c.a, rg);
 			}
 		}
+		void rerandomize(CipherTextA& c) const { rerandomize(c, local::g_rg); }
+		void rerandomize(CipherTextM& c) const { rerandomize(c, local::g_rg); }
+		void rerandomize(CipherText& c) const { rerandomize(c, local::g_rg); }
+
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
 			xP.readStream(is, ioMode);
@@ -1042,6 +1064,19 @@ typename BN::G1 BGNT<BN, Fr>::P;
 
 template<class BN, class Fr>
 typename BN::G2 BGNT<BN, Fr>::Q;
+
+#ifdef MCL_USE_BN384
+typedef mcl::bgn::BGNT<mcl::bn384::BN, mcl::bn256::Fr> BGN;
+#else
+typedef mcl::bgn::BGNT<mcl::bn256::BN, mcl::bn256::Fr> BGN;
+#endif
+typedef BGN::SecretKey SecretKey;
+typedef BGN::PublicKey PublicKey;
+typedef BGN::CipherTextG1 CipherTextG1;
+typedef BGN::CipherTextG2 CipherTextG2;
+typedef BGN::CipherTextA CipherTextA;
+typedef BGN::CipherTextM CipherTextM;
+typedef BGN::CipherText CipherText;
 
 } } // mcl::bgn
 

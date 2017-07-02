@@ -1,25 +1,7 @@
 #define PUT(x) std::cout << #x << "=" << (x) << std::endl;
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
-#include <cybozu/random_generator.hpp>
-#include <mcl/bn256.hpp>
 #include <mcl/bgn.hpp>
-
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <random>
-std::random_device g_rg;
-#else
-cybozu::RandomGenerator g_rg;
-#endif
-
-typedef mcl::bgn::BGNT<mcl::bn256::BN, mcl::bn256::Fr> BGN;
-typedef BGN::SecretKey SecretKey;
-typedef BGN::PublicKey PublicKey;
-typedef BGN::CipherTextG1 CipherTextG1;
-typedef BGN::CipherTextG2 CipherTextG2;
-typedef BGN::CipherTextA CipherTextA;
-typedef BGN::CipherTextM CipherTextM;
-typedef BGN::CipherText CipherText;
 
 using namespace mcl::bgn;
 using namespace mcl::bn256;
@@ -87,15 +69,15 @@ CYBOZU_TEST_AUTO(GTHashTable)
 CYBOZU_TEST_AUTO(enc_dec)
 {
 	SecretKey& sec = g_sec;
-	sec.setByCSPRNG(g_rg);
+	sec.setByCSPRNG();
 	sec.setRangeForDLP(1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
 	for (int i = -5; i < 5; i++) {
-		pub.enc(c, i, g_rg);
+		pub.enc(c, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c), i);
-		pub.rerandomize(c, g_rg);
+		pub.rerandomize(c);
 		CYBOZU_TEST_EQUAL(sec.dec(c), i);
 	}
 }
@@ -108,12 +90,12 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 	for (int m1 = -5; m1 < 5; m1++) {
 		for (int m2 = -5; m2 < 5; m2++) {
 			CipherText c1, c2, c3;
-			pub.enc(c1, m1, g_rg);
-			pub.enc(c2, m2, g_rg);
+			pub.enc(c1, m1);
+			pub.enc(c2, m2);
 			CipherText::add(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 
-			pub.rerandomize(c3, g_rg);
+			pub.rerandomize(c3);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 
 			CipherText::sub(c3, c1, c2);
@@ -122,7 +104,7 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 			CipherText::mul(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 
-			pub.rerandomize(c3, g_rg);
+			pub.rerandomize(c3);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 		}
 	}
@@ -136,7 +118,7 @@ CYBOZU_TEST_AUTO(add_mul_add_sub)
 	int m[8] = { 1, -2, 3, 4, -5, 6, -7, 8 };
 	CipherText c[8];
 	for (int i = 0; i < 8; i++) {
-		pub.enc(c[i], m[i], g_rg);
+		pub.enc(c[i], m[i]);
 		CYBOZU_TEST_EQUAL(sec.dec(c[i]), m[i]);
 		CYBOZU_TEST_ASSERT(!c[i].isMultiplied());
 		CipherText mc;
@@ -181,21 +163,21 @@ CYBOZU_TEST_AUTO(io)
 			G1::setIoMode(mcl::IoFixedSizeByteSeq);
 		}
 		SecretKey sec;
-		sec.setByCSPRNG(g_rg);
+		sec.setByCSPRNG();
 		sec.setRangeForDLP(100, 2);
 		testIo(sec);
 		PublicKey pub;
 		sec.getPublicKey(pub);
 		testIo(pub);
 		CipherTextG1 g1;
-		pub.enc(g1, 3, g_rg);
+		pub.enc(g1, 3);
 		m = sec.dec(testIo(g1));
 		CYBOZU_TEST_EQUAL(m, 3);
 		CipherTextG2 g2;
-		pub.enc(g2, 5, g_rg);
+		pub.enc(g2, 5);
 		testIo(g2);
 		CipherTextA ca;
-		pub.enc(ca, -4, g_rg);
+		pub.enc(ca, -4);
 		m = sec.dec(testIo(ca));
 		CYBOZU_TEST_EQUAL(m, -4);
 		CipherTextM cm;
@@ -211,12 +193,12 @@ CYBOZU_TEST_AUTO(bench)
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c1, c2, c3;
-	CYBOZU_BENCH("enc", pub.enc, c1, 5, g_rg);
-	pub.enc(c2, 4, g_rg);
+	CYBOZU_BENCH("enc", pub.enc, c1, 5);
+	pub.enc(c2, 4);
 	CYBOZU_BENCH("add", c1.add, c2);
 	CYBOZU_BENCH("mul", CipherText::mul, c3, c1, c2);
-	pub.enc(c1, 5, g_rg);
-	pub.enc(c2, 4, g_rg);
+	pub.enc(c1, 5);
+	pub.enc(c2, 4);
 	c1.mul(c2);
 	CYBOZU_BENCH("dec", sec.dec, c1);
 	c2 = c1;
