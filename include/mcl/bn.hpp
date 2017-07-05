@@ -436,14 +436,6 @@ struct ParamT {
 	bool isNegative;
 	mpz_class p;
 	mpz_class r;
-	static const size_t gN = 5;
-	/*
-		g = xi^((p - 1) / 6)
-		g[] = { g^2, g^4, g^1, g^3, g^5 }
-	*/
-	Fp2 g[gN];
-	Fp2 g2[gN];
-	Fp2 g3[gN];
 	int b;
 	/*
 		twist
@@ -496,31 +488,6 @@ struct ParamT {
 		mapTo.init(2 * p - r);
 		glv1.init(r, z);
 
-		Fp2::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
-		for (size_t i = 1; i < gN; i++) {
-			g[i] = g[i - 1] * g[0];
-		}
-		/*
-			permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
-			g[0] = g^2
-			g[1] = g^4
-			g[2] = g^1
-			g[3] = g^3
-			g[4] = g^5
-		*/
-		{
-			Fp2 t = g[0];
-			g[0] = g[1];
-			g[1] = g[3];
-			g[3] = g[2];
-			g[2] = t;
-		}
-		for (size_t i = 0; i < gN; i++) {
-			Fp2 t(g[i].a, g[i].b);
-			if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
-			Fp2::mul(g2[i], t, g[i]);
-			g3[i] = g[i] * g2[i];
-		}
 		const mpz_class largest_c = abs(6 * z + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
@@ -576,65 +543,6 @@ struct BNT {
 		G2::setMulArrayGLV(mulArrayGLV2);
 	}
 	/*
-		Frobenius
-		i^2 = -1
-		(a + bi)^p = a + bi^p in Fp
-		= a + bi if p = 1 mod 4
-		= a - bi if p = 3 mod 4
-
-		g = xi^(p - 1) / 6
-		v^3 = xi in Fp2
-		v^p = ((v^6) ^ (p-1)/6) v = g^2 v
-		v^2p = g^4 v^2
-		(a + bv + cv^2)^p in Fp6
-		= F(a) + F(b)g^2 v + F(c) g^4 v^2
-
-		w^p = ((w^6) ^ (p-1)/6) w = g w
-		((a + bv + cv^2)w)^p in Fp12
-		= (F(a) g + F(b) g^3 v + F(c) g^5 v^2)w
-	*/
-	static void Frobenius(Fp12& y, const Fp12& x)
-	{
-		for (int i = 0; i < 6; i++) {
-			Fp2::Frobenius(y.getFp2()[i], x.getFp2()[i]);
-		}
-		for (int i = 1; i < 6; i++) {
-			y.getFp2()[i] *= param.g[i - 1];
-		}
-	}
-	static void Frobenius2(Fp12& y, const Fp12& x)
-	{
-#if 0
-		Frobenius(y, x);
-		Frobenius(y, y);
-#else
-		y.getFp2()[0] = x.getFp2()[0];
-		if (Fp::getOp().pmod4 == 1) {
-			for (int i = 1; i < 6; i++) {
-				Fp2::mul(y.getFp2()[i], x.getFp2()[i], param.g2[i]);
-			}
-		} else {
-			for (int i = 1; i < 6; i++) {
-				Fp2::mulFp(y.getFp2()[i], x.getFp2()[i], param.g2[i - 1].a);
-			}
-		}
-#endif
-	}
-	static void Frobenius3(Fp12& y, const Fp12& x)
-	{
-#if 0
-		Frobenius(y, x);
-		Frobenius(y, y);
-		Frobenius(y, y);
-#else
-		Fp2::Frobenius(y.getFp2()[0], x.getFp2()[0]);
-		for (int i = 1; i < 6; i++) {
-			Fp2::Frobenius(y.getFp2()[i], x.getFp2()[i]);
-			y.getFp2()[i] *= param.g3[i - 1];
-		}
-#endif
-	}
-	/*
 		p mod 6 = 1, w^6 = xi
 		Frob(x', y') = phi Frob phi^-1(x', y')
 		= phi Frob (x' w^2, y' w^3)
@@ -647,8 +555,8 @@ struct BNT {
 		Fp2::Frobenius(D.x, S.x);
 		Fp2::Frobenius(D.y, S.y);
 		Fp2::Frobenius(D.z, S.z);
-		D.x *= param.g[0];
-		D.y *= param.g[3];
+		D.x *= Fp2::get_gTbl()[0];
+		D.y *= Fp2::get_gTbl()[3];
 	}
 	/*
 		l = (a, b, c) => (a, b * P.y, c * P.x)
@@ -1217,20 +1125,20 @@ struct BNT {
 		Fp12::unitaryInv(b, b);
 		b *= a;
 		a2 *= a;
-		Frobenius2(a, a);
+		Fp12::Frobenius2(a, a);
 		a *= a2;
 		a *= x;
 		Fp12::unitaryInv(y, x);
 		y *= b;
-		Frobenius(b, b);
+		Fp12::Frobenius(b, b);
 		a *= b;
-		Frobenius3(y, y);
+		Fp12::Frobenius3(y, y);
 		y *= a;
 	}
 	static void mapToCyclotomic(Fp12& y, const Fp12& x)
 	{
 		Fp12 z;
-		Frobenius2(z, x); // z = x^(p^2)
+		Fp12::Frobenius2(z, x); // z = x^(p^2)
 		z *= x; // x^(p^2 + 1)
 		Fp12::inv(y, z);
 		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
