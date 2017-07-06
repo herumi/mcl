@@ -143,6 +143,59 @@ See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cp
 A default constructor does not initialize the instance.
 Set a valid value before reffering it.
 
+## Definition of groups
+
+The curve equation for a BN curve is:
+
+	E/Fp: y^2 = x^3 + b .
+
+* the cyclic group G1 is instantiated as E(Fp)[n] where n := p + 1 - t;
+* the cyclic group G2 is instantiated as the inverse image of E'(Fp^2)[n] under a twisting isomorphism phi from E' to E; and
+* the pairing e: G1 x G2 -> Fp12 is the optimal ate pairing.
+
+The field Fp12 is constructed via the following tower:
+
+* Fp2 = Fp[u] / (u^2 + 1)
+* Fp6 = Fp2[v] / (v^3 - Xi) where Xi = u + 1
+* Fp12 = Fp6[w] / (w^2 - v)
+* GT = { x in Fp12 | x^r = 1 }
+
+
+## Arithmetic operations
+
+G1 and G2 is additive group and has the following operations:
+
+* T::add(T& z, const T& x, const T& y); // z = x + y
+* T::sub(T& z, const T& x, const T& y); // z = x - y
+* T::neg(T& y, const T& x); // y = -x
+* T::mul(T& z, const T& x, const INT& y); // z = y times scalar multiplication of x
+
+Remark: &z == &x or &y are allowed. INT means integer type such as Fr, int and mpz_class.
+
+`T::mul` uses GLV method then `G2::mul` returns wrong value if x is not in G2.
+Use `T::mulGeneric(T& z, const T& x, const INT& y)` for x in phi^-1(E'(Fp^2)) - G2.
+
+Fp, Fp2, Fp6 and Fp12 have the following operations:
+
+* T::add(T& z, const T& x, const T& y); // z = x + y
+* T::sub(T& z, const T& x, const T& y); // z = x - y
+* T::mul(T& z, const T& x, const T& y); // z = x * y
+* T::div(T& z, const T& x, const T& y); // z = x / y
+* T::neg(T& y, const T& x); // y = -x
+* T::inv(T& y, const T& x); // y = 1/x
+* T::pow(T& z, const T& x, const INT& y); // z = x^y
+* Fp12::unitaryInv(T& y, const T& x); // y = conjugate of x
+
+Remark: `Fp12::mul` uses GLV method then returns wrong value if x is not in GT.
+Use `Fp12::mulGeneric` for x in Fp12 - GT.
+
+## Map To points
+
+* BN::mapToG1(G1& P, const Fp& x);
+* BN::mapToG2(G2& P, const Fp2& x);
+
+These functions maps x into Gi according to [_Faster hashing to G2_].
+
 ## String format of G1 and G2
 G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
 normalize() method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).
