@@ -90,7 +90,7 @@ public:
 	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
 };
 
-template<class Fp> class Fp12T;
+template<class Fp> struct Fp12T;
 template<class Fp> class BNT;
 /*
 	beta = -1

@@ -249,9 +249,12 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&x, &z));
 
+	/*
+		can't use mclBnGT_pow because x is not in GT
+	*/
 	mclBnFr n;
 	mclBnFr_setInt(&n, 3);
-	mclBnGT_pow(&z, &x, &n);
+	mclBnGT_powGeneric(&z, &x, &n);
 	mclBnGT_mul(&y, &x, &x);
 	mclBnGT_mul(&y, &y, &x);
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&y, &z));
@@ -280,6 +283,13 @@ CYBOZU_TEST_AUTO(pairing)
 
 	mclBnGT_pow(&e1, &e, &b);
 	mclBn_pairing(&e2, &P, &bQ);
+	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &e2));
+
+	mclBnFr n;
+	mclBnFr_setInt(&n, 3);
+	mclBnGT_pow(&e1, &e, &n);
+	mclBnGT_mul(&e2, &e, &e);
+	mclBnGT_mul(&e2, &e2, &e);
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &e2));
 }
 

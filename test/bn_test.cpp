@@ -184,6 +184,27 @@ void testPrecomputed(const G1& P, const G2& Q)
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
+void testFp12pow(const G1& P, const G2& Q)
+{
+	Fp12 e, e1, e2;
+	BN::pairing(e, P, Q);
+	cybozu::XorShift rg;
+	for (int i = -10; i < 10; i++) {
+		mpz_class xm = i;
+		Fp12::pow(e1, e, xm);
+		Fp12::powGeneric(e2, e, xm);
+		CYBOZU_TEST_EQUAL(e1, e2);
+	}
+	for (int i = 0; i < 10; i++) {
+		Fr x;
+		x.setRand(rg);
+		mpz_class xm = x.getMpz();
+		Fp12::pow(e1, e, xm);
+		BN::param.glv2.pow(e2, e, xm);
+		CYBOZU_TEST_EQUAL(e1, e2);
+	}
+}
+
 void testMillerLoop2(const G1& P1, const G2& Q1)
 {
 	Fp12 e1, e2;
@@ -259,6 +280,7 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		CYBOZU_BENCH_C("G2::add", 500, G2::add, Qa, Qa, Q);
 		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
 		CYBOZU_BENCH_C("GT::pow", 500, GT::pow, e1, e1, a);
+		CYBOZU_BENCH_C("GT::powGLV", 500, BN::param.glv2.pow, e1, e1, a);
 	}
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
@@ -326,6 +348,7 @@ CYBOZU_TEST_AUTO(naive)
 		bn256init(ts.cp, g_mode);
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+		testFp12pow(P, Q);
 		testIo(P, Q);
 		testTrivial(P, Q);
 		testSetStr(Q);

@@ -490,6 +490,10 @@ void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
 {
 	Fp12::pow(*cast(z), *cast(x), *cast(y));
 }
+void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
+{
+	Fp12::powGeneric(*cast(z), *cast(x), *cast(y));
+}
 
 void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
