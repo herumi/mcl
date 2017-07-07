@@ -258,6 +258,37 @@ struct GLV1 {
 	}
 };
 
+/*
+	twisted Frobenius for G2
+*/
+template<class G2>
+struct AddFrobenius : public G2 {
+	typedef typename G2::Fp Fp2;
+	/*
+		FrobeniusOnTwist
+		p mod 6 = 1, w^6 = xi
+		Frob(x', y') = phi Frob phi^-1(x', y')
+		= phi Frob (x' w^2, y' w^3)
+		= phi (x'^p w^2p, y'^p w^3p)
+		= (F(x') w^2(p - 1), F(y') w^3(p - 1))
+		= (F(x') g^2, F(y') g^3)
+	*/
+	static void Frobenius(G2& D, const G2& S)
+	{
+		Fp2::Frobenius(D.x, S.x);
+		Fp2::Frobenius(D.y, S.y);
+		Fp2::Frobenius(D.z, S.z);
+		D.x *= Fp2::get_gTbl()[0];
+		D.y *= Fp2::get_gTbl()[3];
+	}
+	static void Frobenius(AddFrobenius& y, const AddFrobenius& x)
+	{
+		Frobenius(static_cast<G2&>(y), static_cast<const G2&>(x));
+	}
+};
+/*
+	GLV method for G2 and GT
+*/
 template<class Fp2>
 struct GLV2 {
 	typedef typename Fp2::BaseFp Fp;
@@ -267,12 +298,10 @@ struct GLV2 {
 	mpz_class B[4][4];
 	mpz_class r;
 	mpz_class v[4];
-	void (*FrobeniusOnTwist)(G2&, const G2&);
-	GLV2() : m(0), FrobeniusOnTwist(0) {}
-	void init(const mpz_class& r, const mpz_class& z, void FrobeniusOnTwist(G2&, const G2&))
+	GLV2() : m(0) {}
+	void init(const mpz_class& r, const mpz_class& z)
 	{
 		this->r = r;
-		this->FrobeniusOnTwist = FrobeniusOnTwist;
 		m = mcl::gmp::getBitSize(r);
 		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
 		/*
@@ -316,12 +345,13 @@ struct GLV2 {
 			}
 		}
 	}
-	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
+	template<class T>
+	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
 	{
 #ifndef NDEBUG
 		{
-			G2 R;
-			G2::mulGeneric(R, P, r);
+			T R;
+			T::mulGeneric(R, P, r);
 			assert(R.isZero());
 		}
 #endif
@@ -329,8 +359,8 @@ struct GLV2 {
 		const size_t maxUnit = 3;
 		const int splitN = 4;
 		mpz_class u[splitN];
-		G2 in[splitN];
-		G2 tbl[16];
+		T in[splitN];
+		T tbl[16];
 		int bitTbl[splitN]; // bit size of u[i]
 		Unit w[splitN][maxUnit]; // unit array of u[i]
 		int maxBit = 0; // max bit of u[i]
@@ -348,21 +378,21 @@ struct GLV2 {
 		}
 		split(u, x);
 		in[0] = P;
-		FrobeniusOnTwist(in[1], in[0]);
-		FrobeniusOnTwist(in[2], in[1]);
-		FrobeniusOnTwist(in[3], in[2]);
+		T::Frobenius(in[1], in[0]);
+		T::Frobenius(in[2], in[1]);
+		T::Frobenius(in[3], in[2]);
 		for (int i = 0; i < splitN; i++) {
 			if (u[i] < 0) {
 				u[i] = -u[i];
-				G2::neg(in[i], in[i]);
+				T::neg(in[i], in[i]);
 			}
 //			in[i].normalize(); // slow
 		}
 #if 0
 		for (int i = 0; i < splitN; i++) {
-			G2::mulGeneric(in[i], in[i], u[i]);
+			T::mulGeneric(in[i], in[i], u[i]);
 		}
-		G2::add(Q, in[0], in[1]);
+		T::add(Q, in[0], in[1]);
 		Q += in[2];
 		Q += in[3];
 		return;
@@ -400,7 +430,7 @@ struct GLV2 {
 		Q.clear();
 		for (int i = maxN; i >= 0; i--) {
 			for (int j = m - 1; j >= 0; j--) {
-				G2::dbl(Q, Q);
+				T::dbl(Q, Q);
 				uint32_t b0 = (w[0][i] >> j) & 1;
 				uint32_t b1 = (w[1][i] >> j) & 1;
 				uint32_t b2 = (w[2][i] >> j) & 1;
@@ -418,119 +448,25 @@ struct GLV2 {
 	DummyLoop:
 		if (!constTime) return;
 		const int limitBit = (int)Fp::getBitSize() / splitN;
-		G2 D = tbl[0];
+		T D = tbl[0];
 		for (int i = maxBit + 1; i < limitBit; i++) {
-			G2::dbl(D, D);
+			T::dbl(D, D);
 			D += tbl[0];
 		}
 	}
+	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
+	{
+		typedef AddFrobenius<G2> G2withF;
+		G2withF& _Q(static_cast<G2withF&>(Q));
+		const G2withF& _P(static_cast<const G2withF&>(P));
+		mul(_Q, _P, x, constTime);
+	}
 	void pow(Fp12& z, const Fp12& x, mpz_class y, bool constTime = false) const
 	{
-#if 0 // #ifndef NDEBUG
-		{
-			Fp12 t;
-			Fp12::powGeneric(t, x, r);
-			assert(t.isZero());
-		}
-#endif
-		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 3;
-		const int splitN = 4;
-		mpz_class u[splitN];
-		Fp12 in[splitN];
-		Fp12 tbl[16];
-		int bitTbl[splitN]; // bit size of u[i]
-		Unit w[splitN][maxUnit]; // unit array of u[i]
-		int maxBit = 0; // max bit of u[i]
-		int maxN = 0;
-		int m = 0;
-
-		y %= r;
-		if (y == 0) {
-			z = 1;
-			if (constTime) goto DummyLoop;
-			return;
-		}
-		if (y < 0) {
-			y += r;
-		}
-		split(u, y);
-		in[0] = x;
-		Fp12::Frobenius(in[1], in[0]);
-		Fp12::Frobenius(in[2], in[1]);
-		Fp12::Frobenius(in[3], in[2]);
-		for (int i = 0; i < splitN; i++) {
-			if (u[i] < 0) {
-				u[i] = -u[i];
-				Fp12::unitaryInv(in[i], in[i]);
-			}
-//			in[i].normalize(); // slow
-		}
-#if 0
-		for (int i = 0; i < splitN; i++) {
-			Fp12::pow(in[i], in[i], u[i]);
-		}
-		Fp12::mul(z, in[0], in[1]);
-		z *= in[2];
-		z *= in[3];
-		return;
-#else
-		tbl[0] = in[0];
-		for (size_t i = 1; i < 16; i++) {
-			tbl[i] = 1;
-			if (i & 1) {
-				tbl[i] *= in[0];
-			}
-			if (i & 2) {
-				tbl[i] *= in[1];
-			}
-			if (i & 4) {
-				tbl[i] *= in[2];
-			}
-			if (i & 8) {
-				tbl[i] *= in[3];
-			}
-//			tbl[i].normalize();
-		}
-		for (int i = 0; i < splitN; i++) {
-			mcl::gmp::getArray(w[i], maxUnit, u[i]);
-			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
-			maxBit = std::max(maxBit, bitTbl[i]);
-		}
-		maxBit--;
-		/*
-			maxBit = maxN * UnitBitSize + m
-			0 < m <= UnitBitSize
-		*/
-		maxN = maxBit / mcl::fp::UnitBitSize;
-		m = maxBit % mcl::fp::UnitBitSize;
-		m++;
-		z = 1;
-		for (int i = maxN; i >= 0; i--) {
-			for (int j = m - 1; j >= 0; j--) {
-				Fp12::sqr(z, z);
-				uint32_t b0 = (w[0][i] >> j) & 1;
-				uint32_t b1 = (w[1][i] >> j) & 1;
-				uint32_t b2 = (w[2][i] >> j) & 1;
-				uint32_t b3 = (w[3][i] >> j) & 1;
-				uint32_t c = b3 * 8 + b2 * 4 + b1 * 2 + b0;
-				if (c == 0) {
-					if (constTime) tbl[0] *= tbl[1];
-				} else {
-					z *= tbl[c];
-				}
-			}
-			m = (int)mcl::fp::UnitBitSize;
-		}
-#endif
-	DummyLoop:
-		if (!constTime) return;
-		const int limitBit = (int)Fp::getBitSize() / splitN;
-		Fp12 d = tbl[0];
-		for (int i = maxBit + 1; i < limitBit; i++) {
-			Fp12::sqr(d, d);
-			d *= tbl[0];
-		}
+		typedef GroupMtoA<Fp12> AG; // as additive group
+		AG& _z = static_cast<AG&>(z);
+		const AG& _x = static_cast<const AG&>(x);
+		mul(_z, _x, y, constTime);
 	}
 };
 
@@ -627,6 +563,7 @@ struct BNT {
 	typedef mcl::Fp12T<Fp> Fp12;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
+	typedef AddFrobenius<G2> G2withF;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 	typedef ParamT<Fp> Param;
 	static Param param;
@@ -655,25 +592,9 @@ struct BNT {
 	{
 		param.init(cp, mode);
 		G1::setMulArrayGLV(mulArrayGLV1);
-		param.glv2.init(param.r, param.z, FrobeniusOnTwist);
+		param.glv2.init(param.r, param.z);
 		G2::setMulArrayGLV(mulArrayGLV2);
 		Fp12::setPowArrayGLV(powArrayGLV2);
-	}
-	/*
-		p mod 6 = 1, w^6 = xi
-		Frob(x', y') = phi Frob phi^-1(x', y')
-		= phi Frob (x' w^2, y' w^3)
-		= phi (x'^p w^2p, y'^p w^3p)
-		= (F(x') w^2(p - 1), F(y') w^3(p - 1))
-		= (F(x') g^2, F(y') g^3)
-	*/
-	static void FrobeniusOnTwist(G2& D, const G2& S)
-	{
-		Fp2::Frobenius(D.x, S.x);
-		Fp2::Frobenius(D.y, S.y);
-		Fp2::Frobenius(D.z, S.z);
-		D.x *= Fp2::get_gTbl()[0];
-		D.y *= Fp2::get_gTbl()[3];
 	}
 	/*
 		l = (a, b, c) => (a, b * P.y, c * P.x)
@@ -1316,8 +1237,8 @@ struct BNT {
 			}
 		}
 		G2 Q1, Q2;
-		FrobeniusOnTwist(Q1, Q);
-		FrobeniusOnTwist(Q2, Q1);
+		G2withF::Frobenius(Q1, Q);
+		G2withF::Frobenius(Q2, Q1);
 		G2::neg(Q2, Q2);
 		if (param.z < 0) {
 			G2::neg(T, T);
@@ -1378,8 +1299,8 @@ struct BNT {
 			}
 		}
 		G2 Q1, Q2;
-		FrobeniusOnTwist(Q1, Q);
-		FrobeniusOnTwist(Q2, Q1);
+		G2withF::Frobenius(Q1, Q);
+		G2withF::Frobenius(Q2, Q1);
 		G2::neg(Q2, Q2);
 		if (param.z < 0) {
 			G2::neg(T, T);

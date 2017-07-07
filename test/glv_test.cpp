@@ -161,7 +161,7 @@ void testGLV2()
 	mpz_class r = BN::param.r;
 	mpz_class lambda = 6 * z * z;
 	mcl::bn::GLV2<Fp2> glv2;
-	glv2.init(r, z, BN::FrobeniusOnTwist);
+	glv2.init(r, z);
 	mpz_class u[4];
 	mpz_class n;
 	cybozu::XorShift rg;

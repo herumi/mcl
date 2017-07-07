@@ -1121,5 +1121,44 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	}
 };
 
+/*
+	convert multiplicative group to additive group
+*/
+template<class T>
+struct GroupMtoA : public T {
+	static T& self(GroupMtoA& x) { return static_cast<T&>(x); }
+	static const T& self(const GroupMtoA& x) { return static_cast<const T&>(x); }
+	void clear()
+	{
+		self(*this) = 1;
+	}
+	static void add(GroupMtoA& z, const GroupMtoA& x, const GroupMtoA& y)
+	{
+		T::mul(self(z), self(x), self(y));
+	}
+	static void dbl(GroupMtoA& y, const GroupMtoA& x)
+	{
+		T::sqr(self(y), self(x));
+	}
+	static void neg(GroupMtoA& y, const GroupMtoA& x)
+	{
+		// assume Fp12
+		T::unitaryInv(self(y), self(x));
+	}
+	static void Frobenus(GroupMtoA& y, const GroupMtoA& x)
+	{
+		T::Frobenius(self(y), self(x));
+	}
+	template<class INT>
+	static void mul(GroupMtoA& z, const GroupMtoA& x, const INT& y)
+	{
+		T::pow(self(z), self(x), y);
+	}
+	void operator+=(const GroupMtoA& rhs)
+	{
+		add(*this, *this, rhs);
+	}
+};
+
 } // mcl
 
