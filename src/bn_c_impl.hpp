@@ -15,6 +15,7 @@ using namespace mcl::bn256;
 #include <mcl/bn384.hpp>
 using namespace mcl::bn384;
 #endif
+#include <mcl/lagrange.hpp>
 
 static FILE *g_fp = NULL;
 
@@ -525,4 +526,53 @@ void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Q
 void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t  *Q1buf, const mclBnG1 *P2, const uint64_t *Q2buf)
 {
 	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
+}
+
+int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, size_t k)
+	try
+{
+	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
+	return 0;
+} catch (std::exception& e) {
+	return -1;
+}
+int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, size_t k)
+	try
+{
+	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
+	return 0;
+} catch (std::exception& e) {
+	return -1;
+}
+int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, size_t k)
+	try
+{
+	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
+	return 0;
+} catch (std::exception& e) {
+	return -1;
+}
+int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, size_t cSize, const mclBnFr *x)
+	try
+{
+	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
+	return 0;
+} catch (std::exception& e) {
+	return -1;
+}
+int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, size_t cSize, const mclBnFr *x)
+	try
+{
+	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
+	return 0;
+} catch (std::exception& e) {
+	return -1;
+}
+int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, size_t cSize, const mclBnFr *x)
+	try
+{
+	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
+	return 0;
+} catch (std::exception& e) {
+	return -1;
 }
