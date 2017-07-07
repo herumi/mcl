@@ -1154,10 +1154,16 @@ struct GroupMtoA : public T {
 	{
 		T::pow(self(z), self(x), y);
 	}
+	template<class INT>
+	static void mulGeneric(GroupMtoA& z, const GroupMtoA& x, const INT& y)
+	{
+		T::powGeneric(self(z), self(x), y);
+	}
 	void operator+=(const GroupMtoA& rhs)
 	{
 		add(*this, *this, rhs);
 	}
+	void normalize() {}
 };
 
 } // mcl
