@@ -1,14 +1,14 @@
 #pragma once
 /**
 	@file
-	@brief pailler encryption
+	@brief paillier encryption
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/gmp_util.hpp>
 
-namespace mcl { namespace pailler {
+namespace mcl { namespace paillier {
 
 class PublicKey {
 	size_t primeBitSize;
@@ -27,7 +27,7 @@ public:
 	template<class RG>
 	void enc(mpz_class& c, const mpz_class& m, RG& rg) const
 	{
-		if (primeBitSize == 0) throw cybozu::Exception("pailler:PublicKey:not init");
+		if (primeBitSize == 0) throw cybozu::Exception("paillier:PublicKey:not init");
 		mpz_class r;
 		mcl::gmp::getRand(r, primeBitSize, rg);
 		mpz_class a, b;
@@ -81,4 +81,4 @@ public:
 	}
 };
 
-} } // mcl::pailler
+} } // mcl::paillier

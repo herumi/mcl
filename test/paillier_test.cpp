@@ -1,11 +1,11 @@
 #include <cybozu/test.hpp>
 #include <cybozu/random_generator.hpp>
-#include <mcl/pailler.hpp>
+#include <mcl/paillier.hpp>
 
-CYBOZU_TEST_AUTO(pailler)
+CYBOZU_TEST_AUTO(paillier)
 {
 	cybozu::RandomGenerator rg;
-	using namespace mcl::pailler;
+	using namespace mcl::paillier;
 	SecretKey sec;
 	sec.init(2048, rg);
 	PublicKey pub;
