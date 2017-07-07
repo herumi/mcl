@@ -1166,7 +1166,7 @@ struct GroupMtoA : public T {
 	}
 	void normalize() {}
 private:
-	bool isOne() const { return false; }
+	bool isOne() const;
 };
 
 } // mcl

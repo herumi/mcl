@@ -348,7 +348,7 @@ struct GLV2 {
 	template<class T>
 	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
 	{
-#ifndef NDEBUG
+#if 0 // #ifndef NDEBUG
 		{
 			T R;
 			T::mulGeneric(R, P, r);
