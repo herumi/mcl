@@ -1126,44 +1126,47 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 */
 template<class T>
 struct GroupMtoA : public T {
-	static T& self(GroupMtoA& x) { return static_cast<T&>(x); }
-	static const T& self(const GroupMtoA& x) { return static_cast<const T&>(x); }
+	static T& castT(GroupMtoA& x) { return static_cast<T&>(x); }
+	static const T& castT(const GroupMtoA& x) { return static_cast<const T&>(x); }
 	void clear()
 	{
-		self(*this) = 1;
+		castT(*this) = 1;
 	}
+	bool isZero() const { return castT(*this).isOne(); }
 	static void add(GroupMtoA& z, const GroupMtoA& x, const GroupMtoA& y)
 	{
-		T::mul(self(z), self(x), self(y));
+		T::mul(castT(z), castT(x), castT(y));
 	}
 	static void dbl(GroupMtoA& y, const GroupMtoA& x)
 	{
-		T::sqr(self(y), self(x));
+		T::sqr(castT(y), castT(x));
 	}
 	static void neg(GroupMtoA& y, const GroupMtoA& x)
 	{
 		// assume Fp12
-		T::unitaryInv(self(y), self(x));
+		T::unitaryInv(castT(y), castT(x));
 	}
 	static void Frobenus(GroupMtoA& y, const GroupMtoA& x)
 	{
-		T::Frobenius(self(y), self(x));
+		T::Frobenius(castT(y), castT(x));
 	}
 	template<class INT>
 	static void mul(GroupMtoA& z, const GroupMtoA& x, const INT& y)
 	{
-		T::pow(self(z), self(x), y);
+		T::pow(castT(z), castT(x), y);
 	}
 	template<class INT>
 	static void mulGeneric(GroupMtoA& z, const GroupMtoA& x, const INT& y)
 	{
-		T::powGeneric(self(z), self(x), y);
+		T::powGeneric(castT(z), castT(x), y);
 	}
 	void operator+=(const GroupMtoA& rhs)
 	{
 		add(*this, *this, rhs);
 	}
 	void normalize() {}
+private:
+	bool isOne() const { return false; }
 };
 
 } // mcl
