@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <assert.h>
+#include <stdint.h>
 #include <cybozu/exception.hpp>
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -21,11 +22,14 @@
 	#pragma warning(disable : 4512)
 	#pragma warning(disable : 4146)
 #endif
+#ifdef MCL_USE_EMU_MPZ
+#include <mcl/emu_mpz.hpp>
+#else
 #include <gmpxx.h>
-#include <stdint.h>
 #ifdef _MSC_VER
 	#pragma warning(pop)
 	#include <cybozu/link_mpir.hpp>
+#endif
 #endif
 
 namespace mcl { namespace gmp {
