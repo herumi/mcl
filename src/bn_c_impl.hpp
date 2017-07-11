@@ -534,6 +534,7 @@ int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBn
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
 	return 0;
 } catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "mclBn_FrLagrangeInterpolation %s\n", e.what());
 	return -1;
 }
 int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, size_t k)
@@ -542,6 +543,7 @@ int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBn
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
 	return 0;
 } catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "mclBn_G1LagrangeInterpolation %s\n", e.what());
 	return -1;
 }
 int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, size_t k)
@@ -550,6 +552,7 @@ int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBn
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
 	return 0;
 } catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "mclBn_G2LagrangeInterpolation %s\n", e.what());
 	return -1;
 }
 int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, size_t cSize, const mclBnFr *x)
@@ -558,6 +561,7 @@ int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, size_t cSize, 
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
 	return 0;
 } catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "mclBn_FrEvaluatePolynomial %s\n", e.what());
 	return -1;
 }
 int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, size_t cSize, const mclBnFr *x)
@@ -566,6 +570,7 @@ int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, size_t cSize, 
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
 	return 0;
 } catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "mclBn_G1EvaluatePolynomial %s\n", e.what());
 	return -1;
 }
 int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, size_t cSize, const mclBnFr *x)
@@ -574,5 +579,6 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, size_t cSize, 
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
 	return 0;
 } catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "mclBn_G2EvaluatePolynomial %s\n", e.what());
 	return -1;
 }

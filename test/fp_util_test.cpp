@@ -1,6 +1,7 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #include "../src/conversion.hpp"
 #include <cybozu/test.hpp>
+#include <mcl/gmp_util.hpp>
 
 CYBOZU_TEST_AUTO(toStr16)
 {

@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <mcl/gmp_util.hpp>
 #include <cybozu/bit_operation.hpp>
 
 #ifdef _MSC_VER
