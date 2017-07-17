@@ -790,29 +790,20 @@ CYBOZU_TEST_AUTO(Vint)
 	const struct {
 		int a;
 		int b;
-		int add, sub, mul, q, r;
+		/*
+			q, r ; like C
+			q2, r2 ; like Python
+		*/
+		int add, sub, mul, q, r, q2, r2;
 	} tbl[] = {
-#if 0 // like Python
-		{  13,  5,  18,   8,  65,  2,  3 },
-		{  13, -5,   8,  18, -65, -3, -2 },
-		{ -13,  5,  -8, -18, -65, -3,  2 },
-		{ -13, -5, -18,  -8,  65,  2, -3 },
-
-		{  5,  13,  18,  -8,  65,  0,  5 },
-		{  5, -13,  -8,  18, -65, -1, -8 },
-		{ -5,  13,   8, -18, -65, -1,  8 },
-		{ -5, -13, -18,   8,  65,  0, -5 },
-#else // like C
-		{  13,  5,  18,   8,  65,  2,  3 },
-		{  13, -5,   8,  18, -65, -2,  3 },
-		{ -13,  5,  -8, -18, -65, -2, -3 },
-		{ -13, -5, -18,  -8,  65,  2, -3 },
-
-		{  5,  13,  18,  -8,  65, 0,  5 },
-		{  5, -13,  -8,  18, -65, 0,  5 },
-		{ -5,  13,   8, -18, -65, 0, -5 },
-		{ -5, -13, -18,   8,  65, 0, -5 },
-#endif
+		{  13,  5,  18,   8,  65,  2,  3,  2,  3 },
+		{  13, -5,   8,  18, -65, -2,  3, -3, -2 },
+		{ -13,  5,  -8, -18, -65, -2, -3, -3,  2 },
+		{ -13, -5, -18,  -8,  65,  2, -3,  2, -3 },
+		{  5,  13,  18,  -8,  65, 0,  5 ,  0,  5},
+		{  5, -13,  -8,  18, -65, 0,  5 , -1, -8},
+		{ -5,  13,   8, -18, -65, 0, -5 , -1,  8},
+		{ -5, -13, -18,   8,  65, 0, -5 ,  0, -5},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Vint a = tbl[i].a;
@@ -822,12 +813,17 @@ CYBOZU_TEST_AUTO(Vint)
 		Vint mul = a * b;
 		Vint q = a / b;
 		Vint r = a % b;
+		Vint q2, r2;
+		Vint::quotRem(&q2, r2, a, b);
 		CYBOZU_TEST_EQUAL(add, tbl[i].add);
 		CYBOZU_TEST_EQUAL(sub, tbl[i].sub);
 		CYBOZU_TEST_EQUAL(mul, tbl[i].mul);
 		CYBOZU_TEST_EQUAL(q, tbl[i].q);
 		CYBOZU_TEST_EQUAL(r, tbl[i].r);
 		CYBOZU_TEST_EQUAL(q * b + r, a);
+		CYBOZU_TEST_EQUAL(q2, tbl[i].q2);
+		CYBOZU_TEST_EQUAL(r2, tbl[i].r2);
+		CYBOZU_TEST_EQUAL(q2 * b + r2, a);
 	}
 	CYBOZU_TEST_EQUAL(Vint("15") / Vint("3"), Vint("5"));
 	CYBOZU_TEST_EQUAL(Vint("15") / Vint("-3"), Vint("-5"));
