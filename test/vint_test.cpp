@@ -483,7 +483,7 @@ CYBOZU_TEST_AUTO(div2)
 		r.setArray(tbl[i].r.p, tbl[i].r.n);
 
 		Vint qt, rt;
-		Vint::div(&qt, rt, x, y);
+		Vint::quotRem(&qt, rt, x, y);
 		CYBOZU_TEST_EQUAL(qt, q);
 		CYBOZU_TEST_EQUAL(rt, r);
 
@@ -493,25 +493,25 @@ CYBOZU_TEST_AUTO(div2)
 
 		x.setArray(tbl[i].x.p, tbl[i].x.n);
 		y.setArray(tbl[i].y.p, tbl[i].y.n);
-		Vint::div(&x, rt, x, y);
+		Vint::quotRem(&x, rt, x, y);
 		CYBOZU_TEST_EQUAL(x, q);
 		CYBOZU_TEST_EQUAL(rt, r);
 
 		x.setArray(tbl[i].x.p, tbl[i].x.n);
 		y.setArray(tbl[i].y.p, tbl[i].y.n);
-		Vint::div(&y, rt, x, y);
+		Vint::quotRem(&y, rt, x, y);
 		CYBOZU_TEST_EQUAL(y, q);
 		CYBOZU_TEST_EQUAL(rt, r);
 
 		x.setArray(tbl[i].x.p, tbl[i].x.n);
 		y.setArray(tbl[i].y.p, tbl[i].y.n);
-		Vint::div(&x, y, x, y);
+		Vint::quotRem(&x, y, x, y);
 		CYBOZU_TEST_EQUAL(x, q);
 		CYBOZU_TEST_EQUAL(y, r);
 
 		x.setArray(tbl[i].x.p, tbl[i].x.n);
 		y.setArray(tbl[i].y.p, tbl[i].y.n);
-		Vint::div(&y, x, x, y);
+		Vint::quotRem(&y, x, x, y);
 		CYBOZU_TEST_EQUAL(y, q);
 		CYBOZU_TEST_EQUAL(x, r);
 	}
@@ -519,13 +519,13 @@ CYBOZU_TEST_AUTO(div2)
 		const uint32_t in[] = { 1, 1 };
 		Vint x, y, z;
 		x.setArray(in, 2);
-		Vint::div(&x, y, x, x);
+		Vint::quotRem(&x, y, x, x);
 		z = 1;
 		CYBOZU_TEST_EQUAL(x, z);
 		z.clear();
 		CYBOZU_TEST_EQUAL(y, z);
 
-		Vint::div(&y, x, x, x);
+		Vint::quotRem(&y, x, x, x);
 		z = 1;
 		CYBOZU_TEST_EQUAL(y, z);
 		z.clear();
@@ -533,7 +533,7 @@ CYBOZU_TEST_AUTO(div2)
 	}
 }
 
-CYBOZU_TEST_AUTO(div)
+CYBOZU_TEST_AUTO(quotRem)
 {
 	const struct {
 		const char *x;
@@ -781,7 +781,7 @@ CYBOZU_TEST_AUTO(sample)
 	q = x / y;
 	CYBOZU_TEST_EQUAL(q * y + r, x);
 
-	Vint::div(&q, r, x, y); // get both r and q
+	Vint::quotRem(&q, r, x, y); // get both r and q
 	CYBOZU_TEST_EQUAL(q * y + r, x);
 }
 
@@ -792,7 +792,7 @@ CYBOZU_TEST_AUTO(Vint)
 		int b;
 		int add, sub, mul, q, r;
 	} tbl[] = {
-#if 1 // like Python
+#if 0 // like Python
 		{  13,  5,  18,   8,  65,  2,  3 },
 		{  13, -5,   8,  18, -65, -3, -2 },
 		{ -13,  5,  -8, -18, -65, -3,  2 },
