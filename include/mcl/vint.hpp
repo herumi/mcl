@@ -29,7 +29,7 @@ typedef struct {
 	int allocSize_;
 	int dataSize_;
 	Unit *ptr_;
-} emu_mpz_struct;
+} Vint_struct;
 
 namespace local {
 
@@ -139,8 +139,8 @@ inline void decStr2Int(T& x, const std::string& s)
 	while (q) {
 		v = cybozu::atoi(p, width);
 		p += width;
-		x *= d;
-		x += v;
+		T::mul(x, x, d);
+		T::add(x, x, v);
 		q--;
 	}
 }
@@ -809,38 +809,38 @@ public:
 /**
 	unsigned integer with variable length
 */
-template<class Buffer>
-class VuintT : public local::dividable<VuintT<Buffer>,
-					   local::addsubmul<VuintT<Buffer>,
-					   local::comparable<VuintT<Buffer>,
-					   local::shiftable<VuintT<Buffer> > > > > {
+template<class _Buffer>
+class VuintT {
+public:
+	typedef _Buffer Buffer;
 	Buffer buf;
 	size_t size_;
-public:
+	void alloc(size_t n) { return buf.alloc(n); }
 	typedef typename Buffer::value_type value_type;
 	typedef value_type T;
 	static const size_t unitBitSize = sizeof(T) * 8;
 
 	VuintT(T x = 0) : size_(0)
 	{
-		set(x);
+		operator=(x);
 	}
 	explicit VuintT(const std::string& str) : size_(0)
 	{
-		set(str);
+		setStr(str);
 	}
-	void set(T x)
+	VuintT& operator=(T x)
 	{
 		buf.alloc(1);
 		buf[0] = x;
 		size_ = 1;
+		return *this;
 	}
-	// assume little endian system
+	// @note assume little endian system
 	template<class S>
 	void setArray(const S *x, size_t size)
 	{
 		if (size == 0) {
-			set(0);
+			*this = 0;
 			return;
 		}
 		size_t unitSize = (sizeof(S) * size + sizeof(T) - 1) / sizeof(T);
@@ -849,69 +849,30 @@ public:
 		memcpy(&buf[0], x, sizeof(S) * size);
 		trim(unitSize);
 	}
+	/*
+		buf[0, size) = x
+		buf[size, maxSize) with zero
+		@note assume little endian system
+	*/
+	void getArray(T *x, size_t maxSize) const
+	{
+		if (size_ > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << size_;
+		local::copyN(x, &buf[0], size_);
+		local::clearN(x + size_, maxSize - size_);
+	}
+	void clear() { *this = 0; }
 #if 0
-	void setArray(const uint32_t *x, size_t size)
-	{
-		buf.clear();
-		if (size == 0) {
-			set((T)0);
-			return;
-		}
-#ifdef MIE_USE_UNIT32
-		buf.alloc(size);
-		for (size_t i = 0; i < size; i++) {
-			buf[i] = x[i];
-		}
-		trim(size);
-#else
-		buf.alloc((size + 1) / 2);
-		for (size_t i = 0; i < size / 2; i++) {
-			buf[i] = make64(x[i * 2 + 1], x[i * 2]);
-		}
-		if (size & 1) {
-			buf[size / 2] = x[size - 1];
-		}
-		trim((size + 1) / 2);
-#endif
-	}
-	void setArray(const uint64_t *x, size_t size)
-	{
-		buf.clear();
-		if (size == 0) {
-			buf.set((T)0);
-			return;
-		}
-#ifdef MIE_USE_UNIT32
-		buf.alloc(size * 2);
-		for (size_t i = 0; i < size; i++) {
-			uint32_t L, H;
-			local::split64(&H, &L, x[i]);
-			buf[i * 2 + 0] = L;
-			buf[i * 2 + 1] = H;
-		}
-		buf.trim(size * 2);
-#else
-		buf.alloc(size);
-		for (size_t i = 0; i < size; i++) {
-			buf[i] = x[i];
-		}
-		buf.trim(size);
-#endif
-	}
-#endif
-	void clear() { set((T)0); }
-	std::string toString(int base = 10) const
+	std::string getStr(int base = 10) const
 	{
 		std::ostringstream os;
 		switch (base) {
 		case 10:
 			{
 				const uint32_t i1e9 = 1000000000U;
-				static const VuintT zero = 0;
 				VuintT x = *this;
 
 				std::vector<uint32_t> t;
-				while (x > zero) {
+				while (!x.isZero()) {
 					uint32_t r = (uint32_t)div1(&x, x, i1e9);
 					t.push_back(r);
 				}
@@ -935,27 +896,28 @@ public:
 			}
 			break;
 		default:
-			throw cybozu::Exception("toString:not supported base") << base;
+			throw cybozu::Exception("getStr:not supported base") << base;
 		}
 		return os.str();
 	}
+#endif
 	/*
 		@param str [in] number string
 		@note "0x..."   => base = 16
 		      "0b..."   => base = 2
 		      otherwise => base = 10
 	*/
-	void set(std::string str, int base = 0)
+	void setStr(std::string str, int base = 0)
 	{
 		if (str.size() >= 2 && str[0] == '0') {
 			switch (str[1]) {
 			case 'x':
-				if (base != 0 && base != 16) throw cybozu::Exception("bad base in set(str)") << base;
+				if (base != 0 && base != 16) throw cybozu::Exception("bad base in setStr(str)") << base;
 				base = 16;
 				str = str.substr(2);
 				break;
 			default:
-				throw cybozu::Exception("not support base in set(str) 0") << str[1];
+				throw cybozu::Exception("not support base in setStr(str) 0") << str[1];
 			}
 		}
 		if (base == 0) {
@@ -999,7 +961,6 @@ public:
 	}
 	T& operator[](size_t n) { return buf[n]; }
 	const T& operator[](size_t n) const { return buf[n]; }
-	void alloc(size_t n) { return buf.alloc(n); }
 	void swap(VuintT& rhs) { buf.swap(rhs.buf); }
 
 	size_t bitLen() const
@@ -1018,23 +979,13 @@ public:
 		T mask = T(1) << bit_pos;
 		return (buf[unit_pos] & mask) != 0;
 	}
-
-	static inline void add(VuintT& z, const VuintT& x, const VuintT& y)
+	static void add(VuintT& z, const VuintT& x, T y)
 	{
-		// get xn, yn before z.alloc
-		const size_t xn = x.size();
-		const size_t yn = y.size();
-		const size_t zn = std::max(xn, yn) + 1;
+		size_t xn = x.size();
+		size_t zn = xn + 1;
 		z.alloc(zn);
-		z[zn - 1] = local::addNM(&z[0], &x[0], xn, &y[0], yn);
+		z[zn - 1] = local::add1(&z[0], &x[0], xn, y);
 		z.trim(zn);
-	}
-	static inline void add(VuintT& z, const VuintT& x, uint32_t y)
-	{
-		const size_t xn = x.size();
-		z.alloc(xn + 1);
-		z[xn] = local::add1(&z[0], &x[0], xn, y);
-		z.trim(xn + 1);
 	}
 	static void sub(VuintT& z, const VuintT& x, const VuintT& y)
 	{
@@ -1071,6 +1022,7 @@ public:
 		@param y [in] must be not zero
 		@return x % y
 	*/
+#if 0
 	static T div1(VuintT *q, const VuintT& x, T y)
 	{
 		const size_t xn = x.size();
@@ -1084,6 +1036,7 @@ public:
 		}
 		return r;
 	}
+#endif
 	/**
 		@param q [out] x / y if q != 0
 		@param r [out] x % y
@@ -1106,17 +1059,7 @@ public:
 		r.trim(xn);
 		return true;
 	}
-	inline friend std::ostream& operator<<(std::ostream& os, const VuintT& x)
-	{
-		return os << x.toString(os.flags() & std::ios_base::hex ? 16 : 10);
-	}
-	inline friend std::istream& operator>>(std::istream& is, VuintT& x)
-	{
-		std::string str;
-		local::getDigits(is, str);
-		x.set(str);
-		return is;
-	}
+#if 0
 	static inline void shl(VuintT& y, const VuintT& x, size_t n)
 	{
 		size_t xn = x.size();
@@ -1126,6 +1069,7 @@ public:
 		local::shlN(&y[0], &x[0], xn, n);
 		y.trim(yn);
 	}
+#endif
 	static inline void shr(VuintT& y, const VuintT& x, size_t n)
 	{
 		size_t xn = x.size();
@@ -1148,64 +1092,214 @@ public:
 		}
 		size_ = i ? i + 1 : 1;
 	}
+	void setSize(size_t n)
+	{
+		size_ = n;
+	}
 };
 
 template<class V>
-class VsintT : public local::addsubmul<VsintT<V>,
-					  local::comparable<VsintT<V>,
-					  local::dividable<VsintT<V>,
-					  local::hasNegative<VsintT<V>,
-					  local::shiftable<VsintT<V> > > > > > {
+struct VintT : public local::addsubmul<VintT<V>,
+					  local::comparable<VintT<V>,
+					  local::dividable<VintT<V>,
+					  local::hasNegative<VintT<V>,
+					  local::shiftable<VintT<V> > > > > > {
+	typedef typename V::Buffer Buffer;
+	typedef typename V::value_type value_type;
+	typedef value_type T;
+	static const size_t unitBitSize = sizeof(T) * 8;
 	V v_;
 	bool isNeg_;
+	static size_t realSize(const Buffer& buf, size_t n)
+	{
+		if (n == 0) throw cybozu::Exception("realSize zero");
+		int i = (int)n - 1;
+		for (; i > 0; i--) {
+			if (buf[i]) {
+				return i + 1;
+			}
+		}
+		return 1;
+	}
+	static size_t uadd(Buffer& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
+	{
+		size_t zn = std::max(xn, yn) + 1;
+		z.alloc(zn);
+		z[zn - 1] = local::addNM(&z[0], &x[0], xn, &y[0], yn);
+		return realSize(z, zn);
+	}
+	static size_t uadd1(Buffer& z, const Buffer& x, size_t xn, T y)
+	{
+		size_t zn = xn + 1;
+		z.alloc(zn);
+		z[zn - 1] = local::add1(&z[0], &x[0], xn, y);
+		return realSize(z, zn);
+	}
+	static size_t ushl(Buffer& y, const Buffer& x, size_t xn, size_t shiftBit)
+	{
+		const size_t unitSize = sizeof(T) * 8;
+		size_t yn = xn + (shiftBit + unitSize - 1) / unitSize;
+		y.alloc(yn);
+		local::shlN(&y[0], &x[0], xn, shiftBit);
+		return realSize(y, yn);
+	}
 public:
-	typedef typename V::value_type value_type;
-	VsintT(int x = 0)
+	/**
+		@param q [out] q = x / y
+		@param x [in]
+		@param y [in] must be not zero
+		@return x % y
+	*/
+	static T udiv1(Buffer *q, size_t *qn, const Buffer& x, size_t xn, T y)
+	{
+		T r;
+		if (q) {
+			q->alloc(xn); // assume q is not destroyed if q == x
+			r = local::div1(&(*q)[0], &x[0], xn, y);
+			*qn = realSize(*q, xn);
+		} else {
+			r = local::mod1(&x[0], xn, y);
+		}
+		return r;
+	}
+	std::string getStr(int base = 10) const
+	{
+		std::ostringstream os;
+		if (isNeg_) os << '-';
+		switch (base) {
+		case 10:
+			{
+				const uint32_t i1e9 = 1000000000U;
+				VintT x = *this;
+
+				std::vector<uint32_t> t;
+				while (!x.isZero()) {
+//					uint32_t r = (uint32_t)div1(&x, x, i1e9);
+					size_t n;
+					uint32_t r = (uint32_t)udiv1(&x.v_.buf, &n, x.v_.buf, x.size(), i1e9);
+					x.v_.setSize(n);
+					t.push_back(r);
+				}
+				if (t.empty()) {
+					return "0";
+				}
+				os << t[t.size() - 1];
+				for (size_t i = 1, n = t.size(); i < n; i++) {
+					os << std::setfill('0') << std::setw(9) << t[n - 1 - i];
+				}
+			}
+			break;
+		case 16:
+			{
+				os << "0x" << std::hex;
+				const size_t n = size();
+				os << getUnit()[n - 1];
+				for (size_t i = 1; i < n; i++) {
+					os << std::setfill('0') << std::setw(sizeof(Unit) * 2) << getUnit()[n - 1 - i];
+				}
+			}
+			break;
+		default:
+			throw cybozu::Exception("getStr:not supported base") << base;
+		}
+		return os.str();
+	}
+	static void _add(VintT& z, const V& x, bool xNeg, const V& y, bool yNeg)
+	{
+		if ((xNeg ^ yNeg) == 0) {
+			// same sign
+			size_t s = uadd(z.v_.buf, x.buf, x.size(), y.buf, y.size());
+			z.v_.setSize(s);
+			z.isNeg_ = xNeg;
+			return;
+		}
+		int r = V::compare(x, y);
+		if (r >= 0) {
+			V::sub(z.v_, x, y);
+			z.isNeg_ = xNeg;
+		} else {
+			V::sub(z.v_, y, x);
+			z.isNeg_ = yNeg;
+		}
+	}
+public:
+	VintT(int x = 0)
 		: v_(::abs(x))
 		, isNeg_(x < 0)
 	{
 	}
-	explicit VsintT(const std::string& str)
+	explicit VintT(const std::string& str)
 	{
-		set(str);
+		setStr(str);
 	}
-	VsintT(const V& x)
-		: v_(x)
-		, isNeg_(false)
-	{
-	}
-	void set(value_type x)
-	{
-		v_.set(x);
-	}
-	void set(int64_t x)
+	VintT& operator=(int x)
 	{
 		isNeg_ = x < 0;
-		v_.set(isNeg_ ? -x : x);
+		v_ = (isNeg_ ? -x : x);
+		return *this;
 	}
-	void set(const V& x)
+	/*
+		set positive value
+		@note assume little endian system
+	*/
+	template<class S>
+	void setArray(const S *x, size_t size)
 	{
-		v_ = x;
 		isNeg_ = false;
+		if (size == 0) {
+			clear();
+			return;
+		}
+		size_t unitSize = (sizeof(S) * size + sizeof(T) - 1) / sizeof(T);
+		v_.buf.alloc(unitSize);
+		v_.buf[unitSize - 1] = 0;
+		memcpy(&v_.buf[0], x, sizeof(S) * size);
+		trim(unitSize);
 	}
-	void set(const uint64_t *ptr, size_t size) { v_.set(ptr, size); }
-	void clear() { v_.set((value_type)0); isNeg_ = false; }
-	std::string toString(int base = 10) const
+	/*
+		get abs value
+		buf[0, size) = x
+		buf[size, maxSize) with zero
+		@note assume little endian system
+	*/
+	void getArray(T *x, size_t maxSize) const
 	{
-		if (isNeg_) return "-" + v_.toString(base);
-		return v_.toString(base);
+		size_t size = v_.size_;
+		if (size > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << size;
+		local::copyN(x, &v_.buf[0], size);
+		local::clearN(x + size, maxSize - size);
 	}
-	void set(const std::string& str, int base = 10)
+	void clear() { v_ = 0; isNeg_ = false; }
+	/*
+		return bitLen(abs(*this))
+	*/
+	size_t bitLen() const
+	{
+		if (isZero()) return 0;
+		size_t size = v_.size_;
+		T v = v_.buf[size - 1];
+		assert(v);
+		return (size - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(v);
+	}
+	bool testBit(size_t i) const
+	{
+		size_t unit_pos = i / (sizeof(T) * 8);
+		size_t bit_pos  = i % (sizeof(T) * 8);
+		T mask = T(1) << bit_pos;
+		return (v_.buf[unit_pos] & mask) != 0;
+	}
+
+	void setStr(const std::string& str, int base = 0)
 	{
 		isNeg_ = false;
 		if (str.size() > 0 && str[0] == '-') {
 			isNeg_ = true;
-			v_.set(&str[1], base);
+			v_.setStr(&str[1], base);
 		} else {
-			v_.set(str, base);
+			v_.setStr(str, base);
 		}
 	}
-	static inline int compare(const VsintT& x, const VsintT& y)
+	static inline int compare(const VintT& x, const VintT& y)
 	{
 		if (x.isNeg_ ^ y.isNeg_) {
 			if (x.isZero() && y.isZero()) return 0;
@@ -1217,48 +1311,41 @@ public:
 	}
 	size_t size() const { return v_.size(); }
 	bool isZero() const { return v_.isZero(); }
-	bool isNegative() const { return isNeg_ && !isZero(); }
-	static inline void add(VsintT& out, const VsintT& x, const VsintT& y)
+	bool isNegative() const { return isNeg_; }
+	static inline void add(VintT& z, const VintT& x, const VintT& y)
 	{
-		if ((x.isNeg_ ^ y.isNeg_) == 0) {
-			// same sign
-			V::add(out.v_, x.v_, y.v_);
-			out.isNeg_ = x.isNeg_;
-			return;
-		}
-		int r = V::compare(x.v_, y.v_);
-		if (r >= 0) {
-			V::sub(out.v_, x.v_, y.v_);
-			out.isNeg_ = x.isNeg_;
+		_add(z, x.v_, x.isNeg_, y.v_, y.isNeg_);
+	}
+	static inline void sub(VintT& z, const VintT& x, const VintT& y)
+	{
+		_add(z, x.v_, x.isNeg_, y.v_, !y.isNeg_);
+	}
+	static inline void mul(VintT& z, const VintT& x, const VintT& y)
+	{
+		V::mul(z.v_, x.v_, y.v_);
+		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
+	}
+	static void mul(VintT& z, const VintT& x, T y)
+	{
+		V::mul1(z.v_, x.v_, y);
+		z.isNeg_ = x.isNeg_;
+	}
+	/*
+		@note ignore sign
+	*/
+	static T udiv1(VintT *q, const VintT& x, T y)
+	{
+		if (q) {
+			q->isNeg_ = false;
+			size_t qn;
+			size_t r = udiv1(&q->v_.buf, &qn, x.v_.buf, x.size(), y);
+			q->v_.setSize(qn);
+			return r;
 		} else {
-			V::sub(out.v_, y.v_, x.v_);
-			out.isNeg_ = y.isNeg_;
+			return udiv1(0, 0, x.v_.buf, x.size(), y);
 		}
 	}
-	static inline void sub(VsintT& out, const VsintT& x, const VsintT& y)
-	{
-		if (x.isNeg_ ^ y.isNeg_) {
-			// different sign
-			V::add(out.v_, x.v_, y.v_);
-			out.isNeg_ = x.isNeg_;
-			return;
-		}
-		// same sign
-		int r = V::compare(x.v_, y.v_);
-		if (r >= 0) {
-			V::sub(out.v_, x.v_, y.v_);
-			out.isNeg_ = x.isNeg_;
-		} else {
-			V::sub(out.v_, y.v_, x.v_);
-			out.isNeg_ = !y.isNeg_;
-		}
-	}
-	static inline void mul(VsintT& out, const VsintT& x, const VsintT& y)
-	{
-		V::mul(out.v_, x.v_, y.v_);
-		out.isNeg_ = x.isNeg_ ^ y.isNeg_;
-	}
-	static inline bool div(VsintT *q, VsintT& r, const VsintT& x, const VsintT& y)
+	static inline bool div(VintT *q, VintT& r, const VintT& x, const VintT& y)
 	{
 #if 1
 		// like Python
@@ -1274,9 +1361,9 @@ public:
 		} else {
 			if (qsign) {
 				if (q) {
-					q->v_ += 1;
+					V::add(q->v_, q->v_, 1);
 				}
-				r.v_ = yy - r.v_;
+				V::sub(r.v_, yy, r.v_);
 			}
 			r.isNeg_ = y.isNeg_;
 		}
@@ -1293,55 +1380,53 @@ public:
 		return ret;
 #endif
 	}
-	static inline void neg(VsintT& out, const VsintT& x)
+	static inline void neg(VintT& z, const VintT& x)
 	{
-		out.v_ = x.v_;
-		out.isNeg_ = !x.isNeg_;
+		z.v_ = x.v_;
+		z.isNeg_ = !x.isNeg_;
 	}
-	inline friend std::ostream& operator<<(std::ostream& os, const VsintT& x)
+	inline friend std::ostream& operator<<(std::ostream& os, const VintT& x)
 	{
-		if (x.isNeg_) os << "-";
-		return os << x.v_;
+		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
 	}
-	inline friend std::istream& operator>>(std::istream& is, VsintT& x)
+	inline friend std::istream& operator>>(std::istream& is, VintT& x)
 	{
 		std::string str;
 		local::getDigits(is, str, true);
-		x.set(str);
+		x.setStr(str);
 		return is;
 	}
-	static inline void shl(VsintT& out, const VsintT& x, size_t n)
+	static inline void shl(VintT& z, const VintT& x, size_t shiftBit)
 	{
-		V::shl(out.v_, x.v_, n);
-		out.isNeg_ = x.isNeg_;
+//		V::shl(z.v_, x.v_, n);
+		size_t zn = ushl(z.v_.buf, x.v_.buf, x.size(), shiftBit);
+		z.v_.setSize(zn);
+		z.isNeg_ = x.isNeg_;
 	}
-	static inline void shr(VsintT& out, const VsintT& x, size_t n)
+	static inline void shr(VintT& z, const VintT& x, size_t n)
 	{
-		if (x.isZero()) {
-			out.clear();
-			return;
+		V::shr(z.v_, x.v_, n);
+		z.isNeg_ = x.isNeg_;
+	}
+	static inline void abs(VintT& z, const VintT& in)
+	{
+		z.v_ = in.v_;
+		z.isNeg_ = false;
+	}
+	const T *getUnit() const { return &v_.buf[0]; }
+private:
+	void trim(size_t n)
+	{
+		if (n == 0) throw cybozu::Exception("trim zero");
+		int i = (int)n - 1;
+		for (; i > 0; i--) {
+			if (v_.buf[i]) {
+				v_.size_ = i + 1;
+				return;
+			}
 		}
-		if (x.isNeg_) {
-			throw cybozu::Exception("shr can't deal with negative value");
-		} else {
-			V::shr(out.v_, x.v_, n);
-			out.isNeg_ = false;
-		}
-	}
-
-	static inline void absolute(V& out, const VsintT& in)
-	{
-		out = in.get();
-	}
-
-	inline V abs() const { V x; absolute(x, *this); return x; }
-	VsintT operator<<(size_t n) const
-	{
-		VsintT out; shl(out, *this, n); return out;
-	}
-	VsintT& operator<<=(size_t n)
-	{
-		shl(*this, *this, n); return *this;
+		isNeg_ = false;
+		v_.size_ = 1;
 	}
 };
 
@@ -1354,7 +1439,7 @@ struct IntTag {
 	typedef typename T::value_type value_type;
 	static inline value_type getBlock(const T& x, size_t i)
 	{
-		return x[i];
+		return x.getUnit()[i];
 	}
 	static inline size_t getBlockSize(const T& x)
 	{
@@ -1421,7 +1506,8 @@ T power(const T& x, const S& y)
 typedef VuintT<local::Buffer<mcl::Unit> > Vuint;
 //typedef VuintT<local::VariableBuffer<mcl::Unit> > Vuint;
 //typedef VuintT<local::FixedBuffer<mcl::Unit, MIE_ZM_VUINT_BIT_LEN> > Vuint;
-typedef VsintT<Vuint> Vint;
+typedef VintT<Vuint> Vint;
 
 } // mcl
 
+//typedef mcl::Vint mpz_class;

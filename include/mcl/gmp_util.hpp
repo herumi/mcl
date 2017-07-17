@@ -22,8 +22,8 @@
 	#pragma warning(disable : 4512)
 	#pragma warning(disable : 4146)
 #endif
-#ifdef MCL_USE_EMU_MPZ
-#include <mcl/emu_mpz.hpp>
+#ifdef MCL_USE_VINT
+#include <mcl/vint.hpp>
 #else
 #include <gmpxx.h>
 #ifdef _MSC_VER
@@ -45,12 +45,17 @@ typedef uint32_t Unit;
 template<class T>
 void setArray(mpz_class& z, const T *buf, size_t n)
 {
+#ifdef MCL_USE_VINT
+	z.setArray(buf, n);
+#else
 	mpz_import(z.get_mpz_t(), n, -1, sizeof(*buf), 0, 0, buf);
+#endif
 }
 /*
 	buf[0, size) = x
 	buf[size, maxSize) with zero
 */
+#ifndef MCL_USE_VINT
 template<class T>
 void getArray(T *buf, size_t maxSize, const mpz_srcptr x)
 {
@@ -62,10 +67,15 @@ void getArray(T *buf, size_t maxSize, const mpz_srcptr x)
 	memcpy(buf, x->_mp_d, xByteSize);
 	memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
 }
+#endif
 template<class T>
 void getArray(T *buf, size_t maxSize, const mpz_class& x)
 {
+#ifdef MCL_USE_VINT
+	x.getArray(buf, maxSize);
+#else
 	getArray(buf, maxSize, x.get_mpz_t());
+#endif
 }
 inline void set(mpz_class& z, uint64_t x)
 {
