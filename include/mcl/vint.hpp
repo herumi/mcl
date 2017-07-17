@@ -784,30 +784,16 @@ public:
 } // local
 
 /**
-	unsigned integer with variable length
+	signed integer with variable length
 */
 template<class _Buffer>
-class VuintT {
-public:
+struct VintT : public local::Operator<VintT<_Buffer> > {
 	typedef _Buffer Buffer;
-	Buffer buf;
-	size_t size_;
-
-	size_t size() const { return size_; }
-
-	void setSize(size_t n)
-	{
-		size_ = n;
-	}
-};
-
-template<class V>
-struct VintT : public local::Operator<VintT<V> > {
-	typedef typename V::Buffer Buffer;
 	typedef typename Buffer::value_type value_type;
 	typedef typename Buffer::value_type T;
 	static const size_t unitBitSize = sizeof(T) * 8;
-	V v_;
+	Buffer buf;
+	size_t size_;
 	bool isNeg_;
 	static size_t realSize(const Buffer& buf, size_t n)
 	{
@@ -930,8 +916,8 @@ public:
 				while (!x.isZero()) {
 //					uint32_t r = (uint32_t)div1(&x, x, i1e9);
 					size_t n;
-					uint32_t r = (uint32_t)udiv1(&x.v_.buf, &n, x.v_.buf, x.size(), i1e9);
-					x.v_.setSize(n);
+					uint32_t r = (uint32_t)udiv1(&x.buf, &n, x.buf, x.size(), i1e9);
+					x.setSize(n);
 					t.push_back(r);
 				}
 				if (t.empty()) {
@@ -958,41 +944,44 @@ public:
 		}
 		return os.str();
 	}
-	static void _add(VintT& z, const V& x, bool xNeg, const V& y, bool yNeg)
+	static void _add(VintT& z, const VintT& x, bool xNeg, const VintT& y, bool yNeg)
 	{
 		if ((xNeg ^ yNeg) == 0) {
 			// same sign
-			size_t s = uadd(z.v_.buf, x.buf, x.size(), y.buf, y.size());
-			z.v_.setSize(s);
+			size_t s = uadd(z.buf, x.buf, x.size(), y.buf, y.size());
+			z.setSize(s);
 			z.isNeg_ = xNeg;
 			return;
 		}
 		int r = ucompare(x.buf, x.size(), y.buf, y.size());
 		if (r >= 0) {
-			size_t zn = usub(z.v_.buf, x.buf, x.size(), y.buf, y.size());
-			z.v_.setSize(zn);
+			size_t zn = usub(z.buf, x.buf, x.size(), y.buf, y.size());
+			z.setSize(zn);
 			z.isNeg_ = xNeg;
 		} else {
-			size_t zn = usub(z.v_.buf, y.buf, y.size(), x.buf, x.size());
-			z.v_.setSize(zn);
+			size_t zn = usub(z.buf, y.buf, y.size(), x.buf, x.size());
+			z.setSize(zn);
 			z.isNeg_ = yNeg;
 		}
 	}
+	void setSize(size_t n) { size_ = n; }
 public:
 	VintT(int x = 0)
+		: size_(0)
 	{
 		*this = x;
 	}
 	explicit VintT(const std::string& str)
+		: size_(0)
 	{
 		setStr(str);
 	}
 	VintT& operator=(int x)
 	{
 		isNeg_ = x < 0;
-		v_.buf.alloc(1);
-		v_.buf[0] = std::abs(x);
-		v_.setSize(1);
+		buf.alloc(1);
+		buf[0] = std::abs(x);
+		setSize(1);
 		return *this;
 	}
 	/*
@@ -1008,9 +997,9 @@ public:
 			return;
 		}
 		size_t unitSize = (sizeof(S) * size + sizeof(T) - 1) / sizeof(T);
-		v_.buf.alloc(unitSize);
-		v_.buf[unitSize - 1] = 0;
-		memcpy(&v_.buf[0], x, sizeof(S) * size);
+		buf.alloc(unitSize);
+		buf[unitSize - 1] = 0;
+		memcpy(&buf[0], x, sizeof(S) * size);
 		trim(unitSize);
 	}
 	/*
@@ -1021,10 +1010,10 @@ public:
 	*/
 	void getArray(T *x, size_t maxSize) const
 	{
-		size_t size = v_.size_;
-		if (size > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << size;
-		local::copyN(x, &v_.buf[0], size);
-		local::clearN(x + size, maxSize - size);
+		size_t n = size();
+		if (n > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << n;
+		local::copyN(x, &buf[0], n);
+		local::clearN(x + n, maxSize - n);
 	}
 	void clear() { *this = 0; }
 	/*
@@ -1033,10 +1022,10 @@ public:
 	size_t bitLen() const
 	{
 		if (isZero()) return 0;
-		size_t size = v_.size_;
-		T v = v_.buf[size - 1];
+		size_t n = size();
+		T v = buf[n - 1];
 		assert(v);
-		return (size - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(v);
+		return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(v);
 	}
 	// ignore sign
 	bool testBit(size_t i) const
@@ -1044,7 +1033,7 @@ public:
 		size_t unit_pos = i / (sizeof(T) * 8);
 		size_t bit_pos  = i % (sizeof(T) * 8);
 		T mask = T(1) << bit_pos;
-		return (v_.buf[unit_pos] & mask) != 0;
+		return (buf[unit_pos] & mask) != 0;
 	}
 	/*
 		@param str [in] number string
@@ -1109,36 +1098,36 @@ public:
 			return x.isNeg_ ? -1 : 1;
 		} else {
 			// same sign
-			return ucompare(x.v_.buf, x.size(), y.v_.buf, y.size()) * (x.isNeg_ ? -1 : 1);
+			return ucompare(x.buf, x.size(), y.buf, y.size()) * (x.isNeg_ ? -1 : 1);
 		}
 	}
-	size_t size() const { return v_.size(); }
-	bool isZero() const { return size() == 1 && v_.buf[0] == 0; }
+	size_t size() const { return size_; }
+	bool isZero() const { return size() == 1 && buf[0] == 0; }
 	bool isNegative() const { return isNeg_; }
 	static inline void add(VintT& z, const VintT& x, const VintT& y)
 	{
-		_add(z, x.v_, x.isNeg_, y.v_, y.isNeg_);
+		_add(z, x, x.isNeg_, y, y.isNeg_);
 	}
 	static inline void sub(VintT& z, const VintT& x, const VintT& y)
 	{
-		_add(z, x.v_, x.isNeg_, y.v_, !y.isNeg_);
+		_add(z, x, x.isNeg_, y, !y.isNeg_);
 	}
 	static inline void mul(VintT& z, const VintT& x, const VintT& y)
 	{
 		const size_t xn = x.size();
 		const size_t yn = y.size();
 		size_t zn = xn + yn;
-		z.v_.buf.alloc(zn);
-		local::mulNM(&z.v_.buf[0], &x.v_.buf[0], xn, &y.v_.buf[0], yn);
-		zn = realSize(z.v_.buf, zn);
-		z.v_.setSize(zn);
+		z.buf.alloc(zn);
+		local::mulNM(&z.buf[0], &x.buf[0], xn, &y.buf[0], yn);
+		zn = realSize(z.buf, zn);
+		z.setSize(zn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 	}
 	static void mul(VintT& z, const VintT& x, T y)
 	{
-//		V::mul1(z.v_, x.v_, y);
-		size_t zn = umul1(z.v_.buf, x.v_.buf, x.v_.size(), y);
-		z.v_.setSize(zn);
+//		V::mul1(z. x. y);
+		size_t zn = umul1(z.buf, x.buf, x.size(), y);
+		z.setSize(zn);
 		z.isNeg_ = x.isNeg_;
 	}
 	/*
@@ -1149,11 +1138,11 @@ public:
 		if (q) {
 			q->isNeg_ = false;
 			size_t qn;
-			size_t r = udiv1(&q->v_.buf, &qn, x.v_.buf, x.size(), y);
-			q->v_.setSize(qn);
+			size_t r = udiv1(&q->buf, &qn, x.buf, x.size(), y);
+			q->setSize(qn);
 			return r;
 		} else {
-			return udiv1(0, 0, x.v_.buf, x.size(), y);
+			return udiv1(0, 0, x.buf, x.size(), y);
 		}
 	}
 	static void div(VintT *q, VintT& r, const VintT& x, const VintT& y)
@@ -1162,29 +1151,27 @@ public:
 		//  13 / -5 = -3 ... -2
 		// -13 /  5 = -3 ...  2
 		// -13 / -5 =  2 ... -3
-		V yy = y.v_;
+		VintT yy = y;
 		size_t rn = 0;
 		if (q) {
 			size_t qn = 0;
-			udiv(&q->v_.buf, &qn, r.v_.buf, rn, x.v_.buf, x.v_.size(), y.v_.buf, y.v_.size());
-			q->v_.setSize(qn);
+			udiv(&q->buf, &qn, r.buf, rn, x.buf, x.size(), y.buf, y.size());
+			q->setSize(qn);
 		} else {
-			udiv(0, 0, r.v_.buf, rn, x.v_.buf, x.v_.size(), y.v_.buf, y.v_.size());
+			udiv(0, 0, r.buf, rn, x.buf, x.size(), y.buf, y.size());
 		}
-		r.v_.setSize(rn);
+		r.setSize(rn);
 		bool qsign = x.isNeg_ ^ y.isNeg_;
 		if (r.isZero()) {
 			r.isNeg_ = false;
 		} else {
 			if (qsign) {
 				if (q) {
-//					V::add(q->v_, q->v_, 1);
-					size_t n = uadd1(q->v_.buf, q->v_.buf, q->v_.size(), 1);
-					q->v_.setSize(n);
+					size_t n = uadd1(q->buf, q->buf, q->size(), 1);
+					q->setSize(n);
 				}
-//				V::sub(r.v_, yy, r.v_);
-				size_t n = usub(r.v_.buf, yy.buf, yy.size(), r.v_.buf, r.v_.size());
-				r.v_.setSize(n);
+				size_t n = usub(r.buf, yy.buf, yy.size(), r.buf, r.size());
+				r.setSize(n);
 			}
 			r.isNeg_ = y.isNeg_;
 		}
@@ -1192,7 +1179,7 @@ public:
 	}
 	static inline void neg(VintT& z, const VintT& x)
 	{
-		z.v_ = x.v_;
+		if (&z != &x) { z = x; }
 		z.isNeg_ = !x.isNeg_;
 	}
 	inline friend std::ostream& operator<<(std::ostream& os, const VintT& x)
@@ -1208,37 +1195,37 @@ public:
 	}
 	static inline void shl(VintT& z, const VintT& x, size_t shiftBit)
 	{
-//		V::shl(z.v_, x.v_, n);
-		size_t zn = ushl(z.v_.buf, x.v_.buf, x.size(), shiftBit);
-		z.v_.setSize(zn);
+//		V::shl(z. x. n);
+		size_t zn = ushl(z.buf, x.buf, x.size(), shiftBit);
+		z.setSize(zn);
 		z.isNeg_ = x.isNeg_;
 	}
 	static inline void shr(VintT& z, const VintT& x, size_t shiftBit)
 	{
-//		V::shr(z.v_, x.v_, n);
-		size_t zn = ushr(z.v_.buf, x.v_.buf, x.size(), shiftBit);
-		z.v_.setSize(zn);
+//		V::shr(z. x. n);
+		size_t zn = ushr(z.buf, x.buf, x.size(), shiftBit);
+		z.setSize(zn);
 		z.isNeg_ = x.isNeg_;
 	}
-	static inline void abs(VintT& z, const VintT& in)
+	static inline void abs(VintT& z, const VintT& x)
 	{
-		z.v_ = in.v_;
+		if (&z != &x) { z = x; }
 		z.isNeg_ = false;
 	}
-	const T *getUnit() const { return &v_.buf[0]; }
+	const T *getUnit() const { return &buf[0]; }
 private:
 	void trim(size_t n)
 	{
 		if (n == 0) throw cybozu::Exception("trim zero");
 		int i = (int)n - 1;
 		for (; i > 0; i--) {
-			if (v_.buf[i]) {
-				v_.size_ = i + 1;
+			if (buf[i]) {
+				size_ = i + 1;
 				return;
 			}
 		}
 		isNeg_ = false;
-		v_.size_ = 1;
+		size_ = 1;
 	}
 };
 
@@ -1315,10 +1302,9 @@ T power(const T& x, const S& y)
 	return out;
 }
 
-typedef VuintT<local::Buffer<mcl::Unit> > Vuint;
-//typedef VuintT<local::VariableBuffer<mcl::Unit> > Vuint;
-//typedef VuintT<local::FixedBuffer<mcl::Unit, MIE_ZM_VUINT_BIT_LEN> > Vuint;
-typedef VintT<Vuint> Vint;
+//typedef VintT<local::VariableBuffer<mcl::Unit> > Vint;
+//typedef VintT<local::FixedBuffer<mcl::Unit, MIE_ZM_VUINT_BIT_LEN> > Vint;
+typedef VintT<local::Buffer<mcl::Unit> > Vint;
 
 } // mcl
 
