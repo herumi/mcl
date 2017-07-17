@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <mcl/emu_mpz.hpp>
+#include <mcl/vint.hpp>
 #include <iostream>
 #include <sstream>
 #define CYBOZU_BENCH_DONT_USE_RDTSC
@@ -783,7 +783,7 @@ CYBOZU_TEST_AUTO(sample)
 	CYBOZU_TEST_EQUAL(q * y + r, x);
 }
 
-CYBOZU_TEST_AUTO(emu_mpz)
+CYBOZU_TEST_AUTO(Vint)
 {
 	const struct {
 		int a;
@@ -813,13 +813,13 @@ CYBOZU_TEST_AUTO(emu_mpz)
 #endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		emu_mpz a = tbl[i].a;
-		emu_mpz b = tbl[i].b;
-		emu_mpz add = a + b;
-		emu_mpz sub = a - b;
-		emu_mpz mul = a * b;
-		emu_mpz q = a / b;
-		emu_mpz r = a % b;
+		Vint a = tbl[i].a;
+		Vint b = tbl[i].b;
+		Vint add = a + b;
+		Vint sub = a - b;
+		Vint mul = a * b;
+		Vint q = a / b;
+		Vint r = a % b;
 		CYBOZU_TEST_EQUAL(add, tbl[i].add);
 		CYBOZU_TEST_EQUAL(sub, tbl[i].sub);
 		CYBOZU_TEST_EQUAL(mul, tbl[i].mul);
@@ -827,42 +827,42 @@ CYBOZU_TEST_AUTO(emu_mpz)
 		CYBOZU_TEST_EQUAL(r, tbl[i].r);
 		CYBOZU_TEST_EQUAL(q * b + r, a);
 	}
-	CYBOZU_TEST_EQUAL(emu_mpz("15") / emu_mpz("3"), emu_mpz("5"));
-	CYBOZU_TEST_EQUAL(emu_mpz("15") / emu_mpz("-3"), emu_mpz("-5"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-15") / emu_mpz("3"), emu_mpz("-5"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-15") / emu_mpz("-3"), emu_mpz("5"));
+	CYBOZU_TEST_EQUAL(Vint("15") / Vint("3"), Vint("5"));
+	CYBOZU_TEST_EQUAL(Vint("15") / Vint("-3"), Vint("-5"));
+	CYBOZU_TEST_EQUAL(Vint("-15") / Vint("3"), Vint("-5"));
+	CYBOZU_TEST_EQUAL(Vint("-15") / Vint("-3"), Vint("5"));
 
-	CYBOZU_TEST_EQUAL(emu_mpz("15") % emu_mpz("3"), emu_mpz("0"));
-	CYBOZU_TEST_EQUAL(emu_mpz("15") % emu_mpz("-3"), emu_mpz("0"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-15") % emu_mpz("3"), emu_mpz("0"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-15") % emu_mpz("-3"), emu_mpz("0"));
+	CYBOZU_TEST_EQUAL(Vint("15") % Vint("3"), Vint("0"));
+	CYBOZU_TEST_EQUAL(Vint("15") % Vint("-3"), Vint("0"));
+	CYBOZU_TEST_EQUAL(Vint("-15") % Vint("3"), Vint("0"));
+	CYBOZU_TEST_EQUAL(Vint("-15") % Vint("-3"), Vint("0"));
 
-	CYBOZU_TEST_EQUAL(emu_mpz("-0") + emu_mpz("-3"), emu_mpz("-3"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-0") - emu_mpz("-3"), emu_mpz("3"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-3") + emu_mpz("-0"), emu_mpz("-3"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-3") - emu_mpz("-0"), emu_mpz("-3"));
+	CYBOZU_TEST_EQUAL(Vint("-0") + Vint("-3"), Vint("-3"));
+	CYBOZU_TEST_EQUAL(Vint("-0") - Vint("-3"), Vint("3"));
+	CYBOZU_TEST_EQUAL(Vint("-3") + Vint("-0"), Vint("-3"));
+	CYBOZU_TEST_EQUAL(Vint("-3") - Vint("-0"), Vint("-3"));
 
-	CYBOZU_TEST_EQUAL(emu_mpz("-0") + emu_mpz("3"), emu_mpz("3"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-0") - emu_mpz("3"), emu_mpz("-3"));
-	CYBOZU_TEST_EQUAL(emu_mpz("3") + emu_mpz("-0"), emu_mpz("3"));
-	CYBOZU_TEST_EQUAL(emu_mpz("3") - emu_mpz("-0"), emu_mpz("3"));
+	CYBOZU_TEST_EQUAL(Vint("-0") + Vint("3"), Vint("3"));
+	CYBOZU_TEST_EQUAL(Vint("-0") - Vint("3"), Vint("-3"));
+	CYBOZU_TEST_EQUAL(Vint("3") + Vint("-0"), Vint("3"));
+	CYBOZU_TEST_EQUAL(Vint("3") - Vint("-0"), Vint("3"));
 
-	CYBOZU_TEST_EQUAL(emu_mpz("0"), emu_mpz("0"));
-	CYBOZU_TEST_EQUAL(emu_mpz("0"), emu_mpz("-0"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-0"), emu_mpz("0"));
-	CYBOZU_TEST_EQUAL(emu_mpz("-0"), emu_mpz("-0"));
+	CYBOZU_TEST_EQUAL(Vint("0"), Vint("0"));
+	CYBOZU_TEST_EQUAL(Vint("0"), Vint("-0"));
+	CYBOZU_TEST_EQUAL(Vint("-0"), Vint("0"));
+	CYBOZU_TEST_EQUAL(Vint("-0"), Vint("-0"));
 
-	CYBOZU_TEST_ASSERT(emu_mpz("2") < emu_mpz("3"));
-	CYBOZU_TEST_ASSERT(emu_mpz("-2") < emu_mpz("3"));
-	CYBOZU_TEST_ASSERT(emu_mpz("-5") < emu_mpz("-3"));
-	CYBOZU_TEST_ASSERT(emu_mpz("-0") < emu_mpz("1"));
-	CYBOZU_TEST_ASSERT(emu_mpz("-1") < emu_mpz("-0"));
+	CYBOZU_TEST_ASSERT(Vint("2") < Vint("3"));
+	CYBOZU_TEST_ASSERT(Vint("-2") < Vint("3"));
+	CYBOZU_TEST_ASSERT(Vint("-5") < Vint("-3"));
+	CYBOZU_TEST_ASSERT(Vint("-0") < Vint("1"));
+	CYBOZU_TEST_ASSERT(Vint("-1") < Vint("-0"));
 
-	CYBOZU_TEST_ASSERT(emu_mpz("5") > emu_mpz("3"));
-	CYBOZU_TEST_ASSERT(emu_mpz("5") > emu_mpz("-3"));
-	CYBOZU_TEST_ASSERT(emu_mpz("-2") > emu_mpz("-3"));
-	CYBOZU_TEST_ASSERT(emu_mpz("3") > emu_mpz("-0"));
-	CYBOZU_TEST_ASSERT(emu_mpz("-0") > emu_mpz("-1"));
+	CYBOZU_TEST_ASSERT(Vint("5") > Vint("3"));
+	CYBOZU_TEST_ASSERT(Vint("5") > Vint("-3"));
+	CYBOZU_TEST_ASSERT(Vint("-2") > Vint("-3"));
+	CYBOZU_TEST_ASSERT(Vint("3") > Vint("-0"));
+	CYBOZU_TEST_ASSERT(Vint("-0") > Vint("-1"));
 
 	{
 		const struct {
@@ -879,11 +879,11 @@ CYBOZU_TEST_AUTO(emu_mpz)
 			{ "-12345", 3, -98760, 0 },
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl2); i++) {
-			emu_mpz a = emu_mpz(tbl2[i].str);
-			emu_mpz shl = a << tbl2[i].s;
+			Vint a = Vint(tbl2[i].str);
+			Vint shl = a << tbl2[i].s;
 			CYBOZU_TEST_EQUAL(shl, tbl2[i].shl);
 			if (!a.isNegative()) {
-				emu_mpz shr = a >> tbl2[i].s;
+				Vint shr = a >> tbl2[i].s;
 				CYBOZU_TEST_EQUAL(shr, tbl2[i].shr);
 			}
 		}
@@ -899,7 +899,7 @@ CYBOZU_TEST_AUTO(add2)
 	Vuint::sub(w, x, y);
 	CYBOZU_TEST_EQUAL(w, z);
 
-	emu_mpz a, c, d;
+	Vint a, c, d;
 
 	a.set("-2416089439321382744001761632872637936198961520379024187947524965775137204955564426500438089001375107581766516460437532995850581062940399321788596606850");
 	c.set("2416089439321382743300544243711595219403446085161565705825288050160594425031420687263897209379984490503106207071010949258995096347962762372787916800000");
@@ -934,7 +934,7 @@ CYBOZU_TEST_AUTO(stream)
 		CYBOZU_TEST_EQUAL(y, w);
 	}
 	{
-		emu_mpz x, y, z, w;
+		Vint x, y, z, w;
 		x.set("12345678901232342424242423423429922");
 		y.set("-23423423452424242343");
 		std::ostringstream oss;

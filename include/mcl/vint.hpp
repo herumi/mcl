@@ -1421,8 +1421,7 @@ T power(const T& x, const S& y)
 typedef VuintT<local::Buffer<mcl::Unit> > Vuint;
 //typedef VuintT<local::VariableBuffer<mcl::Unit> > Vuint;
 //typedef VuintT<local::FixedBuffer<mcl::Unit, MIE_ZM_VUINT_BIT_LEN> > Vuint;
-typedef VsintT<Vuint> emu_mpz;
+typedef VsintT<Vuint> Vint;
 
 } // mcl
 
-typedef mcl::emu_mpz mpz_class;
