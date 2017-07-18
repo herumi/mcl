@@ -12,24 +12,19 @@
 #include <cmath>
 #include <iostream>
 
-#ifndef MIE_ZM_VUINT_BIT_LEN
-	#define MIE_ZM_VUINT_BIT_LEN (64 * 9)
+#ifndef MCL_VINT_UNIT_BYTE_SIZE
+	#define MCL_VINT_UNIT_BYTE_SIZE 4
 #endif
 
 namespace mcl {
 
-#ifdef MIE_USE_UNIT64
+#if MCL_VINT_UNIT_BYTE_SIZE == 8
 typedef uint64_t Unit;
-#else
+#elif MCL_VINT_UNIT_BYTE_SIZE == 4
 typedef uint32_t Unit;
-#define MIE_USE_UNIT32
+#else
+	#error "define MCL_VINT_UNIT_BYTE_SIZE"
 #endif
-
-typedef struct {
-	int allocSize_;
-	int dataSize_;
-	Unit *ptr_;
-} Vint_struct;
 
 namespace local {
 
@@ -50,7 +45,7 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 */
 static inline Unit mulUnit(Unit *H, Unit a, Unit b)
 {
-#ifdef MIE_USE_UNIT32
+#if MCL_VINT_UNIT_BYTE_SIZE == 4
 	uint64_t t = uint64_t(a) * b;
 	uint32_t L;
 	split64(H, &L, t);
@@ -74,7 +69,7 @@ static inline Unit mulUnit(Unit *H, Unit a, Unit b)
 */
 static Unit divUnit(Unit *r, Unit H, Unit L, Unit y)
 {
-#ifdef MIE_USE_UNIT32
+#if MCL_VINT_UNIT_BYTE_SIZE == 4
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
 	*r = Unit(t % y);
@@ -144,42 +139,6 @@ inline void decStr2Int(T& x, const std::string& s)
 		q--;
 	}
 }
-
-/*
-	T must have compare, add, sub, mul
-*/
-template<class T>
-struct Empty {};
-
-template<class T, class E = Empty<T> >
-struct Operator : E {
-	inline friend bool operator<(const T& x, const T& y) { return T::compare(x, y) < 0; }
-	inline friend bool operator>=(const T& x, const T& y) { return !operator<(x, y); }
-
-	inline friend bool operator>(const T& x, const T& y) { return T::compare(x, y) > 0; }
-	inline friend bool operator<=(const T& x, const T& y) { return !operator>(x, y); }
-	inline friend bool operator==(const T& x, const T& y) { return T::compare(x, y) == 0; }
-	inline friend bool operator!=(const T& x, const T& y) { return !operator==(x, y); }
-	template<class N>
-	inline T& operator+=(const N& rhs) { T::add(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	inline T& operator-=(const T& rhs) { T::sub(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	inline T& operator*=(const T& rhs) { T::mul(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	inline T& operator/=(const T& rhs) { T::div(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	inline T& operator%=(const T& rhs) { T::mod(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
-	inline friend T operator+(const T& a, const T& b) { T c; T::add(c, a, b); return c; }
-	inline friend T operator-(const T& a, const T& b) { T c; T::sub(c, a, b); return c; }
-	inline friend T operator*(const T& a, const T& b) { T c; T::mul(c, a, b); return c; }
-	inline friend T operator/(const T& a, const T& b) { T c; T::div(c, a, b); return c; }
-	inline friend T operator%(const T& a, const T& b) { T c; T::mod(c, a, b); return c; }
-	inline T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
-	inline T operator<<(size_t n) const { T out; T::shl(out, static_cast<const T&>(*this), n); return out; }
-	inline T operator>>(size_t n) const { T out; T::shr(out, static_cast<const T&>(*this), n); return out; }
-
-//	T& operator<<=(size_t n) { *this = *this << n; return static_cast<T&>(*this); }
-//	T& operator>>=(size_t n) { *this = *this >> n; return static_cast<T&>(*this); }
-	inline T& operator<<=(size_t n) { T::shl(static_cast<T&>(*this), static_cast<const T&>(*this), n); return static_cast<T&>(*this); }
-	inline T& operator>>=(size_t n) { T::shr(static_cast<T&>(*this), static_cast<const T&>(*this), n); return static_cast<T&>(*this); }
-};
 
 /*
 	compare x[] and y[]
@@ -440,7 +399,7 @@ static inline double GetApp(const T *x, size_t xn, bool up)
 	union di di;
 	di.f = (double)H;
 	unsigned int len = int(di.i >> 52) - 1023 + 1;
-#ifdef MIE_USE_UNIT32
+#if MCL_VINT_UNIT_BYTE_SIZE == 4
 	uint32_t M = x[xn - 2];
 	if (len >= 21) {
 		di.i |= M >> (len - 21);
@@ -786,7 +745,7 @@ public:
 	signed integer with variable length
 */
 template<class _Buffer>
-class VintT : public local::Operator<VintT<_Buffer> > {
+class VintT {
 public:
 	typedef _Buffer Buffer;
 	typedef typename Buffer::value_type value_type;
@@ -838,13 +797,6 @@ private:
 		assert(!c);
 		z.trim(zn);
 	}
-	static void umul1(VintT& z, const Buffer& x, size_t xn, T y)
-	{
-		size_t zn = xn + 1;
-		z.buf_.alloc(zn);
-		z.buf_[zn - 1] = local::mul1(&z.buf_[0], &x[0], xn, y);
-		z.trim(zn);
-	}
 	static void usub(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		assert(xn >= yn);
@@ -872,25 +824,6 @@ private:
 			usub(z, y.buf_, y.size(), x.buf_, x.size());
 			z.isNeg_ = yNeg;
 		}
-	}
-	void setSize(size_t n) { size_ = n; }
-	/**
-		@param q [out] q = x / y
-		@param x [in]
-		@param y [in] must be not zero
-		@return x % y
-	*/
-	static T udiv1(VintT *q, const Buffer& x, size_t xn, T y)
-	{
-		T r;
-		if (q) {
-			q->buf_.alloc(xn); // assume q is not destroyed if q == x
-			r = local::div1(&q->buf_[0], &x[0], xn, y);
-			q->trim(xn);
-		} else {
-			r = local::mod1(&x[0], xn, y);
-		}
-		return r;
 	}
 	/**
 		@param q [out] x / y if q != 0
@@ -928,7 +861,7 @@ public:
 		isNeg_ = x < 0;
 		buf_.alloc(1);
 		buf_[0] = std::abs(x);
-		setSize(1);
+		size_ = 1;
 		return *this;
 	}
 	/*
@@ -975,7 +908,7 @@ public:
 
 				std::vector<uint32_t> t;
 				while (!x.isZero()) {
-					uint32_t r = (uint32_t)udiv1(&x, x.buf_, x.size(), i1e9);
+					uint32_t r = (uint32_t)udivMod1(&x, x, i1e9);
 					t.push_back(r);
 				}
 				if (t.empty()) {
@@ -1112,21 +1045,60 @@ public:
 		z.trim(zn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 	}
-	static void mul(VintT& z, const VintT& x, T y)
+	/*
+		@note y is unsigned integer
+	*/
+	static void add(VintT& z, const VintT& x, T y)
 	{
-		umul1(z, x.buf_, x.size(), y);
+		if (x.isNeg_) {
+			usub1(z, x.buf_, x.size(), y);
+		} else {
+			uadd1(z, x.buf_, x.size(), y);
+		}
 		z.isNeg_ = x.isNeg_;
 	}
 	/*
-		@note ignore sign
+		@note y is unsigned integer
 	*/
-	static T udiv1(VintT *q, const VintT& x, T y)
+	static void sub(VintT& z, const VintT& x, T y)
 	{
-		if (q) {
-			q->isNeg_ = false;
-			return udiv1(q, x.buf_, x.size(), y);
+		if (x.isNeg_) {
+			uadd1(z, x.buf_, x.size(), y);
 		} else {
-			return udiv1(0, x.buf_, x.size(), y);
+			usub1(z, x.buf_, x.size(), y);
+		}
+		z.isNeg_ = x.isNeg_;
+	}
+	/*
+		@note y is unsigned integer
+	*/
+	static void mul(VintT& z, const VintT& x, T y)
+	{
+		size_t xn = x.size();
+		size_t zn = xn + 1;
+		z.buf_.alloc(zn);
+		z.buf_[zn - 1] = local::mul1(&z.buf_[0], &x.buf_[0], xn, y);
+		z.trim(zn);
+		z.isNeg_ = x.isNeg_;
+	}
+	/*
+		@param q [out] q = x / y if q is not zero
+		@param x [in]
+		@param y [in] must be not zero
+		return abs(x) % y
+		@note return value ignore sign of x
+	*/
+	static T udivMod1(VintT *q, const VintT& x, T y)
+	{
+		size_t xn = x.size();
+		if (q) {
+			q->isNeg_ = x.isNeg_;
+			q->buf_.alloc(xn);
+			T r = local::div1(&q->buf_[0], &x.buf_[0], xn, y);
+			q->trim(xn);
+			return r;
+		} else {
+			return local::mod1(&x.buf_[0], xn, y);
 		}
 	}
 	/*
@@ -1151,6 +1123,16 @@ public:
 	static void mod(VintT& r, const VintT& x, const VintT& y)
 	{
 		divMod(0, r, x, y);
+	}
+	static void div(VintT& q, const VintT& x, T y)
+	{
+		udivMod1(&q, x, y);
+	}
+	static void mod(VintT& r, const VintT& x, T y)
+	{
+		bool xNeg = x.isNeg_;
+		r = udivMod1(0, x, y);
+		r.isNeg_ = xNeg;
 	}
 	/*
 		like Python
@@ -1189,7 +1171,7 @@ public:
 		x.setStr(str);
 		return is;
 	}
-	// logical left shift (ignore sign)
+	// logical left shift (copy sign)
 	static void shl(VintT& y, const VintT& x, size_t shiftBit)
 	{
 		size_t xn = x.size();
@@ -1199,7 +1181,7 @@ public:
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
-	// logical right shift (ignore sign)
+	// logical right shift (copy sign)
 	static void shr(VintT& y, const VintT& x, size_t shiftBit)
 	{
 		size_t xn = x.size();
@@ -1218,7 +1200,38 @@ public:
 		if (&z != &x) { z = x; }
 		z.isNeg_ = false;
 	}
+	VintT& operator++() { add(*this, *this, 1); return *this; }
+	VintT& operator--() { sub(*this, *this, 1); return *this; }
+	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }
+	VintT operator--(int) { VintT c = *this; sub(*this, *this, 1); return c; }
 	const T *getUnit() const { return &buf_[0]; }
+	friend bool operator<(const VintT& x, const VintT& y) { return compare(x, y) < 0; }
+	friend bool operator>=(const VintT& x, const VintT& y) { return !operator<(x, y); }
+	friend bool operator>(const VintT& x, const VintT& y) { return compare(x, y) > 0; }
+	friend bool operator<=(const VintT& x, const VintT& y) { return !operator>(x, y); }
+	friend bool operator==(const VintT& x, const VintT& y) { return compare(x, y) == 0; }
+	friend bool operator!=(const VintT& x, const VintT& y) { return !operator==(x, y); }
+	template<class N>
+	VintT& operator+=(const N& rhs) { add(*this, *this, rhs); return *this; }
+	template<class N>
+	VintT& operator-=(const N& rhs) { sub(*this, *this, rhs); return *this; }
+	template<class N>
+	VintT& operator*=(const N& rhs) { mul(*this, *this, rhs); return *this; }
+	template<class N>
+	VintT& operator/=(const N& rhs) { div(*this, *this, rhs); return *this; }
+	template<class N>
+	VintT& operator%=(const N& rhs) { mod(*this, *this, rhs); return *this; }
+	friend VintT operator+(const VintT& a, const VintT& b) { VintT c; add(c, a, b); return c; }
+	friend VintT operator-(const VintT& a, const VintT& b) { VintT c; sub(c, a, b); return c; }
+	friend VintT operator*(const VintT& a, const VintT& b) { VintT c; mul(c, a, b); return c; }
+	friend VintT operator/(const VintT& a, const VintT& b) { VintT c; div(c, a, b); return c; }
+	friend VintT operator%(const VintT& a, const VintT& b) { VintT c; mod(c, a, b); return c; }
+	VintT operator-() const { VintT c; neg(c, *this); return c; }
+	VintT& operator<<=(size_t n) { shl(*this, *this, n); return *this; }
+	VintT& operator>>=(size_t n) { shr(*this, *this, n); return *this; }
+	VintT operator<<(size_t n) const { VintT c = *this; c <<= n; return c; }
+	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
+
 };
 
 namespace util {
@@ -1295,7 +1308,7 @@ T power(const T& x, const S& y)
 }
 
 //typedef VintT<local::VariableBuffer<mcl::Unit> > Vint;
-//typedef VintT<local::FixedBuffer<mcl::Unit, MIE_ZM_VUINT_BIT_LEN> > Vint;
+//typedef VintT<local::FixedBuffer<mcl::Unit, 10> > Vint;
 typedef VintT<local::Buffer<mcl::Unit> > Vint;
 
 } // mcl

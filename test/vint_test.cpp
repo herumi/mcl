@@ -366,11 +366,11 @@ CYBOZU_TEST_AUTO(div1)
 		r = tbl[i].r;
 		z.setArray(tbl[i].c.p, tbl[i].c.n);
 
-		u = (unsigned int)Vint::udiv1(&t, x, b);
+		u = (unsigned int)Vint::udivMod1(&t, x, b);
 		CYBOZU_TEST_EQUAL(t, z);
 		CYBOZU_TEST_EQUAL(u, r);
 
-		u = (unsigned int)Vint::udiv1(&x, x, b);
+		u = (unsigned int)Vint::udivMod1(&x, x, b);
 		CYBOZU_TEST_EQUAL(x, z);
 		CYBOZU_TEST_EQUAL(u, r);
 	}
@@ -942,4 +942,55 @@ CYBOZU_TEST_AUTO(stream)
 		CYBOZU_TEST_EQUAL(x, z);
 		CYBOZU_TEST_EQUAL(y, w);
 	}
+}
+
+CYBOZU_TEST_AUTO(inc_dec)
+{
+	Vint x = 3;
+	CYBOZU_TEST_EQUAL(x++, 3);
+	CYBOZU_TEST_EQUAL(x, 4);
+	CYBOZU_TEST_EQUAL(++x, 5);
+	CYBOZU_TEST_EQUAL(x, 5);
+
+	CYBOZU_TEST_EQUAL(x--, 5);
+	CYBOZU_TEST_EQUAL(x, 4);
+	CYBOZU_TEST_EQUAL(--x, 3);
+	CYBOZU_TEST_EQUAL(x, 3);
+}
+
+CYBOZU_TEST_AUTO(T)
+{
+	Vint x = 15;
+	x += 3;
+	CYBOZU_TEST_EQUAL(x, 18);
+	x -= 2;
+	CYBOZU_TEST_EQUAL(x, 16);
+	x *= 2;
+	CYBOZU_TEST_EQUAL(x, 32);
+	x /= 3;
+	CYBOZU_TEST_EQUAL(x, 10);
+	x = -x;
+	CYBOZU_TEST_EQUAL(x, -10);
+	x += 1;
+	CYBOZU_TEST_EQUAL(x, -9);
+	x -= 2;
+	CYBOZU_TEST_EQUAL(x, -11);
+	x *= 2;
+	CYBOZU_TEST_EQUAL(x, -22);
+	x /= 5;
+	CYBOZU_TEST_EQUAL(x, -4);
+	x = -22;
+	x %= 5;
+	CYBOZU_TEST_EQUAL(x, -2);
+}
+
+CYBOZU_TEST_AUTO(signedInt)
+{
+	Vint x = 3;
+	x += -2; // T(-2)
+#if MCL_VINT_UNIT_BYTE_SIZE == 8
+	CYBOZU_TEST_EQUAL(x, Vint("0x10000000000000001"));
+#else
+	CYBOZU_TEST_EQUAL(x, Vint("0x100000001"));
+#endif
 }
