@@ -18,6 +18,8 @@
 
 namespace mcl {
 
+namespace local {
+
 #if MCL_VINT_UNIT_BYTE_SIZE == 8
 typedef uint64_t Unit;
 #elif MCL_VINT_UNIT_BYTE_SIZE == 4
@@ -25,8 +27,6 @@ typedef uint32_t Unit;
 #else
 	#error "define MCL_VINT_UNIT_BYTE_SIZE"
 #endif
-
-namespace local {
 
 inline uint64_t make64(uint32_t H, uint32_t L)
 {
@@ -582,7 +582,7 @@ template<class T>
 class VariableBuffer {
 	std::vector<T> v_;
 public:
-	typedef T value_type;
+	typedef T Unit;
 	VariableBuffer()
 	{
 	}
@@ -611,7 +611,7 @@ class Buffer {
 	size_t allocSize_;
 	T *ptr_;
 public:
-	typedef T value_type;
+	typedef T Unit;
 	Buffer() : allocSize_(0), ptr_(0) {}
 	~Buffer()
 	{
@@ -689,7 +689,7 @@ class FixedBuffer {
 	T v_[N];
 	size_t size_;
 public:
-	typedef T value_type;
+	typedef T Unit;
 	FixedBuffer()
 		: size_(0)
 	{
@@ -748,9 +748,8 @@ template<class _Buffer>
 class VintT {
 public:
 	typedef _Buffer Buffer;
-	typedef typename Buffer::value_type value_type;
-	typedef typename Buffer::value_type T;
-	static const size_t unitBitSize = sizeof(T) * 8;
+	typedef typename Buffer::Unit Unit;
+	static const size_t unitBitSize = sizeof(Unit) * 8;
 	static const int invalidVar = -2147483648; // abs(invalidVar) is not defined
 private:
 	Buffer buf_;
@@ -783,18 +782,18 @@ private:
 		z.buf_[zn - 1] = local::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
 		z.trim(zn);
 	}
-	static void uadd1(VintT& z, const Buffer& x, size_t xn, T y)
+	static void uadd1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn + 1;
 		z.buf_.alloc(zn);
 		z.buf_[zn - 1] = local::add1(&z.buf_[0], &x[0], xn, y);
 		z.trim(zn);
 	}
-	static void usub1(VintT& z, const Buffer& x, size_t xn, T y)
+	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn;
 		z.buf_.alloc(zn);
-		T c = local::sub1(&z.buf_[0], &x[0], xn, y);
+		Unit c = local::sub1(&z.buf_[0], &x[0], xn, y);
 		assert(!c);
 		z.trim(zn);
 	}
@@ -802,7 +801,7 @@ private:
 	{
 		assert(xn >= yn);
 		z.buf_.alloc(xn);
-		T c = local::subN(&z.buf_[0], &x[0], &y[0], yn);
+		Unit c = local::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
 			c = local::sub1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
@@ -835,7 +834,7 @@ private:
 			z.isNeg_ = xNeg;
 			return;
 		}
-		if (x.size() > 1 || x.buf_[0] >= (T)y) {
+		if (x.size() > 1 || x.buf_[0] >= (Unit)y) {
 			usub1(z, x.buf_, x.size(), y);
 			z.isNeg_ = xNeg;
 		} else {
@@ -895,7 +894,7 @@ public:
 			clear();
 			return;
 		}
-		size_t unitSize = (sizeof(S) * size + sizeof(T) - 1) / sizeof(T);
+		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
 		buf_.alloc(unitSize);
 		buf_[unitSize - 1] = 0;
 		memcpy(&buf_[0], x, sizeof(S) * size);
@@ -907,7 +906,7 @@ public:
 		buf_[size, maxSize) with zero
 		@note assume little endian system
 	*/
-	void getArray(T *x, size_t maxSize) const
+	void getArray(Unit *x, size_t maxSize) const
 	{
 		size_t n = size();
 		if (n > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << n;
@@ -962,16 +961,16 @@ public:
 	{
 		if (isZero()) return 0;
 		size_t n = size();
-		T v = buf_[n - 1];
+		Unit v = buf_[n - 1];
 		assert(v);
-		return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(v);
+		return (n - 1) * sizeof(Unit) * 8 + 1 + cybozu::bsr<Unit>(v);
 	}
 	// ignore sign
 	bool testBit(size_t i) const
 	{
-		size_t unit_pos = i / (sizeof(T) * 8);
-		size_t bit_pos  = i % (sizeof(T) * 8);
-		T mask = T(1) << bit_pos;
+		size_t unit_pos = i / (sizeof(Unit) * 8);
+		size_t bit_pos  = i % (sizeof(Unit) * 8);
+		Unit mask = Unit(1) << bit_pos;
 		return (buf_[unit_pos] & mask) != 0;
 	}
 	/*
@@ -1080,7 +1079,7 @@ public:
 		if (y == invalidVar) throw cybozu::Exception("VintT:mul1:bad y");
 		size_t xn = x.size();
 		size_t zn = xn + 1;
-		T absY = std::abs(y);
+		Unit absY = std::abs(y);
 		z.buf_.alloc(zn);
 		z.buf_[zn - 1] = local::mul1(&z.buf_[0], &x.buf_[0], xn, absY);
 		z.isNeg_ = x.isNeg_ ^ (y < 0);
@@ -1097,7 +1096,7 @@ public:
 		if (y == invalidVar) throw cybozu::Exception("VintT:divMod1:bad y");
 		bool xNeg = x.isNeg_;
 		bool yNeg = y < 0;
-		T absY = std::abs(y);
+		Unit absY = std::abs(y);
 		size_t xn = x.size();
 		int r;
 		if (q) {
@@ -1164,11 +1163,6 @@ public:
 			usub(r, yy.buf_, yy.size(), r.buf_, r.size());
 		}
 	}
-	static void neg(VintT& z, const VintT& x)
-	{
-		if (&z != &x) { z = x; }
-		z.isNeg_ = !x.isNeg_;
-	}
 	inline friend std::ostream& operator<<(std::ostream& os, const VintT& x)
 	{
 		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
@@ -1204,16 +1198,21 @@ public:
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
-	static void abs(VintT& z, const VintT& x)
+	static void neg(VintT& y, const VintT& x)
 	{
-		if (&z != &x) { z = x; }
-		z.isNeg_ = false;
+		if (&y != &x) { y = x; }
+		y.isNeg_ = !x.isNeg_;
+	}
+	static void abs(VintT& y, const VintT& x)
+	{
+		if (&y != &x) { y = x; }
+		y.isNeg_ = false;
 	}
 	VintT& operator++() { add(*this, *this, 1); return *this; }
 	VintT& operator--() { sub(*this, *this, 1); return *this; }
 	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }
 	VintT operator--(int) { VintT c = *this; sub(*this, *this, 1); return c; }
-	const T *getUnit() const { return &buf_[0]; }
+	const Unit *getUnit() const { return &buf_[0]; }
 	friend bool operator<(const VintT& x, const VintT& y) { return compare(x, y) < 0; }
 	friend bool operator>=(const VintT& x, const VintT& y) { return !operator<(x, y); }
 	friend bool operator>(const VintT& x, const VintT& y) { return compare(x, y) > 0; }
@@ -1240,7 +1239,6 @@ public:
 	VintT& operator>>=(size_t n) { shr(*this, *this, n); return *this; }
 	VintT operator<<(size_t n) const { VintT c = *this; c <<= n; return c; }
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
-
 };
 
 namespace util {
@@ -1249,8 +1247,8 @@ namespace util {
 */
 template<class T>
 struct IntTag {
-	typedef typename T::value_type value_type;
-	static value_type getBlock(const T& x, size_t i)
+	typedef typename T::Unit Unit;
+	static Unit getBlock(const T& x, size_t i)
 	{
 		return x.getUnit()[i];
 	}
@@ -1262,8 +1260,8 @@ struct IntTag {
 
 template<>
 struct IntTag<int> {
-	typedef int value_type;
-	static value_type getBlock(const int& x, size_t)
+	typedef int Unit;
+	static Unit getBlock(const int& x, size_t)
 	{
 		return x;
 	}
@@ -1274,8 +1272,8 @@ struct IntTag<int> {
 };
 template<>
 struct IntTag<size_t> {
-	typedef size_t value_type;
-	static value_type getBlock(const size_t& x, size_t)
+	typedef size_t Unit;
+	static Unit getBlock(const size_t& x, size_t)
 	{
 		return x;
 	}
@@ -1294,20 +1292,20 @@ template<class T, class S>
 T power(const T& x, const S& y)
 {
 	typedef typename mcl::util::IntTag<S> Tag;
-	typedef typename Tag::value_type value_type;
+	typedef typename Tag::Unit Unit;
 	T t(x);
 	T out = 1;
 	for (size_t i = 0, n = Tag::getBlockSize(y); i < n; i++) {
-		value_type v = Tag::getBlock(y, i);
-		int m = (int)sizeof(value_type) * 8;
+		Unit v = Tag::getBlock(y, i);
+		int m = (int)sizeof(Unit) * 8;
 		if (i == n - 1) {
 			// avoid unused multiplication
-			while (m > 0 && (v & (value_type(1) << (m - 1))) == 0) {
+			while (m > 0 && (v & (Unit(1) << (m - 1))) == 0) {
 				m--;
 			}
 		}
 		for (int j = 0; j < m; j++) {
-			if (v & (value_type(1) << j)) {
+			if (v & (Unit(1) << j)) {
 				out *= t;
 			}
 			t *= t;
@@ -1316,9 +1314,9 @@ T power(const T& x, const S& y)
 	return out;
 }
 
-//typedef VintT<local::VariableBuffer<mcl::Unit> > Vint;
-//typedef VintT<local::FixedBuffer<mcl::Unit, 10> > Vint;
-typedef VintT<local::Buffer<mcl::Unit> > Vint;
+//typedef VintT<local::VariableBuffer<mcl::local::Unit> > Vint;
+//typedef VintT<local::FixedBuffer<mcl::local::Unit, 10> > Vint;
+typedef VintT<local::Buffer<mcl::local::Unit> > Vint;
 
 } // mcl
 

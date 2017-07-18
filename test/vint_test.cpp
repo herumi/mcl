@@ -622,11 +622,11 @@ CYBOZU_TEST_AUTO(shift)
 	Vint x("123423424918471928374192874198274981274918274918274918243");
 	Vint y, z;
 
-	const size_t unitBitSize = sizeof(mcl::Unit) * 8;
+	const size_t unitBitSize = Vint::unitBitSize;
 	// shl
 	for (size_t i = 1; i < 31; i++) {
 		Vint::shl(y, x, i);
-		z = x * (mcl::Unit(1) << i);
+		z = x * (Vint::Unit(1) << i);
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x << i;
 		CYBOZU_TEST_EQUAL(y, z);
@@ -658,7 +658,7 @@ CYBOZU_TEST_AUTO(shift)
 	// shr
 	for (size_t i = 1; i < 31; i++) {
 		Vint::shr(y, x, i);
-		z = x / (mcl::Unit(1) << i);
+		z = x / (Vint::Unit(1) << i);
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x >> i;
 		CYBOZU_TEST_EQUAL(y, z);
@@ -688,7 +688,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	{
 		Vint a = 0, zero = 0;
-		a <<= sizeof(Vint::T) * 8;
+		a <<= Vint::unitBitSize;
 		CYBOZU_TEST_EQUAL(a, zero);
 	}
 }
@@ -698,9 +698,9 @@ CYBOZU_TEST_AUTO(bitLen)
 	{
 		Vint zero = 0;
 		CYBOZU_TEST_EQUAL(zero.bitLen(), 0);
-		zero <<= (sizeof(Vint::T)*8 - 1);
+		zero <<= (Vint::unitBitSize - 1);
 		CYBOZU_TEST_EQUAL(zero.bitLen(), 0);
-		zero <<= (sizeof(Vint::T)*8);
+		zero <<= Vint::unitBitSize;
 		CYBOZU_TEST_EQUAL(zero.bitLen(), 0);
 	}
 
