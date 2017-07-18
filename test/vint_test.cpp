@@ -1023,7 +1023,6 @@ CYBOZU_TEST_AUTO(powMod)
 
 CYBOZU_TEST_AUTO(andOr)
 {
-	std::cout << std::hex;
 	Vint x("1223480928420984209849242");
 	Vint y("29348220482094820948208420984209482048204289482");
 	Vint z;
@@ -1040,4 +1039,15 @@ CYBOZU_TEST_AUTO(andOr)
 	y = 8;
 	y &= x;
 	CYBOZU_TEST_EQUAL(y, 0);
+}
+
+CYBOZU_TEST_AUTO(invMod)
+{
+	Vint m("100000000000000000039");
+	for (int i = 1; i < 100; i++) {
+		Vint x = i;
+		Vint y;
+		Vint::invMod(y, x, m);
+		CYBOZU_TEST_EQUAL((y * x) % m, 1);
+	}
 }

@@ -251,7 +251,7 @@ inline void sqrMod(mpz_class& z, const mpz_class& x, const mpz_class& m)
 inline void pow(mpz_class& z, const mpz_class& x, unsigned int y)
 {
 #ifdef MCL_USE_VINT
-	z = mcl::power(x, y);
+	mcl::pow(z, x, y);
 #else
 	mpz_pow_ui(z.get_mpz_t(), x.get_mpz_t(), y);
 #endif
@@ -259,7 +259,11 @@ inline void pow(mpz_class& z, const mpz_class& x, unsigned int y)
 // z = x^y mod m (y >=0)
 inline void powMod(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_class& m)
 {
+#ifdef MCL_USE_VINT
+	mcl::powMod(z, x, y, m);
+#else
 	mpz_powm(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t(), m.get_mpz_t());
+#endif
 }
 // z = 1/x mod m
 inline void invMod(mpz_class& z, const mpz_class& x, const mpz_class& m)

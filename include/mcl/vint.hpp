@@ -1312,6 +1312,46 @@ public:
 		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
 		z.swap(zz);
 	}
+	/*
+		inverse mod
+		y = 1/x mod m
+	*/
+	static void invMod(VintT& y, const VintT& x, const VintT& m)
+	{
+		if (x == 1) {
+			y = 1;
+			return;
+		}
+		VintT a = 1;
+		VintT t;
+		VintT q;
+		divMod(&q, t, m, x);
+		if (t.isZero()) throw cybozu::Exception("VintT:invMod:bad m") << m;
+		VintT s = x;
+		VintT b = -q;
+
+		for (;;) {
+			divMod(&q, s, s, t);
+			if (s.isZero()) {
+				if (b.isNeg_) {
+					b += m;
+				}
+				y = b;
+				return;
+			}
+			a -= b * q;
+
+			divMod(&q, t, t, s);
+			if (t.isZero()) {
+				if (a.isNeg_) {
+					a += m;
+				}
+				y = a;
+				return;
+			}
+			b -= a * q;
+		}
+	}
 	VintT& operator++() { add(*this, *this, 1); return *this; }
 	VintT& operator--() { sub(*this, *this, 1); return *this; }
 	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }
