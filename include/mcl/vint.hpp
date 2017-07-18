@@ -994,10 +994,20 @@ public:
 	// ignore sign
 	bool testBit(size_t i) const
 	{
-		size_t unit_pos = i / (sizeof(Unit) * 8);
-		size_t bit_pos  = i % (sizeof(Unit) * 8);
-		Unit mask = Unit(1) << bit_pos;
-		return (buf_[unit_pos] & mask) != 0;
+		size_t q = i / unitBitSize;
+		size_t r = i % unitBitSize;
+		if (q > size()) throw cybozu::Exception("Vint:testBit:large i") << q << size();
+		Unit mask = Unit(1) << r;
+		return (buf_[q] & mask) != 0;
+	}
+	void setBit(size_t i)
+	{
+		size_t q = i / unitBitSize;
+		size_t r = i % unitBitSize;
+		if (q > size()) throw cybozu::Exception("Vint:setBit:large i") << q << size();
+		buf_.alloc(q + 1);
+		Unit mask = Unit(1) << r;
+		buf_[q] |= mask;
 	}
 	/*
 		@param str [in] number string
@@ -1238,6 +1248,40 @@ public:
 		if (&y != &x) { y = x; }
 		y.isNeg_ = false;
 	}
+	// accept only non-negative value
+	static void orBit(VintT& z, const VintT& x, const VintT& y)
+	{
+		if (x.isNeg_ || y.isNeg_) throw cybozu::Exception("Vint:_or:negative value is not supported");
+		const VintT *px = &x, *py = &y;
+		if (x.size() < y.size()) {
+			std::swap(px, py);
+		}
+		size_t xn = px->size();
+		size_t yn = py->size();
+		assert(xn >= yn);
+		z.buf_.alloc(xn);
+		for (size_t i = 0; i < yn; i++) {
+			z.buf_[i] = x.buf_[i] | y.buf_[i];
+		}
+		local::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
+		z.trim(xn);
+	}
+	static void andBit(VintT& z, const VintT& x, const VintT& y)
+	{
+		if (x.isNeg_ || y.isNeg_) throw cybozu::Exception("Vint:_or:negative value is not supported");
+		const VintT *px = &x, *py = &y;
+		if (x.size() < y.size()) {
+			std::swap(px, py);
+		}
+		size_t xn CYBOZU_UNUSED = px->size();
+		size_t yn = py->size();
+		assert(xn >= yn);
+		z.buf_.alloc(yn);
+		for (size_t i = 0; i < yn; i++) {
+			z.buf_[i] = x.buf_[i] & y.buf_[i];
+		}
+		z.trim(yn);
+	}
 	static void pow(VintT& z, const VintT& x, const VintT& y)
 	{
 		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
@@ -1284,6 +1328,8 @@ public:
 	VintT& operator*=(const VintT& rhs) { mul(*this, *this, rhs); return *this; }
 	VintT& operator/=(const VintT& rhs) { div(*this, *this, rhs); return *this; }
 	VintT& operator%=(const VintT& rhs) { mod(*this, *this, rhs); return *this; }
+	VintT& operator&=(const VintT& rhs) { andBit(*this, *this, rhs); return *this; }
+	VintT& operator|=(const VintT& rhs) { orBit(*this, *this, rhs); return *this; }
 	VintT& operator+=(int rhs) { add1(*this, *this, rhs); return *this; }
 	VintT& operator-=(int rhs) { sub1(*this, *this, rhs); return *this; }
 	VintT& operator*=(int rhs) { mul1(*this, *this, rhs); return *this; }
@@ -1294,6 +1340,8 @@ public:
 	friend VintT operator*(const VintT& a, const VintT& b) { VintT c; mul(c, a, b); return c; }
 	friend VintT operator/(const VintT& a, const VintT& b) { VintT c; div(c, a, b); return c; }
 	friend VintT operator%(const VintT& a, const VintT& b) { VintT c; mod(c, a, b); return c; }
+	friend VintT operator&(const VintT& a, const VintT& b) { VintT c; andBit(c, a, b); return c; }
+	friend VintT operator|(const VintT& a, const VintT& b) { VintT c; orBit(c, a, b); return c; }
 	VintT operator-() const { VintT c; neg(c, *this); return c; }
 	VintT& operator<<=(size_t n) { shl(*this, *this, n); return *this; }
 	VintT& operator>>=(size_t n) { shr(*this, *this, n); return *this; }

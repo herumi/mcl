@@ -1020,3 +1020,24 @@ CYBOZU_TEST_AUTO(powMod)
 	CYBOZU_TEST_EQUAL(y, 1);
 
 }
+
+CYBOZU_TEST_AUTO(andOr)
+{
+	std::cout << std::hex;
+	Vint x("1223480928420984209849242");
+	Vint y("29348220482094820948208420984209482048204289482");
+	Vint z;
+	z = x & y;
+	CYBOZU_TEST_EQUAL(z, Vint("1209221003550923564822922"));
+	z = x | y;
+	CYBOZU_TEST_EQUAL(z, Vint("29348220482094820948208435244134352108849315802"));
+	CYBOZU_TEST_EXCEPTION(Vint("-2") | Vint("5"), std::exception);
+	CYBOZU_TEST_EXCEPTION(Vint("-2") & Vint("5"), std::exception);
+	x = 8;
+	x |= 7;
+	CYBOZU_TEST_EQUAL(x, 15);
+	x = 65536;
+	y = 8;
+	y &= x;
+	CYBOZU_TEST_EQUAL(y, 0);
+}
