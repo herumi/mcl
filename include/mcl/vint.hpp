@@ -1287,7 +1287,7 @@ public:
 		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
 		const VintT xx = x;
 		z = 1;
-		mcl::fp::powGeneric(z, x, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
+		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
 	}
 	static void pow(VintT& z, const VintT& x, int y)
 	{
@@ -1295,7 +1295,7 @@ public:
 		const VintT xx = x;
 		Unit absY = std::abs(y);
 		z = 1;
-		mcl::fp::powGeneric(z, x, &absY, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		mcl::fp::powGeneric(z, xx, &absY, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
 	}
 	/*
 		z = x ^ y mod m
