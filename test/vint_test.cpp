@@ -623,6 +623,7 @@ CYBOZU_TEST_AUTO(shift)
 	Vint y, z;
 
 	const size_t unitBitSize = Vint::unitBitSize;
+	Vint s;
 	// shl
 	for (size_t i = 1; i < 31; i++) {
 		Vint::shl(y, x, i);
@@ -636,7 +637,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	for (int i = 0; i < 4; i++) {
 		Vint::shl(y, x, i * unitBitSize);
-		Vint s = power(Vint(2), Vint(i * unitBitSize));
+		Vint::pow(s, Vint(2), Vint(i * unitBitSize));
 		z = x * s;
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x << (i * unitBitSize);
@@ -647,7 +648,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	for (int i = 0; i < 100; i++) {
 		y = x << i;
-		Vint s = power(Vint(2), Vint(i));
+		Vint::pow(s, Vint(2), i);
 		z = x * s;
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x;
@@ -668,7 +669,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	for (int i = 0; i < 3; i++) {
 		Vint::shr(y, x, i * unitBitSize);
-		Vint s = power(Vint(2), Vint(i * unitBitSize));
+		Vint::pow(s, Vint(2), i * unitBitSize);
 		z = x / s;
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x >> (i * unitBitSize);
@@ -679,7 +680,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	for (int i = 0; i < 100; i++) {
 		y = x >> i;
-		Vint s = power(Vint(2), Vint(i));
+		Vint::pow(s, Vint(2), i);
 		z = x / s;
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x;
@@ -775,7 +776,7 @@ CYBOZU_TEST_AUTO(sample)
 
 	x = 2;
 	y = 250;
-	x = power(x, y);
+	Vint::pow(x, x, y);
 	Vint r, q;
 	r = x % y;
 	q = x / y;
@@ -994,4 +995,28 @@ CYBOZU_TEST_AUTO(T)
 	CYBOZU_TEST_EQUAL(x, -3);
 	x /= -1;
 	CYBOZU_TEST_EQUAL(x, 3);
+}
+
+CYBOZU_TEST_AUTO(pow)
+{
+	Vint x = 2;
+	Vint y;
+	Vint::pow(y, x, 3);
+	CYBOZU_TEST_EQUAL(y, 8);
+	x = -2;
+	Vint::pow(y, x, 3);
+	CYBOZU_TEST_EQUAL(y, -8);
+	CYBOZU_TEST_EXCEPTION(Vint::pow(y, x, -2), std::exception);
+}
+
+CYBOZU_TEST_AUTO(powMod)
+{
+	Vint x = 7;
+	Vint m = 65537;
+	Vint y;
+	Vint::powMod(y, x, 20, m);
+	CYBOZU_TEST_EQUAL(y, 55277);
+	Vint::powMod(y, x, m - 1, m);
+	CYBOZU_TEST_EQUAL(y, 1);
+
 }

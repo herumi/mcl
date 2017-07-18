@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <cmath>
 #include <iostream>
+#include <mcl/util.hpp>
 
 #ifndef MCL_VINT_UNIT_BYTE_SIZE
 	#define MCL_VINT_UNIT_BYTE_SIZE 4
@@ -862,6 +863,22 @@ private:
 		}
 		r.trim(xn);
 	}
+	struct MulMod {
+		const VintT *pm;
+		void operator()(VintT& z, const VintT& x, const VintT& y) const
+		{
+			VintT::mul(z, x, y);
+			z %= *pm;
+		}
+	};
+	struct SqrMod {
+		const VintT *pm;
+		void operator()(VintT& y, const VintT& x) const
+		{
+			VintT::sqr(y, x);
+			y %= *pm;
+		}
+	};
 public:
 	VintT(int x = 0)
 		: size_(0)
@@ -881,6 +898,15 @@ public:
 		buf_[0] = std::abs(x);
 		size_ = 1;
 		return *this;
+	}
+	void swap(VintT& rhs)
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+		noexcept
+#endif
+	{
+		std::swap(buf_, rhs.buf_);
+		std::swap(size_, rhs.size_);
+		std::swap(isNeg_, rhs.isNeg_);
 	}
 	/*
 		set positive value
@@ -1064,6 +1090,10 @@ public:
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
 	}
+	static void sqr(VintT& y, const VintT& x)
+	{
+		mul(y, x, x);
+	}
 	static void add1(VintT& z, const VintT& x, int y)
 	{
 		if (y == invalidVar) throw cybozu::Exception("VintT:add1:bad y");
@@ -1208,6 +1238,36 @@ public:
 		if (&y != &x) { y = x; }
 		y.isNeg_ = false;
 	}
+	static void pow(VintT& z, const VintT& x, const VintT& y)
+	{
+		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
+		const VintT xx = x;
+		z = 1;
+		mcl::fp::powGeneric(z, x, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
+	}
+	static void pow(VintT& z, const VintT& x, int y)
+	{
+		if (y < 0) throw cybozu::Exception("Vint::pow:negative y") << y;
+		const VintT xx = x;
+		Unit absY = std::abs(y);
+		z = 1;
+		mcl::fp::powGeneric(z, x, &absY, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+	}
+	/*
+		z = x ^ y mod m
+	*/
+	static void powMod(VintT& z, const VintT& x, const VintT& y, const VintT& m)
+	{
+		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
+		VintT zz = 1;
+		MulMod mulMod;
+		SqrMod sqrMod;
+		mulMod.pm = &m;
+		sqrMod.pm = &m;
+		zz = 1;
+		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
+		z.swap(zz);
+	}
 	VintT& operator++() { add(*this, *this, 1); return *this; }
 	VintT& operator--() { sub(*this, *this, 1); return *this; }
 	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }
@@ -1240,79 +1300,6 @@ public:
 	VintT operator<<(size_t n) const { VintT c = *this; c <<= n; return c; }
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
-
-namespace util {
-/*
-	dispatch Uint, int, size_t, and so on
-*/
-template<class T>
-struct IntTag {
-	typedef typename T::Unit Unit;
-	static Unit getBlock(const T& x, size_t i)
-	{
-		return x.getUnit()[i];
-	}
-	static size_t getBlockSize(const T& x)
-	{
-		return x.size();
-	}
-};
-
-template<>
-struct IntTag<int> {
-	typedef int Unit;
-	static Unit getBlock(const int& x, size_t)
-	{
-		return x;
-	}
-	static size_t getBlockSize(const int&)
-	{
-		return 1;
-	}
-};
-template<>
-struct IntTag<size_t> {
-	typedef size_t Unit;
-	static Unit getBlock(const size_t& x, size_t)
-	{
-		return x;
-	}
-	static size_t getBlockSize(const size_t&)
-	{
-		return 1;
-	}
-};
-
-} // util
-
-/**
-	return pow(x, y)
-*/
-template<class T, class S>
-T power(const T& x, const S& y)
-{
-	typedef typename mcl::util::IntTag<S> Tag;
-	typedef typename Tag::Unit Unit;
-	T t(x);
-	T out = 1;
-	for (size_t i = 0, n = Tag::getBlockSize(y); i < n; i++) {
-		Unit v = Tag::getBlock(y, i);
-		int m = (int)sizeof(Unit) * 8;
-		if (i == n - 1) {
-			// avoid unused multiplication
-			while (m > 0 && (v & (Unit(1) << (m - 1))) == 0) {
-				m--;
-			}
-		}
-		for (int j = 0; j < m; j++) {
-			if (v & (Unit(1) << j)) {
-				out *= t;
-			}
-			t *= t;
-		}
-	}
-	return out;
-}
 
 //typedef VintT<local::VariableBuffer<mcl::local::Unit> > Vint;
 //typedef VintT<local::FixedBuffer<mcl::local::Unit, 10> > Vint;

@@ -194,8 +194,8 @@ void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
 	@param limitBit [in] const time version if the value is positive
 	@note &out != x and out = the unit element of G
 */
-template<class G, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, void mul(G&, const G&, const G&) , void sqr(G&, const G&), void normalize(G&, const G&), size_t limitBit = 0)
+template<class G, class Mul, class Sqr, class T>
+void powGeneric(G& out, const G& x, const T *y, size_t n, const Mul& mul, const Sqr& sqr, void normalize(G&, const G&), size_t limitBit = 0)
 {
 	assert(&out != &x);
 	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
