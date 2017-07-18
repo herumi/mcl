@@ -751,6 +751,7 @@ public:
 	typedef typename Buffer::value_type value_type;
 	typedef typename Buffer::value_type T;
 	static const size_t unitBitSize = sizeof(T) * 8;
+	static const int invalidVar = -2147483648; // abs(invalidVar) is not defined
 private:
 	Buffer buf_;
 	size_t size_;
@@ -825,6 +826,23 @@ private:
 			z.isNeg_ = yNeg;
 		}
 	}
+	static void _add1(VintT& z, const VintT& x, bool xNeg, int y, bool yNeg)
+	{
+		assert(y >= 0);
+		if ((xNeg ^ yNeg) == 0) {
+			// same sign
+			uadd1(z, x.buf_, x.size(), y);
+			z.isNeg_ = xNeg;
+			return;
+		}
+		if (x.size() > 1 || x.buf_[0] >= (T)y) {
+			usub1(z, x.buf_, x.size(), y);
+			z.isNeg_ = xNeg;
+		} else {
+			z = y - x.buf_[0];
+			z.isNeg_ = yNeg;
+		}
+	}
 	/**
 		@param q [out] x / y if q != 0
 		@param r [out] x % y
@@ -858,6 +876,7 @@ public:
 	}
 	VintT& operator=(int x)
 	{
+		if (x == invalidVar) throw cybozu::Exception("VintT:operator=:invalidVar");
 		isNeg_ = x < 0;
 		buf_.alloc(1);
 		buf_[0] = std::abs(x);
@@ -904,11 +923,12 @@ public:
 		case 10:
 			{
 				const uint32_t i1e9 = 1000000000U;
-				VintT x = *this;
+				VintT x;
+				VintT::abs(x, *this);
 
 				std::vector<uint32_t> t;
 				while (!x.isZero()) {
-					uint32_t r = (uint32_t)udivMod1(&x, x, i1e9);
+					uint32_t r = divMod1(&x, x, i1e9);
 					t.push_back(r);
 				}
 				if (t.empty()) {
@@ -1026,7 +1046,7 @@ public:
 	}
 	size_t size() const { return size_; }
 	bool isZero() const { return size() == 1 && buf_[0] == 0; }
-	bool isNegative() const { return isNeg_; }
+	bool isNegative() const { return !isZero() && isNeg_; }
 	static void add(VintT& z, const VintT& x, const VintT& y)
 	{
 		_add(z, x, x.isNeg_, y, y.isNeg_);
@@ -1042,64 +1062,53 @@ public:
 		size_t zn = xn + yn;
 		z.buf_.alloc(zn);
 		local::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
-		z.trim(zn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
+		z.trim(zn);
 	}
-	/*
-		@note y is unsigned integer
-	*/
-	static void add(VintT& z, const VintT& x, T y)
+	static void add1(VintT& z, const VintT& x, int y)
 	{
-		if (x.isNeg_) {
-			usub1(z, x.buf_, x.size(), y);
-		} else {
-			uadd1(z, x.buf_, x.size(), y);
-		}
-		z.isNeg_ = x.isNeg_;
+		if (y == invalidVar) throw cybozu::Exception("VintT:add1:bad y");
+		_add1(z, x, x.isNeg_, std::abs(y), y < 0);
 	}
-	/*
-		@note y is unsigned integer
-	*/
-	static void sub(VintT& z, const VintT& x, T y)
+	static void sub1(VintT& z, const VintT& x, int y)
 	{
-		if (x.isNeg_) {
-			uadd1(z, x.buf_, x.size(), y);
-		} else {
-			usub1(z, x.buf_, x.size(), y);
-		}
-		z.isNeg_ = x.isNeg_;
+		if (y == invalidVar) throw cybozu::Exception("VintT:sub1:bad y");
+		_add1(z, x, x.isNeg_, std::abs(y), !(y < 0));
 	}
-	/*
-		@note y is unsigned integer
-	*/
-	static void mul(VintT& z, const VintT& x, T y)
+	static void mul1(VintT& z, const VintT& x, int y)
 	{
+		if (y == invalidVar) throw cybozu::Exception("VintT:mul1:bad y");
 		size_t xn = x.size();
 		size_t zn = xn + 1;
+		T absY = std::abs(y);
 		z.buf_.alloc(zn);
-		z.buf_[zn - 1] = local::mul1(&z.buf_[0], &x.buf_[0], xn, y);
+		z.buf_[zn - 1] = local::mul1(&z.buf_[0], &x.buf_[0], xn, absY);
+		z.isNeg_ = x.isNeg_ ^ (y < 0);
 		z.trim(zn);
-		z.isNeg_ = x.isNeg_;
 	}
 	/*
 		@param q [out] q = x / y if q is not zero
 		@param x [in]
 		@param y [in] must be not zero
-		return abs(x) % y
-		@note return value ignore sign of x
+		return x % y
 	*/
-	static T udivMod1(VintT *q, const VintT& x, T y)
+	static int divMod1(VintT *q, const VintT& x, int y)
 	{
+		if (y == invalidVar) throw cybozu::Exception("VintT:divMod1:bad y");
+		bool xNeg = x.isNeg_;
+		bool yNeg = y < 0;
+		T absY = std::abs(y);
 		size_t xn = x.size();
+		int r;
 		if (q) {
-			q->isNeg_ = x.isNeg_;
+			q->isNeg_ = xNeg ^ yNeg;
 			q->buf_.alloc(xn);
-			T r = local::div1(&q->buf_[0], &x.buf_[0], xn, y);
+			r = local::div1(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
-			return r;
 		} else {
-			return local::mod1(&x.buf_[0], xn, y);
+			r = local::mod1(&x.buf_[0], xn, absY);
 		}
+		return xNeg ? -r : r;
 	}
 	/*
 		like C
@@ -1124,14 +1133,14 @@ public:
 	{
 		divMod(0, r, x, y);
 	}
-	static void div(VintT& q, const VintT& x, T y)
+	static void div1(VintT& q, const VintT& x, int y)
 	{
-		udivMod1(&q, x, y);
+		divMod1(&q, x, y);
 	}
-	static void mod(VintT& r, const VintT& x, T y)
+	static void mod1(VintT& r, const VintT& x, int y)
 	{
 		bool xNeg = x.isNeg_;
-		r = udivMod1(0, x, y);
+		r = divMod1(0, x, y);
 		r.isNeg_ = xNeg;
 	}
 	/*
@@ -1211,16 +1220,16 @@ public:
 	friend bool operator<=(const VintT& x, const VintT& y) { return !operator>(x, y); }
 	friend bool operator==(const VintT& x, const VintT& y) { return compare(x, y) == 0; }
 	friend bool operator!=(const VintT& x, const VintT& y) { return !operator==(x, y); }
-	template<class N>
-	VintT& operator+=(const N& rhs) { add(*this, *this, rhs); return *this; }
-	template<class N>
-	VintT& operator-=(const N& rhs) { sub(*this, *this, rhs); return *this; }
-	template<class N>
-	VintT& operator*=(const N& rhs) { mul(*this, *this, rhs); return *this; }
-	template<class N>
-	VintT& operator/=(const N& rhs) { div(*this, *this, rhs); return *this; }
-	template<class N>
-	VintT& operator%=(const N& rhs) { mod(*this, *this, rhs); return *this; }
+	VintT& operator+=(const VintT& rhs) { add(*this, *this, rhs); return *this; }
+	VintT& operator-=(const VintT& rhs) { sub(*this, *this, rhs); return *this; }
+	VintT& operator*=(const VintT& rhs) { mul(*this, *this, rhs); return *this; }
+	VintT& operator/=(const VintT& rhs) { div(*this, *this, rhs); return *this; }
+	VintT& operator%=(const VintT& rhs) { mod(*this, *this, rhs); return *this; }
+	VintT& operator+=(int rhs) { add1(*this, *this, rhs); return *this; }
+	VintT& operator-=(int rhs) { sub1(*this, *this, rhs); return *this; }
+	VintT& operator*=(int rhs) { mul1(*this, *this, rhs); return *this; }
+	VintT& operator/=(int rhs) { div1(*this, *this, rhs); return *this; }
+	VintT& operator%=(int rhs) { mod1(*this, *this, rhs); return *this; }
 	friend VintT operator+(const VintT& a, const VintT& b) { VintT c; add(c, a, b); return c; }
 	friend VintT operator-(const VintT& a, const VintT& b) { VintT c; sub(c, a, b); return c; }
 	friend VintT operator*(const VintT& a, const VintT& b) { VintT c; mul(c, a, b); return c; }

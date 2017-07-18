@@ -203,8 +203,8 @@ CYBOZU_TEST_AUTO(mul1)
 		},
 		{
 			{ 3, { 0xffffffff, 0xffffffff, 0xffffffff, } },
-			0xffffffff,
-			{ 4, { 0x00000001, 0xffffffff, 0xffffffff, 0xfffffffe } },
+			0x7fffffff,
+			{ 4, { 0x80000001, 0xffffffff, 0xffffffff, 0x7ffffffe } },
 		},
 		{
 			{ 3, { 0xffffffff, 0xffffffff, 0xffffffff, } },
@@ -213,8 +213,8 @@ CYBOZU_TEST_AUTO(mul1)
 		},
 		{
 			{ 2, { 0xffffffff, 1 } },
-			0xffffffff,
-			{ 3, { 0x00000001, 0xfffffffd, 1 } },
+			0x7fffffff,
+			{ 2, { 0x80000001, 0xfffffffd } },
 		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
@@ -366,11 +366,11 @@ CYBOZU_TEST_AUTO(div1)
 		r = tbl[i].r;
 		z.setArray(tbl[i].c.p, tbl[i].c.n);
 
-		u = (unsigned int)Vint::udivMod1(&t, x, b);
+		u = (unsigned int)Vint::divMod1(&t, x, b);
 		CYBOZU_TEST_EQUAL(t, z);
 		CYBOZU_TEST_EQUAL(u, r);
 
-		u = (unsigned int)Vint::udivMod1(&x, x, b);
+		u = (unsigned int)Vint::divMod1(&x, x, b);
 		CYBOZU_TEST_EQUAL(x, z);
 		CYBOZU_TEST_EQUAL(u, r);
 	}
@@ -624,7 +624,7 @@ CYBOZU_TEST_AUTO(shift)
 
 	const size_t unitBitSize = sizeof(mcl::Unit) * 8;
 	// shl
-	for (size_t i = 1; i < unitBitSize - 2; i++) {
+	for (size_t i = 1; i < 31; i++) {
 		Vint::shl(y, x, i);
 		z = x * (mcl::Unit(1) << i);
 		CYBOZU_TEST_EQUAL(y, z);
@@ -656,7 +656,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 
 	// shr
-	for (size_t i = 1; i < unitBitSize - 2; i++) {
+	for (size_t i = 1; i < 31; i++) {
 		Vint::shr(y, x, i);
 		z = x / (mcl::Unit(1) << i);
 		CYBOZU_TEST_EQUAL(y, z);
@@ -982,15 +982,16 @@ CYBOZU_TEST_AUTO(T)
 	x = -22;
 	x %= 5;
 	CYBOZU_TEST_EQUAL(x, -2);
-}
 
-CYBOZU_TEST_AUTO(signedInt)
-{
-	Vint x = 3;
-	x += -2; // T(-2)
-#if MCL_VINT_UNIT_BYTE_SIZE == 8
-	CYBOZU_TEST_EQUAL(x, Vint("0x10000000000000001"));
-#else
-	CYBOZU_TEST_EQUAL(x, Vint("0x100000001"));
-#endif
+	x = 3;
+	x += -2;
+	CYBOZU_TEST_EQUAL(x, 1);
+	x += -5;
+	CYBOZU_TEST_EQUAL(x, -4);
+	x -= -7;
+	CYBOZU_TEST_EQUAL(x, 3);
+	x *= -1;
+	CYBOZU_TEST_EQUAL(x, -3);
+	x /= -1;
+	CYBOZU_TEST_EQUAL(x, 3);
 }
