@@ -24,6 +24,7 @@
 #endif
 #ifdef MCL_USE_VINT
 #include <mcl/vint.hpp>
+typedef mcl::Vint mpz_class;
 #else
 #include <gmpxx.h>
 #ifdef _MSC_VER
@@ -83,83 +84,142 @@ inline void set(mpz_class& z, uint64_t x)
 }
 inline bool setStr(mpz_class& z, const std::string& str, int base = 0)
 {
+#ifdef MCL_USE_VINT
+	z.setStr(str, base);
+	return true;
+#else
 	return z.set_str(str, base) == 0;
+#endif
 }
 inline void getStr(std::string& str, const mpz_class& z, int base = 10)
 {
+#ifdef MCL_USE_VINT
+	str = z.getStr(base);
+#else
 	str = z.get_str(base);
+#endif
 }
 inline void add(mpz_class& z, const mpz_class& x, const mpz_class& y)
 {
+#ifdef MCL_USE_VINT
+	Vint::add(z, x, y);
+#else
 	mpz_add(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
 }
+#ifndef MCL_USE_VINT
 inline void add(mpz_class& z, const mpz_class& x, unsigned int y)
 {
 	mpz_add_ui(z.get_mpz_t(), x.get_mpz_t(), y);
-}
-inline void sub(mpz_class& z, const mpz_class& x, const mpz_class& y)
-{
-	mpz_sub(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
 }
 inline void sub(mpz_class& z, const mpz_class& x, unsigned int y)
 {
 	mpz_sub_ui(z.get_mpz_t(), x.get_mpz_t(), y);
 }
-inline void mul(mpz_class& z, const mpz_class& x, const mpz_class& y)
-{
-	mpz_mul(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
-}
-inline void sqr(mpz_class& z, const mpz_class& x)
-{
-	mpz_mul(z.get_mpz_t(), x.get_mpz_t(), x.get_mpz_t());
-}
 inline void mul(mpz_class& z, const mpz_class& x, unsigned int y)
 {
 	mpz_mul_ui(z.get_mpz_t(), x.get_mpz_t(), y);
-}
-inline void divmod(mpz_class& q, mpz_class& r, const mpz_class& x, const mpz_class& y)
-{
-	mpz_divmod(q.get_mpz_t(), r.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
-}
-inline void div(mpz_class& q, const mpz_class& x, const mpz_class& y)
-{
-	mpz_div(q.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
 }
 inline void div(mpz_class& q, const mpz_class& x, unsigned int y)
 {
 	mpz_div_ui(q.get_mpz_t(), x.get_mpz_t(), y);
 }
-inline void mod(mpz_class& r, const mpz_class& x, const mpz_class& m)
-{
-	mpz_mod(r.get_mpz_t(), x.get_mpz_t(), m.get_mpz_t());
-}
 inline void mod(mpz_class& r, const mpz_class& x, unsigned int m)
 {
 	mpz_mod_ui(r.get_mpz_t(), x.get_mpz_t(), m);
 }
-inline void clear(mpz_class& z)
-{
-	mpz_set_ui(z.get_mpz_t(), 0);
-}
-inline bool isZero(const mpz_class& z)
-{
-	return mpz_sgn(z.get_mpz_t()) == 0;
-}
-inline bool isNegative(const mpz_class& z)
-{
-	return mpz_sgn(z.get_mpz_t()) < 0;
-}
-inline void neg(mpz_class& z, const mpz_class& x)
-{
-	mpz_neg(z.get_mpz_t(), x.get_mpz_t());
-}
-inline int compare(const mpz_class& x, const mpz_class & y)
-{
-	return mpz_cmp(x.get_mpz_t(), y.get_mpz_t());
-}
 inline int compare(const mpz_class& x, int y)
 {
 	return mpz_cmp_si(x.get_mpz_t(), y);
+}
+#endif
+inline void sub(mpz_class& z, const mpz_class& x, const mpz_class& y)
+{
+#ifdef MCL_USE_VINT
+	Vint::sub(z, x, y);
+#else
+	mpz_sub(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
+}
+inline void mul(mpz_class& z, const mpz_class& x, const mpz_class& y)
+{
+#ifdef MCL_USE_VINT
+	Vint::mul(z, x, y);
+#else
+	mpz_mul(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
+}
+inline void sqr(mpz_class& z, const mpz_class& x)
+{
+#ifdef MCL_USE_VINT
+	Vint::mul(z, x, x);
+#else
+	mpz_mul(z.get_mpz_t(), x.get_mpz_t(), x.get_mpz_t());
+#endif
+}
+inline void divmod(mpz_class& q, mpz_class& r, const mpz_class& x, const mpz_class& y)
+{
+#ifdef MCL_USE_VINT
+	Vint::divMod(&q, r, x, y);
+#else
+	mpz_divmod(q.get_mpz_t(), r.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
+}
+inline void div(mpz_class& q, const mpz_class& x, const mpz_class& y)
+{
+#ifdef MCL_USE_VINT
+	Vint::div(q, x, y);
+#else
+	mpz_div(q.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
+}
+inline void mod(mpz_class& r, const mpz_class& x, const mpz_class& m)
+{
+#ifdef MCL_USE_VINT
+	Vint::mod(r, x, m);
+#else
+	mpz_mod(r.get_mpz_t(), x.get_mpz_t(), m.get_mpz_t());
+#endif
+}
+inline void clear(mpz_class& z)
+{
+#ifdef MCL_USE_VINT
+	z.clear();
+#else
+	mpz_set_ui(z.get_mpz_t(), 0);
+#endif
+}
+inline bool isZero(const mpz_class& z)
+{
+#ifdef MCL_USE_VINT
+	return z.isZero();
+#else
+	return mpz_sgn(z.get_mpz_t()) == 0;
+#endif
+}
+inline bool isNegative(const mpz_class& z)
+{
+#ifdef MCL_USE_VINT
+	return z.isNegative();
+#else
+	return mpz_sgn(z.get_mpz_t()) < 0;
+#endif
+}
+inline void neg(mpz_class& z, const mpz_class& x)
+{
+#ifdef MCL_USE_VINT
+	Vint::neg(z, x);
+#else
+	mpz_neg(z.get_mpz_t(), x.get_mpz_t());
+#endif
+}
+inline int compare(const mpz_class& x, const mpz_class & y)
+{
+#ifdef MCL_USE_VINT
+	return Vint::compare(x, y);
+#else
+	return mpz_cmp(x.get_mpz_t(), y.get_mpz_t());
+#endif
 }
 template<class T>
 void addMod(mpz_class& z, const mpz_class& x, const T& y, const mpz_class& m)
@@ -190,7 +250,11 @@ inline void sqrMod(mpz_class& z, const mpz_class& x, const mpz_class& m)
 // z = x^y (y >= 0)
 inline void pow(mpz_class& z, const mpz_class& x, unsigned int y)
 {
+#ifdef MCL_USE_VINT
+	z = mcl::power(x, y);
+#else
 	mpz_pow_ui(z.get_mpz_t(), x.get_mpz_t(), y);
+#endif
 }
 // z = x^y mod m (y >=0)
 inline void powMod(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_class& m)
