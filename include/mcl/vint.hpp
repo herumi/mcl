@@ -1063,7 +1063,7 @@ public:
 		}
 		return;
 	ERR:
-		throw std::invalid_argument(std::string("bad digit `") + str + "`");
+		throw cybozu::Exception("VintT:setStr") << str << base;
 	}
 	static int compare(const VintT& x, const VintT& y)
 	{
