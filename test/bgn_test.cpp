@@ -204,3 +204,24 @@ CYBOZU_TEST_AUTO(bench)
 	c2 = c1;
 	CYBOZU_BENCH("add after mul", c1.add, c2);
 }
+
+CYBOZU_TEST_AUTO(hashBench)
+{
+	SecretKey& sec = g_sec;
+	sec.setByCSPRNG();
+	sec.setRangeForDLP(100, 1000);
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	int x = 100;
+	CipherText c1;
+	pub.enc(c1, x);
+	for (int i = 0; i < 20; i++) {
+		int y = i * 10;
+		CipherText c2;
+		pub.enc(c2, y);
+		c2.mul(c1);
+		CYBOZU_TEST_EQUAL(sec.dec(c2), x * y);
+		printf("i=%2d x * y =%5d ", i, x * y);
+		CYBOZU_BENCH("dec", sec.dec, c2);
+	}
+}
