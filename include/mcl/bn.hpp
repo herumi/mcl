@@ -457,9 +457,9 @@ struct GLV2 {
 	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
 	{
 		typedef AddFrobenius<G2> G2withF;
-		G2withF& _Q(static_cast<G2withF&>(Q));
-		const G2withF& _P(static_cast<const G2withF&>(P));
-		mul(_Q, _P, x, constTime);
+		G2withF& QQ(static_cast<G2withF&>(Q));
+		const G2withF& PP(static_cast<const G2withF&>(P));
+		mul(QQ, PP, x, constTime);
 	}
 	void pow(Fp12& z, const Fp12& x, mpz_class y, bool constTime = false) const
 	{
