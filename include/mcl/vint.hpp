@@ -900,6 +900,21 @@ public:
 		size_ = 1;
 		return *this;
 	}
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+	VintT(VintT&& rhs)
+		: buf_(rhs.buf_)
+		, size_(rhs.size_)
+		, neg_(rhs.neg_)
+	{
+	}
+	VintT& operator=(VintT&& rhs)
+	{
+		buf_ = std::move(rhs.buf_);
+		size_ = rhs.size_;
+		neg_ = rhs.neg_;
+		return *this;
+	}
+#endif
 	void swap(VintT& rhs)
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 		noexcept
@@ -1104,6 +1119,7 @@ public:
 	size_t size() const { return size_; }
 	bool isZero() const { return size() == 1 && buf_[0] == 0; }
 	bool isNegative() const { return !isZero() && isNeg_; }
+	uint32_t getLow32bit() const { return (uint32_t)buf_[0]; }
 	bool isOdd() const { return (buf_[0] & 1) == 1; }
 	bool isEven() const { return !isOdd(); }
 	static void add(VintT& z, const VintT& x, const VintT& y)
@@ -1376,6 +1392,21 @@ public:
 			b -= a * q;
 		}
 	}
+private:
+	/*
+		@param x [inout] x <- d
+		@retval s for x = 2^s d where d is odd
+	*/
+	static uint32_t countTrailingZero(VintT& x)
+	{
+		uint32_t s = 0;
+		while (x.isEven()) {
+			x >>= 1;
+			s++;
+		}
+		return s;
+	}
+public:
 	/*
 		Miller-Rabin
 	*/
@@ -1387,11 +1418,7 @@ public:
 		if (n.isEven()) return false;
 		const VintT nm1 = n - 1;
 		VintT d = nm1;
-		int r = 0;
-		while (d.isEven()) {
-			d >>= 1;
-			r++;
-		}
+		uint32_t r = countTrailingZero(d);
 		// n - 1 = 2^r d
 		VintT a, x;
 		for (int i = 0; i < tryNum; i++) {
@@ -1401,7 +1428,7 @@ public:
 			if (x == 1 || x == nm1) {
 				continue;
 			}
-			for (int i = 1; i < r; i++) {
+			for (uint32_t i = 1; i < r; i++) {
 				sqr(x, x);
 				x %= n;
 				if (x == 1) return false;
@@ -1435,12 +1462,60 @@ public:
 			mod(y, t, y);
 		}
 	}
+	static VintT gcd(const VintT& x, const VintT& y)
+	{
+		VintT z;
+		gcd(z, x, y);
+		return z;
+	}
 	static void lcm(VintT& z, const VintT& x, const VintT& y)
 	{
 		VintT c;
 		gcd(c, x, y);
 		div(c, x, c);
 		mul(z, c, y);
+	}
+	static VintT lcm(const VintT& x, const VintT& y)
+	{
+		VintT z;
+		lcm(z, x, y);
+		return z;
+	}
+	/*
+		 1 if m is quadratic residue modulo n (i.e., there exists an x s.t. x^2 = m mod n)
+		 0 if m = 0 mod n
+		-1 otherwise
+		@note return legendre_symbol(m, p) for m and odd prime p
+	*/
+	static int jacobi(VintT m, VintT n)
+	{
+		if (n.isEven()) throw cybozu::Exception();
+		if (n == 1) return 1;
+		if (m < 0 || m > n) {
+			quotRem(0, m, m, n); // m = m mod n
+		}
+		if (m.isZero()) return 0;
+		if (m == 1) return 1;
+		if (gcd(m, n) != 1) return 0;
+
+		int j = 1;
+		VintT t;
+		goto START;
+		while (m != 1) {
+			if ((m.getLow32bit() % 4) == 3 && (n.getLow32bit() % 4) == 3) {
+				j = -j;
+			}
+			mod(t, n, m);
+			n = m;
+			m = t;
+		START:
+			int s = countTrailingZero(m);
+			uint32_t nmod8 = n.getLow32bit() % 8;
+			if ((s % 2) && (nmod8 == 3 || nmod8 == 5)) {
+				j = -j;
+			}
+		}
+		return j;
 	}
 	VintT& operator++() { add(*this, *this, 1); return *this; }
 	VintT& operator--() { sub(*this, *this, 1); return *this; }

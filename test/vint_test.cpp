@@ -1079,7 +1079,7 @@ CYBOZU_TEST_AUTO(isPrime)
 		bool my = Vint(i).isPrime();
 		CYBOZU_TEST_EQUAL(ok, my);
 	}
-	struct {
+	const struct {
 		const char *n;
 		bool isPrime;
 	} tbl[] = {
@@ -1113,4 +1113,25 @@ CYBOZU_TEST_AUTO(gcd)
 	CYBOZU_TEST_EQUAL(x, 36);
 	Vint::lcm(x, x, x);
 	CYBOZU_TEST_EQUAL(x, 36);
+}
+
+CYBOZU_TEST_AUTO(jacobi)
+{
+	const struct {
+		const char *m;
+		const char *n;
+		int ok;
+	} tbl[] = {
+		{ "0", "1", 1 },
+		{ "1", "1", 1 },
+		{ "123", "1", 1 },
+		{ "45", "77", -1 },
+		{ "60", "121", 1 },
+		{ "12345672342342342342428", "923423423424753211", 1 },
+		{ "12345672342342342342428","34592342234235424753211", -1 },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		int my = Vint::jacobi(Vint(tbl[i].m), Vint(tbl[i].n));
+		CYBOZU_TEST_EQUAL(my, tbl[i].ok);
+	}
 }
