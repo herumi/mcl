@@ -391,7 +391,7 @@ private:
 	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
 	{
 		/*
-			(S1, T1) x (S2, T2)
+			(S1, T1) x (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 		*/
 #if 1
 #ifdef MCL_USE_BN384
@@ -430,31 +430,20 @@ public:
 	}
 
 	class SecretKey {
-		Fr x1, y1, z1;
-		Fr x2, y2, z2;
-		G1 B1; // (x1 y1 - z1) P
-		G2 B2; // (x2 y2 - z2) Q
-		Fr x1x2;
-		GT g; // e(B1, B2)
+		Fr x, y;
+		GT g; // e(P, Q)
 		local::EcHashTable<G1> g1HashTbl;
 		local::GTHashTable<GT> gtHashTbl;
 		void initInner()
 		{
-			G1::mul(B1, P, x1 * y1 - z1);
-			G2::mul(B2, Q, x2 * y2 - z2);
-			x1x2 = x1 * x2;
-			BN::pairing(g, B1, B2);
+			BN::pairing(g, P, Q);
 		}
 	public:
 		template<class RG>
 		void setByCSPRNG(RG& rg)
 		{
-			x1.setRand(rg);
-			y1.setRand(rg);
-			z1.setRand(rg);
-			x2.setRand(rg);
-			y2.setRand(rg);
-			z2.setRand(rg);
+			x.setRand(rg);
+			y.setRand(rg);
 			initInner();
 		}
 		void setByCSPRNG() { setByCSPRNG(local::g_rg); }
@@ -463,7 +452,7 @@ public:
 		*/
 		void setRangeForG1DLP(size_t hashSize, size_t tryNum = 0)
 		{
-			g1HashTbl.init(B1, hashSize, tryNum);
+			g1HashTbl.init(P, hashSize, tryNum);
 		}
 		/*
 			set range for GT-DLP
@@ -484,16 +473,12 @@ public:
 			setRangeForGTDLP(hashSize, tryNum);
 		}
 		/*
-			set (xP, yP, zP) and (xQ, yQ, zQ)
+			set xP and yQ
 		*/
 		void getPublicKey(PublicKey& pub) const
 		{
-			G1::mul(pub.xP, P, x1);
-			G1::mul(pub.yP, P, y1);
-			G1::mul(pub.zP, P, z1);
-			G2::mul(pub.xQ, Q, x2);
-			G2::mul(pub.yQ, Q, y2);
-			G2::mul(pub.zQ, Q, z2);
+			G1::mul(pub.xP, P, x);
+			G2::mul(pub.yQ, Q, y);
 		}
 #if 0
 		// log_x(y)
@@ -517,13 +502,13 @@ public:
 		int dec(const CipherTextG1& c) const
 		{
 			/*
-				S = myP + rP
-				T = mzP + rxP
-				R = xS - T = m(xy - z)P = mB
+				S = mP + rxP
+				T = rP
+				R = S - xT = mP
 			*/
 			G1 R;
-			G1::mul(R, c.S, x1);
-			R -= c.T;
+			G1::mul(R, c.T, x);
+			G1::sub(R, c.S, R);
 			return g1HashTbl.log(R);
 		}
 		int dec(const CipherTextA& c) const
@@ -534,23 +519,21 @@ public:
 		{
 			/*
 				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
-				s^(xx') v / (t^x u^x')
-				= e(xS, x'S') e(xS, -T') e(-T, x'S') e(T, T')
-				= e(xS - T, x'S' - T')
-				= e(m B1, m' B2)
-				= e(B1, B2)^(mm')
+				s v^(xy) / (t^y u^x) = s (v^x / t) ^ y / u^x
+				= e(P, Q)^(mm')
 			*/
-			GT s, t, u;
-			GT::pow(s, c.g[0], x1x2);
-			s *= c.g[3];
-			GT::pow(t, c.g[1], x1);
-			GT::pow(u, c.g[2], x2);
-			t *= u;
-			GT::unitaryInv(t, t);
-			s *= t;
-			BN::finalExp(s, s);
-			return gtHashTbl.log(s);
-//			return log(g, s);
+			GT t, u, v;
+			GT::unitaryInv(t, c.g[1]);
+			GT::unitaryInv(u, c.g[2]);
+			GT::pow(v, c.g[3], x);
+			v *= t;
+			GT::pow(v, v, y);
+			GT::pow(u, u, x);
+			v *= u;
+			v *= c.g[0];
+			BN::finalExp(v, v);
+			return gtHashTbl.log(v);
+//			return log(g, v);
 		}
 		int dec(const CipherText& c) const
 		{
@@ -562,28 +545,16 @@ public:
 		}
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			x1.readStream(is, ioMode);
-			y1.readStream(is, ioMode);
-			z1.readStream(is, ioMode);
-			x2.readStream(is, ioMode);
-			y2.readStream(is, ioMode);
-			z2.readStream(is, ioMode);
+			x.readStream(is, ioMode);
+			y.readStream(is, ioMode);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
-			str = x1.getStr(ioMode);
+			str = x.getStr(ioMode);
 			str += sep;
-			str += y1.getStr(ioMode);
-			str += sep;
-			str += z1.getStr(ioMode);
-			str += sep;
-			str += x2.getStr(ioMode);
-			str += sep;
-			str += y2.getStr(ioMode);
-			str += sep;
-			str += z2.getStr(ioMode);
+			str += y.getStr(ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -606,42 +577,39 @@ public:
 		}
 		bool operator==(const SecretKey& rhs) const
 		{
-			return x1 == rhs.x1 && y1 == rhs.y1 && z1 == rhs.z1
-			    && x2 == rhs.x2 && y2 == rhs.y2 && z2 == rhs.z2;
+			return x == rhs.x && y == rhs.y;
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
 	};
 
 	class PublicKey {
-		G1 xP, yP, zP;
-		G2 xQ, yQ, zQ;
+		G1 xP;
+		G2 yQ;
 		friend class SecretKey;
 		/*
-			(S, T) = (m yP + rP, m zP + r xP)
+			(S, T) = (m P + r xP, rP)
 		*/
 		template<class G, class RG>
-		static void enc1(G& S, G& T, const G& P, const G& xP, const G& yP, const G& zP, int m, RG& rg)
+		static void enc1(G& S, G& T, const G& P, const G& xP, int m, RG& rg)
 		{
 			Fr r;
 			r.setRand(rg);
 			G C;
-			G::mul(S, yP, m);
-			G::mul(C, P, r);
-			S += C;
-			G::mul(T, zP, m);
+			G::mul(T, P, r);
+			G::mul(S, P, m);
 			G::mul(C, xP, r);
-			T += C;
+			S += C;
 		}
 	public:
 		template<class RG>
 		void enc(CipherTextG1& c, int m, RG& rg) const
 		{
-			enc1(c.S, c.T, P, xP, yP, zP, m, rg);
+			enc1(c.S, c.T, P, xP, m, rg);
 		}
 		template<class RG>
 		void enc(CipherTextG2& c, int m, RG& rg) const
 		{
-			enc1(c.S, c.T, Q, xQ, yQ, zQ, m, rg);
+			enc1(c.S, c.T, Q, yQ, m, rg);
 		}
 		template<class RG>
 		void enc(CipherTextA& c, int m, RG& rg) const
@@ -665,10 +633,12 @@ public:
 		void convertToCipherTextM(CipherTextM& cm, const CipherTextG1& c1) const
 		{
 			/*
-				Enc(1) = (S, T) = (yQ + rQ, zQ + r xQ) = (yQ, zQ) if r = 0
-				cm = c1 * (yQ, zQ)
+				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
+				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
+				QQQ
 			*/
-			tensorProduct(cm.g, c1.S, c1.T, yQ, zQ);
+			G2 zero; zero.clear();
+			tensorProduct(cm.g, c1.S, c1.T, Q, zero);
 		}
 		/*
 			convert from CipherTextG2 to CipherTextM
@@ -676,10 +646,11 @@ public:
 		void convertToCipherTextM(CipherTextM& cm, const CipherTextG2& c2) const
 		{
 			/*
-				Enc(1) = (S, T) = (yP + rP, zP + r xP) = (yP, zP) if r = 0
-				cm = (yP, zP) * c2
+				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
+				cm = (P, 0) * c2
 			*/
-			tensorProduct(cm.g, yP, zP, c2.S, c2.T);
+			G1 zero; zero.clear();
+			tensorProduct(cm.g, P, zero, c2.S, c2.T);
 		}
 		void convertToCipherTextM(CipherTextM& cm, const CipherTextA& ca) const
 		{
@@ -706,24 +677,20 @@ public:
 		{
 			/*
 				add Enc(0) * Enc(0)
-				(S1, T1) * (S2, T2) = (rP, rxP) * (r'Q, r'xQ)
-				replace r <- rr'
-				= (r P, rxP) * (Q, xQ)
+				(S1, T1) * (S2, T2) = (rxP, rP) * (r'yQ, r'Q)
+				replace r <- rr', r' <- 1
+				= (r xP, rP) * (yQ, Q)
 			*/
 			G1 S1, T1;
 			Fr r;
 			r.setRand(rg);
-			G1::mul(S1, P, r);
-			G1::mul(T1, xP, r);
-			GT e;
-			BN::millerLoop(e, S1, Q);
-			c.g[0] *= e;
-			BN::millerLoop(e, S1, xQ);
-			c.g[1] *= e;
-			BN::millerLoop(e, T1, Q);
-			c.g[2] *= e;
-			BN::millerLoop(e, T1, xQ);
-			c.g[3] *= e;
+			G1::mul(S1, xP, r);
+			G1::mul(T1, P, r);
+			GT g[4];
+			tensorProduct(g, S1, T1, yQ, Q);
+			for (int i = 0; i < 4; i++) {
+				c.g[i] *= g[i];
+			}
 		}
 		template<class RG>
 		void rerandomize(CipherText& c, RG& rg) const
@@ -741,11 +708,7 @@ public:
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
 			xP.readStream(is, ioMode);
-			yP.readStream(is, ioMode);
-			zP.readStream(is, ioMode);
-			xQ.readStream(is, ioMode);
 			yQ.readStream(is, ioMode);
-			zQ.readStream(is, ioMode);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
@@ -753,15 +716,7 @@ public:
 			const char *sep = fp::getIoSeparator(ioMode);
 			str = xP.getStr(ioMode);
 			str += sep;
-			str += yP.getStr(ioMode);
-			str += sep;
-			str += zP.getStr(ioMode);
-			str += sep;
-			str += xQ.getStr(ioMode);
-			str += sep;
 			str += yQ.getStr(ioMode);
-			str += sep;
-			str += zQ.getStr(ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -784,8 +739,7 @@ public:
 		}
 		bool operator==(const PublicKey& rhs) const
 		{
-			return xP == rhs.xP && yP == rhs.yP && zP == rhs.zP
-			    && xQ == rhs.xQ && yQ == rhs.yQ && zQ == rhs.zQ;
+			return xP == rhs.xP && yQ == rhs.yQ;
 		}
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
 	};
