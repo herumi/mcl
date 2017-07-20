@@ -20,6 +20,9 @@ endif
 ifeq ($(ARCH),amd64)
   DO_IT=1
 endif
+ifeq ($(ARCH),OpenBSD.amd64)
+  DO_IT=1
+endif
 ifeq ($(DO_IT),1)
   CPU=x86-64
   INTEL=1
