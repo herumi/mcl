@@ -1422,6 +1422,26 @@ public:
 		cybozu::XorShift rg;
 		return isPrime(rg, tryNum);
 	}
+	static void gcd(VintT& z, VintT x, VintT y)
+	{
+		VintT t;
+		for (;;) {
+			if (y.isZero()) {
+				z = x;
+				return;
+			}
+			t = x;
+			x = y;
+			mod(y, t, y);
+		}
+	}
+	static void lcm(VintT& z, const VintT& x, const VintT& y)
+	{
+		VintT c;
+		gcd(c, x, y);
+		div(c, x, c);
+		mul(z, c, y);
+	}
 	VintT& operator++() { add(*this, *this, 1); return *this; }
 	VintT& operator--() { sub(*this, *this, 1); return *this; }
 	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }

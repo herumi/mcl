@@ -1099,3 +1099,18 @@ CYBOZU_TEST_AUTO(isPrime)
 		CYBOZU_TEST_EQUAL(x.isPrime(), tbl[i].isPrime);
 	}
 }
+
+CYBOZU_TEST_AUTO(gcd)
+{
+	Vint x = 12;
+	Vint y = 18;
+	Vint z;
+	Vint::gcd(z, x, y);
+	CYBOZU_TEST_EQUAL(z, 6);
+	Vint::lcm(z, x, y);
+	CYBOZU_TEST_EQUAL(z, 36);
+	Vint::lcm(x, x, y);
+	CYBOZU_TEST_EQUAL(x, 36);
+	Vint::lcm(x, x, x);
+	CYBOZU_TEST_EQUAL(x, 36);
+}
