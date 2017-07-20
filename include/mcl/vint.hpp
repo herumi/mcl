@@ -5,6 +5,7 @@
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <cybozu/atoi.hpp>
+#include <cybozu/xorshift.hpp>
 #include <vector>
 #include <iomanip>
 #include <stdlib.h>
@@ -927,6 +928,21 @@ public:
 		trim(unitSize);
 	}
 	/*
+		set [0, max) randomly
+	*/
+	template<class RG>
+	void setRand(const VintT& max, RG& rg)
+	{
+		size_t n = max.size();
+		buf_.alloc(n);
+		uint32_t *p = (uint32_t*)&buf_[0];
+		for (size_t i = 0; i < n * sizeof(Unit) / sizeof(uint32_t); i++) {
+			p[i] = (uint32_t)rg();
+		}
+		trim(n);
+		*this %= max;
+	}
+	/*
 		get abs value
 		buf_[0, size) = x
 		buf_[size, maxSize) with zero
@@ -1000,14 +1016,19 @@ public:
 		Unit mask = Unit(1) << r;
 		return (buf_[q] & mask) != 0;
 	}
-	void setBit(size_t i)
+	void setBit(size_t i, bool v = true)
 	{
 		size_t q = i / unitBitSize;
 		size_t r = i % unitBitSize;
 		if (q > size()) throw cybozu::Exception("Vint:setBit:large i") << q << size();
 		buf_.alloc(q + 1);
 		Unit mask = Unit(1) << r;
-		buf_[q] |= mask;
+		if (v) {
+			buf_[q] |= mask;
+		} else {
+			buf_[q] &= ~mask;
+			trim(q + 1);
+		}
 	}
 	/*
 		@param str [in] number string
@@ -1082,6 +1103,8 @@ public:
 	size_t size() const { return size_; }
 	bool isZero() const { return size() == 1 && buf_[0] == 0; }
 	bool isNegative() const { return !isZero() && isNeg_; }
+	uint32_t getMod4() const { return buf_[0] & 3; }
+	bool isOdd() const { return (buf_[0] & 1) == 1; }
 	static void add(VintT& z, const VintT& x, const VintT& y)
 	{
 		_add(z, x, x.isNeg_, y, y.isNeg_);
@@ -1351,6 +1374,41 @@ public:
 			}
 			b -= a * q;
 		}
+	}
+	template<class RG>
+	static bool isPrime(const VintT& n, RG& rg, int tryNum = 32)
+	{
+		if (n == 2) return true;
+		if (n <= 1 || !n.isOdd()) return false;
+		VintT nm1 = n - 1;
+		VintT d = nm1;
+		while (!d.isOdd()) {
+			d >>= 1;
+		}
+		VintT a, t, y;
+		for (int i = 0; i < tryNum; i++) {
+			a.setRand(n - 2, rg);
+			a++;
+			t = d;
+			powMod(y, a, t, n);
+			while (t != nm1 && y != 1 && y != nm1) {
+				sqr(y, y);
+				y %= n;
+				t <<= 1;
+			}
+			if (y != nm1 && !t.isOdd()) return false;
+		}
+		return true;
+	}
+	template<class RG>
+	bool isPrime(RG& rg, int tryNum = 32)
+	{
+		return isPrime(*this, rg, tryNum);
+	}
+	bool isPrime(int tryNum = 32)
+	{
+		cybozu::XorShift rg;
+		return isPrime(rg, tryNum);
 	}
 	VintT& operator++() { add(*this, *this, 1); return *this; }
 	VintT& operator--() { sub(*this, *this, 1); return *this; }
