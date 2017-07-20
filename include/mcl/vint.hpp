@@ -933,6 +933,7 @@ public:
 	template<class RG>
 	void setRand(const VintT& max, RG& rg)
 	{
+		if (max <= 0) throw cybozu::Exception("Vint:setRand:bad value") << max;
 		size_t n = max.size();
 		buf_.alloc(n);
 		uint32_t *p = (uint32_t*)&buf_[0];
@@ -1103,8 +1104,8 @@ public:
 	size_t size() const { return size_; }
 	bool isZero() const { return size() == 1 && buf_[0] == 0; }
 	bool isNegative() const { return !isZero() && isNeg_; }
-	uint32_t getMod4() const { return buf_[0] & 3; }
 	bool isOdd() const { return (buf_[0] & 1) == 1; }
+	bool isEven() const { return !isOdd(); }
 	static void add(VintT& z, const VintT& x, const VintT& y)
 	{
 		_add(z, x, x.isNeg_, y, y.isNeg_);
@@ -1375,28 +1376,39 @@ public:
 			b -= a * q;
 		}
 	}
+	/*
+		Miller-Rabin
+	*/
 	template<class RG>
 	static bool isPrime(const VintT& n, RG& rg, int tryNum = 32)
 	{
-		if (n == 2) return true;
-		if (n <= 1 || !n.isOdd()) return false;
-		VintT nm1 = n - 1;
+		if (n <= 1) return false;
+		if (n == 2 || n == 3) return true;
+		if (n.isEven()) return false;
+		const VintT nm1 = n - 1;
 		VintT d = nm1;
-		while (!d.isOdd()) {
+		int r = 0;
+		while (d.isEven()) {
 			d >>= 1;
+			r++;
 		}
-		VintT a, t, y;
+		// n - 1 = 2^r d
+		VintT a, x;
 		for (int i = 0; i < tryNum; i++) {
-			a.setRand(n - 2, rg);
-			a++;
-			t = d;
-			powMod(y, a, t, n);
-			while (t != nm1 && y != 1 && y != nm1) {
-				sqr(y, y);
-				y %= n;
-				t <<= 1;
+			a.setRand(n - 3, rg);
+			a += 2; // a in [2, n - 2]
+			powMod(x, a, d, n);
+			if (x == 1 || x == nm1) {
+				continue;
 			}
-			if (y != nm1 && !t.isOdd()) return false;
+			for (int i = 1; i < r; i++) {
+				sqr(x, x);
+				x %= n;
+				if (x == 1) return false;
+				if (x == nm1) goto NEXT_LOOP;
+			}
+			return false;
+		NEXT_LOOP:;
 		}
 		return true;
 	}
