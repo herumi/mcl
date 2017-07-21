@@ -552,6 +552,7 @@ public:
 		{
 			x.readStream(is, ioMode);
 			y.readStream(is, ioMode);
+			initInner();
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
