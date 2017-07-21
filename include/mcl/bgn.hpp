@@ -1,7 +1,8 @@
 #pragma once
 /**
 	@file
-	@brief BGN encryption with prime-order groups
+	@brief somewhat homomorphic encryption
+	additive homomorphic encryption which supports one multiplication by lifted ElGamal and prime-order pairing
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
