@@ -388,29 +388,33 @@ private:
 		}
 		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
 	};
-	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
+	/*
+		g1 = millerLoop(P1, Q)
+		g2 = millerLoop(P2, Q)
+	*/
+	static inline void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
-		/*
-			(S1, T1) x (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
-		*/
 #if 1
 #ifdef MCL_USE_BN384
 		std::vector<bn384::Fp6> Qcoeff;
 #else
 		std::vector<bn256::Fp6> Qcoeff;
 #endif
-		BN::precomputeG2(Qcoeff, S2);
-		BN::precomputedMillerLoop(g[0], S1, Qcoeff);
-		BN::precomputedMillerLoop(g[2], T1, Qcoeff);
-		BN::precomputeG2(Qcoeff, T2);
-		BN::precomputedMillerLoop(g[1], S1, Qcoeff);
-		BN::precomputedMillerLoop(g[3], T1, Qcoeff);
+		BN::precomputeG2(Qcoeff, Q);
+		BN::precomputedMillerLoop(g1, P1, Qcoeff);
+		BN::precomputedMillerLoop(g2, P2, Qcoeff);
 #else
-		BN::millerLoop(g[0], S1, S2);
-		BN::millerLoop(g[1], S1, T2);
-		BN::millerLoop(g[2], T1, S2);
-		BN::millerLoop(g[3], T1, T2);
+		BN::millerLoop(g1, P1, Q);
+		BN::millerLoop(g2, P2, Q);
 #endif
+	}
+	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
+	{
+		/*
+			(S1, T1) x (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
+		*/
+		doubleMillerLoop(g[0], g[2], S1, T1, S2);
+		doubleMillerLoop(g[1], g[3], S1, T1, T2);
 	}
 public:
 
@@ -635,10 +639,10 @@ public:
 			/*
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
-				QQQ
 			*/
-			G2 zero; zero.clear();
-			tensorProduct(cm.g, c1.S, c1.T, Q, zero);
+			doubleMillerLoop(cm.g[0], cm.g[2], c1.S, c1.T, Q);
+			cm.g[1] = 1;
+			cm.g[3] = 1;
 		}
 		/*
 			convert from CipherTextG2 to CipherTextM
