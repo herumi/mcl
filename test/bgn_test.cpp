@@ -101,11 +101,19 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 			CipherText::sub(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 - m2, sec.dec(c3));
 
+			CipherText::mul(c3, c1, 5);
+			CYBOZU_TEST_EQUAL(m1 * 5, sec.dec(c3));
+			CipherText::mul(c3, c1, -123);
+			CYBOZU_TEST_EQUAL(m1 * -123, sec.dec(c3));
+
 			CipherText::mul(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 
 			pub.rerandomize(c3);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
+
+			CipherText::mul(c3, c3, -25);
+			CYBOZU_TEST_EQUAL(m1 * m2 * -25, sec.dec(c3));
 		}
 	}
 }

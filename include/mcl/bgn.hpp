@@ -346,6 +346,11 @@ private:
 			G::sub(z.S, x.S, y.S);
 			G::sub(z.T, x.T, y.T);
 		}
+		static void mul(CipherTextAT& z, const CipherTextAT& x, int y)
+		{
+			G::mul(z.S, x.S, y);
+			G::mul(z.T, x.T, y);
+		}
 		static void neg(CipherTextAT& y, const CipherTextAT& x)
 		{
 			G::neg(y.S, x.S);
@@ -756,17 +761,22 @@ public:
 			c1.clear();
 			c2.clear();
 		}
-		static inline void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
+		static void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
 			CipherTextG1::add(z.c1, x.c1, y.c1);
 			CipherTextG2::add(z.c2, x.c2, y.c2);
 		}
-		static inline void sub(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
+		static void sub(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
 			CipherTextG1::sub(z.c1, x.c1, y.c1);
 			CipherTextG2::sub(z.c2, x.c2, y.c2);
 		}
-		static inline void neg(CipherTextA& y, const CipherTextA& x)
+		static void mul(CipherTextA& z, const CipherTextA& x, int y)
+		{
+			CipherTextG1::mul(z.c1, x.c1, y);
+			CipherTextG2::mul(z.c2, x.c2, y);
+		}
+		static void neg(CipherTextA& y, const CipherTextA& x)
 		{
 			CipherTextG1::neg(y.c1, x.c1);
 			CipherTextG2::neg(y.c2, x.c2);
@@ -824,7 +834,7 @@ public:
 				g[i].setOne();
 			}
 		}
-		static inline void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+		static void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
 		{
 			/*
 				(g[i]) + (g'[i]) = (g[i] * g'[i])
@@ -833,7 +843,7 @@ public:
 				GT::mul(z.g[i], x.g[i], y.g[i]);
 			}
 		}
-		static inline void sub(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+		static void sub(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
 		{
 			/*
 				(g[i]) - (g'[i]) = (g[i] / g'[i])
@@ -844,7 +854,7 @@ public:
 				GT::mul(z.g[i], x.g[i], t);
 			}
 		}
-		static inline void mul(CipherTextM& z, const CipherTextG1& x, const CipherTextG2& y)
+		static void mul(CipherTextM& z, const CipherTextG1& x, const CipherTextG2& y)
 		{
 			/*
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
@@ -852,15 +862,21 @@ public:
 			*/
 			tensorProduct(z.g, x.S, x.T, y.S, y.T);
 		}
-		static inline void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
+		static void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
 		{
 			mul(z, x.c1, y.c2);
+		}
+		static void mul(CipherTextM& z, const CipherTextM& x, int y)
+		{
+			for (int i = 0; i < 4; i++) {
+				GT::pow(z.g[i], x.g[i], y);
+			}
 		}
 		void add(const CipherTextM& c) { add(*this, *this, c); }
 		void sub(const CipherTextM& c) { sub(*this, *this, c); }
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			for (size_t i = 0; i < 4; i++) {
+			for (int i = 0; i < 4; i++) {
 				g[i].readStream(is, ioMode);
 			}
 			return is;
@@ -922,7 +938,7 @@ public:
 			m.clear();
 		}
 		bool isMultiplied() const { return isMultiplied_; }
-		static inline void add(CipherText& z, const CipherText& x, const CipherText& y)
+		static void add(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
@@ -936,7 +952,7 @@ public:
 			}
 			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText");
 		}
-		static inline void sub(CipherText& z, const CipherText& x, const CipherText& y)
+		static void sub(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
@@ -950,13 +966,21 @@ public:
 			}
 			throw cybozu::Exception("bgn:CipherText:sub:mixed CipherText");
 		}
-		static inline void mul(CipherText& z, const CipherText& x, const CipherText& y)
+		static void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() || y.isMultiplied()) {
 				throw cybozu::Exception("bgn:CipherText:mul:mixed CipherText");
 			}
 			z.isMultiplied_ = true;
 			CipherTextM::mul(z.m, x.a, y.a);
+		}
+		static void mul(CipherText& z, const CipherText& x, int y)
+		{
+			if (x.isMultiplied()) {
+				CipherTextM::mul(z.m, x.m, y);
+			} else {
+				CipherTextA::mul(z.a, x.a, y);
+			}
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
 		void sub(const CipherText& c) { sub(*this, *this, c); }
