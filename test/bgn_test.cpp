@@ -70,7 +70,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
-	sec.setRangeForDLP(1024);
+	BGN::setRangeForDLP(1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
@@ -156,6 +156,7 @@ T testIo(const T& x)
 
 CYBOZU_TEST_AUTO(io)
 {
+	BGN::setRangeForDLP(100, 2);
 	int m;
 	for (int i = 0; i < 2; i++) {
 		if (i == 1) {
@@ -164,7 +165,6 @@ CYBOZU_TEST_AUTO(io)
 		}
 		SecretKey sec;
 		sec.setByCSPRNG();
-		sec.setRangeForDLP(100, 2);
 		testIo(sec);
 		PublicKey pub;
 		sec.getPublicKey(pub);
@@ -209,7 +209,7 @@ CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
-	sec.setRangeForDLP(100, 1000);
+	BGN::setRangeForDLP(100, 1000);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	int x = 100;

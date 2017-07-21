@@ -313,7 +313,9 @@ struct BGNT {
 
 	static G1 P;
 	static G2 Q;
-
+	static GT ePQ; // e(P, Q)
+	static local::EcHashTable<G1> g1HashTbl;
+	static local::GTHashTable<GT> gtHashTbl;
 private:
 	template<class G>
 	class CipherTextAT {
@@ -328,7 +330,7 @@ private:
 			S.clear();
 			T.clear();
 		}
-		static inline void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
+		static void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
 			/*
 				(S, T) + (S', T') = (S + S', T + T')
@@ -336,7 +338,7 @@ private:
 			G::add(z.S, x.S, y.S);
 			G::add(z.T, x.T, y.T);
 		}
-		static inline void sub(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
+		static void sub(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
 			/*
 				(S, T) - (S', T') = (S - S', T - T')
@@ -344,7 +346,7 @@ private:
 			G::sub(z.S, x.S, y.S);
 			G::sub(z.T, x.T, y.T);
 		}
-		static inline void neg(CipherTextAT& y, const CipherTextAT& x)
+		static void neg(CipherTextAT& y, const CipherTextAT& x)
 		{
 			G::neg(y.S, x.S);
 			G::neg(y.T, x.T);
@@ -393,7 +395,7 @@ private:
 		g1 = millerLoop(P1, Q)
 		g2 = millerLoop(P2, Q)
 	*/
-	static inline void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
+	static void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
 #if 1
 #ifdef MCL_USE_BN384
@@ -409,7 +411,7 @@ private:
 		BN::millerLoop(g2, P2, Q);
 #endif
 	}
-	static inline void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
+	static void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
 	{
 		/*
 			(S1, T1) x (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
@@ -422,7 +424,7 @@ public:
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
 
-	static inline void init(const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb)
+	static void init(const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb)
 	{
 #ifdef MCL_USE_BN256
 		mcl::bn256::bn256init(cp);
@@ -432,51 +434,44 @@ public:
 #endif
 		BN::hashAndMapToG1(P, "0");
 		BN::hashAndMapToG2(Q, "0");
+		BN::pairing(ePQ, P, Q);
+	}
+	/*
+		set range for G1-DLP
+	*/
+	static void setRangeForG1DLP(size_t hashSize, size_t tryNum = 0)
+	{
+		g1HashTbl.init(P, hashSize, tryNum);
+	}
+	/*
+		set range for GT-DLP
+	*/
+	static void setRangeForGTDLP(size_t hashSize, size_t tryNum = 0)
+	{
+		gtHashTbl.init(ePQ, hashSize, tryNum);
+	}
+	/*
+		set range for G1/GT DLP
+		decode message m for |m| <= hasSize * tryNum
+		decode time = O(log(hasSize) * tryNum)
+		@note if tryNum = 0 then fast but require more memory(TBD)
+	*/
+	static void setRangeForDLP(size_t hashSize, size_t tryNum = 0)
+	{
+		setRangeForG1DLP(hashSize, tryNum);
+		setRangeForGTDLP(hashSize, tryNum);
 	}
 
 	class SecretKey {
 		Fr x, y;
-		GT g; // e(P, Q)
-		local::EcHashTable<G1> g1HashTbl;
-		local::GTHashTable<GT> gtHashTbl;
-		void initInner()
-		{
-			BN::pairing(g, P, Q);
-		}
 	public:
 		template<class RG>
 		void setByCSPRNG(RG& rg)
 		{
 			x.setRand(rg);
 			y.setRand(rg);
-			initInner();
 		}
 		void setByCSPRNG() { setByCSPRNG(local::g_rg); }
-		/*
-			set range for G1-DLP
-		*/
-		void setRangeForG1DLP(size_t hashSize, size_t tryNum = 0)
-		{
-			g1HashTbl.init(P, hashSize, tryNum);
-		}
-		/*
-			set range for GT-DLP
-		*/
-		void setRangeForGTDLP(size_t hashSize, size_t tryNum = 0)
-		{
-			gtHashTbl.init(g, hashSize, tryNum);
-		}
-		/*
-			set range for G1/GT DLP
-			decode message m for |m| <= hasSize * tryNum
-			decode time = O(log(hasSize) * tryNum)
-			@note if tryNum = 0 then fast but require more memory(TBD)
-		*/
-		void setRangeForDLP(size_t hashSize, size_t tryNum = 0)
-		{
-			setRangeForG1DLP(hashSize, tryNum);
-			setRangeForGTDLP(hashSize, tryNum);
-		}
 		/*
 			set xP and yQ
 		*/
@@ -552,7 +547,6 @@ public:
 		{
 			x.readStream(is, ioMode);
 			y.readStream(is, ioMode);
-			initInner();
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
@@ -1019,12 +1013,11 @@ public:
 	};
 };
 
-template<class BN, class Fr>
-typename BN::G1 BGNT<BN, Fr>::P;
-
-template<class BN, class Fr>
-typename BN::G2 BGNT<BN, Fr>::Q;
-
+template<class BN, class Fr> typename BN::G1 BGNT<BN, Fr>::P;
+template<class BN, class Fr> typename BN::G2 BGNT<BN, Fr>::Q;
+template<class BN, class Fr> typename BN::Fp12 BGNT<BN, Fr>::ePQ;
+template<class BN, class Fr> local::EcHashTable<typename BN::G1> BGNT<BN, Fr>::g1HashTbl;
+template<class BN, class Fr> local::GTHashTable<typename BN::Fp12> BGNT<BN, Fr>::gtHashTbl;
 #ifdef MCL_USE_BN384
 typedef mcl::bgn::BGNT<mcl::bn384::BN, mcl::bn256::Fr> BGN;
 #else
