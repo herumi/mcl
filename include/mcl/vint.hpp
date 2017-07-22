@@ -325,10 +325,10 @@ T mul1(T *z, const T *x, size_t n, T y)
 }
 
 /*
-	T[xn * yn] = x[xn] * y[ym]
+	z[xn * yn] = x[xn] * y[ym]
 */
 template<class T>
-static inline void mulNM(T *out, const T *x, size_t xn, const T *y, size_t yn)
+static inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 {
 	assert(xn > 0 && yn > 0);
 	if (yn > xn) {
@@ -336,24 +336,33 @@ static inline void mulNM(T *out, const T *x, size_t xn, const T *y, size_t yn)
 		std::swap(x, y);
 	}
 	assert(xn >= yn);
-	if (out == x) {
+	if (z == x) {
 		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 		copyN(p, x, xn);
 		x = p;
 	}
-	if (out == y) {
+	if (z == y) {
 		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
 		copyN(p, y, yn);
 		y = p;
 	}
-	out[xn] = mul1(&out[0], x, xn, y[0]);
-	clearN(out + xn + 1, yn - 1);
+	z[xn] = mul1(&z[0], x, xn, y[0]);
+	clearN(z + xn + 1, yn - 1);
 
 	T *t2 = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	for (size_t i = 1; i < yn; i++) {
 		t2[xn] = vint::mul1(&t2[0], x, xn, y[i]);
-		vint::addN(&out[i], &out[i], &t2[0], xn + 1);
+		vint::addN(&z[i], &z[i], &t2[0], xn + 1);
 	}
+}
+/*
+	out[xn * 2] = x[xn] * x[xn]
+	QQQ : optimize this
+*/
+template<class T>
+static inline void sqrN(T *y, const T *x, size_t xn)
+{
+	mulNM(y, x, xn, x, xn);
 }
 
 /*
