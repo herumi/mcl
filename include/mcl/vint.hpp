@@ -1027,11 +1027,12 @@ public:
 		return os.str();
 	}
 	/*
-		return bitLen(abs(*this))
+		return bitSize(abs(*this))
+		@note return 1 if zero
 	*/
-	size_t bitLen() const
+	size_t getBitSize() const
 	{
-		if (isZero()) return 0;
+		if (isZero()) return 1;
 		size_t n = size();
 		Unit v = buf_[n - 1];
 		assert(v);

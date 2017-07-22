@@ -697,52 +697,53 @@ CYBOZU_TEST_AUTO(shift)
 	}
 }
 
-CYBOZU_TEST_AUTO(bitLen)
+CYBOZU_TEST_AUTO(getBitSize)
 {
 	{
 		Vint zero = 0;
-		CYBOZU_TEST_EQUAL(zero.bitLen(), 0);
+		CYBOZU_TEST_EQUAL(zero.getBitSize(), 1);
 		zero <<= (Vint::unitBitSize - 1);
-		CYBOZU_TEST_EQUAL(zero.bitLen(), 0);
+		CYBOZU_TEST_EQUAL(zero.getBitSize(), 1);
 		zero <<= Vint::unitBitSize;
-		CYBOZU_TEST_EQUAL(zero.bitLen(), 0);
+		CYBOZU_TEST_EQUAL(zero.getBitSize(), 1);
 	}
 
 	{
 		Vint a = 1;
-		CYBOZU_TEST_EQUAL(a.bitLen(), 1);
+		CYBOZU_TEST_EQUAL(a.getBitSize(), 1);
 		a = 2;
-		CYBOZU_TEST_EQUAL(a.bitLen(), 2);
+		CYBOZU_TEST_EQUAL(a.getBitSize(), 2);
 		a = 3;
-		CYBOZU_TEST_EQUAL(a.bitLen(), 2);
+		CYBOZU_TEST_EQUAL(a.getBitSize(), 2);
 		a = 4;
-		CYBOZU_TEST_EQUAL(a.bitLen(), 3);
+		CYBOZU_TEST_EQUAL(a.getBitSize(), 3);
 	}
 
 	{
 		Vint a = 5;
-		const size_t msbindex = a.bitLen();
+		const size_t msbindex = a.getBitSize();
 		const size_t width = 100;
 		const size_t time = 3;
 		for (size_t i = 0; i < time; ++i) {
 			a <<= width;
-			CYBOZU_TEST_EQUAL(a.bitLen(), msbindex + width*(i + 1));
+			CYBOZU_TEST_EQUAL(a.getBitSize(), msbindex + width*(i + 1));
 		}
 
 		for (size_t i = 0; i < time*2; ++i) {
 			a >>= width/2;
-			CYBOZU_TEST_EQUAL(a.bitLen(), msbindex + width*time - (width/2)*(i + 1));
+			CYBOZU_TEST_EQUAL(a.getBitSize(), msbindex + width*time - (width/2)*(i + 1));
 		}
 		a >>= width;
-		CYBOZU_TEST_EQUAL(a.bitLen(), 0);
+		CYBOZU_TEST_ASSERT(a.isZero());
+		CYBOZU_TEST_EQUAL(a.getBitSize(), 1);
 	}
 
 	{
 		Vint b("12"), c("345"), d("67890");
-		size_t bl = b.bitLen(), cl = c.bitLen(), dl = d.bitLen();
-		CYBOZU_TEST_ASSERT((b*c).bitLen()   <= bl + cl);
-		CYBOZU_TEST_ASSERT((c*d).bitLen()   <= cl + dl);
-		CYBOZU_TEST_ASSERT((b*c*d).bitLen() <= bl + cl + dl);
+		size_t bl = b.getBitSize(), cl = c.getBitSize(), dl = d.getBitSize();
+		CYBOZU_TEST_ASSERT((b*c).getBitSize()   <= bl + cl);
+		CYBOZU_TEST_ASSERT((c*d).getBitSize()   <= cl + dl);
+		CYBOZU_TEST_ASSERT((b*c*d).getBitSize() <= bl + cl + dl);
 	}
 }
 
@@ -759,8 +760,8 @@ CYBOZU_TEST_AUTO(bit)
 		,1,0,1,1,0 ,0,0,1,0,0
 		,1
 	};
-	CYBOZU_TEST_EQUAL(a.bitLen(), sizeof(tvec)/sizeof(*tvec));
-	for (int i = (int)a.bitLen() - 1; i >= 0; --i) {
+	CYBOZU_TEST_EQUAL(a.getBitSize(), sizeof(tvec)/sizeof(*tvec));
+	for (int i = (int)a.getBitSize() - 1; i >= 0; --i) {
 		CYBOZU_TEST_EQUAL(a.testBit(i), tvec[i]);
 	}
 }
