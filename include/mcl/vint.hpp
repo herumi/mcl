@@ -20,7 +20,7 @@
 
 namespace mcl {
 
-namespace local {
+namespace vint {
 
 #if MCL_VINT_UNIT_BYTE_SIZE == 8
 typedef uint64_t Unit;
@@ -136,8 +136,8 @@ inline void decStr2Int(T& x, const std::string& s)
 	while (q) {
 		v = cybozu::atoi(p, width);
 		p += width;
-		T::mul(x, x, d);
-		T::add(x, x, v);
+		x *= d;
+		x += v;
 		q--;
 	}
 }
@@ -234,9 +234,9 @@ T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 	assert(xn >= yn);
 	size_t max = xn;
 	size_t min = yn;
-	T c = local::addN(z, x, y, min);
+	T c = vint::addN(z, x, y, min);
 	if (max > min) {
-		c = local::add1(z + min, x + min, max - min, c);
+		c = vint::add1(z + min, x + min, max - min, c);
 	}
 	return c;
 }
@@ -351,8 +351,8 @@ static inline void mulNM(T *out, const T *x, size_t xn, const T *y, size_t yn)
 
 	T *t2 = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	for (size_t i = 1; i < yn; i++) {
-		t2[xn] = local::mul1(&t2[0], x, xn, y[i]);
-		local::addN(&out[i], &out[i], &t2[0], xn + 1);
+		t2[xn] = vint::mul1(&t2[0], x, xn, y[i]);
+		vint::addN(&out[i], &out[i], &t2[0], xn + 1);
 	}
 }
 
@@ -477,17 +477,17 @@ void divNM(T *q, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	copyN(r, x, xn);
 	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
 	double yt = GetApp(y, yn, true);
-	while (local::compareNM(r, xn, y, yn) >= 0) {
+	while (vint::compareNM(r, xn, y, yn) >= 0) {
 		size_t len = yn;
 		double xt = GetApp(r, xn, false);
-		if (local::compareNM(&r[xn - len], yn, y, yn) < 0) {
+		if (vint::compareNM(&r[xn - len], yn, y, yn) < 0) {
 			xt *= double(1ULL << (sizeof(T) * 8 - 1)) * 2;
 			len++;
 		}
 		T qt = T(xt / yt);
 		if (qt == 0) qt = 1;
-		t[yn] = local::mul1(&t[0], y, yn, qt);
-		T b = local::subN(&r[xn - len], &r[xn - len], &t[0], len);
+		t[yn] = vint::mul1(&t[0], y, yn, qt);
+		T b = vint::subN(&r[xn - len], &r[xn - len], &t[0], len);
 		if (b) {
 			assert(!b);
 		}
@@ -741,7 +741,7 @@ public:
 	T& operator[](size_t n) { verify(n); return v_[n]; }
 };
 
-} // local
+} // vint
 
 /**
 	signed integer with variable length
@@ -775,27 +775,27 @@ private:
 	}
 	static int ucompare(const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		return local::compareNM(&x[0], xn, &y[0], yn);
+		return vint::compareNM(&x[0], xn, &y[0], yn);
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		size_t zn = std::max(xn, yn) + 1;
 		z.buf_.alloc(zn);
-		z.buf_[zn - 1] = local::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
+		z.buf_[zn - 1] = vint::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
 		z.trim(zn);
 	}
 	static void uadd1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn + 1;
 		z.buf_.alloc(zn);
-		z.buf_[zn - 1] = local::add1(&z.buf_[0], &x[0], xn, y);
+		z.buf_[zn - 1] = vint::add1(&z.buf_[0], &x[0], xn, y);
 		z.trim(zn);
 	}
 	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn;
 		z.buf_.alloc(zn);
-		Unit c = local::sub1(&z.buf_[0], &x[0], xn, y);
+		Unit c = vint::sub1(&z.buf_[0], &x[0], xn, y);
 		(void)c;
 		assert(!c);
 		z.trim(zn);
@@ -804,9 +804,9 @@ private:
 	{
 		assert(xn >= yn);
 		z.buf_.alloc(xn);
-		Unit c = local::subN(&z.buf_[0], &x[0], &y[0], yn);
+		Unit c = vint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
-			c = local::sub1(&z.buf_[yn], &x[yn], xn - yn, c);
+			c = vint::sub1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
 		assert(!c);
 		z.trim(xn);
@@ -859,7 +859,7 @@ private:
 			q->buf_.alloc(qn);
 		}
 		r.buf_.alloc(xn);
-		local::divNM(q ? &q->buf_[0] : 0, &r.buf_[0], &x[0], xn, &y[0], yn);
+		vint::divNM(q ? &q->buf_[0] : 0, &r.buf_[0], &x[0], xn, &y[0], yn);
 		if (q) {
 			q->trim(qn);
 		}
@@ -982,8 +982,8 @@ public:
 	{
 		size_t n = size();
 		if (n > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << n;
-		local::copyN(x, &buf_[0], n);
-		local::clearN(x + n, maxSize - n);
+		vint::copyN(x, &buf_[0], n);
+		vint::clearN(x + n, maxSize - n);
 	}
 	void clear() { *this = 0; }
 	std::string getStr(int base = 10) const
@@ -1151,7 +1151,7 @@ public:
 		const size_t yn = y.size();
 		size_t zn = xn + yn;
 		z.buf_.alloc(zn);
-		local::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
+		vint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
 	}
@@ -1176,7 +1176,7 @@ public:
 		size_t zn = xn + 1;
 		Unit absY = std::abs(y);
 		z.buf_.alloc(zn);
-		z.buf_[zn - 1] = local::mul1(&z.buf_[0], &x.buf_[0], xn, absY);
+		z.buf_[zn - 1] = vint::mul1(&z.buf_[0], &x.buf_[0], xn, absY);
 		z.isNeg_ = x.isNeg_ ^ (y < 0);
 		z.trim(zn);
 	}
@@ -1197,10 +1197,10 @@ public:
 		if (q) {
 			q->isNeg_ = xNeg ^ yNeg;
 			q->buf_.alloc(xn);
-			r = local::div1(&q->buf_[0], &x.buf_[0], xn, absY);
+			r = vint::div1(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
 		} else {
-			r = local::mod1(&x.buf_[0], xn, absY);
+			r = vint::mod1(&x.buf_[0], xn, absY);
 		}
 		return xNeg ? -r : r;
 	}
@@ -1265,7 +1265,7 @@ public:
 	inline friend std::istream& operator>>(std::istream& is, VintT& x)
 	{
 		std::string str;
-		local::getDigits(is, str, true);
+		vint::getDigits(is, str, true);
 		x.setStr(str);
 		return is;
 	}
@@ -1275,7 +1275,7 @@ public:
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + unitBitSize - 1) / unitBitSize;
 		y.buf_.alloc(yn);
-		local::shlN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
+		vint::shlN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
@@ -1289,7 +1289,7 @@ public:
 		}
 		size_t yn = xn - shiftBit / unitBitSize;
 		y.buf_.alloc(yn);
-		local::shrN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
+		vint::shrN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
@@ -1302,6 +1302,12 @@ public:
 	{
 		if (&y != &x) { y = x; }
 		y.isNeg_ = false;
+	}
+	static VintT abs(const VintT& x)
+	{
+		VintT y = x;
+		abs(y, x);
+		return y;
 	}
 	// accept only non-negative value
 	static void orBit(VintT& z, const VintT& x, const VintT& y)
@@ -1318,7 +1324,7 @@ public:
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] | y.buf_[i];
 		}
-		local::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
+		vint::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
 		z.trim(xn);
 	}
 	static void andBit(VintT& z, const VintT& x, const VintT& y)
@@ -1569,9 +1575,9 @@ public:
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
 
-//typedef VintT<local::VariableBuffer<mcl::local::Unit> > Vint;
-//typedef VintT<local::FixedBuffer<mcl::local::Unit, 10> > Vint;
-typedef VintT<local::Buffer<mcl::local::Unit> > Vint;
+//typedef VintT<vint::VariableBuffer<mcl::vint::Unit> > Vint;
+//typedef VintT<vint::FixedBuffer<mcl::vint::Unit, 10> > Vint;
+typedef VintT<vint::Buffer<mcl::vint::Unit> > Vint;
 
 } // mcl
 
