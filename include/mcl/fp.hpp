@@ -96,7 +96,7 @@ public:
 	}
 	static inline void init(const mpz_class& m, fp::Mode mode = fp::FP_AUTO)
 	{
-		init(m.get_str(), mode);
+		init(gmp::getStr(m), mode);
 	}
 	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{

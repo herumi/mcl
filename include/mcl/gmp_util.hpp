@@ -99,6 +99,12 @@ inline void getStr(std::string& str, const mpz_class& z, int base = 10)
 	str = z.get_str(base);
 #endif
 }
+inline std::string getStr(const mpz_class& z, int base = 10)
+{
+	std::string s;
+	getStr(s, z, base);
+	return s;
+}
 inline void add(mpz_class& z, const mpz_class& x, const mpz_class& y)
 {
 #ifdef MCL_USE_VINT
@@ -251,7 +257,7 @@ inline void sqrMod(mpz_class& z, const mpz_class& x, const mpz_class& m)
 inline void pow(mpz_class& z, const mpz_class& x, unsigned int y)
 {
 #ifdef MCL_USE_VINT
-	mcl::pow(z, x, y);
+	Vint::pow(z, x, y);
 #else
 	mpz_pow_ui(z.get_mpz_t(), x.get_mpz_t(), y);
 #endif
@@ -260,7 +266,7 @@ inline void pow(mpz_class& z, const mpz_class& x, unsigned int y)
 inline void powMod(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_class& m)
 {
 #ifdef MCL_USE_VINT
-	mcl::powMod(z, x, y, m);
+	Vint::powMod(z, x, y, m);
 #else
 	mpz_powm(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t(), m.get_mpz_t());
 #endif
@@ -268,12 +274,20 @@ inline void powMod(mpz_class& z, const mpz_class& x, const mpz_class& y, const m
 // z = 1/x mod m
 inline void invMod(mpz_class& z, const mpz_class& x, const mpz_class& m)
 {
+#ifdef MCL_USE_VINT
+	Vint::invMod(z, x, m);
+#else
 	mpz_invert(z.get_mpz_t(), x.get_mpz_t(), m.get_mpz_t());
+#endif
 }
 // z = lcm(x, y)
 inline void lcm(mpz_class& z, const mpz_class& x, const mpz_class& y)
 {
+#ifdef MCL_USE_VINT
+	Vint::lcm(z, x, y);
+#else
 	mpz_lcm(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
 }
 inline mpz_class lcm(const mpz_class& x, const mpz_class& y)
 {
@@ -284,7 +298,11 @@ inline mpz_class lcm(const mpz_class& x, const mpz_class& y)
 // z = gcd(x, y)
 inline void gcd(mpz_class& z, const mpz_class& x, const mpz_class& y)
 {
+#ifdef MCL_USE_VINT
+	Vint::gcd(z, x, y);
+#else
 	mpz_gcd(z.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
+#endif
 }
 inline mpz_class gcd(const mpz_class& x, const mpz_class& y)
 {
@@ -299,44 +317,83 @@ inline mpz_class gcd(const mpz_class& x, const mpz_class& y)
 */
 inline int legendre(const mpz_class& a, const mpz_class& p)
 {
+#ifdef MCL_USE_VINT
+	return Vint::jacobi(a, p);
+#else
 	return mpz_legendre(a.get_mpz_t(), p.get_mpz_t());
+#endif
 }
 inline bool isPrime(const mpz_class& x)
 {
+#ifdef MCL_USE_VINT
+	return x.isPrime(32);
+#else
 	return mpz_probab_prime_p(x.get_mpz_t(), 32) != 0;
+#endif
 }
 inline size_t getBitSize(const mpz_class& x)
 {
+#ifdef MCL_USE_VINT
+	return x.getBitSize();
+#else
 	return mpz_sizeinbase(x.get_mpz_t(), 2);
+#endif
 }
 inline bool testBit(const mpz_class& x, size_t pos)
 {
+#ifdef MCL_USE_VINT
+	return x.testBit(pos);
+#else
 	return mpz_tstbit(x.get_mpz_t(), pos) != 0;
+#endif
 }
 inline void resetBit(mpz_class& x, size_t pos)
 {
+#ifdef MCL_USE_VINT
+	x.setBit(pos, false);
+#else
 	mpz_clrbit(x.get_mpz_t(), pos);
+#endif
 }
 inline void setBit(mpz_class& x, size_t pos, bool v = true)
 {
+#ifdef MCL_USE_VINT
+	x.setBit(pos, v);
+#else
 	if (v) {
 		mpz_setbit(x.get_mpz_t(), pos);
 	} else {
 		resetBit(x, pos);
 	}
-}
-inline Unit getUnit(const mpz_class& x, size_t i)
-{
-	return x.get_mpz_t()->_mp_d[i];
+#endif
 }
 inline const Unit *getUnit(const mpz_class& x)
 {
+#ifdef MCL_USE_VINT
+	return x.getUnit();
+#else
 	return reinterpret_cast<const Unit*>(x.get_mpz_t()->_mp_d);
+#endif
+}
+inline Unit getUnit(const mpz_class& x, size_t i)
+{
+	return getUnit(x)[i];
 }
 inline size_t getUnitSize(const mpz_class& x)
 {
-	assert(x.get_mpz_t()->_mp_size >= 0);
-	return x.get_mpz_t()->_mp_size;
+#ifdef MCL_USE_VINT
+	return x.getUnitSize();
+#else
+	return abs(x.get_mpz_t()->_mp_size);
+#endif
+}
+inline mpz_class abs(const mpz_class& x)
+{
+#ifdef MCL_USE_VINT
+	return Vint::abs(x);
+#else
+	return abs(x.get_mpz_t()->_mp_size);
+#endif
 }
 template<class RG>
 void getRand(mpz_class& z, size_t bitSize, RG& rg)

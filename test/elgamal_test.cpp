@@ -1,6 +1,10 @@
 #include <cybozu/test.hpp>
 #include <cybozu/random_generator.hpp>
+#ifdef MCL_DONT_USE_OPENSSL
+#include <cybozu/sha1.hpp>
+#else
 #include <cybozu/crypto.hpp>
+#endif
 #include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/elgamal.hpp>
@@ -141,8 +145,11 @@ CYBOZU_TEST_AUTO(testEc)
 	{
 		ElgamalEc::Zkp zkp;
 		ElgamalEc::CipherText c;
-//		cybozu::Sha1 hash;
+#ifdef MCL_DONT_USE_OPENSSL
+		cybozu::Sha1 hash;
+#else
 		cybozu::crypto::Hash hash(cybozu::crypto::Hash::N_SHA256);
+#endif
 		pub.encWithZkp(c, zkp, 0, hash, rg);
 		CYBOZU_TEST_ASSERT(pub.verify(c, zkp, hash));
 		zkp.s0 += 1;

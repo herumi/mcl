@@ -89,7 +89,21 @@ CFLAGS_OPT_USER?=$(CFLAGS_OPT)
 ifeq ($(DEBUG),0)
 CFLAGS+=$(CFLAGS_OPT_USER)
 endif
-LDFLAGS+=-lgmp -lgmpxx -lcrypto $(BIT_OPT) $(LDFLAGS_USER)
+MCL_USE_GMP?=1
+MCL_USE_OPENSSL?=1
+ifeq ($(MCL_USE_GMP),0)
+  CFLAGS+=-DMCL_USE_VINT
+endif
+ifeq ($(MCL_USE_OPENSSL),0)
+  CFLAGS+=-DMCL_DONT_USE_OPENSSL
+endif
+ifeq ($(MCL_USE_GMP),1)
+  GMP_LIB=-lgmp -lgmpxx
+endif
+ifeq ($(MCL_USE_OPENSSL),1)
+  OPENSSL_LIB=-lcrypto
+endif
+LDFLAGS+=$(GMP_LIB) $(OPENSSL_LIB) $(BIT_OPT) $(LDFLAGS_USER)
 
 CFLAGS+=-fPIC
 

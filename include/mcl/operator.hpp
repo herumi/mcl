@@ -68,15 +68,15 @@ struct Operator : E {
 	}
 	static void pow(T& z, const T& x, const mpz_class& y)
 	{
-		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, false);
+		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
 	}
 	static void powGeneric(T& z, const T& x, const mpz_class& y)
 	{
-		powArrayBase(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, false);
+		powArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
 	}
 	static void powCT(T& z, const T& x, const mpz_class& y)
 	{
-		powArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
+		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
 	}
 	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime))
 	{

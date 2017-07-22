@@ -592,7 +592,7 @@ public:
 	}
 	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mulCT(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
@@ -603,7 +603,7 @@ public:
 	}
 	static inline void mulCT(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		mulArray(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, true);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
 	}
 	/*
 		0 <= P for any P
@@ -850,7 +850,7 @@ public:
 	*/
 	static inline void mulGeneric(EcT& z, const EcT& x, const mpz_class& y, bool constTime = false)
 	{
-		mulArrayBase(z, x, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0, constTime);
+		mulArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime);
 	}
 };
 

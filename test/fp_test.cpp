@@ -7,7 +7,11 @@
 #include <time.h>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
+#ifdef MCL_DONT_USE_OPENSSL
+#include <cybozu/sha1.hpp>
+#else
 #include <cybozu/crypto.hpp>
+#endif
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4127) // const condition
@@ -340,7 +344,7 @@ void moduloTest(const char *pStr)
 {
 	std::string str;
 	Fp::getModulo(str);
-	CYBOZU_TEST_EQUAL(str, mpz_class(pStr).get_str());
+	CYBOZU_TEST_EQUAL(str, mcl::gmp::getStr(mpz_class(pStr)));
 }
 
 void opeTest()
@@ -711,6 +715,10 @@ void setHashOfTest()
 		"", "abc", "111111111111111111111111111111111111",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(msgTbl); i++) {
+#ifdef MCL_DONT_USE_OPENSSL
+		cybozu::Sha1 sha1;
+		std::string digest = sha1.digest(msgTbl[i]);
+#else
 		size_t bitSize = Fp::getBitSize();
 		cybozu::crypto::Hash::Name name;
 		if (bitSize <= 160) {
@@ -725,6 +733,7 @@ void setHashOfTest()
 			name = cybozu::crypto::Hash::N_SHA512;
 		}
 		std::string digest = cybozu::crypto::Hash::digest(name, msgTbl[i]);
+#endif
 		Fp x, y;
 		x.setArrayMask(digest.c_str(), digest.size());
 		y.setHashOf(msgTbl[i]);

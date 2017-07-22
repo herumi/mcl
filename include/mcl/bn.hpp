@@ -521,7 +521,7 @@ struct ParamT {
 		p = eval(pCoff, z);
 		assert((p % 6) == 1);
 		r = eval(rCoff, z);
-		Fp::init(p.get_str(), mode);
+		Fp::init(gmp::getStr(p), mode);
 		Fp2::init(cp.xi_a);
 		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);
@@ -533,10 +533,10 @@ struct ParamT {
 		mapTo.init(2 * p - r);
 		glv1.init(r, z);
 
-		const mpz_class largest_c = abs(6 * z + 2);
+		const mpz_class largest_c = gmp::abs(z * 6 + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
-		gmp::getNAF(zReplTbl, abs(z));
+		gmp::getNAF(zReplTbl, gmp::abs(z));
 		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
 		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
 		exp_c2 = 6 * z * z + 1;

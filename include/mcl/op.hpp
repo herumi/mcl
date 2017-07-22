@@ -89,7 +89,7 @@ enum IoMode {
 
 namespace fp {
 
-#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
+#if MCL_UNIT_BYTE_SIZE == 4 || (defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32))
 typedef uint32_t Unit;
 #else
 typedef uint64_t Unit;

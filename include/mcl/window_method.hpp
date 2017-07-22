@@ -128,7 +128,7 @@ public:
 	}
 	void mul(Ec& z, const mpz_class& y) const
 	{
-		powArray(z, gmp::getUnit(y), abs(y.get_mpz_t()->_mp_size), y < 0);
+		powArray(z, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	void powArray(Ec& z, const Unit* y, size_t n, bool isNegative) const
 	{

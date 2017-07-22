@@ -1,6 +1,10 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#ifdef MCL_DONT_USE_OPENSSL
+#include <cybozu/sha1.hpp>
+#else
 #include <cybozu/crypto.hpp>
+#endif
 #include <cybozu/endian.hpp>
 #include "conversion.hpp"
 #include "fp_generator.hpp"
@@ -189,6 +193,11 @@ bool isEnableJIT()
 
 std::string hash(size_t bitSize, const void *msg, size_t msgSize)
 {
+#ifdef MCL_DONT_USE_OPENSSL
+	(void)bitSize;
+	cybozu::Sha1 sha1;
+	return sha1.digest((const char*)msg, msgSize);
+#else
 	cybozu::crypto::Hash::Name name;
 	if (bitSize <= 160) {
 		name = cybozu::crypto::Hash::N_SHA1;
@@ -202,8 +211,10 @@ std::string hash(size_t bitSize, const void *msg, size_t msgSize)
 		name = cybozu::crypto::Hash::N_SHA512;
 	}
 	return cybozu::crypto::Hash::digest(name, (const char *)msg, msgSize);
+#endif
 }
 
+#ifndef MCL_USE_VINT
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 {
 	int s = n;
@@ -215,16 +226,28 @@ static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 	z->_mp_size = s;
 	z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
 }
+#endif
 
+/*
+	y = (1/x) mod op.p
+*/
 static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 {
 	const int N = (int)op.N;
+#ifdef MCL_USE_VINT
+	Vint vx, vy, vp;
+	vx.setArray(x, N);
+	vy.setArray(op.p, N);
+	Vint::invMod(vy, vx, vp);
+	vy.getArray(y, N);
+#else
 	mpz_class my;
 	mpz_t mx, mp;
 	set_mpz_t(mx, x, N);
 	set_mpz_t(mp, op.p, N);
 	mpz_invert(my.get_mpz_t(), mx, mp);
 	gmp::getArray(y, N, my);
+#endif
 }
 
 /*
