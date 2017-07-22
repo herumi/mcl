@@ -857,12 +857,16 @@ private:
 	/**
 		@param q [out] x / y if q != 0
 		@param r [out] x % y
-		@retval true if y != 0
-		@retavl false if y == 0
 	*/
 	static void udiv(VintT* q, VintT& r, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		assert(q != &r);
+		if (xn < yn) {
+			r.buf_ = x;
+			r.trim(xn);
+			if (q) q->clear();
+			return;
+		}
 		size_t qn = xn - yn + 1;
 		if (q) {
 			q->buf_.alloc(qn);

@@ -7,7 +7,9 @@
 #endif
 #include <cybozu/endian.hpp>
 #include "conversion.hpp"
+#ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
+#endif
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "proto.hpp"
@@ -408,7 +410,11 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) {
 		throw cybozu::Exception("Op:init:mismatch between header and library of MCL_MAX_BIT_SIZE") << mclMaxBitSize << MCL_MAX_BIT_SIZE;
 	}
+#ifdef MCL_USE_VINT
+	assert(sizeof(mcl::vint::Unit) == sizeof(Unit));
+#else
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
+#endif
 	clear();
 	if (maxBitSize > MCL_MAX_BIT_SIZE) {
 		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_BIT_SIZE;

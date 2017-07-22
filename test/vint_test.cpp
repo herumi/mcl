@@ -477,6 +477,18 @@ CYBOZU_TEST_AUTO(div2)
 			{ 1, { 0 } },
 			{ 2, { 4, 5 } },
 		},
+		{
+			{ 1, { 123 } },
+			{ 2, { 1, 1 } },
+			{ 1, { 0 } },
+			{ 1, { 123 } },
+		},
+		{
+			{ 1, { 123 } },
+			{ 3, { 1, 1, 1 } },
+			{ 1, { 0 } },
+			{ 1, { 123 } },
+		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Vint x, y, q, r;
@@ -1137,4 +1149,17 @@ CYBOZU_TEST_AUTO(jacobi)
 		int my = Vint::jacobi(Vint(tbl[i].m), Vint(tbl[i].n));
 		CYBOZU_TEST_EQUAL(my, tbl[i].ok);
 	}
+}
+
+CYBOZU_TEST_AUTO(bench)
+{
+	Vint x, y, z;
+	x.setStr("0x2523648240000001ba344d80000000086121000000000013a700000000000013");
+	y.setStr("0x1802938109810498104982094820498203942804928049284092424902424243");
+
+	int N = 1000;
+	CYBOZU_BENCH_C("add", N, Vint::add, z, x, y);
+	CYBOZU_BENCH_C("sub", N, Vint::sub, z, x, y);
+	CYBOZU_BENCH_C("mul", N, Vint::mul, z, x, y);
+	CYBOZU_BENCH_C("div", N, Vint::div, y, z, x);
 }
