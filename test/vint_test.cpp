@@ -12,6 +12,9 @@
 
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 
+// emcc stop exception
+#define AVOID_EXCEPTION_TEST
+
 using namespace mcl;
 
 struct V {
@@ -975,7 +978,7 @@ CYBOZU_TEST_AUTO(inc_dec)
 	CYBOZU_TEST_EQUAL(x, 3);
 }
 
-CYBOZU_TEST_AUTO(T)
+CYBOZU_TEST_AUTO(withInt)
 {
 	Vint x = 15;
 	x += 3;
@@ -1022,7 +1025,9 @@ CYBOZU_TEST_AUTO(pow)
 	x = -2;
 	Vint::pow(y, x, 3);
 	CYBOZU_TEST_EQUAL(y, -8);
+#ifndef AVOID_EXCEPTION_TEST
 	CYBOZU_TEST_EXCEPTION(Vint::pow(y, x, -2), std::exception);
+#endif
 }
 
 CYBOZU_TEST_AUTO(powMod)
@@ -1034,7 +1039,6 @@ CYBOZU_TEST_AUTO(powMod)
 	CYBOZU_TEST_EQUAL(y, 55277);
 	Vint::powMod(y, x, m - 1, m);
 	CYBOZU_TEST_EQUAL(y, 1);
-
 }
 
 CYBOZU_TEST_AUTO(andOr)
@@ -1046,8 +1050,10 @@ CYBOZU_TEST_AUTO(andOr)
 	CYBOZU_TEST_EQUAL(z, Vint("1209221003550923564822922"));
 	z = x | y;
 	CYBOZU_TEST_EQUAL(z, Vint("29348220482094820948208435244134352108849315802"));
+#ifndef AVOID_EXCEPTION_TEST
 	CYBOZU_TEST_EXCEPTION(Vint("-2") | Vint("5"), std::exception);
 	CYBOZU_TEST_EXCEPTION(Vint("-2") & Vint("5"), std::exception);
+#endif
 	x = 8;
 	x |= 7;
 	CYBOZU_TEST_EQUAL(x, 15);
@@ -1157,7 +1163,7 @@ CYBOZU_TEST_AUTO(bench)
 	x.setStr("0x2523648240000001ba344d80000000086121000000000013a700000000000013");
 	y.setStr("0x1802938109810498104982094820498203942804928049284092424902424243");
 
-	int N = 1000;
+	int N = 100000;
 	CYBOZU_BENCH_C("add", N, Vint::add, z, x, y);
 	CYBOZU_BENCH_C("sub", N, Vint::sub, z, x, y);
 	CYBOZU_BENCH_C("mul", N, Vint::mul, z, x, y);
