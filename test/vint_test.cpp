@@ -3,8 +3,10 @@
 #include <iostream>
 #include <sstream>
 #include <set>
+#ifndef _MSC_VER
 #define CYBOZU_BENCH_DONT_USE_RDTSC
 #define CYBOZU_BENCH_USE_GETTIMEOFDAY
+#endif
 #include <cybozu/benchmark.hpp>
 #include <cybozu/test.hpp>
 

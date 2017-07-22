@@ -752,7 +752,7 @@ public:
 	typedef _Buffer Buffer;
 	typedef typename Buffer::Unit Unit;
 	static const size_t unitBitSize = sizeof(Unit) * 8;
-	static const int invalidVar = -2147483648; // abs(invalidVar) is not defined
+	static const int invalidVar = -2147483647 - 1; // abs(invalidVar) is not defined
 private:
 	Buffer buf_;
 	size_t size_;
@@ -796,6 +796,7 @@ private:
 		size_t zn = xn;
 		z.buf_.alloc(zn);
 		Unit c = local::sub1(&z.buf_[0], &x[0], xn, y);
+		(void)c;
 		assert(!c);
 		z.trim(zn);
 	}
@@ -891,6 +892,12 @@ public:
 	{
 		setStr(str);
 	}
+	VintT(const VintT& rhs)
+		: buf_(rhs.buf_)
+		, size_(rhs.size_)
+		, isNeg_(rhs.isNeg_)
+	{
+	}
 	VintT& operator=(int x)
 	{
 		if (x == invalidVar) throw cybozu::Exception("VintT:operator=:invalidVar");
@@ -900,18 +907,25 @@ public:
 		size_ = 1;
 		return *this;
 	}
+	VintT& operator=(const VintT& rhs)
+	{
+		buf_ = rhs.buf_;
+		size_ = rhs.size_;
+		isNeg_ = rhs.isNeg_;
+		return *this;
+	}
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 	VintT(VintT&& rhs)
 		: buf_(rhs.buf_)
 		, size_(rhs.size_)
-		, neg_(rhs.neg_)
+		, isNeg_(rhs.isNeg_)
 	{
 	}
 	VintT& operator=(VintT&& rhs)
 	{
 		buf_ = std::move(rhs.buf_);
 		size_ = rhs.size_;
-		neg_ = rhs.neg_;
+		isNeg_ = rhs.isNeg_;
 		return *this;
 	}
 #endif
@@ -1313,9 +1327,8 @@ public:
 		if (x.size() < y.size()) {
 			std::swap(px, py);
 		}
-		size_t xn CYBOZU_UNUSED = px->size();
 		size_t yn = py->size();
-		assert(xn >= yn);
+		assert(px->size() >= yn);
 		z.buf_.alloc(yn);
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] & y.buf_[i];
@@ -1428,7 +1441,7 @@ public:
 			if (x == 1 || x == nm1) {
 				continue;
 			}
-			for (uint32_t i = 1; i < r; i++) {
+			for (uint32_t j = 1; j < r; j++) {
 				sqr(x, x);
 				x %= n;
 				if (x == 1) return false;
