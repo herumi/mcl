@@ -1454,11 +1454,11 @@ public:
 		return true;
 	}
 	template<class RG>
-	bool isPrime(RG& rg, int tryNum = 32)
+	bool isPrime(RG& rg, int tryNum = 32) const
 	{
 		return isPrime(*this, rg, tryNum);
 	}
-	bool isPrime(int tryNum = 32)
+	bool isPrime(int tryNum = 32) const
 	{
 		cybozu::XorShift rg;
 		return isPrime(rg, tryNum);
@@ -1536,6 +1536,7 @@ public:
 	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }
 	VintT operator--(int) { VintT c = *this; sub(*this, *this, 1); return c; }
 	const Unit *getUnit() const { return &buf_[0]; }
+	size_t getUnitSize() const { return size_; }
 	friend bool operator<(const VintT& x, const VintT& y) { return compare(x, y) < 0; }
 	friend bool operator>=(const VintT& x, const VintT& y) { return !operator<(x, y); }
 	friend bool operator>(const VintT& x, const VintT& y) { return compare(x, y) > 0; }
