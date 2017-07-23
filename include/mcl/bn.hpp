@@ -1073,6 +1073,10 @@ struct BNT {
 		*/
 		static void fixed_power(Fp12& z, const Fp12& x)
 		{
+			if (x.isOne()) {
+				z = 1;
+				return;
+			}
 			assert(param.isCurveFp254BNb);
 			Fp12 x_org = x;
 			Fp12 d62;
