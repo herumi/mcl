@@ -20,7 +20,7 @@
 		#ifdef NDEBUG
 			#pragma comment(lib, "mcl.lib")
 		#else
-			#pragma comment(lib, "mcld.lib")
+			#pragma comment(lib, "mcl.lib")
 		#endif
 	#endif
 #endif
@@ -52,7 +52,7 @@ Mode StrToMode(const std::string& s);
 void dumpUnit(Unit x);
 void UnitToHex(char *buf, size_t maxBufSize, Unit x);
 std::string hexStrToLittleEndian(const char *buf, size_t bufSize);
-std::string littleEndianToHexStr(const char *buf, size_t bufSize);
+std::string littleEndianToHexStr(const void *buf, size_t bufSize);
 
 bool isEnableJIT(); // 1st call is not threadsafe
 

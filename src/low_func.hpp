@@ -300,7 +300,7 @@ struct MulUnitPre {
 	static inline void func(Unit *z, const Unit *x, Unit y)
 	{
 #ifdef MCL_USE_VINT
-		z[N] = mcl::vint::mul1(z, x, N, y);
+		z[N] = mcl::vint::mulu1(z, x, N, y);
 #else
 		z[N] = mpn_mul_1((mp_limb_t*)z, (const mp_limb_t*)x, N, y);
 #endif
@@ -317,7 +317,7 @@ struct N1_Mod {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::divNM<Unit>(0, y, x, N + 1, p, N);
+		mcl::vint::divNM<Unit>(0, 0, y, x, N + 1, p, N);
 #else
 		mp_limb_t q[2]; // not used
 		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N + 1, (const mp_limb_t*)p, N);
@@ -380,7 +380,7 @@ struct Dbl_Mod {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::divNM<Unit>(0, y, x, N * 2, p, N);
+		mcl::vint::divNM<Unit>(0, 0, y, x, N * 2, p, N);
 #else
 		mp_limb_t q[N + 1]; // not used
 		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N * 2, (const mp_limb_t*)p, N);

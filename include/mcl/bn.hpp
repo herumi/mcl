@@ -521,7 +521,7 @@ struct ParamT {
 		p = eval(pCoff, z);
 		assert((p % 6) == 1);
 		r = eval(rCoff, z);
-		Fp::init(gmp::getStr(p), mode);
+		Fp::init(p, mode);
 		Fp2::init(cp.xi_a);
 		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);

@@ -161,12 +161,13 @@ std::string hexStrToLittleEndian(const char *buf, size_t bufSize)
 }
 
 // { 0xaf, 0x23, 0x01 } => "0123af"
-std::string littleEndianToHexStr(const char *buf, size_t bufSize)
+std::string littleEndianToHexStr(const void *buf, size_t bufSize)
 {
 	std::string s;
 	s.resize(bufSize * 2);
+	const uint8_t *p = (const uint8_t *)buf;
 	for (size_t i = 0; i < bufSize; i++) {
-		cybozu::itohex(&s[i * 2], 2, (uint8_t)buf[bufSize - 1 - i], false);
+		cybozu::itohex(&s[i * 2], 2, p[bufSize - 1 - i], false);
 	}
 	return s;
 }
@@ -239,7 +240,7 @@ static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 #ifdef MCL_USE_VINT
 	Vint vx, vy, vp;
 	vx.setArray(x, N);
-	vy.setArray(op.p, N);
+	vp.setArray(op.p, N);
 	Vint::invMod(vy, vx, vp);
 	vy.getArray(y, N);
 #else
@@ -334,7 +335,7 @@ void setOp(Op& op, Mode mode)
 	setOp2<N, Gtag, true>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+#if defined(MCL_USE_XBYAK) && CYBOZU_HOST == CYBOZU_HOST_INTEL
 		Xbyak::util::Cpu cpu;
 		if (cpu.has(Xbyak::util::Cpu::tBMI2)) {
 			setOp2<N, LBMI2tag, (N * UnitBitSize <= 256)>(op);

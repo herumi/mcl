@@ -384,7 +384,7 @@ inline size_t getUnitSize(const mpz_class& x)
 #ifdef MCL_USE_VINT
 	return x.getUnitSize();
 #else
-	return abs(x.get_mpz_t()->_mp_size);
+	return std::abs(x.get_mpz_t()->_mp_size);
 #endif
 }
 inline mpz_class abs(const mpz_class& x)
@@ -392,7 +392,7 @@ inline mpz_class abs(const mpz_class& x)
 #ifdef MCL_USE_VINT
 	return Vint::abs(x);
 #else
-	return abs(x.get_mpz_t()->_mp_size);
+	return ::abs(x);
 #endif
 }
 template<class RG>

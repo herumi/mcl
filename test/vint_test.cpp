@@ -372,11 +372,11 @@ CYBOZU_TEST_AUTO(div1)
 		r = tbl[i].r;
 		z.setArray(tbl[i].c.p, tbl[i].c.n);
 
-		u = (unsigned int)Vint::divMod1(&t, x, b);
+		u = (unsigned int)Vint::divMods1(&t, x, b);
 		CYBOZU_TEST_EQUAL(t, z);
 		CYBOZU_TEST_EQUAL(u, r);
 
-		u = (unsigned int)Vint::divMod1(&x, x, b);
+		u = (unsigned int)Vint::divMods1(&x, x, b);
 		CYBOZU_TEST_EQUAL(x, z);
 		CYBOZU_TEST_EQUAL(u, r);
 	}
@@ -616,12 +616,13 @@ CYBOZU_TEST_AUTO(string)
 		size_t vn;
 		const char *str;
 		const char *hex;
+		const char *bin;
 	} tbl[] = {
-		{ { 0 }, 0, "0", "0x0" },
-		{ { 12345 }, 1, "12345", "0x3039" },
-		{ { 0xffffffff }, 1, "4294967295", "0xffffffff" },
-		{ { 0, 1 }, 2, "4294967296", "0x100000000" },
-		{ { 0, 0, 0, 0, 1 }, 5, "340282366920938463463374607431768211456", "0x100000000000000000000000000000000" },
+		{ { 0 }, 0, "0", "0x0", "0b0" },
+		{ { 12345 }, 1, "12345", "0x3039", "0b11000000111001" },
+		{ { 0xffffffff }, 1, "4294967295", "0xffffffff", "0b11111111111111111111111111111111" },
+		{ { 0, 1 }, 2, "4294967296", "0x100000000", "0b100000000000000000000000000000000" },
+		{ { 0, 0, 0, 0, 1 }, 5, "340282366920938463463374607431768211456", "0x100000000000000000000000000000000", "0b100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Vint x, y;
