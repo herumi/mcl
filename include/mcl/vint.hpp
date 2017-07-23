@@ -498,33 +498,25 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 {
 	assert(xn > 0 && yn > 0);
 	assert(xn < yn || (q == 0 || qn == xn - yn + 1));
+	assert(q != r);
 	const size_t rn = yn;
 	xn = getRealSize(x, xn);
 	yn = getRealSize(y, yn);
-	if (x == q) {
-		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-		copyN(p, x, xn);
-		x = p;
-	}
-	if (y == q) {
-		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		copyN(p, y, yn);
-		y = p;
-	}
-	if (q) {
-		clearN(q, qn);
-	}
 	if (yn > xn) {
 		/*
 			if y > x then q = 0 and r = x
 		*/
 		copyN(r, x, xn);
 		clearN(r + xn, rn - xn);
+		if (q) clearN(q, qn);
 		return;
 	}
 	if (yn == 1) {
 		T t;
 		if (q) {
+			if (qn > xn) {
+				clearN(q + xn, qn - xn);
+			}
 			t = divu1(q, x, xn, y[0]);
 		} else {
 			t = modu1(x, xn, y[0]);
@@ -539,8 +531,16 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		clearN(r, rn);
 		if (q) {
 			q[0] = 1;
+			clearN(q + 1, qn - 1);
 		}
 		return;
+	}
+	T *qq = q;
+	if (q) {
+		if (q == x || q == y) {
+			qq = (T*)CYBOZU_ALLOCA(sizeof(T) * qn);
+		}
+		clearN(qq, qn);
 	}
 	T *rr = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 	copyN(rr, x, xn);
@@ -560,13 +560,16 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		if (b) {
 			assert(!b);
 		}
-		if (q) q[xn - len] += qt;
+		if (qq) qq[xn - len] += qt;
 
 		while (xn >= yn && rr[xn - 1] == 0) {
 			xn--;
 		}
 	}
 	copyN(r, rr, rn);
+	if (q && q != qq) {
+		copyN(q, qq, qn);
+	}
 }
 
 /*
