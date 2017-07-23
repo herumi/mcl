@@ -66,6 +66,7 @@ struct MapToT {
 	{
 		F x, y, w;
 		bool negative = legendre(t) < 0;
+		if (t.isZero()) goto ERR_POINT;
 		F::sqr(w, t);
 		w += G::b_;
 		*w.getFp0() += Fp::one();
