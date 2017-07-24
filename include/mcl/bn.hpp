@@ -177,7 +177,7 @@ struct GLV1 {
 	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
 	{
 		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 3;
+		const size_t maxUnit = 384 / 2 / mcl::fp::UnitBitSize;
 		const int splitN = 2;
 		mpz_class u[splitN];
 		G1 in[splitN];
@@ -357,7 +357,7 @@ struct GLV2 {
 		}
 #endif
 		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 3;
+		const size_t maxUnit = 384 / 2 / mcl::fp::UnitBitSize;
 		const int splitN = 4;
 		mpz_class u[splitN];
 		T in[splitN];
