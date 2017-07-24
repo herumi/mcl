@@ -12,8 +12,9 @@
 
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 
-// emcc stop exception
-#define AVOID_EXCEPTION_TEST
+#if defined(__EMSCRIPTEN__) && !defined(MCL_AVOID_EXCEPTION_TEST)
+	#define MCL_AVOID_EXCEPTION_TEST
+#endif
 
 using namespace mcl;
 
@@ -1026,7 +1027,7 @@ CYBOZU_TEST_AUTO(pow)
 	x = -2;
 	Vint::pow(y, x, 3);
 	CYBOZU_TEST_EQUAL(y, -8);
-#ifndef AVOID_EXCEPTION_TEST
+#ifndef MCL_AVOID_EXCEPTION_TEST
 	CYBOZU_TEST_EXCEPTION(Vint::pow(y, x, -2), std::exception);
 #endif
 }
@@ -1051,7 +1052,7 @@ CYBOZU_TEST_AUTO(andOr)
 	CYBOZU_TEST_EQUAL(z, Vint("1209221003550923564822922"));
 	z = x | y;
 	CYBOZU_TEST_EQUAL(z, Vint("29348220482094820948208435244134352108849315802"));
-#ifndef AVOID_EXCEPTION_TEST
+#ifndef MCL_AVOID_EXCEPTION_TEST
 	CYBOZU_TEST_EXCEPTION(Vint("-2") | Vint("5"), std::exception);
 	CYBOZU_TEST_EXCEPTION(Vint("-2") & Vint("5"), std::exception);
 #endif

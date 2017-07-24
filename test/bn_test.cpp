@@ -7,6 +7,10 @@ cybozu::CpuClock clk;
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 
+#if defined(__EMSCRIPTEN__) && !defined(MCL_AVOID_EXCEPTION_TEST)
+	#define MCL_AVOID_EXCEPTION_TEST
+#endif
+
 typedef mcl::bn256::BN::Compress Compress;
 using namespace mcl::bn256;
 
@@ -112,11 +116,13 @@ void testMapToG1()
 		G1::mul(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
+#ifndef MCL_AVOID_EXCEPTION_TEST
 	if (BN::param.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, 0), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, BN::param.mapTo.c1), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, -BN::param.mapTo.c1), cybozu::Exception);
 	}
+#endif
 }
 
 void testMapToG2()
@@ -129,9 +135,11 @@ void testMapToG2()
 		G2::mul(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
+#ifndef MCL_AVOID_EXCEPTION_TEST
 	if (BN::param.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG2(g, 0), cybozu::Exception);
 	}
+#endif
 	Fp x;
 	x.setHashOf("abc");
 	BN::mapToG2(g, Fp2(x, 0));
