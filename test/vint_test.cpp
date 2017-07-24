@@ -656,7 +656,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	for (int i = 0; i < 4; i++) {
 		Vint::shl(y, x, i * unitBitSize);
-		Vint::pow(s, Vint(2), Vint(i * unitBitSize));
+		Vint::pow(s, Vint(2), i * unitBitSize);
 		z = x * s;
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x << (i * unitBitSize);
