@@ -10,6 +10,7 @@
 	David Mandell Freeman:
 	Converting Pairing-Based Cryptosystems from Composite-Order Groups to Prime-Order Groups. EUROCRYPT 2010: 44-61
 	http://theory.stanford.edu/~dfreeman/papers/subgroups.pdf
+	this algorithm reduces public key size compared to the paper by Sakai's idea.
 
 	BGN encryption
 	http://theory.stanford.edu/~dfreeman/cs259c-f11/lectures/bgn
@@ -467,6 +468,10 @@ public:
 		setRangeForGTDLP(hashSize, tryNum);
 	}
 
+	/*
+		only one element is necessary for each G1 and G2.
+		this is better than David Mandell Freeman's algorithm
+	*/
 	class SecretKey {
 		Fr x, y;
 	public:
