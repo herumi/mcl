@@ -14,20 +14,20 @@
 #include <iostream>
 #include <mcl/util.hpp>
 
-#ifndef MCL_VINT_UNIT_BYTE_SIZE
-	#define MCL_VINT_UNIT_BYTE_SIZE 4
+#ifndef MCL_SIZEOF_VINT_UNIT
+	#define MCL_SIZEOF_VINT_UNIT 4
 #endif
 
 namespace mcl {
 
 namespace vint {
 
-#if MCL_VINT_UNIT_BYTE_SIZE == 8
+#if MCL_SIZEOF_VINT_UNIT == 8
 typedef uint64_t Unit;
-#elif MCL_VINT_UNIT_BYTE_SIZE == 4
+#elif MCL_SIZEOF_VINT_UNIT == 4
 typedef uint32_t Unit;
 #else
-	#error "define MCL_VINT_UNIT_BYTE_SIZE"
+	#error "define MCL_SIZEOF_VINT_UNIT"
 #endif
 
 inline uint64_t make64(uint32_t H, uint32_t L)
@@ -47,7 +47,7 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 */
 static inline Unit mulUnit(Unit *H, Unit a, Unit b)
 {
-#if MCL_VINT_UNIT_BYTE_SIZE == 4
+#if MCL_SIZEOF_VINT_UNIT == 4
 	uint64_t t = uint64_t(a) * b;
 	uint32_t L;
 	split64(H, &L, t);
@@ -71,7 +71,7 @@ static inline Unit mulUnit(Unit *H, Unit a, Unit b)
 */
 static Unit divUnit(Unit *r, Unit H, Unit L, Unit y)
 {
-#if MCL_VINT_UNIT_BYTE_SIZE == 4
+#if MCL_SIZEOF_VINT_UNIT == 4
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
 	*r = Unit(t % y);
@@ -117,7 +117,7 @@ template<class T>
 inline void decStr2Int(T& x, const std::string& s)
 {
 	const size_t width = 9;
-	const uint32_t d = (uint32_t)std::pow(10.0, 9);
+	const typename T::Unit d = (uint32_t)std::pow(10.0, 9);
 	size_t size = s.size();
 	size_t q = size / width;
 	size_t r = size % width;
@@ -126,7 +126,7 @@ inline void decStr2Int(T& x, const std::string& s)
 		split s and compute x
 		eg. 123456789012345678901234 => 123456, 789012345, 678901234
 	*/
-	uint32_t v;
+	typename T::Unit v;
 	x = 0;
 	if (r) {
 		v = cybozu::atoi(p, r);
@@ -449,7 +449,7 @@ static inline double GetApp(const T *x, size_t xn, bool up)
 	union di di;
 	di.f = (double)H;
 	unsigned int len = int(di.i >> 52) - 1023 + 1;
-#if MCL_VINT_UNIT_BYTE_SIZE == 4
+#if MCL_SIZEOF_VINT_UNIT == 4
 	uint32_t M = x[xn - 2];
 	if (len >= 21) {
 		di.i |= M >> (len - 21);
@@ -1313,6 +1313,16 @@ public:
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
 	}
+	static void divu1(VintT& q, const VintT& x, Unit y)
+	{
+		udivModu1(&q, x, y);
+	}
+	static void modu1(VintT& r, const VintT& x, Unit y)
+	{
+		bool xNeg = x.isNeg_;
+		r = divModu1(0, x, y);
+		r.isNeg_ = xNeg;
+	}
 	static void adds1(VintT& z, const VintT& x, int y)
 	{
 		if (y == invalidVar) throw cybozu::Exception("VintT:adds1:bad y");
@@ -1743,6 +1753,12 @@ public:
 	VintT& operator*=(int rhs) { muls1(*this, *this, rhs); return *this; }
 	VintT& operator/=(int rhs) { divs1(*this, *this, rhs); return *this; }
 	VintT& operator%=(int rhs) { mods1(*this, *this, rhs); return *this; }
+	VintT& operator+=(Unit rhs) { addu1(*this, *this, rhs); return *this; }
+	VintT& operator-=(Unit rhs) { subu1(*this, *this, rhs); return *this; }
+	VintT& operator*=(Unit rhs) { mulu1(*this, *this, rhs); return *this; }
+	VintT& operator/=(Unit rhs) { divu1(*this, *this, rhs); return *this; }
+	VintT& operator%=(Unit rhs) { modu1(*this, *this, rhs); return *this; }
+
 	VintT& operator&=(Unit rhs) { andBitu1(*this, *this, rhs); return *this; }
 	VintT& operator|=(Unit rhs) { orBitu1(*this, *this, rhs); return *this; }
 
@@ -1759,6 +1775,12 @@ public:
 	friend VintT operator*(const VintT& a, int b) { VintT c; muls1(c, a, b); return c; }
 	friend VintT operator/(const VintT& a, int b) { VintT c; divs1(c, a, b); return c; }
 	friend VintT operator%(const VintT& a, int b) { VintT c; mods1(c, a, b); return c; }
+	friend VintT operator+(const VintT& a, Unit b) { VintT c; addu1(c, a, b); return c; }
+	friend VintT operator-(const VintT& a, Unit b) { VintT c; subu1(c, a, b); return c; }
+	friend VintT operator*(const VintT& a, Unit b) { VintT c; mulu1(c, a, b); return c; }
+	friend VintT operator/(const VintT& a, Unit b) { VintT c; divu1(c, a, b); return c; }
+	friend VintT operator%(const VintT& a, Unit b) { VintT c; modu1(c, a, b); return c; }
+
 	friend VintT operator&(const VintT& a, Unit b) { VintT c; andBitu1(c, a, b); return c; }
 	friend VintT operator|(const VintT& a, Unit b) { VintT c; orBitu1(c, a, b); return c; }
 

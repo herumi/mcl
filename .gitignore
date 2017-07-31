@@ -1,5 +1,7 @@
 CVS
 java/*_wrap.cxx
+lib/*.so
+lib/*.a
 *.class
 GPATH
 GRTAGS

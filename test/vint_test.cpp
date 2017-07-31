@@ -190,7 +190,7 @@ CYBOZU_TEST_AUTO(mul1)
 {
 	static const struct {
 		V a;
-		unsigned int b;
+		int b;
 		V c;
 	} tbl[] = {
 		{
@@ -226,7 +226,7 @@ CYBOZU_TEST_AUTO(mul1)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Vint x, z, t;
-		unsigned int y;
+		int y;
 		x.setArray(tbl[i].a.p, tbl[i].a.n);
 		y = tbl[i].b;
 		z.setArray(tbl[i].c.p, tbl[i].c.n);
