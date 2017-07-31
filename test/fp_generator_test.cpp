@@ -1,5 +1,5 @@
 #include <cybozu/test.hpp>
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 // not support
 #else
 #include <mcl/gmp_util.hpp>

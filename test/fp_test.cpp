@@ -910,7 +910,7 @@ CYBOZU_TEST_AUTO(main)
 CYBOZU_TEST_AUTO(copyUnitToByteAsLE)
 {
 	using namespace mcl::fp;
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	const Unit src[] = { 0x12345678, 0xaabbccdd, 0xffeeddcc, 0x87654321 };
 #else
 	const Unit src[] = { uint64_t(0xaabbccdd12345678ull), uint64_t(0x87654321ffeeddcc) };

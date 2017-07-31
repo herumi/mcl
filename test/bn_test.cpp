@@ -252,7 +252,7 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		Fp12 e = e1, ea;
 		G1 Pa;
 		G2 Qa;
-#if CYBOZU_OS_BIT == 64
+#if MCL_SIZEOF_UNIT == 8
 		const int count = 1000;
 #else
 		const int count = 100;

@@ -10,7 +10,7 @@
 #define XBYAK_NO_OP_NAMES
 #include <xbyak/xbyak_util.h>
 
-#if CYBOZU_OS_BIT == 64
+#if MCL_SIZEOF_UNIT == 8
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>

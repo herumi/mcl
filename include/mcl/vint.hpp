@@ -14,20 +14,22 @@
 #include <iostream>
 #include <mcl/util.hpp>
 
-#ifndef MCL_SIZEOF_VINT_UNIT
-	#define MCL_SIZEOF_VINT_UNIT 4
+#ifndef MCL_SIZEOF_UNIT
+	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
+		#define MCL_SIZEOF_UNIT 4
+	#else
+		#define MCL_SIZEOF_UNIT 8
+	#endif
 #endif
 
 namespace mcl {
 
 namespace vint {
 
-#if MCL_SIZEOF_VINT_UNIT == 8
+#if MCL_SIZEOF_UNIT == 8
 typedef uint64_t Unit;
-#elif MCL_SIZEOF_VINT_UNIT == 4
-typedef uint32_t Unit;
 #else
-	#error "define MCL_SIZEOF_VINT_UNIT"
+typedef uint32_t Unit;
 #endif
 
 inline uint64_t make64(uint32_t H, uint32_t L)
@@ -47,7 +49,7 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 */
 static inline Unit mulUnit(Unit *H, Unit a, Unit b)
 {
-#if MCL_SIZEOF_VINT_UNIT == 4
+#if MCL_SIZEOF_UNIT == 4
 	uint64_t t = uint64_t(a) * b;
 	uint32_t L;
 	split64(H, &L, t);
@@ -71,7 +73,7 @@ static inline Unit mulUnit(Unit *H, Unit a, Unit b)
 */
 static Unit divUnit(Unit *r, Unit H, Unit L, Unit y)
 {
-#if MCL_SIZEOF_VINT_UNIT == 4
+#if MCL_SIZEOF_UNIT == 4
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
 	*r = Unit(t % y);
@@ -449,7 +451,7 @@ static inline double GetApp(const T *x, size_t xn, bool up)
 	union di di;
 	di.f = (double)H;
 	unsigned int len = int(di.i >> 52) - 1023 + 1;
-#if MCL_SIZEOF_VINT_UNIT == 4
+#if MCL_SIZEOF_UNIT == 4
 	uint32_t M = x[xn - 2];
 	if (len >= 21) {
 		di.i |= M >> (len - 21);
@@ -1048,7 +1050,7 @@ public:
 	{
 		printf("size_=%d ", (int)size_);
 		for (size_t i = 0; i < size_; i++) {
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 			printf("%08x", (uint32_t)buf_[size_ - 1 - i]);
 #else
 			printf("%016llx", (unsigned long long)buf_[size_ - 1 - i]);

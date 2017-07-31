@@ -4,7 +4,7 @@ namespace mcl { namespace fp {
 
 template<>
 struct EnableKaratsuba<Ltag> {
-#if CYBOZU_OS_BIT ==  32
+#if MCL_SIZEOF_UNIT == 4
 	static const size_t minMulN = 10;
 	static const size_t minSqrN = 10;
 #else
@@ -13,7 +13,7 @@ struct EnableKaratsuba<Ltag> {
 #endif
 };
 
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	#define MCL_GMP_IS_FASTER_THAN_LLVM // QQQ : check later
 #endif
 
@@ -78,7 +78,7 @@ MCL_DEF_LLVM_FUNC(14)
 #endif
 #if MCL_MAX_UNIT_SIZE >= 16
 MCL_DEF_LLVM_FUNC(15)
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 MCL_DEF_LLVM_FUNC(16)
 #else
 /// QQQ : check speed

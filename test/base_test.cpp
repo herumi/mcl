@@ -9,7 +9,7 @@
 #include <mcl/fp.hpp>
 
 #include "../src/fp_generator.hpp"
-#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (CYBOZU_OS_BIT == 64)
+#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (MCL_SIZEOF_UNIT == 8)
 	#define USE_XBYAK
 	static mcl::FpGenerator fg;
 #endif
@@ -214,7 +214,7 @@ const struct FuncOp {
 	{ 384, mcl_fp_add384S, mcl_fp_add384L, mcl_fp_sub384S, mcl_fp_sub384L, mcl_fp_mul384pre, mcl_fp_mont384 },
 	{ 448, mcl_fp_add448S, mcl_fp_add448L, mcl_fp_sub448S, mcl_fp_sub448L, mcl_fp_mul448pre, mcl_fp_mont448 },
 	{ 512, mcl_fp_add512S, mcl_fp_add512L, mcl_fp_sub512S, mcl_fp_sub512L, mcl_fp_mul512pre, mcl_fp_mont512 },
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	{ 160, mcl_fp_add160S, mcl_fp_add160L, mcl_fp_sub160S, mcl_fp_sub160L, mcl_fp_mul160pre, mcl_fp_mont160 },
 	{ 224, mcl_fp_add224S, mcl_fp_add224L, mcl_fp_sub224S, mcl_fp_sub224L, mcl_fp_mul224pre, mcl_fp_mont224 },
 	{ 288, mcl_fp_add288S, mcl_fp_add288L, mcl_fp_sub288S, mcl_fp_sub288L, mcl_fp_mul288pre, mcl_fp_mont288 },

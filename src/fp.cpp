@@ -47,7 +47,7 @@ void Op::destroyFpGenerator(FpGenerator *)
 
 inline void setUnitAsLE(void *p, Unit x)
 {
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	cybozu::Set32bitAsLE(p, x);
 #else
 	cybozu::Set64bitAsLE(p, x);
@@ -55,7 +55,7 @@ inline void setUnitAsLE(void *p, Unit x)
 }
 inline Unit getUnitAsLE(const void *p)
 {
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	return cybozu::Get32bitAsLE(p);
 #else
 	return cybozu::Get64bitAsLE(p);
@@ -128,7 +128,7 @@ Mode StrToMode(const std::string& s)
 
 void dumpUnit(Unit x)
 {
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	printf("%08x", (uint32_t)x);
 #else
 	printf("%016llx", (unsigned long long)x);
@@ -136,7 +136,7 @@ void dumpUnit(Unit x)
 }
 void UnitToHex(char *buf, size_t maxBufSize, Unit x)
 {
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	CYBOZU_SNPRINTF(buf, maxBufSize, "%08x", (uint32_t)x);
 #else
 	CYBOZU_SNPRINTF(buf, maxBufSize, "%016llx ", (unsigned long long)x);
@@ -516,7 +516,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	case 17: setOp<17>(*this, mode); break; // 521 if 32-bit
 #endif
 	default:
-		throw cybozu::Exception("Op::init:not:support") << N << mstr;
+		throw cybozu::Exception("Op:init:not:support") << N << mstr;
 	}
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NICT_P192) {
@@ -655,7 +655,7 @@ static bool isInUint64(uint64_t *pv, const fp::Block& b)
 	for (size_t i = start; i < b.n; i++) {
 		if (b.p[i]) return false;
 	}
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	*pv = b.p[0] | (uint64_t(b.p[1]) << 32);
 #else
 	*pv = b.p[0];

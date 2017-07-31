@@ -9,7 +9,7 @@ typedef mcl::FpT<ZnTag> Zn;
 typedef mcl::FpT<> Fp;
 
 struct Montgomery {
-	typedef mcl::gmp::Unit Unit;
+	typedef mcl::fp::Unit Unit;
 	mpz_class p_;
 	mpz_class R_; // (1 << (pn_ * 64)) % p
 	mpz_class RR_; // (R * R) % p
@@ -53,7 +53,11 @@ struct Montgomery {
 		z = x * y;
 		for (size_t i = 0; i < pn_; i++) {
 			Unit q = mcl::gmp::getUnit(z, 0) * rp_;
+#ifdef MCL_USE_VINT
+			z += p_ * q;
+#else
 			z += p_ * (mp_limb_t)q;
+#endif
 			z >>= sizeof(Unit) * 8;
 		}
 		if (z >= p_) {

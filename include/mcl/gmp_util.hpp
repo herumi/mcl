@@ -33,14 +33,31 @@ typedef mcl::Vint mpz_class;
 #endif
 #endif
 
-namespace mcl { namespace gmp {
+#ifndef MCL_SIZEOF_UNIT
+	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
+		#define MCL_SIZEOF_UNIT 4
+	#else
+		#define MCL_SIZEOF_UNIT 8
+	#endif
+#endif
 
-typedef mpz_class ImplType;
-#if CYBOZU_OS_BIT == 64
+namespace mcl {
+
+namespace fp {
+
+#if MCL_SIZEOF_UNIT == 8
 typedef uint64_t Unit;
 #else
 typedef uint32_t Unit;
 #endif
+#define MCL_UNIT_BIT_SIZE (MCL_SIZEOF_UNIT * 8)
+
+} // mcl::fp
+
+namespace gmp {
+
+typedef mpz_class ImplType;
+
 // z = [buf[n-1]:..:buf[1]:buf[0]]
 // eg. buf[] = {0x12345678, 0xaabbccdd}; => z = 0xaabbccdd12345678;
 template<class T>
@@ -367,15 +384,15 @@ inline void setBit(mpz_class& x, size_t pos, bool v = true)
 	}
 #endif
 }
-inline const Unit *getUnit(const mpz_class& x)
+inline const fp::Unit *getUnit(const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
 	return x.getUnit();
 #else
-	return reinterpret_cast<const Unit*>(x.get_mpz_t()->_mp_d);
+	return reinterpret_cast<const fp::Unit*>(x.get_mpz_t()->_mp_d);
 #endif
 }
-inline Unit getUnit(const mpz_class& x, size_t i)
+inline fp::Unit getUnit(const mpz_class& x, size_t i)
 {
 	return getUnit(x)[i];
 }
