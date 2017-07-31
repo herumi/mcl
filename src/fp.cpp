@@ -390,7 +390,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 		R = (t << (N * UnitBitSize)) % op.mp;
 		t = (R * R) % op.mp;
 		gmp::getArray(op.R2, N, t);
-		t = (R * R * R) % op.mp;
+		t = (t * R) % op.mp;
 		gmp::getArray(op.R3, N, t);
 	}
 	op.rp = getMontgomeryCoeff(p[0]);

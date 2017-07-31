@@ -1794,8 +1794,11 @@ public:
 };
 
 //typedef VintT<vint::VariableBuffer<mcl::vint::Unit> > Vint;
-//typedef VintT<vint::FixedBuffer<mcl::vint::Unit, 10> > Vint;
+#ifdef MCL_VINT_FIXED_BUFFER
+typedef VintT<vint::FixedBuffer<mcl::vint::Unit, MCL_MAX_BIT_SIZE * 2> > Vint;
+#else
 typedef VintT<vint::Buffer<mcl::vint::Unit> > Vint;
+#endif
 
 } // mcl
 
