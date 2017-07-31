@@ -438,22 +438,23 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
 */
 #ifdef MCL_USE_XBYAK
-	if (mode == fp::FP_AUTO) mode = fp::FP_XBYAK;
-	if (mode == fp::FP_XBYAK && bitSize > 256) {
-		mode = fp::FP_AUTO;
+	if (mode == FP_AUTO) mode = FP_XBYAK;
+	if (mode == FP_XBYAK && bitSize > 256) {
+		mode = FP_AUTO;
 	}
-	if (!fp::isEnableJIT()) {
-		mode = fp::FP_AUTO;
+	if (!isEnableJIT()) {
+		mode = FP_AUTO;
 	}
 #else
-	if (mode == fp::FP_XBYAK) mode = fp::FP_AUTO;
+	if (mode == FP_XBYAK) mode = FP_AUTO;
 #endif
 #ifdef MCL_USE_LLVM
-	if (mode == fp::FP_AUTO) mode = fp::FP_LLVM_MONT;
+	if (mode == FP_AUTO) mode = FP_LLVM_MONT;
 #else
-	if (mode == fp::FP_LLVM || mode == fp::FP_LLVM_MONT) mode = fp::FP_AUTO;
+	if (mode == FP_LLVM || mode == FP_LLVM_MONT) mode = FP_AUTO;
 #endif
-	isMont = mode == fp::FP_GMP_MONT || mode == fp::FP_LLVM_MONT || mode == fp::FP_XBYAK;
+	if (mode == FP_AUTO) mode = FP_GMP_MONT;
+	isMont = mode == FP_GMP_MONT || mode == FP_LLVM_MONT || mode == FP_XBYAK;
 #ifndef NDEBUG
 	fprintf(stderr, "mode=%s, isMont=%d, maxBitSize=%d"
 #ifdef MCL_USE_XBYAK

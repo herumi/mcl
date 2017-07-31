@@ -44,25 +44,55 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 }
 
 /*
-	[H:L] <= a * b
+	[H:L] <= x * y
 	@return L
 */
-static inline Unit mulUnit(Unit *H, Unit a, Unit b)
+static inline Unit mulUnit(Unit *pH, Unit x, Unit y)
 {
 #if MCL_SIZEOF_UNIT == 4
-	uint64_t t = uint64_t(a) * b;
+	uint64_t t = uint64_t(x) * y;
 	uint32_t L;
-	split64(H, &L, t);
+	split64(pH, &L, t);
 	return L;
-#else
-#if defined(_WIN64) && !defined(__INTEL_COMPILER)
-	return _umul128(a, b, H);
+#elif MCL_VINT_MUL_PORTABLE
+	uint32_t a = uint32_t(x >> 32);
+	uint32_t b = uint32_t(x);
+	uint32_t c = uint32_t(y >> 32);
+	uint32_t d = uint32_t(y);
+
+	uint64_t ad = uint64_t(d) * a;
+	uint64_t bd = uint64_t(d) * b;
+	uint64_t L = uint32_t(bd);
+	ad += bd >> 32; // [ad:L]
+
+	uint64_t ac = uint64_t(c) * a;
+	uint64_t bc = uint64_t(c) * b;
+	uint64_t H = uint32_t(bc);
+	ac += bc >> 32; // [ac:H]
+	/*
+		  adL
+		 acH
+	*/
+	uint64_t t = (ac << 32) | H;
+	ac >>= 32;
+	H = t + ad;
+	if (H < t) {
+		ac++;
+	}
+	/*
+		ac:H:L
+	*/
+	L |= H << 32;
+	H = (ac << 32) | uint32_t(H >> 32);
+	*pH = H;
+	return L;
+#elif defined(_WIN64) && !defined(__INTEL_COMPILER)
+	return _umul128(x, y, pH);
 #else
 	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = uint128(a) * b;
-	*H = uint64_t(t >> 64);
+	uint128 t = uint128(x) * y;
+	*pH = uint64_t(t >> 64);
 	return uint64_t(t);
-#endif
 #endif
 }
 
