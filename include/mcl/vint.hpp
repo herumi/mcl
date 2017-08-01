@@ -47,14 +47,17 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 	[H:L] <= x * y
 	@return L
 */
-static inline Unit mulUnit(Unit *pH, Unit x, Unit y)
+inline uint32_t mulUnit(uint32_t *pH, uint32_t x, uint32_t y)
 {
-#if MCL_SIZEOF_UNIT == 4
 	uint64_t t = uint64_t(x) * y;
 	uint32_t L;
 	split64(pH, &L, t);
 	return L;
-#elif MCL_VINT_MUL_PORTABLE
+}
+#if MCL_SIZEOF_UNIT == 8
+inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
+{
+#ifdef MCL_VINT_64BIT_PORTABLE
 	uint32_t a = uint32_t(x >> 32);
 	uint32_t b = uint32_t(x);
 	uint32_t c = uint32_t(y >> 32);
@@ -95,30 +98,80 @@ static inline Unit mulUnit(Unit *pH, Unit x, Unit y)
 	return uint64_t(t);
 #endif
 }
+#endif
+
+template<class T>
+size_t getRealSize(const T *x, size_t xn)
+{
+	int i = (int)xn - 1;
+	for (; i > 0; i--) {
+		if (x[i]) {
+			return i + 1;
+		}
+	}
+	return 1;
+}
+
+template<class T>
+void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn);
 
 /*
 	q = [H:L] / y
 	r = [H:L] % y
 	return q
 */
-static Unit divUnit(Unit *r, Unit H, Unit L, Unit y)
+inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 {
-#if MCL_SIZEOF_UNIT == 4
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
-	*r = Unit(t % y);
+	*pr = uint32_t(t % y);
 	return q;
+}
+#if MCL_SIZEOF_UNIT == 8
+inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
+{
+#if defined(MCL_VINT_64BIT_PORTABLE)
+	uint32_t px[4] = { uint32_t(L), uint32_t(L >> 32), uint32_t(H), uint32_t(H >> 32) };
+	uint32_t py[2] = { uint32_t(y), uint32_t(y >> 32) };
+#if 1
+	size_t xn = 4;
+	size_t yn = 2;
+	uint32_t q[4];
+	uint32_t r[2];
+	size_t qn = xn - yn + 1;
+	divNM(q, qn, r, px, xn, py, yn);
+	*pr = make64(r[1], r[0]);
+	return make64(q[1], q[0]);
+#else
+	size_t xn = getRealSize(px, 4);
+	size_t yn = getRealSize(py, 2);
+	if (yn > xn) {
+		*pr = L;
+		return 0;
+	}
+	if (xn == yn) {
+		*pr = L % y;
+		return L / y;
+	}
+	assert(xn > yn);
+	uint32_t q[4];
+	uint32_t r[2];
+	size_t qn = xn - yn + 1;
+	divNM(q, qn, r, px, xn, py, yn);
+	*pr = (yn == 1) ? r[0] : make64(r[1], r[0]);
+	return (qn == 1) ? q[0] : make64(q[1], q[0]);
+#endif
 #elif defined(_MSC_VER)
-	fprintf(stderr, "not implemented divUnit\n");
-	exit(1);
+	#error "divUnit for uint64_t is not supported"
 #else
 	typedef __attribute__((mode(TI))) unsigned int uint128;
 	uint128 t = (uint128(H) << 64) | L;
 	uint64_t q = uint64_t(t / y);
-	*r = Unit(t % y);
+	*pr = uint64_t(t % y);
 	return q;
 #endif
 }
+#endif
 
 inline std::istream& getDigits(std::istream& is, std::string& str, bool allowNegative = false)
 {
@@ -269,7 +322,7 @@ T addN(T *z, const T *x, const T *y, size_t n)
 	z[] = x[] + y
 */
 template<class T>
-T adds1(T *z, const T *x, size_t n, T y)
+T addu1(T *z, const T *x, size_t n, T y)
 {
 	assert(n > 0);
 	T t = x[0] + y;
@@ -307,7 +360,7 @@ T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 	size_t min = yn;
 	T c = vint::addN(z, x, y, min);
 	if (max > min) {
-		c = vint::adds1(z + min, x + min, max - min, c);
+		c = vint::addu1(z + min, x + min, max - min, c);
 	}
 	return c;
 }
@@ -338,7 +391,7 @@ T subN(T *z, const T *x, const T *y, size_t n)
 	out[] = x[n] - y
 */
 template<class T>
-T subs1(T *z, const T *x, size_t n, T y)
+T subu1(T *z, const T *x, size_t n, T y)
 {
 	assert(n > 0);
 #if 0
@@ -469,7 +522,7 @@ T modu1(const T *x, size_t n, T y)
 	@param up [in] round up if true
 */
 template<class T>
-static inline double GetApp(const T *x, size_t xn, bool up)
+static inline double getApprox(const T *x, size_t xn, bool up)
 {
 	union di {
 		double f;
@@ -509,17 +562,6 @@ static inline double GetApp(const T *x, size_t xn, bool up)
 	return t;
 }
 
-template<class T>
-size_t getRealSize(const T *x, size_t xn)
-{
-	int i = (int)xn - 1;
-	for (; i > 0; i--) {
-		if (x[i]) {
-			return i + 1;
-		}
-	}
-	return 1;
-}
 
 /*
 	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
@@ -577,10 +619,10 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	T *rr = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 	copyN(rr, x, xn);
 	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
-	double yt = GetApp(y, yn, true);
+	double yt = getApprox(y, yn, true);
 	while (vint::compareNM(rr, xn, y, yn) >= 0) {
 		size_t len = yn;
-		double xt = GetApp(rr, xn, false);
+		double xt = getApprox(rr, xn, false);
 		if (vint::compareNM(&rr[xn - len], yn, y, yn) < 0) {
 			xt *= double(1ULL << (sizeof(T) * 8 - 1)) * 2;
 			len++;
@@ -893,14 +935,14 @@ private:
 	{
 		size_t zn = xn + 1;
 		z.buf_.alloc(zn);
-		z.buf_[zn - 1] = vint::adds1(&z.buf_[0], &x[0], xn, y);
+		z.buf_[zn - 1] = vint::addu1(&z.buf_[0], &x[0], xn, y);
 		z.trim(zn);
 	}
 	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn;
 		z.buf_.alloc(zn);
-		Unit c = vint::subs1(&z.buf_[0], &x[0], xn, y);
+		Unit c = vint::subu1(&z.buf_[0], &x[0], xn, y);
 		(void)c;
 		assert(!c);
 		z.trim(zn);
@@ -911,7 +953,7 @@ private:
 		z.buf_.alloc(xn);
 		Unit c = vint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
-			c = vint::subs1(&z.buf_[yn], &x[yn], xn - yn, c);
+			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
 		assert(!c);
 		z.trim(xn);
