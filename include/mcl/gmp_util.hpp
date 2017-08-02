@@ -22,6 +22,9 @@
 	#pragma warning(disable : 4512)
 	#pragma warning(disable : 4146)
 #endif
+#ifdef __EMSCRIPTEN__
+	#define MCL_USE_VINT
+#endif
 #ifdef MCL_USE_VINT
 #include <mcl/vint.hpp>
 typedef mcl::Vint mpz_class;

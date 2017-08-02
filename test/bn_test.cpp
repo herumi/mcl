@@ -252,10 +252,10 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		Fp12 e = e1, ea;
 		G1 Pa;
 		G2 Qa;
-#if MCL_SIZEOF_UNIT == 8
-		const int count = 1000;
-#else
+#if defined(__EMSCRIPTEN__) || MCL_SIZEOF_UNIT == 4
 		const int count = 100;
+#else
+		const int count = 1000;
 #endif
 		mpz_class a;
 		cybozu::XorShift rg;

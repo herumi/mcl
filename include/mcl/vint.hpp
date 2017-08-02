@@ -14,6 +14,10 @@
 #include <iostream>
 #include <mcl/util.hpp>
 
+#ifdef __EMSCRIPTEN__
+	#define MCL_VINT_64BIT_PORTABLE
+#endif
+
 #ifndef MCL_SIZEOF_UNIT
 	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
 		#define MCL_SIZEOF_UNIT 4
