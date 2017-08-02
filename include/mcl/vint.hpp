@@ -32,6 +32,20 @@ typedef uint64_t Unit;
 typedef uint32_t Unit;
 #endif
 
+template<class T>
+void dump(const T *x, size_t n)
+{
+	const size_t is4byteUnit = sizeof(*x) == 4;
+	for (size_t i = 0; i < n; i++) {
+		if (is4byteUnit) {
+			printf("%08x", (uint32_t)x[n - 1 - i]);
+		} else {
+			printf("%016llx", (unsigned long long)x[n - 1 - i]);
+		}
+	}
+	printf("\n");
+}
+
 inline uint64_t make64(uint32_t H, uint32_t L)
 {
 	return ((uint64_t)H << 32) | L;
@@ -110,6 +124,15 @@ size_t getRealSize(const T *x, size_t xn)
 		}
 	}
 	return 1;
+}
+
+template<class T>
+size_t getBitSize(const T *x, size_t n)
+{
+	if (n == 1 && x[0] == 0) return 1;
+	T v = x[n - 1];
+	assert(v);
+	return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<Unit>(v);
 }
 
 template<class T>
@@ -345,8 +368,8 @@ EXIT_0:
 }
 
 /*
-	z[] = x[xn] + y[yn]
-	@note size of z must be max(xn, yn) + 1
+	z[zn] = x[xn] + y[yn]
+	@note zn = max(xn, yn)
 */
 template<class T>
 T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
@@ -428,7 +451,22 @@ EXIT_0:
 }
 
 /*
-	z[0..n) = x[0..n] * y
+	z[xn] = x[xn] - y[yn]
+	@note xn >= yn
+*/
+template<class T>
+T subNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
+{
+	assert(xn >= yn);
+	T c = vint::subN(z, x, y, yn);
+	if (xn > yn) {
+		c = vint::subu1(z + yn, x + yn, xn - yn, c);
+	}
+	return c;
+}
+
+/*
+	z[0..n) = x[0..n) * y
 	return z[n]
 	@note accept z == x
 */
@@ -518,135 +556,6 @@ T modu1(const T *x, size_t n, T y)
 }
 
 /*
-	get approximate value from x[xn - 1..]
-	@param up [in] round up if true
-*/
-template<class T>
-static inline double getApprox(const T *x, size_t xn, bool up)
-{
-	union di {
-		double f;
-		uint64_t i;
-	};
-	assert(xn >= 2);
-	T H = x[xn - 1];
-	assert(H);
-	union di di;
-	di.f = (double)H;
-	unsigned int len = int(di.i >> 52) - 1023 + 1;
-#if MCL_SIZEOF_UNIT == 4
-	uint32_t M = x[xn - 2];
-	if (len >= 21) {
-		di.i |= M >> (len - 21);
-	} else {
-		di.i |= uint64_t(M) << (21 - len);
-		if (xn >= 3) {
-			uint32_t L = x[xn - 3];
-			di.i |= L >> (len + 11);
-		}
-	}
-#else
-	if (len < 53) {
-		uint64_t L = x[xn - 2];
-		di.i |= L >> (len + 11);
-	} else {
-		// avoid rounding in converting from uint64_t to double
-		di.f = (double)(H & ~((uint64_t(1) << (len - 53)) - 1));
-	}
-#endif
-	double t = di.f;
-	if (up) {
-		di.i = uint64_t(len + 1022 - 52 + 1) << 52;
-		t += di.f;
-	}
-	return t;
-}
-
-
-/*
-	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
-	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSiz
-*/
-template<class T>
-void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn > 0 && yn > 0);
-	assert(xn < yn || (q == 0 || qn == xn - yn + 1));
-	assert(q != r);
-	const size_t rn = yn;
-	xn = getRealSize(x, xn);
-	yn = getRealSize(y, yn);
-	if (yn > xn) {
-		/*
-			if y > x then q = 0 and r = x
-		*/
-		copyN(r, x, xn);
-		clearN(r + xn, rn - xn);
-		if (q) clearN(q, qn);
-		return;
-	}
-	if (yn == 1) {
-		T t;
-		if (q) {
-			if (qn > xn) {
-				clearN(q + xn, qn - xn);
-			}
-			t = divu1(q, x, xn, y[0]);
-		} else {
-			t = modu1(x, xn, y[0]);
-		}
-		r[0] = t;
-		clearN(r + 1, rn - 1);
-		return;
-	}
-	assert(yn >= 2);
-	if (x == y) {
-		assert(xn == yn);
-		clearN(r, rn);
-		if (q) {
-			q[0] = 1;
-			clearN(q + 1, qn - 1);
-		}
-		return;
-	}
-	T *qq = q;
-	if (q) {
-		if (q == x || q == y) {
-			qq = (T*)CYBOZU_ALLOCA(sizeof(T) * qn);
-		}
-		clearN(qq, qn);
-	}
-	T *rr = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-	copyN(rr, x, xn);
-	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
-	double yt = getApprox(y, yn, true);
-	while (vint::compareNM(rr, xn, y, yn) >= 0) {
-		size_t len = yn;
-		double xt = getApprox(rr, xn, false);
-		if (vint::compareNM(&rr[xn - len], yn, y, yn) < 0) {
-			xt *= double(1ULL << (sizeof(T) * 8 - 1)) * 2;
-			len++;
-		}
-		T qt = T(xt / yt);
-		if (qt == 0) qt = 1;
-		t[yn] = vint::mulu1(&t[0], y, yn, qt);
-		T b = vint::subN(&rr[xn - len], &rr[xn - len], &t[0], len);
-		if (b) {
-			assert(!b);
-		}
-		if (qq) qq[xn - len] += qt;
-
-		while (xn >= yn && rr[xn - 1] == 0) {
-			xn--;
-		}
-	}
-	copyN(r, rr, rn);
-	if (q && q != qq) {
-		copyN(q, qq, qn);
-	}
-}
-
-/*
 	y[] = x[] << bit
 	0 < bit < sizeof(T) * 8
 	accept y == x
@@ -724,6 +633,164 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 		copyN(y, x + q, xn - q);
 	} else {
 		shrBit(y, x + q, xn - q, r);
+	}
+}
+
+
+/*
+	get approximate value from x[xn - 1..]
+	@param up [in] round up if true
+*/
+template<class T>
+static inline double getApprox(const T *x, size_t xn, bool up)
+{
+	union di {
+		double f;
+		uint64_t i;
+	};
+	assert(xn >= 2);
+	T H = x[xn - 1];
+	assert(H);
+	union di di;
+	di.f = (double)H;
+	unsigned int len = int(di.i >> 52) - 1023 + 1;
+#if MCL_SIZEOF_UNIT == 4
+	uint32_t M = x[xn - 2];
+	if (len >= 21) {
+		di.i |= M >> (len - 21);
+	} else {
+		di.i |= uint64_t(M) << (21 - len);
+		if (xn >= 3) {
+			uint32_t L = x[xn - 3];
+			di.i |= L >> (len + 11);
+		}
+	}
+#else
+	if (len < 53) {
+		uint64_t L = x[xn - 2];
+		di.i |= L >> (len + 11);
+	} else {
+		// avoid rounding in converting from uint64_t to double
+		di.f = (double)(H & ~((uint64_t(1) << (len - 53)) - 1));
+	}
+#endif
+	double t = di.f;
+	if (up) {
+		di.i = uint64_t(len + 1022 - 52 + 1) << 52;
+		t += di.f;
+	}
+	return t;
+}
+
+/*
+	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
+	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSiz
+*/
+template<class T>
+void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
+{
+	assert(xn > 0 && yn > 0);
+	assert(xn < yn || (q == 0 || qn == xn - yn + 1));
+	assert(q != r);
+	const size_t rn = yn;
+	xn = getRealSize(x, xn);
+	yn = getRealSize(y, yn);
+	if (yn > xn) {
+		/*
+			if y > x then q = 0 and r = x
+		*/
+		copyN(r, x, xn);
+		clearN(r + xn, rn - xn);
+		if (q) clearN(q, qn);
+		return;
+	}
+	if (yn == 1) {
+		T t;
+		if (q) {
+			if (qn > xn) {
+				clearN(q + xn, qn - xn);
+			}
+			t = divu1(q, x, xn, y[0]);
+		} else {
+			t = modu1(x, xn, y[0]);
+		}
+		r[0] = t;
+		clearN(r + 1, rn - 1);
+		return;
+	}
+	assert(yn >= 2);
+	if (x == y) {
+		assert(xn == yn);
+		clearN(r, rn);
+		if (q) {
+			q[0] = 1;
+			clearN(q + 1, qn - 1);
+		}
+		return;
+	}
+	T *qq = q;
+	if (q) {
+		if (q == x || q == y) {
+			qq = (T*)CYBOZU_ALLOCA(sizeof(T) * qn);
+		}
+		clearN(qq, qn);
+	}
+	T *rr = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
+	copyN(rr, x, xn);
+#if 1
+	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 2));
+	size_t yb = getBitSize(y, yn);
+	const size_t unitBitSize = sizeof(T) * 8;
+	while (vint::compareNM(rr, xn, y, yn) >= 0) {
+		size_t xb = getBitSize(rr, xn);
+		if (xb <= yb + 1) {
+			vint::subNM(rr, rr, xn, y, yn);
+			xn = getRealSize(rr, xn);
+			if (qq) vint::addu1<T>(qq, qq, qn, 1);
+			continue;
+		}
+		assert(xb > yb + 1);
+		size_t w = std::min(unitBitSize, xb - yb);
+		vint::shrN(t, rr, xn, xb - w);
+		T q0 = t[0];
+		t[yn] = vint::mulu1(t, y, yn, q0);
+		vint::shlN(t, t, yn + 1, xb - w - yb);
+		vint::subN(rr, rr, t, xn);
+		xn = getRealSize(rr, xn);
+		if (q) {
+			clearN(t, qn);
+			t[0] = q0;
+			vint::shlN(t, t, 1, xb - w - yb);
+			vint::addN(q, q, t, qn);
+		}
+	}
+#else
+	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
+	double yt = getApprox(y, yn, true);
+	while (vint::compareNM(rr, xn, y, yn) >= 0) {
+		size_t len = yn;
+		double xt = getApprox(rr, xn, false);
+		if (vint::compareNM(&rr[xn - len], yn, y, yn) < 0) {
+			xt *= double(1ULL << (sizeof(T) * 8 - 1)) * 2;
+			len++;
+		}
+		T qt = T(xt / yt);
+		if (qt == 0) qt = 1;
+		t[yn] = vint::mulu1(&t[0], y, yn, qt);
+		T b = vint::subN(&rr[xn - len], &rr[xn - len], &t[0], len);
+		if (b) {
+			assert(!b);
+		}
+		if (qq) qq[xn - len] += qt;
+
+		while (xn >= yn && rr[xn - 1] == 0) {
+			xn--;
+		}
+	}
+#endif
+	copyN(r, rr, rn);
+	if (q && q != qq) {
+		copyN(q, qq, qn);
 	}
 }
 
@@ -1121,14 +1188,7 @@ public:
 	void dump() const
 	{
 		printf("size_=%d ", (int)size_);
-		for (size_t i = 0; i < size_; i++) {
-#if MCL_SIZEOF_UNIT == 4
-			printf("%08x", (uint32_t)buf_[size_ - 1 - i]);
-#else
-			printf("%016llx", (unsigned long long)buf_[size_ - 1 - i]);
-#endif
-		}
-		printf("\n");
+		vint::dump(buf_, size_);
 	}
 	/*
 		set positive value
