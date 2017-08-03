@@ -16,6 +16,8 @@
 
 #ifdef __EMSCRIPTEN__
 	#define MCL_VINT_64BIT_PORTABLE
+	#define MCL_VINT_FIXED_BUFFER
+	#define MCL_MAX_BIT_SIZE 384
 #endif
 
 #ifndef MCL_SIZEOF_UNIT
@@ -863,7 +865,7 @@ public:
 	void verify(size_t n) const
 	{
 		if (n > N) {
-			throw cybozu::Exception("verify:too large size") << n << N;
+			throw cybozu::Exception("verify:too large size") << n << (int)N;
 		}
 	}
 	const T& operator[](size_t n) const { verify(n); return v_[n]; }
