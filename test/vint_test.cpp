@@ -3,10 +3,6 @@
 #include <iostream>
 #include <sstream>
 #include <set>
-#ifndef _MSC_VER
-#define CYBOZU_BENCH_DONT_USE_RDTSC
-#define CYBOZU_BENCH_USE_GETTIMEOFDAY
-#endif
 #include <cybozu/benchmark.hpp>
 #include <cybozu/test.hpp>
 
@@ -1125,4 +1121,56 @@ CYBOZU_TEST_AUTO(bench)
 	CYBOZU_BENCH_C("sub", N, Vint::sub, z, x, y);
 	CYBOZU_BENCH_C("mul", N, Vint::mul, z, x, y);
 	CYBOZU_BENCH_C("div", N, Vint::div, y, z, x);
+}
+
+struct Seq {
+	const uint32_t *tbl;
+	size_t n;
+	size_t i, j;
+	Seq(const uint32_t *tbl, size_t n) : tbl(tbl), n(n), i(0), j(0) {}
+	bool next(uint64_t *v)
+	{
+		if (i == n) {
+			if (j == n - 1) return false;
+			i = 0;
+			j++;
+		}
+		*v = (uint64_t(tbl[j]) << 32) | tbl[i];
+		i++;
+		return true;
+	}
+};
+
+CYBOZU_TEST_AUTO(divUnit)
+{
+	const uint32_t tbl[] = {
+		0, 1, 3,
+		0x7fffffff,
+		0x80000000,
+		0x80000001,
+		0xffffffff,
+	};
+	const size_t n = sizeof(tbl) / sizeof(tbl[0]);
+	Seq seq3(tbl, n);
+	uint64_t y;
+	while (seq3.next(&y)) {
+		if (y == 0) continue;
+		Seq seq2(tbl, n);
+		uint64_t r;
+		while (seq2.next(&r)) {
+			if (r >= y) break;
+			Seq seq1(tbl, n);
+			uint64_t q;
+			while (seq1.next(&q)) {
+				uint64_t x[2];
+				x[0] = mcl::vint::mulUnit(&x[1], q, y);
+				mcl::vint::addu1(x, x, 2, r);
+				uint64_t Q, R;
+//printf("q=0x%016llxull, r=0x%016llxull, y=0x%016llxull\n", (long long)q, (long long)r, (long long)y);
+				Q = mcl::vint::divUnit(&R, x[1], x[0], y);
+				CYBOZU_TEST_EQUAL(q, Q);
+				CYBOZU_TEST_EQUAL(r, R);
+			}
+		}
+	}
 }

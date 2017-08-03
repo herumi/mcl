@@ -120,27 +120,6 @@ inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
 #endif
 
 template<class T>
-size_t getRealSize(const T *x, size_t xn)
-{
-	int i = (int)xn - 1;
-	for (; i > 0; i--) {
-		if (x[i]) {
-			return i + 1;
-		}
-	}
-	return 1;
-}
-
-template<class T>
-size_t getBitSize(const T *x, size_t n)
-{
-	if (n == 1 && x[0] == 0) return 1;
-	T v = x[n - 1];
-	assert(v);
-	return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<Unit>(v);
-}
-
-template<class T>
 void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn);
 
 /*
@@ -161,7 +140,6 @@ inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 #if defined(MCL_VINT_64BIT_PORTABLE)
 	uint32_t px[4] = { uint32_t(L), uint32_t(L >> 32), uint32_t(H), uint32_t(H >> 32) };
 	uint32_t py[2] = { uint32_t(y), uint32_t(y >> 32) };
-#if 1
 	size_t xn = 4;
 	size_t yn = 2;
 	uint32_t q[4];
@@ -170,25 +148,6 @@ inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	divNM(q, qn, r, px, xn, py, yn);
 	*pr = make64(r[1], r[0]);
 	return make64(q[1], q[0]);
-#else
-	size_t xn = getRealSize(px, 4);
-	size_t yn = getRealSize(py, 2);
-	if (yn > xn) {
-		*pr = L;
-		return 0;
-	}
-	if (xn == yn) {
-		*pr = L % y;
-		return L / y;
-	}
-	assert(xn > yn);
-	uint32_t q[4];
-	uint32_t r[2];
-	size_t qn = xn - yn + 1;
-	divNM(q, qn, r, px, xn, py, yn);
-	*pr = (yn == 1) ? r[0] : make64(r[1], r[0]);
-	return (qn == 1) ? q[0] : make64(q[1], q[0]);
-#endif
 #elif defined(_MSC_VER)
 	#error "divUnit for uint64_t is not supported"
 #else
@@ -634,6 +593,7 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 	const size_t unitBitSize = sizeof(T) * 8;
 	size_t q = bit / unitBitSize;
 	size_t r = bit % unitBitSize;
+	assert(xn >= q);
 	if (r == 0) {
 		copyN(y, x + q, xn - q);
 	} else {
@@ -641,50 +601,25 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 	}
 }
 
-
-/*
-	get approximate value from x[xn - 1..]
-	@param up [in] round up if true
-*/
 template<class T>
-static inline double getApprox(const T *x, size_t xn, bool up)
+size_t getRealSize(const T *x, size_t xn)
 {
-	union di {
-		double f;
-		uint64_t i;
-	};
-	assert(xn >= 2);
-	T H = x[xn - 1];
-	assert(H);
-	union di di;
-	di.f = (double)H;
-	unsigned int len = int(di.i >> 52) - 1023 + 1;
-#if MCL_SIZEOF_UNIT == 4
-	uint32_t M = x[xn - 2];
-	if (len >= 21) {
-		di.i |= M >> (len - 21);
-	} else {
-		di.i |= uint64_t(M) << (21 - len);
-		if (xn >= 3) {
-			uint32_t L = x[xn - 3];
-			di.i |= L >> (len + 11);
+	int i = (int)xn - 1;
+	for (; i > 0; i--) {
+		if (x[i]) {
+			return i + 1;
 		}
 	}
-#else
-	if (len < 53) {
-		uint64_t L = x[xn - 2];
-		di.i |= L >> (len + 11);
-	} else {
-		// avoid rounding in converting from uint64_t to double
-		di.f = (double)(H & ~((uint64_t(1) << (len - 53)) - 1));
-	}
-#endif
-	double t = di.f;
-	if (up) {
-		di.i = uint64_t(len + 1022 - 52 + 1) << 52;
-		t += di.f;
-	}
-	return t;
+	return 1;
+}
+
+template<class T>
+size_t getBitSize(const T *x, size_t n)
+{
+	if (n == 1 && x[0] == 0) return 1;
+	T v = x[n - 1];
+	assert(v);
+	return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<Unit>(v);
 }
 
 /*
@@ -733,16 +668,15 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		}
 		return;
 	}
-	T *qq = q;
+	T *qOrg = q;
 	if (q) {
 		if (q == x || q == y) {
-			qq = (T*)CYBOZU_ALLOCA(sizeof(T) * qn);
+			q = (T*)CYBOZU_ALLOCA(sizeof(T) * qn);
 		}
-		clearN(qq, qn);
+		clearN(q, qn);
 	}
 	T *rr = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 	copyN(rr, x, xn);
-#if 1
 	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 2));
 	size_t yb = getBitSize(y, yn);
 	const size_t unitBitSize = sizeof(T) * 8;
@@ -751,7 +685,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		if (xb <= yb + 1) {
 			vint::subNM(rr, rr, xn, y, yn);
 			xn = getRealSize(rr, xn);
-			if (qq) vint::addu1<T>(qq, qq, qn, 1);
+			if (q) vint::addu1<T>(q, q, qn, 1);
 			continue;
 		}
 		assert(xb > yb + 1);
@@ -766,36 +700,12 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 			clearN(t, qn);
 			t[0] = q0;
 			vint::shlN(t, t, 1, xb - w - yb);
-			vint::addN(qq, qq, t, qn);
+			vint::addN(q, q, t, qn);
 		}
 	}
-#else
-	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
-	double yt = getApprox(y, yn, true);
-	while (vint::compareNM(rr, xn, y, yn) >= 0) {
-		size_t len = yn;
-		double xt = getApprox(rr, xn, false);
-		if (vint::compareNM(&rr[xn - len], yn, y, yn) < 0) {
-			xt *= double(1ULL << (sizeof(T) * 8 - 1)) * 2;
-			len++;
-		}
-		T qt = T(xt / yt);
-		if (qt == 0) qt = 1;
-		t[yn] = vint::mulu1(&t[0], y, yn, qt);
-		T b = vint::subN(&rr[xn - len], &rr[xn - len], &t[0], len);
-		if (b) {
-			assert(!b);
-		}
-		if (qq) qq[xn - len] += qt;
-
-		while (xn >= yn && rr[xn - 1] == 0) {
-			xn--;
-		}
-	}
-#endif
 	copyN(r, rr, rn);
-	if (q && q != qq) {
-		copyN(q, qq, qn);
+	if (q && q != qOrg) {
+		copyN(qOrg, q, qn);
 	}
 }
 
