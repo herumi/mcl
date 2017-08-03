@@ -50,16 +50,54 @@ struct KeyCount {
 	}
 };
 
+template<class G, bool = true>
+struct InterfaceForHashTable {
+	static bool isOdd(const G& P) { return P.y.isOdd(); }
+	static bool isZero(const G& P) { return P.isZero(); }
+	static bool isSameX(const G& P, const G& Q) { return P.x == Q.x; }
+	static uint32_t getHash(const G& P) { return uint32_t(*P.x.getUnit()); }
+	static void clear(G& P) { P.clear(); }
+	static void normalize(G& P) { P.normalize(); }
+	static void dbl(G& Q, const G& P) { G::dbl(Q, P); }
+	static void neg(G& Q, const G& P) { G::neg(Q, P); }
+	static void add(G& R, const G& P, const G& Q) { G::add(R, P, Q); }
+	static void mul(G& Q, const G& P, int x) { G::mul(Q, P, x); }
+};
+
+/*
+	treat Fp12 as EC
+	unitary inverse of (a, b) = (a, -b)
+	then b.a.a or -b.a.a is odd
+*/
 template<class G>
-class EcHashTable {
+struct InterfaceForHashTable<G, false> {
+	static bool isOdd(const G& x) { return x.b.a.a.isOdd(); }
+	static bool isZero(const G& x) { return x.isOne(); }
+	static bool isSameX(const G& x, const G& Q) { return x.a == Q.a; }
+	static uint32_t getHash(const G& x) { return uint32_t(*x.getFp0()->getUnit()); }
+	static void clear(G& x) { x = 1; }
+	static void normalize(G&) { }
+	static void dbl(G& y, const G& x) { G::sqr(y, x); }
+	static void neg(G& Q, const G& P) { G::unitaryInv(Q, P); }
+	static void add(G& z, const G& x, const G& y) { G::mul(z, x, y); }
+	static void mul(G& z, const G& x, int y) { G::pow(z, x, y); }
+};
+
+/*
+	HashTable<EC, true> or HashTable<Fp12, false>
+*/
+template<class G, bool isEC = true>
+class HashTable {
+	typedef InterfaceForHashTable<G, isEC> I;
 	typedef std::vector<KeyCount> KeyCountVec;
 	KeyCountVec kcv;
 	G P;
 	G nextP;
+	G nextNegP;
 	int hashSize;
 	size_t tryNum;
 public:
-	EcHashTable() : hashSize(0), tryNum(0) {}
+	HashTable() : hashSize(0), tryNum(0) {}
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
@@ -69,22 +107,23 @@ public:
 			kcv.clear();
 			return;
 		}
-		if (hashSize >= 0x80000000u) throw cybozu::Exception("EcHashTable:init:hashSize is too large");
+		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
 		this->P = P;
 		this->hashSize = (int)hashSize;
 		this->tryNum = tryNum;
 		kcv.resize(hashSize);
 		G xP;
-		xP.clear();
+		I::clear(xP);
 		for (int i = 1; i <= (int)hashSize; i++) {
-			xP += P;
-			xP.normalize();
-			kcv[i - 1].key = uint32_t(*xP.x.getUnit());
-			kcv[i - 1].count = xP.y.isOdd() ? i : -i;
+			I::add(xP, xP, P);
+			I::normalize(xP);
+			kcv[i - 1].key = I::getHash(xP);
+			kcv[i - 1].count = I::isOdd(xP) ? i : -i;
 		}
 		nextP = xP;
-		G::dbl(nextP, nextP);
-		nextP += P; // nextP = (hasSize * 2 + 1)P
+		I::dbl(nextP, nextP);
+		I::add(nextP, nextP, P); // nextP = (hasSize * 2 + 1)P
+		I::neg(nextNegP, nextP); // nextNegP = -nextP
 		/*
 			ascending order of abs(count) for same key
 		*/
@@ -98,15 +137,15 @@ public:
 	int basicLog(G xP, bool *ok = 0) const
 	{
 		if (ok) *ok = true;
-		if (xP.isZero()) return 0;
+		if (I::isZero(xP)) return 0;
 		typedef KeyCountVec::const_iterator Iter;
 		KeyCount kc;
-		xP.normalize();
-		kc.key = uint32_t(*xP.x.getUnit());
+		I::normalize(xP);
+		kc.key = I::getHash(xP);
 		kc.count = 0;
 		std::pair<Iter, Iter> p = std::equal_range(kcv.begin(), kcv.end(), kc);
 		G Q;
-		Q.clear();
+		I::clear(Q);
 		int prev = 0;
 		/*
 			check range which has same hash
@@ -117,11 +156,14 @@ public:
 			assert(abs_c >= prev); // assume ascending order
 			bool neg = count < 0;
 			G T;
-			G::mul(T, P, abs_c - prev);
-			Q += T;
-			Q.normalize();
-			if (Q.x == xP.x) {
-				if (Q.y.isOdd() ^ xP.y.isOdd() ^ neg) return -count;
+			I::mul(T, P, abs_c - prev);
+			I::add(Q, Q, T);
+			I::normalize(Q);
+			if (I::isSameX(Q, xP)) {
+				bool QisOdd = I::isOdd(Q);
+				bool xPisOdd = I::isOdd(xP);
+				if (QisOdd ^ xPisOdd ^ neg) return -count;
+				if (QisOdd ^ xPisOdd ^ neg) return -count;
 				return count;
 			}
 			prev = abs_c;
@@ -149,133 +191,21 @@ public:
 		int negCenter = 0;
 		int next = hashSize * 2 + 1;
 		for (size_t i = 1; i < tryNum; i++) {
-			posP -= nextP;
+//			I::sub(posP, posP, nextP);
+			I::add(posP, posP, nextNegP);
 			posCenter += next;
 			c = basicLog(posP, &ok);
 			if (ok) {
 				return posCenter + c;
 			}
-			negP += nextP;
+			I::add(negP, negP, nextP);
 			negCenter -= next;
 			c = basicLog(negP, &ok);
 			if (ok) {
 				return negCenter + c;
 			}
 		}
-		throw cybozu::Exception("EcHashTable:log:not found");
-	}
-};
-
-template<class GT>
-class GTHashTable {
-	typedef std::vector<KeyCount> KeyCountVec;
-	KeyCountVec kcv;
-	GT g;
-	GT nextg;
-	GT nextgInv;
-	int hashSize;
-	size_t tryNum;
-public:
-	GTHashTable() : hashSize(0), tryNum(0) {}
-	/*
-		compute log_P(g^x) for |x| <= hashSize * tryNum
-	*/
-	void init(const GT& g, size_t hashSize, size_t tryNum = 0)
-	{
-		if (hashSize == 0) {
-			kcv.clear();
-			return;
-		}
-		if (hashSize >= 0x80000000u) throw cybozu::Exception("GTHashTable:init:hashSize is too large");
-		this->g = g;
-		this->hashSize = (int)hashSize;
-		this->tryNum = tryNum;
-		kcv.resize(hashSize);
-		GT gx = 1;
-		for (int i = 1; i <= (int)hashSize; i++) {
-			gx *= g;
-			kcv[i - 1].key = uint32_t(*gx.getFp0()->getUnit());
-			kcv[i - 1].count = gx.b.a.a.isOdd() ? i : -i;
-		}
-		nextg = gx;
-		GT::sqr(nextg, nextg);
-		nextg *= g; // nextg = g^(hasSize * 2 + 1)
-		GT::unitaryInv(nextgInv, nextg);
-		/*
-			ascending order of abs(count) for same key
-		*/
-		std::stable_sort(kcv.begin(), kcv.end());
-	}
-	/*
-		log_P(g^x)
-		find range which has same hash of gx in kcv,
-		and detect it
-	*/
-	int basicLog(const GT& gx, bool *ok = 0) const
-	{
-		if (ok) *ok = true;
-		if (gx.isOne()) return 0;
-		typedef KeyCountVec::const_iterator Iter;
-		KeyCount kc;
-		kc.key = uint32_t(*gx.getFp0()->getUnit());
-		kc.count = 0;
-		std::pair<Iter, Iter> p = std::equal_range(kcv.begin(), kcv.end(), kc);
-		GT Q = 1;
-		int prev = 0;
-		/*
-			check range which has same hash
-		*/
-		while (p.first != p.second) {
-			int count = p.first->count;
-			int abs_c = std::abs(count);
-			assert(abs_c >= prev); // assume ascending order
-			bool neg = count < 0;
-			GT T;
-			GT::pow(T, g, abs_c - prev);
-			Q *= T;
-			if (Q.a == gx.a) {
-				if (Q.b.a.a.isOdd() ^ gx.b.a.a.isOdd() ^ neg) return -count;
-				return count;
-			}
-			prev = abs_c;
-			++p.first;
-		}
-		if (ok) {
-			*ok = false;
-			return 0;
-		}
-		throw cybozu::Exception("GTHashTable:basicLog:not found");
-	}
-	/*
-		compute log_P(g^x)
-		call basicLog at most 2 * tryNum
-	*/
-	int log(const GT& gx) const
-	{
-		bool ok;
-		int c = basicLog(gx, &ok);
-		if (ok) {
-			return c;
-		}
-		GT pos = gx, neg = gx;
-		int posCenter = 0;
-		int negCenter = 0;
-		int next = hashSize * 2 + 1;
-		for (size_t i = 1; i < tryNum; i++) {
-			pos *= nextgInv;
-			posCenter += next;
-			c = basicLog(pos, &ok);
-			if (ok) {
-				return posCenter + c;
-			}
-			neg *= nextg;
-			negCenter -= next;
-			c = basicLog(neg, &ok);
-			if (ok) {
-				return negCenter + c;
-			}
-		}
-		throw cybozu::Exception("GTHashTable:log:not found");
+		throw cybozu::Exception("HashTable:log:not found");
 	}
 };
 
@@ -315,8 +245,9 @@ struct BGNT {
 	static G1 P;
 	static G2 Q;
 	static GT ePQ; // e(P, Q)
-	static local::EcHashTable<G1> g1HashTbl;
-	static local::GTHashTable<GT> gtHashTbl;
+	static local::HashTable<G1> g1HashTbl;
+	static local::HashTable<GT, false> gtHashTbl;
+//	static local::GTHashTable<GT> gtHashTbl;
 private:
 	template<class G>
 	class CipherTextAT {
@@ -1045,8 +976,8 @@ public:
 template<class BN, class Fr> typename BN::G1 BGNT<BN, Fr>::P;
 template<class BN, class Fr> typename BN::G2 BGNT<BN, Fr>::Q;
 template<class BN, class Fr> typename BN::Fp12 BGNT<BN, Fr>::ePQ;
-template<class BN, class Fr> local::EcHashTable<typename BN::G1> BGNT<BN, Fr>::g1HashTbl;
-template<class BN, class Fr> local::GTHashTable<typename BN::Fp12> BGNT<BN, Fr>::gtHashTbl;
+template<class BN, class Fr> local::HashTable<typename BN::G1> BGNT<BN, Fr>::g1HashTbl;
+template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> BGNT<BN, Fr>::gtHashTbl;
 #ifdef MCL_USE_BN384
 typedef mcl::bgn::BGNT<mcl::bn384::BN, mcl::bn256::Fr> BGN;
 #else

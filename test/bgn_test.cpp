@@ -20,9 +20,9 @@ CYBOZU_TEST_AUTO(log)
 	}
 }
 
-CYBOZU_TEST_AUTO(EcHashTable)
+CYBOZU_TEST_AUTO(HashTable)
 {
-	mcl::bgn::local::EcHashTable<G1> hashTbl;
+	mcl::bgn::local::HashTable<G1> hashTbl;
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
 	const int maxSize = 100;
@@ -42,7 +42,7 @@ CYBOZU_TEST_AUTO(EcHashTable)
 
 CYBOZU_TEST_AUTO(GTHashTable)
 {
-	mcl::bgn::local::GTHashTable<GT> hashTbl;
+	mcl::bgn::local::HashTable<GT, false> hashTbl;
 	GT g;
 	{
 		G1 P;
