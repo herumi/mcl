@@ -37,9 +37,10 @@ typedef uint32_t Unit;
 #endif
 
 template<class T>
-void dump(const T *x, size_t n)
+void dump(const T *x, size_t n, const char *msg = "")
 {
 	const size_t is4byteUnit = sizeof(*x) == 4;
+	if (msg) printf("%s ", msg);
 	for (size_t i = 0; i < n; i++) {
 		if (is4byteUnit) {
 			printf("%08x", (uint32_t)x[n - 1 - i]);
@@ -1189,10 +1190,9 @@ public:
 		std::swap(size_, rhs.size_);
 		std::swap(isNeg_, rhs.isNeg_);
 	}
-	void dump() const
+	void dump(const char *msg = "") const
 	{
-		printf("size_=%d ", (int)size_);
-		vint::dump(buf_, size_);
+		vint::dump(&buf_[0], size_, msg);
 	}
 	/*
 		set positive value
