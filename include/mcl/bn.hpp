@@ -263,7 +263,7 @@ struct GLV1 {
 	twisted Frobenius for G2
 */
 template<class G2>
-struct AddFrobenius : public G2 {
+struct HaveFrobenius : public G2 {
 	typedef typename G2::Fp Fp2;
 	/*
 		FrobeniusOnTwist
@@ -282,7 +282,7 @@ struct AddFrobenius : public G2 {
 		D.x *= Fp2::get_gTbl()[0];
 		D.y *= Fp2::get_gTbl()[3];
 	}
-	static void Frobenius(AddFrobenius& y, const AddFrobenius& x)
+	static void Frobenius(HaveFrobenius& y, const HaveFrobenius& x)
 	{
 		Frobenius(static_cast<G2&>(y), static_cast<const G2&>(x));
 	}
@@ -457,7 +457,7 @@ struct GLV2 {
 	}
 	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
 	{
-		typedef AddFrobenius<G2> G2withF;
+		typedef HaveFrobenius<G2> G2withF;
 		G2withF& QQ(static_cast<G2withF&>(Q));
 		const G2withF& PP(static_cast<const G2withF&>(P));
 		mul(QQ, PP, x, constTime);
@@ -564,7 +564,7 @@ struct BNT {
 	typedef mcl::Fp12T<Fp> Fp12;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
-	typedef AddFrobenius<G2> G2withF;
+	typedef HaveFrobenius<G2> G2withF;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 	typedef ParamT<Fp> Param;
 	static Param param;
