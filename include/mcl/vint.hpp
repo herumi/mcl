@@ -765,7 +765,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 			clearN(t, qn);
 			t[0] = q0;
 			vint::shlN(t, t, 1, xb - w - yb);
-			vint::addN(q, q, t, qn);
+			vint::addN(qq, qq, t, qn);
 		}
 	}
 #else
