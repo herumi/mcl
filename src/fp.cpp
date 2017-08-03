@@ -455,7 +455,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 #endif
 	if (mode == FP_AUTO) mode = FP_GMP_MONT;
 	isMont = mode == FP_GMP_MONT || mode == FP_LLVM_MONT || mode == FP_XBYAK;
-#ifndef NDEBUG
+#if 0
 	fprintf(stderr, "mode=%s, isMont=%d, maxBitSize=%d"
 #ifdef MCL_USE_XBYAK
 		" MCL_USE_XBYAK"
