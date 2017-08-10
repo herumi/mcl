@@ -39,6 +39,15 @@ void testCurve(const mcl::bn::CurveParam& cp)
 	CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, bQ, bQ);
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q);
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1);
+{
+#define PUT(x) std::cout << #x << "=" << x << std::endl;
+	G1 PP;
+	G1::mul(PP, P, BN::param.r);
+	PUT(BN::param.r);
+	PUT(PP);
+	G2 QQ;
+	G2::mul(QQ, Q, BN::param.r);
+}
 }
 
 CYBOZU_TEST_AUTO(pairing)

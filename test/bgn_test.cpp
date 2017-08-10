@@ -1,6 +1,7 @@
 #define PUT(x) std::cout << #x << "=" << (x) << std::endl;
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
+#include <cybozu/xorshift.hpp>
 #include <mcl/bgn.hpp>
 
 using namespace mcl::bgn;
@@ -149,6 +150,37 @@ CYBOZU_TEST_AUTO(add_mul_add_sub)
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok);
 	c[0].sub(c[4]);
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok1);
+}
+
+CYBOZU_TEST_AUTO(innerProduct)
+{
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+
+	cybozu::XorShift rg;
+	const size_t n = 1000;
+	std::vector<int> v1, v2;
+	std::vector<CipherText> c1, c2;
+	v1.resize(n);
+	v2.resize(n);
+	c1.resize(n);
+	c2.resize(n);
+	int innerProduct = 0;
+	for (size_t i = 0; i < n; i++) {
+		v1[i] = rg() % 2;
+		v2[i] = rg() % 2;
+		innerProduct += v1[i] * v2[i];
+		pub.enc(c1[i], v1[i]);
+		pub.enc(c2[i], v2[i]);
+	}
+	CipherText c, t;
+	CipherText::mul(c, c1[0], c2[0]);
+	for (size_t i = 1; i < n; i++) {
+		CipherText::mul(t, c1[i], c2[i]);
+		c.add(t);
+	}
+	CYBOZU_TEST_EQUAL(innerProduct, sec.dec(c));
 }
 
 template<class T>
