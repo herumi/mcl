@@ -26,11 +26,14 @@ endif
 SHARE_BASENAME_SUF?=_dy
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
-MCL_SLIB=$(LIB_DIR)/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
+MCL_SNAME=mcl$(SHARE_BASENAME_SUF)
+BN256_SNAME=mclbn256$(SHARE_BASENAME_SUF)
+BN384_SNAME=mclbn384$(SHARE_BASENAME_SUF)
+MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
 BN256_LIB=$(LIB_DIR)/libmclbn256.a
-BN256_SLIB=$(LIB_DIR)/libmclbn256$(SHARE_BASENAME_SUF).$(LIB_SUF)
+BN256_SLIB=$(LIB_DIR)/lib$(BN256_SNAME).$(LIB_SUF)
 BN384_LIB=$(LIB_DIR)/libmclbn384.a
-BN384_SLIB=$(LIB_DIR)/libmclbn384$(SHARE_BASENAME_SUF).$(LIB_SUF)
+BN384_SLIB=$(LIB_DIR)/lib$(BN384_SNAME).$(LIB_SUF)
 all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB)
 
 #LLVM_VER=-3.8
@@ -93,14 +96,17 @@ $(MCL_SLIB): $(LIB_OBJ)
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $@ $(BN256_OBJ)
 
+ifeq ($(OS),mac)
+  MAC_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+endif
 $(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(MCL_SLIB)
+	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
 
 $(BN384_LIB): $(BN384_OBJ)
 	$(AR) $@ $(BN384_OBJ)
 
 $(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(MCL_SLIB)
+	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -137,11 +143,14 @@ asm: $(LLVM_SRC)
 $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 	$(ASM) $<
 
+ifeq ($(OS),mac)
+  MAC_GO_LDFLAGS="-ldflags=-s"
+endif
 test_go256: $(MCL_SLIB) $(BN256_SLIB)
-	cd ffi/go/mcl && env CGO_CFLAGS="-I../../../include -DMCLBN_FP_UNIT_SIZE=4" CGO_LDFLAGS="-L../../../lib" LD_LIBRARY_PATH=../../../lib go test -tags bn256 .
+	cd ffi/go/mcl && env LD_RUN_PATH="../../../lib" CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib -l$(BN256_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) -tags bn256 .
 
 test_go384: $(MCL_SLIB) $(BN384_SLIB)
-	cd ffi/go/mcl && env CGO_CFLAGS="-I../../../include -DMCLBN_FP_UNIT_SIZE=6" CGO_LDFLAGS="-L../../../lib" LD_LIBRARY_PATH=../../../lib go test -tags bn384 .
+	cd ffi/go/mcl && env LD_RUN_PATH="../../../lib" CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib -l$(BN384_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) .
 
 test_go:
 	$(MAKE) test_go256

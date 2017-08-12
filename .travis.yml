@@ -12,4 +12,5 @@ script:
   - git clone https://github.com/herumi/mcl.git
   - cd mcl
   - make test DEBUG=1
+  - make test_go
  

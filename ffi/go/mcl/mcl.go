@@ -1,8 +1,8 @@
 package mcl
 
 /*
-#cgo bn256 LDFLAGS:-lmclbn256_dy -lmcl_dy -lgmpxx -lstdc++ -lgmp -lcrypto
-#cgo bn384 LDFLAGS:-lmclbn384_dy -lmcl_dy -lgmpxx -lstdc++ -lgmp -lcrypto
+#cgo CFLAGS:-DMCLBN_FP_UNIT_SIZE=6
+#cgo bn256 CFLAGS:-UMCLBN_FP_UNIT_SIZE -DMCLBN_FP_UNIT_SIZE=4
 #include <mcl/bn.h>
 */
 import "C"
@@ -29,7 +29,41 @@ func Init(curve int) error {
 	return nil
 }
 
-////////////////////////////////////////////////
+// GetMaxOpUnitSize --
+func GetMaxOpUnitSize() int {
+	return int(C.MCLBN_FP_UNIT_SIZE)
+}
+
+// GetOpUnitSize --
+// the length of Fr is GetOpUnitSize() * 8 bytes
+func GetOpUnitSize() int {
+	return int(C.mclBn_getOpUnitSize())
+}
+
+// GetCurveOrder --
+// return the order of G1
+func GetCurveOrder() string {
+	buf := make([]byte, 1024)
+	// #nosec
+	n := C.mclBn_getCurveOrder((*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+	if n == 0 {
+		panic("implementation err. size of buf is small")
+	}
+	return string(buf[:n])
+}
+
+// GetFieldOrder --
+// return the characteristic of the field where a curve is defined
+func GetFieldOrder() string {
+	buf := make([]byte, 1024)
+	// #nosec
+	n := C.mclBn_getFieldOrder((*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+	if n == 0 {
+		panic("implementation err. size of buf is small")
+	}
+	return string(buf[:n])
+}
+
 // Fr --
 type Fr struct {
 	v C.mclBnFr
@@ -90,26 +124,26 @@ func (x *Fr) IsEqual(rhs *Fr) bool {
 }
 
 // IsZero --
-func (x *Fr) IsZero(rhs *Fr) bool {
+func (x *Fr) IsZero() bool {
 	return C.mclBnFr_isZero(x.getPointer()) == 1
 }
 
 // IsOne --
-func (x *Fr) IsOne(rhs *Fr) bool {
+func (x *Fr) IsOne() bool {
 	return C.mclBnFr_isOne(x.getPointer()) == 1
 }
 
 // SetByCSPRNG --
-func (x *Fr) SetByCSPRNG() error {
+func (x *Fr) SetByCSPRNG() {
 	err := C.mclBnFr_setByCSPRNG(x.getPointer())
 	if err != 0 {
-		return fmt.Errorf("err mclBnFr_setByCSPRNG")
+		panic("err mclBnFr_setByCSPRNG")
 	}
-	return nil
 }
 
 // SetHashOf --
 func (x *Fr) SetHashOf(buf []byte) bool {
+	// #nosec
 	return C.mclBnFr_setHashOf(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf))) == 1
 }
 
@@ -165,7 +199,6 @@ func FrDiv(out *Fr, x *Fr, y *Fr) {
 	C.mclBnFr_div(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
-////////////////////////////////////////////
 // G1 --
 type G1 struct {
 	v C.mclBnG1
@@ -209,8 +242,8 @@ func (x *G1) IsEqual(rhs *G1) bool {
 	return C.mclBnG1_isEqual(x.getPointer(), rhs.getPointer()) == 1
 }
 
-// IsEqual --
-func (x *G1) IsZero(rhs *G1) bool {
+// IsZero --
+func (x *G1) IsZero() bool {
 	return C.mclBnG1_isZero(x.getPointer()) == 1
 }
 
@@ -271,7 +304,11 @@ func G1Mul(out *G1, x *G1, y *Fr) {
 	C.mclBnG1_mul(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
-////////////////////////////////////////////
+// G1MulCT -- constant time (depending on bit lengh of y)
+func G1MulCT(out *G1, x *G1, y *Fr) {
+	C.mclBnG1_mulCT(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
 // G2 --
 type G2 struct {
 	v C.mclBnG2
@@ -315,8 +352,8 @@ func (x *G2) IsEqual(rhs *G2) bool {
 	return C.mclBnG2_isEqual(x.getPointer(), rhs.getPointer()) == 1
 }
 
-// IsEqual --
-func (x *G2) IsZero(rhs *G2) bool {
+// IsZero --
+func (x *G2) IsZero() bool {
 	return C.mclBnG2_isZero(x.getPointer()) == 1
 }
 
@@ -362,7 +399,7 @@ func G2Dbl(out *G2, x *G2) {
 	C.mclBnG2_dbl(out.getPointer(), x.getPointer())
 }
 
-// G1Add --
+// G2Add --
 func G2Add(out *G2, x *G2, y *G2) {
 	C.mclBnG2_add(out.getPointer(), x.getPointer(), y.getPointer())
 }
@@ -377,7 +414,6 @@ func G2Mul(out *G2, x *G2, y *Fr) {
 	C.mclBnG2_mul(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
-///////////////////////////////////////////////////////
 // GT --
 type GT struct {
 	v C.mclBnGT
@@ -393,6 +429,12 @@ func (x *GT) getPointer() (p *C.mclBnGT) {
 func (x *GT) Clear() {
 	// #nosec
 	C.mclBnGT_clear(x.getPointer())
+}
+
+// SetInt64 --
+func (x *GT) SetInt64(v int64) {
+	// #nosec
+	C.mclBnGT_setInt(x.getPointer(), C.int64_t(v))
 }
 
 // SetString --
@@ -422,12 +464,12 @@ func (x *GT) IsEqual(rhs *GT) bool {
 }
 
 // IsZero --
-func (x *GT) IsZero(rhs *GT) bool {
+func (x *GT) IsZero() bool {
 	return C.mclBnGT_isZero(x.getPointer()) == 1
 }
 
 // IsOne --
-func (x *GT) IsOne(rhs *GT) bool {
+func (x *GT) IsOne() bool {
 	return C.mclBnGT_isOne(x.getPointer()) == 1
 }
 
@@ -488,7 +530,6 @@ func GTPow(out *GT, x *GT, y *Fr) {
 	C.mclBnGT_pow(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
-//////////////////////
 // Pairing --
 func Pairing(out *GT, x *G1, y *G2) {
 	C.mclBn_pairing(out.getPointer(), x.getPointer(), y.getPointer())
@@ -511,16 +552,87 @@ func GetUint64NumToPrecompute() int {
 
 // PrecomputeG2 --
 func PrecomputeG2(Qbuf []uint64, Q *G2) {
+	// #nosec
 	C.mclBn_precomputeG2((*C.uint64_t)(unsafe.Pointer(&Qbuf[0])), Q.getPointer())
 }
 
 // PrecomputedMillerLoop --
 func PrecomputedMillerLoop(out *GT, P *G1, Qbuf []uint64) {
+	// #nosec
 	C.mclBn_precomputedMillerLoop(out.getPointer(), P.getPointer(), (*C.uint64_t)(unsafe.Pointer(&Qbuf[0])))
 }
 
 // PrecomputedMillerLoop2 --
 func PrecomputedMillerLoop2(out *GT, P1 *G1, Q1buf []uint64, P2 *G1, Q2buf []uint64) {
+	// #nosec
 	C.mclBn_precomputedMillerLoop2(out.getPointer(), P1.getPointer(), (*C.uint64_t)(unsafe.Pointer(&Q1buf[0])), P1.getPointer(), (*C.uint64_t)(unsafe.Pointer(&Q1buf[0])))
 }
 
+// FrEvaluatePolynomial -- y = c[0] + c[1] * x + c[2] * x^2 + ...
+func FrEvaluatePolynomial(y *Fr, c []Fr, x *Fr) error {
+	// #nosec
+	err := C.mclBn_FrEvaluatePolynomial(y.getPointer(), (*C.mclBnFr)(unsafe.Pointer(&c[0])), (C.size_t)(len(c)), x.getPointer())
+	if err != 0 {
+		return fmt.Errorf("err mclBn_FrEvaluatePolynomial")
+	}
+	return nil
+}
+
+// G1EvaluatePolynomial -- y = c[0] + c[1] * x + c[2] * x^2 + ...
+func G1EvaluatePolynomial(y *G1, c []G1, x *Fr) error {
+	// #nosec
+	err := C.mclBn_G1EvaluatePolynomial(y.getPointer(), (*C.mclBnG1)(unsafe.Pointer(&c[0])), (C.size_t)(len(c)), x.getPointer())
+	if err != 0 {
+		return fmt.Errorf("err mclBn_G1EvaluatePolynomial")
+	}
+	return nil
+}
+
+// G2EvaluatePolynomial -- y = c[0] + c[1] * x + c[2] * x^2 + ...
+func G2EvaluatePolynomial(y *G2, c []G2, x *Fr) error {
+	// #nosec
+	err := C.mclBn_G2EvaluatePolynomial(y.getPointer(), (*C.mclBnG2)(unsafe.Pointer(&c[0])), (C.size_t)(len(c)), x.getPointer())
+	if err != 0 {
+		return fmt.Errorf("err mclBn_G2EvaluatePolynomial")
+	}
+	return nil
+}
+
+// FrLagrangeInterpolation --
+func FrLagrangeInterpolation(out *Fr, xVec []Fr, yVec []Fr) error {
+	if len(xVec) != len(yVec) {
+		return fmt.Errorf("err FrLagrangeInterpolation:bad size")
+	}
+	// #nosec
+	err := C.mclBn_FrLagrangeInterpolation(out.getPointer(), (*C.mclBnFr)(unsafe.Pointer(&xVec[0])), (*C.mclBnFr)(unsafe.Pointer(&yVec[0])), (C.size_t)(len(xVec)))
+	if err != 0 {
+		return fmt.Errorf("err FrLagrangeInterpolation")
+	}
+	return nil
+}
+
+// G1LagrangeInterpolation --
+func G1LagrangeInterpolation(out *G1, xVec []Fr, yVec []G1) error {
+	if len(xVec) != len(yVec) {
+		return fmt.Errorf("err G1LagrangeInterpolation:bad size")
+	}
+	// #nosec
+	err := C.mclBn_G1LagrangeInterpolation(out.getPointer(), (*C.mclBnFr)(unsafe.Pointer(&xVec[0])), (*C.mclBnG1)(unsafe.Pointer(&yVec[0])), (C.size_t)(len(xVec)))
+	if err != 0 {
+		return fmt.Errorf("err G1LagrangeInterpolation")
+	}
+	return nil
+}
+
+// G2LagrangeInterpolation --
+func G2LagrangeInterpolation(out *G2, xVec []Fr, yVec []G2) error {
+	if len(xVec) != len(yVec) {
+		return fmt.Errorf("err G2LagrangeInterpolation:bad size")
+	}
+	// #nosec
+	err := C.mclBn_G2LagrangeInterpolation(out.getPointer(), (*C.mclBnFr)(unsafe.Pointer(&xVec[0])), (*C.mclBnG2)(unsafe.Pointer(&yVec[0])), (C.size_t)(len(xVec)))
+	if err != 0 {
+		return fmt.Errorf("err G2LagrangeInterpolation")
+	}
+	return nil
+}
