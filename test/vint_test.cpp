@@ -1141,6 +1141,7 @@ struct Seq {
 	}
 };
 
+#if MCL_SIZEOF_UNIT == 8
 CYBOZU_TEST_AUTO(divUnit)
 {
 	const uint32_t tbl[] = {
@@ -1174,3 +1175,4 @@ CYBOZU_TEST_AUTO(divUnit)
 		}
 	}
 }
+#endif
