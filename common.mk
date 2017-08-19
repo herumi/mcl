@@ -12,15 +12,12 @@ ifeq ($(UNAME_S),Darwin)
 else
   LIB_SUF=so
 endif
-ARCH?=$(shell arch)
+ARCH?=$(shell uname -m)
 DO_IT=0
 ifeq ($(ARCH),x86_64)
   DO_IT=1
 endif
 ifeq ($(ARCH),amd64)
-  DO_IT=1
-endif
-ifeq ($(ARCH),OpenBSD.amd64)
   DO_IT=1
 endif
 ifeq ($(DO_IT),1)
