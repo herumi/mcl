@@ -83,10 +83,12 @@ CYBOZU_TEST_AUTO(testEc)
 	prv.dec(dec1, c1);
 	CYBOZU_TEST_EQUAL(dec1, m1 + m2);
 	// enc(m1) x = enc(m1 + x)
-	const int x = 555;
-	pub.add(c1, x);
-	prv.dec(dec1, c1);
-	CYBOZU_TEST_EQUAL(dec1, m1 + m2 + x);
+	{
+		const int x = 555;
+		pub.add(c1, x);
+		prv.dec(dec1, c1);
+		CYBOZU_TEST_EQUAL(dec1, m1 + m2 + x);
+	}
 	// rerandomize
 	c1 = c2;
 	pub.rerandomize(c1, rg);

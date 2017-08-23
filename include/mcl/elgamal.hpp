@@ -96,12 +96,12 @@ struct ElgamalT {
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const CipherText& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			int ioMode = fp::detectIoMode(Ec::getIoMode(), os);
 			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, CipherText& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			int ioMode = fp::detectIoMode(Ec::getIoMode(), is);
 			return self.readStream(is, ioMode);
 		}
 		// obsolete
@@ -148,12 +148,12 @@ struct ElgamalT {
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const Zkp& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			int ioMode = fp::detectIoMode(Zn::getIoMode(), os);
 			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, Zkp& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			int ioMode = fp::detectIoMode(Zn::getIoMode(), is);
 			return self.readStream(is, ioMode);
 		}
 		// obsolete
@@ -282,9 +282,9 @@ struct ElgamalT {
 				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
 				hash.update(os.str());
 				const std::string digest = hash.digest();
-				Zn c;
-				c.setArrayMask(digest.c_str(), digest.size());
-				zkp.c0 = c - zkp.c1;
+				Zn cc;
+				cc.setArrayMask(digest.c_str(), digest.size());
+				zkp.c0 = cc - zkp.c1;
 				zkp.s0 = r0 + zkp.c0 * u;
 			}
 		}
@@ -384,12 +384,12 @@ struct ElgamalT {
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			int ioMode = fp::detectIoMode(Ec::getIoMode(), os);
 			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			int ioMode = fp::detectIoMode(Ec::getIoMode(), is);
 			return self.readStream(is, ioMode);
 		}
 		// obsolete
@@ -578,12 +578,12 @@ struct ElgamalT {
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const PrivateKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), os);
+			int ioMode = fp::detectIoMode(Ec::getIoMode(), os);
 			return os << self.getStr(ioMode);
 		}
 		friend inline std::istream& operator>>(std::istream& is, PrivateKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::Fp::BaseFp::getIoMode(), is);
+			int ioMode = fp::detectIoMode(Ec::getIoMode(), is);
 			return self.readStream(is, ioMode);
 		}
 		std::string toStr() const { return getStr(); }

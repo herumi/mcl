@@ -741,7 +741,7 @@ public:
 			if (c == '1') {
 				y.readStream(is, ioMode);
 				if (!isValid(x, y)) {
-					throw cybozu::Exception("EcT:readStream:bad value") << x << y;
+					throw cybozu::Exception("EcT:readStream:bad value") << ioMode << x << y;
 				}
 			} else if (c == '2' || c == '3') {
 				bool isYodd = c == '3';
