@@ -129,6 +129,10 @@ public:
 		*/
 		std::stable_sort(kcv.begin(), kcv.end());
 	}
+	void setTryNum(size_t tryNum)
+	{
+		this->tryNum = tryNum;
+	}
 	/*
 		log_P(xP)
 		find range which has same hash of xP in kcv,
