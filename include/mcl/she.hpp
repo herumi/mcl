@@ -1,9 +1,9 @@
 #pragma once
 /**
 	@file
-	@brief somewhat homomorphic encryption
-	additive homomorphic encryption which supports one multiplication by lifted ElGamal and prime-order pairing
+	@brief somewhat homomorphic encryption with one-time multiplication, based on prime-order pairings
 	@author MITSUNARI Shigeo(@herumi)
+	see https://github.com/herumi/blob/master/she/she.pdf
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 
@@ -30,7 +30,7 @@
 #include <cybozu/random_generator.hpp>
 #endif
 
-namespace mcl { namespace bgn {
+namespace mcl { namespace she {
 
 namespace local {
 
@@ -271,13 +271,13 @@ int log(const G& P, const G& xP)
 		G::neg(negT, T);
 		if (xP == negT) return -i;
 	}
-	throw cybozu::Exception("BGN:log:not found");
+	throw cybozu::Exception("she:log:not found");
 }
 
-} // mcl::bgn::local
+} // mcl::she::local
 
 template<class BN, class Fr>
-struct BGNT {
+struct SHET {
 	typedef typename BN::G1 G1;
 	typedef typename BN::G2 G2;
 	typedef typename BN::Fp12 GT;
@@ -484,7 +484,7 @@ public:
 				GT::unitaryInv(inv, t);
 				if (y == inv) return -i;
 			}
-			throw cybozu::Exception("BGN:dec:log:not found");
+			throw cybozu::Exception("she:dec:log:not found");
 		}
 #endif
 		int dec(const CipherTextG1& c) const
@@ -646,7 +646,7 @@ public:
 		}
 		void convertToCipherTextM(CipherText& cm, const CipherText& ca) const
 		{
-			if (ca.isMultiplied()) throw cybozu::Exception("bgn:PublicKey:convertCipherText:already isMultiplied");
+			if (ca.isMultiplied()) throw cybozu::Exception("she:PublicKey:convertCipherText:already isMultiplied");
 			cm.isMultiplied_ = true;
 			convertToCipherTextM(cm.m, ca.a);
 		}
@@ -933,7 +933,7 @@ public:
 				CipherTextA::add(z.a, x.a, y.a);
 				return;
 			}
-			throw cybozu::Exception("bgn:CipherText:add:mixed CipherText");
+			throw cybozu::Exception("she:CipherText:add:mixed CipherText");
 		}
 		static void sub(CipherText& z, const CipherText& x, const CipherText& y)
 		{
@@ -947,12 +947,12 @@ public:
 				CipherTextA::sub(z.a, x.a, y.a);
 				return;
 			}
-			throw cybozu::Exception("bgn:CipherText:sub:mixed CipherText");
+			throw cybozu::Exception("she:CipherText:sub:mixed CipherText");
 		}
 		static void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() || y.isMultiplied()) {
-				throw cybozu::Exception("bgn:CipherText:mul:mixed CipherText");
+				throw cybozu::Exception("she:CipherText:mul:mixed CipherText");
 			}
 			z.isMultiplied_ = true;
 			CipherTextM::mul(z.m, x.a, y.a);
@@ -1020,23 +1020,23 @@ public:
 	};
 };
 
-template<class BN, class Fr> typename BN::G1 BGNT<BN, Fr>::P;
-template<class BN, class Fr> typename BN::G2 BGNT<BN, Fr>::Q;
-template<class BN, class Fr> typename BN::Fp12 BGNT<BN, Fr>::ePQ;
-template<class BN, class Fr> local::HashTable<typename BN::G1> BGNT<BN, Fr>::g1HashTbl;
-template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> BGNT<BN, Fr>::gtHashTbl;
+template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P;
+template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q;
+template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ;
+template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::g1HashTbl;
+template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::gtHashTbl;
 #ifdef MCL_USE_BN384
-typedef mcl::bgn::BGNT<mcl::bn384::BN, mcl::bn256::Fr> BGN;
+typedef mcl::she::SHET<mcl::bn384::BN, mcl::bn256::Fr> SHE;
 #else
-typedef mcl::bgn::BGNT<mcl::bn256::BN, mcl::bn256::Fr> BGN;
+typedef mcl::she::SHET<mcl::bn256::BN, mcl::bn256::Fr> SHE;
 #endif
-typedef BGN::SecretKey SecretKey;
-typedef BGN::PublicKey PublicKey;
-typedef BGN::CipherTextG1 CipherTextG1;
-typedef BGN::CipherTextG2 CipherTextG2;
-typedef BGN::CipherTextA CipherTextA;
-typedef BGN::CipherTextM CipherTextM;
-typedef BGN::CipherText CipherText;
+typedef SHE::SecretKey SecretKey;
+typedef SHE::PublicKey PublicKey;
+typedef SHE::CipherTextG1 CipherTextG1;
+typedef SHE::CipherTextG2 CipherTextG2;
+typedef SHE::CipherTextA CipherTextA;
+typedef SHE::CipherTextM CipherTextM;
+typedef SHE::CipherText CipherText;
 
-} } // mcl::bgn
+} } // mcl::she
 

@@ -2,28 +2,28 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
-#include <mcl/bgn.hpp>
+#include <mcl/she.hpp>
 
-using namespace mcl::bgn;
+using namespace mcl::she;
 using namespace mcl::bn256;
 
 SecretKey g_sec;
 
 CYBOZU_TEST_AUTO(log)
 {
-	BGN::init();
+	SHE::init();
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
 	for (int i = -5; i < 5; i++) {
 		G1 iP;
 		G1::mul(iP, P, i);
-		CYBOZU_TEST_EQUAL(mcl::bgn::local::log(P, iP), i);
+		CYBOZU_TEST_EQUAL(mcl::she::local::log(P, iP), i);
 	}
 }
 
 CYBOZU_TEST_AUTO(HashTable)
 {
-	mcl::bgn::local::HashTable<G1> hashTbl;
+	mcl::she::local::HashTable<G1> hashTbl;
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
 	const int maxSize = 100;
@@ -43,7 +43,7 @@ CYBOZU_TEST_AUTO(HashTable)
 
 CYBOZU_TEST_AUTO(GTHashTable)
 {
-	mcl::bgn::local::HashTable<GT, false> hashTbl;
+	mcl::she::local::HashTable<GT, false> hashTbl;
 	GT g;
 	{
 		G1 P;
@@ -71,7 +71,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
-	BGN::setRangeForDLP(1024);
+	SHE::setRangeForDLP(1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
@@ -196,7 +196,7 @@ T testIo(const T& x)
 
 CYBOZU_TEST_AUTO(io)
 {
-	BGN::setRangeForDLP(100, 2);
+	SHE::setRangeForDLP(100, 2);
 	int m;
 	for (int i = 0; i < 2; i++) {
 		if (i == 1) {
@@ -247,8 +247,8 @@ CYBOZU_TEST_AUTO(bench)
 
 CYBOZU_TEST_AUTO(saveHash)
 {
-	mcl::bgn::local::HashTable<BGN::G1> hashTbl1, hashTbl2;
-	hashTbl1.init(BGN::P, 1234, 123);
+	mcl::she::local::HashTable<SHE::G1> hashTbl1, hashTbl2;
+	hashTbl1.init(SHE::P, 1234, 123);
 	std::stringstream ss;
 	hashTbl1.save(ss);
 	hashTbl2.load(ss);
@@ -259,7 +259,7 @@ CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
-	BGN::setRangeForDLP(100, 1000);
+	SHE::setRangeForDLP(100, 1000);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	int x = 100;
