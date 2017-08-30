@@ -245,6 +245,16 @@ CYBOZU_TEST_AUTO(bench)
 	CYBOZU_BENCH("add after mul", c1.add, c2);
 }
 
+CYBOZU_TEST_AUTO(saveHash)
+{
+	mcl::bgn::local::HashTable<BGN::G1> hashTbl1, hashTbl2;
+	hashTbl1.init(BGN::P, 1234, 123);
+	std::stringstream ss;
+	hashTbl1.save(ss);
+	hashTbl2.load(ss);
+	CYBOZU_TEST_ASSERT(hashTbl1 == hashTbl2);
+}
+
 CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;

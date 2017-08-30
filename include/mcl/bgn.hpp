@@ -48,6 +48,10 @@ struct KeyCount {
 	{
 		return key < rhs.key;
 	}
+	bool isSame(const KeyCount& rhs) const
+	{
+		return key == rhs.key && count == rhs.count;
+	}
 };
 
 template<class G, bool = true>
@@ -94,10 +98,34 @@ class HashTable {
 	G P;
 	G nextP;
 	G nextNegP;
-	int hashSize;
 	size_t tryNum;
+	union ic {
+		uint64_t i;
+		char c[8];
+	};
+	static void saveUint64(std::ostream& os, uint64_t v)
+	{
+		ic ic;
+		ic.i = v;
+		os.write(ic.c, sizeof(ic));
+	}
+	static uint64_t loadUint64(std::istream& is)
+	{
+		ic ic;
+		is.read(ic.c, sizeof(ic));
+		return ic.i;
+	}
 public:
-	HashTable() : hashSize(0), tryNum(0) {}
+	HashTable() : tryNum(0) {}
+	bool operator==(const HashTable& rhs) const
+	{
+		if (kcv.size() != rhs.kcv.size()) return false;
+		for (size_t i = 0; i < kcv.size(); i++) {
+			if (!kcv[i].isSame(rhs.kcv[i])) return false;
+		}
+		return P == rhs.P && nextP == rhs.nextP && tryNum == rhs.tryNum;
+	}
+	bool operator!=(const HashTable& rhs) const { return !operator==(rhs); }
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
@@ -109,12 +137,11 @@ public:
 		}
 		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
 		this->P = P;
-		this->hashSize = (int)hashSize;
 		this->tryNum = tryNum;
 		kcv.resize(hashSize);
 		G xP;
 		I::clear(xP);
-		for (int i = 1; i <= (int)hashSize; i++) {
+		for (int i = 1; i <= (int)kcv.size(); i++) {
 			I::add(xP, xP, P);
 			I::normalize(xP);
 			kcv[i - 1].key = I::getHash(xP);
@@ -193,9 +220,8 @@ public:
 		G posP = xP, negP = xP;
 		int posCenter = 0;
 		int negCenter = 0;
-		int next = hashSize * 2 + 1;
+		int next = (int)kcv.size() * 2 + 1;
 		for (size_t i = 1; i < tryNum; i++) {
-//			I::sub(posP, posP, nextP);
 			I::add(posP, posP, nextNegP);
 			posCenter += next;
 			c = basicLog(posP, &ok);
@@ -210,6 +236,23 @@ public:
 			}
 		}
 		throw cybozu::Exception("HashTable:log:not found");
+	}
+	void save(std::ostream& os) const
+	{
+		saveUint64(os, kcv.size());
+		saveUint64(os, tryNum);
+		os.write((const char*)&kcv[0], sizeof(kcv[0]) * kcv.size());
+		os << P.getStr(mcl::IoArray);
+	}
+	void load(std::istream& is)
+	{
+		size_t hashSize = size_t(loadUint64(is));
+		kcv.resize(hashSize);
+		tryNum = loadUint64(is);
+		is.read((char*)&kcv[0], sizeof(kcv[0]) * kcv.size());
+		P.readStream(is, mcl::IoArray);
+		I::mul(nextP, P, (hashSize * 2) + 1);
+		I::neg(nextNegP, nextP);
 	}
 };
 
