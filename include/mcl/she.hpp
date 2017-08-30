@@ -3,7 +3,7 @@
 	@file
 	@brief somewhat homomorphic encryption with one-time multiplication, based on prime-order pairings
 	@author MITSUNARI Shigeo(@herumi)
-	see https://github.com/herumi/blob/master/she/she.pdf
+	see https://github.com/herumi/blob/master/misc/she/she.pdf
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 
