@@ -93,9 +93,11 @@ cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
 ## Build for WASM(WebAssembly) (experimental)
-mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox and Chrome.
+mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge(enable extended JavaScript at about:config).
 
 * [pairing on brower](http://herumi.github.io/mcl/demo/pairing.html)
+
+
 Type
 ```
 emcc -O3 -I ./include/ -I ../cybozulib/include/ src/fp.cpp test/bn_test.cpp -DNDEBUG -s WASM=1 -o t.html
