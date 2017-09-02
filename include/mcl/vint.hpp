@@ -17,7 +17,9 @@
 #ifdef __EMSCRIPTEN__
 	#define MCL_VINT_64BIT_PORTABLE
 	#define MCL_VINT_FIXED_BUFFER
-	#define MCL_MAX_BIT_SIZE 384
+	#ifndef MCL_MAX_BIT_SIZE
+		#define MCL_MAX_BIT_SIZE 384
+	#endif
 #endif
 
 #ifndef MCL_SIZEOF_UNIT
