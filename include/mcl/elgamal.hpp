@@ -30,6 +30,10 @@ struct ElgamalT {
 	struct CipherText {
 		Ec c1;
 		Ec c2;
+		CipherText()
+		{
+			clear();
+		}
 		/*
 			(c1, c2) = (0, 0) is trivial valid ciphertext for m = 0
 		*/
