@@ -244,9 +244,9 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		ss >> e2;
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
-#if 0
-	for (int i = 0; i < 1000; i++) BN::pairing(e1, P, Q);
-//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, P, Q); // 2.4Mclk
+#ifdef ONLY_BENCH
+//	for (int i = 0; i < 1000; i++) BN::pairing(e1, P, Q);
+	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, P, Q); // 2.4Mclk
 #else
 	{
 		Fp12 e = e1, ea;
