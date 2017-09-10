@@ -13,6 +13,10 @@ library status <span name="status">initializing...</span>
 </div>
 <h2>optimal Ate pairing over 256-bit BN curve</h2>
 <button type="text" onclick="TestPairing()">test Pairing</button>
+<div>pairing time : <span name="time_pairing">0</span>msec</div>
+<div>G1 scalar mul : <span name="time_g1mul">0</span>msec</div>
+<div>G2 scalar mul : <span name="time_g2mul">0</span>msec</div>
+<hr>
 <div>
 a = <input type="text" name="a" value="3"><br>
 b = <input type="text" name="b" value="4"><br>
@@ -34,8 +38,6 @@ e(P, Q)^ab = <span name="ePQab">0</span><br>
 <div>
 e(aP, bQ) == e(P, Q)^ab is <span name="verify_pairing"></span>
 </div>
-<hr>
-pairing time : <span name="time_pairing">0</span>msec
 <h2>Fr</h2>
 <button type="text" onclick="TestFr()">test Fr</button>
 <div>

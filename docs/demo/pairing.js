@@ -243,6 +243,16 @@ function TestG2() {
 	mclBnG2_free(Q3)
 }
 
+function bench(label, count, func) {
+	var start = Date.now()
+	for (var i = 0; i < count; i++) {
+		func()
+	}
+	var end = Date.now()
+	var t = (end - start) / count
+	setText(label, t)
+}
+
 function TestPairing() {
 	var a = mclBnFr_malloc()
 	var b = mclBnFr_malloc()
@@ -276,14 +286,10 @@ function TestPairing() {
 	setText('ePQab', mclBnGT_getStr(e1))
 	setText('verify_pairing', !!mclBnGT_isEqual(e1, e2))
 
-	const count = 50
-	var start = Date.now()
-	for (var i = 0; i < count; i++) {
-		mclBn_pairing(e1, P, Q);
-	}
-	var end = Date.now()
-	var t = (end - start) / count
-	setText('time_pairing', t)
+	bench('time_pairing', 50, () => mclBn_pairing(e1, P, Q))
+	mclBnFr_setByCSPRNG(a)
+	bench('time_g1mul', 50, () => mclBnG1_mulCT(aP, P, a))
+	bench('time_g2mul', 50, () => mclBnG2_mulCT(bQ, Q, a))
 
 	mclBnGT_free(e2)
 	mclBnGT_free(e1)
