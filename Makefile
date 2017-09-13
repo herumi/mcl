@@ -200,7 +200,10 @@ $(EXPORTED_JS): ./include/mcl/bn.h
 EXPORTED_MCL=$(shell cat $(EXPORTED_TXT))
 
 docs/demo/mclbn.js: src/fp.cpp src/bn_c256.cpp $(EXPORTED_TXT) $(EXPORTED_JS)
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp -I./include -I../cybozulib/include -s WASM=1 -s "MODULARIZE=1" -s "EXPORTED_FUNCTIONS=[$(EXPORTED_MCL)]" -O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DDISABLE_EXCEPTION_CATCHING=2
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp -I./include -I../cybozulib/include -s WASM=1 -s "MODULARIZE=1" -s "EXPORTED_FUNCTIONS=[$(EXPORTED_MCL)]" -O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1
+
+demo:
+	$(MAKE) docs/demo/mclbn.js
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll $(EXPORTED_JS) $(EXPORTED_TXT) docs/demo/mclbn.js docs/demo/mclbn.wasm

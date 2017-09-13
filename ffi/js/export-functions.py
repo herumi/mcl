@@ -2,7 +2,7 @@ import sys, re
 
 #RE_PROTOTYPE = re.compile(r'MCLBN_DLL_API\s\w\s\w\([^)]*\);')
 RE_PROTOTYPE = re.compile(r'\w*\s(\w*)\s(\w*)\(([^)]*)\);')
-RE_SPECIAL_FUNCTION_NAME = re.compile(r'(setStr|getStr|serialize|setLittleEndian|setHashOf|hashAndMapTo)')
+RE_SPECIAL_FUNCTION_NAME = re.compile(r'(setStr|getStr|[sS]erialize|setLittleEndian|setHashOf|hashAndMapTo|DecStr|HexStr|HashTo|blsSign|blsVerify|GetCurveOrder|GetFieldOrder|KeyShare|KeyRecover|blsSignatureRecover)')
 def export_functions(modName, fileNames):
 	if modName:
 		print 'function define_exported_' + modName + '(mod) {'
