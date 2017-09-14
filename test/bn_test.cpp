@@ -289,6 +289,10 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
 		CYBOZU_BENCH_C("GT::pow", 500, GT::pow, e1, e1, a);
 		CYBOZU_BENCH_C("GT::powGLV", 500, BN::param.glv2.pow, e1, e1, a);
+		G1 PP;
+		G2 QQ;
+		CYBOZU_BENCH_C("hashAndMapToG1", 500, BN::hashAndMapToG1, PP, "abc", 3);
+		CYBOZU_BENCH_C("hashAndMapToG2", 500, BN::hashAndMapToG2, QQ, "abc", 3);
 	}
 	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q); // 2.4Mclk
 	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1); // 1.3Mclk
