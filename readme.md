@@ -96,6 +96,7 @@ msbuild mcl.sln /p:Configuration=Release /m
 mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge(enable extended JavaScript at about:config).
 
 * [pairing on brower](http://herumi.github.io/mcl/demo/pairing.html)
+* [BLS signature on brower](http://herumi.github.io/bls/demo/bls.html)
 
 
 Type
