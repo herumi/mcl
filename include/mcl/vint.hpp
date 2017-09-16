@@ -1248,7 +1248,7 @@ public:
 			if (base != 0 && base != 16) throw cybozu::Exception("Vint:setStr bad base 0x)") << str << base;
 			base = 16;
 			str = str.substr(2);
-		} else if (str.size() >= 2 && str[0] == '0' && str[1] == 'x') {
+		} else if (str.size() >= 2 && str[0] == '0' && str[1] == 'b') {
 			if (base != 0 && base != 2) throw cybozu::Exception("Vint:setStr bad base 0b") << str << base;
 			base = 2;
 			str = str.substr(2);
