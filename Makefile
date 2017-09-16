@@ -39,7 +39,12 @@ all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
+LLVM_OPT_VERSION=$(shell $(LLVM_OPT) --version | awk '/version/ {print $$3}')
 GEN_EXE=src/gen
+# incompatibility between llvm 3.4 and the later version
+ifeq ($(shell expr $(LLVM_OPT_VERSION) \< 3.5.0),1)
+  GEN_EXE_OPT=-old
+endif
 ifeq ($(OS),mac)
   ASM_SRC_PATH_NAME=src/asm/$(CPU)mac
 else
@@ -115,7 +120,7 @@ $(ASM_SRC): $(ASM_SRC_DEP)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
 
 $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
-	$(GEN_EXE) -f $(FUNC_LIST) > $@
+	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) > $@
 
 $(ASM_SRC_PATH_NAME).bmi2.s: $(ASM_BMI2_SRC_DEP)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS) -mattr=bmi2
@@ -124,7 +129,7 @@ $(OBJ_DIR)/$(CPU).bmi2.o: $(ASM_SRC_PATH_NAME).bmi2.s
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
 src/base$(BIT).bmi2.ll: $(GEN_EXE)
-	$(GEN_EXE) -f $(FUNC_LIST) -s bmi2 > $@
+	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) -s bmi2 > $@
 
 $(FUNC_LIST): $(LOW_ASM_SRC)
 ifeq ($(USE_LOW_ASM),1)
