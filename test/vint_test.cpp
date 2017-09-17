@@ -967,6 +967,51 @@ CYBOZU_TEST_AUTO(withInt)
 	CYBOZU_TEST_EQUAL(x, -3);
 	x /= -1;
 	CYBOZU_TEST_EQUAL(x, 3);
+
+	x++;
+	CYBOZU_TEST_EQUAL(x, 4);
+	x--;
+	CYBOZU_TEST_EQUAL(x, 3);
+	x = -3;
+	x++;
+	CYBOZU_TEST_EQUAL(x, -2);
+	x--;
+	CYBOZU_TEST_EQUAL(x, -3);
+
+	++x;
+	CYBOZU_TEST_EQUAL(x, -2);
+	--x;
+	CYBOZU_TEST_EQUAL(x, -3);
+	x = 3;
+	++x;
+	CYBOZU_TEST_EQUAL(x, 4);
+	--x;
+	CYBOZU_TEST_EQUAL(x, 3);
+}
+
+CYBOZU_TEST_AUTO(addu1)
+{
+	Vint x = 4;
+	Vint::addu1(x, x, 2);
+	CYBOZU_TEST_EQUAL(x, 6);
+	Vint::subu1(x, x, 2);
+	CYBOZU_TEST_EQUAL(x, 4);
+	Vint::subu1(x, x, 10);
+	CYBOZU_TEST_EQUAL(x, -6);
+	x = -4;
+	Vint::addu1(x, x, 2);
+	CYBOZU_TEST_EQUAL(x, -2);
+	Vint::subu1(x, x, 2);
+	CYBOZU_TEST_EQUAL(x, -4);
+	Vint::addu1(x, x, 10);
+	CYBOZU_TEST_EQUAL(x, 6);
+
+	x.setStr("0x10000000000000000000000002");
+	Vint::subu1(x, x, 3);
+	CYBOZU_TEST_EQUAL(x, Vint("0xfffffffffffffffffffffffff"));
+	x.setStr("-0x10000000000000000000000000");
+	Vint::addu1(x, x, 5);
+	CYBOZU_TEST_EQUAL(x, Vint("-0xffffffffffffffffffffffffb"));
 }
 
 CYBOZU_TEST_AUTO(pow)

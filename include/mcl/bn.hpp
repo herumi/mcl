@@ -186,7 +186,7 @@ struct GLV1 {
 		Unit w[splitN][maxUnit]; // unit array of u[i]
 		int maxBit = 0; // max bit of u[i]
 		int maxN = 0;
-		int m = 0;
+		int remainBit = 0;
 
 		x %= r;
 		if (x == 0) {
@@ -226,15 +226,15 @@ struct GLV1 {
 		assert(maxBit > 0);
 		maxBit--;
 		/*
-			maxBit = maxN * UnitBitSize + m
-			0 < m <= UnitBitSize
+			maxBit = maxN * UnitBitSize + remainBit
+			0 < remainBit <= UnitBitSize
 		*/
 		maxN = maxBit / mcl::fp::UnitBitSize;
-		m = maxBit % mcl::fp::UnitBitSize;
-		m++;
+		remainBit = maxBit % mcl::fp::UnitBitSize;
+		remainBit++;
 		Q.clear();
 		for (int i = maxN; i >= 0; i--) {
-			for (int j = m - 1; j >= 0; j--) {
+			for (int j = remainBit - 1; j >= 0; j--) {
 				G1::dbl(Q, Q);
 				uint32_t b0 = (w[0][i] >> j) & 1;
 				uint32_t b1 = (w[1][i] >> j) & 1;
@@ -245,7 +245,7 @@ struct GLV1 {
 					Q += tbl[c];
 				}
 			}
-			m = (int)mcl::fp::UnitBitSize;
+			remainBit = (int)mcl::fp::UnitBitSize;
 		}
 #endif
 	DummyLoop:
@@ -366,7 +366,7 @@ struct GLV2 {
 		Unit w[splitN][maxUnit]; // unit array of u[i]
 		int maxBit = 0; // max bit of u[i]
 		int maxN = 0;
-		int m = 0;
+		int remainBit = 0;
 
 		x %= r;
 		if (x == 0) {
@@ -422,15 +422,15 @@ struct GLV2 {
 		}
 		maxBit--;
 		/*
-			maxBit = maxN * UnitBitSize + m
-			0 < m <= UnitBitSize
+			maxBit = maxN * UnitBitSize + remainBit
+			0 < remainBit <= UnitBitSize
 		*/
 		maxN = maxBit / mcl::fp::UnitBitSize;
-		m = maxBit % mcl::fp::UnitBitSize;
-		m++;
+		remainBit = maxBit % mcl::fp::UnitBitSize;
+		remainBit++;
 		Q.clear();
 		for (int i = maxN; i >= 0; i--) {
-			for (int j = m - 1; j >= 0; j--) {
+			for (int j = remainBit - 1; j >= 0; j--) {
 				T::dbl(Q, Q);
 				uint32_t b0 = (w[0][i] >> j) & 1;
 				uint32_t b1 = (w[1][i] >> j) & 1;
@@ -443,7 +443,7 @@ struct GLV2 {
 					Q += tbl[c];
 				}
 			}
-			m = (int)mcl::fp::UnitBitSize;
+			remainBit = (int)mcl::fp::UnitBitSize;
 		}
 #endif
 	DummyLoop:

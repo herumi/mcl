@@ -961,37 +961,37 @@ private:
 			z.isNeg_ = yNeg;
 		}
 	}
-	static void _adds1(VintT& z, const VintT& x, bool xNeg, int y, bool yNeg)
+	static void _adds1(VintT& z, const VintT& x, int y, bool yNeg)
 	{
 		assert(y >= 0);
-		if ((xNeg ^ yNeg) == 0) {
+		if ((x.isNeg_ ^ yNeg) == 0) {
 			// same sign
 			uadd1(z, x.buf_, x.size(), y);
-			z.isNeg_ = xNeg;
+			z.isNeg_ = yNeg;
 			return;
 		}
 		if (x.size() > 1 || x.buf_[0] >= (Unit)y) {
 			usub1(z, x.buf_, x.size(), y);
-			z.isNeg_ = xNeg;
+			z.isNeg_ = x.isNeg_;
 		} else {
 			z = y - x.buf_[0];
 			z.isNeg_ = yNeg;
 		}
 	}
-	static void _addu1(VintT& z, const VintT& x, bool xNeg, Unit y)
+	static void _addu1(VintT& z, const VintT& x, Unit y, bool yNeg)
 	{
-		if (!xNeg) {
+		if ((x.isNeg_ ^ yNeg) == 0) {
 			// same sign
 			uadd1(z, x.buf_, x.size(), y);
-			z.isNeg_ = xNeg;
+			z.isNeg_ = yNeg;
 			return;
 		}
 		if (x.size() > 1 || x.buf_[0] >= y) {
 			usub1(z, x.buf_, x.size(), y);
-			z.isNeg_ = xNeg;
+			z.isNeg_ = x.isNeg_;
 		} else {
 			z = y - x.buf_[0];
-			z.isNeg_ = false;
+			z.isNeg_ = yNeg;
 		}
 	}
 	/**
@@ -1350,11 +1350,11 @@ public:
 	}
 	static void addu1(VintT& z, const VintT& x, Unit y)
 	{
-		_addu1(z, x, x.isNeg_, y);
+		_addu1(z, x, y, false);
 	}
 	static void subu1(VintT& z, const VintT& x, Unit y)
 	{
-		_addu1(z, x, x.isNeg_, y);
+		_addu1(z, x, y, true);
 	}
 	static void mulu1(VintT& z, const VintT& x, Unit y)
 	{
@@ -1378,12 +1378,12 @@ public:
 	static void adds1(VintT& z, const VintT& x, int y)
 	{
 		if (y == invalidVar) throw cybozu::Exception("VintT:adds1:bad y");
-		_adds1(z, x, x.isNeg_, std::abs(y), y < 0);
+		_adds1(z, x, std::abs(y), y < 0);
 	}
 	static void subs1(VintT& z, const VintT& x, int y)
 	{
 		if (y == invalidVar) throw cybozu::Exception("VintT:subs1:bad y");
-		_adds1(z, x, x.isNeg_, std::abs(y), !(y < 0));
+		_adds1(z, x, std::abs(y), !(y < 0));
 	}
 	static void muls1(VintT& z, const VintT& x, int y)
 	{
@@ -1600,7 +1600,7 @@ public:
 	static void powMod(VintT& z, const VintT& x, const VintT& y, const VintT& m)
 	{
 		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
-		VintT zz = 1;
+		VintT zz;
 		MulMod mulMod;
 		SqrMod sqrMod;
 		mulMod.pm = &m;
@@ -1774,10 +1774,10 @@ public:
 		}
 		return j;
 	}
-	VintT& operator++() { add(*this, *this, 1); return *this; }
-	VintT& operator--() { sub(*this, *this, 1); return *this; }
-	VintT operator++(int) { VintT c = *this; add(*this, *this, 1); return c; }
-	VintT operator--(int) { VintT c = *this; sub(*this, *this, 1); return c; }
+	VintT& operator++() { adds1(*this, *this, 1); return *this; }
+	VintT& operator--() { subs1(*this, *this, 1); return *this; }
+	VintT operator++(int) { VintT c = *this; adds1(*this, *this, 1); return c; }
+	VintT operator--(int) { VintT c = *this; subs1(*this, *this, 1); return c; }
 	friend bool operator<(const VintT& x, const VintT& y) { return compare(x, y) < 0; }
 	friend bool operator>=(const VintT& x, const VintT& y) { return !operator<(x, y); }
 	friend bool operator>(const VintT& x, const VintT& y) { return compare(x, y) > 0; }
