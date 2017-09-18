@@ -178,7 +178,7 @@ struct GLV1 {
 	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
 	{
 		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 384 / 2 / mcl::fp::UnitBitSize;
+		const size_t maxUnit = 512 / 2 / mcl::fp::UnitBitSize;
 		const int splitN = 2;
 		mpz_class u[splitN];
 		G1 in[splitN];
@@ -358,7 +358,7 @@ struct GLV2 {
 		}
 #endif
 		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 384 / 2 / mcl::fp::UnitBitSize;
+		const size_t maxUnit = 512 / 2 / mcl::fp::UnitBitSize;
 		const int splitN = 4;
 		mpz_class u[splitN];
 		T in[splitN];
@@ -527,7 +527,11 @@ struct ParamT {
 		Fp2::init(cp.xi_a);
 		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);
-		b_div_xi = Fp2(b) / xi;
+		if (cp == CurveFp462) {
+			b_div_xi = xi * b;
+		} else {
+			b_div_xi = Fp2(b) / xi;
+		}
 		is_b_div_xi_1_m1i =  b_div_xi == Fp2(1, -1);
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
