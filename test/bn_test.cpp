@@ -357,7 +357,7 @@ CYBOZU_TEST_AUTO(naive)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("curve=%s\n", ts.name);
-		bn256init(ts.cp, g_mode);
+		initPairing(ts.cp, g_mode);
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 		testFp12pow(P, Q);

@@ -139,11 +139,11 @@ finalExp 546.259Kclk
 If you want to remove '_dy` of so files, then `makeSHARE_BASENAME_SUF=`.
 
 # How to initialize pairing library
-Call `mcl::bn256::bn256init` before calling any operations.
+Call `mcl::bn256::initPairing` before calling any operations.
 ```
 #include <mcl/bn256.hpp>
 mcl::bn::CurveParam cp = mcl::bn::CurveFp254BNb; // or mcl::bn::CurveSNARK1
-mcl::bn256::bn256init(cp);
+mcl::bn256::initPairing(cp);
 mcl::bn256::G1 P(...);
 mcl::bn256::G2 Q(...);
 mcl::bn256::Fp12 e;

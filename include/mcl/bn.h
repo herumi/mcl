@@ -73,7 +73,8 @@ MCLBN_DLL_API int mclBn_setErrFile(const char *name);
 enum {
 	mclBn_CurveFp254BNb = 0,
 	mclBn_CurveFp382_1 = 1,
-	mclBn_CurveFp382_2 = 2
+	mclBn_CurveFp382_2 = 2,
+	mclBn_CurveFp462 = 3
 };
 
 /*

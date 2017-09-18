@@ -4,7 +4,7 @@
 
 void SystemInit() throw(std::exception)
 {
-	mcl::bn256::bn256init();
+	mcl::bn256::initPairing();
 }
 
 class G1;

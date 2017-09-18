@@ -17,11 +17,20 @@
 */
 #include <vector>
 #include <iosfwd>
+#if !defined(MCL_USE_BN256) && !defined(MCL_USE_BN384) && !defined(MCL_USE_BN512)
+	#define MCL_USE_BN256
+#endif
+#ifdef MCL_USE_BN256
+#include <mcl/bn256.hpp>
+namespace bn_current = mcl::bn256;
+#endif
 #ifdef MCL_USE_BN384
 #include <mcl/bn384.hpp>
-#else
-#include <mcl/bn256.hpp>
-#define MCL_USE_BN256
+namespace bn_current = mcl::bn384;
+#endif
+#ifdef MCL_USE_BN512
+#include <mcl/bn512.hpp>
+namespace bn_current = mcl::bn512;
 #endif
 
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
@@ -382,11 +391,7 @@ private:
 	static void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
 #if 1
-#ifdef MCL_USE_BN384
-		std::vector<bn384::Fp6> Qcoeff;
-#else
-		std::vector<bn256::Fp6> Qcoeff;
-#endif
+		std::vector<bn_current::Fp6> Qcoeff;
 		BN::precomputeG2(Qcoeff, Q);
 		BN::precomputedMillerLoop(g1, P1, Qcoeff);
 		BN::precomputedMillerLoop(g2, P2, Qcoeff);
@@ -410,12 +415,7 @@ public:
 
 	static void init(const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb)
 	{
-#ifdef MCL_USE_BN256
-		mcl::bn256::bn256init(cp);
-#endif
-#ifdef MCL_USE_BN384
-		mcl::bn384::bn384init(cp);
-#endif
+		bn_current::initPairing(cp);
 		BN::hashAndMapToG1(P, "0");
 		BN::hashAndMapToG2(Q, "0");
 		BN::pairing(ePQ, P, Q);
@@ -1025,11 +1025,7 @@ template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::g1HashTbl;
 template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::gtHashTbl;
-#ifdef MCL_USE_BN384
-typedef mcl::she::SHET<mcl::bn384::BN, mcl::bn256::Fr> SHE;
-#else
-typedef mcl::she::SHET<mcl::bn256::BN, mcl::bn256::Fr> SHE;
-#endif
+typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
 typedef SHE::PublicKey PublicKey;
 typedef SHE::CipherTextG1 CipherTextG1;

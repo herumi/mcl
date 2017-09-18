@@ -1,6 +1,6 @@
 function define_exported_mcl(mod) {
 mclBn_setErrFile = mod.cwrap('mclBn_setErrFile', 'number', ['number', ])
-mclBn_init = mod.cwrap('mclBn_init', 'number', ['number', 'number', ])
+_mclBn_init = mod.cwrap('mclBn_init', 'number', ['number', 'number', ])
 mclBn_getOpUnitSize = mod.cwrap('mclBn_getOpUnitSize', 'number', [])
 mclBn_getCurveOrder = mod.cwrap('mclBn_getCurveOrder', 'number', ['number', 'number', ])
 mclBn_getFieldOrder = mod.cwrap('mclBn_getFieldOrder', 'number', ['number', 'number', ])

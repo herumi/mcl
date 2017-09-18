@@ -194,7 +194,7 @@ CYBOZU_TEST_AUTO(glv)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mcl::bn::CurveParam& cp = tbl[i];
-		bn384init(cp);
+		initPairing(cp);
 		testGLV1();
 		testGLV2();
 	}

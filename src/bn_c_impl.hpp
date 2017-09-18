@@ -11,9 +11,12 @@ static cybozu::RandomGenerator g_rg;
 #if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
 using namespace mcl::bn256;
-#else
+#elif MCLBN_FP_UNIT_SIZE == 6
 #include <mcl/bn384.hpp>
 using namespace mcl::bn384;
+#elif MCLBN_FP_UNIT_SIZE == 8
+#include <mcl/bn512.hpp>
+using namespace mcl::bn512;
 #endif
 #include <mcl/lagrange.hpp>
 
@@ -116,7 +119,7 @@ int mclBn_init(int curve, int maxUnitSize)
 	case mclBn_CurveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;
 		break;
-#if MCLBN_FP_UNIT_SIZE == 6
+#if MCLBN_FP_UNIT_SIZE >= 6
 	case mclBn_CurveFp382_1:
 		cp = mcl::bn::CurveFp382_1;
 		break;
@@ -124,15 +127,16 @@ int mclBn_init(int curve, int maxUnitSize)
 		cp = mcl::bn::CurveFp382_2;
 		break;
 #endif
+#if MCLBN_FP_UNIT_SIZE >= 8
+	case mclBn_CurveFp462:
+		cp = mcl::bn::CurveFp462;
+		break;
+#endif
 	default:
 		if (g_fp) fprintf(g_fp, "MCLBN_init:not supported curve %d\n", curve);
 		return -1;
 	}
-#if MCLBN_FP_UNIT_SIZE == 4
-	bn256init(cp);
-#else
-	bn384init(cp);
-#endif
+	initPairing(cp);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "%s\n", e.what());

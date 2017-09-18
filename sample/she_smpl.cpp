@@ -1,16 +1,16 @@
 /*
-	sample of somewhat homomorphic encryption(SHE) by BGN with prime order group
+	sample of somewhat homomorphic encryption(SHE)
 */
 #define PUT(x) std::cout << #x << "=" << (x) << std::endl;
 #include <cybozu/benchmark.hpp>
-#include <mcl/bgn.hpp>
+#include <mcl/she.hpp>
 
-using namespace mcl::bgn;
+using namespace mcl::she;
 
 void miniSample()
 {
 	// init library
-	BGN::init();
+	SHE::init();
 
 	SecretKey sec;
 
@@ -18,7 +18,7 @@ void miniSample()
 	sec.setByCSPRNG();
 
 	// set range to decode GT DLP
-	sec.setRangeForGTDLP(1000);
+	SHE::setRangeForGTDLP(1000);
 
 	PublicKey pub;
 	// get public key
@@ -61,7 +61,7 @@ void miniSample()
 void usePrimitiveCipherText()
 {
 	// init library
-	BGN::init();
+	SHE::init();
 
 	SecretKey sec;
 
@@ -69,7 +69,7 @@ void usePrimitiveCipherText()
 	sec.setByCSPRNG();
 
 	// set range to decode GT DLP
-	sec.setRangeForGTDLP(1000);
+	SHE::setRangeForGTDLP(100);
 
 	PublicKey pub;
 	// get public key

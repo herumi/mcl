@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	std::string m = argc == 1 ? "hello mcl" : argv[1];
 
 	// setup parameter
-	bn256init();
+	initPairing();
 	G2 Q;
 	BN::mapToG2(Q, 1);
 

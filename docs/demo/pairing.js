@@ -25,7 +25,7 @@ var MCLBN_FP_UNIT_SIZE = 4
 var module = setupWasm('mclbn.wasm', null, function(mod, ns) {
 	define_exported_mcl(mod)
 	define_extra_functions(mod)
-	var r = mclBn_init(0, MCLBN_FP_UNIT_SIZE)
+	var r = mclBn_init(0)
 	setText('status', r ? 'err:' + r : 'ok')
 })
 
@@ -99,6 +99,9 @@ function define_extra_functions(mod) {
 		}
 	}
 	///////////////////////////////////////////////////////////////
+	mclBn_init = function(curveType) {
+		_mclBn_init(curveType, MCLBN_FP_UNIT_SIZE)
+	}
 	mclBnFr_malloc = function() {
 		return mod._malloc(MCLBN_FP_UNIT_SIZE * 8)
 	}

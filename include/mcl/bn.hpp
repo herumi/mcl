@@ -33,6 +33,7 @@ const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1 }; // -(2^62 + 2^
 // provisional(experimental) param with maxBitSize = 384
 const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
 const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
+const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", -4, 1 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
 
 template<class Fp>
 struct MapToT {

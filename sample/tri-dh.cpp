@@ -25,7 +25,7 @@ void keygen(const std::string& user)
 	const char *bb = "7937318970632701341203597196594272556916396164729705624521405069090520231616";
 
 
-	bn256init();
+	initPairing();
 	G2 Q(Fp2(aa, ab), Fp2(ba, bb));
 	G1 P(-1, 1);
 
@@ -54,7 +54,7 @@ void load(G1& P, G2& Q, const std::string& fileName)
 
 void share(const std::string& skFile, const std::string& pk1File, const std::string& pk2File)
 {
-	bn256init();
+	initPairing();
 	Fr s;
 	G1 P1, P2;
 	G2 Q1, Q2;

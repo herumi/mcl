@@ -12,7 +12,7 @@ mcl::fp::Mode g_mode;
 
 void testCurve(const mcl::bn::CurveParam& cp)
 {
-	bn384init(cp, g_mode);
+	initPairing(cp, g_mode);
 	G1 P;
 	G2 Q;
 	BN::mapToG1(P, 1);
