@@ -490,9 +490,14 @@ struct ParamT {
 		y^2 = x^3 + b
 		=> (y'w^3)^2 = (x'w^2)^3 + b
 		=> y'^2 = x'^3 + b / w^6 ; w^6 = xi
-		=> y'^2 = x'^3 + b_div_xi;
+		=> y'^2 = x'^3 + twist_b;
 	*/
-	Fp2 b_div_xi;
+	Fp2 twist_b;
+	enum {
+		tb_generic,
+		tb_1m1i,
+		tb_1m2i
+	} twist_b_type;
 	bool is_b_div_xi_1_m1i;
 	mpz_class exp_c0;
 	mpz_class exp_c1;
@@ -527,10 +532,16 @@ struct ParamT {
 		Fp2::init(cp.xi_a);
 		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);
-		b_div_xi = Fp2(b) / xi;
-		is_b_div_xi_1_m1i =  b_div_xi == Fp2(1, -1);
+		twist_b = Fp2(b) / xi;
+		if (twist_b == Fp2(1, -1)) {
+			twist_b_type = tb_1m1i;
+		} else if (twist_b == Fp2(1, -2)) {
+			twist_b_type = tb_1m2i;
+		} else {
+			twist_b_type = tb_generic;
+		}
 		G1::init(0, b, mcl::ec::Proj);
-		G2::init(0, b_div_xi, mcl::ec::Proj);
+		G2::init(0, twist_b, mcl::ec::Proj);
 		G2::setOrder(r);
 		mapTo.init(2 * p - r);
 		glv1.init(r, z);
@@ -610,17 +621,36 @@ struct BNT {
 	}
 	static void mul_b_div_xi(Fp2& y, const Fp2& x)
 	{
-		if (param.is_b_div_xi_1_m1i) {
+		switch (param.twist_b_type) {
+		case Param::tb_1m1i:
 			/*
 				b / xi = 1 - 1i
 				(a + bi)(1 - 1i) = (a + b) + (b - a)i
 			*/
-			Fp t;
-			Fp::add(t, x.a, x.b);
-			Fp::sub(y.b, x.b, x.a);
-			y.a = t;
-		} else {
-			Fp2::mul(y, x, param.b_div_xi);
+			{
+				Fp t;
+				Fp::add(t, x.a, x.b);
+				Fp::sub(y.b, x.b, x.a);
+				y.a = t;
+			}
+			return;
+		case Param::tb_1m2i:
+			/*
+				b / xi = 1 - 2i
+				(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
+			*/
+			{
+				Fp t;
+				Fp::sub(t, x.b, x.a);
+				t -= x.a;
+				Fp::add(y.a, x.a, x.b);
+				y.a += x.b;
+				y.b = t;
+			}
+			return;
+		case Param::tb_generic:
+			Fp2::mul(y, x, param.twist_b);
+			return;
 		}
 	}
 	static void dblLineWithoutP(Fp6& l, G2& Q)
