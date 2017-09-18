@@ -618,6 +618,50 @@ public:
 		}
 		return true;
 	}
+	/*
+		solve x^2 = a in Fp
+	*/
+	template<class Fp>
+	bool get(Fp& x, const Fp& a) const
+	{
+		if (Fp::getOp().mp != p) throw cybozu::Exception("bad Fp") << Fp::getOp().mp << p;
+		if (a == 0) {
+			x = 0;
+			return true;
+		}
+		if (gmp::legendre(a.getMpz(), p) < 0) return false;
+		if (r == 1) {
+			// (p + 1) / 4 = (q + 1) / 2
+			Fp::pow(x, a, q_add_1_div_2);
+			return true;
+		}
+		Fp c, d;
+		c.setMpz(s);
+		int e = r;
+		Fp::pow(d, a, q);
+		Fp::pow(x, a, q_add_1_div_2); // destroy a if &x == &a
+		Fp dd;
+		Fp b;
+		while (!d.isOne()) {
+			int i = 1;
+			Fp::sqr(dd, d);
+			while (!dd.isOne()) {
+				dd *= dd;
+				i++;
+			}
+			b = 1;
+//			b <<= e - i - 1;
+			for (int j = 0; j < e - i - 1; j++) {
+				b += b;
+			}
+			Fp::pow(b, c, b);
+			x *= b;
+			Fp::sqr(c, b);
+			d *= c;
+			e = i;
+		}
+		return true;
+	}
 };
 
 } // mcl
