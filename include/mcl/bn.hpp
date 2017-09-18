@@ -33,7 +33,7 @@ const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1 }; // -(2^62 + 2^
 // provisional(experimental) param with maxBitSize = 384
 const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
 const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
-const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", -4, 1 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
+const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", 5, 2 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
 
 template<class Fp>
 struct MapToT {
@@ -527,11 +527,7 @@ struct ParamT {
 		Fp2::init(cp.xi_a);
 		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);
-		if (cp == CurveFp462) {
-			b_div_xi = xi * b;
-		} else {
-			b_div_xi = Fp2(b) / xi;
-		}
+		b_div_xi = Fp2(b) / xi;
 		is_b_div_xi_1_m1i =  b_div_xi == Fp2(1, -1);
 		G1::init(0, b, mcl::ec::Proj);
 		G2::init(0, b_div_xi, mcl::ec::Proj);
