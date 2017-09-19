@@ -22,15 +22,21 @@
 #endif
 #ifdef MCL_USE_BN256
 #include <mcl/bn256.hpp>
+namespace mcl {
 namespace bn_current = mcl::bn256;
+}
 #endif
 #ifdef MCL_USE_BN384
 #include <mcl/bn384.hpp>
+namespace mcl {
 namespace bn_current = mcl::bn384;
+}
 #endif
 #ifdef MCL_USE_BN512
 #include <mcl/bn512.hpp>
+namespace mcl {
 namespace bn_current = mcl::bn512;
+}
 #endif
 
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
@@ -465,8 +471,7 @@ public:
 		*/
 		void getPublicKey(PublicKey& pub) const
 		{
-			G1::mul(pub.xP, P, x);
-			G2::mul(pub.yQ, Q, y);
+			pub.set(x, y);
 		}
 #if 0
 		// log_x(y)
@@ -573,6 +578,10 @@ public:
 	class PublicKey {
 		G1 xP;
 		G2 yQ;
+		GT mPQ;   // ML(P, Q)
+		GT mxPQ;  // ML(xP, Q)
+		GT myPQ;  // ML(P, yQ)
+		GT mxyPQ; // ML(xP, yQ)
 		friend class SecretKey;
 		/*
 			(S, T) = (m P + r xP, rP)
@@ -587,6 +596,19 @@ public:
 			G::mul(S, P, m);
 			G::mul(C, xP, r);
 			S += C;
+		}
+		void set(const Fr& x, const Fr& y)
+		{
+			G1::mul(xP, P, x);
+			G2::mul(yQ, Q, y);
+			setOtherMember();
+		}
+		void setOtherMember()
+		{
+			BN::millerLoop(mPQ, P, Q);
+			BN::millerLoop(mxPQ, xP, Q);
+			BN::millerLoop(myPQ, P, yQ);
+			BN::millerLoop(mxyPQ, xP, yQ);
 		}
 	public:
 		template<class RG>
@@ -606,15 +628,56 @@ public:
 			enc(c.c2, m, rg);
 		}
 		template<class RG>
-		void enc(CipherText& c, int m, RG& rg) const
+		void enc(CipherTextM& c, int m, RG& rg) const
 		{
-			c.isMultiplied_ = false;
-			enc(c.a, m, rg);
+			/*
+				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
+				s = e(a xP + m P, Q)e(b P - c xP, yQ)
+			*/
+			Fr ra, rb, rc;
+			ra.setRand(rg);
+			rb.setRand(rg);
+			rc.setRand(rg);
+			GT e;
+#if 1 // 6.5Mclk -> 5.9Mclk at Fp462
+			G1 P1, P2;
+			G1::mul(P1, xP, ra);
+			G1::mul(P2, P, m);
+			P1 += P2;
+			BN::millerLoop(c.g[0], P1, Q);
+			G1::mul(P1, P, rb);
+			G1::mul(P2, xP, rc);
+			P1 -= P2;
+			BN::millerLoop(e, P1, yQ);
+			c.g[0] *= e;
+#else
+			GT::pow(c.g[0], mxPQ, ra);
+			GT::pow(e, myPQ, rb);
+			c.g[0] *= e;
+			GT::pow(e, mxyPQ, -rc);
+			c.g[0] *= e;
+			GT::pow(e, mPQ, m);
+			c.g[0] *= e;
+#endif
+			GT::pow(c.g[1], mPQ, rb);
+			GT::pow(c.g[2], mPQ, ra);
+			GT::pow(c.g[3], mPQ, rc);
+		}
+		template<class RG>
+		void enc(CipherText& c, int m, RG& rg, bool multiplied = false) const
+		{
+			c.isMultiplied_ = multiplied;
+			if (multiplied) {
+				enc(c.m, m, rg);
+			} else {
+				enc(c.a, m, rg);
+			}
 		}
 		void enc(CipherTextG1& c, int m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherTextG2& c, int m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherTextA& c, int m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherText& c, int m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextM& c, int m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherText& c, int m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
 		/*
 			convert from CipherTextG1 to CipherTextM
 		*/
@@ -697,6 +760,7 @@ public:
 		{
 			xP.readStream(is, ioMode);
 			yQ.readStream(is, ioMode);
+			setOtherMember();
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const

@@ -5,7 +5,7 @@
 #include <mcl/she.hpp>
 
 using namespace mcl::she;
-using namespace mcl::bn256;
+using namespace mcl::bn_current;
 
 SecretKey g_sec;
 
@@ -115,6 +115,12 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 
 			CipherText::mul(c3, c3, -25);
 			CYBOZU_TEST_EQUAL(m1 * m2 * -25, sec.dec(c3));
+
+			pub.enc(c1, m1, true);
+			CYBOZU_TEST_EQUAL(m1, sec.dec(c1));
+			pub.enc(c2, m2, true);
+			CipherText::add(c3, c1, c2);
+			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 		}
 	}
 }
@@ -226,6 +232,37 @@ CYBOZU_TEST_AUTO(io)
 		CYBOZU_TEST_EQUAL(m, 15);
 	}
 }
+
+CYBOZU_TEST_AUTO(opBench)
+{
+	G1 P, P2;
+	G2 Q;
+	GT e, e2;
+	Fr r;
+	r.setRand(mcl::she::local::g_rg);
+	BN::hashAndMapToG1(P, "abc");
+	BN::hashAndMapToG2(Q, "abc");
+	BN::pairing(e, P, Q);
+	const int c = 100;
+	P2.clear();
+	e2 = 1;
+	CYBOZU_BENCH_C("G1::add", c, G1::add, P2, P2, P);
+	CYBOZU_BENCH_C("G1::pow", c, G1::mul, P, P, r);
+	CYBOZU_BENCH_C("GT::mul", c, GT::mul, e2, e2, e);
+	CYBOZU_BENCH_C("GT::pow", c, GT::pow, e, e, r);
+	CYBOZU_BENCH_C("miller ", c, BN::millerLoop, e, P, Q);
+
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	CipherTextG1 ca1;
+	CipherTextG2 ca2;
+	CipherTextM cm;
+	CYBOZU_BENCH_C("encG1", c, pub.enc, ca1, 12345);
+	CYBOZU_BENCH_C("encG2", c, pub.enc, ca2, 12345);
+	CYBOZU_BENCH_C("encGT", c, pub.enc, cm, 12345);
+}
+
 
 CYBOZU_TEST_AUTO(bench)
 {
