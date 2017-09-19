@@ -591,10 +591,11 @@ public:
 		{
 			Fr r;
 			r.setRand(rg);
-			G C;
 			G::mul(T, P, r);
-			G::mul(S, P, m);
-			G::mul(C, xP, r);
+			G::mul(S, xP, r);
+			if (m == 0) return;
+			G C;
+			G::mul(C, P, m);
 			S += C;
 		}
 		void set(const Fr& x, const Fr& y)
@@ -642,8 +643,10 @@ public:
 #if 1 // 6.5Mclk -> 5.9Mclk at Fp462
 			G1 P1, P2;
 			G1::mul(P1, xP, ra);
-			G1::mul(P2, P, m);
-			P1 += P2;
+			if (m) {
+				G1::mul(P2, P, m);
+				P1 += P2;
+			}
 			BN::millerLoop(c.g[0], P1, Q);
 			G1::mul(P1, P, rb);
 			G1::mul(P2, xP, rc);
@@ -717,6 +720,20 @@ public:
 			c += Enc(0)
 		*/
 		template<class RG>
+		void rerandomize(CipherTextG1& c, RG& rg) const
+		{
+			CipherTextG1 c0;
+			enc(c0, 0, rg);
+			CipherTextG1::add(c, c, c0);
+		}
+		template<class RG>
+		void rerandomize(CipherTextG2& c, RG& rg) const
+		{
+			CipherTextG2 c0;
+			enc(c0, 0, rg);
+			CipherTextG2::add(c, c, c0);
+		}
+		template<class RG>
 		void rerandomize(CipherTextA& c, RG& rg) const
 		{
 			CipherTextA c0;
@@ -726,6 +743,11 @@ public:
 		template<class RG>
 		void rerandomize(CipherTextM& c, RG& rg) const
 		{
+#if 1 // for circuit security : 3.58Mclk -> 5.4clk
+			CipherTextM c0;
+			enc(c0, 0, rg);
+			CipherTextM::add(c, c, c0);
+#else
 			/*
 				add Enc(0) * Enc(0)
 				(S1, T1) * (S2, T2) = (rxP, rP) * (r'yQ, r'Q)
@@ -742,6 +764,7 @@ public:
 			for (int i = 0; i < 4; i++) {
 				c.g[i] *= g[i];
 			}
+#endif
 		}
 		template<class RG>
 		void rerandomize(CipherText& c, RG& rg) const
@@ -752,6 +775,8 @@ public:
 				rerandomize(c.a, rg);
 			}
 		}
+		void rerandomize(CipherTextG1& c) const { rerandomize(c, local::g_rg); }
+		void rerandomize(CipherTextG2& c) const { rerandomize(c, local::g_rg); }
 		void rerandomize(CipherTextA& c) const { rerandomize(c, local::g_rg); }
 		void rerandomize(CipherTextM& c) const { rerandomize(c, local::g_rg); }
 		void rerandomize(CipherText& c) const { rerandomize(c, local::g_rg); }
