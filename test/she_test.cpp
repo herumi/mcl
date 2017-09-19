@@ -11,7 +11,16 @@ SecretKey g_sec;
 
 CYBOZU_TEST_AUTO(log)
 {
-	SHE::init();
+#ifdef MCL_USE_BN256
+	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb;
+#endif
+#ifdef MCL_USE_BN384
+	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp382_1;
+#endif
+#ifdef MCL_USE_BN512
+	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp462;
+#endif
+	SHE::init(cp);
 	G1 P;
 	BN::hashAndMapToG1(P, "abc");
 	for (int i = -5; i < 5; i++) {
@@ -246,11 +255,11 @@ CYBOZU_TEST_AUTO(opBench)
 	const int C = 100;
 	P2.clear();
 	e2 = 1;
-	CYBOZU_BENCH_C("G1::add", C, G1::add, P2, P2, P);
-	CYBOZU_BENCH_C("G1::pow", C, G1::mul, P, P, r);
-	CYBOZU_BENCH_C("GT::mul", C, GT::mul, e2, e2, e);
-	CYBOZU_BENCH_C("GT::pow", C, GT::pow, e, e, r);
-	CYBOZU_BENCH_C("miller ", C, BN::millerLoop, e, P, Q);
+	CYBOZU_BENCH_C("G1::add ", C, G1::add, P2, P2, P);
+	CYBOZU_BENCH_C("G1::pow ", C, G1::mul, P, P, r);
+	CYBOZU_BENCH_C("GT::mul ", C, GT::mul, e2, e2, e);
+	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, r);
+	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
 
 	const SecretKey& sec = g_sec;
 	PublicKey pub;
@@ -258,9 +267,21 @@ CYBOZU_TEST_AUTO(opBench)
 	CipherTextG1 ca1;
 	CipherTextG2 ca2;
 	CipherTextM cm;
-	CYBOZU_BENCH_C("encG1", C, pub.enc, ca1, 12345);
-	CYBOZU_BENCH_C("encG2", C, pub.enc, ca2, 12345);
-	CYBOZU_BENCH_C("encGT", C, pub.enc, cm, 12345);
+	int m = 12;
+	CYBOZU_BENCH_C("encG1   ", C, pub.enc, ca1, m);
+	CYBOZU_BENCH_C("encG2   ", C, pub.enc, ca2, m);
+	CYBOZU_BENCH_C("encGT   ", C, pub.enc, cm, m);
+
+	CYBOZU_BENCH_C("decG1   ", C, sec.dec, ca1);
+//	CYBOZU_BENCH_C("decG2", C, sec.dec, ca2);
+	CYBOZU_BENCH_C("decGT   ", C, sec.dec, cm);
+
+	CYBOZU_BENCH_C("mul     ", C, CipherTextM::mul, cm, ca1, ca2);
+
+	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, ca1, ca1, ca1);
+	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, ca2, ca2, ca2);
+	CYBOZU_BENCH_C("addGT   ", C, CipherTextM::add, cm, cm, cm);
+
 	CYBOZU_BENCH_C("rerandG1", C, pub.rerandomize, ca1);
 	CYBOZU_BENCH_C("rerandG2", C, pub.rerandomize, ca2);
 	CYBOZU_BENCH_C("rerandGT", C, pub.rerandomize, cm);

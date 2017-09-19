@@ -640,7 +640,7 @@ public:
 			rb.setRand(rg);
 			rc.setRand(rg);
 			GT e;
-#if 1 // 6.5Mclk -> 5.9Mclk at Fp462
+#if 1 // 6.5Mclk -> 5.9Mclk
 			G1 P1, P2;
 			G1::mul(P1, xP, ra);
 			if (m) {
