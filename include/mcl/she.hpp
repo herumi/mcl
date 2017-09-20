@@ -15,6 +15,7 @@
 	BGN encryption
 	http://theory.stanford.edu/~dfreeman/cs259c-f11/lectures/bgn
 */
+#include <cmath>
 #include <vector>
 #include <iosfwd>
 #if !defined(MCL_USE_BN256) && !defined(MCL_USE_BN384) && !defined(MCL_USE_BN512)
@@ -44,6 +45,7 @@ namespace bn_current = mcl::bn512;
 #else
 #include <cybozu/random_generator.hpp>
 #endif
+#include <mcl/window_method.hpp>
 
 namespace mcl { namespace she {
 
@@ -70,7 +72,11 @@ struct KeyCount {
 };
 
 template<class G, bool = true>
-struct InterfaceForHashTable {
+struct InterfaceForHashTable : G {
+	static G& castG(InterfaceForHashTable& x) { return static_cast<G&>(x); }
+	static const G& castG(const InterfaceForHashTable& x) { return static_cast<const G&>(x); }
+	void clear() { clear(castG(*this)); }
+	void normalize() { normalize(castG(*this)); }
 	static bool isOdd(const G& P) { return P.y.isOdd(); }
 	static bool isZero(const G& P) { return P.isZero(); }
 	static bool isSameX(const G& P, const G& Q) { return P.x == Q.x; }
@@ -89,7 +95,11 @@ struct InterfaceForHashTable {
 	then b.a.a or -b.a.a is odd
 */
 template<class G>
-struct InterfaceForHashTable<G, false> {
+struct InterfaceForHashTable<G, false> : G {
+	static G& castG(InterfaceForHashTable& x) { return static_cast<G&>(x); }
+	static const G& castG(const InterfaceForHashTable& x) { return static_cast<const G&>(x); }
+	void clear() { clear(castG(*this)); }
+	void normalize() { normalize(castG(*this)); }
 	static bool isOdd(const G& x) { return x.b.a.a.isOdd(); }
 	static bool isZero(const G& x) { return x.isOne(); }
 	static bool isSameX(const G& x, const G& Q) { return x.a == Q.a; }
@@ -111,6 +121,7 @@ class HashTable {
 	typedef std::vector<KeyCount> KeyCountVec;
 	KeyCountVec kcv;
 	G P;
+	mcl::fp::WindowMethod<I> wm;
 	G nextP;
 	G nextNegP;
 	size_t tryNum;
@@ -129,6 +140,12 @@ class HashTable {
 		ic ic;
 		is.read(ic.c, sizeof(ic));
 		return ic.i;
+	}
+	void setWindowMethod()
+	{
+		const size_t bitSize = G::BaseFp::getBitSize();
+		const size_t winSize = 10;
+		wm.init(static_cast<const I&>(P), bitSize, winSize);
 	}
 public:
 	HashTable() : tryNum(0) {}
@@ -170,6 +187,7 @@ public:
 			ascending order of abs(count) for same key
 		*/
 		std::stable_sort(kcv.begin(), kcv.end());
+		setWindowMethod();
 	}
 	void setTryNum(size_t tryNum)
 	{
@@ -202,7 +220,8 @@ public:
 			assert(abs_c >= prev); // assume ascending order
 			bool neg = count < 0;
 			G T;
-			I::mul(T, P, abs_c - prev);
+//			I::mul(T, P, abs_c - prev);
+			mulByWindowMethod(T, abs_c - prev);
 			I::add(Q, Q, T);
 			I::normalize(Q);
 			if (I::isSameX(Q, xP)) {
@@ -268,6 +287,15 @@ public:
 		P.readStream(is, mcl::IoArray);
 		I::mul(nextP, P, (hashSize * 2) + 1);
 		I::neg(nextNegP, nextP);
+		setWindowMethod();
+	}
+	/*
+		mul(x, P, y);
+	*/
+	template<class T>
+	void mulByWindowMethod(G& x, const T& y) const
+	{
+		wm.mul(static_cast<I&>(x), y);
 	}
 };
 
@@ -307,9 +335,9 @@ struct SHET {
 	static G1 P;
 	static G2 Q;
 	static GT ePQ; // e(P, Q)
+	static GT mPQ; // millerLoop(P, Q)
 	static local::HashTable<G1> g1HashTbl;
 	static local::HashTable<GT, false> gtHashTbl;
-//	static local::GTHashTable<GT> gtHashTbl;
 private:
 	template<class G>
 	class CipherTextAT {
@@ -424,7 +452,8 @@ public:
 		bn_current::initPairing(cp);
 		BN::hashAndMapToG1(P, "0");
 		BN::hashAndMapToG2(Q, "0");
-		BN::pairing(ePQ, P, Q);
+		BN::millerLoop(mPQ, P, Q);
+		BN::finalExp(ePQ, mPQ);
 	}
 	/*
 		set range for G1-DLP
@@ -578,10 +607,6 @@ public:
 	class PublicKey {
 		G1 xP;
 		G2 yQ;
-		GT mPQ;   // ML(P, Q)
-		GT mxPQ;  // ML(xP, Q)
-		GT myPQ;  // ML(P, yQ)
-		GT mxyPQ; // ML(xP, yQ)
 		friend class SecretKey;
 		/*
 			(S, T) = (m P + r xP, rP)
@@ -602,25 +627,35 @@ public:
 		{
 			G1::mul(xP, P, x);
 			G2::mul(yQ, Q, y);
-			setOtherMember();
-		}
-		void setOtherMember()
-		{
-			BN::millerLoop(mPQ, P, Q);
-			BN::millerLoop(mxPQ, xP, Q);
-			BN::millerLoop(myPQ, P, yQ);
-			BN::millerLoop(mxyPQ, xP, yQ);
 		}
 	public:
 		template<class RG>
 		void enc(CipherTextG1& c, int m, RG& rg) const
 		{
-			enc1(c.S, c.T, P, xP, m, rg);
+			// (S, T) = (m P + r xP, rP)
+			Fr r;
+			r.setRand(rg);
+//			G1::mul(c.T, P, r);
+			g1HashTbl.mulByWindowMethod(c.T, r);
+			G1::mul(c.S, xP, r);
+			if (m == 0) return;
+			G1 C;
+//			G1::mul(C, P, m);
+			g1HashTbl.mulByWindowMethod(C, m);
+			c.S += C;
 		}
 		template<class RG>
 		void enc(CipherTextG2& c, int m, RG& rg) const
 		{
-			enc1(c.S, c.T, Q, yQ, m, rg);
+			// (S, T) = (m Q + r yQ, yQ)
+			Fr r;
+			r.setRand(rg);
+			G2::mul(c.T, Q, r);
+			G2::mul(c.S, yQ, r);
+			if (m == 0) return;
+			G2 C;
+			G2::mul(C, Q, m);
+			c.S += C;
 		}
 		template<class RG>
 		void enc(CipherTextA& c, int m, RG& rg) const
@@ -644,11 +679,13 @@ public:
 			G1 P1, P2;
 			G1::mul(P1, xP, ra);
 			if (m) {
-				G1::mul(P2, P, m);
+//				G1::mul(P2, P, m);
+				g1HashTbl.mulByWindowMethod(P2, m);
 				P1 += P2;
 			}
 			BN::millerLoop(c.g[0], P1, Q);
-			G1::mul(P1, P, rb);
+//			G1::mul(P1, P, rb);
+			g1HashTbl.mulByWindowMethod(P1, rb);
 			G1::mul(P2, xP, rc);
 			P1 -= P2;
 			BN::millerLoop(e, P1, yQ);
@@ -785,7 +822,6 @@ public:
 		{
 			xP.readStream(is, ioMode);
 			yQ.readStream(is, ioMode);
-			setOtherMember();
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
@@ -1112,6 +1148,7 @@ public:
 template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P;
 template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ;
+template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::mPQ;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::g1HashTbl;
 template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::gtHashTbl;
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;

@@ -249,6 +249,7 @@ CYBOZU_TEST_AUTO(opBench)
 	GT e, e2;
 	Fr r;
 	r.setRand(mcl::she::local::g_rg);
+	mpz_class mr = r.getMpz();
 	BN::hashAndMapToG1(P, "abc");
 	BN::hashAndMapToG2(Q, "abc");
 	BN::pairing(e, P, Q);
@@ -256,9 +257,21 @@ CYBOZU_TEST_AUTO(opBench)
 	P2.clear();
 	e2 = 1;
 	CYBOZU_BENCH_C("G1::add ", C, G1::add, P2, P2, P);
-	CYBOZU_BENCH_C("G1::pow ", C, G1::mul, P, P, r);
+	CYBOZU_BENCH_C("G1::pow ", C, G1::mul, P, P, mr);
 	CYBOZU_BENCH_C("GT::mul ", C, GT::mul, e2, e2, e);
-	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, r);
+	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, mr);
+	typedef mcl::GroupMtoA<Fp12> AG;
+	mcl::fp::WindowMethod<AG> wm;
+#if 1
+	wm.init(static_cast<AG&>(e), Fr::getBitSize(), 10);
+	for (int i = 0; i < 100; i++) {
+		GT t1, t2;
+		GT::pow(t1, e, i);
+		wm.mul(static_cast<AG&>(t2), i);
+		CYBOZU_TEST_EQUAL(t1, t2);
+	}
+	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), mr);
+#endif
 	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
 
 	const SecretKey& sec = g_sec;
