@@ -333,10 +333,10 @@ CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
-	SHE::setRangeForDLP(1u << 20, 1024);
+	SHE::setRangeForDLP(1u << 21, 1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
-	int x = 1 << 20;
+	int x = 1 << 21;
 	CipherText c1;
 	pub.enc(c1, x);
 	for (int i = 0; i < 20; i++) {
