@@ -721,6 +721,7 @@ public:
 			const size_t n = Fp::getByteSize();
 			str.resize(n);
 			is.read(&str[0], n);
+			if (!is) throw cybozu::Exception("EcT:readStream:can't read") << n;
 			if (fp::isZeroArray(&str[0], n)) {
 				clear();
 				return is;
