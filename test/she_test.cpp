@@ -340,12 +340,12 @@ CYBOZU_TEST_AUTO(hashBench)
 	CipherText c1;
 	pub.enc(c1, x);
 	for (int i = 0; i < 20; i++) {
-		int y = i * 10;
+		int y = i * 50;
 		CipherText c2;
 		pub.enc(c2, y);
 		c2.mul(c1);
 		CYBOZU_TEST_EQUAL(sec.dec(c2), x * y);
 		printf("i=%2d x * y =%5d ", i, x * y);
-		CYBOZU_BENCH("dec", sec.dec, c2);
+		CYBOZU_BENCH_C("dec", 100, sec.dec, c2);
 	}
 }

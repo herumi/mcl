@@ -57,6 +57,7 @@ static thread_local std::random_device g_rg;
 #else
 static cybozu::RandomGenerator g_rg;
 #endif
+const size_t winSize = 10;
 
 struct KeyCount {
 	uint32_t key;
@@ -144,8 +145,7 @@ class HashTable {
 	void setWindowMethod()
 	{
 		const size_t bitSize = G::BaseFp::getBitSize();
-		const size_t winSize = 10;
-		wm.init(static_cast<const I&>(P), bitSize, winSize);
+		wm.init(static_cast<const I&>(P), bitSize, local::winSize);
 	}
 public:
 	HashTable() : tryNum(0) {}
@@ -289,6 +289,7 @@ public:
 		I::neg(nextNegP, nextP);
 		setWindowMethod();
 	}
+	const mcl::fp::WindowMethod<I>& getWM() const { return wm; }
 	/*
 		mul(x, P, y);
 	*/
@@ -337,6 +338,9 @@ struct SHET {
 	static GT ePQ; // e(P, Q)
 	static GT mPQ; // millerLoop(P, Q)
 	static local::HashTable<G1> g1HashTbl;
+	static mcl::fp::WindowMethod<G2> g2wm;
+	typedef local::InterfaceForHashTable<GT, false> GTasEC;
+	static mcl::fp::WindowMethod<GTasEC> gtwm;
 	static local::HashTable<GT, false> gtHashTbl;
 private:
 	template<class G>
@@ -454,6 +458,9 @@ public:
 		BN::hashAndMapToG2(Q, "0");
 		BN::millerLoop(mPQ, P, Q);
 		BN::finalExp(ePQ, mPQ);
+		const size_t bitSize = Fr::getBitSize();
+		g2wm.init(Q, bitSize, local::winSize);
+		gtwm.init(static_cast<const GTasEC&>(mPQ), bitSize, local::winSize);
 	}
 	/*
 		set range for G1-DLP
@@ -611,16 +618,18 @@ public:
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
-		template<class G, class RG>
-		static void enc1(G& S, G& T, const G& P, const G& xP, int m, RG& rg)
+		template<class G, class RG, class I>
+		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, int m, RG& rg, const mcl::fp::WindowMethod<I>& wm)
 		{
 			Fr r;
 			r.setRand(rg);
-			G::mul(T, P, r);
+//			G::mul(T, P, r);
+			wm.mul(static_cast<I&>(T), r);
 			G::mul(S, xP, r);
 			if (m == 0) return;
 			G C;
-			G::mul(C, P, m);
+//			G::mul(C, P, m);
+			wm.mul(static_cast<I&>(C), m);
 			S += C;
 		}
 		void set(const Fr& x, const Fr& y)
@@ -632,30 +641,12 @@ public:
 		template<class RG>
 		void enc(CipherTextG1& c, int m, RG& rg) const
 		{
-			// (S, T) = (m P + r xP, rP)
-			Fr r;
-			r.setRand(rg);
-//			G1::mul(c.T, P, r);
-			g1HashTbl.mulByWindowMethod(c.T, r);
-			G1::mul(c.S, xP, r);
-			if (m == 0) return;
-			G1 C;
-//			G1::mul(C, P, m);
-			g1HashTbl.mulByWindowMethod(C, m);
-			c.S += C;
+			enc1(c.S, c.T, P, xP, m, rg, g1HashTbl.getWM());
 		}
 		template<class RG>
 		void enc(CipherTextG2& c, int m, RG& rg) const
 		{
-			// (S, T) = (m Q + r yQ, yQ)
-			Fr r;
-			r.setRand(rg);
-			G2::mul(c.T, Q, r);
-			G2::mul(c.S, yQ, r);
-			if (m == 0) return;
-			G2 C;
-			G2::mul(C, Q, m);
-			c.S += C;
+			enc1(c.S, c.T, Q, yQ, m, rg, g2wm);
 		}
 		template<class RG>
 		void enc(CipherTextA& c, int m, RG& rg) const
@@ -699,9 +690,15 @@ public:
 			GT::pow(e, mPQ, m);
 			c.g[0] *= e;
 #endif
+#if 1
+			gtwm.mul(static_cast<GTasEC&>(c.g[1]), rb);
+			gtwm.mul(static_cast<GTasEC&>(c.g[2]), ra);
+			gtwm.mul(static_cast<GTasEC&>(c.g[3]), rc);
+#else
 			GT::pow(c.g[1], mPQ, rb);
 			GT::pow(c.g[2], mPQ, ra);
 			GT::pow(c.g[3], mPQ, rc);
+#endif
 		}
 		template<class RG>
 		void enc(CipherText& c, int m, RG& rg, bool multiplied = false) const
@@ -780,7 +777,7 @@ public:
 		template<class RG>
 		void rerandomize(CipherTextM& c, RG& rg) const
 		{
-#if 1 // for circuit security : 3.58Mclk -> 5.4clk
+#if 1 // for circuit security : 3.58Mclk -> 5.4Mclk
 			CipherTextM c0;
 			enc(c0, 0, rg);
 			CipherTextM::add(c, c, c0);
@@ -1150,6 +1147,8 @@ template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::mPQ;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::g1HashTbl;
+template<class BN, class Fr> mcl::fp::WindowMethod<typename BN::G2> SHET<BN, Fr>::g2wm;
+template<class BN, class Fr> mcl::fp::WindowMethod<mcl::she::local::InterfaceForHashTable<typename BN::Fp12, false> > SHET<BN, Fr>::gtwm;
 template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::gtHashTbl;
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
