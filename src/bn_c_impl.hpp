@@ -48,15 +48,12 @@ static int closeErrFile()
 }
 
 template<class T>
-size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const char *msg, bool convertToHex)
+size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const char *msg)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str, ioMode);
-	if (convertToHex) {
-		str = mcl::fp::littleEndianToHexStr(str.c_str(), str.size());
-	}
-	size_t terminate = (convertToHex || ioMode == 10 || ioMode == 16) ? 1 : 0;
+	size_t terminate = (ioMode == 10 || ioMode == 16) ? 1 : 0;
 	if (str.size() + terminate > maxBufSize) {
 		if (g_fp) fprintf(g_fp, "%s:serialize:small maxBufSize %d %d %d\n", msg, (int)maxBufSize, (int)str.size(), (int)terminate);
 		return 0;
@@ -72,15 +69,11 @@ size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const cha
 }
 
 template<class T>
-int deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *msg, bool convertFromHex)
+int deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *msg)
 	try
 {
 	std::string str;
-	if (convertFromHex) {
-		str = mcl::fp::hexStrToLittleEndian((const char *)buf, bufSize);
-	} else {
-		str.assign((const char *)buf, bufSize);
-	}
+	str.assign((const char *)buf, bufSize);
 	cast(x)->setStr(str, ioMode);
 	return 0;
 } catch (std::exception& e) {
@@ -184,7 +177,7 @@ void mclBnFr_setInt(mclBnFr *y, int64_t x)
 
 int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnFr_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnFr_setStr");
 }
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize)
 	try
@@ -197,7 +190,7 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize)
 }
 int mclBnFr_deserialize(mclBnFr *x, const void *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnFr_deserialize", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnFr_deserialize");
 }
 // return 1 if true
 int mclBnFr_isValid(const mclBnFr *x)
@@ -240,11 +233,11 @@ int mclBnFr_setHashOf(mclBnFr *x, const void *buf, size_t bufSize)
 
 size_t mclBnFr_getStr(char *buf, size_t maxBufSize, const mclBnFr *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnFr_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnFr_getStr");
 }
 size_t mclBnFr_serialize(void *buf, size_t maxBufSize, const mclBnFr *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnFr_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnFr_serialize");
 }
 
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x)
@@ -281,11 +274,11 @@ void mclBnG1_clear(mclBnG1 *x)
 
 int mclBnG1_setStr(mclBnG1 *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnG1_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnG1_setStr");
 }
 int mclBnG1_deserialize(mclBnG1 *x, const void *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG1_deserialize", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG1_deserialize");
 }
 
 // return 1 if true
@@ -314,12 +307,12 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, size_t bufSize)
 
 size_t mclBnG1_getStr(char *buf, size_t maxBufSize, const mclBnG1 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnG1_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnG1_getStr");
 }
 
 size_t mclBnG1_serialize(void *buf, size_t maxBufSize, const mclBnG1 *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG1_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG1_serialize");
 }
 
 void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x)
@@ -356,11 +349,11 @@ void mclBnG2_clear(mclBnG2 *x)
 
 int mclBnG2_setStr(mclBnG2 *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnG2_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnG2_setStr");
 }
 int mclBnG2_deserialize(mclBnG2 *x, const void *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG2_deserialize", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG2_deserialize");
 }
 
 // return 1 if true
@@ -389,11 +382,11 @@ int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, size_t bufSize)
 
 size_t mclBnG2_getStr(char *buf, size_t maxBufSize, const mclBnG2 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnG2_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnG2_getStr");
 }
 size_t mclBnG2_serialize(void *buf, size_t maxBufSize, const mclBnG2 *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG2_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG2_serialize");
 }
 
 void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x)
@@ -435,11 +428,11 @@ void mclBnGT_setInt(mclBnGT *y, int64_t x)
 
 int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnGT_setStr", false);
+	return deserialize(x, buf, bufSize, ioMode, "mclBnGT_setStr");
 }
 int mclBnGT_deserialize(mclBnGT *x, const void *buf, size_t bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnGT_deserialize", false);
+	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnGT_deserialize");
 }
 
 // return 1 if true
@@ -458,12 +451,12 @@ int mclBnGT_isOne(const mclBnGT *x)
 
 size_t mclBnGT_getStr(char *buf, size_t maxBufSize, const mclBnGT *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnGT_getStr", false);
+	return serialize(buf, maxBufSize, x, ioMode, "mclBnGT_getStr");
 }
 
 size_t mclBnGT_serialize(void *buf, size_t maxBufSize, const mclBnGT *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnGT_serialize", false);
+	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnGT_serialize");
 }
 
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)
