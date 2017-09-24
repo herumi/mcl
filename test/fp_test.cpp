@@ -721,14 +721,8 @@ void setHashOfTest()
 #else
 		size_t bitSize = Fp::getBitSize();
 		cybozu::crypto::Hash::Name name;
-		if (bitSize <= 160) {
-			name = cybozu::crypto::Hash::N_SHA1;
-		} else if (bitSize <= 224) {
-			name = cybozu::crypto::Hash::N_SHA224;
-		} else if (bitSize <= 256) {
+		if (bitSize <= 256) {
 			name = cybozu::crypto::Hash::N_SHA256;
-		} else if (bitSize <= 384) {
-			name = cybozu::crypto::Hash::N_SHA384;
 		} else {
 			name = cybozu::crypto::Hash::N_SHA512;
 		}
