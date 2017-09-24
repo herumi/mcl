@@ -277,7 +277,7 @@ struct SetFpDbl<N, true> {
 	}
 };
 
-template<size_t N, class Tag, bool enableFpDbl>
+template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>
 void setOp2(Op& op)
 {
 	op.fp_shr1 = Shr1<N, Tag>::f;
@@ -304,8 +304,10 @@ void setOp2(Op& op)
 		op.fpDbl_mod = Dbl_Mod<N, Tag>::f;
 	}
 	op.fp_mulUnit = MulUnit<N, Tag>::f;
-	op.fpDbl_mulPre = MulPre<N, Tag>::f;
-	op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
+	if (!gmpIsFasterThanLLVM) {
+		op.fpDbl_mulPre = MulPre<N, Tag>::f;
+		op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
+	}
 	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
 	op.fpN1_mod = N1_Mod<N, Tag>::f;
 	op.fpDbl_add = DblAdd<N, Tag>::f;
@@ -328,17 +330,18 @@ void setOp(Op& op, Mode mode)
 	} else {
 		op.fp_invOp = fp_invOpC;
 	}
-	setOp2<N, Gtag, true>(op);
+	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
 #if defined(MCL_USE_XBYAK) && CYBOZU_HOST == CYBOZU_HOST_INTEL
+		const bool gmpIsFasterThanLLVM = false;//(N == 8 && MCL_SIZEOF_UNIT == 8);
 		Xbyak::util::Cpu cpu;
 		if (cpu.has(Xbyak::util::Cpu::tBMI2)) {
-			setOp2<N, LBMI2tag, (N * UnitBitSize <= 256)>(op);
+			setOp2<N, LBMI2tag, (N * UnitBitSize <= 256), gmpIsFasterThanLLVM>(op);
 		} else
 #endif
 		{
-			setOp2<N, Ltag, (N * UnitBitSize <= 256)>(op);
+			setOp2<N, Ltag, (N * UnitBitSize <= 256), false>(op);
 		}
 	}
 #else

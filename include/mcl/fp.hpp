@@ -118,6 +118,12 @@ public:
 	{
 		gmp::getStr(pstr, op_.mp);
 	}
+	static std::string getModulo()
+	{
+		std::string s;
+		getModulo(s);
+		return s;
+	}
 	static inline bool isFullBit() { return op_.isFullBit; }
 	/*
 		binary patter of p
