@@ -371,6 +371,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
+		testHashAndMapto();
 	}
 	int count = (int)clk.getCount();
 	if (count) {

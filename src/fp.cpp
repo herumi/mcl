@@ -1,7 +1,7 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #ifdef MCL_DONT_USE_OPENSSL
-#include <cybozu/sha1.hpp>
+#include <cybozu/sha2.hpp>
 #else
 #include <cybozu/crypto.hpp>
 #endif
@@ -197,19 +197,15 @@ bool isEnableJIT()
 std::string hash(size_t bitSize, const void *msg, size_t msgSize)
 {
 #ifdef MCL_DONT_USE_OPENSSL
-	(void)bitSize;
-	cybozu::Sha1 sha1;
-	return sha1.digest((const char*)msg, msgSize);
+	if (bitSize <= 256) {
+		return cybozu::Sha256(msg, msgSize).get();
+	} else {
+		return cybozu::Sha512(msg, msgSize).get();
+	}
 #else
 	cybozu::crypto::Hash::Name name;
-	if (bitSize <= 160) {
-		name = cybozu::crypto::Hash::N_SHA1;
-	} else if (bitSize <= 224) {
-		name = cybozu::crypto::Hash::N_SHA224;
-	} else if (bitSize <= 256) {
+	if (bitSize <= 256) {
 		name = cybozu::crypto::Hash::N_SHA256;
-	} else if (bitSize <= 384) {
-		name = cybozu::crypto::Hash::N_SHA384;
 	} else {
 		name = cybozu::crypto::Hash::N_SHA512;
 	}
