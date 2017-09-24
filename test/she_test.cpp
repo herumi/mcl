@@ -298,6 +298,18 @@ CYBOZU_TEST_AUTO(opBench)
 	CYBOZU_BENCH_C("rerandG1", C, pub.rerandomize, ca1);
 	CYBOZU_BENCH_C("rerandG2", C, pub.rerandomize, ca2);
 	CYBOZU_BENCH_C("rerandGT", C, pub.rerandomize, cm);
+
+	int m2 = 12345678;
+	printf("mul %d\n", m2);
+	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, ca1, ca1, m2);
+	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, ca2, ca2, m2);
+	CYBOZU_BENCH_C("mulGT   ", C, CipherTextM::mul, cm, cm, m2);
+
+	m2 = 12;
+	printf("mul %d\n", m2);
+	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, ca1, ca1, m2);
+	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, ca2, ca2, m2);
+	CYBOZU_BENCH_C("mulGT   ", C, CipherTextM::mul, cm, cm, m2);
 }
 
 
