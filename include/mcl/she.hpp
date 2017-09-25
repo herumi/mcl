@@ -337,6 +337,7 @@ struct SHET {
 	static G2 Q;
 	static GT ePQ; // e(P, Q)
 	static GT mPQ; // millerLoop(P, Q)
+	static std::vector<bn_current::Fp6> Qcoeff_;
 	static local::HashTable<G1> g1HashTbl;
 	static mcl::fp::WindowMethod<G2> g2wm;
 	typedef local::InterfaceForHashTable<GT, false> GTasEC;
@@ -458,6 +459,7 @@ public:
 		BN::hashAndMapToG2(Q, "0");
 		BN::millerLoop(mPQ, P, Q);
 		BN::finalExp(ePQ, mPQ);
+		BN::precomputeG2(Qcoeff_, Q);
 		const size_t bitSize = Fr::getBitSize();
 		g2wm.init(Q, bitSize, local::winSize);
 		gtwm.init(static_cast<const GTasEC&>(mPQ), bitSize, local::winSize);
@@ -666,7 +668,7 @@ public:
 			rb.setRand(rg);
 			rc.setRand(rg);
 			GT e;
-#if 1 // 6.5Mclk -> 5.9Mclk
+#if 1
 			G1 P1, P2;
 			G1::mul(P1, xP, ra);
 			if (m) {
@@ -674,7 +676,8 @@ public:
 				g1HashTbl.mulByWindowMethod(P2, m);
 				P1 += P2;
 			}
-			BN::millerLoop(c.g[0], P1, Q);
+//			BN::millerLoop(c.g[0], P1, Q);
+			BN::precomputedMillerLoop(c.g[0], P1, Qcoeff_);
 //			G1::mul(P1, P, rb);
 			g1HashTbl.mulByWindowMethod(P1, rb);
 			G1::mul(P2, xP, rc);
@@ -724,7 +727,9 @@ public:
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
 			*/
-			doubleMillerLoop(cm.g[0], cm.g[2], c1.S, c1.T, Q);
+//			doubleMillerLoop(cm.g[0], cm.g[2], c1.S, c1.T, Q);
+			BN::precomputedMillerLoop(cm.g[0], c1.S, Qcoeff_);
+			BN::precomputedMillerLoop(cm.g[2], c1.T, Qcoeff_);
 			cm.g[1] = 1;
 			cm.g[3] = 1;
 		}
@@ -1146,6 +1151,7 @@ template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P;
 template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::mPQ;
+template<class BN, class Fr> std::vector<bn_current::Fp6> SHET<BN, Fr>::Qcoeff_;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::g1HashTbl;
 template<class BN, class Fr> mcl::fp::WindowMethod<typename BN::G2> SHET<BN, Fr>::g2wm;
 template<class BN, class Fr> mcl::fp::WindowMethod<mcl::she::local::InterfaceForHashTable<typename BN::Fp12, false> > SHET<BN, Fr>::gtwm;
