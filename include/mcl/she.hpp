@@ -121,11 +121,11 @@ class HashTable {
 	typedef InterfaceForHashTable<G, isEC> I;
 	typedef std::vector<KeyCount> KeyCountVec;
 	KeyCountVec kcv;
-	G P;
-	mcl::fp::WindowMethod<I> wm;
-	G nextP;
-	G nextNegP;
-	size_t tryNum;
+	G P_;
+	mcl::fp::WindowMethod<I> wm_;
+	G nextP_;
+	G nextNegP_;
+	size_t tryNum_;
 	union ic {
 		uint64_t i;
 		char c[8];
@@ -145,17 +145,17 @@ class HashTable {
 	void setWindowMethod()
 	{
 		const size_t bitSize = G::BaseFp::getBitSize();
-		wm.init(static_cast<const I&>(P), bitSize, local::winSize);
+		wm_.init(static_cast<const I&>(P_), bitSize, local::winSize);
 	}
 public:
-	HashTable() : tryNum(0) {}
+	HashTable() : tryNum_(0) {}
 	bool operator==(const HashTable& rhs) const
 	{
 		if (kcv.size() != rhs.kcv.size()) return false;
 		for (size_t i = 0; i < kcv.size(); i++) {
 			if (!kcv[i].isSame(rhs.kcv[i])) return false;
 		}
-		return P == rhs.P && nextP == rhs.nextP && tryNum == rhs.tryNum;
+		return P_ == rhs.P_ && nextP_ == rhs.nextP_ && tryNum_ == rhs.tryNum_;
 	}
 	bool operator!=(const HashTable& rhs) const { return !operator==(rhs); }
 	/*
@@ -168,21 +168,21 @@ public:
 			return;
 		}
 		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
-		this->P = P;
-		this->tryNum = tryNum;
+		P_ = P;
+		tryNum_ = tryNum;
 		kcv.resize(hashSize);
 		G xP;
 		I::clear(xP);
 		for (int i = 1; i <= (int)kcv.size(); i++) {
-			I::add(xP, xP, P);
+			I::add(xP, xP, P_);
 			I::normalize(xP);
 			kcv[i - 1].key = I::getHash(xP);
 			kcv[i - 1].count = I::isOdd(xP) ? i : -i;
 		}
-		nextP = xP;
-		I::dbl(nextP, nextP);
-		I::add(nextP, nextP, P); // nextP = (hasSize * 2 + 1)P
-		I::neg(nextNegP, nextP); // nextNegP = -nextP
+		nextP_ = xP;
+		I::dbl(nextP_, nextP_);
+		I::add(nextP_, nextP_, P_); // nextP = (hasSize * 2 + 1)P
+		I::neg(nextNegP_, nextP_); // nextNegP = -nextP
 		/*
 			ascending order of abs(count) for same key
 		*/
@@ -191,7 +191,7 @@ public:
 	}
 	void setTryNum(size_t tryNum)
 	{
-		this->tryNum = tryNum;
+		this->tryNum_ = tryNum;
 	}
 	/*
 		log_P(xP)
@@ -255,14 +255,14 @@ public:
 		int posCenter = 0;
 		int negCenter = 0;
 		int next = (int)kcv.size() * 2 + 1;
-		for (size_t i = 1; i < tryNum; i++) {
-			I::add(posP, posP, nextNegP);
+		for (size_t i = 1; i < tryNum_; i++) {
+			I::add(posP, posP, nextNegP_);
 			posCenter += next;
 			c = basicLog(posP, &ok);
 			if (ok) {
 				return posCenter + c;
 			}
-			I::add(negP, negP, nextP);
+			I::add(negP, negP, nextP_);
 			negCenter -= next;
 			c = basicLog(negP, &ok);
 			if (ok) {
@@ -274,29 +274,29 @@ public:
 	void save(std::ostream& os) const
 	{
 		saveUint64(os, kcv.size());
-		saveUint64(os, tryNum);
+		saveUint64(os, tryNum_);
 		os.write((const char*)&kcv[0], sizeof(kcv[0]) * kcv.size());
-		os << P.getStr(mcl::IoArray);
+		os << P_.getStr(mcl::IoArray);
 	}
 	void load(std::istream& is)
 	{
 		size_t hashSize = size_t(loadUint64(is));
 		kcv.resize(hashSize);
-		tryNum = loadUint64(is);
+		tryNum_ = loadUint64(is);
 		is.read((char*)&kcv[0], sizeof(kcv[0]) * kcv.size());
-		P.readStream(is, mcl::IoArray);
-		I::mul(nextP, P, (hashSize * 2) + 1);
-		I::neg(nextNegP, nextP);
+		P_.readStream(is, mcl::IoArray);
+		I::mul(nextP_, P_, (hashSize * 2) + 1);
+		I::neg(nextNegP_, nextP_);
 		setWindowMethod();
 	}
-	const mcl::fp::WindowMethod<I>& getWM() const { return wm; }
+	const mcl::fp::WindowMethod<I>& getWM() const { return wm_; }
 	/*
 		mul(x, P, y);
 	*/
 	template<class T>
 	void mulByWindowMethod(G& x, const T& y) const
 	{
-		wm.mul(static_cast<I&>(x), y);
+		wm_.mul(static_cast<I&>(x), y);
 	}
 };
 
@@ -333,20 +333,20 @@ struct SHET {
 	class CipherTextM; // multiplicative HE
 	class CipherText; // CipherTextA + CipherTextM
 
-	static G1 P;
-	static G2 Q;
-	static GT ePQ; // e(P, Q)
-	static GT mPQ; // millerLoop(P, Q)
+	static G1 P_;
+	static G2 Q_;
+	static GT ePQ_; // e(P, Q)
+	static GT mPQ_; // millerLoop(P, Q)
 	static std::vector<bn_current::Fp6> Qcoeff_;
-	static local::HashTable<G1> g1HashTbl;
-	static mcl::fp::WindowMethod<G2> g2wm;
+	static local::HashTable<G1> PhashTbl_;
+	static mcl::fp::WindowMethod<G2> Qwm_;
 	typedef local::InterfaceForHashTable<GT, false> GTasEC;
-	static mcl::fp::WindowMethod<GTasEC> gtwm;
-	static local::HashTable<GT, false> gtHashTbl;
+	static mcl::fp::WindowMethod<GTasEC> mPQwm_;
+	static local::HashTable<GT, false> ePQhashTbl_;
 private:
 	template<class G>
 	class CipherTextAT {
-		G S, T;
+		G S_, T_;
 		friend class SecretKey;
 		friend class PublicKey;
 		friend class CipherTextA;
@@ -354,49 +354,49 @@ private:
 	public:
 		void clear()
 		{
-			S.clear();
-			T.clear();
+			S_.clear();
+			T_.clear();
 		}
 		static void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
 			/*
 				(S, T) + (S', T') = (S + S', T + T')
 			*/
-			G::add(z.S, x.S, y.S);
-			G::add(z.T, x.T, y.T);
+			G::add(z.S_, x.S_, y.S_);
+			G::add(z.T_, x.T_, y.T_);
 		}
 		static void sub(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
 			/*
 				(S, T) - (S', T') = (S - S', T - T')
 			*/
-			G::sub(z.S, x.S, y.S);
-			G::sub(z.T, x.T, y.T);
+			G::sub(z.S_, x.S_, y.S_);
+			G::sub(z.T_, x.T_, y.T_);
 		}
 		static void mul(CipherTextAT& z, const CipherTextAT& x, int y)
 		{
-			G::mul(z.S, x.S, y);
-			G::mul(z.T, x.T, y);
+			G::mul(z.S_, x.S_, y);
+			G::mul(z.T_, x.T_, y);
 		}
 		static void neg(CipherTextAT& y, const CipherTextAT& x)
 		{
-			G::neg(y.S, x.S);
-			G::neg(y.T, x.T);
+			G::neg(y.S_, x.S_);
+			G::neg(y.T_, x.T_);
 		}
 		void add(const CipherTextAT& c) { add(*this, *this, c); }
 		void sub(const CipherTextAT& c) { sub(*this, *this, c); }
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			S.readStream(is, ioMode);
-			T.readStream(is, ioMode);
+			S_.readStream(is, ioMode);
+			T_.readStream(is, ioMode);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
-			str = S.getStr(ioMode);
+			str = S_.getStr(ioMode);
 			str += sep;
-			str += T.getStr(ioMode);
+			str += T_.getStr(ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -419,7 +419,7 @@ private:
 		}
 		bool operator==(const CipherTextAT& rhs) const
 		{
-			return S == rhs.S && T == rhs.T;
+			return S_ == rhs.S_ && T_ == rhs.T_;
 		}
 		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
 	};
@@ -455,28 +455,28 @@ public:
 	static void init(const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb)
 	{
 		bn_current::initPairing(cp);
-		BN::hashAndMapToG1(P, "0");
-		BN::hashAndMapToG2(Q, "0");
-		BN::millerLoop(mPQ, P, Q);
-		BN::finalExp(ePQ, mPQ);
-		BN::precomputeG2(Qcoeff_, Q);
+		BN::hashAndMapToG1(P_, "0");
+		BN::hashAndMapToG2(Q_, "0");
+		BN::millerLoop(mPQ_, P_, Q_);
+		BN::finalExp(ePQ_, mPQ_);
+		BN::precomputeG2(Qcoeff_, Q_);
 		const size_t bitSize = Fr::getBitSize();
-		g2wm.init(Q, bitSize, local::winSize);
-		gtwm.init(static_cast<const GTasEC&>(mPQ), bitSize, local::winSize);
+		Qwm_.init(Q_, bitSize, local::winSize);
+		mPQwm_.init(static_cast<const GTasEC&>(mPQ_), bitSize, local::winSize);
 	}
 	/*
 		set range for G1-DLP
 	*/
 	static void setRangeForG1DLP(size_t hashSize, size_t tryNum = 0)
 	{
-		g1HashTbl.init(P, hashSize, tryNum);
+		PhashTbl_.init(P_, hashSize, tryNum);
 	}
 	/*
 		set range for GT-DLP
 	*/
 	static void setRangeForGTDLP(size_t hashSize, size_t tryNum = 0)
 	{
-		gtHashTbl.init(ePQ, hashSize, tryNum);
+		ePQhashTbl_.init(ePQ_, hashSize, tryNum);
 	}
 	/*
 		set range for G1/GT DLP
@@ -495,13 +495,13 @@ public:
 		this is better than David Mandell Freeman's algorithm
 	*/
 	class SecretKey {
-		Fr x, y;
+		Fr x_, y_;
 	public:
 		template<class RG>
 		void setByCSPRNG(RG& rg)
 		{
-			x.setRand(rg);
-			y.setRand(rg);
+			x_.setRand(rg);
+			y_.setRand(rg);
 		}
 		void setByCSPRNG() { setByCSPRNG(local::g_rg); }
 		/*
@@ -509,7 +509,7 @@ public:
 		*/
 		void getPublicKey(PublicKey& pub) const
 		{
-			pub.set(x, y);
+			pub.set(x_, y_);
 		}
 #if 0
 		// log_x(y)
@@ -538,13 +538,13 @@ public:
 				R = S - xT = mP
 			*/
 			G1 R;
-			G1::mul(R, c.T, x);
-			G1::sub(R, c.S, R);
-			return g1HashTbl.log(R);
+			G1::mul(R, c.T_, x_);
+			G1::sub(R, c.S_, R);
+			return PhashTbl_.log(R);
 		}
 		int dec(const CipherTextA& c) const
 		{
-			return dec(c.c1);
+			return dec(c.c1_);
 		}
 		int dec(const CipherTextM& c) const
 		{
@@ -554,38 +554,38 @@ public:
 				= e(P, Q)^(mm')
 			*/
 			GT t, u, v;
-			GT::unitaryInv(t, c.g[1]);
-			GT::unitaryInv(u, c.g[2]);
-			GT::pow(v, c.g[3], x);
+			GT::unitaryInv(t, c.g_[1]);
+			GT::unitaryInv(u, c.g_[2]);
+			GT::pow(v, c.g_[3], x_);
 			v *= t;
-			GT::pow(v, v, y);
-			GT::pow(u, u, x);
+			GT::pow(v, v, y_);
+			GT::pow(u, u, x_);
 			v *= u;
-			v *= c.g[0];
+			v *= c.g_[0];
 			BN::finalExp(v, v);
-			return gtHashTbl.log(v);
+			return ePQhashTbl_.log(v);
 //			return log(g, v);
 		}
 		int dec(const CipherText& c) const
 		{
 			if (c.isMultiplied()) {
-				return dec(c.m);
+				return dec(c.m_);
 			} else {
-				return dec(c.a);
+				return dec(c.a_);
 			}
 		}
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			x.readStream(is, ioMode);
-			y.readStream(is, ioMode);
+			x_.readStream(is, ioMode);
+			y_.readStream(is, ioMode);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
-			str = x.getStr(ioMode);
+			str = x_.getStr(ioMode);
 			str += sep;
-			str += y.getStr(ioMode);
+			str += y_.getStr(ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -608,14 +608,14 @@ public:
 		}
 		bool operator==(const SecretKey& rhs) const
 		{
-			return x == rhs.x && y == rhs.y;
+			return x_ == rhs.x_ && y_ == rhs.y_;
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
 	};
 
 	class PublicKey {
-		G1 xP;
-		G2 yQ;
+		G1 xP_;
+		G2 yQ_;
 		friend class SecretKey;
 		/*
 			(S, T) = (m P + r xP, rP)
@@ -636,25 +636,25 @@ public:
 		}
 		void set(const Fr& x, const Fr& y)
 		{
-			G1::mul(xP, P, x);
-			G2::mul(yQ, Q, y);
+			G1::mul(xP_, P_, x);
+			G2::mul(yQ_, Q_, y);
 		}
 	public:
 		template<class RG>
 		void enc(CipherTextG1& c, int m, RG& rg) const
 		{
-			enc1(c.S, c.T, P, xP, m, rg, g1HashTbl.getWM());
+			enc1(c.S_, c.T_, P_, xP_, m, rg, PhashTbl_.getWM());
 		}
 		template<class RG>
 		void enc(CipherTextG2& c, int m, RG& rg) const
 		{
-			enc1(c.S, c.T, Q, yQ, m, rg, g2wm);
+			enc1(c.S_, c.T_, Q_, yQ_, m, rg, Qwm_);
 		}
 		template<class RG>
 		void enc(CipherTextA& c, int m, RG& rg) const
 		{
-			enc(c.c1, m, rg);
-			enc(c.c2, m, rg);
+			enc(c.c1_, m, rg);
+			enc(c.c2_, m, rg);
 		}
 		template<class RG>
 		void enc(CipherTextM& c, int m, RG& rg) const
@@ -670,37 +670,37 @@ public:
 			GT e;
 #if 1
 			G1 P1, P2;
-			G1::mul(P1, xP, ra);
+			G1::mul(P1, xP_, ra);
 			if (m) {
 //				G1::mul(P2, P, m);
-				g1HashTbl.mulByWindowMethod(P2, m);
+				PhashTbl_.mulByWindowMethod(P2, m);
 				P1 += P2;
 			}
 //			BN::millerLoop(c.g[0], P1, Q);
-			BN::precomputedMillerLoop(c.g[0], P1, Qcoeff_);
+			BN::precomputedMillerLoop(c.g_[0], P1, Qcoeff_);
 //			G1::mul(P1, P, rb);
-			g1HashTbl.mulByWindowMethod(P1, rb);
-			G1::mul(P2, xP, rc);
+			PhashTbl_.mulByWindowMethod(P1, rb);
+			G1::mul(P2, xP_, rc);
 			P1 -= P2;
-			BN::millerLoop(e, P1, yQ);
-			c.g[0] *= e;
+			BN::millerLoop(e, P1, yQ_);
+			c.g_[0] *= e;
 #else
-			GT::pow(c.g[0], mxPQ, ra);
+			GT::pow(c.g_[0], mxPQ, ra);
 			GT::pow(e, myPQ, rb);
-			c.g[0] *= e;
+			c.g_[0] *= e;
 			GT::pow(e, mxyPQ, -rc);
-			c.g[0] *= e;
-			GT::pow(e, mPQ, m);
-			c.g[0] *= e;
+			c.g_[0] *= e;
+			GT::pow(e, mPQ_, m);
+			c.g_[0] *= e;
 #endif
 #if 1
-			gtwm.mul(static_cast<GTasEC&>(c.g[1]), rb);
-			gtwm.mul(static_cast<GTasEC&>(c.g[2]), ra);
-			gtwm.mul(static_cast<GTasEC&>(c.g[3]), rc);
+			mPQwm_.mul(static_cast<GTasEC&>(c.g_[1]), rb);
+			mPQwm_.mul(static_cast<GTasEC&>(c.g_[2]), ra);
+			mPQwm_.mul(static_cast<GTasEC&>(c.g_[3]), rc);
 #else
-			GT::pow(c.g[1], mPQ, rb);
-			GT::pow(c.g[2], mPQ, ra);
-			GT::pow(c.g[3], mPQ, rc);
+			GT::pow(c.g_[1], mPQ_, rb);
+			GT::pow(c.g_[2], mPQ_, ra);
+			GT::pow(c.g_[3], mPQ_, rc);
 #endif
 		}
 		template<class RG>
@@ -708,9 +708,9 @@ public:
 		{
 			c.isMultiplied_ = multiplied;
 			if (multiplied) {
-				enc(c.m, m, rg);
+				enc(c.m_, m, rg);
 			} else {
-				enc(c.a, m, rg);
+				enc(c.a_, m, rg);
 			}
 		}
 		void enc(CipherTextG1& c, int m) const { return enc(c, m, local::g_rg); }
@@ -727,11 +727,11 @@ public:
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
 			*/
-//			doubleMillerLoop(cm.g[0], cm.g[2], c1.S, c1.T, Q);
-			BN::precomputedMillerLoop(cm.g[0], c1.S, Qcoeff_);
-			BN::precomputedMillerLoop(cm.g[2], c1.T, Qcoeff_);
-			cm.g[1] = 1;
-			cm.g[3] = 1;
+//			doubleMillerLoop(cm.g_[0], cm.g_[2], c1.S, c1.T, Q);
+			BN::precomputedMillerLoop(cm.g_[0], c1.S_, Qcoeff_);
+			BN::precomputedMillerLoop(cm.g_[2], c1.T_, Qcoeff_);
+			cm.g_[1] = 1;
+			cm.g_[3] = 1;
 		}
 		/*
 			convert from CipherTextG2 to CipherTextM
@@ -743,17 +743,17 @@ public:
 				cm = (P, 0) * c2
 			*/
 			G1 zero; zero.clear();
-			tensorProduct(cm.g, P, zero, c2.S, c2.T);
+			tensorProduct(cm.g_, P_, zero, c2.S_, c2.T_);
 		}
 		void convertToCipherTextM(CipherTextM& cm, const CipherTextA& ca) const
 		{
-			convertToCipherTextM(cm, ca.c1);
+			convertToCipherTextM(cm, ca.c1_);
 		}
 		void convertToCipherTextM(CipherText& cm, const CipherText& ca) const
 		{
 			if (ca.isMultiplied()) throw cybozu::Exception("she:PublicKey:convertCipherText:already isMultiplied");
 			cm.isMultiplied_ = true;
-			convertToCipherTextM(cm.m, ca.a);
+			convertToCipherTextM(cm.m_, ca.a_);
 		}
 		/*
 			c += Enc(0)
@@ -798,10 +798,10 @@ public:
 			r.setRand(rg);
 			G1::mul(S1, xP, r);
 			G1::mul(T1, P, r);
-			GT g[4];
-			tensorProduct(g, S1, T1, yQ, Q);
+			GT g_[4];
+			tensorProduct(g_, S1, T1, yQ, Q);
 			for (int i = 0; i < 4; i++) {
-				c.g[i] *= g[i];
+				c.g_[i] *= g_[i];
 			}
 #endif
 		}
@@ -809,9 +809,9 @@ public:
 		void rerandomize(CipherText& c, RG& rg) const
 		{
 			if (c.isMultiplied()) {
-				rerandomize(c.m, rg);
+				rerandomize(c.m_, rg);
 			} else {
-				rerandomize(c.a, rg);
+				rerandomize(c.a_, rg);
 			}
 		}
 		void rerandomize(CipherTextG1& c) const { rerandomize(c, local::g_rg); }
@@ -822,16 +822,16 @@ public:
 
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			xP.readStream(is, ioMode);
-			yQ.readStream(is, ioMode);
+			xP_.readStream(is, ioMode);
+			yQ_.readStream(is, ioMode);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
-			str = xP.getStr(ioMode);
+			str = xP_.getStr(ioMode);
 			str += sep;
-			str += yQ.getStr(ioMode);
+			str += yQ_.getStr(ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -854,57 +854,57 @@ public:
 		}
 		bool operator==(const PublicKey& rhs) const
 		{
-			return xP == rhs.xP && yQ == rhs.yQ;
+			return xP_ == rhs.xP_ && yQ_ == rhs.yQ_;
 		}
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
 	};
 
 	class CipherTextA {
-		CipherTextG1 c1;
-		CipherTextG2 c2;
+		CipherTextG1 c1_;
+		CipherTextG2 c2_;
 		friend class SecretKey;
 		friend class PublicKey;
 		friend class CipherTextM;
 	public:
 		void clear()
 		{
-			c1.clear();
-			c2.clear();
+			c1_.clear();
+			c2_.clear();
 		}
 		static void add(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
-			CipherTextG1::add(z.c1, x.c1, y.c1);
-			CipherTextG2::add(z.c2, x.c2, y.c2);
+			CipherTextG1::add(z.c1_, x.c1_, y.c1_);
+			CipherTextG2::add(z.c2_, x.c2_, y.c2_);
 		}
 		static void sub(CipherTextA& z, const CipherTextA& x, const CipherTextA& y)
 		{
-			CipherTextG1::sub(z.c1, x.c1, y.c1);
-			CipherTextG2::sub(z.c2, x.c2, y.c2);
+			CipherTextG1::sub(z.c1_, x.c1_, y.c1_);
+			CipherTextG2::sub(z.c2_, x.c2_, y.c2_);
 		}
 		static void mul(CipherTextA& z, const CipherTextA& x, int y)
 		{
-			CipherTextG1::mul(z.c1, x.c1, y);
-			CipherTextG2::mul(z.c2, x.c2, y);
+			CipherTextG1::mul(z.c1_, x.c1_, y);
+			CipherTextG2::mul(z.c2_, x.c2_, y);
 		}
 		static void neg(CipherTextA& y, const CipherTextA& x)
 		{
-			CipherTextG1::neg(y.c1, x.c1);
-			CipherTextG2::neg(y.c2, x.c2);
+			CipherTextG1::neg(y.c1_, x.c1_);
+			CipherTextG2::neg(y.c2_, x.c2_);
 		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 		void sub(const CipherTextA& c) { sub(*this, *this, c); }
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
-			c1.readStream(is, ioMode);
-			c2.readStream(is, ioMode);
+			c1_.readStream(is, ioMode);
+			c2_.readStream(is, ioMode);
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
-			str = c1.getStr(ioMode);
+			str = c1_.getStr(ioMode);
 			str += sep;
-			str += c2.getStr(ioMode);
+			str += c2_.getStr(ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
@@ -927,13 +927,13 @@ public:
 		}
 		bool operator==(const CipherTextA& rhs) const
 		{
-			return c1 == rhs.c1 && c2 == rhs.c2;
+			return c1_ == rhs.c1_ && c2_ == rhs.c2_;
 		}
 		bool operator!=(const CipherTextA& rhs) const { return !operator==(rhs); }
 	};
 
 	class CipherTextM {
-		GT g[4];
+		GT g_[4];
 		friend class SecretKey;
 		friend class PublicKey;
 		friend class CipherTextA;
@@ -941,7 +941,7 @@ public:
 		void clear()
 		{
 			for (int i = 0; i < 4; i++) {
-				g[i].setOne();
+				g_[i].setOne();
 			}
 		}
 		static void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
@@ -950,7 +950,7 @@ public:
 				(g[i]) + (g'[i]) = (g[i] * g'[i])
 			*/
 			for (int i = 0; i < 4; i++) {
-				GT::mul(z.g[i], x.g[i], y.g[i]);
+				GT::mul(z.g_[i], x.g_[i], y.g_[i]);
 			}
 		}
 		static void sub(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
@@ -960,8 +960,8 @@ public:
 			*/
 			GT t;
 			for (size_t i = 0; i < 4; i++) {
-				GT::unitaryInv(t, y.g[i]);
-				GT::mul(z.g[i], x.g[i], t);
+				GT::unitaryInv(t, y.g_[i]);
+				GT::mul(z.g_[i], x.g_[i], t);
 			}
 		}
 		static void mul(CipherTextM& z, const CipherTextG1& x, const CipherTextG2& y)
@@ -970,16 +970,16 @@ public:
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 				call finalExp at once in decrypting c
 			*/
-			tensorProduct(z.g, x.S, x.T, y.S, y.T);
+			tensorProduct(z.g_, x.S_, x.T_, y.S_, y.T_);
 		}
 		static void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
 		{
-			mul(z, x.c1, y.c2);
+			mul(z, x.c1_, y.c2_);
 		}
 		static void mul(CipherTextM& z, const CipherTextM& x, int y)
 		{
 			for (int i = 0; i < 4; i++) {
-				GT::pow(z.g[i], x.g[i], y);
+				GT::pow(z.g_[i], x.g_[i], y);
 			}
 		}
 		void add(const CipherTextM& c) { add(*this, *this, c); }
@@ -987,17 +987,17 @@ public:
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
 			for (int i = 0; i < 4; i++) {
-				g[i].readStream(is, ioMode);
+				g_[i].readStream(is, ioMode);
 			}
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
 			const char *sep = fp::getIoSeparator(ioMode);
-			str = g[0].getStr(ioMode);
+			str = g_[0].getStr(ioMode);
 			for (int i = 1; i < 4; i++) {
 				str += sep;
-				str += g[i].getStr(ioMode);
+				str += g_[i].getStr(ioMode);
 			}
 		}
 		void setStr(const std::string& str, int ioMode = 0)
@@ -1022,7 +1022,7 @@ public:
 		bool operator==(const CipherTextM& rhs) const
 		{
 			for (int i = 0; i < 4; i++) {
-				if (g[i] != rhs.g[i]) return false;
+				if (g_[i] != rhs.g_[i]) return false;
 			}
 			return true;
 		}
@@ -1031,8 +1031,8 @@ public:
 
 	class CipherText {
 		bool isMultiplied_;
-		CipherTextA a;
-		CipherTextM m;
+		CipherTextA a_;
+		CipherTextM m_;
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
@@ -1040,24 +1040,24 @@ public:
 		void clearAsAdded()
 		{
 			isMultiplied_ = false;
-			a.clear();
+			a_.clear();
 		}
 		void clearAsMultiplied()
 		{
 			isMultiplied_ = true;
-			m.clear();
+			m_.clear();
 		}
 		bool isMultiplied() const { return isMultiplied_; }
 		static void add(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
-				CipherTextM::add(z.m, x.m, y.m);
+				CipherTextM::add(z.m_, x.m_, y.m_);
 				return;
 			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
 				z.isMultiplied_ = false;
-				CipherTextA::add(z.a, x.a, y.a);
+				CipherTextA::add(z.a_, x.a_, y.a_);
 				return;
 			}
 			throw cybozu::Exception("she:CipherText:add:mixed CipherText");
@@ -1066,12 +1066,12 @@ public:
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
-				CipherTextM::sub(z.m, x.m, y.m);
+				CipherTextM::sub(z.m_, x.m_, y.m_);
 				return;
 			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
 				z.isMultiplied_ = false;
-				CipherTextA::sub(z.a, x.a, y.a);
+				CipherTextA::sub(z.a_, x.a_, y.a_);
 				return;
 			}
 			throw cybozu::Exception("she:CipherText:sub:mixed CipherText");
@@ -1082,14 +1082,14 @@ public:
 				throw cybozu::Exception("she:CipherText:mul:mixed CipherText");
 			}
 			z.isMultiplied_ = true;
-			CipherTextM::mul(z.m, x.a, y.a);
+			CipherTextM::mul(z.m_, x.a_, y.a_);
 		}
 		static void mul(CipherText& z, const CipherText& x, int y)
 		{
 			if (x.isMultiplied()) {
-				CipherTextM::mul(z.m, x.m, y);
+				CipherTextM::mul(z.m_, x.m_, y);
 			} else {
-				CipherTextA::mul(z.a, x.a, y);
+				CipherTextA::mul(z.a_, x.a_, y);
 			}
 		}
 		void add(const CipherText& c) { add(*this, *this, c); }
@@ -1099,9 +1099,9 @@ public:
 		{
 			is >> isMultiplied_;
 			if (isMultiplied()) {
-				m.readStream(is, ioMode);
+				m_.readStream(is, ioMode);
 			} else {
-				a.readStream(is, ioMode);
+				a_.readStream(is, ioMode);
 			}
 			return is;
 		}
@@ -1111,9 +1111,9 @@ public:
 			str = isMultiplied() ? "1" : "0";
 			str += sep;
 			if (isMultiplied()) {
-				str += m.getStr(ioMode);
+				str += m_.getStr(ioMode);
 			} else {
-				str += a.getStr(ioMode);
+				str += a_.getStr(ioMode);
 			}
 		}
 		void setStr(const std::string& str, int ioMode = 0)
@@ -1139,23 +1139,23 @@ public:
 		{
 			if (isMultiplied() != rhs.isMultiplied()) return false;
 			if (isMultiplied()) {
-				return m == rhs.m;
+				return m_ == rhs.m_;
 			}
-			return a == rhs.a;
+			return a_ == rhs.a_;
 		}
 		bool operator!=(const CipherTextM& rhs) const { return !operator==(rhs); }
 	};
 };
 
-template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P;
-template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q;
-template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ;
-template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::mPQ;
+template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P_;
+template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q_;
+template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ_;
+template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::mPQ_;
 template<class BN, class Fr> std::vector<bn_current::Fp6> SHET<BN, Fr>::Qcoeff_;
-template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::g1HashTbl;
-template<class BN, class Fr> mcl::fp::WindowMethod<typename BN::G2> SHET<BN, Fr>::g2wm;
-template<class BN, class Fr> mcl::fp::WindowMethod<mcl::she::local::InterfaceForHashTable<typename BN::Fp12, false> > SHET<BN, Fr>::gtwm;
-template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::gtHashTbl;
+template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::PhashTbl_;
+template<class BN, class Fr> mcl::fp::WindowMethod<typename BN::G2> SHET<BN, Fr>::Qwm_;
+template<class BN, class Fr> mcl::fp::WindowMethod<mcl::she::local::InterfaceForHashTable<typename BN::Fp12, false> > SHET<BN, Fr>::mPQwm_;
+template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::ePQhashTbl_;
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
 typedef SHE::PublicKey PublicKey;

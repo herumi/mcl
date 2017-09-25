@@ -263,7 +263,7 @@ CYBOZU_TEST_AUTO(bench)
 CYBOZU_TEST_AUTO(saveHash)
 {
 	mcl::she::local::HashTable<SHE::G1> hashTbl1, hashTbl2;
-	hashTbl1.init(SHE::P, 1234, 123);
+	hashTbl1.init(SHE::P_, 1234, 123);
 	std::stringstream ss;
 	hashTbl1.save(ss);
 	hashTbl2.load(ss);
