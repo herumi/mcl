@@ -295,6 +295,13 @@ CYBOZU_TEST_AUTO(hashBench)
 			printf("i=%2d dec(c2)=%08x ", i, expect);
 			CYBOZU_BENCH_C("dec", 100, sec.dec, c2);
 		}
+		// larger than int32_t
+		int64_t mTbl[] = { -0x80000003ll, 0x80000000ll, 0x80000005ll };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(mTbl); i++) {
+			int64_t m = mTbl[i];
+			pub.enc(c1, m);
+			CYBOZU_TEST_EQUAL(sec.dec(c1), m);
+		}
 	}
 
 	G1 P, P2;

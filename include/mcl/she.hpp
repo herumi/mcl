@@ -244,7 +244,7 @@ public:
 		compute log_P(xP)
 		call basicLog at most 2 * tryNum
 	*/
-	int log(const G& xP) const
+	int64_t log(const G& xP) const
 	{
 		bool ok;
 		int c = basicLog(xP, &ok);
@@ -252,9 +252,9 @@ public:
 			return c;
 		}
 		G posP = xP, negP = xP;
-		int posCenter = 0;
-		int negCenter = 0;
-		int next = (int)kcv.size() * 2 + 1;
+		int64_t posCenter = 0;
+		int64_t negCenter = 0;
+		int64_t next = (int64_t)kcv.size() * 2 + 1;
 		for (size_t i = 1; i < tryNum_; i++) {
 			I::add(posP, posP, nextNegP_);
 			posCenter += next;
@@ -530,7 +530,7 @@ public:
 			throw cybozu::Exception("she:dec:log:not found");
 		}
 #endif
-		int dec(const CipherTextG1& c) const
+		int64_t dec(const CipherTextG1& c) const
 		{
 			/*
 				S = mP + rxP
@@ -542,11 +542,11 @@ public:
 			G1::sub(R, c.S_, R);
 			return PhashTbl_.log(R);
 		}
-		int dec(const CipherTextA& c) const
+		int64_t dec(const CipherTextA& c) const
 		{
 			return dec(c.c1_);
 		}
-		int dec(const CipherTextM& c) const
+		int64_t dec(const CipherTextM& c) const
 		{
 			/*
 				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
@@ -566,7 +566,7 @@ public:
 			return ePQhashTbl_.log(v);
 //			return log(g, v);
 		}
-		int dec(const CipherText& c) const
+		int64_t dec(const CipherText& c) const
 		{
 			if (c.isMultiplied()) {
 				return dec(c.m_);
@@ -621,7 +621,7 @@ public:
 			(S, T) = (m P + r xP, rP)
 		*/
 		template<class G, class RG, class I>
-		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, int m, RG& rg, const mcl::fp::WindowMethod<I>& wm)
+		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, int64_t m, RG& rg, const mcl::fp::WindowMethod<I>& wm)
 		{
 			Fr r;
 			r.setRand(rg);
@@ -641,23 +641,23 @@ public:
 		}
 	public:
 		template<class RG>
-		void enc(CipherTextG1& c, int m, RG& rg) const
+		void enc(CipherTextG1& c, int64_t m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, P_, xP_, m, rg, PhashTbl_.getWM());
 		}
 		template<class RG>
-		void enc(CipherTextG2& c, int m, RG& rg) const
+		void enc(CipherTextG2& c, int64_t m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, Q_, yQ_, m, rg, Qwm_);
 		}
 		template<class RG>
-		void enc(CipherTextA& c, int m, RG& rg) const
+		void enc(CipherTextA& c, int64_t m, RG& rg) const
 		{
 			enc(c.c1_, m, rg);
 			enc(c.c2_, m, rg);
 		}
 		template<class RG>
-		void enc(CipherTextM& c, int m, RG& rg) const
+		void enc(CipherTextM& c, int64_t m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
@@ -704,7 +704,7 @@ public:
 #endif
 		}
 		template<class RG>
-		void enc(CipherText& c, int m, RG& rg, bool multiplied = false) const
+		void enc(CipherText& c, int64_t m, RG& rg, bool multiplied = false) const
 		{
 			c.isMultiplied_ = multiplied;
 			if (multiplied) {
@@ -713,11 +713,11 @@ public:
 				enc(c.a_, m, rg);
 			}
 		}
-		void enc(CipherTextG1& c, int m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextG2& c, int m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextA& c, int m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextM& c, int m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherText& c, int m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
+		void enc(CipherTextG1& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextG2& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextA& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextM& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherText& c, int64_t m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
 		/*
 			convert from CipherTextG1 to CipherTextM
 		*/

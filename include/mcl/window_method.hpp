@@ -121,10 +121,16 @@ public:
 		y.getBlock(b);
 		powArray(z, b.p, b.n, false);
 	}
-	void mul(Ec& z, int y) const
+	void mul(Ec& z, int64_t y) const
 	{
+#if MCL_SIZEOF_UNIT == 8
 		Unit u = std::abs(y);
 		powArray(z, &u, 1, y < 0);
+#else
+		uint64_t ua = std::abs(y);
+		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
+		powArray(z, u, 2, y < 0);
+#endif
 	}
 	void mul(Ec& z, const mpz_class& y) const
 	{
