@@ -345,41 +345,41 @@ CYBOZU_TEST_AUTO(hashBench)
 
 	int m = int(mcl::she::local::g_rg() % hashSize);
 	printf("m = %d\n", m);
-	CYBOZU_BENCH_C("encG1   ", C, pub.enc, ca1, m);
+	CYBOZU_BENCH_C("", C, pub.enc, ca1, m);
 	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("encG2   ", C, pub.enc, ca2, m);
+	CYBOZU_BENCH_C("", C, pub.enc, ca2, m);
 	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("encGT   ", C, pub.enc, cm, m);
+	CYBOZU_BENCH_C("", C, pub.enc, cm, m);
 	dv.push_back(cybozu::bench::g_clk.getClock());
 
-	CYBOZU_BENCH_C("decG1   ", C, sec.dec, ca1);
+	CYBOZU_BENCH_C("", C, sec.dec, ca1);
 	dv.push_back(cybozu::bench::g_clk.getClock());
 //	CYBOZU_BENCH_C("decG2", C, sec.dec, ca2);
-	CYBOZU_BENCH_C("decGT   ", C, sec.dec, cm);
+	CYBOZU_BENCH_C("", C, sec.dec, cm);
 	dv.push_back(cybozu::bench::g_clk.getClock());
 
-	CYBOZU_BENCH_C("mul     ", C, CipherTextM::mul, cm, ca1, ca2);
+	CYBOZU_BENCH_C("", C, CipherTextM::mul, cm, ca1, ca2);
 	dv.push_back(cybozu::bench::g_clk.getClock());
 
-	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, ca1, ca1, ca1);
+	CYBOZU_BENCH_C("", C, CipherTextG1::add, ca1, ca1, ca1);
 	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, ca2, ca2, ca2);
+	CYBOZU_BENCH_C("", C, CipherTextG2::add, ca2, ca2, ca2);
 	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("addGT   ", C, CipherTextM::add, cm, cm, cm);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-
-	CYBOZU_BENCH_C("rerandG1", C, pub.rerandomize, ca1);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("rerandG2", C, pub.rerandomize, ca2);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("rerandGT", C, pub.rerandomize, cm);
+	CYBOZU_BENCH_C("", C, CipherTextM::add, cm, cm, cm);
 	dv.push_back(cybozu::bench::g_clk.getClock());
 
-	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, ca1, ca1, m);
+	CYBOZU_BENCH_C("", C, pub.rerandomize, ca1);
 	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, ca2, ca2, m);
+	CYBOZU_BENCH_C("", C, pub.rerandomize, ca2);
 	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("mulGT   ", C, CipherTextM::mul, cm, cm, m);
+	CYBOZU_BENCH_C("", C, pub.rerandomize, cm);
+	dv.push_back(cybozu::bench::g_clk.getClock());
+
+	CYBOZU_BENCH_C("", C, CipherTextG1::mul, ca1, ca1, m);
+	dv.push_back(cybozu::bench::g_clk.getClock());
+	CYBOZU_BENCH_C("", C, CipherTextG2::mul, ca2, ca2, m);
+	dv.push_back(cybozu::bench::g_clk.getClock());
+	CYBOZU_BENCH_C("", C, CipherTextM::mul, cm, cm, m);
 	dv.push_back(cybozu::bench::g_clk.getClock());
 
 	const char *funcNameTbl[] = {
