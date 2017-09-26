@@ -270,6 +270,9 @@ CYBOZU_TEST_AUTO(saveHash)
 	CYBOZU_TEST_ASSERT(hashTbl1 == hashTbl2);
 }
 
+static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
+static inline void putM(double t) { printf("%.2e\n", t * 1e-3); }
+
 CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;
@@ -284,6 +287,9 @@ CYBOZU_TEST_AUTO(hashBench)
 		CipherText c1;
 		pub.enc(c1, x);
 		pub.enc(one, 1, true);
+
+		puts("Mclk");
+		cybozu::bench::setPutCallback(putM);
 		for (int i = 0; i < 12; i++) {
 			int y = 1 << i;
 			CipherText c2;
@@ -305,7 +311,7 @@ CYBOZU_TEST_AUTO(hashBench)
 	}
 
 	G1 P, P2;
-	G2 Q;
+	G2 Q, Q2;
 	GT e, e2;
 	mpz_class mr;
 	{
@@ -318,9 +324,16 @@ CYBOZU_TEST_AUTO(hashBench)
 	BN::pairing(e, P, Q);
 	const int C = 100;
 	P2.clear();
+	Q2.clear();
 	e2 = 1;
+
+	puts("Kclk");
+	cybozu::bench::setPutCallback(putK);
+
 	CYBOZU_BENCH_C("G1::add ", C, G1::add, P2, P2, P);
 	CYBOZU_BENCH_C("G1::pow ", C, G1::mul, P, P, mr);
+	CYBOZU_BENCH_C("G2::add ", C, G2::add, Q2, Q2, Q);
+	CYBOZU_BENCH_C("G2::pow ", C, G2::mul, Q, Q, mr);
 	CYBOZU_BENCH_C("GT::mul ", C, GT::mul, e2, e2, e);
 	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, mr);
 	typedef mcl::GroupMtoA<Fp12> AG;
@@ -335,78 +348,40 @@ CYBOZU_TEST_AUTO(hashBench)
 	}
 	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), mr);
 #endif
+
+	puts("Mclk");
+	cybozu::bench::setPutCallback(putM);
 	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
+	CYBOZU_BENCH_C("finalExp", C, BN::finalExp, e, e);
 
 	CipherTextG1 ca1;
 	CipherTextG2 ca2;
 	CipherTextM cm;
-	typedef std::vector<double> doubleVec;
-	doubleVec dv;
+
+	puts("Kclk");
+	cybozu::bench::setPutCallback(putK);
 
 	int m = int(mcl::she::local::g_rg() % hashSize);
+
 	printf("m = %d\n", m);
-	CYBOZU_BENCH_C("", C, pub.enc, ca1, m);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, pub.enc, ca2, m);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, pub.enc, cm, m);
-	dv.push_back(cybozu::bench::g_clk.getClock());
+	CYBOZU_BENCH_C("encG1   ", C, pub.enc, ca1, m);
+	CYBOZU_BENCH_C("encG2   ", C, pub.enc, ca2, m);
+	CYBOZU_BENCH_C("encGT   ", C, pub.enc, cm, m);
 
-	CYBOZU_BENCH_C("", C, sec.dec, ca1);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-//	CYBOZU_BENCH_C("decG2", C, sec.dec, ca2);
-	CYBOZU_BENCH_C("", C, sec.dec, cm);
-	dv.push_back(cybozu::bench::g_clk.getClock());
+	CYBOZU_BENCH_C("decG1   ", C, sec.dec, ca1);
+//	CYBOZU_BENCH_C("decG2   ", C, sec.dec, ca2);
+	CYBOZU_BENCH_C("degGT   ", C, sec.dec, cm);
 
-	CYBOZU_BENCH_C("", C, CipherTextM::mul, cm, ca1, ca2);
-	dv.push_back(cybozu::bench::g_clk.getClock());
+	CYBOZU_BENCH_C("mul     ", C, CipherTextM::mul, cm, ca1, ca2);
 
-	CYBOZU_BENCH_C("", C, CipherTextG1::add, ca1, ca1, ca1);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, CipherTextG2::add, ca2, ca2, ca2);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, CipherTextM::add, cm, cm, cm);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-
-	CYBOZU_BENCH_C("", C, pub.rerandomize, ca1);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, pub.rerandomize, ca2);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, pub.rerandomize, cm);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-
-	CYBOZU_BENCH_C("", C, CipherTextG1::mul, ca1, ca1, m);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, CipherTextG2::mul, ca2, ca2, m);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-	CYBOZU_BENCH_C("", C, CipherTextM::mul, cm, cm, m);
-	dv.push_back(cybozu::bench::g_clk.getClock());
-
-	const char *funcNameTbl[] = {
-		"encG1",
-		"encG2",
-		"encGT",
-
-		"decG1",
-		"degGT",
-
-		"mul",
-
-		"addG1",
-		"addG2",
-		"addGT",
-
-		"rerandG1",
-		"rerandG2",
-		"rerandGT",
-
-		"mulG1",
-		"mulG2",
-		"mulGT",
-	};
-	CYBOZU_TEST_EQUAL(dv.size(), CYBOZU_NUM_OF_ARRAY(funcNameTbl));
-	for (size_t i = 0; i < dv.size(); i++) {
-		printf("%8s %.2e\n", funcNameTbl[i], dv[i] / C);
-	}
+	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, ca1, ca1, ca1);
+	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, ca2, ca2, ca2);
+	CYBOZU_BENCH_C("addGT   ", C, CipherTextM::add, cm, cm, cm);
+	CYBOZU_BENCH_C("rerandG1", C, pub.rerandomize, ca1);
+	CYBOZU_BENCH_C("rerandG2", C, pub.rerandomize, ca2);
+	CYBOZU_BENCH_C("rerandGT", C, pub.rerandomize, cm);
+	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, ca1, ca1, m);
+	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, ca2, ca2, m);
+	CYBOZU_BENCH_C("mulGT   ", C, CipherTextM::mul, cm, cm, m);
 }
 
