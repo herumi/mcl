@@ -336,12 +336,10 @@ struct SHET {
 	static G1 P_;
 	static G2 Q_;
 	static GT ePQ_; // e(P, Q)
-	static GT mPQ_; // millerLoop(P, Q)
 	static std::vector<bn_current::Fp6> Qcoeff_;
 	static local::HashTable<G1> PhashTbl_;
 	static mcl::fp::WindowMethod<G2> Qwm_;
 	typedef local::InterfaceForHashTable<GT, false> GTasEC;
-	static mcl::fp::WindowMethod<GTasEC> mPQwm_;
 	static local::HashTable<GT, false> ePQhashTbl_;
 private:
 	template<class G>
@@ -427,16 +425,18 @@ private:
 		g1 = millerLoop(P1, Q)
 		g2 = millerLoop(P2, Q)
 	*/
-	static void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
+	static void doublePairing(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
 #if 1
 		std::vector<bn_current::Fp6> Qcoeff;
 		BN::precomputeG2(Qcoeff, Q);
 		BN::precomputedMillerLoop(g1, P1, Qcoeff);
+		BN::finalExp(g1, g1);
 		BN::precomputedMillerLoop(g2, P2, Qcoeff);
+		BN::finalExp(g2, g2);
 #else
-		BN::millerLoop(g1, P1, Q);
-		BN::millerLoop(g2, P2, Q);
+		BN::pairing(g1, P1, Q);
+		BN::pairing(g2, P2, Q);
 #endif
 	}
 	static void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
@@ -444,8 +444,8 @@ private:
 		/*
 			(S1, T1) x (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 		*/
-		doubleMillerLoop(g[0], g[2], S1, T1, S2);
-		doubleMillerLoop(g[1], g[3], S1, T1, T2);
+		doublePairing(g[0], g[2], S1, T1, S2);
+		doublePairing(g[1], g[3], S1, T1, T2);
 	}
 public:
 
@@ -457,12 +457,10 @@ public:
 		bn_current::initPairing(cp);
 		BN::hashAndMapToG1(P_, "0");
 		BN::hashAndMapToG2(Q_, "0");
-		BN::millerLoop(mPQ_, P_, Q_);
-		BN::finalExp(ePQ_, mPQ_);
+		BN::pairing(ePQ_, P_, Q_);
 		BN::precomputeG2(Qcoeff_, Q_);
 		const size_t bitSize = Fr::getBitSize();
 		Qwm_.init(Q_, bitSize, local::winSize);
-		mPQwm_.init(static_cast<const GTasEC&>(mPQ_), bitSize, local::winSize);
 	}
 	/*
 		set range for G1-DLP
@@ -562,7 +560,6 @@ public:
 			GT::pow(u, u, x_);
 			v *= u;
 			v *= c.g_[0];
-			BN::finalExp(v, v);
 			return ePQhashTbl_.log(v);
 //			return log(g, v);
 		}
@@ -668,7 +665,7 @@ public:
 			rb.setRand(rg);
 			rc.setRand(rg);
 			GT e;
-#if 1
+
 			G1 P1, P2;
 			G1::mul(P1, xP_, ra);
 			if (m) {
@@ -684,23 +681,15 @@ public:
 			P1 -= P2;
 			BN::millerLoop(e, P1, yQ_);
 			c.g_[0] *= e;
-#else
-			GT::pow(c.g_[0], mxPQ, ra);
-			GT::pow(e, myPQ, rb);
-			c.g_[0] *= e;
-			GT::pow(e, mxyPQ, -rc);
-			c.g_[0] *= e;
-			GT::pow(e, mPQ_, m);
-			c.g_[0] *= e;
-#endif
+			BN::finalExp(c.g_[0], c.g_[0]);
 #if 1
-			mPQwm_.mul(static_cast<GTasEC&>(c.g_[1]), rb);
-			mPQwm_.mul(static_cast<GTasEC&>(c.g_[2]), ra);
-			mPQwm_.mul(static_cast<GTasEC&>(c.g_[3]), rc);
+			ePQhashTbl_.mulByWindowMethod(c.g_[1], rb);
+			ePQhashTbl_.mulByWindowMethod(c.g_[2], ra);
+			ePQhashTbl_.mulByWindowMethod(c.g_[3], rc);
 #else
-			GT::pow(c.g_[1], mPQ_, rb);
-			GT::pow(c.g_[2], mPQ_, ra);
-			GT::pow(c.g_[3], mPQ_, rc);
+			GT::pow(c.g_[1], ePQ_, rb);
+			GT::pow(c.g_[2], ePQ_, ra);
+			GT::pow(c.g_[3], ePQ_, rc);
 #endif
 		}
 		template<class RG>
@@ -727,9 +716,12 @@ public:
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
 			*/
-//			doubleMillerLoop(cm.g_[0], cm.g_[2], c1.S, c1.T, Q);
+//			doublePairing(cm.g_[0], cm.g_[2], c1.S, c1.T, Q);
 			BN::precomputedMillerLoop(cm.g_[0], c1.S_, Qcoeff_);
+			BN::finalExp(cm.g_[0], cm.g_[0]);
 			BN::precomputedMillerLoop(cm.g_[2], c1.T_, Qcoeff_);
+			BN::finalExp(cm.g_[2], cm.g_[2]);
+
 			cm.g_[1] = 1;
 			cm.g_[3] = 1;
 		}
@@ -968,7 +960,6 @@ public:
 		{
 			/*
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
-				call finalExp at once in decrypting c
 			*/
 			tensorProduct(z.g_, x.S_, x.T_, y.S_, y.T_);
 		}
@@ -1150,11 +1141,9 @@ public:
 template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P_;
 template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q_;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ_;
-template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::mPQ_;
 template<class BN, class Fr> std::vector<bn_current::Fp6> SHET<BN, Fr>::Qcoeff_;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::PhashTbl_;
 template<class BN, class Fr> mcl::fp::WindowMethod<typename BN::G2> SHET<BN, Fr>::Qwm_;
-template<class BN, class Fr> mcl::fp::WindowMethod<mcl::she::local::InterfaceForHashTable<typename BN::Fp12, false> > SHET<BN, Fr>::mPQwm_;
 template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::ePQhashTbl_;
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
