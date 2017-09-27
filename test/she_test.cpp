@@ -11,13 +11,11 @@ SecretKey g_sec;
 
 CYBOZU_TEST_AUTO(log)
 {
-#ifdef MCL_USE_BN256
+#if MCLBN_FP_UNIT_SIZE == 4
 	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb;
-#endif
-#ifdef MCL_USE_BN384
+#elif MCLBN_FP_UNIT_SIZE == 6
 	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp382_1;
-#endif
-#ifdef MCL_USE_BN512
+#elif MCLBN_FP_UNIT_SIZE == 8
 	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp462;
 #endif
 	SHE::init(cp);

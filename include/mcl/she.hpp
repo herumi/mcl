@@ -18,26 +18,26 @@
 #include <cmath>
 #include <vector>
 #include <iosfwd>
-#if !defined(MCL_USE_BN256) && !defined(MCL_USE_BN384) && !defined(MCL_USE_BN512)
-	#define MCL_USE_BN256
+#ifndef MCLBN_FP_UNIT_SIZE
+	#define MCLBN_FP_UNIT_SIZE 4
 #endif
-#ifdef MCL_USE_BN256
+#if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
 namespace mcl {
 namespace bn_current = mcl::bn256;
 }
-#endif
-#ifdef MCL_USE_BN384
+#elif MCLBN_FP_UNIT_SIZE == 6
 #include <mcl/bn384.hpp>
 namespace mcl {
 namespace bn_current = mcl::bn384;
 }
-#endif
-#ifdef MCL_USE_BN512
+#elif MCLBN_FP_UNIT_SIZE == 8
 #include <mcl/bn512.hpp>
 namespace mcl {
 namespace bn_current = mcl::bn512;
 }
+#else
+	#error "MCLBN_FP_UNIT_SIZE must be 4, 6, or 8"
 #endif
 
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
