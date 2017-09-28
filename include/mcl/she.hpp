@@ -751,28 +751,28 @@ public:
 			c += Enc(0)
 		*/
 		template<class RG>
-		void rerandomize(CipherTextG1& c, RG& rg) const
+		void reRand(CipherTextG1& c, RG& rg) const
 		{
 			CipherTextG1 c0;
 			enc(c0, 0, rg);
 			CipherTextG1::add(c, c, c0);
 		}
 		template<class RG>
-		void rerandomize(CipherTextG2& c, RG& rg) const
+		void reRand(CipherTextG2& c, RG& rg) const
 		{
 			CipherTextG2 c0;
 			enc(c0, 0, rg);
 			CipherTextG2::add(c, c, c0);
 		}
 		template<class RG>
-		void rerandomize(CipherTextA& c, RG& rg) const
+		void reRand(CipherTextA& c, RG& rg) const
 		{
 			CipherTextA c0;
 			enc(c0, 0, rg);
 			CipherTextA::add(c, c, c0);
 		}
 		template<class RG>
-		void rerandomize(CipherTextM& c, RG& rg) const
+		void reRand(CipherTextM& c, RG& rg) const
 		{
 #if 1 // for circuit security : 3.58Mclk -> 5.4Mclk
 			CipherTextM c0;
@@ -798,19 +798,19 @@ public:
 #endif
 		}
 		template<class RG>
-		void rerandomize(CipherText& c, RG& rg) const
+		void reRand(CipherText& c, RG& rg) const
 		{
 			if (c.isMultiplied()) {
-				rerandomize(c.m_, rg);
+				reRand(c.m_, rg);
 			} else {
-				rerandomize(c.a_, rg);
+				reRand(c.a_, rg);
 			}
 		}
-		void rerandomize(CipherTextG1& c) const { rerandomize(c, local::g_rg); }
-		void rerandomize(CipherTextG2& c) const { rerandomize(c, local::g_rg); }
-		void rerandomize(CipherTextA& c) const { rerandomize(c, local::g_rg); }
-		void rerandomize(CipherTextM& c) const { rerandomize(c, local::g_rg); }
-		void rerandomize(CipherText& c) const { rerandomize(c, local::g_rg); }
+		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextM& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
 
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
@@ -1152,6 +1152,7 @@ typedef SHE::CipherTextG1 CipherTextG1;
 typedef SHE::CipherTextG2 CipherTextG2;
 typedef SHE::CipherTextA CipherTextA;
 typedef SHE::CipherTextM CipherTextM;
+typedef CipherTextM CipherTextGT;
 typedef SHE::CipherText CipherText;
 
 } } // mcl::she

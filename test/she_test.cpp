@@ -85,7 +85,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 	for (int i = -5; i < 5; i++) {
 		pub.enc(c, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c), i);
-		pub.rerandomize(c);
+		pub.reRand(c);
 		CYBOZU_TEST_EQUAL(sec.dec(c), i);
 	}
 }
@@ -103,7 +103,7 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 			CipherText::add(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 
-			pub.rerandomize(c3);
+			pub.reRand(c3);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 
 			CipherText::sub(c3, c1, c2);
@@ -117,7 +117,7 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 			CipherText::mul(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 
-			pub.rerandomize(c3);
+			pub.reRand(c3);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 
 			CipherText::mul(c3, c3, -25);
@@ -375,9 +375,9 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, ca1, ca1, ca1);
 	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, ca2, ca2, ca2);
 	CYBOZU_BENCH_C("addGT   ", C, CipherTextM::add, cm, cm, cm);
-	CYBOZU_BENCH_C("rerandG1", C, pub.rerandomize, ca1);
-	CYBOZU_BENCH_C("rerandG2", C, pub.rerandomize, ca2);
-	CYBOZU_BENCH_C("rerandGT", C, pub.rerandomize, cm);
+	CYBOZU_BENCH_C("reRandG1", C, pub.reRand, ca1);
+	CYBOZU_BENCH_C("reRandG2", C, pub.reRand, ca2);
+	CYBOZU_BENCH_C("reRandGT", C, pub.reRand, cm);
 	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, ca1, ca1, m);
 	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, ca2, ca2, m);
 	CYBOZU_BENCH_C("mulGT   ", C, CipherTextM::mul, cm, cm, m);
