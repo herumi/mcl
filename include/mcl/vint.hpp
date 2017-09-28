@@ -1586,13 +1586,20 @@ public:
 		z = 1;
 		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
 	}
-	static void pow(VintT& z, const VintT& x, int y)
+	static void pow(VintT& z, const VintT& x, int64_t y)
 	{
 		if (y < 0) throw cybozu::Exception("Vint::pow:negative y") << y;
 		const VintT xx = x;
-		Unit absY = std::abs(y);
 		z = 1;
-		mcl::fp::powGeneric(z, xx, &absY, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+#if MCL_SIZEOF_UNIT == 8
+		Unit ua = std::abs(y);
+		mcl::fp::powGeneric(z, xx, &ua, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+#else
+		uint64_t ua = std::abs(y);
+		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
+		size_t un = u[1] ? 2 : 1;
+		mcl::fp::powGeneric(z, xx, u, un, mul, sqr, (void (*)(VintT&, const VintT&))0);
+#endif
 	}
 	/*
 		z = x ^ y mod m

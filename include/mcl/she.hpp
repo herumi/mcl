@@ -87,7 +87,7 @@ struct InterfaceForHashTable : G {
 	static void dbl(G& Q, const G& P) { G::dbl(Q, P); }
 	static void neg(G& Q, const G& P) { G::neg(Q, P); }
 	static void add(G& R, const G& P, const G& Q) { G::add(R, P, Q); }
-	static void mul(G& Q, const G& P, int x) { G::mul(Q, P, x); }
+	static void mul(G& Q, const G& P, int64_t x) { G::mul(Q, P, x); }
 };
 
 /*
@@ -110,7 +110,7 @@ struct InterfaceForHashTable<G, false> : G {
 	static void dbl(G& y, const G& x) { G::sqr(y, x); }
 	static void neg(G& Q, const G& P) { G::unitaryInv(Q, P); }
 	static void add(G& z, const G& x, const G& y) { G::mul(z, x, y); }
-	static void mul(G& z, const G& x, int y) { G::pow(z, x, y); }
+	static void mul(G& z, const G& x, int64_t y) { G::pow(z, x, y); }
 };
 
 /*
@@ -371,7 +371,7 @@ private:
 			G::sub(z.S_, x.S_, y.S_);
 			G::sub(z.T_, x.T_, y.T_);
 		}
-		static void mul(CipherTextAT& z, const CipherTextAT& x, int y)
+		static void mul(CipherTextAT& z, const CipherTextAT& x, int64_t y)
 		{
 			G::mul(z.S_, x.S_, y);
 			G::mul(z.T_, x.T_, y);
@@ -873,7 +873,7 @@ public:
 			CipherTextG1::sub(z.c1_, x.c1_, y.c1_);
 			CipherTextG2::sub(z.c2_, x.c2_, y.c2_);
 		}
-		static void mul(CipherTextA& z, const CipherTextA& x, int y)
+		static void mul(CipherTextA& z, const CipherTextA& x, int64_t y)
 		{
 			CipherTextG1::mul(z.c1_, x.c1_, y);
 			CipherTextG2::mul(z.c2_, x.c2_, y);
@@ -967,7 +967,7 @@ public:
 		{
 			mul(z, x.c1_, y.c2_);
 		}
-		static void mul(CipherTextM& z, const CipherTextM& x, int y)
+		static void mul(CipherTextM& z, const CipherTextM& x, int64_t y)
 		{
 			for (int i = 0; i < 4; i++) {
 				GT::pow(z.g_[i], x.g_[i], y);
@@ -1075,7 +1075,7 @@ public:
 			z.isMultiplied_ = true;
 			CipherTextM::mul(z.m_, x.a_, y.a_);
 		}
-		static void mul(CipherText& z, const CipherText& x, int y)
+		static void mul(CipherText& z, const CipherText& x, int64_t y)
 		{
 			if (x.isMultiplied()) {
 				CipherTextM::mul(z.m_, x.m_, y);

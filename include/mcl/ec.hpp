@@ -586,10 +586,17 @@ public:
 		y.getBlock(b);
 		mulArray(z, x, b.p, b.n, false);
 	}
-	static inline void mul(EcT& z, const EcT& x, int y)
+	static inline void mul(EcT& z, const EcT& x, int64_t y)
 	{
+#if MCL_SIZEOF_UNIT == 8
 		const fp::Unit u = abs(y);
 		mulArray(z, x, &u, 1, y < 0);
+#else
+		uint64_t ua = std::abs(y);
+		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
+		size_t un = u[1] ? 2 : 1;
+		mulArray(z, u, un, y < 0);
+#endif
 	}
 	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
 	{
