@@ -7,7 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #ifndef MCLBN_FP_UNIT_SIZE
-	#error "define MCLBN_FP_UNIT_SIZE 4(or 6)"
+	#error "define MCLBN_FP_UNIT_SIZE 4(, 6 or 8)"
 #endif
 
 #include <stdint.h> // for uint64_t, uint8_t
@@ -80,7 +80,7 @@ enum {
 /*
 	init library
 	@param curve [in] type of bn curve
-	@param maxUnitSize [in] 4 or 6
+	@param maxUnitSize [in] MCLBN_FP_UNIT_SIZE
 	curve = MCLBN_CurveFp254BNb is allowed if maxUnitSize = 4
 	curve = MCLBN_CurveFp254BNb/MCLBN_CurveFp382_1/MCLBN_CurveFp382_2 are allowed if maxUnitSize = 6
 	This parameter is used to detect a library compiled with different MCLBN_FP_UNIT_SIZE for safety.
