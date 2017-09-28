@@ -2,9 +2,9 @@ include common.mk
 LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
-SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp
+SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp
+TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp she_c256_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -29,12 +29,14 @@ MCL_LIB=$(LIB_DIR)/libmcl.a
 MCL_SNAME=mcl$(SHARE_BASENAME_SUF)
 BN256_SNAME=mclbn256$(SHARE_BASENAME_SUF)
 BN384_SNAME=mclbn384$(SHARE_BASENAME_SUF)
+SHE256_SNAME=mclshe256$(SHARE_BASENAME_SUF)
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
 BN256_LIB=$(LIB_DIR)/libmclbn256.a
 BN256_SLIB=$(LIB_DIR)/lib$(BN256_SNAME).$(LIB_SUF)
 BN384_LIB=$(LIB_DIR)/libmclbn384.a
 BN384_SLIB=$(LIB_DIR)/lib$(BN384_SNAME).$(LIB_SUF)
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB)
+SHE256_LIB=$(LIB_DIR)/libmclshe256.a
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(SHE256_LIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -57,6 +59,7 @@ ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
+SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
@@ -100,6 +103,9 @@ $(MCL_SLIB): $(LIB_OBJ)
 
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $@ $(BN256_OBJ)
+
+$(SHE256_LIB): $(SHE256_OBJ)
+	$(AR) $@ $(SHE256_OBJ)
 
 ifeq ($(OS),mac)
   MAC_LDFLAGS+=-l$(MCL_SNAME) -L./lib
@@ -184,6 +190,9 @@ $(EXE_DIR)/bn_c384_test.exe: $(OBJ_DIR)/bn_c384_test.o $(BN384_LIB) $(MCL_LIB)
 
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB) $(MCL_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
+
+$(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(SHE256_LIB) $(MCL_LIB) $(LDFLAGS)
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)

@@ -17,3 +17,8 @@ echo cl /c %CFLAGS% src\bn_c384.cpp /Foobj\bn_c384.obj
      cl /c %CFLAGS% src\bn_c384.cpp /Foobj\bn_c384.obj
 echo link /nologo /DLL /OUT:bin\mclbn384.dll obj\bn_c384.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn384.lib
      link /nologo /DLL /OUT:bin\mclbn384.dll obj\bn_c384.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn384.lib
+
+echo cl /c %CFLAGS% src\she_c256.cpp /Foobj\she_c256.obj
+     cl /c %CFLAGS% src\she_c256.cpp /Foobj\she_c256.obj
+echo link /nologo /DLL /OUT:bin\mclbn256.dll obj\she_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe256.lib
+     link /nologo /DLL /OUT:bin\mclbn256.dll obj\she_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe256.lib
