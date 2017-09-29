@@ -1,0 +1,65 @@
+ctest:module=log
+CurveFp254BNb
+ctest:module=HashTable
+ctest:module=GTHashTable
+ctest:module=enc_dec
+ctest:module=add_sub_mul
+ctest:module=add_mul_add_sub
+ctest:module=innerProduct
+ctest:module=io
+ctest:module=bench
+enc 674.383Kclk
+add   8.133Kclk
+mul   4.052Mclk
+dec   2.213Mclk
+add after mul  20.752Kclk
+ctest:module=saveHash
+ctest:module=hashBench
+Mclk
+i= 0 dec(c2)=000fffff dec 2.22e+03
+i= 1 dec(c2)=001fffff dec 2.22e+03
+i= 2 dec(c2)=003fffff dec 2.23e+03
+i= 3 dec(c2)=007fffff dec 2.24e+03
+i= 4 dec(c2)=00ffffff dec 2.27e+03
+i= 5 dec(c2)=01ffffff dec 2.30e+03
+i= 6 dec(c2)=03ffffff dec 2.39e+03
+i= 7 dec(c2)=07ffffff dec 2.58e+03
+i= 8 dec(c2)=0fffffff dec 2.98e+03
+i= 9 dec(c2)=1fffffff dec 3.83e+03
+i=10 dec(c2)=3fffffff dec 5.45e+03
+i=11 dec(c2)=7fffffff dec 8.74e+03
+Kclk
+large m
+G1::add  7.47e-01
+G1::mul  1.94e+02
+G2::add  2.99e+00
+G2::mul  4.02e+02
+GT::mul  5.17e+00
+GT::pow  7.39e+02
+GTwindow 1.36e+02
+Mclk
+miller   6.73e+02
+finalExp 4.25e+02
+precomML 5.14e+02
+Kclk
+small m = 897426
+G1::mul  4.11e+01
+G2::mul  9.13e+01
+GT::pow  1.12e+02
+GTwindow 1.06e+01
+encG1    2.21e+02
+encG2    4.74e+02
+encGT    2.48e+03
+decG1    1.88e+02
+degGT    2.22e+03
+mul      4.09e+03
+addG1    1.56e+00
+addG2    4.78e+00
+addGT    2.05e+01
+reRandG1 2.10e+02
+reRandG2 4.74e+02
+reRandGT 2.49e+03
+mulG1    8.33e+01
+mulG2    1.75e+02
+mulGT    4.47e+02
+ctest:name=she_test, module=11, total=2809, ok=2809, ng=0, exception=0

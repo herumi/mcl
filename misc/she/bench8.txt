@@ -1,0 +1,65 @@
+ctest:module=log
+CurveFp462
+ctest:module=HashTable
+ctest:module=GTHashTable
+ctest:module=enc_dec
+ctest:module=add_sub_mul
+ctest:module=add_mul_add_sub
+ctest:module=innerProduct
+ctest:module=io
+ctest:module=bench
+enc   5.108Mclk
+add  36.342Kclk
+mul  31.055Mclk
+dec  12.866Mclk
+add after mul  76.869Kclk
+ctest:module=saveHash
+ctest:module=hashBench
+Mclk
+i= 0 dec(c2)=000fffff dec 1.29e+04
+i= 1 dec(c2)=001fffff dec 1.29e+04
+i= 2 dec(c2)=003fffff dec 1.29e+04
+i= 3 dec(c2)=007fffff dec 1.29e+04
+i= 4 dec(c2)=00ffffff dec 1.30e+04
+i= 5 dec(c2)=01ffffff dec 1.32e+04
+i= 6 dec(c2)=03ffffff dec 1.35e+04
+i= 7 dec(c2)=07ffffff dec 1.41e+04
+i= 8 dec(c2)=0fffffff dec 1.54e+04
+i= 9 dec(c2)=1fffffff dec 1.81e+04
+i=10 dec(c2)=3fffffff dec 2.34e+04
+i=11 dec(c2)=7fffffff dec 3.41e+04
+Kclk
+large m
+G1::add  3.41e+00
+G1::mul  1.44e+03
+G2::add  1.36e+01
+G2::mul  2.99e+03
+GT::mul  1.90e+01
+GT::pow  4.34e+03
+GTwindow 9.03e+02
+Mclk
+miller   4.89e+03
+finalExp 3.27e+03
+precomML 3.73e+03
+Kclk
+small m = 1341871
+G1::mul  1.51e+02
+G2::mul  3.74e+02
+GT::pow  4.73e+02
+GTwindow 5.86e+01
+encG1    1.62e+03
+encG2    3.51e+03
+encGT    1.77e+04
+decG1    1.47e+03
+degGT    1.29e+04
+mul      3.03e+04
+addG1    7.05e+00
+addG2    2.05e+01
+addGT    7.67e+01
+reRandG1 1.63e+03
+reRandG2 3.50e+03
+reRandGT 1.78e+04
+mulG1    2.98e+02
+mulG2    7.51e+02
+mulGT    1.90e+03
+ctest:name=she_test, module=11, total=2809, ok=2809, ng=0, exception=0
