@@ -272,7 +272,6 @@ CYBOZU_TEST_AUTO(saveHash)
 }
 
 static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
-static inline void putM(double t) { printf("%.2e\n", t * 1e-3); }
 
 CYBOZU_TEST_AUTO(hashBench)
 {
@@ -289,8 +288,8 @@ CYBOZU_TEST_AUTO(hashBench)
 		pub.enc(c1, x);
 		pub.enc(one, 1, true);
 
-		puts("Mclk");
-		cybozu::bench::setPutCallback(putM);
+		puts("Kclk");
+		cybozu::bench::setPutCallback(putK);
 		for (int i = 0; i < 12; i++) {
 			int y = 1 << i;
 			CipherText c2;
@@ -328,9 +327,6 @@ CYBOZU_TEST_AUTO(hashBench)
 	Q2.clear();
 	e2 = 1;
 
-	puts("Kclk");
-	cybozu::bench::setPutCallback(putK);
-
 	printf("large m\n");
 	CYBOZU_BENCH_C("G1::add ", C, G1::add, P2, P2, P);
 	CYBOZU_BENCH_C("G1::mul ", C, G1::mul, P, P, mr);
@@ -351,8 +347,6 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), mr);
 #endif
 
-	puts("Mclk");
-	cybozu::bench::setPutCallback(putM);
 	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
 	CYBOZU_BENCH_C("finalExp", C, BN::finalExp, e, e);
 	CYBOZU_BENCH_C("precomML", C, BN::precomputedMillerLoop, e, P, SHE::Qcoeff_);
@@ -360,9 +354,6 @@ CYBOZU_TEST_AUTO(hashBench)
 	CipherTextG1 ca1;
 	CipherTextG2 ca2;
 	CipherTextM cm;
-
-	puts("Kclk");
-	cybozu::bench::setPutCallback(putK);
 
 	int m = int(mcl::she::local::g_rg() % hashSize);
 	printf("small m = %d\n", m);
