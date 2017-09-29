@@ -13,10 +13,13 @@ CYBOZU_TEST_AUTO(log)
 {
 #if MCLBN_FP_UNIT_SIZE == 4
 	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp254BNb;
+	puts("CurveFp254BNb");
 #elif MCLBN_FP_UNIT_SIZE == 6
 	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp382_1;
+	puts("CurveFp382_1");
 #elif MCLBN_FP_UNIT_SIZE == 8
 	const mcl::bn::CurveParam& cp = mcl::bn::CurveFp462;
+	puts("CurveFp462");
 #endif
 	SHE::init(cp);
 	G1 P;
@@ -328,10 +331,11 @@ CYBOZU_TEST_AUTO(hashBench)
 	puts("Kclk");
 	cybozu::bench::setPutCallback(putK);
 
+	printf("large m\n");
 	CYBOZU_BENCH_C("G1::add ", C, G1::add, P2, P2, P);
-	CYBOZU_BENCH_C("G1::pow ", C, G1::mul, P, P, mr);
+	CYBOZU_BENCH_C("G1::mul ", C, G1::mul, P, P, mr);
 	CYBOZU_BENCH_C("G2::add ", C, G2::add, Q2, Q2, Q);
-	CYBOZU_BENCH_C("G2::pow ", C, G2::mul, Q, Q, mr);
+	CYBOZU_BENCH_C("G2::mul ", C, G2::mul, Q, Q, mr);
 	CYBOZU_BENCH_C("GT::mul ", C, GT::mul, e2, e2, e);
 	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, mr);
 	typedef mcl::GroupMtoA<Fp12> AG;
@@ -351,6 +355,7 @@ CYBOZU_TEST_AUTO(hashBench)
 	cybozu::bench::setPutCallback(putM);
 	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
 	CYBOZU_BENCH_C("finalExp", C, BN::finalExp, e, e);
+	CYBOZU_BENCH_C("precomML", C, BN::precomputedMillerLoop, e, P, SHE::Qcoeff_);
 
 	CipherTextG1 ca1;
 	CipherTextG2 ca2;
@@ -360,8 +365,12 @@ CYBOZU_TEST_AUTO(hashBench)
 	cybozu::bench::setPutCallback(putK);
 
 	int m = int(mcl::she::local::g_rg() % hashSize);
+	printf("small m = %d\n", m);
+	CYBOZU_BENCH_C("G1::mul ", C, G1::mul, P, P, m);
+	CYBOZU_BENCH_C("G2::mul ", C, G2::mul, Q, Q, m);
+	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, m);
+	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), m);
 
-	printf("m = %d\n", m);
 	CYBOZU_BENCH_C("encG1   ", C, pub.enc, ca1, m);
 	CYBOZU_BENCH_C("encG2   ", C, pub.enc, ca2, m);
 	CYBOZU_BENCH_C("encGT   ", C, pub.enc, cm, m);
