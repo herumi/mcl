@@ -140,6 +140,7 @@ public:
 	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
 	Fp* getFp0() { return &a; }
 	const Fp* getFp0() const { return &a; }
+	const Unit* getUnit() const { return a.getUnit(); }
 	void clear()
 	{
 		a.clear();

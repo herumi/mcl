@@ -282,44 +282,47 @@ CYBOZU_TEST_AUTO(saveHash)
 
 static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
 
+template<class CT>
+void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub)
+{
+	int64_t begin = 1 << 20;
+	int64_t end = 1LL << 32;
+	while (begin < end) {
+		CT c;
+		int64_t x = begin - 1;
+		pub.enc(c, x);
+		printf("m=%08x ", (uint32_t)x);
+		CYBOZU_BENCH_C(msg, C, sec.dec, c);
+		CYBOZU_TEST_EQUAL(sec.dec(c), x);
+		begin *= 2;
+	}
+	int64_t mTbl[] = { -0x80000003ll, 0x80000000ll, 0x80000005ll };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(mTbl); i++) {
+		int64_t m = mTbl[i];
+		CT c;
+		pub.enc(c, m);
+		CYBOZU_TEST_EQUAL(sec.dec(c), m);
+	}
+}
+
 CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
+	const int C = 500;
 	const size_t hashSize = 1u << 21;
 	SHE::setRangeForDLP(hashSize, 1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	PrecomputedPublicKey ppub;
 	ppub.init(pub);
-	{
-		int x = 1 << 20;
-		CipherText one;
-		CipherText c1;
-		pub.enc(c1, x);
-		pub.enc(one, 1, true);
-
-		puts("Kclk");
-		cybozu::bench::setPutCallback(putK);
-		for (int i = 0; i < 12; i++) {
-			int y = 1 << i;
-			CipherText c2;
-			pub.enc(c2, y);
-			c2.mul(c1);
-			c2.sub(one);
-			int expect = x * y - 1;
-			CYBOZU_TEST_EQUAL(sec.dec(c2), expect);
-			printf("i=%2d dec(c2)=%08x ", i, expect);
-			CYBOZU_BENCH_C("dec", 100, sec.dec, c2);
-		}
-		// larger than int32_t
-		int64_t mTbl[] = { -0x80000003ll, 0x80000000ll, 0x80000005ll };
-		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(mTbl); i++) {
-			int64_t m = mTbl[i];
-			pub.enc(c1, m);
-			CYBOZU_TEST_EQUAL(sec.dec(c1), m);
-		}
-	}
+	puts("Kclk");
+	cybozu::bench::setPutCallback(putK);
+	decBench<CipherTextG1>("decG1", C, sec, pub);
+	puts("");
+	decBench<CipherTextG2>("decG2", C, sec, pub);
+	puts("");
+	decBench<CipherTextGT>("decGT", C, sec, pub);
 
 	G1 P, P2;
 	G2 Q, Q2;
@@ -333,7 +336,6 @@ CYBOZU_TEST_AUTO(hashBench)
 	BN::hashAndMapToG1(P, "abc");
 	BN::hashAndMapToG2(Q, "abc");
 	BN::pairing(e, P, Q);
-	const int C = 100;
 	P2.clear();
 	Q2.clear();
 	e2 = 1;
@@ -366,7 +368,7 @@ CYBOZU_TEST_AUTO(hashBench)
 	CipherTextG2 ca2;
 	CipherTextM cm;
 
-	int m = int(mcl::she::local::g_rg() % hashSize);
+	int m = int(hashSize - 1);
 	printf("small m = %d\n", m);
 	CYBOZU_BENCH_C("G1::mul ", C, G1::mul, P, P, m);
 	CYBOZU_BENCH_C("G2::mul ", C, G2::mul, Q, Q, m);
@@ -379,7 +381,7 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("encGTpre", C, ppub.enc, cm, m);
 
 	CYBOZU_BENCH_C("decG1   ", C, sec.dec, ca1);
-//	CYBOZU_BENCH_C("decG2   ", C, sec.dec, ca2);
+	CYBOZU_BENCH_C("decG2   ", C, sec.dec, ca2);
 	CYBOZU_BENCH_C("degGT   ", C, sec.dec, cm);
 
 	CYBOZU_BENCH_C("mul     ", C, CipherTextM::mul, cm, ca1, ca2);

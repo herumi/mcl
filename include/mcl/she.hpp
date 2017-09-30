@@ -144,7 +144,7 @@ class HashTable {
 	}
 	void setWindowMethod()
 	{
-		const size_t bitSize = G::BaseFp::getBitSize();
+		const size_t bitSize = G::BaseFp::BaseFp::getBitSize();
 		wm_.init(static_cast<const I&>(P_), bitSize, local::winSize);
 	}
 public:
@@ -339,6 +339,7 @@ struct SHET {
 	static GT ePQ_; // e(P, Q)
 	static std::vector<bn_current::Fp6> Qcoeff_;
 	static local::HashTable<G1> PhashTbl_;
+	static local::HashTable<G2> QhashTbl_;
 	static mcl::fp::WindowMethod<G2> Qwm_;
 	typedef local::InterfaceForHashTable<GT, false> GTasEC;
 	static local::HashTable<GT, false> ePQhashTbl_;
@@ -460,8 +461,6 @@ public:
 		BN::hashAndMapToG2(Q_, "0");
 		BN::pairing(ePQ_, P_, Q_);
 		BN::precomputeG2(Qcoeff_, Q_);
-		const size_t bitSize = Fr::getBitSize();
-		Qwm_.init(Q_, bitSize, local::winSize);
 	}
 	/*
 		set range for G1-DLP
@@ -471,6 +470,13 @@ public:
 		PhashTbl_.init(P_, hashSize, tryNum);
 	}
 	/*
+		set range for G2-DLP
+	*/
+	static void setRangeForG2DLP(size_t hashSize, size_t tryNum = 0)
+	{
+		QhashTbl_.init(Q_, hashSize, tryNum);
+	}
+	/*
 		set range for GT-DLP
 	*/
 	static void setRangeForGTDLP(size_t hashSize, size_t tryNum = 0)
@@ -478,7 +484,7 @@ public:
 		ePQhashTbl_.init(ePQ_, hashSize, tryNum);
 	}
 	/*
-		set range for G1/GT DLP
+		set range for G1/G2/GT DLP
 		decode message m for |m| <= hasSize * tryNum
 		decode time = O(log(hasSize) * tryNum)
 		@note if tryNum = 0 then fast but require more memory(TBD)
@@ -486,6 +492,7 @@ public:
 	static void setRangeForDLP(size_t hashSize, size_t tryNum = 0)
 	{
 		setRangeForG1DLP(hashSize, tryNum);
+		setRangeForG2DLP(hashSize, tryNum);
 		setRangeForGTDLP(hashSize, tryNum);
 	}
 
@@ -540,6 +547,13 @@ public:
 			G1::mul(R, c.T_, x_);
 			G1::sub(R, c.S_, R);
 			return PhashTbl_.log(R);
+		}
+		int64_t dec(const CipherTextG2& c) const
+		{
+			G2 R;
+			G2::mul(R, c.T_, y_);
+			G2::sub(R, c.S_, R);
+			return QhashTbl_.log(R);
 		}
 		int64_t dec(const CipherTextA& c) const
 		{
@@ -647,7 +661,7 @@ public:
 		template<class RG>
 		void enc(CipherTextG2& c, int64_t m, RG& rg) const
 		{
-			enc1(c.S_, c.T_, Q_, yQ_, m, rg, Qwm_);
+			enc1(c.S_, c.T_, Q_, yQ_, m, rg, QhashTbl_.getWM());
 		}
 		template<class RG>
 		void enc(CipherTextA& c, int64_t m, RG& rg) const
@@ -1201,7 +1215,7 @@ template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q_;
 template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ_;
 template<class BN, class Fr> std::vector<bn_current::Fp6> SHET<BN, Fr>::Qcoeff_;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::PhashTbl_;
-template<class BN, class Fr> mcl::fp::WindowMethod<typename BN::G2> SHET<BN, Fr>::Qwm_;
+template<class BN, class Fr> local::HashTable<typename BN::G2> SHET<BN, Fr>::QhashTbl_;
 template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::ePQhashTbl_;
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
