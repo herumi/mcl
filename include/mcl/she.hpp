@@ -328,6 +328,7 @@ struct SHET {
 
 	class SecretKey;
 	class PublicKey;
+	class PrecomputedPublicKey;
 	// additive HE
 	class CipherTextA; // = CipherTextG1 + CipherTextG2
 	class CipherTextM; // multiplicative HE
@@ -614,6 +615,7 @@ public:
 		G1 xP_;
 		G2 yQ_;
 		friend class SecretKey;
+		friend class PrecomputedPublicKey;
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
@@ -851,6 +853,61 @@ public:
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
 	};
 
+	class PrecomputedPublicKey {
+		typedef local::InterfaceForHashTable<GT, false> GTasEC;
+		typedef mcl::fp::WindowMethod<GTasEC> GTwin;
+		GT exPQ_;
+		GT eyPQ_;
+		GT exyPQ_;
+		GTwin exPQwm_;
+		GTwin eyPQwm_;
+		GTwin exyPQwm_;
+		template<class T>
+		void mulByWindowMethod(GT& x, const GTwin& wm, const T& y) const
+		{
+			wm.mul(static_cast<GTasEC&>(x), y);
+		}
+	public:
+		void init(const PublicKey& pub)
+		{
+			BN::pairing(exPQ_, pub.xP_, Q_);
+			BN::pairing(eyPQ_, P_, pub.yQ_);
+			BN::pairing(exyPQ_, pub.xP_, pub.yQ_);
+			const size_t bitSize = Fr::getBitSize();
+			exPQwm_.init(static_cast<const GTasEC&>(exPQ_), bitSize, local::winSize);
+			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
+			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
+		}
+		template<class RG>
+		void enc(CipherTextM& c, int64_t m, RG& rg) const
+		{
+			/*
+				(s, t, u, v) = (e^m e^(xya), (e^x)^b, (e^y)^c, e^(b + c - a))
+			*/
+			Fr ra, rb, rc;
+			ra.setRand(rg);
+			rb.setRand(rg);
+			rc.setRand(rg);
+			GT t;
+			ePQhashTbl_.mulByWindowMethod(c.g_[0], m); // e^m
+			mulByWindowMethod(t, exyPQwm_, ra); // (e^xy)^a
+			c.g_[0] *= t;
+			mulByWindowMethod(c.g_[1], exPQwm_, rb); // (e^x)^b
+			mulByWindowMethod(c.g_[2], eyPQwm_, rc); // (e^y)^c
+			rb = rb + rc - ra;
+			ePQhashTbl_.mulByWindowMethod(c.g_[3], rb);
+		}
+		template<class RG>
+		void reRand(CipherTextM& c, RG& rg) const
+		{
+			CipherTextM c0;
+			enc(c0, 0, rg);
+			CipherTextM::add(c, c, c0);
+		}
+		void enc(CipherTextM& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void reRand(CipherTextM& c) const { reRand(c, local::g_rg); }
+	};
+
 	class CipherTextA {
 		CipherTextG1 c1_;
 		CipherTextG2 c2_;
@@ -928,6 +985,7 @@ public:
 		GT g_[4];
 		friend class SecretKey;
 		friend class PublicKey;
+		friend class PrecomputedPublicKey;
 		friend class CipherTextA;
 	public:
 		void clear()
@@ -1148,6 +1206,7 @@ template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN,
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
 typedef SHE::PublicKey PublicKey;
+typedef SHE::PrecomputedPublicKey PrecomputedPublicKey;
 typedef SHE::CipherTextG1 CipherTextG1;
 typedef SHE::CipherTextG2 CipherTextG2;
 typedef SHE::CipherTextA CipherTextA;

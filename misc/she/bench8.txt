@@ -47,6 +47,7 @@ GTwindow 4.04e+01
 encG1    1.70e+03
 encG2    3.67e+03
 encGT    1.87e+04
+encGTpre 3.77e+03
 decG1    1.52e+03
 degGT    1.32e+04
 mul      3.11e+04
@@ -56,6 +57,7 @@ addGT    8.04e+01
 reRandG1 1.66e+03
 reRandG2 3.58e+03
 reRandGT 1.83e+04
+reRandGTpre 3.78e+03
 mulG1    2.36e+02
 mulG2    5.55e+02
 mulGT    1.30e+03
