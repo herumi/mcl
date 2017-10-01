@@ -57,7 +57,10 @@ static thread_local std::random_device g_rg;
 #else
 static cybozu::RandomGenerator g_rg;
 #endif
-const size_t winSize = 10;
+#ifndef MCLSHE_WIN_SIZE
+	#define MCLSHE_WIN_SIZE 10
+#endif
+const size_t winSize = MCLSHE_WIN_SIZE;
 
 struct KeyCount {
 	uint32_t key;
