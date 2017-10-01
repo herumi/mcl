@@ -1,9 +1,11 @@
-import sys, re
+import sys, re, argparse
 
 #RE_PROTOTYPE = re.compile(r'MCLBN_DLL_API\s\w\s\w\([^)]*\);')
 RE_PROTOTYPE = re.compile(r'\w*\s(\w*)\s(\w*)\(([^)]*)\);')
-RE_SPECIAL_FUNCTION_NAME = re.compile(r'(mclBn_init|setStr|getStr|[sS]erialize|setLittleEndian|setHashOf|hashAndMapTo|DecStr|HexStr|HashTo|blsSign|blsVerify|GetCurveOrder|GetFieldOrder|KeyShare|KeyRecover|blsSignatureRecover|blsInit)')
-def export_functions(modName, fileNames):
+def export_functions(modName, fileNames, reToAddUnderscore):
+	if not reToAddUnderscore:
+		reToAddUnderscore = r'(mclBn_init|setStr|getStr|[sS]erialize|setLittleEndian|setHashOf|hashAndMapTo|DecStr|HexStr|HashTo|blsSign|blsVerify|GetCurveOrder|GetFieldOrder|KeyShare|KeyRecover|blsSignatureRecover|blsInit)'
+	reSpecialFunctionName = re.compile(reToAddUnderscore)
 	if modName:
 		print 'function define_exported_' + modName + '(mod) {'
 	comma = ''
@@ -21,7 +23,7 @@ def export_functions(modName, fileNames):
 							paramType = '[]'
 						else:
 							paramType = '[' + ("'number', " * len(arg.split(','))) + ']'
-						if RE_SPECIAL_FUNCTION_NAME.search(name):
+						if reSpecialFunctionName.search(name):
 							exportName = '_' + name # to wrap function
 						else:
 							exportName = name
@@ -34,16 +36,13 @@ def export_functions(modName, fileNames):
 		print '}'
 
 def main():
-	args = len(sys.argv)
-	modName = ''
-	if args <= 1:
-		print 'export_functions [-js <modName>] header+'
-		sys.exit(1)
-	pos = 1
-	if args >= 3 and sys.argv[1] == '-js':
-		modName = sys.argv[2]
-		pos = 3
-	export_functions(modName, sys.argv[pos:])
+	p = argparse.ArgumentParser('export_functions')
+	p.add_argument('header', type=str, nargs='+', help='headers')
+	p.add_argument('-js', type=str, nargs='?', help='module name')
+	p.add_argument('-re', type=str, nargs='?', help='regular expression to add underscore to function name')
+	args = p.parse_args()
+
+	export_functions(args.js, args.header, args.re)
 
 if __name__ == '__main__':
     main()
