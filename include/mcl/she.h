@@ -100,11 +100,11 @@ MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t
 MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m);
 
 /*
-	decode c and set m[2]. plaintext is int64_t(m[1] << 32) + m[0]
+	decode c and set m
 	return 0 if success
 */
-MCLSHE_DLL_API int sheDecG1(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextG1 *c);
-MCLSHE_DLL_API int sheDecGT(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextGT *c);
+MCLSHE_DLL_API int sheDecG1(int64_t *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
+MCLSHE_DLL_API int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c);
 
 // return 0 if success
 // z = x + y

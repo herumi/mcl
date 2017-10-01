@@ -217,24 +217,22 @@ int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m)
 }
 
 template<class CT>
-int decT(uint32_t m[2], const sheSecretKey *sec, const CT *c)
+int decT(int64_t *m, const sheSecretKey *sec, const CT *c)
 	try
 {
-	uint64_t dec = uint64_t(cast(sec)->dec(*cast(c)));
-	m[0] = uint32_t(dec);
-	m[1] = uint32_t(dec >> 32);
+	*m = cast(sec)->dec(*cast(c));
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	return -1;
 }
 
-int sheDecG1(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextG1 *c)
+int sheDecG1(int64_t *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
 {
 	return decT(m, sec, c);
 }
 
-int sheDecGT(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextGT *c)
+int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c)
 {
 	return decT(m, sec, c);
 }
