@@ -73,7 +73,7 @@ MCLSHE_DLL_API size_t sheCipherTextG1Serialize(void *buf, size_t maxBufSize, con
 MCLSHE_DLL_API size_t sheCipherTextG2Serialize(void *buf, size_t maxBufSize, const sheCipherTextG2 *c);
 MCLSHE_DLL_API size_t sheCipherTextGTSerialize(void *buf, size_t maxBufSize, const sheCipherTextGT *c);
 
-// return 0 if success else -1
+// return 0 if success
 MCLSHE_DLL_API int sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize);
 MCLSHE_DLL_API int shePublicKeyDeserialize(shePublicKey* pub, const void *buf, size_t bufSize);
 MCLSHE_DLL_API int sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize);
@@ -82,7 +82,7 @@ MCLSHE_DLL_API int sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *bu
 
 /*
 	set secretKey if system has /dev/urandom or CryptGenRandom
-	return 0 if success else -1
+	return 0 if success
 */
 MCLSHE_DLL_API int sheSecretKeySetByCSPRNG(sheSecretKey *sec);
 
@@ -90,21 +90,21 @@ MCLSHE_DLL_API void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec);
 
 /*
 	make table to decode DLP
-	return 0 if success else -1
+	return 0 if success
 */
 MCLSHE_DLL_API int sheSetRangeForDLP(size_t hashSize, size_t tryNum);
 
-// return 0 if success else -1
+// return 0 if success
 MCLSHE_DLL_API int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m);
 MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t m);
 MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m);
 
-#define MCLSHE_ERR_DECODE 0x7fffffffffffffffll
-
-// return MCLSHE_ERR_DECODE if error
-MCLSHE_DLL_API int64_t sheDecG1(const sheSecretKey *sec, const sheCipherTextG1 *c);
-//MCLSHE_DLL_API int64_t sheDecG2(const sheSecretKey *sec, const sheCipherTextG2 *c);
-MCLSHE_DLL_API int64_t sheDecGT(const sheSecretKey *sec, const sheCipherTextGT *c);
+/*
+	decode c and set m[2]. plaintext is int64_t(m[1] << 32) + m[0]
+	return 0 if success
+*/
+MCLSHE_DLL_API int sheDecG1(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextG1 *c);
+MCLSHE_DLL_API int sheDecGT(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextGT *c);
 
 // return 0 if success
 // z = x + y

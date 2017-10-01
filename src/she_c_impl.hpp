@@ -190,7 +190,8 @@ int sheSetRangeForDLP(size_t hashSize, size_t tryNum)
 	return -1;
 }
 
-int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m)
+template<class CT>
+int encT(CT *c, const shePublicKey *pub, int64_t m)
 	try
 {
 	cast(pub)->enc(*cast(c), m);
@@ -198,69 +199,77 @@ int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m)
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	return -1;
+}
+
+int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m)
+{
+	return encT(c, pub, m);
 }
 
 int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t m)
-	try
 {
-	cast(pub)->enc(*cast(c), m);
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return encT(c, pub, m);
 }
 
 int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m)
+{
+	return encT(c, pub, m);
+}
+
+template<class CT>
+int decT(uint32_t m[2], const sheSecretKey *sec, const CT *c)
 	try
 {
-	cast(pub)->enc(*cast(c), m);
+	uint64_t dec = uint64_t(cast(sec)->dec(*cast(c)));
+	m[0] = uint32_t(dec);
+	m[1] = uint32_t(dec >> 32);
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	return -1;
 }
 
-int64_t sheDecG1(const sheSecretKey *sec, const sheCipherTextG1 *c)
-	try
+int sheDecG1(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextG1 *c)
 {
-	return cast(sec)->dec(*cast(c));
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return MCLSHE_ERR_DECODE;
+	return decT(m, sec, c);
 }
 
-int64_t sheDecGT(const sheSecretKey *sec, const sheCipherTextGT *c)
+int sheDecGT(uint32_t m[2], const sheSecretKey *sec, const sheCipherTextGT *c)
+{
+	return decT(m, sec, c);
+}
+
+template<class CT>
+int addT(CT& z, const CT& x, const CT& y)
 	try
 {
-	return cast(sec)->dec(*cast(c));
+	CT::add(z, x, y);
+	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
-	return MCLSHE_ERR_DECODE;
+	return -1;
 }
 
 int sheAddG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const sheCipherTextG1 *y)
-	try
 {
-	CipherTextG1::add(*cast(z), *cast(x), *cast(y));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return addT(*cast(z), *cast(x), *cast(y));
 }
 
 int sheAddG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, const sheCipherTextG2 *y)
-	try
 {
-	CipherTextG2::add(*cast(z), *cast(x), *cast(y));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return addT(*cast(z), *cast(x), *cast(y));
 }
+
 int sheAddGT(sheCipherTextGT *z, const sheCipherTextGT *x, const sheCipherTextGT *y)
+{
+	return addT(*cast(z), *cast(x), *cast(y));
+}
+
+template<class CT>
+int subT(CT& z, const CT& x, const CT& y)
 	try
 {
-	CipherTextGT::add(*cast(z), *cast(x), *cast(y));
+	CT::sub(z, x, y);
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
@@ -268,28 +277,25 @@ int sheAddGT(sheCipherTextGT *z, const sheCipherTextGT *x, const sheCipherTextGT
 }
 
 int sheSubG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const sheCipherTextG1 *y)
-	try
 {
-	CipherTextG1::sub(*cast(z), *cast(x), *cast(y));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return subT(*cast(z), *cast(x), *cast(y));
 }
 
 int sheSubG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, const sheCipherTextG2 *y)
-	try
 {
-	CipherTextG2::sub(*cast(z), *cast(x), *cast(y));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return subT(*cast(z), *cast(x), *cast(y));
 }
+
 int sheSubGT(sheCipherTextGT *z, const sheCipherTextGT *x, const sheCipherTextGT *y)
+{
+	return subT(*cast(z), *cast(x), *cast(y));
+}
+
+template<class CT1, class CT2, class CT3>
+int mulT(CT1& z, const CT2& x, const CT3& y)
 	try
 {
-	CipherTextGT::sub(*cast(z), *cast(x), *cast(y));
+	CT1::mul(z, x, y);
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
@@ -297,38 +303,30 @@ int sheSubGT(sheCipherTextGT *z, const sheCipherTextGT *x, const sheCipherTextGT
 }
 
 int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int64_t y)
-	try
 {
-	CipherTextG1::mul(*cast(z), *cast(x), y);
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return mulT(*cast(z), *cast(x), y);
 }
 
 int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int64_t y)
-	try
 {
-	CipherTextG2::mul(*cast(z), *cast(x), y);
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return mulT(*cast(z), *cast(x), y);
 }
+
 int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, int64_t y)
-	try
 {
-	CipherTextGT::mul(*cast(z), *cast(x), y);
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return mulT(*cast(z), *cast(x), y);
 }
 
 int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y)
+{
+	return mulT(*cast(z), *cast(x), *cast(y));
+}
+
+template<class CT>
+int reRandT(CT& c, const shePublicKey *pub)
 	try
 {
-	CipherTextGT::mul(*cast(z), *cast(x), *cast(y));
+	cast(pub)->reRand(c);
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
@@ -336,29 +334,17 @@ int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *
 }
 
 int sheReRandG1(sheCipherTextG1 *c, const shePublicKey *pub)
-	try
 {
-	cast(pub)->reRand(*cast(c));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return reRandT(*cast(c), pub);
 }
+
 int sheReRandG2(sheCipherTextG2 *c, const shePublicKey *pub)
-	try
 {
-	cast(pub)->reRand(*cast(c));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return reRandT(*cast(c), pub);
 }
+
 int sheReRandGT(sheCipherTextGT *c, const shePublicKey *pub)
-	try
 {
-	cast(pub)->reRand(*cast(c));
-	return 0;
-} catch (std::exception& e) {
-	printf("err %s\n", e.what());
-	return -1;
+	return reRandT(*cast(c), pub);
 }
+

@@ -16,9 +16,14 @@ CYBOZU_TEST_AUTO(init)
 #endif
 	int ret;
 	ret = sheInit(curve, MCLBN_FP_UNIT_SIZE);
-	CYBOZU_TEST_ASSERT(ret == 0);
+	CYBOZU_TEST_EQUAL(ret, 0);
 	ret = sheSetRangeForDLP(hashSize, tryNum);
-	CYBOZU_TEST_ASSERT(ret == 0);
+	CYBOZU_TEST_EQUAL(ret, 0);
+}
+
+int64_t toInt(const uint32_t m[2])
+{
+	return m[0] + (int64_t(m[1]) << 32);
 }
 
 CYBOZU_TEST_AUTO(encDec)
@@ -34,8 +39,11 @@ CYBOZU_TEST_AUTO(encDec)
 	sheEncG1(&c1, &pub, m);
 	sheEncGT(&ct, &pub, m);
 
-	CYBOZU_TEST_EQUAL(sheDecG1(&sec, &c1), m);
-	CYBOZU_TEST_EQUAL(sheDecGT(&sec, &ct), m);
+	uint32_t dec[2];
+	CYBOZU_TEST_EQUAL(sheDecG1(dec, &sec, &c1), 0);
+	CYBOZU_TEST_EQUAL(toInt(dec), m);
+	CYBOZU_TEST_EQUAL(sheDecGT(dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(toInt(dec), m);
 }
 
 CYBOZU_TEST_AUTO(addMul)
@@ -54,7 +62,9 @@ CYBOZU_TEST_AUTO(addMul)
 	sheEncG2(&c2, &pub, m2);
 	sheMul(&ct, &c1, &c2);
 
-	CYBOZU_TEST_EQUAL(sheDecGT(&sec, &ct), m1 * m2);
+	uint32_t dec[2];
+	CYBOZU_TEST_EQUAL(sheDecGT(dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(toInt(dec), m1 * m2);
 }
 
 CYBOZU_TEST_AUTO(allOp)
@@ -85,7 +95,9 @@ CYBOZU_TEST_AUTO(allOp)
 	sheMulGT(&ct, &ct, -4); // 160 * (m1 - m2) * (m3 - m4)
 
 	int64_t t = 160 * (m1 - m2) * (m3 - m4);
-	CYBOZU_TEST_EQUAL(sheDecGT(&sec, &ct), t);
+	uint32_t dec[2];
+	CYBOZU_TEST_EQUAL(sheDecGT(dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(toInt(dec), t);
 }
 
 CYBOZU_TEST_AUTO(rerand)
@@ -114,7 +126,9 @@ CYBOZU_TEST_AUTO(rerand)
 	sheReRandGT(&ct2, &pub);
 	sheAddGT(&ct1, &ct1, &ct2);
 
-	CYBOZU_TEST_EQUAL(sheDecGT(&sec, &ct1), m1 * m2 + m3);
+	uint32_t dec[2];
+	CYBOZU_TEST_EQUAL(sheDecGT(dec, &sec, &ct1), 0);
+	CYBOZU_TEST_EQUAL(toInt(dec), m1 * m2 + m3);
 }
 
 CYBOZU_TEST_AUTO(serialize)
