@@ -207,8 +207,9 @@ test: $(TEST_EXE)
 
 EXPORTED_SHE_JS=docs/demo/exported-she.js
 SHE_TXT=ffi/js/she.txt
-EXPORT_OPT=-re ffi/js/she-re.txt
-$(SHE_TXT): ./include/mcl/she.h
+SHE_RE_TXT=ffi/js/she-re.txt
+EXPORT_OPT=-re $(SHE_RE_TXT)
+$(SHE_TXT): ./include/mcl/she.h $(SHE_RE_TXT)
 	python ffi/js/export-functions.py $(EXPORT_OPT) $< > $@
 
 $(EXPORTED_SHE_JS): ./include/mcl/she.h
@@ -222,8 +223,12 @@ docs/demo/mclshe.js: src/fp.cpp src/she_c256.cpp $(SHE_TXT) $(EXPORTED_SHE_JS)
 demo:
 	$(MAKE) docs/demo/mclshe.js
 
+clean_demo:
+	$(RM) $(EXPORTED_SHE_JS) $(SHE_TXT) docs/demo/mclshe.js docs/demo/mclshe.wasm
+
 clean:
-	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll $(EXPORTED_SHE_JS) $(SHE_TXT) docs/demo/mclshe.js docs/demo/mclshe.wasm
+	$(MAKE) clean_demo
+	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))

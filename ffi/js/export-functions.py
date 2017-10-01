@@ -45,10 +45,8 @@ def main():
 	reToAddUnderscore = ''
 	if args.re:
 		reToAddUnderscore = open(args.re).read().strip()
-	print 'RE', reToAddUnderscore
 	export_functions(args.js, args.header, reToAddUnderscore)
 
 if __name__ == '__main__':
     main()
 
-			
