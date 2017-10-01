@@ -5,7 +5,7 @@
 #include <iosfwd>
 #include <stdint.h>
 #include <memory.h>
-#include "../mcl/src/bn_c_impl.hpp"
+#include "../src/bn_c_impl.hpp"
 #define MCLSHE_DLL_EXPORT
 
 #include <mcl/she.h>

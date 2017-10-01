@@ -39,10 +39,14 @@ def main():
 	p = argparse.ArgumentParser('export_functions')
 	p.add_argument('header', type=str, nargs='+', help='headers')
 	p.add_argument('-js', type=str, nargs='?', help='module name')
-	p.add_argument('-re', type=str, nargs='?', help='regular expression to add underscore to function name')
+	p.add_argument('-re', type=str, nargs='?', help='regular expression file to add underscore to function name')
 	args = p.parse_args()
 
-	export_functions(args.js, args.header, args.re)
+	reToAddUnderscore = ''
+	if args.re:
+		reToAddUnderscore = open(args.re).read().strip()
+	print 'RE', reToAddUnderscore
+	export_functions(args.js, args.header, reToAddUnderscore)
 
 if __name__ == '__main__':
     main()
