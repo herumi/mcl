@@ -180,14 +180,31 @@ void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec)
 	cast(sec)->getPublicKey(*cast(pub));
 }
 
-int sheSetRangeForDLP(size_t hashSize, size_t tryNum)
+static int setRangeForDLP(void (*f)(size_t, size_t), size_t hashSize, size_t tryNum)
 	try
 {
-	SHE::setRangeForDLP(hashSize, tryNum);
+	f(hashSize, tryNum);
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	return -1;
+}
+
+int sheSetRangeForDLP(size_t hashSize, size_t tryNum)
+{
+	return setRangeForDLP(SHE::setRangeForDLP, hashSize, tryNum);
+}
+int sheSetRangeForG1DLP(size_t hashSize, size_t tryNum)
+{
+	return setRangeForDLP(SHE::setRangeForG1DLP, hashSize, tryNum);
+}
+int sheSetRangeForG2DLP(size_t hashSize, size_t tryNum)
+{
+	return setRangeForDLP(SHE::setRangeForG2DLP, hashSize, tryNum);
+}
+int sheSetRangeForGTDLP(size_t hashSize, size_t tryNum)
+{
+	return setRangeForDLP(SHE::setRangeForGTDLP, hashSize, tryNum);
 }
 
 template<class CT>
@@ -212,6 +229,21 @@ int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t m)
 }
 
 int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m)
+{
+	return encT(c, pub, m);
+}
+
+int sheEnc32G1(sheCipherTextG1 *c, const shePublicKey *pub, int m)
+{
+	return encT(c, pub, m);
+}
+
+int sheEnc32G2(sheCipherTextG2 *c, const shePublicKey *pub, int m)
+{
+	return encT(c, pub, m);
+}
+
+int sheEnc32GT(sheCipherTextGT *c, const shePublicKey *pub, int m)
 {
 	return encT(c, pub, m);
 }

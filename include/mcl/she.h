@@ -93,11 +93,19 @@ MCLSHE_DLL_API void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec);
 	return 0 if success
 */
 MCLSHE_DLL_API int sheSetRangeForDLP(size_t hashSize, size_t tryNum);
+MCLSHE_DLL_API int sheSetRangeForG1DLP(size_t hashSize, size_t tryNum);
+MCLSHE_DLL_API int sheSetRangeForG2DLP(size_t hashSize, size_t tryNum);
+MCLSHE_DLL_API int sheSetRangeForGTDLP(size_t hashSize, size_t tryNum);
 
 // return 0 if success
 MCLSHE_DLL_API int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m);
 MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t m);
 MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m);
+
+// for JavaScript
+MCLSHE_DLL_API int sheEnc32G1(sheCipherTextG1 *c, const shePublicKey *pub, int m);
+MCLSHE_DLL_API int sheEnc32G2(sheCipherTextG2 *c, const shePublicKey *pub, int m);
+MCLSHE_DLL_API int sheEnc32GT(sheCipherTextGT *c, const shePublicKey *pub, int m);
 
 /*
 	decode c and set m
