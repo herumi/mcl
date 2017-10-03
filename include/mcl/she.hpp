@@ -352,6 +352,7 @@ private:
 		G S_, T_;
 		friend class SecretKey;
 		friend class PublicKey;
+		friend class PrecomputedPublicKey;
 		friend class CipherTextA;
 		friend class CipherTextM;
 	public:
@@ -879,6 +880,8 @@ public:
 		GTwin exPQwm_;
 		GTwin eyPQwm_;
 		GTwin exyPQwm_;
+		mcl::fp::WindowMethod<G1> xPwm_;
+		mcl::fp::WindowMethod<G2> yQwm_;
 		template<class T>
 		void mulByWindowMethod(GT& x, const GTwin& wm, const T& y) const
 		{
@@ -894,6 +897,33 @@ public:
 			exPQwm_.init(static_cast<const GTasEC&>(exPQ_), bitSize, local::winSize);
 			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
 			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
+			xPwm_.init(pub.xP_, bitSize, local::winSize);
+			yQwm_.init(pub.yQ_, bitSize, local::winSize);
+		}
+		/*
+			(S, T) = (m P + r xP, rP)
+		*/
+		template<class G, class RG, class I>
+		void enc1(G& S, G& T, int64_t m, RG& rg, const mcl::fp::WindowMethod<I>& Pwm, const mcl::fp::WindowMethod<G>& xPwm) const
+		{
+			Fr r;
+			r.setRand(rg);
+			Pwm.mul(static_cast<I&>(T), r);
+			xPwm.mul(S, r);
+			if (m == 0) return;
+			G C;
+			Pwm.mul(static_cast<I&>(C), m);
+			S += C;
+		}
+		template<class RG>
+		void enc(CipherTextG1& c, int64_t m, RG& rg) const
+		{
+			enc1(c.S_, c.T_, m, rg, PhashTbl_.getWM(), xPwm_);
+		}
+		template<class RG>
+		void enc(CipherTextG2& c, int64_t m, RG& rg) const
+		{
+			enc1(c.S_, c.T_, m, rg, QhashTbl_.getWM(), yQwm_);
 		}
 		template<class RG>
 		void enc(CipherTextM& c, int64_t m, RG& rg) const
@@ -914,14 +944,21 @@ public:
 			rb = rb + rc - ra;
 			ePQhashTbl_.mulByWindowMethod(c.g_[3], rb);
 		}
-		template<class RG>
-		void reRand(CipherTextM& c, RG& rg) const
+		template<class CT, class RG>
+		void reRandT(CT& c, RG& rg) const
 		{
-			CipherTextM c0;
+			CT c0;
 			enc(c0, 0, rg);
-			CipherTextM::add(c, c, c0);
+			CT::add(c, c, c0);
 		}
+		template<class RG> void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG> void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG> void reRand(CipherTextM& c, RG& rg) const { reRandT(c, rg); }
+		void enc(CipherTextG1& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextG2& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherTextM& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherTextM& c) const { reRand(c, local::g_rg); }
 	};
 
@@ -1226,8 +1263,8 @@ typedef SHE::PublicKey PublicKey;
 typedef SHE::PrecomputedPublicKey PrecomputedPublicKey;
 typedef SHE::CipherTextG1 CipherTextG1;
 typedef SHE::CipherTextG2 CipherTextG2;
-typedef SHE::CipherTextA CipherTextA;
 typedef SHE::CipherTextM CipherTextM;
+typedef SHE::CipherTextA CipherTextA;
 typedef CipherTextM CipherTextGT;
 typedef SHE::CipherText CipherText;
 

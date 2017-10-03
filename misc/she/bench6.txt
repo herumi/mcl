@@ -8,84 +8,88 @@ ctest:module=add_mul_add_sub
 ctest:module=innerProduct
 ctest:module=io
 ctest:module=bench
-enc   2.081Mclk
-add  17.729Kclk
-mul  13.522Mclk
-dec   6.002Mclk
-add after mul  42.743Kclk
+enc   2.087Mclk
+add  17.699Kclk
+mul  13.369Mclk
+dec   6.004Mclk
+add after mul  41.593Kclk
 ctest:module=saveHash
 ctest:module=hashBench
 Kclk
 m=000fffff decG1 5.29e+02
-m=001fffff decG1 5.27e+02
+m=001fffff decG1 5.30e+02
 m=003fffff decG1 5.30e+02
-m=007fffff decG1 5.36e+02
-m=00ffffff decG1 5.83e+02
-m=01ffffff decG1 7.07e+02
-m=03ffffff decG1 9.52e+02
+m=007fffff decG1 5.42e+02
+m=00ffffff decG1 5.86e+02
+m=01ffffff decG1 7.09e+02
+m=03ffffff decG1 9.54e+02
 m=07ffffff decG1 1.41e+03
 m=0fffffff decG1 2.31e+03
 m=1fffffff decG1 4.13e+03
 m=3fffffff decG1 7.73e+03
 m=7fffffff decG1 1.50e+04
 
-m=000fffff decG2 1.26e+03
-m=001fffff decG2 1.27e+03
-m=003fffff decG2 1.26e+03
-m=007fffff decG2 1.29e+03
-m=00ffffff decG2 1.35e+03
-m=01ffffff decG2 1.53e+03
-m=03ffffff decG2 1.88e+03
-m=07ffffff decG2 2.54e+03
-m=0fffffff decG2 3.86e+03
-m=1fffffff decG2 6.50e+03
-m=3fffffff decG2 1.18e+04
-m=7fffffff decG2 2.24e+04
+m=000fffff decG2 1.29e+03
+m=001fffff decG2 1.30e+03
+m=003fffff decG2 1.30e+03
+m=007fffff decG2 1.33e+03
+m=00ffffff decG2 1.38e+03
+m=01ffffff decG2 1.55e+03
+m=03ffffff decG2 1.90e+03
+m=07ffffff decG2 2.57e+03
+m=0fffffff decG2 3.90e+03
+m=1fffffff decG2 6.55e+03
+m=3fffffff decG2 1.19e+04
+m=7fffffff decG2 2.25e+04
 
-m=000fffff decGT 6.05e+03
-m=001fffff decGT 6.05e+03
-m=003fffff decGT 6.04e+03
-m=007fffff decGT 6.07e+03
-m=00ffffff decGT 6.11e+03
-m=01ffffff decGT 6.19e+03
+m=000fffff decGT 6.06e+03
+m=001fffff decGT 6.07e+03
+m=003fffff decGT 6.06e+03
+m=007fffff decGT 6.08e+03
+m=00ffffff decGT 6.13e+03
+m=01ffffff decGT 6.21e+03
 m=03ffffff decGT 6.42e+03
 m=07ffffff decGT 6.74e+03
 m=0fffffff decGT 7.47e+03
-m=1fffffff decGT 9.00e+03
-m=3fffffff decGT 1.21e+04
-m=7fffffff decGT 1.81e+04
+m=1fffffff decGT 8.99e+03
+m=3fffffff decGT 1.20e+04
+m=7fffffff decGT 1.80e+04
 large m
 G1::add  1.48e+00
 G1::mul  5.34e+02
-G2::add  6.94e+00
-G2::mul  1.22e+03
-GT::mul  1.07e+01
-GT::pow  1.96e+03
-GTwindow 4.15e+02
-miller   2.10e+03
-finalExp 1.50e+03
-precomML 1.64e+03
+G2::add  6.93e+00
+G2::mul  1.23e+03
+GT::mul  1.05e+01
+GT::pow  1.95e+03
+GTwindow 3.96e+02
+miller   2.08e+03
+finalExp 1.49e+03
+precomML 1.63e+03
 small m = 2097151
-G1::mul  8.24e+01
+G1::mul  8.27e+01
 G2::mul  2.06e+02
-GT::pow  2.68e+02
-GTwindow 3.18e+01
-encG1    6.03e+02
-encG2    1.51e+03
-encGT    7.68e+03
-encGTpre 1.75e+03
-decG1    5.28e+02
+GT::pow  2.64e+02
+GTwindow 3.13e+01
+encG1    6.01e+02
+encG2    1.49e+03
+encGT    7.63e+03
+encG1pre 1.42e+02
+encG2pre 4.73e+02
+encGTpre 1.72e+03
+decG1    5.30e+02
 decG2    1.29e+03
-degGT    6.05e+03
-mul      1.35e+04
-addG1    3.09e+00
-addG2    1.02e+01
-addGT    4.22e+01
-reRandG1 5.99e+02
-reRandG2 1.50e+03
-reRandGT 7.72e+03
-reRandGTpre 1.76e+03
+degGT    6.08e+03
+mul      1.34e+04
+addG1    3.07e+00
+addG2    1.04e+01
+addGT    4.13e+01
+reRandG1 6.01e+02
+reRandG2 1.49e+03
+reRandGT 7.67e+03
+reRandG1pre 1.40e+02
+reRandG2pre 4.68e+02
+reRandGTpre 1.73e+03
 mulG1    1.65e+02
-mulG2    4.13e+02
-mulGT    1.07e+03
-ctest:name=she_test, module=11, total=2859, ok=2859, ng=0, exception=0
+mulG2    4.15e+02
+mulGT    1.06e+03
+ctest:name=she_test, module=11, total=2879, ok=2879, ng=0, exception=0
