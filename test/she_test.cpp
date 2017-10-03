@@ -353,9 +353,12 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("G2::mul ", C, G2::mul, Q, Q, mr);
 	CYBOZU_BENCH_C("GT::mul ", C, GT::mul, e2, e2, e);
 	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, mr);
+	CYBOZU_BENCH_C("G1window", C, SHE::PhashTbl_.mulByWindowMethod, P2, mr);
+	CYBOZU_BENCH_C("G2window", C, SHE::QhashTbl_.mulByWindowMethod, Q2, mr);
+	CYBOZU_BENCH_C("GTwindow", C, SHE::ePQhashTbl_.mulByWindowMethod, e, mr);
+#if 1
 	typedef mcl::GroupMtoA<Fp12> AG;
 	mcl::fp::WindowMethod<AG> wm;
-#if 1
 	wm.init(static_cast<AG&>(e), Fr::getBitSize(), 10);
 	for (int i = 0; i < 100; i++) {
 		GT t1, t2;
@@ -363,7 +366,7 @@ CYBOZU_TEST_AUTO(hashBench)
 		wm.mul(static_cast<AG&>(t2), i);
 		CYBOZU_TEST_EQUAL(t1, t2);
 	}
-	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), mr);
+//	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), mr);
 #endif
 
 	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
@@ -379,7 +382,10 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("G1::mul ", C, G1::mul, P, P, m);
 	CYBOZU_BENCH_C("G2::mul ", C, G2::mul, Q, Q, m);
 	CYBOZU_BENCH_C("GT::pow ", C, GT::pow, e, e, m);
-	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), m);
+	CYBOZU_BENCH_C("G1window", C, SHE::PhashTbl_.mulByWindowMethod, P2, m);
+	CYBOZU_BENCH_C("G2window", C, SHE::QhashTbl_.mulByWindowMethod, Q2, m);
+	CYBOZU_BENCH_C("GTwindow", C, SHE::ePQhashTbl_.mulByWindowMethod, e, m);
+//	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), m);
 
 	CYBOZU_BENCH_C("encG1   ", C, pub.enc, ca1, m);
 	CYBOZU_BENCH_C("encG2   ", C, pub.enc, ca2, m);
