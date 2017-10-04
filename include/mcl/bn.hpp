@@ -577,6 +577,7 @@ struct BNT {
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
 	typedef HaveFrobenius<G2> G2withF;
+	typedef mcl::FpDblT<Fp> FpDbl;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 	typedef ParamT<Fp> Param;
 	static Param param;
@@ -788,6 +789,19 @@ struct BNT {
 		y.a.c = x.c;
 		y.b.b = x.b;
 	}
+	static void Fp2Dbl_mulOpt(Fp2Dbl& Z, const Fp2& x, const Fp2& y)
+	{
+		FpDbl D0;
+		Fp s, t;
+		Fp::addPre(s, x.a, x.b);
+		Fp::addPre(t, y.a, y.b);
+		FpDbl::mulPre(D0, x.b, y.b);
+		FpDbl::mulPre(Z.a, x.a, y.a);
+		FpDbl::mulPre(Z.b, s, t);
+		FpDbl::subPre(Z.b, Z.b, Z.a);
+		FpDbl::subPre(Z.b, Z.b, D0);
+		FpDbl::sub(Z.a, Z.a, D0);
+	}
 	/*
 		x = (x0 + x1 + x2^2) + (x3 + x4v + x5v^2)w
 		y = (y0, y4, y2) -> (y0, 0, y2, 0, y4, 0)
@@ -798,6 +812,84 @@ struct BNT {
 		x2y2 + x5y4 = (x2 + x5)(y2 + y4) - x2y4 - x5y2
 		x0y2 + x3y4 = (x0 + x3)(y2 + y4) - x0y4 - x3y2
 	*/
+	// mul_024(z, z(=y), x)
+	static void mul_024(Fp12& z, const Fp6& x)
+	{
+		Fp2& z0 = z.a.a;
+		Fp2& z1 = z.a.b;
+		Fp2& z2 = z.a.c;
+		Fp2& z3 = z.b.a;
+		Fp2& z4 = z.b.b;
+		Fp2& z5 = z.b.c;
+		const Fp2& x0 = x.a;
+		const Fp2& x2 = x.c;
+		const Fp2& x4 = x.b;
+		Fp2 t0, t1, t2;
+		Fp2 s0;
+		Fp2Dbl T3, T4;
+		Fp2Dbl D0, D2, D4;
+		Fp2Dbl S1;
+		Fp2Dbl_mulOpt(D0, z0, x0);
+		Fp2Dbl_mulOpt(D2, z2, x2);
+		Fp2Dbl_mulOpt(D4, z4, x4);
+		Fp2::add(t2, z0, z4);
+		Fp2::add(t1, z0, z2);
+		Fp2::add(s0, z1, z3);
+		s0 += z5;
+		// For z.a.a = z0.
+		Fp2Dbl_mulOpt(S1, z1, x2);
+		Fp2Dbl::add(T3, S1, D4);
+		Fp2Dbl::mul_xi(T4, T3);
+		T4 += D0;
+		Fp2Dbl::mod(z0, T4);
+		// For z.a.b = z1.
+		Fp2Dbl_mulOpt(T3, z5, x4);
+		S1 += T3;
+		T3 += D2;
+		Fp2Dbl::mul_xi(T4, T3);
+		Fp2Dbl_mulOpt(T3, z1, x0);
+		S1 += T3;
+		T4 += T3;
+		Fp2Dbl::mod(z1, T4);
+		// For z.a.c = z2.
+		Fp2::add(t0, x0, x2);
+		Fp2Dbl_mulOpt(T3, t1, t0);
+		T3 -= D0;
+		T3 -= D2;
+		Fp2Dbl_mulOpt(T4, z3, x4);
+		S1 += T4;
+		T3 += T4;
+		// z3 needs z2.
+		// For z.b.a = z3.
+		Fp2::add(t0, z2, z4);
+		Fp2Dbl::mod(z2, T3);
+		Fp2::add(t1, x2, x4);
+		Fp2Dbl_mulOpt(T3, t0, t1);
+		T3 -= D2;
+		T3 -= D4;
+		Fp2Dbl::mul_xi(T4, T3);
+		Fp2Dbl_mulOpt(T3, z3, x0);
+		S1 += T3;
+		T4 += T3;
+		Fp2Dbl::mod(z3, T4);
+		// For z.b.b = z4.
+		Fp2Dbl_mulOpt(T3, z5, x2);
+		S1 += T3;
+		Fp2Dbl::mul_xi(T4, T3);
+		Fp2::add(t0, x0, x4);
+		Fp2Dbl_mulOpt(T3, t2, t0);
+		T3 -= D0;
+		T3 -= D4;
+		T4 += T3;
+		Fp2Dbl::mod(z4, T4);
+		// For z.b.c = z5.
+		Fp2::add(t0, x0, x2);
+		t0 += x4;
+		Fp2Dbl_mulOpt(T3, s0, t0);
+		T3 -= S1;
+		Fp2Dbl::mod(z5, T3);
+	}
+#if 0
 	static void mul_024(Fp12& z, const Fp12&x, const Fp6& y)
 	{
 #if 1
@@ -828,42 +920,42 @@ struct BNT {
 		Fp2::add(x0_add_x3, x0, x3);
 		Fp2Dbl T1, T2;
 		Fp2Dbl::mulPre(T1, x1_add_x4, y2_add_y4);
-		Fp2Dbl::sub(T1, T1, X1Y4);
-		Fp2Dbl::sub(T1, T1, X4Y2);
+		T1 -= X1Y4;
+		T1 -= X4Y2;
 		Fp2Dbl::mul_xi(T1, T1);
 		Fp2Dbl::mulPre(T2, x0, y0);
-		Fp2Dbl::add(T1, T1, T2);
+		T1 += T2;
 		Fp2Dbl::mod(z.a.a, T1);
 
 		Fp2Dbl::mulPre(T1, x2_add_x5, y2_add_y4);
-		Fp2Dbl::sub(T1, T1, X2Y4);
-		Fp2Dbl::sub(T1, T1, X5Y2);
+		T1 -= X2Y4;
+		T1 -= X5Y2;
 		Fp2Dbl::mul_xi(T1, T1);
 		Fp2Dbl::mulPre(T2, x1, y0);
 		Fp2Dbl::add(T1, T1, T2);
 		Fp2Dbl::mod(z.a.b, T1);
 		Fp2Dbl::mulPre(T1, x0_add_x3, y2_add_y4);
-		Fp2Dbl::sub(T1, T1, X0Y4);
-		Fp2Dbl::sub(T1, T1, X3Y2);
+		T1 -= X0Y4;
+		T1 -= X3Y2;
 		Fp2Dbl::mulPre(T2, x2, y0);
-		Fp2Dbl::add(T1, T1, T2);
+		T1 += T2;
 		Fp2Dbl::mod(z.a.c, T1);
 
 		Fp2Dbl::add(T1, X2Y4, X4Y2);
 		Fp2Dbl::mul_xi(T1, T1);
 		Fp2Dbl::mulPre(T2, x3, y0);
-		Fp2Dbl::add(T1, T1, T2);
+		T1 += T2;
 		Fp2Dbl::mod(z.b.a, T1);
 
 		Fp2Dbl::mul_xi(T1, X5Y2);
 		Fp2Dbl::mulPre(T2, x4, y0);
-		Fp2Dbl::add(T2, T2, X0Y4);
-		Fp2Dbl::add(T1, T1, T2);
+		T2 += X0Y4;
+		T1 += T2;
 		Fp2Dbl::mod(z.b.b, T1);
 
 		Fp2Dbl::mulPre(T1, x5, y0);
-		Fp2Dbl::add(T1, T1, X3Y2);
-		Fp2Dbl::add(T1, T1, X1Y4);
+		T1 += X3Y2;
+		T1 += X1Y4;
 		Fp2Dbl::mod(z.b.c, T1);
 #else
 		const Fp2 x0 = x.a.a;
@@ -926,6 +1018,7 @@ struct BNT {
 		z.b.c += x1y4;
 #endif
 	}
+#endif
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
 	{
 		Fp12 x2, y2;
@@ -1323,14 +1416,14 @@ struct BNT {
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
 			dblLine(l, T, P);
 			Fp12::sqr(f, f);
-			mul_024(f, f, l);
+			mul_024(f, l);
 			if (param.siTbl[i]) {
 				if (param.siTbl[i] > 0) {
 					addLine(l, T, Q, P);
 				} else {
 					addLine(l, T, negQ, P);
 				}
-				mul_024(f, f, l);
+				mul_024(f, l);
 			}
 		}
 		G2 Q1, Q2;
@@ -1427,11 +1520,11 @@ struct BNT {
 			mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
 			idx++;
 			Fp12::sqr(f, f);
-			mul_024(f, f, l);
+			mul_024(f, l);
 			if (param.siTbl[i]) {
 				mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
 				idx++;
-				mul_024(f, f, l);
+				mul_024(f, l);
 			}
 		}
 		if (param.z < 0) {

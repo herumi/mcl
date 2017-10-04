@@ -245,8 +245,8 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
 #ifdef ONLY_BENCH
-//	for (int i = 0; i < 1000; i++) BN::pairing(e1, P, Q);
-	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, P, Q); // 2.4Mclk
+	for (int i = 0; i < 1000; i++) BN::pairing(e1, P, Q);
+//	CYBOZU_BENCH_C("pairing", 1000, BN::pairing, e1, P, Q); // 2.4Mclk
 #else
 	{
 		Fp12 e = e1, ea;
@@ -360,6 +360,11 @@ CYBOZU_TEST_AUTO(naive)
 		initPairing(ts.cp, g_mode);
 		G1 P(ts.g1.a, ts.g1.b);
 		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+#if 0
+		testPairing(P, Q, ts.e);
+clk.put();
+return;
+#endif
 		testFp12pow(P, Q);
 		testIo(P, Q);
 		testTrivial(P, Q);
