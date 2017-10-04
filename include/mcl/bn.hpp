@@ -812,6 +812,71 @@ struct BNT {
 		const Fp2& y4 = y.b;
 		Fp2 y2_add_y4;
 		Fp2::add(y2_add_y4, y2, y4);
+		Fp2Dbl X0Y4, X1Y4, X2Y4, X3Y2, X4Y2, X5Y2;
+		Fp2Dbl::mulPre(X0Y4, x0, y4);
+		Fp2Dbl::mulPre(X1Y4, x1, y4);
+		Fp2Dbl::mulPre(X2Y4, x2, y4);
+		Fp2Dbl::mulPre(X3Y2, x3, y2);
+		Fp2Dbl::mulPre(X4Y2, x4, y2);
+		Fp2Dbl::mulPre(X5Y2, x5, y2);
+
+		Fp2 x1_add_x4;
+		Fp2 x2_add_x5;
+		Fp2 x0_add_x3;
+		Fp2::add(x1_add_x4, x1, x4);
+		Fp2::add(x2_add_x5, x2, x5);
+		Fp2::add(x0_add_x3, x0, x3);
+		Fp2Dbl T1, T2;
+		Fp2Dbl::mulPre(T1, x1_add_x4, y2_add_y4);
+		Fp2Dbl::sub(T1, T1, X1Y4);
+		Fp2Dbl::sub(T1, T1, X4Y2);
+		Fp2Dbl::mul_xi(T1, T1);
+		Fp2Dbl::mulPre(T2, x0, y0);
+		Fp2Dbl::add(T1, T1, T2);
+		Fp2Dbl::mod(z.a.a, T1);
+
+		Fp2Dbl::mulPre(T1, x2_add_x5, y2_add_y4);
+		Fp2Dbl::sub(T1, T1, X2Y4);
+		Fp2Dbl::sub(T1, T1, X5Y2);
+		Fp2Dbl::mul_xi(T1, T1);
+		Fp2Dbl::mulPre(T2, x1, y0);
+		Fp2Dbl::add(T1, T1, T2);
+		Fp2Dbl::mod(z.a.b, T1);
+		Fp2Dbl::mulPre(T1, x0_add_x3, y2_add_y4);
+		Fp2Dbl::sub(T1, T1, X0Y4);
+		Fp2Dbl::sub(T1, T1, X3Y2);
+		Fp2Dbl::mulPre(T2, x2, y0);
+		Fp2Dbl::add(T1, T1, T2);
+		Fp2Dbl::mod(z.a.c, T1);
+
+		Fp2Dbl::add(T1, X2Y4, X4Y2);
+		Fp2Dbl::mul_xi(T1, T1);
+		Fp2Dbl::mulPre(T2, x3, y0);
+		Fp2Dbl::add(T1, T1, T2);
+		Fp2Dbl::mod(z.b.a, T1);
+
+		Fp2Dbl::mul_xi(T1, X5Y2);
+		Fp2Dbl::mulPre(T2, x4, y0);
+		Fp2Dbl::add(T2, T2, X0Y4);
+		Fp2Dbl::add(T1, T1, T2);
+		Fp2Dbl::mod(z.b.b, T1);
+
+		Fp2Dbl::mulPre(T1, x5, y0);
+		Fp2Dbl::add(T1, T1, X3Y2);
+		Fp2Dbl::add(T1, T1, X1Y4);
+		Fp2Dbl::mod(z.b.c, T1);
+#else
+		const Fp2 x0 = x.a.a;
+		const Fp2 x1 = x.a.b;
+		const Fp2 x2 = x.a.c;
+		const Fp2 x3 = x.b.a;
+		const Fp2 x4 = x.b.b;
+		const Fp2 x5 = x.b.c;
+		const Fp2& y0 = y.a;
+		const Fp2& y2 = y.c;
+		const Fp2& y4 = y.b;
+		Fp2 y2_add_y4;
+		Fp2::add(y2_add_y4, y2, y4);
 		Fp2 x0y4, x1y4, x2y4, x3y2, x4y2, x5y2;
 		Fp2::mul(x0y4, x0, y4);
 		Fp2::mul(x1y4, x1, y4);
@@ -859,10 +924,6 @@ struct BNT {
 		Fp2::mul(z.b.c, x5, y0);
 		z.b.c += x3y2;
 		z.b.c += x1y4;
-#else
-		Fp12 t;
-		convertFp6toFp12(t, y);
-		Fp12::mul(z, x, t);
 #endif
 	}
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
