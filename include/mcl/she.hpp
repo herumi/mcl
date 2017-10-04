@@ -231,7 +231,6 @@ public:
 				bool QisOdd = I::isOdd(Q);
 				bool xPisOdd = I::isOdd(xP);
 				if (QisOdd ^ xPisOdd ^ neg) return -count;
-				if (QisOdd ^ xPisOdd ^ neg) return -count;
 				return count;
 			}
 			prev = abs_c;
