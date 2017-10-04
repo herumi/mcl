@@ -705,37 +705,35 @@ struct BNT {
 	}
 	static void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 	{
-		// 4Kclk x 30
 #if 1
-		Fp2 theta;
-		Fp2::mul(theta, Q.y, R.z);
-		Fp2::sub(theta, R.y, theta);
-		Fp2::mul(l.b, Q.x, R.z);
-		Fp2::sub(l.b, R.x, l.b);
-		Fp2 lambda2;
-		Fp2::sqr(lambda2, l.b);
 		Fp2 t1, t2, t3, t4;
-		Fp2 t;
-		Fp2::mul(t1, R.x, lambda2);
-		Fp2::add(t2, t1, t1); // 2 R.x lambda^2
-		Fp2::mul(t3, lambda2, l.b); // lambda^3
-		Fp2::sqr(t4, theta);
-		t4 *= R.z; // t4 = R.z theta^2
-		Fp2::add(R.x, t3, t4);
-		R.x -= t2;
-		R.x *= l.b;
-		Fp2::mul(t, R.y, t3);
-		Fp2::add(R.y, t1, t2);
-		R.y -= t3;
-		R.y -= t4;
-		R.y *= theta;
-		R.y -= t;
-		Fp2::mul(R.z, R.z, t3);
-		Fp2::mul(l.a, theta, Q.x);
-		Fp2::mul(t, l.b, Q.y);
-		l.a -= t;
-		Fp2::mul_xi(l.a, l.a);
-		Fp2::neg(l.c, theta);
+		Fp2Dbl T1, T2;
+		Fp2::mul(t1, R.z, Q.x);
+		Fp2::mul(t2, R.z, Q.y);
+		Fp2::sub(t1, R.x, t1);
+		Fp2::sub(t2, R.y, t2);
+		Fp2::sqr(t3, t1);
+		Fp2::mul(R.x, t3, R.x);
+		Fp2::sqr(t4, t2);
+		t3 *= t1;
+		t4 *= R.z;
+		t4 += t3;
+		t4 -= R.x;
+		t4 -= R.x;
+		R.x -= t4;
+		Fp2Dbl_mulOpt(T1, t2, R.x);
+		Fp2Dbl_mulOpt(T2, t3, R.y);
+		Fp2Dbl::sub(T2, T1, T2);
+		Fp2Dbl::mod(R.y, T2);
+		Fp2::mul(R.x, t1, t4);
+		Fp2::mul(R.z, t3, R.z);
+		Fp2::neg(l.c, t2);
+		Fp2Dbl_mulOpt(T1, t2, Q.x);
+		Fp2Dbl_mulOpt(T2, t1, Q.y);
+		Fp2Dbl::sub(T1, T1, T2);
+		Fp2Dbl::mod(t2, T1);
+		Fp2::mul_xi(l.a, t2);
+		l.b = t1;
 #else
 		Fp2 t1, t2, t3, t4, T1, T2;
 		Fp2::mul(t1, R.z, Q.x);
