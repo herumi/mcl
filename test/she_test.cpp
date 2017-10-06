@@ -325,9 +325,11 @@ CYBOZU_TEST_AUTO(hashBench)
 	printf("init G1 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 	begin = end;
 	SHE::setRangeForG2DLP(hashSize, 1024);
+	end = clock();
 	printf("init G2 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 	begin = end;
 	SHE::setRangeForGTDLP(hashSize, 1024);
+	end = clock();
 	printf("init GT DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 
 	PublicKey pub;
