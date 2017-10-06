@@ -239,7 +239,7 @@ A benchmark of a BN curve CurveFp254BNb(2016/12/25).
 software                                                 |   x64|  x86| arm|arm64(msec)
 ---------------------------------------------------------|------|-----|----|-----
 [ate-pairing](https://github.com/herumi/ate-pairing)     | 0.21 |   - |  - |    -
-mcl                                                      | 0.31 | 1.6 |22.6|  4.0
+mcl                                                      | 0.31 | 1.6 |22.6|  3.9
 [TEPLA](http://www.cipher.risk.tsukuba.ac.jp/tepla/)     | 1.76 | 3.7 | 37 | 17.9
 [RELIC](https://github.com/relic-toolkit/relic) PRIME=254| 0.30 | 3.5 | 36 |    -
 [MIRACL](https://github.com/miracl/MIRACL) ake12bnx      | 4.2  |   - | 78 |    -
