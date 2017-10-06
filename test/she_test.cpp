@@ -2,6 +2,7 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
+#include <time.h>
 #include <mcl/she.hpp>
 
 using namespace mcl::she;
@@ -317,7 +318,18 @@ CYBOZU_TEST_AUTO(hashBench)
 	sec.setByCSPRNG();
 	const int C = 500;
 	const size_t hashSize = 1u << 21;
-	SHE::setRangeForDLP(hashSize, 1024);
+
+	clock_t begin = clock(), end;
+	SHE::setRangeForG1DLP(hashSize, 1024);
+	end = clock();
+	printf("init G1 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
+	begin = end;
+	SHE::setRangeForG2DLP(hashSize, 1024);
+	printf("init G2 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
+	begin = end;
+	SHE::setRangeForGTDLP(hashSize, 1024);
+	printf("init GT DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
+
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	PrecomputedPublicKey ppub;
