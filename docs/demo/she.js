@@ -18,7 +18,29 @@ function setupWasm(fileName, nameSpace, setupFct) {
 const MCLBN_CURVE_FP254BNB = 0
 const MCLBN_FP_UNIT_SIZE = 4
 
+const BLS_ID_SIZE = MCLBN_FP_UNIT_SIZE * 8
+const BLS_SECRETKEY_SIZE = BLS_ID_SIZE
+const BLS_PUBLICKEY_SIZE = BLS_ID_SIZE * 3 * 2
+const BLS_SIGNATURE_SIZE = BLS_ID_SIZE * 3
+
 function define_she_extra_functions(mod) {
+	ptrToStr = function(pos, n) {
+		let s = ''
+			for (let i = 0; i < n; i++) {
+			s += String.fromCharCode(mod.HEAP8[pos + i])
+		}
+		return s
+	}
+	Uint8ArrayToMem = function(pos, buf) {
+		for (let i = 0; i < buf.length; i++) {
+			mod.HEAP8[pos + i] = buf[i]
+		}
+	}
+	AsciiStrToMem = function(pos, s) {
+		for (let i = 0; i < s.length; i++) {
+			mod.HEAP8[pos + i] = s.charCodeAt(i)
+		}
+	}
 	wrap_outputString = function(func, doesReturnString = true) {
 		return function(x, ioMode = 0) {
 			let maxBufSize = 2048
@@ -29,10 +51,7 @@ function define_she_extra_functions(mod) {
 				throw('err gen_str:' + x)
 			}
 			if (doesReturnString) {
-				let s = ''
-				for (let i = 0; i < n; i++) {
-					s += String.fromCharCode(mod.HEAP8[pos + i])
-				}
+				let s = ptrToStr(pos, n)
 				mod.Runtime.stackRestore(stack)
 				return s
 			} else {
@@ -53,13 +72,9 @@ function define_she_extra_functions(mod) {
 			let stack = mod.Runtime.stackSave()
 			let pos = mod.Runtime.stackAlloc(buf.length)
 			if (typeof(buf) == "string") {
-				for (let i = 0; i < buf.length; i++) {
-					mod.HEAP8[pos + i] = buf.charCodeAt(i)
-				}
+				AsciiStrToMem(pos, buf)
 			} else {
-				for (let i = 0; i < buf.length; i++) {
-					mod.HEAP8[pos + i] = buf[i]
-				}
+				Uint8ArrayToMem(pos, buf)
 			}
 			let r = func(pos, buf.length, ioMode)
 			mod.Runtime.stackRestore(stack)
@@ -72,13 +87,9 @@ function define_she_extra_functions(mod) {
 			let stack = mod.Runtime.stackSave()
 			let pos = mod.Runtime.stackAlloc(buf.length)
 			if (typeof(buf) == "string") {
-				for (let i = 0; i < buf.length; i++) {
-					mod.HEAP8[pos + i] = buf.charCodeAt(i)
-				}
+				AsciiStrToMem(pos, buf)
 			} else {
-				for (let i = 0; i < buf.length; i++) {
-					mod.HEAP8[pos + i] = buf[i]
-				}
+				Uint8ArrayToMem(pos, buf)
 			}
 			let r = func(x1, pos, buf.length, ioMode)
 			mod.Runtime.stackRestore(stack)
@@ -91,30 +102,14 @@ function define_she_extra_functions(mod) {
 			let stack = mod.Runtime.stackSave()
 			let pos = mod.Runtime.stackAlloc(buf.length)
 			if (typeof(buf) == "string") {
-				for (let i = 0; i < buf.length; i++) {
-					mod.HEAP8[pos + i] = buf.charCodeAt(i)
-				}
+				AsciiStrToMem(pos, buf)
 			} else {
-				for (let i = 0; i < buf.length; i++) {
-					mod.HEAP8[pos + i] = buf[i]
-				}
+				Uint8ArrayToMem(pos, buf)
 			}
 			let r = func(x1, x2, pos, buf.length, ioMode)
 			mod.Runtime.stackRestore(stack)
 			if (returnValue) return r
 			if (r) throw('err wrap_input2 ' + buf)
-		}
-	}
-	wrap_keyShare = function(func, dataSize) {
-		return function(x, vec, id) {
-			let k = vec.length
-			let p = mod._malloc(dataSize * k)
-			for (let i = 0; i < k; i++) {
-				mod._memcpy(p + i * dataSize, vec[i], dataSize)
-			}
-			let r = func(x, p, k, id)
-			mod._free(p)
-			if (r) throw('keyShare ' + k)
 		}
 	}
 	wrap_dec = function(func) {
@@ -127,6 +122,38 @@ function define_she_extra_functions(mod) {
 			let v = mod.HEAP32[pos / 4]
 			return v
 		}
+	}
+	let crypto = window.crypto || window.msCrypto
+
+	let copyToUint32Array = function(a, pos) {
+		for (let i = 0; i < a.length; i++) {
+			a[i] = mod.HEAP32[pos / 4 + i]
+		}
+	}
+	let copyFromUint32Array = function(pos, a) {
+		for (let i = 0; i < a.length; i++) {
+			mod.HEAP32[pos / 4 + i] = a[i]
+		}
+	}
+	let callSetter = function(func, a, p1, p2) {
+		let pos = mod._malloc(a.length * 4)
+		func(pos, p1, p2) // p1, p2 may be undefined
+		copyToUint32Array(a, pos)
+		mod._free(pos)
+	}
+	let callGetter = function(func, a, p1, p2) {
+		let pos = mod._malloc(a.length * 4)
+		mod.HEAP32.set(a, pos / 4)
+		let s = func(pos, p1, p2)
+		mod._free(pos)
+		return s
+	}
+	let callModifier = function(func, a, p1, p2) {
+		let pos = mod._malloc(a.length * 4)
+		mod.HEAP32.set(a, pos / 4)
+		func(pos, p1, p2) // p1, p2 may be undefined
+		copyToUint32Array(a, pos)
+		mod._free(pos)
 	}
 	///////////////////////////////////////////////////////////////
 	const FR_SIZE = MCLBN_FP_UNIT_SIZE * 8
