@@ -17,11 +17,20 @@ function setupWasm(fileName, nameSpace, setupFct) {
 
 const MCLBN_CURVE_FP254BNB = 0
 const MCLBN_FP_UNIT_SIZE = 4
+const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
+const MCLBN_G1_SIZE = MCLBN_FP_SIZE * 3
+const MCLBN_G2_SIZE = MCLBN_FP_SIZE * 6
+const MCLBN_GT_SIZE = MCLBN_FP_SIZE * 12
 
-const BLS_ID_SIZE = MCLBN_FP_UNIT_SIZE * 8
-const BLS_SECRETKEY_SIZE = BLS_ID_SIZE
-const BLS_PUBLICKEY_SIZE = BLS_ID_SIZE * 3 * 2
-const BLS_SIGNATURE_SIZE = BLS_ID_SIZE * 3
+const SHE_SECRETKEY_SIZE = MCLBN_FP_SIZE * 2
+const SHE_PUBLICKEY_SIZE = MCLBN_G1_SIZE + MCLBN_G2_SIZE
+const SHE_CIPHERTEXT_G1_SIZE = MCLBN_G1_SIZE * 2
+const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
+const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
+
+//SheSecretKey = function() {
+//	this.a_ = new Uint8Array(
+//}
 
 function define_she_extra_functions(mod) {
 	ptrToStr = function(pos, n) {
@@ -156,48 +165,37 @@ function define_she_extra_functions(mod) {
 		mod._free(pos)
 	}
 	///////////////////////////////////////////////////////////////
-	const FR_SIZE = MCLBN_FP_UNIT_SIZE * 8
-	const G1_SIZE = FR_SIZE * 3
-	const G2_SIZE = FR_SIZE * 3 * 2
-	const GT_SIZE = FR_SIZE * 12
-
-	const SECRETKEY_SIZE = FR_SIZE * 2
-	const PUBLICKEY_SIZE = G1_SIZE + G2_SIZE
-	const CIPHERTEXT_G1_SIZE = G1_SIZE * 2
-	const CIPHERTEXT_G2_SIZE = G2_SIZE * 2
-	const CIPHERTEXT_GT_SIZE = GT_SIZE * 4
-
 	she_free = function(p) {
 		mod._free(p)
 	}
 	///////////////////////////////////////////////////////////////
 	sheSecretKey_malloc = function() {
-		return mod._malloc(SECRETKEY_SIZE)
+		return mod._malloc(SHE_SECRETKEY_SIZE)
 	}
 	sheSecretKeySerialize = wrap_outputArray(_sheSecretKeySerialize)
 	sheSecretKeyDeserialize = wrap_input1(_sheSecretKeyDeserialize)
 	///////////////////////////////////////////////////////////////
 	shePublicKey_malloc = function() {
-		return mod._malloc(PUBLICKEY_SIZE)
+		return mod._malloc(SHE_PUBLICKEY_SIZE)
 	}
 	shePublicKeySerialize = wrap_outputArray(_shePublicKeySerialize)
 	shePublicKeyDeserialize = wrap_input1(_shePublicKeyDeserialize)
 	///////////////////////////////////////////////////////////////
 	sheCipherTextG1_malloc = function() {
-		return mod._malloc(CIPHERTEXT_G1_SIZE)
+		return mod._malloc(SHE_CIPHERTEXT_G1_SIZE)
 	}
 	sheCipherTextG1Serialize = wrap_outputArray(_sheCipherTextG1Serialize)
 	sheCipherTextG1Deserialize = wrap_input1(_sheCipherTextG1Deserialize)
 	sheDecG1 = wrap_dec(_sheDecG1)
 	///////////////////////////////////////////////////////////////
 	sheCipherTextG2_malloc = function() {
-		return mod._malloc(CIPHERTEXT_G2_SIZE)
+		return mod._malloc(SHE_CIPHERTEXT_G2_SIZE)
 	}
 	sheCipherTextG2Serialize = wrap_outputArray(_sheCipherTextG2Serialize)
 	sheCipherTextG2Deserialize = wrap_input1(_sheCipherTextG2Deserialize)
 	///////////////////////////////////////////////////////////////
 	sheCipherTextGT_malloc = function() {
-		return mod._malloc(CIPHERTEXT_GT_SIZE)
+		return mod._malloc(SHE_CIPHERTEXT_GT_SIZE)
 	}
 	sheCipherTextGTSerialize = wrap_outputArray(_sheCipherTextGTSerialize)
 	sheCipherTextGTDeserialize = wrap_input1(_sheCipherTextGTDeserialize)
