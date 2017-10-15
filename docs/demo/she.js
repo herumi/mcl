@@ -5,6 +5,8 @@
 		window.she = return_she()
 	}
 })(function() {
+	const crypto = window.crypto || window.msCrypto
+
 	const MCLBN_CURVE_FP254BNB = 0
 	const MCLBN_FP_UNIT_SIZE = 4
 	const MCLBN_FP_SIZE = MCLBN_FP_UNIT_SIZE * 8
@@ -18,8 +20,9 @@
 	const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
 	const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
 
-	let she = {}
 	let mod = {}
+	let she = {}
+	she.mod = mod
 
 	const setupWasm = function(fileName, nameSpace, setupFct) {
 		console.log('setupWasm ' + fileName)
@@ -36,6 +39,7 @@
 			})
 		return mod
 	}
+
 	const define_she_extra_functions = function(mod) {
 		const ptrToStr = function(pos, n) {
 			let s = ''
@@ -136,14 +140,12 @@
 				return v
 			}
 		}
-		const crypto = window.crypto || window.msCrypto
-
-		let copyToUint32Array = function(a, pos) {
+		const copyToUint32Array = function(a, pos) {
 			for (let i = 0; i < a.length; i++) {
 				a[i] = mod.HEAP32[pos / 4 + i]
 			}
 		}
-		let copyFromUint32Array = function(pos, a) {
+		const copyFromUint32Array = function(pos, a) {
 			for (let i = 0; i < a.length; i++) {
 				mod.HEAP32[pos / 4 + i] = a[i]
 			}
@@ -205,39 +207,33 @@
 			copyToUint32Array(pub, pubPos)
 			mod.Runtime.stackRestore(stack)
 		}
-		///////////////////////////////////////////////////////////////
 		she_free = function(p) {
 			mod._free(p)
 		}
-		///////////////////////////////////////////////////////////////
 		sheSecretKey_malloc = function() {
 			return mod._malloc(SHE_SECRETKEY_SIZE)
 		}
-		sheSecretKeySerialize = wrap_outputArray(_sheSecretKeySerialize)
-		sheSecretKeyDeserialize = wrap_input1(_sheSecretKeyDeserialize)
-		///////////////////////////////////////////////////////////////
 		shePublicKey_malloc = function() {
 			return mod._malloc(SHE_PUBLICKEY_SIZE)
 		}
-		shePublicKeySerialize = wrap_outputArray(_shePublicKeySerialize)
-		shePublicKeyDeserialize = wrap_input1(_shePublicKeyDeserialize)
-		///////////////////////////////////////////////////////////////
-		sheCipherTextG1_malloc = function() {
-			return mod._malloc(SHE_CIPHERTEXT_G1_SIZE)
-		}
-		sheCipherTextG1Serialize = wrap_outputArray(_sheCipherTextG1Serialize)
-		sheCipherTextG1Deserialize = wrap_input1(_sheCipherTextG1Deserialize)
-		sheDecG1 = wrap_dec(_sheDecG1)
-		///////////////////////////////////////////////////////////////
 		sheCipherTextG2_malloc = function() {
 			return mod._malloc(SHE_CIPHERTEXT_G2_SIZE)
 		}
-		sheCipherTextG2Serialize = wrap_outputArray(_sheCipherTextG2Serialize)
-		sheCipherTextG2Deserialize = wrap_input1(_sheCipherTextG2Deserialize)
-		///////////////////////////////////////////////////////////////
 		sheCipherTextGT_malloc = function() {
 			return mod._malloc(SHE_CIPHERTEXT_GT_SIZE)
 		}
+		sheCipherTextG1_malloc = function() {
+			return mod._malloc(SHE_CIPHERTEXT_G1_SIZE)
+		}
+		sheSecretKeySerialize = wrap_outputArray(_sheSecretKeySerialize)
+		sheSecretKeyDeserialize = wrap_input1(_sheSecretKeyDeserialize)
+		shePublicKeySerialize = wrap_outputArray(_shePublicKeySerialize)
+		shePublicKeyDeserialize = wrap_input1(_shePublicKeyDeserialize)
+		sheCipherTextG1Serialize = wrap_outputArray(_sheCipherTextG1Serialize)
+		sheCipherTextG1Deserialize = wrap_input1(_sheCipherTextG1Deserialize)
+		sheDecG1 = wrap_dec(_sheDecG1)
+		sheCipherTextG2Serialize = wrap_outputArray(_sheCipherTextG2Serialize)
+		sheCipherTextG2Deserialize = wrap_input1(_sheCipherTextG2Deserialize)
 		sheCipherTextGTSerialize = wrap_outputArray(_sheCipherTextGTSerialize)
 		sheCipherTextGTDeserialize = wrap_input1(_sheCipherTextGTDeserialize)
 		sheDecGT = wrap_dec(_sheDecGT)
@@ -248,73 +244,69 @@
 			if (r) throw('sheInit')
 	//		r = sheSetRangeForGTDLP(128, 1024)
 		}
+		she.SecretKey = function() {
+			this.a_ = new Uint32Array(SHE_SECRETKEY_SIZE / 4)
+		}
+		she.SecretKey.prototype.serialize = function() {
+			return she.callGetter(sheSecretKeySerialize, this.a_)
+		}
+		she.SecretKey.prototype.deserialize = function(s) {
+			return she.callSetter(sheSecretKeyDeserialize, this.a_, s)
+		}
+		she.PublicKey = function() {
+			this.a_ = new Uint32Array(SHE_PUBLICKEY_SIZE / 4)
+		}
+		she.PublicKey.prototype.serialize = function() {
+			return she.callGetter(shePublicKeySerialize, this.a_)
+		}
+		she.PublicKey.prototype.deserialize = function(s) {
+			return she.callSetter(shePublicKeyDeserialize, this.a_, s)
+		}
+		she.CipherTextG1 = function() {
+			this.a_ = new Uint32Array(SHE_CIPHERTEXT_G1_SIZE / 4)
+		}
+		she.CipherTextG1.prototype.serialize = function() {
+			return she.callGetter(sheCipherTextG1Serialize, this.a_)
+		}
+		she.CipherTextG1.prototype.deserialize = function(s) {
+			return she.callSetter(sheCipherTextG1Deserialize, this.a_, s)
+		}
+		she.SecretKey.prototype.setByCSPRNG = function() {
+			she.callSetByCSPRNG(this.a_)
+		}
+		she.SecretKey.prototype.getPublicKey = function() {
+			let pub = new she.PublicKey()
+			let stack = mod.Runtime.stackSave()
+			let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
+			let pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
+			copyFromUint32Array(secPos, this.a_)
+			sheGetPublicKey(pubPos, secPos)
+			copyToUint32Array(pub.a_, pubPos)
+			mod.Runtime.stackRestore(stack)
+			return pub
+		}
+		she.PublicKey.prototype.enc = function(m) {
+			return she.callEnc(sheEnc32G1, she.CipherTextG1, this.a_, m)
+		}
+		she.SecretKey.prototype.dec = function(c) {
+			if (she.CipherTextG1.prototype.isPrototypeOf(c)) {
+				return she.callDec(sheDecG1, this.a_, c.a_)
+			}
+			throw('she.SecretKey.dec is not supported')
+		}
 	}
 
 	she.init = function(callback = null) {
-		setupWasm('mclshe.wasm', null, function(mod, ns) {
+		setupWasm('mclshe.wasm', null, function(_mod, ns) {
+			mod = _mod
 			define_exported_she(mod)
 			define_she_extra_functions(mod)
 			sheInit()
 			console.log('initializing sheSetRangeForDLP')
-			let r = sheSetRangeForDLP(256, 2048)
+			let r = sheSetRangeForDLP(256, 100)
 			console.log('finished ' + r)
 			if (callback) callback()
 		})
-	}
-	she.SecretKey = function() {
-		this.a_ = new Uint32Array(SHE_SECRETKEY_SIZE / 4)
-	}
-	she.SecretKey.prototype.serialize = function() {
-		return she.callGetter(sheSecretKeySerialize, this.a_)
-	}
-	she.SecretKey.prototype.deserialize = function(s) {
-		return she.callSetter(sheSecretKeyDeserialize, this.a_, s)
-	}
-	she.PublicKey = function() {
-		this.a_ = new Uint32Array(SHE_PUBLICKEY_SIZE / 4)
-	}
-	she.PublicKey.prototype.serialize = function() {
-		return she.callGetter(shePublicKeySerialize, this.a_)
-	}
-	she.PublicKey.prototype.deserialize = function(s) {
-		return she.callSetter(shePublicKeyDeserialize, this.a_, s)
-	}
-	she.CipherTextG1 = function() {
-		this.a_ = new Uint32Array(SHE_CIPHERTEXT_G1_SIZE / 4)
-	}
-	she.CipherTextG1.prototype.serialize = function() {
-		return she.callGetter(sheCipherTextG1Serialize, this.a_)
-	}
-	she.CipherTextG1.prototype.deserialize = function(s) {
-		return she.callSetter(sheCipherTextG1Deserialize, this.a_, s)
-	}
-	she.SecretKey.prototype.setByCSPRNG = function() {
-		she.callSetByCSPRNG(this.a_)
-	}
-	she.SecretKey.prototype.getPublicKey = function() {
-		let pub = new she.PublicKey()
-		she.callGetPublicKey(pub.a_, this.a_)
-		return pub
-/*
-		let pub = new she.PublicKey()
-		let stack = mod.Runtime.stackSave()
-		let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
-		let pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
-		copyFromUint32Array(secPos, this.a_)
-		sheGetPublicKey(pubPos, secPos)
-		copyToUint32Array(pub.a_, pubPos)
-		mod.Runtime.stackRestore(stack)
-		return pub
-*/
-	}
-	she.PublicKey.prototype.enc = function(m) {
-		return she.callEnc(sheEnc32G1, she.CipherTextG1, this.a_, m)
-	}
-	she.SecretKey.prototype.dec = function(c) {
-		if (she.CipherTextG1.prototype.isPrototypeOf(c)) {
-			return she.callDec(sheDecG1, this.a_, c)
-		}
-		throw('she.SecretKey.dec is not supported')
 	}
 	return she
 })

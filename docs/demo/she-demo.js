@@ -59,6 +59,7 @@ function onClickTestSHE() {
 		let m3 = getValue('msg3')
 		let m4 = getValue('msg4')
 		sheEnc32G1(c11, pub, m1)
+		console.log('dec c11=' + sheDecG1(sec, c11))
 		sheEnc32G1(c12, pub, m2)
 		sheEnc32G2(c21, pub, m3)
 		sheEnc32G2(c22, pub, m4)
@@ -101,3 +102,28 @@ function HexStringToUint8Array(s) {
 	return a
 }
 
+function onClickTestSHEclass() {
+	let sec = new she.SecretKey()
+	sec.setByCSPRNG()
+	setText('sec2', Uint8ArrayToHexString(sec.serialize()))
+	let pub = sec.getPublicKey()
+	setText('pub2', Uint8ArrayToHexString(pub.serialize()))
+	let m = 15
+	setText('m2', m)
+	let c = pub.enc(m)
+	setText('c2', Uint8ArrayToHexString(c.serialize()))
+	if (0) {
+		let s1 = sheSecretKey_malloc()
+		let p1 = shePublicKey_malloc()
+		sheSecretKeyDeserialize(s1, sec.serialize())
+		putSecretKey(s1)
+		sheGetPublicKey(p1, s1)
+		putPublicKey(p1)
+		let c1 = sheCipherTextG1_malloc()
+		sheCipherTextG1Deserialize(c1, c.serialize())
+		putCipherTextG1(c1)
+		console.log('dec c1=' + sheDecG1(s1, c1))
+	}
+	let d = sec.dec(c)
+	setText('d2', d)
+}
