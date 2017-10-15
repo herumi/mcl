@@ -3,18 +3,7 @@ function setValue(name, val) { document.getElementsByName(name)[0].value = val }
 function getText(name) { return document.getElementsByName(name)[0].innerText }
 function setText(name, val) { document.getElementsByName(name)[0].innerText = val }
 
-let moduleInited = false
-
-let module = setupWasm('mclshe.wasm', null, function(mod, ns) {
-	define_exported_she(mod)
-	define_she_extra_functions(mod)
-	moduleInited = true
-	sheInit()
-	console.log('initializing sheSetRangeForDLP')
-	let r = sheSetRangeForDLP(256, 2048)
-	console.log('finished')
-	setText('status', r ? 'err:' + r : 'ok')
-})
+she.init(function() { setText('status', 'ok')})
 
 function putSecretKey(x, msg = "") {
 	console.log(msg + ' sk=' + Uint8ArrayToHexString(sheSecretKeySerialize(x)))
