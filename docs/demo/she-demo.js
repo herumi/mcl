@@ -110,7 +110,7 @@ function onClickTestSHEclass() {
 	setText('pub2', Uint8ArrayToHexString(pub.serialize()))
 	let m = 15
 	setText('m2', m)
-	let c = pub.enc(m)
+	let c = pub.encG1(m)
 	setText('c2', Uint8ArrayToHexString(c.serialize()))
 	if (0) {
 		let s1 = sheSecretKey_malloc()

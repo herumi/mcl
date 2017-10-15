@@ -285,7 +285,7 @@
 			mod.Runtime.stackRestore(stack)
 			return pub
 		}
-		she.PublicKey.prototype.enc = function(m) {
+		she.PublicKey.prototype.encG1 = function(m) {
 			return she.callEnc(sheEnc32G1, she.CipherTextG1, this.a_, m)
 		}
 		she.SecretKey.prototype.dec = function(c) {
