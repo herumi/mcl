@@ -92,7 +92,7 @@ function send() {
 	obj.html('')
 	{
 		var header = [
-			'EncG1(x)', 'EncG2(y)', 'EncGT(x y)'
+			'EncG1(x)', 'EncG2(y)', 'EncGT(x * y)'
 		]
 		var t = $('<tr>').attr('id', 'header')
 		for (var i = 0; i < header.length; i++) {

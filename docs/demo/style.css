@@ -32,6 +32,9 @@ td {
 #header {
 	background-color: #ddf;
 }
+#client_header {
+	background-color: #ddf;
+}
 
 button {
 	margin: 5px;

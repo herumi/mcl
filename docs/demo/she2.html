@@ -45,10 +45,9 @@ secretKey : <div name="sec" class="hex"></div>
 publicKey : <div name="pub" class="hex"></div>
 
 <table border=1 id="server_table" width="100%" summary="server">
-<tr id="header"><th>ciphertext</tr>
 </table>
-<button type="button" onclick="mul()">3. EncG1(xi) * EncG2(y)</button><br>
-<button type="button" onclick="sum()">4. sum Enc(xi * yi)</button>
+<button type="button" onclick="mul()">3. compute EncGT(x * y) := EncG1(x) * EncG2(y)</button><br>
+<button type="button" onclick="sum()">4. sum Enc(x * y)</button>
 <div>result</div>
 <div name="encSumS" class="hex">0</div>
 <button type="button" onclick="recv()">5. return to client</button>
