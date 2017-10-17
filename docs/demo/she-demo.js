@@ -3,7 +3,11 @@ function setValue(name, val) { document.getElementsByName(name)[0].value = val }
 function getText(name) { return document.getElementsByName(name)[0].innerText }
 function setText(name, val) { document.getElementsByName(name)[0].innerText = val }
 
-she.init(function() { setText('status', 'ok')})
+(function() {
+	const range = 2048
+	const tryNum = 100
+	she.init(range, tryNum, function() { setText('status', 'ok')})
+}())
 
 function putSecretKey(x, msg = "") {
 	console.log(msg + ' sk=' + Uint8ArrayToHexString(sheSecretKeySerialize(x)))
@@ -61,8 +65,11 @@ function onClickTestSHE() {
 		sheEnc32G1(c11, pub, m1)
 		console.log('dec c11=' + sheDecG1(sec, c11))
 		sheEnc32G1(c12, pub, m2)
+		console.log('dec c12=' + sheDecG1(sec, c12))
 		sheEnc32G2(c21, pub, m3)
+		console.log('dec c21=' + sheDecG2(sec, c21))
 		sheEnc32G2(c22, pub, m4)
+		console.log('dec c22=' + sheDecG2(sec, c22))
 		setText('encG11', Uint8ArrayToHexString(sheCipherTextG1Serialize(c11)))
 		setText('encG12', Uint8ArrayToHexString(sheCipherTextG1Serialize(c12)))
 		setText('encG21', Uint8ArrayToHexString(sheCipherTextG2Serialize(c21)))
@@ -103,27 +110,25 @@ function HexStringToUint8Array(s) {
 }
 
 function onClickTestSHEclass() {
-	let sec = new she.SecretKey()
-	sec.setByCSPRNG()
-	setText('sec2', Uint8ArrayToHexString(sec.serialize()))
-	let pub = sec.getPublicKey()
-	setText('pub2', Uint8ArrayToHexString(pub.serialize()))
-	let m = 15
-	setText('m2', m)
-	let c = pub.encG1(m)
-	setText('c2', Uint8ArrayToHexString(c.serialize()))
-	if (0) {
-		let s1 = sheSecretKey_malloc()
-		let p1 = shePublicKey_malloc()
-		sheSecretKeyDeserialize(s1, sec.serialize())
-		putSecretKey(s1)
-		sheGetPublicKey(p1, s1)
-		putPublicKey(p1)
-		let c1 = sheCipherTextG1_malloc()
-		sheCipherTextG1Deserialize(c1, c.serialize())
-		putCipherTextG1(c1)
-		console.log('dec c1=' + sheDecG1(s1, c1))
+	try {
+		let sec = new she.SecretKey()
+		sec.setByCSPRNG()
+		setText('sec2', Uint8ArrayToHexString(sec.serialize()))
+		let pub = sec.getPublicKey()
+		setText('pub2', Uint8ArrayToHexString(pub.serialize()))
+		let m = 15
+		setText('m2', m)
+		let c1 = pub.encG1(m)
+		console.log('dec c1 ' + sec.dec(c1))
+		let c2 = pub.encG2(m)
+		let ct = pub.encGT(m)
+		console.log('ct ' + Uint8ArrayToHexString(ct.serialize()))
+		setText('c2', Uint8ArrayToHexString(c1.serialize()))
+		let d = sec.dec(c1)
+		setText('d2', d)
+		console.log('dec c2=' + sec.dec(c2))
+		console.log('dec ct=' + sec.dec(ct))
+	} catch (e) {
+		console.log('err ' + e)
 	}
-	let d = sec.dec(c)
-	setText('d2', d)
 }

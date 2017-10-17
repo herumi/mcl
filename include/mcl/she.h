@@ -112,6 +112,7 @@ MCLSHE_DLL_API int sheEnc32GT(sheCipherTextGT *c, const shePublicKey *pub, int m
 	return 0 if success
 */
 MCLSHE_DLL_API int sheDecG1(int64_t *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
+MCLSHE_DLL_API int sheDecG2(int64_t *m, const sheSecretKey *sec, const sheCipherTextG2 *c);
 MCLSHE_DLL_API int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c);
 
 // return 0 if success

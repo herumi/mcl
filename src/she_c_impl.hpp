@@ -264,6 +264,11 @@ int sheDecG1(int64_t *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
 	return decT(m, sec, c);
 }
 
+int sheDecG2(int64_t *m, const sheSecretKey *sec, const sheCipherTextG2 *c)
+{
+	return decT(m, sec, c);
+}
+
 int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c)
 {
 	return decT(m, sec, c);
