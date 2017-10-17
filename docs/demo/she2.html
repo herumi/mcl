@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="ja">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>Two-level Homomorphic Encryption demo</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script type='text/javascript' src="jquery-3.2.1.min.js"></script>
+	<script type='text/javascript' src="exported-she.js"></script>
+	<script type='text/javascript' src="mclshe.js"></script>
+	<script type='text/javascript' src="she.js"></script>
+	<script type="text/javascript" src="she-demo2.js"></script>
+</head>
+<body>
+<h1>Two-level Homorphic Encryption demo</h1>
+<div>
+library status <span name="status">initializing...</span>
+</div>
+
+<div id="left">
+<h2>Client</h2>
+secretKey : <div name="sec" class="hex"></div>
+
+<table border=1 id="client_table" width="100%" summary="client">
+<tr id="client_header"><th>x<th>y<th class="hex">EncG1(x)<th class="hex">EncG2(y)</tr>
+</table>
+<input type="text" name="append" value="1,1">
+<button type="button" onclick="append()">1. append</button>
+<br>
+<button type="button" onclick="send()">2. send to server</button>
+<div>received ciphertext</div>
+<div name="encSumC" class="hex">0</div>
+<button type="button" onclick="dec()">6. decode ciphertext</button>
+<div name="ret">0</div>
+
+</div>
+
+<div id="middle">
+</div>
+
+<div id="right">
+
+<h2>Server</h2>
+publicKey : <div name="pub" class="hex"></div>
+
+<table border=1 id="server_table" width="100%" summary="server">
+<tr id="header"><th>ciphertext</tr>
+</table>
+<button type="button" onclick="mul()">3. EncG1(xi) * EncG2(y)</button><br>
+<button type="button" onclick="sum()">4. sum Enc(xi * yi)</button>
+<div>result</div>
+<div name="encSumS" class="hex">0</div>
+<button type="button" onclick="recv()">5. return to client</button>
+
+</div>
+
+</body>
+</html>

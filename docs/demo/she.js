@@ -317,13 +317,13 @@
 		she.PublicKey.prototype.deserialize = function(s) {
 			callSetter(shePublicKeyDeserialize, this.a_, s)
 		}
-		she.SecretKey.prototype.fromHexStr = function(s) {
+		she.PublicKey.prototype.fromHexStr = function(s) {
 			this.deserialize(she.fromHexStr(s))
 		}
-		she.SecretKey.prototype.toHexStr = function() {
+		she.PublicKey.prototype.toHexStr = function() {
 			return she.toHexStr(this.serialize())
 		}
-		she.SecretKey.prototype.dump = function(msg = 'pub ') {
+		she.PublicKey.prototype.dump = function(msg = 'pub ') {
 			console.log(msg + this.toHexStr())
 		}
 		she.CipherTextG1 = function() {
