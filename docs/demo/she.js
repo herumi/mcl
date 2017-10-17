@@ -188,6 +188,39 @@
 			mod.Runtime.stackRestore(stack)
 			return c
 		}
+		she.callMul = function(func, cstr, pub, m) {
+			let c = new cstr()
+			let stack = mod.Runtime.stackSave()
+			let cPos = mod.Runtime.stackAlloc(c.a_.length * 4)
+			let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+			copyFromUint32Array(pubPos, pub);
+			func(cPos, pubPos, m)
+			copyToUint32Array(c.a_, cPos)
+			mod.Runtime.stackRestore(stack)
+			return c
+		}
+		// z = func(x, y)
+		she.callAddSub = function(func, z, x, y) {
+			let stack = mod.Runtime.stackSave()
+			let xPos = mod.Runtime.stackAlloc(x.length * 4)
+			let yPos = mod.Runtime.stackAlloc(y.length * 4)
+			let zPos = mod.Runtime.stackAlloc(z.length * 4)
+			copyFromUint32Array(xPos, x);
+			copyFromUint32Array(yPos, y);
+			func(zPos, xPos, yPos)
+			copyToUint32Array(z, zPos)
+			mod.Runtime.stackRestore(stack)
+		}
+		// z = func(x, y)
+		she.callMulInt = function(func, z, x, y) {
+			let stack = mod.Runtime.stackSave()
+			let xPos = mod.Runtime.stackAlloc(x.length * 4)
+			let zPos = mod.Runtime.stackAlloc(z.length * 4)
+			copyFromUint32Array(xPos, x);
+			func(zPos, xPos, y)
+			copyToUint32Array(z, zPos)
+			mod.Runtime.stackRestore(stack)
+		}
 		she.callDec = function(func, sec, c) {
 			let stack = mod.Runtime.stackSave()
 			let secPos = mod.Runtime.stackAlloc(sec.length * 4)
@@ -306,6 +339,49 @@
 		}
 		she.PublicKey.prototype.encGT = function(m) {
 			return she.callEnc(sheEnc32GT, she.CipherTextGT, this.a_, m)
+		}
+		// z = x + y
+		she.add = function(z, x, y) {
+			if  (x.a_.length != y.a_.length || x.a_.length != z.a_.length) throw('she.add:bad type')
+			let add = null
+			if (she.CipherTextG1.prototype.isPrototypeOf(x)) {
+				add = sheAddG1
+			} else if (she.CipherTextG2.prototype.isPrototypeOf(x)) {
+				add = sheAddG2
+			} else if (she.CipherTextGT.prototype.isPrototypeOf(x)) {
+				add = sheAddGT
+			} else {
+				throw('she.add:not supported')
+			}
+			she.callAddSub(add, z.a_, x.a_, y.a_)
+		}
+		she.sub = function(z, x, y) {
+			if  (x.a_.length != y.a_.length || x.a_.length != z.a_.length) throw('she.sub:bad type')
+			let sub = null
+			if (she.CipherTextG1.prototype.isPrototypeOf(x)) {
+				sub = sheSubG1
+			} else if (she.CipherTextG2.prototype.isPrototypeOf(x)) {
+				sub = sheSubG2
+			} else if (she.CipherTextGT.prototype.isPrototypeOf(x)) {
+				sub = sheSubGT
+			} else {
+				throw('she.sub:not supported')
+			}
+			she.callAddSub(sub, z.a_, x.a_, y.a_)
+		}
+		she.mulInt = function(z, x, y) {
+			if  (x.a_.length != z.a_.length) throw('she.mulInt:bad type')
+			let mulInt = null
+			if (she.CipherTextG1.prototype.isPrototypeOf(x)) {
+				mulInt = sheMul32G1
+			} else if (she.CipherTextG2.prototype.isPrototypeOf(x)) {
+				mulInt = sheMul32G2
+			} else if (she.CipherTextGT.prototype.isPrototypeOf(x)) {
+				mulInt = sheMul32GT
+			} else {
+				throw('she.mulInt:not supported')
+			}
+			she.callMulInt(mulInt, z.a_, x.a_, y)
 		}
 		she.SecretKey.prototype.dec = function(c) {
 			let dec = null

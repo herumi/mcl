@@ -133,6 +133,11 @@ MCLSHE_DLL_API int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int64_
 MCLSHE_DLL_API int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int64_t y);
 MCLSHE_DLL_API int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, int64_t y);
 
+// for JavaScript
+MCLSHE_DLL_API int sheMul32G1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int y);
+MCLSHE_DLL_API int sheMul32G2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int y);
+MCLSHE_DLL_API int sheMul32GT(sheCipherTextGT *z, const sheCipherTextGT *x, int y);
+
 // return 0 if success
 // z = x * y
 MCLSHE_DLL_API int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y);

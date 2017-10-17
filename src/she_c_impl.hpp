@@ -352,6 +352,21 @@ int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, int64_t y)
 	return mulT(*cast(z), *cast(x), y);
 }
 
+int sheMul32G1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int y)
+{
+	return mulT(*cast(z), *cast(x), y);
+}
+
+int sheMul32G2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int y)
+{
+	return mulT(*cast(z), *cast(x), y);
+}
+
+int sheMul32GT(sheCipherTextGT *z, const sheCipherTextGT *x, int y)
+{
+	return mulT(*cast(z), *cast(x), y);
+}
+
 int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y)
 {
 	return mulT(*cast(z), *cast(x), *cast(y));
