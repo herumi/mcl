@@ -177,8 +177,21 @@
 			}
 			return s
 		}
+		// Uint8Array to hex string
 		she.toHexStr = function(a) {
 			return she.toHex(a, 0, a.length)
+		}
+		// hex string to Uint8Array
+		she.fromHexStr = function(s) {
+			let n = (s.length + 1) / 2
+			let a = new Uint8Array(n)
+			for (let i = 0; i < s.length / 2; i++) {
+				a[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
+			}
+			if ((s.length & 1) != 0) {
+				a[n - 1] = parseInt(s[s.length - 1] + '0', 16)
+			}
+			return a
 		}
 		const callEnc = function(func, cstr, pub, m) {
 			let c = new cstr()
@@ -284,10 +297,16 @@
 			return callGetter(sheSecretKeySerialize, this.a_)
 		}
 		she.SecretKey.prototype.deserialize = function(s) {
-			return callSetter(sheSecretKeyDeserialize, this.a_, s)
+			callSetter(sheSecretKeyDeserialize, this.a_, s)
+		}
+		she.SecretKey.prototype.fromHexStr = function(s) {
+			this.deserialize(she.fromHexStr(s))
+		}
+		she.SecretKey.prototype.toHexStr = function() {
+			return she.toHexStr(this.serialize())
 		}
 		she.SecretKey.prototype.dump = function(msg = 'sec ') {
-			console.log(msg + she.toHexStr(this.serialize()))
+			console.log(msg + this.toHexStr())
 		}
 		she.PublicKey = function() {
 			this.a_ = new Uint32Array(SHE_PUBLICKEY_SIZE / 4)
@@ -296,10 +315,16 @@
 			return callGetter(shePublicKeySerialize, this.a_)
 		}
 		she.PublicKey.prototype.deserialize = function(s) {
-			return callSetter(shePublicKeyDeserialize, this.a_, s)
+			callSetter(shePublicKeyDeserialize, this.a_, s)
 		}
-		she.PublicKey.prototype.dump = function(msg = 'pub ') {
-			console.log(msg + she.toHexStr(this.serialize()))
+		she.SecretKey.prototype.fromHexStr = function(s) {
+			this.deserialize(she.fromHexStr(s))
+		}
+		she.SecretKey.prototype.toHexStr = function() {
+			return she.toHexStr(this.serialize())
+		}
+		she.SecretKey.prototype.dump = function(msg = 'pub ') {
+			console.log(msg + this.toHexStr())
 		}
 		she.CipherTextG1 = function() {
 			this.a_ = new Uint32Array(SHE_CIPHERTEXT_G1_SIZE / 4)
@@ -308,10 +333,16 @@
 			return callGetter(sheCipherTextG1Serialize, this.a_)
 		}
 		she.CipherTextG1.prototype.deserialize = function(s) {
-			return callSetter(sheCipherTextG1Deserialize, this.a_, s)
+			callSetter(sheCipherTextG1Deserialize, this.a_, s)
+		}
+		she.CipherTextG1.prototype.fromHexStr = function(s) {
+			this.deserialize(she.fromHexStr(s))
+		}
+		she.CipherTextG1.prototype.toHexStr = function() {
+			return she.toHexStr(this.serialize())
 		}
 		she.CipherTextG1.prototype.dump = function(msg = 'ct1 ') {
-			console.log(msg + she.toHexStr(this.serialize()))
+			console.log(msg + this.toHexStr())
 		}
 		she.CipherTextG2 = function() {
 			this.a_ = new Uint32Array(SHE_CIPHERTEXT_G2_SIZE / 4)
@@ -320,10 +351,16 @@
 			return callGetter(sheCipherTextG2Serialize, this.a_)
 		}
 		she.CipherTextG2.prototype.deserialize = function(s) {
-			return callSetter(sheCipherTextG2Deserialize, this.a_, s)
+			callSetter(sheCipherTextG2Deserialize, this.a_, s)
+		}
+		she.CipherTextG2.prototype.fromHexStr = function(s) {
+			this.deserialize(she.fromHexStr(s))
+		}
+		she.CipherTextG2.prototype.toHexStr = function() {
+			return she.toHexStr(this.serialize())
 		}
 		she.CipherTextG2.prototype.dump = function(msg = 'ct2 ') {
-			console.log(msg + she.toHexStr(this.serialize()))
+			console.log(msg + this.toHexStr())
 		}
 		she.CipherTextGT = function() {
 			this.a_ = new Uint32Array(SHE_CIPHERTEXT_GT_SIZE / 4)
@@ -332,10 +369,16 @@
 			return callGetter(sheCipherTextGTSerialize, this.a_)
 		}
 		she.CipherTextGT.prototype.deserialize = function(s) {
-			return callSetter(sheCipherTextGTDeserialize, this.a_, s)
+			callSetter(sheCipherTextGTDeserialize, this.a_, s)
+		}
+		she.CipherTextGT.prototype.fromHexStr = function(s) {
+			this.deserialize(she.fromHexStr(s))
+		}
+		she.CipherTextGT.prototype.toHexStr = function() {
+			return she.toHexStr(this.serialize())
 		}
 		she.CipherTextGT.prototype.dump = function(msg = 'ctt ') {
-			console.log(msg + she.toHexStr(this.serialize()))
+			console.log(msg + this.toHexStr())
 		}
 		she.SecretKey.prototype.setByCSPRNG = function() {
 			let stack = mod.Runtime.stackSave()

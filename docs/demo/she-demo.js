@@ -121,9 +121,9 @@ function onClickTestSHEclass() {
 		let sec = new she.SecretKey()
 		sec.setByCSPRNG()
 		sec.dump()
-		setText('sec2', Uint8ArrayToHexString(sec.serialize()))
+		setText('sec2', sec.toHexStr())
 		let pub = sec.getPublicKey()
-		setText('pub2', Uint8ArrayToHexString(pub.serialize()))
+		setText('pub2', pub.toHexStr())
 		let m1 = 15
 		let m2 = 17
 		setText('m2', m1)
@@ -131,7 +131,7 @@ function onClickTestSHEclass() {
 		console.log('dec c11=' + sec.dec(c11))
 		let c21 = pub.encG2(m1)
 		let ct1 = pub.encGT(m1)
-		setText('c2', Uint8ArrayToHexString(c11.serialize()))
+		setText('c2', c11.toHexStr())
 		let d = sec.dec(c11)
 		setText('d2', d)
 		console.log('dec c21=' + sec.dec(c21))
