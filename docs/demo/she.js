@@ -199,27 +199,31 @@
 			mod.Runtime.stackRestore(stack)
 			return c
 		}
-		// z = func(x, y)
-		she.callAddSub = function(func, z, x, y) {
+		// return func(x, y)
+		she.callAddSub = function(func, cstr, x, y) {
+			let z = new cstr()
 			let stack = mod.Runtime.stackSave()
 			let xPos = mod.Runtime.stackAlloc(x.length * 4)
 			let yPos = mod.Runtime.stackAlloc(y.length * 4)
-			let zPos = mod.Runtime.stackAlloc(z.length * 4)
+			let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
 			copyFromUint32Array(xPos, x);
 			copyFromUint32Array(yPos, y);
 			func(zPos, xPos, yPos)
-			copyToUint32Array(z, zPos)
+			copyToUint32Array(z.a_, zPos)
 			mod.Runtime.stackRestore(stack)
+			return z
 		}
 		// z = func(x, y)
-		she.callMulInt = function(func, z, x, y) {
+		she.callMulInt = function(func, cstr, x, y) {
+			let z = new cstr()
 			let stack = mod.Runtime.stackSave()
 			let xPos = mod.Runtime.stackAlloc(x.length * 4)
-			let zPos = mod.Runtime.stackAlloc(z.length * 4)
+			let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
 			copyFromUint32Array(xPos, x);
 			func(zPos, xPos, y)
-			copyToUint32Array(z, zPos)
+			copyToUint32Array(z.a_, zPos)
 			mod.Runtime.stackRestore(stack)
+			return z
 		}
 		she.callDec = function(func, sec, c) {
 			let stack = mod.Runtime.stackSave()
@@ -340,48 +344,77 @@
 		she.PublicKey.prototype.encGT = function(m) {
 			return she.callEnc(sheEnc32GT, she.CipherTextGT, this.a_, m)
 		}
-		// z = x + y
-		she.add = function(z, x, y) {
-			if  (x.a_.length != y.a_.length || x.a_.length != z.a_.length) throw('she.add:bad type')
+		// return x + y
+		she.add = function(x, y) {
+			if  (x.a_.length != y.a_.length) throw('she.add:bad type')
 			let add = null
+			let cstr = null
 			if (she.CipherTextG1.prototype.isPrototypeOf(x)) {
 				add = sheAddG1
+				cstr = she.CipherTextG1
 			} else if (she.CipherTextG2.prototype.isPrototypeOf(x)) {
 				add = sheAddG2
+				cstr = she.CipherTextG2
 			} else if (she.CipherTextGT.prototype.isPrototypeOf(x)) {
 				add = sheAddGT
+				cstr = she.CipherTextGT
 			} else {
 				throw('she.add:not supported')
 			}
-			she.callAddSub(add, z.a_, x.a_, y.a_)
+			return she.callAddSub(add, cstr, x.a_, y.a_)
 		}
-		she.sub = function(z, x, y) {
-			if  (x.a_.length != y.a_.length || x.a_.length != z.a_.length) throw('she.sub:bad type')
+		// return x - y
+		she.sub = function(x, y) {
+			if  (x.a_.length != y.a_.length) throw('she.sub:bad type')
 			let sub = null
+			let cstr = null
 			if (she.CipherTextG1.prototype.isPrototypeOf(x)) {
 				sub = sheSubG1
+				cstr = she.CipherTextG1
 			} else if (she.CipherTextG2.prototype.isPrototypeOf(x)) {
 				sub = sheSubG2
+				cstr = she.CipherTextG2
 			} else if (she.CipherTextGT.prototype.isPrototypeOf(x)) {
 				sub = sheSubGT
+				cstr = she.CipherTextGT
 			} else {
 				throw('she.sub:not supported')
 			}
-			she.callAddSub(sub, z.a_, x.a_, y.a_)
+			return she.callAddSub(sub, cstr, x.a_, y.a_)
 		}
-		she.mulInt = function(z, x, y) {
-			if  (x.a_.length != z.a_.length) throw('she.mulInt:bad type')
+		// return x * (int)y
+		she.mulInt = function(x, y) {
 			let mulInt = null
+			let cstr = null
 			if (she.CipherTextG1.prototype.isPrototypeOf(x)) {
 				mulInt = sheMul32G1
+				cstr = she.CipherTextG1
 			} else if (she.CipherTextG2.prototype.isPrototypeOf(x)) {
 				mulInt = sheMul32G2
+				cstr = she.CipherTextG2
 			} else if (she.CipherTextGT.prototype.isPrototypeOf(x)) {
 				mulInt = sheMul32GT
+				cstr = she.CipherTextGT
 			} else {
 				throw('she.mulInt:not supported')
 			}
-			she.callMulInt(mulInt, z.a_, x.a_, y)
+			return she.callMulInt(mulInt, cstr, x.a_, y)
+		}
+		// return (G1)x * (G2)y
+		she.mul = function(x, y) {
+			if (!she.CipherTextG1.prototype.isPrototypeOf(x)
+				|| !she.CipherTextG2.prototype.isPrototypeOf(y)) throw('she.mul:bad type')
+			let z = new she.CipherTextGT()
+			let stack = mod.Runtime.stackSave()
+			let xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
+			let yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
+			let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
+			copyFromUint32Array(xPos, x.a_)
+			copyFromUint32Array(yPos, y.a_)
+			sheMul(zPos, xPos, yPos)
+			copyToUint32Array(z.a_, zPos)
+			mod.Runtime.stackRestore(stack)
+			return z
 		}
 		she.SecretKey.prototype.dec = function(c) {
 			let dec = null
