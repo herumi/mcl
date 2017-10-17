@@ -109,10 +109,18 @@ function HexStringToUint8Array(s) {
 	return a
 }
 
+function reRandTest(sec, pub, c) {
+	console.log('before ' + sec.dec(c))
+	c.dump()
+	pub.reRand(c)
+	console.log('after ' + sec.dec(c))
+	c.dump()
+}
 function onClickTestSHEclass() {
 	try {
 		let sec = new she.SecretKey()
 		sec.setByCSPRNG()
+		sec.dump()
 		setText('sec2', Uint8ArrayToHexString(sec.serialize()))
 		let pub = sec.getPublicKey()
 		setText('pub2', Uint8ArrayToHexString(pub.serialize()))
@@ -157,6 +165,10 @@ function onClickTestSHEclass() {
 		c22 = pub.encG2(5)
 		ct2 = she.mul(c12, c22)
 		console.log('dec ct2=' + sec.dec(ct2))
+
+		reRandTest(sec, pub, c12)
+		reRandTest(sec, pub, c22)
+		reRandTest(sec, pub, ct2)
 		console.log('ok')
 	} catch (e) {
 		console.log('err ' + e)
