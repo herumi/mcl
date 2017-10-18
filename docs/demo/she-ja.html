@@ -13,7 +13,7 @@
 	<script type="text/javascript" src="she-demo2.js"></script>
 </head>
 <body>
-<h1>レベル2の順同型暗号デモ</h1>
+<h1>レベル2の準同型暗号デモ</h1>
 <div>
 ライブラリの状態 <span name="status">初期化中</span>
 </div>
@@ -23,7 +23,7 @@
 秘密鍵 : <div name="sec" class="hex"></div>
 
 <table border=1 id="client_table" width="100%" summary="client">
-<tr id="client_header"><th>x(ビールを買った)<th>y(次の日会社を休んだ)<th class="hex">EncG1(x)<th class="hex">EncG2(y)</tr>
+<tr id="client_header"><th>x(喫煙)<th>y(肺癌)<th class="hex">EncG1(x)<th class="hex">EncG2(y)</tr>
 </table>
 <input type="text" name="append" value="1,1">
 <button type="button" onclick="append()">1. 行を追加する</button>
@@ -32,7 +32,7 @@
 <div>暗号文を受信する</div>
 <div name="encSumC" class="hex">0</div>
 <button type="button" onclick="dec()">6. 暗号文を復号する</button><br>
-ビールを飲んで次の日会社を休んだ人数<div name="ret">0</div>
+喫煙で肺癌になった人数<div name="ret">0</div>
 
 </div>
 
@@ -46,12 +46,11 @@
 
 <table border=1 id="server_table" width="100%" summary="server">
 </table>
-<button type="button" onclick="mul()">3. EncG1(x)とEncG2(y)を掛けてEncGT(x * y)にする（=各行がビールを飲んで休んだかどうか）</button><br>
-<button type="button" onclick="sum()">4. EncGT(x * y)の総和をとる（ビールを飲んで会社を休んだ人の総数）</button>
+<button type="button" onclick="mul()">3. EncG1(x)とEncG2(y)を掛けてEncGT(x * y)にする（=各行が喫煙で肺癌になっかどうか）</button><br>
+<button type="button" onclick="sum()">4. EncGT(x * y)の総和をとる（喫煙で肺癌になった人数）</button>
 <div>暗号文の集計結果</div>
 <div name="encSumS" class="hex">0</div>
 <button type="button" onclick="recv()">5. 結果をクライアントに送信する</button>
-
 </div>
 
 </body>
