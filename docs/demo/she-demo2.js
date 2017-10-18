@@ -88,22 +88,22 @@ function send() {
 	$('.encG2y').each(function() {
 		ct2.push($(this).text())
 	})
-	var obj = $('#server_table')
+	let obj = $('#server_table')
 	obj.html('')
 	{
-		var header = [
+		let header = [
 			'EncG1(x)', 'EncG2(y)', 'EncGT(x * y)'
 		]
-		var t = $('<tr>').attr('id', 'header')
-		for (var i = 0; i < header.length; i++) {
+		let t = $('<tr>').attr('id', 'header')
+		for (let i = 0; i < header.length; i++) {
 			t.append(
 				$('<th>').append(header[i])
 			)
 		}
 		obj.append(t)
 	}
-	for (var i = 0; i < ct1.length; i++) {
-		var t = $('<tr>')
+	for (let i = 0; i < ct1.length; i++) {
+		let t = $('<tr>')
 		t.append(
 			$('<td class="encG1xS">').append(ct1[i])
 		).append(
@@ -116,22 +116,20 @@ function send() {
 }
 
 function mul() {
-	let c1 = new she.CipherTextG1()
-	let c2 = new she.CipherTextG2()
 	$('.encG1xS').each(function() {
 		let o = $(this)
-		c1.fromHexStr(o.text())
-		c2.fromHexStr(o.next().text())
+		let c1 = she.getCipherTextG1FromHexStr(o.text())
+		let c2 = she.getCipherTextG2FromHexStr(o.next().text())
 		let ct = she.mul(c1, c2)
 		o.next().next().text(ct.toHexStr())
 	})
 }
 
 function sum() {
-	let ct = new she.CipherTextGT()
 	let csum = pub.encGT(0)
 	$('.encGTxyS').each(function() {
-		ct.fromHexStr($(this).text())
+		let s = $(this).text()
+		let ct = she.getCipherTextGTFromHexStr(s)
 		csum = she.add(csum, ct)
 	})
 	setText('encSumS', csum.toHexStr())
@@ -143,8 +141,7 @@ function recv() {
 
 function dec() {
 	let s = getText('encSumC')
-	let ct = new she.CipherTextGT()
-	ct.fromHexStr(s)
+	let ct = she.getCipherTextGTFromHexStr(s)
 	let v = sec.dec(ct)
 	setText('ret', v)
 }

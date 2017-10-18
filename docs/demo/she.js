@@ -308,6 +308,11 @@
 		she.SecretKey.prototype.dump = function(msg = 'sec ') {
 			console.log(msg + this.toHexStr())
 		}
+		she.getSecretKeyFromHexStr = function(s) {
+			r = new she.SecretKey()
+			r.fromHexStr(s)
+			return r
+		}
 		she.PublicKey = function() {
 			this.a_ = new Uint32Array(SHE_PUBLICKEY_SIZE / 4)
 		}
@@ -325,6 +330,11 @@
 		}
 		she.PublicKey.prototype.dump = function(msg = 'pub ') {
 			console.log(msg + this.toHexStr())
+		}
+		she.getPublicKeyFromHexStr = function(s) {
+			r = new she.PublicKey()
+			r.fromHexStr(s)
+			return r
 		}
 		she.CipherTextG1 = function() {
 			this.a_ = new Uint32Array(SHE_CIPHERTEXT_G1_SIZE / 4)
@@ -344,6 +354,11 @@
 		she.CipherTextG1.prototype.dump = function(msg = 'ct1 ') {
 			console.log(msg + this.toHexStr())
 		}
+		she.getCipherTextG1FromHexStr = function(s) {
+			r = new she.CipherTextG1()
+			r.fromHexStr(s)
+			return r
+		}
 		she.CipherTextG2 = function() {
 			this.a_ = new Uint32Array(SHE_CIPHERTEXT_G2_SIZE / 4)
 		}
@@ -362,6 +377,11 @@
 		she.CipherTextG2.prototype.dump = function(msg = 'ct2 ') {
 			console.log(msg + this.toHexStr())
 		}
+		she.getCipherTextG2FromHexStr = function(s) {
+			r = new she.CipherTextG2()
+			r.fromHexStr(s)
+			return r
+		}
 		she.CipherTextGT = function() {
 			this.a_ = new Uint32Array(SHE_CIPHERTEXT_GT_SIZE / 4)
 		}
@@ -379,6 +399,11 @@
 		}
 		she.CipherTextGT.prototype.dump = function(msg = 'ctt ') {
 			console.log(msg + this.toHexStr())
+		}
+		she.getCipherTextGTFromHexStr = function(s) {
+			r = new she.CipherTextGT()
+			r.fromHexStr(s)
+			return r
 		}
 		she.SecretKey.prototype.setByCSPRNG = function() {
 			let stack = mod.Runtime.stackSave()
