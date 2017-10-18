@@ -253,6 +253,21 @@
 			mod.Runtime.stackRestore(stack)
 			if (r) throw('callReRand err')
 		}
+		// convertFrom
+		const callConvertFrom = function(func, pub, c) {
+			let ct = new she.CipherTextGT()
+			let stack = mod.Runtime.stackSave()
+			let ctPos = mod.Runtime.stackAlloc(ct.a_.length * 4)
+			let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
+			let cPos = mod.Runtime.stackAlloc(c.length * 4)
+			copyFromUint32Array(pubPos, pub);
+			copyFromUint32Array(cPos, c);
+			let r = func(ctPos, pubPos, cPos)
+			copyToUint32Array(ct.a_, ctPos)
+			mod.Runtime.stackRestore(stack)
+			if (r) throw('callConvertFrom err')
+			return ct
+		}
 		she_free = function(p) {
 			mod._free(p)
 		}
@@ -531,6 +546,20 @@
 				throw('she.PublicKey.reRand:not supported')
 			}
 			return callReRand(reRand, c.a_, this.a_)
+		}
+		she.PublicKey.prototype.convertToCipherTextGT = function(c) {
+			let convertFrom = null
+			if (she.CipherTextG1.prototype.isPrototypeOf(c)) {
+				convertFrom = sheConvertFromG1
+			} else if (she.CipherTextG2.prototype.isPrototypeOf(c)) {
+				convertFrom = sheConvertFromG2
+			} else {
+				throw('she.PublicKey.convertToCipherTextGT:not supported')
+			}
+			return callConvertFrom(convertFrom, this.a_, c.a_)
+		}
+		she.PublicKey.prototype.convertFromG2 = function(c) {
+			return she.convertFrom(sheConvertFromG1, this.a_, c.a_)
 		}
 	}
 

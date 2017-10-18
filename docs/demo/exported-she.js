@@ -41,6 +41,6 @@ sheMul = mod.cwrap('sheMul', 'number', ['number', 'number', 'number', ])
 sheReRandG1 = mod.cwrap('sheReRandG1', 'number', ['number', 'number', ])
 sheReRandG2 = mod.cwrap('sheReRandG2', 'number', ['number', 'number', ])
 sheReRandGT = mod.cwrap('sheReRandGT', 'number', ['number', 'number', ])
-_sheConvertFromG1 = mod.cwrap('sheConvertFromG1', 'number', ['number', 'number', 'number', ])
-_sheConvertFromG2 = mod.cwrap('sheConvertFromG2', 'number', ['number', 'number', 'number', ])
+sheConvertFromG1 = mod.cwrap('sheConvertFromG1', 'number', ['number', 'number', 'number', ])
+sheConvertFromG2 = mod.cwrap('sheConvertFromG2', 'number', ['number', 'number', 'number', ])
 }
