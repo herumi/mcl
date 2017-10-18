@@ -191,3 +191,32 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 }
+
+CYBOZU_TEST_AUTO(convertFrom)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+	sheCipherTextGT ct;
+	const int m = 123;
+	int64_t dec;
+	sheCipherTextG1 c1;
+	sheEnc32G1(&c1, &pub, m);
+	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
+	CYBOZU_TEST_EQUAL(dec, 123);
+	sheConvertFromG1(&ct, &pub, &c1);
+	dec = 0;
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(dec, 123);
+
+	sheCipherTextG2 c2;
+	sheEnc32G2(&c2, &pub, m);
+	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
+	CYBOZU_TEST_EQUAL(dec, 123);
+	sheConvertFromG2(&ct, &pub, &c2);
+	dec = 0;
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(dec, 123);
+}
+

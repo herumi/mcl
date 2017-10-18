@@ -1,1 +1,1 @@
-sheInit|erialize|Str|sheDec
+sheInit|erialize|Str|sheDec|sheConvertFrom
