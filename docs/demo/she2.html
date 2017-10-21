@@ -26,7 +26,7 @@ secretKey : <div name="sec" class="hex"></div>
 <tr id="client_header"><th>x<th>y<th class="hex">EncG1(x)<th class="hex">EncG2(y)</tr>
 </table>
 <input type="text" name="append" value="1,1">
-<button type="button" onclick="append()">1. append</button>
+<button type="button" onclick="append()">1. append "x,y" and encrypt them (multiple times)</button>
 <br>
 <button type="button" onclick="send()">2. send to server</button>
 <div>received ciphertext</div>
@@ -46,8 +46,8 @@ publicKey : <div name="pub" class="hex"></div>
 
 <table border=1 id="server_table" width="100%" summary="server">
 </table>
-<button type="button" onclick="mul()">3. compute EncGT(x * y) := EncG1(x) * EncG2(y)</button><br>
-<button type="button" onclick="sum()">4. sum Enc(x * y)</button>
+<button type="button" onclick="mul()">3. compute EncGT(x * y) := EncG1(x) * EncG2(y) for eacy row</button><br>
+<button type="button" onclick="sum()">4. sum of all values in EncGT(x * y) colomn</button>
 <div>result</div>
 <div name="encSumS" class="hex">0</div>
 <button type="button" onclick="recv()">5. return to client</button>
