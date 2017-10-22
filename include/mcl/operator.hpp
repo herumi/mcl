@@ -63,14 +63,13 @@ struct Operator : E {
 	}
 	static void pow(T& z, const T& x, int64_t y)
 	{
+		const uint64_t u = std::abs(y);
 #if MCL_SIZEOF_UNIT == 8
-		const Unit u = abs(y);
 		powArray(z, x, &u, 1, y < 0, false);
 #else
-		uint64_t ua = std::abs(y);
-		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
-		size_t un = u[1] ? 2 : 1;
-		powArray(z, x, u, un, y < 0, false);
+		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
+		size_t un = ua[1] ? 2 : 1;
+		powArray(z, x, ua, un, y < 0, false);
 #endif
 	}
 	static void pow(T& z, const T& x, const mpz_class& y)

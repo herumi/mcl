@@ -588,14 +588,13 @@ public:
 	}
 	static inline void mul(EcT& z, const EcT& x, int64_t y)
 	{
+		const uint64_t u = std::abs(y);
 #if MCL_SIZEOF_UNIT == 8
-		const fp::Unit u = abs(y);
 		mulArray(z, x, &u, 1, y < 0);
 #else
-		uint64_t ua = std::abs(y);
-		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
-		size_t un = u[1] ? 2 : 1;
-		mulArray(z, u, un, y < 0);
+		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
+		size_t un = ua[1] ? 2 : 1;
+		mulArray(z, ua, un, y < 0);
 #endif
 	}
 	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
