@@ -106,6 +106,7 @@ $(MCL_SLIB): $(LIB_OBJ)
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $@ $(BN256_OBJ)
 
+$(SHE256_OBJ) : src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.h
 $(SHE256_LIB): $(SHE256_OBJ)
 	$(AR) $@ $(SHE256_OBJ)
 
