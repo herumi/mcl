@@ -1,0 +1,266 @@
+[
+{
+  "name":"sheInit",
+  "exportName":"_sheInit",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheSecretKeySerialize",
+  "exportName":"_sheSecretKeySerialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"shePublicKeySerialize",
+  "exportName":"_shePublicKeySerialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheCipherTextG1Serialize",
+  "exportName":"_sheCipherTextG1Serialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheCipherTextG2Serialize",
+  "exportName":"_sheCipherTextG2Serialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheCipherTextGTSerialize",
+  "exportName":"_sheCipherTextGTSerialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheSecretKeyDeserialize",
+  "exportName":"_sheSecretKeyDeserialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"shePublicKeyDeserialize",
+  "exportName":"_shePublicKeyDeserialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheCipherTextG1Deserialize",
+  "exportName":"_sheCipherTextG1Deserialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheCipherTextG2Deserialize",
+  "exportName":"_sheCipherTextG2Deserialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheCipherTextGTDeserialize",
+  "exportName":"_sheCipherTextGTDeserialize",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheSecretKeySetByCSPRNG",
+  "exportName":"sheSecretKeySetByCSPRNG",
+  "ret":"number",
+  "args":[ "number" ]
+}
+,{
+  "name":"sheGetPublicKey",
+  "exportName":"sheGetPublicKey",
+  "ret":"null",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheSetRangeForDLP",
+  "exportName":"sheSetRangeForDLP",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheSetRangeForG1DLP",
+  "exportName":"sheSetRangeForG1DLP",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheSetRangeForG2DLP",
+  "exportName":"sheSetRangeForG2DLP",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheSetRangeForGTDLP",
+  "exportName":"sheSetRangeForGTDLP",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheEncG1",
+  "exportName":"sheEncG1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheEncG2",
+  "exportName":"sheEncG2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheEncGT",
+  "exportName":"sheEncGT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheEnc32G1",
+  "exportName":"sheEnc32G1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheEnc32G2",
+  "exportName":"sheEnc32G2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheEnc32GT",
+  "exportName":"sheEnc32GT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheDecG1",
+  "exportName":"_sheDecG1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheDecG2",
+  "exportName":"_sheDecG2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheDecGT",
+  "exportName":"_sheDecGT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheAddG1",
+  "exportName":"sheAddG1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheAddG2",
+  "exportName":"sheAddG2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheAddGT",
+  "exportName":"sheAddGT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheSubG1",
+  "exportName":"sheSubG1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheSubG2",
+  "exportName":"sheSubG2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheSubGT",
+  "exportName":"sheSubGT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMulG1",
+  "exportName":"sheMulG1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMulG2",
+  "exportName":"sheMulG2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMulGT",
+  "exportName":"sheMulGT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMul32G1",
+  "exportName":"sheMul32G1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMul32G2",
+  "exportName":"sheMul32G2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMul32GT",
+  "exportName":"sheMul32GT",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheMul",
+  "exportName":"sheMul",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheReRandG1",
+  "exportName":"sheReRandG1",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheReRandG2",
+  "exportName":"sheReRandG2",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheReRandGT",
+  "exportName":"sheReRandGT",
+  "ret":"number",
+  "args":[ "number", "number" ]
+}
+,{
+  "name":"sheConvertFromG1",
+  "exportName":"sheConvertFromG1",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+,{
+  "name":"sheConvertFromG2",
+  "exportName":"sheConvertFromG2",
+  "ret":"number",
+  "args":[ "number", "number", "number" ]
+}
+]

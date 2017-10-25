@@ -206,7 +206,7 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
-EXPORTED_SHE_JS=docs/demo/exported-she.js
+EXPORTED_SHE_JS=docs/demo/exported-she.json
 SHE_TXT=ffi/js/she.txt
 SHE_RE_TXT=ffi/js/she-re.txt
 EXPORT_OPT=-re $(SHE_RE_TXT)
@@ -214,7 +214,7 @@ $(SHE_TXT): ./include/mcl/she.h $(SHE_RE_TXT)
 	python ffi/js/export-functions.py $(EXPORT_OPT) $< > $@
 
 $(EXPORTED_SHE_JS): ./include/mcl/she.h
-	python ffi/js/export-functions.py $(EXPORT_OPT) -js she $< > $@
+	python ffi/js/export-functions.py $(EXPORT_OPT) -json $< > docs/demo/exported-she.json
 
 EXPORTED_SHE=$(shell cat $(SHE_TXT))
 

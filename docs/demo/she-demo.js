@@ -9,22 +9,6 @@ function setText(name, val) { document.getElementsByName(name)[0].innerText = va
 	she.init(range, tryNum, function() { setText('status', 'ok')})
 }())
 
-function putSecretKey(x, msg = "") {
-	console.log(msg + ' sk=' + Uint8ArrayToHexString(sheSecretKeySerialize(x)))
-}
-function putPublicKey(x, msg = "") {
-	console.log(msg + ' pk=' + Uint8ArrayToHexString(shePublicKeySerialize(x)))
-}
-function putCipherTextG1(x, msg = "") {
-	console.log(msg + ' ctG1=' + Uint8ArrayToHexString(sheCipherTextG1Serialize(x)))
-}
-function putCipherTextG2(x, msg = "") {
-	console.log(msg + ' ctG2=' + Uint8ArrayToHexString(sheCipherTextG2Serialize(x)))
-}
-function putCipherTextGT(x, msg = "") {
-	console.log(msg + ' ctGT=' + Uint8ArrayToHexString(sheCipherTextGTSerialize(x)))
-}
-
 function bench(label, count, func) {
 	let start = Date.now()
 	for (let i = 0; i < count; i++) {
@@ -44,50 +28,34 @@ function onClickBenchmark() {
 
 function onClickTestSHE() {
 	try {
-		let sec = sheSecretKey_malloc()
-		let pub = shePublicKey_malloc()
-		let c11 = sheCipherTextG1_malloc()
-		let c12 = sheCipherTextG1_malloc()
-		let c21 = sheCipherTextG2_malloc()
-		let c22 = sheCipherTextG2_malloc()
-		let ct = sheCipherTextGT_malloc()
-
-		sheSecretKeySetByCSPRNG(sec)
-		setText('secretKey', Uint8ArrayToHexString(sheSecretKeySerialize(sec)))
-		sheGetPublicKey(pub, sec)
-		setText('publicKey', Uint8ArrayToHexString(shePublicKeySerialize(pub)))
-		putPublicKey(pub)
+		let sec = new she.SecretKey()
+		sec.setByCSPRNG()
+		setText('secretKey', sec.toHexStr())
+		let pub = sec.getPublicKey()
+		setText('publicKey', pub.toHexStr())
 
 		let m1 = getValue('msg1')
 		let m2 = getValue('msg2')
 		let m3 = getValue('msg3')
 		let m4 = getValue('msg4')
-		sheEnc32G1(c11, pub, m1)
-		console.log('dec c11=' + sheDecG1(sec, c11))
-		sheEnc32G1(c12, pub, m2)
-		console.log('dec c12=' + sheDecG1(sec, c12))
-		sheEnc32G2(c21, pub, m3)
-		console.log('dec c21=' + sheDecG2(sec, c21))
-		sheEnc32G2(c22, pub, m4)
-		console.log('dec c22=' + sheDecG2(sec, c22))
-		setText('encG11', Uint8ArrayToHexString(sheCipherTextG1Serialize(c11)))
-		setText('encG12', Uint8ArrayToHexString(sheCipherTextG1Serialize(c12)))
-		setText('encG21', Uint8ArrayToHexString(sheCipherTextG2Serialize(c21)))
-		setText('encG22', Uint8ArrayToHexString(sheCipherTextG2Serialize(c22)))
-		sheAddG1(c11, c11, c12)
-		sheAddG2(c21, c21, c22)
-		sheMul(ct, c11, c21)
-		setText('encGT', Uint8ArrayToHexString(sheCipherTextGTSerialize(ct)))
-		let d = sheDecGT(sec, ct)
+		let c11 = pub.encG1(m1)
+		console.log('dec c11=' + sec.dec(c11))
+		let c12 = pub.encG1(m2)
+		console.log('dec c12=' + sec.dec(c12))
+		let c21 = pub.encG2(m3)
+		console.log('dec c21=' + sec.dec(c21))
+		let c22 = pub.encG2(m4)
+		console.log('dec c22=' + sec.dec(c22))
+		setText('encG11', c11.toHexStr())
+		setText('encG12', c12.toHexStr())
+		setText('encG21', c21.toHexStr())
+		setText('encG22', c22.toHexStr())
+		c11 = she.add(c11, c12)
+		c21 = she.add(c21, c22)
+		let ct = she.mul(c11, c21)
+		setText('encGT', ct.toHexStr())
+		let d = sec.dec(ct)
 		setText('decMsg', d)
-
-		she_free(ct)
-		she_free(c22)
-		she_free(c21)
-		she_free(c12)
-		she_free(c11)
-		she_free(pub)
-		she_free(sec)
 	} catch (e) {
 		console.log('exception ' + e)
 	}
