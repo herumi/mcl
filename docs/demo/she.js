@@ -85,13 +85,11 @@
 	}
 	// hex string to Uint8Array
 	self.fromHexStr = function(s) {
-		let n = (s.length + 1) / 2
+		if (s.length & 1) throw('fromHexStr:length must be even ' + s.length)
+		let n = s.length / 2
 		let a = new Uint8Array(n)
-		for (let i = 0; i < s.length / 2; i++) {
+		for (let i = 0; i < n; i++) {
 			a[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
-		}
-		if ((s.length & 1) != 0) {
-			a[n - 1] = parseInt(s[s.length - 1] + '0', 16)
 		}
 		return a
 	}
@@ -142,52 +140,7 @@
 			let r = func(...args.slice(0, argNum), pos, buf.length, ioMode)
 			mod.Runtime.stackRestore(stack)
 			if (returnValue) return r
-			if (r) throw('err wrap_input0 ' + buf)
-		}
-	}
-	const wrap_input0 = function(func, returnValue = false) {
-		return function(buf, ioMode = 0) {
-			let stack = mod.Runtime.stackSave()
-			let pos = mod.Runtime.stackAlloc(buf.length)
-			if (typeof(buf) == "string") {
-				AsciiStrToMem(pos, buf)
-			} else {
-				Uint8ArrayToMem(pos, buf)
-			}
-			let r = func(pos, buf.length, ioMode)
-			mod.Runtime.stackRestore(stack)
-			if (returnValue) return r
-			if (r) throw('err wrap_input0 ' + buf)
-		}
-	}
-	const wrap_input1 = function(func, returnValue = false) {
-		return function(x1, buf, ioMode = 0) {
-			let stack = mod.Runtime.stackSave()
-			let pos = mod.Runtime.stackAlloc(buf.length)
-			if (typeof(buf) == "string") {
-				AsciiStrToMem(pos, buf)
-			} else {
-				Uint8ArrayToMem(pos, buf)
-			}
-			let r = func(x1, pos, buf.length, ioMode)
-			mod.Runtime.stackRestore(stack)
-			if (returnValue) return r
-			if (r) throw('err wrap_input1 ' + buf)
-		}
-	}
-	const wrap_input2 = function(func, returnValue = false) {
-		return function(x1, x2, buf, ioMode = 0) {
-			let stack = mod.Runtime.stackSave()
-			let pos = mod.Runtime.stackAlloc(buf.length)
-			if (typeof(buf) == "string") {
-				AsciiStrToMem(pos, buf)
-			} else {
-				Uint8ArrayToMem(pos, buf)
-			}
-			let r = func(x1, x2, pos, buf.length, ioMode)
-			mod.Runtime.stackRestore(stack)
-			if (returnValue) return r
-			if (r) throw('err wrap_input2 ' + buf)
+			if (r) throw('err wrap_input ' + buf)
 		}
 	}
 	const callSetter = function(func, a, p1, p2) {
@@ -202,13 +155,6 @@
 		let s = func(pos, p1, p2)
 		mod._free(pos)
 		return s
-	}
-	const callModifier = function(func, a, p1, p2) {
-		let pos = mod._malloc(a.length * 4)
-		mod.HEAP32.set(a, pos / 4)
-		func(pos, p1, p2) // p1, p2 may be undefined
-		copyToUint32Array(a, pos)
-		mod._free(pos)
 	}
 	const wrap_dec = function(func) {
 		return function(sec, c) {
