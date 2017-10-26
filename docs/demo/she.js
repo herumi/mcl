@@ -63,9 +63,10 @@
 		}
 	}
 	const copyToUint32Array = function(a, pos) {
-		for (let i = 0; i < a.length; i++) {
-			a[i] = mod.HEAP32[pos / 4 + i]
-		}
+		a.set(mod.HEAP32.subarray(pos / 4, pos / 4 + a.length))
+//		for (let i = 0; i < a.length; i++) {
+//			a[i] = mod.HEAP32[pos / 4 + i]
+//		}
 	}
 	const copyFromUint32Array = function(pos, a) {
 		for (let i = 0; i < a.length; i++) {
