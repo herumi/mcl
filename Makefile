@@ -221,6 +221,9 @@ EXPORTED_SHE=$(shell cat $(SHE_TXT))
 docs/demo/mclshe.js: src/fp.cpp src/she_c256.cpp $(SHE_TXT) $(EXPORTED_SHE_JS) src/she_c_impl.hpp include/mcl/she.hpp
 	emcc -o $@ src/fp.cpp src/she_c256.cpp -I./include -I./src -I../cybozulib/include -s WASM=1 -s "MODULARIZE=1" -s "EXPORTED_FUNCTIONS=[$(EXPORTED_SHE)]" -O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -DMCLSHE_WIN_SIZE=8
 
+../she-wasm/she.js: src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/she.h include/mcl/bn.h
+	cd ../she-wasm && emcc -O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -DMCLSHE_WIN_SIZE=8 -o she.js ../mcl/src/fp.cpp ../mcl/src/she_c256.cpp -I../mcl/include -I../mcl/src -I../cybozulib/include
+
 demo:
 	$(MAKE) docs/demo/mclshe.js
 

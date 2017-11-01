@@ -29,7 +29,11 @@
 #endif
 #endif
 #else
-#define MCLBN_DLL_API
+#ifdef __EMSCRIPTEN__
+	#define MCLBN_DLL_API __attribute__((used))
+#else
+	#define MCLBN_DLL_API
+#endif
 #endif
 
 #ifdef __cplusplus
