@@ -36,7 +36,6 @@
 			.then(response => response.arrayBuffer())
 			.then(buffer => new Uint8Array(buffer))
 			.then(binary => {
-				mod['wasmBinary'] = binary
 				mod['onRuntimeInitialized'] = function() {
 					setupFct(mod, nameSpace)
 					console.log('setupWasm end')
