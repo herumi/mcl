@@ -451,7 +451,7 @@ inline mpz_class getQuadraticNonResidue(const mpz_class& p)
 {
 	mpz_class g = 2;
 	while (legendre(g, p) > 0) {
-		g++;
+		++g;
 	}
 	return g;
 }
