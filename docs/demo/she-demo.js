@@ -4,10 +4,10 @@ function getText(name) { return document.getElementsByName(name)[0].innerText }
 function setText(name, val) { document.getElementsByName(name)[0].innerText = val }
 
 (function() {
-	const range = 2048
-	const tryNum = 100
-	she.init(range, tryNum, function() { setText('status', 'ok')})
-}())
+	she.init(function() {
+		setText('status', 'ok')
+	})
+})()
 
 function bench(label, count, func) {
 	let start = Date.now()

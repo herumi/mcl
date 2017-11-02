@@ -1,11 +1,11 @@
-(function(return_she) {
+(function(generator) {
 	if (typeof exports === 'object') {
-		module.exports = return_she()
+		generator(exports, true)
 	} else {
-		window.she = return_she()
+		let exports = {}
+		window.she = generator(exports, false)
 	}
-})(function() {
-	const crypto = window.crypto || window.msCrypto
+})(function(exports, isNodeJs) {
 
 	const MCLBN_CURVE_FP254BNB = 0
 	const MCLBN_CURVE_FP382_1 = 1
@@ -26,24 +26,65 @@
 
 	let mod = {}
 	let capi = {}
-	let self = {}
-	self.mod = mod
-	self.capi = capi
+	let g_callback = null
+	let g_range = 1024
+	let g_tryNum = 1024
+	exports.mod = mod
+	exports.capi = capi
 
-	const setupWasm = function(fileName, nameSpace, setupFct) {
-		console.log('setupWasm ' + fileName)
-		fetch(fileName)
-			.then(response => response.arrayBuffer())
-			.then(buffer => new Uint8Array(buffer))
-			.then(binary => {
-				mod['onRuntimeInitialized'] = function() {
-					setupFct(mod, nameSpace)
-					console.log('setupWasm end')
-				}
-				Module(mod)
+	if (isNodeJs) {
+		mod = require('./she.js')
+
+		exports.init = function(callback) {
+			console.log('onModuleInit')
+			g_callback = callback
+		}
+		mod.onRuntimeInitialized = function () {
+			const fs = require('fs')
+			const json = fs.readFileSync('./exported-she.json')
+			exportedFuncs = JSON.parse(json)
+			exportedFuncs.forEach(func => {
+				capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
 			})
-		return mod
+			define_extra_functions(mod)
+			capi.sheInit()
+			console.log('initializing sheSetRangeForDLP')
+			let range = 1024
+			let tryNum = 512
+			let r = capi.sheSetRangeForDLP(range, tryNum)
+			console.log('finished ' + r)
+			if (g_callback) g_callback()
+		}
+	} else {
+		exports.init = function(callback = null, range = 1024, tryNum = 1024) {
+			g_callback = callback
+			g_range = range
+			g_tryNum = tryNum
+			fetch('mclshe.wasm')
+				.then(response => response.arrayBuffer())
+				.then(buffer => new Uint8Array(buffer))
+				.then(binary => {
+					Module(mod)
+				})
+		}
+		mod.onRuntimeInitialized = function() {
+			fetch('exported-she.json')
+				.then(response => response.json())
+				.then(json => {
+					mod.json = json
+					json.forEach(func => {
+						capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
+					})
+					define_extra_functions(mod)
+					capi.sheInit()
+					console.log('initializing sheSetRangeForDLP')
+					let r = capi.sheSetRangeForDLP(g_range, g_tryNum)
+					console.log('finished ' + r)
+					if (g_callback) g_callback()
+				})
+		}
 	}
+
 	const ptrToStr = function(pos, n) {
 		let s = ''
 			for (let i = 0; i < n; i++) {
@@ -72,7 +113,7 @@
 			mod.HEAP32[pos / 4 + i] = a[i]
 		}
 	}
-	self.toHex = function(a, start, n) {
+	exports.toHex = function(a, start, n) {
 		let s = ''
 		for (let i = 0; i < n; i++) {
 			s += ('0' + a[start + i].toString(16)).slice(-2)
@@ -80,11 +121,11 @@
 		return s
 	}
 	// Uint8Array to hex string
-	self.toHexStr = function(a) {
-		return self.toHex(a, 0, a.length)
+	exports.toHexStr = function(a) {
+		return exports.toHex(a, 0, a.length)
 	}
 	// hex string to Uint8Array
-	self.fromHexStr = function(s) {
+	exports.fromHexStr = function(s) {
 		if (s.length & 1) throw('fromHexStr:length must be even ' + s.length)
 		let n = s.length / 2
 		let a = new Uint8Array(n)
@@ -229,7 +270,7 @@
 	}
 	// convertFrom
 	const callConvertFrom = function(func, pub, c) {
-		let ct = new self.CipherTextGT()
+		let ct = new exports.CipherTextGT()
 		let stack = mod.Runtime.stackSave()
 		let ctPos = mod.Runtime.stackAlloc(ct.a_.length * 4)
 		let pubPos = mod.Runtime.stackAlloc(pub.length * 4)
@@ -285,16 +326,16 @@
 				this.a_ = new Uint32Array(size / 4)
 			}
 			fromHexStr(s) {
-				this.deserialize(self.fromHexStr(s))
+				this.deserialize(exports.fromHexStr(s))
 			}
 			toHexStr() {
-				return self.toHexStr(this.serialize())
+				return exports.toHexStr(this.serialize())
 			}
 			dump(msg = '') {
 				console.log(msg + this.toHexStr())
 			}
 		}
-		self.SecretKey = class extends Common {
+		exports.SecretKey = class extends Common {
 			constructor() {
 				super(SHE_SECRETKEY_SIZE)
 			}
@@ -312,7 +353,7 @@
 				mod.Runtime.stackRestore(stack)
 			}
 			getPublicKey() {
-				let pub = new self.PublicKey()
+				let pub = new exports.PublicKey()
 				let stack = mod.Runtime.stackSave()
 				let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
 				let pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
@@ -324,25 +365,25 @@
 			}
 			dec(c) {
 				let dec = null
-				if (self.CipherTextG1.prototype.isPrototypeOf(c)) {
+				if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
 					dec = capi.sheDecG1
-				} else if (self.CipherTextG2.prototype.isPrototypeOf(c)) {
+				} else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
 					dec = capi.sheDecG2
-				} else if (self.CipherTextGT.prototype.isPrototypeOf(c)) {
+				} else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
 					dec = capi.sheDecGT
 				} else {
-					throw('self.SecretKey.dec:not supported')
+					throw('exports.SecretKey.dec:not supported')
 				}
 				return callDec(dec, this.a_, c.a_)
 			}
 		}
 
-		self.getSecretKeyFromHexStr = function(s) {
-			r = new self.SecretKey()
+		exports.getSecretKeyFromHexStr = function(s) {
+			r = new exports.SecretKey()
 			r.fromHexStr(s)
 			return r
 		}
-		self.PublicKey = class extends Common {
+		exports.PublicKey = class extends Common {
 			constructor() {
 				super(SHE_PUBLICKEY_SIZE)
 			}
@@ -353,46 +394,46 @@
 				callSetter(capi.shePublicKeyDeserialize, this.a_, s)
 			}
 			encG1(m) {
-				return callEnc(capi.sheEnc32G1, self.CipherTextG1, this.a_, m)
+				return callEnc(capi.sheEnc32G1, exports.CipherTextG1, this.a_, m)
 			}
 			encG2(m) {
-				return callEnc(capi.sheEnc32G2, self.CipherTextG2, this.a_, m)
+				return callEnc(capi.sheEnc32G2, exports.CipherTextG2, this.a_, m)
 			}
 			encGT(m) {
-				return callEnc(capi.sheEnc32GT, self.CipherTextGT, this.a_, m)
+				return callEnc(capi.sheEnc32GT, exports.CipherTextGT, this.a_, m)
 			}
 			reRand(c) {
 				let reRand = null
-				if (self.CipherTextG1.prototype.isPrototypeOf(c)) {
+				if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
 					reRand = capi.sheReRandG1
-				} else if (self.CipherTextG2.prototype.isPrototypeOf(c)) {
+				} else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
 					reRand = capi.sheReRandG2
-				} else if (self.CipherTextGT.prototype.isPrototypeOf(c)) {
+				} else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
 					reRand = capi.sheReRandGT
 				} else {
-					throw('self.PublicKey.reRand:not supported')
+					throw('exports.PublicKey.reRand:not supported')
 				}
 				return callReRand(reRand, c.a_, this.a_)
 			}
 			convertToCipherTextGT(c) {
 				let convertFrom = null
-				if (self.CipherTextG1.prototype.isPrototypeOf(c)) {
+				if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
 					convertFrom = capi.sheConvertFromG1
-				} else if (self.CipherTextG2.prototype.isPrototypeOf(c)) {
+				} else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
 					convertFrom = capi.sheConvertFromG2
 				} else {
-					throw('self.PublicKey.convertToCipherTextGT:not supported')
+					throw('exports.PublicKey.convertToCipherTextGT:not supported')
 				}
 				return callConvertFrom(convertFrom, this.a_, c.a_)
 			}
 		}
 
-		self.getPublicKeyFromHexStr = function(s) {
-			r = new self.PublicKey()
+		exports.getPublicKeyFromHexStr = function(s) {
+			r = new exports.PublicKey()
 			r.fromHexStr(s)
 			return r
 		}
-		self.CipherTextG1 = class extends Common {
+		exports.CipherTextG1 = class extends Common {
 			constructor() {
 				super(SHE_CIPHERTEXT_G1_SIZE)
 			}
@@ -404,12 +445,12 @@
 			}
 		}
 
-		self.getCipherTextG1FromHexStr = function(s) {
-			r = new self.CipherTextG1()
+		exports.getCipherTextG1FromHexStr = function(s) {
+			r = new exports.CipherTextG1()
 			r.fromHexStr(s)
 			return r
 		}
-		self.CipherTextG2 = class extends Common {
+		exports.CipherTextG2 = class extends Common {
 			constructor() {
 				super(SHE_CIPHERTEXT_G2_SIZE)
 			}
@@ -421,13 +462,13 @@
 			}
 		}
 
-		self.getCipherTextG2FromHexStr = function(s) {
-			r = new self.CipherTextG2()
+		exports.getCipherTextG2FromHexStr = function(s) {
+			r = new exports.CipherTextG2()
 			r.fromHexStr(s)
 			return r
 		}
 
-		self.CipherTextGT = class extends Common {
+		exports.CipherTextGT = class extends Common {
 			constructor() {
 				super(SHE_CIPHERTEXT_GT_SIZE)
 			}
@@ -439,72 +480,72 @@
 			}
 		}
 
-		self.getCipherTextGTFromHexStr = function(s) {
-			r = new self.CipherTextGT()
+		exports.getCipherTextGTFromHexStr = function(s) {
+			r = new exports.CipherTextGT()
 			r.fromHexStr(s)
 			return r
 		}
 		// return x + y
-		self.add = function(x, y) {
-			if  (x.a_.length != y.a_.length) throw('self.add:bad type')
+		exports.add = function(x, y) {
+			if  (x.a_.length != y.a_.length) throw('exports.add:bad type')
 			let add = null
 			let cstr = null
-			if (self.CipherTextG1.prototype.isPrototypeOf(x)) {
+			if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
 				add = capi.sheAddG1
-				cstr = self.CipherTextG1
-			} else if (self.CipherTextG2.prototype.isPrototypeOf(x)) {
+				cstr = exports.CipherTextG1
+			} else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
 				add = capi.sheAddG2
-				cstr = self.CipherTextG2
-			} else if (self.CipherTextGT.prototype.isPrototypeOf(x)) {
+				cstr = exports.CipherTextG2
+			} else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
 				add = capi.sheAddGT
-				cstr = self.CipherTextGT
+				cstr = exports.CipherTextGT
 			} else {
-				throw('self.add:not supported')
+				throw('exports.add:not supported')
 			}
 			return callAddSub(add, cstr, x.a_, y.a_)
 		}
 		// return x - y
-		self.sub = function(x, y) {
-			if  (x.a_.length != y.a_.length) throw('self.sub:bad type')
+		exports.sub = function(x, y) {
+			if  (x.a_.length != y.a_.length) throw('exports.sub:bad type')
 			let sub = null
 			let cstr = null
-			if (self.CipherTextG1.prototype.isPrototypeOf(x)) {
+			if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
 				sub = capi.sheSubG1
-				cstr = self.CipherTextG1
-			} else if (self.CipherTextG2.prototype.isPrototypeOf(x)) {
+				cstr = exports.CipherTextG1
+			} else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
 				sub = capi.sheSubG2
-				cstr = self.CipherTextG2
-			} else if (self.CipherTextGT.prototype.isPrototypeOf(x)) {
+				cstr = exports.CipherTextG2
+			} else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
 				sub = capi.sheSubGT
-				cstr = self.CipherTextGT
+				cstr = exports.CipherTextGT
 			} else {
-				throw('self.sub:not supported')
+				throw('exports.sub:not supported')
 			}
 			return callAddSub(sub, cstr, x.a_, y.a_)
 		}
 		// return x * (int)y
-		self.mulInt = function(x, y) {
+		exports.mulInt = function(x, y) {
 			let mulInt = null
 			let cstr = null
-			if (self.CipherTextG1.prototype.isPrototypeOf(x)) {
+			if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
 				mulInt = capi.sheMul32G1
-				cstr = self.CipherTextG1
-			} else if (self.CipherTextG2.prototype.isPrototypeOf(x)) {
+				cstr = exports.CipherTextG1
+			} else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
 				mulInt = capi.sheMul32G2
-				cstr = self.CipherTextG2
-			} else if (self.CipherTextGT.prototype.isPrototypeOf(x)) {
+				cstr = exports.CipherTextG2
+			} else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
 				mulInt = capi.sheMul32GT
-				cstr = self.CipherTextGT
+				cstr = exports.CipherTextGT
 			} else {
-				throw('self.mulInt:not supported')
+				throw('exports.mulInt:not supported')
 			}
 			return callMulInt(mulInt, cstr, x.a_, y)
 		}
 		// return (G1)x * (G2)y
-		self.mul = function(x, y) {
-			if (!self.CipherTextG1.prototype.isPrototypeOf(x)
-				|| !self.CipherTextG2.prototype.isPrototypeOf(y)) throw('self.mul:bad type')
-			let z = new self.CipherTextGT()
+		exports.mul = function(x, y) {
+			if (!exports.CipherTextG1.prototype.isPrototypeOf(x)
+				|| !exports.CipherTextG2.prototype.isPrototypeOf(y)) throw('exports.mul:bad type')
+			let z = new exports.CipherTextGT()
 			let stack = mod.Runtime.stackSave()
 			let xPos = mod.Runtime.stackAlloc(x.a_.length * 4)
 			let yPos = mod.Runtime.stackAlloc(y.a_.length * 4)
@@ -517,24 +558,5 @@
 			return z
 		}
 	}
-	self.init = function(range = 1024, tryNum = 1024, callback = null) {
-		setupWasm('mclshe.wasm', null, function(_mod, ns) {
-			mod = _mod
-			fetch('exported-she.json')
-				.then(response => response.json())
-				.then(json => {
-					mod.json = json
-					json.forEach(func => {
-						capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
-					})
-					define_extra_functions(mod)
-					capi.sheInit()
-					console.log('initializing sheSetRangeForDLP')
-					let r = capi.sheSetRangeForDLP(range, tryNum)
-					console.log('finished ' + r)
-					if (callback) callback()
-				})
-		})
-	}
-	return self
+	return exports
 })

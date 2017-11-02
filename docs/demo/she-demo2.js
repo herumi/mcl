@@ -45,18 +45,14 @@ function strip(s) {
 }
 
 
-(function() {
-	const range = 2048
-	const tryNum = 100
-	she.init(range, tryNum, function() {
-		setText('status', 'ok')
-		sec = new she.SecretKey()
-		sec.setByCSPRNG()
-		setText('sec', sec.toHexStr())
-		pub = sec.getPublicKey()
-		setText('pub', pub.toHexStr())
-	})
-}())
+she.init(function() {
+	setText('status', 'ok')
+	sec = new she.SecretKey()
+	sec.setByCSPRNG()
+	setText('sec', sec.toHexStr())
+	pub = sec.getPublicKey()
+	setText('pub', pub.toHexStr())
+})
 
 function append() {
 	let v = getValue('append')
