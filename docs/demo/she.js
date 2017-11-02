@@ -1,8 +1,10 @@
 (function(generator) {
 	if (typeof exports === 'object') {
+		exports.mod = require('./she.js')
 		generator(exports, true)
 	} else {
 		let exports = {}
+		exports.mod = {}
 		window.she = generator(exports, false)
 	}
 })(function(exports, isNodeJs) {
@@ -24,64 +26,48 @@
 	const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
 	const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
 
-	let mod = {}
-	let capi = {}
 	let g_callback = null
-	let g_range = 1024
-	let g_tryNum = 1024
-	exports.mod = mod
+	let g_range = 0
+	let g_tryNum = 0
+
+	let capi = {}
 	exports.capi = capi
+	let mod = exports.mod
 
-	if (isNodeJs) {
-		mod = require('./she.js')
-
-		exports.init = function(callback) {
-			console.log('onModuleInit')
-			g_callback = callback
+	exports.init = function(callback = null, range = 1024, tryNum = 1024) {
+		console.log('init')
+		g_callback = callback
+		g_range = range
+		g_tryNum = tryNum
+		if (isNodeJs) {
+		} else {
+			fetch('mclshe.wasm')
+				.then(response => response.arrayBuffer())
+				.then(buffer => new Uint8Array(buffer))
+				.then(binary => { Module(mod) })
 		}
-		mod.onRuntimeInitialized = function () {
-			const fs = require('fs')
-			const json = fs.readFileSync('./exported-she.json')
-			exportedFuncs = JSON.parse(json)
+	}
+
+	mod.onRuntimeInitialized = function () {
+		const f = function(exportedFuncs) {
 			exportedFuncs.forEach(func => {
 				capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
 			})
 			define_extra_functions(mod)
 			capi.sheInit()
 			console.log('initializing sheSetRangeForDLP')
-			let range = 1024
-			let tryNum = 512
-			let r = capi.sheSetRangeForDLP(range, tryNum)
+			const r = capi.sheSetRangeForDLP(g_range, g_tryNum)
 			console.log('finished ' + r)
 			if (g_callback) g_callback()
 		}
-	} else {
-		exports.init = function(callback = null, range = 1024, tryNum = 1024) {
-			g_callback = callback
-			g_range = range
-			g_tryNum = tryNum
-			fetch('mclshe.wasm')
-				.then(response => response.arrayBuffer())
-				.then(buffer => new Uint8Array(buffer))
-				.then(binary => {
-					Module(mod)
-				})
-		}
-		mod.onRuntimeInitialized = function() {
+		if (isNodeJs) {
+			const fs = require('fs')
+			const jsonStr = fs.readFileSync('./exported-she.json')
+			f(JSON.parse(jsonStr))
+		} else {
 			fetch('exported-she.json')
 				.then(response => response.json())
-				.then(json => {
-					mod.json = json
-					json.forEach(func => {
-						capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
-					})
-					define_extra_functions(mod)
-					capi.sheInit()
-					console.log('initializing sheSetRangeForDLP')
-					let r = capi.sheSetRangeForDLP(g_range, g_tryNum)
-					console.log('finished ' + r)
-					if (g_callback) g_callback()
-				})
+				.then(exportedFuncs => f(exportedFuncs))
 		}
 	}
 
