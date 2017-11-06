@@ -12,7 +12,7 @@
 	<script type="text/javascript" src="she-demo2.js"></script>
 </head>
 <body>
-<h1>Two-level Homorphic Encryption demo</h1>
+<h1>Two-level Homomorphic Encryption demo</h1>
 <div>
 library status <span name="status">initializing...</span>
 </div>
@@ -45,8 +45,8 @@ publicKey : <div name="pub" class="hex"></div>
 
 <table border=1 id="server_table" width="100%" summary="server">
 </table>
-<button type="button" onclick="mul()">3. compute EncGT(x * y) := EncG1(x) * EncG2(y) for eacy row</button><br>
-<button type="button" onclick="sum()">4. sum of all values in EncGT(x * y) colomn</button>
+<button type="button" onclick="mul()">3. compute EncGT(x * y) := EncG1(x) * EncG2(y) for each row</button><br>
+<button type="button" onclick="sum()">4. sum of all values in EncGT(x * y) column</button>
 <div>result</div>
 <div name="encSumS" class="hex">0</div>
 <button type="button" onclick="recv()">5. return to client</button>
