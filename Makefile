@@ -210,25 +210,31 @@ EXPORTED_SHE_JS=docs/demo/exported-she.json
 SHE_TXT=ffi/js/she.txt
 SHE_RE_TXT=ffi/js/she-re.txt
 EXPORT_OPT=-re $(SHE_RE_TXT)
-$(SHE_TXT): ./include/mcl/she.h $(SHE_RE_TXT)
-	python ffi/js/export-functions.py $(EXPORT_OPT) $< > $@
-
-$(EXPORTED_SHE_JS): ./include/mcl/she.h
+$(EXPORTED_SHE_JS): include/mcl/she.h include/mcl/bn.h $(SHE_RE_TXT)
 	python ffi/js/export-functions.py $(EXPORT_OPT) -json $< > docs/demo/exported-she.json
+	python ffi/js/export-functions.py $(EXPORT_OPT) $< > $(SHE_TXT)
 
 EXPORTED_SHE=$(shell cat $(SHE_TXT))
 
-docs/demo/mclshe.js: src/fp.cpp src/she_c256.cpp $(SHE_TXT) $(EXPORTED_SHE_JS) src/she_c_impl.hpp include/mcl/she.hpp
-	emcc -o $@ src/fp.cpp src/she_c256.cpp -I./include -I./src -I../cybozulib/include -s WASM=1 -s "MODULARIZE=1" -s "EXPORTED_FUNCTIONS=[$(EXPORTED_SHE)]" -O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -DMCLSHE_WIN_SIZE=8
+EMCC_OPT=-I./include -I./src -I../cybozulib/include
+EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
+EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s "EXPORTED_FUNCTIONS=[$(EXPORTED_SHE)]" --pre-js ffi/js/pre.js
+SHE_C_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_SHE_JS) Makefile ffi/js/pre.js
+docs/demo/she_c.js: $(SHE_C_DEP)
+	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 
-../she-wasm/she.js: src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/she.h include/mcl/bn.h
-	cd ../she-wasm && emcc -O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -DMCLSHE_WIN_SIZE=8 -o she.js ../mcl/src/fp.cpp ../mcl/src/she_c256.cpp -I../mcl/include -I../mcl/src -I../cybozulib/include && cp ../mcl/docs/demo/she.js index.js
+../she-wasm/she_c.js: $(SHE_C_DEP)
+	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT)
+	cp docs/demo/she.js ../she-wasm/
 
 demo:
-	$(MAKE) docs/demo/mclshe.js
+	$(MAKE) docs/demo/she_c.js
+
+she-wasm:
+	$(MAKE) ../she-wasm/she_c.js
 
 clean_demo:
-	$(RM) $(EXPORTED_SHE_JS) $(SHE_TXT) docs/demo/mclshe.js docs/demo/mclshe.wasm
+	$(RM) $(EXPORTED_SHE_JS) $(SHE_TXT) docs/demo/she_c.js docs/demo/she_c.wasm
 
 clean:
 	$(MAKE) clean_demo

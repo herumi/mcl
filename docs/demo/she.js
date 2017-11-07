@@ -1,6 +1,6 @@
 (function(generator) {
   if (typeof exports === 'object') {
-    exports.mod = require('./she.js')
+    exports.mod = require('./she_c.js')
     generator(exports, true)
   } else {
     let exports = {}
@@ -41,7 +41,7 @@
     g_tryNum = tryNum
     if (isNodeJs) {
     } else {
-      fetch('mclshe.wasm')
+      fetch('she_c.wasm')
         .then(response => response.arrayBuffer())
         .then(buffer => new Uint8Array(buffer))
         .then(binary => { Module(mod) })
@@ -60,12 +60,14 @@
       console.log('finished ' + r)
       if (g_callback) g_callback()
     }
+    const EXPORTED_JSON = 'exported-she.json'
     if (isNodeJs) {
       const fs = require('fs')
-      const jsonStr = fs.readFileSync('./exported-she.json')
+      const path = require('path')
+      const jsonStr = fs.readFileSync(path.resolve(__dirname, EXPORTED_JSON))
       f(JSON.parse(jsonStr))
     } else {
-      fetch('exported-she.json')
+      fetch(EXPORTED_JSON)
         .then(response => response.json())
         .then(exportedFuncs => f(exportedFuncs))
     }
