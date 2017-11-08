@@ -206,24 +206,24 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
-EXPORTED_SHE_JS=docs/demo/exported-she.json
-SHE_TXT=ffi/js/she.txt
-SHE_RE_TXT=ffi/js/she-re.txt
-EXPORT_OPT=-re $(SHE_RE_TXT)
-$(EXPORTED_SHE_JS): include/mcl/she.h include/mcl/bn.h $(SHE_RE_TXT)
-	python ffi/js/export-functions.py $(EXPORT_OPT) -json $< > docs/demo/exported-she.json
-	python ffi/js/export-functions.py $(EXPORT_OPT) $< > $(SHE_TXT)
+EXPORTED_JSON=docs/demo/exported-she.json
+EXPORTED_TXT=ffi/js/exported-she.txt
+RE_TXT=ffi/js/she-re.txt
+EXPORT_OPT=-re $(RE_TXT)
+$(EXPORTED_JSON): include/mcl/she.h
+	python ffi/js/export-functions.py $(EXPORT_OPT) -json $^ > $(EXPORTED_JSON)
 
-EXPORTED_SHE=$(shell cat $(SHE_TXT))
+$(EXPORTED_TXT): include/mcl/she.h
+	python ffi/js/export-functions.py $(EXPORT_OPT) $^ > $(EXPORTED_TXT)
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
-EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s "EXPORTED_FUNCTIONS=[$(EXPORTED_SHE)]" --pre-js ffi/js/pre.js
-SHE_C_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_SHE_JS) Makefile ffi/js/pre.js
-docs/demo/she_c.js: $(SHE_C_DEP)
+EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s "EXPORTED_FUNCTIONS=[$(shell cat $(EXPORTED_TXT))]" --pre-js ffi/js/pre.js
+JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_JSON) Makefile ffi/js/pre.js $(EXPORTED_TXT)
+docs/demo/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 
-../she-wasm/she_c.js: $(SHE_C_DEP)
+../she-wasm/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT)
 	cp docs/demo/she.js ../she-wasm/
 
@@ -234,7 +234,7 @@ she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
 
 clean_demo:
-	$(RM) $(EXPORTED_SHE_JS) $(SHE_TXT) docs/demo/she_c.js docs/demo/she_c.wasm
+	$(RM) $(EXPORTED_JSON) $(EXPORTED_TXT) docs/demo/she_c.js docs/demo/she_c.wasm
 
 clean:
 	$(MAKE) clean_demo
