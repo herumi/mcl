@@ -3,56 +3,18 @@ function setValue(name, val) { document.getElementsByName(name)[0].value = val }
 function getText(name) { return document.getElementsByName(name)[0].innerText }
 function setText(name, val) { document.getElementsByName(name)[0].innerText = val }
 
-function Uint8ArrayToHexString(a) {
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += ('0' + a[i].toString(16)).slice(-2)
-	}
-	return s
-}
+let sec = null
+let pub = null
 
-function HexStringToUint8Array(s) {
-	let a = new Uint8Array(s.length / 2)
-	for (let i = 0; i < s.length / 2; i++) {
-		a[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
-	}
-	return a
-}
-
-function bin2hex(s) {
-	var o = ''
-	for (var i = 0; i < s.length; i++) {
-		n = s.charCodeAt(i).toString(16)
-		o += (n.length < 2 ? '0' + n : n) + ' '
-	}
-	return o
-}
-
-function strip(s) {
-	s = s.trim()
-	var begin = 0
-	var end = s.length
-	if (end == 0) {
-		return s
-	}
-	if (s[0] == '"') {
-		begin++
-	}
-	if (begin < end && s[end - 1] == '"') {
-		end--
-	}
-	return s.substr(begin, end - begin)
-}
-
-
-she.init(function() {
-	setText('status', 'ok')
-	sec = new she.SecretKey()
-	sec.setByCSPRNG()
-	setText('sec', sec.toHexStr())
-	pub = sec.getPublicKey()
-	setText('pub', pub.toHexStr())
-})
+she.init()
+  .then(() => {
+    setText('status', 'ok')
+    sec = new she.SecretKey()
+    sec.setByCSPRNG()
+    sec.dump('sec=')
+    pub = sec.getPublicKey()
+    pub.dump('pub=')
+  })
 
 function append() {
 	let v = getValue('append')

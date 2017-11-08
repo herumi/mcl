@@ -26,51 +26,48 @@
   const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
   const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
 
-  let g_callback = null
-  let g_range = 0
-  let g_tryNum = 0
-
   let capi = {}
   exports.capi = capi
   let mod = exports.mod
 
-  exports.init = function(callback = null, range = 1024, tryNum = 1024) {
+  /*
+    init she
+    @param range [in] table size of DLP ; require 8 * table size
+    @param tryNum [in] how many search ; O(tryNum) time
+    can decrypt (range * tryNum) range value
+  */
+  exports.init = (range = 1024, tryNum = 1024) => {
     console.log('init')
-    g_callback = callback
-    g_range = range
-    g_tryNum = tryNum
-    if (isNodeJs) {
-    } else {
+    if (!isNodeJs) {
       fetch('she_c.wasm')
         .then(response => response.arrayBuffer())
         .then(buffer => new Uint8Array(buffer))
         .then(binary => { Module(mod) })
     }
-  }
-
-  mod.onRuntimeInitialized = function () {
-    const f = function(exportedFuncs) {
-      exportedFuncs.forEach(func => {
-        capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
-      })
-      define_extra_functions(mod)
-      capi.sheInit()
-      console.log('initializing sheSetRangeForDLP')
-      const r = capi.sheSetRangeForDLP(g_range, g_tryNum)
-      console.log('finished ' + r)
-      if (g_callback) g_callback()
-    }
-    const EXPORTED_JSON = 'exported-she.json'
-    if (isNodeJs) {
-      const fs = require('fs')
-      const path = require('path')
-      const jsonStr = fs.readFileSync(path.resolve(__dirname, EXPORTED_JSON))
-      f(JSON.parse(jsonStr))
-    } else {
-      fetch(EXPORTED_JSON)
-        .then(response => response.json())
-        .then(exportedFuncs => f(exportedFuncs))
-    }
+    return new Promise((resolve) => {
+      mod.onRuntimeInitialized = () => {
+        const f = (exportedFuncs) => {
+          exportedFuncs.forEach(func => {
+            capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
+          })
+          define_extra_functions(mod)
+          capi.sheInit()
+          console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
+          const r = capi.sheSetRangeForDLP(range, tryNum)
+          console.log('finished ' + r)
+          resolve()
+        }
+        if (isNodeJs) {
+          const fs = require('fs')
+          const jsonStr = fs.readFileSync('./exported-she.json')
+          f(JSON.parse(jsonStr))
+        } else {
+          fetch('exported-she.json')
+            .then(response => response.json())
+            .then(exportedFuncs => f(exportedFuncs))
+        }
+      }
+    })
   }
 
   const ptrToStr = function(pos, n) {

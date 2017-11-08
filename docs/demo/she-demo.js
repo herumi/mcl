@@ -3,11 +3,10 @@ function setValue(name, val) { document.getElementsByName(name)[0].value = val }
 function getText(name) { return document.getElementsByName(name)[0].innerText }
 function setText(name, val) { document.getElementsByName(name)[0].innerText = val }
 
-(function() {
-	she.init(function() {
-		setText('status', 'ok')
-	})
-})()
+she.init()
+  .then(() => {
+    setText('status', 'ok')
+  })
 
 function bench(label, count, func) {
 	let start = Date.now()
