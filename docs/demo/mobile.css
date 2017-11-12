@@ -1,0 +1,66 @@
+h1 {
+	font-size:xx-large;
+	text-align: center;
+}
+
+h2 {
+	font-size:xx-large;
+}
+
+h3 {
+	font-size:xx-large;
+	display: inline-block;
+	background-color: #eee;
+}
+
+li {
+	list-style-type : none;
+	padding:5px 10px;
+	border-top:1px solid black;
+	border-left:1px solid black;
+}
+
+input {
+	font-size: xx-large;
+}
+
+span {
+	font-size:xx-large;
+	max-width: 400px;
+	display: inline-block;
+	overflow: hidden;
+}
+
+td {
+	text-align: left;
+	max-width: 200px;
+	overflow: hidden;
+}
+
+#header {
+	background-color: #ddf;
+}
+#client_header {
+	background-color: #ddf;
+}
+
+table {
+	font-size: xx-large;
+	width: 800px;
+}
+
+button {
+	font-size: xx-large;
+	margin: 8px;
+	padding: 8px;
+	border: 1px;
+	background-color: #bee;
+}
+
+div.ret {
+	font-size: xx-large;
+	margin: 5px;
+	padding: 5px;
+	border: 1px solid;
+	text-align: center;
+}
