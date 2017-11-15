@@ -16,10 +16,37 @@ she.init(256)
     setText('pub', pub.toHexStr())
   })
 
+function bench(label, count, func) {
+	const start = Date.now()
+	for (let i = 0; i < count; i++) {
+		func()
+	}
+	const end = Date.now()
+	const t = (end - start) / count
+	setText(label, t)
+}
+
+function benchAll() {
+	const C = 50
+	bench('EncG1T', C, () => { pub.encG1(100) })
+	bench('EncG2T', C, () => { pub.encG2(100) })
+	const c11 = pub.encG1(1)
+	const c12 = pub.encG1(2)
+	bench('AddG1T', C, () => { she.add(c11, c12) })
+	const c21 = pub.encG2(1)
+	const c22 = pub.encG2(2)
+	bench('AddG2T', C, () => { she.add(c21, c22) })
+	const ct1 = pub.encGT(123)
+	const ct2 = pub.encGT(2)
+	bench('AddGTT', C, () => { she.add(ct1, ct2) })
+	bench('MulT', 10, () => { she.mul(c11, c21) })
+	bench('DecGTT', 10, () => { sec.dec(ct1) })
+}
+
 function appendXY(x, y) {
 	console.log('x = ' + x + ', y = ' + y)
-	let c1 = pub.encG1(x)
-	let c2 = pub.encG2(y)
+	const c1 = pub.encG1(x)
+	const c2 = pub.encG2(y)
 	$('#client_table').append(
 		$('<tr>').append(
 			$('<td>').text(x)
@@ -34,10 +61,10 @@ function appendXY(x, y) {
 }
 
 function append() {
-	let v = getValue('append')
-	let vs = v.split(',')
-	let x = parseInt(vs[0])
-	let y = parseInt(vs[1])
+	const v = getValue('append')
+	const vs = v.split(',')
+	const x = parseInt(vs[0])
+	const y = parseInt(vs[1])
 	appendXY(x, y)
 }
 
@@ -50,21 +77,21 @@ function appendRand() {
 
 
 function send() {
-	let ct1 = []
+	const ct1 = []
 	$('.encG1x').each(function() {
 		ct1.push($(this).text())
 	})
-	let ct2 = []
+	const ct2 = []
 	$('.encG2y').each(function() {
 		ct2.push($(this).text())
 	})
-	let obj = $('#server_table')
+	const obj = $('#server_table')
 	obj.html('')
 	{
-		let header = [
+		const header = [
 			'Enc(x)', 'Enc(y)', 'Enc(x * y)'
 		]
-		let t = $('<tr>').attr('id', 'header')
+		const t = $('<tr>').attr('id', 'header')
 		for (let i = 0; i < header.length; i++) {
 			t.append(
 				$('<th>').append(header[i])
@@ -73,7 +100,7 @@ function send() {
 		obj.append(t)
 	}
 	for (let i = 0; i < ct1.length; i++) {
-		let t = $('<tr>')
+		const t = $('<tr>')
 		t.append(
 			$('<td class="encG1xS">').append(ct1[i])
 		).append(
@@ -87,10 +114,10 @@ function send() {
 
 function mul() {
 	$('.encG1xS').each(function() {
-		let o = $(this)
-		let c1 = she.getCipherTextG1FromHexStr(o.text())
-		let c2 = she.getCipherTextG2FromHexStr(o.next().text())
-		let ct = she.mul(c1, c2)
+		const o = $(this)
+		const c1 = she.getCipherTextG1FromHexStr(o.text())
+		const c2 = she.getCipherTextG2FromHexStr(o.next().text())
+		const ct = she.mul(c1, c2)
 		o.next().next().text(ct.toHexStr())
 	})
 }
@@ -98,8 +125,8 @@ function mul() {
 function sum() {
 	let csum = pub.encGT(0)
 	$('.encGTxyS').each(function() {
-		let s = $(this).text()
-		let ct = she.getCipherTextGTFromHexStr(s)
+		const s = $(this).text()
+		const ct = she.getCipherTextGTFromHexStr(s)
 		csum = she.add(csum, ct)
 	})
 	setText('encSumS', csum.toHexStr())
@@ -115,8 +142,8 @@ function recv() {
 }
 
 function dec() {
-	let s = getText('encSumC')
-	let ct = she.getCipherTextGTFromHexStr(s)
-	let v = sec.dec(ct)
+	const s = getText('encSumC')
+	const ct = she.getCipherTextGTFromHexStr(s)
+	const v = sec.dec(ct)
 	setText('ret', v)
 }

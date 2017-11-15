@@ -47,5 +47,20 @@
 <button type="button" onclick="dec()">復号する</button><br>
 <h3>集計結果：</h3><span name="ret">0</span>
 
+<hr>
+<h2>ベンチマーク</h2>
+<button type="button" onclick="benchAll()">benchAll</button><br>
+
+<table border=1 id="benchAll" width="100%" summary="benchAll">
+<tr><th>op<th>msec
+<tr><th>EncG1<th><span name="EncG1T">0</span>
+<tr><th>EncG2<th><span name="EncG2T">0</span>
+<tr><th>AddG1<th><span name="AddG1T">0</span>
+<tr><th>AddG2<th><span name="AddG2T">0</span>
+<tr><th>AddGT<th><span name="AddGTT">0</span>
+<tr><th>Mul<th><span name="MulT">0</span>
+<tr><th>DecGT<th><span name="DecGTT">0</span>
+</table>
+
 </body>
 </html>
