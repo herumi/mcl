@@ -209,16 +209,20 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
-EXPORTED_JSON=docs/demo/exported-she.json
-RE_TXT=ffi/js/she-re.txt
-EXPORT_OPT=-re $(RE_TXT)
-$(EXPORTED_JSON): include/mcl/she.h
-	python ffi/js/export-functions.py $(EXPORT_OPT) -json $^ > $(EXPORTED_JSON)
+SHE_JSON=docs/demo/exported-she.json
+SHE_RE_TXT=ffi/js/she-re.txt
+SHE_EXPORT_OPT=-re $(SHE_RE_TXT)
+$(SHE_JSON): include/mcl/she.h
+	python ffi/js/export-functions.py $(SHE_EXPORT_OPT) -json $^ > $(SHE_JSON)
+
+MCL_JSON=docs/demo/exported-mcl.json
+$(MCL_JSON): include/mcl/bn.h
+	python ffi/js/export-functions.py -json $^ > $(MCL_JSON)
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
-EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 --pre-js ffi/js/pre.js
-JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_JSON) Makefile ffi/js/pre.js
+EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1
+JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(SHE_JSON) Makefile ffi/js/pre.js
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   JS_DEP+=src/base64m.ll
@@ -227,8 +231,14 @@ docs/demo/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 
 ../she-wasm/she_c.js: $(JS_DEP)
-	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT)
+	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre.js
 	cp docs/demo/she.js ../she-wasm/
+	cp $(SHE_JSON) ../she-wasm/
+
+../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp $(MCL_JSON)
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre-mcl.js
+	cp docs/demo/mcl.js ../mcl-wasm/
+	cp $(MCL_JSON) ../mcl-wasm/
 
 demo:
 	$(MAKE) docs/demo/she_c.js
@@ -236,8 +246,11 @@ demo:
 she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
 
+mcl-wasm:
+	$(MAKE) ../mcl-wasm/mcl_c.js
+
 clean_demo:
-	$(RM) $(EXPORTED_JSON) docs/demo/she_c.js docs/demo/she_c.wasm
+	$(RM) $(SHE_JSON) docs/demo/she_c.js docs/demo/she_c.wasm
 
 clean:
 	$(MAKE) clean_demo
