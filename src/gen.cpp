@@ -16,9 +16,11 @@ struct Code : public mcl::Generator {
 	uint32_t bit;
 	uint32_t N;
 	const StrSet *privateFuncList;
+	bool wasm;
 	std::string suf;
 	std::string unitStr;
 	Function mulUU;
+	Function mul32x32; // for WASM
 	Function extractHigh;
 	Function mulPos;
 	Function makeNIST_P192;
@@ -35,7 +37,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fpDbl_sqrPreM;
 	FunctionMap mcl_fp_montM;
 	FunctionMap mcl_fp_montRedM;
-	Code() : unit(0), unit2(0), bit(0), N(0), privateFuncList(0) { }
+	Code() : unit(0), unit2(0), bit(0), N(0), privateFuncList(0), wasm(false) { }
 	void verifyAndSetPrivate(Function& f)
 	{
 		if (privateFuncList && privateFuncList->find(f.name) != privateFuncList->end()) {
@@ -80,8 +82,49 @@ struct Code : public mcl::Generator {
 		}
 		return v;
 	}
+	void gen_mul32x32()
+	{
+		const int u = 32;
+		resetGlobalIdx();
+		Operand z(Int, u * 2);
+		Operand x(Int, u);
+		Operand y(Int, u);
+		mul32x32 = Function("mul32x32L", z, x, y);
+		mul32x32.setPrivate();
+		verifyAndSetPrivate(mul32x32);
+		beginFunc(mul32x32);
+
+		x = zext(x, u * 2);
+		y = zext(y, u * 2);
+		z = mul(x, y);
+		ret(z);
+		endFunc();
+	}
+	void gen_mul64x64(Operand& z, Operand& x, Operand& y)
+	{
+		Operand a = trunc(lshr(x, 32), 32);
+		Operand b = trunc(x, 32);
+		Operand c = trunc(lshr(y, 32), 32);
+		Operand d = trunc(y, 32);
+		Operand ad = call(mul32x32, a, d);
+		Operand bd = call(mul32x32, b, d);
+		bd = zext(bd, 96);
+		ad = shl(zext(ad, 96), 32);
+		ad = add(ad, bd);
+		Operand ac = call(mul32x32, a, c);
+		Operand bc = call(mul32x32, b, c);
+		bc = zext(bc, 96);
+		ac = shl(zext(ac, 96), 32);
+		ac = add(ac, bc);
+		ad = zext(ad, 128);
+		ac = shl(zext(ac, 128), 32);
+		z = add(ac, ad);
+	}
 	void gen_mulUU()
 	{
+		if (wasm) {
+			gen_mul32x32();
+		}
 		resetGlobalIdx();
 		Operand z(Int, unit2);
 		Operand x(Int, unit);
@@ -93,9 +136,13 @@ struct Code : public mcl::Generator {
 		verifyAndSetPrivate(mulUU);
 		beginFunc(mulUU);
 
-		x = zext(x, unit2);
-		y = zext(y, unit2);
-		z = mul(x, y);
+		if (wasm) {
+			gen_mul64x64(z, x, y);
+		} else {
+			x = zext(x, unit2);
+			y = zext(y, unit2);
+			z = mul(x, y);
+		}
 		ret(z);
 		endFunc();
 	}
@@ -890,6 +937,9 @@ struct Code : public mcl::Generator {
 	{
 		this->suf = suf;
 		this->privateFuncList = &privateFuncList;
+#ifdef FOR_WASM
+		gen_mulUU();
+#else
 		gen_once();
 		uint32_t end = ((maxBitSize + unit - 1) / unit);
 		for (uint32_t n = 1; n <= end; n++) {
@@ -904,6 +954,7 @@ struct Code : public mcl::Generator {
 				gen_all();
 			}
 		}
+#endif
 	}
 };
 
@@ -912,11 +963,13 @@ int main(int argc, char *argv[])
 {
 	uint32_t unit;
 	bool oldLLVM;
+	bool wasm;
 	std::string suf;
 	std::string privateFile;
 	cybozu::Option opt;
 	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", ": unit");
 	opt.appendBoolOpt(&oldLLVM, "old", ": old LLVM(before 3.8)");
+	opt.appendBoolOpt(&wasm, "wasm", ": for wasm");
 	opt.appendOpt(&suf, "", "s", ": suffix of function name");
 	opt.appendOpt(&privateFile, "", "f", ": private function list file");
 	opt.appendHelp("h");
@@ -936,6 +989,7 @@ int main(int argc, char *argv[])
 	if (oldLLVM) {
 		c.setOldLLVM();
 	}
+	c.wasm = wasm;
 	c.setUnit(unit);
 	uint32_t maxBitSize = MCL_MAX_BIT_SIZE;
 	c.gen(privateFuncList, maxBitSize, suf);

@@ -140,6 +140,9 @@ $(OBJ_DIR)/$(CPU).bmi2.o: $(ASM_SRC_PATH_NAME).bmi2.s
 src/base$(BIT).bmi2.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) -s bmi2 > $@
 
+src/base64m.ll: $(GEN_EXE)
+	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
+
 $(FUNC_LIST): $(LOW_ASM_SRC)
 ifeq ($(USE_LOW_ASM),1)
 	$(shell awk '/global/ { print $$2}' $(LOW_ASM_SRC) > $(FUNC_LIST))
@@ -220,6 +223,10 @@ EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s "EXPORTED_FUNCTIONS=[$(shell cat $(EXPORTED_TXT))]" --pre-js ffi/js/pre.js
 JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_JSON) Makefile ffi/js/pre.js $(EXPORTED_TXT)
+ifeq ($(MCL_USE_LLVM),2)
+  EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
+  JS_DEP+=src/base64m.ll
+endif
 docs/demo/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 
