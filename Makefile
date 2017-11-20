@@ -210,19 +210,15 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
 EXPORTED_JSON=docs/demo/exported-she.json
-EXPORTED_TXT=ffi/js/exported-she.txt
 RE_TXT=ffi/js/she-re.txt
 EXPORT_OPT=-re $(RE_TXT)
 $(EXPORTED_JSON): include/mcl/she.h
 	python ffi/js/export-functions.py $(EXPORT_OPT) -json $^ > $(EXPORTED_JSON)
 
-$(EXPORTED_TXT): include/mcl/she.h
-	python ffi/js/export-functions.py $(EXPORT_OPT) $^ > $(EXPORTED_TXT)
-
 EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
-EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s "EXPORTED_FUNCTIONS=[$(shell cat $(EXPORTED_TXT))]" --pre-js ffi/js/pre.js
-JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_JSON) Makefile ffi/js/pre.js $(EXPORTED_TXT)
+EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 --pre-js ffi/js/pre.js
+JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp $(EXPORTED_JSON) Makefile ffi/js/pre.js
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   JS_DEP+=src/base64m.ll
@@ -241,7 +237,7 @@ she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
 
 clean_demo:
-	$(RM) $(EXPORTED_JSON) $(EXPORTED_TXT) docs/demo/she_c.js docs/demo/she_c.wasm
+	$(RM) $(EXPORTED_JSON) docs/demo/she_c.js docs/demo/she_c.wasm
 
 clean:
 	$(MAKE) clean_demo
