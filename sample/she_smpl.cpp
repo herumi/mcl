@@ -85,8 +85,8 @@ void usePrimitiveCipherText()
 	pub.enc(d2, b2);
 	c1.add(c2); // CipherTextG1 is additive HE
 	d1.add(d2); // CipherTextG2 is additive HE
-	CipherTextM cm; // size of CipherTextM = N * 12 * 4
-	CipherTextM::mul(cm, c1, d1); // cm = c1 * d1
+	CipherTextGT cm; // size of CipherTextGT = N * 12 * 4
+	CipherTextGT::mul(cm, c1, d1); // cm = c1 * d1
 	cm.add(cm); // 2cm
 	int m = sec.dec(cm);
 	int ok = (a1 + a2) * (b1 + b2) * 2;
@@ -109,7 +109,7 @@ void usePrimitiveCipherText()
 
 	s = cm.getStr(mcl::IoFixedSizeByteSeq); // serialize
 	printf("cm data size %d byte\n", (int)s.size());
-	CipherTextM cm2;
+	CipherTextGT cm2;
 	cm2.setStr(s, mcl::IoFixedSizeByteSeq);
 	printf("deserialize %s\n", cm == cm2 ? "ok" : "ng");
 }

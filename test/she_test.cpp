@@ -96,12 +96,12 @@ CYBOZU_TEST_AUTO(enc_dec)
 	ppub.init(pub);
 	CipherTextG1 c1;
 	CipherTextG1 c2;
-	CipherTextM cm1, cm2;
+	CipherTextGT ct1, ct2;
 	for (int i = -5; i < 5; i++) {
-		pub.enc(cm1, i);
-		CYBOZU_TEST_EQUAL(sec.dec(cm1), i);
-		ppub.enc(cm2, i);
-		CYBOZU_TEST_EQUAL(sec.dec(cm2), i);
+		pub.enc(ct1, i);
+		CYBOZU_TEST_EQUAL(sec.dec(ct1), i);
+		ppub.enc(ct2, i);
+		CYBOZU_TEST_EQUAL(sec.dec(ct2), i);
 		ppub.enc(c1, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c1), i);
 		ppub.enc(c2, i);
@@ -163,7 +163,7 @@ CYBOZU_TEST_AUTO(add_mul_add_sub)
 		CYBOZU_TEST_EQUAL(sec.dec(c[i]), m[i]);
 		CYBOZU_TEST_ASSERT(!c[i].isMultiplied());
 		CipherText mc;
-		pub.convertToCipherTextM(mc, c[i]);
+		pub.convertToCipherTextGT(mc, c[i]);
 		CYBOZU_TEST_ASSERT(mc.isMultiplied());
 		CYBOZU_TEST_EQUAL(sec.dec(mc), m[i]);
 	}
@@ -252,9 +252,9 @@ CYBOZU_TEST_AUTO(io)
 		pub.enc(ca, -4);
 		m = sec.dec(testIo(ca));
 		CYBOZU_TEST_EQUAL(m, -4);
-		CipherTextM cm;
-		CipherTextM::mul(cm, g1, g2);
-		m = sec.dec(testIo(cm));
+		CipherTextGT ct;
+		CipherTextGT::mul(ct, g1, g2);
+		m = sec.dec(testIo(ct));
 		CYBOZU_TEST_EQUAL(m, 15);
 	}
 }
@@ -387,9 +387,9 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("finalExp", C, BN::finalExp, e, e);
 	CYBOZU_BENCH_C("precomML", C, BN::precomputedMillerLoop, e, P, SHE::Qcoeff_);
 
-	CipherTextG1 ca1;
-	CipherTextG2 ca2;
-	CipherTextM cm;
+	CipherTextG1 c1;
+	CipherTextG2 c2;
+	CipherTextGT ct;
 
 	int m = int(hashSize - 1);
 	printf("small m = %d\n", m);
@@ -401,30 +401,30 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("GTwindow", C, SHE::ePQhashTbl_.mulByWindowMethod, e, m);
 //	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), m);
 
-	CYBOZU_BENCH_C("encG1   ", C, pub.enc, ca1, m);
-	CYBOZU_BENCH_C("encG2   ", C, pub.enc, ca2, m);
-	CYBOZU_BENCH_C("encGT   ", C, pub.enc, cm, m);
-	CYBOZU_BENCH_C("encG1pre", C, ppub.enc, ca1, m);
-	CYBOZU_BENCH_C("encG2pre", C, ppub.enc, ca2, m);
-	CYBOZU_BENCH_C("encGTpre", C, ppub.enc, cm, m);
+	CYBOZU_BENCH_C("encG1   ", C, pub.enc, c1, m);
+	CYBOZU_BENCH_C("encG2   ", C, pub.enc, c2, m);
+	CYBOZU_BENCH_C("encGT   ", C, pub.enc, ct, m);
+	CYBOZU_BENCH_C("encG1pre", C, ppub.enc, c1, m);
+	CYBOZU_BENCH_C("encG2pre", C, ppub.enc, c2, m);
+	CYBOZU_BENCH_C("encGTpre", C, ppub.enc, ct, m);
 
-	CYBOZU_BENCH_C("decG1   ", C, sec.dec, ca1);
-	CYBOZU_BENCH_C("decG2   ", C, sec.dec, ca2);
-	CYBOZU_BENCH_C("degGT   ", C, sec.dec, cm);
+	CYBOZU_BENCH_C("decG1   ", C, sec.dec, c1);
+	CYBOZU_BENCH_C("decG2   ", C, sec.dec, c2);
+	CYBOZU_BENCH_C("degGT   ", C, sec.dec, ct);
 
-	CYBOZU_BENCH_C("mul     ", C, CipherTextM::mul, cm, ca1, ca2);
+	CYBOZU_BENCH_C("mul     ", C, CipherTextGT::mul, ct, c1, c2);
 
-	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, ca1, ca1, ca1);
-	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, ca2, ca2, ca2);
-	CYBOZU_BENCH_C("addGT   ", C, CipherTextM::add, cm, cm, cm);
-	CYBOZU_BENCH_C("reRandG1", C, pub.reRand, ca1);
-	CYBOZU_BENCH_C("reRandG2", C, pub.reRand, ca2);
-	CYBOZU_BENCH_C("reRandGT", C, pub.reRand, cm);
-	CYBOZU_BENCH_C("reRandG1pre", C, ppub.reRand, ca1);
-	CYBOZU_BENCH_C("reRandG2pre", C, ppub.reRand, ca2);
-	CYBOZU_BENCH_C("reRandGTpre", C, ppub.reRand, cm);
-	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, ca1, ca1, m);
-	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, ca2, ca2, m);
-	CYBOZU_BENCH_C("mulGT   ", C, CipherTextM::mul, cm, cm, m);
+	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, c1, c1, c1);
+	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, c2, c2, c2);
+	CYBOZU_BENCH_C("addGT   ", C, CipherTextGT::add, ct, ct, ct);
+	CYBOZU_BENCH_C("reRandG1", C, pub.reRand, c1);
+	CYBOZU_BENCH_C("reRandG2", C, pub.reRand, c2);
+	CYBOZU_BENCH_C("reRandGT", C, pub.reRand, ct);
+	CYBOZU_BENCH_C("reRandG1pre", C, ppub.reRand, c1);
+	CYBOZU_BENCH_C("reRandG2pre", C, ppub.reRand, c2);
+	CYBOZU_BENCH_C("reRandGTpre", C, ppub.reRand, ct);
+	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, c1, c1, m);
+	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, c2, c2, m);
+	CYBOZU_BENCH_C("mulGT   ", C, CipherTextGT::mul, ct, ct, m);
 }
 

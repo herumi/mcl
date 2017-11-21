@@ -402,7 +402,7 @@ template<class CT>
 int convertTo(sheCipherTextGT *y, const shePublicKey *pub, const CT *x)
 	try
 {
-	cast(pub)->convertToCipherTextM(*cast(y), *cast(x));
+	cast(pub)->convertToCipherTextGT(*cast(y), *cast(x));
 	return 0;
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());

@@ -333,8 +333,8 @@ struct SHET {
 	class PrecomputedPublicKey;
 	// additive HE
 	class CipherTextA; // = CipherTextG1 + CipherTextG2
-	class CipherTextM; // multiplicative HE
-	class CipherText; // CipherTextA + CipherTextM
+	class CipherTextGT; // multiplicative HE
+	class CipherText; // CipherTextA + CipherTextGT
 
 	static G1 P_;
 	static G2 Q_;
@@ -353,7 +353,7 @@ private:
 		friend class PublicKey;
 		friend class PrecomputedPublicKey;
 		friend class CipherTextA;
-		friend class CipherTextM;
+		friend class CipherTextGT;
 	public:
 		void clear()
 		{
@@ -562,7 +562,7 @@ public:
 		{
 			return dec(c.c1_);
 		}
-		int64_t dec(const CipherTextM& c) const
+		int64_t dec(const CipherTextGT& c) const
 		{
 			/*
 				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
@@ -673,7 +673,7 @@ public:
 			enc(c.c2_, m, rg);
 		}
 		template<class RG>
-		void enc(CipherTextM& c, int64_t m, RG& rg) const
+		void enc(CipherTextGT& c, int64_t m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
@@ -724,12 +724,12 @@ public:
 		void enc(CipherTextG1& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherTextG2& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherTextA& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextM& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextGT& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherText& c, int64_t m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
 		/*
-			convert from CipherTextG1 to CipherTextM
+			convert from CipherTextG1 to CipherTextGT
 		*/
-		void convertToCipherTextM(CipherTextM& cm, const CipherTextG1& c1) const
+		void convertToCipherTextGT(CipherTextGT& cm, const CipherTextG1& c1) const
 		{
 			/*
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
@@ -745,9 +745,9 @@ public:
 			cm.g_[3] = 1;
 		}
 		/*
-			convert from CipherTextG2 to CipherTextM
+			convert from CipherTextG2 to CipherTextGT
 		*/
-		void convertToCipherTextM(CipherTextM& cm, const CipherTextG2& c2) const
+		void convertToCipherTextGT(CipherTextGT& cm, const CipherTextG2& c2) const
 		{
 			/*
 				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
@@ -756,15 +756,15 @@ public:
 			G1 zero; zero.clear();
 			tensorProduct(cm.g_, P_, zero, c2.S_, c2.T_);
 		}
-		void convertToCipherTextM(CipherTextM& cm, const CipherTextA& ca) const
+		void convertToCipherTextGT(CipherTextGT& cm, const CipherTextA& ca) const
 		{
-			convertToCipherTextM(cm, ca.c1_);
+			convertToCipherTextGT(cm, ca.c1_);
 		}
-		void convertToCipherTextM(CipherText& cm, const CipherText& ca) const
+		void convertToCipherTextGT(CipherText& cm, const CipherText& ca) const
 		{
 			if (ca.isMultiplied()) throw cybozu::Exception("she:PublicKey:convertCipherText:already isMultiplied");
 			cm.isMultiplied_ = true;
-			convertToCipherTextM(cm.m_, ca.a_);
+			convertToCipherTextGT(cm.m_, ca.a_);
 		}
 		/*
 			c += Enc(0)
@@ -791,12 +791,12 @@ public:
 			CipherTextA::add(c, c, c0);
 		}
 		template<class RG>
-		void reRand(CipherTextM& c, RG& rg) const
+		void reRand(CipherTextGT& c, RG& rg) const
 		{
 #if 1 // for circuit security : 3.58Mclk -> 5.4Mclk
-			CipherTextM c0;
+			CipherTextGT c0;
 			enc(c0, 0, rg);
-			CipherTextM::add(c, c, c0);
+			CipherTextGT::add(c, c, c0);
 #else
 			/*
 				add Enc(0) * Enc(0)
@@ -828,7 +828,7 @@ public:
 		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextM& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
 
 		std::istream& readStream(std::istream& is, int ioMode)
@@ -925,7 +925,7 @@ public:
 			enc1(c.S_, c.T_, m, rg, QhashTbl_.getWM(), yQwm_);
 		}
 		template<class RG>
-		void enc(CipherTextM& c, int64_t m, RG& rg) const
+		void enc(CipherTextGT& c, int64_t m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = (e^m e^(xya), (e^x)^b, (e^y)^c, e^(b + c - a))
@@ -952,13 +952,13 @@ public:
 		}
 		template<class RG> void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
 		template<class RG> void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG> void reRand(CipherTextM& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG> void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
 		void enc(CipherTextG1& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void enc(CipherTextG2& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextM& c, int64_t m) const { return enc(c, m, local::g_rg); }
+		void enc(CipherTextGT& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextM& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
 	};
 
 	class CipherTextA {
@@ -966,7 +966,7 @@ public:
 		CipherTextG2 c2_;
 		friend class SecretKey;
 		friend class PublicKey;
-		friend class CipherTextM;
+		friend class CipherTextGT;
 	public:
 		void clear()
 		{
@@ -1034,7 +1034,7 @@ public:
 		bool operator!=(const CipherTextA& rhs) const { return !operator==(rhs); }
 	};
 
-	class CipherTextM {
+	class CipherTextGT {
 		GT g_[4];
 		friend class SecretKey;
 		friend class PublicKey;
@@ -1047,7 +1047,7 @@ public:
 				g_[i].setOne();
 			}
 		}
-		static void add(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+		static void add(CipherTextGT& z, const CipherTextGT& x, const CipherTextGT& y)
 		{
 			/*
 				(g[i]) + (g'[i]) = (g[i] * g'[i])
@@ -1056,7 +1056,7 @@ public:
 				GT::mul(z.g_[i], x.g_[i], y.g_[i]);
 			}
 		}
-		static void sub(CipherTextM& z, const CipherTextM& x, const CipherTextM& y)
+		static void sub(CipherTextGT& z, const CipherTextGT& x, const CipherTextGT& y)
 		{
 			/*
 				(g[i]) - (g'[i]) = (g[i] / g'[i])
@@ -1067,25 +1067,25 @@ public:
 				GT::mul(z.g_[i], x.g_[i], t);
 			}
 		}
-		static void mul(CipherTextM& z, const CipherTextG1& x, const CipherTextG2& y)
+		static void mul(CipherTextGT& z, const CipherTextG1& x, const CipherTextG2& y)
 		{
 			/*
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 			*/
 			tensorProduct(z.g_, x.S_, x.T_, y.S_, y.T_);
 		}
-		static void mul(CipherTextM& z, const CipherTextA& x, const CipherTextA& y)
+		static void mul(CipherTextGT& z, const CipherTextA& x, const CipherTextA& y)
 		{
 			mul(z, x.c1_, y.c2_);
 		}
-		static void mul(CipherTextM& z, const CipherTextM& x, int64_t y)
+		static void mul(CipherTextGT& z, const CipherTextGT& x, int64_t y)
 		{
 			for (int i = 0; i < 4; i++) {
 				GT::pow(z.g_[i], x.g_[i], y);
 			}
 		}
-		void add(const CipherTextM& c) { add(*this, *this, c); }
-		void sub(const CipherTextM& c) { sub(*this, *this, c); }
+		void add(const CipherTextGT& c) { add(*this, *this, c); }
+		void sub(const CipherTextGT& c) { sub(*this, *this, c); }
 		std::istream& readStream(std::istream& is, int ioMode)
 		{
 			for (int i = 0; i < 4; i++) {
@@ -1113,28 +1113,28 @@ public:
 			getStr(str, ioMode);
 			return str;
 		}
-		friend std::istream& operator>>(std::istream& is, CipherTextM& self)
+		friend std::istream& operator>>(std::istream& is, CipherTextGT& self)
 		{
 			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
 		}
-		friend std::ostream& operator<<(std::ostream& os, const CipherTextM& self)
+		friend std::ostream& operator<<(std::ostream& os, const CipherTextGT& self)
 		{
 			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
 		}
-		bool operator==(const CipherTextM& rhs) const
+		bool operator==(const CipherTextGT& rhs) const
 		{
 			for (int i = 0; i < 4; i++) {
 				if (g_[i] != rhs.g_[i]) return false;
 			}
 			return true;
 		}
-		bool operator!=(const CipherTextM& rhs) const { return !operator==(rhs); }
+		bool operator!=(const CipherTextGT& rhs) const { return !operator==(rhs); }
 	};
 
 	class CipherText {
 		bool isMultiplied_;
 		CipherTextA a_;
-		CipherTextM m_;
+		CipherTextGT m_;
 		friend class SecretKey;
 		friend class PublicKey;
 	public:
@@ -1154,7 +1154,7 @@ public:
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
-				CipherTextM::add(z.m_, x.m_, y.m_);
+				CipherTextGT::add(z.m_, x.m_, y.m_);
 				return;
 			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
@@ -1168,7 +1168,7 @@ public:
 		{
 			if (x.isMultiplied() && y.isMultiplied()) {
 				z.isMultiplied_ = true;
-				CipherTextM::sub(z.m_, x.m_, y.m_);
+				CipherTextGT::sub(z.m_, x.m_, y.m_);
 				return;
 			}
 			if (!x.isMultiplied() && !y.isMultiplied()) {
@@ -1184,12 +1184,12 @@ public:
 				throw cybozu::Exception("she:CipherText:mul:mixed CipherText");
 			}
 			z.isMultiplied_ = true;
-			CipherTextM::mul(z.m_, x.a_, y.a_);
+			CipherTextGT::mul(z.m_, x.a_, y.a_);
 		}
 		static void mul(CipherText& z, const CipherText& x, int64_t y)
 		{
 			if (x.isMultiplied()) {
-				CipherTextM::mul(z.m_, x.m_, y);
+				CipherTextGT::mul(z.m_, x.m_, y);
 			} else {
 				CipherTextA::mul(z.a_, x.a_, y);
 			}
@@ -1237,7 +1237,7 @@ public:
 		{
 			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
 		}
-		bool operator==(const CipherTextM& rhs) const
+		bool operator==(const CipherTextGT& rhs) const
 		{
 			if (isMultiplied() != rhs.isMultiplied()) return false;
 			if (isMultiplied()) {
@@ -1245,7 +1245,7 @@ public:
 			}
 			return a_ == rhs.a_;
 		}
-		bool operator!=(const CipherTextM& rhs) const { return !operator==(rhs); }
+		bool operator!=(const CipherTextGT& rhs) const { return !operator==(rhs); }
 	};
 };
 
@@ -1262,9 +1262,9 @@ typedef SHE::PublicKey PublicKey;
 typedef SHE::PrecomputedPublicKey PrecomputedPublicKey;
 typedef SHE::CipherTextG1 CipherTextG1;
 typedef SHE::CipherTextG2 CipherTextG2;
-typedef SHE::CipherTextM CipherTextM;
+typedef SHE::CipherTextGT CipherTextGT;
 typedef SHE::CipherTextA CipherTextA;
-typedef CipherTextM CipherTextGT;
+typedef CipherTextGT CipherTextGM; // old class
 typedef SHE::CipherText CipherText;
 
 } } // mcl::she
