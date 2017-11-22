@@ -225,6 +225,16 @@
     mod.Runtime.stackRestore(stack)
     return r
   }
+  const callIsZero = function(func, sec, c) {
+    let stack = mod.Runtime.stackSave()
+    let secPos = mod.Runtime.stackAlloc(sec.length * 4)
+    let cPos = mod.Runtime.stackAlloc(c.length * 4)
+    copyFromUint32Array(secPos, sec);
+    copyFromUint32Array(cPos, c);
+    let r = func(secPos, cPos)
+    mod.Runtime.stackRestore(stack)
+    return r
+  }
   // reRand(c)
   const callReRand = function(func, c, pub) {
     let stack = mod.Runtime.stackSave()
@@ -321,6 +331,19 @@
           throw('exports.SecretKey.dec:not supported')
         }
         return callDec(dec, this.a_, c.a_)
+      }
+      isZero(c) {
+        let isZero = null
+        if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
+          isZero = mod._sheIsZeroG1
+        } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
+          isZero = mod._sheIsZeroG2
+        } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
+          isZero = mod._sheIsZeroGT
+        } else {
+          throw('exports.SecretKey.isZero:not supported')
+        }
+        return callIsZero(isZero, this.a_, c.a_)
       }
     }
 
