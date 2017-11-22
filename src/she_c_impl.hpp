@@ -275,6 +275,30 @@ int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c)
 }
 
 template<class CT>
+int isZeroT(const sheSecretKey *sec, const CT *c)
+	try
+{
+	return cast(sec)->isZero(*cast(c));
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return 0;
+}
+
+int sheIsZeroG1(const sheSecretKey *sec, const sheCipherTextG1 *c)
+{
+	return isZeroT(sec, c);
+}
+int sheIsZeroG2(const sheSecretKey *sec, const sheCipherTextG2 *c)
+{
+	return isZeroT(sec, c);
+}
+int sheIsZeroGT(const sheSecretKey *sec, const sheCipherTextGT *c)
+{
+	return isZeroT(sec, c);
+}
+
+
+template<class CT>
 int addT(CT& z, const CT& x, const CT& y)
 	try
 {

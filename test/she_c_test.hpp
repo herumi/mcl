@@ -30,15 +30,30 @@ CYBOZU_TEST_AUTO(encDec)
 
 	int64_t m = 123;
 	sheCipherTextG1 c1;
+	sheCipherTextG2 c2;
 	sheCipherTextGT ct;
 	sheEncG1(&c1, &pub, m);
+	sheEncG2(&c2, &pub, m);
 	sheEncGT(&ct, &pub, m);
 
 	int64_t dec;
 	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
 	CYBOZU_TEST_EQUAL(dec, m);
+	dec = 0;
+	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+	dec = 0;
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, m);
+
+	for (int m = -3; m < 3; m++) {
+		sheEncG1(&c1, &pub, m);
+		CYBOZU_TEST_EQUAL(sheIsZeroG1(&sec, &c1), m == 0);
+		sheEncG2(&c2, &pub, m);
+		CYBOZU_TEST_EQUAL(sheIsZeroG2(&sec, &c2), m == 0);
+		sheEncGT(&ct, &pub, m);
+		CYBOZU_TEST_EQUAL(sheIsZeroGT(&sec, &ct), m == 0);
+	}
 }
 
 CYBOZU_TEST_AUTO(addMul)
