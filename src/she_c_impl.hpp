@@ -40,7 +40,7 @@ int sheInit(int curve, int maxUnitSize)
 	try
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
-		printf("err sheInit:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
+		fprintf(stderr, "err sheInit:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
 #ifdef USE_STD_MUTEX
@@ -68,14 +68,14 @@ int sheInit(int curve, int maxUnitSize)
 		cp = mcl::bn::CurveFp462;
 		break;
 	default:
-		printf("err bad curve %d\n", curve);
+		fprintf(stderr, "err bad curve %d\n", curve);
 		return -1;
 	}
 	SHE::init(cp);
 	g_curve = curve;
 	return 0;
 } catch (std::exception& e) {
-	printf("err sheInit %s\n", e.what());
+	fprintf(stderr, "err sheInit %s\n", e.what());
 	return -1;
 }
 
@@ -171,7 +171,7 @@ int sheSecretKeySetByCSPRNG(sheSecretKey *sec)
 	cast(sec)->setByCSPRNG();
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -186,7 +186,7 @@ static int setRangeForDLP(void (*f)(size_t, size_t), size_t hashSize, size_t try
 	f(hashSize, tryNum);
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -214,7 +214,7 @@ int encT(CT *c, const shePublicKey *pub, int64_t m)
 	cast(pub)->enc(*cast(c), m);
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -255,7 +255,7 @@ int decT(int64_t *m, const sheSecretKey *sec, const CT *c)
 	*m = cast(sec)->dec(*cast(c));
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -305,7 +305,7 @@ int addT(CT& z, const CT& x, const CT& y)
 	CT::add(z, x, y);
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -331,7 +331,7 @@ int subT(CT& z, const CT& x, const CT& y)
 	CT::sub(z, x, y);
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -357,7 +357,7 @@ int mulT(CT1& z, const CT2& x, const CT3& y)
 	CT1::mul(z, x, y);
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -403,7 +403,7 @@ int reRandT(CT& c, const shePublicKey *pub)
 	cast(pub)->reRand(c);
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
@@ -429,7 +429,7 @@ int convertTo(sheCipherTextGT *y, const shePublicKey *pub, const CT *x)
 	cast(pub)->convertToCipherTextGT(*cast(y), *cast(x));
 	return 0;
 } catch (std::exception& e) {
-	printf("err %s\n", e.what());
+	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
