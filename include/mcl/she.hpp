@@ -354,6 +354,12 @@ private:
 		friend class PrecomputedPublicKey;
 		friend class CipherTextA;
 		friend class CipherTextGT;
+		bool isZero(const Fr& x) const
+		{
+			G xT;
+			G::mul(xT, T_, x);
+			return S_ == xT;
+		}
 	public:
 		void clear()
 		{
@@ -505,6 +511,23 @@ public:
 	*/
 	class SecretKey {
 		Fr x_, y_;
+		void getPowOfePQ(GT& v, const CipherTextGT& c) const
+		{
+			/*
+				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
+				s v^(xy) / (t^y u^x) = s (v^x / t) ^ y / u^x
+				= e(P, Q)^(mm')
+			*/
+			GT t, u;
+			GT::unitaryInv(t, c.g_[1]);
+			GT::unitaryInv(u, c.g_[2]);
+			GT::pow(v, c.g_[3], x_);
+			v *= t;
+			GT::pow(v, v, y_);
+			GT::pow(u, u, x_);
+			v *= u;
+			v *= c.g_[0];
+		}
 	public:
 		template<class RG>
 		void setByCSPRNG(RG& rg)
@@ -564,20 +587,8 @@ public:
 		}
 		int64_t dec(const CipherTextGT& c) const
 		{
-			/*
-				(s, t, u, v) := (e(S, S'), e(S, T'), e(T, S'), e(T, T'))
-				s v^(xy) / (t^y u^x) = s (v^x / t) ^ y / u^x
-				= e(P, Q)^(mm')
-			*/
-			GT t, u, v;
-			GT::unitaryInv(t, c.g_[1]);
-			GT::unitaryInv(u, c.g_[2]);
-			GT::pow(v, c.g_[3], x_);
-			v *= t;
-			GT::pow(v, v, y_);
-			GT::pow(u, u, x_);
-			v *= u;
-			v *= c.g_[0];
+			GT v;
+			getPowOfePQ(v, c);
 			return ePQhashTbl_.log(v);
 //			return log(g, v);
 		}
@@ -587,6 +598,32 @@ public:
 				return dec(c.m_);
 			} else {
 				return dec(c.a_);
+			}
+		}
+		bool isZero(const CipherTextG1& c) const
+		{
+			return c.isZero(x_);
+		}
+		bool isZero(const CipherTextG2& c) const
+		{
+			return c.isZero(y_);
+		}
+		bool isZero(const CipherTextA& c) const
+		{
+			return c.c1_.isZero(x_);
+		}
+		bool isZero(const CipherTextGT& c) const
+		{
+			GT v;
+			getPowOfePQ(v, c);
+			return v.isOne();
+		}
+		bool isZero(const CipherText& c) const
+		{
+			if (c.isMultiplied()) {
+				return isZero(c.m_);
+			} else {
+				return isZero(c.a_);
 			}
 		}
 		std::istream& readStream(std::istream& is, int ioMode)

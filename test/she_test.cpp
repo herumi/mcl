@@ -95,17 +95,22 @@ CYBOZU_TEST_AUTO(enc_dec)
 	PrecomputedPublicKey ppub;
 	ppub.init(pub);
 	CipherTextG1 c1;
-	CipherTextG1 c2;
+	CipherTextG2 c2;
 	CipherTextGT ct1, ct2;
 	for (int i = -5; i < 5; i++) {
 		pub.enc(ct1, i);
 		CYBOZU_TEST_EQUAL(sec.dec(ct1), i);
+		CYBOZU_TEST_EQUAL(sec.isZero(ct1), i == 0);
 		ppub.enc(ct2, i);
 		CYBOZU_TEST_EQUAL(sec.dec(ct2), i);
 		ppub.enc(c1, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c1), i);
+		CYBOZU_TEST_EQUAL(sec.isZero(c1), i == 0);
 		ppub.enc(c2, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c2), i);
+		CYBOZU_TEST_EQUAL(sec.isZero(c2), i == 0);
+		pub.enc(c, i);
+		CYBOZU_TEST_EQUAL(sec.isZero(c), i == 0);
 	}
 }
 
