@@ -26,8 +26,6 @@
   const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
   const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
 
-  let capi = {}
-  exports.capi = capi
   let mod = exports.mod
 
   /*
@@ -46,26 +44,12 @@
     }
     return new Promise((resolve) => {
       mod.onRuntimeInitialized = () => {
-        const f = (exportedFuncs) => {
-          exportedFuncs.forEach(func => {
-            capi[func.exportName] = mod.cwrap(func.name, func.returns, func.args)
-          })
-          define_extra_functions(mod)
-          capi.sheInit()
-          console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
-          const r = capi.sheSetRangeForDLP(range, tryNum)
-          console.log('finished ' + r)
-          resolve()
-        }
-        if (isNodeJs) {
-          const fs = require('fs')
-          const jsonStr = fs.readFileSync('./exported-she.json')
-          f(JSON.parse(jsonStr))
-        } else {
-          fetch('exported-she.json')
-            .then(response => response.json())
-            .then(exportedFuncs => f(exportedFuncs))
-        }
+        define_extra_functions(mod)
+        let r = mod._sheInit(MCLBN_CURVE_FP254BNB, MCLBN_FP_UNIT_SIZE)
+        console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
+        r = mod._sheSetRangeForDLP(range, tryNum)
+        console.log('finished ' + r)
+        resolve()
       }
     })
   }
@@ -253,8 +237,8 @@
     mod.Runtime.stackRestore(stack)
     if (r) throw('callReRand err')
   }
-  // convertFrom
-  const callConvertFrom = function(func, pub, c) {
+  // convert
+  const callConvert = function(func, pub, c) {
     let ct = new exports.CipherTextGT()
     let stack = mod.Runtime.stackSave()
     let ctPos = mod.Runtime.stackAlloc(ct.a_.length * 4)
@@ -265,47 +249,24 @@
     let r = func(ctPos, pubPos, cPos)
     copyToUint32Array(ct.a_, ctPos)
     mod.Runtime.stackRestore(stack)
-    if (r) throw('callConvertFrom err')
+    if (r) throw('callConvert err')
     return ct
   }
   const define_extra_functions = function(mod) {
-    capi.she_free = function(p) {
-      mod._free(p)
-    }
-    capi.sheSecretKey_malloc = function() {
-      return mod._malloc(SHE_SECRETKEY_SIZE)
-    }
-    capi.shePublicKey_malloc = function() {
-      return mod._malloc(SHE_PUBLICKEY_SIZE)
-    }
-    capi.sheCipherTextG2_malloc = function() {
-      return mod._malloc(SHE_CIPHERTEXT_G2_SIZE)
-    }
-    capi.sheCipherTextGT_malloc = function() {
-      return mod._malloc(SHE_CIPHERTEXT_GT_SIZE)
-    }
-    capi.sheCipherTextG1_malloc = function() {
-      return mod._malloc(SHE_CIPHERTEXT_G1_SIZE)
-    }
-    capi.sheSecretKeySerialize = wrap_outputArray(capi._sheSecretKeySerialize)
-    capi.sheSecretKeyDeserialize = wrap_input(capi._sheSecretKeyDeserialize, 1)
-    capi.shePublicKeySerialize = wrap_outputArray(capi._shePublicKeySerialize)
-    capi.shePublicKeyDeserialize = wrap_input(capi._shePublicKeyDeserialize, 1)
-    capi.sheCipherTextG1Serialize = wrap_outputArray(capi._sheCipherTextG1Serialize)
-    capi.sheCipherTextG1Deserialize = wrap_input(capi._sheCipherTextG1Deserialize, 1)
-    capi.sheDecG1 = wrap_dec(capi._sheDecG1)
-    capi.sheCipherTextG2Serialize = wrap_outputArray(capi._sheCipherTextG2Serialize)
-    capi.sheCipherTextG2Deserialize = wrap_input(capi._sheCipherTextG2Deserialize, 1)
-    capi.sheDecG2 = wrap_dec(capi._sheDecG2)
-    capi.sheCipherTextGTSerialize = wrap_outputArray(capi._sheCipherTextGTSerialize)
-    capi.sheCipherTextGTDeserialize = wrap_input(capi._sheCipherTextGTDeserialize, 1)
-    capi.sheDecGT = wrap_dec(capi._sheDecGT)
+    mod.sheSecretKeySerialize = wrap_outputArray(mod._sheSecretKeySerialize)
+    mod.sheSecretKeyDeserialize = wrap_input(mod._sheSecretKeyDeserialize, 1)
+    mod.shePublicKeySerialize = wrap_outputArray(mod._shePublicKeySerialize)
+    mod.shePublicKeyDeserialize = wrap_input(mod._shePublicKeyDeserialize, 1)
+    mod.sheCipherTextG1Serialize = wrap_outputArray(mod._sheCipherTextG1Serialize)
+    mod.sheCipherTextG1Deserialize = wrap_input(mod._sheCipherTextG1Deserialize, 1)
+    mod.sheDecG1 = wrap_dec(mod._sheDecG1)
+    mod.sheCipherTextG2Serialize = wrap_outputArray(mod._sheCipherTextG2Serialize)
+    mod.sheCipherTextG2Deserialize = wrap_input(mod._sheCipherTextG2Deserialize, 1)
+    mod.sheDecG2 = wrap_dec(mod._sheDecG2)
+    mod.sheCipherTextGTSerialize = wrap_outputArray(mod._sheCipherTextGTSerialize)
+    mod.sheCipherTextGTDeserialize = wrap_input(mod._sheCipherTextGTDeserialize, 1)
+    mod.sheDecGT = wrap_dec(mod._sheDecGT)
 
-    capi.sheInit = function(curveType = MCLBN_CURVE_FP254BNB) {
-      let r = capi._sheInit(curveType, MCLBN_FP_UNIT_SIZE)
-      console.log('sheInit ' + r)
-      if (r) throw('sheInit')
-    }
     class Common {
       constructor(size) {
         this.a_ = new Uint32Array(size / 4)
@@ -325,15 +286,15 @@
         super(SHE_SECRETKEY_SIZE)
       }
       serialize() {
-        return callGetter(capi.sheSecretKeySerialize, this.a_)
+        return callGetter(mod.sheSecretKeySerialize, this.a_)
       }
       deserialize(s) {
-        callSetter(capi.sheSecretKeyDeserialize, this.a_, s)
+        callSetter(mod.sheSecretKeyDeserialize, this.a_, s)
       }
       setByCSPRNG() {
         let stack = mod.Runtime.stackSave()
         let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
-        capi.sheSecretKeySetByCSPRNG(secPos)
+        mod._sheSecretKeySetByCSPRNG(secPos)
         copyToUint32Array(this.a_, secPos)
         mod.Runtime.stackRestore(stack)
       }
@@ -343,7 +304,7 @@
         let secPos = mod.Runtime.stackAlloc(this.a_.length * 4)
         let pubPos = mod.Runtime.stackAlloc(pub.a_.length * 4)
         copyFromUint32Array(secPos, this.a_)
-        capi.sheGetPublicKey(pubPos, secPos)
+        mod._sheGetPublicKey(pubPos, secPos)
         copyToUint32Array(pub.a_, pubPos)
         mod.Runtime.stackRestore(stack)
         return pub
@@ -351,11 +312,11 @@
       dec(c) {
         let dec = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          dec = capi.sheDecG1
+          dec = mod.sheDecG1
         } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          dec = capi.sheDecG2
+          dec = mod.sheDecG2
         } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
-          dec = capi.sheDecGT
+          dec = mod.sheDecGT
         } else {
           throw('exports.SecretKey.dec:not supported')
         }
@@ -373,43 +334,44 @@
         super(SHE_PUBLICKEY_SIZE)
       }
       serialize() {
-        return callGetter(capi.shePublicKeySerialize, this.a_)
+        return callGetter(mod.shePublicKeySerialize, this.a_)
       }
       deserialize(s) {
-        callSetter(capi.shePublicKeyDeserialize, this.a_, s)
+        callSetter(mod.shePublicKeyDeserialize, this.a_, s)
       }
       encG1(m) {
-        return callEnc(capi.sheEnc32G1, exports.CipherTextG1, this.a_, m)
+        return callEnc(mod._sheEnc32G1, exports.CipherTextG1, this.a_, m)
       }
       encG2(m) {
-        return callEnc(capi.sheEnc32G2, exports.CipherTextG2, this.a_, m)
+        return callEnc(mod._sheEnc32G2, exports.CipherTextG2, this.a_, m)
       }
       encGT(m) {
-        return callEnc(capi.sheEnc32GT, exports.CipherTextGT, this.a_, m)
+        return callEnc(mod._sheEnc32GT, exports.CipherTextGT, this.a_, m)
       }
       reRand(c) {
         let reRand = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          reRand = capi.sheReRandG1
+          reRand = mod._sheReRandG1
         } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          reRand = capi.sheReRandG2
+          reRand = mod._sheReRandG2
         } else if (exports.CipherTextGT.prototype.isPrototypeOf(c)) {
-          reRand = capi.sheReRandGT
+          reRand = mod._sheReRandGT
         } else {
           throw('exports.PublicKey.reRand:not supported')
         }
         return callReRand(reRand, c.a_, this.a_)
       }
-      convertToCipherTextGT(c) {
-        let convertFrom = null
+      // convert to CipherTextGT
+      convert(c) {
+        let convert = null
         if (exports.CipherTextG1.prototype.isPrototypeOf(c)) {
-          convertFrom = capi.sheConvertFromG1
+          convert = mod._sheConvertG1
         } else if (exports.CipherTextG2.prototype.isPrototypeOf(c)) {
-          convertFrom = capi.sheConvertFromG2
+          convert = mod._sheConvertG2
         } else {
-          throw('exports.PublicKey.convertToCipherTextGT:not supported')
+          throw('exports.PublicKey.convert:not supported')
         }
-        return callConvertFrom(convertFrom, this.a_, c.a_)
+        return callConvert(convert, this.a_, c.a_)
       }
     }
 
@@ -423,10 +385,10 @@
         super(SHE_CIPHERTEXT_G1_SIZE)
       }
       serialize() {
-        return callGetter(capi.sheCipherTextG1Serialize, this.a_)
+        return callGetter(mod.sheCipherTextG1Serialize, this.a_)
       }
       deserialize(s) {
-        callSetter(capi.sheCipherTextG1Deserialize, this.a_, s)
+        callSetter(mod.sheCipherTextG1Deserialize, this.a_, s)
       }
     }
 
@@ -440,10 +402,10 @@
         super(SHE_CIPHERTEXT_G2_SIZE)
       }
       serialize() {
-        return callGetter(capi.sheCipherTextG2Serialize, this.a_)
+        return callGetter(mod.sheCipherTextG2Serialize, this.a_)
       }
       deserialize(s) {
-        callSetter(capi.sheCipherTextG2Deserialize, this.a_, s)
+        callSetter(mod.sheCipherTextG2Deserialize, this.a_, s)
       }
     }
 
@@ -458,10 +420,10 @@
         super(SHE_CIPHERTEXT_GT_SIZE)
       }
       serialize() {
-        return callGetter(capi.sheCipherTextGTSerialize, this.a_)
+        return callGetter(mod.sheCipherTextGTSerialize, this.a_)
       }
       deserialize(s) {
-        callSetter(capi.sheCipherTextGTDeserialize, this.a_, s)
+        callSetter(mod.sheCipherTextGTDeserialize, this.a_, s)
       }
     }
 
@@ -476,13 +438,13 @@
       let add = null
       let cstr = null
       if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
-        add = capi.sheAddG1
+        add = mod._sheAddG1
         cstr = exports.CipherTextG1
       } else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
-        add = capi.sheAddG2
+        add = mod._sheAddG2
         cstr = exports.CipherTextG2
       } else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
-        add = capi.sheAddGT
+        add = mod._sheAddGT
         cstr = exports.CipherTextGT
       } else {
         throw('exports.add:not supported')
@@ -495,13 +457,13 @@
       let sub = null
       let cstr = null
       if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
-        sub = capi.sheSubG1
+        sub = mod._sheSubG1
         cstr = exports.CipherTextG1
       } else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
-        sub = capi.sheSubG2
+        sub = mod._sheSubG2
         cstr = exports.CipherTextG2
       } else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
-        sub = capi.sheSubGT
+        sub = mod._sheSubGT
         cstr = exports.CipherTextGT
       } else {
         throw('exports.sub:not supported')
@@ -513,13 +475,13 @@
       let mulInt = null
       let cstr = null
       if (exports.CipherTextG1.prototype.isPrototypeOf(x)) {
-        mulInt = capi.sheMul32G1
+        mulInt = mod._sheMul32G1
         cstr = exports.CipherTextG1
       } else if (exports.CipherTextG2.prototype.isPrototypeOf(x)) {
-        mulInt = capi.sheMul32G2
+        mulInt = mod._sheMul32G2
         cstr = exports.CipherTextG2
       } else if (exports.CipherTextGT.prototype.isPrototypeOf(x)) {
-        mulInt = capi.sheMul32GT
+        mulInt = mod._sheMul32GT
         cstr = exports.CipherTextGT
       } else {
         throw('exports.mulInt:not supported')
@@ -537,7 +499,7 @@
       let zPos = mod.Runtime.stackAlloc(z.a_.length * 4)
       copyFromUint32Array(xPos, x.a_)
       copyFromUint32Array(yPos, y.a_)
-      capi.sheMul(zPos, xPos, yPos)
+      mod._sheMul(zPos, xPos, yPos)
       copyToUint32Array(z.a_, zPos)
       mod.Runtime.stackRestore(stack)
       return z

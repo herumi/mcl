@@ -207,7 +207,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 }
 
-CYBOZU_TEST_AUTO(convertFrom)
+CYBOZU_TEST_AUTO(convert)
 {
 	sheSecretKey sec;
 	sheSecretKeySetByCSPRNG(&sec);
@@ -220,7 +220,7 @@ CYBOZU_TEST_AUTO(convertFrom)
 	sheEnc32G1(&c1, &pub, m);
 	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
 	CYBOZU_TEST_EQUAL(dec, 123);
-	sheConvertFromG1(&ct, &pub, &c1);
+	sheConvertG1(&ct, &pub, &c1);
 	dec = 0;
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, 123);
@@ -229,7 +229,7 @@ CYBOZU_TEST_AUTO(convertFrom)
 	sheEnc32G2(&c2, &pub, m);
 	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
 	CYBOZU_TEST_EQUAL(dec, 123);
-	sheConvertFromG2(&ct, &pub, &c2);
+	sheConvertG2(&ct, &pub, &c2);
 	dec = 0;
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, 123);

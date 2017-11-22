@@ -766,7 +766,7 @@ public:
 		/*
 			convert from CipherTextG1 to CipherTextGT
 		*/
-		void convertToCipherTextGT(CipherTextGT& cm, const CipherTextG1& c1) const
+		void convert(CipherTextGT& cm, const CipherTextG1& c1) const
 		{
 			/*
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
@@ -784,7 +784,7 @@ public:
 		/*
 			convert from CipherTextG2 to CipherTextGT
 		*/
-		void convertToCipherTextGT(CipherTextGT& cm, const CipherTextG2& c2) const
+		void convert(CipherTextGT& cm, const CipherTextG2& c2) const
 		{
 			/*
 				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
@@ -793,15 +793,15 @@ public:
 			G1 zero; zero.clear();
 			tensorProduct(cm.g_, P_, zero, c2.S_, c2.T_);
 		}
-		void convertToCipherTextGT(CipherTextGT& cm, const CipherTextA& ca) const
+		void convert(CipherTextGT& cm, const CipherTextA& ca) const
 		{
-			convertToCipherTextGT(cm, ca.c1_);
+			convert(cm, ca.c1_);
 		}
-		void convertToCipherTextGT(CipherText& cm, const CipherText& ca) const
+		void convert(CipherText& cm, const CipherText& ca) const
 		{
 			if (ca.isMultiplied()) throw cybozu::Exception("she:PublicKey:convertCipherText:already isMultiplied");
 			cm.isMultiplied_ = true;
-			convertToCipherTextGT(cm.m_, ca.a_);
+			convert(cm.m_, ca.a_);
 		}
 		/*
 			c += Enc(0)

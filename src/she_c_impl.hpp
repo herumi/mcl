@@ -423,22 +423,22 @@ int sheReRandGT(sheCipherTextGT *c, const shePublicKey *pub)
 }
 
 template<class CT>
-int convertTo(sheCipherTextGT *y, const shePublicKey *pub, const CT *x)
+int convert(sheCipherTextGT *y, const shePublicKey *pub, const CT *x)
 	try
 {
-	cast(pub)->convertToCipherTextGT(*cast(y), *cast(x));
+	cast(pub)->convert(*cast(y), *cast(x));
 	return 0;
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
-int sheConvertFromG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x)
+int sheConvertG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x)
 {
-	return convertTo(y, pub, x);
+	return convert(y, pub, x);
 }
 
-int sheConvertFromG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x)
+int sheConvertG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x)
 {
-	return convertTo(y, pub, x);
+	return convert(y, pub, x);
 }

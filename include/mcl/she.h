@@ -161,8 +161,8 @@ MCLSHE_DLL_API int sheReRandGT(sheCipherTextGT *c, const shePublicKey *pub);
 
 // return 0 if success
 // y = convert(x)
-MCLSHE_DLL_API int sheConvertFromG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x);
-MCLSHE_DLL_API int sheConvertFromG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x);
+MCLSHE_DLL_API int sheConvertG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x);
+MCLSHE_DLL_API int sheConvertG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x);
 
 #ifdef __cplusplus
 }
