@@ -1,9 +1,10 @@
 (function(generator) {
+  "use strict"
   if (typeof exports === 'object') {
     exports.mod = require('./she_c.js')
     generator(exports, true)
   } else {
-    let exports = {}
+    const exports = {}
     exports.mod = {}
     window.she = generator(exports, false)
   }
@@ -26,7 +27,7 @@
   const SHE_CIPHERTEXT_G2_SIZE = MCLBN_G2_SIZE * 2
   const SHE_CIPHERTEXT_GT_SIZE = MCLBN_GT_SIZE * 4
 
-  let mod = exports.mod
+  const mod = exports.mod
 
   /*
     init she
@@ -35,7 +36,6 @@
     can decrypt (range * tryNum) range value
   */
   exports.init = (range = 1024, tryNum = 1024) => {
-    console.log('init')
     if (!isNodeJs) {
       fetch('she_c.wasm')
         .then(response => response.arrayBuffer())
@@ -46,9 +46,11 @@
       mod.onRuntimeInitialized = () => {
         define_extra_functions(mod)
         let r = mod._sheInit(MCLBN_CURVE_FP254BNB, MCLBN_FP_UNIT_SIZE)
+        if (r) throw('sheInit err ' + r)
         console.log(`initializing sheSetRangeForDLP(range=${range}, tryNum=${tryNum})`)
         r = mod._sheSetRangeForDLP(range, tryNum)
-        console.log('finished ' + r)
+        if (r) throw('_sheSetRangeForDLP err ' + r)
+        console.log('finished')
         resolve()
       }
     })
@@ -96,8 +98,8 @@
   // hex string to Uint8Array
   exports.fromHexStr = function(s) {
     if (s.length & 1) throw('fromHexStr:length must be even ' + s.length)
-    let n = s.length / 2
-    let a = new Uint8Array(n)
+    const n = s.length / 2
+    const a = new Uint8Array(n)
     for (let i = 0; i < n; i++) {
       a[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16)
     }
@@ -106,19 +108,19 @@
 
   const wrap_outputString = function(func, doesReturnString = true) {
     return function(x, ioMode = 0) {
-      let maxBufSize = 2048
-      let stack = mod.Runtime.stackSave()
-      let pos = mod.Runtime.stackAlloc(maxBufSize)
-      let n = func(pos, maxBufSize, x, ioMode)
+      const maxBufSize = 2048
+      const stack = mod.Runtime.stackSave()
+      const pos = mod.Runtime.stackAlloc(maxBufSize)
+      const n = func(pos, maxBufSize, x, ioMode)
       if (n < 0) {
         throw('err gen_str:' + x)
       }
       if (doesReturnString) {
-        let s = ptrToStr(pos, n)
+        const s = ptrToStr(pos, n)
         mod.Runtime.stackRestore(stack)
         return s
       } else {
-        let a = new Uint8Array(n)
+        const a = new Uint8Array(n)
         for (let i = 0; i < n; i++) {
           a[i] = mod.HEAP8[pos + i]
         }
@@ -348,7 +350,7 @@
     }
 
     exports.getSecretKeyFromHexStr = function(s) {
-      r = new exports.SecretKey()
+      const r = new exports.SecretKey()
       r.fromHexStr(s)
       return r
     }
@@ -399,7 +401,7 @@
     }
 
     exports.getPublicKeyFromHexStr = function(s) {
-      r = new exports.PublicKey()
+      const r = new exports.PublicKey()
       r.fromHexStr(s)
       return r
     }
@@ -416,7 +418,7 @@
     }
 
     exports.getCipherTextG1FromHexStr = function(s) {
-      r = new exports.CipherTextG1()
+      const r = new exports.CipherTextG1()
       r.fromHexStr(s)
       return r
     }
@@ -433,7 +435,7 @@
     }
 
     exports.getCipherTextG2FromHexStr = function(s) {
-      r = new exports.CipherTextG2()
+      const r = new exports.CipherTextG2()
       r.fromHexStr(s)
       return r
     }
@@ -451,7 +453,7 @@
     }
 
     exports.getCipherTextGTFromHexStr = function(s) {
-      r = new exports.CipherTextGT()
+      const r = new exports.CipherTextGT()
       r.fromHexStr(s)
       return r
     }
