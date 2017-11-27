@@ -174,6 +174,10 @@ void mclBnFr_setInt(mclBnFr *y, int64_t x)
 {
 	*cast(y) = x;
 }
+void mclBnFr_setInt32(mclBnFr *y, int x)
+{
+	*cast(y) = x;
+}
 
 int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode)
 {
@@ -421,6 +425,11 @@ void mclBnGT_clear(mclBnGT *x)
 	cast(x)->clear();
 }
 void mclBnGT_setInt(mclBnGT *y, int64_t x)
+{
+	cast(y)->clear();
+	*(cast(y)->getFp0()) = x;
+}
+void mclBnGT_setInt32(mclBnGT *y, int x)
 {
 	cast(y)->clear();
 	*(cast(y)->getFp0()) = x;

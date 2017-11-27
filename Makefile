@@ -209,10 +209,6 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
-MCL_JSON=docs/demo/exported-mcl.json
-$(MCL_JSON): include/mcl/bn.h
-	python ffi/js/export-functions.py -json $^ > $(MCL_JSON)
-
 EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1
@@ -228,10 +224,9 @@ docs/demo/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre.js
 	cp docs/demo/she.js ../she-wasm/
 
-../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp $(MCL_JSON)
+../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre-mcl.js
 	cp docs/demo/mcl.js ../mcl-wasm/
-	cp $(MCL_JSON) ../mcl-wasm/
 
 demo:
 	$(MAKE) docs/demo/she_c.js

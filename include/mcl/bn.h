@@ -131,6 +131,7 @@ MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
 
 // set x to y
 MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, int64_t x);
+MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 
 /*
 	ioMode
@@ -235,6 +236,7 @@ MCLBN_DLL_API void mclBnG2_mulCT(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y)
 MCLBN_DLL_API void mclBnGT_clear(mclBnGT *x);
 // set x to y
 MCLBN_DLL_API void mclBnGT_setInt(mclBnGT *y, int64_t x);
+MCLBN_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
 
 // return 0 if success
 MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode);
