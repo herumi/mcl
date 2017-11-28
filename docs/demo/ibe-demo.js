@@ -8,6 +8,7 @@ mcl.init()
     setText('status', 'ok')
   })
 
+// Enc(m) = [r P, m + h(e(r mpk, H(id)))]
 function IDenc(id, P, mpk, m) {
   const r = new mcl.Fr()
   r.setByCSPRNG()
@@ -29,10 +30,13 @@ function onClickIBE() {
   const msk = new mcl.Fr()
   msk.setByCSPRNG()
   setText('msk', msk.toHexStr())
+  // mpk = msk P
   const mpk = mcl.mul(P, msk)
   setText('mpk', mpk.toHexStr())
 
+  // user KeyGen
   const id = getText('id')
+  // sk = msk H(id)
   const sk = mcl.mul(mcl.hashAndMapToG2(id), msk)
   setText('sk', sk.toHexStr())
 
