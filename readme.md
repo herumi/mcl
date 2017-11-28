@@ -16,6 +16,7 @@ The current version supports the optimal Ate pairing over BN curves.
 * ARM Linux
 * ARM64 Linux
 * (maybe any platform to be supported by LLVM)
+* WebAssembly
 
 # Installation Requirements
 
@@ -92,12 +93,12 @@ cd build
 cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
-## Build for WASM(WebAssembly) (experimental)
+## Build for wasm(WebAssembly)
 mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge(enable extended JavaScript at about:config).
 
-* [SHE on browser](http://herumi.github.io/mcl/demo/she.html)
-* [BLS signature on brower](http://herumi.github.io/bls/demo/bls.html)
-
+* [IBE on browser](https://herumi.github.io/mcl/demo/ibe.html)
+* [SHE on browser](https://herumi.github.io/mcl/demo/she2.html)
+* [BLS signature on brower](https://herumi.github.io/bls/demo/bls.html)
 
 Type
 ```
@@ -106,6 +107,12 @@ emrun --no_browser --port 8080 --no_emrun_detect .
 ```
 and open `http://<address>:8080/t.html`.
 The timing of a pairing on `CurveFp254BNb` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
+
+### Node.js
+
+* [mcl-wasm](https://www.npmjs.com/package/mcl-wasm) pairing library
+* [bls-wasm](https://www.npmjs.com/package/bls-wasm) BLS signature library
+* [she-wasm](https://www.npmjs.com/package/she-wasm) 2 Level Homomorphic Encryption library
 
 ### SELinux
 mcl uses Xbyak JIT engine if it is available on x64 architecture,

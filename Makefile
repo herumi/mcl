@@ -219,6 +219,8 @@ ifeq ($(MCL_USE_LLVM),2)
 endif
 docs/demo/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
+docs/demo/mcl_c.js: src/fp.cpp src/bn_c256.cpp
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 
 ../she-wasm/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre.js
@@ -229,7 +231,7 @@ docs/demo/she_c.js: $(JS_DEP)
 	cp docs/demo/mcl.js ../mcl-wasm/
 
 demo:
-	$(MAKE) docs/demo/she_c.js
+	$(MAKE) docs/demo/she_c.js docs/demo/mcl_c.js
 
 she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
