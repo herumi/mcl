@@ -98,7 +98,7 @@ mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Fi
 
 * [IBE on browser](https://herumi.github.io/mcl/demo/ibe.html)
 * [SHE on browser](https://herumi.github.io/mcl/demo/she2.html)
-* [BLS signature on brower](https://herumi.github.io/bls/demo/bls.html)
+* [BLS signature on brower](https://herumi.github.io/bls-wasm/bls-demo.html)
 
 Type
 ```
