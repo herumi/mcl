@@ -212,38 +212,25 @@ test: $(TEST_EXE)
 EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1
-JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp Makefile ffi/js/pre.js
+JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   JS_DEP+=src/base64m.ll
 endif
-docs/demo/she_c.js: $(JS_DEP)
-	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 docs/demo/mcl_c.js: src/fp.cpp src/bn_c256.cpp
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
 
 ../she-wasm/she_c.js: $(JS_DEP)
-	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre.js
-	cp docs/demo/she.js ../she-wasm/
+	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1"
 
 ../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre-mcl.js
 	cp docs/demo/mcl.js ../mcl-wasm/
 
-demo:
-	$(MAKE) docs/demo/she_c.js docs/demo/mcl_c.js
-
-she-wasm:
-	$(MAKE) ../she-wasm/she_c.js
-
 mcl-wasm:
 	$(MAKE) ../mcl-wasm/mcl_c.js
 
-clean_demo:
-	$(RM) docs/demo/she_c.js docs/demo/she_c.wasm
-
 clean:
-	$(MAKE) clean_demo
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
