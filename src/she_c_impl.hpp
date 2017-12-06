@@ -79,48 +79,39 @@ int sheInit(int curve, int maxUnitSize)
 	return -1;
 }
 
+template<class T>
+size_t serialize(void *buf, size_t maxBufSize, const T *x)
+	try
+{
+	return cast(x)->serialize(buf, maxBufSize);
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return 0;
+}
+
 size_t sheSecretKeySerialize(void *buf, size_t maxBufSize, const sheSecretKey *sec)
 {
-	char *p = (char *)buf;
-	size_t n = mclBnFr_serialize(p, maxBufSize, &sec->x);
-	if (n == 0) return 0;
-	return n += mclBnFr_serialize(p + n, maxBufSize - n, &sec->y);
+	return serialize(buf, maxBufSize, sec);
 }
 
 size_t shePublicKeySerialize(void *buf, size_t maxBufSize, const shePublicKey *pub)
 {
-	char *p = (char *)buf;
-	size_t n = mclBnG1_serialize(p, maxBufSize, &pub->xP);
-	if (n == 0) return 0;
-	return n += mclBnG2_serialize(p + n, maxBufSize - n, &pub->yQ);
+	return serialize(buf, maxBufSize, pub);
 }
 
 size_t sheCipherTextG1Serialize(void *buf, size_t maxBufSize, const sheCipherTextG1 *c)
 {
-	char *p = (char *)buf;
-	size_t n = mclBnG1_serialize(p, maxBufSize, &c->S);
-	if (n == 0) return 0;
-	return n += mclBnG1_serialize(p + n, maxBufSize - n, &c->T);
+	return serialize(buf, maxBufSize, c);
 }
 
 size_t sheCipherTextG2Serialize(void *buf, size_t maxBufSize, const sheCipherTextG2 *c)
 {
-	char *p = (char *)buf;
-	size_t n = mclBnG2_serialize(p, maxBufSize, &c->S);
-	if (n == 0) return 0;
-	return n += mclBnG2_serialize(p + n, maxBufSize - n, &c->T);
+	return serialize(buf, maxBufSize, c);
 }
 
 size_t sheCipherTextGTSerialize(void *buf, size_t maxBufSize, const sheCipherTextGT *c)
 {
-	char *p = (char *)buf;
-	size_t n = 0;
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(c->g); i++) {
-		size_t r = mclBnGT_serialize(p + n, maxBufSize - n, &c->g[i]);
-		if (r == 0) return 0;
-		n += r;
-	}
-	return n;
+	return serialize(buf, maxBufSize, c);
 }
 
 int sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize)

@@ -431,6 +431,18 @@ private:
 			return S_ == rhs.S_ && T_ == rhs.T_;
 		}
 		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
+		size_t serialize(void *buf, size_t maxBufSize) const
+		{
+			std::string s1 = S_.getStr(mcl::IoFixedSizeByteSeq);
+			std::string s2 = T_.getStr(mcl::IoFixedSizeByteSeq);
+			if (maxBufSize < s1.size() + s2.size()) {
+				throw  cybozu::Exception("she:CipherTextAT:serialize");
+			}
+			char *p = (char *)buf;
+			memcpy(p, s1.c_str(), s1.size());
+			memcpy(p + s1.size(), s2.c_str(), s2.size());
+			return s1.size() + s2.size();
+		}
 	};
 	/*
 		g1 = millerLoop(P1, Q)
@@ -663,6 +675,18 @@ public:
 			return x_ == rhs.x_ && y_ == rhs.y_;
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
+		size_t serialize(void *buf, size_t maxBufSize) const
+		{
+			std::string s1 = x_.getStr(mcl::IoFixedSizeByteSeq);
+			std::string s2 = y_.getStr(mcl::IoFixedSizeByteSeq);
+			if (maxBufSize < s1.size() + s2.size()) {
+				throw  cybozu::Exception("she:SecretKey:serialize");
+			}
+			char *p = (char *)buf;
+			memcpy(p, s1.c_str(), s1.size());
+			memcpy(p + s1.size(), s2.c_str(), s2.size());
+			return s1.size() + s2.size();
+		}
 	};
 
 	class PublicKey {
@@ -905,6 +929,18 @@ public:
 			return xP_ == rhs.xP_ && yQ_ == rhs.yQ_;
 		}
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
+		size_t serialize(void *buf, size_t maxBufSize) const
+		{
+			std::string s1 = xP_.getStr(mcl::IoFixedSizeByteSeq);
+			std::string s2 = yQ_.getStr(mcl::IoFixedSizeByteSeq);
+			if (maxBufSize < s1.size() + s2.size()) {
+				throw  cybozu::Exception("she:PublicKey:serialize");
+			}
+			char *p = (char *)buf;
+			memcpy(p, s1.c_str(), s1.size());
+			memcpy(p + s1.size(), s2.c_str(), s2.size());
+			return s1.size() + s2.size();
+		}
 	};
 
 	class PrecomputedPublicKey {
@@ -1166,6 +1202,24 @@ public:
 			return true;
 		}
 		bool operator!=(const CipherTextGT& rhs) const { return !operator==(rhs); }
+		size_t serialize(void *buf, size_t maxBufSize) const
+		{
+			std::string s[4];
+			size_t totalSize = 0;
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(s); i++) {
+				g_[i].getStr(s[i], mcl::IoFixedSizeByteSeq);
+				totalSize += s[i].size();
+			}
+			if (maxBufSize < totalSize) {
+				throw cybozu::Exception("she:CipherTextGT:serialize");
+			}
+			char *p = (char *)buf;
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(s); i++) {
+				memcpy(p, s[i].c_str(), s[i].size());
+				p += s[i].size();
+			}
+			return totalSize;
+		}
 	};
 
 	class CipherText {
