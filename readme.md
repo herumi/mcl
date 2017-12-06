@@ -96,8 +96,8 @@ msbuild mcl.sln /p:Configuration=Release /m
 ## Build for wasm(WebAssembly)
 mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge(enable extended JavaScript at about:config).
 
-* [IBE on browser](https://herumi.github.io/mcl/demo/ibe.html)
-* [SHE on browser](https://herumi.github.io/mcl/demo/she2.html)
+* [IBE on browser](https://herumi.github.io/mcl-wasm/ibe-demo.html)
+* [SHE on browser](https://herumi.github.io/she-wasm/she-demo.html)
 * [BLS signature on brower](https://herumi.github.io/bls-wasm/bls-demo.html)
 
 Type

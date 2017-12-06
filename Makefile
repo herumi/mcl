@@ -211,24 +211,17 @@ test: $(TEST_EXE)
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
-EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1
+EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1
 JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   JS_DEP+=src/base64m.ll
 endif
-docs/demo/mcl_c.js: src/fp.cpp src/bn_c256.cpp
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1" 
-
 ../she-wasm/she_c.js: $(JS_DEP)
-	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s "MODULARIZE=1"
+	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT)
 
 ../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) --pre-js ffi/js/pre-mcl.js
-	cp docs/demo/mcl.js ../mcl-wasm/
-
-mcl-wasm:
-	$(MAKE) ../mcl-wasm/mcl_c.js
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT)
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
