@@ -223,6 +223,26 @@ public:
 		std::istringstream is(str);
 		readStream(is, ioMode);
 	}
+	// return written bytes if sucess else 0
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		const size_t n = getByteSize();
+		if (n > maxBufSize) return 0;
+		fp::Block b;
+		getBlock(b);
+		fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(buf), b.p, n);
+		return n;
+	}
+	// return positive read bytes if sucess else 0
+	size_t deserialize(const void *buf, size_t bufSize)
+	{
+		const size_t n = getByteSize();
+		if (bufSize < n) return 0;
+		fp::copyByteToUnitAsLE(v_, reinterpret_cast<const uint8_t*>(buf), n);
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) return 0;
+		toMont();
+		return n;
+	}
 	/*
 		throw exception if x >= p
 	*/

@@ -157,7 +157,7 @@ CYBOZU_TEST_AUTO(serialize)
 	n1 = sheSecretKeySerialize(buf1, sizeof(buf1), &sec1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheSecretKeyDeserialize(&sec2, buf1, n1);
-	CYBOZU_TEST_ASSERT(r == 0);
+	CYBOZU_TEST_EQUAL(r, n1);
 	n2 = sheSecretKeySerialize(buf2, sizeof(buf2), &sec2);
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
@@ -166,7 +166,7 @@ CYBOZU_TEST_AUTO(serialize)
 	n1 = shePublicKeySerialize(buf1, sizeof(buf1), &pub1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = shePublicKeyDeserialize(&pub2, buf1, n1);
-	CYBOZU_TEST_ASSERT(r == 0);
+	CYBOZU_TEST_EQUAL(r, n1);
 	n2 = shePublicKeySerialize(buf2, sizeof(buf2), &pub2);
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
@@ -183,7 +183,7 @@ CYBOZU_TEST_AUTO(serialize)
 	n1 = sheCipherTextG1Serialize(buf1, sizeof(buf1), &c11);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextG1Deserialize(&c12, buf1, n1);
-	CYBOZU_TEST_ASSERT(r == 0);
+	CYBOZU_TEST_EQUAL(r, n1);
 	n2 = sheCipherTextG1Serialize(buf2, sizeof(buf2), &c12);
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
@@ -192,7 +192,7 @@ CYBOZU_TEST_AUTO(serialize)
 	n1 = sheCipherTextG2Serialize(buf1, sizeof(buf1), &c21);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextG2Deserialize(&c22, buf1, n1);
-	CYBOZU_TEST_ASSERT(r == 0);
+	CYBOZU_TEST_EQUAL(r, n1);
 	n2 = sheCipherTextG2Serialize(buf2, sizeof(buf2), &c22);
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
@@ -201,7 +201,7 @@ CYBOZU_TEST_AUTO(serialize)
 	n1 = sheCipherTextGTSerialize(buf1, sizeof(buf1), &ct1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextGTDeserialize(&ct2, buf1, n1);
-	CYBOZU_TEST_ASSERT(r == 0);
+	CYBOZU_TEST_EQUAL(r, n1);
 	n2 = sheCipherTextGTSerialize(buf2, sizeof(buf2), &ct2);
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);

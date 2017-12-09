@@ -114,46 +114,39 @@ size_t sheCipherTextGTSerialize(void *buf, size_t maxBufSize, const sheCipherTex
 	return serialize(buf, maxBufSize, c);
 }
 
-int sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize)
+template<class T>
+size_t deserialize(T *x, const void *buf, size_t bufSize)
+	try
 {
-	const char *p = (const char *)buf;
-	if (mclBnFr_deserialize(&sec->x, p, bufSize)) return -1;
-	const size_t size = Fr::getByteSize();
-	return mclBnFr_deserialize(&sec->y, p + size, bufSize - size);
-}
-
-int shePublicKeyDeserialize(shePublicKey* sec, const void *buf, size_t bufSize)
-{
-	const char *p = (const char *)buf;
-	if (mclBnG1_deserialize(&sec->xP, p, bufSize)) return -1;
-	const size_t size = Fr::getByteSize();
-	return mclBnG2_deserialize(&sec->yQ, p + size, bufSize - size);
-}
-
-int sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize)
-{
-	const char *p = (const char *)buf;
-	if (mclBnG1_deserialize(&c->S, p, bufSize)) return -1;
-	const size_t size = Fr::getByteSize();
-	return mclBnG1_deserialize(&c->T, p + size, bufSize - size);
-}
-
-int sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, size_t bufSize)
-{
-	const char *p = (const char *)buf;
-	if (mclBnG2_deserialize(&c->S, p, bufSize)) return -1;
-	const size_t size = Fr::getByteSize() * 2;
-	return mclBnG2_deserialize(&c->T, p + size, bufSize - size);
-}
-
-int sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, size_t bufSize)
-{
-	const char *p = (const char *)buf;
-	const size_t size = Fr::getByteSize() * 12;
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(c->g); i++) {
-		if (mclBnGT_deserialize(&c->g[i], p + size * i, bufSize - size * i)) return -1;
-	}
+	return cast(x)->deserialize(buf, bufSize);
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
 	return 0;
+}
+
+size_t sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize)
+{
+	return deserialize(sec, buf, bufSize);
+}
+
+size_t shePublicKeyDeserialize(shePublicKey* pub, const void *buf, size_t bufSize)
+{
+	return deserialize(pub, buf, bufSize);
+}
+
+size_t sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize)
+{
+	return deserialize(c, buf, bufSize);
+}
+
+size_t sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, size_t bufSize)
+{
+	return deserialize(c, buf, bufSize);
+}
+
+size_t sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, size_t bufSize)
+{
+	return deserialize(c, buf, bufSize);
 }
 
 int sheSecretKeySetByCSPRNG(sheSecretKey *sec)

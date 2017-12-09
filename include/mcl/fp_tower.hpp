@@ -10,6 +10,58 @@
 
 namespace mcl {
 
+namespace local {
+
+template<class T1, class T2>
+size_t serialize2(void *buf, size_t maxBufSize, const T1& p1, const T2& p2)
+{
+	char *p = reinterpret_cast<char*>(buf);
+	const size_t n1 = p1.serialize(p, maxBufSize);
+	if (n1 == 0) return 0;
+	p += n1; maxBufSize -= n1;
+	const size_t n2 = p2.serialize(p, maxBufSize);
+	if (n2 == 0) return 0;
+	return n1 + n2;
+}
+
+template<class T1, class T2, class T3>
+size_t serialize3(void *buf, size_t maxBufSize, const T1& p1, const T2& p2, const T3& p3)
+{
+	char *p = reinterpret_cast<char*>(buf);
+	const size_t n1 = serialize2(buf, maxBufSize, p1, p2);
+	if (n1 == 0) return 0;
+	p += n1; maxBufSize -= n1;
+	const size_t n2 = p3.serialize(p, maxBufSize);
+	if (n2 == 0) return 0;
+	return n1 + n2;
+}
+
+template<class T1, class T2>
+size_t deserialize2(T1& p1, T2& p2, const void *buf, size_t bufSize)
+{
+	const char *p = reinterpret_cast<const char*>(buf);
+	const size_t n1 = p1.deserialize(p, bufSize);
+	if (n1 == 0) return 0;
+	p += n1; bufSize -= n1;
+	const size_t n2 = p2.deserialize(p, bufSize);
+	if (n2 == 0) return 0;
+	return n1 + n2;
+}
+
+template<class T1, class T2, class T3>
+size_t deserialize3(T1& p1, T2& p2, T3& p3, const void *buf, size_t bufSize)
+{
+	const char *p = reinterpret_cast<const char*>(buf);
+	const size_t n1 = deserialize2(p1, p2, p, bufSize);
+	if (n1 == 0) return 0;
+	p += n1; bufSize -= n1;
+	const size_t n2 = p3.deserialize(p, bufSize);
+	if (n2 == 0) return 0;
+	return n1 + n2;
+}
+
+} // local
+
 template<class Fp>
 class FpDblT {
 	typedef fp::Unit Unit;
@@ -216,6 +268,16 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
 		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+	}
+	// return written bytes if sucess else 0
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		return local::serialize2(buf, maxBufSize, a, b);
+	}
+	// return positive read bytes if sucess else 0
+	size_t deserialize(const void *buf, size_t bufSize)
+	{
+		return local::deserialize2(a, b, buf, bufSize);
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -725,6 +787,16 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	{
 		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 	}
+	// return written bytes if sucess else 0
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		return local::serialize3(buf, maxBufSize, a, b, c);
+	}
+	// return positive read bytes if sucess else 0
+	size_t deserialize(const void *buf, size_t bufSize)
+	{
+		return local::deserialize3(a, b, c, buf, bufSize);
+	}
 	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
@@ -1129,6 +1201,16 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
 		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+	}
+	// return written bytes if sucess else 0
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		return local::serialize2(buf, maxBufSize, a, b);
+	}
+	// return positive read bytes if sucess else 0
+	size_t deserialize(const void *buf, size_t bufSize)
+	{
+		return local::deserialize2(a, b, buf, bufSize);
 	}
 };
 

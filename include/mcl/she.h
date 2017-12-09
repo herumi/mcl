@@ -77,12 +77,12 @@ MCLSHE_DLL_API size_t sheCipherTextG1Serialize(void *buf, size_t maxBufSize, con
 MCLSHE_DLL_API size_t sheCipherTextG2Serialize(void *buf, size_t maxBufSize, const sheCipherTextG2 *c);
 MCLSHE_DLL_API size_t sheCipherTextGTSerialize(void *buf, size_t maxBufSize, const sheCipherTextGT *c);
 
-// return 0 if success
-MCLSHE_DLL_API int sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize);
-MCLSHE_DLL_API int shePublicKeyDeserialize(shePublicKey* pub, const void *buf, size_t bufSize);
-MCLSHE_DLL_API int sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize);
-MCLSHE_DLL_API int sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, size_t bufSize);
-MCLSHE_DLL_API int sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, size_t bufSize);
+// return read byte size if sucess else 0
+MCLSHE_DLL_API size_t sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize);
+MCLSHE_DLL_API size_t shePublicKeyDeserialize(shePublicKey* pub, const void *buf, size_t bufSize);
+MCLSHE_DLL_API size_t sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize);
+MCLSHE_DLL_API size_t sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, size_t bufSize);
+MCLSHE_DLL_API size_t sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, size_t bufSize);
 
 /*
 	set secretKey if system has /dev/urandom or CryptGenRandom

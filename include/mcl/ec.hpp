@@ -776,6 +776,52 @@ public:
 		std::istringstream is(str);
 		readStream(is, ioMode);
 	}
+	// return written bytes if sucess else 0
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		if (!isFixedSizeByteSeq()) return 0;
+		const size_t n = Fp::getByteSize();
+		if (maxBufSize < n) return 0;
+		if (isZero()) {
+			memset(buf, 0, n);
+		} else {
+			char *p = reinterpret_cast<char*>(buf);
+			EcT P(*this);
+			P.normalize();
+			if (P.x.serialize(p, maxBufSize) == 0) return 0;
+			if (P.y.isOdd()) {
+				p[n - 1] |= 0x80;
+			}
+		}
+		return n;
+	}
+	// return positive read bytes if sucess else 0
+	size_t deserialize(const void *buf, size_t bufSize)
+	{
+		// QQQ : remove duplicated code
+#ifdef MCL_EC_USE_AFFINE
+		inf_ = false;
+#else
+		z = 1;
+#endif
+		if (!isFixedSizeByteSeq()) return 0;
+		const size_t n = sizeof(Fp);
+		if (bufSize < n) return 0;
+		char p[n];
+		memcpy(p, buf, n);
+		if (fp::isZeroArray(p, n)) {
+			clear();
+			return n;
+		}
+		bool isYodd = (p[n - 1] >> 7) != 0;
+		p[n - 1] &= 0x7f;
+		if (x.deserialize(p, n) == 0) return 0;
+		getYfromX(y, x, isYodd);
+		if (verifyOrder_ && !isValidOrder()) {
+			return 0;
+		}
+		return n;
+	}
 	// deplicated
 	static void setCompressedExpression(bool compressedExpression = true)
 	{
