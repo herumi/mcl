@@ -220,8 +220,8 @@ endif
 ../she-wasm/she_c.js: $(JS_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT)
 
-../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT)
+../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp include/mcl/bn.h Makefile
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT)# -DMCLBN_USE_NEW_DESERIALIZE_API
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll

@@ -48,14 +48,14 @@ static int closeErrFile()
 }
 
 template<class T>
-mclSize serialize(void *buf, mclSize maxBufSize, const T *x, int ioMode, const char *msg)
+mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode, const char *msg)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str, ioMode);
 	mclSize terminate = (ioMode == 10 || ioMode == 16) ? 1 : 0;
 	if (str.size() + terminate > maxBufSize) {
-		if (g_fp) fprintf(g_fp, "%s:serialize:small maxBufSize %d %d %d\n", msg, (int)maxBufSize, (int)str.size(), (int)terminate);
+		if (g_fp) fprintf(g_fp, "%s:getStr:small maxBufSize %d %d %d\n", msg, (int)maxBufSize, (int)str.size(), (int)terminate);
 		return 0;
 	}
 	memcpy(buf, str.c_str(), str.size());
@@ -69,16 +69,43 @@ mclSize serialize(void *buf, mclSize maxBufSize, const T *x, int ioMode, const c
 }
 
 template<class T>
-int deserialize(T *x, const void *buf, mclSize bufSize, int ioMode, const char *msg)
+mclSize serialize(void *buf, mclSize maxBufSize, const T *x, const char *msg)
 	try
 {
-	std::string str;
-	str.assign((const char *)buf, bufSize);
-	cast(x)->setStr(str, ioMode);
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
+} catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
+	return 0;
+}
+
+template<class T>
+int setStr(T *x, const char *buf, mclSize bufSize, int ioMode, const char *msg)
+	try
+{
+	cast(x)->setStr(std::string(buf, bufSize), ioMode);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
 	return -1;
+}
+
+template<class T>
+mclRetType deserialize(T *x, const void *buf, mclSize bufSize, const char *msg)
+	try
+{
+	const size_t n = cast(x)->deserialize(buf, bufSize);
+#ifdef MCLBN_USE_NEW_DESERIALIZE_API
+	return mclSize(n);
+#else
+	return n == 0 ? -1 : 0;
+#endif
+} catch (std::exception& e) {
+	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
+#ifdef MCLBN_USE_NEW_DESERIALIZE_API
+	return 0;
+#else
+	return -1;
+#endif
 }
 
 int mclBn_setErrFile(const char *name)
@@ -181,7 +208,7 @@ void mclBnFr_setInt32(mclBnFr *y, int x)
 
 int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnFr_setStr");
+	return setStr(x, buf, bufSize, ioMode, "mclBnFr_setStr");
 }
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	try
@@ -192,9 +219,9 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	if (g_fp) fprintf(g_fp, "setArrayMask %s\n", e.what());
 	return -1;
 }
-int mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
+mclRetType mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnFr_deserialize");
+	return deserialize(x, buf, bufSize, "mclBnFr_deserialize");
 }
 // return 1 if true
 int mclBnFr_isValid(const mclBnFr *x)
@@ -237,11 +264,11 @@ int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnFr_getStr");
+	return getStr(buf, maxBufSize, x, ioMode, "mclBnFr_getStr");
 }
 mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnFr_serialize");
+	return serialize(buf, maxBufSize, x, "mclBnFr_serialize");
 }
 
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x)
@@ -278,11 +305,11 @@ void mclBnG1_clear(mclBnG1 *x)
 
 int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnG1_setStr");
+	return setStr(x, buf, bufSize, ioMode, "mclBnG1_setStr");
 }
-int mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
+mclRetType mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG1_deserialize");
+	return deserialize(x, buf, bufSize, "mclBnG1_deserialize");
 }
 
 // return 1 if true
@@ -311,12 +338,12 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnG1_getStr");
+	return getStr(buf, maxBufSize, x, ioMode, "mclBnG1_getStr");
 }
 
 mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG1_serialize");
+	return serialize(buf, maxBufSize, x, "mclBnG1_serialize");
 }
 
 void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x)
@@ -353,11 +380,11 @@ void mclBnG2_clear(mclBnG2 *x)
 
 int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnG2_setStr");
+	return setStr(x, buf, bufSize, ioMode, "mclBnG2_setStr");
 }
-int mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
+mclRetType mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG2_deserialize");
+	return deserialize(x, buf, bufSize, "mclBnG2_deserialize");
 }
 
 // return 1 if true
@@ -386,11 +413,11 @@ int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnG2_getStr");
+	return getStr(buf, maxBufSize, x, ioMode, "mclBnG2_getStr");
 }
 mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG2_serialize");
+	return serialize(buf, maxBufSize, x, "mclBnG2_serialize");
 }
 
 void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x)
@@ -437,11 +464,11 @@ void mclBnGT_setInt32(mclBnGT *y, int x)
 
 int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return deserialize(x, buf, bufSize, ioMode, "mclBnGT_setStr");
+	return setStr(x, buf, bufSize, ioMode, "mclBnGT_setStr");
 }
-int mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
+mclRetType mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnGT_deserialize");
+	return deserialize(x, buf, bufSize, "mclBnGT_deserialize");
 }
 
 // return 1 if true
@@ -460,12 +487,12 @@ int mclBnGT_isOne(const mclBnGT *x)
 
 mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode)
 {
-	return serialize(buf, maxBufSize, x, ioMode, "mclBnGT_getStr");
+	return getStr(buf, maxBufSize, x, ioMode, "mclBnGT_getStr");
 }
 
 mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x)
 {
-	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnGT_serialize");
+	return serialize(buf, maxBufSize, x, "mclBnGT_serialize");
 }
 
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)

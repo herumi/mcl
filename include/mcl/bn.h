@@ -40,6 +40,14 @@
 #endif
 #endif
 
+#ifdef MCLBN_USE_NEW_DESERIALIZE_API
+	// return read size if sucess else 0
+	typedef mclSize mclRetType;
+#else
+	// return 0 if success else -1
+	typedef int mclRetType;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -144,8 +152,7 @@ MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 */
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
-// return error if buf >= r
-MCLBN_DLL_API int mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclRetType mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 
@@ -180,7 +187,7 @@ MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
 
 // return 0 if success
 MCLBN_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclRetType mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnG1_isValid(const mclBnG1 *x);
@@ -211,7 +218,7 @@ MCLBN_DLL_API void mclBnG2_clear(mclBnG2 *x);
 
 // return 0 if success
 MCLBN_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclRetType mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnG2_isValid(const mclBnG2 *x);
@@ -244,7 +251,7 @@ MCLBN_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
 
 // return 0 if success
 MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclRetType mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
