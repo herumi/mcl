@@ -31,12 +31,14 @@
 #else
 #ifdef __EMSCRIPTEN__
 	#define MCLBN_DLL_API __attribute__((used))
-	typedef unsigned int mclSize;
-	typedef int mclInt;
+	// avoid 64-bit integer
+	#define mclSize unsigned int
+	#define mclInt int
 #else
 	#define MCLBN_DLL_API
-	typedef size_t mclSize;
-	typedef int64_t mclInt;
+	// use #define for cgo
+	#define mclSize size_t
+	#define mclInt int64_t
 #endif
 #endif
 
