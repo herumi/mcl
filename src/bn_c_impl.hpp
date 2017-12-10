@@ -95,7 +95,7 @@ mclRetType deserialize(T *x, const void *buf, mclSize bufSize, const char *msg)
 {
 	const size_t n = cast(x)->deserialize(buf, bufSize);
 #ifdef MCLBN_USE_NEW_DESERIALIZE_API
-	return mclSize(n);
+	return (mclSize)n;
 #else
 	return n ? 0 : -1;
 #endif
