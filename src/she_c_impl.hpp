@@ -80,7 +80,7 @@ int sheInit(int curve, int maxUnitSize)
 }
 
 template<class T>
-size_t serialize(void *buf, size_t maxBufSize, const T *x)
+mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
 	try
 {
 	return cast(x)->serialize(buf, maxBufSize);
@@ -89,33 +89,33 @@ size_t serialize(void *buf, size_t maxBufSize, const T *x)
 	return 0;
 }
 
-size_t sheSecretKeySerialize(void *buf, size_t maxBufSize, const sheSecretKey *sec)
+mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec)
 {
 	return serialize(buf, maxBufSize, sec);
 }
 
-size_t shePublicKeySerialize(void *buf, size_t maxBufSize, const shePublicKey *pub)
+mclSize shePublicKeySerialize(void *buf, mclSize maxBufSize, const shePublicKey *pub)
 {
 	return serialize(buf, maxBufSize, pub);
 }
 
-size_t sheCipherTextG1Serialize(void *buf, size_t maxBufSize, const sheCipherTextG1 *c)
+mclSize sheCipherTextG1Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG1 *c)
 {
 	return serialize(buf, maxBufSize, c);
 }
 
-size_t sheCipherTextG2Serialize(void *buf, size_t maxBufSize, const sheCipherTextG2 *c)
+mclSize sheCipherTextG2Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG2 *c)
 {
 	return serialize(buf, maxBufSize, c);
 }
 
-size_t sheCipherTextGTSerialize(void *buf, size_t maxBufSize, const sheCipherTextGT *c)
+mclSize sheCipherTextGTSerialize(void *buf, mclSize maxBufSize, const sheCipherTextGT *c)
 {
 	return serialize(buf, maxBufSize, c);
 }
 
 template<class T>
-size_t deserialize(T *x, const void *buf, size_t bufSize)
+mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 	try
 {
 	return cast(x)->deserialize(buf, bufSize);
@@ -124,27 +124,27 @@ size_t deserialize(T *x, const void *buf, size_t bufSize)
 	return 0;
 }
 
-size_t sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize)
+mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize)
 {
 	return deserialize(sec, buf, bufSize);
 }
 
-size_t shePublicKeyDeserialize(shePublicKey* pub, const void *buf, size_t bufSize)
+mclSize shePublicKeyDeserialize(shePublicKey* pub, const void *buf, mclSize bufSize)
 {
 	return deserialize(pub, buf, bufSize);
 }
 
-size_t sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize)
+mclSize sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, mclSize bufSize)
 {
 	return deserialize(c, buf, bufSize);
 }
 
-size_t sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, size_t bufSize)
+mclSize sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, mclSize bufSize)
 {
 	return deserialize(c, buf, bufSize);
 }
 
-size_t sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, size_t bufSize)
+mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize bufSize)
 {
 	return deserialize(c, buf, bufSize);
 }
@@ -164,7 +164,7 @@ void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec)
 	cast(sec)->getPublicKey(*cast(pub));
 }
 
-static int setRangeForDLP(void (*f)(size_t, size_t), size_t hashSize, size_t tryNum)
+static int setRangeForDLP(void (*f)(mclSize, mclSize), mclSize hashSize, mclSize tryNum)
 	try
 {
 	f(hashSize, tryNum);
@@ -174,25 +174,25 @@ static int setRangeForDLP(void (*f)(size_t, size_t), size_t hashSize, size_t try
 	return -1;
 }
 
-int sheSetRangeForDLP(size_t hashSize, size_t tryNum)
+int sheSetRangeForDLP(mclSize hashSize, mclSize tryNum)
 {
 	return setRangeForDLP(SHE::setRangeForDLP, hashSize, tryNum);
 }
-int sheSetRangeForG1DLP(size_t hashSize, size_t tryNum)
+int sheSetRangeForG1DLP(mclSize hashSize, mclSize tryNum)
 {
 	return setRangeForDLP(SHE::setRangeForG1DLP, hashSize, tryNum);
 }
-int sheSetRangeForG2DLP(size_t hashSize, size_t tryNum)
+int sheSetRangeForG2DLP(mclSize hashSize, mclSize tryNum)
 {
 	return setRangeForDLP(SHE::setRangeForG2DLP, hashSize, tryNum);
 }
-int sheSetRangeForGTDLP(size_t hashSize, size_t tryNum)
+int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum)
 {
 	return setRangeForDLP(SHE::setRangeForGTDLP, hashSize, tryNum);
 }
 
 template<class CT>
-int encT(CT *c, const shePublicKey *pub, int64_t m)
+int encT(CT *c, const shePublicKey *pub, mclInt m)
 	try
 {
 	cast(pub)->enc(*cast(c), m);
@@ -202,38 +202,23 @@ int encT(CT *c, const shePublicKey *pub, int64_t m)
 	return -1;
 }
 
-int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m)
+int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, mclInt m)
 {
 	return encT(c, pub, m);
 }
 
-int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t m)
+int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, mclInt m)
 {
 	return encT(c, pub, m);
 }
 
-int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m)
-{
-	return encT(c, pub, m);
-}
-
-int sheEnc32G1(sheCipherTextG1 *c, const shePublicKey *pub, int m)
-{
-	return encT(c, pub, m);
-}
-
-int sheEnc32G2(sheCipherTextG2 *c, const shePublicKey *pub, int m)
-{
-	return encT(c, pub, m);
-}
-
-int sheEnc32GT(sheCipherTextGT *c, const shePublicKey *pub, int m)
+int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt m)
 {
 	return encT(c, pub, m);
 }
 
 template<class CT>
-int decT(int64_t *m, const sheSecretKey *sec, const CT *c)
+int decT(mclInt *m, const sheSecretKey *sec, const CT *c)
 	try
 {
 	*m = cast(sec)->dec(*cast(c));
@@ -243,17 +228,17 @@ int decT(int64_t *m, const sheSecretKey *sec, const CT *c)
 	return -1;
 }
 
-int sheDecG1(int64_t *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
+int sheDecG1(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
 {
 	return decT(m, sec, c);
 }
 
-int sheDecG2(int64_t *m, const sheSecretKey *sec, const sheCipherTextG2 *c)
+int sheDecG2(mclInt *m, const sheSecretKey *sec, const sheCipherTextG2 *c)
 {
 	return decT(m, sec, c);
 }
 
-int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c)
+int sheDecGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextGT *c)
 {
 	return decT(m, sec, c);
 }
@@ -345,32 +330,17 @@ int mulT(CT1& z, const CT2& x, const CT3& y)
 	return -1;
 }
 
-int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int64_t y)
+int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, mclInt y)
 {
 	return mulT(*cast(z), *cast(x), y);
 }
 
-int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int64_t y)
+int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, mclInt y)
 {
 	return mulT(*cast(z), *cast(x), y);
 }
 
-int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, int64_t y)
-{
-	return mulT(*cast(z), *cast(x), y);
-}
-
-int sheMul32G1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int y)
-{
-	return mulT(*cast(z), *cast(x), y);
-}
-
-int sheMul32G2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int y)
-{
-	return mulT(*cast(z), *cast(x), y);
-}
-
-int sheMul32GT(sheCipherTextGT *z, const sheCipherTextGT *x, int y)
+int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, mclInt y)
 {
 	return mulT(*cast(z), *cast(x), y);
 }

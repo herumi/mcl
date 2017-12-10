@@ -71,18 +71,18 @@ typedef struct {
 MCLSHE_DLL_API int sheInit(int curve, int maxUnitSize);
 
 // return written byte size if success else 0
-MCLSHE_DLL_API size_t sheSecretKeySerialize(void *buf, size_t maxBufSize, const sheSecretKey *sec);
-MCLSHE_DLL_API size_t shePublicKeySerialize(void *buf, size_t maxBufSize, const shePublicKey *pub);
-MCLSHE_DLL_API size_t sheCipherTextG1Serialize(void *buf, size_t maxBufSize, const sheCipherTextG1 *c);
-MCLSHE_DLL_API size_t sheCipherTextG2Serialize(void *buf, size_t maxBufSize, const sheCipherTextG2 *c);
-MCLSHE_DLL_API size_t sheCipherTextGTSerialize(void *buf, size_t maxBufSize, const sheCipherTextGT *c);
+MCLSHE_DLL_API mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec);
+MCLSHE_DLL_API mclSize shePublicKeySerialize(void *buf, mclSize maxBufSize, const shePublicKey *pub);
+MCLSHE_DLL_API mclSize sheCipherTextG1Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG1 *c);
+MCLSHE_DLL_API mclSize sheCipherTextG2Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG2 *c);
+MCLSHE_DLL_API mclSize sheCipherTextGTSerialize(void *buf, mclSize maxBufSize, const sheCipherTextGT *c);
 
 // return read byte size if sucess else 0
-MCLSHE_DLL_API size_t sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, size_t bufSize);
-MCLSHE_DLL_API size_t shePublicKeyDeserialize(shePublicKey* pub, const void *buf, size_t bufSize);
-MCLSHE_DLL_API size_t sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, size_t bufSize);
-MCLSHE_DLL_API size_t sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, size_t bufSize);
-MCLSHE_DLL_API size_t sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, size_t bufSize);
+MCLSHE_DLL_API mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize shePublicKeyDeserialize(shePublicKey* pub, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize bufSize);
 
 /*
 	set secretKey if system has /dev/urandom or CryptGenRandom
@@ -96,28 +96,23 @@ MCLSHE_DLL_API void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec);
 	make table to decode DLP
 	return 0 if success
 */
-MCLSHE_DLL_API int sheSetRangeForDLP(size_t hashSize, size_t tryNum);
-MCLSHE_DLL_API int sheSetRangeForG1DLP(size_t hashSize, size_t tryNum);
-MCLSHE_DLL_API int sheSetRangeForG2DLP(size_t hashSize, size_t tryNum);
-MCLSHE_DLL_API int sheSetRangeForGTDLP(size_t hashSize, size_t tryNum);
+MCLSHE_DLL_API int sheSetRangeForDLP(mclSize hashSize, mclSize tryNum);
+MCLSHE_DLL_API int sheSetRangeForG1DLP(mclSize hashSize, mclSize tryNum);
+MCLSHE_DLL_API int sheSetRangeForG2DLP(mclSize hashSize, mclSize tryNum);
+MCLSHE_DLL_API int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum);
 
 // return 0 if success
-MCLSHE_DLL_API int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, int64_t m);
-MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, int64_t m);
-MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, int64_t m);
-
-// for JavaScript
-MCLSHE_DLL_API int sheEnc32G1(sheCipherTextG1 *c, const shePublicKey *pub, int m);
-MCLSHE_DLL_API int sheEnc32G2(sheCipherTextG2 *c, const shePublicKey *pub, int m);
-MCLSHE_DLL_API int sheEnc32GT(sheCipherTextGT *c, const shePublicKey *pub, int m);
+MCLSHE_DLL_API int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, mclInt m);
+MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, mclInt m);
+MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt m);
 
 /*
 	decode c and set m
 	return 0 if success
 */
-MCLSHE_DLL_API int sheDecG1(int64_t *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
-MCLSHE_DLL_API int sheDecG2(int64_t *m, const sheSecretKey *sec, const sheCipherTextG2 *c);
-MCLSHE_DLL_API int sheDecGT(int64_t *m, const sheSecretKey *sec, const sheCipherTextGT *c);
+MCLSHE_DLL_API int sheDecG1(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
+MCLSHE_DLL_API int sheDecG2(mclInt *m, const sheSecretKey *sec, const sheCipherTextG2 *c);
+MCLSHE_DLL_API int sheDecGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextGT *c);
 
 /*
 	return 1 if dec(c) == 0
@@ -140,14 +135,9 @@ MCLSHE_DLL_API int sheSubGT(sheCipherTextGT *z, const sheCipherTextGT *x, const 
 
 // return 0 if success
 // z = x * y
-MCLSHE_DLL_API int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int64_t y);
-MCLSHE_DLL_API int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int64_t y);
-MCLSHE_DLL_API int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, int64_t y);
-
-// for JavaScript
-MCLSHE_DLL_API int sheMul32G1(sheCipherTextG1 *z, const sheCipherTextG1 *x, int y);
-MCLSHE_DLL_API int sheMul32G2(sheCipherTextG2 *z, const sheCipherTextG2 *x, int y);
-MCLSHE_DLL_API int sheMul32GT(sheCipherTextGT *z, const sheCipherTextGT *x, int y);
+MCLSHE_DLL_API int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, mclInt y);
+MCLSHE_DLL_API int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, mclInt y);
+MCLSHE_DLL_API int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, mclInt y);
 
 // return 0 if success
 // z = x * y
