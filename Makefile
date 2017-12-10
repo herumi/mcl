@@ -106,7 +106,7 @@ $(MCL_SLIB): $(LIB_OBJ)
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $@ $(BN256_OBJ)
 
-$(SHE256_OBJ) : src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.h
+$(SHE256_OBJ) : src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.h include/mcl/bn.h
 $(SHE256_LIB): $(SHE256_OBJ)
 	$(AR) $@ $(SHE256_OBJ)
 
@@ -209,7 +209,7 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
-EMCC_OPT=-I./include -I./src -I../cybozulib/include
+EMCC_OPT=-I./include -I./src -I../cybozulib/include -Wall -Wextra
 EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1
 JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp Makefile

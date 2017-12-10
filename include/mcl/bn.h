@@ -31,8 +31,12 @@
 #else
 #ifdef __EMSCRIPTEN__
 	#define MCLBN_DLL_API __attribute__((used))
+	typedef unsigned int mclSize;
+	typedef int mclInt;
 #else
 	#define MCLBN_DLL_API
+	typedef size_t mclSize;
+	typedef int64_t mclInt;
 #endif
 #endif
 
@@ -117,20 +121,20 @@ MCLBN_DLL_API int mclBn_getOpUnitSize();
 	return decimal string of the order of the curve(=the characteristic of Fr)
 	return str(buf) if success
 */
-MCLBN_DLL_API size_t mclBn_getCurveOrder(char *buf, size_t maxBufSize);
+MCLBN_DLL_API mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize);
 
 /*
 	return decimal string of the characteristic of Fp
 	return str(buf) if success
 */
-MCLBN_DLL_API size_t mclBn_getFieldOrder(char *buf, size_t maxBufSize);
+MCLBN_DLL_API mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize);
 
 ////////////////////////////////////////////////
 // set zero
 MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
 
 // set x to y
-MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, int64_t x);
+MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
 MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 
 /*
@@ -139,11 +143,11 @@ MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 	16 : hexadecimal number
 */
 // return 0 if success
-MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode);
+MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
 // return error if buf >= r
-MCLBN_DLL_API int mclBnFr_deserialize(mclBnFr *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
-MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnFr_isValid(const mclBnFr *x);
@@ -156,12 +160,12 @@ MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
 
 // hash(s) and set x
 // return 0 if success
-MCLBN_DLL_API int mclBnFr_setHashOf(mclBnFr *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
 
 // return strlen(buf) if sucess else 0
-MCLBN_DLL_API size_t mclBnFr_getStr(char *buf, size_t maxBufSize, const mclBnFr *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode);
 // return written byte if sucess else 0
-MCLBN_DLL_API size_t mclBnFr_serialize(void *buf, size_t maxBufSize, const mclBnFr *x);
+MCLBN_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x);
 
 MCLBN_DLL_API void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 MCLBN_DLL_API void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
@@ -175,20 +179,20 @@ MCLBN_DLL_API void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
 
 // return 0 if success
-MCLBN_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, size_t bufSize, int ioMode);
-MCLBN_DLL_API int mclBnG1_deserialize(mclBnG1 *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
+MCLBN_DLL_API int mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnG1_isValid(const mclBnG1 *x);
 MCLBN_DLL_API int mclBnG1_isEqual(const mclBnG1 *x, const mclBnG1 *y);
 MCLBN_DLL_API int mclBnG1_isZero(const mclBnG1 *x);
 
-MCLBN_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
 
 // return 0 if success
-MCLBN_DLL_API size_t mclBnG1_getStr(char *buf, size_t maxBufSize, const mclBnG1 *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode);
 // return written size if sucess else 0
-MCLBN_DLL_API size_t mclBnG1_serialize(void *buf, size_t maxBufSize, const mclBnG1 *x);
+MCLBN_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
 
 MCLBN_DLL_API void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
 MCLBN_DLL_API void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x);
@@ -206,20 +210,20 @@ MCLBN_DLL_API void mclBnG1_mulCT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y)
 MCLBN_DLL_API void mclBnG2_clear(mclBnG2 *x);
 
 // return 0 if success
-MCLBN_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, size_t bufSize, int ioMode);
-MCLBN_DLL_API int mclBnG2_deserialize(mclBnG2 *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
+MCLBN_DLL_API int mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnG2_isValid(const mclBnG2 *x);
 MCLBN_DLL_API int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y);
 MCLBN_DLL_API int mclBnG2_isZero(const mclBnG2 *x);
 
-MCLBN_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
 
 // return 0 if success
-MCLBN_DLL_API size_t mclBnG2_getStr(char *buf, size_t maxBufSize, const mclBnG2 *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode);
 // return written size if sucess else 0
-MCLBN_DLL_API size_t mclBnG2_serialize(void *buf, size_t maxBufSize, const mclBnG2 *x);
+MCLBN_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
 
 MCLBN_DLL_API void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x);
 MCLBN_DLL_API void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x);
@@ -235,12 +239,12 @@ MCLBN_DLL_API void mclBnG2_mulCT(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y)
 // set zero
 MCLBN_DLL_API void mclBnGT_clear(mclBnGT *x);
 // set x to y
-MCLBN_DLL_API void mclBnGT_setInt(mclBnGT *y, int64_t x);
+MCLBN_DLL_API void mclBnGT_setInt(mclBnGT *y, mclInt x);
 MCLBN_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
 
 // return 0 if success
-MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode);
-MCLBN_DLL_API int mclBnGT_deserialize(mclBnGT *x, const void *buf, size_t bufSize);
+MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
+MCLBN_DLL_API int mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
@@ -248,9 +252,9 @@ MCLBN_DLL_API int mclBnGT_isZero(const mclBnGT *x);
 MCLBN_DLL_API int mclBnGT_isOne(const mclBnGT *x);
 
 // return 0 if success
-MCLBN_DLL_API size_t mclBnGT_getStr(char *buf, size_t maxBufSize, const mclBnGT *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode);
 // return written size if sucess else 0
-MCLBN_DLL_API size_t mclBnGT_serialize(void *buf, size_t maxBufSize, const mclBnGT *x);
+MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
 
 MCLBN_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);
@@ -288,18 +292,18 @@ MCLBN_DLL_API void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, c
 	return 0 if success else -1
 	@note k >= 2, xVec[i] != 0, xVec[i] != xVec[j] for i != j
 */
-MCLBN_DLL_API int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, size_t k);
-MCLBN_DLL_API int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, size_t k);
-MCLBN_DLL_API int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, size_t k);
+MCLBN_DLL_API int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k);
+MCLBN_DLL_API int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k);
+MCLBN_DLL_API int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k);
 
 /*
 	evaluate polynomial
 	out = f(x) = c[0] + c[1] * x + c[2] * x^2 + ... + c[cSize - 1] * x^(cSize - 1)
 	@note cSize >= 2
 */
-MCLBN_DLL_API int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, size_t cSize, const mclBnFr *x);
-MCLBN_DLL_API int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, size_t cSize, const mclBnFr *x);
-MCLBN_DLL_API int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, size_t cSize, const mclBnFr *x);
+MCLBN_DLL_API int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x);
+MCLBN_DLL_API int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x);
+MCLBN_DLL_API int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x);
 
 
 #ifdef __cplusplus

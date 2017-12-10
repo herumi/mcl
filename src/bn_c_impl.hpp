@@ -48,12 +48,12 @@ static int closeErrFile()
 }
 
 template<class T>
-size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const char *msg)
+mclSize serialize(void *buf, mclSize maxBufSize, const T *x, int ioMode, const char *msg)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str, ioMode);
-	size_t terminate = (ioMode == 10 || ioMode == 16) ? 1 : 0;
+	mclSize terminate = (ioMode == 10 || ioMode == 16) ? 1 : 0;
 	if (str.size() + terminate > maxBufSize) {
 		if (g_fp) fprintf(g_fp, "%s:serialize:small maxBufSize %d %d %d\n", msg, (int)maxBufSize, (int)str.size(), (int)terminate);
 		return 0;
@@ -69,7 +69,7 @@ size_t serialize(void *buf, size_t maxBufSize, const T *x, int ioMode, const cha
 }
 
 template<class T>
-int deserialize(T *x, const void *buf, size_t bufSize, int ioMode, const char *msg)
+int deserialize(T *x, const void *buf, mclSize bufSize, int ioMode, const char *msg)
 	try
 {
 	std::string str;
@@ -141,7 +141,7 @@ int mclBn_getOpUnitSize()
 	return (int)Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
 }
 
-size_t copyStrAndReturnSize(char *buf, size_t maxBufSize, const std::string& str)
+mclSize copyStrAndReturnSize(char *buf, mclSize maxBufSize, const std::string& str)
 {
 	if (str.size() >= maxBufSize) return 0;
 	memcpy(buf, str.c_str(), str.size());
@@ -149,14 +149,14 @@ size_t copyStrAndReturnSize(char *buf, size_t maxBufSize, const std::string& str
 	return str.size();
 }
 
-size_t mclBn_getCurveOrder(char *buf, size_t maxBufSize)
+mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize)
 {
 	std::string str;
 	Fr::getModulo(str);
 	return copyStrAndReturnSize(buf, maxBufSize, str);
 }
 
-size_t mclBn_getFieldOrder(char *buf, size_t maxBufSize)
+mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize)
 {
 	std::string str;
 	Fp::getModulo(str);
@@ -170,7 +170,7 @@ void mclBnFr_clear(mclBnFr *x)
 }
 
 // set x to y
-void mclBnFr_setInt(mclBnFr *y, int64_t x)
+void mclBnFr_setInt(mclBnFr *y, mclInt x)
 {
 	*cast(y) = x;
 }
@@ -179,11 +179,11 @@ void mclBnFr_setInt32(mclBnFr *y, int x)
 	*cast(y) = x;
 }
 
-int mclBnFr_setStr(mclBnFr *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return deserialize(x, buf, bufSize, ioMode, "mclBnFr_setStr");
 }
-int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize)
+int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	try
 {
 	cast(x)->setArrayMask((const char *)buf, bufSize);
@@ -192,7 +192,7 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, size_t bufSize)
 	if (g_fp) fprintf(g_fp, "setArrayMask %s\n", e.what());
 	return -1;
 }
-int mclBnFr_deserialize(mclBnFr *x, const void *buf, size_t bufSize)
+int mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnFr_deserialize");
 }
@@ -225,7 +225,7 @@ int mclBnFr_setByCSPRNG(mclBnFr *x)
 }
 
 // hash(buf) and set x
-int mclBnFr_setHashOf(mclBnFr *x, const void *buf, size_t bufSize)
+int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)
 	try
 {
 	cast(x)->setHashOf(buf, bufSize);
@@ -235,11 +235,11 @@ int mclBnFr_setHashOf(mclBnFr *x, const void *buf, size_t bufSize)
 	return -1;
 }
 
-size_t mclBnFr_getStr(char *buf, size_t maxBufSize, const mclBnFr *x, int ioMode)
+mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode)
 {
 	return serialize(buf, maxBufSize, x, ioMode, "mclBnFr_getStr");
 }
-size_t mclBnFr_serialize(void *buf, size_t maxBufSize, const mclBnFr *x)
+mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x)
 {
 	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnFr_serialize");
 }
@@ -276,11 +276,11 @@ void mclBnG1_clear(mclBnG1 *x)
 	cast(x)->clear();
 }
 
-int mclBnG1_setStr(mclBnG1 *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return deserialize(x, buf, bufSize, ioMode, "mclBnG1_setStr");
 }
-int mclBnG1_deserialize(mclBnG1 *x, const void *buf, size_t bufSize)
+int mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG1_deserialize");
 }
@@ -299,7 +299,7 @@ int mclBnG1_isZero(const mclBnG1 *x)
 	return cast(x)->isZero();
 }
 
-int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, size_t bufSize)
+int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 	try
 {
 	BN::hashAndMapToG1(*cast(x), buf, bufSize);
@@ -309,12 +309,12 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, size_t bufSize)
 	return 1;
 }
 
-size_t mclBnG1_getStr(char *buf, size_t maxBufSize, const mclBnG1 *x, int ioMode)
+mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode)
 {
 	return serialize(buf, maxBufSize, x, ioMode, "mclBnG1_getStr");
 }
 
-size_t mclBnG1_serialize(void *buf, size_t maxBufSize, const mclBnG1 *x)
+mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x)
 {
 	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG1_serialize");
 }
@@ -351,11 +351,11 @@ void mclBnG2_clear(mclBnG2 *x)
 	cast(x)->clear();
 }
 
-int mclBnG2_setStr(mclBnG2 *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return deserialize(x, buf, bufSize, ioMode, "mclBnG2_setStr");
 }
-int mclBnG2_deserialize(mclBnG2 *x, const void *buf, size_t bufSize)
+int mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnG2_deserialize");
 }
@@ -374,7 +374,7 @@ int mclBnG2_isZero(const mclBnG2 *x)
 	return cast(x)->isZero();
 }
 
-int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, size_t bufSize)
+int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 	try
 {
 	BN::hashAndMapToG2(*cast(x), buf, bufSize);
@@ -384,11 +384,11 @@ int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, size_t bufSize)
 	return 1;
 }
 
-size_t mclBnG2_getStr(char *buf, size_t maxBufSize, const mclBnG2 *x, int ioMode)
+mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode)
 {
 	return serialize(buf, maxBufSize, x, ioMode, "mclBnG2_getStr");
 }
-size_t mclBnG2_serialize(void *buf, size_t maxBufSize, const mclBnG2 *x)
+mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x)
 {
 	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnG2_serialize");
 }
@@ -424,7 +424,7 @@ void mclBnGT_clear(mclBnGT *x)
 {
 	cast(x)->clear();
 }
-void mclBnGT_setInt(mclBnGT *y, int64_t x)
+void mclBnGT_setInt(mclBnGT *y, mclInt x)
 {
 	cast(y)->clear();
 	*(cast(y)->getFp0()) = x;
@@ -435,11 +435,11 @@ void mclBnGT_setInt32(mclBnGT *y, int x)
 	*(cast(y)->getFp0()) = x;
 }
 
-int mclBnGT_setStr(mclBnGT *x, const char *buf, size_t bufSize, int ioMode)
+int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return deserialize(x, buf, bufSize, ioMode, "mclBnGT_setStr");
 }
-int mclBnGT_deserialize(mclBnGT *x, const void *buf, size_t bufSize)
+int mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, mcl::IoFixedSizeByteSeq, "mclBnGT_deserialize");
 }
@@ -458,12 +458,12 @@ int mclBnGT_isOne(const mclBnGT *x)
 	return cast(x)->isOne();
 }
 
-size_t mclBnGT_getStr(char *buf, size_t maxBufSize, const mclBnGT *x, int ioMode)
+mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode)
 {
 	return serialize(buf, maxBufSize, x, ioMode, "mclBnGT_getStr");
 }
 
-size_t mclBnGT_serialize(void *buf, size_t maxBufSize, const mclBnGT *x)
+mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x)
 {
 	return serialize(buf, maxBufSize, x, mcl::IoFixedSizeByteSeq, "mclBnGT_serialize");
 }
@@ -534,7 +534,7 @@ void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t 
 	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }
 
-int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, size_t k)
+int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k)
 	try
 {
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
@@ -543,7 +543,7 @@ int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBn
 	if (g_fp) fprintf(g_fp, "mclBn_FrLagrangeInterpolation %s\n", e.what());
 	return -1;
 }
-int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, size_t k)
+int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k)
 	try
 {
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
@@ -552,7 +552,7 @@ int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBn
 	if (g_fp) fprintf(g_fp, "mclBn_G1LagrangeInterpolation %s\n", e.what());
 	return -1;
 }
-int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, size_t k)
+int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k)
 	try
 {
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
@@ -561,7 +561,7 @@ int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBn
 	if (g_fp) fprintf(g_fp, "mclBn_G2LagrangeInterpolation %s\n", e.what());
 	return -1;
 }
-int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, size_t cSize, const mclBnFr *x)
+int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x)
 	try
 {
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
@@ -570,7 +570,7 @@ int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, size_t cSize, 
 	if (g_fp) fprintf(g_fp, "mclBn_FrEvaluatePolynomial %s\n", e.what());
 	return -1;
 }
-int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, size_t cSize, const mclBnFr *x)
+int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x)
 	try
 {
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
@@ -579,7 +579,7 @@ int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, size_t cSize, 
 	if (g_fp) fprintf(g_fp, "mclBn_G1EvaluatePolynomial %s\n", e.what());
 	return -1;
 }
-int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, size_t cSize, const mclBnFr *x)
+int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x)
 	try
 {
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
