@@ -97,7 +97,7 @@ mclRetType deserialize(T *x, const void *buf, mclSize bufSize, const char *msg)
 #ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	return mclSize(n);
 #else
-	return n == 0 ? -1 : 0;
+	return n ? 0 : -1;
 #endif
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());

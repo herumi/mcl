@@ -786,8 +786,8 @@ public:
 			memset(buf, 0, n);
 		} else {
 			char *p = reinterpret_cast<char*>(buf);
-			EcT P(*this);
-			P.normalize();
+			EcT P;
+			EcT::normalize(P, *this);
 			if (P.x.serialize(p, maxBufSize) == 0) return 0;
 			if (P.y.isOdd()) {
 				p[n - 1] |= 0x80;
@@ -805,9 +805,9 @@ public:
 		z = 1;
 #endif
 		if (!isFixedSizeByteSeq()) return 0;
-		const size_t n = sizeof(Fp);
+		const size_t n = Fp::getByteSize();
 		if (bufSize < n) return 0;
-		char p[n];
+		char p[sizeof(Fp)];
 		memcpy(p, buf, n);
 		if (fp::isZeroArray(p, n)) {
 			clear();
