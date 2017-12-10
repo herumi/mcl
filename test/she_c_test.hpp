@@ -214,10 +214,10 @@ CYBOZU_TEST_AUTO(convert)
 	shePublicKey pub;
 	sheGetPublicKey(&pub, &sec);
 	sheCipherTextGT ct;
-	const int m = 123;
+	const int64_t m = 123;
 	int64_t dec;
 	sheCipherTextG1 c1;
-	sheEnc32G1(&c1, &pub, m);
+	sheEncG1(&c1, &pub, m);
 	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
 	CYBOZU_TEST_EQUAL(dec, 123);
 	sheConvertG1(&ct, &pub, &c1);
@@ -226,7 +226,7 @@ CYBOZU_TEST_AUTO(convert)
 	CYBOZU_TEST_EQUAL(dec, 123);
 
 	sheCipherTextG2 c2;
-	sheEnc32G2(&c2, &pub, m);
+	sheEncG2(&c2, &pub, m);
 	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
 	CYBOZU_TEST_EQUAL(dec, 123);
 	sheConvertG2(&ct, &pub, &c2);
