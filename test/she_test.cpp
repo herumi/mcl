@@ -189,6 +189,33 @@ CYBOZU_TEST_AUTO(add_mul_add_sub)
 	CYBOZU_TEST_EQUAL(sec.dec(c[0]), ok1);
 }
 
+CYBOZU_TEST_AUTO(finalExp)
+{
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	const int64_t m11 = 5;
+	const int64_t m12 = 3;
+	const int64_t m21 = -2;
+	const int64_t m22 = 9;
+	CipherTextG1 c11, c12;
+	CipherTextG2 c21, c22;
+	CipherTextGT ct1, ct2, ct;
+	pub.enc(c11, m11);
+	pub.enc(c12, m12);
+	pub.enc(c21, m21);
+	pub.enc(c22, m22);
+	CipherTextGT::mulML(ct1, c11, c21);
+	CipherTextGT::finalExp(ct, ct1);
+	CYBOZU_TEST_EQUAL(sec.dec(ct), m11 * m21);
+	CipherTextGT::mulML(ct2, c12, c22);
+	CipherTextGT::finalExp(ct, ct2);
+	CYBOZU_TEST_EQUAL(sec.dec(ct), m12 * m22);
+	CipherTextGT::add(ct1, ct1, ct2);
+	CipherTextGT::finalExp(ct1, ct1);
+	CYBOZU_TEST_EQUAL(sec.dec(ct1), (m11 * m21) + (m12 * m22));
+}
+
 CYBOZU_TEST_AUTO(innerProduct)
 {
 	const SecretKey& sec = g_sec;
@@ -418,6 +445,8 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("degGT   ", C, sec.dec, ct);
 
 	CYBOZU_BENCH_C("mul     ", C, CipherTextGT::mul, ct, c1, c2);
+	CYBOZU_BENCH_C("mulML   ", C, CipherTextGT::mulML, ct, c1, c2);
+	CYBOZU_BENCH_C("finalExp", C, CipherTextGT::finalExp, ct, ct);
 
 	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, c1, c1, c1);
 	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, c2, c2, c2);
