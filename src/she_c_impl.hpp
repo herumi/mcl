@@ -27,6 +27,9 @@ static const SecretKey *cast(const sheSecretKey *p) { return reinterpret_cast<co
 static PublicKey *cast(shePublicKey *p) { return reinterpret_cast<PublicKey*>(p); }
 static const PublicKey *cast(const shePublicKey *p) { return reinterpret_cast<const PublicKey*>(p); }
 
+static PrecomputedPublicKey *cast(shePrecomputedPublicKey *p) { return reinterpret_cast<PrecomputedPublicKey*>(p); }
+static const PrecomputedPublicKey *cast(const shePrecomputedPublicKey *p) { return reinterpret_cast<const PrecomputedPublicKey*>(p); }
+
 static CipherTextG1 *cast(sheCipherTextG1 *p) { return reinterpret_cast<CipherTextG1*>(p); }
 static const CipherTextG1 *cast(const sheCipherTextG1 *p) { return reinterpret_cast<const CipherTextG1*>(p); }
 
@@ -395,4 +398,52 @@ int sheConvertG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTex
 int sheConvertG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x)
 {
 	return convert(y, pub, x);
+}
+
+shePrecomputedPublicKey *shePrecomputedPublicKeyCreate()
+	try
+{
+	return reinterpret_cast<shePrecomputedPublicKey*>(new PrecomputedPublicKey());
+} catch (...) {
+	return 0;
+}
+
+void shePrecomputedPublicKeyDestroy(shePrecomputedPublicKey *ppub)
+{
+	delete cast(ppub);
+}
+
+int shePrecomputedPublicKeyInit(shePrecomputedPublicKey *ppub, const shePublicKey *pub)
+	try
+{
+	cast(ppub)->init(*cast(pub));
+	return 0;
+} catch (...) {
+	return 1;
+}
+
+template<class CT>
+int pEncT(CT *c, const shePrecomputedPublicKey *pub, mclInt m)
+	try
+{
+	cast(pub)->enc(*cast(c), m);
+	return 0;
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return -1;
+}
+
+int shePrecomputedPublicKeyEncG1(sheCipherTextG1 *c, const shePrecomputedPublicKey *pub, mclInt m)
+{
+	return pEncT(c, pub, m);
+}
+
+int shePrecomputedPublicKeyEncG2(sheCipherTextG2 *c, const shePrecomputedPublicKey *pub, mclInt m)
+{
+	return pEncT(c, pub, m);
+}
+
+int shePrecomputedPublicKeyEncGT(sheCipherTextGT *c, const shePrecomputedPublicKey *pub, mclInt m)
+{
+	return pEncT(c, pub, m);
 }

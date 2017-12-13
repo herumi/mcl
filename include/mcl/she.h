@@ -154,6 +154,15 @@ MCLSHE_DLL_API int sheReRandGT(sheCipherTextGT *c, const shePublicKey *pub);
 MCLSHE_DLL_API int sheConvertG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x);
 MCLSHE_DLL_API int sheConvertG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x);
 
+struct shePrecomputedPublicKey;
+MCLSHE_DLL_API shePrecomputedPublicKey *shePrecomputedPublicKeyCreate();
+MCLSHE_DLL_API void shePrecomputedPublicKeyDestroy(shePrecomputedPublicKey *ppub);
+// return 0 if success
+MCLSHE_DLL_API int shePrecomputedPublicKeyInit(shePrecomputedPublicKey *ppub, const shePublicKey *pub);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncG1(sheCipherTextG1 *c, const shePrecomputedPublicKey *ppub, mclInt m);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncG2(sheCipherTextG2 *c, const shePrecomputedPublicKey *ppub, mclInt m);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncGT(sheCipherTextGT *c, const shePrecomputedPublicKey *ppub, mclInt m);
+
 #ifdef __cplusplus
 }
 #endif

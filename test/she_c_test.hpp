@@ -235,3 +235,30 @@ CYBOZU_TEST_AUTO(convert)
 	CYBOZU_TEST_EQUAL(dec, 123);
 }
 
+CYBOZU_TEST_AUTO(precomputed)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+	shePrecomputedPublicKey *ppub = shePrecomputedPublicKeyCreate();
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyInit(ppub, &pub), 0);
+	const int64_t m = 152;
+	sheCipherTextG1 c1;
+	sheCipherTextG2 c2;
+	sheCipherTextGT ct;
+	int64_t dec = 0;
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyEncG1(&c1, ppub, m), 0);
+	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+	dec = 0;
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyEncG2(&c2, ppub, m), 0);
+	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+	dec = 0;
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyEncGT(&ct, ppub, m), 0);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+
+	shePrecomputedPublicKeyDestroy(ppub);
+}
