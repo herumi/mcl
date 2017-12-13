@@ -284,6 +284,10 @@ CYBOZU_TEST_AUTO(finalExp)
 
 	int64_t dec;
 	// sheMul = sheMulML + sheFinalExpGT
+	sheMul(&ct1, &c11, &c21);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct1), 0);
+	CYBOZU_TEST_EQUAL(dec, m11 * m21);
+
 	sheMulML(&ct1, &c11, &c21);
 	sheFinalExpGT(&ct, &ct1);
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
