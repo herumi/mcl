@@ -217,8 +217,8 @@ ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   JS_DEP+=src/base64m.ll
 endif
-../she-wasm/she_c.js: $(JS_DEP)
-	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT)
+../she-wasm/she_c.js: $(JS_DEP) Makefile
+	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
 
 ../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp include/mcl/bn.h Makefile
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCLBN_USE_NEW_DESERIALIZE_API
