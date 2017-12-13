@@ -262,3 +262,44 @@ CYBOZU_TEST_AUTO(precomputed)
 
 	shePrecomputedPublicKeyDestroy(ppub);
 }
+
+CYBOZU_TEST_AUTO(finalExp)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+	const int64_t m11 = 5;
+	const int64_t m12 = 7;
+	const int64_t m21 = -3;
+	const int64_t m22 = 9;
+	sheCipherTextG1 c11, c12;
+	sheCipherTextG2 c21, c22;
+	sheCipherTextGT ct1, ct2;
+	sheCipherTextGT ct;
+	sheEncG1(&c11, &pub, m11);
+	sheEncG1(&c12, &pub, m12);
+	sheEncG2(&c21, &pub, m21);
+	sheEncG2(&c22, &pub, m22);
+
+	int64_t dec;
+	// sheMul = sheMulML + sheFinalExpGT
+	sheMulML(&ct1, &c11, &c21);
+	sheFinalExpGT(&ct, &ct1);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(dec, m11 * m21);
+
+	sheMulML(&ct2, &c12, &c22);
+	sheFinalExpGT(&ct, &ct2);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(dec, m12 * m22);
+
+	/*
+		Mul(c11, c21) + Mul(c21, c22)
+		= finalExp(ML(c11, c21) + ML(c21, c22))
+	*/
+	sheAddGT(&ct, &ct1, &ct2);
+	sheFinalExpGT(&ct, &ct);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+	CYBOZU_TEST_EQUAL(dec, (m11 * m21) + (m12 * m22));
+}

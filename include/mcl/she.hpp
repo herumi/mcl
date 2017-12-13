@@ -444,27 +444,39 @@ private:
 		g1 = millerLoop(P1, Q)
 		g2 = millerLoop(P2, Q)
 	*/
-	static void doublePairing(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
+	static void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
 #if 1
 		std::vector<bn_current::Fp6> Qcoeff;
 		BN::precomputeG2(Qcoeff, Q);
 		BN::precomputedMillerLoop(g1, P1, Qcoeff);
-		BN::finalExp(g1, g1);
 		BN::precomputedMillerLoop(g2, P2, Qcoeff);
-		BN::finalExp(g2, g2);
 #else
-		BN::pairing(g1, P1, Q);
-		BN::pairing(g2, P2, Q);
+		BN::millerLoop(g1, P1, Q);
+		BN::millerLoop(g2, P2, Q);
 #endif
+	}
+	static void finalExp4(GT out[4], const GT in[4])
+	{
+		for (int i =  0; i < 4; i++) {
+			BN::finalExp(out[i], in[i]);
+		}
+	}
+	static void tensorProductML(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
+	{
+		/*
+			(S1, T1) x (S2, T2) = (ML(S1, S2), ML(S1, T2), ML(T1, S2), ML(T1, T2))
+		*/
+		doubleMillerLoop(g[0], g[2], S1, T1, S2);
+		doubleMillerLoop(g[1], g[3], S1, T1, T2);
 	}
 	static void tensorProduct(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
 	{
 		/*
 			(S1, T1) x (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 		*/
-		doublePairing(g[0], g[2], S1, T1, S2);
-		doublePairing(g[1], g[3], S1, T1, T2);
+		tensorProductML(g,S1, T1, S2,T2);
+		finalExp4(g, g);
 	}
 public:
 
@@ -788,7 +800,6 @@ public:
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
 			*/
-//			doublePairing(cm.g_[0], cm.g_[2], c1.S, c1.T, Q);
 			BN::precomputedMillerLoop(cm.g_[0], c1.S_, Qcoeff_);
 			BN::finalExp(cm.g_[0], cm.g_[0]);
 			BN::precomputedMillerLoop(cm.g_[2], c1.T_, Qcoeff_);
@@ -1128,12 +1139,30 @@ public:
 				GT::mul(z.g_[i], x.g_[i], t);
 			}
 		}
+		static void mulML(CipherTextGT& z, const CipherTextG1& x, const CipherTextG2& y)
+		{
+			/*
+				(S1, T1) * (S2, T2) = (ML(S1, S2), ML(S1, T2), ML(T1, S2), ML(T1, T2))
+			*/
+			tensorProductML(z.g_, x.S_, x.T_, y.S_, y.T_);
+		}
+		static void finalExp(CipherTextGT& y, const CipherTextGT& x)
+		{
+			finalExp4(y.g_, x.g_);
+		}
+		/*
+			mul(x, y) = mulML(x, y) + finalExp
+			mul(c11, c12) + mul(c21, c22)
+			= finalExp(mulML(c11, c12) + mulML(c21, c22)),
+			then one finalExp can be reduced
+		*/
 		static void mul(CipherTextGT& z, const CipherTextG1& x, const CipherTextG2& y)
 		{
 			/*
 				(S1, T1) * (S2, T2) = (e(S1, S2), e(S1, T2), e(T1, S2), e(T1, T2))
 			*/
-			tensorProduct(z.g_, x.S_, x.T_, y.S_, y.T_);
+			mulML(z, x, y);
+			finalExp(z, z);
 		}
 		static void mul(CipherTextGT& z, const CipherTextA& x, const CipherTextA& y)
 		{

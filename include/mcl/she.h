@@ -142,6 +142,13 @@ MCLSHE_DLL_API int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, mclInt
 // return 0 if success
 // z = x * y
 MCLSHE_DLL_API int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y);
+/*
+	sheMul(z, x, y) = sheMulML(z, x, y) + sheFinalExpGT(z)
+	@note
+	Mul(x1, y1) + ... + Mul(xn, yn) = finalExp(MulML(x1, y1) + ... + MulML(xn, yn))
+*/
+MCLSHE_DLL_API int sheMulML(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y);
+MCLSHE_DLL_API int sheFinalExpGT(sheCipherTextGT *y, const sheCipherTextGT *x);
 
 // return 0 if success
 // rerandomize(c)

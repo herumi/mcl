@@ -353,6 +353,26 @@ int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *
 	return mulT(*cast(z), *cast(x), *cast(y));
 }
 
+int sheMulML(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y)
+	try
+{
+	CipherTextGT::mulML(*cast(z), *cast(x), *cast(y));
+	return 0;
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return -1;
+}
+
+int sheFinalExpGT(sheCipherTextGT *y, const sheCipherTextGT *x)
+	try
+{
+	CipherTextGT::finalExp(*cast(y), *cast(x));
+	return 0;
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return -1;
+}
+
 template<class CT>
 int reRandT(CT& c, const shePublicKey *pub)
 	try
