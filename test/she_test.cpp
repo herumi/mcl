@@ -171,6 +171,13 @@ CYBOZU_TEST_AUTO(largeEnc)
 	pub.enc(c2, x + m);
 	CipherTextG1::sub(c1, c1, c2);
 	CYBOZU_TEST_EQUAL(sec.dec(c1), -m);
+
+	pub.enc(c1, 0);
+	CipherTextG1::mul(c1, c1, x);
+	CYBOZU_TEST_ASSERT(sec.isZero(c1));
+	pub.enc(c1, 1);
+	CipherTextG1::mul(c1, c1, x);
+	CYBOZU_TEST_ASSERT(!sec.isZero(c1));
 }
 
 CYBOZU_TEST_AUTO(add_mul_add_sub)
