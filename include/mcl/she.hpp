@@ -90,7 +90,8 @@ struct InterfaceForHashTable : G {
 	static void dbl(G& Q, const G& P) { G::dbl(Q, P); }
 	static void neg(G& Q, const G& P) { G::neg(Q, P); }
 	static void add(G& R, const G& P, const G& Q) { G::add(R, P, Q); }
-	static void mul(G& Q, const G& P, int64_t x) { G::mul(Q, P, x); }
+	template<class INT>
+	static void mul(G& Q, const G& P, const INT& x) { G::mul(Q, P, x); }
 };
 
 /*
@@ -113,7 +114,8 @@ struct InterfaceForHashTable<G, false> : G {
 	static void dbl(G& y, const G& x) { G::sqr(y, x); }
 	static void neg(G& Q, const G& P) { G::unitaryInv(Q, P); }
 	static void add(G& z, const G& x, const G& y) { G::mul(z, x, y); }
-	static void mul(G& z, const G& x, int64_t y) { G::pow(z, x, y); }
+	template<class INT>
+	static void mul(G& z, const G& x, const INT& y) { G::pow(z, x, y); }
 };
 
 /*
@@ -382,7 +384,9 @@ private:
 			G::sub(z.S_, x.S_, y.S_);
 			G::sub(z.T_, x.T_, y.T_);
 		}
-		static void mul(CipherTextAT& z, const CipherTextAT& x, int64_t y)
+		// INT = int64_t or Fr
+		template<class INT>
+		static void mul(CipherTextAT& z, const CipherTextAT& x, const INT& y)
 		{
 			G::mul(z.S_, x.S_, y);
 			G::mul(z.T_, x.T_, y);
@@ -701,8 +705,8 @@ public:
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
-		template<class G, class RG, class I>
-		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, int64_t m, RG& rg, const mcl::fp::WindowMethod<I>& wm)
+		template<class G, class INT, class RG, class I>
+		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, const INT& m, RG& rg, const mcl::fp::WindowMethod<I>& wm)
 		{
 			Fr r;
 			r.setRand(rg);
@@ -721,24 +725,28 @@ public:
 			G2::mul(yQ_, Q_, y);
 		}
 	public:
-		template<class RG>
-		void enc(CipherTextG1& c, int64_t m, RG& rg) const
+		/*
+			you can use INT as int64_t and Fr,
+			but the return type of dec() is int64_t.
+		*/
+		template<class INT, class RG>
+		void enc(CipherTextG1& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, P_, xP_, m, rg, PhashTbl_.getWM());
 		}
-		template<class RG>
-		void enc(CipherTextG2& c, int64_t m, RG& rg) const
+		template<class INT, class RG>
+		void enc(CipherTextG2& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, Q_, yQ_, m, rg, QhashTbl_.getWM());
 		}
-		template<class RG>
-		void enc(CipherTextA& c, int64_t m, RG& rg) const
+		template<class INT, class RG>
+		void enc(CipherTextA& c, const INT& m, RG& rg) const
 		{
 			enc(c.c1_, m, rg);
 			enc(c.c2_, m, rg);
 		}
-		template<class RG>
-		void enc(CipherTextGT& c, int64_t m, RG& rg) const
+		template<class INT, class RG>
+		void enc(CipherTextGT& c, const INT& m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
@@ -776,8 +784,8 @@ public:
 			GT::pow(c.g_[3], ePQ_, rc);
 #endif
 		}
-		template<class RG>
-		void enc(CipherText& c, int64_t m, RG& rg, bool multiplied = false) const
+		template<class INT, class RG>
+		void enc(CipherText& c, const INT& m, RG& rg, bool multiplied = false) const
 		{
 			c.isMultiplied_ = multiplied;
 			if (multiplied) {
@@ -786,11 +794,16 @@ public:
 				enc(c.a_, m, rg);
 			}
 		}
-		void enc(CipherTextG1& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextG2& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextA& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextGT& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherText& c, int64_t m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
+		template<class INT>
+		void enc(CipherTextG1& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextG2& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextA& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextGT& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherText& c, const INT& m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
 		/*
 			convert from CipherTextG1 to CipherTextGT
 		*/

@@ -156,6 +156,23 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 	}
 }
 
+CYBOZU_TEST_AUTO(largeEnc)
+{
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+
+	cybozu::XorShift rg;
+	Fr x;
+	x.setRand(rg);
+	CipherTextG1 c1, c2;
+	pub.enc(c1, x);
+	const int64_t m = 123;
+	pub.enc(c2, x + m);
+	CipherTextG1::sub(c1, c1, c2);
+	CYBOZU_TEST_EQUAL(sec.dec(c1), -m);
+}
+
 CYBOZU_TEST_AUTO(add_mul_add_sub)
 {
 	const SecretKey& sec = g_sec;
