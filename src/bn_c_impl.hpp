@@ -90,22 +90,14 @@ int setStr(T *x, const char *buf, mclSize bufSize, int ioMode, const char *msg)
 }
 
 template<class T>
-mclRetType deserialize(T *x, const void *buf, mclSize bufSize, const char *msg)
+mclSize deserialize(T *x, const void *buf, mclSize bufSize, const char *msg)
 	try
 {
 	const size_t n = cast(x)->deserialize(buf, bufSize);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	return (mclSize)n;
-#else
-	return n ? 0 : -1;
-#endif
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	return 0;
-#else
-	return -1;
-#endif
 }
 
 int mclBn_setErrFile(const char *name)
@@ -219,7 +211,7 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	if (g_fp) fprintf(g_fp, "setArrayMask %s\n", e.what());
 	return -1;
 }
-mclRetType mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
+mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, "mclBnFr_deserialize");
 }
@@ -307,7 +299,7 @@ int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return setStr(x, buf, bufSize, ioMode, "mclBnG1_setStr");
 }
-mclRetType mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
+mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, "mclBnG1_deserialize");
 }
@@ -382,7 +374,7 @@ int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return setStr(x, buf, bufSize, ioMode, "mclBnG2_setStr");
 }
-mclRetType mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
+mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, "mclBnG2_deserialize");
 }
@@ -466,7 +458,7 @@ int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	return setStr(x, buf, bufSize, ioMode, "mclBnGT_setStr");
 }
-mclRetType mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
+mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
 {
 	return deserialize(x, buf, bufSize, "mclBnGT_deserialize");
 }

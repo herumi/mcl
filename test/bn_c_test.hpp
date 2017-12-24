@@ -344,27 +344,15 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	ret = mclBnFr_deserialize(&x2, buf, n);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, n);
-#else
-	CYBOZU_TEST_EQUAL(ret, 0);
-#endif
 	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x1, &x2));
 
 	ret = mclBnFr_deserialize(&x2, buf, n - 1);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, 0);
-#else
-	CYBOZU_TEST_ASSERT(ret != 0);
-#endif
 
 	memset(&x2, 0, sizeof(x2));
 	ret = mclBnFr_deserialize(&x2, buf, n + 1);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, n);
-#else
-	CYBOZU_TEST_EQUAL(ret, 0);
-#endif
 	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x1, &x2));
 
 	n = mclBnFr_serialize(buf, expectSize, &x1);
@@ -377,27 +365,15 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	ret = mclBnG1_deserialize(&P2, buf, n);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, n);
-#else
-	CYBOZU_TEST_EQUAL(ret, 0);
-#endif
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&P1, &P2));
 
 	ret = mclBnG1_deserialize(&P2, buf, n - 1);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, 0);
-#else
-	CYBOZU_TEST_ASSERT(ret != 0);
-#endif
 
 	memset(&P2, 0, sizeof(P2));
 	ret = mclBnG1_deserialize(&P2, buf, n + 1);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, n);
-#else
-	CYBOZU_TEST_EQUAL(ret, 0);
-#endif
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&P1, &P2));
 
 	n = mclBnG1_serialize(buf, expectSize, &P1);
@@ -410,27 +386,15 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	ret = mclBnG2_deserialize(&Q2, buf, n);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, n);
-#else
-	CYBOZU_TEST_EQUAL(ret, 0);
-#endif
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&Q1, &Q2));
 
 	ret = mclBnG2_deserialize(&Q2, buf, n - 1);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, 0);
-#else
-	CYBOZU_TEST_ASSERT(ret != 0);
-#endif
 
 	memset(&Q2, 0, sizeof(Q2));
 	ret = mclBnG2_deserialize(&Q2, buf, n + 1);
-#ifdef MCLBN_USE_NEW_DESERIALIZE_API
 	CYBOZU_TEST_EQUAL(ret, n);
-#else
-	CYBOZU_TEST_EQUAL(ret, 0);
-#endif
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&Q1, &Q2));
 
 	n = mclBnG2_serialize(buf, expectSize, &Q1);
