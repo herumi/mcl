@@ -25,6 +25,7 @@
 	#endif
 #endif
 #include <cybozu/hash.hpp>
+#include <cybozu/serializer.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <mcl/operator.hpp>
@@ -207,15 +208,24 @@ public:
 	}
 	std::istream& readStream(std::istream& is, int ioMode)
 	{
-		bool isMinus;
-		fp::streamToArray(&isMinus, v_, FpT::getByteSize(), is, ioMode);
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) throw cybozu::Exception("FpT:readStream:large value");
-		if (!(ioMode & IoArrayRaw)) {
-			if (isMinus) {
-				neg(*this, *this);
-			}
-			toMont();
+		const size_t n = getByteSize();
+		if (ioMode & (IoArray | IoFixedSizeByteSeq)) {
+			load(is);
+			return is;
 		}
+		if (ioMode & IoArrayRaw) {
+			uint8_t buf[sizeof(FpT)];
+			is.read(reinterpret_cast<char*>(&buf[0]), n);
+			fp::copyByteToUnitAsLE(v_, buf, n);
+			return is;
+		}
+		bool isMinus;
+		fp::streamToArray(&isMinus, v_, n, is, ioMode);
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) throw cybozu::Exception("FpT:readStream:large value");
+		if (isMinus) {
+			neg(*this, *this);
+		}
+		toMont();
 		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
@@ -223,25 +233,39 @@ public:
 		std::istringstream is(str);
 		readStream(is, ioMode);
 	}
+	template<class OutputStream>
+	size_t save(OutputStream& os) const
+	{
+		uint8_t buf[sizeof(FpT)];
+		fp::Block b;
+		getBlock(b);
+		const size_t n = getByteSize();
+		fp::copyUnitToByteAsLE(buf, b.p, n);
+		cybozu::saveRange(os, buf, n);
+		return n;
+	}
+	template<class InputStream>
+	size_t load(InputStream& is)
+	{
+		uint8_t buf[sizeof(FpT)];
+		const size_t n = getByteSize();
+		cybozu::loadRange(buf, n, is);
+		fp::copyByteToUnitAsLE(v_, buf, n);
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) return 0;
+		toMont();
+		return n;
+	}
 	// return written bytes if sucess else 0
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
-		const size_t n = getByteSize();
-		if (n > maxBufSize) return 0;
-		fp::Block b;
-		getBlock(b);
-		fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(buf), b.p, n);
-		return n;
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		return save(os);
 	}
 	// return positive read bytes if sucess else 0
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
-		const size_t n = getByteSize();
-		if (bufSize < n) return 0;
-		fp::copyByteToUnitAsLE(v_, reinterpret_cast<const uint8_t*>(buf), n);
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) return 0;
-		toMont();
-		return n;
+		cybozu::MemoryInputStream is(buf, bufSize);
+		return load(is);
 	}
 	/*
 		throw exception if x >= p
@@ -295,18 +319,19 @@ public:
 #endif
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		fp::Block b;
 		const size_t n = getByteSize();
-		const Unit *p = v_;
-		if (!(ioMode & IoArrayRaw)) {
-			getBlock(b);
-			p = b.p;
-		}
-		if (ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)) {
+		if (ioMode & (IoArray | IoFixedSizeByteSeq)) {
 			str.resize(n);
-			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), p, str.size());
+			serialize(&str[0], n);
 			return;
 		}
+		if (ioMode & IoArrayRaw) {
+			str.resize(n);
+			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), v_, n);
+			return;
+		}
+		fp::Block b;
+		getBlock(b);
 		// use low 8-bit ioMode for Fp
 		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
 	}

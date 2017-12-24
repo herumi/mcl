@@ -602,24 +602,18 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 
 void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode)
 {
+	assert(!(ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)));
 	std::string str;
-	if (ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)) {
-		str.resize(byteSize);
-		is.read(&str[0], byteSize);
-		*pIsMinus = false;
-		fp::copyByteToUnitAsLE(x, reinterpret_cast<const uint8_t*>(str.c_str()), byteSize);
-	} else {
-		is >> str;
-		// use low 8-bit ioMode for Fp
-		ioMode &= 0xff;
-		const char *p = verifyStr(pIsMinus, &ioMode, str);
-		mpz_class mx;
-		if (!gmp::setStr(mx, p, ioMode)) {
-			throw cybozu::Exception("fp:streamToArray:bad format") << ioMode << str;
-		}
-		const size_t n = (byteSize + sizeof(Unit) - 1) / sizeof(Unit);
-		gmp::getArray(x, n, mx);
+	is >> str;
+	// use low 8-bit ioMode for Fp
+	ioMode &= 0xff;
+	const char *p = verifyStr(pIsMinus, &ioMode, str);
+	mpz_class mx;
+	if (!gmp::setStr(mx, p, ioMode)) {
+		throw cybozu::Exception("fp:streamToArray:bad format") << ioMode << str;
 	}
+	const size_t n = (byteSize + sizeof(Unit) - 1) / sizeof(Unit);
+	gmp::getArray(x, n, mx);
 	if (!is) {
 		throw cybozu::Exception("streamToArray:can't read") << byteSize;
 	}

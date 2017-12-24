@@ -46,6 +46,7 @@ namespace bn_current = mcl::bn512;
 #include <cybozu/random_generator.hpp>
 #endif
 #include <mcl/window_method.hpp>
+#include <cybozu/endian.hpp>
 
 namespace mcl { namespace she {
 
@@ -130,7 +131,7 @@ class HashTable {
 	mcl::fp::WindowMethod<I> wm_;
 	G nextP_;
 	G nextNegP_;
-	size_t tryNum_;
+	uint32_t tryNum_;
 	union ic {
 		uint64_t i;
 		char c[8];
@@ -166,7 +167,7 @@ public:
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
-	void init(const G& P, size_t hashSize, size_t tryNum = 0)
+	void init(const G& P, size_t hashSize, uint32_t tryNum = 0)
 	{
 		if (hashSize == 0) {
 			kcv.clear();
@@ -194,7 +195,7 @@ public:
 		std::stable_sort(kcv.begin(), kcv.end());
 		setWindowMethod();
 	}
-	void setTryNum(size_t tryNum)
+	void setTryNum(uint32_t tryNum)
 	{
 		this->tryNum_ = tryNum;
 	}
@@ -259,7 +260,7 @@ public:
 		int64_t posCenter = 0;
 		int64_t negCenter = 0;
 		int64_t next = (int64_t)kcv.size() * 2 + 1;
-		for (size_t i = 1; i < tryNum_; i++) {
+		for (uint32_t i = 1; i < tryNum_; i++) {
 			I::add(posP, posP, nextNegP_);
 			posCenter += next;
 			c = basicLog(posP, &ok);
@@ -275,6 +276,24 @@ public:
 		}
 		throw cybozu::Exception("HashTable:log:not found");
 	}
+#if 0
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		const size_t kcvTotalSize = sizeof(kcv[0]) * kcv.size();
+		uint8_t *p = reinterpret_cast<uint8_t*>(buf);
+		if (sizeof(uint32_t) * 2 + kcvTotalSize > maxBufSize) throw cybozu::Exception("HashTable:serialize:small maxBufSize") << maxBufSize;
+		cybozu::set32bitLE(p, static_cast<uint32_t>(kcv.size()));
+		p += 4;
+		cybozu::set32bitLE(p, tryNum_);
+		p += 4;
+		memcpy(p, &kcv[0], kcvTotalSize);
+		const writeSize = 8 + kcvTotalSize;
+		p += kcvTotalSize;
+		const size_t sizeP = P_.serialize(p, maxBufSize - writeSize);
+		if (sizeP == 0) return 0;
+		return writeSize + sizeP;
+	}
+#endif
 	void save(std::ostream& os) const
 	{
 		saveUint64(os, kcv.size());
