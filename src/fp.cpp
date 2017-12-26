@@ -600,23 +600,17 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	return ioMode;
 }
 
-void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode)
+void strToArray(bool *pIsMinus, Unit *x, size_t xN, const std::string& str, int ioMode)
 {
-	assert(!(ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)));
-	std::string str;
-	is >> str;
+	assert(!(ioMode & (IoArray | IoArrayRaw | IoSerialize)));
 	// use low 8-bit ioMode for Fp
 	ioMode &= 0xff;
 	const char *p = verifyStr(pIsMinus, &ioMode, str);
 	mpz_class mx;
 	if (!gmp::setStr(mx, p, ioMode)) {
-		throw cybozu::Exception("fp:streamToArray:bad format") << ioMode << str;
+		throw cybozu::Exception("fp:strToArray:bad format") << ioMode << str;
 	}
-	const size_t n = (byteSize + sizeof(Unit) - 1) / sizeof(Unit);
-	gmp::getArray(x, n, mx);
-	if (!is) {
-		throw cybozu::Exception("streamToArray:can't read") << byteSize;
-	}
+	gmp::getArray(x, xN, mx);
 }
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask)

@@ -234,16 +234,21 @@ public:
 		a.setArray(buf, n);
 		b.setArray(buf + n, n);
 	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode)
+	{
+		a.load(is, ioMode);
+		b.load(is, ioMode);
+	}
 	std::istream& readStream(std::istream& is, int ioMode)
 	{
-		a.readStream(is, ioMode);
-		b.readStream(is, ioMode);
+		load(is, ioMode);
 		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		std::istringstream is(str);
-		readStream(is, ioMode);
+		load(is, ioMode);
 	}
 	/*
 		Fp2T = <a> + ' ' + <b>
@@ -263,7 +268,8 @@ public:
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
-		return self.readStream(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+		return is;
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
@@ -752,17 +758,22 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		return a == rhs.a && b == rhs.b && c == rhs.c;
 	}
 	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
+	template<class InputStream>
+	void load(InputStream& is, int ioMode)
+	{
+		a.load(is, ioMode);
+		b.load(is, ioMode);
+		c.load(is, ioMode);
+	}
 	std::istream& readStream(std::istream& is, int ioMode)
 	{
-		a.readStream(is, ioMode);
-		b.readStream(is, ioMode);
-		c.readStream(is, ioMode);
+		load(is, ioMode);
 		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		std::istringstream is(str);
-		readStream(is, ioMode);
+		load(is, ioMode);
 	}
 	void getStr(std::string& str, int ioMode = 0) const
 	{
@@ -781,7 +792,8 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& self)
 	{
-		return self.readStream(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+		return is;
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp6T& self)
 	{
@@ -1170,16 +1182,21 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		}
 #endif
 	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode)
+	{
+		a.load(is, ioMode);
+		b.load(is, ioMode);
+	}
 	std::istream& readStream(std::istream& is, int ioMode)
 	{
-		a.readStream(is, ioMode);
-		b.readStream(is, ioMode);
+		load(is, ioMode);
 		return is;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		std::istringstream is(str);
-		readStream(is, ioMode);
+		load(is, ioMode);
 	}
 	void getStr(std::string& str, int ioMode = 0) const
 	{
@@ -1196,7 +1213,8 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
-		return self.readStream(is, fp::detectIoMode(Fp::getIoMode(), is));
+		self.load(is, fp::detectIoMode(Fp::getIoMode(), is));
+		return is;
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{

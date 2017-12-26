@@ -280,28 +280,28 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
-		// IoFixedSizeByteSeq
+		// IoSerialize
 		if (!Ec::isFixedSizeByteSeq()) return;
 		P.set(x, y);
 		{
-			std::string s = P.getStr(mcl::IoFixedSizeByteSeq);
+			std::string s = P.getStr(mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
-			Q.setStr(s, mcl::IoFixedSizeByteSeq);
+			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		{
 			P = -P;
-			std::string s = P.getStr(mcl::IoFixedSizeByteSeq);
+			std::string s = P.getStr(mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
-			Q.setStr(s, mcl::IoFixedSizeByteSeq);
+			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		P.clear();
 		{
-			std::string s = P.getStr(mcl::IoFixedSizeByteSeq);
+			std::string s = P.getStr(mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
 			CYBOZU_TEST_ASSERT(mcl::fp::isZeroArray(s.c_str(), s.size()));
-			Q.setStr(s, mcl::IoFixedSizeByteSeq);
+			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 	}

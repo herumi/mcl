@@ -672,7 +672,7 @@ public:
 		}
 		EcT P(*this);
 		P.normalize();
-		if (ioMode & IoFixedSizeByteSeq) {
+		if (ioMode & IoSerialize) {
 			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
 			if (isZero()) {
@@ -714,40 +714,37 @@ public:
 		int ioMode = fp::detectIoMode(getIoMode(), os);
 		return os << self.getStr(ioMode);
 	}
-	std::istream& readStream(std::istream& is, int ioMode)
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
 	{
+		typedef cybozu::InputStreamTag<InputStream> InputTag;
 #ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
 #else
 		z = 1;
 #endif
-		if (ioMode & IoFixedSizeByteSeq) {
+		if (ioMode & IoSerialize) {
 			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
-			std::string str;
+			char buf[sizeof(Fp)];
 			const size_t n = Fp::getByteSize();
-			str.resize(n);
-			is.read(&str[0], n);
-			if (!is) throw cybozu::Exception("EcT:readStream:can't read") << n;
-			if (fp::isZeroArray(&str[0], n)) {
+			if (InputTag::readSome(is, buf, n) != n) throw cybozu::Exception("EcT:readStream:can't read") << n;
+			if (fp::isZeroArray(buf, n)) {
 				clear();
-				return is;
+				return;
 			}
-			bool isYodd = (str[n - 1] >> 7) != 0;
-			str[n - 1] &= 0x7f;
-			x.setStr(str, ioMode);
+			bool isYodd = (buf[n - 1] >> 7) != 0;
+			buf[n - 1] &= 0x7f;
+			x.setStr(std::string(buf, n), ioMode);
 			getYfromX(y, x, isYodd);
 		} else {
-			char c = 0;
-			if (!(is >> c)) {
-				throw cybozu::Exception("EcT:readStream:no header");
-			}
+			char c = InputTag::readChar(is);
 			if (c == '0') {
 				clear();
-				return is;
+				return;
 			}
-			x.readStream(is, ioMode);
+			x.load(is, ioMode);
 			if (c == '1') {
-				y.readStream(is, ioMode);
+				y.load(is, ioMode);
 				if (!isValid(x, y)) {
 					throw cybozu::Exception("EcT:readStream:bad value") << ioMode << x << y;
 				}
@@ -755,8 +752,8 @@ public:
 				bool isYodd = c == '3';
 				getYfromX(y, x, isYodd);
 			} else if (c == '4') {
-				y.readStream(is, ioMode);
-				z.readStream(is, ioMode);
+				y.load(is, ioMode);
+				z.load(is, ioMode);
 			} else {
 				throw cybozu::Exception("EcT:readStream:bad format") << (int)c;
 			}
@@ -764,6 +761,10 @@ public:
 		if (verifyOrder_ && !isValidOrder()) {
 			throw cybozu::Exception("EcT:readStream:bad order") << *this;
 		}
+	}
+	std::istream& readStream(std::istream& is, int ioMode = 0)
+	{
+		load(is, ioMode);
 		return is;
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
@@ -779,6 +780,11 @@ public:
 	// return written bytes if sucess else 0
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
+#if 0
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		save(os, IoSerialize);
+		return os.getPos();
+#else
 		if (!isFixedSizeByteSeq()) return 0;
 		const size_t n = Fp::getByteSize();
 		if (maxBufSize < n) return 0;
@@ -794,33 +800,14 @@ public:
 			}
 		}
 		return n;
+#endif
 	}
 	// return positive read bytes if sucess else 0
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
-		// QQQ : remove duplicated code
-#ifdef MCL_EC_USE_AFFINE
-		inf_ = false;
-#else
-		z = 1;
-#endif
-		if (!isFixedSizeByteSeq()) return 0;
-		const size_t n = Fp::getByteSize();
-		if (bufSize < n) return 0;
-		char p[sizeof(Fp)];
-		memcpy(p, buf, n);
-		if (fp::isZeroArray(p, n)) {
-			clear();
-			return n;
-		}
-		bool isYodd = (p[n - 1] >> 7) != 0;
-		p[n - 1] &= 0x7f;
-		if (x.deserialize(p, n) == 0) return 0;
-		getYfromX(y, x, isYodd);
-		if (verifyOrder_ && !isValidOrder()) {
-			return 0;
-		}
-		return n;
+		cybozu::MemoryInputStream is(buf, bufSize);
+		load(is, IoSerialize);
+		return is.getPos();
 	}
 	// deplicated
 	static void setCompressedExpression(bool compressedExpression = true)

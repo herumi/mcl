@@ -60,6 +60,38 @@ bool isEnableJIT(); // 1st call is not threadsafe
 // hash msg
 std::string hash(size_t bitSize, const void *msg, size_t msgSize);
 
+namespace local {
+
+inline bool isSpace(char c)
+{
+	return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+
+template<class InputStream>
+char skipSpace(InputStream& is)
+{
+	typedef cybozu::InputStreamTag<InputStream> InputTag;
+	while (InputTag::hasNext(is)) {
+		char c = InputTag::readChar(is);
+		if (!isSpace(c)) return c;
+	}
+	throw cybozu::Exception("skipSpace:read");
+}
+
+template<class InputStream>
+void loadWord(std::string& s, InputStream& is)
+{
+	typedef cybozu::InputStreamTag<InputStream> InputTag;
+	s = skipSpace(is);
+	while (InputTag::hasNext(is)) {
+		char c = InputTag::readChar(is);
+		if (isSpace(c)) break;
+		s += c;
+	}
+}
+
+} // local
+
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
@@ -206,66 +238,77 @@ public:
 	{
 		if (isMont()) op_.fromMont(v_, v_);
 	}
-	std::istream& readStream(std::istream& is, int ioMode)
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
 	{
-		const size_t n = getByteSize();
-		if (ioMode & (IoArray | IoFixedSizeByteSeq)) {
-			load(is);
-			return is;
-		}
-		if (ioMode & IoArrayRaw) {
+		typedef cybozu::InputStreamTag<InputStream> InputTag;
+		bool isMinus = false;
+		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
 			uint8_t buf[sizeof(FpT)];
-			is.read(reinterpret_cast<char*>(&buf[0]), n);
+			const size_t n = getByteSize();
+			if (InputTag::readSome(is, buf, n) != n) throw cybozu::Exception("FpT:load:can't read") << n;
 			fp::copyByteToUnitAsLE(v_, buf, n);
-			return is;
+		} else {
+			std::string str;
+			fp::local::loadWord(str, is);
+			fp::strToArray(&isMinus, v_, op_.N, str, ioMode);
 		}
-		bool isMinus;
-		fp::streamToArray(&isMinus, v_, n, is, ioMode);
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) throw cybozu::Exception("FpT:readStream:large value");
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) throw cybozu::Exception("FpT:load:large value");
 		if (isMinus) {
 			neg(*this, *this);
 		}
-		toMont();
-		return is;
+		if (!(ioMode & IoArrayRaw)) {
+			toMont();
+		}
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		typedef cybozu::OutputStreamTag<OutputStream> OutputTag;
+		const size_t n = getByteSize();
+		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
+			uint8_t buf[sizeof(FpT)];
+			if (ioMode & IoArrayRaw) {
+				fp::copyUnitToByteAsLE(buf, v_, n);
+			} else {
+				fp::Block b;
+				getBlock(b);
+				fp::copyUnitToByteAsLE(buf, b.p, n);
+			}
+			os.write(buf, n);
+			return;
+		}
+		fp::Block b;
+		getBlock(b);
+		std::string str;
+		// use low 8-bit ioMode for Fp
+		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
+		OutputTag::write(os, str.c_str(), str.size());
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		std::istringstream is(str);
-		readStream(is, ioMode);
-	}
-	template<class OutputStream>
-	size_t save(OutputStream& os) const
-	{
-		uint8_t buf[sizeof(FpT)];
-		fp::Block b;
-		getBlock(b);
-		const size_t n = getByteSize();
-		fp::copyUnitToByteAsLE(buf, b.p, n);
-		cybozu::saveRange(os, buf, n);
-		return n;
+		cybozu::StringInputStream is(str);
+		load(is, ioMode);
 	}
 	template<class InputStream>
-	size_t load(InputStream& is)
+	InputStream& readStream(InputStream& is, int ioMode = 0)
 	{
-		uint8_t buf[sizeof(FpT)];
-		const size_t n = getByteSize();
-		cybozu::loadRange(buf, n, is);
-		fp::copyByteToUnitAsLE(v_, buf, n);
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) return 0;
-		toMont();
-		return n;
+		load(is, ioMode);
+		return is;
 	}
-	// return written bytes if sucess else 0
+	// return written bytes
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
 		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		return save(os);
+		save(os);
+		return os.getPos();
 	}
-	// return positive read bytes if sucess else 0
+	// return read bytes
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
 		cybozu::MemoryInputStream is(buf, bufSize);
-		return load(is);
+		load(is);
+		return is.getPos();
 	}
 	/*
 		throw exception if x >= p
@@ -313,31 +356,12 @@ public:
 	{
 		setHashOf(msg.data(), msg.size());
 	}
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable:4701)
-#endif
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		const size_t n = getByteSize();
-		if (ioMode & (IoArray | IoFixedSizeByteSeq)) {
-			str.resize(n);
-			serialize(&str[0], n);
-			return;
-		}
-		if (ioMode & IoArrayRaw) {
-			str.resize(n);
-			fp::copyUnitToByteAsLE(reinterpret_cast<uint8_t*>(&str[0]), v_, n);
-			return;
-		}
-		fp::Block b;
-		getBlock(b);
-		// use low 8-bit ioMode for Fp
-		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
+		str.clear();
+		cybozu::StringOutputStream os(str);
+		save(os, ioMode);
 	}
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
 	std::string getStr(int ioMode = 0) const
 	{
 		std::string str;

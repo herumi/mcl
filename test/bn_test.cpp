@@ -325,8 +325,8 @@ void testTrivial(const G1& P, const G2& Q)
 
 void testIoAll(const G1& P, const G2& Q)
 {
-	int FpTbl[] = { 0, 2, 2|mcl::IoPrefix, 10, 16, 16|mcl::IoPrefix, mcl::IoArray, mcl::IoArrayRaw };
-	int EcTbl[] = { mcl::IoEcAffine, mcl::IoEcProj, mcl::IoEcCompY, mcl::IoFixedSizeByteSeq };
+	const int FpTbl[] = { 0, 2, 2|mcl::IoPrefix, 10, 16, 16|mcl::IoPrefix, mcl::IoArray, mcl::IoArrayRaw };
+	const int EcTbl[] = { mcl::IoEcAffine, mcl::IoEcProj, mcl::IoEcCompY, mcl::IoSerialize };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(FpTbl); i++) {
 		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(EcTbl); j++) {
 			G1 P2 = P, P3;
@@ -338,6 +338,14 @@ void testIoAll(const G1& P, const G2& Q)
 			s = Q2.getStr(ioMode);
 			Q3.setStr(s, ioMode);
 			CYBOZU_TEST_EQUAL(Q2, Q3);
+			s = P.x.getStr(ioMode);
+			Fp Px;
+			Px.setStr(s, ioMode);
+			CYBOZU_TEST_EQUAL(P.x, Px);
+			s = Q.x.getStr(ioMode);
+			Fp2 Qx;
+			Qx.setStr(s, ioMode);
+			CYBOZU_TEST_EQUAL(Q.x, Qx);
 		}
 	}
 }
@@ -356,10 +364,10 @@ CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
-		printf("curve=%s\n", ts.name);
+		printf("i=%d curve=%s\n", int(i), ts.name);
 		initPairing(ts.cp, g_mode);
-		G1 P(ts.g1.a, ts.g1.b);
-		G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
+		const G1 P(ts.g1.a, ts.g1.b);
+		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
 		testPairing(P, Q, ts.e);
 		clk.put();

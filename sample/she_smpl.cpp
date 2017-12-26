@@ -96,21 +96,21 @@ void usePrimitiveCipherText()
 		printf("err m=%d ok=%d\n", m, ok);
 	}
 	std::string s;
-	s = c1.getStr(mcl::IoFixedSizeByteSeq); // serialize
+	s = c1.getStr(mcl::IoSerialize); // serialize
 	printf("c1 data size %d byte\n", (int)s.size());
 
-	c2.setStr(s, mcl::IoFixedSizeByteSeq);
+	c2.setStr(s, mcl::IoSerialize);
 	printf("deserialize %s\n", c1 == c2 ? "ok" : "ng");
 
-	s = d1.getStr(mcl::IoFixedSizeByteSeq); // serialize
+	s = d1.getStr(mcl::IoSerialize); // serialize
 	printf("d1 data size %d byte\n", (int)s.size());
-	d2.setStr(s, mcl::IoFixedSizeByteSeq);
+	d2.setStr(s, mcl::IoSerialize);
 	printf("deserialize %s\n", d1 == d2 ? "ok" : "ng");
 
-	s = cm.getStr(mcl::IoFixedSizeByteSeq); // serialize
+	s = cm.getStr(mcl::IoSerialize); // serialize
 	printf("cm data size %d byte\n", (int)s.size());
 	CipherTextGT cm2;
-	cm2.setStr(s, mcl::IoFixedSizeByteSeq);
+	cm2.setStr(s, mcl::IoSerialize);
 	printf("deserialize %s\n", cm == cm2 ? "ok" : "ng");
 }
 

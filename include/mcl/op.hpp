@@ -30,14 +30,14 @@ namespace mcl {
 
 	byte string(not zero terminated, fixed size)
 	IoArray | IoArrayRaw
-	IoArray = IoFixedSizeByteSeq
+	IoArray = IoSerialize
 
 	// for Ec
 	affine(0) | IoEcCompY | IoComp
 	default : affine
 
 	affine and IoEcCompY are available with ioMode for Fp
-	IoFixedSizeByteSeq ignores ioMode for Fp
+	IoSerialize ignores ioMode for Fp
 
 	IoAuto
 		dec or hex according to ios_base::fmtflags
@@ -69,7 +69,7 @@ namespace mcl {
 		"2 <x>" ; compressed for even y
 		"3 <x>" ; compressed for odd y
 
-	IoFixedSizeByteSeq(fixed size = Fp::getByteSize())
+	IoSerialize(fixed size = Fp::getByteSize())
 		use MSB of array of x for 1-bit y for prime p where (p % 8 != 0)
 		[0] ; infinity
 		<x> ; for even y
@@ -87,7 +87,8 @@ enum IoMode {
 	IoHexPrefix = IoHex | IoPrefix,
 	IoEcAffine = 0, // affine coordinate
 	IoEcCompY = 256, // 1-bit y representation of elliptic curve
-	IoFixedSizeByteSeq = 512, // use MBS for 1-bit y
+	IoSerialize = 512, // use MBS for 1-bit y
+	IoFixedSizeByteSeq = IoSerialize, // obsolete
 	IoEcProj = 1024 // projective or jacobi coordinate
 };
 
@@ -297,17 +298,15 @@ private:
 };
 
 /*
-	read data from is according to ioMode,
-	and set x[0, n) with abs(buf[0, bufSize/sizeof(Unit)))
-	@note byteSize is not num of Unit
+	conevrt string to array according to ioMode,
 */
-void streamToArray(bool *pIsMinus, Unit *x, size_t byteSize, std::istream& is, int ioMode);
+void strToArray(bool *pIsMinus, Unit *x, size_t xN, const std::string& str, int ioMode);
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode);
 
 inline const char* getIoSeparator(int ioMode)
 {
-	return (ioMode & (IoArray | IoArrayRaw | IoFixedSizeByteSeq)) ? "" : " ";
+	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : " ";
 }
 
 int detectIoMode(int ioMode, const std::ios_base& ios);

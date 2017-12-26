@@ -288,8 +288,8 @@ CYBOZU_TEST_AUTO(io)
 	int m;
 	for (int i = 0; i < 2; i++) {
 		if (i == 1) {
-			Fp::setIoMode(mcl::IoFixedSizeByteSeq);
-			G1::setIoMode(mcl::IoFixedSizeByteSeq);
+			Fp::setIoMode(mcl::IoSerialize);
+			G1::setIoMode(mcl::IoSerialize);
 		}
 		SecretKey sec;
 		sec.setByCSPRNG();

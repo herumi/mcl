@@ -2,6 +2,7 @@
 #include "../src/conversion.hpp"
 #include <cybozu/test.hpp>
 #include <mcl/gmp_util.hpp>
+#include <mcl/fp.hpp>
 
 CYBOZU_TEST_AUTO(toStr16)
 {
@@ -206,4 +207,47 @@ CYBOZU_TEST_AUTO(maskArray)
 		CYBOZU_TEST_EQUAL_ARRAY(x, y, n);
 	}
 #endif
+}
+
+CYBOZU_TEST_AUTO(stream)
+{
+	const char *nulTbl[] = { "", "    ", " \t\t\n\n  " };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nulTbl); i++) {
+		const char *p = nulTbl[i];
+		cybozu::MemoryInputStream is(p, strlen(p));
+		std::string w;
+		CYBOZU_TEST_EXCEPTION(mcl::fp::local::loadWord(w, is), std::exception);
+	}
+	const struct {
+		const char *buf;
+		const char *expect[2];
+		size_t n;
+	} tbl[] = {
+		{ "\t\t \n\rabc\r\r\n    def", { "abc", "def" }, 2 },
+		{ "123", { "123" }, 1 },
+		{ "123\n", { "123" }, 1 },
+		{ "123 456", { "123", "456" }, 2 },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const char *buf = tbl[i].buf;
+		{
+			cybozu::MemoryInputStream is(buf, strlen(buf));
+			for (size_t j = 0; j < tbl[i].n; j++) {
+				std::string w;
+				mcl::fp::local::loadWord(w, is);
+				CYBOZU_TEST_EQUAL(w, tbl[i].expect[j]);
+			}
+			CYBOZU_TEST_ASSERT(!is.hasNext());
+		}
+		{
+			std::istringstream is(buf);
+			for (size_t j = 0; j < tbl[i].n; j++) {
+				std::string w;
+				mcl::fp::local::loadWord(w, is);
+				CYBOZU_TEST_EQUAL(w, tbl[i].expect[j]);
+			}
+			typedef cybozu::InputStreamTag<std::istringstream> InputTag;
+			CYBOZU_TEST_ASSERT(!InputTag::hasNext(is));
+		}
+	}
 }
