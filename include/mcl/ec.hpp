@@ -717,17 +717,16 @@ public:
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
-		typedef cybozu::InputStreamTag<InputStream> InputTag;
 #ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
 #else
 		z = 1;
 #endif
 		if (ioMode & IoSerialize) {
-			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:readStream:not supported ioMode") << ioMode;
+			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:load:not supported ioMode") << ioMode;
 			char buf[sizeof(Fp)];
 			const size_t n = Fp::getByteSize();
-			if (InputTag::readSome(is, buf, n) != n) throw cybozu::Exception("EcT:readStream:can't read") << n;
+			if (cybozu::readSome(buf, n, is) != n) throw cybozu::Exception("EcT:load:can't read") << n;
 			if (fp::isZeroArray(buf, n)) {
 				clear();
 				return;
@@ -737,7 +736,8 @@ public:
 			x.setStr(std::string(buf, n), ioMode);
 			getYfromX(y, x, isYodd);
 		} else {
-			char c = InputTag::readChar(is);
+			char c = 0;
+			if (!cybozu::readChar(&c, is)) throw cybozu::Exception("EcT:load:no header");
 			if (c == '0') {
 				clear();
 				return;
@@ -746,7 +746,7 @@ public:
 			if (c == '1') {
 				y.load(is, ioMode);
 				if (!isValid(x, y)) {
-					throw cybozu::Exception("EcT:readStream:bad value") << ioMode << x << y;
+					throw cybozu::Exception("EcT:load:bad value") << ioMode << x << y;
 				}
 			} else if (c == '2' || c == '3') {
 				bool isYodd = c == '3';
@@ -755,11 +755,11 @@ public:
 				y.load(is, ioMode);
 				z.load(is, ioMode);
 			} else {
-				throw cybozu::Exception("EcT:readStream:bad format") << (int)c;
+				throw cybozu::Exception("EcT:load:bad format") << (int)c;
 			}
 		}
 		if (verifyOrder_ && !isValidOrder()) {
-			throw cybozu::Exception("EcT:readStream:bad order") << *this;
+			throw cybozu::Exception("EcT:load:bad order") << *this;
 		}
 	}
 	std::istream& readStream(std::istream& is, int ioMode = 0)

@@ -215,8 +215,9 @@ CYBOZU_TEST_AUTO(stream)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nulTbl); i++) {
 		const char *p = nulTbl[i];
 		cybozu::MemoryInputStream is(p, strlen(p));
-		std::string w;
-		CYBOZU_TEST_EXCEPTION(mcl::fp::local::loadWord(w, is), std::exception);
+		std::string w = "abc";
+		mcl::fp::local::loadWord(w, is);
+		CYBOZU_TEST_ASSERT(w.empty());
 	}
 	const struct {
 		const char *buf;
@@ -237,7 +238,6 @@ CYBOZU_TEST_AUTO(stream)
 				mcl::fp::local::loadWord(w, is);
 				CYBOZU_TEST_EQUAL(w, tbl[i].expect[j]);
 			}
-			CYBOZU_TEST_ASSERT(!is.hasNext());
 		}
 		{
 			std::istringstream is(buf);
@@ -246,8 +246,6 @@ CYBOZU_TEST_AUTO(stream)
 				mcl::fp::local::loadWord(w, is);
 				CYBOZU_TEST_EQUAL(w, tbl[i].expect[j]);
 			}
-			typedef cybozu::InputStreamTag<std::istringstream> InputTag;
-			CYBOZU_TEST_ASSERT(!InputTag::hasNext(is));
 		}
 	}
 }

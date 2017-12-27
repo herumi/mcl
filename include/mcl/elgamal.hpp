@@ -77,7 +77,6 @@ struct ElgamalT {
 		{
 			c1.readStream(is, ioMode);
 			c2.readStream(is, ioMode);
-			if (!is) throw cybozu::Exception("ElgamalT:CipherText:readStream");
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
@@ -125,7 +124,6 @@ struct ElgamalT {
 			c1.readStream(is, ioMode);
 			s0.readStream(is, ioMode);
 			s1.readStream(is, ioMode);
-			if (!is) throw cybozu::Exception("ElgamalT:Zkp:readStream");
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const
@@ -360,7 +358,6 @@ struct ElgamalT {
 			f.readStream(is, ioMode);
 			g.readStream(is, ioMode);
 			h.readStream(is, ioMode);
-			if (!is) throw cybozu::Exception("ElgamalT:PublicKey:readStream");
 			init(bitSize, f, g, h);
 			return is;
 		}
@@ -559,7 +556,6 @@ struct ElgamalT {
 		{
 			pub.readStream(is, ioMode);
 			z.readStream(is, ioMode);
-			if (!is) throw cybozu::Exception("ElgamalT:CipherText:readStream");
 			return is;
 		}
 		void getStr(std::string& str, int ioMode = 0) const

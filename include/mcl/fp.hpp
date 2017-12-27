@@ -68,23 +68,18 @@ inline bool isSpace(char c)
 }
 
 template<class InputStream>
-char skipSpace(InputStream& is)
-{
-	typedef cybozu::InputStreamTag<InputStream> InputTag;
-	while (InputTag::hasNext(is)) {
-		char c = InputTag::readChar(is);
-		if (!isSpace(c)) return c;
-	}
-	throw cybozu::Exception("skipSpace:read");
-}
-
-template<class InputStream>
 void loadWord(std::string& s, InputStream& is)
 {
-	typedef cybozu::InputStreamTag<InputStream> InputTag;
-	s = skipSpace(is);
-	while (InputTag::hasNext(is)) {
-		char c = InputTag::readChar(is);
+	s.clear();
+	char c;
+	// skip space
+	for (;;) {
+		if (!cybozu::readChar(&c,  is)) return;
+		if (!isSpace(c)) break;
+	}
+	s = c;
+	for (;;) {
+		if (!cybozu::readChar(&c,  is)) return;
 		if (isSpace(c)) break;
 		s += c;
 	}
@@ -241,12 +236,11 @@ public:
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
-		typedef cybozu::InputStreamTag<InputStream> InputTag;
 		bool isMinus = false;
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
 			uint8_t buf[sizeof(FpT)];
 			const size_t n = getByteSize();
-			if (InputTag::readSome(is, buf, n) != n) throw cybozu::Exception("FpT:load:can't read") << n;
+			if (cybozu::readSome(buf, n, is) != n) throw cybozu::Exception("FpT:load:can't read") << n;
 			fp::copyByteToUnitAsLE(v_, buf, n);
 		} else {
 			std::string str;
@@ -264,7 +258,6 @@ public:
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
-		typedef cybozu::OutputStreamTag<OutputStream> OutputTag;
 		const size_t n = getByteSize();
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
 			uint8_t buf[sizeof(FpT)];
@@ -275,7 +268,7 @@ public:
 				getBlock(b);
 				fp::copyUnitToByteAsLE(buf, b.p, n);
 			}
-			os.write(buf, n);
+			cybozu::write(os, buf, n);
 			return;
 		}
 		fp::Block b;
@@ -283,7 +276,7 @@ public:
 		std::string str;
 		// use low 8-bit ioMode for Fp
 		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
-		OutputTag::write(os, str.c_str(), str.size());
+		cybozu::write(os, str.c_str(), str.size());
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
