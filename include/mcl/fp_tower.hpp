@@ -10,58 +10,6 @@
 
 namespace mcl {
 
-namespace local {
-
-template<class T1, class T2>
-size_t serialize2(void *buf, size_t maxBufSize, const T1& p1, const T2& p2)
-{
-	char *p = reinterpret_cast<char*>(buf);
-	const size_t n1 = p1.serialize(p, maxBufSize);
-	if (n1 == 0) return 0;
-	p += n1; maxBufSize -= n1;
-	const size_t n2 = p2.serialize(p, maxBufSize);
-	if (n2 == 0) return 0;
-	return n1 + n2;
-}
-
-template<class T1, class T2, class T3>
-size_t serialize3(void *buf, size_t maxBufSize, const T1& p1, const T2& p2, const T3& p3)
-{
-	char *p = reinterpret_cast<char*>(buf);
-	const size_t n1 = serialize2(buf, maxBufSize, p1, p2);
-	if (n1 == 0) return 0;
-	p += n1; maxBufSize -= n1;
-	const size_t n2 = p3.serialize(p, maxBufSize);
-	if (n2 == 0) return 0;
-	return n1 + n2;
-}
-
-template<class T1, class T2>
-size_t deserialize2(T1& p1, T2& p2, const void *buf, size_t bufSize)
-{
-	const char *p = reinterpret_cast<const char*>(buf);
-	const size_t n1 = p1.deserialize(p, bufSize);
-	if (n1 == 0) return 0;
-	p += n1; bufSize -= n1;
-	const size_t n2 = p2.deserialize(p, bufSize);
-	if (n2 == 0) return 0;
-	return n1 + n2;
-}
-
-template<class T1, class T2, class T3>
-size_t deserialize3(T1& p1, T2& p2, T3& p3, const void *buf, size_t bufSize)
-{
-	const char *p = reinterpret_cast<const char*>(buf);
-	const size_t n1 = deserialize2(p1, p2, p, bufSize);
-	if (n1 == 0) return 0;
-	p += n1; bufSize -= n1;
-	const size_t n2 = p3.deserialize(p, bufSize);
-	if (n2 == 0) return 0;
-	return n1 + n2;
-}
-
-} // local
-
 template<class Fp>
 class FpDblT {
 	typedef fp::Unit Unit;
@@ -235,19 +183,22 @@ public:
 		b.setArray(buf + n, n);
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode)
+	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		a.load(is, ioMode);
 		b.load(is, ioMode);
 	}
-	std::istream& readStream(std::istream& is, int ioMode)
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
-		load(is, ioMode);
-		return is;
+		const char sep = *fp::getIoSeparator(ioMode);
+		a.save(os, ioMode);
+		if (sep) cybozu::writeChar(os, sep);
+		b.save(os, ioMode);
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		std::istringstream is(str);
+		cybozu::StringInputStream is(str);
 		load(is, ioMode);
 	}
 	/*
@@ -255,10 +206,9 @@ public:
 	*/
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		const char *sep = fp::getIoSeparator(ioMode);
-		str = a.getStr(ioMode);
-		str += sep;
-		str += b.getStr(ioMode);
+		str.clear();
+		cybozu::StringOutputStream os(str);
+		save(os, ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
@@ -273,17 +223,22 @@ public:
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
 	{
-		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		return os;
 	}
 	// return written bytes if sucess else 0
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
-		return local::serialize2(buf, maxBufSize, a, b);
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		save(os);
+		return os.getPos();
 	}
 	// return positive read bytes if sucess else 0
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
-		return local::deserialize2(a, b, buf, bufSize);
+		cybozu::MemoryInputStream is(buf, bufSize);
+		load(is);
+		return is.getPos();
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -765,24 +720,26 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		b.load(is, ioMode);
 		c.load(is, ioMode);
 	}
-	std::istream& readStream(std::istream& is, int ioMode)
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
-		load(is, ioMode);
-		return is;
+		const char sep = *fp::getIoSeparator(ioMode);
+		a.save(os, ioMode);
+		if (sep) cybozu::writeChar(os, sep);
+		b.save(os, ioMode);
+		if (sep) cybozu::writeChar(os, sep);
+		c.save(os, ioMode);
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		std::istringstream is(str);
+		cybozu::StringInputStream is(str);
 		load(is, ioMode);
 	}
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		const char *sep = fp::getIoSeparator(ioMode);
-		str = a.getStr(ioMode);
-		str += sep;
-		str += b.getStr(ioMode);
-		str += sep;
-		str += c.getStr(ioMode);
+		str.clear();
+		cybozu::StringOutputStream os(str);
+		save(os, ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
@@ -797,17 +754,22 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp6T& self)
 	{
-		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		return os;
 	}
 	// return written bytes if sucess else 0
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
-		return local::serialize3(buf, maxBufSize, a, b, c);
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		save(os);
+		return os.getPos();
 	}
 	// return positive read bytes if sucess else 0
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
-		return local::deserialize3(a, b, c, buf, bufSize);
+		cybozu::MemoryInputStream is(buf, bufSize);
+		load(is);
+		return is.getPos();
 	}
 	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
@@ -1183,27 +1145,29 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 #endif
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode)
+	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		a.load(is, ioMode);
 		b.load(is, ioMode);
 	}
-	std::istream& readStream(std::istream& is, int ioMode)
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
-		load(is, ioMode);
-		return is;
+		const char sep = *fp::getIoSeparator(ioMode);
+		a.save(os, ioMode);
+		if (sep) cybozu::writeChar(os, sep);
+		b.save(os, ioMode);
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		std::istringstream is(str);
+		cybozu::StringInputStream is(str);
 		load(is, ioMode);
 	}
 	void getStr(std::string& str, int ioMode = 0) const
 	{
-		const char *sep = fp::getIoSeparator(ioMode);
-		str = a.getStr(ioMode);
-		str += sep;
-		str += b.getStr(ioMode);
+		str.clear();
+		cybozu::StringOutputStream os(str);
+		save(os, ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
@@ -1213,22 +1177,27 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
-		self.load(is, fp::detectIoMode(Fp::getIoMode(), is));
+		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
 		return is;
 	}
 	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
 	{
-		return os << self.getStr(fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		return os;
 	}
 	// return written bytes if sucess else 0
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
-		return local::serialize2(buf, maxBufSize, a, b);
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		save(os);
+		return os.getPos();
 	}
 	// return positive read bytes if sucess else 0
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
-		return local::deserialize2(a, b, buf, bufSize);
+		cybozu::MemoryInputStream is(buf, bufSize);
+		load(is);
+		return is.getPos();
 	}
 };
 

@@ -654,65 +654,68 @@ public:
 	{
 		return !b_.isZero() && (Fp::BaseFp::getBitSize() & 7) != 0;
 	}
-	/*
-		see mcl/op.hpp for the format of ioMode
-	*/
-	void getStr(std::string& str, int ioMode = 0) const
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
-		const char *sep = fp::getIoSeparator(ioMode);
+		const char sep = *fp::getIoSeparator(ioMode);
 		if (ioMode & IoEcProj) {
-			str = '4';
-			str += sep;
-			str += x.getStr(ioMode);
-			str += sep;
-			str += y.getStr(ioMode);
-			str += sep;
-			str += z.getStr(ioMode);
+			cybozu::writeChar(os, '4');
+			if (sep) cybozu::writeChar(os, sep);
+			x.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			y.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			z.save(os, ioMode);
 			return;
 		}
 		EcT P(*this);
 		P.normalize();
 		if (ioMode & IoSerialize) {
-			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:getStr:not supported ioMode") << ioMode;
+			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:save:not supported ioMode") << ioMode;
 			const size_t n = Fp::getByteSize();
+			char buf[sizeof(Fp)];
+			std::string str;
 			if (isZero()) {
-				str.clear();
-				str.resize(n);
-				return;
+				memset(buf, 0, n);
+			} else {
+				cybozu::MemoryOutputStream mos(buf, n);
+				P.x.save(mos, ioMode);
+				if (P.y.isOdd()) {
+					buf[n - 1] |= 0x80;
+				}
 			}
-			P.x.getStr(str, ioMode);
-			assert(str.size() == n && (str[n - 1] & 0x80) == 0);
-			if (P.y.isOdd()) {
-				str[n - 1] |= 0x80;
-			}
+			cybozu::write(os, buf, n);
 			return;
 		}
 		if (isZero()) {
-			str = '0';
+			cybozu::writeChar(os, '0');
 			return;
 		}
 		if (ioMode & IoEcCompY) {
-			str = P.y.isOdd() ? '3' : '2';
-			str += sep;
-			str += P.x.getStr(ioMode);
+			cybozu::writeChar(os, P.y.isOdd() ? '3' : '2');
+			if (sep) cybozu::writeChar(os, sep);
+			P.x.save(os, ioMode);
 		} else {
-			str = '1';
-			str += sep;
-			str += P.x.getStr(ioMode);
-			str += sep;
-			str += P.y.getStr(ioMode);
+			cybozu::writeChar(os, '1');
+			if (sep) cybozu::writeChar(os, sep);
+			P.x.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			P.y.save(os, ioMode);
 		}
+	}
+	/*
+		see mcl/op.hpp for the format of ioMode
+	*/
+	void getStr(std::string& str, int ioMode = 0) const
+	{
+		cybozu::StringOutputStream os(str);
+		save(os, ioMode);
 	}
 	std::string getStr(int ioMode = 0) const
 	{
 		std::string str;
 		getStr(str, ioMode);
 		return str;
-	}
-	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
-	{
-		int ioMode = fp::detectIoMode(getIoMode(), os);
-		return os << self.getStr(ioMode);
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
@@ -762,47 +765,29 @@ public:
 			throw cybozu::Exception("EcT:load:bad order") << *this;
 		}
 	}
-	std::istream& readStream(std::istream& is, int ioMode = 0)
-	{
-		load(is, ioMode);
-		return is;
-	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
-		int ioMode = fp::detectIoMode(getIoMode(), is);
-		return self.readStream(is, ioMode);
+		self.load(is, fp::detectIoMode(getIoMode(), is));
+		return is;
+	}
+	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
+	{
+		self.save(os, fp::detectIoMode(getIoMode(), os));
+		return os;
 	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
-		std::istringstream is(str);
-		readStream(is, ioMode);
+		cybozu::StringInputStream is(str);
+		load(is, ioMode);
 	}
-	// return written bytes if sucess else 0
+	// return written bytes if sucess
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
-#if 0
 		cybozu::MemoryOutputStream os(buf, maxBufSize);
 		save(os, IoSerialize);
 		return os.getPos();
-#else
-		if (!isFixedSizeByteSeq()) return 0;
-		const size_t n = Fp::getByteSize();
-		if (maxBufSize < n) return 0;
-		if (isZero()) {
-			memset(buf, 0, n);
-		} else {
-			char *p = reinterpret_cast<char*>(buf);
-			EcT P;
-			EcT::normalize(P, *this);
-			if (P.x.serialize(p, maxBufSize) == 0) return 0;
-			if (P.y.isOdd()) {
-				p[n - 1] |= 0x80;
-			}
-		}
-		return n;
-#endif
 	}
-	// return positive read bytes if sucess else 0
+	// return positive read bytes if sucess
 	size_t deserialize(const void *buf, size_t bufSize)
 	{
 		cybozu::MemoryInputStream is(buf, bufSize);

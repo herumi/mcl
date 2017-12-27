@@ -276,39 +276,24 @@ public:
 		}
 		throw cybozu::Exception("HashTable:log:not found");
 	}
-#if 0
-	size_t serialize(void *buf, size_t maxBufSize) const
+	template<class OutputStream>
+	void save(OutputStream& os) const
 	{
-		const size_t kcvTotalSize = sizeof(kcv[0]) * kcv.size();
-		uint8_t *p = reinterpret_cast<uint8_t*>(buf);
-		if (sizeof(uint32_t) * 2 + kcvTotalSize > maxBufSize) throw cybozu::Exception("HashTable:serialize:small maxBufSize") << maxBufSize;
-		cybozu::set32bitLE(p, static_cast<uint32_t>(kcv.size()));
-		p += 4;
-		cybozu::set32bitLE(p, tryNum_);
-		p += 4;
-		memcpy(p, &kcv[0], kcvTotalSize);
-		const writeSize = 8 + kcvTotalSize;
-		p += kcvTotalSize;
-		const size_t sizeP = P_.serialize(p, maxBufSize - writeSize);
-		if (sizeP == 0) return 0;
-		return writeSize + sizeP;
+		cybozu::save(os, kcv.size());
+		cybozu::save(os, tryNum_);
+		cybozu::write(os, &kcv[0], sizeof(kcv[0]) * kcv.size());
+		P_.save(os);
 	}
-#endif
-	void save(std::ostream& os) const
+	template<class InputStream>
+	void load(InputStream& is)
 	{
-		saveUint64(os, kcv.size());
-		saveUint64(os, tryNum_);
-		os.write((const char*)&kcv[0], sizeof(kcv[0]) * kcv.size());
-		os << P_.getStr(mcl::IoArray);
-	}
-	void load(std::istream& is)
-	{
-		size_t hashSize = size_t(loadUint64(is));
-		kcv.resize(hashSize);
-		tryNum_ = loadUint64(is);
-		is.read((char*)&kcv[0], sizeof(kcv[0]) * kcv.size());
-		P_.readStream(is, mcl::IoArray);
-		I::mul(nextP_, P_, (hashSize * 2) + 1);
+		size_t kcvSize;
+		cybozu::load(kcvSize, is);
+		kcv.resize(kcvSize);
+		cybozu::load(tryNum_, is);
+		cybozu::read(&kcv[0], sizeof(kcv[0]) * kcvSize, is);
+		P_.load(is);
+		I::mul(nextP_, P_, (kcvSize * 2) + 1);
 		I::neg(nextNegP_, nextP_);
 		setWindowMethod();
 	}
@@ -417,23 +402,30 @@ private:
 		}
 		void add(const CipherTextAT& c) { add(*this, *this, c); }
 		void sub(const CipherTextAT& c) { sub(*this, *this, c); }
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			S_.readStream(is, ioMode);
-			T_.readStream(is, ioMode);
-			return is;
+			S_.load(is, ioMode);
+			T_.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			S_.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			T_.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = S_.getStr(ioMode);
-			str += sep;
-			str += T_.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -443,11 +435,13 @@ private:
 		}
 		friend std::istream& operator>>(std::istream& is, CipherTextAT& self)
 		{
-			return self.readStream(is, fp::detectIoMode(G::getIoMode(), is));
+			self.load(is, fp::detectIoMode(G::getIoMode(), is));
+			return is;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const CipherTextAT& self)
 		{
-			return os << self.getStr(fp::detectIoMode(G::getIoMode(), os));
+			self.save(os, fp::detectIoMode(G::getIoMode(), os));
+			return os;
 		}
 		bool operator==(const CipherTextAT& rhs) const
 		{
@@ -456,11 +450,15 @@ private:
 		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
 		size_t serialize(void *buf, size_t maxBufSize) const
 		{
-			return mcl::local::serialize2(buf, maxBufSize, S_, T_);
+			cybozu::MemoryOutputStream os(buf, maxBufSize);
+			save(os);
+			return os.getPos();
 		}
 		size_t deserialize(const void *buf, size_t bufSize)
 		{
-			return mcl::local::deserialize2(S_, T_, buf, bufSize);
+			cybozu::MemoryInputStream is(buf, bufSize);
+			load(is);
+			return is.getPos();
 		}
 	};
 	/*
@@ -669,23 +667,30 @@ public:
 				return isZero(c.a_);
 			}
 		}
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			x_.readStream(is, ioMode);
-			y_.readStream(is, ioMode);
-			return is;
+			x_.load(is, ioMode);
+			y_.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			x_.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			y_.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = x_.getStr(ioMode);
-			str += sep;
-			str += y_.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -695,11 +700,13 @@ public:
 		}
 		friend std::istream& operator>>(std::istream& is, SecretKey& self)
 		{
-			return self.readStream(is, fp::detectIoMode(Fr::getIoMode(), is));
+			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
+			return is;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const SecretKey& self)
 		{
-			return os << self.getStr(fp::detectIoMode(Fr::getIoMode(), os));
+			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
+			return os;
 		}
 		bool operator==(const SecretKey& rhs) const
 		{
@@ -708,11 +715,15 @@ public:
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
 		size_t serialize(void *buf, size_t maxBufSize) const
 		{
-			return mcl::local::serialize2(buf, maxBufSize, x_, y_);
+			cybozu::MemoryOutputStream os(buf, maxBufSize);
+			save(os);
+			return os.getPos();
 		}
 		size_t deserialize(const void *buf, size_t bufSize)
 		{
-			return mcl::local::deserialize2(x_, y_, buf, bufSize);
+			cybozu::MemoryInputStream is(buf, bufSize);
+			load(is);
+			return is.getPos();
 		}
 	};
 
@@ -927,23 +938,30 @@ public:
 		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
 
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			xP_.readStream(is, ioMode);
-			yQ_.readStream(is, ioMode);
-			return is;
+			xP_.load(is, ioMode);
+			yQ_.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			xP_.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			yQ_.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = xP_.getStr(ioMode);
-			str += sep;
-			str += yQ_.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -953,11 +971,13 @@ public:
 		}
 		friend std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
-			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
+			return is;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
-			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
+			return os;
 		}
 		bool operator==(const PublicKey& rhs) const
 		{
@@ -966,11 +986,15 @@ public:
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
 		size_t serialize(void *buf, size_t maxBufSize) const
 		{
-			return mcl::local::serialize2(buf, maxBufSize, xP_, yQ_);
+			cybozu::MemoryOutputStream os(buf, maxBufSize);
+			save(os);
+			return os.getPos();
 		}
 		size_t deserialize(const void *buf, size_t bufSize)
 		{
-			return mcl::local::deserialize2(xP_, yQ_, buf, bufSize);
+			cybozu::MemoryInputStream is(buf, bufSize);
+			load(is);
+			return is.getPos();
 		}
 	};
 
@@ -1099,23 +1123,30 @@ public:
 		}
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 		void sub(const CipherTextA& c) { sub(*this, *this, c); }
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			c1_.readStream(is, ioMode);
-			c2_.readStream(is, ioMode);
-			return is;
+			c1_.load(is, ioMode);
+			c2_.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			c1_.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			c2_.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = c1_.getStr(ioMode);
-			str += sep;
-			str += c2_.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -1125,11 +1156,13 @@ public:
 		}
 		friend std::istream& operator>>(std::istream& is, CipherTextA& self)
 		{
-			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
+			return is;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const CipherTextA& self)
 		{
-			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
+			return os;
 		}
 		bool operator==(const CipherTextA& rhs) const
 		{
@@ -1208,26 +1241,33 @@ public:
 		}
 		void add(const CipherTextGT& c) { add(*this, *this, c); }
 		void sub(const CipherTextGT& c) { sub(*this, *this, c); }
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
 			for (int i = 0; i < 4; i++) {
-				g_[i].readStream(is, ioMode);
+				g_[i].load(is, ioMode);
 			}
-			return is;
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			g_[0].save(os, ioMode);
+			for (int i = 1; i < 4; i++) {
+				if (sep) cybozu::writeChar(os, sep);
+				g_[i].save(os, ioMode);
+			}
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = g_[0].getStr(ioMode);
-			for (int i = 1; i < 4; i++) {
-				str += sep;
-				str += g_[i].getStr(ioMode);
-			}
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -1237,11 +1277,13 @@ public:
 		}
 		friend std::istream& operator>>(std::istream& is, CipherTextGT& self)
 		{
-			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
+			return is;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const CipherTextGT& self)
 		{
-			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
+			return os;
 		}
 		bool operator==(const CipherTextGT& rhs) const
 		{
@@ -1253,23 +1295,15 @@ public:
 		bool operator!=(const CipherTextGT& rhs) const { return !operator==(rhs); }
 		size_t serialize(void *buf, size_t maxBufSize) const
 		{
-			char *p = reinterpret_cast<char*>(buf);
-			const size_t n1 = mcl::local::serialize2(p, maxBufSize, g_[0], g_[1]);
-			if (n1 == 0) return 0;
-			p += n1; maxBufSize -= n1;
-			const size_t n2 = mcl::local::serialize2(p, maxBufSize, g_[2], g_[3]);
-			if (n2 == 0) return 0;
-			return n1 + n2;
+			cybozu::MemoryOutputStream os(buf, maxBufSize);
+			save(os);
+			return os.getPos();
 		}
 		size_t deserialize(const void *buf, size_t bufSize)
 		{
-			const char *p = reinterpret_cast<const char*>(buf);
-			const size_t n1 = mcl::local::deserialize2(g_[0], g_[1], p, bufSize);
-			if (n1 == 0) return 0;
-			p += n1; bufSize -= n1;
-			const size_t n2 = mcl::local::deserialize2(g_[2], g_[3], p, bufSize);
-			if (n2 == 0) return 0;
-			return n1 + n2;
+			cybozu::MemoryInputStream is(buf, bufSize);
+			load(is);
+			return is.getPos();
 		}
 	};
 
@@ -1339,31 +1373,36 @@ public:
 		void add(const CipherText& c) { add(*this, *this, c); }
 		void sub(const CipherText& c) { sub(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			is >> isMultiplied_;
+			cybozu::load(isMultiplied_, is);
 			if (isMultiplied()) {
-				m_.readStream(is, ioMode);
+				m_.load(is, ioMode);
 			} else {
-				a_.readStream(is, ioMode);
+				a_.load(is, ioMode);
 			}
-			return is;
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			cybozu::save(os, isMultiplied_);
+			if (isMultiplied()) {
+				m_.save(os, ioMode);
+			} else {
+				a_.save(os, ioMode);
+			}
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = isMultiplied() ? "1" : "0";
-			str += sep;
-			if (isMultiplied()) {
-				str += m_.getStr(ioMode);
-			} else {
-				str += a_.getStr(ioMode);
-			}
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -1373,11 +1412,13 @@ public:
 		}
 		friend std::istream& operator>>(std::istream& is, CipherText& self)
 		{
-			return self.readStream(is, fp::detectIoMode(G1::getIoMode(), is));
+			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
+			return is;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const CipherText& self)
 		{
-			return os << self.getStr(fp::detectIoMode(G1::getIoMode(), os));
+			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
+			return os;
 		}
 		bool operator==(const CipherTextGT& rhs) const
 		{

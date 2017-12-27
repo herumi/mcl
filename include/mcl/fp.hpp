@@ -283,12 +283,6 @@ public:
 		cybozu::StringInputStream is(str);
 		load(is, ioMode);
 	}
-	template<class InputStream>
-	InputStream& readStream(InputStream& is, int ioMode = 0)
-	{
-		load(is, ioMode);
-		return is;
-	}
 	// return written bytes
 	size_t serialize(void *buf, size_t maxBufSize) const
 	{
@@ -442,11 +436,13 @@ public:
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
 	{
-		return os << self.getStr(fp::detectIoMode(getIoMode(), os));
+		self.save(os, fp::detectIoMode(getIoMode(), os));
+		return os;
 	}
 	friend inline std::istream& operator>>(std::istream& is, FpT& self)
 	{
-		return self.readStream(is, fp::detectIoMode(getIoMode(), is));
+		self.load(is, fp::detectIoMode(getIoMode(), is));
+		return is;
 	}
 	/*
 		@note

@@ -73,18 +73,25 @@ struct ElgamalT {
 			Ec::neg(c1, c1);
 			Ec::neg(c2, c2);
 		}
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			c1.readStream(is, ioMode);
-			c2.readStream(is, ioMode);
-			return is;
+			c1.load(is, ioMode);
+			c2.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			c1.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			c2.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = c1.getStr(ioMode);
-			str += sep;
-			str += c2.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -94,18 +101,18 @@ struct ElgamalT {
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const CipherText& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::getIoMode(), os);
-			return os << self.getStr(ioMode);
+			self.save(os, fp::detectIoMode(Ec::getIoMode(), os));
+			return os;
 		}
 		friend inline std::istream& operator>>(std::istream& is, CipherText& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::getIoMode(), is);
-			return self.readStream(is, ioMode);
+			self.load(is, fp::detectIoMode(Ec::getIoMode(), is));
+			return is;
 		}
 		// obsolete
 		std::string toStr() const { return getStr(); }
@@ -118,24 +125,31 @@ struct ElgamalT {
 	*/
 	struct Zkp {
 		Zn c0, c1, s0, s1;
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			c0.readStream(is, ioMode);
-			c1.readStream(is, ioMode);
-			s0.readStream(is, ioMode);
-			s1.readStream(is, ioMode);
-			return is;
+			c0.load(is, ioMode);
+			c1.load(is, ioMode);
+			s0.load(is, ioMode);
+			s1.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			c0.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			c1.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			s0.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			s1.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = c0.getStr(ioMode);
-			str += sep;
-			str += c1.getStr(ioMode);
-			str += sep;
-			str += s0.getStr(ioMode);
-			str += sep;
-			str += s1.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -145,18 +159,18 @@ struct ElgamalT {
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const Zkp& self)
 		{
-			int ioMode = fp::detectIoMode(Zn::getIoMode(), os);
-			return os << self.getStr(ioMode);
+			self.save(os, fp::detectIoMode(Ec::getIoMode(), os));
+			return os;
 		}
 		friend inline std::istream& operator>>(std::istream& is, Zkp& self)
 		{
-			int ioMode = fp::detectIoMode(Zn::getIoMode(), is);
-			return self.readStream(is, ioMode);
+			self.load(is, fp::detectIoMode(Ec::getIoMode(), is));
+			return is;
 		}
 		// obsolete
 		std::string toStr() const { return getStr(); }
@@ -347,30 +361,32 @@ struct ElgamalT {
 			mulF(fm, m);
 			Ec::add(c.c2, c.c2, fm);
 		}
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			std::string s;
-			is >> s;
-			bitSize = cybozu::atoi(s);
-			char c;
-			is.read(&c, 1);
-			if (c != ' ') throw cybozu::Exception("ElgamalT:PublicKey:readStream:bad separator") << int(c);
-			f.readStream(is, ioMode);
-			g.readStream(is, ioMode);
-			h.readStream(is, ioMode);
+			cybozu::load(bitSize, is);
+			f.load(is, ioMode);
+			g.load(is, ioMode);
+			h.load(is, ioMode);
 			init(bitSize, f, g, h);
-			return is;
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			cybozu::save(os, bitSize);
+			f.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			g.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			h.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = cybozu::itoa(bitSize);
-			str += ' ';
-			str += f.getStr(ioMode);
-			str += sep;
-			str += g.getStr(ioMode);
-			str += sep;
-			str += h.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -380,18 +396,18 @@ struct ElgamalT {
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const PublicKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::getIoMode(), os);
-			return os << self.getStr(ioMode);
+			self.save(os, fp::detectIoMode(Ec::getIoMode(), os));
+			return os;
 		}
 		friend inline std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::getIoMode(), is);
-			return self.readStream(is, ioMode);
+			self.load(is, fp::detectIoMode(Ec::getIoMode(), is));
+			return is;
 		}
 		// obsolete
 		std::string toStr() const { return getStr(); }
@@ -552,18 +568,25 @@ struct ElgamalT {
 			Ec::mul(c1z, c.c1, z);
 			return c.c2 == c1z;
 		}
-		std::istream& readStream(std::istream& is, int ioMode)
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			pub.readStream(is, ioMode);
-			z.readStream(is, ioMode);
-			return is;
+			pub.load(is, ioMode);
+			z.load(is, ioMode);
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			pub.save(os, ioMode);
+			if (sep) cybozu::writeChar(os, sep);
+			z.save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
-			const char *sep = fp::getIoSeparator(ioMode);
-			str = pub.getStr(ioMode);
-			str += sep;
-			str += z.getStr(ioMode);
+			str.clear();
+			cybozu::StringOutputStream os(str);
+			save(os, ioMode);
 		}
 		std::string getStr(int ioMode = 0) const
 		{
@@ -573,18 +596,18 @@ struct ElgamalT {
 		}
 		void setStr(const std::string& str, int ioMode = 0)
 		{
-			std::istringstream is(str);
-			readStream(is, ioMode);
+			cybozu::StringInputStream is(str);
+			load(is, ioMode);
 		}
 		friend inline std::ostream& operator<<(std::ostream& os, const PrivateKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::getIoMode(), os);
-			return os << self.getStr(ioMode);
+			self.save(os, fp::detectIoMode(Ec::getIoMode(), os));
+			return os;
 		}
 		friend inline std::istream& operator>>(std::istream& is, PrivateKey& self)
 		{
-			int ioMode = fp::detectIoMode(Ec::getIoMode(), is);
-			return self.readStream(is, ioMode);
+			self.load(is, fp::detectIoMode(Ec::getIoMode(), is));
+			return is;
 		}
 		std::string toStr() const { return getStr(); }
 		void fromStr(const std::string& str) { setStr(str); }
