@@ -866,7 +866,7 @@ public:
 		{
 			/*
 				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
-				cm = (P, 0) * c2
+				cm = (P, 0) * c2 = (e(P, S), e(P, T), 1, 1)
 			*/
 			G1 zero; zero.clear();
 			tensorProduct(cm.g_, P_, zero, c2.S_, c2.T_);
