@@ -124,6 +124,7 @@ struct InterfaceForHashTable<G, false> : G {
 */
 template<class G, bool isEC = true>
 class HashTable {
+	static const size_t defaultTryNum = 1024;
 	typedef InterfaceForHashTable<G, isEC> I;
 	typedef std::vector<KeyCount> KeyCountVec;
 	KeyCountVec kcv;
@@ -131,7 +132,7 @@ class HashTable {
 	mcl::fp::WindowMethod<I> wm_;
 	G nextP_;
 	G nextNegP_;
-	uint32_t tryNum_;
+	size_t tryNum_;
 	union ic {
 		uint64_t i;
 		char c[8];
@@ -154,20 +155,20 @@ class HashTable {
 		wm_.init(static_cast<const I&>(P_), bitSize, local::winSize);
 	}
 public:
-	HashTable() : tryNum_(0) {}
+	HashTable() : tryNum_(defaultTryNum) {}
 	bool operator==(const HashTable& rhs) const
 	{
 		if (kcv.size() != rhs.kcv.size()) return false;
 		for (size_t i = 0; i < kcv.size(); i++) {
 			if (!kcv[i].isSame(rhs.kcv[i])) return false;
 		}
-		return P_ == rhs.P_ && nextP_ == rhs.nextP_ && tryNum_ == rhs.tryNum_;
+		return P_ == rhs.P_ && nextP_ == rhs.nextP_;
 	}
 	bool operator!=(const HashTable& rhs) const { return !operator==(rhs); }
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
-	void init(const G& P, size_t hashSize, uint32_t tryNum = 0)
+	void init(const G& P, size_t hashSize, size_t tryNum = defaultTryNum)
 	{
 		if (hashSize == 0) {
 			kcv.clear();
@@ -195,7 +196,7 @@ public:
 		std::stable_sort(kcv.begin(), kcv.end());
 		setWindowMethod();
 	}
-	void setTryNum(uint32_t tryNum)
+	void setTryNum(size_t tryNum)
 	{
 		this->tryNum_ = tryNum;
 	}
@@ -260,7 +261,7 @@ public:
 		int64_t posCenter = 0;
 		int64_t negCenter = 0;
 		int64_t next = (int64_t)kcv.size() * 2 + 1;
-		for (uint32_t i = 1; i < tryNum_; i++) {
+		for (size_t i = 1; i < tryNum_; i++) {
 			I::add(posP, posP, nextNegP_);
 			posCenter += next;
 			c = basicLog(posP, &ok);
@@ -276,26 +277,33 @@ public:
 		}
 		throw cybozu::Exception("HashTable:log:not found");
 	}
+	/*
+		remark
+		tryNum is not saved.
+	*/
 	template<class OutputStream>
 	void save(OutputStream& os) const
 	{
 		cybozu::save(os, kcv.size());
-		cybozu::save(os, tryNum_);
 		cybozu::write(os, &kcv[0], sizeof(kcv[0]) * kcv.size());
 		P_.save(os);
 	}
+	/*
+		remark
+		tryNum is set defaultTryNum
+	*/
 	template<class InputStream>
 	void load(InputStream& is)
 	{
 		size_t kcvSize;
 		cybozu::load(kcvSize, is);
 		kcv.resize(kcvSize);
-		cybozu::load(tryNum_, is);
 		cybozu::read(&kcv[0], sizeof(kcv[0]) * kcvSize, is);
 		P_.load(is);
 		I::mul(nextP_, P_, (kcvSize * 2) + 1);
 		I::neg(nextNegP_, nextP_);
 		setWindowMethod();
+		tryNum_ = defaultTryNum;
 	}
 	const mcl::fp::WindowMethod<I>& getWM() const { return wm_; }
 	/*

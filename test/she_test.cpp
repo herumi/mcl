@@ -285,7 +285,7 @@ T testIo(const T& x)
 CYBOZU_TEST_AUTO(io)
 {
 	SHE::setRangeForDLP(100, 2);
-	int m;
+	int64_t m;
 	for (int i = 0; i < 2; i++) {
 		if (i == 1) {
 			Fp::setIoMode(mcl::IoSerialize);

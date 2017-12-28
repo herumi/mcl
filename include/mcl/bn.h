@@ -13,33 +13,36 @@
 #include <stdint.h> // for uint64_t, uint8_t
 #include <stdlib.h> // for size_t
 
-#ifdef _MSC_VER
-#ifdef MCLBN_DLL_EXPORT
-#define MCLBN_DLL_API __declspec(dllexport)
-#else
-#define MCLBN_DLL_API __declspec(dllimport)
-#ifndef MCLBN_NO_AUTOLINK
-	#if MCLBN_FP_UNIT_SIZE == 4
-		#pragma comment(lib, "mclbn256.lib")
-	#elif MCLBN_FP_UNIT_SIZE == 6
-		#pragma comment(lib, "mclbn384.lib")
+
+#if defined(_MSC_VER)
+	#ifdef MCLBN_DLL_EXPORT
+		#define MCLBN_DLL_API __declspec(dllexport)
 	#else
-		#pragma comment(lib, "mclbn512.lib")
+		#define MCLBN_DLL_API __declspec(dllimport)
+		#ifndef MCLBN_NO_AUTOLINK
+			#if MCLBN_FP_UNIT_SIZE == 4
+				#pragma comment(lib, "mclbn256.lib")
+			#elif MCLBN_FP_UNIT_SIZE == 6
+				#pragma comment(lib, "mclbn384.lib")
+			#else
+				#pragma comment(lib, "mclbn512.lib")
+			#endif
+		#endif
 	#endif
-#endif
-#endif
-#else
-#ifdef __EMSCRIPTEN__
+#elif defined(__EMSCRIPTEN__)
 	#define MCLBN_DLL_API __attribute__((used))
+#else
+	#define MCLBN_DLL_API
+#endif
+
+#ifdef __EMSCRIPTEN__
 	// avoid 64-bit integer
 	#define mclSize unsigned int
 	#define mclInt int
 #else
-	#define MCLBN_DLL_API
 	// use #define for cgo
 	#define mclSize size_t
 	#define mclInt int64_t
-#endif
 #endif
 
 #ifdef __cplusplus
