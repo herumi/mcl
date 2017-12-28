@@ -491,6 +491,7 @@ struct ParamT {
 	typedef Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
+	int curveType;
 	bool isCurveFp254BNb;
 	mpz_class z;
 	mpz_class abs_z;
@@ -529,6 +530,7 @@ struct ParamT {
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
+		curveType = cp.curveType;
 		isCurveFp254BNb = cp == CurveFp254BNb;
 		z = mpz_class(cp.z);
 		isNegative = z < 0;
