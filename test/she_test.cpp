@@ -105,9 +105,11 @@ CYBOZU_TEST_AUTO(enc_dec)
 		CYBOZU_TEST_EQUAL(sec.dec(ct2), i);
 		ppub.enc(c1, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c1), i);
+		CYBOZU_TEST_EQUAL(sec.decViaGT(c1), i);
 		CYBOZU_TEST_EQUAL(sec.isZero(c1), i == 0);
 		ppub.enc(c2, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c2), i);
+		CYBOZU_TEST_EQUAL(sec.decViaGT(c2), i);
 		CYBOZU_TEST_EQUAL(sec.isZero(c2), i == 0);
 		pub.enc(c, i);
 		CYBOZU_TEST_EQUAL(sec.isZero(c), i == 0);
@@ -346,7 +348,7 @@ CYBOZU_TEST_AUTO(saveHash)
 static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
 
 template<class CT>
-void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub)
+void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub, int64_t (SecretKey::*dec)(const CT& c) const = &SecretKey::dec)
 {
 	int64_t begin = 1 << 20;
 	int64_t end = 1LL << 32;
@@ -355,8 +357,8 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 		int64_t x = begin - 1;
 		pub.enc(c, x);
 		printf("m=%08x ", (uint32_t)x);
-		CYBOZU_BENCH_C(msg, C, sec.dec, c);
-		CYBOZU_TEST_EQUAL(sec.dec(c), x);
+		CYBOZU_BENCH_C(msg, C, (sec.*dec), c);
+		CYBOZU_TEST_EQUAL((sec.*dec)(c), x);
 		begin *= 2;
 	}
 	int64_t mTbl[] = { -0x80000003ll, 0x80000000ll, 0x80000005ll };
@@ -364,7 +366,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 		int64_t m = mTbl[i];
 		CT c;
 		pub.enc(c, m);
-		CYBOZU_TEST_EQUAL(sec.dec(c), m);
+		CYBOZU_TEST_EQUAL((sec.*dec)(c), m);
 	}
 }
 
@@ -399,6 +401,10 @@ CYBOZU_TEST_AUTO(hashBench)
 	decBench<CipherTextG2>("decG2", C, sec, pub);
 	puts("");
 	decBench<CipherTextGT>("decGT", C, sec, pub);
+	puts("");
+	decBench<CipherTextG1>("decG1ViaGT", C, sec, pub, &SecretKey::decViaGT);
+	puts("");
+	decBench<CipherTextG2>("decG2ViaGT", C, sec, pub, &SecretKey::decViaGT);
 
 	G1 P, P2;
 	G2 Q, Q2;
@@ -468,9 +474,9 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("decG2   ", C, sec.dec, c2);
 	CYBOZU_BENCH_C("degGT   ", C, sec.dec, ct);
 
-	CYBOZU_BENCH_C("mul     ", C, CipherTextGT::mul, ct, c1, c2);
-	CYBOZU_BENCH_C("mulML   ", C, CipherTextGT::mulML, ct, c1, c2);
-	CYBOZU_BENCH_C("finalExp", C, CipherTextGT::finalExp, ct, ct);
+	CYBOZU_BENCH_C("CT:mul  ", C, CipherTextGT::mul, ct, c1, c2);
+	CYBOZU_BENCH_C("CT:mulML", C, CipherTextGT::mulML, ct, c1, c2);
+	CYBOZU_BENCH_C("CT:finalExp", C, CipherTextGT::finalExp, ct, ct);
 
 	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, c1, c1, c1);
 	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, c2, c2, c2);

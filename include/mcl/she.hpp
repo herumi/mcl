@@ -641,6 +641,24 @@ public:
 			return ePQhashTbl_.log(v);
 //			return log(g, v);
 		}
+		int64_t decViaGT(const CipherTextG1& c) const
+		{
+			G1 R;
+			G1::mul(R, c.T_, x_);
+			G1::sub(R, c.S_, R);
+			GT v;
+			BN::pairing(v, R, Q_);
+			return ePQhashTbl_.log(v);
+		}
+		int64_t decViaGT(const CipherTextG2& c) const
+		{
+			G2 R;
+			G2::mul(R, c.T_, y_);
+			G2::sub(R, c.S_, R);
+			GT v;
+			BN::pairing(v, P_, R);
+			return ePQhashTbl_.log(v);
+		}
 		int64_t dec(const CipherText& c) const
 		{
 			if (c.isMultiplied()) {
