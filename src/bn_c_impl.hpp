@@ -126,28 +126,7 @@ int mclBn_init(int curve, int maxUnitSize)
 		if (g_fp) fprintf(g_fp, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
-	mcl::bn::CurveParam cp;
-	switch (curve) {
-	case mclBn_CurveFp254BNb:
-		cp = mcl::bn::CurveFp254BNb;
-		break;
-#if MCLBN_FP_UNIT_SIZE >= 6
-	case mclBn_CurveFp382_1:
-		cp = mcl::bn::CurveFp382_1;
-		break;
-	case mclBn_CurveFp382_2:
-		cp = mcl::bn::CurveFp382_2;
-		break;
-#endif
-#if MCLBN_FP_UNIT_SIZE >= 8
-	case mclBn_CurveFp462:
-		cp = mcl::bn::CurveFp462;
-		break;
-#endif
-	default:
-		if (g_fp) fprintf(g_fp, "MCLBN_init:not supported curve %d\n", curve);
-		return -1;
-	}
+	const mcl::bn::CurveParam& cp = mcl::bn::getCurveParam(curve);
 	initPairing(cp);
 	return 0;
 } catch (std::exception& e) {
