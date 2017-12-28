@@ -484,5 +484,8 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("mulG1   ", C, CipherTextG1::mul, c1, c1, m);
 	CYBOZU_BENCH_C("mulG2   ", C, CipherTextG2::mul, c2, c2, m);
 	CYBOZU_BENCH_C("mulGT   ", C, CipherTextGT::mul, ct, ct, m);
+
+	CYBOZU_BENCH_C("convG1toGT", C, pub.convert, ct, c1);
+	CYBOZU_BENCH_C("convG2toGT", C, pub.convert, ct, c2);
 }
 
