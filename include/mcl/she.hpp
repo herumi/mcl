@@ -127,7 +127,7 @@ class HashTable {
 	static const size_t defaultTryNum = 1024;
 	typedef InterfaceForHashTable<G, isEC> I;
 	typedef std::vector<KeyCount> KeyCountVec;
-	KeyCountVec kcv;
+	KeyCountVec kcv_;
 	G P_;
 	mcl::fp::WindowMethod<I> wm_;
 	G nextP_;
@@ -158,9 +158,9 @@ public:
 	HashTable() : tryNum_(defaultTryNum) {}
 	bool operator==(const HashTable& rhs) const
 	{
-		if (kcv.size() != rhs.kcv.size()) return false;
-		for (size_t i = 0; i < kcv.size(); i++) {
-			if (!kcv[i].isSame(rhs.kcv[i])) return false;
+		if (kcv_.size() != rhs.kcv_.size()) return false;
+		for (size_t i = 0; i < kcv_.size(); i++) {
+			if (!kcv_[i].isSame(rhs.kcv_[i])) return false;
 		}
 		return P_ == rhs.P_ && nextP_ == rhs.nextP_;
 	}
@@ -171,20 +171,20 @@ public:
 	void init(const G& P, size_t hashSize, size_t tryNum = defaultTryNum)
 	{
 		if (hashSize == 0) {
-			kcv.clear();
+			kcv_.clear();
 			return;
 		}
 		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
 		P_ = P;
 		tryNum_ = tryNum;
-		kcv.resize(hashSize);
+		kcv_.resize(hashSize);
 		G xP;
 		I::clear(xP);
-		for (int i = 1; i <= (int)kcv.size(); i++) {
+		for (int i = 1; i <= (int)kcv_.size(); i++) {
 			I::add(xP, xP, P_);
 			I::normalize(xP);
-			kcv[i - 1].key = I::getHash(xP);
-			kcv[i - 1].count = I::isOdd(xP) ? i : -i;
+			kcv_[i - 1].key = I::getHash(xP);
+			kcv_[i - 1].count = I::isOdd(xP) ? i : -i;
 		}
 		nextP_ = xP;
 		I::dbl(nextP_, nextP_);
@@ -193,7 +193,7 @@ public:
 		/*
 			ascending order of abs(count) for same key
 		*/
-		std::stable_sort(kcv.begin(), kcv.end());
+		std::stable_sort(kcv_.begin(), kcv_.end());
 		setWindowMethod();
 	}
 	void setTryNum(size_t tryNum)
@@ -202,7 +202,7 @@ public:
 	}
 	/*
 		log_P(xP)
-		find range which has same hash of xP in kcv,
+		find range which has same hash of xP in kcv_,
 		and detect it
 	*/
 	int basicLog(G xP, bool *ok = 0) const
@@ -214,7 +214,7 @@ public:
 		I::normalize(xP);
 		kc.key = I::getHash(xP);
 		kc.count = 0;
-		std::pair<Iter, Iter> p = std::equal_range(kcv.begin(), kcv.end(), kc);
+		std::pair<Iter, Iter> p = std::equal_range(kcv_.begin(), kcv_.end(), kc);
 		G Q;
 		I::clear(Q);
 		int prev = 0;
@@ -260,7 +260,7 @@ public:
 		G posP = xP, negP = xP;
 		int64_t posCenter = 0;
 		int64_t negCenter = 0;
-		int64_t next = (int64_t)kcv.size() * 2 + 1;
+		int64_t next = (int64_t)kcv_.size() * 2 + 1;
 		for (size_t i = 1; i < tryNum_; i++) {
 			I::add(posP, posP, nextNegP_);
 			posCenter += next;
@@ -285,8 +285,8 @@ public:
 	void save(OutputStream& os) const
 	{
 		cybozu::save(os, bn_current::BN::param.curveType);
-		cybozu::save(os, kcv.size());
-		cybozu::write(os, &kcv[0], sizeof(kcv[0]) * kcv.size());
+		cybozu::save(os, kcv_.size());
+		cybozu::write(os, &kcv_[0], sizeof(kcv_[0]) * kcv_.size());
 		P_.save(os);
 	}
 	/*
@@ -301,8 +301,8 @@ public:
 		if (curveType != bn_current::BN::param.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
 		size_t kcvSize;
 		cybozu::load(kcvSize, is);
-		kcv.resize(kcvSize);
-		cybozu::read(&kcv[0], sizeof(kcv[0]) * kcvSize, is);
+		kcv_.resize(kcvSize);
+		cybozu::read(&kcv_[0], sizeof(kcv_[0]) * kcvSize, is);
 		P_.load(is);
 		I::mul(nextP_, P_, (kcvSize * 2) + 1);
 		I::neg(nextNegP_, nextP_);
