@@ -101,6 +101,22 @@ MCLSHE_DLL_API int sheSetRangeForG1DLP(mclSize hashSize, mclSize tryNum);
 MCLSHE_DLL_API int sheSetRangeForG2DLP(mclSize hashSize, mclSize tryNum);
 MCLSHE_DLL_API int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum);
 
+/*
+	load table for DLP
+	return read size if success else 0
+*/
+MCLSHE_DLL_API mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize);
+
+/*
+	save table for DLP
+	return written size if success else 0
+*/
+MCLSHE_DLL_API mclSize sheSaveTableForG1DLP(void *buf, mclSize maxBufSize);
+MCLSHE_DLL_API mclSize sheSaveTableForG2DLP(void *buf, mclSize maxBufSize);
+MCLSHE_DLL_API mclSize sheSaveTableForGTDLP(void *buf, mclSize maxBufSize);
+
 // return 0 if success
 MCLSHE_DLL_API int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, mclInt m);
 MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, mclInt m);

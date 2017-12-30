@@ -6,14 +6,6 @@
 	see https://github.com/herumi/mcl/blob/master/misc/she/she.pdf
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
-
-	David Mandell Freeman:
-	Converting Pairing-Based Cryptosystems from Composite-Order Groups to Prime-Order Groups. EUROCRYPT 2010: 44-61
-	http://theory.stanford.edu/~dfreeman/papers/subgroups.pdf
-	this algorithm reduces public key size compared to the paper by Sakai's idea.
-
-	BGN encryption
-	http://theory.stanford.edu/~dfreeman/cs259c-f11/lectures/bgn
 */
 #include <cmath>
 #include <vector>
@@ -119,6 +111,12 @@ struct InterfaceForHashTable<G, false> : G {
 	static void mul(G& z, const G& x, const INT& y) { G::pow(z, x, y); }
 };
 
+template<class G>
+char GtoChar();
+template<>char GtoChar<bn_current::G1>() { return '1'; }
+template<>char GtoChar<bn_current::G2>() { return '2'; }
+template<>char GtoChar<bn_current::GT>() { return 'T'; }
+
 /*
 	HashTable<EC, true> or HashTable<Fp12, false>
 */
@@ -133,22 +131,6 @@ class HashTable {
 	G nextP_;
 	G nextNegP_;
 	size_t tryNum_;
-	union ic {
-		uint64_t i;
-		char c[8];
-	};
-	static void saveUint64(std::ostream& os, uint64_t v)
-	{
-		ic ic;
-		ic.i = v;
-		os.write(ic.c, sizeof(ic));
-	}
-	static uint64_t loadUint64(std::istream& is)
-	{
-		ic ic;
-		is.read(ic.c, sizeof(ic));
-		return ic.i;
-	}
 	void setWindowMethod()
 	{
 		const size_t bitSize = G::BaseFp::BaseFp::getBitSize();
@@ -285,6 +267,7 @@ public:
 	void save(OutputStream& os) const
 	{
 		cybozu::save(os, bn_current::BN::param.curveType);
+		cybozu::writeChar(os, GtoChar<G>());
 		cybozu::save(os, kcv_.size());
 		cybozu::write(os, &kcv_[0], sizeof(kcv_[0]) * kcv_.size());
 		P_.save(os);
@@ -299,6 +282,8 @@ public:
 		int curveType;
 		cybozu::load(curveType, is);
 		if (curveType != bn_current::BN::param.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
+		char c = 0;
+		if (!cybozu::readChar(&c, is) || c != GtoChar<G>()) throw cybozu::Exception("HashTable:bad c") << (int)c;
 		size_t kcvSize;
 		cybozu::load(kcvSize, is);
 		kcv_.resize(kcvSize);

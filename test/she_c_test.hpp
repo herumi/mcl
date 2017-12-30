@@ -1,5 +1,8 @@
 #include <mcl/she.h>
+#define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
+#include <cybozu/option.hpp>
+#include <fstream>
 
 const size_t hashSize = 1 << 10;
 const size_t tryNum = 1024;
@@ -306,4 +309,53 @@ CYBOZU_TEST_AUTO(finalExp)
 	sheFinalExpGT(&ct, &ct);
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, (m11 * m21) + (m12 * m22));
+}
+
+int g_hashBitSize = 8;
+std::string g_tableName;
+
+CYBOZU_TEST_AUTO(saveLoad)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+	const size_t hashSize = 1 << g_hashBitSize;
+	const size_t byteSizePerEntry = 8;
+	sheSetRangeForGTDLP(hashSize, 10);
+	std::string buf;
+	buf.resize(hashSize * byteSizePerEntry + 1024);
+	const size_t n1 = sheSaveTableForGTDLP(&buf[0], buf.size());
+	CYBOZU_TEST_ASSERT(n1 > 0);
+	if (!g_tableName.empty()) {
+		std::ofstream ofs(g_tableName.c_str(), std::ios::binary);
+		ofs.write(buf.c_str(), n1);
+	}
+	const int64_t m = hashSize + 1;
+	sheCipherTextGT ct;
+	CYBOZU_TEST_ASSERT(sheEncGT(&ct, &pub, m) == 0);
+	sheSetRangeForGTDLP(1, 1);
+	int64_t dec;
+	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) != 0);
+	const size_t n2 = sheLoadTableForGTDLP(&buf[0], n1);
+	CYBOZU_TEST_ASSERT(n2 > 0);
+	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) == 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+}
+
+int main(int argc, char *argv[])
+	try
+{
+	cybozu::Option opt;
+	opt.appendOpt(&g_hashBitSize, 8, "bit", ": hashBitSize");
+	opt.appendOpt(&g_tableName, "", "f", ": table name");
+	opt.appendHelp("h", ": show this message");
+	if (!opt.parse(argc, argv)) {
+		opt.usage();
+		return 1;
+	}
+	return cybozu::test::autoRun.run(argc, argv);
+} catch (std::exception& e) {
+	printf("ERR %s\n", e.what());
+	return 1;
 }

@@ -194,6 +194,55 @@ int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum)
 	return setRangeForDLP(SHE::setRangeForGTDLP, hashSize, tryNum);
 }
 
+template<class HashTable>
+mclSize loadTable(HashTable& table, const void *buf, mclSize maxBufSize)
+	try
+{
+	cybozu::MemoryInputStream is(buf, maxBufSize);
+	table.load(is);
+	return is.getPos();
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return 0;
+}
+
+mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize)
+{
+	return loadTable(SHE::PhashTbl_, buf, bufSize);
+}
+mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize)
+{
+	return loadTable(SHE::QhashTbl_, buf, bufSize);
+}
+mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize)
+{
+	return loadTable(SHE::ePQhashTbl_, buf, bufSize);
+}
+
+template<class HashTable>
+mclSize saveTable(void *buf, mclSize maxBufSize, const HashTable& table)
+	try
+{
+	cybozu::MemoryOutputStream os(buf, maxBufSize);
+	table.save(os);
+	return os.getPos();
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return 0;
+}
+mclSize sheSaveTableForG1DLP(void *buf, mclSize maxBufSize)
+{
+	return saveTable(buf, maxBufSize, SHE::PhashTbl_);
+}
+mclSize sheSaveTableForG2DLP(void *buf, mclSize maxBufSize)
+{
+	return saveTable(buf, maxBufSize, SHE::QhashTbl_);
+}
+mclSize sheSaveTableForGTDLP(void *buf, mclSize maxBufSize)
+{
+	return saveTable(buf, maxBufSize, SHE::ePQhashTbl_);
+}
+
 template<class CT>
 int encT(CT *c, const shePublicKey *pub, mclInt m)
 	try
