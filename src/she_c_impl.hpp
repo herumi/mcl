@@ -198,13 +198,13 @@ void sheSetTryNum(mclSize tryNum)
 {
 	SHE::setTryNum(tryNum);
 }
-void sheDecG1ViaGT(int use)
+void sheUseDecG1ViaGT(int use)
 {
-	SHE::decG1ViaGT(use != 0);
+	SHE::useDecG1ViaGT(use != 0);
 }
 void sheDecG2ViaGT(int use)
 {
-	SHE::decG2ViaGT(use != 0);
+	SHE::useDecG2ViaGT(use != 0);
 }
 
 template<class HashTable>
