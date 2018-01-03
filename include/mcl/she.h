@@ -107,6 +107,16 @@ MCLSHE_DLL_API int sheSetRangeForGTDLP(mclSize hashSize);
 MCLSHE_DLL_API void sheSetTryNum(mclSize tryNum);
 
 /*
+	decode G1 via GT if use != 0
+	@note faster if tryNum >= 300
+*/
+MCLSHE_DLL_API void sheDecG1ViaGT(int use);
+/*
+	decode G2 via GT if use != 0
+	@note faster if tryNum >= 100
+*/
+MCLSHE_DLL_API void sheDecG2ViaGT(int use);
+/*
 	load table for DLP
 	return read size if success else 0
 */

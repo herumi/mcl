@@ -198,14 +198,20 @@ void sheSetTryNum(mclSize tryNum)
 {
 	SHE::setTryNum(tryNum);
 }
+void sheDecG1ViaGT(int use)
+{
+	SHE::decG1ViaGT(use != 0);
+}
+void sheDecG2ViaGT(int use)
+{
+	SHE::decG2ViaGT(use != 0);
+}
 
 template<class HashTable>
-mclSize loadTable(HashTable& table, const void *buf, mclSize maxBufSize)
+mclSize loadTable(HashTable& table, const void *buf, mclSize bufSize)
 	try
 {
-	cybozu::MemoryInputStream is(buf, maxBufSize);
-	table.load(is);
-	return is.getPos();
+	return table.load(buf, bufSize);
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
 	return 0;
@@ -228,9 +234,7 @@ template<class HashTable>
 mclSize saveTable(void *buf, mclSize maxBufSize, const HashTable& table)
 	try
 {
-	cybozu::MemoryOutputStream os(buf, maxBufSize);
-	table.save(os);
-	return os.getPos();
+	return table.save(buf, maxBufSize);
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
 	return 0;

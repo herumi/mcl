@@ -272,6 +272,12 @@ public:
 		cybozu::write(os, &kcv_[0], sizeof(kcv_[0]) * kcv_.size());
 		P_.save(os);
 	}
+	size_t save(void *buf, size_t maxBufSize) const
+	{
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		save(os);
+		return os.getPos();
+	}
 	/*
 		remark
 		tryNum is not set
@@ -292,6 +298,12 @@ public:
 		I::mul(nextP_, P_, (kcvSize * 2) + 1);
 		I::neg(nextNegP_, nextP_);
 		setWindowMethod();
+	}
+	size_t load(const void *buf, size_t bufSize)
+	{
+		cybozu::MemoryInputStream is(buf, bufSize);
+		load(is);
+		return is.getPos();
 	}
 	const mcl::fp::WindowMethod<I>& getWM() const { return wm_; }
 	/*
@@ -347,6 +359,8 @@ struct SHET {
 	static mcl::fp::WindowMethod<G2> Qwm_;
 	typedef local::InterfaceForHashTable<GT, false> GTasEC;
 	static local::HashTable<GT, false> ePQhashTbl_;
+	static bool decG1ViaGT_;
+	static bool decG2ViaGT_;
 private:
 	template<class G>
 	class CipherTextAT {
@@ -546,7 +560,14 @@ public:
 		QhashTbl_.setTryNum(tryNum);
 		ePQhashTbl_.setTryNum(tryNum);
 	}
-
+	static void decG1ViaGT(bool use = true)
+	{
+		decG1ViaGT_ = use;
+	}
+	static void decG2ViaGT(bool use = true)
+	{
+		decG2ViaGT_ = use;
+	}
 	/*
 		only one element is necessary for each G1 and G2.
 		this is better than David Mandell Freeman's algorithm
@@ -606,6 +627,7 @@ public:
 #endif
 		int64_t dec(const CipherTextG1& c) const
 		{
+			if (decG1ViaGT_) return decViaGT(c);
 			/*
 				S = mP + rxP
 				T = rP
@@ -618,6 +640,7 @@ public:
 		}
 		int64_t dec(const CipherTextG2& c) const
 		{
+			if (decG2ViaGT_) return decViaGT(c);
 			G2 R;
 			G2::mul(R, c.T_, y_);
 			G2::sub(R, c.S_, R);
@@ -1458,6 +1481,8 @@ template<class BN, class Fr> std::vector<bn_current::Fp6> SHET<BN, Fr>::Qcoeff_;
 template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::PhashTbl_;
 template<class BN, class Fr> local::HashTable<typename BN::G2> SHET<BN, Fr>::QhashTbl_;
 template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::ePQhashTbl_;
+template<class BN, class Fr> bool SHET<BN, Fr>::decG1ViaGT_;
+template<class BN, class Fr> bool SHET<BN, Fr>::decG2ViaGT_;
 typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
 typedef SHE::SecretKey SecretKey;
 typedef SHE::PublicKey PublicKey;
