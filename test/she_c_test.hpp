@@ -43,7 +43,13 @@ CYBOZU_TEST_AUTO(encDec)
 	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
 	CYBOZU_TEST_EQUAL(dec, m);
 	dec = 0;
+	CYBOZU_TEST_EQUAL(sheDecG1ViaGT(&dec, &sec, &c1), 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+	dec = 0;
 	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
+	CYBOZU_TEST_EQUAL(dec, m);
+	dec = 0;
+	CYBOZU_TEST_EQUAL(sheDecG2ViaGT(&dec, &sec, &c2), 0);
 	CYBOZU_TEST_EQUAL(dec, m);
 	dec = 0;
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);

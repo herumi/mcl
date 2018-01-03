@@ -144,6 +144,12 @@ MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt 
 MCLSHE_DLL_API int sheDecG1(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
 MCLSHE_DLL_API int sheDecG2(mclInt *m, const sheSecretKey *sec, const sheCipherTextG2 *c);
 MCLSHE_DLL_API int sheDecGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextGT *c);
+/*
+	decode c via GT and set m
+	return 0 if success
+*/
+MCLSHE_DLL_API int sheDecG1ViaGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
+MCLSHE_DLL_API int sheDecG2ViaGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextG2 *c);
 
 /*
 	return 1 if dec(c) == 0

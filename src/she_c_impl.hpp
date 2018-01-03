@@ -202,7 +202,7 @@ void sheUseDecG1ViaGT(int use)
 {
 	SHE::useDecG1ViaGT(use != 0);
 }
-void sheDecG2ViaGT(int use)
+void sheUseDecG2ViaGT(int use)
 {
 	SHE::useDecG2ViaGT(use != 0);
 }
@@ -282,7 +282,7 @@ template<class CT>
 int decT(mclInt *m, const sheSecretKey *sec, const CT *c)
 	try
 {
-	*m = cast(sec)->dec(*cast(c));
+	*m = (cast(sec)->dec)(*cast(c));
 	return 0;
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
@@ -303,6 +303,28 @@ int sheDecGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextGT *c)
 {
 	return decT(m, sec, c);
 }
+
+template<class CT>
+int decViaGTT(mclInt *m, const sheSecretKey *sec, const CT *c)
+	try
+{
+	*m = (cast(sec)->decViaGT)(*cast(c));
+	return 0;
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return -1;
+}
+
+int sheDecG1ViaGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
+{
+	return decViaGTT(m, sec, c);
+}
+
+int sheDecG2ViaGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextG2 *c)
+{
+	return decViaGTT(m, sec, c);
+}
+
 
 template<class CT>
 int isZeroT(const sheSecretKey *sec, const CT *c)
