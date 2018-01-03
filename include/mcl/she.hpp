@@ -796,6 +796,13 @@ public:
 			G1::mul(xP_, P_, x);
 			G2::mul(yQ_, Q_, y);
 		}
+		template<class CT, class RG>
+		void reRandT(CT& c, RG& rg) const
+		{
+			CT c0;
+			enc(c0, 0, rg);
+			CT::add(c, c, c0);
+		}
 	public:
 		/*
 			you can use INT as int64_t and Fr,
@@ -915,63 +922,20 @@ public:
 			cm.isMultiplied_ = true;
 			convert(cm.m_, ca.a_);
 		}
-		/*
-			c += Enc(0)
-		*/
+
 		template<class RG>
-		void reRand(CipherTextG1& c, RG& rg) const
-		{
-			CipherTextG1 c0;
-			enc(c0, 0, rg);
-			CipherTextG1::add(c, c, c0);
-		}
+		void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
 		template<class RG>
-		void reRand(CipherTextG2& c, RG& rg) const
-		{
-			CipherTextG2 c0;
-			enc(c0, 0, rg);
-			CipherTextG2::add(c, c, c0);
-		}
+		void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
 		template<class RG>
-		void reRand(CipherTextA& c, RG& rg) const
-		{
-			CipherTextA c0;
-			enc(c0, 0, rg);
-			CipherTextA::add(c, c, c0);
-		}
-		template<class RG>
-		void reRand(CipherTextGT& c, RG& rg) const
-		{
-#if 1 // for circuit security : 3.58Mclk -> 5.4Mclk
-			CipherTextGT c0;
-			enc(c0, 0, rg);
-			CipherTextGT::add(c, c, c0);
-#else
-			/*
-				add Enc(0) * Enc(0)
-				(S1, T1) * (S2, T2) = (rxP, rP) * (r'yQ, r'Q)
-				replace r <- rr', r' <- 1
-				= (r xP, rP) * (yQ, Q)
-			*/
-			G1 S1, T1;
-			Fr r;
-			r.setRand(rg);
-			G1::mul(S1, xP, r);
-			G1::mul(T1, P, r);
-			GT g_[4];
-			tensorProduct(g_, S1, T1, yQ, Q);
-			for (int i = 0; i < 4; i++) {
-				c.g_[i] *= g_[i];
-			}
-#endif
-		}
+		void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
 		template<class RG>
 		void reRand(CipherText& c, RG& rg) const
 		{
 			if (c.isMultiplied()) {
-				reRand(c.m_, rg);
+				reRandT(c.m_, rg);
 			} else {
-				reRand(c.a_, rg);
+				reRandT(c.a_, rg);
 			}
 		}
 		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
@@ -1056,6 +1020,13 @@ public:
 		{
 			wm.mul(static_cast<GTasEC&>(x), y);
 		}
+		template<class CT, class RG>
+		void reRandT(CT& c, RG& rg) const
+		{
+			CT c0;
+			enc(c0, 0, rg);
+			CT::add(c, c, c0);
+		}
 	public:
 		void init(const PublicKey& pub)
 		{
@@ -1072,8 +1043,8 @@ public:
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
-		template<class G, class RG, class I>
-		void enc1(G& S, G& T, int64_t m, RG& rg, const mcl::fp::WindowMethod<I>& Pwm, const mcl::fp::WindowMethod<G>& xPwm) const
+		template<class G, class INT, class RG, class I>
+		void enc1(G& S, G& T, const INT& m, RG& rg, const mcl::fp::WindowMethod<I>& Pwm, const mcl::fp::WindowMethod<G>& xPwm) const
 		{
 			Fr r;
 			r.setRand(rg);
@@ -1084,18 +1055,18 @@ public:
 			Pwm.mul(static_cast<I&>(C), m);
 			S += C;
 		}
-		template<class RG>
-		void enc(CipherTextG1& c, int64_t m, RG& rg) const
+		template<class INT, class RG>
+		void enc(CipherTextG1& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, m, rg, PhashTbl_.getWM(), xPwm_);
 		}
-		template<class RG>
-		void enc(CipherTextG2& c, int64_t m, RG& rg) const
+		template<class INT, class RG>
+		void enc(CipherTextG2& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, m, rg, QhashTbl_.getWM(), yQwm_);
 		}
-		template<class RG>
-		void enc(CipherTextGT& c, int64_t m, RG& rg) const
+		template<class INT, class RG>
+		void enc(CipherTextGT& c, const INT& m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = (e^m e^(xya), (e^x)^b, (e^y)^c, e^(b + c - a))
@@ -1110,25 +1081,37 @@ public:
 			c.g_[0] *= t;
 			mulByWindowMethod(c.g_[1], exPQwm_, rb); // (e^x)^b
 			mulByWindowMethod(c.g_[2], eyPQwm_, rc); // (e^y)^c
-			rb = rb + rc - ra;
+			rb += rc;
+			rb -= ra;
 			ePQhashTbl_.mulByWindowMethod(c.g_[3], rb);
 		}
-		template<class CT, class RG>
-		void reRandT(CT& c, RG& rg) const
+		template<class INT>
+		void enc(CipherTextG1& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextG2& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextGT& c, const INT& m) const { return enc(c, m, local::g_rg); }
+
+		template<class RG>
+		void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG>
+		void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG>
+		void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG>
+		void reRand(CipherText& c, RG& rg) const
 		{
-			CT c0;
-			enc(c0, 0, rg);
-			CT::add(c, c, c0);
+			if (c.isMultiplied()) {
+				reRandT(c.m_, rg);
+			} else {
+				reRandT(c.a_, rg);
+			}
 		}
-		template<class RG> void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG> void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG> void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
-		void enc(CipherTextG1& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextG2& c, int64_t m) const { return enc(c, m, local::g_rg); }
-		void enc(CipherTextGT& c, int64_t m) const { return enc(c, m, local::g_rg); }
 		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
 		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
 	};
 
 	class CipherTextA {
