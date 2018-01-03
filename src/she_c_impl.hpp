@@ -195,28 +195,28 @@ int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum)
 }
 
 template<class HashTable>
-mclSize loadTable(HashTable& table, const void *buf, mclSize maxBufSize)
+mclSize loadTable(HashTable& table, const void *buf, mclSize maxBufSize, mclSize tryNum)
 	try
 {
 	cybozu::MemoryInputStream is(buf, maxBufSize);
-	table.load(is);
+	table.load(is, tryNum);
 	return is.getPos();
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
 	return 0;
 }
 
-mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize)
+mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize, mclSize tryNum)
 {
-	return loadTable(SHE::PhashTbl_, buf, bufSize);
+	return loadTable(SHE::PhashTbl_, buf, bufSize, tryNum);
 }
-mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize)
+mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize, mclSize tryNum)
 {
-	return loadTable(SHE::QhashTbl_, buf, bufSize);
+	return loadTable(SHE::QhashTbl_, buf, bufSize, tryNum);
 }
-mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize)
+mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize, mclSize tryNum)
 {
-	return loadTable(SHE::ePQhashTbl_, buf, bufSize);
+	return loadTable(SHE::ePQhashTbl_, buf, bufSize, tryNum);
 }
 
 template<class HashTable>

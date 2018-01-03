@@ -105,9 +105,9 @@ MCLSHE_DLL_API int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum);
 	load table for DLP
 	return read size if success else 0
 */
-MCLSHE_DLL_API mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize);
-MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize);
-MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize, mclSize tryNum);
+MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize, mclSize tryNum);
+MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize, mclSize tryNum);
 
 /*
 	save table for DLP

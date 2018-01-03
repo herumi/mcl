@@ -277,7 +277,7 @@ public:
 		tryNum is set defaultTryNum
 	*/
 	template<class InputStream>
-	void load(InputStream& is)
+	void load(InputStream& is, size_t tryNum = defaultTryNum)
 	{
 		int curveType;
 		cybozu::load(curveType, is);
@@ -292,7 +292,7 @@ public:
 		I::mul(nextP_, P_, (kcvSize * 2) + 1);
 		I::neg(nextNegP_, nextP_);
 		setWindowMethod();
-		tryNum_ = defaultTryNum;
+		tryNum_ = tryNum;
 	}
 	const mcl::fp::WindowMethod<I>& getWM() const { return wm_; }
 	/*
