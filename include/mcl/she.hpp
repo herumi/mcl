@@ -53,7 +53,8 @@ static cybozu::RandomGenerator g_rg;
 #ifndef MCLSHE_WIN_SIZE
 	#define MCLSHE_WIN_SIZE 10
 #endif
-const size_t winSize = MCLSHE_WIN_SIZE;
+static const size_t winSize = MCLSHE_WIN_SIZE;
+static const size_t defaultTryNum = 1024;
 
 struct KeyCount {
 	uint32_t key;
@@ -122,7 +123,6 @@ template<>char GtoChar<bn_current::GT>() { return 'T'; }
 */
 template<class G, bool isEC = true>
 class HashTable {
-	static const size_t defaultTryNum = 1024;
 	typedef InterfaceForHashTable<G, isEC> I;
 	typedef std::vector<KeyCount> KeyCountVec;
 	KeyCountVec kcv_;
@@ -137,7 +137,7 @@ class HashTable {
 		wm_.init(static_cast<const I&>(P_), bitSize, local::winSize);
 	}
 public:
-	HashTable() : tryNum_(defaultTryNum) {}
+	HashTable() : tryNum_(local::defaultTryNum) {}
 	bool operator==(const HashTable& rhs) const
 	{
 		if (kcv_.size() != rhs.kcv_.size()) return false;
@@ -150,7 +150,7 @@ public:
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
-	void init(const G& P, size_t hashSize, size_t tryNum = defaultTryNum)
+	void init(const G& P, size_t hashSize, size_t tryNum = local::defaultTryNum)
 	{
 		if (hashSize == 0) {
 			kcv_.clear();
@@ -274,10 +274,10 @@ public:
 	}
 	/*
 		remark
-		tryNum is set defaultTryNum
+		tryNum is not set
 	*/
 	template<class InputStream>
-	void load(InputStream& is, size_t tryNum = defaultTryNum)
+	void load(InputStream& is)
 	{
 		int curveType;
 		cybozu::load(curveType, is);
@@ -292,7 +292,6 @@ public:
 		I::mul(nextP_, P_, (kcvSize * 2) + 1);
 		I::neg(nextNegP_, nextP_);
 		setWindowMethod();
-		tryNum_ = tryNum;
 	}
 	const mcl::fp::WindowMethod<I>& getWM() const { return wm_; }
 	/*
@@ -512,35 +511,40 @@ public:
 	/*
 		set range for G1-DLP
 	*/
-	static void setRangeForG1DLP(size_t hashSize, size_t tryNum = 0)
+	static void setRangeForG1DLP(size_t hashSize)
 	{
-		PhashTbl_.init(P_, hashSize, tryNum);
+		PhashTbl_.init(P_, hashSize);
 	}
 	/*
 		set range for G2-DLP
 	*/
-	static void setRangeForG2DLP(size_t hashSize, size_t tryNum = 0)
+	static void setRangeForG2DLP(size_t hashSize)
 	{
-		QhashTbl_.init(Q_, hashSize, tryNum);
+		QhashTbl_.init(Q_, hashSize);
 	}
 	/*
 		set range for GT-DLP
 	*/
-	static void setRangeForGTDLP(size_t hashSize, size_t tryNum = 0)
+	static void setRangeForGTDLP(size_t hashSize)
 	{
-		ePQhashTbl_.init(ePQ_, hashSize, tryNum);
+		ePQhashTbl_.init(ePQ_, hashSize);
 	}
 	/*
 		set range for G1/G2/GT DLP
 		decode message m for |m| <= hasSize * tryNum
 		decode time = O(log(hasSize) * tryNum)
-		@note if tryNum = 0 then fast but require more memory(TBD)
 	*/
-	static void setRangeForDLP(size_t hashSize, size_t tryNum = 0)
+	static void setRangeForDLP(size_t hashSize)
 	{
-		setRangeForG1DLP(hashSize, tryNum);
-		setRangeForG2DLP(hashSize, tryNum);
-		setRangeForGTDLP(hashSize, tryNum);
+		setRangeForG1DLP(hashSize);
+		setRangeForG2DLP(hashSize);
+		setRangeForGTDLP(hashSize);
+	}
+	static void setTryNum(size_t tryNum)
+	{
+		PhashTbl_.setTryNum(tryNum);
+		QhashTbl_.setTryNum(tryNum);
+		ePQhashTbl_.setTryNum(tryNum);
 	}
 
 	/*

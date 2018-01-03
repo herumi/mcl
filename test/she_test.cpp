@@ -286,7 +286,7 @@ T testIo(const T& x)
 
 CYBOZU_TEST_AUTO(io)
 {
-	SHE::setRangeForDLP(100, 2);
+	SHE::setRangeForDLP(100);
 	int64_t m;
 	for (int i = 0; i < 2; i++) {
 		if (i == 1) {
@@ -378,15 +378,15 @@ CYBOZU_TEST_AUTO(hashBench)
 	const size_t hashSize = 1u << 21;
 
 	clock_t begin = clock(), end;
-	SHE::setRangeForG1DLP(hashSize, 1024);
+	SHE::setRangeForG1DLP(hashSize);
 	end = clock();
 	printf("init G1 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 	begin = end;
-	SHE::setRangeForG2DLP(hashSize, 1024);
+	SHE::setRangeForG2DLP(hashSize);
 	end = clock();
 	printf("init G2 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 	begin = end;
-	SHE::setRangeForGTDLP(hashSize, 1024);
+	SHE::setRangeForGTDLP(hashSize);
 	end = clock();
 	printf("init GT DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 

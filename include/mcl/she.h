@@ -96,18 +96,23 @@ MCLSHE_DLL_API void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec);
 	make table to decode DLP
 	return 0 if success
 */
-MCLSHE_DLL_API int sheSetRangeForDLP(mclSize hashSize, mclSize tryNum);
-MCLSHE_DLL_API int sheSetRangeForG1DLP(mclSize hashSize, mclSize tryNum);
-MCLSHE_DLL_API int sheSetRangeForG2DLP(mclSize hashSize, mclSize tryNum);
-MCLSHE_DLL_API int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum);
+MCLSHE_DLL_API int sheSetRangeForDLP(mclSize hashSize);
+MCLSHE_DLL_API int sheSetRangeForG1DLP(mclSize hashSize);
+MCLSHE_DLL_API int sheSetRangeForG2DLP(mclSize hashSize);
+MCLSHE_DLL_API int sheSetRangeForGTDLP(mclSize hashSize);
+
+/*
+	set tryNum to decode DLP
+*/
+MCLSHE_DLL_API void sheSetTryNum(mclSize tryNum);
 
 /*
 	load table for DLP
 	return read size if success else 0
 */
-MCLSHE_DLL_API mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize, mclSize tryNum);
-MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize, mclSize tryNum);
-MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize, mclSize tryNum);
+MCLSHE_DLL_API mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize);
 
 /*
 	save table for DLP

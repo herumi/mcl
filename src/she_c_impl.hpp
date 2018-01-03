@@ -167,56 +167,61 @@ void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec)
 	cast(sec)->getPublicKey(*cast(pub));
 }
 
-static int setRangeForDLP(void (*f)(mclSize, mclSize), mclSize hashSize, mclSize tryNum)
+static int setRangeForDLP(void (*f)(mclSize), mclSize hashSize)
 	try
 {
-	f(hashSize, tryNum);
+	f(hashSize);
 	return 0;
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
 	return -1;
 }
 
-int sheSetRangeForDLP(mclSize hashSize, mclSize tryNum)
+int sheSetRangeForDLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForDLP, hashSize, tryNum);
+	return setRangeForDLP(SHE::setRangeForDLP, hashSize);
 }
-int sheSetRangeForG1DLP(mclSize hashSize, mclSize tryNum)
+int sheSetRangeForG1DLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForG1DLP, hashSize, tryNum);
+	return setRangeForDLP(SHE::setRangeForG1DLP, hashSize);
 }
-int sheSetRangeForG2DLP(mclSize hashSize, mclSize tryNum)
+int sheSetRangeForG2DLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForG2DLP, hashSize, tryNum);
+	return setRangeForDLP(SHE::setRangeForG2DLP, hashSize);
 }
-int sheSetRangeForGTDLP(mclSize hashSize, mclSize tryNum)
+int sheSetRangeForGTDLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForGTDLP, hashSize, tryNum);
+	return setRangeForDLP(SHE::setRangeForGTDLP, hashSize);
+}
+
+void sheSetTryNum(mclSize tryNum)
+{
+	SHE::setTryNum(tryNum);
 }
 
 template<class HashTable>
-mclSize loadTable(HashTable& table, const void *buf, mclSize maxBufSize, mclSize tryNum)
+mclSize loadTable(HashTable& table, const void *buf, mclSize maxBufSize)
 	try
 {
 	cybozu::MemoryInputStream is(buf, maxBufSize);
-	table.load(is, tryNum);
+	table.load(is);
 	return is.getPos();
 } catch (std::exception& e) {
 	fprintf(stderr, "err %s\n", e.what());
 	return 0;
 }
 
-mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize, mclSize tryNum)
+mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize)
 {
-	return loadTable(SHE::PhashTbl_, buf, bufSize, tryNum);
+	return loadTable(SHE::PhashTbl_, buf, bufSize);
 }
-mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize, mclSize tryNum)
+mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize)
 {
-	return loadTable(SHE::QhashTbl_, buf, bufSize, tryNum);
+	return loadTable(SHE::QhashTbl_, buf, bufSize);
 }
-mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize, mclSize tryNum)
+mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize)
 {
-	return loadTable(SHE::ePQhashTbl_, buf, bufSize, tryNum);
+	return loadTable(SHE::ePQhashTbl_, buf, bufSize);
 }
 
 template<class HashTable>

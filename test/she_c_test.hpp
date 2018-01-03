@@ -20,7 +20,7 @@ CYBOZU_TEST_AUTO(init)
 	int ret;
 	ret = sheInit(curve, MCLBN_FP_UNIT_SIZE);
 	CYBOZU_TEST_EQUAL(ret, 0);
-	ret = sheSetRangeForDLP(hashSize, tryNum);
+	ret = sheSetRangeForDLP(hashSize);
 	CYBOZU_TEST_EQUAL(ret, 0);
 }
 
@@ -322,7 +322,7 @@ CYBOZU_TEST_AUTO(saveLoad)
 	sheGetPublicKey(&pub, &sec);
 	const size_t hashSize = 1 << g_hashBitSize;
 	const size_t byteSizePerEntry = 8;
-	sheSetRangeForGTDLP(hashSize, 10);
+	sheSetRangeForGTDLP(hashSize);
 	std::string buf;
 	buf.resize(hashSize * byteSizePerEntry + 1024);
 	const size_t n1 = sheSaveTableForGTDLP(&buf[0], buf.size());
@@ -331,11 +331,12 @@ CYBOZU_TEST_AUTO(saveLoad)
 		std::ofstream ofs(g_tableName.c_str(), std::ios::binary);
 		ofs.write(buf.c_str(), n1);
 	}
-	const int64_t m = hashSize + 1;
+	const int64_t m = hashSize - 1;
 	sheCipherTextGT ct;
 	CYBOZU_TEST_ASSERT(sheEncGT(&ct, &pub, m) == 0);
-	sheSetRangeForGTDLP(1, 1);
-	int64_t dec;
+	sheSetRangeForGTDLP(1);
+	sheSetTryNum(1);
+	int64_t dec = 0;
 	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) != 0);
 	const size_t n2 = sheLoadTableForGTDLP(&buf[0], n1);
 	CYBOZU_TEST_ASSERT(n2 > 0);
