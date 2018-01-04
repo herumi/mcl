@@ -107,10 +107,16 @@ CYBOZU_TEST_AUTO(enc_dec)
 		CYBOZU_TEST_EQUAL(sec.dec(c1), i);
 		CYBOZU_TEST_EQUAL(sec.decViaGT(c1), i);
 		CYBOZU_TEST_EQUAL(sec.isZero(c1), i == 0);
+		ct1.clear();
+		pub.convert(ct1, c1);
+		CYBOZU_TEST_EQUAL(sec.dec(ct1), i);
 		ppub.enc(c2, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c2), i);
 		CYBOZU_TEST_EQUAL(sec.decViaGT(c2), i);
 		CYBOZU_TEST_EQUAL(sec.isZero(c2), i == 0);
+		ct1.clear();
+		pub.convert(ct1, c2);
+		CYBOZU_TEST_EQUAL(sec.dec(ct1), i);
 		pub.enc(c, i);
 		CYBOZU_TEST_EQUAL(sec.isZero(c), i == 0);
 	}

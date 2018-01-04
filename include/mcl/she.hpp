@@ -897,8 +897,7 @@ public:
 			BN::precomputedMillerLoop(cm.g_[2], c1.T_, Qcoeff_);
 			BN::finalExp(cm.g_[2], cm.g_[2]);
 
-			cm.g_[1] = 1;
-			cm.g_[3] = 1;
+			cm.g_[1] = cm.g_[3] = 1;
 		}
 		/*
 			convert from CipherTextG2 to CipherTextGT
@@ -909,8 +908,9 @@ public:
 				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
 				cm = (P, 0) * c2 = (e(P, S), e(P, T), 1, 1)
 			*/
-			G1 zero; zero.clear();
-			tensorProduct(cm.g_, P_, zero, c2.S_, c2.T_);
+			BN::pairing(cm.g_[0], P_, c2.S_);
+			BN::pairing(cm.g_[1], P_, c2.T_);
+			cm.g_[2] = cm.g_[3] = 1;
 		}
 		void convert(CipherTextGT& cm, const CipherTextA& ca) const
 		{
