@@ -377,6 +377,8 @@ private:
 			return S_ == xT;
 		}
 	public:
+		const G& getS() const { return S_; }
+		const G& getT() const { return T_; }
 		void clear()
 		{
 			S_.clear();
@@ -768,12 +770,135 @@ public:
 			return is.getPos();
 		}
 	};
+private:
+	/*
+		common method for PublicKey and PrecomputedPublicKey
+	*/
+	template<class T>
+	struct PublicKeyMethod {
+		/*
+			you can use INT as int64_t and Fr,
+			but the return type of dec() is int64_t.
+		*/
+		template<class INT, class RG>
+		void enc(CipherTextG1& c, const INT& m, RG& rg) const
+		{
+			static_cast<const T&>(*this).encG1(c, m, rg);
+		}
+		template<class INT, class RG>
+		void enc(CipherTextG2& c, const INT& m, RG& rg) const
+		{
+			static_cast<const T&>(*this).encG2(c, m, rg);
+		}
+		template<class INT, class RG>
+		void enc(CipherTextA& c, const INT& m, RG& rg) const
+		{
+			enc(c.c1_, m, rg);
+			enc(c.c2_, m, rg);
+		}
+		template<class INT, class RG>
+		void enc(CipherTextGT& c, const INT& m, RG& rg) const
+		{
+			static_cast<const T&>(*this).encGT(c, m, rg);
+		}
+		template<class INT, class RG>
+		void enc(CipherText& c, const INT& m, RG& rg, bool multiplied = false) const
+		{
+			c.isMultiplied_ = multiplied;
+			if (multiplied) {
+				enc(c.m_, m, rg);
+			} else {
+				enc(c.a_, m, rg);
+			}
+		}
+		template<class INT>
+		void enc(CipherTextG1& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextG2& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextA& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherTextGT& c, const INT& m) const { return enc(c, m, local::g_rg); }
+		template<class INT>
+		void enc(CipherText& c, const INT& m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
+		/*
+			reRand method is for circuit privacy
+		*/
+		template<class CT, class RG>
+		void reRandT(CT& c, RG& rg) const
+		{
+			CT c0;
+			static_cast<const T&>(*this).enc(c0, 0, rg);
+			CT::add(c, c, c0);
+		}
+		template<class RG>
+		void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG>
+		void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG>
+		void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
+		template<class RG>
+		void reRand(CipherText& c, RG& rg) const
+		{
+			if (c.isMultiplied()) {
+				reRandT(c.m_, rg);
+			} else {
+				reRandT(c.a_, rg);
+			}
+		}
+		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
+		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
+		/*
+			convert from CipherTextG1 to CipherTextGT
+		*/
+		void convert(CipherTextGT& cm, const CipherTextG1& c1) const
+		{
+			/*
+				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
+				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
+			*/
+			BN::precomputedMillerLoop(cm.g_[0], c1.getS(), Qcoeff_);
+			BN::finalExp(cm.g_[0], cm.g_[0]);
+			BN::precomputedMillerLoop(cm.g_[2], c1.getT(), Qcoeff_);
+			BN::finalExp(cm.g_[2], cm.g_[2]);
 
-	class PublicKey {
+			cm.g_[1] = cm.g_[3] = 1;
+		}
+		/*
+			convert from CipherTextG2 to CipherTextGT
+		*/
+		void convert(CipherTextGT& cm, const CipherTextG2& c2) const
+		{
+			/*
+				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
+				cm = (P, 0) * c2 = (e(P, S), e(P, T), 1, 1)
+			*/
+			BN::pairing(cm.g_[0], P_, c2.getS());
+			BN::pairing(cm.g_[1], P_, c2.getT());
+			cm.g_[2] = cm.g_[3] = 1;
+		}
+		void convert(CipherTextGT& cm, const CipherTextA& ca) const
+		{
+			convert(cm, ca.c1_);
+		}
+		void convert(CipherText& cm, const CipherText& ca) const
+		{
+			if (ca.isMultiplied()) throw cybozu::Exception("she:PublicKey:convertCipherText:already isMultiplied");
+			cm.isMultiplied_ = true;
+			convert(cm.m_, ca.a_);
+		}
+	};
+public:
+	class PublicKey : public PublicKeyMethod<PublicKey> {
 		G1 xP_;
 		G2 yQ_;
 		friend class SecretKey;
 		friend class PrecomputedPublicKey;
+		template<class T>
+		friend struct PublicKeyMethod;
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
@@ -796,36 +921,18 @@ public:
 			G1::mul(xP_, P_, x);
 			G2::mul(yQ_, Q_, y);
 		}
-		template<class CT, class RG>
-		void reRandT(CT& c, RG& rg) const
-		{
-			CT c0;
-			enc(c0, 0, rg);
-			CT::add(c, c, c0);
-		}
-	public:
-		/*
-			you can use INT as int64_t and Fr,
-			but the return type of dec() is int64_t.
-		*/
 		template<class INT, class RG>
-		void enc(CipherTextG1& c, const INT& m, RG& rg) const
+		void encG1(CipherTextG1& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, P_, xP_, m, rg, PhashTbl_.getWM());
 		}
 		template<class INT, class RG>
-		void enc(CipherTextG2& c, const INT& m, RG& rg) const
+		void encG2(CipherTextG2& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, Q_, yQ_, m, rg, QhashTbl_.getWM());
 		}
 		template<class INT, class RG>
-		void enc(CipherTextA& c, const INT& m, RG& rg) const
-		{
-			enc(c.c1_, m, rg);
-			enc(c.c2_, m, rg);
-		}
-		template<class INT, class RG>
-		void enc(CipherTextGT& c, const INT& m, RG& rg) const
+		void encGT(CipherTextGT& c, const INT& m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
@@ -863,87 +970,7 @@ public:
 			GT::pow(c.g_[3], ePQ_, rc);
 #endif
 		}
-		template<class INT, class RG>
-		void enc(CipherText& c, const INT& m, RG& rg, bool multiplied = false) const
-		{
-			c.isMultiplied_ = multiplied;
-			if (multiplied) {
-				enc(c.m_, m, rg);
-			} else {
-				enc(c.a_, m, rg);
-			}
-		}
-		template<class INT>
-		void enc(CipherTextG1& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextG2& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextA& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextGT& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherText& c, const INT& m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
-		/*
-			convert from CipherTextG1 to CipherTextGT
-		*/
-		void convert(CipherTextGT& cm, const CipherTextG1& c1) const
-		{
-			/*
-				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
-				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
-			*/
-			BN::precomputedMillerLoop(cm.g_[0], c1.S_, Qcoeff_);
-			BN::finalExp(cm.g_[0], cm.g_[0]);
-			BN::precomputedMillerLoop(cm.g_[2], c1.T_, Qcoeff_);
-			BN::finalExp(cm.g_[2], cm.g_[2]);
-
-			cm.g_[1] = cm.g_[3] = 1;
-		}
-		/*
-			convert from CipherTextG2 to CipherTextGT
-		*/
-		void convert(CipherTextGT& cm, const CipherTextG2& c2) const
-		{
-			/*
-				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
-				cm = (P, 0) * c2 = (e(P, S), e(P, T), 1, 1)
-			*/
-			BN::pairing(cm.g_[0], P_, c2.S_);
-			BN::pairing(cm.g_[1], P_, c2.T_);
-			cm.g_[2] = cm.g_[3] = 1;
-		}
-		void convert(CipherTextGT& cm, const CipherTextA& ca) const
-		{
-			convert(cm, ca.c1_);
-		}
-		void convert(CipherText& cm, const CipherText& ca) const
-		{
-			if (ca.isMultiplied()) throw cybozu::Exception("she:PublicKey:convertCipherText:already isMultiplied");
-			cm.isMultiplied_ = true;
-			convert(cm.m_, ca.a_);
-		}
-
-		template<class RG>
-		void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherText& c, RG& rg) const
-		{
-			if (c.isMultiplied()) {
-				reRandT(c.m_, rg);
-			} else {
-				reRandT(c.a_, rg);
-			}
-		}
-		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
-
+	public:
 		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
@@ -1004,9 +1031,11 @@ public:
 		}
 	};
 
-	class PrecomputedPublicKey {
+	class PrecomputedPublicKey : public PublicKeyMethod<PrecomputedPublicKey> {
 		typedef local::InterfaceForHashTable<GT, false> GTasEC;
 		typedef mcl::fp::WindowMethod<GTasEC> GTwin;
+		template<class T>
+		friend struct PublicKeyMethod;
 		GT exPQ_;
 		GT eyPQ_;
 		GT exyPQ_;
@@ -1019,26 +1048,6 @@ public:
 		void mulByWindowMethod(GT& x, const GTwin& wm, const T& y) const
 		{
 			wm.mul(static_cast<GTasEC&>(x), y);
-		}
-		template<class CT, class RG>
-		void reRandT(CT& c, RG& rg) const
-		{
-			CT c0;
-			enc(c0, 0, rg);
-			CT::add(c, c, c0);
-		}
-	public:
-		void init(const PublicKey& pub)
-		{
-			BN::pairing(exPQ_, pub.xP_, Q_);
-			BN::pairing(eyPQ_, P_, pub.yQ_);
-			BN::pairing(exyPQ_, pub.xP_, pub.yQ_);
-			const size_t bitSize = Fr::getBitSize();
-			exPQwm_.init(static_cast<const GTasEC&>(exPQ_), bitSize, local::winSize);
-			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
-			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
-			xPwm_.init(pub.xP_, bitSize, local::winSize);
-			yQwm_.init(pub.yQ_, bitSize, local::winSize);
 		}
 		/*
 			(S, T) = (m P + r xP, rP)
@@ -1056,17 +1065,17 @@ public:
 			S += C;
 		}
 		template<class INT, class RG>
-		void enc(CipherTextG1& c, const INT& m, RG& rg) const
+		void encG1(CipherTextG1& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, m, rg, PhashTbl_.getWM(), xPwm_);
 		}
 		template<class INT, class RG>
-		void enc(CipherTextG2& c, const INT& m, RG& rg) const
+		void encG2(CipherTextG2& c, const INT& m, RG& rg) const
 		{
 			enc1(c.S_, c.T_, m, rg, QhashTbl_.getWM(), yQwm_);
 		}
 		template<class INT, class RG>
-		void enc(CipherTextGT& c, const INT& m, RG& rg) const
+		void encGT(CipherTextGT& c, const INT& m, RG& rg) const
 		{
 			/*
 				(s, t, u, v) = (e^m e^(xya), (e^x)^b, (e^y)^c, e^(b + c - a))
@@ -1085,33 +1094,19 @@ public:
 			rb -= ra;
 			ePQhashTbl_.mulByWindowMethod(c.g_[3], rb);
 		}
-		template<class INT>
-		void enc(CipherTextG1& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextG2& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextGT& c, const INT& m) const { return enc(c, m, local::g_rg); }
-
-		template<class RG>
-		void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherText& c, RG& rg) const
+	public:
+		void init(const PublicKey& pub)
 		{
-			if (c.isMultiplied()) {
-				reRandT(c.m_, rg);
-			} else {
-				reRandT(c.a_, rg);
-			}
+			BN::pairing(exPQ_, pub.xP_, Q_);
+			BN::pairing(eyPQ_, P_, pub.yQ_);
+			BN::pairing(exyPQ_, pub.xP_, pub.yQ_);
+			const size_t bitSize = Fr::getBitSize();
+			exPQwm_.init(static_cast<const GTasEC&>(exPQ_), bitSize, local::winSize);
+			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
+			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
+			xPwm_.init(pub.xP_, bitSize, local::winSize);
+			yQwm_.init(pub.yQ_, bitSize, local::winSize);
 		}
-		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
 	};
 
 	class CipherTextA {
@@ -1120,6 +1115,8 @@ public:
 		friend class SecretKey;
 		friend class PublicKey;
 		friend class CipherTextGT;
+		template<class T>
+		friend struct PublicKeyMethod;
 	public:
 		void clear()
 		{
@@ -1202,6 +1199,8 @@ public:
 		friend class PublicKey;
 		friend class PrecomputedPublicKey;
 		friend class CipherTextA;
+		template<class T>
+		friend struct PublicKeyMethod;
 	public:
 		void clear()
 		{
@@ -1338,6 +1337,8 @@ public:
 		CipherTextGT m_;
 		friend class SecretKey;
 		friend class PublicKey;
+		template<class T>
+		friend struct PublicKeyMethod;
 	public:
 		CipherText() : isMultiplied_(false) {}
 		void clearAsAdded()
