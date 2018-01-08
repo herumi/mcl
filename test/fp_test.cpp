@@ -19,6 +19,11 @@
 
 typedef mcl::FpT<> Fp;
 
+CYBOZU_TEST_AUTO(sizeof)
+{
+	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::fp::Unit) * Fp::maxSize);
+}
+
 void cstrTest()
 {
 	const struct {

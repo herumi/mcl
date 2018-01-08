@@ -363,7 +363,7 @@ struct SHET {
 	static bool useDecG2ViaGT_;
 private:
 	template<class G>
-	class CipherTextAT {
+	class CipherTextAT : public fp::Serializable<CipherTextAT<G> > {
 		G S_, T_;
 		friend class SecretKey;
 		friend class PublicKey;
@@ -428,23 +428,6 @@ private:
 			if (sep) cybozu::writeChar(os, sep);
 			T_.save(os, ioMode);
 		}
-		void getStr(std::string& str, int ioMode = 0) const
-		{
-			str.clear();
-			cybozu::StringOutputStream os(str);
-			save(os, ioMode);
-		}
-		void setStr(const std::string& str, int ioMode = 0)
-		{
-			cybozu::StringInputStream is(str);
-			load(is, ioMode);
-		}
-		std::string getStr(int ioMode = 0) const
-		{
-			std::string str;
-			getStr(str, ioMode);
-			return str;
-		}
 		friend std::istream& operator>>(std::istream& is, CipherTextAT& self)
 		{
 			self.load(is, fp::detectIoMode(G::getIoMode(), is));
@@ -460,18 +443,6 @@ private:
 			return S_ == rhs.S_ && T_ == rhs.T_;
 		}
 		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
-		size_t serialize(void *buf, size_t maxBufSize) const
-		{
-			cybozu::MemoryOutputStream os(buf, maxBufSize);
-			save(os);
-			return os.getPos();
-		}
-		size_t deserialize(const void *buf, size_t bufSize)
-		{
-			cybozu::MemoryInputStream is(buf, bufSize);
-			load(is);
-			return is.getPos();
-		}
 	};
 	/*
 		g1 = millerLoop(P1, Q)
@@ -574,7 +545,7 @@ public:
 		only one element is necessary for each G1 and G2.
 		this is better than David Mandell Freeman's algorithm
 	*/
-	class SecretKey {
+	class SecretKey : public fp::Serializable<SecretKey> {
 		Fr x_, y_;
 		void getPowOfePQ(GT& v, const CipherTextGT& c) const
 		{
@@ -725,23 +696,6 @@ public:
 			if (sep) cybozu::writeChar(os, sep);
 			y_.save(os, ioMode);
 		}
-		void getStr(std::string& str, int ioMode = 0) const
-		{
-			str.clear();
-			cybozu::StringOutputStream os(str);
-			save(os, ioMode);
-		}
-		void setStr(const std::string& str, int ioMode = 0)
-		{
-			cybozu::StringInputStream is(str);
-			load(is, ioMode);
-		}
-		std::string getStr(int ioMode = 0) const
-		{
-			std::string str;
-			getStr(str, ioMode);
-			return str;
-		}
 		friend std::istream& operator>>(std::istream& is, SecretKey& self)
 		{
 			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
@@ -757,18 +711,6 @@ public:
 			return x_ == rhs.x_ && y_ == rhs.y_;
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
-		size_t serialize(void *buf, size_t maxBufSize) const
-		{
-			cybozu::MemoryOutputStream os(buf, maxBufSize);
-			save(os);
-			return os.getPos();
-		}
-		size_t deserialize(const void *buf, size_t bufSize)
-		{
-			cybozu::MemoryInputStream is(buf, bufSize);
-			load(is);
-			return is.getPos();
-		}
 	};
 private:
 	/*
@@ -892,7 +834,8 @@ private:
 		}
 	};
 public:
-	class PublicKey : public PublicKeyMethod<PublicKey> {
+	class PublicKey : public fp::Serializable<PublicKey,
+		PublicKeyMethod<PublicKey> > {
 		G1 xP_;
 		G2 yQ_;
 		friend class SecretKey;
@@ -985,23 +928,6 @@ public:
 			if (sep) cybozu::writeChar(os, sep);
 			yQ_.save(os, ioMode);
 		}
-		void getStr(std::string& str, int ioMode = 0) const
-		{
-			str.clear();
-			cybozu::StringOutputStream os(str);
-			save(os, ioMode);
-		}
-		void setStr(const std::string& str, int ioMode = 0)
-		{
-			cybozu::StringInputStream is(str);
-			load(is, ioMode);
-		}
-		std::string getStr(int ioMode = 0) const
-		{
-			std::string str;
-			getStr(str, ioMode);
-			return str;
-		}
 		friend std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -1017,21 +943,10 @@ public:
 			return xP_ == rhs.xP_ && yQ_ == rhs.yQ_;
 		}
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
-		size_t serialize(void *buf, size_t maxBufSize) const
-		{
-			cybozu::MemoryOutputStream os(buf, maxBufSize);
-			save(os);
-			return os.getPos();
-		}
-		size_t deserialize(const void *buf, size_t bufSize)
-		{
-			cybozu::MemoryInputStream is(buf, bufSize);
-			load(is);
-			return is.getPos();
-		}
 	};
 
-	class PrecomputedPublicKey : public PublicKeyMethod<PrecomputedPublicKey> {
+	class PrecomputedPublicKey : public fp::Serializable<PrecomputedPublicKey,
+		PublicKeyMethod<PrecomputedPublicKey> > {
 		typedef local::InterfaceForHashTable<GT, false> GTasEC;
 		typedef mcl::fp::WindowMethod<GTasEC> GTwin;
 		template<class T>
@@ -1159,23 +1074,6 @@ public:
 			if (sep) cybozu::writeChar(os, sep);
 			c2_.save(os, ioMode);
 		}
-		void getStr(std::string& str, int ioMode = 0) const
-		{
-			str.clear();
-			cybozu::StringOutputStream os(str);
-			save(os, ioMode);
-		}
-		void setStr(const std::string& str, int ioMode = 0)
-		{
-			cybozu::StringInputStream is(str);
-			load(is, ioMode);
-		}
-		std::string getStr(int ioMode = 0) const
-		{
-			std::string str;
-			getStr(str, ioMode);
-			return str;
-		}
 		friend std::istream& operator>>(std::istream& is, CipherTextA& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -1193,7 +1091,7 @@ public:
 		bool operator!=(const CipherTextA& rhs) const { return !operator==(rhs); }
 	};
 
-	class CipherTextGT {
+	class CipherTextGT : public fp::Serializable<CipherTextGT> {
 		GT g_[4];
 		friend class SecretKey;
 		friend class PublicKey;
@@ -1282,23 +1180,6 @@ public:
 				g_[i].save(os, ioMode);
 			}
 		}
-		void getStr(std::string& str, int ioMode = 0) const
-		{
-			str.clear();
-			cybozu::StringOutputStream os(str);
-			save(os, ioMode);
-		}
-		void setStr(const std::string& str, int ioMode = 0)
-		{
-			cybozu::StringInputStream is(str);
-			load(is, ioMode);
-		}
-		std::string getStr(int ioMode = 0) const
-		{
-			std::string str;
-			getStr(str, ioMode);
-			return str;
-		}
 		friend std::istream& operator>>(std::istream& is, CipherTextGT& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -1317,21 +1198,9 @@ public:
 			return true;
 		}
 		bool operator!=(const CipherTextGT& rhs) const { return !operator==(rhs); }
-		size_t serialize(void *buf, size_t maxBufSize) const
-		{
-			cybozu::MemoryOutputStream os(buf, maxBufSize);
-			save(os);
-			return os.getPos();
-		}
-		size_t deserialize(const void *buf, size_t bufSize)
-		{
-			cybozu::MemoryInputStream is(buf, bufSize);
-			load(is);
-			return is.getPos();
-		}
 	};
 
-	class CipherText {
+	class CipherText : public fp::Serializable<CipherText> {
 		bool isMultiplied_;
 		CipherTextA a_;
 		CipherTextGT m_;
@@ -1418,23 +1287,6 @@ public:
 			} else {
 				a_.save(os, ioMode);
 			}
-		}
-		void getStr(std::string& str, int ioMode = 0) const
-		{
-			str.clear();
-			cybozu::StringOutputStream os(str);
-			save(os, ioMode);
-		}
-		void setStr(const std::string& str, int ioMode = 0)
-		{
-			cybozu::StringInputStream is(str);
-			load(is, ioMode);
-		}
-		std::string getStr(int ioMode = 0) const
-		{
-			std::string str;
-			getStr(str, ioMode);
-			return str;
 		}
 		friend std::istream& operator>>(std::istream& is, CipherText& self)
 		{

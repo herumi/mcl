@@ -108,7 +108,8 @@ template<class Fp> class BNT;
 	x = a + bi
 */
 template<class Fp>
-class Fp2T : public fp::Operator<Fp2T<Fp> > {
+class Fp2T : public fp::Serializable<Fp2T<Fp>,
+	fp::Operator<Fp2T<Fp> > > {
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
 	static uint32_t xi_a_;
@@ -188,6 +189,9 @@ public:
 		a.load(is, ioMode);
 		b.load(is, ioMode);
 	}
+	/*
+		Fp2T = <a> + ' ' + <b>
+	*/
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
@@ -195,26 +199,6 @@ public:
 		a.save(os, ioMode);
 		if (sep) cybozu::writeChar(os, sep);
 		b.save(os, ioMode);
-	}
-	void setStr(const std::string& str, int ioMode = 0)
-	{
-		cybozu::StringInputStream is(str);
-		load(is, ioMode);
-	}
-	/*
-		Fp2T = <a> + ' ' + <b>
-	*/
-	void getStr(std::string& str, int ioMode = 0) const
-	{
-		str.clear();
-		cybozu::StringOutputStream os(str);
-		save(os, ioMode);
-	}
-	std::string getStr(int ioMode = 0) const
-	{
-		std::string str;
-		getStr(str, ioMode);
-		return str;
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
@@ -225,20 +209,6 @@ public:
 	{
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
-	}
-	// return written bytes if sucess else 0
-	size_t serialize(void *buf, size_t maxBufSize) const
-	{
-		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		save(os);
-		return os.getPos();
-	}
-	// return positive read bytes if sucess else 0
-	size_t deserialize(const void *buf, size_t bufSize)
-	{
-		cybozu::MemoryInputStream is(buf, bufSize);
-		load(is);
-		return is.getPos();
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -676,7 +646,8 @@ template<class Fp> Fp2T<Fp> Fp2T<Fp>::g3[Fp2T<Fp>::gN];
 	x = a + b v + c v^2
 */
 template<class Fp>
-struct Fp6T : public fp::Operator<Fp6T<Fp> > {
+struct Fp6T : public fp::Serializable<Fp6T<Fp>,
+	fp::Operator<Fp6T<Fp> > > {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp BaseFp;
@@ -730,23 +701,6 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 		if (sep) cybozu::writeChar(os, sep);
 		c.save(os, ioMode);
 	}
-	void setStr(const std::string& str, int ioMode = 0)
-	{
-		cybozu::StringInputStream is(str);
-		load(is, ioMode);
-	}
-	void getStr(std::string& str, int ioMode = 0) const
-	{
-		str.clear();
-		cybozu::StringOutputStream os(str);
-		save(os, ioMode);
-	}
-	std::string getStr(int ioMode = 0) const
-	{
-		std::string str;
-		getStr(str, ioMode);
-		return str;
-	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
@@ -756,20 +710,6 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	{
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
-	}
-	// return written bytes if sucess else 0
-	size_t serialize(void *buf, size_t maxBufSize) const
-	{
-		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		save(os);
-		return os.getPos();
-	}
-	// return positive read bytes if sucess else 0
-	size_t deserialize(const void *buf, size_t bufSize)
-	{
-		cybozu::MemoryInputStream is(buf, bufSize);
-		load(is);
-		return is.getPos();
 	}
 	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
@@ -947,7 +887,8 @@ struct Fp6T : public fp::Operator<Fp6T<Fp> > {
 	x = a + b w
 */
 template<class Fp>
-struct Fp12T : public fp::Operator<Fp12T<Fp> > {
+struct Fp12T : public fp::Serializable<Fp12T<Fp>,
+	fp::Operator<Fp12T<Fp> > > {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
 	typedef Fp BaseFp;
@@ -1158,23 +1099,6 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 		if (sep) cybozu::writeChar(os, sep);
 		b.save(os, ioMode);
 	}
-	void setStr(const std::string& str, int ioMode = 0)
-	{
-		cybozu::StringInputStream is(str);
-		load(is, ioMode);
-	}
-	void getStr(std::string& str, int ioMode = 0) const
-	{
-		str.clear();
-		cybozu::StringOutputStream os(str);
-		save(os, ioMode);
-	}
-	std::string getStr(int ioMode = 0) const
-	{
-		std::string str;
-		getStr(str, ioMode);
-		return str;
-	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
@@ -1184,20 +1108,6 @@ struct Fp12T : public fp::Operator<Fp12T<Fp> > {
 	{
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
-	}
-	// return written bytes if sucess else 0
-	size_t serialize(void *buf, size_t maxBufSize) const
-	{
-		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		save(os);
-		return os.getPos();
-	}
-	// return positive read bytes if sucess else 0
-	size_t deserialize(const void *buf, size_t bufSize)
-	{
-		cybozu::MemoryInputStream is(buf, bufSize);
-		load(is);
-		return is.getPos();
 	}
 };
 

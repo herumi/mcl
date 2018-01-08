@@ -36,7 +36,7 @@ enum Mode {
 	y^2 = x^3 + az^4 + bz^6 (Jacobi) x = X/Z^2, y = Y/Z^3
 */
 template<class _Fp>
-class EcT {
+class EcT : public fp::Serializable<EcT<_Fp> > {
 	enum {
 		zero,
 		minus3,
@@ -703,20 +703,6 @@ public:
 			P.y.save(os, ioMode);
 		}
 	}
-	/*
-		see mcl/op.hpp for the format of ioMode
-	*/
-	void getStr(std::string& str, int ioMode = 0) const
-	{
-		cybozu::StringOutputStream os(str);
-		save(os, ioMode);
-	}
-	std::string getStr(int ioMode = 0) const
-	{
-		std::string str;
-		getStr(str, ioMode);
-		return str;
-	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
@@ -774,25 +760,6 @@ public:
 	{
 		self.save(os, fp::detectIoMode(getIoMode(), os));
 		return os;
-	}
-	void setStr(const std::string& str, int ioMode = 0)
-	{
-		cybozu::StringInputStream is(str);
-		load(is, ioMode);
-	}
-	// return written bytes if sucess
-	size_t serialize(void *buf, size_t maxBufSize) const
-	{
-		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		save(os, IoSerialize);
-		return os.getPos();
-	}
-	// return positive read bytes if sucess
-	size_t deserialize(const void *buf, size_t bufSize)
-	{
-		cybozu::MemoryInputStream is(buf, bufSize);
-		load(is, IoSerialize);
-		return is.getPos();
 	}
 	// deplicated
 	static void setCompressedExpression(bool compressedExpression = true)

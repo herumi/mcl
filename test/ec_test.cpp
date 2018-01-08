@@ -15,6 +15,12 @@ struct tagZn;
 typedef mcl::FpT<tagZn> Zn;
 typedef mcl::EcT<Fp> Ec;
 
+CYBOZU_TEST_AUTO(sizeof)
+{
+	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::fp::Unit) * Fp::maxSize);
+	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 3);
+}
+
 struct Test {
 	const mcl::EcParam& para;
 	Test(const mcl::EcParam& para, mcl::fp::Mode fpMode, mcl::ec::Mode ecMode)

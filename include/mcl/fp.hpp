@@ -90,9 +90,11 @@ void loadWord(std::string& s, InputStream& is)
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
-class FpT : public fp::Operator<FpT<tag, maxBitSize> > {
+class FpT : public fp::Serializable<FpT<tag, maxBitSize>,
+	fp::Operator<FpT<tag, maxBitSize> > > {
 	typedef fp::Unit Unit;
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
+	typedef fp::Serializable<FpT<tag, maxBitSize>, Operator> Serializer;
 public:
 	static const size_t maxSize = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
 private:
@@ -194,7 +196,7 @@ public:
 	FpT(int64_t x) { operator=(x); }
 	explicit FpT(const std::string& str, int base = 0)
 	{
-		setStr(str, base);
+		Serializer::setStr(str, base);
 	}
 	FpT& operator=(int64_t x)
 	{
@@ -278,25 +280,6 @@ public:
 		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
 		cybozu::write(os, str.c_str(), str.size());
 	}
-	void setStr(const std::string& str, int ioMode = 0)
-	{
-		cybozu::StringInputStream is(str);
-		load(is, ioMode);
-	}
-	// return written bytes
-	size_t serialize(void *buf, size_t maxBufSize) const
-	{
-		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		save(os);
-		return os.getPos();
-	}
-	// return read bytes
-	size_t deserialize(const void *buf, size_t bufSize)
-	{
-		cybozu::MemoryInputStream is(buf, bufSize);
-		load(is);
-		return is.getPos();
-	}
 	/*
 		throw exception if x >= p
 	*/
@@ -342,18 +325,6 @@ public:
 	void setHashOf(const std::string& msg)
 	{
 		setHashOf(msg.data(), msg.size());
-	}
-	void getStr(std::string& str, int ioMode = 0) const
-	{
-		str.clear();
-		cybozu::StringOutputStream os(str);
-		save(os, ioMode);
-	}
-	std::string getStr(int ioMode = 0) const
-	{
-		std::string str;
-		getStr(str, ioMode);
-		return str;
 	}
 	void getMpz(mpz_class& x) const
 	{

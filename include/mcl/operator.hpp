@@ -29,7 +29,7 @@ struct Empty {};
 	T must have add, sub, mul, inv, neg
 */
 template<class T, class E = Empty<T> >
-struct Operator : E {
+struct Operator : public E {
 	template<class S> MCL_FORCE_INLINE T& operator+=(const S& rhs) { T::add(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
 	template<class S> MCL_FORCE_INLINE T& operator-=(const S& rhs) { T::sub(static_cast<T&>(*this), static_cast<const T&>(*this), rhs); return static_cast<T&>(*this); }
 	template<class S> friend MCL_FORCE_INLINE T operator+(const T& a, const S& b) { T c; T::add(c, a, b); return c; }
@@ -116,6 +116,44 @@ private:
 
 template<class T, class E>
 void (*Operator<T, E>::powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
+
+/*
+	T must have save and load
+*/
+template<class T, class E = Empty<T> >
+struct Serializable : public E {
+	void setStr(const std::string& str, int ioMode = 0)
+	{
+		cybozu::StringInputStream is(str);
+		static_cast<T&>(*this).load(is, ioMode);
+	}
+	void getStr(std::string& str, int ioMode = 0) const
+	{
+		str.clear();
+		cybozu::StringOutputStream os(str);
+		static_cast<const T&>(*this).save(os, ioMode);
+	}
+	std::string getStr(int ioMode = 0) const
+	{
+		std::string str;
+		getStr(str, ioMode);
+		return str;
+	}
+	// return written bytes
+	size_t serialize(void *buf, size_t maxBufSize) const
+	{
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		static_cast<const T&>(*this).save(os);
+		return os.getPos();
+	}
+	// return read bytes
+	size_t deserialize(const void *buf, size_t bufSize)
+	{
+		cybozu::MemoryInputStream is(buf, bufSize);
+		static_cast<T&>(*this).load(is);
+		return is.getPos();
+	}
+};
 
 } } // mcl::fp
 
