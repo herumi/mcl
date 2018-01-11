@@ -325,6 +325,10 @@ void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x)
 {
 	G1::dbl(*cast(y), *cast(x));
 }
+void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x)
+{
+	G1::normalize(*cast(y), *cast(x));
+}
 void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y)
 {
 	G1::add(*cast(z),*cast(x), *cast(y));
@@ -398,6 +402,10 @@ void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x)
 void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x)
 {
 	G2::dbl(*cast(y), *cast(x));
+}
+void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x)
+{
+	G2::normalize(*cast(y), *cast(x));
 }
 void mclBnG2_add(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y)
 {

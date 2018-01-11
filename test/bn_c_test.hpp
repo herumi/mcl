@@ -153,6 +153,8 @@ CYBOZU_TEST_AUTO(G1)
 	mclBnFr_setInt(&n, 2);
 	mclBnG1_mul(&z, &y, &n); //  z = 2y
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&x, &z));
+	mclBnG1_normalize(&y, &z);
+	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&y, &z));
 }
 
 CYBOZU_TEST_AUTO(G2)
@@ -191,6 +193,8 @@ CYBOZU_TEST_AUTO(G2)
 	mclBnFr_setInt(&n, 2);
 	mclBnG2_mul(&z, &y, &n); //  z = 2y
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&x, &z));
+	mclBnG2_normalize(&y, &z);
+	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&y, &z));
 }
 
 CYBOZU_TEST_AUTO(GT)

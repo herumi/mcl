@@ -201,6 +201,7 @@ MCLBN_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mcl
 
 MCLBN_DLL_API void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
 MCLBN_DLL_API void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x);
+MCLBN_DLL_API void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
 MCLBN_DLL_API void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
 MCLBN_DLL_API void mclBnG1_sub(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
 MCLBN_DLL_API void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
@@ -232,6 +233,7 @@ MCLBN_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mcl
 
 MCLBN_DLL_API void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x);
 MCLBN_DLL_API void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x);
+MCLBN_DLL_API void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
 MCLBN_DLL_API void mclBnG2_add(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
 MCLBN_DLL_API void mclBnG2_sub(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
 MCLBN_DLL_API void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
