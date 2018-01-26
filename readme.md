@@ -52,7 +52,7 @@ cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_ME
 ## Higher-bit BN curve benchmark by mcl
 see `test/bn384_test.cpp` and  `test/bn512_test.cpp`.
 
-## Benchmark on Kaby Lake Core i7-7700(3.6GHz)
+* Benchmark on Kaby Lake Core i7-7700(3.6GHz)
 
 paramter        |   x64(msec)|
 ----------------|------------|
