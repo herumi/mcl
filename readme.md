@@ -50,13 +50,14 @@ mcl                                                      | 0.31 | 1.6 |22.6|  3.
 cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_METHD="LAZYR;OATEP"
 ```
 ## Higher-bit BN curve benchmark by mcl
-see `test/bn384_test.cpp` and  `test/bn512_test.cpp`.
 
 * Benchmark on Kaby Lake Core i7-7700(3.6GHz)
+    * `test/bn_test.cpp` for CurveFpBN254BNb
+    * `test/bn512.cpp` for CurveFp382_1 and CurveFp461
 
 paramter        |   x64(msec)|
 ----------------|------------|
-CurveFpBN254BNb |        0.34|
+CurveFpBN254BNb |        0.29|
 CurveFp382_1    |        0.95|
 CurveFp461      |        2.16|
 
