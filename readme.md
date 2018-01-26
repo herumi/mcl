@@ -53,7 +53,7 @@ cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_ME
 
 * Benchmark on Kaby Lake Core i7-7700(3.6GHz)
     * `test/bn_test.cpp` for CurveFpBN254BNb
-    * `test/bn512.cpp` for CurveFp382_1 and CurveFp461
+    * `test/bn512_test.cpp` for CurveFp382_1 and CurveFp461
 
 paramter        |   x64(msec)|
 ----------------|------------|
