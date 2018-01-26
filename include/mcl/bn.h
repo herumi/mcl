@@ -112,7 +112,7 @@ MCLBN_DLL_API int mclBn_init(int curve, int maxUnitSize);
 	G1 is a curve defined on Fp
 
 	serialized size of elements
-	|Fr| = |G1| = 32 bytes (if CurveFp254BNb), 48 bytes (if CurevFp382_{1,2})
+	|Fr| = |G1| = 32 bytes (if CurveFp254BNb), 48 bytes (if CurevFp382_{1,2}), 58 bytes (if CurveFp462)
 	|G2| = |G1| * 2
 	|GT| = |G1| * 12
 */
@@ -120,8 +120,17 @@ MCLBN_DLL_API int mclBn_init(int curve, int maxUnitSize);
 	return the num of Unit(=uint64_t) to store Fr
 	4 if curve is mclBn_CurveFp254BNb
 	6 if curve is mclBn_CurveFp382_{1,2}
+	8 if curve is mclBn_CurveFp462
 */
 MCLBN_DLL_API int mclBn_getOpUnitSize();
+
+/*
+	return bytes for serialized G1
+	32 if mclBn_CurveFp254BNb
+	48 if mclBn_CurveFp382_{1,2}
+	58 if mclBn_CurveFpA462
+*/
+MCLBN_DLL_API int mclBn_getG1ByteSize();
 
 /*
 	return decimal string of the order of the curve(=the characteristic of Fr)

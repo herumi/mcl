@@ -30,11 +30,17 @@ CYBOZU_TEST_AUTO(init)
 #if MCLBN_FP_UNIT_SIZE == 4
 	printf("test MCLBN_curveFp254BNb %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(mclBn_CurveFp254BNb, MCLBN_FP_UNIT_SIZE);
-#else
+#elif MCLBN_FP_UNIT_SIZE == 6
 	printf("test MCLBN_curveFp382_1 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(mclBn_CurveFp382_1, MCLBN_FP_UNIT_SIZE);
+#elif MCLBN_FP_UNIT_SIZE == 8
+	printf("test MCLBN_curveFp462 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(mclBn_CurveFp462, MCLBN_FP_UNIT_SIZE);
+#else
+	#error "bad MCLBN_FP_UNIT_SIZE"
 #endif
 	CYBOZU_TEST_EQUAL(ret, 0);
+	if (ret != 0) exit(1);
 }
 
 CYBOZU_TEST_AUTO(Fr)
@@ -42,8 +48,6 @@ CYBOZU_TEST_AUTO(Fr)
 	mclBnFr x, y;
 	memset(&x, 0xff, sizeof(x));
 	CYBOZU_TEST_ASSERT(!mclBnFr_isValid(&x));
-	memset(&x, 1, sizeof(x));
-	CYBOZU_TEST_ASSERT(mclBnFr_isValid(&x));
 	CYBOZU_TEST_ASSERT(!mclBnFr_isZero(&x));
 
 	mclBnFr_clear(&x);
@@ -333,7 +337,7 @@ CYBOZU_TEST_AUTO(precomputed)
 
 CYBOZU_TEST_AUTO(serialize)
 {
-	const size_t opUnitSize = mclBn_getOpUnitSize();
+	const size_t G1Size = mclBn_getG1ByteSize();
 	mclBnFr x1, x2;
 	mclBnG1 P1, P2;
 	mclBnG2 Q1, Q2;
@@ -342,7 +346,7 @@ CYBOZU_TEST_AUTO(serialize)
 	size_t expectSize;
 	int ret;
 	// Fr
-	expectSize = opUnitSize * 8;
+	expectSize = G1Size;
 	mclBnFr_setInt(&x1, -1);
 	n = mclBnFr_serialize(buf, sizeof(buf), &x1);
 	CYBOZU_TEST_EQUAL(n, expectSize);
@@ -363,7 +367,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	// G1
-	expectSize = opUnitSize * 8;
+	expectSize = G1Size;
 	mclBnG1_hashAndMapTo(&P1, "1", 1);
 	n = mclBnG1_serialize(buf, sizeof(buf), &P1);
 	CYBOZU_TEST_EQUAL(n, expectSize);
@@ -384,7 +388,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	// G2
-	expectSize = opUnitSize * 8 * 2;
+	expectSize = G1Size * 2;
 	mclBnG2_hashAndMapTo(&Q1, "1", 1);
 	n = mclBnG2_serialize(buf, sizeof(buf), &Q1);
 	CYBOZU_TEST_EQUAL(n, expectSize);

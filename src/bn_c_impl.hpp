@@ -123,20 +123,25 @@ int mclBn_init(int curve, int maxUnitSize)
 	try
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
-		if (g_fp) fprintf(g_fp, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
+		fprintf(stderr, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
 	const mcl::bn::CurveParam& cp = mcl::bn::getCurveParam(curve);
 	initPairing(cp);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s\n", e.what());
+	fprintf(stderr, "%s\n", e.what());
 	return -1;
 }
 
 int mclBn_getOpUnitSize()
 {
 	return (int)Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
+}
+
+int mclBn_getG1ByteSize()
+{
+	return (int)Fp::getByteSize();
 }
 
 mclSize copyStrAndReturnSize(char *buf, mclSize maxBufSize, const std::string& str)

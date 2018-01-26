@@ -2,9 +2,9 @@ include common.mk
 LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
-SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp she_c256.cpp
+SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp she_c256_test.cpp
+TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c512_test.cpp she_c256_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -29,14 +29,17 @@ MCL_LIB=$(LIB_DIR)/libmcl.a
 MCL_SNAME=mcl$(SHARE_BASENAME_SUF)
 BN256_SNAME=mclbn256$(SHARE_BASENAME_SUF)
 BN384_SNAME=mclbn384$(SHARE_BASENAME_SUF)
+BN512_SNAME=mclbn512$(SHARE_BASENAME_SUF)
 SHE256_SNAME=mclshe256$(SHARE_BASENAME_SUF)
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
 BN256_LIB=$(LIB_DIR)/libmclbn256.a
 BN256_SLIB=$(LIB_DIR)/lib$(BN256_SNAME).$(LIB_SUF)
 BN384_LIB=$(LIB_DIR)/libmclbn384.a
 BN384_SLIB=$(LIB_DIR)/lib$(BN384_SNAME).$(LIB_SUF)
+BN512_LIB=$(LIB_DIR)/libmclbn512.a
+BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
 SHE256_LIB=$(LIB_DIR)/libmclshe256.a
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(SHE256_LIB)
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -61,6 +64,7 @@ ASM_OBJ=$(OBJ_DIR)/$(CPU).o
 LIB_OBJ=$(OBJ_DIR)/fp.o
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
+BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
@@ -119,8 +123,14 @@ $(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
 $(BN384_LIB): $(BN384_OBJ)
 	$(AR) $@ $(BN384_OBJ)
 
+$(BN512_LIB): $(BN512_OBJ)
+	$(AR) $@ $(BN512_OBJ)
+
 $(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
+
+$(BN512_SLIB): $(BN512_OBJ) $(MCL_SLIB)
+	$(PRE)$(CXX) -o $@ $(BN512_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -194,6 +204,9 @@ $(EXE_DIR)/bn_c256_test.exe: $(OBJ_DIR)/bn_c256_test.o $(BN256_LIB) $(MCL_LIB)
 $(EXE_DIR)/bn_c384_test.exe: $(OBJ_DIR)/bn_c384_test.o $(BN384_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(BN384_LIB) $(MCL_LIB) $(LDFLAGS)
 
+$(EXE_DIR)/bn_c512_test.exe: $(OBJ_DIR)/bn_c512_test.o $(BN512_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN512_LIB) $(MCL_LIB) $(LDFLAGS)
+
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB) $(MCL_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
 
@@ -210,7 +223,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include -Wall -Wextra
-EMCC_OPT+=-O3 -DNDEBUG -DMCLBN_FP_UNIT_SIZE=4 -DMCL_MAX_BIT_SIZE=256 -DMCLSHE_WIN_SIZE=8
+EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1
 JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp Makefile
 ifeq ($(MCL_USE_LLVM),2)
@@ -223,8 +236,11 @@ endif
 ../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp include/mcl/bn.h Makefile
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT)
 
+../mcl-wasm/mcl_c512.js: src/fp.cpp src/bn_c512.cpp include/mcl/bn.h Makefile
+	emcc -o $@ src/fp.cpp src/bn_c512.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=512
+
 clean:
-	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
+	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
