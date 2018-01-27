@@ -51,6 +51,8 @@ cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_ME
 ```
 ## Higher-bit BN curve benchmark by mcl
 
+see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html)
+
 paramter        |  x64| Firefox on x64|Safari on iPhone7|
 ----------------|-----|---------------|-----------------|
 CurveFpBN254BNb | 0.29|           2.48|             4.78|
