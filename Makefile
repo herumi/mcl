@@ -234,10 +234,14 @@ endif
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
 
 ../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp include/mcl/bn.h Makefile
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT)
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256
 
 ../mcl-wasm/mcl_c512.js: src/fp.cpp src/bn_c512.cpp include/mcl/bn.h Makefile
 	emcc -o $@ src/fp.cpp src/bn_c512.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=512
+
+mcl-wasm:
+	$(MAKE) ../mcl-wasm/mcl_c.js
+	$(MAKE) ../mcl-wasm/mcl_c512.js
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
@@ -254,7 +258,7 @@ install: lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test
+.PHONY: test mcl-wasm
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))

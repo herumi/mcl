@@ -51,15 +51,18 @@ cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_ME
 ```
 ## Higher-bit BN curve benchmark by mcl
 
-* Benchmark on Kaby Lake Core i7-7700(3.6GHz)
-    * `test/bn_test.cpp` for CurveFpBN254BNb
-    * `test/bn512_test.cpp` for CurveFp382_1 and CurveFp461
+paramter        |  x64| Firefox on x64|Safari on iPhone7|
+----------------|-----|---------------|-----------------|
+CurveFpBN254BNb | 0.29|           2.48|             4.78|
+CurveFp382_1    | 0.95|           7.91|            11.74|
+CurveFp462      | 2.16|          14.73|            22.77|
 
-paramter        |   x64(msec)|
-----------------|------------|
-CurveFpBN254BNb |        0.29|
-CurveFp382_1    |        0.95|
-CurveFp461      |        2.16|
+* x64 : 'Kaby Lake Core i7-7700(3.6GHz)'.
+* Firefox : 64-bit version 58.
+* iPhone7 : iOS 11.2.1.
+* CurveFpBN254BNb is by `test/bn_test.cpp`.
+* CurveFp382_1 and CurveFp462 are  by `test/bn512_test.cpp`.
+* All the timings  are given in ms(milliseconds).
 
 # Installation Requirements
 
