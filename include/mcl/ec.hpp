@@ -594,7 +594,7 @@ public:
 #else
 		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
 		size_t un = ua[1] ? 2 : 1;
-		mulArray(z, ua, un, y < 0);
+		mulArray(z, x, ua, un, y < 0);
 #endif
 	}
 	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
