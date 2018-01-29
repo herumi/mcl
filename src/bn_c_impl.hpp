@@ -255,6 +255,10 @@ void mclBnFr_inv(mclBnFr *y, const mclBnFr *x)
 {
 	Fr::inv(*cast(y), *cast(x));
 }
+void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x)
+{
+	Fr::sqr(*cast(y), *cast(x));
+}
 void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::add(*cast(z),*cast(x), *cast(y));
@@ -486,6 +490,10 @@ void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)
 void mclBnGT_inv(mclBnGT *y, const mclBnGT *x)
 {
 	Fp12::inv(*cast(y), *cast(x));
+}
+void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x)
+{
+	Fp12::sqr(*cast(y), *cast(x));
 }
 void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y)
 {

@@ -183,6 +183,7 @@ MCLBN_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mcl
 
 MCLBN_DLL_API void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 MCLBN_DLL_API void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
+MCLBN_DLL_API void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x);
 MCLBN_DLL_API void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
@@ -274,6 +275,7 @@ MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mcl
 
 MCLBN_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);
+MCLBN_DLL_API void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API void mclBnGT_mul(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);

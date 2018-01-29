@@ -103,6 +103,10 @@ CYBOZU_TEST_AUTO(Fr)
 	CYBOZU_TEST_EQUAL(size, 2);
 	CYBOZU_TEST_EQUAL(buf, "23");
 
+	mclBnFr_mul(&x, &y, &y);
+	mclBnFr_sqr(&y, &y);
+	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x, &y));
+
 	const char *s = "12345678901234567";
 	CYBOZU_TEST_ASSERT(!mclBnFr_setStr(&x, s, strlen(s), 10));
 	s = "20000000000000000";
@@ -266,6 +270,10 @@ CYBOZU_TEST_AUTO(GT)
 	mclBnGT_mul(&y, &x, &x);
 	mclBnGT_mul(&y, &y, &x);
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&y, &z));
+
+	mclBnGT_mul(&x, &y, &y);
+	mclBnGT_sqr(&y, &y);
+	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&x, &y));
 }
 
 CYBOZU_TEST_AUTO(pairing)
