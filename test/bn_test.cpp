@@ -166,13 +166,11 @@ void testCyclotomic()
 	CYBOZU_TEST_EQUAL(a, d);
 }
 
-void testCompress()
+void testCompress(const G1& P, const G2& Q)
 {
 	if (!BN::param.isCurveFp254BNb) return;
 	Fp12 a;
-	for (int i = 0; i < 12; ++i) {
-		a.getFp0()[i] = i;
-	}
+	BN::pairing(a, P, Q);
 	BN::mapToCyclotomic(a, a);
 	Fp12 b;
 	Compress::fixed_power(b, a);
@@ -380,7 +378,7 @@ CYBOZU_TEST_AUTO(naive)
 		testMapToG1();
 		testMapToG2();
 		testCyclotomic();
-		testCompress();
+		testCompress(P, Q);
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
