@@ -10,6 +10,8 @@ using namespace mcl::bn512;
 
 mcl::fp::Mode g_mode;
 
+#include "bench.hpp"
+
 void testHashAndMapto(const mcl::bn::CurveParam& cp)
 {
 	G1 P;
@@ -63,15 +65,8 @@ void testCurve(const mcl::bn::CurveParam& cp)
 	BN::pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
-	CYBOZU_BENCH_C("G1::mulCT", 500, G1::mul, aP, aP, a);
-	CYBOZU_BENCH_C("G1::add", 500, G1::add, aP, aP, P);
-	CYBOZU_BENCH_C("G1::dbl", 500, G1::dbl, aP, aP);
-	CYBOZU_BENCH_C("G2::mulCT", 500, G2::mul, bQ, bQ, b);
-	CYBOZU_BENCH_C("G2::add", 500, G2::add, bQ, bQ, Q);
-	CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, bQ, bQ);
-	CYBOZU_BENCH("pairing", BN::pairing, e1, P, Q);
-	CYBOZU_BENCH("finalExp", BN::finalExp, e1, e1);
 	testHashAndMapto(cp);
+	testBench(P, Q);
 }
 
 CYBOZU_TEST_AUTO(pairing)
