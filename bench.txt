@@ -112,31 +112,3 @@ pairing          3.913msec   12.606msec  26.818msec
 millerLoop       2.402msec    7.202msec  15.711msec
 finalExp         1.506msec    5.395msec  11.098msec
 precomputedML    1.815msec    5.447msec  11.094msec
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
