@@ -51,7 +51,7 @@ cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_ME
 ```
 ## Higher-bit BN curve benchmark by mcl
 
-see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html)
+For JavaScript(WebAssembly), see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html).
 
 paramter        |  x64| Firefox on x64|Safari on iPhone7|
 ----------------|-----|---------------|-----------------|
@@ -65,6 +65,8 @@ CurveFp462      | 2.16|          14.73|            22.77|
 * CurveFpBN254BNb is by `test/bn_test.cpp`.
 * CurveFp382_1 and CurveFp462 are  by `test/bn512_test.cpp`.
 * All the timings  are given in ms(milliseconds).
+
+The other benchmark results are [bench.txt](bench.txt).
 
 # Installation Requirements
 
