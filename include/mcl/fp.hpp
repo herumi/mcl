@@ -57,9 +57,6 @@ std::string littleEndianToHexStr(const void *buf, size_t bufSize);
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
-// hash msg
-std::string hash(size_t bitSize, const void *msg, size_t msgSize);
-
 namespace local {
 
 inline bool isSpace(char c)
@@ -319,8 +316,9 @@ public:
 	*/
 	void setHashOf(const void *msg, size_t msgSize)
 	{
-		std::string digest = mcl::fp::hash(op_.bitSize, msg, msgSize);
-		setArrayMask(digest.c_str(), digest.size());
+		char buf[MCL_MAX_HASH_BIT_SIZE / 8];
+		uint32_t size = op_.hash(buf, static_cast<uint32_t>(sizeof(buf)), msg, static_cast<uint32_t>(msgSize));
+		setArrayMask(buf, size);
 	}
 	void setHashOf(const std::string& msg)
 	{
@@ -464,6 +462,10 @@ public:
 		init(mstr, mode);
 	}
 	static inline size_t getModBitLen() { return getBitSize(); }
+	static inline void setHashFunc(uint32_t hash(const void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
+	{
+		op_.hash = hash;
+	}
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;

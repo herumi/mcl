@@ -19,6 +19,8 @@
 	#define MCL_USE_XBYAK
 #endif
 
+#define MCL_MAX_HASH_BIT_SIZE 512
+
 namespace mcl {
 
 /*
@@ -200,6 +202,7 @@ struct Op {
 	void2u fp2_inv;
 	void2u fp2_sqr;
 	void2u fp2_mul_xi;
+	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 	PrimeMode primeMode;
 	bool isFullBit; // true if bitSize % uniSize == 0
@@ -272,6 +275,7 @@ struct Op {
 		isFullBit = false;
 		isMont = false;
 		isFastMod = false;
+		hash = 0;
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{

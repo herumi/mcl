@@ -194,23 +194,28 @@ bool isEnableJIT()
 #endif
 }
 
-std::string hash(size_t bitSize, const void *msg, size_t msgSize)
+static uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
+	const uint32_t hashSize = 256 / 8;
+	if (maxOutSize < hashSize) return 0;
 #ifdef MCL_DONT_USE_OPENSSL
-	if (bitSize <= 256) {
-		return cybozu::Sha256(msg, msgSize).get();
-	} else {
-		return cybozu::Sha512(msg, msgSize).get();
-	}
+	cybozu::Sha256(msg, msgSize).get(out);
 #else
-	cybozu::crypto::Hash::Name name;
-	if (bitSize <= 256) {
-		name = cybozu::crypto::Hash::N_SHA256;
-	} else {
-		name = cybozu::crypto::Hash::N_SHA512;
-	}
-	return cybozu::crypto::Hash::digest(name, (const char *)msg, msgSize);
+	cybozu::crypto::Hash::digest(out, cybozu::crypto::Hash::N_SHA256, msg, msgSize);
 #endif
+	return hashSize;
+}
+
+static uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
+{
+	const uint32_t hashSize = 512 / 8;
+	if (maxOutSize < hashSize) return 0;
+#ifdef MCL_DONT_USE_OPENSSL
+	cybozu::Sha512(msg, msgSize).get(out);
+#else
+	cybozu::crypto::Hash::digest(out, cybozu::crypto::Hash::N_SHA512, msg, msgSize);
+#endif
+	return hashSize;
 }
 
 #ifndef MCL_USE_VINT
@@ -530,6 +535,11 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 #endif
 	fp::initForMont(*this, p, mode);
 	sq.set(mp);
+	if (N * UnitBitSize <= 256) {
+		hash = sha256;
+	} else {
+		hash = sha512;
+	}
 }
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode)
