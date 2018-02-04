@@ -462,7 +462,7 @@ public:
 		init(mstr, mode);
 	}
 	static inline size_t getModBitLen() { return getBitSize(); }
-	static inline void setHashFunc(uint32_t hash(const void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
+	static inline void setHashFunc(uint32_t hash(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
 	{
 		op_.hash = hash;
 	}
