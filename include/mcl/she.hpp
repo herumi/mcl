@@ -472,6 +472,36 @@ private:
 		finalExp4(g, g);
 	}
 public:
+	struct ZkpBin : public fp::Serializable<ZkpBin> {
+		Fr d_[4];
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
+		{
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
+				d_[i].load(is, ioMode);
+			}
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			d_[0].save(os, ioMode);
+			for (size_t i = 1; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
+				if (sep) cybozu::writeChar(os, sep);
+				d_[i].save(os, ioMode);
+			}
+		}
+		friend std::istream& operator>>(std::istream& is, ZkpBin& self)
+		{
+			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
+			return is;
+		}
+		friend std::ostream& operator<<(std::ostream& os, const ZkpBin& self)
+		{
+			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
+			return os;
+		}
+	};
 
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
@@ -719,6 +749,16 @@ private:
 		{
 			static_cast<const T&>(*this).encG2(c, m);
 		}
+#if 0
+		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, bool m) const
+		{
+			static_cast<const T&>(*this).encWithZkpBinG1(c, zkp, m);
+		}
+		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, bool m) const
+		{
+			static_cast<const T&>(*this).encWithZkpBinG2(c, zkp, m);
+		}
+#endif
 		template<class INT>
 		void enc(CipherTextA& c, const INT& m) const
 		{
@@ -814,10 +854,11 @@ public:
 			(S, T) = (m P + r xP, rP)
 		*/
 		template<class G, class INT, class I>
-		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, const INT& m, const mcl::fp::WindowMethod<I>& wm)
+		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, const INT& m, const mcl::fp::WindowMethod<I>& wm, Fr *encRand = 0)
 		{
 			Fr r;
 			r.setRand();
+			if (encRand) *encRand = r;
 //			G::mul(T, P, r);
 			wm.mul(static_cast<I&>(T), r);
 			G::mul(S, xP, r);
@@ -826,6 +867,94 @@ public:
 //			G::mul(C, P, m);
 			wm.mul(static_cast<I&>(C), m);
 			S += C;
+		}
+		/*
+			d[1-m] ; rand
+			s[1-m] ; rand
+			R[0][1-m] = s[1-m] P - d[1-m] T
+			R[1][1-m] = s[1-m] xP - d[1-m] (S - (1-m) P)
+			r ; rand
+			R[0][m] = r P
+			R[1][m] = r xP
+			c = H(S, T, R[0][0], R[0][1], R[1][0], R[1][1])
+			d[m] = c - d[1-m]
+			s[m] = r + d[m] encRand
+		*/
+		template<class G>
+		static void makeZkpBin1(ZkpBin& zkp, const G& S, const G& T, const Fr& encRand, const G& P, const G& xP, int m)
+		{
+			if (m != 0 && m != 1) throw cybozu::Exception("makeZkpBin1:bad m") << m;
+			Fr *s = &zkp.d_[0];
+			Fr *d = &zkp.d_[2];
+			G R[2][2];
+			d[1-m].setRand();
+			s[1-m].setRand();
+			G T1, T2;
+			G::mul(T1, P, s[1-m]);
+			G::mul(T2, T, d[1-m]);
+			G::sub(R[0][1-m], T1, T2); // s[1-m] P - d[1-m]T
+			G::mul(T1, xP, s[1-m]);
+			if (m == 0) {
+				G::sub(T2, S, P);
+				G::mul(T2, T2, d[1-m]);
+			} else {
+				G::mul(T2, S, d[1-m]);
+			}
+			G::sub(R[1][1-m], T1, T2); // s[1-m] xP - d[1-m](S - (1-m) P)
+			Fr r;
+			r.setRand();
+			G::mul(R[0][m], P, r);
+			G::mul(R[1][m], xP, r);
+			char buf[sizeof(G) * 2];
+			cybozu::MemoryOutputStream os(buf, sizeof(buf));
+			S.save(os);
+			T.save(os);
+			R[0][0].save(os);
+			R[0][1].save(os);
+			R[1][0].save(os);
+			R[1][1].save(os);
+			Fr c;
+			c.setHashOf(buf, os.getPos());
+			d[m] = c - d[1-m];
+			s[m] = r + d[m] * encRand;
+		}
+		/*
+			R[0][i] = s[i] P - d[i] T ; i = 0,1
+			R[1][0] = s[0] xP - d[0] S
+			R[1][1] = s[1] xP - d[1](S - P)
+			c = H(S, T, R[0][0], R[0][1], R[1][0], R[1][1])
+			c == d[0] + d[1]
+		*/
+		template<class G>
+		static bool verifyZkpBin(const G& S, const G& T, const G& P, const G& xP, const ZkpBin& zkp)
+		{
+			const Fr *s = &zkp.d_[0];
+			const Fr *d = &zkp.d_[2];
+			G R[2][2];
+			G T1, T2;
+			for (int i = 0; i < 2; i++) {
+				G::mul(T1, P, s[i]);
+				G::mul(T2, T, d[i]);
+				G::sub(R[0][i], T1, T2);
+			}
+			G::mul(T1, xP, s[0]);
+			G::mul(T2, S, d[0]);
+			G::sub(R[1][0], T1, T2);
+			G::mul(T1, xP, s[1]);
+			G::sub(T2, S, P);
+			G::mul(T2, T2, d[1]);
+			G::sub(R[1][1], T1, T2);
+			char buf[sizeof(G) * 2];
+			cybozu::MemoryOutputStream os(buf, sizeof(buf));
+			S.save(os);
+			T.save(os);
+			R[0][0].save(os);
+			R[0][1].save(os);
+			R[1][0].save(os);
+			R[1][1].save(os);
+			Fr c;
+			c.setHashOf(buf, os.getPos());
+			return c == d[0] + d[1];
 		}
 		void set(const Fr& x, const Fr& y)
 		{
@@ -841,6 +970,17 @@ public:
 		void encG2(CipherTextG2& c, const INT& m) const
 		{
 			enc1(c.S_, c.T_, Q_, yQ_, m, QhashTbl_.getWM());
+		}
+public:
+		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		{
+			Fr encRand;
+			enc1(c.S_, c.T_, P_, xP_, m, PhashTbl_.getWM(), &encRand);
+			makeZkpBin1(zkp, c.S_, c.T_, encRand, P_, xP_, m);
+		}
+		bool verify(const CipherTextG1& c, const ZkpBin& zkp) const
+		{
+			return verifyZkpBin(c.S_, c.T_, P_, xP_, zkp);
 		}
 		template<class INT>
 		void encGT(CipherTextGT& c, const INT& m) const
@@ -989,37 +1129,6 @@ public:
 			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
 			xPwm_.init(pub.xP_, bitSize, local::winSize);
 			yQwm_.init(pub.yQ_, bitSize, local::winSize);
-		}
-	};
-
-	struct ZkpBin : public fp::Serializable<ZkpBin> {
-		Fr d_[4];
-		template<class InputStream>
-		void load(InputStream& is, int ioMode = IoSerialize)
-		{
-			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
-				d_[i].load(is, ioMode);
-			}
-		}
-		template<class OutputStream>
-		void save(OutputStream& os, int ioMode = IoSerialize) const
-		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			d_[0].save(os, ioMode);
-			for (size_t i = 1; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
-				if (sep) cybozu::writeChar(os, sep);
-				d_[i].save(os, ioMode);
-			}
-		}
-		friend std::istream& operator>>(std::istream& is, ZkpBin& self)
-		{
-			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
-			return is;
-		}
-		friend std::ostream& operator<<(std::ostream& os, const ZkpBin& self)
-		{
-			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
-			return os;
 		}
 	};
 	class CipherTextA {
@@ -1327,6 +1436,7 @@ typedef SHE::CipherTextGT CipherTextGT;
 typedef SHE::CipherTextA CipherTextA;
 typedef CipherTextGT CipherTextGM; // old class
 typedef SHE::CipherText CipherText;
+typedef SHE::ZkpBin ZkpBin;
 
 } } // mcl::she
 

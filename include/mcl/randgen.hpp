@@ -77,7 +77,7 @@ public:
 		rg must be thread safe
 		rg.read(void *buf, size_t bufSize);
 	*/
-	void setRandGen(RandGen& rg)
+	static void setRandGen(const RandGen& rg)
 	{
 		get() = rg;
 	}
