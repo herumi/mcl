@@ -18,13 +18,11 @@
 #include <cybozu/atoi.hpp>
 #include <cybozu/itoa.hpp>
 #include <cybozu/random_generator.hpp>
+#include <mcl/randgen.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
 #endif
-
-cybozu::RandomGenerator s_cybozuRandomGenerator;
-mcl::fp::RandGen s_rg(s_cybozuRandomGenerator);
 
 namespace mcl {
 
@@ -200,7 +198,7 @@ bool isEnableJIT()
 
 void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize)
 {
-	if (rg.isZero()) rg = s_rg;
+	if (rg.isZero()) rg = RandGen::get();
 	const size_t n = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	const size_t rem = bitSize & (UnitBitSize - 1);
 	for (;;) {
@@ -208,11 +206,6 @@ void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize)
 		if (rem > 0) out[n - 1] &= (Unit(1) << rem) - 1;
 		if (isLessArray(out, in, n)) return;
 	}
-}
-
-void setRandGen(RandGen& rg)
-{
-	s_rg = rg;
 }
 
 static uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)

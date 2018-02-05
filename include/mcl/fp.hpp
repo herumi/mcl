@@ -59,9 +59,6 @@ bool isEnableJIT(); // 1st call is not threadsafe
 
 void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize);
 
-// rg must be thread safe
-void setRandGen(RandGen& rg);
-
 namespace local {
 
 inline bool isSpace(char c)

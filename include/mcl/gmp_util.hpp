@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <cybozu/exception.hpp>
+#include <mcl/randgen.hpp>
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4616)

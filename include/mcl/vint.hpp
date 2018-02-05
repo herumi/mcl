@@ -5,7 +5,6 @@
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <cybozu/atoi.hpp>
-#include <cybozu/xorshift.hpp>
 #include <vector>
 #include <iomanip>
 #include <stdlib.h>
@@ -13,6 +12,7 @@
 #include <cmath>
 #include <iostream>
 #include <mcl/util.hpp>
+#include <mcl/randgen.hpp>
 
 #ifdef __EMSCRIPTEN__
 	#define MCL_VINT_64BIT_PORTABLE
@@ -1129,16 +1129,12 @@ public:
 	/*
 		set [0, max) randomly
 	*/
-	template<class RG>
-	void setRand(const VintT& max, RG& rg)
+	void setRand(const VintT& max, fp::RandGen rg = fp::RandGen())
 	{
 		if (max <= 0) throw cybozu::Exception("Vint:setRand:bad value") << max;
 		size_t n = max.size();
 		buf_.alloc(n);
-		uint32_t *p = (uint32_t*)&buf_[0];
-		for (size_t i = 0; i < n * sizeof(Unit) / sizeof(uint32_t); i++) {
-			p[i] = (uint32_t)rg();
-		}
+		rg.read(&buf_[0], n * sizeof(buf_[0]));
 		trim(n);
 		*this %= max;
 	}
@@ -1674,8 +1670,7 @@ public:
 	/*
 		Miller-Rabin
 	*/
-	template<class RG>
-	static bool isPrime(const VintT& n, RG& rg, int tryNum = 32)
+	static bool isPrime(const VintT& n, fp::RandGen& rg, int tryNum = 32)
 	{
 		if (n <= 1) return false;
 		if (n == 2 || n == 3) return true;
@@ -1703,15 +1698,10 @@ public:
 		}
 		return true;
 	}
-	template<class RG>
-	bool isPrime(RG& rg, int tryNum = 32) const
+	bool isPrime(fp::RandGen rg = fp::RandGen(), int tryNum = 32) const
 	{
+		if (rg.isZero()) rg = fp::RandGen::get();
 		return isPrime(*this, rg, tryNum);
-	}
-	bool isPrime(int tryNum = 32) const
-	{
-		cybozu::XorShift rg;
-		return isPrime(rg, tryNum);
 	}
 	static void gcd(VintT& z, VintT x, VintT y)
 	{
