@@ -1129,8 +1129,9 @@ public:
 	/*
 		set [0, max) randomly
 	*/
-	void setRand(const VintT& max, fp::RandGen rg = fp::RandGen())
+	void setRand(const VintT& max)
 	{
+		fp::RandGen& rg = fp::RandGen::get();
 		if (max <= 0) throw cybozu::Exception("Vint:setRand:bad value") << max;
 		size_t n = max.size();
 		buf_.alloc(n);
@@ -1670,7 +1671,7 @@ public:
 	/*
 		Miller-Rabin
 	*/
-	static bool isPrime(const VintT& n, fp::RandGen& rg, int tryNum = 32)
+	static bool isPrime(const VintT& n, int tryNum = 32)
 	{
 		if (n <= 1) return false;
 		if (n == 2 || n == 3) return true;
@@ -1681,7 +1682,7 @@ public:
 		// n - 1 = 2^r d
 		VintT a, x;
 		for (int i = 0; i < tryNum; i++) {
-			a.setRand(n - 3, rg);
+			a.setRand(n - 3);
 			a += 2; // a in [2, n - 2]
 			powMod(x, a, d, n);
 			if (x == 1 || x == nm1) {
@@ -1698,10 +1699,9 @@ public:
 		}
 		return true;
 	}
-	bool isPrime(fp::RandGen rg = fp::RandGen(), int tryNum = 32) const
+	bool isPrime(int tryNum = 32) const
 	{
-		if (rg.isZero()) rg = fp::RandGen::get();
-		return isPrime(*this, rg, tryNum);
+		return isPrime(*this, tryNum);
 	}
 	static void gcd(VintT& z, VintT x, VintT y)
 	{
