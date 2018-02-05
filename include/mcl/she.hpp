@@ -1024,6 +1024,36 @@ public:
 		}
 	};
 
+	struct ZkpBin : public fp::Serializable<ZkpBin> {
+		Fr d_[4];
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
+		{
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
+				d_[i].load(is, ioMode);
+			}
+		}
+		template<class OutputStream>
+		void save(OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			d_[0].save(os, ioMode);
+			for (size_t i = 1; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
+				if (sep) cybozu::writeChar(os, sep);
+				d_[i].save(os, ioMode);
+			}
+		}
+		friend std::istream& operator>>(std::istream& is, ZkpBin& self)
+		{
+			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
+			return is;
+		}
+		friend std::ostream& operator<<(std::ostream& os, const ZkpBin& self)
+		{
+			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
+			return os;
+		}
+	};
 	class CipherTextA {
 		CipherTextG1 c1_;
 		CipherTextG2 c2_;
