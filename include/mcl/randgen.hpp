@@ -49,6 +49,13 @@ public:
 	RandGen() : self_(0), readFunc_(0) {}
 	RandGen(void *self, readFuncType readFunc) : self_(self) , readFunc_(readFunc) {}
 	RandGen(const RandGen& rhs) : self_(rhs.self_), readFunc_(rhs.readFunc_) {}
+	RandGen(RandGen& rhs) : self_(rhs.self_), readFunc_(rhs.readFunc_) {}
+	RandGen& operator=(const RandGen& rhs)
+	{
+		self_ = rhs.self_;
+		readFunc_ = rhs.readFunc_;
+		return *this;
+	}
 	template<class RG>
 	RandGen(RG& rg)
 		: self_(reinterpret_cast<void*>(&rg))

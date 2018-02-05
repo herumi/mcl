@@ -32,11 +32,6 @@ namespace bn_current = mcl::bn512;
 	#error "MCLBN_FP_UNIT_SIZE must be 4, 6, or 8"
 #endif
 
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <random>
-#else
-#include <cybozu/random_generator.hpp>
-#endif
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>
 
@@ -44,12 +39,6 @@ namespace mcl { namespace she {
 
 namespace local {
 
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-typedef std::random_device RandomDevice;
-static thread_local std::random_device g_rg;
-#else
-static cybozu::RandomGenerator g_rg;
-#endif
 #ifndef MCLSHE_WIN_SIZE
 	#define MCLSHE_WIN_SIZE 10
 #endif
@@ -565,13 +554,11 @@ public:
 			v *= c.g_[0];
 		}
 	public:
-		template<class RG>
-		void setByCSPRNG(RG& rg)
+		void setByCSPRNG()
 		{
-			x_.setRand(rg);
-			y_.setRand(rg);
+			x_.setRand();
+			y_.setRand();
 		}
-		void setByCSPRNG() { setByCSPRNG(local::g_rg); }
 		/*
 			set xP and yQ
 		*/
@@ -722,77 +709,58 @@ private:
 			you can use INT as int64_t and Fr,
 			but the return type of dec() is int64_t.
 		*/
-		template<class INT, class RG>
-		void enc(CipherTextG1& c, const INT& m, RG& rg) const
+		template<class INT>
+		void enc(CipherTextG1& c, const INT& m) const
 		{
-			static_cast<const T&>(*this).encG1(c, m, rg);
+			static_cast<const T&>(*this).encG1(c, m);
 		}
-		template<class INT, class RG>
-		void enc(CipherTextG2& c, const INT& m, RG& rg) const
+		template<class INT>
+		void enc(CipherTextG2& c, const INT& m) const
 		{
-			static_cast<const T&>(*this).encG2(c, m, rg);
+			static_cast<const T&>(*this).encG2(c, m);
 		}
-		template<class INT, class RG>
-		void enc(CipherTextA& c, const INT& m, RG& rg) const
+		template<class INT>
+		void enc(CipherTextA& c, const INT& m) const
 		{
-			enc(c.c1_, m, rg);
-			enc(c.c2_, m, rg);
+			enc(c.c1_, m);
+			enc(c.c2_, m);
 		}
-		template<class INT, class RG>
-		void enc(CipherTextGT& c, const INT& m, RG& rg) const
+		template<class INT>
+		void enc(CipherTextGT& c, const INT& m) const
 		{
-			static_cast<const T&>(*this).encGT(c, m, rg);
+			static_cast<const T&>(*this).encGT(c, m);
 		}
-		template<class INT, class RG>
-		void enc(CipherText& c, const INT& m, RG& rg, bool multiplied = false) const
+		template<class INT>
+		void enc(CipherText& c, const INT& m, bool multiplied = false) const
 		{
 			c.isMultiplied_ = multiplied;
 			if (multiplied) {
-				enc(c.m_, m, rg);
+				enc(c.m_, m);
 			} else {
-				enc(c.a_, m, rg);
+				enc(c.a_, m);
 			}
 		}
-		template<class INT>
-		void enc(CipherTextG1& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextG2& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextA& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherTextGT& c, const INT& m) const { return enc(c, m, local::g_rg); }
-		template<class INT>
-		void enc(CipherText& c, const INT& m, bool multiplied = false) const { return enc(c, m, local::g_rg, multiplied); }
 		/*
 			reRand method is for circuit privacy
 		*/
-		template<class CT, class RG>
-		void reRandT(CT& c, RG& rg) const
+		template<class CT>
+		void reRandT(CT& c) const
 		{
 			CT c0;
-			static_cast<const T&>(*this).enc(c0, 0, rg);
+			static_cast<const T&>(*this).enc(c0, 0);
 			CT::add(c, c, c0);
 		}
-		template<class RG>
-		void reRand(CipherTextG1& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherTextG2& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherTextGT& c, RG& rg) const { reRandT(c, rg); }
-		template<class RG>
-		void reRand(CipherText& c, RG& rg) const
+		void reRand(CipherTextG1& c) const { reRandT(c); }
+		void reRand(CipherTextG2& c) const { reRandT(c); }
+		void reRand(CipherTextGT& c) const { reRandT(c); }
+		void reRand(CipherText& c) const
 		{
 			if (c.isMultiplied()) {
-				reRandT(c.m_, rg);
+				reRandT(c.m_);
 			} else {
-				reRandT(c.a_, rg);
+				reRandT(c.a_);
 			}
 		}
-		void reRand(CipherTextG1& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextG2& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextA& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherTextGT& c) const { reRand(c, local::g_rg); }
-		void reRand(CipherText& c) const { reRand(c, local::g_rg); }
 		/*
 			convert from CipherTextG1 to CipherTextGT
 		*/
@@ -845,11 +813,11 @@ public:
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
-		template<class G, class INT, class RG, class I>
-		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, const INT& m, RG& rg, const mcl::fp::WindowMethod<I>& wm)
+		template<class G, class INT, class I>
+		static void enc1(G& S, G& T, const G& /*P*/, const G& xP, const INT& m, const mcl::fp::WindowMethod<I>& wm)
 		{
 			Fr r;
-			r.setRand(rg);
+			r.setRand();
 //			G::mul(T, P, r);
 			wm.mul(static_cast<I&>(T), r);
 			G::mul(S, xP, r);
@@ -864,27 +832,27 @@ public:
 			G1::mul(xP_, P_, x);
 			G2::mul(yQ_, Q_, y);
 		}
-		template<class INT, class RG>
-		void encG1(CipherTextG1& c, const INT& m, RG& rg) const
+		template<class INT>
+		void encG1(CipherTextG1& c, const INT& m) const
 		{
-			enc1(c.S_, c.T_, P_, xP_, m, rg, PhashTbl_.getWM());
+			enc1(c.S_, c.T_, P_, xP_, m, PhashTbl_.getWM());
 		}
-		template<class INT, class RG>
-		void encG2(CipherTextG2& c, const INT& m, RG& rg) const
+		template<class INT>
+		void encG2(CipherTextG2& c, const INT& m) const
 		{
-			enc1(c.S_, c.T_, Q_, yQ_, m, rg, QhashTbl_.getWM());
+			enc1(c.S_, c.T_, Q_, yQ_, m, QhashTbl_.getWM());
 		}
-		template<class INT, class RG>
-		void encGT(CipherTextGT& c, const INT& m, RG& rg) const
+		template<class INT>
+		void encGT(CipherTextGT& c, const INT& m) const
 		{
 			/*
 				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
 				s = e(a xP + m P, Q)e(b P - c xP, yQ)
 			*/
 			Fr ra, rb, rc;
-			ra.setRand(rg);
-			rb.setRand(rg);
-			rc.setRand(rg);
+			ra.setRand();
+			rb.setRand();
+			rc.setRand();
 			GT e;
 
 			G1 P1, P2;
@@ -967,11 +935,11 @@ public:
 		/*
 			(S, T) = (m P + r xP, rP)
 		*/
-		template<class G, class INT, class RG, class I>
-		void enc1(G& S, G& T, const INT& m, RG& rg, const mcl::fp::WindowMethod<I>& Pwm, const mcl::fp::WindowMethod<G>& xPwm) const
+		template<class G, class INT, class I>
+		void enc1(G& S, G& T, const INT& m, const mcl::fp::WindowMethod<I>& Pwm, const mcl::fp::WindowMethod<G>& xPwm) const
 		{
 			Fr r;
-			r.setRand(rg);
+			r.setRand();
 			Pwm.mul(static_cast<I&>(T), r);
 			xPwm.mul(S, r);
 			if (m == 0) return;
@@ -979,26 +947,26 @@ public:
 			Pwm.mul(static_cast<I&>(C), m);
 			S += C;
 		}
-		template<class INT, class RG>
-		void encG1(CipherTextG1& c, const INT& m, RG& rg) const
+		template<class INT>
+		void encG1(CipherTextG1& c, const INT& m) const
 		{
-			enc1(c.S_, c.T_, m, rg, PhashTbl_.getWM(), xPwm_);
+			enc1(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_);
 		}
-		template<class INT, class RG>
-		void encG2(CipherTextG2& c, const INT& m, RG& rg) const
+		template<class INT>
+		void encG2(CipherTextG2& c, const INT& m) const
 		{
-			enc1(c.S_, c.T_, m, rg, QhashTbl_.getWM(), yQwm_);
+			enc1(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_);
 		}
-		template<class INT, class RG>
-		void encGT(CipherTextGT& c, const INT& m, RG& rg) const
+		template<class INT>
+		void encGT(CipherTextGT& c, const INT& m) const
 		{
 			/*
 				(s, t, u, v) = (e^m e^(xya), (e^x)^b, (e^y)^c, e^(b + c - a))
 			*/
 			Fr ra, rb, rc;
-			ra.setRand(rg);
-			rb.setRand(rg);
-			rc.setRand(rg);
+			ra.setRand();
+			rb.setRand();
+			rc.setRand();
 			GT t;
 			ePQhashTbl_.mulByWindowMethod(c.g_[0], m); // e^m
 			mulByWindowMethod(t, exyPQwm_, ra); // (e^xy)^a

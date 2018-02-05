@@ -170,9 +170,8 @@ CYBOZU_TEST_AUTO(largeEnc)
 	PublicKey pub;
 	sec.getPublicKey(pub);
 
-	cybozu::XorShift rg;
 	Fr x;
-	x.setRand(rg);
+	x.setRand();
 	CipherTextG1 c1, c2;
 	pub.enc(c1, x);
 	const int64_t m = 123;
@@ -418,7 +417,7 @@ CYBOZU_TEST_AUTO(hashBench)
 	mpz_class mr;
 	{
 		Fr r;
-		r.setRand(mcl::she::local::g_rg);
+		r.setRand();
 		mr = r.getMpz();
 	}
 	BN::hashAndMapToG1(P, "abc");

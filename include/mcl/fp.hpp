@@ -309,6 +309,7 @@ public:
 	}
 	void setByCSPRNG(fp::RandGen rg = fp::RandGen())
 	{
+		if (rg.isZero()) rg = fp::RandGen::get();
 		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
 		toMont();
 	}
