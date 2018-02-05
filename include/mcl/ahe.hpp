@@ -8,7 +8,6 @@
 */
 #include <mcl/elgamal.hpp>
 #include <mcl/ecparam.hpp>
-#include <mcl/random.hpp>
 
 namespace mcl {
 
@@ -37,7 +36,7 @@ static inline void initAhe()
 static inline void initSecretKey(SecretKey& sec)
 {
 	const Ec P(Fp(para.gx), Fp(para.gy));
-	sec.init(P, Zn::getBitSize(), mcl::getRandomGenerator());
+	sec.init(P, Zn::getBitSize());
 }
 
 } //mcl::ahe192
@@ -68,7 +67,7 @@ static inline void initAhe()
 static inline void initSecretKey(SecretKey& sec)
 {
 	const Ec P(Fp(para.gx), Fp(para.gy));
-	sec.init(P, Zn::getBitSize(), mcl::getRandomGenerator());
+	sec.init(P, Zn::getBitSize());
 }
 
 } //mcl::ahe256

@@ -228,8 +228,7 @@ struct ElgamalT {
 			input : m
 			output : c = (c1, c2) = (g^u, h^u f^m)
 		*/
-		template<class RG>
-		void enc(CipherText& c, const Zn& m, RG& rg) const
+		void enc(CipherText& c, const Zn& m, fp::RandGen rg = fp::RandGen()) const
 		{
 			Zn u;
 			u.setRand(rg);
@@ -244,8 +243,8 @@ struct ElgamalT {
 			input : m = 0 or 1
 			output : c (c1, c2), zkp
 		*/
-		template<class RG, class Hash>
-		void encWithZkp(CipherText& c, Zkp& zkp, int m, Hash& hash, RG& rg) const
+		template<class Hash>
+		void encWithZkp(CipherText& c, Zkp& zkp, int m, Hash& hash, fp::RandGen rg = fp::RandGen()) const
 		{
 			if (m != 0 && m != 1) {
 				throw cybozu::Exception("elgamal:PublicKey:encWithZkp") << m;
@@ -338,8 +337,7 @@ struct ElgamalT {
 			input : c = (c1, c2)
 			output : c = (c1 g^v, c2 h^v)
 		*/
-		template<class RG>
-		void rerandomize(CipherText& c, RG& rg) const
+		void rerandomize(CipherText& c, fp::RandGen rg = fp::RandGen()) const
 		{
 			Zn v;
 			v.setRand(rg);
@@ -479,8 +477,7 @@ struct ElgamalT {
 			g in Ec
 			h = g^z
 		*/
-		template<class RG>
-		void init(const Ec& f, size_t bitSize, RG& rg)
+		void init(const Ec& f, size_t bitSize, fp::RandGen rg = fp::RandGen())
 		{
 			Ec g, h;
 			z.setRand(rg);

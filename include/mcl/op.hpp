@@ -173,15 +173,16 @@ void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufSize)
 /*
 	wrapper of cryptographically secure pseudo random number generator
 */
-class WrapperRG {
+class RandGen {
 	typedef void (*readFuncType)(void *self, void *buf, uint32_t bufSize);
 	void *self_;
 	readFuncType readFunc_;
 public:
-	WrapperRG() : self_(0), readFunc_(0) {}
-	WrapperRG(void *self, readFuncType readFunc) : self_(self) , readFunc_(readFunc) {}
+	RandGen() : self_(0), readFunc_(0) {}
+	RandGen(void *self, readFuncType readFunc) : self_(self) , readFunc_(readFunc) {}
+	RandGen(const RandGen& rhs) : self_(rhs.self_), readFunc_(rhs.readFunc_) {}
 	template<class RG>
-	WrapperRG(RG& rg)
+	RandGen(RG& rg)
 		: self_(reinterpret_cast<void*>(&rg))
 		, readFunc_(local::readWrapper<RG>)
 	{
@@ -191,12 +192,6 @@ public:
 		readFunc_(self_, out, byteSize);
 	}
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
-	void clear() { self_ = 0; readFunc_ = 0; }
-	void set(void *self, void (*readFunc)(void *self,void *buf, uint32_t bufSize))
-	{
-		self_ = self;
-		readFunc_ = readFunc;
-	}
 };
 
 struct Op {
@@ -265,7 +260,6 @@ struct Op {
 	void2u fp2_sqr;
 	void2u fp2_mul_xi;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
-	WrapperRG wrapperRg;
 
 	PrimeMode primeMode;
 	bool isFullBit; // true if bitSize % uniSize == 0
@@ -339,7 +333,6 @@ struct Op {
 		isMont = false;
 		isFastMod = false;
 		hash = 0;
-		wrapperRg.clear();
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{

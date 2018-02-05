@@ -24,6 +24,7 @@
 #endif
 
 cybozu::RandomGenerator s_cybozuRandomGenerator;
+mcl::fp::RandGen s_rg(s_cybozuRandomGenerator);
 
 namespace mcl {
 
@@ -197,8 +198,9 @@ bool isEnableJIT()
 #endif
 }
 
-void getRandVal(Unit *out, WrapperRG& rg, const Unit *in, size_t bitSize)
+void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize)
 {
+	if (rg.isZero()) rg = s_rg;
 	const size_t n = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	const size_t rem = bitSize & (UnitBitSize - 1);
 	for (;;) {
@@ -206,6 +208,11 @@ void getRandVal(Unit *out, WrapperRG& rg, const Unit *in, size_t bitSize)
 		if (rem > 0) out[n - 1] &= (Unit(1) << rem) - 1;
 		if (isLessArray(out, in, n)) return;
 	}
+}
+
+void setRandGen(RandGen& rg)
+{
+	s_rg = rg;
 }
 
 static uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
@@ -555,7 +562,6 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	} else {
 		hash = sha512;
 	}
-	wrapperRg = mcl::fp::WrapperRG(s_cybozuRandomGenerator);
 }
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode)

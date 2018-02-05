@@ -186,7 +186,7 @@ CYBOZU_TEST_AUTO(getRandVal)
 		const uint32_t *mod = tbl[i].mod;
 		const uint32_t *expect = tbl[i].expect;
 #endif
-		mcl::fp::WrapperRG wrg(rg);
+		mcl::fp::RandGen wrg(rg);
 		mcl::fp::getRandVal(out, wrg, mod, tbl[i].bitSize);
 		CYBOZU_TEST_EQUAL(out[0], expect[0]);
 #if CYBOZU_OS_BIT == 32
