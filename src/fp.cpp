@@ -17,10 +17,13 @@
 #endif
 #include <cybozu/atoi.hpp>
 #include <cybozu/itoa.hpp>
+#include <cybozu/random_generator.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
 #endif
+
+cybozu::RandomGenerator s_cybozuRandomGenerator;
 
 namespace mcl {
 
@@ -194,6 +197,17 @@ bool isEnableJIT()
 #endif
 }
 
+void getRandVal(Unit *out, WrapperRG& rg, const Unit *in, size_t bitSize)
+{
+	const size_t n = (bitSize + UnitBitSize - 1) / UnitBitSize;
+	const size_t rem = bitSize & (UnitBitSize - 1);
+	for (;;) {
+		rg.read(out, n * sizeof(Unit));
+		if (rem > 0) out[n - 1] &= (Unit(1) << rem) - 1;
+		if (isLessArray(out, in, n)) return;
+	}
+}
+
 static uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
 	const uint32_t hashSize = 256 / 8;
@@ -217,6 +231,7 @@ static uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t
 #endif
 	return hashSize;
 }
+
 
 #ifndef MCL_USE_VINT
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
@@ -540,6 +555,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	} else {
 		hash = sha512;
 	}
+	wrapperRg = mcl::fp::WrapperRG(s_cybozuRandomGenerator);
 }
 
 void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode)

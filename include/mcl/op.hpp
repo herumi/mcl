@@ -7,6 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/gmp_util.hpp>
+#include <memory.h>
 
 #ifndef MCL_MAX_BIT_SIZE
 	#define MCL_MAX_BIT_SIZE 521
@@ -20,6 +21,10 @@
 #endif
 
 #define MCL_MAX_HASH_BIT_SIZE 512
+
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#include <random>
+#endif
 
 namespace mcl {
 
@@ -137,6 +142,63 @@ enum PrimeMode {
 	PM_NICT_P521
 };
 
+namespace local {
+
+template<class RG>
+void readWrapper(void *self, void *buf, uint32_t bufSize)
+{
+	reinterpret_cast<RG*>(self)->read((uint8_t*)buf, bufSize);
+}
+
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+template<>
+void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufSize)
+{
+	std::random_device& rg = *reinterpret_cast<std::random_device*>(self);
+	uint8_t *p = reinterpret_cast<uint8_t*>(buf);
+	uint32_t v;
+	while (bufSize >= 4) {
+		v = rg();
+		memcpy(p, &v, 4);
+		p += 4;
+		bufSize -= 4;
+	}
+	if (bufSize > 0) {
+		v = rg();
+		memcpy(p, &v, bufSize);
+	}
+}
+#endif
+} // local
+/*
+	wrapper of cryptographically secure pseudo random number generator
+*/
+class WrapperRG {
+	typedef void (*readFuncType)(void *self, void *buf, uint32_t bufSize);
+	void *self_;
+	readFuncType readFunc_;
+public:
+	WrapperRG() : self_(0), readFunc_(0) {}
+	WrapperRG(void *self, readFuncType readFunc) : self_(self) , readFunc_(readFunc) {}
+	template<class RG>
+	WrapperRG(RG& rg)
+		: self_(reinterpret_cast<void*>(&rg))
+		, readFunc_(local::readWrapper<RG>)
+	{
+	}
+	void read(void *out, size_t byteSize)
+	{
+		readFunc_(self_, out, byteSize);
+	}
+	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
+	void clear() { self_ = 0; readFunc_ = 0; }
+	void set(void *self, void (*readFunc)(void *self,void *buf, uint32_t bufSize))
+	{
+		self_ = self;
+		readFunc_ = readFunc;
+	}
+};
+
 struct Op {
 	/*
 		don't change the layout of rp and p
@@ -203,6 +265,7 @@ struct Op {
 	void2u fp2_sqr;
 	void2u fp2_mul_xi;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
+	WrapperRG wrapperRg;
 
 	PrimeMode primeMode;
 	bool isFullBit; // true if bitSize % uniSize == 0
@@ -276,6 +339,7 @@ struct Op {
 		isMont = false;
 		isFastMod = false;
 		hash = 0;
+		wrapperRg.clear();
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{

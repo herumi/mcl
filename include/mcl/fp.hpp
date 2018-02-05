@@ -57,6 +57,8 @@ std::string littleEndianToHexStr(const void *buf, size_t bufSize);
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
+void getRandVal(Unit *out, WrapperRG& rg, const Unit *in, size_t bitSize);
+
 namespace local {
 
 inline bool isSpace(char c)
@@ -305,11 +307,15 @@ public:
 			b.p = &v_[0];
 		}
 	}
-	template<class RG>
-	void setRand(RG& rg)
+	void setByCSPRNG(mcl::fp::WrapperRG rg = mcl::fp::WrapperRG())
 	{
+		if (rg.isZero()) rg = op_.wrapperRg;
 		fp::getRandVal(v_, rg, op_.p, op_.bitSize);
 		toMont();
+	}
+	void setRand(mcl::fp::WrapperRG rg = mcl::fp::WrapperRG())
+	{
+		setByCSPRNG(rg);
 	}
 	/*
 		hash msg and mask with (1 << (bitLen - 1)) - 1
@@ -465,6 +471,10 @@ public:
 	static inline void setHashFunc(uint32_t hash(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
 	{
 		op_.hash = hash;
+	}
+	static inline void setWrapperRG(void *self, void (*readFunc)(void *self, void *buf, uint32_t bufSize))
+	{
+		op_.wrapperRg.set(self, readFunc);
 	}
 };
 

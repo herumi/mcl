@@ -146,46 +146,6 @@ size_t getNonZeroArraySize(const T *x, size_t n)
 	return 1;
 }
 
-namespace impl {
-
-template<class T, class RG>
-static void readN(T* out, size_t n, RG& rg)
-{
-	if (sizeof(T) == 8) {
-		for (size_t i = 0; i < n; i++) {
-			T L = rg();
-			T H = rg();
-			out[i] = L | (uint64_t(H) << 32);
-		}
-	} else {
-		for (size_t i = 0; i < n; i++) {
-			out[i] = rg();
-		}
-	}
-}
-
-} // impl
-/*
-	get random value less than in[]
-	n = (bitSize + sizeof(T) * 8) / (sizeof(T) * 8)
-	input  in[0..n)
-	output out[n..n)
-	0 <= out < in
-*/
-template<class RG, class T>
-void getRandVal(T *out, RG& rg, const T *in, size_t bitSize)
-{
-	const size_t TbitSize = sizeof(T) * 8;
-	const size_t n = (bitSize + TbitSize - 1) / TbitSize;
-	const size_t rem = bitSize & (TbitSize - 1);
-	for (;;) {
-		impl::readN(out, n, rg);
-//		rg.read(out, n);
-		if (rem > 0) out[n - 1] &= (T(1) << rem) - 1;
-		if (isLessArray(out, in, n)) return;
-	}
-}
-
 /*
 	@param out [inout] : set element of G ; out = x^y[]
 	@param x [in]
