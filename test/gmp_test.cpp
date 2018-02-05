@@ -21,3 +21,11 @@ CYBOZU_TEST_AUTO(testBit)
 	}
 }
 
+CYBOZU_TEST_AUTO(getRandPrime)
+{
+	for (int i = 0; i < 10; i++) {
+		mpz_class z;
+		mcl::gmp::getRandPrime(z, i * 10 + 3);
+		CYBOZU_TEST_ASSERT(mcl::gmp::isPrime(z));
+	}
+}

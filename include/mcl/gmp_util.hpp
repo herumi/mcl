@@ -416,14 +416,15 @@ inline mpz_class abs(const mpz_class& x)
 	return ::abs(x);
 #endif
 }
-template<class RG>
-void getRand(mpz_class& z, size_t bitSize, RG& rg)
+
+inline void getRand(mpz_class& z, size_t bitSize, fp::RandGen rg = fp::RandGen())
 {
+	if (rg.isZero()) rg = fp::RandGen::get();
 	assert(bitSize > 1);
 	const size_t rem = bitSize & 31;
 	const size_t n = (bitSize + 31) / 32;
 	std::vector<uint32_t> buf(n);
-	rg.read(buf.data(), n);
+	rg.read(buf.data(), n * sizeof(buf[0]));
 	uint32_t v = buf[n - 1];
 	if (rem == 0) {
 		v |= 1U << 31;
@@ -434,9 +435,10 @@ void getRand(mpz_class& z, size_t bitSize, RG& rg)
 	buf[n - 1] = v;
 	setArray(z, &buf[0], n);
 }
-template<class RG>
-void getRandPrime(mpz_class& z, size_t bitSize, RG& rg, bool setSecondBit = false, bool mustBe3mod4 = false)
+
+inline void getRandPrime(mpz_class& z, size_t bitSize, fp::RandGen rg = fp::RandGen(), bool setSecondBit = false, bool mustBe3mod4 = false)
 {
+	if (rg.isZero()) rg = fp::RandGen::get();
 	assert(bitSize > 2);
 	do {
 		getRand(z, bitSize, rg);

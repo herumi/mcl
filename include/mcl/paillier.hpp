@@ -24,9 +24,9 @@ public:
 		g = 1 + _n;
 		n2 = _n * _n;
 	}
-	template<class RG>
-	void enc(mpz_class& c, const mpz_class& m, RG& rg) const
+	void enc(mpz_class& c, const mpz_class& m, mcl::fp::RandGen rg = mcl::fp::RandGen()) const
 	{
+		if (rg.isZero()) rg = mcl::fp::RandGen::get();
 		if (primeBitSize == 0) throw cybozu::Exception("paillier:PublicKey:not init");
 		mpz_class r;
 		mcl::gmp::getRand(r, primeBitSize, rg);
@@ -56,9 +56,9 @@ public:
 	/*
 		the size of prime is half of bitSize
 	*/
-	template<class RG>
-	void init(size_t bitSize, RG& rg)
+	void init(size_t bitSize, mcl::fp::RandGen rg = mcl::fp::RandGen())
 	{
+		if (rg.isZero()) rg = mcl::fp::RandGen::get();
 		primeBitSize = bitSize / 2;
 		mpz_class p, q;
 		mcl::gmp::getRandPrime(p, primeBitSize, rg);
