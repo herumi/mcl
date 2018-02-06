@@ -45,6 +45,8 @@ typedef struct {
 	mclBnG2 yQ;
 } shePublicKey;
 
+struct shePrecomputedPublicKey;
+
 typedef struct {
 	mclBnG1 S;
 	mclBnG1 T;
@@ -59,6 +61,9 @@ typedef struct {
 	mclBnGT g[4];
 } sheCipherTextGT;
 
+typedef struct {
+	mclBnFr d[4];
+} sheZkpBin;
 /*
 	initialize this library
 	call this once before using the other functions
@@ -138,12 +143,26 @@ MCLSHE_DLL_API int sheEncG2(sheCipherTextG2 *c, const shePublicKey *pub, mclInt 
 MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt m);
 
 /*
+	m must be 0 or 1
+*/
+MCLSHE_DLL_API int sheEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePublicKey *pub, int m);
+MCLSHE_DLL_API int sheEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePublicKey *pub, int m);
+
+/*
 	decode c and set m
 	return 0 if success
 */
 MCLSHE_DLL_API int sheDecG1(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c);
 MCLSHE_DLL_API int sheDecG2(mclInt *m, const sheSecretKey *sec, const sheCipherTextG2 *c);
 MCLSHE_DLL_API int sheDecGT(mclInt *m, const sheSecretKey *sec, const sheCipherTextGT *c);
+/*
+	verify zkp
+	return 1 if valid
+*/
+MCLSHE_DLL_API int sheVerifyZkpBinG1(const shePublicKey *pub, const sheCipherTextG1 *c, const sheZkpBin *zkp);
+MCLSHE_DLL_API int sheVerifyZkpBinG2(const shePublicKey *pub, const sheCipherTextG2 *c, const sheZkpBin *zkp);
+MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpBinG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const sheZkpBin *zkp);
+MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpBinG2(const shePrecomputedPublicKey *ppub, const sheCipherTextG2 *c, const sheZkpBin *zkp);
 /*
 	decode c via GT and set m
 	return 0 if success
@@ -198,7 +217,6 @@ MCLSHE_DLL_API int sheReRandGT(sheCipherTextGT *c, const shePublicKey *pub);
 MCLSHE_DLL_API int sheConvertG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x);
 MCLSHE_DLL_API int sheConvertG2(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG2 *x);
 
-struct shePrecomputedPublicKey;
 MCLSHE_DLL_API shePrecomputedPublicKey *shePrecomputedPublicKeyCreate();
 MCLSHE_DLL_API void shePrecomputedPublicKeyDestroy(shePrecomputedPublicKey *ppub);
 // return 0 if success
@@ -206,6 +224,12 @@ MCLSHE_DLL_API int shePrecomputedPublicKeyInit(shePrecomputedPublicKey *ppub, co
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncG1(sheCipherTextG1 *c, const shePrecomputedPublicKey *ppub, mclInt m);
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncG2(sheCipherTextG2 *c, const shePrecomputedPublicKey *ppub, mclInt m);
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncGT(sheCipherTextGT *c, const shePrecomputedPublicKey *ppub, mclInt m);
+
+/*
+	m must be 0 or 1
+*/
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *ppub, int m);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *ppub, int m);
 
 #ifdef __cplusplus
 }

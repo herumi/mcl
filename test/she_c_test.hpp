@@ -272,6 +272,42 @@ CYBOZU_TEST_AUTO(precomputed)
 	shePrecomputedPublicKeyDestroy(ppub);
 }
 
+template<class CT, class PK, class encWithZkpFunc, class decFunc, class verifyFunc>
+void ZkpBinTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZkp, decFunc dec, verifyFunc verify)
+{
+	CT c;
+	sheZkpBin zkp;
+	for (int m = 0; m < 2; m++) {
+		CYBOZU_TEST_EQUAL(encWithZkp(&c, &zkp, pub, m), 0);
+		mclInt mDec;
+		CYBOZU_TEST_EQUAL(dec(&mDec, sec, &c), 0);
+		CYBOZU_TEST_EQUAL(mDec, m);
+		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 1);
+		zkp.d[0].d[0]++;
+		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 0);
+	}
+	CYBOZU_TEST_ASSERT(encWithZkp(&c, &zkp, pub, 2) != 0);
+}
+
+CYBOZU_TEST_AUTO(ZkpBin)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+
+	ZkpBinTest<sheCipherTextG1>(&sec, &pub, sheEncWithZkpBinG1, sheDecG1, sheVerifyZkpBinG1);
+	ZkpBinTest<sheCipherTextG2>(&sec, &pub, sheEncWithZkpBinG2, sheDecG2, sheVerifyZkpBinG2);
+
+	shePrecomputedPublicKey *ppub = shePrecomputedPublicKeyCreate();
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyInit(ppub, &pub), 0);
+
+	ZkpBinTest<sheCipherTextG1>(&sec, ppub, shePrecomputedPublicKeyEncWithZkpBinG1, sheDecG1, shePrecomputedPublicKeyVerifyZkpBinG1);
+	ZkpBinTest<sheCipherTextG2>(&sec, ppub, shePrecomputedPublicKeyEncWithZkpBinG2, sheDecG2, shePrecomputedPublicKeyVerifyZkpBinG2);
+
+	shePrecomputedPublicKeyDestroy(ppub);
+}
+
 CYBOZU_TEST_AUTO(finalExp)
 {
 	sheSecretKey sec;
