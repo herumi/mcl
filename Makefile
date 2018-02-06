@@ -242,6 +242,9 @@ mcl-wasm:
 	$(MAKE) ../mcl-wasm/mcl_c.js
 	$(MAKE) ../mcl-wasm/mcl_c512.js
 
+she-wasm:
+	$(MAKE) ../she-wasm/she_c.js
+
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
