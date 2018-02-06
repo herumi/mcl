@@ -283,6 +283,15 @@ void ZkpBinTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZk
 		CYBOZU_TEST_EQUAL(dec(&mDec, sec, &c), 0);
 		CYBOZU_TEST_EQUAL(mDec, m);
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 1);
+		{
+			char buf[2048];
+			size_t n = sheZkpBinSerialize(buf, sizeof(buf), &zkp);
+			CYBOZU_TEST_EQUAL(n, mclBn_getOpUnitSize() * 8 * 4);
+			sheZkpBin zkp2;
+			size_t r = sheZkpBinDeserialize(&zkp2, buf, n);
+			CYBOZU_TEST_EQUAL(r, n);
+			CYBOZU_TEST_ASSERT(memcmp(&zkp, &zkp2, n) == 0);
+		}
 		zkp.d[0].d[0]++;
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 0);
 	}

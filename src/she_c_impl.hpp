@@ -120,6 +120,11 @@ mclSize sheCipherTextGTSerialize(void *buf, mclSize maxBufSize, const sheCipherT
 	return serialize(buf, maxBufSize, c);
 }
 
+mclSize sheZkpBinSerialize(void *buf, mclSize maxBufSize, const sheZkpBin *zkp)
+{
+	return serialize(buf, maxBufSize, zkp);
+}
+
 template<class T>
 mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 	try
@@ -153,6 +158,11 @@ mclSize sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, mclSize 
 mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize bufSize)
 {
 	return deserialize(c, buf, bufSize);
+}
+
+mclSize sheZkpBinDeserialize(sheZkpBin* zkp, const void *buf, mclSize bufSize)
+{
+	return deserialize(zkp, buf, bufSize);
 }
 
 int sheSecretKeySetByCSPRNG(sheSecretKey *sec)

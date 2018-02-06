@@ -81,6 +81,7 @@ MCLSHE_DLL_API mclSize shePublicKeySerialize(void *buf, mclSize maxBufSize, cons
 MCLSHE_DLL_API mclSize sheCipherTextG1Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG1 *c);
 MCLSHE_DLL_API mclSize sheCipherTextG2Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG2 *c);
 MCLSHE_DLL_API mclSize sheCipherTextGTSerialize(void *buf, mclSize maxBufSize, const sheCipherTextGT *c);
+MCLSHE_DLL_API mclSize sheZkpBinSerialize(void *buf, mclSize maxBufSize, const sheZkpBin *zkp);
 
 // return read byte size if sucess else 0
 MCLSHE_DLL_API mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize);
@@ -88,6 +89,7 @@ MCLSHE_DLL_API mclSize shePublicKeyDeserialize(shePublicKey* pub, const void *bu
 MCLSHE_DLL_API mclSize sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, mclSize bufSize);
 MCLSHE_DLL_API mclSize sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, mclSize bufSize);
 MCLSHE_DLL_API mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheZkpBinDeserialize(sheZkpBin* zkp, const void *buf, mclSize bufSize);
 
 /*
 	set secretKey if system has /dev/urandom or CryptGenRandom
