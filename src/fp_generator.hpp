@@ -178,7 +178,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	*/
 	void init(Op& op)
 	{
-//		if (op.N < 2) throw cybozu::Exception("mcl:FpGenerator:small pn") << op.N;
 		op_ = &op;
 		p_ = op.p;
 		rp_ = fp::getMontgomeryCoeff(p_[0]);
@@ -254,7 +253,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fpDbl_mod = getCurr<void3u>();
 			gen_fpDbl_mod(op);
 		}
-		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
+		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4 || (useAdx_ && op.N == 6)) {
 			align(16);
 			op.fpDbl_mulPre = getCurr<void3u>();
 			gen_fpDbl_mulPre();
@@ -1566,6 +1565,24 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		mov(ptr [pz + 8 * 7], d);
 #endif
 	}
+	void mulPre6(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
+	{
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+
+		mulPack(pz, px, py, Pack(t5, t4, t3, t2, t1, t0)); // [t5:t4:t3:t2:t1:t0]
+		mulPackAdd(pz + 8 * 1, px + 8 * 1, py, t6, Pack(t5, t4, t3, t2, t1, t0)); // [t6:t5:t4:t3:t2:t1]
+		mulPackAdd(pz + 8 * 2, px + 8 * 2, py, t0, Pack(t6, t5, t4, t3, t2, t1)); // [t0:t6:t5:t4:t3:t2]
+		mulPackAdd(pz + 8 * 3, px + 8 * 3, py, t1, Pack(t0, t6, t5, t4, t3, t2)); // [t1:t0:t6:t5:t4:t3]
+		mulPackAdd(pz + 8 * 4, px + 8 * 4, py, t2, Pack(t1, t0, t6, t5, t4, t3)); // [t2:t1:t0:t6:t5:t4]
+		mulPackAdd(pz + 8 * 5, px + 8 * 5, py, t3, Pack(t2, t1, t0, t6, t5, t4)); // [t3:t2:t1:t0:t6:t5]
+		store_mr(pz + 8 * 6, Pack(t3, t2, t1, t0, t6, t5));
+	}
 	void gen_fpDbl_sqrPre(mcl::fp::Op& op)
 	{
 		if (useMulx_ && pn_ == 2) {
@@ -1601,6 +1618,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		} else if (pn_ == 4) {
 			StackFrame sf(this, 3, 10 | UseRDX);
 			mulPre4(sf.p[0], sf.p[1], sf.p[2], sf.t);
+#if 0 // slow?
+		} else if (pn_ == 6 && useAdx_) {
+			StackFrame sf(this, 3, 7 | UseRDX);
+			mulPre6(sf.p[0], sf.p[1], sf.p[2], sf.t);
+#endif
 		}
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
