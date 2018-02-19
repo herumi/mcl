@@ -1,7 +1,6 @@
 #include <cybozu/test.hpp>
 #include <mcl/aggregate_sig.hpp>
 
-using namespace mcl::bn_current;
 using namespace mcl::aggs;
 
 CYBOZU_TEST_AUTO(init)
