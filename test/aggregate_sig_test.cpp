@@ -46,10 +46,9 @@ CYBOZU_TEST_AUTO(aggregate)
 		Core i7-7700 CPU @ 3.60GHz
 		              BN254  Fp382   Fp462
 		security bit   100    115?     128
-		  100           69     200     476
-		 1000          693    2037    4731
-		10000         6969   20448   47000(Mclk)
-
+		# of sig 100    69     200     476
+		        1000   693    2037    4731
+		       10000  6969   20448   47000(Mclk)
 	*/
 	const size_t n = 1000;
 	const size_t msgSize = 16;
