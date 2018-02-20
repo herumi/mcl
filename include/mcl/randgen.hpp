@@ -7,7 +7,13 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <cybozu/random_generator.hpp>
-
+#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#include <random>
+#endif
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4521)
+#endif
 namespace mcl { namespace fp {
 
 namespace local {
@@ -20,7 +26,7 @@ void readWrapper(void *self, void *buf, uint32_t bufSize)
 
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 template<>
-void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufSize)
+inline void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufSize)
 {
 	std::random_device& rg = *reinterpret_cast<std::random_device*>(self);
 	uint8_t *p = reinterpret_cast<uint8_t*>(buf);
@@ -64,7 +70,7 @@ public:
 	}
 	void read(void *out, size_t byteSize)
 	{
-		readFunc_(self_, out, byteSize);
+		readFunc_(self_, out, static_cast<uint32_t>(byteSize));
 	}
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
 	static RandGen& get()
@@ -84,3 +90,7 @@ public:
 };
 
 } } // mcl::fp
+
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
