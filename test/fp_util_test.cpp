@@ -179,18 +179,19 @@ CYBOZU_TEST_AUTO(getRandVal)
 		Rand rg(tbl[i].r, rn);
 #if CYBOZU_OS_BIT == 64
 		uint64_t out[1];
-		const uint64_t *mod = (const uint64_t*)tbl[i].mod;
-		const uint64_t *expect = (const uint64_t*)tbl[i].expect;
 #else
 		uint32_t out[2];
-		const uint32_t *mod = tbl[i].mod;
-		const uint32_t *expect = tbl[i].expect;
 #endif
 		mcl::fp::RandGen wrg(rg);
-		mcl::fp::getRandVal(out, wrg, mod, tbl[i].bitSize);
-		CYBOZU_TEST_EQUAL(out[0], expect[0]);
-#if CYBOZU_OS_BIT == 32
-		CYBOZU_TEST_EQUAL(out[1], expect[1]);
+#if CYBOZU_OS_BIT == 64
+		uint64_t mod = tbl[i].mod[0] | (uint64_t(tbl[i].mod[1]) << 32);
+		mcl::fp::getRandVal(out, wrg, &mod, tbl[i].bitSize);
+		uint64_t expect = tbl[i].expect[0] | (uint64_t(tbl[i].expect[1]) << 32);
+		CYBOZU_TEST_EQUAL(out[0], expect);
+#else
+		mcl::fp::getRandVal(out, wrg, tbl[i].mod, tbl[i].bitSize);
+		CYBOZU_TEST_EQUAL(out[0], tbl[i].expect[0]);
+		CYBOZU_TEST_EQUAL(out[1], tbl[i].expect[1]);
 #endif
 	}
 }
