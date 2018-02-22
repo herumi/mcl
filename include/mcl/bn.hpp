@@ -10,6 +10,8 @@
 #include <mcl/ec.hpp>
 #include <assert.h>
 
+//#define MCL_DEV
+
 namespace mcl { namespace bn {
 
 struct CurveParam {
@@ -522,6 +524,7 @@ struct ParamT {
 	mpz_class p;
 	mpz_class r;
 	int b;
+	bool isMtype; // Dtype if false, BN254 is Dtype, BLS12-381
 	/*
 		twist
 		(x', y') = phi(x, y) = (x/w^2, y/w^3)
@@ -540,6 +543,7 @@ struct ParamT {
 	mpz_class exp_c0;
 	mpz_class exp_c1;
 	mpz_class exp_c2;
+	mpz_class exp_c3;
 	MapToT<Fp> mapTo;
 	GLV1<Fp> glv1;
 	GLV2<Fp2> glv2;
@@ -554,24 +558,39 @@ struct ParamT {
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		curveType = cp.curveType;
-		isCurveFp254BNb = cp == CurveFp254BNb;
 		z = mpz_class(cp.z);
+		isCurveFp254BNb = cp == CurveFp254BNb;
+		bool isBLS12 = false;
+		isMtype = false;
 		isNegative = z < 0;
 		if (isNegative) {
 			abs_z = -z;
 		} else {
 			abs_z = z;
 		}
-		const int pCoff[] = { 1, 6, 24, 36, 36 };
-		const int rCoff[] = { 1, 6, 18, 36, 36 };
-		p = eval(pCoff, z);
-		assert((p % 6) == 1);
-		r = eval(rCoff, z);
+		if (isBLS12) {
+			/* BLS12 */
+			mpz_class z2 = z * z;
+			mpz_class z4 = z2 * z2;
+			r = z4 - z2 + 1;
+			p = z - 1;
+			p = p * p * r / 3 + z;
+		} else {
+			const int pCoff[] = { 1, 6, 24, 36, 36 };
+			const int rCoff[] = { 1, 6, 18, 36, 36 };
+			p = eval(pCoff, z);
+			assert((p % 6) == 1);
+			r = eval(rCoff, z);
+		}
 		Fp::init(p, mode);
 		Fp2::init(cp.xi_a);
 		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);
-		twist_b = Fp2(b) / xi;
+		if (isMtype) {
+			twist_b = Fp2(b) * xi;
+		} else {
+			twist_b = Fp2(b) / xi;
+		}
 		if (twist_b == Fp2(1, -1)) {
 			twist_b_type = tb_1m1i;
 		} else if (twist_b == Fp2(1, -2)) {
@@ -585,13 +604,24 @@ struct ParamT {
 		mapTo.init(2 * p - r);
 		glv1.init(r, z);
 
-		const mpz_class largest_c = gmp::abs(z * 6 + 2);
+		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
-		exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
-		exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
-		exp_c2 = 6 * z * z + 1;
+		if (isBLS12) {
+			mpz_class z2 = z * z;
+			mpz_class z3 = z2 * z;
+			mpz_class z4 = z3 * z;
+			mpz_class z5 = z4 * z;
+			exp_c0 = z5 - 2 * z4 + 2 * z2 - z + 3;
+			exp_c1 = z4 - 2 * z3 + 2 * z - 1;
+			exp_c2 = z3 - 2 * z2 + z;
+			exp_c3 = z2 - 2 * z + 1;
+		} else {
+			exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
+			exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
+			exp_c2 = 6 * z * z + 1;
+		}
 	}
 	mpz_class eval(const int c[5], const mpz_class& x) const
 	{
@@ -707,13 +737,21 @@ struct BNT {
 		Fp2::divBy2(t4, t4);
 		Fp2::add(t5, t0, t1);
 		t0 += t3;
+#ifdef MCL_DEV
+		Fp2::mul_xi(t2, t0);
+#else
 		mul_b_div_xi(t2, t0);
+#endif
 		Fp2::sqr(t0, Q.x);
 		Fp2::add(t3, t2, t2);
 		t3 += t2;
+#ifndef MCL_DEV
 		Fp2::add(l.c, t0, t0);
+#endif
 		Fp2::sub(Q.x, t1, t3);
+#ifndef MCL_DEV
 		Fp2::add(l.c, l.c, t0);
+#endif
 		t3 += t1;
 		Q.x *= t4;
 		Fp2::divBy2(t3, t3);
@@ -727,9 +765,15 @@ struct BNT {
 		Fp2::sqr(t3, t3);
 		t3 -= t5;
 		Fp2::mul(Q.z, t1, t3);
+#ifdef MCL_DEV
+		Fp2::sub(l.a, t2, t1);
+		l.c = t0;
+		l.b = t3;
+#else
 		t2 -= t1;
 		Fp2::mul_xi(l.a, t2);
 		Fp2::neg(l.b, t3);
+#endif
 	}
 	static void mulOpt1(Fp2& z, const Fp2& x, const Fp2& y)
 	{
@@ -771,8 +815,12 @@ struct BNT {
 		Fp2Dbl_mulOpt(T1, t2, Q.x);
 		Fp2Dbl_mulOpt(T2, t1, Q.y);
 		Fp2Dbl::sub(T1, T1, T2);
+#ifdef MCL_DEV
+		Fp2Dbl::mod(l.a, T1);
+#else
 		Fp2Dbl::mod(t2, T1);
 		Fp2::mul_xi(l.a, t2);
+#endif
 		l.b = t1;
 	}
 	static void dblLine(Fp6& l, G2& Q, const G1& P)
@@ -978,9 +1026,9 @@ struct BNT {
 	{
 #if 1
 		Fp12 t1, t2, t3;
-		Frobenius(t1, x);
-		Frobenius(t2, t1);
-		Frobenius(t3, t2);
+		Fp12::Frobenius(t1, x);
+		Fp12::Frobenius(t2, t1);
+		Fp12::Frobenius(t3, t2);
 		Fp12::pow(t1, t1, param.exp_c1);
 		Fp12::pow(t2, t2, param.exp_c2);
 		Fp12::pow(y, x, param.exp_c0);
@@ -1334,6 +1382,7 @@ struct BNT {
 		Fp12::pow(y, y, p4 * p2 - 1);
 #endif
 		exp_d1(y, y);
+//		exp_d(y, x);
 	}
 	static void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	{
@@ -1370,14 +1419,14 @@ struct BNT {
 				mul_024(f, l);
 			}
 		}
-		G2 Q1, Q2;
-		G2withF::Frobenius(Q1, Q);
-		G2withF::Frobenius(Q2, Q1);
-		G2::neg(Q2, Q2);
 		if (param.z < 0) {
 			G2::neg(T, T);
 			Fp6::neg(f.b, f.b);
 		}
+		G2 Q1, Q2;
+		G2withF::Frobenius(Q1, Q);
+		G2withF::Frobenius(Q2, Q1);
+		G2::neg(Q2, Q2);
 		addLine(d, T, Q1, P);
 		addLine(e, T, Q2, P);
 		Fp12 ft;
