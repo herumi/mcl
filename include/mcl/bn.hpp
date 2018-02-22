@@ -1013,10 +1013,8 @@ struct BNT {
 #endif
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
 	{
-		Fp12 x2, y2;
-		convertFp6toFp12(x2, x);
-		convertFp6toFp12(y2, y);
-		Fp12::mul(z, x2, y2);
+		convertFp6toFp12(z, x);
+		mul_024(z, y);
 	}
 	/*
 		y = x^d
