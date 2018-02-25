@@ -737,7 +737,7 @@ struct BNT {
 		Fp2::divBy2(t4, t4);
 		Fp2::add(t5, t0, t1);
 		t0 += t3;
-#ifdef MCL_DEV
+#if 0//#ifdef MCL_DEV
 		Fp2::mul_xi(t2, t0);
 #else
 		mul_b_div_xi(t2, t0);
@@ -745,11 +745,9 @@ struct BNT {
 		Fp2::sqr(t0, Q.x);
 		Fp2::add(t3, t2, t2);
 		t3 += t2;
-#ifndef MCL_DEV
-		Fp2::add(l.c, t0, t0);
-#endif
 		Fp2::sub(Q.x, t1, t3);
 #ifndef MCL_DEV
+		Fp2::add(l.c, t0, t0);
 		Fp2::add(l.c, l.c, t0);
 #endif
 		t3 += t1;
@@ -844,9 +842,15 @@ struct BNT {
 	static void convertFp6toFp12(Fp12& y, const Fp6& x)
 	{
 		y.clear();
+#ifdef MCL_DEV
+		y.a.a = x.b;
+		y.b.a = x.c;
+		y.b.b = x.a;
+#else
 		y.a.a = x.a;
 		y.a.c = x.c;
 		y.b.b = x.b;
+#endif
 	}
 	static void Fp2Dbl_mulOpt(Fp2Dbl& Z, const Fp2& x, const Fp2& y)
 	{
@@ -874,6 +878,11 @@ struct BNT {
 	// mul_024(z, z(=y), x)
 	static void mul_024(Fp12& z, const Fp6& x)
 	{
+#ifdef MCL_DEV
+		Fp12 t;
+		convertFp6toFp12(t, x);
+		z *= t;
+#else
 		Fp2& z0 = z.a.a;
 		Fp2& z1 = z.a.b;
 		Fp2& z2 = z.a.c;
@@ -947,6 +956,7 @@ struct BNT {
 		Fp2Dbl_mulOpt(T3, s0, t0);
 		T3 -= S1;
 		Fp2Dbl::mod(z5, T3);
+#endif
 	}
 #if 0
 	static void mul_024(Fp12& z, const Fp12&x, const Fp6& y)
@@ -1382,6 +1392,19 @@ struct BNT {
 		exp_d1(y, y);
 //		exp_d(y, x);
 	}
+	static G1 makeAdjP(const G1& P)
+	{
+#ifdef MCL_DEV
+		G1 adjP;
+		Fp::add(adjP.x, P.x, P.x);
+		adjP.x += P.x;
+		Fp::neg(adjP.y, P.y);
+		adjP.z = 1;
+		return adjP;
+#else
+		return P;
+#endif
+	}
 	static void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	{
 		G1 P(P_);
@@ -1392,20 +1415,20 @@ struct BNT {
 			f = 1;
 			return;
 		}
+		assert(param.siTbl[1] == 1);
 		G2 T = Q;
 		G2 negQ;
 		if (param.useNAF) {
 			G2::neg(negQ, Q);
 		}
-		Fp6 d;
-		dblLine(d, T, P);
-		Fp6 e;
-		assert(param.siTbl[1] == 1);
-		addLine(e, T, Q, P);
-		mul_024_024(f, d, e);
-		Fp6 l;
+		Fp6 d, e, l;
+		d = e = l = 1;
+		G1 adjP = makeAdjP(P);
+		dblLine(d, T, adjP);
+		addLine(l, T, Q, P);
+		mul_024_024(f, d, l);
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
-			dblLine(l, T, P);
+			dblLine(l, T, adjP);
 			Fp12::sqr(f, f);
 			mul_024(f, l);
 			if (param.siTbl[i]) {
@@ -1498,17 +1521,17 @@ struct BNT {
 	{
 		G1 P(P_);
 		P.normalize();
+		G1 adjP = makeAdjP(P);
 		size_t idx = 0;
-		Fp6 d, e;
-		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
+		Fp6 d, e, l;
+		mulFp6cb_by_G1xy(d, Qcoeff[idx], adjP);
 		idx++;
 
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
 		idx++;
 		mul_024_024(f, d, e);
-		Fp6 l;
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
-			mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
+			mulFp6cb_by_G1xy(l, Qcoeff[idx], adjP);
 			idx++;
 			Fp12::sqr(f, f);
 			mul_024(f, l);
@@ -1541,13 +1564,14 @@ struct BNT {
 		G1 P1(P1_), P2(P2_);
 		P1.normalize();
 		P2.normalize();
+		G1 adjP1 = makeAdjP(P1);
+		G1 adjP2 = makeAdjP(P2);
 		size_t idx = 0;
-		Fp6 d1, d2;
-		mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
-		mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
+		Fp6 d1, d2, e1, e2, l1, l2;
+		mulFp6cb_by_G1xy(d1, Q1coeff[idx], adjP1);
+		mulFp6cb_by_G1xy(d2, Q2coeff[idx], adjP2);
 		idx++;
 
-		Fp6 e1, e2;
 		Fp12 f1, f2;
 		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
 		mul_024_024(f1, d1, e1);
@@ -1556,10 +1580,9 @@ struct BNT {
 		mul_024_024(f2, d2, e2);
 		Fp12::mul(f, f1, f2);
 		idx++;
-		Fp6 l1, l2;
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
-			mulFp6cb_by_G1xy(l1, Q1coeff[idx], P1);
-			mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
+			mulFp6cb_by_G1xy(l1, Q1coeff[idx], adjP1);
+			mulFp6cb_by_G1xy(l2, Q2coeff[idx], adjP2);
 			idx++;
 			Fp12::sqr(f, f);
 			mul_024_024(f1, l1, l2);
