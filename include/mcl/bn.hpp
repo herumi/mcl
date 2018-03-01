@@ -866,99 +866,130 @@ struct BNT {
 		FpDbl::sub(Z.a, Z.a, D0);
 	}
 	/*
-		input
-		z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w
-		x = (a, b, c) -> (b, 0, 0, c, a, 0)
-		output
-		z <- zx = (z0b + (z5c + z4a)xi) + (z1b + z3c + z5axi)v + (z2b + z4c + z3a)v^2
-		   + ((z3b + z0c + z2axi) + (z4b + z1c + z0a)v + (z5b + z2c + z1a)v^2)w
-		z3b + z0c = (z3 + z0)(b + c) - z3c - z0b
-		z4b + z1c = (z4 + z1)(b + c) - z4c - z1b
-		z5b + z2c = (z5 + z2)(b + c) - z5c - z2b
+		x = a + bv + cv^2
+		y = (y0, y4, y2) -> (y0, 0, y2, 0, y4, 0)
+		z = xy = (a + bv + cv^2)(d + ev)
+		= (ad + ce xi) + ((a + b)(d + e) - ad - be)v + (be + cd)v^2
 	*/
-	static void mul_025(Fp12& z, const Fp6& x)
+	static void Fp6mul_01(Fp6& z, const Fp6& x, const Fp2& d, const Fp2& e)
 	{
-#if 0
-		Fp12 t;
-		convertFp6toFp12(t, x);
-		z *= t;
-#else
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
 		const Fp2& c = x.c;
+		Fp2 t0, t1;
+		Fp2Dbl AD, CE, BE, CD, T;
+		Fp2Dbl_mulOpt(AD, a, d);
+		Fp2Dbl_mulOpt(CE, c, e);
+		Fp2Dbl_mulOpt(BE, b, e);
+		Fp2Dbl_mulOpt(CD, c, d);
+		Fp2::add(t0, a, b);
+		Fp2::add(t1, d, e);
+		Fp2Dbl_mulOpt(T, t0, t1);
+		T -= AD;
+		T -= BE;
+		Fp2Dbl::mod(z.b, T);
+		Fp2Dbl::mul_xi(CE, CE);
+		AD += CE;
+		Fp2Dbl::mod(z.a, AD);
+		BE += CD;
+		Fp2Dbl::mod(z.c, BE);
+	}
+	/*
+		input
+		z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w = Z0 + Z1w
+		x = (a, b, c) -> (b, 0, 0, c, a, 0) = X0 + X1w
+		X0 = b = (b, 0, 0)
+		X1 = c + av = (c, a, 0)
+		w^2 = v, v^3 = xi
+		output
+		z <- zx = (Z0X0 + Z1X1v) + ((Z0 + Z1)(X0 + X1) - Z0X0 - Z1X1)w
+		Z0X0 = Z0 b
+		Z1X1 = Z1 (c, a, 0)
+		(Z0 + Z1)(X0 + X1) = (Z0 + Z1) (b + c, a, 0)
+	*/
+	static void mul_025(Fp12& z, const Fp6& x)
+	{
+		const Fp2& a = x.a;
+		const Fp2& b = x.b;
+		const Fp2& c = x.c;
+#if 0
+		Fp6& z0 = z.a;
+		Fp6& z1 = z.b;
+		Fp6 z0b, z1x1, t0;
+		Fp2 t1;
+		Fp2::add(t1, x.b, c);
+		Fp6::add(t0, z0, z1);
+		Fp2::mul(z0b.a, z0.a, b);
+		Fp2::mul(z0b.b, z0.b, b);
+		Fp2::mul(z0b.c, z0.c, b);
+		Fp6mul_01(z1x1, z1, c, a);
+		Fp6mul_01(t0, t0, t1, a);
+		Fp6::sub(z.b, t0, z0b);
+		z.b -= z1x1;
+		// a + bv + cv^2 = cxi + av + bv^2
+		Fp2::mul_xi(z1x1.c, z1x1.c);
+		Fp2::add(z.a.a, z0b.a, z1x1.c);
+		Fp2::add(z.a.b, z0b.b, z1x1.a);
+		Fp2::add(z.a.c, z0b.c, z1x1.b);
+#else
 		Fp2& z0 = z.a.a;
 		Fp2& z1 = z.a.b;
 		Fp2& z2 = z.a.c;
 		Fp2& z3 = z.b.a;
 		Fp2& z4 = z.b.b;
 		Fp2& z5 = z.b.c;
-		Fp2 t0, t1, t2, t3, t4, t5, t6;
-#if 1
-		Fp2 bc;
-		Fp2 z0b, z1b, z2b, z3c, z4c, z5c;
-		Fp2::add(bc, b, c);
-		Fp2::mul(z5c, z5, c);
-		Fp2::mul(t0, z4, a);
-		t0 += z5c;
-		Fp2::mul_xi(t0, t0);
-		Fp2::mul(z0b, z0, b);
-		t0 += z0b;
-		Fp2::mul(t1, z5, a);
-		Fp2::mul_xi(t1, t1);
-		Fp2::mul(z1b, z1, b);
-		Fp2::mul(z3c, z3, c);
-		t1 += z1b;
-		t1 += z3c;
-		Fp2::mul(z2b, z2, b);
-		Fp2::mul(z4c, z4, c);
-		Fp2::mul(t2, z3, a);
-		t2 += z2b;
-		t2 += z4c;
-		Fp2::mul(t3, z2, a);
-		Fp2::mul_xi(t3, t3);
-		Fp2::add(t4, z3, z0);
-		t4 *= bc;
-		t3 += t4;
-		t3 -= z3c;
-		t3 -= z0b;
-		Fp2::mul(t4, z0, a);
-		Fp2::add(t5, z4, z1);
-		t5 *= bc;
-		t4 += t5;
-		t4 -= z4c;
-		t4 -= z1b;
-		Fp2::mul(t5, z1, a);
-		Fp2::add(t6, z5, z2);
-		t6 *= bc;
-		t5 += t6;
-		t5 -= z5c;
-		t5 -= z2b;
-		z.a.a = t0;
-		z.a.b = t1;
-		z.a.c = t2;
-		z.b.a = t3;
-		z.b.b = t4;
-		z.b.c = t5;
-#else
-		t0 = z5 * c + z4 * a;
-		Fp2::mul_xi(t0, t0);
-		t0 += z0 * b;
-		t1 = z5 * a;
-		Fp2::mul_xi(t1, t1);
-		t1 += z1 * b + z3 * c;
-		t2 = z2 * b + z4 * c + z3 * a;
-		t3 = z2 * a;
-		Fp2::mul_xi(t3, t3);
-		t3 += z3 * b + z0 * c;
-		t4 = z4 * b + z1 * c + z0 * a;
-		t5 = z5 * b + z2 * c + z1 * a;
-		z.a.a = t0;
-		z.a.b = t1;
-		z.a.c = t2;
-		z.b.a = t3;
-		z.b.b = t4;
-		z.b.c = t5;
-#endif
+		Fp2Dbl Z0B, Z1B, Z2B, Z3C, Z4C, Z5C;
+		Fp2Dbl T0, T1, T2, T3, T4, T5;
+		Fp2 bc, t;
+		Fp2::addPre(bc, b, c);
+		Fp2::addPre(t, z5, z2);
+		Fp2Dbl_mulOpt(T5, t, bc);
+		Fp2Dbl_mulOpt(Z5C, z5, c);
+		Fp2Dbl_mulOpt(Z2B, z2, b);
+		Fp2Dbl::sub(T5, T5, Z5C);
+		Fp2Dbl::sub(T5, T5, Z2B);
+		Fp2Dbl_mulOpt(T0, z1, a);
+		T5 += T0;
+
+		Fp2::addPre(t, z4, z1);
+		Fp2Dbl_mulOpt(T4, t, bc);
+		Fp2Dbl_mulOpt(Z4C, z4, c);
+		Fp2Dbl_mulOpt(Z1B, z1, b);
+		Fp2Dbl::sub(T4, T4, Z4C);
+		Fp2Dbl::sub(T4, T4, Z1B);
+		Fp2Dbl_mulOpt(T0, z0, a);
+		T4 += T0;
+
+		Fp2::addPre(t, z3, z0);
+		Fp2Dbl_mulOpt(T3, t, bc);
+		Fp2Dbl_mulOpt(Z3C, z3, c);
+		Fp2Dbl_mulOpt(Z0B, z0, b);
+		Fp2Dbl::sub(T3, T3, Z3C);
+		Fp2Dbl::sub(T3, T3, Z0B);
+		Fp2::mul_xi(t, z2);
+		Fp2Dbl_mulOpt(T0, t, a);
+		T3 += T0;
+
+		Fp2Dbl_mulOpt(T2, z3, a);
+		T2 += Z2B;
+		T2 += Z4C;
+
+		Fp2::mul_xi(t, z5);
+		Fp2Dbl_mulOpt(T1, t, a);
+		T1 += Z1B;
+		T1 += Z3C;
+
+		Fp2Dbl_mulOpt(T0, z4, a);
+		T0 += Z5C;
+		Fp2Dbl::mul_xi(T0, T0);
+		T0 += Z0B;
+
+		Fp2Dbl::mod(z0, T0);
+		Fp2Dbl::mod(z1, T1);
+		Fp2Dbl::mod(z2, T2);
+		Fp2Dbl::mod(z3, T3);
+		Fp2Dbl::mod(z4, T4);
+		Fp2Dbl::mod(z5, T5);
 #endif
 	}
 	/*
@@ -1053,69 +1084,6 @@ struct BNT {
 		Fp2Dbl::mod(z5, T3);
 #endif
 	}
-#if 0
-	static void mul_024(Fp12& z, const Fp12&x, const Fp6& y)
-	{
-		const Fp2 x0 = x.a.a;
-		const Fp2 x1 = x.a.b;
-		const Fp2 x2 = x.a.c;
-		const Fp2 x3 = x.b.a;
-		const Fp2 x4 = x.b.b;
-		const Fp2 x5 = x.b.c;
-		const Fp2& y0 = y.a;
-		const Fp2& y2 = y.c;
-		const Fp2& y4 = y.b;
-		Fp2 y2_add_y4;
-		Fp2::add(y2_add_y4, y2, y4);
-		Fp2 x0y4, x1y4, x2y4, x3y2, x4y2, x5y2;
-		Fp2::mul(x0y4, x0, y4);
-		Fp2::mul(x1y4, x1, y4);
-		Fp2::mul(x2y4, x2, y4);
-		Fp2::mul(x3y2, x3, y2);
-		Fp2::mul(x4y2, x4, y2);
-		Fp2::mul(x5y2, x5, y2);
-
-		Fp2 x1_add_x4;
-		Fp2 x2_add_x5;
-		Fp2 x0_add_x3;
-		Fp2::add(x1_add_x4, x1, x4);
-		Fp2::add(x2_add_x5, x2, x5);
-		Fp2::add(x0_add_x3, x0, x3);
-		Fp2 t1, t2;
-		Fp2::mul(t1, x1_add_x4, y2_add_y4);
-		t1 -= x1y4;
-		t1 -= x4y2;
-		Fp2::mul_xi(t1, t1);
-		Fp2::mul(t2, x0, y0);
-		Fp2::add(z.a.a, t1, t2);
-
-		Fp2::mul(t1, x2_add_x5, y2_add_y4);
-		t1 -= x2y4;
-		t1 -= x5y2;
-		Fp2::mul_xi(t1, t1);
-		Fp2::mul(t2, x1, y0);
-		Fp2::add(z.a.b, t1, t2);
-		Fp2::mul(t1, x0_add_x3, y2_add_y4);
-		t1 -= x0y4;
-		t1 -= x3y2;
-		Fp2::mul(t2, x2, y0);
-		Fp2::add(z.a.c, t1, t2);
-
-		Fp2::add(t1, x2y4, x4y2);
-		Fp2::mul_xi(t1, t1);
-		Fp2::mul(t2, x3, y0);
-		Fp2::add(z.b.a, t1, t2);
-
-		Fp2::mul_xi(t1, x5y2);
-		Fp2::mul(z.b.b, x4, y0);
-		z.b.b += x0y4;
-		z.b.b += t1;
-
-		Fp2::mul(z.b.c, x5, y0);
-		z.b.c += x3y2;
-		z.b.c += x1y4;
-	}
-#endif
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
 	{
 		convertFp6toFp12(z, x);
