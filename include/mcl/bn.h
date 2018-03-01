@@ -85,13 +85,17 @@ typedef struct {
 */
 MCLBN_DLL_API int mclBn_setErrFile(const char *name);
 
+#ifndef MCL_CURVE_TYPE_DEFINED
+#define MCL_CURVE_TYPE_DEFINED
 enum {
 	mclBn_CurveFp254BNb = 0,
 	mclBn_CurveFp382_1 = 1,
 	mclBn_CurveFp382_2 = 2,
 	mclBn_CurveFp462 = 3,
-	mclBn_CurveSNARK1 = 4
+	mclBn_CurveSNARK1 = 4,
+	mclBls12_CurveFp381 = 5
 };
+#endif
 
 /*
 	init library
