@@ -525,11 +525,10 @@ struct ParamT {
 	GLV2<Fp2> glv2;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
-	typedef std::vector<int8_t> SignVec;
-	SignVec siTbl;
+	util::SignVec siTbl;
 	size_t precomputedQcoeffSize;
 	bool useNAF;
-	SignVec zReplTbl;
+	util::SignVec zReplTbl;
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
@@ -554,9 +553,9 @@ struct ParamT {
 		} else {
 			const int pCoff[] = { 1, 6, 24, 36, 36 };
 			const int rCoff[] = { 1, 6, 18, 36, 36 };
-			p = eval(pCoff, z);
+			p = util::evalPoly(z, pCoff);
 			assert((p % 6) == 1);
-			r = eval(rCoff, z);
+			r = util::evalPoly(z, rCoff);
 		}
 		Fp::init(p, mode);
 		Fp2::init(cp.xi_a);
@@ -582,7 +581,7 @@ struct ParamT {
 
 		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
-		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
+		precomputedQcoeffSize = util::getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
 		if (isBLS12) {
 			mpz_class z2 = z * z;
@@ -598,19 +597,6 @@ struct ParamT {
 			exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
 			exp_c2 = 6 * z * z + 1;
 		}
-	}
-	mpz_class eval(const int c[5], const mpz_class& x) const
-	{
-		return (((c[4] * x + c[3]) * x + c[2]) * x + c[1]) * x + c[0];
-	}
-	size_t getPrecomputeQcoeffSize(const SignVec& sv) const
-	{
-		size_t idx = 2 + 2;
-		for (size_t i = 2; i < sv.size(); i++) {
-			idx++;
-			if (sv[i]) idx++;
-		}
-		return idx;
 	}
 };
 
