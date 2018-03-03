@@ -688,7 +688,7 @@
 		Fp12::pow(y, y, p4 * p2 - 1);
 #endif
 #ifdef MCL_USE_BLS12
-		exp_d(y, x);
+		exp_d(y, y);
 #else
 		exp_d1(y, y);
 #endif
