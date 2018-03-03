@@ -8,8 +8,8 @@
 */
 #include <mcl/fp_tower.hpp>
 #include <mcl/ec.hpp>
-#include <assert.h>
 #include <mcl/curve_type.h>
+#include <assert.h>
 
 namespace mcl {
 
