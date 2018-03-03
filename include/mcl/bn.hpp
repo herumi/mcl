@@ -14,17 +14,6 @@
 namespace mcl { namespace bn {
 
 using mcl::CurveParam;
-
-#if 0
-const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1, 0 }; // -(2^62 + 2^55 + 1)
-// provisional(experimental) param with maxBitSize = 384
-const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1, 1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1, 2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
-const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, 3 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
-const CurveParam CurveSNARK1 = { "4965661367192848881", 3, 9, 4 };
-//const CurveParam CurveSNARK2 = { "4965661367192848881", 82, 9 };
-#endif
-
 using mcl::getCurveParam;
 
 template<class Fp>
@@ -488,115 +477,21 @@ struct GLV2 {
 };
 
 template<class Fp>
-struct ParamT {
+struct ParamT : public util::CommonParamT<Fp> {
+	typedef util::CommonParamT<Fp> Common;
 	typedef Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
-	int curveType;
-	bool isCurveFp254BNb;
-	mpz_class z;
-	mpz_class abs_z;
-	bool isNegative;
-	mpz_class p;
-	mpz_class r;
-	int b;
-	bool isMtype; // Dtype if false, BN254 is Dtype, BLS12-381
-	/*
-		twist
-		(x', y') = phi(x, y) = (x/w^2, y/w^3)
-		y^2 = x^3 + b
-		=> (y'w^3)^2 = (x'w^2)^3 + b
-		=> y'^2 = x'^3 + b / w^6 ; w^6 = xi
-		=> y'^2 = x'^3 + twist_b;
-	*/
-	Fp2 twist_b;
-	enum {
-		tb_generic,
-		tb_1m1i,
-		tb_1m2i
-	} twist_b_type;
-	bool is_b_div_xi_1_m1i;
-	mpz_class exp_c0;
-	mpz_class exp_c1;
-	mpz_class exp_c2;
-	mpz_class exp_c3;
 	MapToT<Fp> mapTo;
 	GLV1<Fp> glv1;
 	GLV2<Fp2> glv2;
 
-	// Loop parameter for the Miller loop part of opt. ate pairing.
-	util::SignVec siTbl;
-	size_t precomputedQcoeffSize;
-	bool useNAF;
-	util::SignVec zReplTbl;
-
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		curveType = cp.curveType;
-		z = mpz_class(cp.z);
-		isCurveFp254BNb = cp == CurveFp254BNb;
-		bool isBLS12 = false;
-		isMtype = false;
-		isNegative = z < 0;
-		if (isNegative) {
-			abs_z = -z;
-		} else {
-			abs_z = z;
-		}
-		if (isBLS12) {
-			/* BLS12 */
-			mpz_class z2 = z * z;
-			mpz_class z4 = z2 * z2;
-			r = z4 - z2 + 1;
-			p = z - 1;
-			p = p * p * r / 3 + z;
-		} else {
-			const int pCoff[] = { 1, 6, 24, 36, 36 };
-			const int rCoff[] = { 1, 6, 18, 36, 36 };
-			p = util::evalPoly(z, pCoff);
-			assert((p % 6) == 1);
-			r = util::evalPoly(z, rCoff);
-		}
-		Fp::init(p, mode);
-		Fp2::init(cp.xi_a);
-		b = cp.b;
-		Fp2 xi(cp.xi_a, 1);
-		if (isMtype) {
-			twist_b = Fp2(b) * xi;
-		} else {
-			twist_b = Fp2(b) / xi;
-		}
-		if (twist_b == Fp2(1, -1)) {
-			twist_b_type = tb_1m1i;
-		} else if (twist_b == Fp2(1, -2)) {
-			twist_b_type = tb_1m2i;
-		} else {
-			twist_b_type = tb_generic;
-		}
-		G1::init(0, b, mcl::ec::Proj);
-		G2::init(0, twist_b, mcl::ec::Proj);
-		G2::setOrder(r);
-		mapTo.init(2 * p - r);
-		glv1.init(r, z);
-
-		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
-		useNAF = gmp::getNAF(siTbl, largest_c);
-		precomputedQcoeffSize = util::getPrecomputeQcoeffSize(siTbl);
-		gmp::getNAF(zReplTbl, gmp::abs(z));
-		if (isBLS12) {
-			mpz_class z2 = z * z;
-			mpz_class z3 = z2 * z;
-			mpz_class z4 = z3 * z;
-			mpz_class z5 = z4 * z;
-			exp_c0 = z5 - 2 * z4 + 2 * z2 - z + 3;
-			exp_c1 = z4 - 2 * z3 + 2 * z - 1;
-			exp_c2 = z3 - 2 * z2 + z;
-			exp_c3 = z2 - 2 * z + 1;
-		} else {
-			exp_c0 = -2 + z * (-18 + z * (-30 - 36 *z));
-			exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
-			exp_c2 = 6 * z * z + 1;
-		}
+		Common::initCommonParam(cp, mode, false);
+		mapTo.init(2 * this->p - this->r);
+		glv1.init(this->r, this->z);
+		glv2.init(this->r, this->z);
 	}
 };
 
@@ -637,59 +532,13 @@ struct BNT {
 	{
 		param.init(cp, mode);
 		G1::setMulArrayGLV(mulArrayGLV1);
-		param.glv2.init(param.r, param.z);
 		G2::setMulArrayGLV(mulArrayGLV2);
 		Fp12::setPowArrayGLV(powArrayGLV2);
-		const bool isMtype = false;
-		G2withF::init(isMtype);
-	}
-	/*
-		l = (a, b, c) => (a, b * P.y, c * P.x)
-	*/
-	static void updateLine(Fp6& l, const G1& P)
-	{
-		l.b.a *= P.y;
-		l.b.b *= P.y;
-		l.c.a *= P.x;
-		l.c.b *= P.x;
-	}
-	static void mul_b_div_xi(Fp2& y, const Fp2& x)
-	{
-		switch (param.twist_b_type) {
-		case Param::tb_1m1i:
-			/*
-				b / xi = 1 - 1i
-				(a + bi)(1 - 1i) = (a + b) + (b - a)i
-			*/
-			{
-				Fp t;
-				Fp::add(t, x.a, x.b);
-				Fp::sub(y.b, x.b, x.a);
-				y.a = t;
-			}
-			return;
-		case Param::tb_1m2i:
-			/*
-				b / xi = 1 - 2i
-				(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
-			*/
-			{
-				Fp t;
-				Fp::sub(t, x.b, x.a);
-				t -= x.a;
-				Fp::add(y.a, x.a, x.b);
-				y.a += x.b;
-				y.b = t;
-			}
-			return;
-		case Param::tb_generic:
-			Fp2::mul(y, x, param.twist_b);
-			return;
-		}
+		G2withF::init(param.isMtype);
 	}
 	static void dblLineWithoutP(Fp6& l, G2& Q)
 	{
-		// 3K x 129
+#if 1
 		Fp2 t0, t1, t2, t3, t4, t5;
 		Fp2Dbl T0, T1;
 		Fp2::sqr(t0, Q.z);
@@ -699,10 +548,10 @@ struct BNT {
 		Fp2::divBy2(t4, t4);
 		Fp2::add(t5, t0, t1);
 		t0 += t3;
-#if 0//#ifdef MCL_DEV
+#if 0
 		Fp2::mul_xi(t2, t0);
 #else
-		mul_b_div_xi(t2, t0);
+		util::mul_b_div_xi(param, t2, t0);
 #endif
 		Fp2::sqr(t0, Q.x);
 		Fp2::add(t3, t2, t2);
@@ -734,6 +583,13 @@ struct BNT {
 		Fp2::mul_xi(l.a, t2);
 		Fp2::neg(l.b, t3);
 #endif
+#else
+#ifdef MCL_DEV
+		util::dblLineWithoutP<true, Fp>(param, l, Q);
+#else
+		util::dblLineWithoutP<false, Fp>(param, l, Q);
+#endif
+#endif
 	}
 	static void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 	{
@@ -762,23 +618,23 @@ struct BNT {
 		Fp2Dbl::mulPre(T1, t2, Q.x);
 		Fp2Dbl::mulPre(T2, t1, Q.y);
 		Fp2Dbl::sub(T1, T1, T2);
+		l.b = t1;
 #ifdef MCL_DEV
 		Fp2Dbl::mod(l.a, T1);
 #else
 		Fp2Dbl::mod(t2, T1);
 		Fp2::mul_xi(l.a, t2);
 #endif
-		l.b = t1;
 	}
 	static void dblLine(Fp6& l, G2& Q, const G1& P)
 	{
 		dblLineWithoutP(l, Q);
-		updateLine(l, P);
+		util::updateLine(l, P);
 	}
 	static void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 	{
 		addLineWithoutP(l, R, Q);
-		updateLine(l, P);
+		util::updateLine(l, P);
 	}
 	static void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 	{
@@ -788,19 +644,6 @@ struct BNT {
 		Fp2::mulFp(y.b, x.b, P.y);
 	}
 
-	static void convertFp6toFp12(Fp12& y, const Fp6& x)
-	{
-		y.clear();
-#ifdef MCL_DEV
-		y.a.a = x.b;
-		y.b.a = x.c;
-		y.b.b = x.a;
-#else
-		y.a.a = x.a;
-		y.a.c = x.c;
-		y.b.b = x.b;
-#endif
-	}
 	/*
 		x = a + bv + cv^2
 		y = (y0, y4, y2) -> (y0, 0, y2, 0, y4, 0)
@@ -1022,7 +865,7 @@ struct BNT {
 	}
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
 	{
-		convertFp6toFp12(z, x);
+		util::convertFp6toFp12(z, x);
 		mul_024(z, y);
 	}
 	/*
