@@ -315,7 +315,7 @@ void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode);
 
 inline const char* getIoSeparator(int ioMode)
 {
-	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : "\n";
+	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : " ";
 }
 
 int detectIoMode(int ioMode, const std::ios_base& ios);
