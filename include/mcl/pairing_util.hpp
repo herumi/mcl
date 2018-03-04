@@ -214,11 +214,11 @@ void convertFp6toFp12(Fp12& y, const Fp6& x)
 {
 	y.clear();
 #ifdef MCL_DEV
+#ifdef MCL_MTYPE
 	// (a, b, c) -> (a, c, 0, 0, b, 0)
 	y.a.a = x.a;
 	y.a.b = x.c;
 	y.b.b = x.b;
-#ifdef MCL_MTYPE
 #else
 	// (a, b, c) -> (b, 0, 0, c, a, 0)
 	y.a.a = x.b;

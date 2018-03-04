@@ -433,6 +433,12 @@
 	*/
 	static void mul_024(Fp12& z, const Fp6& x)
 	{
+#ifdef MCL_USE_BLS12
+		Fp12 y;
+		util::convertFp6toFp12(y, x);
+		z *= y;
+		return;
+#endif
 #ifdef MCL_DEV
 		mul_025(z, x);
 #else
@@ -805,16 +811,18 @@
 				}
 			}
 		}
+		if (param.z < 0) {
+			G2::neg(T, T);
+		}
+#ifndef MCL_USE_BLS12
 		G2 Q1, Q2;
 		G2withF::Frobenius(Q1, Q);
 		G2withF::Frobenius(Q2, Q1);
 		G2::neg(Q2, Q2);
-		if (param.z < 0) {
-			G2::neg(T, T);
-		}
 		addLineWithoutP(Qcoeff[idx++], T, Q1);
 		addLineWithoutP(Qcoeff[idx++], T, Q2);
 		assert(idx == param.precomputedQcoeffSize);
+#endif
 	}
 	static void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
 	{
@@ -847,6 +855,7 @@
 		if (param.z < 0) {
 			Fp6::neg(f.b, f.b);
 		}
+#ifndef MCL_USE_BLS12
 		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
 		idx++;
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
@@ -854,6 +863,7 @@
 		Fp12 ft;
 		mul_024_024(ft, d, e);
 		f *= ft;
+#endif
 	}
 	/*
 		f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
@@ -901,6 +911,7 @@
 		if (param.z < 0) {
 			Fp6::neg(f.b, f.b);
 		}
+#ifndef MCL_USE_BLS12
 		mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
 		mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
 		idx++;
@@ -911,4 +922,5 @@
 		mul_024_024(f2, d2, e2);
 		f *= f1;
 		f *= f2;
+#endif
 	}
