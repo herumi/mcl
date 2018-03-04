@@ -342,22 +342,22 @@
 #if 0
 		Fp6& z0 = z.a;
 		Fp6& z1 = z.b;
-		Fp6 z0b, z1x1, t0;
+		Fp6 z0x0, z1x1, t0;
 		Fp2 t1;
 		Fp2::add(t1, x.b, c);
 		Fp6::add(t0, z0, z1);
-		Fp2::mul(z0b.a, z0.a, b);
-		Fp2::mul(z0b.b, z0.b, b);
-		Fp2::mul(z0b.c, z0.c, b);
+		Fp2::mul(z0x0.a, z0.a, b);
+		Fp2::mul(z0x0.b, z0.b, b);
+		Fp2::mul(z0x0.c, z0.c, b);
 		Fp6mul_01(z1x1, z1, c, a);
 		Fp6mul_01(t0, t0, t1, a);
-		Fp6::sub(z.b, t0, z0b);
+		Fp6::sub(z.b, t0, z0x0);
 		z.b -= z1x1;
 		// a + bv + cv^2 = cxi + av + bv^2
 		Fp2::mul_xi(z1x1.c, z1x1.c);
-		Fp2::add(z.a.a, z0b.a, z1x1.c);
-		Fp2::add(z.a.b, z0b.b, z1x1.a);
-		Fp2::add(z.a.c, z0b.c, z1x1.b);
+		Fp2::add(z.a.a, z0x0.a, z1x1.c);
+		Fp2::add(z.a.b, z0x0.b, z1x1.a);
+		Fp2::add(z.a.c, z0x0.c, z1x1.b);
 #else
 		Fp2& z0 = z.a.a;
 		Fp2& z1 = z.a.b;
@@ -421,6 +421,46 @@
 	}
 	/*
 		input
+		z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w = Z0 + Z1w
+		x = (a, b, c) -> (a, c, 0, 0, b, 0) = X0 + X1w
+		X0 = (a, c, 0)
+		X1 = (0, b, 0)
+		w^2 = v, v^3 = xi
+		output
+		z <- zx = (Z0X0 + Z1X1v) + ((Z0 + Z1)(X0 + X1) - Z0X0 - Z1X1)w
+		Z0X0 = Z0 (a, c, 0)
+		Z1X1 = Z1 (0, b, 0) = Z1 bv
+		(Z0 + Z1)(X0 + X1) = (Z0 + Z1) (a, b + c, 0)
+
+		(a + bv + cv^2)v = c xi + av + bv^2
+	*/
+	static void mul_014(Fp12& z, const Fp6& x)
+	{
+		const Fp2& a = x.a;
+		const Fp2& b = x.b;
+		const Fp2& c = x.c;
+		Fp6& z0 = z.a;
+		Fp6& z1 = z.b;
+		Fp6 z0x0, z1x1, t0;
+		Fp2 t1;
+		Fp2::mul(z1x1.a, z1.c, b);
+		Fp2::mul_xi(z1x1.a, z1x1.a);
+		Fp2::mul(z1x1.b, z1.a, b);
+		Fp2::mul(z1x1.c, z1.b, b);
+		Fp2::add(t1, x.b, c);
+		Fp6::add(t0, z0, z1);
+		Fp6mul_01(z0x0, z0, a, c);
+		Fp6mul_01(t0, t0, a, t1);
+		Fp6::sub(z.b, t0, z0x0);
+		z.b -= z1x1;
+		// a + bv + cv^2 = cxi + av + bv^2
+		Fp2::mul_xi(z1x1.c, z1x1.c);
+		Fp2::add(z.a.a, z0x0.a, z1x1.c);
+		Fp2::add(z.a.b, z0x0.b, z1x1.a);
+		Fp2::add(z.a.c, z0x0.c, z1x1.b);
+	}
+	/*
+		input
 		z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w
 		x = (a, b, c) -> (a, 0, c, 0, b, 0)
 		output
@@ -434,9 +474,7 @@
 	static void mul_024(Fp12& z, const Fp6& x)
 	{
 #ifdef MCL_USE_BLS12
-		Fp12 y;
-		util::convertFp6toFp12(y, x);
-		z *= y;
+		mul_014(z, x);
 		return;
 #endif
 #ifdef MCL_DEV
