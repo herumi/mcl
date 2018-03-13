@@ -349,6 +349,27 @@ int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, c
 }
 
 template<class PK>
+int encWithZkpEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpEq *zkp, const PK *pub, mclInt m)
+	try
+{
+	cast(pub)->encWithZkpEq(*cast(c1), *cast(c2), *cast(zkp), m);
+	return 0;
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return -1;
+}
+
+int sheEncWithZkpEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpEq *zkp, const shePublicKey *pub, mclInt m)
+{
+	return encWithZkpEqT(c1, c2, zkp, pub, m);
+}
+
+int shePrecomputedPublicKeyEncWithZkpEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpEq *zkp, const shePrecomputedPublicKey *ppub, mclInt m)
+{
+	return encWithZkpEqT(c1, c2, zkp, ppub, m);
+}
+
+template<class PK>
 int encWithZkpBinEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const PK *pub, int m)
 	try
 {
@@ -666,8 +687,8 @@ int shePrecomputedPublicKeyVerifyZkpBinG2(const shePrecomputedPublicKey *pub, co
 	return verifyT(*cast(pub), *cast(c), *cast(zkp));
 }
 
-template<class PK>
-int verifyT(const PK& pub, const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp)
+template<class PK, class Zkp>
+int verifyT(const PK& pub, const CipherTextG1& c1, const CipherTextG2& c2, const Zkp& zkp)
 	try
 {
 	return pub.verify(c1, c2, zkp);
@@ -676,9 +697,17 @@ int verifyT(const PK& pub, const CipherTextG1& c1, const CipherTextG2& c2, const
 	return 0;
 }
 
+int sheVerifyZkpEq(const shePublicKey *pub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpEq *zkp)
+{
+	return verifyT(*cast(pub), *cast(c1), *cast(c2), *cast(zkp));
+}
 int sheVerifyZkpBinEq(const shePublicKey *pub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp)
 {
 	return verifyT(*cast(pub), *cast(c1), *cast(c2), *cast(zkp));
+}
+int shePrecomputedPublicKeyVerifyZkpEq(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpEq *zkp)
+{
+	return verifyT(*cast(ppub), *cast(c1), *cast(c2), *cast(zkp));
 }
 int shePrecomputedPublicKeyVerifyZkpBinEq(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp)
 {
