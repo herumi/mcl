@@ -471,13 +471,13 @@ private:
 		tensorProductML(g,S1, T1, S2,T2);
 		finalExp4(g, g);
 	}
-public:
-	struct ZkpBin : public fp::Serializable<ZkpBin> {
-		Fr d_[4];
+	template<class Tag, size_t n>
+	struct ZkpT : public fp::Serializable<ZkpT<Tag, n> > {
+		Fr d_[n];
 		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
+			for (size_t i = 0; i < n; i++) {
 				d_[i].load(is, ioMode);
 			}
 		}
@@ -486,22 +486,38 @@ public:
 		{
 			const char sep = *fp::getIoSeparator(ioMode);
 			d_[0].save(os, ioMode);
-			for (size_t i = 1; i < CYBOZU_NUM_OF_ARRAY(d_); i++) {
+			for (size_t i = 1; i < n; i++) {
 				if (sep) cybozu::writeChar(os, sep);
 				d_[i].save(os, ioMode);
 			}
 		}
-		friend std::istream& operator>>(std::istream& is, ZkpBin& self)
+		friend std::istream& operator>>(std::istream& is, ZkpT& self)
 		{
 			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
 			return is;
 		}
-		friend std::ostream& operator<<(std::ostream& os, const ZkpBin& self)
+		friend std::ostream& operator<<(std::ostream& os, const ZkpT& self)
 		{
 			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
 			return os;
 		}
 	};
+	struct ZkpBinTag;
+	struct ZkpEqTag; // d_[] = { c, sp, ss, sm }
+	struct ZkpBinEqTag; // d_[] = { d0, d1, sp0, sp1, ss, sp, sm }
+public:
+	/*
+		Zkp for m = 0 or 1
+	*/
+	typedef ZkpT<ZkpBinTag, 4> ZkpBin;
+	/*
+		Zkp for decG1(c1) == decG2(c2)
+	*/
+	typedef ZkpT<ZkpEqTag, 4> ZkpEq;
+	/*
+		Zkp for (m = 0 or 1) and decG1(c1) == decG2(c2)
+	*/
+	typedef ZkpT<ZkpBinEqTag, 7> ZkpBinEq;
 
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
@@ -735,14 +751,17 @@ private:
 		(S, T) = (m P + r xP, rP)
 		Pmul.mul(X, a) // X = a P
 		xPmul.mul(X, a) // X = a xP
-		encRand is used to compute Zkp
+		use *encRand if encRand is not null
 	*/
 	template<class G, class INT, class MulG, class I>
-	static void ElGamalEnc(G& S, G& T, const INT& m, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul, Fr *encRand = 0)
+	static void ElGamalEnc(G& S, G& T, const INT& m, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul, const Fr *encRand = 0)
 	{
 		Fr r;
-		r.setRand();
-		if (encRand) *encRand = r;
+		if (encRand) {
+			r = *encRand;
+		} else {
+			r.setRand();
+		}
 		Pmul.mul(static_cast<I&>(T), r);
 		xPmul.mul(S, r); // S = r xP
 		if (m == 0) return;
@@ -840,6 +859,197 @@ private:
 		return c == d[0] + d[1];
 	}
 	/*
+		encRand1, encRand2 are random values use for ElGamalEnc()
+	*/
+	template<class G1, class G2, class INT, class I1, class I2, class MulG1, class MulG2>
+	static void makeZkpEq(ZkpEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, const INT& m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
+	{
+		Fr p, s;
+		p.setRand();
+		s.setRand();
+		ElGamalEnc(S1, T1, m, Pmul, xPmul, &p);
+		ElGamalEnc(S2, T2, m, Qmul, yQmul, &s);
+		Fr rp, rs, rm;
+		rp.setRand();
+		rs.setRand();
+		rm.setRand();
+		G1 R1, R2;
+		G2 R3, R4;
+		ElGamalEnc(R1, R2, rm, Pmul, xPmul, &rp);
+		ElGamalEnc(R3, R4, rm, Qmul, yQmul, &rs);
+		char buf[sizeof(G1) * 4 + sizeof(G2) * 4];
+		cybozu::MemoryOutputStream os(buf, sizeof(buf));
+		S1.save(os);
+		T1.save(os);
+		S2.save(os);
+		T2.save(os);
+		R1.save(os);
+		R2.save(os);
+		R3.save(os);
+		R4.save(os);
+		Fr& c = zkp.d_[0];
+		Fr& sp = zkp.d_[1];
+		Fr& ss = zkp.d_[2];
+		Fr& sm = zkp.d_[3];
+		c.setHashOf(buf, os.getPos());
+		Fr::mul(sp, c, p);
+		sp += rp;
+		Fr::mul(ss, c, s);
+		ss += rs;
+		Fr::mul(sm, c, m);
+		sm += rm;
+	}
+	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
+	static bool verifyZkpEq(const ZkpEq& zkp, const G1& S1, const G1& T1, const G2& S2, const G2& T2, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
+	{
+		const Fr& c = zkp.d_[0];
+		const Fr& sp = zkp.d_[1];
+		const Fr& ss = zkp.d_[2];
+		const Fr& sm = zkp.d_[3];
+		G1 R1, R2, X1;
+		G2 R3, R4, X2;
+		ElGamalEnc(R1, R2, sm, Pmul, xPmul, &sp);
+		G1::mul(X1, S1, c);
+		R1 -= X1;
+		G1::mul(X1, T1, c);
+		R2 -= X1;
+		ElGamalEnc(R3, R4, sm, Qmul, yQmul, &ss);
+		G2::mul(X2, S2, c);
+		R3 -= X2;
+		G2::mul(X2, T2, c);
+		R4 -= X2;
+		char buf[sizeof(G1) * 4 + sizeof(G2) * 4];
+		cybozu::MemoryOutputStream os(buf, sizeof(buf));
+		S1.save(os);
+		T1.save(os);
+		S2.save(os);
+		T2.save(os);
+		R1.save(os);
+		R2.save(os);
+		R3.save(os);
+		R4.save(os);
+		Fr c2;
+		c2.setHashOf(buf, os.getPos());
+		return c == c2;
+	}
+	/*
+		encRand1, encRand2 are random values use for ElGamalEnc()
+	*/
+	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
+	static void makeZkpBinEq(ZkpBinEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, int m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
+	{
+		if (m != 0 && m != 1) throw cybozu::Exception("makeZkpBinEq:bad m") << m;
+		Fr *d = &zkp.d_[0];
+		Fr *spm = &zkp.d_[2];
+		Fr& ss = zkp.d_[4];
+		Fr& sp = zkp.d_[5];
+		Fr& sm = zkp.d_[6];
+		Fr p, s;
+		p.setRand();
+		s.setRand();
+		ElGamalEnc(S1, T1, m, Pmul, xPmul, &p);
+		ElGamalEnc(S2, T2, m, Qmul, yQmul, &s);
+		d[1-m].setRand();
+		spm[1-m].setRand();
+		G1 R1[2], R2[2], X1;
+		Pmul.mul(static_cast<I1&>(R1[1-m]), spm[1-m]);
+		G1::mul(X1, T1, d[1-m]);
+		R1[1-m] -= X1;
+		if (m == 0) {
+			G1::sub(X1, S1, P_);
+			G1::mul(X1, X1, d[1-m]);
+		} else {
+			G1::mul(X1, S1, d[1-m]);
+		}
+		xPmul.mul(R2[1-m], spm[1-m]);
+		R2[1-m] -= X1;
+		Fr rpm, rp, rs, rm;
+		rpm.setRand();
+		rp.setRand();
+		rs.setRand();
+		rm.setRand();
+		ElGamalEnc(R2[m], R1[m], 0, Pmul, xPmul, &rpm);
+		G1 R3, R4;
+		G2 R5, R6;
+		ElGamalEnc(R4, R3, rm, Pmul, xPmul, &rp);
+		ElGamalEnc(R6, R5, rm, Qmul, yQmul, &rs);
+		char buf[sizeof(Fr) * 12];
+		cybozu::MemoryOutputStream os(buf, sizeof(buf));
+		S1.save(os);
+		T1.save(os);
+		R1[0].save(os);
+		R1[1].save(os);
+		R2[0].save(os);
+		R2[1].save(os);
+		R3.save(os);
+		R4.save(os);
+		R5.save(os);
+		R6.save(os);
+		Fr c;
+		c.setHashOf(buf, os.getPos());
+		Fr::sub(d[m], c, d[1-m]);
+		Fr::mul(spm[m], d[m], p);
+		spm[m] += rpm;
+		Fr::mul(sp, c, p);
+		sp += rp;
+		Fr::mul(ss, c, s);
+		ss += rs;
+		Fr::mul(sm, c, m);
+		sm += rm;
+	}
+	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
+	static bool verifyZkpBinEq(const ZkpBinEq& zkp, const G1& S1, const G1& T1, const G2& S2, const G2& T2, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
+	{
+		const Fr *d = &zkp.d_[0];
+		const Fr *spm = &zkp.d_[2];
+		const Fr& ss = zkp.d_[4];
+		const Fr& sp = zkp.d_[5];
+		const Fr& sm = zkp.d_[6];
+		G1 R1[2], R2[2], X1;
+		for (int i = 0; i < 2; i++) {
+			Pmul.mul(static_cast<I1&>(R1[i]), spm[i]);
+			G1::mul(X1, T1, d[i]);
+			R1[i] -= X1;
+		}
+		xPmul.mul(R2[0], spm[0]);
+		G1::mul(X1, S1, d[0]);
+		R2[0] -= X1;
+		xPmul.mul(R2[1], spm[1]);
+		G1::sub(X1, S1, P_);
+		G1::mul(X1, X1, d[1]);
+		R2[1] -= X1;
+		Fr c;
+		Fr::add(c, d[0], d[1]);
+		G1 R3, R4;
+		G2 R5, R6;
+		ElGamalEnc(R4, R3, sm, Pmul, xPmul, &sp);
+		G1::mul(X1, T1, c);
+		R3 -= X1;
+		G1::mul(X1, S1, c);
+		R4 -= X1;
+		ElGamalEnc(R6, R5, sm, Qmul, yQmul, &ss);
+		G2 X2;
+		G2::mul(X2, T2, c);
+		R5 -= X2;
+		G2::mul(X2, S2, c);
+		R6 -= X2;
+		char buf[sizeof(Fr) * 12];
+		cybozu::MemoryOutputStream os(buf, sizeof(buf));
+		S1.save(os);
+		T1.save(os);
+		R1[0].save(os);
+		R1[1].save(os);
+		R2[0].save(os);
+		R2[1].save(os);
+		R3.save(os);
+		R4.save(os);
+		R5.save(os);
+		R6.save(os);
+		Fr c2;
+		c2.setHashOf(buf, os.getPos());
+		return c == c2;
+	}
+	/*
 		common method for PublicKey and PrecomputedPublicKey
 	*/
 	template<class T>
@@ -858,16 +1068,6 @@ private:
 		{
 			static_cast<const T&>(*this).encG2(c, m);
 		}
-#if 0
-		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, bool m) const
-		{
-			static_cast<const T&>(*this).encWithZkpBinG1(c, zkp, m);
-		}
-		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, bool m) const
-		{
-			static_cast<const T&>(*this).encWithZkpBinG2(c, zkp, m);
-		}
-#endif
 		template<class INT>
 		void enc(CipherTextA& c, const INT& m) const
 		{
@@ -990,6 +1190,7 @@ public:
 		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
+			encRand.setRand();
 			const MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
@@ -997,6 +1198,7 @@ public:
 		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
+			encRand.setRand();
 			const MulG<G2> yQmul(yQ_);
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
@@ -1010,6 +1212,31 @@ public:
 		{
 			const MulG<G2> yQmul(yQ_);
 			return verifyZkpBin(c.S_, c.T_, Q_, zkp, QhashTbl_.getWM(), yQmul);
+		}
+		template<class INT>
+		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const
+		{
+			const MulG<G1> xPmul(xP_);
+			const MulG<G2> yQmul(yQ_);
+			makeZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+		}
+		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpEq& zkp) const
+		{
+			const MulG<G1> xPmul(xP_);
+			const MulG<G2> yQmul(yQ_);
+			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+		}
+		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		{
+			const MulG<G1> xPmul(xP_);
+			const MulG<G2> yQmul(yQ_);
+			makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+		}
+		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
+		{
+			const MulG<G1> xPmul(xP_);
+			const MulG<G2> yQmul(yQ_);
+			return verifyZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
 		template<class INT>
 		void encGT(CipherTextGT& c, const INT& m) const
@@ -1147,12 +1374,14 @@ public:
 		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
+			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPwm_);
 		}
 		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
+			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
 		}
@@ -1163,6 +1392,23 @@ public:
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
 		{
 			return verifyZkpBin(c.S_, c.T_, Q_, zkp, QhashTbl_.getWM(), yQwm_);
+		}
+		template<class INT>
+		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const
+		{
+			makeZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+		}
+		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpEq& zkp) const
+		{
+			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+		}
+		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		{
+			makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+		}
+		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
+		{
+			return verifyZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
 		}
 	};
 	class CipherTextA {
@@ -1471,6 +1717,8 @@ typedef SHE::CipherTextA CipherTextA;
 typedef CipherTextGT CipherTextGM; // old class
 typedef SHE::CipherText CipherText;
 typedef SHE::ZkpBin ZkpBin;
+typedef SHE::ZkpEq ZkpEq;
+typedef SHE::ZkpBinEq ZkpBinEq;
 
 } } // mcl::she
 

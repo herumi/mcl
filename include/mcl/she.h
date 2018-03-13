@@ -64,6 +64,14 @@ typedef struct {
 typedef struct {
 	mclBnFr d[4];
 } sheZkpBin;
+
+typedef struct {
+	mclBnFr d[4];
+} sheZkpEq;
+
+typedef struct {
+	mclBnFr d[7];
+} sheZkpBinEq;
 /*
 	initialize this library
 	call this once before using the other functions
@@ -82,6 +90,8 @@ MCLSHE_DLL_API mclSize sheCipherTextG1Serialize(void *buf, mclSize maxBufSize, c
 MCLSHE_DLL_API mclSize sheCipherTextG2Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG2 *c);
 MCLSHE_DLL_API mclSize sheCipherTextGTSerialize(void *buf, mclSize maxBufSize, const sheCipherTextGT *c);
 MCLSHE_DLL_API mclSize sheZkpBinSerialize(void *buf, mclSize maxBufSize, const sheZkpBin *zkp);
+MCLSHE_DLL_API mclSize sheZkpEqSerialize(void *buf, mclSize maxBufSize, const sheZkpEq *zkp);
+MCLSHE_DLL_API mclSize sheZkpBinEqSerialize(void *buf, mclSize maxBufSize, const sheZkpBinEq *zkp);
 
 // return read byte size if sucess else 0
 MCLSHE_DLL_API mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize);
@@ -90,6 +100,8 @@ MCLSHE_DLL_API mclSize sheCipherTextG1Deserialize(sheCipherTextG1* c, const void
 MCLSHE_DLL_API mclSize sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, mclSize bufSize);
 MCLSHE_DLL_API mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize bufSize);
 MCLSHE_DLL_API mclSize sheZkpBinDeserialize(sheZkpBin* zkp, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheZkpEqDeserialize(sheZkpEq* zkp, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API mclSize sheZkpBinEqDeserialize(sheZkpBinEq* zkp, const void *buf, mclSize bufSize);
 
 /*
 	set secretKey if system has /dev/urandom or CryptGenRandom
@@ -149,6 +161,7 @@ MCLSHE_DLL_API int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt 
 */
 MCLSHE_DLL_API int sheEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePublicKey *pub, int m);
 MCLSHE_DLL_API int sheEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePublicKey *pub, int m);
+MCLSHE_DLL_API int sheEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const shePublicKey *pub, int m);
 
 /*
 	decode c and set m
@@ -163,8 +176,10 @@ MCLSHE_DLL_API int sheDecGT(mclInt *m, const sheSecretKey *sec, const sheCipherT
 */
 MCLSHE_DLL_API int sheVerifyZkpBinG1(const shePublicKey *pub, const sheCipherTextG1 *c, const sheZkpBin *zkp);
 MCLSHE_DLL_API int sheVerifyZkpBinG2(const shePublicKey *pub, const sheCipherTextG2 *c, const sheZkpBin *zkp);
+MCLSHE_DLL_API int sheVerifyZkpBinEq(const shePublicKey *pub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp);
 MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpBinG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const sheZkpBin *zkp);
 MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpBinG2(const shePrecomputedPublicKey *ppub, const sheCipherTextG2 *c, const sheZkpBin *zkp);
+MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpBinEq(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp);
 /*
 	decode c via GT and set m
 	return 0 if success
@@ -232,6 +247,7 @@ MCLSHE_DLL_API int shePrecomputedPublicKeyEncGT(sheCipherTextGT *c, const shePre
 */
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *ppub, int m);
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *ppub, int m);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const shePrecomputedPublicKey *ppub, int m);
 
 #ifdef __cplusplus
 }

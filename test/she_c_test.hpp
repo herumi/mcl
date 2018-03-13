@@ -317,6 +317,53 @@ CYBOZU_TEST_AUTO(ZkpBin)
 	shePrecomputedPublicKeyDestroy(ppub);
 }
 
+template<class PK, class encWithZkpFunc, class verifyFunc>
+void ZkpBinEqTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZkp, verifyFunc verify)
+{
+	sheCipherTextG1 c1;
+	sheCipherTextG2 c2;
+	sheZkpBinEq zkp;
+	for (int m = 0; m < 2; m++) {
+		CYBOZU_TEST_EQUAL(encWithZkp(&c1, &c2, &zkp, pub, m), 0);
+		mclInt mDec = -1;
+		CYBOZU_TEST_EQUAL(sheDecG1(&mDec, sec, &c1), 0);
+		CYBOZU_TEST_EQUAL(mDec, m);
+		mDec = -1;
+		CYBOZU_TEST_EQUAL(sheDecG2(&mDec, sec, &c2), 0);
+		CYBOZU_TEST_EQUAL(mDec, m);
+		CYBOZU_TEST_EQUAL(verify(pub, &c1, &c2, &zkp), 1);
+		{
+			char buf[2048];
+			size_t n = sheZkpBinEqSerialize(buf, sizeof(buf), &zkp);
+			CYBOZU_TEST_EQUAL(n, mclBn_getOpUnitSize() * 8 * 7);
+			sheZkpBinEq zkp2;
+			size_t r = sheZkpBinEqDeserialize(&zkp2, buf, n);
+			CYBOZU_TEST_EQUAL(r, n);
+			CYBOZU_TEST_ASSERT(memcmp(&zkp, &zkp2, n) == 0);
+		}
+		zkp.d[0].d[0]++;
+		CYBOZU_TEST_EQUAL(verify(pub, &c1, &c2, &zkp), 0);
+	}
+	CYBOZU_TEST_ASSERT(encWithZkp(&c1, &c2, &zkp, pub, 2) != 0);
+}
+
+CYBOZU_TEST_AUTO(ZkpBinEq)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+
+	ZkpBinEqTest(&sec, &pub, sheEncWithZkpBinEq, sheVerifyZkpBinEq);
+
+	shePrecomputedPublicKey *ppub = shePrecomputedPublicKeyCreate();
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyInit(ppub, &pub), 0);
+
+	ZkpBinEqTest(&sec, ppub, shePrecomputedPublicKeyEncWithZkpBinEq, shePrecomputedPublicKeyVerifyZkpBinEq);
+
+	shePrecomputedPublicKeyDestroy(ppub);
+}
+
 CYBOZU_TEST_AUTO(finalExp)
 {
 	sheSecretKey sec;

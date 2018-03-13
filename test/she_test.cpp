@@ -150,6 +150,62 @@ CYBOZU_TEST_AUTO(ZkpBin)
 	ZkpBinTest<CipherTextG2>(sec, ppub);
 }
 
+template<class PubT>
+void ZkpEqTest(const SecretKey& sec, const PubT& pub)
+{
+	CipherTextG1 c1;
+	CipherTextG2 c2;
+	ZkpEq zkp;
+	for (int m = -4; m < 4; m++) {
+		pub.encWithZkpEq(c1, c2, zkp, m);
+		CYBOZU_TEST_EQUAL(sec.dec(c1), m);
+		CYBOZU_TEST_EQUAL(sec.dec(c2), m);
+		CYBOZU_TEST_ASSERT(pub.verify(c1, c2, zkp));
+		zkp.d_[0] += 1;
+		CYBOZU_TEST_ASSERT(!pub.verify(c1, c2, zkp));
+	}
+}
+
+CYBOZU_TEST_AUTO(ZkpEq)
+{
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
+	ZkpEqTest(sec, pub);
+	ZkpEqTest(sec, ppub);
+}
+
+template<class PK>
+void ZkpBinEqTest(const SecretKey& sec, const PK& pub)
+{
+	CipherTextG1 c1;
+	CipherTextG2 c2;
+	ZkpBinEq zkp;
+	for (int m = 0; m < 2; m++) {
+		pub.encWithZkpBinEq(c1, c2, zkp, m);
+		CYBOZU_TEST_EQUAL(sec.dec(c1), m);
+		CYBOZU_TEST_EQUAL(sec.dec(c2), m);
+		CYBOZU_TEST_ASSERT(pub.verify(c1, c2, zkp));
+		zkp.d_[0] += 1;
+		CYBOZU_TEST_ASSERT(!pub.verify(c1, c2, zkp));
+	}
+	CYBOZU_TEST_EXCEPTION(pub.encWithZkpBinEq(c1, c2, zkp, 2), cybozu::Exception);
+}
+
+CYBOZU_TEST_AUTO(ZkpBinEq)
+{
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	ZkpBinEqTest(sec, pub);
+
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
+	ZkpBinEqTest(sec, ppub);
+}
+
 CYBOZU_TEST_AUTO(add_sub_mul)
 {
 	const SecretKey& sec = g_sec;

@@ -42,6 +42,12 @@ static const CipherTextGT *cast(const sheCipherTextGT *p) { return reinterpret_c
 static ZkpBin *cast(sheZkpBin *p) { return reinterpret_cast<ZkpBin*>(p); }
 static const ZkpBin *cast(const sheZkpBin *p) { return reinterpret_cast<const ZkpBin*>(p); }
 
+static ZkpEq *cast(sheZkpEq *p) { return reinterpret_cast<ZkpEq*>(p); }
+static const ZkpEq *cast(const sheZkpEq *p) { return reinterpret_cast<const ZkpEq*>(p); }
+
+static ZkpBinEq *cast(sheZkpBinEq *p) { return reinterpret_cast<ZkpBinEq*>(p); }
+static const ZkpBinEq *cast(const sheZkpBinEq *p) { return reinterpret_cast<const ZkpBinEq*>(p); }
+
 int sheInit(int curve, int maxUnitSize)
 	try
 {
@@ -125,6 +131,16 @@ mclSize sheZkpBinSerialize(void *buf, mclSize maxBufSize, const sheZkpBin *zkp)
 	return serialize(buf, maxBufSize, zkp);
 }
 
+mclSize sheZkpEqSerialize(void *buf, mclSize maxBufSize, const sheZkpEq *zkp)
+{
+	return serialize(buf, maxBufSize, zkp);
+}
+
+mclSize sheZkpBinEqSerialize(void *buf, mclSize maxBufSize, const sheZkpBinEq *zkp)
+{
+	return serialize(buf, maxBufSize, zkp);
+}
+
 template<class T>
 mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 	try
@@ -161,6 +177,16 @@ mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize 
 }
 
 mclSize sheZkpBinDeserialize(sheZkpBin* zkp, const void *buf, mclSize bufSize)
+{
+	return deserialize(zkp, buf, bufSize);
+}
+
+mclSize sheZkpEqDeserialize(sheZkpEq* zkp, const void *buf, mclSize bufSize)
+{
+	return deserialize(zkp, buf, bufSize);
+}
+
+mclSize sheZkpBinEqDeserialize(sheZkpBinEq* zkp, const void *buf, mclSize bufSize)
 {
 	return deserialize(zkp, buf, bufSize);
 }
@@ -320,6 +346,27 @@ int shePrecomputedPublicKeyEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, c
 int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *pub, int m)
 {
 	return encWithZkpBinT(c, zkp, pub, m);
+}
+
+template<class PK>
+int encWithZkpBinEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const PK *pub, int m)
+	try
+{
+	cast(pub)->encWithZkpBinEq(*cast(c1), *cast(c2), *cast(zkp), m);
+	return 0;
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return -1;
+}
+
+int sheEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const shePublicKey *pub, int m)
+{
+	return encWithZkpBinEqT(c1, c2, zkp, pub, m);
+}
+
+int shePrecomputedPublicKeyEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const shePrecomputedPublicKey *ppub, int m)
+{
+	return encWithZkpBinEqT(c1, c2, zkp, ppub, m);
 }
 
 template<class CT>
@@ -618,3 +665,23 @@ int shePrecomputedPublicKeyVerifyZkpBinG2(const shePrecomputedPublicKey *pub, co
 {
 	return verifyT(*cast(pub), *cast(c), *cast(zkp));
 }
+
+template<class PK>
+int verifyT(const PK& pub, const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp)
+	try
+{
+	return pub.verify(c1, c2, zkp);
+} catch (std::exception& e) {
+	fprintf(stderr, "err %s\n", e.what());
+	return 0;
+}
+
+int sheVerifyZkpBinEq(const shePublicKey *pub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp)
+{
+	return verifyT(*cast(pub), *cast(c1), *cast(c2), *cast(zkp));
+}
+int shePrecomputedPublicKeyVerifyZkpBinEq(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp)
+{
+	return verifyT(*cast(ppub), *cast(c1), *cast(c2), *cast(zkp));
+}
+
