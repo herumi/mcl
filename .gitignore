@@ -9,3 +9,4 @@ GTAGS
 *.o
 *.d
 *.exe
+*.swp
