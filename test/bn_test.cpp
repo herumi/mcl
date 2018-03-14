@@ -113,7 +113,7 @@ void testMapToG1()
 		BN::mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
-		G1::mul(gr, g, BN::param.r);
+		G1::mulGeneric(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
@@ -132,7 +132,7 @@ void testMapToG2()
 		BN::mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
-		G2::mul(gr, g, BN::param.r);
+		G2::mulGeneric(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
