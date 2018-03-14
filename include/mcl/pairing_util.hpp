@@ -213,7 +213,6 @@ template<class Fp12, class Fp6>
 void convertFp6toFp12(Fp12& y, const Fp6& x)
 {
 	y.clear();
-#ifdef MCL_DEV
 #ifdef MCL_MTYPE
 	// (a, b, c) -> (a, c, 0, 0, b, 0)
 	y.a.a = x.a;
@@ -224,12 +223,6 @@ void convertFp6toFp12(Fp12& y, const Fp6& x)
 	y.a.a = x.b;
 	y.b.a = x.c;
 	y.b.b = x.a;
-#endif
-#else
-	// (a, b, c) -> (a, 0, c, 0, b, 0)
-	y.a.a = x.a;
-	y.a.c = x.c;
-	y.b.b = x.b;
 #endif
 }
 

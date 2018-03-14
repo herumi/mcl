@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-//#define MCL_DEV
 #include <mcl/pairing_util.hpp>
 
 namespace mcl { namespace bn {

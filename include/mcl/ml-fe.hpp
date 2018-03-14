@@ -212,10 +212,6 @@
 		Fp2::add(t3, t2, t2);
 		t3 += t2;
 		Fp2::sub(Q.x, t1, t3);
-#ifndef MCL_DEV
-		Fp2::add(l.c, t0, t0);
-		Fp2::add(l.c, l.c, t0);
-#endif
 		t3 += t1;
 		Q.x *= t4;
 		Fp2::divBy2(t3, t3);
@@ -229,15 +225,9 @@
 		Fp2::sqr(t3, t3);
 		t3 -= t5;
 		Fp2::mul(Q.z, t1, t3);
-#ifdef MCL_DEV
 		Fp2::sub(l.a, t2, t1);
 		l.c = t0;
 		l.b = t3;
-#else
-		t2 -= t1;
-		Fp2::mul_xi(l.a, t2);
-		Fp2::neg(l.b, t3);
-#endif
 	}
 	static void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 	{
@@ -267,12 +257,7 @@
 		Fp2Dbl::mulPre(T2, t1, Q.y);
 		Fp2Dbl::sub(T1, T1, T2);
 		l.b = t1;
-#ifdef MCL_DEV
 		Fp2Dbl::mod(l.a, T1);
-#else
-		Fp2Dbl::mod(t2, T1);
-		Fp2::mul_xi(l.a, t2);
-#endif
 	}
 	static void dblLine(Fp6& l, G2& Q, const G1& P)
 	{
@@ -477,83 +462,7 @@
 		mul_014(z, x);
 		return;
 #endif
-#ifdef MCL_DEV
 		mul_025(z, x);
-#else
-		Fp2& z0 = z.a.a;
-		Fp2& z1 = z.a.b;
-		Fp2& z2 = z.a.c;
-		Fp2& z3 = z.b.a;
-		Fp2& z4 = z.b.b;
-		Fp2& z5 = z.b.c;
-		const Fp2& a = x.a;
-		const Fp2& b = x.c;
-		const Fp2& c = x.b;
-		Fp2 t0, t1, t2;
-		Fp2 s0;
-		Fp2Dbl T3, T4;
-		Fp2Dbl D0, D2, D4;
-		Fp2Dbl S1;
-		Fp2Dbl::mulPre(D0, z0, a);
-		Fp2Dbl::mulPre(D2, z2, b);
-		Fp2Dbl::mulPre(D4, z4, c);
-		Fp2::add(t2, z0, z4);
-		Fp2::add(t1, z0, z2);
-		Fp2::add(s0, z1, z3);
-		s0 += z5;
-		// For z.a.a = z0.
-		Fp2Dbl::mulPre(S1, z1, b);
-		Fp2Dbl::add(T3, S1, D4);
-		Fp2Dbl::mul_xi(T4, T3);
-		T4 += D0;
-		Fp2Dbl::mod(z0, T4);
-		// For z.a.b = z1.
-		Fp2Dbl::mulPre(T3, z5, c);
-		S1 += T3;
-		T3 += D2;
-		Fp2Dbl::mul_xi(T4, T3);
-		Fp2Dbl::mulPre(T3, z1, a);
-		S1 += T3;
-		T4 += T3;
-		Fp2Dbl::mod(z1, T4);
-		// For z.a.c = z2.
-		Fp2::add(t0, a, b);
-		Fp2Dbl::mulPre(T3, t1, t0);
-		T3 -= D0;
-		T3 -= D2;
-		Fp2Dbl::mulPre(T4, z3, c);
-		S1 += T4;
-		T3 += T4;
-		// z3 needs z2.
-		// For z.b.a = z3.
-		Fp2::add(t0, z2, z4);
-		Fp2Dbl::mod(z2, T3);
-		Fp2::add(t1, b, c);
-		Fp2Dbl::mulPre(T3, t0, t1);
-		T3 -= D2;
-		T3 -= D4;
-		Fp2Dbl::mul_xi(T4, T3);
-		Fp2Dbl::mulPre(T3, z3, a);
-		S1 += T3;
-		T4 += T3;
-		Fp2Dbl::mod(z3, T4);
-		// For z.b.b = z4.
-		Fp2Dbl::mulPre(T3, z5, b);
-		S1 += T3;
-		Fp2Dbl::mul_xi(T4, T3);
-		Fp2::add(t0, a, c);
-		Fp2Dbl::mulPre(T3, t2, t0);
-		T3 -= D0;
-		T3 -= D4;
-		T4 += T3;
-		Fp2Dbl::mod(z4, T4);
-		// For z.b.c = z5.
-		Fp2::add(t0, a, b);
-		t0 += c;
-		Fp2Dbl::mulPre(T3, s0, t0);
-		T3 -= S1;
-		Fp2Dbl::mod(z5, T3);
-#endif
 	}
 	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
 	{
@@ -737,18 +646,17 @@
 		exp_d1(y, y);
 #endif
 	}
+	/*
+		remark : returned value is NOT on a curve
+	*/
 	static G1 makeAdjP(const G1& P)
 	{
-#ifdef MCL_DEV
 		G1 adjP;
 		Fp::add(adjP.x, P.x, P.x);
 		adjP.x += P.x;
 		Fp::neg(adjP.y, P.y);
 		adjP.z = 1;
 		return adjP;
-#else
-		return P;
-#endif
 	}
 	static void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	{

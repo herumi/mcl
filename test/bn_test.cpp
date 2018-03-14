@@ -350,11 +350,7 @@ if(0){
 	Fp12 t;
 	mcl::util::convertFp6toFp12(t, x);
 	z1 *= t;
-#ifdef MCL_DEV
 	BN::mul_025(z2, x);
-#else
-	BN::mul_024(z2, x);
-#endif
 	for (int i = 0; i < 12; i++) {
 		printf("i=%d\n", i);
 		CYBOZU_TEST_EQUAL(z1.getFp0()[i], z2.getFp0()[i]);
