@@ -586,7 +586,7 @@ const char *f2Str =
 	l.c.setStr(l1Str, 16);
 	f.setStr(fStr, 16);
 	f2.setStr(f2Str, 16);
-	BLS12::mul_024(f, l);
+	BLS12::mulSparse(f, l);
 	CYBOZU_TEST_EQUAL(f, f2);
 }
 

@@ -263,6 +263,57 @@ void mul_b_div_xi(const Param& param, Fp2& y, const Fp2& x)
 	}
 }
 
+/*
+	twisted Frobenius for G2
+*/
+template<class G2>
+struct HaveFrobenius : public G2 {
+	typedef typename G2::Fp Fp2;
+	static Fp2 g2;
+	static Fp2 g3;
+	/*
+		BN254 is Dtype
+		BLS12-381 is Mtype
+	*/
+	static void init(bool isMtype)
+	{
+		g2 = Fp2::get_gTbl()[0];
+		g3 = Fp2::get_gTbl()[3];
+		if (isMtype) {
+			Fp2::inv(g2, g2);
+			Fp2::inv(g3, g3);
+		}
+	}
+	/*
+		FrobeniusOnTwist for Dtype
+		p mod 6 = 1, w^6 = xi
+		Frob(x', y') = phi Frob phi^-1(x', y')
+		= phi Frob (x' w^2, y' w^3)
+		= phi (x'^p w^2p, y'^p w^3p)
+		= (F(x') w^2(p - 1), F(y') w^3(p - 1))
+		= (F(x') g^2, F(y') g^3)
+
+		FrobeniusOnTwist for Dtype
+		use (1/g) instead of g
+	*/
+	static void Frobenius(G2& D, const G2& S)
+	{
+		Fp2::Frobenius(D.x, S.x);
+		Fp2::Frobenius(D.y, S.y);
+		Fp2::Frobenius(D.z, S.z);
+		D.x *= g2;
+		D.y *= g3;
+	}
+	static void Frobenius(HaveFrobenius& y, const HaveFrobenius& x)
+	{
+		Frobenius(static_cast<G2&>(y), static_cast<const G2&>(x));
+	}
+};
+template<class G2>
+typename G2::Fp HaveFrobenius<G2>::g2;
+template<class G2>
+typename G2::Fp HaveFrobenius<G2>::g3;
+
 } // mcl::util
 
 } // mcl

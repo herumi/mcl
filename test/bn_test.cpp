@@ -361,7 +361,7 @@ BN::Fp2Dbl D;
 	CYBOZU_BENCH_C("Fp2Dbl::mulPre", 100000, BN::Fp2Dbl::mulPre, D, x.a, x.b);
 	CYBOZU_BENCH_C("Fp6mul_01", 1000000, BN::Fp6mul_01, x, x, x.a, x.b);
 	CYBOZU_BENCH_C("mul_025", 1000000, BN::mul_025, z2,z2.a);
-	CYBOZU_BENCH_C("mul_024", 1000000, BN::mul_024, z2,z2.a);
+	CYBOZU_BENCH_C("mulSparse", 1000000, BN::mulSparse, z2,z2.a);
 	exit(1);
 }
 		const G1 P(ts.g1.a, ts.g1.b);

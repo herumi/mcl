@@ -456,7 +456,7 @@
 		z2c + z5b = (z2 + z5)(c + b) - z2b - z5c
 		z0c + z3b = (z0 + z3)(c + b) - z0b - z3c
 	*/
-	static void mul_024(Fp12& z, const Fp6& x)
+	static void mulSparse(Fp12& z, const Fp6& x)
 	{
 #ifdef MCL_USE_BLS12
 		mul_014(z, x);
@@ -464,10 +464,10 @@
 #endif
 		mul_025(z, x);
 	}
-	static void mul_024_024(Fp12& z, const Fp6& x, const Fp6& y)
+	static void mulSparse2(Fp12& z, const Fp6& x, const Fp6& y)
 	{
 		util::convertFp6toFp12(z, x);
-		mul_024(z, y);
+		mulSparse(z, y);
 	}
 #if 0
 	/*
@@ -679,18 +679,18 @@
 		G1 adjP = makeAdjP(P);
 		dblLine(d, T, adjP);
 		addLine(l, T, Q, P);
-		mul_024_024(f, d, l);
+		mulSparse2(f, d, l);
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
 			dblLine(l, T, adjP);
 			Fp12::sqr(f, f);
-			mul_024(f, l);
+			mulSparse(f, l);
 			if (param.siTbl[i]) {
 				if (param.siTbl[i] > 0) {
 					addLine(l, T, Q, P);
 				} else {
 					addLine(l, T, negQ, P);
 				}
-				mul_024(f, l);
+				mulSparse(f, l);
 			}
 		}
 		if (param.z < 0) {
@@ -705,7 +705,7 @@
 		addLine(d, T, Q1, P);
 		addLine(e, T, Q2, P);
 		Fp12 ft;
-		mul_024_024(ft, d, e);
+		mulSparse2(ft, d, e);
 		f *= ft;
 #endif
 	}
@@ -786,16 +786,16 @@
 
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
 		idx++;
-		mul_024_024(f, d, e);
+		mulSparse2(f, d, e);
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
 			mulFp6cb_by_G1xy(l, Qcoeff[idx], adjP);
 			idx++;
 			Fp12::sqr(f, f);
-			mul_024(f, l);
+			mulSparse(f, l);
 			if (param.siTbl[i]) {
 				mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
 				idx++;
-				mul_024(f, l);
+				mulSparse(f, l);
 			}
 		}
 		if (param.z < 0) {
@@ -807,7 +807,7 @@
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
 		idx++;
 		Fp12 ft;
-		mul_024_024(ft, d, e);
+		mulSparse2(ft, d, e);
 		f *= ft;
 #endif
 	}
@@ -833,10 +833,10 @@
 
 		Fp12 f1, f2;
 		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
-		mul_024_024(f1, d1, e1);
+		mulSparse2(f1, d1, e1);
 
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-		mul_024_024(f2, d2, e2);
+		mulSparse2(f2, d2, e2);
 		Fp12::mul(f, f1, f2);
 		idx++;
 		for (size_t i = 2; i < param.siTbl.size(); i++) {
@@ -844,13 +844,13 @@
 			mulFp6cb_by_G1xy(l2, Q2coeff[idx], adjP2);
 			idx++;
 			Fp12::sqr(f, f);
-			mul_024_024(f1, l1, l2);
+			mulSparse2(f1, l1, l2);
 			f *= f1;
 			if (param.siTbl[i]) {
 				mulFp6cb_by_G1xy(l1, Q1coeff[idx], P1);
 				mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
 				idx++;
-				mul_024_024(f1, l1, l2);
+				mulSparse2(f1, l1, l2);
 				f *= f1;
 			}
 		}
@@ -864,8 +864,8 @@
 		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
 		idx++;
-		mul_024_024(f1, d1, e1);
-		mul_024_024(f2, d2, e2);
+		mulSparse2(f1, d1, e1);
+		mulSparse2(f2, d2, e2);
 		f *= f1;
 		f *= f2;
 #endif
