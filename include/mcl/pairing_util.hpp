@@ -304,6 +304,17 @@ struct HaveFrobenius : public G2 {
 		D.x *= g2;
 		D.y *= g3;
 	}
+	static void Frobenius2(G2& D, const G2& S)
+	{
+		Frobenius(D, S);
+		Frobenius(D, D);
+	}
+	static void Frobenius3(G2& D, const G2& S)
+	{
+		Frobenius(D, S);
+		Frobenius(D, D);
+		Frobenius(D, D);
+	}
 	static void Frobenius(HaveFrobenius& y, const HaveFrobenius& x)
 	{
 		Frobenius(static_cast<G2&>(y), static_cast<const G2&>(x));
