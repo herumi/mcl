@@ -339,31 +339,6 @@ CYBOZU_TEST_AUTO(naive)
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
 		initPairing(ts.cp, g_mode);
-if(0){
-	G1 P(ts.g1.a, ts.g1.b);
-	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
-	Fp12 z1, z2;
-	Fp6 x;
-	for (int i = 0; i < 12; i++) z1.getFp0()[i] = i * i + i + 3;
-	for (int i = 0; i < 6; i++) x.getFp0()[i] = i * i * i + i * 2 + 4;
-	z2 = z1;
-	Fp12 t;
-	mcl::util::convertFp6toFp12(t, x);
-	z1 *= t;
-	BN::mul_025(z2, x);
-	for (int i = 0; i < 12; i++) {
-		printf("i=%d\n", i);
-		CYBOZU_TEST_EQUAL(z1.getFp0()[i], z2.getFp0()[i]);
-	}
-//	CYBOZU_BENCH_C("addLine", 100000, BN::addLine, z1.a, Q, Q, P);
-//	CYBOZU_BENCH_C("dblLine", 100000, BN::dblLine, z1.a, Q, P);
-BN::Fp2Dbl D;
-	CYBOZU_BENCH_C("Fp2Dbl::mulPre", 100000, BN::Fp2Dbl::mulPre, D, x.a, x.b);
-	CYBOZU_BENCH_C("Fp6mul_01", 1000000, BN::Fp6mul_01, x, x, x.a, x.b);
-	CYBOZU_BENCH_C("mul_025", 1000000, BN::mul_025, z2,z2.a);
-	CYBOZU_BENCH_C("mulSparse", 1000000, BN::mulSparse, z2,z2.a);
-	exit(1);
-}
 		const G1 P(ts.g1.a, ts.g1.b);
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH

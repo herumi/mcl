@@ -149,7 +149,6 @@ void testSetStr(const G2& Q0)
 	}
 }
 
-#if 0
 void testMapToG1()
 {
 	G1 g;
@@ -160,13 +159,6 @@ void testMapToG1()
 		G1::mul(gr, g, BLS12::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
-#ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BLS12::param.b == 2) {
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG1(g, 0), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG1(g, BLS12::param.mapTo.c1), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG1(g, -BLS12::param.mapTo.c1), cybozu::Exception);
-	}
-#endif
 }
 
 void testMapToG2()
@@ -179,17 +171,11 @@ void testMapToG2()
 		G2::mul(gr, g, BLS12::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
-#ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BLS12::param.b == 2) {
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG2(g, 0), cybozu::Exception);
-	}
-#endif
 	Fp x;
 	x.setHashOf("abc");
 	BLS12::mapToG2(g, Fp2(x, 0));
 	CYBOZU_TEST_ASSERT(g.isValid());
 }
-#endif
 
 void testPrecomputed(const G1& P, const G2& Q)
 {
@@ -354,7 +340,7 @@ CYBOZU_TEST_AUTO(naive)
 		testTrivial(P, Q);
 		testSetStr(Q);
 //		testMapToG1();
-//		testMapToG2();
+		testMapToG2();
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
