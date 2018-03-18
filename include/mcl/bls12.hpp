@@ -21,6 +21,15 @@ struct MapToT {
 	typedef mcl::EcT<Fp2> G2;
 	typedef util::HaveFrobenius<G2> G2withF;
 	mpz_class z_;
+	mpz_class cofactor1_;
+	/*
+		#(Fp) / r = (z + 1 - t) / r = (z - 1)^2 / 3
+	*/
+	void mulByCofactor(G1& Q, const G1& P) const
+	{
+		assert(cofactor1_ != 0);
+		G1::mulGeneric(Q, P, cofactor1_);
+	}
 	/*
 		Q = (z(z-1)-1)P + Frob((z-1)P) + Frob^2(2P)
 	*/
@@ -39,6 +48,7 @@ struct MapToT {
 	void init(const mpz_class& z)
 	{
 		z_ = z;
+		cofactor1_ = (z - 1) * (z - 1) / 3;
 	}
 	template<class G, class F>
 	void calc(G& P, const F& t) const
@@ -57,7 +67,7 @@ struct MapToT {
 	void calcG1(G1& P, const Fp& t) const
 	{
 		calc<G1, Fp>(P, t);
-		assert(P.isValid());
+		mulByCofactor(P, P);
 	}
 	/*
 		get the element in G2 by multiplying the cofactor
@@ -65,9 +75,7 @@ struct MapToT {
 	void calcG2(G2& P, const Fp2& t) const
 	{
 		calc<G2, Fp2>(P, t);
-		assert(cofactor_ != 0);
 		mulByCofactor(P, P);
-		assert(!P.isZero());
 	}
 };
 

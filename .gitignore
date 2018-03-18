@@ -10,3 +10,4 @@ GTAGS
 *.d
 *.exe
 *.swp
+.cvsignore

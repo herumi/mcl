@@ -339,7 +339,7 @@ CYBOZU_TEST_AUTO(naive)
 //		testFp12pow(P, Q);
 		testTrivial(P, Q);
 		testSetStr(Q);
-//		testMapToG1();
+		testMapToG1();
 		testMapToG2();
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
