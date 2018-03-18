@@ -1,9 +1,10 @@
+template<class CT>
 void testBench(const G1& P, const G2& Q)
 {
 	G1 Pa;
 	G2 Qa;
 	Fp12 e1, e2;
-	BN::pairing(e1, P, Q);
+	CT::pairing(e1, P, Q);
 	Fp12::pow(e2, e1, 12345);
 	const int C = 500;
 	const int C2 = 1000;
@@ -25,7 +26,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("G2::add       ", C, G2::add, Qa, Qa, Q);
 	CYBOZU_BENCH_C("G2::dbl       ", C, G2::dbl, Qa, Qa);
 	CYBOZU_BENCH_C("GT::pow       ", C, GT::pow, e1, e1, a);
-//	CYBOZU_BENCH_C("GT::powGLV    ", C, BN::param.glv2.pow, e1, e1, a);
+//	CYBOZU_BENCH_C("GT::powGLV    ", C, CT::param.glv2.pow, e1, e1, a);
 	G1 PP;
 	G2 QQ;
 	std::string s;
@@ -33,8 +34,8 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("G1::setStr    ", C, PP.setStr, s);
 	s = Q.getStr();
 	CYBOZU_BENCH_C("G2::setStr    ", C, QQ.setStr, s);
-	CYBOZU_BENCH_C("hashAndMapToG1", C, BN::hashAndMapToG1, PP, "abc", 3);
-	CYBOZU_BENCH_C("hashAndMapToG2", C, BN::hashAndMapToG2, QQ, "abc", 3);
+	CYBOZU_BENCH_C("hashAndMapToG1", C, CT::hashAndMapToG1, PP, "abc", 3);
+	CYBOZU_BENCH_C("hashAndMapToG2", C, CT::hashAndMapToG2, QQ, "abc", 3);
 	CYBOZU_BENCH_C("Fp::add       ", C2, Fp::add, x, x, y);
 	CYBOZU_BENCH_C("Fp::mul       ", C2, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C2, Fp::sqr, x, x);
@@ -44,10 +45,10 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("GT::mul       ", C2, GT::mul, e1, e1, e2);
 	CYBOZU_BENCH_C("GT::sqr       ", C2, GT::sqr, e1, e1);
 	CYBOZU_BENCH_C("GT::inv       ", C2, GT::inv, e1, e1);
-	CYBOZU_BENCH_C("pairing       ", C, BN::pairing, e1, P, Q);
-	CYBOZU_BENCH_C("millerLoop    ", C, BN::millerLoop, e1, P, Q);
-	CYBOZU_BENCH_C("finalExp      ", C, BN::finalExp, e1, e1);
+	CYBOZU_BENCH_C("pairing       ", C, CT::pairing, e1, P, Q);
+	CYBOZU_BENCH_C("millerLoop    ", C, CT::millerLoop, e1, P, Q);
+	CYBOZU_BENCH_C("finalExp      ", C, CT::finalExp, e1, e1);
 	std::vector<Fp6> Qcoeff;
-	BN::precomputeG2(Qcoeff, Q);
-	CYBOZU_BENCH_C("precomputedML ", C, BN::precomputedMillerLoop, e2, P, Qcoeff);
+	CT::precomputeG2(Qcoeff, Q);
+	CYBOZU_BENCH_C("precomputedML ", C, CT::precomputedMillerLoop, e2, P, Qcoeff);
 }

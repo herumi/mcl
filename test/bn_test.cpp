@@ -360,7 +360,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testBench(P, Q);
+		testBench<BN>(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {
