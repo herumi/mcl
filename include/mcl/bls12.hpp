@@ -31,6 +31,8 @@ struct MapToT {
 		G1::mulGeneric(Q, P, cofactor1_);
 	}
 	/*
+		Efficient hash maps to G2 on BLS curves
+		Alessandro Budroni, Federico Pintore
 		Q = (z(z-1)-1)P + Frob((z-1)P) + Frob^2(2P)
 	*/
 	void mulByCofactor(G2& Q, const G2& P) const
