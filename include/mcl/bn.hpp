@@ -468,7 +468,7 @@ struct ParamT : public util::CommonParamT<Fp> {
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		Common::initCommonParam(cp, mode, false);
+		Common::initCommonParam(cp, mode);
 		mapTo.init(2 * this->p - this->r, this->z);
 		glv1.init(this->r, this->z);
 		glv2.init(this->r, this->z);
@@ -511,7 +511,7 @@ struct BNT : mcl::util::BasePairingT<Fp, ParamT<Fp> > {
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		Base::param.init(cp, mode);
-		G2withF::init(Base::param.isMtype);
+		G2withF::init(cp.isMtype);
 		G1::setMulArrayGLV(mulArrayGLV1);
 		G2::setMulArrayGLV(mulArrayGLV2);
 		Fp12::setPowArrayGLV(powArrayGLV2);

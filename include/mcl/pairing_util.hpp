@@ -24,25 +24,33 @@ struct CurveParam {
 	const char *z;
 	int b; // y^2 = x^3 + b
 	int xi_a; // xi = xi_a + i
-	int curveType; // same in bn.h
-	bool operator==(const CurveParam& rhs) const { return z == rhs.z && b == rhs.b && xi_a == rhs.xi_a; }
+	/*
+		BN254, BN381 : Dtype
+		BLS12-381 : Mtype
+	*/
+	bool isMtype;
+	int curveType; // same in curve_type.h
+	bool operator==(const CurveParam& rhs) const
+	{
+		return std::string(z) == rhs.z && b == rhs.b && xi_a == rhs.xi_a && isMtype == rhs.isMtype;
+	}
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
 
 namespace bn {
 
-const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1, mclBn_CurveFp254BNb }; // -(2^62 + 2^55 + 1)
+const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1, false, mclBn_CurveFp254BNb }; // -(2^62 + 2^55 + 1)
 // provisional(experimental) param with maxBitSize = 384
-const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1, mclBn_CurveFp382_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1, mclBn_CurveFp382_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
-const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, mclBn_CurveFp462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
-const CurveParam CurveSNARK1 = { "4965661367192848881", 3, 9, mclBn_CurveSNARK1 };
+const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1, false, mclBn_CurveFp382_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
+const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1, false, mclBn_CurveFp382_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
+const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, mclBn_CurveFp462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
+const CurveParam CurveSNARK1 = { "4965661367192848881", 3, 9, false, mclBn_CurveSNARK1 };
 
 } // mcl::bn
 
 namespace bls12 {
 
-const CurveParam CurveFp381 = { "-0xd201000000010000", 4, 1, mclBls12_CurveFp381 };
+const CurveParam CurveFp381 = { "-0xd201000000010000", 4, 1, true, mclBls12_CurveFp381 };
 
 } // mcl::bls12
 
@@ -96,19 +104,13 @@ struct CommonParamT {
 	typedef Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
-	int curveType;
-	bool isCurveFp254BNb;
+	mcl::CurveParam cp;
 	mpz_class z;
 	mpz_class abs_z;
 	bool isNegative;
 	mpz_class p;
 	mpz_class r;
-	int b;
-	/*
-		BN254, BN381, etc. : Dtype
-		BLS12-381 : Mtype
-	*/
-	bool isMtype;
+//	int b;
 	/*
 		Dtype twist
 		(x', y') = phi(x, y) = (x/w^2, y/w^3)
@@ -131,12 +133,14 @@ struct CommonParamT {
 	bool useNAF;
 	util::SignVec zReplTbl;
 
-	void initCommonParam(const CurveParam& cp, fp::Mode mode, bool isBLS12)
+	void initCommonParam(const CurveParam& cp, fp::Mode mode)
 	{
-		curveType = cp.curveType;
+		const bool isBLS12 = cp.curveType == mclBls12_CurveFp381;
+//		curveType = cp.curveType;
+		this->cp = cp;
 		z = mpz_class(cp.z);
-		isCurveFp254BNb = cp == bn::CurveFp254BNb;
-		isMtype = isBLS12 ? true : false; // ad hoc
+//		isCurveFp254BNb = cp == bn::CurveFp254BNb;
+//		isMtype = isBLS12 ? true : false; // ad hoc
 		isNegative = z < 0;
 		if (isNegative) {
 			abs_z = -z;
@@ -158,12 +162,11 @@ struct CommonParamT {
 		}
 		Fp::init(p, mode);
 		Fp2::init(cp.xi_a);
-		b = cp.b;
 		Fp2 xi(cp.xi_a, 1);
-		if (isMtype) {
-			twist_b = Fp2(b) * xi;
+		if (cp.isMtype) {
+			twist_b = Fp2(cp.b) * xi;
 		} else {
-			twist_b = Fp2(b) / xi;
+			twist_b = Fp2(cp.b) / xi;
 		}
 		if (twist_b == Fp2(1, -1)) {
 			twist_b_type = tb_1m1i;
@@ -172,7 +175,7 @@ struct CommonParamT {
 		} else {
 			twist_b_type = tb_generic;
 		}
-		G1::init(0, b, mcl::ec::Proj);
+		G1::init(0, cp.b, mcl::ec::Proj);
 		G2::init(0, twist_b, mcl::ec::Proj);
 		G2::setOrder(r);
 
@@ -459,7 +462,7 @@ struct BasePairingT {
 				z = 1;
 				return;
 			}
-			assert(param.isCurveFp254BNb);
+			assert(param.cp.curveType == mclBn_CurveFp254BNb);
 			Fp12 x_org = x;
 			Fp12 d62;
 			Fp2 c55nume, c55denomi, c62nume, c62denomi;
@@ -490,7 +493,7 @@ struct BasePairingT {
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
 #if 1
-		if (param.isCurveFp254BNb) {
+		if (param.cp.curveType == mclBn_CurveFp254BNb) {
 			Compress::fixed_power(y, x);
 		} else {
 			Fp12 orgX = x;
@@ -791,7 +794,7 @@ struct BasePairingT {
 	static void convertFp6toFp12(Fp12& y, const Fp6& x)
 	{
 		y.clear();
-		if (param.isMtype) {
+		if (param.cp.isMtype) {
 			// (a, b, c) -> (a, c, 0, 0, b, 0)
 			y.a.a = x.a;
 			y.b.b = x.b;

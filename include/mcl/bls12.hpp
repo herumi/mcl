@@ -92,7 +92,7 @@ struct ParamT : public util::CommonParamT<Fp> {
 
 	void init(const CurveParam& cp = CurveFp381, fp::Mode mode = fp::FP_AUTO)
 	{
-		Common::initCommonParam(cp, mode, true);
+		Common::initCommonParam(cp, mode);
 		mapTo.init(this->z);
 	}
 };
@@ -112,7 +112,7 @@ struct BLS12T : mcl::util::BasePairingT<Fp, ParamT<Fp> > {
 	static void init(const mcl::bls12::CurveParam& cp = CurveFp381, fp::Mode mode = fp::FP_AUTO)
 	{
 		Base::param.init(cp, mode);
-		G2withF::init(Base::param.isMtype);
+		G2withF::init(cp.isMtype);
 	}
 };
 

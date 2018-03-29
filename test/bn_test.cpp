@@ -117,7 +117,7 @@ void testMapToG1()
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.b == 2) {
+	if (BN::param.cp.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, 0), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, BN::param.mapTo.c1_), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, -BN::param.mapTo.c1_), cybozu::Exception);
@@ -136,7 +136,7 @@ void testMapToG2()
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.b == 2) {
+	if (BN::param.cp.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG2(g, 0), cybozu::Exception);
 	}
 #endif
@@ -168,7 +168,7 @@ void testCyclotomic()
 
 void testCompress(const G1& P, const G2& Q)
 {
-	if (!BN::param.isCurveFp254BNb) return;
+	if (BN::param.cp.curveType != mclBn_CurveFp254BNb) return;
 	Fp12 a;
 	BN::pairing(a, P, Q);
 	BN::mapToCyclotomic(a, a);
