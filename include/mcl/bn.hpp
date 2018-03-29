@@ -476,7 +476,9 @@ struct ParamT : public util::CommonParamT<Fp> {
 };
 
 template<class Fp>
-struct BNT {
+struct BNT : mcl::util::BasePairingT<Fp, ParamT<Fp> > {
+	typedef ParamT<Fp> Param;
+	typedef typename mcl::util::BasePairingT<Fp, Param> Base;
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::Fp6T<Fp> Fp6;
 	typedef mcl::Fp12T<Fp> Fp12;
@@ -485,67 +487,36 @@ struct BNT {
 	typedef util::HaveFrobenius<G2> G2withF;
 	typedef mcl::FpDblT<Fp> FpDbl;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-	typedef ParamT<Fp> Param;
-	static Param param;
 	static void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv1.mul(z, x, s, constTime);
+		Base::param.glv1.mul(z, x, s, constTime);
 	}
 	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv2.mul(z, x, s, constTime);
+		Base::param.glv2.mul(z, x, s, constTime);
 	}
 	static void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv2.pow(z, x, s, constTime);
+		Base::param.glv2.pow(z, x, s, constTime);
 	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		param.init(cp, mode);
-		G2withF::init(param.isMtype);
+		Base::param.init(cp, mode);
+		G2withF::init(Base::param.isMtype);
 		G1::setMulArrayGLV(mulArrayGLV1);
 		G2::setMulArrayGLV(mulArrayGLV2);
 		Fp12::setPowArrayGLV(powArrayGLV2);
 	}
-////////////////////////////////////////////////////////////////////////////////////
-	#include "ml-fe.hpp"
-/////////////////////////////////////////////////////////////
-	static void mapToG1(G1& P, const Fp& x) { param.mapTo.calcG1(P, x); }
-	static void mapToG2(G2& P, const Fp2& x) { param.mapTo.calcG2(P, x); }
-	static void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
-	{
-		Fp t;
-		t.setHashOf(buf, bufSize);
-		mapToG1(P, t);
-	}
-	static void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
-	{
-		Fp2 t;
-		t.a.setHashOf(buf, bufSize);
-		t.b.clear();
-		mapToG2(P, t);
-	}
-	static void hashAndMapToG1(G1& P, const std::string& str)
-	{
-		hashAndMapToG1(P, str.c_str(), str.size());
-	}
-	static void hashAndMapToG2(G2& P, const std::string& str)
-	{
-		hashAndMapToG2(P, str.c_str(), str.size());
-	}
 };
-
-template<class Fp>
-ParamT<Fp> BNT<Fp>::param;
 
 } } // mcl::bn
 

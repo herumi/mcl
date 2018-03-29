@@ -107,9 +107,10 @@ template<class Fp> class BNT;
 	Fp2 = F[i] / (i^2 + 1)
 	x = a + bi
 */
-template<class Fp>
-class Fp2T : public fp::Serializable<Fp2T<Fp>,
-	fp::Operator<Fp2T<Fp> > > {
+template<class _Fp>
+class Fp2T : public fp::Serializable<Fp2T<_Fp>,
+	fp::Operator<Fp2T<_Fp> > > {
+	typedef _Fp Fp;
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
 	static uint32_t xi_a_;
@@ -645,9 +646,10 @@ template<class Fp> Fp2T<Fp> Fp2T<Fp>::g3[Fp2T<Fp>::gN];
 	Fp6T = Fp2[v] / (v^3 - xi)
 	x = a + b v + c v^2
 */
-template<class Fp>
-struct Fp6T : public fp::Serializable<Fp6T<Fp>,
-	fp::Operator<Fp6T<Fp> > > {
+template<class _Fp>
+struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
+	fp::Operator<Fp6T<_Fp> > > {
+	typedef _Fp Fp;
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp BaseFp;
