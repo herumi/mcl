@@ -255,7 +255,7 @@ public:
 	template<class OutputStream>
 	void save(OutputStream& os) const
 	{
-		cybozu::save(os, bn_current::BN::param.curveType);
+		cybozu::save(os, bn_current::BN::param.cp.curveType);
 		cybozu::writeChar(os, GtoChar<G>());
 		cybozu::save(os, kcv_.size());
 		cybozu::write(os, &kcv_[0], sizeof(kcv_[0]) * kcv_.size());
@@ -276,7 +276,7 @@ public:
 	{
 		int curveType;
 		cybozu::load(curveType, is);
-		if (curveType != bn_current::BN::param.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
+		if (curveType != bn_current::BN::param.cp.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
 		char c = 0;
 		if (!cybozu::readChar(&c, is) || c != GtoChar<G>()) throw cybozu::Exception("HashTable:bad c") << (int)c;
 		size_t kcvSize;
