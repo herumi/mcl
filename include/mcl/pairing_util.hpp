@@ -110,7 +110,6 @@ struct CommonParamT {
 	bool isNegative;
 	mpz_class p;
 	mpz_class r;
-//	int b;
 	/*
 		Dtype twist
 		(x', y') = phi(x, y) = (x/w^2, y/w^3)
@@ -121,7 +120,6 @@ struct CommonParamT {
 	*/
 	Fp2 twist_b;
 	util::TwistBtype twist_b_type;
-	bool is_b_div_xi_1_m1i;
 	mpz_class exp_c0;
 	mpz_class exp_c1;
 	mpz_class exp_c2;
@@ -136,11 +134,8 @@ struct CommonParamT {
 	void initCommonParam(const CurveParam& cp, fp::Mode mode)
 	{
 		const bool isBLS12 = cp.curveType == mclBls12_CurveFp381;
-//		curveType = cp.curveType;
 		this->cp = cp;
 		z = mpz_class(cp.z);
-//		isCurveFp254BNb = cp == bn::CurveFp254BNb;
-//		isMtype = isBLS12 ? true : false; // ad hoc
 		isNegative = z < 0;
 		if (isNegative) {
 			abs_z = -z;
@@ -210,43 +205,6 @@ void updateLine(Fp6& l, const G1& P)
 	l.b.b *= P.y;
 	l.c.a *= P.x;
 	l.c.b *= P.x;
-}
-
-template<class Param, class Fp2>
-void mul_b_div_xi(const Param& param, Fp2& y, const Fp2& x)
-{
-	typedef typename Fp2::BaseFp Fp;
-	switch (param.twist_b_type) {
-	case util::tb_1m1i:
-		/*
-			b / xi = 1 - 1i
-			(a + bi)(1 - 1i) = (a + b) + (b - a)i
-		*/
-		{
-			Fp t;
-			Fp::add(t, x.a, x.b);
-			Fp::sub(y.b, x.b, x.a);
-			y.a = t;
-		}
-		return;
-	case util::tb_1m2i:
-		/*
-			b / xi = 1 - 2i
-			(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
-		*/
-		{
-			Fp t;
-			Fp::sub(t, x.b, x.a);
-			t -= x.a;
-			Fp::add(y.a, x.a, x.b);
-			y.a += x.b;
-			y.b = t;
-		}
-		return;
-	case util::tb_generic:
-		Fp2::mul(y, x, param.twist_b);
-		return;
-	}
 }
 
 /*
@@ -517,6 +475,41 @@ struct BasePairingT {
 			Fp12::unitaryInv(y, y);
 		}
 	}
+	static void mul_b_div_xi(Fp2& y, const Fp2& x)
+	{
+		switch (param.twist_b_type) {
+		case util::tb_1m1i:
+			/*
+				b / xi = 1 - 1i
+				(a + bi)(1 - 1i) = (a + b) + (b - a)i
+			*/
+			{
+				Fp t;
+				Fp::add(t, x.a, x.b);
+				Fp::sub(y.b, x.b, x.a);
+				y.a = t;
+			}
+			return;
+		case util::tb_1m2i:
+			/*
+				b / xi = 1 - 2i
+				(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
+			*/
+			{
+				Fp t;
+				Fp::sub(t, x.b, x.a);
+				t -= x.a;
+				Fp::add(y.a, x.a, x.b);
+				y.a += x.b;
+				y.b = t;
+			}
+			return;
+		case util::tb_generic:
+			Fp2::mul(y, x, param.twist_b);
+			return;
+		}
+	}
+
 	static void dblLineWithoutP(Fp6& l, G2& Q)
 	{
 		Fp2 t0, t1, t2, t3, t4, t5;
@@ -528,11 +521,7 @@ struct BasePairingT {
 		Fp2::divBy2(t4, t4);
 		Fp2::add(t5, t0, t1);
 		t0 += t3;
-#if 0
-		Fp2::mul_xi(t2, t0);
-#else
-		util::mul_b_div_xi(param, t2, t0);
-#endif
+		mul_b_div_xi(t2, t0);
 		Fp2::sqr(t0, Q.x);
 		Fp2::add(t3, t2, t2);
 		t3 += t2;
