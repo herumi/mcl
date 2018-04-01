@@ -233,6 +233,7 @@ CYBOZU_TEST_AUTO(ZkpBin)
 	ZkpBinTest<CipherTextG2>(sec, ppub);
 }
 
+#if 0
 template<class PubT>
 void ZkpEqTest(const SecretKey& sec, const PubT& pub)
 {
@@ -288,6 +289,7 @@ CYBOZU_TEST_AUTO(ZkpBinEq)
 	ppub.init(pub);
 	ZkpBinEqTest(sec, ppub);
 }
+#endif
 
 CYBOZU_TEST_AUTO(add_sub_mul)
 {
