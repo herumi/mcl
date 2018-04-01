@@ -476,9 +476,9 @@ struct ParamT : public util::CommonParamT<Fp> {
 };
 
 template<class Fp>
-struct BNT : mcl::util::BasePairingT<Fp, ParamT<Fp> > {
+struct BNT : mcl::util::BasePairingT<BNT<Fp>, Fp, ParamT<Fp> > {
 	typedef ParamT<Fp> Param;
-	typedef typename mcl::util::BasePairingT<Fp, Param> Base;
+	typedef typename mcl::util::BasePairingT<BNT<Fp>, Fp, Param> Base;
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::Fp6T<Fp> Fp6;
 	typedef mcl::Fp12T<Fp> Fp12;
@@ -515,6 +515,72 @@ struct BNT : mcl::util::BasePairingT<Fp, ParamT<Fp> > {
 		G1::setMulArrayGLV(mulArrayGLV1);
 		G2::setMulArrayGLV(mulArrayGLV2);
 		Fp12::setPowArrayGLV(powArrayGLV2);
+	}
+	/*
+		Faster Hashing to G2
+		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
+		section 4.1
+		y = x^(d 2z(6z^2 + 3z + 1)) where
+		p = p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1
+		r = r(z) = 36z^4 + 36z^3 + 18z^2 + 6z + 1
+		d = (p^4 - p^2 + 1) / r
+		d1 = d 2z(6z^2 + 3z + 1)
+		= c0 + c1 p + c2 p^2 + c3 p^3
+
+		c0 = 1 + 6z + 12z^2 + 12z^3
+		c1 = 4z + 6z^2 + 12z^3
+		c2 = 6z + 6z^2 + 12z^3
+		c3 = -1 + 4z + 6z^2 + 12z^3
+		x -> x^z -> x^2z -> x^4z -> x^6z -> x^(6z^2) -> x^(12z^2) -> x^(12z^3)
+		a = x^(6z) x^(6z^2) x^(12z^3)
+		b = a / (x^2z)
+		x^d1 = (a x^(6z^2) x) b^p a^(p^2) (b / x)^(p^3)
+	*/
+	static void expHardPart(Fp12& y, const Fp12& x)
+	{
+#if 0
+		const mpz_class& p = param.p;
+		mpz_class p2 = p * p;
+		mpz_class p4 = p2 * p2;
+		Fp12::pow(y, x, (p4 - p2 + 1) / param.r);
+		return;
+#endif
+#if 1
+		Fp12 a, b;
+		Fp12 a2, a3;
+		Base::pow_z(b, x); // x^z
+		Base::fasterSqr(b, b); // x^2z
+		Base::fasterSqr(a, b); // x^4z
+		a *= b; // x^6z
+		Base::pow_z(a2, a); // x^(6z^2)
+		a *= a2;
+		Base::fasterSqr(a3, a2); // x^(12z^2)
+		Base::pow_z(a3, a3); // x^(12z^3)
+		a *= a3;
+		Fp12::unitaryInv(b, b);
+		b *= a;
+		a2 *= a;
+		Fp12::Frobenius2(a, a);
+		a *= a2;
+		a *= x;
+		Fp12::unitaryInv(y, x);
+		y *= b;
+		Fp12::Frobenius(b, b);
+		a *= b;
+		Fp12::Frobenius3(y, y);
+		y *= a;
+#else
+		Fp12 t1, t2, t3;
+		Fp12::Frobenius(t1, x);
+		Fp12::Frobenius(t2, t1);
+		Fp12::Frobenius(t3, t2);
+		Fp12::pow(t1, t1, param.exp_c1);
+		Fp12::pow(t2, t2, param.exp_c2);
+		Fp12::pow(y, x, param.exp_c0);
+		y *= t1;
+		y *= t2;
+		y *= t3;
+#endif
 	}
 };
 

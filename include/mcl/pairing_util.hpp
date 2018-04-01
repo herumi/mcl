@@ -108,6 +108,7 @@ struct CommonParamT {
 	mpz_class z;
 	mpz_class abs_z;
 	bool isNegative;
+	bool isBLS12;
 	mpz_class p;
 	mpz_class r;
 	/*
@@ -133,8 +134,8 @@ struct CommonParamT {
 
 	void initCommonParam(const CurveParam& cp, fp::Mode mode)
 	{
-		const bool isBLS12 = cp.curveType == mclBls12_CurveFp381;
 		this->cp = cp;
+		isBLS12 = cp.curveType == mclBls12_CurveFp381;
 		z = mpz_class(cp.z);
 		isNegative = z < 0;
 		if (isNegative) {
@@ -269,7 +270,7 @@ typename G2::Fp HaveFrobenius<G2>::g2;
 template<class G2>
 typename G2::Fp HaveFrobenius<G2>::g3;
 
-template<class Fp, class Param>
+template<class CT, class Fp, class Param>
 struct BasePairingT {
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::Fp6T<Fp> Fp6;
@@ -774,11 +775,11 @@ struct BasePairingT {
 	*/
 	static void mulSparse(Fp12& z, const Fp6& x)
 	{
-#ifdef MCL_USE_BLS12
-		mul_041(z, x);
-		return;
-#endif
-		mul_403(z, x);
+		if (param.cp.isMtype) {
+			mul_041(z, x);
+		} else {
+			mul_403(z, x);
+		}
 	}
 	static void convertFp6toFp12(Fp12& y, const Fp6& x)
 	{
@@ -800,32 +801,6 @@ struct BasePairingT {
 		convertFp6toFp12(z, x);
 		mulSparse(z, y);
 	}
-#if 0
-	/*
-		y = x^d
-		d = (p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
-	*/
-	static void exp_d(Fp12& y, const Fp12& x)
-	{
-#if 1
-		Fp12 t1, t2, t3;
-		Fp12::Frobenius(t1, x);
-		Fp12::Frobenius(t2, t1);
-		Fp12::Frobenius(t3, t2);
-		Fp12::pow(t1, t1, param.exp_c1);
-		Fp12::pow(t2, t2, param.exp_c2);
-		Fp12::pow(y, x, param.exp_c0);
-		y *= t1;
-		y *= t2;
-		y *= t3;
-#else
-		const mpz_class& p = param.p;
-		mpz_class p2 = p * p;
-		mpz_class p4 = p2 * p2;
-		Fp12::pow(y, x, (p4 - p2 + 1) / param.r);
-#endif
-	}
-#endif
 	/*
 		Faster Squaring in the Cyclotomic Subgroup of Sixth Degree Extensions
 		Robert Granger, Michael Scott
@@ -899,52 +874,6 @@ struct BasePairingT {
 		y3 += t2;
 #endif
 	}
-	/*
-		Faster Hashing to G2
-		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
-		section 4.1
-		y = x^(d 2z(6z^2 + 3z + 1)) where
-		p = p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1
-		r = r(z) = 36z^4 + 36z^3 + 18z^2 + 6z + 1
-		d = (p^4 - p^2 + 1) / r
-		d1 = d 2z(6z^2 + 3z + 1)
-		= c0 + c1 p + c2 p^2 + c3 p^3
-
-		c0 = 1 + 6z + 12z^2 + 12z^3
-		c1 = 4z + 6z^2 + 12z^3
-		c2 = 6z + 6z^2 + 12z^3
-		c3 = -1 + 4z + 6z^2 + 12z^3
-		x -> x^z -> x^2z -> x^4z -> x^6z -> x^(6z^2) -> x^(12z^2) -> x^(12z^3)
-		a = x^(6z) x^(6z^2) x^(12z^3)
-		b = a / (x^2z)
-		x^d1 = (a x^(6z^2) x) b^p a^(p^2) (b / x)^(p^3)
-	*/
-	static void exp_d1(Fp12& y, const Fp12& x)
-	{
-		Fp12 a, b;
-		Fp12 a2, a3;
-		pow_z(b, x); // x^z
-		fasterSqr(b, b); // x^2z
-		fasterSqr(a, b); // x^4z
-		a *= b; // x^6z
-		pow_z(a2, a); // x^(6z^2)
-		a *= a2;
-		fasterSqr(a3, a2); // x^(12z^2)
-		pow_z(a3, a3); // x^(12z^3)
-		a *= a3;
-		Fp12::unitaryInv(b, b);
-		b *= a;
-		a2 *= a;
-		Fp12::Frobenius2(a, a);
-		a *= a2;
-		a *= x;
-		Fp12::unitaryInv(y, x);
-		y *= b;
-		Fp12::Frobenius(b, b);
-		a *= b;
-		Fp12::Frobenius3(y, y);
-		y *= a;
-	}
 	static void mapToCyclotomic(Fp12& y, const Fp12& x)
 	{
 		Fp12 z;
@@ -954,56 +883,6 @@ struct BasePairingT {
 		Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
 		y *= z;
 	}
-#ifdef MCL_USE_BLS12
-	static void exp_d(Fp12& y, const Fp12& x)
-	{
-#if 0
-		const mpz_class& p = param.p;
-		mpz_class p2 = p * p;
-		mpz_class p4 = p2 * p2;
-		Fp12::pow(y, x, (p4 - p2 + 1) / param.r * 3);
-		return;
-#endif
-#if 1
-		Fp12 a0, a1, a2, a3, a4, a5, a6, a7;
-		Fp12::unitaryInv(a0, x); // a0 = x^-1
-		fasterSqr(a1, a0); // x^-2
-		pow_z(a2, x); // x^z
-		fasterSqr(a3, a2); // x^2z
-		a1 *= a2; // a1 = x^(z-2)
-		pow_z(a7, a1); // a7 = x^(z^2-2z)
-		pow_z(a4, a7); // a4 = x^(z^3-2z^2)
-		pow_z(a5, a4); // a5 = x^(z^4-2z^3)
-		a3 *= a5; // a3 = x^(z^4-2z^3+2z)
-		pow_z(a6, a3); // a6 = x^(z^5-2z^4+2z^2)
-
-		Fp12::unitaryInv(a1, a1); // x^(2-z)
-		a1 *= a6; // x^(z^5-2z^4+2z^2-z+2)
-		a1 *= x; // x^(z^5-2z^4+2z^2-z+3) = x^c0
-		a3 *= a0; // x^(z^4-2z^3-1) = x^c1
-		Fp12::Frobenius(a3, a3); // x^(c1 p)
-		a1 *= a3; // x^(c0 + c1 p)
-		a4 *= a2; // x^(z^3-2z^2+z) = x^c2
-		Fp12::Frobenius2(a4, a4);  // x^(c2 p^2)
-		a1 *= a4; // x^(c0 + c1 p + c2 p^2)
-		a7 *= x; // x^(z^2-2z+1) = x^c3
-		Fp12::Frobenius3(y, a7);
-		y *= a1;
-#else
-		Fp12 t1, t2, t3;
-		Fp12::Frobenius(t1, x);
-		Fp12::Frobenius(t2, t1);
-		Fp12::Frobenius(t3, t2);
-		Fp12::pow(t1, t1, param.exp_c1);
-		Fp12::pow(t2, t2, param.exp_c2);
-		Fp12::pow(t3, t3, param.exp_c3);
-		Fp12::pow(y, x, param.exp_c0);
-		y *= t1;
-		y *= t2;
-		y *= t3;
-#endif
-	}
-#endif
 	/*
 		y = x^((p^12 - 1) / r)
 		(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
@@ -1021,11 +900,7 @@ struct BasePairingT {
 		Fp12::pow(y, x, p2 + 1);
 		Fp12::pow(y, y, p4 * p2 - 1);
 #endif
-#ifdef MCL_USE_BLS12
-		exp_d(y, y);
-#else
-		exp_d1(y, y);
-#endif
+		CT::expHardPart(y, y);
 	}
 	/*
 		remark : returned value is NOT on a curve
@@ -1078,7 +953,7 @@ struct BasePairingT {
 			G2::neg(T, T);
 			Fp6::neg(f.b, f.b);
 		}
-#ifndef MCL_USE_BLS12
+		if (param.isBLS12) return;
 		G2 Q1, Q2;
 		G2withF::Frobenius(Q1, Q);
 		G2withF::Frobenius(Q2, Q1);
@@ -1088,7 +963,6 @@ struct BasePairingT {
 		Fp12 ft;
 		mulSparse2(ft, d, e);
 		f *= ft;
-#endif
 	}
 	static void pairing(Fp12& f, const G1& P, const G2& Q)
 	{
@@ -1141,7 +1015,7 @@ struct BasePairingT {
 		if (param.z < 0) {
 			G2::neg(T, T);
 		}
-#ifndef MCL_USE_BLS12
+		if (param.isBLS12) return;
 		G2 Q1, Q2;
 		G2withF::Frobenius(Q1, Q);
 		G2withF::Frobenius(Q2, Q1);
@@ -1149,7 +1023,6 @@ struct BasePairingT {
 		addLineWithoutP(Qcoeff[idx++], T, Q1);
 		addLineWithoutP(Qcoeff[idx++], T, Q2);
 		assert(idx == param.precomputedQcoeffSize);
-#endif
 	}
 	static void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
 	{
@@ -1182,7 +1055,7 @@ struct BasePairingT {
 		if (param.z < 0) {
 			Fp6::neg(f.b, f.b);
 		}
-#ifndef MCL_USE_BLS12
+		if (param.isBLS12) return;
 		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
 		idx++;
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
@@ -1190,7 +1063,6 @@ struct BasePairingT {
 		Fp12 ft;
 		mulSparse2(ft, d, e);
 		f *= ft;
-#endif
 	}
 	/*
 		f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
@@ -1238,7 +1110,7 @@ struct BasePairingT {
 		if (param.z < 0) {
 			Fp6::neg(f.b, f.b);
 		}
-#ifndef MCL_USE_BLS12
+		if (param.isBLS12) return;
 		mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
 		mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
 		idx++;
@@ -1249,7 +1121,6 @@ struct BasePairingT {
 		mulSparse2(f2, d2, e2);
 		f *= f1;
 		f *= f2;
-#endif
 	}
 	static void mapToG1(G1& P, const Fp& x) { param.mapTo.calcG1(P, x); }
 	static void mapToG2(G2& P, const Fp2& x) { param.mapTo.calcG2(P, x); }
@@ -1276,8 +1147,8 @@ struct BasePairingT {
 	}
 };
 
-template<class Fp, class Param>
-Param BasePairingT<Fp, Param>::param;
+template<class CT, class Fp, class Param>
+Param BasePairingT<CT, Fp, Param>::param;
 
 } // mcl::util
 
