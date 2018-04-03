@@ -45,15 +45,6 @@ const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_B
 const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
 const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
 
-// backward compatibility
-namespace bn {
-static const CurveParam& CurveFp254BNb = BN254BNb;
-static const CurveParam& CurveFp382_1 = BN382_1;
-static const CurveParam& CurveFp382_2 = BN382_2;
-static const CurveParam& CurveFp462 = BN462;
-static const CurveParam& CurveSNARK1 = BN_SNARK1;
-} // mcl::bn
-
 inline const CurveParam& getCurveParam(int type)
 {
 	switch (type) {
@@ -92,108 +83,11 @@ X evalPoly(const X& x, const C (&c)[N])
 	}
 	return ret;
 }
+
 enum TwistBtype {
 	tb_generic,
 	tb_1m1i, // 1 - 1i
 	tb_1m2i // 1 - 2i
-};
-
-template<class _Fp>
-struct CommonParamT {
-	typedef _Fp Fp;
-	typedef Fp2T<Fp> Fp2;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
-	mcl::CurveParam cp;
-	mpz_class z;
-	mpz_class abs_z;
-	bool isNegative;
-	bool isBLS12;
-	mpz_class p;
-	mpz_class r;
-	/*
-		Dtype twist
-		(x', y') = phi(x, y) = (x/w^2, y/w^3)
-		y^2 = x^3 + b
-		=> (y'w^3)^2 = (x'w^2)^3 + b
-		=> y'^2 = x'^3 + b / w^6 ; w^6 = xi
-		=> y'^2 = x'^3 + twist_b;
-	*/
-	Fp2 twist_b;
-	util::TwistBtype twist_b_type;
-	mpz_class exp_c0;
-	mpz_class exp_c1;
-	mpz_class exp_c2;
-	mpz_class exp_c3;
-
-	// Loop parameter for the Miller loop part of opt. ate pairing.
-	util::SignVec siTbl;
-	size_t precomputedQcoeffSize;
-	bool useNAF;
-	util::SignVec zReplTbl;
-
-	void initCommonParam(const mcl::CurveParam& cp, fp::Mode mode)
-	{
-		this->cp = cp;
-		isBLS12 = cp.curveType == MCL_BLS12_381;
-		z = mpz_class(cp.z);
-		isNegative = z < 0;
-		if (isNegative) {
-			abs_z = -z;
-		} else {
-			abs_z = z;
-		}
-		if (isBLS12) {
-			mpz_class z2 = z * z;
-			mpz_class z4 = z2 * z2;
-			r = z4 - z2 + 1;
-			p = z - 1;
-			p = p * p * r / 3 + z;
-		} else {
-			const int pCoff[] = { 1, 6, 24, 36, 36 };
-			const int rCoff[] = { 1, 6, 18, 36, 36 };
-			p = util::evalPoly(z, pCoff);
-			assert((p % 6) == 1);
-			r = util::evalPoly(z, rCoff);
-		}
-		Fp::init(p, mode);
-		Fp2::init(cp.xi_a);
-		Fp2 xi(cp.xi_a, 1);
-		if (cp.isMtype) {
-			twist_b = Fp2(cp.b) * xi;
-		} else {
-			twist_b = Fp2(cp.b) / xi;
-		}
-		if (twist_b == Fp2(1, -1)) {
-			twist_b_type = tb_1m1i;
-		} else if (twist_b == Fp2(1, -2)) {
-			twist_b_type = tb_1m2i;
-		} else {
-			twist_b_type = tb_generic;
-		}
-		G1::init(0, cp.b, mcl::ec::Proj);
-		G2::init(0, twist_b, mcl::ec::Proj);
-		G2::setOrder(r);
-
-		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
-		useNAF = gmp::getNAF(siTbl, largest_c);
-		precomputedQcoeffSize = util::getPrecomputeQcoeffSize(siTbl);
-		gmp::getNAF(zReplTbl, gmp::abs(z));
-		if (isBLS12) {
-			mpz_class z2 = z * z;
-			mpz_class z3 = z2 * z;
-			mpz_class z4 = z3 * z;
-			mpz_class z5 = z4 * z;
-			exp_c0 = z5 - 2 * z4 + 2 * z2 - z + 3;
-			exp_c1 = z4 - 2 * z3 + 2 * z - 1;
-			exp_c2 = z3 - 2 * z2 + z;
-			exp_c3 = z2 - 2 * z + 1;
-		} else {
-			exp_c0 = -2 + z * (-18 + z * (-30 - 36 * z));
-			exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
-			exp_c2 = 6 * z * z + 1;
-		}
-	}
 };
 
 /*
@@ -628,7 +522,7 @@ struct MapToT {
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
-	GLV for G1
+	GLV for G1 on BN
 */
 template<class Fp>
 struct GLV1 {
@@ -760,7 +654,7 @@ struct GLV1 {
 };
 
 /*
-	GLV method for G2 and GT
+	GLV method for G2 and GT on BN
 */
 template<class Fp2>
 struct GLV2 {
@@ -944,24 +838,112 @@ struct GLV2 {
 };
 
 template<class Fp>
-struct ParamT : public util::CommonParamT<Fp> {
-	typedef util::CommonParamT<Fp> Common;
+struct ParamT {
 	typedef Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
+	CurveParam cp;
+	mpz_class z;
+	mpz_class abs_z;
+	bool isNegative;
+	bool isBLS12;
+	mpz_class p;
+	mpz_class r;
 	util::MapToT<Fp> mapTo;
 	util::GLV1<Fp> glv1;
 	util::GLV2<Fp2> glv2;
+	/*
+		Dtype twist
+		(x', y') = phi(x, y) = (x/w^2, y/w^3)
+		y^2 = x^3 + b
+		=> (y'w^3)^2 = (x'w^2)^3 + b
+		=> y'^2 = x'^3 + b / w^6 ; w^6 = xi
+		=> y'^2 = x'^3 + twist_b;
+	*/
+	Fp2 twist_b;
+	util::TwistBtype twist_b_type;
+/*
+	mpz_class exp_c0;
+	mpz_class exp_c1;
+	mpz_class exp_c2;
+	mpz_class exp_c3;
+*/
+
+	// Loop parameter for the Miller loop part of opt. ate pairing.
+	util::SignVec siTbl;
+	size_t precomputedQcoeffSize;
+	bool useNAF;
+	util::SignVec zReplTbl;
 
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
 	{
-		Common::initCommonParam(cp, mode);
-		if (this->isBLS12) {
-			mapTo.init(0, this->z, false);
+		this->cp = cp;
+		isBLS12 = cp.curveType == MCL_BLS12_381;
+		z = mpz_class(cp.z);
+		isNegative = z < 0;
+		if (isNegative) {
+			abs_z = -z;
 		} else {
-			mapTo.init(2 * this->p - this->r, this->z, true);
-			glv1.init(this->r, this->z);
-			glv2.init(this->r, this->z);
+			abs_z = z;
+		}
+		if (isBLS12) {
+			mpz_class z2 = z * z;
+			mpz_class z4 = z2 * z2;
+			r = z4 - z2 + 1;
+			p = z - 1;
+			p = p * p * r / 3 + z;
+		} else {
+			const int pCoff[] = { 1, 6, 24, 36, 36 };
+			const int rCoff[] = { 1, 6, 18, 36, 36 };
+			p = util::evalPoly(z, pCoff);
+			assert((p % 6) == 1);
+			r = util::evalPoly(z, rCoff);
+		}
+		Fp::init(p, mode);
+		Fp2::init(cp.xi_a);
+		Fp2 xi(cp.xi_a, 1);
+		if (cp.isMtype) {
+			twist_b = Fp2(cp.b) * xi;
+		} else {
+			twist_b = Fp2(cp.b) / xi;
+		}
+		if (twist_b == Fp2(1, -1)) {
+			twist_b_type = tb_1m1i;
+		} else if (twist_b == Fp2(1, -2)) {
+			twist_b_type = tb_1m2i;
+		} else {
+			twist_b_type = tb_generic;
+		}
+		G1::init(0, cp.b, mcl::ec::Proj);
+		G2::init(0, twist_b, mcl::ec::Proj);
+		G2::setOrder(r);
+
+		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
+		useNAF = gmp::getNAF(siTbl, largest_c);
+		precomputedQcoeffSize = util::getPrecomputeQcoeffSize(siTbl);
+		gmp::getNAF(zReplTbl, gmp::abs(z));
+/*
+		if (isBLS12) {
+			mpz_class z2 = z * z;
+			mpz_class z3 = z2 * z;
+			mpz_class z4 = z3 * z;
+			mpz_class z5 = z4 * z;
+			exp_c0 = z5 - 2 * z4 + 2 * z2 - z + 3;
+			exp_c1 = z4 - 2 * z3 + 2 * z - 1;
+			exp_c2 = z3 - 2 * z2 + z;
+			exp_c3 = z2 - 2 * z + 1;
+		} else {
+			exp_c0 = -2 + z * (-18 + z * (-30 - 36 * z));
+			exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
+			exp_c2 = 6 * z * z + 1;
+		}
+*/
+		if (isBLS12) {
+			mapTo.init(0, z, false);
+		} else {
+			mapTo.init(2 * p - r, z, true);
+			glv1.init(r, z);
+			glv2.init(r, z);
 		}
 	}
 };
@@ -1211,7 +1193,7 @@ struct BNT {
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
 		const Fp2& c = x.c;
-#if 0
+#if 1
 		Fp6& z0 = z.a;
 		Fp6& z1 = z.b;
 		Fp6 z0x0, z1x1, t0;
@@ -1332,18 +1314,6 @@ struct BNT {
 		Fp2::add(z.a.b, z0x0.b, z1x1.a);
 		Fp2::add(z.a.c, z0x0.c, z1x1.b);
 	}
-	/*
-		input
-		z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w
-		x = (a, b, c) -> (a, 0, c, 0, b, 0)
-		output
-		z <- zx = (z0a + (z1c + z4b)xi) + (z1a + (z2c + z5b)xi)v + (z0c + z2a + z3b)v^2
-		+ (z3a + (z2b + z4c)xi)w + (z0b + z4a + z5cxi)vw + (z1b + z3c + z5a)v^2w
-
-		z1c + z4b = (z1 + z4)(c + b) - z1b - z4c
-		z2c + z5b = (z2 + z5)(c + b) - z2b - z5c
-		z0c + z3b = (z0 + z3)(c + b) - z0b - z3c
-	*/
 	static void mulSparse(Fp12& z, const Fp6& x)
 	{
 		if (param.cp.isMtype) {
@@ -1844,7 +1814,13 @@ struct BNT {
 template<class Fp>
 util::ParamT<Fp> BNT<Fp>::param;
 
-using mcl::CurveParam; // QQQ : for backward compatibility(will be removed later)
+// backward compatibility
+using mcl::CurveParam;
+static const CurveParam& CurveFp254BNb = BN254BNb;
+static const CurveParam& CurveFp382_1 = BN382_1;
+static const CurveParam& CurveFp382_2 = BN382_2;
+static const CurveParam& CurveFp462 = BN462;
+static const CurveParam& CurveSNARK1 = BN_SNARK1;
 
 } } // mcl::bn
 
