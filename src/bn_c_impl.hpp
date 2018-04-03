@@ -126,7 +126,7 @@ int mclBn_init(int curve, int maxUnitSize)
 		fprintf(stderr, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
-	const mcl::bn::CurveParam& cp = mcl::bn::getCurveParam(curve);
+	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
 	initPairing(cp);
 	return 0;
 } catch (std::exception& e) {

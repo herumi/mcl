@@ -119,7 +119,7 @@ void testGLV1()
 	oldGLV oldGlv;
 	oldGlv.init(BN::param.r, BN::param.z);
 
-	mcl::bn::GLV1<Fp> glv;
+	mcl::util::GLV1<Fp> glv;
 	glv.init(BN::param.r, BN::param.z);
 	compareLength(glv, oldGlv);
 
@@ -160,7 +160,7 @@ void testGLV2()
 	mpz_class z = BN::param.z;
 	mpz_class r = BN::param.r;
 	mpz_class lambda = 6 * z * z;
-	mcl::bn::GLV2<Fp2> glv2;
+	mcl::util::GLV2<Fp2> glv2;
 	glv2.init(r, z);
 	mpz_class n;
 	cybozu::XorShift rg;
@@ -187,13 +187,13 @@ void testGLV2()
 
 CYBOZU_TEST_AUTO(glv)
 {
-	const mcl::bn::CurveParam tbl[] = {
+	const mcl::CurveParam tbl[] = {
 		mcl::bn::CurveFp254BNb,
 		mcl::bn::CurveFp382_1,
 		mcl::bn::CurveFp382_2,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const mcl::bn::CurveParam& cp = tbl[i];
+		const mcl::CurveParam& cp = tbl[i];
 		initPairing(cp);
 		testGLV1();
 		testGLV2();

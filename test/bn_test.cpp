@@ -17,7 +17,7 @@ using namespace mcl::bn256;
 mcl::fp::Mode g_mode;
 
 const struct TestSet {
-	mcl::bn::CurveParam cp;
+	mcl::CurveParam cp;
 	const char *name;
 	struct G2 {
 		const char *aa;

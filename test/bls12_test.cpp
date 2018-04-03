@@ -17,7 +17,7 @@ using namespace mcl::bls12_381;
 mcl::fp::Mode g_mode;
 
 const struct TestSet {
-	mcl::bls12::CurveParam cp;
+	mcl::CurveParam cp;
 	const char *name;
 	const char *p;
 	const char *r;

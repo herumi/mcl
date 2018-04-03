@@ -59,7 +59,7 @@ int sheInit(int curve, int maxUnitSize)
 	static int g_curve = -1;
 	if (g_curve == curve) return 0;
 
-	mcl::bn::CurveParam cp;
+	mcl::CurveParam cp;
 	switch (curve) {
 	case mclBn_CurveFp254BNb:
 		cp = mcl::bn::CurveFp254BNb;

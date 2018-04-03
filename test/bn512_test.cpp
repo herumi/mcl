@@ -12,7 +12,7 @@ mcl::fp::Mode g_mode;
 
 #include "bench.hpp"
 
-void testCurve(const mcl::bn::CurveParam& cp)
+void testCurve(const mcl::CurveParam& cp)
 {
 	initPairing(cp, g_mode);
 	G1 P;
