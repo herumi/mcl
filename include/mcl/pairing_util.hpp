@@ -37,32 +37,31 @@ struct CurveParam {
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
 
-namespace bn {
-
-const CurveParam CurveFp254BNb = { "-0x4080000000000001", 2, 1, false, mclBn_CurveFp254BNb }; // -(2^62 + 2^55 + 1)
+const CurveParam BN254BNb = { "-0x4080000000000001", 2, 1, false, MCL_BN254BNb }; // -(2^62 + 2^55 + 1)
 // provisional(experimental) param with maxBitSize = 384
-const CurveParam CurveFp382_1 = { "-0x400011000000000000000001", 2, 1, false, mclBn_CurveFp382_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam CurveFp382_2 = { "-0x400040090001000000000001", 2, 1, false, mclBn_CurveFp382_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
-const CurveParam CurveFp462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, mclBn_CurveFp462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
-const CurveParam CurveSNARK1 = { "4965661367192848881", 3, 9, false, mclBn_CurveSNARK1 };
+const CurveParam BN382_1 = { "-0x400011000000000000000001", 2, 1, false, MCL_BN382_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
+const CurveParam BN382_2 = { "-0x400040090001000000000001", 2, 1, false, MCL_BN382_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
+const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
+const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
+const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
 
+namespace bn {
+static const CurveParam& CurveFp254BNb = BN254BNb;
+static const CurveParam& CurveFp382_1 = BN382_1;
+static const CurveParam& CurveFp382_2 = BN382_2;
+static const CurveParam& CurveFp462 = BN462;
+static const CurveParam& CurveSNARK1 = BN_SNARK1;
 } // mcl::bn
-
-namespace bls12 {
-
-const CurveParam CurveFp381 = { "-0xd201000000010000", 4, 1, true, mclBls12_CurveFp381 };
-
-} // mcl::bls12
 
 inline const CurveParam& getCurveParam(int type)
 {
 	switch (type) {
-	case mclBn_CurveFp254BNb: return bn::CurveFp254BNb;
-	case mclBn_CurveFp382_1: return bn::CurveFp382_1;
-	case mclBn_CurveFp382_2: return bn::CurveFp382_2;
-	case mclBn_CurveFp462: return bn::CurveFp462;
-	case mclBn_CurveSNARK1: return bn::CurveSNARK1;
-	case mclBls12_CurveFp381: return bls12::CurveFp381;
+	case MCL_BN254BNb: return mcl::BN254BNb;
+	case MCL_BN382_1: return mcl::BN382_1;
+	case MCL_BN382_2: return mcl::BN382_2;
+	case MCL_BN462: return mcl::BN462;
+	case MCL_BN_SNARK1: return mcl::BN_SNARK1;
+	case MCL_BLS12_381: return mcl::BLS12_381;
 	default:
 		throw cybozu::Exception("getCurveParam:bad type") << type;
 	}
@@ -135,7 +134,7 @@ struct CommonParamT {
 	void initCommonParam(const CurveParam& cp, fp::Mode mode)
 	{
 		this->cp = cp;
-		isBLS12 = cp.curveType == mclBls12_CurveFp381;
+		isBLS12 = cp.curveType == MCL_BLS12_381;
 		z = mpz_class(cp.z);
 		isNegative = z < 0;
 		if (isNegative) {
@@ -421,7 +420,7 @@ struct BasePairingT {
 				z = 1;
 				return;
 			}
-			assert(param.cp.curveType == mclBn_CurveFp254BNb);
+			assert(param.cp.curveType == MCL_BN254BNb);
 			Fp12 x_org = x;
 			Fp12 d62;
 			Fp2 c55nume, c55denomi, c62nume, c62denomi;
@@ -452,7 +451,7 @@ struct BasePairingT {
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
 #if 1
-		if (param.cp.curveType == mclBn_CurveFp254BNb) {
+		if (param.cp.curveType == MCL_BN254BNb) {
 			Compress::fixed_power(y, x);
 		} else {
 			Fp12 orgX = x;

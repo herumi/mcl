@@ -27,7 +27,7 @@ typedef BLS12::Fp12 GT;
 /* the order of G1 is r */
 typedef mcl::FpT<local::FrTag, 256> Fr;
 
-static inline void initPairing(const mcl::bls12::CurveParam& cp = mcl::bls12::CurveFp381, fp::Mode mode = fp::FP_AUTO)
+static inline void initPairing(const mcl::bls12::CurveParam& cp = mcl::BLS12_381, fp::Mode mode = fp::FP_AUTO)
 {
 	BLS12::init(cp, mode);
 	G1::setCompressedExpression();

@@ -88,7 +88,7 @@ struct ParamT : public util::CommonParamT<Fp> {
 	typedef mcl::EcT<Fp2> G2;
 	MapToT<Fp> mapTo;
 
-	void init(const CurveParam& cp = CurveFp381, fp::Mode mode = fp::FP_AUTO)
+	void init(const CurveParam& cp = mcl::BLS12_381, fp::Mode mode = fp::FP_AUTO)
 	{
 		Common::initCommonParam(cp, mode);
 		mapTo.init(this->z);
@@ -107,7 +107,7 @@ struct BLS12T : mcl::util::BasePairingT<BLS12T<Fp>, Fp, ParamT<Fp> > {
 	typedef util::HaveFrobenius<G2> G2withF;
 	typedef mcl::FpDblT<Fp> FpDbl;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-	static void init(const mcl::bls12::CurveParam& cp = CurveFp381, fp::Mode mode = fp::FP_AUTO)
+	static void init(const mcl::CurveParam& cp = mcl::BLS12_381, fp::Mode mode = fp::FP_AUTO)
 	{
 		Base::param.init(cp, mode);
 		G2withF::init(cp.isMtype);
