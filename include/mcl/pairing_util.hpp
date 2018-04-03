@@ -269,6 +269,7 @@ typename G2::Fp HaveFrobenius<G2>::g2;
 template<class G2>
 typename G2::Fp HaveFrobenius<G2>::g3;
 
+
 template<class CT, class Fp, class Param>
 struct BasePairingT {
 	typedef mcl::Fp2T<Fp> Fp2;
@@ -899,7 +900,130 @@ struct BasePairingT {
 		Fp12::pow(y, x, p2 + 1);
 		Fp12::pow(y, y, p4 * p2 - 1);
 #endif
-		CT::expHardPart(y, y);
+		if (param.isBLS12) {
+			expHardPartBLS12(y, y);
+		} else {
+			expHardPartBN(y, y);
+		}
+	}
+	/*
+		Faster Hashing to G2
+		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
+		section 4.1
+		y = x^(d 2z(6z^2 + 3z + 1)) where
+		p = p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1
+		r = r(z) = 36z^4 + 36z^3 + 18z^2 + 6z + 1
+		d = (p^4 - p^2 + 1) / r
+		d1 = d 2z(6z^2 + 3z + 1)
+		= c0 + c1 p + c2 p^2 + c3 p^3
+
+		c0 = 1 + 6z + 12z^2 + 12z^3
+		c1 = 4z + 6z^2 + 12z^3
+		c2 = 6z + 6z^2 + 12z^3
+		c3 = -1 + 4z + 6z^2 + 12z^3
+		x -> x^z -> x^2z -> x^4z -> x^6z -> x^(6z^2) -> x^(12z^2) -> x^(12z^3)
+		a = x^(6z) x^(6z^2) x^(12z^3)
+		b = a / (x^2z)
+		x^d1 = (a x^(6z^2) x) b^p a^(p^2) (b / x)^(p^3)
+	*/
+	static void expHardPartBN(Fp12& y, const Fp12& x)
+	{
+#if 0
+		const mpz_class& p = param.p;
+		mpz_class p2 = p * p;
+		mpz_class p4 = p2 * p2;
+		Fp12::pow(y, x, (p4 - p2 + 1) / param.r);
+		return;
+#endif
+#if 1
+		Fp12 a, b;
+		Fp12 a2, a3;
+		pow_z(b, x); // x^z
+		fasterSqr(b, b); // x^2z
+		fasterSqr(a, b); // x^4z
+		a *= b; // x^6z
+		pow_z(a2, a); // x^(6z^2)
+		a *= a2;
+		fasterSqr(a3, a2); // x^(12z^2)
+		pow_z(a3, a3); // x^(12z^3)
+		a *= a3;
+		Fp12::unitaryInv(b, b);
+		b *= a;
+		a2 *= a;
+		Fp12::Frobenius2(a, a);
+		a *= a2;
+		a *= x;
+		Fp12::unitaryInv(y, x);
+		y *= b;
+		Fp12::Frobenius(b, b);
+		a *= b;
+		Fp12::Frobenius3(y, y);
+		y *= a;
+#else
+		Fp12 t1, t2, t3;
+		Fp12::Frobenius(t1, x);
+		Fp12::Frobenius(t2, t1);
+		Fp12::Frobenius(t3, t2);
+		Fp12::pow(t1, t1, param.exp_c1);
+		Fp12::pow(t2, t2, param.exp_c2);
+		Fp12::pow(y, x, param.exp_c0);
+		y *= t1;
+		y *= t2;
+		y *= t3;
+#endif
+	}
+	/*
+		Implementing Pairings at the 192-bit Security Level
+		D.F.Aranha, L.F.Castaneda, E.Knapp, A.Menezes, F.R.Henriquez
+		Section 4
+	*/
+	static void expHardPartBLS12(Fp12& y, const Fp12& x)
+	{
+#if 0
+		const mpz_class& p = param.p;
+		mpz_class p2 = p * p;
+		mpz_class p4 = p2 * p2;
+		Fp12::pow(y, x, (p4 - p2 + 1) / param.r * 3);
+		return;
+#endif
+#if 1
+		Fp12 a0, a1, a2, a3, a4, a5, a6, a7;
+		Fp12::unitaryInv(a0, x); // a0 = x^-1
+		fasterSqr(a1, a0); // x^-2
+		pow_z(a2, x); // x^z
+		fasterSqr(a3, a2); // x^2z
+		a1 *= a2; // a1 = x^(z-2)
+		pow_z(a7, a1); // a7 = x^(z^2-2z)
+		pow_z(a4, a7); // a4 = x^(z^3-2z^2)
+		pow_z(a5, a4); // a5 = x^(z^4-2z^3)
+		a3 *= a5; // a3 = x^(z^4-2z^3+2z)
+		pow_z(a6, a3); // a6 = x^(z^5-2z^4+2z^2)
+
+		Fp12::unitaryInv(a1, a1); // x^(2-z)
+		a1 *= a6; // x^(z^5-2z^4+2z^2-z+2)
+		a1 *= x; // x^(z^5-2z^4+2z^2-z+3) = x^c0
+		a3 *= a0; // x^(z^4-2z^3-1) = x^c1
+		Fp12::Frobenius(a3, a3); // x^(c1 p)
+		a1 *= a3; // x^(c0 + c1 p)
+		a4 *= a2; // x^(z^3-2z^2+z) = x^c2
+		Fp12::Frobenius2(a4, a4);  // x^(c2 p^2)
+		a1 *= a4; // x^(c0 + c1 p + c2 p^2)
+		a7 *= x; // x^(z^2-2z+1) = x^c3
+		Fp12::Frobenius3(y, a7);
+		y *= a1;
+#else
+		Fp12 t1, t2, t3;
+		Fp12::Frobenius(t1, x);
+		Fp12::Frobenius(t2, t1);
+		Fp12::Frobenius(t3, t2);
+		Fp12::pow(t1, t1, param.exp_c1);
+		Fp12::pow(t2, t2, param.exp_c2);
+		Fp12::pow(t3, t3, param.exp_c3);
+		Fp12::pow(y, x, param.exp_c0);
+		y *= t1;
+		y *= t2;
+		y *= t3;
+#endif
 	}
 	/*
 		remark : returned value is NOT on a curve
