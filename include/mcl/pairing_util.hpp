@@ -575,7 +575,7 @@ struct MapToT {
 		G2::add(Q, T0, T1);
 	}
 	/*
-		cofactor_ is for G2
+		cofactor_ is for G2(not used now)
 	*/
 	void initBN(const mpz_class& cofactor, const mpz_class &z)
 	{

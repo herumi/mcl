@@ -340,7 +340,7 @@ struct ParamT : public util::CommonParamT<Fp> {
 	GLV1<Fp> glv1;
 	GLV2<Fp2> glv2;
 
-	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
+	void init(const CurveParam& cp, fp::Mode mode)
 	{
 		Common::initCommonParam(cp, mode);
 		mapTo.init(2 * this->p - this->r, this->z, true);

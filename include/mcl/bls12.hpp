@@ -21,7 +21,7 @@ struct ParamT : public util::CommonParamT<Fp> {
 	typedef mcl::EcT<Fp2> G2;
 	util::MapToT<Fp> mapTo;
 
-	void init(const CurveParam& cp = mcl::BLS12_381, fp::Mode mode = fp::FP_AUTO)
+	void init(const CurveParam& cp, fp::Mode mode)
 	{
 		Common::initCommonParam(cp, mode);
 		mapTo.init(0, this->z, false);
