@@ -966,8 +966,12 @@ struct ParamT : public util::CommonParamT<Fp> {
 	}
 };
 
-template<class CT, class Fp, class Param>
-struct BasePairingT {
+} // mcl::util
+
+namespace bn {
+
+template<class Fp>
+struct BNT {
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::Fp6T<Fp> Fp6;
 	typedef mcl::Fp12T<Fp> Fp12;
@@ -976,8 +980,41 @@ struct BasePairingT {
 	typedef util::HaveFrobenius<G2> G2withF;
 	typedef mcl::FpDblT<Fp> FpDbl;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-	typedef CompressT<Fp> Compress;
+	typedef util::CompressT<Fp> Compress;
+	typedef util::ParamT<Fp> Param;
 	static Param param;
+
+	static void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		mpz_class s;
+		mcl::gmp::setArray(s, y, yn);
+		if (isNegative) s = -s;
+		param.glv1.mul(z, x, s, constTime);
+	}
+	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		mpz_class s;
+		mcl::gmp::setArray(s, y, yn);
+		if (isNegative) s = -s;
+		param.glv2.mul(z, x, s, constTime);
+	}
+	static void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		mpz_class s;
+		mcl::gmp::setArray(s, y, yn);
+		if (isNegative) s = -s;
+		param.glv2.pow(z, x, s, constTime);
+	}
+	static void init(const mcl::CurveParam& cp = mcl::BN254BNb, fp::Mode mode = fp::FP_AUTO)
+	{
+		param.init(cp, mode);
+		G2withF::init(cp.isMtype);
+		if (!param.isBLS12) {
+			G1::setMulArrayGLV(mulArrayGLV1);
+			G2::setMulArrayGLV(mulArrayGLV2);
+			Fp12::setPowArrayGLV(powArrayGLV2);
+		}
+	}
 
 	/*
 		y = x^z if z > 0
@@ -1804,59 +1841,10 @@ struct BasePairingT {
 	}
 };
 
-template<class CT, class Fp, class Param>
-Param BasePairingT<CT, Fp, Param>::param;
-
-} // mcl::util
-
-namespace bn {
+template<class Fp>
+util::ParamT<Fp> BNT<Fp>::param;
 
 using mcl::CurveParam; // QQQ : for backward compatibility(will be removed later)
-
-template<class Fp>
-struct BNT : mcl::util::BasePairingT<BNT<Fp>, Fp, util::ParamT<Fp> > {
-	typedef util::ParamT<Fp> Param;
-	typedef typename mcl::util::BasePairingT<BNT<Fp>, Fp, Param> Base;
-	typedef mcl::Fp2T<Fp> Fp2;
-	typedef mcl::Fp6T<Fp> Fp6;
-	typedef mcl::Fp12T<Fp> Fp12;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
-	typedef util::HaveFrobenius<G2> G2withF;
-	typedef mcl::FpDblT<Fp> FpDbl;
-	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-	static void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		mpz_class s;
-		mcl::gmp::setArray(s, y, yn);
-		if (isNegative) s = -s;
-		Base::param.glv1.mul(z, x, s, constTime);
-	}
-	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		mpz_class s;
-		mcl::gmp::setArray(s, y, yn);
-		if (isNegative) s = -s;
-		Base::param.glv2.mul(z, x, s, constTime);
-	}
-	static void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		mpz_class s;
-		mcl::gmp::setArray(s, y, yn);
-		if (isNegative) s = -s;
-		Base::param.glv2.pow(z, x, s, constTime);
-	}
-	static void init(const mcl::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
-	{
-		Base::param.init(cp, mode);
-		G2withF::init(cp.isMtype);
-		if (!Base::param.isBLS12) {
-			G1::setMulArrayGLV(mulArrayGLV1);
-			G2::setMulArrayGLV(mulArrayGLV2);
-			Fp12::setPowArrayGLV(powArrayGLV2);
-		}
-	}
-};
 
 } } // mcl::bn
 
