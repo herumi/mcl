@@ -13,132 +13,6 @@ namespace mcl { namespace bn {
 using mcl::CurveParam;
 using mcl::getCurveParam;
 
-template<class Fp>
-struct MapToT {
-	typedef mcl::Fp2T<Fp> Fp2;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
-	typedef util::HaveFrobenius<G2> G2withF;
-	Fp c1_; // sqrt(-3)
-	Fp c2_; // (-1 + sqrt(-3)) / 2
-	mpz_class cofactor_;
-	mpz_class z_;
-	int legendre(const Fp& x) const
-	{
-		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
-	}
-	int legendre(const Fp2& x) const
-	{
-		Fp y;
-		Fp2::norm(y, x);
-		return legendre(y);
-	}
-	void mulFp(Fp& x, const Fp& y) const
-	{
-		x *= y;
-	}
-	void mulFp(Fp2& x, const Fp& y) const
-	{
-		x.a *= y;
-		x.b *= y;
-	}
-	/*
-		P.-A. Fouque and M. Tibouchi,
-		"Indifferentiable hashing to Barreto Naehrig curves,"
-		in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
-
-		w = sqrt(-3) t / (1 + b + t^2)
-		Remark: throw exception if t = 0, c1, -c1 and b = 2
-	*/
-	template<class G, class F>
-	void calcBN(G& P, const F& t) const
-	{
-		F x, y, w;
-		bool negative = legendre(t) < 0;
-		if (t.isZero()) goto ERR_POINT;
-		F::sqr(w, t);
-		w += G::b_;
-		*w.getFp0() += Fp::one();
-		if (w.isZero()) goto ERR_POINT;
-		F::inv(w, w);
-		mulFp(w, c1_);
-		w *= t;
-		for (int i = 0; i < 3; i++) {
-			switch (i) {
-			case 0: F::mul(x, t, w); F::neg(x, x); *x.getFp0() += c2_; break;
-			case 1: F::neg(x, x); *x.getFp0() -= Fp::one(); break;
-			case 2: F::sqr(x, w); F::inv(x, x); *x.getFp0() += Fp::one(); break;
-			}
-			G::getWeierstrass(y, x);
-			if (F::squareRoot(y, y)) {
-				if (negative) F::neg(y, y);
-				P.set(x, y, false);
-				return;
-			}
-		}
-	ERR_POINT:
-		throw cybozu::Exception("MapToT:calcBN:bad") << t;
-	}
-	/*
-		Faster Hashing to G2
-		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
-		section 6.1
-		for BN
-		Q = zP + Frob(3zP) + Frob^2(zP) + Frob^3(P)
-		  = -(18x^3 + 12x^2 + 3x + 1)cofactor_ P
-	*/
-	void mulByCofactorBN(G2& Q, const G2& P) const
-	{
-#if 0
-		G2::mulGeneric(Q, P, cofactor_);
-#else
-#if 0
-		mpz_class t = -(1 + z_ * (3 + z_ * (12 + z_ * 18)));
-		G2::mulGeneric(Q, P, t * cofactor_);
-#else
-		G2 T0, T1, T2;
-		/*
-			G2::mul (GLV method) can't be used because P is not on G2
-		*/
-		G2::mulGeneric(T0, P, z_);
-		G2::dbl(T1, T0);
-		T1 += T0; // 3zP
-		G2withF::Frobenius(T1, T1);
-		G2withF::Frobenius2(T2, T0);
-		T0 += T1;
-		T0 += T2;
-		G2withF::Frobenius3(T2, P);
-		G2::add(Q, T0, T2);
-#endif
-#endif
-	}
-	/*
-		cofactor_ is for G2
-	*/
-	void init(const mpz_class& cofactor, const mpz_class &z)
-	{
-		if (!Fp::squareRoot(c1_, -3)) throw cybozu::Exception("MapToT:init:c1_");
-		c2_ = (c1_ - 1) / 2;
-		cofactor_ = cofactor;
-		z_ = z;
-	}
-	void calcG1(G1& P, const Fp& t) const
-	{
-		calcBN<G1, Fp>(P, t);
-		assert(P.isValid());
-	}
-	/*
-		get the element in G2 by multiplying the cofactor
-	*/
-	void calcG2(G2& P, const Fp2& t) const
-	{
-		calcBN<G2, Fp2>(P, t);
-		assert(cofactor_ != 0);
-		mulByCofactorBN(P, P);
-		assert(!P.isZero());
-	}
-};
-
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1
@@ -462,14 +336,14 @@ struct ParamT : public util::CommonParamT<Fp> {
 	typedef Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
-	MapToT<Fp> mapTo;
+	util::MapToT<Fp> mapTo;
 	GLV1<Fp> glv1;
 	GLV2<Fp2> glv2;
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
 		Common::initCommonParam(cp, mode);
-		mapTo.init(2 * this->p - this->r, this->z);
+		mapTo.init(2 * this->p - this->r, this->z, true);
 		glv1.init(this->r, this->z);
 		glv2.init(this->r, this->z);
 	}
