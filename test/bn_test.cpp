@@ -113,14 +113,14 @@ void testMapToG1()
 		BN::mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
-		G1::mul(gr, g, BN::param.r);
+		G1::mulGeneric(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.b == 2) {
+	if (BN::param.cp.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, 0), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, BN::param.mapTo.c1), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, -BN::param.mapTo.c1), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, BN::param.mapTo.c1_), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, -BN::param.mapTo.c1_), cybozu::Exception);
 	}
 #endif
 }
@@ -132,11 +132,11 @@ void testMapToG2()
 		BN::mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
-		G2::mul(gr, g, BN::param.r);
+		G2::mulGeneric(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.b == 2) {
+	if (BN::param.cp.b == 2) {
 		CYBOZU_TEST_EXCEPTION(BN::mapToG2(g, 0), cybozu::Exception);
 	}
 #endif
@@ -168,7 +168,7 @@ void testCyclotomic()
 
 void testCompress(const G1& P, const G2& Q)
 {
-	if (!BN::param.isCurveFp254BNb) return;
+	if (BN::param.cp.curveType != mclBn_CurveFp254BNb) return;
 	Fp12 a;
 	BN::pairing(a, P, Q);
 	BN::mapToCyclotomic(a, a);
@@ -339,35 +339,6 @@ CYBOZU_TEST_AUTO(naive)
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
 		initPairing(ts.cp, g_mode);
-if(0){
-	G1 P(ts.g1.a, ts.g1.b);
-	G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
-	Fp12 z1, z2;
-	Fp6 x;
-	for (int i = 0; i < 12; i++) z1.getFp0()[i] = i * i + i + 3;
-	for (int i = 0; i < 6; i++) x.getFp0()[i] = i * i * i + i * 2 + 4;
-	z2 = z1;
-	Fp12 t;
-	mcl::util::convertFp6toFp12(t, x);
-	z1 *= t;
-#ifdef MCL_DEV
-	BN::mul_025(z2, x);
-#else
-	BN::mul_024(z2, x);
-#endif
-	for (int i = 0; i < 12; i++) {
-		printf("i=%d\n", i);
-		CYBOZU_TEST_EQUAL(z1.getFp0()[i], z2.getFp0()[i]);
-	}
-//	CYBOZU_BENCH_C("addLine", 100000, BN::addLine, z1.a, Q, Q, P);
-//	CYBOZU_BENCH_C("dblLine", 100000, BN::dblLine, z1.a, Q, P);
-BN::Fp2Dbl D;
-	CYBOZU_BENCH_C("Fp2Dbl::mulPre", 100000, BN::Fp2Dbl::mulPre, D, x.a, x.b);
-	CYBOZU_BENCH_C("Fp6mul_01", 1000000, BN::Fp6mul_01, x, x, x.a, x.b);
-	CYBOZU_BENCH_C("mul_025", 1000000, BN::mul_025, z2,z2.a);
-	CYBOZU_BENCH_C("mul_024", 1000000, BN::mul_024, z2,z2.a);
-	exit(1);
-}
 		const G1 P(ts.g1.a, ts.g1.b);
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
@@ -389,7 +360,7 @@ BN::Fp2Dbl D;
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testBench(P, Q);
+		testBench<BN>(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {

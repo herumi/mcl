@@ -149,7 +149,6 @@ void testSetStr(const G2& Q0)
 	}
 }
 
-#if 0
 void testMapToG1()
 {
 	G1 g;
@@ -160,13 +159,6 @@ void testMapToG1()
 		G1::mul(gr, g, BLS12::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
-#ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BLS12::param.b == 2) {
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG1(g, 0), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG1(g, BLS12::param.mapTo.c1), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG1(g, -BLS12::param.mapTo.c1), cybozu::Exception);
-	}
-#endif
 }
 
 void testMapToG2()
@@ -179,17 +171,11 @@ void testMapToG2()
 		G2::mul(gr, g, BLS12::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
-#ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BLS12::param.b == 2) {
-		CYBOZU_TEST_EXCEPTION(BLS12::mapToG2(g, 0), cybozu::Exception);
-	}
-#endif
 	Fp x;
 	x.setHashOf("abc");
 	BLS12::mapToG2(g, Fp2(x, 0));
 	CYBOZU_TEST_ASSERT(g.isValid());
 }
-#endif
 
 void testPrecomputed(const G1& P, const G2& Q)
 {
@@ -256,59 +242,31 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		ss >> e2;
 	}
 	CYBOZU_TEST_EQUAL(e1, e2);
-#ifdef ONLY_BENCH
-	for (int i = 0; i < 1000; i++) BLS12::pairing(e1, P, Q);
-//	CYBOZU_BENCH_C("pairing", 1000, BLS12::pairing, e1, P, Q); // 2.4Mclk
-#else
-	{
-		Fp12 e = e1, ea;
-		G1 Pa;
-		G2 Qa;
+	Fp12 e = e1, ea;
+	G1 Pa;
+	G2 Qa;
 #if defined(__EMSCRIPTEN__) || MCL_SIZEOF_UNIT == 4
-		const int count = 100;
+	const int count = 100;
 #else
-		const int count = 1000;
+	const int count = 1000;
 #endif
-		mpz_class a;
-		cybozu::XorShift rg;
-		for (int i = 0; i < count; i++) {
-			Fr r;
-			r.setRand(rg);
-			a = r.getMpz();
-			Fp12::pow(ea, e, a);
-			G1::mul(Pa, P, a);
-			G2::mul(Qa, Q, a);
-			G1 T;
-			G1::mulCT(T, P, a);
-			CYBOZU_TEST_EQUAL(Pa, T);
-			BLS12::pairing(e1, Pa, Q);
-			BLS12::pairing(e2, P, Qa);
-			CYBOZU_TEST_EQUAL(ea, e1);
-			CYBOZU_TEST_EQUAL(ea, e2);
-		}
-		mpz_class z = 3;
-		CYBOZU_BENCH_C("G1::mulCT  ", 500, G1::mulCT, Pa, P, a);
-		CYBOZU_BENCH_C("G1::mulCT z", 500, G1::mulCT, Pa, P, z);
-		CYBOZU_BENCH_C("G1::mul  ", 500, G1::mul, Pa, Pa, a);
-		CYBOZU_BENCH_C("G1::mul z", 500, G1::mul, Pa, Pa, z);
-		CYBOZU_BENCH_C("G1::add", 500, G1::add, Pa, Pa, P);
-		CYBOZU_BENCH_C("G1::dbl", 500, G1::dbl, Pa, Pa);
-		CYBOZU_BENCH_C("G2::mulCT  ", 500, G2::mulCT, Qa, Q, a);
-		CYBOZU_BENCH_C("G2::mulCT z", 500, G2::mulCT, Qa, Q, z);
-		CYBOZU_BENCH_C("G2::mul  ", 500, G2::mul, Qa, Qa, a);
-		CYBOZU_BENCH_C("G2::mul z", 500, G2::mul, Qa, Qa, z);
-		CYBOZU_BENCH_C("G2::add", 500, G2::add, Qa, Qa, Q);
-		CYBOZU_BENCH_C("G2::dbl", 500, G2::dbl, Qa, Qa);
-		CYBOZU_BENCH_C("GT::pow", 500, GT::pow, e1, e1, a);
-//		CYBOZU_BENCH_C("GT::powGLV", 500, BLS12::param.glv2.pow, e1, e1, a);
-		G1 PP;
-		G2 QQ;
-//		CYBOZU_BENCH_C("hashAndMapToG1", 500, BLS12::hashAndMapToG1, PP, "abc", 3);
-//		CYBOZU_BENCH_C("hashAndMapToG2", 500, BLS12::hashAndMapToG2, QQ, "abc", 3);
+	mpz_class a;
+	cybozu::XorShift rg;
+	for (int i = 0; i < count; i++) {
+		Fr r;
+		r.setRand(rg);
+		a = r.getMpz();
+		Fp12::pow(ea, e, a);
+		G1::mul(Pa, P, a);
+		G2::mul(Qa, Q, a);
+		G1 T;
+		G1::mulCT(T, P, a);
+		CYBOZU_TEST_EQUAL(Pa, T);
+		BLS12::pairing(e1, Pa, Q);
+		BLS12::pairing(e2, P, Qa);
+		CYBOZU_TEST_EQUAL(ea, e1);
+		CYBOZU_TEST_EQUAL(ea, e2);
 	}
-	CYBOZU_BENCH("pairing", BLS12::pairing, e1, P, Q); // 2.4Mclk
-	CYBOZU_BENCH("finalExp", BLS12::finalExp, e1, e1); // 1.3Mclk
-#endif
 }
 
 void testTrivial(const G1& P, const G2& Q)
@@ -335,6 +293,8 @@ void testTrivial(const G1& P, const G2& Q)
 	CYBOZU_TEST_EQUAL(e, 1);
 }
 
+#include "bench.hpp"
+
 CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
@@ -344,7 +304,10 @@ CYBOZU_TEST_AUTO(naive)
 		const G1 P(Fp(ts.g1.a), Fp(ts.g1.b));
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
-		testPairing(P, Q, ts.e);
+		{
+			Fp12 e;
+			for (int i = 0; i < 1000; i++) BLS12::pairing(e, P, Q);
+		}
 		clk.put();
 		return;
 #endif
@@ -353,11 +316,12 @@ CYBOZU_TEST_AUTO(naive)
 //		testFp12pow(P, Q);
 		testTrivial(P, Q);
 		testSetStr(Q);
-//		testMapToG1();
-//		testMapToG2();
+		testMapToG1();
+		testMapToG2();
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
+		testBench<BLS12>(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {
@@ -586,7 +550,7 @@ const char *f2Str =
 	l.c.setStr(l1Str, 16);
 	f.setStr(fStr, 16);
 	f2.setStr(f2Str, 16);
-	BLS12::mul_024(f, l);
+	BLS12::mulSparse(f, l);
 	CYBOZU_TEST_EQUAL(f, f2);
 }
 

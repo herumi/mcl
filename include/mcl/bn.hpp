@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-//#define MCL_DEV
 #include <mcl/pairing_util.hpp>
 
 namespace mcl { namespace bn {
@@ -19,9 +18,11 @@ struct MapToT {
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
-	Fp c1; // sqrt(-3)
-	Fp c2; // (-1 + sqrt(-3)) / 2
-	mpz_class cofactor;
+	typedef util::HaveFrobenius<G2> G2withF;
+	Fp c1_; // sqrt(-3)
+	Fp c2_; // (-1 + sqrt(-3)) / 2
+	mpz_class cofactor_;
+	mpz_class z_;
 	int legendre(const Fp& x) const
 	{
 		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
@@ -41,6 +42,14 @@ struct MapToT {
 		x.a *= y;
 		x.b *= y;
 	}
+	/*
+		P.-A. Fouque and M. Tibouchi,
+		"Indifferentiable hashing to Barreto Naehrig curves,"
+		in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
+
+		w = sqrt(-3) t / (1 + b + t^2)
+		Remark: throw exception if t = 0, c1, -c1 and b = 2
+	*/
 	template<class G, class F>
 	void calc(G& P, const F& t) const
 	{
@@ -52,11 +61,11 @@ struct MapToT {
 		*w.getFp0() += Fp::one();
 		if (w.isZero()) goto ERR_POINT;
 		F::inv(w, w);
-		mulFp(w, c1);
+		mulFp(w, c1_);
 		w *= t;
 		for (int i = 0; i < 3; i++) {
 			switch (i) {
-			case 0: F::mul(x, t, w); F::neg(x, x); *x.getFp0() += c2; break;
+			case 0: F::mul(x, t, w); F::neg(x, x); *x.getFp0() += c2_; break;
 			case 1: F::neg(x, x); *x.getFp0() -= Fp::one(); break;
 			case 2: F::sqr(x, w); F::inv(x, x); *x.getFp0() += Fp::one(); break;
 			}
@@ -71,21 +80,48 @@ struct MapToT {
 		throw cybozu::Exception("MapToT:calc:bad") << t;
 	}
 	/*
-		cofactor is for G2
+		Faster Hashing to G2
+		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
+		section 6.1
+		for BN
+		Q = zP + Frob(3zP) + Frob^2(zP) + Frob^3(P)
+		  = -(18x^3 + 12x^2 + 3x + 1)cofactor_ P
 	*/
-	void init(const mpz_class& cofactor)
+	void mulByCofactor(G2& Q, const G2& P) const
 	{
-		if (!Fp::squareRoot(c1, -3)) throw cybozu::Exception("MapToT:init:c1");
-		c2 = (c1 - 1) / 2;
-		this->cofactor = cofactor;
+#if 0
+		G2::mulGeneric(Q, P, cofactor_);
+#else
+#if 0
+		mpz_class t = -(1 + z_ * (3 + z_ * (12 + z_ * 18)));
+		G2::mulGeneric(Q, P, t * cofactor_);
+#else
+		G2 T0, T1, T2;
+		/*
+			G2::mul (GLV method) can't be used because P is not on G2
+		*/
+		G2::mulGeneric(T0, P, z_);
+		G2::dbl(T1, T0);
+		T1 += T0; // 3zP
+		G2withF::Frobenius(T1, T1);
+		G2withF::Frobenius2(T2, T0);
+		T0 += T1;
+		T0 += T2;
+		G2withF::Frobenius3(T2, P);
+		G2::add(Q, T0, T2);
+#endif
+#endif
 	}
 	/*
-		P.-A. Fouque and M. Tibouchi,
-		"Indifferentiable hashing to Barreto Naehrig curves," in Proc. Int. Conf. Cryptol. Inform. Security Latin Amer., 2012, vol. 7533, pp.1-17.
-
-		w = sqrt(-3) t / (1 + b + t^2)
-		Remark: throw exception if t = 0, c1, -c1 and b = 2
+		cofactor_ is for G2
 	*/
+	void init(const mpz_class& cofactor, const mpz_class &z)
+	{
+		if (!Fp::squareRoot(c1_, -3)) throw cybozu::Exception("MapToT:init:c1_");
+		c2_ = (c1_ - 1) / 2;
+		cofactor_ = cofactor;
+		z_ = z;
+	}
 	void calcG1(G1& P, const Fp& t) const
 	{
 		calc<G1, Fp>(P, t);
@@ -97,11 +133,8 @@ struct MapToT {
 	void calcG2(G2& P, const Fp2& t) const
 	{
 		calc<G2, Fp2>(P, t);
-		assert(cofactor != 0);
-		/*
-			G2::mul (GLV method) can't be used because P is not on G2
-		*/
-		G2::mulGeneric(P, P, cofactor);
+		assert(cofactor_ != 0);
+		mulByCofactor(P, P);
 		assert(!P.isZero());
 	}
 };
@@ -238,57 +271,6 @@ struct GLV1 {
 		}
 	}
 };
-
-/*
-	twisted Frobenius for G2
-*/
-template<class G2>
-struct HaveFrobenius : public G2 {
-	typedef typename G2::Fp Fp2;
-	static Fp2 g2;
-	static Fp2 g3;
-	/*
-		BN254 is Dtype
-		BLS12-381 is Mtype
-	*/
-	static void init(bool isMtype)
-	{
-		g2 = Fp2::get_gTbl()[0];
-		g3 = Fp2::get_gTbl()[3];
-		if (isMtype) {
-			Fp2::inv(g2, g2);
-			Fp2::inv(g3, g3);
-		}
-	}
-	/*
-		FrobeniusOnTwist for Dtype
-		p mod 6 = 1, w^6 = xi
-		Frob(x', y') = phi Frob phi^-1(x', y')
-		= phi Frob (x' w^2, y' w^3)
-		= phi (x'^p w^2p, y'^p w^3p)
-		= (F(x') w^2(p - 1), F(y') w^3(p - 1))
-		= (F(x') g^2, F(y') g^3)
-
-		FrobeniusOnTwist for Dtype
-		use (1/g) instead of g
-	*/
-	static void Frobenius(G2& D, const G2& S)
-	{
-		Fp2::Frobenius(D.x, S.x);
-		Fp2::Frobenius(D.y, S.y);
-		Fp2::Frobenius(D.z, S.z);
-		D.x *= g2;
-		D.y *= g3;
-	}
-	static void Frobenius(HaveFrobenius& y, const HaveFrobenius& x)
-	{
-		Frobenius(static_cast<G2&>(y), static_cast<const G2&>(x));
-	}
-};
-template<class G2>
-typename G2::Fp HaveFrobenius<G2>::g2;
-template<class G2>
-typename G2::Fp HaveFrobenius<G2>::g3;
 
 /*
 	GLV method for G2 and GT
@@ -460,7 +442,7 @@ struct GLV2 {
 	}
 	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
 	{
-		typedef HaveFrobenius<G2> G2withF;
+		typedef util::HaveFrobenius<G2> G2withF;
 		G2withF& QQ(static_cast<G2withF&>(Q));
 		const G2withF& PP(static_cast<const G2withF&>(P));
 		mul(QQ, PP, x, constTime);
@@ -486,91 +468,121 @@ struct ParamT : public util::CommonParamT<Fp> {
 
 	void init(const CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		Common::initCommonParam(cp, mode, false);
-		mapTo.init(2 * this->p - this->r);
+		Common::initCommonParam(cp, mode);
+		mapTo.init(2 * this->p - this->r, this->z);
 		glv1.init(this->r, this->z);
 		glv2.init(this->r, this->z);
 	}
 };
 
 template<class Fp>
-struct BNT {
+struct BNT : mcl::util::BasePairingT<BNT<Fp>, Fp, ParamT<Fp> > {
+	typedef ParamT<Fp> Param;
+	typedef typename mcl::util::BasePairingT<BNT<Fp>, Fp, Param> Base;
 	typedef mcl::Fp2T<Fp> Fp2;
 	typedef mcl::Fp6T<Fp> Fp6;
 	typedef mcl::Fp12T<Fp> Fp12;
 	typedef mcl::EcT<Fp> G1;
 	typedef mcl::EcT<Fp2> G2;
-	typedef HaveFrobenius<G2> G2withF;
+	typedef util::HaveFrobenius<G2> G2withF;
 	typedef mcl::FpDblT<Fp> FpDbl;
 	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-	typedef ParamT<Fp> Param;
-	static Param param;
 	static void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv1.mul(z, x, s, constTime);
+		Base::param.glv1.mul(z, x, s, constTime);
 	}
 	static void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv2.mul(z, x, s, constTime);
+		Base::param.glv2.mul(z, x, s, constTime);
 	}
 	static void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		mcl::gmp::setArray(s, y, yn);
 		if (isNegative) s = -s;
-		param.glv2.pow(z, x, s, constTime);
+		Base::param.glv2.pow(z, x, s, constTime);
 	}
 	static void init(const mcl::bn::CurveParam& cp = CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
 	{
-		param.init(cp, mode);
-		G2withF::init(param.isMtype);
+		Base::param.init(cp, mode);
+		G2withF::init(cp.isMtype);
 		G1::setMulArrayGLV(mulArrayGLV1);
 		G2::setMulArrayGLV(mulArrayGLV2);
 		Fp12::setPowArrayGLV(powArrayGLV2);
 	}
-////////////////////////////////////////////////////////////////////////////////////
-	#include "ml-fe.hpp"
-/////////////////////////////////////////////////////////////
-	static void mapToG1(G1& P, const Fp& x) { param.mapTo.calcG1(P, x); }
-	static void mapToG2(G2& P, const Fp2& x) { param.mapTo.calcG2(P, x); }
-	static void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
-	{
-		Fp t;
-		t.setHashOf(buf, bufSize);
-		mapToG1(P, t);
-	}
-	static void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
-	{
-		Fp2 t;
-		t.a.setHashOf(buf, bufSize);
-		t.b.clear();
-		mapToG2(P, t);
-	}
-	static void hashAndMapToG1(G1& P, const std::string& str)
-	{
-		hashAndMapToG1(P, str.c_str(), str.size());
-	}
-	static void hashAndMapToG2(G2& P, const std::string& str)
-	{
-		hashAndMapToG2(P, str.c_str(), str.size());
-	}
-#if 1 // duplicated later
-	// old order of P and Q
-	static void pairing(Fp12& f, const G2& Q, const G1& P)
-	{
-		pairing(f, P, Q);
-	}
-#endif
-};
+	/*
+		Faster Hashing to G2
+		Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
+		section 4.1
+		y = x^(d 2z(6z^2 + 3z + 1)) where
+		p = p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1
+		r = r(z) = 36z^4 + 36z^3 + 18z^2 + 6z + 1
+		d = (p^4 - p^2 + 1) / r
+		d1 = d 2z(6z^2 + 3z + 1)
+		= c0 + c1 p + c2 p^2 + c3 p^3
 
-template<class Fp>
-ParamT<Fp> BNT<Fp>::param;
+		c0 = 1 + 6z + 12z^2 + 12z^3
+		c1 = 4z + 6z^2 + 12z^3
+		c2 = 6z + 6z^2 + 12z^3
+		c3 = -1 + 4z + 6z^2 + 12z^3
+		x -> x^z -> x^2z -> x^4z -> x^6z -> x^(6z^2) -> x^(12z^2) -> x^(12z^3)
+		a = x^(6z) x^(6z^2) x^(12z^3)
+		b = a / (x^2z)
+		x^d1 = (a x^(6z^2) x) b^p a^(p^2) (b / x)^(p^3)
+	*/
+	static void expHardPart(Fp12& y, const Fp12& x)
+	{
+#if 0
+		const mpz_class& p = param.p;
+		mpz_class p2 = p * p;
+		mpz_class p4 = p2 * p2;
+		Fp12::pow(y, x, (p4 - p2 + 1) / param.r);
+		return;
+#endif
+#if 1
+		Fp12 a, b;
+		Fp12 a2, a3;
+		Base::pow_z(b, x); // x^z
+		Base::fasterSqr(b, b); // x^2z
+		Base::fasterSqr(a, b); // x^4z
+		a *= b; // x^6z
+		Base::pow_z(a2, a); // x^(6z^2)
+		a *= a2;
+		Base::fasterSqr(a3, a2); // x^(12z^2)
+		Base::pow_z(a3, a3); // x^(12z^3)
+		a *= a3;
+		Fp12::unitaryInv(b, b);
+		b *= a;
+		a2 *= a;
+		Fp12::Frobenius2(a, a);
+		a *= a2;
+		a *= x;
+		Fp12::unitaryInv(y, x);
+		y *= b;
+		Fp12::Frobenius(b, b);
+		a *= b;
+		Fp12::Frobenius3(y, y);
+		y *= a;
+#else
+		Fp12 t1, t2, t3;
+		Fp12::Frobenius(t1, x);
+		Fp12::Frobenius(t2, t1);
+		Fp12::Frobenius(t3, t2);
+		Fp12::pow(t1, t1, param.exp_c1);
+		Fp12::pow(t2, t2, param.exp_c2);
+		Fp12::pow(y, x, param.exp_c0);
+		y *= t1;
+		y *= t2;
+		y *= t3;
+#endif
+	}
+};
 
 } } // mcl::bn
 

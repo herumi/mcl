@@ -2,6 +2,7 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
+#include <fstream>
 #include <time.h>
 #include <mcl/she.hpp>
 
@@ -31,6 +32,88 @@ CYBOZU_TEST_AUTO(log)
 		CYBOZU_TEST_EQUAL(mcl::she::local::log(P, iP), i);
 	}
 }
+
+//#define PAPER
+#ifdef PAPER
+double clk2msec(const cybozu::CpuClock& clk, int n)
+{
+	const double rate = (1 / 3.4e9) * 1.e3; // 3.4GHz
+	return clk.getClock() / (double)clk.getCount() / n * rate;
+}
+
+CYBOZU_TEST_AUTO(bench2)
+{
+	SHE::setRangeForDLP(1 << 21);
+	SHE::setTryNum(1 << 16);
+	SHE::useDecG1ViaGT(true);
+	SHE::useDecG2ViaGT(true);
+#if 0
+	{
+		const char *tblName = "../she-dlp-table/she-dlp-0-20-gt.bin";
+		std::ifstream ifs(tblName, std::ios::binary);
+		SHE::ePQhashTbl_.load(ifs);
+	}
+#endif
+	SecretKey sec;
+	sec.setByCSPRNG();
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
+	const int C = 500;
+	double t1, t2;
+	int64_t m = (1ll << 31) - 12345;
+	CipherTextG1 c1, d1;
+	CipherTextG2 c2, d2;
+	CipherTextGT ct, dt;
+	CYBOZU_BENCH_C("", C, ppub.enc, c1, m);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	CYBOZU_TEST_EQUAL(sec.dec(c1), m);
+
+	CYBOZU_BENCH_C("", C, ppub.enc, c2, m);
+	t2 = clk2msec(cybozu::bench::g_clk, C);
+	CYBOZU_TEST_EQUAL(sec.dec(c2), m);
+	printf("Enc L1 %.2e\n", t1 + t2);
+
+	CYBOZU_BENCH_C("", C, ppub.enc, ct, m);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	CYBOZU_TEST_EQUAL(sec.dec(ct), m);
+	printf("Enc L2 %.2e\n", t1);
+
+	CYBOZU_BENCH_C("", C, sec.dec, c1);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	printf("DEC L1 %.2e\n", t1);
+
+	CYBOZU_BENCH_C("", C, sec.dec, ct);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	printf("DEC L2 %.2e\n", t1);
+
+	CYBOZU_BENCH_C("", C, CipherTextG1::add, d1, d1, c1);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+
+	CYBOZU_BENCH_C("", C, CipherTextG2::add, d2, d2, c2);
+	t2 = clk2msec(cybozu::bench::g_clk, C);
+	printf("Add L1 %.2e\n", t1 + t2);
+
+	CYBOZU_BENCH_C("", C, CipherTextGT::add, dt, dt, ct);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	printf("Add L2 %.2e\n", t1);
+
+	CYBOZU_BENCH_C("", C, CipherTextGT::mul, ct, c1, c2);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	printf("Mul   %.2e\n", t1);
+
+	CYBOZU_BENCH_C("", C, ppub.reRand, c1);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	CYBOZU_BENCH_C("", C, ppub.reRand, c2);
+	t2 = clk2msec(cybozu::bench::g_clk, C);
+	printf("ReRand L1 %.2e\n", t1 + t2);
+
+	CYBOZU_BENCH_C("", C, ppub.reRand, ct);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	printf("ReRand L2 %.2e\n", t1);
+}
+#endif
 
 CYBOZU_TEST_AUTO(HashTable)
 {
@@ -150,6 +233,7 @@ CYBOZU_TEST_AUTO(ZkpBin)
 	ZkpBinTest<CipherTextG2>(sec, ppub);
 }
 
+#if 0
 template<class PubT>
 void ZkpEqTest(const SecretKey& sec, const PubT& pub)
 {
@@ -205,6 +289,7 @@ CYBOZU_TEST_AUTO(ZkpBinEq)
 	ppub.init(pub);
 	ZkpBinEqTest(sec, ppub);
 }
+#endif
 
 CYBOZU_TEST_AUTO(add_sub_mul)
 {
@@ -406,6 +491,7 @@ CYBOZU_TEST_AUTO(io)
 	}
 }
 
+#ifndef PAPER
 CYBOZU_TEST_AUTO(bench)
 {
 	const SecretKey& sec = g_sec;
@@ -423,6 +509,7 @@ CYBOZU_TEST_AUTO(bench)
 	c2 = c1;
 	CYBOZU_BENCH("add after mul", c1.add, c2);
 }
+#endif
 
 CYBOZU_TEST_AUTO(saveHash)
 {
@@ -459,6 +546,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 	}
 }
 
+#ifndef PAPER
 CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;
@@ -583,4 +671,5 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("convG1toGT", C, pub.convert, ct, c1);
 	CYBOZU_BENCH_C("convG2toGT", C, pub.convert, ct, c2);
 }
+#endif
 
