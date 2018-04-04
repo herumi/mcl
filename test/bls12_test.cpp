@@ -592,6 +592,36 @@ const char *eStr =
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
+void testCurve(const mcl::CurveParam& cp)
+{
+	initPairing(cp, g_mode);
+	G1 P;
+	G2 Q;
+	BLS12::mapToG1(P, 1);
+	BLS12::mapToG2(Q, 1);
+	GT e1, e2;
+	BLS12::pairing(e1, P, Q);
+	cybozu::XorShift rg;
+	mpz_class a, b;
+	Fr r;
+	r.setRand(rg); a = r.getMpz();
+	r.setRand(rg); b = r.getMpz();
+	G1 aP;
+	G2 bQ;
+	G1::mul(aP, P, a);
+	G2::mul(bQ, Q, b);
+	BLS12::pairing(e2, aP, bQ);
+	GT::pow(e1, e1, a * b);
+	CYBOZU_TEST_EQUAL(e1, e2);
+}
+CYBOZU_TEST_AUTO(multi)
+{
+	puts("BN254BNb");
+	testCurve(mcl::BN254BNb);
+	puts("BLS12_381");
+	testCurve(mcl::BLS12_381);
+}
+
 int main(int argc, char *argv[])
 	try
 {

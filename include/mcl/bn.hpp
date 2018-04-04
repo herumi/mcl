@@ -991,7 +991,12 @@ struct BNT {
 	{
 		param.init(cp, mode);
 		G2withF::init(cp.isMtype);
-		if (!param.isBLS12) {
+		if (param.isBLS12) {
+			// not supported yet
+			G1::setMulArrayGLV(0);
+			G2::setMulArrayGLV(0);
+			Fp12::setPowArrayGLV(0);
+		} else {
 			G1::setMulArrayGLV(mulArrayGLV1);
 			G2::setMulArrayGLV(mulArrayGLV2);
 			Fp12::setPowArrayGLV(powArrayGLV2);
