@@ -26,6 +26,7 @@ p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
 * CurveSNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
 * CurveFp381 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
 * CurveFp462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
+* mcl::BLS12_381 ; new [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
 
 # Benchmark
 
