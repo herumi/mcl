@@ -607,3 +607,16 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 	if (g_fp) fprintf(g_fp, "mclBn_G2EvaluatePolynomial %s\n", e.what());
 	return -1;
 }
+
+void mclBn_verifyOrderG1(int doVerify)
+{
+	if (BN::param.isBLS12) {
+		G1::setOrder(doVerify ? BN::param.r : 0);
+	}
+}
+
+void mclBn_verifyOrderG2(int doVerify)
+{
+	G2::setOrder(doVerify ? BN::param.r : 0);
+}
+

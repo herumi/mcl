@@ -61,17 +61,23 @@ int sheInit(int curve, int maxUnitSize)
 
 	mcl::CurveParam cp;
 	switch (curve) {
-	case mclBn_CurveFp254BNb:
-		cp = mcl::bn::CurveFp254BNb;
+	case MCL_BN254BNb:
+		cp = mcl::BN254BNb;
 		break;
-	case mclBn_CurveFp382_1:
-		cp = mcl::bn::CurveFp382_1;
+	case MCL_BN382_1:
+		cp = mcl::BN382_1;
 		break;
-	case mclBn_CurveFp382_2:
-		cp = mcl::bn::CurveFp382_2;
+	case MCL_BN382_2:
+		cp = mcl::BN382_2;
 		break;
-	case mclBn_CurveFp462:
-		cp = mcl::bn::CurveFp462;
+	case MCL_BN462:
+		cp = mcl::BN462;
+		break;
+	case MCL_BN_SNARK1:
+		cp = mcl::BN_SNARK1;
+		break;
+	case MCL_BLS12_381:
+		cp = mcl::BLS12_381;
 		break;
 	default:
 		fprintf(stderr, "err bad curve %d\n", curve);

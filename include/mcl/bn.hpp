@@ -915,6 +915,9 @@ struct ParamT {
 			twist_b_type = tb_generic;
 		}
 		G1::init(0, cp.b, mcl::ec::Proj);
+		if (isBLS12) {
+			G1::setOrder(r);
+		}
 		G2::init(0, twist_b, mcl::ec::Proj);
 		G2::setOrder(r);
 

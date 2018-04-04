@@ -85,6 +85,8 @@ typedef struct {
 */
 MCLBN_DLL_API int mclBn_setErrFile(const char *name);
 
+#include <mcl/curve_type.h>
+// for backword compatibility
 enum {
 	mclBn_CurveFp254BNb = 0,
 	mclBn_CurveFp382_1 = 1,
@@ -324,6 +326,13 @@ MCLBN_DLL_API int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, 
 MCLBN_DLL_API int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x);
 MCLBN_DLL_API int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x);
 
+/*
+	verify whether a point of an elliptic curve has order r
+	This api affetcs setStr(), deserialize() for G2 on BN or G1/G2 on BLS12
+	@param doVerify [in] does not verify if zero(default 1)
+*/
+MCLBN_DLL_API void mclBn_verifyOrderG1(int doVerify);
+MCLBN_DLL_API void mclBn_verifyOrderG2(int doVerify);
 
 #ifdef __cplusplus
 }
