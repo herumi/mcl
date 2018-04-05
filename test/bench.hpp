@@ -31,9 +31,15 @@ void testBench(const G1& P, const G2& Q)
 	G2 QQ;
 	std::string s;
 	s = P.getStr();
+	CYBOZU_BENCH_C("G1::setStr chk", C, PP.setStr, s);
+	CT::verifyOrderG1(false);
 	CYBOZU_BENCH_C("G1::setStr    ", C, PP.setStr, s);
+	CT::verifyOrderG1(true);
 	s = Q.getStr();
+	CYBOZU_BENCH_C("G2::setStr chk", C, QQ.setStr, s);
+	CT::verifyOrderG2(false);
 	CYBOZU_BENCH_C("G2::setStr    ", C, QQ.setStr, s);
+	CT::verifyOrderG2(true);
 	CYBOZU_BENCH_C("hashAndMapToG1", C, CT::hashAndMapToG1, PP, "abc", 3);
 	CYBOZU_BENCH_C("hashAndMapToG2", C, CT::hashAndMapToG2, QQ, "abc", 3);
 	CYBOZU_BENCH_C("Fp::add       ", C2, Fp::add, x, x, y);

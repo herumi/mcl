@@ -1817,6 +1817,16 @@ struct BNT {
 	{
 		hashAndMapToG2(P, str.c_str(), str.size());
 	}
+	static void verifyOrderG1(bool doVerify)
+	{
+		if (param.isBLS12) {
+			G1::setOrder(doVerify ? param.r : 0);
+		}
+	}
+	static void verifyOrderG2(bool doVerify)
+	{
+		G2::setOrder(doVerify ? param.r : 0);
+	}
 };
 
 template<class Fp>
