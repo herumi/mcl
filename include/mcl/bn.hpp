@@ -37,10 +37,10 @@ struct CurveParam {
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
 
-const CurveParam BN254BNb = { "-0x4080000000000001", 2, 1, false, MCL_BN254BNb }; // -(2^62 + 2^55 + 1)
+const CurveParam BN254 = { "-0x4080000000000001", 2, 1, false, MCL_BN254 }; // -(2^62 + 2^55 + 1)
 // provisional(experimental) param with maxBitSize = 384
-const CurveParam BN382_1 = { "-0x400011000000000000000001", 2, 1, false, MCL_BN382_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam BN382_2 = { "-0x400040090001000000000001", 2, 1, false, MCL_BN382_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
+const CurveParam BN381_1 = { "-0x400011000000000000000001", 2, 1, false, MCL_BN381_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
+const CurveParam BN381_2 = { "-0x400040090001000000000001", 2, 1, false, MCL_BN381_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
 const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
 const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
 const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
@@ -48,9 +48,9 @@ const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 
 inline const CurveParam& getCurveParam(int type)
 {
 	switch (type) {
-	case MCL_BN254BNb: return mcl::BN254BNb;
-	case MCL_BN382_1: return mcl::BN382_1;
-	case MCL_BN382_2: return mcl::BN382_2;
+	case MCL_BN254: return mcl::BN254;
+	case MCL_BN381_1: return mcl::BN381_1;
+	case MCL_BN381_2: return mcl::BN381_2;
 	case MCL_BN462: return mcl::BN462;
 	case MCL_BN_SNARK1: return mcl::BN_SNARK1;
 	case MCL_BLS12_381: return mcl::BLS12_381;
@@ -990,7 +990,7 @@ struct BNT {
 		if (isNegative) s = -s;
 		param.glv2.pow(z, x, s, constTime);
 	}
-	static void init(const mcl::CurveParam& cp = mcl::BN254BNb, fp::Mode mode = fp::FP_AUTO)
+	static void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 	{
 		param.init(cp, mode);
 		G2withF::init(cp.isMtype);
@@ -1013,7 +1013,7 @@ struct BNT {
 	static void pow_z(Fp12& y, const Fp12& x)
 	{
 #if 1
-		if (param.cp.curveType == MCL_BN254BNb) {
+		if (param.cp.curveType == MCL_BN254) {
 			Compress::fixed_power(y, x);
 		} else {
 			Fp12 orgX = x;
@@ -1824,9 +1824,9 @@ util::ParamT<Fp> BNT<Fp>::param;
 
 // backward compatibility
 using mcl::CurveParam;
-static const CurveParam& CurveFp254BNb = BN254BNb;
-static const CurveParam& CurveFp382_1 = BN382_1;
-static const CurveParam& CurveFp382_2 = BN382_2;
+static const CurveParam& CurveFp254BNb = BN254;
+static const CurveParam& CurveFp382_1 = BN381_1;
+static const CurveParam& CurveFp382_2 = BN381_2;
 static const CurveParam& CurveFp462 = BN462;
 static const CurveParam& CurveSNARK1 = BN_SNARK1;
 

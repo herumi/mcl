@@ -22,15 +22,15 @@ The current version supports the optimal Ate pairing over BN curves.
 
 p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
 
-* CurveFp254BNb ; a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
-* CurveSNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-* CurveFp381 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
-* CurveFp462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
-* mcl::BLS12_381 ; new [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+* BN254 ; a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
+* BN\_SNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
+* BN381\_1 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
+* BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
+* BLS12\_381 ; new [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
 
 # Benchmark
 
-A benchmark of a BN curve CurveFp254BNb(2016/12/25).
+A benchmark of a BN curve BN254(2016/12/25).
 
 * x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz on Ubuntu 16.04.
     * `sudo cpufreq-set -g performance`
@@ -54,17 +54,17 @@ cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_ME
 
 For JavaScript(WebAssembly), see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html).
 
-paramter        |  x64| Firefox on x64|Safari on iPhone7|
-----------------|-----|---------------|-----------------|
-CurveFpBN254BNb | 0.29|           2.48|             4.78|
-CurveFp382_1    | 0.95|           7.91|            11.74|
-CurveFp462      | 2.16|          14.73|            22.77|
+paramter   |  x64| Firefox on x64|Safari on iPhone7|
+-----------|-----|---------------|-----------------|
+BN254      | 0.29|           2.48|             4.78|
+BN381\_1   | 0.95|           7.91|            11.74|
+BN462      | 2.16|          14.73|            22.77|
 
 * x64 : 'Kaby Lake Core i7-7700(3.6GHz)'.
 * Firefox : 64-bit version 58.
 * iPhone7 : iOS 11.2.1.
-* CurveFpBN254BNb is by `test/bn_test.cpp`.
-* CurveFp382_1 and CurveFp462 are  by `test/bn512_test.cpp`.
+* BN254 is by `test/bn_test.cpp`.
+* BN381\_1 and CurveFp462 are  by `test/bn512_test.cpp`.
 * All the timings  are given in ms(milliseconds).
 
 The other benchmark results are [bench.txt](bench.txt).
@@ -85,7 +85,7 @@ git clone git://github.com/herumi/cybozulib
 git clone git://github.com/herumi/xbyak ; for only x86/x64
 git clone git://github.com/herumi/cybozulib_ext ; for only Windows
 ```
-* Cybozulib_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
+* Cybozulib\_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
 
 # Build and test on x86-64 Linux, macOS, ARM and ARM64 Linux
 To make lib/libmcl.a and test it:
@@ -157,7 +157,7 @@ emcc -O3 -I ./include/ -I ../cybozulib/include/ src/fp.cpp test/bn_test.cpp -DND
 emrun --no_browser --port 8080 --no_emrun_detect .
 ```
 and open `http://<address>:8080/t.html`.
-The timing of a pairing on `CurveFp254BNb` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
+The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
 
 ### Node.js
 
@@ -200,17 +200,17 @@ If you want to remove '_dy` of so files, then `makeSHARE_BASENAME_SUF=`.
 Call `mcl::bn256::initPairing` before calling any operations.
 ```
 #include <mcl/bn256.hpp>
-mcl::bn::CurveParam cp = mcl::bn::CurveFp254BNb; // or mcl::bn::CurveSNARK1
+mcl::bn::CurveParam cp = mcl::BN254; // or mcl::BN_SNARK1
 mcl::bn256::initPairing(cp);
 mcl::bn256::G1 P(...);
 mcl::bn256::G2 Q(...);
 mcl::bn256::Fp12 e;
 mcl::bn256::BN::pairing(e, P, Q);
 ```
-1. (CurveFp254BNb) a BN curve over the 254-bit prime p = p(z) where z = -(2^62 + 2^55 + 1).
-2. (CurveSNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-3. CurveFp381 with `mcl/bn384.hpp`.
-4. CurveFp462 with `mcl/bn512.hpp`.
+1. (BN254) a BN curve over the 254-bit prime p = p(z) where z = -(2^62 + 2^55 + 1).
+2. (BN_SNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
+3. BN381_1 with `mcl/bn384.hpp`.
+4. BN462 with `mcl/bn512.hpp`.
 
 See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
 

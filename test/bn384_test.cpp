@@ -38,13 +38,13 @@ void testCurve(const mcl::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(pairing)
 {
-	puts("BN254BNb");
+	puts("BN254");
 	// support 256-bit pairing
-	testCurve(mcl::BN254BNb);
-	puts("BN382_1");
-	testCurve(mcl::BN382_1);
-	puts("BN382_2");
-	testCurve(mcl::BN382_2);
+	testCurve(mcl::BN254);
+	puts("BN381_1");
+	testCurve(mcl::BN381_1);
+	puts("BN381_2");
+	testCurve(mcl::BN381_2);
 	puts("BLS12_381");
 	testCurve(mcl::BLS12_381);
 	// Q is not on EcT, but bad order

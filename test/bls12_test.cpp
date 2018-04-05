@@ -617,8 +617,8 @@ void testCurve(const mcl::CurveParam& cp)
 }
 CYBOZU_TEST_AUTO(multi)
 {
-	puts("BN254BNb");
-	testCurve(mcl::BN254BNb);
+	puts("BN254");
+	testCurve(mcl::BN254);
 	puts("BLS12_381");
 	testCurve(mcl::BLS12_381);
 }

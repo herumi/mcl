@@ -144,6 +144,11 @@ int mclBn_getG1ByteSize()
 	return (int)Fp::getByteSize();
 }
 
+int mclBn_getFrByteSize()
+{
+	return (int)Fr::getByteSize();
+}
+
 mclSize copyStrAndReturnSize(char *buf, mclSize maxBufSize, const std::string& str)
 {
 	if (str.size() >= maxBufSize) return 0;

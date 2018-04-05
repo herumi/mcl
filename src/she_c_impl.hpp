@@ -61,14 +61,14 @@ int sheInit(int curve, int maxUnitSize)
 
 	mcl::CurveParam cp;
 	switch (curve) {
-	case MCL_BN254BNb:
-		cp = mcl::BN254BNb;
+	case MCL_BN254:
+		cp = mcl::BN254;
 		break;
-	case MCL_BN382_1:
-		cp = mcl::BN382_1;
+	case MCL_BN381_1:
+		cp = mcl::BN381_1;
 		break;
-	case MCL_BN382_2:
-		cp = mcl::BN382_2;
+	case MCL_BN381_2:
+		cp = mcl::BN381_2;
 		break;
 	case MCL_BN462:
 		cp = mcl::BN462;

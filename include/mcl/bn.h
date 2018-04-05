@@ -134,6 +134,7 @@ MCLBN_DLL_API int mclBn_getOpUnitSize();
 	58 if mclBn_CurveFpA462
 */
 MCLBN_DLL_API int mclBn_getG1ByteSize();
+MCLBN_DLL_API int mclBn_getFrByteSize();
 
 /*
 	return decimal string of the order of the curve(=the characteristic of Fr)

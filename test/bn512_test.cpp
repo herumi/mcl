@@ -41,9 +41,9 @@ CYBOZU_TEST_AUTO(pairing)
 	puts("CurveFp462");
 	testCurve(mcl::BN462);
 	puts("CurveFp382_1");
-	testCurve(mcl::BN382_1);
+	testCurve(mcl::BN381_1);
 	puts("CurveFp382_2");
-	testCurve(mcl::BN382_2);
+	testCurve(mcl::BN381_2);
 	puts("CurveFp254BNb");
 	testCurve(mcl::bn::CurveFp254BNb);
 }

@@ -124,7 +124,7 @@ func TestMclMain(t *testing.T) {
 	if GetMaxOpUnitSize() == 6 {
 		t.Log("CurveFp382_1")
 		testMcl(t, CurveFp382_1)
-		t.Log("CurveFp382_2")
-		testMcl(t, CurveFp382_2)
+		t.Log("BLS12_381")
+		testMcl(t, BLS12_381)
 	}
 }

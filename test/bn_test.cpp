@@ -168,7 +168,7 @@ void testCyclotomic()
 
 void testCompress(const G1& P, const G2& Q)
 {
-	if (BN::param.cp.curveType != MCL_BN254BNb) return;
+	if (BN::param.cp.curveType != MCL_BN254) return;
 	Fp12 a;
 	BN::pairing(a, P, Q);
 	BN::mapToCyclotomic(a, a);
