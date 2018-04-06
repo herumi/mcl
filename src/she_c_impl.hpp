@@ -97,7 +97,9 @@ mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
 {
 	return cast(x)->serialize(buf, maxBufSize);
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return 0;
 }
 
@@ -137,7 +139,9 @@ mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 {
 	return cast(x)->deserialize(buf, bufSize);
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return 0;
 }
 
@@ -177,7 +181,9 @@ int sheSecretKeySetByCSPRNG(sheSecretKey *sec)
 	cast(sec)->setByCSPRNG();
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -192,7 +198,9 @@ static int setRangeForDLP(void (*f)(mclSize), mclSize hashSize)
 	f(hashSize);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -232,7 +240,9 @@ mclSize loadTable(HashTable& table, const void *buf, mclSize bufSize)
 {
 	return table.load(buf, bufSize);
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return 0;
 }
 
@@ -255,7 +265,9 @@ mclSize saveTable(void *buf, mclSize maxBufSize, const HashTable& table)
 {
 	return table.save(buf, maxBufSize);
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return 0;
 }
 mclSize sheSaveTableForG1DLP(void *buf, mclSize maxBufSize)
@@ -278,7 +290,9 @@ int encT(CT *c, const shePublicKey *pub, mclInt m)
 	cast(pub)->enc(*cast(c), m);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -304,7 +318,9 @@ int encWithZkpBinT(CT *c, sheZkpBin *zkp, const PK *pub, int m)
 	cast(pub)->encWithZkpBin(*cast(c), *cast(zkp), m);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -335,7 +351,9 @@ int decT(mclInt *m, const sheSecretKey *sec, const CT *c)
 	*m = (cast(sec)->dec)(*cast(c));
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -361,7 +379,9 @@ int decViaGTT(mclInt *m, const sheSecretKey *sec, const CT *c)
 	*m = (cast(sec)->decViaGT)(*cast(c));
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -382,7 +402,9 @@ int isZeroT(const sheSecretKey *sec, const CT *c)
 {
 	return cast(sec)->isZero(*cast(c));
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return 0;
 }
 
@@ -407,7 +429,9 @@ int addT(CT& z, const CT& x, const CT& y)
 	CT::add(z, x, y);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -433,7 +457,9 @@ int subT(CT& z, const CT& x, const CT& y)
 	CT::sub(z, x, y);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -459,7 +485,9 @@ int mulT(CT1& z, const CT2& x, const CT3& y)
 	CT1::mul(z, x, y);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -489,7 +517,9 @@ int sheMulML(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2
 	CipherTextGT::mulML(*cast(z), *cast(x), *cast(y));
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -499,7 +529,9 @@ int sheFinalExpGT(sheCipherTextGT *y, const sheCipherTextGT *x)
 	CipherTextGT::finalExp(*cast(y), *cast(x));
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -510,7 +542,9 @@ int reRandT(CT& c, const shePublicKey *pub)
 	cast(pub)->reRand(c);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -536,7 +570,9 @@ int convert(sheCipherTextGT *y, const shePublicKey *pub, const CT *x)
 	cast(pub)->convert(*cast(y), *cast(x));
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -579,7 +615,9 @@ int pEncT(CT *c, const shePrecomputedPublicKey *pub, mclInt m)
 	cast(pub)->enc(*cast(c), m);
 	return 0;
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return -1;
 }
 
@@ -604,7 +642,9 @@ int verifyT(const PK& pub, const CT& c, const ZkpBin& zkp)
 {
 	return pub.verify(c, zkp);
 } catch (std::exception& e) {
+#ifndef NDEBUG
 	fprintf(stderr, "err %s\n", e.what());
+#endif
 	return 0;
 }
 
