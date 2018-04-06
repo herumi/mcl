@@ -379,6 +379,7 @@ CYBOZU_TEST_AUTO(saveLoad)
 	const size_t n1 = sheSaveTableForGTDLP(&buf[0], buf.size());
 	CYBOZU_TEST_ASSERT(n1 > 0);
 	if (!g_tableName.empty()) {
+		printf("use table=%s\n", g_tableName.c_str());
 		std::ofstream ofs(g_tableName.c_str(), std::ios::binary);
 		ofs.write(buf.c_str(), n1);
 	}
@@ -389,6 +390,12 @@ CYBOZU_TEST_AUTO(saveLoad)
 	sheSetTryNum(1);
 	int64_t dec = 0;
 	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) != 0);
+	if (!g_tableName.empty()) {
+		std::ifstream ifs(g_tableName.c_str(), std::ios::binary);
+		buf.clear();
+		buf.resize(n1);
+		ifs.read(&buf[0], n1);
+	}
 	const size_t n2 = sheLoadTableForGTDLP(&buf[0], n1);
 	CYBOZU_TEST_ASSERT(n2 > 0);
 	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) == 0);

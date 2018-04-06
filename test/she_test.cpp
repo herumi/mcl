@@ -115,24 +115,40 @@ CYBOZU_TEST_AUTO(bench2)
 }
 #endif
 
-CYBOZU_TEST_AUTO(HashTable)
+template<class G>
+void HashTableTest(const G& P)
 {
-	mcl::she::local::HashTable<G1> hashTbl;
-	G1 P;
-	BN::hashAndMapToG1(P, "abc");
+	mcl::she::local::HashTable<G> hashTbl;
 	const int maxSize = 100;
 	const int tryNum = 3;
 	hashTbl.init(P, maxSize, tryNum);
-	for (int i = -maxSize; i <= maxSize; i++) {
-		G1 xP;
-		G1::mul(xP, P, i);
-		CYBOZU_TEST_EQUAL(hashTbl.basicLog(xP), i);
+	for (int j = 0; j < 2; j++) {
+		for (int i = -maxSize; i <= maxSize; i++) {
+			G xP;
+			G::mul(xP, P, i);
+			CYBOZU_TEST_EQUAL(hashTbl.basicLog(xP), i);
+		}
+		for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
+			G xP;
+			G::mul(xP, P, i);
+			CYBOZU_TEST_EQUAL(hashTbl.log(xP), i);
+		}
+		std::stringstream ss;
+		hashTbl.save(ss);
+		mcl::she::local::HashTable<G> hashTbl2;
+		hashTbl2.load(ss);
+		hashTbl = hashTbl2;
 	}
-	for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
-		G1 xP;
-		G1::mul(xP, P, i);
-		CYBOZU_TEST_EQUAL(hashTbl.log(xP), i);
-	}
+}
+
+CYBOZU_TEST_AUTO(HashTable)
+{
+	G1 P;
+	BN::hashAndMapToG1(P, "abc");
+	G2 Q;
+	BN::hashAndMapToG2(Q, "abc");
+	HashTableTest(P);
+	HashTableTest(Q);
 }
 
 CYBOZU_TEST_AUTO(GTHashTable)
@@ -149,15 +165,22 @@ CYBOZU_TEST_AUTO(GTHashTable)
 	const int maxSize = 100;
 	const int tryNum = 3;
 	hashTbl.init(g, maxSize, tryNum);
-	for (int i = -maxSize; i <= maxSize; i++) {
-		GT gx;
-		GT::pow(gx, g, i);
-		CYBOZU_TEST_EQUAL(hashTbl.basicLog(gx), i);
-	}
-	for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
-		GT gx;
-		GT::pow(gx, g, i);
-		CYBOZU_TEST_EQUAL(hashTbl.log(gx), i);
+	for (int j = 0; j < 2; j++) {
+		for (int i = -maxSize; i <= maxSize; i++) {
+			GT gx;
+			GT::pow(gx, g, i);
+			CYBOZU_TEST_EQUAL(hashTbl.basicLog(gx), i);
+		}
+		for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
+			GT gx;
+			GT::pow(gx, g, i);
+			CYBOZU_TEST_EQUAL(hashTbl.log(gx), i);
+		}
+		std::stringstream ss;
+		hashTbl.save(ss);
+		mcl::she::local::HashTable<GT, false> hashTbl2;
+		hashTbl2.load(ss);
+		hashTbl = hashTbl2;
 	}
 }
 
