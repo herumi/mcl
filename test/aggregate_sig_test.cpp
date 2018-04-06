@@ -9,8 +9,8 @@ using namespace mcl::aggs;
 CYBOZU_TEST_AUTO(init)
 {
 	AGGS::init();
-//	AGGS::init(mcl::bn::CurveFp382_1);
-//	AGGS::init(mcl::bn::CurveFp462);
+//	AGGS::init(mcl::BN381_1);
+//	AGGS::init(mcl::BLS12_381);
 	SecretKey sec;
 	sec.init();
 	PublicKey pub;

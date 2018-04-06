@@ -38,14 +38,14 @@ void testCurve(const mcl::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(pairing)
 {
-	puts("CurveFp462");
+	puts("BN462");
 	testCurve(mcl::BN462);
-	puts("CurveFp382_1");
+	puts("BN381_1");
 	testCurve(mcl::BN381_1);
-	puts("CurveFp382_2");
-	testCurve(mcl::BN381_2);
-	puts("CurveFp254BNb");
-	testCurve(mcl::bn::CurveFp254BNb);
+	puts("BLS12_381");
+	testCurve(mcl::BLS12_381);
+	puts("BN254");
+	testCurve(mcl::BN254);
 }
 
 int main(int argc, char *argv[])

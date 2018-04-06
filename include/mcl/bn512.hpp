@@ -27,7 +27,7 @@ typedef BN::Fp12 GT;
 /* the order of G1 is r */
 typedef mcl::FpT<local::FrTag, 512> Fr;
 
-static inline void initPairing(const mcl::CurveParam& cp = mcl::bn::CurveFp254BNb, fp::Mode mode = fp::FP_AUTO)
+static inline void initPairing(const mcl::CurveParam& cp = mcl::BN462, fp::Mode mode = fp::FP_AUTO)
 {
 	BN::init(cp, mode);
 	G1::setCompressedExpression();

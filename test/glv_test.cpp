@@ -188,9 +188,9 @@ void testGLV2()
 CYBOZU_TEST_AUTO(glv)
 {
 	const mcl::CurveParam tbl[] = {
-		mcl::bn::CurveFp254BNb,
-		mcl::bn::CurveFp382_1,
-		mcl::bn::CurveFp382_2,
+		mcl::BN254,
+		mcl::BN381_1,
+		mcl::BN381_2,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mcl::CurveParam& cp = tbl[i];

@@ -64,7 +64,7 @@ BN462      | 2.16|          14.73|            22.77|
 * Firefox : 64-bit version 58.
 * iPhone7 : iOS 11.2.1.
 * BN254 is by `test/bn_test.cpp`.
-* BN381\_1 and CurveFp462 are  by `test/bn512_test.cpp`.
+* BN381\_1 and BN462 are  by `test/bn512_test.cpp`.
 * All the timings  are given in ms(milliseconds).
 
 The other benchmark results are [bench.txt](bench.txt).

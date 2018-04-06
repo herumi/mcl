@@ -11,7 +11,7 @@ int main()
 	char buf[1024];
 	const char *aStr = "123";
 	const char *bStr = "456";
-	mclBn_init(mclBn_CurveFp254BNb, MCLBN_FP_UNIT_SIZE);
+	mclBn_init(MCL_BN254, MCLBN_FP_UNIT_SIZE);
 	mclBnFr a, b, ab;
 	mclBnG1 P, aP;
 	mclBnG2 Q, bQ;

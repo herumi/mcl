@@ -27,17 +27,12 @@ typedef BN::Fp12 GT;
 /* the order of G1 is r */
 typedef mcl::FpT<local::FrTag, 384> Fr;
 
-static inline void initPairing(const mcl::CurveParam& cp = mcl::bn::CurveFp382_2, fp::Mode mode = fp::FP_AUTO)
+static inline void initPairing(const mcl::CurveParam& cp = mcl::BN381_1, fp::Mode mode = fp::FP_AUTO)
 {
 	BN::init(cp, mode);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 	Fr::init(BN::param.r);
-}
-
-static inline void bn384init(const mcl::CurveParam& cp = mcl::bn::CurveFp382_2, fp::Mode mode = fp::FP_AUTO)
-{
-	initPairing(cp, mode);
 }
 
 } } // mcl::bn384

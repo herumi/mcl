@@ -506,7 +506,7 @@ public:
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
 
-	static void init(const mcl::CurveParam& cp = mcl::bn::CurveFp254BNb)
+	static void init(const mcl::CurveParam& cp = mcl::BN254)
 	{
 		bn_current::initPairing(cp);
 		BN::hashAndMapToG1(P_, "0");

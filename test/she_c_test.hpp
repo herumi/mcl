@@ -11,11 +11,11 @@ CYBOZU_TEST_AUTO(init)
 {
 	int curve;
 #if MCLBN_FP_UNIT_SIZE == 4
-	curve = mclBn_CurveFp254BNb;
+	curve = MCL_BN254;
 #elif MCLBN_FP_UNIT_SIZE == 6
-	curve = mclBn_CurveFp382_1;
+	curve = MCL_BN381_1;
 #elif MCLBN_FP_UNIT_SIZE == 8
-	curve = mclBn_CurveFp462;
+	curve = MCL_BN462;
 #endif
 	int ret;
 	ret = sheInit(curve, MCLBN_FP_UNIT_SIZE);

@@ -53,7 +53,7 @@ struct AGGST {
 	static G2 Q_;
 	static std::vector<bn_current::Fp6> Qcoeff_;
 public:
-	static void init(const mcl::CurveParam& cp = mcl::bn::CurveFp254BNb)
+	static void init(const mcl::CurveParam& cp = mcl::BN254)
 	{
 		bn_current::initPairing(cp);
 		BN::hashAndMapToG1(P_, "0");
