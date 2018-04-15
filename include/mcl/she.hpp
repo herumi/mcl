@@ -1472,5 +1472,14 @@ typedef CipherTextGT CipherTextGM; // old class
 typedef SHE::CipherText CipherText;
 typedef SHE::ZkpBin ZkpBin;
 
+inline void init(const mcl::CurveParam& cp = mcl::BN254) { SHE::init(cp); }
+inline void setRangeForG1DLP(size_t hashSize) { SHE::setRangeForG1DLP(hashSize); }
+inline void setRangeForG2DLP(size_t hashSize) { SHE::setRangeForG2DLP(hashSize); }
+inline void setRangeForGTDLP(size_t hashSize) { SHE::setRangeForGTDLP(hashSize); }
+inline void setRangeForDLP(size_t hashSize) { SHE::setRangeForDLP(hashSize); }
+inline void setTryNum(size_t tryNum) { SHE::setTryNum(tryNum); }
+inline void useDecG1ViaGT(bool use = true) { SHE::useDecG1ViaGT(use); }
+inline void useDecG2ViaGT(bool use = true) { SHE::useDecG2ViaGT(use); }
+
 } } // mcl::she
 
