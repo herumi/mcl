@@ -201,6 +201,7 @@ void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize)
 	if (rg.isZero()) rg = RandGen::get();
 	const size_t n = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	const size_t rem = bitSize & (UnitBitSize - 1);
+	assert(n > 0);
 	for (;;) {
 		rg.read(out, n * sizeof(Unit));
 		if (rem > 0) out[n - 1] &= (Unit(1) << rem) - 1;

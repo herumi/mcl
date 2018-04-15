@@ -2,7 +2,7 @@
 
 # mcl
 
-A generic and fast pairing-based cryptography library.
+A portable and fast pairing-based cryptography library.
 
 # Abstract
 
