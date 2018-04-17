@@ -249,8 +249,8 @@ int main()
 
 ## グローバル関数
 
-* `void init(const CurveParam& cp, size_t hashSize, size_t tryNum)`(C++)
-* `void init(hashSize, tryNum)`(JS)
+* `void init(const CurveParam& cp, size_t hashSize = 1024, size_t tryNum = 2048)`(C++)
+* `void init(curveType = she.BN254, hashSize = 1024, tryNum = 2048)`(JS)
     * hashSizeの大きさの復号用テーブルとtryNumを元に初期化する
     * 復号可能な平文mの範囲は|m| <= hashSize * tryNum
 * `she.loadTableForGTDLP(Uint8Array a)`(JS)

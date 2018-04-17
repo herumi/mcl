@@ -43,7 +43,7 @@ namespace local {
 	#define MCLSHE_WIN_SIZE 10
 #endif
 static const size_t winSize = MCLSHE_WIN_SIZE;
-static const size_t defaultTryNum = 1024;
+static const size_t defaultTryNum = 2048;
 
 struct KeyCount {
 	uint32_t key;
@@ -506,13 +506,19 @@ public:
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
 
-	static void init(const mcl::CurveParam& cp = mcl::BN254)
+	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 	{
 		bn_current::initPairing(cp);
 		BN::hashAndMapToG1(P_, "0");
 		BN::hashAndMapToG2(Q_, "0");
 		BN::pairing(ePQ_, P_, Q_);
 		BN::precomputeG2(Qcoeff_, Q_);
+		setRangeForDLP(hashSize);
+		setTryNum(tryNum);
+	}
+	static void init(size_t hashSize, size_t tryNum = local::defaultTryNum)
+	{
+		init(mcl::BN254, hashSize, tryNum);
 	}
 	/*
 		set range for G1-DLP
@@ -1472,7 +1478,11 @@ typedef CipherTextGT CipherTextGM; // old class
 typedef SHE::CipherText CipherText;
 typedef SHE::ZkpBin ZkpBin;
 
-inline void init(const mcl::CurveParam& cp = mcl::BN254) { SHE::init(cp); }
+inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+{
+	SHE::init(cp, hashSize, tryNum);
+}
+inline void init(size_t hashSize, size_t tryNum = local::defaultTryNum) { SHE::init(hashSize, tryNum); }
 inline void setRangeForG1DLP(size_t hashSize) { SHE::setRangeForG1DLP(hashSize); }
 inline void setRangeForG2DLP(size_t hashSize) { SHE::setRangeForG2DLP(hashSize); }
 inline void setRangeForGTDLP(size_t hashSize) { SHE::setRangeForGTDLP(hashSize); }
