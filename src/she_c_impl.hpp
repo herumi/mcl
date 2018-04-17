@@ -421,6 +421,33 @@ int sheIsZeroGT(const sheSecretKey *sec, const sheCipherTextGT *c)
 	return isZeroT(sec, c);
 }
 
+template<class CT>
+int negT(CT& y, const CT& x)
+	try
+{
+	CT::neg(y, x);
+	return 0;
+} catch (std::exception& e) {
+#ifndef NDEBUG
+	fprintf(stderr, "err %s\n", e.what());
+#endif
+	return -1;
+}
+
+int sheNegG1(sheCipherTextG1 *y, const sheCipherTextG1 *x)
+{
+	return negT(*cast(y), *cast(x));
+}
+
+int sheNegG2(sheCipherTextG2 *y, const sheCipherTextG2 *x)
+{
+	return negT(*cast(y), *cast(x));
+}
+
+int sheNegGT(sheCipherTextGT *y, const sheCipherTextGT *x)
+{
+	return negT(*cast(y), *cast(x));
+}
 
 template<class CT>
 int addT(CT& z, const CT& x, const CT& y)

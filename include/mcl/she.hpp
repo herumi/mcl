@@ -1253,6 +1253,12 @@ public:
 				g_[i].setOne();
 			}
 		}
+		static void neg(CipherTextGT& y, const CipherTextGT& x)
+		{
+			for (int i = 0; i < 4; i++) {
+				GT::unitaryInv(y.g_[i], x.g_[i]);
+			}
+		}
 		static void add(CipherTextGT& z, const CipherTextGT& x, const CipherTextGT& y)
 		{
 			/*

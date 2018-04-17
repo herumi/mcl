@@ -97,15 +97,24 @@ CYBOZU_TEST_AUTO(allOp)
 	int64_t m2 = -9;
 	int64_t m3 = 12;
 	int64_t m4 = -9;
+	int64_t dec;
 	sheCipherTextG1 c11, c12;
 	sheCipherTextG2 c21, c22;
 	sheCipherTextGT ct;
+
 	sheEncG1(&c11, &pub, m1);
+	sheNegG1(&c12, &c11);
+	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c12), 0);
+	CYBOZU_TEST_EQUAL(dec, -m1);
+
 	sheEncG1(&c12, &pub, m2);
 	sheSubG1(&c11, &c11, &c12); // m1 - m2
 	sheMulG1(&c11, &c11, 4); // 4 * (m1 - m2)
 
 	sheEncG2(&c21, &pub, m3);
+	sheNegG2(&c22, &c21);
+	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c22), 0);
+	CYBOZU_TEST_EQUAL(dec, -m3);
 	sheEncG2(&c22, &pub, m4);
 	sheSubG2(&c21, &c21, &c22); // m3 - m4
 	sheMulG2(&c21, &c21, -5); // -5 * (m3 - m4)
@@ -114,9 +123,13 @@ CYBOZU_TEST_AUTO(allOp)
 	sheMulGT(&ct, &ct, -4); // 160 * (m1 - m2) * (m3 - m4)
 
 	int64_t t = 160 * (m1 - m2) * (m3 - m4);
-	int64_t dec;
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, t);
+
+	sheCipherTextGT ct2;
+	sheNegGT(&ct2, &ct);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct2), 0);
+	CYBOZU_TEST_EQUAL(dec, -t);
 }
 
 CYBOZU_TEST_AUTO(rerand)
