@@ -545,17 +545,17 @@ int mclBn_getUint64NumToPrecompute(void)
 
 void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q)
 {
-	BN::precomputeG2(cast(Qbuf), *cast(Q));
+	precomputeG2(cast(Qbuf), *cast(Q));
 }
 
 void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf)
 {
-	BN::precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
+	precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
 }
 
 void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t  *Q1buf, const mclBnG1 *P2, const uint64_t *Q2buf)
 {
-	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
+	precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }
 
 int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k)

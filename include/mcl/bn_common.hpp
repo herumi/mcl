@@ -66,12 +66,27 @@ inline void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	BN::precomputeG2(Qcoeff, Q);
 }
 
+inline void precomputeG2(Fp6 *Qcoeff, const G2& Q)
+{
+	BN::precomputeG2(Qcoeff, Q);
+}
+
 inline void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
 {
 	BN::precomputedMillerLoop(f, P, Qcoeff);
 }
 
+inline void precomputedMillerLoop(Fp12& f, const G1& P, const Fp6* Qcoeff)
+{
+	BN::precomputedMillerLoop(f, P, Qcoeff);
+}
+
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
+{
+	BN::precomputedMillerLoop2(f, P1, Q1coeff, P2, Q2coeff);
+}
+
+inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const Fp6* Q1coeff, const G1& P2, const Fp6* Q2coeff)
 {
 	BN::precomputedMillerLoop2(f, P1, Q1coeff, P2, Q2coeff);
 }
