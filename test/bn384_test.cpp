@@ -17,10 +17,10 @@ void testCurve(const mcl::CurveParam& cp)
 	initPairing(cp, g_mode);
 	G1 P;
 	G2 Q;
-	BN::mapToG1(P, 1);
-	BN::mapToG2(Q, 1);
+	mapToG1(P, 1);
+	mapToG2(Q, 1);
 	GT e1, e2;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	cybozu::XorShift rg;
 	mpz_class a, b;
 	Fr r;
@@ -30,7 +30,7 @@ void testCurve(const mcl::CurveParam& cp)
 	G2 bQ;
 	G1::mul(aP, P, a);
 	G2::mul(bQ, Q, b);
-	BN::pairing(e2, aP, bQ);
+	pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
 	testBench<BN>(P, Q);

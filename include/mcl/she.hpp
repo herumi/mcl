@@ -37,6 +37,8 @@ namespace bn_current = mcl::bn512;
 
 namespace mcl { namespace she {
 
+using namespace mcl::bn_current;
+
 namespace local {
 
 #ifndef MCLSHE_WIN_SIZE
@@ -255,7 +257,7 @@ public:
 	template<class OutputStream>
 	void save(OutputStream& os) const
 	{
-		cybozu::save(os, bn_current::BN::param.cp.curveType);
+		cybozu::save(os, BN::param.cp.curveType);
 		cybozu::writeChar(os, GtoChar<G>());
 		cybozu::save(os, kcv_.size());
 		cybozu::write(os, &kcv_[0], sizeof(kcv_[0]) * kcv_.size());
@@ -276,7 +278,7 @@ public:
 	{
 		int curveType;
 		cybozu::load(curveType, is);
-		if (curveType != bn_current::BN::param.cp.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
+		if (curveType != BN::param.cp.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
 		char c = 0;
 		if (!cybozu::readChar(&c, is) || c != GtoChar<G>()) throw cybozu::Exception("HashTable:bad c") << (int)c;
 		size_t kcvSize;
@@ -325,12 +327,8 @@ int log(const G& P, const G& xP)
 
 } // mcl::she::local
 
-template<class BN, class Fr>
+template<size_t dummyInpl = 0>
 struct SHET {
-	typedef typename BN::G1 G1;
-	typedef typename BN::G2 G2;
-	typedef typename BN::Fp12 GT;
-
 	class SecretKey;
 	class PublicKey;
 	class PrecomputedPublicKey;
@@ -342,7 +340,7 @@ struct SHET {
 	static G1 P_;
 	static G2 Q_;
 	static GT ePQ_; // e(P, Q)
-	static std::vector<bn_current::Fp6> Qcoeff_;
+	static std::vector<Fp6> Qcoeff_;
 	static local::HashTable<G1> PhashTbl_;
 	static local::HashTable<G2> QhashTbl_;
 	static mcl::fp::WindowMethod<G2> Qwm_;
@@ -440,19 +438,19 @@ private:
 	static void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
 #if 1
-		std::vector<bn_current::Fp6> Qcoeff;
-		BN::precomputeG2(Qcoeff, Q);
-		BN::precomputedMillerLoop(g1, P1, Qcoeff);
-		BN::precomputedMillerLoop(g2, P2, Qcoeff);
+		std::vector<Fp6> Qcoeff;
+		precomputeG2(Qcoeff, Q);
+		precomputedMillerLoop(g1, P1, Qcoeff);
+		precomputedMillerLoop(g2, P2, Qcoeff);
 #else
-		BN::millerLoop(g1, P1, Q);
-		BN::millerLoop(g2, P2, Q);
+		millerLoop(g1, P1, Q);
+		millerLoop(g2, P2, Q);
 #endif
 	}
 	static void finalExp4(GT out[4], const GT in[4])
 	{
 		for (int i =  0; i < 4; i++) {
-			BN::finalExp(out[i], in[i]);
+			finalExp(out[i], in[i]);
 		}
 	}
 	static void tensorProductML(GT g[4], const G1& S1, const G1& T1, const G2& S2, const G2& T2)
@@ -508,11 +506,11 @@ public:
 
 	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 	{
-		bn_current::initPairing(cp);
-		BN::hashAndMapToG1(P_, "0");
-		BN::hashAndMapToG2(Q_, "0");
-		BN::pairing(ePQ_, P_, Q_);
-		BN::precomputeG2(Qcoeff_, Q_);
+		initPairing(cp);
+		hashAndMapToG1(P_, "0");
+		hashAndMapToG2(Q_, "0");
+		pairing(ePQ_, P_, Q_);
+		precomputeG2(Qcoeff_, Q_);
 		setRangeForDLP(hashSize);
 		setTryNum(tryNum);
 	}
@@ -659,7 +657,7 @@ public:
 			G1::mul(R, c.T_, x_);
 			G1::sub(R, c.S_, R);
 			GT v;
-			BN::pairing(v, R, Q_);
+			pairing(v, R, Q_);
 			return ePQhashTbl_.log(v);
 		}
 		int64_t decViaGT(const CipherTextG2& c) const
@@ -668,7 +666,7 @@ public:
 			G2::mul(R, c.T_, y_);
 			G2::sub(R, c.S_, R);
 			GT v;
-			BN::pairing(v, P_, R);
+			pairing(v, P_, R);
 			return ePQhashTbl_.log(v);
 		}
 		int64_t dec(const CipherText& c) const
@@ -925,10 +923,10 @@ private:
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
 			*/
-			BN::precomputedMillerLoop(cm.g_[0], c1.getS(), Qcoeff_);
-			BN::finalExp(cm.g_[0], cm.g_[0]);
-			BN::precomputedMillerLoop(cm.g_[2], c1.getT(), Qcoeff_);
-			BN::finalExp(cm.g_[2], cm.g_[2]);
+			precomputedMillerLoop(cm.g_[0], c1.getS(), Qcoeff_);
+			finalExp(cm.g_[0], cm.g_[0]);
+			precomputedMillerLoop(cm.g_[2], c1.getT(), Qcoeff_);
+			finalExp(cm.g_[2], cm.g_[2]);
 
 			cm.g_[1] = cm.g_[3] = 1;
 		}
@@ -941,8 +939,8 @@ private:
 				Enc(1) = (S, T) = (P + r xP, rP) = (P, 0) if r = 0
 				cm = (P, 0) * c2 = (e(P, S), e(P, T), 1, 1)
 			*/
-			BN::pairing(cm.g_[0], P_, c2.getS());
-			BN::pairing(cm.g_[1], P_, c2.getT());
+			pairing(cm.g_[0], P_, c2.getS());
+			pairing(cm.g_[1], P_, c2.getT());
 			cm.g_[2] = cm.g_[3] = 1;
 		}
 		void convert(CipherTextGT& cm, const CipherTextA& ca) const
@@ -1037,15 +1035,15 @@ public:
 				PhashTbl_.mulByWindowMethod(P2, m);
 				P1 += P2;
 			}
-//			BN::millerLoop(c.g[0], P1, Q);
-			BN::precomputedMillerLoop(c.g_[0], P1, Qcoeff_);
+//			millerLoop(c.g[0], P1, Q);
+			precomputedMillerLoop(c.g_[0], P1, Qcoeff_);
 //			G1::mul(P1, P, rb);
 			PhashTbl_.mulByWindowMethod(P1, rb);
 			G1::mul(P2, xP_, rc);
 			P1 -= P2;
-			BN::millerLoop(e, P1, yQ_);
+			millerLoop(e, P1, yQ_);
 			c.g_[0] *= e;
-			BN::finalExp(c.g_[0], c.g_[0]);
+			finalExp(c.g_[0], c.g_[0]);
 #if 1
 			ePQhashTbl_.mulByWindowMethod(c.g_[1], rb);
 			ePQhashTbl_.mulByWindowMethod(c.g_[2], ra);
@@ -1140,9 +1138,9 @@ public:
 	public:
 		void init(const PublicKey& pub)
 		{
-			BN::pairing(exPQ_, pub.xP_, Q_);
-			BN::pairing(eyPQ_, P_, pub.yQ_);
-			BN::pairing(exyPQ_, pub.xP_, pub.yQ_);
+			pairing(exPQ_, pub.xP_, Q_);
+			pairing(eyPQ_, P_, pub.yQ_);
+			pairing(exyPQ_, pub.xP_, pub.yQ_);
 			const size_t bitSize = Fr::getBitSize();
 			exPQwm_.init(static_cast<const GTasEC&>(exPQ_), bitSize, local::winSize);
 			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
@@ -1463,16 +1461,16 @@ public:
 	};
 };
 
-template<class BN, class Fr> typename BN::G1 SHET<BN, Fr>::P_;
-template<class BN, class Fr> typename BN::G2 SHET<BN, Fr>::Q_;
-template<class BN, class Fr> typename BN::Fp12 SHET<BN, Fr>::ePQ_;
-template<class BN, class Fr> std::vector<bn_current::Fp6> SHET<BN, Fr>::Qcoeff_;
-template<class BN, class Fr> local::HashTable<typename BN::G1> SHET<BN, Fr>::PhashTbl_;
-template<class BN, class Fr> local::HashTable<typename BN::G2> SHET<BN, Fr>::QhashTbl_;
-template<class BN, class Fr> local::HashTable<typename BN::Fp12, false> SHET<BN, Fr>::ePQhashTbl_;
-template<class BN, class Fr> bool SHET<BN, Fr>::useDecG1ViaGT_;
-template<class BN, class Fr> bool SHET<BN, Fr>::useDecG2ViaGT_;
-typedef mcl::she::SHET<bn_current::BN, bn_current::Fr> SHE;
+template<size_t dummyInpl> G1 SHET<dummyInpl>::P_;
+template<size_t dummyInpl> G2 SHET<dummyInpl>::Q_;
+template<size_t dummyInpl> Fp12 SHET<dummyInpl>::ePQ_;
+template<size_t dummyInpl> std::vector<Fp6> SHET<dummyInpl>::Qcoeff_;
+template<size_t dummyInpl> local::HashTable<G1> SHET<dummyInpl>::PhashTbl_;
+template<size_t dummyInpl> local::HashTable<G2> SHET<dummyInpl>::QhashTbl_;
+template<size_t dummyInpl> local::HashTable<Fp12, false> SHET<dummyInpl>::ePQhashTbl_;
+template<size_t dummyInpl> bool SHET<dummyInpl>::useDecG1ViaGT_;
+template<size_t dummyInpl> bool SHET<dummyInpl>::useDecG2ViaGT_;
+typedef mcl::she::SHET<> SHE;
 typedef SHE::SecretKey SecretKey;
 typedef SHE::PublicKey PublicKey;
 typedef SHE::PrecomputedPublicKey PrecomputedPublicKey;

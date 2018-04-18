@@ -7,12 +7,12 @@ void minimum_sample(const G1& P, const G2& Q)
 	const mpz_class a = 123;
 	const mpz_class b = 456;
 	Fp12 e1, e2;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	G2 aQ;
 	G1 bP;
 	G2::mul(aQ, Q, a);
 	G1::mul(bP, P, b);
-	BN::pairing(e2, bP, aQ);
+	pairing(e2, bP, aQ);
 	Fp12::pow(e1, e1, a * b);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
@@ -20,21 +20,21 @@ void minimum_sample(const G1& P, const G2& Q)
 void miller_and_finel_exp(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 
-	BN::millerLoop(e2, P, Q);
-	BN::finalExp(e2, e2);
+	millerLoop(e2, P, Q);
+	finalExp(e2, e2);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
 
 void precomputed(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	std::vector<Fp6> Qcoeff;
-	BN::precomputeG2(Qcoeff, Q);
-	BN::precomputedMillerLoop(e2, P, Qcoeff);
-	BN::finalExp(e2, e2);
+	precomputeG2(Qcoeff, Q);
+	precomputedMillerLoop(e2, P, Qcoeff);
+	finalExp(e2, e2);
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
 

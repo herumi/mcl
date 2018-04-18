@@ -314,7 +314,7 @@ int mclBnG1_isZero(const mclBnG1 *x)
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 	try
 {
-	BN::hashAndMapToG1(*cast(x), buf, bufSize);
+	hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnG1_hashAndMapTo %s\n", e.what());
@@ -393,7 +393,7 @@ int mclBnG2_isZero(const mclBnG2 *x)
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 	try
 {
-	BN::hashAndMapToG2(*cast(x), buf, bufSize);
+	hashAndMapToG2(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnG2_hashAndMapTo %s\n", e.what());
@@ -528,15 +528,15 @@ void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
 
 void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
-	BN::pairing(*cast(z), *cast(x), *cast(y));
+	pairing(*cast(z), *cast(x), *cast(y));
 }
 void mclBn_finalExp(mclBnGT *y, const mclBnGT *x)
 {
-	BN::finalExp(*cast(y), *cast(x));
+	finalExp(*cast(y), *cast(x));
 }
 void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
-	BN::millerLoop(*cast(z), *cast(x), *cast(y));
+	millerLoop(*cast(z), *cast(x), *cast(y));
 }
 int mclBn_getUint64NumToPrecompute(void)
 {
@@ -615,11 +615,11 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 
 void mclBn_verifyOrderG1(int doVerify)
 {
-	BN::verifyOrderG1(doVerify != 0);
+	verifyOrderG1(doVerify != 0);
 }
 
 void mclBn_verifyOrderG2(int doVerify)
 {
-	BN::verifyOrderG2(doVerify != 0);
+	verifyOrderG2(doVerify != 0);
 }
 

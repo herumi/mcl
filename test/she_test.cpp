@@ -23,9 +23,9 @@ CYBOZU_TEST_AUTO(log)
 	const mcl::CurveParam& cp = mcl::BN462;
 	puts("BN462");
 #endif
-	SHE::init(cp);
+	init(cp);
 	G1 P;
-	BN::hashAndMapToG1(P, "abc");
+	hashAndMapToG1(P, "abc");
 	for (int i = -5; i < 5; i++) {
 		G1 iP;
 		G1::mul(iP, P, i);
@@ -43,15 +43,15 @@ double clk2msec(const cybozu::CpuClock& clk, int n)
 
 CYBOZU_TEST_AUTO(bench2)
 {
-	SHE::setRangeForDLP(1 << 21);
-	SHE::setTryNum(1 << 16);
-	SHE::useDecG1ViaGT(true);
-	SHE::useDecG2ViaGT(true);
+	setRangeForDLP(1 << 21);
+	setTryNum(1 << 16);
+	useDecG1ViaGT(true);
+	useDecG2ViaGT(true);
 #if 0
 	{
 		const char *tblName = "../she-dlp-table/she-dlp-0-20-gt.bin";
 		std::ifstream ifs(tblName, std::ios::binary);
-		SHE::ePQhashTbl_.load(ifs);
+		ePQhashTbl_.load(ifs);
 	}
 #endif
 	SecretKey sec;
@@ -144,9 +144,9 @@ void HashTableTest(const G& P)
 CYBOZU_TEST_AUTO(HashTable)
 {
 	G1 P;
-	BN::hashAndMapToG1(P, "abc");
+	hashAndMapToG1(P, "abc");
 	G2 Q;
-	BN::hashAndMapToG2(Q, "abc");
+	hashAndMapToG2(Q, "abc");
 	HashTableTest(P);
 	HashTableTest(Q);
 }
@@ -157,10 +157,10 @@ CYBOZU_TEST_AUTO(GTHashTable)
 	GT g;
 	{
 		G1 P;
-		BN::hashAndMapToG1(P, "abc");
+		hashAndMapToG1(P, "abc");
 		G2 Q;
-		BN::hashAndMapToG2(Q, "abc");
-		BN::pairing(g, P, Q);
+		hashAndMapToG2(Q, "abc");
+		pairing(g, P, Q);
 	}
 	const int maxSize = 100;
 	const int tryNum = 3;
@@ -188,7 +188,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 {
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
-	SHE::setRangeForDLP(1024);
+	setRangeForDLP(1024);
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
@@ -483,7 +483,7 @@ T testIo(const T& x)
 
 CYBOZU_TEST_AUTO(io)
 {
-	SHE::setRangeForDLP(100);
+	setRangeForDLP(100);
 	int64_t m;
 	for (int i = 0; i < 2; i++) {
 		if (i == 1) {
@@ -536,7 +536,7 @@ CYBOZU_TEST_AUTO(bench)
 
 CYBOZU_TEST_AUTO(saveHash)
 {
-	mcl::she::local::HashTable<SHE::G1> hashTbl1, hashTbl2;
+	mcl::she::local::HashTable<G1> hashTbl1, hashTbl2;
 	hashTbl1.init(SHE::P_, 1234, 123);
 	std::stringstream ss;
 	hashTbl1.save(ss);
@@ -578,15 +578,15 @@ CYBOZU_TEST_AUTO(hashBench)
 	const size_t hashSize = 1u << 21;
 
 	clock_t begin = clock(), end;
-	SHE::setRangeForG1DLP(hashSize);
+	setRangeForG1DLP(hashSize);
 	end = clock();
 	printf("init G1 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 	begin = end;
-	SHE::setRangeForG2DLP(hashSize);
+	setRangeForG2DLP(hashSize);
 	end = clock();
 	printf("init G2 DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 	begin = end;
-	SHE::setRangeForGTDLP(hashSize);
+	setRangeForGTDLP(hashSize);
 	end = clock();
 	printf("init GT DLP %f\n", double(end - begin) / CLOCKS_PER_SEC);
 
@@ -615,9 +615,9 @@ CYBOZU_TEST_AUTO(hashBench)
 		r.setRand();
 		mr = r.getMpz();
 	}
-	BN::hashAndMapToG1(P, "abc");
-	BN::hashAndMapToG2(Q, "abc");
-	BN::pairing(e, P, Q);
+	hashAndMapToG1(P, "abc");
+	hashAndMapToG2(Q, "abc");
+	pairing(e, P, Q);
 	P2.clear();
 	Q2.clear();
 	e2 = 1;
@@ -645,9 +645,9 @@ CYBOZU_TEST_AUTO(hashBench)
 //	CYBOZU_BENCH_C("GTwindow", C, wm.mul, static_cast<AG&>(e), mr);
 #endif
 
-	CYBOZU_BENCH_C("miller  ", C, BN::millerLoop, e, P, Q);
-	CYBOZU_BENCH_C("finalExp", C, BN::finalExp, e, e);
-	CYBOZU_BENCH_C("precomML", C, BN::precomputedMillerLoop, e, P, SHE::Qcoeff_);
+	CYBOZU_BENCH_C("miller  ", C, millerLoop, e, P, Q);
+	CYBOZU_BENCH_C("finalExp", C, finalExp, e, e);
+	CYBOZU_BENCH_C("precomML", C, precomputedMillerLoop, e, P, SHE::Qcoeff_);
 
 	CipherTextG1 c1;
 	CipherTextG2 c2;

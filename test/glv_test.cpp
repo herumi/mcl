@@ -113,7 +113,7 @@ void compareLength(const GLV1& rhs, const GLV2& lhs)
 void testGLV1()
 {
 	G1 P0, P1, P2;
-	BN::mapToG1(P0, 1);
+	mapToG1(P0, 1);
 	cybozu::XorShift rg;
 
 	oldGLV oldGlv;
@@ -124,7 +124,7 @@ void testGLV1()
 	compareLength(glv, oldGlv);
 
 	for (int i = 1; i < 100; i++) {
-		BN::mapToG1(P0, i);
+		mapToG1(P0, i);
 		Fr s;
 		s.setRand(rg);
 		mpz_class ss = s.getMpz();
@@ -145,7 +145,7 @@ void testGLV1()
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
 	Fr s;
-	BN::mapToG1(P0, 123);
+	mapToG1(P0, 123);
 	CYBOZU_BENCH_C("Ec::mul", 100, P1 = P0; s.setRand(rg); G1::mulGeneric, P2, P1, s.getMpz());
 	CYBOZU_BENCH_C("Ec::glv", 100, P1 = P0; s.setRand(rg); glv.mul, P2, P1, s.getMpz());
 }
@@ -164,7 +164,7 @@ void testGLV2()
 	glv2.init(r, z);
 	mpz_class n;
 	cybozu::XorShift rg;
-	BN::mapToG2(Q0, 1);
+	mapToG2(Q0, 1);
 	for (int i = -10; i < 10; i++) {
 		n = i;
 		G2::mulGeneric(Q1, Q0, n);
@@ -174,13 +174,13 @@ void testGLV2()
 	for (int i = 1; i < 100; i++) {
 		mcl::gmp::getRand(n, glv2.m, rg);
 		n %= r;
-		BN::mapToG2(Q0, i);
+		mapToG2(Q0, i);
 		G2::mulGeneric(Q1, Q0, n);
 		glv2.mul(Q2, Q0, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
 	Fr s;
-	BN::mapToG2(Q0, 123);
+	mapToG2(Q0, 123);
 	CYBOZU_BENCH_C("G2::mul", 1000, Q2 = Q0; s.setRand(rg); G2::mulGeneric, Q2, Q1, s.getMpz());
 	CYBOZU_BENCH_C("G2::glv", 1000, Q1 = Q0; s.setRand(rg); glv2.mul, Q2, Q1, s.getMpz());
 }

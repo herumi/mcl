@@ -205,7 +205,7 @@ mcl::bn256::initPairing(cp);
 mcl::bn256::G1 P(...);
 mcl::bn256::G2 Q(...);
 mcl::bn256::Fp12 e;
-mcl::bn256::BN::pairing(e, P, Q);
+mcl::bn256::pairing(e, P, Q);
 ```
 1. (BN254) a BN curve over the 254-bit prime p = p(z) where z = -(2^62 + 2^55 + 1).
 2. (BN_SNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
@@ -266,8 +266,8 @@ Use `Fp12::mulGeneric` for x in Fp12 - GT.
 
 ## Map To points
 
-* BN::mapToG1(G1& P, const Fp& x);
-* BN::mapToG2(G2& P, const Fp2& x);
+* mapToG1(G1& P, const Fp& x);
+* mapToG2(G2& P, const Fp2& x);
 
 These functions maps x into Gi according to [_Faster hashing to G2_].
 
