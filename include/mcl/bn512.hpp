@@ -6,19 +6,9 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#define MCL_MAX_FP_BIT_SIZE 512
 #include <mcl/bn.hpp>
 
 namespace mcl { namespace bn512 {
-
-namespace local {
-struct FpTag;
-struct FrTag;
-}
-
-typedef mcl::FpT<local::FpTag, 512> Fp;
-typedef mcl::FpT<local::FrTag, 512> Fr;
-
-#include <mcl/bn_common.hpp>
-
-} } // mcl::bn512
-
+using namespace mcl::bn;
+} }
