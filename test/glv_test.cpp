@@ -119,7 +119,7 @@ void testGLV1()
 	oldGLV oldGlv;
 	oldGlv.init(BN::param.r, BN::param.z);
 
-	mcl::util::GLV1<Fp> glv;
+	mcl::bn::local::GLV1 glv;
 	glv.init(BN::param.r, BN::param.z);
 	compareLength(glv, oldGlv);
 
@@ -160,7 +160,7 @@ void testGLV2()
 	mpz_class z = BN::param.z;
 	mpz_class r = BN::param.r;
 	mpz_class lambda = 6 * z * z;
-	mcl::util::GLV2<Fp2> glv2;
+	mcl::bn::local::GLV2 glv2;
 	glv2.init(r, z);
 	mpz_class n;
 	cybozu::XorShift rg;

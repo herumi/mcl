@@ -11,6 +11,9 @@
 #include <mcl/curve_type.h>
 #include <assert.h>
 
+/*
+	set bit size of Fp and Fr
+*/
 #ifndef MCL_MAX_FP_BIT_SIZE
 	#define MCL_MAX_FP_BIT_SIZE 256
 #endif
@@ -19,15 +22,6 @@
 	#define MCL_MAX_FR_BIT_SIZE MCL_MAX_FP_BIT_SIZE
 #endif
 namespace mcl {
-
-namespace bn {
-namespace local {
-struct FpTag;
-struct FrTag;
-}
-typedef mcl::FpT<local::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;
-typedef mcl::FpT<local::FrTag, MCL_MAX_FR_BIT_SIZE> Fr;
-}
 
 struct CurveParam {
 	/*
@@ -75,7 +69,41 @@ inline const CurveParam& getCurveParam(int type)
 	}
 }
 
-namespace util {
+namespace bn {
+
+namespace local {
+struct FpTag;
+struct FrTag;
+}
+
+typedef mcl::FpT<local::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;
+typedef mcl::FpT<local::FrTag, MCL_MAX_FR_BIT_SIZE> Fr;
+typedef mcl::Fp2T<Fp> Fp2;
+typedef mcl::Fp6T<Fp> Fp6;
+typedef mcl::Fp12T<Fp> Fp12;
+typedef mcl::EcT<Fp> G1;
+typedef mcl::EcT<Fp2> G2;
+typedef Fp12 GT;
+
+typedef mcl::FpDblT<Fp> FpDbl;
+typedef mcl::Fp2DblT<Fp> Fp2Dbl;
+
+inline void Frobenius(Fp2& y, const Fp2& x)
+{
+	Fp2::Frobenius(y, x);
+}
+inline void Frobenius(Fp12& y, const Fp12& x)
+{
+	Fp12::Frobenius(y, x);
+}
+/*
+	twisted Frobenius for G2
+*/
+void Frobenius(G2& D, const G2& S);
+void Frobenius2(G2& D, const G2& S);
+void Frobenius3(G2& D, const G2& S);
+
+namespace local {
 
 typedef std::vector<int8_t> SignVec;
 
@@ -109,8 +137,7 @@ enum TwistBtype {
 /*
 	l = (a, b, c) => (a, b * P.y, c * P.x)
 */
-template<class Fp6,  class G1>
-void updateLine(Fp6& l, const G1& P)
+inline void updateLine(Fp6& l, const G1& P)
 {
 	l.b.a *= P.y;
 	l.b.b *= P.y;
@@ -118,73 +145,7 @@ void updateLine(Fp6& l, const G1& P)
 	l.c.b *= P.x;
 }
 
-/*
-	twisted Frobenius for G2
-*/
-template<class G2>
-struct HaveFrobenius : public G2 {
-	typedef typename G2::Fp Fp2;
-	static Fp2 g2;
-	static Fp2 g3;
-	/*
-		BN254 is Dtype
-		BLS12-381 is Mtype
-	*/
-	static void init(bool isMtype)
-	{
-		g2 = Fp2::get_gTbl()[0];
-		g3 = Fp2::get_gTbl()[3];
-		if (isMtype) {
-			Fp2::inv(g2, g2);
-			Fp2::inv(g3, g3);
-		}
-	}
-	/*
-		FrobeniusOnTwist for Dtype
-		p mod 6 = 1, w^6 = xi
-		Frob(x', y') = phi Frob phi^-1(x', y')
-		= phi Frob (x' w^2, y' w^3)
-		= phi (x'^p w^2p, y'^p w^3p)
-		= (F(x') w^2(p - 1), F(y') w^3(p - 1))
-		= (F(x') g^2, F(y') g^3)
-
-		FrobeniusOnTwist for Dtype
-		use (1/g) instead of g
-	*/
-	static void Frobenius(G2& D, const G2& S)
-	{
-		Fp2::Frobenius(D.x, S.x);
-		Fp2::Frobenius(D.y, S.y);
-		Fp2::Frobenius(D.z, S.z);
-		D.x *= g2;
-		D.y *= g3;
-	}
-	static void Frobenius2(G2& D, const G2& S)
-	{
-		Frobenius(D, S);
-		Frobenius(D, D);
-	}
-	static void Frobenius3(G2& D, const G2& S)
-	{
-		Frobenius(D, S);
-		Frobenius(D, D);
-		Frobenius(D, D);
-	}
-	static void Frobenius(HaveFrobenius& y, const HaveFrobenius& x)
-	{
-		Frobenius(static_cast<G2&>(y), static_cast<const G2&>(x));
-	}
-};
-template<class G2>
-typename G2::Fp HaveFrobenius<G2>::g2;
-template<class G2>
-typename G2::Fp HaveFrobenius<G2>::g3;
-
-template<class Fp>
-struct CompressT {
-	typedef mcl::Fp2T<Fp> Fp2;
-	typedef mcl::Fp12T<Fp> Fp12;
-	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
+struct Compress {
 	Fp12& z_;
 	Fp2& g1_;
 	Fp2& g2_;
@@ -192,7 +153,7 @@ struct CompressT {
 	Fp2& g4_;
 	Fp2& g5_;
 	// z is output area
-	CompressT(Fp12& z, const Fp12& x)
+	Compress(Fp12& z, const Fp12& x)
 		: z_(z)
 		, g1_(z.getFp2()[4])
 		, g2_(z.getFp2()[3])
@@ -205,7 +166,7 @@ struct CompressT {
 		g4_ = x.getFp2()[1];
 		g5_ = x.getFp2()[5];
 	}
-	CompressT(Fp12& z, const CompressT& c)
+	Compress(Fp12& z, const Compress& c)
 		: z_(z)
 		, g1_(z.getFp2()[4])
 		, g2_(z.getFp2()[3])
@@ -269,7 +230,7 @@ public:
 	/*
 		2275clk * 186 = 423Kclk QQQ
 	*/
-	static void squareC(CompressT& z)
+	static void squareC(Compress& z)
 	{
 		Fp2 t0, t1, t2;
 		Fp2Dbl T0, T1, T2, T3;
@@ -307,7 +268,7 @@ public:
 		z.g5_ += z.g5_;
 		z.g5_ += t0;
 	}
-	static void square_n(CompressT& z, int n)
+	static void square_n(Compress& z, int n)
 	{
 		for (int i = 0; i < n; i++) {
 			squareC(z);
@@ -326,10 +287,10 @@ public:
 		Fp12 x_org = x;
 		Fp12 d62;
 		Fp2 c55nume, c55denomi, c62nume, c62denomi;
-		CompressT c55(z, x);
+		Compress c55(z, x);
 		square_n(c55, 55);
 		c55.decompressBeforeInv(c55nume, c55denomi);
-		CompressT c62(d62, c55);
+		Compress c62(d62, c55);
 		square_n(c62, 62 - 55);
 		c62.decompressBeforeInv(c62nume, c62denomi);
 		Fp2 acc;
@@ -347,12 +308,7 @@ public:
 	}
 };
 
-template<class Fp>
-struct MapToT {
-	typedef mcl::Fp2T<Fp> Fp2;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
-	typedef util::HaveFrobenius<G2> G2withF;
+struct MapTo {
 	Fp c1_; // sqrt(-3)
 	Fp c2_; // (-1 + sqrt(-3)) / 2
 	mpz_class z_;
@@ -412,7 +368,7 @@ struct MapToT {
 			}
 		}
 	ERR_POINT:
-		throw cybozu::Exception("MapToT:calcBN:bad") << t;
+		throw cybozu::Exception("MapTo:calcBN:bad") << t;
 	}
 	/*
 		Faster Hashing to G2
@@ -438,17 +394,17 @@ struct MapToT {
 		G2::mulGeneric(T0, P, z_);
 		G2::dbl(T1, T0);
 		T1 += T0; // 3zP
-		G2withF::Frobenius(T1, T1);
-		G2withF::Frobenius2(T2, T0);
+		Frobenius(T1, T1);
+		Frobenius2(T2, T0);
 		T0 += T1;
 		T0 += T2;
-		G2withF::Frobenius3(T2, P);
+		Frobenius3(T2, P);
 		G2::add(Q, T0, T2);
 #endif
 #endif
 	}
 	template<class G, class F>
-	void calcBLS12(G& P, const F& t) const
+	void naiveMapTo(G& P, const F& t) const
 	{
 		F x = t;
 		for (;;) {
@@ -479,10 +435,10 @@ struct MapToT {
 		G2::mulGeneric(T0, P, z_ - 1);
 		G2::mulGeneric(T1, T0, z_);
 		T1 -= P;
-		G2withF::Frobenius(T0, T0);
+		Frobenius(T0, T0);
 		T0 += T1;
 		G2::dbl(T1, P);
-		G2withF::Frobenius2(T1, T1);
+		Frobenius2(T1, T1);
 		G2::add(Q, T0, T1);
 	}
 	/*
@@ -490,7 +446,7 @@ struct MapToT {
 	*/
 	void initBN(const mpz_class& cofactor, const mpz_class &z)
 	{
-		if (!Fp::squareRoot(c1_, -3)) throw cybozu::Exception("MapToT:init:c1_");
+		if (!Fp::squareRoot(c1_, -3)) throw cybozu::Exception("MapTo:init:c1_");
 		c2_ = (c1_ - 1) / 2;
 		z_ = z;
 		cofactor_ = cofactor;
@@ -515,7 +471,7 @@ struct MapToT {
 		if (isBN_) {
 			calcBN<G1, Fp>(P, t);
 		} else {
-			calcBLS12<G1, Fp>(P, t);
+			naiveMapTo<G1, Fp>(P, t);
 			mulByCofactorBLS12(P, P);
 		}
 		assert(P.isValid());
@@ -529,7 +485,7 @@ struct MapToT {
 			calcBN<G2, Fp2>(P, t);
 			mulByCofactorBN(P, P);
 		} else {
-			calcBLS12<G2, Fp2>(P, t);
+			naiveMapTo<G2, Fp2>(P, t);
 			mulByCofactorBLS12(P, P);
 		}
 		assert(P.isValid());
@@ -540,9 +496,7 @@ struct MapToT {
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN
 */
-template<class Fp>
 struct GLV1 {
-	typedef mcl::EcT<Fp> G1;
 	Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	size_t m;
 	mpz_class v0, v1;
@@ -672,11 +626,7 @@ struct GLV1 {
 /*
 	GLV method for G2 and GT on BN
 */
-template<class Fp2>
 struct GLV2 {
-	typedef typename Fp2::BaseFp Fp;
-	typedef mcl::EcT<Fp2> G2;
-	typedef mcl::Fp12T<Fp> Fp12;
 	size_t m;
 	mpz_class B[4][4];
 	mpz_class r;
@@ -761,9 +711,9 @@ struct GLV2 {
 		}
 		split(u, x);
 		in[0] = P;
-		T::Frobenius(in[1], in[0]);
-		T::Frobenius(in[2], in[1]);
-		T::Frobenius(in[3], in[2]);
+		Frobenius(in[1], in[0]);
+		Frobenius(in[2], in[1]);
+		Frobenius(in[3], in[2]);
 		for (int i = 0; i < splitN; i++) {
 			if (u[i] < 0) {
 				u[i] = -u[i];
@@ -837,13 +787,6 @@ struct GLV2 {
 			D += tbl[0];
 		}
 	}
-	void mul(G2& Q, const G2& P, mpz_class x, bool constTime = false) const
-	{
-		typedef util::HaveFrobenius<G2> G2withF;
-		G2withF& QQ(static_cast<G2withF&>(Q));
-		const G2withF& PP(static_cast<const G2withF&>(P));
-		mul(QQ, PP, x, constTime);
-	}
 	void pow(Fp12& z, const Fp12& x, mpz_class y, bool constTime = false) const
 	{
 		typedef GroupMtoA<Fp12> AG; // as additive group
@@ -853,11 +796,7 @@ struct GLV2 {
 	}
 };
 
-template<class Fp>
-struct ParamT {
-	typedef Fp2T<Fp> Fp2;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
+struct Param {
 	CurveParam cp;
 	mpz_class z;
 	mpz_class abs_z;
@@ -865,9 +804,12 @@ struct ParamT {
 	bool isBLS12;
 	mpz_class p;
 	mpz_class r;
-	util::MapToT<Fp> mapTo;
-	util::GLV1<Fp> glv1;
-	util::GLV2<Fp2> glv2;
+	local::MapTo mapTo;
+	local::GLV1 glv1;
+	local::GLV2 glv2;
+	// for G2 Frobenius
+	Fp2 g2;
+	Fp2 g3;
 	/*
 		Dtype twist
 		(x', y') = phi(x, y) = (x/w^2, y/w^3)
@@ -877,7 +819,7 @@ struct ParamT {
 		=> y'^2 = x'^3 + twist_b;
 	*/
 	Fp2 twist_b;
-	util::TwistBtype twist_b_type;
+	local::TwistBtype twist_b_type;
 /*
 	mpz_class exp_c0;
 	mpz_class exp_c1;
@@ -886,10 +828,10 @@ struct ParamT {
 */
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
-	util::SignVec siTbl;
+	local::SignVec siTbl;
 	size_t precomputedQcoeffSize;
 	bool useNAF;
-	util::SignVec zReplTbl;
+	local::SignVec zReplTbl;
 
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
 	{
@@ -911,13 +853,19 @@ struct ParamT {
 		} else {
 			const int pCoff[] = { 1, 6, 24, 36, 36 };
 			const int rCoff[] = { 1, 6, 18, 36, 36 };
-			p = util::evalPoly(z, pCoff);
+			p = local::evalPoly(z, pCoff);
 			assert((p % 6) == 1);
-			r = util::evalPoly(z, rCoff);
+			r = local::evalPoly(z, rCoff);
 		}
 		Fp::init(p, mode);
 		Fp2::init(cp.xi_a);
 		Fp2 xi(cp.xi_a, 1);
+		g2 = Fp2::get_gTbl()[0];
+		g3 = Fp2::get_gTbl()[3];
+		if (cp.isMtype) {
+			Fp2::inv(g2, g2);
+			Fp2::inv(g3, g3);
+		}
 		if (cp.isMtype) {
 			twist_b = Fp2(cp.b) * xi;
 		} else {
@@ -939,7 +887,7 @@ struct ParamT {
 
 		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
-		precomputedQcoeffSize = util::getPrecomputeQcoeffSize(siTbl);
+		precomputedQcoeffSize = local::getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
 /*
 		if (isBLS12) {
@@ -967,23 +915,12 @@ struct ParamT {
 	}
 };
 
-} // mcl::util
+} // mcl::bn::local
 
-namespace bn {
-
-template<class Fp>
+template<size_t dummyImpl = 0>
 struct BNT {
-	typedef mcl::Fp2T<Fp> Fp2;
-	typedef mcl::Fp6T<Fp> Fp6;
-	typedef mcl::Fp12T<Fp> Fp12;
-	typedef mcl::EcT<Fp> G1;
-	typedef mcl::EcT<Fp2> G2;
-	typedef util::HaveFrobenius<G2> G2withF;
-	typedef mcl::FpDblT<Fp> FpDbl;
-	typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-	typedef util::CompressT<Fp> Compress;
-	typedef util::ParamT<Fp> Param;
-	static Param param;
+	typedef local::Compress Compress;
+	static local::Param param;
 
 	static void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
@@ -1009,7 +946,7 @@ struct BNT {
 	static void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 	{
 		param.init(cp, mode);
-		G2withF::init(cp.isMtype);
+//		G2withF::init(cp.isMtype);
 		if (param.isBLS12) {
 			// not supported yet
 			G1::setMulArrayGLV(0);
@@ -1056,7 +993,7 @@ struct BNT {
 	static void mul_b_div_xi(Fp2& y, const Fp2& x)
 	{
 		switch (param.twist_b_type) {
-		case util::tb_1m1i:
+		case local::tb_1m1i:
 			/*
 				b / xi = 1 - 1i
 				(a + bi)(1 - 1i) = (a + b) + (b - a)i
@@ -1068,7 +1005,7 @@ struct BNT {
 				y.a = t;
 			}
 			return;
-		case util::tb_1m2i:
+		case local::tb_1m2i:
 			/*
 				b / xi = 1 - 2i
 				(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
@@ -1082,7 +1019,7 @@ struct BNT {
 				y.b = t;
 			}
 			return;
-		case util::tb_generic:
+		case local::tb_generic:
 			Fp2::mul(y, x, param.twist_b);
 			return;
 		}
@@ -1154,12 +1091,12 @@ struct BNT {
 	static void dblLine(Fp6& l, G2& Q, const G1& P)
 	{
 		dblLineWithoutP(l, Q);
-		util::updateLine(l, P);
+		local::updateLine(l, P);
 	}
 	static void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 	{
 		addLineWithoutP(l, R, Q);
-		util::updateLine(l, P);
+		local::updateLine(l, P);
 	}
 	static void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 	{
@@ -1643,8 +1580,8 @@ struct BNT {
 		}
 		if (param.isBLS12) return;
 		G2 Q1, Q2;
-		G2withF::Frobenius(Q1, Q);
-		G2withF::Frobenius(Q2, Q1);
+		Frobenius(Q1, Q);
+		Frobenius(Q2, Q1);
 		G2::neg(Q2, Q2);
 		addLine(d, T, Q1, P);
 		addLine(e, T, Q2, P);
@@ -1705,8 +1642,8 @@ struct BNT {
 		}
 		if (param.isBLS12) return;
 		G2 Q1, Q2;
-		G2withF::Frobenius(Q1, Q);
-		G2withF::Frobenius(Q2, Q1);
+		Frobenius(Q1, Q);
+		Frobenius(Q2, Q1);
 		G2::neg(Q2, Q2);
 		addLineWithoutP(Qcoeff[idx++], T, Q1);
 		addLineWithoutP(Qcoeff[idx++], T, Q2);
@@ -1845,8 +1782,8 @@ struct BNT {
 	}
 };
 
-template<class Fp>
-util::ParamT<Fp> BNT<Fp>::param;
+template<size_t dummyImpl>
+local::Param BNT<dummyImpl>::param;
 
 // backward compatibility
 using mcl::CurveParam;
@@ -1856,13 +1793,39 @@ static const CurveParam& CurveFp382_2 = BN381_2;
 static const CurveParam& CurveFp462 = BN462;
 static const CurveParam& CurveSNARK1 = BN_SNARK1;
 
-typedef mcl::bn::BNT<Fp> BN;
-typedef BN::Fp2 Fp2;
-typedef BN::Fp6 Fp6;
-typedef BN::Fp12 Fp12;
-typedef BN::G1 G1;
-typedef BN::G2 G2;
-typedef BN::Fp12 GT;
+typedef mcl::bn::BNT<> BN;
+
+/*
+	FrobeniusOnTwist for Dtype
+	p mod 6 = 1, w^6 = xi
+	Frob(x', y') = phi Frob phi^-1(x', y')
+	= phi Frob (x' w^2, y' w^3)
+	= phi (x'^p w^2p, y'^p w^3p)
+	= (F(x') w^2(p - 1), F(y') w^3(p - 1))
+	= (F(x') g^2, F(y') g^3)
+
+	FrobeniusOnTwist for Dtype
+	use (1/g) instead of g
+*/
+inline void Frobenius(G2& D, const G2& S)
+{
+	Fp2::Frobenius(D.x, S.x);
+	Fp2::Frobenius(D.y, S.y);
+	Fp2::Frobenius(D.z, S.z);
+	D.x *= BN::param.g2;
+	D.y *= BN::param.g3;
+}
+inline void Frobenius2(G2& D, const G2& S)
+{
+	Frobenius(D, S);
+	Frobenius(D, D);
+}
+inline void Frobenius3(G2& D, const G2& S)
+{
+	Frobenius(D, S);
+	Frobenius(D, D);
+	Frobenius(D, D);
+}
 
 inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
@@ -1955,7 +1918,6 @@ inline void verifyOrderG2(bool doVerify)
 {
 	BN::verifyOrderG2(doVerify);
 }
-
 
 } } // mcl::bn
 
