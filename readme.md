@@ -7,7 +7,7 @@ A portable and fast pairing-based cryptography library.
 # Abstract
 
 mcl is a library for pairing-based cryptography.
-The current version supports the optimal Ate pairing over BN curves.
+The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # Support architecture
 
@@ -26,7 +26,7 @@ p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
 * BN\_SNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
 * BN381\_1 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
 * BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
-* BLS12\_381 ; new [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+* BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
 
 # Benchmark
 
@@ -190,11 +190,11 @@ finalExp 546.259Kclk
 # Libraries
 
 * libmcl.a ; static C++ library of mcl
-* libmcl_dy.so ; shared C++ library of mcl
+* libmcl\_dy.so ; shared C++ library of mcl
 * libbn256.a ; static C library for `mcl/bn256f.h`
-* libbn256_dy.so ; shared C library
+* libbn256\_dy.so ; shared C library
 
-If you want to remove '_dy` of so files, then `makeSHARE_BASENAME_SUF=`.
+If you want to remove '_dy` of so files, then `makeSHARE_BASENAME\_SUF=`.
 
 # How to initialize pairing library
 Call `mcl::bn256::initPairing` before calling any operations.
