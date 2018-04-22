@@ -502,23 +502,44 @@ struct GLV1 {
 	mpz_class v0, v1;
 	mpz_class B[2][2];
 	mpz_class r;
-	void init(const mpz_class& r, const mpz_class& z)
+	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false)
 	{
 		if (!Fp::squareRoot(rw, -3)) throw cybozu::Exception("GLV1:init");
 		rw = -(rw + 1) / 2;
 		this->r = r;
 		m = gmp::getBitSize(r);
 		m = (m + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
-		v0 = ((6 * z * z + 4 * z + 1) << m) / r;
-		v1 = ((-2 * z - 1) << m) / r;
-		B[0][0] = 6 * z * z + 2 * z;
-		B[0][1] = -2 * z - 1;
-		B[1][0] = -2 * z - 1;
-		B[1][1] = -6 * z * z - 4 * z - 1;
+		if (isBLS12) {
+			/*
+				BLS12
+				L = z^4
+				(-z^2+1) + L = 0
+				1 + z^2 L = 0
+			*/
+			B[0][0] = -z * z + 1;
+			B[0][1] = 1;
+			B[1][0] = 1;
+			B[1][1] = z * z;
+			v0 = ((-B[1][1]) << m) / r;
+			v1 = ((B[1][0]) << m) / r;
+		} else {
+			/*
+				BN
+				L = 36z^4 - 1
+				(6z^2+2z) - (2z+1)   L = 0
+				(-2z-1) - (6z^2+4z+1)L = 0
+			*/
+			B[0][0] = 6 * z * z + 2 * z;
+			B[0][1] = -2 * z - 1;
+			B[1][0] = -2 * z - 1;
+			B[1][1] = -6 * z * z - 4 * z - 1;
+			v0 = ((-B[1][1]) << m) / r;
+			v1 = ((B[1][0]) << m) / r;
+		}
 	}
 	/*
-		lambda = 36z^4 - 1
-		lambda (x, y) = (rw x, y)
+		L = p^4
+		L (x, y) = (rw x, y)
 	*/
 	void mulLambda(G1& Q, const G1& P) const
 	{
@@ -527,7 +548,6 @@ struct GLV1 {
 		Q.z = P.z;
 	}
 	/*
-		lambda = 36 z^4 - 1
 		x = a + b * lambda mod r
 	*/
 	void split(mpz_class& a, mpz_class& b, const mpz_class& x) const

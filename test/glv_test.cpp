@@ -80,9 +80,9 @@ template<class GLV1, class GLV2>
 void compareLength(const GLV1& rhs, const GLV2& lhs)
 {
 	cybozu::XorShift rg;
-	int Rc = 0;
-	int Lc = 0;
+	int lt = 0;
 	int eq = 0;
+	int gt = 0;
 	mpz_class R0, R1, L0, L1, x;
 	Fr r;
 	for (int i = 1; i < 1000; i++) {
@@ -101,13 +101,13 @@ void compareLength(const GLV1& rhs, const GLV2& lhs)
 			eq++;
 		}
 		if (Rn > Ln) {
-			Rc++;
+			gt++;
 		}
 		if (Rn < Ln) {
-			Lc++;
+			lt++;
 		}
 	}
-	printf("eq=%d small is better rhs=%d, lhs=%d\n", eq, Rc, Lc);
+	printf("#of{<} = %d, #of{=} = %d #of{>} = %d\n", lt, eq, gt);
 }
 
 void testGLV1()
@@ -117,11 +117,15 @@ void testGLV1()
 	cybozu::XorShift rg;
 
 	oldGLV oldGlv;
-	oldGlv.init(BN::param.r, BN::param.z);
+	if (!BN::param.isBLS12) {
+		oldGlv.init(BN::param.r, BN::param.z);
+	}
 
 	mcl::bn::local::GLV1 glv;
-	glv.init(BN::param.r, BN::param.z);
-	compareLength(glv, oldGlv);
+	glv.init(BN::param.r, BN::param.z, BN::param.isBLS12);
+	if (!BN::param.isBLS12) {
+		compareLength(glv, oldGlv);
+	}
 
 	for (int i = 1; i < 100; i++) {
 		mapToG1(P0, i);
@@ -133,8 +137,10 @@ void testGLV1()
 		CYBOZU_TEST_EQUAL(P1, P2);
 		glv.mul(P2, P0, ss, true);
 		CYBOZU_TEST_EQUAL(P1, P2);
-		oldGlv.mul(P2, P0, ss);
-		CYBOZU_TEST_EQUAL(P1, P2);
+		if (!BN::param.isBLS12) {
+			oldGlv.mul(P2, P0, ss);
+			CYBOZU_TEST_EQUAL(P1, P2);
+		}
 	}
 	for (int i = -100; i < 100; i++) {
 		mpz_class ss = i;
@@ -191,11 +197,13 @@ CYBOZU_TEST_AUTO(glv)
 		mcl::BN254,
 		mcl::BN381_1,
 		mcl::BN381_2,
+		mcl::BLS12_381,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mcl::CurveParam& cp = tbl[i];
 		initPairing(cp);
 		testGLV1();
+		if (BN::param.isBLS12) break;
 		testGLV2();
 	}
 }
