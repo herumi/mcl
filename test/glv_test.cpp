@@ -167,7 +167,7 @@ void testGLV2()
 	mpz_class r = BN::param.r;
 	mpz_class lambda = 6 * z * z;
 	mcl::bn::local::GLV2 glv2;
-	glv2.init(r, z);
+	glv2.init(r, z, BN::param.isBLS12);
 	mpz_class n;
 	cybozu::XorShift rg;
 	mapToG2(Q0, 1);
@@ -180,6 +180,7 @@ void testGLV2()
 	for (int i = 1; i < 100; i++) {
 		mcl::gmp::getRand(n, glv2.m, rg);
 		n %= r;
+		n -= r/2;
 		mapToG2(Q0, i);
 		G2::mulGeneric(Q1, Q0, n);
 		glv2.mul(Q2, Q0, n);
@@ -203,7 +204,6 @@ CYBOZU_TEST_AUTO(glv)
 		const mcl::CurveParam& cp = tbl[i];
 		initPairing(cp);
 		testGLV1();
-		if (BN::param.isBLS12) break;
 		testGLV2();
 	}
 }

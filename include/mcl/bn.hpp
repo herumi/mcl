@@ -520,8 +520,6 @@ struct GLV1 {
 			B[0][1] = 1;
 			B[1][0] = 1;
 			B[1][1] = z * z;
-			v0 = ((-B[1][1]) << m) / r;
-			v1 = ((B[1][0]) << m) / r;
 		} else {
 			/*
 				BN
@@ -533,12 +531,13 @@ struct GLV1 {
 			B[0][1] = -2 * z - 1;
 			B[1][0] = -2 * z - 1;
 			B[1][1] = -6 * z * z - 4 * z - 1;
-			v0 = ((-B[1][1]) << m) / r;
-			v1 = ((B[1][0]) << m) / r;
 		}
+		// [v0 v1] = [r 0] * B^(-1)
+		v0 = ((-B[1][1]) << m) / r;
+		v1 = ((B[1][0]) << m) / r;
 	}
 	/*
-		L = p^4
+		L = lambda = p^4
 		L (x, y) = (rw x, y)
 	*/
 	void mulLambda(G1& Q, const G1& P) const
@@ -651,19 +650,18 @@ struct GLV2 {
 	mpz_class B[4][4];
 	mpz_class r;
 	mpz_class v[4];
-	GLV2() : m(0) {}
-	void init(const mpz_class& r, const mpz_class& z)
+	mpz_class z;
+	mpz_class abs_z;
+	bool isBLS12;
+	GLV2() : m(0), isBLS12(false) {}
+	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false)
 	{
 		this->r = r;
+		this->z = z;
+		this->abs_z = z < 0 ? -z : z;
+		this->isBLS12 = isBLS12;
 		m = mcl::gmp::getBitSize(r);
 		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
-		/*
-			v[] = [1, 0, 0, 0] * B^(-1) = [2z^2+3z+1, 12z^3+8z^2+z, 6z^3+4z^2+z, -(2z+1)]
-		*/
-		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
-		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
-		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
-		v[3] = -((z * (1 + z * 2)) << m) / r;
 		mpz_class z2p1 = z * 2 + 1;
 		B[0][0] = z + 1;
 		B[0][1] = z;
@@ -681,12 +679,40 @@ struct GLV2 {
 		B[3][1] = 2 * z2p1;
 		B[3][2] =  -2 * z + 1;
 		B[3][3] = z - 1;
+		/*
+			v[] = [r 0 0 0] * B^(-1) = [2z^2+3z+1, 12z^3+8z^2+z, 6z^3+4z^2+z, -(2z+1)]
+		*/
+		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
+		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
+		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
+		v[3] = -((z * (1 + z * 2)) << m) / r;
 	}
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
 	*/
 	void split(mpz_class u[4], const mpz_class& x) const
 	{
+		if (isBLS12) {
+			/*
+				Frob(P) = zP
+				x = u[0] + u[1] z + u[2] z^2 + u[3] z^3
+			*/
+			bool isNeg = false;
+			mpz_class t = x;
+			if (t < 0) {
+				t = -t;
+				isNeg = true;
+			}
+			for (int i = 0; i < 4; i++) {
+				// t = t / abs_z, u[i] = t % abs_z
+				mcl::gmp::divmod(t, u[i], t, abs_z);
+				if (((z < 0) && (i & 1)) ^ isNeg) {
+					u[i] = -u[i];
+				}
+			}
+			return;
+		}
+		// BN
 		mpz_class t[4];
 		for (int i = 0; i < 4; i++) {
 			t[i] = (x * v[i]) >> m;
@@ -929,8 +955,8 @@ struct Param {
 			mapTo.init(0, z, false);
 		} else {
 			mapTo.init(2 * p - r, z, true);
-			glv2.init(r, z);
 		}
+		glv2.init(r, z, isBLS12);
 		glv1.init(r, z, isBLS12);
 	}
 };
@@ -966,16 +992,9 @@ struct BNT {
 	static void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 	{
 		param.init(cp, mode);
-//		G2withF::init(cp.isMtype);
 		G1::setMulArrayGLV(mulArrayGLV1);
-		if (param.isBLS12) {
-			// not supported yet
-			G2::setMulArrayGLV(0);
-			Fp12::setPowArrayGLV(0);
-		} else {
-			G2::setMulArrayGLV(mulArrayGLV2);
-			Fp12::setPowArrayGLV(powArrayGLV2);
-		}
+		G2::setMulArrayGLV(mulArrayGLV2);
+		Fp12::setPowArrayGLV(powArrayGLV2);
 	}
 
 	/*
