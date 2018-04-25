@@ -178,7 +178,7 @@ void testGLV2()
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
 	for (int i = 1; i < 100; i++) {
-		mcl::gmp::getRand(n, glv2.m, rg);
+		mcl::gmp::getRand(n, glv2.rBitSize, rg);
 		n %= r;
 		n -= r/2;
 		mapToG2(Q0, i);

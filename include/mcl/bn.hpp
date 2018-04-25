@@ -498,7 +498,7 @@ struct MapTo {
 */
 struct GLV1 {
 	Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
-	size_t m;
+	size_t rBitSize;
 	mpz_class v0, v1;
 	mpz_class B[2][2];
 	mpz_class r;
@@ -507,8 +507,8 @@ struct GLV1 {
 		if (!Fp::squareRoot(rw, -3)) throw cybozu::Exception("GLV1:init");
 		rw = -(rw + 1) / 2;
 		this->r = r;
-		m = gmp::getBitSize(r);
-		m = (m + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
+		rBitSize = gmp::getBitSize(r);
+		rBitSize = (rBitSize + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
 		if (isBLS12) {
 			/*
 				BLS12
@@ -533,8 +533,8 @@ struct GLV1 {
 			B[1][1] = -6 * z * z - 4 * z - 1;
 		}
 		// [v0 v1] = [r 0] * B^(-1)
-		v0 = ((-B[1][1]) << m) / r;
-		v1 = ((B[1][0]) << m) / r;
+		v0 = ((-B[1][1]) << rBitSize) / r;
+		v1 = ((B[1][0]) << rBitSize) / r;
 	}
 	/*
 		L = lambda = p^4
@@ -552,8 +552,8 @@ struct GLV1 {
 	void split(mpz_class& a, mpz_class& b, const mpz_class& x) const
 	{
 		mpz_class t;
-		t = (x * v0) >> m;
-		b = (x * v1) >> m;
+		t = (x * v0) >> rBitSize;
+		b = (x * v1) >> rBitSize;
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
@@ -633,7 +633,7 @@ struct GLV1 {
 #endif
 	DummyLoop:
 		if (!constTime) return;
-		const int limitBit = (int)Fp::getBitSize() / splitN;
+		const int limitBit = (int)rBitSize / splitN;
 		G1 D = tbl[0];
 		for (int i = maxBit + 1; i < limitBit; i++) {
 			G1::dbl(D, D);
@@ -646,22 +646,22 @@ struct GLV1 {
 	GLV method for G2 and GT on BN/BLS12
 */
 struct GLV2 {
-	size_t m;
+	size_t rBitSize;
 	mpz_class B[4][4];
 	mpz_class r;
 	mpz_class v[4];
 	mpz_class z;
 	mpz_class abs_z;
 	bool isBLS12;
-	GLV2() : m(0), isBLS12(false) {}
+	GLV2() : rBitSize(0), isBLS12(false) {}
 	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false)
 	{
 		this->r = r;
 		this->z = z;
 		this->abs_z = z < 0 ? -z : z;
 		this->isBLS12 = isBLS12;
-		m = mcl::gmp::getBitSize(r);
-		m = (m + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
+		rBitSize = mcl::gmp::getBitSize(r);
+		rBitSize = (rBitSize + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
 		mpz_class z2p1 = z * 2 + 1;
 		B[0][0] = z + 1;
 		B[0][1] = z;
@@ -682,10 +682,10 @@ struct GLV2 {
 		/*
 			v[] = [r 0 0 0] * B^(-1) = [2z^2+3z+1, 12z^3+8z^2+z, 6z^3+4z^2+z, -(2z+1)]
 		*/
-		v[0] = ((1 + z * (3 + z * 2)) << m) / r;
-		v[1] = ((z * (1 + z * (8 + z * 12))) << m) / r;
-		v[2] = ((z * (1 + z * (4 + z * 6))) << m) / r;
-		v[3] = -((z * (1 + z * 2)) << m) / r;
+		v[0] = ((1 + z * (3 + z * 2)) << rBitSize) / r;
+		v[1] = ((z * (1 + z * (8 + z * 12))) << rBitSize) / r;
+		v[2] = ((z * (1 + z * (4 + z * 6))) << rBitSize) / r;
+		v[3] = -((z * (1 + z * 2)) << rBitSize) / r;
 	}
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
@@ -715,7 +715,7 @@ struct GLV2 {
 		// BN
 		mpz_class t[4];
 		for (int i = 0; i < 4; i++) {
-			t[i] = (x * v[i]) >> m;
+			t[i] = (x * v[i]) >> rBitSize;
 		}
 		for (int i = 0; i < 4; i++) {
 			u[i] = (i == 0) ? x : 0;
@@ -826,7 +826,7 @@ struct GLV2 {
 #endif
 	DummyLoop:
 		if (!constTime) return;
-		const int limitBit = (int)Fp::getBitSize() / splitN;
+		const int limitBit = (int)rBitSize / splitN;
 		T D = tbl[0];
 		for (int i = maxBit + 1; i < limitBit; i++) {
 			T::dbl(D, D);
