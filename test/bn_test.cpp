@@ -11,7 +11,7 @@ cybozu::CpuClock clk;
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-typedef mcl::bn256::BN::Compress Compress;
+typedef mcl::bn::local::Compress Compress;
 using namespace mcl::bn256;
 
 mcl::fp::Mode g_mode;
@@ -152,7 +152,7 @@ void testCyclotomic()
 	for (int i = 0; i < 12; ++i) {
 		a.getFp0()[i] = i * i;
 	}
-	BN::mapToCyclotomic(a, a);
+	local::mapToCyclotomic(a, a);
 	Fp12 d;
 	Compress b(d, a);
 	a *= a;
@@ -171,7 +171,7 @@ void testCompress(const G1& P, const G2& Q)
 	if (BN::param.cp.curveType != MCL_BN254) return;
 	Fp12 a;
 	pairing(a, P, Q);
-	BN::mapToCyclotomic(a, a);
+	local::mapToCyclotomic(a, a);
 	Fp12 b;
 	Compress::fixed_power(b, a);
 	Fp12 c;
@@ -360,7 +360,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testBench<BN>(P, Q);
+		testBench(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {

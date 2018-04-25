@@ -33,7 +33,7 @@ void testCurve(const mcl::CurveParam& cp)
 	pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
-	testBench<BN>(P, Q);
+	testBench(P, Q);
 }
 
 CYBOZU_TEST_AUTO(pairing)

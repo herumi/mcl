@@ -320,7 +320,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testBench<BN>(P, Q);
+		testBench(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {
@@ -430,7 +430,7 @@ const char *r1Str =
 	l.a.setStr(l0Str, mode);
 	l.b.setStr(l4Str, mode);
 	l.c.setStr(l1Str, mode);
-	BN::addLine(l, R, Q, P);
+	local::addLine(l, R, Q, P);
 	m.a.setStr(m0Str, mode);
 	m.b.setStr(m4Str, mode);
 	m.c.setStr(m1Str, mode);
@@ -494,7 +494,7 @@ const char *q1Str =
 	l.a.setStr(l0Str, mode);
 	l.b.setStr(l4Str, mode);
 	l.c.setStr(l1Str, mode);
-	BN::dblLine(l, Q, P);
+	local::dblLine(l, Q, P);
 	m.a.setStr(m0Str, mode);
 	m.b.setStr(m4Str, mode);
 	m.c.setStr(m1Str, mode);
@@ -551,7 +551,7 @@ const char *f2Str =
 	l.c.setStr(l1Str, 16);
 	f.setStr(fStr, 16);
 	f2.setStr(f2Str, 16);
-	BN::mulSparse(f, l);
+	local::mulSparse(f, l);
 	CYBOZU_TEST_EQUAL(f, f2);
 }
 
