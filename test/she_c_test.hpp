@@ -170,10 +170,11 @@ CYBOZU_TEST_AUTO(serialize)
 	shePublicKey pub1, pub2;
 	sheGetPublicKey(&pub1, &sec1);
 
-	char buf1[2048], buf2[2048];
+	char buf1[4096], buf2[4096];
 	size_t n1, n2;
 	size_t r, size;
 	const size_t sizeofFr = mclBn_getOpUnitSize() * 8;
+	const size_t sizeofFp = mclBn_getG1ByteSize();
 
 	size = sizeofFr * 2;
 	n1 = sheSecretKeySerialize(buf1, sizeof(buf1), &sec1);
@@ -219,7 +220,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 
-	size = sizeofFr * 12 * 4;
+	size = sizeofFp * 12 * 4;
 	n1 = sheCipherTextGTSerialize(buf1, sizeof(buf1), &ct1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextGTDeserialize(&ct2, buf1, n1);

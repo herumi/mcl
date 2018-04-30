@@ -4,7 +4,7 @@ OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c512_test.cpp she_c256_test.cpp
+TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c512_test.cpp she_c256_test.cpp she_c384_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp
 TEST_SRC+=bls12_test.cpp
 ifeq ($(CPU),x86-64)
@@ -41,7 +41,8 @@ BN384_SLIB=$(LIB_DIR)/lib$(BN384_SNAME).$(LIB_SUF)
 BN512_LIB=$(LIB_DIR)/libmclbn512.a
 BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
 SHE256_LIB=$(LIB_DIR)/libmclshe256.a
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB)
+SHE384_LIB=$(LIB_DIR)/libmclshe384.a
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(SHE384_lib)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -68,6 +69,7 @@ BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
+SHE384_OBJ=$(OBJ_DIR)/she_c384.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
@@ -114,6 +116,9 @@ $(BN256_LIB): $(BN256_OBJ)
 
 $(SHE256_LIB): $(SHE256_OBJ)
 	$(AR) $@ $(SHE256_OBJ)
+
+$(SHE384_LIB): $(SHE384_OBJ)
+	$(AR) $@ $(SHE384_OBJ)
 
 ifeq ($(OS),mac)
   MAC_LDFLAGS+=-l$(MCL_SNAME) -L./lib
@@ -214,6 +219,9 @@ $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB) $(MCL_LIB)
 $(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE256_LIB) $(MCL_LIB) $(LDFLAGS)
 
+$(EXE_DIR)/she_c384_test.exe: $(OBJ_DIR)/she_c384_test.o $(SHE384_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(SHE384_LIB) $(MCL_LIB) $(LDFLAGS)
+
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
@@ -233,6 +241,7 @@ ifeq ($(MCL_USE_LLVM),2)
 endif
 ../she-wasm/she_c.js: $(JS_DEP) Makefile
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
+#	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
 
 ../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp include/mcl/bn.h Makefile
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256
