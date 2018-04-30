@@ -13,7 +13,8 @@ CYBOZU_TEST_AUTO(init)
 #if MCLBN_FP_UNIT_SIZE == 4
 	curve = MCL_BN254;
 #elif MCLBN_FP_UNIT_SIZE == 6
-	curve = MCL_BN381_1;
+//	curve = MCL_BN381_1;
+	curve = MCL_BLS12_381;
 #elif MCLBN_FP_UNIT_SIZE == 8
 	curve = MCL_BN462;
 #endif
@@ -173,7 +174,7 @@ CYBOZU_TEST_AUTO(serialize)
 	char buf1[4096], buf2[4096];
 	size_t n1, n2;
 	size_t r, size;
-	const size_t sizeofFr = mclBn_getOpUnitSize() * 8;
+	const size_t sizeofFr = mclBn_getFrByteSize();
 	const size_t sizeofFp = mclBn_getG1ByteSize();
 
 	size = sizeofFr * 2;
@@ -185,7 +186,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 
-	size = sizeofFr * 3;
+	size = sizeofFp * 3;
 	n1 = shePublicKeySerialize(buf1, sizeof(buf1), &pub1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = shePublicKeyDeserialize(&pub2, buf1, n1);
@@ -202,7 +203,7 @@ CYBOZU_TEST_AUTO(serialize)
 	sheEncG2(&c21, &pub2, m);
 	sheEncGT(&ct1, &pub2, m);
 
-	size = sizeofFr * 2;
+	size = sizeofFp * 2;
 	n1 = sheCipherTextG1Serialize(buf1, sizeof(buf1), &c11);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextG1Deserialize(&c12, buf1, n1);
@@ -211,7 +212,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 
-	size = sizeofFr * 4;
+	size = sizeofFp * 4;
 	n1 = sheCipherTextG2Serialize(buf1, sizeof(buf1), &c21);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextG2Deserialize(&c22, buf1, n1);
@@ -298,13 +299,15 @@ void ZkpBinTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZk
 		CYBOZU_TEST_EQUAL(mDec, m);
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 1);
 		{
-			char buf[2048];
+			char buf[4096];
 			size_t n = sheZkpBinSerialize(buf, sizeof(buf), &zkp);
-			CYBOZU_TEST_EQUAL(n, mclBn_getOpUnitSize() * 8 * 4);
+			CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * 4);
 			sheZkpBin zkp2;
 			size_t r = sheZkpBinDeserialize(&zkp2, buf, n);
 			CYBOZU_TEST_EQUAL(r, n);
-			CYBOZU_TEST_ASSERT(memcmp(&zkp, &zkp2, n) == 0);
+			char buf2[4096];
+			sheZkpBinSerialize(buf2, sizeof(buf2), &zkp2);
+			CYBOZU_TEST_EQUAL_ARRAY(buf, buf2, n);
 		}
 		zkp.d[0].d[0]++;
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 0);
