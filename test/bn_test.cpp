@@ -11,13 +11,13 @@ cybozu::CpuClock clk;
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-typedef mcl::bn256::BN::Compress Compress;
+typedef mcl::bn::local::Compress Compress;
 using namespace mcl::bn256;
 
 mcl::fp::Mode g_mode;
 
 const struct TestSet {
-	mcl::bn::CurveParam cp;
+	mcl::CurveParam cp;
 	const char *name;
 	struct G2 {
 		const char *aa;
@@ -32,8 +32,8 @@ const struct TestSet {
 	const char *e;
 } g_testSetTbl[] = {
 	{
-		mcl::bn::CurveFp254BNb,
-		"CurveFp254BNb",
+		mcl::BN254,
+		"BN254",
 		{
 			"12723517038133731887338407189719511622662176727675373276651903807414909099441",
 			"4168783608814932154536427934509895782246573715297911553964171371032945126671",
@@ -57,8 +57,8 @@ const struct TestSet {
 		"10688745994254573144943003027511098295097561129365638275727908595677791826005"
 	},
 	{
-		mcl::bn::CurveSNARK1,
-		"CurveSNARK1",
+		mcl::BN_SNARK1,
+		"BN_SNARK1",
 		{
 			"15267802884793550383558706039165621050290089775961208824303765753922461897946",
 			"9034493566019742339402378670461897774509967669562610788113215988055021632533",
@@ -110,7 +110,7 @@ void testMapToG1()
 {
 	G1 g;
 	for (int i = 1; i < 10; i++) {
-		BN::mapToG1(g, i);
+		mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
 		G1::mulGeneric(gr, g, BN::param.r);
@@ -118,9 +118,9 @@ void testMapToG1()
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
 	if (BN::param.cp.b == 2) {
-		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, 0), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, BN::param.mapTo.c1_), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(BN::mapToG1(g, -BN::param.mapTo.c1_), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapToG1(g, 0), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapToG1(g, BN::param.mapTo.c1_), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapToG1(g, -BN::param.mapTo.c1_), cybozu::Exception);
 	}
 #endif
 }
@@ -129,7 +129,7 @@ void testMapToG2()
 {
 	G2 g;
 	for (int i = 1; i < 10; i++) {
-		BN::mapToG2(g, i);
+		mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
 		G2::mulGeneric(gr, g, BN::param.r);
@@ -137,12 +137,12 @@ void testMapToG2()
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
 	if (BN::param.cp.b == 2) {
-		CYBOZU_TEST_EXCEPTION(BN::mapToG2(g, 0), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapToG2(g, 0), cybozu::Exception);
 	}
 #endif
 	Fp x;
 	x.setHashOf("abc");
-	BN::mapToG2(g, Fp2(x, 0));
+	mapToG2(g, Fp2(x, 0));
 	CYBOZU_TEST_ASSERT(g.isValid());
 }
 
@@ -152,7 +152,7 @@ void testCyclotomic()
 	for (int i = 0; i < 12; ++i) {
 		a.getFp0()[i] = i * i;
 	}
-	BN::mapToCyclotomic(a, a);
+	local::mapToCyclotomic(a, a);
 	Fp12 d;
 	Compress b(d, a);
 	a *= a;
@@ -168,10 +168,10 @@ void testCyclotomic()
 
 void testCompress(const G1& P, const G2& Q)
 {
-	if (BN::param.cp.curveType != mclBn_CurveFp254BNb) return;
+	if (BN::param.cp.curveType != MCL_BN254) return;
 	Fp12 a;
-	BN::pairing(a, P, Q);
-	BN::mapToCyclotomic(a, a);
+	pairing(a, P, Q);
+	local::mapToCyclotomic(a, a);
 	Fp12 b;
 	Compress::fixed_power(b, a);
 	Fp12 c;
@@ -182,18 +182,18 @@ void testCompress(const G1& P, const G2& Q)
 void testPrecomputed(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	std::vector<Fp6> Qcoeff;
-	BN::precomputeG2(Qcoeff, Q);
-	BN::precomputedMillerLoop(e2, P, Qcoeff);
-	BN::finalExp(e2, e2);
+	precomputeG2(Qcoeff, Q);
+	precomputedMillerLoop(e2, P, Qcoeff);
+	finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
 void testFp12pow(const G1& P, const G2& Q)
 {
 	Fp12 e, e1, e2;
-	BN::pairing(e, P, Q);
+	pairing(e, P, Q);
 	cybozu::XorShift rg;
 	for (int i = -10; i < 10; i++) {
 		mpz_class xm = i;
@@ -220,22 +220,22 @@ void testMillerLoop2(const G1& P1, const G2& Q1)
 	G1 P2;
 	G2::mul(Q2, Q1, c1);
 	G1::mul(P2, P1, c2);
-	BN::pairing(e1, P1, Q1);
-	BN::pairing(e2, P2, Q2);
+	pairing(e1, P1, Q1);
+	pairing(e2, P2, Q2);
 	e1 *= e2;
 
 	std::vector<Fp6> Q1coeff, Q2coeff;
-	BN::precomputeG2(Q1coeff, Q1);
-	BN::precomputeG2(Q2coeff, Q2);
-	BN::precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
-	BN::finalExp(e2, e2);
+	precomputeG2(Q1coeff, Q1);
+	precomputeG2(Q2coeff, Q2);
+	precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
+	finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
 void testPairing(const G1& P, const G2& Q, const char *eStr)
 {
 	Fp12 e1;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	Fp12 e2;
 	{
 		std::stringstream ss(eStr);
@@ -263,8 +263,8 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		G1 T;
 		G1::mulCT(T, P, a);
 		CYBOZU_TEST_EQUAL(Pa, T);
-		BN::pairing(e1, Pa, Q);
-		BN::pairing(e2, P, Qa);
+		pairing(e1, Pa, Q);
+		pairing(e2, P, Qa);
 		CYBOZU_TEST_EQUAL(ea, e1);
 		CYBOZU_TEST_EQUAL(ea, e2);
 	}
@@ -275,22 +275,22 @@ void testTrivial(const G1& P, const G2& Q)
 	G1 Z1; Z1.clear();
 	G2 Z2; Z2.clear();
 	Fp12 e;
-	BN::pairing(e, Z1, Q);
+	pairing(e, Z1, Q);
 	CYBOZU_TEST_EQUAL(e, 1);
-	BN::pairing(e, P, Z2);
+	pairing(e, P, Z2);
 	CYBOZU_TEST_EQUAL(e, 1);
-	BN::pairing(e, Z1, Z2);
+	pairing(e, Z1, Z2);
 	CYBOZU_TEST_EQUAL(e, 1);
 
 	std::vector<Fp6> Qcoeff;
-	BN::precomputeG2(Qcoeff, Z2);
-	BN::precomputedMillerLoop(e, P, Qcoeff);
-	BN::finalExp(e, e);
+	precomputeG2(Qcoeff, Z2);
+	precomputedMillerLoop(e, P, Qcoeff);
+	finalExp(e, e);
 	CYBOZU_TEST_EQUAL(e, 1);
 
-	BN::precomputeG2(Qcoeff, Q);
-	BN::precomputedMillerLoop(e, Z1, Qcoeff);
-	BN::finalExp(e, e);
+	precomputeG2(Qcoeff, Q);
+	precomputedMillerLoop(e, Z1, Qcoeff);
+	finalExp(e, e);
 	CYBOZU_TEST_EQUAL(e, 1);
 }
 
@@ -344,7 +344,7 @@ CYBOZU_TEST_AUTO(naive)
 #ifdef ONLY_BENCH
 		{
 			Fp12 e;
-			for (int i = 0; i < 1000; i++) BN::pairing(e, P, Q);
+			for (int i = 0; i < 1000; i++) pairing(e, P, Q);
 		}
 		clk.put();
 		return;
@@ -360,7 +360,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testBench<BN>(P, Q);
+		testBench(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {

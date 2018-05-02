@@ -7,14 +7,11 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 
-#ifndef MCL_CURVE_TYPE_DEFINED
-#define MCL_CURVE_TYPE_DEFINED
 enum {
-	mclBn_CurveFp254BNb = 0,
-	mclBn_CurveFp382_1 = 1,
-	mclBn_CurveFp382_2 = 2,
-	mclBn_CurveFp462 = 3,
-	mclBn_CurveSNARK1 = 4,
-	mclBls12_CurveFp381 = 5
+	MCL_BN254 = 0,
+	MCL_BN381_1 = 1,
+	MCL_BN381_2 = 2,
+	MCL_BN462 = 3,
+	MCL_BN_SNARK1 = 4,
+	MCL_BLS12_381 = 5
 };
-#endif

@@ -23,7 +23,7 @@ void Hash(G1& P, const std::string& m)
 {
 	Fp t;
 	t.setHashOf(m);
-	BN::mapToG1(P, t);
+	mapToG1(P, t);
 }
 
 void KeyGen(Fr& s, G2& pub, const G2& Q)
@@ -44,8 +44,8 @@ bool Verify(const G1& sign, const G2& Q, const G2& pub, const std::string& m)
 	Fp12 e1, e2;
 	G1 Hm;
 	Hash(Hm, m);
-	BN::pairing(e1, sign, Q); // e1 = e(sign, Q)
-	BN::pairing(e2, Hm, pub); // e2 = e(Hm, sQ)
+	pairing(e1, sign, Q); // e1 = e(sign, Q)
+	pairing(e2, Hm, pub); // e2 = e(Hm, sQ)
 	return e1 == e2;
 }
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	// setup parameter
 	initPairing();
 	G2 Q;
-	BN::mapToG2(Q, 1);
+	mapToG2(Q, 1);
 
 	// generate secret key and public key
 	Fr s;

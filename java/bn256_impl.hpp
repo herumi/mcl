@@ -245,5 +245,5 @@ void pow(GT& z, const GT& x, const Fr& y)
 }
 void pairing(GT& e, const G1& P, const G2& Q)
 {
-	mcl::bn256::BN::pairing(e.self_, P.self_, Q.self_);
+	mcl::bn256::pairing(e.self_, P.self_, Q.self_);
 }

@@ -726,7 +726,7 @@ public:
 			getYfromX(y, x, isYodd);
 		} else {
 			char c = 0;
-			if (!cybozu::readChar(&c, is)) throw cybozu::Exception("EcT:load:no header");
+			if (!fp::local::skipSpace(&c, is)) throw cybozu::Exception("EcT:load:no header");
 			if (c == '0') {
 				clear();
 				return;

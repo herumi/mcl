@@ -3,7 +3,7 @@
 #include <cybozu/benchmark.hpp>
 cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
-#include <mcl/bls12_381.hpp>
+#include <mcl/bn384.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 
@@ -11,13 +11,12 @@ cybozu::CpuClock clk;
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-//typedef mcl::bls12::BLS12::Compress Compress;
-using namespace mcl::bls12_381;
+using namespace mcl::bn384;
 
 mcl::fp::Mode g_mode;
 
 const struct TestSet {
-	mcl::bls12::CurveParam cp;
+	mcl::CurveParam cp;
 	const char *name;
 	const char *p;
 	const char *r;
@@ -34,8 +33,8 @@ const struct TestSet {
 	const char *e;
 } g_testSetTbl[] = {
 	{
-		mcl::bls12::CurveFp381,
-		"CurveFp381",
+		mcl::BLS12_381,
+		"BLS12_381",
 		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
 		"0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001",
 		{
@@ -75,14 +74,14 @@ CYBOZU_TEST_AUTO(size)
 
 void testParam(const TestSet& ts)
 {
-	CYBOZU_TEST_EQUAL(BLS12::param.r, mpz_class(ts.r));
-	CYBOZU_TEST_EQUAL(BLS12::param.p, mpz_class(ts.p));
+	CYBOZU_TEST_EQUAL(BN::param.r, mpz_class(ts.r));
+	CYBOZU_TEST_EQUAL(BN::param.p, mpz_class(ts.p));
 }
 
 void finalExpC(Fp12& y, const Fp12& x)
 {
-	const mpz_class& r = BLS12::param.r;
-	const mpz_class& p = BLS12::param.p;
+	const mpz_class& r = BN::param.r;
+	const mpz_class& p = BN::param.p;
 	mpz_class p2 = p * p;
 	mpz_class p4 = p2 * p2;
 #if 1
@@ -96,8 +95,8 @@ void finalExpC(Fp12& y, const Fp12& x)
 
 void pairingC(Fp12& e, const G1& P, const G2& Q)
 {
-	BLS12::millerLoop(e, P, Q);
-	BLS12::finalExp(e, e);
+	millerLoop(e, P, Q);
+	finalExp(e, e);
 }
 void testIoAll(const G1& P, const G2& Q)
 {
@@ -153,10 +152,10 @@ void testMapToG1()
 {
 	G1 g;
 	for (int i = 1; i < 10; i++) {
-		BLS12::mapToG1(g, i);
+		mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
-		G1::mul(gr, g, BLS12::param.r);
+		G1::mul(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 }
@@ -165,26 +164,26 @@ void testMapToG2()
 {
 	G2 g;
 	for (int i = 1; i < 10; i++) {
-		BLS12::mapToG2(g, i);
+		mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
-		G2::mul(gr, g, BLS12::param.r);
+		G2::mul(gr, g, BN::param.r);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 	Fp x;
 	x.setHashOf("abc");
-	BLS12::mapToG2(g, Fp2(x, 0));
+	mapToG2(g, Fp2(x, 0));
 	CYBOZU_TEST_ASSERT(g.isValid());
 }
 
 void testPrecomputed(const G1& P, const G2& Q)
 {
 	Fp12 e1, e2;
-	BLS12::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	std::vector<Fp6> Qcoeff;
-	BLS12::precomputeG2(Qcoeff, Q);
-	BLS12::precomputedMillerLoop(e2, P, Qcoeff);
-	BLS12::finalExp(e2, e2);
+	precomputeG2(Qcoeff, Q);
+	precomputedMillerLoop(e2, P, Qcoeff);
+	finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
@@ -192,7 +191,7 @@ void testPrecomputed(const G1& P, const G2& Q)
 void testFp12pow(const G1& P, const G2& Q)
 {
 	Fp12 e, e1, e2;
-	BLS12::pairing(e, P, Q);
+	pairing(e, P, Q);
 	cybozu::XorShift rg;
 	for (int i = -10; i < 10; i++) {
 		mpz_class xm = i;
@@ -205,7 +204,7 @@ void testFp12pow(const G1& P, const G2& Q)
 		x.setRand(rg);
 		mpz_class xm = x.getMpz();
 		Fp12::pow(e1, e, xm);
-		BLS12::param.glv2.pow(e2, e, xm);
+		param.glv2.pow(e2, e, xm);
 		CYBOZU_TEST_EQUAL(e1, e2);
 	}
 }
@@ -220,22 +219,22 @@ void testMillerLoop2(const G1& P1, const G2& Q1)
 	G1 P2;
 	G2::mul(Q2, Q1, c1);
 	G1::mul(P2, P1, c2);
-	BLS12::pairing(e1, P1, Q1);
-	BLS12::pairing(e2, P2, Q2);
+	pairing(e1, P1, Q1);
+	pairing(e2, P2, Q2);
 	e1 *= e2;
 
 	std::vector<Fp6> Q1coeff, Q2coeff;
-	BLS12::precomputeG2(Q1coeff, Q1);
-	BLS12::precomputeG2(Q2coeff, Q2);
-	BLS12::precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
-	BLS12::finalExp(e2, e2);
+	precomputeG2(Q1coeff, Q1);
+	precomputeG2(Q2coeff, Q2);
+	precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
+	finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
 }
 
 void testPairing(const G1& P, const G2& Q, const char *eStr)
 {
 	Fp12 e1;
-	BLS12::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	Fp12 e2;
 	{
 		std::stringstream ss(eStr);
@@ -262,8 +261,8 @@ void testPairing(const G1& P, const G2& Q, const char *eStr)
 		G1 T;
 		G1::mulCT(T, P, a);
 		CYBOZU_TEST_EQUAL(Pa, T);
-		BLS12::pairing(e1, Pa, Q);
-		BLS12::pairing(e2, P, Qa);
+		pairing(e1, Pa, Q);
+		pairing(e2, P, Qa);
 		CYBOZU_TEST_EQUAL(ea, e1);
 		CYBOZU_TEST_EQUAL(ea, e2);
 	}
@@ -274,22 +273,22 @@ void testTrivial(const G1& P, const G2& Q)
 	G1 Z1; Z1.clear();
 	G2 Z2; Z2.clear();
 	Fp12 e;
-	BLS12::pairing(e, Z1, Q);
+	pairing(e, Z1, Q);
 	CYBOZU_TEST_EQUAL(e, 1);
-	BLS12::pairing(e, P, Z2);
+	pairing(e, P, Z2);
 	CYBOZU_TEST_EQUAL(e, 1);
-	BLS12::pairing(e, Z1, Z2);
+	pairing(e, Z1, Z2);
 	CYBOZU_TEST_EQUAL(e, 1);
 
 	std::vector<Fp6> Qcoeff;
-	BLS12::precomputeG2(Qcoeff, Z2);
-	BLS12::precomputedMillerLoop(e, P, Qcoeff);
-	BLS12::finalExp(e, e);
+	precomputeG2(Qcoeff, Z2);
+	precomputedMillerLoop(e, P, Qcoeff);
+	finalExp(e, e);
 	CYBOZU_TEST_EQUAL(e, 1);
 
-	BLS12::precomputeG2(Qcoeff, Q);
-	BLS12::precomputedMillerLoop(e, Z1, Qcoeff);
-	BLS12::finalExp(e, e);
+	precomputeG2(Qcoeff, Q);
+	precomputedMillerLoop(e, Z1, Qcoeff);
+	finalExp(e, e);
 	CYBOZU_TEST_EQUAL(e, 1);
 }
 
@@ -306,7 +305,7 @@ CYBOZU_TEST_AUTO(naive)
 #ifdef ONLY_BENCH
 		{
 			Fp12 e;
-			for (int i = 0; i < 1000; i++) BLS12::pairing(e, P, Q);
+			for (int i = 0; i < 1000; i++) pairing(e, P, Q);
 		}
 		clk.put();
 		return;
@@ -321,7 +320,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testBench<BLS12>(P, Q);
+		testBench(P, Q);
 	}
 	int count = (int)clk.getCount();
 	if (count) {
@@ -363,10 +362,10 @@ const char *e1Str =
 	Fp12 e0, e1, e2;
 	e0.setStr(e0Str, 16);
 	e1.setStr(e1Str, 16);
-	BLS12::finalExp(e2, e0);
+	finalExp(e2, e0);
 //	finalExpC(e2, e0);
 	CYBOZU_TEST_EQUAL(e1, e2);
-	CYBOZU_BENCH_C("finalExp", 100, BLS12::finalExp, e2, e0);
+	CYBOZU_BENCH_C("finalExp", 100, finalExp, e2, e0);
 }
 
 CYBOZU_TEST_AUTO(addLine)
@@ -431,7 +430,7 @@ const char *r1Str =
 	l.a.setStr(l0Str, mode);
 	l.b.setStr(l4Str, mode);
 	l.c.setStr(l1Str, mode);
-	BLS12::addLine(l, R, Q, P);
+	local::addLine(l, R, Q, P);
 	m.a.setStr(m0Str, mode);
 	m.b.setStr(m4Str, mode);
 	m.c.setStr(m1Str, mode);
@@ -489,18 +488,20 @@ const char *q1Str =
 	G2 Q, Q1;
 	G1 P;
 
+	G1::setOrder(0);
 	Q.setStr(qStr, mode);
 	P.setStr(pStr, mode);
 	l.a.setStr(l0Str, mode);
 	l.b.setStr(l4Str, mode);
 	l.c.setStr(l1Str, mode);
-	BLS12::dblLine(l, Q, P);
+	local::dblLine(l, Q, P);
 	m.a.setStr(m0Str, mode);
 	m.b.setStr(m4Str, mode);
 	m.c.setStr(m1Str, mode);
 	Q1.setStr(q1Str, mode);
 	CYBOZU_TEST_EQUAL(l, m);
 	CYBOZU_TEST_EQUAL(Q, Q1);
+	G1::setOrder(BN::param.r);
 }
 
 CYBOZU_TEST_AUTO(mul_012)
@@ -550,7 +551,7 @@ const char *f2Str =
 	l.c.setStr(l1Str, 16);
 	f.setStr(fStr, 16);
 	f2.setStr(f2Str, 16);
-	BLS12::mulSparse(f, l);
+	local::mulSparse(f, l);
 	CYBOZU_TEST_EQUAL(f, f2);
 }
 
@@ -588,8 +589,44 @@ const char *eStr =
 	Q.setStr(qStr, mode);
 	Fp12 e1, e2;
 	e1.setStr(eStr, 16);
-	BLS12::pairing(e2, P, Q);
+	pairing(e2, P, Q);
 	CYBOZU_TEST_EQUAL(e1, e2);
+}
+
+void testCurve(const mcl::CurveParam& cp)
+{
+	initPairing(cp, g_mode);
+	G1 P;
+	G2 Q;
+	mapToG1(P, 1);
+	mapToG2(Q, 1);
+	GT e1, e2;
+	pairing(e1, P, Q);
+	cybozu::XorShift rg;
+	mpz_class a, b;
+	Fr r;
+	r.setRand(rg); a = r.getMpz();
+	r.setRand(rg); b = r.getMpz();
+	G1 aP;
+	G2 bQ;
+	G1::mul(aP, P, a);
+	G2::mul(bQ, Q, b);
+	pairing(e2, aP, bQ);
+	GT::pow(e1, e1, a * b);
+	CYBOZU_TEST_EQUAL(e1, e2);
+}
+CYBOZU_TEST_AUTO(multi)
+{
+	puts("BN254");
+	testCurve(mcl::BN254);
+	puts("BLS12_381");
+	testCurve(mcl::BLS12_381);
+}
+
+CYBOZU_TEST_AUTO(BLS12_G1mulCofactor)
+{
+	if (BN::param.cp.curveType != MCL_BLS12_381) return;
+	
 }
 
 int main(int argc, char *argv[])

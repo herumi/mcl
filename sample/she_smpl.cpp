@@ -18,7 +18,7 @@ void miniSample()
 	sec.setByCSPRNG();
 
 	// set range to decode GT DLP
-	SHE::setRangeForGTDLP(1000);
+	SHE::setRangeForDLP(1000);
 
 	PublicKey pub;
 	// get public key

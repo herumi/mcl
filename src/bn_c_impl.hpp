@@ -126,7 +126,7 @@ int mclBn_init(int curve, int maxUnitSize)
 		fprintf(stderr, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
-	const mcl::bn::CurveParam& cp = mcl::bn::getCurveParam(curve);
+	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
 	initPairing(cp);
 	return 0;
 } catch (std::exception& e) {
@@ -142,6 +142,11 @@ int mclBn_getOpUnitSize()
 int mclBn_getG1ByteSize()
 {
 	return (int)Fp::getByteSize();
+}
+
+int mclBn_getFrByteSize()
+{
+	return (int)Fr::getByteSize();
 }
 
 mclSize copyStrAndReturnSize(char *buf, mclSize maxBufSize, const std::string& str)
@@ -309,7 +314,7 @@ int mclBnG1_isZero(const mclBnG1 *x)
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 	try
 {
-	BN::hashAndMapToG1(*cast(x), buf, bufSize);
+	hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnG1_hashAndMapTo %s\n", e.what());
@@ -388,7 +393,7 @@ int mclBnG2_isZero(const mclBnG2 *x)
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 	try
 {
-	BN::hashAndMapToG2(*cast(x), buf, bufSize);
+	hashAndMapToG2(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnG2_hashAndMapTo %s\n", e.what());
@@ -523,15 +528,15 @@ void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
 
 void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
-	BN::pairing(*cast(z), *cast(x), *cast(y));
+	pairing(*cast(z), *cast(x), *cast(y));
 }
 void mclBn_finalExp(mclBnGT *y, const mclBnGT *x)
 {
-	BN::finalExp(*cast(y), *cast(x));
+	finalExp(*cast(y), *cast(x));
 }
 void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
-	BN::millerLoop(*cast(z), *cast(x), *cast(y));
+	millerLoop(*cast(z), *cast(x), *cast(y));
 }
 int mclBn_getUint64NumToPrecompute(void)
 {
@@ -540,17 +545,17 @@ int mclBn_getUint64NumToPrecompute(void)
 
 void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q)
 {
-	BN::precomputeG2(cast(Qbuf), *cast(Q));
+	precomputeG2(cast(Qbuf), *cast(Q));
 }
 
 void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf)
 {
-	BN::precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
+	precomputedMillerLoop(*cast(f), *cast(P), cast(Qbuf));
 }
 
 void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t  *Q1buf, const mclBnG1 *P2, const uint64_t *Q2buf)
 {
-	BN::precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
+	precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }
 
 int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k)
@@ -607,3 +612,14 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 	if (g_fp) fprintf(g_fp, "mclBn_G2EvaluatePolynomial %s\n", e.what());
 	return -1;
 }
+
+void mclBn_verifyOrderG1(int doVerify)
+{
+	verifyOrderG1(doVerify != 0);
+}
+
+void mclBn_verifyOrderG2(int doVerify)
+{
+	verifyOrderG2(doVerify != 0);
+}
+

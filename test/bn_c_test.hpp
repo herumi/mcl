@@ -28,14 +28,14 @@ CYBOZU_TEST_AUTO(init)
 //	CYBOZU_TEST_EQUAL(ret, 0);
 
 #if MCLBN_FP_UNIT_SIZE == 4
-	printf("test MCLBN_curveFp254BNb %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(mclBn_CurveFp254BNb, MCLBN_FP_UNIT_SIZE);
+	printf("test BN254 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(MCL_BN254, MCLBN_FP_UNIT_SIZE);
 #elif MCLBN_FP_UNIT_SIZE == 6
-	printf("test MCLBN_curveFp382_1 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(mclBn_CurveFp382_1, MCLBN_FP_UNIT_SIZE);
+	printf("test BN381_1 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(MCL_BN381_1, MCLBN_FP_UNIT_SIZE);
 #elif MCLBN_FP_UNIT_SIZE == 8
-	printf("test MCLBN_curveFp462 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(mclBn_CurveFp462, MCLBN_FP_UNIT_SIZE);
+	printf("test BN462 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(MCL_BN462, MCLBN_FP_UNIT_SIZE);
 #else
 	#error "bad MCLBN_FP_UNIT_SIZE"
 #endif
@@ -421,7 +421,7 @@ CYBOZU_TEST_AUTO(serialize)
 CYBOZU_TEST_AUTO(badG2)
 {
 	int ret;
-	ret = mclBn_init(mclBn_CurveFp382_1, MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(MCL_BN381_1, MCLBN_FP_UNIT_SIZE);
 	CYBOZU_TEST_EQUAL(ret, 0);
 	const char *s = "1 18d3d8c085a5a5e7553c3a4eb628e88b8465bf4de2612e35a0a4eb018fb0c82e9698896031e62fd7633ffd824a859474 1dc6edfcf33e29575d4791faed8e7203832217423bf7f7fbf1f6b36625b12e7132c15fbc15562ce93362a322fb83dd0d 65836963b1f7b6959030ddfa15ab38ce056097e91dedffd996c1808624fa7e2644a77be606290aa555cda8481cfb3cb 1b77b708d3d4f65aeedf54b58393463a42f0dc5856baadb5ce608036baeca398c5d9e6b169473a8838098fd72fd28b50";
 	mclBnG2 Q;

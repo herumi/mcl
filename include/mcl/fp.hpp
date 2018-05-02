@@ -65,17 +65,21 @@ inline bool isSpace(char c)
 {
 	return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
+template<class InputStream>
+bool skipSpace(char *c, InputStream& is)
+{
+	for (;;) {
+		if (!cybozu::readChar(c,  is)) return false;
+		if (!isSpace(*c)) return true;
+	}
+}
 
 template<class InputStream>
 void loadWord(std::string& s, InputStream& is)
 {
 	s.clear();
 	char c;
-	// skip space
-	for (;;) {
-		if (!cybozu::readChar(&c,  is)) return;
-		if (!isSpace(c)) break;
-	}
+	if (!skipSpace(&c, is)) return;
 	s = c;
 	for (;;) {
 		if (!cybozu::readChar(&c,  is)) return;

@@ -11,11 +11,12 @@ CYBOZU_TEST_AUTO(init)
 {
 	int curve;
 #if MCLBN_FP_UNIT_SIZE == 4
-	curve = mclBn_CurveFp254BNb;
+	curve = MCL_BN254;
 #elif MCLBN_FP_UNIT_SIZE == 6
-	curve = mclBn_CurveFp382_1;
+//	curve = MCL_BN381_1;
+	curve = MCL_BLS12_381;
 #elif MCLBN_FP_UNIT_SIZE == 8
-	curve = mclBn_CurveFp462;
+	curve = MCL_BN462;
 #endif
 	int ret;
 	ret = sheInit(curve, MCLBN_FP_UNIT_SIZE);
@@ -97,15 +98,24 @@ CYBOZU_TEST_AUTO(allOp)
 	int64_t m2 = -9;
 	int64_t m3 = 12;
 	int64_t m4 = -9;
+	int64_t dec;
 	sheCipherTextG1 c11, c12;
 	sheCipherTextG2 c21, c22;
 	sheCipherTextGT ct;
+
 	sheEncG1(&c11, &pub, m1);
+	sheNegG1(&c12, &c11);
+	CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c12), 0);
+	CYBOZU_TEST_EQUAL(dec, -m1);
+
 	sheEncG1(&c12, &pub, m2);
 	sheSubG1(&c11, &c11, &c12); // m1 - m2
 	sheMulG1(&c11, &c11, 4); // 4 * (m1 - m2)
 
 	sheEncG2(&c21, &pub, m3);
+	sheNegG2(&c22, &c21);
+	CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c22), 0);
+	CYBOZU_TEST_EQUAL(dec, -m3);
 	sheEncG2(&c22, &pub, m4);
 	sheSubG2(&c21, &c21, &c22); // m3 - m4
 	sheMulG2(&c21, &c21, -5); // -5 * (m3 - m4)
@@ -114,9 +124,13 @@ CYBOZU_TEST_AUTO(allOp)
 	sheMulGT(&ct, &ct, -4); // 160 * (m1 - m2) * (m3 - m4)
 
 	int64_t t = 160 * (m1 - m2) * (m3 - m4);
-	int64_t dec;
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, t);
+
+	sheCipherTextGT ct2;
+	sheNegGT(&ct2, &ct);
+	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct2), 0);
+	CYBOZU_TEST_EQUAL(dec, -t);
 }
 
 CYBOZU_TEST_AUTO(rerand)
@@ -157,10 +171,11 @@ CYBOZU_TEST_AUTO(serialize)
 	shePublicKey pub1, pub2;
 	sheGetPublicKey(&pub1, &sec1);
 
-	char buf1[2048], buf2[2048];
+	char buf1[4096], buf2[4096];
 	size_t n1, n2;
 	size_t r, size;
-	const size_t sizeofFr = mclBn_getOpUnitSize() * 8;
+	const size_t sizeofFr = mclBn_getFrByteSize();
+	const size_t sizeofFp = mclBn_getG1ByteSize();
 
 	size = sizeofFr * 2;
 	n1 = sheSecretKeySerialize(buf1, sizeof(buf1), &sec1);
@@ -171,7 +186,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 
-	size = sizeofFr * 3;
+	size = sizeofFp * 3;
 	n1 = shePublicKeySerialize(buf1, sizeof(buf1), &pub1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = shePublicKeyDeserialize(&pub2, buf1, n1);
@@ -188,7 +203,7 @@ CYBOZU_TEST_AUTO(serialize)
 	sheEncG2(&c21, &pub2, m);
 	sheEncGT(&ct1, &pub2, m);
 
-	size = sizeofFr * 2;
+	size = sizeofFp * 2;
 	n1 = sheCipherTextG1Serialize(buf1, sizeof(buf1), &c11);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextG1Deserialize(&c12, buf1, n1);
@@ -197,7 +212,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 
-	size = sizeofFr * 4;
+	size = sizeofFp * 4;
 	n1 = sheCipherTextG2Serialize(buf1, sizeof(buf1), &c21);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextG2Deserialize(&c22, buf1, n1);
@@ -206,7 +221,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n2, size);
 	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n2);
 
-	size = sizeofFr * 12 * 4;
+	size = sizeofFp * 12 * 4;
 	n1 = sheCipherTextGTSerialize(buf1, sizeof(buf1), &ct1);
 	CYBOZU_TEST_EQUAL(n1, size);
 	r = sheCipherTextGTDeserialize(&ct2, buf1, n1);
@@ -284,13 +299,15 @@ void ZkpBinTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZk
 		CYBOZU_TEST_EQUAL(mDec, m);
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 1);
 		{
-			char buf[2048];
+			char buf[4096];
 			size_t n = sheZkpBinSerialize(buf, sizeof(buf), &zkp);
-			CYBOZU_TEST_EQUAL(n, mclBn_getOpUnitSize() * 8 * 4);
+			CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * 4);
 			sheZkpBin zkp2;
 			size_t r = sheZkpBinDeserialize(&zkp2, buf, n);
 			CYBOZU_TEST_EQUAL(r, n);
-			CYBOZU_TEST_ASSERT(memcmp(&zkp, &zkp2, n) == 0);
+			char buf2[4096];
+			sheZkpBinSerialize(buf2, sizeof(buf2), &zkp2);
+			CYBOZU_TEST_EQUAL_ARRAY(buf, buf2, n);
 		}
 		zkp.d[0].d[0]++;
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 0);
@@ -472,6 +489,7 @@ CYBOZU_TEST_AUTO(saveLoad)
 	const size_t n1 = sheSaveTableForGTDLP(&buf[0], buf.size());
 	CYBOZU_TEST_ASSERT(n1 > 0);
 	if (!g_tableName.empty()) {
+		printf("use table=%s\n", g_tableName.c_str());
 		std::ofstream ofs(g_tableName.c_str(), std::ios::binary);
 		ofs.write(buf.c_str(), n1);
 	}
@@ -482,6 +500,12 @@ CYBOZU_TEST_AUTO(saveLoad)
 	sheSetTryNum(1);
 	int64_t dec = 0;
 	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) != 0);
+	if (!g_tableName.empty()) {
+		std::ifstream ifs(g_tableName.c_str(), std::ios::binary);
+		buf.clear();
+		buf.resize(n1);
+		ifs.read(&buf[0], n1);
+	}
 	const size_t n2 = sheLoadTableForGTDLP(&buf[0], n1);
 	CYBOZU_TEST_ASSERT(n2 > 0);
 	CYBOZU_TEST_ASSERT(sheDecGT(&dec, &sec, &ct) == 0);

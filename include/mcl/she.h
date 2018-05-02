@@ -209,6 +209,12 @@ MCLSHE_DLL_API int sheIsZeroG2(const sheSecretKey *sec, const sheCipherTextG2 *c
 MCLSHE_DLL_API int sheIsZeroGT(const sheSecretKey *sec, const sheCipherTextGT *c);
 
 // return 0 if success
+// y = -x
+MCLSHE_DLL_API int sheNegG1(sheCipherTextG1 *y, const sheCipherTextG1 *x);
+MCLSHE_DLL_API int sheNegG2(sheCipherTextG2 *y, const sheCipherTextG2 *x);
+MCLSHE_DLL_API int sheNegGT(sheCipherTextGT *y, const sheCipherTextGT *x);
+
+// return 0 if success
 // z = x + y
 MCLSHE_DLL_API int sheAddG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const sheCipherTextG1 *y);
 MCLSHE_DLL_API int sheAddG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, const sheCipherTextG2 *y);

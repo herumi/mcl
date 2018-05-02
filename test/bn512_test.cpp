@@ -12,15 +12,15 @@ mcl::fp::Mode g_mode;
 
 #include "bench.hpp"
 
-void testCurve(const mcl::bn::CurveParam& cp)
+void testCurve(const mcl::CurveParam& cp)
 {
 	initPairing(cp, g_mode);
 	G1 P;
 	G2 Q;
-	BN::mapToG1(P, 1);
-	BN::mapToG2(Q, 1);
+	mapToG1(P, 1);
+	mapToG2(Q, 1);
 	GT e1, e2;
-	BN::pairing(e1, P, Q);
+	pairing(e1, P, Q);
 	cybozu::XorShift rg;
 	mpz_class a, b;
 	Fr r;
@@ -30,22 +30,22 @@ void testCurve(const mcl::bn::CurveParam& cp)
 	G2 bQ;
 	G1::mul(aP, P, a);
 	G2::mul(bQ, Q, b);
-	BN::pairing(e2, aP, bQ);
+	pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
-	testBench<BN>(P, Q);
+	testBench(P, Q);
 }
 
 CYBOZU_TEST_AUTO(pairing)
 {
-	puts("CurveFp462");
-	testCurve(mcl::bn::CurveFp462);
-	puts("CurveFp382_1");
-	testCurve(mcl::bn::CurveFp382_1);
-	puts("CurveFp382_2");
-	testCurve(mcl::bn::CurveFp382_2);
-	puts("CurveFp254BNb");
-	testCurve(mcl::bn::CurveFp254BNb);
+	puts("BN462");
+	testCurve(mcl::BN462);
+	puts("BN381_1");
+	testCurve(mcl::BN381_1);
+	puts("BLS12_381");
+	testCurve(mcl::BLS12_381);
+	puts("BN254");
+	testCurve(mcl::BN254);
 }
 
 int main(int argc, char *argv[])
