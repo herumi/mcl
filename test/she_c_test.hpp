@@ -352,11 +352,13 @@ void ZkpBinEqTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWith
 		{
 			char buf[2048];
 			size_t n = sheZkpBinEqSerialize(buf, sizeof(buf), &zkp);
-			CYBOZU_TEST_EQUAL(n, mclBn_getOpUnitSize() * 8 * 7);
+			CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * CYBOZU_NUM_OF_ARRAY(zkp.d));
 			sheZkpBinEq zkp2;
 			size_t r = sheZkpBinEqDeserialize(&zkp2, buf, n);
 			CYBOZU_TEST_EQUAL(r, n);
-			CYBOZU_TEST_ASSERT(memcmp(&zkp, &zkp2, n) == 0);
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zkp.d); i++) {
+				CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&zkp.d[i], &zkp2.d[i]));
+			}
 		}
 		zkp.d[0].d[0]++;
 		CYBOZU_TEST_EQUAL(verify(pub, &c1, &c2, &zkp), 0);
@@ -399,11 +401,13 @@ void ZkpEqTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZkp
 		{
 			char buf[2048];
 			size_t n = sheZkpEqSerialize(buf, sizeof(buf), &zkp);
-			CYBOZU_TEST_EQUAL(n, mclBn_getOpUnitSize() * 8 * 4);
+			CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * CYBOZU_NUM_OF_ARRAY(zkp.d));
 			sheZkpEq zkp2;
 			size_t r = sheZkpEqDeserialize(&zkp2, buf, n);
 			CYBOZU_TEST_EQUAL(r, n);
-			CYBOZU_TEST_ASSERT(memcmp(&zkp, &zkp2, n) == 0);
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zkp.d); i++) {
+				CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&zkp.d[i], &zkp2.d[i]));
+			}
 		}
 		zkp.d[0].d[0]++;
 		CYBOZU_TEST_EQUAL(verify(pub, &c1, &c2, &zkp), 0);

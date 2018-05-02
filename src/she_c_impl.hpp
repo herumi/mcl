@@ -352,8 +352,7 @@ int encWithZkpEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpEq *zkp, const
 {
 	cast(pub)->encWithZkpEq(*cast(c1), *cast(c2), *cast(zkp), m);
 	return 0;
-} catch (std::exception& e) {
-	fprintf(stderr, "err %s\n", e.what());
+} catch (std::exception&) {
 	return -1;
 }
 
@@ -373,8 +372,7 @@ int encWithZkpBinEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp,
 {
 	cast(pub)->encWithZkpBinEq(*cast(c1), *cast(c2), *cast(zkp), m);
 	return 0;
-} catch (std::exception& e) {
-	fprintf(stderr, "err %s\n", e.what());
+} catch (std::exception&) {
 	return -1;
 }
 
@@ -702,8 +700,7 @@ int verifyT(const PK& pub, const CipherTextG1& c1, const CipherTextG2& c2, const
 	try
 {
 	return pub.verify(c1, c2, zkp);
-} catch (std::exception& e) {
-	fprintf(stderr, "err %s\n", e.what());
+} catch (std::exception&) {
 	return 0;
 }
 
