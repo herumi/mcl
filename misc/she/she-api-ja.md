@@ -20,6 +20,7 @@ L2準同型暗号とは暗号文同士の加算を複数回、乗算を一度だ
 * 秘密鍵クラス SecretKey
 * 公開鍵クラス PublicKey
 * 暗号文クラス CipherTextG1, CipherTextG2, CipherTextGT
+* ゼロ知識証明クラス ZkpBin, ZkpEq, ZkpBinEq
 
 ## 暗号化と復号方法
 * 秘密鍵から公開鍵を作成する
@@ -31,10 +32,14 @@ L2準同型暗号とは暗号文同士の加算を複数回、乗算を一度だ
 * CipherTextG1とCipherTextG2を乗算するとCipherTextGTになる
 
 ## 復号の重要な注意点
-* このsheは復号時に小さな離散対数問題(DLP)を解く必要がある。
-* DLPのテーブルサイズをs、暗号文をEnc(m)とすると復号時間はm/sに比例する。
-* テーブルサイズの設定は`setRangeForDLP(s)`を使う。
-`m/s`の最大値は`setTryNum(tryNum)`で行う。
+* このsheは復号時に小さな離散対数問題(DLP)を解く必要がある
+* DLPのテーブルサイズをs、暗号文をEnc(m)とすると復号時間はm/sに比例する
+* テーブルサイズの設定は`setRangeForDLP(s)`を使う
+    * `m/s`の最大値は`setTryNum(tryNum)`で行う
+
+## ゼロ知識証明クラス
+* mを暗号するときに同時にゼロ知識証明を生成する
+* 暗号文と生成されたゼロ知識証明と公開鍵でmに関する制約条件を検証できる
 
 # JS版
 
@@ -205,16 +210,28 @@ int main()
     * cの復号結果が0ならばtrue
     * decしてから0と比較するよりも高速
 
-## PublicKeyクラス
+## PublicKey, PrecomputedPublicKeyクラス
+PrecomputedPublicKeyはPublicKeyの高速版
 
-* `void enc(CT& c, int64_t m) const`(C++)
-* `CipherTextG1 encG1(m)`(JS)
-* `CipherTextG2 encG2(m)`(JS)
-* `CipherTextGT encGT(m)`(JS)
+* `void PrecomputedPublicKey::init(const PublicKey& pub)`(C++)
+* `void PrecomputedPublicKey::init(pub)`(JS)
+    * 公開鍵pubでPrecomputedPublicKeyを初期化する
+
+
+* `PrecomputedPublicKey::destroy()`(JS)
+    * JavaScriptではPrecomputedPublicKeyが不要になったらこのメソッドを呼ぶ必要がある
+    * そうしないとメモリリークする
+
+以下はPK = PublicKey or PrecomputedPublicKey
+
+* `void PK::enc(CT& c, int64_t m) const`(C++)
+* `CipherTextG1 PK::encG1(m)`(JS)
+* `CipherTextG2 PK::encG2(m)`(JS)
+* `CipherTextGT PK::encGT(m)`(JS)
     * mを暗号化してcにセットする(またはその値を返す)
 
-* `void reRand(CT& c) const`(C++)
-* `CT reRand(CT c)`(JS)
+* `void PK::reRand(CT& c) const`(C++)
+* `CT PK::reRand(CT c)`(JS)
     * cを再ランダム化する
     * 再ランダム化された暗号文と元の暗号文は同じ平文を暗号化したものかどうか判定できない
 
@@ -247,6 +264,30 @@ int main()
     * mul(a, b) = finalExp(mulML(a, b))
     * add(mul(a, b), mul(c, d)) = finalExp(add(mulML(a, b), mulML(c, d)))
     * すなわち積和演算はmulMLしたものを足してから最後に一度finalExpするのがよい
+
+## ゼロ知識証明クラス
+
+### 概要
+* ZkpBin 暗号文encGi(m)(i = 1, 2, T)についてm = 0または1であることを復号せずに検証できる
+* ZkpEq 暗号文encG1(m1), encG2(m2)についてm1 = m2であることを検証できる
+* ZkpBinEq 暗号文encG1(m1), encG2(m2)についてm1 = m2 = 0または1であることを検証できる
+
+### API
+PK = PublicKey or PrecomputedPublicKey
+
+* `void PK::encWithZkpBin(CipherTextG1& c, Zkp& zkp, int m) const`(C++)
+* `void PK::encWithZkpBin(CipherTextG2& c, Zkp& zkp, int m) const`(C++)
+* `[CipherTextG1, ZkpBin] PK::encWithZkpBinG1(m)`(JS)
+* `[CipherTextG2, ZkpBin] PK::encWithZkpBinG2(m)`(JS)
+    * m(=0 or 1)を暗号化して暗号文cとゼロ知識証明zkpをセットする(または[c, zkp]を返す)
+    * mが0でも1でもなければ例外
+* `void PK::encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const`(C++)
+* `[CipherTextG1, CipherTextG2, ZkpEq] PK::encWithZkpEq(m)`(JS)
+    * mを暗号化して暗号文c1, c2とゼロ知識証明zkpをセットする(または[c1, c2, zkp]を返す)
+* `void PK::encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const`(C++)
+* `[CipherTextG1, CipherTextG2, ZkpEqBin] PK::encWithZkpBinEq(m)`(JS)
+    * m(=0 or 1)を暗号化して暗号文c1, c2とゼロ知識証明zkpをセットする(または[c1, c2, zkp]を返す)
+    * mが0でも1でもなければ例外
 
 ## グローバル関数
 
