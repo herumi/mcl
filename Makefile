@@ -232,21 +232,24 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include -Wall -Wextra
-EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8
+EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8 -Os
 EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1
-JS_DEP=src/fp.cpp src/she_c256.cpp src/she_c_impl.hpp include/mcl/she.hpp Makefile
+SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/she.h Makefile
+MCL_C_DEP=src/fp.cpp src/bn_c_impl.hpp include/mcl/bn.hpp include/mcl/bn.h Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
-  JS_DEP+=src/base64m.ll
+  SHE_C_DEP+=src/base64m.ll
 endif
-../she-wasm/she_c.js: $(JS_DEP) Makefile
+../she-wasm/she_c.js: src/she_c256.cpp $(SHE_C_DEP)
 	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
-#	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
 
-../mcl-wasm/mcl_c.js: src/fp.cpp src/bn_c256.cpp include/mcl/bn.h Makefile
+../she-wasm/she_c384.js: src/she_c384.cpp $(SHE_C_DEP)
+	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
+
+../mcl-wasm/mcl_c.js: src/bn_c256.cpp $(MCL_C_DEP)
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256
 
-../mcl-wasm/mcl_c512.js: src/fp.cpp src/bn_c512.cpp include/mcl/bn.h Makefile
+../mcl-wasm/mcl_c512.js: src/bn_c512.cpp $(MCL_C_DEP)
 	emcc -o $@ src/fp.cpp src/bn_c512.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=512
 
 mcl-wasm:
@@ -255,6 +258,7 @@ mcl-wasm:
 
 she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
+	$(MAKE) ../she-wasm/she_c384.js
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
