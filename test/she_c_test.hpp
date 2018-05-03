@@ -301,13 +301,14 @@ void ZkpBinTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZk
 		{
 			char buf[4096];
 			size_t n = sheZkpBinSerialize(buf, sizeof(buf), &zkp);
-			CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * 4);
+			CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * CYBOZU_NUM_OF_ARRAY(zkp.d));
 			sheZkpBin zkp2;
 			size_t r = sheZkpBinDeserialize(&zkp2, buf, n);
 			CYBOZU_TEST_EQUAL(r, n);
-			char buf2[4096];
-			sheZkpBinSerialize(buf2, sizeof(buf2), &zkp2);
-			CYBOZU_TEST_EQUAL_ARRAY(buf, buf2, n);
+			CYBOZU_TEST_EQUAL(r, n);
+			for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zkp.d); i++) {
+				CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&zkp.d[i], &zkp2.d[i]));
+			}
 		}
 		zkp.d[0].d[0]++;
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 0);
