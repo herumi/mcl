@@ -41,7 +41,8 @@ namespace fp {
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize);
 // copy src to dst as little endian
 void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize);
-void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask);
+
+void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode);
 
 uint64_t getUint64(bool *pb, const fp::Block& b);
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
@@ -58,6 +59,9 @@ std::string littleEndianToHexStr(const void *buf, size_t bufSize);
 bool isEnableJIT(); // 1st call is not threadsafe
 
 void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize);
+
+uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
+uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 namespace local {
 
@@ -289,16 +293,26 @@ public:
 	template<class S>
 	void setArray(const S *x, size_t n)
 	{
-		fp::copyAndMask(v_, x, sizeof(S) * n, op_, false);
+		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::NoMask);
 		toMont();
 	}
 	/*
-		mask inBuf with (1 << (bitLen - 1)) - 1 if x >= p
+		mask x with (1 << bitLen) and subtract p if x >= p
 	*/
 	template<class S>
-	void setArrayMask(const S *inBuf, size_t n)
+	void setArrayMaskMod(const S *x, size_t n)
 	{
-		fp::copyAndMask(v_, inBuf, sizeof(S) * n, op_, true);
+		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::MaskAndMod);
+		toMont();
+	}
+
+	/*
+		mask x with (1 << (bitLen - 1)) - 1 if x >= p
+	*/
+	template<class S>
+	void setArrayMask(const S *x, size_t n)
+	{
+		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::SmallMask);
 		toMont();
 	}
 	void getBlock(fp::Block& b) const

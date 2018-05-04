@@ -209,7 +209,7 @@ void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize)
 	}
 }
 
-static uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
+uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
 	const uint32_t hashSize = 256 / 8;
 	if (maxOutSize < hashSize) return 0;
@@ -221,7 +221,7 @@ static uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t
 	return hashSize;
 }
 
-static uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
+uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
 	const uint32_t hashSize = 512 / 8;
 	if (maxOutSize < hashSize) return 0;
@@ -639,11 +639,11 @@ void strToArray(bool *pIsMinus, Unit *x, size_t xN, const std::string& str, int 
 	gmp::getArray(x, xN, mx);
 }
 
-void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool doMask)
+void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
 {
 	const size_t fpByteSize = sizeof(Unit) * op.N;
 	if (xByteSize > fpByteSize) {
-		if (!doMask) throw cybozu::Exception("fp:copyAndMask:bad size") << xByteSize << fpByteSize;
+		if (maskMode == NoMask) throw cybozu::Exception("fp:copyAndMask:bad size") << xByteSize << fpByteSize;
 		xByteSize = fpByteSize;
 	}
 	// QQQ : fixed later for big endian
@@ -651,13 +651,19 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, bool do
 	for (size_t i = (xByteSize + sizeof(Unit) - 1) / sizeof(Unit); i < op.N; i++) {
 		y[i] = 0;
 	}
-	if (!doMask) {
-		if (isGreaterOrEqualArray(y, op.p, op.N)) throw cybozu::Exception("fp:copyAndMask:large x");
-		return;
-	}
-	maskArray(y, op.N, op.bitSize);
 	if (isGreaterOrEqualArray(y, op.p, op.N)) {
-		maskArray(y, op.N, op.bitSize - 1);
+		switch (maskMode) {
+		case mcl::fp::NoMask: throw cybozu::Exception("fp:copyAndMask:large x");
+		case mcl::fp::SmallMask:
+			maskArray(y, op.N, op.bitSize - 1);
+			break;
+		case mcl::fp::MaskAndMod:
+		default:
+			op.fp_subPre(y, y, op.p);
+			break;
+		}
+	} else {
+		maskArray(y, op.N, op.bitSize);
 	}
 	assert(isLessArray(y, op.p, op.N));
 }
