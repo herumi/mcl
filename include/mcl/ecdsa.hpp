@@ -136,7 +136,7 @@ struct Signature : public mcl::fp::Serializable<Signature> {
 	}
 };
 
-inline bool sign(Signature& sig, const SecretKey& sec, const void *msg, size_t msgSize)
+inline void sign(Signature& sig, const SecretKey& sec, const void *msg, size_t msgSize)
 {
 	Zn& r = sig.r;
 	Zn& s = sig.s;
@@ -154,7 +154,7 @@ inline bool sign(Signature& sig, const SecretKey& sec, const void *msg, size_t m
 		s += z;
 		if (s.isZero()) continue;
 		s /= k;
-		return true;
+		return;
 	}
 }
 

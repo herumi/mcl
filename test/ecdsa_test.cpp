@@ -24,7 +24,7 @@ CYBOZU_TEST_AUTO(ecdsa)
 	getPublicKey(pub, sec);
 	Signature sig;
 	const std::string msg = "hello";
-	CYBOZU_TEST_ASSERT(sign(sig, sec, msg.c_str(), msg.size()));
+	sign(sig, sec, msg.c_str(), msg.size());
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
 	sig.s += 1;
 	CYBOZU_TEST_ASSERT(!verify(sig, pub, msg.c_str(), msg.size()));

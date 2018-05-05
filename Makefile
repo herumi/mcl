@@ -7,6 +7,7 @@ TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal
 TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c512_test.cpp she_c256_test.cpp she_c384_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp
 TEST_SRC+=bls12_test.cpp
+TEST_SRC+=ecdsa_c_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -42,7 +43,8 @@ BN512_LIB=$(LIB_DIR)/libmclbn512.a
 BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
 SHE256_LIB=$(LIB_DIR)/libmclshe256.a
 SHE384_LIB=$(LIB_DIR)/libmclshe384.a
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(SHE384_lib)
+ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(SHE384_lib) $(ECDSA_LIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -70,6 +72,7 @@ BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
+ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 FUNC_LIST=src/func.list
 MCL_USE_LLVM?=1
 ifeq ($(MCL_USE_LLVM),1)
@@ -119,6 +122,9 @@ $(SHE256_LIB): $(SHE256_OBJ)
 
 $(SHE384_LIB): $(SHE384_OBJ)
 	$(AR) $@ $(SHE384_OBJ)
+
+$(ECDSA_LIB): $(ECDSA_OBJ)
+	$(AR) $@ $(ECDSA_OBJ)
 
 ifeq ($(OS),mac)
   MAC_LDFLAGS+=-l$(MCL_SNAME) -L./lib
@@ -221,6 +227,9 @@ $(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB
 
 $(EXE_DIR)/she_c384_test.exe: $(OBJ_DIR)/she_c384_test.o $(SHE384_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE384_LIB) $(MCL_LIB) $(LDFLAGS)
+
+$(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
