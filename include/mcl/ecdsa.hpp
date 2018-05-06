@@ -106,6 +106,7 @@ struct PrecomputedPublicKey {
 inline void getPublicKey(PublicKey& pub, const SecretKey& sec)
 {
 	Ec::mul(pub, param.P, sec);
+	pub.normalize();
 }
 
 struct Signature : public mcl::fp::Serializable<Signature> {
