@@ -247,10 +247,9 @@ public:
 	{
 		bool isMinus = false;
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
-			uint8_t buf[sizeof(FpT)];
 			const size_t n = getByteSize();
-			if (cybozu::readSome(buf, n, is) != n) throw cybozu::Exception("FpT:load:can't read") << n;
-			fp::copyByteToUnitAsLE(v_, buf, n);
+			v_[op_.N - 1] = 0;
+			if (cybozu::readSome(v_, n, is) != n) throw cybozu::Exception("FpT:load:can't read") << n;
 		} else {
 			std::string str;
 			fp::local::loadWord(str, is);
@@ -269,15 +268,13 @@ public:
 	{
 		const size_t n = getByteSize();
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
-			uint8_t buf[sizeof(FpT)];
 			if (ioMode & IoArrayRaw) {
-				fp::copyUnitToByteAsLE(buf, v_, n);
+				cybozu::write(os, v_, n);
 			} else {
 				fp::Block b;
 				getBlock(b);
-				fp::copyUnitToByteAsLE(buf, b.p, n);
+				cybozu::write(os, b.p, n);
 			}
-			cybozu::write(os, buf, n);
 			return;
 		}
 		fp::Block b;
