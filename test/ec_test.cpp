@@ -287,25 +287,25 @@ struct Test {
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		// IoSerialize
-		if (!Ec::isFixedSizeByteSeq()) return;
+		const size_t adj = Ec::isMSBserialize() ? 0 : 1;
 		P.set(x, y);
 		{
 			std::string s = P.getStr(mcl::IoSerialize);
-			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
+			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
 			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		{
 			P = -P;
 			std::string s = P.getStr(mcl::IoSerialize);
-			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
+			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
 			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		P.clear();
 		{
 			std::string s = P.getStr(mcl::IoSerialize);
-			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize());
+			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
 			CYBOZU_TEST_ASSERT(mcl::fp::isZeroArray(s.c_str(), s.size()));
 			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);

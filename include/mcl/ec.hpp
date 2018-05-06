@@ -650,7 +650,7 @@ public:
 		return z.isZero();
 #endif
 	}
-	static inline bool isFixedSizeByteSeq()
+	static inline bool isMSBserialize()
 	{
 		return !b_.isZero() && (Fp::BaseFp::getBitSize() & 7) != 0;
 	}
@@ -671,20 +671,33 @@ public:
 		EcT P(*this);
 		P.normalize();
 		if (ioMode & IoSerialize) {
-			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:save:not supported ioMode") << ioMode;
+			/*
+				if (isMSBserialize()) {
+				  // n bytes
+				  x | (y.isOdd ? 0x80 : 0)
+				} else {
+				  // n + 1 bytes
+				  (y.isOdd ? 3 : 2), x
+				}
+			*/
 			const size_t n = Fp::getByteSize();
-			char buf[sizeof(Fp)];
+			const size_t adj = isMSBserialize() ? 0 : 1;
+			char buf[sizeof(Fp) + 1];
 			std::string str;
 			if (isZero()) {
-				memset(buf, 0, n);
+				memset(buf, 0, n + adj);
 			} else {
-				cybozu::MemoryOutputStream mos(buf, n);
-				P.x.save(mos, ioMode);
-				if (P.y.isOdd()) {
-					buf[n - 1] |= 0x80;
+				cybozu::MemoryOutputStream mos(buf + adj, n);
+				P.x.save(mos, IoSerialize);
+				if (adj) {
+					buf[0] = P.y.isOdd() ? 3 : 2;
+				} else {
+					if (P.y.isOdd()) {
+						buf[n - 1] |= 0x80;
+					}
 				}
 			}
-			cybozu::write(os, buf, n);
+			cybozu::write(os, buf, n + adj);
 			return;
 		}
 		if (isZero()) {
@@ -712,17 +725,25 @@ public:
 		z = 1;
 #endif
 		if (ioMode & IoSerialize) {
-			if (!isFixedSizeByteSeq()) throw cybozu::Exception("EcT:load:not supported ioMode") << ioMode;
-			char buf[sizeof(Fp)];
 			const size_t n = Fp::getByteSize();
-			if (cybozu::readSome(buf, n, is) != n) throw cybozu::Exception("EcT:load:can't read") << n;
-			if (fp::isZeroArray(buf, n)) {
+			const size_t adj = isMSBserialize() ? 0 : 1;
+			const size_t n1 = n + adj;
+			char buf[sizeof(Fp) + 1];
+			if (cybozu::readSome(buf, n1, is) != n1) throw cybozu::Exception("EcT:load:can't read") << n1;
+			if (fp::isZeroArray(buf, n1)) {
 				clear();
 				return;
 			}
-			bool isYodd = (buf[n - 1] >> 7) != 0;
-			buf[n - 1] &= 0x7f;
-			x.setStr(std::string(buf, n), ioMode);
+			bool isYodd;
+			if (adj) {
+				char c = buf[0];
+				if (c != 2 && c != 3) throw cybozu::Exception("EcT:bad mode") << c;
+				isYodd = c == 3;
+			} else {
+				isYodd = (buf[n - 1] >> 7) != 0;
+				buf[n - 1] &= 0x7f;
+			}
+			x.setArray(buf + adj, n);
 			getYfromX(y, x, isYodd);
 		} else {
 			char c = 0;
