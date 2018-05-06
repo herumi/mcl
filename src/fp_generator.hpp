@@ -210,7 +210,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		mulUnit_ = getCurr<uint3opI>();
 		gen_mulUnit();
-		if (op.primeMode == PM_NICT_P521) {
+		if (op.primeMode == PM_NIST_P521) {
 			align(16);
 			op.fpDbl_mod = getCurr<void3u>();
 			gen_fpDbl_mod(op);
@@ -223,7 +223,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			op.fp_sqr = getCurr<void3u>();
 			gen_sqr();
 		}
-		if (op.primeMode != PM_NICT_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
+		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
@@ -602,7 +602,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_mul()
 	{
-		if (op_->primeMode == PM_NICT_P192) {
+		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
 			mulPre3(rsp, sf.p[1], sf.p[2], sf.t);
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
@@ -890,12 +890,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_fpDbl_mod(const mcl::fp::Op& op)
 	{
-		if (op.primeMode == PM_NICT_P192) {
+		if (op.primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 2, 6 | UseRDX);
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
-		if (op.primeMode == PM_NICT_P521) {
+		if (op.primeMode == PM_NIST_P521) {
 			StackFrame sf(this, 2, 8 | UseRDX);
 			fpDbl_mod_NIST_P521(sf.p[0], sf.p[1], sf.t);
 			return;
@@ -916,7 +916,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	void gen_sqr()
 	{
-		if (op_->primeMode == PM_NICT_P192) {
+		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 2, 10 | UseRDX | UseRCX, 8 * 6);
 			sqrPre3(rsp, sf.p[1], sf.t);
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);

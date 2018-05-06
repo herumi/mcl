@@ -145,8 +145,9 @@ enum Mode {
 
 enum PrimeMode {
 	PM_GENERIC = 0,
-	PM_NICT_P192,
-	PM_NICT_P521
+	PM_NIST_P192,
+	PM_NIST_P256,
+	PM_NIST_P521
 };
 
 enum MaskMode {

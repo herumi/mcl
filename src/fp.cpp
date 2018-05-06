@@ -490,13 +490,13 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
 	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
 		&& mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-		primeMode = PM_NICT_P192;
+		primeMode = PM_NIST_P192;
 		isMont = false;
 		isFastMod = true;
 	}
 	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
 		&& mp == mpz_class("0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
-		primeMode = PM_NICT_P521;
+		primeMode = PM_NIST_P521;
 		isMont = false;
 		isFastMod = true;
 	}
@@ -540,12 +540,12 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 		throw cybozu::Exception("Op:init:not:support") << N << mstr;
 	}
 #ifdef MCL_USE_LLVM
-	if (primeMode == PM_NICT_P192) {
+	if (primeMode == PM_NIST_P192) {
 		fp_mul = &mcl_fp_mulNIST_P192L;
 		fp_sqr = &mcl_fp_sqr_NIST_P192L;
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192L;
 	}
-	if (primeMode == PM_NICT_P521) {
+	if (primeMode == PM_NIST_P521) {
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521L;
 	}
 #endif
