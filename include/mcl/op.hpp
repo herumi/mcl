@@ -76,11 +76,18 @@ namespace mcl {
 		"2 <x>" ; compressed for even y
 		"3 <x>" ; compressed for odd y
 
-	IoSerialize(fixed size = Fp::getByteSize())
-		use MSB of array of x for 1-bit y for prime p where (p % 8 != 0)
-		[0] ; infinity
-		<x> ; for even y
-		<x>|1 ; for odd y ; |1 means set MSB of x
+	IoSerialize
+		if isMSBserialize(): // p is not full bit
+			size = Fp::getByteSize()
+			use MSB of array of x for 1-bit y for prime p where (p % 8 != 0)
+			[0] ; infinity
+			<x> ; for even y
+			<x>|1 ; for odd y ; |1 means set MSB of x
+		else:
+			size = Fp::getByteSize() + 1
+			[0] ; infinity
+			2 <x> ; for even y
+			3 <x> ; for odd y
 */
 enum IoMode {
 	IoAuto = 0, // dec or hex according to ios_base::fmtflags
