@@ -261,6 +261,9 @@ endif
 ../mcl-wasm/mcl_c512.js: src/bn_c512.cpp $(MCL_C_DEP)
 	emcc -o $@ src/fp.cpp src/bn_c512.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=512
 
+../ecdsa-wasm/ecdsa_c.js: src/ecdsa_c.cpp src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
+	emcc -o $@ src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256
+
 mcl-wasm:
 	$(MAKE) ../mcl-wasm/mcl_c.js
 	$(MAKE) ../mcl-wasm/mcl_c512.js
@@ -268,6 +271,9 @@ mcl-wasm:
 she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
 	$(MAKE) ../she-wasm/she_c384.js
+
+ecdsa-wasm:
+	$(MAKE) ../ecdsa-wasm/ecdsa_c.js
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
