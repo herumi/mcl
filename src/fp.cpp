@@ -651,6 +651,9 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMod
 	for (size_t i = (xByteSize + sizeof(Unit) - 1) / sizeof(Unit); i < op.N; i++) {
 		y[i] = 0;
 	}
+	if (maskMode == mcl::fp::SmallMask || maskMode == mcl::fp::MaskAndMod) {
+		maskArray(y, op.N, op.bitSize);
+	}
 	if (isGreaterOrEqualArray(y, op.p, op.N)) {
 		switch (maskMode) {
 		case mcl::fp::NoMask: throw cybozu::Exception("fp:copyAndMask:large x");
@@ -662,8 +665,6 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMod
 			op.fp_subPre(y, y, op.p);
 			break;
 		}
-	} else {
-		maskArray(y, op.N, op.bitSize);
 	}
 	assert(isLessArray(y, op.p, op.N));
 }
