@@ -874,6 +874,55 @@ public:
 	T& operator[](size_t n) { verify(n); return v_[n]; }
 };
 
+#if MCL_SIZEOF_UNIT == 8
+/*
+	M = 1 << 256
+	a = M mod p = (1 << 32) + 0x3d1
+	[H:L] mod p = H * a + L
+
+	if H = L = M - 1, t = H * a + L = aM + (M - a - 1)
+	H' = a, L' = M - a - 1
+	t' = H' * a + L' = M + (a^2 - a - 1)
+	H'' = 1, L'' = a^2 - a - 1
+	t'' = H'' * a + L'' = a^2 - 1
+*/
+inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
+{
+	const Unit a = (uint64_t(1) << 32) + 0x3d1;
+	Unit buf[5];
+	buf[4] = mulu1(buf, x + 4, 4, a); // H * a
+	buf[4] += addN(buf, buf, x, 4); // t = H * a + L
+	Unit x2[2];
+	x2[0] = mulUnit(&x2[1], buf[4], a);
+	Unit x3 = addN(buf, buf, x2, 2);
+	if (x3) {
+		x3 = addu1(buf + 2, buf + 2, 2, Unit(1)); // t' = H' * a + L'
+		if (x3) {
+			x3 = addu1(buf, buf, 4, a);
+			assert(x3 == 0);
+		}
+	}
+	if (fp::isGreaterOrEqualArray(buf, p, 4)) {
+		subN(z, buf, p, 4);
+	} else {
+		fp::copyArray(z, buf, 4);
+	}
+}
+
+inline void mcl_fp_mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	Unit xy[8];
+	mulNM(xy, x, 4, y, 4);
+	mcl_fpDbl_mod_SECP256K1(z, xy, p);
+}
+inline void mcl_fp_sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
+{
+	Unit xx[8];
+	sqrN(xx, x, 4);
+	mcl_fpDbl_mod_SECP256K1(y, xx, p);
+}
+#endif
+
 } // vint
 
 /**

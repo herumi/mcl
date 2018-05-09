@@ -501,6 +501,13 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 		isFastMod = true;
 	}
 #endif
+#if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
+	if (mp == mpz_class("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f")) {
+		primeMode = PM_SECP256K1;
+		isMont = false;
+		isFastMod = true;
+	}
+#endif
 	N = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	switch (N) {
 	case 1:  setOp<1>(*this, mode); break;
@@ -547,6 +554,13 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	}
 	if (primeMode == PM_NIST_P521) {
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521L;
+	}
+#endif
+#if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
+	if (primeMode == PM_SECP256K1) {
+		fp_mul = &mcl::vint::mcl_fp_mul_SECP256K1;
+		fp_sqr = &mcl::vint::mcl_fp_sqr_SECP256K1;
+		fpDbl_mod = &mcl::vint::mcl_fpDbl_mod_SECP256K1;
 	}
 #endif
 	fp::initForMont(*this, p, mode);

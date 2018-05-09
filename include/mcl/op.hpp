@@ -146,7 +146,7 @@ enum Mode {
 enum PrimeMode {
 	PM_GENERIC = 0,
 	PM_NIST_P192,
-	PM_NIST_P256,
+	PM_SECP256K1,
 	PM_NIST_P521
 };
 

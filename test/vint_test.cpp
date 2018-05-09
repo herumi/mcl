@@ -5,6 +5,7 @@
 #include <set>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/test.hpp>
+#include <cybozu/xorshift.hpp>
 
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 
@@ -1218,6 +1219,37 @@ CYBOZU_TEST_AUTO(divUnit)
 				CYBOZU_TEST_EQUAL(r, R);
 			}
 		}
+	}
+}
+
+void compareMod(const uint64_t *x, const uint64_t *p)
+{
+	uint64_t y1[4] = {};
+	uint64_t y2[4] = {};
+	mcl::vint::divNM((uint64_t*)0, 0, y1, x, 8, p, 4);
+	mcl::vint::mcl_fpDbl_mod_SECP256K1(y2, x, p);
+	CYBOZU_TEST_EQUAL_ARRAY(y1, y2, 4);
+}
+CYBOZU_TEST_AUTO(SECP256k1)
+{
+	const uint64_t F = uint64_t(-1);
+	const uint64_t p[4] = { uint64_t(0xfffffffefffffc2full), F, F, F };
+	const uint64_t tbl[][8] = {
+		{ 0, 0, 0, 0, 0, 0, 0, 0 },
+		{ F, F, F, F, F, F, F, F },
+		{ F, F, F, F, 1, 0, 0, 0 },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const uint64_t *x = tbl[i];
+		compareMod(x, p);
+	}
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < 100; i++) {
+		uint64_t x[8];
+		for (int j = 0; j < 8; j++) {
+			x[j] = rg();
+		}
+		compareMod(x, p);
 	}
 }
 #endif
