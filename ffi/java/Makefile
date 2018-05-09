@@ -1,4 +1,5 @@
-include ../common.mk
+TOP_DIR=../..
+include $(TOP_DIR)/common.mk
 ifeq ($(UNAME_S),Darwin)
   JAVA_INC=-I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/
 else
@@ -7,15 +8,15 @@ else
   CFLAGS+=-z noexecstack
   LDFLAGS+=-lrt
 endif
-CFLAGS+=$(JAVA_INC) $(JAVA_INC)/linux -I ../include -I ../../xbyak -I ../../cybozulib/include -Wno-strict-aliasing
-MCL_LIB=../lib/libmcl.a
+CFLAGS+=$(JAVA_INC) $(JAVA_INC)/linux -I $(TOP_DIR)/include -I $(TOP_DIR)/../xbyak -I $(TOP_DIR)/../cybozulib/include -Wno-strict-aliasing
+MCL_LIB=$(TOP_DIR)/lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl
 PACKAGE_DIR=$(subst .,/,$(PACKAGE_NAME))
 
-ELGAMAL_LIB=../bin/libmcl_elgamal.$(LIB_SUF)
-BN256_LIB=../bin/libmcl_bn256.$(LIB_SUF)
-JAVA_EXE=cd ../bin && LD_LIBRARY_PATH=./:$(LD_LIBRARY_PATH) java -classpath ../java
+ELGAMAL_LIB=$(TOP_DIR)/bin/libmcl_elgamal.$(LIB_SUF)
+BN256_LIB=$(TOP_DIR)/bin/libmcl_bn256.$(LIB_SUF)
+JAVA_EXE=cd $(TOP_DIR)/bin && LD_LIBRARY_PATH=./:$(LD_LIBRARY_PATH) java -classpath ../ffi/java
 all: $(ELGAMAL_LIB)
 
 elgamal_wrap.cxx: elgamal.i elgamal_impl.hpp
@@ -27,7 +28,7 @@ bn256_wrap.cxx: bn256.i bn256_impl.hpp
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall bn256.i
 
 $(MCL_LIB):
-	make -C ..
+	make -C $(TOP_DIR)
 
 $(ELGAMAL_LIB): elgamal_wrap.cxx $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(LDFLAGS) $(MCL_LIB) -shared
