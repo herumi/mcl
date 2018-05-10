@@ -195,6 +195,9 @@ test_go:
 	$(MAKE) test_go256
 	$(MAKE) test_go384
 
+test_java:
+	$(MAKE) -C ffi/java test
+
 ##################################################################
 
 VPATH=test sample src

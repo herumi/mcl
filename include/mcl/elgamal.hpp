@@ -222,6 +222,7 @@ struct ElgamalT {
 			this->g = g;
 			this->h = h;
 			enableWindowMethod_ = false;
+			enableWindowMethod();
 		}
 		/*
 			encode message
@@ -362,7 +363,9 @@ struct ElgamalT {
 		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			cybozu::load(bitSize, is);
+			std::string s;
+			mcl::fp::local::loadWord(s, is);
+			bitSize = cybozu::atoi(s);
 			f.load(is, ioMode);
 			g.load(is, ioMode);
 			h.load(is, ioMode);
@@ -371,8 +374,11 @@ struct ElgamalT {
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
+			std::string s = cybozu::itoa(bitSize);
+			cybozu::write(os, s.c_str(), s.size());
+			cybozu::writeChar(os, ' ');
+
 			const char sep = *fp::getIoSeparator(ioMode);
-			cybozu::save(os, bitSize);
 			f.save(os, ioMode);
 			if (sep) cybozu::writeChar(os, sep);
 			g.save(os, ioMode);
