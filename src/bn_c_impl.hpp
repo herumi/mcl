@@ -1,12 +1,5 @@
 #define MCLBN_DLL_EXPORT
 #include <mcl/bn.h>
-#if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <random>
-static std::random_device g_rg;
-#else
-#include <cybozu/random_generator.hpp>
-static cybozu::RandomGenerator g_rg;
-#endif
 
 #if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
@@ -225,7 +218,7 @@ int mclBnFr_isOne(const mclBnFr *x)
 int mclBnFr_setByCSPRNG(mclBnFr *x)
 	try
 {
-	cast(x)->setRand(g_rg);
+	cast(x)->setByCSPRNG();
 	return 0;
 } catch (std::exception& e) {
 	if (g_fp) fprintf(g_fp, "mclBnFr_setByCSPRNG %s\n", e.what());

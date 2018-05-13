@@ -17,7 +17,6 @@
 #endif
 #include <cybozu/atoi.hpp>
 #include <cybozu/itoa.hpp>
-#include <cybozu/random_generator.hpp>
 #include <mcl/randgen.hpp>
 
 #ifdef _MSC_VER

@@ -123,6 +123,12 @@ CYBOZU_TEST_AUTO(Fr)
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
 	CYBOZU_TEST_ASSERT(!mclBnFr_setStr(&y, buf, size, 10));
 	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x, &y));
+
+	for (int i = 0; i < 10; i++) {
+		mclBnFr_setByCSPRNG(&x);
+		mclBnFr_getStr(buf, sizeof(buf), &x, 16);
+		printf("%s\n", buf);
+	}
 }
 
 CYBOZU_TEST_AUTO(G1)
