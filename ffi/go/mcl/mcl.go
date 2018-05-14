@@ -147,7 +147,7 @@ func (x *Fr) SetByCSPRNG() {
 // SetHashOf --
 func (x *Fr) SetHashOf(buf []byte) bool {
 	// #nosec
-	return C.mclBnFr_setHashOf(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf))) == 1
+	return C.mclBnFr_setHashOf(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf))) == 0
 }
 
 // GetString --

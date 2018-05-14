@@ -24,6 +24,15 @@ func testGT(t *testing.T) {
 	}
 }
 
+func testHash(t *testing.T) {
+	var x Fr
+	err := x.SetHashOf([]byte("abc"))
+	if !err {
+		t.Error(err)
+	}
+	fmt.Printf("x=%s\n", x.GetString(16))
+}
+
 func testNegAdd(t *testing.T) {
 	var x Fr
 	var P1, P2, P3 G1
@@ -111,6 +120,7 @@ func testMcl(t *testing.T, c int) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	testHash(t)
 	testNegAdd(t)
 	testPairing(t)
 	testGT(t)
