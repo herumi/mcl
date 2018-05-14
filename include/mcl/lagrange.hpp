@@ -15,25 +15,34 @@ namespace mcl {
 	@retval 0 if succeed else -1
 */
 template<class G, class F>
-void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k)
+void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k, bool *pb)
 {
 	/*
 		delta_{i,S}(0) = prod_{j != i} S[j] / (S[j] - S[i]) = a / b
 		where a = prod S[j], b = S[i] * prod_{j != i} (S[j] - S[i])
 	*/
-	if (k < 2) throw cybozu::Exception("LagrangeInterpolation:smalll k") << k;
+	if (k < 2) {
+		*pb = false;
+		return;
+	}
 	std::vector<F> delta(k);
 	F a = S[0];
 	for (size_t i = 1; i < k; i++) {
 		a *= S[i];
 	}
-	if (a.isZero()) throw cybozu::Exception("LagrangeInterpolation:S has zero");
+	if (a.isZero()) {
+		*pb = false;
+		return;
+	}
 	for (size_t i = 0; i < k; i++) {
 		F b = S[i];
 		for (size_t j = 0; j < k; j++) {
 			if (j != i) {
 				F v = S[j] - S[i];
-				if (v.isZero()) throw cybozu::Exception("LagrangeInterpolation:same S") << i << j;
+				if (v.isZero()) {
+					*pb = false;
+					return;
+				}
 				b *= v;
 			}
 		}
@@ -50,22 +59,42 @@ void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k)
 		r += t;
 	}
 	out = r;
+	*pb = true;
 }
 
+template<class G, class F>
+void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k)
+{
+	bool b;
+	LagrangeInterpolation(out, S, vec, k, &b);
+	if (!b) throw cybozu::Exception("LagrangeInterpolation");
+}
 /*
 	out = f(x) = c[0] + c[1] * x + c[2] * x^2 + ... + c[cSize - 1] * x^(cSize - 1)
 	@retval 0 if succeed else -1
 */
 template<class G, class T>
-void evaluatePolynomial(G& out, const G *c, size_t cSize, const T& x)
+void evaluatePolynomial(G& out, const G *c, size_t cSize, const T& x, bool *pb)
 {
-	if (cSize < 2) throw cybozu::Exception("evaluatePolynomial:small cSize") << cSize;
+	if (cSize < 2) {
+		*pb = false;
+		return;
+	}
 	G y = c[cSize - 1];
 	for (int i = (int)cSize - 2; i >= 0; i--) {
 		G::mul(y, y, x);
 		G::add(y, y, c[i]);
 	}
 	out = y;
+	*pb = true;
+}
+
+template<class G, class T>
+void evaluatePolynomial(G& out, const G *c, size_t cSize, const T& x)
+{
+	bool b;
+	evaluatePolynomial(out, c, cSize, x, &b);
+	if (!b) throw cybozu::Exception("evaluatePolynomial");
 }
 
 } // mcl

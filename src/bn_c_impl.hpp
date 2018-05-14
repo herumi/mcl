@@ -43,7 +43,7 @@ mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode)
 		((char *)buf)[str.size()] = '\0';
 	}
 	return str.size();
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return 0;
 }
 
@@ -52,7 +52,7 @@ mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
 	try
 {
 	return (mclSize)cast(x)->serialize(buf, maxBufSize);
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return 0;
 }
 
@@ -62,7 +62,7 @@ int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	cast(x)->setStr(std::string(buf, bufSize), ioMode);
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return -1;
 }
 
@@ -72,7 +72,7 @@ mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 {
 	const size_t n = cast(x)->deserialize(buf, bufSize);
 	return (mclSize)n;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return 0;
 }
 
@@ -85,7 +85,7 @@ int mclBn_init(int curve, int maxUnitSize)
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
 	initPairing(cp);
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return -1;
 }
 
@@ -151,7 +151,7 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	cast(x)->setArrayMask((const char *)buf, bufSize);
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return -1;
 }
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
@@ -181,7 +181,7 @@ int mclBnFr_setByCSPRNG(mclBnFr *x)
 {
 	cast(x)->setByCSPRNG();
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return -1;
 }
 
@@ -191,7 +191,7 @@ int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	cast(x)->setHashOf(buf, bufSize);
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return -1;
 }
 
@@ -268,7 +268,7 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
 	hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return 1;
 }
 
@@ -346,7 +346,7 @@ int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
 	hashAndMapToG2(*cast(x), buf, bufSize);
 	return 0;
-} catch (std::exception& e) {
+} catch (std::exception&) {
 	return 1;
 }
 
@@ -509,52 +509,40 @@ void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t 
 }
 
 int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k)
-	try
 {
-	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
-	return 0;
-} catch (std::exception& e) {
-	return -1;
+	bool b;
+	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k, &b);
+	return b ? 0 : -1;
 }
 int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k)
-	try
 {
-	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
-	return 0;
-} catch (std::exception& e) {
-	return -1;
+	bool b;
+	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k, &b);
+	return b ? 0 : -1;
 }
 int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k)
-	try
 {
-	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
-	return 0;
-} catch (std::exception& e) {
-	return -1;
+	bool b;
+	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k, &b);
+	return b ? 0 : -1;
 }
 int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x)
-	try
 {
-	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
-	return 0;
-} catch (std::exception& e) {
-	return -1;
+	bool b;
+	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x), &b);
+	return b ? 0 : -1;
 }
 int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x)
-	try
 {
-	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
-	return 0;
-} catch (std::exception& e) {
-	return -1;
+	bool b;
+	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x), &b);
+	return b ? 0 : -1;
 }
 int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x)
-	try
 {
-	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
-	return 0;
-} catch (std::exception& e) {
-	return -1;
+	bool b;
+	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x), &b);
+	return b ? 0 : -1;
 }
 
 void mclBn_verifyOrderG1(int doVerify)
