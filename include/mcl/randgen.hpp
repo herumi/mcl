@@ -6,9 +6,22 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#ifdef MCL_USE_WEB_CRYPTO_API
+#include <emscripten.h>
+
+struct RandomGenerator {
+	void read(void *buf, size_t bufSize)
+	{
+		// use crypto.getRandomValues
+		EM_ASM({mod.cryptoGetRandomValues($0, $1)}, buf, bufSize);
+	}
+};
+
+#else
 #include <cybozu/random_generator.hpp>
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 #include <random>
+#endif
 #endif
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -24,7 +37,7 @@ void readWrapper(void *self, void *buf, uint32_t bufSize)
 	reinterpret_cast<RG*>(self)->read((uint8_t*)buf, bufSize);
 }
 
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
+#if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 template<>
 inline void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufSize)
 {
