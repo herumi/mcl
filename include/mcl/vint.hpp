@@ -4,9 +4,10 @@
 */
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
+#include <cybozu/stream.hpp>
 #include <cybozu/atoi.hpp>
+#include <cybozu/itoa.hpp>
 #include <vector>
-#include <iomanip>
 #include <stdlib.h>
 #include <assert.h>
 #include <cmath>
@@ -1202,45 +1203,64 @@ public:
 		vint::clearN(x + n, maxSize - n);
 	}
 	void clear() { *this = 0; }
+	template<class OutputStream>
+	void save(OutputStream& os, int base = 10) const
+	{
+		if (isNeg_) cybozu::writeChar(os, '-');
+		if (base == 10) {
+			const size_t width = 9;
+			const uint32_t i1e9 = 1000000000U;
+			VintT x;
+			VintT::abs(x, *this);
+
+			std::vector<uint32_t> t;
+			while (!x.isZero()) {
+				uint32_t r = udivModu1(&x, x, i1e9);
+				t.push_back(r);
+			}
+			if (t.empty()) {
+				cybozu::writeChar(os, '0');
+				return;
+			}
+			char buf[width];
+			for (size_t i = 0, n = t.size(); i < n; i++) {
+				size_t len = cybozu::itoa_local::uintToDec(buf, width, t[n - 1 - i]);
+				assert(len > 0);
+				if (i == 0) {
+					os.write(buf + width - len, len);
+				} else {
+					for (size_t j = 0; j < width - len; j++) {
+						buf[j] = '0';
+					}
+					os.write(buf, width);
+				}
+			}
+		} else if (base == 16) {
+			const size_t n = size();
+			const size_t width = 16;
+			char buf[width];
+			for (size_t i = 0; i < n; i++) {
+				size_t len = cybozu::itoa_local::uintToHex(buf, width, getUnit()[n - 1 - i], false);
+				assert(len > 0);
+				if (i == 0) {
+					os.write(buf + width - len, len);
+				} else {
+					for (size_t j = 0; j < width - len; j++) {
+						buf[j] = '0';
+					}
+					os.write(buf, width);
+				}
+			}
+		} else {
+			assert(0);
+		}
+	}
 	std::string getStr(int base = 10) const
 	{
-		std::ostringstream os;
-		if (isNeg_) os << '-';
-		switch (base) {
-		case 10:
-			{
-				const uint32_t i1e9 = 1000000000U;
-				VintT x;
-				VintT::abs(x, *this);
-
-				std::vector<uint32_t> t;
-				while (!x.isZero()) {
-					uint32_t r = udivModu1(&x, x, i1e9);
-					t.push_back(r);
-				}
-				if (t.empty()) {
-					return "0";
-				}
-				os << t[t.size() - 1];
-				for (size_t i = 1, n = t.size(); i < n; i++) {
-					os << std::setfill('0') << std::setw(9) << t[n - 1 - i];
-				}
-			}
-			break;
-		case 16:
-			{
-				os << std::hex;
-				const size_t n = size();
-				os << getUnit()[n - 1];
-				for (size_t i = 1; i < n; i++) {
-					os << std::setfill('0') << std::setw(sizeof(Unit) * 2) << getUnit()[n - 1 - i];
-				}
-			}
-			break;
-		default:
-			throw cybozu::Exception("getStr:not supported base") << base;
-		}
-		return os.str();
+		std::string s;
+		cybozu::StringOutputStream os(s);
+		save(os, base);
+		return s;
 	}
 	/*
 		return bitSize(abs(*this))
