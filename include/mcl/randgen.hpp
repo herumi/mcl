@@ -9,13 +9,15 @@
 #ifdef MCL_USE_WEB_CRYPTO_API
 #include <emscripten.h>
 
-struct RandomGenerator {
+namespace mcl {
+struct RandomGeneratorJS {
 	void read(void *buf, size_t bufSize)
 	{
 		// use crypto.getRandomValues
-		EM_ASM({mod.cryptoGetRandomValues($0, $1)}, buf, bufSize);
+		EM_ASM({Module.cryptoGetRandomValues($0, $1)}, buf, bufSize);
 	}
 };
+} // mcl
 
 #else
 #include <cybozu/random_generator.hpp>
@@ -88,7 +90,11 @@ public:
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
 	static RandGen& get()
 	{
+#ifdef MCL_USE_WEB_CRYPTO_API
+		static mcl::RandomGeneratorJS rg;
+#else
 		static cybozu::RandomGenerator rg;
+#endif
 		static RandGen wrg(rg);
 		return wrg;
 	}

@@ -259,7 +259,7 @@ endif
 	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
 
 ../mcl-wasm/mcl_c.js: src/bn_c256.cpp $(MCL_C_DEP)
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DCYBOZU_MINIMUM_EXCEPTION
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DCYBOZU_MINIMUM_EXCEPTION -DMCL_USE_WEB_CRYPTO_API
 
 ../mcl-wasm/mcl_c512.js: src/bn_c512.cpp $(MCL_C_DEP)
 	emcc -o $@ src/fp.cpp src/bn_c512.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=512 -DCYBOZU_MINIMUM_EXCEPTION
