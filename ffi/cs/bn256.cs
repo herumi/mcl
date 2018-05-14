@@ -5,8 +5,6 @@ using System.Runtime.InteropServices;
 namespace mcl {
 	class BN256 {
 		[DllImport("mclBn256.dll")]
-		public static extern int mclBn_setErrFile([In][MarshalAs(UnmanagedType.LPStr)] string name);
-		[DllImport("mclBn256.dll")]
 		public static extern int mclBn_init(int curve, int maxUnitSize);
 		[DllImport("mclBn256.dll")]
 		public static extern void mclBnFr_clear(ref Fr x);

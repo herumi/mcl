@@ -13,8 +13,6 @@ using namespace mcl::bn512;
 #endif
 #include <mcl/lagrange.hpp>
 
-static FILE *g_fp = NULL;
-
 static Fr *cast(mclBnFr *p) { return reinterpret_cast<Fr*>(p); }
 static const Fr *cast(const mclBnFr *p) { return reinterpret_cast<const Fr*>(p); }
 
@@ -30,25 +28,14 @@ static const Fp12 *cast(const mclBnGT *p) { return reinterpret_cast<const Fp12*>
 static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
 static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
 
-static int closeErrFile()
-{
-	if (g_fp == NULL || g_fp == stderr) {
-		return 0;
-	}
-	int ret = fclose(g_fp);
-	g_fp = NULL;
-	return ret;
-}
-
 template<class T>
-mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode, const char *msg)
+mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode)
 	try
 {
 	std::string str;
 	cast(x)->getStr(str, ioMode);
 	mclSize terminate = (ioMode == 10 || ioMode == 16) ? 1 : 0;
 	if (str.size() + terminate > maxBufSize) {
-		if (g_fp) fprintf(g_fp, "%s:getStr:small maxBufSize %d %d %d\n", msg, (int)maxBufSize, (int)str.size(), (int)terminate);
 		return 0;
 	}
 	memcpy(buf, str.c_str(), str.size());
@@ -57,73 +44,48 @@ mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode, const char
 	}
 	return str.size();
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
 	return 0;
 }
 
 template<class T>
-mclSize serialize(void *buf, mclSize maxBufSize, const T *x, const char *msg)
+mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
 	try
 {
 	return (mclSize)cast(x)->serialize(buf, maxBufSize);
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
 	return 0;
 }
 
 template<class T>
-int setStr(T *x, const char *buf, mclSize bufSize, int ioMode, const char *msg)
+int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
 	try
 {
 	cast(x)->setStr(std::string(buf, bufSize), ioMode);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
 	return -1;
 }
 
 template<class T>
-mclSize deserialize(T *x, const void *buf, mclSize bufSize, const char *msg)
+mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 	try
 {
 	const size_t n = cast(x)->deserialize(buf, bufSize);
 	return (mclSize)n;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "%s %s\n", msg, e.what());
 	return 0;
-}
-
-int mclBn_setErrFile(const char *name)
-{
-	int ret = closeErrFile();
-	if (name == NULL || *name == '\0') {
-		return ret;
-	}
-	if (ret) return ret;
-	if (strcmp(name, "stderr") == 0) {
-		g_fp = stderr;
-		return 0;
-	}
-#ifdef _MSC_VER
-	return fopen_s(&g_fp, name, "wb");
-#else
-	g_fp = fopen(name, "wb");
-	return  g_fp ? 0 : errno;
-#endif
 }
 
 int mclBn_init(int curve, int maxUnitSize)
 	try
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
-		fprintf(stderr, "mclBn_init:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
 		return -1;
 	}
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
 	initPairing(cp);
 	return 0;
 } catch (std::exception& e) {
-	fprintf(stderr, "%s\n", e.what());
 	return -1;
 }
 
@@ -182,7 +144,7 @@ void mclBnFr_setInt32(mclBnFr *y, int x)
 
 int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return setStr(x, buf, bufSize, ioMode, "mclBnFr_setStr");
+	return setStr(x, buf, bufSize, ioMode);
 }
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	try
@@ -190,12 +152,11 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	cast(x)->setArrayMask((const char *)buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "setArrayMask %s\n", e.what());
 	return -1;
 }
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, "mclBnFr_deserialize");
+	return deserialize(x, buf, bufSize);
 }
 // return 1 if true
 int mclBnFr_isValid(const mclBnFr *x)
@@ -221,7 +182,6 @@ int mclBnFr_setByCSPRNG(mclBnFr *x)
 	cast(x)->setByCSPRNG();
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBnFr_setByCSPRNG %s\n", e.what());
 	return -1;
 }
 
@@ -232,17 +192,16 @@ int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)
 	cast(x)->setHashOf(buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBnFr_setHashOf %s\n", e.what());
 	return -1;
 }
 
 mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode, "mclBnFr_getStr");
+	return getStr(buf, maxBufSize, x, ioMode);
 }
 mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x)
 {
-	return serialize(buf, maxBufSize, x, "mclBnFr_serialize");
+	return serialize(buf, maxBufSize, x);
 }
 
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x)
@@ -283,11 +242,11 @@ void mclBnG1_clear(mclBnG1 *x)
 
 int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return setStr(x, buf, bufSize, ioMode, "mclBnG1_setStr");
+	return setStr(x, buf, bufSize, ioMode);
 }
 mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, "mclBnG1_deserialize");
+	return deserialize(x, buf, bufSize);
 }
 
 // return 1 if true
@@ -310,18 +269,17 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 	hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBnG1_hashAndMapTo %s\n", e.what());
 	return 1;
 }
 
 mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode, "mclBnG1_getStr");
+	return getStr(buf, maxBufSize, x, ioMode);
 }
 
 mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x)
 {
-	return serialize(buf, maxBufSize, x, "mclBnG1_serialize");
+	return serialize(buf, maxBufSize, x);
 }
 
 void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x)
@@ -362,11 +320,11 @@ void mclBnG2_clear(mclBnG2 *x)
 
 int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return setStr(x, buf, bufSize, ioMode, "mclBnG2_setStr");
+	return setStr(x, buf, bufSize, ioMode);
 }
 mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, "mclBnG2_deserialize");
+	return deserialize(x, buf, bufSize);
 }
 
 // return 1 if true
@@ -389,17 +347,16 @@ int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 	hashAndMapToG2(*cast(x), buf, bufSize);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBnG2_hashAndMapTo %s\n", e.what());
 	return 1;
 }
 
 mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode, "mclBnG2_getStr");
+	return getStr(buf, maxBufSize, x, ioMode);
 }
 mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x)
 {
-	return serialize(buf, maxBufSize, x, "mclBnG2_serialize");
+	return serialize(buf, maxBufSize, x);
 }
 
 void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x)
@@ -450,11 +407,11 @@ void mclBnGT_setInt32(mclBnGT *y, int x)
 
 int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode)
 {
-	return setStr(x, buf, bufSize, ioMode, "mclBnGT_setStr");
+	return setStr(x, buf, bufSize, ioMode);
 }
 mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize, "mclBnGT_deserialize");
+	return deserialize(x, buf, bufSize);
 }
 
 // return 1 if true
@@ -473,12 +430,12 @@ int mclBnGT_isOne(const mclBnGT *x)
 
 mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode, "mclBnGT_getStr");
+	return getStr(buf, maxBufSize, x, ioMode);
 }
 
 mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x)
 {
-	return serialize(buf, maxBufSize, x, "mclBnGT_serialize");
+	return serialize(buf, maxBufSize, x);
 }
 
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)
@@ -557,7 +514,6 @@ int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBn
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBn_FrLagrangeInterpolation %s\n", e.what());
 	return -1;
 }
 int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k)
@@ -566,7 +522,6 @@ int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBn
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBn_G1LagrangeInterpolation %s\n", e.what());
 	return -1;
 }
 int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k)
@@ -575,7 +530,6 @@ int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBn
 	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k);
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBn_G2LagrangeInterpolation %s\n", e.what());
 	return -1;
 }
 int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x)
@@ -584,7 +538,6 @@ int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize,
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBn_FrEvaluatePolynomial %s\n", e.what());
 	return -1;
 }
 int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x)
@@ -593,7 +546,6 @@ int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize,
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBn_G1EvaluatePolynomial %s\n", e.what());
 	return -1;
 }
 int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x)
@@ -602,7 +554,6 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x));
 	return 0;
 } catch (std::exception& e) {
-	if (g_fp) fprintf(g_fp, "mclBn_G2EvaluatePolynomial %s\n", e.what());
 	return -1;
 }
 

@@ -24,9 +24,6 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(sizeof(mclBnG2), sizeof(G2));
 	CYBOZU_TEST_EQUAL(sizeof(mclBnGT), sizeof(Fp12));
 
-//	ret = mclBn_setErrFile("stderr");
-//	CYBOZU_TEST_EQUAL(ret, 0);
-
 #if MCLBN_FP_UNIT_SIZE == 4
 	printf("test BN254 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BN254, MCLBN_FP_UNIT_SIZE);
@@ -436,8 +433,3 @@ CYBOZU_TEST_AUTO(badG2)
 }
 #endif
 
-CYBOZU_TEST_AUTO(end)
-{
-	int ret = mclBn_setErrFile("bn_if.log");
-	CYBOZU_TEST_EQUAL(ret, 0);
-}

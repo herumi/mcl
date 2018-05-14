@@ -14,13 +14,6 @@
 using namespace mcl::she;
 using namespace mcl::bn_current;
 
-#if defined(CYBOZU_CPP_VERSION) && CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <mutex>
-	#define USE_STD_MUTEX
-#else
-#include <cybozu/mutex.hpp>
-#endif
-
 static SecretKey *cast(sheSecretKey *p) { return reinterpret_cast<SecretKey*>(p); }
 static const SecretKey *cast(const sheSecretKey *p) { return reinterpret_cast<const SecretKey*>(p); }
 
@@ -52,19 +45,8 @@ int sheInit(int curve, int maxUnitSize)
 	try
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
-		fprintf(stderr, "err sheInit:maxUnitSize is mismatch %d %d\n", maxUnitSize, MCLBN_FP_UNIT_SIZE);
-		return -1;
+		return -2;
 	}
-#ifdef USE_STD_MUTEX
-	static std::mutex m;
-	std::lock_guard<std::mutex> lock(m);
-#else
-	static cybozu::Mutex m;
-	cybozu::AutoLock lock(m);
-#endif
-	static int g_curve = -1;
-	if (g_curve == curve) return 0;
-
 	mcl::CurveParam cp;
 	switch (curve) {
 	case MCL_BN254:
@@ -86,24 +68,12 @@ int sheInit(int curve, int maxUnitSize)
 		cp = mcl::BLS12_381;
 		break;
 	default:
-		fprintf(stderr, "err bad curve %d\n", curve);
 		return -1;
 	}
 	SHE::init(cp);
-	g_curve = curve;
 	return 0;
-} catch (std::exception& e) {
-	fprintf(stderr, "err sheInit %s\n", e.what());
-	return -1;
-}
-
-template<class T>
-mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
-	try
-{
-	return cast(x)->serialize(buf, maxBufSize);
 } catch (std::exception&) {
-	return 0;
+	return -1;
 }
 
 mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec)
@@ -144,15 +114,6 @@ mclSize sheZkpEqSerialize(void *buf, mclSize maxBufSize, const sheZkpEq *zkp)
 mclSize sheZkpBinEqSerialize(void *buf, mclSize maxBufSize, const sheZkpBinEq *zkp)
 {
 	return serialize(buf, maxBufSize, zkp);
-}
-
-template<class T>
-mclSize deserialize(T *x, const void *buf, mclSize bufSize)
-	try
-{
-	return cast(x)->deserialize(buf, bufSize);
-} catch (std::exception&) {
-	return 0;
 }
 
 mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize)

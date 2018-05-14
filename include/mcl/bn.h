@@ -76,15 +76,6 @@ typedef struct {
 
 #endif
 
-/*
-	set errlog file name
-	use stderr if name == "stderr"
-	close if name == ""
-	return 0 if success
-	@note not threadsafe
-*/
-MCLBN_DLL_API int mclBn_setErrFile(const char *name);
-
 #include <mcl/curve_type.h>
 // for backword compatibility
 enum {

@@ -42,7 +42,6 @@ int main()
 	mclBnGT_pow(&e1, &e, &b);
 	mclBn_pairing(&e2, &P, &bQ);
 	ASSERT(mclBnGT_isEqual(&e1, &e2));
-	ASSERT(mclBn_setErrFile("") == 0);
 	if (g_err) {
 		printf("err %d\n", g_err);
 		return 1;
