@@ -142,6 +142,45 @@ MCLBN_DLL_API mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize);
 MCLBN_DLL_API mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize);
 
 ////////////////////////////////////////////////
+/*
+	deserialize
+	return read size if success else 0
+*/
+MCLBN_DLL_API mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
+
+/*
+	serialize
+	return written byte if sucess else 0
+*/
+MCLBN_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x);
+MCLBN_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
+MCLBN_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
+MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
+
+/*
+	set string
+	ioMode
+	10 : decimal number
+	16 : hexadecimal number
+	return 0 if success else -1
+*/
+MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
+MCLBN_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
+MCLBN_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
+MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
+
+/*
+	buf is terminated by '\0'
+	return strlen(buf) if sucess else 0
+*/
+MCLBN_DLL_API mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode);
+MCLBN_DLL_API mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode);
+
 // set zero
 MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
 
@@ -149,14 +188,6 @@ MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
 MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
 MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 
-/*
-	ioMode
-	10 : decimal number
-	16 : hexadecimal number
-*/
-// return 0 if success
-MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 
@@ -173,10 +204,6 @@ MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
 
-// return strlen(buf) if sucess else 0
-MCLBN_DLL_API mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode);
-// return written byte if sucess else 0
-MCLBN_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x);
 
 MCLBN_DLL_API void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 MCLBN_DLL_API void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
@@ -190,9 +217,6 @@ MCLBN_DLL_API void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 // set zero
 MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
 
-// return 0 if success
-MCLBN_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnG1_isValid(const mclBnG1 *x);
@@ -201,10 +225,6 @@ MCLBN_DLL_API int mclBnG1_isZero(const mclBnG1 *x);
 
 MCLBN_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
 
-// return 0 if success
-MCLBN_DLL_API mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode);
-// return written size if sucess else 0
-MCLBN_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
 
 MCLBN_DLL_API void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
 MCLBN_DLL_API void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x);
@@ -222,10 +242,6 @@ MCLBN_DLL_API void mclBnG1_mulCT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y)
 // set zero
 MCLBN_DLL_API void mclBnG2_clear(mclBnG2 *x);
 
-// return 0 if success
-MCLBN_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
-
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnG2_isValid(const mclBnG2 *x);
 MCLBN_DLL_API int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y);
@@ -233,10 +249,7 @@ MCLBN_DLL_API int mclBnG2_isZero(const mclBnG2 *x);
 
 MCLBN_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
 
-// return 0 if success
-MCLBN_DLL_API mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode);
 // return written size if sucess else 0
-MCLBN_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
 
 MCLBN_DLL_API void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x);
 MCLBN_DLL_API void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x);
@@ -256,19 +269,10 @@ MCLBN_DLL_API void mclBnGT_clear(mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_setInt(mclBnGT *y, mclInt x);
 MCLBN_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
 
-// return 0 if success
-MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
-
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API int mclBnGT_isZero(const mclBnGT *x);
 MCLBN_DLL_API int mclBnGT_isOne(const mclBnGT *x);
-
-// return 0 if success
-MCLBN_DLL_API mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode);
-// return written size if sucess else 0
-MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
 
 MCLBN_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);

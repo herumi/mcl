@@ -70,8 +70,7 @@ template<class T>
 mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 	try
 {
-	const size_t n = cast(x)->deserialize(buf, bufSize);
-	return (mclSize)n;
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
 } catch (std::exception&) {
 	return 0;
 }
