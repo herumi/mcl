@@ -26,9 +26,8 @@ func testGT(t *testing.T) {
 
 func testHash(t *testing.T) {
 	var x Fr
-	err := x.SetHashOf([]byte("abc"))
-	if !err {
-		t.Error(err)
+	if !x.SetHashOf([]byte("abc")) {
+		t.Error("SetHashOf")
 	}
 	fmt.Printf("x=%s\n", x.GetString(16))
 }
