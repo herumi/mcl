@@ -3,15 +3,13 @@
 
 #if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
-using namespace mcl::bn256;
 #elif MCLBN_FP_UNIT_SIZE == 6
 #include <mcl/bn384.hpp>
-using namespace mcl::bn384;
 #elif MCLBN_FP_UNIT_SIZE == 8
 #include <mcl/bn512.hpp>
-using namespace mcl::bn512;
 #endif
 #include <mcl/lagrange.hpp>
+using namespace mcl::bn;
 
 static Fr *cast(mclBnFr *p) { return reinterpret_cast<Fr*>(p); }
 static const Fr *cast(const mclBnFr *p) { return reinterpret_cast<const Fr*>(p); }
