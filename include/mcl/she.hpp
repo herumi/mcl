@@ -34,6 +34,7 @@ namespace bn_current = mcl::bn512;
 
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>
+#include <cybozu/serializer.hpp>
 
 namespace mcl { namespace she {
 

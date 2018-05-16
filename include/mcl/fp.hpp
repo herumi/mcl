@@ -25,7 +25,7 @@
 	#endif
 #endif
 #include <cybozu/hash.hpp>
-#include <cybozu/serializer.hpp>
+#include <cybozu/stream.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <mcl/operator.hpp>
