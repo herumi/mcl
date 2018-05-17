@@ -323,9 +323,14 @@ private:
 /*
 	conevrt string to array according to ioMode,
 */
-void strToArray(bool *pIsMinus, Unit *x, size_t xN, const std::string& str, int ioMode);
+bool strToArray(bool *pIsMinus, Unit *x, size_t xN, const std::string& str, int ioMode);
+bool strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode);
 
-void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode);
+/*
+	return retavl is written size if success else 0
+	REMARK : the top of string is buf + bufSize - retval
+*/
+size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int ioMode);
 
 inline const char* getIoSeparator(int ioMode)
 {

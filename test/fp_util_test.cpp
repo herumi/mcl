@@ -4,7 +4,7 @@
 #include <mcl/gmp_util.hpp>
 #include <mcl/fp.hpp>
 
-CYBOZU_TEST_AUTO(toStr16)
+CYBOZU_TEST_AUTO(arrayToHex)
 {
 	const struct {
 		uint32_t x[4];
@@ -18,15 +18,39 @@ CYBOZU_TEST_AUTO(toStr16)
 		{ { 1, 2, 0xffffffff, 0x123abc }, 4, "123abcffffffff0000000200000001" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		std::string str;
-		mcl::fp::toStr16(str, tbl[i].x, tbl[i].n, false);
-		CYBOZU_TEST_EQUAL(str, tbl[i].str);
-		mcl::fp::toStr16(str, tbl[i].x, tbl[i].n, true);
-		CYBOZU_TEST_EQUAL(str, std::string("0x") + tbl[i].str);
+		char buf[64];
+		size_t n = mcl::fp::arrayToHex(buf, sizeof(buf), tbl[i].x, tbl[i].n, false);
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL_ARRAY(buf + sizeof(buf) - n, tbl[i].str, n);
+		n = mcl::fp::arrayToHex(buf, sizeof(buf), tbl[i].x, tbl[i].n, true);
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL_ARRAY(buf + sizeof(buf) - n, (std::string("0x") + tbl[i].str).c_str(), n);
 	}
 }
 
-// CYBOZU_TEST_AUTO(toStr2) // QQQ
+CYBOZU_TEST_AUTO(arrayToBin)
+{
+	const struct {
+		uint32_t x[4];
+		size_t n;
+		const char *str;
+	} tbl[] = {
+		{ { 0, 0, 0, 0 }, 0, "0" },
+		{ { 0x123, 0, 0, 0 }, 1, "100100011" },
+		{ { 0x12345678, 0xaabbcc, 0, 0 }, 2, "10101010101110111100110000010010001101000101011001111000" },
+		{ { 0, 0x12, 0x234a, 0 }, 3, "100011010010100000000000000000000000000001001000000000000000000000000000000000" },
+		{ { 1, 2, 0xffffffff, 0x123abc }, 4, "100100011101010111100111111111111111111111111111111110000000000000000000000000000001000000000000000000000000000000001" },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		char buf[512];
+		size_t n = mcl::fp::arrayToBin(buf, sizeof(buf), tbl[i].x, tbl[i].n, false);
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL_ARRAY(buf + sizeof(buf) - n, tbl[i].str, n);
+		n = mcl::fp::arrayToBin(buf, sizeof(buf), tbl[i].x, tbl[i].n, true);
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL_ARRAY(buf + sizeof(buf) - n, (std::string("0b") + tbl[i].str).c_str(), n);
+	}
+}
 // CYBOZU_TEST_AUTO(verifyStr) // QQQ
 
 CYBOZU_TEST_AUTO(fromStr16)

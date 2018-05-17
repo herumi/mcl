@@ -63,35 +63,39 @@ inline Unit getUnitAsLE(const void *p)
 #endif
 }
 
-const char *verifyStr(bool *isMinus, int *base, const std::string& str)
+bool parsePrefix(size_t *readSize, bool *isMinus, int *base, const char *buf, size_t bufSize)
 {
-	const char *p = str.c_str();
-	if (*p == '-') {
+	if (bufSize == 0) return false;
+	size_t pos = 0;
+	if (*buf == '-') {
+		if (bufSize == 1) return false;
 		*isMinus = true;
-		p++;
+		buf++;
+		pos++;
 	} else {
 		*isMinus = false;
 	}
-	if (p[0] == '0') {
-		if (p[1] == 'x') {
+	if (buf[0] == '0') {
+		if (bufSize > 1 && buf[1] == 'x') {
 			if (*base == 0 || *base == 16 || *base == (16 | IoPrefix)) {
 				*base = 16;
-				p += 2;
+				pos += 2;
 			} else {
-				throw cybozu::Exception("fp:verifyStr:0x conflicts with") << *base;
+				return false;
 			}
-		} else if (p[1] == 'b') {
+		} else if (bufSize > 1 && buf[1] == 'b') {
 			if (*base == 0 || *base == 2 || *base == (2 | IoPrefix)) {
 				*base = 2;
-				p += 2;
+				pos += 2;
 			} else {
-				throw cybozu::Exception("fp:verifyStr:0b conflicts with") << *base;
+				return false;
 			}
 		}
 	}
 	if (*base == 0) *base = 10;
-	if (*p == '\0') throw cybozu::Exception("fp:verifyStr:str is empty");
-	return p;
+	if (pos == bufSize) return false;
+	*readSize = pos;
+	return true;
 }
 
 const char *ModeToStr(Mode mode)
@@ -442,13 +446,17 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	{ // set mp and p
 		bool isMinus = false;
 		int base = 0;
-		const char *pstr = verifyStr(&isMinus, &base, mstr);
-		if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
+		size_t readSize;
+		if (!parsePrefix(&readSize, &isMinus, &base, mstr.c_str(), mstr.size())) {
+			throw cybozu::Exception("fp:parsePrefix");
+		}
+		const char *pstr = mstr.c_str() + readSize;
 		if (!gmp::setStr(mp, pstr, base)) {
 			throw cybozu::Exception("Op:init:bad str") << mstr;
 		}
-		if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
+		if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
 	}
+	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
 	gmp::getArray(p, (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize, mp);
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
@@ -571,27 +579,20 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	}
 }
 
-void arrayToStr(std::string& str, const Unit *x, size_t n, int ioMode)
+size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int ioMode)
 {
 	int base = ioMode & ~IoPrefix;
 	bool withPrefix = (ioMode & IoPrefix) != 0;
 	switch (base) {
 	case 0:
 	case 10:
-		{
-			mpz_class t;
-			gmp::setArray(t, x, n);
-			gmp::getStr(str, t, 10);
-		}
-		return;
+		return mcl::fp::arrayToDec(buf, bufSize, x, n);
 	case 16:
-		mcl::fp::toStr16(str, x, n, withPrefix);
-		return;
+		return mcl::fp::arrayToHex(buf, bufSize, x, n, withPrefix);
 	case 2:
-		mcl::fp::toStr2(str, x, n, withPrefix);
-		return;
+		return mcl::fp::arrayToBin(buf, bufSize, x, n, withPrefix);
 	default:
-		throw cybozu::Exception("fp:arrayToStr:bad base") << base;
+		return 0;
 	}
 }
 
@@ -639,17 +640,22 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	return ioMode;
 }
 
-void strToArray(bool *pIsMinus, Unit *x, size_t xN, const std::string& str, int ioMode)
+bool strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
 {
 	assert(!(ioMode & (IoArray | IoArrayRaw | IoSerialize)));
 	// use low 8-bit ioMode for Fp
 	ioMode &= 0xff;
-	const char *p = verifyStr(pIsMinus, &ioMode, str);
+	size_t readSize;
+	if (!parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return false;
+#if 0
+#else
 	mpz_class mx;
-	if (!gmp::setStr(mx, p, ioMode)) {
-		throw cybozu::Exception("fp:strToArray:bad format") << ioMode << str;
+	if (!gmp::setStr(mx, std::string(buf + readSize, bufSize - readSize), ioMode)) {
+		return false;
 	}
 	gmp::getArray(x, xN, mx);
+#endif
+	return true;
 }
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
@@ -704,11 +710,7 @@ uint64_t getUint64(bool *pb, const fp::Block& b)
 		if (pb) *pb = true;
 		return v;
 	}
-	if (!pb) {
-		std::string str;
-		arrayToStr(str, b.p, b.n, 10);
-		throw cybozu::Exception("fp::getUint64:large value") << str;
-	}
+	if (!pb) throw cybozu::Exception("fp::getUint64:large value");
 	*pb = false;
 	return 0;
 }
@@ -743,11 +745,7 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 			}
 		}
 	}
-	if (!pb) {
-		std::string str;
-		arrayToStr(str, b.p, b.n, 10);
-		throw cybozu::Exception("fp::getInt64:large value") << str << isNegative;
-	}
+	if (!pb) throw cybozu::Exception("fp::getInt64:large value");
 	*pb = false;
 	return 0;
 }

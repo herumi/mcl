@@ -92,6 +92,23 @@ void loadWord(std::string& s, InputStream& is)
 	}
 }
 
+template<class InputStream>
+size_t loadWord(char *buf, size_t bufSize, InputStream& is)
+{
+	if (bufSize == 0) return 0;
+	char c;
+	if (!skipSpace(&c, is)) return 0;
+	size_t pos = 0;
+	buf[pos++] = c;
+	for (;;) {
+		if (!cybozu::readChar(&c, is)) break;
+		if (isSpace(c)) break;
+		if (pos == bufSize) return 0;
+		buf[pos++] = c;
+	}
+	return pos;
+}
+
 } // local
 
 } // mcl::fp
@@ -243,46 +260,72 @@ public:
 		if (isMont()) op_.fromMont(v_, v_);
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode = IoSerialize)
+	void load(InputStream& is, int ioMode, bool *pb)
 	{
 		bool isMinus = false;
+		*pb = false;
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
 			const size_t n = getByteSize();
 			v_[op_.N - 1] = 0;
-			if (cybozu::readSome(v_, n, is) != n) throw cybozu::Exception("FpT:load:can't read") << n;
+			if (cybozu::readSome(v_, n, is) != n) {
+				return;
+			}
 		} else {
-			std::string str;
-			fp::local::loadWord(str, is);
-			fp::strToArray(&isMinus, v_, op_.N, str, ioMode);
+			char buf[1024];
+			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
+			if (n == 0 || !fp::strToArray(&isMinus, v_, op_.N, buf, n, ioMode)) {
+				return;
+			}
 		}
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) throw cybozu::Exception("FpT:load:large value");
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+			return;
+		}
 		if (isMinus) {
 			neg(*this, *this);
 		}
 		if (!(ioMode & IoArrayRaw)) {
 			toMont();
 		}
+		*pb = true;
 	}
 	template<class OutputStream>
-	void save(OutputStream& os, int ioMode = IoSerialize) const
+	void save(OutputStream& os, int ioMode, bool *pb) const
 	{
 		const size_t n = getByteSize();
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
 			if (ioMode & IoArrayRaw) {
-				cybozu::write(os, v_, n);
+				cybozu::write(os, v_, n, pb);
 			} else {
 				fp::Block b;
 				getBlock(b);
-				cybozu::write(os, b.p, n);
+				cybozu::write(os, b.p, n, pb);
 			}
 			return;
 		}
 		fp::Block b;
 		getBlock(b);
-		std::string str;
 		// use low 8-bit ioMode for Fp
-		fp::arrayToStr(str, b.p, b.n, ioMode & 255);
-		cybozu::write(os, str.c_str(), str.size());
+		char buf[2048];
+		size_t len = fp::arrayToStr(buf, sizeof(buf), b.p, b.n, ioMode & 255);
+		if (len == 0) {
+			*pb = false;
+			return;
+		}
+		cybozu::write(os, buf + sizeof(buf) - len, len, pb);
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		bool b;
+		save(os, ioMode, &b);
+		if (!b) throw cybozu::Exception("fp:save") << ioMode;
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
+	{
+		bool b;
+		load(is, ioMode, &b);
+		if (!b) throw cybozu::Exception("fp:load") << ioMode;
 	}
 	/*
 		throw exception if x >= p

@@ -146,9 +146,10 @@ void benchToStr16()
 	};
 	Fp::init("0xffffffffffffffffffffffffffffffffffffffffffffff13");
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		char buf[128];
 		std::string str;
 		Fp x(tbl[i]);
-		CYBOZU_BENCH("fp::toStr16", mcl::fp::toStr16, str, x.getUnit(), x.getUnitSize(), 16);
+		CYBOZU_BENCH("fp::arrayToHex", mcl::fp::arrayToHex, buf, sizeof(buf), x.getUnit(), x.getUnitSize(), true);
 		mpz_class y(tbl[i]);
 		CYBOZU_BENCH("gmp:getStr ", mcl::gmp::getStr, str, y, 16);
 	}
