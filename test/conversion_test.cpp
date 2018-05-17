@@ -33,7 +33,7 @@ CYBOZU_TEST_AUTO(arrayToDec)
 		CYBOZU_TEST_EQUAL_ARRAY(buf + bufSize - n, str, n);
 		const size_t maxN = 32;
 		uint32_t xx[maxN] = {};
-		size_t xn = mcl::fp::convertDecToArray(xx, maxN, str, strLen);
+		size_t xn = mcl::fp::decToArray(xx, maxN, str, strLen);
 		CYBOZU_TEST_EQUAL(xn, tbl[i].xn);
 		CYBOZU_TEST_EQUAL_ARRAY(xx, x, xn);
 	}
@@ -50,7 +50,7 @@ CYBOZU_TEST_AUTO(arrayToDec)
 		CYBOZU_TEST_EQUAL_ARRAY(buf + bufSize - n, str, n);
 		const size_t maxN = 32;
 		uint64_t xx[maxN] = {};
-		size_t xxn = mcl::fp::convertDecToArray(xx, maxN, str, strLen);
+		size_t xxn = mcl::fp::decToArray(xx, maxN, str, strLen);
 		CYBOZU_TEST_EQUAL(xxn, xn);
 		CYBOZU_TEST_EQUAL_ARRAY(xx, x, xn);
 	}

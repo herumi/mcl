@@ -647,14 +647,28 @@ bool strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufS
 	ioMode &= 0xff;
 	size_t readSize;
 	if (!parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return false;
-#if 0
-#else
+#if 1
+	if (ioMode == 10) {
+		size_t n = mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
+		if (n == 0) return false;
+		for (size_t i = n; i < xN; i++) {
+			x[i] = 0;
+		}
+		return true;
+	} else if (ioMode == 16) {
+		size_t n = mcl::fp::hexToArray(x, xN, buf + readSize, bufSize - readSize);
+		if (n == 0) return false;
+		for (size_t i = n; i < xN; i++) {
+			x[i] = 0;
+		}
+		return true;
+	}
+#endif
 	mpz_class mx;
 	if (!gmp::setStr(mx, std::string(buf + readSize, bufSize - readSize), ioMode)) {
 		return false;
 	}
 	gmp::getArray(x, xN, mx);
-#endif
 	return true;
 }
 

@@ -111,6 +111,32 @@ void fromStr16(T *x, size_t xn, const char *str, size_t strLen)
 	for (size_t i = requireSize; i < xn; i++) x[i] = 0;
 }
 
+/*
+	convert hex string to x[0..xn)
+	hex string = [0-9a-fA-F]+
+*/
+template<class UT>
+inline size_t hexToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
+{
+	if (bufSize == 0) return 0;
+	const size_t unitLen = sizeof(UT) * 2;
+	const size_t q = bufSize / unitLen;
+	const size_t r = bufSize % unitLen;
+	const size_t requireSize = q + (r ? 1 : 0);
+	if (maxN < requireSize) return 0;
+	for (size_t i = 0; i < q; i++) {
+		bool b;
+		x[i] = cybozu::hextoi(&b, &buf[r + (q - 1 - i) * unitLen], unitLen);
+		if (!b) return 0;
+	}
+	if (r) {
+		bool b;
+		x[q] = cybozu::hextoi(&b, buf, r);
+		if (!b) return 0;
+	}
+	return requireSize;
+}
+
 namespace local {
 
 /*
@@ -225,14 +251,14 @@ inline size_t arrayToDec(char *buf, size_t bufSize, const UT *x, size_t xn)
 	return written num if success else 0
 */
 template<class UT>
-inline size_t convertDecToArray(UT *_x, size_t xSize, const char *buf, size_t bufSize)
+inline size_t decToArray(UT *_x, size_t maxN, const char *buf, size_t bufSize)
 {
 	assert(sizeof(UT) == 4 || sizeof(UT) == 8);
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
-	if (xSize == 0) return 0;
+	if (maxN == 0) return 0;
 	if (sizeof(UT) == 8) {
-		xSize *= 2;
+		maxN *= 2;
 	}
 	uint32_t *x = reinterpret_cast<uint32_t*>(_x);
 	size_t xn = 1;
@@ -245,12 +271,12 @@ inline size_t convertDecToArray(UT *_x, size_t xSize, const char *buf, size_t bu
 		if (!b) return 0;
 		uint32_t H = local::mulU32(x, x, xn, i1e9);
 		if (H > 0) {
-			if (xn == xSize) return 0;
+			if (xn == maxN) return 0;
 			x[xn++] = H;
 		}
 		H = local::addU32(x, xn, v);
 		if (H > 0) {
-			if (xn == xSize) return 0;
+			if (xn == maxN) return 0;
 			x[xn++] = H;
 		}
 		buf += n;
