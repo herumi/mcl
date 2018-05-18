@@ -52,6 +52,7 @@ L2準同型暗号とは暗号文同士の加算を複数回、乗算を一度だ
 ```
 
 ## ブラウザでの読み込み
+[she](https://github.com/herumi/she-wasm/)のjsファイルとwasmファイルを読み込む
 ```
 // HTML
 <script src="she.js"></script>
@@ -95,6 +96,7 @@ she.init().then(() => {
 ```
 
 # C++版サンプル
+ライブラリのビルドは[mcl](https://github.com/herumi/mcl/#installation-requirements)を参照
 ```
 #include <mcl/she.hpp>
 int main()
