@@ -13,6 +13,122 @@
 
 namespace mcl { namespace fp {
 
+namespace local {
+
+/*
+	q = x[] / x
+	@retval r = x[] % x
+	@note accept q == x
+*/
+inline uint32_t divU32(uint32_t *q, const uint32_t *x, size_t xn, uint32_t y)
+{
+	if (xn == 0) return 0;
+	uint32_t r = 0;
+	for (int i = (int)xn - 1; i >= 0; i--) {
+		uint64_t t = (uint64_t(r) << 32) | x[i];
+		q[i] = uint32_t(t / y);
+		r = uint32_t(t % y);
+	}
+	return r;
+}
+
+/*
+	z[0, xn) = x[0, xn) * y
+	return z[xn]
+	@note accept z == x
+*/
+inline uint32_t mulU32(uint32_t *z, const uint32_t *x, size_t xn, uint32_t y)
+{
+	uint32_t H = 0;
+	for (size_t i = 0; i < xn; i++) {
+		uint32_t t = H;
+		uint64_t v = uint64_t(x[i]) * y;
+		uint32_t L = uint32_t(v);
+		H = uint32_t(v >> 32);
+		z[i] = t + L;
+		if (z[i] < t) {
+			H++;
+		}
+	}
+	return H;
+}
+
+/*
+	x[0, xn) += y
+	return 1 if overflow else 0
+*/
+inline uint32_t addU32(uint32_t *x, size_t xn, uint32_t y)
+{
+	uint32_t t = x[0] + y;
+	x[0] = t;
+	if (t >= y) return 0;
+	for (size_t i = 1; i < xn; i++) {
+		t = x[i] + 1;
+		x[i] = t;
+		if (t != 0) return 0;
+	}
+	return 1;
+}
+
+inline uint32_t decToU32(const char *p, size_t size, bool *pb)
+{
+	assert(0 < size && size <= 9);
+	uint32_t x = 0;
+	for (size_t i = 0; i < size; i++) {
+		char c = p[i];
+		if (c < '0' || c > '9') {
+			*pb = false;
+			return 0;
+		}
+		x = x * 10 + uint32_t(c - '0');
+	}
+	*pb = true;
+	return x;
+}
+
+template<class UT>
+bool hexToUint(UT *px, const char *p, size_t size)
+{
+	assert(0 < size && size <= sizeof(UT) * 2);
+	UT x = 0;
+	for (size_t i = 0; i < size; i++) {
+		UT c = static_cast<uint8_t>(p[i]);
+		if (c - 'A' <= 'F' - 'A') {
+			c = (c - 'A') + 10;
+		} else if (c - 'a' <= 'f' - 'a') {
+			c = (c - 'a') + 10;
+		} else if (c - '0' <= '9' - '0') {
+			c = c - '0';
+		} else {
+			return false;
+		}
+		x = x * 16 + c;
+	}
+	*px = x;
+	return true;
+}
+
+template<class UT>
+bool binToUint(UT *px, const char *p, size_t size)
+{
+	assert(0 < size && size <= sizeof(UT) * 8);
+	UT x = 0;
+	for (size_t i = 0; i < size; i++) {
+		UT c = static_cast<uint8_t>(p[i]);
+		if (c == '0') {
+			x = x * 2;
+		} else if (c == '1') {
+			x = x * 2 + 1;
+		} else {
+			return false;
+		}
+	}
+	*px = x;
+	return true;
+}
+
+} // mcl::fp::local
+
 /*
 	convert little endian x[0, xn) to buf
 	return written size if success else 0
@@ -125,92 +241,34 @@ inline size_t hexToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
 	const size_t requireSize = q + (r ? 1 : 0);
 	if (maxN < requireSize) return 0;
 	for (size_t i = 0; i < q; i++) {
-		bool b;
-		x[i] = cybozu::hextoi(&b, &buf[r + (q - 1 - i) * unitLen], unitLen);
-		if (!b) return 0;
+		if (!local::hexToUint(&x[i], &buf[r + (q - 1 - i) * unitLen], unitLen)) return 0;
 	}
 	if (r) {
-		bool b;
-		x[q] = cybozu::hextoi(&b, buf, r);
-		if (!b) return 0;
+		if (!local::hexToUint(&x[q], buf, r)) return 0;
 	}
 	return requireSize;
 }
-
-namespace local {
-
 /*
-	q = x[] / x
-	@retval r = x[] % x
-	@note accept q == x
+	convert bin string to x[0..xn)
+	bin string = [01]+
 */
-inline uint32_t divU32(uint32_t *q, const uint32_t *x, size_t xn, uint32_t y)
+template<class UT>
+inline size_t binToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
 {
-	if (xn == 0) return 0;
-	uint32_t r = 0;
-	for (int i = (int)xn - 1; i >= 0; i--) {
-		uint64_t t = (uint64_t(r) << 32) | x[i];
-		q[i] = uint32_t(t / y);
-		r = uint32_t(t % y);
+	if (bufSize == 0) return 0;
+	const size_t unitLen = sizeof(UT) * 8;
+	const size_t q = bufSize / unitLen;
+	const size_t r = bufSize % unitLen;
+	const size_t requireSize = q + (r ? 1 : 0);
+	if (maxN < requireSize) return 0;
+	for (size_t i = 0; i < q; i++) {
+		if (!local::binToUint(&x[i], &buf[r + (q - 1 - i) * unitLen], unitLen)) return 0;
 	}
-	return r;
-}
-
-/*
-	z[0, xn) = x[0, xn) * y
-	return z[xn]
-	@note accept z == x
-*/
-inline uint32_t mulU32(uint32_t *z, const uint32_t *x, size_t xn, uint32_t y)
-{
-	uint32_t H = 0;
-	for (size_t i = 0; i < xn; i++) {
-		uint32_t t = H;
-		uint64_t v = uint64_t(x[i]) * y;
-		uint32_t L = uint32_t(v);
-		H = uint32_t(v >> 32);
-		z[i] = t + L;
-		if (z[i] < t) {
-			H++;
-		}
+	if (r) {
+		if (!local::binToUint(&x[q], buf, r)) return 0;
 	}
-	return H;
+	return requireSize;
 }
-
-/*
-	x[0, xn) += y
-	return 1 if overflow else 0
-*/
-inline uint32_t addU32(uint32_t *x, size_t xn, uint32_t y)
-{
-	uint32_t t = x[0] + y;
-	x[0] = t;
-	if (t >= y) return 0;
-	for (size_t i = 1; i < xn; i++) {
-		t = x[i] + 1;
-		x[i] = t;
-		if (t != 0) return 0;
-	}
-	return 1;
-}
-
-inline uint32_t decToU32(const char *p, size_t size, bool *pb)
-{
-	assert(0 < size && size <= 9);
-	uint32_t x = 0;
-	for (size_t i = 0; i < size; i++) {
-		char c = p[i];
-		if (c < '0' || c > '9') {
-			*pb = false;
-			return 0;
-		}
-		x = x * 10 + uint32_t(c - '0');
-	}
-	*pb = true;
-	return x;
-}
-
-} // mcl::fp::local
 
 /*
 	little endian x[0, xn) to buf

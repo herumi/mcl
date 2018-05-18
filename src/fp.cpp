@@ -647,28 +647,24 @@ bool strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufS
 	ioMode &= 0xff;
 	size_t readSize;
 	if (!parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return false;
-#if 1
-	if (ioMode == 10) {
-		size_t n = mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
-		if (n == 0) return false;
-		for (size_t i = n; i < xN; i++) {
-			x[i] = 0;
-		}
-		return true;
-	} else if (ioMode == 16) {
-		size_t n = mcl::fp::hexToArray(x, xN, buf + readSize, bufSize - readSize);
-		if (n == 0) return false;
-		for (size_t i = n; i < xN; i++) {
-			x[i] = 0;
-		}
-		return true;
+	size_t n;
+	switch (ioMode) {
+	case 10:
+		n = mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
+		break;
+	case 16:
+		n = mcl::fp::hexToArray(x, xN, buf + readSize, bufSize - readSize);
+		break;
+	case 2:
+		n = mcl::fp::binToArray(x, xN, buf + readSize, bufSize - readSize);
+		break;
+	default:
+		return 0;
 	}
-#endif
-	mpz_class mx;
-	if (!gmp::setStr(mx, std::string(buf + readSize, bufSize - readSize), ioMode)) {
-		return false;
+	if (n == 0) return false;
+	for (size_t i = n; i < xN; i++) {
+		x[i] = 0;
 	}
-	gmp::getArray(x, xN, mx);
 	return true;
 }
 
