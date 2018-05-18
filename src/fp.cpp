@@ -429,10 +429,13 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #endif
 }
 
-void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
+bool Op::init(const char *str, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) {
-		throw cybozu::Exception("Op:init:mismatch between header and library of MCL_MAX_BIT_SIZE") << mclMaxBitSize << MCL_MAX_BIT_SIZE;
+#ifdef __EMSCRIPTEN__
+		fprintf(stderr, "Op:init:mismatch between header and library of MCL_MAX_BIT_SIZE %d %d\n", (int)mclMaxBitSize, MCL_MAX_BIT_SIZE);
+#endif
+		return false;
 	}
 #ifdef MCL_USE_VINT
 	assert(sizeof(mcl::vint::Unit) == sizeof(Unit));
@@ -441,23 +444,16 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 #endif
 	clear();
 	if (maxBitSize > MCL_MAX_BIT_SIZE) {
-		throw cybozu::Exception("Op:init:too large maxBitSize") << maxBitSize << MCL_MAX_BIT_SIZE;
+		return false;
 	}
-	{ // set mp and p
-		bool isMinus = false;
-		int base = 0;
-		size_t readSize;
-		if (!parsePrefix(&readSize, &isMinus, &base, mstr.c_str(), mstr.size())) {
-			throw cybozu::Exception("fp:parsePrefix");
-		}
-		const char *pstr = mstr.c_str() + readSize;
-		if (!gmp::setStr(mp, pstr, base)) {
-			throw cybozu::Exception("Op:init:bad str") << mstr;
-		}
-		if (isMinus) throw cybozu::Exception("Op:init:mstr is minus") << mstr;
+	{
+		const size_t maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
+		bool isMinus;
+		int ioMode = 0;
+		N = strToArray(&isMinus, p, maxN, str, strlen(str), ioMode);
+		if (N == 0 || isMinus) return false;
+		gmp::setArray(mp, p, N);
 	}
-	if (mp == 0) throw cybozu::Exception("Op:init:mstr is zero") << mstr;
-	gmp::getArray(p, (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize, mp);
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
 /*
@@ -515,7 +511,6 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 		isFastMod = true;
 	}
 #endif
-	N = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	switch (N) {
 	case 1:  setOp<1>(*this, mode); break;
 	case 2:  setOp<2>(*this, mode); break;
@@ -551,7 +546,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	case 17: setOp<17>(*this, mode); break; // 521 if 32-bit
 #endif
 	default:
-		throw cybozu::Exception("Op:init:not:support") << N << mstr;
+		return false;
 	}
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NIST_P192) {
@@ -577,6 +572,7 @@ void Op::init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclM
 	} else {
 		hash = sha512;
 	}
+	return true;
 }
 
 size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int ioMode)
@@ -640,32 +636,23 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	return ioMode;
 }
 
-bool strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
+size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
 {
 	assert(!(ioMode & (IoArray | IoArrayRaw | IoSerialize)));
 	// use low 8-bit ioMode for Fp
 	ioMode &= 0xff;
 	size_t readSize;
-	if (!parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return false;
-	size_t n;
+	if (!parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return 0;
 	switch (ioMode) {
 	case 10:
-		n = mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
-		break;
+		return mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
 	case 16:
-		n = mcl::fp::hexToArray(x, xN, buf + readSize, bufSize - readSize);
-		break;
+		return mcl::fp::hexToArray(x, xN, buf + readSize, bufSize - readSize);
 	case 2:
-		n = mcl::fp::binToArray(x, xN, buf + readSize, bufSize - readSize);
-		break;
+		return mcl::fp::binToArray(x, xN, buf + readSize, bufSize - readSize);
 	default:
 		return 0;
 	}
-	if (n == 0) return false;
-	for (size_t i = n; i < xN; i++) {
-		x[i] = 0;
-	}
-	return true;
 }
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)

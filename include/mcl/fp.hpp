@@ -273,9 +273,10 @@ public:
 		} else {
 			char buf[1024];
 			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
-			if (n == 0 || !fp::strToArray(&isMinus, v_, op_.N, buf, n, ioMode)) {
-				return;
-			}
+			if (n == 0) return;
+			n = fp::strToArray(&isMinus, v_, op_.N, buf, n, ioMode);
+			if (n == 0) return;
+			for (size_t i = n; i < op_.N; i++) v_[i] = 0;
 		}
 		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
 			return;
