@@ -205,32 +205,6 @@ size_t arrayToBin(char *buf, size_t bufSize, const T *x, size_t n, bool withPref
 	convert hex string to x[0..xn)
 	hex string = [0-9a-fA-F]+
 */
-template<class T>
-void fromStr16(T *x, size_t xn, const char *str, size_t strLen)
-{
-	if (strLen == 0) throw cybozu::Exception("fp:fromStr16:strLen is zero");
-	const size_t unitLen = sizeof(T) * 2;
-	const size_t q = strLen / unitLen;
-	const size_t r = strLen % unitLen;
-	const size_t requireSize = q + (r ? 1 : 0);
-	if (xn < requireSize) throw cybozu::Exception("fp:fromStr16:short size") << xn << requireSize;
-	for (size_t i = 0; i < q; i++) {
-		bool b;
-		x[i] = cybozu::hextoi(&b, &str[r + (q - 1 - i) * unitLen], unitLen);
-		if (!b) throw cybozu::Exception("fp:fromStr16:bad char") << cybozu::exception::makeString(str, strLen);
-	}
-	if (r) {
-		bool b;
-		x[q] = cybozu::hextoi(&b, str, r);
-		if (!b) throw cybozu::Exception("fp:fromStr16:bad char") << cybozu::exception::makeString(str, strLen);
-	}
-	for (size_t i = requireSize; i < xn; i++) x[i] = 0;
-}
-
-/*
-	convert hex string to x[0..xn)
-	hex string = [0-9a-fA-F]+
-*/
 template<class UT>
 inline size_t hexToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
 {

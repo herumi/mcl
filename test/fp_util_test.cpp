@@ -53,7 +53,7 @@ CYBOZU_TEST_AUTO(arrayToBin)
 }
 // CYBOZU_TEST_AUTO(verifyStr) // QQQ
 
-CYBOZU_TEST_AUTO(fromStr16)
+CYBOZU_TEST_AUTO(hexToArray)
 {
 	const struct {
 		const char *str;
@@ -71,10 +71,9 @@ CYBOZU_TEST_AUTO(fromStr16)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const size_t xN = 4;
 		uint64_t x[xN];
-		mcl::fp::fromStr16(x, xN, tbl[i].str, strlen(tbl[i].str));
-		for (size_t j = 0; j < xN; j++) {
-			CYBOZU_TEST_EQUAL(x[j], tbl[i].x[j]);
-		}
+		size_t n = mcl::fp::hexToArray(x, xN, tbl[i].str, strlen(tbl[i].str));
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL_ARRAY(x, tbl[i].x, n);
 	}
 }
 

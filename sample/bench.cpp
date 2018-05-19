@@ -173,7 +173,7 @@ void benchFromStr16()
 		Fp x;
 		const size_t N = 64;
 		mcl::fp::Unit buf[N];
-		CYBOZU_BENCH("fp:fromStr16", mcl::fp::fromStr16, buf, N, str.c_str(), str.size());
+		CYBOZU_BENCH("fp:hexToArray", mcl::fp::hexToArray, buf, N, str.c_str(), str.size());
 
 		mpz_class y;
 		CYBOZU_BENCH("gmp:setStr  ", mcl::gmp::setStr, y, str, 16);
