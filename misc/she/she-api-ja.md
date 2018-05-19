@@ -304,3 +304,11 @@ PK = PublicKey or PrecomputedPublicKey
 * `void useDecG2ViaGT(bool use)`(C++/JS)
     * CipherTextG1, CipherTextG2の復号をCipherTextGT経由で行う
     * 大きな値を復号するときはDLP用の巨大なテーブルをそれぞれに持つよりもGTに集約した方が効率がよい
+
+# ライセンス
+
+このライブラリは[修正BSDライセンス](https://github.com/herumi/mcl/blob/master/COPYRIGHT)で提供されます
+
+# 開発者
+
+光成滋生 MITSUNARI Shigeo(herumi@nifty.com)
