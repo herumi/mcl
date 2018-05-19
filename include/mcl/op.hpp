@@ -329,12 +329,6 @@ private:
 */
 size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode);
 
-/*
-	return retavl is written size if success else 0
-	REMARK : the top of string is buf + bufSize - retval
-*/
-size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int ioMode);
-
 inline const char* getIoSeparator(int ioMode)
 {
 	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : " ";

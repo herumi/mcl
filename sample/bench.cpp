@@ -2,7 +2,7 @@
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 #include <mcl/fp.hpp>
-#include "../src/conversion.hpp"
+#include <mcl/conversion.hpp>
 #include <mcl/ecparam.hpp>
 
 typedef mcl::FpT<> Fp;

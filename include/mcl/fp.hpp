@@ -29,6 +29,7 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <mcl/operator.hpp>
+#include <mcl/conversion.hpp>
 
 namespace mcl {
 
@@ -305,9 +306,9 @@ public:
 		}
 		fp::Block b;
 		getBlock(b);
-		// use low 8-bit ioMode for Fp
+		// use low 8-bit ioMode for (base, withPrefix)
 		char buf[2048];
-		size_t len = fp::arrayToStr(buf, sizeof(buf), b.p, b.n, ioMode & 255);
+		size_t len = mcl::fp::arrayToStr(buf, sizeof(buf), b.p, b.n, ioMode & 31, (ioMode & IoPrefix) != 0);
 		if (len == 0) {
 			*pb = false;
 			return;

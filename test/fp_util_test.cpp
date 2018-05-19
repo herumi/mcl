@@ -1,6 +1,6 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
-#include "../src/conversion.hpp"
 #include <cybozu/test.hpp>
+#include <mcl/conversion.hpp>
 #include <mcl/gmp_util.hpp>
 #include <mcl/fp.hpp>
 

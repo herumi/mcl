@@ -6,7 +6,7 @@
 #include <cybozu/crypto.hpp>
 #endif
 #include <cybozu/endian.hpp>
-#include "conversion.hpp"
+#include <mcl/conversion.hpp>
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
 #endif
@@ -573,23 +573,6 @@ bool Op::init(const char *str, size_t maxBitSize, Mode mode, size_t mclMaxBitSiz
 		hash = sha512;
 	}
 	return true;
-}
-
-size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int ioMode)
-{
-	int base = ioMode & ~IoPrefix;
-	bool withPrefix = (ioMode & IoPrefix) != 0;
-	switch (base) {
-	case 0:
-	case 10:
-		return mcl::fp::arrayToDec(buf, bufSize, x, n);
-	case 16:
-		return mcl::fp::arrayToHex(buf, bufSize, x, n, withPrefix);
-	case 2:
-		return mcl::fp::arrayToBin(buf, bufSize, x, n, withPrefix);
-	default:
-		return 0;
-	}
 }
 
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)

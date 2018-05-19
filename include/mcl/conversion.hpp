@@ -5,7 +5,7 @@
 #include <mcl/util.hpp>
 /**
 	@file
-	@brief convertion from T[] to str2, str16
+	@brief convertion bin/dec/hex <=> array
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
@@ -320,4 +320,24 @@ inline size_t decToArray(UT *_x, size_t maxN, const char *buf, size_t bufSize)
 	return xn / (sizeof(UT) / 4);
 }
 
-} } // mcp::fp
+/*
+	return retavl is written size if success else 0
+	REMARK : the top of string is buf + bufSize - retval
+*/
+template<class UT>
+size_t arrayToStr(char *buf, size_t bufSize, const UT *x, size_t n, int base, bool withPrefix)
+{
+	switch (base) {
+	case 0:
+	case 10:
+		return arrayToDec(buf, bufSize, x, n);
+	case 16:
+		return arrayToHex(buf, bufSize, x, n, withPrefix);
+	case 2:
+		return arrayToBin(buf, bufSize, x, n, withPrefix);
+	default:
+		return 0;
+	}
+}
+
+} } // mcl::fp

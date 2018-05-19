@@ -1,5 +1,5 @@
 #include <cybozu/test.hpp>
-#include "../src/conversion.hpp"
+#include <mcl/conversion.hpp>
 
 CYBOZU_TEST_AUTO(arrayToDec)
 {
