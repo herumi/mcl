@@ -177,14 +177,8 @@ public:
 #ifdef MCL_EC_USE_AFFINE
 		cybozu::disable_warning_unused_variable(mode);
 #else
-		switch (mode) {
-		case ec::Jacobi:
-		case ec::Proj:
-			mode_ = mode;
-			break;
-		default:
-			throw cybozu::Exception("ec:EcT:init:bad mode") << mode;
-		}
+		assert(mode == ec::Jacobi || mode == ec::Proj);
+		mode_ = mode;
 #endif
 	}
 	/*
@@ -239,9 +233,12 @@ public:
 		if (verifyOrder_) return isValidOrder();
 		return true;
 	}
-	void set(const Fp& _x, const Fp& _y, bool verify = true)
+	void set(const Fp& _x, const Fp& _y, bool verify, bool *pb)
 	{
-		if (verify && !isValid(_x, _y)) throw cybozu::Exception("ec:EcT:set") << _x << _y;
+		if (verify && !isValid(_x, _y)) {
+			*pb = false;
+			return;
+		}
 		x = _x; y = _y;
 #ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
@@ -249,8 +246,16 @@ public:
 		z = 1;
 #endif
 		if (verify && verifyOrder_ && !isValidOrder()) {
-			throw cybozu::Exception("EcT:set:bad order") << *this;
+			*pb = false;
+		} else {
+			*pb = true;
 		}
+	}
+	void set(const Fp& _x, const Fp& _y, bool verify = true)
+	{
+		bool b;
+		set(_x, _y, verify, &b);
+		if (!b) throw cybozu::Exception("ec:EcT:set") << _x << _y;
 	}
 	void clear()
 	{
@@ -796,7 +801,7 @@ public:
 	*/
 	static void setIoMode(int ioMode)
 	{
-		if (ioMode & 0xff) throw cybozu::Exception("EcT:setIoMode:use Fp::setIomode") << ioMode;
+		assert(!(isMode & 0xff));
 		ioMode_ = ioMode;
 	}
 	static inline int getIoMode() { return Fp::BaseFp::getIoMode() | ioMode_; }
