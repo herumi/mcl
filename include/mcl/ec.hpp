@@ -801,7 +801,7 @@ public:
 	*/
 	static void setIoMode(int ioMode)
 	{
-		assert(!(isMode & 0xff));
+		assert(!(ioMode & 0xff));
 		ioMode_ = ioMode;
 	}
 	static inline int getIoMode() { return Fp::BaseFp::getIoMode() | ioMode_; }
