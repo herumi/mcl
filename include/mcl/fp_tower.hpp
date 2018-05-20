@@ -11,7 +11,7 @@
 namespace mcl {
 
 template<class Fp>
-class FpDblT {
+class FpDblT : public fp::Serializable<FpDblT<Fp> > {
 	typedef fp::Unit Unit;
 	Unit v_[Fp::maxSize * 2];
 public:
@@ -34,15 +34,42 @@ public:
 		}
 		printf("\n");
 	}
-	friend std::ostream& operator<<(std::ostream& os, const FpDblT& x)
+	template<class OutputStream>
+	void save(OutputStream& os, int, bool *pb) const
 	{
-		char buf[20];
-		const size_t n = getUnitSize();
-		for (size_t i = 0; i < n; i++) {
-			mcl::fp::UnitToHex(buf, sizeof(buf), x.v_[n - 1 - i]);
-			os << buf;
+		char buf[1024];
+		size_t n = mcl::fp::arrayToHex(buf, sizeof(buf), v_, getUnitSize());
+		if (n == 0) {
+			*pb = false;
+			return;
 		}
-		return os;
+		cybozu::write(os, buf + sizeof(buf) - n, sizeof(buf), pb);
+	}
+	template<class InputStream>
+	void load(InputStream& is, int, bool *pb)
+	{
+		char buf[1024];
+		*pb = false;
+		size_t n = fp::local::loadWord(buf, sizeof(buf), is);
+		if (n == 0) return;
+		n = fp::hexToArray(v_, getUnitSize(), buf, n);
+		if (n == 0) return;
+		for (size_t i = n; i < getUnitSize(); i++) v_[i] = 0;
+		*pb = true;
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		bool b;
+		save(os, ioMode, &b);
+		if (!b) throw cybozu::Exception("fp:save") << ioMode;
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
+	{
+		bool b;
+		load(is, ioMode, &b);
+		if (!b) throw cybozu::Exception("fp:load") << ioMode;
 	}
 	void clear()
 	{

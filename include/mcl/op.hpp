@@ -324,11 +324,6 @@ private:
 	void operator=(const Op&);
 };
 
-/*
-	conevrt string to array according to ioMode,
-*/
-size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode);
-
 inline const char* getIoSeparator(int ioMode)
 {
 	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : " ";

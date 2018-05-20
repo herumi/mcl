@@ -53,9 +53,6 @@ const char *ModeToStr(Mode mode);
 Mode StrToMode(const std::string& s);
 
 void dumpUnit(Unit x);
-void UnitToHex(char *buf, size_t maxBufSize, Unit x);
-std::string hexStrToLittleEndian(const char *buf, size_t bufSize);
-std::string littleEndianToHexStr(const void *buf, size_t bufSize);
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
@@ -63,54 +60,6 @@ void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize);
 
 uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
-
-namespace local {
-
-inline bool isSpace(char c)
-{
-	return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-}
-template<class InputStream>
-bool skipSpace(char *c, InputStream& is)
-{
-	for (;;) {
-		if (!cybozu::readChar(c,  is)) return false;
-		if (!isSpace(*c)) return true;
-	}
-}
-
-template<class InputStream>
-void loadWord(std::string& s, InputStream& is)
-{
-	s.clear();
-	char c;
-	if (!skipSpace(&c, is)) return;
-	s = c;
-	for (;;) {
-		if (!cybozu::readChar(&c,  is)) return;
-		if (isSpace(c)) break;
-		s += c;
-	}
-}
-
-template<class InputStream>
-size_t loadWord(char *buf, size_t bufSize, InputStream& is)
-{
-	if (bufSize == 0) return 0;
-	char c;
-	if (!skipSpace(&c, is)) return 0;
-	size_t pos = 0;
-	buf[pos++] = c;
-	for (;;) {
-		if (!cybozu::readChar(&c, is)) break;
-		if (isSpace(c)) break;
-		if (pos == bufSize) return 0;
-		buf[pos++] = c;
-	}
-	return pos;
-}
-
-} // local
 
 } // mcl::fp
 

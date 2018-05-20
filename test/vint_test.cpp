@@ -1027,7 +1027,7 @@ CYBOZU_TEST_AUTO(pow)
 	Vint::pow(y, x, 3);
 	CYBOZU_TEST_EQUAL(y, -8);
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	CYBOZU_TEST_EXCEPTION(Vint::pow(y, x, -2), cybozu::Exception);
+//	CYBOZU_TEST_EXCEPTION(Vint::pow(y, x, -2), cybozu::Exception);
 #endif
 }
 
@@ -1052,8 +1052,8 @@ CYBOZU_TEST_AUTO(andOr)
 	z = x | y;
 	CYBOZU_TEST_EQUAL(z, Vint("29348220482094820948208435244134352108849315802"));
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	CYBOZU_TEST_EXCEPTION(Vint("-2") | Vint("5"), cybozu::Exception);
-	CYBOZU_TEST_EXCEPTION(Vint("-2") & Vint("5"), cybozu::Exception);
+//	CYBOZU_TEST_EXCEPTION(Vint("-2") | Vint("5"), cybozu::Exception);
+//	CYBOZU_TEST_EXCEPTION(Vint("-2") & Vint("5"), cybozu::Exception);
 #endif
 	x = 8;
 	x |= 7;

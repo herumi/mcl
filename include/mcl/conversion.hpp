@@ -1,8 +1,6 @@
 #pragma once
-#include <vector>
 #include <cybozu/itoa.hpp>
-#include <cybozu/atoi.hpp>
-#include <mcl/util.hpp>
+#include <cybozu/stream.hpp>
 /**
 	@file
 	@brief convertion bin/dec/hex <=> array
@@ -14,6 +12,51 @@
 namespace mcl { namespace fp {
 
 namespace local {
+
+inline bool isSpace(char c)
+{
+	return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+template<class InputStream>
+bool skipSpace(char *c, InputStream& is)
+{
+	for (;;) {
+		if (!cybozu::readChar(c,  is)) return false;
+		if (!isSpace(*c)) return true;
+	}
+}
+
+template<class InputStream>
+void loadWord(std::string& s, InputStream& is)
+{
+	s.clear();
+	char c;
+	if (!skipSpace(&c, is)) return;
+	s = c;
+	for (;;) {
+		if (!cybozu::readChar(&c,  is)) return;
+		if (isSpace(c)) break;
+		s += c;
+	}
+}
+
+template<class InputStream>
+size_t loadWord(char *buf, size_t bufSize, InputStream& is)
+{
+	if (bufSize == 0) return 0;
+	char c;
+	if (!skipSpace(&c, is)) return 0;
+	size_t pos = 0;
+	buf[pos++] = c;
+	for (;;) {
+		if (!cybozu::readChar(&c, is)) break;
+		if (isSpace(c)) break;
+		if (pos == bufSize) return 0;
+		buf[pos++] = c;
+	}
+	return pos;
+}
+
 
 /*
 	q = x[] / x
@@ -124,6 +167,41 @@ bool binToUint(UT *px, const char *p, size_t size)
 		}
 	}
 	*px = x;
+	return true;
+}
+
+inline bool parsePrefix(size_t *readSize, bool *isMinus, int *base, const char *buf, size_t bufSize)
+{
+	if (bufSize == 0) return false;
+	size_t pos = 0;
+	if (*buf == '-') {
+		if (bufSize == 1) return false;
+		*isMinus = true;
+		buf++;
+		pos++;
+	} else {
+		*isMinus = false;
+	}
+	if (buf[0] == '0') {
+		if (bufSize > 1 && buf[1] == 'x') {
+			if (*base == 0 || *base == 16) {
+				*base = 16;
+				pos += 2;
+			} else {
+				return false;
+			}
+		} else if (bufSize > 1 && buf[1] == 'b') {
+			if (*base == 0 || *base == 2) {
+				*base = 2;
+				pos += 2;
+			} else {
+				return false;
+			}
+		}
+	}
+	if (*base == 0) *base = 10;
+	if (pos == bufSize) return false;
+	*readSize = pos;
 	return true;
 }
 
@@ -335,6 +413,24 @@ size_t arrayToStr(char *buf, size_t bufSize, const UT *x, size_t n, int base, bo
 		return arrayToHex(buf, bufSize, x, n, withPrefix);
 	case 2:
 		return arrayToBin(buf, bufSize, x, n, withPrefix);
+	default:
+		return 0;
+	}
+}
+
+template<class UT>
+size_t strToArray(bool *pIsMinus, UT *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
+{
+	ioMode &= 31;
+	size_t readSize;
+	if (!local::parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return 0;
+	switch (ioMode) {
+	case 10:
+		return decToArray(x, xN, buf + readSize, bufSize - readSize);
+	case 16:
+		return hexToArray(x, xN, buf + readSize, bufSize - readSize);
+	case 2:
+		return binToArray(x, xN, buf + readSize, bufSize - readSize);
 	default:
 		return 0;
 	}

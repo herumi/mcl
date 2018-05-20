@@ -946,47 +946,6 @@ CYBOZU_TEST_AUTO(copyUnitToByteAsLE)
 	CYBOZU_TEST_EQUAL(dst[0], 1u);
 }
 
-CYBOZU_TEST_AUTO(hexStrToLittleEndian)
-{
-	const struct {
-		const char *in;
-		uint8_t out[8];
-		size_t outSize;
-	} tbl[] = {
-		{ "", {}, 0 },
-		{ "0", { 0 }, 1 },
-		{ "12", { 0x12 }, 1 },
-		{ "abc", { 0xbc, 0x0a }, 2 },
-		{ "1234567890abcdef", { 0xef, 0xcd, 0xab, 0x90, 0x78, 0x56, 0x34, 0x12 }, 8 },
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const char *buf = tbl[i].in;
-		size_t bufSize = strlen(buf);
-		std::string s = mcl::fp::hexStrToLittleEndian(buf, bufSize);
-		CYBOZU_TEST_EQUAL(s.size(), tbl[i].outSize);
-		CYBOZU_TEST_ASSERT(memcmp(s.c_str(), tbl[i].out, s.size()) == 0);
-	}
-}
-
-CYBOZU_TEST_AUTO(littleEndianToHexStr)
-{
-	const struct {
-		uint8_t in[8];
-		size_t inSize;
-		const char *out;
-	} tbl[] = {
-		{ {}, 0, "" },
-		{ { 0 }, 1, "00" },
-		{ { 0x12 }, 1, "12" },
-		{ { 0xbc, 0x0a }, 2, "0abc" },
-		{ { 0xef, 0xcd, 0xab, 0x90, 0x78, 0x56, 0x34, 0x12 }, 8, "1234567890abcdef" },
-	};
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		std::string s = mcl::fp::littleEndianToHexStr(tbl[i].in, tbl[i].inSize);
-		CYBOZU_TEST_EQUAL(s, tbl[i].out);
-	}
-}
-
 int main(int argc, char *argv[])
 	try
 {

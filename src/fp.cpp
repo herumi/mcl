@@ -15,7 +15,6 @@
 #include "proto.hpp"
 #include "low_func_llvm.hpp"
 #endif
-#include <cybozu/atoi.hpp>
 #include <cybozu/itoa.hpp>
 #include <mcl/randgen.hpp>
 
@@ -63,41 +62,6 @@ inline Unit getUnitAsLE(const void *p)
 #endif
 }
 
-bool parsePrefix(size_t *readSize, bool *isMinus, int *base, const char *buf, size_t bufSize)
-{
-	if (bufSize == 0) return false;
-	size_t pos = 0;
-	if (*buf == '-') {
-		if (bufSize == 1) return false;
-		*isMinus = true;
-		buf++;
-		pos++;
-	} else {
-		*isMinus = false;
-	}
-	if (buf[0] == '0') {
-		if (bufSize > 1 && buf[1] == 'x') {
-			if (*base == 0 || *base == 16 || *base == (16 | IoPrefix)) {
-				*base = 16;
-				pos += 2;
-			} else {
-				return false;
-			}
-		} else if (bufSize > 1 && buf[1] == 'b') {
-			if (*base == 0 || *base == 2 || *base == (2 | IoPrefix)) {
-				*base = 2;
-				pos += 2;
-			} else {
-				return false;
-			}
-		}
-	}
-	if (*base == 0) *base = 10;
-	if (pos == bufSize) return false;
-	*readSize = pos;
-	return true;
-}
-
 const char *ModeToStr(Mode mode)
 {
 	switch (mode) {
@@ -138,43 +102,6 @@ void dumpUnit(Unit x)
 #else
 	printf("%016llx", (unsigned long long)x);
 #endif
-}
-void UnitToHex(char *buf, size_t maxBufSize, Unit x)
-{
-#if MCL_SIZEOF_UNIT == 4
-	CYBOZU_SNPRINTF(buf, maxBufSize, "%08x", (uint32_t)x);
-#else
-	CYBOZU_SNPRINTF(buf, maxBufSize, "%016llx ", (unsigned long long)x);
-#endif
-}
-
-// "123af" => { 0xaf, 0x23, 0x01 }
-std::string hexStrToLittleEndian(const char *buf, size_t bufSize)
-{
-	std::string s;
-	s.reserve((bufSize + 1) / 2);
-	while (bufSize >= 2) {
-		uint8_t c = cybozu::hextoi(&buf[bufSize - 2], 2);
-		s += char(c);
-		bufSize -= 2;
-	}
-	if (bufSize == 1) {
-		uint8_t c = cybozu::hextoi(&buf[0], 1);
-		s += char(c);
-	}
-	return s;
-}
-
-// { 0xaf, 0x23, 0x01 } => "0123af"
-std::string littleEndianToHexStr(const void *buf, size_t bufSize)
-{
-	std::string s;
-	s.resize(bufSize * 2);
-	const uint8_t *p = (const uint8_t *)buf;
-	for (size_t i = 0; i < bufSize; i++) {
-		cybozu::itohex(&s[i * 2], 2, p[bufSize - 1 - i], false);
-	}
-	return s;
 }
 
 bool isEnableJIT()
@@ -619,13 +546,14 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	return ioMode;
 }
 
+#if 0
 size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
 {
 	assert(!(ioMode & (IoArray | IoArrayRaw | IoSerialize)));
 	// use low 8-bit ioMode for Fp
 	ioMode &= 0xff;
 	size_t readSize;
-	if (!parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return 0;
+	if (!mcl::fp::local::parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return 0;
 	switch (ioMode) {
 	case 10:
 		return mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
@@ -637,6 +565,7 @@ size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bu
 		return 0;
 	}
 }
+#endif
 
 void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
 {

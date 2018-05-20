@@ -4,9 +4,6 @@
 */
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
-#include <cybozu/stream.hpp>
-#include <cybozu/atoi.hpp>
-#include <cybozu/itoa.hpp>
 #include <vector>
 #include <stdlib.h>
 #include <assert.h>
@@ -14,6 +11,7 @@
 #include <iostream>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
+#include <mcl/conversion.hpp>
 
 #ifdef __EMSCRIPTEN__
 	#define MCL_VINT_64BIT_PORTABLE
@@ -164,99 +162,6 @@ inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 #endif
 }
 #endif
-
-inline std::istream& getDigits(std::istream& is, std::string& str, bool allowNegative = false)
-{
-	std::ios_base::fmtflags keep = is.flags();
-	size_t pos = 0;
-	char c;
-	while (is >> c) {
-		if (('0' <= c && c <= '9') /* digits */
-		  || (pos == 1 && (str[0] == '0' && c == 'x')) /* 0x.. */
-		  || ('a' <= c && c <= 'f') /* lowercase hex */
-		  || ('A' <= c && c <= 'F') /* uppercase hex */
-		  || (allowNegative && pos == 0 && c == '-')) { /* -digits */
-			str.push_back(c);
-			if (pos == 0) {
-				is >> std::noskipws;
-			}
-			pos++;
-		} else {
-			is.unget();
-			break;
-		}
-	}
-	is.flags(keep);
-	return is;
-}
-
-template<class T>
-inline void decStr2Int(T& x, const std::string& s)
-{
-	const size_t width = 9;
-	const typename T::Unit d = (uint32_t)std::pow(10.0, 9);
-	size_t size = s.size();
-	size_t q = size / width;
-	size_t r = size % width;
-	const char *p = s.c_str();
-	/*
-		split s and compute x
-		eg. 123456789012345678901234 => 123456, 789012345, 678901234
-	*/
-	typename T::Unit v;
-	x = 0;
-	if (r) {
-		v = cybozu::atoi(p, r);
-		p += r;
-		x = v;
-	}
-	while (q) {
-		v = cybozu::atoi(p, width);
-		p += width;
-		x *= d;
-		x += v;
-		q--;
-	}
-}
-
-inline uint32_t bin2uint32(const char *s, size_t n)
-{
-	uint32_t x = 0;
-	for (size_t i = 0; i < n; i++) {
-		x <<= 1;
-		char c = s[i];
-		if (c != '0' && c != '1') throw cybozu::Exception("bin2uint32:bad char") << std::string(s, n);
-		if (c == '1') {
-			x |= 1;
-		}
-	}
-	return x;
-}
-
-template<class T>
-inline void binStr2Int(T& x, const std::string& s)
-{
-	const size_t width = 32;
-	size_t size = s.size();
-	size_t q = size / width;
-	size_t r = size % width;
-
-	const char *p = s.c_str();
-	uint32_t v;
-	x = 0;
-	if (r) {
-		v = bin2uint32(p, r);
-		p += r;
-		T::addu1(x, x, v);
-	}
-	while (q) {
-		v = bin2uint32(p, width);
-		p += width;
-		x <<= width;
-		T::addu1(x, x, v);
-		q--;
-	}
-}
 
 /*
 	compare x[] and y[]
@@ -942,7 +847,7 @@ private:
 	bool isNeg_;
 	void trim(size_t n)
 	{
-		if (n == 0) throw cybozu::Exception("trim zero");
+		assert(n > 0);
 		int i = (int)n - 1;
 		for (; i > 0; i--) {
 			if (buf_[i]) {
@@ -1108,7 +1013,7 @@ public:
 	}
 	VintT& operator=(int x)
 	{
-		if (x == invalidVar) throw cybozu::Exception("VintT:operator=:invalidVar");
+		assert(x != invalidVar);
 		isNeg_ = x < 0;
 		buf_.alloc(1);
 		buf_[0] = std::abs(x);
@@ -1204,56 +1109,23 @@ public:
 	}
 	void clear() { *this = 0; }
 	template<class OutputStream>
+	void save(OutputStream& os, int base, bool *pb) const
+	{
+		if (isNeg_) cybozu::writeChar(os, '-', pb);
+		char buf[1024];
+		size_t n = mcl::fp::arrayToStr(buf, sizeof(buf), &buf_[0], size_, base, false);
+		if (n == 0) {
+			*pb = false;
+			return;
+		}
+		cybozu::write(os, buf + sizeof(buf) - n, n, pb);
+	}
+	template<class OutputStream>
 	void save(OutputStream& os, int base = 10) const
 	{
-		if (isNeg_) cybozu::writeChar(os, '-');
-		if (base == 10) {
-			const size_t width = 9;
-			const uint32_t i1e9 = 1000000000U;
-			VintT x;
-			VintT::abs(x, *this);
-
-			std::vector<uint32_t> t;
-			while (!x.isZero()) {
-				uint32_t r = udivModu1(&x, x, i1e9);
-				t.push_back(r);
-			}
-			if (t.empty()) {
-				cybozu::writeChar(os, '0');
-				return;
-			}
-			char buf[width];
-			for (size_t i = 0, n = t.size(); i < n; i++) {
-				size_t len = cybozu::itoa_local::uintToDec(buf, width, t[n - 1 - i]);
-				assert(len > 0);
-				if (i == 0) {
-					os.write(buf + width - len, len);
-				} else {
-					for (size_t j = 0; j < width - len; j++) {
-						buf[j] = '0';
-					}
-					os.write(buf, width);
-				}
-			}
-		} else if (base == 16) {
-			const size_t n = size();
-			const size_t width = 16;
-			char buf[width];
-			for (size_t i = 0; i < n; i++) {
-				size_t len = cybozu::itoa_local::uintToHex(buf, width, getUnit()[n - 1 - i], false);
-				assert(len > 0);
-				if (i == 0) {
-					os.write(buf + width - len, len);
-				} else {
-					for (size_t j = 0; j < width - len; j++) {
-						buf[j] = '0';
-					}
-					os.write(buf, width);
-				}
-			}
-		} else {
-			assert(0);
-		}
+		bool b;
+		save(os, base, &b);
+		if (!b) throw cybozu::Exception("Vint:save");
 	}
 	std::string getStr(int base = 10) const
 	{
@@ -1303,56 +1175,22 @@ public:
 		      "0b..."   => base = 2
 		      otherwise => base = 10
 	*/
+	void setStr(const char *str, size_t strSize, int base, bool *pb)
+	{
+		const size_t maxN = 384 / (sizeof(MCL_SIZEOF_UNIT) * 8);
+		buf_.alloc(maxN);
+		*pb = false;
+		isNeg_ = false;
+		size_t n = fp::strToArray(&isNeg_, &buf_[0], maxN, str, strSize, base);
+		if (n == 0) return;
+		trim(n);
+		*pb = true;
+	}
 	void setStr(std::string str, int base = 0)
 	{
-		bool neg = false;
-		if (!str.empty() && str[0] == '-') {
-			neg = true;
-			str = str.substr(1);
-		}
-		if (str.size() >= 2 && str[0] == '0' && str[1] == 'x') {
-			if (base != 0 && base != 16) throw cybozu::Exception("Vint:setStr bad base 0x)") << str << base;
-			base = 16;
-			str = str.substr(2);
-		} else if (str.size() >= 2 && str[0] == '0' && str[1] == 'b') {
-			if (base != 0 && base != 2) throw cybozu::Exception("Vint:setStr bad base 0b") << str << base;
-			base = 2;
-			str = str.substr(2);
-		}
-		if (base == 0) {
-			base = 10;
-		}
-		if (str.empty()) throw cybozu::Exception("empty string");
-
-		switch (base) {
-		case 16:
-			{
-				std::vector<uint32_t> x;
-				while (!str.empty()) {
-					size_t remain = std::min((int)str.size(), 8);
-					char *endp;
-					uint32_t v = strtoul(&str[str.size() - remain], &endp, 16);
-					if (*endp) goto ERR;
-					x.push_back(v);
-					str = str.substr(0, str.size() - remain);
-				}
-				setArray(&x[0], x.size());
-			}
-			break;
-		case 2:
-			binStr2Int(*this, str);
-			break;
-		default:
-		case 10:
-			decStr2Int(*this, str);
-			break;
-		}
-		if (!isZero() && neg) {
-			isNeg_ = true;
-		}
-		return;
-	ERR:
-		throw cybozu::Exception("VintT:setStr") << str << base;
+		bool b;
+		setStr(str.c_str(), str.size(), base, &b);
+		if (!b) throw cybozu::Exception("Vint:setStr") << str;
 	}
 	static int compare(const VintT& x, const VintT& y)
 	{
@@ -1370,7 +1208,7 @@ public:
 	}
 	static int compares1(const VintT& x, int y)
 	{
-		if (y == invalidVar) throw cybozu::Exception("VintT:compares1:bad y");
+		assert(y != invalidVar);
 		if (x.isNeg_ ^ (y < 0)) {
 			if (x.isZero() && y == 0) return 0;
 			return x.isNeg_ ? -1 : 1;
@@ -1443,17 +1281,17 @@ public:
 	}
 	static void adds1(VintT& z, const VintT& x, int y)
 	{
-		if (y == invalidVar) throw cybozu::Exception("VintT:adds1:bad y");
+		assert(y != invalidVar);
 		_adds1(z, x, std::abs(y), y < 0);
 	}
 	static void subs1(VintT& z, const VintT& x, int y)
 	{
-		if (y == invalidVar) throw cybozu::Exception("VintT:subs1:bad y");
+		assert(y != invalidVar);
 		_adds1(z, x, std::abs(y), !(y < 0));
 	}
 	static void muls1(VintT& z, const VintT& x, int y)
 	{
-		if (y == invalidVar) throw cybozu::Exception("VintT:muls1:bad y");
+		assert(y != invalidVar);
 		mulu1(z, x, std::abs(y));
 		z.isNeg_ ^= (y < 0);
 	}
@@ -1465,7 +1303,7 @@ public:
 	*/
 	static int divMods1(VintT *q, const VintT& x, int y)
 	{
-		if (y == invalidVar) throw cybozu::Exception("VintT:divMods1:bad y");
+		assert(y != invalidVar);
 		bool xNeg = x.isNeg_;
 		bool yNeg = y < 0;
 		Unit absY = std::abs(y);
@@ -1516,7 +1354,7 @@ public:
 	}
 	static Unit udivModu1(VintT *q, const VintT& x, Unit y)
 	{
-		if (x.isNeg_) throw cybozu::Exception("VintT:udivu1:x is not negative") << x;
+		assert(!x.isNeg_);
 		size_t xn = x.size();
 		if (q) q->buf_.alloc(xn);
 		Unit r = vint::divu1(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
@@ -1551,11 +1389,31 @@ public:
 	{
 		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
 	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode, bool *pb)
+	{
+		*pb = false;
+		char buf[1024];
+		size_t n = fp::local::loadWord(buf, sizeof(buf), is);
+		if (n == 0) return;
+		const size_t maxN = 384 / (sizeof(MCL_SIZEOF_UNIT) * 8);
+		buf_.alloc(maxN);
+		isNeg_ = false;
+		n = fp::strToArray(&isNeg_, &buf_[0], maxN, buf, n, ioMode);
+		if (n == 0) return;
+		trim(n);
+		*pb = true;
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = 0)
+	{
+		bool b;
+		load(is, ioMode, &b);
+		if (!b) throw cybozu::Exception("Vint:load");
+	}
 	inline friend std::istream& operator>>(std::istream& is, VintT& x)
 	{
-		std::string str;
-		vint::getDigits(is, str, true);
-		x.setStr(str);
+		x.load(is);
 		return is;
 	}
 	// logical left shift (copy sign)
@@ -1601,7 +1459,7 @@ public:
 	// accept only non-negative value
 	static void orBit(VintT& z, const VintT& x, const VintT& y)
 	{
-		if (x.isNeg_ || y.isNeg_) throw cybozu::Exception("Vint:orBit:negative value is not supported");
+		assert(!x.isNeg_ && !y.isNeg_);
 		const VintT *px = &x, *py = &y;
 		if (x.size() < y.size()) {
 			std::swap(px, py);
@@ -1618,7 +1476,7 @@ public:
 	}
 	static void andBit(VintT& z, const VintT& x, const VintT& y)
 	{
-		if (x.isNeg_ || y.isNeg_) throw cybozu::Exception("Vint:andBit:negative value is not supported");
+		assert(!x.isNeg_ && !y.isNeg_);
 		const VintT *px = &x, *py = &y;
 		if (x.size() < y.size()) {
 			std::swap(px, py);
@@ -1633,28 +1491,34 @@ public:
 	}
 	static void orBitu1(VintT& z, const VintT& x, Unit y)
 	{
-		if (x.isNeg_) throw cybozu::Exception("Vint:orBit:negative value is not supported");
+		assert(!x.isNeg_);
 		z = x;
 		z.buf_[0] |= y;
 	}
 	static void andBitu1(VintT& z, const VintT& x, Unit y)
 	{
-		if (x.isNeg_) throw cybozu::Exception("Vint:andBit:negative value is not supported");
+		assert(!x.isNeg_);
 		z.buf_.alloc(1);
 		z.buf_[0] = x.buf_[0] & y;
 		z.size_ = 1;
 		z.isNeg_ = false;
 	}
+	/*
+		REMARK y >= 0;
+	*/
 	static void pow(VintT& z, const VintT& x, const VintT& y)
 	{
-		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
+		assert(!y.isNeg_);
 		const VintT xx = x;
 		z = 1;
 		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
 	}
+	/*
+		REMARK y >= 0;
+	*/
 	static void pow(VintT& z, const VintT& x, int64_t y)
 	{
-		if (y < 0) throw cybozu::Exception("Vint::pow:negative y") << y;
+		assert(y >= 0);
 		const VintT xx = x;
 		z = 1;
 #if MCL_SIZEOF_UNIT == 8
@@ -1669,10 +1533,11 @@ public:
 	}
 	/*
 		z = x ^ y mod m
+		REMARK y >= 0;
 	*/
 	static void powMod(VintT& z, const VintT& x, const VintT& y, const VintT& m)
 	{
-		if (y.isNeg_) throw cybozu::Exception("Vint::pow:negative y") << y;
+		assert(!y.isNeg_);
 		VintT zz;
 		MulMod mulMod;
 		SqrMod sqrMod;
@@ -1685,9 +1550,11 @@ public:
 	/*
 		inverse mod
 		y = 1/x mod m
+		REMARK x != 0 and m != 0;
 	*/
 	static void invMod(VintT& y, const VintT& x, const VintT& m)
 	{
+		assert(!x.isZero() && !m.isZero());
 		if (x == 1) {
 			y = 1;
 			return;
@@ -1696,7 +1563,6 @@ public:
 		VintT t;
 		VintT q;
 		divMod(&q, t, m, x);
-		if (t.isZero()) throw cybozu::Exception("VintT:invMod:bad m") << m;
 		VintT s = x;
 		VintT b = -q;
 
