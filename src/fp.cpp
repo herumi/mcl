@@ -72,7 +72,8 @@ const char *ModeToStr(Mode mode)
 	case FP_LLVM_MONT: return "llvm_mont";
 	case FP_XBYAK: return "xbyak";
 	default:
-		throw cybozu::Exception("ModeToStr") << mode;
+		assert(0);
+		return 0;
 	}
 }
 
@@ -92,7 +93,7 @@ Mode StrToMode(const std::string& s)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		if (s == tbl[i].s) return tbl[i].mode;
 	}
-	throw cybozu::Exception("StrToMode") << s;
+	return FP_AUTO;
 }
 
 void dumpUnit(Unit x)
@@ -538,7 +539,7 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	if (ioMode & ~IoPrefix) return ioMode;
 	// IoAuto or IoPrefix
 	const std::ios_base::fmtflags f = ios.flags();
-	if (f & std::ios_base::oct) throw cybozu::Exception("mcl:fp:detectIoMode:oct is not supported");
+	assert(!(f & std::ios_base::oct));
 	ioMode |= (f & std::ios_base::hex) ? IoHex : 0;
 	if (f & std::ios_base::showbase) {
 		ioMode |= IoPrefix;
@@ -546,32 +547,11 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	return ioMode;
 }
 
-#if 0
-size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
-{
-	assert(!(ioMode & (IoArray | IoArrayRaw | IoSerialize)));
-	// use low 8-bit ioMode for Fp
-	ioMode &= 0xff;
-	size_t readSize;
-	if (!mcl::fp::local::parsePrefix(&readSize, pIsMinus, &ioMode, buf, bufSize)) return 0;
-	switch (ioMode) {
-	case 10:
-		return mcl::fp::decToArray(x, xN, buf + readSize, bufSize - readSize);
-	case 16:
-		return mcl::fp::hexToArray(x, xN, buf + readSize, bufSize - readSize);
-	case 2:
-		return mcl::fp::binToArray(x, xN, buf + readSize, bufSize - readSize);
-	default:
-		return 0;
-	}
-}
-#endif
-
-void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
+bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
 {
 	const size_t fpByteSize = sizeof(Unit) * op.N;
 	if (xByteSize > fpByteSize) {
-		if (maskMode == NoMask) throw cybozu::Exception("fp:copyAndMask:bad size") << xByteSize << fpByteSize;
+		if (maskMode == NoMask) return false;
 		xByteSize = fpByteSize;
 	}
 	// QQQ : fixed later for big endian
@@ -584,7 +564,7 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMod
 	}
 	if (isGreaterOrEqualArray(y, op.p, op.N)) {
 		switch (maskMode) {
-		case mcl::fp::NoMask: throw cybozu::Exception("fp:copyAndMask:large x");
+		case mcl::fp::NoMask: return false;
 		case mcl::fp::SmallMask:
 			maskArray(y, op.N, op.bitSize - 1);
 			break;
@@ -595,6 +575,7 @@ void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMod
 		}
 	}
 	assert(isLessArray(y, op.p, op.N));
+	return true;
 }
 
 static bool isInUint64(uint64_t *pv, const fp::Block& b)

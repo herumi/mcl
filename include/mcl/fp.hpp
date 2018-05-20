@@ -43,7 +43,7 @@ void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize);
 // copy src to dst as little endian
 void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize);
 
-void copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode);
+bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode);
 
 uint64_t getUint64(bool *pb, const fp::Block& b);
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
@@ -278,14 +278,21 @@ public:
 		load(is, ioMode, &b);
 		if (!b) throw cybozu::Exception("fp:load") << ioMode;
 	}
+	template<class S>
+	void setArray(const S *x, size_t n, bool *pb)
+	{
+		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::NoMask);
+		toMont();
+	}
 	/*
 		throw exception if x >= p
 	*/
 	template<class S>
 	void setArray(const S *x, size_t n)
 	{
-		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::NoMask);
-		toMont();
+		bool b;
+		setArray(x, n, &b);
+		if (!b) throw cybozu::Exception("Fp:setArray");
 	}
 	/*
 		mask x with (1 << bitLen) and subtract p if x >= p
@@ -351,10 +358,20 @@ public:
 		getMpz(x);
 		return x;
 	}
+	void setMpz(const mpz_class& x, bool *pb)
+	{
+		if (x < 0) {
+			*pb = false;
+			return;
+		}
+		setArray(gmp::getUnit(x), gmp::getUnitSize(x));
+		*pb = true;
+	}
 	void setMpz(const mpz_class& x)
 	{
-		if (x < 0) throw cybozu::Exception("Fp:setMpz:negative is not supported") << x;
-		setArray(gmp::getUnit(x), gmp::getUnitSize(x));
+		bool b;
+		setMpz(x, &b);
+		if (!b) throw cybozu::Exception("Fp:setMpz:neg");
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
@@ -467,7 +484,7 @@ public:
 	*/
 	static inline void setIoMode(int ioMode)
 	{
-		if (ioMode_ & ~0xff) throw cybozu::Exception("FpT:setIoMode:bad mode") << ioMode;
+		assert((ioMode & ~0xff) == 0);
 		ioMode_ = ioMode;
 	}
 	static inline int getIoMode() { return ioMode_; }
