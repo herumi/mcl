@@ -484,7 +484,6 @@ public:
 	*/
 	static inline void setIoMode(int ioMode)
 	{
-		assert((ioMode & ~0xff) == 0);
 		ioMode_ = ioMode;
 	}
 	static inline int getIoMode() { return ioMode_; }
