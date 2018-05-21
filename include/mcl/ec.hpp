@@ -762,6 +762,7 @@ public:
 			char buf[sizeof(Fp) + 1];
 			if (cybozu::readSome(buf, n1, is) != n1) {
 				*pb = false;
+				return;
 			}
 			if (fp::isZeroArray(buf, n1)) {
 				clear();
