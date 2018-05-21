@@ -1107,7 +1107,7 @@ inline void pow_z(Fp12& y, const Fp12& x)
 		Fp12::unitaryInv(y, y);
 	}
 }
-inline void mul_b_div_xi(Fp2& y, const Fp2& x)
+inline void mul_twist_b(Fp2& y, const Fp2& x)
 {
 	switch (BN::param.twist_b_type) {
 	case local::tb_1m1i:
@@ -1153,7 +1153,7 @@ inline void dblLineWithoutP(Fp6& l, G2& Q)
 	Fp2::divBy2(t4, t4);
 	Fp2::add(t5, t0, t1);
 	t0 += t3;
-	mul_b_div_xi(t2, t0);
+	mul_twist_b(t2, t0);
 	Fp2::sqr(t0, Q.x);
 	Fp2::add(t3, t2, t2);
 	t3 += t2;
