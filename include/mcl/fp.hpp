@@ -364,8 +364,7 @@ public:
 			*pb = false;
 			return;
 		}
-		setArray(gmp::getUnit(x), gmp::getUnitSize(x));
-		*pb = true;
+		setArray(gmp::getUnit(x), gmp::getUnitSize(x), pb);
 	}
 	void setMpz(const mpz_class& x)
 	{
@@ -421,17 +420,31 @@ public:
 	{
 		return fp::isLessArray(v_, op_.p, op_.N);
 	}
-	uint64_t getUint64(bool *pb = 0) const
+	uint64_t getUint64(bool *pb) const
 	{
 		fp::Block b;
 		getBlock(b);
 		return fp::getUint64(pb, b);
 	}
-	int64_t getInt64(bool *pb = 0) const
+	int64_t getInt64(bool *pb) const
 	{
 		fp::Block b;
 		getBlock(b);
 		return fp::getInt64(pb, b, op_);
+	}
+	uint64_t getUint64() const
+	{
+		bool b;
+		uint64_t v = getUint64(&b);
+		if (!b) throw cybozu::Exception("Fp:getUint64:large value");
+		return v;
+	}
+	int64_t getInt64() const
+	{
+		bool b;
+		int64_t v = getInt64(&b);
+		if (!b) throw cybozu::Exception("Fp:getInt64:large value");
+		return v;
 	}
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }

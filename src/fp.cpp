@@ -597,10 +597,9 @@ uint64_t getUint64(bool *pb, const fp::Block& b)
 {
 	uint64_t v;
 	if (isInUint64(&v, b)) {
-		if (pb) *pb = true;
+		*pb = true;
 		return v;
 	}
-	if (!pb) throw cybozu::Exception("fp::getUint64:large value");
 	*pb = false;
 	return 0;
 }
@@ -623,19 +622,18 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 		const uint64_t c = uint64_t(1) << 63;
 		if (isNegative) {
 			if (v <= c) { // include c
-				if (pb) *pb = true;
+				*pb = true;
 				// -1 << 63
 				if (v == c) return int64_t(-9223372036854775807ll - 1);
 				return int64_t(-v);
 			}
 		} else {
 			if (v < c) { // not include c
-				if (pb) *pb = true;
+				*pb = true;
 				return int64_t(v);
 			}
 		}
 	}
-	if (!pb) throw cybozu::Exception("fp::getInt64:large value");
 	*pb = false;
 	return 0;
 }
