@@ -190,12 +190,14 @@ struct Test {
 		Fp y(para.gy);
 		bool odd = y.isOdd();
 		Fp yy;
-		Ec::getYfromX(yy, x, odd);
+		bool b = Ec::getYfromX(yy, x, odd);
+		CYBOZU_TEST_ASSERT(b);
 		CYBOZU_TEST_EQUAL(yy, y);
 		Fp::neg(y, y);
 		odd = y.isOdd();
 		yy.clear();
-		Ec::getYfromX(yy, x, odd);
+		b = Ec::getYfromX(yy, x, odd);
+		CYBOZU_TEST_ASSERT(b);
 		CYBOZU_TEST_EQUAL(yy, y);
 	}
 	void mul_fp() const
@@ -262,7 +264,7 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
-		CYBOZU_TEST_EXCEPTION_MESSAGE(P.setStr("1 3 5"), cybozu::Exception, "bad value");
+		CYBOZU_TEST_EXCEPTION(P.setStr("1 3 5"), cybozu::Exception);
 		// compressed
 		Ec::setCompressedExpression(true);
 		P.set(x, y);

@@ -660,17 +660,26 @@ public:
 		return !b_.isZero() && (Fp::BaseFp::getBitSize() & 7) != 0;
 	}
 	template<class OutputStream>
-	void save(OutputStream& os, int ioMode = IoSerialize) const
+	void save(OutputStream& os, int ioMode, bool *pb) const
 	{
 		const char sep = *fp::getIoSeparator(ioMode);
 		if (ioMode & IoEcProj) {
-			cybozu::writeChar(os, '4');
-			if (sep) cybozu::writeChar(os, sep);
-			x.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			y.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			z.save(os, ioMode);
+			cybozu::writeChar(os, '4', pb); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(os, sep, pb);
+				if (!*pb) return;
+			}
+			x.save(os, ioMode, pb); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(os, sep, pb);
+				if (!*pb) return;
+			}
+			y.save(os, ioMode, pb); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(os, sep, pb);
+				if (!*pb) return;
+			}
+			z.save(os, ioMode, pb);
 			return;
 		}
 		EcT P(*this);
@@ -693,7 +702,7 @@ public:
 				memset(buf, 0, n + adj);
 			} else {
 				cybozu::MemoryOutputStream mos(buf + adj, n);
-				P.x.save(mos, IoSerialize);
+				P.x.save(mos, IoSerialize, pb); if (!*pb) return;
 				if (adj) {
 					buf[0] = P.y.isOdd() ? 3 : 2;
 				} else {
@@ -702,27 +711,44 @@ public:
 					}
 				}
 			}
-			cybozu::write(os, buf, n + adj);
+			cybozu::write(os, buf, n + adj, pb);
 			return;
 		}
 		if (isZero()) {
-			cybozu::writeChar(os, '0');
+			cybozu::writeChar(os, '0', pb);
 			return;
 		}
 		if (ioMode & IoEcCompY) {
-			cybozu::writeChar(os, P.y.isOdd() ? '3' : '2');
-			if (sep) cybozu::writeChar(os, sep);
-			P.x.save(os, ioMode);
+			cybozu::writeChar(os, P.y.isOdd() ? '3' : '2', pb);
+			if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(os, sep, pb);
+				if (!*pb) return;
+			}
+			P.x.save(os, ioMode, pb);
 		} else {
-			cybozu::writeChar(os, '1');
-			if (sep) cybozu::writeChar(os, sep);
-			P.x.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			P.y.save(os, ioMode);
+			cybozu::writeChar(os, '1', pb); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(os, sep, pb);
+				if (!*pb) return;
+			}
+			P.x.save(os, ioMode, pb); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(os, sep, pb);
+				if (!*pb) return;
+			}
+			P.y.save(os, ioMode, pb);
 		}
 	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		bool b;
+		save(os, ioMode, &b);
+		if (!b) throw cybozu::Exception("EcT:save");
+	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode = IoSerialize)
+	void load(InputStream& is, int ioMode, bool *pb)
 	{
 #ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
@@ -734,48 +760,71 @@ public:
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			const size_t n1 = n + adj;
 			char buf[sizeof(Fp) + 1];
-			if (cybozu::readSome(buf, n1, is) != n1) throw cybozu::Exception("EcT:load:can't read") << n1;
+			if (cybozu::readSome(buf, n1, is) != n1) {
+				*pb = false;
+			}
 			if (fp::isZeroArray(buf, n1)) {
 				clear();
+				*pb = true;
 				return;
 			}
 			bool isYodd;
 			if (adj) {
 				char c = buf[0];
-				if (c != 2 && c != 3) throw cybozu::Exception("EcT:bad mode") << c;
+				if (c != 2 && c != 3) {
+					*pb = false;
+					return;
+				}
 				isYodd = c == 3;
 			} else {
 				isYodd = (buf[n - 1] >> 7) != 0;
 				buf[n - 1] &= 0x7f;
 			}
 			x.setArray(buf + adj, n);
-			getYfromX(y, x, isYodd);
+			*pb = getYfromX(y, x, isYodd);
+			if (!*pb) return;
 		} else {
 			char c = 0;
-			if (!fp::local::skipSpace(&c, is)) throw cybozu::Exception("EcT:load:no header");
-			if (c == '0') {
-				clear();
+			if (!fp::local::skipSpace(&c, is)) {
+				*pb = false;
 				return;
 			}
-			x.load(is, ioMode);
+			if (c == '0') {
+				clear();
+				*pb = true;
+				return;
+			}
+			x.load(is, ioMode, pb); if (!*pb) return;
 			if (c == '1') {
-				y.load(is, ioMode);
+				y.load(is, ioMode, pb); if (!*pb) return;
 				if (!isValid(x, y)) {
-					throw cybozu::Exception("EcT:load:bad value") << ioMode << x << y;
+					*pb = false;
+					return;
 				}
 			} else if (c == '2' || c == '3') {
 				bool isYodd = c == '3';
-				getYfromX(y, x, isYodd);
+				*pb = getYfromX(y, x, isYodd);
+				if (!*pb) return;
 			} else if (c == '4') {
-				y.load(is, ioMode);
-				z.load(is, ioMode);
+				y.load(is, ioMode, pb); if (!*pb) return;
+				z.load(is, ioMode, pb); if (!*pb) return;
 			} else {
-				throw cybozu::Exception("EcT:load:bad format") << (int)c;
+				*pb = false;
+				return;
 			}
 		}
 		if (verifyOrder_ && !isValidOrder()) {
-			throw cybozu::Exception("EcT:load:bad order") << *this;
+			*pb = false;
+		} else {
+			*pb = true;
 		}
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
+	{
+		bool b;
+		load(is, ioMode, &b);
+		if (!b) throw cybozu::Exception("EcT:load");
 	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
@@ -813,15 +862,16 @@ public:
 		t *= x;
 		Fp::add(yy, t, b_);
 	}
-	static inline void getYfromX(Fp& y, const Fp& x, bool isYodd)
+	static inline bool getYfromX(Fp& y, const Fp& x, bool isYodd)
 	{
 		getWeierstrass(y, x);
 		if (!Fp::squareRoot(y, y)) {
-			throw cybozu::Exception("EcT:getYfromX") << x << isYodd;
+			return false;
 		}
 		if (y.isOdd() ^ isYodd) {
 			Fp::neg(y, y);
 		}
+		return true;
 	}
 	inline friend EcT operator+(const EcT& x, const EcT& y) { EcT z; add(z, x, y); return z; }
 	inline friend EcT operator-(const EcT& x, const EcT& y) { EcT z; sub(z, x, y); return z; }
