@@ -52,7 +52,14 @@ const char *ModeToStr(Mode mode);
 
 Mode StrToMode(const std::string& s);
 
-void dumpUnit(Unit x);
+inline void dumpUnit(Unit x)
+{
+#if MCL_SIZEOF_UNIT == 4
+	printf("%08x", (uint32_t)x);
+#else
+	printf("%016llx", (unsigned long long)x);
+#endif
+}
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
@@ -98,14 +105,12 @@ public:
 		}
 		printf("\n");
 	}
-	static inline void init(const mpz_class& m, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(gmp::getStr(m), mode);
-	}
-	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	static inline bool init(const char *str, size_t strSize, fp::Mode mode)
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		op_.init(mstr, maxBitSize, mode);
+		if (!op_.init(str, strSize, maxBitSize, mode)) {
+			return false;
+		}
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
 			one.clear();
@@ -117,6 +122,17 @@ public:
 			gmp::getArray(op_.half, op_.N, half);
 		}
 		inv(inv2_, 2);
+		return true;
+	}
+	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		if (!init(mstr.c_str(), mstr.size(), mode)) {
+			throw cybozu::Exception("Fp:init") << mstr << mode;
+		}
+	}
+	static inline void init(const mpz_class& m, fp::Mode mode = fp::FP_AUTO)
+	{
+		init(gmp::getStr(m), mode);
 	}
 	static inline void getModulo(std::string& pstr)
 	{

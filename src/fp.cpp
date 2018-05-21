@@ -96,15 +96,6 @@ Mode StrToMode(const std::string& s)
 	return FP_AUTO;
 }
 
-void dumpUnit(Unit x)
-{
-#if MCL_SIZEOF_UNIT == 4
-	printf("%08x", (uint32_t)x);
-#else
-	printf("%016llx", (unsigned long long)x);
-#endif
-}
-
 bool isEnableJIT()
 {
 #if defined(MCL_USE_XBYAK)
@@ -357,7 +348,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #endif
 }
 
-bool Op::init(const char *str, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
+bool Op::init(const char *str, size_t strSize, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) {
 #ifdef __EMSCRIPTEN__
@@ -378,7 +369,7 @@ bool Op::init(const char *str, size_t maxBitSize, Mode mode, size_t mclMaxBitSiz
 		const size_t maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
 		bool isMinus;
 		int ioMode = 0;
-		N = strToArray(&isMinus, p, maxN, str, strlen(str), ioMode);
+		N = strToArray(&isMinus, p, maxN, str, strSize, ioMode);
 		if (N == 0 || isMinus) return false;
 		gmp::setArray(mp, p, N);
 	}
@@ -645,7 +636,6 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 void Op::initFp2(int _xi_a)
 {
 	this->xi_a = _xi_a;
-//	if (N * UnitBitSize != 256) throw cybozu::Exception("Op2:init:not support size") << N;
 }
 
 } } // mcl::fp

@@ -89,11 +89,12 @@ public:
 	// QQQ : does not check range of x strictly(use for debug)
 	void setMpz(const mpz_class& x)
 	{
-		if (x < 0) throw cybozu::Exception("FpDblT:_setMpz:negative is not supported") << x;
+		assert(x >= 0);
 		const size_t xn = gmp::getUnitSize(x);
 		const size_t N2 = getUnitSize();
 		if (xn > N2) {
-			throw cybozu::Exception("FpDblT:setMpz:too large") << x;
+			assert(0);
+			return;
 		}
 		memcpy(v_, gmp::getUnit(x), xn * sizeof(Unit));
 		memset(v_ + xn, 0, (N2 - xn) * sizeof(Unit));
@@ -121,7 +122,7 @@ public:
 	static void mulUnit(FpDblT& z, const FpDblT& x, Unit y)
 	{
 		if (mulSmallUnit(z, x, y)) return;
-		throw cybozu::Exception("mulUnit:not supported") << y;
+		assert(0); // not supported y
 	}
 	void operator+=(const FpDblT& x) { add(*this, *this, x); }
 	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
@@ -206,7 +207,7 @@ public:
 	template<class S>
 	void setArray(const S *buf, size_t n)
 	{
-		if ((n & 1) != 0) throw cybozu::Exception("Fp2T:setArray:bad size") << n;
+		assert((n & 1) == 0);
 		n /= 2;
 		a.setArray(buf, n);
 		b.setArray(buf + n, n);
@@ -263,7 +264,8 @@ public:
 				y.a = t1;
 				y.b.clear();
 			} else {
-				if (!Fp::squareRoot(t1, -x.a)) throw cybozu::Exception("Fp2T:squareRoot:internal error1") << x;
+				bool b = Fp::squareRoot(t1, -x.a);
+				assert(b); (void)b;
 				y.a.clear();
 				y.b = t1;
 			}
@@ -278,7 +280,8 @@ public:
 		if (!Fp::squareRoot(t2, t2)) {
 			Fp::sub(t2, x.a, t1);
 			Fp::divBy2(t2, t2);
-			if (!Fp::squareRoot(t2, t2)) throw cybozu::Exception("Fp2T:squareRoot:internal error2") << x;
+			bool b = Fp::squareRoot(t2, t2);
+			assert(b); (void)b;
 		}
 		y.a = t2;
 		t2 += t2;

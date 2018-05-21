@@ -311,11 +311,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	bool init(const char *str, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
-	void init(const std::string& mstr, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE)
-	{
-		if (!init(mstr.c_str(), maxBitSize, mode, mclMaxBitSize)) throw cybozu::Exception("Op:init:init");
-	}
+	bool init(const char *str, size_t strSize, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
 	void initFp2(int xi_a);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
