@@ -16,9 +16,9 @@
 #ifdef __EMSCRIPTEN__
 	#define MCL_VINT_64BIT_PORTABLE
 	#define MCL_VINT_FIXED_BUFFER
-	#ifndef MCL_MAX_BIT_SIZE
-		#define MCL_MAX_BIT_SIZE 384
-	#endif
+#endif
+#ifndef MCL_MAX_BIT_SIZE
+	#define MCL_MAX_BIT_SIZE 384
 #endif
 
 #ifndef MCL_SIZEOF_UNIT
@@ -1177,7 +1177,7 @@ public:
 	*/
 	void setStr(const char *str, size_t strSize, int base, bool *pb)
 	{
-		const size_t maxN = 384 / (sizeof(MCL_SIZEOF_UNIT) * 8);
+		const size_t maxN = MCL_MAX_BIT_SIZE / (sizeof(MCL_SIZEOF_UNIT) * 8);
 		buf_.alloc(maxN);
 		*pb = false;
 		isNeg_ = false;

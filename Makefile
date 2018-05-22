@@ -278,6 +278,9 @@ she-wasm:
 ecdsa-wasm:
 	$(MAKE) ../ecdsa-wasm/ecdsa_c.js
 
+bin/emu:
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_64BIT_PORTABLE -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=256 -I./include -I../cybozulib/include
+
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll
 
@@ -293,7 +296,7 @@ install: lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test mcl-wasm
+.PHONY: test mcl-wasm she-wasm bin/emu
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))
