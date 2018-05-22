@@ -879,7 +879,7 @@ struct Param {
 	bool useNAF;
 	local::SignVec zReplTbl;
 
-	void init(const mcl::CurveParam& cp, fp::Mode mode)
+	void init(int *pret, const mcl::CurveParam& cp, fp::Mode mode)
 	{
 		this->cp = cp;
 		isBLS12 = cp.curveType == MCL_BLS12_381;
@@ -903,7 +903,10 @@ struct Param {
 			assert((p % 6) == 1);
 			r = local::evalPoly(z, rCoff);
 		}
-		Fp::init(p, mode);
+		Fp::init(pret, p, mode);
+		if (*pret < 0) return;
+		Fr::init(pret, r, mode);
+		if (*pret < 0) return;
 		Fp2::init(cp.xi_a);
 		Fp2 xi(cp.xi_a, 1);
 		g2 = Fp2::get_gTbl()[0];
@@ -958,6 +961,13 @@ struct Param {
 		}
 		glv1.init(r, z, isBLS12);
 		glv2.init(r, z, isBLS12);
+		*pret = 0;
+	}
+	void init(const mcl::CurveParam& cp, fp::Mode mode)
+	{
+		int ret;
+		init(&ret, cp, mode);
+		if (ret < 0) throw cybozu::Exception("Param:init") << ret;
 	}
 };
 
@@ -1561,14 +1571,6 @@ inline G1 makeAdjP(const G1& P)
 	return adjP;
 }
 
-inline void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
-{
-	local::StaticVar<>::param.init(cp, mode);
-	G1::setMulArrayGLV(local::mulArrayGLV1);
-	G2::setMulArrayGLV(local::mulArrayGLV2);
-	Fp12::setPowArrayGLV(local::powArrayGLV2);
-}
-
 } // mcl::bn::local
 
 /*
@@ -1876,23 +1878,42 @@ inline void Frobenius3(G2& D, const G2& S)
 	Frobenius(D, D);
 }
 
-inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
-{
-	local::init(cp, mode);
-	G1::setCompressedExpression();
-	G2::setCompressedExpression();
-	Fr::init(BN::param.r, mode);
-}
-
 namespace BN {
 
 using namespace mcl::bn; // backward compatibility
+
+inline void init(int *pret, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
+{
+	local::StaticVar<>::param.init(pret, cp, mode);
+	if (*pret < 0) return;
+	G1::setMulArrayGLV(local::mulArrayGLV1);
+	G2::setMulArrayGLV(local::mulArrayGLV2);
+	Fp12::setPowArrayGLV(local::powArrayGLV2);
+	G1::setCompressedExpression();
+	G2::setCompressedExpression();
+	*pret = 0;
+}
+
 inline void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
-	local::init(cp, mode);
+	int ret;
+	init(&ret, cp, mode);
+	if (ret < 0) throw cybozu::Exception("BN:init") << ret;
 }
 
 } // mcl::bn::BN
+
+inline void initPairing(int *pret, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
+{
+	BN::init(pret, cp, mode);
+}
+
+inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
+{
+	int ret;
+	BN::init(&ret, cp, mode);
+	if (ret < 0) throw cybozu::Exception("bn:initPairing") << ret;
+}
 
 } } // mcl::bn
 

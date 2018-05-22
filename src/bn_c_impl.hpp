@@ -74,16 +74,14 @@ mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 }
 
 int mclBn_init(int curve, int maxUnitSize)
-	try
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
-		return -1;
+		return -10;
 	}
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
-	initPairing(cp);
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	int ret;
+	initPairing(&ret, cp);
+	return ret;
 }
 
 int mclBn_getOpUnitSize()
