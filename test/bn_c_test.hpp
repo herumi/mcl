@@ -131,7 +131,10 @@ CYBOZU_TEST_AUTO(Fr)
 CYBOZU_TEST_AUTO(G1)
 {
 	mclBnG1 x, y, z;
-	memset(&x, 0xff, sizeof(x));
+	memset(&x, 0x1, sizeof(x));
+	/*
+		assert() of carry operation fails if use 0xff, so use 0x1
+	*/
 	CYBOZU_TEST_ASSERT(!mclBnG1_isValid(&x));
 	mclBnG1_clear(&x);
 	CYBOZU_TEST_ASSERT(mclBnG1_isValid(&x));
@@ -171,7 +174,10 @@ CYBOZU_TEST_AUTO(G1)
 CYBOZU_TEST_AUTO(G2)
 {
 	mclBnG2 x, y, z;
-	memset(&x, 0xff, sizeof(x));
+	/*
+		assert() of carry operation fails if use 0xff, so use 0x1
+	*/
+	memset(&x, 0x1, sizeof(x));
 	CYBOZU_TEST_ASSERT(!mclBnG2_isValid(&x));
 	mclBnG2_clear(&x);
 	CYBOZU_TEST_ASSERT(mclBnG2_isValid(&x));
