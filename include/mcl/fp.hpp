@@ -105,12 +105,11 @@ public:
 		}
 		printf("\n");
 	}
-	static inline bool init(const char *str, size_t strSize, fp::Mode mode)
+	static inline void init(int *pret, const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		if (!op_.init(str, strSize, maxBitSize, mode)) {
-			return false;
-		}
+		*pret = op_.init(_p, maxBitSize, mode);
+		if (*pret < 0) return;
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
 			one.clear();
@@ -122,17 +121,18 @@ public:
 			gmp::getArray(op_.half, op_.N, half);
 		}
 		inv(inv2_, 2);
-		return true;
+		*pret = 0;
+	}
+	static inline void init(const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
+	{
+		int ret;
+		init(&ret, _p, mode);
+		if (ret < 0) throw cybozu::Exception("Fp:init") << ret;
 	}
 	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
-		if (!init(mstr.c_str(), mstr.size(), mode)) {
-			throw cybozu::Exception("Fp:init") << mstr << mode;
-		}
-	}
-	static inline void init(const mpz_class& m, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(gmp::getStr(m), mode);
+		mpz_class p(mstr);
+		init(p, mode);
 	}
 	static inline void getModulo(std::string& pstr)
 	{

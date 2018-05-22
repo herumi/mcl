@@ -1881,7 +1881,7 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = 
 	local::init(cp, mode);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
-	Fr::init(BN::param.r);
+	Fr::init(BN::param.r, mode);
 }
 
 namespace BN {

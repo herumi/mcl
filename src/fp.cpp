@@ -348,30 +348,23 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #endif
 }
 
-bool Op::init(const char *str, size_t strSize, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
+int Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
 {
-	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) {
-#ifdef __EMSCRIPTEN__
-		fprintf(stderr, "Op:init:mismatch between header and library of MCL_MAX_BIT_SIZE %d %d\n", (int)mclMaxBitSize, MCL_MAX_BIT_SIZE);
-#endif
-		return false;
-	}
+	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return -1;
 #ifdef MCL_USE_VINT
 	assert(sizeof(mcl::vint::Unit) == sizeof(Unit));
 #else
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 #endif
+	if (maxBitSize > MCL_MAX_BIT_SIZE) return -2;
+	if (_p <= 0) return -3;
 	clear();
-	if (maxBitSize > MCL_MAX_BIT_SIZE) {
-		return false;
-	}
 	{
 		const size_t maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
-		bool isMinus;
-		int ioMode = 0;
-		N = strToArray(&isMinus, p, maxN, str, strSize, ioMode);
-		if (N == 0 || isMinus) return false;
-		gmp::setArray(mp, p, N);
+		N = gmp::getUnitSize(_p);
+		if (N > maxN) return -4;
+		gmp::getArray(p, N, _p);
+		mp = _p;
 	}
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
@@ -465,7 +458,7 @@ bool Op::init(const char *str, size_t strSize, size_t maxBitSize, Mode mode, siz
 	case 17: setOp<17>(*this, mode); break; // 521 if 32-bit
 #endif
 	default:
-		return false;
+		return -5;
 	}
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NIST_P192) {
@@ -491,7 +484,7 @@ bool Op::init(const char *str, size_t strSize, size_t maxBitSize, Mode mode, siz
 	} else {
 		hash = sha512;
 	}
-	return true;
+	return 0;
 }
 
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)
