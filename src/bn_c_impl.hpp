@@ -28,49 +28,30 @@ static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(
 
 template<class T>
 mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode)
-	try
 {
-	std::string str;
-	cast(x)->getStr(str, ioMode);
-	mclSize terminate = (ioMode == 10 || ioMode == 16) ? 1 : 0;
-	if (str.size() + terminate > maxBufSize) {
-		return 0;
-	}
-	memcpy(buf, str.c_str(), str.size());
-	if (terminate) {
-		((char *)buf)[str.size()] = '\0';
-	}
-	return str.size();
-} catch (std::exception&) {
-	return 0;
+	size_t n = cast(x)->serialize(buf, maxBufSize, ioMode);
+	if (n == 0 || n == maxBufSize - 1) return 0;
+	((char *)buf)[n] = '\0';
+	return n;
 }
 
 template<class T>
 mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
-	try
 {
 	return (mclSize)cast(x)->serialize(buf, maxBufSize);
-} catch (std::exception&) {
-	return 0;
 }
 
 template<class T>
 int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
-	try
 {
-	cast(x)->setStr(std::string(buf, bufSize), ioMode);
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	size_t n = cast(x)->deserialize(buf, bufSize, ioMode);
+	return n > 0 ? 0 : -1;
 }
 
 template<class T>
 mclSize deserialize(T *x, const void *buf, mclSize bufSize)
-	try
 {
 	return (mclSize)cast(x)->deserialize(buf, bufSize);
-} catch (std::exception&) {
-	return 0;
 }
 
 int mclBn_init(int curve, int maxUnitSize)
@@ -142,12 +123,9 @@ int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode)
 	return setStr(x, buf, bufSize, ioMode);
 }
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
-	try
 {
 	cast(x)->setArrayMask((const char *)buf, bufSize);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
 {
@@ -172,22 +150,16 @@ int mclBnFr_isOne(const mclBnFr *x)
 }
 
 int mclBnFr_setByCSPRNG(mclBnFr *x)
-	try
 {
 	cast(x)->setByCSPRNG();
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 // hash(buf) and set x
 int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)
-	try
 {
 	cast(x)->setHashOf(buf, bufSize);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode)
