@@ -35,7 +35,7 @@ public:
 		printf("\n");
 	}
 	template<class OutputStream>
-	void save(OutputStream& os, int, bool *pb) const
+	void save(bool *pb, OutputStream& os, int) const
 	{
 		char buf[1024];
 		size_t n = mcl::fp::arrayToHex(buf, sizeof(buf), v_, getUnitSize());
@@ -46,7 +46,7 @@ public:
 		cybozu::write(os, buf + sizeof(buf) - n, sizeof(buf), pb);
 	}
 	template<class InputStream>
-	void load(InputStream& is, int, bool *pb)
+	void load(bool *pb, InputStream& is, int)
 	{
 		char buf[1024];
 		*pb = false;
@@ -61,14 +61,14 @@ public:
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
-		save(os, ioMode, &b);
+		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("fp:save") << ioMode;
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
-		load(is, ioMode, &b);
+		load(&b, is, ioMode);
 		if (!b) throw cybozu::Exception("fp:load") << ioMode;
 	}
 	void clear()
@@ -213,39 +213,39 @@ public:
 		b.setArray(buf + n, n);
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode, bool *pb)
+	void load(bool *pb, InputStream& is, int ioMode)
 	{
-		a.load(is, ioMode, pb);
+		a.load(pb, is, ioMode);
 		if (!*pb) return;
-		b.load(is, ioMode, pb);
+		b.load(pb, is, ioMode);
 	}
 	/*
 		Fp2T = <a> + ' ' + <b>
 	*/
 	template<class OutputStream>
-	void save(OutputStream& os, int ioMode, bool *pb) const
+	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const char sep = *fp::getIoSeparator(ioMode);
-		a.save(os, ioMode, pb);
+		a.save(pb, os, ioMode);
 		if (!*pb) return;
 		if (sep) {
-			cybozu::writeChar(os, sep, pb);
+			cybozu::writeChar(pb, os, sep);
 			if (!*pb) return;
 		}
-		b.save(os, ioMode, pb);
+		b.save(pb, os, ioMode);
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
-		load(is, ioMode, &b);
+		load(&b, is, ioMode);
 		if (!b) throw cybozu::Exception("Fp2T:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
-		save(os, ioMode, &b);
+		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("Fp2T:save");
 	}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
@@ -736,40 +736,40 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	}
 	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
 	template<class InputStream>
-	void load(InputStream& is, int ioMode, bool *pb)
+	void load(bool *pb, InputStream& is, int ioMode)
 	{
-		a.load(is, ioMode, pb); if (!*pb) return;
-		b.load(is, ioMode, pb); if (!*pb) return;
-		c.load(is, ioMode, pb); if (!*pb) return;
+		a.load(pb, is, ioMode); if (!*pb) return;
+		b.load(pb, is, ioMode); if (!*pb) return;
+		c.load(pb, is, ioMode); if (!*pb) return;
 	}
 	template<class OutputStream>
-	void save(OutputStream& os, int ioMode, bool *pb) const
+	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const char sep = *fp::getIoSeparator(ioMode);
-		a.save(os, ioMode, pb); if (!*pb) return;
+		a.save(pb, os, ioMode); if (!*pb) return;
 		if (sep) {
-			cybozu::writeChar(os, sep, pb);
+			cybozu::writeChar(pb, os, sep);
 			if (!*pb) return;
 		}
-		b.save(os, ioMode, pb); if (!*pb) return;
+		b.save(pb, os, ioMode); if (!*pb) return;
 		if (sep) {
-			cybozu::writeChar(os, sep, pb);
+			cybozu::writeChar(pb, os, sep);
 			if (!*pb) return;
 		}
-		c.save(os, ioMode, pb);
+		c.save(pb, os, ioMode);
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
-		load(is, ioMode, &b);
+		load(&b, is, ioMode);
 		if (!b) throw cybozu::Exception("Fp6T:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
-		save(os, ioMode, &b);
+		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("Fp6T:save");
 	}
 	friend std::istream& operator>>(std::istream& is, Fp6T& self)
@@ -1157,34 +1157,34 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 #endif
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode, bool *pb)
+	void load(bool *pb, InputStream& is, int ioMode)
 	{
-		a.load(is, ioMode, pb); if (!*pb) return;
-		b.load(is, ioMode, pb);
+		a.load(pb, is, ioMode); if (!*pb) return;
+		b.load(pb, is, ioMode);
 	}
 	template<class OutputStream>
-	void save(OutputStream& os, int ioMode, bool *pb) const
+	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const char sep = *fp::getIoSeparator(ioMode);
-		a.save(os, ioMode, pb); if (!*pb) return;
+		a.save(pb, os, ioMode); if (!*pb) return;
 		if (sep) {
-			cybozu::writeChar(os, sep, pb);
+			cybozu::writeChar(pb, os, sep);
 			if (!*pb) return;
 		}
-		b.save(os, ioMode, pb);
+		b.save(pb, os, ioMode);
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
-		load(is, ioMode, &b);
+		load(&b, is, ioMode);
 		if (!b) throw cybozu::Exception("Fp12T:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
-		save(os, ioMode, &b);
+		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("Fp12T:save");
 	}
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)

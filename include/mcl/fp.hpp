@@ -226,7 +226,7 @@ public:
 		if (isMont()) op_.fromMont(v_, v_);
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode, bool *pb)
+	void load(bool *pb, InputStream& is, int ioMode)
 	{
 		bool isMinus = false;
 		*pb = false;
@@ -256,16 +256,16 @@ public:
 		*pb = true;
 	}
 	template<class OutputStream>
-	void save(OutputStream& os, int ioMode, bool *pb) const
+	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const size_t n = getByteSize();
 		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
 			if (ioMode & IoArrayRaw) {
-				cybozu::write(os, v_, n, pb);
+				cybozu::write(pb, os, v_, n);
 			} else {
 				fp::Block b;
 				getBlock(b);
-				cybozu::write(os, b.p, n, pb);
+				cybozu::write(pb, os, b.p, n);
 			}
 			return;
 		}
@@ -278,24 +278,24 @@ public:
 			*pb = false;
 			return;
 		}
-		cybozu::write(os, buf + sizeof(buf) - len, len, pb);
+		cybozu::write(pb, os, buf + sizeof(buf) - len, len);
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
-		save(os, ioMode, &b);
+		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("fp:save") << ioMode;
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
-		load(is, ioMode, &b);
+		load(&b, is, ioMode);
 		if (!b) throw cybozu::Exception("fp:load") << ioMode;
 	}
 	template<class S>
-	void setArray(const S *x, size_t n, bool *pb)
+	void setArray(bool *pb, const S *x, size_t n)
 	{
 		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::NoMask);
 		toMont();
@@ -307,7 +307,7 @@ public:
 	void setArray(const S *x, size_t n)
 	{
 		bool b;
-		setArray(x, n, &b);
+		setArray(&b, x, n);
 		if (!b) throw cybozu::Exception("Fp:setArray");
 	}
 	/*
@@ -374,18 +374,18 @@ public:
 		getMpz(x);
 		return x;
 	}
-	void setMpz(const mpz_class& x, bool *pb)
+	void setMpz(bool *pb, const mpz_class& x)
 	{
 		if (x < 0) {
 			*pb = false;
 			return;
 		}
-		setArray(gmp::getUnit(x), gmp::getUnitSize(x), pb);
+		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
 	}
 	void setMpz(const mpz_class& x)
 	{
 		bool b;
-		setMpz(x, &b);
+		setMpz(&b, x);
 		if (!b) throw cybozu::Exception("Fp:setMpz:neg");
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }

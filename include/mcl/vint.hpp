@@ -1111,14 +1111,14 @@ public:
 	template<class OutputStream>
 	void save(OutputStream& os, int base, bool *pb) const
 	{
-		if (isNeg_) cybozu::writeChar(os, '-', pb);
+		if (isNeg_) cybozu::writeChar(pb, os, '-');
 		char buf[1024];
 		size_t n = mcl::fp::arrayToStr(buf, sizeof(buf), &buf_[0], size_, base, false);
 		if (n == 0) {
 			*pb = false;
 			return;
 		}
-		cybozu::write(os, buf + sizeof(buf) - n, n, pb);
+		cybozu::write(pb, os, buf + sizeof(buf) - n, n);
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int base = 10) const
@@ -1390,7 +1390,7 @@ public:
 		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
 	}
 	template<class InputStream>
-	void load(InputStream& is, int ioMode, bool *pb)
+	void load(bool *pb, InputStream& is, int ioMode)
 	{
 		*pb = false;
 		char buf[1024];
@@ -1408,7 +1408,7 @@ public:
 	void load(InputStream& is, int ioMode = 0)
 	{
 		bool b;
-		load(is, ioMode, &b);
+		load(&b, is, ioMode);
 		if (!b) throw cybozu::Exception("Vint:load");
 	}
 	inline friend std::istream& operator>>(std::istream& is, VintT& x)
