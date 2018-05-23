@@ -54,6 +54,18 @@ mclSize deserialize(T *x, const void *buf, mclSize bufSize)
 	return (mclSize)cast(x)->deserialize(buf, bufSize);
 }
 
+#ifdef __EMSCRIPTEN__
+// use these functions forcibly
+extern "C" MCLBN_DLL_API void *mclBnMalloc(size_t n)
+{
+	return malloc(n);
+}
+extern "C" MCLBN_DLL_API void mclBnFree(void *p)
+{
+	free(p);
+}
+#endif
+
 int mclBn_init(int curve, int maxUnitSize)
 {
 	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {

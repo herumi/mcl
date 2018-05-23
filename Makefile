@@ -245,7 +245,9 @@ test: $(TEST_EXE)
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include -Wall -Wextra
 EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8 -Os
-EMCC_OPT+=-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1 -s ASSERTIONS=1
+EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1 #-s ASSERTIONS=1
+EMCC_OPT+=-s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_MINIMUM_EXCEPTION
+EMCC_OPT+=-s ABORTING_MALLOC=0
 SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/she.h Makefile
 MCL_C_DEP=src/fp.cpp src/bn_c_impl.hpp include/mcl/bn.hpp include/mcl/bn.h Makefile
 ifeq ($(MCL_USE_LLVM),2)
@@ -259,7 +261,7 @@ endif
 	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -s TOTAL_MEMORY=67108864
 
 ../mcl-wasm/mcl_c.js: src/bn_c256.cpp $(MCL_C_DEP)
-	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DCYBOZU_MINIMUM_EXCEPTION -DMCL_USE_WEB_CRYPTO_API
+	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API
 
 ../mcl-wasm/mcl_c512.js: src/bn_c512.cpp $(MCL_C_DEP)
 	emcc -o $@ src/fp.cpp src/bn_c512.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=512 -DCYBOZU_MINIMUM_EXCEPTION -DMCL_USE_WEB_CRYPTO_API
