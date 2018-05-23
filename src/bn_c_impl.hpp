@@ -231,12 +231,9 @@ int mclBnG1_isZero(const mclBnG1 *x)
 }
 
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
-	try
 {
 	hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
-} catch (std::exception&) {
-	return 1;
 }
 
 mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode)
@@ -309,12 +306,9 @@ int mclBnG2_isZero(const mclBnG2 *x)
 }
 
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
-	try
 {
 	hashAndMapToG2(*cast(x), buf, bufSize);
 	return 0;
-} catch (std::exception&) {
-	return 1;
 }
 
 mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode)

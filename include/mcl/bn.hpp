@@ -342,15 +342,15 @@ struct MapTo {
 		Remark: throw exception if t = 0, c1, -c1 and b = 2
 	*/
 	template<class G, class F>
-	void calcBN(G& P, const F& t) const
+	bool calcBN(G& P, const F& t) const
 	{
 		F x, y, w;
 		bool negative = legendre(t) < 0;
-		if (t.isZero()) goto ERR_POINT;
+		if (t.isZero()) return false;
 		F::sqr(w, t);
 		w += G::b_;
 		*w.getFp0() += Fp::one();
-		if (w.isZero()) goto ERR_POINT;
+		if (w.isZero()) return false;
 		F::inv(w, w);
 		mulFp(w, c1_);
 		w *= t;
@@ -364,11 +364,10 @@ struct MapTo {
 			if (F::squareRoot(y, y)) {
 				if (negative) F::neg(y, y);
 				P.set(x, y, false);
-				return;
+				return true;
 			}
 		}
-	ERR_POINT:
-		throw cybozu::Exception("MapTo:calcBN:bad") << t;
+		return false;
 	}
 	/*
 		Faster Hashing to G2
@@ -466,29 +465,31 @@ struct MapTo {
 			initBLS12(z);
 		}
 	}
-	void calcG1(G1& P, const Fp& t) const
+	bool calcG1(G1& P, const Fp& t) const
 	{
 		if (isBN_) {
-			calcBN<G1, Fp>(P, t);
+			if (!calcBN<G1, Fp>(P, t)) return false;
 		} else {
 			naiveMapTo<G1, Fp>(P, t);
 			mulByCofactorBLS12(P, P);
 		}
 		assert(P.isValid());
+		return true;
 	}
 	/*
 		get the element in G2 by multiplying the cofactor
 	*/
-	void calcG2(G2& P, const Fp2& t) const
+	bool calcG2(G2& P, const Fp2& t) const
 	{
 		if (isBN_) {
-			calcBN<G2, Fp2>(P, t);
+			if (!calcBN<G2, Fp2>(P, t)) return false;
 			mulByCofactorBN(P, P);
 		} else {
 			naiveMapTo<G2, Fp2>(P, t);
 			mulByCofactorBLS12(P, P);
 		}
 		assert(P.isValid());
+		return true;
 	}
 };
 
@@ -1804,20 +1805,40 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>
 {
 	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
 }
-inline void mapToG1(G1& P, const Fp& x) { BN::param.mapTo.calcG1(P, x); }
-inline void mapToG2(G2& P, const Fp2& x) { BN::param.mapTo.calcG2(P, x); }
+inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
+inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
+inline void mapToG1(G1& P, const Fp& x)
+{
+	bool b;
+	mapToG1(&b, P, x);
+	if (!b) throw cybozu::Exception("mapToG1:bad value") << x;
+}
+inline void mapToG2(G2& P, const Fp2& x)
+{
+	bool b;
+	mapToG2(&b, P, x);
+	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
+}
 inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 {
 	Fp t;
 	t.setHashOf(buf, bufSize);
-	mapToG1(P, t);
+	bool b;
+	mapToG1(&b, P, t);
+	// It will not happen that the hashed value is equal to special value
+	assert(b);
+	(void)b;
 }
 inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 {
 	Fp2 t;
 	t.a.setHashOf(buf, bufSize);
 	t.b.clear();
-	mapToG2(P, t);
+	bool b;
+	mapToG2(&b, P, t);
+	// It will not happen that the hashed value is equal to special value
+	assert(b);
+	(void)b;
 }
 inline void hashAndMapToG1(G1& P, const std::string& str)
 {
