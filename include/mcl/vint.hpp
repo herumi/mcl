@@ -1109,7 +1109,7 @@ public:
 	}
 	void clear() { *this = 0; }
 	template<class OutputStream>
-	void save(OutputStream& os, int base, bool *pb) const
+	void save(bool *pb, OutputStream& os, int base = 10) const
 	{
 		if (isNeg_) cybozu::writeChar(pb, os, '-');
 		char buf[1024];
@@ -1124,8 +1124,22 @@ public:
 	void save(OutputStream& os, int base = 10) const
 	{
 		bool b;
-		save(os, base, &b);
+		save(&b, os, base);
 		if (!b) throw cybozu::Exception("Vint:save");
+	}
+	/*
+		set buf with string terminated by '\0'
+		return strlen(buf) if success else 0
+	*/
+	size_t getStr(char *buf, size_t bufSize, int base = 10) const
+	{
+		cybozu::MemoryOutputStream os(buf, bufSize);
+		bool b;
+		save(&b, os, base);
+		const size_t n = os.getPos();
+		if (!b || n == bufSize - 1) return 0;
+		buf[n] = '\0';
+		return n;
 	}
 	std::string getStr(int base = 10) const
 	{

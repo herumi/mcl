@@ -582,8 +582,15 @@ CYBOZU_TEST_AUTO(string)
 		Vint x, y;
 		x.setArray(tbl[i].v,tbl[i].vn);
 		CYBOZU_TEST_EQUAL(x.getStr(10), tbl[i].str);
+		char buf[1024];
+		size_t n = x.getStr(buf, sizeof(buf), 10);
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL(tbl[i].str, buf);
 		y.setStr(tbl[i].str);
 		CYBOZU_TEST_EQUAL(x.getStr(16), tbl[i].hex + 2);
+		n = x.getStr(buf, sizeof(buf), 16);
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL(tbl[i].hex + 2, buf);
 		CYBOZU_TEST_EQUAL(x, y);
 		x = 1;
 		x.setStr(tbl[i].hex);

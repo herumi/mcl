@@ -112,6 +112,23 @@ inline bool setStr(mpz_class& z, const std::string& str, int base = 0)
 	return z.set_str(str, base) == 0;
 #endif
 }
+/*
+	set buf with string terminated by '\0'
+	return strlen(buf) if success else 0
+*/
+inline size_t getStr(char *buf, size_t bufSize, const mpz_class& z, int base = 10)
+{
+#ifdef MCL_USE_VINT
+	return z.getStr(buf, bufSize, base);
+#else
+	std::string str = z.get_str(base);
+	if (str.size() < bufSize) {
+		memcpy(buf, str.c_str(), str.size() + 1);
+		return str.size();
+	}
+	return 0;
+#endif
+}
 inline void getStr(std::string& str, const mpz_class& z, int base = 10)
 {
 #ifdef MCL_USE_VINT

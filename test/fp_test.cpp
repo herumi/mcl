@@ -333,6 +333,10 @@ void compareTest()
 		}
 		std::string str;
 		Fp::getModulo(str);
+		char buf[1024];
+		size_t n = Fp::getModulo(buf, sizeof(buf));
+		CYBOZU_TEST_EQUAL(n, str.size());
+		CYBOZU_TEST_EQUAL(buf, str.c_str());
 		mpz_class half(str);
 		half = (half - 1) / 2;
 		Fp x;

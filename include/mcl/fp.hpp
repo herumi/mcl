@@ -134,6 +134,10 @@ public:
 		mpz_class p(mstr);
 		init(p, mode);
 	}
+	static inline size_t getModulo(char *buf, size_t bufSize)
+	{
+		return gmp::getStr(buf, bufSize, op_.mp);
+	}
 	static inline void getModulo(std::string& pstr)
 	{
 		gmp::getStr(pstr, op_.mp);
