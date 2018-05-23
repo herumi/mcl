@@ -403,18 +403,35 @@ private:
 		void add(const CipherTextAT& c) { add(*this, *this, c); }
 		void sub(const CipherTextAT& c) { sub(*this, *this, c); }
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			S_.load(pb, is, ioMode); if (!*pb) return;
+			T_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			S_.save(pb, os, ioMode); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(pb, os, sep);
+				if (!*pb) return;
+			}
+			T_.save(pb, os, ioMode);
+		}
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			S_.load(is, ioMode);
-			T_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherTextA:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			S_.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			T_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherTextA:save");
 		}
 		friend std::istream& operator>>(std::istream& is, CipherTextAT& self)
 		{
@@ -474,21 +491,38 @@ private:
 	struct ZkpT : public fp::Serializable<ZkpT<Tag, n> > {
 		Fr d_[n];
 		template<class InputStream>
-		void load(InputStream& is, int ioMode = IoSerialize)
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
 		{
 			for (size_t i = 0; i < n; i++) {
-				d_[i].load(is, ioMode);
+				d_[i].load(pb, is, ioMode); if (!*pb) return;
 			}
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			d_[0].save(pb, os, ioMode); if (!*pb) return;
+			for (size_t i = 1; i < n; i++) {
+				if (sep) {
+					cybozu::writeChar(pb, os, sep);
+					if (!*pb) return;
+				}
+				d_[i].save(pb, os, ioMode);
+			}
+		}
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
+		{
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:ZkpT:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			d_[0].save(os, ioMode);
-			for (size_t i = 1; i < n; i++) {
-				if (sep) cybozu::writeChar(os, sep);
-				d_[i].save(os, ioMode);
-			}
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:ZkpT:save");
 		}
 		friend std::istream& operator>>(std::istream& is, ZkpT& self)
 		{
@@ -721,18 +755,35 @@ public:
 			}
 		}
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			x_.load(pb, is, ioMode); if (!*pb) return;
+			y_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			x_.save(pb, os, ioMode); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(pb, os, sep);
+				if (!*pb) return;
+			}
+			y_.save(os, ioMode);
+		}
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			x_.load(is, ioMode);
-			y_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:SecretKey:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			x_.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			y_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:SecretKey:save");
 		}
 		friend std::istream& operator>>(std::istream& is, SecretKey& self)
 		{
@@ -1284,18 +1335,35 @@ public:
 		}
 	public:
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			xP_.load(pb, is, ioMode); if (!*pb) return;
+			yQ_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			xP_.save(pb, os, ioMode); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(pb, os, sep);
+				if (!*pb) return;
+			}
+			yQ_.save(pb, os, ioMode);
+		}
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			xP_.load(is, ioMode);
-			yQ_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:PublicKey:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			xP_.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			yQ_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:PublicKey:save");
 		}
 		friend std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
@@ -1453,18 +1521,35 @@ public:
 		void add(const CipherTextA& c) { add(*this, *this, c); }
 		void sub(const CipherTextA& c) { sub(*this, *this, c); }
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			c1_.load(pb, is, ioMode); if (!*pb) return;
+			c2_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			c1_.save(pb, os, ioMode); if (!*pb) return;
+			if (sep) {
+				cybozu::writeChar(pb, os, sep);
+				if (!*pb) return;
+			}
+			c2_.save(pb, os, ioMode);
+		}
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			c1_.load(is, ioMode);
-			c2_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherTextA:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			c1_.save(os, ioMode);
-			if (sep) cybozu::writeChar(os, sep);
-			c2_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherTextA:save");
 		}
 		friend std::istream& operator>>(std::istream& is, CipherTextA& self)
 		{
@@ -1562,21 +1647,38 @@ public:
 		void add(const CipherTextGT& c) { add(*this, *this, c); }
 		void sub(const CipherTextGT& c) { sub(*this, *this, c); }
 		template<class InputStream>
-		void load(InputStream& is, int ioMode = IoSerialize)
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
 		{
 			for (int i = 0; i < 4; i++) {
-				g_[i].load(is, ioMode);
+				g_[i].load(pb, is, ioMode); if (!*pb) return;
 			}
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			const char sep = *fp::getIoSeparator(ioMode);
+			g_[0].save(pb, os, ioMode); if (!*pb) return;
+			for (int i = 1; i < 4; i++) {
+				if (sep) {
+					cybozu::writeChar(pb, os, sep);
+					if (!*pb) return;
+				}
+				g_[i].save(pb, os, ioMode); if (!*pb) return;
+			}
+		}
+		template<class InputStream>
+		void load(InputStream& is, int ioMode = IoSerialize)
+		{
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherTextGT:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			const char sep = *fp::getIoSeparator(ioMode);
-			g_[0].save(os, ioMode);
-			for (int i = 1; i < 4; i++) {
-				if (sep) cybozu::writeChar(os, sep);
-				g_[i].save(os, ioMode);
-			}
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherTextGT:save");
 		}
 		friend std::istream& operator>>(std::istream& is, CipherTextGT& self)
 		{
@@ -1667,24 +1769,45 @@ public:
 		void sub(const CipherText& c) { sub(*this, *this, c); }
 		void mul(const CipherText& c) { mul(*this, *this, c); }
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			cybozu::writeChar(pb, isMultiplied_ ? '0' : '1', is); if (!*pb) return;
+			if (isMultiplied()) {
+				m_.load(pb, is, ioMode);
+			} else {
+				a_.load(pb, is, ioMode);
+			}
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			char c;
+			if (!cybozu::readChar(&c, os)) return;
+			if (c == '0' || c == '1') {
+				isMultiplied_ = c == '0';
+			} else {
+				*pb = false;
+				return;
+			}
+			if (isMultiplied()) {
+				m_.save(pb, os, ioMode);
+			} else {
+				a_.save(pb, os, ioMode);
+			}
+		}
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			cybozu::load(isMultiplied_, is);
-			if (isMultiplied()) {
-				m_.load(is, ioMode);
-			} else {
-				a_.load(is, ioMode);
-			}
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherText:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			cybozu::save(os, isMultiplied_);
-			if (isMultiplied()) {
-				m_.save(os, ioMode);
-			} else {
-				a_.save(os, ioMode);
-			}
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("she:CipherText:save");
 		}
 		friend std::istream& operator>>(std::istream& is, CipherText& self)
 		{

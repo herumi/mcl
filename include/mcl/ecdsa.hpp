@@ -112,18 +112,35 @@ inline void getPublicKey(PublicKey& pub, const SecretKey& sec)
 struct Signature : public mcl::fp::Serializable<Signature> {
 	Zn r, s;
 	template<class InputStream>
+	void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+	{
+		r.load(pb, is, ioMode); if (!*pb) return;
+		s.load(pb, is, ioMode);
+	}
+	template<class OutputStream>
+	void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+	{
+		const char sep = *fp::getIoSeparator(ioMode);
+		r.save(pb, os, ioMode); if (!*pb) return;
+		if (sep) {
+			cybozu::writeChar(pb, os, sep);
+			if (!*pb) return;
+		}
+		s.save(pb, os, ioMode);
+	}
+	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
-		r.load(is, ioMode);
-		s.load(is, ioMode);
+		bool b;
+		load(&b, is, ioMode);
+		if (!b) throw cybozu::Exception("ecdsa:Signature:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
-		const char sep = *fp::getIoSeparator(ioMode);
-		r.save(os, ioMode);
-		if (sep) cybozu::writeChar(os, sep);
-		s.save(os, ioMode);
+		bool b;
+		save(&b, os, ioMode);
+		if (!b) throw cybozu::Exception("ecdsa:Signature:save");
 	}
 	friend std::istream& operator>>(std::istream& is, Signature& self)
 	{

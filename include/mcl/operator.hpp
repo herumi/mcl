@@ -140,18 +140,20 @@ struct Serializable : public E {
 		return str;
 	}
 	// return written bytes
-	size_t serialize(void *buf, size_t maxBufSize) const
+	size_t serialize(void *buf, size_t maxBufSize, int ioMode = IoSerialize) const
 	{
 		cybozu::MemoryOutputStream os(buf, maxBufSize);
-		static_cast<const T&>(*this).save(os);
-		return os.getPos();
+		bool b;
+		static_cast<const T&>(*this).save(&b, os, ioMode);
+		return b ? os.getPos() : 0;
 	}
 	// return read bytes
-	size_t deserialize(const void *buf, size_t bufSize)
+	size_t deserialize(const void *buf, size_t bufSize, int ioMode = IoSerialize)
 	{
 		cybozu::MemoryInputStream is(buf, bufSize);
-		static_cast<T&>(*this).load(is);
-		return is.getPos();
+		bool b;
+		static_cast<T&>(*this).load(&b, is, ioMode);
+		return b ? is.getPos() : 0;
 	}
 };
 
