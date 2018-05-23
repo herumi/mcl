@@ -9,7 +9,6 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <vector>
 #include <assert.h>
 #include <stdint.h>
 #include <cybozu/exception.hpp>
@@ -440,8 +439,13 @@ inline void getRand(mpz_class& z, size_t bitSize, fp::RandGen rg = fp::RandGen()
 	assert(bitSize > 1);
 	const size_t rem = bitSize & 31;
 	const size_t n = (bitSize + 31) / 32;
-	std::vector<uint32_t> buf(n);
-	rg.read(buf.data(), n * sizeof(buf[0]));
+	uint32_t buf[128];
+	assert(n <= CYBOZU_NUM_OF_ARRAY(buf));
+	if (n > CYBOZU_NUM_OF_ARRAY(buf)) {
+		z = 0;
+		return;
+	}
+	rg.read(buf, n * sizeof(buf[0]));
 	uint32_t v = buf[n - 1];
 	if (rem == 0) {
 		v |= 1U << 31;
@@ -450,7 +454,7 @@ inline void getRand(mpz_class& z, size_t bitSize, fp::RandGen rg = fp::RandGen()
 		v |= 1U << (rem - 1);
 	}
 	buf[n - 1] = v;
-	setArray(z, &buf[0], n);
+	setArray(z, buf, n);
 }
 
 inline void getRandPrime(mpz_class& z, size_t bitSize, fp::RandGen rg = fp::RandGen(), bool setSecondBit = false, bool mustBe3mod4 = false)
@@ -482,9 +486,9 @@ template<class Vec>
 void convertToBinary(Vec& v, const mpz_class& x)
 {
 	const size_t len = gmp::getBitSize(x);
-	v.clear();
+	v.resize(len);
 	for (size_t i = 0; i < len; i++) {
-		v.push_back(gmp::testBit(x, len - 1 - i) ? 1 : 0);
+		v[i] = gmp::testBit(x, len - 1 - i) ? 1 : 0;
 	}
 }
 
@@ -501,7 +505,8 @@ size_t getContinuousVal(const Vec& v, size_t pos, int val)
 template<class Vec>
 void convertToNAF(Vec& v, const Vec& in)
 {
-	v = in;
+//	v = in;
+	v.copy(in);
 	size_t pos = v.size() - 1;
 	for (;;) {
 		size_t p = getContinuousVal(v, pos, 0);

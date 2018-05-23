@@ -10,6 +10,7 @@
 #include <mcl/ec.hpp>
 #include <mcl/curve_type.h>
 #include <assert.h>
+#include <vector>
 
 /*
 	set bit size of Fp and Fr
@@ -105,7 +106,7 @@ void Frobenius3(G2& D, const G2& S);
 
 namespace local {
 
-typedef std::vector<int8_t> SignVec;
+typedef mcl::Vector<int8_t> SignVec;
 
 inline size_t getPrecomputeQcoeffSize(const SignVec& sv)
 {
@@ -1707,6 +1708,13 @@ inline void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	Qcoeff.resize(BN::param.precomputedQcoeffSize);
 	precomputeG2(Qcoeff.data(), Q);
 }
+inline bool precomputeG2(mcl::Vector<Fp6>& Qcoeff, const G2& Q)
+{
+	bool b = Qcoeff.resize(BN::param.precomputedQcoeffSize);
+	if (!b) return false;
+	precomputeG2(Qcoeff.data(), Q);
+	return true;
+}
 inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
 	G1 P(P_);
@@ -1744,6 +1752,10 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	f *= ft;
 }
 inline void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
+{
+	precomputedMillerLoop(f, P, Qcoeff.data());
+}
+inline void precomputedMillerLoop(Fp12& f, const G1& P, const mcl::Vector<Fp6>& Qcoeff)
 {
 	precomputedMillerLoop(f, P, Qcoeff.data());
 }
@@ -1802,6 +1814,10 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, c
 	f *= f2;
 }
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
+{
+	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
+}
+inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const mcl::Vector<Fp6>& Q1coeff, const G1& P2, const mcl::Vector<Fp6>& Q2coeff)
 {
 	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
 }

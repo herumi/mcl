@@ -4,11 +4,10 @@
 */
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
-#include <vector>
-#include <stdlib.h>
 #include <assert.h>
 #include <cmath>
 #include <iostream>
+#include <mcl/vector.hpp>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
 #include <mcl/conversion.hpp>
@@ -620,34 +619,6 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 }
 
 template<class T>
-class VariableBuffer {
-	std::vector<T> v_;
-public:
-	typedef T Unit;
-	VariableBuffer()
-	{
-	}
-	void clear() { v_.clear(); }
-
-	/*
-		@note extended buffer may be not cleared
-	*/
-	void alloc(size_t n)
-	{
-		v_.resize(n);
-	}
-	void swap(VariableBuffer& rhs) { v_.swap(rhs.v_); }
-
-	/*
-		*this = rhs
-		rhs may be destroyed
-	*/
-	size_t allocSize() const { return v_.size(); }
-	const T& operator[](size_t n) const { return v_[n]; }
-	T& operator[](size_t n) { return v_[n]; }
-};
-
-template<class T>
 class Buffer {
 	size_t allocSize_;
 	T *ptr_;
@@ -680,6 +651,7 @@ public:
 		std::swap(allocSize_, rhs.allocSize_);
 		std::swap(ptr_, rhs.ptr_);
 	}
+#if 0
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 	Buffer(Buffer&& rhs) noexcept
 		: allocSize_(0)
@@ -692,6 +664,7 @@ public:
 		swap(rhs);
 		return *this;
 	}
+#endif
 #endif
 	void clear()
 	{
@@ -1789,7 +1762,6 @@ public:
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
 
-//typedef VintT<vint::VariableBuffer<mcl::vint::Unit> > Vint;
 #ifdef MCL_VINT_FIXED_BUFFER
 typedef VintT<vint::FixedBuffer<mcl::vint::Unit, MCL_MAX_BIT_SIZE * 2> > Vint;
 #else

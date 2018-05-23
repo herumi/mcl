@@ -6,9 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <iostream>
-#include <sstream>
-#include <vector>
+#include <iosfwd>
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4127)

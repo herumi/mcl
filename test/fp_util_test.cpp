@@ -3,6 +3,7 @@
 #include <mcl/conversion.hpp>
 #include <mcl/gmp_util.hpp>
 #include <mcl/fp.hpp>
+#include <vector>
 
 CYBOZU_TEST_AUTO(arrayToHex)
 {
