@@ -43,7 +43,7 @@ struct CurveParam {
 	int curveType; // same in curve_type.h
 	bool operator==(const CurveParam& rhs) const
 	{
-		return std::string(z) == rhs.z && b == rhs.b && xi_a == rhs.xi_a && isMtype == rhs.isMtype;
+		return strcmp(z, rhs.z) == 0 && b == rhs.b && xi_a == rhs.xi_a && isMtype == rhs.isMtype;
 	}
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
@@ -66,7 +66,8 @@ inline const CurveParam& getCurveParam(int type)
 	case MCL_BN_SNARK1: return mcl::BN_SNARK1;
 	case MCL_BLS12_381: return mcl::BLS12_381;
 	default:
-		throw cybozu::Exception("getCurveParam:bad type") << type;
+		assert(0);
+		return mcl::BN254;
 	}
 }
 
@@ -446,7 +447,9 @@ struct MapTo {
 	*/
 	void initBN(const mpz_class& cofactor, const mpz_class &z)
 	{
-		if (!Fp::squareRoot(c1_, -3)) throw cybozu::Exception("MapTo:init:c1_");
+		bool b = Fp::squareRoot(c1_, -3);
+		assert(b);
+		(void)b;
 		c2_ = (c1_ - 1) / 2;
 		z_ = z;
 		cofactor_ = cofactor;
@@ -506,7 +509,9 @@ struct GLV1 {
 	mpz_class r;
 	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false)
 	{
-		if (!Fp::squareRoot(rw, -3)) throw cybozu::Exception("GLV1:init");
+		bool b = Fp::squareRoot(rw, -3);
+		assert(b);
+		(void)b;
 		rw = -(rw + 1) / 2;
 		this->r = r;
 		rBitSize = gmp::getBitSize(r);

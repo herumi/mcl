@@ -92,26 +92,14 @@ int mclBn_getFrByteSize()
 	return (int)Fr::getByteSize();
 }
 
-mclSize copyStrAndReturnSize(char *buf, mclSize maxBufSize, const std::string& str)
-{
-	if (str.size() >= maxBufSize) return 0;
-	memcpy(buf, str.c_str(), str.size());
-	buf[str.size()] = '\0';
-	return str.size();
-}
-
 mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize)
 {
-	std::string str;
-	Fr::getModulo(str);
-	return copyStrAndReturnSize(buf, maxBufSize, str);
+	return Fr::getModulo(buf, maxBufSize);
 }
 
 mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize)
 {
-	std::string str;
-	Fp::getModulo(str);
-	return copyStrAndReturnSize(buf, maxBufSize, str);
+	return Fp::getModulo(buf, maxBufSize);
 }
 ////////////////////////////////////////////////
 // set zero
