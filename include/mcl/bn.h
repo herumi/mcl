@@ -29,7 +29,7 @@
 			#endif
 		#endif
 	#endif
-#elif defined(__EMSCRIPTEN__)
+#elif defined(__EMSCRIPTEN__) && !defined(MCLBN_DONT_EXPORT)
 	#define MCLBN_DLL_API __attribute__((used))
 #else
 	#define MCLBN_DLL_API
