@@ -80,12 +80,13 @@ endif
 CFLAGS_WARN=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith
 CFLAGS+=-g3
 INC_OPT=-I include -I test -I ../xbyak -I ../cybozulib/include
-CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT) $(CFLAGS_USER)
+CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT)
 DEBUG=0
 CFLAGS_OPT_USER?=$(CFLAGS_OPT)
 ifeq ($(DEBUG),0)
 CFLAGS+=$(CFLAGS_OPT_USER)
 endif
+CFLAGS+=$(CFLAGS_USER)
 MCL_USE_GMP?=1
 MCL_USE_OPENSSL?=1
 ifeq ($(MCL_USE_GMP),0)
