@@ -890,7 +890,8 @@ struct Param {
 	{
 		this->cp = cp;
 		isBLS12 = cp.curveType == MCL_BLS12_381;
-		z = mpz_class(cp.z);
+		gmp::setStr(pb, z, cp.z);
+		if (!*pb) return;
 		isNegative = z < 0;
 		if (isNegative) {
 			abs_z = -z;
@@ -970,12 +971,14 @@ struct Param {
 		glv2.init(r, z, isBLS12);
 		*pb = true;
 	}
+#ifndef CYBOZU_DONT_EXCEPTION
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
 	{
 		bool b;
 		init(&b, cp, mode);
 		if (!b) throw cybozu::Exception("Param:init");
 	}
+#endif
 };
 
 template<size_t dummyImpl = 0>
@@ -1828,6 +1831,7 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const mcl::Array<Fp6>&
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
+#ifndef CYBOZU_DONT_EXCEPTION
 inline void mapToG1(G1& P, const Fp& x)
 {
 	bool b;
@@ -1840,6 +1844,7 @@ inline void mapToG2(G2& P, const Fp2& x)
 	mapToG2(&b, P, x);
 	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
 }
+#endif
 inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 {
 	Fp t;
@@ -1861,6 +1866,7 @@ inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 	assert(b);
 	(void)b;
 }
+#ifndef CYBOZU_DONT_USE_STRING
 inline void hashAndMapToG1(G1& P, const std::string& str)
 {
 	hashAndMapToG1(P, str.c_str(), str.size());
@@ -1869,6 +1875,7 @@ inline void hashAndMapToG2(G2& P, const std::string& str)
 {
 	hashAndMapToG2(P, str.c_str(), str.size());
 }
+#endif
 inline void verifyOrderG1(bool doVerify)
 {
 	if (BN::param.isBLS12) {
@@ -1936,12 +1943,14 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	*pb = true;
 }
 
+#ifndef CYBOZU_DONT_EXCEPTION
 inline void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	bool b;
 	init(&b, cp, mode);
 	if (!b) throw cybozu::Exception("BN:init");
 }
+#endif
 
 } // mcl::bn::BN
 
@@ -1950,12 +1959,14 @@ inline void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mo
 	BN::init(pb, cp, mode);
 }
 
+#ifndef CYBOZU_DONT_EXCEPTION
 inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	bool b;
 	BN::init(&b, cp, mode);
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
+#endif
 
 } } // mcl::bn
 

@@ -136,6 +136,7 @@ struct Serializable : public E {
 		buf[n] = '\0';
 		return n;
 	}
+#ifndef CYBOZU_DONT_USE_STRING
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		cybozu::StringInputStream is(str);
@@ -153,6 +154,7 @@ struct Serializable : public E {
 		getStr(str, ioMode);
 		return str;
 	}
+#endif
 	// return written bytes
 	size_t serialize(void *buf, size_t maxBufSize, int ioMode = IoSerialize) const
 	{

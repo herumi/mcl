@@ -26,6 +26,7 @@ bool skipSpace(char *c, InputStream& is)
 	}
 }
 
+#ifndef CYBOZU_DONT_USE_STRING
 template<class InputStream>
 void loadWord(std::string& s, InputStream& is)
 {
@@ -39,6 +40,7 @@ void loadWord(std::string& s, InputStream& is)
 		s += c;
 	}
 }
+#endif
 
 template<class InputStream>
 size_t loadWord(char *buf, size_t bufSize, InputStream& is)

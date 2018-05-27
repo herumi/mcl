@@ -77,7 +77,7 @@ const char *ModeToStr(Mode mode)
 	}
 }
 
-Mode StrToMode(const std::string& s)
+Mode StrToMode(const char *s)
 {
 	static const struct {
 		const char *s;
@@ -91,7 +91,7 @@ Mode StrToMode(const std::string& s)
 		{ "xbyak", FP_XBYAK },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		if (s == tbl[i].s) return tbl[i].mode;
+		if (strcmp(s, tbl[i].s) == 0) return tbl[i].mode;
 	}
 	return FP_AUTO;
 }
@@ -176,19 +176,24 @@ static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 {
 	const int N = (int)op.N;
+	bool b;
 #ifdef MCL_USE_VINT
 	Vint vx, vy, vp;
-	vx.setArray(x, N);
-	vp.setArray(op.p, N);
+	vx.setArray(&b, x, N);
+	assert(b);
+	vp.setArray(&b, op.p, N);
+	assert(b);
 	Vint::invMod(vy, vx, vp);
-	vy.getArray(y, N);
+	vy.getArray(&b, y, N);
+	assert(b);
 #else
 	mpz_class my;
 	mpz_t mx, mp;
 	set_mpz_t(mx, x, N);
 	set_mpz_t(mp, op.p, N);
 	mpz_invert(my.get_mpz_t(), mx, mp);
-	gmp::getArray(y, N, my);
+	gmp::getArray(&b, y, N, my);
+	assert(b);
 #endif
 }
 
@@ -323,20 +328,24 @@ static void initInvTbl(Op& op)
 }
 #endif
 
-static void initForMont(Op& op, const Unit *p, Mode mode)
+static bool initForMont(Op& op, const Unit *p, Mode mode)
 {
 	const size_t N = op.N;
+	bool b;
 	{
 		mpz_class t = 1, R;
-		gmp::getArray(op.one, N, t);
+		gmp::getArray(&b, op.one, N, t);
+		if (!b) return false;
 		R = (t << (N * UnitBitSize)) % op.mp;
 		t = (R * R) % op.mp;
-		gmp::getArray(op.R2, N, t);
+		gmp::getArray(&b, op.R2, N, t);
+		if (!b) return false;
 		t = (t * R) % op.mp;
-		gmp::getArray(op.R3, N, t);
+		gmp::getArray(&b, op.R3, N, t);
+		if (!b) return false;
 	}
 	op.rp = getMontgomeryCoeff(p[0]);
-	if (mode != FP_XBYAK) return;
+	if (mode != FP_XBYAK) return true;
 #ifdef MCL_USE_XBYAK
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
 	op.fg->init(op);
@@ -346,6 +355,7 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 		initInvTbl(op);
 	}
 #endif
+	return true;
 }
 
 bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
@@ -359,11 +369,13 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
 	clear();
+	bool b;
 	{
 		const size_t maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
 		N = gmp::getUnitSize(_p);
 		if (N > maxN) return false;
-		gmp::getArray(p, N, _p);
+		gmp::getArray(&b, p, N, _p);
+		if (!b) return false;
 		mp = _p;
 	}
 	bitSize = gmp::getBitSize(mp);
@@ -417,10 +429,16 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 	}
 #endif
 #if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
-	if (mp == mpz_class("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f")) {
-		primeMode = PM_SECP256K1;
-		isMont = false;
-		isFastMod = true;
+	{
+		const char *secp256k1Str = "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
+		bool b;
+		mpz_class secp256k1;
+		gmp::setStr(&b, secp256k1, secp256k1Str);
+		if (b && mp == secp256k1) {
+			primeMode = PM_SECP256K1;
+			isMont = false;
+			isFastMod = true;
+		}
 	}
 #endif
 	switch (N) {
@@ -477,8 +495,9 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 		fpDbl_mod = &mcl::vint::mcl_fpDbl_mod_SECP256K1;
 	}
 #endif
-	fp::initForMont(*this, p, mode);
-	sq.set(mp);
+	if (!fp::initForMont(*this, p, mode)) return false;
+	sq.set(&b, mp);
+	if (!b) return false;
 	if (N * UnitBitSize <= 256) {
 		hash = sha256;
 	} else {

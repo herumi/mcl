@@ -618,6 +618,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	}
 }
 
+#ifndef MCL_VINT_FIXED_BUFFER
 template<class T>
 class Buffer {
 	size_t allocSize_;
@@ -651,21 +652,6 @@ public:
 		std::swap(allocSize_, rhs.allocSize_);
 		std::swap(ptr_, rhs.ptr_);
 	}
-#if 0
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-	Buffer(Buffer&& rhs) noexcept
-		: allocSize_(0)
-		, ptr_(0)
-	{
-		swap(rhs);
-	}
-	Buffer& operator=(Buffer&& rhs) noexcept
-	{
-		swap(rhs);
-		return *this;
-	}
-#endif
-#endif
 	void clear()
 	{
 		allocSize_ = 0;
@@ -676,17 +662,29 @@ public:
 	/*
 		@note extended buffer may be not cleared
 	*/
-	void alloc(size_t n)
+	void alloc(bool *pb, size_t n)
 	{
 		if (n > allocSize_) {
 			T *p = (T*)malloc(n * sizeof(T));
-			if (p == 0) throw cybozu::Exception("Buffer:alloc:malloc:") << n;
+			if (p == 0) {
+				*pb = false;
+				return;
+			}
 			copyN(p, ptr_, allocSize_);
 			free(ptr_);
 			ptr_ = p;
 			allocSize_ = n;
 		}
+		*pb = true;
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	void alloc(size_t n)
+	{
+		bool b;
+		alloc(&b, n);
+		if (!b) throw cybozu::Exception("Buffer:alloc");
+	}
+#endif
 	/*
 		*this = rhs
 		rhs may be destroyed
@@ -694,6 +692,7 @@ public:
 	const T& operator[](size_t n) const { return ptr_[n]; }
 	T& operator[](size_t n) { return ptr_[n]; }
 };
+#endif
 
 template<class T, size_t BitLen>
 class FixedBuffer {
@@ -721,11 +720,23 @@ public:
 		return *this;
 	}
 	void clear() { size_ = 0; }
+	void alloc(bool *pb, size_t n)
+	{
+		if (n > N) {
+			*pb = false;
+			return;
+		}
+		size_ = n;
+		*pb = true;
+	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	void alloc(size_t n)
 	{
-		verify(n);
-		size_ = n;
+		bool b;
+		alloc(&b, n);
+		if (!b) throw cybozu::Exception("FixedBuffer:alloc");
 	}
+#endif
 	void swap(FixedBuffer& rhs)
 	{
 		FixedBuffer *p1 = this;
@@ -745,9 +756,8 @@ public:
 	// to avoid warning of gcc
 	void verify(size_t n) const
 	{
-		if (n > N) {
-			throw cybozu::Exception("verify:too large size") << n << (int)N;
-		}
+		assert(n <= N);
+		(void)n;
 	}
 	const T& operator[](size_t n) const { verify(n); return v_[n]; }
 	T& operator[](size_t n) { verify(n); return v_[n]; }
@@ -946,6 +956,19 @@ private:
 		}
 		r.trim(yn);
 	}
+	/*
+		@param x [inout] x <- d
+		@retval s for x = 2^s d where d is odd
+	*/
+	static uint32_t countTrailingZero(VintT& x)
+	{
+		uint32_t s = 0;
+		while (x.isEven()) {
+			x >>= 1;
+			s++;
+		}
+		return s;
+	}
 	struct MulMod {
 		const VintT *pm;
 		void operator()(VintT& z, const VintT& x, const VintT& y) const
@@ -972,11 +995,6 @@ public:
 		: size_(0)
 	{
 		*this = x;
-	}
-	explicit VintT(const std::string& str)
-		: size_(0)
-	{
-		setStr(str);
 	}
 	VintT(const VintT& rhs)
 		: buf_(rhs.buf_)
@@ -1057,12 +1075,13 @@ public:
 	/*
 		set [0, max) randomly
 	*/
-	void setRand(const VintT& max)
+	void setRand(bool *pb, const VintT& max)
 	{
+		assert(max > 0);
 		fp::RandGen& rg = fp::RandGen::get();
-		if (max <= 0) throw cybozu::Exception("Vint:setRand:bad value") << max;
 		size_t n = max.size();
-		buf_.alloc(n);
+		buf_.alloc(pb, n);
+		if (!*pb) return;
 		rg.read(&buf_[0], n * sizeof(buf_[0]));
 		trim(n);
 		*this %= max;
@@ -1073,12 +1092,16 @@ public:
 		buf_[size, maxSize) with zero
 		@note assume little endian system
 	*/
-	void getArray(Unit *x, size_t maxSize) const
+	void getArray(bool *pb, Unit *x, size_t maxSize) const
 	{
 		size_t n = size();
-		if (n > maxSize) throw cybozu::Exception("Vint:getArray:small maxSize") << maxSize << n;
+		if (n > maxSize) {
+			*pb = false;
+			return;
+		}
 		vint::copyN(x, &buf_[0], n);
 		vint::clearN(x + n, maxSize - n);
+		*pb = true;
 	}
 	void clear() { *this = 0; }
 	template<class OutputStream>
@@ -1093,13 +1116,6 @@ public:
 		}
 		cybozu::write(pb, os, buf + sizeof(buf) - n, n);
 	}
-	template<class OutputStream>
-	void save(OutputStream& os, int base = 10) const
-	{
-		bool b;
-		save(&b, os, base);
-		if (!b) throw cybozu::Exception("Vint:save");
-	}
 	/*
 		set buf with string terminated by '\0'
 		return strlen(buf) if success else 0
@@ -1113,13 +1129,6 @@ public:
 		if (!b || n == bufSize - 1) return 0;
 		buf[n] = '\0';
 		return n;
-	}
-	std::string getStr(int base = 10) const
-	{
-		std::string s;
-		cybozu::StringOutputStream os(s);
-		save(os, base);
-		return s;
 	}
 	/*
 		return bitSize(abs(*this))
@@ -1138,7 +1147,7 @@ public:
 	{
 		size_t q = i / unitBitSize;
 		size_t r = i % unitBitSize;
-		if (q > size()) throw cybozu::Exception("Vint:testBit:large i") << q << size();
+		assert(q <= size());
 		Unit mask = Unit(1) << r;
 		return (buf_[q] & mask) != 0;
 	}
@@ -1146,7 +1155,7 @@ public:
 	{
 		size_t q = i / unitBitSize;
 		size_t r = i % unitBitSize;
-		if (q > size()) throw cybozu::Exception("Vint:setBit:large i") << q << size();
+		assert(q <= size());
 		buf_.alloc(q + 1);
 		Unit mask = Unit(1) << r;
 		if (v) {
@@ -1162,22 +1171,18 @@ public:
 		      "0b..."   => base = 2
 		      otherwise => base = 10
 	*/
-	void setStr(bool *pb, const char *str, size_t strSize, int base = 0)
+	void setStr(bool *pb, const char *str, int base = 0)
 	{
 		const size_t maxN = MCL_MAX_BIT_SIZE / (sizeof(MCL_SIZEOF_UNIT) * 8);
-		buf_.alloc(maxN);
+		buf_.alloc(pb, maxN);
+		if (!*pb) return;
 		*pb = false;
 		isNeg_ = false;
-		size_t n = fp::strToArray(&isNeg_, &buf_[0], maxN, str, strSize, base);
+		size_t len = strlen(str);
+		size_t n = fp::strToArray(&isNeg_, &buf_[0], maxN, str, len, base);
 		if (n == 0) return;
 		trim(n);
 		*pb = true;
-	}
-	void setStr(std::string str, int base = 0)
-	{
-		bool b;
-		setStr(&b, str.c_str(), str.size(), base);
-		if (!b) throw cybozu::Exception("Vint:setStr") << str;
 	}
 	static int compare(const VintT& x, const VintT& y)
 	{
@@ -1372,10 +1377,6 @@ public:
 			usub(r, yy.buf_, yy.size(), r.buf_, r.size());
 		}
 	}
-	inline friend std::ostream& operator<<(std::ostream& os, const VintT& x)
-	{
-		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
-	}
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
@@ -1390,18 +1391,6 @@ public:
 		if (n == 0) return;
 		trim(n);
 		*pb = true;
-	}
-	template<class InputStream>
-	void load(InputStream& is, int ioMode = 0)
-	{
-		bool b;
-		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("Vint:load");
-	}
-	inline friend std::istream& operator>>(std::istream& is, VintT& x)
-	{
-		x.load(is);
-		return is;
 	}
 	// logical left shift (copy sign)
 	static void shl(VintT& y, const VintT& x, size_t shiftBit)
@@ -1575,26 +1564,12 @@ public:
 			b -= a * q;
 		}
 	}
-private:
-	/*
-		@param x [inout] x <- d
-		@retval s for x = 2^s d where d is odd
-	*/
-	static uint32_t countTrailingZero(VintT& x)
-	{
-		uint32_t s = 0;
-		while (x.isEven()) {
-			x >>= 1;
-			s++;
-		}
-		return s;
-	}
-public:
 	/*
 		Miller-Rabin
 	*/
-	static bool isPrime(const VintT& n, int tryNum = 32)
+	static bool isPrime(bool *pb, const VintT& n, int tryNum = 32)
 	{
+		*pb = true;
 		if (n <= 1) return false;
 		if (n == 2 || n == 3) return true;
 		if (n.isEven()) return false;
@@ -1604,7 +1579,8 @@ public:
 		// n - 1 = 2^r d
 		VintT a, x;
 		for (int i = 0; i < tryNum; i++) {
-			a.setRand(n - 3);
+			a.setRand(pb, n - 3);
+			if (!*pb) return false;
 			a += 2; // a in [2, n - 2]
 			powMod(x, a, d, n);
 			if (x == 1 || x == nm1) {
@@ -1621,9 +1597,9 @@ public:
 		}
 		return true;
 	}
-	bool isPrime(int tryNum = 32) const
+	bool isPrime(bool *pb, int tryNum = 32) const
 	{
-		return isPrime(*this, tryNum);
+		return isPrime(pb, *this, tryNum);
 	}
 	static void gcd(VintT& z, VintT x, VintT y)
 	{
@@ -1665,7 +1641,7 @@ public:
 	*/
 	static int jacobi(VintT m, VintT n)
 	{
-		if (n.isEven()) throw cybozu::Exception();
+		assert(n.isOdd());
 		if (n == 1) return 1;
 		if (m < 0 || m > n) {
 			quotRem(0, m, m, n); // m = m mod n
@@ -1693,6 +1669,81 @@ public:
 		}
 		return j;
 	}
+#ifndef CYBOZU_DONT_USE_STRING
+	explicit VintT(const std::string& str)
+		: size_(0)
+	{
+		setStr(str);
+	}
+	void getStr(std::string& s, int base = 10) const
+	{
+		cybozu::StringOutputStream os(s);
+		save(os, base);
+	}
+	std::string getStr(int base = 10) const
+	{
+		std::string s;
+		getStr(s, base);
+		return s;
+	}
+	inline friend std::ostream& operator<<(std::ostream& os, const VintT& x)
+	{
+		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
+	}
+	inline friend std::istream& operator>>(std::istream& is, VintT& x)
+	{
+		x.load(is);
+		return is;
+	}
+#endif
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	void setStr(const std::string& str, int base = 0)
+	{
+		bool b;
+		setStr(&b, str.c_str(), base);
+		if (!b) throw cybozu::Exception("Vint:setStr") << str;
+	}
+	void setRand(const VintT& max)
+	{
+		bool b;
+		setRand(&b, max);
+		if (!b) throw cybozu::Exception("Vint:setRand");
+	}
+	void getArray(Unit *x, size_t maxSize) const
+	{
+		bool b;
+		getArray(&b, x, maxSize);
+		if (!b) throw cybozu::Exception("Vint:getArray");
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = 0)
+	{
+		bool b;
+		load(&b, is, ioMode);
+		if (!b) throw cybozu::Exception("Vint:load");
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int base = 10) const
+	{
+		bool b;
+		save(&b, os, base);
+		if (!b) throw cybozu::Exception("Vint:save");
+	}
+	static bool isPrime(const VintT& n, int tryNum = 32)
+	{
+		bool b;
+		bool ret = isPrime(&b, n, tryNum);
+		if (!b) throw cybozu::Exception("Vint:isPrime");
+		return ret;
+	}
+	bool isPrime(int tryNum = 32) const
+	{
+		bool b;
+		bool ret = isPrime(&b, *this, tryNum);
+		if (!b) throw cybozu::Exception("Vint:isPrime");
+		return ret;
+	}
+#endif
 	VintT& operator++() { adds1(*this, *this, 1); return *this; }
 	VintT& operator--() { subs1(*this, *this, 1); return *this; }
 	VintT operator++(int) { VintT c = *this; adds1(*this, *this, 1); return c; }

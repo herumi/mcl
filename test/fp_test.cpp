@@ -351,6 +351,7 @@ void compareTest()
 
 void moduloTest(const char *pStr)
 {
+std::cout << std::hex;
 	std::string str;
 	Fp::getModulo(str);
 	CYBOZU_TEST_EQUAL(str, mcl::gmp::getStr(mpz_class(pStr)));

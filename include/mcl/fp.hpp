@@ -48,7 +48,14 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
 const char *ModeToStr(Mode mode);
 
-Mode StrToMode(const std::string& s);
+Mode StrToMode(const char *s);
+
+#ifndef CYBOZU_DONT_USE_STRING
+inline Mode StrToMode(const std::string& s)
+{
+	return StrToMode(s.c_str());
+}
+#endif
 
 inline void dumpUnit(Unit x)
 {
@@ -124,35 +131,13 @@ public:
 	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO)
 	{
 		mpz_class p;
-		gmp::setStr(pb, p, mstr, strlen(mstr));
+		gmp::setStr(pb, p, mstr);
 		if (!*pb) return;
 		init(pb, p, mode);
-	}
-	static inline void init(const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
-	{
-		bool b;
-		init(&b, _p, mode);
-		if (!b) throw cybozu::Exception("Fp:init");
-	}
-	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
-	{
-		bool b;
-		init(&b, mstr.c_str(), mode);
-		if (!b) throw cybozu::Exception("Fp:init");
 	}
 	static inline size_t getModulo(char *buf, size_t bufSize)
 	{
 		return gmp::getStr(buf, bufSize, op_.mp);
-	}
-	static inline void getModulo(std::string& pstr)
-	{
-		gmp::getStr(pstr, op_.mp);
-	}
-	static std::string getModulo()
-	{
-		std::string s;
-		getModulo(s);
-		return s;
 	}
 	static inline bool isFullBit() { return op_.isFullBit; }
 	/*
@@ -176,8 +161,8 @@ public:
 		x.getMpz(mx);
 		bool b = op_.sq.get(my, mx);
 		if (!b) return false;
-		y.setMpz(my);
-		return true;
+		y.setMpz(&b, my);
+		return b;
 	}
 	FpT() {}
 	FpT(const FpT& x)
@@ -194,10 +179,6 @@ public:
 		op_.fp_clear(v_);
 	}
 	FpT(int64_t x) { operator=(x); }
-	explicit FpT(const std::string& str, int base = 0)
-	{
-		Serializer::setStr(str, base);
-	}
 	FpT& operator=(int64_t x)
 	{
 		if (x == 1) {
@@ -290,35 +271,11 @@ public:
 		}
 		cybozu::write(pb, os, buf + sizeof(buf) - len, len);
 	}
-	template<class OutputStream>
-	void save(OutputStream& os, int ioMode = IoSerialize) const
-	{
-		bool b;
-		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("fp:save") << ioMode;
-	}
-	template<class InputStream>
-	void load(InputStream& is, int ioMode = IoSerialize)
-	{
-		bool b;
-		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("fp:load") << ioMode;
-	}
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t n)
 	{
 		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::NoMask);
 		toMont();
-	}
-	/*
-		throw exception if x >= p
-	*/
-	template<class S>
-	void setArray(const S *x, size_t n)
-	{
-		bool b;
-		setArray(&b, x, n);
-		if (!b) throw cybozu::Exception("Fp:setArray");
 	}
 	/*
 		mask x with (1 << bitLen) and subtract p if x >= p
@@ -368,10 +325,6 @@ public:
 		uint32_t size = op_.hash(buf, static_cast<uint32_t>(sizeof(buf)), msg, static_cast<uint32_t>(msgSize));
 		setArrayMask(buf, size);
 	}
-	void setHashOf(const std::string& msg)
-	{
-		setHashOf(msg.data(), msg.size());
-	}
 	void getMpz(mpz_class& x) const
 	{
 		fp::Block b;
@@ -391,12 +344,6 @@ public:
 			return;
 		}
 		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
-	}
-	void setMpz(const mpz_class& x)
-	{
-		bool b;
-		setMpz(&b, x);
-		if (!b) throw cybozu::Exception("Fp:setMpz:neg");
 	}
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
@@ -458,20 +405,6 @@ public:
 		getBlock(b);
 		return fp::getInt64(pb, b, op_);
 	}
-	uint64_t getUint64() const
-	{
-		bool b;
-		uint64_t v = getUint64(&b);
-		if (!b) throw cybozu::Exception("Fp:getUint64:large value");
-		return v;
-	}
-	int64_t getInt64() const
-	{
-		bool b;
-		int64_t v = getInt64(&b);
-		if (!b) throw cybozu::Exception("Fp:getInt64:large value");
-		return v;
-	}
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
@@ -526,16 +459,94 @@ public:
 		ioMode_ = ioMode;
 	}
 	static inline int getIoMode() { return ioMode_; }
-	// backward compatibility
-	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(mstr, mode);
-	}
 	static inline size_t getModBitLen() { return getBitSize(); }
 	static inline void setHashFunc(uint32_t hash(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
 	{
 		op_.hash = hash;
 	}
+#ifndef CYBOZU_DONT_USE_STRING
+	explicit FpT(const std::string& str, int base = 0)
+	{
+		Serializer::setStr(str, base);
+	}
+	static inline void getModulo(std::string& pstr)
+	{
+		gmp::getStr(pstr, op_.mp);
+	}
+	static std::string getModulo()
+	{
+		std::string s;
+		getModulo(s);
+		return s;
+	}
+	void setHashOf(const std::string& msg)
+	{
+		setHashOf(msg.data(), msg.size());
+	}
+	// backward compatibility
+	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		init(mstr, mode);
+	}
+#endif
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	static inline void init(const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
+	{
+		bool b;
+		init(&b, _p, mode);
+		if (!b) throw cybozu::Exception("Fp:init");
+	}
+	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		bool b;
+		init(&b, mstr.c_str(), mode);
+		if (!b) throw cybozu::Exception("Fp:init");
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		bool b;
+		save(&b, os, ioMode);
+		if (!b) throw cybozu::Exception("fp:save") << ioMode;
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
+	{
+		bool b;
+		load(&b, is, ioMode);
+		if (!b) throw cybozu::Exception("fp:load") << ioMode;
+	}
+	/*
+		throw exception if x >= p
+	*/
+	template<class S>
+	void setArray(const S *x, size_t n)
+	{
+		bool b;
+		setArray(&b, x, n);
+		if (!b) throw cybozu::Exception("Fp:setArray");
+	}
+	void setMpz(const mpz_class& x)
+	{
+		bool b;
+		setMpz(&b, x);
+		if (!b) throw cybozu::Exception("Fp:setMpz:neg");
+	}
+	uint64_t getUint64() const
+	{
+		bool b;
+		uint64_t v = getUint64(&b);
+		if (!b) throw cybozu::Exception("Fp:getUint64:large value");
+		return v;
+	}
+	int64_t getInt64() const
+	{
+		bool b;
+		int64_t v = getInt64(&b);
+		if (!b) throw cybozu::Exception("Fp:getInt64:large value");
+		return v;
+	}
+#endif
 };
 
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
