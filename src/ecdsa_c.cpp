@@ -16,6 +16,14 @@ static const Signature *cast(const ecdsaSignature *p) { return reinterpret_cast<
 static PrecomputedPublicKey *cast(ecdsaPrecomputedPublicKey *p) { return reinterpret_cast<PrecomputedPublicKey*>(p); }
 static const PrecomputedPublicKey *cast(const ecdsaPrecomputedPublicKey *p) { return reinterpret_cast<const PrecomputedPublicKey*>(p); }
 
+#ifdef __EMSCRIPTEN__
+// use these functions forcibly
+extern "C" ECDSA_DLL_API void ecdsaFree(void *p)
+{
+	free(p);
+}
+#endif
+
 int ecdsaInit(void)
 {
 	bool b;
