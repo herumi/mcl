@@ -176,16 +176,16 @@ static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 {
 	const int N = (int)op.N;
-	bool b;
+	bool b = false;
 #ifdef MCL_USE_VINT
 	Vint vx, vy, vp;
 	vx.setArray(&b, x, N);
-	assert(b);
+	assert(b); (void)b;
 	vp.setArray(&b, op.p, N);
-	assert(b);
+	assert(b); (void)b;
 	Vint::invMod(vy, vx, vp);
 	vy.getArray(&b, y, N);
-	assert(b);
+	assert(b); (void)b;
 #else
 	mpz_class my;
 	mpz_t mx, mp;

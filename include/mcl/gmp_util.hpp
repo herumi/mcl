@@ -670,13 +670,11 @@ public:
 	/*
 		solve x^2 = a mod p
 	*/
-	bool get(bool *pb, mpz_class& x, const mpz_class& a) const
+	bool get(mpz_class& x, const mpz_class& a) const
 	{
 		if (!isPrime) {
-			*pb = false;
 			return false;
 		}
-		*pb = true;
 		if (a == 0) {
 			x = 0;
 			return true;
@@ -721,14 +719,24 @@ public:
 			x = 0;
 			return true;
 		}
-		if (gmp::legendre(a.getMpz(), p) < 0) return false;
+		{
+			bool b;
+			mpz_class aa;
+			a.getMpz(&b, aa);
+			assert(b);
+			if (gmp::legendre(aa, p) < 0) return false;
+		}
 		if (r == 1) {
 			// (p + 1) / 4 = (q + 1) / 2
 			Fp::pow(x, a, q_add_1_div_2);
 			return true;
 		}
 		Fp c, d;
-		c.setMpz(s);
+		{
+			bool b;
+			c.setMpz(&b, s);
+			assert(b);
+		}
 		int e = r;
 		Fp::pow(d, a, q);
 		Fp::pow(x, a, q_add_1_div_2); // destroy a if &x == &a
@@ -760,13 +768,6 @@ public:
 		bool b;
 		set(&b, _p);
 		if (!b) throw cybozu::Exception("gmp:SquareRoot:set");
-	}
-	bool get(mpz_class& x, const mpz_class& a) const
-	{
-		bool b;
-		bool ret = get(&b, x, a);
-		if (!b) throw cybozu::Exception("gmp:SquareRoot:get:not prime");
-		return ret;
 	}
 #endif
 };

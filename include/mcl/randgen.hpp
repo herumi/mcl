@@ -6,7 +6,19 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#ifdef MCL_USE_WEB_CRYPTO_API
+#ifdef MCL_DONT_USE_RANDOM
+#include <stdlib.h>
+
+namespace mcl {
+struct NoRandomGenerator {
+	void read(void *, size_t)
+	{
+		exit(1);
+	}
+};
+} // mcl
+
+#elif defined(MCL_USE_WEB_CRYPTO_API)
 #include <emscripten.h>
 
 namespace mcl {
@@ -90,7 +102,9 @@ public:
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
 	static RandGen& get()
 	{
-#ifdef MCL_USE_WEB_CRYPTO_API
+#ifdef MCL_DONT_USE_RANDOM
+		static mcl::NoRandomGenerator rg;
+#elif defined(MCL_USE_WEB_CRYPTO_API)
 		static mcl::RandomGeneratorJS rg;
 #else
 		static cybozu::RandomGenerator rg;

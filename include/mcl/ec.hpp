@@ -208,12 +208,6 @@ public:
 		if (!*pb) return;
 		init(a, b, mode);
 	}
-	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
-	{
-		bool b;
-		init(&b, astr.c_str(), bstr.c_str(), mode);
-		if (!b) throw cybozu::Exception("mcl:EcT:init");
-	}
 	// verify the order
 	bool isValidOrder() const
 	{
@@ -244,7 +238,7 @@ public:
 		if (verifyOrder_) return isValidOrder();
 		return true;
 	}
-	void set(const Fp& _x, const Fp& _y, bool verify, bool *pb)
+	void set(bool *pb, const Fp& _x, const Fp& _y, bool verify = true)
 	{
 		if (verify && !isValid(_x, _y)) {
 			*pb = false;
@@ -261,12 +255,6 @@ public:
 		} else {
 			*pb = true;
 		}
-	}
-	void set(const Fp& _x, const Fp& _y, bool verify = true)
-	{
-		bool b;
-		set(_x, _y, verify, &b);
-		if (!b) throw cybozu::Exception("ec:EcT:set") << _x << _y;
 	}
 	void clear()
 	{
@@ -751,13 +739,6 @@ public:
 			P.y.save(pb, os, ioMode);
 		}
 	}
-	template<class OutputStream>
-	void save(OutputStream& os, int ioMode = IoSerialize) const
-	{
-		bool b;
-		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("EcT:save");
-	}
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
@@ -792,7 +773,8 @@ public:
 				isYodd = (buf[n - 1] >> 7) != 0;
 				buf[n - 1] &= 0x7f;
 			}
-			x.setArray(buf + adj, n);
+			x.setArray(pb, buf + adj, n);
+			if (!*pb) return;
 			*pb = getYfromX(y, x, isYodd);
 			if (!*pb) return;
 		} else {
@@ -830,23 +812,6 @@ public:
 		} else {
 			*pb = true;
 		}
-	}
-	template<class InputStream>
-	void load(InputStream& is, int ioMode = IoSerialize)
-	{
-		bool b;
-		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("EcT:load");
-	}
-	friend inline std::istream& operator>>(std::istream& is, EcT& self)
-	{
-		self.load(is, fp::detectIoMode(getIoMode(), is));
-		return is;
-	}
-	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
-	{
-		self.save(os, fp::detectIoMode(getIoMode(), os));
-		return os;
 	}
 	// deplicated
 	static void setCompressedExpression(bool compressedExpression = true)
@@ -933,6 +898,46 @@ public:
 	{
 		mulArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime);
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
+	{
+		bool b;
+		init(&b, astr.c_str(), bstr.c_str(), mode);
+		if (!b) throw cybozu::Exception("mcl:EcT:init");
+	}
+	void set(const Fp& _x, const Fp& _y, bool verify = true)
+	{
+		bool b;
+		set(&b, _x, _y, verify);
+		if (!b) throw cybozu::Exception("ec:EcT:set") << _x << _y;
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		bool b;
+		save(&b, os, ioMode);
+		if (!b) throw cybozu::Exception("EcT:save");
+	}
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
+	{
+		bool b;
+		load(&b, is, ioMode);
+		if (!b) throw cybozu::Exception("EcT:load");
+	}
+#endif
+#ifndef CYBOZU_DONT_USE_STRING
+	friend inline std::istream& operator>>(std::istream& is, EcT& self)
+	{
+		self.load(is, fp::detectIoMode(getIoMode(), is));
+		return is;
+	}
+	friend inline std::ostream& operator<<(std::ostream& os, const EcT& self)
+	{
+		self.save(os, fp::detectIoMode(getIoMode(), os));
+		return os;
+	}
+#endif
 };
 
 template<class Fp> Fp EcT<Fp>::a_;

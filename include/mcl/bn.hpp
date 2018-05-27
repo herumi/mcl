@@ -316,15 +316,18 @@ struct MapTo {
 	mpz_class z_;
 	mpz_class cofactor_;
 	bool isBN_;
-	int legendre(const Fp& x) const
+	int legendre(bool *pb, const Fp& x) const
 	{
-		return gmp::legendre(x.getMpz(), Fp::getOp().mp);
+		mpz_class xx;
+		x.getMpz(pb, xx);
+		if (!*pb) return 0;
+		return gmp::legendre(xx, Fp::getOp().mp);
 	}
-	int legendre(const Fp2& x) const
+	int legendre(bool *pb, const Fp2& x) const
 	{
 		Fp y;
 		Fp2::norm(y, x);
-		return legendre(y);
+		return legendre(pb, y);
 	}
 	void mulFp(Fp& x, const Fp& y) const
 	{
@@ -347,7 +350,9 @@ struct MapTo {
 	bool calcBN(G& P, const F& t) const
 	{
 		F x, y, w;
-		bool negative = legendre(t) < 0;
+		bool b;
+		bool negative = legendre(&b, t) < 0;
+		if (!b) return false;
 		if (t.isZero()) return false;
 		F::sqr(w, t);
 		w += G::b_;
@@ -365,7 +370,9 @@ struct MapTo {
 			G::getWeierstrass(y, x);
 			if (F::squareRoot(y, y)) {
 				if (negative) F::neg(y, y);
-				P.set(x, y, false);
+				bool b;
+				P.set(&b, x, y, false);
+				assert(b);
 				return true;
 			}
 		}
@@ -412,7 +419,9 @@ struct MapTo {
 			F y;
 			G::getWeierstrass(y, x);
 			if (F::squareRoot(y, y)) {
-				P.set(x, y, false);
+				bool b;
+				P.set(&b, x, y, false);
+				assert(b);
 				return;
 			}
 			*x.getFp0() += Fp::one();
@@ -609,7 +618,9 @@ struct GLV1 {
 		G1::add(tbl[3], in[0], in[1]);
 		tbl[3].normalize();
 		for (int i = 0; i < splitN; i++) {
-			mcl::gmp::getArray(w[i], maxUnit, u[i]);
+			bool b;
+			mcl::gmp::getArray(&b, w[i], maxUnit, u[i]);
+			assert(b);
 			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
 			maxBit = std::max(maxBit, bitTbl[i]);
 		}
@@ -801,7 +812,9 @@ struct GLV2 {
 //			tbl[i].normalize();
 		}
 		for (int i = 0; i < splitN; i++) {
-			mcl::gmp::getArray(w[i], maxUnit, u[i]);
+			bool b;
+			mcl::gmp::getArray(&b, w[i], maxUnit, u[i]);
+			assert(b);
 			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
 			maxBit = std::max(maxBit, bitTbl[i]);
 		}
@@ -971,7 +984,7 @@ struct Param {
 		glv2.init(r, z, isBLS12);
 		*pb = true;
 	}
-#ifndef CYBOZU_DONT_EXCEPTION
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
 	{
 		bool b;
@@ -1002,21 +1015,27 @@ namespace local {
 inline void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 {
 	mpz_class s;
-	mcl::gmp::setArray(s, y, yn);
+	bool b;
+	mcl::gmp::setArray(&b, s, y, yn);
+	assert(b);
 	if (isNegative) s = -s;
 	BN::param.glv1.mul(z, x, s, constTime);
 }
 inline void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 {
 	mpz_class s;
-	mcl::gmp::setArray(s, y, yn);
+	bool b;
+	mcl::gmp::setArray(&b, s, y, yn);
+	assert(b);
 	if (isNegative) s = -s;
 	BN::param.glv2.mul(z, x, s, constTime);
 }
 inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 {
 	mpz_class s;
-	mcl::gmp::setArray(s, y, yn);
+	bool b;
+	mcl::gmp::setArray(&b, s, y, yn);
+	assert(b);
 	if (isNegative) s = -s;
 	BN::param.glv2.pow(z, x, s, constTime);
 }
@@ -1831,7 +1850,7 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const mcl::Array<Fp6>&
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
-#ifndef CYBOZU_DONT_EXCEPTION
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void mapToG1(G1& P, const Fp& x)
 {
 	bool b;
@@ -1943,7 +1962,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	*pb = true;
 }
 
-#ifndef CYBOZU_DONT_EXCEPTION
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	bool b;
@@ -1959,7 +1978,7 @@ inline void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mo
 	BN::init(pb, cp, mode);
 }
 
-#ifndef CYBOZU_DONT_EXCEPTION
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	bool b;

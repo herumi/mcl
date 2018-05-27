@@ -57,20 +57,34 @@ public:
 		for (size_t i = n; i < getUnitSize(); i++) v_[i] = 0;
 		*pb = true;
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
 		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("fp:save") << ioMode;
+		if (!b) throw cybozu::Exception("FpDblT:save") << ioMode;
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
 		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("fp:load") << ioMode;
+		if (!b) throw cybozu::Exception("FpDblT:load") << ioMode;
 	}
+	void getMpz(mpz_class& x) const
+	{
+		bool b;
+		getMpz(&b, x);
+		if (!b) throw cybozu::Exception("FpDblT:getMpz");
+	}
+	mpz_class getMpz() const
+	{
+		mpz_class x;
+		getMpz(x);
+		return x;
+	}
+#endif
 	void clear()
 	{
 		const size_t n = getUnitSize();
@@ -99,15 +113,9 @@ public:
 		memcpy(v_, gmp::getUnit(x), xn * sizeof(Unit));
 		memset(v_ + xn, 0, (N2 - xn) * sizeof(Unit));
 	}
-	void getMpz(mpz_class& x) const
+	void getMpz(bool *pb, mpz_class& x) const
 	{
-		gmp::setArray(x, v_, Fp::op_.N * 2);
-	}
-	mpz_class getMpz() const
-	{
-		mpz_class x;
-		getMpz(x);
-		return x;
+		gmp::setArray(pb, x, v_, Fp::op_.N * 2);
 	}
 	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
@@ -205,12 +213,13 @@ public:
 		Fp::mul(z.b, x.b, y);
 	}
 	template<class S>
-	void setArray(const S *buf, size_t n)
+	void setArray(bool *pb, const S *buf, size_t n)
 	{
 		assert((n & 1) == 0);
 		n /= 2;
-		a.setArray(buf, n);
-		b.setArray(buf + n, n);
+		a.setArray(pb, buf, n);
+		if (!*pb) return;
+		b.setArray(pb, buf + n, n);
 	}
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
@@ -233,30 +242,6 @@ public:
 			if (!*pb) return;
 		}
 		b.save(pb, os, ioMode);
-	}
-	template<class InputStream>
-	void load(InputStream& is, int ioMode = IoSerialize)
-	{
-		bool b;
-		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("Fp2T:load");
-	}
-	template<class OutputStream>
-	void save(OutputStream& os, int ioMode = IoSerialize) const
-	{
-		bool b;
-		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("Fp2T:save");
-	}
-	friend std::istream& operator>>(std::istream& is, Fp2T& self)
-	{
-		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
-		return is;
-	}
-	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
-	{
-		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
-		return os;
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
@@ -391,6 +376,41 @@ public:
 			g3[i] = g[i] * g2[i];
 		}
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	template<class InputStream>
+	void load(InputStream& is, int ioMode = IoSerialize)
+	{
+		bool b;
+		load(&b, is, ioMode);
+		if (!b) throw cybozu::Exception("Fp2T:load");
+	}
+	template<class OutputStream>
+	void save(OutputStream& os, int ioMode = IoSerialize) const
+	{
+		bool b;
+		save(&b, os, ioMode);
+		if (!b) throw cybozu::Exception("Fp2T:save");
+	}
+	template<class S>
+	void setArray(const S *buf, size_t n)
+	{
+		bool b;
+		setArray(&b, buf, n);
+		if (!b) throw cybozu::Exception("Fp2T:setArray");
+	}
+#endif
+#ifndef CYBOZU_DONT_USE_STRING
+	friend std::istream& operator>>(std::istream& is, Fp2T& self)
+	{
+		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
+		return is;
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
+	{
+		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
+		return os;
+	}
+#endif
 private:
 	/*
 		default Fp2T operator
@@ -758,6 +778,7 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		}
 		c.save(pb, os, ioMode);
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
@@ -772,6 +793,8 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("Fp6T:save");
 	}
+#endif
+#ifndef CYBOZU_DONT_USE_STRING
 	friend std::istream& operator>>(std::istream& is, Fp6T& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
@@ -782,6 +805,7 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
 	}
+#endif
 	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
@@ -1173,6 +1197,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		}
 		b.save(pb, os, ioMode);
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
@@ -1187,6 +1212,8 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("Fp12T:save");
 	}
+#endif
+#ifndef CYBOZU_DONT_USE_STRING
 	friend std::istream& operator>>(std::istream& is, Fp12T& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
@@ -1197,6 +1224,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
 	}
+#endif
 };
 
 /*

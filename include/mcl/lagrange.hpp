@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <vector>
+#include <mcl/array.hpp>
 
 namespace mcl {
 
@@ -15,7 +15,7 @@ namespace mcl {
 	@retval 0 if succeed else -1
 */
 template<class G, class F>
-void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k, bool *pb)
+void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 {
 	/*
 		delta_{i,S}(0) = prod_{j != i} S[j] / (S[j] - S[i]) = a / b
@@ -25,7 +25,9 @@ void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k, bool *pb)
 		*pb = false;
 		return;
 	}
-	std::vector<F> delta(k);
+	mcl::Array<F> delta;
+	*pb = delta.resize(k);
+	if (!*pb) return;
 	F a = S[0];
 	for (size_t i = 1; i < k; i++) {
 		a *= S[i];
@@ -62,19 +64,12 @@ void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k, bool *pb)
 	*pb = true;
 }
 
-template<class G, class F>
-void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k)
-{
-	bool b;
-	LagrangeInterpolation(out, S, vec, k, &b);
-	if (!b) throw cybozu::Exception("LagrangeInterpolation");
-}
 /*
 	out = f(x) = c[0] + c[1] * x + c[2] * x^2 + ... + c[cSize - 1] * x^(cSize - 1)
 	@retval 0 if succeed else -1
 */
 template<class G, class T>
-void evaluatePolynomial(G& out, const G *c, size_t cSize, const T& x, bool *pb)
+void evaluatePolynomial(bool *pb, G& out, const G *c, size_t cSize, const T& x)
 {
 	if (cSize < 2) {
 		*pb = false;
@@ -89,12 +84,22 @@ void evaluatePolynomial(G& out, const G *c, size_t cSize, const T& x, bool *pb)
 	*pb = true;
 }
 
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+template<class G, class F>
+void LagrangeInterpolation(G& out, const F *S, const G *vec, size_t k)
+{
+	bool b;
+	LagrangeInterpolation(&b, out, S, vec, k);
+	if (!b) throw cybozu::Exception("LagrangeInterpolation");
+}
+
 template<class G, class T>
 void evaluatePolynomial(G& out, const G *c, size_t cSize, const T& x)
 {
 	bool b;
-	evaluatePolynomial(out, c, cSize, x, &b);
+	evaluatePolynomial(&b, out, c, cSize, x);
 	if (!b) throw cybozu::Exception("evaluatePolynomial");
 }
+#endif
 
 } // mcl

@@ -452,37 +452,37 @@ void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t 
 int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k)
 {
 	bool b;
-	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k, &b);
+	mcl::LagrangeInterpolation(&b, *cast(out), cast(xVec), cast(yVec), k);
 	return b ? 0 : -1;
 }
 int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k)
 {
 	bool b;
-	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k, &b);
+	mcl::LagrangeInterpolation(&b, *cast(out), cast(xVec), cast(yVec), k);
 	return b ? 0 : -1;
 }
 int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k)
 {
 	bool b;
-	mcl::LagrangeInterpolation(*cast(out), cast(xVec), cast(yVec), k, &b);
+	mcl::LagrangeInterpolation(&b, *cast(out), cast(xVec), cast(yVec), k);
 	return b ? 0 : -1;
 }
 int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x)
 {
 	bool b;
-	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x), &b);
+	mcl::evaluatePolynomial(&b, *cast(out), cast(cVec), cSize, *cast(x));
 	return b ? 0 : -1;
 }
 int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x)
 {
 	bool b;
-	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x), &b);
+	mcl::evaluatePolynomial(&b, *cast(out), cast(cVec), cSize, *cast(x));
 	return b ? 0 : -1;
 }
 int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x)
 {
 	bool b;
-	mcl::evaluatePolynomial(*cast(out), cast(cVec), cSize, *cast(x), &b);
+	mcl::evaluatePolynomial(&b, *cast(out), cast(cVec), cSize, *cast(x));
 	return b ? 0 : -1;
 }
 

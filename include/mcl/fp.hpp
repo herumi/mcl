@@ -123,7 +123,8 @@ public:
 		}
 		{ // set half
 			mpz_class half = (op_.mp + 1) / 2;
-			gmp::getArray(op_.half, op_.N, half);
+			gmp::getArray(pb, op_.half, op_.N, half);
+			if (!*pb) return;
 		}
 		inv(inv2_, 2);
 		*pb = true;
@@ -158,8 +159,10 @@ public:
 	{
 		if (isMont()) return op_.sq.get(y, x);
 		mpz_class mx, my;
-		x.getMpz(mx);
-		bool b = op_.sq.get(my, mx);
+		bool b = false;
+		x.getMpz(&b, mx);
+		if (!b) return false;
+		b = op_.sq.get(my, mx);
 		if (!b) return false;
 		y.setMpz(&b, my);
 		return b;
@@ -325,17 +328,11 @@ public:
 		uint32_t size = op_.hash(buf, static_cast<uint32_t>(sizeof(buf)), msg, static_cast<uint32_t>(msgSize));
 		setArrayMask(buf, size);
 	}
-	void getMpz(mpz_class& x) const
+	void getMpz(bool *pb, mpz_class& x) const
 	{
 		fp::Block b;
 		getBlock(b);
-		gmp::setArray(x, b.p, b.n);
-	}
-	mpz_class getMpz() const
-	{
-		mpz_class x;
-		getMpz(x);
-		return x;
+		gmp::setArray(pb, x, b.p, b.n);
 	}
 	void setMpz(bool *pb, const mpz_class& x)
 	{
@@ -545,6 +542,18 @@ public:
 		int64_t v = getInt64(&b);
 		if (!b) throw cybozu::Exception("Fp:getInt64:large value");
 		return v;
+	}
+	void getMpz(mpz_class& x) const
+	{
+		bool b;
+		getMpz(&b, x);
+		if (!b) throw cybozu::Exception("Fp:getMpz");
+	}
+	mpz_class getMpz() const
+	{
+		mpz_class x;
+		getMpz(x);
+		return x;
 	}
 #endif
 };

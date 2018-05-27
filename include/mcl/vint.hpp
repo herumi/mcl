@@ -699,8 +699,8 @@ class FixedBuffer {
 	enum {
 		N = (BitLen + sizeof(T) * 8 - 1) / (sizeof(T) * 8)
 	};
-	T v_[N];
 	size_t size_;
+	T v_[N];
 public:
 	typedef T Unit;
 	FixedBuffer()
@@ -851,21 +851,27 @@ private:
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		size_t zn = std::max(xn, yn) + 1;
-		z.buf_.alloc(zn);
+		bool b;
+		z.buf_.alloc(&b, zn);
+		assert(b); (void)b;
 		z.buf_[zn - 1] = vint::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
 		z.trim(zn);
 	}
 	static void uadd1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn + 1;
-		z.buf_.alloc(zn);
+		bool b;
+		z.buf_.alloc(&b, zn);
+		assert(b); (void)b;
 		z.buf_[zn - 1] = vint::addu1(&z.buf_[0], &x[0], xn, y);
 		z.trim(zn);
 	}
 	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn;
-		z.buf_.alloc(zn);
+		bool b;
+		z.buf_.alloc(&b, zn);
+		assert(b); (void)b;
 		Unit c = vint::subu1(&z.buf_[0], &x[0], xn, y);
 		(void)c;
 		assert(!c);
@@ -874,7 +880,9 @@ private:
 	static void usub(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		assert(xn >= yn);
-		z.buf_.alloc(xn);
+		bool b;
+		z.buf_.alloc(&b, xn);
+		assert(b); (void)b;
 		Unit c = vint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
 			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
@@ -946,10 +954,13 @@ private:
 			return;
 		}
 		size_t qn = xn - yn + 1;
+		bool b;
 		if (q) {
-			q->buf_.alloc(qn);
+			q->buf_.alloc(&b, qn);
+			assert(b); (void)b;
 		}
-		r.buf_.alloc(yn);
+		r.buf_.alloc(&b, yn);
+		assert(b); (void)b;
 		vint::divNM(q ? &q->buf_[0] : 0, qn, &r.buf_[0], &x[0], xn, &y[0], yn);
 		if (q) {
 			q->trim(qn);
@@ -1006,7 +1017,9 @@ public:
 	{
 		assert(x != invalidVar);
 		isNeg_ = x < 0;
-		buf_.alloc(1);
+		bool b;
+		buf_.alloc(&b, 1);
+		assert(b); (void)b;
 		buf_[0] = std::abs(x);
 		size_ = 1;
 		return *this;
@@ -1014,7 +1027,9 @@ public:
 	VintT& operator=(Unit x)
 	{
 		isNeg_ = false;
-		buf_.alloc(1);
+		bool b;
+		buf_.alloc(&b, 1);
+		assert(b); (void)b;
 		buf_[0] = x;
 		size_ = 1;
 		return *this;
@@ -1059,7 +1074,7 @@ public:
 		@note assume little endian system
 	*/
 	template<class S>
-	void setArray(const S *x, size_t size)
+	void setArray(bool *pb, const S *x, size_t size)
 	{
 		isNeg_ = false;
 		if (size == 0) {
@@ -1067,7 +1082,8 @@ public:
 			return;
 		}
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
-		buf_.alloc(unitSize);
+		buf_.alloc(pb, unitSize);
+		if (!*pb) return;
 		buf_[unitSize - 1] = 0;
 		memcpy(&buf_[0], x, sizeof(S) * size);
 		trim(unitSize);
@@ -1156,7 +1172,9 @@ public:
 		size_t q = i / unitBitSize;
 		size_t r = i % unitBitSize;
 		assert(q <= size());
-		buf_.alloc(q + 1);
+		bool b;
+		buf_.alloc(&b, q + 1);
+		assert(b); (void)b;
 		Unit mask = Unit(1) << r;
 		if (v) {
 			buf_[q] |= mask;
@@ -1235,7 +1253,9 @@ public:
 		const size_t xn = x.size();
 		const size_t yn = y.size();
 		size_t zn = xn + yn;
-		z.buf_.alloc(zn);
+		bool b;
+		z.buf_.alloc(&b, zn);
+		assert(b); (void)b;
 		vint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
@@ -1256,7 +1276,9 @@ public:
 	{
 		size_t xn = x.size();
 		size_t zn = xn + 1;
-		z.buf_.alloc(zn);
+		bool b;
+		z.buf_.alloc(&b, zn);
+		assert(b); (void)b;
 		z.buf_[zn - 1] = vint::mulu1(&z.buf_[0], &x.buf_[0], xn, y);
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
@@ -1303,7 +1325,9 @@ public:
 		int r;
 		if (q) {
 			q->isNeg_ = xNeg ^ yNeg;
-			q->buf_.alloc(xn);
+			bool b;
+			q->buf_.alloc(&b, xn);
+			assert(b); (void)b;
 			r = vint::divu1(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
 		} else {
@@ -1348,7 +1372,11 @@ public:
 	{
 		assert(!x.isNeg_);
 		size_t xn = x.size();
-		if (q) q->buf_.alloc(xn);
+		if (q) {
+			bool b;
+			q->buf_.alloc(&b, xn);
+			assert(b); (void)b;
+		}
 		Unit r = vint::divu1(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
 		if (q) {
 			q->trim(xn);
@@ -1385,7 +1413,8 @@ public:
 		size_t n = fp::local::loadWord(buf, sizeof(buf), is);
 		if (n == 0) return;
 		const size_t maxN = 384 / (sizeof(MCL_SIZEOF_UNIT) * 8);
-		buf_.alloc(maxN);
+		buf_.alloc(pb, maxN);
+		if (!*pb) return;
 		isNeg_ = false;
 		n = fp::strToArray(&isNeg_, &buf_[0], maxN, buf, n, ioMode);
 		if (n == 0) return;
@@ -1397,7 +1426,9 @@ public:
 	{
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + unitBitSize - 1) / unitBitSize;
-		y.buf_.alloc(yn);
+		bool b;
+		y.buf_.alloc(&b, yn);
+		assert(b); (void)b;
 		vint::shlN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
@@ -1411,7 +1442,9 @@ public:
 			return;
 		}
 		size_t yn = xn - shiftBit / unitBitSize;
-		y.buf_.alloc(yn);
+		bool b;
+		y.buf_.alloc(&b, yn);
+		assert(b); (void)b;
 		vint::shrN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
@@ -1443,7 +1476,9 @@ public:
 		size_t xn = px->size();
 		size_t yn = py->size();
 		assert(xn >= yn);
-		z.buf_.alloc(xn);
+		bool b;
+		z.buf_.alloc(&b, xn);
+		assert(b); (void)b;
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] | y.buf_[i];
 		}
@@ -1459,7 +1494,9 @@ public:
 		}
 		size_t yn = py->size();
 		assert(px->size() >= yn);
-		z.buf_.alloc(yn);
+		bool b;
+		z.buf_.alloc(&b, yn);
+		assert(b); (void)b;
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] & y.buf_[i];
 		}
@@ -1474,7 +1511,9 @@ public:
 	static void andBitu1(VintT& z, const VintT& x, Unit y)
 	{
 		assert(!x.isNeg_);
-		z.buf_.alloc(1);
+		bool b;
+		z.buf_.alloc(&b, 1);
+		assert(b); (void)b;
 		z.buf_[0] = x.buf_[0] & y;
 		z.size_ = 1;
 		z.isNeg_ = false;
@@ -1742,6 +1781,13 @@ public:
 		bool ret = isPrime(&b, *this, tryNum);
 		if (!b) throw cybozu::Exception("Vint:isPrime");
 		return ret;
+	}
+	template<class S>
+	void setArray(const S *x, size_t size)
+	{
+		bool b;
+		setArray(&b, x, size);
+		if (!b) throw cybozu::Exception("Vint:setArray");
 	}
 #endif
 	VintT& operator++() { adds1(*this, *this, 1); return *this; }
