@@ -69,10 +69,9 @@ struct ArrayIterator {
 template<class Ec>
 class WindowMethod {
 public:
-	typedef std::vector<Ec> EcV;
 	size_t bitSize_;
 	size_t winSize_;
-	std::vector<EcV> tbl_;
+	std::vector<Ec> tbl_;
 	WindowMethod(const Ec& x, size_t bitSize, size_t winSize)
 	{
 		init(x, bitSize, winSize);
@@ -93,11 +92,10 @@ public:
 		winSize_ = winSize;
 		const size_t tblNum = (bitSize + winSize - 1) / winSize;
 		const size_t r = size_t(1) << winSize;
-		tbl_.resize(tblNum);
+		tbl_.resize(tblNum * r);
 		Ec t(x);
 		for (size_t i = 0; i < tblNum; i++) {
-			tbl_[i].resize(r);
-			EcV& w = tbl_[i];
+			Ec* w = &tbl_[i * r];
 			w[0].clear();
 			for (size_t d = 1; d < r; d *= 2) {
 				for (size_t j = 0; j < d; j++) {
@@ -105,7 +103,7 @@ public:
 				}
 				Ec::dbl(t, t);
 			}
-			for (size_t j = 0; j < w.size(); j++) {
+			for (size_t j = 0; j < r; j++) {
 				w[j].normalize();
 			}
 		}
@@ -145,7 +143,7 @@ public:
 			n--;
 		}
 		if (n == 0) return;
-		if (n > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powArray:bad n") << n << tbl_.size();
+		if ((n << winSize_) > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powArray:bad n") << n << tbl_.size();
 		assert(y[n - 1]);
 		const size_t bitSize = (n - 1) * UnitBitSize + cybozu::bsr<Unit>(y[n - 1]) + 1;
 		size_t i = 0;
@@ -153,7 +151,7 @@ public:
 		do {
 			Unit v = ai.getNext();
 			if (v) {
-				Ec::add(z, z, tbl_[i][v]);
+				Ec::add(z, z, tbl_[(i << winSize_) + v]);
 			}
 			i++;
 		} while (ai.hasNext());
