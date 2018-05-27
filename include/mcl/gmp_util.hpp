@@ -102,14 +102,19 @@ inline void set(mpz_class& z, uint64_t x)
 {
 	setArray(z, &x, 1);
 }
-inline bool setStr(mpz_class& z, const std::string& str, int base = 0)
+inline void setStr(bool *pb, mpz_class& z, const char *str, size_t strSize, int base = 0)
 {
 #ifdef MCL_USE_VINT
-	z.setStr(str, base);
-	return true;
+	z.setStr(pb, str, strSize, base);
 #else
-	return z.set_str(str, base) == 0;
+	*pb = z.set_str(std::string(str, strSize), base) == 0;
 #endif
+}
+inline void setStr(mpz_class& z, const std::string& str, int base = 0)
+{
+	bool b;
+	setStr(&b, z, str.c_str(), str.size(), base);
+	if (!b) throw cybozu::Exception("gmp:setStr");
 }
 /*
 	set buf with string terminated by '\0'

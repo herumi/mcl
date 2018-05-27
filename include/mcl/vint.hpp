@@ -1162,7 +1162,7 @@ public:
 		      "0b..."   => base = 2
 		      otherwise => base = 10
 	*/
-	void setStr(const char *str, size_t strSize, int base, bool *pb)
+	void setStr(bool *pb, const char *str, size_t strSize, int base = 0)
 	{
 		const size_t maxN = MCL_MAX_BIT_SIZE / (sizeof(MCL_SIZEOF_UNIT) * 8);
 		buf_.alloc(maxN);
@@ -1176,7 +1176,7 @@ public:
 	void setStr(std::string str, int base = 0)
 	{
 		bool b;
-		setStr(str.c_str(), str.size(), base, &b);
+		setStr(&b, str.c_str(), str.size(), base);
 		if (!b) throw cybozu::Exception("Vint:setStr") << str;
 	}
 	static int compare(const VintT& x, const VintT& y)

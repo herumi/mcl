@@ -103,11 +103,11 @@ public:
 		}
 		printf("\n");
 	}
-	static inline void init(int *pret, const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		*pret = op_.init(_p, maxBitSize, mode);
-		if (*pret < 0) return;
+		*pb = op_.init(_p, maxBitSize, mode);
+		if (!*pb) return;
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
 			one.clear();
@@ -119,18 +119,26 @@ public:
 			gmp::getArray(op_.half, op_.N, half);
 		}
 		inv(inv2_, 2);
-		*pret = 0;
+		*pb = true;
+	}
+	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		mpz_class p;
+		gmp::setStr(pb, p, mstr, strlen(mstr));
+		if (!*pb) return;
+		init(pb, p, mode);
 	}
 	static inline void init(const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
 	{
-		int ret;
-		init(&ret, _p, mode);
-		if (ret < 0) throw cybozu::Exception("Fp:init") << ret;
+		bool b;
+		init(&b, _p, mode);
+		if (!b) throw cybozu::Exception("Fp:init");
 	}
 	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
-		mpz_class p(mstr);
-		init(p, mode);
+		bool b;
+		init(&b, mstr.c_str(), mode);
+		if (!b) throw cybozu::Exception("Fp:init");
 	}
 	static inline size_t getModulo(char *buf, size_t bufSize)
 	{

@@ -4,7 +4,7 @@
 	@brief window method
 	@author MITSUNARI Shigeo(@herumi)
 */
-#include <vector>
+#include <mcl/array.hpp>
 #include <mcl/fp.hpp>
 
 namespace mcl { namespace fp {
@@ -71,7 +71,7 @@ class WindowMethod {
 public:
 	size_t bitSize_;
 	size_t winSize_;
-	std::vector<Ec> tbl_;
+	mcl::Array<Ec> tbl_;
 	WindowMethod(const Ec& x, size_t bitSize, size_t winSize)
 	{
 		init(x, bitSize, winSize);
@@ -86,13 +86,14 @@ public:
 		@param bitSize [in] exponent bit length
 		@param winSize [in] window size
 	*/
-	void init(const Ec& x, size_t bitSize, size_t winSize)
+	void init(bool *pb, const Ec& x, size_t bitSize, size_t winSize)
 	{
 		bitSize_ = bitSize;
 		winSize_ = winSize;
 		const size_t tblNum = (bitSize + winSize - 1) / winSize;
 		const size_t r = size_t(1) << winSize;
-		tbl_.resize(tblNum * r);
+		*pb = tbl_.resize(tblNum * r);
+		if (!*pb) return;
 		Ec t(x);
 		for (size_t i = 0; i < tblNum; i++) {
 			Ec* w = &tbl_[i * r];
@@ -107,6 +108,12 @@ public:
 				w[j].normalize();
 			}
 		}
+	}
+	void init(const Ec& x, size_t bitSize, size_t winSize)
+	{
+		bool b;
+		init(&b, x, bitSize, winSize);
+		if (!b) throw cybozu::Exception("mcl:WindowMethod:init") << bitSize << winSize;
 	}
 	/*
 		@param z [out] x multiplied by y
@@ -143,7 +150,8 @@ public:
 			n--;
 		}
 		if (n == 0) return;
-		if ((n << winSize_) > tbl_.size()) throw cybozu::Exception("mcl:WindowMethod:powArray:bad n") << n << tbl_.size();
+		assert((n << winSize_) <= tbl_.size());
+		if ((n << winSize_) > tbl_.size()) return;
 		assert(y[n - 1]);
 		const size_t bitSize = (n - 1) * UnitBitSize + cybozu::bsr<Unit>(y[n - 1]) + 1;
 		size_t i = 0;

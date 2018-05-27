@@ -122,6 +122,20 @@ void (*Operator<T, E>::powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, 
 */
 template<class T, class E = Empty<T> >
 struct Serializable : public E {
+	void setStr(bool *pb, const char *str, int ioMode = 0)
+	{
+		size_t len = strlen(str);
+		size_t n = deserialize(str, len, ioMode);
+		*pb = n > 0 && n == len;
+	}
+	// return strlen(buf) if success else 0
+	size_t getStr(char *buf, size_t maxBufSize, int ioMode = 0) const
+	{
+		size_t n = serialize(buf, maxBufSize, ioMode);
+		if (n == 0 || n == maxBufSize - 1) return 0;
+		buf[n] = '\0';
+		return n;
+	}
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		cybozu::StringInputStream is(str);

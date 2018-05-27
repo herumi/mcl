@@ -348,21 +348,21 @@ static void initForMont(Op& op, const Unit *p, Mode mode)
 #endif
 }
 
-int Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
+bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
 {
-	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return -1;
+	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
 #ifdef MCL_USE_VINT
 	assert(sizeof(mcl::vint::Unit) == sizeof(Unit));
 #else
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 #endif
-	if (maxBitSize > MCL_MAX_BIT_SIZE) return -2;
-	if (_p <= 0) return -3;
+	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
+	if (_p <= 0) return false;
 	clear();
 	{
 		const size_t maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
 		N = gmp::getUnitSize(_p);
-		if (N > maxN) return -4;
+		if (N > maxN) return false;
 		gmp::getArray(p, N, _p);
 		mp = _p;
 	}
@@ -484,7 +484,7 @@ int Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBit
 	} else {
 		hash = sha512;
 	}
-	return 0;
+	return true;
 }
 
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)

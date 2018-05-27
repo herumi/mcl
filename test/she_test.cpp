@@ -115,30 +115,33 @@ CYBOZU_TEST_AUTO(bench2)
 }
 #endif
 
+template<class G, class HashTbl>
+void GAHashTableTest(int maxSize, int tryNum, const G& P, const HashTbl& hashTbl)
+{
+	for (int i = -maxSize; i <= maxSize; i++) {
+		G xP;
+		G::mul(xP, P, i);
+		CYBOZU_TEST_EQUAL(hashTbl.basicLog(xP), i);
+	}
+	for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
+		G xP;
+		G::mul(xP, P, i);
+		CYBOZU_TEST_EQUAL(hashTbl.log(xP), i);
+	}
+}
+
 template<class G>
 void HashTableTest(const G& P)
 {
-	mcl::she::local::HashTable<G> hashTbl;
+	mcl::she::local::HashTable<G> hashTbl, hashTbl2;
 	const int maxSize = 100;
 	const int tryNum = 3;
 	hashTbl.init(P, maxSize, tryNum);
-	for (int j = 0; j < 2; j++) {
-		for (int i = -maxSize; i <= maxSize; i++) {
-			G xP;
-			G::mul(xP, P, i);
-			CYBOZU_TEST_EQUAL(hashTbl.basicLog(xP), i);
-		}
-		for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
-			G xP;
-			G::mul(xP, P, i);
-			CYBOZU_TEST_EQUAL(hashTbl.log(xP), i);
-		}
-		std::stringstream ss;
-		hashTbl.save(ss);
-		mcl::she::local::HashTable<G> hashTbl2;
-		hashTbl2.load(ss);
-		hashTbl = hashTbl2;
-	}
+	GAHashTableTest(maxSize, tryNum, P, hashTbl);
+	std::stringstream ss;
+	hashTbl.save(ss);
+	hashTbl2.load(ss);
+	GAHashTableTest(maxSize, tryNum, P, hashTbl2);
 }
 
 CYBOZU_TEST_AUTO(HashTable)
@@ -151,9 +154,24 @@ CYBOZU_TEST_AUTO(HashTable)
 	HashTableTest(Q);
 }
 
+template<class HashTbl>
+void GTHashTableTest(int maxSize, int tryNum, const GT& g, const HashTbl& hashTbl)
+{
+	for (int i = -maxSize; i <= maxSize; i++) {
+		GT gx;
+		GT::pow(gx, g, i);
+		CYBOZU_TEST_EQUAL(hashTbl.basicLog(gx), i);
+	}
+	for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
+		GT gx;
+		GT::pow(gx, g, i);
+		CYBOZU_TEST_EQUAL(hashTbl.log(gx), i);
+	}
+}
+
 CYBOZU_TEST_AUTO(GTHashTable)
 {
-	mcl::she::local::HashTable<GT, false> hashTbl;
+	mcl::she::local::HashTable<GT, false> hashTbl, hashTbl2;
 	GT g;
 	{
 		G1 P;
@@ -165,23 +183,11 @@ CYBOZU_TEST_AUTO(GTHashTable)
 	const int maxSize = 100;
 	const int tryNum = 3;
 	hashTbl.init(g, maxSize, tryNum);
-	for (int j = 0; j < 2; j++) {
-		for (int i = -maxSize; i <= maxSize; i++) {
-			GT gx;
-			GT::pow(gx, g, i);
-			CYBOZU_TEST_EQUAL(hashTbl.basicLog(gx), i);
-		}
-		for (int i = -maxSize * tryNum; i <= maxSize * tryNum; i++) {
-			GT gx;
-			GT::pow(gx, g, i);
-			CYBOZU_TEST_EQUAL(hashTbl.log(gx), i);
-		}
-		std::stringstream ss;
-		hashTbl.save(ss);
-		mcl::she::local::HashTable<GT, false> hashTbl2;
-		hashTbl2.load(ss);
-		hashTbl = hashTbl2;
-	}
+	GTHashTableTest(maxSize, tryNum, g, hashTbl);
+	std::stringstream ss;
+	hashTbl.save(ss);
+	hashTbl2.load(ss);
+	GTHashTableTest(maxSize, tryNum, g, hashTbl2);
 }
 
 CYBOZU_TEST_AUTO(enc_dec)

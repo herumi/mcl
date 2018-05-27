@@ -199,9 +199,20 @@ public:
 	{
 		init(astr, bstr, mode);
 	}
+	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
+	{
+		Fp a, b;
+		a.setStr(pb, astr);
+		if (!*pb) return;
+		b.setStr(pb, bstr);
+		if (!*pb) return;
+		init(a, b, mode);
+	}
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
 	{
-		init(Fp(astr), Fp(bstr), mode);
+		bool b;
+		init(&b, astr.c_str(), bstr.c_str(), mode);
+		if (!b) throw cybozu::Exception("mcl:EcT:init");
 	}
 	// verify the order
 	bool isValidOrder() const

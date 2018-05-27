@@ -17,66 +17,43 @@ static PrecomputedPublicKey *cast(ecdsaPrecomputedPublicKey *p) { return reinter
 static const PrecomputedPublicKey *cast(const ecdsaPrecomputedPublicKey *p) { return reinterpret_cast<const PrecomputedPublicKey*>(p); }
 
 int ecdsaInit(void)
-	try
 {
-	init();
-	return 0;
-} catch (std::exception&) {
-	return -1;
-}
-
-template<class T>
-mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
-	try
-{
-	return (mclSize)cast(x)->serialize(buf, maxBufSize);
-} catch (std::exception&) {
-	return 0;
+	bool b;
+	init(&b);
+	return b ? 0 : -1;
 }
 
 mclSize ecdsaSecretKeySerialize(void *buf, mclSize maxBufSize, const ecdsaSecretKey *sec)
 {
-	return serialize(buf, maxBufSize, sec);
+	return (mclSize)cast(sec)->serialize(buf, maxBufSize);
 }
 mclSize ecdsaPublicKeySerialize(void *buf, mclSize maxBufSize, const ecdsaPublicKey *pub)
 {
-	return serialize(buf, maxBufSize, pub);
+	return (mclSize)cast(pub)->serialize(buf, maxBufSize);
 }
 mclSize ecdsaSignatureSerialize(void *buf, mclSize maxBufSize, const ecdsaSignature *sig)
 {
-	return serialize(buf, maxBufSize, sig);
-}
-
-template<class T>
-mclSize deserialize(T *x, const void *buf, mclSize bufSize)
-	try
-{
-	return (mclSize)cast(x)->deserialize(buf, bufSize);
-} catch (std::exception&) {
-	return 0;
+	return (mclSize)cast(sig)->serialize(buf, maxBufSize);
 }
 
 mclSize ecdsaSecretKeyDeserialize(ecdsaSecretKey* sec, const void *buf, mclSize bufSize)
 {
-	return deserialize(sec, buf, bufSize);
+	return (mclSize)cast(sec)->deserialize(buf, bufSize);
 }
 mclSize ecdsaPublicKeyDeserialize(ecdsaPublicKey* pub, const void *buf, mclSize bufSize)
 {
-	return deserialize(pub, buf, bufSize);
+	return (mclSize)cast(pub)->deserialize(buf, bufSize);
 }
 mclSize ecdsaSignatureDeserialize(ecdsaSignature* sig, const void *buf, mclSize bufSize)
 {
-	return deserialize(sig, buf, bufSize);
+	return (mclSize)cast(sig)->deserialize(buf, bufSize);
 }
 
 //	return 0 if success
 int ecdsaSecretKeySetByCSPRNG(ecdsaSecretKey *sec)
-	try
 {
 	cast(sec)->setByCSPRNG();
 	return 0;
-} catch (...) {
-	return -1;
 }
 
 void ecdsaGetPublicKey(ecdsaPublicKey *pub, const ecdsaSecretKey *sec)
@@ -99,23 +76,22 @@ int ecdsaVerifyPrecomputed(const ecdsaSignature *sig, const ecdsaPrecomputedPubl
 }
 
 ecdsaPrecomputedPublicKey *ecdsaPrecomputedPublicKeyCreate()
-	try
 {
-	return reinterpret_cast<ecdsaPrecomputedPublicKey*>(new PrecomputedPublicKey());
-} catch (...) {
-	return 0;
+	PrecomputedPublicKey *ppub = (PrecomputedPublicKey*)malloc(sizeof(PrecomputedPublicKey));
+	if (ppub == 0) return 0;
+	new(ppub) PrecomputedPublicKey();
+	return reinterpret_cast<ecdsaPrecomputedPublicKey*>(ppub);
 }
 
 void ecdsaPrecomputedPublicKeyDestroy(ecdsaPrecomputedPublicKey *ppub)
 {
-	delete cast(ppub);
+	cast(ppub)->~PrecomputedPublicKey();
+	free(ppub);
 }
 
 int ecdsaPrecomputedPublicKeyInit(ecdsaPrecomputedPublicKey *ppub, const ecdsaPublicKey *pub)
-	try
 {
-	cast(ppub)->init(*cast(pub));
-	return 0;
-} catch (...) {
-	return -1;
+	bool b;
+	cast(ppub)->init(&b, *cast(pub));
+	return b ? 0 : -1;
 }

@@ -27,31 +27,10 @@ static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
 static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
 
 template<class T>
-mclSize getStr(void *buf, mclSize maxBufSize, const T *x, int ioMode)
-{
-	size_t n = cast(x)->serialize(buf, maxBufSize, ioMode);
-	if (n == 0 || n == maxBufSize - 1) return 0;
-	((char *)buf)[n] = '\0';
-	return n;
-}
-
-template<class T>
-mclSize serialize(void *buf, mclSize maxBufSize, const T *x)
-{
-	return (mclSize)cast(x)->serialize(buf, maxBufSize);
-}
-
-template<class T>
 int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
 {
 	size_t n = cast(x)->deserialize(buf, bufSize, ioMode);
 	return n > 0 ? 0 : -1;
-}
-
-template<class T>
-mclSize deserialize(T *x, const void *buf, mclSize bufSize)
-{
-	return (mclSize)cast(x)->deserialize(buf, bufSize);
 }
 
 #ifdef __EMSCRIPTEN__
@@ -72,9 +51,9 @@ int mclBn_init(int curve, int maxUnitSize)
 		return -10;
 	}
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
-	int ret;
-	initPairing(&ret, cp);
-	return ret;
+	bool b;
+	initPairing(&b, cp);
+	return b ? 0 : -1;
 }
 
 int mclBn_getOpUnitSize()
@@ -129,7 +108,7 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 }
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize);
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
 }
 // return 1 if true
 int mclBnFr_isValid(const mclBnFr *x)
@@ -164,11 +143,11 @@ int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode);
+	return cast(x)->getStr(buf, maxBufSize, ioMode);
 }
 mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x)
 {
-	return serialize(buf, maxBufSize, x);
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
 }
 
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x)
@@ -213,7 +192,7 @@ int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode)
 }
 mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize);
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
 }
 
 // return 1 if true
@@ -238,12 +217,12 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode);
+	return cast(x)->getStr(buf, maxBufSize, ioMode);
 }
 
 mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x)
 {
-	return serialize(buf, maxBufSize, x);
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
 }
 
 void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x)
@@ -288,7 +267,7 @@ int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode)
 }
 mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize);
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
 }
 
 // return 1 if true
@@ -313,11 +292,12 @@ int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode);
+	return cast(x)->getStr(buf, maxBufSize, ioMode);
 }
+
 mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x)
 {
-	return serialize(buf, maxBufSize, x);
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
 }
 
 void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x)
@@ -372,7 +352,7 @@ int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode)
 }
 mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize)
 {
-	return deserialize(x, buf, bufSize);
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
 }
 
 // return 1 if true
@@ -391,12 +371,12 @@ int mclBnGT_isOne(const mclBnGT *x)
 
 mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode)
 {
-	return getStr(buf, maxBufSize, x, ioMode);
+	return cast(x)->getStr(buf, maxBufSize, ioMode);
 }
 
 mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x)
 {
-	return serialize(buf, maxBufSize, x);
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
 }
 
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)

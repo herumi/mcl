@@ -312,10 +312,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	/*
-		return 0 if success else negative value
-	*/
-	int init(const mpz_class& p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
+	bool init(const mpz_class& p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
 	void initFp2(int xi_a);
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);

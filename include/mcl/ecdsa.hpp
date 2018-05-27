@@ -77,19 +77,29 @@ inline void setHashOf(Zn& x, const void *msg, size_t msgSize)
 
 const local::Param& param = local::getParam();
 
-inline void init()
+inline void init(bool *pb)
 {
 	const mcl::EcParam& ecParam = mcl::ecparam::secp256k1;
-	Zn::init(ecParam.n);
-	Fp::init(ecParam.p);
-	Ec::init(ecParam.a, ecParam.b);
+	Zn::init(pb, ecParam.n);
+	if (!*pb) return;
+	Fp::init(pb, ecParam.p);
+	if (!*pb) return;
+	Ec::init(pb, ecParam.a, ecParam.b);
+	if (!*pb) return;
 	Zn::setIoMode(16);
 	Fp::setIoMode(16);
 	Ec::setIoMode(mcl::IoEcAffine);
 	local::Param& p = local::getParam();
 	p.ecParam = ecParam;
 	p.P.set(Fp(ecParam.gx), Fp(ecParam.gy));
-	p.Pbase.init(p.P, ecParam.bitSize, local::winSize);
+	p.Pbase.init(pb, p.P, ecParam.bitSize, local::winSize);
+}
+
+inline void init()
+{
+	bool b;
+	init(&b);
+	if (!b) throw cybozu::Exception("ecdsa:init");
 }
 
 typedef Zn SecretKey;
@@ -97,9 +107,15 @@ typedef Ec PublicKey;
 
 struct PrecomputedPublicKey {
 	mcl::fp::WindowMethod<Ec> pubBase_;
+	void init(bool *pb, const PublicKey& pub)
+	{
+		pubBase_.init(pb, pub, param.ecParam.bitSize, local::winSize);
+	}
 	void init(const PublicKey& pub)
 	{
-		pubBase_.init(pub, param.ecParam.bitSize, local::winSize);
+		bool b;
+		init(&b, pub);
+		if (!b) throw cybozu::Exception("ecdsa:PrecomputedPublicKey:init");
 	}
 };
 

@@ -78,91 +78,88 @@ int sheInit(int curve, int maxUnitSize)
 
 mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec)
 {
-	return serialize(buf, maxBufSize, sec);
+	return (mclSize)cast(sec)->serialize(buf, maxBufSize);
 }
 
 mclSize shePublicKeySerialize(void *buf, mclSize maxBufSize, const shePublicKey *pub)
 {
-	return serialize(buf, maxBufSize, pub);
+	return (mclSize)cast(pub)->serialize(buf, maxBufSize);
 }
 
 mclSize sheCipherTextG1Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG1 *c)
 {
-	return serialize(buf, maxBufSize, c);
+	return (mclSize)cast(c)->serialize(buf, maxBufSize);
 }
 
 mclSize sheCipherTextG2Serialize(void *buf, mclSize maxBufSize, const sheCipherTextG2 *c)
 {
-	return serialize(buf, maxBufSize, c);
+	return (mclSize)cast(c)->serialize(buf, maxBufSize);
 }
 
 mclSize sheCipherTextGTSerialize(void *buf, mclSize maxBufSize, const sheCipherTextGT *c)
 {
-	return serialize(buf, maxBufSize, c);
+	return (mclSize)cast(c)->serialize(buf, maxBufSize);
 }
 
 mclSize sheZkpBinSerialize(void *buf, mclSize maxBufSize, const sheZkpBin *zkp)
 {
-	return serialize(buf, maxBufSize, zkp);
+	return (mclSize)cast(zkp)->serialize(buf, maxBufSize);
 }
 
 mclSize sheZkpEqSerialize(void *buf, mclSize maxBufSize, const sheZkpEq *zkp)
 {
-	return serialize(buf, maxBufSize, zkp);
+	return (mclSize)cast(zkp)->serialize(buf, maxBufSize);
 }
 
 mclSize sheZkpBinEqSerialize(void *buf, mclSize maxBufSize, const sheZkpBinEq *zkp)
 {
-	return serialize(buf, maxBufSize, zkp);
+	return (mclSize)cast(zkp)->serialize(buf, maxBufSize);
 }
 
 mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize)
 {
-	return deserialize(sec, buf, bufSize);
+	return (mclSize)cast(sec)->deserialize(buf, bufSize);
 }
 
 mclSize shePublicKeyDeserialize(shePublicKey* pub, const void *buf, mclSize bufSize)
 {
-	return deserialize(pub, buf, bufSize);
+	return (mclSize)cast(pub)->deserialize(buf, bufSize);
 }
 
 mclSize sheCipherTextG1Deserialize(sheCipherTextG1* c, const void *buf, mclSize bufSize)
 {
-	return deserialize(c, buf, bufSize);
+	return (mclSize)cast(c)->deserialize(buf, bufSize);
 }
 
 mclSize sheCipherTextG2Deserialize(sheCipherTextG2* c, const void *buf, mclSize bufSize)
 {
-	return deserialize(c, buf, bufSize);
+	return (mclSize)cast(c)->deserialize(buf, bufSize);
 }
 
 mclSize sheCipherTextGTDeserialize(sheCipherTextGT* c, const void *buf, mclSize bufSize)
 {
-	return deserialize(c, buf, bufSize);
+	return (mclSize)cast(c)->deserialize(buf, bufSize);
 }
 
 mclSize sheZkpBinDeserialize(sheZkpBin* zkp, const void *buf, mclSize bufSize)
 {
-	return deserialize(zkp, buf, bufSize);
+	return (mclSize)cast(zkp)->deserialize(buf, bufSize);
 }
 
 mclSize sheZkpEqDeserialize(sheZkpEq* zkp, const void *buf, mclSize bufSize)
 {
-	return deserialize(zkp, buf, bufSize);
+	return (mclSize)cast(zkp)->deserialize(buf, bufSize);
 }
 
 mclSize sheZkpBinEqDeserialize(sheZkpBinEq* zkp, const void *buf, mclSize bufSize)
 {
-	return deserialize(zkp, buf, bufSize);
+	return (mclSize)cast(zkp)->deserialize(buf, bufSize);
 }
 
 int sheSecretKeySetByCSPRNG(sheSecretKey *sec)
-	try
 {
 	cast(sec)->setByCSPRNG();
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec)
