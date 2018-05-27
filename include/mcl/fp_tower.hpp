@@ -175,7 +175,6 @@ public:
 	Fp2T(int64_t a) : a(a), b(0) { }
 	Fp2T(const Fp& a, const Fp& b) : a(a), b(b) { }
 	Fp2T(int64_t a, int64_t b) : a(a), b(b) { }
-	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
 	Fp* getFp0() { return &a; }
 	const Fp* getFp0() const { return &a; }
 	const Unit* getUnit() const { return a.getUnit(); }
@@ -400,6 +399,7 @@ public:
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_STRING
+	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
 	friend std::istream& operator>>(std::istream& is, Fp2T& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
@@ -698,10 +698,12 @@ struct Fp2DblT {
 		FpDbl::mod(y.a, x.a);
 		FpDbl::mod(y.b, x.b);
 	}
+#ifndef CYBOZU_DONT_USE_STRING
 	friend std::ostream& operator<<(std::ostream& os, const Fp2DblT& x)
 	{
 		return os << x.a << ' ' << x.b;
 	}
+#endif
 	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
 };

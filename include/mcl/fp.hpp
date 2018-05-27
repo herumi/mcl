@@ -6,7 +6,9 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#ifndef CYBOZU_DONT_USE_STRING
 #include <iosfwd>
+#endif
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4127)
@@ -404,16 +406,6 @@ public:
 	}
 	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
-	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
-	{
-		self.save(os, fp::detectIoMode(getIoMode(), os));
-		return os;
-	}
-	friend inline std::istream& operator>>(std::istream& is, FpT& self)
-	{
-		self.load(is, fp::detectIoMode(getIoMode(), is));
-		return is;
-	}
 	/*
 		@note
 		this compare functions is slow because of calling mul if isMont is true.
@@ -484,6 +476,16 @@ public:
 	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
 		init(mstr, mode);
+	}
+	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
+	{
+		self.save(os, fp::detectIoMode(getIoMode(), os));
+		return os;
+	}
+	friend inline std::istream& operator>>(std::istream& is, FpT& self)
+	{
+		self.load(is, fp::detectIoMode(getIoMode(), is));
+		return is;
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_EXCEPTION

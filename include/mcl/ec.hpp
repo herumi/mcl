@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <sstream>
 #include <stdlib.h>
 #include <cybozu/exception.hpp>
 #include <mcl/op.hpp>
@@ -193,11 +192,6 @@ public:
 	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime))
 	{
 		mulArrayGLV = f;
-	}
-	// backward compatilibity
-	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
-	{
-		init(astr, bstr, mode);
 	}
 	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
 	{
@@ -549,7 +543,7 @@ public:
 		const EcT *pP = &P0;
 		const EcT *pQ = &Q0;
 		if (pP->z.isOne()) {
-			std::swap(pP, pQ);
+			fp::swap_(pP, pQ);
 		}
 		const EcT& P(*pP);
 		const EcT& Q(*pQ);
@@ -592,7 +586,7 @@ public:
 	}
 	static inline void mul(EcT& z, const EcT& x, int64_t y)
 	{
-		const uint64_t u = std::abs(y);
+		const uint64_t u = fp::abs_(y);
 #if MCL_SIZEOF_UNIT == 8
 		mulArray(z, x, &u, 1, y < 0);
 #else
@@ -696,7 +690,6 @@ public:
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			char buf[sizeof(Fp) + 1];
-			std::string str;
 			if (isZero()) {
 				memset(buf, 0, n + adj);
 			} else {
@@ -927,6 +920,11 @@ public:
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_STRING
+	// backward compatilibity
+	static inline void setParam(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
+	{
+		init(astr, bstr, mode);
+	}
 	friend inline std::istream& operator>>(std::istream& is, EcT& self)
 	{
 		self.load(is, fp::detectIoMode(getIoMode(), is));

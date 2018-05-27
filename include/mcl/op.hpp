@@ -326,8 +326,6 @@ inline const char* getIoSeparator(int ioMode)
 	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : " ";
 }
 
-int detectIoMode(int ioMode, const std::ios_base& ios);
-
 inline void dump(const char *s, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
@@ -336,9 +334,13 @@ inline void dump(const char *s, size_t n)
 	printf("\n");
 }
 
+#ifndef CYBOZU_DONT_USE_STRING
+int detectIoMode(int ioMode, const std::ios_base& ios);
+
 inline void dump(const std::string& s)
 {
 	dump(s.c_str(), s.size());
 }
+#endif
 
 } } // mcl::fp

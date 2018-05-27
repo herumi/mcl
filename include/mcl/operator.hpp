@@ -63,7 +63,7 @@ struct Operator : public E {
 	}
 	static void pow(T& z, const T& x, int64_t y)
 	{
-		const uint64_t u = std::abs(y);
+		const uint64_t u = fp::abs_(y);
 #if MCL_SIZEOF_UNIT == 8
 		powArray(z, x, &u, 1, y < 0, false);
 #else

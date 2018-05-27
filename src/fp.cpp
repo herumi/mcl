@@ -537,6 +537,7 @@ void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize)
 	*dst = x;
 }
 
+#ifndef CYBOZU_DONT_USE_STRING
 int detectIoMode(int ioMode, const std::ios_base& ios)
 {
 	if (ioMode & ~IoPrefix) return ioMode;
@@ -549,6 +550,7 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	}
 	return ioMode;
 }
+#endif
 
 bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
 {

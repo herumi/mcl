@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 /**
 	@file
 	@brief util function for gmp

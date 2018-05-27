@@ -16,6 +16,25 @@
 
 namespace mcl { namespace fp {
 
+template<class T>
+T abs_(T x) { return x < 0 ? -x : x; }
+
+template<class T>
+T min_(T x, T y) { return x < y ? x : y; }
+
+template<class T>
+T max_(T x, T y) { return x < y ? y : x; }
+
+template<class T>
+void swap_(T& x, T& y)
+{
+	T t;
+	t = x;
+	x = y;
+	y = t;
+}
+
+
 /*
 	get pp such that p * pp = -1 mod M,
 	where p is prime and M = 1 << 64(or 32).

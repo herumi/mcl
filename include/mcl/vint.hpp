@@ -5,8 +5,9 @@
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <assert.h>
-#include <cmath>
+#ifndef CYBOZU_DONT_USE_STRING
 #include <iostream>
+#endif
 #include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
@@ -248,8 +249,8 @@ template<class T>
 T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 {
 	if (yn > xn) {
-		std::swap(xn, yn);
-		std::swap(x, y);
+		fp::swap_(xn, yn);
+		fp::swap_(x, y);
 	}
 	assert(xn >= yn);
 	size_t max = xn;
@@ -367,8 +368,8 @@ static inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 {
 	assert(xn > 0 && yn > 0);
 	if (yn > xn) {
-		std::swap(yn, xn);
-		std::swap(x, y);
+		fp::swap_(yn, xn);
+		fp::swap_(x, y);
 	}
 	assert(xn >= yn);
 	if (z == x) {
@@ -598,7 +599,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 			continue;
 		}
 		assert(xb > yb + 1);
-		size_t w = std::min(unitBitSize, xb - yb);
+		size_t w = fp::min_(unitBitSize, xb - yb);
 		vint::shrN(t, rr, xn, xb - w);
 		T q0 = t[0];
 		t[yn] = vint::mulu1(t, y, yn, q0);
@@ -649,8 +650,8 @@ public:
 		noexcept
 #endif
 	{
-		std::swap(allocSize_, rhs.allocSize_);
-		std::swap(ptr_, rhs.ptr_);
+		fp::swap_(allocSize_, rhs.allocSize_);
+		fp::swap_(ptr_, rhs.ptr_);
 	}
 	void clear()
 	{
@@ -742,16 +743,16 @@ public:
 		FixedBuffer *p1 = this;
 		FixedBuffer *p2 = &rhs;
 		if (p1->size_ < p2->size_) {
-			std::swap(p1, p2);
+			fp::swap_(p1, p2);
 		}
 		assert(p1->size_ >= p2->size_);
 		for (size_t i = 0; i < p2->size_; i++) {
-			std::swap(p1->v_[i], p2->v_[i]);
+			fp::swap_(p1->v_[i], p2->v_[i]);
 		}
 		for (size_t i = p2->size_; i < p1->size_; i++) {
 			p2->v_[i] = p1->v_[i];
 		}
-		std::swap(p1->size_, p2->size_);
+		fp::swap_(p1->size_, p2->size_);
 	}
 	// to avoid warning of gcc
 	void verify(size_t n) const
@@ -850,7 +851,7 @@ private:
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		size_t zn = std::max(xn, yn) + 1;
+		size_t zn = fp::max_(xn, yn) + 1;
 		bool b;
 		z.buf_.alloc(&b, zn);
 		assert(b); (void)b;
@@ -1020,7 +1021,7 @@ public:
 		bool b;
 		buf_.alloc(&b, 1);
 		assert(b); (void)b;
-		buf_[0] = std::abs(x);
+		buf_[0] = fp::abs_(x);
 		size_ = 1;
 		return *this;
 	}
@@ -1061,9 +1062,9 @@ public:
 		noexcept
 #endif
 	{
-		std::swap(buf_, rhs.buf_);
-		std::swap(size_, rhs.size_);
-		std::swap(isNeg_, rhs.isNeg_);
+		fp::swap_(buf_, rhs.buf_);
+		fp::swap_(size_, rhs.size_);
+		fp::swap_(isNeg_, rhs.isNeg_);
 	}
 	void dump(const char *msg = "") const
 	{
@@ -1224,7 +1225,7 @@ public:
 			return x.isNeg_ ? -1 : 1;
 		} else {
 			// same sign
-			Unit y0 = std::abs(y);
+			Unit y0 = fp::abs_(y);
 			int c = vint::compareNM(&x.buf_[0], x.size(), &y0, 1);
 			if (x.isNeg_) {
 				return -c;
@@ -1296,17 +1297,17 @@ public:
 	static void adds1(VintT& z, const VintT& x, int y)
 	{
 		assert(y != invalidVar);
-		_adds1(z, x, std::abs(y), y < 0);
+		_adds1(z, x, fp::abs_(y), y < 0);
 	}
 	static void subs1(VintT& z, const VintT& x, int y)
 	{
 		assert(y != invalidVar);
-		_adds1(z, x, std::abs(y), !(y < 0));
+		_adds1(z, x, fp::abs_(y), !(y < 0));
 	}
 	static void muls1(VintT& z, const VintT& x, int y)
 	{
 		assert(y != invalidVar);
-		mulu1(z, x, std::abs(y));
+		mulu1(z, x, fp::abs_(y));
 		z.isNeg_ ^= (y < 0);
 	}
 	/*
@@ -1320,7 +1321,7 @@ public:
 		assert(y != invalidVar);
 		bool xNeg = x.isNeg_;
 		bool yNeg = y < 0;
-		Unit absY = std::abs(y);
+		Unit absY = fp::abs_(y);
 		size_t xn = x.size();
 		int r;
 		if (q) {
@@ -1471,7 +1472,7 @@ public:
 		assert(!x.isNeg_ && !y.isNeg_);
 		const VintT *px = &x, *py = &y;
 		if (x.size() < y.size()) {
-			std::swap(px, py);
+			fp::swap_(px, py);
 		}
 		size_t xn = px->size();
 		size_t yn = py->size();
@@ -1490,7 +1491,7 @@ public:
 		assert(!x.isNeg_ && !y.isNeg_);
 		const VintT *px = &x, *py = &y;
 		if (x.size() < y.size()) {
-			std::swap(px, py);
+			fp::swap_(px, py);
 		}
 		size_t yn = py->size();
 		assert(px->size() >= yn);
@@ -1537,10 +1538,10 @@ public:
 		const VintT xx = x;
 		z = 1;
 #if MCL_SIZEOF_UNIT == 8
-		Unit ua = std::abs(y);
+		Unit ua = fp::abs_(y);
 		mcl::fp::powGeneric(z, xx, &ua, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
 #else
-		uint64_t ua = std::abs(y);
+		uint64_t ua = fp::abs_(y);
 		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
 		size_t un = u[1] ? 2 : 1;
 		mcl::fp::powGeneric(z, xx, u, un, mul, sqr, (void (*)(VintT&, const VintT&))0);

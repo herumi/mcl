@@ -10,7 +10,9 @@
 #include <mcl/ec.hpp>
 #include <mcl/curve_type.h>
 #include <assert.h>
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <vector>
+#endif
 
 /*
 	set bit size of Fp and Fr
@@ -622,7 +624,7 @@ struct GLV1 {
 			mcl::gmp::getArray(&b, w[i], maxUnit, u[i]);
 			assert(b);
 			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
-			maxBit = std::max(maxBit, bitTbl[i]);
+			maxBit = fp::max_(maxBit, bitTbl[i]);
 		}
 		assert(maxBit > 0);
 		maxBit--;
@@ -816,7 +818,7 @@ struct GLV2 {
 			mcl::gmp::getArray(&b, w[i], maxUnit, u[i]);
 			assert(b);
 			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
-			maxBit = std::max(maxBit, bitTbl[i]);
+			maxBit = fp::max_(maxBit, bitTbl[i]);
 		}
 		maxBit--;
 		/*
@@ -1730,11 +1732,13 @@ inline void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	precomputeG2(Qcoeff, Q);
 	precomputedMillerLoop(e, P, Qcoeff);
 */
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 {
 	Qcoeff.resize(BN::param.precomputedQcoeffSize);
 	precomputeG2(Qcoeff.data(), Q);
 }
+#endif
 inline bool precomputeG2(mcl::Array<Fp6>& Qcoeff, const G2& Q)
 {
 	bool b = Qcoeff.resize(BN::param.precomputedQcoeffSize);
@@ -1778,10 +1782,12 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	mulSparse2(ft, d, e);
 	f *= ft;
 }
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
 {
 	precomputedMillerLoop(f, P, Qcoeff.data());
 }
+#endif
 inline void precomputedMillerLoop(Fp12& f, const G1& P, const mcl::Array<Fp6>& Qcoeff)
 {
 	precomputedMillerLoop(f, P, Qcoeff.data());
@@ -1840,10 +1846,12 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, c
 	f *= f1;
 	f *= f2;
 }
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
 {
 	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
 }
+#endif
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const mcl::Array<Fp6>& Q1coeff, const G1& P2, const mcl::Array<Fp6>& Q2coeff)
 {
 	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
