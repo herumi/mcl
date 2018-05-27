@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <cmath>
 #include <iostream>
-#include <mcl/vector.hpp>
+#include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
 #include <mcl/conversion.hpp>

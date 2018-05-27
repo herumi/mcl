@@ -1,9 +1,9 @@
-#include <mcl/vector.hpp>
+#include <mcl/array.hpp>
 #include <cybozu/test.hpp>
 
 CYBOZU_TEST_AUTO(resize)
 {
-	mcl::Vector<int> a, b;
+	mcl::Array<int> a, b;
 	CYBOZU_TEST_EQUAL(a.size(), 0);
 	CYBOZU_TEST_EQUAL(b.size(), 0);
 

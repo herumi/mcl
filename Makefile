@@ -5,7 +5,7 @@ EXE_DIR=bin
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp ecdsa_test.cpp conversion_test.cpp
 TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c512_test.cpp she_c256_test.cpp she_c384_test.cpp
-TEST_SRC+=aggregate_sig_test.cpp vector_test.cpp
+TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
 ifeq ($(CPU),x86-64)

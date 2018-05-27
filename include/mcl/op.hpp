@@ -8,7 +8,7 @@
 */
 #include <mcl/gmp_util.hpp>
 #include <memory.h>
-#include <mcl/vector.hpp>
+#include <mcl/array.hpp>
 
 #ifndef MCL_MAX_BIT_SIZE
 	#define MCL_MAX_BIT_SIZE 521
@@ -180,7 +180,7 @@ struct Op {
 	Unit one[maxUnitSize];
 	Unit R2[maxUnitSize];
 	Unit R3[maxUnitSize];
-	mcl::Vector<Unit> invTbl;
+	mcl::Array<Unit> invTbl;
 	size_t N;
 	size_t bitSize;
 	bool (*fp_isZero)(const Unit*);
