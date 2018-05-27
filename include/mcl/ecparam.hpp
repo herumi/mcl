@@ -136,6 +136,7 @@ const struct mcl::EcParam NIST_P521 = {
 
 } // mcl::ecparam
 
+#ifndef CYBOZU_DONT_USE_STRING
 static inline const mcl::EcParam* getEcParam(const std::string& name)
 {
 	static const mcl::EcParam *tbl[] = {
@@ -158,5 +159,6 @@ static inline const mcl::EcParam* getEcParam(const std::string& name)
 	}
 	throw cybozu::Exception("mcl::getEcParam:not support name") << name;
 }
+#endif
 
 } // mcl

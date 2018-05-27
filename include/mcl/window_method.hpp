@@ -109,12 +109,14 @@ public:
 			}
 		}
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const Ec& x, size_t bitSize, size_t winSize)
 	{
 		bool b;
 		init(&b, x, bitSize, winSize);
 		if (!b) throw cybozu::Exception("mcl:WindowMethod:init") << bitSize << winSize;
 	}
+#endif
 	/*
 		@param z [out] x multiplied by y
 		@param y [in] exponent
@@ -129,10 +131,10 @@ public:
 	void mul(Ec& z, int64_t y) const
 	{
 #if MCL_SIZEOF_UNIT == 8
-		Unit u = std::abs(y);
+		Unit u = fp::abs_(y);
 		powArray(z, &u, 1, y < 0);
 #else
-		uint64_t ua = std::abs(y);
+		uint64_t ua = fp::abs_(y);
 		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
 		size_t un = u[1] ? 2 : 1;
 		powArray(z, u, un, y < 0);

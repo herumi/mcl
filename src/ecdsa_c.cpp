@@ -1,6 +1,7 @@
 #define ECDSA_DLL_EXPORT
 #include <mcl/ecdsa.h>
 #include <mcl/ecdsa.hpp>
+#include <new>
 
 using namespace mcl::ecdsa;
 
@@ -18,6 +19,10 @@ static const PrecomputedPublicKey *cast(const ecdsaPrecomputedPublicKey *p) { re
 
 #ifdef __EMSCRIPTEN__
 // use these functions forcibly
+extern "C" ECDSA_DLL_API void *ecdsaMalloc(size_t n)
+{
+	return malloc(n);
+}
 extern "C" ECDSA_DLL_API void ecdsaFree(void *p)
 {
 	free(p);

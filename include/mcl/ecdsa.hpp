@@ -91,16 +91,24 @@ inline void init(bool *pb)
 	Ec::setIoMode(mcl::IoEcAffine);
 	local::Param& p = local::getParam();
 	p.ecParam = ecParam;
-	p.P.set(Fp(ecParam.gx), Fp(ecParam.gy));
+	Fp x, y;
+	x.setStr(pb, ecParam.gx);
+	if (!*pb) return;
+	y.setStr(pb, ecParam.gy);
+	if (!*pb) return;
+	p.P.set(pb, x, y);
+	if (!*pb) return;
 	p.Pbase.init(pb, p.P, ecParam.bitSize, local::winSize);
 }
 
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void init()
 {
 	bool b;
 	init(&b);
 	if (!b) throw cybozu::Exception("ecdsa:init");
 }
+#endif
 
 typedef Zn SecretKey;
 typedef Ec PublicKey;
@@ -111,12 +119,14 @@ struct PrecomputedPublicKey {
 	{
 		pubBase_.init(pb, pub, param.ecParam.bitSize, local::winSize);
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const PublicKey& pub)
 	{
 		bool b;
 		init(&b, pub);
 		if (!b) throw cybozu::Exception("ecdsa:PrecomputedPublicKey:init");
 	}
+#endif
 };
 
 inline void getPublicKey(PublicKey& pub, const SecretKey& sec)
@@ -144,6 +154,7 @@ struct Signature : public mcl::fp::Serializable<Signature> {
 		}
 		s.save(pb, os, ioMode);
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
@@ -158,6 +169,8 @@ struct Signature : public mcl::fp::Serializable<Signature> {
 		save(&b, os, ioMode);
 		if (!b) throw cybozu::Exception("ecdsa:Signature:save");
 	}
+#endif
+#ifndef CYBOZU_DONT_USE_STRING
 	friend std::istream& operator>>(std::istream& is, Signature& self)
 	{
 		self.load(is, fp::detectIoMode(Ec::getIoMode(), is));
@@ -168,6 +181,7 @@ struct Signature : public mcl::fp::Serializable<Signature> {
 		self.save(os, fp::detectIoMode(Ec::getIoMode(), os));
 		return os;
 	}
+#endif
 };
 
 inline void sign(Signature& sig, const SecretKey& sec, const void *msg, size_t msgSize)
