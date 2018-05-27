@@ -1080,6 +1080,7 @@ public:
 		isNeg_ = false;
 		if (size == 0) {
 			clear();
+			*pb = true;
 			return;
 		}
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
