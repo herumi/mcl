@@ -7,7 +7,7 @@
 #include <mcl/she.hpp>
 
 using namespace mcl::she;
-using namespace mcl::bn_current;
+using namespace mcl::bn;
 
 SecretKey g_sec;
 

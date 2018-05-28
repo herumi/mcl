@@ -15,19 +15,10 @@
 #endif
 #if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
-namespace mcl {
-namespace bn_current = mcl::bn256;
-}
 #elif MCLBN_FP_UNIT_SIZE == 6
 #include <mcl/bn384.hpp>
-namespace mcl {
-namespace bn_current = mcl::bn384;
-}
 #elif MCLBN_FP_UNIT_SIZE == 8
 #include <mcl/bn512.hpp>
-namespace mcl {
-namespace bn_current = mcl::bn512;
-}
 #else
 	#error "MCLBN_FP_UNIT_SIZE must be 4, 6, or 8"
 #endif
@@ -38,7 +29,7 @@ namespace bn_current = mcl::bn512;
 
 namespace mcl { namespace she {
 
-using namespace mcl::bn_current;
+using namespace mcl::bn;
 
 namespace local {
 
@@ -106,9 +97,9 @@ struct InterfaceForHashTable<G, false> : G {
 
 template<class G>
 char GtoChar();
-template<>char GtoChar<bn_current::G1>() { return '1'; }
-template<>char GtoChar<bn_current::G2>() { return '2'; }
-template<>char GtoChar<bn_current::GT>() { return 'T'; }
+template<>char GtoChar<bn::G1>() { return '1'; }
+template<>char GtoChar<bn::G2>() { return '2'; }
+template<>char GtoChar<bn::GT>() { return 'T'; }
 
 /*
 	HashTable<EC, true> or HashTable<Fp12, false>

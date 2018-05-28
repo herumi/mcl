@@ -12,7 +12,7 @@
 #include <mcl/she.hpp>
 
 using namespace mcl::she;
-using namespace mcl::bn_current;
+using namespace mcl::bn;
 
 static SecretKey *cast(sheSecretKey *p) { return reinterpret_cast<SecretKey*>(p); }
 static const SecretKey *cast(const sheSecretKey *p) { return reinterpret_cast<const SecretKey*>(p); }
