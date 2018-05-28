@@ -7,16 +7,8 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #ifdef MCL_DONT_USE_RANDOM
-#include <stdlib.h>
 
-namespace mcl {
-struct NoRandomGenerator {
-	void read(void *, size_t)
-	{
-		exit(1);
-	}
-};
-} // mcl
+// nothing
 
 #elif defined(MCL_USE_WEB_CRYPTO_API)
 #include <emscripten.h>
@@ -99,17 +91,22 @@ public:
 	{
 		readFunc_(self_, out, static_cast<uint32_t>(byteSize));
 	}
+#ifdef MCL_DONT_USE_RANDOM
+	bool isZero() const { return false; }
+#else
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
+#endif
 	static RandGen& get()
 	{
 #ifdef MCL_DONT_USE_RANDOM
-		static mcl::NoRandomGenerator rg;
+		static RandGen wrg;
 #elif defined(MCL_USE_WEB_CRYPTO_API)
 		static mcl::RandomGeneratorJS rg;
+		static RandGen wrg(rg);
 #else
 		static cybozu::RandomGenerator rg;
-#endif
 		static RandGen wrg(rg);
+#endif
 		return wrg;
 	}
 	/*
