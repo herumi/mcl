@@ -128,11 +128,13 @@ int mclBnFr_isOne(const mclBnFr *x)
 	return cast(x)->isOne();
 }
 
+#ifndef MCL_DONT_USE_CSRPNG
 int mclBnFr_setByCSPRNG(mclBnFr *x)
 {
 	cast(x)->setByCSPRNG();
 	return 0;
 }
+#endif
 
 // hash(buf) and set x
 int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize)

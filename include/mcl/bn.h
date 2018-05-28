@@ -197,8 +197,10 @@ MCLBN_DLL_API int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API int mclBnFr_isZero(const mclBnFr *x);
 MCLBN_DLL_API int mclBnFr_isOne(const mclBnFr *x);
 
+#ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
+#endif
 
 // hash(s) and set x
 // return 0 if success
