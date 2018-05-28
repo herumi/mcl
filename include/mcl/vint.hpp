@@ -4,6 +4,7 @@
 */
 #include <cybozu/exception.hpp>
 #include <cybozu/bit_operation.hpp>
+#include <cybozu/xorshift.hpp>
 #include <assert.h>
 #ifndef CYBOZU_DONT_USE_STRING
 #include <iostream>
@@ -1093,10 +1094,10 @@ public:
 	/*
 		set [0, max) randomly
 	*/
-	void setRand(bool *pb, const VintT& max)
+	void setRand(bool *pb, const VintT& max, fp::RandGen rg = fp::RandGen())
 	{
 		assert(max > 0);
-		fp::RandGen& rg = fp::RandGen::get();
+		if (rg.isZero()) rg = fp::RandGen::get();
 		size_t n = max.size();
 		buf_.alloc(pb, n);
 		if (!*pb) return;
@@ -1614,13 +1615,14 @@ public:
 		if (n <= 1) return false;
 		if (n == 2 || n == 3) return true;
 		if (n.isEven()) return false;
+		cybozu::XorShift rg;
 		const VintT nm1 = n - 1;
 		VintT d = nm1;
 		uint32_t r = countTrailingZero(d);
 		// n - 1 = 2^r d
 		VintT a, x;
 		for (int i = 0; i < tryNum; i++) {
-			a.setRand(pb, n - 3);
+			a.setRand(pb, n - 3, rg);
 			if (!*pb) return false;
 			a += 2; // a in [2, n - 2]
 			powMod(x, a, d, n);
@@ -1744,10 +1746,10 @@ public:
 		setStr(&b, str.c_str(), base);
 		if (!b) throw cybozu::Exception("Vint:setStr") << str;
 	}
-	void setRand(const VintT& max)
+	void setRand(const VintT& max, fp::RandGen rg = fp::RandGen())
 	{
 		bool b;
-		setRand(&b, max);
+		setRand(&b, max, rg);
 		if (!b) throw cybozu::Exception("Vint:setRand");
 	}
 	void getArray(Unit *x, size_t maxSize) const
