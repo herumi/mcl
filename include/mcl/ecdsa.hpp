@@ -67,7 +67,7 @@ inline void FpToZn(Zn& y, const Fp& x)
 inline void setHashOf(Zn& x, const void *msg, size_t msgSize)
 {
 	mcl::fp::Unit xBuf[256 / 8 / sizeof(mcl::fp::Unit)];
-	uint32_t hashSize = mcl::fp::sha256(xBuf, sizeof(xBuf), msg, msgSize);
+	uint32_t hashSize = mcl::fp::sha256(xBuf, sizeof(xBuf), msg, (uint32_t)msgSize);
 	assert(hashSize == sizeof(xBuf));
 	(void)hashSize;
 	be32toZn(x, xBuf);
