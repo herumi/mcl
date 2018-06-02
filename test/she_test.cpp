@@ -5,9 +5,9 @@
 #include <fstream>
 #include <time.h>
 #include <mcl/she.hpp>
+#include <mcl/ecparam.hpp> // for secp192k1
 
 using namespace mcl::she;
-using namespace mcl::bn;
 
 SecretKey g_sec;
 
@@ -88,18 +88,18 @@ CYBOZU_TEST_AUTO(bench2)
 	t1 = clk2msec(cybozu::bench::g_clk, C);
 	printf("DEC L2 %.2e\n", t1);
 
-	CYBOZU_BENCH_C("", C, CipherTextG1::add, d1, d1, c1);
+	CYBOZU_BENCH_C("", C, add, d1, d1, c1);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
 
-	CYBOZU_BENCH_C("", C, CipherTextG2::add, d2, d2, c2);
+	CYBOZU_BENCH_C("", C, add, d2, d2, c2);
 	t2 = clk2msec(cybozu::bench::g_clk, C);
 	printf("Add L1 %.2e\n", t1 + t2);
 
-	CYBOZU_BENCH_C("", C, CipherTextGT::add, dt, dt, ct);
+	CYBOZU_BENCH_C("", C, add, dt, dt, ct);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
 	printf("Add L2 %.2e\n", t1);
 
-	CYBOZU_BENCH_C("", C, CipherTextGT::mul, ct, c1, c2);
+	CYBOZU_BENCH_C("", C, mul, ct, c1, c2);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
 	printf("Mul   %.2e\n", t1);
 
@@ -328,21 +328,21 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 			CipherText c1, c2, c3;
 			pub.enc(c1, m1);
 			pub.enc(c2, m2);
-			CipherText::add(c3, c1, c2);
+			add(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 
 			pub.reRand(c3);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 
-			CipherText::sub(c3, c1, c2);
+			sub(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 - m2, sec.dec(c3));
 
-			CipherText::mul(c3, c1, 5);
+			mul(c3, c1, 5);
 			CYBOZU_TEST_EQUAL(m1 * 5, sec.dec(c3));
-			CipherText::mul(c3, c1, -123);
+			mul(c3, c1, -123);
 			CYBOZU_TEST_EQUAL(m1 * -123, sec.dec(c3));
 
-			CipherText::mul(c3, c1, c2);
+			mul(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 * m2, sec.dec(c3));
 
 			pub.reRand(c3);
@@ -354,7 +354,7 @@ CYBOZU_TEST_AUTO(add_sub_mul)
 			pub.enc(c1, m1, true);
 			CYBOZU_TEST_EQUAL(m1, sec.dec(c1));
 			pub.enc(c2, m2, true);
-			CipherText::add(c3, c1, c2);
+			add(c3, c1, c2);
 			CYBOZU_TEST_EQUAL(m1 + m2, sec.dec(c3));
 		}
 	}
@@ -372,14 +372,14 @@ CYBOZU_TEST_AUTO(largeEnc)
 	pub.enc(c1, x);
 	const int64_t m = 123;
 	pub.enc(c2, x + m);
-	CipherTextG1::sub(c1, c1, c2);
+	sub(c1, c1, c2);
 	CYBOZU_TEST_EQUAL(sec.dec(c1), -m);
 
 	pub.enc(c1, 0);
-	CipherTextG1::mul(c1, c1, x);
+	mul(c1, c1, x);
 	CYBOZU_TEST_ASSERT(sec.isZero(c1));
 	pub.enc(c1, 1);
-	CipherTextG1::mul(c1, c1, x);
+	mul(c1, c1, x);
 	CYBOZU_TEST_ASSERT(!sec.isZero(c1));
 }
 
@@ -700,3 +700,44 @@ CYBOZU_TEST_AUTO(hashBench)
 }
 #endif
 
+CYBOZU_TEST_AUTO(liftedElGamal)
+{
+	const size_t hashSize = 1024;
+	initG1only(mcl::ecparam::secp192k1, hashSize);
+	const size_t byteSize = 192 / 8;
+	SecretKey sec;
+	sec.setByCSPRNG();
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	CipherTextG1 c1, c2, c3;
+	int m1 = 12, m2 = 34;
+	pub.enc(c1, m1);
+	pub.enc(c2, m2);
+	CYBOZU_TEST_EQUAL(sec.dec(c1), m1);
+	CYBOZU_TEST_EQUAL(sec.dec(c2), m2);
+	add(c3, c1, c2);
+	CYBOZU_TEST_EQUAL(sec.dec(c3), m1 + m2);
+	neg(c1, c2);
+	CYBOZU_TEST_EQUAL(sec.dec(c1), -m2);
+	mul(c1, c2, m1);
+	CYBOZU_TEST_EQUAL(sec.dec(c1), m2 * m1);
+
+	char buf[1024];
+	size_t n = sec.serialize(buf, sizeof(buf));
+	CYBOZU_TEST_EQUAL(n, byteSize);
+	SecretKey sec2;
+	n = sec2.deserialize(buf, n);
+	CYBOZU_TEST_EQUAL(n, byteSize);
+	CYBOZU_TEST_EQUAL(sec, sec2);
+
+	n = pub.serialize(buf, sizeof(buf));
+	CYBOZU_TEST_EQUAL(n, byteSize + 1); // +1 is for sign of y
+	PublicKey pub2;
+	n = pub2.deserialize(buf, n);
+	CYBOZU_TEST_EQUAL(n, byteSize + 1);
+	CYBOZU_TEST_EQUAL(pub, pub2);
+
+	PublicKey pub3;
+	sec2.getPublicKey(pub3);
+	CYBOZU_TEST_EQUAL(pub, pub3);
+}

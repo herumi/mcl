@@ -217,15 +217,15 @@ mclSize loadTable(HashTable& table, const void *buf, mclSize bufSize)
 
 mclSize sheLoadTableForG1DLP(const void *buf, mclSize bufSize)
 {
-	return loadTable(SHE::PhashTbl_, buf, bufSize);
+	return loadTable(getHashTableG1(), buf, bufSize);
 }
 mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize)
 {
-	return loadTable(SHE::QhashTbl_, buf, bufSize);
+	return loadTable(getHashTableG2(), buf, bufSize);
 }
 mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize)
 {
-	return loadTable(SHE::ePQhashTbl_, buf, bufSize);
+	return loadTable(getHashTableGT(), buf, bufSize);
 }
 
 template<class HashTable>

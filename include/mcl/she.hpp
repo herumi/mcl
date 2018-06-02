@@ -340,6 +340,7 @@ struct SHET {
 	static local::HashTable<GT, false> ePQhashTbl_;
 	static bool useDecG1ViaGT_;
 	static bool useDecG2ViaGT_;
+	static bool isG1only_;
 private:
 	template<class G>
 	class CipherTextAT : public fp::Serializable<CipherTextAT<G> > {
@@ -554,11 +555,32 @@ public:
 		pairing(ePQ_, P_, Q_);
 		precomputeG2(Qcoeff_, Q_);
 		setRangeForDLP(hashSize);
+		useDecG1ViaGT_ = false;
+		useDecG2ViaGT_ = false;
+		isG1only_ = false;
 		setTryNum(tryNum);
 	}
 	static void init(size_t hashSize, size_t tryNum = local::defaultTryNum)
 	{
 		init(mcl::BN254, hashSize, tryNum);
+	}
+	/*
+		standard lifted ElGamal encryption
+	*/
+	static void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	{
+		Fp::init(para.p);
+		Fr::init(para.n);
+		G1::init(para.a, para.b);
+		const Fp x0(para.gx);
+		const Fp y0(para.gy);
+		P_.set(x0, y0);
+
+		setRangeForG1DLP(hashSize);
+		useDecG1ViaGT_ = false;
+		useDecG2ViaGT_ = false;
+		isG1only_ = true;
+		setTryNum(tryNum);
 	}
 	/*
 		set range for G1-DLP
@@ -633,7 +655,7 @@ public:
 		void setByCSPRNG()
 		{
 			x_.setRand();
-			y_.setRand();
+			if (!isG1only_) y_.setRand();
 		}
 		/*
 			set xP and yQ
@@ -749,13 +771,14 @@ public:
 		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
 		{
 			x_.load(pb, is, ioMode); if (!*pb) return;
-			y_.load(pb, is, ioMode);
+			if (!isG1only_) y_.load(pb, is, ioMode);
 		}
 		template<class OutputStream>
 		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
 		{
 			const char sep = *fp::getIoSeparator(ioMode);
 			x_.save(pb, os, ioMode); if (!*pb) return;
+			if (isG1only_) return;
 			if (sep) {
 				cybozu::writeChar(pb, os, sep);
 				if (!*pb) return;
@@ -788,7 +811,7 @@ public:
 		}
 		bool operator==(const SecretKey& rhs) const
 		{
-			return x_ == rhs.x_ && y_ == rhs.y_;
+			return x_ == rhs.x_ && (isG1only_ || y_ == rhs.y_);
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
 	};
@@ -1219,7 +1242,7 @@ public:
 		void set(const Fr& x, const Fr& y)
 		{
 			G1::mul(xP_, P_, x);
-			G2::mul(yQ_, Q_, y);
+			if (!isG1only_) G2::mul(yQ_, Q_, y);
 		}
 		template<class INT>
 		void encG1(CipherTextG1& c, const INT& m) const
@@ -1329,13 +1352,14 @@ public:
 		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
 		{
 			xP_.load(pb, is, ioMode); if (!*pb) return;
-			yQ_.load(pb, is, ioMode);
+			if (!isG1only_) yQ_.load(pb, is, ioMode);
 		}
 		template<class OutputStream>
 		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
 		{
 			const char sep = *fp::getIoSeparator(ioMode);
 			xP_.save(pb, os, ioMode); if (!*pb) return;
+			if (isG1only_) return;
 			if (sep) {
 				cybozu::writeChar(pb, os, sep);
 				if (!*pb) return;
@@ -1368,7 +1392,7 @@ public:
 		}
 		bool operator==(const PublicKey& rhs) const
 		{
-			return xP_ == rhs.xP_ && yQ_ == rhs.yQ_;
+			return xP_ == rhs.xP_ && (isG1only_ || yQ_ == rhs.yQ_);
 		}
 		bool operator!=(const PublicKey& rhs) const { return !operator==(rhs); }
 	};
@@ -1425,15 +1449,16 @@ public:
 	public:
 		void init(const PublicKey& pub)
 		{
+			const size_t bitSize = Fr::getBitSize();
+			xPwm_.init(pub.xP_, bitSize, local::winSize);
+			if (isG1only_) return;
+			yQwm_.init(pub.yQ_, bitSize, local::winSize);
 			pairing(exPQ_, pub.xP_, Q_);
 			pairing(eyPQ_, P_, pub.yQ_);
 			pairing(exyPQ_, pub.xP_, pub.yQ_);
-			const size_t bitSize = Fr::getBitSize();
 			exPQwm_.init(static_cast<const GTasEC&>(exPQ_), bitSize, local::winSize);
 			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
 			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
-			xPwm_.init(pub.xP_, bitSize, local::winSize);
-			yQwm_.init(pub.yQ_, bitSize, local::winSize);
 		}
 		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
@@ -1740,6 +1765,18 @@ public:
 			}
 			throw cybozu::Exception("she:CipherText:sub:mixed CipherText");
 		}
+		static void neg(CipherText& y, const CipherText& x)
+		{
+			if (x.isMultiplied()) {
+				y.isMultiplied_ = true;
+				CipherTextGT::neg(y.m_, x.m_);
+				return;
+			} else {
+				y.isMultiplied_ = false;
+				CipherTextA::neg(y.a_, x.a_);
+				return;
+			}
+		}
 		static void mul(CipherText& z, const CipherText& x, const CipherText& y)
 		{
 			if (x.isMultiplied() || y.isMultiplied()) {
@@ -1821,16 +1858,20 @@ public:
 		bool operator!=(const CipherTextGT& rhs) const { return !operator==(rhs); }
 	};
 };
+typedef local::HashTable<G1> HashTableG1;
+typedef local::HashTable<G2> HashTableG2;
+typedef local::HashTable<Fp12, false> HashTableGT;
 
 template<size_t dummyInpl> G1 SHET<dummyInpl>::P_;
 template<size_t dummyInpl> G2 SHET<dummyInpl>::Q_;
 template<size_t dummyInpl> Fp12 SHET<dummyInpl>::ePQ_;
 template<size_t dummyInpl> std::vector<Fp6> SHET<dummyInpl>::Qcoeff_;
-template<size_t dummyInpl> local::HashTable<G1> SHET<dummyInpl>::PhashTbl_;
-template<size_t dummyInpl> local::HashTable<G2> SHET<dummyInpl>::QhashTbl_;
-template<size_t dummyInpl> local::HashTable<Fp12, false> SHET<dummyInpl>::ePQhashTbl_;
+template<size_t dummyInpl> HashTableG1 SHET<dummyInpl>::PhashTbl_;
+template<size_t dummyInpl> HashTableG2 SHET<dummyInpl>::QhashTbl_;
+template<size_t dummyInpl> HashTableGT SHET<dummyInpl>::ePQhashTbl_;
 template<size_t dummyInpl> bool SHET<dummyInpl>::useDecG1ViaGT_;
 template<size_t dummyInpl> bool SHET<dummyInpl>::useDecG2ViaGT_;
+template<size_t dummyInpl> bool SHET<dummyInpl>::isG1only_;
 typedef mcl::she::SHET<> SHE;
 typedef SHE::SecretKey SecretKey;
 typedef SHE::PublicKey PublicKey;
@@ -1849,6 +1890,10 @@ inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024,
 {
 	SHE::init(cp, hashSize, tryNum);
 }
+inline void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+{
+	SHE::initG1only(para, hashSize, tryNum);
+}
 inline void init(size_t hashSize, size_t tryNum = local::defaultTryNum) { SHE::init(hashSize, tryNum); }
 inline void setRangeForG1DLP(size_t hashSize) { SHE::setRangeForG1DLP(hashSize); }
 inline void setRangeForG2DLP(size_t hashSize) { SHE::setRangeForG2DLP(hashSize); }
@@ -1857,6 +1902,36 @@ inline void setRangeForDLP(size_t hashSize) { SHE::setRangeForDLP(hashSize); }
 inline void setTryNum(size_t tryNum) { SHE::setTryNum(tryNum); }
 inline void useDecG1ViaGT(bool use = true) { SHE::useDecG1ViaGT(use); }
 inline void useDecG2ViaGT(bool use = true) { SHE::useDecG2ViaGT(use); }
+inline HashTableG1& getHashTableG1() { return SHE::PhashTbl_; }
+inline HashTableG2& getHashTableG2() { return SHE::QhashTbl_; }
+inline HashTableGT& getHashTableGT() { return SHE::ePQhashTbl_; }
+
+inline void add(CipherTextG1& z, const CipherTextG1& x, const CipherTextG1& y) { CipherTextG1::add(z, x, y); }
+inline void add(CipherTextG2& z, const CipherTextG2& x, const CipherTextG2& y) { CipherTextG2::add(z, x, y); }
+inline void add(CipherTextGT& z, const CipherTextGT& x, const CipherTextGT& y) { CipherTextGT::add(z, x, y); }
+inline void add(CipherText& z, const CipherText& x, const CipherText& y) { CipherText::add(z, x, y); }
+
+inline void sub(CipherTextG1& z, const CipherTextG1& x, const CipherTextG1& y) { CipherTextG1::sub(z, x, y); }
+inline void sub(CipherTextG2& z, const CipherTextG2& x, const CipherTextG2& y) { CipherTextG2::sub(z, x, y); }
+inline void sub(CipherTextGT& z, const CipherTextGT& x, const CipherTextGT& y) { CipherTextGT::sub(z, x, y); }
+inline void sub(CipherText& z, const CipherText& x, const CipherText& y) { CipherText::sub(z, x, y); }
+
+inline void neg(CipherTextG1& y, const CipherTextG1& x) { CipherTextG1::neg(y, x); }
+inline void neg(CipherTextG2& y, const CipherTextG2& x) { CipherTextG2::neg(y, x); }
+inline void neg(CipherTextGT& y, const CipherTextGT& x) { CipherTextGT::neg(y, x); }
+inline void neg(CipherText& y, const CipherText& x) { CipherText::neg(y, x); }
+
+template<class INT>
+inline void mul(CipherTextG1& z, const CipherTextG1& x, const INT& y) { CipherTextG1::mul(z, x, y); }
+template<class INT>
+inline void mul(CipherTextG2& z, const CipherTextG2& x, const INT& y) { CipherTextG2::mul(z, x, y); }
+template<class INT>
+inline void mul(CipherTextGT& z, const CipherTextGT& x, const INT& y) { CipherTextGT::mul(z, x, y); }
+template<class INT>
+inline void mul(CipherText& z, const CipherText& x, const INT& y) { CipherText::mul(z, x, y); }
+
+inline void mul(CipherTextGT& z, const CipherTextG1& x, const CipherTextG2& y) { CipherTextGT::mul(z, x, y); }
+inline void mul(CipherText& z, const CipherText& x, const CipherText& y) { CipherText::mul(z, x, y); }
 
 } } // mcl::she
 

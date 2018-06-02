@@ -171,8 +171,10 @@ public:
 		} else {
 			specialA_ = generic;
 		}
+		ioMode_ = 0;
 		verifyOrder_ = false;
 		order_ = 0;
+		mulArrayGLV = 0;
 #ifdef MCL_EC_USE_AFFINE
 		cybozu::disable_warning_unused_variable(mode);
 #else

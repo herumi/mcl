@@ -34,13 +34,13 @@ void run(const Param& param)
 
 	switch (param.group) {
 	case 1:
-		makeTable(param, "g1", SHE::PhashTbl_, SHE::P_);
+		makeTable(param, "g1", getHashTableG1(), SHE::P_);
 		break;
 	case 2:
-		makeTable(param, "g2", SHE::QhashTbl_, SHE::Q_);
+		makeTable(param, "g2", getHashTableG2(), SHE::Q_);
 		break;
 	case 3:
-		makeTable(param, "gt", SHE::ePQhashTbl_, SHE::ePQ_);
+		makeTable(param, "gt", getHashTableGT(), SHE::ePQ_);
 		break;
 	default:
 		throw cybozu::Exception("bad group") << param.group;
