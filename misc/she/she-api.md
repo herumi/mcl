@@ -319,4 +319,4 @@ PK = PublicKey or PrecomputedPublicKey
 
 # Author
 
-Œõ¬ ¶ MITSUNARI Shigeo(herumi@nifty.com)
+å…‰æˆæ»‹ç”Ÿ MITSUNARI Shigeo(herumi@nifty.com)
