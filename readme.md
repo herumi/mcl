@@ -301,6 +301,10 @@ If you want to use Fp with 1024-bit prime on x86-64, then
 make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1 MCL_MAX_BIT_SIZE=1024
 ```
 
+# API for Two level homomorphic encryption
+* [she-api](https://github.com/herumi/mcl/blob/master/misc/she/she-api.md)
+* [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
+
 # Java API
 See [java.md](https://github.com/herumi/mcl/blob/master/java/java.md)
 
