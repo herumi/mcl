@@ -840,6 +840,8 @@ private:
 		S += C;
 	}
 	/*
+		https://github.com/herumi/mcl/blob/master/misc/she/nizkp.pdf
+
 		encRand is a random value used for ElGamalEnc()
 		d[1-m] ; rand
 		s[1-m] ; rand
