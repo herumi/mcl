@@ -476,7 +476,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 	case 17: setOp<17>(*this, mode); break; // 521 if 32-bit
 #endif
 	default:
-		return -5;
+		return false;
 	}
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NIST_P192) {
