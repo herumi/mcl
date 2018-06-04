@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <malloc.h>
+#include <stdlib.h>
 #include <stddef.h>
 
 namespace mcl {
