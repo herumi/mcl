@@ -372,7 +372,6 @@ struct MapTo {
 			G::getWeierstrass(y, x);
 			if (F::squareRoot(y, y)) {
 				if (negative) F::neg(y, y);
-				bool b;
 				P.set(&b, x, y, false);
 				assert(b);
 				return true;
