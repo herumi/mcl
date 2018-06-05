@@ -1960,7 +1960,7 @@ using namespace mcl::bn; // backward compatibility
 inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	local::StaticVar<>::param.init(pb, cp, mode);
-	if (*pb) return;
+	if (!*pb) return;
 	G1::setMulArrayGLV(local::mulArrayGLV1);
 	G2::setMulArrayGLV(local::mulArrayGLV2);
 	Fp12::setPowArrayGLV(local::powArrayGLV2);
