@@ -13,7 +13,7 @@
 #ifndef MCL_MAX_BIT_SIZE
 	#define MCL_MAX_BIT_SIZE 521
 #endif
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_DONT_USE_XBYAK
 	#define MCL_DONT_USE_OPENSSL
 #endif
@@ -22,10 +22,6 @@
 #endif
 
 #define MCL_MAX_HASH_BIT_SIZE 512
-
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <random>
-#endif
 
 namespace mcl {
 

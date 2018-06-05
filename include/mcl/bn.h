@@ -31,6 +31,8 @@
 	#endif
 #elif defined(__EMSCRIPTEN__) && !defined(MCLBN_DONT_EXPORT)
 	#define MCLBN_DLL_API __attribute__((used))
+#elif defined(__wasm__) && !defined(MCLBN_DONT_EXPORT)
+	#define MCLBN_DLL_API __attribute__((visibility("default")))
 #else
 	#define MCLBN_DLL_API
 #endif

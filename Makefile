@@ -280,8 +280,21 @@ she-wasm:
 ecdsa-wasm:
 	$(MAKE) ../ecdsa-wasm/ecdsa_c.js
 
+# test
 bin/emu:
 	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_64BIT_PORTABLE -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=256 -I./include -I../cybozulib/include
+
+# test
+CLANG_WASM=-DNDEBUG -DMCLSHE_WIN_SIZE=8 -DCYBOZU_MINIMUM_EXCEPTION
+CLANG_WASM+=-DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256
+CLANG_WASM+=-DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -DMCL_DONT_USE_CSRPNG
+CLANG_WASM+=-O3 -Oz -target wasm32-wasm -fno-exceptions
+CLANG_WASM+=-Wall -Wextra
+CLANG_WASM+=-I./include -I../cybozulib/include -std=c++03
+mcl-wasm-clang:
+	clang++-6.0 -c -o bin/fp.o src/fp.cpp $(CLANG_WASM)
+	clang++-6.0 -c -o bin/bn_c256.o src/bn_c256.cpp $(CLANG_WASM)
+	wasm-ld-6.0 -o bin/mcl256.wasm bin/fp.o bin/bn_c256.o -no-entry --strip-all --allow-undefined
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll

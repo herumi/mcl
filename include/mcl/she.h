@@ -26,6 +26,8 @@
 #else
 #ifdef __EMSCRIPTEN__
 	#define MCLSHE_DLL_API __attribute__((used))
+#elif defined(__wasm__)
+	#define MCLSHE_DLL_API __attribute__((visibility("default")))
 #else
 	#define MCLSHE_DLL_API
 #endif

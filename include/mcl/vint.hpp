@@ -14,7 +14,7 @@
 #include <mcl/randgen.hpp>
 #include <mcl/conversion.hpp>
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_VINT_64BIT_PORTABLE
 	#define MCL_VINT_FIXED_BUFFER
 #endif
