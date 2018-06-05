@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#ifdef MCL_DONT_USE_CSRPNG
+#ifdef MCL_DONT_USE_CSPRNG
 
 // nothing
 
@@ -91,14 +91,14 @@ public:
 	{
 		readFunc_(self_, out, static_cast<uint32_t>(byteSize));
 	}
-#ifdef MCL_DONT_USE_CSRPNG
+#ifdef MCL_DONT_USE_CSPRNG
 	bool isZero() const { return false; } /* return false to avoid copying default rg */
 #else
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
 #endif
 	static RandGen& get()
 	{
-#ifdef MCL_DONT_USE_CSRPNG
+#ifdef MCL_DONT_USE_CSPRNG
 		static RandGen wrg;
 #elif defined(MCL_USE_WEB_CRYPTO_API)
 		static mcl::RandomGeneratorJS rg;
