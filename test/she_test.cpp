@@ -43,15 +43,17 @@ double clk2msec(const cybozu::CpuClock& clk, int n)
 
 CYBOZU_TEST_AUTO(bench2)
 {
-	setRangeForDLP(1 << 21);
+	puts("msec");
 	setTryNum(1 << 16);
 	useDecG1ViaGT(true);
 	useDecG2ViaGT(true);
 #if 0
+	setRangeForDLP(1 << 21);
+#else
 	{
 		const char *tblName = "../she-dlp-table/she-dlp-0-20-gt.bin";
 		std::ifstream ifs(tblName, std::ios::binary);
-		ePQhashTbl_.load(ifs);
+		getHashTableGT().load(ifs);
 	}
 #endif
 	SecretKey sec;
@@ -73,7 +75,9 @@ CYBOZU_TEST_AUTO(bench2)
 	CYBOZU_BENCH_C("", C, ppub.enc, c2, m);
 	t2 = clk2msec(cybozu::bench::g_clk, C);
 	CYBOZU_TEST_EQUAL(sec.dec(c2), m);
-	printf("Enc L1 %.2e\n", t1 + t2);
+	printf("Enc G1 %.2e\n", t1);
+	printf("Enc G2 %.2e\n", t2);
+	printf("Enc L1(G1+G2) %.2e\n", t1 + t2);
 
 	CYBOZU_BENCH_C("", C, ppub.enc, ct, m);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
@@ -82,18 +86,25 @@ CYBOZU_TEST_AUTO(bench2)
 
 	CYBOZU_BENCH_C("", C, sec.dec, c1);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
-	printf("DEC L1 %.2e\n", t1);
+	printf("Dec L1 %.2e\n", t1);
 
 	CYBOZU_BENCH_C("", C, sec.dec, ct);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
-	printf("DEC L2 %.2e\n", t1);
+	printf("Dec L2 %.2e\n", t1);
+
+	pub.enc(ct, 1234);
+	CYBOZU_BENCH_C("", C, sec.dec, ct);
+	t1 = clk2msec(cybozu::bench::g_clk, C);
+	printf("Dec L2(small) %.2e\n", t1);
 
 	CYBOZU_BENCH_C("", C, add, d1, d1, c1);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
 
 	CYBOZU_BENCH_C("", C, add, d2, d2, c2);
 	t2 = clk2msec(cybozu::bench::g_clk, C);
-	printf("Add L1 %.2e\n", t1 + t2);
+	printf("Add G1 %.2e\n", t1);
+	printf("Add G2 %.2e\n", t2);
+	printf("Add L1(G1+G2) %.2e\n", t1 + t2);
 
 	CYBOZU_BENCH_C("", C, add, dt, dt, ct);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
@@ -107,7 +118,9 @@ CYBOZU_TEST_AUTO(bench2)
 	t1 = clk2msec(cybozu::bench::g_clk, C);
 	CYBOZU_BENCH_C("", C, ppub.reRand, c2);
 	t2 = clk2msec(cybozu::bench::g_clk, C);
-	printf("ReRand L1 %.2e\n", t1 + t2);
+	printf("ReRand G1 %.2e\n", t1);
+	printf("ReRand G2 %.2e\n", t2);
+	printf("ReRand L1(G1+G2) %.2e\n", t1 + t2);
 
 	CYBOZU_BENCH_C("", C, ppub.reRand, ct);
 	t1 = clk2msec(cybozu::bench::g_clk, C);
