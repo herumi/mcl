@@ -244,7 +244,7 @@ test: $(TEST_EXE)
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
 EMCC_OPT=-I./include -I./src -I../cybozulib/include -Wall -Wextra
-EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8 -Os
+EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1 #-s ASSERTIONS=1
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
