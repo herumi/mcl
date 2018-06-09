@@ -176,7 +176,9 @@ struct Op {
 	Unit one[maxUnitSize];
 	Unit R2[maxUnitSize];
 	Unit R3[maxUnitSize];
+#ifdef MCL_USE_XBYAK
 	mcl::Array<Unit> invTbl;
+#endif
 	size_t N;
 	size_t bitSize;
 	bool (*fp_isZero)(const Unit*);
@@ -247,7 +249,9 @@ struct Op {
 		memset(one, 0, sizeof(one));
 		memset(R2, 0, sizeof(R2));
 		memset(R3, 0, sizeof(R3));
+#ifdef MCL_USE_XBYAK
 		invTbl.clear();
+#endif
 		N = 0;
 		bitSize = 0;
 		fp_isZero = 0;
