@@ -118,6 +118,24 @@ public:
 		n_ = 0;
 	}
 	size_t size() const { return n_; }
+	void swap(FixedArray<T, maxSize>& rhs)
+	{
+		T *minP = p_;
+		size_t minN = n_;
+		T *maxP = rhs.p_;
+		size_t maxN = rhs.n_;
+		if (minP > maxP) {
+			swap_(minP, maxP);
+			swap_(minN, maxN);
+		}
+		for (size_t i = 0; i < minN; i++) {
+			swap_(minP[i], maxP[i]);
+		}
+		for (size_t i = minN; i < maxN; i++) {
+			minP[i] = maxP[i];
+		}
+		swap_(n_, rhs.n_);
+	}
 	T& operator[](size_t n) { return p_[n]; }
 	const T& operator[](size_t n) const { return p_[n]; }
 	T* data() { return p_; }
