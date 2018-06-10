@@ -5,12 +5,30 @@
 #include <cybozu/xorshift.hpp>
 #include <mcl/bn384.hpp>
 #include <mcl/bn.hpp>
+#include <mcl/lagrange.hpp>
 
 using namespace mcl::bn384;
 
 mcl::fp::Mode g_mode;
 
 #include "bench.hpp"
+
+void testLagrange()
+{
+	puts("testLagrange");
+	const int k = 7;
+	Fr c[k], x[k], y[k];
+	for (size_t i = 0; i < k; i++) {
+		c[i].setByCSPRNG();
+		x[i].setByCSPRNG();
+	}
+	for (size_t i = 0; i < k; i++) {
+		mcl::evaluatePolynomial(y[i], c, k, x[i]);
+	}
+	Fr s;
+	mcl::LagrangeInterpolation(s, x, y, k);
+	CYBOZU_TEST_EQUAL(s, c[0]);
+}
 
 void testCurve(const mcl::CurveParam& cp)
 {
@@ -34,6 +52,7 @@ void testCurve(const mcl::CurveParam& cp)
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
 	testBench(P, Q);
+	testLagrange();
 }
 
 CYBOZU_TEST_AUTO(pairing)
