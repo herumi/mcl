@@ -1738,13 +1738,14 @@ inline void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	precomputeG2(Qcoeff.data(), Q);
 }
 #endif
-inline bool precomputeG2(mcl::Array<Fp6>& Qcoeff, const G2& Q)
+template<class T, template<class T>class Array>
+void precomputeG2(bool *pb, Array<T>& Qcoeff, const G2& Q)
 {
-	bool b = Qcoeff.resize(BN::param.precomputedQcoeffSize);
-	if (!b) return false;
+	*pb = Qcoeff.resize(BN::param.precomputedQcoeffSize);
+	if (!*pb) return;
 	precomputeG2(Qcoeff.data(), Q);
-	return true;
 }
+
 inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
 	G1 P(P_);
@@ -1793,6 +1794,83 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P, const mcl::Array<Fp6>& Q
 }
 /*
 	f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
+	Q2coeff : precomputed Q2
+*/
+inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff)
+{
+	G1 P1(P1_), P2(P2_);
+	G2 Q1(Q1_);
+	P1.normalize();
+	P2.normalize();
+	Q1.normalize();
+	if (Q1.isZero()) {
+		precomputedMillerLoop(f, P2_, Q2coeff);
+		return;
+	}
+	G2 T = Q1;
+	G2 negQ1;
+	if (BN::param.useNAF) {
+		G2::neg(negQ1, Q1);
+	}
+	G1 adjP1 = makeAdjP(P1);
+	G1 adjP2 = makeAdjP(P2);
+	size_t idx = 0;
+	Fp6 d1, d2, e1, e2, l1, l2;
+	dblLine(d1, T, adjP1);
+	mulFp6cb_by_G1xy(d2, Q2coeff[idx], adjP2);
+	idx++;
+
+	Fp12 f1, f2;
+	e1 = 1;
+	addLine(e1, T, Q1, P1);
+	mulSparse2(f1, d1, e1);
+
+	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
+	mulSparse2(f2, d2, e2);
+	Fp12::mul(f, f1, f2);
+	idx++;
+	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
+		dblLine(l1, T, adjP1);
+		mulFp6cb_by_G1xy(l2, Q2coeff[idx], adjP2);
+		idx++;
+		Fp12::sqr(f, f);
+		mulSparse2(f1, l1, l2);
+		f *= f1;
+		if (BN::param.siTbl[i]) {
+			if (BN::param.siTbl[i] > 0) {
+				addLine(l1, T, Q1, P1);
+			} else {
+				addLine(l1, T, negQ1, P1);
+			}
+			mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
+			idx++;
+			mulSparse2(f1, l1, l2);
+			f *= f1;
+		}
+	}
+	if (BN::param.z < 0) {
+		G2::neg(T, T);
+		Fp6::neg(f.b, f.b);
+	}
+	if (BN::param.isBLS12) return;
+	G2 Q11, Q12;
+	Frobenius(Q11, Q1);
+	Frobenius(Q12, Q11);
+	G2::neg(Q12, Q12);
+	addLine(d1, T, Q11, P1);
+	mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
+	idx++;
+	addLine(e1, T, Q12, P1);
+	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
+	idx++;
+	mulSparse2(f1, d1, e1);
+	mulSparse2(f2, d2, e2);
+	f *= f1;
+	f *= f2;
+}
+/*
+	f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
+	Q1coeff, Q2coeff : precomputed Q1, Q2
 */
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1& P2_, const Fp6* Q2coeff)
 {
@@ -1849,6 +1927,10 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, c
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
 {
 	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
+}
+inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, const G1& P2, const std::vector<Fp6>& Q2coeff)
+{
+	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
 }
 #endif
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const mcl::Array<Fp6>& Q1coeff, const G1& P2, const mcl::Array<Fp6>& Q2coeff)
