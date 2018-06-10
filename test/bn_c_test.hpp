@@ -334,7 +334,7 @@ CYBOZU_TEST_AUTO(precomputed)
 	mclBn_precomputeG2(Q1buf.data(), &Q1);
 	mclBn_precomputeG2(Q2buf.data(), &Q2);
 
-	mclBnGT e1, e2, f1, f2, f3;
+	mclBnGT e1, e2, f1, f2, f3, f4;
 	mclBn_pairing(&e1, &P1, &Q1);
 	mclBn_precomputedMillerLoop(&f1, &P1, Q1buf.data());
 	mclBn_finalExp(&f1, &f1);
@@ -346,6 +346,8 @@ CYBOZU_TEST_AUTO(precomputed)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e2, &f2));
 
 	mclBn_precomputedMillerLoop2(&f3, &P1, Q1buf.data(), &P2, Q2buf.data());
+	mclBn_precomputedMillerLoop2mixed(&f4, &P1, &Q1, &P2, Q2buf.data());
+	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&f3, &f4));
 	mclBn_finalExp(&f3, &f3);
 
 	mclBnGT_mul(&e1, &e1, &e2);

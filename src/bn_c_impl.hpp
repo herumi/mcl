@@ -451,6 +451,11 @@ void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t 
 	precomputedMillerLoop2(*cast(f), *cast(P1), cast(Q1buf), *cast(P2), cast(Q2buf));
 }
 
+void mclBn_precomputedMillerLoop2mixed(mclBnGT *f, const mclBnG1 *P1, const mclBnG2 *Q1, const mclBnG1 *P2, const uint64_t *Q2buf)
+{
+	precomputedMillerLoop2mixed(*cast(f), *cast(P1), *cast(Q1), *cast(P2), cast(Q2buf));
+}
+
 int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k)
 {
 	bool b;

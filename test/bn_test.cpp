@@ -232,6 +232,18 @@ void testMillerLoop2(const G1& P1, const G2& Q1)
 	CYBOZU_TEST_EQUAL(e2, e3);
 	finalExp(e2, e2);
 	CYBOZU_TEST_EQUAL(e1, e2);
+
+	// special value
+	G2 Z;
+	Z.clear();
+	Q2 += Q2;
+	precomputeG2(Q1coeff, Z);
+	precomputeG2(Q2coeff, Q2);
+	precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
+	precomputedMillerLoop2mixed(e3, P1, Z, P2, Q2coeff);
+	finalExp(e2, e2);
+	finalExp(e3, e3);
+	CYBOZU_TEST_EQUAL(e2, e3);
 }
 
 void testPairing(const G1& P, const G2& Q, const char *eStr)
