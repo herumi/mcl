@@ -6,8 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <mcl/array.hpp>
-
 namespace mcl {
 
 /*
@@ -25,9 +23,6 @@ void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 		*pb = false;
 		return;
 	}
-	mcl::Array<F> delta;
-	*pb = delta.resize(k);
-	if (!*pb) return;
 	F a = S[0];
 	for (size_t i = 1; i < k; i++) {
 		a *= S[i];
@@ -36,6 +31,11 @@ void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 		*pb = false;
 		return;
 	}
+	/*
+		f(0) = sum_i f(S[i]) delta_{i,S}(0)
+	*/
+	G r;
+	r.clear();
 	for (size_t i = 0; i < k; i++) {
 		F b = S[i];
 		for (size_t j = 0; j < k; j++) {
@@ -48,16 +48,8 @@ void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 				b *= v;
 			}
 		}
-		delta[i] = a / b;
-	}
-
-	/*
-		f(0) = sum_i f(S[i]) delta_{i,S}(0)
-	*/
-	G r, t;
-	r.clear();
-	for (size_t i = 0; i < delta.size(); i++) {
-		G::mul(t, vec[i], delta[i]);
+		G t;
+		G::mul(t, vec[i], a / b);
 		r += t;
 	}
 	out = r;
