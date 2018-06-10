@@ -1738,8 +1738,8 @@ inline void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 	precomputeG2(Qcoeff.data(), Q);
 }
 #endif
-template<class T, template<class T>class Array>
-void precomputeG2(bool *pb, Array<T>& Qcoeff, const G2& Q)
+template<class Array>
+void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 {
 	*pb = Qcoeff.resize(BN::param.precomputedQcoeffSize);
 	if (!*pb) return;
