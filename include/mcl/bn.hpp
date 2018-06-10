@@ -1788,10 +1788,6 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& 
 	precomputedMillerLoop(f, P, Qcoeff.data());
 }
 #endif
-inline void precomputedMillerLoop(Fp12& f, const G1& P, const mcl::Array<Fp6>& Qcoeff)
-{
-	precomputedMillerLoop(f, P, Qcoeff.data());
-}
 /*
 	f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
 	Q2coeff : precomputed Q2
@@ -1933,10 +1929,6 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
 }
 #endif
-inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const mcl::Array<Fp6>& Q1coeff, const G1& P2, const mcl::Array<Fp6>& Q2coeff)
-{
-	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
-}
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
