@@ -109,7 +109,7 @@ void Frobenius3(G2& D, const G2& S);
 
 namespace local {
 
-typedef mcl::Array<int8_t> SignVec;
+typedef mcl::FixedArray<int8_t, 128> SignVec;
 
 inline size_t getPrecomputeQcoeffSize(const SignVec& sv)
 {
