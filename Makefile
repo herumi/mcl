@@ -288,7 +288,7 @@ bin/emu:
 CLANG_WASM=-DNDEBUG -DMCLSHE_WIN_SIZE=8 -DCYBOZU_MINIMUM_EXCEPTION
 CLANG_WASM+=-DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256
 CLANG_WASM+=-DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -DMCL_DONT_USE_CSPRNG
-CLANG_WASM+=-O3 -Oz -target wasm32-wasm -fno-exceptions
+CLANG_WASM+=-O3 -target wasm32-wasm -fno-exceptions
 CLANG_WASM+=-Wall -Wextra
 CLANG_WASM+=-I./include -I../cybozulib/include -std=c++03
 mcl-wasm-clang:
