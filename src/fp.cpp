@@ -35,14 +35,6 @@ void Op::destroyFpGenerator(FpGenerator *fg)
 {
 	delete fg;
 }
-#else
-FpGenerator *Op::createFpGenerator()
-{
-	return 0;
-}
-void Op::destroyFpGenerator(FpGenerator *)
-{
-}
 #endif
 
 inline void setUnitAsLE(void *p, Unit x)

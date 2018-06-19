@@ -163,7 +163,6 @@ struct Op {
 	mpz_class mp;
 	uint32_t pmod4;
 	mcl::SquareRoot sq;
-	FpGenerator *fg;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
 	/*
@@ -177,6 +176,7 @@ struct Op {
 	Unit R2[maxUnitSize];
 	Unit R3[maxUnitSize];
 #ifdef MCL_USE_XBYAK
+	FpGenerator *fg;
 	mcl::Array<Unit> invTbl;
 #endif
 	size_t N;
@@ -230,11 +230,12 @@ struct Op {
 	Op()
 	{
 		clear();
-		fg = 0;
 	}
 	~Op()
 	{
+#ifdef MCL_USE_XBYAK
 		destroyFpGenerator(fg);
+#endif
 	}
 	void clear()
 	{
@@ -250,6 +251,7 @@ struct Op {
 		memset(R2, 0, sizeof(R2));
 		memset(R3, 0, sizeof(R3));
 #ifdef MCL_USE_XBYAK
+		fg = 0;
 		invTbl.clear();
 #endif
 		N = 0;
@@ -314,8 +316,10 @@ struct Op {
 	}
 	bool init(const mpz_class& p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
 	void initFp2(int xi_a);
+#ifdef MCL_USE_XBYAK
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);
+#endif
 private:
 	Op(const Op&);
 	void operator=(const Op&);
