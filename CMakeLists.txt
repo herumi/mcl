@@ -10,9 +10,8 @@ option(
 option(
 	DOWNLOAD_SOURCE
 	"download xbyak, cybozulib"
-	OFF
+	ON
 )
-set(DOWNLOAD_SOURCE ON)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -106,6 +105,16 @@ include_directories(
 add_library(mcl STATIC ${SRCS})
 if(NOT MSVC)
 add_library(mcl_dy SHARED ${SRCS})
+set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl VERSION 1.0.0 SOVERSION 1)
+# SOVERSION must match VERSION's major number and be bumped whenever non-backwards-ABI-compatible changes
+# are made. The other numbers in VERSION should be bumped for other changes as you wish; one common standard
+# is libtool's scheme: https://www.gnu.org/software/libtool/manual/html_node/Libtool-versioning.html
+#
+# For semantics of ABI compatibility including when you must bump SOVERSION, see:
+# https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B#The_Do.27s_and_Don.27ts
+#
+# Since ABI compatibility is a strict requirement that is only necessary for shared-library systems,
+# these library version numbers do not necessarily need to match the release version of the overall package.
 endif()
 
 file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/*.h)
