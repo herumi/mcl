@@ -120,16 +120,16 @@ MCLBN_DLL_API int mclBn_init(int curve, int maxUnitSize);
 /*
 	return the num of Unit(=uint64_t) to store Fr
 */
-MCLBN_DLL_API int mclBn_getOpUnitSize();
+MCLBN_DLL_API int mclBn_getOpUnitSize(void);
 
 /*
 	return bytes for serialized G1(=Fp)
 */
-MCLBN_DLL_API int mclBn_getG1ByteSize();
+MCLBN_DLL_API int mclBn_getG1ByteSize(void);
 /*
 	return bytes for serialized Fr
 */
-MCLBN_DLL_API int mclBn_getFrByteSize();
+MCLBN_DLL_API int mclBn_getFrByteSize(void);
 
 /*
 	return decimal string of the order of the curve(=the characteristic of Fr)
