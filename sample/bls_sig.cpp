@@ -8,14 +8,7 @@
 
 */
 #include <mcl/bn256.hpp>
-
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <random>
-std::random_device g_rg;
-#else
-#include <cybozu/random_generator.hpp>
-cybozu::RandomGenerator g_rg;
-#endif
+#include <iostream>
 
 using namespace mcl::bn256;
 
@@ -28,7 +21,7 @@ void Hash(G1& P, const std::string& m)
 
 void KeyGen(Fr& s, G2& pub, const G2& Q)
 {
-	s.setRand(g_rg);
+	s.setRand();
 	G2::mul(pub, Q, s); // pub = sQ
 }
 

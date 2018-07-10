@@ -4,7 +4,7 @@
 */
 #include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
-#include <sstream>
+#include <iostream>
 #include "../src/low_func.hpp"
 
 typedef mcl::FpT<> Fp;
