@@ -179,6 +179,7 @@ struct Op {
 	FpGenerator *fg;
 	mcl::Array<Unit> invTbl;
 #endif
+	size_t maxN;
 	size_t N;
 	size_t bitSize;
 	bool (*fp_isZero)(const Unit*);
@@ -254,6 +255,7 @@ struct Op {
 		fg = 0;
 		invTbl.clear();
 #endif
+		maxN = 0;
 		N = 0;
 		bitSize = 0;
 		fp_isZero = 0;

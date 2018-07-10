@@ -361,15 +361,15 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
 	clear();
-	bool b;
+	maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
+	N = gmp::getUnitSize(_p);
+	if (N > maxN) return false;
 	{
-		const size_t maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
-		N = gmp::getUnitSize(_p);
-		if (N > maxN) return false;
+		bool b;
 		gmp::getArray(&b, p, N, _p);
 		if (!b) return false;
-		mp = _p;
 	}
+	mp = _p;
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
 /*
@@ -488,8 +488,11 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 	}
 #endif
 	if (!fp::initForMont(*this, p, mode)) return false;
-	sq.set(&b, mp);
-	if (!b) return false;
+	{
+		bool b;
+		sq.set(&b, mp);
+		if (!b) return false;
+	}
 	if (N * UnitBitSize <= 256) {
 		hash = sha256;
 	} else {
