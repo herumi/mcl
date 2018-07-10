@@ -210,19 +210,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		mulUnit_ = getCurr<uint3opI>();
 		gen_mulUnit();
-		if (op.primeMode == PM_NIST_P521) {
-			align(16);
-			op.fpDbl_mod = getCurr<void3u>();
-			gen_fpDbl_mod(op);
-		} else {
-			align(16);
-			mul_ = getCurr<void4u>();
-			op.fp_mul = mul_;
-			gen_mul();
-			align(16);
-			op.fp_sqr = getCurr<void3u>();
-			gen_sqr();
-		}
+		align(16);
+		mul_ = getCurr<void4u>();
+		op.fp_mul = mul_;
+		gen_mul();
+		align(16);
+		op.fp_sqr = getCurr<void3u>();
+		gen_sqr();
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
@@ -895,11 +889,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
+#if 0
 		if (op.primeMode == PM_NIST_P521) {
 			StackFrame sf(this, 2, 8 | UseRDX);
 			fpDbl_mod_NIST_P521(sf.p[0], sf.p[1], sf.t);
 			return;
 		}
+#endif
 		switch (pn_) {
 		case 2:
 			gen_fpDbl_mod2();
