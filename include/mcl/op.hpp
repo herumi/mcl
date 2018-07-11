@@ -208,6 +208,7 @@ struct Op {
 	u3u fp_subPre; // without modulo p
 	u3u fpDbl_addPre;
 	u3u fpDbl_subPre;
+	void3u fp2Dbl_mulPre;
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
@@ -284,6 +285,7 @@ struct Op {
 		fp_subPre = 0;
 		fpDbl_addPre = 0;
 		fpDbl_subPre = 0;
+		fp2Dbl_mulPre = 0;
 
 		xi_a = 0;
 		fp2_add = 0;

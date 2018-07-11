@@ -11,6 +11,7 @@ void testBench(const G1& P, const G2& Q)
 	Fp x, y;
 	x.setHashOf("abc");
 	y.setHashOf("xyz");
+#if 1
 	mpz_class z = 3;
 	mpz_class a = x.getMpz();
 	CYBOZU_BENCH_C("G1::mulCT     ", C, G1::mulCT, Pa, P, a);
@@ -46,6 +47,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, Fp::inv, x, x);
+#endif
 	Fp2 xx, yy;
 	xx.a = x;
 	xx.b = 3;
