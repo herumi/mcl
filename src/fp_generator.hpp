@@ -363,6 +363,9 @@ struct FpGenerator : Xbyak::CodeGenerator {
 			align(16);
 			op.fp2Dbl_mulPre = getCurr<void3u>();
 			gen_fp2Dbl_mulPre();
+			align(16);
+			op.fp2_mul = getCurr<void3u>();
+			gen_fp2_mul();
 		}
 	}
 	void gen_addSubPre(bool isAdd, int n)
@@ -2773,7 +2776,6 @@ private:
 	}
 	void gen_fp2Dbl_mulPre()
 	{
-#if 1
 		assert(!isFullBit_);
 		const RegExp z = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
@@ -2818,21 +2820,17 @@ private:
 		lea(gp2, ptr [d2]);
 		gen_raw_sub(gp0, gp1, gp2, rax, 8);
 
-		// pz[1]
 		mov(gp0, ptr [z]);
 		mov(gp1, gp0);
 		lea(gp2, ptr [d2]);
 
 		gen_raw_sub(gp0, gp1, gp2, rax, 4);
 		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+	}
 
-#else
+	void gen_fp2_mul()
+	{
 		assert(!isFullBit_);
-		/*
-			x = a + bi, y = c + di
-			xy = (ac - bd) + (ad + bc)i
-			   = (ac - bd) + ((a + b)(c + d) - ac - bd)i
-		*/
 		const RegExp z = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
 		const RegExp y = rsp + 2 * 8;
@@ -2846,32 +2844,17 @@ private:
 		mov(ptr[z], gp0);
 		mov(ptr[x], gp1);
 		mov(ptr[y], gp2);
-		/*
-			FpDbl d0, d1, d2;
-			Fp s, t;
-			Fp::addPre(s, a, b);
-			Fp::addPre(t, c, d);
-			FpDbl::mulPre(d0, s, t); // (a + b)(c + d)
-			FpDbl::mulPre(d1, a, c);
-			FpDbl::mulPre(d2, b, d);
-			FpDbl::subPre(d0, d0, d1); // (a + b)(c + d) - ac
-			FpDbl::subPre(d0, d0, d2); // (a + b)(c + d) - ac - bd
-			Fp *pz = reinterpret_cast<Fp*>(z);
-			FpDbl::mod(pz[1], d0);
-			FpDbl::sub(d1, d1, d2); // ac - bd
-			FpDbl::mod(pz[0], d1); // set z0
-		*/
 		// s = a + b
-		gen_raw_add(s, x, x + FpByte_, rax, 4);
+		gen_raw_add(s, gp1, gp1 + FpByte_, rax, 4);
 		// t = c + d
-		gen_raw_add(t, y, y + FpByte_, rax, 4);
-		// d0 = (a + b)(c + d)
-		lea(gp0, ptr [d0]);
+		gen_raw_add(t, gp2, gp2 + FpByte_, rax, 4);
+		// d1 = (a + b)(c + d)
+		lea(gp0, ptr [d1]);
 		lea(gp1, ptr [s]);
 		lea(gp2, ptr [t]);
 		call(mulPreL_);
-		// d1 = a c
-		lea(gp0, ptr [d1]);
+		// d0 = a c
+		lea(gp0, ptr [d0]);
 		mov(gp1, ptr [x]);
 		mov(gp2, ptr [y]);
 		call(mulPreL_);
@@ -2883,30 +2866,29 @@ private:
 		add(gp2, FpByte_);
 		call(mulPreL_);
 
-		lea(gp0, ptr [d0]);
-		mov(gp1, gp0);
-		lea(gp2, ptr [d1]);
-		gen_raw_sub(gp0, gp1, gp2, rax, 8);
-		lea(gp2, ptr [d2]);
-		gen_raw_sub(gp0, gp1, gp2, rax, 8);
-
-		// pz[1]
-		mov(gp0, ptr [z]);
-		add(gp0, FpByte_);
-		lea(gp1, ptr[d0]);
-		call(fpDbl_modL_);
-
-
 		lea(gp0, ptr [d1]);
 		mov(gp1, gp0);
+		lea(gp2, ptr [d0]);
+		gen_raw_sub(gp0, gp1, gp2, rax, 8);
 		lea(gp2, ptr [d2]);
+		gen_raw_sub(gp0, gp1, gp2, rax, 8);
+
+		lea(gp0, ptr [d0]);
+		mov(gp1, gp0);
+		lea(gp2, ptr [d2]);
+
 		gen_raw_sub(gp0, gp1, gp2, rax, 4);
 		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 
 		mov(gp0, ptr [z]);
+		lea(gp1, ptr[d0]);
+		call(fpDbl_modL_);
+
+		mov(gp0, ptr [z]);
+		add(gp0, FpByte_);
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL_);
-#endif
+
 	}
 };
 
