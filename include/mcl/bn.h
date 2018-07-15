@@ -15,18 +15,22 @@
 
 
 #if defined(_MSC_VER)
-	#ifdef MCLBN_DLL_EXPORT
-		#define MCLBN_DLL_API __declspec(dllexport)
+	#ifdef MCLBN_DONT_EXPORT
+		#define MCLBN_DLL_API
 	#else
-		#define MCLBN_DLL_API __declspec(dllimport)
-		#ifndef MCLBN_NO_AUTOLINK
-			#if MCLBN_FP_UNIT_SIZE == 4
-				#pragma comment(lib, "mclbn256.lib")
-			#elif MCLBN_FP_UNIT_SIZE == 6
-				#pragma comment(lib, "mclbn384.lib")
-			#else
-				#pragma comment(lib, "mclbn512.lib")
-			#endif
+		#ifdef MCLBN_DLL_EXPORT
+			#define MCLBN_DLL_API __declspec(dllexport)
+		#else
+			#define MCLBN_DLL_API __declspec(dllimport)
+		#endif
+	#endif
+	#ifndef MCLBN_NO_AUTOLINK
+		#if MCLBN_FP_UNIT_SIZE == 4
+			#pragma comment(lib, "mclbn256.lib")
+		#elif MCLBN_FP_UNIT_SIZE == 6
+			#pragma comment(lib, "mclbn384.lib")
+		#else
+			#pragma comment(lib, "mclbn512.lib")
 		#endif
 	#endif
 #elif defined(__EMSCRIPTEN__) && !defined(MCLBN_DONT_EXPORT)
