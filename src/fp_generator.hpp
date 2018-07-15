@@ -141,7 +141,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		classes to calculate offset and size
 	*/
 	struct Ext1 {
-		Ext1(size_t FpByte, const Reg64& r, int n = 0)
+		Ext1(int FpByte, const Reg64& r, int n = 0)
 			: r_(r)
 			, n_(n)
 			, next(FpByte + n)
@@ -156,7 +156,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		void operator=(const Ext1&);
 	};
 	struct Ext2 {
-		Ext2(size_t FpByte, const Reg64& r, int n = 0)
+		Ext2(int FpByte, const Reg64& r, int n = 0)
 			: r_(r)
 			, n_(n)
 			, next(FpByte * 2 + n)
