@@ -49,7 +49,7 @@ void miniSample()
 		c.add(t); // c += t
 	}
 	// decode it
-	int m = sec.dec(c);
+	int m = (int)sec.dec(c);
 	// verify the value
 	if (m == sum) {
 		puts("ok");
@@ -88,7 +88,7 @@ void usePrimitiveCipherText()
 	CipherTextGT cm; // size of CipherTextGT = N * 12 * 4
 	CipherTextGT::mul(cm, c1, d1); // cm = c1 * d1
 	cm.add(cm); // 2cm
-	int m = sec.dec(cm);
+	int m = (int)sec.dec(cm);
 	int ok = (a1 + a2) * (b1 + b2) * 2;
 	if (m == ok) {
 		puts("ok");
