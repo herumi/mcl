@@ -94,15 +94,25 @@ bool isEnableJIT()
 	/* -1:not init, 0:disable, 1:enable */
 	static int status = -1;
 	if (status == -1) {
-		const size_t size = 4096;
-		uint8_t *p = (uint8_t*)malloc(size * 2);
-		uint8_t *aligned = Xbyak::CodeArray::getAlignedAddress(p, size);
-		bool ret = Xbyak::CodeArray::protect(aligned, size, true);
-		status = ret ? 1 : 0;
-		if (ret) {
-			Xbyak::CodeArray::protect(aligned, size, false);
+#ifndef _MSC_VER
+		status = 1;
+		FILE *fp = fopen("/sys/fs/selinux/enforce", "rb");
+		if (fp) {
+			char c;
+			if (fread(&c, 1, 1, fp) == 1 && c == '1') {
+				status = 0;
+			}
+			fclose(fp);
 		}
-		free(p);
+#endif
+		if (status != 0) {
+			MIE_ALIGN(4096) char buf[4096];
+			bool ret = Xbyak::CodeArray::protect(buf, sizeof(buf), true);
+			status = ret ? 1 : 0;
+			if (ret) {
+				Xbyak::CodeArray::protect(buf, sizeof(buf), false);
+			}
+		}
 	}
 	return status != 0;
 #else
