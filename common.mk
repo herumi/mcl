@@ -20,16 +20,12 @@ else
   LIB_SUF=so
 endif
 ARCH?=$(shell uname -m)
-DO_IT=0
-ifeq ($(ARCH),x86_64)
-  DO_IT=1
-endif
-ifeq ($(ARCH),amd64)
-  DO_IT=1
-endif
-ifeq ($(DO_IT),1)
+ifneq ($(findstring $(ARCH),x86_64/amd64),)
   CPU=x86-64
   INTEL=1
+  ifeq ($(findstring $(OS),mingw64/cygwin),)
+    GCC_EXT=1
+  endif
   BIT=64
   BIT_OPT=-m64
   #LOW_ASM_SRC=src/asm/low_x86-64.asm
@@ -61,7 +57,7 @@ MKDIR=mkdir -p
 RM=rm -rf
 
 ifeq ($(DEBUG),1)
-  ifeq ($(INTEL),1)
+  ifeq ($(GCC_EXT),1)
     CFLAGS+=-fsanitize=address
     LDFLAGS+=-fsanitize=address
   endif

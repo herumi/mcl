@@ -7,6 +7,10 @@
 #include <mcl/fp.hpp>
 #include <mcl/fp_tower.hpp>
 
+#ifdef _MSC_VER
+	#pragma warning(disable : 4456)
+#endif
+
 #if MCL_MAX_BIT_SIZE >= 768
 typedef mcl::FpT<mcl::FpTag, MCL_MAX_BIT_SIZE> Fp;
 #else
