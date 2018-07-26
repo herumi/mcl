@@ -56,7 +56,9 @@ struct Montgomery {
 #ifdef MCL_USE_VINT
 			z += p_ * q;
 #else
-			z += p_ * (mp_limb_t)q;
+			mpz_class t;
+			mcl::gmp::set(t, q);
+			z += p_ * t;
 #endif
 			z >>= sizeof(Unit) * 8;
 		}
