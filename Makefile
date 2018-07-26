@@ -15,6 +15,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=low_test.cpp
   endif
   ifeq ($(MCL_USE_XBYAK),1)
+    CFLAGS+=-DMCL_XBYAK_DIRECT_CALL
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif

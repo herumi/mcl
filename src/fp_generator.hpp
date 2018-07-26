@@ -200,7 +200,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	typedef bool (*bool3op)(uint64_t*, const uint64_t*, const uint64_t*);
 
 	// add/sub with mod
-	typedef void (*void3op)(uint64_t*, const uint64_t*, const uint64_t*);
+//	typedef void (*void3op)(uint64_t*, const uint64_t*, const uint64_t*);
 
 	// mul without carry. return top of z
 	typedef uint64_t (*uint3opI)(uint64_t*, const uint64_t*, uint64_t);
@@ -268,9 +268,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		setSize(0); // reset code
 		align(16);
 		op.fp_add = getCurr<void4u>();
+		op.fp_addA_ = getCurr<void3u>();
 		gen_fp_add();
 		align(16);
 		op.fp_sub = getCurr<void4u>();
+		op.fp_subA_ = getCurr<void3u>();
 		gen_fp_sub();
 
 		align(16);
@@ -293,6 +295,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		align(16);
 		mul_ = getCurr<void4u>();
 		op.fp_mul = mul_;
+		op.fp_mulA_ = getCurr<void3u>();
 		gen_mul();
 		align(16);
 		op.fp_sqr = getCurr<void3u>();

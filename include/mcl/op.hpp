@@ -179,6 +179,9 @@ struct Op {
 	FpGenerator *fg;
 	mcl::Array<Unit> invTbl;
 #endif
+	void3u fp_addA_;
+	void3u fp_subA_;
+	void3u fp_mulA_;
 	size_t maxN;
 	size_t N;
 	size_t bitSize;
@@ -256,6 +259,9 @@ struct Op {
 		fg = 0;
 		invTbl.clear();
 #endif
+		fp_addA_ = 0;
+		fp_subA_ = 0;
+		fp_mulA_ = 0;
 		maxN = 0;
 		N = 0;
 		bitSize = 0;

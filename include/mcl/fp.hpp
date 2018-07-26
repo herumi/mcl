@@ -129,6 +129,14 @@ public:
 			if (!*pb) return;
 		}
 		inv(inv2_, 2);
+#ifdef MCL_XBYAK_DIRECT_CALL
+		add = (void (*)(FpT& z, const FpT& x, const FpT& y))op_.fp_addA_;
+		if (add == 0) add = addC;
+		sub = (void (*)(FpT& z, const FpT& x, const FpT& y))op_.fp_subA_;
+		if (sub == 0) sub = subC;
+		mul = (void (*)(FpT& z, const FpT& x, const FpT& y))op_.fp_mulA_;
+		if (mul == 0) mul = mulC;
+#endif
 		*pb = true;
 	}
 	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO)
@@ -344,11 +352,20 @@ public:
 		}
 		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
 	}
+#ifdef MCL_XBYAK_DIRECT_CALL
+	static void (*add)(FpT& z, const FpT& x, const FpT& y);
+	static inline void addC(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
+	static void (*sub)(FpT& z, const FpT& x, const FpT& y);
+	static inline void subC(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
+	static void (*mul)(FpT& z, const FpT& x, const FpT& y);
+	static inline void mulC(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
+#else
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
+	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
+#endif
 	static inline void addPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_addPre(z.v_, x.v_, y.v_); }
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
-	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
 	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
 		if (mulSmallUnit(z, x, y)) return;
@@ -563,6 +580,11 @@ public:
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
 template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
+#ifdef MCL_XBYAK_DIRECT_CALL
+template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::add)(FpT& z, const FpT& x, const FpT& y);
+template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sub)(FpT& z, const FpT& x, const FpT& y);
+template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul)(FpT& z, const FpT& x, const FpT& y);
+#endif
 
 } // mcl
 

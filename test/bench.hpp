@@ -43,11 +43,11 @@ void testBench(const G1& P, const G2& Q)
 	verifyOrderG2(true);
 	CYBOZU_BENCH_C("hashAndMapToG1", C, hashAndMapToG1, PP, "abc", 3);
 	CYBOZU_BENCH_C("hashAndMapToG2", C, hashAndMapToG2, QQ, "abc", 3);
+#endif
 	CYBOZU_BENCH_C("Fp::add       ", C3, Fp::add, x, x, y);
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, Fp::inv, x, x);
-#endif
 	Fp2 xx, yy;
 	xx.a = x;
 	xx.b = 3;
@@ -75,6 +75,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("pairing       ", C, pairing, e1, P, Q);
 	CYBOZU_BENCH_C("millerLoop    ", C, millerLoop, e1, P, Q);
 	CYBOZU_BENCH_C("finalExp      ", C, finalExp, e1, e1);
+//exit(1);
 	std::vector<Fp6> Qcoeff;
 	precomputeG2(Qcoeff, Q);
 	CYBOZU_BENCH_C("precomputedML ", C, precomputedMillerLoop, e2, P, Qcoeff);
