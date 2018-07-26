@@ -218,7 +218,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 
 	FpGenerator()
 		: CodeGenerator(4096 * 8)
-#ifdef _MSC_VER
+#ifdef XBYAK64_WIN
 		, gp0(rcx)
 		, gp1(r11)
 		, gp2(r8)
