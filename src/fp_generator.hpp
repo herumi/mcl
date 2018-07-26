@@ -2894,7 +2894,7 @@ private:
 
 } } // mcl::fp
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
 

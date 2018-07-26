@@ -701,6 +701,6 @@ const void4u Fp2MulNF<N, Tag>::f = Fp2MulNF<N, Tag>::func;
 
 } } // mcl::fp
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#pragma warning(pop)
 #endif

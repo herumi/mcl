@@ -3,6 +3,13 @@ UNAME_S=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
   OS=Linux
 endif
+ifeq ($(findstring MINGW64,$(UNAME_S)),MINGW64)
+  OS=mingw64
+  CFLAGS+=-D__USE_MINGW_ANSI_STDIO=1
+endif
+ifeq ($(findstring CYGWIN,$(UNAME_S)),CYGWIN)
+  OS=cygwin
+endif
 ifeq ($(UNAME_S),Darwin)
   OS=mac
   ARCH=x86_64
@@ -44,7 +51,7 @@ ifeq ($(ARCH),aarch64)
   CPU=aarch64
   BIT=64
 endif
-ifneq ($(UNAME_S),Darwin)
+ifeq ($(findstring $(OS),Darwin/mingw64),)
   LDFLAGS+=-lrt
 endif
 

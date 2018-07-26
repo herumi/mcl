@@ -590,6 +590,6 @@ struct hash<mcl::FpT<tag, maxBitSize> > {
 CYBOZU_NAMESPACE_TR1_END } // std::tr1
 #endif
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#pragma warning(pop)
 #endif

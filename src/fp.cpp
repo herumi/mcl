@@ -648,7 +648,7 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	return 0;
 }
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
 

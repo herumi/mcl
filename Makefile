@@ -74,10 +74,18 @@ SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 FUNC_LIST=src/func.list
-MCL_USE_LLVM?=1
+ifeq ($(findstring $(OS),mingw64/cygwin),)
+  MCL_USE_LLVM?=1
+else
+  MCL_USE_LLVM=0
+endif
 ifeq ($(MCL_USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(ASM_OBJ)
+  # special case for intel with bmi2
+  ifeq ($(INTEL),1)
+    LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
+  endif
 endif
 LLVM_SRC=src/base$(BIT).ll
 
@@ -94,10 +102,6 @@ LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=-sse
 ifeq ($(USE_LOW_ASM),1)
   LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
   LIB_OBJ+=$(LOW_ASM_OBJ)
-endif
-# special case for intel with bmi2
-ifeq ($(INTEL),1)
-  LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
 endif
 
 ifeq ($(UPDATE_ASM),1)
