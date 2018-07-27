@@ -302,6 +302,8 @@ make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1 MCL_MAX_BIT_SIZE=1024
 ```
 
 # API for Two level homomorphic encryption
+* [_Efficient Two-level Homomorphic Encryption in Prime-order Bilinear Groups and A Fast Implementation in WebAssembly_](https://dl.acm.org/citation.cfm?doid=3196494.3196552), N. Attrapadung, G. Hanaoka, S. Mitsunari, Y. Sakai,
+K. Shimizu, and T. Teruya. ASIACCS 2018
 * [she-api](https://github.com/herumi/mcl/blob/master/misc/she/she-api.md)
 * [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
