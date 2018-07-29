@@ -1,4 +1,4 @@
-#define MCL_EC_USE_AFFINE
+//#define MCL_EC_USE_AFFINE
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>

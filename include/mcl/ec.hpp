@@ -128,6 +128,7 @@ private:
 		y2 *= z;
 		return y2 == t;
 	}
+#endif
 	// y^2 == (x^2 + a)x + b
 	static inline bool isValid(const Fp& _x, const Fp& _y)
 	{
@@ -140,7 +141,6 @@ private:
 		return y2 == t;
 	}
 public:
-#endif
 	void normalize()
 	{
 #ifndef MCL_EC_USE_AFFINE
@@ -674,7 +674,9 @@ public:
 				cybozu::writeChar(pb, os, sep);
 				if (!*pb) return;
 			}
+#ifndef MCL_EC_USE_AFFINE
 			z.save(pb, os, ioMode);
+#endif
 			return;
 		}
 		EcT P(*this);
@@ -796,7 +798,9 @@ public:
 				if (!*pb) return;
 			} else if (c == '4') {
 				y.load(pb, is, ioMode); if (!*pb) return;
+#ifndef MCL_EC_USE_AFFINE
 				z.load(pb, is, ioMode); if (!*pb) return;
+#endif
 			} else {
 				*pb = false;
 				return;
