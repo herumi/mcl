@@ -1,3 +1,4 @@
+#define MCL_EC_USE_AFFINE
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
@@ -18,7 +19,11 @@ typedef mcl::EcT<Fp> Ec;
 CYBOZU_TEST_AUTO(sizeof)
 {
 	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::fp::Unit) * Fp::maxSize);
+#ifdef MCL_EC_USE_AFFINE
+	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 2 + sizeof(mcl::fp::Unit));
+#else
 	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 3);
+#endif
 }
 
 struct Test {
@@ -93,7 +98,9 @@ struct Test {
 
 		{
 			Ec::dbl(R, P);
+#ifndef MCL_EC_USE_AFFINE
 			CYBOZU_TEST_ASSERT(!R.isNormalized());
+#endif
 			CYBOZU_TEST_ASSERT(R.isValid());
 			Ec R2 = P + P;
 			CYBOZU_TEST_EQUAL(R, R2);
