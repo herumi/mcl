@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>
+#include <cybozu/array.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -125,7 +126,7 @@ if (rm.isReg()) { \
 
 namespace fp {
 
-struct FpGenerator : Xbyak::CodeGenerator {
+struct Code : Xbyak::CodeGenerator {
 	typedef Xbyak::RegExp RegExp;
 	typedef Xbyak::Reg64 Reg64;
 	typedef Xbyak::Xmm Xmm;
@@ -216,8 +217,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	Label mulPreL_;
 	Label fpDbl_modL_;
 
-	FpGenerator()
-		: CodeGenerator(4096 * 8)
+	Code(uint8_t *mem, size_t codeSize)
+		: CodeGenerator(codeSize, mem)
 #ifdef XBYAK64_WIN
 		, gp0(rcx)
 		, gp1(r11)
@@ -725,7 +726,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		} else if (pn_ <= 9) {
 			gen_montMulN(p_, rp_, pn_);
 		} else {
-			throw cybozu::Exception("mcl:FpGenerator:gen_mul:not implemented for") << pn_;
+			throw cybozu::Exception("mcl:Code:gen_mul:not implemented for") << pn_;
 		}
 	}
 	/*
@@ -1978,7 +1979,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		assert(pn_ >= 1);
 		const int freeRegNum = 13;
 		if (pn_ > 9) {
-			throw cybozu::Exception("mcl:FpGenerator:gen_preInv:large pn_") << pn_;
+			throw cybozu::Exception("mcl:Code:gen_preInv:large pn_") << pn_;
 		}
 		StackFrame sf(this, 2, 10 | UseRDX | UseRCX, (std::max<int>(0, pn_ * 5 - freeRegNum) + 1 + (isFullBit_ ? 1 : 0)) * 8);
 		const Reg64& pr = sf.p[0];
@@ -2252,8 +2253,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	L("@@");
 	}
 private:
-	FpGenerator(const FpGenerator&);
-	void operator=(const FpGenerator&);
+	Code(const Code&);
+	void operator=(const Code&);
 	void make_op_rm(void (Xbyak::CodeGenerator::*op)(const Xbyak::Operand&, const Xbyak::Operand&), const Reg64& op1, const MemReg& op2)
 	{
 		if (op2.isReg()) {
@@ -2896,6 +2897,30 @@ private:
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL_);
 
+	}
+};
+
+struct FpGenerator {
+	static const size_t codeSize = 4096 * 8;
+	static const size_t pageSize = 4096;
+	uint8_t *mem_;
+	Code code_;
+	FpGenerator()
+		: mem_((uint8_t*)cybozu::AlignedMalloc(codeSize, pageSize))
+		, code_(mem_, codeSize)
+	{
+	}
+	void init(Op& op)
+	{
+		code_.init(op);
+		if (!Xbyak::CodeArray::protect(mem_, codeSize, Xbyak::CodeArray::PROTECT_RE)) {
+			throw cybozu::Exception("err protect read/exec");
+		}
+	}
+	~FpGenerator()
+	{
+		Xbyak::CodeArray::protect(mem_, codeSize, Xbyak::CodeArray::PROTECT_RW);
+		cybozu::AlignedFree(mem_);
 	}
 };
 
