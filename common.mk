@@ -47,7 +47,7 @@ ifeq ($(ARCH),aarch64)
   CPU=aarch64
   BIT=64
 endif
-ifeq ($(findstring $(OS),Darwin/mingw64),)
+ifeq ($(findstring $(OS),mac/mingw64),)
   LDFLAGS+=-lrt
 endif
 
