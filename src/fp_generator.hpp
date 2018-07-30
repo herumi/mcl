@@ -2903,24 +2903,24 @@ private:
 struct FpGenerator {
 	static const size_t codeSize = 4096 * 8;
 	static const size_t pageSize = 4096;
-	uint8_t *mem_;
-	Code code_;
+	uint8_t *mem;
+	Code code;
 	FpGenerator()
-		: mem_((uint8_t*)cybozu::AlignedMalloc(codeSize, pageSize))
-		, code_(mem_, codeSize)
+		: mem((uint8_t*)cybozu::AlignedMalloc(codeSize, pageSize))
+		, code(mem, codeSize)
 	{
 	}
 	void init(Op& op)
 	{
-		code_.init(op);
-		if (!Xbyak::CodeArray::protect(mem_, codeSize, Xbyak::CodeArray::PROTECT_RE)) {
+		code.init(op);
+		if (!Xbyak::CodeArray::protect(mem, codeSize, Xbyak::CodeArray::PROTECT_RE)) {
 			throw cybozu::Exception("err protect read/exec");
 		}
 	}
 	~FpGenerator()
 	{
-		Xbyak::CodeArray::protect(mem_, codeSize, Xbyak::CodeArray::PROTECT_RW);
-		cybozu::AlignedFree(mem_);
+		Xbyak::CodeArray::protect(mem, codeSize, Xbyak::CodeArray::PROTECT_RW);
+		cybozu::AlignedFree(mem);
 	}
 };
 
