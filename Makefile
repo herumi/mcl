@@ -113,11 +113,23 @@ else
   ASM_BMI2_SRC_DEP=
 endif
 
+ifneq ($(findstring $(OS),mac/mingw64),)
+  BN256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  BN384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  BN512_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+endif
+ifeq ($(OS),mingw64)
+  MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(MCL_SNAME).a
+  BN256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN256_SNAME).a
+  BN384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_SNAME).a
+  BN512_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN512_SNAME).a
+endif
+
 $(MCL_LIB): $(LIB_OBJ)
 	$(AR) $@ $(LIB_OBJ)
 
 $(MCL_SLIB): $(LIB_OBJ)
-	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(LDFLAGS)
+	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(LDFLAGS) $(MCL_SLIB_LDFLAGS)
 
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $@ $(BN256_OBJ)
@@ -131,11 +143,8 @@ $(SHE384_LIB): $(SHE384_OBJ)
 $(ECDSA_LIB): $(ECDSA_OBJ)
 	$(AR) $@ $(ECDSA_OBJ)
 
-ifeq ($(OS),mac)
-  MAC_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-endif
 $(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
+	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(BN256_SLIB_LDFLAGS)
 
 $(BN384_LIB): $(BN384_OBJ)
 	$(AR) $@ $(BN384_OBJ)
@@ -144,10 +153,10 @@ $(BN512_LIB): $(BN512_OBJ)
 	$(AR) $@ $(BN512_OBJ)
 
 $(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
+	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(BN384_SLIB_LDFLAGS)
 
 $(BN512_SLIB): $(BN512_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN512_OBJ) -shared $(LDFLAGS) $(MAC_LDFLAGS)
+	$(PRE)$(CXX) -o $@ $(BN512_OBJ) -shared $(LDFLAGS) $(BN512_SLIB_LDFLAGS)
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -190,11 +199,14 @@ $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 ifeq ($(OS),mac)
   MAC_GO_LDFLAGS="-ldflags=-s"
 endif
+# set PATH for mingw, set LD_RUN_PATH is for other env
 test_go256: $(MCL_SLIB) $(BN256_SLIB)
-	cd ffi/go/mcl && env LD_RUN_PATH="../../../lib" CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib -l$(BN256_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) -tags bn256 .
+#	cd ffi/go/mcl && env PATH="$$PATH:../../../lib" LD_RUN_PATH="../../../lib" CGO_LDFLAGS="-L../../../lib -l$(BN256_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) -tags bn256 .
+	cd ffi/go/mcl && env PATH="$$PATH:../../../lib" LD_RUN_PATH="../../../lib" go test $(MAC_GO_LDFLAGS) -tags bn256 .
 
 test_go384: $(MCL_SLIB) $(BN384_SLIB)
-	cd ffi/go/mcl && env LD_RUN_PATH="../../../lib" CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib -l$(BN384_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) .
+#	cd ffi/go/mcl && env LD_RUN_PATH="../../../lib" CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib -l$(BN384_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) .
+	cd ffi/go/mcl && env PATH="$$PATH:../../../lib" LD_RUN_PATH="../../../lib" go test $(MAC_GO_LDFLAGS) -tags bn384 .
 
 test_go:
 	$(MAKE) test_go256
