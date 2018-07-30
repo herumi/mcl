@@ -348,7 +348,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 					this function calls mulPreL_ directly.
 				*/
 				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+#if 0
 				call(mulPreL_);
+#else
+				mulPre4(gp0, gp1, gp2, sf.t);
+#endif
 				sf.close(); // make epilog
 			L(mulPreL_); // called only from asm code
 				mulPre4(gp0, gp1, gp2, sf.t);
