@@ -90,7 +90,7 @@ git clone git://github.com/herumi/cybozulib_ext ; for only Windows
 # Build and test on x86-64 Linux, macOS, ARM and ARM64 Linux
 To make lib/libmcl.a and test it:
 ```
-cod work/mcl
+cd work/mcl
 make test
 ```
 To benchmark a pairing:
