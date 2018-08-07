@@ -216,6 +216,7 @@ struct Code : Xbyak::CodeGenerator {
 	// the following labels assume sf(this, 3, 10 | UseRDX)
 	Label mulPreL_;
 	Label fpDbl_modL_;
+	Label fp_mulL_;
 
 	Code(uint8_t *mem, size_t codeSize)
 		: CodeGenerator(codeSize, mem)
@@ -294,12 +295,12 @@ struct Code : Xbyak::CodeGenerator {
 		mulUnit_ = getCurr<uint3opI>();
 		gen_mulUnit();
 		align(16);
-		mul_ = getCurr<void4u>();
-		op.fp_mul = mul_;
+		op.fp_mul = getCurr<void4u>();
 		op.fp_mulA_ = getCurr<void3u>();
 		gen_mul();
 		align(16);
 		op.fp_sqr = getCurr<void3u>();
+		op.fp_sqrA_ = getCurr<void2u>();
 		gen_sqr();
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
@@ -374,6 +375,9 @@ struct Code : Xbyak::CodeGenerator {
 			align(16);
 			op.fp2_mul = getCurr<void3u>();
 			gen_fp2_mul();
+			align(16);
+//			op.fp2_sqrA_ = getCurr<void2u>();
+//			gen_fp2_sqr();
 		}
 	}
 	void gen_addSubPre(bool isAdd, int n)
@@ -1045,7 +1049,7 @@ struct Code : Xbyak::CodeGenerator {
 #else
 		mov(rdx, rsi);
 #endif
-		jmp((void*)mul_);
+		jmp((const void*)op_->fp_mulA_);
 	}
 	/*
 		input (pz[], px[], py[])
@@ -1092,7 +1096,9 @@ struct Code : Xbyak::CodeGenerator {
 	*/
 	void gen_montMul4(const uint64_t *p, uint64_t pp)
 	{
-		StackFrame sf(this, 3, 10 | UseRDX);
+		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+		call(fp_mulL_);
+		sf.close();
 		const Reg64& p0 = sf.p[0];
 		const Reg64& p1 = sf.p[1];
 		const Reg64& p2 = sf.p[2];
@@ -1108,6 +1114,7 @@ struct Code : Xbyak::CodeGenerator {
 		const Reg64& t8 = sf.t[8];
 		const Reg64& t9 = sf.t[9];
 
+	L(fp_mulL_);
 		movq(xm0, p0); // save p0
 		mov(p0, (uint64_t)p);
 		movq(xm1, p2);
@@ -1140,6 +1147,7 @@ struct Code : Xbyak::CodeGenerator {
 
 		movq(p0, xm0); // load p0
 		store_mr(p0, Pack(t3, t2, t1, t0));
+		ret();
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
@@ -2883,6 +2891,61 @@ private:
 		add(gp0, FpByte_);
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL_);
+	}
+	void gen_fp2_sqr()
+	{
+		assert(!isFullBit_);
+		const RegExp y = rsp + 0 * 8;
+		const RegExp x = rsp + 1 * 8;
+		const Ext1 t1(FpByte_, rsp, 2 * 8);
+		const Ext1 t2(FpByte_, rsp, t1.next);
+		const Ext1 t3(FpByte_, rsp, t2.next);
+		StackFrame sf(this, 3, 10 | UseRDX, t3.next);
+		mov(ptr [y], gp0);
+		mov(ptr [x], gp1);
+		// t1 = b + b
+		lea(gp0, ptr [t1]);
+		for (int i = 0; i < 4; i++) {
+			mov(rax, ptr [gp1 + FpByte_ + i * 8]);
+			if (i == 0) {
+				add(rax, rax);
+			} else {
+				adc(rax, rax);
+			}
+			mov(ptr [gp0 + i * 8], rax);
+		}
+		mov(gp1, gp0);
+		mov(gp2, ptr [x]);
+		call(fp_mulL_);
+
+		Pack a = sf.t.sub(0, 4);
+		Pack b = sf.t.sub(4, 4);
+		mov(gp0, ptr [x]);
+		load_rm(a, gp0);
+		load_rm(b, gp0 + FpByte_);
+		for (int i = 0; i < 4; i++) {
+			mov(rax, a[i]);
+			if (i == 0) {
+				add(rax, b[i]);
+			} else {
+				adc(rax, b[i]);
+			}
+			mov(ptr [(RegExp)t2 + i * 8], rax);
+		}
+		mov(gp1, (size_t)p_);
+		add_rm(a, gp1);
+		sub_rr(a, b);
+		store_mr(t3, a);
+
+		mov(gp0, ptr [y]);
+		lea(gp1, ptr [t2]);
+		lea(gp2, ptr [t3]);
+		call(fp_mulL_);
+		mov(gp0, ptr [y]);
+		for (int i = 0; i < 4; i++) {
+			mov(rax, ptr [(RegExp)t1 + i * 8]);
+			mov(ptr [gp0 + FpByte_ + i * 8], rax);
+		}
 	}
 };
 

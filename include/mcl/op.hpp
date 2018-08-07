@@ -182,6 +182,8 @@ struct Op {
 	void3u fp_addA_;
 	void3u fp_subA_;
 	void3u fp_mulA_;
+	void2u fp_sqrA_;
+	void2u fp2_sqrA_;
 	size_t maxN;
 	size_t N;
 	size_t bitSize;
@@ -262,6 +264,8 @@ struct Op {
 		fp_addA_ = 0;
 		fp_subA_ = 0;
 		fp_mulA_ = 0;
+		fp_sqrA_ = 0;
+		fp2_sqrA_ = 0;
 		maxN = 0;
 		N = 0;
 		bitSize = 0;

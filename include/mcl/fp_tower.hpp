@@ -402,6 +402,9 @@ public:
 		op.fp2_sqr = fp2_sqrW;
 		if (xi_a == 1) {
 			op.fp2_mul_xi = fp2_mul_xi_1_1i;
+			if (op.fp2_sqrA_) {
+				op.fp2_sqr = op.fp2_sqrA_;
+			}
 		} else {
 			op.fp2_mul_xi = fp2_mul_xiW;
 		}
