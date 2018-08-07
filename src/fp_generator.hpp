@@ -2857,36 +2857,23 @@ private:
 		// t = c + d
 		gen_raw_add(t, gp2, gp2 + FpByte_, rax, 4);
 		// d1 = (a + b)(c + d)
-		lea(gp0, ptr [d1]);
-		lea(gp1, ptr [s]);
-		lea(gp2, ptr [t]);
-		call(mulPreL_);
+		mulPre4(d1, s, t, sf.t);
 		// d0 = a c
-		lea(gp0, ptr [d0]);
 		mov(gp1, ptr [x]);
 		mov(gp2, ptr [y]);
-		call(mulPreL_);
+		mulPre4(d0, gp1, gp2, sf.t);
 		// d2 = b d
-		lea(gp0, ptr [d2]);
 		mov(gp1, ptr [x]);
 		add(gp1, FpByte_);
 		mov(gp2, ptr [y]);
 		add(gp2, FpByte_);
-		call(mulPreL_);
+		mulPre4(d2, gp1, gp2, sf.t);
 
-		lea(gp0, ptr [d1]);
-		mov(gp1, gp0);
-		lea(gp2, ptr [d0]);
-		gen_raw_sub(gp0, gp1, gp2, rax, 8);
-		lea(gp2, ptr [d2]);
-		gen_raw_sub(gp0, gp1, gp2, rax, 8);
+		gen_raw_sub(d1, d1, d0, rax, 8);
+		gen_raw_sub(d1, d1, d2, rax, 8);
 
-		lea(gp0, ptr [d0]);
-		mov(gp1, gp0);
-		lea(gp2, ptr [d2]);
-
-		gen_raw_sub(gp0, gp1, gp2, rax, 4);
-		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+		gen_raw_sub(d0, d0, d2, rax, 4);
+		gen_raw_fp_sub((RegExp)d0 + 8 * 4, (RegExp)d0 + 8 * 4, (RegExp)d2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 
 		mov(gp0, ptr [z]);
 		lea(gp1, ptr[d0]);
@@ -2896,7 +2883,6 @@ private:
 		add(gp0, FpByte_);
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL_);
-
 	}
 };
 
