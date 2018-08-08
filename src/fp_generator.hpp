@@ -376,8 +376,8 @@ struct Code : Xbyak::CodeGenerator {
 			op.fp2_mul = getCurr<void3u>();
 			gen_fp2_mul();
 			align(16);
-//			op.fp2_sqrA_ = getCurr<void2u>();
-//			gen_fp2_sqr();
+			op.fp2_sqrA_ = getCurr<void2u>();
+			gen_fp2_sqr();
 		}
 	}
 	void gen_addSubPre(bool isAdd, int n)
@@ -2918,6 +2918,11 @@ private:
 		mov(gp2, ptr [x]);
 		call(fp_mulL_);
 
+#if 0
+		mov(gp0, ptr [x]);
+		gen_raw_fp_add(t2, gp0, gp0 + FpByte_, sf.t, false);
+		gen_raw_fp_sub(t3, gp0, gp0 + FpByte_, sf.t, false);
+#else
 		Pack a = sf.t.sub(0, 4);
 		Pack b = sf.t.sub(4, 4);
 		mov(gp0, ptr [x]);
@@ -2936,6 +2941,7 @@ private:
 		add_rm(a, gp1);
 		sub_rr(a, b);
 		store_mr(t3, a);
+#endif
 
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t2]);
