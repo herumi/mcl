@@ -547,11 +547,6 @@ private:
 	*/
 	static void fp2_sqrW(Unit *y, const Unit *x)
 	{
-#if 0
-		Unit xx[8], copyX[8];
-		memcpy(copyX, x, sizeof(copyX));
-		Fp::getOp().fp2_sqrA_(xx, x);
-#endif
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
 		const Fp& a = px[0];
@@ -574,18 +569,6 @@ private:
 		FpDbl::mulPre(d1, t1, t2); // (a + b)(a - b)
 		FpDbl::mod(py[0], d1);
 		FpDbl::mod(py[1], d2);
-#endif
-#if 0
-		for (int i = 0; i < 8; i++) {
-			if (y[i] != xx[i]) {
-				printf("ERR %d %016llx %016llx\n", i, (long long)y[i], (long long)xx[i]);
-				printf("X\n");
-				for (int j = 0; j < 8; j++) {
-					printf("%016llx ", (long long)copyX[i]);
-				}
-				puts("");
-			}
-		}
 #endif
 	}
 	/*

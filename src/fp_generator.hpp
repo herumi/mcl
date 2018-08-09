@@ -2900,48 +2900,56 @@ private:
 		const Ext1 t1(FpByte_, rsp, 2 * 8);
 		const Ext1 t2(FpByte_, rsp, t1.next);
 		const Ext1 t3(FpByte_, rsp, t2.next);
+		bool nocarry = (p_[pn_ - 1] >> 62) == 0;
 		StackFrame sf(this, 3, 10 | UseRDX, t3.next);
 		mov(ptr [y], gp0);
 		mov(ptr [x], gp1);
 		// t1 = b + b
 		lea(gp0, ptr [t1]);
-		for (int i = 0; i < 4; i++) {
-			mov(rax, ptr [gp1 + FpByte_ + i * 8]);
-			if (i == 0) {
-				add(rax, rax);
-			} else {
-				adc(rax, rax);
+		if (nocarry) {
+			for (int i = 0; i < 4; i++) {
+				mov(rax, ptr [gp1 + FpByte_ + i * 8]);
+				if (i == 0) {
+					add(rax, rax);
+				} else {
+					adc(rax, rax);
+				}
+				mov(ptr [gp0 + i * 8], rax);
 			}
-			mov(ptr [gp0 + i * 8], rax);
+		} else {
+			gen_raw_fp_add(gp0, gp1 + FpByte_, gp1 + FpByte_, sf.t, false);
 		}
+		// t1 = 2ab
 		mov(gp1, gp0);
 		mov(gp2, ptr [x]);
 		call(fp_mulL_);
 
-#if 0
-		mov(gp0, ptr [x]);
-		gen_raw_fp_add(t2, gp0, gp0 + FpByte_, sf.t, false);
-		gen_raw_fp_sub(t3, gp0, gp0 + FpByte_, sf.t, false);
-#else
-		Pack a = sf.t.sub(0, 4);
-		Pack b = sf.t.sub(4, 4);
-		mov(gp0, ptr [x]);
-		load_rm(a, gp0);
-		load_rm(b, gp0 + FpByte_);
-		for (int i = 0; i < 4; i++) {
-			mov(rax, a[i]);
-			if (i == 0) {
-				add(rax, b[i]);
-			} else {
-				adc(rax, b[i]);
+		if (nocarry) {
+			Pack a = sf.t.sub(0, 4);
+			Pack b = sf.t.sub(4, 4);
+			mov(gp0, ptr [x]);
+			load_rm(a, gp0);
+			load_rm(b, gp0 + FpByte_);
+			// t2 = a + b
+			for (int i = 0; i < 4; i++) {
+				mov(rax, a[i]);
+				if (i == 0) {
+					add(rax, b[i]);
+				} else {
+					adc(rax, b[i]);
+				}
+				mov(ptr [(RegExp)t2 + i * 8], rax);
 			}
-			mov(ptr [(RegExp)t2 + i * 8], rax);
+			// t3 = a + p - b
+			mov(gp1, (size_t)p_);
+			add_rm(a, gp1);
+			sub_rr(a, b);
+			store_mr(t3, a);
+		} else {
+			mov(gp0, ptr [x]);
+			gen_raw_fp_add(t2, gp0, gp0 + FpByte_, sf.t, false);
+			gen_raw_fp_sub(t3, gp0, gp0 + FpByte_, sf.t, false);
 		}
-		mov(gp1, (size_t)p_);
-		add_rm(a, gp1);
-		sub_rr(a, b);
-		store_mr(t3, a);
-#endif
 
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t2]);
