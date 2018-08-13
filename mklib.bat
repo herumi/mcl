@@ -14,10 +14,10 @@ echo lib /nologo /OUT:lib\mcl.lib /nodefaultlib obj\fp.obj
      lib /nologo /OUT:lib\mcl.lib /nodefaultlib obj\fp.obj
 
 if "%1"=="dll" (
-  echo cl /c %CFLAGS% src\she_c256.cpp /Foobj\she_c256.obj
-     cl /c %CFLAGS% src\she_c256.cpp /Foobj\she_c256.obj /DMCLBN_NO_AUTOLINK
-  echo link /nologo /DLL /OUT:bin\mclbn256.dll obj\she_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe256.lib
-     link /nologo /DLL /OUT:bin\mclbn256.dll obj\she_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe256.lib
+  echo cl /c %CFLAGS% src\bn_c256.cpp /Foobj\bn_c256.obj
+     cl /c %CFLAGS% src\bn_c256.cpp /Foobj\bn_c256.obj /DMCLBN_NO_AUTOLINK
+  echo link /nologo /DLL /OUT:bin\mclbn256.dll obj\bn_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn256.lib
+     link /nologo /DLL /OUT:bin\mclbn256.dll obj\bn_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn256.lib
 
   echo cl /c %CFLAGS% src\bn_c384.cpp /Foobj\bn_c384.obj
      cl /c %CFLAGS% src\bn_c384.cpp /Foobj\bn_c384.obj /DMCLBN_NO_AUTOLINK
