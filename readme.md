@@ -114,14 +114,19 @@ make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,
 ```
 
 ## Build for 64-bit Windows
-1) make library
+1) make static library and use it
+
 ```
-mklib.bat
+mklib
+mk -s test\bn_c256_test.cpp
+bin\bn_c256_test.exe
 ```
-2) make exe binary of sample\pairing.cpp
+2) make dynamic library and use it
+
 ```
-mk sample\pairing.cpp
-bin/bn_test.exe
+mklib dll
+mk -d test\bn_c256_test.cpp
+bin\bn_c256_test.exe
 ```
 
 open mcl.sln and build or if you have msbuild.exe
