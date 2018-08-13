@@ -363,7 +363,7 @@ CYBOZU_TEST_AUTO(serialize)
 	char buf[1024];
 	size_t n;
 	size_t expectSize;
-	int ret;
+	size_t ret;
 	// Fr
 	expectSize = G1Size;
 	mclBnFr_setInt(&x1, -1);
