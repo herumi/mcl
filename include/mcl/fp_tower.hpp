@@ -243,7 +243,7 @@ public:
 	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_mul(z.a.v_, x.a.v_, y.a.v_); }
 	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
 	static void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
-	static void sqr(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_sqr(y.a.v_, x.a.v_); }
+	static void (*sqr)(Fp2T& y, const Fp2T& x);
 	static void mul_xi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mul_xi(y.a.v_, x.a.v_); }
 	static void divBy2(Fp2T& y, const Fp2T& x)
 	{
@@ -397,11 +397,8 @@ public:
 				op.fp2_mul = fp2_mulW;
 			}
 		}
-		if (op.fp2_sqrA_) {
-			op.fp2_sqr = op.fp2_sqrA_;
-		} else {
-			op.fp2_sqr = fp2_sqrW;
-		}
+		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
+		if (sqr == 0) sqr = (void (*)(Fp2T& y, const Fp2T& x))fp2_sqrC;
 		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		if (xi_a == 1) {
@@ -545,7 +542,7 @@ private:
 		x = a + bi, i^2 = -1
 		y = x^2 = (a + bi)^2 = (a + b)(a - b) + 2abi
 	*/
-	static void fp2_sqrW(Unit *y, const Unit *x)
+	static void fp2_sqrC(Unit *y, const Unit *x)
 	{
 		const Fp *px = reinterpret_cast<const Fp*>(x);
 		Fp *py = reinterpret_cast<Fp*>(y);
@@ -625,6 +622,8 @@ private:
 		Fp::neg(py[1], py[1]);
 	}
 };
+
+template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>
 struct Fp2DblT {

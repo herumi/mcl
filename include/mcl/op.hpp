@@ -225,7 +225,6 @@ struct Op {
 	void4u fp2_mulNF;
 	void2u fp2_neg;
 	void2u fp2_inv;
-	void2u fp2_sqr;
 	void2u fp2_mul_xi;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
@@ -304,7 +303,6 @@ struct Op {
 		fp2_mulNF = 0;
 		fp2_neg = 0;
 		fp2_inv = 0;
-		fp2_sqr = 0;
 		fp2_mul_xi = 0;
 
 		primeMode = PM_GENERIC;
