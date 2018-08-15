@@ -134,6 +134,8 @@ public:
 		if (add == 0) add = addC;
 		sub = (void (*)(FpT& z, const FpT& x, const FpT& y))op_.fp_subA_;
 		if (sub == 0) sub = subC;
+		neg = (void (*)(FpT& y, const FpT& x))op_.fp_negA_;
+		if (neg == 0) neg = negC;
 		mul = (void (*)(FpT& z, const FpT& x, const FpT& y))op_.fp_mulA_;
 		if (mul == 0) mul = mulC;
 		sqr = (void (*)(FpT& y, const FpT& x))op_.fp_sqrA_;
@@ -359,6 +361,8 @@ public:
 	static inline void addC(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static void (*sub)(FpT& z, const FpT& x, const FpT& y);
 	static inline void subC(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
+	static void (*neg)(FpT& y, const FpT& x);
+	static inline void negC(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static void (*mul)(FpT& z, const FpT& x, const FpT& y);
 	static inline void mulC(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
 	static void (*sqr)(FpT& y, const FpT& x);
@@ -366,6 +370,7 @@ public:
 #else
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
+	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }
 #endif
@@ -377,7 +382,6 @@ public:
 		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
 	}
 	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
-	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static inline void divBy2(FpT& y, const FpT& x)
 	{
 #if 0
@@ -587,6 +591,7 @@ template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAut
 #ifdef MCL_XBYAK_DIRECT_CALL
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::add)(FpT& z, const FpT& x, const FpT& y);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sub)(FpT& z, const FpT& x, const FpT& y);
+template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::neg)(FpT& y, const FpT& x);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul)(FpT& z, const FpT& x, const FpT& y);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sqr)(FpT& y, const FpT& x);
 #endif

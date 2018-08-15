@@ -288,18 +288,17 @@ struct Code : Xbyak::CodeGenerator {
 		gen_shr1();
 
 		align(16);
-		op.fp_neg = getCurr<void3u>();
-		gen_neg();
+		op.fp_negA_ = getCurr<void2u>();
+		gen_fp_neg();
 
 		align(16);
 		mulUnit_ = getCurr<uint3opI>();
 		gen_mulUnit();
 		align(16);
-		op.fp_mul = getCurr<void4u>();
+		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
 		op.fp_mulA_ = getCurr<void3u>();
 		gen_mul();
 		align(16);
-		op.fp_sqr = getCurr<void3u>();
 		op.fp_sqrA_ = getCurr<void2u>();
 		gen_sqr();
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
@@ -376,10 +375,13 @@ struct Code : Xbyak::CodeGenerator {
 			op.fp2_subA_ = getCurr<void3u>();
 			gen_fp2_sub4();
 			align(16);
+			op.fp2_negA_ = getCurr<void2u>();
+			gen_fp2_neg4();
+			align(16);
 			op.fp2Dbl_mulPre = getCurr<void3u>();
 			gen_fp2Dbl_mulPre();
 			align(16);
-			op.fp2_mul = getCurr<void3u>();
+			op.fp2_mulA_ = getCurr<void3u>();
 			gen_fp2_mul4();
 			align(16);
 			op.fp2_sqrA_ = getCurr<void2u>();
@@ -425,29 +427,38 @@ struct Code : Xbyak::CodeGenerator {
 	}
 	/*
 		pz[] = -px[]
+		use rax, rdx
 	*/
-	void gen_raw_neg(const RegExp& pz, const RegExp& px, const Reg64& t0, const Reg64& t1)
+	void gen_raw_neg(const RegExp& pz, const RegExp& px, const Pack& t)
 	{
-		inLocalLabel();
-		mov(t0, ptr [px]);
-		test(t0, t0);
-		jnz(".neg");
-		if (pn_ > 1) {
-			for (int i = 1; i < pn_; i++) {
-				or_(t0, ptr [px + i * 8]);
+		Label nonZero, exit;
+		load_rm(t, px);
+		mov(rax, t[0]);
+		if (t.size() > 1) {
+			for (size_t i = 1; i < t.size(); i++) {
+				or_(rax, t[i]);
 			}
-			jnz(".neg");
+		} else {
+			test(rax, rax);
 		}
-		// zero
-		for (int i = 0; i < pn_; i++) {
-			mov(ptr [pz + i * 8], t0);
+		jnz(nonZero);
+		// rax = 0
+		for (size_t i = 0; i < t.size(); i++) {
+			mov(ptr[pz + i * 8], rax);
 		}
-		jmp(".exit");
-	L(".neg");
-		mov(t1, (size_t)p_);
-		gen_raw_sub(pz, t1, px, t0, pn_);
-	L(".exit");
-		outLocalLabel();
+		jmp(exit);
+	L(nonZero);
+		mov(rax, (size_t)p_);
+		for (size_t i = 0; i < t.size(); i++) {
+			mov(rdx, ptr [rax + i * 8]);
+			if (i == 0) {
+				sub(rdx, t[i]);
+			} else {
+				sbb(rdx, t[i]);
+			}
+			mov(ptr [pz + i * 8], rdx);
+		}
+	L(exit);
 	}
 	/*
 		(rdx:pz[0..n-1]) = px[0..n-1] * y
@@ -697,12 +708,10 @@ struct Code : Xbyak::CodeGenerator {
 	L(".exit");
 		outLocalLabel();
 	}
-	void gen_neg()
+	void gen_fp_neg()
 	{
-		StackFrame sf(this, 2, 2);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		gen_raw_neg(pz, px, sf.t[0], sf.t[1]);
+		StackFrame sf(this, 2, UseRDX | pn_);
+		gen_raw_neg(sf.p[0], sf.p[1], sf.t);
 	}
 	void gen_shr1()
 	{
@@ -2863,6 +2872,13 @@ private:
 		StackFrame sf(this, 3, 8);
 		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
 		gen_raw_fp_sub(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+	}
+	void gen_fp2_neg4()
+	{
+		assert(!isFullBit_);
+		StackFrame sf(this, 2, UseRDX | pn_);
+		gen_raw_neg(sf.p[0], sf.p[1], sf.t);
+		gen_raw_neg(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.t);
 	}
 	void gen_fp2_mul4()
 	{

@@ -181,10 +181,13 @@ struct Op {
 #endif
 	void3u fp_addA_;
 	void3u fp_subA_;
+	void2u fp_negA_;
 	void3u fp_mulA_;
 	void2u fp_sqrA_;
 	void3u fp2_addA_;
 	void3u fp2_subA_;
+	void2u fp2_negA_;
+	void3u fp2_mulA_;
 	void2u fp2_sqrA_;
 	size_t maxN;
 	size_t N;
@@ -221,10 +224,7 @@ struct Op {
 		x = a + bu
 	*/
 	int xi_a; // xi = xi_a + u
-	void3u fp2_sub;
-	void3u fp2_mul;
 	void4u fp2_mulNF;
-	void2u fp2_neg;
 	void2u fp2_inv;
 	void2u fp2_mul_xi;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
@@ -263,10 +263,13 @@ struct Op {
 #endif
 		fp_addA_ = 0;
 		fp_subA_ = 0;
+		fp_negA_ = 0;
 		fp_mulA_ = 0;
 		fp_sqrA_ = 0;
 		fp2_addA_ = 0;
 		fp2_subA_ = 0;
+		fp2_negA_ = 0;
+		fp2_mulA_ = 0;
 		fp2_sqrA_ = 0;
 		maxN = 0;
 		N = 0;
@@ -300,10 +303,7 @@ struct Op {
 		fp2Dbl_mulPre = 0;
 
 		xi_a = 0;
-		fp2_sub = 0;
-		fp2_mul = 0;
 		fp2_mulNF = 0;
-		fp2_neg = 0;
 		fp2_inv = 0;
 		fp2_mul_xi = 0;
 

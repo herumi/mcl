@@ -239,11 +239,11 @@ public:
 	}
 	static void (*add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
-	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
-	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_mul(z.a.v_, x.a.v_, y.a.v_); }
-	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
-	static void neg(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_neg(y.a.v_, x.a.v_); }
+	static void (*neg)(Fp2T& y, const Fp2T& x);
+	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
+	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
+	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
 	static void mul_xi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mul_xi(y.a.v_, x.a.v_); }
 	static void divBy2(Fp2T& y, const Fp2T& x)
 	{
@@ -379,6 +379,8 @@ public:
 		if (add == 0) add = fp2_addC;
 		sub = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_subA_;
 		if (sub == 0) sub = fp2_subC;
+		neg = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_negA_;
+		if (neg == 0) neg = fp2_negC;
 		if (op.fp2Dbl_mulPre == 0) {
 			if (op.isFullBit) {
 				op.fp2Dbl_mulPre = FpDblT<Fp>::fp2Dbl_mulPreW;
@@ -386,22 +388,22 @@ public:
 				op.fp2Dbl_mulPre = FpDblT<Fp>::fp2Dbl_mulPreNoCarryW;
 			}
 		}
-		if (op.fp2_mul == 0) {
+		mul = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_mulA_;
+		if (mul == 0) {
 			if (op.isFastMod) {
-				op.fp2_mul = fp2_mulW;
+				mul = fp2_mulC;
 			} else if (!op.isFullBit) {
 				if (0 && sizeof(Fp) * 8 == op.N * fp::UnitBitSize && op.fp2_mulNF) {
-					op.fp2_mul = fp2_mulNFW;
+					mul = fp2_mulNFW;
 				} else {
-					op.fp2_mul = fp2_mulW;
+					mul = fp2_mulC;
 				}
 			} else {
-				op.fp2_mul = fp2_mulW;
+				mul = fp2_mulC;
 			}
 		}
 		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
 		if (sqr == 0) sqr = fp2_sqrC;
-		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		if (xi_a == 1) {
 			op.fp2_mul_xi = fp2_mul_xi_1_1i;
@@ -487,12 +489,10 @@ private:
 		Fp::sub(z.a, x.a, y.a);
 		Fp::sub(z.b, x.b, y.b);
 	}
-	static void fp2_negW(Unit *y, const Unit *x)
+	static void fp2_negC(Fp2T& y, const Fp2T& x)
 	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		Fp *py = reinterpret_cast<Fp*>(y);
-		Fp::neg(py[0], px[0]);
-		Fp::neg(py[1], px[1]);
+		Fp::neg(y.a, x.a);
+		Fp::neg(y.b, x.b);
 	}
 #if 0
 	/*
@@ -521,18 +521,17 @@ private:
 		pz[1] -= bd;
 	}
 #endif
-	static void fp2_mulNFW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_mulNFW(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		const fp::Op& op = Fp::op_;
-		op.fp2_mulNF(z, x, y, op.p);
+		op.fp2_mulNF((Unit*)&z, (const Unit*)&x, (const Unit*)&y, op.p);
 	}
-	static void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_mulC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		FpDbl d[2];
-		Fp::getOp().fp2Dbl_mulPre(reinterpret_cast<Unit*>(d), x, y);
-		Fp *pz = reinterpret_cast<Fp*>(z);
-		FpDbl::mod(pz[0], d[0]);
-		FpDbl::mod(pz[1], d[1]);
+		Fp::getOp().fp2Dbl_mulPre((Unit*)d, (const Unit*)&x, (const Unit*)&y);
+		FpDbl::mod(z.a, d[0]);
+		FpDbl::mod(z.b, d[1]);
 	}
 	/*
 		x = a + bi, i^2 = -1
@@ -619,6 +618,8 @@ private:
 
 template<class Fp_> void (*Fp2T<Fp_>::add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
+template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
+template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>
