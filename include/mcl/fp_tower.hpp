@@ -398,7 +398,7 @@ public:
 			}
 		}
 		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
-		if (sqr == 0) sqr = (void (*)(Fp2T& y, const Fp2T& x))fp2_sqrC;
+		if (sqr == 0) sqr = fp2_sqrC;
 		op.fp2_neg = fp2_negW;
 		op.fp2_inv = fp2_invW;
 		if (xi_a == 1) {
@@ -542,20 +542,18 @@ private:
 		x = a + bi, i^2 = -1
 		y = x^2 = (a + bi)^2 = (a + b)(a - b) + 2abi
 	*/
-	static void fp2_sqrC(Unit *y, const Unit *x)
+	static void fp2_sqrC(Fp2T& y, const Fp2T& x)
 	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		Fp *py = reinterpret_cast<Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
+		const Fp& a = x.a;
+		const Fp& b = x.b;
 #if 1 // faster than using FpDbl
 		Fp t1, t2, t3;
 		Fp::add(t1, b, b); // 2b
 		t1 *= a; // 2ab
 		Fp::add(t2, a, b); // a + b
 		Fp::sub(t3, a, b); // a - b
-		Fp::mul(py[0], t2, t3); // (a + b)(a - b)
-		py[1] = t1;
+		Fp::mul(y.a, t2, t3); // (a + b)(a - b)
+		y.b = t1;
 #else
 		Fp t1, t2;
 		FpDbl d1, d2;
