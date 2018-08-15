@@ -370,14 +370,20 @@ struct Code : Xbyak::CodeGenerator {
 		}
 		if (op.N == 4 && !isFullBit_) {
 			align(16);
+			op.fp2_addA_ = getCurr<void3u>();
+			gen_fp2_add4();
+			align(16);
+			op.fp2_subA_ = getCurr<void3u>();
+			gen_fp2_sub4();
+			align(16);
 			op.fp2Dbl_mulPre = getCurr<void3u>();
 			gen_fp2Dbl_mulPre();
 			align(16);
 			op.fp2_mul = getCurr<void3u>();
-			gen_fp2_mul();
+			gen_fp2_mul4();
 			align(16);
 			op.fp2_sqrA_ = getCurr<void2u>();
-			gen_fp2_sqr();
+			gen_fp2_sqr4();
 		}
 	}
 	void gen_addSubPre(bool isAdd, int n)
@@ -2844,7 +2850,21 @@ private:
 		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 	}
 
-	void gen_fp2_mul()
+	void gen_fp2_add4()
+	{
+		assert(!isFullBit_);
+		StackFrame sf(this, 3, 8);
+		gen_raw_fp_add(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
+		gen_raw_fp_add(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+	}
+	void gen_fp2_sub4()
+	{
+		assert(!isFullBit_);
+		StackFrame sf(this, 3, 8);
+		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
+		gen_raw_fp_sub(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+	}
+	void gen_fp2_mul4()
 	{
 		assert(!isFullBit_);
 		const RegExp z = rsp + 0 * 8;
@@ -2892,7 +2912,7 @@ private:
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL_);
 	}
-	void gen_fp2_sqr()
+	void gen_fp2_sqr4()
 	{
 		assert(!isFullBit_);
 		const RegExp y = rsp + 0 * 8;

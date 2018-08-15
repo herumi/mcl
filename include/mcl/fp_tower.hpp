@@ -237,8 +237,8 @@ public:
 		a = a_;
 		b = b_;
 	}
-	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_add(z.a.v_, x.a.v_, y.a.v_); }
-	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_sub(z.a.v_, x.a.v_, y.a.v_); }
+	static void (*add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
+	static void (*sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
 	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::op_.fp2_mul(z.a.v_, x.a.v_, y.a.v_); }
 	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
@@ -375,8 +375,10 @@ public:
 //		assert(Fp::maxSize <= 256);
 		xi_a_ = xi_a;
 		mcl::fp::Op& op = Fp::op_;
-		op.fp2_add = fp2_addW;
-		op.fp2_sub = fp2_subW;
+		add = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_addA_;
+		if (add == 0) add = fp2_addC;
+		sub = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_subA_;
+		if (sub == 0) sub = fp2_subC;
 		if (op.fp2Dbl_mulPre == 0) {
 			if (op.isFullBit) {
 				op.fp2Dbl_mulPre = FpDblT<Fp>::fp2Dbl_mulPreW;
@@ -475,21 +477,15 @@ private:
 		default Fp2T operator
 		Fp2T = Fp[i]/(i^2 + 1)
 	*/
-	static void fp2_addW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_addC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		const Fp *py = reinterpret_cast<const Fp*>(y);
-		Fp *pz = reinterpret_cast<Fp*>(z);
-		Fp::add(pz[0], px[0], py[0]);
-		Fp::add(pz[1], px[1], py[1]);
+		Fp::add(z.a, x.a, y.a);
+		Fp::add(z.b, x.b, y.b);
 	}
-	static void fp2_subW(Unit *z, const Unit *x, const Unit *y)
+	static void fp2_subC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		const Fp *py = reinterpret_cast<const Fp*>(y);
-		Fp *pz = reinterpret_cast<Fp*>(z);
-		Fp::sub(pz[0], px[0], py[0]);
-		Fp::sub(pz[1], px[1], py[1]);
+		Fp::sub(z.a, x.a, y.a);
+		Fp::sub(z.b, x.b, y.b);
 	}
 	static void fp2_negW(Unit *y, const Unit *x)
 	{
@@ -621,6 +617,8 @@ private:
 	}
 };
 
+template<class Fp_> void (*Fp2T<Fp_>::add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
+template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>

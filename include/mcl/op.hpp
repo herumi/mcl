@@ -183,6 +183,8 @@ struct Op {
 	void3u fp_subA_;
 	void3u fp_mulA_;
 	void2u fp_sqrA_;
+	void3u fp2_addA_;
+	void3u fp2_subA_;
 	void2u fp2_sqrA_;
 	size_t maxN;
 	size_t N;
@@ -219,7 +221,6 @@ struct Op {
 		x = a + bu
 	*/
 	int xi_a; // xi = xi_a + u
-	void3u fp2_add;
 	void3u fp2_sub;
 	void3u fp2_mul;
 	void4u fp2_mulNF;
@@ -264,6 +265,8 @@ struct Op {
 		fp_subA_ = 0;
 		fp_mulA_ = 0;
 		fp_sqrA_ = 0;
+		fp2_addA_ = 0;
+		fp2_subA_ = 0;
 		fp2_sqrA_ = 0;
 		maxN = 0;
 		N = 0;
@@ -297,7 +300,6 @@ struct Op {
 		fp2Dbl_mulPre = 0;
 
 		xi_a = 0;
-		fp2_add = 0;
 		fp2_sub = 0;
 		fp2_mul = 0;
 		fp2_mulNF = 0;

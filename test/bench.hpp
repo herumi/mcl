@@ -45,6 +45,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("hashAndMapToG2", C, hashAndMapToG2, QQ, "abc", 3);
 #endif
 	CYBOZU_BENCH_C("Fp::add       ", C3, Fp::add, x, x, y);
+	CYBOZU_BENCH_C("Fp::sub       ", C3, Fp::sub, x, x, y);
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, Fp::inv, x, x);
@@ -54,6 +55,7 @@ void testBench(const G1& P, const G2& Q)
 	yy.a = y;
 	yy.b = -5;
 	CYBOZU_BENCH_C("Fp2::add      ", C3, Fp2::add, xx, xx, yy);
+	CYBOZU_BENCH_C("Fp2::sub      ", C3, Fp2::sub, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::mul      ", C3, Fp2::mul, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::sqr      ", C3, Fp2::sqr, xx, xx);
 	CYBOZU_BENCH_C("Fp2::inv      ", C3, Fp2::inv, xx, xx);
