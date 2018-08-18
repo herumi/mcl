@@ -59,17 +59,18 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp2::sub      ", C3, Fp2::sub, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::neg      ", C3, Fp2::neg, xx, xx);
 	CYBOZU_BENCH_C("Fp2::mul      ", C3, Fp2::mul, xx, xx, yy);
+	CYBOZU_BENCH_C("Fp2::mul_xi   ", C3, Fp2::mul_xi, xx, xx);
 	CYBOZU_BENCH_C("Fp2::sqr      ", C3, Fp2::sqr, xx, xx);
 	CYBOZU_BENCH_C("Fp2::inv      ", C3, Fp2::inv, xx, xx);
 	FpDbl d0, d1;
 	x = 9;
 	y = 3;
-	CYBOZU_BENCH_C("FpDbl::mulPre ", C3, FpDbl::mulPre, d0, x, y);
-	CYBOZU_BENCH_C("FpDbl::sqrPre ", C3, FpDbl::sqrPre, d1, x);
-	CYBOZU_BENCH_C("FpDbl::add    ", C3, FpDbl::add, d1, d1, d0);
-	CYBOZU_BENCH_C("FpDbl::sub    ", C3, FpDbl::sub, d1, d1, d0);
 	CYBOZU_BENCH_C("FpDbl::addPre ", C3, FpDbl::addPre, d1, d1, d0);
 	CYBOZU_BENCH_C("FpDbl::subPre ", C3, FpDbl::subPre, d1, d1, d0);
+	CYBOZU_BENCH_C("FpDbl::add    ", C3, FpDbl::add, d1, d1, d0);
+	CYBOZU_BENCH_C("FpDbl::sub    ", C3, FpDbl::sub, d1, d1, d0);
+	CYBOZU_BENCH_C("FpDbl::mulPre ", C3, FpDbl::mulPre, d0, x, y);
+	CYBOZU_BENCH_C("FpDbl::sqrPre ", C3, FpDbl::sqrPre, d1, x);
 	CYBOZU_BENCH_C("FpDbl::mod    ", C3, FpDbl::mod, x, d0);
 
 	CYBOZU_BENCH_C("GT::add       ", C2, GT::add, e1, e1, e2);

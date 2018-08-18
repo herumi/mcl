@@ -57,6 +57,8 @@ void testCurve(const mcl::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(pairing)
 {
+//	puts("BN160");
+//	testCurve(mcl::BN160);
 	puts("BN254");
 	// support 256-bit pairing
 	testCurve(mcl::BN254);

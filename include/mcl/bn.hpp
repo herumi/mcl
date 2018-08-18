@@ -57,6 +57,7 @@ const CurveParam BN381_2 = { "-0x400040090001000000000001", 2, 1, false, MCL_BN3
 const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
 const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
 const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
+const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
 
 inline const CurveParam& getCurveParam(int type)
 {
@@ -67,6 +68,7 @@ inline const CurveParam& getCurveParam(int type)
 	case MCL_BN462: return mcl::BN462;
 	case MCL_BN_SNARK1: return mcl::BN_SNARK1;
 	case MCL_BLS12_381: return mcl::BLS12_381;
+	case MCL_BN160: return mcl::BN160;
 	default:
 		assert(0);
 		return mcl::BN254;
