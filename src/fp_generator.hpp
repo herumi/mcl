@@ -386,6 +386,9 @@ struct Code : Xbyak::CodeGenerator {
 			align(16);
 			op.fp2_sqrA_ = getCurr<void2u>();
 			gen_fp2_sqr4();
+			align(16);
+			op.fp2_mul_xiA_ = getCurr<void2u>();
+			gen_fp2_mul_xi4();
 		}
 	}
 	void gen_addSubPre(bool isAdd, int n)
@@ -2872,6 +2875,20 @@ private:
 		StackFrame sf(this, 3, 8);
 		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
 		gen_raw_fp_sub(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+	}
+	/*
+		for only xi_a = 1
+	*/
+	void gen_fp2_mul_xi4()
+	{
+		assert(!isFullBit_);
+		StackFrame sf(this, 2, 8, 8 * 4);
+		gen_raw_fp_add(rsp, sf.p[1], sf.p[1] + FpByte_, sf.t, false);
+		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[1] + FpByte_, sf.t, false);
+		for (int i = 0; i < 4; i++) {
+			mov(rax, ptr [rsp + i * 8]);
+			mov(ptr[sf.p[0] + FpByte_ + i * 8], rax);
+		}
 	}
 	void gen_fp2_neg4()
 	{

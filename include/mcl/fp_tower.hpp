@@ -242,9 +242,9 @@ public:
 	static void (*neg)(Fp2T& y, const Fp2T& x);
 	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
+	static void (*mul_xi)(Fp2T& y, const Fp2T& x);
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
 	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
-	static void mul_xi(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_mul_xi(y.a.v_, x.a.v_); }
 	static void divBy2(Fp2T& y, const Fp2T& x)
 	{
 		Fp::divBy2(y.a, x.a);
@@ -405,11 +405,21 @@ public:
 		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
 		if (sqr == 0) sqr = fp2_sqrC;
 		op.fp2_inv = fp2_invW;
-		if (xi_a == 1) {
-			op.fp2_mul_xi = fp2_mul_xi_1_1i;
-		} else {
-			op.fp2_mul_xi = fp2_mul_xiW;
+		if (op.fp2_mul_xi == 0) {
+			if (xi_a == 1) {
+				/*
+					current fp_generator.hpp generates mul_xi for xi_a = 1
+				*/
+				if (op.fp2_mul_xiA_) {
+					op.fp2_mul_xi = op.fp2_mul_xiA_;
+				} else {
+					op.fp2_mul_xi = fp2_mul_xi_1_1i;
+				}
+			} else {
+				op.fp2_mul_xi = fp2_mul_xiW;
+			}
 		}
+		mul_xi = (void (*)(Fp2T&, const Fp2T&))op.fp2_mul_xi;
 		const Fp2T xi(xi_a, 1);
 		const mpz_class& p = Fp::getOp().mp;
 		Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
@@ -621,6 +631,7 @@ template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y
 template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
+template<class Fp_> void (*Fp2T<Fp_>::mul_xi)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>
 struct Fp2DblT {
