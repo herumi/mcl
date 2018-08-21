@@ -2878,10 +2878,44 @@ private:
 	}
 	/*
 		for only xi_a = 1
+		y.a = a - b
+		y.b = a + b
 	*/
 	void gen_fp2_mul_xi4()
 	{
 		assert(!isFullBit_);
+#if 0
+		StackFrame sf(this, 2, 10 | UseRDX | UseRCX);
+		Pack a = sf.t.sub(0, 4);
+		Pack b = sf.t.sub(4, 4);
+		Pack t(rdx, rcx, sf.t[8], sf.t[9]);
+		load_rm(a, sf.p[1]);
+		load_rm(b, sf.p[1] + FpByte_);
+		for (int i = 0; i < 4; i++) {
+			mov(t[i], a[i]);
+			if (i == 0) {
+				add(t[i], b[i]);
+			} else {
+				adc(t[i], b[i]);
+			}
+		}
+		sub_rr(a, b);
+		mov(rax, (size_t)p_);
+		load_rm(b, rax);
+		sbb(rax, rax);
+		for (int i = 0; i < 4; i++) {
+			and_(b[i], rax);
+		}
+		add_rr(a, b);
+		store_mr(sf.p[0], a);
+		mov(rax, (size_t)p_);
+		mov_rr(a, t);
+		sub_rm(t, rax);
+		for (int i = 0; i < 4; i++) {
+			cmovc(t[i], a[i]);
+		}
+		store_mr(sf.p[0] + FpByte_, t);
+#else
 		StackFrame sf(this, 2, 8, 8 * 4);
 		gen_raw_fp_add(rsp, sf.p[1], sf.p[1] + FpByte_, sf.t, false);
 		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[1] + FpByte_, sf.t, false);
@@ -2889,6 +2923,7 @@ private:
 			mov(rax, ptr [rsp + i * 8]);
 			mov(ptr[sf.p[0] + FpByte_ + i * 8], rax);
 		}
+#endif
 	}
 	void gen_fp2_neg4()
 	{
