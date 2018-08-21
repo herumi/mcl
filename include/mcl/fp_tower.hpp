@@ -405,21 +405,18 @@ public:
 		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
 		if (sqr == 0) sqr = fp2_sqrC;
 		op.fp2_inv = fp2_invW;
-		if (op.fp2_mul_xi == 0) {
-			if (xi_a == 1) {
-				/*
-					current fp_generator.hpp generates mul_xi for xi_a = 1
-				*/
-				if (op.fp2_mul_xiA_) {
-					op.fp2_mul_xi = op.fp2_mul_xiA_;
-				} else {
-					op.fp2_mul_xi = fp2_mul_xi_1_1i;
-				}
+		if (xi_a == 1) {
+			/*
+				current fp_generator.hpp generates mul_xi for xi_a = 1
+			*/
+			if (op.fp2_mul_xiA_) {
+				mul_xi = (void (*)(Fp2T&, const Fp2T&))op.fp2_mul_xiA_;
 			} else {
-				op.fp2_mul_xi = fp2_mul_xiW;
+				mul_xi = fp2_mul_xi_1_1i;
 			}
+		} else {
+			mul_xi = fp2_mul_xiC;
 		}
-		mul_xi = (void (*)(Fp2T&, const Fp2T&))op.fp2_mul_xi;
 		const Fp2T xi(xi_a, 1);
 		const mpz_class& p = Fp::getOp().mp;
 		Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
@@ -577,33 +574,29 @@ private:
 		y = (a + bi)xi = (a + bi)(xi_a + i)
 		=(a * x_ia - b) + (a + b xi_a)i
 	*/
-	static void fp2_mul_xiW(Unit *y, const Unit *x)
+	static void fp2_mul_xiC(Fp2T& y, const Fp2T& x)
 	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		Fp *py = reinterpret_cast<Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
+		const Fp& a = x.a;
+		const Fp& b = x.b;
 		Fp t;
 		Fp::mulUnit(t, a, xi_a_);
 		t -= b;
-		Fp::mulUnit(py[1], b, xi_a_);
-		py[1] += a;
-		py[0] = t;
+		Fp::mulUnit(y.b, b, xi_a_);
+		y.b += a;
+		y.a = t;
 	}
 	/*
 		xi = 1 + i ; xi_a = 1
 		y = (a + bi)xi = (a - b) + (a + b)i
 	*/
-	static void fp2_mul_xi_1_1i(Unit *y, const Unit *x)
+	static void fp2_mul_xi_1_1i(Fp2T& y, const Fp2T& x)
 	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		Fp *py = reinterpret_cast<Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
+		const Fp& a = x.a;
+		const Fp& b = x.b;
 		Fp t;
 		Fp::add(t, a, b);
-		Fp::sub(py[0], a, b);
-		py[1] = t;
+		Fp::sub(y.a, a, b);
+		y.b = t;
 	}
 	/*
 		x = a + bi
