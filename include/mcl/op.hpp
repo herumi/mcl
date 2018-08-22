@@ -265,7 +265,6 @@ struct Op {
 		memset(R2, 0, sizeof(R2));
 		memset(R3, 0, sizeof(R3));
 #ifdef MCL_USE_XBYAK
-		fg = 0;
 		invTbl.clear();
 #endif
 		fp_addA_ = 0;

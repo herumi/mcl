@@ -152,7 +152,7 @@ void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 		mpz_class my;
 		mcl::gmp::set(my, y);
 		mx *= my;
-		uint64_t d = fg.code.mulUnit_(z, x, y);
+		uint64_t d = fg.code->mulUnit_(z, x, y);
 		z[pn] = d;
 		mcl::gmp::setArray(my, z, pn + 1);
 		CYBOZU_TEST_EQUAL(mx, my);
@@ -162,7 +162,7 @@ void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 		uint64_t z[MAX_N + 1];
 		rg.read(x, pn);
 		uint64_t y = rg.get64();
-		CYBOZU_BENCH_C("mulUnit", 10000000, fg.code.mulUnit_, z, x, y);
+		CYBOZU_BENCH_C("mulUnit", 10000000, fg.code->mulUnit_, z, x, y);
 	}
 }
 

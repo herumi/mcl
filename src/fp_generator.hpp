@@ -218,7 +218,10 @@ struct Code : Xbyak::CodeGenerator {
 	Label fpDbl_modL_;
 	Label fp_mulL_;
 
-	Code(uint8_t *mem, size_t codeSize)
+	/*
+		@param op [in] ; use op.p, op.N, op.isFullBit
+	*/
+	Code(size_t codeSize, uint8_t *mem, Op& op)
 		: CodeGenerator(codeSize, mem)
 #ifdef XBYAK64_WIN
 		, gp0(rcx)
@@ -253,12 +256,7 @@ struct Code : Xbyak::CodeGenerator {
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
-	}
-	/*
-		@param op [in] ; use op.p, op.N, op.isFullBit
-	*/
-	void init(Op& op)
-	{
+
 		op_ = &op;
 		p_ = op.p;
 		rp_ = fp::getMontgomeryCoeff(p_[0]);
@@ -267,8 +265,6 @@ struct Code : Xbyak::CodeGenerator {
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
 
-		setSize(0); // reset code
-		align(16);
 		op.fp_add = getCurr<void4u>();
 		op.fp_addA_ = getCurr<void3u>();
 		gen_fp_add();
@@ -3055,23 +3051,39 @@ struct FpGenerator {
 	static const size_t codeSize = 4096 * 8;
 	static const size_t pageSize = 4096;
 	uint8_t *mem;
-	Code code;
+	Code *code;
 	FpGenerator()
 		: mem((uint8_t*)cybozu::AlignedMalloc(codeSize, pageSize))
-		, code(mem, codeSize)
+		, code(0)
 	{
 	}
 	void init(Op& op)
 	{
-		code.init(op);
-		if (!Xbyak::CodeArray::protect(mem, codeSize, Xbyak::CodeArray::PROTECT_RE)) {
-			throw cybozu::Exception("err protect read/exec");
+		if (code) {
+			setRW();
+			delete code;
 		}
+		code = new Code(codeSize, mem, op);
+		setRE();
 	}
 	~FpGenerator()
 	{
-		Xbyak::CodeArray::protect(mem, codeSize, Xbyak::CodeArray::PROTECT_RW);
+		setRW();
+		delete code;
 		cybozu::AlignedFree(mem);
+	}
+private:
+	FpGenerator(const FpGenerator&);
+	void operator==(const FpGenerator&);
+	void setRW()
+	{
+		Xbyak::CodeArray::protect(mem, codeSize, Xbyak::CodeArray::PROTECT_RW);
+	}
+	void setRE()
+	{
+		if (!Xbyak::CodeArray::protect(mem, codeSize, Xbyak::CodeArray::PROTECT_RE)) {
+			throw cybozu::Exception("err protect read/exec");
+		}
 	}
 };
 
