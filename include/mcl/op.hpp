@@ -189,6 +189,14 @@ struct Op {
 	void2u fp2_negA_;
 	void3u fp2_mulA_;
 	void2u fp2_sqrA_;
+	void3u fpDbl_addA_;
+	void3u fpDbl_subA_;
+	void3u fpDbl_addPreA_;
+	void3u fpDbl_subPreA_;
+	void3u fpDbl_mulPreA_;
+	void2u fpDbl_sqrPreA_;
+	void2u fpDbl_modA_;
+	void3u fp2Dbl_mulPreA_;
 	size_t maxN;
 	size_t N;
 	size_t bitSize;
@@ -218,7 +226,6 @@ struct Op {
 	u3u fp_subPre; // without modulo p
 	u3u fpDbl_addPre;
 	u3u fpDbl_subPre;
-	void3u fp2Dbl_mulPre;
 	/*
 		for Fp2 = F[u] / (u^2 + 1)
 		x = a + bu
@@ -271,6 +278,14 @@ struct Op {
 		fp2_negA_ = 0;
 		fp2_mulA_ = 0;
 		fp2_sqrA_ = 0;
+		fpDbl_addA_ = 0;
+		fpDbl_subA_ = 0;
+		fpDbl_addPreA_ = 0;
+		fpDbl_subPreA_ = 0;
+		fpDbl_mulPreA_ = 0;
+		fpDbl_sqrPreA_ = 0;
+		fpDbl_modA_ = 0;
+		fp2Dbl_mulPreA_ = 0;
 		maxN = 0;
 		N = 0;
 		bitSize = 0;
@@ -300,7 +315,6 @@ struct Op {
 		fp_subPre = 0;
 		fpDbl_addPre = 0;
 		fpDbl_subPre = 0;
-		fp2Dbl_mulPre = 0;
 
 		xi_a = 0;
 		fp2_mulNF = 0;

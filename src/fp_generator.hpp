@@ -310,25 +310,25 @@ struct Code : Xbyak::CodeGenerator {
 		if (op.N > 4) return;
 		op.fp2_mulNF = 0;
 		align(16);
-		op.fpDbl_add = getCurr<void4u>();
+		op.fpDbl_addA_ = getCurr<void3u>();
 		gen_fpDbl_add();
 		align(16);
-		op.fpDbl_sub = getCurr<void4u>();
+		op.fpDbl_subA_ = getCurr<void3u>();
 		gen_fpDbl_sub();
 		if (op.isFullBit) {
 			op.fpDbl_addPre = 0;
 			op.fpDbl_subPre = 0;
 		} else {
 			align(16);
-			op.fpDbl_addPre = getCurr<u3u>();
+			op.fpDbl_addPreA_ = getCurr<void3u>();
 			gen_addSubPre(true, pn_ * 2);
 			align(16);
-			op.fpDbl_subPre = getCurr<u3u>();
+			op.fpDbl_subPreA_ = getCurr<void3u>();
 			gen_addSubPre(false, pn_ * 2);
 		}
 		if (op.N == 2 || op.N == 3 || op.N == 4) {
 			align(16);
-			op.fpDbl_mod = getCurr<void3u>();
+			op.fpDbl_modA_ = getCurr<void2u>();
 			if (op.N == 4) {
 				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 				call(fpDbl_modL_);
@@ -342,7 +342,7 @@ struct Code : Xbyak::CodeGenerator {
 		}
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4 || (useAdx_ && op.N == 6)) {
 			align(16);
-			op.fpDbl_mulPre = getCurr<void3u>();
+			op.fpDbl_mulPreA_ = getCurr<void3u>();
 			if (op.N == 4) {
 				/*
 					fpDbl_mulPre is available as C function
@@ -364,7 +364,7 @@ struct Code : Xbyak::CodeGenerator {
 		}
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
 			align(16);
-			op.fpDbl_sqrPre = getCurr<void2u>();
+			op.fpDbl_sqrPreA_ = getCurr<void2u>();
 			gen_fpDbl_sqrPre(op);
 		}
 		if (op.N == 4 && !isFullBit_) {
@@ -378,7 +378,7 @@ struct Code : Xbyak::CodeGenerator {
 			op.fp2_negA_ = getCurr<void2u>();
 			gen_fp2_neg4();
 			align(16);
-			op.fp2Dbl_mulPre = getCurr<void3u>();
+			op.fp2Dbl_mulPreA_ = getCurr<void3u>();
 			gen_fp2Dbl_mulPre();
 			align(16);
 			op.fp2_mulA_ = getCurr<void3u>();

@@ -117,76 +117,79 @@ public:
 	{
 		gmp::setArray(pb, x, v_, Fp::op_.N * 2);
 	}
+#ifdef MCL_XBYAK_DIRECT_CALL
+	static void (*add)(FpDblT& z, const FpDblT& x, const FpDblT& y);
+	static void (*sub)(FpDblT& z, const FpDblT& x, const FpDblT& y);
+	static void (*mod)(Fp& z, const FpDblT& xy);
+	static void addC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
+	static void subC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
+	static void modC(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
+#else
 	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
-	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
-	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
+	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
+#endif
+	static void (*addPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
+	static void (*subPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
-	static void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
-	static void sqrPre(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
-	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
+	static void (*mulPre)(FpDblT& xy, const Fp& x, const Fp& y);
+	static void (*sqrPre)(FpDblT& xx, const Fp& x);
 	static void mulUnit(FpDblT& z, const FpDblT& x, Unit y)
 	{
 		if (mulSmallUnit(z, x, y)) return;
 		assert(0); // not supported y
 	}
+	static void init()
+	{
+		const mcl::fp::Op& op = Fp::getOp();
+#ifdef MCL_XBYAK_DIRECT_CALL
+		add = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addA_;
+		if (add == 0) add = addC;
+		sub = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subA_;
+		if (sub == 0) sub = subC;
+		mod = (void (*)(Fp&, const FpDblT&))op.fpDbl_modA_;
+		if (mod == 0) mod = modC;
+#endif
+		if (op.fpDbl_addPreA_) {
+			addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPreA_;
+		} else {
+			addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPre;
+		}
+		if (op.fpDbl_subPreA_) {
+			subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPreA_;
+		} else {
+			subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPre;
+		}
+		if (op.fpDbl_mulPreA_) {
+			mulPre = (void (*)(FpDblT&, const Fp&, const Fp&))op.fpDbl_mulPreA_;
+		} else {
+			mulPre = (void (*)(FpDblT&, const Fp&, const Fp&))op.fpDbl_mulPre;
+		}
+		if (op.fpDbl_sqrPreA_) {
+			sqrPre = (void (*)(FpDblT&, const Fp&))op.fpDbl_sqrPreA_;
+		} else {
+			sqrPre = (void (*)(FpDblT&, const Fp&))op.fpDbl_sqrPre;
+		}
+	}
 	void operator+=(const FpDblT& x) { add(*this, *this, x); }
 	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
-	/*
-		Fp2Dbl::mulPre by FpDblT
-		@note mod of NIST_P192 is fast
-	*/
-	static void fp2Dbl_mulPreW(Unit *z, const Unit *x, const Unit *y)
-	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		const Fp *py = reinterpret_cast<const Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
-		const Fp& c = py[0];
-		const Fp& d = py[1];
-		FpDblT& d0 = reinterpret_cast<FpDblT*>(z)[0];
-		FpDblT& d1 = reinterpret_cast<FpDblT*>(z)[1];
-		FpDblT d2;
-		Fp s, t;
-		Fp::add(s, a, b);
-		Fp::add(t, c, d);
-		FpDblT::mulPre(d1, s, t); // (a + b)(c + d)
-		FpDblT::mulPre(d0, a, c);
-		FpDblT::mulPre(d2, b, d);
-		FpDblT::sub(d1, d1, d0); // (a + b)(c + d) - ac
-		FpDblT::sub(d1, d1, d2); // (a + b)(c + d) - ac - bd
-		FpDblT::sub(d0, d0, d2); // ac - bd
-	}
-	/*
-		Fp2Dbl::mulPre by FpDblT with No Carry
-	*/
-	static void fp2Dbl_mulPreNoCarryW(Unit *z, const Unit *x, const Unit *y)
-	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		const Fp *py = reinterpret_cast<const Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
-		const Fp& c = py[0];
-		const Fp& d = py[1];
-		FpDblT& d0 = reinterpret_cast<FpDblT*>(z)[0];
-		FpDblT& d1 = reinterpret_cast<FpDblT*>(z)[1];
-		FpDblT d2;
-		Fp s, t;
-		Fp::addPre(s, a, b);
-		Fp::addPre(t, c, d);
-		FpDblT::mulPre(d1, s, t); // (a + b)(c + d)
-		FpDblT::mulPre(d0, a, c);
-		FpDblT::mulPre(d2, b, d);
-		FpDblT::subPre(d1, d1, d0); // (a + b)(c + d) - ac
-		FpDblT::subPre(d1, d1, d2); // (a + b)(c + d) - ac - bd
-		FpDblT::sub(d0, d0, d2); // ac - bd
-	}
 };
+
+#ifdef MCL_XBYAK_DIRECT_CALL
+template<class Fp> void (*FpDblT<Fp>::add)(FpDblT&, const FpDblT&, const FpDblT&);
+template<class Fp> void (*FpDblT<Fp>::sub)(FpDblT&, const FpDblT&, const FpDblT&);
+template<class Fp> void (*FpDblT<Fp>::mod)(Fp&, const FpDblT&);
+#endif
+template<class Fp> void (*FpDblT<Fp>::addPre)(FpDblT&, const FpDblT&, const FpDblT&);
+template<class Fp> void (*FpDblT<Fp>::subPre)(FpDblT&, const FpDblT&, const FpDblT&);
+template<class Fp> void (*FpDblT<Fp>::mulPre)(FpDblT&, const Fp&, const Fp&);
+template<class Fp> void (*FpDblT<Fp>::sqrPre)(FpDblT&, const Fp&);
 
 template<class Fp> struct Fp12T;
 template<class Fp> class BNT;
+template<class Fp> struct Fp2DblT;
 /*
 	beta = -1
 	Fp2 = F[i] / (i^2 + 1)
@@ -198,6 +201,7 @@ class Fp2T : public fp::Serializable<Fp2T<_Fp>,
 	typedef _Fp Fp;
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
+	typedef Fp2DblT<Fp> Fp2Dbl;
 	static uint32_t xi_a_;
 	static const size_t gN = 5;
 	/*
@@ -381,13 +385,6 @@ public:
 		if (sub == 0) sub = fp2_subC;
 		neg = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_negA_;
 		if (neg == 0) neg = fp2_negC;
-		if (op.fp2Dbl_mulPre == 0) {
-			if (op.isFullBit) {
-				op.fp2Dbl_mulPre = FpDblT<Fp>::fp2Dbl_mulPreW;
-			} else {
-				op.fp2Dbl_mulPre = FpDblT<Fp>::fp2Dbl_mulPreNoCarryW;
-			}
-		}
 		mul = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_mulA_;
 		if (mul == 0) {
 			if (op.isFastMod) {
@@ -444,6 +441,8 @@ public:
 			Fp2T::mul(g2[i], t, g[i]);
 			g3[i] = g[i] * g2[i];
 		}
+		FpDblT<Fp>::init();
+		Fp2DblT<Fp>::init();
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class InputStream>
@@ -535,10 +534,10 @@ private:
 	}
 	static void fp2_mulC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
-		FpDbl d[2];
-		Fp::getOp().fp2Dbl_mulPre((Unit*)d, (const Unit*)&x, (const Unit*)&y);
-		FpDbl::mod(z.a, d[0]);
-		FpDbl::mod(z.b, d[1]);
+		Fp2Dbl d;
+		Fp2Dbl::mulPre(d, x, y);
+		FpDbl::mod(z.a, d.a);
+		FpDbl::mod(z.b, d.b);
 	}
 	/*
 		x = a + bi, i^2 = -1
@@ -630,6 +629,7 @@ template<class Fp>
 struct Fp2DblT {
 	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2T<Fp> Fp2;
+	typedef fp::Unit Unit;
 	FpDbl a, b;
 	static void add(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
 	{
@@ -687,10 +687,7 @@ struct Fp2DblT {
 		Fp::sub(t1, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
 	}
-	static void mulPre(Fp2DblT& z, const Fp2& x, const Fp2& y)
-	{
-		Fp::getOp().fp2Dbl_mulPre((fp::Unit*)&z, (const fp::Unit*)&x, (const fp::Unit*)&y);
-	}
+	static void (*mulPre)(Fp2DblT&, const Fp2&, const Fp2&);
 	static void mod(Fp2& y, const Fp2DblT& x)
 	{
 		FpDbl::mod(y.a, x.a);
@@ -704,7 +701,67 @@ struct Fp2DblT {
 #endif
 	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
+	static void init()
+ 	{
+		const mcl::fp::Op& op = Fp::getOp();
+		if (op.fp2Dbl_mulPreA_) {
+			mulPre = (void (*)(Fp2DblT&, const Fp2&, const Fp2&))op.fp2Dbl_mulPreA_;
+		} else {
+			if (op.isFullBit) {
+				mulPre = fp2Dbl_mulPreW;
+			} else {
+				mulPre = fp2Dbl_mulPreNoCarryW;
+			}
+		}
+	}
+	/*
+		Fp2Dbl::mulPre by FpDblT
+		@note mod of NIST_P192 is fast
+	*/
+	static void fp2Dbl_mulPreW(Fp2DblT& z, const Fp2& x, const Fp2& y)
+	{
+		const Fp& a = x.a;
+		const Fp& b = x.b;
+		const Fp& c = y.a;
+		const Fp& d = y.b;
+		FpDbl& d0 = z.a;
+		FpDbl& d1 = z.b;
+		FpDbl d2;
+		Fp s, t;
+		Fp::add(s, a, b);
+		Fp::add(t, c, d);
+		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
+		FpDbl::mulPre(d0, a, c);
+		FpDbl::mulPre(d2, b, d);
+		FpDbl::sub(d1, d1, d0); // (a + b)(c + d) - ac
+		FpDbl::sub(d1, d1, d2); // (a + b)(c + d) - ac - bd
+		FpDbl::sub(d0, d0, d2); // ac - bd
+	}
+	/*
+		Fp2Dbl::mulPre by FpDbl with No Carry
+	*/
+	static void fp2Dbl_mulPreNoCarryW(Fp2DblT& z, const Fp2& x, const Fp2& y)
+	{
+		const Fp& a = x.a;
+		const Fp& b = x.b;
+		const Fp& c = y.a;
+		const Fp& d = y.b;
+		FpDbl& d0 = z.a;
+		FpDbl& d1 = z.b;
+		FpDbl d2;
+		Fp s, t;
+		Fp::addPre(s, a, b);
+		Fp::addPre(t, c, d);
+		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
+		FpDbl::mulPre(d0, a, c);
+		FpDbl::mulPre(d2, b, d);
+		FpDbl::subPre(d1, d1, d0); // (a + b)(c + d) - ac
+		FpDbl::subPre(d1, d1, d2); // (a + b)(c + d) - ac - bd
+		FpDbl::sub(d0, d0, d2); // ac - bd
+	}
 };
+
+template<class Fp> void (*Fp2DblT<Fp>::mulPre)(Fp2DblT&, const Fp2T<Fp>&, const Fp2T<Fp>&);
 
 template<class Fp> uint32_t Fp2T<Fp>::xi_a_;
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
