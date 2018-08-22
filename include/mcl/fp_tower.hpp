@@ -414,6 +414,9 @@ public:
 		} else {
 			mul_xi = fp2_mul_xiC;
 		}
+		FpDblT<Fp>::init();
+		Fp2DblT<Fp>::init();
+		// call init before Fp2::pow because FpDbl is used in Fp2T
 		const Fp2T xi(xi_a, 1);
 		const mpz_class& p = Fp::getOp().mp;
 		Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
@@ -441,8 +444,6 @@ public:
 			Fp2T::mul(g2[i], t, g[i]);
 			g3[i] = g[i] * g2[i];
 		}
-		FpDblT<Fp>::init();
-		Fp2DblT<Fp>::init();
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class InputStream>
