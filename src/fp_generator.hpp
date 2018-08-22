@@ -1741,7 +1741,7 @@ struct Code : Xbyak::CodeGenerator {
 #else
 		mov(rdx, rsi);
 #endif
-		jmp((void*)op.fpDbl_mulPre);
+		jmp((void*)op.fpDbl_mulPreA_);
 	}
 	void gen_fpDbl_mulPre()
 	{
