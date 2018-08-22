@@ -12,7 +12,7 @@ cybozu::CpuClock clk;
 #endif
 
 typedef mcl::bn::local::Compress Compress;
-using namespace mcl::bn256;
+using namespace mcl::bn;
 
 mcl::fp::Mode g_mode;
 
