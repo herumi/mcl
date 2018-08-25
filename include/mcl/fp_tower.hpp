@@ -709,9 +709,9 @@ struct Fp2DblT {
 			mulPre = (void (*)(Fp2DblT&, const Fp2&, const Fp2&))op.fp2Dbl_mulPreA_;
 		} else {
 			if (op.isFullBit) {
-				mulPre = fp2Dbl_mulPreW;
+				mulPre = fp2Dbl_mulPreW<true>;
 			} else {
-				mulPre = fp2Dbl_mulPreNoCarryW;
+				mulPre = fp2Dbl_mulPreW<false>;
 			}
 		}
 	}
@@ -719,6 +719,7 @@ struct Fp2DblT {
 		Fp2Dbl::mulPre by FpDblT
 		@note mod of NIST_P192 is fast
 	*/
+	template<bool isFullBit>
 	static void fp2Dbl_mulPreW(Fp2DblT& z, const Fp2& x, const Fp2& y)
 	{
 		const Fp& a = x.a;
@@ -729,35 +730,23 @@ struct Fp2DblT {
 		FpDbl& d1 = z.b;
 		FpDbl d2;
 		Fp s, t;
-		Fp::add(s, a, b);
-		Fp::add(t, c, d);
+		if (isFullBit) {
+			Fp::add(s, a, b);
+			Fp::add(t, c, d);
+		} else {
+			Fp::addPre(s, a, b);
+			Fp::addPre(t, c, d);
+		}
 		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
 		FpDbl::mulPre(d0, a, c);
 		FpDbl::mulPre(d2, b, d);
-		FpDbl::sub(d1, d1, d0); // (a + b)(c + d) - ac
-		FpDbl::sub(d1, d1, d2); // (a + b)(c + d) - ac - bd
-		FpDbl::sub(d0, d0, d2); // ac - bd
-	}
-	/*
-		Fp2Dbl::mulPre by FpDbl with No Carry
-	*/
-	static void fp2Dbl_mulPreNoCarryW(Fp2DblT& z, const Fp2& x, const Fp2& y)
-	{
-		const Fp& a = x.a;
-		const Fp& b = x.b;
-		const Fp& c = y.a;
-		const Fp& d = y.b;
-		FpDbl& d0 = z.a;
-		FpDbl& d1 = z.b;
-		FpDbl d2;
-		Fp s, t;
-		Fp::addPre(s, a, b);
-		Fp::addPre(t, c, d);
-		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
-		FpDbl::mulPre(d0, a, c);
-		FpDbl::mulPre(d2, b, d);
-		FpDbl::subPre(d1, d1, d0); // (a + b)(c + d) - ac
-		FpDbl::subPre(d1, d1, d2); // (a + b)(c + d) - ac - bd
+		if (isFullBit) {
+			FpDbl::sub(d1, d1, d0); // (a + b)(c + d) - ac
+			FpDbl::sub(d1, d1, d2); // (a + b)(c + d) - ac - bd
+		} else {
+			FpDbl::subPre(d1, d1, d0);
+			FpDbl::subPre(d1, d1, d2);
+		}
 		FpDbl::sub(d0, d0, d2); // ac - bd
 	}
 };
