@@ -129,6 +129,10 @@ public:
 	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
 #endif
+	static void addPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
+	static void subPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
+	static void mulPreC(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
+	static void sqrPreC(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
 	static void (*addPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	static void (*subPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	/*
@@ -155,22 +159,22 @@ public:
 		if (op.fpDbl_addPreA_) {
 			addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPreA_;
 		} else {
-			addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPre;
+			addPre = addPreC;
 		}
 		if (op.fpDbl_subPreA_) {
 			subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPreA_;
 		} else {
-			subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPre;
+			subPre = subPreC;
 		}
 		if (op.fpDbl_mulPreA_) {
 			mulPre = (void (*)(FpDblT&, const Fp&, const Fp&))op.fpDbl_mulPreA_;
 		} else {
-			mulPre = (void (*)(FpDblT&, const Fp&, const Fp&))op.fpDbl_mulPre;
+			mulPre = mulPreC;
 		}
 		if (op.fpDbl_sqrPreA_) {
 			sqrPre = (void (*)(FpDblT&, const Fp&))op.fpDbl_sqrPreA_;
 		} else {
-			sqrPre = (void (*)(FpDblT&, const Fp&))op.fpDbl_sqrPre;
+			sqrPre = sqrPreC;
 		}
 	}
 	void operator+=(const FpDblT& x) { add(*this, *this, x); }
