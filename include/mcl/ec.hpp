@@ -188,7 +188,7 @@ public:
 	*/
 	static void setOrder(const mpz_class& order)
 	{
-		if (order) {
+		if (order != 0) {
 			verifyOrder_ = true;
 			order_ = order;
 		} else {
