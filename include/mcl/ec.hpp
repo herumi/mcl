@@ -188,8 +188,13 @@ public:
 	*/
 	static void setOrder(const mpz_class& order)
 	{
-		verifyOrder_ = order != 0;
-		order_ = order;
+		if (order) {
+			verifyOrder_ = true;
+			order_ = order;
+		} else {
+			verifyOrder_ = false;
+			// don't clear order_ because it is used for isValidOrder()
+		}
 	}
 	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime))
 	{
@@ -207,6 +212,7 @@ public:
 	// verify the order
 	bool isValidOrder() const
 	{
+		assert(order_);
 		EcT Q;
 		EcT::mulGeneric(Q, *this, order_);
 		return Q.isZero();
