@@ -230,6 +230,13 @@ MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
 MCLBN_DLL_API int mclBnG1_isValid(const mclBnG1 *x);
 MCLBN_DLL_API int mclBnG1_isEqual(const mclBnG1 *x, const mclBnG1 *y);
 MCLBN_DLL_API int mclBnG1_isZero(const mclBnG1 *x);
+/*
+	return 1 if x has a correct order
+	x is valid point of G1 if and only if
+	mclBnG1_isValid() is true, which contains mclBnG1_isValidOrder() if mclBn_verifyOrderG1(true)
+	mclBnG1_isValid() && mclBnG1_isValidOrder() is true if mclBn_verifyOrderG1(false)
+*/
+MCLBN_DLL_API int mclBnG1_isValidOrder(const mclBnG1 *x);
 
 MCLBN_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
 
@@ -254,6 +261,8 @@ MCLBN_DLL_API void mclBnG2_clear(mclBnG2 *x);
 MCLBN_DLL_API int mclBnG2_isValid(const mclBnG2 *x);
 MCLBN_DLL_API int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y);
 MCLBN_DLL_API int mclBnG2_isZero(const mclBnG2 *x);
+// return 1 if x has a correct order
+MCLBN_DLL_API int mclBnG2_isValidOrder(const mclBnG2 *x);
 
 MCLBN_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
 

@@ -141,6 +141,7 @@ CYBOZU_TEST_AUTO(G1)
 	CYBOZU_TEST_ASSERT(mclBnG1_isZero(&x));
 
 	CYBOZU_TEST_ASSERT(!mclBnG1_hashAndMapTo(&y, "abc", 3));
+	CYBOZU_TEST_ASSERT(mclBnG1_isValidOrder(&y));
 
 	char buf[1024];
 	size_t size;
@@ -184,6 +185,7 @@ CYBOZU_TEST_AUTO(G2)
 	CYBOZU_TEST_ASSERT(mclBnG2_isZero(&x));
 
 	CYBOZU_TEST_ASSERT(!mclBnG2_hashAndMapTo(&x, "abc", 3));
+	CYBOZU_TEST_ASSERT(mclBnG2_isValidOrder(&x));
 
 	char buf[1024];
 	size_t size;

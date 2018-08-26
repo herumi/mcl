@@ -210,6 +210,10 @@ int mclBnG1_isZero(const mclBnG1 *x)
 {
 	return cast(x)->isZero();
 }
+int mclBnG1_isValidOrder(const mclBnG1 *x)
+{
+	return cast(x)->isValidOrder();
+}
 
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 {
@@ -284,6 +288,10 @@ int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y)
 int mclBnG2_isZero(const mclBnG2 *x)
 {
 	return cast(x)->isZero();
+}
+int mclBnG2_isValidOrder(const mclBnG2 *x)
+{
+	return cast(x)->isValidOrder();
 }
 
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)

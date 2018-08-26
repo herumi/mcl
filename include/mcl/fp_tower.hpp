@@ -674,21 +674,8 @@ struct Fp2DblT {
 			y.a = t;
 		}
 	}
-	static void sqrPre(Fp2DblT& y, const Fp2& x)
-	{
-		Fp t1, t2;
-		if (Fp::isFullBit()) {
-			Fp::add(t1, x.b, x.b); // 2b
-			Fp::add(t2, x.a, x.b); // a + b
-		} else {
-			Fp::addPre(t1, x.b, x.b); // 2b
-			Fp::addPre(t2, x.a, x.b); // a + b
-		}
-		FpDbl::mulPre(y.b, t1, x.a); // 2ab
-		Fp::sub(t1, x.a, x.b); // a - b
-		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
-	}
 	static void (*mulPre)(Fp2DblT&, const Fp2&, const Fp2&);
+	static void (*sqrPre)(Fp2DblT&, const Fp2&);
 	static void mod(Fp2& y, const Fp2DblT& x)
 	{
 		FpDbl::mod(y.a, x.a);
@@ -712,6 +699,15 @@ struct Fp2DblT {
 				mulPre = fp2Dbl_mulPreW<true>;
 			} else {
 				mulPre = fp2Dbl_mulPreW<false>;
+			}
+		}
+		if (op.fp2Dbl_sqrPreA_) {
+			sqrPre = (void (*)(Fp2DblT&, const Fp2&))op.fp2Dbl_sqrPreA_;
+		} else {
+			if (op.isFullBit) {
+				sqrPre = fp2Dbl_sqrPreW<true>;
+			} else {
+				sqrPre = fp2Dbl_sqrPreW<false>;
 			}
 		}
 	}
@@ -749,9 +745,25 @@ struct Fp2DblT {
 		}
 		FpDbl::sub(d0, d0, d2); // ac - bd
 	}
+	template<bool isFullBit>
+	static void fp2Dbl_sqrPreW(Fp2DblT& y, const Fp2& x)
+	{
+		Fp t1, t2;
+		if (isFullBit) {
+			Fp::add(t1, x.b, x.b); // 2b
+			Fp::add(t2, x.a, x.b); // a + b
+		} else {
+			Fp::addPre(t1, x.b, x.b); // 2b
+			Fp::addPre(t2, x.a, x.b); // a + b
+		}
+		FpDbl::mulPre(y.b, t1, x.a); // 2ab
+		Fp::sub(t1, x.a, x.b); // a - b
+		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
+	}
 };
 
 template<class Fp> void (*Fp2DblT<Fp>::mulPre)(Fp2DblT&, const Fp2T<Fp>&, const Fp2T<Fp>&);
+template<class Fp> void (*Fp2DblT<Fp>::sqrPre)(Fp2DblT&, const Fp2T<Fp>&);
 
 template<class Fp> uint32_t Fp2T<Fp>::xi_a_;
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
