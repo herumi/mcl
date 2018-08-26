@@ -212,7 +212,6 @@ public:
 	// verify the order
 	bool isValidOrder() const
 	{
-		assert(order_);
 		EcT Q;
 		EcT::mulGeneric(Q, *this, order_);
 		return Q.isZero();
