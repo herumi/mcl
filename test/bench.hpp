@@ -72,6 +72,9 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("FpDbl::mulPre ", C3, FpDbl::mulPre, d0, x, y);
 	CYBOZU_BENCH_C("FpDbl::sqrPre ", C3, FpDbl::sqrPre, d1, x);
 	CYBOZU_BENCH_C("FpDbl::mod    ", C3, FpDbl::mod, x, d0);
+	Fp2Dbl D;
+	CYBOZU_BENCH_C("Fp2Dbl::mulPre ", C3, Fp2Dbl::mulPre, D, xx, yy);
+	CYBOZU_BENCH_C("Fp2Dbl::sqrPre ", C3, Fp2Dbl::sqrPre, D, xx);
 
 	CYBOZU_BENCH_C("GT::add       ", C2, GT::add, e1, e1, e2);
 	CYBOZU_BENCH_C("GT::mul       ", C2, GT::mul, e1, e1, e2);
