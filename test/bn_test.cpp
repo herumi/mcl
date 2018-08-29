@@ -358,7 +358,7 @@ CYBOZU_TEST_AUTO(naive)
 #ifdef ONLY_BENCH
 		{
 			Fp12 e;
-			for (int i = 0; i < 1000; i++) pairing(e, P, Q);
+			for (int i = 0; i < 10000; i++) { clk.begin(); pairing(e, P, Q); clk.end(); }
 		}
 		clk.put();
 		return;

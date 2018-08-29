@@ -387,6 +387,9 @@ private:
 			op.fp2Dbl_mulPreA_ = getCurr<void3u>();
 			gen_fp2Dbl_mulPre(mulPreL);
 			align(16);
+			op.fp2Dbl_sqrPreA_ = getCurr<void2u>();
+			gen_fp2Dbl_sqrPre(mulPreL);
+			align(16);
 			op.fp2_mulA_ = getCurr<void3u>();
 			gen_fp2_mul4(fpDbl_modL);
 			align(16);
@@ -2867,7 +2870,44 @@ private:
 		gen_raw_sub(gp0, gp1, gp2, rax, 4);
 		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 	}
-
+	void gen_fp2Dbl_sqrPre(Label& mulPreL)
+	{
+		assert(!isFullBit_);
+		const RegExp y = rsp + 0 * 8;
+		const RegExp x = rsp + 1 * 8;
+		const Ext1 t1(FpByte_, rsp, 2 * 8);
+		const Ext1 t2(FpByte_, rsp, t1.next);
+		// use mulPreL then use 3
+		StackFrame sf(this, 3 /* not 2 */, 10 | UseRDX, t2.next);
+		mov(ptr [y], gp0);
+		mov(ptr [x], gp1);
+		const Pack a = sf.t.sub(0, 4);
+		const Pack b = sf.t.sub(4, 4);
+		load_rm(b, gp1 + FpByte_);
+		for (int i = 0; i < 4; i++) {
+			mov(rax, b[i]);
+			if (i == 0) {
+				add(rax, rax);
+			} else {
+				adc(rax, rax);
+			}
+			mov(ptr [(const RegExp&)t1 + i * 8], rax);
+		}
+		load_rm(a, gp1);
+		add_rr(a, b);
+		store_mr(t2, a);
+		mov(gp0, ptr [y]);
+		add(gp0, FpByte_ * 2);
+		lea(gp1, ptr [t1]);
+		mov(gp2, ptr [x]);
+		call(mulPreL);
+		mov(gp0, ptr [x]);
+		gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, sf.t, false);
+		mov(gp0, ptr [y]);
+		lea(gp1, ptr [t1]);
+		lea(gp2, ptr [t2]);
+		call(mulPreL);
+	}
 	void gen_fp2_add4()
 	{
 		assert(!isFullBit_);
