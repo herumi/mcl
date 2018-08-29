@@ -535,7 +535,7 @@ size_t getBitSize(const T *x, size_t n)
 
 /*
 	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
-	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSiz
+	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
 */
 template<class T>
 void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
