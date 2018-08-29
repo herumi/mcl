@@ -38,6 +38,12 @@ void testCurve(const mcl::CurveParam& cp)
 	mapToG1(P, 1);
 	mapToG2(Q, 1);
 	GT e1, e2;
+#ifdef ONLY_BENCH
+	cybozu::CpuClock clk;
+	for (int i = 0; i < 10000; i++) { clk.begin(); pairing(e1, P, Q); clk.end(); }
+	clk.put();
+	return;
+#endif
 	pairing(e1, P, Q);
 	cybozu::XorShift rg;
 	mpz_class a, b;
