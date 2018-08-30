@@ -88,3 +88,47 @@ void testBench(const G1& P, const G2& Q)
 	precomputeG2(Qcoeff, Q);
 	CYBOZU_BENCH_C("precomputedML ", C, precomputedMillerLoop, e2, P, Qcoeff);
 }
+
+inline void SquareRootPrecomputeTest(const mpz_class& p)
+{
+	mcl::SquareRoot sq1, sq2;
+	bool b;
+	sq1.set(&b, p, true);
+	CYBOZU_TEST_ASSERT(b);
+	CYBOZU_TEST_ASSERT(sq1.isPrecomputed());
+	sq2.set(&b, p, false);
+	CYBOZU_TEST_ASSERT(sq1 == sq2);
+	if (sq1 != sq2) {
+		puts("dump");
+		puts("sq1");
+		sq1.dump();
+		puts("sq2");
+		sq2.dump();
+		puts("---");
+	}
+}
+
+void testSquareRoot()
+{
+	if (BN::param.cp == mcl::BN254 || BN::param.cp == mcl::BLS12_381) {
+		SquareRootPrecomputeTest(BN::param.p);
+		SquareRootPrecomputeTest(BN::param.r);
+	}
+}
+
+void testLagrange()
+{
+	puts("testLagrange");
+	const int k = 7;
+	Fr c[k], x[k], y[k];
+	for (size_t i = 0; i < k; i++) {
+		c[i].setByCSPRNG();
+		x[i].setByCSPRNG();
+	}
+	for (size_t i = 0; i < k; i++) {
+		mcl::evaluatePolynomial(y[i], c, k, x[i]);
+	}
+	Fr s;
+	mcl::LagrangeInterpolation(s, x, y, k);
+	CYBOZU_TEST_EQUAL(s, c[0]);
+}

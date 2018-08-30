@@ -5,6 +5,7 @@
 #include <cybozu/xorshift.hpp>
 #include <mcl/bn512.hpp>
 #include <mcl/bn.hpp>
+#include <mcl/lagrange.hpp>
 
 using namespace mcl::bn512;
 
@@ -34,6 +35,8 @@ void testCurve(const mcl::CurveParam& cp)
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
 	testBench(P, Q);
+	testSquareRoot();
+	testLagrange();
 }
 
 CYBOZU_TEST_AUTO(pairing)

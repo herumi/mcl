@@ -622,6 +622,7 @@ inline void getRandPrime(mpz_class& z, size_t bitSize, fp::RandGen rg = fp::Rand
 	Tonelli-Shanks
 */
 class SquareRoot {
+	bool isPrecomputed_;
 	bool isPrime;
 	mpz_class p;
 	mpz_class g;
@@ -629,10 +630,78 @@ class SquareRoot {
 	mpz_class q; // p - 1 = 2^r q
 	mpz_class s; // s = g^q
 	mpz_class q_add_1_div_2;
+	struct Tbl {
+		const char *p;
+		const char *g;
+		int r;
+		const char *q;
+		const char *s;
+		const char *q_add_1_div_2;
+	};
+	bool setIfPrecomputed(const mpz_class& p_)
+	{
+		static const Tbl tbl[] = {
+			{ // BN254.p
+				"2523648240000001ba344d80000000086121000000000013a700000000000013",
+				"2",
+				1,
+				"1291b24120000000dd1a26c0000000043090800000000009d380000000000009",
+				"2523648240000001ba344d80000000086121000000000013a700000000000012",
+				"948d920900000006e8d1360000000021848400000000004e9c0000000000005",
+			},
+			{ // BN254.r
+				"2523648240000001ba344d8000000007ff9f800000000010a10000000000000d",
+				"2",
+				2,
+				"948d920900000006e8d136000000001ffe7e000000000042840000000000003",
+				"9366c4800000000555150000000000122400000000000015",
+				"4a46c9048000000374689b000000000fff3f000000000021420000000000002",
+			},
+			{ // BLS12_381,p
+				"1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+				"2",
+				1,
+				"d0088f51cbff34d258dd3db21a5d66bb23ba5c279c2895fb39869507b587b120f55ffff58a9ffffdcff7fffffffd555",
+				"1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaaa",
+				"680447a8e5ff9a692c6e9ed90d2eb35d91dd2e13ce144afd9cc34a83dac3d8907aaffffac54ffffee7fbfffffffeaab",
+			},
+			{ // BLS12_381.r
+				"73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001",
+				"5",
+				32,
+				"73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff",
+				"212d79e5b416b6f0fd56dc8d168d6c0c4024ff270b3e0941b788f500b912f1f",
+				"39f6d3a994cebea4199cec0404d0ec02a9ded2017fff2dff80000000",
+			},
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			mpz_class targetPrime;
+			bool b;
+			mcl::gmp::setStr(&b, targetPrime, tbl[i].p, 16);
+			if (!b) continue;
+			if (targetPrime != p_) continue;
+			isPrime = true;
+			p = p_;
+			mcl::gmp::setStr(&b, g, tbl[i].g, 16);
+			if (!b) continue;
+			r = tbl[i].r;
+			mcl::gmp::setStr(&b, q, tbl[i].q, 16);
+			if (!b) continue;
+			mcl::gmp::setStr(&b, s, tbl[i].s, 16);
+			if (!b) continue;
+			mcl::gmp::setStr(&b, q_add_1_div_2, tbl[i].q_add_1_div_2, 16);
+			if (!b) continue;
+			isPrecomputed_ = true;
+			return true;
+		}
+		return false;
+	}
 public:
 	SquareRoot() { clear(); }
+	bool isPrecomputed() const { return isPrecomputed_; }
 	void clear()
 	{
+		isPrecomputed_ = false;
 		isPrime = false;
 		p = 0;
 		g = 0;
@@ -641,8 +710,23 @@ public:
 		s = 0;
 		q_add_1_div_2 = 0;
 	}
-	void set(bool *pb, const mpz_class& _p)
+#ifndef MCL_USE_VINT
+	void dump() const
 	{
+		printf("\"%s\",\n", mcl::gmp::getStr(p, 16).c_str());
+		printf("\"%s\",\n", mcl::gmp::getStr(g, 16).c_str());
+		printf("%d,\n", r);
+		printf("\"%s\",\n", mcl::gmp::getStr(q, 16).c_str());
+		printf("\"%s\",\n", mcl::gmp::getStr(s, 16).c_str());
+		printf("\"%s\",\n", mcl::gmp::getStr(q_add_1_div_2, 16).c_str());
+	}
+#endif
+	void set(bool *pb, const mpz_class& _p, bool usePrecomputedTable = true)
+	{
+		if (usePrecomputedTable && setIfPrecomputed(_p)) {
+			*pb = true;
+			return;
+		}
 		p = _p;
 		if (p <= 2) {
 			*pb = false;
@@ -761,6 +845,12 @@ public:
 		}
 		return true;
 	}
+	bool operator==(const SquareRoot& rhs) const
+	{
+		return isPrime == rhs.isPrime && p == rhs.p && g == rhs.g && r == rhs.r
+			&& q == rhs.q && s == rhs.s && q_add_1_div_2 == rhs.q_add_1_div_2;
+	}
+	bool operator!=(const SquareRoot& rhs) const { return !operator==(rhs); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void set(const mpz_class& _p)
 	{
