@@ -1,3 +1,5 @@
+#include <mcl/lagrange.hpp>
+
 void testBench(const G1& P, const G2& Q)
 {
 	G1 Pa;

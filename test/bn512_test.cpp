@@ -5,7 +5,6 @@
 #include <cybozu/xorshift.hpp>
 #include <mcl/bn512.hpp>
 #include <mcl/bn.hpp>
-#include <mcl/lagrange.hpp>
 
 using namespace mcl::bn512;
 
