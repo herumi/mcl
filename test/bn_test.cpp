@@ -6,6 +6,7 @@ cybozu::CpuClock clk;
 #include <mcl/bn256.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
+#include <mcl/lagrange.hpp>
 
 #if defined(__EMSCRIPTEN__) && !defined(MCL_AVOID_EXCEPTION_TEST)
 	#define MCL_AVOID_EXCEPTION_TEST
