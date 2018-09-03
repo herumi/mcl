@@ -710,7 +710,7 @@ public:
 		s = 0;
 		q_add_1_div_2 = 0;
 	}
-#ifndef MCL_USE_VINT
+#ifndef CYBOZU_DONT_USE_USE_STRING
 	void dump() const
 	{
 		printf("\"%s\",\n", mcl::gmp::getStr(p, 16).c_str());

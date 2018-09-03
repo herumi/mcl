@@ -457,14 +457,23 @@ struct MapTo {
 	/*
 		cofactor_ is for G2(not used now)
 	*/
-	void initBN(const mpz_class& cofactor, const mpz_class &z)
+	void initBN(const mpz_class& cofactor, const mpz_class &z, int curveType)
 	{
+		z_ = z;
+		cofactor_ = cofactor;
+		if (curveType == MCL_BN254) {
+			const char *c1 = "252364824000000126cd890000000003cf0f0000000000060c00000000000004";
+			const char *c2 = "25236482400000017080eb4000000006181800000000000cd98000000000000b";
+			bool b;
+			c1_.setStr(&b, c1, 16);
+			c2_.setStr(&b, c2, 16);
+			(void)b;
+			return;
+		}
 		bool b = Fp::squareRoot(c1_, -3);
 		assert(b);
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
-		z_ = z;
-		cofactor_ = cofactor;
 	}
 	void initBLS12(const mpz_class& z)
 	{
@@ -472,11 +481,11 @@ struct MapTo {
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
 	}
-	void init(const mpz_class& cofactor, const mpz_class &z, bool isBN)
+	void init(const mpz_class& cofactor, const mpz_class &z, bool isBN, int curveType = -1)
 	{
 		isBN_ = isBN;
 		if (isBN_) {
-			initBN(cofactor, z);
+			initBN(cofactor, z, curveType);
 		} else {
 			initBLS12(z);
 		}
@@ -519,8 +528,79 @@ struct GLV1 {
 	mpz_class v0, v1;
 	mpz_class B[2][2];
 	mpz_class r;
-	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false)
+private:
+	bool usePrecomputedTable(int curveType)
 	{
+		if (curveType < 0) return false;
+		const struct Tbl {
+			int curveType;
+			const char *rw;
+			size_t rBitSize;
+			const char *v0, *v1;
+			const char *B[2][2];
+			const char *r;
+		} tbl[] = {
+			{
+				MCL_BN254,
+				"49b36240000000024909000000000006cd80000000000007",
+				256,
+				"2a01fab7e04a017b9c0eb31ff36bf3357",
+				"37937ca688a6b4904",
+				{
+					{
+						"61818000000000028500000000000004",
+						"8100000000000001",
+					},
+					{
+						"8100000000000001",
+						"-61818000000000020400000000000003",
+					},
+				},
+				"2523648240000001ba344d8000000007ff9f800000000010a10000000000000d",
+			},
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			if (tbl[i].curveType != curveType) continue;
+			bool b;
+			rw.setStr(&b, tbl[i].rw, 16); if (!b) continue;
+			rBitSize = tbl[i].rBitSize;
+			mcl::gmp::setStr(&b, v0, tbl[i].v0, 16); if (!b) continue;
+			mcl::gmp::setStr(&b, v1, tbl[i].v1, 16); if (!b) continue;
+			mcl::gmp::setStr(&b, B[0][0], tbl[i].B[0][0], 16); if (!b) continue;
+			mcl::gmp::setStr(&b, B[0][1], tbl[i].B[0][1], 16); if (!b) continue;
+			mcl::gmp::setStr(&b, B[1][0], tbl[i].B[1][0], 16); if (!b) continue;
+			mcl::gmp::setStr(&b, B[1][1], tbl[i].B[1][1], 16); if (!b) continue;
+			mcl::gmp::setStr(&b, r, tbl[i].r, 16); if (!b) continue;
+			return true;
+		}
+		return false;
+	}
+public:
+	bool operator==(const GLV1& rhs) const
+	{
+		return rw == rhs.rw && rBitSize == rhs.rBitSize && v0 == rhs.v0 && v1 == rhs.v1
+			&& B[0][0] == rhs.B[0][0] && B[0][1] == rhs.B[0][1] && B[1][0] == rhs.B[1][0]
+			&& B[1][1] == rhs.B[1][1] && r == rhs.r;
+	}
+	bool operator!=(const GLV1& rhs) const { return !operator==(rhs); }
+#ifndef CYBOZU_DONT_USE_STRING
+	void dump(const mpz_class& x) const
+	{
+		printf("\"%s\",\n", mcl::gmp::getStr(x, 16).c_str());
+	}
+	void dump() const
+	{
+		printf("\"%s\",\n", rw.getStr(16).c_str());
+		printf("%d,\n", (int)rBitSize);
+		dump(v0);
+		dump(v1);
+		dump(B[0][0]); dump(B[0][1]); dump(B[1][0]); dump(B[1][1]);
+		dump(r);
+	}
+#endif
+	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false, int curveType = -1)
+	{
+		if (usePrecomputedTable(curveType)) return;
 		bool b = Fp::squareRoot(rw, -3);
 		assert(b);
 		(void)b;
@@ -981,9 +1061,9 @@ struct Param {
 		if (isBLS12) {
 			mapTo.init(0, z, false);
 		} else {
-			mapTo.init(2 * p - r, z, true);
+			mapTo.init(2 * p - r, z, true, cp.curveType);
 		}
-		glv1.init(r, z, isBLS12);
+		glv1.init(r, z, isBLS12, cp.curveType);
 		glv2.init(r, z, isBLS12);
 		*pb = true;
 	}
