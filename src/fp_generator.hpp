@@ -8,7 +8,7 @@
 */
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL
 #define XBYAK_NO_OP_NAMES
-#include <xbyak/xbyak_util.h>
+#include "xbyak/xbyak_util.h"
 
 #if MCL_SIZEOF_UNIT == 8
 #include <stdio.h>

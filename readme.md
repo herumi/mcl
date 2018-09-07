@@ -82,7 +82,6 @@ mkdir work
 cd work
 git clone git://github.com/herumi/mcl
 git clone git://github.com/herumi/cybozulib
-git clone git://github.com/herumi/xbyak ; for only x86/x64
 git clone git://github.com/herumi/cybozulib_ext ; for only Windows
 ```
 * Cybozulib\_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
@@ -320,17 +319,10 @@ See [java.md](https://github.com/herumi/mcl/blob/master/java/java.md)
 modified new BSD License
 http://opensource.org/licenses/BSD-3-Clause
 
-The original source of the followings are https://github.com/aistcrypt/Lifted-ElGamal .
-These files are licensed by BSD-3-Clause and are used for only tests.
-
-```
-include/mcl/elgamal.hpp
-include/mcl/window_method.hpp
-test/elgamal_test.cpp
-test/window_method_test.cpp
-sample/vote.cpp
-```
-This library contains [mie](https://github.com/herumi/mie/) and [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal/).
+This library contains some part of the followings software licensed by BSD-3-Clause.
+* [xbyak](https://github.com/heurmi/xbyak)
+* [mie](https://github.com/herumi/mie)
+* [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal)
 
 # References
 * [ate-pairing](https://github.com/herumi/ate-pairing/)
