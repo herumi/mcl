@@ -7,8 +7,6 @@ compiler:
 before_install:
   - sudo apt install -y libgmp-dev
 script:
-  - git clone https://github.com/herumi/cybozulib.git
-  - git clone https://github.com/herumi/xbyak.git
   - git clone https://github.com/herumi/mcl.git
   - cd mcl
   - make test DEBUG=1

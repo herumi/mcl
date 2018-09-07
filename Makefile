@@ -260,7 +260,7 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
-EMCC_OPT=-I./include -I./src -I../cybozulib/include -Wall -Wextra
+EMCC_OPT=-I./include -I./src -Wall -Wextra
 EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1 #-s ASSERTIONS=1
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
@@ -299,9 +299,10 @@ ecdsa-wasm:
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_64BIT_PORTABLE -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=256 -I./include -I../cybozulib/include
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_64BIT_PORTABLE -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -o $@ sample/pairing_c.c src/fp.cpp src/bn_c256.cpp -Ofast -g -I./include -I../cybozulib/include -fno-exceptions -fno-rtti -fno-threadsafe-statics -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -DMCL_DONT_USE_CSPRNG -DMCL_MAX_BIT_SIZE=256 -DMCL_VINT_64BIT_PORTABLE -DNDEBUG
+#	$(CXX) -o $@ sample/pairing_c.c src/fp.cpp src/bn_c256.cpp -O2 -g -I./include -fno-exceptions -fno-rtti -fno-threadsafe-statics -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -DMCL_DONT_USE_CSPRNG -DMCL_MAX_BIT_SIZE=256 -DMCL_VINT_64BIT_PORTABLE -DNDEBUG -pg
+	$(CXX) -o $@ sample/pairing_c.c src/fp.cpp src/bn_c256.cpp -O2 -g -I./include -fno-threadsafe-statics -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DMCL_DONT_USE_CSPRNG -DMCL_MAX_BIT_SIZE=256 -DMCL_VINT_64BIT_PORTABLE -DNDEBUG
 
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll lib/*.a
@@ -312,9 +313,9 @@ DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
 
 PREFIX?=/usr/local
 install: lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF)
-	$(MAKE) -C ../cybozulib install PREFIX=$(PREFIX)
 	$(MKDIR) $(PREFIX)/include/mcl
 	cp -a include/mcl/ $(PREFIX)/include/
+	cp -a include/cybozu/ $(PREFIX)/include/
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl$(SHARE_BASENAME_SUF).$(LIB_SUF) $(PREFIX)/lib/
 

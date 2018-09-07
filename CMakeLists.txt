@@ -9,10 +9,9 @@ option(
 )
 option(
 	DOWNLOAD_SOURCE
-	"download xbyak, cybozulib"
+	"download cybozulib_ext"
 	OFF
 )
-set(DOWNLOAD_SOURCE ON)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -50,19 +49,6 @@ else()
 endif()
 
 if(DOWNLOAD_SOURCE)
-	set(XBYAK_TAG v5.64)
-	foreach(file IN ITEMS xbyak.h xbyak_util.h xbyak_mnemonic.h)
-		file(DOWNLOAD https://raw.githubusercontent.com/herumi/xbyak/${XBYAK_TAG}/xbyak/${file} ${mcl_SOURCE_DIR}/include/xbyak/${file})
-		message("download xbyak/" ${file})
-	endforeach()
-
-	set(CYBOZULIB_TAG release20180528)
-	set(CYBOZULIB_FILES atoi.hpp bit_operation.hpp endian.hpp hash.hpp itoa.hpp random_generator.hpp unordered_map.hpp benchmark.hpp crypto.hpp exception.hpp inttype.hpp option.hpp test.hpp xorshift.hpp link_mpir.hpp link_libeay32.hpp link_ssleay32.hpp critical_section.hpp mutex.hpp serializer.hpp stream.hpp)
-	foreach(file IN ITEMS ${CYBOZULIB_FILES})
-		file(DOWNLOAD https://raw.githubusercontent.com/herumi/cybozulib/${CYBOZULIB_TAG}/include/cybozu/${file} ${mcl_SOURCE_DIR}/include/cybozu/${file})
-		message("download cybozu/" ${file})
-	endforeach()
-
 	if(MSVC)
 		set(CYBOZULIB_EXT_TAG release20170521)
 		set(FILES config.h gmp-impl.h gmp-mparam.h gmp.h gmpxx.h longlong.h mpir.h mpirxx.h)
@@ -87,11 +73,6 @@ if(DOWNLOAD_SOURCE)
 		endif()
 	endif()
 else()
-	include_directories(
-		${mcl_SOURCE_DIR}/../cybozulib/include
-		${mcl_SOURCE_DIR}/../xbyak
-		${mcl_SOURCE_DIR}/../cybozulib_ext/include
-	)
 	if(MSVC)
 		include_directories(
 			${mcl_SOURCE_DIR}/../cybozulib_ext/include

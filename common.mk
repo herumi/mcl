@@ -82,7 +82,7 @@ else
 endif
 CFLAGS_WARN=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith
 CFLAGS+=-g3
-INC_OPT=-I include -I test -I ../cybozulib/include
+INC_OPT=-I include -I test
 CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT)
 DEBUG=0
 CFLAGS_OPT_USER?=$(CFLAGS_OPT)

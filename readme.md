@@ -81,7 +81,6 @@ Create a working directory (e.g., work) and clone the following repositories.
 mkdir work
 cd work
 git clone git://github.com/herumi/mcl
-git clone git://github.com/herumi/cybozulib
 git clone git://github.com/herumi/cybozulib_ext ; for only Windows
 ```
 * Cybozulib\_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
@@ -149,18 +148,12 @@ cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
 ## Build for wasm(WebAssembly)
-mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge(enable extended JavaScript at about:config).
+mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge.
 
 * [IBE on browser](https://herumi.github.io/mcl-wasm/ibe-demo.html)
 * [SHE on browser](https://herumi.github.io/she-wasm/she-demo.html)
 * [BLS signature on brower](https://herumi.github.io/bls-wasm/bls-demo.html)
 
-Type
-```
-emcc -O3 -I ./include/ -I ../cybozulib/include/ src/fp.cpp test/bn_test.cpp -DNDEBUG -s WASM=1 -o t.html
-emrun --no_browser --port 8080 --no_emrun_detect .
-```
-and open `http://<address>:8080/t.html`.
 The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
 
 ### Node.js
@@ -321,7 +314,7 @@ http://opensource.org/licenses/BSD-3-Clause
 
 This library contains some part of the followings software licensed by BSD-3-Clause.
 * [xbyak](https://github.com/heurmi/xbyak)
-* [mie](https://github.com/herumi/mie)
+* [cybozulib](https://github.com/heurmi/cybozulib)
 * [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal)
 
 # References
