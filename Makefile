@@ -304,6 +304,14 @@ bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp includ
 #	$(CXX) -o $@ sample/pairing_c.c src/fp.cpp src/bn_c256.cpp -O2 -g -I./include -fno-exceptions -fno-rtti -fno-threadsafe-statics -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -DMCL_DONT_USE_CSPRNG -DMCL_MAX_BIT_SIZE=256 -DMCL_VINT_64BIT_PORTABLE -DNDEBUG -pg
 	$(CXX) -o $@ sample/pairing_c.c src/fp.cpp src/bn_c256.cpp -O2 -g -I./include -fno-threadsafe-statics -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DMCL_DONT_USE_CSPRNG -DMCL_MAX_BIT_SIZE=256 -DMCL_VINT_64BIT_PORTABLE -DNDEBUG
 
+make_tbl:
+	$(MAKE) ../bls/src/qcoeff-bn254.hpp
+
+../bls/src/qcoeff-bn254.hpp:  $(MCL_LIB) misc/precompute.cpp
+	$(CXX) -o misc/precompute misc/precompute.cpp $(CFLAGS) $(MCL_LIB) $(LDFLAGS)
+	./misc/precompute > ../bls/src/qcoeff-bn254.hpp
+
+
 clean:
 	$(RM) $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll lib/*.a
 

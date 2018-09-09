@@ -1,4 +1,4 @@
-#include <mcl/bn384.hpp>
+#include <mcl/bn256.hpp>
 #include <iostream>
 
 using namespace mcl::bn;
@@ -10,9 +10,21 @@ int main()
 	mapToG2(Q, 1);
 	std::vector<Fp6> Qcoeff;
 	precomputeG2(Qcoeff, Q);
-	printf("static const char *tbl[%d] = {\n", (int)Qcoeff.size());
+	puts("#if MCL_SIZEOF_UNIT == 8");
+	puts("static const uint64_t QcoeffTblBN254[][6][4] = {");
 	for (size_t i = 0; i < Qcoeff.size(); i++) {
-		printf("\"%s\",\n", Qcoeff[i].getStr(16).c_str());
+		const Fp6& x6 = Qcoeff[i];
+		puts("\t{");
+		for (size_t j = 0; j < 6; j++) {
+			printf("\t\t{");
+			const Fp& x = x6.getFp0()[j];
+			for (size_t k = 0; k < 4; k++) {
+				printf("0x%016llxull,", (unsigned long long)x.getUnit()[k]);
+			}
+			puts("},");
+		}
+		puts("\t},");
 	}
 	puts("};");
+	puts("#endif");
 }
