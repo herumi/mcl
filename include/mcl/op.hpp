@@ -19,6 +19,7 @@
 #endif
 #if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8)
 	#define MCL_USE_XBYAK
+	#define MCL_XBYAK_DIRECT_CALL
 #endif
 
 #define MCL_MAX_HASH_BIT_SIZE 512
