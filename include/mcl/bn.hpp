@@ -1042,7 +1042,11 @@ struct Param {
 		if (cp.isMtype) {
 			twist_b = Fp2(cp.b) * xi;
 		} else {
-			twist_b = Fp2(cp.b) / xi;
+			if (cp.b == 2 && cp.xi_a == 1) {
+				twist_b = Fp2(1, -1); // shortcut
+			} else {
+				twist_b = Fp2(cp.b) / xi;
+			}
 		}
 		if (twist_b == Fp2(1, -1)) {
 			twist_b_type = tb_1m1i;
