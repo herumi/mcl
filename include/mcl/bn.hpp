@@ -783,10 +783,30 @@ struct GLV2 {
 		/*
 			v[] = [r 0 0 0] * B^(-1) = [2z^2+3z+1, 12z^3+8z^2+z, 6z^3+4z^2+z, -(2z+1)]
 		*/
-		v[0] = ((1 + z * (3 + z * 2)) << rBitSize) / r;
-		v[1] = ((z * (1 + z * (8 + z * 12))) << rBitSize) / r;
-		v[2] = ((z * (1 + z * (4 + z * 6))) << rBitSize) / r;
-		v[3] = -((z * (1 + z * 2)) << rBitSize) / r;
+		const char *zBN254 = "-4080000000000001";
+		mpz_class t;
+		bool b;
+		mcl::gmp::setStr(&b, t, zBN254, 16);
+		assert(b);
+		(void)b;
+		if (z == t) {
+			static const char *vTblBN254[] = {
+				"e00a8e7f56e007e5b09fe7fdf43ba998",
+				"-152aff56a8054abf9da75db2da3d6885101e5fd3997d41cb1",
+				"-a957fab5402a55fced3aed96d1eb44295f40f136ee84e09b",
+				"-e00a8e7f56e007e929d7b2667ea6f29c",
+			};
+			for (int i = 0; i < 4; i++) {
+				mcl::gmp::setStr(&b, v[i], vTblBN254[i], 16);
+				assert(b);
+				(void)b;
+			}
+		} else {
+			v[0] = ((1 + z * (3 + z * 2)) << rBitSize) / r;
+			v[1] = ((z * (1 + z * (8 + z * 12))) << rBitSize) / r;
+			v[2] = ((z * (1 + z * (4 + z * 6))) << rBitSize) / r;
+			v[3] = -((z * (1 + z * 2)) << rBitSize) / r;
+		}
 	}
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
