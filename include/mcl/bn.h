@@ -97,6 +97,7 @@ enum {
 	init library
 	@param curve [in] type of bn curve
 	@param maxUnitSize [in] MCLBN_FP_UNIT_SIZE
+	return 0 if success else -1
 	curve = BN254/BN_SNARK1 is allowed if maxUnitSize = 4
 	curve = BN381_1/BN381_2/BLS12_381 are allowed if maxUnitSize = 6
 	This parameter is used to detect a library compiled with different MCLBN_FP_UNIT_SIZE for safety.
