@@ -8,6 +8,10 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4127)
+#endif
 
 namespace mcl { namespace fp {
 
@@ -485,3 +489,7 @@ inline size_t readHexStr(void *buf, size_t n, InputStream& is)
 }
 
 } } // mcl::fp
+
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
