@@ -76,27 +76,24 @@ void setArray(bool *pb, mpz_class& z, const T *buf, size_t n)
 	buf[0, size) = x
 	buf[size, maxSize) with zero
 */
-#ifndef MCL_USE_VINT
-template<class T>
-bool getArray_(T *buf, size_t maxSize, const mpz_srcptr x)
+template<class T, class U>
+bool getArray_(T *buf, size_t maxSize, const U *x, int xn)//const mpz_srcptr x)
 {
 	const size_t bufByteSize = sizeof(T) * maxSize;
-	const int xn = x->_mp_size;
 	if (xn < 0) return false;
-	size_t xByteSize = sizeof(*x->_mp_d) * xn;
+	size_t xByteSize = sizeof(*x) * xn;
 	if (xByteSize > bufByteSize) return false;
-	memcpy(buf, x->_mp_d, xByteSize);
+	memcpy(buf, x, xByteSize);
 	memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
 	return true;
 }
-#endif
 template<class T>
 void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
-	x.getArray(pb, buf, maxSize);
+	*pb = getArray_(buf, maxSize, x.getUnit(), x.getUnitSize());
 #else
-	*pb = getArray_(buf, maxSize, x.get_mpz_t());
+	*pb = getArray_(buf, maxSize, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size);
 #endif
 }
 inline void set(mpz_class& z, uint64_t x)
