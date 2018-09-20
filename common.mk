@@ -14,8 +14,9 @@ ifeq ($(UNAME_S),Darwin)
   OS=mac
   ARCH=x86_64
   LIB_SUF=dylib
-  CFLAGS+=-I/usr/local/opt/openssl/include
-  LDFLAGS+=-L/usr/local/opt/openssl/lib
+  OPENSSL_DIR?=/usr/local/opt/openssl
+  CFLAGS+=-I$(OPENSSL_DIR)/include
+  LDFLAGS+=-L$(OPENSSL_DIR)/lib
 else
   LIB_SUF=so
 endif
