@@ -243,6 +243,25 @@ EXIT_0:
 }
 
 /*
+	x[] += y
+*/
+template<class T>
+T addu1(T *x, size_t n, T y)
+{
+	assert(n > 0);
+	T t = x[0] + y;
+	x[0] = t;
+	size_t i = 0;
+	if (t >= y) return 0;
+	i = 1;
+	for (; i < n; i++) {
+		t = x[i] + 1;
+		x[i] = t;
+		if (t != 0) return 0;
+	}
+	return 1;
+}
+/*
 	z[zn] = x[xn] + y[yn]
 	@note zn = max(xn, yn)
 */
@@ -536,6 +555,7 @@ size_t getBitSize(const T *x, size_t n)
 /*
 	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
 	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
+	allow q == 0
 */
 template<class T>
 void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
@@ -546,6 +566,15 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	const size_t rn = yn;
 	xn = getRealSize(x, xn);
 	yn = getRealSize(y, yn);
+	if (x == y) {
+		assert(xn == yn);
+		clearN(r, rn);
+		if (q) {
+			q[0] = 1;
+			clearN(q + 1, qn - 1);
+		}
+		return;
+	}
 	if (yn > xn) {
 		/*
 			if y > x then q = 0 and r = x
@@ -570,15 +599,64 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		return;
 	}
 	assert(yn >= 2);
-	if (x == y) {
-		assert(xn == yn);
-		clearN(r, rn);
-		if (q) {
-			q[0] = 1;
-			clearN(q + 1, qn - 1);
+#if 1
+	/*
+		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
+	*/
+	const size_t shift = sizeof(T) * 8 - 1 - cybozu::bsr(y[yn - 1]);
+	T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
+	const T *yy;
+	if (shift) {
+		T v = shlBit(xx, x, xn, shift);
+		if (v) {
+			xx[xn] = v;
+			xn++;
 		}
-		return;
+		T *yBuf = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
+		shlBit(yBuf, y, yn ,shift);
+		yy = yBuf;
+	} else {
+		copyN(xx, x, xn);
+		yy = y;
 	}
+	if (q) {
+		clearN(q, qn);
+	}
+	assert((yy[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
+	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
+	while (xn > yn) {
+		size_t d = xn - yn;
+		T xTop = xx[xn - 1];
+		T yTop = yy[yn - 1];
+		if (xTop > yTop || (compareNM(xx + d, xn - d, yy, yn) >= 0)) {
+			vint::subN(xx + d, xx + d, yy, yn);
+			xn = getRealSize(xx, xn);
+			if (q) vint::addu1<T>(q + d, qn - d, 1);
+			continue;
+		}
+		if (xTop == 1) {
+			vint::subNM(xx + d - 1, xx + d - 1, xn - d + 1, yy, yn);
+			xn = getRealSize(xx, xn);
+			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, 1);
+			continue;
+		}
+		tt[yn] = vint::mulu1(tt, yy, yn, xTop);
+		vint::subN(xx + d - 1, xx + d - 1, tt, yn + 1);
+		xn = getRealSize(xx, xn);
+		if (q) vint::addu1<T>(q + d - 1, qn - d + 1, xTop);
+	}
+	if (xn == yn && compareNM(xx, xn, yy, yn) >= 0) {
+		subN(xx, xx, yy, yn);
+		xn = getRealSize(xx, xn);
+		if (q) vint::addu1<T>(q, qn, 1);
+	}
+	if (shift) {
+		shrBit(r, xx, xn, shift);
+	} else {
+		copyN(r, xx, xn);
+	}
+	clearN(r + xn, rn - xn);
+#else
 	T *qOrg = q;
 	if (q) {
 		if (q == x || q == y) {
@@ -618,6 +696,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	if (q && q != qOrg) {
 		copyN(qOrg, q, qn);
 	}
+#endif
 }
 
 #ifndef MCL_VINT_FIXED_BUFFER
