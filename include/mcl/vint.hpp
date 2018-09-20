@@ -1235,6 +1235,13 @@ public:
 			return c;
 		}
 	}
+	static int compareu1(const VintT& x, uint32_t y)
+	{
+		if (x.isNeg_) return -1;
+		if (x.size() > 1) return 1;
+		Unit x0 = x.buf_[0];
+		return x0 > y ? 1 : x0 == y ? 0 : -1;
+	}
 	size_t size() const { return size_; }
 	bool isZero() const { return size() == 1 && buf_[0] == 0; }
 	bool isNegative() const { return !isZero() && isNeg_; }
@@ -1331,10 +1338,10 @@ public:
 			bool b;
 			q->buf_.alloc(&b, xn);
 			assert(b); (void)b;
-			r = vint::divu1(&q->buf_[0], &x.buf_[0], xn, absY);
+			r = (int)vint::divu1(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
 		} else {
-			r = vint::modu1(&x.buf_[0], xn, absY);
+			r = (int)vint::modu1(&x.buf_[0], xn, absY);
 		}
 		return xNeg ? -r : r;
 	}
@@ -1811,6 +1818,13 @@ public:
 	friend bool operator<=(const VintT& x, int y) { return !operator>(x, y); }
 	friend bool operator==(const VintT& x, int y) { return compares1(x, y) == 0; }
 	friend bool operator!=(const VintT& x, int y) { return !operator==(x, y); }
+
+	friend bool operator<(const VintT& x, uint32_t y) { return compareu1(x, y) < 0; }
+	friend bool operator>=(const VintT& x, uint32_t y) { return !operator<(x, y); }
+	friend bool operator>(const VintT& x, uint32_t y) { return compareu1(x, y) > 0; }
+	friend bool operator<=(const VintT& x, uint32_t y) { return !operator>(x, y); }
+	friend bool operator==(const VintT& x, uint32_t y) { return compareu1(x, y) == 0; }
+	friend bool operator!=(const VintT& x, uint32_t y) { return !operator==(x, y); }
 
 	VintT& operator+=(const VintT& rhs) { add(*this, *this, rhs); return *this; }
 	VintT& operator-=(const VintT& rhs) { sub(*this, *this, rhs); return *this; }
