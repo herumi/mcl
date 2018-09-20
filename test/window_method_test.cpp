@@ -17,7 +17,7 @@ CYBOZU_TEST_AUTO(ArrayIterator)
 		for (size_t j = 0; j < n; j++) {
 			CYBOZU_TEST_ASSERT(ai.hasNext());
 			uint32_t v = ai.getNext();
-			CYBOZU_TEST_EQUAL(v, x & mask);
+			CYBOZU_TEST_EQUAL(x & mask, v);
 			x >>= w;
 		}
 		CYBOZU_TEST_ASSERT(!ai.hasNext());
