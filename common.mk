@@ -17,6 +17,9 @@ ifeq ($(UNAME_S),Darwin)
   OPENSSL_DIR?=/usr/local/opt/openssl
   CFLAGS+=-I$(OPENSSL_DIR)/include
   LDFLAGS+=-L$(OPENSSL_DIR)/lib
+  GMP_DIR?=/usr/local/opt/gmp
+  CFLAGS+=-I$(GMP_DIR)/include
+  LDFLAGS+=-L$(GMP_DIR)/lib
 else
   LIB_SUF=so
 endif
