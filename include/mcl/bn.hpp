@@ -414,6 +414,9 @@ struct MapTo {
 #endif
 #endif
 	}
+	/*
+		1.2~1.4 times faster than calBN
+	*/
 	template<class G, class F>
 	void naiveMapTo(G& P, const F& t) const
 	{
@@ -480,6 +483,10 @@ struct MapTo {
 		z_ = z;
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
+		bool b = Fp::squareRoot(c1_, -3);
+		assert(b);
+		(void)b;
+		c2_ = (c1_ - 1) / 2;
 	}
 	void init(const mpz_class& cofactor, const mpz_class &z, bool isBN, int curveType = -1)
 	{
@@ -494,8 +501,13 @@ struct MapTo {
 	{
 		if (isBN_) {
 			if (!calcBN<G1, Fp>(P, t)) return false;
+			// no subgroup
 		} else {
+#ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
 			naiveMapTo<G1, Fp>(P, t);
+#else
+			if (!calcBN<G1, Fp>(P, t)) return false;
+#endif
 			mulByCofactorBLS12(P, P);
 		}
 		assert(P.isValid());
@@ -510,7 +522,11 @@ struct MapTo {
 			if (!calcBN<G2, Fp2>(P, t)) return false;
 			mulByCofactorBN(P, P);
 		} else {
-			naiveMapTo<G2, Fp2>(P, t);
+#ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
+			naiveMapTo<G1, Fp>(P, t);
+#else
+			if (!calcBN<G2, Fp2>(P, t)) return false;
+#endif
 			mulByCofactorBLS12(P, P);
 		}
 		assert(P.isValid());
