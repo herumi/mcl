@@ -430,6 +430,80 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 }
 
+CYBOZU_TEST_AUTO(serializeToHexStr)
+{
+	const size_t G1Size = mclBn_getG1ByteSize() * 2;
+	mclBnFr x1, x2;
+	mclBnG1 P1, P2;
+	mclBnG2 Q1, Q2;
+	char buf[1024];
+	size_t n;
+	size_t expectSize;
+	size_t ret;
+	// Fr
+	expectSize = G1Size;
+	mclBnFr_setInt(&x1, -1);
+	n = mclBnFr_getStr(buf, sizeof(buf), &x1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(n, expectSize);
+
+	ret = mclBnFr_setStr(&x2, buf, n, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x1, &x2));
+
+	ret = mclBnFr_setStr(&x2, buf, n - 1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_ASSERT(ret != 0);
+
+	memset(&x2, 0, sizeof(x2));
+	ret = mclBnFr_setStr(&x2, buf, n + 1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x1, &x2));
+
+	n = mclBnFr_getStr(buf, expectSize, &x1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(n, expectSize);
+
+	// G1
+	expectSize = G1Size;
+	mclBnG1_hashAndMapTo(&P1, "1", 1);
+	n = mclBnG1_getStr(buf, sizeof(buf), &P1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(n, expectSize);
+
+	ret = mclBnG1_setStr(&P2, buf, n, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&P1, &P2));
+
+	ret = mclBnG1_setStr(&P2, buf, n - 1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_ASSERT(ret != 0);
+
+	memset(&P2, 0, sizeof(P2));
+	ret = mclBnG1_setStr(&P2, buf, n + 1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&P1, &P2));
+
+	n = mclBnG1_getStr(buf, expectSize, &P1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(n, expectSize);
+
+	// G2
+	expectSize = G1Size * 2;
+	mclBnG2_hashAndMapTo(&Q1, "1", 1);
+	n = mclBnG2_getStr(buf, sizeof(buf), &Q1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(n, expectSize);
+
+	ret = mclBnG2_setStr(&Q2, buf, n, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&Q1, &Q2));
+
+	ret = mclBnG2_setStr(&Q2, buf, n - 1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_ASSERT(ret != 0);
+
+	memset(&Q2, 0, sizeof(Q2));
+	ret = mclBnG2_setStr(&Q2, buf, n + 1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&Q1, &Q2));
+
+	n = mclBnG2_getStr(buf, expectSize, &Q1, MCLBN_IO_SERIALIZE_HEX_STR);
+	CYBOZU_TEST_EQUAL(n, expectSize);
+}
+
 #if MCLBN_FP_UNIT_SIZE == 6
 CYBOZU_TEST_AUTO(badG2)
 {

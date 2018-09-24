@@ -358,7 +358,7 @@ private:
 
 inline const char* getIoSeparator(int ioMode)
 {
-	return (ioMode & (IoArray | IoArrayRaw | IoSerialize)) ? "" : " ";
+	return (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr)) ? "" : " ";
 }
 
 inline void dump(const char *s, size_t n)

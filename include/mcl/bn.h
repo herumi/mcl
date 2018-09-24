@@ -83,6 +83,8 @@ typedef struct {
 #endif
 
 #include <mcl/curve_type.h>
+
+#define MCLBN_IO_SERIALIZE_HEX_STR 2048
 // for backword compatibility
 enum {
 	mclBn_CurveFp254BNb = 0,
@@ -172,6 +174,7 @@ MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mcl
 	ioMode
 	10 : decimal number
 	16 : hexadecimal number
+	MCLBN_IO_SERIALIZE_HEX_STR : hex string of serialized data
 	return 0 if success else -1
 */
 MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
