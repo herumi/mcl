@@ -713,7 +713,7 @@ public:
 				}
 			}
 			if (ioMode & IoSerializeHexStr) {
-				*pb = mcl::fp::writeHexStr(os, buf, n + adj);
+				mcl::fp::writeHexStr(pb, os, buf, n + adj);
 			} else {
 				cybozu::write(pb, os, buf, n + adj);
 			}

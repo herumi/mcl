@@ -278,7 +278,7 @@ public:
 				fp::Block b;
 				getBlock(b);
 				if (ioMode & IoSerializeHexStr) {
-					*pb = mcl::fp::writeHexStr(os, b.p, n);
+					mcl::fp::writeHexStr(pb, os, b.p, n);
 				} else {
 					cybozu::write(pb, os, b.p, n);
 				}

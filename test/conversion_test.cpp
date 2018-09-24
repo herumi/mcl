@@ -82,7 +82,9 @@ CYBOZU_TEST_AUTO(writeHexStr)
 		const char *bin = tbl[i].bin;
 		const char *hex = tbl[i].hex;
 		size_t n = tbl[i].n;
-		CYBOZU_TEST_ASSERT(mcl::fp::writeHexStr(os, bin, n));
+		bool b;
+		mcl::fp::writeHexStr(&b, os, bin, n);
+		CYBOZU_TEST_ASSERT(b);
 		CYBOZU_TEST_EQUAL(os.getPos(), n * 2);
 		CYBOZU_TEST_EQUAL_ARRAY(buf, hex, n * 2);
 

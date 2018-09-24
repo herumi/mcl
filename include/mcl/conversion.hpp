@@ -451,17 +451,16 @@ size_t strToArray(bool *pIsMinus, UT *x, size_t xN, const char *buf, size_t bufS
 	return true if success else flase
 */
 template<class OutputStream>
-bool writeHexStr(OutputStream& os, const void *src, size_t n)
+void writeHexStr(bool *pb, OutputStream& os, const void *src, size_t n)
 {
-	bool b;
 	const uint8_t *p = (const uint8_t *)src;
 	for (size_t i = 0; i < n; i++) {
 		char hex[2];
 		cybozu::itohex(hex, sizeof(hex), p[i], false);
-		cybozu::write(&b, os, hex, sizeof(hex));
-		if (!b) return false;
+		cybozu::write(pb, os, hex, sizeof(hex));
+		if (!*pb) return;
 	}
-	return true;
+	*pb = true;
 }
 /*
 	read hex string from is and convert it to byte array
