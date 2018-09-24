@@ -101,7 +101,8 @@ enum IoMode {
 	IoEcCompY = 256, // 1-bit y representation of elliptic curve
 	IoSerialize = 512, // use MBS for 1-bit y
 	IoFixedSizeByteSeq = IoSerialize, // obsolete
-	IoEcProj = 1024 // projective or jacobi coordinate
+	IoEcProj = 1024, // projective or jacobi coordinate
+	IoSerializeHexStr = 2048 // printable hex string
 };
 
 namespace fp {

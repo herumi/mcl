@@ -55,3 +55,40 @@ CYBOZU_TEST_AUTO(arrayToDec)
 		CYBOZU_TEST_EQUAL_ARRAY(xx, x, xn);
 	}
 }
+
+CYBOZU_TEST_AUTO(writeHexStr)
+{
+	const char *hex1tbl = "0123456789abcdef";
+	const char *hex2tbl = "0123456789ABCDEF";
+	for (size_t i = 0; i < 16; i++) {
+		uint8_t v = 0xff;
+		CYBOZU_TEST_ASSERT(mcl::fp::local::hexCharToUint8(&v, hex1tbl[i]));
+		CYBOZU_TEST_EQUAL(v, i);
+		CYBOZU_TEST_ASSERT(mcl::fp::local::hexCharToUint8(&v, hex2tbl[i]));
+		CYBOZU_TEST_EQUAL(v, i);
+	}
+	const struct Tbl {
+		const char *bin;
+		size_t n;
+		const char *hex;
+	} tbl[] = {
+		{ "", 0, "" },
+		{ "\x12\x34\xab", 3, "1234ab" },
+		{ "\xff\xfc\x00\x12", 4, "fffc0012" },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		char buf[32];
+		cybozu::MemoryOutputStream os(buf, sizeof(buf));
+		const char *bin = tbl[i].bin;
+		const char *hex = tbl[i].hex;
+		size_t n = tbl[i].n;
+		CYBOZU_TEST_ASSERT(mcl::fp::writeHexStr(os, bin, n));
+		CYBOZU_TEST_EQUAL(os.getPos(), n * 2);
+		CYBOZU_TEST_EQUAL_ARRAY(buf, hex, n * 2);
+
+		cybozu::MemoryInputStream is(hex, n * 2);
+		size_t w = mcl::fp::readHexStr(buf, n, is);
+		CYBOZU_TEST_EQUAL(w, n);
+		CYBOZU_TEST_EQUAL_ARRAY(buf, bin, n);
+	}
+}

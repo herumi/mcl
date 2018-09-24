@@ -131,23 +131,31 @@ inline uint32_t decToU32(const char *p, size_t size, bool *pb)
 	return x;
 }
 
+inline bool hexCharToUint8(uint8_t *v, char _c)
+{
+	uint32_t c = uint8_t(_c); // cast is necessary
+	if (c - '0' <= '9' - '0') {
+		c = c - '0';
+	} else if (c - 'a' <= 'f' - 'a') {
+		c = (c - 'a') + 10;
+	} else if (c - 'A' <= 'F' - 'A') {
+		c = (c - 'A') + 10;
+	} else {
+		return false;
+	}
+	*v = c;
+	return true;
+}
+
 template<class UT>
 bool hexToUint(UT *px, const char *p, size_t size)
 {
 	assert(0 < size && size <= sizeof(UT) * 2);
 	UT x = 0;
 	for (size_t i = 0; i < size; i++) {
-		UT c = static_cast<uint8_t>(p[i]);
-		if (c - 'A' <= 'F' - 'A') {
-			c = (c - 'A') + 10;
-		} else if (c - 'a' <= 'f' - 'a') {
-			c = (c - 'a') + 10;
-		} else if (c - '0' <= '9' - '0') {
-			c = c - '0';
-		} else {
-			return false;
-		}
-		x = x * 16 + c;
+		uint8_t v;
+		if (!hexCharToUint8(&v, p[i])) return false;
+		x = x * 16 + v;
 	}
 	*px = x;
 	return true;
@@ -436,6 +444,45 @@ size_t strToArray(bool *pIsMinus, UT *x, size_t xN, const char *buf, size_t bufS
 	default:
 		return 0;
 	}
+}
+
+/*
+	convert src[0, n) to (n * 2) byte hex string and write it to os
+	return true if success else flase
+*/
+template<class OutputStream>
+bool writeHexStr(OutputStream& os, const void *src, size_t n)
+{
+	bool b;
+	const uint8_t *p = (const uint8_t *)src;
+	for (size_t i = 0; i < n; i++) {
+		char hex[2];
+		cybozu::itohex(hex, sizeof(hex), p[i], false);
+		cybozu::write(&b, os, hex, sizeof(hex));
+		if (!b) return false;
+	}
+	return true;
+}
+/*
+	read hex string from is and convert it to byte array
+	return written buffer size
+*/
+template<class InputStream>
+inline size_t readHexStr(void *buf, size_t n, InputStream& is)
+{
+	bool b;
+	uint8_t *dst = (uint8_t *)buf;
+	for (size_t i = 0; i < n; i++) {
+		uint8_t L, H;
+		char c[2];
+		if (cybozu::readSome(c, sizeof(c), is) != sizeof(c)) return i;
+		b = local::hexCharToUint8(&H, c[0]);
+		if (!b) return i;
+		b = local::hexCharToUint8(&L, c[1]);
+		if (!b) return i;
+		dst[i] = (H << 4) | L;
+	}
+	return n;
 }
 
 } } // mcl::fp
