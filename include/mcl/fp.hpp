@@ -238,12 +238,16 @@ public:
 	{
 		bool isMinus = false;
 		*pb = false;
-		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
+		if (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr)) {
 			const size_t n = getByteSize();
 			v_[op_.N - 1] = 0;
-			if (cybozu::readSome(v_, n, is) != n) {
-				return;
+			size_t readSize;
+			if (ioMode & IoSerializeHexStr) {
+				readSize = mcl::fp::readHexStr(v_, n, is);
+			} else {
+				readSize = cybozu::readSome(v_, n, is);
 			}
+			if (readSize != n) return;
 		} else {
 			char buf[1024];
 			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
@@ -267,13 +271,17 @@ public:
 	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const size_t n = getByteSize();
-		if (ioMode & (IoArray | IoArrayRaw | IoSerialize)) {
+		if (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr)) {
 			if (ioMode & IoArrayRaw) {
 				cybozu::write(pb, os, v_, n);
 			} else {
 				fp::Block b;
 				getBlock(b);
-				cybozu::write(pb, os, b.p, n);
+				if (ioMode & IoSerializeHexStr) {
+					*pb = mcl::fp::writeHexStr(os, b.p, n);
+				} else {
+					cybozu::write(pb, os, b.p, n);
+				}
 			}
 			return;
 		}

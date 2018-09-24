@@ -768,6 +768,24 @@ CYBOZU_TEST_AUTO(getArray)
 	}
 }
 
+void serializeTest()
+{
+	const char *tbl[] = { "0", "-1", "123" };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		char buf[1024];
+		Fp x, y;
+		x.setStr(tbl[i]);
+		size_t n = x.serialize(buf, sizeof(buf));
+		CYBOZU_TEST_EQUAL(n, Fp::getByteSize());
+		y.deserialize(buf, n);
+		CYBOZU_TEST_EQUAL(x, y);
+
+		n = x.serialize(buf, sizeof(buf), mcl::IoSerializeHexStr);
+		CYBOZU_TEST_EQUAL(n, Fp::getByteSize() * 2);
+		y.deserialize(buf, n, mcl::IoSerializeHexStr);
+		CYBOZU_TEST_EQUAL(x, y);
+	}
+}
 
 #include <iostream>
 #if (defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)) && (MCL_MAX_BIT_SIZE >= 521)
@@ -877,6 +895,7 @@ void sub(mcl::fp::Mode mode)
 		divBy2Test();
 		getStrTest();
 		setHashOfTest();
+		serializeTest();
 	}
 	anotherFpTest(mode);
 	setArrayTest2(mode);
