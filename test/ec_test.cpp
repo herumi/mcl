@@ -295,7 +295,7 @@ struct Test {
 			ss >> Q;
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
-		// IoSerialize
+		// IoSerialize, IoSerializeHexStr
 		const size_t adj = Ec::isMSBserialize() ? 0 : 1;
 		P.set(x, y);
 		{
@@ -305,10 +305,22 @@ struct Test {
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		{
-			P = -P;
+			std::string s = P.getStr(mcl::IoSerializeHexStr);
+			CYBOZU_TEST_EQUAL(s.size(), (Fp::getByteSize() + adj) * 2);
+			Q.setStr(s, mcl::IoSerializeHexStr);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
+		P = -P;
+		{
 			std::string s = P.getStr(mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
 			Q.setStr(s, mcl::IoSerialize);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
+		{
+			std::string s = P.getStr(mcl::IoSerializeHexStr);
+			CYBOZU_TEST_EQUAL(s.size(), (Fp::getByteSize() + adj) * 2);
+			Q.setStr(s, mcl::IoSerializeHexStr);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 		P.clear();
@@ -317,6 +329,15 @@ struct Test {
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
 			CYBOZU_TEST_ASSERT(mcl::fp::isZeroArray(s.c_str(), s.size()));
 			Q.setStr(s, mcl::IoSerialize);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
+		{
+			std::string s = P.getStr(mcl::IoSerializeHexStr);
+			CYBOZU_TEST_EQUAL(s.size(), (Fp::getByteSize() + adj) * 2);
+			for (size_t i = 0; i < s.size(); i++) {
+				CYBOZU_TEST_EQUAL(s[i], '0');
+			}
+			Q.setStr(s, mcl::IoSerializeHexStr);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
 	}

@@ -686,7 +686,7 @@ public:
 		}
 		EcT P(*this);
 		P.normalize();
-		if (ioMode & IoSerialize) {
+		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
 			/*
 				if (isMSBserialize()) {
 				  // n bytes
@@ -712,7 +712,11 @@ public:
 					}
 				}
 			}
-			cybozu::write(pb, os, buf, n + adj);
+			if (ioMode & IoSerializeHexStr) {
+				*pb = mcl::fp::writeHexStr(os, buf, n + adj);
+			} else {
+				cybozu::write(pb, os, buf, n + adj);
+			}
 			return;
 		}
 		if (isZero()) {
@@ -749,12 +753,18 @@ public:
 #else
 		z = 1;
 #endif
-		if (ioMode & IoSerialize) {
+		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			const size_t n1 = n + adj;
 			char buf[sizeof(Fp) + 1];
-			if (cybozu::readSome(buf, n1, is) != n1) {
+			size_t readSize;
+			if (ioMode & IoSerializeHexStr) {
+				readSize = mcl::fp::readHexStr(buf, n1, is);
+			} else {
+				readSize = cybozu::readSome(buf, n1, is);
+			}
+			if (readSize != n1) {
 				*pb = false;
 				return;
 			}
