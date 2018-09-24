@@ -112,6 +112,22 @@ func testPairing(t *testing.T) {
 	if !e1.IsEqual(&e2) {
 		t.Errorf("not equal pairing\n%s\n%s", e1.GetString(16), e2.GetString(16))
 	}
+	{
+		s := P.GetString(IoSerializeHexStr)
+		var P1 G1
+		P1.SetString(s, IoSerializeHexStr)
+		if !P1.IsEqual(&P) {
+			t.Error("not equal to P")
+			return
+		}
+		s = Q.GetString(IoSerializeHexStr)
+		var Q1 G2
+		Q1.SetString(s, IoSerializeHexStr)
+		if !Q1.IsEqual(&Q) {
+			t.Error("not equal to Q")
+			return
+		}
+	}
 }
 
 func testMcl(t *testing.T, c int) {

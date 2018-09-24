@@ -25,6 +25,9 @@ const CurveFp382_2 = C.mclBn_CurveFp382_2
 // BLS12_381
 const BLS12_381 = C.MCL_BLS12_381
 
+// IoSerializeHexStr
+const IoSerializeHexStr = C.MCLBN_IO_SERIALIZE_HEX_STR
+
 // Init --
 // call this function before calling all the other operations
 // this function is not thread safe
