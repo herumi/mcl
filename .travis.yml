@@ -10,5 +10,6 @@ addons:
       - libgmp-dev
 script:
   - make test DEBUG=1 -j3
+  - make clean
   - make test_go
  
