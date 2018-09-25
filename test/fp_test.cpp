@@ -8,7 +8,7 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
 #ifdef MCL_DONT_USE_OPENSSL
-#include <cybozu/sha1.hpp>
+#include <cybozu/sha2.hpp>
 #else
 #include <cybozu/crypto.hpp>
 #endif
@@ -725,11 +725,15 @@ void setHashOfTest()
 		"", "abc", "111111111111111111111111111111111111",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(msgTbl); i++) {
-#ifdef MCL_DONT_USE_OPENSSL
-		cybozu::Sha1 sha1;
-		std::string digest = sha1.digest(msgTbl[i]);
-#else
 		size_t bitSize = Fp::getBitSize();
+#ifdef MCL_DONT_USE_OPENSSL
+		std::string digest;
+		if (bitSize <= 256) {
+			digest = cybozu::Sha256(msgTbl[i].c_str(), msgTbl[i].size()).get();
+		} else {
+			digest = cybozu::Sha512(msgTbl[i].c_str(), msgTbl[i].size()).get();
+		}
+#else
 		cybozu::crypto::Hash::Name name;
 		if (bitSize <= 256) {
 			name = cybozu::crypto::Hash::N_SHA256;
