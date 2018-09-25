@@ -866,8 +866,12 @@ public:
 	}
 	inline friend EcT operator+(const EcT& x, const EcT& y) { EcT z; add(z, x, y); return z; }
 	inline friend EcT operator-(const EcT& x, const EcT& y) { EcT z; sub(z, x, y); return z; }
+	template<class INT>
+	inline friend EcT operator*(const EcT& x, const INT& y) { EcT z; mul(z, x, y); return z; }
 	EcT& operator+=(const EcT& x) { add(*this, *this, x); return *this; }
 	EcT& operator-=(const EcT& x) { sub(*this, *this, x); return *this; }
+	template<class INT>
+	EcT& operator*=(const INT& x) { mul(*this, *this, x); return *this; }
 	EcT operator-() const { EcT x; neg(x, *this); return x; }
 	bool operator==(const EcT& rhs) const
 	{
