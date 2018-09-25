@@ -1,13 +1,14 @@
-sudo: required
+sudo: false
 dist: trusty
 language: cpp
 compiler:
   - gcc
   - clang
-before_install:
-  - sudo apt install -y libgmp-dev
+addons:
+  apt:
+    packages:
+      - libgmp-dev
 script:
-  - make test DEBUG=1
-  - make clean
+  - make test DEBUG=1 -j3
   - make test_go
  
