@@ -599,7 +599,6 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		return;
 	}
 	assert(yn >= 2);
-#if 1
 	/*
 		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
 	*/
@@ -656,47 +655,6 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		copyN(r, xx, xn);
 	}
 	clearN(r + xn, rn - xn);
-#else
-	T *qOrg = q;
-	if (q) {
-		if (q == x || q == y) {
-			q = (T*)CYBOZU_ALLOCA(sizeof(T) * qn);
-		}
-		clearN(q, qn);
-	}
-	T *rr = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-	copyN(rr, x, xn);
-	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 2));
-	size_t yb = getBitSize(y, yn);
-	const size_t unitBitSize = sizeof(T) * 8;
-	while (vint::compareNM(rr, xn, y, yn) >= 0) {
-		size_t xb = getBitSize(rr, xn);
-		if (xb <= yb + 1) {
-			vint::subNM(rr, rr, xn, y, yn);
-			xn = getRealSize(rr, xn);
-			if (q) vint::addu1<T>(q, q, qn, 1);
-			continue;
-		}
-		assert(xb > yb + 1);
-		size_t w = fp::min_(unitBitSize, xb - yb);
-		vint::shrN(t, rr, xn, xb - w);
-		T q0 = t[0];
-		t[yn] = vint::mulu1(t, y, yn, q0);
-		vint::shlN(t, t, yn + 1, xb - w - yb);
-		vint::subN(rr, rr, t, xn);
-		xn = getRealSize(rr, xn);
-		if (q) {
-			clearN(t, qn);
-			t[0] = q0;
-			vint::shlN(t, t, 1, xb - w - yb);
-			vint::addN(q, q, t, qn);
-		}
-	}
-	copyN(r, rr, rn);
-	if (q && q != qOrg) {
-		copyN(qOrg, q, qn);
-	}
-#endif
 }
 
 #ifndef MCL_VINT_FIXED_BUFFER
