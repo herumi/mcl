@@ -1764,6 +1764,7 @@ public:
 	}
 	void getStr(std::string& s, int base = 10) const
 	{
+		s.clear();
 		cybozu::StringOutputStream os(s);
 		save(os, base);
 	}
