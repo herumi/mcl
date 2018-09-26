@@ -1182,7 +1182,7 @@ public:
 		bool b;
 		save(&b, os, base);
 		const size_t n = os.getPos();
-		if (!b || n == bufSize - 1) return 0;
+		if (!b || n == bufSize) return 0;
 		buf[n] = '\0';
 		return n;
 	}

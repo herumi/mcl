@@ -14,18 +14,13 @@ void testBench(const G1& P, const G2& Q)
 	x.setHashOf("abc");
 	y.setHashOf("xyz");
 #if 1
-	mpz_class z = 3;
 	mpz_class a = x.getMpz();
 	CYBOZU_BENCH_C("G1::mulCT     ", C, G1::mulCT, Pa, P, a);
-//	CYBOZU_BENCH_C("G1::mulCTsmall", C, G1::mulCT, Pa, P, z);
 	CYBOZU_BENCH_C("G1::mul       ", C, G1::mul, Pa, Pa, a);
-//	CYBOZU_BENCH_C("G1::mulsmall  ", C, G1::mul, Pa, Pa, z);
 	CYBOZU_BENCH_C("G1::add       ", C, G1::add, Pa, Pa, P);
 	CYBOZU_BENCH_C("G1::dbl       ", C, G1::dbl, Pa, Pa);
 	CYBOZU_BENCH_C("G2::mulCT     ", C, G2::mulCT, Qa, Q, a);
-//	CYBOZU_BENCH_C("G2::mulCTsmall", C, G2::mulCT, Qa, Q, z);
 	CYBOZU_BENCH_C("G2::mul       ", C, G2::mul, Qa, Qa, a);
-//	CYBOZU_BENCH_C("G2::mulsmall  ", C, G2::mul, Qa, Qa, z);
 	CYBOZU_BENCH_C("G2::add       ", C, G2::add, Qa, Qa, Q);
 	CYBOZU_BENCH_C("G2::dbl       ", C, G2::dbl, Qa, Qa);
 	CYBOZU_BENCH_C("GT::pow       ", C, GT::pow, e1, e1, a);
