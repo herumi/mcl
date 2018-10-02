@@ -147,7 +147,7 @@ inline bool hexCharToUint8(uint8_t *v, char _c)
 	} else {
 		return false;
 	}
-	*v = c;
+	*v = uint8_t(c);
 	return true;
 }
 
