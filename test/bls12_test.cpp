@@ -3,7 +3,7 @@
 #include <cybozu/benchmark.hpp>
 cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
-#include <mcl/bn384.hpp>
+#include <mcl/bls12_381.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 
@@ -11,7 +11,7 @@ cybozu::CpuClock clk;
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-using namespace mcl::bn384;
+using namespace mcl::bls12;
 
 mcl::fp::Mode g_mode;
 
@@ -65,6 +65,7 @@ const struct TestSet {
 CYBOZU_TEST_AUTO(size)
 {
 	CYBOZU_TEST_EQUAL(sizeof(Fp), 48u);
+	CYBOZU_TEST_EQUAL(sizeof(Fr), 32u);
 	CYBOZU_TEST_EQUAL(sizeof(Fp2), sizeof(Fp) * 2);
 	CYBOZU_TEST_EQUAL(sizeof(Fp6), sizeof(Fp) * 6);
 	CYBOZU_TEST_EQUAL(sizeof(Fp12), sizeof(Fp) * 12);
