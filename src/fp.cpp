@@ -388,7 +388,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 */
 #ifdef MCL_USE_XBYAK
 	if (mode == FP_AUTO) mode = FP_XBYAK;
-	if (mode == FP_XBYAK && bitSize > 256) {
+	if (mode == FP_XBYAK && bitSize > 384) {
 		mode = FP_AUTO;
 	}
 	if (!isEnableJIT()) {

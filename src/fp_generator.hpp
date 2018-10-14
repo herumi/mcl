@@ -275,20 +275,23 @@ private:
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
 
-		op.fp_add = getCurr<void4u>();
-		op.fp_addA_ = getCurr<void3u>();
-		gen_fp_add();
-		align(16);
-		op.fp_sub = getCurr<void4u>();
-		op.fp_subA_ = getCurr<void3u>();
-		gen_fp_sub();
-
 		align(16);
 		op.fp_addPre = getCurr<u3u>();
 		gen_addSubPre(true, pn_);
 		align(16);
 		op.fp_subPre = getCurr<u3u>();
 		gen_addSubPre(false, pn_);
+		align(16);
+		op.fp_sub = getCurr<void4u>();
+		op.fp_subA_ = getCurr<void3u>();
+		gen_fp_sub();
+		if (op.N > 4) return;
+		align(16);
+		op.fp_add = getCurr<void4u>();
+		op.fp_addA_ = getCurr<void3u>();
+		gen_fp_add();
+		if (op.N > 4) return;
+
 		align(16);
 		op.fp_shr1 = getCurr<void2u>();
 		gen_shr1();
@@ -700,10 +703,34 @@ private:
 		gen_raw_sub(pz, px, py, rax, pn_);
 		gen_raw_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
 	}
+	void gen_fp_sub6()
+	{
+		StackFrame sf(this, 3, 4);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rax);
+		t.append(px); // |t| = 6
+		load_rm(t, px); // destroy px
+		sub_rm(t, py);
+		/*
+			jmp is faster than and-mask without jmp
+		*/
+		jnc("@f");
+		mov(py, (size_t)p_); // destory py
+		add_rm(t, py);
+	L("@@");
+		store_mr(pz, t);
+	}
 	void gen_fp_sub()
 	{
 		if (pn_ <= 4) {
 			gen_fp_sub_le4();
+			return;
+		}
+		if (pn_ == 6) {
+			gen_fp_sub6();
 			return;
 		}
 		StackFrame sf(this, 3);
@@ -711,14 +738,12 @@ private:
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		const Xbyak::CodeGenerator::LabelType jmpMode = pn_ < 5 ? T_AUTO : T_NEAR;
-
-		inLocalLabel();
+		Label exit;
 		gen_raw_sub(pz, px, py, rax, pn_);
-		jnc(".exit", jmpMode);
+		jnc(exit, jmpMode);
 		mov(px, (size_t)p_);
 		gen_raw_add(pz, pz, px, rax, pn_);
-	L(".exit");
-		outLocalLabel();
+	L(exit);
 	}
 	void gen_fp_neg()
 	{
