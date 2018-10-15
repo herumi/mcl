@@ -138,6 +138,7 @@ void testNeg(const mcl::fp::Op& op)
 	}
 }
 
+#if 0
 void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 {
 	cybozu::XorShift rg;
@@ -165,6 +166,7 @@ void testMulI(const mcl::fp::FpGenerator& fg, int pn)
 		CYBOZU_BENCH_C("mulUnit", 10000000, fg.mulUnit_, z, x, y);
 	}
 }
+#endif
 
 void testShr1(const mcl::fp::Op& op, int pn)
 {
@@ -191,7 +193,7 @@ void test(const char *pStr)
 	const int pn = (int)op.N;
 	testAddSub(op);
 	testNeg(op);
-	testMulI(*op.fg, pn);
+//	testMulI(*op.fg, pn);
 	testShr1(op, pn);
 }
 

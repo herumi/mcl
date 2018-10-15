@@ -212,7 +212,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	// preInv
 	typedef int (*int2op)(uint64_t*, const uint64_t*);
 	void4u mul_;
-	uint3opI mulUnit_;
+//	uint3opI mulUnit_;
 
 	/*
 		@param op [in] ; use op.p, op.N, op.isFullBit
@@ -248,7 +248,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, pn_(0)
 		, FpByte_(0)
 		, mul_(0)
-		, mulUnit_(0)
+//		, mulUnit_(0)
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
@@ -299,9 +299,9 @@ private:
 		gen_fp_neg();
 		if (op.N > 4) return;
 
-		align(16);
-		mulUnit_ = getCurr<uint3opI>();
-		gen_mulUnit();
+//		align(16);
+//		mulUnit_ = getCurr<uint3opI>();
+//		gen_mulUnit();
 		align(16);
 		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
 		op.fp_mulA_ = getCurr<void3u>();
