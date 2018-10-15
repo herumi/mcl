@@ -289,7 +289,6 @@ private:
 		op.fp_add = getCurr<void4u>();
 		op.fp_addA_ = getCurr<void3u>();
 		gen_fp_add();
-		if (op.N > 4) return;
 
 		align(16);
 		op.fp_shr1 = getCurr<void2u>();
@@ -298,6 +297,7 @@ private:
 		align(16);
 		op.fp_negA_ = getCurr<void2u>();
 		gen_fp_neg();
+		if (op.N > 4) return;
 
 		align(16);
 		mulUnit_ = getCurr<uint3opI>();
