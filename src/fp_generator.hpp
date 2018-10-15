@@ -285,7 +285,6 @@ private:
 		op.fp_sub = getCurr<void4u>();
 		op.fp_subA_ = getCurr<void3u>();
 		gen_fp_sub();
-		if (op.N > 4) return;
 		align(16);
 		op.fp_add = getCurr<void4u>();
 		op.fp_addA_ = getCurr<void3u>();
@@ -640,10 +639,46 @@ private:
 		const Reg64& py = sf.p[2];
 		gen_raw_fp_sub(pz, px, py, sf.t, false);
 	}
+	void gen_fp_add6()
+	{
+		/*
+			cmov is faster than jmp
+		*/
+		StackFrame sf(this, 3, 10);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t.sub(0, 6);
+		Pack t2 = sf.t.sub(6);
+		t2.append(rax);
+		t2.append(px);
+		load_rm(t, px);
+		add_rm(t, py);
+		Label exit;
+		if (isFullBit_) {
+			jnc("@f");
+			mov(py, (size_t)p_);
+			sub_rm(t, py);
+			jmp(exit);
+		L("@@");
+		}
+		mov_rr(t2, t);
+		mov(py, (size_t)p_);
+		sub_rm(t2, py);
+		for (int i = 0; i < 6; i++) {
+			cmovnc(t[i], t2[i]);
+		}
+	L(exit);
+		store_mr(pz, t);
+	}
 	void gen_fp_add()
 	{
 		if (pn_ <= 4) {
 			gen_fp_add_le4();
+			return;
+		}
+		if (pn_ == 6) {
+			gen_fp_add6();
 			return;
 		}
 		StackFrame sf(this, 3, 0, pn_ * 8);
