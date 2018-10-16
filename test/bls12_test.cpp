@@ -654,9 +654,16 @@ CYBOZU_TEST_AUTO(multi)
 CYBOZU_TEST_AUTO(BLS12_G1mulCofactor)
 {
 	if (BN::param.cp.curveType != MCL_BLS12_381) return;
-	
 }
 
+typedef std::vector<Fp> FpVec;
+
+void f(FpVec& zv, const FpVec& xv, const FpVec& yv)
+{
+	for (size_t i = 0; i < zv.size(); i++) {
+		Fp::mul(zv[i], xv[i], yv[i]);
+	}
+}
 int main(int argc, char *argv[])
 	try
 {
@@ -669,6 +676,22 @@ int main(int argc, char *argv[])
 	}
 	g_mode = mcl::fp::StrToMode(mode);
 	printf("JIT %d\n", mcl::fp::isEnableJIT());
+#if 0
+	initPairing(mcl::BLS12_381);
+	cybozu::XorShift rg;
+	const int n = 1;
+	std::vector<Fp> xv(n), yv(n), zv(n);
+	for (int i = 0; i < n; i++) {
+		xv[i].setByCSPRNG(rg);
+		yv[i].setByCSPRNG(rg);
+	}
+	FpDbl dx;
+	FpDbl::mulPre(dx, xv[0], xv[0]);
+	CYBOZU_BENCH_C("addDbl", 10000000, FpDbl::add, dx, dx, dx);
+//	CYBOZU_BENCH_C("mul", 10000000 / n, f, xv, yv, xv);
+//	CYBOZU_BENCH_C("mulPre", 10000000, FpDbl::mulPre, dx, xv[0], yv[0]);
+	return 0;
+#endif
 	return cybozu::test::autoRun.run(argc, argv);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());

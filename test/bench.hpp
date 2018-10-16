@@ -52,6 +52,7 @@ void testBench(const G1& P, const G2& Q)
 	xx.b = 3;
 	yy.a = y;
 	yy.b = -5;
+#if 1
 	CYBOZU_BENCH_C("Fp2::add      ", C3, Fp2::add, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::sub      ", C3, Fp2::sub, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::neg      ", C3, Fp2::neg, xx, xx);
@@ -77,6 +78,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("GT::mul       ", C2, GT::mul, e1, e1, e2);
 	CYBOZU_BENCH_C("GT::sqr       ", C2, GT::sqr, e1, e1);
 	CYBOZU_BENCH_C("GT::inv       ", C2, GT::inv, e1, e1);
+#endif
 	CYBOZU_BENCH_C("pairing       ", C, pairing, e1, P, Q);
 	CYBOZU_BENCH_C("millerLoop    ", C, millerLoop, e1, P, Q);
 	CYBOZU_BENCH_C("finalExp      ", C, finalExp, e1, e1);

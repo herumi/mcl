@@ -297,29 +297,15 @@ private:
 		align(16);
 		op.fp_negA_ = getCurr<void2u>();
 		gen_fp_neg();
-		if (op.N > 4) return;
 
-//		align(16);
-//		mulUnit_ = getCurr<uint3opI>();
-//		gen_mulUnit();
-		align(16);
-		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
-		op.fp_mulA_ = getCurr<void3u>();
-		gen_mul(fp_mulL);
-		align(16);
-		op.fp_sqrA_ = getCurr<void2u>();
-		gen_sqr();
-		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
-			align(16);
-			op.fp_preInv = getCurr<int2u>();
-			gen_preInv();
-		}
 		// setup fp_tower
-		if (op.N > 4) return;
 		op.fp2_mulNF = 0;
-		align(16);
-		op.fpDbl_addA_ = getCurr<void3u>();
-		gen_fpDbl_add();
+		if (pn_ <= 4 || (pn_ == 6 && !isFullBit_)) {
+			align(16);
+			op.fpDbl_addA_ = getCurr<void3u>();
+			gen_fpDbl_add();
+		}
+		if (op.N > 4) return;
 		align(16);
 		op.fpDbl_subA_ = getCurr<void3u>();
 		gen_fpDbl_sub();
@@ -374,6 +360,19 @@ private:
 			align(16);
 			op.fpDbl_sqrPreA_ = getCurr<void2u>();
 			gen_fpDbl_sqrPre(op);
+		}
+		align(16);
+		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
+		op.fp_mulA_ = getCurr<void3u>();
+		gen_mul(fp_mulL);
+//		if (op.N > 4) return;
+		align(16);
+		op.fp_sqrA_ = getCurr<void2u>();
+		gen_sqr();
+		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
+			align(16);
+			op.fp_preInv = getCurr<int2u>();
+			gen_preInv();
 		}
 		if (op.N == 4 && !isFullBit_) {
 			align(16);
@@ -639,6 +638,36 @@ private:
 		const Reg64& py = sf.p[2];
 		gen_raw_fp_sub(pz, px, py, sf.t, false);
 	}
+	/*
+		add(pz + offset, px + offset, py + offset);
+		t.size() == 10
+		destroy px, py, rax
+	*/
+	void gen_raw_fp_add6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, Pack t, bool withCarry)
+	{
+		Pack t2 = t.sub(6);
+		t = t.sub(0, 6);
+		t2.append(rax);
+		t2.append(px);
+		load_rm(t, px + offset);
+		add_rm(t, py + offset, withCarry);
+		Label exit;
+		if (isFullBit_) {
+			jnc("@f");
+			mov(py, (size_t)p_);
+			sub_rm(t, py);
+			jmp(exit);
+		L("@@");
+		}
+		mov_rr(t2, t); // destroy px
+		mov(py, (size_t)p_);
+		sub_rm(t2, py);
+		for (int i = 0; i < 6; i++) {
+			cmovnc(t[i], t2[i]);
+		}
+	L(exit);
+		store_mr(pz + offset, t);
+	}
 	void gen_fp_add6()
 	{
 		/*
@@ -648,28 +677,7 @@ private:
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		Pack t = sf.t.sub(0, 6);
-		Pack t2 = sf.t.sub(6);
-		t2.append(rax);
-		t2.append(px);
-		load_rm(t, px);
-		add_rm(t, py);
-		Label exit;
-		if (isFullBit_) {
-			jnc("@f");
-			mov(py, (size_t)p_);
-			sub_rm(t, py);
-			jmp(exit);
-		L("@@");
-		}
-		mov_rr(t2, t);
-		mov(py, (size_t)p_);
-		sub_rm(t2, py);
-		for (int i = 0; i < 6; i++) {
-			cmovnc(t[i], t2[i]);
-		}
-	L(exit);
-		store_mr(pz, t);
+		gen_raw_fp_add6(pz, px, py, 0, sf.t, false);
 	}
 	void gen_fp_add()
 	{
@@ -718,14 +726,25 @@ private:
 	}
 	void gen_fpDbl_add()
 	{
-		assert(pn_ <= 4);
-		int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
-		StackFrame sf(this, 3, tn);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		gen_raw_add(pz, px, py, rax, pn_);
-		gen_raw_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+		if (pn_ <= 4) {
+			int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
+			StackFrame sf(this, 3, tn);
+			const Reg64& pz = sf.p[0];
+			const Reg64& px = sf.p[1];
+			const Reg64& py = sf.p[2];
+			gen_raw_add(pz, px, py, rax, pn_);
+			gen_raw_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+		} else if (pn_ == 6 && !isFullBit_) {
+			StackFrame sf(this, 3, 10);
+			const Reg64& pz = sf.p[0];
+			const Reg64& px = sf.p[1];
+			const Reg64& py = sf.p[2];
+			gen_raw_add(pz, px, py, rax, pn_);
+			gen_raw_fp_add6(pz, px, py, pn_ * 8, sf.t, true);
+		} else {
+			assert(0);
+			exit(1);
+		}
 	}
 	void gen_fpDbl_sub()
 	{
@@ -814,6 +833,8 @@ private:
 			gen_montMul3(p_, rp_);
 		} else if (pn_ == 4) {
 			gen_montMul4(fp_mulL, p_, rp_);
+//		} else if (pn_ == 6 && useAdx_) {
+//			gen_montMul6(fp_mulL, p_, rp_);
 		} else if (pn_ <= 9) {
 			gen_montMulN(p_, rp_, pn_);
 		} else {
@@ -1828,20 +1849,16 @@ private:
 			mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
 			return;
 		}
-		assert(0);
-#if 1
 		if (pn_ == 4) {
 			StackFrame sf(this, 3, 10 | UseRDX);
 			mulPre4(sf.p[0], sf.p[1], sf.p[2], sf.t);
 			return;
 		}
-#endif
-#if 0 // slow?
+		// 64clk -> 56clk
 		if (pn_ == 6 && useAdx_) {
 			StackFrame sf(this, 3, 7 | UseRDX);
 			mulPre6(sf.p[0], sf.p[1], sf.p[2], sf.t);
 		}
-#endif
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
 	{
