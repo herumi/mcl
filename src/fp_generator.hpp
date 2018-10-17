@@ -316,11 +316,11 @@ private:
 			align(16);
 			op.fpDbl_addA_ = getCurr<void3u>();
 			gen_fpDbl_add();
+			align(16);
+			op.fpDbl_subA_ = getCurr<void3u>();
+			gen_fpDbl_sub();
 		}
 		if (op.N > 4) return;
-		align(16);
-		op.fpDbl_subA_ = getCurr<void3u>();
-		gen_fpDbl_sub();
 		if (op.isFullBit) {
 			op.fpDbl_addPre = 0;
 			op.fpDbl_subPre = 0;
@@ -763,19 +763,33 @@ private:
 	}
 	void gen_fpDbl_sub()
 	{
-		assert(pn_ <= 4);
-		int tn = pn_ * 2;
-		StackFrame sf(this, 3, tn);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		gen_raw_sub(pz, px, py, rax, pn_);
-		gen_raw_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+		if (pn_ <= 4) {
+			int tn = pn_ * 2;
+			StackFrame sf(this, 3, tn);
+			const Reg64& pz = sf.p[0];
+			const Reg64& px = sf.p[1];
+			const Reg64& py = sf.p[2];
+			gen_raw_sub(pz, px, py, rax, pn_);
+			gen_raw_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
+		} else if (pn_ == 6) {
+			StackFrame sf(this, 3, 4);
+			const Reg64& pz = sf.p[0];
+			const Reg64& px = sf.p[1];
+			const Reg64& py = sf.p[2];
+			gen_raw_sub(pz, px, py, rax, pn_);
+			Pack t = sf.t;
+			t.append(rax);
+			t.append(px);
+			gen_raw_fp_sub6(pz, px, py, pn_ * 8, t, true);
+		} else {
+			assert(0);
+			exit(1);
+		}
 	}
-	void gen_raw_fp_sub6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t)
+	void gen_raw_fp_sub6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t, bool withCarry)
 	{
 		load_rm(t, px + offset);
-		sub_rm(t, py + offset);
+		sub_rm(t, py + offset, withCarry);
 		/*
 			jmp is faster than and-mask without jmp
 		*/
@@ -793,7 +807,7 @@ private:
 		Pack t = sf.t;
 		t.append(rax);
 		t.append(px); // |t| = 6
-		gen_raw_fp_sub6(pz, px, py, 0, t);
+		gen_raw_fp_sub6(pz, px, py, 0, t, false);
 	}
 	void gen_fp_sub()
 	{
