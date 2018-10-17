@@ -192,6 +192,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	const Reg64& gt8;
 	const Reg64& gt9;
 	const mcl::fp::Op *op_;
+	Label *pL_; // valid only in init_inner
 	const uint64_t *p_;
 	uint64_t rp_;
 	int pn_;
@@ -218,7 +219,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		@param op [in] ; use op.p, op.N, op.isFullBit
 	*/
 	FpGenerator()
-		: CodeGenerator(4096 * 8, Xbyak::DontSetProtectRWE)
+		: CodeGenerator(4096 * 9, Xbyak::DontSetProtectRWE)
 #ifdef XBYAK64_WIN
 		, gp0(rcx)
 		, gp1(r11)
@@ -267,15 +268,26 @@ private:
 		Label mulPreL;
 		Label fpDbl_modL;
 		Label fp_mulL;
+		Label pL; // label to p_
 		op_ = &op;
-		p_ = op.p;
+		pL_ = &pL;
+		/*
+			first 4096-byte is data area
+			remain is code area
+		*/
+		L(pL);
+		p_ = reinterpret_cast<const uint64_t*>(getCurr());
+		for (size_t i = 0; i < op.N; i++) {
+			dq(op.p[i]);
+		}
 		rp_ = fp::getMontgomeryCoeff(p_[0]);
 		pn_ = (int)op.N;
 		FpByte_ = int(op.maxN * sizeof(uint64_t));
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
-
-		align(16);
+		// code from here
+		setSize(4096);
+		assert((getCurr<size_t>() & 4095) == 0);
 		op.fp_addPre = getCurr<u3u>();
 		gen_addSubPre(true, pn_);
 		align(16);
@@ -585,7 +597,7 @@ private:
 		load_rm(p0, px);
 		add_rm(p0, py, withCarry);
 		mov_rr(p1, p0);
-		if (fullReg) {
+		if (isFullBit_) {
 			mov(*fullReg, 0);
 			adc(*fullReg, 0);
 		}
@@ -640,33 +652,28 @@ private:
 	}
 	/*
 		add(pz + offset, px + offset, py + offset);
-		t.size() == 10
-		destroy px, py, rax
+		size of t1, t2 == 6
+		destroy t0, t1
 	*/
-	void gen_raw_fp_add6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, Pack t, bool withCarry)
+	void gen_raw_fp_add6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t1, const Pack& t2, bool withCarry)
 	{
-		Pack t2 = t.sub(6);
-		t = t.sub(0, 6);
-		t2.append(rax);
-		t2.append(px);
-		load_rm(t, px + offset);
-		add_rm(t, py + offset, withCarry);
+		load_rm(t1, px + offset);
+		add_rm(t1, py + offset, withCarry);
 		Label exit;
 		if (isFullBit_) {
 			jnc("@f");
-			mov(py, (size_t)p_);
-			sub_rm(t, py);
+			mov(t2[0], *pL_); // t2 is not used
+			sub_rm(t1, t2[0]);
 			jmp(exit);
 		L("@@");
 		}
-		mov_rr(t2, t); // destroy px
-		mov(py, (size_t)p_);
-		sub_rm(t2, py);
+		mov_rr(t2, t1);
+		sub_rm(t2, rip + *pL_);
 		for (int i = 0; i < 6; i++) {
-			cmovnc(t[i], t2[i]);
+			cmovnc(t1[i], t2[i]);
 		}
 	L(exit);
-		store_mr(pz + offset, t);
+		store_mr(pz + offset, t1);
 	}
 	void gen_fp_add6()
 	{
@@ -677,7 +684,11 @@ private:
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		gen_raw_fp_add6(pz, px, py, 0, sf.t, false);
+		Pack t1 = sf.t.sub(0, 6);
+		Pack t2 = sf.t.sub(6);
+		t2.append(rax);
+		t2.append(px); // destory after used
+		gen_raw_fp_add6(pz, px, py, 0, t1, t2, false);
 	}
 	void gen_fp_add()
 	{
@@ -740,7 +751,11 @@ private:
 			const Reg64& px = sf.p[1];
 			const Reg64& py = sf.p[2];
 			gen_raw_add(pz, px, py, rax, pn_);
-			gen_raw_fp_add6(pz, px, py, pn_ * 8, sf.t, true);
+			Pack t1 = sf.t.sub(0, 6);
+			Pack t2 = sf.t.sub(6);
+			t2.append(rax);
+			t2.append(py);
+			gen_raw_fp_add6(pz, px, py, pn_ * 8, t1, t2, true);
 		} else {
 			assert(0);
 			exit(1);
@@ -757,6 +772,18 @@ private:
 		gen_raw_sub(pz, px, py, rax, pn_);
 		gen_raw_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
 	}
+	void gen_raw_fp_sub6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t)
+	{
+		load_rm(t, px + offset);
+		sub_rm(t, py + offset);
+		/*
+			jmp is faster than and-mask without jmp
+		*/
+		jnc("@f");
+		add_rm(t, rip + *pL_);
+	L("@@");
+		store_mr(pz + offset, t);
+	}
 	void gen_fp_sub6()
 	{
 		StackFrame sf(this, 3, 4);
@@ -766,16 +793,7 @@ private:
 		Pack t = sf.t;
 		t.append(rax);
 		t.append(px); // |t| = 6
-		load_rm(t, px); // destroy px
-		sub_rm(t, py);
-		/*
-			jmp is faster than and-mask without jmp
-		*/
-		jnc("@f");
-		mov(py, (size_t)p_); // destory py
-		add_rm(t, py);
-	L("@@");
-		store_mr(pz, t);
+		gen_raw_fp_sub6(pz, px, py, 0, t);
 	}
 	void gen_fp_sub()
 	{
@@ -2453,10 +2471,17 @@ private:
 			mov(ptr [m + 8 * i], x[i]);
 		}
 	}
+	void store_mr(const Xbyak::RegRip& m, const Pack& x)
+	{
+		for (int i = 0, n = (int)x.size(); i < n; i++) {
+			mov(ptr [m + 8 * i], x[i]);
+		}
+	}
 	/*
 		x[] = m[]
 	*/
-	void load_rm(const Pack& z, const RegExp& m)
+	template<class ADDR>
+	void load_rm(const Pack& z, const ADDR& m)
 	{
 		for (int i = 0, n = (int)z.size(); i < n; i++) {
 			mov(z[i], ptr [m + 8 * i]);
@@ -2487,7 +2512,8 @@ private:
 	/*
 		z[] += m[]
 	*/
-	void add_rm(const Pack& z, const RegExp& m, bool withCarry = false)
+	template<class ADDR>
+	void add_rm(const Pack& z, const ADDR& m, bool withCarry = false)
 	{
 		if (withCarry) {
 			adc(z[0], ptr [m + 8 * 0]);
@@ -2501,7 +2527,8 @@ private:
 	/*
 		z[] -= m[]
 	*/
-	void sub_rm(const Pack& z, const RegExp& m, bool withCarry = false)
+	template<class ADDR>
+	void sub_rm(const Pack& z, const ADDR& m, bool withCarry = false)
 	{
 		if (withCarry) {
 			sbb(z[0], ptr [m + 8 * 0]);

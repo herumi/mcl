@@ -687,7 +687,7 @@ int main(int argc, char *argv[])
 	}
 	FpDbl dx;
 	FpDbl::mulPre(dx, xv[0], xv[0]);
-	CYBOZU_BENCH_C("addDbl", 10000000, FpDbl::add, dx, dx, dx);
+	CYBOZU_BENCH_C("subDbl", 10000000, FpDbl::sub, dx, dx, dx);
 //	CYBOZU_BENCH_C("mul", 10000000 / n, f, xv, yv, xv);
 //	CYBOZU_BENCH_C("mulPre", 10000000, FpDbl::mulPre, dx, xv[0], yv[0]);
 	return 0;
