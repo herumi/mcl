@@ -320,7 +320,6 @@ private:
 			op.fpDbl_subA_ = getCurr<void3u>();
 			gen_fpDbl_sub();
 		}
-		if (op.N > 4) return;
 		if (op.isFullBit) {
 			op.fpDbl_addPre = 0;
 			op.fpDbl_subPre = 0;
@@ -331,20 +330,6 @@ private:
 			align(16);
 			op.fpDbl_subPreA_ = getCurr<void3u>();
 			gen_addSubPre(false, pn_ * 2);
-		}
-		if (op.N == 2 || op.N == 3 || op.N == 4) {
-			align(16);
-			op.fpDbl_modA_ = getCurr<void2u>();
-			if (op.N == 4) {
-				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
-				call(fpDbl_modL);
-				sf.close();
-			L(fpDbl_modL);
-				gen_fpDbl_mod4(gp0, gp1, sf.t, gp2);
-				ret();
-			} else {
-				gen_fpDbl_mod(op);
-			}
 		}
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4 || (useAdx_ && op.N == 6)) {
 			align(16);
@@ -366,6 +351,21 @@ private:
 				ret();
 			} else {
 				gen_fpDbl_mulPre();
+			}
+		}
+		if (op.N > 4) return;
+		if (op.N == 2 || op.N == 3 || op.N == 4) {
+			align(16);
+			op.fpDbl_modA_ = getCurr<void2u>();
+			if (op.N == 4) {
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				call(fpDbl_modL);
+				sf.close();
+			L(fpDbl_modL);
+				gen_fpDbl_mod4(gp0, gp1, sf.t, gp2);
+				ret();
+			} else {
+				gen_fpDbl_mod(op);
 			}
 		}
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
@@ -1888,7 +1888,7 @@ private:
 		}
 		// 64clk -> 56clk
 		if (pn_ == 6 && useAdx_) {
-			StackFrame sf(this, 3, 7 | UseRDX);
+			StackFrame sf(this, 3, 10 | UseRDX); // 7 is ok, but to use same api
 			mulPre6(sf.p[0], sf.p[1], sf.p[2], sf.t);
 		}
 	}
