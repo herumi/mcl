@@ -43,7 +43,7 @@ public:
 			*pb = false;
 			return;
 		}
-		cybozu::write(os, buf + sizeof(buf) - n, sizeof(buf), pb);
+		cybozu::write(pb, os, buf + sizeof(buf) - n, sizeof(buf));
 	}
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int)
