@@ -1,12 +1,19 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
+#include <cybozu/xorshift.hpp>
 #include <time.h>
 
+#if 0
+#include <mcl/bls12_381.hpp>
+using namespace mcl::bls12;
+typedef Fr Zn;
+#else
 #include <mcl/fp.hpp>
 struct ZnTag;
 typedef mcl::FpT<ZnTag> Zn;
 typedef mcl::FpT<> Fp;
+#endif
 
 struct Montgomery {
 	typedef mcl::fp::Unit Unit;
@@ -66,6 +73,25 @@ struct Montgomery {
 			z -= p_;
 		}
 #endif
+	}
+	void mod(mpz_class& z, const mpz_class& xy) const
+	{
+		z = xy;
+		for (size_t i = 0; i < pn_; i++) {
+//printf("i=%zd\n", i);
+//std::cout << "z=" << std::hex << z << std::endl;
+			Unit q = mcl::gmp::getUnit(z, 0) * rp_;
+//std::cout << "q=" << q << std::endl;
+			mpz_class t;
+			mcl::gmp::set(t, q);
+			z += p_ * t;
+			z >>= sizeof(Unit) * 8;
+//std::cout << "z=" << std::hex << z << std::endl;
+		}
+		if (z >= p_) {
+			z -= p_;
+		}
+//std::cout << "z=" << std::hex << z << std::endl;
 	}
 };
 
@@ -217,6 +243,7 @@ CYBOZU_TEST_AUTO(test)
 {
 	Test test;
 	const char *tbl[] = {
+#if 1
 		// N = 2
 		"0x0000000000000001000000000000000d",
 		"0x7fffffffffffffffffffffffffffffff",
@@ -241,9 +268,11 @@ CYBOZU_TEST_AUTO(test)
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+#endif
 
 #if MCL_MAX_BIT_SIZE >= 384
 		// N = 6
+		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
 
@@ -254,6 +283,46 @@ CYBOZU_TEST_AUTO(test)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		printf("prime=%s\n", tbl[i]);
+#if 0
+		mpz_class p(tbl[i]);
+		initPairing(mcl::BLS12_381);
+printf("FpDbl::mod=%p\n", FpDbl::mod);
+#if 1
+		cybozu::XorShift rg;
+		for (int i = 0; i < 1000; i++) {
+			Fp x, y, z;
+			FpDbl xy;
+			x.setByCSPRNG(rg);
+			y.setByCSPRNG(rg);
+			FpDbl::mulPre(xy, x, y);
+			FpDbl::mod(z, xy);
+			if (z != x * y) {
+				puts("ERR");
+				std::cout << std::hex;
+				PUT(x);
+				PUT(y);
+				PUT(z);
+				PUT(x * y);
+				exit(1);
+			}
+		}
+#else
+		Montgomery mont(p);
+		mpz_class xy1("00783239517141aafb2ffc854bebe27a47655610fa048c1bb6482ba78a79f232c9043ac4a898274ced5b2f65cf281204f4266605b5602ca09cacd1ea9e650c7936a436836ecfd3861d601ef424dbd6e8dbc8c71e9bc7da343f640cf5dffb903f", 16);
+//		mpz_class xy1 = (mpz_class(1) << (64 * 12 - 4)) - 1;
+		mpz_class z1;
+		mont.mod(z1, xy1);
+std::cout << "1=" << z1 << std::endl;
+		FpDbl xy2, z2;
+		Fp z3;
+		z3.clear();
+		xy2.setMpz(xy1);
+xy2.dump();
+		FpDbl::mod(z3, xy2);
+		z3.dump();
+#endif
+		exit(1);
+#endif
 		test.run(tbl[i]);
 	}
 }
