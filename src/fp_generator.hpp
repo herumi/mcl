@@ -1556,9 +1556,9 @@ private:
 	*/
 	void mulPackAddShr(const Pack& z, const RegExp& p, const Reg64& H, bool last = false)
 	{
-		assert(n >= 3);
 		const Reg64& a = rax;
 		const size_t n = z.size();
+		assert(n >= 3);
 		// clear CF and OF
 		xor_(a, a);
 		const size_t loop = last ? n - 1 : n - 3;
