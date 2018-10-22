@@ -19,7 +19,7 @@ CYBOZU_TEST_AUTO(init)
 	curve = MCL_BN462;
 #endif
 	int ret;
-	ret = sheInit(curve, MCLBN_FP_UNIT_SIZE);
+	ret = sheInit(curve, MCLBN_COMPILED_TIME_VAR);
 	CYBOZU_TEST_EQUAL(ret, 0);
 	ret = sheSetRangeForDLP(hashSize);
 	CYBOZU_TEST_EQUAL(ret, 0);
