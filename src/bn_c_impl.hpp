@@ -45,9 +45,9 @@ extern "C" MCLBN_DLL_API void mclBnFree(void *p)
 }
 #endif
 
-int mclBn_init(int curve, int maxUnitSize)
+int mclBn_init(int curve, int compiledTimeVar)
 {
-	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
+	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {
 		return -10;
 	}
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);

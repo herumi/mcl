@@ -78,12 +78,14 @@ typedef struct {
 	initialize this library
 	call this once before using the other functions
 	@param curve [in] enum value defined in mcl/bn.h
-	@param maxUnitSize [in] MCLBN_FP_UNIT_SIZE (fixed)
-	return 0 if success
+	@param compiledTimeVar [in] specify MCLBN_COMPILED_TIME_VAR,
+	which macro is used to make sure that the values
+	are the same when the library is built and used
+	@return 0 if success
 	@note sheInit() is thread safe and serialized if it is called simultaneously
 	but don't call it while using other functions.
 */
-MCLSHE_DLL_API int sheInit(int curve, int maxUnitSize);
+MCLSHE_DLL_API int sheInit(int curve, int compiledTimeVar);
 
 // return written byte size if success else 0
 MCLSHE_DLL_API mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec);

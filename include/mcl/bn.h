@@ -6,9 +6,16 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+/*
+	the order of an elliptic curve over Fp is Fr
+*/
 #ifndef MCLBN_FP_UNIT_SIZE
 	#error "define MCLBN_FP_UNIT_SIZE 4(, 6 or 8)"
 #endif
+#ifndef MCLBN_FR_UNIT_SIZE
+	#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
+#endif
+#define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
 #include <stdint.h> // for uint64_t, uint8_t
 #include <stdlib.h> // for size_t
@@ -65,7 +72,7 @@ typedef struct mclBnGT mclBnGT;
 #else
 
 typedef struct {
-	uint64_t d[MCLBN_FP_UNIT_SIZE];
+	uint64_t d[MCLBN_FR_UNIT_SIZE];
 } mclBnFr;
 
 typedef struct {
@@ -98,15 +105,17 @@ enum {
 /*
 	init library
 	@param curve [in] type of bn curve
-	@param maxUnitSize [in] MCLBN_FP_UNIT_SIZE
-	return 0 if success else -1
+	@param compiledTimeVar [in] specify MCLBN_COMPILED_TIME_VAR,
+	which macro is used to make sure that the values
+	are the same when the library is built and used
+	@return 0 if success
 	curve = BN254/BN_SNARK1 is allowed if maxUnitSize = 4
 	curve = BN381_1/BN381_2/BLS12_381 are allowed if maxUnitSize = 6
 	This parameter is used to detect a library compiled with different MCLBN_FP_UNIT_SIZE for safety.
 	@note not threadsafe
 	@note BN_init is used in libeay32
 */
-MCLBN_DLL_API int mclBn_init(int curve, int maxUnitSize);
+MCLBN_DLL_API int mclBn_init(int curve, int compiledTimeVar);
 
 
 /*

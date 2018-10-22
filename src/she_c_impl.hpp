@@ -41,10 +41,10 @@ static const ZkpEq *cast(const sheZkpEq *p) { return reinterpret_cast<const ZkpE
 static ZkpBinEq *cast(sheZkpBinEq *p) { return reinterpret_cast<ZkpBinEq*>(p); }
 static const ZkpBinEq *cast(const sheZkpBinEq *p) { return reinterpret_cast<const ZkpBinEq*>(p); }
 
-int sheInit(int curve, int maxUnitSize)
+int sheInit(int curve, int compiledTimeVar)
 	try
 {
-	if (maxUnitSize != MCLBN_FP_UNIT_SIZE) {
+	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {
 		return -2;
 	}
 	mcl::CurveParam cp;
