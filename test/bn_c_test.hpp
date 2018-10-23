@@ -27,9 +27,12 @@ CYBOZU_TEST_AUTO(init)
 #if MCLBN_FP_UNIT_SIZE == 4
 	printf("test BN254 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BN254, MCLBN_COMPILED_TIME_VAR);
-#elif MCLBN_FP_UNIT_SIZE == 6
+#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
 	printf("test BN381_1 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BN381_1, MCLBN_COMPILED_TIME_VAR);
+#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
+	printf("test BLS12_381 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(MCL_BLS12_381, MCLBN_COMPILED_TIME_VAR);
 #elif MCLBN_FP_UNIT_SIZE == 8
 	printf("test BN462 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BN462, MCLBN_COMPILED_TIME_VAR);
@@ -358,6 +361,7 @@ CYBOZU_TEST_AUTO(precomputed)
 
 CYBOZU_TEST_AUTO(serialize)
 {
+	const size_t FrSize = mclBn_getFrByteSize();
 	const size_t G1Size = mclBn_getG1ByteSize();
 	mclBnFr x1, x2;
 	mclBnG1 P1, P2;
@@ -367,7 +371,7 @@ CYBOZU_TEST_AUTO(serialize)
 	size_t expectSize;
 	size_t ret;
 	// Fr
-	expectSize = G1Size;
+	expectSize = FrSize;
 	mclBnFr_setInt(&x1, -1);
 	n = mclBnFr_serialize(buf, sizeof(buf), &x1);
 	CYBOZU_TEST_EQUAL(n, expectSize);
@@ -432,7 +436,8 @@ CYBOZU_TEST_AUTO(serialize)
 
 CYBOZU_TEST_AUTO(serializeToHexStr)
 {
-	const size_t G1Size = mclBn_getG1ByteSize() * 2;
+	const size_t FrSize = mclBn_getFrByteSize();
+	const size_t G1Size = mclBn_getG1ByteSize();
 	mclBnFr x1, x2;
 	mclBnG1 P1, P2;
 	mclBnG2 Q1, Q2;
@@ -441,7 +446,7 @@ CYBOZU_TEST_AUTO(serializeToHexStr)
 	size_t expectSize;
 	size_t ret;
 	// Fr
-	expectSize = G1Size;
+	expectSize = FrSize * 2; // hex string
 	mclBnFr_setInt(&x1, -1);
 	n = mclBnFr_getStr(buf, sizeof(buf), &x1, MCLBN_IO_SERIALIZE_HEX_STR);
 	CYBOZU_TEST_EQUAL(n, expectSize);
@@ -462,7 +467,7 @@ CYBOZU_TEST_AUTO(serializeToHexStr)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	// G1
-	expectSize = G1Size;
+	expectSize = G1Size * 2; // hex string
 	mclBnG1_hashAndMapTo(&P1, "1", 1);
 	n = mclBnG1_getStr(buf, sizeof(buf), &P1, MCLBN_IO_SERIALIZE_HEX_STR);
 	CYBOZU_TEST_EQUAL(n, expectSize);
@@ -483,7 +488,7 @@ CYBOZU_TEST_AUTO(serializeToHexStr)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 
 	// G2
-	expectSize = G1Size * 2;
+	expectSize = G1Size * 2 * 2; // hex string
 	mclBnG2_hashAndMapTo(&Q1, "1", 1);
 	n = mclBnG2_getStr(buf, sizeof(buf), &Q1, MCLBN_IO_SERIALIZE_HEX_STR);
 	CYBOZU_TEST_EQUAL(n, expectSize);
@@ -504,7 +509,7 @@ CYBOZU_TEST_AUTO(serializeToHexStr)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 }
 
-#if MCLBN_FP_UNIT_SIZE == 6
+#if MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE >= 6
 CYBOZU_TEST_AUTO(badG2)
 {
 	int ret;

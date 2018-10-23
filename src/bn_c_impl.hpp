@@ -1,12 +1,16 @@
 #define MCLBN_DLL_EXPORT
 #include <mcl/bn.h>
 
-#if MCLBN_FP_UNIT_SIZE == 4
+#if MCLBN_FP_UNIT_SIZE == 4 && MCLBN_FR_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6
+#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
 #include <mcl/bn384.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 8
+#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
+#include <mcl/bls12_381.hpp>
+#elif MCLBN_FP_UNIT_SIZE == 8 && MCLBN_FR_UNIT_SIZE == 8
 #include <mcl/bn512.hpp>
+#else
+	#error "not supported size"
 #endif
 #include <mcl/lagrange.hpp>
 using namespace mcl::bn;
@@ -48,7 +52,7 @@ extern "C" MCLBN_DLL_API void mclBnFree(void *p)
 int mclBn_init(int curve, int compiledTimeVar)
 {
 	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {
-		return -10;
+		return -(compiledTimeVar | (MCLBN_COMPILED_TIME_VAR * 100));
 	}
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
 	bool b;
