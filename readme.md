@@ -191,12 +191,37 @@ finalExp 546.259Kclk
 
 # Libraries
 
+* G1 and G2 is defined over Fp
+* The order of G1 and G2 is r.
+* Use `bn256.hpp` if only BN254 is used.
+
+## C++ library
+
 * libmcl.a ; static C++ library of mcl
 * libmcl\_dy.so ; shared C++ library of mcl
-* libbn256.a ; static C library for `mcl/bn256f.h`
-* libbn256\_dy.so ; shared C library
+* the default parameter of curveType is BN254
 
-If you want to remove '_dy` of so files, then `makeSHARE_BASENAME\_SUF=`.
+header        |support curveType        |sizeof Fr|sizeof Fp|
+--------------|-------------------------|---------|---------|
+bn256.hpp     |BN254                    |   32    |   32    |
+bls12_381.hpp |BLS12_381, BN254         |   32    |   48    |
+bn384.hpp     |BN381_1, BLS12_381, BN254|   48    |   48    |
+
+## C library
+
+* Define `MCLBN_FR_UNIT_SIZE` and `MCLBN_FP_UNIT_SIZE` and include bn.h
+* set `MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE` unless `MCLBN_FR_UNIT_SIZE` is defined
+
+library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|
+------------------|------------------|------------------|
+libmclbn256.a     |          4       |         4        |
+libmclbn384_256.a |          4       |         6        |
+libmclbn384.a     |          6       |         6        |
+
+* libmclbn*.a ; static C library
+* libmclbn*\_dy.so ; shared C library
+
+If you want to remove `_dy` of so files, then `makeSHARE_BASENAME\_SUF=`.
 
 # How to initialize pairing library
 Call `mcl::bn256::initPairing` before calling any operations.
