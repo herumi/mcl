@@ -213,6 +213,7 @@ bn384.hpp     |BN381_1, BLS12_381, BN254|   48    |   48    |
 * set `MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE` unless `MCLBN_FR_UNIT_SIZE` is defined
 
 library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|
+                  | sizeof Fr        |  sizeof Fp       |
 ------------------|------------------|------------------|
 libmclbn256.a     |          4       |         4        |
 libmclbn384_256.a |          4       |         6        |
@@ -221,6 +222,12 @@ libmclbn384.a     |          6       |         6        |
 * libmclbn*.a ; static C library
 * libmclbn*\_dy.so ; shared C library
 
+### 2nd argument of `mclBn_init`
+Specify `MCLBN_COMPILED_TIME_VAR` to 2nd argument of `mclBn_init`, which
+is defined as `MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE`.
+This parameter is used to make sure that the values are the same when the library is built and used.
+
+### shared library name
 If you want to remove `_dy` of so files, then `makeSHARE_BASENAME\_SUF=`.
 
 # How to initialize pairing library
