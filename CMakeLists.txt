@@ -89,7 +89,7 @@ if(NOT MSVC)
 add_library(mcl_dy SHARED ${SRCS})
 endif()
 
-file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/*.h)
+file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h)
 file(GLOB CYBOZULIB_HEADERS include/cybozu/*.hpp)
 
 install(TARGETS mcl DESTINATION lib)
