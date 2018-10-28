@@ -219,6 +219,16 @@ MCLBN_DLL_API int mclBnFr_isOne(const mclBnFr *x);
 #ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
+
+/*
+	set user-defined random function for setByCSPRNG
+	@param self [in] user-defined pointer
+	@param readFunc [in] user-defined function,
+	which writes random bufSize bytes to buf and returns bufSize if success else returns 0
+	@note if self == 0 and readFunc == 0 then set default random function
+	@note not threadsafe
+*/
+MCLBN_DLL_API void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize));
 #endif
 
 // hash(s) and set x

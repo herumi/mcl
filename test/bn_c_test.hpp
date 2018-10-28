@@ -522,3 +522,40 @@ CYBOZU_TEST_AUTO(badG2)
 }
 #endif
 
+struct Sequential {
+	uint32_t pos;
+	Sequential() : pos(0) {}
+	static uint32_t read(void *self, void *buf, uint32_t bufSize)
+	{
+		Sequential *seq = reinterpret_cast<Sequential*>(self);
+		uint8_t *p = reinterpret_cast<uint8_t*>(buf);
+		for (uint32_t i = 0; i < bufSize; i++) {
+			p[i] = uint8_t(seq->pos + i) & 0x1f; // mask is to make valid Fp
+		}
+		seq->pos += bufSize;
+		return bufSize;
+	}
+};
+
+CYBOZU_TEST_AUTO(setRandFunc)
+{
+	Sequential seq;
+	for (int j = 0; j < 3; j++) {
+		puts(j == 1 ? "sequential rand" : "true rand");
+		for (int i = 0; i < 5; i++) {
+			mclBnFr x;
+			int ret;
+			char buf[1024];
+			ret = mclBnFr_setByCSPRNG(&x);
+			CYBOZU_TEST_EQUAL(ret, 0);
+			ret = mclBnFr_getStr(buf, sizeof(buf), &x, 16);
+			CYBOZU_TEST_ASSERT(ret > 0);
+			printf("%d %s\n", i, buf);
+		}
+		if (j == 0) {
+			mclBn_setRandFunc(&seq, Sequential::read);
+		} else {
+			mclBn_setRandFunc(0, 0);
+		}
+	}
+}

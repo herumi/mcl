@@ -158,12 +158,22 @@ struct Rand {
 	const uint8_t *p;
 	size_t pos;
 	size_t endPos;
-	void read(void *x, size_t n)
+	void read(bool *pb, void *x, size_t n)
 	{
-		if (pos + n > endPos) throw cybozu::Exception("Rand:get:bad n") << pos << n << endPos;
+		if (pos + n > endPos) {
+			*pb = false;
+			return;
+		}
 		uint8_t *dst = (uint8_t*)x;
 		memcpy(dst, p + pos, n);
 		pos += n;
+		*pb = true;
+	}
+	void read(void *x, size_t n)
+	{
+		bool b;
+		read(&b, x, n);
+		if (!b) throw cybozu::Exception("Rand") << n;
 	}
 	uint32_t operator()()
 	{

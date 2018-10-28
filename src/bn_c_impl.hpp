@@ -84,6 +84,7 @@ mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize)
 {
 	return Fp::getModulo(buf, maxBufSize);
 }
+
 ////////////////////////////////////////////////
 // set zero
 void mclBnFr_clear(mclBnFr *x)
@@ -137,6 +138,10 @@ int mclBnFr_setByCSPRNG(mclBnFr *x)
 {
 	cast(x)->setByCSPRNG();
 	return 0;
+}
+void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize))
+{
+	mcl::fp::RandGen::setRandFunc(self, readFunc);
 }
 #endif
 

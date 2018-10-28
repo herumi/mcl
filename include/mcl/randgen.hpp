@@ -15,10 +15,16 @@
 
 namespace mcl {
 struct RandomGeneratorJS {
-	void read(void *buf, size_t bufSize)
+	void read(bool *pb, void *buf, uint32_t byteSize)
 	{
+		// cf. https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues
+		if (byteSize > 65536) {
+			*pb = false;
+			return;
+		}
 		// use crypto.getRandomValues
-		EM_ASM({Module.cryptoGetRandomValues($0, $1)}, buf, bufSize);
+		EM_ASM({Module.cryptoGetRandomValues($0, $1)}, buf, byteSize);
+		*pb = true;
 	}
 };
 } // mcl
@@ -38,28 +44,33 @@ namespace mcl { namespace fp {
 namespace local {
 
 template<class RG>
-void readWrapper(void *self, void *buf, uint32_t bufSize)
+uint32_t readWrapper(void *self, void *buf, uint32_t byteSize)
 {
-	reinterpret_cast<RG*>(self)->read((uint8_t*)buf, bufSize);
+	bool b;
+	reinterpret_cast<RG*>(self)->read(&b, (uint8_t*)buf, byteSize);
+	if (b) return byteSize;
+	return 0;
 }
 
 #if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 template<>
-inline void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufSize)
+inline uint32_t readWrapper<std::random_device>(void *self, void *buf, uint32_t byteSize)
 {
+	const uint32_t keep = byteSize;
 	std::random_device& rg = *reinterpret_cast<std::random_device*>(self);
 	uint8_t *p = reinterpret_cast<uint8_t*>(buf);
 	uint32_t v;
-	while (bufSize >= 4) {
+	while (byteSize >= 4) {
 		v = rg();
 		memcpy(p, &v, 4);
 		p += 4;
-		bufSize -= 4;
+		byteSize -= 4;
 	}
-	if (bufSize > 0) {
+	if (byteSize > 0) {
 		v = rg();
-		memcpy(p, &v, bufSize);
+		memcpy(p, &v, byteSize);
 	}
+	return keep;
 }
 #endif
 } // local
@@ -67,7 +78,7 @@ inline void readWrapper<std::random_device>(void *self, void *buf, uint32_t bufS
 	wrapper of cryptographically secure pseudo random number generator
 */
 class RandGen {
-	typedef void (*readFuncType)(void *self, void *buf, uint32_t bufSize);
+	typedef uint32_t (*readFuncType)(void *self, void *buf, uint32_t byteSize);
 	void *self_;
 	readFuncType readFunc_;
 public:
@@ -87,16 +98,17 @@ public:
 		, readFunc_(local::readWrapper<RG>)
 	{
 	}
-	void read(void *out, size_t byteSize)
+	void read(bool *pb, void *out, size_t byteSize)
 	{
-		readFunc_(self_, out, static_cast<uint32_t>(byteSize));
+		uint32_t size = readFunc_(self_, out, static_cast<uint32_t>(byteSize));
+		*pb = size == byteSize;
 	}
 #ifdef MCL_DONT_USE_CSPRNG
 	bool isZero() const { return false; } /* return false to avoid copying default rg */
 #else
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
 #endif
-	static RandGen& get()
+	static RandGen& getDefaultRandGen()
 	{
 #ifdef MCL_DONT_USE_CSPRNG
 		static RandGen wrg;
@@ -109,13 +121,31 @@ public:
 #endif
 		return wrg;
 	}
+	static RandGen& get()
+	{
+		static RandGen wrg(getDefaultRandGen());
+		return wrg;
+	}
 	/*
 		rg must be thread safe
-		rg.read(void *buf, size_t bufSize);
+		rg.read(void *buf, size_t byteSize);
 	*/
 	static void setRandGen(const RandGen& rg)
 	{
 		get() = rg;
+	}
+	/*
+		set rand function
+		if self and readFunc are NULL then set default rand function
+	*/
+	static void setRandFunc(void *self, readFuncType readFunc)
+	{
+		if (self == 0 && readFunc == 0) {
+			setRandGen(getDefaultRandGen());
+		} else {
+			RandGen rg(self, readFunc);
+			setRandGen(rg);
+		}
 	}
 };
 

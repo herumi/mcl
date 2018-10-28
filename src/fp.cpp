@@ -120,14 +120,16 @@ bool isEnableJIT()
 #endif
 }
 
-void getRandVal(Unit *out, RandGen& rg, const Unit *in, size_t bitSize)
+void getRandVal(bool *pb, void *p, RandGen& rg, const Unit *in, size_t bitSize)
 {
 	if (rg.isZero()) rg = RandGen::get();
+	Unit *out = reinterpret_cast<Unit*>(p);
 	const size_t n = (bitSize + UnitBitSize - 1) / UnitBitSize;
 	const size_t rem = bitSize & (UnitBitSize - 1);
 	assert(n > 0);
 	for (;;) {
-		rg.read(out, n * sizeof(Unit));
+		rg.read(pb, out, n * sizeof(Unit)); // byte size
+		if (!*pb) return;
 		if (rem > 0) out[n - 1] &= (Unit(1) << rem) - 1;
 		if (isLessArray(out, in, n)) return;
 	}

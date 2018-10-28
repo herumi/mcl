@@ -1138,7 +1138,8 @@ public:
 		size_t n = max.size();
 		buf_.alloc(pb, n);
 		if (!*pb) return;
-		rg.read(&buf_[0], n * sizeof(buf_[0]));
+		rg.read(pb, &buf_[0], n * sizeof(buf_[0]));
+		if (!*pb) return;
 		trim(n);
 		*this %= max;
 	}

@@ -450,7 +450,8 @@ inline void getRand(bool *pb, mpz_class& z, size_t bitSize, fp::RandGen rg = fp:
 		*pb = false;
 		return;
 	}
-	rg.read(buf, n * sizeof(buf[0]));
+	rg.read(pb, buf, n * sizeof(buf[0]));
+	if (!*pb) return;
 	uint32_t v = buf[n - 1];
 	if (rem == 0) {
 		v |= 1U << 31;
