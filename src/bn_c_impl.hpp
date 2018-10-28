@@ -136,8 +136,9 @@ int mclBnFr_isOne(const mclBnFr *x)
 #ifndef MCL_DONT_USE_CSRPNG
 int mclBnFr_setByCSPRNG(mclBnFr *x)
 {
-	cast(x)->setByCSPRNG();
-	return 0;
+	bool b;
+	cast(x)->setByCSPRNG(&b);
+	return b ? 0 : -1;
 }
 void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize))
 {
