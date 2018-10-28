@@ -7,8 +7,46 @@
 	@author MITSUNARI Shigeo
 */
 #include <cybozu/inttype.hpp>
+#include <assert.h>
 
 namespace cybozu {
+
+namespace xorshift_local {
+
+/*
+	U is uint32_t or uint64_t
+*/
+template<class U, class Gen>
+void read_local(void *p, size_t n, Gen& gen, U (Gen::*f)())
+{
+	uint8_t *dst = static_cast<uint8_t*>(p);
+	const size_t uSize = sizeof(U);
+	assert(uSize == 4 || uSize == 8);
+	union ua {
+		U u;
+		uint8_t a[uSize];
+	};
+
+	while (n >= uSize) {
+		ua ua;
+		ua.u = (gen.*f)();
+		for (size_t i = 0; i < uSize; i++) {
+			dst[i] = ua.a[i];
+		}
+		dst += uSize;
+		n -= uSize;
+	}
+	assert(n < uSize);
+	if (n > 0) {
+		ua ua;
+		ua.u = (gen.*f)();
+		for (size_t i = 0; i < n; i++) {
+			dst[i] = ua.a[i];
+		}
+	}
+}
+
+} // xorshift_local
 
 class XorShift {
 	uint32_t x_, y_, z_, w_;
@@ -38,25 +76,18 @@ public:
 		return (uint64_t(a) << 32) | b;
 	}
 	template<class T>
-	void read(T *x, size_t n)
+	void read(bool *pb, T *p, size_t n)
 	{
-		const size_t size = sizeof(T) * n;
-		uint8_t *p8 = static_cast<uint8_t*>(x);
-		for (size_t i = 0; i < size; i++) {
-			p8[i] = static_cast<uint8_t>(get32());
-		}
+		xorshift_local::read_local(p, n * sizeof(T), *this, &XorShift::get32);
+		*pb = true;
 	}
-	void read(uint32_t *x, size_t n)
+	template<class T>
+	size_t read(T *p, size_t n)
 	{
-		for (size_t i = 0; i < n; i++) {
-			x[i] = get32();
-		}
-	}
-	void read(uint64_t *x, size_t n)
-	{
-		for (size_t i = 0; i < n; i++) {
-			x[i] = get64();
-		}
+		bool b;
+		read(&b, p, n);
+		(void)b;
+		return n;
 	}
 };
 
@@ -90,25 +121,18 @@ public:
 		return s_[1] + s0;
 	}
 	template<class T>
-	void read(T *x, size_t n)
+	void read(bool *pb, T *p, size_t n)
 	{
-		const size_t size = sizeof(T) * n;
-		uint8_t *p8 = static_cast<uint8_t*>(x);
-		for (size_t i = 0; i < size; i++) {
-			p8[i] = static_cast<uint8_t>(get32());
-		}
+		xorshift_local::read_local(p, n * sizeof(T), *this, &XorShift128Plus::get64);
+		*pb = true;
 	}
-	void read(uint32_t *x, size_t n)
+	template<class T>
+	size_t read(T *p, size_t n)
 	{
-		for (size_t i = 0; i < n; i++) {
-			x[i] = get32();
-		}
-	}
-	void read(uint64_t *x, size_t n)
-	{
-		for (size_t i = 0; i < n; i++) {
-			x[i] = get64();
-		}
+		bool b;
+		read(&b, p, n);
+		(void)b;
+		return n;
 	}
 };
 
@@ -147,25 +171,18 @@ public:
 		return result;
 	}
 	template<class T>
-	void read(T *x, size_t n)
+	void read(bool *pb, T *p, size_t n)
 	{
-		const size_t size = sizeof(T) * n;
-		uint8_t *p8 = static_cast<uint8_t*>(x);
-		for (size_t i = 0; i < size; i++) {
-			p8[i] = static_cast<uint8_t>(get32());
-		}
+		xorshift_local::read_local(p, n * sizeof(T), *this, &Xoroshiro128Plus::get64);
+		*pb = true;
 	}
-	void read(uint32_t *x, size_t n)
+	template<class T>
+	size_t read(T *p, size_t n)
 	{
-		for (size_t i = 0; i < n; i++) {
-			x[i] = get32();
-		}
-	}
-	void read(uint64_t *x, size_t n)
-	{
-		for (size_t i = 0; i < n; i++) {
-			x[i] = get64();
-		}
+		bool b;
+		read(&b, p, n);
+		(void)b;
+		return n;
 	}
 };
 

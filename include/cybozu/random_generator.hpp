@@ -54,11 +54,9 @@ public:
 		}
 		throw cybozu::Exception("randomgenerator");
 	}
-	void read_inner(void *buf, size_t byteSize)
+	bool read_inner(void *buf, size_t byteSize)
 	{
-		if (CryptGenRandom(prov_, static_cast<DWORD>(byteSize), static_cast<BYTE*>(buf)) == 0) {
-			throw cybozu::Exception("randomgenerator:read") << byteSize;
-		}
+		return CryptGenRandom(prov_, static_cast<DWORD>(byteSize), static_cast<BYTE*>(buf)) != 0;
 	}
 	~RandomGenerator()
 	{
@@ -71,12 +69,15 @@ public:
 		@note bufNum is not byte size
 	*/
 	template<class T>
-	void read(T *buf, size_t bufNum)
+	void read(bool *pb, T *buf, size_t bufNum)
 	{
 		cybozu::AutoLockCs al(cs_);
 		const size_t byteSize = sizeof(T) * bufNum;
 		if (byteSize > bufSize) {
-			read_inner(buf, byteSize);
+			if (!read_inner(buf, byteSize)) {
+				*pb = false;
+				return;
+			}
 		} else {
 			if (pos_ + byteSize > bufSize) {
 				read_inner(buf_, bufSize);
@@ -85,6 +86,14 @@ public:
 			memcpy(buf, buf_ + pos_, byteSize);
 			pos_ += byteSize;
 		}
+		*pb = true;
+	}
+	template<class T>
+	void read(T *buf, size_t bufNum)
+	{
+		bool b;
+		read(&b, buf, bufNum);
+		if (!b) throw cybozu::Exception("RandomGenerator:read") << bufNum;
 	}
 private:
 	HCRYPTPROV prov_;
@@ -107,12 +116,17 @@ private:
 		@note bufNum is not byte size
 	*/
 	template<class T>
-	void read(T *buf, size_t bufNum)
+	void read(bool *pb, T *buf, size_t bufNum)
 	{
 		const size_t byteSize = sizeof(T) * bufNum;
-		if (::fread(buf, 1, (int)byteSize, fp_) != byteSize) {
-			throw cybozu::Exception("randomgenerator:read") << byteSize;
-		}
+		*pb = ::fread(buf, 1, (int)byteSize, fp_) == byteSize;
+	}
+	template<class T>
+	void read(T *buf, size_t bufNum)
+	{
+		bool b;
+		read(&b, buf, bufNum);
+		if (!b) throw cybozu::Exception("RandomGenerator:read") << bufNum;
 	}
 #endif
 private:
