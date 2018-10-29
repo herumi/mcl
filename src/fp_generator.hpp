@@ -8,6 +8,7 @@
 */
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL
 #define XBYAK_NO_OP_NAMES
+#define XBYAK_DISABLE_AVX512
 #include "xbyak/xbyak_util.h"
 
 #if MCL_SIZEOF_UNIT == 8
@@ -192,7 +193,11 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	const Reg64& gt8;
 	const Reg64& gt9;
 	const mcl::fp::Op *op_;
-	Label *pL_; // valid only in init_inner
+	Label pL_; // pointer to p
+	// the following labels assume sf(this, 3, 10 | UseRDX)
+	Label mulPreL;
+	Label fpDbl_modL;
+	Label fp_mulL;
 	const uint64_t *p_;
 	uint64_t rp_;
 	int pn_;
@@ -264,18 +269,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 private:
 	void init_inner(Op& op)
 	{
-		// the following labels assume sf(this, 3, 10 | UseRDX)
-		Label mulPreL;
-		Label fpDbl_modL;
-		Label fp_mulL;
-		Label pL; // label to p_
 		op_ = &op;
-		pL_ = &pL;
 		/*
 			first 4096-byte is data area
 			remain is code area
 		*/
-		L(pL);
+		L(pL_);
 		p_ = reinterpret_cast<const uint64_t*>(getCurr());
 		for (size_t i = 0; i < op.N; i++) {
 			dq(op.p[i]);
@@ -393,15 +392,16 @@ private:
 			}
 		}
 		if (op.N > 4) return;
+		align(16);
+		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
+		op.fp_mulA_ = getCurr<void3u>();
+		gen_mul();
+		if (op.N > 4) return;
 		if ((useMulx_ && op.N == 2) || op.N == 3 || op.N == 4) {
 			align(16);
 			op.fpDbl_sqrPreA_ = getCurr<void2u>();
 			gen_fpDbl_sqrPre(op);
 		}
-		align(16);
-		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
-		op.fp_mulA_ = getCurr<void3u>();
-		gen_mul(fp_mulL);
 //		if (op.N > 4) return;
 		align(16);
 		op.fp_sqrA_ = getCurr<void2u>();
@@ -423,16 +423,16 @@ private:
 			gen_fp2_neg4();
 			align(16);
 			op.fp2Dbl_mulPreA_ = getCurr<void3u>();
-			gen_fp2Dbl_mulPre(mulPreL);
+			gen_fp2Dbl_mulPre();
 			align(16);
 			op.fp2Dbl_sqrPreA_ = getCurr<void2u>();
-			gen_fp2Dbl_sqrPre(mulPreL);
+			gen_fp2Dbl_sqrPre();
 			align(16);
 			op.fp2_mulA_ = getCurr<void3u>();
-			gen_fp2_mul4(fpDbl_modL);
+			gen_fp2_mul4();
 			align(16);
 			op.fp2_sqrA_ = getCurr<void2u>();
-			gen_fp2_sqr4(fp_mulL);
+			gen_fp2_sqr4();
 			align(16);
 			op.fp2_mul_xiA_ = getCurr<void2u>();
 			gen_fp2_mul_xi4();
@@ -687,13 +687,13 @@ private:
 		Label exit;
 		if (isFullBit_) {
 			jnc("@f");
-			mov(t2[0], *pL_); // t2 is not used
+			mov(t2[0], pL_); // t2 is not used
 			sub_rm(t1, t2[0]);
 			jmp(exit);
 		L("@@");
 		}
 		mov_rr(t2, t1);
-		sub_rm(t2, rip + *pL_);
+		sub_rm(t2, rip + pL_);
 		for (int i = 0; i < 6; i++) {
 			cmovnc(t1[i], t2[i]);
 		}
@@ -819,7 +819,7 @@ private:
 			jmp is faster than and-mask without jmp
 		*/
 		jnc("@f");
-		add_rm(t, rip + *pL_);
+		add_rm(t, rip + pL_);
 	L("@@");
 		store_mr(pz + offset, t);
 	}
@@ -879,7 +879,7 @@ private:
 		shr(*t0, c);
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
 	}
-	void gen_mul(Label& fp_mulL)
+	void gen_mul()
 	{
 		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
@@ -889,9 +889,18 @@ private:
 		if (pn_ == 3) {
 			gen_montMul3(p_, rp_);
 		} else if (pn_ == 4) {
-			gen_montMul4(fp_mulL, p_, rp_);
-//		} else if (pn_ == 6 && useAdx_) {
-//			gen_montMul6(fp_mulL, p_, rp_);
+			gen_montMul4(p_, rp_);
+#if 0
+		} else if (pn_ == 6 && useAdx_) {
+//			gen_montMul6(p_, rp_);
+			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
+			mov(ptr[rsp + 12 * 8], gp0);
+			mov(gp0, rsp);
+			call(mulPreL); // gp0, x, y
+			mov(gp0, ptr[rsp + 12 * 8]);
+			mov(gp1, rsp);
+			call(fpDbl_modL);
+#endif
 		} else if (pn_ <= 9) {
 			gen_montMulN(p_, rp_, pn_);
 		} else {
@@ -1259,7 +1268,7 @@ private:
 		z[0..3] <- montgomery(x[0..3], y[0..3])
 		destroy gt0, ..., gt9, xm0, xm1, p2
 	*/
-	void gen_montMul4(Label& fp_mulL, const uint64_t *p, uint64_t pp)
+	void gen_montMul4(const uint64_t *p, uint64_t pp)
 	{
 		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 		call(fp_mulL);
@@ -1938,7 +1947,7 @@ private:
 		mov(z, ptr [xy + 0 * 8]);
 		mov(a, rp_);
 		mul(z);
-		lea(t0, ptr [rip + *pL_]);
+		lea(t0, ptr [rip + pL_]);
 		load_rm(Pack(t7, t6, t5, t4, t3, t2, t1), xy);
 		mov(d, a); // q
 		mulPackAddShr(Pack(t7, t6, t5, t4, t3, t2, t1), t0, t10);
@@ -1952,7 +1961,7 @@ private:
 		mov(a, rp_);
 		mul(t2);
 		movq(xm1, t0); // save
-		lea(t0, ptr [rip + *pL_]);
+		lea(t0, ptr [rip + pL_]);
 		mov(d, a);
 		movq(xm2, t10);
 		mulPackAddShr(Pack(t8, t7, t6, t5, t4, t3, t2), t0, t10);
@@ -1965,7 +1974,7 @@ private:
 		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4:t3]
 		mov(a, rp_);
 		mul(t3);
-		lea(t2, ptr [rip + *pL_]);
+		lea(t2, ptr [rip + pL_]);
 		mov(d, a);
 		movq(xm2, t10);
 		mulPackAddShr(Pack(t9, t8, t7, t6, t5, t4, t3), t2, t10);
@@ -1976,7 +1985,7 @@ private:
 		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4]
 		mov(a, rp_);
 		mul(t4);
-		lea(t2, ptr [rip + *pL_]);
+		lea(t2, ptr [rip + pL_]);
 		mov(d, a);
 		mulPackAddShr(Pack(t10, t9, t8, t7, t6, t5, t4), t2, t3);
 		adc(t0, rax);
@@ -1984,14 +1993,14 @@ private:
 		// z = [t1:t0:t10:t9:t8:t7:t6:t5]
 		mov(a, rp_);
 		mul(t5);
-		lea(t2, ptr [rip + *pL_]);
+		lea(t2, ptr [rip + pL_]);
 		mov(d, a);
 		mulPackAddShr(Pack(t0, t10, t9, t8, t7, t6, t5), t2, t3);
 		adc(t1, a);
 		// z = [t1:t0:t10:t9:t8:t7:t6]
 		mov(a, rp_);
 		mul(t6);
-		lea(t2, ptr [rip + *pL_]);
+		lea(t2, ptr [rip + pL_]);
 		mov(d, a);
 		mulPackAddShr(Pack(t1, t0, t10, t9, t8, t7, t6), t2, t3, true);
 		// z = [t1:t0:t10:t9:t8:t7]
@@ -3085,7 +3094,7 @@ private:
 			}
 		}
 	}
-	void gen_fp2Dbl_mulPre(Label& mulPreL)
+	void gen_fp2Dbl_mulPre()
 	{
 		assert(!isFullBit_);
 		const RegExp z = rsp + 0 * 8;
@@ -3138,7 +3147,7 @@ private:
 		gen_raw_sub(gp0, gp1, gp2, rax, 4);
 		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 	}
-	void gen_fp2Dbl_sqrPre(Label& mulPreL)
+	void gen_fp2Dbl_sqrPre()
 	{
 		assert(!isFullBit_);
 		const RegExp y = rsp + 0 * 8;
@@ -3246,7 +3255,7 @@ private:
 		gen_raw_neg(sf.p[0], sf.p[1], sf.t);
 		gen_raw_neg(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.t);
 	}
-	void gen_fp2_mul4(Label& fpDbl_modL)
+	void gen_fp2_mul4()
 	{
 		assert(!isFullBit_);
 		const RegExp z = rsp + 0 * 8;
@@ -3294,7 +3303,7 @@ private:
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL);
 	}
-	void gen_fp2_sqr4(Label& fp_mulL)
+	void gen_fp2_sqr4()
 	{
 		assert(!isFullBit_);
 		const RegExp y = rsp + 0 * 8;
