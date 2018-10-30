@@ -345,25 +345,12 @@ private:
 				mulPre4(gp0, gp1, gp2, sf.t);
 				ret();
 			} else if (op.N == 6 && useAdx_) {
-#if 1
-				StackFrame sf(this, 3, 7 | UseRDX, 0, false);
-				mulPre6(gp0, gp1, gp2, sf.t);
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				call(mulPreL);
 				sf.close(); // make epilog
 			L(mulPreL); // called only from asm code
-				mulPre6(gp0, gp1, gp2, sf.t);
+				mulPre6(sf.t);
 				ret();
-#else
-				{
-					StackFrame sf(this, 3, 7 | UseRDX);
-					mulPre6(gp0, gp1, gp2, sf.t);
-				}
-				{
-					StackFrame sf(this, 3, 10 | UseRDX, 0, false);
-			L(mulPreL); // called only from asm code
-					mulPre6(gp0, gp1, gp2, sf.t);
-					ret();
-				}
-#endif
 			} else {
 				gen_fpDbl_mulPre();
 			}
@@ -1546,13 +1533,13 @@ private:
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
 		mov(d, ptr [px]);
-		mulx(hi, a, ptr [py + 8 * 0]);
-		adox(pd[0], a);
-		mov(ptr [pz], pd[0]);
-		for (size_t i = 1; i < pd.size(); i++) {
-			adcx(pd[i], hi);
-			mulx(hi, a, ptr [py + 8 * i]);
+		xor_(a, a);
+		for (size_t i = 0; i < pd.size(); i++) {
+			mulx(hi, a, ptr [py + i * 8]);
 			adox(pd[i], a);
+			if (i == 0) mov(ptr[pz], pd[0]);
+			if (i == pd.size() - 1) break;
+			adcx(pd[i + 1], hi);
 		}
 		mov(d, 0);
 		adcx(hi, d);
@@ -1814,6 +1801,16 @@ private:
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
 
+#if 0 // a little slower
+		if (useMulx_ && useAdx_) {
+			mulPack(pz, px, py, Pack(t3, t2, t1, t0));
+			mulPackAdd(pz + 8 * 1, px + 8 * 1, py, t4, Pack(t3, t2, t1, t0));
+			mulPackAdd(pz + 8 * 2, px + 8 * 2, py, t0, Pack(t4, t3, t2, t1));
+			mulPackAdd(pz + 8 * 3, px + 8 * 3, py, t1, Pack(t0, t4, t3, t2));
+			store_mr(pz + 8 * 4, Pack(t1, t0, t4, t3));
+			return;
+		}
+#endif
 #if 0
 		// a little slower
 		if (!useMulx_) {
@@ -1838,17 +1835,6 @@ private:
 #else
 		if (useMulx_) {
 			mulPack(pz, px, py, Pack(t3, t2, t1, t0));
-			if (0 && useAdx_) { // a little slower?
-				// [t3:t2:t1:t0]
-				mulPackAdd(pz + 8 * 1, px + 8 * 1, py, t4, Pack(t3, t2, t1, t0));
-				// [t4:t3:t2:t1]
-				mulPackAdd(pz + 8 * 2, px + 8 * 2, py, t5, Pack(t4, t3, t2, t1));
-				// [t5:t4:t3:t2]
-				mulPackAdd(pz + 8 * 3, px + 8 * 3, py, t0, Pack(t5, t4, t3, t2));
-				// [t0:t5:t4:t3]
-				store_mr(pz + 8 * 4, Pack(t0, t5, t4, t3));
-				return;
-			}
 		} else {
 			mov(t5, ptr [px]);
 			mov(a, ptr [py + 8 * 0]);
@@ -1903,12 +1889,111 @@ private:
 		mov(ptr [pz + 8 * 7], d);
 #endif
 	}
-	void mulPre6(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t)
+	// [gp0] <- [gp1] * [gp2]
+	void mulPre6(const Pack& t)
 	{
+		const Reg64& pz = gp0;
+		const Reg64& px = gp1;
+		const Reg64& py = gp2;
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
 		const Reg64& t3 = t[3];
+#if 0 // slower than basic multiplication(56clk -> 67clk)
+//		const Reg64& t7 = t[7];
+//		const Reg64& t8 = t[8];
+//		const Reg64& t9 = t[9];
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+		const int stackSize = (3 + 3 + 6 + 1 + 1 + 1) * 8; // a+b, c+d, (a+b)(c+d), x, y, z
+		const int abPos = 0;
+		const int cdPos = abPos + 3 * 8;
+		const int abcdPos = cdPos + 3 * 8;
+		const int zPos = abcdPos + 6 * 8;
+		const int yPos = zPos + 8;
+		const int xPos = yPos + 8;
+
+		sub(rsp, stackSize);
+		mov(ptr[rsp + zPos], pz);
+		mov(ptr[rsp + xPos], px);
+		mov(ptr[rsp + yPos], py);
+		/*
+			x = aN + b, y = cN + d
+			xy = abN^2 + ((a+b)(c+d) - ac - bd)N + bd
+		*/
+		xor_(a, a);
+		load_rm(Pack(t2, t1, t0), px); // b
+		add_rm(Pack(t2, t1, t0), px + 3 * 8); // a + b
+		adc(a, 0);
+		store_mr(pz, Pack(t2, t1, t0));
+		movq(xm0, a); // carry1
+
+		xor_(a, a);
+		load_rm(Pack(t2, t1, t0), py); // d
+		add_rm(Pack(t2, t1, t0), py + 3 * 8); // c + d
+		adc(a, 0);
+		store_mr(pz + 3 * 8, Pack(t2, t1, t0));
+		movq(xm1, a); // carry2
+
+		mulPre3(rsp + abcdPos, pz, pz + 3 * 8, t); // (a+b)(c+d)
+
+		movq(a, xm0);
+		movq(d, xm1);
+		mov(t3, a);
+		and_(t3, d); // t3 = carry1 & carry2
+		Label doNothing;
+		je(doNothing);
+		load_rm(Pack(t2, t1, t0), rsp + abcdPos + 3 * 8);
+		test(a, a);
+		je("@f");
+		// add (c+d)
+		add_rm(Pack(t2, t1, t0), pz + 3 * 8);
+		adc(t3, 0);
+	L("@@");
+		test(d, d);
+		je("@f");
+		// add(a+b)
+		add_rm(Pack(t2, t1, t0), pz);
+		adc(t3, 0);
+	L("@@");
+		store_mr(rsp + abcdPos + 3 * 8, Pack(t2, t1, t0));
+	L(doNothing);
+		movq(xm0, t3); // save new carry
+
+
+		mov(gp0, ptr [rsp + zPos]);
+		mov(gp1, ptr [rsp + xPos]);
+		mov(gp2, ptr [rsp + yPos]);
+		mulPre3(gp0, gp1, gp2, t); // [rsp] <- bd
+
+		mov(gp0, ptr [rsp + zPos]);
+		mov(gp1, ptr [rsp + xPos]);
+		mov(gp2, ptr [rsp + yPos]);
+		mulPre3(gp0 + 6 * 8, gp1 + 3 * 8, gp2 + 3 * 8, t); // [rsp + 6 * 8] <- ac
+
+		mov(pz, ptr[rsp + zPos]);
+		movq(d, xm0);
+		for (int i = 0; i < 6; i++) {
+			mov(a, ptr[pz + (3 + i) * 8]);
+			if (i == 0) {
+				add(a, ptr[rsp + abcdPos + i * 8]);
+			} else {
+				adc(a, ptr[rsp + abcdPos + i * 8]);
+			}
+			mov(ptr[pz + (3 + i) * 8], a);
+		}
+		mov(a, ptr[pz + 9 * 8]);
+		adc(a, d);
+		mov(ptr[pz + 9 * 8], a);
+		jnc("@f");
+		for (int i = 10; i < 12; i++) {
+			mov(a, ptr[pz + i * 8]);
+			adc(a, 0);
+			mov(ptr[pz + i * 8], a);
+		}
+	L("@@");
+		add(rsp, stackSize);
+#else
 		const Reg64& t4 = t[4];
 		const Reg64& t5 = t[5];
 		const Reg64& t6 = t[6];
@@ -1920,6 +2005,7 @@ private:
 		mulPackAdd(pz + 8 * 4, px + 8 * 4, py, t2, Pack(t1, t0, t6, t5, t4, t3)); // [t2:t1:t0:t6:t5:t4]
 		mulPackAdd(pz + 8 * 5, px + 8 * 5, py, t3, Pack(t2, t1, t0, t6, t5, t4)); // [t3:t2:t1:t0:t6:t5]
 		store_mr(pz + 8 * 6, Pack(t3, t2, t1, t0, t6, t5));
+#endif
 	}
 	/*
 		@input (z, xy)
