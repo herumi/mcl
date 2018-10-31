@@ -315,11 +315,11 @@ private:
 		func = gen_fpDbl_sqrPre(op);
 		if (func) op.fpDbl_sqrPreA_ = reinterpret_cast<void2u>(func);
 
-		if (op.N > 4) return;
-		align(16);
-		op.fp_mul = getCurr<void4u>(); // used in toMont/fromMont
-		op.fp_mulA_ = getCurr<void3u>();
-		gen_mul();
+		func = gen_mul();
+		if (func) {
+			op.fp_mul = reinterpret_cast<void4u>(func); // used in toMont/fromMont
+			op.fp_mulA_ = reinterpret_cast<void3u>(func);
+		}
 		if (op.N > 4) return;
 		align(16);
 		op.fp_sqrA_ = getCurr<void2u>();
@@ -817,19 +817,25 @@ private:
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
 		return func;
 	}
-	void gen_mul()
+	const void* gen_mul()
 	{
+		align(16);
+		const void* func = getCurr<void*>();
 		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
 			mulPre3(rsp, sf.p[1], sf.p[2], sf.t);
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
+			return func;
 		}
 		if (pn_ == 3) {
 			gen_montMul3();
-		} else if (pn_ == 4) {
+			return func;
+		}
+		if (pn_ == 4) {
 			gen_montMul4();
-#if 1
-		} else if (pn_ == 6 && useAdx_) {
+			return func;
+		}
+		if (pn_ == 6 && useAdx_) {
 //			gen_montMul6(p_, rp_);
 			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
 			mov(ptr[rsp + 12 * 8], gp0);
@@ -838,12 +844,15 @@ private:
 			mov(gp0, ptr[rsp + 12 * 8]);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
-#endif
-		} else if (pn_ <= 9) {
-			gen_montMulN(p_, rp_, pn_);
-		} else {
-			throw cybozu::Exception("mcl:FpGenerator:gen_mul:not implemented for") << pn_;
+			return func;
 		}
+#if 0
+		if (pn_ <= 9) {
+			gen_montMulN(p_, rp_, pn_);
+			return func;
+		}
+#endif
+		return 0;
 	}
 	/*
 		@input (z, xy)
