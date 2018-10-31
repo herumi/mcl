@@ -14,7 +14,7 @@
 #if MCL_MAX_BIT_SIZE >= 768
 typedef mcl::FpT<mcl::FpTag, MCL_MAX_BIT_SIZE> Fp;
 #else
-typedef mcl::FpT<mcl::FpTag, 256> Fp;
+typedef mcl::FpT<mcl::FpTag, 384> Fp;
 #endif
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
@@ -28,10 +28,11 @@ void testFp2()
 	using namespace mcl;
 	puts(__FUNCTION__);
 #if MCL_MAX_BIT_SIZE < 768
-	CYBOZU_TEST_EQUAL(sizeof(Fp), 32);
-	CYBOZU_TEST_EQUAL(sizeof(Fp2), 32 * 2);
-	CYBOZU_TEST_EQUAL(sizeof(Fp6), 32 * 6);
-	CYBOZU_TEST_EQUAL(sizeof(Fp12), 32 * 12);
+	const size_t FpSize = 48;
+	CYBOZU_TEST_EQUAL(sizeof(Fp), FpSize);
+	CYBOZU_TEST_EQUAL(sizeof(Fp2), FpSize * 2);
+	CYBOZU_TEST_EQUAL(sizeof(Fp6), FpSize * 6);
+	CYBOZU_TEST_EQUAL(sizeof(Fp12), FpSize * 12);
 #endif
 	Fp2 x, y, z;
 	x.a = 1;
@@ -335,6 +336,7 @@ void testFpDbl()
 				tx.getMpz(mtx);
 				mo = mtx * mtx;
 			}
+std::cout << std::hex;
 			CYBOZU_TEST_EQUAL(mz, mo);
 
 			FpDbl::mod(z, d);
@@ -434,6 +436,11 @@ void testAll()
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+#if MCL_MAX_BIT_SIZE >= 384
+		// N = 6
+		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+#endif
 #if MCL_MAX_BIT_SIZE >= 768
 		"776259046150354467574489744231251277628443008558348305569526019013025476343188443165439204414323238975243865348565536603085790022057407195722143637520590569602227488010424952775132642815799222412631499596858234375446423426908029627",
 #endif

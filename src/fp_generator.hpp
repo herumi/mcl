@@ -1713,6 +1713,7 @@ private:
 	}
 	/*
 		py[7..0] = px[3..0] ^ 2
+		use xmm0
 	*/
 	void sqrPre4(const RegExp& py, const RegExp& px, const Pack& t)
 	{
@@ -1726,34 +1727,46 @@ private:
 		const Reg64& t7 = t[7];
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
+		const Reg64& t10 = t[10];
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
 
-		// (AN + B)^2 = A^2N^2 + 2AB + B^2
-
-		mul2x2(px + 8 * 0, px + 8 * 2, t4, t3, t2, t1, t0);
-		// [t3:t2:t1:t0] = AB
-		xor_(t4, t4);
-		add_rr(Pack(t4, t3, t2, t1, t0), Pack(t4, t3, t2, t1, t0));
-		// [t4:t3:t2:t1:t0] = 2AB
-		store_mr(py + 8 * 2, Pack(t4, t3, t2, t1, t0));
-
-		mov(t8, ptr [px + 8 * 0]);
-		mov(t9, ptr [px + 8 * 1]);
-		sqr2(t1, t0, t7, t6, t9, t8, rax, rcx);
-		// B^2 = [t1:t0:t7:t6]
-		store_mr(py + 8 * 0, Pack(t7, t6));
-		// [t1:t0]
-
-		mov(t8, ptr [px + 8 * 2]);
-		mov(t9, ptr [px + 8 * 3]);
-		sqr2(t5, t4, t3, t2, t9, t8, rax, rcx);
-		// [t5:t4:t3:t2]
-		add_rm(Pack(t4, t3, t2, t1, t0), py + 8 * 2);
-		adc(t5, 0);
-		store_mr(py + 8 * 2, Pack(t5, t4, t3, t2, t1, t0));
+		/*
+			(aN + b)^2 = a^2 N^2 + 2ab N + b^2
+		*/
+		load_rm(Pack(t9, t8), px);
+		sqr2(t3, t2, t1, t0, t9, t8, t7, t6);
+		// [t3:t2:t1:t0] = b^2
+		store_mr(py, Pack(t1, t0));
+		movq(xm0, t2);
+		mul2x2(px, px + 2 * 8, t6, t5, t4, t1, t0);
+		// [t5:t4:t1:t0] = ab
+		xor_(t6, t6);
+		add_rr(Pack(t6, t5, t4, t1, t0), Pack(t6, t5, t4, t1, t0));
+		// [t6:t5:t4:t1:t0] = 2ab
+		load_rm(Pack(t8, t7), px + 2 * 8);
+		// free t10, t9, rax, rdx
+		/*
+			[d:t8:t10:t9] = [t8:t7]^2
+		*/
+		mov(d, t7);
+		mulx(t10, t9, t7); // [t10:t9] = t7^2
+		mulx(t7, t2, t8); // [t7:t2] = t7 t8
+		xor_(a, a);
+		add_rr(Pack(a, t7, t2), Pack(a, t7, t2));
+		// [a:t7:t2] = 2 t7 t8
+		mov(d, t8);
+		mulx(d, t8, t8); // [d:t8] = t8^2
+		add_rr(Pack(d, t8, t10), Pack(a, t7, t2));
+		// [d:t8:t10:t9] = [t8:t7]^2
+		movq(t2, xm0);
+		add_rr(Pack(t8, t10, t9, t3, t2), Pack(t6, t5, t4, t1, t0));
+		adc(d, 0);
+		store_mr(py + 2 * 8, Pack(d, t8, t10, t9, t3, t2));
 	}
 	/*
 		py[11..0] = px[5..0] ^ 2
-		use stack[6 * 8]
+		use rax, rdx, stack[6 * 8]
 	*/
 	void sqrPre6(const RegExp& py, const RegExp& px, const Pack& t)
 	{
@@ -1767,7 +1780,8 @@ private:
 		sqrPre3(py + 6 * 8, px + 3 * 8, t); // [py + 6 * 8] <- a^2
 		mulPre3(rsp, px, px + 3 * 8, t); // ab
 		Pack ab = t.sub(0, 6);
-		load_rm(ab, py + 3 * 8);
+		load_rm(ab, rsp);
+		xor_(rax, rax);
 		for (int i = 0; i < 6; i++) {
 			if (i == 0) {
 				add(ab[i], ab[i]);
@@ -1775,10 +1789,11 @@ private:
 				adc(ab[i], ab[i]);
 			}
 		}
-		add_rm(ab, rsp);
+		adc(rax, rax);
+		add_rm(ab, py + 3 * 8);
 		store_mr(py + 3 * 8, ab);
 		load_rm(Pack(t2, t1, t0), py + 9 * 8);
-		adc(t0, 0);
+		adc(t0, rax);
 		adc(t1, 0);
 		adc(t2, 0);
 		store_mr(py + 9 * 8, Pack(t2, t1, t0));
@@ -2114,11 +2129,15 @@ private:
 			sqrPre3(sf.p[0], sf.p[1], t);
 			return func;
 		}
+#if 1
 		if (pn_ == 4 && useMulx_) {
-			StackFrame sf(this, 2, 10 | UseRDX);
-			sqrPre4(sf.p[0], sf.p[1], sf.t);
+			StackFrame sf(this, 3, 10 | UseRDX);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			sqrPre4(sf.p[0], sf.p[1], t);
 			return func;
 		}
+#endif
 		if (pn_ == 6 && useMulx_ && useAdx_) {
 			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
 			Pack t = sf.t;
