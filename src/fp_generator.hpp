@@ -836,6 +836,7 @@ private:
 			gen_montMul4();
 			return func;
 		}
+	return 0;
 		if (pn_ == 6 && useMulx_ && useAdx_) {
 //			gen_montMul6(p_, rp_);
 			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
@@ -1183,6 +1184,27 @@ private:
 			gen_montSqr3();
 			return func;
 		}
+		if (pn_ == 4 && useMulx_) {
+#if 1
+			// sqr(y, x) = mul(y, x, x)
+#ifdef XBYAK64_WIN
+			mov(r8, rdx);
+#else
+			mov(rdx, rsi);
+#endif
+			jmp((const void*)op_->fp_mulA_);
+#else // (sqrPre + mod) is slower than mul
+			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			sqrPre4(rsp, sf.p[1], t);
+			mov(gp0, sf.p[0]);
+			mov(gp1, rsp);
+			call(fpDbl_modL);
+#endif
+			return func;
+		}
+return 0;
 		if (pn_ == 6 && useMulx_ && useAdx_) {
 			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
 			mov(ptr[rsp + 12 * 8], gp0);
@@ -1194,26 +1216,7 @@ private:
 			call(fpDbl_modL);
 			return func;
 		}
-#if 0 // (sqrPre + mod) is slower than mul
-		if (pn_ == 4 && useMulx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre4(rsp, sf.p[1], t);
-			mov(gp0, sf.p[0]);
-			mov(gp1, rsp);
-			call(fpDbl_modL);
-			return func;
-		}
-#endif
-		// sqr(y, x) = mul(y, x, x)
-#ifdef XBYAK64_WIN
-		mov(r8, rdx);
-#else
-		mov(rdx, rsi);
-#endif
-		jmp((const void*)op_->fp_mulA_);
-		return func;
+		return 0;
 	}
 	/*
 		input (pz[], px[], py[])
