@@ -296,7 +296,7 @@ private:
 
 		op.fp_negA_ = gen_fp_neg();
 
-		const void* func = 0;
+		void* func = 0;
 		// setup fp_tower
 		op.fp2_mulNF = 0;
 		func = gen_fpDbl_add();
@@ -320,10 +320,11 @@ private:
 			op.fp_mul = reinterpret_cast<void4u>(func); // used in toMont/fromMont
 			op.fp_mulA_ = reinterpret_cast<void3u>(func);
 		}
+		func = gen_sqr();
+		if (func) {
+			op.fp_sqrA_ = reinterpret_cast<void2u>(func);
+		}
 		if (op.N > 4) return;
-		align(16);
-		op.fp_sqrA_ = getCurr<void2u>();
-		gen_sqr();
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
@@ -685,10 +686,10 @@ private:
 		outLocalLabel();
 		return func;
 	}
-	const void* gen_fpDbl_add()
+	void* gen_fpDbl_add()
 	{
 		align(16);
-		const void* func = getCurr<void*>();
+		void* func = getCurr<void*>();
 		if (pn_ <= 4) {
 			int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
 			StackFrame sf(this, 3, tn);
@@ -713,10 +714,10 @@ private:
 		}
 		return 0;
 	}
-	const void* gen_fpDbl_sub()
+	void* gen_fpDbl_sub()
 	{
 		align(16);
-		const void* func = getCurr<void*>();
+		void* func = getCurr<void*>();
 		if (pn_ <= 4) {
 			int tn = pn_ * 2;
 			StackFrame sf(this, 3, tn);
@@ -817,10 +818,10 @@ private:
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
 		return func;
 	}
-	const void* gen_mul()
+	void* gen_mul()
 	{
 		align(16);
-		const void* func = getCurr<void*>();
+		void* func = getCurr<void*>();
 		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
 			mulPre3(rsp, sf.p[1], sf.p[2], sf.t);
@@ -835,7 +836,7 @@ private:
 			gen_montMul4();
 			return func;
 		}
-		if (pn_ == 6 && useAdx_) {
+		if (pn_ == 6 && useMulx_ && useAdx_) {
 //			gen_montMul6(p_, rp_);
 			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
 			mov(ptr[rsp + 12 * 8], gp0);
@@ -1120,10 +1121,10 @@ private:
 		movq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-	const void* gen_fpDbl_mod(const fp::Op& op)
+	void* gen_fpDbl_mod(const fp::Op& op)
 	{
 		align(16);
-		const void* func = getCurr<void*>();
+		void* func = getCurr<void*>();
 		if (op.primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 2, 6 | UseRDX);
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
@@ -1166,18 +1167,32 @@ private:
 		}
 		return 0;
 	}
-	void gen_sqr()
+	void* gen_sqr()
 	{
+		align(16);
+		void* func = getCurr<void*>();
 		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			sqrPre3(rsp, sf.p[1], t);
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
+			return func;
 		}
 		if (pn_ == 3) {
 			gen_montSqr3();
-			return;
+			return func;
+		}
+		if (pn_ == 6 && useMulx_ && useAdx_) {
+			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
+			mov(ptr[rsp + 12 * 8], gp0);
+			mov(gp0, rsp);
+			mov(gp2, gp1);
+			call(mulPreL); // gp0, x, y
+			mov(gp0, ptr[rsp + 12 * 8]);
+			mov(gp1, rsp);
+			call(fpDbl_modL);
+			return func;
 		}
 #if 0 // (sqrPre + mod) is slower than mul
 		if (pn_ == 4 && useMulx_) {
@@ -1188,7 +1203,7 @@ private:
 			mov(gp0, sf.p[0]);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
-			return;
+			return func;
 		}
 #endif
 		// sqr(y, x) = mul(y, x, x)
@@ -1198,6 +1213,7 @@ private:
 		mov(rdx, rsi);
 #endif
 		jmp((const void*)op_->fp_mulA_);
+		return func;
 	}
 	/*
 		input (pz[], px[], py[])
@@ -2134,10 +2150,10 @@ private:
 		movq(z, xm0);
 		store_mr(z, zp);
 	}
-	const void* gen_fpDbl_sqrPre(const fp::Op&/* op */)
+	void* gen_fpDbl_sqrPre(const fp::Op&/* op */)
 	{
 		align(16);
-		const void* func = getCurr<void*>();
+		void* func = getCurr<void*>();
 		if (pn_ == 2 && useMulx_) {
 			StackFrame sf(this, 2, 7 | UseRDX);
 			sqrPre2(sf.p[0], sf.p[1], sf.t);
@@ -2175,10 +2191,10 @@ private:
 		return func;
 #endif
 	}
-	const void* gen_fpDbl_mulPre()
+	void* gen_fpDbl_mulPre()
 	{
 		align(16);
-		const void* func = getCurr<void*>();
+		void* func = getCurr<void*>();
 		if (pn_ == 2 && useMulx_) {
 			StackFrame sf(this, 3, 5 | UseRDX);
 			mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
