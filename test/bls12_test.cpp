@@ -698,6 +698,7 @@ if(0){
 //	CYBOZU_BENCH_C("subDbl", 10000000, FpDbl::sub, dx, dx, dx);
 	CYBOZU_BENCH_C("mul", 10000000 / n, f, xv, yv, xv);
 	CYBOZU_BENCH_C("mulPre", 100000000, FpDbl::mulPre, dx, xv[0], yv[0]);
+	CYBOZU_BENCH_C("sqrPre", 100000000, FpDbl::sqrPre, dx, xv[0]);
 	return 0;
 #endif
 	return cybozu::test::autoRun.run(argc, argv);
