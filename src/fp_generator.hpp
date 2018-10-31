@@ -1160,7 +1160,7 @@ private:
 	void gen_sqr()
 	{
 		if (op_->primeMode == PM_NIST_P192) {
-			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
+			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			sqrPre3(rsp, sf.p[1], t);
@@ -1170,6 +1170,18 @@ private:
 			gen_montSqr3();
 			return;
 		}
+#if 0 // (sqrPre + mod) is slower than mul
+		if (pn_ == 4 && useMulx_) {
+			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			sqrPre4(rsp, sf.p[1], t);
+			mov(gp0, sf.p[0]);
+			mov(gp1, rsp);
+			call(fpDbl_modL);
+			return;
+		}
+#endif
 		// sqr(y, x) = mul(y, x, x)
 #ifdef XBYAK64_WIN
 		mov(r8, rdx);
@@ -2129,7 +2141,6 @@ private:
 			sqrPre3(sf.p[0], sf.p[1], t);
 			return func;
 		}
-#if 1
 		if (pn_ == 4 && useMulx_) {
 			StackFrame sf(this, 3, 10 | UseRDX);
 			Pack t = sf.t;
@@ -2137,7 +2148,6 @@ private:
 			sqrPre4(sf.p[0], sf.p[1], t);
 			return func;
 		}
-#endif
 		if (pn_ == 6 && useMulx_ && useAdx_) {
 			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
 			Pack t = sf.t;

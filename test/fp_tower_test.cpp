@@ -336,7 +336,6 @@ void testFpDbl()
 				tx.getMpz(mtx);
 				mo = mtx * mtx;
 			}
-std::cout << std::hex;
 			CYBOZU_TEST_EQUAL(mz, mo);
 
 			FpDbl::mod(z, d);
