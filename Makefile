@@ -279,8 +279,8 @@ EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1 #-s ASSERTIONS=1
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
-SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/she.h Makefile
-MCL_C_DEP=src/fp.cpp src/bn_c_impl.hpp include/mcl/bn.hpp include/mcl/bn.h Makefile
+SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/she.h Makefile
+MCL_C_DEP=src/fp.cpp src/bn_c_impl.hpp include/mcl/bn.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/bn.h Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   SHE_C_DEP+=src/base64m.ll
