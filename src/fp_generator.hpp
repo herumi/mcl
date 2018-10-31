@@ -1163,7 +1163,7 @@ private:
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
-			sqrPre3(rsp, sf.p[1], sf.t);
+			sqrPre3(rsp, sf.p[1], t);
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
 		}
 		if (pn_ == 3) {
