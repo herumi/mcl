@@ -193,8 +193,6 @@ struct Op {
 	void2u fp2_sqrA_;
 	void3u fpDbl_addA_;
 	void3u fpDbl_subA_;
-	void3u fpDbl_addPreA_;
-	void3u fpDbl_subPreA_;
 	void3u fpDbl_mulPreA_;
 	void2u fpDbl_sqrPreA_;
 	void2u fpDbl_modA_;
@@ -282,8 +280,6 @@ struct Op {
 		fp2_sqrA_ = 0;
 		fpDbl_addA_ = 0;
 		fpDbl_subA_ = 0;
-		fpDbl_addPreA_ = 0;
-		fpDbl_subPreA_ = 0;
 		fpDbl_mulPreA_ = 0;
 		fpDbl_sqrPreA_ = 0;
 		fpDbl_modA_ = 0;

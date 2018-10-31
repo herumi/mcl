@@ -121,20 +121,22 @@ public:
 	static void (*add)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	static void (*sub)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	static void (*mod)(Fp& z, const FpDblT& xy);
+	static void (*addPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
+	static void (*subPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	static void addC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void subC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void modC(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
+	static void addPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
+	static void subPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 #else
 	static void add(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
+	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
+	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 #endif
-	static void addPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
-	static void subPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 	static void mulPreC(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
 	static void sqrPreC(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
-	static void (*addPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
-	static void (*subPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
@@ -155,17 +157,11 @@ public:
 		if (sub == 0) sub = subC;
 		mod = (void (*)(Fp&, const FpDblT&))op.fpDbl_modA_;
 		if (mod == 0) mod = modC;
+		addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPre;
+		if (addPre == 0) addPre = addPreC;
+		subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPre;
+		if (subPre == 0) subPre = subPreC;
 #endif
-		if (op.fpDbl_addPreA_) {
-			addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPreA_;
-		} else {
-			addPre = addPreC;
-		}
-		if (op.fpDbl_subPreA_) {
-			subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPreA_;
-		} else {
-			subPre = subPreC;
-		}
 		if (op.fpDbl_mulPreA_) {
 			mulPre = (void (*)(FpDblT&, const Fp&, const Fp&))op.fpDbl_mulPreA_;
 		} else {
@@ -185,9 +181,9 @@ public:
 template<class Fp> void (*FpDblT<Fp>::add)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::sub)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::mod)(Fp&, const FpDblT&);
-#endif
 template<class Fp> void (*FpDblT<Fp>::addPre)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::subPre)(FpDblT&, const FpDblT&, const FpDblT&);
+#endif
 template<class Fp> void (*FpDblT<Fp>::mulPre)(FpDblT&, const Fp&, const Fp&);
 template<class Fp> void (*FpDblT<Fp>::sqrPre)(FpDblT&, const Fp&);
 
