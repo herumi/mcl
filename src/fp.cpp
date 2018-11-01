@@ -499,18 +499,17 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 		fpDbl_mod = &mcl::vint::mcl_fpDbl_mod_SECP256K1;
 	}
 #endif
-	if (!fp::initForMont(*this, p, mode)) return false;
-	{
-		bool b;
-		sq.set(&b, mp);
-		if (!b) return false;
-	}
 	if (N * UnitBitSize <= 256) {
 		hash = sha256;
 	} else {
 		hash = sha512;
 	}
-	return true;
+	{
+		bool b;
+		sq.set(&b, mp);
+		if (!b) return false;
+	}
+	return fp::initForMont(*this, p, mode);
 }
 
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)

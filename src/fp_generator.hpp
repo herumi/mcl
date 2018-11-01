@@ -836,13 +836,19 @@ private:
 			gen_montMul4();
 			return func;
 		}
-		if (pn_ == 6 && useMulx_ && useAdx_) {
+		if (pn_ == 6 && !isFullBit_ && useMulx_ && useAdx_) {
 //			gen_montMul6(p_, rp_);
-			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
-			mov(ptr[rsp + 12 * 8], gp0);
+			if (mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
+			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
+			/*
+				use xm3
+				rsp
+				[0, ..12 * 8) ; mul(x, y)
+			*/
+			movq(xm3, gp0);
 			mov(gp0, rsp);
 			call(mulPreL); // gp0, x, y
-			mov(gp0, ptr[rsp + 12 * 8]);
+			movq(gp0, xm3);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
 			return func;
@@ -1154,7 +1160,7 @@ private:
 			ret();
 			return func;
 		}
-		if (pn_ == 6 && !isFullBit_ && useAdx_) {
+		if (pn_ == 6 && !isFullBit_ && useMulx_ && useAdx_) {
 			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 			call(fpDbl_modL);
 			sf.close();
@@ -1203,20 +1209,22 @@ private:
 #endif
 			return func;
 		}
-		if (pn_ == 6 && useMulx_ && useAdx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12 + 6) * 8);
+		if (pn_ == 6 && !isFullBit_ && useMulx_ && useAdx_) {
+			if (fpDbl_modL.getAddress() == 0) return 0;
+			StackFrame sf(this, 3, 10 | UseRDX, (12 + 6) * 8);
 			/*
+				use xm3
 				rsp
-				[(12 + 6 * 8] ; gp0
 				[6 * 8, (12 + 6) * 8) ; sqrPre(x, x)
 				[0..6 * 8) ; stack for sqrPre6
 			*/
-			mov(ptr[rsp + (12 + 6) * 8], gp0);
+			movq(xm3, gp0);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			// sqrPre6 uses 6 * 8 bytes stack
 			sqrPre6(rsp + 6 * 8, sf.p[1], t);
 			mov(gp0, ptr[rsp + (12 + 6) * 8]);
+			movq(gp0, xm3);
 			lea(gp1, ptr[rsp + 6 * 8]);
 			call(fpDbl_modL);
 			return func;
