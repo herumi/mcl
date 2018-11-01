@@ -78,7 +78,7 @@ else
   endif
   ifeq ($(MARCH),)
     ifeq ($(INTEL),1)
-      CFLAGS_OPT+=-march=native
+#      CFLAGS_OPT+=-march=native
     endif
   else
     CFLAGS_OPT+=$(MARCH)
