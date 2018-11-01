@@ -836,7 +836,6 @@ private:
 			gen_montMul4();
 			return func;
 		}
-	return 0;
 		if (pn_ == 6 && useMulx_ && useAdx_) {
 //			gen_montMul6(p_, rp_);
 			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
@@ -1204,15 +1203,21 @@ private:
 #endif
 			return func;
 		}
-return 0;
 		if (pn_ == 6 && useMulx_ && useAdx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12) * 8);
-			mov(ptr[rsp + 12 * 8], gp0);
-			mov(gp0, rsp);
-			mov(gp2, gp1);
-			call(mulPreL); // gp0, x, y
-			mov(gp0, ptr[rsp + 12 * 8]);
-			mov(gp1, rsp);
+			StackFrame sf(this, 3, 10 | UseRDX, (1 + 12 + 6) * 8);
+			/*
+				rsp
+				[(12 + 6 * 8] ; gp0
+				[6 * 8, (12 + 6) * 8) ; sqrPre(x, x)
+				[0..6 * 8) ; stack for sqrPre6
+			*/
+			mov(ptr[rsp + (12 + 6) * 8], gp0);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			// sqrPre6 uses 6 * 8 bytes stack
+			sqrPre6(rsp + 6 * 8, sf.p[1], t);
+			mov(gp0, ptr[rsp + (12 + 6) * 8]);
+			lea(gp1, ptr[rsp + 6 * 8]);
 			call(fpDbl_modL);
 			return func;
 		}
