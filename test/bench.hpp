@@ -7,7 +7,7 @@ void testBench(const G1& P, const G2& Q)
 	Fp12 e1, e2;
 	pairing(e1, P, Q);
 	Fp12::pow(e2, e1, 12345);
-	const int C = 500;
+	const int C = 1000;
 	const int C3 = 3000;
 	Fp x, y;
 	x.setHashOf("abc");
