@@ -523,7 +523,7 @@ struct MapTo {
 			mulByCofactorBN(P, P);
 		} else {
 #ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
-			naiveMapTo<G1, Fp>(P, t);
+			naiveMapTo<G2, Fp2>(P, t);
 #else
 			if (!calcBN<G2, Fp2>(P, t)) return false;
 #endif
