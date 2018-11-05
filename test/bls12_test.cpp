@@ -696,9 +696,9 @@ if(0){
 //	exit(1);
 }
 //	CYBOZU_BENCH_C("subDbl", 10000000, FpDbl::sub, dx, dx, dx);
-	CYBOZU_BENCH_C("mulPre", 100000000, FpDbl::mulPre, dx, xv[0], yv[0]);
-	CYBOZU_BENCH_C("sqrPre", 100000000, FpDbl::sqrPre, dx, xv[0]);
-	CYBOZU_BENCH_C("mod   ", 100000000, FpDbl::mod, xv[0], dx);
+//	CYBOZU_BENCH_C("mulPre", 100000000, FpDbl::mulPre, dx, xv[0], yv[0]);
+//	CYBOZU_BENCH_C("sqrPre", 100000000, FpDbl::sqrPre, dx, xv[0]);
+//	CYBOZU_BENCH_C("mod   ", 100000000, FpDbl::mod, xv[0], dx);
 	CYBOZU_BENCH_C("mul   ", 100000000, Fp::mul, xv[0], yv[0], xv[0]);
 	CYBOZU_BENCH_C("sqr   ", 100000000, Fp::sqr, xv[0], xv[0]);
 	return 0;

@@ -837,7 +837,10 @@ private:
 			return func;
 		}
 		if (pn_ == 6 && !isFullBit_ && useMulx_ && useAdx_) {
-//			gen_montMul6(p_, rp_);
+#if 1
+			// a little faster
+			gen_montMul6();
+#else
 			if (mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
 			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
 			/*
@@ -851,6 +854,7 @@ private:
 			movq(gp0, xm3);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
+#endif
 			return func;
 		}
 #if 0
@@ -1327,6 +1331,121 @@ private:
 
 		movq(p0, xm0); // load p0
 		store_mr(p0, Pack(t3, t2, t1, t0));
+		ret();
+	}
+	/*
+		c[n+2] = c[n+1] + px[n] * rdx
+		use rax
+	*/
+	void mulAdd(const Pack& c, int n, const RegExp& px)
+	{
+		const Reg64& a = rax;
+		xor_(a, a);
+		for (int i = 0; i < n; i++) {
+			mulx(c[n + 1], a, ptr [px + i * 8]);
+			adox(c[i], a);
+			adcx(c[i + 1], c[n + 1]);
+		}
+		mov(a, 0);
+		mov(c[n + 1], a);
+		adox(c[n], a);
+		adcx(c[n + 1], a);
+		adox(c[n + 1], a);
+	}
+	/*
+		input
+		c[6..0]
+		rdx = yi
+		use rax, rdx
+		output
+		c[7..1]
+
+		if first:
+		  c = x[5..0] * rdx
+		else:
+		  c += x[5..0] * rdx
+		q = uint64_t(c0 * rp)
+		c += p * q
+		c >>= 64
+	*/
+	void montgomery6_1(const Pack& c, const RegExp& px, const Reg64& t0, const Reg64& t1, bool isFirst)
+	{
+		const int n = 6;
+		const Reg64& a = rax;
+		const Reg64& d = rdx;
+		if (isFirst) {
+			const Reg64 *pt0 = &a;
+			const Reg64 *pt1 = &t0;
+			// c[6..0] = px[5..0] * rdx
+			mulx(*pt0, c[0], ptr [px + 0 * 8]);
+			for (int i = 1; i < n; i++) {
+				mulx(*pt1, c[i], ptr[px + i * 8]);
+				if (i == 1) {
+					add(c[i], *pt0);
+				} else {
+					adc(c[i], *pt0);
+				}
+				std::swap(pt0, pt1);
+			}
+			mov(c[n], 0);
+			adc(c[n], *pt0);
+		} else {
+			// c[7..0] = c[6..0] + px[5..0] * rdx
+			mulAdd(c, 6, px);
+		}
+		mov(a, rp_);
+		mul(c[0]); // q = a
+		mov(d, a);
+		mov(t1, pL_);
+		// c += p * q
+		mulAdd(c, 6, t1);
+	}
+	/*
+		input (z, x, y) = (p0, p1, p2)
+		z[0..5] <- montgomery(x[0..5], y[0..5])
+		destroy t0, ..., t9, rax, rdx
+	*/
+	void gen_montMul6()
+	{
+		assert(!isFullBit_ && useMulx_ && useAdx_);
+		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+		call(fp_mulL);
+		sf.close();
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+
+		const Reg64& t0 = sf.t[0];
+		const Reg64& t1 = sf.t[1];
+		const Reg64& t2 = sf.t[2];
+		const Reg64& t3 = sf.t[3];
+		const Reg64& t4 = sf.t[4];
+		const Reg64& t5 = sf.t[5];
+		const Reg64& t6 = sf.t[6];
+		const Reg64& t7 = sf.t[7];
+		const Reg64& t8 = sf.t[8];
+		const Reg64& t9 = sf.t[9];
+	L(fp_mulL);
+		mov(rdx, ptr [py + 0 * 8]);
+		montgomery6_1(Pack(t7, t6, t5, t4, t3, t2, t1, t0), px, t8, t9, true);
+		mov(rdx, ptr [py + 1 * 8]);
+		montgomery6_1(Pack(t0, t7, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
+		mov(rdx, ptr [py + 2 * 8]);
+		montgomery6_1(Pack(t1, t0, t7, t6, t5, t4, t3, t2), px, t8, t9, false);
+		mov(rdx, ptr [py + 3 * 8]);
+		montgomery6_1(Pack(t2, t1, t0, t7, t6, t5, t4, t3), px, t8, t9, false);
+		mov(rdx, ptr [py + 4 * 8]);
+		montgomery6_1(Pack(t3, t2, t1, t0, t7, t6, t5, t4), px, t8, t9, false);
+		mov(rdx, ptr [py + 5 * 8]);
+		montgomery6_1(Pack(t4, t3, t2, t1, t0, t7, t6, t5), px, t8, t9, false);
+		// [t4:t3:t2:t1:t0:t7:t6]
+		const Pack z = Pack(t3, t2, t1, t0, t7, t6);
+		const Pack keep = Pack(rdx, rax, px, py, t8, t9);
+		mov_rr(keep, z);
+		mov(t5, pL_);
+		sub_rm(z, t5);
+		cmovc_rr(z, keep);
+		store_mr(pz, z);
 		ret();
 	}
 	/*
