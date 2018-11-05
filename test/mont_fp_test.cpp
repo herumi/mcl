@@ -286,7 +286,6 @@ CYBOZU_TEST_AUTO(test)
 #if 0
 		mpz_class p(tbl[i]);
 		initPairing(mcl::BLS12_381);
-printf("FpDbl::mod=%p\n", FpDbl::mod);
 #if 1
 		cybozu::XorShift rg;
 		for (int i = 0; i < 1000; i++) {
@@ -308,18 +307,23 @@ printf("FpDbl::mod=%p\n", FpDbl::mod);
 		}
 #else
 		Montgomery mont(p);
-		mpz_class xy1("00783239517141aafb2ffc854bebe27a47655610fa048c1bb6482ba78a79f232c9043ac4a898274ced5b2f65cf281204f4266605b5602ca09cacd1ea9e650c7936a436836ecfd3861d601ef424dbd6e8dbc8c71e9bc7da343f640cf5dffb903f", 16);
-//		mpz_class xy1 = (mpz_class(1) << (64 * 12 - 4)) - 1;
-		mpz_class z1;
-		mont.mod(z1, xy1);
-std::cout << "1=" << z1 << std::endl;
-		FpDbl xy2, z2;
-		Fp z3;
-		z3.clear();
-		xy2.setMpz(xy1);
-xy2.dump();
-		FpDbl::mod(z3, xy2);
-		z3.dump();
+		mpz_class x("19517141aafb2ffc39517141aafb2ffc39517141aafb2ffc39517141aafb2ffc39517141aafb2ffc39517141aafb2ffc", 16);
+		mpz_class y("139517141aafb2ffc39517141aafb2ffc39517141aafb2ffc39517141aafb2ffc39517141aafb2ffc39517141aafb2ff", 16);
+		std::cout << std::hex;
+		PUT(x);
+		PUT(y);
+		mpz_class z;
+		mont.mul(z, x, y);
+		PUT(z);
+		Fp x1, y1, z1;
+		puts("aaa");
+		memcpy(&x1, mcl::gmp::getUnit(x), sizeof(x1));
+		memcpy(&y1, mcl::gmp::getUnit(y), sizeof(y1));
+		z1.clear();
+		x1.dump();
+		y1.dump();
+		Fp::mul(z1, x1, y1);
+		z1.dump();
 #endif
 		exit(1);
 #endif
