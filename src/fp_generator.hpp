@@ -324,16 +324,14 @@ private:
 		if (func) {
 			op.fp_sqrA_ = reinterpret_cast<void2u>(func);
 		}
-		if (op.N > 4) return;
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
 		}
+		op.fp2_addA_ = gen_fp2_add();
+
 		if (op.N == 4 && !isFullBit_) {
-			align(16);
-			op.fp2_addA_ = getCurr<void3u>();
-			gen_fp2_add4();
 			align(16);
 			op.fp2_subA_ = getCurr<void3u>();
 			gen_fp2_sub4();
@@ -3504,6 +3502,36 @@ private:
 		StackFrame sf(this, 3, 8);
 		gen_raw_fp_add(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
 		gen_raw_fp_add(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+	}
+	void gen_fp2_add6()
+	{
+		assert(!isFullBit_);
+		StackFrame sf(this, 3, 10);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t1 = sf.t.sub(0, 6);
+		Pack t2 = sf.t.sub(6);
+		t2.append(rax);
+		t2.append(px); // destory after used
+		movq(xm0, px);
+		gen_raw_fp_add6(pz, px, py, 0, t1, t2, false);
+		movq(px, xm0);
+		gen_raw_fp_add6(pz, px, py, FpByte_, t1, t2, false);
+	}
+	void3u gen_fp2_add()
+	{
+		align(16);
+		void3u func = getCurr<void3u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2_add4();
+			return func;
+		}
+		if (pn_ == 6 && !isFullBit_) {
+			gen_fp2_add6();
+			return func;
+		}
+		return 0;
 	}
 	void gen_fp2_sub4()
 	{
