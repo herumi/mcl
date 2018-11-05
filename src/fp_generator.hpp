@@ -330,30 +330,13 @@ private:
 			gen_preInv();
 		}
 		op.fp2_addA_ = gen_fp2_add();
-
-		if (op.N == 4 && !isFullBit_) {
-			align(16);
-			op.fp2_subA_ = getCurr<void3u>();
-			gen_fp2_sub4();
-			align(16);
-			op.fp2_negA_ = getCurr<void2u>();
-			gen_fp2_neg4();
-			align(16);
-			op.fp2Dbl_mulPreA_ = getCurr<void3u>();
-			gen_fp2Dbl_mulPre();
-			align(16);
-			op.fp2Dbl_sqrPreA_ = getCurr<void2u>();
-			gen_fp2Dbl_sqrPre();
-			align(16);
-			op.fp2_mulA_ = getCurr<void3u>();
-			gen_fp2_mul4();
-			align(16);
-			op.fp2_sqrA_ = getCurr<void2u>();
-			gen_fp2_sqr4();
-			align(16);
-			op.fp2_mul_xiA_ = getCurr<void2u>();
-			gen_fp2_mul_xi4();
-		}
+		op.fp2_subA_ = gen_fp2_sub();
+		op.fp2_negA_ = gen_fp2_neg();
+		op.fp2Dbl_mulPreA_ = gen_fp2Dbl_mulPre();
+		op.fp2Dbl_sqrPreA_ = gen_fp2Dbl_sqrPre();
+		op.fp2_mulA_ = gen_fp2_mul();
+		op.fp2_sqrA_ = gen_fp2_sqr();
+		op.fp2_mul_xiA_ = gen_fp2_mul_xi();
 	}
 	u3u gen_addSubPre(bool isAdd, int n)
 	{
@@ -3405,7 +3388,17 @@ private:
 			}
 		}
 	}
-	void gen_fp2Dbl_mulPre()
+	void3u gen_fp2Dbl_mulPre()
+	{
+		align(16);
+		void3u func = getCurr<void3u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2Dbl_mulPre4();
+			return func;
+		}
+		return 0;
+	}
+	void gen_fp2Dbl_mulPre4()
 	{
 		assert(!isFullBit_);
 		const RegExp z = rsp + 0 * 8;
@@ -3458,7 +3451,17 @@ private:
 		gen_raw_sub(gp0, gp1, gp2, rax, 4);
 		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 	}
-	void gen_fp2Dbl_sqrPre()
+	void2u gen_fp2Dbl_sqrPre()
+	{
+		align(16);
+		void2u func = getCurr<void2u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2Dbl_sqrPre4();
+			return func;
+		}
+		return 0;
+	}
+	void gen_fp2Dbl_sqrPre4()
 	{
 		assert(!isFullBit_);
 		const RegExp y = rsp + 0 * 8;
@@ -3533,12 +3536,32 @@ private:
 		}
 		return 0;
 	}
+	void3u gen_fp2_sub()
+	{
+		align(16);
+		void3u func = getCurr<void3u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2_sub4();
+			return func;
+		}
+		return 0;
+	}
 	void gen_fp2_sub4()
 	{
 		assert(!isFullBit_);
 		StackFrame sf(this, 3, 8);
 		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
 		gen_raw_fp_sub(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+	}
+	void2u gen_fp2_mul_xi()
+	{
+		align(16);
+		void2u func = getCurr<void2u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2_mul_xi4();
+			return func;
+		}
+		return 0;
 	}
 	/*
 		for only xi_a = 1
@@ -3589,12 +3612,32 @@ private:
 		}
 #endif
 	}
+	void2u gen_fp2_neg()
+	{
+		align(16);
+		void2u func = getCurr<void2u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2_neg4();
+			return func;
+		}
+		return 0;
+	}
 	void gen_fp2_neg4()
 	{
 		assert(!isFullBit_);
 		StackFrame sf(this, 2, UseRDX | pn_);
 		gen_raw_neg(sf.p[0], sf.p[1], sf.t);
 		gen_raw_neg(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.t);
+	}
+	void3u gen_fp2_mul()
+	{
+		align(16);
+		void3u func = getCurr<void3u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2_mul4();
+			return func;
+		}
+		return 0;
 	}
 	void gen_fp2_mul4()
 	{
@@ -3643,6 +3686,16 @@ private:
 		add(gp0, FpByte_);
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL);
+	}
+	void2u gen_fp2_sqr()
+	{
+		align(16);
+		void2u func = getCurr<void2u>();
+		if (pn_ == 4 && !isFullBit_) {
+			gen_fp2_sqr4();
+			return func;
+		}
+		return 0;
 	}
 	void gen_fp2_sqr4()
 	{
