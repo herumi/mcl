@@ -579,7 +579,7 @@ public:
 	{
 		bool b;
 		setMpz(&b, x);
-		if (!b) throw cybozu::Exception("Fp:setMpz:neg");
+		if (!b) throw cybozu::Exception("Fp:setMpz");
 	}
 	uint64_t getUint64() const
 	{
