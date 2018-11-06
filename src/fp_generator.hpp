@@ -723,7 +723,7 @@ private:
 		}
 		return 0;
 	}
-	void gen_raw_fp_sub6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t, bool withCarry)
+	void gen_raw_fp_sub6(const RegExp& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t, bool withCarry)
 	{
 		load_rm(t, px + offset);
 		sub_rm(t, py + offset, withCarry);
@@ -3391,17 +3391,13 @@ private:
 	}
 	void3u gen_fp2Dbl_mulPre()
 	{
+		if (isFullBit_) return 0;
+//		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
+		// almost same for pn_ == 6
+		if (pn_ != 4) return 0;
 		align(16);
 		void3u func = getCurr<void3u>();
-		if (pn_ == 4 && !isFullBit_) {
-			gen_fp2Dbl_mulPre4();
-			return func;
-		}
-		return 0;
-	}
-	void gen_fp2Dbl_mulPre4()
-	{
-		assert(!isFullBit_);
+
 		const RegExp z = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
 		const RegExp y = rsp + 2 * 8;
@@ -3414,9 +3410,9 @@ private:
 		mov(ptr [x], gp1);
 		mov(ptr [y], gp2);
 		// s = a + b
-		gen_raw_add(s, gp1, gp1 + FpByte_, rax, 4);
+		gen_raw_add(s, gp1, gp1 + FpByte_, rax, pn_);
 		// t = c + d
-		gen_raw_add(t, gp2, gp2 + FpByte_, rax, 4);
+		gen_raw_add(t, gp2, gp2 + FpByte_, rax, pn_);
 		// d1 = (a + b)(c + d)
 		mov(gp0, ptr [z]);
 		add(gp0, FpByte_ * 2); // d1
@@ -3441,30 +3437,33 @@ private:
 		add(gp0, FpByte_ * 2); // d1
 		mov(gp1, gp0);
 		mov(gp2, ptr [z]);
-		gen_raw_sub(gp0, gp1, gp2, rax, 8);
+		gen_raw_sub(gp0, gp1, gp2, rax, pn_ * 2);
 		lea(gp2, ptr [d2]);
-		gen_raw_sub(gp0, gp1, gp2, rax, 8);
+		gen_raw_sub(gp0, gp1, gp2, rax, pn_ * 2);
 
 		mov(gp0, ptr [z]);
 		mov(gp1, gp0);
 		lea(gp2, ptr [d2]);
 
-		gen_raw_sub(gp0, gp1, gp2, rax, 4);
-		gen_raw_fp_sub(gp0 + 8 * 4, gp1 + 8 * 4, gp2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+		gen_raw_sub(gp0, gp1, gp2, rax, pn_);
+		if (pn_ == 4) {
+			gen_raw_fp_sub(gp0 + pn_ * 8, gp1 + pn_ * 8, gp2 + pn_ * 8, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+		} else {
+			assert(pn_ == 6);
+			gen_raw_fp_sub6(gp0, gp1, gp2, pn_ * 8, sf.t.sub(0, 6), true);
+		}
+		return func;
 	}
 	void2u gen_fp2Dbl_sqrPre()
 	{
+		if (isFullBit_) return 0;
+//		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
+		// almost same for pn_ == 6
+		if (pn_ != 4) return 0;
 		align(16);
 		void2u func = getCurr<void2u>();
-		if (pn_ == 4 && !isFullBit_) {
-			gen_fp2Dbl_sqrPre4();
-			return func;
-		}
-		return 0;
-	}
-	void gen_fp2Dbl_sqrPre4()
-	{
-		assert(!isFullBit_);
+		// almost same for pn_ == 6
+		if (pn_ != 4) return 0;
 		const RegExp y = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
 		const Ext1 t1(FpByte_, rsp, 2 * 8);
@@ -3473,10 +3472,15 @@ private:
 		StackFrame sf(this, 3 /* not 2 */, 10 | UseRDX, t2.next);
 		mov(ptr [y], gp0);
 		mov(ptr [x], gp1);
-		const Pack a = sf.t.sub(0, 4);
-		const Pack b = sf.t.sub(4, 4);
+		Pack t = sf.t;
+		if (pn_ == 6) {
+			t.append(rax);
+			t.append(rdx);
+		}
+		const Pack a = t.sub(0, pn_);
+		const Pack b = t.sub(pn_, pn_);
 		load_rm(b, gp1 + FpByte_);
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < pn_; i++) {
 			mov(rax, b[i]);
 			if (i == 0) {
 				add(rax, rax);
@@ -3494,11 +3498,17 @@ private:
 		mov(gp2, ptr [x]);
 		call(mulPreL);
 		mov(gp0, ptr [x]);
-		gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, sf.t, false);
+		if (pn_ == 4) {
+			gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, sf.t, false);
+		} else {
+			assert(pn_ == 6);
+			gen_raw_fp_sub6(t1, gp0, gp0, FpByte_, a, false);
+		}
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t1]);
 		lea(gp2, ptr [t2]);
 		call(mulPreL);
+		return func;
 	}
 	void gen_fp2_add4()
 	{
