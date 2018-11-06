@@ -3523,6 +3523,17 @@ private:
 		vmovq(px, xm0);
 		gen_raw_fp_add6(pz, px, py, FpByte_, t1, t2, false);
 	}
+	void gen_fp2_sub6()
+	{
+		StackFrame sf(this, 3, 5);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rax);
+		gen_raw_fp_sub6(pz, px, py, 0, t, false);
+		gen_raw_fp_sub6(pz, px, py, FpByte_, t, false);
+	}
 	void3u gen_fp2_add()
 	{
 		align(16);
@@ -3543,6 +3554,10 @@ private:
 		void3u func = getCurr<void3u>();
 		if (pn_ == 4 && !isFullBit_) {
 			gen_fp2_sub4();
+			return func;
+		}
+		if (pn_ == 6 && !isFullBit_) {
+			gen_fp2_sub6();
 			return func;
 		}
 		return 0;
