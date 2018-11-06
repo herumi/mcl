@@ -3652,17 +3652,13 @@ private:
 	}
 	void3u gen_fp2_mul()
 	{
+		if (isFullBit_) return 0;
+		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
+//		if (pn_ != 4) return 0;
 		align(16);
 		void3u func = getCurr<void3u>();
-		if (pn_ == 4 && !isFullBit_) {
-			gen_fp2_mul4();
-			return func;
-		}
-		return 0;
-	}
-	void gen_fp2_mul4()
-	{
-		assert(!isFullBit_);
+		bool embedded = pn_ == 4;
+
 		const RegExp z = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
 		const RegExp y = rsp + 2 * 8;
@@ -3677,27 +3673,50 @@ private:
 		mov(ptr[x], gp1);
 		mov(ptr[y], gp2);
 		// s = a + b
-		gen_raw_add(s, gp1, gp1 + FpByte_, rax, 4);
+		gen_raw_add(s, gp1, gp1 + FpByte_, rax, pn_);
 		// t = c + d
-		gen_raw_add(t, gp2, gp2 + FpByte_, rax, 4);
+		gen_raw_add(t, gp2, gp2 + FpByte_, rax, pn_);
 		// d1 = (a + b)(c + d)
-		mulPre4(d1, s, t, sf.t);
+		if (embedded) {
+			mulPre4(d1, s, t, sf.t);
+		} else {
+			lea(gp0, ptr [d1]);
+			lea(gp1, ptr [s]);
+			lea(gp2, ptr [t]);
+			call(mulPreL);
+		}
 		// d0 = a c
 		mov(gp1, ptr [x]);
 		mov(gp2, ptr [y]);
-		mulPre4(d0, gp1, gp2, sf.t);
+		if (embedded) {
+			mulPre4(d0, gp1, gp2, sf.t);
+		} else {
+			lea(gp0, ptr [d0]);
+			call(mulPreL);
+		}
 		// d2 = b d
 		mov(gp1, ptr [x]);
 		add(gp1, FpByte_);
 		mov(gp2, ptr [y]);
 		add(gp2, FpByte_);
-		mulPre4(d2, gp1, gp2, sf.t);
+		if (embedded) {
+			mulPre4(d2, gp1, gp2, sf.t);
+		} else {
+			lea(gp0, ptr [d2]);
+			call(mulPreL);
+		}
 
-		gen_raw_sub(d1, d1, d0, rax, 8);
-		gen_raw_sub(d1, d1, d2, rax, 8);
+		gen_raw_sub(d1, d1, d0, rax, pn_ * 2);
+		gen_raw_sub(d1, d1, d2, rax, pn_ * 2);
 
-		gen_raw_sub(d0, d0, d2, rax, 4);
-		gen_raw_fp_sub((RegExp)d0 + 8 * 4, (RegExp)d0 + 8 * 4, (RegExp)d2 + 8 * 4, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+		gen_raw_sub(d0, d0, d2, rax, pn_);
+		if (pn_ == 4) {
+			gen_raw_fp_sub((RegExp)d0 + pn_ * 8, (RegExp)d0 + pn_ * 8, (RegExp)d2 + pn_ * 8, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+		} else {
+			lea(gp0, ptr[d0]);
+			lea(gp2, ptr[d2]);
+			gen_raw_fp_sub6(gp0, gp0, gp2, pn_ * 8, sf.t.sub(0, 6), true);
+		}
 
 		mov(gp0, ptr [z]);
 		lea(gp1, ptr[d0]);
@@ -3707,6 +3726,7 @@ private:
 		add(gp0, FpByte_);
 		lea(gp1, ptr[d1]);
 		call(fpDbl_modL);
+		return func;
 	}
 	void2u gen_fp2_sqr()
 	{
