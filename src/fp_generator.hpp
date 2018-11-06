@@ -585,10 +585,10 @@ private:
 		size of t1, t2 == 6
 		destroy t0, t1
 	*/
-	void gen_raw_fp_add6(const Reg64& pz, const Reg64& px, const Reg64& py, int offset, const Pack& t1, const Pack& t2, bool withCarry)
+	void gen_raw_fp_add6(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t1, const Pack& t2, bool withCarry)
 	{
-		load_rm(t1, px + offset);
-		add_rm(t1, py + offset, withCarry);
+		load_rm(t1, px);
+		add_rm(t1, py, withCarry);
 		Label exit;
 		if (isFullBit_) {
 			jnc("@f");
@@ -603,7 +603,7 @@ private:
 			cmovnc(t1[i], t2[i]);
 		}
 	L(exit);
-		store_mr(pz + offset, t1);
+		store_mr(pz, t1);
 	}
 	void gen_fp_add6()
 	{
@@ -618,7 +618,7 @@ private:
 		Pack t2 = sf.t.sub(6);
 		t2.append(rax);
 		t2.append(px); // destory after used
-		gen_raw_fp_add6(pz, px, py, 0, t1, t2, false);
+		gen_raw_fp_add6(pz, px, py, t1, t2, false);
 	}
 	void3u gen_fp_add()
 	{
@@ -691,7 +691,7 @@ private:
 			Pack t2 = sf.t.sub(6);
 			t2.append(rax);
 			t2.append(py);
-			gen_raw_fp_add6(pz, px, py, pn_ * 8, t1, t2, true);
+			gen_raw_fp_add6(pz + pn_ * 8, px + pn_ * 8, py + pn_ * 8, t1, t2, true);
 			return func;
 		}
 		return 0;
@@ -3529,9 +3529,9 @@ private:
 		t2.append(rax);
 		t2.append(px); // destory after used
 		vmovq(xm0, px);
-		gen_raw_fp_add6(pz, px, py, 0, t1, t2, false);
+		gen_raw_fp_add6(pz, px, py, t1, t2, false);
 		vmovq(px, xm0);
-		gen_raw_fp_add6(pz, px, py, FpByte_, t1, t2, false);
+		gen_raw_fp_add6(pz + FpByte_, px + FpByte_, py + FpByte_, t1, t2, false);
 	}
 	void gen_fp2_sub6()
 	{
