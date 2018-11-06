@@ -3632,18 +3632,13 @@ private:
 	{
 		align(16);
 		void2u func = getCurr<void2u>();
-		if (pn_ == 4 && !isFullBit_) {
-			gen_fp2_neg4();
+		if (pn_ <= 6) {
+			StackFrame sf(this, 2, UseRDX | pn_);
+			gen_raw_neg(sf.p[0], sf.p[1], sf.t);
+			gen_raw_neg(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.t);
 			return func;
 		}
 		return 0;
-	}
-	void gen_fp2_neg4()
-	{
-		assert(!isFullBit_);
-		StackFrame sf(this, 2, UseRDX | pn_);
-		gen_raw_neg(sf.p[0], sf.p[1], sf.t);
-		gen_raw_neg(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.t);
 	}
 	void3u gen_fp2_mul()
 	{

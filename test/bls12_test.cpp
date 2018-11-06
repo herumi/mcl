@@ -700,8 +700,7 @@ if(0){
 	puts("----------");
 //	exit(1);
 }
-	CYBOZU_BENCH_C("Fp2::add", 10000000, Fp2::add, x2, x2, y2);
-	CYBOZU_BENCH_C("Fp2::sub", 10000000, Fp2::sub, x2, x2, y2);
+	CYBOZU_BENCH_C("Fp2::neg", 10000000, Fp2::neg, x2, x2);
 //	CYBOZU_BENCH_C("mulPre", 100000000, FpDbl::mulPre, dx, xv[0], yv[0]);
 //	CYBOZU_BENCH_C("sqrPre", 100000000, FpDbl::sqrPre, dx, xv[0]);
 //	CYBOZU_BENCH_C("mod   ", 100000000, FpDbl::mod, xv[0], dx);
