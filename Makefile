@@ -269,7 +269,7 @@ SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
 TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.cpp=.exe))
-test_ci:
+test_ci: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do echo $$i; $$i; done'
 test: $(TEST_EXE)
 	@echo test $(TEST_EXE)
