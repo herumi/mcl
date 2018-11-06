@@ -270,6 +270,7 @@ private:
 	void init_inner(Op& op)
 	{
 		op_ = &op;
+		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return;
 		/*
 			first 4096-byte is data area
 			remain is code area
@@ -829,10 +830,10 @@ private:
 				rsp
 				[0, ..12 * 8) ; mul(x, y)
 			*/
-			movq(xm3, gp0);
+			vmovq(xm3, gp0);
 			mov(gp0, rsp);
 			call(mulPreL); // gp0, x, y
-			movq(gp0, xm3);
+			vmovq(gp0, xm3);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
 #endif
@@ -1018,7 +1019,7 @@ private:
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
 
-		movq(xm0, z);
+		vmovq(xm0, z);
 		mov(z, ptr [xy + 8 * 0]);
 
 		mov(a, rp_);
@@ -1045,7 +1046,7 @@ private:
 		if (isFullBit_) {
 			mov(t5, 0);
 			adc(t5, 0);
-			movq(xm2, t5);
+			vmovq(xm2, t5);
 		}
 
 		// free z, t0, t1, t5, t6, xy
@@ -1054,18 +1055,18 @@ private:
 		mul(t2);
 		mov(z, a); // q
 
-		movq(xm1, t10);
+		vmovq(xm1, t10);
 		// [d:z:t5:t6:xy] = p * q
 		mul4x1(t0, z, t1, t5, t6, xy, t10);
-		movq(t10, xm1);
+		vmovq(t10, xm1);
 
 		add_rr(Pack(t8, t4, t7, t3, t2), Pack(d, z, t5, t6, xy));
 		adc(t9, 0);
 		adc(t10, 0); // [t10:t9:t8:t4:t7:t3]
 		if (isFullBit_) {
-			movq(t5, xm2);
+			vmovq(t5, xm2);
 			adc(t5, 0);
-			movq(xm2, t5);
+			vmovq(xm2, t5);
 		}
 
 		// free z, t0, t1, t2, t5, t6, xy
@@ -1080,7 +1081,7 @@ private:
 		add_rr(Pack(t9, t8, t4, t7, t3), Pack(d, z, t5, xy, t6));
 		adc(t10, 0); // c' = [t10:t9:t8:t4:t7]
 		if (isFullBit_) {
-			movq(t3, xm2);
+			vmovq(t3, xm2);
 			adc(t3, 0);
 		}
 
@@ -1109,7 +1110,7 @@ private:
 		cmovc(t9, t2);
 		cmovc(t10, t6);
 
-		movq(z, xm0);
+		vmovq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
 	void* gen_fpDbl_mod(const fp::Op& op)
@@ -1203,13 +1204,13 @@ private:
 				[6 * 8, (12 + 6) * 8) ; sqrPre(x, x)
 				[0..6 * 8) ; stack for sqrPre6
 			*/
-			movq(xm3, gp0);
+			vmovq(xm3, gp0);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			// sqrPre6 uses 6 * 8 bytes stack
 			sqrPre6(rsp + 6 * 8, sf.p[1], t);
 			mov(gp0, ptr[rsp + (12 + 6) * 8]);
-			movq(gp0, xm3);
+			vmovq(gp0, xm3);
 			lea(gp1, ptr[rsp + 6 * 8]);
 			call(fpDbl_modL);
 			return func;
@@ -1280,21 +1281,21 @@ private:
 		const Reg64& t9 = sf.t[9];
 
 	L(fp_mulL);
-		movq(xm0, p0); // save p0
+		vmovq(xm0, p0); // save p0
 		mov(p0, pL_);
-		movq(xm1, p2);
+		vmovq(xm1, p2);
 		mov(p2, ptr [p2]);
 		montgomery4_1(rp_, t0, t7, t3, t2, t1, p1, p2, p0, t4, t5, t6, t8, t9, true, xm2);
 
-		movq(p2, xm1);
+		vmovq(p2, xm1);
 		mov(p2, ptr [p2 + 8]);
 		montgomery4_1(rp_, t1, t0, t7, t3, t2, p1, p2, p0, t4, t5, t6, t8, t9, false, xm2);
 
-		movq(p2, xm1);
+		vmovq(p2, xm1);
 		mov(p2, ptr [p2 + 16]);
 		montgomery4_1(rp_, t2, t1, t0, t7, t3, p1, p2, p0, t4, t5, t6, t8, t9, false, xm2);
 
-		movq(p2, xm1);
+		vmovq(p2, xm1);
 		mov(p2, ptr [p2 + 24]);
 		montgomery4_1(rp_, t3, t2, t1, t0, t7, p1, p2, p0, t4, t5, t6, t8, t9, false, xm2);
 		// [t7:t3:t2:t1:t0]
@@ -1310,7 +1311,7 @@ private:
 		cmovc(t2, t6);
 		cmovc(t3, rdx);
 
-		movq(p0, xm0); // load p0
+		vmovq(p0, xm0); // load p0
 		store_mr(p0, Pack(t3, t2, t1, t0));
 		ret();
 	}
@@ -1452,7 +1453,7 @@ private:
 		const Reg64& t8 = sf.t[8];
 		const Reg64& t9 = sf.t[9];
 
-		movq(xm0, p0); // save p0
+		vmovq(xm0, p0); // save p0
 		mov(t7, pL_);
 		mov(t9, ptr [p2]);
 		//                c3, c2, c1, c0, px, y,  p,
@@ -1472,7 +1473,7 @@ private:
 		cmovc(t0, t4);
 		cmovc(t1, t5);
 		cmovc(t2, t6);
-		movq(p0, xm0);
+		vmovq(p0, xm0);
 		store_mr(p0, Pack(t2, t1, t0));
 	}
 	/*
@@ -1498,7 +1499,7 @@ private:
 		const Reg64& t8 = sf.t[8];
 		const Reg64& t9 = sf.t[9];
 
-		movq(xm0, pz); // save pz
+		vmovq(xm0, pz); // save pz
 		mov(t7, pL_);
 		mov(t9, ptr [px]);
 		mul3x1_sqr1(px, t9, t3, t2, t1, t0);
@@ -1526,7 +1527,7 @@ private:
 		cmovc(t3, t4);
 		cmovc(t0, t5);
 		cmovc(t2, t6);
-		movq(pz, xm0);
+		vmovq(pz, xm0);
 		store_mr(pz, Pack(t2, t0, t3));
 	}
 	/*
@@ -1891,7 +1892,7 @@ private:
 		sqr2(t3, t2, t1, t0, t9, t8, t7, t6);
 		// [t3:t2:t1:t0] = b^2
 		store_mr(py, Pack(t1, t0));
-		movq(xm0, t2);
+		vmovq(xm0, t2);
 		mul2x2(px, px + 2 * 8, t6, t5, t4, t1, t0);
 		// [t5:t4:t1:t0] = ab
 		xor_(t6, t6);
@@ -1912,7 +1913,7 @@ private:
 		mulx(d, t8, t8); // [d:t8] = t8^2
 		add_rr(Pack(d, t8, t10), Pack(a, t7, t2));
 		// [d:t8:t10:t9] = [t8:t7]^2
-		movq(t2, xm0);
+		vmovq(t2, xm0);
 		add_rr(Pack(t8, t10, t9, t3, t2), Pack(t6, t5, t4, t1, t0));
 		adc(d, 0);
 		store_mr(py + 2 * 8, Pack(d, t8, t10, t9, t3, t2));
@@ -1992,11 +1993,11 @@ private:
 		mul2x2(px + 8 * 0, py + 8 * 0, t9, t8, t7, t6, t5);
 		store_mr(pz, Pack(t6, t5));
 		// [t8:t7]
-		movq(xm0, t7);
-		movq(xm1, t8);
+		vmovq(xm0, t7);
+		vmovq(xm1, t8);
 		mul2x2(px + 8 * 2, py + 8 * 2, t8, t7, t9, t6, t5);
-		movq(a, xm0);
-		movq(d, xm1);
+		vmovq(a, xm0);
+		vmovq(d, xm1);
 		add_rr(Pack(t4, t3, t2, t1, t0), Pack(t9, t6, t5, d, a));
 		adc(t7, 0);
 		store_mr(pz + 8 * 2, Pack(t7, t4, t3, t2, t1, t0));
@@ -2094,19 +2095,19 @@ private:
 		add_rm(Pack(t2, t1, t0), px + 3 * 8); // a + b
 		adc(a, 0);
 		store_mr(pz, Pack(t2, t1, t0));
-		movq(xm0, a); // carry1
+		vmovq(xm0, a); // carry1
 
 		xor_(a, a);
 		load_rm(Pack(t2, t1, t0), py); // d
 		add_rm(Pack(t2, t1, t0), py + 3 * 8); // c + d
 		adc(a, 0);
 		store_mr(pz + 3 * 8, Pack(t2, t1, t0));
-		movq(xm1, a); // carry2
+		vmovq(xm1, a); // carry2
 
 		mulPre3(rsp + abcdPos, pz, pz + 3 * 8, t); // (a+b)(c+d)
 
-		movq(a, xm0);
-		movq(d, xm1);
+		vmovq(a, xm0);
+		vmovq(d, xm1);
 		mov(t3, a);
 		and_(t3, d); // t3 = carry1 & carry2
 		Label doNothing;
@@ -2126,7 +2127,7 @@ private:
 	L("@@");
 		store_mr(rsp + abcdPos + 3 * 8, Pack(t2, t1, t0));
 	L(doNothing);
-		movq(xm0, t3); // save new carry
+		vmovq(xm0, t3); // save new carry
 
 
 		mov(gp0, ptr [rsp + zPos]);
@@ -2140,7 +2141,7 @@ private:
 		mulPre3(gp0 + 6 * 8, gp1 + 3 * 8, gp2 + 3 * 8, t); // [rsp + 6 * 8] <- ac
 
 		mov(pz, ptr[rsp + zPos]);
-		movq(d, xm0);
+		vmovq(d, xm0);
 		for (int i = 0; i < 6; i++) {
 			mov(a, ptr[pz + (3 + i) * 8]);
 			if (i == 0) {
@@ -2197,7 +2198,7 @@ private:
 
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
-		movq(xm0, z);
+		vmovq(xm0, z);
 		mov(z, ptr [xy + 0 * 8]);
 		mov(a, rp_);
 		mul(z);
@@ -2214,15 +2215,15 @@ private:
 		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4:t3:t2]
 		mov(a, rp_);
 		mul(t2);
-		movq(xm1, t0); // save
+		vmovq(xm1, t0); // save
 		lea(t0, ptr [rip + pL_]);
 		mov(d, a);
-		movq(xm2, t10);
+		vmovq(xm2, t10);
 		mulPackAddShr(Pack(t8, t7, t6, t5, t4, t3, t2), t0, t10);
-		movq(t10, xm2);
+		vmovq(t10, xm2);
 		adc(t9, rax);
 		adc(t10, rax);
-		movq(t0, xm1); // load
+		vmovq(t0, xm1); // load
 		adc(t0, rax);
 		adc(t1, rax);
 		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4:t3]
@@ -2230,9 +2231,9 @@ private:
 		mul(t3);
 		lea(t2, ptr [rip + pL_]);
 		mov(d, a);
-		movq(xm2, t10);
+		vmovq(xm2, t10);
 		mulPackAddShr(Pack(t9, t8, t7, t6, t5, t4, t3), t2, t10);
-		movq(t10, xm2);
+		vmovq(t10, xm2);
 		adc(t10, rax);
 		adc(t0, rax);
 		adc(t1, rax);
@@ -2263,7 +2264,7 @@ private:
 		mov_rr(keep, zp);
 		sub_rm(zp, t2); // z -= p
 		cmovc_rr(zp, keep);
-		movq(z, xm0);
+		vmovq(z, xm0);
 		store_mr(z, zp);
 	}
 	void* gen_fpDbl_sqrPre(const fp::Op&/* op */)
@@ -2553,10 +2554,10 @@ private:
 	{
 		if (n >= 10) exit(1);
 		static uint64_t buf[10];
-		movq(xm0, rax);
+		vmovq(xm0, rax);
 		mov(rax, (size_t)buf);
 		store_mp(rax, mp, t);
-		movq(rax, xm0);
+		vmovq(rax, xm0);
 		push(rax);
 		mov(rax, (size_t)buf);
 		debug_put(rax, n);
@@ -3360,7 +3361,7 @@ private:
 			mul4x1(px, y, t3, t2, t1, t0, t4);
 			// [rdx:y:t2:t1:t0] = px[3..0] * y
 			if (isFullBit_) {
-				movq(xt, px);
+				vmovq(xt, px);
 				xor_(px, px);
 			}
 			add_rr(Pack(c4, y, c2, c1, c0), Pack(rdx, c3, t2, t1, t0));
@@ -3384,7 +3385,7 @@ private:
 				adc(c0, 0);
 			} else {
 				adc(c0, px);
-				movq(px, xt);
+				vmovq(px, xt);
 			}
 		}
 	}
@@ -3517,9 +3518,9 @@ private:
 		Pack t2 = sf.t.sub(6);
 		t2.append(rax);
 		t2.append(px); // destory after used
-		movq(xm0, px);
+		vmovq(xm0, px);
 		gen_raw_fp_add6(pz, px, py, 0, t1, t2, false);
-		movq(px, xm0);
+		vmovq(px, xm0);
 		gen_raw_fp_add6(pz, px, py, FpByte_, t1, t2, false);
 	}
 	void3u gen_fp2_add()
