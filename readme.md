@@ -35,7 +35,37 @@ p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
 
 # Benchmark
 
-A benchmark of a BN curve BN254(2016/12/25).
+## The latest benchmark(2018/11/7)
+
+* Intel Core i7-7700 3.6GHz(Kaby Lake), Ubuntu 18.04.1 LTS on Windows 10 Vmware
+
+curveType|             binary|clang-6.0.0|gcc-7.3.0
+---------|-------------------|-----------|---------
+    BN254|   bin/bn\_test.exe|    900Kclk|  954Kclk
+BLS12-381|bin/bls12\_test.exe|   2340Kclk| 2680Kclk
+
+* now investigating the reason why gcc is slower than clang.
+
+## Higher-bit BN curve benchmark
+
+For JavaScript(WebAssembly), see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html).
+
+paramter   |  x64| Firefox on x64|Safari on iPhone7|
+-----------|-----|---------------|-----------------|
+BN254      | 0.25|           2.48|             4.78|
+BN381\_1   | 0.95|           7.91|            11.74|
+BN462      | 2.16|          14.73|            22.77|
+
+* x64 : 'Kaby Lake Core i7-7700(3.6GHz)'.
+* Firefox : 64-bit version 58.
+* iPhone7 : iOS 11.2.1.
+* BN254 is by `test/bn_test.cpp`.
+* BN381\_1 and BN462 are  by `test/bn512_test.cpp`.
+* All the timings  are given in ms(milliseconds).
+
+The other benchmark results are [bench.txt](bench.txt).
+
+## An old benchmark of a BN curve BN254(2016/12/25).
 
 * x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz on Ubuntu 16.04.
     * `sudo cpufreq-set -g performance`
@@ -55,24 +85,6 @@ mcl                                                      | 0.31 | 1.6 |22.6|  3.
 ```
 cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_METHD="LAZYR;OATEP"
 ```
-## Higher-bit BN curve benchmark by mcl
-
-For JavaScript(WebAssembly), see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html).
-
-paramter   |  x64| Firefox on x64|Safari on iPhone7|
------------|-----|---------------|-----------------|
-BN254      | 0.29|           2.48|             4.78|
-BN381\_1   | 0.95|           7.91|            11.74|
-BN462      | 2.16|          14.73|            22.77|
-
-* x64 : 'Kaby Lake Core i7-7700(3.6GHz)'.
-* Firefox : 64-bit version 58.
-* iPhone7 : iOS 11.2.1.
-* BN254 is by `test/bn_test.cpp`.
-* BN381\_1 and BN462 are  by `test/bn512_test.cpp`.
-* All the timings  are given in ms(milliseconds).
-
-The other benchmark results are [bench.txt](bench.txt).
 
 # Installation Requirements
 
