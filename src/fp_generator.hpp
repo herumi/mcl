@@ -2574,11 +2574,8 @@ private:
 	*/
 	void gen_preInv()
 	{
-		assert(pn_ >= 1);
+		assert(1 <= pn_ && pn_ <= 4);
 		const int freeRegNum = 13;
-		if (pn_ > 9) {
-			throw cybozu::Exception("mcl:FpGenerator:gen_preInv:large pn_") << pn_;
-		}
 		StackFrame sf(this, 2, 10 | UseRDX | UseRCX, (std::max<int>(0, pn_ * 5 - freeRegNum) + 1 + (isFullBit_ ? 1 : 0)) * 8);
 		const Reg64& pr = sf.p[0];
 		const Reg64& px = sf.p[1];
@@ -2628,46 +2625,6 @@ private:
 		} else {
 			mov(qword [ss.getMem(0)], 1);
 		}
-#if 0
-	L(".lp");
-		or_mp(vv, t);
-		jz(".exit", T_NEAR);
-
-		g_test(uu[0], 1);
-		jz(".u_even", T_NEAR);
-		g_test(vv[0], 1);
-		jz(".v_even", T_NEAR);
-		for (int i = pn_ - 1; i >= 0; i--) {
-			g_cmp(vv[i], uu[i], t);
-			jc(".v_lt_u", T_NEAR);
-			if (i > 0) jnz(".v_ge_u", T_NEAR);
-		}
-
-	L(".v_ge_u");
-		sub_mp(vv, uu, t);
-		add_mp(ss, rr, t);
-	L(".v_even");
-		shr_mp(vv, 1, t);
-		twice_mp(rr, t);
-		if (isFullBit_) {
-			sbb(t, t);
-			mov(ptr [rTop], t);
-		}
-		inc(rax);
-		jmp(".lp", T_NEAR);
-	L(".v_lt_u");
-		sub_mp(uu, vv, t);
-		add_mp(rr, ss, t);
-		if (isFullBit_) {
-			sbb(t, t);
-			mov(ptr [rTop], t);
-		}
-	L(".u_even");
-		shr_mp(uu, 1, t);
-		twice_mp(ss, t);
-		inc(rax);
-		jmp(".lp", T_NEAR);
-#else
 		for (int cn = pn_; cn > 0; cn--) {
 			const std::string _lp = mkLabel(".lp", cn);
 			const std::string _u_v_odd = mkLabel(".u_v_odd", cn);
@@ -2724,7 +2681,6 @@ private:
 				uu.removeLast();
 			}
 		}
-#endif
 	L(".exit");
 		assert(ss.isReg(0));
 		const Reg64& t2 = ss.getReg(0);
