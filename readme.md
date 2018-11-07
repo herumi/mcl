@@ -37,13 +37,14 @@ p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
 
 ## The latest benchmark(2018/11/7)
 
+
+curveType |              binary|clang-6.0.0|gcc-7.3.0|
+----------|--------------------|-----------|---------|
+BN254     |    bin/bn\_test.exe|    900Kclk|  954Kclk|
+BLS12-381 | bin/bls12\_test.exe|   2340Kclk| 2680Kclk|
+
+
 * Intel Core i7-7700 3.6GHz(Kaby Lake), Ubuntu 18.04.1 LTS on Windows 10 Vmware
-
-curveType|             binary|clang-6.0.0|gcc-7.3.0
----------|-------------------|-----------|---------
-    BN254|   bin/bn\_test.exe|    900Kclk|  954Kclk
-BLS12-381|bin/bls12\_test.exe|   2340Kclk| 2680Kclk
-
 * now investigating the reason why gcc is slower than clang.
 
 ## Higher-bit BN curve benchmark
