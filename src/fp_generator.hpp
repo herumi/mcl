@@ -403,7 +403,7 @@ private:
 		}
 		jmp(exit);
 	L(nonZero);
-		mov(rax, (size_t)p_);
+		mov(rax, pL_);
 		for (size_t i = 0; i < t.size(); i++) {
 			mov(rdx, ptr [rax + i * 8]);
 			if (i == 0) {
@@ -531,7 +531,7 @@ private:
 			mov(*fullReg, 0);
 			adc(*fullReg, 0);
 		}
-		mov(rax, (size_t)p_);
+		mov(rax, pL_);
 		sub_rm(p1, rax);
 		if (fullReg) {
 			sbb(*fullReg, 0);
@@ -551,7 +551,7 @@ private:
 		const Pack& p1 = t.sub(pn_, pn_);
 		load_rm(p0, px);
 		sub_rm(p0, py, withCarry);
-		mov(rax, (size_t)p_);
+		mov(rax, pL_);
 		load_rm(p1, rax);
 		sbb(rax, rax); // rax = (x > y) ? 0 : -1
 		for (size_t i = 0; i < p1.size(); i++) {
@@ -640,7 +640,7 @@ private:
 
 		inLocalLabel();
 		gen_raw_add(pz, px, py, rax, pn_);
-		mov(px, (size_t)p_); // destroy px
+		mov(px, pL_); // destroy px
 		if (isFullBit_) {
 			jc(".over", jmpMode);
 		}
@@ -766,7 +766,7 @@ private:
 		Label exit;
 		gen_raw_sub(pz, px, py, rax, pn_);
 		jnc(exit, jmpMode);
-		mov(px, (size_t)p_);
+		mov(px, pL_);
 		gen_raw_add(pz, pz, px, rax, pn_);
 	L(exit);
 		return func;
@@ -875,7 +875,7 @@ private:
 
 		mov(a, rp_);
 		mul(t6);
-		mov(t0, (uint64_t)p_);
+		mov(t0, pL_);
 		mov(t7, a); // q
 
 		// [d:t7:t1] = p * q
@@ -944,7 +944,7 @@ private:
 
 		mov(a, rp_);
 		mul(t10);
-		mov(t0, (uint64_t)p_);
+		mov(t0, pL_);
 		mov(t7, a); // q
 
 		// [d:t7:t2:t1] = p * q
@@ -1024,7 +1024,7 @@ private:
 
 		mov(a, rp_);
 		mul(z);
-		mov(t0, (uint64_t)p_);
+		mov(t0, pL_);
 		mov(t7, a); // q
 
 		// [d:t7:t3:t2:t1] = p * q
@@ -2611,7 +2611,7 @@ private:
 		mov(rax, px);
 		// px is free frome here
 		load_mp(vv, rax, t); // v = x
-		mov(rax, (size_t)p_);
+		mov(rax, pL_);
 		load_mp(uu, rax, t); // u = p_
 		// k = 0
 		xor_(rax, rax);
@@ -2730,7 +2730,7 @@ private:
 		const Reg64& t2 = ss.getReg(0);
 		const Reg64& t3 = rdx;
 
-		mov(t2, (size_t)p_);
+		mov(t2, pL_);
 		if (isFullBit_) {
 			mov(t, ptr [rTop]);
 			test(t, t);
