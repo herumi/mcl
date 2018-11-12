@@ -362,7 +362,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize)
+bool Op::init(const mpz_class& _p, size_t maxBitSize, int xi_a, Mode mode, size_t mclMaxBitSize)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
 #ifdef MCL_USE_VINT
@@ -384,6 +384,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, Mode mode, size_t mclMaxBi
 	mp = _p;
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
+	this->xi_a = xi_a;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
@@ -652,11 +653,6 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 #ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
-
-void Op::initFp2(int _xi_a)
-{
-	this->xi_a = _xi_a;
-}
 
 } } // mcl::fp
 

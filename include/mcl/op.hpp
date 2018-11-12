@@ -341,8 +341,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	bool init(const mpz_class& p, size_t maxBitSize, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
-	void initFp2(int xi_a);
+	bool init(const mpz_class& p, size_t maxBitSize, int xi_a, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
 #ifdef MCL_USE_XBYAK
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);

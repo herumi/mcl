@@ -120,10 +120,10 @@ public:
 		}
 		printf("\n");
 	}
-	static inline void init(bool *pb, const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, const mpz_class& _p, fp::Mode mode = fp::FP_AUTO, int xi_a = 0)
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		*pb = op_.init(_p, maxBitSize, mode);
+		*pb = op_.init(_p, maxBitSize, xi_a, mode);
 		if (!*pb) return;
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
@@ -151,12 +151,12 @@ public:
 #endif
 		*pb = true;
 	}
-	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO, int xi_a = 0)
 	{
 		mpz_class p;
 		gmp::setStr(pb, p, mstr);
 		if (!*pb) return;
-		init(pb, p, mode);
+		init(pb, p, mode, xi_a);
 	}
 	static inline size_t getModulo(char *buf, size_t bufSize)
 	{
