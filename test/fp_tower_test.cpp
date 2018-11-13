@@ -386,10 +386,10 @@ void benchFp2()
 
 void test(const char *p, mcl::fp::Mode mode)
 {
-	Fp::init(p, mode);
-	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	const int xi_a = 1;
-	Fp2::init(xi_a);
+	Fp::init(xi_a, p, mode);
+	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
+	Fp2::init();
 #if 0
 	if (Fp::getBitSize() > 256) {
 		printf("not support p=%s\n", p);

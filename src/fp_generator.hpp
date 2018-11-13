@@ -246,7 +246,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
 		init_inner(op);
-		printf("code size=%d\n", (int)getSize());
+//		printf("code size=%d\n", (int)getSize());
 		setProtectModeRE(); // set read/exec memory
 	}
 private:

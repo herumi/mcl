@@ -547,17 +547,25 @@ public:
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-	static inline void init(const mpz_class& _p, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
 	{
 		bool b;
-		init(&b, _p, mode);
+		init(&b, xi_a, p, mode);
 		if (!b) throw cybozu::Exception("Fp:init");
+	}
+	static inline void init(int xi_a, const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	{
+		mpz_class p;
+		gmp::setStr(p, mstr);
+		init(xi_a, p, mode);
+	}
+	static inline void init(const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
+	{
+		init(0, p, mode);
 	}
 	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
 	{
-		bool b;
-		init(&b, mstr.c_str(), mode);
-		if (!b) throw cybozu::Exception("Fp:init");
+		init(0, mstr, mode);
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
