@@ -7,13 +7,13 @@ void testBench(const G1& P, const G2& Q)
 	Fp12 e1, e2;
 	pairing(e1, P, Q);
 	Fp12::pow(e2, e1, 12345);
-	const int C = 1000;
-	const int C3 = 3000;
 	Fp x, y;
 	x.setHashOf("abc");
 	y.setHashOf("xyz");
+	const int C = 1000;
+	const int C3 = 100000;
 #if 1
-	const int C2 = 1000;
+	const int C2 = 3000;
 	mpz_class a = x.getMpz();
 	CYBOZU_BENCH_C("G1::mulCT     ", C, G1::mulCT, Pa, P, a);
 	CYBOZU_BENCH_C("G1::mul       ", C, G1::mul, Pa, Pa, a);
@@ -44,8 +44,8 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp::add       ", C3, Fp::add, x, x, y);
 	CYBOZU_BENCH_C("Fp::sub       ", C3, Fp::sub, x, x, y);
 	CYBOZU_BENCH_C("Fp::neg       ", C3, Fp::neg, x, x);
-	CYBOZU_BENCH_C("Fp::mul       ", 1000000, Fp::mul, x, x, y);
-	CYBOZU_BENCH_C("Fp::sqr       ", 1000000, Fp::sqr, x, x);
+	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
+	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, Fp::inv, x, x);
 	Fp2 xx, yy;
 	xx.a = x;
@@ -79,10 +79,10 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("GT::sqr       ", C2, GT::sqr, e1, e1);
 	CYBOZU_BENCH_C("GT::inv       ", C2, GT::inv, e1, e1);
 #endif
-	CYBOZU_BENCH_C("FpDbl::mulPre ", 10000000, FpDbl::mulPre, d0, x, y);
-	CYBOZU_BENCH_C("pairing       ", C3, pairing, e1, P, Q);
-	CYBOZU_BENCH_C("millerLoop    ", C3, millerLoop, e1, P, Q);
-	CYBOZU_BENCH_C("finalExp      ", C3, finalExp, e1, e1);
+	CYBOZU_BENCH_C("FpDbl::mulPre ", C3, FpDbl::mulPre, d0, x, y);
+	CYBOZU_BENCH_C("pairing       ", C2, pairing, e1, P, Q);
+	CYBOZU_BENCH_C("millerLoop    ", C2, millerLoop, e1, P, Q);
+	CYBOZU_BENCH_C("finalExp      ", C2, finalExp, e1, e1);
 //exit(1);
 	std::vector<Fp6> Qcoeff;
 	precomputeG2(Qcoeff, Q);
