@@ -127,6 +127,71 @@ if (rm.isReg()) { \
 
 namespace fp {
 
+struct Profiler {
+	FILE *fp_;
+	const char *suf_;
+	const uint8_t *prev_ = 0;
+	Profiler()
+		: fp_(0)
+		, suf_(0)
+		, prev_(0)
+	{
+	}
+	void init(const char *suf, const uint8_t *prev)
+	{
+#ifdef __linux__
+		close();
+		const char *s = getenv("MCL_PERF");
+		if (s == 0 || strcmp(s, "1") != 0) return;
+		fprintf(stderr, "use perf suf=%s\n", suf);
+		suf_ = suf;
+		const int pid = getpid();
+		char name[128];
+		snprintf(name, sizeof(name), "/tmp/perf-%d.map", pid);
+		fp_ = fopen(name, "wb");
+		if (fp_ == 0) throw cybozu::Exception("PerMap") << name;
+		prev_ = prev;
+#else
+		(void)suf;
+		(void)prev;
+#endif
+	}
+	~Profiler()
+	{
+		close();
+	}
+	void close()
+	{
+#ifdef __linux__
+		if (fp_ == 0) return;
+		fclose(fp_);
+		fp_ = 0;
+		prev_ = 0;
+#endif
+	}
+	void set(const uint8_t *p, size_t n, const char *name) const
+	{
+#ifdef __linux__
+		if (fp_ == 0) return;
+		fprintf(fp_, "%llx %zx %s%s\n", (long long)p, n, name, suf_);
+#else
+		(void)p;
+		(void)n;
+		(void)name;
+#endif
+	}
+	void set(const char *name, const uint8_t *cur)
+	{
+#ifdef __linux__
+		set(prev_, cur - prev_, name);
+		prev_ = cur;
+#else
+		(void)name;
+		(void)cur;
+#endif
+	}
+};
+
 struct FpGenerator : Xbyak::CodeGenerator {
 	typedef Xbyak::RegExp RegExp;
 	typedef Xbyak::Reg64 Reg64;
@@ -203,6 +268,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	int pn_;
 	int FpByte_;
 	bool isFullBit_;
+	Profiler prof_;
 
 	/*
 		@param op [in] ; use op.p, op.N, op.isFullBit
@@ -264,45 +330,88 @@ private:
 		FpByte_ = int(op.maxN * sizeof(uint64_t));
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
+		static char suf[] = "_0";
+		prof_.init(suf, getCurr());
+		suf[1]++;
 
 		op.fp_addPre = gen_addSubPre(true, pn_);
+		prof_.set("Fp_addPre", getCurr());
+
 		op.fp_subPre = gen_addSubPre(false, pn_);
-		op.fp_subA_ = gen_fp_sub();
+		prof_.set("Fp_subPre", getCurr());
+
 		op.fp_addA_ = gen_fp_add();
+		prof_.set("Fp_add", getCurr());
+
+		op.fp_subA_ = gen_fp_sub();
+		prof_.set("Fp_sub", getCurr());
 
 		op.fp_shr1 = gen_shr1();
+		prof_.set("Fp_shr1", getCurr());
 
 		op.fp_negA_ = gen_fp_neg();
+		prof_.set("Fp_neg", getCurr());
 
 		op.fpDbl_addA_ = gen_fpDbl_add();
+		prof_.set("FpDbl_add", getCurr());
+
 		op.fpDbl_subA_ = gen_fpDbl_sub();
+		prof_.set("FpDbl_sub", getCurr());
+
 		op.fpDbl_addPre = gen_addSubPre(true, pn_ * 2);
+		prof_.set("FpDbl_addPre", getCurr());
+
 		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
+		prof_.set("FpDbl_subPre", getCurr());
 
 		op.fpDbl_mulPreA_ = gen_fpDbl_mulPre();
+		prof_.set("FpDbl_mulPre", getCurr());
+
 		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
+		prof_.set("FpDbl_sqrPre", getCurr());
+
 		op.fpDbl_modA_ = gen_fpDbl_mod(op);
+		prof_.set("FpDbl_mod", getCurr());
 
 		op.fp_mulA_ = gen_mul();
+		prof_.set("Fp_mul", getCurr());
 		if (op.fp_mulA_) {
 			op.fp_mul = reinterpret_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
 		}
 		op.fp_sqrA_ = gen_sqr();
+		prof_.set("Fp_sqr", getCurr());
+
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
+			prof_.set("preInv", getCurr());
 		}
 		if (op.xi_a == 0) return; // Fp2 is not used
 		op.fp2_addA_ = gen_fp2_add();
+		prof_.set("Fp2_add", getCurr());
+
 		op.fp2_subA_ = gen_fp2_sub();
+		prof_.set("Fp2_sub", getCurr());
+
 		op.fp2_negA_ = gen_fp2_neg();
+		prof_.set("Fp2_neg", getCurr());
+
 		op.fp2_mulNF = 0;
 		op.fp2Dbl_mulPreA_ = gen_fp2Dbl_mulPre();
+		prof_.set("Fp2Dbl_mulPre", getCurr());
+
 		op.fp2Dbl_sqrPreA_ = gen_fp2Dbl_sqrPre();
+		prof_.set("Fp2Dbl_sqrPre", getCurr());
+
 		op.fp2_mulA_ = gen_fp2_mul();
+		prof_.set("Fp2_mul", getCurr());
+
 		op.fp2_sqrA_ = gen_fp2_sqr();
+		prof_.set("Fp2_sqr", getCurr());
+
 		op.fp2_mul_xiA_ = gen_fp2_mul_xi();
+		prof_.set("Fp2_mul_xi", getCurr());
 	}
 	u3u gen_addSubPre(bool isAdd, int n)
 	{
