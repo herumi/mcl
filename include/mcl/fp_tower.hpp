@@ -202,7 +202,6 @@ class Fp2T : public fp::Serializable<Fp2T<_Fp>,
 	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2DblT<Fp> Fp2Dbl;
-	static uint32_t xi_a_;
 	static const size_t gN = 5;
 	/*
 		g = xi^((p - 1) / 6)
@@ -373,12 +372,12 @@ public:
 		}
 	}
 
-	static uint32_t get_xi_a() { return xi_a_; }
-	static void init(uint32_t xi_a)
+	static uint32_t get_xi_a() { return Fp::getOp().xi_a; }
+	static void init()
 	{
 //		assert(Fp::maxSize <= 256);
-		xi_a_ = xi_a;
 		mcl::fp::Op& op = Fp::op_;
+		assert(op.xi_a);
 		add = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_addA_;
 		if (add == 0) add = fp2_addC;
 		sub = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_subA_;
@@ -402,7 +401,7 @@ public:
 		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
 		if (sqr == 0) sqr = fp2_sqrC;
 		op.fp2_inv = fp2_invW;
-		if (xi_a == 1) {
+		if (op.xi_a == 1) {
 			/*
 				current fp_generator.hpp generates mul_xi for xi_a = 1
 			*/
@@ -417,7 +416,7 @@ public:
 		FpDblT<Fp>::init();
 		Fp2DblT<Fp>::init();
 		// call init before Fp2::pow because FpDbl is used in Fp2T
-		const Fp2T xi(xi_a, 1);
+		const Fp2T xi(op.xi_a, 1);
 		const mpz_class& p = Fp::getOp().mp;
 		Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
 		for (size_t i = 1; i < gN; i++) {
@@ -579,9 +578,9 @@ private:
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
-		Fp::mulUnit(t, a, xi_a_);
+		Fp::mulUnit(t, a, Fp::getOp().xi_a);
 		t -= b;
-		Fp::mulUnit(y.b, b, xi_a_);
+		Fp::mulUnit(y.b, b, Fp::getOp().xi_a);
 		y.b += a;
 		y.a = t;
 	}
@@ -765,7 +764,6 @@ struct Fp2DblT {
 template<class Fp> void (*Fp2DblT<Fp>::mulPre)(Fp2DblT&, const Fp2T<Fp>&, const Fp2T<Fp>&);
 template<class Fp> void (*Fp2DblT<Fp>::sqrPre)(Fp2DblT&, const Fp2T<Fp>&);
 
-template<class Fp> uint32_t Fp2T<Fp>::xi_a_;
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g2[Fp2T<Fp>::gN];
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g3[Fp2T<Fp>::gN];

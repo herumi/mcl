@@ -1043,12 +1043,12 @@ struct Param {
 			assert((p % 6) == 1);
 			r = local::evalPoly(z, rCoff);
 		}
-		Fp::init(pb, p, mode);
-		if (!*pb) return;
 		Fr::init(pb, r, mode);
 		if (!*pb) return;
-		Fp2::init(cp.xi_a);
-		Fp2 xi(cp.xi_a, 1);
+		Fp::init(pb, cp.xi_a, p, mode);
+		if (!*pb) return;
+		Fp2::init();
+		const Fp2 xi(cp.xi_a, 1);
 		g2 = Fp2::get_gTbl()[0];
 		g3 = Fp2::get_gTbl()[3];
 		if (cp.isMtype) {

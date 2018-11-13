@@ -203,22 +203,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	int pn_;
 	int FpByte_;
 	bool isFullBit_;
-	// add/sub without carry. return true if overflow
-	typedef bool (*bool3op)(uint64_t*, const uint64_t*, const uint64_t*);
-
-	// add/sub with mod
-//	typedef void (*void3op)(uint64_t*, const uint64_t*, const uint64_t*);
-
-	// mul without carry. return top of z
-	typedef uint64_t (*uint3opI)(uint64_t*, const uint64_t*, uint64_t);
-
-	// neg
-	typedef void (*void2op)(uint64_t*, const uint64_t*);
-
-	// preInv
-	typedef int (*int2op)(uint64_t*, const uint64_t*);
-	void4u mul_;
-//	uint3opI mulUnit_;
 
 	/*
 		@param op [in] ; use op.p, op.N, op.isFullBit
@@ -253,8 +237,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, rp_(0)
 		, pn_(0)
 		, FpByte_(0)
-		, mul_(0)
-//		, mulUnit_(0)
 	{
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
@@ -264,6 +246,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
 		init_inner(op);
+		printf("code size=%d\n", (int)getSize());
 		setProtectModeRE(); // set read/exec memory
 	}
 private:
@@ -271,10 +254,6 @@ private:
 	{
 		op_ = &op;
 		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return;
-		/*
-			first 4096-byte is data area
-			remain is code area
-		*/
 		L(pL_);
 		p_ = reinterpret_cast<const uint64_t*>(getCurr());
 		for (size_t i = 0; i < op.N; i++) {
@@ -285,9 +264,7 @@ private:
 		FpByte_ = int(op.maxN * sizeof(uint64_t));
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
-		// code from here
-		setSize(4096);
-		assert((getCurr<size_t>() & 4095) == 0);
+
 		op.fp_addPre = gen_addSubPre(true, pn_);
 		op.fp_subPre = gen_addSubPre(false, pn_);
 		op.fp_subA_ = gen_fp_sub();
@@ -297,42 +274,30 @@ private:
 
 		op.fp_negA_ = gen_fp_neg();
 
-		void* func = 0;
-		// setup fp_tower
-		op.fp2_mulNF = 0;
-		func = gen_fpDbl_add();
-		if (func) op.fpDbl_addA_ = reinterpret_cast<void3u>(func);
-		func = gen_fpDbl_sub();
-		if (func) op.fpDbl_subA_ = reinterpret_cast<void3u>(func);
+		op.fpDbl_addA_ = gen_fpDbl_add();
+		op.fpDbl_subA_ = gen_fpDbl_sub();
 		op.fpDbl_addPre = gen_addSubPre(true, pn_ * 2);
 		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
 
-		func = gen_fpDbl_mulPre();
-		if (func) op.fpDbl_mulPreA_ = reinterpret_cast<void3u>(func);
+		op.fpDbl_mulPreA_ = gen_fpDbl_mulPre();
+		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
+		op.fpDbl_modA_ = gen_fpDbl_mod(op);
 
-		func = gen_fpDbl_mod(op);
-		if (func) op.fpDbl_modA_ = reinterpret_cast<void2u>(func);
-
-		func = gen_fpDbl_sqrPre(op);
-		if (func) op.fpDbl_sqrPreA_ = reinterpret_cast<void2u>(func);
-
-		func = gen_mul();
-		if (func) {
-			op.fp_mul = reinterpret_cast<void4u>(func); // used in toMont/fromMont
-			op.fp_mulA_ = reinterpret_cast<void3u>(func);
+		op.fp_mulA_ = gen_mul();
+		if (op.fp_mulA_) {
+			op.fp_mul = reinterpret_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
 		}
-		func = gen_sqr();
-		if (func) {
-			op.fp_sqrA_ = reinterpret_cast<void2u>(func);
-		}
+		op.fp_sqrA_ = gen_sqr();
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
 		}
+		if (op.xi_a == 0) return; // Fp2 is not used
 		op.fp2_addA_ = gen_fp2_add();
 		op.fp2_subA_ = gen_fp2_sub();
 		op.fp2_negA_ = gen_fp2_neg();
+		op.fp2_mulNF = 0;
 		op.fp2Dbl_mulPreA_ = gen_fp2Dbl_mulPre();
 		op.fp2Dbl_sqrPreA_ = gen_fp2Dbl_sqrPre();
 		op.fp2_mulA_ = gen_fp2_mul();
@@ -668,10 +633,10 @@ private:
 		outLocalLabel();
 		return func;
 	}
-	void* gen_fpDbl_add()
+	void3u gen_fpDbl_add()
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void3u func = getCurr<void3u>();
 		if (pn_ <= 4) {
 			int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
 			StackFrame sf(this, 3, tn);
@@ -696,10 +661,10 @@ private:
 		}
 		return 0;
 	}
-	void* gen_fpDbl_sub()
+	void3u gen_fpDbl_sub()
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void3u func = getCurr<void3u>();
 		if (pn_ <= 4) {
 			int tn = pn_ * 2;
 			StackFrame sf(this, 3, tn);
@@ -800,10 +765,10 @@ private:
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
 		return func;
 	}
-	void* gen_mul()
+	void3u gen_mul()
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void3u func = getCurr<void3u>();
 		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 6);
 			mulPre3(rsp, sf.p[1], sf.p[2], sf.t);
@@ -1113,10 +1078,10 @@ private:
 		vmovq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-	void* gen_fpDbl_mod(const fp::Op& op)
+	void2u gen_fpDbl_mod(const fp::Op& op)
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void2u func = getCurr<void2u>();
 		if (op.primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 2, 6 | UseRDX);
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
@@ -1159,10 +1124,10 @@ private:
 		}
 		return 0;
 	}
-	void* gen_sqr()
+	void2u gen_sqr()
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void2u func = getCurr<void2u>();
 		if (op_->primeMode == PM_NIST_P192) {
 			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
 			Pack t = sf.t;
@@ -2267,10 +2232,10 @@ private:
 		vmovq(z, xm0);
 		store_mr(z, zp);
 	}
-	void* gen_fpDbl_sqrPre(const fp::Op&/* op */)
+	void2u gen_fpDbl_sqrPre()
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void2u func = getCurr<void2u>();
 		if (pn_ == 2 && useMulx_) {
 			StackFrame sf(this, 2, 7 | UseRDX);
 			sqrPre2(sf.p[0], sf.p[1], sf.t);
@@ -2308,10 +2273,10 @@ private:
 		return func;
 #endif
 	}
-	void* gen_fpDbl_mulPre()
+	void3u gen_fpDbl_mulPre()
 	{
 		align(16);
-		void* func = getCurr<void*>();
+		void3u func = getCurr<void3u>();
 		if (pn_ == 2 && useMulx_) {
 			StackFrame sf(this, 3, 5 | UseRDX);
 			mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
