@@ -240,11 +240,19 @@ public:
 		a = a_;
 		b = b_;
 	}
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*neg)(Fp2T& y, const Fp2T& x);
 	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
+#else
+	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { addC(z, x, y); }
+	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { subC(z, x, y); }
+	static void neg(Fp2T& y, const Fp2T& x) { negC(y, x); }
+	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { mulC(z, x, y); }
+	static void sqr(Fp2T& y, const Fp2T& x) { sqrC(y, x); }
+#endif
 	static void (*mul_xi)(Fp2T& y, const Fp2T& x);
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
 	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
@@ -378,40 +386,26 @@ public:
 //		assert(Fp::maxSize <= 256);
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
+#ifdef MCL_XBYAK_DIRECT_CALL
 		add = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_addA_;
-		if (add == 0) add = fp2_addC;
+		if (add == 0) add = addC;
 		sub = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_subA_;
-		if (sub == 0) sub = fp2_subC;
+		if (sub == 0) sub = subC;
 		neg = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_negA_;
-		if (neg == 0) neg = fp2_negC;
+		if (neg == 0) neg = negC;
 		mul = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_mulA_;
-		if (mul == 0) {
-			if (op.isFastMod) {
-				mul = fp2_mulC;
-			} else if (!op.isFullBit) {
-				if (0 && sizeof(Fp) * 8 == op.N * fp::UnitBitSize && op.fp2_mulNF) {
-					mul = fp2_mulNFW;
-				} else {
-					mul = fp2_mulC;
-				}
-			} else {
-				mul = fp2_mulC;
-			}
-		}
+		if (mul == 0) mul = mulC;
 		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
-		if (sqr == 0) sqr = fp2_sqrC;
+		if (sqr == 0) sqr = sqrC;
+#endif
 		op.fp2_inv = fp2_invW;
-		if (op.xi_a == 1) {
-			/*
-				current fp_generator.hpp generates mul_xi for xi_a = 1
-			*/
-			if (op.fp2_mul_xiA_) {
-				mul_xi = (void (*)(Fp2T&, const Fp2T&))op.fp2_mul_xiA_;
+		mul_xi = (void (*)(Fp2T&, const Fp2T&))op.fp2_mul_xiA_;
+		if (mul_xi == 0) {
+			if (op.xi_a == 1) {
+				mul_xi = fp2_mul_xi_1_1iC;
 			} else {
-				mul_xi = fp2_mul_xi_1_1i;
+				mul_xi = fp2_mul_xiC;
 			}
-		} else {
-			mul_xi = fp2_mul_xiC;
 		}
 		FpDblT<Fp>::init();
 		Fp2DblT<Fp>::init();
@@ -485,17 +479,17 @@ private:
 		default Fp2T operator
 		Fp2T = Fp[i]/(i^2 + 1)
 	*/
-	static void fp2_addC(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void addC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		Fp::add(z.a, x.a, y.a);
 		Fp::add(z.b, x.b, y.b);
 	}
-	static void fp2_subC(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void subC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		Fp::sub(z.a, x.a, y.a);
 		Fp::sub(z.b, x.b, y.b);
 	}
-	static void fp2_negC(Fp2T& y, const Fp2T& x)
+	static void negC(Fp2T& y, const Fp2T& x)
 	{
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
@@ -526,13 +520,13 @@ private:
 		Fp::sub(pz[1], t1, ac);
 		pz[1] -= bd;
 	}
-#endif
 	static void fp2_mulNFW(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		const fp::Op& op = Fp::op_;
 		op.fp2_mulNF((Unit*)&z, (const Unit*)&x, (const Unit*)&y, op.p);
 	}
-	static void fp2_mulC(Fp2T& z, const Fp2T& x, const Fp2T& y)
+#endif
+	static void mulC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		Fp2Dbl d;
 		Fp2Dbl::mulPre(d, x, y);
@@ -543,7 +537,7 @@ private:
 		x = a + bi, i^2 = -1
 		y = x^2 = (a + bi)^2 = (a + b)(a - b) + 2abi
 	*/
-	static void fp2_sqrC(Fp2T& y, const Fp2T& x)
+	static void sqrC(Fp2T& y, const Fp2T& x)
 	{
 		const Fp& a = x.a;
 		const Fp& b = x.b;
@@ -588,7 +582,7 @@ private:
 		xi = 1 + i ; xi_a = 1
 		y = (a + bi)xi = (a - b) + (a + b)i
 	*/
-	static void fp2_mul_xi_1_1i(Fp2T& y, const Fp2T& x)
+	static void fp2_mul_xi_1_1iC(Fp2T& y, const Fp2T& x)
 	{
 		const Fp& a = x.a;
 		const Fp& b = x.b;
@@ -618,11 +612,13 @@ private:
 	}
 };
 
+#ifdef MCL_XBYAK_DIRECT_CALL
 template<class Fp_> void (*Fp2T<Fp_>::add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
+#endif
 template<class Fp_> void (*Fp2T<Fp_>::mul_xi)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>

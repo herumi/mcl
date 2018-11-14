@@ -3675,6 +3675,7 @@ private:
 	void2u gen_fp2_mul_xi()
 	{
 		if (isFullBit_) return 0;
+		if (op_->xi_a != 1) return 0;
 		align(16);
 		void2u func = getCurr<void2u>();
 		if (pn_ == 4) {
