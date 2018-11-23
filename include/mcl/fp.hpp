@@ -70,16 +70,6 @@ inline void dumpUnit(Unit x)
 
 bool isEnableJIT(); // 1st call is not threadsafe
 
-void getRandVal(bool *pb, void *p, RandGen& rg, const Unit *in, size_t bitSize);
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void getRandVal(void *p, RandGen& rg, const Unit *in, size_t bitSize)
-{
-	bool b;
-	getRandVal(&b, p, rg, in, bitSize);
-	if (!b) throw cybozu::Exception("getRandVal") << bitSize;
-}
-#endif
-
 uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
@@ -350,9 +340,9 @@ public:
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
 		if (rg.isZero()) rg = fp::RandGen::get();
-		fp::getRandVal(pb, v_, rg, op_.p, op_.bitSize);
-		if (!*pb) return;
-		toMont();
+		rg.read(pb, v_, op_.N * sizeof(Unit)); // byte size
+		if (!pb) return;
+		setArrayMask(v_, op_.N);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void setByCSPRNG(fp::RandGen rg = fp::RandGen())

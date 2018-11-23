@@ -120,21 +120,6 @@ bool isEnableJIT()
 #endif
 }
 
-void getRandVal(bool *pb, void *p, RandGen& rg, const Unit *in, size_t bitSize)
-{
-	if (rg.isZero()) rg = RandGen::get();
-	Unit *out = reinterpret_cast<Unit*>(p);
-	const size_t n = (bitSize + UnitBitSize - 1) / UnitBitSize;
-	const size_t rem = bitSize & (UnitBitSize - 1);
-	assert(n > 0);
-	for (;;) {
-		rg.read(pb, out, n * sizeof(Unit)); // byte size
-		if (!*pb) return;
-		if (rem > 0) out[n - 1] &= (Unit(1) << rem) - 1;
-		if (isLessArray(out, in, n)) return;
-	}
-}
-
 uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
 	const uint32_t hashSize = 256 / 8;
