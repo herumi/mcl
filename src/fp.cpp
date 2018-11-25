@@ -1,10 +1,6 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
-#ifdef MCL_DONT_USE_OPENSSL
 #include <cybozu/sha2.hpp>
-#else
-#include <cybozu/crypto.hpp>
-#endif
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
 #ifdef MCL_USE_XBYAK
@@ -122,28 +118,13 @@ bool isEnableJIT()
 
 uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
-	const uint32_t hashSize = 256 / 8;
-	if (maxOutSize < hashSize) return 0;
-#ifdef MCL_DONT_USE_OPENSSL
-	cybozu::Sha256(msg, msgSize).get(out);
-#else
-	cybozu::crypto::Hash::digest(out, cybozu::crypto::Hash::N_SHA256, msg, msgSize);
-#endif
-	return hashSize;
+	return (uint32_t)cybozu::Sha256().digest(out, maxOutSize, msg, msgSize);
 }
 
 uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize)
 {
-	const uint32_t hashSize = 512 / 8;
-	if (maxOutSize < hashSize) return 0;
-#ifdef MCL_DONT_USE_OPENSSL
-	cybozu::Sha512(msg, msgSize).get(out);
-#else
-	cybozu::crypto::Hash::digest(out, cybozu::crypto::Hash::N_SHA512, msg, msgSize);
-#endif
-	return hashSize;
+	return (uint32_t)cybozu::Sha512().digest(out, maxOutSize, msg, msgSize);
 }
-
 
 #ifndef MCL_USE_VINT
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
