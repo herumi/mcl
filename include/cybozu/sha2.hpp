@@ -57,6 +57,10 @@ public:
 	{
 		update(buf.c_str(), buf.size());
 	}
+	std::string digest(const std::string& buf)
+	{
+		return digest(buf.c_str(), buf.size());
+	}
 	std::string digest(const void *buf, size_t bufSize)
 	{
 		std::string md(SHA256_DIGEST_LENGTH, 0);
@@ -92,6 +96,10 @@ public:
 	void update(const std::string& buf)
 	{
 		update(buf.c_str(), buf.size());
+	}
+	std::string digest(const std::string& buf)
+	{
+		return digest(buf.c_str(), buf.size());
 	}
 	std::string digest(const void *buf, size_t bufSize)
 	{
@@ -300,6 +308,10 @@ public:
 	{
 		update(buf.c_str(), buf.size());
 	}
+	std::string digest(const std::string& buf)
+	{
+		return digest(buf.c_str(), buf.size());
+	}
 	std::string digest(const void *buf, size_t bufSize)
 	{
 		std::string md(outByteSize_, 0);
@@ -436,6 +448,10 @@ public:
 	void update(const std::string& buf)
 	{
 		update(buf.c_str(), buf.size());
+	}
+	std::string digest(const std::string& buf)
+	{
+		return digest(buf.c_str(), buf.size());
 	}
 	std::string digest(const void *buf, size_t bufSize)
 	{

@@ -7,11 +7,7 @@
 #include <time.h>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
-#ifdef MCL_DONT_USE_OPENSSL
 #include <cybozu/sha2.hpp>
-#else
-#include <cybozu/crypto.hpp>
-#endif
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4127) // const condition
@@ -726,22 +722,12 @@ void setHashOfTest()
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(msgTbl); i++) {
 		size_t bitSize = Fp::getBitSize();
-#ifdef MCL_DONT_USE_OPENSSL
 		std::string digest;
 		if (bitSize <= 256) {
-			digest = cybozu::Sha256(msgTbl[i].c_str(), msgTbl[i].size()).get();
+			digest = cybozu::Sha256().digest(msgTbl[i]);
 		} else {
-			digest = cybozu::Sha512(msgTbl[i].c_str(), msgTbl[i].size()).get();
+			digest = cybozu::Sha512().digest(msgTbl[i]);
 		}
-#else
-		cybozu::crypto::Hash::Name name;
-		if (bitSize <= 256) {
-			name = cybozu::crypto::Hash::N_SHA256;
-		} else {
-			name = cybozu::crypto::Hash::N_SHA512;
-		}
-		std::string digest = cybozu::crypto::Hash::digest(name, msgTbl[i]);
-#endif
 		Fp x, y;
 		x.setArrayMask(digest.c_str(), digest.size());
 		y.setHashOf(msgTbl[i]);

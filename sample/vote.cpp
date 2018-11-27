@@ -10,7 +10,6 @@
 #include <fstream>
 #include <cybozu/random_generator.hpp>
 #include <cybozu/option.hpp>
-#include <cybozu/crypto.hpp>
 #include <cybozu/itoa.hpp>
 #include <mcl/fp.hpp>
 #include <mcl/ec.hpp>
@@ -107,8 +106,7 @@ struct CipherWithZkp {
 	Elgamal::Zkp zkp;
 	bool verify(const Elgamal::PublicKey& pub) const
 	{
-		cybozu::crypto::Hash hash;
-		return pub.verify(c, zkp, hash);
+		return pub.verify(c, zkp);
 	}
 };
 
@@ -134,8 +132,7 @@ void Vote(const std::string& voteList)
 	puts("each voter votes");
 	for (size_t i = 0; i < voteList.size(); i++) {
 		CipherWithZkp c;
-		cybozu::crypto::Hash hash;
-		pub.encWithZkp(c.c, c.zkp, voteList[i] - '0', hash, rg);
+		pub.encWithZkp(c.c, c.zkp, voteList[i] - '0', rg);
 		const std::string sheetName = GetSheetName(idxTbl[i]);
 		printf("make %s\n", sheetName.c_str());
 		Save(sheetName, c);

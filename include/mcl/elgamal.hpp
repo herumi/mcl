@@ -244,8 +244,7 @@ struct ElgamalT {
 			input : m = 0 or 1
 			output : c (c1, c2), zkp
 		*/
-		template<class Hash>
-		void encWithZkp(CipherText& c, Zkp& zkp, int m, Hash& hash, fp::RandGen rg = fp::RandGen()) const
+		void encWithZkp(CipherText& c, Zkp& zkp, int m, fp::RandGen rg = fp::RandGen()) const
 		{
 			if (m != 0 && m != 1) {
 				throw cybozu::Exception("elgamal:PublicKey:encWithZkp") << m;
@@ -272,10 +271,8 @@ struct ElgamalT {
 				mulH(R12, r1);
 				std::ostringstream os;
 				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
-				hash.update(os.str());
-				const std::string digest = hash.digest();
 				Zn cc;
-				cc.setArrayMask(digest.c_str(), digest.size());
+				cc.setHashOf(os.str());
 				zkp.c1 = cc - zkp.c0;
 				zkp.s1 = r1 + zkp.c1 * u;
 			} else {
@@ -296,10 +293,8 @@ struct ElgamalT {
 				Ec::sub(R12, t1, t2);
 				std::ostringstream os;
 				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
-				hash.update(os.str());
-				const std::string digest = hash.digest();
 				Zn cc;
-				cc.setArrayMask(digest.c_str(), digest.size());
+				cc.setHashOf(os.str());
 				zkp.c0 = cc - zkp.c1;
 				zkp.s0 = r0 + zkp.c0 * u;
 			}
@@ -307,8 +302,7 @@ struct ElgamalT {
 		/*
 			verify cipher text with ZKP
 		*/
-		template<class Hash>
-		bool verify(const CipherText& c, const Zkp& zkp, Hash& hash) const
+		bool verify(const CipherText& c, const Zkp& zkp) const
 		{
 			Ec R01, R02, R11, R12;
 			Ec t1, t2;
@@ -327,10 +321,8 @@ struct ElgamalT {
 			Ec::sub(R12, t1, t2);
 			std::ostringstream os;
 			os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << f << g << h;
-			hash.update(os.str());
-			const std::string digest = hash.digest();
 			Zn cc;
-			cc.setArrayMask(digest.c_str(), digest.size());
+			cc.setHashOf(os.str());
 			return cc == zkp.c0 + zkp.c1;
 		}
 		/*
