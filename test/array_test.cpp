@@ -1,14 +1,19 @@
 #include <mcl/array.hpp>
 #include <cybozu/test.hpp>
 
+template<class Array, size_t n>
+void setArray(Array& a, const int (&tbl)[n])
+{
+	CYBOZU_TEST_ASSERT(a.resize(n));
+	for (size_t i = 0; i < n; i++) a[i] = tbl[i];
+}
+
 template<class Array, size_t an, size_t bn>
 void swapTest(const int (&a)[an], const int (&b)[bn])
 {
 	Array s, t;
-	CYBOZU_TEST_ASSERT(s.resize(an));
-	CYBOZU_TEST_ASSERT(t.resize(bn));
-	for (size_t i = 0; i < an; i++) s[i] = a[i];
-	for (size_t i = 0; i < bn; i++) t[i] = b[i];
+	setArray(s, a);
+	setArray(t, b);
 	s.swap(t);
 	CYBOZU_TEST_EQUAL(s.size(), bn);
 	CYBOZU_TEST_EQUAL(t.size(), an);
@@ -83,3 +88,17 @@ CYBOZU_TEST_AUTO(FixedArray)
 	swapTest<mcl::FixedArray<int, n> >(aTbl, bTbl);
 	swapTest<mcl::FixedArray<int, n> >(bTbl, aTbl);
 }
+
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+CYBOZU_TEST_AUTO(assign)
+{
+	const int aTbl[] = { 3, 4, 2 };
+	const int bTbl[] = { 3, 4, 2, 1, 5 };
+	mcl::Array<int> a, b;
+	setArray(a, aTbl);
+	setArray(b, bTbl);
+	a = b;
+	CYBOZU_TEST_EQUAL(a.size(), b.size());
+	CYBOZU_TEST_EQUAL_ARRAY(a.data(), b.data(), a.size());
+}
+#endif

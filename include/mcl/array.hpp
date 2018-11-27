@@ -8,6 +8,9 @@
 */
 #include <stdlib.h>
 #include <stddef.h>
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+#include <new>
+#endif
 
 namespace mcl {
 
@@ -15,8 +18,6 @@ template<class T>
 class Array {
 	T *p_;
 	size_t n_;
-	Array(const Array&);
-	void operator=(const Array&);
 	template<class U>
 	void swap_(U& x, U& y) const
 	{
@@ -31,6 +32,26 @@ public:
 	{
 		free(p_);
 	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	Array(const Array& rhs)
+		: p_(0)
+		, n_(0)
+	{
+		if (rhs.n_ == 0) return;
+		p_ = (T*)malloc(sizeof(T) * rhs.n_);
+		if (p_ == 0) throw std::bad_alloc();
+		n_ = rhs.n_;
+		for (size_t i = 0; i < n_; i++) {
+			p_[i] = rhs.p_[i];
+		}
+	}
+	Array& operator=(const Array& rhs)
+	{
+		Array tmp(rhs);
+		tmp.swap(*this);
+		return *this;
+	}
+#endif
 	bool resize(size_t n)
 	{
 		if (n <= n_) {
