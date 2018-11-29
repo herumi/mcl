@@ -130,7 +130,7 @@ namespace fp {
 struct Profiler {
 	FILE *fp_;
 	const char *suf_;
-	const uint8_t *prev_ = 0;
+	const uint8_t *prev_;
 	Profiler()
 		: fp_(0)
 		, suf_(0)
