@@ -3,7 +3,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 
 namespace mcl {
-	class BN256 {
+	public class BN256 {
 		[DllImport("mclBn256.dll")]
 		public static extern int mclBn_init(int curve, int maxUnitSize);
 		[DllImport("mclBn256.dll")]
@@ -410,19 +410,19 @@ namespace mcl {
 			}
 			public void Add(GT x, GT y)
 			{
-				mclBnGT_add(ref this, ref x, ref this);
+				mclBnGT_add(ref this, ref x, ref y);
 			}
 			public void Sub(GT x, GT y)
 			{
-				mclBnGT_sub(ref this, ref x, ref this);
+				mclBnGT_sub(ref this, ref x, ref y);
 			}
 			public void Mul(GT x, GT y)
 			{
-				mclBnGT_mul(ref this, ref x, ref this);
+				mclBnGT_mul(ref this, ref x, ref y);
 			}
 			public void Div(GT x, GT y)
 			{
-				mclBnGT_div(ref this, ref x, ref this);
+				mclBnGT_div(ref this, ref x, ref y);
 			}
 			public static GT operator -(GT x)
 			{
