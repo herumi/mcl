@@ -7,6 +7,8 @@ package mcl
 #cgo bn256 LDFLAGS:-lmclbn256_dy -lmcl_dy
 #cgo bn384 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6
 #cgo bn384 LDFLAGS:-lmclbn384_dy -lmcl_dy
+#cgo bn384_256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6 -DMCLBN_FR_UNIT_SIZE=4
+#cgo bn384_256 LDFLAGS:-lmclbn384_256_dy -lmcl_dy
 #include <mcl/bn.h>
 */
 import "C"
@@ -37,6 +39,17 @@ func Init(curve int) error {
 		return fmt.Errorf("ERR mclBn_init curve=%d", curve)
 	}
 	return nil
+}
+
+// GetFrUnitSize() --
+func GetFrUnitSize() int {
+	return int(C.MCLBN_FR_UNIT_SIZE)
+}
+
+// GetFpUnitSize() --
+// same as GetMaxOpUnitSize()
+func GetFpUnitSize() int {
+	return int(C.MCLBN_FP_UNIT_SIZE)
 }
 
 // GetMaxOpUnitSize --

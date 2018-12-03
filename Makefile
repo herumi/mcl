@@ -216,12 +216,15 @@ test_go256: $(MCL_SLIB) $(BN256_SLIB)
 	cd ffi/go/mcl && env PATH="$$PATH:../../../lib" LD_RUN_PATH="../../../lib" go test $(MAC_GO_LDFLAGS) -tags bn256 .
 
 test_go384: $(MCL_SLIB) $(BN384_SLIB)
-#	cd ffi/go/mcl && env LD_RUN_PATH="../../../lib" CGO_CFLAGS="-I../../../include" CGO_LDFLAGS="-L../../../lib -l$(BN384_SNAME) -l$(MCL_SNAME) -lgmpxx -lgmp -lcrypto -lstdc++" go test $(MAC_GO_LDFLAGS) .
 	cd ffi/go/mcl && env PATH="$$PATH:../../../lib" LD_RUN_PATH="../../../lib" go test $(MAC_GO_LDFLAGS) -tags bn384 .
+
+test_go384_256: $(MCL_SLIB) $(BN384_256_SLIB)
+	cd ffi/go/mcl && env PATH="$$PATH:../../../lib" LD_RUN_PATH="../../../lib" go test $(MAC_GO_LDFLAGS) -tags bn384_256 .
 
 test_go:
 	$(MAKE) test_go256
 	$(MAKE) test_go384
+	$(MAKE) test_go384_256
 
 test_java:
 	$(MAKE) -C ffi/java test
