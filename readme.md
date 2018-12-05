@@ -10,6 +10,8 @@ mcl is a library for pairing-based cryptography.
 The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+* The default name of the shared library is renamed fromlibmcl_dy.a to libmcl.a.
+    * Use `cmake -DUSE_OLD_SHARED_NAME=ON` if you want to use the old name.
 * 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
 * break backward compatibility of mapToGi for BLS12. A map-to-function for BN is used.
 If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but this will be removed in the future.

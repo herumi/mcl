@@ -12,6 +12,11 @@ option(
 	"download cybozulib_ext"
 	OFF
 )
+option(
+	USE_OLD_SHARED_NAME
+	"add '_dy' of shared library name"
+	OFF
+)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -85,8 +90,10 @@ include_directories(
 )
 
 add_library(mcl STATIC ${SRCS})
-if(NOT MSVC)
 add_library(mcl_dy SHARED ${SRCS})
+set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl)
+if(NOT USE_OLD_SHARED_NAME)
+	set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl)
 endif()
 
 file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h)
