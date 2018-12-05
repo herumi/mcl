@@ -87,6 +87,7 @@ include_directories(
 add_library(mcl STATIC ${SRCS})
 if(NOT MSVC)
 add_library(mcl_dy SHARED ${SRCS})
+set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl)
 endif()
 
 file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h)
