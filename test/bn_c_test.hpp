@@ -24,20 +24,21 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(sizeof(mclBnG2), sizeof(G2));
 	CYBOZU_TEST_EQUAL(sizeof(mclBnGT), sizeof(Fp12));
 
-#if MCLBN_FP_UNIT_SIZE == 4
+#if MCLBN_FP_UNIT_SIZE >= 4
 	printf("test BN254 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BN254, MCLBN_COMPILED_TIME_VAR);
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
-	printf("test BN381_1 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(MCL_BN381_1, MCLBN_COMPILED_TIME_VAR);
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
+#endif
+#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 4
 	printf("test BLS12_381 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BLS12_381, MCLBN_COMPILED_TIME_VAR);
-#elif MCLBN_FP_UNIT_SIZE == 8
+#endif
+#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
+	printf("test BN381_1 %d\n", MCLBN_FP_UNIT_SIZE);
+	ret = mclBn_init(MCL_BN381_1, MCLBN_COMPILED_TIME_VAR);
+#endif
+#if MCLBN_FP_UNIT_SIZE == 8
 	printf("test BN462 %d\n", MCLBN_FP_UNIT_SIZE);
 	ret = mclBn_init(MCL_BN462, MCLBN_COMPILED_TIME_VAR);
-#else
-	#error "bad MCLBN_FP_UNIT_SIZE"
 #endif
 	CYBOZU_TEST_EQUAL(ret, 0);
 	if (ret != 0) exit(1);
