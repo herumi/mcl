@@ -104,6 +104,7 @@ if(NOT MSVC)
 install(TARGETS mcl_dy DESTINATION lib)
 endif()
 install(FILES ${MCL_HEADERS} DESTINATION include/mcl)
+install(FILES include/mcl/impl/bn_c_impl.hpp DESTINATION include/mcl/impl)
 install(FILES ${CYBOZULIB_HEADERS} DESTINATION include/cybozu)
 
 set(TEST_BASE fp_test ec_test fp_util_test window_method_test elgamal_test fp_tower_test gmp_test bn_test glv_test)
