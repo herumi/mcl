@@ -1,3 +1,7 @@
+/*
+	This is an internal header
+	Do not include this
+*/
 #define MCLBN_DLL_EXPORT
 #include <mcl/bn.h>
 
