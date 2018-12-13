@@ -92,4 +92,4 @@ make test_bn256
 ```
 
 # Sample code
-[Bn256Test.java](https://github.com/herumi/mcl/blob/master/java/Bn256Test.java)
+[Bn256Test.java](https://github.com/herumi/mcl/blob/master/ffi/java/Bn256Test.java)

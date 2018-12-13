@@ -363,7 +363,7 @@ K. Shimizu, and T. Teruya. ASIACCS 2018
 * [she-api(Japanese)](https://github.com/herumi/mcl/blob/master/misc/she/she-api-ja.md)
 
 # Java API
-See [java.md](https://github.com/herumi/mcl/blob/master/java/java.md)
+See [java.md](https://github.com/herumi/mcl/blob/master/ffi/java/java.md)
 
 # License
 
