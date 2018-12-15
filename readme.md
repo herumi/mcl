@@ -233,12 +233,15 @@ bn384.hpp     |BN381_1, BLS12_381, BN254|   48    |   48    |
 * Define `MCLBN_FR_UNIT_SIZE` and `MCLBN_FP_UNIT_SIZE` and include bn.h
 * set `MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE` unless `MCLBN_FR_UNIT_SIZE` is defined
 
+
 library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|
+------------------|------------------|------------------|
                   | sizeof Fr        |  sizeof Fp       |
 ------------------|------------------|------------------|
 libmclbn256.a     |          4       |         4        |
 libmclbn384_256.a |          4       |         6        |
 libmclbn384.a     |          6       |         6        |
+
 
 * libmclbn*.a ; static C library
 * libmclbn*\_dy.so ; shared C library
@@ -249,7 +252,7 @@ is defined as `MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE`.
 This parameter is used to make sure that the values are the same when the library is built and used.
 
 ### shared library name
-If you want to remove `_dy` of so files, then `makeSHARE_BASENAME\_SUF=`.
+If you want to remove `_dy` of so files, then `makeSHARE_BASENAME_SUF=`.
 
 # How to initialize pairing library
 Call `mcl::bn256::initPairing` before calling any operations.
@@ -321,10 +324,14 @@ Use `Fp12::mulGeneric` for x in Fp12 - GT.
 
 ## Map To points
 
-* mapToG1(G1& P, const Fp& x);
-* mapToG2(G2& P, const Fp2& x);
+Use these functions to make a point of G1 and G2.
 
-These functions maps x into Gi according to [_Faster hashing to G2_].
+* mapToG1(G1& P, const Fp& x); // assume x != 0
+* mapToG2(G2& P, const Fp2& x);
+* hashAndMapToG1(G1& P, const void *buf, size_t bufSize); // set P by the hash value of [buf, bufSize)
+* hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
+
+These functions maps x into Gi according to [\[_Faster hashing to G2_\]].
 
 ## String format of G1 and G2
 G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
