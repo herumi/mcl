@@ -236,7 +236,7 @@ bn384.hpp     |BN381_1, BLS12_381, BN254|   48    |   48    |
 
 library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|
 ------------------|------------------|------------------|
-                  | sizeof Fr        |  sizeof Fp       |
+sizeof            | Fr               |  Fp              |
 ------------------|------------------|------------------|
 libmclbn256.a     |          4       |         4        |
 libmclbn384_256.a |          4       |         6        |
