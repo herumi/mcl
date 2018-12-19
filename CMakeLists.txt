@@ -92,9 +92,10 @@ include_directories(
 add_library(mcl STATIC ${SRCS})
 add_library(mcl_dy SHARED ${SRCS})
 target_link_libraries(mcl_dy ${LIBS})
-set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl)
 if(NOT USE_OLD_SHARED_NAME)
-	set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl)
+	set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl VERSION 1.0.0 SOVERSION 1)
+	# For semantics of ABI compatibility including when you must bump SOVERSION, see:
+	# https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B#The_Do.27s_and_Don.27ts
 endif()
 
 file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h)
