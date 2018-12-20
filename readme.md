@@ -111,6 +111,18 @@ git clone git://github.com/herumi/cybozulib_ext ; for only Windows
 ```
 * Cybozulib\_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
 
+# (Option) Without GMP
+```
+make MCL_USE_GMP=0
+```
+Define `MCL_USE_VINT` before including `bn.hpp`
+
+# (Option) Without Openssl
+```
+make MCL_USE_OPENSSL=0
+```
+Define `MCL_DONT_USE_OPENSSL` before including `bn.hpp`
+
 # Build and test on x86-64 Linux, macOS, ARM and ARM64 Linux
 To make lib/libmcl.a and test it:
 ```
