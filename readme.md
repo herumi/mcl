@@ -10,8 +10,8 @@ mcl is a library for pairing-based cryptography.
 The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-* The default name of the shared library is renamed fromlibmcl_dy.a to libmcl.a.
-    * Use `cmake -DUSE_OLD_SHARED_NAME=ON` if you want to use the old name.
+* (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
+    * The option SHARE_BASENAME_SUF is removed
 * 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
 * break backward compatibility of mapToGi for BLS12. A map-to-function for BN is used.
 If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but this will be removed in the future.
@@ -231,7 +231,7 @@ finalExp 546.259Kclk
 ## C++ library
 
 * libmcl.a ; static C++ library of mcl
-* libmcl\_dy.so ; shared C++ library of mcl
+* libmcl.so ; shared C++ library of mcl
 * the default parameter of curveType is BN254
 
 header        |support curveType        |sizeof Fr|sizeof Fp|
@@ -255,15 +255,12 @@ libmclbn384.a     |          6       |         6        |
 
 
 * libmclbn*.a ; static C library
-* libmclbn*\_dy.so ; shared C library
+* libmclbn*.so ; shared C library
 
 ### 2nd argument of `mclBn_init`
 Specify `MCLBN_COMPILED_TIME_VAR` to 2nd argument of `mclBn_init`, which
 is defined as `MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE`.
 This parameter is used to make sure that the values are the same when the library is built and used.
-
-### shared library name
-If you want to remove `_dy` of so files, then `makeSHARE_BASENAME_SUF=`.
 
 # How to initialize pairing library
 Call `mcl::bn256::initPairing` before calling any operations.

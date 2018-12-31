@@ -12,11 +12,6 @@ option(
 	"download cybozulib_ext"
 	OFF
 )
-option(
-	USE_OLD_SHARED_NAME
-	"add '_dy' of shared library name"
-	OFF
-)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -92,19 +87,15 @@ include_directories(
 add_library(mcl STATIC ${SRCS})
 add_library(mcl_dy SHARED ${SRCS})
 target_link_libraries(mcl_dy ${LIBS})
-if(NOT USE_OLD_SHARED_NAME)
-	set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl VERSION 1.0.0 SOVERSION 1)
-	# For semantics of ABI compatibility including when you must bump SOVERSION, see:
-	# https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B#The_Do.27s_and_Don.27ts
-endif()
+set_target_properties(mcl_dy PROPERTIES OUTPUT_NAME mcl VERSION 1.0.0 SOVERSION 1)
+# For semantics of ABI compatibility including when you must bump SOVERSION, see:
+# https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B#The_Do.27s_and_Don.27ts
 
 file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h)
 file(GLOB CYBOZULIB_HEADERS include/cybozu/*.hpp)
 
 install(TARGETS mcl DESTINATION lib)
-if(NOT MSVC)
 install(TARGETS mcl_dy DESTINATION lib)
-endif()
 install(FILES ${MCL_HEADERS} DESTINATION include/mcl)
 install(FILES include/mcl/impl/bn_c_impl.hpp DESTINATION include/mcl/impl)
 install(FILES ${CYBOZULIB_HEADERS} DESTINATION include/cybozu)
