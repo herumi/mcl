@@ -1,13 +1,11 @@
 package mcl
 
 /*
-#cgo CFLAGS:-I../../../include
-#cgo LDFLAGS:-L../../../lib
 #cgo bn256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=4
-#cgo bn256 LDFLAGS:-lmclbn256 -lmcl
 #cgo bn384 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6
-#cgo bn384 LDFLAGS:-lmclbn384 -lmcl
 #cgo bn384_256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6 -DMCLBN_FR_UNIT_SIZE=4
+#cgo bn256 LDFLAGS:-lmclbn256 -lmcl
+#cgo bn384 LDFLAGS:-lmclbn384 -lmcl
 #cgo bn384_256 LDFLAGS:-lmclbn384_256 -lmcl
 #include <mcl/bn.h>
 */

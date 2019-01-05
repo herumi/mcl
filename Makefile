@@ -206,16 +206,17 @@ asm: $(LLVM_SRC)
 $(LOW_ASM_OBJ): $(LOW_ASM_SRC)
 	$(ASM) $<
 
-# set PATH for mingw, set LD_RUN_PATH is for other env
+# set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"
+PATH_VAL=$$PATH:$(COMMON_LIB_PATH) LD_LIBRARY_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L../../../lib"
 test_go256: $(MCL_SLIB) $(BN256_SLIB)
-	cd ffi/go/mcl && env PATH=$$PATH:$(COMMON_LIB_PATH) LD_RUN_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) go test -tags bn256 .
+	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn256 .
 
 test_go384: $(MCL_SLIB) $(BN384_SLIB)
-	cd ffi/go/mcl && env PATH=$$PATH:$(COMMON_LIB_PATH) LD_RUN_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) go test -tags bn384 .
+	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn384 .
 
 test_go384_256: $(MCL_SLIB) $(BN384_256_SLIB)
-	cd ffi/go/mcl && env PATH=$$PATH:$(COMMON_LIB_PATH) LD_RUN_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) go test -tags bn384_256 .
+	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn384_256 .
 
 test_go:
 	$(MAKE) test_go256
@@ -333,7 +334,7 @@ update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(EXE_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll lib/*.a
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(LLVM_SRC) $(FUNC_LIST) src/*.ll lib/*.a
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
