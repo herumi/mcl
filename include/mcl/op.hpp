@@ -127,6 +127,15 @@ typedef int (*int2u)(Unit*, const Unit*);
 typedef Unit (*u1uII)(Unit*, Unit, Unit);
 typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
 
+/*
+	disable -Wcast-function-type
+	the number of arguments of some JIT functions is smaller than that of T
+*/
+template<class T, class S>
+T func_ptr_cast(S func)
+{
+	return reinterpret_cast<T>(reinterpret_cast<void*>(func));
+}
 struct Block {
 	const Unit *p; // pointer to original FpT.v_
 	size_t n;

@@ -151,24 +151,24 @@ public:
 	{
 		const mcl::fp::Op& op = Fp::getOp();
 #ifdef MCL_XBYAK_DIRECT_CALL
-		add = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addA_;
+		add = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_addA_);
 		if (add == 0) add = addC;
-		sub = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subA_;
+		sub = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subA_);
 		if (sub == 0) sub = subC;
-		mod = (void (*)(Fp&, const FpDblT&))op.fpDbl_modA_;
+		mod = fp::func_ptr_cast<void (*)(Fp&, const FpDblT&)>(op.fpDbl_modA_);
 		if (mod == 0) mod = modC;
-		addPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_addPre;
+		addPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_addPre);
 		if (addPre == 0) addPre = addPreC;
-		subPre = (void (*)(FpDblT&, const FpDblT&, const FpDblT&))op.fpDbl_subPre;
+		subPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subPre);
 		if (subPre == 0) subPre = subPreC;
 #endif
 		if (op.fpDbl_mulPreA_) {
-			mulPre = (void (*)(FpDblT&, const Fp&, const Fp&))op.fpDbl_mulPreA_;
+			mulPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&, const Fp&)>(op.fpDbl_mulPreA_);
 		} else {
 			mulPre = mulPreC;
 		}
 		if (op.fpDbl_sqrPreA_) {
-			sqrPre = (void (*)(FpDblT&, const Fp&))op.fpDbl_sqrPreA_;
+			sqrPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&)>(op.fpDbl_sqrPreA_);
 		} else {
 			sqrPre = sqrPreC;
 		}
@@ -387,19 +387,19 @@ public:
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
 #ifdef MCL_XBYAK_DIRECT_CALL
-		add = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_addA_;
+		add = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_addA_);
 		if (add == 0) add = addC;
-		sub = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_subA_;
+		sub = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_subA_);
 		if (sub == 0) sub = subC;
-		neg = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_negA_;
+		neg = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_negA_);
 		if (neg == 0) neg = negC;
-		mul = (void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y))op.fp2_mulA_;
+		mul = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_mulA_);
 		if (mul == 0) mul = mulC;
-		sqr = (void (*)(Fp2T& y, const Fp2T& x))op.fp2_sqrA_;
+		sqr = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_sqrA_);
 		if (sqr == 0) sqr = sqrC;
+		mul_xi = fp::func_ptr_cast<void (*)(Fp2T&, const Fp2T&)>(op.fp2_mul_xiA_);
 #endif
 		op.fp2_inv = fp2_invW;
-		mul_xi = (void (*)(Fp2T&, const Fp2T&))op.fp2_mul_xiA_;
 		if (mul_xi == 0) {
 			if (op.xi_a == 1) {
 				mul_xi = fp2_mul_xi_1_1iC;
@@ -688,7 +688,7 @@ struct Fp2DblT {
  	{
 		const mcl::fp::Op& op = Fp::getOp();
 		if (op.fp2Dbl_mulPreA_) {
-			mulPre = (void (*)(Fp2DblT&, const Fp2&, const Fp2&))op.fp2Dbl_mulPreA_;
+			mulPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&, const Fp2&)>(op.fp2Dbl_mulPreA_);
 		} else {
 			if (op.isFullBit) {
 				mulPre = fp2Dbl_mulPreW<true>;
@@ -697,7 +697,7 @@ struct Fp2DblT {
 			}
 		}
 		if (op.fp2Dbl_sqrPreA_) {
-			sqrPre = (void (*)(Fp2DblT&, const Fp2&))op.fp2Dbl_sqrPreA_;
+			sqrPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&)>(op.fp2Dbl_sqrPreA_);
 		} else {
 			if (op.isFullBit) {
 				sqrPre = fp2Dbl_sqrPreW<true>;

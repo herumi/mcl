@@ -376,7 +376,7 @@ private:
 		op.fp_mulA_ = gen_mul();
 		prof_.set("Fp_mul", getCurr());
 		if (op.fp_mulA_) {
-			op.fp_mul = reinterpret_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
+			op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
 		}
 		op.fp_sqrA_ = gen_sqr();
 		prof_.set("Fp_sqr", getCurr());
