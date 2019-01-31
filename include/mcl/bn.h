@@ -94,8 +94,7 @@ typedef struct {
 } mclBnFp;
 
 typedef struct {
-	mclBnFp a;
-	mclBnFp b;
+	mclBnFp d[2];
 } mclBnFp2;
 
 #endif
