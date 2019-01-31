@@ -307,19 +307,20 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
 	}
-	void init(Op& op)
+	bool init(Op& op)
 	{
+		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return false;
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
 		init_inner(op);
 //		printf("code size=%d\n", (int)getSize());
 		setProtectModeRE(); // set read/exec memory
+		return true;
 	}
 private:
 	void init_inner(Op& op)
 	{
 		op_ = &op;
-		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return;
 		L(pL_);
 		p_ = reinterpret_cast<const uint64_t*>(getCurr());
 		for (size_t i = 0; i < op.N; i++) {

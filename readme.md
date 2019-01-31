@@ -403,6 +403,10 @@ This library contains some part of the followings software licensed by BSD-3-Cla
 * [_Skew Frobenius Map and Efficient Scalar Multiplication for Pairing–Based Cryptography_](https://www.researchgate.net/publication/221282560_Skew_Frobenius_Map_and_Efficient_Scalar_Multiplication_for_Pairing-Based_Cryptography),
 Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
+# History
+
+* 2019/Jan/31 fix crash on x64-CPU without AVX
+
 # Author
 
 光成滋生 MITSUNARI Shigeo(herumi@nifty.com)

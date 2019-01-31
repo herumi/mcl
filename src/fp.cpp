@@ -318,9 +318,9 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return true;
 #ifdef MCL_USE_XBYAK
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
-	op.fg->init(op);
+	bool useXbyak = op.fg->init(op);
 
-	if (op.isMont && N <= 4) {
+	if (useXbyak && op.isMont && N <= 4) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
