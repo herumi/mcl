@@ -560,3 +560,71 @@ CYBOZU_TEST_AUTO(setRandFunc)
 		}
 	}
 }
+
+CYBOZU_TEST_AUTO(Fp)
+{
+	mclBnFp x1, x2;
+	char buf[1024];
+	int ret = mclBnFp_setHashOf(&x1, "abc", 3);
+	CYBOZU_TEST_ASSERT(ret == 0);
+	mclSize n = mclBnFp_serialize(buf, sizeof(buf), &x1);
+	CYBOZU_TEST_ASSERT(n > 0);
+	n = mclBnFp_deserialize(&x2, buf, n);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x1, &x2));
+	for (size_t i = 0; i < n; i++) {
+		buf[i] = char(i);
+	}
+	ret = mclBnFp_setLittleEndian(&x1, buf, n);
+	CYBOZU_TEST_ASSERT(ret == 0);
+	memset(buf, 0, sizeof(buf));
+	n = mclBnFp_serialize(buf, sizeof(buf), &x1);
+	CYBOZU_TEST_ASSERT(n > 0);
+	for (size_t i = 0; i < n - 1; i++) {
+		CYBOZU_TEST_EQUAL(buf[i], char(i));
+	}
+	mclBnFp_clear(&x1);
+	memset(&x2, 0, sizeof(x2));
+	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x1, &x2));
+}
+
+CYBOZU_TEST_AUTO(Fp2)
+{
+	mclBnFp2 x1, x2;
+	char buf[1024];
+	int ret = mclBnFp_setHashOf(&x1.a, "abc", 3);
+	CYBOZU_TEST_ASSERT(ret == 0);
+	ret = mclBnFp_setHashOf(&x1.b, "xyz", 3);
+	CYBOZU_TEST_ASSERT(ret == 0);
+	mclSize n = mclBnFp2_serialize(buf, sizeof(buf), &x1);
+	CYBOZU_TEST_ASSERT(n > 0);
+	n = mclBnFp2_deserialize(&x2, buf, n);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x1, &x2));
+	mclBnFp2_clear(&x1);
+	memset(&x2, 0, sizeof(x2));
+	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x1, &x2));
+}
+
+CYBOZU_TEST_AUTO(mapToG1)
+{
+	mclBnFp x;
+	mclBnG1 P1, P2;
+	mclBnFp_setHashOf(&x, "abc", 3);
+	int ret = mclBnFp_mapToG1(&P1, &x);
+	CYBOZU_TEST_ASSERT(ret == 0);
+	mclBnG1_hashAndMapTo(&P2, "abc", 3);
+	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&P1, &P2));
+}
+
+CYBOZU_TEST_AUTO(mapToG2)
+{
+	mclBnFp2 x;
+	mclBnG2 P1, P2;
+	mclBnFp_setHashOf(&x.a, "abc", 3);
+	mclBnFp_clear(&x.b);
+	int ret = mclBnFp2_mapToG2(&P1, &x);
+	CYBOZU_TEST_ASSERT(ret == 0);
+	mclBnG2_hashAndMapTo(&P2, "abc", 3);
+	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&P1, &P2));
+}

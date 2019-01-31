@@ -68,6 +68,8 @@ typedef struct mclBnFr mclBnFr;
 typedef struct mclBnG1 mclBnG1;
 typedef struct mclBnG2 mclBnG2;
 typedef struct mclBnGT mclBnGT;
+typedef struct mclBnFp mclBnFp;
+typedef struct mclBnFp2 mclBnFp2;
 
 #else
 
@@ -86,6 +88,15 @@ typedef struct {
 typedef struct {
 	uint64_t d[MCLBN_FP_UNIT_SIZE * 12];
 } mclBnGT;
+
+typedef struct {
+	uint64_t d[MCLBN_FP_UNIT_SIZE];
+} mclBnFp;
+
+typedef struct {
+	mclBnFp a;
+	mclBnFp b;
+} mclBnFp2;
 
 #endif
 
@@ -168,6 +179,8 @@ MCLBN_DLL_API mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize b
 MCLBN_DLL_API mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
 MCLBN_DLL_API mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
 MCLBN_DLL_API mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API mclSize mclBnFp2_deserialize(mclBnFp2 *x, const void *buf, mclSize bufSize);
 
 /*
 	serialize
@@ -177,6 +190,8 @@ MCLBN_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mcl
 MCLBN_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
 MCLBN_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
 MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
+MCLBN_DLL_API mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
+MCLBN_DLL_API mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x);
 
 /*
 	set string
@@ -202,6 +217,8 @@ MCLBN_DLL_API mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnG
 
 // set zero
 MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
+MCLBN_DLL_API void mclBnFp_clear(mclBnFp *x);
+MCLBN_DLL_API void mclBnFp2_clear(mclBnFp2 *x);
 
 // set x to y
 MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
@@ -209,12 +226,16 @@ MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 
 // mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
 MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
 MCLBN_DLL_API int mclBnFr_isValid(const mclBnFr *x);
 MCLBN_DLL_API int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API int mclBnFr_isZero(const mclBnFr *x);
 MCLBN_DLL_API int mclBnFr_isOne(const mclBnFr *x);
+
+MCLBN_DLL_API int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y);
+MCLBN_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
 
 #ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
@@ -234,7 +255,12 @@ MCLBN_DLL_API void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *
 // hash(s) and set x
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
+MCLBN_DLL_API int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
 
+// map x to y
+// return 0 if success else -1
+MCLBN_DLL_API int mclBnFp_mapToG1(mclBnG1 *y, const mclBnFp *x);
+MCLBN_DLL_API int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x);
 
 MCLBN_DLL_API void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 MCLBN_DLL_API void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);

@@ -34,6 +34,12 @@ static const Fp12 *cast(const mclBnGT *p) { return reinterpret_cast<const Fp12*>
 static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
 static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
 
+static Fp2 *cast(mclBnFp2 *p) { return reinterpret_cast<Fp2*>(p); }
+static const Fp2 *cast(const mclBnFp2 *p) { return reinterpret_cast<const Fp2*>(p); }
+
+static Fp *cast(mclBnFp *p) { return reinterpret_cast<Fp*>(p); }
+static const Fp *cast(const mclBnFp *p) { return reinterpret_cast<const Fp*>(p); }
+
 template<class T>
 int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
 {
@@ -523,5 +529,71 @@ void mclBn_verifyOrderG1(int doVerify)
 void mclBn_verifyOrderG2(int doVerify)
 {
 	verifyOrderG2(doVerify != 0);
+}
+
+mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize)
+{
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
+}
+
+mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x)
+{
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
+}
+
+void mclBnFp_clear(mclBnFp *x)
+{
+	cast(x)->clear();
+}
+
+int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize)
+{
+	cast(x)->setArrayMask((const char *)buf, bufSize);
+	return 0;
+}
+
+int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y)
+{
+	return *cast(x) == *cast(y);
+}
+
+int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize)
+{
+	cast(x)->setHashOf(buf, bufSize);
+	return 0;
+}
+
+int mclBnFp_mapToG1(mclBnG1 *y, const mclBnFp *x)
+{
+	bool b;
+	mapToG1(&b, *cast(y), *cast(x));
+	return b ? 0 : -1;
+}
+
+mclSize mclBnFp2_deserialize(mclBnFp2 *x, const void *buf, mclSize bufSize)
+{
+	return (mclSize)cast(x)->deserialize(buf, bufSize);
+}
+
+mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x)
+{
+	return (mclSize)cast(x)->serialize(buf, maxBufSize);
+}
+
+void mclBnFp2_clear(mclBnFp2 *x)
+{
+	cast(x)->clear();
+}
+
+int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y)
+{
+	return *cast(x) == *cast(y);
+}
+
+int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x)
+{
+	bool b;
+	mapToG2(&b, *cast(y), *cast(x));
+	return b ? 0 : -1;
 }
 
