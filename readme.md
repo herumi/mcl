@@ -406,7 +406,7 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 # History
 
 * 2019/Jan/31 add mclBnFp_mapToG1, mclBnFp2_mapToG2
-* 2019/Jan/31 fix crash on x64-CPU without AVX
+* 2019/Jan/31 fix crash on x64-CPU without AVX (thanks to mortdeus)
 
 # Author
 
