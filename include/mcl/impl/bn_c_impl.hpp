@@ -77,12 +77,17 @@ int mclBn_getOpUnitSize()
 
 int mclBn_getG1ByteSize()
 {
-	return (int)Fp::getByteSize();
+	return mclBn_getFpByteSize();
 }
 
 int mclBn_getFrByteSize()
 {
 	return (int)Fr::getByteSize();
+}
+
+int mclBn_getFpByteSize()
+{
+	return (int)Fp::getByteSize();
 }
 
 mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize)

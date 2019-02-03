@@ -156,6 +156,10 @@ MCLBN_DLL_API int mclBn_getG1ByteSize(void);
 	return bytes for serialized Fr
 */
 MCLBN_DLL_API int mclBn_getFrByteSize(void);
+/*
+	return bytes for serialized Fp
+*/
+MCLBN_DLL_API int mclBn_getFpByteSize(void);
 
 /*
 	return decimal string of the order of the curve(=the characteristic of Fr)
