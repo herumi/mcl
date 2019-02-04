@@ -352,6 +352,32 @@ getStr() method gets
 * `2 <x>` ; compressed format for even y
 * `3 <x>` ; compressed format for odd y
 
+## Serialization format of G1 and G2
+
+pseudo-code to serialize of p
+```
+if bit-length(p) % 8 != 0:
+  size = Fp::getByteSize()
+  if p is zero:
+    return [0] * size
+  else:
+    s = x.serialize()
+    # x in Fp2 is odd <=> x.a is odd
+    if y is odd:
+      s[byte-length(s) - 1] |= 0x80
+    return s
+else:
+  size = Fp::getByteSize() + 1
+  if p is zero:
+    return [0] * size
+  else:
+    s = x.serialize()
+    if y is odd:
+      return 2:s
+    else:
+      return 3:s
+```
+
 ## Verify an element in G2
 `G2::isValid()` checks that the element is in the curve of G2 and the order of it is r for subgroup attack.
 `G2::set()`, `G2::setStr` and `operator<<` also check the order.
