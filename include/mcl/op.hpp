@@ -59,7 +59,7 @@ namespace mcl {
 	IoArray
 		array of Unit(fixed size = Fp::getByteSize())
 	IoArrayRaw
-		array of Unit(fixed size = Fp::getByteSize()) without Montgomery convresion
+		array of Unit(fixed size = Fp::getByteSize()) without Montgomery conversion
 
 	// for Ec::setIoMode()
 	IoEcAffine(default)
