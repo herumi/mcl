@@ -11,5 +11,7 @@ addons:
 script:
   - make test_ci DEBUG=1 -j3
   - make clean
+  - make test_ci CFLAGS_USER=-DMCL_DONT_USE_XBYAK -j3
+  - make clean
   - make test_go
  
