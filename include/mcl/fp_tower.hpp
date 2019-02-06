@@ -386,6 +386,7 @@ public:
 //		assert(Fp::maxSize <= 256);
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
+		mul_xi = 0;
 #ifdef MCL_XBYAK_DIRECT_CALL
 		add = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_addA_);
 		if (add == 0) add = addC;
