@@ -489,7 +489,6 @@ public:
 	}
 	static inline void addProj(EcT& R, const EcT& P, const EcT& Q, bool isPzOne, bool isQzOne)
 	{
-(void)isPzOne;
 		Fp r, PyQz, v, A, vv;
 		if (isQzOne) {
 			r = P.x;
@@ -498,8 +497,13 @@ public:
 			Fp::mul(r, P.x, Q.z);
 			Fp::mul(PyQz, P.y, Q.z);
 		}
-		Fp::mul(A, Q.y, P.z);
-		Fp::mul(v, Q.x, P.z);
+		if (isPzOne) {
+			A = Q.y;
+			v = Q.x;
+		} else {
+			Fp::mul(A, Q.y, P.z);
+			Fp::mul(v, Q.x, P.z);
+		}
 		v -= r;
 		if (v.isZero()) {
 			if (A == PyQz) {
@@ -517,10 +521,19 @@ public:
 		if (isQzOne) {
 			R.z = P.z;
 		} else {
-			Fp::mul(R.z, P.z, Q.z);
+			if (isPzOne) {
+				R.z = Q.z;
+			} else {
+				Fp::mul(R.z, P.z, Q.z);
+			}
 		}
-		A *= R.z;
-		R.z *= vv;
+		// R.z = 1 if isPzOne && isQzOne
+		if (isPzOne && isQzOne) {
+			R.z = vv;
+		} else {
+			A *= R.z;
+			R.z *= vv;
+		}
 		A -= vv;
 		vv *= PyQz;
 		A -= r;
