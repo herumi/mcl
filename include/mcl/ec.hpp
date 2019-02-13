@@ -487,9 +487,9 @@ public:
 		H3 *= S1;
 		Fp::sub(R.y, U1, H3);
 	}
-	static inline void addProj(EcT& R, const EcT& P, const EcT& Q)
+	static inline void addProj(EcT& R, const EcT& P, const EcT& Q, bool isPzOne, bool isQzOne)
 	{
-		const bool isQzOne = Q.z.isOne();
+(void)isPzOne;
 		Fp r, PyQz, v, A, vv;
 		if (isQzOne) {
 			r = P.x;
@@ -531,17 +531,14 @@ public:
 		R.y -= vv;
 	}
 #endif
-	static inline void add(EcT& R, const EcT& P0, const EcT& Q0)
-	{
-		if (P0.isZero()) { R = Q0; return; }
-		if (Q0.isZero()) { R = P0; return; }
-		if (&P0 == &Q0) {
-			dblNoVerifyInf(R, P0);
+	static inline void add(EcT& R, const EcT& P, const EcT& Q) {
+		if (P.isZero()) { R = Q; return; }
+		if (Q.isZero()) { R = P; return; }
+		if (&P == &Q) {
+			dblNoVerifyInf(R, P);
 			return;
 		}
 #ifdef MCL_EC_USE_AFFINE
-		const EcT& P(P0);
-		const EcT& Q(Q0);
 		Fp t;
 		Fp::neg(t, Q.y);
 		if (P.y == t) { R.clear(); return; }
@@ -563,22 +560,14 @@ public:
 		Fp::sub(R.y, s, P.y);
 		R.x = x3;
 #else
-		const EcT *pP = &P0;
-		const EcT *pQ = &Q0;
-		bool isPzOne = P0.z.isOne();
-		bool isQzOne = Q0.z.isOne();
-		if (pP->z.isOne()) {
-			fp::swap_(pP, pQ);
-			std::swap(isPzOne, isQzOne);
-		}
-		const EcT& P(*pP);
-		const EcT& Q(*pQ);
+		bool isPzOne = P.z.isOne();
+		bool isQzOne = Q.z.isOne();
 		switch (mode_) {
 		case ec::Jacobi:
 			addJacobi(R, P, Q, isPzOne, isQzOne);
 			break;
 		case ec::Proj:
-			addProj(R, P, Q);
+			addProj(R, P, Q, isPzOne, isQzOne);
 			break;
 		}
 #endif
