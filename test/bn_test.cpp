@@ -375,6 +375,8 @@ CYBOZU_TEST_AUTO(naive)
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
 		testBench(P, Q);
+		benchAddDblG1();
+		benchAddDblG2();
 	}
 	int count = (int)clk.getCount();
 	if (count) {

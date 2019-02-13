@@ -23,11 +23,11 @@ namespace mcl {
 namespace ec {
 
 enum Mode {
-	Jacobi,
-	Proj
+	Jacobi = 0,
+	Proj = 1
 };
 
-} // mcl::ecl
+} // mcl::ec
 
 /*
 	elliptic curve
@@ -423,27 +423,41 @@ public:
 		dblNoVerifyInf(R, P);
 	}
 #ifndef MCL_EC_USE_AFFINE
-	static inline void addJacobi(EcT& R, const EcT& P, const EcT& Q)
+	static inline void addJacobi(EcT& R, const EcT& P, const EcT& Q, bool isPzOne, bool isQzOne)
 	{
-		const bool isQzOne = Q.z.isOne();
 		Fp r, U1, S1, H, H3;
-		Fp::sqr(r, P.z);
+		if (isPzOne) {
+			// r = 1;
+		} else {
+			Fp::sqr(r, P.z);
+		}
 		if (isQzOne) {
 			U1 = P.x;
-			Fp::mul(H, Q.x, r);
+			if (isPzOne) {
+				H = Q.x;
+			} else {
+				Fp::mul(H, Q.x, r);
+			}
 			H -= U1;
-			r *= P.z;
 			S1 = P.y;
 		} else {
 			Fp::sqr(S1, Q.z);
 			Fp::mul(U1, P.x, S1);
-			Fp::mul(H, Q.x, r);
+			if (isPzOne) {
+				H = Q.x;
+			} else {
+				Fp::mul(H, Q.x, r);
+			}
 			H -= U1;
-			r *= P.z;
 			S1 *= Q.z;
 			S1 *= P.y;
 		}
-		r *= Q.y;
+		if (isPzOne) {
+			r = Q.y;
+		} else {
+			r *= P.z;
+			r *= Q.y;
+		}
 		r -= S1;
 		if (H.isZero()) {
 			if (r.isZero()) {
@@ -453,11 +467,13 @@ public:
 			}
 			return;
 		}
-		if (isQzOne) {
-			Fp::mul(R.z, P.z, H);
+		if (isPzOne) {
+			R.z = H;
 		} else {
-			Fp::mul(R.z, P.z, Q.z);
-			R.z *= H;
+			Fp::mul(R.z, P.z, H);
+		}
+		if (!isQzOne) {
+			R.z *= Q.z;
 		}
 		Fp::sqr(H3, H); // H^2
 		Fp::sqr(R.y, r); // r^2
@@ -549,14 +565,17 @@ public:
 #else
 		const EcT *pP = &P0;
 		const EcT *pQ = &Q0;
+		bool isPzOne = P0.z.isOne();
+		bool isQzOne = Q0.z.isOne();
 		if (pP->z.isOne()) {
 			fp::swap_(pP, pQ);
+			std::swap(isPzOne, isQzOne);
 		}
 		const EcT& P(*pP);
 		const EcT& Q(*pQ);
 		switch (mode_) {
 		case ec::Jacobi:
-			addJacobi(R, P, Q);
+			addJacobi(R, P, Q, isPzOne, isQzOne);
 			break;
 		case ec::Proj:
 			addProj(R, P, Q);

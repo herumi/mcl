@@ -1,5 +1,58 @@
 #include <mcl/lagrange.hpp>
 
+void benchAddDblG1()
+{
+	puts("benchAddDblG1");
+	const int C = 100000;
+	G1 P1, P2, P3;
+	hashAndMapToG1(P1, "a");
+	hashAndMapToG1(P2, "b");
+	P1 += P2;
+	P2 += P1;
+	printf("z.isOne()=%d %d\n", P1.z.isOne(), P2.z.isOne());
+	CYBOZU_BENCH_C("G1::add(1)", C, G1::add, P3, P1, P2);
+	P1.normalize();
+	printf("z.isOne()=%d %d\n", P1.z.isOne(), P2.z.isOne());
+	CYBOZU_BENCH_C("G1::add(2)", C, G1::add, P3, P1, P2);
+	CYBOZU_BENCH_C("G1::add(3)", C, G1::add, P3, P2, P1);
+	P2.normalize();
+	printf("z.isOne()=%d %d\n", P1.z.isOne(), P2.z.isOne());
+	CYBOZU_BENCH_C("G1::add(4)", C, G1::add, P3, P1, P2);
+	P1 = P3;
+	printf("z.isOne()=%d\n", P1.z.isOne());
+	CYBOZU_BENCH_C("G1::dbl(1)", C, G1::dbl, P3, P1);
+	P1.normalize();
+	printf("z.isOne()=%d\n", P1.z.isOne());
+	CYBOZU_BENCH_C("G1::dbl(2)", C, G1::dbl, P3, P1);
+}
+
+void benchAddDblG2()
+{
+	puts("benchAddDblG2");
+	const int C = 100000;
+	G2 P1, P2, P3;
+	hashAndMapToG2(P1, "a");
+	hashAndMapToG2(P2, "b");
+	P1 += P2;
+	P2 += P1;
+	printf("z.isOne()=%d %d\n", P1.z.isOne(), P2.z.isOne());
+	CYBOZU_BENCH_C("G2::add(1)", C, G2::add, P3, P1, P2);
+	P1.normalize();
+	printf("z.isOne()=%d %d\n", P1.z.isOne(), P2.z.isOne());
+	CYBOZU_BENCH_C("G2::add(2)", C, G2::add, P3, P1, P2);
+	CYBOZU_BENCH_C("G2::add(3)", C, G2::add, P3, P2, P1);
+	P2.normalize();
+	printf("z.isOne()=%d %d\n", P1.z.isOne(), P2.z.isOne());
+	CYBOZU_BENCH_C("G2::add(4)", C, G2::add, P3, P1, P2);
+	P1 = P3;
+	printf("z.isOne()=%d\n", P1.z.isOne());
+	CYBOZU_BENCH_C("G2::dbl(1)", C, G2::dbl, P3, P1);
+	P1.normalize();
+	printf("z.isOne()=%d\n", P1.z.isOne());
+	CYBOZU_BENCH_C("G2::dbl(2)", C, G2::dbl, P3, P1);
+}
+
+
 void testBench(const G1& P, const G2& Q)
 {
 	G1 Pa;
@@ -19,34 +72,10 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("G1::mul       ", C, G1::mul, Pa, Pa, a);
 	CYBOZU_BENCH_C("G1::add       ", C, G1::add, Pa, Pa, P);
 	CYBOZU_BENCH_C("G1::dbl       ", C, G1::dbl, Pa, Pa);
-	{
-		G1 P1 = Pa, P2 = Pa + P, P3;
-		CYBOZU_BENCH_C("G1::add(1)    ", C3, G1::add, P3, P1, P2);
-		P1.normalize();
-		CYBOZU_BENCH_C("G1::add(2)    ", C3, G1::add, P3, P1, P2);
-		P2.normalize();
-		CYBOZU_BENCH_C("G1::add(3)    ", C3, G1::add, P3, P1, P2);
-		P1 = P3;
-		CYBOZU_BENCH_C("G1::dbl(1)    ", C3, G1::dbl, P3, P1);
-		P1.normalize();
-		CYBOZU_BENCH_C("G1::dbl(2)    ", C3, G1::dbl, P3, P1);
-	}
 	CYBOZU_BENCH_C("G2::mulCT     ", C, G2::mulCT, Qa, Q, a);
 	CYBOZU_BENCH_C("G2::mul       ", C, G2::mul, Qa, Qa, a);
 	CYBOZU_BENCH_C("G2::add       ", C, G2::add, Qa, Qa, Q);
 	CYBOZU_BENCH_C("G2::dbl       ", C, G2::dbl, Qa, Qa);
-	{
-		G2 Q1 = Qa, Q2 = Qa + Q, Q3;
-		CYBOZU_BENCH_C("G2::add(1)    ", C3, G2::add, Q3, Q1, Q2);
-		Q1.normalize();
-		CYBOZU_BENCH_C("G2::add(2)    ", C3, G2::add, Q3, Q1, Q2);
-		Q2.normalize();
-		CYBOZU_BENCH_C("G2::add(3)    ", C3, G2::add, Q3, Q1, Q2);
-		Q1 = Q3;
-		CYBOZU_BENCH_C("G2::dbl(1)    ", C3, G2::dbl, Q3, Q1);
-		Q1.normalize();
-		CYBOZU_BENCH_C("G2::dbl(2)    ", C3, G2::dbl, Q3, Q1);
-	}
 	CYBOZU_BENCH_C("GT::pow       ", C, GT::pow, e1, e1, a);
 //	CYBOZU_BENCH_C("GT::powGLV    ", C, BN::param.glv2.pow, e1, e1, a);
 	G1 PP;
