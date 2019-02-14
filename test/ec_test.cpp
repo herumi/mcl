@@ -160,6 +160,42 @@ struct Test {
 			Ec::mul(Q, P, 1);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}
+		{
+			Ec R2;
+			P += P;
+			Q += P;
+			CYBOZU_TEST_ASSERT(!P.z.isOne());
+			CYBOZU_TEST_ASSERT(!Q.z.isOne());
+			Ec::add(R2, P, Q);
+
+			P.normalize();
+			CYBOZU_TEST_ASSERT(P.z.isOne());
+			CYBOZU_TEST_ASSERT(!Q.z.isOne());
+			// affine + generic
+			Ec::add(R, P, Q);
+			CYBOZU_TEST_EQUAL(R, R2);
+			// generic + affine
+			Ec::add(R, Q, P);
+			CYBOZU_TEST_EQUAL(R, R2);
+
+			Q.normalize();
+			CYBOZU_TEST_ASSERT(P.z.isOne());
+			CYBOZU_TEST_ASSERT(Q.z.isOne());
+			// affine + affine
+			Ec::add(R, P, Q);
+			CYBOZU_TEST_EQUAL(R, R2);
+
+			P += P;
+			CYBOZU_TEST_ASSERT(!P.z.isOne());
+			// generic
+			Ec::dbl(R2, P);
+
+			P.normalize();
+			CYBOZU_TEST_ASSERT(P.z.isOne());
+			// affine
+			Ec::dbl(R, P);
+			CYBOZU_TEST_EQUAL(R, R2);
+		}
 	}
 
 	void mul() const
