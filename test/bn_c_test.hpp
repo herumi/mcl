@@ -2,6 +2,7 @@
 	include from bn_if256_test.cpp and bn_if384_test.cpp
 */
 #include <mcl/bn.h>
+#include <mcl/ecparam.hpp>
 #include <cybozu/test.hpp>
 #include <iostream>
 
@@ -132,7 +133,7 @@ CYBOZU_TEST_AUTO(Fr)
 	}
 }
 
-CYBOZU_TEST_AUTO(G1)
+void G1test()
 {
 	mclBnG1 x, y, z;
 	memset(&x, 0x1, sizeof(x));
@@ -149,10 +150,10 @@ CYBOZU_TEST_AUTO(G1)
 
 	char buf[1024];
 	size_t size;
-	size = mclBnG1_getStr(buf, sizeof(buf), &x, 10);
+	size = mclBnG1_getStr(buf, sizeof(buf), &y, 10);
 	CYBOZU_TEST_ASSERT(size > 0);
 	CYBOZU_TEST_EQUAL(size, strlen(buf));
-	CYBOZU_TEST_ASSERT(!mclBnG1_setStr(&y, buf, strlen(buf), 10));
+	CYBOZU_TEST_ASSERT(!mclBnG1_setStr(&x, buf, strlen(buf), 10));
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&x, &y));
 
 	mclBnG1_neg(&x, &x);
@@ -174,6 +175,11 @@ CYBOZU_TEST_AUTO(G1)
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&x, &z));
 	mclBnG1_normalize(&y, &z);
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&y, &z));
+}
+
+CYBOZU_TEST_AUTO(G1)
+{
+	G1test();
 }
 
 CYBOZU_TEST_AUTO(G2)
@@ -627,4 +633,38 @@ CYBOZU_TEST_AUTO(mapToG2)
 	CYBOZU_TEST_ASSERT(ret == 0);
 	mclBnG2_hashAndMapTo(&P2, "abc", 3);
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&P1, &P2));
+}
+
+void G1onlyTest(int curve)
+{
+	printf("curve=%d\n", curve);
+	int ret;
+	ret = mclBn_init(curve, MCLBN_COMPILED_TIME_VAR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	mclBnG1 P0;
+	ret = mclBnG1_getBasePoint(&P0);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	char buf[256];
+	ret = mclBnG1_getStr(buf, sizeof(buf), &P0, 16);
+	CYBOZU_TEST_ASSERT(ret > 0);
+	printf("basePoint=%s\n", buf);
+	G1test();
+}
+
+CYBOZU_TEST_AUTO(G1only)
+{
+	const int tbl[] = {
+		MCL_SECP192K1,
+		MCL_NIST_P192,
+		MCL_SECP224K1,
+		MCL_NIST_P224, // hashAndMapTo is error
+		MCL_SECP256K1,
+		MCL_NIST_P256,
+#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
+		MCL_SECP384R1,
+#endif
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		G1onlyTest(tbl[i]);
+	}
 }

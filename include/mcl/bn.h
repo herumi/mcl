@@ -402,6 +402,13 @@ MCLBN_DLL_API int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, 
 MCLBN_DLL_API void mclBn_verifyOrderG1(int doVerify);
 MCLBN_DLL_API void mclBn_verifyOrderG2(int doVerify);
 
+/*
+	EXPERIMENTAL
+	only for curve = MCL_SECP* or MCL_NIST*
+	return standard base point of the current elliptic curve
+*/
+MCLBN_DLL_API int mclBnG1_getBasePoint(mclBnG1 *x);
+
 #ifdef __cplusplus
 }
 #endif

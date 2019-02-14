@@ -1004,6 +1004,7 @@ struct EcParam {
 	const char *gy;
 	const char *n;
 	size_t bitSize; // bit length of p
+	int curveType;
 };
 
 } // mcl

@@ -118,9 +118,12 @@ void testMapToG1()
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
 	if (BN::param.cp.b == 2) {
+		Fp c1;
+		bool b = Fp::squareRoot(c1, -3);
+		CYBOZU_TEST_ASSERT(b);
 		CYBOZU_TEST_EXCEPTION(mapToG1(g, 0), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(mapToG1(g, BN::param.mapTo.c1_), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(mapToG1(g, -BN::param.mapTo.c1_), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapToG1(g, c1), cybozu::Exception);
+		CYBOZU_TEST_EXCEPTION(mapToG1(g, -c1), cybozu::Exception);
 	}
 #endif
 }

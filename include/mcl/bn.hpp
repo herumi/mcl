@@ -315,11 +315,18 @@ public:
 };
 
 struct MapTo {
+	enum {
+		BNtype,
+		BLS12type,
+		STD_ECtype
+	};
 	Fp c1_; // sqrt(-3)
 	Fp c2_; // (-1 + sqrt(-3)) / 2
 	mpz_class z_;
 	mpz_class cofactor_;
-	bool isBN_;
+	int type_;
+	bool useNaiveMapTo_;
+
 	int legendre(bool *pb, const Fp& x) const
 	{
 		mpz_class xx;
@@ -488,27 +495,44 @@ struct MapTo {
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
 	}
-	void init(const mpz_class& cofactor, const mpz_class &z, bool isBN, int curveType = -1)
+	/*
+		if type == STD_ECtype, then cofactor, z are not used.
+	*/
+	void init(const mpz_class& cofactor, const mpz_class &z, int curveType)
 	{
-		isBN_ = isBN;
-		if (isBN_) {
-			initBN(cofactor, z, curveType);
+		if (0 <= curveType && curveType < MCL_EC_BEGIN) {
+			type_ = curveType == MCL_BLS12_381 ? BLS12type : BNtype;
 		} else {
+			type_ = STD_ECtype;
+		}
+		if (type_ == STD_ECtype) {
+			useNaiveMapTo_ = true;
+		} else {
+			useNaiveMapTo_ = false;
+		}
+#ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
+		if (type == BLS12type) useNaiveMapTo_ = true;
+#endif
+		if (type_ == BNtype) {
+			initBN(cofactor, z, curveType);
+		} else if (type_ == BLS12type) {
 			initBLS12(z);
 		}
 	}
 	bool calcG1(G1& P, const Fp& t) const
 	{
-		if (isBN_) {
-			if (!calcBN<G1, Fp>(P, t)) return false;
-			// no subgroup
-		} else {
-#ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
+		if (useNaiveMapTo_) {
 			naiveMapTo<G1, Fp>(P, t);
-#else
+		} else {
 			if (!calcBN<G1, Fp>(P, t)) return false;
-#endif
+		}
+		switch (type_) {
+		case BNtype:
+			// no subgroup
+			break;
+		case BLS12type:
 			mulByCofactorBLS12(P, P);
+			break;
 		}
 		assert(P.isValid());
 		return true;
@@ -518,16 +542,18 @@ struct MapTo {
 	*/
 	bool calcG2(G2& P, const Fp2& t) const
 	{
-		if (isBN_) {
-			if (!calcBN<G2, Fp2>(P, t)) return false;
-			mulByCofactorBN(P, P);
-		} else {
-#ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
+		if (useNaiveMapTo_) {
 			naiveMapTo<G2, Fp2>(P, t);
-#else
+		} else {
 			if (!calcBN<G2, Fp2>(P, t)) return false;
-#endif
+		}
+		switch(type_) {
+		case BNtype:
+			mulByCofactorBN(P, P);
+			break;
+		case BLS12type:
 			mulByCofactorBLS12(P, P);
+			break;
 		}
 		assert(P.isValid());
 		return true;
@@ -1018,6 +1044,9 @@ struct Param {
 	bool useNAF;
 	local::SignVec zReplTbl;
 
+	// for initG1only
+	G1 basePoint;
+
 	void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	{
 		this->cp = cp;
@@ -1099,13 +1128,30 @@ struct Param {
 		}
 */
 		if (isBLS12) {
-			mapTo.init(0, z, false);
+			mapTo.init(0, z, cp.curveType);
 		} else {
-			mapTo.init(2 * p - r, z, true, cp.curveType);
+			mapTo.init(2 * p - r, z, cp.curveType);
 		}
 		glv1.init(r, z, isBLS12, cp.curveType);
 		glv2.init(r, z, isBLS12);
+		basePoint.clear();
 		*pb = true;
+	}
+	void initG1only(bool *pb, const mcl::EcParam& para)
+	{
+		Fp::init(pb, para.p);
+		if (!*pb) return;
+		Fr::init(pb, para.n);
+		if (!*pb) return;
+		G1::init(pb, para.a, para.b);
+		if (!*pb) return;
+		G1::setOrder(Fr::getOp().mp);
+		mapTo.init(0, 0, para.curveType);
+		Fp x0, y0;
+		x0.setStr(pb, para.gx);
+		if (!*pb) return;
+		y0.setStr(pb, para.gy);
+		basePoint.set(pb, x0, y0);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
@@ -2194,6 +2240,22 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = 
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
 #endif
+
+inline void initG1only(bool *pb, const mcl::EcParam& para)
+{
+	local::StaticVar<>::param.initG1only(pb, para);
+	if (!*pb) return;
+	G1::setMulArrayGLV(0);
+	G2::setMulArrayGLV(0);
+	Fp12::setPowArrayGLV(0);
+	G1::setCompressedExpression();
+	G2::setCompressedExpression();
+}
+
+inline const G1& getG1basePoint()
+{
+	return local::StaticVar<>::param.basePoint;
+}
 
 } } // mcl::bn
 

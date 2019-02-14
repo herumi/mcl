@@ -17,6 +17,7 @@
 	#error "not supported size"
 #endif
 #include <mcl/lagrange.hpp>
+#include <mcl/ecparam.hpp>
 using namespace mcl::bn;
 
 static Fr *cast(mclBnFr *p) { return reinterpret_cast<Fr*>(p); }
@@ -63,6 +64,13 @@ int mclBn_init(int curve, int compiledTimeVar)
 {
 	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {
 		return -(compiledTimeVar | (MCLBN_COMPILED_TIME_VAR * 100));
+	}
+	if (MCL_EC_BEGIN <= curve && curve < MCL_EC_END) {
+		const mcl::EcParam *para = mcl::getEcParam(curve);
+		if (para == 0) return -2;
+		bool b;
+		initG1only(&b, *para);
+		return b ? 0 : -1;
 	}
 	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
 	bool b;
@@ -600,5 +608,11 @@ int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x)
 	bool b;
 	mapToG2(&b, *cast(y), *cast(x));
 	return b ? 0 : -1;
+}
+
+int mclBnG1_getBasePoint(mclBnG1 *x)
+{
+	*cast(x) = mcl::bn::getG1basePoint();
+	return 0;
 }
 
