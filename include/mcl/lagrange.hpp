@@ -15,14 +15,19 @@ namespace mcl {
 template<class G, class F>
 void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 {
+	if (k == 0) {
+		*pb = false;
+		return;
+	}
+	if (k == 1) {
+		out = vec[0];
+		*pb = true;
+		return;
+	}
 	/*
 		delta_{i,S}(0) = prod_{j != i} S[j] / (S[j] - S[i]) = a / b
 		where a = prod S[j], b = S[i] * prod_{j != i} (S[j] - S[i])
 	*/
-	if (k < 2) {
-		*pb = false;
-		return;
-	}
 	F a = S[0];
 	for (size_t i = 1; i < k; i++) {
 		a *= S[i];

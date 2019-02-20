@@ -185,4 +185,6 @@ void testLagrange()
 	Fr s;
 	mcl::LagrangeInterpolation(s, x, y, k);
 	CYBOZU_TEST_EQUAL(s, c[0]);
+	mcl::LagrangeInterpolation(s, x, y, 1);
+	CYBOZU_TEST_EQUAL(s, y[0]);
 }

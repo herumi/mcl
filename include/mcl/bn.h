@@ -379,6 +379,7 @@ MCLBN_DLL_API void mclBn_precomputedMillerLoop2mixed(mclBnGT *f, const mclBnG1 *
 	Lagrange interpolation
 	recover out = y(0) by { (xVec[i], yVec[i]) }
 	return 0 if success else -1
+	@note *out = yVec[0] if k = 1
 	@note k >= 2, xVec[i] != 0, xVec[i] != xVec[j] for i != j
 */
 MCLBN_DLL_API int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k);
