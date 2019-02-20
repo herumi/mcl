@@ -187,4 +187,6 @@ void testLagrange()
 	CYBOZU_TEST_EQUAL(s, c[0]);
 	mcl::LagrangeInterpolation(s, x, y, 1);
 	CYBOZU_TEST_EQUAL(s, y[0]);
+	mcl::evaluatePolynomial(y[0], c, 1, x[0]);
+	CYBOZU_TEST_EQUAL(y[0], c[0]);
 }

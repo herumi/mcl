@@ -63,13 +63,18 @@ void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 
 /*
 	out = f(x) = c[0] + c[1] * x + c[2] * x^2 + ... + c[cSize - 1] * x^(cSize - 1)
-	@retval 0 if succeed else -1
+	@retval 0 if succeed else -1 (if cSize == 0)
 */
 template<class G, class T>
 void evaluatePolynomial(bool *pb, G& out, const G *c, size_t cSize, const T& x)
 {
-	if (cSize < 2) {
+	if (cSize == 0) {
 		*pb = false;
+		return;
+	}
+	if (cSize == 1) {
+		out = c[0];
+		*pb = true;
 		return;
 	}
 	G y = c[cSize - 1];
