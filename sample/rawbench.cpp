@@ -25,8 +25,8 @@ void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)
 
 void benchRaw(const char *p, mcl::fp::Mode mode)
 {
-	Fp::init(p, mode);
-	Fp2::init(1);
+	Fp::init(1, p, mode);
+	Fp2::init();
 	const size_t maxN = sizeof(Fp) / sizeof(Unit);
 	const mcl::fp::Op& op = Fp::getOp();
 	cybozu::XorShift rg;
