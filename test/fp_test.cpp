@@ -777,6 +777,37 @@ void serializeTest()
 	}
 }
 
+void modpTest()
+{
+	const mpz_class& p = Fp::getOp().mp;
+	const mpz_class tbl[] = {
+		0,
+		1,
+		p - 1,
+		p,
+		p + 1,
+		p * 2 - 1,
+		p * 2,
+		p * 2 + 1,
+		p * (p - 1) - 1,
+		p * (p - 1),
+		p * (p - 1) + 1,
+		p * p - 1,
+		p * p,
+		p * p + 1,
+		(mpz_class(1) << Fp::getOp().N * mcl::fp::UnitBitSize * 2) - 1,
+	};
+	mcl::Modp modp;
+	modp.init(p, Fp::getUnitSize());
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const mpz_class& x = tbl[i];
+		mpz_class r1, r2;
+		r1 = x % p;
+		modp.modp(r2, x);
+		CYBOZU_TEST_EQUAL(r1, r2);
+	}
+}
+
 #include <iostream>
 #if (defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)) && (MCL_MAX_BIT_SIZE >= 521)
 CYBOZU_TEST_AUTO(mod_NIST_P521)
@@ -886,6 +917,7 @@ void sub(mcl::fp::Mode mode)
 		getStrTest();
 		setHashOfTest();
 		serializeTest();
+		modpTest();
 	}
 	anotherFpTest(mode);
 	setArrayTest2(mode);
