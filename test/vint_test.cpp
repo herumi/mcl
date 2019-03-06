@@ -551,14 +551,70 @@ CYBOZU_TEST_AUTO(quotRem)
 			"0xfffffffffffff0000000000000000000000000000000000000000000000000000000000000001",
 			"521481209941628322292632858916605385658190900090571826892867289394157573281830188869820088065",
 		},
+		{
+			"0x1230000000000000456",
+			"0x1230000000000000457",
+			"0x1230000000000000456",
+		},
+		{
+			"0x1230000000000000456",
+			"0x1230000000000000456",
+			"0",
+		},
+		{
+			"0x1230000000000000456",
+			"0x1230000000000000455",
+			"1",
+		},
+		{
+			"0x1230000000000000456",
+			"0x2000000000000000000",
+			"0x1230000000000000456",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffff",
+			"0x80000000000000000000000000000000",
+			"0x7fffffffffffffffffffffffffffffff",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffff",
+			"0x7fffffffffffffffffffffffffffffff",
+			"1",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffff",
+			"0x70000000000000000000000000000000",
+			"0x1fffffffffffffffffffffffffffffff",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffff",
+			"0x30000000000000000000000000000000",
+			"0x0fffffffffffffffffffffffffffffff",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffff",
+			"0x10000000000000000000000000000000",
+			"0x0fffffffffffffffffffffffffffffff",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
+			"0x212ba4f27ffffff5a2c62effffffffcdb939ffffffffff8a15ffffffffffff8d",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d",
+			"0x212ba4f27ffffff5a2c62effffffffd00242ffffffffff9c39ffffffffffffb1",
+		},
 	};
-	mcl::Vint x, y, r;
+	mcl::Vint x, y, q, r1, r2;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		x.setStr(tbl[i].x);
 		y.setStr(tbl[i].y);
-		r.setStr(tbl[i].r);
-		x %= y;
-		CYBOZU_TEST_EQUAL(x, r);
+		r1.setStr(tbl[i].r);
+		mcl::Vint::divMod(&q, r2, x, y);
+		CYBOZU_TEST_EQUAL(r1, r2);
+		CYBOZU_TEST_EQUAL(x, q * y + r2);
 	}
 }
 

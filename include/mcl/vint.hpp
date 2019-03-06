@@ -568,6 +568,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	yn = getRealSize(y, yn);
 	if (x == y) {
 		assert(xn == yn);
+	x_is_y:
 		clearN(r, rn);
 		if (q) {
 			q[0] = 1;
@@ -579,6 +580,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		/*
 			if y > x then q = 0 and r = x
 		*/
+	q_is_zero:
 		copyN(r, x, xn);
 		clearN(r + xn, rn - xn);
 		if (q) clearN(q, qn);
@@ -598,11 +600,61 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		clearN(r + 1, rn - 1);
 		return;
 	}
+	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
 	assert(yn >= 2);
+	if (xn == yn) {
+		const size_t xTopBit = cybozu::bsr(x[xn - 1]);
+		if (xTopBit < yTopBit) goto q_is_zero;
+		if (yTopBit == xTopBit) {
+			int ret = compareNM(x, xn, y, yn);
+			if (ret == 0) goto x_is_y;
+			if (ret < 0) goto q_is_zero;
+			if (r) {
+				subN(r, x, y, yn);
+			}
+			if (q) {
+				q[0] = 1;
+				clearN(q + 1, qn - 1);
+			}
+			return;
+		}
+		assert(xTopBit > yTopBit);
+		// fast reduction for larger than fullbit-2 size p
+		if (yTopBit >= sizeof(T) * 8 - 3) {
+			T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
+			T qv = 0;
+			if (yTopBit == sizeof(T) * 8 - 2) {
+				copyN(xx, x, xn);
+			} else {
+				qv = x[xn - 1] >> (yTopBit + 1);
+				mulu1(xx, y, yn, qv);
+				subN(xx, x, xx, xn);
+				xn = getRealSize(xx, xn);
+			}
+			for (;;) {
+				T ret = subN(xx, xx, y, yn);
+				if (ret) {
+					addN(xx, xx, y, yn);
+					break;
+				}
+				qv++;
+				xn = getRealSize(xx, xn);
+			}
+			if (r) {
+				copyN(r, xx, xn);
+				clearN(r + xn, rn - xn);
+			}
+			if (q) {
+				q[0] = qv;
+				clearN(q + 1, qn - 1);
+			}
+			return;
+		}
+	}
 	/*
 		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
 	*/
-	const size_t shift = sizeof(T) * 8 - 1 - cybozu::bsr(y[yn - 1]);
+	const size_t shift = sizeof(T) * 8 - 1 - yTopBit;
 	T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	const T *yy;
 	if (shift) {
