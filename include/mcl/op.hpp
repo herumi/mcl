@@ -161,7 +161,8 @@ enum PrimeMode {
 enum MaskMode {
 	NoMask = 0, // throw if greater or equal
 	SmallMask = 1, // 1-bit smaller mask if greater or equal
-	MaskAndMod = 2 // mask and substract if greater or equal
+	MaskAndMod = 2, // mask and substract if greater or equal
+	Mod = 3 // mod p
 };
 
 struct Op {
@@ -174,6 +175,7 @@ struct Op {
 	mpz_class mp;
 	uint32_t pmod4;
 	mcl::SquareRoot sq;
+	mcl::Modp modp;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
 	/*

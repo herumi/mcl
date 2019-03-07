@@ -302,10 +302,13 @@ public:
 		}
 		cybozu::write(pb, os, buf + sizeof(buf) - len, len);
 	}
+	/*
+		mode = Mod : set x mod p if sizeof(S) * n <= 64 else error
+	*/
 	template<class S>
-	void setArray(bool *pb, const S *x, size_t n)
+	void setArray(bool *pb, const S *x, size_t n, mcl::fp::MaskMode mode = fp::NoMask)
 	{
-		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::NoMask);
+		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, mode);
 		toMont();
 	}
 	/*

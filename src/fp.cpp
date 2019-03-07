@@ -476,6 +476,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		sq.set(&b, mp);
 		if (!b) return false;
 	}
+	modp.init(mp);
 	return fp::initForMont(*this, p, mode);
 }
 
@@ -528,6 +529,27 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
 {
 	const size_t fpByteSize = sizeof(Unit) * op.N;
+	if (maskMode == Mod) {
+		if (xByteSize > fpByteSize * 2) return false;
+		mpz_class mx;
+		bool b;
+		gmp::setArray(&b, mx, (const char*)x, xByteSize);
+		if (!b) return false;
+#ifdef MCL_USE_VINT
+		op.modp.modp(mx, mx);
+#else
+		mx %= op.mp;
+#endif
+		const Unit *pmx = gmp::getUnit(mx);
+		size_t i = 0;
+		for (const size_t n = gmp::getUnitSize(mx); i < n; i++) {
+			y[i] = pmx[i];
+		}
+		for (; i < op.N; i++) {
+			y[i] = 0;
+		}
+		return true;
+	}
 	if (xByteSize > fpByteSize) {
 		if (maskMode == NoMask) return false;
 		xByteSize = fpByteSize;
