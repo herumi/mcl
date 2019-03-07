@@ -544,6 +544,14 @@ void mclBn_verifyOrderG2(int doVerify)
 	verifyOrderG2(doVerify != 0);
 }
 
+mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMode)
+{
+	return cast(x)->getStr(buf, maxBufSize, ioMode);
+}
+int mclBnFp_setStr(mclBnFp *x, const char *buf, mclSize bufSize, int ioMode)
+{
+	return setStr(x, buf, bufSize, ioMode);
+}
 mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize)
 {
 	return (mclSize)cast(x)->deserialize(buf, bufSize);
