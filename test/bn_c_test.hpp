@@ -5,6 +5,7 @@
 #include <mcl/ecparam.hpp>
 #include <cybozu/test.hpp>
 #include <iostream>
+#include <gmpxx.h>
 
 template<size_t N>
 std::ostream& dump(std::ostream& os, const uint64_t (&x)[N])
@@ -592,6 +593,34 @@ CYBOZU_TEST_AUTO(Fp)
 	mclBnFp_clear(&x1);
 	memset(&x2, 0, sizeof(x2));
 	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x1, &x2));
+}
+
+CYBOZU_TEST_AUTO(mod)
+{
+	{
+		// Fp
+		char buf[1024];
+		mclBn_getFieldOrder(buf, sizeof(buf));
+		mpz_class p(buf);
+		mpz_class x = mpz_class(1) << (mclBn_getFpByteSize() * 2);
+		mclBnFp y;
+		int ret = mclBnFp_setLittleEndianMod(&y, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size * sizeof(void*));
+		CYBOZU_TEST_EQUAL(ret, 0);
+		mclBnFp_getStr(buf, sizeof(buf), &y, 10);
+		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
+	}
+	{
+		// Fr
+		char buf[1024];
+		mclBn_getCurveOrder(buf, sizeof(buf));
+		mpz_class p(buf);
+		mpz_class x = mpz_class(1) << (mclBn_getFrByteSize() * 2);
+		mclBnFr y;
+		int ret = mclBnFr_setLittleEndianMod(&y, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size * sizeof(void*));
+		CYBOZU_TEST_EQUAL(ret, 0);
+		mclBnFr_getStr(buf, sizeof(buf), &y, 10);
+		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
+	}
 }
 
 CYBOZU_TEST_AUTO(Fp2)
