@@ -6,6 +6,9 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
+#ifndef DONT_USE_GMP_IN_TEST
+#include <gmpxx.h>
+#endif
 
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 
@@ -1232,6 +1235,36 @@ CYBOZU_TEST_AUTO(bench)
 	CYBOZU_BENCH_C("sub", N, Vint::sub, z, x, y);
 	CYBOZU_BENCH_C("mul", N, Vint::mul, z, x, y);
 	CYBOZU_BENCH_C("div", N, Vint::div, y, z, x);
+
+	const struct {
+		const char *x;
+		const char *y;
+	} tbl[] = {
+		{
+			"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d"
+		},
+		{
+			"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+		},
+		{
+			"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001",
+		},
+
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		x.setStr(tbl[i].x);
+		y.setStr(tbl[i].y);
+		CYBOZU_BENCH_C("fast div", N, Vint::div, z, x, y);
+#ifndef DONT_USE_GMP_IN_TEST
+		{
+			mpz_class mx(tbl[i].x), my(tbl[i].y), mz;
+			CYBOZU_BENCH_C("gmp", N, mpz_div, mz.get_mpz_t(), mx.get_mpz_t(), my.get_mpz_t());
+		}
+#endif
+	}
 }
 
 struct Seq {

@@ -619,8 +619,8 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 			return;
 		}
 		assert(xTopBit > yTopBit);
-		// fast reduction for larger than fullbit-2 size p
-		if (yTopBit >= sizeof(T) * 8 - 3) {
+		// fast reduction for larger than fullbit-3 size p
+		if (yTopBit >= sizeof(T) * 8 - 4) {
 			T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 			T qv = 0;
 			if (yTopBit == sizeof(T) * 8 - 2) {
