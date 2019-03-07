@@ -877,10 +877,11 @@ struct Modp {
 		mcl::gmp::setArray(&b, x, mcl::gmp::getUnit(x), unitSize);
 		assert(b);
 	}
-	void init(const mpz_class& p, size_t unitSize)
+	void init(const mpz_class& p)
 	{
 		p_ = p;
-		N_ = unitSize;
+		size_t bitSize = mcl::gmp::getBitSize(p);
+		N_ = (bitSize + unitBitSize - 1) / unitBitSize;
 		u_ = (mpz_class(1) << (unitBitSize * 2 * N_)) / p_;
 		a_ = mpz_class(1) << (unitBitSize * (N_ + 1));
 	}

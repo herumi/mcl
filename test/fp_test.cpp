@@ -798,7 +798,7 @@ void modpTest()
 		(mpz_class(1) << Fp::getOp().N * mcl::fp::UnitBitSize * 2) - 1,
 	};
 	mcl::Modp modp;
-	modp.init(p, Fp::getUnitSize());
+	modp.init(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];
 		mpz_class r1, r2;
