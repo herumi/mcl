@@ -861,35 +861,43 @@ public:
 
 /*
 	Barrett Reduction
+	for non GMP version
+	mod of GMP is faster than Modp
 */
 struct Modp {
 	static const size_t unitBitSize = sizeof(mcl::fp::Unit) * 8;
 	mpz_class p_;
 	mpz_class u_;
 	mpz_class a_;
+	size_t pBitSize_;
 	size_t N_;
 	// x &= 1 << (unitBitSize * unitSize)
 	void shrinkSize(mpz_class &x, size_t unitSize) const
 	{
-		size_t u = mcl::gmp::getUnitSize(x);
+		size_t u = gmp::getUnitSize(x);
 		if (u < unitSize) return;
 		bool b;
-		mcl::gmp::setArray(&b, x, mcl::gmp::getUnit(x), unitSize);
+		gmp::setArray(&b, x, gmp::getUnit(x), unitSize);
 		assert(b);
 	}
 	void init(const mpz_class& p)
 	{
 		p_ = p;
-		size_t bitSize = mcl::gmp::getBitSize(p);
-		N_ = (bitSize + unitBitSize - 1) / unitBitSize;
+		pBitSize_ = gmp::getBitSize(p);
+		N_ = (pBitSize_ + unitBitSize - 1) / unitBitSize;
 		u_ = (mpz_class(1) << (unitBitSize * 2 * N_)) / p_;
 		a_ = mpz_class(1) << (unitBitSize * (N_ + 1));
 	}
 	void modp(mpz_class& r, const mpz_class& t) const
 	{
-		assert(0 <= t && t < mpz_class(1) << (unitBitSize * 2 * N_));
-		if (t < p_) {
+		const size_t tBitSize = gmp::getBitSize(t);
+		assert(tBitSize <= unitBitSize * 2 * N_);
+		if (tBitSize < pBitSize_) {
 			r = t;
+			return;
+		}
+		if (tBitSize <= unitBitSize * N_) {
+			gmp::mod(r, t, p_);
 			return;
 		}
 		mpz_class q;
