@@ -229,7 +229,9 @@ MCLBN_DLL_API void mclBnFp2_clear(mclBnFp2 *x);
 MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
 MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 
-// mask buf with (1 << (bitLen(r) - 1)) - 1 if buf >= r
+// x = buf & (1 << bitLen(r)) - 1
+// if (x >= r) x &= (1 << (bitLen(r) - 1)) - 1
+// always return 0
 MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 MCLBN_DLL_API int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 
