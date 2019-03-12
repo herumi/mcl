@@ -1176,8 +1176,15 @@ public:
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
 		buf_.alloc(pb, unitSize);
 		if (!*pb) return;
-		buf_[unitSize - 1] = 0;
-		memcpy(&buf_[0], x, sizeof(S) * size);
+		char *dst = (char *)&buf_[0];
+		const char *src = (const char *)x;
+		size_t i = 0;
+		for (; i < sizeof(S) * size; i++) {
+			dst[i] = src[i];
+		}
+		for (; i < sizeof(Unit) * unitSize; i++) {
+			dst[i] = 0;
+		}
 		trim(unitSize);
 	}
 	/*
