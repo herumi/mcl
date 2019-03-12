@@ -443,6 +443,7 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 # History
 
+* 2019/Mar/12 v0.90 fix Vint::setArray(x) for x == this
 * 2019/Mar/07 add mclBnFr_setLittleEndianMod, mclBnFp_setLittleEndianMod
 * 2019/Feb/20 LagrangeInterpolation sets out = yVec[0] if k = 1
 * 2019/Jan/31 add mclBnFp_mapToG1, mclBnFp2_mapToG2

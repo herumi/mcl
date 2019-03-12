@@ -60,6 +60,11 @@ extern "C" MCLBN_DLL_API void mclBnFree(void *p)
 }
 #endif
 
+int mclBn_getVersion()
+{
+	return mcl::version;
+}
+
 int mclBn_init(int curve, int compiledTimeVar)
 {
 	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {

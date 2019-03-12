@@ -26,6 +26,8 @@
 
 namespace mcl {
 
+static const int version = 0x090; /* 0xABC = A.BC */
+
 /*
 	specifies available string format mode for X::setIoMode()
 	// for Fp, Fp2, Fp6, Fp12

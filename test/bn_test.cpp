@@ -352,6 +352,7 @@ void testIo(const G1& P, const G2& Q)
 
 CYBOZU_TEST_AUTO(naive)
 {
+	printf("mcl version=%03x\n", mcl::version);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);

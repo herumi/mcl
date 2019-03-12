@@ -112,6 +112,8 @@ enum {
 	mclBls12_CurveFp381 = 5
 };
 
+// return 0xABC which means A.BC
+MCLBN_DLL_API int mclBn_getVersion();
 /*
 	init library
 	@param curve [in] type of bn curve
