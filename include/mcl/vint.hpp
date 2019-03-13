@@ -1291,7 +1291,8 @@ public:
 	*/
 	void setStr(bool *pb, const char *str, int base = 0)
 	{
-		const size_t maxN = MCL_MAX_BIT_SIZE / (sizeof(MCL_SIZEOF_UNIT) * 8);
+		// allow twice size of MCL_MAX_BIT_SIZE because of multiplication
+		const size_t maxN = (MCL_MAX_BIT_SIZE * 2 + unitBitSize - 1) / unitBitSize;
 		buf_.alloc(pb, maxN);
 		if (!*pb) return;
 		*pb = false;
