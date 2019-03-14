@@ -871,6 +871,13 @@ struct Modp {
 	mpz_class a_;
 	size_t pBitSize_;
 	size_t N_;
+	bool initU_; // Is u_ initialized?
+	Modp()
+		: pBitSize_(0)
+		, N_(0)
+		, initU_(false)
+	{
+	}
 	// x &= 1 << (unitBitSize * unitSize)
 	void shrinkSize(mpz_class &x, size_t unitSize) const
 	{
@@ -878,24 +885,49 @@ struct Modp {
 		if (u < unitSize) return;
 		bool b;
 		gmp::setArray(&b, x, gmp::getUnit(x), unitSize);
+		(void)b;
 		assert(b);
 	}
+	// p_ is set by p and compute (u_, a_) if possible
 	void init(const mpz_class& p)
 	{
 		p_ = p;
 		pBitSize_ = gmp::getBitSize(p);
 		N_ = (pBitSize_ + unitBitSize - 1) / unitBitSize;
+		initU_ = false;
+#if 0
 		u_ = (mpz_class(1) << (unitBitSize * 2 * N_)) / p_;
+#else
+		/*
+			1 << (unitBitSize * 2 * N_) may be overflow,
+			so use (1 << (unitBitSize * 2 * N_)) - 1 because u_ is same.
+		*/
+		uint8_t buf[48 * 2];
+		const size_t byteSize = unitBitSize / 8 * 2 * N_;
+		if (byteSize > sizeof(buf)) return;
+		memset(buf, 0xff, byteSize);
+		bool b;
+		gmp::setArray(&b, u_, buf, byteSize);
+		if (!b) return;
+#endif
+		u_ /= p_;
 		a_ = mpz_class(1) << (unitBitSize * (N_ + 1));
+		initU_ = true;
 	}
 	void modp(mpz_class& r, const mpz_class& t) const
 	{
+		assert(p_ > 0);
 		const size_t tBitSize = gmp::getBitSize(t);
-		assert(tBitSize <= unitBitSize * 2 * N_);
+		// use gmp::mod if init() fails or t is too large
+		if (tBitSize > unitBitSize * 2 * N_ || !initU_) {
+			gmp::mod(r, t, p_);
+			return;
+		}
 		if (tBitSize < pBitSize_) {
 			r = t;
 			return;
 		}
+		// mod is faster than modp if t is small
 		if (tBitSize <= unitBitSize * N_) {
 			gmp::mod(r, t, p_);
 			return;
