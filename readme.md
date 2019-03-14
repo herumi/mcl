@@ -443,6 +443,7 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 # History
 
+* 2019/Mar/14 v0.91 modp supports mcl-wasm
 * 2019/Mar/12 v0.90 fix Vint::setArray(x) for x == this
 * 2019/Mar/07 add mclBnFr_setLittleEndianMod, mclBnFp_setLittleEndianMod
 * 2019/Feb/20 LagrangeInterpolation sets out = yVec[0] if k = 1

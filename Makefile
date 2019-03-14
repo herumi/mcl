@@ -8,6 +8,7 @@ TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
+TEST_SRC+=modp_test.cpp
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -264,6 +265,12 @@ $(EXE_DIR)/she_c384_test.exe: $(OBJ_DIR)/she_c384_test.o $(SHE384_LIB) $(MCL_LIB
 
 $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
 	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
+
+$(OBJ_DIR)/modp_test.o: test/modp_test.cpp
+	$(PRE)$(CXX) -c $< -o $@ -MMD -MP -MF $(@:.o=.d) -DMCL_USE_VINT -DMCL_MAX_BIT_SIZE=384 -DMCL_VINT_64BIT_PORTABLE -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I./include -O2 $(CFLAGS_WARN)
+
+$(EXE_DIR)/modp_test.exe: $(OBJ_DIR)/modp_test.o
+	$(PRE)$(CXX) $< -o $@
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
