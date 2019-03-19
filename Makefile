@@ -45,9 +45,10 @@ BN384_256_SLIB=$(LIB_DIR)/lib$(BN384_256_SNAME).$(LIB_SUF)
 BN512_LIB=$(LIB_DIR)/libmclbn512.a
 BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
 SHE256_LIB=$(LIB_DIR)/libmclshe256.a
+SHE256_SLIB=$(LIB_DIR)/lib$(SHE256_SNAME).$(LIB_SUF)
 SHE384_LIB=$(LIB_DIR)/libmclshe384.a
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(SHE384_lib) $(ECDSA_LIB)
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(SHE256_SLIB) $(SHE384_lib) $(ECDSA_LIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -121,6 +122,7 @@ ifneq ($(findstring $(OS),mac/mingw64),)
   BN384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN512_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  SHE256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
 endif
 ifeq ($(OS),mingw64)
   MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(MCL_SNAME).a
@@ -128,6 +130,7 @@ ifeq ($(OS),mingw64)
   BN384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_SNAME).a
   BN384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_256_SNAME).a
   BN512_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN512_SNAME).a
+  SHE256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE256_SNAME).a
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
@@ -141,6 +144,9 @@ $(BN256_LIB): $(BN256_OBJ)
 
 $(SHE256_LIB): $(SHE256_OBJ)
 	$(AR) $@ $(SHE256_OBJ)
+
+$(SHE256_SLIB): $(SHE256_OBJ) $(MCL_LIB)
+	$(PRE)$(CXX) -o $@ $(SHE256_OBJ) $(MCL_LIB) -shared $(LDFLAGS) $(SHE256_SLIB_LDFLAGS)
 
 $(SHE384_LIB): $(SHE384_OBJ)
 	$(AR) $@ $(SHE384_OBJ)
@@ -223,6 +229,11 @@ test_go:
 	$(MAKE) test_go256
 	$(MAKE) test_go384
 	$(MAKE) test_go384_256
+
+test_python_she: $(SHE256_SLIB)
+	cd ffi/python && env LD_LIBRARY_PATH="../../lib" DYLD_LIBRARY_PATH="../../lib" PATH=$$PATH:"../../lib" python3 she.py
+test_python:
+	$(MAKE) test_python_she
 
 test_java:
 	$(MAKE) -C ffi/java test
