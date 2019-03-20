@@ -26,13 +26,14 @@ def init(curveType=MCL_BN254):
 	global lib
 	name = platform.system()
 	if name == 'Linux':
-		suf = 'so'
+		libName = 'libmclshe256.so'
 	elif name == 'Darwin':
-		suf = 'dylib'
+		libName = 'libmclshe256.dylib'
+	elif name == 'Windows':
+		libName = 'mclshe256.dll'
 	else:
 		raise RuntimeError("not support yet", name)
-	libname = "libmclshe256." + suf
-	lib = cdll.LoadLibrary(libname)
+	lib = cdll.LoadLibrary(libName)
 	ret = lib.sheInit(MCL_BN254, MCLBN_COMPILED_TIME_VAR)
 	if ret != 0:
 		raise RuntimeError("sheInit", ret)
