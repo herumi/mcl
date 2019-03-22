@@ -910,6 +910,10 @@ public:
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
 	{
+		if (!constTime && x.isZero()) {
+			z.clear();
+			return;
+		}
 		if (mulArrayGLV && (constTime || yn > 1)) {
 			mulArrayGLV(z, x, y, yn, isNegative, constTime);
 			return;
