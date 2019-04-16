@@ -805,9 +805,16 @@ public:
 	FixedBuffer& operator=(const FixedBuffer& rhs)
 	{
 		size_ = rhs.size_;
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 		for (size_t i = 0; i < size_; i++) {
 			v_[i] = rhs.v_[i];
 		}
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	#pragma GCC diagnostic pop
+#endif
 		return *this;
 	}
 	void clear() { size_ = 0; }
