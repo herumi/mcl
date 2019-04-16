@@ -165,7 +165,6 @@ void testGLV2()
 	G2 Q0, Q1, Q2;
 	mpz_class z = BN::param.z;
 	mpz_class r = BN::param.r;
-	mpz_class lambda = 6 * z * z;
 	mcl::bn::local::GLV2 glv2;
 	glv2.init(r, z, BN::param.isBLS12);
 	mpz_class n;
