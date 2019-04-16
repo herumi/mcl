@@ -26,6 +26,9 @@
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_USE_VINT
 #endif
+#ifndef MCL_MAX_BIT_SIZE
+	#define MCL_MAX_BIT_SIZE 521
+#endif
 #ifdef MCL_USE_VINT
 #include <mcl/vint.hpp>
 typedef mcl::Vint mpz_class;

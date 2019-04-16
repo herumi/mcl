@@ -19,7 +19,7 @@
 	#define MCL_VINT_FIXED_BUFFER
 #endif
 #ifndef MCL_MAX_BIT_SIZE
-	#define MCL_MAX_BIT_SIZE 384
+	#error "define MCL_MAX_BIT_SZIE"
 #endif
 
 #ifndef MCL_SIZEOF_UNIT

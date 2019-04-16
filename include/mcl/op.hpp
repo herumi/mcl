@@ -10,9 +10,6 @@
 #include <memory.h>
 #include <mcl/array.hpp>
 
-#ifndef MCL_MAX_BIT_SIZE
-	#define MCL_MAX_BIT_SIZE 521
-#endif
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_DONT_USE_XBYAK
 	#define MCL_DONT_USE_OPENSSL
