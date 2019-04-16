@@ -50,7 +50,7 @@ struct MixPack {
 	}
 	void init(Xbyak::util::Pack& remain, size_t& rspPos, size_t n, size_t useRegNum = useAll)
 	{
-		size_t pn = std::min(remain.size(), n);
+		size_t pn = (std::min)(remain.size(), n);
 		if (useRegNum != useAll && useRegNum < pn) pn = useRegNum;
 		this->mn = n - pn;
 		this->m = Xbyak::util::rsp + rspPos;
@@ -568,7 +568,7 @@ private:
 	void gen_mulUnit()
 	{
 //		assert(pn_ >= 2);
-		const int regNum = useMulx_ ? 2 : (1 + std::min(pn_ - 1, 8));
+		const int regNum = useMulx_ ? 2 : (1 + (std::min)(pn_ - 1, 8));
 		const int stackSize = useMulx_ ? 0 : (pn_ - 1) * 8;
 		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
 		const Reg64& pz = sf.p[0];
@@ -1299,7 +1299,7 @@ private:
 	void gen_montMulN(const uint64_t *p, uint64_t pp, int n)
 	{
 		assert(1 <= pn_ && pn_ <= 9);
-		const int regNum = useMulx_ ? 4 : 3 + std::min(n - 1, 7);
+		const int regNum = useMulx_ ? 4 : 3 + (std::min)(n - 1, 7);
 		const int stackSize = (n * 3 + (isFullBit_ ? 2 : 1)) * 8;
 		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
 		const Reg64& pz = sf.p[0];
