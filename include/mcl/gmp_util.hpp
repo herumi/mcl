@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
+#endif
 #include <mcl/randgen.hpp>
 #ifdef _MSC_VER
 	#pragma warning(push)
