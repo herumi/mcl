@@ -12,6 +12,16 @@ option(
 	"download cybozulib_ext"
 	OFF
 )
+option(
+	USE_OPENSSL
+	"use openssl"
+	ON
+)
+option(
+	USE_GMP
+	"use gmp"
+	ON
+)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -49,7 +59,20 @@ else()
 		set(SRCS ${SRCS} src/asm/x86-64.s src/asm/x86-64.bmi2.s)
 		set(CPU x86-64)
 	endif()
-	set(LIBS mcl gmp gmpxx crypto)
+	set(LIBS mcl)
+	if(USE_GMP)
+		set(LIBS ${LIBS} gmp gmpxx)
+	endif()
+	if(USE_OPENSSL)
+		set(LIBS ${LIBS} crypto)
+	endif()
+endif()
+
+if(NOT USE_GMP)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER")
+endif()
+if(NOT USE_OPENSSL)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMCL_DONT_USE_OPENSSL")
 endif()
 
 if(DOWNLOAD_SOURCE)
