@@ -5,7 +5,7 @@
 #include <mcl/ecparam.hpp>
 #include <cybozu/test.hpp>
 #include <iostream>
-#include <gmpxx.h>
+#include <mcl/gmp_util.hpp>
 
 template<size_t N>
 std::ostream& dump(std::ostream& os, const uint64_t (&x)[N])
@@ -604,7 +604,7 @@ CYBOZU_TEST_AUTO(mod)
 		mpz_class p(buf);
 		mpz_class x = mpz_class(1) << (mclBn_getFpByteSize() * 2);
 		mclBnFp y;
-		int ret = mclBnFp_setLittleEndianMod(&y, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size * sizeof(void*));
+		int ret = mclBnFp_setLittleEndianMod(&y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x) * sizeof(void*));
 		CYBOZU_TEST_EQUAL(ret, 0);
 		mclBnFp_getStr(buf, sizeof(buf), &y, 10);
 		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
@@ -616,7 +616,7 @@ CYBOZU_TEST_AUTO(mod)
 		mpz_class p(buf);
 		mpz_class x = mpz_class(1) << (mclBn_getFrByteSize() * 2);
 		mclBnFr y;
-		int ret = mclBnFr_setLittleEndianMod(&y, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size * sizeof(void*));
+		int ret = mclBnFr_setLittleEndianMod(&y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x) * sizeof(void*));
 		CYBOZU_TEST_EQUAL(ret, 0);
 		mclBnFr_getStr(buf, sizeof(buf), &y, 10);
 		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
