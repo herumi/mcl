@@ -22,6 +22,16 @@ option(
 	"use gmp"
 	ON
 )
+option(
+	USE_ASM
+	"use asm"
+	ON
+)
+option(
+	USE_XBYAK
+	"use xbyak"
+	ON
+)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -42,22 +52,24 @@ else()
 		add_definitions(-DMCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
 	endif()
 
-	if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-		add_definitions(-DMCL_USE_LLVM=1)
-		set(SRCS ${SRCS} src/asm/aarch64.s)
-		set(CPU arch64)
-	elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
-		add_definitions(-DMCL_USE_LLVM=1)
-		set(SRCS ${SRCS} src/asm/arm.s)
-		set(CPU arm)
-	elseif(APPLE)
-		add_definitions(-DMCL_USE_LLVM=1)
-		set(SRCS ${SRCS} src/asm/x86-64mac.s src/asm/x86-64mac.bmi2.s)
-		set(CPU x86-64)
-	elseif(UNIX)
-		add_definitions(-DMCL_USE_LLVM=1)
-		set(SRCS ${SRCS} src/asm/x86-64.s src/asm/x86-64.bmi2.s)
-		set(CPU x86-64)
+	if(USE_ASM)
+		if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+			add_definitions(-DMCL_USE_LLVM=1)
+			set(SRCS ${SRCS} src/asm/aarch64.s)
+			set(CPU arch64)
+		elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
+			add_definitions(-DMCL_USE_LLVM=1)
+			set(SRCS ${SRCS} src/asm/arm.s)
+			set(CPU arm)
+		elseif(APPLE)
+			add_definitions(-DMCL_USE_LLVM=1)
+			set(SRCS ${SRCS} src/asm/x86-64mac.s src/asm/x86-64mac.bmi2.s)
+			set(CPU x86-64)
+		elseif(UNIX)
+			add_definitions(-DMCL_USE_LLVM=1)
+			set(SRCS ${SRCS} src/asm/x86-64.s src/asm/x86-64.bmi2.s)
+			set(CPU x86-64)
+		endif()
 	endif()
 	set(LIBS mcl)
 	if(USE_GMP)
@@ -73,6 +85,9 @@ if(NOT USE_GMP)
 endif()
 if(NOT USE_OPENSSL)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMCL_DONT_USE_OPENSSL")
+endif()
+if(NOT USE_XBYAK)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMCL_DONT_USE_XBYAK")
 endif()
 
 if(DOWNLOAD_SOURCE)
