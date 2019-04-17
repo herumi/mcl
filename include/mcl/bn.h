@@ -34,9 +34,11 @@
 	#ifndef MCLBN_NO_AUTOLINK
 		#if MCLBN_FP_UNIT_SIZE == 4
 			#pragma comment(lib, "mclbn256.lib")
-		#elif MCLBN_FP_UNIT_SIZE == 6
+		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 4)
+			#pragma comment(lib, "mclbn384_256.lib")
+		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 6)
 			#pragma comment(lib, "mclbn384.lib")
-		#else
+		#elif MCLBN_FP_UNIT_SIZE == 8
 			#pragma comment(lib, "mclbn512.lib")
 		#endif
 	#endif
