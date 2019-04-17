@@ -251,7 +251,7 @@ void setOp(Op& op, Mode mode)
 	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-#if defined(MCL_USE_XBYAK) && CYBOZU_HOST == CYBOZU_HOST_INTEL
+#if MCL_LLVM_BMI2 == 1
 		const bool gmpIsFasterThanLLVM = false;//(N == 8 && MCL_SIZEOF_UNIT == 8);
 		Xbyak::util::Cpu cpu;
 		if (cpu.has(Xbyak::util::Cpu::tBMI2)) {

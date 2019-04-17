@@ -41,7 +41,7 @@ template<>const void3u MontRed<n, tag>::f = &mcl_fp_montRed ## n ## suf; \
 template<>const void4u DblAdd<n, tag>::f = &mcl_fpDbl_add ## n ## suf; \
 template<>const void4u DblSub<n, tag>::f = &mcl_fpDbl_sub ## n ## suf; \
 
-#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && !defined(MCL_USE_VINT)
+#if MCL_LLVM_BMI2 == 1
 #define MCL_DEF_LLVM_FUNC(n) \
 	MCL_DEF_LLVM_FUNC2(n, Ltag, L) \
 	MCL_DEF_LLVM_FUNC2(n, LBMI2tag, Lbmi2)
