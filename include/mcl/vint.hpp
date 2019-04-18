@@ -958,7 +958,11 @@ private:
 		size_t zn = fp::max_(xn, yn) + 1;
 		bool b;
 		z.buf_.alloc(&b, zn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		z.buf_[zn - 1] = vint::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
 		z.trim(zn);
 	}
@@ -967,7 +971,11 @@ private:
 		size_t zn = xn + 1;
 		bool b;
 		z.buf_.alloc(&b, zn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		z.buf_[zn - 1] = vint::addu1(&z.buf_[0], &x[0], xn, y);
 		z.trim(zn);
 	}
@@ -976,7 +984,11 @@ private:
 		size_t zn = xn;
 		bool b;
 		z.buf_.alloc(&b, zn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		Unit c = vint::subu1(&z.buf_[0], &x[0], xn, y);
 		(void)c;
 		assert(!c);
@@ -987,7 +999,11 @@ private:
 		assert(xn >= yn);
 		bool b;
 		z.buf_.alloc(&b, xn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		Unit c = vint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
 			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
@@ -1062,10 +1078,20 @@ private:
 		bool b;
 		if (q) {
 			q->buf_.alloc(&b, qn);
-			assert(b); (void)b;
+			assert(b);
+			if (!b) {
+				q->clear();
+				r.clear();
+				return;
+			}
 		}
 		r.buf_.alloc(&b, yn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			r.clear();
+			if (q) q->clear();
+			return;
+		}
 		vint::divNM(q ? &q->buf_[0] : 0, qn, &r.buf_[0], &x[0], xn, &y[0], yn);
 		if (q) {
 			q->trim(qn);
@@ -1288,7 +1314,11 @@ public:
 		assert(q <= size());
 		bool b;
 		buf_.alloc(&b, q + 1);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			clear();
+			return;
+		}
 		Unit mask = Unit(1) << r;
 		if (v) {
 			buf_[q] |= mask;
@@ -1377,7 +1407,11 @@ public:
 		size_t zn = xn + yn;
 		bool b;
 		z.buf_.alloc(&b, zn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		vint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
@@ -1400,7 +1434,11 @@ public:
 		size_t zn = xn + 1;
 		bool b;
 		z.buf_.alloc(&b, zn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		z.buf_[zn - 1] = vint::mulu1(&z.buf_[0], &x.buf_[0], xn, y);
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
@@ -1449,7 +1487,11 @@ public:
 			q->isNeg_ = xNeg ^ yNeg;
 			bool b;
 			q->buf_.alloc(&b, xn);
-			assert(b); (void)b;
+			assert(b);
+			if (!b) {
+				q->clear();
+				return 0;
+			}
 			r = (int)vint::divu1(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
 		} else {
@@ -1497,7 +1539,11 @@ public:
 		if (q) {
 			bool b;
 			q->buf_.alloc(&b, xn);
-			assert(b); (void)b;
+			assert(b);
+			if (!b) {
+				q->clear();
+				return 0;
+			}
 		}
 		Unit r = vint::divu1(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
 		if (q) {
@@ -1550,7 +1596,11 @@ public:
 		size_t yn = xn + (shiftBit + unitBitSize - 1) / unitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			y.clear();
+			return;
+		}
 		vint::shlN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
@@ -1566,7 +1616,11 @@ public:
 		size_t yn = xn - shiftBit / unitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			y.clear();
+			return;
+		}
 		vint::shrN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
@@ -1600,7 +1654,10 @@ public:
 		assert(xn >= yn);
 		bool b;
 		z.buf_.alloc(&b, xn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+		}
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] | y.buf_[i];
 		}
@@ -1618,7 +1675,11 @@ public:
 		assert(px->size() >= yn);
 		bool b;
 		z.buf_.alloc(&b, yn);
-		assert(b); (void)b;
+		assert(b);
+		if (!b) {
+			z.clear();
+			return;
+		}
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] & y.buf_[i];
 		}
