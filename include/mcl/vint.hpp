@@ -40,6 +40,13 @@ typedef uint64_t Unit;
 typedef uint32_t Unit;
 #endif
 
+template<size_t x>
+struct RoundUp {
+	static const size_t UnitBitSize = sizeof(Unit) * 8;
+	static const size_t N = (x + UnitBitSize - 1) / UnitBitSize;
+	static const size_t bit = N * UnitBitSize;
+};
+
 template<class T>
 void dump(const T *x, size_t n, const char *msg = "")
 {
@@ -1984,7 +1991,7 @@ public:
 };
 
 #ifdef MCL_VINT_FIXED_BUFFER
-typedef VintT<vint::FixedBuffer<mcl::vint::Unit, MCL_MAX_BIT_SIZE * 2> > Vint;
+typedef VintT<vint::FixedBuffer<mcl::vint::Unit, vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
 #else
 typedef VintT<vint::Buffer<mcl::vint::Unit> > Vint;
 #endif
