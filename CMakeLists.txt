@@ -32,10 +32,33 @@ option(
 	"use xbyak"
 	ON
 )
+option(
+	USE_LLVM
+	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++"
+	OFF
+)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+if(USE_LLVM)
+	add_executable(gen src/gen.cpp)
+	add_custom_target(base64.ll
+		DEPENDS gen
+		SOURCES base64.ll
+	)
+	add_custom_command(OUTPUT base64.ll
+		COMMAND gen > base64.ll
+	)
+	add_custom_target(base64.o
+		DEPENDS base64.ll
+		SOURCES base64.o
+	)
+	add_custom_command(OUTPUT base64.o
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o base64.o base64.ll -O3 -fPIC
+	)
+endif()
 
 if(MSVC)
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /W4 /Oy /Ox /EHsc /GS- /Zi /DNDEBUG /DNOMINMAX")
@@ -52,7 +75,9 @@ else()
 		add_definitions(-DMCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
 	endif()
 
-	if(USE_ASM)
+	if(USE_LLVM)
+		add_definitions(-DMCL_USE_LLVM=1 -DMCL_LLVM_BMI2=0)
+	elseif(USE_ASM)
 		if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
 			add_definitions(-DMCL_USE_LLVM=1)
 			set(SRCS ${SRCS} src/asm/aarch64.s)
@@ -125,8 +150,15 @@ include_directories(
 	${mcl_SOURCE_DIR}/include
 )
 
-add_library(mcl SHARED ${SRCS})
-add_library(mcl_st STATIC ${SRCS})
+if(USE_LLVM)
+	add_library(mcl SHARED ${SRCS} base64.o)
+	add_library(mcl_st STATIC ${SRCS} base64.o)
+	add_dependencies(mcl base64.o)
+	add_dependencies(mcl_st base64.o)
+else()
+	add_library(mcl SHARED ${SRCS})
+	add_library(mcl_st STATIC ${SRCS})
+endif()
 target_link_libraries(mcl ${EXT_LIBS})
 target_link_libraries(mcl_st ${EXT_LIBS})
 set_target_properties(mcl_st PROPERTIES OUTPUT_NAME mcl)
