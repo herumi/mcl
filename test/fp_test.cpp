@@ -567,7 +567,8 @@ void setArrayMaskTest2(mcl::fp::Mode mode)
 void setArrayModTest()
 {
 	const mpz_class& p = Fp::getOp().mp;
-	const mpz_class tbl[] = {
+	mpz_class tbl[] = {
+		0, // max
 		0,
 		1,
 		p - 1,
@@ -582,8 +583,9 @@ void setArrayModTest()
 		p * p - 1,
 		p * p,
 		p * p + 1,
-		(mpz_class(1) << Fp::getOp().N * mcl::fp::UnitBitSize * 2) - 1,
 	};
+	std::string maxStr(mcl::gmp::getBitSize(p) * 2, '1');
+	mcl::gmp::setStr(tbl[0], maxStr, 2);
 	const size_t unitByteSize = sizeof(mcl::fp::Unit);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];
@@ -816,7 +818,8 @@ void serializeTest()
 void modpTest()
 {
 	const mpz_class& p = Fp::getOp().mp;
-	const mpz_class tbl[] = {
+	mpz_class tbl[] = {
+		0, // max
 		0,
 		1,
 		p - 1,
@@ -831,8 +834,9 @@ void modpTest()
 		p * p - 1,
 		p * p,
 		p * p + 1,
-		(mpz_class(1) << Fp::getOp().N * mcl::fp::UnitBitSize * 2) - 1,
 	};
+	std::string maxStr(mcl::gmp::getBitSize(p) * 2, '1');
+	mcl::gmp::setStr(tbl[0], maxStr, 2);
 	mcl::Modp modp;
 	modp.init(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
