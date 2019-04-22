@@ -275,6 +275,10 @@ if __name__ == '__main__':
 	if sec.dec(add(c21, c22)) != m21 + m22: print("err5")
 	if sec.dec(sub(c21, c22)) != m21 - m22: print("err6")
 
+	# mul const for G1/G2
+	if sec.dec(mul(c11, 3)) != m11 * 3: print("err_mul1")
+	if sec.dec(mul(c21, 7)) != m21 * 7: print("err_mul2")
+
 	mt = -56
 	ct = pub.encGT(mt)
 	if sec.dec(ct) != mt: print("err7")
