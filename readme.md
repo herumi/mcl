@@ -443,6 +443,7 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 # History
 
+* 2019/Apr/24 v0.93 support ios
 * 2019/Mar/22 v0.92 shortcut for Ec::mul(Px, P, x) if P = 0
 * 2019/Mar/21 python binding of she256 for Linux/Mac/Windows
 * 2019/Mar/14 v0.91 modp supports mcl-wasm
