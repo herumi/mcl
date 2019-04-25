@@ -73,6 +73,18 @@ bool isEnableJIT(); // 1st call is not threadsafe
 uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
+namespace local {
+
+inline void byteSwap(void *x, size_t n)
+{
+	char *p = (char *)x;
+	for (size_t i = 0; i < n / 2; i++) {
+		fp::swap_(p[i], p[n - 1 - i]);
+	}
+}
+
+} // mcl::fp::local
+
 } // mcl::fp
 
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
@@ -89,6 +101,7 @@ private:
 	static fp::Op op_;
 	static FpT<tag, maxBitSize> inv2_;
 	static int ioMode_;
+	static bool isETHserialization_;
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
 	template<class Fp> friend struct Fp6T;
@@ -131,6 +144,8 @@ public:
 			if (!*pb) return;
 		}
 		inv(inv2_, 2);
+		ioMode_ = 0;
+		isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
 		add = fp::func_ptr_cast<void (*)(FpT& z, const FpT& x, const FpT& y)>(op_.fp_addA_);
 		if (add == 0) add = addC;
@@ -253,6 +268,9 @@ public:
 			} else {
 				readSize = cybozu::readSome(v_, n, is);
 			}
+			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+				fp::local::byteSwap(v_, n);
+			}
 			if (readSize != n) return;
 		} else {
 			char buf[1024];
@@ -283,10 +301,18 @@ public:
 			} else {
 				fp::Block b;
 				getBlock(b);
+				const char *src = (const char *)b.p;
+				char rev[fp::maxUnitSize * sizeof(fp::Unit)];
+				if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+					for (size_t i = 0; i < n; i++) {
+						rev[i] = src[n - 1 - i];
+					}
+					src = rev;
+				}
 				if (ioMode & IoSerializeHexStr) {
-					mcl::fp::writeHexStr(pb, os, b.p, n);
+					mcl::fp::writeHexStr(pb, os, src, n);
 				} else {
-					cybozu::write(pb, os, b.p, n);
+					cybozu::write(pb, os, src, n);
 				}
 			}
 			return;
@@ -498,6 +524,11 @@ public:
 	{
 		ioMode_ = ioMode;
 	}
+	static void setETHserialization(bool ETHserialization)
+	{
+		if (getBitSize() != 381) return;
+		isETHserialization_ = ETHserialization;
+	}
 	static inline int getIoMode() { return ioMode_; }
 	static inline size_t getModBitLen() { return getBitSize(); }
 	static inline void setHashFunc(uint32_t hash(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
@@ -622,6 +653,7 @@ public:
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
 template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
+template<class tag, size_t maxBitSize> bool FpT<tag, maxBitSize>::isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::add)(FpT& z, const FpT& x, const FpT& y);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sub)(FpT& z, const FpT& x, const FpT& y);

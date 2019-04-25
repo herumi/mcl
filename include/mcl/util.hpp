@@ -16,6 +16,7 @@
 
 namespace mcl { namespace fp {
 
+// some environments do not have utility
 template<class T>
 T abs_(T x) { return x < 0 ? -x : x; }
 
@@ -33,7 +34,6 @@ void swap_(T& x, T& y)
 	x = y;
 	y = t;
 }
-
 
 /*
 	get pp such that p * pp = -1 mod M,
