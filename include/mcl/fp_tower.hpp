@@ -283,9 +283,13 @@ public:
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
-		a.load(pb, is, ioMode);
+		Fp *ap = &a, *bp = &b;
+		if (Fp::isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+			fp::swap_(ap, bp);
+		}
+		ap->load(pb, is, ioMode);
 		if (!*pb) return;
-		b.load(pb, is, ioMode);
+		bp->load(pb, is, ioMode);
 	}
 	/*
 		Fp2T = <a> + ' ' + <b>
@@ -293,14 +297,18 @@ public:
 	template<class OutputStream>
 	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
+		const Fp *ap = &a, *bp = &b;
+		if (Fp::isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+			fp::swap_(ap, bp);
+		}
 		const char sep = *fp::getIoSeparator(ioMode);
-		a.save(pb, os, ioMode);
+		ap->save(pb, os, ioMode);
 		if (!*pb) return;
 		if (sep) {
 			cybozu::writeChar(pb, os, sep);
 			if (!*pb) return;
 		}
-		b.save(pb, os, ioMode);
+		bp->save(pb, os, ioMode);
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }

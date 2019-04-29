@@ -146,6 +146,18 @@ void testFp2()
 		CYBOZU_TEST_ASSERT(Fp2::squareRoot(z, y));
 		CYBOZU_TEST_EQUAL(z * z, y);
 	}
+
+	// serialize
+	for (int i = 0; i < 2; i++) {
+		Fp::setETHserialization(i == 0);
+		Fp2 x, y;
+		x.setStr("0x1234567789345 0x23424324");
+		char buf[256];
+		size_t n = x.serialize(buf, sizeof(buf));
+		CYBOZU_TEST_ASSERT(n > 0);
+		CYBOZU_TEST_EQUAL(y.deserialize(buf, n), n);
+		CYBOZU_TEST_EQUAL(x, y);
+	}
 }
 
 void testFp6sqr(const Fp2& a, const Fp2& b, const Fp2& c, const Fp6& x)
@@ -390,6 +402,7 @@ void test(const char *p, mcl::fp::Mode mode)
 	Fp::init(xi_a, p, mode);
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	Fp2::init();
+	printf("bitSize=%d\n", (int)Fp::getBitSize());
 #if 0
 	if (Fp::getBitSize() > 256) {
 		printf("not support p=%s\n", p);
@@ -446,7 +459,7 @@ void testAll()
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
-		printf("prime=%s %d\n", p, (int)(strlen(p) - 2) * 4);
+		printf("prime=%s\n", p);
 		test(p, mcl::fp::FP_GMP);
 #ifdef MCL_USE_LLVM
 		test(p, mcl::fp::FP_LLVM);
