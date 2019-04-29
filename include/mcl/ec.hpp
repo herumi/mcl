@@ -20,12 +20,33 @@
 
 namespace mcl {
 
+template<class _Fp> class Fp2T;
+
 namespace ec {
 
 enum Mode {
 	Jacobi = 0,
 	Proj = 1
 };
+
+namespace local {
+
+// x is negative <=> x < half(:=(p+1)/2) <=> a = 1
+template<class Fp>
+bool get_a_flag(const Fp& x)
+{
+	return x.isNegative();
+}
+
+// Im(x) is negative <=> Im(x)  < half(:=(p+1)/2) <=> a = 1
+
+template<class Fp>
+bool get_a_flag(const mcl::Fp2T<Fp>& x)
+{
+	return get_a_flag(x.b); // x = a + bi
+}
+
+} // mcl::ec::local
 
 } // mcl::ec
 
@@ -708,28 +729,44 @@ public:
 		EcT P(*this);
 		P.normalize();
 		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
-			/*
-				if (isMSBserialize()) {
-				  // n bytes
-				  x | (y.isOdd ? 0x80 : 0)
-				} else {
-				  // n + 1 bytes
-				  (y.isOdd ? 3 : 2), x
-				}
-			*/
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			char buf[sizeof(Fp) + 1];
-			if (isZero()) {
-				memset(buf, 0, n + adj);
-			} else {
-				cybozu::MemoryOutputStream mos(buf + adj, n);
-				P.x.save(pb, mos, IoSerialize); if (!*pb) return;
-				if (adj) {
-					buf[0] = P.y.isOdd() ? 3 : 2;
+			if (Fp::BaseFp::isETHserialization()) {
+				const char c_flag = 0x80;
+				const char b_flag = 0x40;
+				const char a_flag = 0x20;
+				if (P.isZero()) {
+					buf[0] = c_flag | b_flag;
+					memset(buf + 1, 0, n - 1);
 				} else {
-					if (P.y.isOdd()) {
-						buf[n - 1] |= 0x80;
+					cybozu::MemoryOutputStream mos(buf, n);
+					P.x.save(pb, mos, IoSerialize); if (!*pb) return;
+					char cba = c_flag;
+					if (ec::local::get_a_flag(P.y)) cba |= a_flag;
+					buf[0] |= cba;
+				}
+			} else {
+				/*
+					if (isMSBserialize()) {
+					  // n bytes
+					  x | (y.isOdd ? 0x80 : 0)
+					} else {
+					  // n + 1 bytes
+					  (y.isOdd ? 3 : 2), x
+					}
+				*/
+				if (isZero()) {
+					memset(buf, 0, n + adj);
+				} else {
+					cybozu::MemoryOutputStream mos(buf + adj, n);
+					P.x.save(pb, mos, IoSerialize); if (!*pb) return;
+					if (adj) {
+						buf[0] = P.y.isOdd() ? 3 : 2;
+					} else {
+						if (P.y.isOdd()) {
+							buf[n - 1] |= 0x80;
+						}
 					}
 				}
 			}
@@ -787,6 +824,38 @@ public:
 			}
 			if (readSize != n1) {
 				*pb = false;
+				return;
+			}
+			if (Fp::BaseFp::isETHserialization()) {
+				const char c_flag = 0x80;
+				const char b_flag = 0x40;
+				const char a_flag = 0x20;
+				*pb = false;
+				if ((buf[0] & c_flag) == 0) { // assume compressed
+					return;
+				}
+				if (buf[0] & b_flag) { // infinity
+					if (buf[0] != (c_flag | b_flag)) return;
+					for (size_t i = 1; i < n - 1; i++) {
+						if (buf[i]) return;
+					}
+					clear();
+					*pb = true;
+					return;
+				}
+				bool a = (buf[0] & a_flag) != 0;
+				buf[0] &= ~(c_flag | b_flag | a_flag);
+				mcl::fp::local::byteSwap(buf, n);
+				x.setArray(pb, buf, n);
+				if (!*pb) return;
+				getWeierstrass(y, x);
+				if (!Fp::squareRoot(y, y)) {
+					*pb = false;
+					return;
+				}
+				if (ec::local::get_a_flag(y) ^ a) {
+					Fp::neg(y, y);
+				}
 				return;
 			}
 			if (fp::isZeroArray(buf, n1)) {

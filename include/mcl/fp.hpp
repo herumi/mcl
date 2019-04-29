@@ -529,6 +529,7 @@ public:
 		if (getBitSize() != 381) return;
 		isETHserialization_ = ETHserialization;
 	}
+	static inline bool isETHserialization() { return isETHserialization_; }
 	static inline int getIoMode() { return ioMode_; }
 	static inline size_t getModBitLen() { return getBitSize(); }
 	static inline void setHashFunc(uint32_t hash(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))

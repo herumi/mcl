@@ -307,7 +307,18 @@ void testTrivial(const G1& P, const G2& Q)
 	CYBOZU_TEST_EQUAL(e, 1);
 }
 
-void testSerialize()
+template<class T>
+void deserializeAndSerialize(const T& x)
+{
+	char buf[1024];
+	size_t n = x.serialize(buf, sizeof(buf));
+	CYBOZU_TEST_ASSERT(n > 0);
+	T y;
+	CYBOZU_TEST_EQUAL(y.deserialize(buf, n), n);
+	CYBOZU_TEST_EQUAL(x, y);
+}
+
+void testSerialize(const G1& P, const G2& Q)
 {
 	Fp::setETHserialization(true); // big endian
 	const struct FpTbl {
@@ -329,6 +340,17 @@ void testSerialize()
 		CYBOZU_TEST_EQUAL(y.deserialize(buf, n, mcl::IoSerializeHexStr), n);
 		CYBOZU_TEST_EQUAL(x, y);
 	}
+	deserializeAndSerialize(P);
+	deserializeAndSerialize(-P);
+	G1 zero1;
+	zero1.clear();
+	deserializeAndSerialize(zero1);
+
+	deserializeAndSerialize(Q);
+	deserializeAndSerialize(-Q);
+	G2 zero2;
+	zero2.clear();
+	deserializeAndSerialize(zero2);
 	Fp::setETHserialization(false);
 }
 
@@ -350,7 +372,7 @@ CYBOZU_TEST_AUTO(naive)
 		clk.put();
 		return;
 #endif
-		testSerialize();
+		testSerialize(P, Q);
 		testParam(ts);
 		testIo(P, Q);
 //		testFp12pow(P, Q);

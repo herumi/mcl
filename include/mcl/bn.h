@@ -177,6 +177,12 @@ MCLBN_DLL_API mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize);
 */
 MCLBN_DLL_API mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize);
 
+/*
+	set ETH serialization mode for BLS12-381
+	@param ETHserialization [in] 1:enable,  0:disable
+	@note ignore the flag if curve is not BLS12-381
+*/
+MCLBN_DLL_API void mclBn_setETHserialization(int ETHserialization);
 ////////////////////////////////////////////////
 /*
 	deserialize
