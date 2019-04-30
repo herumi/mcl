@@ -11,7 +11,11 @@ int main()
 	char buf[1024];
 	const char *aStr = "123";
 	const char *bStr = "456";
-	mclBn_init(MCL_BN254, MCLBN_FP_UNIT_SIZE);
+	int ret = mclBn_init(MCL_BN254, MCLBN_COMPILED_TIME_VAR);
+	if (ret != 0) {
+		printf("err ret=%d\n", ret);
+		return 1;
+	}
 	mclBnFr a, b, ab;
 	mclBnG1 P, aP;
 	mclBnG2 Q, bQ;

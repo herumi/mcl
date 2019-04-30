@@ -7,7 +7,9 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
+#endif
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -27,22 +29,6 @@ class RandomGenerator {
 	RandomGenerator(const RandomGenerator&);
 	void operator=(const RandomGenerator&);
 public:
-	uint32_t operator()()
-	{
-		return get32();
-	}
-	uint32_t get32()
-	{
-		uint32_t ret;
-		read(&ret, 1);
-		return ret;
-	}
-	uint64_t get64()
-	{
-		uint64_t ret;
-		read(&ret, 1);
-		return ret;
-	}
 #ifdef _WIN32
 	RandomGenerator()
 		: prov_(0)
@@ -52,10 +38,15 @@ public:
 		for (int i = 0; i < 2; i++) {
 			if (CryptAcquireContext(&prov_, NULL, NULL, PROV_RSA_FULL, flagTbl[i]) != 0) return;
 		}
+#ifdef CYBOZU_DONT_USE_EXCEPTION
+		prov_ = 0;
+#else
 		throw cybozu::Exception("randomgenerator");
+#endif
 	}
 	bool read_inner(void *buf, size_t byteSize)
 	{
+		if (prov_ == 0) return false;
 		return CryptGenRandom(prov_, static_cast<DWORD>(byteSize), static_cast<BYTE*>(buf)) != 0;
 	}
 	~RandomGenerator()
@@ -88,13 +79,6 @@ public:
 		}
 		*pb = true;
 	}
-	template<class T>
-	void read(T *buf, size_t bufNum)
-	{
-		bool b;
-		read(&b, buf, bufNum);
-		if (!b) throw cybozu::Exception("RandomGenerator:read") << bufNum;
-	}
 private:
 	HCRYPTPROV prov_;
 	static const size_t bufSize = 1024;
@@ -105,7 +89,9 @@ private:
 	RandomGenerator()
 		: fp_(::fopen("/dev/urandom", "rb"))
 	{
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 		if (!fp_) throw cybozu::Exception("randomgenerator");
+#endif
 	}
 	~RandomGenerator()
 	{
@@ -121,12 +107,30 @@ private:
 		const size_t byteSize = sizeof(T) * bufNum;
 		*pb = ::fread(buf, 1, (int)byteSize, fp_) == byteSize;
 	}
+#endif
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class T>
 	void read(T *buf, size_t bufNum)
 	{
 		bool b;
 		read(&b, buf, bufNum);
 		if (!b) throw cybozu::Exception("RandomGenerator:read") << bufNum;
+	}
+	uint32_t get32()
+	{
+		uint32_t ret;
+		read(&ret, 1);
+		return ret;
+	}
+	uint64_t get64()
+	{
+		uint64_t ret;
+		read(&ret, 1);
+		return ret;
+	}
+	uint32_t operator()()
+	{
+		return get32();
 	}
 #endif
 private:
