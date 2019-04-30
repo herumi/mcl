@@ -400,7 +400,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	}
 #endif
 #if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
-	{
+	if (mode != FP_LLVM && mode != FP_XBYAK) {
 		const char *secp256k1Str = "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
 		bool b;
 		mpz_class secp256k1;

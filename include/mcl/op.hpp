@@ -329,12 +329,12 @@ struct Op {
 		fp2_mulNF = 0;
 		fp2_inv = 0;
 		fp2_mul_xiA_ = 0;
+		hash = 0;
 
 		primeMode = PM_GENERIC;
 		isFullBit = false;
 		isMont = false;
 		isFastMod = false;
-		hash = 0;
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{
