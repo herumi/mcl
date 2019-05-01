@@ -2,7 +2,9 @@
 /**
 	emulate mpz_class
 */
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
+#endif
 #include <cybozu/bit_operation.hpp>
 #include <cybozu/xorshift.hpp>
 #include <assert.h>
