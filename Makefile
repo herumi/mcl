@@ -55,10 +55,11 @@ LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 LLVM_OPT_VERSION=$(shell $(LLVM_OPT) --version 2>/dev/null | awk '/version/ {print $$3}')
 GEN_EXE=src/gen
+GEN_EXE_OPT=-u $(BIT)
 # incompatibility between llvm 3.4 and the later version
 ifneq ($(LLVM_OPT_VERSION),)
 ifeq ($(shell expr $(LLVM_OPT_VERSION) \< 3.5.0),1)
-  GEN_EXE_OPT=-old
+  GEN_EXE_OPT+=-old
 endif
 endif
 ifeq ($(OS),mac)
