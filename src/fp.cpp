@@ -386,17 +386,27 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	isFullBit = (bitSize % UnitBitSize) == 0;
 
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
-	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
-		&& mp == mpz_class("0xfffffffffffffffffffffffffffffffeffffffffffffffff")) {
-		primeMode = PM_NIST_P192;
-		isMont = false;
-		isFastMod = true;
+	if (mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK) {
+		const char *pStr = "0xfffffffffffffffffffffffffffffffeffffffffffffffff";
+		bool b;
+		mpz_class p192;
+		gmp::setStr(&b, p192, pStr);
+		if (b && mp == p192) {
+			primeMode = PM_NIST_P192;
+			isMont = false;
+			isFastMod = true;
+		}
 	}
-	if ((mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK)
-		&& mp == mpz_class("0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")) {
-		primeMode = PM_NIST_P521;
-		isMont = false;
-		isFastMod = true;
+	if (mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK) {
+		const char *pStr = "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+		bool b;
+		mpz_class p521;
+		gmp::setStr(&b, p521, pStr);
+		if (b && mp == p521) {
+			primeMode = PM_NIST_P521;
+			isMont = false;
+			isFastMod = true;
+		}
 	}
 #endif
 #if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
