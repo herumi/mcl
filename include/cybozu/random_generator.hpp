@@ -104,6 +104,10 @@ private:
 	template<class T>
 	void read(bool *pb, T *buf, size_t bufNum)
 	{
+		if (fp_ == 0) {
+			*pb = false;
+			return;
+		}
 		const size_t byteSize = sizeof(T) * bufNum;
 		*pb = ::fread(buf, 1, (int)byteSize, fp_) == byteSize;
 	}
