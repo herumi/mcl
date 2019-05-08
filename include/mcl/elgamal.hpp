@@ -124,26 +124,26 @@ struct ElgamalT {
 		http://dx.doi.org/10.1587/transfun.E96.A.1156
 	*/
 	struct Zkp {
-		Zn c0, c1, s0, s1;
+		Zn c[2], s[2];
 		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			c0.load(is, ioMode);
-			c1.load(is, ioMode);
-			s0.load(is, ioMode);
-			s1.load(is, ioMode);
+			c[0].load(is, ioMode);
+			c[1].load(is, ioMode);
+			s[0].load(is, ioMode);
+			s[1].load(is, ioMode);
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
 			const char sep = *fp::getIoSeparator(ioMode);
-			c0.save(os, ioMode);
+			c[0].save(os, ioMode);
 			if (sep) cybozu::writeChar(os, sep);
-			c1.save(os, ioMode);
+			c[1].save(os, ioMode);
 			if (sep) cybozu::writeChar(os, sep);
-			s0.save(os, ioMode);
+			s[0].save(os, ioMode);
 			if (sep) cybozu::writeChar(os, sep);
-			s1.save(os, ioMode);
+			s[1].save(os, ioMode);
 		}
 		void getStr(std::string& str, int ioMode = 0) const
 		{
@@ -182,7 +182,6 @@ struct ElgamalT {
 		Ec g;
 		Ec h;
 		bool enableWindowMethod_;
-		fp::WindowMethod<Ec> wm_f;
 		fp::WindowMethod<Ec> wm_g;
 		fp::WindowMethod<Ec> wm_h;
 		template<class N>
@@ -248,77 +247,58 @@ struct ElgamalT {
 			u.setRand(rg);
 			mulG(c.c1, u);
 			mulH(c.c2, u);
+			Ec t1, t2;
+			Ec R1[2], R2[2];
+			zkp.c[1-m].setRand(rg);
+			zkp.s[1-m].setRand(rg);
+			mulG(t1, zkp.s[1-m]);
+			Ec::mul(t2, c.c1, zkp.c[1-m]);
+			Ec::sub(R1[1-m], t1, t2);
+			mulH(t1, zkp.s[1-m]);
 			if (m) {
 				Ec::add(c.c2, c.c2, g);
-				Zn r1;
-				r1.setRand(rg);
-				zkp.c0.setRand(rg);
-				zkp.s0.setRand(rg);
-				Ec R01, R02, R11, R12;
-				Ec t1, t2;
-				mulG(t1, zkp.s0);
-				Ec::mul(t2, c.c1, zkp.c0);
-				Ec::sub(R01, t1, t2);
-				mulH(t1, zkp.s0);
-				Ec::mul(t2, c.c2, zkp.c0);
-				Ec::sub(R02, t1, t2);
-				mulG(R11, r1);
-				mulH(R12, r1);
-				std::ostringstream os;
-				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << g << h;
-				Zn cc;
-				cc.setHashOf(os.str());
-				zkp.c1 = cc - zkp.c0;
-				zkp.s1 = r1 + zkp.c1 * u;
+				Ec::mul(t2, c.c2, zkp.c[0]);
 			} else {
-				Zn r0;
-				r0.setRand(rg);
-				zkp.c1.setRand(rg);
-				zkp.s1.setRand(rg);
-				Ec R01, R02, R11, R12;
-				mulG(R01, r0);
-				mulH(R02, r0);
-				Ec t1, t2;
-				mulG(t1, zkp.s1);
-				Ec::mul(t2, c.c1, zkp.c1);
-				Ec::sub(R11, t1, t2);
-				mulH(t1, zkp.s1);
 				Ec::sub(t2, c.c2, g);
-				Ec::mul(t2, t2, zkp.c1);
-				Ec::sub(R12, t1, t2);
-				std::ostringstream os;
-				os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << g << h;
-				Zn cc;
-				cc.setHashOf(os.str());
-				zkp.c0 = cc - zkp.c1;
-				zkp.s0 = r0 + zkp.c0 * u;
+				Ec::mul(t2, t2, zkp.c[1]);
 			}
+			Ec::sub(R2[1-m], t1, t2);
+			Zn r;
+			r.setRand(rg);
+			mulG(R1[m], r);
+			mulH(R2[m], r);
+			std::ostringstream os;
+			os << R1[0] << R2[0] << R1[1] << R2[1] << c.c1 << c.c2 << g << h;
+			Zn cc;
+			cc.setHashOf(os.str());
+			zkp.c[m] = cc - zkp.c[1-m];
+			zkp.s[m] = r + zkp.c[m] * u;
 		}
 		/*
 			verify cipher text with ZKP
 		*/
 		bool verify(const CipherText& c, const Zkp& zkp) const
 		{
-			Ec R01, R02, R11, R12;
+			Ec R1[2], R2[2];
 			Ec t1, t2;
-			mulG(t1, zkp.s0);
-			Ec::mul(t2, c.c1, zkp.c0);
-			Ec::sub(R01, t1, t2);
-			mulH(t1, zkp.s0);
-			Ec::mul(t2, c.c2, zkp.c0);
-			Ec::sub(R02, t1, t2);
-			mulG(t1, zkp.s1);
-			Ec::mul(t2, c.c1, zkp.c1);
-			Ec::sub(R11, t1, t2);
-			mulH(t1, zkp.s1);
+			mulG(t1, zkp.s[0]);
+			Ec::mul(t2, c.c1, zkp.c[0]);
+			Ec::sub(R1[0], t1, t2);
+			mulH(t1, zkp.s[0]);
+			Ec::mul(t2, c.c2, zkp.c[0]);
+			Ec::sub(R2[0], t1, t2);
+			mulG(t1, zkp.s[1]);
+			Ec::mul(t2, c.c1, zkp.c[1]);
+			Ec::sub(R1[1], t1, t2);
+			mulH(t1, zkp.s[1]);
 			Ec::sub(t2, c.c2, g);
-			Ec::mul(t2, t2, zkp.c1);
-			Ec::sub(R12, t1, t2);
+			Ec::mul(t2, t2, zkp.c[1]);
+			Ec::sub(R2[1], t1, t2);
 			std::ostringstream os;
-			os << R01 << R02 << R11 << R12 << c.c1 << c.c2 << g << h;
+			os << R1[0] << R2[0] << R1[1] << R2[1] << c.c1 << c.c2 << g << h;
 			Zn cc;
 			cc.setHashOf(os.str());
-			return cc == zkp.c0 + zkp.c1;
+			return cc == zkp.c[0] + zkp.c[1];
 		}
 		/*
 			rerandomize encoded message

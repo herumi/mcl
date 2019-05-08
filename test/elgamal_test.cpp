@@ -144,11 +144,11 @@ CYBOZU_TEST_AUTO(testEc)
 		ElgamalEc::CipherText c;
 		pub.encWithZkp(c, zkp, 0, g_rg);
 		CYBOZU_TEST_ASSERT(pub.verify(c, zkp));
-		zkp.s0 += 1;
+		zkp.s[0] += 1;
 		CYBOZU_TEST_ASSERT(!pub.verify(c, zkp));
 		pub.encWithZkp(c, zkp, 1, g_rg);
 		CYBOZU_TEST_ASSERT(pub.verify(c, zkp));
-		zkp.s0 += 1;
+		zkp.s[0] += 1;
 		CYBOZU_TEST_ASSERT(!pub.verify(c, zkp));
 		CYBOZU_TEST_EXCEPTION_MESSAGE(pub.encWithZkp(c, zkp, 2, g_rg), cybozu::Exception, "encWithZkp");
 	}
