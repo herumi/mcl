@@ -731,18 +731,18 @@ public:
 		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
-			char buf[sizeof(Fp) + 1];
+			uint8_t buf[sizeof(Fp) + 1];
 			if (Fp::BaseFp::isETHserialization()) {
-				const char c_flag = 0x80;
-				const char b_flag = 0x40;
-				const char a_flag = 0x20;
+				const uint8_t c_flag = 0x80;
+				const uint8_t b_flag = 0x40;
+				const uint8_t a_flag = 0x20;
 				if (P.isZero()) {
 					buf[0] = c_flag | b_flag;
 					memset(buf + 1, 0, n - 1);
 				} else {
 					cybozu::MemoryOutputStream mos(buf, n);
 					P.x.save(pb, mos, IoSerialize); if (!*pb) return;
-					char cba = c_flag;
+					uint8_t cba = c_flag;
 					if (ec::local::get_a_flag(P.y)) cba |= a_flag;
 					buf[0] |= cba;
 				}
@@ -815,7 +815,7 @@ public:
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			const size_t n1 = n + adj;
-			char buf[sizeof(Fp) + 1];
+			uint8_t buf[sizeof(Fp) + 1];
 			size_t readSize;
 			if (ioMode & IoSerializeHexStr) {
 				readSize = mcl::fp::readHexStr(buf, n1, is);
@@ -827,9 +827,9 @@ public:
 				return;
 			}
 			if (Fp::BaseFp::isETHserialization()) {
-				const char c_flag = 0x80;
-				const char b_flag = 0x40;
-				const char a_flag = 0x20;
+				const uint8_t c_flag = 0x80;
+				const uint8_t b_flag = 0x40;
+				const uint8_t a_flag = 0x20;
 				*pb = false;
 				if ((buf[0] & c_flag) == 0) { // assume compressed
 					return;
