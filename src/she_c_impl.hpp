@@ -274,6 +274,41 @@ int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt m)
 	return encT(c, pub, m);
 }
 
+bool setArray(mpz_class& m, const void *buf, mclSize bufSize)
+{
+	if (bufSize > Fr::getUnitSize() * sizeof(mcl::fp::Unit)) return false;
+	bool b;
+	mcl::gmp::setArray(&b, m, (const uint8_t*)buf, bufSize);
+	return b;
+}
+
+template<class CT>
+int encIntVecT(CT *c, const shePublicKey *pub, const void *buf, mclSize bufSize)
+	try
+{
+	mpz_class m;
+	if (!setArray(m, buf, bufSize)) return -1;
+	cast(pub)->enc(*cast(c), m);
+	return 0;
+} catch (std::exception&) {
+	return -1;
+}
+
+int sheEncIntVecG1(sheCipherTextG1 *c, const shePublicKey *pub, const void *buf, mclSize bufSize)
+{
+	return encIntVecT(c, pub, buf, bufSize);
+}
+
+int sheEncIntVecG2(sheCipherTextG2 *c, const shePublicKey *pub, const void *buf, mclSize bufSize)
+{
+	return encIntVecT(c, pub, buf, bufSize);
+}
+
+int sheEncIntVecGT(sheCipherTextGT *c, const shePublicKey *pub, const void *buf, mclSize bufSize)
+{
+	return encIntVecT(c, pub, buf, bufSize);
+}
+
 template<class CT, class PK>
 int encWithZkpBinT(CT *c, sheZkpBin *zkp, const PK *pub, int m)
 	try
@@ -512,6 +547,33 @@ int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, mclInt y)
 	return mulT(*cast(z), *cast(x), y);
 }
 
+template<class CT>
+int mulIntVecT(CT& z, const CT& x, const void *buf, mclSize bufSize)
+	try
+{
+	mpz_class m;
+	if (!setArray(m, buf, bufSize)) return -1;
+	CT::mul(z, x, m);
+	return 0;
+} catch (std::exception&) {
+	return -1;
+}
+
+int sheMulIntVecG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const void *buf, mclSize bufSize)
+{
+	return mulIntVecT(*cast(z), *cast(x), buf, bufSize);
+}
+
+int sheMulIntVecG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, const void *buf, mclSize bufSize)
+{
+	return mulIntVecT(*cast(z), *cast(x), buf, bufSize);
+}
+
+int sheMulIntVecGT(sheCipherTextGT *z, const sheCipherTextGT *x, const void *buf, mclSize bufSize)
+{
+	return mulIntVecT(*cast(z), *cast(x), buf, bufSize);
+}
+
 int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y)
 {
 	return mulT(*cast(z), *cast(x), *cast(y));
@@ -625,6 +687,33 @@ int shePrecomputedPublicKeyEncG2(sheCipherTextG2 *c, const shePrecomputedPublicK
 int shePrecomputedPublicKeyEncGT(sheCipherTextGT *c, const shePrecomputedPublicKey *pub, mclInt m)
 {
 	return pEncT(c, pub, m);
+}
+
+template<class CT>
+int pEncIntVecT(CT *c, const shePrecomputedPublicKey *pub, const void *buf, mclSize bufSize)
+	try
+{
+	mpz_class m;
+	if (!setArray(m, buf, bufSize)) return -1;
+	cast(pub)->enc(*cast(c), m);
+	return 0;
+} catch (std::exception&) {
+	return -1;
+}
+
+int shePrecomputedPublicKeyEncIntVecG1(sheCipherTextG1 *c, const shePrecomputedPublicKey *pub, const void *buf, mclSize bufSize)
+{
+	return pEncIntVecT(c, pub, buf, bufSize);
+}
+
+int shePrecomputedPublicKeyEncIntVecG2(sheCipherTextG2 *c, const shePrecomputedPublicKey *pub, const void *buf, mclSize bufSize)
+{
+	return pEncIntVecT(c, pub, buf, bufSize);
+}
+
+int shePrecomputedPublicKeyEncIntVecGT(sheCipherTextGT *c, const shePrecomputedPublicKey *pub, const void *buf, mclSize bufSize)
+{
+	return pEncIntVecT(c, pub, buf, bufSize);
 }
 
 template<class PK, class CT>

@@ -1656,7 +1656,8 @@ public:
 		{
 			mul(z, x.c1_, y.c2_);
 		}
-		static void mul(CipherTextGT& z, const CipherTextGT& x, int64_t y)
+		template<class INT>
+		static void mul(CipherTextGT& z, const CipherTextGT& x, const INT& y)
 		{
 			for (int i = 0; i < 4; i++) {
 				GT::pow(z.g_[i], x.g_[i], y);

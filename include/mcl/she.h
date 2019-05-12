@@ -164,6 +164,19 @@ MCLSHE_DLL_API int shePrecomputedPublicKeyEncG2(sheCipherTextG2 *c, const shePre
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncGT(sheCipherTextGT *c, const shePrecomputedPublicKey *ppub, mclInt m);
 
 /*
+	enc large integer
+	buf[bufSize] is little endian
+	bufSize <= (FrBitSize + 63) & ~63
+	return 0 if success
+*/
+MCLSHE_DLL_API int sheEncIntVecG1(sheCipherTextG1 *c, const shePublicKey *pub, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int sheEncIntVecG2(sheCipherTextG2 *c, const shePublicKey *pub, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int sheEncIntVecGT(sheCipherTextGT *c, const shePublicKey *pub, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncIntVecG1(sheCipherTextG1 *c, const shePrecomputedPublicKey *ppub, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncIntVecG2(sheCipherTextG2 *c, const shePrecomputedPublicKey *ppub, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncIntVecGT(sheCipherTextGT *c, const shePrecomputedPublicKey *ppub, const void *buf, mclSize bufSize);
+
+/*
 	m must be 0 or 1
 */
 MCLSHE_DLL_API int sheEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePublicKey *pub, int m);
@@ -235,6 +248,15 @@ MCLSHE_DLL_API int sheSubGT(sheCipherTextGT *z, const sheCipherTextGT *x, const 
 MCLSHE_DLL_API int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, mclInt y);
 MCLSHE_DLL_API int sheMulG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, mclInt y);
 MCLSHE_DLL_API int sheMulGT(sheCipherTextGT *z, const sheCipherTextGT *x, mclInt y);
+/*
+	mul large integer
+	buf[bufSize] is little endian
+	bufSize <= (FrBitSize + 63) & ~63
+	return 0 if success
+*/
+MCLSHE_DLL_API int sheMulIntVecG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int sheMulIntVecG2(sheCipherTextG2 *z, const sheCipherTextG2 *x, const void *buf, mclSize bufSize);
+MCLSHE_DLL_API int sheMulIntVecGT(sheCipherTextGT *z, const sheCipherTextGT *x, const void *buf, mclSize bufSize);
 
 // return 0 if success
 // z = x * y

@@ -432,6 +432,40 @@ CYBOZU_TEST_AUTO(ZkpEq)
 	shePrecomputedPublicKeyDestroy(ppub);
 }
 
+template<class CT, class ENC, class ENCV, class DEC, class SUB, class MUL>
+void IntVecTest(const sheSecretKey& sec, const shePublicKey& pub, const ENC& enc, const ENCV& encv, const DEC& dec, const SUB& sub, const MUL& mul, uint8_t *buf, size_t bufSize)
+{
+	CT c1, c2;
+	int ret;
+	ret = encv(&c1, &pub, buf, bufSize);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	buf[0] += 5;
+	enc(&c2, &pub, 1);
+	ret = mul(&c2, &c2, buf, bufSize);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	sub(&c2, &c2, &c1);
+	int64_t d;
+	ret = dec(&d, &sec, &c2);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_EQUAL(d, 5);
+}
+
+CYBOZU_TEST_AUTO(IntVec)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+	uint8_t buf[48];
+	size_t n = 32;
+	for (size_t i = 0; i < sizeof(buf); i++) {
+		buf[i] = uint8_t(i + 5);
+	}
+	IntVecTest<sheCipherTextG1>(sec, pub, sheEncG1, sheEncIntVecG1, sheDecG1, sheSubG1, sheMulIntVecG1, buf, n);
+	IntVecTest<sheCipherTextG2>(sec, pub, sheEncG2, sheEncIntVecG2, sheDecG2, sheSubG2, sheMulIntVecG2, buf, n);
+	IntVecTest<sheCipherTextGT>(sec, pub, sheEncGT, sheEncIntVecGT, sheDecGT, sheSubGT, sheMulIntVecGT, buf, n);
+}
+
 CYBOZU_TEST_AUTO(finalExp)
 {
 	sheSecretKey sec;
