@@ -1325,7 +1325,7 @@ public:
 
 			G1 P1, P2;
 			G1::mul(P1, xP_, ra);
-			if (m) {
+			if (m != 0) {
 //				G1::mul(P2, P, m);
 				PhashTbl_.mulByWindowMethod(P2, m);
 				P1 += P2;
