@@ -1045,7 +1045,7 @@ private:
 		G2 R5, R6;
 		ElGamalEnc(R4, R3, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R6, R5, rm, Qmul, yQmul, &rs);
-		char buf[sizeof(Fr) * 12];
+		char buf[sizeof(Fp) * 12];
 		cybozu::MemoryOutputStream os(buf, sizeof(buf));
 		S1.save(os);
 		T1.save(os);
@@ -1105,7 +1105,7 @@ private:
 		R5 -= X2;
 		G2::mul(X2, S2, c);
 		R6 -= X2;
-		char buf[sizeof(Fr) * 12];
+		char buf[sizeof(Fp) * 12];
 		cybozu::MemoryOutputStream os(buf, sizeof(buf));
 		S1.save(os);
 		T1.save(os);
