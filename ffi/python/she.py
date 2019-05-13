@@ -47,9 +47,7 @@ def setRangeForDLP(hashSize):
 		raise RuntimeError("setRangeForDLP", ret)
 
 def setTryNum(tryNum):
-	ret = lib.sheSetTryNum(tryNum)
-	if ret != 0:
-		raise RuntimeError("setTryNum", ret)
+	lib.sheSetTryNum(tryNum)
 
 def hexStr(v):
 	s = ""
