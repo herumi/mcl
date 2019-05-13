@@ -9,16 +9,17 @@ const size_t tryNum = 1024;
 
 CYBOZU_TEST_AUTO(init)
 {
-	int curve;
 #if MCLBN_FP_UNIT_SIZE == 4
-	curve = MCL_BN254;
-#elif MCLBN_FP_UNIT_SIZE == 6
-//	curve = MCL_BN381_1;
-	curve = MCL_BLS12_381;
+	int curve = MCL_BN254;
+#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
+	int curve = MCL_BLS12_381;
+#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
+	int curve = MCL_BN381_1;
 #elif MCLBN_FP_UNIT_SIZE == 8
-	curve = MCL_BN462;
+	int curve = MCL_BN462;
 #endif
 	int ret;
+	printf("curve=%d\n", curve);
 	ret = sheInit(curve, MCLBN_COMPILED_TIME_VAR);
 	CYBOZU_TEST_EQUAL(ret, 0);
 	ret = sheSetRangeForDLP(hashSize);

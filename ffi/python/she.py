@@ -2,9 +2,10 @@ import os
 import platform
 from ctypes import *
 
-MCL_BN254 = 0
+BN254 = 0
+BLS12_381 = 5
 MCLBN_FR_UNIT_SIZE = 4
-MCLBN_FP_UNIT_SIZE = 4
+MCLBN_FP_UNIT_SIZE = 6
 
 FR_SIZE = MCLBN_FR_UNIT_SIZE
 G1_SIZE = MCLBN_FP_UNIT_SIZE * 3
@@ -22,15 +23,15 @@ MCLBN_COMPILED_TIME_VAR = (MCLBN_FR_UNIT_SIZE * 10) + MCLBN_FP_UNIT_SIZE
 Buffer = c_ubyte * 1536
 lib = None
 
-def init(curveType=MCL_BN254):
+def init(curveType=BN254):
 	global lib
 	name = platform.system()
 	if name == 'Linux':
-		libName = 'libmclshe256.so'
+		libName = 'libmclshe384_256.so'
 	elif name == 'Darwin':
-		libName = 'libmclshe256.dylib'
+		libName = 'libmclshe384_256.dylib'
 	elif name == 'Windows':
-		libName = 'mclshe256.dll'
+		libName = 'mclshe384_256.dll'
 	else:
 		raise RuntimeError("not support yet", name)
 	lib = cdll.LoadLibrary(libName)
@@ -249,7 +250,7 @@ def mul(cx, cy):
 	return out
 
 if __name__ == '__main__':
-	init()
+	init(BLS12_381)
 	sec = SecretKey()
 	sec.setByCSPRNG()
 	print("sec=", sec.serializeToHexStr())

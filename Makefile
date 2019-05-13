@@ -4,7 +4,8 @@ OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp ecdsa_test.cpp conversion_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cpp she_c256_test.cpp she_c384_test.cpp
+TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cpp
+TEST_SRC+=she_c256_test.cpp she_c384_test.cpp she_c384_256_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
@@ -35,6 +36,8 @@ BN384_SNAME=mclbn384
 BN384_256_SNAME=mclbn384_256
 BN512_SNAME=mclbn512
 SHE256_SNAME=mclshe256
+SHE384_SNAME=mclshe384
+SHE384_256_SNAME=mclshe384_256
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
 BN256_LIB=$(LIB_DIR)/libmclbn256.a
 BN256_SLIB=$(LIB_DIR)/lib$(BN256_SNAME).$(LIB_SUF)
@@ -47,8 +50,12 @@ BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
 SHE256_LIB=$(LIB_DIR)/libmclshe256.a
 SHE256_SLIB=$(LIB_DIR)/lib$(SHE256_SNAME).$(LIB_SUF)
 SHE384_LIB=$(LIB_DIR)/libmclshe384.a
+SHE384_SLIB=$(LIB_DIR)/lib$(SHE384_SNAME).$(LIB_SUF)
+SHE384_256_LIB=$(LIB_DIR)/libmclshe384_256.a
+SHE384_256_SLIB=$(LIB_DIR)/lib$(SHE384_256_SNAME).$(LIB_SUF)
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE256_LIB) $(SHE256_SLIB) $(SHE384_lib) $(ECDSA_LIB)
+SHE_LIB_ALL=$(SHE256_LIB) $(SHE256_SLIB) $(SHE384_LIB) $(SHE384_SLIB) $(SHE384_256_LIB) $(SHE384_256_SLIB)
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE_LIB_ALL) $(ECDSA_LIB)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -78,6 +85,7 @@ BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
 BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
+SHE384_256_OBJ=$(OBJ_DIR)/she_c384_256.o
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 FUNC_LIST=src/func.list
 ifeq ($(findstring $(OS),mingw64/cygwin),)
@@ -124,6 +132,8 @@ ifneq ($(findstring $(OS),mac/mingw64),)
   BN384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN512_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   SHE256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  SHE384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  SHE384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
 endif
 ifeq ($(OS),mingw64)
   MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(MCL_SNAME).a
@@ -132,6 +142,8 @@ ifeq ($(OS),mingw64)
   BN384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_256_SNAME).a
   BN512_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN512_SNAME).a
   SHE256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE256_SNAME).a
+  SHE384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_SNAME).a
+  SHE384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_256_SNAME).a
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
@@ -146,11 +158,20 @@ $(BN256_LIB): $(BN256_OBJ)
 $(SHE256_LIB): $(SHE256_OBJ)
 	$(AR) $@ $(SHE256_OBJ)
 
+$(SHE384_LIB): $(SHE384_OBJ)
+	$(AR) $@ $(SHE384_OBJ)
+
+$(SHE384_256_LIB): $(SHE384_256_OBJ)
+	$(AR) $@ $(SHE384_256_OBJ)
+
 $(SHE256_SLIB): $(SHE256_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(SHE256_OBJ) $(MCL_LIB) -shared $(LDFLAGS) $(SHE256_SLIB_LDFLAGS)
 
-$(SHE384_LIB): $(SHE384_OBJ)
-	$(AR) $@ $(SHE384_OBJ)
+$(SHE384_SLIB): $(SHE384_OBJ) $(MCL_LIB)
+	$(PRE)$(CXX) -o $@ $(SHE384_OBJ) $(MCL_LIB) -shared $(LDFLAGS) $(SHE384_SLIB_LDFLAGS)
+
+$(SHE384_256_SLIB): $(SHE384_256_OBJ) $(MCL_LIB)
+	$(PRE)$(CXX) -o $@ $(SHE384_256_OBJ) $(MCL_LIB) -shared $(LDFLAGS) $(SHE384_256_SLIB_LDFLAGS)
 
 $(ECDSA_LIB): $(ECDSA_OBJ)
 	$(AR) $@ $(ECDSA_OBJ)
@@ -274,6 +295,9 @@ $(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB
 
 $(EXE_DIR)/she_c384_test.exe: $(OBJ_DIR)/she_c384_test.o $(SHE384_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE384_LIB) $(MCL_LIB) $(LDFLAGS)
+
+$(EXE_DIR)/she_c384_256_test.exe: $(OBJ_DIR)/she_c384_256_test.o $(SHE384_256_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(SHE384_256_LIB) $(MCL_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
 	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)

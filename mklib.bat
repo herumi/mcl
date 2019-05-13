@@ -28,6 +28,11 @@ if "%1"=="dll" (
      cl /c %CFLAGS% src\she_c256.cpp /Foobj\she_c256.obj /DMCLBN_NO_AUTOLINK
   echo link /nologo /DLL /OUT:bin\mclshe256.dll obj\she_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe_c256.lib
      link /nologo /DLL /OUT:bin\mclshe256.dll obj\she_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe_c256.lib
+
+  echo cl /c %CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj /DMCLBN_NO_AUTOLINK
+     cl /c %CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj /DMCLBN_NO_AUTOLINK
+  echo link /nologo /DLL /OUT:bin\mclshe384_256.dll obj\she_c384_256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe_c384_256.lib
+     link /nologo /DLL /OUT:bin\mclshe384_256.dll obj\she_c384_256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclshe_c384_256.lib
 ) else (
   echo cl /c %CFLAGS% src\bn_c256.cpp /Foobj\bn_c256.obj
      cl /c %CFLAGS% src\bn_c256.cpp /Foobj\bn_c256.obj
