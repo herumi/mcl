@@ -186,6 +186,14 @@ class SecretKey(Structure):
 		if ret != 0:
 			raise RuntimeError("dec")
 		return m.value
+	def isZero(self, c):
+		if isinstance(c, CipherTextG1):
+			return lib.sheIsZeroG1(byref(self.v), byref(c.v)) == 1
+		elif isinstance(c, CipherTextG2):
+			return lib.sheIsZeroG2(byref(self.v), byref(c.v)) == 1
+		elif isinstance(c, CipherTextGT):
+			return lib.sheIsZeroGT(byref(self.v), byref(c.v)) == 1
+		raise RuntimeError("dec")
 
 def neg(c):
 	ret = -1
@@ -306,6 +314,13 @@ if __name__ == '__main__':
 
 	# mul G1 and G2
 	if sec.dec(mul(c11, c21)) != m11 * m21: print("err8")
+
+	if not sec.isZero(pub.encG1(0)): print("err-zero11")
+	if sec.isZero(pub.encG1(3)): print("err-zero12")
+	if not sec.isZero(pub.encG2(0)): print("err-zero21")
+	if sec.isZero(pub.encG2(3)): print("err-zero22")
+	if not sec.isZero(pub.encGT(0)): print("err-zero31")
+	if sec.isZero(pub.encGT(3)): print("err-zero32")
 
 	# use precomputedPublicKey for performance
 	ppub = pub.createPrecomputedPublicKey()
