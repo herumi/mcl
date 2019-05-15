@@ -564,7 +564,7 @@ CYBOZU_TEST_AUTO(saveHash)
 static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
 
 template<class CT>
-void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub, int64_t (SecretKey::*dec)(const CT& c) const = &SecretKey::dec)
+void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub, int64_t (SecretKey::*dec)(const CT& c, bool *pok) const = &SecretKey::dec)
 {
 	int64_t begin = 1 << 20;
 	int64_t end = 1LL << 32;
@@ -573,8 +573,8 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 		int64_t x = begin - 1;
 		pub.enc(c, x);
 		printf("m=%08x ", (uint32_t)x);
-		CYBOZU_BENCH_C(msg, C, (sec.*dec), c);
-		CYBOZU_TEST_EQUAL((sec.*dec)(c), x);
+		CYBOZU_BENCH_C(msg, C, (sec.*dec), c, 0);
+		CYBOZU_TEST_EQUAL((sec.*dec)(c, 0), x);
 		begin *= 2;
 	}
 	int64_t mTbl[] = { -0x80000003ll, 0x80000000ll, 0x80000005ll };
@@ -582,7 +582,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 		int64_t m = mTbl[i];
 		CT c;
 		pub.enc(c, m);
-		CYBOZU_TEST_EQUAL((sec.*dec)(c), m);
+		CYBOZU_TEST_EQUAL((sec.*dec)(c, 0), m);
 	}
 }
 

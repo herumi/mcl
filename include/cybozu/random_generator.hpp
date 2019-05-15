@@ -111,8 +111,11 @@ private:
 		const size_t byteSize = sizeof(T) * bufNum;
 		*pb = ::fread(buf, 1, (int)byteSize, fp_) == byteSize;
 	}
+private:
+	FILE *fp_;
 #endif
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+public:
 	template<class T>
 	void read(T *buf, size_t bufNum)
 	{
@@ -137,8 +140,6 @@ private:
 		return get32();
 	}
 #endif
-private:
-	FILE *fp_;
 };
 
 template<class T, class RG>
