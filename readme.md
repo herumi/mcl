@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography.
 The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+* mclBn_setETHserialization(true) (de)serialize acoording to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
 * (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
     * The option SHARE_BASENAME_SUF is removed
 * 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
@@ -301,6 +302,19 @@ The field Fp12 is constructed via the following tower:
 * Fp12 = Fp6[w] / (w^2 - v)
 * GT = { x in Fp12 | x^r = 1 }
 
+## Curve Parameter
+r = |G1| = |G2| = |GT|
+
+curveType   | hexadecimal number|
+------------|-------------------|
+BN254 r     | 2523648240000001ba344d8000000007ff9f800000000010a10000000000000d |
+BN254 p     | 2523648240000001ba344d80000000086121000000000013a700000000000013 |
+BN381 r     | 240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d |
+BN381 p     | 240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013 |
+BN462 r     | 240480360120023ffffffffff6ff0cf6b7d9bfca0000000000d812908ee1c201f7fffffffff6ff66fc7bf717f7c0000000002401b007e010800d |
+BN462 r     | 240480360120023ffffffffff6ff0cf6b7d9bfca0000000000d812908f41c8020ffffffffff6ff66fc6ff687f640000000002401b00840138013 |
+BLS12-381 r | 73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001 |
+BLS12-381 r | 1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab |
 
 ## Arithmetic operations
 
