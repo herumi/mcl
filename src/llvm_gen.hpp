@@ -146,7 +146,7 @@ struct Generator {
 	Eval load(const Operand& p);
 	void store(const Operand& r, const Operand& p);
 	Eval select(const Operand& c, const Operand& r1, const Operand& r2);
-	Eval _alloca(uint32_t bit, uint32_t n);
+	Eval alloca_(uint32_t bit, uint32_t n);
 	// QQQ : type of type must be Type
 	Eval bitcast(const Operand& r, const Operand& type);
 	Eval icmp(CondType type, const Operand& r1, const Operand& r2);
@@ -524,7 +524,7 @@ inline Generator::Eval Generator::select(const Generator::Operand& c, const Gene
 	return e;
 }
 
-inline Generator::Eval Generator::_alloca(uint32_t bit, uint32_t n)
+inline Generator::Eval Generator::alloca_(uint32_t bit, uint32_t n)
 {
 	Eval e;
 	e.op = Operand(IntPtr, bit);
