@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace mcl {
 	public class BN256 {
 		[DllImport("mclBn256.dll")]
-		public static extern int mclBn_init(int curve, int maxUnitSize);
+		public static extern int mclBn_init(int curve, int compiledTimeVar);
 		[DllImport("mclBn256.dll")]
 		public static extern void mclBnFr_clear(ref Fr x);
 		[DllImport("mclBn256.dll")]
@@ -128,8 +128,10 @@ namespace mcl {
 		public static void init()
 		{
 			const int curveFp254BNb = 0;
-			const int maxUnitSize = 4;
-			if (mclBn_init(curveFp254BNb, maxUnitSize) != 0) {
+            const int MCLBN_FR_UNIT_SIZE = 4;
+            const int MCLBN_FP_UNIT_SIZE = 4;
+            const int MCLBN_COMPILED_TIME_VAR  = (MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE);
+            if (mclBn_init(curveFp254BNb, MCLBN_COMPILED_TIME_VAR) != 0) {
 				throw new InvalidOperationException("mclBn_init");
 			}
 		}
