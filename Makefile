@@ -385,8 +385,8 @@ DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
 PREFIX?=/usr/local
 install: lib/libmcl.a lib/libmcl.$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/include/mcl
-	cp -a include/mcl/ $(PREFIX)/include/
-	cp -a include/cybozu/ $(PREFIX)/include/
+	cp -a include/mcl $(PREFIX)/include/
+	cp -a include/cybozu $(PREFIX)/include/
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl.$(LIB_SUF) $(PREFIX)/lib/
 
