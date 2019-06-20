@@ -431,6 +431,7 @@ const char *e1Str =
 	CYBOZU_BENCH_C("finalExp", 100, finalExp, e2, e0);
 }
 
+#if 0 // test for only Proj
 CYBOZU_TEST_AUTO(addLine)
 {
 const char *l0Str=
@@ -566,6 +567,7 @@ const char *q1Str =
 	CYBOZU_TEST_EQUAL(Q, Q1);
 	G1::setOrder(BN::param.r);
 }
+#endif
 
 CYBOZU_TEST_AUTO(mul_012)
 {
