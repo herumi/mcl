@@ -15,6 +15,23 @@ void SystemInit(int curveType) throw(std::exception)
 	mcl::bn::initPairing(cp);
 }
 
+template<class T>
+void deserializeT(T& x, const char *cbuf, size_t bufSize)
+{
+	if (x.deserialize(cbuf, bufSize) == 0) {
+		throw std::runtime_error("deserialize");
+	}
+}
+
+template<class T>
+void serializeT(std::string& out, const T& x)
+{
+	out.resize(48 * 12);
+	size_t n = x.serialize(&out[0], out.size());
+	if (n == 0) throw std::runtime_error("serializeT");
+	out.resize(n);
+}
+
 class G1;
 class G2;
 class GT;
@@ -63,9 +80,11 @@ public:
 	}
 	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
 	{
-		if (self_.deserialize(cbuf, bufSize) == 0) {
-			throw std::runtime_error("deserialize");
-		}
+		deserializeT(self_, cbuf, bufSize);
+	}
+	void serialize(std::string& out) const throw(std::exception)
+	{
+		serializeT(out, self_);
 	}
 };
 
@@ -136,9 +155,11 @@ public:
 	}
 	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
 	{
-		if (self_.deserialize(cbuf, bufSize) == 0) {
-			throw std::runtime_error("deserialize");
-		}
+		deserializeT(self_, cbuf, bufSize);
+	}
+	void serialize(std::string& out) const throw(std::exception)
+	{
+		serializeT(out, self_);
 	}
 };
 
@@ -207,9 +228,11 @@ public:
 	}
 	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
 	{
-		if (self_.deserialize(cbuf, bufSize) == 0) {
-			throw std::runtime_error("deserialize");
-		}
+		deserializeT(self_, cbuf, bufSize);
+	}
+	void serialize(std::string& out) const throw(std::exception)
+	{
+		serializeT(out, self_);
 	}
 };
 
@@ -275,9 +298,11 @@ public:
 	}
 	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
 	{
-		if (self_.deserialize(cbuf, bufSize) == 0) {
-			throw std::runtime_error("deserialize");
-		}
+		deserializeT(self_, cbuf, bufSize);
+	}
+	void serialize(std::string& out) const throw(std::exception)
+	{
+		serializeT(out, self_);
 	}
 };
 
@@ -325,6 +350,14 @@ public:
 	std::string toString(int base = 0) const throw(std::exception)
 	{
 		return self_.getStr(base);
+	}
+	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
+	{
+		deserializeT(self_, cbuf, bufSize);
+	}
+	void serialize(std::string& out) const throw(std::exception)
+	{
+		serializeT(out, self_);
 	}
 };
 

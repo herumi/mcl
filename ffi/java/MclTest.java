@@ -11,11 +11,13 @@ public class MclTest {
 		System.out.println("libName : " + libName);
 		System.loadLibrary(lib);
 	}
+    public static int errN = 0;
 	public static void assertEquals(String msg, String x, String y) {
 		if (x.equals(y)) {
 			System.out.println("OK : " + msg);
 		} else {
 			System.out.println("NG : " + msg + ", x = " + x + ", y = " + y);
+            errN++;
 		}
 	}
 	public static void assertBool(String msg, boolean b) {
@@ -23,6 +25,7 @@ public class MclTest {
 			System.out.println("OK : " + msg);
 		} else {
 			System.out.println("NG : " + msg);
+            errN++;
 		}
 	}
 	public static void testCurve(int curveType, String name) {
@@ -43,14 +46,12 @@ public class MclTest {
 			assertEquals("x == 18", (new Fr("12", 16)).toString(), "18");
 			assertEquals("x == ff", (new Fr("255")).toString(16), "ff");
 
-/*
 			{
 				byte[] b = x.serialize();
 				Fr t = new Fr();
 				t.deserialize(b);
-				assertEquals("serialize", x, t);
+				assertBool("serialize", x.equals(t));
 			}
-*/
 			G1 P = new G1();
 			System.out.println("P=" + P);
 			Mcl.hashAndMapToG1(P, "test".getBytes());
@@ -60,6 +61,12 @@ public class MclTest {
 			System.out.println("P=" + P);
 			Mcl.neg(P, P);
 			System.out.println("P=" + P);
+			{
+				byte[] b = P.serialize();
+				G1 t = new G1();
+				t.deserialize(b);
+				assertBool("serialize", P.equals(t));
+			}
 
 			G2 Q = new G2();
 			Mcl.hashAndMapToG2(Q, "abc".getBytes());
@@ -71,6 +78,12 @@ public class MclTest {
 				G1 P1 = new G1();
 				P1.setStr(s);
 				assertBool("P == P1", P1.equals(P));
+			}
+			{
+				byte[] b = Q.serialize();
+				G2 t = new G2();
+				t.deserialize(b);
+				assertBool("serialize", Q.equals(t));
 			}
 
 			GT e = new GT();
@@ -84,13 +97,23 @@ public class MclTest {
 			Mcl.pairing(e1, P, cQ);
 			Mcl.pow(e2, e, c); // e2 = e^c
 			assertBool("e1 == e2", e1.equals(e2));
-
+			{
+				byte[] b = e1.serialize();
+				GT t = new GT();
+				t.deserialize(b);
+				assertBool("serialize", e1.equals(t));
+			}
 			G1 cP = new G1(P);
 			Mcl.mul(cP, P, c); // cP = P * c
 			Mcl.pairing(e1, cP, Q);
 			assertBool("e1 == e2", e1.equals(e2));
 
 			BLSsignature(Q);
+            if (errN == 0) {
+                System.out.println("all test passed");
+            } else {
+                System.out.println("ERR=" + errN);
+            }
 		} catch (RuntimeException e) {
 			System.out.println("unknown exception :" + e);
 		}

@@ -91,4 +91,6 @@ public class Fp {
     MclJNI.Fp_deserialize(swigCPtr, this, cbuf);
   }
 
+  public byte[] serialize() { return MclJNI.Fp_serialize(swigCPtr, this); }
+
 }

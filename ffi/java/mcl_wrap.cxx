@@ -788,6 +788,33 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1deserialize(JNIEnv *jenv,
 }
 
 
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_Fr_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jbyteArray jresult = 0 ;
+  Fr *arg1 = (Fr *) 0 ;
+  std::string *arg2 = 0 ;
+  std::string buf2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg2=&buf2;
+  (void)jarg1_;
+  arg1 = *(Fr **)&jarg1; 
+  try {
+    ((Fr const *)arg1)->serialize(*arg2);
+  }
+  catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return 0;
+  }
+  
+  {
+    jresult = jenv->NewByteArray(arg2->size());
+    jenv->SetByteArrayRegion(jresult, 0, arg2->size(), (const jbyte*)arg2->c_str());
+  }
+  return jresult;
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1Fr(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   Fr *arg1 = (Fr *) 0 ;
   
@@ -1322,6 +1349,33 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1deserialize(JNIEnv *jenv,
 }
 
 
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_Fp_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jbyteArray jresult = 0 ;
+  Fp *arg1 = (Fp *) 0 ;
+  std::string *arg2 = 0 ;
+  std::string buf2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg2=&buf2;
+  (void)jarg1_;
+  arg1 = *(Fp **)&jarg1; 
+  try {
+    ((Fp const *)arg1)->serialize(*arg2);
+  }
+  catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return 0;
+  }
+  
+  {
+    jresult = jenv->NewByteArray(arg2->size());
+    jenv->SetByteArrayRegion(jresult, 0, arg2->size(), (const jbyte*)arg2->c_str());
+  }
+  return jresult;
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1Fp(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   Fp *arg1 = (Fp *) 0 ;
   
@@ -1763,6 +1817,33 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1deserialize(JNIEnv *jenv,
     if (jarg2) jenv->ReleaseByteArrayElements(jarg2, (jbyte *)arg2, 0);
   }
   
+}
+
+
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_G1_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jbyteArray jresult = 0 ;
+  G1 *arg1 = (G1 *) 0 ;
+  std::string *arg2 = 0 ;
+  std::string buf2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg2=&buf2;
+  (void)jarg1_;
+  arg1 = *(G1 **)&jarg1; 
+  try {
+    ((G1 const *)arg1)->serialize(*arg2);
+  }
+  catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return 0;
+  }
+  
+  {
+    jresult = jenv->NewByteArray(arg2->size());
+    jenv->SetByteArrayRegion(jresult, 0, arg2->size(), (const jbyte*)arg2->c_str());
+  }
+  return jresult;
 }
 
 
@@ -2209,6 +2290,33 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1deserialize(JNIEnv *jenv,
 }
 
 
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_G2_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jbyteArray jresult = 0 ;
+  G2 *arg1 = (G2 *) 0 ;
+  std::string *arg2 = 0 ;
+  std::string buf2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg2=&buf2;
+  (void)jarg1_;
+  arg1 = *(G2 **)&jarg1; 
+  try {
+    ((G2 const *)arg1)->serialize(*arg2);
+  }
+  catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return 0;
+  }
+  
+  {
+    jresult = jenv->NewByteArray(arg2->size());
+    jenv->SetByteArrayRegion(jresult, 0, arg2->size(), (const jbyte*)arg2->c_str());
+  }
+  return jresult;
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1G2(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   G2 *arg1 = (G2 *) 0 ;
   
@@ -2412,6 +2520,66 @@ SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_GT_1toString_1_1SWIG_11(JN
   }
   
   jresult = jenv->NewStringUTF((&result)->c_str()); 
+  return jresult;
+}
+
+
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_GT_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+  GT *arg1 = (GT *) 0 ;
+  char *arg2 = (char *) 0 ;
+  size_t arg3 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(GT **)&jarg1; 
+  {
+    if (jarg2) {
+      arg2 = (char *) jenv->GetByteArrayElements(jarg2, 0);
+      arg3 = (size_t) jenv->GetArrayLength(jarg2);
+    } else {
+      arg2 = 0;
+      arg3 = 0;
+    }
+  }
+  try {
+    (arg1)->deserialize((char const *)arg2,arg3);
+  }
+  catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return ;
+  }
+  
+  {
+    if (jarg2) jenv->ReleaseByteArrayElements(jarg2, (jbyte *)arg2, 0);
+  }
+  
+}
+
+
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_GT_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jbyteArray jresult = 0 ;
+  GT *arg1 = (GT *) 0 ;
+  std::string *arg2 = 0 ;
+  std::string buf2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg2=&buf2;
+  (void)jarg1_;
+  arg1 = *(GT **)&jarg1; 
+  try {
+    ((GT const *)arg1)->serialize(*arg2);
+  }
+  catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return 0;
+  }
+  
+  {
+    jresult = jenv->NewByteArray(arg2->size());
+    jenv->SetByteArrayRegion(jresult, 0, arg2->size(), (const jbyte*)arg2->c_str());
+  }
   return jresult;
 }
 

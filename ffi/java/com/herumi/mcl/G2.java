@@ -79,4 +79,6 @@ public class G2 {
     MclJNI.G2_deserialize(swigCPtr, this, cbuf);
   }
 
+  public byte[] serialize() { return MclJNI.G2_serialize(swigCPtr, this); }
+
 }

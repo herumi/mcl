@@ -67,4 +67,10 @@ public class GT {
     return MclJNI.GT_toString__SWIG_1(swigCPtr, this);
   }
 
+  public void deserialize(byte[] cbuf) {
+    MclJNI.GT_deserialize(swigCPtr, this, cbuf);
+  }
+
+  public byte[] serialize() { return MclJNI.GT_serialize(swigCPtr, this); }
+
 }
