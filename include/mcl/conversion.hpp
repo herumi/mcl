@@ -208,8 +208,6 @@ inline bool parsePrefix(size_t *readSize, bool *isMinus, int *base, const char *
 			if (*base == 0 || *base == 2) {
 				*base = 2;
 				pos += 2;
-			} else {
-				return false;
 			}
 		}
 	}

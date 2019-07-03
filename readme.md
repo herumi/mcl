@@ -457,6 +457,7 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 # History
 
+* 2019/Jun/03 v0.95 fix a parser of 0b10 with base = 16
 * 2019/Apr/29 v0.94 mclBn_setETHserialization supports [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations)
 * 2019/Apr/24 v0.93 support ios
 * 2019/Mar/22 v0.92 shortcut for Ec::mul(Px, P, x) if P = 0
