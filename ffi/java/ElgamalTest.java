@@ -8,7 +8,7 @@ import com.herumi.mcl.*;
 */
 public class ElgamalTest {
 	static {
-		String lib = "mcl_elgamal";
+		String lib = "mclelgamaljava";
 		String libName = System.mapLibraryName(lib);
 		System.out.println("libName : " + libName);
 		System.loadLibrary(lib);

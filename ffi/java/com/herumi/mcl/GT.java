@@ -29,34 +29,42 @@ public class GT {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        Bn256JNI.delete_GT(swigCPtr);
+        MclJNI.delete_GT(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public GT() {
-    this(Bn256JNI.new_GT__SWIG_0(), true);
+    this(MclJNI.new_GT__SWIG_0(), true);
   }
 
   public GT(GT rhs) {
-    this(Bn256JNI.new_GT__SWIG_1(GT.getCPtr(rhs), rhs), true);
+    this(MclJNI.new_GT__SWIG_1(GT.getCPtr(rhs), rhs), true);
   }
 
   public boolean equals(GT rhs) {
-    return Bn256JNI.GT_equals(swigCPtr, this, GT.getCPtr(rhs), rhs);
+    return MclJNI.GT_equals(swigCPtr, this, GT.getCPtr(rhs), rhs);
   }
 
   public void clear() {
-    Bn256JNI.GT_clear(swigCPtr, this);
+    MclJNI.GT_clear(swigCPtr, this);
+  }
+
+  public void setStr(String str, int base) {
+    MclJNI.GT_setStr__SWIG_0(swigCPtr, this, str, base);
   }
 
   public void setStr(String str) {
-    Bn256JNI.GT_setStr(swigCPtr, this, str);
+    MclJNI.GT_setStr__SWIG_1(swigCPtr, this, str);
+  }
+
+  public String toString(int base) {
+    return MclJNI.GT_toString__SWIG_0(swigCPtr, this, base);
   }
 
   public String toString() {
-    return Bn256JNI.GT_toString(swigCPtr, this);
+    return MclJNI.GT_toString__SWIG_1(swigCPtr, this);
   }
 
 }

@@ -29,42 +29,54 @@ public class G2 {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        Bn256JNI.delete_G2(swigCPtr);
+        MclJNI.delete_G2(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public G2() {
-    this(Bn256JNI.new_G2__SWIG_0(), true);
+    this(MclJNI.new_G2__SWIG_0(), true);
   }
 
   public G2(G2 rhs) {
-    this(Bn256JNI.new_G2__SWIG_1(G2.getCPtr(rhs), rhs), true);
+    this(MclJNI.new_G2__SWIG_1(G2.getCPtr(rhs), rhs), true);
   }
 
-  public G2(String xa, String xb, String ya, String yb) {
-    this(Bn256JNI.new_G2__SWIG_2(xa, xb, ya, yb), true);
+  public G2(Fp ax, Fp ay, Fp bx, Fp by) {
+    this(MclJNI.new_G2__SWIG_2(Fp.getCPtr(ax), ax, Fp.getCPtr(ay), ay, Fp.getCPtr(bx), bx, Fp.getCPtr(by), by), true);
   }
 
   public boolean equals(G2 rhs) {
-    return Bn256JNI.G2_equals(swigCPtr, this, G2.getCPtr(rhs), rhs);
+    return MclJNI.G2_equals(swigCPtr, this, G2.getCPtr(rhs), rhs);
   }
 
-  public void set(String xa, String xb, String ya, String yb) {
-    Bn256JNI.G2_set(swigCPtr, this, xa, xb, ya, yb);
+  public void set(Fp ax, Fp ay, Fp bx, Fp by) {
+    MclJNI.G2_set(swigCPtr, this, Fp.getCPtr(ax), ax, Fp.getCPtr(ay), ay, Fp.getCPtr(bx), bx, Fp.getCPtr(by), by);
   }
 
   public void clear() {
-    Bn256JNI.G2_clear(swigCPtr, this);
+    MclJNI.G2_clear(swigCPtr, this);
+  }
+
+  public void setStr(String str, int base) {
+    MclJNI.G2_setStr__SWIG_0(swigCPtr, this, str, base);
   }
 
   public void setStr(String str) {
-    Bn256JNI.G2_setStr(swigCPtr, this, str);
+    MclJNI.G2_setStr__SWIG_1(swigCPtr, this, str);
+  }
+
+  public String toString(int base) {
+    return MclJNI.G2_toString__SWIG_0(swigCPtr, this, base);
   }
 
   public String toString() {
-    return Bn256JNI.G2_toString(swigCPtr, this);
+    return MclJNI.G2_toString__SWIG_1(swigCPtr, this);
+  }
+
+  public void deserialize(byte[] cbuf) {
+    MclJNI.G2_deserialize(swigCPtr, this, cbuf);
   }
 
 }

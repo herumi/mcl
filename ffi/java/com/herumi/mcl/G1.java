@@ -29,46 +29,54 @@ public class G1 {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        Bn256JNI.delete_G1(swigCPtr);
+        MclJNI.delete_G1(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public G1() {
-    this(Bn256JNI.new_G1__SWIG_0(), true);
+    this(MclJNI.new_G1__SWIG_0(), true);
   }
 
   public G1(G1 rhs) {
-    this(Bn256JNI.new_G1__SWIG_1(G1.getCPtr(rhs), rhs), true);
+    this(MclJNI.new_G1__SWIG_1(G1.getCPtr(rhs), rhs), true);
   }
 
-  public G1(String x, String y) {
-    this(Bn256JNI.new_G1__SWIG_2(x, y), true);
+  public G1(Fp x, Fp y) {
+    this(MclJNI.new_G1__SWIG_2(Fp.getCPtr(x), x, Fp.getCPtr(y), y), true);
   }
 
   public boolean equals(G1 rhs) {
-    return Bn256JNI.G1_equals(swigCPtr, this, G1.getCPtr(rhs), rhs);
+    return MclJNI.G1_equals(swigCPtr, this, G1.getCPtr(rhs), rhs);
   }
 
-  public void set(String x, String y) {
-    Bn256JNI.G1_set(swigCPtr, this, x, y);
-  }
-
-  public void hashAndMapToG1(String m) {
-    Bn256JNI.G1_hashAndMapToG1(swigCPtr, this, m);
+  public void set(Fp x, Fp y) {
+    MclJNI.G1_set(swigCPtr, this, Fp.getCPtr(x), x, Fp.getCPtr(y), y);
   }
 
   public void clear() {
-    Bn256JNI.G1_clear(swigCPtr, this);
+    MclJNI.G1_clear(swigCPtr, this);
+  }
+
+  public void setStr(String str, int base) {
+    MclJNI.G1_setStr__SWIG_0(swigCPtr, this, str, base);
   }
 
   public void setStr(String str) {
-    Bn256JNI.G1_setStr(swigCPtr, this, str);
+    MclJNI.G1_setStr__SWIG_1(swigCPtr, this, str);
+  }
+
+  public String toString(int base) {
+    return MclJNI.G1_toString__SWIG_0(swigCPtr, this, base);
   }
 
   public String toString() {
-    return Bn256JNI.G1_toString(swigCPtr, this);
+    return MclJNI.G1_toString__SWIG_1(swigCPtr, this);
+  }
+
+  public void deserialize(byte[] cbuf) {
+    MclJNI.G1_deserialize(swigCPtr, this, cbuf);
   }
 
 }

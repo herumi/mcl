@@ -2,11 +2,11 @@ import java.io.*;
 import com.herumi.mcl.*;
 
 /*
-	Bn256Test
+	MclTest
 */
-public class Bn256Test {
+public class MclTest {
 	static {
-		String lib = "mcl_bn256";
+		String lib = "mcljava";
 		String libName = System.mapLibraryName(lib);
 		System.out.println("libName : " + libName);
 		System.loadLibrary(lib);
@@ -25,34 +25,47 @@ public class Bn256Test {
 			System.out.println("NG : " + msg);
 		}
 	}
-	public static void main(String argv[]) {
+	public static void testCurve(int curveType, String name) {
 		try {
-			Bn256.SystemInit();
+			System.out.println("curve=" + name);
+			Mcl.SystemInit(curveType);
 			Fr x = new Fr(5);
 			Fr y = new Fr(-2);
 			Fr z = new Fr(5);
 			assertBool("x != y", !x.equals(y));
 			assertBool("x == z", x.equals(z));
 			assertEquals("x == 5", x.toString(), "5");
-			Bn256.add(x, x, y);
+			Mcl.add(x, x, y);
 			assertEquals("x == 3", x.toString(), "3");
-			Bn256.mul(x, x, x);
+			Mcl.mul(x, x, x);
 			assertEquals("x == 9", x.toString(), "9");
+			assertEquals("x == 12", (new Fr("12")).toString(), "12");
+			assertEquals("x == 18", (new Fr("12", 16)).toString(), "18");
+			assertEquals("x == ff", (new Fr("255")).toString(16), "ff");
+
+/*
+			{
+				byte[] b = x.serialize();
+				Fr t = new Fr();
+				t.deserialize(b);
+				assertEquals("serialize", x, t);
+			}
+*/
 			G1 P = new G1();
 			System.out.println("P=" + P);
-			P.set("-1", "1");
+			Mcl.hashAndMapToG1(P, "test".getBytes());
 			System.out.println("P=" + P);
-			Bn256.neg(P, P);
+			byte[] buf = { 1, 2, 3, 4 };
+			Mcl.hashAndMapToG1(P, buf);
+			System.out.println("P=" + P);
+			Mcl.neg(P, P);
 			System.out.println("P=" + P);
 
-			String xa = "12723517038133731887338407189719511622662176727675373276651903807414909099441";
-			String xb = "4168783608814932154536427934509895782246573715297911553964171371032945126671";
-			String ya = "13891744915211034074451795021214165905772212241412891944830863846330766296736";
-			String yb = "7937318970632701341203597196594272556916396164729705624521405069090520231616";
+			G2 Q = new G2();
+			Mcl.hashAndMapToG2(Q, "abc".getBytes());
+			System.out.println("Q=" + Q);
 
-			G2 Q = new G2(xa, xb, ya, yb);
-
-			P.hashAndMapToG1("This is a pen");
+			Mcl.hashAndMapToG1(P, "This is a pen".getBytes());
 			{
 				String s = P.toString();
 				G1 P1 = new G1();
@@ -61,19 +74,20 @@ public class Bn256Test {
 			}
 
 			GT e = new GT();
-			Bn256.pairing(e, P, Q);
+			Mcl.pairing(e, P, Q);
 			GT e1 = new GT();
 			GT e2 = new GT();
 			Fr c = new Fr("1234567890123234928348230428394234");
+			System.out.println("c=" + c);
 			G2 cQ = new G2(Q);
-			Bn256.mul(cQ, Q, c); // cQ = Q * c
-			Bn256.pairing(e1, P, cQ);
-			Bn256.pow(e2, e, c); // e2 = e^c
+			Mcl.mul(cQ, Q, c); // cQ = Q * c
+			Mcl.pairing(e1, P, cQ);
+			Mcl.pow(e2, e, c); // e2 = e^c
 			assertBool("e1 == e2", e1.equals(e2));
 
 			G1 cP = new G1(P);
-			Bn256.mul(cP, P, c); // cP = P * c
-			Bn256.pairing(e1, cP, Q);
+			Mcl.mul(cP, P, c); // cP = P * c
+			Mcl.pairing(e1, cP, Q);
 			assertBool("e1 == e2", e1.equals(e2));
 
 			BLSsignature(Q);
@@ -84,21 +98,25 @@ public class Bn256Test {
 	public static void BLSsignature(G2 Q)
 	{
 		Fr s = new Fr();
-		s.setRand(); // secret key
+		s.setByCSPRNG(); // secret key
 		System.out.println("secret key " + s);
 		G2 pub = new G2();
-		Bn256.mul(pub, Q, s); // public key = sQ
+		Mcl.mul(pub, Q, s); // public key = sQ
 
-		String m = "signature test";
+		byte[] m = "signature test".getBytes();
 		G1 H = new G1();
-		H.hashAndMapToG1(m); // H = Hash(m)
+		Mcl.hashAndMapToG1(H, m); // H = Hash(m)
 		G1 sign = new G1();
-		Bn256.mul(sign, H, s); // signature of m = s H
+		Mcl.mul(sign, H, s); // signature of m = s H
 
 		GT e1 = new GT();
 		GT e2 = new GT();
-		Bn256.pairing(e1, H, pub); // e1 = e(H, s Q)
-		Bn256.pairing(e2, sign, Q); // e2 = e(s H, Q);
+		Mcl.pairing(e1, H, pub); // e1 = e(H, s Q)
+		Mcl.pairing(e2, sign, Q); // e2 = e(s H, Q);
 		assertBool("verify signature", e1.equals(e2));
+	}
+	public static void main(String argv[]) {
+		testCurve(Mcl.BN254, "BN254");
+		testCurve(Mcl.BLS12_381, "BLS12_381");
 	}
 }

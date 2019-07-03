@@ -21,7 +21,7 @@ System.loadLibrary("mcl_bn256");
 ## Fr
 * `Fr::setInt(int x)` ; set by x
 * `Fr::setStr(String str)` ; set by str such as "123", "0xfff", etc.
-* `Fr::setRand()` ; randomly set
+* `Fr::setByCSPRNG()` ; randomly set
 * `Bn256.neg(Fr y, Fr x)` ; `y = -x`
 * `Bn256.add(Fr z, Fr x, Fr y)` ; `z = x + y`
 * `Bn256.sub(Fr z, Fr x, Fr y)` ; `z = x - y`
@@ -68,7 +68,7 @@ String yb = "7937318970632701341203597196594272556916396164729705624521405069090
 G2 Q = new G2(xa, xb, ya, yb); // fixed point of G2
 
 Fr s = new Fr();
-s.setRand(); // secret key
+s.setByCSPRNG(); // secret key
 G2 pub = new G2();
 Bn256.mul(pub, Q, s); // public key = sQ
 
