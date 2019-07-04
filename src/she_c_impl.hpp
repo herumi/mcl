@@ -167,7 +167,7 @@ void sheGetPublicKey(shePublicKey *pub, const sheSecretKey *sec)
 	cast(sec)->getPublicKey(*cast(pub));
 }
 
-static int setRangeForDLP(void (*f)(mclSize), mclSize hashSize)
+static int wrapSetRangeForDLP(void f(size_t), mclSize hashSize)
 	try
 {
 	f(hashSize);
@@ -178,19 +178,19 @@ static int setRangeForDLP(void (*f)(mclSize), mclSize hashSize)
 
 int sheSetRangeForDLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForDLP, hashSize);
+	return wrapSetRangeForDLP(SHE::setRangeForDLP, hashSize);
 }
-int sheSetRangeForG1DLP(mclSize hashSize)
+int sheSetRangeForG1DLPnoexcept(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForG1DLP, hashSize);
+	return wrapSetRangeForDLP(SHE::setRangeForG1DLP, hashSize);
 }
 int sheSetRangeForG2DLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForG2DLP, hashSize);
+	return wrapSetRangeForDLP(SHE::setRangeForG2DLP, hashSize);
 }
 int sheSetRangeForGTDLP(mclSize hashSize)
 {
-	return setRangeForDLP(SHE::setRangeForGTDLP, hashSize);
+	return wrapSetRangeForDLP(SHE::setRangeForGTDLP, hashSize);
 }
 
 void sheSetTryNum(mclSize tryNum)
