@@ -17,7 +17,7 @@ public class MclJNI {
   public final static native void mul__SWIG_1(long jarg1, G1 jarg1_, long jarg2, G1 jarg2_, long jarg3, Fr jarg3_);
   public final static native void mul__SWIG_2(long jarg1, G2 jarg1_, long jarg2, G2 jarg2_, long jarg3, Fr jarg3_);
   public final static native void div__SWIG_0(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_, long jarg3, Fr jarg3_);
-  public final static native void pow__SWIG_0(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, Fr jarg3_);
+  public final static native void pow(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, Fr jarg3_);
   public final static native long new_Fr__SWIG_0();
   public final static native long new_Fr__SWIG_1(long jarg1, Fr jarg1_);
   public final static native long new_Fr__SWIG_2(int jarg1);
@@ -38,10 +38,7 @@ public class MclJNI {
   public final static native void add__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void sub__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void mul__SWIG_3(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
-  public final static native void mul__SWIG_4(long jarg1, G1 jarg1_, long jarg2, G1 jarg2_, long jarg3, Fp jarg3_);
-  public final static native void mul__SWIG_5(long jarg1, G2 jarg1_, long jarg2, G2 jarg2_, long jarg3, Fp jarg3_);
   public final static native void div__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
-  public final static native void pow__SWIG_1(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, Fp jarg3_);
   public final static native long new_Fp__SWIG_0();
   public final static native long new_Fp__SWIG_1(long jarg1, Fp jarg1_);
   public final static native long new_Fp__SWIG_2(int jarg1);
@@ -95,7 +92,7 @@ public class MclJNI {
   public final static native void G2_deserialize(long jarg1, G2 jarg1_, byte[] jarg2);
   public final static native byte[] G2_serialize(long jarg1, G2 jarg1_);
   public final static native void delete_G2(long jarg1);
-  public final static native void mul__SWIG_6(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, GT jarg3_);
+  public final static native void mul__SWIG_4(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, GT jarg3_);
   public final static native long new_GT__SWIG_0();
   public final static native long new_GT__SWIG_1(long jarg1, GT jarg1_);
   public final static native boolean GT_equals(long jarg1, GT jarg1_, long jarg2, GT jarg2_);

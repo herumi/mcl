@@ -460,7 +460,7 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_div_1_1SWIG_10(JNIEnv *jenv, 
 }
 
 
-SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_pow_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_pow(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   GT *arg1 = 0 ;
   GT *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -934,64 +934,6 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_13(JNIEnv *jenv, 
 }
 
 
-SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
-  G1 *arg1 = 0 ;
-  G1 *arg2 = 0 ;
-  Fp *arg3 = 0 ;
-  
-  (void)jenv;
-  (void)jcls;
-  (void)jarg1_;
-  (void)jarg2_;
-  (void)jarg3_;
-  arg1 = *(G1 **)&jarg1;
-  if (!arg1) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G1 & reference is null");
-    return ;
-  } 
-  arg2 = *(G1 **)&jarg2;
-  if (!arg2) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G1 const & reference is null");
-    return ;
-  } 
-  arg3 = *(Fp **)&jarg3;
-  if (!arg3) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fp const & reference is null");
-    return ;
-  } 
-  mul(*arg1,(G1 const &)*arg2,(Fp const &)*arg3);
-}
-
-
-SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_15(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
-  G2 *arg1 = 0 ;
-  G2 *arg2 = 0 ;
-  Fp *arg3 = 0 ;
-  
-  (void)jenv;
-  (void)jcls;
-  (void)jarg1_;
-  (void)jarg2_;
-  (void)jarg3_;
-  arg1 = *(G2 **)&jarg1;
-  if (!arg1) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G2 & reference is null");
-    return ;
-  } 
-  arg2 = *(G2 **)&jarg2;
-  if (!arg2) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "G2 const & reference is null");
-    return ;
-  } 
-  arg3 = *(Fp **)&jarg3;
-  if (!arg3) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fp const & reference is null");
-    return ;
-  } 
-  mul(*arg1,(G2 const &)*arg2,(Fp const &)*arg3);
-}
-
-
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_div_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
@@ -1018,35 +960,6 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_div_1_1SWIG_11(JNIEnv *jenv, 
     return ;
   } 
   div(*arg1,(Fp const &)*arg2,(Fp const &)*arg3);
-}
-
-
-SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_pow_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
-  GT *arg1 = 0 ;
-  GT *arg2 = 0 ;
-  Fp *arg3 = 0 ;
-  
-  (void)jenv;
-  (void)jcls;
-  (void)jarg1_;
-  (void)jarg2_;
-  (void)jarg3_;
-  arg1 = *(GT **)&jarg1;
-  if (!arg1) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "GT & reference is null");
-    return ;
-  } 
-  arg2 = *(GT **)&jarg2;
-  if (!arg2) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "GT const & reference is null");
-    return ;
-  } 
-  arg3 = *(Fp **)&jarg3;
-  if (!arg3) {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fp const & reference is null");
-    return ;
-  } 
-  pow(*arg1,(GT const &)*arg2,(Fp const &)*arg3);
 }
 
 
@@ -2327,7 +2240,7 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1G2(JNIEnv *jenv, jcla
 }
 
 
-SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_16(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   GT *arg1 = 0 ;
   GT *arg2 = 0 ;
   GT *arg3 = 0 ;

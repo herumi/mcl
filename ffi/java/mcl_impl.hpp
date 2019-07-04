@@ -122,10 +122,7 @@ class Fp {
 	friend void add(Fp& z, const Fp& x, const Fp& y);
 	friend void sub(Fp& z, const Fp& x, const Fp& y);
 	friend void mul(Fp& z, const Fp& x, const Fp& y);
-	friend void mul(G1& z, const G1& x, const Fp& y);
-	friend void mul(G2& z, const G2& x, const Fp& y);
 	friend void div(Fp& z, const Fp& x, const Fp& y);
-	friend void pow(GT& z, const GT& x, const Fp& y);
 public:
 	Fp() {}
 	Fp(const Fp& rhs) : self_(rhs.self_) {}

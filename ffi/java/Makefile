@@ -1,9 +1,9 @@
 TOP_DIR=../..
 include $(TOP_DIR)/common.mk
 ifeq ($(UNAME_S),Darwin)
-  JAVA_INC=-I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/
+  JAVA_INC?=-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/JavaVM.framework/Headers/
 else
-  JAVA_INC=-I/usr/lib/jvm/default-java/include
+  JAVA_INC?=-I/usr/lib/jvm/default-java/include
 #JAVA_INC=-I/usr/lib/jvm/java-7-openjdk-amd64/include
   CFLAGS+=-z noexecstack
   LDFLAGS+=-lrt

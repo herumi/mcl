@@ -42,7 +42,7 @@ public class Mcl implements MclConstants {
   }
 
   public static void pow(GT z, GT x, Fr y) {
-    MclJNI.pow__SWIG_0(GT.getCPtr(z), z, GT.getCPtr(x), x, Fr.getCPtr(y), y);
+    MclJNI.pow(GT.getCPtr(z), z, GT.getCPtr(x), x, Fr.getCPtr(y), y);
   }
 
   public static void neg(Fp y, Fp x) {
@@ -61,20 +61,8 @@ public class Mcl implements MclConstants {
     MclJNI.mul__SWIG_3(Fp.getCPtr(z), z, Fp.getCPtr(x), x, Fp.getCPtr(y), y);
   }
 
-  public static void mul(G1 z, G1 x, Fp y) {
-    MclJNI.mul__SWIG_4(G1.getCPtr(z), z, G1.getCPtr(x), x, Fp.getCPtr(y), y);
-  }
-
-  public static void mul(G2 z, G2 x, Fp y) {
-    MclJNI.mul__SWIG_5(G2.getCPtr(z), z, G2.getCPtr(x), x, Fp.getCPtr(y), y);
-  }
-
   public static void div(Fp z, Fp x, Fp y) {
     MclJNI.div__SWIG_1(Fp.getCPtr(z), z, Fp.getCPtr(x), x, Fp.getCPtr(y), y);
-  }
-
-  public static void pow(GT z, GT x, Fp y) {
-    MclJNI.pow__SWIG_1(GT.getCPtr(z), z, GT.getCPtr(x), x, Fp.getCPtr(y), y);
   }
 
   public static void neg(G1 y, G1 x) {
@@ -122,7 +110,7 @@ public class Mcl implements MclConstants {
   }
 
   public static void mul(GT z, GT x, GT y) {
-    MclJNI.mul__SWIG_6(GT.getCPtr(z), z, GT.getCPtr(x), x, GT.getCPtr(y), y);
+    MclJNI.mul__SWIG_4(GT.getCPtr(z), z, GT.getCPtr(x), x, GT.getCPtr(y), y);
   }
 
 }
