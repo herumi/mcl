@@ -11,13 +11,13 @@ public class MclTest {
 		System.out.println("libName : " + libName);
 		System.loadLibrary(lib);
 	}
-    public static int errN = 0;
+	public static int errN = 0;
 	public static void assertEquals(String msg, String x, String y) {
 		if (x.equals(y)) {
 			System.out.println("OK : " + msg);
 		} else {
 			System.out.println("NG : " + msg + ", x = " + x + ", y = " + y);
-            errN++;
+			errN++;
 		}
 	}
 	public static void assertBool(String msg, boolean b) {
@@ -25,7 +25,7 @@ public class MclTest {
 			System.out.println("OK : " + msg);
 		} else {
 			System.out.println("NG : " + msg);
-            errN++;
+			errN++;
 		}
 	}
 	public static void testCurve(int curveType, String name) {
@@ -109,11 +109,11 @@ public class MclTest {
 			assertBool("e1 == e2", e1.equals(e2));
 
 			BLSsignature(Q);
-            if (errN == 0) {
-                System.out.println("all test passed");
-            } else {
-                System.out.println("ERR=" + errN);
-            }
+			if (errN == 0) {
+				System.out.println("all test passed");
+			} else {
+				System.out.println("ERR=" + errN);
+			}
 		} catch (RuntimeException e) {
 			System.out.println("unknown exception :" + e);
 		}
