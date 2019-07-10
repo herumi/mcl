@@ -9,7 +9,6 @@ else
   LDFLAGS+=-lrt
 endif
 CFLAGS+=$(JAVA_INC) $(JAVA_INC)/linux -I $(TOP_DIR)/include -I $(TOP_DIR)/../xbyak -I $(TOP_DIR)/../cybozulib/include -Wno-strict-aliasing
-CFLAGS+=-std=c++03
 MCL_LIB=$(TOP_DIR)/lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl
