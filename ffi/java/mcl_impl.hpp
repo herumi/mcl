@@ -2,6 +2,11 @@
 #include <stdint.h>
 #include <sstream>
 
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
+#endif
+
 void SystemInit(int curveType) throw(std::exception)
 {
 	mcl::CurveParam cp;
@@ -381,3 +386,6 @@ void hashAndMapToG2(G2& P, const char *cbuf, size_t bufSize) throw(std::exceptio
 	mcl::bn::hashAndMapToG2(P.self_, cbuf, bufSize);
 }
 
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif

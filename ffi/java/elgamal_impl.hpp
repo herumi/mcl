@@ -13,6 +13,11 @@ typedef mcl::FpT<mcl::ZnTag, 521> Zn;
 typedef mcl::EcT<Fp> Ec;
 typedef mcl::ElgamalT<Ec, Zn> Elgamal;
 
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
+#endif
+
 /*
 	init system
 	@param param [in] string such as "ecParamName hashName"
@@ -145,3 +150,7 @@ public:
 		self_.clearCache();
 	}
 };
+
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
