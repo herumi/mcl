@@ -552,15 +552,6 @@ size_t getRealSize(const T *x, size_t xn)
 	return 1;
 }
 
-template<class T>
-size_t getBitSize(const T *x, size_t n)
-{
-	if (n == 1 && x[0] == 0) return 1;
-	T v = x[n - 1];
-	assert(v);
-	return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<Unit>(v);
-}
-
 /*
 	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
 	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
