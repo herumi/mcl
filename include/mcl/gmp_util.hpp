@@ -651,6 +651,7 @@ void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 			naf[i] = -naf[i];
 		}
 	}
+	*pb = true;
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
