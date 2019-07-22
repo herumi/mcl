@@ -570,6 +570,7 @@ struct GLV1 {
 	mpz_class v0, v1;
 	mpz_class B[2][2];
 	mpz_class r;
+	typedef mcl::FixedArray<int8_t, 512 / 2> NafArray;
 private:
 	bool usePrecomputedTable(int curveType)
 	{
@@ -698,8 +699,63 @@ public:
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
+	void addTbl(G1& Q, const G1 *tbl, const NafArray& naf, int i) const
+	{
+		if ((size_t)i >= naf.size()) return;
+		int n = naf[i];
+		if (n > 0) {
+			Q += tbl[(n - 1) / 2];
+		} else if (n < 0) {
+			Q -= tbl[(-n - 1)  / 2];
+		}
+	}
 	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
 	{
+#if 1
+		(void)constTime;
+		NafArray naf[2];
+		mpz_class u[2];
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		G1 tbl0[tblSize];
+		G1 tbl1[tblSize];
+		bool b;
+
+		x %= r;
+		if (x == 0) {
+			Q.clear();
+//			if (constTime) goto DummyLoop;
+			return;
+		}
+		if (x < 0) {
+			x += r;
+		}
+		split(u[0], u[1], x);
+		gmp::getNAFwidth(&b, naf[0], u[0], w);
+		if (!b) puts("ERR");
+		assert(b); (void)b;
+		gmp::getNAFwidth(&b, naf[1], u[1], w);
+		if (!b) puts("ERR");
+		assert(b); (void)b;
+
+		tbl0[0] = P;
+		mulLambda(tbl1[0], tbl0[0]);
+		{
+			G1 P2;
+			G1::dbl(P2, P);
+			for (size_t i = 1; i < tblSize; i++) {
+				G1::add(tbl0[i], tbl0[i - 1], P2);
+				mulLambda(tbl1[i], tbl0[i]);
+			}
+		}
+		const int maxBit = (int)fp::max_(naf[0].size(), naf[1].size());
+		Q.clear();
+		for (int i = maxBit - 1; i >= 0; i--) {
+			G1::dbl(Q, Q);
+			addTbl(Q, tbl0, naf[0], i);
+			addTbl(Q, tbl1, naf[1], i);
+		}
+#else
 		typedef mcl::fp::Unit Unit;
 		const size_t maxUnit = 512 / 2 / mcl::fp::UnitBitSize;
 		const int splitN = 2;
@@ -782,6 +838,7 @@ public:
 			G1::dbl(D, D);
 			D += tbl[0];
 		}
+#endif
 	}
 };
 
