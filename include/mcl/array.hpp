@@ -125,6 +125,15 @@ public:
 		n_ = n;
 		return true;
 	}
+	void push(bool *pb, const T& x)
+	{
+		if (n_ == maxSize) {
+			*pb = false;
+			return;
+		}
+		p_[n_++] = x;
+		*pb = true;
+	}
 	bool copy(const FixedArray<T, maxSize>& rhs)
 	{
 		if (this == &rhs) return true;

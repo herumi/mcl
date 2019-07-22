@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <cybozu/bit_operation.hpp>
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
 #endif
@@ -434,6 +435,36 @@ inline size_t getUnitSize(const mpz_class& x)
 	return std::abs(x.get_mpz_t()->_mp_size);
 #endif
 }
+
+/*
+	get the number of lower zeros
+*/
+template<class T>
+size_t getLowerZeroBitNum(const T *x, size_t n)
+{
+	size_t ret = 0;
+	for (size_t i = 0; i < n; i++) {
+		T v = x[i];
+		if (v == 0) {
+			ret += sizeof(T) * 8;
+		} else {
+			ret += cybozu::bsf<T>(v);
+			break;
+		}
+	}
+	return ret;
+}
+
+/*
+	get the number of lower zero
+	@note x != 0
+*/
+inline size_t getLowerZeroBitNum(const mpz_class& x)
+{
+	assert(!isZero(x));
+	return getLowerZeroBitNum(getUnit(x), getUnitSize(x));
+}
+
 inline mpz_class abs(const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
@@ -573,6 +604,42 @@ bool getNAF(Vec& v, const mpz_class& x)
 	} else {
 		v.swap(bin);
 		return false;
+	}
+}
+
+/*
+	v = naf[i]
+	v = 0 or (|v| <= 2^(w-1) - 1 and odd)
+*/
+template<class Vec>
+void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
+{
+	assert(w > 0);
+	naf.clear();
+	size_t zeroNum = 0;
+	const int signedMaxW = 1 << (w - 1);
+	const int maxW = signedMaxW * 2;
+	const int maskW = maxW - 1;
+	while (!isZero(x)) {
+		size_t z = gmp::getLowerZeroBitNum(x);
+		if (z) {
+			x >>= z;
+			zeroNum += z;
+		}
+		for (size_t i = 0; i < zeroNum; i++) {
+			naf.push(pb, 0);
+			if (!*pb) return;
+		}
+		assert(!isZero(x));
+		int v = getUnit(x)[0] & maskW;
+		x >>= w;
+		if (v & signedMaxW) {
+			x++;
+			v -= maxW;
+		}
+		naf.push(pb, v);
+		if (!*pb) return;
+		zeroNum = w - 1;
 	}
 }
 
