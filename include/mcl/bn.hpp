@@ -560,6 +560,19 @@ struct MapTo {
 	}
 };
 
+typedef mcl::FixedArray<int8_t, MCL_MAX_FR_BIT_SIZE / 2 + 2> NafArray;
+template<class G>
+void addTbl(G& Q, const G *tbl, const NafArray& naf, size_t i)
+{
+	if (i >= naf.size()) return;
+	int n = naf[i];
+	if (n > 0) {
+		Q += tbl[(n - 1) >> 1];
+	} else if (n < 0) {
+		Q -= tbl[(-n - 1) >> 1];
+	}
+}
+
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN/BLS12
@@ -570,7 +583,6 @@ struct GLV1 {
 	mpz_class v0, v1;
 	mpz_class B[2][2];
 	mpz_class r;
-	typedef mcl::FixedArray<int8_t, 512 / 2> NafArray;
 private:
 	bool usePrecomputedTable(int curveType)
 	{
@@ -698,16 +710,6 @@ public:
 		b = (x * v1) >> rBitSize;
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
-	}
-	void addTbl(G1& Q, const G1 *tbl, const NafArray& naf, size_t i) const
-	{
-		if (i >= naf.size()) return;
-		int n = naf[i];
-		if (n > 0) {
-			Q += tbl[(n - 1) >> 1];
-		} else if (n < 0) {
-			Q -= tbl[(-n - 1) >> 1];
-		}
 	}
 	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
 	{
@@ -857,6 +859,55 @@ struct GLV2 {
 	template<class T>
 	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
 	{
+#if 0
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		const size_t splitN = 4;
+		NafArray naf[splitN];
+		mpz_class u[splitN];
+		T tbl[splitN][tblSize];
+		bool b;
+
+		x %= r;
+		if (x == 0) {
+			Q.clear();
+			if (!constTime) return;
+		}
+		if (x < 0) {
+			x += r;
+		}
+		split(u, x);
+		for (size_t i = 0; i < splitN; i++) {
+			gmp::getNAFwidth(&b, naf[i], u[i], w);
+			assert(b); (void)b;
+		}
+		tbl[0][0] = P;
+		Frobenius(tbl[1][0], tbl[0][0]);
+		Frobenius(tbl[2][0], tbl[1][0]);
+		Frobenius(tbl[3][0], tbl[2][0]);
+		{
+			T P2;
+			T::dbl(P2, P);
+			for (size_t i = 1; i < tblSize; i++) {
+				T::add(tbl[0][i], tbl[0][i - 1], P2);
+				Frobenius(tbl[1][i], tbl[0][i]);
+				Frobenius(tbl[2][i], tbl[1][i]);
+				Frobenius(tbl[3][i], tbl[2][i]);
+			}
+		}
+		size_t maxBit = naf[0].size();
+		for (size_t i = 1; i < splitN; i++) {
+			if (naf[i].size() > maxBit) maxBit = naf[i].size();
+		}
+		Q.clear();
+		for (size_t i = 0; i < maxBit; i++) {
+			T::dbl(Q, Q);
+			addTbl(Q, tbl[0], naf[0], maxBit - 1 - i);
+			addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
+			addTbl(Q, tbl[2], naf[2], maxBit - 1 - i);
+			addTbl(Q, tbl[3], naf[3], maxBit - 1 - i);
+		}
+#else
 #if 0 // #ifndef NDEBUG
 		{
 			T R;
@@ -964,6 +1015,7 @@ struct GLV2 {
 			T::dbl(D, D);
 			D += tbl[0];
 		}
+#endif
 	}
 	void pow(Fp12& z, const Fp12& x, mpz_class y, bool constTime = false) const
 	{
