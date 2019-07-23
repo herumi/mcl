@@ -118,6 +118,7 @@ class FixedArray {
 		y = t;
 	}
 public:
+	typedef T value_type;
 	FixedArray() : n_(0) {}
 	bool resize(size_t n)
 	{
