@@ -1336,6 +1336,12 @@ struct GroupMtoA : public T {
 	{
 		T::mul(castT(z), castT(x), castT(y));
 	}
+	static void sub(GroupMtoA& z, const GroupMtoA& x, const GroupMtoA& y)
+	{
+		T r;
+		T::unitaryInv(r, castT(y));
+		T::mul(castT(z), castT(x), r);
+	}
 	static void dbl(GroupMtoA& y, const GroupMtoA& x)
 	{
 		T::sqr(castT(y), castT(x));
@@ -1362,6 +1368,10 @@ struct GroupMtoA : public T {
 	void operator+=(const GroupMtoA& rhs)
 	{
 		add(*this, *this, rhs);
+	}
+	void operator-=(const GroupMtoA& rhs)
+	{
+		sub(*this, *this, rhs);
 	}
 	void normalize() {}
 private:

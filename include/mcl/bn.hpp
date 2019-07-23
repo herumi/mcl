@@ -859,7 +859,7 @@ struct GLV2 {
 	template<class T>
 	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
 	{
-#if 0
+#if 1
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
 		const size_t splitN = 4;
@@ -877,14 +877,14 @@ struct GLV2 {
 			x += r;
 		}
 		split(u, x);
-		for (size_t i = 0; i < splitN; i++) {
-			gmp::getNAFwidth(&b, naf[i], u[i], w);
-			assert(b); (void)b;
-		}
 		tbl[0][0] = P;
 		Frobenius(tbl[1][0], tbl[0][0]);
 		Frobenius(tbl[2][0], tbl[1][0]);
 		Frobenius(tbl[3][0], tbl[2][0]);
+		for (size_t i = 0; i < splitN; i++) {
+			gmp::getNAFwidth(&b, naf[i], u[i], w);
+			assert(b); (void)b;
+		}
 		{
 			T P2;
 			T::dbl(P2, P);
