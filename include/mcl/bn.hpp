@@ -699,146 +699,56 @@ public:
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
-	void addTbl(G1& Q, const G1 *tbl, const NafArray& naf, int i) const
+	void addTbl(G1& Q, const G1 *tbl, const NafArray& naf, size_t i) const
 	{
-		if ((size_t)i >= naf.size()) return;
+		if (i >= naf.size()) return;
 		int n = naf[i];
 		if (n > 0) {
-			Q += tbl[(n - 1) / 2];
+			Q += tbl[(n - 1) >> 1];
 		} else if (n < 0) {
-			Q -= tbl[(-n - 1)  / 2];
+			Q -= tbl[(-n - 1) >> 1];
 		}
 	}
 	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
 	{
-#if 1
-		(void)constTime;
-		NafArray naf[2];
-		mpz_class u[2];
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
-		G1 tbl0[tblSize];
-		G1 tbl1[tblSize];
+		NafArray naf[2];
+		mpz_class u[2];
+		G1 tbl[2][tblSize];
 		bool b;
 
 		x %= r;
 		if (x == 0) {
 			Q.clear();
-//			if (constTime) goto DummyLoop;
-			return;
+			if (!constTime) return;
 		}
 		if (x < 0) {
 			x += r;
 		}
 		split(u[0], u[1], x);
 		gmp::getNAFwidth(&b, naf[0], u[0], w);
-		if (!b) puts("ERR");
 		assert(b); (void)b;
 		gmp::getNAFwidth(&b, naf[1], u[1], w);
-		if (!b) puts("ERR");
 		assert(b); (void)b;
 
-		tbl0[0] = P;
-		mulLambda(tbl1[0], tbl0[0]);
+		tbl[0][0] = P;
+		mulLambda(tbl[1][0], tbl[0][0]);
 		{
 			G1 P2;
 			G1::dbl(P2, P);
 			for (size_t i = 1; i < tblSize; i++) {
-				G1::add(tbl0[i], tbl0[i - 1], P2);
-				mulLambda(tbl1[i], tbl0[i]);
+				G1::add(tbl[0][i], tbl[0][i - 1], P2);
+				mulLambda(tbl[1][i], tbl[0][i]);
 			}
 		}
-		const int maxBit = (int)fp::max_(naf[0].size(), naf[1].size());
+		const size_t maxBit = fp::max_(naf[0].size(), naf[1].size());
 		Q.clear();
-		for (int i = maxBit - 1; i >= 0; i--) {
+		for (size_t i = 0; i < maxBit; i++) {
 			G1::dbl(Q, Q);
-			addTbl(Q, tbl0, naf[0], i);
-			addTbl(Q, tbl1, naf[1], i);
+			addTbl(Q, tbl[0], naf[0], maxBit - 1 - i);
+			addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
 		}
-#else
-		typedef mcl::fp::Unit Unit;
-		const size_t maxUnit = 512 / 2 / mcl::fp::UnitBitSize;
-		const int splitN = 2;
-		mpz_class u[splitN];
-		G1 in[splitN];
-		G1 tbl[4];
-		int bitTbl[splitN]; // bit size of u[i]
-		Unit w[splitN][maxUnit]; // unit array of u[i]
-		int maxBit = 0; // max bit of u[i]
-		int maxN = 0;
-		int remainBit = 0;
-
-		x %= r;
-		if (x == 0) {
-			Q.clear();
-			if (constTime) goto DummyLoop;
-			return;
-		}
-		if (x < 0) {
-			x += r;
-		}
-		split(u[0], u[1], x);
-		in[0] = P;
-		mulLambda(in[1], in[0]);
-		for (int i = 0; i < splitN; i++) {
-			if (u[i] < 0) {
-				u[i] = -u[i];
-				G1::neg(in[i], in[i]);
-			}
-			in[i].normalize();
-		}
-#if 0
-		G1::mulGeneric(in[0], in[0], u[0]);
-		G1::mulGeneric(in[1], in[1], u[1]);
-		G1::add(Q, in[0], in[1]);
-		return;
-#else
-		tbl[0] = in[0]; // dummy
-		tbl[1] = in[0];
-		tbl[2] = in[1];
-		G1::add(tbl[3], in[0], in[1]);
-		tbl[3].normalize();
-		for (int i = 0; i < splitN; i++) {
-			bool b;
-			mcl::gmp::getArray(&b, w[i], maxUnit, u[i]);
-			assert(b);
-			bitTbl[i] = (int)mcl::gmp::getBitSize(u[i]);
-			maxBit = fp::max_(maxBit, bitTbl[i]);
-		}
-		assert(maxBit > 0);
-		maxBit--;
-		/*
-			maxBit = maxN * UnitBitSize + remainBit
-			0 < remainBit <= UnitBitSize
-		*/
-		maxN = maxBit / mcl::fp::UnitBitSize;
-		remainBit = maxBit % mcl::fp::UnitBitSize;
-		remainBit++;
-		Q.clear();
-		for (int i = maxN; i >= 0; i--) {
-			for (int j = remainBit - 1; j >= 0; j--) {
-				G1::dbl(Q, Q);
-				uint32_t b0 = (w[0][i] >> j) & 1;
-				uint32_t b1 = (w[1][i] >> j) & 1;
-				uint32_t c = b1 * 2 + b0;
-				if (c == 0) {
-					if (constTime) tbl[0] += tbl[1];
-				} else {
-					Q += tbl[c];
-				}
-			}
-			remainBit = (int)mcl::fp::UnitBitSize;
-		}
-#endif
-	DummyLoop:
-		if (!constTime) return;
-		const int limitBit = (int)rBitSize / splitN;
-		G1 D = tbl[0];
-		for (int i = maxBit + 1; i < limitBit; i++) {
-			G1::dbl(D, D);
-			D += tbl[0];
-		}
-#endif
 	}
 };
 
