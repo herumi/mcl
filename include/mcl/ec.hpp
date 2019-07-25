@@ -10,6 +10,7 @@
 #include <cybozu/exception.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#include <mcl/array.hpp>
 
 //#define MCL_EC_USE_AFFINE
 
@@ -1067,6 +1068,130 @@ template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::
 #ifndef MCL_EC_USE_AFFINE
 template<class Fp> int EcT<Fp>::mode_;
 #endif
+
+namespace local {
+
+template<class G, class Vec>
+void addTbl(G& Q, const G *tbl, const Vec& naf, size_t i)
+{
+	if (i >= naf.size()) return;
+	int n = naf[i];
+	if (n > 0) {
+		Q += tbl[(n - 1) >> 1];
+	} else if (n < 0) {
+		Q -= tbl[(-n - 1) >> 1];
+	}
+}
+
+} // mcl::local
+
+template<class F, class G>
+struct GLV1T {
+	static F rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
+	static size_t rBitSize;
+	static mpz_class v0, v1;
+	static mpz_class B[2][2];
+	static mpz_class r;
+public:
+#ifndef CYBOZU_DONT_USE_STRING
+	static void dump(const mpz_class& x)
+	{
+		printf("\"%s\",\n", mcl::gmp::getStr(x, 16).c_str());
+	}
+	static void dump()
+	{
+		printf("\"%s\",\n", rw.getStr(16).c_str());
+		printf("%d,\n", (int)rBitSize);
+		dump(v0);
+		dump(v1);
+		dump(B[0][0]); dump(B[0][1]); dump(B[1][0]); dump(B[1][1]);
+		dump(r);
+	}
+#endif
+	/*
+		initGLV1() is defined in bn.hpp
+	*/
+	/*
+		L = lambda = p^4
+		L (x, y) = (rw x, y)
+	*/
+	static void mulLambda(G& Q, const G& P)
+	{
+		F::mul(Q.x, P.x, rw);
+		Q.y = P.y;
+		Q.z = P.z;
+	}
+	/*
+		x = a + b * lambda mod r
+	*/
+	static void split(mpz_class& a, mpz_class& b, const mpz_class& x)
+	{
+		mpz_class t;
+		t = (x * v0) >> rBitSize;
+		b = (x * v1) >> rBitSize;
+		a = x - (t * B[0][0] + b * B[1][0]);
+		b = - (t * B[0][1] + b * B[1][1]);
+	}
+	static void mul(G& Q, const G& P, mpz_class x, bool constTime = false)
+	{
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		typedef mcl::FixedArray<int8_t, sizeof(G) * 8 / 2 + 2> NafArray;
+		NafArray naf[2];
+		mpz_class u[2];
+		G tbl[2][tblSize];
+		bool b;
+
+		x %= r;
+		if (x == 0) {
+			Q.clear();
+			if (!constTime) return;
+		}
+		if (x < 0) {
+			x += r;
+		}
+		split(u[0], u[1], x);
+		gmp::getNAFwidth(&b, naf[0], u[0], w);
+		assert(b); (void)b;
+		gmp::getNAFwidth(&b, naf[1], u[1], w);
+		assert(b); (void)b;
+
+		tbl[0][0] = P;
+		mulLambda(tbl[1][0], tbl[0][0]);
+		{
+			G P2;
+			G::dbl(P2, P);
+			for (size_t i = 1; i < tblSize; i++) {
+				G::add(tbl[0][i], tbl[0][i - 1], P2);
+				mulLambda(tbl[1][i], tbl[0][i]);
+			}
+		}
+		const size_t maxBit = fp::max_(naf[0].size(), naf[1].size());
+		Q.clear();
+		for (size_t i = 0; i < maxBit; i++) {
+			G::dbl(Q, Q);
+			local::addTbl(Q, tbl[0], naf[0], maxBit - 1 - i);
+			local::addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
+		}
+	}
+	static void mulArray(G& z, const G& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		mpz_class s;
+		bool b;
+		mcl::gmp::setArray(&b, s, y, yn);
+		assert(b);
+		if (isNegative) s = -s;
+		mul(z, x, s, constTime);
+	}
+};
+
+// rw = 1 / w = (-1 - sqrt(-3)) / 2
+template<class F, class G> F GLV1T<F, G>::rw;
+template<class F, class G> size_t GLV1T<F, G>::rBitSize;
+template<class F, class G> mpz_class GLV1T<F, G>::v0;
+template<class F, class G> mpz_class GLV1T<F, G>::v1;
+template<class F, class G> mpz_class GLV1T<F, G>::B[2][2];
+template<class F, class G> mpz_class GLV1T<F, G>::r;
 
 struct EcParam {
 	const char *name;

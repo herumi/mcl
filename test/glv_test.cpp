@@ -88,7 +88,7 @@ void compareLength(const GLV2& lhs)
 	for (int i = 1; i < 1000; i++) {
 		r.setRand(rg);
 		x = r.getMpz();
-		GLV1::split(R0, R1, x);
+		mcl::bn::local::GLV1::split(R0, R1, x);
 		lhs.split(L0, L1, x);
 
 		size_t R0n = mcl::gmp::getBitSize(R0);
@@ -121,8 +121,8 @@ void testGLV1()
 		oldGlv.init(BN::param.r, BN::param.z);
 	}
 
-	typedef mcl::bn::local::Param::GLV1 GLV1;
-	GLV1::init(BN::param.r, BN::param.z, BN::param.isBLS12);
+	typedef mcl::bn::local::GLV1 GLV1;
+	GLV1::initForBN(BN::param.r, BN::param.z, BN::param.isBLS12);
 	if (!BN::param.isBLS12) {
 		compareLength<GLV1>(oldGlv);
 	}
