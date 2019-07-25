@@ -577,14 +577,15 @@ void addTbl(G& Q, const G *tbl, const NafArray& naf, size_t i)
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN/BLS12
 */
-struct GLV1 {
-	Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
-	size_t rBitSize;
-	mpz_class v0, v1;
-	mpz_class B[2][2];
-	mpz_class r;
+template<class F, class G>
+struct GLV1T {
+	static F rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
+	static size_t rBitSize;
+	static mpz_class v0, v1;
+	static mpz_class B[2][2];
+	static mpz_class r;
 private:
-	bool usePrecomputedTable(int curveType)
+	static bool usePrecomputedTable(int curveType)
 	{
 		if (curveType < 0) return false;
 		const struct Tbl {
@@ -631,19 +632,12 @@ private:
 		return false;
 	}
 public:
-	bool operator==(const GLV1& rhs) const
-	{
-		return rw == rhs.rw && rBitSize == rhs.rBitSize && v0 == rhs.v0 && v1 == rhs.v1
-			&& B[0][0] == rhs.B[0][0] && B[0][1] == rhs.B[0][1] && B[1][0] == rhs.B[1][0]
-			&& B[1][1] == rhs.B[1][1] && r == rhs.r;
-	}
-	bool operator!=(const GLV1& rhs) const { return !operator==(rhs); }
 #ifndef CYBOZU_DONT_USE_STRING
-	void dump(const mpz_class& x) const
+	static void dump(const mpz_class& x)
 	{
 		printf("\"%s\",\n", mcl::gmp::getStr(x, 16).c_str());
 	}
-	void dump() const
+	static void dump()
 	{
 		printf("\"%s\",\n", rw.getStr(16).c_str());
 		printf("%d,\n", (int)rBitSize);
@@ -653,14 +647,14 @@ public:
 		dump(r);
 	}
 #endif
-	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false, int curveType = -1)
+	static void init(const mpz_class& _r, const mpz_class& z, bool isBLS12 = false, int curveType = -1)
 	{
 		if (usePrecomputedTable(curveType)) return;
-		bool b = Fp::squareRoot(rw, -3);
+		bool b = F::squareRoot(rw, -3);
 		assert(b);
 		(void)b;
 		rw = -(rw + 1) / 2;
-		this->r = r;
+		r = _r;
 		rBitSize = gmp::getBitSize(r);
 		rBitSize = (rBitSize + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
 		if (isBLS12) {
@@ -694,16 +688,16 @@ public:
 		L = lambda = p^4
 		L (x, y) = (rw x, y)
 	*/
-	void mulLambda(G1& Q, const G1& P) const
+	static void mulLambda(G& Q, const G& P)
 	{
-		Fp::mul(Q.x, P.x, rw);
+		F::mul(Q.x, P.x, rw);
 		Q.y = P.y;
 		Q.z = P.z;
 	}
 	/*
 		x = a + b * lambda mod r
 	*/
-	void split(mpz_class& a, mpz_class& b, const mpz_class& x) const
+	static void split(mpz_class& a, mpz_class& b, const mpz_class& x)
 	{
 		mpz_class t;
 		t = (x * v0) >> rBitSize;
@@ -711,13 +705,13 @@ public:
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
-	void mul(G1& Q, const G1& P, mpz_class x, bool constTime = false) const
+	static void mul(G& Q, const G& P, mpz_class x, bool constTime = false)
 	{
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
 		NafArray naf[2];
 		mpz_class u[2];
-		G1 tbl[2][tblSize];
+		G tbl[2][tblSize];
 		bool b;
 
 		x %= r;
@@ -737,22 +731,43 @@ public:
 		tbl[0][0] = P;
 		mulLambda(tbl[1][0], tbl[0][0]);
 		{
-			G1 P2;
-			G1::dbl(P2, P);
+			G P2;
+			G::dbl(P2, P);
 			for (size_t i = 1; i < tblSize; i++) {
-				G1::add(tbl[0][i], tbl[0][i - 1], P2);
+				G::add(tbl[0][i], tbl[0][i - 1], P2);
 				mulLambda(tbl[1][i], tbl[0][i]);
 			}
 		}
 		const size_t maxBit = fp::max_(naf[0].size(), naf[1].size());
 		Q.clear();
 		for (size_t i = 0; i < maxBit; i++) {
-			G1::dbl(Q, Q);
+			G::dbl(Q, Q);
 			addTbl(Q, tbl[0], naf[0], maxBit - 1 - i);
 			addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
 		}
 	}
+	static void mulArray(G& z, const G& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		mpz_class s;
+		bool b;
+		mcl::gmp::setArray(&b, s, y, yn);
+		assert(b);
+		if (isNegative) s = -s;
+		mul(z, x, s, constTime);
+	}
 };
+template<class F, class G>
+F GLV1T<F, G>::rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
+template<class F, class G>
+size_t GLV1T<F, G>::rBitSize;
+template<class F, class G>
+mpz_class GLV1T<F, G>::v0;
+template<class F, class G>
+mpz_class GLV1T<F, G>::v1;
+template<class F, class G>
+mpz_class GLV1T<F, G>::B[2][2];
+template<class F, class G>
+mpz_class GLV1T<F, G>::r;
 
 /*
 	GLV method for G2 and GT on BN/BLS12
@@ -1035,7 +1050,7 @@ struct Param {
 	mpz_class p;
 	mpz_class r;
 	local::MapTo mapTo;
-	local::GLV1 glv1;
+	typedef local::GLV1T<Fp, G1> GLV1;
 	local::GLV2 glv2;
 	// for G2 Frobenius
 	Fp2 g2;
@@ -1151,7 +1166,7 @@ struct Param {
 		} else {
 			mapTo.init(2 * p - r, z, cp.curveType);
 		}
-		glv1.init(r, z, isBLS12, cp.curveType);
+		GLV1::init(r, z, isBLS12, cp.curveType);
 		glv2.init(r, z, isBLS12);
 		basePoint.clear();
 		*pb = true;
@@ -1200,15 +1215,6 @@ static const local::Param& param = local::StaticVar<>::param;
 
 namespace local {
 
-inline void mulArrayGLV1(G1& z, const G1& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-{
-	mpz_class s;
-	bool b;
-	mcl::gmp::setArray(&b, s, y, yn);
-	assert(b);
-	if (isNegative) s = -s;
-	BN::param.glv1.mul(z, x, s, constTime);
-}
 inline void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 {
 	mpz_class s;
@@ -2227,7 +2233,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 {
 	local::StaticVar<>::param.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulArrayGLV(local::mulArrayGLV1);
+	G1::setMulArrayGLV(bn::local::Param::GLV1::mulArray);
 	G2::setMulArrayGLV(local::mulArrayGLV2);
 	Fp12::setPowArrayGLV(local::powArrayGLV2);
 	G1::setCompressedExpression();

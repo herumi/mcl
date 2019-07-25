@@ -81,10 +81,10 @@ public:
 	void split(mpz_class& a, mpz_class& b, const mpz_class& x) const
 	{
 		mpz_class t;
-//		t = (x * v0) >> rBitSize;
-//		b = (x * v1) >> rBitSize;
-t = (B[1][1] * x) / r;
-b = (-B[0][1] * x) / r;
+		t = (x * v0) >> rBitSize;
+		b = (x * v1) >> rBitSize;
+//t = (B[1][1] * x) / r;
+//b = (-B[0][1] * x) / r;
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
@@ -161,8 +161,8 @@ void initGLV()
 		gmp::setStr(glv1.B[0][1], "-0xe4437ed6010e88286f547fa90abfe4c3");
 		gmp::setStr(glv1.B[1][0], "0x114ca50f7a8e2f3f657c1108d9d44cfd8");
 		glv1.B[1][1] = glv1.B[0][0];
-		glv1.v0 = ((-glv1.B[1][1]) << glv1.rBitSize) / glv1.r;
-		glv1.v1 = ((glv1.B[1][0]) << glv1.rBitSize) / glv1.r;
+		glv1.v0 = ((glv1.B[1][1]) << glv1.rBitSize) / glv1.r;
+		glv1.v1 = ((-glv1.B[0][1]) << glv1.rBitSize) / glv1.r;
 	}
 	PUT(p.P);
 	Ec Q1, Q2;
