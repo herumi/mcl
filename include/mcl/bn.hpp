@@ -567,7 +567,7 @@ typedef mcl::FixedArray<int8_t, MCL_MAX_FR_BIT_SIZE / 2 + 2> NafArray;
 	GLV for G1 on BN/BLS12
 */
 
-struct GLV1 : mcl::GLV1T<Fp, G1> {
+struct GLV1 : mcl::GLV1T<G1> {
 	static bool usePrecomputedTable(int curveType)
 	{
 		if (curveType < 0) return false;

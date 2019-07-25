@@ -1070,8 +1070,8 @@ template<class Fp> int EcT<Fp>::mode_;
 
 namespace local {
 
-template<class G, class Vec>
-void addTbl(G& Q, const G *tbl, const Vec& naf, size_t i)
+template<class Ec, class Vec>
+void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
 {
 	if (i >= naf.size()) return;
 	int n = naf[i];
@@ -1084,9 +1084,10 @@ void addTbl(G& Q, const G *tbl, const Vec& naf, size_t i)
 
 } // mcl::local
 
-template<class F, class G>
+template<class Ec>
 struct GLV1T {
-	static F rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
+	typedef typename Ec::Fp Fp;
+	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	static size_t rBitSize;
 	static mpz_class v0, v1;
 	static mpz_class B[2][2];
@@ -1110,9 +1111,9 @@ public:
 	/*
 		L (x, y) = (rw x, y)
 	*/
-	static void mulLambda(G& Q, const G& P)
+	static void mulLambda(Ec& Q, const Ec& P)
 	{
-		F::mul(Q.x, P.x, rw);
+		Fp::mul(Q.x, P.x, rw);
 		Q.y = P.y;
 		Q.z = P.z;
 	}
@@ -1127,14 +1128,14 @@ public:
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
-	static void mul(G& Q, const G& P, mpz_class x, bool constTime = false)
+	static void mul(Ec& Q, const Ec& P, mpz_class x, bool constTime = false)
 	{
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
-		typedef mcl::FixedArray<int8_t, sizeof(G) * 8 / 2 + 2> NafArray;
+		typedef mcl::FixedArray<int8_t, sizeof(Fp) * 8 / 2 + 2> NafArray;
 		NafArray naf[2];
 		mpz_class u[2];
-		G tbl[2][tblSize];
+		Ec tbl[2][tblSize];
 		bool b;
 
 		x %= r;
@@ -1154,22 +1155,22 @@ public:
 		tbl[0][0] = P;
 		mulLambda(tbl[1][0], tbl[0][0]);
 		{
-			G P2;
-			G::dbl(P2, P);
+			Ec P2;
+			Ec::dbl(P2, P);
 			for (size_t i = 1; i < tblSize; i++) {
-				G::add(tbl[0][i], tbl[0][i - 1], P2);
+				Ec::add(tbl[0][i], tbl[0][i - 1], P2);
 				mulLambda(tbl[1][i], tbl[0][i]);
 			}
 		}
 		const size_t maxBit = fp::max_(naf[0].size(), naf[1].size());
 		Q.clear();
 		for (size_t i = 0; i < maxBit; i++) {
-			G::dbl(Q, Q);
+			Ec::dbl(Q, Q);
 			local::addTbl(Q, tbl[0], naf[0], maxBit - 1 - i);
 			local::addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
 		}
 	}
-	static void mulArray(G& z, const G& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	static void mulArray(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		bool b;
@@ -1183,7 +1184,7 @@ public:
 	*/
 	static void initForSecp256k1(const mpz_class& _r)
 	{
-		bool b = F::squareRoot(rw, -3);
+		bool b = Fp::squareRoot(rw, -3);
 		assert(b);
 		(void)b;
 		rw = -(rw + 1) / 2;
@@ -1203,12 +1204,12 @@ public:
 };
 
 // rw = 1 / w = (-1 - sqrt(-3)) / 2
-template<class F, class G> F GLV1T<F, G>::rw;
-template<class F, class G> size_t GLV1T<F, G>::rBitSize;
-template<class F, class G> mpz_class GLV1T<F, G>::v0;
-template<class F, class G> mpz_class GLV1T<F, G>::v1;
-template<class F, class G> mpz_class GLV1T<F, G>::B[2][2];
-template<class F, class G> mpz_class GLV1T<F, G>::r;
+template<class Ec> typename Ec::Fp GLV1T<Ec>::rw;
+template<class Ec> size_t GLV1T<Ec>::rBitSize;
+template<class Ec> mpz_class GLV1T<Ec>::v0;
+template<class Ec> mpz_class GLV1T<Ec>::v1;
+template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
+template<class Ec> mpz_class GLV1T<Ec>::r;
 
 struct EcParam {
 	const char *name;
