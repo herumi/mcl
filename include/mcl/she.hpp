@@ -26,6 +26,7 @@
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>
 #include <cybozu/serializer.hpp>
+#include <mcl/ecparam.hpp>
 
 namespace mcl { namespace she {
 
@@ -588,6 +589,10 @@ public:
 		useDecG2ViaGT_ = false;
 		isG1only_ = true;
 		setTryNum(tryNum);
+		if (std::string(para.name) == mcl::ecparam::secp256k1.name) {
+			mcl::GLV1T<G1>::initForSecp256k1(Fr::getOp().mp);
+			G1::setMulArrayGLV(mcl::GLV1T<G1>::mulArray);
+		}
 	}
 	/*
 		set range for G1-DLP

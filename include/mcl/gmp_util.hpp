@@ -642,7 +642,7 @@ void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 			x++;
 			v -= maxW;
 		}
-		naf.push(pb, Vec::value_type(v));
+		naf.push(pb, typename Vec::value_type(v));
 		if (!*pb) return;
 		zeroNum = w - 1;
 	}

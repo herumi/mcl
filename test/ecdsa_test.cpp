@@ -1,4 +1,4 @@
-#define PUT(x) std::cout << #x "=" << x << std::endl;
+#define PUT(x) std::cout << #x "=" << (x) << std::endl;
 #include <stdlib.h>
 #include <stdio.h>
 void put(const void *buf, size_t bufSize)
