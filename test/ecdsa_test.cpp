@@ -18,8 +18,6 @@ using namespace mcl::ecdsa;
 CYBOZU_TEST_AUTO(ecdsa)
 {
 	init();
-	mcl::GLV1T<Fp, Ec>::initForSecp256k1(Zn::getOp().mp);
-	Ec::setMulArrayGLV(mcl::GLV1T<Fp, Ec>::mulArray);
 	SecretKey sec;
 	PublicKey pub;
 	sec.setByCSPRNG();

@@ -99,6 +99,8 @@ inline void init(bool *pb)
 	p.P.set(pb, x, y);
 	if (!*pb) return;
 	p.Pbase.init(pb, p.P, ecParam.bitSize, local::winSize);
+	mcl::GLV1T<Ec>::initForSecp256k1(Zn::getOp().mp);
+	Ec::setMulArrayGLV(mcl::GLV1T<Ec>::mulArray);
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
