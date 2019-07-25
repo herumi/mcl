@@ -10,7 +10,6 @@
 #include <cybozu/exception.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
-#include <mcl/array.hpp>
 
 //#define MCL_EC_USE_AFFINE
 
@@ -1109,10 +1108,6 @@ public:
 	}
 #endif
 	/*
-		initGLV1() is defined in bn.hpp
-	*/
-	/*
-		L = lambda = p^4
 		L (x, y) = (rw x, y)
 	*/
 	static void mulLambda(G& Q, const G& P)
@@ -1182,6 +1177,28 @@ public:
 		assert(b);
 		if (isNegative) s = -s;
 		mul(z, x, s, constTime);
+	}
+	/*
+		initForBN() is defined in bn.hpp
+	*/
+	static void initForSecp256k1(const mpz_class& _r)
+	{
+		bool b = F::squareRoot(rw, -3);
+		assert(b);
+		(void)b;
+		rw = -(rw + 1) / 2;
+		r = _r;
+		rBitSize = gmp::getBitSize(r);
+		rBitSize = (rBitSize + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);
+		gmp::setStr(&b, B[0][0], "0x3086d221a7d46bcde86c90e49284eb15");
+		assert(b); (void)b;
+		gmp::setStr(&b, B[0][1], "-0xe4437ed6010e88286f547fa90abfe4c3");
+		assert(b); (void)b;
+		gmp::setStr(&b, B[1][0], "0x114ca50f7a8e2f3f657c1108d9d44cfd8");
+		assert(b); (void)b;
+		B[1][1] = B[0][0];
+		v0 = ((B[1][1]) << rBitSize) / r;
+		v1 = ((-B[0][1]) << rBitSize) / r;
 	}
 };
 
