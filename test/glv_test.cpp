@@ -191,6 +191,25 @@ void testGLV2()
 	CYBOZU_BENCH_C("G2::glv", 1000, Q1 = Q0; s.setRand(rg); glv2.mul, Q2, Q1, s.getMpz());
 }
 
+void testGT()
+{
+	G1 P;
+	G2 Q;
+	GT x, y, z;
+	hashAndMapToG1(P, "abc", 3);
+	hashAndMapToG2(Q, "abc", 3);
+	pairing(x, P, Q);
+	int n = 200;
+	y = x;
+	for (int i = 0; i < n; i++) {
+		y *= y;
+	}
+	mpz_class t = 1;
+	t <<= n;
+	GT::pow(z, x, t);
+	CYBOZU_TEST_EQUAL(y, z);
+}
+
 CYBOZU_TEST_AUTO(glv)
 {
 	const mcl::CurveParam tbl[] = {
@@ -204,5 +223,6 @@ CYBOZU_TEST_AUTO(glv)
 		initPairing(cp);
 		testGLV1();
 		testGLV2();
+		testGT();
 	}
 }
