@@ -10,6 +10,7 @@
 #include <cybozu/exception.hpp>
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#include <mcl/ecparam.hpp>
 
 //#define MCL_EC_USE_AFFINE
 
@@ -1211,17 +1212,44 @@ template<class Ec> mpz_class GLV1T<Ec>::v1;
 template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
 template<class Ec> mpz_class GLV1T<Ec>::r;
 
-struct EcParam {
-	const char *name;
-	const char *p;
-	const char *a;
-	const char *b;
-	const char *gx;
-	const char *gy;
-	const char *n;
-	size_t bitSize; // bit length of p
-	int curveType;
-};
+/*
+	Ec : elliptic curve
+	Zn : cyclic group of the order |Ec|
+	P : set the generator of Ec unless NULL
+*/
+template<class Ec, class Zn>
+void initCurve(bool *pb, int curveType, Ec *P = 0)
+{
+	typedef typename Ec::Fp Fp;
+	*pb = false;
+	const EcParam *ecParam = getEcParam(curveType);
+	if (ecParam == 0) return;
+
+	Zn::init(pb, ecParam->n);
+	if (!*pb) return;
+	Fp::init(pb, ecParam->p);
+	if (!*pb) return;
+	Ec::init(pb, ecParam->a, ecParam->b);
+	if (!*pb) return;
+	Zn::setIoMode(16);
+	Fp::setIoMode(16);
+//	Ec::setIoMode(IoEcAffine);
+	if (P) {
+		Fp x, y;
+		x.setStr(pb, ecParam->gx);
+		if (!*pb) return;
+		y.setStr(pb, ecParam->gy);
+		if (!*pb) return;
+		P->set(pb, x, y);
+		if (!*pb) return;
+	}
+	if (curveType == MCL_SECP256K1) {
+		GLV1T<Ec>::initForSecp256k1(Zn::getOp().mp);
+		Ec::setMulArrayGLV(GLV1T<Ec>::mulArray);
+	} else {
+		Ec::setMulArrayGLV(0);
+	}
+}
 
 } // mcl
 

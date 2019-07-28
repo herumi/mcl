@@ -6,10 +6,23 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <mcl/ec.hpp>
 #include <mcl/curve_type.h>
 
-namespace mcl { namespace ecparam {
+namespace mcl {
+
+struct EcParam {
+	const char *name;
+	const char *p;
+	const char *a;
+	const char *b;
+	const char *gx;
+	const char *gy;
+	const char *n;
+	size_t bitSize; // bit length of p
+	int curveType;
+};
+
+namespace ecparam {
 
 const struct mcl::EcParam secp160k1 = {
 	"secp160k1",
@@ -181,6 +194,7 @@ inline const mcl::EcParam* getEcParam(int curve)
 	case MCL_SECP224K1: return &ecparam::secp224k1;
 	case MCL_SECP256K1: return &ecparam::secp256k1;
 	case MCL_SECP384R1: return &ecparam::secp384r1;
+	case MCL_SECP521R1: return &ecparam::secp521r1;
 	case MCL_NIST_P192: return &ecparam::NIST_P192;
 	case MCL_NIST_P224: return &ecparam::NIST_P224;
 	case MCL_NIST_P256: return &ecparam::NIST_P256;
@@ -189,3 +203,5 @@ inline const mcl::EcParam* getEcParam(int curve)
 }
 
 } // mcl
+
+#include <mcl/ec.hpp>

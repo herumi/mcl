@@ -32,9 +32,9 @@ typedef mcl::EcT<Fp> Ec;
 namespace local {
 
 struct Param {
-	mcl::EcParam ecParam;
 	Ec P;
 	mcl::fp::WindowMethod<Ec> Pbase;
+	size_t bitSize;
 };
 
 inline Param& getParam()
@@ -79,28 +79,11 @@ const local::Param& param = local::getParam();
 
 inline void init(bool *pb)
 {
-	const mcl::EcParam& ecParam = mcl::ecparam::secp256k1;
-	Zn::init(pb, ecParam.n);
-	if (!*pb) return;
-	Fp::init(pb, ecParam.p);
-	if (!*pb) return;
-	Ec::init(pb, ecParam.a, ecParam.b);
-	if (!*pb) return;
-	Zn::setIoMode(16);
-	Fp::setIoMode(16);
-	Ec::setIoMode(mcl::IoEcAffine);
 	local::Param& p = local::getParam();
-	p.ecParam = ecParam;
-	Fp x, y;
-	x.setStr(pb, ecParam.gx);
+	mcl::initCurve<Ec, Zn>(pb, MCL_SECP256K1, &p.P);
 	if (!*pb) return;
-	y.setStr(pb, ecParam.gy);
-	if (!*pb) return;
-	p.P.set(pb, x, y);
-	if (!*pb) return;
-	p.Pbase.init(pb, p.P, ecParam.bitSize, local::winSize);
-	mcl::GLV1T<Ec>::initForSecp256k1(Zn::getOp().mp);
-	Ec::setMulArrayGLV(mcl::GLV1T<Ec>::mulArray);
+	p.bitSize = 256;
+	p.Pbase.init(pb, p.P, p.bitSize, local::winSize);
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
@@ -119,7 +102,7 @@ struct PrecomputedPublicKey {
 	mcl::fp::WindowMethod<Ec> pubBase_;
 	void init(bool *pb, const PublicKey& pub)
 	{
-		pubBase_.init(pb, pub, param.ecParam.bitSize, local::winSize);
+		pubBase_.init(pb, pub, param.bitSize, local::winSize);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const PublicKey& pub)
