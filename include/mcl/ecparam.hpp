@@ -33,9 +33,9 @@ const struct mcl::EcParam secp160k1 = {
 	"0x938cf935318fdced6bc28286531733c3f03c4fee",
 	"0x100000000000000000001b8fa16dfab9aca16b6b3",
 	160,
-	-1
+	MCL_SECP160K1
 };
-// p=2^160 + 7
+// p=2^160 + 7 (for test)
 const struct mcl::EcParam p160_1 = {
 	"p160_1",
 	"0x10000000000000000000000000000000000000007",
@@ -45,7 +45,7 @@ const struct mcl::EcParam p160_1 = {
 	"1236612389951462151661156731535316138439983579284",
 	"1461501637330902918203683518218126812711137002561",
 	161,
-	-1
+	MCL_P160_1
 };
 const struct mcl::EcParam secp192k1 = {
 	"secp192k1",
@@ -198,6 +198,8 @@ inline const mcl::EcParam* getEcParam(int curve)
 	case MCL_NIST_P192: return &ecparam::NIST_P192;
 	case MCL_NIST_P224: return &ecparam::NIST_P224;
 	case MCL_NIST_P256: return &ecparam::NIST_P256;
+	case MCL_SECP160K1: return &ecparam::secp160k1;
+	case MCL_P160_1: return &ecparam::p160_1;
 	default: return 0;
 	}
 }

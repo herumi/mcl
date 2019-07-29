@@ -76,12 +76,8 @@ void benchFp(size_t bitSize, int mode)
 
 void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMode)
 {
-	Fp::init(para.p, mode);
-	Zn::init(para.n);
-	Ec::init(para.a, para.b, ecMode);
-	Fp x(para.gx);
-	Fp y(para.gy);
-	Ec P(x, y);
+	Ec P;
+	mcl::initCurve<Ec, Zn>(para.curveType, &P, mode, ecMode);
 	Ec P2; Ec::add(P2, P, P);
 	Ec Q = P + P + P;
 	double addT, add2T, subT, dblT, mulT, mulCTT, mulRandT, mulCTRandT, normT;

@@ -32,9 +32,7 @@ struct Test {
 		: para(para)
 	{
 		printf("fpMode=%s\n", mcl::fp::ModeToStr(fpMode));
-		Fp::init(para.p, fpMode);
-		Zn::init(para.n, fpMode);
-		Ec::init(para.a, para.b, ecMode);
+		mcl::initCurve<Ec, Zn>(para.curveType, 0, fpMode, ecMode);
 	}
 	void cstr() const
 	{

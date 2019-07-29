@@ -1215,25 +1215,22 @@ template<class Ec> mpz_class GLV1T<Ec>::r;
 /*
 	Ec : elliptic curve
 	Zn : cyclic group of the order |Ec|
-	P : set the generator of Ec unless NULL
+	set P the generator of Ec if P != 0
 */
 template<class Ec, class Zn>
-void initCurve(bool *pb, int curveType, Ec *P = 0)
+void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	typedef typename Ec::Fp Fp;
 	*pb = false;
 	const EcParam *ecParam = getEcParam(curveType);
 	if (ecParam == 0) return;
 
-	Zn::init(pb, ecParam->n);
+	Zn::init(pb, ecParam->n, mode);
 	if (!*pb) return;
-	Fp::init(pb, ecParam->p);
+	Fp::init(pb, ecParam->p, mode);
 	if (!*pb) return;
-	Ec::init(pb, ecParam->a, ecParam->b);
+	Ec::init(pb, ecParam->a, ecParam->b, ecMode);
 	if (!*pb) return;
-	Zn::setIoMode(16);
-	Fp::setIoMode(16);
-//	Ec::setIoMode(IoEcAffine);
 	if (P) {
 		Fp x, y;
 		x.setStr(pb, ecParam->gx);
@@ -1250,6 +1247,16 @@ void initCurve(bool *pb, int curveType, Ec *P = 0)
 		Ec::setMulArrayGLV(0);
 	}
 }
+
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+template<class Ec, class Zn>
+void initCurve(int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
+{
+	bool b;
+	initCurve<Ec, Zn>(&b, curveType, P, mode, ecMode);
+	if (!b) throw cybozu::Exception("mcl:initCurve") << curveType << mode << ecMode;
+}
+#endif
 
 } // mcl
 

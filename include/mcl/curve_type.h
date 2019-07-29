@@ -18,7 +18,7 @@ enum {
 
 	/*
 		for only G1
-		the size of curve must be less or equal to MCLBN_FP_UNIT_SIZE
+		the size of curve must be <= MCLBN_FP_UNIT_SIZE
 	*/
 	MCL_EC_BEGIN = 100,
 	MCL_SECP192K1 = MCL_EC_BEGIN,
@@ -29,7 +29,9 @@ enum {
 	MCL_NIST_P192 = 105,
 	MCL_NIST_P224 = 106,
 	MCL_NIST_P256 = 107,
-	MCL_EC_END = MCL_NIST_P256 + 1,
+	MCL_SECP160K1 = 108,
+	MCL_P160_1 = 109,
+	MCL_EC_END = MCL_P160_1 + 1,
 	MCL_NIST_P384 = MCL_SECP384R1,
 	MCL_NIST_P521 = MCL_SECP521R1
 };
