@@ -577,22 +577,12 @@ public:
 	*/
 	static void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 	{
-		Fp::init(para.p);
-		Fr::init(para.n);
-		G1::init(para.a, para.b);
-		const Fp x0(para.gx);
-		const Fp y0(para.gy);
-		P_.set(x0, y0);
-
+		mcl::initCurve<G1, Fr>(para.curveType, &P_);
 		setRangeForG1DLP(hashSize);
 		useDecG1ViaGT_ = false;
 		useDecG2ViaGT_ = false;
 		isG1only_ = true;
 		setTryNum(tryNum);
-		if (std::string(para.name) == mcl::ecparam::secp256k1.name) {
-			mcl::GLV1T<G1>::initForSecp256k1(Fr::getOp().mp);
-			G1::setMulArrayGLV(mcl::GLV1T<G1>::mulArray);
-		}
 	}
 	/*
 		set range for G1-DLP
