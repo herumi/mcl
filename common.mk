@@ -42,7 +42,7 @@ ifeq ($(ARCH),x86)
   BIT_OPT=-m32
   #LOW_ASM_SRC=src/asm/low_x86.asm
 endif
-ifeq ($(ARCH),armv7l)
+ifneq ($(findstring $(ARCH),armv7l/armv6l),)
   CPU=arm
   BIT=32
   #LOW_ASM_SRC=src/asm/low_arm.s
