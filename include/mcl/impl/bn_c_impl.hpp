@@ -144,6 +144,10 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 	cast(x)->setArrayMask((const char *)buf, bufSize);
 	return 0;
 }
+mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x)
+{
+	return cast(x)->getLittleEndian(buf, maxBufSize);
+}
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	bool b;
@@ -594,6 +598,11 @@ int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize)
 	bool b;
 	cast(x)->setArray(&b, (const char *)buf, bufSize, mcl::fp::Mod);
 	return b ? 0 : -1;
+}
+
+mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x)
+{
+	return cast(x)->getLittleEndian(buf, maxBufSize);
 }
 int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y)
 {

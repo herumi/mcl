@@ -245,6 +245,14 @@ MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
 MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 MCLBN_DLL_API int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 
+/*
+	write a value as little endian
+	return written size if success else 0
+	@note buf[0] = 0 and return 1 if the value is zero
+*/
+MCLBN_DLL_API mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
+MCLBN_DLL_API mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
+
 // set (buf mod r) to x
 // return 0 if bufSize <= (byte size of Fr * 2) else -1
 MCLBN_DLL_API int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
