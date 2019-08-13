@@ -568,6 +568,94 @@ CYBOZU_TEST_AUTO(setRandFunc)
 	}
 }
 
+CYBOZU_TEST_AUTO(Fp_1)
+{
+	mclBnFp x, y;
+	memset(&x, 0xff, sizeof(x));
+	CYBOZU_TEST_ASSERT(!mclBnFp_isValid(&x));
+	CYBOZU_TEST_ASSERT(!mclBnFp_isZero(&x));
+
+	mclBnFp_clear(&x);
+	CYBOZU_TEST_ASSERT(mclBnFp_isZero(&x));
+
+	mclBnFp_setInt(&x, 1);
+	CYBOZU_TEST_ASSERT(mclBnFp_isOne(&x));
+
+	mclBnFp_setInt(&y, -1);
+	CYBOZU_TEST_ASSERT(!mclBnFp_isEqual(&x, &y));
+
+	y = x;
+	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x, &y));
+
+	mclBnFp_setHashOf(&x, "", 0);
+	mclBnFp_setHashOf(&y, "abc", 3);
+	CYBOZU_TEST_ASSERT(!mclBnFp_isEqual(&x, &y));
+	mclBnFp_setHashOf(&x, "abc", 3);
+	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x, &y));
+
+	char buf[1024];
+	mclBnFp_setInt(&x, 12345678);
+	size_t size;
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 8);
+	CYBOZU_TEST_EQUAL(buf, "12345678");
+
+	mclBnFp_setInt(&x, -7654321);
+	mclBnFp_neg(&x, &x);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 7);
+	CYBOZU_TEST_EQUAL(buf, "7654321");
+
+	mclBnFp_setInt(&y, 123 - 7654321);
+	mclBnFp_add(&x, &x, &y);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 3);
+	CYBOZU_TEST_EQUAL(buf, "123");
+
+	mclBnFp_setInt(&y, 100);
+	mclBnFp_sub(&x, &x, &y);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 2);
+	CYBOZU_TEST_EQUAL(buf, "23");
+
+	mclBnFp_mul(&x, &x, &y);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 4);
+	CYBOZU_TEST_EQUAL(buf, "2300");
+
+	mclBnFp_div(&x, &x, &y);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 2);
+	CYBOZU_TEST_EQUAL(buf, "23");
+
+	mclBnFp_mul(&x, &y, &y);
+	mclBnFp_sqr(&y, &y);
+	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x, &y));
+
+	const char *s = "12345678901234567";
+	CYBOZU_TEST_ASSERT(!mclBnFp_setStr(&x, s, strlen(s), 10));
+	s = "20000000000000000";
+	CYBOZU_TEST_ASSERT(!mclBnFp_setStr(&y, s, strlen(s), 10));
+	mclBnFp_add(&x, &x, &y);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_EQUAL(size, 17);
+	CYBOZU_TEST_EQUAL(buf, "32345678901234567");
+
+	mclBnFp_setInt(&x, 1);
+	mclBnFp_neg(&x, &x);
+	size = mclBnFp_getStr(buf, sizeof(buf), &x, 10);
+	CYBOZU_TEST_ASSERT(size > 0);
+	CYBOZU_TEST_EQUAL(size, strlen(buf));
+	CYBOZU_TEST_ASSERT(!mclBnFp_setStr(&y, buf, size, 10));
+	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x, &y));
+
+	for (int i = 0; i < 10; i++) {
+		mclBnFp_setByCSPRNG(&x);
+		mclBnFp_getStr(buf, sizeof(buf), &x, 16);
+		printf("%s\n", buf);
+	}
+}
+
 CYBOZU_TEST_AUTO(Fp)
 {
 	mclBnFp x1, x2;
@@ -593,6 +681,17 @@ CYBOZU_TEST_AUTO(Fp)
 	mclBnFp_clear(&x1);
 	memset(&x2, 0, sizeof(x2));
 	CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&x1, &x2));
+
+	mclBnFp_clear(&x1);
+	CYBOZU_TEST_ASSERT(mclBnFp_isZero(&x1));
+
+	mclBnFp_setInt(&x1, 1);
+	CYBOZU_TEST_ASSERT(mclBnFp_isOne(&x1));
+
+	mclBnFp_setInt(&x1, -1);
+	CYBOZU_TEST_ASSERT(!mclBnFp_isOne(&x1));
+    mclBnFp_neg(&x1, &x1);
+	CYBOZU_TEST_ASSERT(mclBnFp_isOne(&x1));
 }
 
 CYBOZU_TEST_AUTO(mod)

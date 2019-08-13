@@ -183,6 +183,12 @@ int mclBnFr_setByCSPRNG(mclBnFr *x)
 	cast(x)->setByCSPRNG(&b);
 	return b ? 0 : -1;
 }
+int mclBnFp_setByCSPRNG(mclBnFp *x)
+{
+	bool b;
+	cast(x)->setByCSPRNG(&b);
+	return b ? 0 : -1;
+}
 void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize))
 {
 	mcl::fp::RandGen::setRandFunc(self, readFunc);
@@ -232,6 +238,35 @@ void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::div(*cast(z),*cast(x), *cast(y));
+}
+
+void mclBnFp_neg(mclBnFp *y, const mclBnFp *x)
+{
+	Fp::neg(*cast(y), *cast(x));
+}
+void mclBnFp_inv(mclBnFp *y, const mclBnFp *x)
+{
+	Fp::inv(*cast(y), *cast(x));
+}
+void mclBnFp_sqr(mclBnFp *y, const mclBnFp *x)
+{
+	Fp::sqr(*cast(y), *cast(x));
+}
+void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
+{
+	Fp::add(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
+{
+	Fp::sub(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
+{
+	Fp::mul(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
+{
+	Fp::div(*cast(z),*cast(x), *cast(y));
 }
 
 ////////////////////////////////////////////////
@@ -564,6 +599,15 @@ void mclBn_verifyOrderG2(int doVerify)
 	verifyOrderG2(doVerify != 0);
 }
 
+void mclBnFp_setInt(mclBnFp *y, mclInt x)
+{
+	*cast(y) = x;
+}
+void mclBnFp_setInt32(mclBnFp *y, int x)
+{
+	*cast(y) = x;
+}
+
 mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMode)
 {
 	return cast(x)->getStr(buf, maxBufSize, ioMode);
@@ -604,9 +648,21 @@ mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x)
 {
 	return cast(x)->getLittleEndian(buf, maxBufSize);
 }
+int mclBnFp_isValid(const mclBnFp *x)
+{
+	return cast(x)->isValid();
+}
 int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y)
 {
 	return *cast(x) == *cast(y);
+}
+int mclBnFp_isZero(const mclBnFp *x)
+{
+	return cast(x)->isZero();
+}
+int mclBnFp_isOne(const mclBnFp *x)
+{
+	return cast(x)->isOne();
 }
 
 int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize)

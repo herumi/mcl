@@ -238,6 +238,8 @@ MCLBN_DLL_API void mclBnFp2_clear(mclBnFp2 *x);
 // set x to y
 MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
 MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
+MCLBN_DLL_API void mclBnFp_setInt(mclBnFp *y, mclInt x);
+MCLBN_DLL_API void mclBnFp_setInt32(mclBnFp *y, int x);
 
 // x = buf & (1 << bitLen(r)) - 1
 // if (x >= r) x &= (1 << (bitLen(r) - 1)) - 1
@@ -266,12 +268,16 @@ MCLBN_DLL_API int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API int mclBnFr_isZero(const mclBnFr *x);
 MCLBN_DLL_API int mclBnFr_isOne(const mclBnFr *x);
 
+MCLBN_DLL_API int mclBnFp_isValid(const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y);
+MCLBN_DLL_API int mclBnFp_isZero(const mclBnFp *x);
+MCLBN_DLL_API int mclBnFp_isOne(const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
 
 #ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
+MCLBN_DLL_API int mclBnFp_setByCSPRNG(mclBnFp *x);
 
 /*
 	set user-defined random function for setByCSPRNG
@@ -301,6 +307,14 @@ MCLBN_DLL_API void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+
+MCLBN_DLL_API void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
+MCLBN_DLL_API void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
+MCLBN_DLL_API void mclBnFp_sqr(mclBnFp *y, const mclBnFp *x);
+MCLBN_DLL_API void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCLBN_DLL_API void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCLBN_DLL_API void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCLBN_DLL_API void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 
 ////////////////////////////////////////////////
 // set zero
