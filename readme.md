@@ -358,14 +358,15 @@ These functions maps x into Gi according to [\[_Faster hashing to G2_\]].
 
 ## String format of G1 and G2
 G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
-normalize() method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).
+`normalize()` method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).
 
-getStr() method gets
+getStr(mode = 0) method gets
 
 * `0` ; infinity
-* `1 <x> <y>` ; not compressed format
-* `2 <x>` ; compressed format for even y
-* `3 <x>` ; compressed format for odd y
+* `1 <x> <y>` ; Affine coordinate with mode = `mcl:IoEcAffine`
+* `4 <x> <y> <z>` ; jacobi/Proj coordinate with mode = `mcl::IoEcProj`
+* `2 <x>` ; compressed format for even y with mode = `mcl::IoEcCompY`
+* `3 <x>` ; compressed format for odd y with mode = `mcl::IoEcCompY`
 
 ## Generator of G1 and G2
 
