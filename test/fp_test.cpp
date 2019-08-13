@@ -672,6 +672,36 @@ void getInt64Test()
 	}
 }
 
+void getLittleEndianTest()
+{
+	if (Fp::getOp().bitSize < 80) return;
+	const struct {
+		const char *in;
+		uint8_t out[16];
+		size_t size;
+	} tbl[] = {
+		{ "0", { 0 }, 1 },
+		{ "1", { 1 }, 1 },
+		{ "0x1200", { 0x00, 0x12 }, 2 },
+		{ "0x123400", { 0x00, 0x34, 0x12 }, 3 },
+		{ "0x1234567890123456ab", { 0xab, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12 }, 9 },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Fp x(tbl[i].in);
+		uint8_t buf[128];
+		size_t n = x.getLittleEndian(buf, tbl[i].size);
+		CYBOZU_TEST_EQUAL(n, tbl[i].size);
+		CYBOZU_TEST_EQUAL_ARRAY(buf, tbl[i].out, n);
+
+		n = x.getLittleEndian(buf, tbl[i].size + 1);
+		CYBOZU_TEST_EQUAL(n, tbl[i].size);
+		CYBOZU_TEST_EQUAL_ARRAY(buf, tbl[i].out, n);
+
+		n = x.getLittleEndian(buf, tbl[i].size - 1);
+		CYBOZU_TEST_EQUAL(n, 0);
+	}
+}
+
 void divBy2Test()
 {
 	const int tbl[] = { -4, -3, -2, -1, 0, 1, 2, 3 };
@@ -951,6 +981,7 @@ void sub(mcl::fp::Mode mode)
 		setArrayModTest();
 		getUint64Test();
 		getInt64Test();
+		getLittleEndianTest();
 		divBy2Test();
 		getStrTest();
 		setHashOfTest();

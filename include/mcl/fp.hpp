@@ -366,6 +366,29 @@ public:
 			b.p = &v_[0];
 		}
 	}
+	/*
+		write a value with little endian
+		write buf[0] = 0 and return 1 if the value is 0
+		return written size if success else 0
+	*/
+	size_t getLittleEndian(void *buf, size_t maxBufSize) const
+	{
+		fp::Block b;
+		getBlock(b);
+		const uint8_t *src = (const uint8_t *)b.p;
+		uint8_t *dst = (uint8_t *)buf;
+		size_t n = b.n * sizeof(b.p[0]);
+		while (n > 0) {
+			if (src[n - 1]) break;
+			n--;
+		}
+		if (n == 0) n = 1; // zero
+		if (maxBufSize < n) return 0;
+		for (size_t i = 0; i < n; i++) {
+			dst[i] = src[i];
+		}
+		return n;
+	}
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
 		if (rg.isZero()) rg = fp::RandGen::get();
