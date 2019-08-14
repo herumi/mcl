@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography.
 The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+* v0.97 add some C api functions
 * v0.96 improved scalar multiplication
 * mclBn_setETHserialization(true) (de)serialize acoording to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
 * (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
