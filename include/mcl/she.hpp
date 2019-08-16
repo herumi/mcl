@@ -367,6 +367,8 @@ private:
 	public:
 		const G& getS() const { return S_; }
 		const G& getT() const { return T_; }
+		G& getNonConstRefS() { return S_; }
+		G& getNonConstRefT() { return T_; }
 		void clear()
 		{
 			S_.clear();
