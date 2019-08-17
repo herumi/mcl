@@ -1900,6 +1900,25 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
 }
 #endif
+
+/*
+	f = prod_{i=0}^{n-1} millerLoop(Pvec[i], Qvec[i])
+*/
+inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
+{
+	if (n == 0) {
+		f = 1;
+		return;
+	}
+	millerLoop(f, Pvec[0], Qvec[0]);
+	for (size_t i = 1; i < n; i++) {
+		Fp12 g;
+		millerLoop(g, Pvec[i], Qvec[i]);
+		f *= g;
+	}
+}
+
+
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
