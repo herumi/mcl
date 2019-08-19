@@ -345,7 +345,7 @@ class Option {
 	template<class T, class U>
 	void append(T *pvar, const U& defaultVal, bool isMust, const char *opt, const std::string& help = "")
 	{
-		*pvar = defaultVal;
+		*pvar = static_cast<const T&>(defaultVal);
 		appendSub(pvar, N_is1, isMust, opt, help);
 	}
 	/*
