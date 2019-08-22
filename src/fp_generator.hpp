@@ -127,71 +127,6 @@ if (rm.isReg()) { \
 
 namespace fp {
 
-struct Profiler {
-	FILE *fp_;
-	const char *suf_;
-	const uint8_t *prev_;
-	Profiler()
-		: fp_(0)
-		, suf_(0)
-		, prev_(0)
-	{
-	}
-	void init(const char *suf, const uint8_t *prev)
-	{
-#ifdef __linux__
-		close();
-		const char *s = getenv("MCL_PERF");
-		if (s == 0 || strcmp(s, "1") != 0) return;
-		fprintf(stderr, "use perf suf=%s\n", suf);
-		suf_ = suf;
-		const int pid = getpid();
-		char name[128];
-		snprintf(name, sizeof(name), "/tmp/perf-%d.map", pid);
-		fp_ = fopen(name, "wb");
-		if (fp_ == 0) throw cybozu::Exception("PerMap") << name;
-		prev_ = prev;
-#else
-		(void)suf;
-		(void)prev;
-#endif
-	}
-	~Profiler()
-	{
-		close();
-	}
-	void close()
-	{
-#ifdef __linux__
-		if (fp_ == 0) return;
-		fclose(fp_);
-		fp_ = 0;
-		prev_ = 0;
-#endif
-	}
-	void set(const uint8_t *p, size_t n, const char *name) const
-	{
-#ifdef __linux__
-		if (fp_ == 0) return;
-		fprintf(fp_, "%llx %zx %s%s\n", (long long)p, n, name, suf_);
-#else
-		(void)p;
-		(void)n;
-		(void)name;
-#endif
-	}
-	void set(const char *name, const uint8_t *cur)
-	{
-#ifdef __linux__
-		set(prev_, cur - prev_, name);
-		prev_ = cur;
-#else
-		(void)name;
-		(void)cur;
-#endif
-	}
-};
-
 struct FpGenerator : Xbyak::CodeGenerator {
 	typedef Xbyak::RegExp RegExp;
 	typedef Xbyak::Reg64 Reg64;
@@ -268,7 +203,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	int pn_;
 	int FpByte_;
 	bool isFullBit_;
-	Profiler prof_;
+	Xbyak::util::Profiler prof_;
 
 	/*
 		@param op [in] ; use op.p, op.N, op.isFullBit
@@ -331,9 +266,16 @@ private:
 		FpByte_ = int(op.maxN * sizeof(uint64_t));
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
+#ifdef MCL_USE_PROF
 		static char suf[] = "_0";
-		prof_.init(suf, getCurr());
-		suf[1]++;
+		const char *s = getenv("MCL_PROF");
+		if (s && s[0] && s[1] == '\0') {
+			prof_.init(s[0] - '0');
+			prof_.setStartAddr(getCurr());
+			prof_.setNameSuffix(suf);
+			suf[1]++;
+		}
+#endif
 
 		op.fp_addPre = gen_addSubPre(true, pn_);
 		prof_.set("Fp_addPre", getCurr());
