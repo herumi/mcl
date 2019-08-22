@@ -7,9 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdlib.h>
-#include <cybozu/exception.hpp>
-#include <mcl/op.hpp>
-#include <mcl/util.hpp>
+#include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 
 //#define MCL_EC_USE_AFFINE
