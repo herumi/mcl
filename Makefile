@@ -28,6 +28,13 @@ endif
 ifeq ($(MCL_USE_XBYAK),0)
   CFLAGS+=-DMCL_DONT_USE_XBYAK
 endif
+ifeq ($(MCL_USE_PROF),1)
+  CFLAGS+=-DMCL_USE_PROF
+endif
+ifeq ($(MCL_USE_PROF),2)
+  CFLAGS+=-DMCL_USE_PROF -DXBYAK_USE_VTUNE -I /opt/intel/vtune_amplifier/include/
+  LDFLAGS+=-L /opt/intel/vtune_amplifier/lib64 -ljitprofiling -ldl
+endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/libmcl.a
 MCL_SNAME=mcl
