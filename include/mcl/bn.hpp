@@ -1223,7 +1223,6 @@ inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 }
 inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 {
-	assert(P.isNormalized());
 	y.a = x.a;
 	Fp2::mulFp(y.c, x.c, P.x);
 	Fp2::mulFp(y.b, x.b, P.y);
