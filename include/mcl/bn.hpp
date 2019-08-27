@@ -1224,7 +1224,7 @@ inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 {
 	assert(P.isNormalized());
-	if (&y != &x) y.a = x.a;
+	y.a = x.a;
 	Fp2::mulFp(y.c, x.c, P.x);
 	Fp2::mulFp(y.b, x.b, P.y);
 }
@@ -1560,16 +1560,16 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 #endif
 }
 /*
+	adjP = (P.x * 3, -P.y)
 	remark : returned value is NOT on a curve
 */
-inline G1 makeAdjP(const G1& P)
+inline void makeAdjP(G1& adjP, const G1& P)
 {
-	G1 adjP;
-	Fp::add(adjP.x, P.x, P.x);
-	adjP.x += P.x;
+	Fp x2;
+	Fp::add(x2, P.x, P.x);
+	Fp::add(adjP.x, x2, P.x);
 	Fp::neg(adjP.y, P.y);
-	adjP.z = 1;
-	return adjP;
+	// adjP.z.clear(); // not used
 }
 
 } // mcl::bn::local
@@ -1614,7 +1614,8 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 		G2::neg(negQ, Q);
 	}
 	Fp6 d, e;
-	G1 adjP = makeAdjP(P);
+	G1 adjP;
+	makeAdjP(adjP, P);
 	dblLine(d, T, adjP);
 	addLine(e, T, Q, P);
 	mulSparse2(f, d, e);
@@ -1636,12 +1637,11 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 		Fp6::neg(f.b, f.b);
 	}
 	if (BN::param.isBLS12) return;
-	G2 Q1, Q2;
-	Frobenius(Q1, Q);
-	Frobenius(Q2, Q1);
-	G2::neg(Q2, Q2);
-	addLine(d, T, Q1, P);
-	addLine(e, T, Q2, P);
+	Frobenius(Q, Q);
+	addLine(d, T, Q, P);
+	Frobenius(Q, Q);
+	G2::neg(Q, Q);
+	addLine(e, T, Q, P);
 	Fp12 ft;
 	mulSparse2(ft, d, e);
 	f *= ft;
@@ -1687,12 +1687,11 @@ inline void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 		G2::neg(T, T);
 	}
 	if (BN::param.isBLS12) return;
-	G2 Q1, Q2;
-	Frobenius(Q1, Q);
-	Frobenius(Q2, Q1);
-	G2::neg(Q2, Q2);
-	addLineWithoutP(Qcoeff[idx++], T, Q1);
-	addLineWithoutP(Qcoeff[idx++], T, Q2);
+	Frobenius(Q, Q);
+	addLineWithoutP(Qcoeff[idx++], T, Q);
+	Frobenius(Q, Q);
+	G2::neg(Q, Q);
+	addLineWithoutP(Qcoeff[idx++], T, Q);
 	assert(idx == BN::param.precomputedQcoeffSize);
 }
 /*
@@ -1720,9 +1719,10 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
 	G1 P(P_);
 	P.normalize();
-	G1 adjP = makeAdjP(P);
+	G1 adjP;
+	makeAdjP(adjP, P);
 	size_t idx = 0;
-	Fp6 d, e, l;
+	Fp6 d, e;
 	mulFp6cb_by_G1xy(d, Qcoeff[idx], adjP);
 	idx++;
 
@@ -1730,14 +1730,14 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	idx++;
 	mulSparse2(f, d, e);
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		mulFp6cb_by_G1xy(l, Qcoeff[idx], adjP);
+		mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
 		idx++;
 		Fp12::sqr(f, f);
-		mulSparse(f, l);
+		mulSparse(f, e);
 		if (BN::param.siTbl[i]) {
-			mulFp6cb_by_G1xy(l, Qcoeff[idx], P);
+			mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
 			idx++;
-			mulSparse(f, l);
+			mulSparse(f, e);
 		}
 	}
 	if (BN::param.z < 0) {
@@ -1778,16 +1778,16 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, c
 	if (BN::param.useNAF) {
 		G2::neg(negQ1, Q1);
 	}
-	G1 adjP1 = makeAdjP(P1);
-	G1 adjP2 = makeAdjP(P2);
+	G1 adjP1, adjP2;
+	makeAdjP(adjP1, P1);
+	makeAdjP(adjP2, P2);
 	size_t idx = 0;
-	Fp6 d1, d2, e1, e2, l1, l2;
+	Fp6 d1, d2, e1, e2;
 	dblLine(d1, T, adjP1);
 	mulFp6cb_by_G1xy(d2, Q2coeff[idx], adjP2);
 	idx++;
 
 	Fp12 f1, f2;
-	e1 = 1;
 	addLine(e1, T, Q1, P1);
 	mulSparse2(f1, d1, e1);
 
@@ -1796,21 +1796,21 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, c
 	Fp12::mul(f, f1, f2);
 	idx++;
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		dblLine(l1, T, adjP1);
-		mulFp6cb_by_G1xy(l2, Q2coeff[idx], adjP2);
+		dblLine(e1, T, adjP1);
+		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
 		idx++;
 		Fp12::sqr(f, f);
-		mulSparse2(f1, l1, l2);
+		mulSparse2(f1, e1, e2);
 		f *= f1;
 		if (BN::param.siTbl[i]) {
 			if (BN::param.siTbl[i] > 0) {
-				addLine(l1, T, Q1, P1);
+				addLine(e1, T, Q1, P1);
 			} else {
-				addLine(l1, T, negQ1, P1);
+				addLine(e1, T, negQ1, P1);
 			}
-			mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
+			mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
 			idx++;
-			mulSparse2(f1, l1, l2);
+			mulSparse2(f1, e1, e2);
 			f *= f1;
 		}
 	}
@@ -1819,14 +1819,13 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, c
 		Fp6::neg(f.b, f.b);
 	}
 	if (BN::param.isBLS12) return;
-	G2 Q11, Q12;
-	Frobenius(Q11, Q1);
-	Frobenius(Q12, Q11);
-	G2::neg(Q12, Q12);
-	addLine(d1, T, Q11, P1);
+	Frobenius(Q1, Q1);
+	addLine(d1, T, Q1, P1);
 	mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
 	idx++;
-	addLine(e1, T, Q12, P1);
+	Frobenius(Q1, Q1);
+	G2::neg(Q1, Q1);
+	addLine(e1, T, Q1, P1);
 	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
 	idx++;
 	mulSparse2(f1, d1, e1);
@@ -1843,10 +1842,11 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, c
 	G1 P1(P1_), P2(P2_);
 	P1.normalize();
 	P2.normalize();
-	G1 adjP1 = makeAdjP(P1);
-	G1 adjP2 = makeAdjP(P2);
+	G1 adjP1, adjP2;
+	makeAdjP(adjP1, P1);
+	makeAdjP(adjP2, P2);
 	size_t idx = 0;
-	Fp6 d1, d2, e1, e2, l1, l2;
+	Fp6 d1, d2, e1, e2;
 	mulFp6cb_by_G1xy(d1, Q1coeff[idx], adjP1);
 	mulFp6cb_by_G1xy(d2, Q2coeff[idx], adjP2);
 	idx++;
@@ -1860,17 +1860,17 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, c
 	Fp12::mul(f, f1, f2);
 	idx++;
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		mulFp6cb_by_G1xy(l1, Q1coeff[idx], adjP1);
-		mulFp6cb_by_G1xy(l2, Q2coeff[idx], adjP2);
+		mulFp6cb_by_G1xy(e1, Q1coeff[idx], adjP1);
+		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
 		idx++;
 		Fp12::sqr(f, f);
-		mulSparse2(f1, l1, l2);
+		mulSparse2(f1, e1, e2);
 		f *= f1;
 		if (BN::param.siTbl[i]) {
-			mulFp6cb_by_G1xy(l1, Q1coeff[idx], P1);
-			mulFp6cb_by_G1xy(l2, Q2coeff[idx], P2);
+			mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
+			mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
 			idx++;
-			mulSparse2(f1, l1, l2);
+			mulSparse2(f1, e1, e2);
 			f *= f1;
 		}
 	}
