@@ -1633,10 +1633,12 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 		}
 	}
 	if (BN::param.z < 0) {
-		G2::neg(T, T);
 		Fp6::neg(f.b, f.b);
 	}
 	if (BN::param.isBLS12) return;
+	if (BN::param.z < 0) {
+		G2::neg(T, T);
+	}
 	Frobenius(Q, Q);
 	addLine(d, T, Q, P);
 	Frobenius(Q, Q);
@@ -1900,23 +1902,97 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 }
 #endif
 
+template<size_t N>
+inline void millerLoopVecN(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
+{
+	assert(n <= N);
+	G1 P[N];
+	G2 Q[N];
+	// remove zero elements
+	{
+		size_t realN = 0;
+		for (size_t i = 0; i < n; i++) {
+			if (!Pvec[i].isZero() && !Qvec[i].isZero()) {
+				G1::normalize(P[realN], Pvec[i]);
+				G2::normalize(Q[realN], Qvec[i]);
+				realN++;
+			}
+		}
+		if (realN <= 0) {
+			f = 1;
+			return;
+		}
+		n = realN; // update n
+	}
+	// all P[] and Q[] are not zero
+	G2 T[N], negQ[N];
+	G1 adjP[N];
+	Fp6 d, e;
+	for (size_t i = 0; i < n; i++) {
+		T[i] = Q[i];
+		if (BN::param.useNAF) {
+			G2::neg(negQ[i], Q[i]);
+		}
+		makeAdjP(adjP[i], P[i]);
+		dblLine(d, T[i], adjP[i]);
+		addLine(e, T[i], Q[i], P[i]);
+		if (i == 0) {
+			mulSparse2(f, d, e);
+		} else {
+			Fp12 ft;
+			mulSparse2(ft, d, e);
+			f *= ft;
+		}
+	}
+	for (size_t j = 2; j < BN::param.siTbl.size(); j++) {
+		Fp12::sqr(f, f);
+		for (size_t i = 0; i < n; i++) {
+			dblLine(e, T[i], adjP[i]);
+			mulSparse(f, e);
+			int v = BN::param.siTbl[j];
+			if (v) {
+				if (v > 0) {
+					addLine(e, T[i], Q[i], P[i]);
+				} else {
+					addLine(e, T[i], negQ[i], P[i]);
+				}
+				mulSparse(f, e);
+			}
+		}
+	}
+	if (BN::param.z < 0) {
+		Fp6::neg(f.b, f.b);
+	}
+	if (BN::param.isBLS12) return;
+	for (size_t i = 0; i < n; i++) {
+		if (BN::param.z < 0) {
+			G2::neg(T[i], T[i]);
+		}
+		Frobenius(Q[i], Q[i]);
+		addLine(d, T[i], Q[i], P[i]);
+		Frobenius(Q[i], Q[i]);
+		G2::neg(Q[i], Q[i]);
+		addLine(e, T[i], Q[i], P[i]);
+		Fp12 ft;
+		mulSparse2(ft, d, e);
+		f *= ft;
+	}
+}
 /*
 	f = prod_{i=0}^{n-1} millerLoop(Pvec[i], Qvec[i])
 */
 inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 {
-	if (n == 0) {
-		f = 1;
-		return;
-	}
-	millerLoop(f, Pvec[0], Qvec[0]);
-	for (size_t i = 1; i < n; i++) {
-		Fp12 g;
-		millerLoop(g, Pvec[i], Qvec[i]);
-		f *= g;
+	const size_t N = 16;
+	size_t remain = fp::min_(N, n);
+	millerLoopVecN<N>(f, Pvec, Qvec, remain);
+	for (size_t i = remain; i < n; i += N) {
+		remain = fp::min_(n - i, N);
+		Fp12 ft;
+		millerLoopVecN<N>(ft, Pvec + i, Qvec + i, remain);
+		f *= ft;
 	}
 }
-
 
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
