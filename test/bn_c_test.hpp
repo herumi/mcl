@@ -367,6 +367,26 @@ CYBOZU_TEST_AUTO(precomputed)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &f3));
 }
 
+CYBOZU_TEST_AUTO(millerLoopVec)
+{
+	const size_t n = 7;
+	mclBnG1 Pvec[n];
+	mclBnG2 Qvec[n];
+	for (size_t i = 0; i < n; i++) {
+		char d = (char)(i + 1);
+		mclBnG1_hashAndMapTo(&Pvec[i], &d, 1);
+		mclBnG2_hashAndMapTo(&Qvec[i], &d, 1);
+	}
+	mclBnGT e1, e2;
+	mclBnGT_setInt(&e2, 1);
+	for (size_t i = 0; i < n; i++) {
+		mclBn_millerLoop(&e1, &Pvec[i], &Qvec[i]);
+		mclBnGT_mul(&e2, &e2, &e1);
+	}
+	mclBn_millerLoopVec(&e1, Pvec, Qvec, n);
+	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &e2));
+}
+
 CYBOZU_TEST_AUTO(serialize)
 {
 	const size_t FrSize = mclBn_getFrByteSize();

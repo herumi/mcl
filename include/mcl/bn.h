@@ -407,6 +407,8 @@ MCLBN_DLL_API void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 MCLBN_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 MCLBN_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
+// z = prod_{i=0}^{n-1} millerLoop(x[i], y[i])
+MCLBN_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)
 MCLBN_DLL_API int mclBn_getUint64NumToPrecompute(void);
