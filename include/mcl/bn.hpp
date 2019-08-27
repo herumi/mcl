@@ -1613,23 +1613,22 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	if (BN::param.useNAF) {
 		G2::neg(negQ, Q);
 	}
-	Fp6 d, e, l;
-	d = e = l = 1;
+	Fp6 d, e;
 	G1 adjP = makeAdjP(P);
 	dblLine(d, T, adjP);
-	addLine(l, T, Q, P);
-	mulSparse2(f, d, l);
+	addLine(e, T, Q, P);
+	mulSparse2(f, d, e);
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		dblLine(l, T, adjP);
+		dblLine(e, T, adjP);
 		Fp12::sqr(f, f);
-		mulSparse(f, l);
+		mulSparse(f, e);
 		if (BN::param.siTbl[i]) {
 			if (BN::param.siTbl[i] > 0) {
-				addLine(l, T, Q, P);
+				addLine(e, T, Q, P);
 			} else {
-				addLine(l, T, negQ, P);
+				addLine(e, T, negQ, P);
 			}
-			mulSparse(f, l);
+			mulSparse(f, e);
 		}
 	}
 	if (BN::param.z < 0) {
