@@ -76,28 +76,28 @@ typedef struct mclBnFp2 mclBnFp2;
 #else
 
 typedef struct {
-	uint64_t d[MCLBN_FR_UNIT_SIZE];
-} mclBnFr;
-
-typedef struct {
-	uint64_t d[MCLBN_FP_UNIT_SIZE * 3];
-} mclBnG1;
-
-typedef struct {
-	uint64_t d[MCLBN_FP_UNIT_SIZE * 2 * 3];
-} mclBnG2;
-
-typedef struct {
-	uint64_t d[MCLBN_FP_UNIT_SIZE * 12];
-} mclBnGT;
-
-typedef struct {
 	uint64_t d[MCLBN_FP_UNIT_SIZE];
 } mclBnFp;
 
 typedef struct {
 	mclBnFp d[2];
 } mclBnFp2;
+
+typedef struct {
+	uint64_t d[MCLBN_FR_UNIT_SIZE];
+} mclBnFr;
+
+typedef struct {
+	mclBnFp x, y, z;
+} mclBnG1;
+
+typedef struct {
+	mclBnFp2 x, y, z;
+} mclBnG2;
+
+typedef struct {
+	mclBnFp d[12];
+} mclBnGT;
 
 #endif
 
