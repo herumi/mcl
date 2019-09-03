@@ -755,9 +755,34 @@ CYBOZU_TEST_AUTO(Fp2)
 	n = mclBnFp2_deserialize(&x2, buf, n);
 	CYBOZU_TEST_ASSERT(n > 0);
 	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x1, &x2));
+
+	mclBnFp2 y, z;
+	mclBnFp2_add(&y, &x1, &x2);
+	for (int i = 0; i < 2; i++) {
+		mclBnFp t;
+		mclBnFp_add(&t, &x1.d[i], &x2.d[i]);
+		CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&y.d[i], &t));
+	}
+	mclBnFp2_sub(&y, &y, &x2);
+	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&y, &x1));
+	mclBnFp2_mul(&y, &x1, &x2);
+	mclBnFp2_div(&y, &y, &x1);
+	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&y, &x2));
+	mclBnFp2_inv(&y, &x1);
+	mclBnFp2_mul(&y, &y, &x1);
+	CYBOZU_TEST_ASSERT(mclBnFp2_isOne(&y));
+	mclBnFp2_sqr(&y, &x1);
+	mclBnFp2_mul(&z, &x1, &x1);
+	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&y, &z));
+	mclBnFp2_sub(&y, &x1, &x2);
+	mclBnFp2_sub(&z, &x2, &x1);
+	mclBnFp2_neg(&z, &z);
+	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&y, &z));
+
 	mclBnFp2_clear(&x1);
 	memset(&x2, 0, sizeof(x2));
 	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x1, &x2));
+	CYBOZU_TEST_ASSERT(mclBnFp2_isZero(&x1));
 }
 
 CYBOZU_TEST_AUTO(squareRootFr)

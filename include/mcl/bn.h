@@ -281,7 +281,10 @@ MCLBN_DLL_API int mclBnFp_isValid(const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y);
 MCLBN_DLL_API int mclBnFp_isZero(const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp_isOne(const mclBnFp *x);
+
 MCLBN_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
+MCLBN_DLL_API int mclBnFp2_isZero(const mclBnFp2 *x);
+MCLBN_DLL_API int mclBnFp2_isOne(const mclBnFp2 *x);
 
 #ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
@@ -324,6 +327,14 @@ MCLBN_DLL_API void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCLBN_DLL_API void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCLBN_DLL_API void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCLBN_DLL_API void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+
+MCLBN_DLL_API void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x);
+MCLBN_DLL_API void mclBnFp2_inv(mclBnFp2 *y, const mclBnFp2 *x);
+MCLBN_DLL_API void mclBnFp2_sqr(mclBnFp2 *y, const mclBnFp2 *x);
+MCLBN_DLL_API void mclBnFp2_add(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCLBN_DLL_API void mclBnFp2_sub(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCLBN_DLL_API void mclBnFp2_mul(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCLBN_DLL_API void mclBnFp2_div(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
 
 // y is one of square root of x
 // return 0 if success else -1

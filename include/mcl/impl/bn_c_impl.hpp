@@ -269,6 +269,35 @@ void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
 	Fp::div(*cast(z),*cast(x), *cast(y));
 }
 
+void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x)
+{
+	Fp2::neg(*cast(y), *cast(x));
+}
+void mclBnFp2_inv(mclBnFp2 *y, const mclBnFp2 *x)
+{
+	Fp2::inv(*cast(y), *cast(x));
+}
+void mclBnFp2_sqr(mclBnFp2 *y, const mclBnFp2 *x)
+{
+	Fp2::sqr(*cast(y), *cast(x));
+}
+void mclBnFp2_add(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y)
+{
+	Fp2::add(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp2_sub(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y)
+{
+	Fp2::sub(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp2_mul(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y)
+{
+	Fp2::mul(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp2_div(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y)
+{
+	Fp2::div(*cast(z),*cast(x), *cast(y));
+}
+
 int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x)
 {
 	return Fr::squareRoot(*cast(y), *cast(x)) ? 0 : -1;
@@ -713,6 +742,14 @@ void mclBnFp2_clear(mclBnFp2 *x)
 int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y)
 {
 	return *cast(x) == *cast(y);
+}
+int mclBnFp2_isZero(const mclBnFp2 *x)
+{
+	return cast(x)->isZero();
+}
+int mclBnFp2_isOne(const mclBnFp2 *x)
+{
+	return cast(x)->isOne();
 }
 
 int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x)
