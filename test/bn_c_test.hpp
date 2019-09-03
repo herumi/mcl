@@ -760,6 +760,75 @@ CYBOZU_TEST_AUTO(Fp2)
 	CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x1, &x2));
 }
 
+CYBOZU_TEST_AUTO(squareRootFr)
+{
+	mclBnFr x, y, y2;
+	for (int i = 0; i < 10; i++) {
+		mclBnFr_setInt(&x, i * i);
+		CYBOZU_TEST_EQUAL(mclBnFr_squareRoot(&y, &x), 0);
+		mclBnFr_sqr(&y2, &y);
+		CYBOZU_TEST_EQUAL(mclBnFr_isEqual(&x, &y2), 1);
+	}
+	char buf[128];
+	mclBnFr_setInt(&x, -1);
+	CYBOZU_TEST_ASSERT(mclBnFr_serialize(buf, sizeof(buf), &x) > 0);
+	int mod8 = (buf[0] + 1) & 7;
+	/*
+		(2)
+		(p) = (-1)^((p^2-1)/8) = 1 if and only if there is x s.t. x^2 = 2 mod p
+	*/
+	bool hasSquareRoot = (((mod8 * mod8 - 1) / 8) & 1) == 0;
+	printf("Fr:hasSquareRoot=%d\n", hasSquareRoot);
+	mclBnFr_setInt(&x, 2);
+	CYBOZU_TEST_EQUAL(mclBnFr_squareRoot(&y, &x), hasSquareRoot ? 0 : -1);
+	if (hasSquareRoot) {
+		mclBnFr_sqr(&y2, &y);
+		CYBOZU_TEST_EQUAL(mclBnFr_isEqual(&x, &y2), 1);
+	}
+}
+
+CYBOZU_TEST_AUTO(squareRootFp)
+{
+	mclBnFp x, y, y2;
+	for (int i = 0; i < 10; i++) {
+		mclBnFp_setInt(&x, i * i);
+		CYBOZU_TEST_EQUAL(mclBnFp_squareRoot(&y, &x), 0);
+		mclBnFp_sqr(&y2, &y);
+		CYBOZU_TEST_EQUAL(mclBnFp_isEqual(&x, &y2), 1);
+	}
+	char buf[128];
+	mclBnFp_setInt(&x, -1);
+	CYBOZU_TEST_ASSERT(mclBnFp_serialize(buf, sizeof(buf), &x) > 0);
+	int mod8 = (buf[0] + 1) & 7;
+	/*
+		(2)
+		(p) = (-1)^((p^2-1)/8) = 1 if and only if there is x s.t. x^2 = 2 mod p
+	*/
+	bool hasSquareRoot = (((mod8 * mod8 - 1) / 8) & 1) == 0;
+	printf("Fp:hasSquareRoot=%d\n", hasSquareRoot);
+	mclBnFp_setInt(&x, 2);
+	CYBOZU_TEST_EQUAL(mclBnFp_squareRoot(&y, &x), hasSquareRoot ? 0 : -1);
+	if (hasSquareRoot) {
+		mclBnFp_sqr(&y2, &y);
+		CYBOZU_TEST_EQUAL(mclBnFp_isEqual(&x, &y2), 1);
+	}
+}
+
+#if 0
+CYBOZU_TEST_AUTO(squareRootFp2)
+{
+	mclBnFp2 x, y, y2;
+	for (int i = 0; i < 10; i++) {
+		mclBnFp_setByCSPRNG(&x.d[0]);
+		mclBnFp_setByCSPRNG(&x.d[1]);
+		mclBnFp2_sqr(&x, &x);
+		CYBOZU_TEST_EQUAL(mclBnFp2_squareRoot(&y, &x), 0);
+		mclBnFp2_sqr(&y2, &y);
+		CYBOZU_TEST_EQUAL(mclBnFp2_isEqual(&x, &y2), 1);
+	}
+}
+#endif
+
 CYBOZU_TEST_AUTO(mapToG1)
 {
 	mclBnFp x;

@@ -316,6 +316,12 @@ MCLBN_DLL_API void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCLBN_DLL_API void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCLBN_DLL_API void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 
+// y is one of square root of x
+// return 0 if success else -1
+MCLBN_DLL_API int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
+MCLBN_DLL_API int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
+MCLBN_DLL_API int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
+
 ////////////////////////////////////////////////
 // set zero
 MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);

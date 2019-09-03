@@ -269,6 +269,19 @@ void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
 	Fp::div(*cast(z),*cast(x), *cast(y));
 }
 
+int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x)
+{
+	return Fr::squareRoot(*cast(y), *cast(x)) ? 0 : -1;
+}
+int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x)
+{
+	return Fp::squareRoot(*cast(y), *cast(x)) ? 0 : -1;
+}
+int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x)
+{
+	return Fp2::squareRoot(*cast(y), *cast(x)) ? 0 : -1;
+}
+
 ////////////////////////////////////////////////
 // set zero
 void mclBnG1_clear(mclBnG1 *x)
