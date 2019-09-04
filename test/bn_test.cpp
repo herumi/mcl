@@ -6,6 +6,7 @@ cybozu::CpuClock clk;
 #include <mcl/bn256.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
+#include "common_test.hpp"
 
 #if defined(__EMSCRIPTEN__) && !defined(MCL_AVOID_EXCEPTION_TEST)
 	#define MCL_AVOID_EXCEPTION_TEST
@@ -401,6 +402,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
 		testMillerLoopVec();
+		testCommon();
 		testBench(P, Q);
 		benchAddDblG1();
 		benchAddDblG2();

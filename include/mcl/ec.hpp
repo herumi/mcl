@@ -1009,6 +1009,20 @@ public:
 	{
 		mulArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime);
 	}
+	/*
+		z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
+	*/
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	{
+		EcT r, t;
+		r.clear();
+		for (size_t i = 0; i < n; i++) {
+			mul(t, xVec[i], yVec[i]);
+			r += t;
+		}
+		z = r;
+	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
 	{
