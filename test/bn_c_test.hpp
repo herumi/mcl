@@ -839,7 +839,6 @@ CYBOZU_TEST_AUTO(squareRootFp)
 	}
 }
 
-#if 0
 CYBOZU_TEST_AUTO(squareRootFp2)
 {
 	mclBnFp2 x, y, y2;
@@ -852,7 +851,6 @@ CYBOZU_TEST_AUTO(squareRootFp2)
 		CYBOZU_TEST_EQUAL(mclBnFp2_isEqual(&x, &y2), 1);
 	}
 }
-#endif
 
 CYBOZU_TEST_AUTO(mapToG1)
 {
