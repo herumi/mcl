@@ -49,6 +49,22 @@ bool get_a_flag(const mcl::Fp2T<Fp>& x)
 
 } // mcl::ec
 
+namespace local {
+
+template<class Ec, class Vec>
+void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
+{
+	if (i >= naf.size()) return;
+	int n = naf[i];
+	if (n > 0) {
+		Q += tbl[(n - 1) >> 1];
+	} else if (n < 0) {
+		Q -= tbl[(-n - 1) >> 1];
+	}
+}
+
+} // mcl::local
+
 /*
 	elliptic curve
 	y^2 = x^3 + ax + b (affine)
@@ -990,6 +1006,33 @@ public:
 	}
 	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
+#if 0
+		mpz_class v;
+		bool b;
+		gmp::setArray(&b, v, y, yn);
+		assert(b); (void)b;
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		typedef mcl::FixedArray<int8_t, sizeof(EcT::Fp) * 8 + 1> NafArray;
+		NafArray naf;
+		EcT tbl[tblSize];
+		gmp::getNAFwidth(&b, naf, v, w);
+		assert(b); (void)b;
+		EcT P2;
+		tbl[0] = x;
+		dbl(P2, x);
+		for (size_t i = 1; i < tblSize; i++) {
+			add(tbl[i], tbl[i - 1], P2);
+		}
+		z.clear();
+		for (size_t i = 0; i < naf.size(); i++) {
+			EcT::dbl(z, z);
+			local::addTbl(z, tbl, naf, naf.size() - 1 - i);
+		}
+		if (isNegative) {
+			neg(z, z);
+		}
+#else
 		EcT tmp;
 		const EcT *px = &x;
 		if (&z == &x) {
@@ -1001,6 +1044,7 @@ public:
 		if (isNegative) {
 			neg(z, z);
 		}
+#endif
 	}
 	/*
 		generic mul
@@ -1010,11 +1054,60 @@ public:
 		mulArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime);
 	}
 	/*
-		z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
+		z += sum_{i=0}^{n-1} xVec[i] * yVec[i]
+		@note &z != xVec[i]
 	*/
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+private:
+	template<size_t N, class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void addMulVecN(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
+		assert(n <= N);
+		EcT t;
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		typedef mcl::FixedArray<int8_t, maxBitSize + 1> NafArray;
+		NafArray naf[N];
+		EcT tbl[N][tblSize];
+		bool b;
+		size_t maxBit = 0;
+		for (size_t i = 0; i < n; i++) {
+			gmp::getNAFwidth(&b, naf[i], yVec[i].getMpz(), w);
+			assert(b); (void)b;
+			if (naf[i].size() > maxBit) maxBit = naf[i].size();
+			tbl[i][0] = xVec[i];
+			EcT P2;
+			EcT::dbl(P2, tbl[i][0]);
+			for (size_t j = 1; j < tblSize; j++) {
+				EcT::add(tbl[i][j], tbl[i][j - 1], P2);
+			}
+		}
+		t.clear();
+		for (size_t i = 0; i < maxBit; i++) {
+			EcT::dbl(t, t);
+			for (size_t j = 0; j < n; j++) {
+				local::addTbl(t, tbl[j], naf[j], maxBit - 1 - i);
+			}
+		}
+		z += t;
+	}
+
+public:
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, bool old = false)
+	{
+		(void)old;
+#if 0
+if (!old) {
+		const size_t N = 16;
+		EcT r;
+		r.clear();
+		for (size_t i = 0; i < n; i += N) {
+			size_t remain = fp::min_(n - i, N);
+			addMulVecN<N>(r, xVec + i, yVec + i, remain);
+		}
+		z = r;
+} else {
+#else
 		EcT r, t;
 		r.clear();
 		for (size_t i = 0; i < n; i++) {
@@ -1022,6 +1115,8 @@ public:
 			r += t;
 		}
 		z = r;
+#endif
+//}
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
@@ -1080,22 +1175,6 @@ template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::
 #ifndef MCL_EC_USE_AFFINE
 template<class Fp> int EcT<Fp>::mode_;
 #endif
-
-namespace local {
-
-template<class Ec, class Vec>
-void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
-{
-	if (i >= naf.size()) return;
-	int n = naf[i];
-	if (n > 0) {
-		Q += tbl[(n - 1) >> 1];
-	} else if (n < 0) {
-		Q -= tbl[(-n - 1) >> 1];
-	}
-}
-
-} // mcl::local
 
 template<class Ec>
 struct GLV1T {

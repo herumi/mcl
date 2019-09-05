@@ -1,7 +1,7 @@
 void testMulVec()
 {
 	using namespace mcl::bn;
-	const size_t n = 5;
+	const size_t n = 3;
 	G1 xVec[n];
 	Fr yVec[n];
 	G1 ok;
@@ -17,6 +17,8 @@ void testMulVec()
 	G1 z;
 	G1::mulVec(z, xVec, yVec, n);
 	CYBOZU_TEST_EQUAL(z, ok);
+	CYBOZU_BENCH_C("mulVec(new)", 1000, G1::mulVec, z, xVec, yVec, n);
+	CYBOZU_BENCH_C("mulVec(old)", 1000, G1::mulVec, z, xVec, yVec, n, true);
 }
 
 void testCommon()
