@@ -994,15 +994,135 @@ public:
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
 	{
-		if (!constTime && x.isZero()) {
-			z.clear();
-			return;
+		if (!constTime && yn == 1 && *y <= 16) {
+			if (mulSmallInt(z, x, static_cast<int>(*y), isNegative)) return;
 		}
 		if (mulArrayGLV && (constTime || yn > 1)) {
 			mulArrayGLV(z, x, y, yn, isNegative, constTime);
 			return;
 		}
 		mulArrayBase(z, x, y, yn, isNegative, constTime);
+	}
+	static inline bool mulSmallInt(EcT& z, const EcT& x, uint32_t y, bool isNegative)
+	{
+		switch (y) {
+		case 0: z.clear(); return true;
+		case 1: z = x; break;
+		case 2: dbl(z, x); break;
+		case 3: {
+			EcT t;
+			dbl(t, x);
+			add(z, t, x);
+			break;
+		}
+		case 4: {
+			dbl(z, x);
+			dbl(z, z);
+			break;
+		}
+		case 5: {
+			EcT t;
+			dbl(t, x);
+			dbl(t, t);
+			add(z, t, x);
+			break;
+		}
+		case 6: {
+			EcT t;
+			dbl(t, x);
+			add(z, t, x);
+			dbl(z, z);
+			break;
+		}
+		case 7: {
+			EcT t;
+			dbl(t, x);
+			dbl(t, t);
+			dbl(t, t);
+			sub(z, t, x);
+			break;
+		}
+		case 8: {
+			dbl(z, x);
+			dbl(z, z);
+			dbl(z, z);
+			break;
+		}
+		case 9: {
+			EcT t;
+			dbl(t, x);
+			dbl(t, t);
+			dbl(t, t);
+			add(z, t, x);
+			break;
+		}
+		case 10: {
+			EcT t;
+			dbl(t, x);
+			dbl(t, t);
+			add(z, t, x);
+			dbl(z, z);
+			break;
+		}
+		case 11: {
+			EcT t1, t2;
+			dbl(t1, x); // 2x
+			dbl(t2, t1);
+			dbl(t2, t2); // 8x
+			add(t2, t2, t1);
+			add(z, t2, x);
+			break;
+		}
+		case 12: {
+			EcT t1, t2;
+			dbl(t1, x);
+			dbl(t1, t1); // 4x
+			dbl(t2, t1); // 8x
+			add(z, t1, t2);
+			break;
+		}
+		case 13: {
+			EcT t1, t2;
+			dbl(t1, x);
+			dbl(t1, t1); // 4x
+			dbl(t2, t1); // 8x
+			add(t1, t1, t2); // 12x
+			add(z, t1, x);
+			break;
+		}
+		case 14: {
+			EcT t;
+			// (8 - 1) * 2
+			dbl(t, x);
+			dbl(t, t);
+			dbl(t, t);
+			sub(t, t, x);
+			dbl(z, t);
+			break;
+		}
+		case 15: {
+			EcT t;
+			dbl(t, x);
+			dbl(t, t);
+			dbl(t, t);
+			dbl(t, t);
+			sub(z, t, x);
+			break;
+		}
+		case 16: {
+			dbl(z, x);
+			dbl(z, z);
+			dbl(z, z);
+			dbl(z, z);
+			break;
+		}
+		default:
+			return false;
+		}
+		if (isNegative) {
+			neg(z, z);
+		}
+		return true;
 	}
 	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
