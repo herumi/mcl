@@ -57,13 +57,39 @@ CYBOZU_TEST_AUTO(encDec)
 	CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
 	CYBOZU_TEST_EQUAL(dec, m);
 
-	for (int m = -3; m < 3; m++) {
+	for (int m = -30; m < 30; m++) {
+		dec = 0;
 		sheEncG1(&c1, &pub, m);
+		CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
+		CYBOZU_TEST_EQUAL(dec, m);
 		CYBOZU_TEST_EQUAL(sheIsZeroG1(&sec, &c1), m == 0);
+		dec = 0;
 		sheEncG2(&c2, &pub, m);
+		CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
+		CYBOZU_TEST_EQUAL(dec, m);
 		CYBOZU_TEST_EQUAL(sheIsZeroG2(&sec, &c2), m == 0);
+		dec = 0;
 		sheEncGT(&ct, &pub, m);
+		CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+		CYBOZU_TEST_EQUAL(dec, m);
 		CYBOZU_TEST_EQUAL(sheIsZeroGT(&sec, &ct), m == 0);
+	}
+	for (int m = -30; m < 30; m++) {
+		dec = 0;
+		sheEncG1(&c1, &pub, 1);
+		sheMulG1(&c1, &c1, m);
+		CYBOZU_TEST_EQUAL(sheDecG1(&dec, &sec, &c1), 0);
+		CYBOZU_TEST_EQUAL(dec, m);
+		dec = 0;
+		sheEncG2(&c2, &pub, 1);
+		sheMulG2(&c2, &c2, m);
+		CYBOZU_TEST_EQUAL(sheDecG2(&dec, &sec, &c2), 0);
+		CYBOZU_TEST_EQUAL(dec, m);
+		dec = 0;
+		sheEncGT(&ct, &pub, 1);
+		sheMulGT(&ct, &ct, m);
+		CYBOZU_TEST_EQUAL(sheDecGT(&dec, &sec, &ct), 0);
+		CYBOZU_TEST_EQUAL(dec, m);
 	}
 }
 
