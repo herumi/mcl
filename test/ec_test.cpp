@@ -215,7 +215,7 @@ struct Test {
 			R += P;
 		}
 	}
-	void add() const
+	void aliasAddDbl() const
 	{
 		Fp x(para.gx);
 		Fp y(para.gy);
@@ -231,15 +231,20 @@ struct Test {
 			for (int j = 0; j < 2; j++) {
 				Ec R1, R2, R3, R4;
 				R1 = Ptbl[i];
-				R2 = Qtbl[i];
+				R2 = Qtbl[j];
 				Ec::add(R3, R1, R2);
 				Ec::add(R1, R1, R2);
 				CYBOZU_TEST_EQUAL(R1, R3);
 				R1 = Ptbl[i];
-				R2 = Qtbl[i];
+				R2 = Qtbl[j];
 				Ec::add(R2, R1, R2);
 				CYBOZU_TEST_EQUAL(R2, R3);
 			}
+			Ec R1, R2;
+			R1 = Ptbl[i];
+			Ec::dbl(R2, R1);
+			Ec::dbl(R1, R1);
+			CYBOZU_TEST_EQUAL(R1, R2);
 		}
 	}
 
@@ -513,7 +518,7 @@ mul 499.00usec
 		cstr();
 		ope();
 		mul();
-		add();
+		aliasAddDbl();
 		neg_mul();
 		mul_fp();
 		squareRoot();
