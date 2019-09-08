@@ -504,12 +504,18 @@ public:
 			return;
 		}
 		if (isPzOne) {
-			R.z = H;
+			if (isQzOne) {
+				R.z = H;
+			} else {
+				Fp::mul(R.z, H, Q.z);
+			}
 		} else {
-			Fp::mul(R.z, P.z, H);
-		}
-		if (!isQzOne) {
-			R.z *= Q.z;
+			if (isQzOne) {
+				Fp::mul(R.z, P.z, H);
+			} else {
+				Fp::mul(R.z, P.z, Q.z);
+				R.z *= H;
+			}
 		}
 		Fp::sqr(H3, H); // H^2
 		Fp::sqr(R.y, r); // r^2
@@ -994,7 +1000,7 @@ public:
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
 	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
 	{
-		if (!constTime && yn == 1 && *y <= 16 && !isNegative) {
+		if (!constTime && yn == 1) {
 			if (mulSmallInt(z, x, static_cast<int>(*y), isNegative)) return;
 		}
 		if (mulArrayGLV && (constTime || yn > 1)) {

@@ -205,9 +205,41 @@ struct Test {
 		Ec R;
 		R.clear();
 		for (int i = 0; i < 100; i++) {
-			Ec::mul(Q, P, i);
+			Q = P;
+			Ec::mul(Q, Q, i);
 			CYBOZU_TEST_EQUAL(Q, R);
+			Q = P;
+			if (Ec::mulSmallInt(Q, Q, i, false)) {
+				CYBOZU_TEST_EQUAL(Q, R);
+			}
 			R += P;
+		}
+	}
+	void add() const
+	{
+		Fp x(para.gx);
+		Fp y(para.gy);
+		Ec P1(x, y);
+		Ec P2, Q1, Q2;
+		Ec::dbl(P1, P1);
+		Ec::normalize(P2, P1);
+		Q1 = P1 + P1;
+		Ec::normalize(Q2, Q1);
+		Ec Ptbl[] = { P1, P2 };
+		Ec Qtbl[] = { Q1, Q2 };
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				Ec R1, R2, R3, R4;
+				R1 = Ptbl[i];
+				R2 = Qtbl[i];
+				Ec::add(R3, R1, R2);
+				Ec::add(R1, R1, R2);
+				CYBOZU_TEST_EQUAL(R1, R3);
+				R1 = Ptbl[i];
+				R2 = Qtbl[i];
+				Ec::add(R2, R1, R2);
+				CYBOZU_TEST_EQUAL(R2, R3);
+			}
 		}
 	}
 
@@ -220,8 +252,13 @@ struct Test {
 		Ec R;
 		R.clear();
 		for (int i = 0; i < 100; i++) {
-			Ec::mul(Q, P, -i);
+			Q = P;
+			Ec::mul(Q, Q, -i);
 			CYBOZU_TEST_EQUAL(Q, R);
+			Q = P;
+			if (Ec::mulSmallInt(Q, Q, -i, true)) {
+				CYBOZU_TEST_EQUAL(Q, R);
+			}
 			R -= P;
 		}
 	}
@@ -476,6 +513,7 @@ mul 499.00usec
 		cstr();
 		ope();
 		mul();
+		add();
 		neg_mul();
 		mul_fp();
 		squareRoot();
