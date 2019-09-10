@@ -240,9 +240,9 @@ finalExp 546.259Kclk
 
 header        |support curveType        |sizeof Fr|sizeof Fp|
 --------------|-------------------------|---------|---------|
-bn256.hpp     |BN254                    |   32    |   32    |
-bls12_381.hpp |BLS12_381, BN254         |   32    |   48    |
-bn384.hpp     |BN381_1, BLS12_381, BN254|   48    |   48    |
+bn256.hpp     |BN254, BN_SNARK1         |   32    |   32    |
+bls12_381.hpp |the above + BLS12_381    |   32    |   48    |
+bn384.hpp     |the above + BN381_1      |   48    |   48    |
 
 ## C library
 
