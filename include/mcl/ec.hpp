@@ -998,18 +998,22 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false, bool useGLV = true)
 	{
-		if (!constTime && yn == 1) {
-			if (mulSmallInt(z, x, static_cast<int>(*y), isNegative)) return;
+		if (!constTime) {
+			while (yn > 0) {
+				if (y[yn - 1]) break;
+				yn--;
+			}
+			if (yn <= 1 && mulSmallInt(z, x, *y, isNegative)) return;
 		}
-		if (mulArrayGLV && (constTime || yn > 1)) {
+		if (useGLV && mulArrayGLV && (yn * sizeof(fp::Unit) > 8)) {
 			mulArrayGLV(z, x, y, yn, isNegative, constTime);
 			return;
 		}
 		mulArrayBase(z, x, y, yn, isNegative, constTime);
 	}
-	static inline bool mulSmallInt(EcT& z, const EcT& x, uint32_t y, bool isNegative)
+	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
 	{
 		switch (y) {
 		case 0: z.clear(); return true;
@@ -1132,16 +1136,22 @@ public:
 	}
 	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
-#if 0
+#if 1
+		(void)constTime;
 		mpz_class v;
 		bool b;
 		gmp::setArray(&b, v, y, yn);
 		assert(b); (void)b;
-		const int w = 5;
+		const int maxW = 5;
+		const int maxTblSize = 1 << (maxW - 2);
+		/*
+			L = log2(y), w = (L <= 32) ? 3 : (L <= 128) ? 4 : 5;
+		*/
+		const int w = (yn == 1 && *y <= (1ull << 32)) ? 3 : (yn * sizeof(fp::Unit) > 16) ? 5 : 4;
 		const size_t tblSize = 1 << (w - 2);
 		typedef mcl::FixedArray<int8_t, sizeof(EcT::Fp) * 8 + 1> NafArray;
 		NafArray naf;
-		EcT tbl[tblSize];
+		EcT tbl[maxTblSize];
 		gmp::getNAFwidth(&b, naf, v, w);
 		assert(b); (void)b;
 		EcT P2;
@@ -1174,10 +1184,11 @@ public:
 	}
 	/*
 		generic mul
+		GLV can't be applied in Fp12 - GT
 	*/
 	static inline void mulGeneric(EcT& z, const EcT& x, const mpz_class& y, bool constTime = false)
 	{
-		mulArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime, false);
 	}
 	/*
 		z += sum_{i=0}^{n-1} xVec[i] * yVec[i]
@@ -1388,7 +1399,7 @@ public:
 			local::addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
 		}
 	}
-	static void mulArray(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		bool b;
@@ -1459,7 +1470,7 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 	}
 	if (curveType == MCL_SECP256K1) {
 		GLV1T<Ec>::initForSecp256k1(Zn::getOp().mp);
-		Ec::setMulArrayGLV(GLV1T<Ec>::mulArray);
+		Ec::setMulArrayGLV(GLV1T<Ec>::mulArrayGLV);
 	} else {
 		Ec::setMulArrayGLV(0);
 	}
