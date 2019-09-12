@@ -550,31 +550,28 @@ void mulVec(const mcl::EcParam& para)
 	const Fp y(para.gy);
 	Ec P(x, y);
 	P += P;
-	const int N = 20;
+	const int N = 33;
 	Ec xVec[N];
 	Zn yVec[N];
 	Ec Q1, Q2;
 
-	Ec::dbl(xVec[0], P);
-	for (size_t i = 1; i < N; i++) {
-		xVec[i] += P;
+	Ec::dbl(P, P);
+	for (size_t i = 0; i < N; i++) {
+		Ec::mul(xVec[i], P, i + 3);
+		yVec[i].setByCSPRNG();
 	}
-	const size_t nTbl[] = { 1, 2, 3, 5, 15, 16, 17 };
+	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
+	const int C = 400;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
+		CYBOZU_TEST_ASSERT(n <= N);
 		naiveMulVec(Q1, xVec, yVec, n);
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
+		printf("n=%zd\n", n);
+		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
 	}
-	const int C = 1000;
-	CYBOZU_BENCH_C("naive (1)", C, naiveMulVec, Q1, xVec, yVec, 1);
-	CYBOZU_BENCH_C("mulVec(1)", C, Ec::mulVec, Q1, xVec, yVec, 1);
-	CYBOZU_BENCH_C("naive (2)", C, naiveMulVec, Q1, xVec, yVec, 2);
-	CYBOZU_BENCH_C("mulVec(2)", C, Ec::mulVec, Q1, xVec, yVec, 2);
-	CYBOZU_BENCH_C("naive (3)", C, naiveMulVec, Q1, xVec, yVec, 3);
-	CYBOZU_BENCH_C("mulVec(3)", C, Ec::mulVec, Q1, xVec, yVec, 3);
-	CYBOZU_BENCH_C("naive (9)", C, naiveMulVec, Q1, xVec, yVec, 9);
-	CYBOZU_BENCH_C("mulVec(9)", C, Ec::mulVec, Q1, xVec, yVec, 9);
 }
 
 void test_sub_sub(const mcl::EcParam& para, mcl::fp::Mode fpMode)
