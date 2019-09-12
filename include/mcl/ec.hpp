@@ -1196,7 +1196,7 @@ public:
 		@note &z != xVec[i]
 	*/
 private:
-	template<size_t N = 32, class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	template<size_t N, class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline size_t addMulVecN(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
 		if (n > N) n = N;
@@ -1236,7 +1236,7 @@ public:
 		r.clear();
 		while (n > 0) {
 			EcT t;
-			size_t done = addMulVecN(t, xVec, yVec, n);
+			size_t done = addMulVecN<32>(t, xVec, yVec, n);
 			r += t;
 			xVec += done;
 			yVec += done;

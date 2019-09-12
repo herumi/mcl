@@ -402,7 +402,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
 		testMillerLoopVec();
-		testCommon();
+		testCommon(P, Q);
 		testBench(P, Q);
 		benchAddDblG1();
 		benchAddDblG2();
