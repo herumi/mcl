@@ -1147,8 +1147,8 @@ public:
 		/*
 			L = log2(y), w = (L <= 32) ? 3 : (L <= 128) ? 4 : 5;
 		*/
-		const int w = (yn == 1 && *y <= (1ull << 32)) ? 3 : (yn * sizeof(fp::Unit) > 16) ? 5 : 4;
-		const size_t tblSize = 1 << (w - 2);
+		const int w = (yn == 1 && *y <= (fp::Unit(1) << 32)) ? 3 : (yn * sizeof(fp::Unit) > 16) ? 5 : 4;
+		const size_t tblSize = size_t(1) << (w - 2);
 		typedef mcl::FixedArray<int8_t, sizeof(EcT::Fp) * 8 + 1> NafArray;
 		NafArray naf;
 		EcT tbl[maxTblSize];
