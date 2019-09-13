@@ -268,3 +268,45 @@ CYBOZU_TEST_AUTO(stream)
 		}
 	}
 }
+
+CYBOZU_TEST_AUTO(BitIterator)
+{
+	const struct Tbl {
+		uint32_t v[4];
+		uint32_t n;
+	} tbl[] = {
+		{ { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff }, 4 },
+		{ { 0 }, 1 },
+		{ { 0x12345678, 0x9abcdef0, 0xfedcba98, 0 }, 4 },
+		{ { 0x12345678, 0x9abcdef0, 0xfed,}, 3 },
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const Tbl& t = tbl[i];
+		for (size_t w = 1; w <= 32; w++) {
+			mcl::fp::BitIterator<uint32_t> bi(t.v, t.n);
+			mpz_class x;
+			mcl::gmp::setArray(x, t.v, t.n);
+			while (bi.hasNext()) {
+				uint32_t v1 = bi.getNext(w);
+				mpz_class v2 = x & bi.mask(w);
+				CYBOZU_TEST_EQUAL(v1, v2);
+				x >>= w;
+			}
+			CYBOZU_TEST_EQUAL(x, 0);
+		}
+		// w = 1
+		{
+			mcl::fp::BitIterator<uint32_t> bi(t.v, t.n);
+			mpz_class x;
+			mcl::gmp::setArray(x, t.v, t.n);
+			while (bi.hasNext()) {
+				uint32_t v1 = bi.peekBit();
+				mpz_class v2 = x & 1;
+				CYBOZU_TEST_EQUAL(v1, v2);
+				x >>= 1;
+				bi.skipBit();
+			}
+			CYBOZU_TEST_EQUAL(x, 0);
+		}
+	}
+}

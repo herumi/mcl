@@ -586,7 +586,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 	}
 }
 
-#ifndef PAPER
+#if !defined(PAPER) && defined(NDEBUG)
 CYBOZU_TEST_AUTO(hashBench)
 {
 	SecretKey& sec = g_sec;

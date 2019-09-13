@@ -1,6 +1,10 @@
-template<class G, class F>
-void naiveMulVec(G& out, const G *xVec, const F *yVec, size_t n)
+template<class G>
+void naiveMulVec(G& out, const G *xVec, const mpz_class *yVec, size_t n)
 {
+	if (n == 1) {
+		G::mul(out, xVec[0], yVec[0]);
+		return;
+	}
 	G r, t;
 	r.clear();
 	for (size_t i = 0; i < n; i++) {
@@ -16,14 +20,13 @@ void testMulVec(const G& P)
 	using namespace mcl::bn;
 	const int N = 33;
 	G xVec[N];
-	mcl::bn::Fr yVec[N];
+	mpz_class yVec[N];
 
 	for (size_t i = 0; i < N; i++) {
 		G::mul(xVec[i], P, i + 3);
-		yVec[i].setByCSPRNG();
+		mcl::gmp::getRand(yVec[i], Fr::getOp().bitSize);
 	}
-	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
-	const int C = 400;
+	const size_t nTbl[] = { 1, 2, 3, 5, 7, 8, 9, 14, 15, 16, 30, 31, 32, 33 };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		G Q1, Q2;
@@ -31,14 +34,70 @@ void testMulVec(const G& P)
 		naiveMulVec(Q1, xVec, yVec, n);
 		G::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
+#if 0//#ifdef NDEBUG
 		printf("n=%zd\n", n);
+		const int C = 400;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
 		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec, yVec, n);
+#endif
 	}
 }
 
-template<class G1, class G2>
-void testCommon(const G1& P, const G2&)
+template<class G>
+void naivePowVec(G& out, const G *xVec, const mpz_class *yVec, size_t n)
 {
+	if (n == 1) {
+		G::pow(out, xVec[0], yVec[0]);
+		return;
+	}
+	G r, t;
+	r.setOne();
+	for (size_t i = 0; i < n; i++) {
+		G::pow(t, xVec[i], yVec[i]);
+		r *= t;
+	}
+	out = r;
+}
+
+template<class G>
+inline void testPowVec(const G& e)
+{
+	using namespace mcl::bn;
+	const int N = 33;
+	G xVec[N];
+	mpz_class yVec[N];
+
+	xVec[0] = e;
+	for (size_t i = 0; i < N; i++) {
+		if (i > 0) G::mul(xVec[i], xVec[i - 1], e);
+		mcl::gmp::getRand(yVec[i], Fr::getOp().bitSize);
+	}
+	const size_t nTbl[] = { 1, 2, 3, 5, 7, 8, 9, 14, 15, 16, 30, 31, 32, 33 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		G Q1, Q2;
+		CYBOZU_TEST_ASSERT(n <= N);
+		naivePowVec(Q1, xVec, yVec, n);
+		G::powVec(Q2, xVec, yVec, n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+#if 0//#ifdef NDEBUG
+		printf("n=%zd\n", n);
+		const int C = 400;
+		CYBOZU_BENCH_C("naive ", C, naivePowVec, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVec", C, G::powVec, Q1, xVec, yVec, n);
+#endif
+	}
+}
+
+template<class G1, class G2, class GT>
+void testCommon(const G1& P, const G2& Q)
+{
+	puts("G1");
 	testMulVec(P);
+	puts("G2");
+	testMulVec(Q);
+	GT e;
+	mcl::bn::pairing(e, P, Q);
+	puts("GT");
+	testPowVec(e);
 }

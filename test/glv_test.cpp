@@ -122,7 +122,7 @@ void testGLV1()
 	}
 
 	typedef mcl::bn::local::GLV1 GLV1;
-	GLV1::initForBN(BN::param.r, BN::param.z, BN::param.isBLS12);
+	GLV1::initForBN(BN::param.z, BN::param.isBLS12);
 	if (!BN::param.isBLS12) {
 		compareLength<GLV1>(oldGlv);
 	}
@@ -165,8 +165,8 @@ void testGLV2()
 	G2 Q0, Q1, Q2;
 	mpz_class z = BN::param.z;
 	mpz_class r = BN::param.r;
-	mcl::bn::local::GLV2 glv2;
-	glv2.init(r, z, BN::param.isBLS12);
+	mcl::bn::local::GLV2<Fr> glv2;
+	glv2.init(z, BN::param.isBLS12);
 	mpz_class n;
 	cybozu::XorShift rg;
 	mapToG2(Q0, 1);

@@ -560,14 +560,13 @@ struct MapTo {
 	}
 };
 
-typedef mcl::FixedArray<int8_t, MCL_MAX_FR_BIT_SIZE / 2 + 2> NafArray;
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN/BLS12
 */
 
-struct GLV1 : mcl::GLV1T<G1> {
+struct GLV1 : mcl::GLV1T<G1, Fr> {
 	static bool usePrecomputedTable(int curveType)
 	{
 		if (curveType < 0) return false;
@@ -577,7 +576,6 @@ struct GLV1 : mcl::GLV1T<G1> {
 			size_t rBitSize;
 			const char *v0, *v1;
 			const char *B[2][2];
-			const char *r;
 		} tbl[] = {
 			{
 				MCL_BN254,
@@ -595,7 +593,6 @@ struct GLV1 : mcl::GLV1T<G1> {
 						"-61818000000000020400000000000003",
 					},
 				},
-				"2523648240000001ba344d8000000007ff9f800000000010a10000000000000d",
 			},
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
@@ -609,20 +606,18 @@ struct GLV1 : mcl::GLV1T<G1> {
 			gmp::setStr(&b, B[0][1], tbl[i].B[0][1], 16); if (!b) continue;
 			gmp::setStr(&b, B[1][0], tbl[i].B[1][0], 16); if (!b) continue;
 			gmp::setStr(&b, B[1][1], tbl[i].B[1][1], 16); if (!b) continue;
-			gmp::setStr(&b, r, tbl[i].r, 16); if (!b) continue;
 			return true;
 		}
 		return false;
 	}
-	static void initForBN(const mpz_class& _r, const mpz_class& z, bool isBLS12 = false, int curveType = -1)
+	static void initForBN(const mpz_class& z, bool isBLS12 = false, int curveType = -1)
 	{
 		if (usePrecomputedTable(curveType)) return;
 		bool b = Fp::squareRoot(rw, -3);
 		assert(b);
 		(void)b;
 		rw = -(rw + 1) / 2;
-		r = _r;
-		rBitSize = gmp::getBitSize(r);
+		rBitSize = Fr::getOp().bitSize;
 		rBitSize = (rBitSize + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
 		if (isBLS12) {
 			/*
@@ -648,6 +643,7 @@ struct GLV1 : mcl::GLV1T<G1> {
 			B[1][1] = -6 * z * z - 4 * z - 1;
 		}
 		// [v0 v1] = [r 0] * B^(-1)
+		const mpz_class& r = Fr::getOp().mp;
 		v0 = ((-B[1][1]) << rBitSize) / r;
 		v1 = ((B[1][0]) << rBitSize) / r;
 	}
@@ -656,22 +652,24 @@ struct GLV1 : mcl::GLV1T<G1> {
 /*
 	GLV method for G2 and GT on BN/BLS12
 */
+template<class _Fr>
 struct GLV2 {
+	typedef _Fr Fr;
+	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / 4 + 4> NafArray;
 	size_t rBitSize;
 	mpz_class B[4][4];
-	mpz_class r;
 	mpz_class v[4];
 	mpz_class z;
 	mpz_class abs_z;
 	bool isBLS12;
 	GLV2() : rBitSize(0), isBLS12(false) {}
-	void init(const mpz_class& r, const mpz_class& z, bool isBLS12 = false)
+	void init(const mpz_class& z, bool isBLS12 = false)
 	{
-		this->r = r;
+		const mpz_class& r = Fr::getOp().mp;
 		this->z = z;
 		this->abs_z = z < 0 ? -z : z;
 		this->isBLS12 = isBLS12;
-		rBitSize = gmp::getBitSize(r);
+		rBitSize = Fr::getOp().bitSize;
 		rBitSize = (rBitSize + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
 		mpz_class z2p1 = z * 2 + 1;
 		B[0][0] = z + 1;
@@ -758,6 +756,11 @@ struct GLV2 {
 	template<class T>
 	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
 	{
+#if 1
+		(void)constTime;
+		mulVecNGLV(Q, &P, &x, 1);
+#else
+		const mpz_class& r = Fr::getOp().mp;
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
 		const size_t splitN = 4;
@@ -805,8 +808,65 @@ struct GLV2 {
 			mcl::local::addTbl(Q, tbl[2], naf[2], maxBit - 1 - i);
 			mcl::local::addTbl(Q, tbl[3], naf[3], maxBit - 1 - i);
 		}
+#endif
 	}
-	void pow(Fp12& z, const Fp12& x, mpz_class y, bool constTime = false) const
+	template<class T>
+	size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n) const
+	{
+		const mpz_class& r = Fr::getOp().mp;
+		const size_t N = 16;
+		if (n > N) n = N;
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		const int splitN = 4;
+		NafArray naf[N][splitN];
+		T tbl[N][splitN][tblSize];
+		bool b;
+		mpz_class u[splitN], y;
+		size_t maxBit = 0;
+
+		for (size_t i = 0; i < n; i++) {
+			y = yVec[i];
+			y %= r;
+			if (y < 0) {
+				y += r;
+			}
+			split(u, y);
+
+			for (int j = 0; j < splitN; j++) {
+				gmp::getNAFwidth(&b, naf[i][j], u[j], w);
+				assert(b); (void)b;
+				if (naf[i][j].size() > maxBit) maxBit = naf[i][j].size();
+			}
+
+			T P2;
+			T::dbl(P2, xVec[i]);
+			tbl[i][0][0] = xVec[i];
+			Frobenius(tbl[i][1][0], tbl[i][0][0]);
+			Frobenius(tbl[i][2][0], tbl[i][1][0]);
+			Frobenius(tbl[i][3][0], tbl[i][2][0]);
+			for (size_t j = 1; j < tblSize; j++) {
+				T::add(tbl[i][0][j], tbl[i][0][j - 1], P2);
+				Frobenius(tbl[i][1][j], tbl[i][0][j]);
+				Frobenius(tbl[i][2][j], tbl[i][1][j]);
+				Frobenius(tbl[i][3][j], tbl[i][2][j]);
+			}
+		}
+		z.clear();
+		for (size_t i = 0; i < maxBit; i++) {
+			const size_t bit = maxBit - 1 - i;
+			T::dbl(z, z);
+			for (size_t j = 0; j < n; j++) {
+				mcl::local::addTbl(z, tbl[j][0], naf[j][0], bit);
+				mcl::local::addTbl(z, tbl[j][1], naf[j][1], bit);
+				mcl::local::addTbl(z, tbl[j][2], naf[j][2], bit);
+				mcl::local::addTbl(z, tbl[j][3], naf[j][3], bit);
+			}
+		}
+		return n;
+
+	}
+	void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false) const
 	{
 		typedef GroupMtoA<Fp12> AG; // as additive group
 		AG& _z = static_cast<AG&>(z);
@@ -824,7 +884,7 @@ struct Param {
 	mpz_class p;
 	mpz_class r;
 	local::MapTo mapTo;
-	local::GLV2 glv2;
+	local::GLV2<Fr> glv2;
 	// for G2 Frobenius
 	Fp2 g2;
 	Fp2 g3;
@@ -939,8 +999,8 @@ struct Param {
 		} else {
 			mapTo.init(2 * p - r, z, cp.curveType);
 		}
-		GLV1::initForBN(r, z, isBLS12, cp.curveType);
-		glv2.init(r, z, isBLS12);
+		GLV1::initForBN(z, isBLS12, cp.curveType);
+		glv2.init(z, isBLS12);
 		basePoint.clear();
 		*pb = true;
 	}
@@ -1005,6 +1065,19 @@ inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t 
 	assert(b);
 	if (isNegative) s = -s;
 	BN::param.glv2.pow(z, x, s, constTime);
+}
+
+inline size_t mulVecNGLV2(G2& z, const G2 *xVec, const mpz_class *yVec, size_t n)
+{
+	return BN::param.glv2.mulVecNGLV(z, xVec, yVec, n);
+}
+
+inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size_t n)
+{
+	typedef GroupMtoA<Fp12> AG; // as additive group
+	AG& _z = static_cast<AG&>(z);
+	const AG *_xVec = static_cast<const AG*>(xVec);
+	return BN::param.glv2.mulVecNGLV(_z, _xVec, yVec, n);
 }
 
 /*
@@ -2099,9 +2172,9 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 {
 	local::StaticVar<>::param.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulArrayGLV(local::GLV1::mulArrayGLV);
-	G2::setMulArrayGLV(local::mulArrayGLV2);
-	Fp12::setPowArrayGLV(local::powArrayGLV2);
+	G1::setMulArrayGLV(local::GLV1::mulArrayGLV, local::GLV1::mulVecNGLV);
+	G2::setMulArrayGLV(local::mulArrayGLV2, local::mulVecNGLV2);
+	Fp12::setPowArrayGLV(local::powArrayGLV2, local::powVecNGLV2);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 	*pb = true;

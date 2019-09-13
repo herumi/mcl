@@ -40,7 +40,7 @@ void testCurve(const mcl::CurveParam& cp)
 	pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
-	testCommon(P, Q);
+	testCommon<G1, G2, GT>(P, Q);
 	testBench(P, Q);
 	testSquareRoot();
 	testLagrange();

@@ -157,13 +157,68 @@ void maskArray(T *x, size_t n, size_t bitSize)
 template<class T>
 size_t getNonZeroArraySize(const T *x, size_t n)
 {
-	assert(n > 0);
 	while (n > 0) {
 		if (x[n - 1]) return n;
 		n--;
 	}
 	return 1;
 }
+
+template<class T>
+class BitIterator {
+	const T *x_;
+	size_t bitPos_;
+	size_t bitSize_;
+	static const size_t TbitSize = sizeof(T) * 8;
+public:
+	BitIterator(const T *x, size_t n)
+		: x_(x)
+		, bitPos_(0)
+	{
+		assert(n > 0);
+		n = getNonZeroArraySize(x, n);
+		if (n == 1 && x[0] == 0) {
+			bitSize_ = 1;
+		} else {
+			assert(x_[n - 1]);
+			bitSize_ = (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(x_[n - 1]);
+		}
+	}
+	bool hasNext() const { return bitPos_ < bitSize_; }
+	T getNext(size_t w)
+	{
+		assert(0 < w && w <= TbitSize);
+		assert(hasNext());
+		const size_t q = bitPos_ / TbitSize;
+		const size_t r = bitPos_ % TbitSize;
+		const size_t remain = bitSize_ - bitPos_;
+		if (w > remain) w = remain;
+		T v = x_[q] >> r;
+		if (r + w > TbitSize) {
+			v |= x_[q + 1] << (TbitSize - r);
+		}
+		bitPos_ += w;
+		return v & mask(w);
+	}
+	// whethere next bit is 1 or 0 (bitPos is not moved)
+	bool peekBit() const
+	{
+		assert(hasNext());
+		const size_t q = bitPos_ / TbitSize;
+		const size_t r = bitPos_ % TbitSize;
+		return (x_[q] >> r) & 1;
+	}
+	void skipBit()
+	{
+		assert(hasNext());
+		bitPos_++;
+	}
+	T mask(size_t w) const
+	{
+		assert(w <= TbitSize);
+		return (w == TbitSize ? T(0) : (T(1) << w)) - 1;
+	}
+};
 
 /*
 	@param out [inout] : set element of G ; out = x^y[]

@@ -532,7 +532,7 @@ private:
 	void operator=(const Test&);
 };
 
-void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
+void naiveMulVec(Ec& out, const Ec *xVec, const mpz_class *yVec, size_t n)
 {
 	Ec r, t;
 	r.clear();
@@ -552,13 +552,13 @@ void mulVec(const mcl::EcParam& para)
 	P += P;
 	const int N = 33;
 	Ec xVec[N];
-	Zn yVec[N];
+	mpz_class yVec[N];
 	Ec Q1, Q2;
 
 	Ec::dbl(P, P);
 	for (size_t i = 0; i < N; i++) {
 		Ec::mul(xVec[i], P, i + 3);
-		yVec[i].setByCSPRNG();
+		mcl::gmp::getRand(yVec[i], Zn::getOp().bitSize);
 	}
 	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
 	const int C = 400;

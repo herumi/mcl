@@ -615,13 +615,14 @@ template<class Vec>
 void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 {
 	assert(w > 0);
+	*pb = true;
 	naf.clear();
-	size_t zeroNum = 0;
 	bool negative = false;
 	if (x < 0) {
 		negative = true;
 		x = -x;
 	}
+	size_t zeroNum = 0;
 	const int signedMaxW = 1 << (w - 1);
 	const int maxW = signedMaxW * 2;
 	const int maskW = maxW - 1;
@@ -651,7 +652,6 @@ void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 			naf[i] = -naf[i];
 		}
 	}
-	*pb = true;
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION

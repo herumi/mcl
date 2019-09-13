@@ -84,12 +84,29 @@ struct Operator : public E {
 	{
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
 	}
-	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime))
+	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n) = 0)
 	{
 		powArrayGLV = f;
+		powVecNGLV = g;
+	}
+	static void powVec(T& z, const T* xVec, const mpz_class *yVec, size_t n)
+	{
+		assert(powVecNGLV);
+		T r;
+		r.setOne();
+		while (n > 0) {
+			T t;
+			size_t done = powVecNGLV(t, xVec, yVec, n);
+			r *= t;
+			xVec += done;
+			yVec += done;
+			n -= done;
+		}
+		z = r;
 	}
 private:
 	static void (*powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
+	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		if (powArrayGLV && (constTime || yn > 1)) {
@@ -116,6 +133,9 @@ private:
 
 template<class T, class E>
 void (*Operator<T, E>::powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
+
+template<class T, class E>
+size_t (*Operator<T, E>::powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
 
 /*
 	T must have save and load
