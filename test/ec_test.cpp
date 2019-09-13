@@ -532,6 +532,48 @@ private:
 	void operator=(const Test&);
 };
 
+void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
+{
+	Ec r, t;
+	r.clear();
+	for (size_t i = 0; i < n; i++) {
+		Ec::mul(t, xVec[i], yVec[i]);
+		r += t;
+	}
+	out = r;
+}
+
+void mulVec(const mcl::EcParam& para)
+{
+	if (para.bitSize > 384) return;
+	const Fp x(para.gx);
+	const Fp y(para.gy);
+	Ec P(x, y);
+	P += P;
+	const int N = 33;
+	Ec xVec[N];
+	Zn yVec[N];
+	Ec Q1, Q2;
+
+	Ec::dbl(P, P);
+	for (size_t i = 0; i < N; i++) {
+		Ec::mul(xVec[i], P, i + 3);
+		yVec[i].setByCSPRNG();
+	}
+	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
+	const int C = 400;
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		CYBOZU_TEST_ASSERT(n <= N);
+		naiveMulVec(Q1, xVec, yVec, n);
+		Ec::mulVec(Q2, xVec, yVec, n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+		printf("n=%zd\n", n);
+		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
+	}
+}
+
 void test_sub_sub(const mcl::EcParam& para, mcl::fp::Mode fpMode)
 {
 	puts("Proj");
@@ -551,6 +593,7 @@ void test_sub(const mcl::EcParam *para, size_t paraNum)
 #endif
 #ifdef MCL_USE_XBYAK
 		test_sub_sub(para[i], mcl::fp::FP_XBYAK);
+		mulVec(para[i]);
 #endif
 	}
 }

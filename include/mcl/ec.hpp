@@ -998,18 +998,22 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false)
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false, bool useGLV = true)
 	{
-		if (!constTime && yn == 1) {
-			if (mulSmallInt(z, x, static_cast<int>(*y), isNegative)) return;
+		if (!constTime) {
+			while (yn > 0) {
+				if (y[yn - 1]) break;
+				yn--;
+			}
+			if (yn <= 1 && mulSmallInt(z, x, *y, isNegative)) return;
 		}
-		if (mulArrayGLV && (constTime || yn > 1)) {
+		if (useGLV && mulArrayGLV && (yn * sizeof(fp::Unit) > 8)) {
 			mulArrayGLV(z, x, y, yn, isNegative, constTime);
 			return;
 		}
 		mulArrayBase(z, x, y, yn, isNegative, constTime);
 	}
-	static inline bool mulSmallInt(EcT& z, const EcT& x, uint32_t y, bool isNegative)
+	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
 	{
 		switch (y) {
 		case 0: z.clear(); return true;
@@ -1132,21 +1136,27 @@ public:
 	}
 	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
-#if 0
+#if 1
+		(void)constTime;
 		mpz_class v;
 		bool b;
 		gmp::setArray(&b, v, y, yn);
 		assert(b); (void)b;
-		const int w = 5;
-		const size_t tblSize = 1 << (w - 2);
+		const int maxW = 5;
+		const int maxTblSize = 1 << (maxW - 2);
+		/*
+			L = log2(y), w = (L <= 32) ? 3 : (L <= 128) ? 4 : 5;
+		*/
+		const int w = (yn == 1 && *y <= (fp::Unit(1) << 32)) ? 3 : (yn * sizeof(fp::Unit) > 16) ? 5 : 4;
+		const size_t tblSize = size_t(1) << (w - 2);
 		typedef mcl::FixedArray<int8_t, sizeof(EcT::Fp) * 8 + 1> NafArray;
 		NafArray naf;
-		EcT tbl[tblSize];
+		EcT tbl[maxTblSize];
 		gmp::getNAFwidth(&b, naf, v, w);
 		assert(b); (void)b;
 		EcT P2;
-		tbl[0] = x;
 		dbl(P2, x);
+		tbl[0] = x;
 		for (size_t i = 1; i < tblSize; i++) {
 			add(tbl[i], tbl[i - 1], P2);
 		}
@@ -1174,75 +1184,65 @@ public:
 	}
 	/*
 		generic mul
+		GLV can't be applied in Fp12 - GT
 	*/
 	static inline void mulGeneric(EcT& z, const EcT& x, const mpz_class& y, bool constTime = false)
 	{
-		mulArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime, false);
 	}
 	/*
-		z += sum_{i=0}^{n-1} xVec[i] * yVec[i]
+		z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
+		return min(N, n)
 		@note &z != xVec[i]
 	*/
 private:
 	template<size_t N, class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void addMulVecN(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline size_t addMulVecN(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
-		assert(n <= N);
-		EcT t;
+		if (n > N) n = N;
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
 		typedef mcl::FixedArray<int8_t, maxBitSize + 1> NafArray;
 		NafArray naf[N];
 		EcT tbl[N][tblSize];
-		bool b;
 		size_t maxBit = 0;
 		for (size_t i = 0; i < n; i++) {
+			bool b;
 			gmp::getNAFwidth(&b, naf[i], yVec[i].getMpz(), w);
 			assert(b); (void)b;
 			if (naf[i].size() > maxBit) maxBit = naf[i].size();
-			tbl[i][0] = xVec[i];
 			EcT P2;
-			EcT::dbl(P2, tbl[i][0]);
+			EcT::dbl(P2, xVec[i]);
+			tbl[i][0] = xVec[i];
 			for (size_t j = 1; j < tblSize; j++) {
 				EcT::add(tbl[i][j], tbl[i][j - 1], P2);
 			}
 		}
-		t.clear();
+		z.clear();
 		for (size_t i = 0; i < maxBit; i++) {
-			EcT::dbl(t, t);
+			EcT::dbl(z, z);
 			for (size_t j = 0; j < n; j++) {
-				local::addTbl(t, tbl[j], naf[j], maxBit - 1 - i);
+				local::addTbl(z, tbl[j], naf[j], maxBit - 1 - i);
 			}
 		}
-		z += t;
+		return n;
 	}
 
 public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, bool old = false)
+	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
-		(void)old;
-#if 0
-if (!old) {
-		const size_t N = 16;
 		EcT r;
 		r.clear();
-		for (size_t i = 0; i < n; i += N) {
-			size_t remain = fp::min_(n - i, N);
-			addMulVecN<N>(r, xVec + i, yVec + i, remain);
-		}
-		z = r;
-} else {
-#else
-		EcT r, t;
-		r.clear();
-		for (size_t i = 0; i < n; i++) {
-			mul(t, xVec[i], yVec[i]);
+		while (n > 0) {
+			EcT t;
+			size_t done = addMulVecN<32>(t, xVec, yVec, n);
 			r += t;
+			xVec += done;
+			yVec += done;
+			n -= done;
 		}
 		z = r;
-#endif
-//}
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
@@ -1388,7 +1388,7 @@ public:
 			local::addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
 		}
 	}
-	static void mulArray(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		mpz_class s;
 		bool b;
@@ -1459,7 +1459,7 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 	}
 	if (curveType == MCL_SECP256K1) {
 		GLV1T<Ec>::initForSecp256k1(Zn::getOp().mp);
-		Ec::setMulArrayGLV(GLV1T<Ec>::mulArray);
+		Ec::setMulArrayGLV(GLV1T<Ec>::mulArrayGLV);
 	} else {
 		Ec::setMulArrayGLV(0);
 	}

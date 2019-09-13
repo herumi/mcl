@@ -1,27 +1,44 @@
-void testMulVec()
+template<class G, class F>
+void naiveMulVec(G& out, const G *xVec, const F *yVec, size_t n)
 {
-	using namespace mcl::bn;
-	const size_t n = 3;
-	G1 xVec[n];
-	Fr yVec[n];
-	G1 ok;
-	ok.clear();
-	char c = 'a';
+	G r, t;
+	r.clear();
 	for (size_t i = 0; i < n; i++) {
-		hashAndMapToG1(xVec[i], &c, 1);
-		yVec[i].setByCSPRNG();
-		G1 t;
-		G1::mul(t, xVec[i], yVec[i]);
-		ok += t;
+		G::mul(t, xVec[i], yVec[i]);
+		r += t;
 	}
-	G1 z;
-	G1::mulVec(z, xVec, yVec, n);
-	CYBOZU_TEST_EQUAL(z, ok);
-	CYBOZU_BENCH_C("mulVec(new)", 1000, G1::mulVec, z, xVec, yVec, n);
-	CYBOZU_BENCH_C("mulVec(old)", 1000, G1::mulVec, z, xVec, yVec, n, true);
+	out = r;
 }
 
-void testCommon()
+template<class G>
+void testMulVec(const G& P)
 {
-	testMulVec();
+	using namespace mcl::bn;
+	const int N = 33;
+	G xVec[N];
+	mcl::bn::Fr yVec[N];
+
+	for (size_t i = 0; i < N; i++) {
+		G::mul(xVec[i], P, i + 3);
+		yVec[i].setByCSPRNG();
+	}
+	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
+	const int C = 400;
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		G Q1, Q2;
+		CYBOZU_TEST_ASSERT(n <= N);
+		naiveMulVec(Q1, xVec, yVec, n);
+		G::mulVec(Q2, xVec, yVec, n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+		printf("n=%zd\n", n);
+		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec, yVec, n);
+	}
+}
+
+template<class G1, class G2>
+void testCommon(const G1& P, const G2&)
+{
+	testMulVec(P);
 }

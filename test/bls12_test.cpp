@@ -384,7 +384,7 @@ CYBOZU_TEST_AUTO(naive)
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
-		testCommon();
+		testCommon(P, Q);
 		testBench(P, Q);
 	}
 	int count = (int)clk.getCount();

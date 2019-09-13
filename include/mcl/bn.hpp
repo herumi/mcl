@@ -2099,7 +2099,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 {
 	local::StaticVar<>::param.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulArrayGLV(local::GLV1::mulArray);
+	G1::setMulArrayGLV(local::GLV1::mulArrayGLV);
 	G2::setMulArrayGLV(local::mulArrayGLV2);
 	Fp12::setPowArrayGLV(local::powArrayGLV2);
 	G1::setCompressedExpression();
