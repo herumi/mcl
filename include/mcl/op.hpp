@@ -111,6 +111,9 @@ const size_t UnitBitSize = sizeof(Unit) * 8;
 const size_t maxUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
 #define MCL_MAX_UNIT_SIZE ((MCL_MAX_BIT_SIZE + MCL_UNIT_BIT_SIZE - 1) / MCL_UNIT_BIT_SIZE)
 
+const size_t maxMulVecN = 32; // inner loop of mulVec
+const size_t maxMulVecNGLV = 16; // inner loop of mulVec with GLV
+
 struct FpGenerator;
 struct Op;
 

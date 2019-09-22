@@ -89,14 +89,24 @@ struct Operator : public E {
 		powArrayGLV = f;
 		powVecNGLV = g;
 	}
-	static void powVec(T& z, const T* xVec, const mpz_class *yVec, size_t n)
+	static const size_t powVecMaxN = 16;
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static void powVec(T& z, const T* xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
 		assert(powVecNGLV);
 		T r;
 		r.setOne();
+		const size_t N = mcl::fp::maxMulVecNGLV;
+		mpz_class myVec[N];
 		while (n > 0) {
 			T t;
-			size_t done = powVecNGLV(t, xVec, yVec, n);
+			size_t tn = fp::min_(n, N);
+			for (size_t i = 0; i < tn; i++) {
+				bool b;
+				yVec[i].getMpz(&b, myVec[i]);
+				assert(b); (void)b;
+			}
+			size_t done = powVecNGLV(t, xVec, myVec, tn);
 			r *= t;
 			xVec += done;
 			yVec += done;

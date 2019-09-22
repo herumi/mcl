@@ -30,9 +30,6 @@ enum Mode {
 
 namespace local {
 
-const size_t maxMulVecN = 32; // inner loop of mulVec
-const size_t maxMulVecNGLV = 16; // inner loop of mulVec with GLV
-
 // x is negative <=> x < half(:=(p+1)/2) <=> a = 1
 template<class Fp>
 bool get_a_flag(const Fp& x)
@@ -1187,9 +1184,10 @@ public:
 		@note &z != xVec[i]
 	*/
 private:
-	static inline size_t mulVecN(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t n)
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline size_t mulVecN(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
-		const size_t N = mcl::ec::local::maxMulVecN;
+		const size_t N = mcl::fp::maxMulVecN;
 		if (n > N) n = N;
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
@@ -1197,9 +1195,12 @@ private:
 		NafArray naf[N];
 		EcT tbl[N][tblSize];
 		size_t maxBit = 0;
+		mpz_class y;
 		for (size_t i = 0; i < n; i++) {
 			bool b;
-			gmp::getNAFwidth(&b, naf[i], yVec[i], w);
+			yVec[i].getMpz(&b, y);
+			assert(b); (void)b;
+			gmp::getNAFwidth(&b, naf[i], y, w);
 			assert(b); (void)b;
 			if (naf[i].size() > maxBit) maxBit = naf[i].size();
 			EcT P2;
@@ -1220,14 +1221,20 @@ private:
 	}
 
 public:
-	static inline void mulVec(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t n)
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
-		size_t (*f)(EcT&, const EcT *, const mpz_class *, size_t n) = mulVecN;
 		/*
 			mulVecNGLV is a little slow for large n
 		*/
-		if (mulVecNGLV && n < mcl::ec::local::maxMulVecNGLV) {
-			size_t done = mulVecNGLV(z, xVec, yVec, n);
+		if (mulVecNGLV && n < mcl::fp::maxMulVecNGLV) {
+			mpz_class myVec[mcl::fp::maxMulVecNGLV];
+			for (size_t i = 0; i < n; i++) {
+				bool b;
+				yVec[i].getMpz(&b, myVec[i]);
+				assert(b); (void)b;
+			}
+			size_t done = mulVecNGLV(z, xVec, myVec, n);
 			assert(done == n); (void)done;
 			return;
 		}
@@ -1235,7 +1242,7 @@ public:
 		r.clear();
 		while (n > 0) {
 			EcT t;
-			size_t done = f(t, xVec, yVec, n);
+			size_t done = mulVecN(t, xVec, yVec, n);
 			r += t;
 			xVec += done;
 			yVec += done;
@@ -1352,7 +1359,7 @@ public:
 	}
 	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n)
 	{
-		const size_t N = mcl::ec::local::maxMulVecNGLV;
+		const size_t N = mcl::fp::maxMulVecNGLV;
 		if (n > N) n = N;
 		const int w = 5;
 		const mpz_class& r = Fr::getOp().mp;

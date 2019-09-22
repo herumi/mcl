@@ -5,9 +5,10 @@
 #include <cybozu/xorshift.hpp>
 #include <mcl/bn512.hpp>
 #include <mcl/bn.hpp>
-#include "common_test.hpp"
 
 using namespace mcl::bn512;
+
+#include "common_test.hpp"
 
 mcl::fp::Mode g_mode;
 
@@ -34,7 +35,7 @@ void testCurve(const mcl::CurveParam& cp)
 	pairing(e2, aP, bQ);
 	GT::pow(e1, e1, a * b);
 	CYBOZU_TEST_EQUAL(e1, e2);
-	testCommon<G1, G2, GT>(P, Q);
+	testCommon(P, Q);
 	testBench(P, Q);
 	testSquareRoot();
 	testLagrange();

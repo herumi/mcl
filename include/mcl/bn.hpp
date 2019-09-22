@@ -814,7 +814,7 @@ struct GLV2 {
 	size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n) const
 	{
 		const mpz_class& r = Fr::getOp().mp;
-		const size_t N = 16;
+		const size_t N = mcl::fp::maxMulVecNGLV;
 		if (n > N) n = N;
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);

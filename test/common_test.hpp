@@ -1,5 +1,5 @@
 template<class G>
-void naiveMulVec(G& out, const G *xVec, const mpz_class *yVec, size_t n)
+void naiveMulVec(G& out, const G *xVec, const Fr *yVec, size_t n)
 {
 	if (n == 1) {
 		G::mul(out, xVec[0], yVec[0]);
@@ -20,11 +20,11 @@ void testMulVec(const G& P)
 	using namespace mcl::bn;
 	const int N = 33;
 	G xVec[N];
-	mpz_class yVec[N];
+	Fr yVec[N];
 
 	for (size_t i = 0; i < N; i++) {
 		G::mul(xVec[i], P, i + 3);
-		mcl::gmp::getRand(yVec[i], Fr::getOp().bitSize);
+		yVec[i].setByCSPRNG();
 	}
 	const size_t nTbl[] = { 1, 2, 3, 5, 7, 8, 9, 14, 15, 16, 30, 31, 32, 33 };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
@@ -44,7 +44,7 @@ void testMulVec(const G& P)
 }
 
 template<class G>
-void naivePowVec(G& out, const G *xVec, const mpz_class *yVec, size_t n)
+void naivePowVec(G& out, const G *xVec, const Fr *yVec, size_t n)
 {
 	if (n == 1) {
 		G::pow(out, xVec[0], yVec[0]);
@@ -65,12 +65,12 @@ inline void testPowVec(const G& e)
 	using namespace mcl::bn;
 	const int N = 33;
 	G xVec[N];
-	mpz_class yVec[N];
+	Fr yVec[N];
 
 	xVec[0] = e;
 	for (size_t i = 0; i < N; i++) {
 		if (i > 0) G::mul(xVec[i], xVec[i - 1], e);
-		mcl::gmp::getRand(yVec[i], Fr::getOp().bitSize);
+		yVec[i].setByCSPRNG();
 	}
 	const size_t nTbl[] = { 1, 2, 3, 5, 7, 8, 9, 14, 15, 16, 30, 31, 32, 33 };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
@@ -89,7 +89,6 @@ inline void testPowVec(const G& e)
 	}
 }
 
-template<class G1, class G2, class GT>
 void testCommon(const G1& P, const G2& Q)
 {
 	puts("G1");
