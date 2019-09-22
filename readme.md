@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography.
 The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+* v0.99 add mclBnG1_mulVec, etc.
 * v0.98 bugfix Ec::add(P, Q, R) when P == R
 * v0.97 add some C api functions
 * v0.96 improved scalar multiplication
