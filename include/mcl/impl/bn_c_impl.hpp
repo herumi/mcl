@@ -557,6 +557,19 @@ void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
 	Fp12::powGeneric(*cast(z), *cast(x), *cast(y));
 }
 
+void mclBnG1_mulVec(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n)
+{
+	G1::mulVec(*cast(z), cast(x), cast(y), n);
+}
+void mclBnG2_mulVec(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n)
+{
+	G2::mulVec(*cast(z), cast(x), cast(y), n);
+}
+void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n)
+{
+	GT::powVec(*cast(z), cast(x), cast(y), n);
+}
+
 void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y)
 {
 	pairing(*cast(z), *cast(x), *cast(y));

@@ -906,6 +906,44 @@ CYBOZU_TEST_AUTO(getLittleEndian)
 	}
 }
 
+CYBOZU_TEST_AUTO(mulVec)
+{
+	const size_t N = 70;
+	mclBnG1 x1Vec[N], z1, w1;
+	mclBnG2 x2Vec[N], z2, w2;
+	mclBnGT xtVec[N], zt, wt;
+	mclBnFr yVec[N];
+
+	for (size_t i = 0; i < N; i++) {
+		char c = 'a' + i;
+		mclBnG1_hashAndMapTo(&x1Vec[i], &c, 1);
+		mclBnG2_hashAndMapTo(&x2Vec[i], &c, 1);
+		mclBn_pairing(&xtVec[i], &x1Vec[i], &x2Vec[i]);
+		mclBnFr_setByCSPRNG(&yVec[i]);
+	}
+	mclBnG1_mulVec(&z1, x1Vec, yVec, N);
+	mclBnG2_mulVec(&z2, x2Vec, yVec, N);
+	mclBnGT_powVec(&zt, xtVec, yVec, N);
+
+	mclBnG1_clear(&w1);
+	mclBnG2_clear(&w2);
+	mclBnGT_setInt(&wt, 1);
+	for (size_t i = 0; i < N; i++) {
+		mclBnG1 t1;
+		mclBnG2 t2;
+		mclBnGT tt;
+		mclBnG1_mul(&t1, &x1Vec[i], &yVec[i]);
+		mclBnG2_mul(&t2, &x2Vec[i], &yVec[i]);
+		mclBnGT_pow(&tt, &xtVec[i], &yVec[i]);
+		mclBnG1_add(&w1, &w1, &t1);
+		mclBnG2_add(&w2, &w2, &t2);
+		mclBnGT_mul(&wt, &wt, &tt);
+	}
+	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&z1, &w1));
+	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&z2, &w2));
+	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&zt, &wt));
+}
+
 void G1onlyTest(int curve)
 {
 	printf("curve=%d\n", curve);
