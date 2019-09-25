@@ -576,8 +576,8 @@ CYBOZU_TEST_AUTO(setRandFunc)
 			char buf[1024];
 			ret = mclBnFr_setByCSPRNG(&x);
 			CYBOZU_TEST_EQUAL(ret, 0);
-			ret = mclBnFr_getStr(buf, sizeof(buf), &x, 16);
-			CYBOZU_TEST_ASSERT(ret > 0);
+			size_t n = mclBnFr_getStr(buf, sizeof(buf), &x, 16);
+			CYBOZU_TEST_ASSERT(n > 0);
 			printf("%d %s\n", i, buf);
 		}
 		if (j == 0) {
@@ -915,7 +915,7 @@ CYBOZU_TEST_AUTO(mulVec)
 	mclBnFr yVec[N];
 
 	for (size_t i = 0; i < N; i++) {
-		char c = 'a' + i;
+		char c = char('a' + i);
 		mclBnG1_hashAndMapTo(&x1Vec[i], &c, 1);
 		mclBnG2_hashAndMapTo(&x2Vec[i], &c, 1);
 		mclBn_pairing(&xtVec[i], &x1Vec[i], &x2Vec[i]);
@@ -954,8 +954,8 @@ void G1onlyTest(int curve)
 	ret = mclBnG1_getBasePoint(&P0);
 	CYBOZU_TEST_EQUAL(ret, 0);
 	char buf[256];
-	ret = mclBnG1_getStr(buf, sizeof(buf), &P0, 16);
-	CYBOZU_TEST_ASSERT(ret > 0);
+	size_t n = mclBnG1_getStr(buf, sizeof(buf), &P0, 16);
+	CYBOZU_TEST_ASSERT(n > 0);
 	printf("basePoint=%s\n", buf);
 	G1test();
 }
