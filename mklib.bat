@@ -19,6 +19,11 @@ if "%1"=="dll" (
   echo link /nologo /DLL /OUT:bin\mclbn256.dll obj\bn_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn256.lib
      link /nologo /DLL /OUT:bin\mclbn256.dll obj\bn_c256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn256.lib
 
+  echo cl /c %CFLAGS% src\bn_c384_256.cpp /Foobj\bn_c384_256.obj
+     cl /c %CFLAGS% src\bn_c384_256.cpp /Foobj\bn_c384_256.obj /DMCLBN_NO_AUTOLINK
+  echo link /nologo /DLL /OUT:bin\mclbn384_256.dll obj\bn_c384_256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn384_256.lib
+     link /nologo /DLL /OUT:bin\mclbn384_256.dll obj\bn_c384_256.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn384_256.lib
+
   echo cl /c %CFLAGS% src\bn_c384.cpp /Foobj\bn_c384.obj
      cl /c %CFLAGS% src\bn_c384.cpp /Foobj\bn_c384.obj /DMCLBN_NO_AUTOLINK
   echo link /nologo /DLL /OUT:bin\mclbn384.dll obj\bn_c384.obj obj\fp.obj %LDFLAGS% /implib:lib\mclbn384.lib
