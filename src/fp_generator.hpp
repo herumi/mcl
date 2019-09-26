@@ -268,9 +268,16 @@ private:
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
 #ifdef MCL_USE_PROF
 		static char suf[] = "_0";
-		const char *s = getenv("MCL_PROF");
-		if (s && s[0] && s[1] == '\0') {
-			prof_.init(s[0] - '0');
+		int profMode = 0;
+#ifdef XBYAK_USE_VTUNE
+		profMode = 2;
+#endif
+		{
+			const char *s = getenv("MCL_PROF");
+			if (s && s[0] && s[1] == '\0') profMode = s[0] - '0';
+		}
+		if (profMode) {
+			prof_.init(profMode);
 			prof_.setStartAddr(getCurr());
 			prof_.setNameSuffix(suf);
 			suf[1]++;
