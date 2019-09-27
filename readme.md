@@ -6,39 +6,149 @@ A portable and fast pairing-based cryptography library.
 
 # Abstract
 
-mcl is a library for pairing-based cryptography.
-The current version supports the optimal Ate pairing over BN curves and BLS12-381 curves.
+mcl is a library for pairing-based cryptography,
+which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
-# News
-* v0.99 add mclBnG1_mulVec, etc.
-* v0.98 bugfix Ec::add(P, Q, R) when P == R
-* v0.97 add some C api functions
-* v0.96 improved scalar multiplication
-* mclBn_setETHserialization(true) (de)serialize acoording to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
-* (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
-    * The option SHARE_BASENAME_SUF is removed
-* 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
-* break backward compatibility of mapToGi for BLS12. A map-to-function for BN is used.
-If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but this will be removed in the future.
 
 # Support architecture
 
-* x86-64 Windows + Visual Studio
-* x86, x86-64 Linux + gcc/clang
-* ARM Linux
-* ARM64 Linux
-* (maybe any platform to be supported by LLVM)
-* WebAssembly
+- x86-64 Windows + Visual Studio
+- x86, x86-64 Linux + gcc/clang
+- x86-64 macOS
+- ARM / ARM64 Linux
+- WebAssembly
+- Android
+- iPhone
+- (maybe any platform to be supported by LLVM)
 
 # Support curves
 
-p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
+- BN curve ; p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
+  - BN254 ; a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
+  - BN\_SNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
+  - BN381\_1 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
+  - BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
+- BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
 
-* BN254 ; a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
-* BN\_SNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-* BN381\_1 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
-* BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
-* BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+# How to build on Linux and macOS
+x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.
+
+## Installation Requirements
+
+[GMP](https://gmplib.org/) and [OpenSSL](https://www.openssl.org/) are necessary (default setting).
+
+```
+apt install libgmp-dev libssl-dev # on Ubuntu
+```
+
+## How to build with Makefile
+
+```
+git clone git://github.com/herumi/mcl
+cd mcl
+make -j4
+```
+
+- `lib/libmcl.*` ; core library
+- `lib/libmclbn384_256.*` ; library to use C-API of BLS12-381 pairing
+
+## How to test of BLS12-381 pairing
+
+```
+# C
+make bin/bn_c384_256_test.exe && bin/bn_c384_256_test.exe
+
+# C++
+make bin/bls12_test.exe && bin/bls12_test.exe
+```
+
+## How to build without GMP
+
+```
+make MCL_USE_GMP=0
+
+```
+Define `MCL_USE_VINT` if using C++ header files.
+
+## How to build without OpenSSL
+
+```
+make MCL_USE_OPENSSL=0
+```
+Define `MCL_DONT_USE_OPENSSL` if using C++ header files.
+
+## How to build on 32-bit x86 Linux
+
+Build GMP and OpenSSL for 32-bit mode and install `<lib32>` at yourself.
+
+```
+make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
+```
+
+# How to build on 64-bit Windows with Visual Studio
+
+Clone cybozulib\_ext,
+which provides compiled binaries of OpenSSL and [MPIR](http://mpir.org/).
+
+```
+mkdir work
+cd work
+git clone git://github.com/herumi/mcl
+git clone git://github.com/herumi/cybozulib_ext
+cd work
+# static library
+mklib
+mk -s test\bls12_test.cpp && bin\bls12_test.exe
+# dynamic library
+mklib dll
+mk -d test\bls12_test.cpp && bin\bls12_test.exe
+```
+
+(not maintenanced)
+Open mcl.sln and build or if you have msbuild.exe
+```
+msbuild /p:Configuration=Release
+```
+
+# How to build with CMake
+
+For Linux, macOS, etc.
+```
+mkdir build
+cd build
+cmake ..
+make
+```
+For Visual Studio,
+```
+mkdir build
+cd build
+cmake .. -A x64
+msbuild mcl.sln /p:Configuration=Release /m
+```
+
+## options
+
+```
+cmake .. USE_GMP=OFF ; without GMP
+cmake .. USE_OPENSSL=OFF ; without OpenSSL
+```
+see `cmake .. -LA`.
+
+# How to build for wasm(WebAssembly)
+mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge.
+
+* [IBE on browser](https://herumi.github.io/mcl-wasm/ibe-demo.html)
+* [SHE on browser](https://herumi.github.io/she-wasm/she-demo.html)
+* [BLS signature on brower](https://herumi.github.io/bls-wasm/bls-demo.html)
+
+The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
+
+# Node.js
+
+* [mcl-wasm](https://www.npmjs.com/package/mcl-wasm) pairing library
+* [bls-wasm](https://www.npmjs.com/package/bls-wasm) BLS signature library
+* [she-wasm](https://www.npmjs.com/package/she-wasm) 2 Level Homomorphic Encryption library
 
 # Benchmark
 
@@ -100,112 +210,7 @@ mcl                                                      | 0.31 | 1.6 |22.6|  3.
 cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_METHD="LAZYR;OATEP"
 ```
 
-# Installation Requirements
-
-* [GMP](https://gmplib.org/) and OpenSSL
-```
-apt install libgmp-dev libssl-dev
-```
-
-Create a working directory (e.g., work) and clone the following repositories.
-```
-mkdir work
-cd work
-git clone git://github.com/herumi/mcl
-git clone git://github.com/herumi/cybozulib_ext ; for only Windows
-```
-* Cybozulib\_ext is a prerequisite for running OpenSSL and GMP on VC (Visual C++).
-
-# (Option) Without GMP
-```
-make MCL_USE_GMP=0
-```
-Define `MCL_USE_VINT` before including `bn.hpp`
-
-# (Option) Without Openssl
-```
-make MCL_USE_OPENSSL=0
-```
-Define `MCL_DONT_USE_OPENSSL` before including `bn.hpp`
-
-# Build and test on x86-64 Linux, macOS, ARM and ARM64 Linux
-To make lib/libmcl.a and test it:
-```
-cd work/mcl
-make test
-```
-To benchmark a pairing:
-```
-bin/bn_test.exe
-```
-To make sample programs:
-```
-make sample
-```
-
-if you want to change compiler options for optimization, then set `CFLAGS_OPT_USER`.
-```
-make CLFAGS_OPT_USER="-O2"
-```
-
-## Build for 32-bit Linux
-Build openssl and gmp for 32-bit mode and install `<lib32>`
-```
-make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
-```
-
-## Build for 64-bit Windows
-1) make static library and use it
-
-```
-mklib
-mk -s test\bn_c256_test.cpp
-bin\bn_c256_test.exe
-```
-2) make dynamic library and use it
-
-```
-mklib dll
-mk -d test\bn_c256_test.cpp
-bin\bn_c256_test.exe
-```
-
-open mcl.sln and build or if you have msbuild.exe
-```
-msbuild /p:Configuration=Release
-```
-
-## Build with cmake
-For Linux,
-```
-mkdir build
-cd build
-cmake ..
-make
-```
-For Visual Studio,
-```
-mkdir build
-cd build
-cmake .. -A x64
-msbuild mcl.sln /p:Configuration=Release /m
-```
-## Build for wasm(WebAssembly)
-mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge.
-
-* [IBE on browser](https://herumi.github.io/mcl-wasm/ibe-demo.html)
-* [SHE on browser](https://herumi.github.io/she-wasm/she-demo.html)
-* [BLS signature on brower](https://herumi.github.io/bls-wasm/bls-demo.html)
-
-The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
-
-### Node.js
-
-* [mcl-wasm](https://www.npmjs.com/package/mcl-wasm) pairing library
-* [bls-wasm](https://www.npmjs.com/package/bls-wasm) BLS signature library
-* [she-wasm](https://www.npmjs.com/package/she-wasm) 2 Level Homomorphic Encryption library
-
-### SELinux
+# SELinux
 mcl uses Xbyak JIT engine if it is available on x64 architecture,
 otherwise mcl uses a little slower functions generated by LLVM.
 The default mode enables SELinux security policy on CentOS, then JIT is disabled.
@@ -460,19 +465,32 @@ This library contains some part of the followings software licensed by BSD-3-Cla
 * [_Skew Frobenius Map and Efficient Scalar Multiplication for Pairing–Based Cryptography_](https://www.researchgate.net/publication/221282560_Skew_Frobenius_Map_and_Efficient_Scalar_Multiplication_for_Pairing-Based_Cryptography),
 Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
+# compatilibity
+
+- mclBn_setETHserialization(true) (de)serialize acoording to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
+- (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
+  - The option SHARE_BASENAME_SUF is removed
+- 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
+- break backward compatibility of mapToGi for BLS12. A map-to-function for BN is used.
+If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but this will be removed in the future.
+
 # History
 
-* 2019/Jun/03 v0.95 fix a parser of 0b10 with base = 16
-* 2019/Apr/29 v0.94 mclBn_setETHserialization supports [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations)
-* 2019/Apr/24 v0.93 support ios
-* 2019/Mar/22 v0.92 shortcut for Ec::mul(Px, P, x) if P = 0
-* 2019/Mar/21 python binding of she256 for Linux/Mac/Windows
-* 2019/Mar/14 v0.91 modp supports mcl-wasm
-* 2019/Mar/12 v0.90 fix Vint::setArray(x) for x == this
-* 2019/Mar/07 add mclBnFr_setLittleEndianMod, mclBnFp_setLittleEndianMod
-* 2019/Feb/20 LagrangeInterpolation sets out = yVec[0] if k = 1
-* 2019/Jan/31 add mclBnFp_mapToG1, mclBnFp2_mapToG2
-* 2019/Jan/31 fix crash on x64-CPU without AVX (thanks to mortdeus)
+- 2019/Sep/22 v0.99 add mclBnG1_mulVec, etc.
+- 2019/Sep/08 v0.98 bugfix Ec::add(P, Q, R) when P == R
+- 2019/Aug/14 v0.97 add some C api functions
+- 2019/Jul/26 v0.96 improved scalar multiplication
+- 2019/Jun/03 v0.95 fix a parser of 0b10 with base = 16
+- 2019/Apr/29 v0.94 mclBn_setETHserialization supports [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations)
+- 2019/Apr/24 v0.93 support ios
+- 2019/Mar/22 v0.92 shortcut for Ec::mul(Px, P, x) if P = 0
+- 2019/Mar/21 python binding of she256 for Linux/Mac/Windows
+- 2019/Mar/14 v0.91 modp supports mcl-wasm
+- 2019/Mar/12 v0.90 fix Vint::setArray(x) for x == this
+- 2019/Mar/07 add mclBnFr_setLittleEndianMod, mclBnFp_setLittleEndianMod
+- 2019/Feb/20 LagrangeInterpolation sets out = yVec[0] if k = 1
+- 2019/Jan/31 add mclBnFp_mapToG1, mclBnFp2_mapToG2
+- 2019/Jan/31 fix crash on x64-CPU without AVX (thanks to mortdeus)
 
 # Author
 
