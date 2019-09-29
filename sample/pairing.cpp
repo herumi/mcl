@@ -1,6 +1,6 @@
-#include <mcl/bn256.hpp>
+#include <mcl/bls12_381.hpp>
 
-using namespace mcl::bn256;
+using namespace mcl::bn;
 
 void minimum_sample(const G1& P, const G2& Q)
 {
@@ -40,14 +40,11 @@ void precomputed(const G1& P, const G2& Q)
 
 int main()
 {
-	const char *aa = "12723517038133731887338407189719511622662176727675373276651903807414909099441";
-	const char *ab = "4168783608814932154536427934509895782246573715297911553964171371032945126671";
-	const char *ba = "13891744915211034074451795021214165905772212241412891944830863846330766296736";
-	const char *bb = "7937318970632701341203597196594272556916396164729705624521405069090520231616";
-
-	initPairing();
-	G2 Q(Fp2(aa, ab), Fp2(ba, bb));
-	G1 P(-1, 1);
+	initPairing(mcl::BLS12_381);
+	G1 P;
+	G2 Q;
+	hashAndMapToG1(P, "abc", 3);
+	hashAndMapToG2(Q, "abc", 3);
 
 	minimum_sample(P, Q);
 	miller_and_finel_exp(P, Q);
