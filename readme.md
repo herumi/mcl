@@ -9,7 +9,6 @@ A portable and fast pairing-based cryptography library.
 mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
-
 # Support architecture
 
 - x86-64 Windows + Visual Studio
@@ -29,6 +28,9 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
   - BN381\_1 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
   - BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
 - BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+
+# C-API
+see [api.md](api.md)
 
 # How to build on Linux and macOS
 x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.
@@ -232,193 +234,6 @@ pairing   1.394Mclk
 finalExp 546.259Kclk
 ```
 
-# Libraries
-
-* G1 and G2 is defined over Fp
-* The order of G1 and G2 is r.
-* Use `bn256.hpp` if only BN254 is used.
-
-## C++ library
-
-* libmcl.a ; static C++ library of mcl
-* libmcl.so ; shared C++ library of mcl
-* the default parameter of curveType is BN254
-
-header        |support curveType        |sizeof Fr|sizeof Fp|
---------------|-------------------------|---------|---------|
-bn256.hpp     |BN254, BN_SNARK1         |   32    |   32    |
-bls12_381.hpp |the above + BLS12_381    |   32    |   48    |
-bn384.hpp     |the above + BN381_1      |   48    |   48    |
-
-## C library
-
-* Define `MCLBN_FR_UNIT_SIZE` and `MCLBN_FP_UNIT_SIZE` and include bn.h
-* set `MCLBN_FR_UNIT_SIZE = MCLBN_FP_UNIT_SIZE` unless `MCLBN_FR_UNIT_SIZE` is defined
-
-
-library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|
-------------------|------------------|------------------|
-sizeof            | Fr               |  Fp              |
-libmclbn256.a     |          4       |         4        |
-libmclbn384_256.a |          4       |         6        |
-libmclbn384.a     |          6       |         6        |
-
-
-* libmclbn*.a ; static C library
-* libmclbn*.so ; shared C library
-
-### 2nd argument of `mclBn_init`
-Specify `MCLBN_COMPILED_TIME_VAR` to 2nd argument of `mclBn_init`, which
-is defined as `MCLBN_FR_UNIT_SIZE * 10 + MCLBN_FP_UNIT_SIZE`.
-This parameter is used to make sure that the values are the same when the library is built and used.
-
-# How to initialize pairing library
-Call `mcl::bn256::initPairing` before calling any operations.
-```
-#include <mcl/bn256.hpp>
-mcl::bn::CurveParam cp = mcl::BN254; // or mcl::BN_SNARK1
-mcl::bn256::initPairing(cp);
-mcl::bn256::G1 P(...);
-mcl::bn256::G2 Q(...);
-mcl::bn256::Fp12 e;
-mcl::bn256::pairing(e, P, Q);
-```
-1. (BN254) a BN curve over the 254-bit prime p = p(z) where z = -(2^62 + 2^55 + 1).
-2. (BN_SNARK1) a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-3. BN381_1 with `mcl/bn384.hpp`.
-4. BN462 with `mcl/bn512.hpp`.
-
-See [test/bn_test.cpp](https://github.com/herumi/mcl/blob/master/test/bn_test.cpp).
-
-## Default constructor of Fp, Ec, etc.
-A default constructor does not initialize the instance.
-Set a valid value before reffering it.
-
-## Definition of groups
-
-The curve equation for a BN curve is:
-
-	E/Fp: y^2 = x^3 + b .
-
-* the cyclic group G1 is instantiated as E(Fp)[n] where n := p + 1 - t;
-* the cyclic group G2 is instantiated as the inverse image of E'(Fp^2)[n] under a twisting isomorphism phi from E' to E; and
-* the pairing e: G1 x G2 -> Fp12 is the optimal ate pairing.
-
-The field Fp12 is constructed via the following tower:
-
-* Fp2 = Fp[u] / (u^2 + 1)
-* Fp6 = Fp2[v] / (v^3 - Xi) where Xi = u + 1
-* Fp12 = Fp6[w] / (w^2 - v)
-* GT = { x in Fp12 | x^r = 1 }
-
-## Curve Parameter
-r = |G1| = |G2| = |GT|
-
-curveType   | hexadecimal number|
-------------|-------------------|
-BN254 r     | 2523648240000001ba344d8000000007ff9f800000000010a10000000000000d |
-BN254 p     | 2523648240000001ba344d80000000086121000000000013a700000000000013 |
-BN381 r     | 240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d |
-BN381 p     | 240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013 |
-BN462 r     | 240480360120023ffffffffff6ff0cf6b7d9bfca0000000000d812908ee1c201f7fffffffff6ff66fc7bf717f7c0000000002401b007e010800d |
-BN462 r     | 240480360120023ffffffffff6ff0cf6b7d9bfca0000000000d812908f41c8020ffffffffff6ff66fc6ff687f640000000002401b00840138013 |
-BLS12-381 r | 73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001 |
-BLS12-381 r | 1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab |
-
-## Arithmetic operations
-
-G1 and G2 is additive group and has the following operations:
-
-* T::add(T& z, const T& x, const T& y); // z = x + y
-* T::sub(T& z, const T& x, const T& y); // z = x - y
-* T::neg(T& y, const T& x); // y = -x
-* T::mul(T& z, const T& x, const INT& y); // z = y times scalar multiplication of x
-
-Remark: &z == &x or &y are allowed. INT means integer type such as Fr, int and mpz_class.
-
-`T::mul` uses GLV method then `G2::mul` returns wrong value if x is not in G2.
-Use `T::mulGeneric(T& z, const T& x, const INT& y)` for x in phi^-1(E'(Fp^2)) - G2.
-
-Fp, Fp2, Fp6 and Fp12 have the following operations:
-
-* T::add(T& z, const T& x, const T& y); // z = x + y
-* T::sub(T& z, const T& x, const T& y); // z = x - y
-* T::mul(T& z, const T& x, const T& y); // z = x * y
-* T::div(T& z, const T& x, const T& y); // z = x / y
-* T::neg(T& y, const T& x); // y = -x
-* T::inv(T& y, const T& x); // y = 1/x
-* T::pow(T& z, const T& x, const INT& y); // z = x^y
-* Fp12::unitaryInv(T& y, const T& x); // y = conjugate of x
-
-Remark: `Fp12::mul` uses GLV method then returns wrong value if x is not in GT.
-Use `Fp12::mulGeneric` for x in Fp12 - GT.
-
-## Map To points
-
-Use these functions to make a point of G1 and G2.
-
-* mapToG1(G1& P, const Fp& x); // assume x != 0
-* mapToG2(G2& P, const Fp2& x);
-* hashAndMapToG1(G1& P, const void *buf, size_t bufSize); // set P by the hash value of [buf, bufSize)
-* hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
-
-These functions maps x into Gi according to [\[_Faster hashing to G2_\]].
-
-## String format of G1 and G2
-G1 and G2 have three elements of Fp (x, y, z) for Jacobi coordinate.
-`normalize()` method normalizes it to affine coordinate (x, y, 1) or (0, 0, 0).
-
-getStr(mode = 0) method gets
-
-* `0` ; infinity
-* `1 <x> <y>` ; Affine coordinate with mode = `mcl:IoEcAffine`
-* `4 <x> <y> <z>` ; jacobi/Proj coordinate with mode = `mcl::IoEcProj`
-* `2 <x>` ; compressed format for even y with mode = `mcl::IoEcCompY`
-* `3 <x>` ; compressed format for odd y with mode = `mcl::IoEcCompY`
-
-## Generator of G1 and G2
-
-If you want to use the same generators of BLS12-381 with [zkcrypto](https://github.com/zkcrypto/pairing/tree/master/src/bls12_381#g2) then,
-
-```
-// G1 P
-P.setStr('1 3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507 1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569')
-
-// G2 Q
-Q.setStr('1 352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160 3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758 1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905 927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582')
-```
-
-## Serialization format of G1 and G2
-
-pseudo-code to serialize of p
-```
-if bit-length(p) % 8 != 0:
-  size = Fp::getByteSize()
-  if p is zero:
-    return [0] * size
-  else:
-    s = x.serialize()
-    # x in Fp2 is odd <=> x.a is odd
-    if y is odd:
-      s[byte-length(s) - 1] |= 0x80
-    return s
-else:
-  size = Fp::getByteSize() + 1
-  if p is zero:
-    return [0] * size
-  else:
-    s = x.serialize()
-    if y is odd:
-      return 2:s
-    else:
-      return 3:s
-```
-
-## Verify an element in G2
-`G2::isValid()` checks that the element is in the curve of G2 and the order of it is r for subgroup attack.
-`G2::set()`, `G2::setStr` and `operator<<` also check the order.
-If you check it out of the library, then you can stop the verification by calling `G2::verifyOrderG2(false)`.
-
 # How to make asm files (optional)
 The asm files generated by this way are already put in `src/asm`, then it is not necessary to do this.
 
@@ -478,6 +293,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2019/Sep/30 v1.00 add some functions to bn.h ; [api.md](api.md).
 - 2019/Sep/22 v0.99 add mclBnG1_mulVec, etc.
 - 2019/Sep/08 v0.98 bugfix Ec::add(P, Q, R) when P == R
 - 2019/Aug/14 v0.97 add some C api functions
