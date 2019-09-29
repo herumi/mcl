@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#define MCLBN_FP_UNIT_SIZE 4
-#include <mcl/bn.h>
+#include <mcl/bn_c384_256.h>
 
 int g_err = 0;
 #define ASSERT(x) { if (!(x)) { printf("err %s:%d\n", __FILE__, __LINE__); g_err++; } }
@@ -11,7 +10,7 @@ int main()
 	char buf[1024];
 	const char *aStr = "123";
 	const char *bStr = "456";
-	int ret = mclBn_init(MCL_BN254, MCLBN_COMPILED_TIME_VAR);
+	int ret = mclBn_init(MCL_BLS12_381, MCLBN_COMPILED_TIME_VAR);
 	if (ret != 0) {
 		printf("err ret=%d\n", ret);
 		return 1;

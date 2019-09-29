@@ -294,8 +294,8 @@ $(EXE_DIR)/bn_c384_256_test.exe: $(OBJ_DIR)/bn_c384_256_test.o $(BN384_256_LIB) 
 $(EXE_DIR)/bn_c512_test.exe: $(OBJ_DIR)/bn_c512_test.o $(BN512_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(BN512_LIB) $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN256_LIB) $(MCL_LIB)
-	$(PRE)$(CC) $< -o $@ $(BN256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
+$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN384_256_LIB) $(MCL_LIB)
+	$(PRE)$(CC) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
 
 $(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE256_LIB) $(MCL_LIB) $(LDFLAGS)
