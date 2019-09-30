@@ -467,6 +467,8 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 # compatilibity
 
+- mclBnGT_inv returns a - b w, a conjugate of x for x = a + b w in Fp12 = Fp6[w]
+  - use mclBnGT_invGeneric if x is not in GT
 - mclBn_setETHserialization(true) (de)serialize acoording to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
 - (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
   - The option SHARE_BASENAME_SUF is removed

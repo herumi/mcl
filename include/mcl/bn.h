@@ -413,12 +413,16 @@ MCLBN_DLL_API int mclBnGT_isZero(const mclBnGT *x);
 MCLBN_DLL_API int mclBnGT_isOne(const mclBnGT *x);
 
 MCLBN_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
-MCLBN_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API void mclBnGT_mul(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
+
+// y = conjugate of x in Fp12, which is equal to the inverse of x if |x|^r = 1
+MCLBN_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);
+// use invGeneric when x in Fp12 is not in GT
+MCLBN_DLL_API void mclBnGT_invGeneric(mclBnGT *y, const mclBnGT *x);
 
 /*
 	pow for all elements of Fp12

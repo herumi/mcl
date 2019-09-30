@@ -525,6 +525,10 @@ void mclBnGT_neg(mclBnGT *y, const mclBnGT *x)
 }
 void mclBnGT_inv(mclBnGT *y, const mclBnGT *x)
 {
+	Fp12::unitaryInv(*cast(y), *cast(x));
+}
+void mclBnGT_invGeneric(mclBnGT *y, const mclBnGT *x)
+{
 	Fp12::inv(*cast(y), *cast(x));
 }
 void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x)

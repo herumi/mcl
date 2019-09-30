@@ -298,6 +298,35 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&x, &y));
 }
 
+CYBOZU_TEST_AUTO(GT_inv)
+{
+	mclBnG1 P;
+	mclBnG2 Q;
+	mclBnGT e, e1, e2, e3, e4;
+	mclBnG1_hashAndMapTo(&P, "1", 1);
+	mclBnG2_hashAndMapTo(&Q, "1", 1);
+	// e is not in GT
+	mclBn_millerLoop(&e, &P, &Q);
+	mclBnGT_inv(&e1, &e); // e1 = a - b w if e = a + b w where Fp12 = Fp6[w]
+	mclBnGT_invGeneric(&e2, &e);
+	mclBnGT_mul(&e3, &e, &e1);
+	mclBnGT_mul(&e4, &e, &e2);
+	CYBOZU_TEST_ASSERT(!mclBnGT_isOne(&e3)); // GT_inv does not give a correct inverse for an element not in GT
+	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&e4));
+
+	mclBn_finalExp(&e3, &e3); // e3 is in GT then e3 = 1
+	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&e3));
+
+	// e is in GT
+	mclBn_finalExp(&e, &e);
+	mclBnGT_inv(&e1, &e);
+	mclBnGT_invGeneric(&e2, &e);
+	mclBnGT_mul(&e3, &e, &e1);
+	mclBnGT_mul(&e4, &e, &e2);
+	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&e3)); // GT_inv gives a correct inverse for an element in GT
+	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&e4));
+}
+
 CYBOZU_TEST_AUTO(pairing)
 {
 	mclBnFr a, b, ab;
