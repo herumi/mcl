@@ -175,6 +175,10 @@ int mclBnFr_isOne(const mclBnFr *x)
 {
 	return cast(x)->isOne();
 }
+int mclBnFr_isNegative(const mclBnFr *x)
+{
+	return cast(x)->isNegative();
+}
 
 #ifndef MCL_DONT_USE_CSRPNG
 int mclBnFr_setByCSPRNG(mclBnFr *x)
@@ -726,6 +730,10 @@ int mclBnFp_isZero(const mclBnFp *x)
 int mclBnFp_isOne(const mclBnFp *x)
 {
 	return cast(x)->isOne();
+}
+int mclBnFp_isNegative(const mclBnFp *x)
+{
+	return cast(x)->isNegative();
 }
 
 int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize)

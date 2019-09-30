@@ -286,6 +286,11 @@ MCLBN_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
 MCLBN_DLL_API int mclBnFp2_isZero(const mclBnFp2 *x);
 MCLBN_DLL_API int mclBnFp2_isOne(const mclBnFp2 *x);
 
+// return 1 if half <= x < r, where half = (r + 1) / 2 else 0
+MCLBN_DLL_API int mclBnFr_isNegative(const mclBnFr *x);
+// return 1 if half <= x < p, where half = (p + 1) / 2 else 0
+MCLBN_DLL_API int mclBnFp_isNegative(const mclBnFp *x);
+
 #ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
 MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
