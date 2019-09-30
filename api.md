@@ -154,7 +154,7 @@ int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
 - return 0 if bufSize <= (sizeof(*x) * 8 * 2) else -1
 
-### Get little endian byte sequence corresponding `buf[0..maxBufSize-1]` to `x`
+### Get little endian byte sequence `buf` corresponding to `x`
 ```
 mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
 mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
