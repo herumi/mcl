@@ -71,6 +71,71 @@ func testNegAdd(t *testing.T) {
 	}
 }
 
+func testVecG1(t *testing.T) {
+	N := 50
+	xVec := make([]G1, N)
+	yVec := make([]Fr, N)
+	xVec[0].HashAndMapTo([]byte("aa"))
+	var R1, R2 G1
+	for i := 0; i < N; i++ {
+		if i > 0 {
+			G1Dbl(&xVec[i], &xVec[i - 1])
+		}
+		yVec[i].SetByCSPRNG()
+		G1Mul(&R1, &xVec[i], &yVec[i])
+		G1Add(&R2, &R2, &R1)
+	}
+	G1MulVec(&R1, xVec, yVec)
+	if !R1.IsEqual(&R2) {
+		t.Errorf("wrong G1MulVec")
+	}
+}
+
+func testVecG2(t *testing.T) {
+	N := 50
+	xVec := make([]G2, N)
+	yVec := make([]Fr, N)
+	xVec[0].HashAndMapTo([]byte("aa"))
+	var R1, R2 G2
+	for i := 0; i < N; i++ {
+		if i > 0 {
+			G2Dbl(&xVec[i], &xVec[i - 1])
+		}
+		yVec[i].SetByCSPRNG()
+		G2Mul(&R1, &xVec[i], &yVec[i])
+		G2Add(&R2, &R2, &R1)
+	}
+	G2MulVec(&R1, xVec, yVec)
+	if !R1.IsEqual(&R2) {
+		t.Errorf("wrong G2MulVec")
+	}
+}
+
+func testVecPairing(t *testing.T) {
+	N := 50
+	xVec := make([]G1, N)
+	yVec := make([]G2, N)
+	var e1, e2 GT
+	e1.SetInt64(1)
+	for i := 0; i < N; i++ {
+		xVec[0].HashAndMapTo([]byte("aa"))
+		yVec[0].HashAndMapTo([]byte("aa"))
+		Pairing(&e2, &xVec[i], &yVec[i])
+		GTMul(&e1, &e1, &e2)
+	}
+	MillerLoopVec(&e2, xVec, yVec)
+	FinalExp(&e2, &e2)
+	if !e1.IsEqual(&e2) {
+		t.Errorf("wrong MillerLoopVec")
+	}
+}
+
+func testVec(t *testing.T) {
+	testVecG1(t)
+	testVecG2(t)
+	testVecPairing(t)
+}
+
 func testPairing(t *testing.T) {
 	var a, b, ab Fr
 	err := a.SetString("123", 10)
@@ -138,6 +203,7 @@ func testMcl(t *testing.T, c int) {
 	testHash(t)
 	testNegAdd(t)
 	testPairing(t)
+	testVec(t)
 	testGT(t)
 	testBadPointOfG2(t)
 }
