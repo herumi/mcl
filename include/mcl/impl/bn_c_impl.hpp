@@ -175,6 +175,10 @@ int mclBnFr_isOne(const mclBnFr *x)
 {
 	return cast(x)->isOne();
 }
+int mclBnFr_isOdd(const mclBnFr *x)
+{
+	return cast(x)->isOdd();
+}
 int mclBnFr_isNegative(const mclBnFr *x)
 {
 	return cast(x)->isNegative();
@@ -730,6 +734,10 @@ int mclBnFp_isZero(const mclBnFp *x)
 int mclBnFp_isOne(const mclBnFp *x)
 {
 	return cast(x)->isOne();
+}
+int mclBnFp_isOdd(const mclBnFp *x)
+{
+	return cast(x)->isOdd();
 }
 int mclBnFp_isNegative(const mclBnFp *x)
 {

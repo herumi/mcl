@@ -351,6 +351,27 @@ CYBOZU_TEST_AUTO(Fp_isNegative)
 	CYBOZU_TEST_ASSERT(mclBnFp_isNegative(&a));
 }
 
+CYBOZU_TEST_AUTO(Fr_isOdd)
+{
+	mclBnFr x, one;
+	mclBnFr_clear(&x);
+	mclBnFr_setInt(&one, 1);
+	for (size_t i = 0; i < 100; i++) {
+		CYBOZU_TEST_EQUAL(mclBnFr_isOdd(&x), i & 1);
+		mclBnFr_add(&x, &x, &one);
+	}
+}
+
+CYBOZU_TEST_AUTO(Fp_isOdd)
+{
+	mclBnFp x, one;
+	mclBnFp_clear(&x);
+	mclBnFp_setInt(&one, 1);
+	for (size_t i = 0; i < 100; i++) {
+		CYBOZU_TEST_EQUAL(mclBnFp_isOdd(&x), i & 1);
+		mclBnFp_add(&x, &x, &one);
+	}
+}
 
 CYBOZU_TEST_AUTO(pairing)
 {
