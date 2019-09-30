@@ -314,7 +314,7 @@ void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 ```
 - use `mclBnGT_invGeneric` for an element in Fp12 - GT.
 
-- NOTE: The following functions does NOT return a GT element because GT is multiplicative group.
+- NOTE: The following functions do NOT return a GT element because GT is multiplicative group.
 
 ```
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
