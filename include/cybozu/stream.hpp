@@ -9,7 +9,9 @@
 #include <string>
 #include <iosfwd>
 #endif
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
+#endif
 #include <memory.h>
 
 namespace cybozu {
