@@ -35,10 +35,22 @@ macro_rules! mul_impl {
     )*)
 }
 
+macro_rules! mul_point_impl {
+    ($($t:ty)*, $($fn:ident)*) => ($(
+        impl $t {
+            pub fn mul_point(&self, y: &MclBnFr) -> $t {
+                let mut result = <$t>::default();
+                unsafe { $fn(&mut result as *mut $t, self as *const Self, y as *const MclBnFr) };
+                result
+            }
+        }
+    )*)
+}
+
 macro_rules! hash_and_map_impl {
     ($($t:ty)*, $($fn:ident)*) => ($(
         impl $t {
-            fn hash_and_map(buf: &[u8]) -> Result<$t, i32> {
+            pub fn hash_and_map(buf: &[u8]) -> Result<$t, i32> {
                 let mut result = <$t>::default();
                 let err = unsafe {
                     $fn(&mut result as *mut Self, buf.as_ptr() as *const c_void, buf.len())
@@ -55,7 +67,13 @@ macro_rules! hash_and_map_impl {
 macro_rules! str_conversions_impl {
     ($($t:ty)*, $($get_fn:ident)*, $($set_fn:ident)*) => ($(
         impl $t {
-            fn set_str_radix(&mut self, buffer: &str, io_mode: IoMode) {
+            pub fn from_str(buffer: &str, io_mode: IoMode) -> Self {
+                let mut result = Self::default();
+                result.set_str_radix(buffer, io_mode);
+                result
+            }
+            
+            pub fn set_str_radix(&mut self, buffer: &str, io_mode: IoMode) {
                 let err = unsafe {
                     $set_fn(
                         self as *mut Self,
@@ -67,7 +85,7 @@ macro_rules! str_conversions_impl {
                 assert_eq!(err, 0);
             }
 
-            fn get_str_radix(&self, io_mode: IoMode) -> String {
+            pub fn get_str_radix(&self, io_mode: IoMode) -> String {
                 let len = 2048;
                 let mut buf = vec![0u8; len];
                 let bytes = unsafe {
@@ -80,6 +98,16 @@ macro_rules! str_conversions_impl {
                 };
                 assert_ne!(bytes, 0);
                 String::from_utf8_lossy(&buf[..bytes]).into_owned()
+            }
+        }
+    )*)
+}
+
+macro_rules! is_equal_impl {
+    ($($t:ty)*, $($fn:ident)*) => ($(
+        impl PartialEq for $t {
+            fn eq(&self, other: &Self) -> bool {
+                unsafe { $fn(self as *const Self, other as *const Self) == 1 }
             }
         }
     )*)
@@ -121,66 +149,115 @@ extern "C" {
         ioMode: c_int,
     ) -> size_t;
 
-    /// Hash and map
+    // Hash and map
     fn mclBnG1_hashAndMapTo(x: *mut MclBnG1, buf: *const c_void, bufSize: size_t) -> c_int;
     fn mclBnG2_hashAndMapTo(x: *mut MclBnG2, buf: *const c_void, bufSize: size_t) -> c_int;
 
-    /// Arithmetic operations
-    /// Multiplication
+    // Arithmetic operations
+    // Multiplication
     fn mclBnFr_mul(z: *mut MclBnFr, x: *const MclBnFr, y: *const MclBnFr);
+    fn mclBnGT_mul(z: *mut MclBnGT, x: *const MclBnGT, y: *const MclBnGT);
+
+    // Point multiplication
     fn mclBnG1_mul(z: *mut MclBnG1, x: *const MclBnG1, y: *const MclBnFr);
+    fn mclBnG2_mul(z: *mut MclBnG2, x: *const MclBnG2, y: *const MclBnFr);
+
+    // Point exponentiation
+    fn mclBnGT_pow(z: *mut MclBnGT, x: *const MclBnGT, y: *const MclBnFr);
+
+    fn mclBnG1_isEqual(x: *const MclBnG1, y: *const MclBnG1) -> c_int;
+    fn mclBnG2_isEqual(x: *const MclBnG2, y: *const MclBnG2) -> c_int;
+    fn mclBnGT_isEqual(x: *const MclBnGT, y: *const MclBnGT) -> c_int;
+    fn mclBnFp_isEqual(x: *const MclBnFp, y: *const MclBnFp) -> c_int;
+    fn mclBnFr_isEqual(x: *const MclBnFr, y: *const MclBnFr) -> c_int;
+    fn mclBnFp2_isEqual(x: *const MclBnFp2, y: *const MclBnFp2) -> c_int;
+
+    fn mclBn_pairing(z: *mut MclBnGT, x: *const MclBnG1, y: *const MclBnG2);
 }
 
 pub fn mcl_bn_init(curve: i32, compiled_time_var: i32) -> i32 {
-    unsafe { mclBn_init(curve, compiled_time_var) }
+    use std::sync::Once;
+    static INIT: Once = Once::new();
+    static mut VAL: i32 = 0;
+    unsafe {
+        INIT.call_once(|| { VAL = mclBn_init(curve, compiled_time_var); });
+        VAL
+    }
 }
 
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 #[repr(C)]
 pub struct MclBnFp {
     d: [u64; MCLBN_FP_UNIT_SIZE as usize],
 }
+is_equal_impl![MclBnFp, mclBnFp_isEqual];
 
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 #[repr(C)]
 pub struct MclBnFp2 {
     d: [MclBnFp; 2],
 }
+is_equal_impl![MclBnFp2, mclBnFp2_isEqual];
 
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 #[repr(C)]
 pub struct MclBnFr {
     d: [u64; MCLBN_FR_UNIT_SIZE as usize],
 }
 mul_impl![MclBnFr, mclBnFr_mul];
+is_equal_impl![MclBnFr, mclBnFr_isEqual];
 str_conversions_impl![MclBnFr, mclBnFr_getStr, mclBnFr_setStr];
 
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 #[repr(C)]
 pub struct MclBnG1 {
     x: MclBnFp,
     y: MclBnFp,
     z: MclBnFp,
 }
+mul_point_impl![MclBnG1, mclBnG1_mul];
+is_equal_impl![MclBnG1, mclBnG1_isEqual];
 hash_and_map_impl![MclBnG1, mclBnG1_hashAndMapTo];
 str_conversions_impl![MclBnG1, mclBnG1_getStr, mclBnG1_setStr];
 
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 #[repr(C)]
 pub struct MclBnG2 {
     x: MclBnFp2,
     y: MclBnFp2,
     z: MclBnFp2,
 }
+mul_point_impl![MclBnG2, mclBnG2_mul];
+is_equal_impl![MclBnG2, mclBnG2_isEqual];
 hash_and_map_impl![MclBnG2, mclBnG2_hashAndMapTo];
 str_conversions_impl![MclBnG2, mclBnG2_getStr, mclBnG2_setStr];
 
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 #[repr(C)]
 pub struct MclBnGT {
     d: [MclBnFp; 12],
 }
+mul_impl![MclBnGT, mclBnGT_mul];
+is_equal_impl![MclBnGT, mclBnGT_isEqual];
 str_conversions_impl![MclBnGT, mclBnGT_getStr, mclBnGT_setStr];
+
+impl MclBnGT {
+    pub fn from_pairing(p: &MclBnG1, q: &MclBnG2) -> MclBnGT {
+        let mut result = Self::default();
+        unsafe {
+            mclBn_pairing(&mut result as *mut Self, p as *const MclBnG1, q as *const MclBnG2);
+        }
+        result
+    }
+
+    pub fn pow(&self, a: &MclBnFr) -> Self {
+        let mut result = Self::default();
+        unsafe {
+            mclBnGT_pow(&mut result as *mut Self, self as *const Self, a as *const MclBnFr);
+        }
+        result
+    }
+}
 
 #[derive(Debug)]
 pub enum IoMode {
@@ -192,18 +269,9 @@ pub enum IoMode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Once;
-
-    static INIT: Once = Once::new();
 
     fn initialize() {
-        INIT.call_once(|| {
-            assert_eq!(
-                mcl_bn_init(BLS12_381, MCLBN_COMPILED_TIME_VAR),
-                0,
-                "Failed to initialize MCL"
-            );
-        });
+        mcl_bn_init(BLS12_381, MCLBN_COMPILED_TIME_VAR);
     }
 
     fn run_test(inner: impl FnOnce() -> ()) {
@@ -223,24 +291,25 @@ mod tests {
     #[test]
     fn test_fp_mul() {
         run_test(|| {
-            let mut a = MclBnFr::default();
-            let mut b = MclBnFr::default();
-            a.set_str_radix("12", IoMode::Dec);
-            b.set_str_radix("13", IoMode::Dec);
-            let mut c = MclBnFr::default();
-            c.set_str_radix("156", IoMode::Dec);
+            let a = MclBnFr::from_str("12", IoMode::Dec);
+            let b = MclBnFr::from_str("13", IoMode::Dec);
+            let c = MclBnFr::from_str("156", IoMode::Dec);
             assert_eq!(a * b, c);
         });
     }
 
-    // #[test]
-    // fn test_g1_mul() {
-    //     run_test(|| {
-    //         let mut a = MclBnG1::hash_and_map(b"this");
-    //         let mut b = MclBnG1::hash_and_map(b"that");
-    //         let mut c = MclBnG1::default();
-    //         c.set_str_radix("156", IoMode::Dec);
-    //         assert_eq!(a * b, c);
-    //     });
-    // }
+    #[test]
+    fn test_g1_mul() {
+        run_test(|| {
+            let p = MclBnG1::hash_and_map(b"this").unwrap();
+            let mut x = MclBnFr::default();
+            x.set_str_radix("123", IoMode::Dec);
+            let y = p.mul_point(&x);
+            let mut expected = MclBnG1::default();
+            expected.set_str_radix(
+                "1 ea23afffe7e4eaeddbec067563e2387bac5c2354bd58f4346151db670e65c465f947789e5f82de9ba7567d0a289c658 cf01434515162c99815667f4a5515e20d407609702b9bc182155bcf23473960ec4de3b5b552285b3f1656948cfe3260",
+                IoMode::Hex);
+            assert_eq!(y, expected);
+        });
+    }
 }
