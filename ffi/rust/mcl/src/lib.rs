@@ -1,28 +1,28 @@
 use libc::{c_int, size_t};
-use std::ffi::CString;
 use std::os::raw::{c_char, c_void};
+use std::ops::Mul;
 
-const BN254: i32 = 0;
-const BLS12_381: i32 = 5;
-const MCLBN_FR_UNIT_SIZE: i32 = 4;
-const MCLBN_FP_UNIT_SIZE: i32 = 6;
+pub const BN254: i32 = 0;
+pub const BLS12_381: i32 = 5;
+pub const MCLBN_FR_UNIT_SIZE: i32 = 4;
+pub const MCLBN_FP_UNIT_SIZE: i32 = 6;
 
-const FR_SIZE: i32 = MCLBN_FR_UNIT_SIZE;
-const G1_SIZE: i32 = MCLBN_FP_UNIT_SIZE * 3;
-const G2_SIZE: i32 = MCLBN_FP_UNIT_SIZE * 6;
-const GT_SIZE: i32 = MCLBN_FP_UNIT_SIZE * 12;
+pub const FR_SIZE: i32 = MCLBN_FR_UNIT_SIZE;
+pub const G1_SIZE: i32 = MCLBN_FP_UNIT_SIZE * 3;
+pub const G2_SIZE: i32 = MCLBN_FP_UNIT_SIZE * 6;
+pub const GT_SIZE: i32 = MCLBN_FP_UNIT_SIZE * 12;
 
-const SEC_SIZE: i32 = FR_SIZE * 2;
-const PUB_SIZE: i32 = G1_SIZE + G2_SIZE;
-const G1_CIPHER_SIZE: i32 = G1_SIZE * 2;
-const G2_CIPHER_SIZE: i32 = G2_SIZE * 2;
-const GT_CIPHER_SIZE: i32 = GT_SIZE * 4;
+pub const SEC_SIZE: i32 = FR_SIZE * 2;
+pub const PUB_SIZE: i32 = G1_SIZE + G2_SIZE;
+pub const G1_CIPHER_SIZE: i32 = G1_SIZE * 2;
+pub const G2_CIPHER_SIZE: i32 = G2_SIZE * 2;
+pub const GT_CIPHER_SIZE: i32 = GT_SIZE * 4;
 
-const MCLBN_COMPILED_TIME_VAR: i32 = (MCLBN_FR_UNIT_SIZE * 10) + MCLBN_FP_UNIT_SIZE;
+pub const MCLBN_COMPILED_TIME_VAR: i32 = (MCLBN_FR_UNIT_SIZE * 10) + MCLBN_FP_UNIT_SIZE;
 
 macro_rules! mul_impl {
     ($($t:ty)*, $($fn:ident)*) => ($(
-        impl std::ops::Mul for $t {
+        impl Mul for $t {
             type Output = $t;
 
             #[inline]
@@ -32,9 +32,44 @@ macro_rules! mul_impl {
                 result
             }
         }
+
+        forward_ref_binop! { impl Mul, mul for $t, $t }
+
     )*)
 }
 
+// implements binary operators "&T op U", "T op &U", "&T op &U"
+// based on "T op U" where T and U are expected to be `Copy`able
+macro_rules! forward_ref_binop {
+    (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
+        impl<'a> $imp<$u> for &'a $t {
+            type Output = <$t as $imp<$u>>::Output;
+
+            #[inline]
+            fn $method(self, other: $u) -> <$t as $imp<$u>>::Output {
+                $imp::$method(self.clone(), other)
+            }
+        }
+
+        impl<'a> $imp<&'a $u> for $t {
+            type Output = <$t as $imp<$u>>::Output;
+
+            #[inline]
+            fn $method(self, other: &'a $u) -> <$t as $imp<$u>>::Output {
+                $imp::$method(self, other.clone())
+            }
+        }
+
+        impl<'a, 'b> $imp<&'a $u> for &'b $t {
+            type Output = <$t as $imp<$u>>::Output;
+
+            #[inline]
+            fn $method(self, other: &'a $u) -> <$t as $imp<$u>>::Output {
+                $imp::$method(self.clone(), other.clone())
+            }
+        }
+    }
+}
 macro_rules! mul_point_impl {
     ($($t:ty)*, $($fn:ident)*) => ($(
         impl $t {
@@ -67,13 +102,13 @@ macro_rules! hash_and_map_impl {
 macro_rules! str_conversions_impl {
     ($($t:ty)*, $($get_fn:ident)*, $($set_fn:ident)*) => ($(
         impl $t {
-            pub fn from_str(buffer: &str, io_mode: IoMode) -> Self {
+            pub fn from_str(buffer: &str, io_mode: Base) -> Self {
                 let mut result = Self::default();
-                result.set_str_radix(buffer, io_mode);
+                result.set_str(buffer, io_mode);
                 result
             }
             
-            pub fn set_str_radix(&mut self, buffer: &str, io_mode: IoMode) {
+            pub fn set_str(&mut self, buffer: &str, io_mode: Base) {
                 let err = unsafe {
                     $set_fn(
                         self as *mut Self,
@@ -85,7 +120,7 @@ macro_rules! str_conversions_impl {
                 assert_eq!(err, 0);
             }
 
-            pub fn get_str_radix(&self, io_mode: IoMode) -> String {
+            pub fn get_str(&self, io_mode: Base) -> String {
                 let len = 2048;
                 let mut buf = vec![0u8; len];
                 let bytes = unsafe {
@@ -185,21 +220,21 @@ pub fn mcl_bn_init(curve: i32, compiled_time_var: i32) -> i32 {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MclBnFp {
     d: [u64; MCLBN_FP_UNIT_SIZE as usize],
 }
 is_equal_impl![MclBnFp, mclBnFp_isEqual];
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MclBnFp2 {
     d: [MclBnFp; 2],
 }
 is_equal_impl![MclBnFp2, mclBnFp2_isEqual];
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MclBnFr {
     d: [u64; MCLBN_FR_UNIT_SIZE as usize],
@@ -208,7 +243,7 @@ mul_impl![MclBnFr, mclBnFr_mul];
 is_equal_impl![MclBnFr, mclBnFr_isEqual];
 str_conversions_impl![MclBnFr, mclBnFr_getStr, mclBnFr_setStr];
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct MclBnG1 {
     x: MclBnFp,
@@ -220,7 +255,7 @@ is_equal_impl![MclBnG1, mclBnG1_isEqual];
 hash_and_map_impl![MclBnG1, mclBnG1_hashAndMapTo];
 str_conversions_impl![MclBnG1, mclBnG1_getStr, mclBnG1_setStr];
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct MclBnG2 {
     x: MclBnFp2,
@@ -232,7 +267,7 @@ is_equal_impl![MclBnG2, mclBnG2_isEqual];
 hash_and_map_impl![MclBnG2, mclBnG2_hashAndMapTo];
 str_conversions_impl![MclBnG2, mclBnG2_getStr, mclBnG2_setStr];
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct MclBnGT {
     d: [MclBnFp; 12],
@@ -260,7 +295,7 @@ impl MclBnGT {
 }
 
 #[derive(Debug)]
-pub enum IoMode {
+pub enum Base {
     Dec = 10,
     Hex = 16,
 }
@@ -282,18 +317,17 @@ mod tests {
     #[test]
     fn test_mcl_bn_fp_str() {
         run_test(|| {
-            let mut fr = MclBnFr::default();
-            fr.set_str_radix("123", IoMode::Dec);
-            assert_eq!(fr.get_str_radix(IoMode::Dec), "123".to_string());
+            let mut fr = MclBnFr::from_str("123", Base::Dec);
+            assert_eq!(fr.get_str(Base::Dec), "123".to_string());
         });
     }
 
     #[test]
     fn test_fp_mul() {
         run_test(|| {
-            let a = MclBnFr::from_str("12", IoMode::Dec);
-            let b = MclBnFr::from_str("13", IoMode::Dec);
-            let c = MclBnFr::from_str("156", IoMode::Dec);
+            let a = MclBnFr::from_str("12", Base::Dec);
+            let b = MclBnFr::from_str("13", Base::Dec);
+            let c = MclBnFr::from_str("156", Base::Dec);
             assert_eq!(a * b, c);
         });
     }
@@ -302,13 +336,11 @@ mod tests {
     fn test_g1_mul() {
         run_test(|| {
             let p = MclBnG1::hash_and_map(b"this").unwrap();
-            let mut x = MclBnFr::default();
-            x.set_str_radix("123", IoMode::Dec);
+            let mut x = MclBnFr::from_str("123", Base::Dec);
             let y = p.mul_point(&x);
-            let mut expected = MclBnG1::default();
-            expected.set_str_radix(
+            let mut expected = MclBnG1::from_str(
                 "1 ea23afffe7e4eaeddbec067563e2387bac5c2354bd58f4346151db670e65c465f947789e5f82de9ba7567d0a289c658 cf01434515162c99815667f4a5515e20d407609702b9bc182155bcf23473960ec4de3b5b552285b3f1656948cfe3260",
-                IoMode::Hex);
+                Base::Hex);
             assert_eq!(y, expected);
         });
     }
