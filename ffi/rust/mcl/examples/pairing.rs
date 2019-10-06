@@ -2,7 +2,7 @@ use mcl::*;
 
 fn main() {
     let a_str = "123";
-    let b_str = "123";
+    let b_str = "456";
     mcl_bn_init(BLS12_381, MCLBN_COMPILED_TIME_VAR);
     let a = MclBnFr::from_str(a_str, Base::Dec);
     let b = MclBnFr::from_str(b_str, Base::Dec);
@@ -14,8 +14,8 @@ fn main() {
     println!("{}", P.get_str(Base::Hex));
     println!("{}", Q.get_str(Base::Hex));
 
-    let aP = P.mul_point(&a);
-    let bQ = Q.mul_point(&b);
+    let aP = &P * a;
+    let bQ = &Q * b;
 
     let e = MclBnGT::from_pairing(&P, &Q);
     println!("{}", e.get_str(Base::Hex));

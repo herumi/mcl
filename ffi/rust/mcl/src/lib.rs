@@ -21,21 +21,21 @@ pub const GT_CIPHER_SIZE: i32 = GT_SIZE * 4;
 pub const MCLBN_COMPILED_TIME_VAR: i32 = (MCLBN_FR_UNIT_SIZE * 10) + MCLBN_FP_UNIT_SIZE;
 
 macro_rules! mul_impl {
-    ($($t:ty)*, $($fn:ident)*) => ($(
-        impl Mul for $t {
+    ($t:ty, $u:ty, $fn:ident) => {
+        impl Mul<$u> for $t {
             type Output = $t;
 
             #[inline]
-            fn mul(self, other: $t) -> $t {
+            fn mul(self, other: $u) -> $t {
                 let mut result = <$t>::default();
                 unsafe { $fn(&mut result, &self, &other); }
                 result
             }
         }
 
-        forward_ref_binop! { impl Mul, mul for $t, $t }
+        forward_ref_binop! { impl Mul, mul for $t, $u }
 
-    )*)
+    }
 }
 
 // implements binary operators "&T op U", "T op &U", "&T op &U"
@@ -70,20 +70,9 @@ macro_rules! forward_ref_binop {
         }
     }
 }
-macro_rules! mul_point_impl {
-    ($($t:ty)*, $($fn:ident)*) => ($(
-        impl $t {
-            pub fn mul_point(&self, y: &MclBnFr) -> $t {
-                let mut result = <$t>::default();
-                unsafe { $fn(&mut result as *mut $t, self as *const Self, y as *const MclBnFr) };
-                result
-            }
-        }
-    )*)
-}
 
 macro_rules! hash_and_map_impl {
-    ($($t:ty)*, $($fn:ident)*) => ($(
+    ($t:ty, $fn:ident) => {
         impl $t {
             pub fn hash_and_map(buf: &[u8]) -> Result<$t, i32> {
                 let mut result = <$t>::default();
@@ -96,11 +85,11 @@ macro_rules! hash_and_map_impl {
                 }
             }
         }
-    )*)
+    }
 }
 
 macro_rules! str_conversions_impl {
-    ($($t:ty)*, $($get_fn:ident)*, $($set_fn:ident)*) => ($(
+    ($t:ty, $get_fn:ident, $set_fn:ident) => {
         impl $t {
             pub fn from_str(buffer: &str, io_mode: Base) -> Self {
                 let mut result = Self::default();
@@ -135,17 +124,17 @@ macro_rules! str_conversions_impl {
                 String::from_utf8_lossy(&buf[..bytes]).into_owned()
             }
         }
-    )*)
+    }
 }
 
 macro_rules! is_equal_impl {
-    ($($t:ty)*, $($fn:ident)*) => ($(
+    ($t:ty, $fn:ident) => {
         impl PartialEq for $t {
             fn eq(&self, other: &Self) -> bool {
                 unsafe { $fn(self as *const Self, other as *const Self) == 1 }
             }
         }
-    )*)
+    }
 }
 
 #[link(name = "mclbn384_256")]
@@ -239,7 +228,7 @@ is_equal_impl![MclBnFp2, mclBnFp2_isEqual];
 pub struct MclBnFr {
     d: [u64; MCLBN_FR_UNIT_SIZE as usize],
 }
-mul_impl![MclBnFr, mclBnFr_mul];
+mul_impl![MclBnFr,MclBnFr, mclBnFr_mul];
 is_equal_impl![MclBnFr, mclBnFr_isEqual];
 str_conversions_impl![MclBnFr, mclBnFr_getStr, mclBnFr_setStr];
 
@@ -250,7 +239,7 @@ pub struct MclBnG1 {
     y: MclBnFp,
     z: MclBnFp,
 }
-mul_point_impl![MclBnG1, mclBnG1_mul];
+mul_impl![MclBnG1, MclBnFr, mclBnG1_mul];
 is_equal_impl![MclBnG1, mclBnG1_isEqual];
 hash_and_map_impl![MclBnG1, mclBnG1_hashAndMapTo];
 str_conversions_impl![MclBnG1, mclBnG1_getStr, mclBnG1_setStr];
@@ -262,7 +251,7 @@ pub struct MclBnG2 {
     y: MclBnFp2,
     z: MclBnFp2,
 }
-mul_point_impl![MclBnG2, mclBnG2_mul];
+mul_impl![MclBnG2, MclBnFr, mclBnG2_mul];
 is_equal_impl![MclBnG2, mclBnG2_isEqual];
 hash_and_map_impl![MclBnG2, mclBnG2_hashAndMapTo];
 str_conversions_impl![MclBnG2, mclBnG2_getStr, mclBnG2_setStr];
@@ -272,7 +261,7 @@ str_conversions_impl![MclBnG2, mclBnG2_getStr, mclBnG2_setStr];
 pub struct MclBnGT {
     d: [MclBnFp; 12],
 }
-mul_impl![MclBnGT, mclBnGT_mul];
+mul_impl![MclBnGT, MclBnGT, mclBnGT_mul];
 is_equal_impl![MclBnGT, mclBnGT_isEqual];
 str_conversions_impl![MclBnGT, mclBnGT_getStr, mclBnGT_setStr];
 
@@ -337,7 +326,7 @@ mod tests {
         run_test(|| {
             let p = MclBnG1::hash_and_map(b"this").unwrap();
             let mut x = MclBnFr::from_str("123", Base::Dec);
-            let y = p.mul_point(&x);
+            let y = p * x;
             let mut expected = MclBnG1::from_str(
                 "1 ea23afffe7e4eaeddbec067563e2387bac5c2354bd58f4346151db670e65c465f947789e5f82de9ba7567d0a289c658 cf01434515162c99815667f4a5515e20d407609702b9bc182155bcf23473960ec4de3b5b552285b3f1656948cfe3260",
                 Base::Hex);
