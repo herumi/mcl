@@ -688,6 +688,7 @@ template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sqr)(FpT& y,
 
 } // mcl
 
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #ifdef CYBOZU_USE_BOOST
 namespace mcl {
 
@@ -710,6 +711,7 @@ struct hash<mcl::FpT<tag, maxBitSize> > {
 };
 
 CYBOZU_NAMESPACE_TR1_END } // std::tr1
+#endif
 #endif
 
 #ifdef _MSC_VER

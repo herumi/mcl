@@ -1491,6 +1491,7 @@ void initCurve(int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::
 
 } // mcl
 
+#ifndef CYBOZU_DONT_USE_EXCEPTION
 #ifdef CYBOZU_USE_BOOST
 namespace mcl {
 template<class Fp>
@@ -1516,6 +1517,7 @@ struct hash<mcl::EcT<Fp> > {
 };
 
 CYBOZU_NAMESPACE_TR1_END } // std
+#endif
 #endif
 
 #ifdef _MSC_VER
