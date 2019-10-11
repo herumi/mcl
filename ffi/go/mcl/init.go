@@ -11,6 +11,7 @@ package mcl
 */
 import "C"
 import "fmt"
+
 // Init --
 // call this function before calling all the other operations
 // this function is not thread safe
@@ -21,5 +22,3 @@ func Init(curve int) error {
 	}
 	return nil
 }
-
-

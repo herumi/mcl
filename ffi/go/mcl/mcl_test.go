@@ -79,7 +79,7 @@ func testVecG1(t *testing.T) {
 	var R1, R2 G1
 	for i := 0; i < N; i++ {
 		if i > 0 {
-			G1Dbl(&xVec[i], &xVec[i - 1])
+			G1Dbl(&xVec[i], &xVec[i-1])
 		}
 		yVec[i].SetByCSPRNG()
 		G1Mul(&R1, &xVec[i], &yVec[i])
@@ -99,7 +99,7 @@ func testVecG2(t *testing.T) {
 	var R1, R2 G2
 	for i := 0; i < N; i++ {
 		if i > 0 {
-			G2Dbl(&xVec[i], &xVec[i - 1])
+			G2Dbl(&xVec[i], &xVec[i-1])
 		}
 		yVec[i].SetByCSPRNG()
 		G2Mul(&R1, &xVec[i], &yVec[i])
