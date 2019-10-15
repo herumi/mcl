@@ -125,6 +125,16 @@ func (x *Fr) SetLittleEndian(buf []byte) error {
 	return nil
 }
 
+// SetLittleEndianMod --
+func (x *Fr) SetLittleEndianMod(buf []byte) error {
+	// #nosec
+	err := C.mclBnFr_setLittleEndianMod(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnFr_setLittleEndianMod %x", err)
+	}
+	return nil
+}
+
 // IsEqual --
 func (x *Fr) IsEqual(rhs *Fr) bool {
 	return C.mclBnFr_isEqual(x.getPointer(), rhs.getPointer()) == 1
@@ -135,9 +145,24 @@ func (x *Fr) IsZero() bool {
 	return C.mclBnFr_isZero(x.getPointer()) == 1
 }
 
+// IsValid --
+func (x *Fr) IsValid() bool {
+	return C.mclBnFr_isValid(x.getPointer()) == 1
+}
+
 // IsOne --
 func (x *Fr) IsOne() bool {
 	return C.mclBnFr_isOne(x.getPointer()) == 1
+}
+
+// IsOdd --
+func (x *Fr) IsOdd() bool {
+	return C.mclBnFr_isOdd(x.getPointer()) == 1
+}
+
+// IsNegative -- true if x >= (r + 1) / 2
+func (x *Fr) IsNegative() bool {
+	return C.mclBnFr_isNegative(x.getPointer()) == 1
 }
 
 // SetByCSPRNG --
@@ -186,6 +211,11 @@ func FrInv(out *Fr, x *Fr) {
 	C.mclBnFr_inv(out.getPointer(), x.getPointer())
 }
 
+// FrSqr --
+func FrSqr(out *Fr, x *Fr) {
+	C.mclBnFr_sqr(out.getPointer(), x.getPointer())
+}
+
 // FrAdd --
 func FrAdd(out *Fr, x *Fr, y *Fr) {
 	C.mclBnFr_add(out.getPointer(), x.getPointer(), y.getPointer())
@@ -206,9 +236,278 @@ func FrDiv(out *Fr, x *Fr, y *Fr) {
 	C.mclBnFr_div(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
+// FrSquareRoot --
+func FrSquareRoot(out *Fr, x *Fr) bool {
+	return C.mclBnFr_squareRoot(out.getPointer(), x.getPointer()) == 0
+}
+
+// Fp --
+type Fp struct {
+	v C.mclBnFp
+}
+
+// getPointer --
+func (x *Fp) getPointer() (p *C.mclBnFp) {
+	// #nosec
+	return (*C.mclBnFp)(unsafe.Pointer(x))
+}
+
+// Clear --
+func (x *Fp) Clear() {
+	// #nosec
+	C.mclBnFp_clear(x.getPointer())
+}
+
+// SetInt64 --
+func (x *Fp) SetInt64(v int64) {
+	// #nosec
+	C.mclBnFp_setInt(x.getPointer(), C.int64_t(v))
+}
+
+// SetString --
+func (x *Fp) SetString(s string, base int) error {
+	buf := []byte(s)
+	// #nosec
+	err := C.mclBnFp_setStr(x.getPointer(), (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)), C.int(base))
+	if err != 0 {
+		return fmt.Errorf("err mclBnFp_setStr %x", err)
+	}
+	return nil
+}
+
+// Deserialize --
+func (x *Fp) Deserialize(buf []byte) error {
+	// #nosec
+	err := C.mclBnFp_deserialize(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err == 0 {
+		return fmt.Errorf("err mclBnFp_deserialize %x", buf)
+	}
+	return nil
+}
+
+// SetLittleEndian --
+func (x *Fp) SetLittleEndian(buf []byte) error {
+	// #nosec
+	err := C.mclBnFp_setLittleEndian(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnFp_setLittleEndian %x", err)
+	}
+	return nil
+}
+
+// SetLittleEndianMod --
+func (x *Fp) SetLittleEndianMod(buf []byte) error {
+	// #nosec
+	err := C.mclBnFp_setLittleEndianMod(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnFp_setLittleEndianMod %x", err)
+	}
+	return nil
+}
+
+// IsEqual --
+func (x *Fp) IsEqual(rhs *Fp) bool {
+	return C.mclBnFp_isEqual(x.getPointer(), rhs.getPointer()) == 1
+}
+
+// IsZero --
+func (x *Fp) IsZero() bool {
+	return C.mclBnFp_isZero(x.getPointer()) == 1
+}
+
+// IsValid --
+func (x *Fp) IsValid() bool {
+	return C.mclBnFp_isValid(x.getPointer()) == 1
+}
+
+// IsOne --
+func (x *Fp) IsOne() bool {
+	return C.mclBnFp_isOne(x.getPointer()) == 1
+}
+
+// IsOdd --
+func (x *Fp) IsOdd() bool {
+	return C.mclBnFp_isOdd(x.getPointer()) == 1
+}
+
+// IsNegative -- true if x >= (p + 1) / 2
+func (x *Fp) IsNegative() bool {
+	return C.mclBnFp_isNegative(x.getPointer()) == 1
+}
+
+// SetByCSPRNG --
+func (x *Fp) SetByCSPRNG() {
+	err := C.mclBnFp_setByCSPRNG(x.getPointer())
+	if err != 0 {
+		panic("err mclBnFp_setByCSPRNG")
+	}
+}
+
+// SetHashOf --
+func (x *Fp) SetHashOf(buf []byte) bool {
+	// #nosec
+	return C.mclBnFp_setHashOf(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf))) == 0
+}
+
+// GetString --
+func (x *Fp) GetString(base int) string {
+	buf := make([]byte, 2048)
+	// #nosec
+	n := C.mclBnFp_getStr((*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)), x.getPointer(), C.int(base))
+	if n == 0 {
+		panic("err mclBnFp_getStr")
+	}
+	return string(buf[:n])
+}
+
+// Serialize --
+func (x *Fp) Serialize() []byte {
+	buf := make([]byte, 2048)
+	// #nosec
+	n := C.mclBnFp_serialize(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), x.getPointer())
+	if n == 0 {
+		panic("err mclBnFp_serialize")
+	}
+	return buf[:n]
+}
+
+// FpNeg --
+func FpNeg(out *Fp, x *Fp) {
+	C.mclBnFp_neg(out.getPointer(), x.getPointer())
+}
+
+// FpInv --
+func FpInv(out *Fp, x *Fp) {
+	C.mclBnFp_inv(out.getPointer(), x.getPointer())
+}
+
+// FpSqr --
+func FpSqr(out *Fp, x *Fp) {
+	C.mclBnFp_sqr(out.getPointer(), x.getPointer())
+}
+
+// FpAdd --
+func FpAdd(out *Fp, x *Fp, y *Fp) {
+	C.mclBnFp_add(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// FpSub --
+func FpSub(out *Fp, x *Fp, y *Fp) {
+	C.mclBnFp_sub(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// FpMul --
+func FpMul(out *Fp, x *Fp, y *Fp) {
+	C.mclBnFp_mul(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// FpDiv --
+func FpDiv(out *Fp, x *Fp, y *Fp) {
+	C.mclBnFp_div(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// FpSquareRoot --
+func FpSquareRoot(out *Fp, x *Fp) bool {
+	return C.mclBnFp_squareRoot(out.getPointer(), x.getPointer()) == 0
+}
+
+// Fp2 --
+type Fp2 struct {
+	d [2]Fp
+}
+// getPointer --
+func (x *Fp2) getPointer() (p *C.mclBnFp2) {
+	// #nosec
+	return (*C.mclBnFp2)(unsafe.Pointer(x))
+}
+
+// Clear --
+func (x *Fp2) Clear() {
+	// #nosec
+	C.mclBnFp2_clear(x.getPointer())
+}
+
+// Deserialize --
+func (x *Fp2) Deserialize(buf []byte) error {
+	// #nosec
+	err := C.mclBnFp2_deserialize(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err == 0 {
+		return fmt.Errorf("err mclBnFp2_deserialize %x", buf)
+	}
+	return nil
+}
+
+// IsEqual --
+func (x *Fp2) IsEqual(rhs *Fp2) bool {
+	return C.mclBnFp2_isEqual(x.getPointer(), rhs.getPointer()) == 1
+}
+
+// IsZero --
+func (x *Fp2) IsZero() bool {
+	return C.mclBnFp2_isZero(x.getPointer()) == 1
+}
+
+// IsOne --
+func (x *Fp2) IsOne() bool {
+	return C.mclBnFp2_isOne(x.getPointer()) == 1
+}
+
+// Serialize --
+func (x *Fp2) Serialize() []byte {
+	buf := make([]byte, 2048)
+	// #nosec
+	n := C.mclBnFp2_serialize(unsafe.Pointer(&buf[0]), C.size_t(len(buf)), x.getPointer())
+	if n == 0 {
+		panic("err mclBnFp2_serialize")
+	}
+	return buf[:n]
+}
+
+// Fp2Neg --
+func Fp2Neg(out *Fp2, x *Fp2) {
+	C.mclBnFp2_neg(out.getPointer(), x.getPointer())
+}
+
+// Fp2Inv --
+func Fp2Inv(out *Fp2, x *Fp2) {
+	C.mclBnFp2_inv(out.getPointer(), x.getPointer())
+}
+
+// Fp2Sqr --
+func Fp2Sqr(out *Fp2, x *Fp2) {
+	C.mclBnFp2_sqr(out.getPointer(), x.getPointer())
+}
+
+// Fp2Add --
+func Fp2Add(out *Fp2, x *Fp2, y *Fp2) {
+	C.mclBnFp2_add(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// Fp2Sub --
+func Fp2Sub(out *Fp2, x *Fp2, y *Fp2) {
+	C.mclBnFp2_sub(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// Fp2Mul --
+func Fp2Mul(out *Fp2, x *Fp2, y *Fp2) {
+	C.mclBnFp2_mul(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// Fp2Div --
+func Fp2Div(out *Fp2, x *Fp2, y *Fp2) {
+	C.mclBnFp2_div(out.getPointer(), x.getPointer(), y.getPointer())
+}
+
+// Fp2SquareRoot --
+func Fp2SquareRoot(out *Fp2, x *Fp2) bool {
+	return C.mclBnFp2_squareRoot(out.getPointer(), x.getPointer()) == 0
+}
+
 // G1 --
 type G1 struct {
-	v C.mclBnG1
+	x Fp
+	y Fp
+	z Fp
 }
 
 // getPointer --
@@ -252,6 +551,11 @@ func (x *G1) IsEqual(rhs *G1) bool {
 // IsZero --
 func (x *G1) IsZero() bool {
 	return C.mclBnG1_isZero(x.getPointer()) == 1
+}
+
+// IsValid --
+func (x *G1) IsValid() bool {
+	return C.mclBnG1_isValid(x.getPointer()) == 1
 }
 
 // HashAndMapTo --
@@ -326,7 +630,9 @@ func G1MulCT(out *G1, x *G1, y *Fr) {
 
 // G2 --
 type G2 struct {
-	v C.mclBnG2
+	x Fp2
+	y Fp2
+	z Fp2
 }
 
 // getPointer --
@@ -370,6 +676,11 @@ func (x *G2) IsEqual(rhs *G2) bool {
 // IsZero --
 func (x *G2) IsZero() bool {
 	return C.mclBnG2_isZero(x.getPointer()) == 1
+}
+
+// IsValid --
+func (x *G2) IsValid() bool {
+	return C.mclBnG2_isValid(x.getPointer()) == 1
 }
 
 // HashAndMapTo --
