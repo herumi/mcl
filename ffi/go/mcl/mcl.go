@@ -19,18 +19,24 @@ const CurveFp382_1 = C.mclBn_CurveFp382_1
 // CurveFp382_2 -- 382 bit curve 2
 const CurveFp382_2 = C.mclBn_CurveFp382_2
 
-// BLS12_381
+// BLS12_381 --
 const BLS12_381 = C.MCL_BLS12_381
 
-// IoSerializeHexStr
+// IoSerializeHexStr --
 const IoSerializeHexStr = C.MCLBN_IO_SERIALIZE_HEX_STR
 
-// GetFrUnitSize() --
+// IO_EC_AFFINE --
+const IO_EC_AFFINE = C.MCLBN_IO_EC_AFFINE
+
+// IO_EC_PROJ --
+const IO_EC_PROJ = C.MCLBN_IO_EC_PROJ
+
+// GetFrUnitSize --
 func GetFrUnitSize() int {
 	return int(C.MCLBN_FR_UNIT_SIZE)
 }
 
-// GetFpUnitSize() --
+// GetFpUnitSize --
 // same as GetMaxOpUnitSize()
 func GetFpUnitSize() int {
 	return int(C.MCLBN_FP_UNIT_SIZE)
@@ -69,6 +75,18 @@ func GetFieldOrder() string {
 		panic("implementation err. size of buf is small")
 	}
 	return string(buf[:n])
+}
+
+// SetETHserialization --
+func SetETHserialization(enable bool) {
+	var v C.int
+	if enable {
+		v = 1
+	} else {
+		v = 0
+	}
+	// #nosec
+	C.mclBn_setETHserialization(v)
 }
 
 // Fr --
@@ -411,10 +429,11 @@ func FpSquareRoot(out *Fp, x *Fp) bool {
 	return C.mclBnFp_squareRoot(out.getPointer(), x.getPointer()) == 0
 }
 
-// Fp2 --
+// Fp2 -- x = D[0] + D[1] i where i^2 = -1
 type Fp2 struct {
-	d [2]Fp
+	D [2]Fp
 }
+
 // getPointer --
 func (x *Fp2) getPointer() (p *C.mclBnFp2) {
 	// #nosec
@@ -505,9 +524,9 @@ func Fp2SquareRoot(out *Fp2, x *Fp2) bool {
 
 // G1 --
 type G1 struct {
-	x Fp
-	y Fp
-	z Fp
+	X Fp
+	Y Fp
+	Z Fp
 }
 
 // getPointer --
@@ -590,6 +609,11 @@ func (x *G1) Serialize() []byte {
 	return buf[:n]
 }
 
+// G1Normalize --
+func G1Normalize(out *G1, x *G1) {
+	C.mclBnG1_normalize(out.getPointer(), x.getPointer())
+}
+
 // G1Neg --
 func G1Neg(out *G1, x *G1) {
 	C.mclBnG1_neg(out.getPointer(), x.getPointer())
@@ -630,9 +654,9 @@ func G1MulCT(out *G1, x *G1, y *Fr) {
 
 // G2 --
 type G2 struct {
-	x Fp2
-	y Fp2
-	z Fp2
+	X Fp2
+	Y Fp2
+	Z Fp2
 }
 
 // getPointer --
@@ -713,6 +737,11 @@ func (x *G2) Serialize() []byte {
 		panic("err mclBnG2_serialize")
 	}
 	return buf[:n]
+}
+
+// G2Normalize --
+func G2Normalize(out *G2, x *G2) {
+	C.mclBnG2_normalize(out.getPointer(), x.getPointer())
 }
 
 // G2Neg --
