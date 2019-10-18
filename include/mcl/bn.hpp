@@ -519,13 +519,18 @@ struct MapTo {
 			initBLS12(z);
 		}
 	}
-	bool calcG1(G1& P, const Fp& t) const
+	template<class G, class F>
+	bool mapToEc(G& P, const F& t) const
 	{
 		if (useNaiveMapTo_) {
-			naiveMapTo<G1, Fp>(P, t);
+			naiveMapTo<G, F>(P, t);
 		} else {
-			if (!calcBN<G1, Fp>(P, t)) return false;
+			if (!calcBN<G, F>(P, t)) return false;
 		}
+		return true;
+	}
+	void mulByCofactor(G1& P) const
+	{
 		switch (type_) {
 		case BNtype:
 			// no subgroup
@@ -535,18 +540,9 @@ struct MapTo {
 			break;
 		}
 		assert(P.isValid());
-		return true;
 	}
-	/*
-		get the element in G2 by multiplying the cofactor
-	*/
-	bool calcG2(G2& P, const Fp2& t) const
+	void mulByCofactor(G2& P) const
 	{
-		if (useNaiveMapTo_) {
-			naiveMapTo<G2, Fp2>(P, t);
-		} else {
-			if (!calcBN<G2, Fp2>(P, t)) return false;
-		}
 		switch(type_) {
 		case BNtype:
 			mulByCofactorBN(P, P);
@@ -556,6 +552,12 @@ struct MapTo {
 			break;
 		}
 		assert(P.isValid());
+	}
+	template<class G, class F>
+	bool calc(G& P, const F& t) const
+	{
+		if (!mapToEc(P, t)) return false;
+		mulByCofactor(P);
 		return true;
 	}
 };
@@ -2066,8 +2068,8 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 	}
 }
 
-inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calcG1(P, x); }
-inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calcG2(P, x); }
+inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
+inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void mapToG1(G1& P, const Fp& x)
 {
