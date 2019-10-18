@@ -326,6 +326,7 @@ struct MapTo {
 	mpz_class cofactor_;
 	int type_;
 	bool useNaiveMapTo_;
+	bool useETHsquareRoot_;
 
 	int legendre(bool *pb, const Fp& x) const
 	{
@@ -495,6 +496,23 @@ struct MapTo {
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
 	}
+	// enable if standard Ec
+	void setNaiveMapTo(bool enable)
+	{
+		if (type_ == STD_ECtype) {
+			useNaiveMapTo_ = true;
+		} else {
+			useNaiveMapTo_ = enable;
+		}
+	}
+	void setETHsquareRoot(bool enable)
+	{
+		if (type_ == BLS12type) {
+			useETHsquareRoot_ = enable;
+		} else {
+			useETHsquareRoot_ = false;
+		}
+	}
 	/*
 		if type == STD_ECtype, then cofactor, z are not used.
 	*/
@@ -505,14 +523,8 @@ struct MapTo {
 		} else {
 			type_ = STD_ECtype;
 		}
-		if (type_ == STD_ECtype) {
-			useNaiveMapTo_ = true;
-		} else {
-			useNaiveMapTo_ = false;
-		}
-#ifdef MCL_USE_OLD_MAPTO_FOR_BLS12
-		if (type == BLS12type) useNaiveMapTo_ = true;
-#endif
+		setNaiveMapTo(false);
+		setETHsquareRoot(false);
 		if (type_ == BNtype) {
 			initBN(cofactor, z, curveType);
 		} else if (type_ == BLS12type) {
@@ -553,10 +565,23 @@ struct MapTo {
 		}
 		assert(P.isValid());
 	}
-	template<class G, class F>
-	bool calc(G& P, const F& t) const
+	bool calc(G1& P, const Fp& t) const
 	{
 		if (!mapToEc(P, t)) return false;
+		mulByCofactor(P);
+		return true;
+	}
+	bool calc(G2& P, const Fp2& t) const
+	{
+		if (!mapToEc(P, t)) return false;
+		if (useETHsquareRoot_) {
+			Fp2 negY;
+			Fp2::neg(negY, P.y);
+			int cmp = Fp::compare(P.y.b, negY.b);
+			if (!(cmp > 0 || (cmp == 0 && P.y.a > negY.a))) {
+				P.y = negY;
+			}
+		}
 		mulByCofactor(P);
 		return true;
 	}
@@ -2068,6 +2093,14 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 	}
 }
 
+inline void setETHmapTo(bool enable)
+{
+	local::StaticVar<>::param.mapTo.setNaiveMapTo(enable);
+}
+inline void setETHsquareRoot(bool enable)
+{
+	local::StaticVar<>::param.mapTo.setETHsquareRoot(enable);
+}
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION

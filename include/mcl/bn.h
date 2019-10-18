@@ -191,10 +191,16 @@ MCLBN_DLL_API mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize);
 
 /*
 	set ETH serialization mode for BLS12-381
-	@param ETHserialization [in] 1:enable,  0:disable
+	@param enable [in] 1:enable,  0:disable
 	@note ignore the flag if curve is not BLS12-381
 */
-MCLBN_DLL_API void mclBn_setETHserialization(int ETHserialization);
+MCLBN_DLL_API void mclBn_setETHserialization(int enable);
+/*
+	use mapToGi according to
+	https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#modular_squareroot
+*/
+MCLBN_DLL_API void mclBn_setETHmaptTo(int enable);
+
 ////////////////////////////////////////////////
 /*
 	deserialize

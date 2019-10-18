@@ -113,9 +113,14 @@ mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize)
 	return Fp::getModulo(buf, maxBufSize);
 }
 
-void mclBn_setETHserialization(int ETHserialization)
+void mclBn_setETHserialization(int enable)
 {
-	Fp::setETHserialization(ETHserialization == 1);
+	Fp::setETHserialization(enable == 1);
+}
+
+void mclBn_setETHmaptTo(int enable)
+{
+	setETHmapTo(enable == 1);
 }
 
 ////////////////////////////////////////////////
