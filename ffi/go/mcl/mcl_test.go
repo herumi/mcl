@@ -195,6 +195,44 @@ func testPairing(t *testing.T) {
 	}
 }
 
+func testSerialize(t *testing.T) {
+	var x, xx Fr
+	var y, yy Fp
+	var P, PP G1
+	var Q, QQ G2
+	var e, ee GT
+	x.SetByCSPRNG()
+	y.SetByCSPRNG()
+	P.HashAndMapTo([]byte("abc"))
+	G1Dbl(&P, &P)
+	Q.HashAndMapTo([]byte("abc"))
+	G2Dbl(&Q, &Q)
+	Pairing(&e, &P, &Q)
+	if xx.Deserialize(x.Serialize()) != nil || !x.IsEqual(&xx) {
+		t.Error("Serialize Fr")
+	}
+	if yy.Deserialize(y.Serialize()) != nil || !y.IsEqual(&yy) {
+		t.Error("Serialize Fp")
+	}
+	if PP.Deserialize(P.Serialize()) != nil || !P.IsEqual(&PP) {
+		t.Error("Serialize G1")
+	}
+	if QQ.Deserialize(Q.Serialize()) != nil || !Q.IsEqual(&QQ) {
+		t.Error("Serialize G2")
+	}
+	if ee.Deserialize(e.Serialize()) != nil || !e.IsEqual(&ee) {
+		t.Error("Serialize GT")
+	}
+	G1Dbl(&PP, &PP)
+	if PP.DeserializeUncompressed(P.SerializeUncompressed()) != nil || !P.IsEqual(&PP) {
+		t.Error("SerializeUncompressed G1")
+	}
+	G2Dbl(&QQ, &QQ)
+	if QQ.DeserializeUncompressed(Q.SerializeUncompressed()) != nil || !Q.IsEqual(&QQ) {
+		t.Error("SerializeUncompressed G2")
+	}
+}
+
 func testMcl(t *testing.T, c int) {
 	err := Init(c)
 	if err != nil {
@@ -206,6 +244,7 @@ func testMcl(t *testing.T, c int) {
 	testVec(t)
 	testGT(t)
 	testBadPointOfG2(t)
+	testSerialize(t)
 }
 
 func TestMclMain(t *testing.T) {
