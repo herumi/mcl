@@ -596,8 +596,28 @@ func (x *G1) Deserialize(buf []byte) error {
 	return nil
 }
 
+const ZERO_HEADER = 1 << 6
+func isZeroFormat(buf []byte, n int) bool {
+	if len(buf) < n {
+		return false
+	}
+	if buf[0] != ZERO_HEADER {
+		return false
+	}
+	for i := 1; i < n; i++ {
+		if buf[i] != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // DeserializeUncompressed -- x.Deserialize() + y.Deserialize()
 func (x *G1) DeserializeUncompressed(buf []byte) error {
+	if isZeroFormat(buf, GetG1ByteSize()*2) {
+		x.Clear()
+		return nil
+	}
 	// #nosec
 	var n = C.mclBnFp_deserialize(x.X.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
 	if n == 0 {
@@ -672,6 +692,7 @@ func (x *G1) Serialize() []byte {
 func (x *G1) SerializeUncompressed() []byte {
 	buf := make([]byte, GetG1ByteSize()*2)
 	if x.IsZero() {
+		buf[0] = ZERO_HEADER
 		return buf
 	}
 	var nx G1
@@ -773,6 +794,10 @@ func (x *G2) Deserialize(buf []byte) error {
 
 // DeserializeUncompressed -- x.Deserialize() + y.Deserialize()
 func (x *G2) DeserializeUncompressed(buf []byte) error {
+	if isZeroFormat(buf, GetG2ByteSize()*2) {
+		x.Clear()
+		return nil
+	}
 	// #nosec
 	var n = C.mclBnFp2_deserialize(x.X.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
 	if n == 0 {
@@ -848,6 +873,7 @@ func (x *G2) Serialize() []byte {
 func (x *G2) SerializeUncompressed() []byte {
 	buf := make([]byte, GetG2ByteSize()*2)
 	if x.IsZero() {
+		buf[0] = ZERO_HEADER
 		return buf
 	}
 	var nx G2
