@@ -25,25 +25,28 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(sizeof(mclBnG1), sizeof(G1));
 	CYBOZU_TEST_EQUAL(sizeof(mclBnG2), sizeof(G2));
 	CYBOZU_TEST_EQUAL(sizeof(mclBnGT), sizeof(Fp12));
+	int curveType;
 
 #if MCLBN_FP_UNIT_SIZE >= 4
 	printf("test BN254 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(MCL_BN254, MCLBN_COMPILED_TIME_VAR);
+	curveType = MCL_BN254;
 #endif
 #if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 4
 	printf("test BLS12_381 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(MCL_BLS12_381, MCLBN_COMPILED_TIME_VAR);
+	curveType = MCL_BLS12_381;
 #endif
 #if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
 	printf("test BN381_1 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(MCL_BN381_1, MCLBN_COMPILED_TIME_VAR);
+	curveType = MCL_BN381_1;
 #endif
 #if MCLBN_FP_UNIT_SIZE == 8
 	printf("test BN462 %d\n", MCLBN_FP_UNIT_SIZE);
-	ret = mclBn_init(MCL_BN462, MCLBN_COMPILED_TIME_VAR);
+	curveType = MCL_BN462;
 #endif
+	ret = mclBn_init(curveType, MCLBN_COMPILED_TIME_VAR);
 	CYBOZU_TEST_EQUAL(ret, 0);
 	if (ret != 0) exit(1);
+	CYBOZU_TEST_EQUAL(curveType, mclBn_getCurveType());
 }
 
 CYBOZU_TEST_AUTO(Fr)
@@ -610,6 +613,49 @@ CYBOZU_TEST_AUTO(serializeToHexStr)
 
 	n = mclBnG2_getStr(buf, expectSize, &Q1, MCLBN_IO_SERIALIZE_HEX_STR);
 	CYBOZU_TEST_EQUAL(n, expectSize);
+}
+
+CYBOZU_TEST_AUTO(ETHserialization)
+{
+	int curveType = mclBn_getCurveType();
+	if (curveType != MCL_BLS12_381) return;
+	int keepETH = mclBn_getETHserialization();
+	char buf[128] = {};
+	char str[128];
+	buf[0] = 0x12;
+	buf[1] = 0x34;
+	size_t n;
+	mclBnFr x;
+	mclBn_setETHserialization(false);
+	n = mclBnFr_deserialize(&x, buf, 32);
+	CYBOZU_TEST_EQUAL(n, 32);
+	n = mclBnFr_getStr(str, sizeof(str), &x, 16);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(strcmp(str, "3412"), 0);
+
+	mclBn_setETHserialization(true);
+	n = mclBnFr_deserialize(&x, buf, 32);
+	CYBOZU_TEST_EQUAL(n, 32);
+	n = mclBnFr_getStr(str, sizeof(str), &x, 16);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(strcmp(str, "1234000000000000000000000000000000000000000000000000000000000000"), 0);
+
+	mclBnFp y;
+	mclBn_setETHserialization(false);
+	n = mclBnFp_deserialize(&y, buf, 48);
+	CYBOZU_TEST_EQUAL(n, 48);
+	n = mclBnFp_getStr(str, sizeof(str), &y, 16);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(strcmp(str, "3412"), 0);
+
+	mclBn_setETHserialization(true);
+	n = mclBnFp_deserialize(&y, buf, 48);
+	CYBOZU_TEST_EQUAL(n, 48);
+	n = mclBnFp_getStr(str, sizeof(str), &y, 16);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(strcmp(str, "123400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"), 0);
+
+	mclBn_setETHserialization(keepETH);
 }
 
 #if MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE >= 6

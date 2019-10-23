@@ -549,8 +549,11 @@ public:
 	}
 	static void setETHserialization(bool ETHserialization)
 	{
-		if (getBitSize() != 381) return;
 		isETHserialization_ = ETHserialization;
+	}
+	static bool getETHserialization()
+	{
+		return isETHserialization_;
 	}
 	static inline bool isETHserialization() { return isETHserialization_; }
 	static inline int getIoMode() { return ioMode_; }

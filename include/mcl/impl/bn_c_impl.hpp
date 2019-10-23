@@ -83,6 +83,11 @@ int mclBn_init(int curve, int compiledTimeVar)
 	return b ? 0 : -1;
 }
 
+int mclBn_getCurveType()
+{
+	return mcl::bn::BN::param.cp.curveType;
+}
+
 int mclBn_getOpUnitSize()
 {
 	return (int)Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
@@ -115,7 +120,14 @@ mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize)
 
 void mclBn_setETHserialization(int enable)
 {
+	if (mclBn_getCurveType() != MCL_BLS12_381) return;
 	Fp::setETHserialization(enable == 1);
+	Fr::setETHserialization(enable == 1);
+}
+
+int mclBn_getETHserialization()
+{
+	return Fp::getETHserialization() ? 1 : 0;
 }
 
 void mclBn_setETHmaptTo(int enable)

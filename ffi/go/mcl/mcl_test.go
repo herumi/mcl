@@ -247,6 +247,20 @@ func testMcl(t *testing.T, c int) {
 	testSerialize(t)
 }
 
+func testETHserialize(t *testing.T) {
+	b := make([]byte, 32)
+	b[0] = 0x12
+	b[1] = 0x34
+	var x Fr
+	SetETHserialization(false)
+	x.Deserialize(b)
+	fmt.Printf("AAA x=%s\n", x.GetString(16))
+
+	SetETHserialization(true)
+	x.Deserialize(b)
+	fmt.Printf("AAA x=%s\n", x.GetString(16))
+}
+
 func TestMclMain(t *testing.T) {
 	t.Logf("GetMaxOpUnitSize() = %d\n", GetMaxOpUnitSize())
 	t.Log("CurveFp254BNb")
@@ -258,5 +272,6 @@ func TestMclMain(t *testing.T) {
 		}
 		t.Log("BLS12_381")
 		testMcl(t, BLS12_381)
+		testETHserialize(t)
 	}
 }
