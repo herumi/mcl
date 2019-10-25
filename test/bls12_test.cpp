@@ -729,6 +729,10 @@ CYBOZU_TEST_AUTO(eth2)
 	G2 sig = Q * sec;
 	const char *expectSig = "b9d1bf921b3dd048bdce38c2ceac2a2a8093c864881f2415f22b198de935ffa791707855c1656dc21a7af2d502bb46590151d645f062634c3b2cb79c4ed1c4a4b8b3f19f0f5c76965c651553e83d153ff95353735156eff77692f7a62ae653fb";
 	CYBOZU_TEST_EQUAL(sig.getStr(mcl::IoSerializeHexStr), expectSig);
+
+	CYBOZU_BENCH_C("mapToG2 org-cofactor", 1000, mapToG2, Q, m);
+	setOriginalG2cofactor(false);
+	CYBOZU_BENCH_C("mapToG2 org-cofactor", 1000, mapToG2, Q, m);
 }
 
 typedef std::vector<Fp> FpVec;
