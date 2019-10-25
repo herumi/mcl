@@ -1,5 +1,25 @@
 # C API
 
+## New features
+
+Add compatibility mode with [eth2](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md)
+
+```
+void mclBn_setETHserialization(int enable);
+```
+The serialization/deserialization for `Fp`, `Fr`, `G1`, `G2` if `enable = 1`.
+
+```
+int mclBn_setMapToMode(int mode);
+```
+The map-to-G2 function if `mode = MCL_MAP_TO_MODE_ETH2`.
+
+```
+void mclBn_setOriginalG2cofactor(int enable);
+```
+Use faster multiplication of `G2` with cofactor if `enable = 1`.
+This is disabled if `mclBn_setMapToMode(MCL_MAP_TO_MODE_ETH2)`.
+
 ## Minimum sample
 
 [sample/pairing_c.c](sample/pairing_c.c) is a sample of how to use BLS12-381 pairing.
