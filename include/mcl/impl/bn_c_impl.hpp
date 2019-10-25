@@ -130,9 +130,14 @@ int mclBn_getETHserialization()
 	return Fp::getETHserialization() ? 1 : 0;
 }
 
-void mclBn_setETHmaptTo(int enable)
+int mclBn_setMapToMode(int mode)
 {
-	setETHmapTo(enable == 1);
+	return setMapToMode(mode) ? 0 : -1;
+}
+
+void mclBn_setOriginalG2cofactor(int enable)
+{
+	setOriginalG2cofactor(enable == 1);
 }
 
 ////////////////////////////////////////////////

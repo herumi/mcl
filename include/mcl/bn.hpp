@@ -324,9 +324,16 @@ struct MapTo {
 	Fp c2_; // (-1 + sqrt(-3)) / 2
 	mpz_class z_;
 	mpz_class cofactor_;
+	mpz_class g2cofactor_;
 	int type_;
-	bool useNaiveMapTo_;
-	bool useETHsquareRoot_;
+	int mapToMode_;
+	bool useOriginalG2cofactor_;
+	MapTo()
+		: type_(0)
+		, mapToMode_(MCL_MAP_TO_MODE_ORIGINAL)
+		, useOriginalG2cofactor_(false)
+	{
+	}
 
 	int legendre(bool *pb, const Fp& x) const
 	{
@@ -455,6 +462,10 @@ struct MapTo {
 	*/
 	void mulByCofactorBLS12(G2& Q, const G2& P) const
 	{
+		if (useOriginalG2cofactor_) {
+			G2::mulGeneric(Q, P, g2cofactor_);
+			return;
+		}
 		G2 T0, T1;
 		G2::mulGeneric(T0, P, z_ - 1);
 		G2::mulGeneric(T1, T0, z_);
@@ -491,26 +502,39 @@ struct MapTo {
 		z_ = z;
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
+		const int g2Coff[] = { 13, -4, -4, 6, -4, 0, 5, -4, 1 };
+		g2cofactor_ = local::evalPoly(z, g2Coff) / 9;
 		bool b = Fp::squareRoot(c1_, -3);
 		assert(b);
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
 	}
-	// enable if standard Ec
-	void setNaiveMapTo(bool enable)
+	/*
+		change mapTo function to mode
+	*/
+	bool setMapToMode(int mode)
 	{
 		if (type_ == STD_ECtype) {
-			useNaiveMapTo_ = true;
-		} else {
-			useNaiveMapTo_ = enable;
+			mapToMode_ = MCL_MAP_TO_TRY_AND_INC;
+			return true;
+		}
+		switch (mode) {
+		case MCL_MAP_TO_MODE_ORIGINAL:
+		case MCL_MAP_TO_TRY_AND_INC:
+		case MCL_MAP_TO_MODE_ETH2:
+			mapToMode_ = mode;
+			return true;
+			break;
+		default:
+			return false;
 		}
 	}
-	void setETHsquareRoot(bool enable)
+	void setOriginalG2cofactor(bool enable)
 	{
 		if (type_ == BLS12type) {
-			useETHsquareRoot_ = enable;
+			useOriginalG2cofactor_ = enable;
 		} else {
-			useETHsquareRoot_ = false;
+			useOriginalG2cofactor_ = false;
 		}
 	}
 	/*
@@ -523,8 +547,7 @@ struct MapTo {
 		} else {
 			type_ = STD_ECtype;
 		}
-		setNaiveMapTo(false);
-		setETHsquareRoot(false);
+		setMapToMode(MCL_MAP_TO_MODE_ORIGINAL);
 		if (type_ == BNtype) {
 			initBN(cofactor, z, curveType);
 		} else if (type_ == BLS12type) {
@@ -534,7 +557,7 @@ struct MapTo {
 	template<class G, class F>
 	bool mapToEc(G& P, const F& t) const
 	{
-		if (useNaiveMapTo_) {
+		if (mapToMode_ == MCL_MAP_TO_TRY_AND_INC || mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
 			naiveMapTo<G, F>(P, t);
 		} else {
 			if (!calcBN<G, F>(P, t)) return false;
@@ -574,7 +597,7 @@ struct MapTo {
 	bool calc(G2& P, const Fp2& t) const
 	{
 		if (!mapToEc(P, t)) return false;
-		if (useETHsquareRoot_) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
 			Fp2 negY;
 			Fp2::neg(negY, P.y);
 			int cmp = Fp::compare(P.y.b, negY.b);
@@ -1070,6 +1093,7 @@ local::Param StaticVar<dummyImpl>::param;
 namespace BN {
 
 static const local::Param& param = local::StaticVar<>::param;
+static local::Param& NonConstParam = local::StaticVar<>::param;
 
 } // mcl::bn::BN
 
@@ -2093,13 +2117,16 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 	}
 }
 
-inline void setETHmapTo(bool enable)
+inline void setOriginalG2cofactor(bool enable)
 {
-	local::StaticVar<>::param.mapTo.setNaiveMapTo(enable);
+	BN::NonConstParam.mapTo.setOriginalG2cofactor(enable);
 }
-inline void setETHsquareRoot(bool enable)
+inline bool setMapToMode(int mode)
 {
-	local::StaticVar<>::param.mapTo.setETHsquareRoot(enable);
+	if (mode == MCL_MAP_TO_MODE_ETH2) {
+		setOriginalG2cofactor(true);
+	}
+	return BN::NonConstParam.mapTo.setMapToMode(mode);
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }

@@ -35,3 +35,9 @@ enum {
 	MCL_NIST_P384 = MCL_SECP384R1,
 	MCL_NIST_P521 = MCL_SECP521R1
 };
+
+enum {
+	MCL_MAP_TO_MODE_ORIGINAL, // see MapTo::calcBN
+	MCL_MAP_TO_TRY_AND_INC, // try-and-incremental-x
+	MCL_MAP_TO_MODE_ETH2 // eth2.0 spec
+};
