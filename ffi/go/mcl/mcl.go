@@ -1044,6 +1044,22 @@ func GTPow(out *GT, x *GT, y *Fr) {
 	C.mclBnGT_pow(out.getPointer(), x.getPointer(), y.getPointer())
 }
 
+// MapToG1 --
+func MapToG1(out *G1, x *Fp) error {
+	if C.mclBnFp_mapToG1(out.getPointer(), x.getPointer()) != 0 {
+		return fmt.Errorf("err mclBnFp_mapToG1")
+	}
+	return nil
+}
+
+// MapToG2 --
+func MapToG2(out *G2, x *Fp2) error {
+	if C.mclBnFp2_mapToG2(out.getPointer(), x.getPointer()) != 0 {
+		return fmt.Errorf("err mclBnFp2_mapToG2")
+	}
+	return nil
+}
+
 // Pairing --
 func Pairing(out *GT, x *G1, y *G2) {
 	C.mclBn_pairing(out.getPointer(), x.getPointer(), y.getPointer())
