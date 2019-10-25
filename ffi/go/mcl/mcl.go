@@ -123,6 +123,22 @@ func SetETHserialization(enable bool) {
 	C.mclBn_setETHserialization(bool2Cint(enable))
 }
 
+// SetOriginalG2cofactor -- true if BLS_ETH is defined
+func SetOriginalG2cofactor(enable bool) {
+	// #nosec
+	C.mclBn_setOriginalG2cofactor(bool2Cint(enable))
+}
+
+// SetMapToMode --
+func SetMapToMode(mode int) error {
+	// #nosec
+	err := C.mclBn_setMapToMode((C.int)(mode))
+	if err != 0 {
+		return fmt.Errorf("SetMapToMode mode=%d\n", mode)
+	}
+	return nil
+}
+
 // Fr --
 type Fr struct {
 	v C.mclBnFr
@@ -597,6 +613,7 @@ func (x *G1) Deserialize(buf []byte) error {
 }
 
 const ZERO_HEADER = 1 << 6
+
 func isZeroFormat(buf []byte, n int) bool {
 	if len(buf) < n {
 		return false
