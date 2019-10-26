@@ -475,10 +475,10 @@ struct MapTo {
 		Frobenius2(T1, T1);
 		G2::add(Q, T0, T1);
 	}
-	void mulByCofactorBLS12(G2& Q, const G2& P) const
+	void mulByCofactorBLS12(G2& Q, const G2& P, bool fast = false) const
 	{
 		mulByCofactorBLS12fast(Q, P);
-		if (useOriginalG2cofactor_) {
+		if (useOriginalG2cofactor_ && !fast) {
 			Q *= g2cofactorAdj_;
 			return;
 		}
@@ -588,14 +588,14 @@ struct MapTo {
 		}
 		assert(P.isValid());
 	}
-	void mulByCofactor(G2& P) const
+	void mulByCofactor(G2& P, bool fast = false) const
 	{
 		switch(type_) {
 		case BNtype:
 			mulByCofactorBN(P, P);
 			break;
 		case BLS12type:
-			mulByCofactorBLS12(P, P);
+			mulByCofactorBLS12(P, P, fast);
 			break;
 		}
 		assert(P.isValid());
@@ -606,7 +606,7 @@ struct MapTo {
 		mulByCofactor(P);
 		return true;
 	}
-	bool calc(G2& P, const Fp2& t) const
+	bool calc(G2& P, const Fp2& t, bool fast = false) const
 	{
 		if (!mapToEc(P, t)) return false;
 		if (mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
@@ -617,7 +617,7 @@ struct MapTo {
 				P.y = negY;
 			}
 		}
-		mulByCofactor(P);
+		mulByCofactor(P, fast);
 		return true;
 	}
 };
@@ -2141,7 +2141,7 @@ inline bool setMapToMode(int mode)
 	return BN::nonConstParam.mapTo.setMapToMode(mode);
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
-inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
+inline void mapToG2(bool *pb, G2& P, const Fp2& x, bool fast = false) { *pb = BN::param.mapTo.calc(P, x, fast); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void mapToG1(G1& P, const Fp& x)
 {
@@ -2149,10 +2149,10 @@ inline void mapToG1(G1& P, const Fp& x)
 	mapToG1(&b, P, x);
 	if (!b) throw cybozu::Exception("mapToG1:bad value") << x;
 }
-inline void mapToG2(G2& P, const Fp2& x)
+inline void mapToG2(G2& P, const Fp2& x, bool fast = false)
 {
 	bool b;
-	mapToG2(&b, P, x);
+	mapToG2(&b, P, x, fast);
 	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
 }
 #endif
