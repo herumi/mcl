@@ -733,6 +733,19 @@ CYBOZU_TEST_AUTO(eth2)
 	CYBOZU_BENCH_C("mapToG2  org-cofactor", 1000, mapToG2, Q, m);
 	setOriginalG2cofactor(false);
 	CYBOZU_BENCH_C("mapToG2 fast-cofactor", 1000, mapToG2, Q, m);
+
+	Fp2 x;
+	x.a = 5;
+	x.b = 3;
+	const mpz_class& g2c = BN::param.mapTo.g2cofactor_;
+	const Fr& g2ca = BN::param.mapTo.g2cofactorAdj_;
+	G2 Q1, Q2, Q3;
+	BN::param.mapTo.mapToEc(Q, x);
+	G2::mulGeneric(Q1, Q, g2c);
+	Q2 = Q;
+	BN::param.mapTo.mulByCofactor(Q2);
+	Q2 *= g2ca;
+	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
 typedef std::vector<Fp> FpVec;

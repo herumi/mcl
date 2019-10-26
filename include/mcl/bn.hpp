@@ -325,6 +325,7 @@ struct MapTo {
 	mpz_class z_;
 	mpz_class cofactor_;
 	mpz_class g2cofactor_;
+	Fr g2cofactorAdj_;
 	int type_;
 	int mapToMode_;
 	bool useOriginalG2cofactor_;
@@ -459,13 +460,10 @@ struct MapTo {
 		Efficient hash maps to G2 on BLS curves
 		Alessandro Budroni, Federico Pintore
 		Q = (z(z-1)-1)P + Frob((z-1)P) + Frob^2(2P)
+		original G2 cofactor = this cofactor * g2cofactorAdj_
 	*/
-	void mulByCofactorBLS12(G2& Q, const G2& P) const
+	void mulByCofactorBLS12fast(G2& Q, const G2& P) const
 	{
-		if (useOriginalG2cofactor_) {
-			G2::mulGeneric(Q, P, g2cofactor_);
-			return;
-		}
 		G2 T0, T1;
 		G2::mulGeneric(T0, P, z_ - 1);
 		G2::mulGeneric(T1, T0, z_);
@@ -475,6 +473,14 @@ struct MapTo {
 		G2::dbl(T1, P);
 		Frobenius2(T1, T1);
 		G2::add(Q, T0, T1);
+	}
+	void mulByCofactorBLS12(G2& Q, const G2& P) const
+	{
+		mulByCofactorBLS12fast(Q, P);
+		if (useOriginalG2cofactor_) {
+			Q *= g2cofactorAdj_;
+			return;
+		}
 	}
 	/*
 		cofactor_ is for G2(not used now)
@@ -508,6 +514,11 @@ struct MapTo {
 		assert(b);
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
+		mpz_class t = (z * z - 1) * 3;;
+		g2cofactorAdj_.setMpz(&b, t);
+		assert(b);
+		(void)b;
+		Fr::inv(g2cofactorAdj_, g2cofactorAdj_);
 	}
 	/*
 		change mapTo function to mode
