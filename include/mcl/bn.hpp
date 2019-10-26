@@ -326,6 +326,7 @@ struct MapTo {
 	mpz_class cofactor_;
 	mpz_class g2cofactor_;
 	Fr g2cofactorAdj_;
+	Fr g2cofactorAdjInv_;
 	int type_;
 	int mapToMode_;
 	bool useOriginalG2cofactor_;
@@ -515,10 +516,10 @@ struct MapTo {
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
 		mpz_class t = (z * z - 1) * 3;;
-		g2cofactorAdj_.setMpz(&b, t);
+		g2cofactorAdjInv_.setMpz(&b, t);
 		assert(b);
 		(void)b;
-		Fr::inv(g2cofactorAdj_, g2cofactorAdj_);
+		Fr::inv(g2cofactorAdj_, g2cofactorAdjInv_);
 	}
 	/*
 		change mapTo function to mode
@@ -1104,7 +1105,7 @@ local::Param StaticVar<dummyImpl>::param;
 namespace BN {
 
 static const local::Param& param = local::StaticVar<>::param;
-static local::Param& NonConstParam = local::StaticVar<>::param;
+static local::Param& nonConstParam = local::StaticVar<>::param;
 
 } // mcl::bn::BN
 
@@ -2130,14 +2131,14 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 
 inline void setOriginalG2cofactor(bool enable)
 {
-	BN::NonConstParam.mapTo.setOriginalG2cofactor(enable);
+	BN::nonConstParam.mapTo.setOriginalG2cofactor(enable);
 }
 inline bool setMapToMode(int mode)
 {
 	if (mode == MCL_MAP_TO_MODE_ETH2) {
 		setOriginalG2cofactor(true);
 	}
-	return BN::NonConstParam.mapTo.setMapToMode(mode);
+	return BN::nonConstParam.mapTo.setMapToMode(mode);
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
@@ -2243,7 +2244,7 @@ using namespace mcl::bn; // backward compatibility
 
 inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
-	local::StaticVar<>::param.init(pb, cp, mode);
+	BN::nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
 	G1::setMulArrayGLV(local::GLV1::mulArrayGLV, local::GLV1::mulVecNGLV);
 	G2::setMulArrayGLV(local::mulArrayGLV2, local::mulVecNGLV2);
@@ -2280,7 +2281,7 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = 
 
 inline void initG1only(bool *pb, const mcl::EcParam& para)
 {
-	local::StaticVar<>::param.initG1only(pb, para);
+	BN::nonConstParam.initG1only(pb, para);
 	if (!*pb) return;
 	G1::setMulArrayGLV(0);
 	G2::setMulArrayGLV(0);
@@ -2291,7 +2292,17 @@ inline void initG1only(bool *pb, const mcl::EcParam& para)
 
 inline const G1& getG1basePoint()
 {
-	return local::StaticVar<>::param.basePoint;
+	return BN::param.basePoint;
+}
+
+inline const Fr& getG2cofactorAdj()
+{
+	return BN::param.mapTo.g2cofactorAdj_;
+}
+
+inline const Fr& getG2cofactorAdjInv()
+{
+	return BN::param.mapTo.g2cofactorAdjInv_;
 }
 
 } } // mcl::bn

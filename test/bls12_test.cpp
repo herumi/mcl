@@ -738,7 +738,7 @@ CYBOZU_TEST_AUTO(eth2)
 	x.a = 5;
 	x.b = 3;
 	const mpz_class& g2c = BN::param.mapTo.g2cofactor_;
-	const Fr& g2ca = BN::param.mapTo.g2cofactorAdj_;
+	const Fr& g2ca = getG2cofactorAdj();
 	G2 Q1, Q2, Q3;
 	BN::param.mapTo.mapToEc(Q, x);
 	G2::mulGeneric(Q1, Q, g2c);
