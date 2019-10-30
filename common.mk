@@ -95,6 +95,12 @@ CFLAGS+=$(CFLAGS_OPT_USER)
 endif
 CFLAGS+=$(CFLAGS_USER)
 MCL_USE_GMP?=1
+ifeq ($(OS),mac)
+  ifeq ($(shell sw_vers -productVersion),10.15)
+    # workaround because of GMP does not run well on Catalina
+    MCL_USE_GMP=0
+  endif
+endif
 MCL_USE_OPENSSL?=1
 ifeq ($(MCL_USE_GMP),0)
   CFLAGS+=-DMCL_USE_VINT
