@@ -7,7 +7,7 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
-#ifndef DONT_USE_GMP_IN_TEST
+#ifndef MCL_USE_VINT
 #include <gmpxx.h>
 #endif
 
@@ -1259,7 +1259,7 @@ CYBOZU_TEST_AUTO(bench)
 		x.setStr(tbl[i].x);
 		y.setStr(tbl[i].y);
 		CYBOZU_BENCH_C("fast div", N, Vint::div, z, x, y);
-#ifndef DONT_USE_GMP_IN_TEST
+#ifndef MCL_USE_VINT
 		{
 			mpz_class mx(tbl[i].x), my(tbl[i].y), mz;
 			CYBOZU_BENCH_C("gmp", N, mpz_div, mz.get_mpz_t(), mx.get_mpz_t(), my.get_mpz_t());

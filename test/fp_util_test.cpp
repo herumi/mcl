@@ -289,7 +289,7 @@ CYBOZU_TEST_AUTO(BitIterator)
 			while (bi.hasNext()) {
 				uint32_t v1 = bi.getNext(w);
 				mpz_class v2 = x & bi.mask(w);
-				CYBOZU_TEST_EQUAL(v1, v2);
+				CYBOZU_TEST_EQUAL(v2, v1);
 				x >>= w;
 			}
 			CYBOZU_TEST_EQUAL(x, 0);
@@ -302,7 +302,7 @@ CYBOZU_TEST_AUTO(BitIterator)
 			while (bi.hasNext()) {
 				uint32_t v1 = bi.peekBit();
 				mpz_class v2 = x & 1;
-				CYBOZU_TEST_EQUAL(v1, v2);
+				CYBOZU_TEST_EQUAL(v2, v1);
 				x >>= 1;
 				bi.skipBit();
 			}
