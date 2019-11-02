@@ -527,12 +527,12 @@ struct MapTo {
 	bool setMapToMode(int mode)
 	{
 		if (type_ == STD_ECtype) {
-			mapToMode_ = MCL_MAP_TO_TRY_AND_INC;
+			mapToMode_ = MCL_MAP_TO_MODE_TRY_AND_INC;
 			return true;
 		}
 		switch (mode) {
 		case MCL_MAP_TO_MODE_ORIGINAL:
-		case MCL_MAP_TO_TRY_AND_INC:
+		case MCL_MAP_TO_MODE_TRY_AND_INC:
 		case MCL_MAP_TO_MODE_ETH2:
 			mapToMode_ = mode;
 			return true;
@@ -569,7 +569,7 @@ struct MapTo {
 	template<class G, class F>
 	bool mapToEc(G& P, const F& t) const
 	{
-		if (mapToMode_ == MCL_MAP_TO_TRY_AND_INC || mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_TRY_AND_INC || mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
 			naiveMapTo<G, F>(P, t);
 		} else {
 			if (!calcBN<G, F>(P, t)) return false;
