@@ -37,10 +37,10 @@ x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.
 
 ## Installation Requirements
 
-[GMP](https://gmplib.org/) and [OpenSSL](https://www.openssl.org/) are necessary (default setting).
+[GMP](https://gmplib.org/) is necessary (default setting).
 
 ```
-apt install libgmp-dev libssl-dev # on Ubuntu
+apt install libgmp-dev # on Ubuntu
 ```
 
 ## How to build with Makefile
@@ -72,16 +72,10 @@ make MCL_USE_GMP=0
 ```
 Define `MCL_USE_VINT` if using C++ header files.
 
-## How to build without OpenSSL
-
-```
-make MCL_USE_OPENSSL=0
-```
-Define `MCL_DONT_USE_OPENSSL` if using C++ header files.
 
 ## How to build on 32-bit x86 Linux
 
-Build GMP and OpenSSL for 32-bit mode and install `<lib32>` at yourself.
+Build GMP and for 32-bit mode and install `<lib32>` at yourself.
 
 ```
 make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
@@ -90,7 +84,7 @@ make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,
 # How to build on 64-bit Windows with Visual Studio
 
 Clone cybozulib\_ext,
-which provides compiled binaries of OpenSSL and [MPIR](http://mpir.org/).
+which provides compiled binaries of [MPIR](http://mpir.org/).
 
 ```
 mkdir work
@@ -133,7 +127,6 @@ msbuild mcl.sln /p:Configuration=Release /m
 
 ```
 cmake .. USE_GMP=OFF ; without GMP
-cmake .. USE_OPENSSL=OFF ; without OpenSSL
 ```
 see `cmake .. -LA`.
 

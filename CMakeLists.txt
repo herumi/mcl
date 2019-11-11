@@ -15,7 +15,7 @@ option(
 option(
 	USE_OPENSSL
 	"use openssl"
-	ON
+	OFF
 )
 option(
 	USE_GMP
