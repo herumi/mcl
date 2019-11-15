@@ -387,25 +387,24 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
 	if (mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK) {
-		const char *pStr = "0xfffffffffffffffffffffffffffffffeffffffffffffffff";
-		bool b;
-		mpz_class p192;
-		gmp::setStr(&b, p192, pStr);
-		if (b && mp == p192) {
-			primeMode = PM_NIST_P192;
-			isMont = false;
-			isFastMod = true;
-		}
-	}
-	if (mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK) {
-		const char *pStr = "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-		bool b;
-		mpz_class p521;
-		gmp::setStr(&b, p521, pStr);
-		if (b && mp == p521) {
-			primeMode = PM_NIST_P521;
-			isMont = false;
-			isFastMod = true;
+		const struct {
+			PrimeMode mode;
+			const char *str;
+		} tbl[] = {
+			{ PM_NIST_P192, "0xfffffffffffffffffffffffffffffffeffffffffffffffff" },
+			{ PM_NIST_P521, "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
+		};
+		// user fastMode for special primes
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			bool b;
+			mpz_class target;
+			gmp::setStr(&b, target, tbl[i].str);
+			if (b && mp == target) {
+				primeMode = tbl[i].mode;
+				isMont = false;
+				isFastMod = true;
+				break;
+			}
 		}
 	}
 #endif
