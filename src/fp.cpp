@@ -394,7 +394,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 			{ PM_NIST_P192, "0xfffffffffffffffffffffffffffffffeffffffffffffffff" },
 			{ PM_NIST_P521, "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
 		};
-		// user fastMode for special primes
+		// use fastMode for special primes
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 			bool b;
 			mpz_class target;
