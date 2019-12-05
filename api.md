@@ -133,8 +133,8 @@ This function affects `setStr()` and `deserialize()` for G1/G2.
 void mclBn_verifyOrderG1(int doVerify);
 void mclBn_verifyOrderG2(int doVerify);
 ```
-- verify if `doVerify` is 1 or does not. The default parameter is 1.
-- The cost of verification is not small, so set `doVerify = 0` carefully if necessary.
+- verify if `doVerify` is 1 or does not. The default parameter is 0 because the cost of verification is not small.
+- Set `doVerify = 1` if considering subgroup attack is necessary.
 - This is not thread safe.
 
 ## Setter / Getter

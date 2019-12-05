@@ -747,6 +747,31 @@ CYBOZU_TEST_AUTO(eth2)
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
+CYBOZU_TEST_AUTO(deserialize)
+{
+	if (BN::param.cp.curveType != MCL_BLS12_381) return;
+	G1 P;
+	G2 Q;
+	mapToG1(P, 5);
+	mapToG2(Q, 5);
+	char buf1[128];
+	char buf2[128];
+	size_t n1 = P.serialize(buf1, sizeof(buf1));
+	CYBOZU_TEST_ASSERT(n1 > 0);
+	CYBOZU_TEST_EQUAL(P.deserialize(buf1, n1), n1);
+	size_t n2 = Q.serialize(buf2, sizeof(buf2));
+	CYBOZU_TEST_ASSERT(n2 > 0);
+	CYBOZU_TEST_EQUAL(Q.deserialize(buf2, n2), n2);
+	for (int i = 0; i < 2; i++) {
+		bool doVerify = i == 0;
+		printf("verifyOrder(%d)\n", doVerify);
+		verifyOrderG1(doVerify);
+		verifyOrderG2(doVerify);
+		CYBOZU_BENCH_C("deserializeG1", 1000, P.deserialize, buf1, n1);
+		CYBOZU_BENCH_C("deserializeG2", 1000, Q.deserialize, buf2, n2);
+	}
+}
+
 typedef std::vector<Fp> FpVec;
 
 void f(FpVec& zv, const FpVec& xv, const FpVec& yv)

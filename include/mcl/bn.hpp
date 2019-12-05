@@ -1030,11 +1030,7 @@ struct Param {
 			twist_b_type = tb_generic;
 		}
 		G1::init(0, cp.b, mcl::ec::Jacobi);
-		if (isBLS12) {
-			G1::setOrder(r);
-		}
 		G2::init(0, twist_b, mcl::ec::Jacobi);
-		G2::setOrder(r);
 
 		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
@@ -1074,7 +1070,6 @@ struct Param {
 		if (!*pb) return;
 		G1::init(pb, para.a, para.b);
 		if (!*pb) return;
-		G1::setOrder(Fr::getOp().mp);
 		mapTo.init(0, 0, para.curveType);
 		Fp x0, y0;
 		x0.setStr(pb, para.gx);

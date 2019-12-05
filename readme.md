@@ -286,6 +286,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2019/Dec/05 v1.03 disable to check the order in setStr
 - 2019/Sep/30 v1.00 add some functions to bn.h ; [api.md](api.md).
 - 2019/Sep/22 v0.99 add mclBnG1_mulVec, etc.
 - 2019/Sep/08 v0.98 bugfix Ec::add(P, Q, R) when P == R

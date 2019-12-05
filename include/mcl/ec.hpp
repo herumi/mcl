@@ -880,7 +880,7 @@ public:
 				if (ec::local::get_a_flag(y) ^ a) {
 					Fp::neg(y, y);
 				}
-				return;
+				goto verifyOrder;
 			}
 			if (fp::isZeroArray(buf, n1)) {
 				clear();
@@ -935,6 +935,7 @@ public:
 				return;
 			}
 		}
+	verifyOrder:
 		if (verifyOrder_ && !isValidOrder()) {
 			*pb = false;
 		} else {

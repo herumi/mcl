@@ -82,15 +82,15 @@ void testBench(const G1& P, const G2& Q)
 	G2 QQ;
 	std::string s;
 	s = P.getStr();
+	verifyOrderG1(true);
 	CYBOZU_BENCH_C("G1::setStr chk", C, PP.setStr, s);
 	verifyOrderG1(false);
 	CYBOZU_BENCH_C("G1::setStr    ", C, PP.setStr, s);
-	verifyOrderG1(true);
 	s = Q.getStr();
+	verifyOrderG2(true);
 	CYBOZU_BENCH_C("G2::setStr chk", C, QQ.setStr, s);
 	verifyOrderG2(false);
 	CYBOZU_BENCH_C("G2::setStr    ", C, QQ.setStr, s);
-	verifyOrderG2(true);
 	CYBOZU_BENCH_C("hashAndMapToG1", C, hashAndMapToG1, PP, "abc", 3);
 	CYBOZU_BENCH_C("hashAndMapToG2", C, hashAndMapToG2, QQ, "abc", 3);
 #endif
