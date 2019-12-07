@@ -9,6 +9,9 @@
 	@note modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#if !defined(XBYAK_USE_OP_NAMES) && !defined(XBYAK_NO_OP_NAMES)
+	#define XBYAK_NO_OP_NAMES
+#endif
 #ifndef XBYAK_NO_OP_NAMES
 	#if not +0 // trick to detect whether 'not' is operator or not
 		#error "use -fno-operator-names option if you want to use and(), or(), xor(), not() as function names, Or define XBYAK_NO_OP_NAMES and use and_(), or_(), xor_(), not_()."
@@ -80,6 +83,10 @@
 	#include <sys/mman.h>
 	#include <stdlib.h>
 #endif
+#if defined(__APPLE__) && defined(MAP_JIT)
+	#define XBYAK_USE_MAP_JIT
+	#include <sys/sysctl.h>
+#endif
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
 	#include <stdint.h>
 #endif
@@ -113,7 +120,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x5802 /* 0xABCD = A.BC(D) */
+	VERSION = 0x5850 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -186,8 +193,8 @@ enum {
 	ERR_INVALID_ZERO,
 	ERR_INVALID_RIP_IN_AUTO_GROW,
 	ERR_INVALID_MIB_ADDRESS,
-	ERR_INTERNAL,
-	ERR_X2APIC_IS_NOT_SUPPORTED
+	ERR_X2APIC_IS_NOT_SUPPORTED,
+	ERR_INTERNAL // Put it at last.
 };
 
 class Error : public std::exception {
@@ -196,8 +203,7 @@ public:
 	explicit Error(int err) : err_(err)
 	{
 		if (err_ < 0 || err_ > ERR_INTERNAL) {
-			fprintf(stderr, "bad err=%d in Xbyak::Error\n", err_);
-			exit(1);
+			err_ = ERR_INTERNAL;
 		}
 	}
 	operator int() const { return err_; }
@@ -248,10 +254,11 @@ public:
 			"invalid zero",
 			"invalid rip in AutoGrow",
 			"invalid mib address",
-			"internal error",
-			"x2APIC is not supported"
+			"x2APIC is not supported",
+			"internal error"
 		};
-		assert((size_t)err_ < sizeof(errTbl) / sizeof(*errTbl));
+		assert(err_ <= ERR_INTERNAL);
+		assert(ERR_INTERNAL + 1 == sizeof(errTbl) / sizeof(*errTbl));
 		return errTbl[err_];
 	}
 };
@@ -325,6 +332,29 @@ struct Allocator {
 };
 
 #ifdef XBYAK_USE_MMAP_ALLOCATOR
+#ifdef XBYAK_USE_MAP_JIT
+namespace util {
+
+inline int getMacOsVersionPure()
+{
+	char buf[64];
+	size_t size = sizeof(buf);
+	int err = sysctlbyname("kern.osrelease", buf, &size, NULL, 0);
+	if (err != 0) return 0;
+	char *endp;
+	int major = strtol(buf, &endp, 10);
+	if (*endp != '.') return 0;
+	return major;
+}
+
+inline int getMacOsVersion()
+{
+	static const int version = getMacOsVersionPure();
+	return version;
+}
+
+} // util
+#endif
 class MmapAllocator : Allocator {
 	typedef XBYAK_STD_UNORDERED_MAP<uintptr_t, size_t> SizeList;
 	SizeList sizeList_;
@@ -333,7 +363,11 @@ public:
 	{
 		const size_t alignedSizeM1 = inner::ALIGN_PAGE_SIZE - 1;
 		size = (size + alignedSizeM1) & ~alignedSizeM1;
-#ifdef MAP_ANONYMOUS
+#if defined(XBYAK_USE_MAP_JIT)
+		int mode = MAP_PRIVATE | MAP_ANONYMOUS;
+		const int mojaveVersion = 18;
+		if (util::getMacOsVersion() >= mojaveVersion) mode |= MAP_JIT;
+#elif defined(MAP_ANONYMOUS)
 		const int mode = MAP_PRIVATE | MAP_ANONYMOUS;
 #elif defined(MAP_ANON)
 		const int mode = MAP_PRIVATE | MAP_ANON;
@@ -1714,6 +1748,14 @@ private:
 		db(code0 | (reg.isBit(8) ? 0 : 1)); if (code1 != NONE) db(code1); if (code2 != NONE) db(code2);
 		opAddr(addr, reg.getIdx(), immSize);
 	}
+	void opLoadSeg(const Address& addr, const Reg& reg, int code0, int code1 = NONE)
+	{
+		if (addr.is64bitDisp()) throw Error(ERR_CANT_USE_64BIT_DISP);
+		if (reg.isBit(8)) throw Error(ERR_BAD_SIZE_OF_REGISTER);
+		rex(addr, reg);
+		db(code0); if (code1 != NONE) db(code1);
+		opAddr(addr, reg.getIdx());
+	}
 	void opMIB(const Address& addr, const Reg& reg, int code0, int code1)
 	{
 		if (addr.is64bitDisp()) throw Error(ERR_CANT_USE_64BIT_DISP);
@@ -2184,6 +2226,28 @@ private:
 		if (addr.hasZero()) throw Error(ERR_INVALID_ZERO);
 		if (addr.getRegExp().getIndex().getKind() != kind) throw Error(ERR_BAD_VSIB_ADDRESSING);
 		opVex(x, 0, addr, type, code);
+	}
+	void opInOut(const Reg& a, const Reg& d, uint8 code)
+	{
+		if (a.getIdx() == Operand::AL && d.getIdx() == Operand::DX && d.getBit() == 16) {
+			switch (a.getBit()) {
+			case 8: db(code); return;
+			case 16: db(0x66); db(code + 1); return;
+			case 32: db(code + 1); return;
+			}
+		}
+		throw Error(ERR_BAD_COMBINATION);
+	}
+	void opInOut(const Reg& a, uint8 code, uint8 v)
+	{
+		if (a.getIdx() == Operand::AL) {
+			switch (a.getBit()) {
+			case 8: db(code); db(v); return;
+			case 16: db(0x66); db(code + 1); db(v); return;
+			case 32: db(code + 1); db(v); return;
+			}
+		}
+		throw Error(ERR_BAD_COMBINATION);
 	}
 public:
 	unsigned int getVersion() const { return VERSION; }
