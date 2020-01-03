@@ -7,7 +7,7 @@ int g_err = 0;
 
 int main()
 {
-	char buf[1024];
+	char buf[1600];
 	const char *aStr = "123";
 	const char *bStr = "456";
 	int ret = mclBn_init(MCL_BLS12_381, MCLBN_COMPILED_TIME_VAR);
@@ -27,16 +27,16 @@ int main()
 
 	ASSERT(!mclBnG1_hashAndMapTo(&P, "this", 4));
 	ASSERT(!mclBnG2_hashAndMapTo(&Q, "that", 4));
-	mclBnG1_getStr(buf, sizeof(buf), &P, 16);
+	ASSERT(mclBnG1_getStr(buf, sizeof(buf), &P, 16));
 	printf("P = %s\n", buf);
-	mclBnG2_getStr(buf, sizeof(buf), &Q, 16);
+	ASSERT(mclBnG2_getStr(buf, sizeof(buf), &Q, 16));
 	printf("Q = %s\n", buf);
 
 	mclBnG1_mul(&aP, &P, &a);
 	mclBnG2_mul(&bQ, &Q, &b);
 
 	mclBn_pairing(&e, &P, &Q);
-	mclBnGT_getStr(buf, sizeof(buf), &e, 16);
+	ASSERT(mclBnGT_getStr(buf, sizeof(buf), &e, 16));
 	printf("e = %s\n", buf);
 	mclBnGT_pow(&e1, &e, &a);
 	mclBn_pairing(&e2, &aP, &Q);
