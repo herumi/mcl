@@ -39,5 +39,6 @@ enum {
 enum {
 	MCL_MAP_TO_MODE_ORIGINAL, // see MapTo::calcBN
 	MCL_MAP_TO_MODE_TRY_AND_INC, // try-and-incremental-x
-	MCL_MAP_TO_MODE_ETH2 // eth2.0 spec
+	MCL_MAP_TO_MODE_ETH2, // eth2.0 spec
+	MCL_MAP_TO_MODE_WB19
 };

@@ -314,6 +314,8 @@ public:
 	}
 };
 
+#include <mcl/mapto_wb19.hpp>
+
 struct MapTo {
 	enum {
 		BNtype,
@@ -330,6 +332,7 @@ struct MapTo {
 	int type_;
 	int mapToMode_;
 	bool useOriginalG2cofactor_;
+	MapToG2_WB19 maptog2_wb19_;
 	MapTo()
 		: type_(0)
 		, mapToMode_(MCL_MAP_TO_MODE_ORIGINAL)
@@ -535,6 +538,11 @@ struct MapTo {
 		case MCL_MAP_TO_MODE_TRY_AND_INC:
 		case MCL_MAP_TO_MODE_ETH2:
 			mapToMode_ = mode;
+			return true;
+			break;
+		case MCL_MAP_TO_MODE_WB19:
+			mapToMode_ = mode;
+			maptog2_wb19_.init();
 			return true;
 			break;
 		default:
