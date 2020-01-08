@@ -145,7 +145,7 @@ bool convertInt(T* x, const char *str)
 	if (factor > 1) {
 		if ((std::numeric_limits<T>::min)() / factor <= y
 			&& y <= (std::numeric_limits<T>::max)() / factor) {
-			*x = y * factor;
+			*x = static_cast<T>(y * factor);
 		} else {
 			return false;
 		}
@@ -155,8 +155,28 @@ bool convertInt(T* x, const char *str)
 	return true;
 }
 
+template<class T>
+void convertToStr(std::ostream& os, const T* p)
+{
+	os << *p;
+}
+template<>inline void convertToStr(std::ostream& os, const int8_t* p)
+{
+	os << static_cast<int>(*p);
+}
+template<>inline void convertToStr(std::ostream& os, const uint8_t* p)
+{
+	os << static_cast<int>(*p);
+}
+
 #define CYBOZU_OPTION_DEFINE_CONVERT_INT(type) \
 template<>inline bool convert(type* x, const char *str) { return convertInt(x, str); }
+
+CYBOZU_OPTION_DEFINE_CONVERT_INT(int8_t)
+CYBOZU_OPTION_DEFINE_CONVERT_INT(uint8_t)
+
+CYBOZU_OPTION_DEFINE_CONVERT_INT(int16_t)
+CYBOZU_OPTION_DEFINE_CONVERT_INT(uint16_t)
 
 CYBOZU_OPTION_DEFINE_CONVERT_INT(int)
 CYBOZU_OPTION_DEFINE_CONVERT_INT(long)
@@ -185,7 +205,7 @@ struct Holder : public HolderBase {
 	std::string toStr() const
 	{
 		std::ostringstream os;
-		os << *p_;
+		convertToStr(os, p_);
 		return os.str();
 	}
 	const void *get() const { return (void*)p_; }
