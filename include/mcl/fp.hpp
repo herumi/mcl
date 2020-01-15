@@ -330,6 +330,7 @@ public:
 	}
 	/*
 		mode = Mod : set x mod p if sizeof(S) * n <= 64 else error
+		set array x as little endian
 	*/
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t n, mcl::fp::MaskMode mode = fp::NoMask)
@@ -345,6 +346,15 @@ public:
 	{
 		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::MaskAndMod);
 		toMont();
+	}
+	/*
+		set (array mod p)
+		error if sizeof(S) * n > 64
+	*/
+	template<class S>
+	void setArrayMod(bool *pb, const S *x, size_t n)
+	{
+		setArray(pb, x, n, fp::Mod);
 	}
 
 	/*
