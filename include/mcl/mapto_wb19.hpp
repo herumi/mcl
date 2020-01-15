@@ -8,6 +8,48 @@
 	ref. https://eprint.iacr.org/2019/403 , https://github.com/algorand/bls_sigs_ref
 */
 
+inline void hkdf_extract_addZeroByte(uint8_t hmac[32], const uint8_t *salt, size_t saltSize, const uint8_t *msg, size_t msgSize)
+{
+	uint8_t saltZero[32];
+	if (salt == 0 || saltSize == 0) {
+		memset(saltZero, 0, sizeof(saltZero));
+		salt = saltZero;
+		saltSize = sizeof(saltZero);
+	}
+	cybozu::hmac256addZeroByte(hmac, salt, saltSize, msg, msgSize);
+}
+
+inline void hkdf_expand(uint8_t out[64], const uint8_t prk[32], char info[6])
+{
+	info[5] = 1;
+	cybozu::hmac256(out, prk, 32, info, 6);
+	info[5] = 2;
+	memcpy(out + 32, info, 6);
+	cybozu::hmac256(out + 32, prk, 32, out, 32 + 6);
+}
+
+// ctr = 0 or 1 or 2
+inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
+{
+	assert(ctr <= 2);
+	const size_t degree = 2;
+	uint8_t msg_prime[32];
+	// add '\0' at the end of dst
+	// see. 5.3. Implementation of https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve
+	hkdf_extract_addZeroByte(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
+	char info_pfx[] = "H2C000";
+	info_pfx[3] = ctr;
+	for (size_t i = 0; i < degree; i++) {
+		info_pfx[4] = char(i + 1);
+		uint8_t t[64];
+		hkdf_expand(t, msg_prime, info_pfx);
+		fp::local::byteSwap(t, 64);
+		bool b;
+		out.getFp0()[i].setArrayMod(&b, t, 64);
+		assert(b); (void)b;
+	}
+}
+
 struct MapToG2_WB19 {
 	Fp2 xi;
 	Fp2 Ell2p_a;
@@ -604,5 +646,13 @@ struct MapToG2_WB19 {
 		iso3(P, Pp);
 		clear_h2(P, P);
 	}
+	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
+	{
+		Fp2 t1, t2;
+		hashToFp2(t1, msg, msgSize, 0, dst, dstSize);
+		hashToFp2(t2, msg, msgSize, 1, dst, dstSize);
+		opt_swu2_map(out, t1, &t2);
+	}
+
 };
 
