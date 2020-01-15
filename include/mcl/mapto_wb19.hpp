@@ -8,26 +8,6 @@
 	ref. https://eprint.iacr.org/2019/403 , https://github.com/algorand/bls_sigs_ref
 */
 
-inline void hkdf_extract_addZeroByte(uint8_t hmac[32], const uint8_t *salt, size_t saltSize, const uint8_t *msg, size_t msgSize)
-{
-	uint8_t saltZero[32];
-	if (salt == 0 || saltSize == 0) {
-		memset(saltZero, 0, sizeof(saltZero));
-		salt = saltZero;
-		saltSize = sizeof(saltZero);
-	}
-	cybozu::hmac256addZeroByte(hmac, salt, saltSize, msg, msgSize);
-}
-
-inline void hkdf_expand(uint8_t out[64], const uint8_t prk[32], char info[6])
-{
-	info[5] = 1;
-	cybozu::hmac256(out, prk, 32, info, 6);
-	info[5] = 2;
-	memcpy(out + 32, info, 6);
-	cybozu::hmac256(out + 32, prk, 32, out, 32 + 6);
-}
-
 // ctr = 0 or 1 or 2
 inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
@@ -36,13 +16,13 @@ inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, co
 	uint8_t msg_prime[32];
 	// add '\0' at the end of dst
 	// see. 5.3. Implementation of https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve
-	hkdf_extract_addZeroByte(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
+	fp::hkdf_extract_addZeroByte(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
 	char info_pfx[] = "H2C000";
 	info_pfx[3] = ctr;
 	for (size_t i = 0; i < degree; i++) {
 		info_pfx[4] = char(i + 1);
 		uint8_t t[64];
-		hkdf_expand(t, msg_prime, info_pfx);
+		fp::hkdf_expand(t, msg_prime, info_pfx);
 		fp::local::byteSwap(t, 64);
 		bool b;
 		out.getFp0()[i].setArrayMod(&b, t, 64);
