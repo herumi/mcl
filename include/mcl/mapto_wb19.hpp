@@ -393,198 +393,52 @@ struct MapToG2_WB19 {
 		}
 		assert(0);
 	}
-	void h2_chain(G2& t1, const G2& P) const
+	void h2_chain(G2& out, const G2& P) const
 	{
-		G2 t0, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15;
-		t0 = P;
-		dbl(t1, t0);
-		add(t4, t1, t0);
-		add(t2, t4, t1);
-		add(t3, t2, t1);
-		add(t11, t3, t1);
-		add(t9, t11, t1);
-		add(t10, t9, t1);
-		add(t5, t10, t1);
-		add(t7, t5, t1);
-		add(t15, t7, t1);
-		add(t13, t15, t1);
-		add(t6, t13, t1);
-		add(t14, t6, t1);
-		add(t12, t14, t1);
-		add(t8, t12, t1);
-		dbl(t1, t6);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t13);
-		for (size_t i = 0; i < 2; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 9; i++) dbl(t1, t1);
-		add(t1, t1, t8);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t11);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t13);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t11);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t8);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 9; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t11);
-		for (size_t i = 0; i < 2; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 9; i++) dbl(t1, t1);
-		add(t1, t1, t8);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t13);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 11; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 7; i++) dbl(t1, t1);
-		add(t1, t1, t12);
-		for (size_t i = 0; i < 7; i++) dbl(t1, t1);
-		add(t1, t1, t7);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t12);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t14);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t13);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t13);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t10);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t10);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 10; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t14);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t15);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t8);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t12);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t15);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 7; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t15);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t14);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t8);
-		for (size_t i = 0; i < 10; i++) dbl(t1, t1);
-		add(t1, t1, t6);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 3; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 9; i++) dbl(t1, t1);
-		add(t1, t1, t13);
-		for (size_t i = 0; i < 7; i++) dbl(t1, t1);
-		add(t1, t1, t12);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t11);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t10);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t4);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t10);
-		for (size_t i = 0; i < 7; i++) dbl(t1, t1);
-		add(t1, t1, t7);
-		for (size_t i = 0; i < 3; i++) dbl(t1, t1);
-		add(t1, t1, t2);
-		for (size_t i = 0; i < 4; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 8; i++) dbl(t1, t1);
-		add(t1, t1, t9);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t8);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t7);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t6);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t4);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t4);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t4);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t5);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 7; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t4);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 3; i++) dbl(t1, t1);
-		add(t1, t1, t0);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 6; i++) dbl(t1, t1);
-		add(t1, t1, t3);
-		for (size_t i = 0; i < 5; i++) dbl(t1, t1);
-		add(t1, t1, t2);
+		G2 t[16];
+		t[0] = P;
+		dbl(t[1], t[0]);
+		add(t[4], t[1], t[0]);
+		add(t[2], t[4], t[1]);
+		add(t[3], t[2], t[1]);
+		add(t[11], t[3], t[1]);
+		add(t[9], t[11], t[1]);
+		add(t[10], t[9], t[1]);
+		add(t[5], t[10], t[1]);
+		add(t[7], t[5], t[1]);
+		add(t[15], t[7], t[1]);
+		add(t[13], t[15], t[1]);
+		add(t[6], t[13], t[1]);
+		add(t[14], t[6], t[1]);
+		add(t[12], t[14], t[1]);
+		add(t[8], t[12], t[1]);
+		dbl(t[1], t[6]);
+
+		const struct {
+			uint32_t n;
+			uint32_t idx;
+		} tbl[] = {
+			{ 5, 13 }, { 2, 0 }, { 9, 8 }, { 5, 11 }, { 6, 13 }, { 8, 2 }, { 5, 3 },
+			{ 5, 3 }, { 4, 5 }, { 4, 0 }, { 8, 11 }, { 8, 8 }, { 4, 2 }, { 9, 5 },
+			{ 6, 11 }, { 2, 0 }, { 9, 8 }, { 5, 13 }, { 4, 0 }, { 11, 9 }, { 7, 12 },
+			{ 7, 7 }, { 5, 12 }, { 5, 14 }, { 8, 13 }, { 6, 3 }, { 5, 0 }, { 8, 9 },
+			{ 6, 13 }, { 4, 10 }, { 4, 2 }, { 6, 10 }, { 6, 2 }, { 4, 0 }, { 10, 9 },
+			{ 6, 14 }, { 4, 3 }, { 6, 9 }, { 6, 15 }, { 5, 8 }, { 5, 12 }, { 4, 5 },
+			{ 6, 15 }, { 6, 2 }, { 7, 5 }, { 6, 3 }, { 6, 9 }, { 6, 15 }, { 6, 14 },
+			{ 5, 8 }, { 10, 6 }, { 5, 5 }, { 3, 0 }, { 9, 13 }, { 7, 12 }, { 4, 5 },
+			{ 6, 2 }, { 6, 11 }, { 4, 10 }, { 4, 4 }, { 6, 10 }, { 7, 7 }, { 3, 2 },
+			{ 4, 3 }, { 8, 9 }, { 8, 9 }, { 6, 8 }, { 5, 7 }, { 5, 6 }, { 6, 5 },
+			{ 6, 4 }, { 5, 5 }, { 6, 4 }, { 6, 3 }, { 6, 4 }, { 6, 5 }, { 6, 3 },
+			{ 7, 3 }, { 6, 3 }, { 5, 4 }, { 6, 3 }, { 6, 3 }, { 3, 0 }, { 6, 3 },
+			{ 6, 3 },
+		};
+		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+			const uint32_t n = tbl[j].n;
+			for (size_t i = 0; i < n; i++) dbl(t[1], t[1]);
+			add(t[1], t[1], t[tbl[j].idx]);
+		}
+		for (size_t i = 0; i < 5; i++) dbl(t[1], t[1]);
+		add(out, t[1], t[2]);
 	}
 	void mx_chain(G2& Q, const G2& P) const
 	{
