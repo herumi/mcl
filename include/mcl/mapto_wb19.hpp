@@ -141,18 +141,18 @@ struct MapToG2_WB19 {
 	// P is on y^2 = x^3 + Ell2p_a x + Ell2p_b
 	bool isValidPoint(const Point& P) const
 	{
-    Fp2 y2, x2, z2, z4, t;
-    Fp2::sqr(x2, P.x);
-    Fp2::sqr(y2, P.y);
-    Fp2::sqr(z2, P.z);
-    Fp2::sqr(z4, z2);
-    Fp2::mul(t, z4, Ell2p_a);
-    t += x2;
-    t *= P.x;
-    z4 *= z2;
-    z4 *= Ell2p_b;
-    t += z4;
-    return y2 == t;
+		Fp2 y2, x2, z2, z4, t;
+		Fp2::sqr(x2, P.x);
+		Fp2::sqr(y2, P.y);
+		Fp2::sqr(z2, P.z);
+		Fp2::sqr(z4, z2);
+		Fp2::mul(t, z4, Ell2p_a);
+		t += x2;
+		t *= P.x;
+		z4 *= z2;
+		z4 *= Ell2p_b;
+		t += z4;
+		return y2 == t;
 	}
 	void init()
 	{
