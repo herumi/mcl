@@ -2143,6 +2143,10 @@ inline bool setMapToMode(int mode)
 	}
 	return BN::nonConstParam.mapTo.setMapToMode(mode);
 }
+inline int getMapToMode()
+{
+	return BN::param.mapTo.mapToMode_;
+}
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
 inline void mapToG2(bool *pb, G2& P, const Fp2& x, bool fast = false) { *pb = BN::param.mapTo.calc(P, x, fast); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
