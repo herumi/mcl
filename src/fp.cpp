@@ -139,6 +139,17 @@ void hkdf_extract_addZeroByte(uint8_t hmac[32], const uint8_t *salt, size_t salt
 	cybozu::hmac256addZeroByte(hmac, salt, saltSize, msg, msgSize);
 }
 
+void hkdf_extract(uint8_t hmac[32], const uint8_t *salt, size_t saltSize, const uint8_t *msg, size_t msgSize)
+{
+	uint8_t saltZero[32];
+	if (salt == 0 || saltSize == 0) {
+		memset(saltZero, 0, sizeof(saltZero));
+		salt = saltZero;
+		saltSize = sizeof(saltZero);
+	}
+	cybozu::hmac256(hmac, salt, saltSize, msg, msgSize);
+}
+
 void hkdf_expand(uint8_t out[64], const uint8_t prk[32], char info[6])
 {
 	info[5] = 1;
