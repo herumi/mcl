@@ -9,14 +9,15 @@
 */
 
 // ctr = 0 or 1 or 2
-inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize, bool addZero = true)
+inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
+	const bool addZeroByte = false; // append zero byte to msg
 	assert(ctr <= 2);
 	const size_t degree = 2;
 	uint8_t msg_prime[32];
 	// add '\0' at the end of dst
 	// see. 5.3. Implementation of https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve
-	if (addZero) {
+	if (addZeroByte) {
 		fp::hkdf_extract_addZeroByte(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
 	} else {
 		fp::hkdf_extract(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
@@ -484,17 +485,17 @@ struct MapToG2_WB19 {
 		iso3(P, Pp);
 		clear_h2(P, P);
 	}
-	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize, bool addZero = true) const
+	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		Fp2 t1, t2;
-		hashToFp2(t1, msg, msgSize, 0, dst, dstSize, addZero);
-		hashToFp2(t2, msg, msgSize, 1, dst, dstSize, addZero);
+		hashToFp2(t1, msg, msgSize, 0, dst, dstSize);
+		hashToFp2(t2, msg, msgSize, 1, dst, dstSize);
 		opt_swu2_map(out, t1, &t2);
 	}
 	void msgToG2(G2& out, const void *msg, size_t msgSize) const
 	{
 		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_";
-		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst), false);
+		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
 };
 
