@@ -250,7 +250,7 @@ PrecomputedPublicKeyはPublicKeyの高速版
 * `CT she.sub(CT x, CT y)`(JS)
     * 暗号文xから暗号文yを引いてzにセットする(またはその値を返す)
 * `void CT::neg(CT& y, const CT& x)`(C++)
-* `void she.neg(CT x)`(JS)
+* `CT she.neg(CT x)`(JS)
     * 暗号文xの符号反転をyにセットする(またはその値を返す)
 * `void CT::mul(CT& z, const CT& x, int y)`(C++)
 * `CT she.mulInt(CT x, int y)`(JS)
