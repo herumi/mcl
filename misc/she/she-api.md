@@ -255,7 +255,7 @@ PK means PublicKey or PrecomputedPublicKey
 * `CT she.sub(CT x, CT y)`(JS)
     * subtract `x` and `y` and set the value to `z`(or return the value)
 * `void CT::neg(CT& y, const CT& x)`(C++)
-* `void she.neg(CT x)`(JS)
+* `CT she.neg(CT x)`(JS)
     * negate `x` and set the value to `y`(or return the value)
 * `void CT::mul(CT& z, const CT& x, int y)`(C++)
 * `CT she.mulInt(CT x, int y)`(JS)
