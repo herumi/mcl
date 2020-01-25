@@ -714,6 +714,28 @@ CYBOZU_TEST_AUTO(eth_hash)
 		CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&P.x, &x));
 		CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&P.y, &y));
 	}
+	{
+		const char *msg = "msg";
+		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO_POP_";
+		const Fp2Str xs = {
+			"0xb1871d245d50ec4e5a3ac790628864d24655208812abc420b67a93c5afdd38111137f14ca0f844ddbf69809897ca941",
+			"0xa8b490ae1aac870b16b1a82db2e9653ec14485fc5f38c2ce2926c526537262061d4cd8bc62cc90e98235952a7fe7f13",
+		};
+		const Fp2Str ys = {
+			"0x2c8e9f9d52870075ae5879be5a4994a16db6c93b34453d9c055eb058107a2d805cc307b0ba30144518fb36da5f97d12",
+			"0x344ce62d77dda0b4b509d5b5e6ef08f99c972fc0e5f0c25b25bb881384e85b8b1086043813e674f9bbc4b67dd47d9a7",
+		};
+		const Fp2Str zs = {
+			"0x1515a4d612e48626000f998a220029380a47e9e6c69d497db804e2dfc3dbce5cfb000a559b64f50796f26ddc4cf3be2c",
+			"0x1796ee0f0b9b65802c90e3e1586034f3826ec3538c66525de298d1ff2f7a26f2ec553ec64e5989ed9841c4456d0bddd7",
+		};
+		mclBnG2 P, Q;
+		mclBn_ethMsgToG2(&P, msg, strlen(msg) + 1 /* add zero byte */, dst, strlen(dst));
+		setFp2(&Q.x, xs);
+		setFp2(&Q.y, ys);
+		setFp2(&Q.z, zs);
+		CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&P, &Q));
+	}
 }
 
 #if MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE >= 6
