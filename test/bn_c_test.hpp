@@ -658,6 +658,64 @@ CYBOZU_TEST_AUTO(ETHserialization)
 	mclBn_setETHserialization(keepETH);
 }
 
+struct Fp2Str {
+	const char *a;
+	const char *b;
+};
+
+void setFp2(mclBnFp2 *x, const Fp2Str& s)
+{
+	CYBOZU_TEST_EQUAL(mclBnFp_setStr(&x->d[0], s.a, strlen(s.a), 16), 0);
+	CYBOZU_TEST_EQUAL(mclBnFp_setStr(&x->d[1], s.b, strlen(s.b), 16), 0);
+}
+
+CYBOZU_TEST_AUTO(eth_hash)
+{
+	int curveType = mclBn_getCurveType();
+	if (curveType != MCL_BLS12_381) return;
+	{
+		const char *msg = "msg";
+		uint8_t ctr = 0;
+		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO_POP_";
+		const Fp2Str ys = {
+			"18df4dc51885b18ca0082a4966b0def46287930b8f1c0b673b11ac48d19c8899bc150d83fd3a7a1430b0de541742c1d4",
+			"14eef8ca34b82d065d187a3904cb313dbb44558917cc5091574d9999b5ecfdd5af2fa3aea6e02fb253bf4ae670e72d55"
+		};
+		mclBnFp2 x, y;
+		CYBOZU_TEST_EQUAL(mclBn_ethMsgToFp2(&x, msg, strlen(msg) + 1 /* add zero byte */, ctr, dst, strlen(dst)), 0);
+		setFp2(&y, ys);
+		CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x, &y));
+	}
+	{
+		const Fp2Str u0s = {
+			"0x004ad233c619209060e40059b81e4c1f92796b05aa1bc6358d65e53dc0d657dfbc713d4030b0b6d9234a6634fd1944e7",
+			"0x0e2386c82713441bc3b06a460bd81850f4bf376ea89c80b18c0881e855c58dc8e83b2fd23af983f4786508e30c42af01",
+		};
+		const Fp2Str u1s = {
+			"0x08a6a75e0a8d32f1e096f29047ea879dd34a5504218d7ce92c32c244786822fb73fbf708d167ad86537468249ec6df48",
+			"0x07016d0e5e13cd65780042c6f7b4c74ae1c58da438c99582696818b5c229895b893318dcb87d2a65e557d4ebeb408b70",
+		};
+		const Fp2Str xs = {
+			"0x4861c41efcc5fc56e62273692b48da25d950d2a0aaffb34eff80e8dbdc2d41ca38555ceb8554368436aea47d16056b5",
+			"0x9db5217528c55d982cf05fc54242bdcd25f1ebb73372e00e16d8e0f19dc3aeabdeef2d42d693405a04c37d60961526a",
+		};
+		const Fp2Str ys = {
+			"0x177d05b95e7879a7ddbd83c15114b5a4e9846fde72b2263072dc9e60db548ccbadaacb92cc4952d4f47425fe3c5e0172",
+			"0xfc82c99b928ed9df12a74f9215c3df8ae1e9a3fa54c00897889296890b23a0edcbb9653f9170bf715f882b35c0b4647",
+		};
+		mclBnFp2 u0, u1, x, y;
+		setFp2(&u0, u0s);
+		setFp2(&u1, u1s);
+		setFp2(&x, xs);
+		setFp2(&y, ys);
+		mclBnG2 P;
+		mclBn_ethFp2ToG2(&P, &u0, &u1);
+		mclBnG2_normalize(&P, &P);
+		CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&P.x, &x));
+		CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&P.y, &y));
+	}
+}
+
 #if MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE >= 6
 CYBOZU_TEST_AUTO(badG2)
 {

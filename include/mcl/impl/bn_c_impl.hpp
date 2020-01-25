@@ -135,6 +135,27 @@ int mclBn_setMapToMode(int mode)
 	return setMapToMode(mode) ? 0 : -1;
 }
 
+int mclBn_ethMsgToFp2(mclBnFp2 *out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
+{
+	if (mclBn_getCurveType() != MCL_BLS12_381) return -1;
+	mcl::bn::BN::local::hashToFp2(*cast(out), msg, msgSize, ctr, dst, dstSize);
+	return 0;
+}
+
+int mclBn_ethFp2ToG2(mclBnG2 *out, const mclBnFp2 *t1, const mclBnFp2 *t2)
+{
+	if (mclBn_getCurveType() != MCL_BLS12_381) return -1;
+	mcl::bn::BN::param.mapTo.mapToG2_WB19_.opt_swu2_map(*cast(out), *cast(t1), cast(t2));
+	return 0;
+}
+
+int mclBn_ethMsgToG2(mclBnG2 *out, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
+{
+	if (mclBn_getCurveType() != MCL_BLS12_381) return -1;
+	mcl::bn::BN::param.mapTo.mapToG2_WB19_.map2curve_osswu2(*cast(out), msg, msgSize, dst, dstSize);
+	return 0;
+}
+
 void mclBn_setOriginalG2cofactor(int enable)
 {
 	setOriginalG2cofactor(enable == 1);
