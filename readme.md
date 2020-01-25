@@ -9,6 +9,12 @@ A portable and fast pairing-based cryptography library.
 mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
+# News
+add new hash functions corresponding to python-impl of [algorand/bls_sig_ref](https://github.com/algorand/bls_sigs_ref).
+* `mclBn_ethMsgToFp2`(resp. `Hp2`)
+* `mclBn_ethFp2ToG2`(resp. `opt_swu2_map`)
+* `mclBn_ethMsgToG2`(resp. `map2curve_osswu2`)
+
 # Support architecture
 
 - x86-64 Windows + Visual Studio
