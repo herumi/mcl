@@ -9,6 +9,9 @@
 using namespace mcl;
 using namespace mcl::bn;
 
+typedef mcl::bn::local::MapToG2_WB19 MapTo;
+typedef MapTo::Point Point;
+
 void dump(const void *msg, size_t msgSize)
 {
 	const uint8_t *p = (const uint8_t *)msg;
@@ -189,6 +192,18 @@ void test2(const T& mapto)
 		testMapToCurveG2
 		https://github.com/status-im/nim-blscurve/blob/de64516a5933a6e8ebb01a346430e61a201b5775/blscurve/hash_to_curve.nim#L531
 	*/
+	{
+		const Fp2Str u0s = {
+			"0x004ad233c619209060e40059b81e4c1f92796b05aa1bc6358d65e53dc0d657dfbc713d4030b0b6d9234a6634fd1944e7",
+			"0x0e2386c82713441bc3b06a460bd81850f4bf376ea89c80b18c0881e855c58dc8e83b2fd23af983f4786508e30c42af01",
+		};
+		const Fp2Str u1s = {
+			"0x08a6a75e0a8d32f1e096f29047ea879dd34a5504218d7ce92c32c244786822fb73fbf708d167ad86537468249ec6df48",
+			"0x07016d0e5e13cd65780042c6f7b4c74ae1c58da438c99582696818b5c229895b893318dcb87d2a65e557d4ebeb408b70",
+		};
+		Fp2 u0, u1;
+		(void)mapto;
+	}
 }
 
 template<class T>
@@ -220,52 +235,59 @@ template<class T>
 void helpTest(const T& mapto)
 {
 	const struct {
-		const char *ta;
-		const char *tb;
-		const char *xa;
-		const char *xb;
-		const char *ya;
-		const char *yb;
-		const char *za;
-		const char *zb;
+		Fp2Str t;
+		Fp2Str x;
+		Fp2Str y;
+		Fp2Str z;
 	} tbl[] = {
 		{
-			"0xe54bc0f2e26071a79ba5fe7ae5307d39cf5519e581e03b43f39a431eccc258fa1477c517b1268b22986601ee5caa5ea",
-			"0x17e8397d5e687ff7f915c23f27fe1ca2c397a7df91de8c88dc82d34c9188a3ef719f9f20436ea8a5fe7d509fbc79214d",
-
-			"0x11d568058220b1826cacde2e367beef98ea1edfde5fbf0491231b7ffdfc867e5269f9cfe65347c32ead182ba6b8c3ba1",
-			"0x19f2778213e671ac444b1b579bfdf4e7fabeed9626dc909ce243b60397a6b5f65af0fbbe02a43c1e289f28c927012da1",
-
-			"0xfe17bc695a84ec060b6287a4e77a50f65ba8f2c6c433f8131036ddfe34e3071d1cb71c0000f6bcfada947b19d8588df",
-			"0xb76abd285945f787721e7e306895149523941586ac44f25a294c406a70ed570020992025aa307777cfe6c590567dfbe",
-
-			"0x1910249ae63241608e013eb13578b9b3d96774d35e5732fc75efd17c212dd310d7f4016d6f212f62f33d34f10252e3e3",
-			"0xdcd076cea67c76a6d0594c8f30c8cd8e9ead24f90870f723228f2203a55e04a5517c426ea2c4bae9d37a11c3d0f1912",
+			{
+				"0xe54bc0f2e26071a79ba5fe7ae5307d39cf5519e581e03b43f39a431eccc258fa1477c517b1268b22986601ee5caa5ea",
+				"0x17e8397d5e687ff7f915c23f27fe1ca2c397a7df91de8c88dc82d34c9188a3ef719f9f20436ea8a5fe7d509fbc79214d",
+			},
+			{
+				"0x11d568058220b1826cacde2e367beef98ea1edfde5fbf0491231b7ffdfc867e5269f9cfe65347c32ead182ba6b8c3ba1",
+				"0x19f2778213e671ac444b1b579bfdf4e7fabeed9626dc909ce243b60397a6b5f65af0fbbe02a43c1e289f28c927012da1",
+			},
+			{
+				"0xfe17bc695a84ec060b6287a4e77a50f65ba8f2c6c433f8131036ddfe34e3071d1cb71c0000f6bcfada947b19d8588df",
+				"0xb76abd285945f787721e7e306895149523941586ac44f25a294c406a70ed570020992025aa307777cfe6c590567dfbe",
+			},
+			{
+				"0x1910249ae63241608e013eb13578b9b3d96774d35e5732fc75efd17c212dd310d7f4016d6f212f62f33d34f10252e3e3",
+				"0xdcd076cea67c76a6d0594c8f30c8cd8e9ead24f90870f723228f2203a55e04a5517c426ea2c4bae9d37a11c3d0f1912",
+			},
 		},
 		{
-			"0x2a8663422cc279aa8591819195a62cfd57357b7bcb6f4a9174275c2e2e754fb23e2f8a444d0d164990dc03dcb95a129",
-			"0x15cf611083511955a70fdcc80cb08c6e22b8043a3038065251d4d3f82c6051bac4933e41d589514c42fba13f78f297ef",
-
-			"0x74ee12dce0c9a8836017172b562ebe491273964dd63df71dea6eb778cd9040e8c9a7136e745013c1def93cc57ef0dae",
-			"0xedce8fa83a2435a796d207943b14ea4d1a9850e10a6c2035912f1c5bd579e9cabc54027b87a779af28f380cc5edc8a6",
-
-			"0x11367627461d742b4afac12bd789f1437787f2dc675cf2c7896f004ab8480c06cd06589748d8b9791b4969763962f73c",
-			"0x101d8e4c1598e72d943dad4695cfa74236d5065345f1e62e62c75ca30cb0c41c3f6197d7c57d46e8cdd07845d77e1e34",
-
-			"0x3952479e45a0826275c1481fbd78a2b4c5076b6a5cd4ad7e132c1ec460dcaef504943e2c6a969ba182e230da3850b4",
-			"0x13b8e64e2e233d1dc4506360c3bff93535642c2d3115c53c049e287e35c03212be882f0618cc50557e55b42be53e4893",
+			{
+				"0x2a8663422cc279aa8591819195a62cfd57357b7bcb6f4a9174275c2e2e754fb23e2f8a444d0d164990dc03dcb95a129",
+				"0x15cf611083511955a70fdcc80cb08c6e22b8043a3038065251d4d3f82c6051bac4933e41d589514c42fba13f78f297ef",
+			},
+			{
+				"0x74ee12dce0c9a8836017172b562ebe491273964dd63df71dea6eb778cd9040e8c9a7136e745013c1def93cc57ef0dae",
+				"0xedce8fa83a2435a796d207943b14ea4d1a9850e10a6c2035912f1c5bd579e9cabc54027b87a779af28f380cc5edc8a6",
+			},
+			{
+				"0x11367627461d742b4afac12bd789f1437787f2dc675cf2c7896f004ab8480c06cd06589748d8b9791b4969763962f73c",
+				"0x101d8e4c1598e72d943dad4695cfa74236d5065345f1e62e62c75ca30cb0c41c3f6197d7c57d46e8cdd07845d77e1e34",
+			},
+			{
+				"0x3952479e45a0826275c1481fbd78a2b4c5076b6a5cd4ad7e132c1ec460dcaef504943e2c6a969ba182e230da3850b4",
+				"0x13b8e64e2e233d1dc4506360c3bff93535642c2d3115c53c049e287e35c03212be882f0618cc50557e55b42be53e4893",
+			},
 		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		Fp2 t(tbl[i].ta, tbl[i].tb);
-		Fp2 x0(tbl[i].xa, tbl[i].xb);
-		Fp2 y0(tbl[i].ya, tbl[i].yb);
-		Fp2 z0(tbl[i].za, tbl[i].zb);
+		Fp2 t, x, y, z;
 		typename T::Point P;
+		set(t, tbl[i].t);
+		set(x, tbl[i].x);
+		set(y, tbl[i].y);
+		set(z, tbl[i].z);
 		mapto.osswu2_help(P, t);
-		CYBOZU_TEST_EQUAL(P.x, x0);
-		CYBOZU_TEST_EQUAL(P.y, y0);
-		CYBOZU_TEST_EQUAL(P.z, z0);
+		CYBOZU_TEST_EQUAL(P.x, x);
+		CYBOZU_TEST_EQUAL(P.y, y);
+		CYBOZU_TEST_EQUAL(P.z, z);
 		CYBOZU_TEST_ASSERT(mapto.isValidPoint(P));
 	}
 }

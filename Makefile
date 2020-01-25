@@ -8,6 +8,7 @@ TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cp
 TEST_SRC+=she_c256_test.cpp she_c384_test.cpp she_c384_256_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
+TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
 TEST_SRC+=modp_test.cpp
 ifeq ($(CPU),x86-64)
