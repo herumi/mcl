@@ -523,6 +523,7 @@ struct MapTo {
 		assert(b);
 		(void)b;
 		Fr::inv(g2cofactorAdj_, g2cofactorAdjInv_);
+		mapToG2_WB19_.init();
 	}
 	/*
 		change mapTo function to mode
@@ -537,12 +538,8 @@ struct MapTo {
 		case MCL_MAP_TO_MODE_ORIGINAL:
 		case MCL_MAP_TO_MODE_TRY_AND_INC:
 		case MCL_MAP_TO_MODE_ETH2:
-			mapToMode_ = mode;
-			return true;
-			break;
 		case MCL_MAP_TO_MODE_WB19:
 			mapToMode_ = mode;
-			mapToG2_WB19_.init();
 			return true;
 			break;
 		default:
