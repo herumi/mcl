@@ -6,6 +6,8 @@
 #include <cybozu/atoi.hpp>
 #include <cybozu/file.hpp>
 
+#define PUT(x) std::cout << #x "=" << (x) << std::endl;
+
 using namespace mcl;
 using namespace mcl::bn;
 
@@ -188,10 +190,6 @@ void test2(const T& mapto)
 		mcl::bn::local::hashToFp2(x, msg, strlen(msg) + 1 /* add zero byte */, ctr, dst, strlen(dst));
 		CYBOZU_TEST_EQUAL(toHexStr(x), expect);
 	}
-	/*
-		testMapToCurveG2
-		https://github.com/status-im/nim-blscurve/blob/de64516a5933a6e8ebb01a346430e61a201b5775/blscurve/hash_to_curve.nim#L531
-	*/
 	{
 		const Fp2Str u0s = {
 			"0x004ad233c619209060e40059b81e4c1f92796b05aa1bc6358d65e53dc0d657dfbc713d4030b0b6d9234a6634fd1944e7",
@@ -201,8 +199,25 @@ void test2(const T& mapto)
 			"0x08a6a75e0a8d32f1e096f29047ea879dd34a5504218d7ce92c32c244786822fb73fbf708d167ad86537468249ec6df48",
 			"0x07016d0e5e13cd65780042c6f7b4c74ae1c58da438c99582696818b5c229895b893318dcb87d2a65e557d4ebeb408b70",
 		};
-		Fp2 u0, u1;
-		(void)mapto;
+		// return value of opt_swu2_map in bls_sigs_ref/python-impl/opt_swu_g2.py
+		const Fp2Str xs = {
+			"0x4861c41efcc5fc56e62273692b48da25d950d2a0aaffb34eff80e8dbdc2d41ca38555ceb8554368436aea47d16056b5",
+			"0x9db5217528c55d982cf05fc54242bdcd25f1ebb73372e00e16d8e0f19dc3aeabdeef2d42d693405a04c37d60961526a",
+		};
+		const Fp2Str ys = {
+			"0x177d05b95e7879a7ddbd83c15114b5a4e9846fde72b2263072dc9e60db548ccbadaacb92cc4952d4f47425fe3c5e0172",
+			"0xfc82c99b928ed9df12a74f9215c3df8ae1e9a3fa54c00897889296890b23a0edcbb9653f9170bf715f882b35c0b4647",
+		};
+		Fp2 u0, u1, x, y;
+		set(u0, u0s);
+		set(u1, u1s);
+		set(x, xs);
+		set(y, ys);
+		G2 P;
+		mapto.opt_swu2_map(P, u0, &u1);
+		P.normalize();
+		CYBOZU_TEST_EQUAL(P.x, x);
+		CYBOZU_TEST_EQUAL(P.y, y);
 	}
 }
 
