@@ -184,6 +184,20 @@ struct Serializable : public E {
 		getStr(str, ioMode);
 		return str;
 	}
+	std::string serializeToHexStr() const
+	{
+		std::string str(sizeof(T) * 2, 0);
+		size_t n = serialize(&str[0], str.size(), IoSerializeHexStr);
+		str.resize(n);
+		return str;
+	}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+	void deserializeHexStr(const std::string& str)
+	{
+		size_t n = deserialize(str.c_str(), str.size(), IoSerializeHexStr);
+		if (n == 0) throw cybozu::Exception("bad str") << str;
+	}
+#endif
 #endif
 	// return written bytes
 	size_t serialize(void *buf, size_t maxBufSize, int ioMode = IoSerialize) const
