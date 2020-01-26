@@ -2317,5 +2317,26 @@ inline const Fr& getG2cofactorAdjInv()
 	return BN::param.mapTo.g2cofactorAdjInv_;
 }
 
+inline bool ethMsgToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
+{
+	if (!BN::param.isBLS12) return false;
+	BN::local::hashToFp2(out, msg, msgSize, ctr, dst, dstSize);
+	return true;
+}
+
+inline bool ethFp2ToG2(G2& out, const Fp2& t1, const Fp2 *t2 = 0)
+{
+	if (!BN::param.isBLS12) return false;
+	BN::param.mapTo.mapToG2_WB19_.opt_swu2_map(out, t1, t2);
+	return true;
+}
+
+inline bool ethMsgToG2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
+{
+	if (!BN::param.isBLS12) return false;
+	BN::param.mapTo.mapToG2_WB19_.map2curve_osswu2(out, msg, msgSize, dst, dstSize);
+	return true;
+}
+
 } } // mcl::bn
 
