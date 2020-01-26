@@ -97,8 +97,7 @@ std::string toHexStr(const G2& P)
 	return toHexStr(xy, 96);
 }
 
-template<class T>
-void testHash_g2(const T& mapto, const std::string& fileName)
+void testHash_g2(const std::string& fileName)
 {
 	const char *dst = "\x02";
 	printf("name=%s\n", fileName.c_str());
@@ -111,19 +110,18 @@ void testHash_g2(const T& mapto, const std::string& fileName)
 		if (zero != "00") break;
 		buf = fromHexStr(msg);
 		buf.push_back(0); // add zero byte
-		mapto.map2curve_osswu2(out, buf.data(), buf.size(), dst, strlen(dst));
+		ethMsgToG2(out, buf.data(), buf.size(), dst, strlen(dst));
 		std::string s = toHexStr(out);
 		CYBOZU_TEST_EQUAL(s, ret);
 	}
 }
 
-template<class T>
-void testHash_g2All(const T& mapto, const std::string& dir)
+void testHash_g2All(const std::string& dir)
 {
 	cybozu::FileList list = cybozu::GetFileList(dir);
 	for (size_t i = 0; i < list.size(); i++) {
 		const cybozu::FileInfo& info = list[i];
-		testHash_g2(mapto, dir + "/" + info.name);
+		testHash_g2(dir + "/" + info.name);
 	}
 }
 
@@ -149,8 +147,7 @@ void testHashToFp2()
 	CYBOZU_TEST_EQUAL(out, ok);
 }
 
-template<class T>
-void testMap2curve_osswu2(const T& mapto)
+void ethMsgToG2test()
 {
 	const char *msg = "the message to be signed";
 	const char *dst = "\x02";
@@ -170,12 +167,12 @@ void testMap2curve_osswu2(const T& mapto)
 	};
 	G2 out, ok;
 	set(ok, outS);
-	mapto.map2curve_osswu2(out, msg, strlen(msg) + 1 /* contains zero byte */, dst, strlen(dst));
+//	mapto.map2curve_osswu2(out, msg, strlen(msg) + 1 /* contains zero byte */, dst, strlen(dst));
+	ethMsgToG2(out, msg, strlen(msg) + 1 /* contains zero byte */, dst, strlen(dst));
 	CYBOZU_TEST_EQUAL(out, ok);
 }
 
-template<class T>
-void test2(const T& mapto)
+void test2()
 {
 	/*
 		testHashToBaseFP2
@@ -187,7 +184,7 @@ void test2(const T& mapto)
 		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO_POP_";
 		const char *expect = "18df4dc51885b18ca0082a4966b0def46287930b8f1c0b673b11ac48d19c8899bc150d83fd3a7a1430b0de541742c1d4 14eef8ca34b82d065d187a3904cb313dbb44558917cc5091574d9999b5ecfdd5af2fa3aea6e02fb253bf4ae670e72d55";
 		Fp2 x;
-		mcl::bn::local::hashToFp2(x, msg, strlen(msg) + 1 /* add zero byte */, ctr, dst, strlen(dst));
+		ethMsgToFp2(x, msg, strlen(msg) + 1 /* add zero byte */, ctr, dst, strlen(dst));
 		CYBOZU_TEST_EQUAL(toHexStr(x), expect);
 	}
 	{
@@ -214,10 +211,22 @@ void test2(const T& mapto)
 		set(x, xs);
 		set(y, ys);
 		G2 P;
-		mapto.opt_swu2_map(P, u0, &u1);
+		ethFp2ToG2(P, u0, &u1);
 		P.normalize();
 		CYBOZU_TEST_EQUAL(P.x, x);
 		CYBOZU_TEST_EQUAL(P.y, y);
+	}
+	{
+		// https://media.githubusercontent.com/media/ethereum/eth2.0-spec-tests/v0.10.1/tests/general/phase0/bls/sign/small/sign_case_11b8c7cad5238946/data.yaml
+		const char *secs = "47b8192d77bf871b62e87859d653922725724a5c031afeabc60bcef5ff665138";
+		const char msg[32] = {};
+		const char *expect = "b2deb7c656c86cb18c43dae94b21b107595486438e0b906f3bdb29fa316d0fc3cab1fc04c6ec9879c773849f2564d39317bfa948b4a35fc8509beafd3a2575c25c077ba8bca4df06cb547fe7ca3b107d49794b7132ef3b5493a6ffb2aad2a441";
+		Fr sec;
+		sec.deserializeHexStr(secs);
+		G2 Q;
+		Q.deserializeHexStr(expect);
+		Q *= (1/sec);
+		printf("Q=%s\n", Q.serializeToHexStr().c_str());
 	}
 }
 
@@ -247,7 +256,7 @@ void testSign(const T& mapto)
 }
 
 template<class T>
-void helpTest(const T& mapto)
+void osswu2_helpTest(const T& mapto)
 {
 	const struct {
 		Fp2Str t;
@@ -294,7 +303,7 @@ void helpTest(const T& mapto)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Fp2 t, x, y, z;
-		typename T::Point P;
+		Point P;
 		set(t, tbl[i].t);
 		set(x, tbl[i].x);
 		set(y, tbl[i].y);
@@ -360,7 +369,6 @@ void addTest(const T& mapto)
 			},
 		},
 	};
-	typedef typename T::Point Point;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Point P, Q, R;
 		set(P, tbl[i].P);
@@ -430,8 +438,7 @@ void iso3Test(const T& mapto)
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
-template<class T>
-void opt_swu2_mapTest(const T& mapto)
+void ethFp2ToG2test()
 {
 	const Fp2Str t1s = {
 		"0xafcfb20d836159f0cfb6f48c0ed808fd97a1cd1b9f1eb14451ff59e3884b1bf7665406cce673d434dde6933bdcf0ec9",
@@ -474,15 +481,14 @@ void opt_swu2_mapTest(const T& mapto)
 	set(t2, t2s);
 	G2 P1, P2;
 	set(P1, t1t2s);
-	mapto.opt_swu2_map(P2, t1, &t2);
+	ethFp2ToG2(P2, t1, &t2);
 	CYBOZU_TEST_EQUAL(P1, P2);
 	set(P1, t1t1s);
-	mapto.opt_swu2_map(P2, t1, &t1);
+	ethFp2ToG2(P2, t1, &t1);
 	CYBOZU_TEST_EQUAL(P1, P2);
 }
 
-template<class T>
-void testVec(const T& mapto, const char *file)
+void testVec(const char *file)
 {
 	std::ifstream ifs(file);
 	Fp2 t1, t2;
@@ -498,7 +504,7 @@ void testVec(const T& mapto, const char *file)
 		ifs >> s;
 		CYBOZU_TEST_EQUAL(s, "out");
 		ifs >> out.x >> out.y >> out.z;
-		mapto.opt_swu2_map(P, t1, &t2);
+		ethFp2ToG2(P, t1, &t2);
 		CYBOZU_TEST_EQUAL(P, out);
 	}
 }
@@ -509,15 +515,16 @@ CYBOZU_TEST_AUTO(test)
 	Fp::setETHserialization(true);
 	bn::setMapToMode(MCL_MAP_TO_MODE_WB19);
 	const mcl::bn::local::MapToG2_WB19& mapto = BN::param.mapTo.mapToG2_WB19_;
-	test2(mapto);
-	helpTest(mapto);
+	test2();
+	osswu2_helpTest(mapto);
 	addTest(mapto);
 	iso3Test(mapto);
-	opt_swu2_mapTest(mapto);
+	testSign(mapto);
+	ethFp2ToG2test();
 	testHMAC();
 	testHashToFp2();
-	testMap2curve_osswu2(mapto);
-//	testVec(mapto, "fips_186_3_B233.txt");
-//	testVec(mapto, "misc.txt");
-//	testHash_g2All(mapto, "../../bls_sigs_ref/test-vectors/hash_g2/");
+	ethMsgToG2test();
+//	testVec("fips_186_3_B233.txt");
+//	testVec("misc.txt");
+//	testHash_g2All("../../bls_sigs_ref/test-vectors/hash_g2/");
 }
