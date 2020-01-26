@@ -314,12 +314,101 @@ struct MapToG2_WB19 {
 		if (!x.b.isZero()) return false;
 		return false;
 	}
+	/*
+		z = sqrt(u/v) = (uv^7) (uv^15)^((p^2-9)/16) * root4
+		return true if found
+	*/
+	bool sqr_div(Fp2& z, const Fp2& u, const Fp2& v) const
+	{
+		Fp2 gamma, t1, t2;
+		Fp2::sqr(gamma, v); // v^2
+		Fp2::sqr(t2, gamma); // v^4
+		Fp2::mul(t1, u, v); // uv
+		t1 *= gamma; // uv^3
+		t1 *= t2; // uv^7
+		Fp2::sqr(t2, t2); // v^8
+		t2 *= t1;
+		Fp2::pow(gamma, t2, sqrtConst);
+		gamma *= t1;
+		Fp2 candi;
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(root4); i++) {
+			Fp2::mul(candi, gamma, root4[i]);
+			Fp2::sqr(t1, candi);
+			t1 *= v;
+			if (t1 == u) {
+				z = candi;
+				return true;
+			}
+		}
+		z = gamma;
+		return false;
+	}
+	// https://github.com/ethereum/py_ecc
+	void optimized_swu_G2(Point& P, const Fp2& t) const
+	{
+		Fp2 t2, t2xi, t2xi2;
+		Fp2::sqr(t2, t);
+		mul_xi(t2xi, t2);
+		Fp2::sqr(t2xi2, t2xi);
+		Fp2 nume, deno;
+		// (t^2 * xi)^2 + (t^2 * xi)
+		Fp2::add(deno, t2xi2, t2xi);
+		Fp2::add(nume, deno, 1);
+		nume *= Ell2p_b;
+		if (deno.isZero()) {
+			Fp2::mul(deno, Ell2p_a, xi);
+		} else {
+			deno *= -Ell2p_a;
+		}
+		Fp2 u, v;
+		{
+			Fp2 deno2, tmp, tmp1, tmp2;
+			Fp2::sqr(deno2, deno);
+			Fp2::mul(v, deno2, deno);
+
+			Fp2::mul(u, Ell2p_b, v);
+			Fp2::mul(tmp, Ell2p_a, nume);
+			tmp *= deno2;
+			u += tmp;
+			Fp2::sqr(tmp, nume);
+			tmp *= nume;
+			u += tmp;
+		}
+		Fp2 candi;
+		bool success = sqr_div(candi, u, v);
+		P.y = candi;
+		candi *= t2;
+		candi *= t;
+		u *= t2xi2;
+		u *= t2xi;
+		bool success2 = false;
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(etas); i++) {
+			Fp2 t1;
+			Fp2::mul(t1, etas[i], candi);
+			Fp2::sqr(t2, t1);
+			t2 *= v;
+			if (t2 == u && !success && !success2) {
+				P.y = t1;
+				success2 = true;
+			}
+		}
+		assert(success || success2);
+		if (!success) {
+			nume *= t2xi;
+		}
+		if (isNegSign(t) != isNegSign(P.y)) {
+			Fp2::neg(P.y, P.y);
+		}
+		P.y *= deno;
+		P.x = nume;
+		P.z = deno;
+	}
+	// https://github.com/algorand/bls_sigs_ref
 	void osswu2_help(Point& P, const Fp2& t) const
 	{
 		Fp2 t2, t2xi;
 		Fp2::sqr(t2, t);
 		Fp2 den, den2;
-//		Fp2::mul(t2xi, t2, xi);
 		mul_xi(t2xi, t2);
 		den = t2xi;
 		Fp2::sqr(den2, den);
@@ -473,13 +562,23 @@ struct MapToG2_WB19 {
 		add(Q, work, work2);
 #endif
 	}
+	template<class T>
+	void put(const T& P) const
+	{
+		const int base = 10;
+		printf("x=%s\n", P.x.getStr(base).c_str());
+		printf("y=%s\n", P.y.getStr(base).c_str());
+		printf("z=%s\n", P.z.getStr(base).c_str());
+	}
 	void opt_swu2_map(G2& P, const Fp2& t, const Fp2 *t2 = 0) const
 	{
 		Point Pp;
 		osswu2_help(Pp, t);
+//put(Pp);
 		if (t2) {
 			Point P2;
 			osswu2_help(P2, *t2);
+//put(P2);
 			add(Pp, Pp, P2);
 		}
 		iso3(P, Pp);
