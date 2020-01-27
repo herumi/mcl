@@ -62,6 +62,7 @@ struct MapToG2_WB19 {
 		Fp2::neg(Q.y, P.y);
 		Q.z = P.z;
 	}
+	// Jacobi
 	template<class G>
 	void add(G& R, const G& P, const G& Q) const
 	{
@@ -260,30 +261,29 @@ struct MapToG2_WB19 {
 	template<size_t N>
 	void evalPoly(Fp2& y, const Fp2& x, const Fp2 *zpows, const Fp2 (&cof)[N]) const
 	{
-		Fp2::mul(y, zpows[0], cof[N - 1]);
+		y = cof[N - 1]; // always zpows[0] = 1
 		for (size_t i = 1; i < N; i++) {
 			y *= x;
 			Fp2 t;
-			Fp2::mul(t, zpows[i], cof[N - 1 - i]);
+			Fp2::mul(t, zpows[i - 1], cof[N - 1 - i]);
 			y += t;
 		}
 	}
 	// refer (xnum, xden, ynum, yden)
 	void iso3(G2& Q, const Point& P) const
 	{
-		Fp2 zpows[4];
-		zpows[0] = 1;
-		Fp2::sqr(zpows[1], P.z);
-		Fp2::sqr(zpows[2], zpows[1]);
-		Fp2::mul(zpows[3], zpows[2], zpows[1]);
+		Fp2 zpows[3];
+		Fp2::sqr(zpows[0], P.z);
+		Fp2::sqr(zpows[1], zpows[0]);
+		Fp2::mul(zpows[2], zpows[1], zpows[0]);
 		Fp2 mapvals[4];
 		evalPoly(mapvals[0], P.x, zpows, xnum);
 		evalPoly(mapvals[1], P.x, zpows, xden);
 		evalPoly(mapvals[2], P.x, zpows, ynum);
 		evalPoly(mapvals[3], P.x, zpows, yden);
-		mapvals[1] *= zpows[1];
+		mapvals[1] *= zpows[0];
 		mapvals[2] *= P.y;
-		mapvals[3] *= zpows[1];
+		mapvals[3] *= zpows[0];
 		mapvals[3] *= P.z;
 		Fp2::mul(Q.z, mapvals[1], mapvals[3]);
 		Fp2::mul(Q.x, mapvals[0], mapvals[3]);
@@ -344,7 +344,7 @@ struct MapToG2_WB19 {
 		return false;
 	}
 	// https://github.com/ethereum/py_ecc
-	void optimized_swu_G2(Point& P, const Fp2& t) const
+	void py_ecc_optimized_swu_G2(Point& P, const Fp2& t) const
 	{
 		Fp2 t2, t2xi, t2xi2;
 		Fp2::sqr(t2, t);
@@ -402,6 +402,64 @@ struct MapToG2_WB19 {
 		P.y *= deno;
 		P.x = nume;
 		P.z = deno;
+	}
+	// Proj
+	void py_ecc_iso_map_G2(G2& Q, const Point& P) const
+	{
+		Fp2 zpows[3];
+		zpows[0] = P.z;
+		Fp2::sqr(zpows[1], zpows[0]);
+		Fp2::mul(zpows[2], zpows[1], zpows[0]);
+		Fp2 mapvals[4];
+		evalPoly(mapvals[0], P.x, zpows, xnum);
+		evalPoly(mapvals[1], P.x, zpows, xden);
+		evalPoly(mapvals[2], P.x, zpows, ynum);
+		evalPoly(mapvals[3], P.x, zpows, yden);
+		mapvals[1] *= P.z;
+		mapvals[2] *= P.y;
+		mapvals[3] *= P.z;
+		Fp2::mul(Q.z, mapvals[1], mapvals[3]);
+		Fp2::mul(Q.x, mapvals[0], mapvals[3]);
+		Fp2::mul(Q.y, mapvals[1], mapvals[2]);
+	}
+	/*
+		in : Jacobi [X:Y:Z]
+		out : Proj [A:B:C]
+		[X:Y:Z] as Jacobi
+		= (X/Z^2, Y/Z^3) as Affine
+		= [X/Z^2:Y/Z^3:1] as Proj
+		= [XZ:Y:Z^3] as Proj
+	*/
+	void toProj(G2& out, const G2& in) const
+	{
+		Fp2 z2;
+		Fp2::sqr(z2, in.z);
+		Fp2::mul(out.x, in.x, in.z);
+		out.y = in.y;
+		Fp2::mul(out.z, in.z, z2);
+	}
+	/*
+		in : Proj [X:Y:Z]
+		out : Jacobi [A:B:C]
+		[X:Y:Z] as Proj
+		= (X/Z, Y/Z) as Affine
+		= [X/Z:Y/Z:1] as Jacobi
+		= [XZ:YZ^2:Z] as Jacobi
+	*/
+	void toJacobi(G2& out, const G2& in) const
+	{
+		Fp2 z2;
+		Fp2::sqr(z2, in.z);
+		Fp2::mul(out.x, in.x, in.z);
+		Fp2::mul(out.y, in.y, z2);
+		out.z = in.z;
+	}
+	// Proj
+	void py_ecc_map_to_curve_G2(G2& out, const Fp2& t) const
+	{
+		Point P;
+		py_ecc_optimized_swu_G2(P, t);
+		py_ecc_iso_map_G2(out, P);
 	}
 	// https://github.com/algorand/bls_sigs_ref
 	void osswu2_help(Point& P, const Fp2& t) const
@@ -574,15 +632,26 @@ struct MapToG2_WB19 {
 	{
 		Point Pp;
 		osswu2_help(Pp, t);
-//put(Pp);
 		if (t2) {
 			Point P2;
 			osswu2_help(P2, *t2);
-//put(P2);
 			add(Pp, Pp, P2);
 		}
 		iso3(P, Pp);
 		clear_h2(P, P);
+	}
+	void py_ecc_hash_to_G2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
+	{
+		Fp2 t1, t2;
+		hashToFp2(t1, msg, msgSize, 0, dst, dstSize);
+		hashToFp2(t2, msg, msgSize, 1, dst, dstSize);
+		G2 P1, P2;
+		py_ecc_map_to_curve_G2(P1, t1);
+		py_ecc_map_to_curve_G2(P2, t2);
+		toJacobi(P1, P1);
+		toJacobi(P2, P2);
+		P1 += P2;
+		clear_h2(out, P1);
 	}
 	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{

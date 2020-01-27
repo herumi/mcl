@@ -96,7 +96,7 @@ std::string toHexStr(const G2& P)
 	return toHexStr(xy, 96);
 }
 
-void testHash_g2(const std::string& fileName)
+void ethMsgToG2test(const std::string& fileName)
 {
 	const char *dst = "\x02";
 	printf("name=%s\n", fileName.c_str());
@@ -115,13 +115,16 @@ void testHash_g2(const std::string& fileName)
 	}
 }
 
-void testHash_g2All(const std::string& dir)
+void ethMsgToG2testAll(const std::string& dir)
+	try
 {
 	cybozu::FileList list = cybozu::GetFileList(dir);
 	for (size_t i = 0; i < list.size(); i++) {
 		const cybozu::FileInfo& info = list[i];
-		testHash_g2(dir + "/" + info.name);
+		ethMsgToG2test(dir + "/" + info.name);
 	}
+} catch (...) {
+	printf("skip test because `%s` is not found\n", dir.c_str());
 }
 
 void testHMAC()
@@ -142,7 +145,7 @@ void testHashToFp2()
 	const char *outS = "0xe54bc0f2e26071a79ba5fe7ae5307d39cf5519e581e03b43f39a431eccc258fa1477c517b1268b22986601ee5caa5ea 0x17e8397d5e687ff7f915c23f27fe1ca2c397a7df91de8c88dc82d34c9188a3ef719f9f20436ea8a5fe7d509fbc79214d";
 	Fp2 out, ok;
 	ok.setStr(outS);
-	mcl::bn::local::hashToFp2(out, msg, strlen(msg) + 1, 0, dst, strlen(dst));
+	ethMsgToFp2(out, msg, strlen(msg) + 1, 0, dst, strlen(dst));
 	CYBOZU_TEST_EQUAL(out, ok);
 }
 
@@ -166,15 +169,13 @@ void ethMsgToG2test()
 	};
 	G2 out, ok;
 	set(ok, outS);
-//	mapto.map2curve_osswu2(out, msg, strlen(msg) + 1 /* contains zero byte */, dst, strlen(dst));
 	ethMsgToG2(out, msg, strlen(msg) + 1 /* contains zero byte */, dst, strlen(dst));
 	CYBOZU_TEST_EQUAL(out, ok);
 }
 
 template<class T>
-void test2(const T& mapto)
+void py_eccTest(const T& mapto)
 {
-	(void)mapto;
 	/*
 		testHashToBaseFP2
 		https://github.com/status-im/nim-blscurve/blob/de64516a5933a6e8ebb01a346430e61a201b5775/blscurve/hash_to_curve.nim#L492
@@ -221,37 +222,82 @@ void test2(const T& mapto)
 		// https://media.githubusercontent.com/media/ethereum/eth2.0-spec-tests/v0.10.1/tests/general/phase0/bls/sign/small/sign_case_11b8c7cad5238946/data.yaml
 		const char *secs = "47b8192d77bf871b62e87859d653922725724a5c031afeabc60bcef5ff665138";
 		const char msg[33] = {};
+		const PointStr sigs = {
+			{
+				"2293012529822761631014706649736058250445440108079005633865844964288531978383212702502746862140143627562812967825888",
+				"1475696770777687381853347234154288535008294218073605500048435508284141334771039537063168112498702685312150787094910",
+			},
+			{
+				"1469299105114671507318396580458717074245984116935623233990667855919962974356517750849608590897738614199799891365360",
+				"2030012464923141446228430710552804525466499055365665031199510204412192520245701820596000835423160058948948207746066",
+			},
+			{
+				"3767430478723640173773019527754919617225964135305264831468522226308636862085707682484234512649553124965049251340541",
+				"1620434249170283311052688271749383011546709139865619017626863134580828776106815964830529695055765742705622363756158",
+			}
+		};
 		const char *expect = "b2deb7c656c86cb18c43dae94b21b107595486438e0b906f3bdb29fa316d0fc3cab1fc04c6ec9879c773849f2564d39317bfa948b4a35fc8509beafd3a2575c25c077ba8bca4df06cb547fe7ca3b107d49794b7132ef3b5493a6ffb2aad2a441";
 		Fr sec;
-		sec.deserializeHexStr(secs);
-		G2 Q;
+		sec.setStr(secs, 16);
+		G2 P1, P2, Q;
+		set(Q, sigs);
 		Q.deserializeHexStr(expect);
-		Q *= (1/sec);
-		G2 P;
 		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_";
-std::cout << std::hex;
-		ethMsgToG2(P, msg, 33, dst, strlen(dst));
-		printf("P=%s\n", P.serializeToHexStr().c_str());
-		printf("Q=%s\n", Q.serializeToHexStr().c_str());
-		mapto.put(P);
-		printf("equal %d\n", P == Q);
-PointStr ss = {
-{
-	"3257676086538823567761244186080544403330427395946948635449582231233180442322077484215757257097813156392664917178234",
-	"228537154970146118588036771068753907531432250550232803895899422656339347346840810590265440478956079727608969412311",
-},
-{
-	"2211656311977487430400091470761449132135875543285725344573261083165139360734602590585740129428161178745780787382986",
-	"40258781102313547933704047733645277081466097003572358028270922475602169023300010845551344432311507156784289541037",
-},
-{
-	"3554635405737095173231135338330740471713348364117258010850826274365262386961694608537862757803628655357449929362973",
-	"3305133470803621861948711123350198492693369595391902116552614265910644738630055172693143208260379598437272858586799",
-},
-};
-		Point RR;
-		set(RR, ss);
-		mapto.put(RR);
+		const size_t dstSize = strlen(dst);
+		const size_t msgSize = 32 + 1;
+		Fp2 t1, t2;
+		ethMsgToFp2(t1, msg, msgSize, 0, dst, dstSize);
+		ethMsgToFp2(t2, msg, msgSize, 1, dst, dstSize);
+		mapto.py_ecc_map_to_curve_G2(P1, t1);
+		mapto.py_ecc_map_to_curve_G2(P2, t2);
+		const PointStr ss = {
+			{
+				"1972340536407012813644167184956896760015950618902823780657111692209122974250648595689834944711427684709284318183285",
+				"2952312506825835541808570850755873891927945826649651965587037814445801597710562388482713867284483531575836668891717",
+			},
+			{
+				"2802951456840474233717338518518040462806475389210379447165158098937491293557221993219251045678976553989024259770721",
+				"2695848095528813794114709219550802586214789808214026789183854152760661360110019071654047951530688159586363471282307",
+			},
+			{
+				"1480478729322062079370070638002133449414477155913782123147952976030053267833796311564176542916706247537348236105579",
+				"3253481872910728113595595353980041952789112074899014850028493351493155577726278005524067083458491999010934020984031",
+			}
+		};
+		mapto.toJacobi(P1, P1);
+		mapto.toJacobi(P2, P2);
+		P1 += P2;
+		G2 P11;
+		set(P11, ss);
+		mapto.toJacobi(P11, P11);
+		CYBOZU_TEST_EQUAL(P1, P11);
+		const PointStr clears = {
+			{
+				"1957332172874233660214089655571851577083897125827848734477574606688306573833007308344920242234605652569670194263389",
+				"1116411061540418343539740639798030171984762250397980084002067231825141620343376868772345493606425790045780405764984",
+			},
+			{
+				"1009600579479639236035097803661439342927513547544039095581093451111718225564873663970283187908867141796447259993680",
+				"1036550257360332982249682819433119008785814033355112815293516573225867246356464383591412294871954385805192773093413",
+			},
+			{
+				"1455356692682887406712747484663891805342757123109829795478648571883713143907445859929832639473694165616164972254859",
+				"625703068888812559481386371501827420717093467297957594257224036896125014497486535098535016737064365426613580045089",
+			},
+		};
+		set(P11, clears);
+		mapto.clear_h2(P1, P1);
+		mapto.toJacobi(P11, P11);
+		CYBOZU_TEST_EQUAL(P1, P11);
+		mapto.py_ecc_hash_to_G2(P1, msg, msgSize, dst, dstSize);
+		CYBOZU_TEST_EQUAL(P1, P11);
+		ethMsgToG2(P1, msg, msgSize, dst, dstSize);
+		CYBOZU_TEST_EQUAL(P1, P11);
+		set(P11, sigs);
+		mapto.toJacobi(P11, P11);
+		P1 *= sec;
+		CYBOZU_TEST_EQUAL(P1, P11);
+		CYBOZU_TEST_EQUAL(P1.serializeToHexStr(), expect);
 	}
 }
 
@@ -272,12 +318,9 @@ void testSign(const T& mapto)
 		t.a = tbl[i];
 		for (size_t j = 0; j < N; j++) {
 			t.b = tbl[j];
-			if (mapto.isNegSign(t) != (expect[i][j] < 0)) {
-				printf("err %zd %zd\n", i, j);
-			}
+			CYBOZU_TEST_EQUAL(mapto.isNegSign(t), (expect[i][j] < 0));
 		}
 	}
-	puts("ok");
 }
 
 template<class T>
@@ -516,6 +559,10 @@ void ethFp2ToG2test()
 void testVec(const char *file)
 {
 	std::ifstream ifs(file);
+	if (!ifs) {
+		printf("skip testVec because `%s` is not found\n", file);
+	}
+	printf("testVec %s\n", file);
 	Fp2 t1, t2;
 	G2 out, P;
 	std::string s;
@@ -535,7 +582,7 @@ void testVec(const char *file)
 }
 
 template<class T>
-void test3(const T& mapto)
+void py_eccTest2(const T& mapto)
 {
 	Fp2Str ts = {
 		"1918231859236664604157448091070531325862162392395253569013354101088957561890652491757605826252839368362075816084620",
@@ -555,14 +602,32 @@ void test3(const T& mapto)
 			"3910188857576114167072883940429120413632909260968721432280195359371907407125083761682822023489835923188989938783197",
 		},
 	};
+	PointStr out2s = {
+		{
+			"3257676086538823567761244186080544403330427395946948635449582231233180442322077484215757257097813156392664917178234",
+			"228537154970146118588036771068753907531432250550232803895899422656339347346840810590265440478956079727608969412311",
+		},
+		{
+			"2211656311977487430400091470761449132135875543285725344573261083165139360734602590585740129428161178745780787382986",
+			"40258781102313547933704047733645277081466097003572358028270922475602169023300010845551344432311507156784289541037",
+		},
+		{
+			"3554635405737095173231135338330740471713348364117258010850826274365262386961694608537862757803628655357449929362973",
+			"3305133470803621861948711123350198492693369595391902116552614265910644738630055172693143208260379598437272858586799",
+		},
+	};
 	Fp2 t;
 	set(t, ts);
-	Point P, Q;
-	mapto.optimized_swu_G2(P, t);
-	set(Q, out1s);
-	CYBOZU_TEST_EQUAL(P.x, Q.x);
-	CYBOZU_TEST_EQUAL(P.y, Q.y);
-	CYBOZU_TEST_EQUAL(P.z, Q.z);
+	Point p, q;
+	mapto.py_ecc_optimized_swu_G2(p, t);
+	set(q, out1s);
+	CYBOZU_TEST_EQUAL(p.x, q.x);
+	CYBOZU_TEST_EQUAL(p.y, q.y);
+	CYBOZU_TEST_EQUAL(p.z, q.z);
+	G2 P, Q;
+	set(P, out2s);
+	mapto.py_ecc_map_to_curve_G2(Q, t);
+	CYBOZU_TEST_EQUAL(P, Q);
 }
 
 CYBOZU_TEST_AUTO(test)
@@ -571,9 +636,8 @@ CYBOZU_TEST_AUTO(test)
 	Fp::setETHserialization(true);
 	bn::setMapToMode(MCL_MAP_TO_MODE_WB19);
 	const mcl::bn::local::MapToG2_WB19& mapto = BN::param.mapTo.mapToG2_WB19_;
-	test3(mapto);
-return;
-	test2(mapto);
+	py_eccTest(mapto);
+	py_eccTest2(mapto);
 	osswu2_helpTest(mapto);
 	addTest(mapto);
 	iso3Test(mapto);
@@ -582,7 +646,7 @@ return;
 	testHMAC();
 	testHashToFp2();
 	ethMsgToG2test();
-//	testVec("fips_186_3_B233.txt");
-//	testVec("misc.txt");
-//	testHash_g2All("../../bls_sigs_ref/test-vectors/hash_g2/");
+	testVec("../misc/mapto/fips_186_3_B233.txt");
+	testVec("../misc/mapto/misc.txt");
+	ethMsgToG2testAll("../bls_sigs_ref/test-vectors/hash_g2/");
 }
