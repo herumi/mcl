@@ -11,7 +11,7 @@
 // ctr = 0 or 1 or 2
 inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
-	const bool addZeroByte = false; // append zero byte to msg
+	const bool addZeroByte = true; // append zero byte to msg
 	assert(ctr <= 2);
 	const size_t degree = 2;
 	uint8_t msg_prime[32];

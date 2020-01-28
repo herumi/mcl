@@ -108,7 +108,6 @@ void ethMsgToG2test(const std::string& fileName)
 		ifs >> msg >> zero >> ret;
 		if (zero != "00") break;
 		buf = fromHexStr(msg);
-		buf.push_back(0); // add zero byte
 		ethMsgToG2(out, buf.data(), buf.size(), dst, strlen(dst));
 		std::string s = toHexStr(out);
 		CYBOZU_TEST_EQUAL(s, ret);
@@ -145,7 +144,7 @@ void testHashToFp2()
 	const char *outS = "0xe54bc0f2e26071a79ba5fe7ae5307d39cf5519e581e03b43f39a431eccc258fa1477c517b1268b22986601ee5caa5ea 0x17e8397d5e687ff7f915c23f27fe1ca2c397a7df91de8c88dc82d34c9188a3ef719f9f20436ea8a5fe7d509fbc79214d";
 	Fp2 out, ok;
 	ok.setStr(outS);
-	ethMsgToFp2(out, msg, strlen(msg) + 1, 0, dst, strlen(dst));
+	ethMsgToFp2(out, msg, strlen(msg), 0, dst, strlen(dst));
 	CYBOZU_TEST_EQUAL(out, ok);
 }
 
@@ -169,7 +168,7 @@ void ethMsgToG2test()
 	};
 	G2 out, ok;
 	set(ok, outS);
-	ethMsgToG2(out, msg, strlen(msg) + 1 /* contains zero byte */, dst, strlen(dst));
+	ethMsgToG2(out, msg, strlen(msg), dst, strlen(dst));
 	CYBOZU_TEST_EQUAL(out, ok);
 }
 
@@ -186,7 +185,7 @@ void py_eccTest(const T& mapto)
 		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO_POP_";
 		const char *expect = "18df4dc51885b18ca0082a4966b0def46287930b8f1c0b673b11ac48d19c8899bc150d83fd3a7a1430b0de541742c1d4 14eef8ca34b82d065d187a3904cb313dbb44558917cc5091574d9999b5ecfdd5af2fa3aea6e02fb253bf4ae670e72d55";
 		Fp2 x;
-		ethMsgToFp2(x, msg, strlen(msg) + 1 /* add zero byte */, ctr, dst, strlen(dst));
+		ethMsgToFp2(x, msg, strlen(msg), ctr, dst, strlen(dst));
 		CYBOZU_TEST_EQUAL(toHexStr(x), expect);
 	}
 	{
@@ -244,7 +243,7 @@ void py_eccTest(const T& mapto)
 		Q.deserializeHexStr(expect);
 		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_";
 		const size_t dstSize = strlen(dst);
-		const size_t msgSize = 32 + 1;
+		const size_t msgSize = 32;
 		Fp2 t1, t2;
 		ethMsgToFp2(t1, msg, msgSize, 0, dst, dstSize);
 		ethMsgToFp2(t2, msg, msgSize, 1, dst, dstSize);

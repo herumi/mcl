@@ -682,7 +682,7 @@ CYBOZU_TEST_AUTO(eth_hash)
 			"14eef8ca34b82d065d187a3904cb313dbb44558917cc5091574d9999b5ecfdd5af2fa3aea6e02fb253bf4ae670e72d55"
 		};
 		mclBnFp2 x, y;
-		CYBOZU_TEST_EQUAL(mclBn_ethMsgToFp2(&x, msg, strlen(msg) + 1 /* add zero byte */, ctr, dst, strlen(dst)), 0);
+		CYBOZU_TEST_EQUAL(mclBn_ethMsgToFp2(&x, msg, strlen(msg), ctr, dst, strlen(dst)), 0);
 		setFp2(&y, ys);
 		CYBOZU_TEST_ASSERT(mclBnFp2_isEqual(&x, &y));
 	}
@@ -730,7 +730,7 @@ CYBOZU_TEST_AUTO(eth_hash)
 			"0x1796ee0f0b9b65802c90e3e1586034f3826ec3538c66525de298d1ff2f7a26f2ec553ec64e5989ed9841c4456d0bddd7",
 		};
 		mclBnG2 P, Q;
-		mclBn_ethMsgToG2(&P, msg, strlen(msg) + 1 /* add zero byte */, dst, strlen(dst));
+		mclBn_ethMsgToG2(&P, msg, strlen(msg), dst, strlen(dst));
 		setFp2(&Q.x, xs);
 		setFp2(&Q.y, ys);
 		setFp2(&Q.z, zs);
