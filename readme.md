@@ -292,6 +292,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2020/Jan/31 v1.05 mclBn_ethMsgToFp2 has changed to append zero byte at the end of msg
 - 2020/Jan/25 v1.04 add new hash functions
 - 2019/Dec/05 v1.03 disable to check the order in setStr
 - 2019/Sep/30 v1.00 add some functions to bn.h ; [api.md](api.md).
