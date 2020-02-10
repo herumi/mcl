@@ -752,6 +752,23 @@ public:
 		}
 		EcT P(*this);
 		P.normalize();
+		if (ioMode & IoEcAffineSerialize) {
+			if (b_ == 0) { // assume Zero if x = y = 0
+				*pb = false;
+				return;
+			}
+			if (isZero()) {
+				// all zero
+				P.z.save(pb, os, IoSerialize);
+				if (!*pb) return;
+				P.z.save(pb, os, IoSerialize);
+				return;
+			}
+			P.x.save(pb, os, IoSerialize);
+			if (!*pb) return;
+			P.y.save(pb, os, IoSerialize);
+			return;
+		}
 		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
@@ -835,6 +852,21 @@ public:
 #else
 		z = 1;
 #endif
+		if (ioMode & IoEcAffineSerialize) {
+			if (b_ == 0) { // assume Zero if x = y = 0
+				*pb = false;
+				return;
+			}
+			x.load(pb, is, IoSerialize);
+			if (!*pb) return;
+			y.load(pb, is, IoSerialize);
+			if (!*pb) return;
+			if (x.isZero() && y.isZero()) {
+				z.clear();
+				return;
+			}
+			goto verifyValidness;
+		}
 		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
@@ -917,10 +949,7 @@ public:
 			x.load(pb, is, ioMode); if (!*pb) return;
 			if (c == '1') {
 				y.load(pb, is, ioMode); if (!*pb) return;
-				if (!isValid(x, y)) {
-					*pb = false;
-					return;
-				}
+				goto verifyValidness;
 			} else if (c == '2' || c == '3') {
 				bool isYodd = c == '3';
 				*pb = getYfromX(y, x, isYodd);
@@ -941,6 +970,13 @@ public:
 		} else {
 			*pb = true;
 		}
+		return;
+	verifyValidness:
+		if (!isValid(x, y)) {
+			*pb = false;
+			return;
+		}
+		goto verifyOrder;
 	}
 	// deplicated
 	static void setCompressedExpression(bool compressedExpression = true)

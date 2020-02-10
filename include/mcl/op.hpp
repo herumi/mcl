@@ -101,10 +101,16 @@ enum IoMode {
 	IoSerialize = 512, // use MBS for 1-bit y
 	IoFixedSizeByteSeq = IoSerialize, // obsolete
 	IoEcProj = 1024, // projective or jacobi coordinate
-	IoSerializeHexStr = 2048 // printable hex string
+	IoSerializeHexStr = 2048, // printable hex string
+	IoEcAffineSerialize = 4096 // serialize [x:y]
 };
 
 namespace fp {
+
+inline bool isIoSerializeMode(int ioMode)
+{
+	return ioMode & (IoArray | IoArrayRaw | IoSerialize | IoEcAffineSerialize | IoSerializeHexStr);
+}
 
 const size_t UnitBitSize = sizeof(Unit) * 8;
 
@@ -366,7 +372,7 @@ private:
 
 inline const char* getIoSeparator(int ioMode)
 {
-	return (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr)) ? "" : " ";
+	return (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr | IoEcAffineSerialize)) ? "" : " ";
 }
 
 inline void dump(const void *buf, size_t n)

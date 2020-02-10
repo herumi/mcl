@@ -263,7 +263,7 @@ public:
 	{
 		bool isMinus = false;
 		*pb = false;
-		if (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr)) {
+		if (fp::isIoSerializeMode(ioMode)) {
 			const size_t n = getByteSize();
 			v_[op_.N - 1] = 0;
 			size_t readSize;
@@ -299,7 +299,7 @@ public:
 	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const size_t n = getByteSize();
-		if (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr)) {
+		if (fp::isIoSerializeMode(ioMode)) {
 			if (ioMode & IoArrayRaw) {
 				cybozu::write(pb, os, v_, n);
 			} else {
