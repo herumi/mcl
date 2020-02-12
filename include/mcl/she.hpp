@@ -374,6 +374,10 @@ private:
 			S_.clear();
 			T_.clear();
 		}
+		bool isValid() const
+		{
+			return S_.isValid() && T_.isValid();
+		}
 		static void add(CipherTextAT& z, const CipherTextAT& x, const CipherTextAT& y)
 		{
 			/*
