@@ -6,21 +6,24 @@
 
 CYBOZU_TEST_AUTO(ArrayIterator)
 {
-	const uint32_t in[2] = { 0x12345678, 0xabcdef89 };
-	const size_t bitSize = 64;
-	for (size_t w = 1; w <= 32; w++) {
-		const uint32_t mask = uint32_t((uint64_t(1) << w) - 1);
-		mpz_class x;
-		mcl::gmp::setArray(x, in, 2);
-		mcl::fp::ArrayIterator<uint32_t> ai(in, bitSize, w);
-		size_t n = (bitSize + w - 1) / w;
-		for (size_t j = 0; j < n; j++) {
-			CYBOZU_TEST_ASSERT(ai.hasNext());
-			uint32_t v = ai.getNext();
-			CYBOZU_TEST_EQUAL(x & mask, v);
-			x >>= w;
+	const uint32_t in[] = { 0x12345678, 0xabcdef89, 0xaabbccdd };
+	for (size_t bitSize = 1; bitSize <= 64; bitSize++) {
+		for (size_t w = 1; w <= 32; w++) {
+
+			const uint32_t mask = uint32_t((uint64_t(1) << w) - 1);
+			mpz_class x;
+			mcl::gmp::setArray(x, in, CYBOZU_NUM_OF_ARRAY(in));
+			x &= (mpz_class(1) << bitSize) - 1;
+			mcl::fp::ArrayIterator<uint32_t> ai(in, bitSize, w);
+			size_t n = (bitSize + w - 1) / w;
+			for (size_t j = 0; j < n; j++) {
+				CYBOZU_TEST_ASSERT(ai.hasNext());
+				uint32_t v = ai.getNext();
+				CYBOZU_TEST_EQUAL(x & mask, v);
+				x >>= w;
+			}
+			CYBOZU_TEST_ASSERT(!ai.hasNext());
 		}
-		CYBOZU_TEST_ASSERT(!ai.hasNext());
 	}
 }
 

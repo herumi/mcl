@@ -23,35 +23,33 @@ struct ArrayIterator {
 		, bitSize(bitSize)
 		, w(w)
 		, pos(0)
-		, mask((w == TbitSize ? 0 : (T(1) << w)) - 1)
+		, mask(makeMask(w))
 	{
 		assert(w <= TbitSize);
+	}
+	T makeMask(size_t w) const
+	{
+		return (w == TbitSize) ? ~T(0) : (T(1) << w) - 1;
 	}
 	bool hasNext() const { return bitSize > 0; }
 	T getNext()
 	{
-		if (w == TbitSize) {
-			bitSize -= w;
-			return *x++;
+		if (bitSize < w) {
+			w = bitSize;
+			mask = makeMask(w);
 		}
-		if (pos + w < TbitSize) {
-			T v = (*x >> pos) & mask;
-			pos += w;
-			if (bitSize < w) {
-				bitSize = 0;
+		if (pos + w <= TbitSize) {
+			T v = x[0] >> pos;
+			if (pos + w < TbitSize) {
+				pos += w;
+				v &= mask;
 			} else {
-				bitSize -= w;
+				pos = 0;
+				x++;
 			}
+			bitSize -= w;
 			return v;
 		}
-		if (pos + bitSize <= TbitSize) {
-			assert(bitSize <= w);
-			T v = *x >> pos;
-			assert((v >> bitSize) == 0);
-			bitSize = 0;
-			return v & mask;
-		}
-		assert(pos > 0);
 		T v = (x[0] >> pos) | (x[1] << (TbitSize - pos));
 		v &= mask;
 		pos = (pos + w) - TbitSize;
