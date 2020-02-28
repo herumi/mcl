@@ -7,8 +7,10 @@
 	http://opensource.org/licenses/BSD-3-Clause
 	ref. https://eprint.iacr.org/2019/403 , https://github.com/algorand/bls_sigs_ref
 */
+namespace mcl {
 
 // ctr = 0 or 1 or 2
+template<class Fp2>
 inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
 	const bool addZeroByte = true; // append zero byte to msg
@@ -35,6 +37,7 @@ inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, co
 	}
 }
 
+template<class Fp, class Fp2, class G2>
 struct MapToG2_WB19 {
 	Fp2 xi;
 	Fp2 Ell2p_a;
@@ -666,4 +669,6 @@ struct MapToG2_WB19 {
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
 };
+
+} // mcl
 

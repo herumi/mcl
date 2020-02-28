@@ -1,4 +1,6 @@
-#pragma once
+#ifndef MCL_INCLUDE_MCL_BN_HPP
+#define MCL_INCLUDE_MCL_BN_HPP
+// use MCL_INCLUDE_MCL_BN_HPP instead of #pragma once to be able to include twice
 /**
 	@file
 	@brief optimal ate pairing over BN-curve / BLS12-curve
@@ -9,6 +11,7 @@
 #include <mcl/fp_tower.hpp>
 #include <mcl/ec.hpp>
 #include <mcl/curve_type.h>
+#include <mcl/mapto_wb19.hpp>
 #include <assert.h>
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <vector>
@@ -24,58 +27,12 @@
 #ifndef MCL_MAX_FR_BIT_SIZE
 	#define MCL_MAX_FR_BIT_SIZE MCL_MAX_FP_BIT_SIZE
 #endif
+#ifndef MCL_NAMESPACE_BN
+	#define MCL_NAMESPACE_BN bn
+#endif
 namespace mcl {
 
-struct CurveParam {
-	/*
-		y^2 = x^3 + b
-		i^2 = -1
-		xi = xi_a + i
-		v^3 = xi
-		w^2 = v
-	*/
-	const char *z;
-	int b; // y^2 = x^3 + b
-	int xi_a; // xi = xi_a + i
-	/*
-		BN254, BN381 : Dtype
-		BLS12-381 : Mtype
-	*/
-	bool isMtype;
-	int curveType; // same in curve_type.h
-	bool operator==(const CurveParam& rhs) const
-	{
-		return strcmp(z, rhs.z) == 0 && b == rhs.b && xi_a == rhs.xi_a && isMtype == rhs.isMtype;
-	}
-	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
-};
-
-const CurveParam BN254 = { "-0x4080000000000001", 2, 1, false, MCL_BN254 }; // -(2^62 + 2^55 + 1)
-// provisional(experimental) param with maxBitSize = 384
-const CurveParam BN381_1 = { "-0x400011000000000000000001", 2, 1, false, MCL_BN381_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam BN381_2 = { "-0x400040090001000000000001", 2, 1, false, MCL_BN381_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
-const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
-const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
-const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
-const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
-
-inline const CurveParam& getCurveParam(int type)
-{
-	switch (type) {
-	case MCL_BN254: return mcl::BN254;
-	case MCL_BN381_1: return mcl::BN381_1;
-	case MCL_BN381_2: return mcl::BN381_2;
-	case MCL_BN462: return mcl::BN462;
-	case MCL_BN_SNARK1: return mcl::BN_SNARK1;
-	case MCL_BLS12_381: return mcl::BLS12_381;
-	case MCL_BN160: return mcl::BN160;
-	default:
-		assert(0);
-		return mcl::BN254;
-	}
-}
-
-namespace bn {
+namespace MCL_NAMESPACE_BN {
 
 namespace local {
 struct FpTag;
@@ -314,7 +271,6 @@ public:
 	}
 };
 
-#include <mcl/mapto_wb19.hpp>
 
 struct MapTo {
 	enum {
@@ -332,7 +288,7 @@ struct MapTo {
 	int type_;
 	int mapToMode_;
 	bool useOriginalG2cofactor_;
-	MapToG2_WB19 mapToG2_WB19_;
+	MapToG2_WB19<Fp, Fp2, G2> mapToG2_WB19_;
 	MapTo()
 		: type_(0)
 		, mapToMode_(MCL_MAP_TO_MODE_ORIGINAL)
@@ -2320,7 +2276,7 @@ inline const Fr& getG2cofactorAdjInv()
 inline bool ethMsgToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
 	if (!BN::param.isBLS12) return false;
-	BN::local::hashToFp2(out, msg, msgSize, ctr, dst, dstSize);
+	hashToFp2(out, msg, msgSize, ctr, dst, dstSize);
 	return true;
 }
 
@@ -2340,3 +2296,4 @@ inline bool ethMsgToG2(G2& out, const void *msg, size_t msgSize, const void *dst
 
 } } // mcl::bn
 
+#endif
