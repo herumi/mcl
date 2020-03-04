@@ -9,6 +9,7 @@
 #include <cybozu/xorshift.hpp>
 #ifndef MCL_USE_VINT
 #include <gmpxx.h>
+#include <cybozu/link_mpir.hpp>
 #endif
 
 #define PUT(x) std::cout << #x "=" << x << std::endl;
