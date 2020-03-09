@@ -83,6 +83,10 @@ const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1
 const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
 const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
 
+#ifdef __clang__
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+#endif
 inline const CurveParam& getCurveParam(int type)
 {
 	switch (type) {
@@ -98,6 +102,9 @@ inline const CurveParam& getCurveParam(int type)
 		return mcl::BN254;
 	}
 }
+#ifdef __clang__
+	#pragma GCC diagnostic pop
+#endif
 
 } // mcl
 #endif
