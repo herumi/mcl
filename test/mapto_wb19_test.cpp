@@ -629,6 +629,30 @@ void py_eccTest2(const T& mapto)
 	CYBOZU_TEST_EQUAL(P, Q);
 }
 
+template<class T>
+void testHashToFp2v6(const T& mapto)
+{
+	const char msg[] = "asdf";
+	const char dst[] = "QUUX-V01-CS02";
+	Fp2 out[2];
+	mapto.hashToFp2v6(out, msg, strlen(msg), dst, strlen(dst));
+	const Fp2Str expectStr[] = {
+		{
+			"2036684013374073670470642478097435082393965905216073159069132582313283074894808330704754509140183015844408257838394",
+			"1442095344782436377607687657711937282361342321405422912347590889376773969332935605209326528060836557922932229521614",
+		},
+		{
+			"712603160732423529538850938327197859251773848793464448294977148617985113767869616209273456982966659285651019780554",
+			"3549454379036632156704729135192770954406411172309331582430747991672599371642148666322072960024366511631069032927782",
+		},
+	};
+	Fp2 expect[2];
+	for (int i = 0; i < 2; i++) {
+		set(expect[i], expectStr[i]);
+		CYBOZU_TEST_EQUAL(out[i], expect[i]);
+	}
+}
+
 CYBOZU_TEST_AUTO(test)
 {
 	initPairing(mcl::BLS12_381);
@@ -648,4 +672,5 @@ CYBOZU_TEST_AUTO(test)
 	testVec("../misc/mapto/fips_186_3_B233.txt");
 	testVec("../misc/mapto/misc.txt");
 	ethMsgToG2testAll("../bls_sigs_ref/test-vectors/hash_g2/");
+	testHashToFp2v6(mapto);
 }

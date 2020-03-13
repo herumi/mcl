@@ -50,6 +50,11 @@ struct MapToG2_WB19 {
 	Fp2 xden[3];
 	Fp2 ynum[4];
 	Fp2 yden[4];
+	int draftVersion_;
+	void setDraftVersion(int version)
+	{
+		draftVersion_ = version;
+	}
 	struct Point {
 		Fp2 x, y, z;
 		bool isZero() const
@@ -209,6 +214,7 @@ struct MapToG2_WB19 {
 		Fp::neg(etas[3].a, ev4);
 		etas[3].b = ev3;
 		init_iso();
+		draftVersion_ = 5;
 	}
 	void init_iso()
 	{
@@ -656,12 +662,30 @@ struct MapToG2_WB19 {
 		P1 += P2;
 		clear_h2(out, P1);
 	}
+	// hash-to-curve-06
+	void hashToFp2v6(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
+	{
+		uint8_t md[256];
+		mcl::fp::expand_message_xmd(md, msg, msgSize, dst, dstSize);
+		Fp *x = out[0].getFp0();
+		for (size_t i = 0; i < 4; i++) {
+			uint8_t *p = &md[64 * i];
+			fp::local::byteSwap(p, 64);
+			bool b;
+			x[i].setArrayMod(&b, p, 64);
+			assert(b); (void)b;
+		}
+	}
 	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
-		Fp2 t1, t2;
-		hashToFp2(t1, msg, msgSize, 0, dst, dstSize);
-		hashToFp2(t2, msg, msgSize, 1, dst, dstSize);
-		opt_swu2_map(out, t1, &t2);
+		Fp2 t[2];
+		if (draftVersion_ == 5) {
+			hashToFp2(t[0], msg, msgSize, 0, dst, dstSize);
+			hashToFp2(t[1], msg, msgSize, 1, dst, dstSize);
+		} else {
+			hashToFp2v6(t, msg, msgSize, dst, dstSize);
+		}
+		opt_swu2_map(out, t[0], &t[1]);
 	}
 	void msgToG2(G2& out, const void *msg, size_t msgSize) const
 	{

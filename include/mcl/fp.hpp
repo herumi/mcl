@@ -77,6 +77,8 @@ void hkdf_extract_addZeroByte(uint8_t hmac[32], const uint8_t *salt, size_t salt
 void hkdf_extract(uint8_t hmac[32], const uint8_t *salt, size_t saltSize, const uint8_t *msg, size_t msgSize);
 void hkdf_expand(uint8_t out[64], const uint8_t prk[32], char info[6]);
 
+void expand_message_xmd(uint8_t out[256], const void *msg, size_t msgSize, const void *dst, size_t dstSize);
+
 namespace local {
 
 inline void byteSwap(void *x, size_t n)

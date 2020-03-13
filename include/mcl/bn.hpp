@@ -494,8 +494,17 @@ struct MapTo {
 		case MCL_MAP_TO_MODE_ORIGINAL:
 		case MCL_MAP_TO_MODE_TRY_AND_INC:
 		case MCL_MAP_TO_MODE_ETH2:
-		case MCL_MAP_TO_MODE_WB19:
 			mapToMode_ = mode;
+			return true;
+			break;
+		case MCL_MAP_TO_MODE_HASH_TO_CURVE_05:
+			mapToMode_ = mode;
+			mapToG2_WB19_.setDraftVersion(5);
+			return true;
+			break;
+		case MCL_MAP_TO_MODE_HASH_TO_CURVE_06:
+			mapToMode_ = mode;
+			mapToG2_WB19_.setDraftVersion(6);
 			return true;
 			break;
 		default:
@@ -569,7 +578,7 @@ struct MapTo {
 	}
 	bool calc(G2& P, const Fp2& t, bool fast = false) const
 	{
-		if (mapToMode_ == MCL_MAP_TO_MODE_WB19) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_WB19 || mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
 			mapToG2_WB19_.opt_swu2_map(P, t);
 			return true;
 		}
@@ -2132,7 +2141,8 @@ inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 }
 inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 {
-	if (getMapToMode() == MCL_MAP_TO_MODE_WB19) {
+	int mode = getMapToMode();
+	if (mode == MCL_MAP_TO_MODE_WB19 || mode == MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
 		BN::param.mapTo.mapToG2_WB19_.msgToG2(P, buf, bufSize);
 		return;
 	}

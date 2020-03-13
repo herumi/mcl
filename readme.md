@@ -10,10 +10,13 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-add new hash functions corresponding to python-impl of [algorand/bls_sig_ref](https://github.com/algorand/bls_sigs_ref).
-* `mclBn_ethMsgToFp2`(resp. `Hp2`)
-* `mclBn_ethFp2ToG2`(resp. `opt_swu2_map`)
-* `mclBn_ethMsgToG2`(resp. `map2curve_osswu2`)
+- add new hash-to-curve function of [draft-irtf-cfrg-hash-to-curve](https://cfrg.github.io/draft-irtf-cfrg-hash-to-curve/draft-irtf-cfrg-hash-to-curve.txt) at March 2020.
+  - call `setETHmode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);`
+  - The older `MAP_TO_MODE` will be removed after the draft is fixed.
+- add new hash functions corresponding to python-impl of [algorand/bls_sig_ref](https://github.com/algorand/bls_sigs_ref).
+  - `mclBn_ethMsgToFp2`(resp. `Hp2`)
+  - `mclBn_ethFp2ToG2`(resp. `opt_swu2_map`)
+  - `mclBn_ethMsgToG2`(resp. `map2curve_osswu2`)
 
 # Support architecture
 
@@ -292,6 +295,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2020/Mar/15 v1.06 support hash-to-curve-06
 - 2020/Jan/31 v1.05 mclBn_ethMsgToFp2 has changed to append zero byte at the end of msg
 - 2020/Jan/25 v1.04 add new hash functions
 - 2019/Dec/05 v1.03 disable to check the order in setStr
