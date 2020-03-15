@@ -637,6 +637,18 @@ struct MapToG2_WB19 {
 		printf("y=%s\n", P.y.getStr(base).c_str());
 		printf("z=%s\n", P.z.getStr(base).c_str());
 	}
+	bool normalizeJacobi(Point& out, const Point& in) const
+	{
+		if (in.z.isZero()) return false;
+		Fp2 t;
+		Fp2::inv(t, in.z);
+		Fp2::mul(out.y, in.y, t);
+		Fp2::sqr(t, t);
+		Fp2::mul(out.x, in.x, t);
+		out.y *= t;
+		out.z = 1;
+		return true;
+	}
 	void opt_swu2_map(G2& P, const Fp2& t, const Fp2 *t2 = 0) const
 	{
 		Point Pp;
