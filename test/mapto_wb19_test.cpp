@@ -632,12 +632,28 @@ void py_eccTest2(const T& mapto)
 template<class T>
 void testHashToFp2v6(const T& mapto)
 {
-	const char msg[] = "asdf";
 	const struct {
+		const char *msg;
 		const char *dst;
 		const Fp2Str s[2];
 	} tbl[] = {
 		{
+			// from draft-irtf-cfrg-hash-to-curve/poc/vectors/BLS12381G2_XMD:SHA-256_SSWU_RO_.json.swp
+			"abc",
+			"BLS12381G2_XMD:SHA-256_SSWU_RO_TESTGEN",
+			{
+				{
+					"0x0b7b2d371fc970671ddf7bc9ca4a70a1bd286af4487b497e460c0b44d405d73db576f8a08d59416cc976d4b1d0100775",
+					"0x0e86d0eb2d34c34fe8b2a1f2d999fa3dabcd504fdb4beb57e79756b08fd75b0a82660abc6026ecc4ccf327a522587b38",
+				},
+				{
+					"0x10376d048c060df1c5017a363144c482892fe2ce0061094327b8bbe49a713ce795726aa23b5402a271e9f1e7b9b6c7ba",
+					"0x0117f2ea63015e192d759f11a658a002e06112147d90f00d7429722456b9a1c63fef2dbe8df13168e3bd40af2fb959f3",
+				},
+			}
+		},
+		{
+			"asdf",
 			"QUUX-V01-CS02",
 			{
 				{
@@ -651,6 +667,7 @@ void testHashToFp2v6(const T& mapto)
 			}
 		},
 		{
+			"asdf",
 			"BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_",
 			{
 				{
@@ -665,6 +682,7 @@ void testHashToFp2v6(const T& mapto)
 		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const char *msg = tbl[i].msg;
 		const char *dst = tbl[i].dst;
 		const Fp2Str *expectStr = tbl[i].s;
 		Fp2 out[2];
@@ -673,6 +691,27 @@ void testHashToFp2v6(const T& mapto)
 		for (int i = 0; i < 2; i++) {
 			set(expect[i], expectStr[i]);
 			CYBOZU_TEST_EQUAL(out[i], expect[i]);
+		}
+		if (i == 0) {
+			// from draft-irtf-cfrg-hash-to-curve/poc/vectors/BLS12381G2_XMD:SHA-256_SSWU_RO_.json.swp
+			const Fp2Str xys[] = {
+				{
+					"0x0b6d276d0bfbddde617a9ab4c175b07c9c4aecad2cdd6cc9ca541b61334a69c58680ef5692bbad03d2f572838df32b66",
+					"0x139e9d78ff6d9d163f979d14a64c5e57f82f1ef7e42ece338b571a9e92c0666f0f6bf1a5fc21e2d32bcb6432eab7037c",
+				},
+				{
+					"0x022f9ee5d596d06c5f2f735c3c5f743978f79fd57bf7d4291e221227f490d3f276066de9f9edc89c57e048ef4cf0ef72",
+					"0x14dd23517516a80d1d840e34f51dfb76946c7670fca0f36ad8ec9bde4ea82dfae119a21b076519bcc1c00152989a4d45",
+				},
+			};
+			G2 P;
+			mapto.opt_swu2_map(P, out[0], &out[1]);
+			P.normalize();
+			Fp2 t;
+			set(t, xys[0]);
+			CYBOZU_TEST_EQUAL(P.x, t);
+			set(t, xys[1]);
+			CYBOZU_TEST_EQUAL(P.y, t);
 		}
 	}
 	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);
