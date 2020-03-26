@@ -701,7 +701,12 @@ struct MapToG2_WB19 {
 	}
 	void msgToG2(G2& out, const void *msg, size_t msgSize) const
 	{
-		const char *dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_";
+		const char *dst;
+		if (draftVersion_ == 5) {
+			dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_";
+		} else {
+			dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+		}
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
 };
