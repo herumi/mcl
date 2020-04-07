@@ -792,59 +792,8 @@ struct GLV2 {
 	template<class T>
 	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
 	{
-#if 1
 		(void)constTime;
 		mulVecNGLV(Q, &P, &x, 1);
-#else
-		const mpz_class& r = Fr::getOp().mp;
-		const int w = 5;
-		const size_t tblSize = 1 << (w - 2);
-		const size_t splitN = 4;
-		NafArray naf[splitN];
-		mpz_class u[splitN];
-		T tbl[splitN][tblSize];
-		bool b;
-
-		x %= r;
-		if (x == 0) {
-			Q.clear();
-			if (!constTime) return;
-		}
-		if (x < 0) {
-			x += r;
-		}
-		split(u, x);
-		tbl[0][0] = P;
-		Frobenius(tbl[1][0], tbl[0][0]);
-		Frobenius(tbl[2][0], tbl[1][0]);
-		Frobenius(tbl[3][0], tbl[2][0]);
-		for (size_t i = 0; i < splitN; i++) {
-			gmp::getNAFwidth(&b, naf[i], u[i], w);
-			assert(b); (void)b;
-		}
-		{
-			T P2;
-			T::dbl(P2, P);
-			for (size_t i = 1; i < tblSize; i++) {
-				T::add(tbl[0][i], tbl[0][i - 1], P2);
-				Frobenius(tbl[1][i], tbl[0][i]);
-				Frobenius(tbl[2][i], tbl[1][i]);
-				Frobenius(tbl[3][i], tbl[2][i]);
-			}
-		}
-		size_t maxBit = naf[0].size();
-		for (size_t i = 1; i < splitN; i++) {
-			if (naf[i].size() > maxBit) maxBit = naf[i].size();
-		}
-		Q.clear();
-		for (size_t i = 0; i < maxBit; i++) {
-			T::dbl(Q, Q);
-			mcl::local::addTbl(Q, tbl[0], naf[0], maxBit - 1 - i);
-			mcl::local::addTbl(Q, tbl[1], naf[1], maxBit - 1 - i);
-			mcl::local::addTbl(Q, tbl[2], naf[2], maxBit - 1 - i);
-			mcl::local::addTbl(Q, tbl[3], naf[3], maxBit - 1 - i);
-		}
-#endif
 	}
 	template<class T>
 	size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n) const
