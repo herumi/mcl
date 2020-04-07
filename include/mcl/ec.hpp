@@ -21,6 +21,22 @@ namespace mcl {
 
 template<class _Fp> class Fp2T;
 
+namespace local {
+
+template<class Ec, class Vec>
+void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
+{
+	if (i >= naf.size()) return;
+	int n = naf[i];
+	if (n > 0) {
+		Q += tbl[(n - 1) >> 1];
+	} else if (n < 0) {
+		Q -= tbl[(-n - 1) >> 1];
+	}
+}
+
+} // mcl::local
+
 namespace ec {
 
 enum Mode {
@@ -47,23 +63,78 @@ bool get_a_flag(const mcl::Fp2T<Fp>& x)
 
 } // mcl::ec::local
 
-} // mcl::ec
-
-namespace local {
-
-template<class Ec, class Vec>
-void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
+template<class T>
+void normalizeJacobi(T& x, T& y, T& z)
 {
-	if (i >= naf.size()) return;
-	int n = naf[i];
-	if (n > 0) {
-		Q += tbl[(n - 1) >> 1];
-	} else if (n < 0) {
-		Q -= tbl[(-n - 1) >> 1];
-	}
+	assert(!z.isZero());
+	T rz2;
+	T::inv(z, z);
+	T::sqr(rz2, z);
+	x *= rz2;
+	y *= rz2;
+	y *= z;
+	z = 1;
 }
 
-} // mcl::local
+// Y^2 == X(X^2 + aZ^4) + bZ^6
+template<class T>
+bool isValidJacobi(const T& a, const T& b, const T& x, const T& y, const T& z)
+{
+	T y2, x2, z2, z4, t;
+	T::sqr(x2, x);
+	T::sqr(y2, y);
+	T::sqr(z2, z);
+	T::sqr(z4, z2);
+	T::mul(t, z4, a);
+	t += x2;
+	t *= x;
+	z4 *= z2;
+	z4 *= b;
+	t += z4;
+	return y2 == t;
+}
+
+template<class T>
+void normalizeProj(T& x, T& y, T& z)
+{
+	assert(!z.isZero());
+	T::inv(z, z);
+	x *= z;
+	y *= z;
+	z = 1;
+}
+
+// (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
+template<class T>
+bool isValidProj(const T& a, const T& b, const T& x, const T& y, const T& z)
+{
+	T y2, x2, z2, t;
+	T::sqr(x2, x);
+	T::sqr(y2, y);
+	T::sqr(z2, z);
+	T::mul(t, a, z2);
+	t += x2;
+	t *= x;
+	z2 *= b;
+	y2 -= z2;
+	y2 *= z;
+	return y2 == t;
+}
+
+// y^2 == (x^2 + a)x + b
+template<class T>
+bool isValidAffine(const T& a, const T& b, const T& x, const T& y)
+{
+	T y2, t;
+	T::sqr(y2, y);
+	T::sqr(t, x);
+	t += a;
+	t *= x;
+	t += b;
+	return y2 == t;
+}
+
+} // mcl::ec
 
 /*
 	elliptic curve
@@ -117,65 +188,24 @@ public:
 private:
 	void normalizeJacobi()
 	{
-		assert(!z.isZero());
-		Fp rz2;
-		Fp::inv(z, z);
-		Fp::sqr(rz2, z);
-		x *= rz2;
-		y *= rz2;
-		y *= z;
-		z = 1;
+		ec::normalizeJacobi(x, y, z);
 	}
 	void normalizeProj()
 	{
-		assert(!z.isZero());
-		Fp::inv(z, z);
-		x *= z;
-		y *= z;
-		z = 1;
+		ec::normalizeProj(x, y, z);
 	}
-	// Y^2 == X(X^2 + aZ^4) + bZ^6
 	bool isValidJacobi() const
 	{
-		Fp y2, x2, z2, z4, t;
-		Fp::sqr(x2, x);
-		Fp::sqr(y2, y);
-		Fp::sqr(z2, z);
-		Fp::sqr(z4, z2);
-		Fp::mul(t, z4, a_);
-		t += x2;
-		t *= x;
-		z4 *= z2;
-		z4 *= b_;
-		t += z4;
-		return y2 == t;
+		return ec::isValidJacobi(a_, b_, x, y, z);
 	}
-	// (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
 	bool isValidProj() const
 	{
-		Fp y2, x2, z2, t;
-		Fp::sqr(x2, x);
-		Fp::sqr(y2, y);
-		Fp::sqr(z2, z);
-		Fp::mul(t, a_, z2);
-		t += x2;
-		t *= x;
-		z2 *= b_;
-		y2 -= z2;
-		y2 *= z;
-		return y2 == t;
+		return ec::isValidProj(a_, b_, x, y, z);
 	}
 #endif
-	// y^2 == (x^2 + a)x + b
-	static inline bool isValid(const Fp& _x, const Fp& _y)
+	bool isValidAffine() const
 	{
-		Fp y2, t;
-		Fp::sqr(y2, _y);
-		Fp::sqr(t, _x);
-		t += a_;
-		t *= _x;
-		t += b_;
-		return y2 == t;
+		return ec::isValidAffine(a_, b_, x, y);
 	}
 public:
 	void normalize()
@@ -272,29 +302,26 @@ public:
 		} else
 #endif
 		{
-			isOK = isValid(x, y);
+			isOK = isValidAffine();
 		}
 		if (!isOK) return false;
 		if (verifyOrder_) return isValidOrder();
 		return true;
 	}
-	void set(bool *pb, const Fp& _x, const Fp& _y, bool verify = true)
+	void set(bool *pb, const Fp& x, const Fp& y, bool verify = true)
 	{
-		if (verify && !isValid(_x, _y)) {
-			*pb = false;
-			return;
-		}
-		x = _x; y = _y;
+		this->x = x; this->y = y;
 #ifdef MCL_EC_USE_AFFINE
 		inf_ = false;
 #else
 		z = 1;
 #endif
-		if (verify && verifyOrder_ && !isValidOrder()) {
-			*pb = false;
-		} else {
+		if (!verify || (isValidAffine() && (!verifyOrder_ || isValidOrder()))) {
 			*pb = true;
+			return;
 		}
+		*pb = false;
+		clear();
 	}
 	void clear()
 	{
@@ -972,7 +999,7 @@ public:
 		}
 		return;
 	verifyValidness:
-		if (!isValid(x, y)) {
+		if (!isValidAffine()) {
 			*pb = false;
 			return;
 		}
