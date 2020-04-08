@@ -1,8 +1,8 @@
-//#define MCL_EC_USE_AFFINE
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
+#include <cybozu/xorshift.hpp>
 #include <mcl/gmp_util.hpp>
 
 #include <mcl/fp.hpp>
@@ -19,11 +19,7 @@ typedef mcl::EcT<Fp> Ec;
 CYBOZU_TEST_AUTO(sizeof)
 {
 	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::fp::Unit) * Fp::maxSize);
-#ifdef MCL_EC_USE_AFFINE
-	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 2 + sizeof(mcl::fp::Unit));
-#else
 	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 3);
-#endif
 }
 
 struct Test {
@@ -96,9 +92,9 @@ struct Test {
 
 		{
 			Ec::dbl(R, P);
-#ifndef MCL_EC_USE_AFFINE
-			CYBOZU_TEST_ASSERT(!R.isNormalized());
-#endif
+			if (Ec::getMode() != mcl::ec::Affine) {
+				CYBOZU_TEST_ASSERT(!R.isNormalized());
+			}
 			CYBOZU_TEST_ASSERT(R.isValid());
 			Ec R2 = P + P;
 			CYBOZU_TEST_EQUAL(R, R2);
@@ -162,13 +158,17 @@ struct Test {
 			Ec R2;
 			P += P;
 			Q += P;
-			CYBOZU_TEST_ASSERT(!P.z.isOne());
-			CYBOZU_TEST_ASSERT(!Q.z.isOne());
+			if (Ec::getMode() == mcl::ec::Affine) {
+				CYBOZU_TEST_ASSERT(P.z.isOne());
+				CYBOZU_TEST_ASSERT(Q.z.isOne());
+			} else {
+				CYBOZU_TEST_ASSERT(!P.z.isOne());
+				CYBOZU_TEST_ASSERT(!Q.z.isOne());
+			}
 			Ec::add(R2, P, Q);
 
 			P.normalize();
 			CYBOZU_TEST_ASSERT(P.z.isOne());
-			CYBOZU_TEST_ASSERT(!Q.z.isOne());
 			// affine + generic
 			Ec::add(R, P, Q);
 			CYBOZU_TEST_EQUAL(R, R2);
@@ -177,14 +177,17 @@ struct Test {
 			CYBOZU_TEST_EQUAL(R, R2);
 
 			Q.normalize();
-			CYBOZU_TEST_ASSERT(P.z.isOne());
 			CYBOZU_TEST_ASSERT(Q.z.isOne());
 			// affine + affine
 			Ec::add(R, P, Q);
 			CYBOZU_TEST_EQUAL(R, R2);
 
 			P += P;
-			CYBOZU_TEST_ASSERT(!P.z.isOne());
+			if (Ec::getMode() == mcl::ec::Affine) {
+				CYBOZU_TEST_ASSERT(P.z.isOne());
+			} else {
+				CYBOZU_TEST_ASSERT(!P.z.isOne());
+			}
 			// generic
 			Ec::dbl(R2, P);
 
@@ -546,6 +549,7 @@ void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
 void mulVec(const mcl::EcParam& para)
 {
 	if (para.bitSize > 384) return;
+	cybozu::XorShift rg;
 	const Fp x(para.gx);
 	const Fp y(para.gy);
 	Ec P(x, y);
@@ -558,7 +562,7 @@ void mulVec(const mcl::EcParam& para)
 	Ec::dbl(P, P);
 	for (size_t i = 0; i < N; i++) {
 		Ec::mul(xVec[i], P, i + 3);
-		yVec[i].setByCSPRNG();
+		yVec[i].setByCSPRNG(rg);
 	}
 	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
@@ -582,6 +586,8 @@ void test_sub_sub(const mcl::EcParam& para, mcl::fp::Mode fpMode)
 	Test(para, fpMode, mcl::ec::Proj).run();
 	puts("Jacobi");
 	Test(para, fpMode, mcl::ec::Jacobi).run();
+	puts("Affine");
+	Test(para, fpMode, mcl::ec::Affine).run();
 }
 
 void test_sub(const mcl::EcParam *para, size_t paraNum)
@@ -595,8 +601,8 @@ void test_sub(const mcl::EcParam *para, size_t paraNum)
 #endif
 #ifdef MCL_USE_XBYAK
 		test_sub_sub(para[i], mcl::fp::FP_XBYAK);
-		mulVec(para[i]);
 #endif
+		mulVec(para[i]);
 	}
 }
 
@@ -606,7 +612,7 @@ CYBOZU_TEST_AUTO(all)
 {
 	if (g_partial & (1 << 3)) {
 		const struct mcl::EcParam para3[] = {
-	//		mcl::ecparam::p160_1,
+//			mcl::ecparam::p160_1,
 			mcl::ecparam::secp160k1,
 			mcl::ecparam::secp192k1,
 			mcl::ecparam::NIST_P192,
@@ -627,7 +633,7 @@ CYBOZU_TEST_AUTO(all)
 #if MCL_MAX_BIT_SIZE >= 384
 	if (g_partial & (1 << 6)) {
 		const struct mcl::EcParam para6[] = {
-	//		mcl::ecparam::secp384r1,
+//			mcl::ecparam::secp384r1,
 			mcl::ecparam::NIST_P384,
 		};
 		test_sub(para6, CYBOZU_NUM_OF_ARRAY(para6));

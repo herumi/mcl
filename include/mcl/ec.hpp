@@ -10,8 +10,6 @@
 #include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 
-//#define MCL_EC_USE_AFFINE
-
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4458)
@@ -41,7 +39,8 @@ namespace ec {
 
 enum Mode {
 	Jacobi = 0,
-	Proj = 1
+	Proj = 1,
+	Affine
 };
 
 namespace local {
@@ -151,13 +150,8 @@ class EcT : public fp::Serializable<EcT<_Fp> > {
 public:
 	typedef _Fp Fp;
 	typedef _Fp BaseFp;
-#ifdef MCL_EC_USE_AFFINE
-	Fp x, y;
-	bool inf_;
-#else
 	Fp x, y, z;
 	static int mode_;
-#endif
 	static Fp a_;
 	static Fp b_;
 	static int specialA_;
@@ -178,13 +172,8 @@ public:
 	}
 	bool isNormalized() const
 	{
-#ifdef MCL_EC_USE_AFFINE
-		return true;
-#else
 		return isZero() || z.isOne();
-#endif
 	}
-#ifndef MCL_EC_USE_AFFINE
 private:
 	void normalizeJacobi()
 	{
@@ -202,7 +191,6 @@ private:
 	{
 		return ec::isValidProj(a_, b_, x, y, z);
 	}
-#endif
 	bool isValidAffine() const
 	{
 		return ec::isValidAffine(a_, b_, x, y);
@@ -210,7 +198,6 @@ private:
 public:
 	void normalize()
 	{
-#ifndef MCL_EC_USE_AFFINE
 		if (isNormalized()) return;
 		switch (mode_) {
 		case ec::Jacobi:
@@ -220,7 +207,6 @@ public:
 			normalizeProj();
 			break;
 		}
-#endif
 	}
 	static void normalize(EcT& y, const EcT& x)
 	{
@@ -243,13 +229,9 @@ public:
 		order_ = 0;
 		mulArrayGLV = 0;
 		mulVecNGLV = 0;
-#ifdef MCL_EC_USE_AFFINE
-		cybozu::disable_warning_unused_variable(mode);
-#else
-		assert(mode == ec::Jacobi || mode == ec::Proj);
 		mode_ = mode;
-#endif
 	}
+	static inline int getMode() { return mode_; }
 	/*
 		verify the order of *this is equal to order if order != 0
 		in constructor, set, setStr, operator<<().
@@ -288,34 +270,25 @@ public:
 	bool isValid() const
 	{
 		if (isZero()) return true;
-		bool isOK = false;
-#ifndef MCL_EC_USE_AFFINE
-		if (!z.isOne()) {
-			switch (mode_) {
-			case ec::Jacobi:
-				isOK = isValidJacobi();
-				break;
-			case ec::Proj:
-				isOK = isValidProj();
-				break;
-			}
-		} else
-#endif
-		{
-			isOK = isValidAffine();
+		switch (mode_) {
+		case ec::Jacobi:
+			if (!isValidJacobi()) return false;
+			break;
+		case ec::Proj:
+			if (!isValidProj()) return false;
+			break;
+		case ec::Affine:
+			if (!isValidAffine()) return false;
+			break;
 		}
-		if (!isOK) return false;
 		if (verifyOrder_) return isValidOrder();
 		return true;
 	}
 	void set(bool *pb, const Fp& x, const Fp& y, bool verify = true)
 	{
-		this->x = x; this->y = y;
-#ifdef MCL_EC_USE_AFFINE
-		inf_ = false;
-#else
+		this->x = x;
+		this->y = y;
 		z = 1;
-#endif
 		if (!verify || (isValidAffine() && (!verifyOrder_ || isValidOrder()))) {
 			*pb = true;
 			return;
@@ -325,15 +298,10 @@ public:
 	}
 	void clear()
 	{
-#ifdef MCL_EC_USE_AFFINE
-		inf_ = true;
-#else
-		z.clear();
-#endif
 		x.clear();
 		y.clear();
+		z.clear();
 	}
-#ifndef MCL_EC_USE_AFFINE
 	static inline void dblNoVerifyInfJacobi(EcT& R, const EcT& P)
 	{
 		Fp S, M, t, y2;
@@ -449,10 +417,8 @@ public:
 		Fp::sub(R.y, t, w);
 		R.y -= w;
 	}
-#endif
-	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
+	static inline void dblNoVerifyInfAffine(EcT& R, const EcT& P)
 	{
-#ifdef MCL_EC_USE_AFFINE
 		Fp t, s;
 		Fp::sqr(t, P.x);
 		Fp::add(s, t, t);
@@ -468,8 +434,10 @@ public:
 		s *= t;
 		Fp::sub(R.y, s, P.y);
 		R.x = x3;
-		R.inf_ = false;
-#else
+		R.z = 1;
+	}
+	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
+	{
 		switch (mode_) {
 		case ec::Jacobi:
 			dblNoVerifyInfJacobi(R, P);
@@ -477,8 +445,10 @@ public:
 		case ec::Proj:
 			dblNoVerifyInfProj(R, P);
 			break;
+		case ec::Affine:
+			dblNoVerifyInfAffine(R, P);
+			break;
 		}
-#endif
 	}
 	static inline void dbl(EcT& R, const EcT& P)
 	{
@@ -488,7 +458,6 @@ public:
 		}
 		dblNoVerifyInf(R, P);
 	}
-#ifndef MCL_EC_USE_AFFINE
 	static inline void addJacobi(EcT& R, const EcT& P, const EcT& Q, bool isPzOne, bool isQzOne)
 	{
 		Fp r, U1, S1, H, H3;
@@ -615,27 +584,22 @@ public:
 		R.y *= r;
 		R.y -= vv;
 	}
-#endif
-	static inline void add(EcT& R, const EcT& P, const EcT& Q) {
-		if (P.isZero()) { R = Q; return; }
-		if (Q.isZero()) { R = P; return; }
-		if (&P == &Q) {
-			dblNoVerifyInf(R, P);
-			return;
-		}
-#ifdef MCL_EC_USE_AFFINE
+	static inline void addAffine(EcT& R, const EcT& P, const EcT& Q)
+	{
 		Fp t;
-		Fp::neg(t, Q.y);
-		if (P.y == t) { R.clear(); return; }
 		Fp::sub(t, Q.x, P.x);
 		if (t.isZero()) {
-			dblNoVerifyInf(R, P);
+			if (P.y == Q.y) {
+				dblNoVerifyInf(R, P);
+			} else {
+				R.clear();
+			}
 			return;
 		}
 		Fp s;
 		Fp::sub(s, Q.y, P.y);
 		Fp::div(t, s, t);
-		R.inf_ = false;
+		R.z = 1;
 		Fp x3;
 		Fp::sqr(x3, t);
 		x3 -= P.x;
@@ -644,7 +608,14 @@ public:
 		s *= t;
 		Fp::sub(R.y, s, P.y);
 		R.x = x3;
-#else
+	}
+	static inline void add(EcT& R, const EcT& P, const EcT& Q) {
+		if (P.isZero()) { R = Q; return; }
+		if (Q.isZero()) { R = P; return; }
+		if (&P == &Q) {
+			dblNoVerifyInf(R, P);
+			return;
+		}
 		bool isPzOne = P.z.isOne();
 		bool isQzOne = Q.z.isOne();
 		switch (mode_) {
@@ -654,8 +625,10 @@ public:
 		case ec::Proj:
 			addProj(R, P, Q, isPzOne, isQzOne);
 			break;
+		case ec::Affine:
+			addAffine(R, P, Q);
+			break;
 		}
-#endif
 	}
 	static inline void sub(EcT& R, const EcT& P, const EcT& Q)
 	{
@@ -671,11 +644,7 @@ public:
 		}
 		R.x = P.x;
 		Fp::neg(R.y, P.y);
-#ifdef MCL_EC_USE_AFFINE
-		R.inf_ = false;
-#else
 		R.z = P.z;
-#endif
 	}
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
@@ -742,11 +711,7 @@ public:
 	}
 	bool isZero() const
 	{
-#ifdef MCL_EC_USE_AFFINE
-		return inf_;
-#else
 		return z.isZero();
-#endif
 	}
 	static inline bool isMSBserialize()
 	{
@@ -772,9 +737,7 @@ public:
 				cybozu::writeChar(pb, os, sep);
 				if (!*pb) return;
 			}
-#ifndef MCL_EC_USE_AFFINE
 			z.save(pb, os, ioMode);
-#endif
 			return;
 		}
 		EcT P(*this);
@@ -874,11 +837,7 @@ public:
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
-#ifdef MCL_EC_USE_AFFINE
-		inf_ = false;
-#else
 		z = 1;
-#endif
 		if (ioMode & IoEcAffineSerialize) {
 			if (b_ == 0) { // assume Zero if x = y = 0
 				*pb = false;
@@ -983,9 +942,13 @@ public:
 				if (!*pb) return;
 			} else if (c == '4') {
 				y.load(pb, is, ioMode); if (!*pb) return;
-#ifndef MCL_EC_USE_AFFINE
 				z.load(pb, is, ioMode); if (!*pb) return;
-#endif
+				if (mode_ == ec::Affine) {
+					if (!z.isZero() && !z.isOne()) {
+						*pb = false;
+						return;
+					}
+				}
 			} else {
 				*pb = false;
 				return;
@@ -1369,9 +1332,7 @@ template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
 template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 template<class Fp> size_t (*EcT<Fp>::mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
-#ifndef MCL_EC_USE_AFFINE
 template<class Fp> int EcT<Fp>::mode_;
-#endif
 
 // r = the order of Ec
 template<class Ec, class _Fr>
