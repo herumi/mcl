@@ -666,9 +666,9 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("finalExp", C, finalExp, e, e);
 	CYBOZU_BENCH_C("precomML", C, precomputedMillerLoop, e, P, SHE::Qcoeff_);
 
-	CipherTextG1 c1;
-	CipherTextG2 c2;
-	CipherTextGT ct;
+	CipherTextG1 c1, c11;
+	CipherTextG2 c2, c21;
+	CipherTextGT ct, ct1;
 
 	int m = int(hashSize - 1);
 	printf("small m = %d\n", m);
@@ -695,9 +695,12 @@ CYBOZU_TEST_AUTO(hashBench)
 	CYBOZU_BENCH_C("CT:mulML", C, CipherTextGT::mulML, ct, c1, c2);
 	CYBOZU_BENCH_C("CT:finalExp", C, CipherTextGT::finalExp, ct, ct);
 
-	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, c1, c1, c1);
-	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, c2, c2, c2);
-	CYBOZU_BENCH_C("addGT   ", C, CipherTextGT::add, ct, ct, ct);
+	c11 = c1;
+	c21 = c2;
+	ct1 = ct;
+	CYBOZU_BENCH_C("addG1   ", C, CipherTextG1::add, c1, c1, c11);
+	CYBOZU_BENCH_C("addG2   ", C, CipherTextG2::add, c2, c2, c21);
+	CYBOZU_BENCH_C("addGT   ", C, CipherTextGT::add, ct, ct, ct1);
 	CYBOZU_BENCH_C("reRandG1", C, pub.reRand, c1);
 	CYBOZU_BENCH_C("reRandG2", C, pub.reRand, c2);
 	CYBOZU_BENCH_C("reRandGT", C, pub.reRand, ct);
