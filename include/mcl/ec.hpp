@@ -44,9 +44,9 @@ enum Mode {
 };
 
 enum ModeCoeffA {
-	zero,
-	minus3,
-	generic
+	Zero,
+	Minus3,
+	GenericA
 };
 
 namespace local {
@@ -121,11 +121,11 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 	S += S;
 	F::sqr(M, P.x);
 	switch (specialA) {
-	case zero:
+	case Zero:
 		F::add(t, M, M);
 		M += t;
 		break;
-	case minus3:
+	case Minus3:
 		if (isPzOne) {
 			M -= P.z;
 		} else {
@@ -136,7 +136,7 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 		F::add(t, M, M);
 		M += t;
 		break;
-	case generic:
+	case GenericA:
 	default:
 		if (isPzOne) {
 			t = a;
@@ -173,10 +173,9 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 	mul| 12
 	add|  7
 */
-template<class E>
-void addJacobi(E& R, const E& P, const E& Q, int specialA, const typename E::Fp& a)
+template<class E, class F>
+void addJacobi(E& R, const E& P, const E& Q, int specialA, const F& a)
 {
-	typedef typename E::Fp F;
 	if (P.isZero()) { R = Q; return; }
 	if (Q.isZero()) { R = P; return; }
 	bool isPzOne = P.z.isOne();
@@ -283,10 +282,9 @@ bool isValidProj(const F& x, const F& y, const F& z, const F& a, const F& b)
 	mul|  8| 8| 9
 	add| 11|12|12
 */
-template<class E>
-void dblProj(E& R, const E& P, int specialA, const typename E::Fp& a)
+template<class E, class F>
+void dblProj(E& R, const E& P, int specialA, const F& a)
 {
-	typedef typename E::Fp F;
 	if (P.isZero()) {
 		R.clear();
 		return;
@@ -294,12 +292,12 @@ void dblProj(E& R, const E& P, int specialA, const typename E::Fp& a)
 	const bool isPzOne = P.z.isOne();
 	F w, t, h;
 	switch (specialA) {
-	case zero:
+	case Zero:
 		F::sqr(w, P.x);
 		F::add(t, w, w);
 		w += t;
 		break;
-	case minus3:
+	case Minus3:
 		F::sqr(w, P.x);
 		if (isPzOne) {
 			w -= P.z;
@@ -310,7 +308,7 @@ void dblProj(E& R, const E& P, int specialA, const typename E::Fp& a)
 		F::add(t, w, w);
 		w += t;
 		break;
-	case generic:
+	case GenericA:
 	default:
 		if (isPzOne) {
 			w = a;
@@ -354,10 +352,9 @@ void dblProj(E& R, const E& P, int specialA, const typename E::Fp& a)
 	mul| 12
 	add|  7
 */
-template<class E>
-void addProj(E& R, const E& P, const E& Q, int specialA, const typename E::Fp& a)
+template<class E, class F>
+void addProj(E& R, const E& P, const E& Q, int specialA, const F& a)
 {
-	typedef typename E::Fp F;
 	if (P.isZero()) { R = Q; return; }
 	if (Q.isZero()) { R = P; return; }
 	bool isPzOne = P.z.isOne();
@@ -431,10 +428,9 @@ bool isValidAffine(const F& x, const F& y, const F& a, const F& b)
 }
 
 // y^2 = x^3 + ax + b
-template<class E>
-static inline void dblAffine(E& R, const E& P, const typename E::Fp& a)
+template<class E, class F>
+static inline void dblAffine(E& R, const E& P, const F& a)
 {
-	typedef typename E::Fp F;
 	if (P.isZero()) {
 		R.clear();
 		return;
@@ -461,10 +457,9 @@ static inline void dblAffine(E& R, const E& P, const typename E::Fp& a)
 	R.z = 1;
 }
 
-template<class E>
-void addAffine(E& R, const E& P, const E& Q, const typename E::Fp& a)
+template<class E, class F>
+void addAffine(E& R, const E& P, const E& Q, const F& a)
 {
-	typedef typename E::Fp F;
 	if (P.isZero()) { R = Q; return; }
 	if (Q.isZero()) { R = P; return; }
 	F t;
@@ -571,11 +566,11 @@ public:
 		a_ = a;
 		b_ = b;
 		if (a_.isZero()) {
-			specialA_ = ec::zero;
+			specialA_ = ec::Zero;
 		} else if (a_ == -3) {
-			specialA_ = ec::minus3;
+			specialA_ = ec::Minus3;
 		} else {
-			specialA_ = ec::generic;
+			specialA_ = ec::GenericA;
 		}
 		ioMode_ = 0;
 		verifyOrder_ = false;
