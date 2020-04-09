@@ -43,32 +43,38 @@ enum Mode {
 	Affine
 };
 
+enum ModeCoeffA {
+	zero,
+	minus3,
+	generic
+};
+
 namespace local {
 
 // x is negative <=> x < half(:=(p+1)/2) <=> a = 1
-template<class Fp>
-bool get_a_flag(const Fp& x)
+template<class F>
+bool get_a_flag(const F& x)
 {
 	return x.isNegative();
 }
 
 // Im(x) is negative <=> Im(x)  < half(:=(p+1)/2) <=> a = 1
 
-template<class Fp>
-bool get_a_flag(const mcl::Fp2T<Fp>& x)
+template<class F>
+bool get_a_flag(const mcl::Fp2T<F>& x)
 {
 	return get_a_flag(x.b); // x = a + bi
 }
 
 } // mcl::ec::local
 
-template<class T>
-void normalizeJacobi(T& x, T& y, T& z)
+template<class F>
+void normalizeJacobi(F& x, F& y, F& z)
 {
 	assert(!z.isZero());
-	T rz2;
-	T::inv(z, z);
-	T::sqr(rz2, z);
+	F rz2;
+	F::inv(z, z);
+	F::sqr(rz2, z);
 	x *= rz2;
 	y *= rz2;
 	y *= z;
@@ -76,15 +82,15 @@ void normalizeJacobi(T& x, T& y, T& z)
 }
 
 // Y^2 == X(X^2 + aZ^4) + bZ^6
-template<class T>
-bool isValidJacobi(const T& a, const T& b, const T& x, const T& y, const T& z)
+template<class F>
+bool isValidJacobi(const F& x, const F& y, const F& z, const F& a, const F& b)
 {
-	T y2, x2, z2, z4, t;
-	T::sqr(x2, x);
-	T::sqr(y2, y);
-	T::sqr(z2, z);
-	T::sqr(z4, z2);
-	T::mul(t, z4, a);
+	F y2, x2, z2, z4, t;
+	F::sqr(x2, x);
+	F::sqr(y2, y);
+	F::sqr(z2, z);
+	F::sqr(z4, z2);
+	F::mul(t, z4, a);
 	t += x2;
 	t *= x;
 	z4 *= z2;
@@ -93,25 +99,176 @@ bool isValidJacobi(const T& a, const T& b, const T& x, const T& y, const T& z)
 	return y2 == t;
 }
 
-template<class T>
-void normalizeProj(T& x, T& y, T& z)
+/*
+	   |a=0|-3| generic
+	sqr|  4| 6| 6
+	mul|  3| 3| 4
+	add| 12|13|13
+*/
+template<class E>
+void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
+{
+	typedef typename E::Fp F;
+	if (P.isZero()) {
+		R.clear();
+		return;
+	}
+	F S, M, t, y2;
+	F::sqr(y2, P.y);
+	F::mul(S, P.x, y2);
+	const bool isPzOne = P.z.isOne();
+	S += S;
+	S += S;
+	F::sqr(M, P.x);
+	switch (specialA) {
+	case zero:
+		F::add(t, M, M);
+		M += t;
+		break;
+	case minus3:
+		if (isPzOne) {
+			M -= P.z;
+		} else {
+			F::sqr(t, P.z);
+			F::sqr(t, t);
+			M -= t;
+		}
+		F::add(t, M, M);
+		M += t;
+		break;
+	case generic:
+	default:
+		if (isPzOne) {
+			t = a;
+		} else {
+			F::sqr(t, P.z);
+			F::sqr(t, t);
+			t *= a;
+		}
+		t += M;
+		M += M;
+		M += t;
+		break;
+	}
+	F::sqr(R.x, M);
+	R.x -= S;
+	R.x -= S;
+	if (isPzOne) {
+		R.z = P.y;
+	} else {
+		F::mul(R.z, P.y, P.z);
+	}
+	R.z += R.z;
+	F::sqr(y2, y2);
+	y2 += y2;
+	y2 += y2;
+	y2 += y2;
+	F::sub(R.y, S, R.x);
+	R.y *= M;
+	R.y -= y2;
+}
+
+/*
+	sqr|  4
+	mul| 12
+	add|  7
+*/
+template<class E>
+void addJacobi(E& R, const E& P, const E& Q, int specialA, const typename E::Fp& a)
+{
+	typedef typename E::Fp F;
+	if (P.isZero()) { R = Q; return; }
+	if (Q.isZero()) { R = P; return; }
+	bool isPzOne = P.z.isOne();
+	bool isQzOne = Q.z.isOne();
+	F r, U1, S1, H, H3;
+	if (isPzOne) {
+		// r = 1;
+	} else {
+		F::sqr(r, P.z);
+	}
+	if (isQzOne) {
+		U1 = P.x;
+		if (isPzOne) {
+			H = Q.x;
+		} else {
+			F::mul(H, Q.x, r);
+		}
+		H -= U1;
+		S1 = P.y;
+	} else {
+		F::sqr(S1, Q.z);
+		F::mul(U1, P.x, S1);
+		if (isPzOne) {
+			H = Q.x;
+		} else {
+			F::mul(H, Q.x, r);
+		}
+		H -= U1;
+		S1 *= Q.z;
+		S1 *= P.y;
+	}
+	if (isPzOne) {
+		r = Q.y;
+	} else {
+		r *= P.z;
+		r *= Q.y;
+	}
+	r -= S1;
+	if (H.isZero()) {
+		if (r.isZero()) {
+			ec::dblJacobi(R, P, specialA, a);
+		} else {
+			R.clear();
+		}
+		return;
+	}
+	if (isPzOne) {
+		if (isQzOne) {
+			R.z = H;
+		} else {
+			F::mul(R.z, H, Q.z);
+		}
+	} else {
+		if (isQzOne) {
+			F::mul(R.z, P.z, H);
+		} else {
+			F::mul(R.z, P.z, Q.z);
+			R.z *= H;
+		}
+	}
+	F::sqr(H3, H); // H^2
+	F::sqr(R.y, r); // r^2
+	U1 *= H3; // U1 H^2
+	H3 *= H; // H^3
+	R.y -= U1;
+	R.y -= U1;
+	F::sub(R.x, R.y, H3);
+	U1 -= R.x;
+	U1 *= r;
+	H3 *= S1;
+	F::sub(R.y, U1, H3);
+}
+
+template<class F>
+void normalizeProj(F& x, F& y, F& z)
 {
 	assert(!z.isZero());
-	T::inv(z, z);
+	F::inv(z, z);
 	x *= z;
 	y *= z;
 	z = 1;
 }
 
 // (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
-template<class T>
-bool isValidProj(const T& a, const T& b, const T& x, const T& y, const T& z)
+template<class F>
+bool isValidProj(const F& x, const F& y, const F& z, const F& a, const F& b)
 {
-	T y2, x2, z2, t;
-	T::sqr(x2, x);
-	T::sqr(y2, y);
-	T::sqr(z2, z);
-	T::mul(t, a, z2);
+	F y2, x2, z2, t;
+	F::sqr(x2, x);
+	F::sqr(y2, y);
+	F::sqr(z2, z);
+	F::mul(t, a, z2);
 	t += x2;
 	t *= x;
 	z2 *= b;
@@ -120,17 +277,218 @@ bool isValidProj(const T& a, const T& b, const T& x, const T& y, const T& z)
 	return y2 == t;
 }
 
-// y^2 == (x^2 + a)x + b
-template<class T>
-bool isValidAffine(const T& a, const T& b, const T& x, const T& y)
+/*
+	   |a=0|-3| generic
+	sqr|  4| 5| 5
+	mul|  8| 8| 9
+	add| 11|12|12
+*/
+template<class E>
+void dblProj(E& R, const E& P, int specialA, const typename E::Fp& a)
 {
-	T y2, t;
-	T::sqr(y2, y);
-	T::sqr(t, x);
+	typedef typename E::Fp F;
+	if (P.isZero()) {
+		R.clear();
+		return;
+	}
+	const bool isPzOne = P.z.isOne();
+	F w, t, h;
+	switch (specialA) {
+	case zero:
+		F::sqr(w, P.x);
+		F::add(t, w, w);
+		w += t;
+		break;
+	case minus3:
+		F::sqr(w, P.x);
+		if (isPzOne) {
+			w -= P.z;
+		} else {
+			F::sqr(t, P.z);
+			w -= t;
+		}
+		F::add(t, w, w);
+		w += t;
+		break;
+	case generic:
+	default:
+		if (isPzOne) {
+			w = a;
+		} else {
+			F::sqr(w, P.z);
+			w *= a;
+		}
+		F::sqr(t, P.x);
+		w += t;
+		w += t;
+		w += t; // w = a z^2 + 3x^2
+		break;
+	}
+	if (isPzOne) {
+		R.z = P.y;
+	} else {
+		F::mul(R.z, P.y, P.z); // s = yz
+	}
+	F::mul(t, R.z, P.x);
+	t *= P.y; // xys
+	t += t;
+	t += t; // 4(xys) ; 4B
+	F::sqr(h, w);
+	h -= t;
+	h -= t; // w^2 - 8B
+	F::mul(R.x, h, R.z);
+	t -= h; // h is free
+	t *= w;
+	F::sqr(w, P.y);
+	R.x += R.x;
+	R.z += R.z;
+	F::sqr(h, R.z);
+	w *= h;
+	R.z *= h;
+	F::sub(R.y, t, w);
+	R.y -= w;
+}
+
+/*
+	sqr|  2
+	mul| 12
+	add|  7
+*/
+template<class E>
+void addProj(E& R, const E& P, const E& Q, int specialA, const typename E::Fp& a)
+{
+	typedef typename E::Fp F;
+	if (P.isZero()) { R = Q; return; }
+	if (Q.isZero()) { R = P; return; }
+	bool isPzOne = P.z.isOne();
+	bool isQzOne = Q.z.isOne();
+	F r, PyQz, v, A, vv;
+	if (isQzOne) {
+		r = P.x;
+		PyQz = P.y;
+	} else {
+		F::mul(r, P.x, Q.z);
+		F::mul(PyQz, P.y, Q.z);
+	}
+	if (isPzOne) {
+		A = Q.y;
+		v = Q.x;
+	} else {
+		F::mul(A, Q.y, P.z);
+		F::mul(v, Q.x, P.z);
+	}
+	v -= r;
+	if (v.isZero()) {
+		if (A == PyQz) {
+			dblProj(R, P, specialA, a);
+		} else {
+			R.clear();
+		}
+		return;
+	}
+	F::sub(R.y, A, PyQz);
+	F::sqr(A, R.y);
+	F::sqr(vv, v);
+	r *= vv;
+	vv *= v;
+	if (isQzOne) {
+		R.z = P.z;
+	} else {
+		if (isPzOne) {
+			R.z = Q.z;
+		} else {
+			F::mul(R.z, P.z, Q.z);
+		}
+	}
+	// R.z = 1 if isPzOne && isQzOne
+	if (isPzOne && isQzOne) {
+		R.z = vv;
+	} else {
+		A *= R.z;
+		R.z *= vv;
+	}
+	A -= vv;
+	vv *= PyQz;
+	A -= r;
+	A -= r;
+	F::mul(R.x, v, A);
+	r -= A;
+	R.y *= r;
+	R.y -= vv;
+}
+
+// y^2 == (x^2 + a)x + b
+template<class F>
+bool isValidAffine(const F& x, const F& y, const F& a, const F& b)
+{
+	F y2, t;
+	F::sqr(y2, y);
+	F::sqr(t, x);
 	t += a;
 	t *= x;
 	t += b;
 	return y2 == t;
+}
+
+// y^2 = x^3 + ax + b
+template<class E>
+static inline void dblAffine(E& R, const E& P, const typename E::Fp& a)
+{
+	typedef typename E::Fp F;
+	if (P.isZero()) {
+		R.clear();
+		return;
+	}
+	if (P.y.isZero()) {
+		R.clear();
+		return;
+	}
+	F t, s;
+	F::sqr(t, P.x);
+	F::add(s, t, t);
+	t += s;
+	t += a;
+	F::add(s, P.y, P.y);
+	t /= s;
+	F::sqr(s, t);
+	s -= P.x;
+	F x3;
+	F::sub(x3, s, P.x);
+	F::sub(s, P.x, x3);
+	s *= t;
+	F::sub(R.y, s, P.y);
+	R.x = x3;
+	R.z = 1;
+}
+
+template<class E>
+void addAffine(E& R, const E& P, const E& Q, const typename E::Fp& a)
+{
+	typedef typename E::Fp F;
+	if (P.isZero()) { R = Q; return; }
+	if (Q.isZero()) { R = P; return; }
+	F t;
+	F::sub(t, Q.x, P.x);
+	if (t.isZero()) {
+		if (P.y == Q.y) {
+			dblAffine(R, P, a);
+		} else {
+			R.clear();
+		}
+		return;
+	}
+	F s;
+	F::sub(s, Q.y, P.y);
+	F::div(t, s, t);
+	R.z = 1;
+	F x3;
+	F::sqr(x3, t);
+	x3 -= P.x;
+	x3 -= Q.x;
+	F::sub(s, P.x, x3);
+	s *= t;
+	F::sub(R.y, s, P.y);
+	R.x = x3;
 }
 
 } // mcl::ec
@@ -142,11 +500,6 @@ bool isValidAffine(const T& a, const T& b, const T& x, const T& y)
 */
 template<class _Fp>
 class EcT : public fp::Serializable<EcT<_Fp> > {
-	enum {
-		zero,
-		minus3,
-		generic
-	};
 public:
 	typedef _Fp Fp;
 	typedef _Fp BaseFp;
@@ -185,15 +538,15 @@ private:
 	}
 	bool isValidJacobi() const
 	{
-		return ec::isValidJacobi(a_, b_, x, y, z);
+		return ec::isValidJacobi(x, y, z, a_, b_);
 	}
 	bool isValidProj() const
 	{
-		return ec::isValidProj(a_, b_, x, y, z);
+		return ec::isValidProj(x, y, z, a_, b_);
 	}
 	bool isValidAffine() const
 	{
-		return ec::isValidAffine(a_, b_, x, y);
+		return ec::isValidAffine(x, y, a_, b_);
 	}
 public:
 	void normalize()
@@ -218,11 +571,11 @@ public:
 		a_ = a;
 		b_ = b;
 		if (a_.isZero()) {
-			specialA_ = zero;
+			specialA_ = ec::zero;
 		} else if (a_ == -3) {
-			specialA_ = minus3;
+			specialA_ = ec::minus3;
 		} else {
-			specialA_ = generic;
+			specialA_ = ec::generic;
 		}
 		ioMode_ = 0;
 		verifyOrder_ = false;
@@ -302,331 +655,30 @@ public:
 		y.clear();
 		z.clear();
 	}
-	static inline void dblNoVerifyInfJacobi(EcT& R, const EcT& P)
-	{
-		Fp S, M, t, y2;
-		Fp::sqr(y2, P.y);
-		Fp::mul(S, P.x, y2);
-		const bool isPzOne = P.z.isOne();
-		S += S;
-		S += S;
-		Fp::sqr(M, P.x);
-		switch (specialA_) {
-		case zero:
-			Fp::add(t, M, M);
-			M += t;
-			break;
-		case minus3:
-			if (isPzOne) {
-				M -= P.z;
-			} else {
-				Fp::sqr(t, P.z);
-				Fp::sqr(t, t);
-				M -= t;
-			}
-			Fp::add(t, M, M);
-			M += t;
-			break;
-		case generic:
-		default:
-			if (isPzOne) {
-				t = a_;
-			} else {
-				Fp::sqr(t, P.z);
-				Fp::sqr(t, t);
-				t *= a_;
-			}
-			t += M;
-			M += M;
-			M += t;
-			break;
-		}
-		Fp::sqr(R.x, M);
-		R.x -= S;
-		R.x -= S;
-		if (isPzOne) {
-			R.z = P.y;
-		} else {
-			Fp::mul(R.z, P.y, P.z);
-		}
-		R.z += R.z;
-		Fp::sqr(y2, y2);
-		y2 += y2;
-		y2 += y2;
-		y2 += y2;
-		Fp::sub(R.y, S, R.x);
-		R.y *= M;
-		R.y -= y2;
-	}
-	static inline void dblNoVerifyInfProj(EcT& R, const EcT& P)
-	{
-		const bool isPzOne = P.z.isOne();
-		Fp w, t, h;
-		switch (specialA_) {
-		case zero:
-			Fp::sqr(w, P.x);
-			Fp::add(t, w, w);
-			w += t;
-			break;
-		case minus3:
-			Fp::sqr(w, P.x);
-			if (isPzOne) {
-				w -= P.z;
-			} else {
-				Fp::sqr(t, P.z);
-				w -= t;
-			}
-			Fp::add(t, w, w);
-			w += t;
-			break;
-		case generic:
-		default:
-			if (isPzOne) {
-				w = a_;
-			} else {
-				Fp::sqr(w, P.z);
-				w *= a_;
-			}
-			Fp::sqr(t, P.x);
-			w += t;
-			w += t;
-			w += t; // w = a z^2 + 3x^2
-			break;
-		}
-		if (isPzOne) {
-			R.z = P.y;
-		} else {
-			Fp::mul(R.z, P.y, P.z); // s = yz
-		}
-		Fp::mul(t, R.z, P.x);
-		t *= P.y; // xys
-		t += t;
-		t += t; // 4(xys) ; 4B
-		Fp::sqr(h, w);
-		h -= t;
-		h -= t; // w^2 - 8B
-		Fp::mul(R.x, h, R.z);
-		t -= h; // h is free
-		t *= w;
-		Fp::sqr(w, P.y);
-		R.x += R.x;
-		R.z += R.z;
-		Fp::sqr(h, R.z);
-		w *= h;
-		R.z *= h;
-		Fp::sub(R.y, t, w);
-		R.y -= w;
-	}
-	static inline void dblNoVerifyInfAffine(EcT& R, const EcT& P)
-	{
-		Fp t, s;
-		Fp::sqr(t, P.x);
-		Fp::add(s, t, t);
-		t += s;
-		t += a_;
-		Fp::add(s, P.y, P.y);
-		t /= s;
-		Fp::sqr(s, t);
-		s -= P.x;
-		Fp x3;
-		Fp::sub(x3, s, P.x);
-		Fp::sub(s, P.x, x3);
-		s *= t;
-		Fp::sub(R.y, s, P.y);
-		R.x = x3;
-		R.z = 1;
-	}
-	static inline void dblNoVerifyInf(EcT& R, const EcT& P)
-	{
-		switch (mode_) {
-		case ec::Jacobi:
-			dblNoVerifyInfJacobi(R, P);
-			break;
-		case ec::Proj:
-			dblNoVerifyInfProj(R, P);
-			break;
-		case ec::Affine:
-			dblNoVerifyInfAffine(R, P);
-			break;
-		}
-	}
 	static inline void dbl(EcT& R, const EcT& P)
 	{
-		if (P.isZero()) {
-			R.clear();
-			return;
-		}
-		dblNoVerifyInf(R, P);
-	}
-	static inline void addJacobi(EcT& R, const EcT& P, const EcT& Q, bool isPzOne, bool isQzOne)
-	{
-		Fp r, U1, S1, H, H3;
-		if (isPzOne) {
-			// r = 1;
-		} else {
-			Fp::sqr(r, P.z);
-		}
-		if (isQzOne) {
-			U1 = P.x;
-			if (isPzOne) {
-				H = Q.x;
-			} else {
-				Fp::mul(H, Q.x, r);
-			}
-			H -= U1;
-			S1 = P.y;
-		} else {
-			Fp::sqr(S1, Q.z);
-			Fp::mul(U1, P.x, S1);
-			if (isPzOne) {
-				H = Q.x;
-			} else {
-				Fp::mul(H, Q.x, r);
-			}
-			H -= U1;
-			S1 *= Q.z;
-			S1 *= P.y;
-		}
-		if (isPzOne) {
-			r = Q.y;
-		} else {
-			r *= P.z;
-			r *= Q.y;
-		}
-		r -= S1;
-		if (H.isZero()) {
-			if (r.isZero()) {
-				dblNoVerifyInf(R, P);
-			} else {
-				R.clear();
-			}
-			return;
-		}
-		if (isPzOne) {
-			if (isQzOne) {
-				R.z = H;
-			} else {
-				Fp::mul(R.z, H, Q.z);
-			}
-		} else {
-			if (isQzOne) {
-				Fp::mul(R.z, P.z, H);
-			} else {
-				Fp::mul(R.z, P.z, Q.z);
-				R.z *= H;
-			}
-		}
-		Fp::sqr(H3, H); // H^2
-		Fp::sqr(R.y, r); // r^2
-		U1 *= H3; // U1 H^2
-		H3 *= H; // H^3
-		R.y -= U1;
-		R.y -= U1;
-		Fp::sub(R.x, R.y, H3);
-		U1 -= R.x;
-		U1 *= r;
-		H3 *= S1;
-		Fp::sub(R.y, U1, H3);
-	}
-	static inline void addProj(EcT& R, const EcT& P, const EcT& Q, bool isPzOne, bool isQzOne)
-	{
-		Fp r, PyQz, v, A, vv;
-		if (isQzOne) {
-			r = P.x;
-			PyQz = P.y;
-		} else {
-			Fp::mul(r, P.x, Q.z);
-			Fp::mul(PyQz, P.y, Q.z);
-		}
-		if (isPzOne) {
-			A = Q.y;
-			v = Q.x;
-		} else {
-			Fp::mul(A, Q.y, P.z);
-			Fp::mul(v, Q.x, P.z);
-		}
-		v -= r;
-		if (v.isZero()) {
-			if (A == PyQz) {
-				dblNoVerifyInf(R, P);
-			} else {
-				R.clear();
-			}
-			return;
-		}
-		Fp::sub(R.y, A, PyQz);
-		Fp::sqr(A, R.y);
-		Fp::sqr(vv, v);
-		r *= vv;
-		vv *= v;
-		if (isQzOne) {
-			R.z = P.z;
-		} else {
-			if (isPzOne) {
-				R.z = Q.z;
-			} else {
-				Fp::mul(R.z, P.z, Q.z);
-			}
-		}
-		// R.z = 1 if isPzOne && isQzOne
-		if (isPzOne && isQzOne) {
-			R.z = vv;
-		} else {
-			A *= R.z;
-			R.z *= vv;
-		}
-		A -= vv;
-		vv *= PyQz;
-		A -= r;
-		A -= r;
-		Fp::mul(R.x, v, A);
-		r -= A;
-		R.y *= r;
-		R.y -= vv;
-	}
-	static inline void addAffine(EcT& R, const EcT& P, const EcT& Q)
-	{
-		Fp t;
-		Fp::sub(t, Q.x, P.x);
-		if (t.isZero()) {
-			if (P.y == Q.y) {
-				dblNoVerifyInf(R, P);
-			} else {
-				R.clear();
-			}
-			return;
-		}
-		Fp s;
-		Fp::sub(s, Q.y, P.y);
-		Fp::div(t, s, t);
-		R.z = 1;
-		Fp x3;
-		Fp::sqr(x3, t);
-		x3 -= P.x;
-		x3 -= Q.x;
-		Fp::sub(s, P.x, x3);
-		s *= t;
-		Fp::sub(R.y, s, P.y);
-		R.x = x3;
-	}
-	static inline void add(EcT& R, const EcT& P, const EcT& Q) {
-		if (P.isZero()) { R = Q; return; }
-		if (Q.isZero()) { R = P; return; }
-		if (&P == &Q) {
-			dblNoVerifyInf(R, P);
-			return;
-		}
-		bool isPzOne = P.z.isOne();
-		bool isQzOne = Q.z.isOne();
 		switch (mode_) {
 		case ec::Jacobi:
-			addJacobi(R, P, Q, isPzOne, isQzOne);
+			ec::dblJacobi(R, P, specialA_, a_);
 			break;
 		case ec::Proj:
-			addProj(R, P, Q, isPzOne, isQzOne);
+			ec::dblProj(R, P, specialA_, a_);
 			break;
 		case ec::Affine:
-			addAffine(R, P, Q);
+			ec::dblAffine(R, P, a_);
+			break;
+		}
+	}
+	static inline void add(EcT& R, const EcT& P, const EcT& Q) {
+		switch (mode_) {
+		case ec::Jacobi:
+			ec::addJacobi(R, P, Q, specialA_, a_);
+			break;
+		case ec::Proj:
+			ec::addProj(R, P, Q, specialA_, a_);
+			break;
+		case ec::Affine:
+			ec::addAffine(R, P, Q, a_);
 			break;
 		}
 	}
