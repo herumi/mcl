@@ -612,7 +612,7 @@ CYBOZU_TEST_AUTO(all)
 {
 	if (g_partial & (1 << 3)) {
 		const struct mcl::EcParam para3[] = {
-//			mcl::ecparam::p160_1,
+			mcl::ecparam::p160_1,
 			mcl::ecparam::secp160k1,
 			mcl::ecparam::secp192k1,
 			mcl::ecparam::NIST_P192,

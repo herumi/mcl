@@ -71,14 +71,31 @@ bool get_a_flag(const mcl::Fp2T<F>& x)
 template<class F>
 void normalizeJacobi(F& x, F& y, F& z)
 {
-	assert(!z.isZero());
-	F rz2;
+	if (z.isZero()) return;
 	F::inv(z, z);
+	F rz2;
 	F::sqr(rz2, z);
 	x *= rz2;
 	y *= rz2;
 	y *= z;
 	z = 1;
+}
+
+// (x/z^2, y/z^3)
+template<class F>
+bool isEqualJacobi(const F& x1, const F& y1, const F& z1, const F& x2, const F& y2, const F& z2)
+{
+	F s1, s2, t1, t2;
+	F::sqr(s1, z1);
+	F::sqr(s2, z2);
+	F::mul(t1, x1, s2);
+	F::mul(t2, x2, s1);
+	if (t1 != t2) return false;
+	F::mul(t1, y1, s2);
+	F::mul(t2, y2, s1);
+	t1 *= z2;
+	t2 *= z1;
+	return t1 == t2;
 }
 
 // Y^2 == X(X^2 + aZ^4) + bZ^6
@@ -100,10 +117,9 @@ bool isValidJacobi(const F& x, const F& y, const F& z, const F& a, const F& b)
 }
 
 /*
-	   |a=0|-3| generic
-	sqr|  4| 6| 6
-	mul|  3| 3| 4
-	add| 12|13|13
+	a = 0   3M + 4S + 12A
+	a = -3  3M + 6S + 13A
+	generic 4M + 6S + 13A
 */
 template<class E>
 void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
@@ -113,6 +129,65 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 		R.clear();
 		return;
 	}
+#if 0
+	// a = 0    M + 7S + 15A
+	// a = -3   M + 8S + 18A
+	// generic 2M + 8S + 16A
+	F x2, y2, y4, z2, s, m, t;
+    F::sqr(x2, P.x);
+    F::sqr(y2, P.y);
+    F::sqr(y4, y2);
+	const bool isPzOne = P.z.isOne();
+	if (isPzOne) {
+		z2 = P.z;
+	} else {
+	    F::sqr(z2, P.z);
+	}
+    F::add(s, P.x, y2);
+    F::sqr(s, s);
+    s -= x2;
+    s -= y4;
+    s += s;
+	F::add(m, x2, x2);
+	m += x2;
+	switch (specialA) {
+	case Zero:
+		break;
+	case Minus3:
+		if (isPzOne) {
+			t = z2;
+		} else {
+			F::sqr(t, z2);
+		}
+		m -= t;
+		m -= t;
+		m -= t;
+		break;
+	case GenericA:
+	default:
+		if (isPzOne) {
+			m += a;
+		} else {
+			F::sqr(t, z2);
+			t *= a;
+			m += t;
+		}
+		break;
+	}
+    F::sqr(t, m);
+    t -= s;
+    F::sub(R.x, t, s); // m^2 - 2s
+	F::add(R.z, P.y, P.z);
+	F::sqr(R.z, R.z);
+	R.z -= y2;
+	R.z -= z2;
+	F::sub(R.y, s, R.x);
+	R.y *= m;
+	F::add(t, y4, y4);
+	t += t;
+	t += t;
+	R.y -= t;
+#else
 	F S, M, t, y2;
 	F::sqr(y2, P.y);
 	F::mul(S, P.x, y2);
@@ -166,13 +241,10 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 	F::sub(R.y, S, R.x);
 	R.y *= M;
 	R.y -= y2;
+#endif
 }
 
-/*
-	sqr|  4
-	mul| 12
-	add|  7
-*/
+// 7M + 4S + 7A
 template<class E, class F>
 void addJacobi(E& R, const E& P, const E& Q, int specialA, const F& a)
 {
@@ -252,7 +324,7 @@ void addJacobi(E& R, const E& P, const E& Q, int specialA, const F& a)
 template<class F>
 void normalizeProj(F& x, F& y, F& z)
 {
-	assert(!z.isZero());
+	if (z.isZero()) return;
 	F::inv(z, z);
 	x *= z;
 	y *= z;
@@ -276,10 +348,23 @@ bool isValidProj(const F& x, const F& y, const F& z, const F& a, const F& b)
 	return y2 == t;
 }
 
+// (x/z, y/z)
+template<class F>
+bool isEqualProj(const F& x1, const F& y1, const F& z1, const F& x2, const F& y2, const F& z2)
+{
+	F t1, t2;
+	F::mul(t1, x1, z2);
+	F::mul(t2, x2, z1);
+	if (t1 != t2) return false;
+	F::mul(t1, y1, z2);
+	F::mul(t2, y2, z1);
+	return t1 == t2;
+}
+
 /*
 	   |a=0|-3| generic
-	sqr|  4| 5| 5
 	mul|  8| 8| 9
+	sqr|  4| 5| 5
 	add| 11|12|12
 */
 template<class E, class F>
@@ -348,8 +433,8 @@ void dblProj(E& R, const E& P, int specialA, const F& a)
 }
 
 /*
-	sqr|  2
 	mul| 12
+	sqr|  2
 	add|  7
 */
 template<class E, class F>
@@ -523,22 +608,6 @@ public:
 		return isZero() || z.isOne();
 	}
 private:
-	void normalizeJacobi()
-	{
-		ec::normalizeJacobi(x, y, z);
-	}
-	void normalizeProj()
-	{
-		ec::normalizeProj(x, y, z);
-	}
-	bool isValidJacobi() const
-	{
-		return ec::isValidJacobi(x, y, z, a_, b_);
-	}
-	bool isValidProj() const
-	{
-		return ec::isValidProj(x, y, z, a_, b_);
-	}
 	bool isValidAffine() const
 	{
 		return ec::isValidAffine(x, y, a_, b_);
@@ -546,13 +615,12 @@ private:
 public:
 	void normalize()
 	{
-		if (isNormalized()) return;
 		switch (mode_) {
 		case ec::Jacobi:
-			normalizeJacobi();
+			ec::normalizeJacobi(x, y, z);
 			break;
 		case ec::Proj:
-			normalizeProj();
+			ec::normalizeProj(x, y, z);
 			break;
 		}
 	}
@@ -617,15 +685,15 @@ public:
 	}
 	bool isValid() const
 	{
-		if (isZero()) return true;
 		switch (mode_) {
 		case ec::Jacobi:
-			if (!isValidJacobi()) return false;
+			if (!ec::isValidJacobi(x, y, z, a_, b_)) return false;
 			break;
 		case ec::Proj:
-			if (!isValidProj()) return false;
+			if (!ec::isValidProj(x, y, z, a_, b_)) return false;
 			break;
 		case ec::Affine:
+			if (z.isZero()) return true;
 			if (!isValidAffine()) return false;
 			break;
 		}
@@ -898,7 +966,7 @@ public:
 				z.clear();
 				return;
 			}
-			goto verifyValidness;
+			goto verifyValidAffine;
 		}
 		if (ioMode & (IoSerialize | IoSerializeHexStr)) {
 			const size_t n = Fp::getByteSize();
@@ -982,7 +1050,7 @@ public:
 			x.load(pb, is, ioMode); if (!*pb) return;
 			if (c == '1') {
 				y.load(pb, is, ioMode); if (!*pb) return;
-				goto verifyValidness;
+				goto verifyValidAffine;
 			} else if (c == '2' || c == '3') {
 				bool isYodd = c == '3';
 				*pb = getYfromX(y, x, isYodd);
@@ -1008,7 +1076,7 @@ public:
 			*pb = true;
 		}
 		return;
-	verifyValidness:
+	verifyValidAffine:
 		if (!isValidAffine()) {
 			*pb = false;
 			return;
@@ -1063,9 +1131,15 @@ public:
 	EcT operator-() const { EcT x; neg(x, *this); return x; }
 	bool operator==(const EcT& rhs) const
 	{
-		EcT R;
-		sub(R, *this, rhs); // QQQ : optimized later
-		return R.isZero();
+		switch (mode_) {
+		case ec::Jacobi:
+			return ec::isEqualJacobi(x, y, z, rhs.x, rhs.y, rhs.z);
+		case ec::Proj:
+			return ec::isEqualProj(x, y, z, rhs.x, rhs.y, rhs.z);
+		case ec::Affine:
+		default:
+			return x == rhs.x && y == rhs.y && z == rhs.z;
+		}
 	}
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }
 	bool operator<(const EcT& rhs) const

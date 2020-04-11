@@ -37,6 +37,26 @@ inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, co
 	}
 }
 
+namespace local {
+
+template<class F>
+struct PointT {
+	typedef F Fp;
+	F x, y, z;
+	bool isZero() const
+	{
+		return z.isZero();
+	}
+	void clear()
+	{
+		x.clear();
+		y.clear();
+		z.clear();
+	}
+};
+
+} // mcl::local
+
 template<class Fp, class Fp2, class G2>
 struct MapToG2_WB19 {
 	Fp2 xi;
@@ -51,17 +71,11 @@ struct MapToG2_WB19 {
 	Fp2 ynum[4];
 	Fp2 yden[4];
 	int draftVersion_;
+	typedef local::PointT<Fp2> Point;
 	void setDraftVersion(int version)
 	{
 		draftVersion_ = version;
 	}
-	struct Point {
-		Fp2 x, y, z;
-		bool isZero() const
-		{
-			return z.isZero();
-		}
-	};
 	// should be merged into ec.hpp
 	template<class G>
 	void neg(G& Q, const G& P) const
@@ -70,7 +84,7 @@ struct MapToG2_WB19 {
 		Fp2::neg(Q.y, P.y);
 		Q.z = P.z;
 	}
-	// Jacobi
+	// Jacobi : sqr 4, mul 12, add 11
 	template<class G>
 	void add(G& R, const G& P, const G& Q) const
 	{
@@ -121,9 +135,13 @@ struct MapToG2_WB19 {
 		R.y -= S1;
 		R.y -= S1;
 	}
+	// jacobi : sqr 5, mul 2, add 14
 	template<class G>
-	void dbl(G& Q, const G& P) const
+	void dblT(G& Q, const G& P) const
 	{
+#if 0
+		ec::dblJacobi(Q, P, ec::GenericA, Ell2p_a);
+#else
 		Fp2 A, B, C, D, E, F;
 		Fp2::sqr(A, P.x);
 		Fp2::sqr(B, P.y);
@@ -151,22 +169,24 @@ struct MapToG2_WB19 {
 		C += C;
 		C += C;
 		Q.y -= C;
+#endif
+	}
+	void dbl(Point& Q, const Point& P) const
+	{
+		dblT(Q, P);
+	}
+	void dbl(G2& Q, const G2& P) const
+	{
+		dblT(Q, P);
 	}
 	// P is on y^2 = x^3 + Ell2p_a x + Ell2p_b
 	bool isValidPoint(const Point& P) const
 	{
-		Fp2 y2, x2, z2, z4, t;
-		Fp2::sqr(x2, P.x);
-		Fp2::sqr(y2, P.y);
-		Fp2::sqr(z2, P.z);
-		Fp2::sqr(z4, z2);
-		Fp2::mul(t, z4, Ell2p_a);
-		t += x2;
-		t *= P.x;
-		z4 *= z2;
-		z4 *= Ell2p_b;
-		t += z4;
-		return y2 == t;
+		return ec::isValidJacobi(P.x, P.y, P.z, Ell2p_a, Ell2p_b);
+	}
+	bool isValidPoint(const G2& P) const
+	{
+		return P.isValid();
 	}
 	void init()
 	{
@@ -617,7 +637,7 @@ struct MapToG2_WB19 {
 	void clear_h2(G2& Q, const G2& P) const
 	{
 #if 0
-		mcl::bn::BN::param.mapTo.mulByCofactorBLS12fast(Q, P);
+		bn::param.mapTo.mulByCofactorBLS12fast(Q, P);
 #else
 		G2 work, work2;
 		h2_chain(work, P);
