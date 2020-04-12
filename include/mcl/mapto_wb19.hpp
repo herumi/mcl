@@ -355,114 +355,6 @@ struct MapToG2_WB19 {
 		return false;
 	}
 	/*
-		z = sqrt(u/v) = (uv^7) (uv^15)^((p^2-9)/16) * root4
-		return true if found
-	*/
-	bool sqr_div(Fp2& z, const Fp2& u, const Fp2& v) const
-	{
-		Fp2 gamma, t1, t2;
-		Fp2::sqr(gamma, v); // v^2
-		Fp2::sqr(t2, gamma); // v^4
-		Fp2::mul(t1, u, v); // uv
-		t1 *= gamma; // uv^3
-		t1 *= t2; // uv^7
-		Fp2::sqr(t2, t2); // v^8
-		t2 *= t1;
-		Fp2::pow(gamma, t2, sqrtConst);
-		gamma *= t1;
-		Fp2 candi;
-		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(root4); i++) {
-			Fp2::mul(candi, gamma, root4[i]);
-			Fp2::sqr(t1, candi);
-			t1 *= v;
-			if (t1 == u) {
-				z = candi;
-				return true;
-			}
-		}
-		z = gamma;
-		return false;
-	}
-	// https://github.com/ethereum/py_ecc
-	void py_ecc_optimized_swu_G2(Point& P, const Fp2& t) const
-	{
-		Fp2 t2, t2xi, t2xi2;
-		Fp2::sqr(t2, t);
-		mul_xi(t2xi, t2);
-		Fp2::sqr(t2xi2, t2xi);
-		Fp2 nume, deno;
-		// (t^2 * xi)^2 + (t^2 * xi)
-		Fp2::add(deno, t2xi2, t2xi);
-		Fp2::add(nume, deno, 1);
-		nume *= Point::b_;
-		if (deno.isZero()) {
-			Fp2::mul(deno, Point::a_, xi);
-		} else {
-			deno *= -Point::a_;
-		}
-		Fp2 u, v;
-		{
-			Fp2 deno2, tmp, tmp1, tmp2;
-			Fp2::sqr(deno2, deno);
-			Fp2::mul(v, deno2, deno);
-
-			Fp2::mul(u, Point::b_, v);
-			Fp2::mul(tmp, Point::a_, nume);
-			tmp *= deno2;
-			u += tmp;
-			Fp2::sqr(tmp, nume);
-			tmp *= nume;
-			u += tmp;
-		}
-		Fp2 candi;
-		bool success = sqr_div(candi, u, v);
-		P.y = candi;
-		candi *= t2;
-		candi *= t;
-		u *= t2xi2;
-		u *= t2xi;
-		bool success2 = false;
-		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(etas); i++) {
-			Fp2 t1;
-			Fp2::mul(t1, etas[i], candi);
-			Fp2::sqr(t2, t1);
-			t2 *= v;
-			if (t2 == u && !success && !success2) {
-				P.y = t1;
-				success2 = true;
-			}
-		}
-		assert(success || success2);
-		if (!success) {
-			nume *= t2xi;
-		}
-		if (isNegSign(t) != isNegSign(P.y)) {
-			Fp2::neg(P.y, P.y);
-		}
-		P.y *= deno;
-		P.x = nume;
-		P.z = deno;
-	}
-	// Proj
-	void py_ecc_iso_map_G2(G2& Q, const Point& P) const
-	{
-		Fp2 zpows[3];
-		zpows[0] = P.z;
-		Fp2::sqr(zpows[1], zpows[0]);
-		Fp2::mul(zpows[2], zpows[1], zpows[0]);
-		Fp2 mapvals[4];
-		evalPoly(mapvals[0], P.x, zpows, xnum);
-		evalPoly(mapvals[1], P.x, zpows, xden);
-		evalPoly(mapvals[2], P.x, zpows, ynum);
-		evalPoly(mapvals[3], P.x, zpows, yden);
-		mapvals[1] *= P.z;
-		mapvals[2] *= P.y;
-		mapvals[3] *= P.z;
-		Fp2::mul(Q.z, mapvals[1], mapvals[3]);
-		Fp2::mul(Q.x, mapvals[0], mapvals[3]);
-		Fp2::mul(Q.y, mapvals[1], mapvals[2]);
-	}
-	/*
 		in : Jacobi [X:Y:Z]
 		out : Proj [A:B:C]
 		[X:Y:Z] as Jacobi
@@ -477,29 +369,6 @@ struct MapToG2_WB19 {
 		Fp2::mul(out.x, in.x, in.z);
 		out.y = in.y;
 		Fp2::mul(out.z, in.z, z2);
-	}
-	/*
-		in : Proj [X:Y:Z]
-		out : Jacobi [A:B:C]
-		[X:Y:Z] as Proj
-		= (X/Z, Y/Z) as Affine
-		= [X/Z:Y/Z:1] as Jacobi
-		= [XZ:YZ^2:Z] as Jacobi
-	*/
-	void toJacobi(G2& out, const G2& in) const
-	{
-		Fp2 z2;
-		Fp2::sqr(z2, in.z);
-		Fp2::mul(out.x, in.x, in.z);
-		Fp2::mul(out.y, in.y, z2);
-		out.z = in.z;
-	}
-	// Proj
-	void py_ecc_map_to_curve_G2(G2& out, const Fp2& t) const
-	{
-		Point P;
-		py_ecc_optimized_swu_G2(P, t);
-		py_ecc_iso_map_G2(out, P);
 	}
 	// https://github.com/algorand/bls_sigs_ref
 	void osswu2_help(Point& P, const Fp2& t) const
@@ -691,19 +560,6 @@ struct MapToG2_WB19 {
 		}
 		iso3(P, Pp);
 		clear_h2(P, P);
-	}
-	void py_ecc_hash_to_G2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
-	{
-		Fp2 t1, t2;
-		hashToFp2(t1, msg, msgSize, 0, dst, dstSize);
-		hashToFp2(t2, msg, msgSize, 1, dst, dstSize);
-		G2 P1, P2;
-		py_ecc_map_to_curve_G2(P1, t1);
-		py_ecc_map_to_curve_G2(P2, t2);
-		toJacobi(P1, P1);
-		toJacobi(P2, P2);
-		P1 += P2;
-		clear_h2(out, P1);
 	}
 	// hash-to-curve-06
 	void hashToFp2v6(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
