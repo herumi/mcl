@@ -135,14 +135,14 @@ struct MapToG2_WB19 {
 		R.y -= S1;
 		R.y -= S1;
 	}
-	// jacobi : sqr 5, mul 2, add 14
+	// jacobi : 2M + 5S + 14A
 	template<class G>
 	void dblT(G& Q, const G& P) const
 	{
 #if 0
 		ec::dblJacobi(Q, P, ec::GenericA, Ell2p_a);
 #else
-		Fp2 A, B, C, D, E, F;
+		Fp2 A, B, C, D, e, f;
 		Fp2::sqr(A, P.x);
 		Fp2::sqr(B, P.y);
 		Fp2::sqr(C, B);
@@ -151,10 +151,10 @@ struct MapToG2_WB19 {
 		D -= A;
 		D -= C;
 		D += D;
-		Fp2::add(E, A, A);
-		E += A;
-		Fp2::sqr(F, E);
-		Fp2::sub(Q.x, F, D);
+		Fp2::add(e, A, A);
+		e += A;
+		Fp2::sqr(f, e);
+		Fp2::sub(Q.x, f, D);
 		Q.x -= D;
 		Fp2::mul(Q.z, P.y, P.z);
 		if (Q.z.isZero()) {
@@ -164,7 +164,7 @@ struct MapToG2_WB19 {
 		}
 		Q.z += Q.z;
 		Fp2::sub(Q.y, D, Q.x);
-		Q.y *= E;
+		Q.y *= e;
 		C += C;
 		C += C;
 		C += C;
@@ -178,6 +178,7 @@ struct MapToG2_WB19 {
 	void dbl(G2& Q, const G2& P) const
 	{
 		dblT(Q, P);
+//		G2::dbl(Q, P);
 	}
 	// P is on y^2 = x^3 + Ell2p_a x + Ell2p_b
 	bool isValidPoint(const Point& P) const
@@ -301,6 +302,7 @@ struct MapToG2_WB19 {
 	// refer (xnum, xden, ynum, yden)
 	void iso3(G2& Q, const Point& P) const
 	{
+//		assert(isValidPoint(P));
 		Fp2 zpows[3];
 		Fp2::sqr(zpows[0], P.z);
 		Fp2::sqr(zpows[1], zpows[0]);
@@ -321,6 +323,7 @@ struct MapToG2_WB19 {
 		Fp2::sqr(t, Q.z);
 		Fp2::mul(Q.y, mapvals[2], mapvals[1]);
 		Q.y *= t;
+//		assert(Q.isValid());
 	}
 	/*
 		(a+bi)*(-2-i) = (b-2a)-(a+2b)i

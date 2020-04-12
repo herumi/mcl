@@ -117,9 +117,9 @@ bool isValidJacobi(const F& x, const F& y, const F& z, const F& a, const F& b)
 }
 
 /*
-	a = 0   3M + 4S + 12A
-	a = -3  3M + 6S + 13A
-	generic 4M + 6S + 13A
+	a = 0   2M + 5S + 14A
+	a = -3  2M + 7S + 15A
+	generic 3M + 7S + 15A
 */
 template<class E>
 void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
@@ -129,87 +129,31 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 		R.clear();
 		return;
 	}
-#if 0
-	// a = 0    M + 7S + 15A
-	// a = -3   M + 8S + 18A
-	// generic 2M + 8S + 16A
-	F x2, y2, y4, z2, s, m, t;
-    F::sqr(x2, P.x);
-    F::sqr(y2, P.y);
-    F::sqr(y4, y2);
 	const bool isPzOne = P.z.isOne();
-	if (isPzOne) {
-		z2 = P.z;
-	} else {
-	    F::sqr(z2, P.z);
-	}
-    F::add(s, P.x, y2);
-    F::sqr(s, s);
-    s -= x2;
-    s -= y4;
-    s += s;
-	F::add(m, x2, x2);
-	m += x2;
-	switch (specialA) {
-	case Zero:
-		break;
-	case Minus3:
-		if (isPzOne) {
-			t = z2;
-		} else {
-			F::sqr(t, z2);
-		}
-		m -= t;
-		m -= t;
-		m -= t;
-		break;
-	case GenericA:
-	default:
-		if (isPzOne) {
-			m += a;
-		} else {
-			F::sqr(t, z2);
-			t *= a;
-			m += t;
-		}
-		break;
-	}
-    F::sqr(t, m);
-    t -= s;
-    F::sub(R.x, t, s); // m^2 - 2s
-	F::add(R.z, P.y, P.z);
-	F::sqr(R.z, R.z);
-	R.z -= y2;
-	R.z -= z2;
-	F::sub(R.y, s, R.x);
-	R.y *= m;
-	F::add(t, y4, y4);
-	t += t;
-	t += t;
-	R.y -= t;
-#else
-	F S, M, t, y2;
+	F x2, y2, xy, t;
+	F::sqr(x2, P.x);
 	F::sqr(y2, P.y);
-	F::mul(S, P.x, y2);
-	const bool isPzOne = P.z.isOne();
-	S += S;
-	S += S;
-	F::sqr(M, P.x);
+	F::add(xy, P.x, y2);
+	F::sqr(y2, y2);
+	F::sqr(xy, xy);
+	xy -= x2;
+	xy -= y2;
+	xy += xy;
 	switch (specialA) {
 	case Zero:
-		F::add(t, M, M);
-		M += t;
+		F::add(t, x2, x2);
+		x2 += t;
 		break;
 	case Minus3:
 		if (isPzOne) {
-			M -= P.z;
+			x2 -= P.z;
 		} else {
 			F::sqr(t, P.z);
 			F::sqr(t, t);
-			M -= t;
+			x2 -= t;
 		}
-		F::add(t, M, M);
-		M += t;
+		F::add(t, x2, x2);
+		x2 += t;
 		break;
 	case GenericA:
 	default:
@@ -220,28 +164,26 @@ void dblJacobi(E& R, const E& P, int specialA, const typename E::Fp& a)
 			F::sqr(t, t);
 			t *= a;
 		}
-		t += M;
-		M += M;
-		M += t;
+		t += x2;
+		x2 += x2;
+		x2 += t;
 		break;
 	}
-	F::sqr(R.x, M);
-	R.x -= S;
-	R.x -= S;
+	F::sqr(R.x, x2);
+	R.x -= xy;
+	R.x -= xy;
 	if (isPzOne) {
 		R.z = P.y;
 	} else {
 		F::mul(R.z, P.y, P.z);
 	}
 	R.z += R.z;
-	F::sqr(y2, y2);
+	F::sub(R.y, xy, R.x);
+	R.y *= x2;
 	y2 += y2;
 	y2 += y2;
 	y2 += y2;
-	F::sub(R.y, S, R.x);
-	R.y *= M;
 	R.y -= y2;
-#endif
 }
 
 // 7M + 4S + 7A

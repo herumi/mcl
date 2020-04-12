@@ -688,9 +688,9 @@ void testHashToFp2v6(const T& mapto)
 		Fp2 out[2];
 		mapto.hashToFp2v6(out, msg, strlen(msg), dst, strlen(dst));
 		Fp2 expect[2];
-		for (int i = 0; i < 2; i++) {
-			set(expect[i], expectStr[i]);
-			CYBOZU_TEST_EQUAL(out[i], expect[i]);
+		for (int j = 0; j < 2; j++) {
+			set(expect[j], expectStr[j]);
+			CYBOZU_TEST_EQUAL(out[j], expect[j]);
 		}
 		if (i == 0) {
 			// from draft-irtf-cfrg-hash-to-curve/poc/vectors/BLS12381G2_XMD:SHA-256_SSWU_RO_.json.swp
