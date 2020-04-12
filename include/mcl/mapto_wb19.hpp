@@ -43,6 +43,9 @@ template<class F>
 struct PointT {
 	typedef F Fp;
 	F x, y, z;
+	static F a_;
+	static F b_;
+	static int specialA_;
 	bool isZero() const
 	{
 		return z.isZero();
@@ -53,15 +56,24 @@ struct PointT {
 		y.clear();
 		z.clear();
 	}
+#if 0
+	bool isEqual(const PointT<F>& rhs) const
+	{
+		return ec::isEqualJacobi(*this, rhs);
+	}
+#endif
 };
+
+template<class F> F PointT<F>::a_;
+template<class F> F PointT<F>::b_;
+template<class F> int PointT<F>::specialA_;
 
 } // mcl::local
 
 template<class Fp, class Fp2, class G2>
 struct MapToG2_WB19 {
+	typedef local::PointT<Fp2> Point;
 	Fp2 xi;
-	Fp2 Ell2p_a;
-	Fp2 Ell2p_b;
 	Fp half;
 	mpz_class sqrtConst; // (p^2 - 9) / 16
 	Fp2 root4[4];
@@ -71,7 +83,6 @@ struct MapToG2_WB19 {
 	Fp2 ynum[4];
 	Fp2 yden[4];
 	int draftVersion_;
-	typedef local::PointT<Fp2> Point;
 	void setDraftVersion(int version)
 	{
 		draftVersion_ = version;
@@ -174,16 +185,12 @@ struct MapToG2_WB19 {
 	void dbl(Point& Q, const Point& P) const
 	{
 		dblT(Q, P);
-	}
-	void dbl(G2& Q, const G2& P) const
-	{
-		dblT(Q, P);
-//		G2::dbl(Q, P);
+//		ec::dblJacobi(Q, P);
 	}
 	// P is on y^2 = x^3 + Ell2p_a x + Ell2p_b
 	bool isValidPoint(const Point& P) const
 	{
-		return ec::isValidJacobi(P.x, P.y, P.z, Ell2p_a, Ell2p_b);
+		return ec::isValidJacobi(P);
 	}
 	bool isValidPoint(const G2& P) const
 	{
@@ -194,10 +201,11 @@ struct MapToG2_WB19 {
 		bool b;
 		xi.a = -2;
 		xi.b = -1;
-		Ell2p_a.a = 0;
-		Ell2p_a.b = 240;
-		Ell2p_b.a = 1012;
-		Ell2p_b.b = 1012;
+		Point::a_.a = 0;
+		Point::a_.b = 240;
+		Point::b_.a = 1012;
+		Point::b_.b = 1012;
+		Point::specialA_ = ec::GenericA;
 		half = -1;
 		half /= 2;
 		sqrtConst = Fp::getOp().mp;
@@ -386,11 +394,11 @@ struct MapToG2_WB19 {
 		// (t^2 * xi)^2 + (t^2 * xi)
 		Fp2::add(deno, t2xi2, t2xi);
 		Fp2::add(nume, deno, 1);
-		nume *= Ell2p_b;
+		nume *= Point::b_;
 		if (deno.isZero()) {
-			Fp2::mul(deno, Ell2p_a, xi);
+			Fp2::mul(deno, Point::a_, xi);
 		} else {
-			deno *= -Ell2p_a;
+			deno *= -Point::a_;
 		}
 		Fp2 u, v;
 		{
@@ -398,8 +406,8 @@ struct MapToG2_WB19 {
 			Fp2::sqr(deno2, deno);
 			Fp2::mul(v, deno2, deno);
 
-			Fp2::mul(u, Ell2p_b, v);
-			Fp2::mul(tmp, Ell2p_a, nume);
+			Fp2::mul(u, Point::b_, v);
+			Fp2::mul(tmp, Point::a_, nume);
 			tmp *= deno2;
 			u += tmp;
 			Fp2::sqr(tmp, nume);
@@ -506,20 +514,20 @@ struct MapToG2_WB19 {
 		den += den2;
 		Fp2 x0_num, x0_den;
 		Fp2::add(x0_num, den, 1);
-		x0_num *= Ell2p_b;
+		x0_num *= Point::b_;
 		if (den.isZero()) {
-			Fp2::mul(x0_den, Ell2p_a, xi);
+			Fp2::mul(x0_den, Point::a_, xi);
 		} else {
-			Fp2::mul(x0_den, -Ell2p_a, den);
+			Fp2::mul(x0_den, -Point::a_, den);
 		}
 		Fp2 x0_den2, x0_den3, gx0_den, gx0_num;
 		Fp2::sqr(x0_den2, x0_den);
 		Fp2::mul(x0_den3, x0_den2, x0_den);
 		gx0_den = x0_den3;
 
-		Fp2::mul(gx0_num, Ell2p_b, gx0_den);
+		Fp2::mul(gx0_num, Point::b_, gx0_den);
 		Fp2 tmp, tmp1, tmp2;
-		Fp2::mul(tmp, Ell2p_a, x0_num);
+		Fp2::mul(tmp, Point::a_, x0_num);
 		tmp *= x0_den2;
 		gx0_num += tmp;
 		Fp2::sqr(tmp, x0_num);
@@ -581,22 +589,22 @@ struct MapToG2_WB19 {
 	{
 		G2 t[16];
 		t[0] = P;
-		dbl(t[1], t[0]);
-		add(t[4], t[1], t[0]);
-		add(t[2], t[4], t[1]);
-		add(t[3], t[2], t[1]);
-		add(t[11], t[3], t[1]);
-		add(t[9], t[11], t[1]);
-		add(t[10], t[9], t[1]);
-		add(t[5], t[10], t[1]);
-		add(t[7], t[5], t[1]);
-		add(t[15], t[7], t[1]);
-		add(t[13], t[15], t[1]);
-		add(t[6], t[13], t[1]);
-		add(t[14], t[6], t[1]);
-		add(t[12], t[14], t[1]);
-		add(t[8], t[12], t[1]);
-		dbl(t[1], t[6]);
+		G2::dbl(t[1], t[0]);
+		G2::add(t[4], t[1], t[0]);
+		G2::add(t[2], t[4], t[1]);
+		G2::add(t[3], t[2], t[1]);
+		G2::add(t[11], t[3], t[1]);
+		G2::add(t[9], t[11], t[1]);
+		G2::add(t[10], t[9], t[1]);
+		G2::add(t[5], t[10], t[1]);
+		G2::add(t[7], t[5], t[1]);
+		G2::add(t[15], t[7], t[1]);
+		G2::add(t[13], t[15], t[1]);
+		G2::add(t[6], t[13], t[1]);
+		G2::add(t[14], t[6], t[1]);
+		G2::add(t[12], t[14], t[1]);
+		G2::add(t[8], t[12], t[1]);
+		G2::dbl(t[1], t[6]);
 
 		const struct {
 			uint32_t n;
@@ -618,21 +626,21 @@ struct MapToG2_WB19 {
 		};
 		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
 			const uint32_t n = tbl[j].n;
-			for (size_t i = 0; i < n; i++) dbl(t[1], t[1]);
-			add(t[1], t[1], t[tbl[j].idx]);
+			for (size_t i = 0; i < n; i++) G2::dbl(t[1], t[1]);
+			G2::add(t[1], t[1], t[tbl[j].idx]);
 		}
-		for (size_t i = 0; i < 5; i++) dbl(t[1], t[1]);
-		add(out, t[1], t[2]);
+		for (size_t i = 0; i < 5; i++) G2::dbl(t[1], t[1]);
+		G2::add(out, t[1], t[2]);
 	}
 	void mx_chain(G2& Q, const G2& P) const
 	{
 		G2 T;
-		dbl(T, P);
+		G2::dbl(T, P);
 		const size_t tbl[] = { 2, 3, 9, 32, 16 };
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			add(T, T, P);
+			G2::add(T, T, P);
 			for (size_t j = 0; j < tbl[i]; j++) {
-				dbl(T, T);
+				G2::dbl(T, T);
 			}
 		}
 		Q = T;
@@ -644,12 +652,12 @@ struct MapToG2_WB19 {
 #else
 		G2 work, work2;
 		h2_chain(work, P);
-		dbl(work2, work);
-		add(work2, work, work2);
+		G2::dbl(work2, work);
+		G2::add(work2, work, work2);
 		mx_chain(work, work2);
 		mx_chain(work, work);
-		neg(work2, work2);
-		add(Q, work, work2);
+		G2::neg(work2, work2);
+		G2::add(Q, work, work2);
 #endif
 	}
 	template<class T>
