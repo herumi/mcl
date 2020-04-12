@@ -39,6 +39,7 @@ inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, co
 
 namespace local {
 
+// y^2 = x^3 + 4(1 + i)
 template<class F>
 struct PointT {
 	typedef F Fp;
@@ -56,12 +57,10 @@ struct PointT {
 		y.clear();
 		z.clear();
 	}
-#if 0
 	bool isEqual(const PointT<F>& rhs) const
 	{
 		return ec::isEqualJacobi(*this, rhs);
 	}
-#endif
 };
 
 template<class F> F PointT<F>::a_;
@@ -73,9 +72,10 @@ template<class F> int PointT<F>::specialA_;
 template<class Fp, class Fp2, class G2>
 struct MapToG2_WB19 {
 	typedef local::PointT<Fp2> Point;
-	Fp2 xi;
 	Fp half;
 	mpz_class sqrtConst; // (p^2 - 9) / 16
+	Fp2 Ep_a;
+	Fp2 Ep_b;
 	Fp2 root4[4];
 	Fp2 etas[4];
 	Fp2 xnum[4];
@@ -87,125 +87,17 @@ struct MapToG2_WB19 {
 	{
 		draftVersion_ = version;
 	}
-	// should be merged into ec.hpp
-	template<class G>
-	void neg(G& Q, const G& P) const
-	{
-		Q.x = P.x;
-		Fp2::neg(Q.y, P.y);
-		Q.z = P.z;
-	}
-	// Jacobi : sqr 4, mul 12, add 11
-	template<class G>
-	void add(G& R, const G& P, const G& Q) const
-	{
-		if (P.isZero()) {
-			R = Q;
-			return;
-		}
-		if (Q.isZero()) {
-			R = Q;
-			return;
-		}
-		Fp2 Z1Z1, Z2Z2, U1, U2, S1, S2;
-		Fp2::sqr(Z1Z1, P.z);
-		Fp2::sqr(Z2Z2, Q.z);
-		Fp2::mul(U1, P.x, Z2Z2);
-		Fp2::mul(U2, Q.x, Z1Z1);
-		Fp2::mul(S1, P.y, Q.z);
-		S1 *= Z2Z2;
-		Fp2::mul(S2, Q.y, P.z);
-		S2 *= Z1Z1;
-		if (U1 == U2 && S1 == S2) {
-			dbl(R, P);
-			return;
-		}
-		Fp2 H, I, J, rr, V;
-		Fp2::sub(H, U2, U1);
-		Fp2::add(I, H, H);
-		Fp2::sqr(I, I);
-		Fp2::mul(J, H, I);
-		Fp2::sub(rr, S2, S1);
-		rr += rr;
-		Fp2::mul(V, U1, I);
-		Fp2::mul(R.z, P.z, Q.z);
-		R.z *= H;
-		if (R.z.isZero()) {
-			R.x.clear();
-			R.y.clear();
-			return;
-		}
-		R.z += R.z;
-		Fp2::sqr(R.x, rr);
-		R.x -= J;
-		R.x -= V;
-		R.x -= V;
-		Fp2::sub(R.y, V, R.x);
-		R.y *= rr;
-		S1 *= J;
-		R.y -= S1;
-		R.y -= S1;
-	}
-	// jacobi : 2M + 5S + 14A
-	template<class G>
-	void dblT(G& Q, const G& P) const
-	{
-#if 0
-		ec::dblJacobi(Q, P, ec::GenericA, Ell2p_a);
-#else
-		Fp2 A, B, C, D, e, f;
-		Fp2::sqr(A, P.x);
-		Fp2::sqr(B, P.y);
-		Fp2::sqr(C, B);
-		Fp2::add(D, P.x, B);
-		Fp2::sqr(D, D);
-		D -= A;
-		D -= C;
-		D += D;
-		Fp2::add(e, A, A);
-		e += A;
-		Fp2::sqr(f, e);
-		Fp2::sub(Q.x, f, D);
-		Q.x -= D;
-		Fp2::mul(Q.z, P.y, P.z);
-		if (Q.z.isZero()) {
-			Q.x.clear();
-			Q.y.clear();
-			return;
-		}
-		Q.z += Q.z;
-		Fp2::sub(Q.y, D, Q.x);
-		Q.y *= e;
-		C += C;
-		C += C;
-		C += C;
-		Q.y -= C;
-#endif
-	}
-	void dbl(Point& Q, const Point& P) const
-	{
-		dblT(Q, P);
-//		ec::dblJacobi(Q, P);
-	}
-	// P is on y^2 = x^3 + Ell2p_a x + Ell2p_b
-	bool isValidPoint(const Point& P) const
-	{
-		return ec::isValidJacobi(P);
-	}
-	bool isValidPoint(const G2& P) const
-	{
-		return P.isValid();
-	}
 	void init()
 	{
 		bool b;
-		xi.a = -2;
-		xi.b = -1;
-		Point::a_.a = 0;
-		Point::a_.b = 240;
-		Point::b_.a = 1012;
-		Point::b_.b = 1012;
-		Point::specialA_ = ec::GenericA;
+		Ep_a.a = 0;
+		Ep_a.b = 240;
+		Ep_b.a = 1012;
+		Ep_b.b = 1012;
+		Point::a_.clear();
+		Point::b_.a = 4;
+		Point::b_.b = 4;
+		Point::specialA_ = ec::Zero;
 		half = -1;
 		half /= 2;
 		sqrtConst = Fp::getOp().mp;
@@ -310,7 +202,6 @@ struct MapToG2_WB19 {
 	// refer (xnum, xden, ynum, yden)
 	void iso3(G2& Q, const Point& P) const
 	{
-//		assert(isValidPoint(P));
 		Fp2 zpows[3];
 		Fp2::sqr(zpows[0], P.z);
 		Fp2::sqr(zpows[1], zpows[0]);
@@ -331,9 +222,9 @@ struct MapToG2_WB19 {
 		Fp2::sqr(t, Q.z);
 		Fp2::mul(Q.y, mapvals[2], mapvals[1]);
 		Q.y *= t;
-//		assert(Q.isValid());
 	}
 	/*
+		xi = -2-i
 		(a+bi)*(-2-i) = (b-2a)-(a+2b)i
 	*/
 	void mul_xi(Fp2& y, const Fp2& x) const
@@ -354,22 +245,6 @@ struct MapToG2_WB19 {
 		if (!x.b.isZero()) return false;
 		return false;
 	}
-	/*
-		in : Jacobi [X:Y:Z]
-		out : Proj [A:B:C]
-		[X:Y:Z] as Jacobi
-		= (X/Z^2, Y/Z^3) as Affine
-		= [X/Z^2:Y/Z^3:1] as Proj
-		= [XZ:Y:Z^3] as Proj
-	*/
-	void toProj(G2& out, const G2& in) const
-	{
-		Fp2 z2;
-		Fp2::sqr(z2, in.z);
-		Fp2::mul(out.x, in.x, in.z);
-		out.y = in.y;
-		Fp2::mul(out.z, in.z, z2);
-	}
 	// https://github.com/algorand/bls_sigs_ref
 	void osswu2_help(Point& P, const Fp2& t) const
 	{
@@ -383,20 +258,20 @@ struct MapToG2_WB19 {
 		den += den2;
 		Fp2 x0_num, x0_den;
 		Fp2::add(x0_num, den, 1);
-		x0_num *= Point::b_;
+		x0_num *= Ep_b;
 		if (den.isZero()) {
-			Fp2::mul(x0_den, Point::a_, xi);
+			mul_xi(x0_den, Ep_a);
 		} else {
-			Fp2::mul(x0_den, -Point::a_, den);
+			Fp2::mul(x0_den, -Ep_a, den);
 		}
 		Fp2 x0_den2, x0_den3, gx0_den, gx0_num;
 		Fp2::sqr(x0_den2, x0_den);
 		Fp2::mul(x0_den3, x0_den2, x0_den);
 		gx0_den = x0_den3;
 
-		Fp2::mul(gx0_num, Point::b_, gx0_den);
+		Fp2::mul(gx0_num, Ep_b, gx0_den);
 		Fp2 tmp, tmp1, tmp2;
-		Fp2::mul(tmp, Point::a_, x0_num);
+		Fp2::mul(tmp, Ep_a, x0_num);
 		tmp *= x0_den2;
 		gx0_num += tmp;
 		Fp2::sqr(tmp, x0_num);
@@ -537,18 +412,6 @@ struct MapToG2_WB19 {
 		printf("y=%s\n", P.y.getStr(base).c_str());
 		printf("z=%s\n", P.z.getStr(base).c_str());
 	}
-	bool normalizeJacobi(Point& out, const Point& in) const
-	{
-		if (in.z.isZero()) return false;
-		Fp2 t;
-		Fp2::inv(t, in.z);
-		Fp2::mul(out.y, in.y, t);
-		Fp2::sqr(t, t);
-		Fp2::mul(out.x, in.x, t);
-		out.y *= t;
-		out.z = 1;
-		return true;
-	}
 	void opt_swu2_map(G2& P, const Fp2& t, const Fp2 *t2 = 0) const
 	{
 		Point Pp;
@@ -556,10 +419,11 @@ struct MapToG2_WB19 {
 		if (t2) {
 			Point P2;
 			osswu2_help(P2, *t2);
-			add(Pp, Pp, P2);
+			ec::addJacobi(Pp, Pp, P2);
 		}
 		iso3(P, Pp);
 		clear_h2(P, P);
+		// if (t2 && !ec::isValidJacobi(P)) { puts("QQQ"); }
 	}
 	// hash-to-curve-06
 	void hashToFp2v6(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const

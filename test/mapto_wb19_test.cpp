@@ -157,11 +157,11 @@ void py_ecc_optimized_swu_G2(const MapTo& mapto, Point& P, const Fp2& t)
 	// (t^2 * xi)^2 + (t^2 * xi)
 	Fp2::add(deno, t2xi2, t2xi);
 	Fp2::add(nume, deno, 1);
-	nume *= Point::b_;
+	nume *= mapto.Ep_b;
 	if (deno.isZero()) {
-		Fp2::mul(deno, Point::a_, mapto.xi);
+		mapto.mul_xi(deno, mapto.Ep_a);
 	} else {
-		deno *= -Point::a_;
+		deno *= -mapto.Ep_a;
 	}
 	Fp2 u, v;
 	{
@@ -169,8 +169,8 @@ void py_ecc_optimized_swu_G2(const MapTo& mapto, Point& P, const Fp2& t)
 		Fp2::sqr(deno2, deno);
 		Fp2::mul(v, deno2, deno);
 
-		Fp2::mul(u, Point::b_, v);
-		Fp2::mul(tmp, Point::a_, nume);
+		Fp2::mul(u, mapto.Ep_b, v);
+		Fp2::mul(tmp, mapto.Ep_a, nume);
 		tmp *= deno2;
 		u += tmp;
 		Fp2::sqr(tmp, nume);
@@ -527,12 +527,11 @@ void osswu2_helpTest(const T& mapto)
 		CYBOZU_TEST_EQUAL(P.x, x);
 		CYBOZU_TEST_EQUAL(P.y, y);
 		CYBOZU_TEST_EQUAL(P.z, z);
-		CYBOZU_TEST_ASSERT(mapto.isValidPoint(P));
+//		CYBOZU_TEST_ASSERT(P.isValid());
 	}
 }
 
-template<class T>
-void addTest(const T& mapto)
+void addTest()
 {
 	const struct Tbl {
 		PointStr P;
@@ -590,10 +589,8 @@ void addTest(const T& mapto)
 		set(Q, tbl[i].Q);
 		set(R, tbl[i].R);
 		Point E;
-		mapto.add(E, P, Q);
-		CYBOZU_TEST_EQUAL(R.x, E.x);
-		CYBOZU_TEST_EQUAL(R.y, E.y);
-		CYBOZU_TEST_EQUAL(R.z, E.z);
+		ec::addJacobi(E, P, Q);
+		CYBOZU_TEST_ASSERT(R.isEqual(E));
 	}
 }
 
@@ -878,7 +875,7 @@ CYBOZU_TEST_AUTO(test)
 	py_eccTest(mapto);
 	py_eccTest2(mapto);
 	osswu2_helpTest(mapto);
-	addTest(mapto);
+	addTest();
 	iso3Test(mapto);
 	testSign(mapto);
 	ethFp2ToG2test();
