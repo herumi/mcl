@@ -127,7 +127,7 @@ enum {
 };
 
 // return 0xABC which means A.BC
-MCLBN_DLL_API int mclBn_getVersion();
+MCLBN_DLL_API int mclBn_getVersion(void);
 /*
 	init library
 	@param curve [in] type of bn curve

@@ -120,10 +120,27 @@ struct Code : public mcl::Generator {
 		ac = shl(zext(ac, 128), 32);
 		z = add(ac, ad);
 	}
+	void gen_multi3()
+	{
+		resetGlobalIdx();
+		Operand z(Int, unit2);
+		Operand x(Int, unit);
+		Operand y(Int, unit);
+		std::string name = "__multi3";
+		Function f(name, z, x, y);
+//		f.setPrivate();
+		verifyAndSetPrivate(f);
+		beginFunc(f);
+
+		gen_mul64x64(z, x, y);
+		ret(z);
+		endFunc();
+	}
 	void gen_mulUU()
 	{
 		if (wasm) {
 			gen_mul32x32();
+			gen_multi3();
 		}
 		resetGlobalIdx();
 		Operand z(Int, unit2);
