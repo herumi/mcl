@@ -235,7 +235,8 @@ struct Code : public mcl::Generator {
 		resetGlobalIdx();
 		Operand out(IntPtr, unit);
 		Operand px(IntPtr, unit);
-		mcl_fpDbl_mod_NIST_P192 = Function("mcl_fpDbl_mod_NIST_P192L" + suf, Void, out, px);
+		Operand dummy(IntPtr, unit);
+		mcl_fpDbl_mod_NIST_P192 = Function("mcl_fpDbl_mod_NIST_P192L" + suf, Void, out, px, dummy);
 		verifyAndSetPrivate(mcl_fpDbl_mod_NIST_P192);
 		beginFunc(mcl_fpDbl_mod_NIST_P192);
 
@@ -294,7 +295,8 @@ struct Code : public mcl::Generator {
 		const size_t mask = -(1 << rem);
 		const Operand py(IntPtr, unit);
 		const Operand px(IntPtr, unit);
-		Function f("mcl_fpDbl_mod_NIST_P521L" + suf, Void, py, px);
+		const Operand dummy(IntPtr, unit);
+		Function f("mcl_fpDbl_mod_NIST_P521L" + suf, Void, py, px, dummy);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
 		Operand x = loadN(px, n * 2 + 1);
@@ -333,14 +335,15 @@ struct Code : public mcl::Generator {
 		resetGlobalIdx();
 		Operand py(IntPtr, unit);
 		Operand px(IntPtr, unit);
-		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192L" + suf, Void, py, px);
+		Operand dummy(IntPtr, unit);
+		mcl_fp_sqr_NIST_P192 = Function("mcl_fp_sqr_NIST_P192L" + suf, Void, py, px, dummy);
 		verifyAndSetPrivate(mcl_fp_sqr_NIST_P192);
 		beginFunc(mcl_fp_sqr_NIST_P192);
 		Operand buf = alloca_(unit, 192 * 2 / unit);
 		// QQQ define later
 		Function mcl_fpDbl_sqrPre("mcl_fpDbl_sqrPre" + cybozu::itoa(192 / unit) + "L" + suf, Void, buf, px);
 		call(mcl_fpDbl_sqrPre, buf, px);
-		call(mcl_fpDbl_mod_NIST_P192, py, buf);
+		call(mcl_fpDbl_mod_NIST_P192, py, buf, buf/*dummy*/);
 		ret(Void);
 		endFunc();
 	}
@@ -350,14 +353,15 @@ struct Code : public mcl::Generator {
 		Operand pz(IntPtr, unit);
 		Operand px(IntPtr, unit);
 		Operand py(IntPtr, unit);
-		Function f("mcl_fp_mulNIST_P192L" + suf, Void, pz, px, py);
+		Operand dummy(IntPtr, unit);
+		Function f("mcl_fp_mulNIST_P192L" + suf, Void, pz, px, py, dummy);
 		verifyAndSetPrivate(f);
 		beginFunc(f);
 		Operand buf = alloca_(unit, 192 * 2 / unit);
 		// QQQ define later
 		Function mcl_fpDbl_mulPre("mcl_fpDbl_mulPre" + cybozu::itoa(192 / unit) + "L" + suf, Void, buf, px, py);
 		call(mcl_fpDbl_mulPre, buf, px, py);
-		call(mcl_fpDbl_mod_NIST_P192, pz, buf);
+		call(mcl_fpDbl_mod_NIST_P192, pz, buf, buf/*dummy*/);
 		ret(Void);
 		endFunc();
 	}
