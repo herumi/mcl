@@ -1810,7 +1810,14 @@ public:
 		template<class InputStream>
 		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
 		{
-			cybozu::writeChar(pb, isMultiplied_ ? '0' : '1', is); if (!*pb) return;
+			char c;
+			if (!cybozu::readChar(&c, is)) return;
+			if (c == '0' || c == '1') {
+				isMultiplied_ = c == '0';
+			} else {
+				*pb = false;
+				return;
+			}
 			if (isMultiplied()) {
 				m_.load(pb, is, ioMode);
 			} else {
@@ -1820,14 +1827,7 @@ public:
 		template<class OutputStream>
 		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
 		{
-			char c;
-			if (!cybozu::readChar(&c, os)) return;
-			if (c == '0' || c == '1') {
-				isMultiplied_ = c == '0';
-			} else {
-				*pb = false;
-				return;
-			}
+			cybozu::writeChar(pb, os, isMultiplied_ ? '0' : '1'); if (!*pb) return;
 			if (isMultiplied()) {
 				m_.save(pb, os, ioMode);
 			} else {
