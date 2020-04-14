@@ -11,6 +11,13 @@
 #include <mcl/fp_tower.hpp>
 #include <mcl/ec.hpp>
 #include <mcl/curve_type.h>
+namespace mcl { namespace local {
+
+// to export fast cofactor multiplication to mapto_wb19
+template<class T>
+void mulByCofactorBLS12fast(T& Q, const T& P);
+
+} } // mcl::local
 #include <mcl/mapto_wb19.hpp>
 #include <assert.h>
 #ifndef CYBOZU_DONT_USE_EXCEPTION
@@ -2255,4 +2262,11 @@ inline bool ethMsgToG2(G2& out, const void *msg, size_t msgSize, const void *dst
 
 } } // mcl::bn
 
+namespace mcl { namespace local {
+template<>
+inline void mulByCofactorBLS12fast(mcl::MCL_NAMESPACE_BN::G2& Q, const mcl::MCL_NAMESPACE_BN::G2& P)
+{
+	mcl::MCL_NAMESPACE_BN::BN::param.mapTo.mulByCofactorBLS12fast(Q, P);
+}
+} } // mcl::local
 #endif

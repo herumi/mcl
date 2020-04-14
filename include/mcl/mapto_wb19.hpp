@@ -327,6 +327,7 @@ struct MapToG2_WB19 {
 		}
 		assert(0);
 	}
+#if 0
 	void h2_chain(G2& out, const G2& P) const
 	{
 		G2 t[16];
@@ -387,19 +388,21 @@ struct MapToG2_WB19 {
 		}
 		Q = T;
 	}
+#endif
 	void clear_h2(G2& Q, const G2& P) const
 	{
-#if 0
-		bn::param.mapTo.mulByCofactorBLS12fast(Q, P);
+#if 1
+		// 1.9Mclk can be reduced
+		mcl::local::mulByCofactorBLS12fast(Q, P);
 #else
-		G2 work, work2;
-		h2_chain(work, P);
-		G2::dbl(work2, work);
-		G2::add(work2, work, work2);
-		mx_chain(work, work2);
-		mx_chain(work, work);
-		G2::neg(work2, work2);
-		G2::add(Q, work, work2);
+		G2 T0, T1;
+		h2_chain(T0, P);
+		G2::dbl(T1, T0);
+		G2::add(T1, T0, T1);
+		mx_chain(T0, T1);
+		mx_chain(T0, T0);
+		G2::neg(T1, T1);
+		G2::add(Q, T0, T1);
 #endif
 	}
 	template<class T>
