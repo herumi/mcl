@@ -6,6 +6,7 @@
 #include <fstream>
 #include <cybozu/atoi.hpp>
 #include <cybozu/file.hpp>
+#include <cybozu/benchmark.hpp>
 
 using namespace mcl;
 using namespace mcl::bn;
@@ -437,6 +438,7 @@ void py_eccTest(const T& mapto)
 		toJacobi(P11, P11);
 		CYBOZU_TEST_EQUAL(P1, P11);
 		py_ecc_hash_to_G2(mapto, P1, msg, msgSize, dst, dstSize);
+		CYBOZU_BENCH_C("py_ecc_hash_to_G2", 1000, py_ecc_hash_to_G2, mapto, P1, msg, msgSize, dst, dstSize);
 		CYBOZU_TEST_EQUAL(P1, P11);
 		ethMsgToG2(P1, msg, msgSize, dst, dstSize);
 		CYBOZU_TEST_EQUAL(P1, P11);
@@ -862,6 +864,7 @@ void testHashToFp2v6(const T& mapto)
 	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);
 	G2 P;
 	mcl::bn::hashAndMapToG2(P, "asdf", 4);
+	CYBOZU_BENCH_C("draft06 hashAndMapToG2", 1000, mcl::bn::hashAndMapToG2, P, "asdf", 4);
 	P.normalize();
 	printf("P=%s %s\n", P.x.getStr(10).c_str(), P.y.getStr(10).c_str());
 }
