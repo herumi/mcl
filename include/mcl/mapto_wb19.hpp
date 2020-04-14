@@ -421,7 +421,6 @@ struct MapToG2_WB19 {
 		}
 		iso3(P, Pp);
 		clear_h2(P, P);
-		// if (t2 && !ec::isValidJacobi(P)) { puts("QQQ"); }
 	}
 	// hash-to-curve-06
 	void hashToFp2v6(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
