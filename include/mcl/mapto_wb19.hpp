@@ -72,7 +72,6 @@ template<class F> int PointT<F>::specialA_;
 template<class Fp, class Fp2, class G2>
 struct MapToG2_WB19 {
 	typedef local::PointT<Fp2> Point;
-	Fp half;
 	mpz_class sqrtConst; // (p^2 - 9) / 16
 	Fp2 Ep_a;
 	Fp2 Ep_b;
@@ -98,8 +97,6 @@ struct MapToG2_WB19 {
 		Point::b_.a = 4;
 		Point::b_.b = 4;
 		Point::specialA_ = ec::Zero;
-		half = -1;
-		half /= 2;
 		sqrtConst = Fp::getOp().mp;
 		sqrtConst *= sqrtConst;
 		sqrtConst -= 9;
@@ -239,9 +236,10 @@ struct MapToG2_WB19 {
 	}
 	bool isNegSign(const Fp2& x) const
 	{
-		if (x.b > half) return true;
+		// x.isNegative() <=> x > (p-1)/2 <=> x >= (p+1)/2
+		if (x.b.isNegative()) return true;
 		if (!x.b.isZero()) return false;
-		if (x.a > half) return true;
+		if (x.a.isNegative()) return true;
 		if (!x.b.isZero()) return false;
 		return false;
 	}

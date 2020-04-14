@@ -453,7 +453,8 @@ void py_eccTest(const T& mapto)
 template<class T>
 void testSign(const T& mapto)
 {
-	const Fp& H = mapto.half;
+	Fp H = -1;
+	H /= 2;
 	const size_t N = 4;
 	const Fp tbl[N] = { 0, 1, H, H + 1 };
 	const int expect[N][N] = {
