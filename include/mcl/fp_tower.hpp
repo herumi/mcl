@@ -16,16 +16,6 @@ class FpDblT : public fp::Serializable<FpDblT<Fp> > {
 	Unit v_[Fp::maxSize * 2];
 public:
 	static size_t getUnitSize() { return Fp::op_.N * 2; }
-	FpDblT() : v_()
-	{
-	}
-	FpDblT(const FpDblT& rhs)
-	{
-		const size_t n = getUnitSize();
-		for (size_t i = 0; i < n; i++) {
-			v_[i] = rhs.v_[i];
-		}
-	}
 	void dump() const
 	{
 		const size_t n = getUnitSize();
