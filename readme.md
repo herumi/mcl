@@ -82,6 +82,20 @@ make MCL_USE_GMP=0
 ```
 Define `MCL_USE_VINT` if using C++ header files.
 
+## How to profile on Linux
+
+### Use perf
+```
+make MCL_USE_PROF=1 bin/bls12_test.exe
+env MCL_PROF=1 bin/bls12_test.exe
+```
+
+### Use Intel VTune profiler
+Supporse VTune is installed in `/opt/intel/vtune_amplifier/`.
+```
+make MCL_USE_PROF=2 bin/bls12_test.exe
+env MCL_PROF=2 bin/bls12_test.exe
+```
 
 ## How to build on 32-bit x86 Linux
 
