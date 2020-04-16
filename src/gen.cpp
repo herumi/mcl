@@ -982,13 +982,13 @@ int main(int argc, char *argv[])
 	try
 {
 	uint32_t unit;
-	bool oldLLVM;
+	int llvmVer;
 	bool wasm;
 	std::string suf;
 	std::string privateFile;
 	cybozu::Option opt;
 	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", ": unit");
-	opt.appendBoolOpt(&oldLLVM, "old", ": old LLVM(before 3.8)");
+	opt.appendOpt(&llvmVer, 0x70, "ver", ": llvm version");
 	opt.appendBoolOpt(&wasm, "wasm", ": for wasm");
 	opt.appendOpt(&suf, "", "s", ": suffix of function name");
 	opt.appendOpt(&privateFile, "", "f", ": private function list file");
@@ -1006,9 +1006,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	Code c;
-	if (oldLLVM) {
-		c.setOldLLVM();
-	}
+	fprintf(stderr, "llvmVer=0x%02x\n", llvmVer);
+	c.setLlvmVer(llvmVer);
 	c.wasm = wasm;
 	c.setUnit(unit);
 	uint32_t maxBitSize = MCL_MAX_BIT_SIZE;
