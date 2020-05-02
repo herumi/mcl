@@ -334,4 +334,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # Author
 
-光成滋生 MITSUNARI Shigeo(herumi@nifty.com)
+MITSUNARI Shigeo(herumi@nifty.com)
+
+# Sponsors welcome
+[GitHub Sponsor](https://github.com/sponsors/herumi)
