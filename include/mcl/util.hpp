@@ -286,7 +286,7 @@ void powGeneric(G& out, const G& x, const T *y, size_t n, const Mul& mul, const 
 		out = x;
 	}
 	for (int i = (int)n - 1; i >= 0; i--) {
-		T v = y[i];
+		v = y[i];
 		for (int j = m - 2; j >= 0; j -= 2) {
 			sqr(out, out);
 			sqr(out, out);
