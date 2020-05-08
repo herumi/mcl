@@ -165,7 +165,7 @@ void expand_message_xmd(uint8_t out[256], const void *msg, size_t msgSize, const
 	const size_t mdSize = 32;
 	const size_t r_in_bytes = 64;
 	const size_t ell = len_in_bytes / mdSize;
-	uint8_t Z_pad[r_in_bytes] = {};
+	static const uint8_t Z_pad[r_in_bytes] = {};
 	assert(dstSize < 256);
 	// BE(len_in_bytes, 2) + BE(0, 1) + BE(dstSize, 1)
 	uint8_t buf[2 + 1 + 1] = { 1, 0, 0, uint8_t(dstSize) };
