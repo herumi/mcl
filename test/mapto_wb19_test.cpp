@@ -853,6 +853,27 @@ void testHashToFp2v6(const T& mapto)
 	printf("P=%s %s\n", P.x.getStr(10).c_str(), P.y.getStr(10).c_str());
 }
 
+template<class T>
+void testHashToFp2v7(const T&/* mapto*/)
+{
+	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+	{
+		char msg[] = "asdf";
+		char dst[] = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+		/*
+			https://github.com:cfrg/draft-irtf-cfrg-hash-to-curve
+			tag: draft-irtf-cfrg-hash-to-curve-07
+			the return value of expand_message_xmd in hash_to_field.py
+		*/
+		char expect[] = "ca53fcd6f140590d19138f38819eb13330c014a1670e40f0f8e991de7b35e21a1fca52a14486c8e8acc9d865718cd41fe3638c2fb50fdc75b95690dc58f86494005fb37fc330366a7fef5f6e26bb631f4a5462affab2b9a9630c3b1c63621875baf782dd435500fda05ba7a9e86a766eeffe259128dc6e43c1852c58034856c4c4e2158c3414a881c17b727be5400432bf5c0cd02066a3b763e25e3ca32f19ca69a807bbc14c7c8c7988915fb1df523c536f744aa8b9bd0bbcea9800a236355690a4765491cd8969ca2f8cac8b021d97306e6ce6a2126b2868cf57f59f5fc416385bc1c2ae396c62608adc6b9174bbdb981a4601c3bd81bbe086e385d9a909aa";
+		size_t msgSize = strlen(msg);
+		size_t dstSize = strlen(dst);
+		uint8_t md[256];
+		mcl::fp::expand_message_xmd(md, msg, msgSize, dst, dstSize);
+		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
+	}
+}
+
 CYBOZU_TEST_AUTO(test)
 {
 	initPairing(mcl::BLS12_381);
@@ -873,4 +894,5 @@ CYBOZU_TEST_AUTO(test)
 	testVec("../misc/mapto/misc.txt");
 	ethMsgToG2testAll("../bls_sigs_ref/test-vectors/hash_g2/");
 	testHashToFp2v6(mapto);
+	testHashToFp2v7(mapto);
 }
