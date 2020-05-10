@@ -429,7 +429,7 @@ struct MapToG2_WB19 {
 	void hashToFp2v6(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		uint8_t md[256];
-		mcl::fp::expand_message_xmd(md, msg, msgSize, dst, dstSize);
+		mcl::fp::expand_message_xmd06(md, msg, msgSize, dst, dstSize);
 		Fp *x = out[0].getFp0();
 		for (size_t i = 0; i < 4; i++) {
 			uint8_t *p = &md[64 * i];
