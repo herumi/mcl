@@ -514,6 +514,11 @@ struct MapTo {
 			mapToG2_WB19_.setDraftVersion(6);
 			return true;
 			break;
+		case MCL_MAP_TO_MODE_HASH_TO_CURVE_07:
+			mapToMode_ = mode;
+			mapToG2_WB19_.setDraftVersion(7);
+			return true;
+			break;
 		default:
 			return false;
 		}

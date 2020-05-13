@@ -812,6 +812,7 @@ void testHashToFp2v6(const T& mapto)
 			}
 		},
 	};
+	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *msg = tbl[i].msg;
 		const char *dst = tbl[i].dst;
@@ -845,7 +846,6 @@ void testHashToFp2v6(const T& mapto)
 			CYBOZU_TEST_EQUAL(P.y, t);
 		}
 	}
-	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);
 	G2 P;
 	mcl::bn::hashAndMapToG2(P, "asdf", 4);
 	CYBOZU_BENCH_C("draft06 hashAndMapToG2", 1000, mcl::bn::hashAndMapToG2, P, "asdf", 4);
