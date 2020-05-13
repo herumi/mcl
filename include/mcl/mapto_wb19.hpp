@@ -234,8 +234,22 @@ struct MapToG2_WB19 {
 		Fp::neg(y.b, y.b);
 		y.a = t;
 	}
+	bool sgn0(const Fp& x) const
+	{
+		return x.isOdd();
+	}
+	bool sgn0(const Fp2& x) const
+	{
+		bool sign0 = sgn0(x.a);
+		bool zero0 = x.a.isZero();
+		bool sign1 = sgn0(x.b);
+		return sign0 || (zero0 & sign1);
+	}
 	bool isNegSign(const Fp2& x) const
 	{
+		if (draftVersion_ == 7) {
+			return sgn0(x);
+		}
 		// x.isNegative() <=> x > (p-1)/2 <=> x >= (p+1)/2
 		if (x.b.isNegative()) return true;
 		if (!x.b.isZero()) return false;
