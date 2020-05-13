@@ -901,7 +901,7 @@ void testHashToFp2v7(const T& mapto)
 			Fp2Str x;
 			Fp2Str y;
 		} tbl[] = {
-			// fd12ba0 : https://github.com/cfrg/draft-irtf-cfrg-hash-to-curve/poc/vectors/BLS12381G2_XMD:SHA-256_SSWU_RO_.json
+			// https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-07.html#name-bls12381g2_xmdsha-256_sswu_
 			{
 				"", // msg
 				{ // P.x
