@@ -957,6 +957,13 @@ void testHashToFp2v7(const T& mapto)
 			mapto.map2curve_osswu2(P2, msg, msgSize, dst, dstSize);
 			CYBOZU_TEST_EQUAL(P1, P2);
 		}
+		{
+			G2 P;
+			mcl::bn::hashAndMapToG2(P, "asdf", 4);
+			CYBOZU_BENCH_C("draft07 hashAndMapToG2", 1000, mcl::bn::hashAndMapToG2, P, "asdf", 4);
+			P.normalize();
+			printf("P=%s %s\n", P.x.getStr(10).c_str(), P.y.getStr(10).c_str());
+		}
 	}
 }
 

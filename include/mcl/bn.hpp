@@ -590,7 +590,7 @@ struct MapTo {
 	}
 	bool calc(G2& P, const Fp2& t, bool fast = false) const
 	{
-		if (mapToMode_ == MCL_MAP_TO_MODE_WB19 || mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_WB19 || mapToMode_ >= MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
 			mapToG2_WB19_.opt_swu2_map(P, t);
 			return true;
 		}
@@ -2103,7 +2103,7 @@ inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 {
 	int mode = getMapToMode();
-	if (mode == MCL_MAP_TO_MODE_WB19 || mode == MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
+	if (mode == MCL_MAP_TO_MODE_WB19 || mode >= MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
 		BN::param.mapTo.mapToG2_WB19_.msgToG2(P, buf, bufSize);
 		return;
 	}

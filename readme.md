@@ -312,7 +312,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
-- 2020/May/13 v1.08 support draft-irtf-cfrg-hash-to-curve-07
+- 2020/May/13 v1.09 support draft-irtf-cfrg-hash-to-curve-07
 - 2020/Mar/26 v1.07 change DST for hash-to-curve-06
 - 2020/Mar/15 v1.06 support hash-to-curve-06
 - 2020/Jan/31 v1.05 mclBn_ethMsgToFp2 has changed to append zero byte at the end of msg
