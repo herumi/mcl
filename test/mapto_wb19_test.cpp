@@ -850,7 +850,7 @@ void testHashToFp2v6(const T& mapto)
 	mcl::bn::hashAndMapToG2(P, "asdf", 4);
 	CYBOZU_BENCH_C("draft06 hashAndMapToG2", 1000, mcl::bn::hashAndMapToG2, P, "asdf", 4);
 	P.normalize();
-	printf("P=%s %s\n", P.x.getStr(10).c_str(), P.y.getStr(10).c_str());
+//	printf("P=%s %s\n", P.x.getStr(10).c_str(), P.y.getStr(10).c_str());
 }
 
 template<class T>
