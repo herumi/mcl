@@ -11,7 +11,7 @@ namespace mcl {
 
 // ctr = 0 or 1 or 2
 template<class Fp2>
-inline void hashToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
+inline void hashToFp2old(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
 	const bool addZeroByte = true; // append zero byte to msg
 	assert(ctr <= 2);
@@ -440,7 +440,7 @@ struct MapToG2_WB19 {
 		clear_h2(P, P);
 	}
 	// hash-to-curve-06
-	void hashToFp2v6(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
+	void hashToFp2(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		uint8_t md[256];
 		mcl::fp::expand_message_xmd06(md, msg, msgSize, dst, dstSize);
@@ -457,10 +457,10 @@ struct MapToG2_WB19 {
 	{
 		Fp2 t[2];
 		if (draftVersion_ == 5) {
-			hashToFp2(t[0], msg, msgSize, 0, dst, dstSize);
-			hashToFp2(t[1], msg, msgSize, 1, dst, dstSize);
+			hashToFp2old(t[0], msg, msgSize, 0, dst, dstSize);
+			hashToFp2old(t[1], msg, msgSize, 1, dst, dstSize);
 		} else {
-			hashToFp2v6(t, msg, msgSize, dst, dstSize);
+			hashToFp2(t, msg, msgSize, dst, dstSize);
 		}
 		opt_swu2_map(out, t[0], &t[1]);
 	}

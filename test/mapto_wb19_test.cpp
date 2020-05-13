@@ -234,8 +234,8 @@ void toJacobi(G2& out, const G2& in)
 void py_ecc_hash_to_G2(const MapTo& mapto, G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
 {
 	Fp2 t1, t2;
-	hashToFp2(t1, msg, msgSize, 0, dst, dstSize);
-	hashToFp2(t2, msg, msgSize, 1, dst, dstSize);
+	hashToFp2old(t1, msg, msgSize, 0, dst, dstSize);
+	hashToFp2old(t2, msg, msgSize, 1, dst, dstSize);
 	G2 P1, P2;
 	py_ecc_map_to_curve_G2(mapto, P1, t1);
 	py_ecc_map_to_curve_G2(mapto, P2, t2);
@@ -817,7 +817,7 @@ void testHashToFp2v6(const T& mapto)
 		const char *dst = tbl[i].dst;
 		const Fp2Str *expectStr = tbl[i].s;
 		Fp2 out[2];
-		mapto.hashToFp2v6(out, msg, strlen(msg), dst, strlen(dst));
+		mapto.hashToFp2(out, msg, strlen(msg), dst, strlen(dst));
 		Fp2 expect[2];
 		for (int j = 0; j < 2; j++) {
 			set(expect[j], expectStr[j]);

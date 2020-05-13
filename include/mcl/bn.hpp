@@ -2242,7 +2242,7 @@ inline const Fr& getG2cofactorAdjInv()
 inline bool ethMsgToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
 	if (!BN::param.isBLS12) return false;
-	hashToFp2(out, msg, msgSize, ctr, dst, dstSize);
+	hashToFp2old(out, msg, msgSize, ctr, dst, dstSize);
 	return true;
 }
 
