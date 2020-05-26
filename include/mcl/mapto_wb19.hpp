@@ -30,9 +30,8 @@ inline void hashToFp2old(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr,
 		info_pfx[4] = char(i + 1);
 		uint8_t t[64];
 		fp::hkdf_expand(t, msg_prime, info_pfx);
-		fp::local::byteSwap(t, 64);
 		bool b;
-		out.getFp0()[i].setArrayMod(&b, t, 64);
+		out.getFp0()[i].setBigEndianMod(&b, t, 64);
 		assert(b); (void)b;
 	}
 }
@@ -450,10 +449,8 @@ struct MapToG2_WB19 {
 		}
 		Fp *x = out[0].getFp0();
 		for (size_t i = 0; i < 4; i++) {
-			uint8_t *p = &md[64 * i];
-			fp::local::byteSwap(p, 64);
 			bool b;
-			x[i].setArrayMod(&b, p, 64);
+			x[i].setBigEndianMod(&b, &md[64 * i], 64);
 			assert(b); (void)b;
 		}
 	}

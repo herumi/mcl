@@ -748,7 +748,14 @@ int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize)
 int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize)
 {
 	bool b;
-	cast(x)->setArray(&b, (const char *)buf, bufSize, mcl::fp::Mod);
+	cast(x)->setLittleEndianMod(&b, buf, bufSize);
+	return b ? 0 : -1;
+}
+
+int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize)
+{
+	bool b;
+	cast(x)->setBigEndianMod(&b, buf, bufSize);
 	return b ? 0 : -1;
 }
 

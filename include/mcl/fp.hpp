@@ -408,6 +408,31 @@ public:
 		}
 		return n;
 	}
+	/*
+		set (little endian % p)
+		error if bufSize > 64
+	*/
+	void setLittleEndianMod(bool *pb, const void *buf, size_t bufSize)
+	{
+		setArray(pb, (const char *)buf, bufSize, mcl::fp::Mod);
+	}
+	/*
+		set (big endian % p)
+		error if bufSize > 64
+	*/
+	void setBigEndianMod(bool *pb, const void *buf, size_t bufSize)
+	{
+		if (bufSize > 64) {
+			*pb = false;
+			return;
+		}
+		const uint8_t *p = (const uint8_t*)buf;
+		uint8_t swapBuf[64];
+		for (size_t i = 0; i < bufSize; i++) {
+			swapBuf[bufSize - 1 - i] = p[i];
+		}
+		setArray(pb, swapBuf, bufSize, mcl::fp::Mod);
+	}
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
 		if (rg.isZero()) rg = fp::RandGen::get();
@@ -416,6 +441,18 @@ public:
 		setArrayMask(v_, op_.N);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+	void setLittleEndianMod(const void *buf, size_t bufSize)
+	{
+		bool b;
+		setLittleEndianMod(&b, buf, bufSize, mcl::fp::Mod);
+		if (!b) throw cybozu::Exception("setLittleEndianMod");
+	}
+	void setBigEndianMod(const void *buf, size_t bufSize)
+	{
+		bool b;
+		setBigEndianMod(&b, buf, bufSize, mcl::fp::Mod);
+		if (!b) throw cybozu::Exception("setBigEndianMod");
+	}
 	void setByCSPRNG(fp::RandGen rg = fp::RandGen())
 	{
 		bool b;
