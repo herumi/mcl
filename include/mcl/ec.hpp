@@ -148,6 +148,64 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	}
 }
 
+/*
+	z += xVec[i] * yVec[i] for i = 0, ..., min(N, n)
+	splitN = 2(G1) or 4(G2)
+	w : window size
+*/
+template<class GLV, class G, class F, int splitN, int w, size_t N>
+static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
+{
+	const mpz_class& r = F::getOp().mp;
+	const size_t tblSize = 1 << (w - 2);
+	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
+	NafArray naf[N][splitN];
+	G tbl[N][splitN][tblSize];
+	bool b;
+	mpz_class u[splitN], y;
+	size_t maxBit = 0;
+
+	if (n > N) n = N;
+	for (size_t i = 0; i < n; i++) {
+		y = yVec[i];
+		y %= r;
+		if (y < 0) {
+			y += r;
+		}
+		GLV::split(u, y);
+
+		for (int j = 0; j < splitN; j++) {
+			gmp::getNAFwidth(&b, naf[i][j], u[j], w);
+			assert(b); (void)b;
+			if (naf[i][j].size() > maxBit) maxBit = naf[i][j].size();
+		}
+
+		G P2;
+		G::dbl(P2, xVec[i]);
+		tbl[i][0][0] = xVec[i];
+		for (int k = 1; k < splitN; k++) {
+			GLV::mulLambda(tbl[i][k][0], tbl[i][k - 1][0]);
+		}
+		for (size_t j = 1; j < tblSize; j++) {
+			G::add(tbl[i][0][j], tbl[i][0][j - 1], P2);
+			for (int k = 1; k < splitN; k++) {
+				GLV::mulLambda(tbl[i][k][j], tbl[i][k - 1][j]);
+			}
+		}
+	}
+	z.clear();
+	for (size_t i = 0; i < maxBit; i++) {
+		const size_t bit = maxBit - 1 - i;
+		G::dbl(z, z);
+		for (size_t j = 0; j < n; j++) {
+			for (int k = 0; k < splitN; k++) {
+				mcl::local::addTbl(z, tbl[j][k], naf[j][k], bit);
+			}
+		}
+	}
+	return n;
+}
+
 } // mcl::ec::local
 
 template<class E>
@@ -1507,6 +1565,7 @@ template<class Fp> int EcT<Fp>::mode_;
 // r = the order of Ec
 template<class Ec, class _Fr>
 struct GLV1T {
+	typedef GLV1T<Ec, _Fr> GLV1;
 	typedef typename Ec::Fp Fp;
 	typedef _Fr Fr;
 	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
@@ -1557,52 +1616,10 @@ public:
 	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n, bool constTime)
 	{
 		if (n == 1 && constTime) {
-			ec::local::mul1CT<GLV1T<Ec, _Fr>, Ec, _Fr, 2, 4>(z, *xVec, *yVec);
+			ec::local::mul1CT<GLV1, Ec, _Fr, 2, 4>(z, *xVec, *yVec);
 			return 1;
 		}
-		const size_t N = mcl::fp::maxMulVecNGLV;
-		if (n > N) n = N;
-		const int w = 5;
-		const mpz_class& r = Fr::getOp().mp;
-		const size_t tblSize = 1 << (w - 2);
-		typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / 2 + 2> NafArray;
-		NafArray naf[N][2];
-		Ec tbl[N][2][tblSize];
-		bool b;
-		mpz_class u[2], y;
-		size_t maxBit = 0;
-		for (size_t i = 0; i < n; i++) {
-			y = yVec[i];
-			y %= r;
-			if (y < 0) {
-				y += r;
-			}
-			split(u, y);
-
-			for (int j = 0; j < 2; j++) {
-				gmp::getNAFwidth(&b, naf[i][j], u[j], w);
-				assert(b); (void)b;
-				if (naf[i][j].size() > maxBit) maxBit = naf[i][j].size();
-			}
-
-			Ec P2;
-			Ec::dbl(P2, xVec[i]);
-			tbl[i][0][0] = xVec[i];
-			mulLambda(tbl[i][1][0], tbl[i][0][0]);
-			for (size_t j = 1; j < tblSize; j++) {
-				Ec::add(tbl[i][0][j], tbl[i][0][j - 1], P2);
-				mulLambda(tbl[i][1][j], tbl[i][0][j]);
-			}
-		}
-		z.clear();
-		for (size_t i = 0; i < maxBit; i++) {
-			Ec::dbl(z, z);
-			for (size_t j = 0; j < n; j++) {
-				local::addTbl(z, tbl[j][0], naf[j][0], maxBit - 1 - i);
-				local::addTbl(z, tbl[j][1], naf[j][1], maxBit - 1 - i);
-			}
-		}
-		return n;
+		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5, mcl::fp::maxMulVecNGLV>(z, xVec, yVec, n);
 	}
 	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
