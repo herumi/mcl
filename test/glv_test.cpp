@@ -83,12 +83,15 @@ void compareLength(const GLV2& lhs)
 	int lt = 0;
 	int eq = 0;
 	int gt = 0;
-	mpz_class R0, R1, L0, L1, x;
+	mpz_class R[2];
+	mpz_class L0, L1, x;
+	mpz_class& R0 = R[0];
+	mpz_class& R1 = R[1];
 	Fr r;
 	for (int i = 1; i < 1000; i++) {
 		r.setRand(rg);
 		x = r.getMpz();
-		mcl::bn::local::GLV1::split(R0, R1, x);
+		mcl::bn::local::GLV1::split(R,x);
 		lhs.split(L0, L1, x);
 
 		size_t R0n = mcl::gmp::getBitSize(R0);
@@ -162,33 +165,33 @@ void testGLV1()
 */
 void testGLV2()
 {
+	typedef local::GLV2 GLV2;
 	G2 Q0, Q1, Q2;
 	mpz_class z = BN::param.z;
 	mpz_class r = BN::param.r;
-	mcl::bn::local::GLV2<Fr> glv2;
-	glv2.init(z, BN::param.isBLS12);
+	GLV2::init(z, BN::param.isBLS12);
 	mpz_class n;
 	cybozu::XorShift rg;
 	mapToG2(Q0, 1);
 	for (int i = -10; i < 10; i++) {
 		n = i;
 		G2::mulGeneric(Q1, Q0, n);
-		glv2.mul(Q2, Q0, n);
+		GLV2::mul(Q2, Q0, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
 	for (int i = 1; i < 100; i++) {
-		mcl::gmp::getRand(n, glv2.rBitSize, rg);
+		mcl::gmp::getRand(n, GLV2::rBitSize, rg);
 		n %= r;
 		n -= r/2;
 		mapToG2(Q0, i);
 		G2::mulGeneric(Q1, Q0, n);
-		glv2.mul(Q2, Q0, n);
+		GLV2::mul(Q2, Q0, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
 	Fr s;
 	mapToG2(Q0, 123);
 	CYBOZU_BENCH_C("G2::mul", 1000, Q2 = Q0; s.setRand(rg); G2::mulGeneric, Q2, Q1, s.getMpz());
-	CYBOZU_BENCH_C("G2::glv", 1000, Q1 = Q0; s.setRand(rg); glv2.mul, Q2, Q1, s.getMpz());
+	CYBOZU_BENCH_C("G2::glv", 1000, Q1 = Q0; s.setRand(rg); GLV2::mul, Q2, Q1, s.getMpz());
 }
 
 void testGT()

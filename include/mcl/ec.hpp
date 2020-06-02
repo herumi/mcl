@@ -72,19 +72,25 @@ bool get_a_flag(const mcl::Fp2T<F>& x)
 	return get_a_flag(x.b); // x = a + bi
 }
 
+/*
+	Q = x P
+	splitN = 2(G1) or 4(G2)
+	w : window size
+*/
 template<class GLV, class G, class F, int splitN, size_t w>
-void mul1CT(const GLV& glv, G& Q, const G& P, const mpz_class& x)
+void mul1CT(G& Q, const G& P, const mpz_class& x)
 {
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << w;
 	G tbl[splitN][tblSize];
 	bool negTbl[splitN];
 	mpz_class u[splitN];
-	mpz_class y = x % r;
+	mpz_class y;
+	F::getOp().modp.modp(y, x);
 	if (y < 0) {
 		y += r;
 	}
-	glv.split(u, y);
+	GLV::split(u, y);
 	for (int i = 0; i < splitN; i++) {
 		if (u[i] < 0) {
 			gmp::neg(u[i], u[i]);
@@ -1532,10 +1538,12 @@ public:
 		Q.z = P.z;
 	}
 	/*
-		x = a + b * lambda mod r
+		x = u[0] + u[1] * lambda mod r
 	*/
-	static void split(mpz_class& a, mpz_class& b, const mpz_class& x)
+	static void split(mpz_class u[2], const mpz_class& x)
 	{
+		mpz_class& a = u[0];
+		mpz_class& b = u[1];
 		mpz_class t;
 		t = (x * v0) >> rBitSize;
 		b = (x * v1) >> rBitSize;
@@ -1546,8 +1554,12 @@ public:
 	{
 		mulVecNGLV(Q, &P, &x, 1, constTime);
 	}
-	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n, bool /*constTime*/ = false)
+	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n, bool constTime)
 	{
+		if (n == 1 && constTime) {
+			ec::local::mul1CT<GLV1T<Ec, _Fr>, Ec, _Fr, 2, 4>(z, *xVec, *yVec);
+			return 1;
+		}
 		const size_t N = mcl::fp::maxMulVecNGLV;
 		if (n > N) n = N;
 		const int w = 5;
@@ -1565,7 +1577,7 @@ public:
 			if (y < 0) {
 				y += r;
 			}
-			split(u[0], u[1], y);
+			split(u, y);
 
 			for (int j = 0; j < 2; j++) {
 				gmp::getNAFwidth(&b, naf[i][j], u[j], w);

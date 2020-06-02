@@ -701,22 +701,22 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 	GLV method for G2 and GT on BN/BLS12
 */
 template<class _Fr>
-struct GLV2 {
+struct GLV2T {
+	typedef GLV2T<_Fr> GLV2;
 	typedef _Fr Fr;
 	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / 4 + 4> NafArray;
-	size_t rBitSize;
-	mpz_class B[4][4];
-	mpz_class v[4];
-	mpz_class z;
-	mpz_class abs_z;
-	bool isBLS12;
-	GLV2() : rBitSize(0), isBLS12(false) {}
-	void init(const mpz_class& z, bool isBLS12 = false)
+	static size_t rBitSize;
+	static mpz_class B[4][4];
+	static mpz_class v[4];
+	static mpz_class z;
+	static mpz_class abs_z;
+	static bool isBLS12;
+	static void init(const mpz_class& z, bool isBLS12 = false)
 	{
 		const mpz_class& r = Fr::getOp().mp;
-		this->z = z;
-		this->abs_z = z < 0 ? -z : z;
-		this->isBLS12 = isBLS12;
+		GLV2::z = z;
+		GLV2::abs_z = z < 0 ? -z : z;
+		GLV2::isBLS12 = isBLS12;
 		rBitSize = Fr::getOp().bitSize;
 		rBitSize = (rBitSize + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
 		mpz_class z2p1 = z * 2 + 1;
@@ -767,7 +767,7 @@ struct GLV2 {
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
 	*/
-	void split(mpz_class u[4], const mpz_class& x) const
+	static void split(mpz_class u[4], const mpz_class& x)
 	{
 		if (isBLS12) {
 			/*
@@ -802,7 +802,7 @@ struct GLV2 {
 		}
 	}
 	template<class T>
-	void mul(T& Q, const T& P, const mpz_class& x, bool constTime = false) const
+	static void mul(T& Q, const T& P, const mpz_class& x, bool constTime = false)
 	{
 		mulVecNGLV(Q, &P, &x, 1, constTime);
 	}
@@ -812,10 +812,10 @@ struct GLV2 {
 		Frobenius(Q, P);
 	}
 	template<class T>
-	size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n, bool constTime) const
+	static size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n, bool constTime)
 	{
 		if (n == 1 && constTime) {
-			ec::local::mul1CT<GLV2<_Fr>, T, Fr, 4, 4>(*this, z, *xVec, *yVec);
+			ec::local::mul1CT<GLV2, T, Fr, 4, 4>(z, *xVec, *yVec);
 			return 1;
 		}
 		const mpz_class& r = Fr::getOp().mp;
@@ -847,14 +847,14 @@ struct GLV2 {
 			T P2;
 			T::dbl(P2, xVec[i]);
 			tbl[i][0][0] = xVec[i];
-			Frobenius(tbl[i][1][0], tbl[i][0][0]);
-			Frobenius(tbl[i][2][0], tbl[i][1][0]);
-			Frobenius(tbl[i][3][0], tbl[i][2][0]);
+			for (int k = 1; k < w; k++) {
+				mulLambda(tbl[i][k][0], tbl[i][k - 1][0]);
+			}
 			for (size_t j = 1; j < tblSize; j++) {
 				T::add(tbl[i][0][j], tbl[i][0][j - 1], P2);
-				Frobenius(tbl[i][1][j], tbl[i][0][j]);
-				Frobenius(tbl[i][2][j], tbl[i][1][j]);
-				Frobenius(tbl[i][3][j], tbl[i][2][j]);
+				for (int k = 1; k < w; k++) {
+					mulLambda(tbl[i][k][j], tbl[i][k - 1][j]);
+				}
 			}
 		}
 		z.clear();
@@ -862,16 +862,15 @@ struct GLV2 {
 			const size_t bit = maxBit - 1 - i;
 			T::dbl(z, z);
 			for (size_t j = 0; j < n; j++) {
-				mcl::local::addTbl(z, tbl[j][0], naf[j][0], bit);
-				mcl::local::addTbl(z, tbl[j][1], naf[j][1], bit);
-				mcl::local::addTbl(z, tbl[j][2], naf[j][2], bit);
-				mcl::local::addTbl(z, tbl[j][3], naf[j][3], bit);
+				for (int k = 0; k < w; k++) {
+					mcl::local::addTbl(z, tbl[j][k], naf[j][k], bit);
+				}
 			}
 		}
 		return n;
 
 	}
-	void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false) const
+	static void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false)
 	{
 		typedef GroupMtoA<Fp12> AG; // as additive group
 		AG& _z = static_cast<AG&>(z);
@@ -879,6 +878,13 @@ struct GLV2 {
 		mul(_z, _x, y, constTime);
 	}
 };
+
+template<class Fr> size_t GLV2T<Fr>::rBitSize = 0;
+template<class Fr> mpz_class GLV2T<Fr>::B[4][4];
+template<class Fr> mpz_class GLV2T<Fr>::v[4];
+template<class Fr> mpz_class GLV2T<Fr>::z;
+template<class Fr> mpz_class GLV2T<Fr>::abs_z;
+template<class Fr> bool GLV2T<Fr>::isBLS12 = false;
 
 struct Param {
 	CurveParam cp;
@@ -889,7 +895,6 @@ struct Param {
 	mpz_class p;
 	mpz_class r;
 	local::MapTo mapTo;
-	local::GLV2<Fr> glv2;
 	// for G2 Frobenius
 	Fp2 g2;
 	Fp2 g3;
@@ -1001,7 +1006,7 @@ struct Param {
 			mapTo.init(2 * p - r, z, cp.curveType);
 		}
 		GLV1::initForBN(z, isBLS12, cp.curveType);
-		glv2.init(z, isBLS12);
+		GLV2T<Fr>::init(z, isBLS12);
 		basePoint.clear();
 		*pb = true;
 	}
@@ -1049,6 +1054,8 @@ static local::Param& nonConstParam = local::StaticVar<>::param;
 
 namespace local {
 
+typedef GLV2T<Fr> GLV2;
+
 inline void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 {
 	mpz_class s;
@@ -1056,7 +1063,7 @@ inline void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, 
 	mcl::gmp::setArray(&b, s, y, yn);
 	assert(b);
 	if (isNegative) s = -s;
-	BN::param.glv2.mul(z, x, s, constTime);
+	GLV2::mul(z, x, s, constTime);
 }
 inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 {
@@ -1065,12 +1072,12 @@ inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t 
 	mcl::gmp::setArray(&b, s, y, yn);
 	assert(b);
 	if (isNegative) s = -s;
-	BN::param.glv2.pow(z, x, s, constTime);
+	GLV2::pow(z, x, s, constTime);
 }
 
 inline size_t mulVecNGLV2(G2& z, const G2 *xVec, const mpz_class *yVec, size_t n, bool constTime)
 {
-	return BN::param.glv2.mulVecNGLV(z, xVec, yVec, n, constTime);
+	return GLV2::mulVecNGLV(z, xVec, yVec, n, constTime);
 }
 
 inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size_t n, bool constTime)
@@ -1078,7 +1085,7 @@ inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return BN::param.glv2.mulVecNGLV(_z, _xVec, yVec, n, constTime);
+	return GLV2::mulVecNGLV(_z, _xVec, yVec, n, constTime);
 }
 
 /*

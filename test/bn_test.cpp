@@ -211,7 +211,7 @@ void testFp12pow(const G1& P, const G2& Q)
 		x.setRand(rg);
 		mpz_class xm = x.getMpz();
 		Fp12::pow(e1, e, xm);
-		BN::param.glv2.pow(e2, e, xm);
+		local::GLV2::pow(e2, e, xm);
 		CYBOZU_TEST_EQUAL(e1, e2);
 	}
 }
