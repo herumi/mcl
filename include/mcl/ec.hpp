@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
+#include <mcl/window_method.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -69,6 +70,76 @@ template<class F>
 bool get_a_flag(const mcl::Fp2T<F>& x)
 {
 	return get_a_flag(x.b); // x = a + bi
+}
+
+template<class GLV, class G, class F, int splitN, size_t w>
+void mul1CT(const GLV& glv, G& Q, const G& P, const mpz_class& x)
+{
+	const mpz_class& r = F::getOp().mp;
+	const size_t tblSize = 1 << w;
+	G tbl[splitN][tblSize];
+	bool negTbl[splitN];
+	mpz_class u[splitN];
+	mpz_class y = x % r;
+	if (y < 0) {
+		y += r;
+	}
+	glv.split(u, y);
+	for (int i = 0; i < splitN; i++) {
+		if (u[i] < 0) {
+			gmp::neg(u[i], u[i]);
+			negTbl[i] = true;
+		} else {
+			negTbl[i] = false;
+		}
+		tbl[i][0].clear();
+	}
+	tbl[0][1] = P;
+	for (size_t j = 2; j < tblSize; j++) {
+		G::add(tbl[0][j], tbl[0][j - 1], P);
+	}
+	for (int i = 1; i < splitN; i++) {
+		for (size_t j = 1; j < tblSize; j++) {
+			GLV::mulLambda(tbl[i][j], tbl[i - 1][j]);
+		}
+	}
+	for (int i = 0; i < splitN; i++) {
+		if (negTbl[i]) {
+			for (size_t j = 0; j < tblSize; j++) {
+				G::neg(tbl[i][j], tbl[i][j]);
+			}
+		}
+	}
+	mcl::FixedArray<int8_t, sizeof(F) * 8 / w + 1> vTbl[splitN];
+	size_t bitSizeTbl[splitN];
+	size_t maxBitSize = 0;
+	for (size_t i = 0; i < splitN; i++) {
+		size_t bitSize = gmp::getBitSize(u[i]);
+		bitSizeTbl[i] = bitSize;
+		if (bitSize > maxBitSize) {
+			maxBitSize = bitSize;
+		}
+	}
+	int loopN = (maxBitSize + w - 1) / w;
+	for (int i = 0; i < splitN; i++) {
+		fp::ArrayIterator<fp::Unit> itr(gmp::getUnit(u[i]), bitSizeTbl[i], w);
+		bool b = vTbl[i].resize(loopN);
+		assert(b);
+		(void)b;
+		for (int j = 0; j < loopN; j++) {
+			vTbl[i][loopN - 1 - j] = itr.getNext();
+		}
+	}
+	Q.clear();
+	for (int k = 0; k < loopN; k++) {
+		for (size_t i = 0; i < w; i++) {
+			G::dbl(Q, Q);
+		}
+		for (size_t i = 0; i < splitN; i++) {
+			uint8_t v = vTbl[i][k];
+			G::add(Q, Q, tbl[i][v]);
+		}
+	}
 }
 
 } // mcl::ec::local
@@ -567,7 +638,7 @@ public:
 	static bool verifyOrder_;
 	static mpz_class order_;
 	static void (*mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
-	static size_t (*mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
+	static size_t (*mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn, bool constTime);
 	/* default constructor is undefined value */
 	EcT() {}
 	EcT(const Fp& _x, const Fp& _y)
@@ -633,7 +704,7 @@ public:
 			// don't clear order_ because it is used for isValidOrder()
 		}
 	}
-	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn) = 0)
+	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn, bool constTime) = 0)
 	{
 		mulArrayGLV = f;
 		mulVecNGLV = g;
@@ -1342,7 +1413,7 @@ private:
 
 public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, bool constTime = false)
 	{
 		/*
 			mulVecNGLV is a little slow for large n
@@ -1354,7 +1425,7 @@ public:
 				yVec[i].getMpz(&b, myVec[i]);
 				assert(b); (void)b;
 			}
-			size_t done = mulVecNGLV(z, xVec, myVec, n);
+			size_t done = mulVecNGLV(z, xVec, myVec, n, constTime);
 			assert(done == n); (void)done;
 			return;
 		}
@@ -1424,7 +1495,7 @@ template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
 template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
-template<class Fp> size_t (*EcT<Fp>::mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
+template<class Fp> size_t (*EcT<Fp>::mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn, bool constTime);
 template<class Fp> int EcT<Fp>::mode_;
 
 // r = the order of Ec
@@ -1471,11 +1542,11 @@ public:
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
-	static void mul(Ec& Q, const Ec& P, const mpz_class& x, bool /*constTime*/ = false)
+	static void mul(Ec& Q, const Ec& P, const mpz_class& x, bool constTime = false)
 	{
-		mulVecNGLV(Q, &P, &x, 1);
+		mulVecNGLV(Q, &P, &x, 1, constTime);
 	}
-	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n)
+	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n, bool /*constTime*/ = false)
 	{
 		const size_t N = mcl::fp::maxMulVecNGLV;
 		if (n > N) n = N;

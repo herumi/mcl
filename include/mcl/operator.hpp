@@ -84,14 +84,14 @@ struct Operator : public E {
 	{
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
 	}
-	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n) = 0)
+	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n, bool constTime) = 0)
 	{
 		powArrayGLV = f;
 		powVecNGLV = g;
 	}
 	static const size_t powVecMaxN = 16;
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static void powVec(T& z, const T* xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static void powVec(T& z, const T* xVec, const FpT<tag, maxBitSize> *yVec, size_t n, bool constTime = false)
 	{
 		assert(powVecNGLV);
 		T r;
@@ -106,7 +106,7 @@ struct Operator : public E {
 				yVec[i].getMpz(&b, myVec[i]);
 				assert(b); (void)b;
 			}
-			size_t done = powVecNGLV(t, xVec, myVec, tn);
+			size_t done = powVecNGLV(t, xVec, myVec, tn, constTime);
 			r *= t;
 			xVec += done;
 			yVec += done;
@@ -116,7 +116,7 @@ struct Operator : public E {
 	}
 private:
 	static void (*powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
-	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
+	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n, bool constTime);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
 		if (powArrayGLV && (constTime || yn > 1)) {
@@ -145,7 +145,7 @@ template<class T, class E>
 void (*Operator<T, E>::powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
 
 template<class T, class E>
-size_t (*Operator<T, E>::powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
+size_t (*Operator<T, E>::powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n, bool constTime);
 
 /*
 	T must have save and load

@@ -89,12 +89,27 @@ inline void testPowVec(const G& e)
 	}
 }
 
+template<class G>
+void testMulCT(const G& P)
+{
+	cybozu::XorShift rg;
+	G Q1, Q2;
+	for (int i = 0; i < 100; i++) {
+		Fr x;
+		x.setByCSPRNG(rg);
+		G::mul(Q1, P, x);
+		G::mulCT(Q2, P, x);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+}
+
 void testCommon(const G1& P, const G2& Q)
 {
 	puts("G1");
 	testMulVec(P);
 	puts("G2");
 	testMulVec(Q);
+	testMulCT(Q);
 	GT e;
 	mcl::bn::pairing(e, P, Q);
 	puts("GT");

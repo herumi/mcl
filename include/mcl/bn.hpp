@@ -802,18 +802,26 @@ struct GLV2 {
 		}
 	}
 	template<class T>
-	void mul(T& Q, const T& P, mpz_class x, bool constTime = false) const
+	void mul(T& Q, const T& P, const mpz_class& x, bool constTime = false) const
 	{
-		(void)constTime;
-		mulVecNGLV(Q, &P, &x, 1);
+		mulVecNGLV(Q, &P, &x, 1, constTime);
 	}
 	template<class T>
-	size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n) const
+	static void mulLambda(T& Q, const T& P)
 	{
+		Frobenius(Q, P);
+	}
+	template<class T>
+	size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n, bool constTime) const
+	{
+		if (n == 1 && constTime) {
+			ec::local::mul1CT<GLV2<_Fr>, T, Fr, 4, 4>(*this, z, *xVec, *yVec);
+			return 1;
+		}
 		const mpz_class& r = Fr::getOp().mp;
 		const size_t N = mcl::fp::maxMulVecNGLV;
 		if (n > N) n = N;
-		const int w = 5;
+		const int w = 4;
 		const size_t tblSize = 1 << (w - 2);
 		const int splitN = 4;
 		NafArray naf[N][splitN];
@@ -1060,17 +1068,17 @@ inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t 
 	BN::param.glv2.pow(z, x, s, constTime);
 }
 
-inline size_t mulVecNGLV2(G2& z, const G2 *xVec, const mpz_class *yVec, size_t n)
+inline size_t mulVecNGLV2(G2& z, const G2 *xVec, const mpz_class *yVec, size_t n, bool constTime)
 {
-	return BN::param.glv2.mulVecNGLV(z, xVec, yVec, n);
+	return BN::param.glv2.mulVecNGLV(z, xVec, yVec, n, constTime);
 }
 
-inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size_t n)
+inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size_t n, bool constTime)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return BN::param.glv2.mulVecNGLV(_z, _xVec, yVec, n);
+	return BN::param.glv2.mulVecNGLV(_z, _xVec, yVec, n, constTime);
 }
 
 /*
