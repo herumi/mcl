@@ -894,16 +894,16 @@ void testHashToFp2v7(const T& mapto)
 		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
 	}
 	{
-		const char *dst = "BLS12381G2_XMD:SHA-256_SSWU_RO_TESTGEN";
-		size_t dstSize = strlen(dst);
 		const struct {
 			const char *msg;
+			const char *dst;
 			Fp2Str x;
 			Fp2Str y;
 		} tbl[] = {
-			// https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-07.html#name-bls12381g2_xmdsha-256_sswu_
+			// https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve-07#appendix-G.10.1
 			{
 				"", // msg
+				"BLS12381G2_XMD:SHA-256_SSWU_RO_TESTGEN",
 				{ // P.x
 					"0x0a650bd36ae7455cb3fe5d8bb1310594551456f5c6593aec9ee0c03d2f6cb693bd2c5e99d4e23cbaec767609314f51d3",
 					"0x0fbdae26f9f9586a46d4b0b70390d09064ef2afe5c99348438a3c7d9756471e015cb534204c1b6824617a85024c772dc",
@@ -915,6 +915,7 @@ void testHashToFp2v7(const T& mapto)
 			},
 			{
 				"abc",
+				"BLS12381G2_XMD:SHA-256_SSWU_RO_TESTGEN",
 				{
 					"0x1953ce6d4267939c7360756d9cca8eb34aac4633ef35369a7dc249445069888e7d1b3f9d2e75fbd468fbcbba7110ea02",
 					"0x03578447618463deb106b60e609c6f7cc446dc6035f84a72801ba17c94cd800583b493b948eff0033f09086fdd7f6175",
@@ -926,6 +927,7 @@ void testHashToFp2v7(const T& mapto)
 			},
 			{
 				"abcdef0123456789",
+				"BLS12381G2_XMD:SHA-256_SSWU_RO_TESTGEN",
 				{
 					"0x17b461fc3b96a30c2408958cbfa5f5927b6063a8ad199d5ebf2d7cdeffa9c20c85487204804fab53f950b2f87db365aa",
 					"0x195fad48982e186ce3c5c82133aefc9b26d55979b6f530992a8849d4263ec5d57f7a181553c8799bcc83da44847bdc8d",
@@ -937,6 +939,7 @@ void testHashToFp2v7(const T& mapto)
 			},
 			{
 				"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"BLS12381G2_XMD:SHA-256_SSWU_RO_TESTGEN",
 				{
 					"0x0a162306f3b0f2bb326f0c4fb0e1fea020019c3af796dcd1d7264f50ddae94cacf3cade74603834d44b9ab3d5d0a6c98",
 					"0x123b6bd9feeba26dd4ad00f8bfda2718c9700dc093ea5287d7711844644eb981848316d3f3f57d5d3a652c6cdc816aca",
@@ -946,10 +949,25 @@ void testHashToFp2v7(const T& mapto)
 					"0x05483f3b96d9252dd4fc0868344dfaf3c9d145e3387db23fa8e449304fab6a7b6ec9c15f05c0a1ea66ff0efcc03e001a",
 				},
 			},
+			// https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-08.html#name-bls12381g2_xmdsha-256_sswu_
+			{
+				"", // msg
+				"QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
+				{ // P.x
+					"0x0141ebfbdca40eb85b87142e130ab689c673cf60f1a3e98d69335266f30d9b8d4ac44c1038e9dcdd5393faf5c41fb78a",
+					"0x05cb8437535e20ecffaef7752baddf98034139c38452458baeefab379ba13dff5bf5dd71b72418717047f5b0f37da03d",
+				},
+				{ // P.y
+					"0x0503921d7f6a12805e72940b963c0cf3471c7b2a524950ca195d11062ee75ec076daf2d4bc358c4b190c0c98064fdd92",
+					"0x12424ac32561493f3fe3c260708a12b7c620e7be00099a974e259ddc7d1f6395c3c811cdd19f1e8dbf3e9ecfdcbab8d6",
+				}
+			},
 		};
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 			const char *msg = tbl[i].msg;
 			size_t msgSize = strlen(msg);
+			const char *dst = tbl[i].dst;
+			size_t dstSize = strlen(dst);
 			G2 P1, P2;
 			set(P1.x, tbl[i].x);
 			set(P1.y, tbl[i].y);
