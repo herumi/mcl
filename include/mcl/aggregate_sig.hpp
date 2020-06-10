@@ -63,15 +63,31 @@ public:
 		friend class PublicKey;
 	public:
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			S_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			S_.save(pb, os, ioMode);
+		}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			S_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("Signature:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			S_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("Signature:save");
 		}
+#endif
 		friend std::istream& operator>>(std::istream& is, Signature& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -156,15 +172,31 @@ public:
 		friend class Signature;
 	public:
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			xQ_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			xQ_.save(pb, os, ioMode);
+		}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			xQ_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("PublicKey:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			xQ_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("PublicKey:save");
 		}
+#endif
 		friend std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
 			self.load(is, fp::detectIoMode(G2::getIoMode(), is));
@@ -209,15 +241,31 @@ public:
 		friend class Signature;
 	public:
 		template<class InputStream>
+		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+		{
+			x_.load(pb, is, ioMode);
+		}
+		template<class OutputStream>
+		void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+		{
+			x_.save(pb, os, ioMode);
+		}
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+		template<class InputStream>
 		void load(InputStream& is, int ioMode = IoSerialize)
 		{
-			x_.load(is, ioMode);
+			bool b;
+			load(&b, is, ioMode);
+			if (!b) throw cybozu::Exception("SecretKey:load");
 		}
 		template<class OutputStream>
 		void save(OutputStream& os, int ioMode = IoSerialize) const
 		{
-			x_.save(os, ioMode);
+			bool b;
+			save(&b, os, ioMode);
+			if (!b) throw cybozu::Exception("SecretKey:save");
 		}
+#endif
 		friend std::istream& operator>>(std::istream& is, SecretKey& self)
 		{
 			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
