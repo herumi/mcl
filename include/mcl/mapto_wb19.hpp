@@ -81,9 +81,9 @@ struct MapToG2_WB19 {
 	Fp2 ynum[4];
 	Fp2 yden[4];
 	int draftVersion_;
-	void setDraftVersion(int version)
+	void setDraftVersion(int draftVersion)
 	{
-		draftVersion_ = version;
+		draftVersion_ = draftVersion;
 	}
 	void init()
 	{

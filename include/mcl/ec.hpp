@@ -116,7 +116,7 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 			}
 		}
 	}
-	mcl::FixedArray<int8_t, sizeof(F) * 8 / w + 1> vTbl[splitN];
+	mcl::FixedArray<uint8_t, sizeof(F) * 8 / w + 1> vTbl[splitN];
 	size_t bitSizeTbl[splitN];
 	size_t maxBitSize = 0;
 	for (size_t i = 0; i < splitN; i++) {
@@ -126,18 +126,18 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 			maxBitSize = bitSize;
 		}
 	}
-	int loopN = (maxBitSize + w - 1) / w;
+	size_t loopN = (maxBitSize + w - 1) / w;
 	for (int i = 0; i < splitN; i++) {
 		fp::ArrayIterator<fp::Unit> itr(gmp::getUnit(u[i]), bitSizeTbl[i], w);
 		bool b = vTbl[i].resize(loopN);
 		assert(b);
 		(void)b;
-		for (int j = 0; j < loopN; j++) {
-			vTbl[i][loopN - 1 - j] = itr.getNext();
+		for (size_t j = 0; j < loopN; j++) {
+			vTbl[i][loopN - 1 - j] = (uint8_t)itr.getNext();
 		}
 	}
 	Q.clear();
-	for (int k = 0; k < loopN; k++) {
+	for (size_t k = 0; k < loopN; k++) {
 		for (size_t i = 0; i < w; i++) {
 			G::dbl(Q, Q);
 		}
