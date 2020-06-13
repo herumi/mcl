@@ -34,8 +34,8 @@ public:
 		: prov_(0)
 		, pos_(bufSize)
 	{
-		DWORD flagTbl[] = { 0, CRYPT_NEWKEYSET };
-		for (int i = 0; i < 2; i++) {
+		DWORD flagTbl[] = { 0, CRYPT_NEWKEYSET, CRYPT_MACHINE_KEYSET };
+		for (int i = 0; i < 3; i++) {
 			if (CryptAcquireContext(&prov_, NULL, NULL, PROV_RSA_FULL, flagTbl[i]) != 0) return;
 		}
 #ifdef CYBOZU_DONT_USE_EXCEPTION
