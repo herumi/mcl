@@ -2,18 +2,6 @@
 
 ## New features
 
-Add compatibility mode with [eth2](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md)
-
-```
-void mclBn_setETHserialization(int enable);
-```
-The serialization/deserialization for `Fp`, `Fr`, `G1`, `G2` if `enable = 1`.
-
-```
-int mclBn_setMapToMode(int mode);
-```
-The map-to-G2 function if `mode = MCL_MAP_TO_MODE_ETH2`.
-
 ```
 void mclBn_setOriginalG2cofactor(int enable);
 ```
@@ -126,6 +114,11 @@ the values are the same when the library is built and used.
 
 ## Global setting
 
+```
+int mclBn_setMapToMode(int mode);
+```
+The map-to-G2 function if `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE`.
+
 ### Control to verify that a point of the elliptic curve has the order `r`.
 
 This function affects `setStr()` and `deserialize()` for G1/G2.
@@ -219,11 +212,11 @@ else:
   return s
 ```
 
-### Ethereum serialization mode for BLS12-381 (experimental)
+### Ethereum serialization mode for BLS12-381
 ```
 void mclBn_setETHserialization(int ETHserialization);
 ```
-- serialize according to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) if BLS12-381 is used and `ETHserialization = 1` (default 0).
+- serialize according to [serialization of BLS12-381](https://github.com/zkcrypto/pairing/blob/master/src/bls12_381/README.md#serialization) if BLS12-381 is used and `ETHserialization = 1` (default 0).
 
 ### Deserialize
 ```
