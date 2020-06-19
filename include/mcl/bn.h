@@ -226,6 +226,7 @@ MCLBN_DLL_API int mclBn_setMapToMode(int mode);
 	return 0 if success
 	@note append zero byte to msg if necessary
 */
+// deprecated
 MCLBN_DLL_API int mclBn_ethMsgToFp2(mclBnFp2 *out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize);
 
 /*
@@ -240,6 +241,7 @@ MCLBN_DLL_API int mclBn_ethFp2ToG2(mclBnG2 *out, const mclBnFp2 *t1, const mclBn
 	@note append zero byte to msg if necessary
 	return 0 if success
 */
+// deprecated
 MCLBN_DLL_API int mclBn_ethMsgToG2(mclBnG2 *out, const void *msg, size_t msgSize, const void *dst, size_t dstSize);
 
 ////////////////////////////////////////////////

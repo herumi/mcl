@@ -2208,6 +2208,7 @@ inline const Fr& getG2cofactorAdjInv()
 	return BN::param.mapTo.g2cofactorAdjInv_;
 }
 
+// deprecated
 inline bool ethMsgToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
 {
 	if (!BN::param.isBLS12) return false;
@@ -2222,6 +2223,7 @@ inline bool ethFp2ToG2(G2& out, const Fp2& t1, const Fp2 *t2 = 0)
 	return true;
 }
 
+// deprecated
 inline bool ethMsgToG2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
 {
 	if (!BN::param.isBLS12) return false;
