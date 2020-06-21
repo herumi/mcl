@@ -17,7 +17,6 @@
 #ifdef _MSC_VER
 #pragma comment (lib, "advapi32.lib")
 #endif
-#include <cybozu/critical_section.hpp>
 #else
 #include <sys/types.h>
 #include <fcntl.h>
@@ -32,10 +31,9 @@ public:
 #ifdef _WIN32
 	RandomGenerator()
 		: prov_(0)
-		, pos_(bufSize)
 	{
-		DWORD flagTbl[] = { 0, CRYPT_NEWKEYSET, CRYPT_MACHINE_KEYSET };
-		for (int i = 0; i < 3; i++) {
+		DWORD flagTbl[] = { CRYPT_VERIFYCONTEXT | CRYPT_SILENT, 0, CRYPT_MACHINE_KEYSET };
+		for (int i = 0; i < CYBOZU_NUM_OF_ARRAY(flagTbl); i++) {
 			if (CryptAcquireContext(&prov_, NULL, NULL, PROV_RSA_FULL, flagTbl[i]) != 0) return;
 		}
 #ifdef CYBOZU_DONT_USE_EXCEPTION
@@ -62,29 +60,11 @@ public:
 	template<class T>
 	void read(bool *pb, T *buf, size_t bufNum)
 	{
-		cybozu::AutoLockCs al(cs_);
 		const size_t byteSize = sizeof(T) * bufNum;
-		if (byteSize > bufSize) {
-			if (!read_inner(buf, byteSize)) {
-				*pb = false;
-				return;
-			}
-		} else {
-			if (pos_ + byteSize > bufSize) {
-				read_inner(buf_, bufSize);
-				pos_ = 0;
-			}
-			memcpy(buf, buf_ + pos_, byteSize);
-			pos_ += byteSize;
-		}
-		*pb = true;
+		*pb = read_inner(buf, byteSize);
 	}
 private:
 	HCRYPTPROV prov_;
-	static const size_t bufSize = 1024;
-	char buf_[bufSize];
-	size_t pos_;
-	cybozu::CriticalSection cs_;
 #else
 	RandomGenerator()
 		: fp_(::fopen("/dev/urandom", "rb"))
