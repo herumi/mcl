@@ -344,6 +344,9 @@ endif
 ../she-wasm/she_c384.js: src/she_c384.cpp $(SHE_C_DEP)
 	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=384 -s TOTAL_MEMORY=67108864 -s DISABLE_EXCEPTION_CATCHING=0
 
+../mcl-wasm/mcl_c384_256.js: src/bn_c384_256.cpp $(MCL_C_DEP)
+	emcc -o $@ src/fp.cpp src/bn_c384_256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=384 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions -MD -MP -MF obj/mcl_c384_256.d
+
 ../mcl-wasm/mcl_c.js: src/bn_c256.cpp $(MCL_C_DEP)
 	emcc -o $@ src/fp.cpp src/bn_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions -MD -MP -MF obj/mcl_c.d
 
@@ -354,8 +357,9 @@ endif
 	emcc -o $@ src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions
 
 mcl-wasm:
-	$(MAKE) ../mcl-wasm/mcl_c.js
-	$(MAKE) ../mcl-wasm/mcl_c512.js
+	$(MAKE) ../mcl-wasm/mcl_c384_256.js
+#	$(MAKE) ../mcl-wasm/mcl_c.js
+#	$(MAKE) ../mcl-wasm/mcl_c512.js
 
 she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
