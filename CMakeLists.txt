@@ -190,7 +190,7 @@ foreach(bit IN ITEMS 256 384 384_256 512)
 	target_link_libraries(bn_c${bit}_test mclbn${bit})
 endforeach()
 
-file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h)
+file(GLOB MCL_HEADERS include/mcl/*.hpp include/mcl/bn.h include/mcl/curve_type.h include/mcl/bn_c256.h include/mcl/bn_c384_256.h include/mcl/bn_c384.h)
 file(GLOB CYBOZULIB_HEADERS include/cybozu/*.hpp)
 
 install(TARGETS mcl DESTINATION lib)
