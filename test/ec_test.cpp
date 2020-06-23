@@ -95,6 +95,9 @@ struct Test {
 			if (Ec::getMode() != mcl::ec::Affine) {
 				CYBOZU_TEST_ASSERT(!R.isNormalized());
 			}
+			CYBOZU_TEST_ASSERT(O == O);
+			CYBOZU_TEST_ASSERT(R != O);
+			CYBOZU_TEST_ASSERT(O != R);
 			CYBOZU_TEST_ASSERT(R.isValid());
 			Ec R2 = P + P;
 			CYBOZU_TEST_EQUAL(R, R2);

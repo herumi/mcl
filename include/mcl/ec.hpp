@@ -227,6 +227,12 @@ template<class E>
 bool isEqualJacobi(const E& P1, const E& P2)
 {
 	typedef typename E::Fp F;
+	bool zero1 = P1.isZero();
+	bool zero2 = P2.isZero();
+	if (zero1) {
+		return zero2;
+	}
+	if (zero2) return false;
 	F s1, s2, t1, t2;
 	F::sqr(s1, P1.z);
 	F::sqr(s2, P2.z);
@@ -452,6 +458,12 @@ template<class E>
 bool isEqualProj(const E& P1, const E& P2)
 {
 	typedef typename E::Fp F;
+	bool zero1 = P1.isZero();
+	bool zero2 = P2.isZero();
+	if (zero1) {
+		return zero2;
+	}
+	if (zero2) return false;
 	F t1, t2;
 	F::mul(t1, P1.x, P2.z);
 	F::mul(t2, P2.x, P1.z);
