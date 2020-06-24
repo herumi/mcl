@@ -282,8 +282,8 @@ modified new BSD License
 http://opensource.org/licenses/BSD-3-Clause
 
 This library contains some part of the followings software licensed by BSD-3-Clause.
-* [xbyak](https://github.com/heurmi/xbyak)
-* [cybozulib](https://github.com/heurmi/cybozulib)
+* [xbyak](https://github.com/herumi/xbyak)
+* [cybozulib](https://github.com/herumi/cybozulib)
 * [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal)
 
 # References
