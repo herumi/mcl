@@ -10,10 +10,10 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- `MCL_MAP_TO_MODE_HASH_TO_CURVE_07` is added for [draft-07](https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-07.txt).
+- `MCL_MAP_TO_MODE_HASH_TO_CURVE_07` is added for [hash-to-curve-draft-07](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/07/).
   - The older version will be removed in the future.
 - change DST of hash-to-curve for `MCL_MAP_TO_MODE_HASH_TO_CURVE_06`.
-- add new hash-to-curve function of [draft-irtf-cfrg-hash-to-curve](https://cfrg.github.io/draft-irtf-cfrg-hash-to-curve/draft-irtf-cfrg-hash-to-curve.txt) at March 2020.
+- add new hash-to-curve function of [hash-to-curve-draft-06](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/06/) at March 2020.
   - call `setETHmode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);`
   - The older `MAP_TO_MODE` will be removed after the draft is fixed.
 - add new hash functions corresponding to python-impl of [algorand/bls_sig_ref](https://github.com/algorand/bls_sigs_ref).
