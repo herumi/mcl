@@ -445,7 +445,7 @@ struct MapToG2_WB19 {
 		if (draftVersion_ == 6) {
 			mcl::fp::expand_message_xmd06(md, msg, msgSize, dst, dstSize);
 		} else {
-			mcl::fp::expand_message_xmd(md, msg, msgSize, dst, dstSize);
+			mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		}
 		Fp *x = out[0].getFp0();
 		for (size_t i = 0; i < 4; i++) {

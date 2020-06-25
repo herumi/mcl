@@ -890,7 +890,17 @@ void testHashToFp2v7(const T& mapto)
 		size_t msgSize = strlen(msg);
 		size_t dstSize = strlen(dst);
 		uint8_t md[256];
-		mcl::fp::expand_message_xmd(md, msg, msgSize, dst, dstSize);
+		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
+		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
+	}
+	{
+		char msg[] = "asdf";
+		char dst[] = "QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
+		char expect[] = "ecc25edef8f6b277e27a88cf5ca0cdd4c4a49e8ba273d6069a4f0c9db05d37b78e700a875f4bb5972bfce49a867172ec1cb8c5524b1853994bb8af52a8ad2338d2cf688cf788b732372c10013445cd2c16a08a462028ae8ffff3082c8e47e8437dee5a58801e03ee8320980ae7c071ab022473231789d543d56defe9ff53bdba";
+		size_t msgSize = strlen(msg);
+		size_t dstSize = strlen(dst);
+		uint8_t md[128];
+		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
 	}
 	{
@@ -1054,6 +1064,12 @@ void testEth2phase0()
 	}
 }
 
+template<class T>
+void testHashToG1(const T& mapto)
+{
+	(void)mapto;
+}
+
 CYBOZU_TEST_AUTO(test)
 {
 	initPairing(mcl::BLS12_381);
@@ -1076,4 +1092,5 @@ CYBOZU_TEST_AUTO(test)
 	testHashToFp2v6(mapto);
 	testHashToFp2v7(mapto);
 	testEth2phase0();
+	testHashToG1(mapto);
 }
