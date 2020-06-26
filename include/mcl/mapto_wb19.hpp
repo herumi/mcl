@@ -340,83 +340,10 @@ struct MapToG2_WB19 {
 		}
 		assert(0);
 	}
-#if 0
-	void h2_chain(G2& out, const G2& P) const
-	{
-		G2 t[16];
-		t[0] = P;
-		G2::dbl(t[1], t[0]);
-		G2::add(t[4], t[1], t[0]);
-		G2::add(t[2], t[4], t[1]);
-		G2::add(t[3], t[2], t[1]);
-		G2::add(t[11], t[3], t[1]);
-		G2::add(t[9], t[11], t[1]);
-		G2::add(t[10], t[9], t[1]);
-		G2::add(t[5], t[10], t[1]);
-		G2::add(t[7], t[5], t[1]);
-		G2::add(t[15], t[7], t[1]);
-		G2::add(t[13], t[15], t[1]);
-		G2::add(t[6], t[13], t[1]);
-		G2::add(t[14], t[6], t[1]);
-		G2::add(t[12], t[14], t[1]);
-		G2::add(t[8], t[12], t[1]);
-		G2::dbl(t[1], t[6]);
-
-		const struct {
-			uint32_t n;
-			uint32_t idx;
-		} tbl[] = {
-			{ 5, 13 }, { 2, 0 }, { 9, 8 }, { 5, 11 }, { 6, 13 }, { 8, 2 }, { 5, 3 },
-			{ 5, 3 }, { 4, 5 }, { 4, 0 }, { 8, 11 }, { 8, 8 }, { 4, 2 }, { 9, 5 },
-			{ 6, 11 }, { 2, 0 }, { 9, 8 }, { 5, 13 }, { 4, 0 }, { 11, 9 }, { 7, 12 },
-			{ 7, 7 }, { 5, 12 }, { 5, 14 }, { 8, 13 }, { 6, 3 }, { 5, 0 }, { 8, 9 },
-			{ 6, 13 }, { 4, 10 }, { 4, 2 }, { 6, 10 }, { 6, 2 }, { 4, 0 }, { 10, 9 },
-			{ 6, 14 }, { 4, 3 }, { 6, 9 }, { 6, 15 }, { 5, 8 }, { 5, 12 }, { 4, 5 },
-			{ 6, 15 }, { 6, 2 }, { 7, 5 }, { 6, 3 }, { 6, 9 }, { 6, 15 }, { 6, 14 },
-			{ 5, 8 }, { 10, 6 }, { 5, 5 }, { 3, 0 }, { 9, 13 }, { 7, 12 }, { 4, 5 },
-			{ 6, 2 }, { 6, 11 }, { 4, 10 }, { 4, 4 }, { 6, 10 }, { 7, 7 }, { 3, 2 },
-			{ 4, 3 }, { 8, 9 }, { 8, 9 }, { 6, 8 }, { 5, 7 }, { 5, 6 }, { 6, 5 },
-			{ 6, 4 }, { 5, 5 }, { 6, 4 }, { 6, 3 }, { 6, 4 }, { 6, 5 }, { 6, 3 },
-			{ 7, 3 }, { 6, 3 }, { 5, 4 }, { 6, 3 }, { 6, 3 }, { 3, 0 }, { 6, 3 },
-			{ 6, 3 },
-		};
-		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
-			const uint32_t n = tbl[j].n;
-			for (size_t i = 0; i < n; i++) G2::dbl(t[1], t[1]);
-			G2::add(t[1], t[1], t[tbl[j].idx]);
-		}
-		for (size_t i = 0; i < 5; i++) G2::dbl(t[1], t[1]);
-		G2::add(out, t[1], t[2]);
-	}
-	void mx_chain(G2& Q, const G2& P) const
-	{
-		G2 T;
-		G2::dbl(T, P);
-		const size_t tbl[] = { 2, 3, 9, 32, 16 };
-		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-			G2::add(T, T, P);
-			for (size_t j = 0; j < tbl[i]; j++) {
-				G2::dbl(T, T);
-			}
-		}
-		Q = T;
-	}
-#endif
 	void clear_h2(G2& Q, const G2& P) const
 	{
-#if 1
 		// 1.9Mclk can be reduced
 		mcl::local::mulByCofactorBLS12fast(Q, P);
-#else
-		G2 T0, T1;
-		h2_chain(T0, P);
-		G2::dbl(T1, T0);
-		G2::add(T1, T0, T1);
-		mx_chain(T0, T1);
-		mx_chain(T0, T0);
-		G2::neg(T1, T1);
-		G2::add(Q, T0, T1);
-#endif
 	}
 	template<class T>
 	void put(const T& P) const
