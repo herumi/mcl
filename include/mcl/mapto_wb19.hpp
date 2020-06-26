@@ -80,6 +80,8 @@ struct MapToG2_WB19 {
 	Fp2 xden[3];
 	Fp2 ynum[4];
 	Fp2 yden[4];
+	Fp g1A, g1B, g1c1, g1c2;
+	int g1Z;
 	int draftVersion_;
 	void setDraftVersion(int draftVersion)
 	{
@@ -132,6 +134,21 @@ struct MapToG2_WB19 {
 		etas[3].b = ev3;
 		init_iso();
 		draftVersion_ = 5;
+		{
+			const char *A = "0x144698a3b8e9433d693a02c96d4982b0ea985383ee66a8d8e8981aefd881ac98936f8da0e0f97f5cf428082d584c1d";
+			const char *B = "0x12e2908d11688030018b12e8753eee3b2016c1f0f24f4070a0b9c14fcef35ef55a23215a316ceaa5d1cc48e98e172be0";
+			const char *c1 = "0x680447a8e5ff9a692c6e9ed90d2eb35d91dd2e13ce144afd9cc34a83dac3d8907aaffffac54ffffee7fbfffffffeaaa";
+			const char *c2 = "0x3d689d1e0e762cef9f2bec6130316806b4c80eda6fc10ce77ae83eab1ea8b8b8a407c9c6db195e06f2dbeabc2baeff5";
+			g1A.setStr(&b, A);
+			assert(b); (void)b;
+			g1B.setStr(&b, B);
+			assert(b); (void)b;
+			g1c1.setStr(&b, c1);
+			assert(b); (void)b;
+			g1c2.setStr(&b, c2);
+			assert(b); (void)b;
+			g1Z = 11;
+		}
 	}
 	void init_iso()
 	{
@@ -255,6 +272,54 @@ struct MapToG2_WB19 {
 		if (x.a.isNegative()) return true;
 		if (!x.b.isZero()) return false;
 		return false;
+	}
+	// https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-07#appendix-D.3.5
+	void sswuG1(Fp& xn, Fp& xd, Fp& y, const Fp& u) const
+	{
+		const Fp& A = g1A;
+		const Fp& B = g1B;
+		const Fp& c1 = g1c1;
+		const Fp& c2 = g1c2;
+		const int Z = g1Z;
+		Fp u2, u2Z, t, t2, t3;
+
+		Fp::sqr(u2, u);
+		Fp::mulUnit(u2Z, u2, Z);
+		Fp::sqr(t, u2Z);
+		Fp::add(xd, t, u2Z);
+		if (xd.isZero()) {
+			Fp::mulUnit(xd, A, Z);
+			xn = B;
+		} else {
+			Fp::add(xn, xd, Fp::one());
+			xn *= B;
+			xd *= A;
+			Fp::neg(xd, xd);
+		}
+		Fp::sqr(t, xd);
+		Fp::mul(t2, t, xd);
+		t *= A;
+		Fp::sqr(t3, xn);
+		t3 += t;
+		t3 *= xn;
+		Fp::mul(t, t2, B);
+		t3 += t;
+		Fp::sqr(y, t2);
+		Fp::mul(t, t3, t2);
+		y *= t;
+		Fp::pow(y, y, c1);
+		y *= t;
+		Fp::sqr(t, y);
+		t *= t2;
+		if (t != t3) {
+			xn *= u2Z;
+			y *= c2;
+			y *= u2;
+			y *= u;
+		}
+		if (sgn0(u) != sgn0(y)) {
+			Fp::neg(y, y);
+		}
 	}
 	// https://github.com/algorand/bls_sigs_ref
 	void osswu2_help(Point& P, const Fp2& t) const
