@@ -11,7 +11,7 @@
 using namespace mcl;
 using namespace mcl::bn;
 
-typedef mcl::MapToG2_WB19<Fp, Fp2, G2> MapTo;
+typedef mcl::MapTo_WB19<Fp, G1, Fp2, G2> MapTo;
 typedef MapTo::Point Point;
 
 void dump(const void *msg, size_t msgSize)
@@ -1108,7 +1108,7 @@ CYBOZU_TEST_AUTO(test)
 	initPairing(mcl::BLS12_381);
 	Fp::setETHserialization(true);
 	bn::setMapToMode(MCL_MAP_TO_MODE_WB19);
-	const MapTo& mapto = BN::param.mapTo.mapToG2_WB19_;
+	const MapTo& mapto = BN::param.mapTo.mapTo_WB19_;
 	py_eccTest(mapto);
 	py_eccTest2(mapto);
 	osswu2_helpTest(mapto);
