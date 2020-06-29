@@ -12,7 +12,7 @@ using namespace mcl;
 using namespace mcl::bn;
 
 typedef mcl::MapTo_WB19<Fp, G1, Fp2, G2> MapTo;
-typedef MapTo::Point Point;
+typedef MapTo::E2 E2;
 
 void dump(const void *msg, size_t msgSize)
 {
@@ -72,8 +72,8 @@ void set(Fp2& x, const Fp2Str& s)
 	x.b.setStr(s.b);
 }
 
-template<class Point>
-void set(Point& P, const PointStr& s)
+template<class E2>
+void set(E2& P, const PointStr& s)
 {
 	set(P.x, s.x);
 	set(P.y, s.y);
@@ -128,7 +128,7 @@ bool sqr_div(const MapTo& mapto, Fp2& z, const Fp2& u, const Fp2& v)
 }
 
 // Proj
-void py_ecc_iso_map_G2(const MapTo& mapto, G2& Q, const Point& P)
+void py_ecc_iso_map_G2(const MapTo& mapto, G2& Q, const E2& P)
 {
 	Fp2 zpows[3];
 	zpows[0] = P.z;
@@ -148,7 +148,7 @@ void py_ecc_iso_map_G2(const MapTo& mapto, G2& Q, const Point& P)
 }
 
 // https://github.com/ethereum/py_ecc
-void py_ecc_optimized_swu_G2(const MapTo& mapto, Point& P, const Fp2& t)
+void py_ecc_optimized_swu_G2(const MapTo& mapto, E2& P, const Fp2& t)
 {
 	Fp2 t2, t2xi, t2xi2;
 	Fp2::sqr(t2, t);
@@ -158,11 +158,11 @@ void py_ecc_optimized_swu_G2(const MapTo& mapto, Point& P, const Fp2& t)
 	// (t^2 * xi)^2 + (t^2 * xi)
 	Fp2::add(deno, t2xi2, t2xi);
 	Fp2::add(nume, deno, 1);
-	nume *= mapto.Ep_b;
+	nume *= mapto.g2B;
 	if (deno.isZero()) {
-		mapto.mul_xi(deno, mapto.Ep_a);
+		mapto.mul_xi(deno, mapto.g2A);
 	} else {
-		deno *= -mapto.Ep_a;
+		deno *= -mapto.g2A;
 	}
 	Fp2 u, v;
 	{
@@ -170,8 +170,8 @@ void py_ecc_optimized_swu_G2(const MapTo& mapto, Point& P, const Fp2& t)
 		Fp2::sqr(deno2, deno);
 		Fp2::mul(v, deno2, deno);
 
-		Fp2::mul(u, mapto.Ep_b, v);
-		Fp2::mul(tmp, mapto.Ep_a, nume);
+		Fp2::mul(u, mapto.g2B, v);
+		Fp2::mul(tmp, mapto.g2A, nume);
 		tmp *= deno2;
 		u += tmp;
 		Fp2::sqr(tmp, nume);
@@ -210,7 +210,7 @@ void py_ecc_optimized_swu_G2(const MapTo& mapto, Point& P, const Fp2& t)
 // Proj
 void py_ecc_map_to_curve_G2(const MapTo& mapto, G2& out, const Fp2& t)
 {
-	Point P;
+	E2 P;
 	py_ecc_optimized_swu_G2(mapto, P, t);
 	py_ecc_iso_map_G2(mapto, out, P);
 }
@@ -521,7 +521,7 @@ void osswu2_helpTest(const T& mapto)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Fp2 t, x, y, z;
-		Point P;
+		E2 P;
 		set(t, tbl[i].t);
 		set(x, tbl[i].x);
 		set(y, tbl[i].y);
@@ -587,11 +587,11 @@ void addTest()
 		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		Point P, Q, R;
+		E2 P, Q, R;
 		set(P, tbl[i].P);
 		set(Q, tbl[i].Q);
 		set(R, tbl[i].R);
-		Point E;
+		E2 E;
 		ec::addJacobi(E, P, Q);
 		CYBOZU_TEST_ASSERT(R.isEqual(E));
 	}
@@ -642,7 +642,7 @@ void iso3Test(const T& mapto)
 			"0xb7b36b9b1bbcf801d21ca5164aa9a0e71df2b4710c67dc0cd275b786800935fc29defbdf9c7e23dc84e26af13ba761d",
 		}
 	};
-	typename T::Point P;
+	typename T::E2 P;
 	G2 Q1, Q2;
 	set(P, Ps);
 	set(Q1, Qs);
@@ -748,7 +748,7 @@ void py_eccTest2(const T& mapto)
 	};
 	Fp2 t;
 	set(t, ts);
-	Point p, q;
+	E2 p, q;
 	py_ecc_optimized_swu_G2(mapto, p, t);
 	set(q, out1s);
 	CYBOZU_TEST_EQUAL(p.x, q.x);

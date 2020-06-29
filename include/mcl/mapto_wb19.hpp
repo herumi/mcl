@@ -70,10 +70,11 @@ template<class F> int PointT<F>::specialA_;
 
 template<class Fp, class G1, class Fp2, class G2>
 struct MapTo_WB19 {
-	typedef local::PointT<Fp2> Point;
+	typedef local::PointT<Fp> E1;
+	typedef local::PointT<Fp2> E2;
 	mpz_class sqrtConst; // (p^2 - 9) / 16
-	Fp2 Ep_a;
-	Fp2 Ep_b;
+	Fp2 g2A;
+	Fp2 g2B;
 	Fp2 root4[4];
 	Fp2 etas[4];
 	Fp2 xnum[4];
@@ -94,14 +95,17 @@ struct MapTo_WB19 {
 	void init()
 	{
 		bool b;
-		Ep_a.a = 0;
-		Ep_a.b = 240;
-		Ep_b.a = 1012;
-		Ep_b.b = 1012;
-		Point::a_.clear();
-		Point::b_.a = 4;
-		Point::b_.b = 4;
-		Point::specialA_ = ec::Zero;
+		g2A.a = 0;
+		g2A.b = 240;
+		g2B.a = 1012;
+		g2B.b = 1012;
+		E1::a_.clear();
+		E1::b_ = 4;
+		E1::specialA_ = ec::Zero;
+		E2::a_.clear();
+		E2::b_.a = 4;
+		E2::b_.b = 4;
+		E2::specialA_ = ec::Zero;
 		sqrtConst = Fp::getOp().mp;
 		sqrtConst *= sqrtConst;
 		sqrtConst -= 9;
@@ -297,7 +301,7 @@ struct MapTo_WB19 {
 		}
 	}
 	// refer (xnum, xden, ynum, yden)
-	void iso3(G2& Q, const Point& P) const
+	void iso3(G2& Q, const E2& P) const
 	{
 		Fp2 zpows[3];
 		Fp2::sqr(zpows[0], P.z);
@@ -321,7 +325,7 @@ struct MapTo_WB19 {
 		Q.y *= t;
 	}
 	// refer (g1xnum, g1xden, g1ynum, g1yden)
-	void iso11(G1& Q, const Point& P) const
+	void iso11(G1& Q, const E2& P) const
 	{
 		Fp2 zpows[3];
 		Fp2::sqr(zpows[0], P.z);
@@ -440,7 +444,7 @@ struct MapTo_WB19 {
 		pt[1] *= y;
 	}
 	// https://github.com/algorand/bls_sigs_ref
-	void osswu2_help(Point& P, const Fp2& t) const
+	void osswu2_help(E2& P, const Fp2& t) const
 	{
 		Fp2 t2, t2xi;
 		Fp2::sqr(t2, t);
@@ -452,20 +456,20 @@ struct MapTo_WB19 {
 		den += den2;
 		Fp2 x0_num, x0_den;
 		Fp2::add(x0_num, den, 1);
-		x0_num *= Ep_b;
+		x0_num *= g2B;
 		if (den.isZero()) {
-			mul_xi(x0_den, Ep_a);
+			mul_xi(x0_den, g2A);
 		} else {
-			Fp2::mul(x0_den, -Ep_a, den);
+			Fp2::mul(x0_den, -g2A, den);
 		}
 		Fp2 x0_den2, x0_den3, gx0_den, gx0_num;
 		Fp2::sqr(x0_den2, x0_den);
 		Fp2::mul(x0_den3, x0_den2, x0_den);
 		gx0_den = x0_den3;
 
-		Fp2::mul(gx0_num, Ep_b, gx0_den);
+		Fp2::mul(gx0_num, g2B, gx0_den);
 		Fp2 tmp, tmp1, tmp2;
-		Fp2::mul(tmp, Ep_a, x0_num);
+		Fp2::mul(tmp, g2A, x0_num);
 		tmp *= x0_den2;
 		gx0_num += tmp;
 		Fp2::sqr(tmp, x0_num);
@@ -538,10 +542,10 @@ struct MapTo_WB19 {
 	}
 	void opt_swu2_map(G2& P, const Fp2& t, const Fp2 *t2 = 0) const
 	{
-		Point Pp;
+		E2 Pp;
 		osswu2_help(Pp, t);
 		if (t2) {
-			Point P2;
+			E2 P2;
 			osswu2_help(P2, *t2);
 			ec::addJacobi(Pp, Pp, P2);
 		}
