@@ -433,15 +433,15 @@ struct MapTo_WB19 {
 			Fp::neg(y, y);
 		}
 	}
-	void sswuG1(Fp pt[3], const Fp& u) const
+	void sswuG1(E1& pt, const Fp& u) const
 	{
 		Fp xn, y;
-		Fp& xd = pt[2];
+		Fp& xd = pt.z;
 		sswuG1(xn, xd, y, u);
-		Fp::mul(pt[0], xn, xd);
-		Fp::sqr(pt[1], xd);
-		pt[1] *= xd;
-		pt[1] *= y;
+		Fp::mul(pt.x, xn, xd);
+		Fp::sqr(pt.y, xd);
+		pt.y *= xd;
+		pt.y *= y;
 	}
 	// https://github.com/algorand/bls_sigs_ref
 	void osswu2_help(E2& P, const Fp2& t) const
@@ -589,6 +589,27 @@ struct MapTo_WB19 {
 		}
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
+#if 0
+	void msgToG1(G1& out, const void *msg, size_t msgSize) const
+	{
+		assert(draftVersion_ == 7);
+		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+		const size_t dstSize = strlen(dst);
+		uint8_t md[128];
+		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
+		Fp u[2];
+		for (size_t i = 0; i < 2; i++) {
+			bool b;
+			u[i].setBigEndianMod(&b, &md[64 * i], 64);
+			assert(b); (void)b;
+		}
+		E1 P1, P2;
+		sswuG1(P1, u[0]);
+		sswuG1(P2, u[1]);
+		ec::addJacobi(P1, P1, P2); // ok
+		// ec::normalizeJacobi(P1);
+	}
+#endif
 };
 
 } // mcl

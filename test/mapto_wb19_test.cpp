@@ -812,7 +812,6 @@ void testHashToFp2v6(const T& mapto)
 			}
 		},
 	};
-	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *msg = tbl[i].msg;
 		const char *dst = tbl[i].dst;
@@ -856,7 +855,6 @@ void testHashToFp2v6(const T& mapto)
 template<class T>
 void testHashToFp2v7(const T& mapto)
 {
-	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
 	{
 		const char *msg = "asdf";
 		PointStr s = {
@@ -1048,7 +1046,6 @@ void testEth2phase0()
 			"882730e5d03f6b42c3abc26d3372625034e1d871b65a8a6b900a56dae22da98abbe1b68f85e49fe7652a55ec3d0591c20767677e33e5cbb1207315c41a9ac03be39c2e7668edc043d6cb1d9fd93033caa8a1c5b0e84bedaeb6c64972503a43eb",
 		},
 	};
-	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const Uint8Vec msg = fromHexStr(tbl[i].msg);
 		const Uint8Vec out = fromHexStr(tbl[i].out);
@@ -1103,6 +1100,30 @@ void testSswuG1(const T& mapto)
 	}
 }
 
+template<class T>
+void testMsgToG1(const T& mapto)
+{
+	const struct {
+		const char *msg;
+		const char *x;
+		const char *y;
+		const char *z;
+	} tbl[] = {
+		{
+			"asdf",
+			"0",
+			"0",
+			"0",
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const char *msg = tbl[i].msg;
+		const size_t msgSize = strlen(msg);
+		G1 P;
+		mapto.msgToG1(P, msg, msgSize);
+	}
+}
+
 CYBOZU_TEST_AUTO(test)
 {
 	initPairing(mcl::BLS12_381);
@@ -1122,8 +1143,11 @@ CYBOZU_TEST_AUTO(test)
 	testVec("../misc/mapto/fips_186_3_B233.txt");
 	testVec("../misc/mapto/misc.txt");
 	ethMsgToG2testAll("../bls_sigs_ref/test-vectors/hash_g2/");
+	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);
 	testHashToFp2v6(mapto);
+	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
 	testHashToFp2v7(mapto);
 	testEth2phase0();
 	testSswuG1(mapto);
+//	testMsgToG1(mapto);
 }
