@@ -1105,25 +1105,35 @@ void testMsgToG1(const T& mapto)
 {
 	const struct {
 		const char *msg;
+		const char *dst;
 		const char *x;
 		const char *y;
-		const char *z;
 	} tbl[] = {
 		{
 			"asdf",
-			"14f99d14fa81bad3cc6232c0dee394235fb61287be4a262085604684a20790fbc7954ae6b2d545f05f967c9f624a116a",
-			"acfaebe113b047b38d8eb3a37bbdf77ed0d392289f642e6e7b1611305ae537fa0a574a8235042672b49f44f54d00646",
-			"1",
+			"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_",
+			"bc73d15443009a8ff2ddce864136d892274dd8365c60d0d2d44cc543387348e366a8f1e1401427e37743c29ed2c939a",
+			"101e26428a1b78c05458cb1cc37d2d87876ad3437096d2827f376702d4451667fe1fa82e82795495d33d466133ed1862",
 		},
+		// https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.txt
+		// H.9.1.  BLS12381G1_XMD:SHA-256_SSWU_RO_
+		{
+			"",
+			"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_",
+			"052926add2207b76ca4fa57a8734416c8dc95e24501772c814278700eed6d1e4e8cf62d9c09db0fac349612b759e79a1",
+			"08ba738453bfed09cb546dbb0783dbb3a5f1f566ed67bb6be0e8c67e2e81a4cc68ee29813bb7994998f3eae0c9c6a265",
+		}
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *msg = tbl[i].msg;
 		const size_t msgSize = strlen(msg);
+		const char *dst = tbl[i].dst;
+		const size_t dstSize = strlen(dst);
 		G1 P, Q;
-		mapto.msgToG1(P, msg, msgSize);
+		mapto.msgToG1(P, msg, msgSize, dst, dstSize);
 		Q.x.setStr(tbl[i].x, 16);
 		Q.y.setStr(tbl[i].y, 16);
-		Q.z.setStr(tbl[i].z, 16);
+		Q.z = 1;
 		CYBOZU_TEST_EQUAL(P, Q);
 	}
 }

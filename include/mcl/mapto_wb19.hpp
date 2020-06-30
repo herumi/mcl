@@ -86,6 +86,7 @@ struct MapTo_WB19 {
 	Fp g1xden[11];
 	Fp g1ynum[16];
 	Fp g1yden[16];
+	mpz_class g1cofactor;
 	int g1Z;
 	int draftVersion_;
 	void setDraftVersion(int draftVersion)
@@ -156,6 +157,8 @@ struct MapTo_WB19 {
 			g1c2.setStr(&b, c2);
 			assert(b); (void)b;
 			g1Z = 11;
+			gmp::setStr(&b, g1cofactor, "d201000000010001", 16);
+			assert(b); (void)b;
 		}
 		init_iso11();
 	}
@@ -612,11 +615,9 @@ struct MapTo_WB19 {
 		}
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
-	void msgToG1(G1& out, const void *msg, size_t msgSize) const
+	void msgToG1(G1& out, const void *msg, size_t msgSize, const char *dst, size_t dstSize) const
 	{
 		assert(draftVersion_ == 7);
-		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-		const size_t dstSize = strlen(dst);
 		uint8_t md[128];
 		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		Fp u[2];
@@ -628,8 +629,16 @@ struct MapTo_WB19 {
 		E1 P1, P2;
 		sswuG1(P1, u[0]);
 		sswuG1(P2, u[1]);
-		ec::addJacobi(P1, P1, P2); // ok
+		ec::addJacobi(P1, P1, P2);
 		iso11(out, P1);
+		G1::mulGeneric(out, out, g1cofactor);
+	}
+	void msgToG1(G1& out, const void *msg, size_t msgSize) const
+	{
+		assert(draftVersion_ == 7);
+		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+		const size_t dstSize = strlen(dst);
+		msgToG1(out, msg, msgSize, dst, dstSize);
 	}
 };
 
