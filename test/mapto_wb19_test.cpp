@@ -1111,16 +1111,20 @@ void testMsgToG1(const T& mapto)
 	} tbl[] = {
 		{
 			"asdf",
-			"0",
-			"0",
-			"0",
+			"14f99d14fa81bad3cc6232c0dee394235fb61287be4a262085604684a20790fbc7954ae6b2d545f05f967c9f624a116a",
+			"acfaebe113b047b38d8eb3a37bbdf77ed0d392289f642e6e7b1611305ae537fa0a574a8235042672b49f44f54d00646",
+			"1",
 		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *msg = tbl[i].msg;
 		const size_t msgSize = strlen(msg);
-		G1 P;
+		G1 P, Q;
 		mapto.msgToG1(P, msg, msgSize);
+		Q.x.setStr(tbl[i].x, 16);
+		Q.y.setStr(tbl[i].y, 16);
+		Q.z.setStr(tbl[i].z, 16);
+		CYBOZU_TEST_EQUAL(P, Q);
 	}
 }
 
@@ -1149,5 +1153,5 @@ CYBOZU_TEST_AUTO(test)
 	testHashToFp2v7(mapto);
 	testEth2phase0();
 	testSswuG1(mapto);
-//	testMsgToG1(mapto);
+	testMsgToG1(mapto);
 }

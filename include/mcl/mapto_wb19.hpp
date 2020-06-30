@@ -82,7 +82,7 @@ struct MapTo_WB19 {
 	Fp2 ynum[4];
 	Fp2 yden[4];
 	Fp g1A, g1B, g1c1, g1c2;
-	Fp g1xnum[11];
+	Fp g1xnum[12];
 	Fp g1xden[11];
 	Fp g1ynum[16];
 	Fp g1yden[16];
@@ -289,14 +289,14 @@ struct MapTo_WB19 {
 		initArray(g1ynum, ynumStr, CYBOZU_NUM_OF_ARRAY(ynumStr));
 		initArray(g1yden, ydenStr, CYBOZU_NUM_OF_ARRAY(ydenStr));
 	}
-	template<size_t N>
-	void evalPoly(Fp2& y, const Fp2& x, const Fp2 *zpows, const Fp2 (&cof)[N]) const
+	template<class F, size_t N>
+	void evalPoly(F& y, const F& x, const F *zpows, const F (&cof)[N]) const
 	{
 		y = cof[N - 1]; // always zpows[0] = 1
 		for (size_t i = 1; i < N; i++) {
 			y *= x;
-			Fp2 t;
-			Fp2::mul(t, zpows[i - 1], cof[N - 1 - i]);
+			F t;
+			F::mul(t, zpows[i - 1], cof[N - 1 - i]);
 			y += t;
 		}
 	}
@@ -324,29 +324,52 @@ struct MapTo_WB19 {
 		Fp2::mul(Q.y, mapvals[2], mapvals[1]);
 		Q.y *= t;
 	}
-	// refer (g1xnum, g1xden, g1ynum, g1yden)
-	void iso11(G1& Q, const E2& P) const
+	template<class X, class C, size_t N>
+	X evalPoly2(const X& x, const C (&c)[N]) const
 	{
-		Fp2 zpows[3];
-		Fp2::sqr(zpows[0], P.z);
-		Fp2::sqr(zpows[1], zpows[0]);
-		Fp2::mul(zpows[2], zpows[1], zpows[0]);
-		Fp2 mapvals[4];
-		evalPoly(mapvals[0], P.x, zpows, xnum);
-		evalPoly(mapvals[1], P.x, zpows, xden);
-		evalPoly(mapvals[2], P.x, zpows, ynum);
-		evalPoly(mapvals[3], P.x, zpows, yden);
+		X ret = c[N - 1];
+		for (size_t i = 1; i < N; i++) {
+			ret *= x;
+			ret += c[N - 1 - i];
+		}
+		return ret;
+	}
+	// refer (g1xnum, g1xden, g1ynum, g1yden)
+	void iso11(G1& Q, E1& P) const
+	{
+#if 1
+		ec::normalizeJacobi(P);
+		Fp xn, xd, yn, yd;
+		xn = evalPoly2(P.x, g1xnum);
+		xd = evalPoly2(P.x, g1xden);
+		yn = evalPoly2(P.x, g1ynum);
+		yd = evalPoly2(P.x, g1yden);
+		Fp::div(Q.x, xn, xd);
+		Fp::div(Q.y, yn, yd);
+		Q.y *= P.y;
+		Q.z = 1;
+#else
+		Fp zpows[3];
+		Fp::sqr(zpows[0], P.z);
+		Fp::sqr(zpows[1], zpows[0]);
+		Fp::mul(zpows[2], zpows[1], zpows[0]);
+		Fp mapvals[4];
+		evalPoly(mapvals[0], P.x, zpows, g1xnum);
+		evalPoly(mapvals[1], P.x, zpows, g1xden);
+		evalPoly(mapvals[2], P.x, zpows, g1ynum);
+		evalPoly(mapvals[3], P.x, zpows, g1yden);
 		mapvals[1] *= zpows[0];
 		mapvals[2] *= P.y;
 		mapvals[3] *= zpows[0];
 		mapvals[3] *= P.z;
-		Fp2::mul(Q.z, mapvals[1], mapvals[3]);
-		Fp2::mul(Q.x, mapvals[0], mapvals[3]);
+		Fp::mul(Q.z, mapvals[1], mapvals[3]);
+		Fp::mul(Q.x, mapvals[0], mapvals[3]);
 		Q.x *= Q.z;
-		Fp2 t;
-		Fp2::sqr(t, Q.z);
-		Fp2::mul(Q.y, mapvals[2], mapvals[1]);
+		Fp t;
+		Fp::sqr(t, Q.z);
+		Fp::mul(Q.y, mapvals[2], mapvals[1]);
 		Q.y *= t;
+#endif
 	}
 	/*
 		xi = -2-i
@@ -589,7 +612,6 @@ struct MapTo_WB19 {
 		}
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
-#if 0
 	void msgToG1(G1& out, const void *msg, size_t msgSize) const
 	{
 		assert(draftVersion_ == 7);
@@ -607,9 +629,8 @@ struct MapTo_WB19 {
 		sswuG1(P1, u[0]);
 		sswuG1(P2, u[1]);
 		ec::addJacobi(P1, P1, P2); // ok
-		// ec::normalizeJacobi(P1);
+		iso11(out, P1);
 	}
-#endif
 };
 
 } // mcl
