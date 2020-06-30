@@ -1159,6 +1159,7 @@ void testMsgToG1(const T& mapto)
 		Q.y.setStr(tbl[i].y, 16);
 		Q.z = 1;
 		CYBOZU_TEST_EQUAL(P, Q);
+CYBOZU_BENCH_C("msgToG1", 1000, mapto.msgToG1, P, msg, msgSize, dst, dstSize);
 	}
 }
 

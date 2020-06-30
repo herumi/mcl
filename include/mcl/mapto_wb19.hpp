@@ -340,39 +340,23 @@ struct MapTo_WB19 {
 	// refer (g1xnum, g1xden, g1ynum, g1yden)
 	void iso11(G1& Q, E1& P) const
 	{
-#if 1
 		ec::normalizeJacobi(P);
 		Fp xn, xd, yn, yd;
 		xn = evalPoly2(P.x, g1xnum);
 		xd = evalPoly2(P.x, g1xden);
 		yn = evalPoly2(P.x, g1ynum);
 		yd = evalPoly2(P.x, g1yden);
-		Fp::div(Q.x, xn, xd);
-		Fp::div(Q.y, yn, yd);
-		Q.y *= P.y;
-		Q.z = 1;
-#else
-		Fp zpows[3];
-		Fp::sqr(zpows[0], P.z);
-		Fp::sqr(zpows[1], zpows[0]);
-		Fp::mul(zpows[2], zpows[1], zpows[0]);
-		Fp mapvals[4];
-		evalPoly(mapvals[0], P.x, zpows, g1xnum);
-		evalPoly(mapvals[1], P.x, zpows, g1xden);
-		evalPoly(mapvals[2], P.x, zpows, g1ynum);
-		evalPoly(mapvals[3], P.x, zpows, g1yden);
-		mapvals[1] *= zpows[0];
-		mapvals[2] *= P.y;
-		mapvals[3] *= zpows[0];
-		mapvals[3] *= P.z;
-		Fp::mul(Q.z, mapvals[1], mapvals[3]);
-		Fp::mul(Q.x, mapvals[0], mapvals[3]);
+		/*
+			[xn/xd:y * yn/yd:1] = [xn xd yd^2:y yn xd^3 yd^2:xd yd]
+			=[xn yd z:y yn xd z^2:z] where z = xd yd
+		*/
+		Fp::mul(Q.z, xd, yd);
+		Fp::mul(Q.x, xn, yd);
 		Q.x *= Q.z;
-		Fp t;
-		Fp::sqr(t, Q.z);
-		Fp::mul(Q.y, mapvals[2], mapvals[1]);
-		Q.y *= t;
-#endif
+		Fp::mul(Q.y, P.y, yn);
+		Q.y *= xd;
+		Fp::sqr(xd, Q.z);
+		Q.y *= xd;
 	}
 	/*
 		xi = -2-i
