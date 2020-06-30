@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- `hashAndMapToG1` is compatible with [hash-to-curve-09 BLS12381G1_XMD:SHA-256_SSWU_RO_](https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.html#name-bls12381g1_xmdsha-256_sswu_)
 - `MCL_MAP_TO_MODE_HASH_TO_CURVE_07` is added for [hash-to-curve-draft-07](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/07/).
   - The older version will be removed in the future.
 - change DST of hash-to-curve for `MCL_MAP_TO_MODE_HASH_TO_CURVE_06`.
