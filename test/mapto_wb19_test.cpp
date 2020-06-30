@@ -1160,6 +1160,11 @@ void testMsgToG1(const T& mapto)
 		Q.z = 1;
 		CYBOZU_TEST_EQUAL(P, Q);
 CYBOZU_BENCH_C("msgToG1", 1000, mapto.msgToG1, P, msg, msgSize, dst, dstSize);
+		if (i == 0) { // correct dst
+			P.clear();
+			bn::hashAndMapToG1(P, msg, msgSize);
+			CYBOZU_TEST_EQUAL(P, Q);
+		}
 	}
 }
 

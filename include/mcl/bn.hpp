@@ -2056,6 +2056,11 @@ inline void mapToG2(G2& P, const Fp2& x, bool fast = false)
 #endif
 inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 {
+	int mode = getMapToMode();
+	if (mode == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
+		BN::param.mapTo.mapTo_WB19_.msgToG1(P, buf, bufSize);
+		return;
+	}
 	Fp t;
 	t.setHashOf(buf, bufSize);
 	bool b;
