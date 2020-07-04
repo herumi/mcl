@@ -444,13 +444,13 @@ public:
 	void setLittleEndianMod(const void *buf, size_t bufSize)
 	{
 		bool b;
-		setLittleEndianMod(&b, buf, bufSize, mcl::fp::Mod);
+		setLittleEndianMod(&b, buf, bufSize);
 		if (!b) throw cybozu::Exception("setLittleEndianMod");
 	}
 	void setBigEndianMod(const void *buf, size_t bufSize)
 	{
 		bool b;
-		setBigEndianMod(&b, buf, bufSize, mcl::fp::Mod);
+		setBigEndianMod(&b, buf, bufSize);
 		if (!b) throw cybozu::Exception("setBigEndianMod");
 	}
 	void setByCSPRNG(fp::RandGen rg = fp::RandGen())
