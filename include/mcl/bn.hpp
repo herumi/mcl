@@ -584,6 +584,10 @@ struct MapTo {
 	}
 	bool calc(G1& P, const Fp& t) const
 	{
+		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
+			mapTo_WB19_.FpToG1(P, t);
+			return true;
+		}
 		if (!mapToEc(P, t)) return false;
 		mulByCofactor(P);
 		return true;

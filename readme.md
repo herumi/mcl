@@ -10,7 +10,8 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
-- `hashAndMapToG1` is compatible with [hash-to-curve-09 BLS12381G1_XMD:SHA-256_SSWU_RO_](https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.html#name-bls12381g1_xmdsha-256_sswu_)
+- `mcl::bn::mapToG1(G1& out, const Fp& v)` supports `BLS12_MAP_FP_TO_G1` in [EIP 2537](https://eips.ethereum.org/EIPS/eip-2537).
+- `mcl::bn::hashAndMapToG1(G1& out, const void *msg, size_t msgSize)` supports ([hash-to-curve-09 BLS12381G1_XMD:SHA-256_SSWU_RO_](https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.html#name-bls12381g1_xmdsha-256_sswu_))
 - `MCL_MAP_TO_MODE_HASH_TO_CURVE_07` is added for [hash-to-curve-draft-07](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/07/).
   - The older version will be removed in the future.
 - change DST of hash-to-curve for `MCL_MAP_TO_MODE_HASH_TO_CURVE_06`.
@@ -313,6 +314,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2020/Jun/04 v1.21 mapToG1 and hashAndMapToG1 are compatible to irtf/eip-2537
 - 2020/May/13 v1.09 support draft-irtf-cfrg-hash-to-curve-07
 - 2020/Mar/26 v1.07 change DST for hash-to-curve-06
 - 2020/Mar/15 v1.06 support hash-to-curve-06

@@ -599,6 +599,18 @@ struct MapTo_WB19 {
 		}
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
+	void FpToG1(G1& out, const Fp& u0, const Fp *u1 = 0) const
+	{
+		E1 P1;
+		sswuG1(P1, u0);
+		if (u1) {
+			E1 P2;
+			sswuG1(P2, *u1);
+			ec::addJacobi(P1, P1, P2);
+		}
+		iso11(out, P1);
+		G1::mulGeneric(out, out, g1cofactor);
+	}
 	void msgToG1(G1& out, const void *msg, size_t msgSize, const char *dst, size_t dstSize) const
 	{
 		assert(draftVersion_ == 7);
@@ -610,12 +622,7 @@ struct MapTo_WB19 {
 			u[i].setBigEndianMod(&b, &md[64 * i], 64);
 			assert(b); (void)b;
 		}
-		E1 P1, P2;
-		sswuG1(P1, u[0]);
-		sswuG1(P2, u[1]);
-		ec::addJacobi(P1, P1, P2);
-		iso11(out, P1);
-		G1::mulGeneric(out, out, g1cofactor);
+		FpToG1(out, u[0], &u[1]);
 	}
 	void msgToG1(G1& out, const void *msg, size_t msgSize) const
 	{
