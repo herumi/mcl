@@ -206,33 +206,6 @@ MCLBN_DLL_API int mclBn_getETHserialization(void);
 */
 MCLBN_DLL_API int mclBn_setMapToMode(int mode);
 
-/*
-	the next three functions are auxiliary of the new eth 2.0 spec
-	these always return 0 if MCL_BLS12_381 is set
-*/
-/*
-	set out to hash of (msg[msgSize], ctr, dst[dstSize])
-	return 0 if success
-	@note append zero byte to msg if necessary
-*/
-// deprecated
-MCLBN_DLL_API int mclBn_ethMsgToFp2(mclBnFp2 *out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize);
-
-/*
-	set out to hash of (t1, t2)
-	allow t2 is NULL
-	return 0 if success
-*/
-MCLBN_DLL_API int mclBn_ethFp2ToG2(mclBnG2 *out, const mclBnFp2 *t1, const mclBnFp2 *t2);
-
-/*
-	set out to hash of (msg[msgSize], dst[dstSize])
-	@note append zero byte to msg if necessary
-	return 0 if success
-*/
-// deprecated
-MCLBN_DLL_API int mclBn_ethMsgToG2(mclBnG2 *out, const void *msg, size_t msgSize, const void *dst, size_t dstSize);
-
 ////////////////////////////////////////////////
 /*
 	deserialize

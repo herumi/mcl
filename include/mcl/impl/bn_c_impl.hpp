@@ -135,21 +135,6 @@ int mclBn_setMapToMode(int mode)
 	return setMapToMode(mode) ? 0 : -1;
 }
 
-int mclBn_ethMsgToFp2(mclBnFp2 *out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
-{
-	return mcl::bn::ethMsgToFp2(*cast(out), msg, msgSize, ctr, dst, dstSize) ? 0 : -1;
-}
-
-int mclBn_ethFp2ToG2(mclBnG2 *out, const mclBnFp2 *t1, const mclBnFp2 *t2)
-{
-	return mcl::bn::ethFp2ToG2(*cast(out), *cast(t1), cast(t2)) ? 0 : -1;
-}
-
-int mclBn_ethMsgToG2(mclBnG2 *out, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
-{
-	return mcl::bn::ethMsgToG2(*cast(out), msg, msgSize, dst, dstSize) ? 0 : -1;
-}
-
 ////////////////////////////////////////////////
 // set zero
 void mclBnFr_clear(mclBnFr *x)

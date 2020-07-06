@@ -2173,39 +2173,6 @@ inline const G1& getG1basePoint()
 	return BN::param.basePoint;
 }
 
-inline const Fr& getG2cofactorAdj()
-{
-	return BN::param.mapTo.g2cofactorAdj_;
-}
-
-inline const Fr& getG2cofactorAdjInv()
-{
-	return BN::param.mapTo.g2cofactorAdjInv_;
-}
-
-// deprecated
-inline bool ethMsgToFp2(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
-{
-	if (!BN::param.isBLS12) return false;
-	hashToFp2old(out, msg, msgSize, ctr, dst, dstSize);
-	return true;
-}
-
-inline bool ethFp2ToG2(G2& out, const Fp2& t1, const Fp2 *t2 = 0)
-{
-	if (!BN::param.isBLS12) return false;
-	BN::param.mapTo.mapTo_WB19_.opt_swu2_map(out, t1, t2);
-	return true;
-}
-
-// deprecated
-inline bool ethMsgToG2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
-{
-	if (!BN::param.isBLS12) return false;
-	BN::param.mapTo.mapTo_WB19_.map2curve_osswu2(out, msg, msgSize, dst, dstSize);
-	return true;
-}
-
 } } // mcl::bn
 
 namespace mcl { namespace local {

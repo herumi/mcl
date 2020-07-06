@@ -244,31 +244,6 @@ void iso3Test(const T& mapto)
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
-void testVec(const char *file)
-{
-	std::ifstream ifs(file);
-	if (!ifs) {
-		printf("skip testVec because `%s` is not found\n", file);
-	}
-	printf("testVec %s\n", file);
-	Fp2 t1, t2;
-	G2 out, P;
-	std::string s;
-	for (;;) {
-		ifs >> s;
-		if (s != "t1") break;
-		ifs >> t1;
-		ifs >> s;
-		CYBOZU_TEST_EQUAL(s, "t2");
-		ifs >> t2;
-		ifs >> s;
-		CYBOZU_TEST_EQUAL(s, "out");
-		ifs >> out.x >> out.y >> out.z;
-		ethFp2ToG2(P, t1, &t2);
-		CYBOZU_TEST_EQUAL(P, out);
-	}
-}
-
 template<class T>
 void testHashToFp2v7(const T& mapto)
 {
