@@ -88,11 +88,6 @@ struct MapTo_WB19 {
 	Fp g1yden[16];
 	mpz_class g1cofactor;
 	int g1Z;
-	int draftVersion_;
-	void setDraftVersion(int draftVersion)
-	{
-		draftVersion_ = draftVersion;
-	}
 	void init()
 	{
 		bool b;
@@ -142,7 +137,6 @@ struct MapTo_WB19 {
 		Fp::neg(etas[3].a, ev4);
 		etas[3].b = ev3;
 		init_iso3();
-		draftVersion_ = 5;
 		{
 			const char *A = "0x144698a3b8e9433d693a02c96d4982b0ea985383ee66a8d8e8981aefd881ac98936f8da0e0f97f5cf428082d584c1d";
 			const char *B = "0x12e2908d11688030018b12e8753eee3b2016c1f0f24f4070a0b9c14fcef35ef55a23215a316ceaa5d1cc48e98e172be0";
@@ -385,15 +379,7 @@ struct MapTo_WB19 {
 	}
 	bool isNegSign(const Fp2& x) const
 	{
-		if (draftVersion_ == 7) {
-			return sgn0(x);
-		}
-		// x.isNegative() <=> x > (p-1)/2 <=> x >= (p+1)/2
-		if (x.b.isNegative()) return true;
-		if (!x.b.isZero()) return false;
-		if (x.a.isNegative()) return true;
-		if (!x.b.isZero()) return false;
-		return false;
+		return sgn0(x);
 	}
 	// https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-07#appendix-D.3.5
 	void sswuG1(Fp& xn, Fp& xd, Fp& y, const Fp& u) const
@@ -566,11 +552,7 @@ struct MapTo_WB19 {
 	void hashToFp2(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		uint8_t md[256];
-		if (draftVersion_ == 6) {
-			mcl::fp::expand_message_xmd06(md, msg, msgSize, dst, dstSize);
-		} else {
-			mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		}
+		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		Fp *x = out[0].getFp0();
 		for (size_t i = 0; i < 4; i++) {
 			bool b;
@@ -581,22 +563,12 @@ struct MapTo_WB19 {
 	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		Fp2 t[2];
-		if (draftVersion_ == 5) {
-			hashToFp2old(t[0], msg, msgSize, 0, dst, dstSize);
-			hashToFp2old(t[1], msg, msgSize, 1, dst, dstSize);
-		} else {
-			hashToFp2(t, msg, msgSize, dst, dstSize);
-		}
+		hashToFp2(t, msg, msgSize, dst, dstSize);
 		opt_swu2_map(out, t[0], &t[1]);
 	}
 	void msgToG2(G2& out, const void *msg, size_t msgSize) const
 	{
-		const char *dst;
-		if (draftVersion_ == 5) {
-			dst = "BLS_SIG_BLS12381G2-SHA256-SSWU-RO-_POP_";
-		} else {
-			dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-		}
+		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
 	}
 	void FpToG1(G1& out, const Fp& u0, const Fp *u1 = 0) const
@@ -613,7 +585,6 @@ struct MapTo_WB19 {
 	}
 	void msgToG1(G1& out, const void *msg, size_t msgSize, const char *dst, size_t dstSize) const
 	{
-		assert(draftVersion_ == 7);
 		uint8_t md[128];
 		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		Fp u[2];
@@ -626,7 +597,6 @@ struct MapTo_WB19 {
 	}
 	void msgToG1(G1& out, const void *msg, size_t msgSize) const
 	{
-		assert(draftVersion_ == 7);
 		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 		const size_t dstSize = strlen(dst);
 		msgToG1(out, msg, msgSize, dst, dstSize);

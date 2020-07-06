@@ -1,13 +1,9 @@
 # C API
 
-## New features
+## News
 
-```
-void mclBn_setOriginalG2cofactor(int enable);
-```
-Use faster multiplication of `G2` with cofactor if `enable = 1`.
-This is enabled if `mclBn_setMapToMode(MCL_MAP_TO_MODE_ETH2)`.
-if `enable = 0`, then [the fast algorithm (mulByCofactorBLS12)](https://github.com/herumi/mcl/blob/master/include/mcl/bn.hpp#L463) is used.
+APIs for old ethreum hash functions are removed.
+`mclBn_setMapToMode` supports only `MCL_MAP_TO_MODE_ETH2`.
 
 ## Minimum sample
 

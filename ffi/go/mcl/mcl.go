@@ -123,12 +123,6 @@ func SetETHserialization(enable bool) {
 	C.mclBn_setETHserialization(bool2Cint(enable))
 }
 
-// SetOriginalG2cofactor -- true if BLS_ETH is defined
-func SetOriginalG2cofactor(enable bool) {
-	// #nosec
-	C.mclBn_setOriginalG2cofactor(bool2Cint(enable))
-}
-
 // SetMapToMode --
 func SetMapToMode(mode int) error {
 	// #nosec

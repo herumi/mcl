@@ -150,11 +150,6 @@ int mclBn_ethMsgToG2(mclBnG2 *out, const void *msg, size_t msgSize, const void *
 	return mcl::bn::ethMsgToG2(*cast(out), msg, msgSize, dst, dstSize) ? 0 : -1;
 }
 
-void mclBn_setOriginalG2cofactor(int enable)
-{
-	setOriginalG2cofactor(enable == 1);
-}
-
 ////////////////////////////////////////////////
 // set zero
 void mclBnFr_clear(mclBnFr *x)

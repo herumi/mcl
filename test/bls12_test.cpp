@@ -704,49 +704,6 @@ CYBOZU_TEST_AUTO(multi)
 	CYBOZU_BENCH_C("naiveG2", 100, (BN::param.mapTo.naiveMapTo<G2, Fp2>), Q, i++);
 }
 
-CYBOZU_TEST_AUTO(eth2)
-{
-	if (BN::param.cp.curveType != MCL_BLS12_381) return;
-	Fp::setETHserialization(true);
-	Fr::setETHserialization(true);
-	setMapToMode(MCL_MAP_TO_MODE_ETH2);
-	Fr sec;
-	sec.setStr("0x47b8192d77bf871b62e87859d653922725724a5c031afeabc60bcef5ff665138");
-	uint8_t msg[] = {
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 87, 33, 13, 72, 155, 73, 4, 185, 87, 46, 230, 247, 159, 191, 7, 148, 85, 120, 129, 175, 102, 169, 241, 139, 189, 44, 244, 68, 119, 60, 28, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 225, 95, 237, 38, 188, 142, 181, 147, 233, 183, 232, 13, 219, 92, 94, 79, 19, 174, 172, 105, 133, 207, 4, 113, 115, 242, 140, 138, 44, 215, 244, 77
-	};
-	const uint8_t sigStr[] = {
-		6, 239, 41, 231, 36, 30, 26, 28, 198, 15, 238, 50, 142, 50, 144, 192, 35, 213, 90, 103, 1, 219, 80, 14, 239, 171, 127, 145, 57, 26, 139, 135, 38, 253, 0, 36, 18, 30, 100, 99, 114, 129, 249, 7, 19, 127, 226, 104, 24, 123, 75, 172, 163, 99, 136, 233, 97, 148, 183, 58, 125, 83, 47, 110, 234, 107, 192, 152, 119, 141, 191, 211, 64, 69, 132, 97, 59, 91, 169, 218, 151, 213, 96, 46, 49, 253, 190, 146, 112, 184, 99, 135, 101, 41, 178, 84, 18, 210, 104, 251, 230, 10, 193, 72, 64, 52, 41, 52, 81, 12, 106, 12, 31, 250, 171, 222, 116, 82, 153, 227, 157, 225, 55, 196, 22, 100, 207, 162, 163, 65, 163, 112, 14, 234, 31, 243, 107, 2, 227, 249, 10, 187, 131, 10, 3, 211, 176, 25, 9, 1, 154, 245, 167, 74, 192, 135, 28, 44, 85, 238, 179, 95, 250, 20, 39, 137, 56, 40, 196, 66, 91, 125, 231, 240, 32, 204, 95, 9, 56, 38, 62, 180, 158, 95, 1, 58, 2, 126, 173, 200, 94, 46
-	};
-	(void)sigStr;
-	G1 gen;
-	gen.setStr("1 3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507 1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10);
-	Fp2 m;
-	CYBOZU_TEST_ASSERT(m.deserialize(msg, sizeof(msg)) > 0);
-	G2 Q;
-	mapToG2(Q, m);
-
-	G2 sig = Q * sec;
-	const char *expectSig = "b9d1bf921b3dd048bdce38c2ceac2a2a8093c864881f2415f22b198de935ffa791707855c1656dc21a7af2d502bb46590151d645f062634c3b2cb79c4ed1c4a4b8b3f19f0f5c76965c651553e83d153ff95353735156eff77692f7a62ae653fb";
-	CYBOZU_TEST_EQUAL(sig.getStr(mcl::IoSerializeHexStr), expectSig);
-
-	CYBOZU_BENCH_C("mapToG2  org-cofactor", 1000, mapToG2, Q, m, false);
-	CYBOZU_BENCH_C("mapToG2 fast-cofactor", 1000, mapToG2, Q, m, true);
-
-	Fp2 x;
-	x.a = 5;
-	x.b = 3;
-	const mpz_class& g2c = BN::param.mapTo.g2cofactor_;
-	const Fr& g2ca = getG2cofactorAdj();
-	G2 Q1, Q2, Q3;
-	BN::param.mapTo.mapToEc(Q, x);
-	G2::mulGeneric(Q1, Q, g2c);
-	Q2 = Q;
-	BN::param.mapTo.mulByCofactor(Q2, true);
-	Q2 *= g2ca;
-	CYBOZU_TEST_EQUAL(Q1, Q2);
-}
-
 CYBOZU_TEST_AUTO(deserialize)
 {
 	if (BN::param.cp.curveType != MCL_BLS12_381) return;

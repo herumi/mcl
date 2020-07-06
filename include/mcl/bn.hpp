@@ -500,35 +500,16 @@ struct MapTo {
 		switch (mode) {
 		case MCL_MAP_TO_MODE_ORIGINAL:
 		case MCL_MAP_TO_MODE_TRY_AND_INC:
-		case MCL_MAP_TO_MODE_ETH2:
+//		case MCL_MAP_TO_MODE_ETH2:
 			mapToMode_ = mode;
-			return true;
-			break;
-		case MCL_MAP_TO_MODE_HASH_TO_CURVE_05:
-			mapToMode_ = mode;
-			mapTo_WB19_.setDraftVersion(5);
-			return true;
-			break;
-		case MCL_MAP_TO_MODE_HASH_TO_CURVE_06:
-			mapToMode_ = mode;
-			mapTo_WB19_.setDraftVersion(6);
 			return true;
 			break;
 		case MCL_MAP_TO_MODE_HASH_TO_CURVE_07:
 			mapToMode_ = mode;
-			mapTo_WB19_.setDraftVersion(7);
 			return true;
 			break;
 		default:
 			return false;
-		}
-	}
-	void setOriginalG2cofactor(bool enable)
-	{
-		if (type_ == BLS12type) {
-			useOriginalG2cofactor_ = enable;
-		} else {
-			useOriginalG2cofactor_ = false;
 		}
 	}
 	/*
@@ -551,7 +532,7 @@ struct MapTo {
 	template<class G, class F>
 	bool mapToEc(G& P, const F& t) const
 	{
-		if (mapToMode_ == MCL_MAP_TO_MODE_TRY_AND_INC || mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_TRY_AND_INC) {
 			naiveMapTo<G, F>(P, t);
 		} else {
 			if (!calcBN<G, F>(P, t)) return false;
@@ -594,19 +575,11 @@ struct MapTo {
 	}
 	bool calc(G2& P, const Fp2& t, bool fast = false) const
 	{
-		if (mapToMode_ == MCL_MAP_TO_MODE_WB19 || mapToMode_ >= MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
 			mapTo_WB19_.opt_swu2_map(P, t);
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
-		if (mapToMode_ == MCL_MAP_TO_MODE_ETH2) {
-			Fp2 negY;
-			Fp2::neg(negY, P.y);
-			int cmp = Fp::compare(P.y.b, negY.b);
-			if (!(cmp > 0 || (cmp == 0 && P.y.a > negY.a))) {
-				P.y = negY;
-			}
-		}
 		mulByCofactor(P, fast);
 		return true;
 	}
@@ -2027,15 +2000,8 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 	}
 }
 
-inline void setOriginalG2cofactor(bool enable)
-{
-	BN::nonConstParam.mapTo.setOriginalG2cofactor(enable);
-}
 inline bool setMapToMode(int mode)
 {
-	if (mode == MCL_MAP_TO_MODE_ETH2) {
-		setOriginalG2cofactor(true);
-	}
 	return BN::nonConstParam.mapTo.setMapToMode(mode);
 }
 inline int getMapToMode()
