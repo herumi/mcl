@@ -366,20 +366,16 @@ struct MapTo_WB19 {
 		Fp::neg(y.b, y.b);
 		y.a = t;
 	}
-	bool sgn0(const Fp& x) const
+	bool isNegSign(const Fp& x) const
 	{
 		return x.isOdd();
 	}
-	bool sgn0(const Fp2& x) const
-	{
-		bool sign0 = sgn0(x.a);
-		bool zero0 = x.a.isZero();
-		bool sign1 = sgn0(x.b);
-		return sign0 || (zero0 & sign1);
-	}
 	bool isNegSign(const Fp2& x) const
 	{
-		return sgn0(x);
+		bool sign0 = isNegSign(x.a);
+		bool zero0 = x.a.isZero();
+		bool sign1 = isNegSign(x.b);
+		return sign0 || (zero0 & sign1);
 	}
 	// https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-07#appendix-D.3.5
 	void sswuG1(Fp& xn, Fp& xd, Fp& y, const Fp& u) const
@@ -425,7 +421,7 @@ struct MapTo_WB19 {
 			y *= u2;
 			y *= u;
 		}
-		if (sgn0(u) != sgn0(y)) {
+		if (isNegSign(u) != isNegSign(y)) {
 			Fp::neg(y, y);
 		}
 	}
@@ -440,7 +436,7 @@ struct MapTo_WB19 {
 		pt.y *= y;
 	}
 	// https://github.com/algorand/bls_sigs_ref
-	void osswu2_help(E2& P, const Fp2& t) const
+	void sswuG2(E2& P, const Fp2& t) const
 	{
 		Fp2 t2, t2xi;
 		Fp2::sqr(t2, t);
@@ -523,11 +519,6 @@ struct MapTo_WB19 {
 		}
 		assert(0);
 	}
-	void clear_h2(G2& Q, const G2& P) const
-	{
-		// 1.9Mclk can be reduced
-		mcl::local::mulByCofactorBLS12fast(Q, P);
-	}
 	template<class T>
 	void put(const T& P) const
 	{
@@ -536,19 +527,18 @@ struct MapTo_WB19 {
 		printf("y=%s\n", P.y.getStr(base).c_str());
 		printf("z=%s\n", P.z.getStr(base).c_str());
 	}
-	void opt_swu2_map(G2& P, const Fp2& t, const Fp2 *t2 = 0) const
+	void Fp2ToG2(G2& P, const Fp2& t, const Fp2 *t2 = 0) const
 	{
 		E2 Pp;
-		osswu2_help(Pp, t);
+		sswuG2(Pp, t);
 		if (t2) {
 			E2 P2;
-			osswu2_help(P2, *t2);
+			sswuG2(P2, *t2);
 			ec::addJacobi(Pp, Pp, P2);
 		}
 		iso3(P, Pp);
-		clear_h2(P, P);
+		mcl::local::mulByCofactorBLS12fast(P, P);
 	}
-	// hash-to-curve-06
 	void hashToFp2(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		uint8_t md[256];
@@ -560,16 +550,17 @@ struct MapTo_WB19 {
 			assert(b); (void)b;
 		}
 	}
-	void map2curve_osswu2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
+	void msgToG2(G2& out, const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		Fp2 t[2];
 		hashToFp2(t, msg, msgSize, dst, dstSize);
-		opt_swu2_map(out, t[0], &t[1]);
+		Fp2ToG2(out, t[0], &t[1]);
 	}
 	void msgToG2(G2& out, const void *msg, size_t msgSize) const
 	{
 		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-		map2curve_osswu2(out, msg, msgSize, dst, strlen(dst));
+		const size_t dstSize = strlen(dst);
+		msgToG2(out, msg, msgSize, dst, dstSize);
 	}
 	void FpToG1(G1& out, const Fp& u0, const Fp *u1 = 0) const
 	{
@@ -595,6 +586,7 @@ struct MapTo_WB19 {
 		}
 		FpToG1(out, u[0], &u[1]);
 	}
+
 	void msgToG1(G1& out, const void *msg, size_t msgSize) const
 	{
 		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";

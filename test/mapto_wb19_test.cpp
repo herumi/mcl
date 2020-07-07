@@ -240,7 +240,7 @@ void iso3Test(const T& mapto)
 	mapto.iso3(Q2, P);
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 	set(Q1, clearPs);
-	mapto.clear_h2(Q2, Q2);
+	mcl::local::mulByCofactorBLS12fast(Q2, Q2);
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
@@ -372,7 +372,7 @@ void testHashToFp2v7(const T& mapto)
 			set(P1.x, tbl[i].x);
 			set(P1.y, tbl[i].y);
 			P1.z = 1;
-			mapto.map2curve_osswu2(P2, msg, msgSize, dst, dstSize);
+			mapto.msgToG2(P2, msg, msgSize, dst, dstSize);
 			CYBOZU_TEST_EQUAL(P1, P2);
 		}
 		{

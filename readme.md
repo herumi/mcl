@@ -315,6 +315,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2020/Jun/07 v1.22 remove old hash-to-curve functions
 - 2020/Jun/04 v1.21 mapToG1 and hashAndMapToG1 are compatible to irtf/eip-2537
 - 2020/May/13 v1.09 support draft-irtf-cfrg-hash-to-curve-07
 - 2020/Mar/26 v1.07 change DST for hash-to-curve-06

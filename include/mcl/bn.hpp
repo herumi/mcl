@@ -576,7 +576,7 @@ struct MapTo {
 	bool calc(G2& P, const Fp2& t, bool fast = false) const
 	{
 		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
-			mapTo_WB19_.opt_swu2_map(P, t);
+			mapTo_WB19_.Fp2ToG2(P, t);
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
