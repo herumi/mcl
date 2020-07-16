@@ -671,7 +671,6 @@ struct Code : public mcl::Generator {
 		Operand y(Int, unit);
 		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit);
 		mulPvM[bit] = Function(name, z, px, y);
-		mulPvM[bit].setPrivate();
 		verifyAndSetPrivate(mulPvM[bit]);
 		beginFunc(mulPvM[bit]);
 		OperandVec L(N), H(N);
