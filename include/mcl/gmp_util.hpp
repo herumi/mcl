@@ -97,7 +97,7 @@ template<class T>
 void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
-	*pb = getArray_(buf, maxSize, x.getUnit(), x.getUnitSize());
+	*pb = getArray_(buf, maxSize, x.getUnit(), (int)x.getUnitSize());
 #else
 	*pb = getArray_(buf, maxSize, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size);
 #endif
