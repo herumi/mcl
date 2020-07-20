@@ -12,24 +12,14 @@ namespace mcl {
         }
         static void Main(string[] args)
         {
-            Console.WriteLine("BN254");
-            TestCurve(BN254);
-            Console.WriteLine("BN_SNARK");
-            TestCurve(BN_SNARK);
-            Console.WriteLine("BLS12_381");
-            TestCurve(BLS12_381);
-        }
-
-        static void TestCurve(int curveType)
-
-        {
             err = 0;
             try {
-                Init(curveType);
-                TestFr();
-                TestG1();
-                TestG2();
-                TestPairing();
+                Console.WriteLine("BN254");
+                TestCurve(BN254);
+                Console.WriteLine("BN_SNARK");
+                TestCurve(BN_SNARK);
+                Console.WriteLine("BLS12_381");
+                TestCurve(BLS12_381);
                 if (err == 0) {
                     Console.WriteLine("all tests succeed");
                 } else {
@@ -38,6 +28,17 @@ namespace mcl {
             } catch (Exception e) {
                 Console.WriteLine("ERR={0}", e);
             }
+        }
+
+        static void TestCurve(int curveType)
+
+        {
+            Init(curveType);
+            TestFr();
+            TestFp();
+            TestG1();
+            TestG2();
+            TestPairing();
         }
         static void TestFr()
         {
@@ -78,6 +79,56 @@ namespace mcl {
             }
             x.SetStr("1234567891234", 10);
             assert("1234567891234", x.GetStr(10) == "1234567891234");
+            {
+                byte[] buf = x.Serialize();
+                y.Deserialize(buf);
+                assert("x == y", x.Equals(y));
+            }
+        }
+        static void TestFp()
+        {
+            Console.WriteLine("TestFp");
+            Fp x = new Fp();
+            x.Clear();
+            assert("0", x.GetStr(10) == "0");
+            assert("0.IzZero", x.IsZero());
+            assert("!0.IzOne", !x.IsOne());
+            x.SetInt(1);
+            assert("1", x.GetStr(10) == "1");
+            assert("!1.IzZero", !x.IsZero());
+            assert("1.IzOne", x.IsOne());
+            x.SetInt(3);
+            assert("3", x.GetStr(10) == "3");
+            assert("!3.IzZero", !x.IsZero());
+            assert("!3.IzOne", !x.IsOne());
+            x.SetInt(-5);
+            x = -x;
+            assert("5", x.GetStr(10) == "5");
+            x.SetInt(4);
+            x = x * x;
+            assert("16", x.GetStr(10) == "16");
+            assert("10", x.GetStr(16) == "10");
+            Fp y;
+            y = x;
+            assert("x == y", x.Equals(y));
+            x.SetInt(123);
+            assert("123", x.GetStr(10) == "123");
+            assert("7b", x.GetStr(16) == "7b");
+            assert("y != x", !x.Equals(y));
+            Console.WriteLine("exception test");
+            try {
+                x.SetStr("1234567891234x", 10);
+                Console.WriteLine("x = {0}", x);
+            } catch (Exception e) {
+                Console.WriteLine("OK ; expected exception: {0}", e);
+            }
+            x.SetStr("1234567891234", 10);
+            assert("1234567891234", x.GetStr(10) == "1234567891234");
+            {
+                byte[] buf = x.Serialize();
+                y.Deserialize(buf);
+                assert("x == y", x.Equals(y));
+            }
         }
         static void TestG1()
         {
@@ -104,6 +155,12 @@ namespace mcl {
             R.Add(R, P);
             Q.Mul(P, x);
             assert("Q == R", Q.Equals(R));
+            {
+                byte[] buf = P.Serialize();
+                Q.Clear();
+                Q.Deserialize(buf);
+                assert("P == Q", P.Equals(Q));
+            }
         }
         static void TestG2()
         {
@@ -130,6 +187,12 @@ namespace mcl {
             R.Add(R, P);
             Q.Mul(P, x);
             assert("Q == R", Q.Equals(R));
+            {
+                byte[] buf = P.Serialize();
+                Q.Clear();
+                Q.Deserialize(buf);
+                assert("P == Q", P.Equals(Q));
+            }
         }
         static void TestPairing()
         {
