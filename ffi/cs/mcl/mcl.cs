@@ -7,6 +7,7 @@ namespace mcl {
         public const int BN254 = 0;
         public const int BN_SNARK = 4;
         public const int BLS12_381 = 5;
+        public const int MCL_MAP_TO_MODE_HASH_TO_CURVE = 5;
         public const int FR_UNIT_SIZE = 4;
         public const int FP_UNIT_SIZE = 6; // 4 if mclbn256.dll is used
 
@@ -16,6 +17,8 @@ namespace mcl {
 
         public const string dllName = "mclbn384_256";
         [DllImport(dllName)] public static extern int mclBn_init(int curve, int compiledTimeVar);
+        [DllImport(dllName)] public static extern void mclBn_setETHserialization(int enable);
+        [DllImport(dllName)] public static extern int mclBn_setMapToMode(int mode);
         [DllImport(dllName)] public static extern void mclBnFr_clear(ref Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_setInt(ref Fr y, int x);
         [DllImport(dllName)] public static extern int mclBnFr_setStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -53,6 +56,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnFp_sub(ref Fp z, in Fp x, in Fp y);
         [DllImport(dllName)] public static extern void mclBnFp_mul(ref Fp z, in Fp x, in Fp y);
         [DllImport(dllName)] public static extern void mclBnFp_div(ref Fp z, in Fp x, in Fp y);
+
         [DllImport(dllName)] public static extern void mclBnG1_clear(ref G1 x);
         [DllImport(dllName)] public static extern int mclBnG1_setStr(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
         [DllImport(dllName)] public static extern int mclBnG1_isValid(in G1 x);
@@ -62,9 +66,11 @@ namespace mcl {
         [DllImport(dllName)] public static extern long mclBnG1_getStr([Out] StringBuilder buf, long maxBufSize, in G1 x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnG1_neg(ref G1 y, in G1 x);
         [DllImport(dllName)] public static extern void mclBnG1_dbl(ref G1 y, in G1 x);
+        [DllImport(dllName)] public static extern void mclBnG1_normalize(ref G1 y, in G1 x);
         [DllImport(dllName)] public static extern void mclBnG1_add(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_sub(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_mul(ref G1 z, in G1 x, in Fr y);
+
         [DllImport(dllName)] public static extern void mclBnG2_clear(ref G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
         [DllImport(dllName)] public static extern int mclBnG2_isValid(in G2 x);
@@ -74,6 +80,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern long mclBnG2_getStr([Out] StringBuilder buf, long maxBufSize, in G2 x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnG2_neg(ref G2 y, in G2 x);
         [DllImport(dllName)] public static extern void mclBnG2_dbl(ref G2 y, in G2 x);
+        [DllImport(dllName)] public static extern void mclBnG2_normalize(ref G2 y, in G2 x);
         [DllImport(dllName)] public static extern void mclBnG2_add(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_sub(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_mul(ref G2 z, in G2 x, in Fr y);
@@ -94,8 +101,10 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBn_pairing(ref GT z, in G1 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBn_finalExp(ref GT y, in GT x);
         [DllImport(dllName)] public static extern void mclBn_millerLoop(ref GT z, in G1 x, in G2 y);
-        [DllImport(dllName)] public static extern int mclBnFp_setLittleEndianMod(ref Fp y, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
-        [DllImport(dllName)] public static extern int mclBnFr_setLittleEndianMod(ref Fr y, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnFp_setLittleEndianMod(ref Fp y, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnFr_setLittleEndianMod(ref Fr y, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnFp_setBigEndianMod(ref Fp y, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnFr_setBigEndianMod(ref Fr y, [In] byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern int mclBn_getFrByteSize();
         [DllImport(dllName)] public static extern int mclBn_getFpByteSize();
         [DllImport(dllName)] public static extern ulong mclBnFp_serialize([Out] byte[] buf, ulong maxBufSize, in Fp x);
@@ -116,6 +125,11 @@ namespace mcl {
             if (mclBn_init(curveType, COMPILED_TIME_VAR) != 0) {
                 throw new ArgumentException("mclBn_init");
             }
+        }
+        public static void ETHmode()
+        {
+            mclBn_setETHserialization(1);
+            mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
         }
         [StructLayout(LayoutKind.Sequential)]
         struct U128 {
@@ -188,6 +202,20 @@ namespace mcl {
                 ulong n = mclBnFr_deserialize(ref this, buf, (ulong)buf.Length);
                 if (n == 0) {
                     throw new ArithmeticException("mclBnFr_deserialize");
+                }
+            }
+            public void SetLittleEndianMod(byte[] buf)
+            {
+                ulong n = mclBnFr_setLittleEndianMod(ref this, buf, (ulong)buf.Length);
+                if (n == 0) {
+                    throw new ArithmeticException("mclBnFr_setLittleEndianMod");
+                }
+            }
+            public void SetBigEndianMod(byte[] buf)
+            {
+                ulong n = mclBnFr_setBigEndianMod(ref this, buf, (ulong)buf.Length);
+                if (n == 0) {
+                    throw new ArithmeticException("mclBnFr_setBigEndianMod");
                 }
             }
 
@@ -306,6 +334,20 @@ namespace mcl {
                 ulong n = mclBnFp_deserialize(ref this, buf, (ulong)buf.Length);
                 if (n == 0) {
                     throw new ArithmeticException("mclBnFp_deserialize");
+                }
+            }
+            public void SetLittleEndianMod(byte[] buf)
+            {
+                ulong n = mclBnFp_setLittleEndianMod(ref this, buf, (ulong)buf.Length);
+                if (n == 0) {
+                    throw new ArithmeticException("mclBnFp_setLittleEndianMod");
+                }
+            }
+            public void SetBigEndianMod(byte[] buf)
+            {
+                ulong n = mclBnFp_setBigEndianMod(ref this, buf, (ulong)buf.Length);
+                if (n == 0) {
+                    throw new ArithmeticException("mclBnFp_setBigEndianMod");
                 }
             }
             public void Neg(in Fp x)
@@ -431,6 +473,10 @@ namespace mcl {
             {
                 mclBnG1_dbl(ref this, x);
             }
+            public void Normalize(in G1 x)
+            {
+                mclBnG1_normalize(ref this, x);
+            }
             public void Add(in G1 x, in G1 y)
             {
                 mclBnG1_add(ref this, x, y);
@@ -507,6 +553,10 @@ namespace mcl {
             public void Dbl(in G2 x)
             {
                 mclBnG2_dbl(ref this, x);
+            }
+            public void Normalize(in G2 x)
+            {
+                mclBnG2_normalize(ref this, x);
             }
             public void Add(in G2 x, in G2 y)
             {
