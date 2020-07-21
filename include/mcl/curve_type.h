@@ -96,19 +96,18 @@ const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
 #endif
-inline const CurveParam& getCurveParam(int type)
+inline const CurveParam* getCurveParam(int type)
 {
 	switch (type) {
-	case MCL_BN254: return mcl::BN254;
-	case MCL_BN381_1: return mcl::BN381_1;
-	case MCL_BN381_2: return mcl::BN381_2;
-	case MCL_BN462: return mcl::BN462;
-	case MCL_BN_SNARK1: return mcl::BN_SNARK1;
-	case MCL_BLS12_381: return mcl::BLS12_381;
-	case MCL_BN160: return mcl::BN160;
+	case MCL_BN254: return &mcl::BN254;
+	case MCL_BN381_1: return &mcl::BN381_1;
+	case MCL_BN381_2: return &mcl::BN381_2;
+	case MCL_BN462: return &mcl::BN462;
+	case MCL_BN_SNARK1: return &mcl::BN_SNARK1;
+	case MCL_BLS12_381: return &mcl::BLS12_381;
+	case MCL_BN160: return &mcl::BN160;
 	default:
-		assert(0);
-		return mcl::BN254;
+		return 0;
 	}
 }
 #ifdef __clang__

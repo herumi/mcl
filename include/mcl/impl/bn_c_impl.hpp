@@ -77,9 +77,10 @@ int mclBn_init(int curve, int compiledTimeVar)
 		initG1only(&b, *para);
 		return b ? 0 : -1;
 	}
-	const mcl::CurveParam& cp = mcl::getCurveParam(curve);
+	const mcl::CurveParam* cp = mcl::getCurveParam(curve);
+	if (cp == 0) return -1;
 	bool b;
-	initPairing(&b, cp);
+	initPairing(&b, *cp);
 	return b ? 0 : -1;
 }
 

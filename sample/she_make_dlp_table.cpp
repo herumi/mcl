@@ -30,7 +30,7 @@ void makeTable(const Param& param, const char *groupStr, HashTable& hashTbl, con
 
 void run(const Param& param)
 {
-	SHE::init(mcl::getCurveParam(param.curveType));
+	SHE::init(*mcl::getCurveParam(param.curveType));
 
 	switch (param.group) {
 	case 1:
