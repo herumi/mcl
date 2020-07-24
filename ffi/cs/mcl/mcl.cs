@@ -33,6 +33,7 @@ namespace mcl {
 
         [DllImport(dllName)] public static extern void mclBnFr_neg(ref Fr y, in Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_inv(ref Fr y, in Fr x);
+        [DllImport(dllName)] public static extern void mclBnFr_sqr(ref Fr y, in Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_add(ref Fr z, in Fr x, in Fr y);
         [DllImport(dllName)] public static extern void mclBnFr_sub(ref Fr z, in Fr x, in Fr y);
         [DllImport(dllName)] public static extern void mclBnFr_mul(ref Fr z, in Fr x, in Fr y);
@@ -52,6 +53,7 @@ namespace mcl {
 
         [DllImport(dllName)] public static extern void mclBnFp_neg(ref Fp y, in Fp x);
         [DllImport(dllName)] public static extern void mclBnFp_inv(ref Fp y, in Fp x);
+        [DllImport(dllName)] public static extern void mclBnFp_sqr(ref Fp y, in Fp x);
         [DllImport(dllName)] public static extern void mclBnFp_add(ref Fp z, in Fp x, in Fp y);
         [DllImport(dllName)] public static extern void mclBnFp_sub(ref Fp z, in Fp x, in Fp y);
         [DllImport(dllName)] public static extern void mclBnFp_mul(ref Fp z, in Fp x, in Fp y);
@@ -93,6 +95,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern long mclBnGT_getStr([Out] StringBuilder buf, long maxBufSize, in GT x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnGT_neg(ref GT y, in GT x);
         [DllImport(dllName)] public static extern void mclBnGT_inv(ref GT y, in GT x);
+        [DllImport(dllName)] public static extern void mclBnGT_sqr(ref GT y, in GT x);
         [DllImport(dllName)] public static extern void mclBnGT_add(ref GT z, in GT x, in GT y);
         [DllImport(dllName)] public static extern void mclBnGT_sub(ref GT z, in GT x, in GT y);
         [DllImport(dllName)] public static extern void mclBnGT_mul(ref GT z, in GT x, in GT y);
@@ -130,6 +133,155 @@ namespace mcl {
         {
             mclBn_setETHserialization(1);
             mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
+        }
+        public static void Add(ref Fr z, in Fr x, in Fr y)
+        {
+            mclBnFr_add(ref z, x, y);
+        }
+        public static void Sub(ref Fr z, in Fr x, in Fr y)
+        {
+            mclBnFr_sub(ref z, x, y);
+        }
+        public static void Mul(ref Fr z, in Fr x, in Fr y)
+        {
+            mclBnFr_mul(ref z, x, y);
+        }
+        public static void Div(ref Fr z, in Fr x, in Fr y)
+        {
+            mclBnFr_div(ref z, x, y);
+        }
+        public static void Neg(ref Fr y, in Fr x)
+        {
+            mclBnFr_neg(ref y, x);
+        }
+        public static void Inv(ref Fr y, in Fr x)
+        {
+            mclBnFr_inv(ref y, x);
+        }
+        public static void Sqr(ref Fr y, in Fr x)
+        {
+            mclBnFr_sqr(ref y, x);
+        }
+
+        public static void Add(ref Fp z, in Fp x, in Fp y)
+        {
+            mclBnFp_add(ref z, x, y);
+        }
+        public static void Sub(ref Fp z, in Fp x, in Fp y)
+        {
+            mclBnFp_sub(ref z, x, y);
+        }
+        public static void Mul(ref Fp z, in Fp x, in Fp y)
+        {
+            mclBnFp_mul(ref z, x, y);
+        }
+        public static void Div(ref Fp z, in Fp x, in Fp y)
+        {
+            mclBnFp_div(ref z, x, y);
+        }
+        public static void Neg(ref Fp y, in Fp x)
+        {
+            mclBnFp_neg(ref y, x);
+        }
+        public static void Inv(ref Fp y, in Fp x)
+        {
+            mclBnFp_inv(ref y, x);
+        }
+        public static void Sqr(ref Fp y, in Fp x)
+        {
+            mclBnFp_sqr(ref y, x);
+        }
+        public static void Add(ref G1 z, in G1 x, in G1 y)
+        {
+            mclBnG1_add(ref z, x, y);
+        }
+        public static void Sub(ref G1 z, in G1 x, in G1 y)
+        {
+            mclBnG1_sub(ref z, x, y);
+        }
+        public static void Mul(ref G1 z, in G1 x, in Fr y)
+        {
+            mclBnG1_mul(ref z, x, y);
+        }
+        public static void Neg(ref G1 y, in G1 x)
+        {
+            mclBnG1_neg(ref y, x);
+        }
+        public static void Dbl(ref G1 y, in G1 x)
+        {
+            mclBnG1_dbl(ref y, x);
+        }
+        public static void Normalize(ref G1 y, in G1 x)
+        {
+            mclBnG1_normalize(ref y, x);
+        }
+        public static void Add(ref G2 z, in G2 x, in G2 y)
+        {
+            mclBnG2_add(ref z, x, y);
+        }
+        public static void Sub(ref G2 z, in G2 x, in G2 y)
+        {
+            mclBnG2_sub(ref z, x, y);
+        }
+        public static void Mul(ref G2 z, in G2 x, in Fr y)
+        {
+            mclBnG2_mul(ref z, x, y);
+        }
+        public static void Neg(ref G2 y, in G2 x)
+        {
+            mclBnG2_neg(ref y, x);
+        }
+        public static void Dbl(ref G2 y, in G2 x)
+        {
+            mclBnG2_dbl(ref y, x);
+        }
+        public static void Normalize(ref G2 y, in G2 x)
+        {
+            mclBnG2_normalize(ref y, x);
+        }
+        public static void Add(ref GT z, in GT x, in GT y)
+        {
+            mclBnGT_add(ref z, x, y);
+        }
+        public static void Sub(ref GT z, in GT x, in GT y)
+        {
+            mclBnGT_sub(ref z, x, y);
+        }
+        public static void Mul(ref GT z, in GT x, in GT y)
+        {
+            mclBnGT_mul(ref z, x, y);
+        }
+        public static void Div(ref GT z, in GT x, in GT y)
+        {
+            mclBnGT_div(ref z, x, y);
+        }
+        public static void Neg(ref GT y, in GT x)
+        {
+            mclBnGT_neg(ref y, x);
+        }
+        public static void Inv(ref GT y, in GT x)
+        {
+            mclBnGT_inv(ref y, x);
+        }
+        public static void Sqr(ref GT y, in GT x)
+        {
+            mclBnGT_sqr(ref y, x);
+        }
+        public static void Pow(ref GT z, in GT x, in Fr y)
+        {
+            mclBnGT_pow(ref z, x, y);
+        }
+        public static void Pairing(ref GT z, in G1 x, in G2 y)
+        {
+            mclBn_pairing(ref z, x, y);
+        }
+        public static void FinalExp(ref GT y, in GT x)
+        {
+            mclBn_finalExp(ref y, x);
+        }
+        public static void MillerLoop(ref GT z, in G1 x, in G2 y)
+        {
+            mclBn_millerLoop(ref z, x, y);
         }
         [StructLayout(LayoutKind.Sequential)]
         struct U128 {
@@ -227,21 +379,25 @@ namespace mcl {
             {
                 mclBnFr_inv(ref this, x);
             }
+            public void Sqr(in Fr x)
+            {
+                MCL.Sqr(ref this, x);
+            }
             public void Add(in Fr x, in Fr y)
             {
-                mclBnFr_add(ref this, x, y);
+                MCL.Add(ref this, x, y);
             }
             public void Sub(in Fr x, in Fr y)
             {
-                mclBnFr_sub(ref this, x, y);
+                MCL.Sub(ref this, x, y);
             }
             public void Mul(in Fr x, in Fr y)
             {
-                mclBnFr_mul(ref this, x, y);
+                MCL.Mul(ref this, x, y);
             }
             public void Div(in Fr x, in Fr y)
             {
-                mclBnFr_div(ref this, x, y);
+                MCL.Div(ref this, x, y);
             }
             public static Fr operator -(in Fr x)
             {
@@ -352,27 +508,31 @@ namespace mcl {
             }
             public void Neg(in Fp x)
             {
-                mclBnFp_neg(ref this, x);
+                MCL.Neg(ref this, x);
             }
             public void Inv(in Fp x)
             {
-                mclBnFp_inv(ref this, x);
+                MCL.Inv(ref this, x);
+            }
+            public void Sqr(in Fp x)
+            {
+                MCL.Sqr(ref this, x);
             }
             public void Add(in Fp x, in Fp y)
             {
-                mclBnFp_add(ref this, x, y);
+                MCL.Add(ref this, x, y);
             }
             public void Sub(in Fp x, in Fp y)
             {
-                mclBnFp_sub(ref this, x, y);
+                MCL.Sub(ref this, x, y);
             }
             public void Mul(in Fp x, in Fp y)
             {
-                mclBnFp_mul(ref this, x, y);
+                MCL.Mul(ref this, x, y);
             }
             public void Div(in Fp x, in Fp y)
             {
-                mclBnFp_div(ref this, x, y);
+                MCL.Div(ref this, x, y);
             }
             public static Fp operator -(in Fp x)
             {
@@ -467,27 +627,27 @@ namespace mcl {
             }
             public void Neg(in G1 x)
             {
-                mclBnG1_neg(ref this, x);
+                MCL.Neg(ref this, x);
             }
             public void Dbl(in G1 x)
             {
-                mclBnG1_dbl(ref this, x);
+                MCL.Dbl(ref this, x);
             }
             public void Normalize(in G1 x)
             {
-                mclBnG1_normalize(ref this, x);
+                MCL.Normalize(ref this, x);
             }
             public void Add(in G1 x, in G1 y)
             {
-                mclBnG1_add(ref this, x, y);
+                MCL.Add(ref this, x, y);
             }
             public void Sub(in G1 x, in G1 y)
             {
-                mclBnG1_sub(ref this, x, y);
+                MCL.Sub(ref this, x, y);
             }
             public void Mul(in G1 x, in Fr y)
             {
-                mclBnG1_mul(ref this, x, y);
+                MCL.Mul(ref this, x, y);
             }
         }
         [StructLayout(LayoutKind.Sequential)]
@@ -548,27 +708,27 @@ namespace mcl {
             }
             public void Neg(in G2 x)
             {
-                mclBnG2_neg(ref this, x);
+                MCL.Neg(ref this, x);
             }
             public void Dbl(in G2 x)
             {
-                mclBnG2_dbl(ref this, x);
+                MCL.Dbl(ref this, x);
             }
             public void Normalize(in G2 x)
             {
-                mclBnG2_normalize(ref this, x);
+                MCL.Normalize(ref this, x);
             }
             public void Add(in G2 x, in G2 y)
             {
-                mclBnG2_add(ref this, x, y);
+                MCL.Add(ref this, x, y);
             }
             public void Sub(in G2 x, in G2 y)
             {
-                mclBnG2_sub(ref this, x, y);
+                MCL.Sub(ref this, x, y);
             }
-            public void Mul(in G2 x, Fr y)
+            public void Mul(in G2 x, in Fr y)
             {
-                mclBnG2_mul(ref this, x, y);
+                MCL.Mul(ref this, x, y);
             }
         }
         [StructLayout(LayoutKind.Sequential)]
@@ -607,27 +767,31 @@ namespace mcl {
             }
             public void Neg(in GT x)
             {
-                mclBnGT_neg(ref this, x);
+                MCL.Neg(ref this, x);
             }
             public void Inv(in GT x)
             {
-                mclBnGT_inv(ref this, x);
+                MCL.Inv(ref this, x);
+            }
+            public void Sqr(in GT x)
+            {
+                MCL.Sqr(ref this, x);
             }
             public void Add(in GT x, in GT y)
             {
-                mclBnGT_add(ref this, x, y);
+                MCL.Add(ref this, x, y);
             }
             public void Sub(in GT x, in GT y)
             {
-                mclBnGT_sub(ref this, x, y);
+                MCL.Sub(ref this, x, y);
             }
             public void Mul(in GT x, in GT y)
             {
-                mclBnGT_mul(ref this, x, y);
+                MCL.Mul(ref this, x, y);
             }
             public void Div(in GT x, in GT y)
             {
-                mclBnGT_div(ref this, x, y);
+                MCL.Div(ref this, x, y);
             }
             public static GT operator -(in GT x)
             {
@@ -661,19 +825,19 @@ namespace mcl {
             }
             public void Pow(in GT x, in Fr y)
             {
-                mclBnGT_pow(ref this, x, y);
+                MCL.Pow(ref this, x, y);
             }
             public void Pairing(in G1 x, in G2 y)
             {
-                mclBn_pairing(ref this, x, y);
+                MCL.Pairing(ref this, x, y);
             }
             public void FinalExp(in GT x)
             {
-                mclBn_finalExp(ref this, x);
+                MCL.FinalExp(ref this, x);
             }
             public void MillerLoop(in G1 x, in G2 y)
             {
-                mclBn_millerLoop(ref this, x, y);
+                MCL.MillerLoop(ref this, x, y);
             }
         }
     }
