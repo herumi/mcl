@@ -20,6 +20,9 @@ namespace mcl {
                 TestCurve(BN_SNARK);
                 Console.WriteLine("BLS12_381");
                 TestCurve(BLS12_381);
+                Console.WriteLine("BLS12_381 eth");
+                ETHmode();
+                TestETH();
                 if (err == 0) {
                     Console.WriteLine("all tests succeed");
                 } else {
@@ -219,6 +222,34 @@ namespace mcl {
             e2.Pairing(P, bQ);
             e3.Pow(e1, b);
             assert("e2.Equals(e3)", e2.Equals(e3));
+        }
+        static void TestETH_mapToG1()
+        {
+            var tbl = new[] {
+                new {
+                    msg = "asdf",
+                    dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_",
+                    x = "bc73d15443009a8ff2ddce864136d892274dd8365c60d0d2d44cc543387348e366a8f1e1401427e37743c29ed2c939a",
+                    y = "101e26428a1b78c05458cb1cc37d2d87876ad3437096d2827f376702d4451667fe1fa82e82795495d33d466133ed1862",
+                },
+           };
+            G1 P = new G1();
+            Fp x = new Fp();
+            Fp y = new Fp();
+            foreach (var v in tbl) {
+                P.HashAndMapTo(v.msg);
+                x.SetStr(v.x, 16);
+                y.SetStr(v.y, 16);
+                Normalize(ref P, P);
+                Console.WriteLine("x={0}", P.x.GetStr(16));
+                Console.WriteLine("y={0}", P.y.GetStr(16));
+                assert("P.x", P.x.Equals(x));
+                assert("P.y", P.y.Equals(y));
+            }
+        }
+        static void TestETH()
+        {
+            TestETH_mapToG1();
         }
     }
 }

@@ -567,11 +567,11 @@ namespace mcl {
         }
         [StructLayout(LayoutKind.Sequential)]
         public struct Fp2 {
-            private Fp a, b;
+            public Fp a, b;
         }
         [StructLayout(LayoutKind.Sequential)]
         public struct G1 {
-            private Fp x, y, z;
+            public Fp x, y, z;
             public void Clear()
             {
                 mclBnG1_clear(ref this);
@@ -652,7 +652,7 @@ namespace mcl {
         }
         [StructLayout(LayoutKind.Sequential)]
         public struct G2 {
-            private Fp2 x, y, z;
+            public Fp2 x, y, z;
             public void Clear()
             {
                 mclBnG2_clear(ref this);
@@ -733,7 +733,7 @@ namespace mcl {
         }
         [StructLayout(LayoutKind.Sequential)]
         public struct GT {
-            private Fp v00, v01, v02, v03, v04, v05, v06, v07, v08, v09, v10, v11;
+            public Fp v00, v01, v02, v03, v04, v05, v06, v07, v08, v09, v10, v11;
             public void Clear()
             {
                 mclBnGT_clear(ref this);
