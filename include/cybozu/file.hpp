@@ -4,6 +4,7 @@
 	@brief file class and operations
 
 	@author MITSUNARI Shigeo(@herumi)
+	@remark mingw requires -lshlwapi option
 */
 
 #include <assert.h>
@@ -17,10 +18,15 @@
 	#include <fcntl.h>
 	#include <shlobj.h>
 	#include <direct.h>
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
+	#endif
 	#include <windows.h>
-	#pragma comment(lib, "shlwapi.lib")
-	#pragma comment(lib, "shell32.lib")
-	#pragma comment(lib, "User32.lib")
+	#ifdef _MSC_VER
+		#pragma comment(lib, "shlwapi.lib")
+		#pragma comment(lib, "shell32.lib")
+		#pragma comment(lib, "User32.lib")
+	#endif
 #else
 	#include <stdio.h>
 	#include <unistd.h>
@@ -302,13 +308,12 @@ public:
 			posMode = FILE_BEGIN;
 			break;
 		case std::ios::cur:
+		default:
 			posMode = FILE_CURRENT;
 			break;
 		case std::ios::end:
 			posMode = FILE_END;
 			break;
-		default:
-			__assume(0);
 		}
 		bool isOK = SetFilePointerEx(hdl_, largePos, NULL, posMode) != 0;
 #else
@@ -318,10 +323,10 @@ public:
 			whence = SEEK_SET;
 			break;
 		case std::ios::cur:
+		default:
 			whence = SEEK_CUR;
 			break;
 		case std::ios::end:
-		default:
 			whence = SEEK_END;
 			break;
 		}
