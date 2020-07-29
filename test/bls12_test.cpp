@@ -729,6 +729,119 @@ CYBOZU_TEST_AUTO(deserialize)
 	}
 }
 
+CYBOZU_TEST_AUTO(verifyG1)
+{
+	const char *ok_x = "ad50e39253e0de4fad89440f01f1874c8bc91fdcd59ad66162984b10690e51ccf4d95e4222df14549d745d8b971199";
+	const char *ok_y = "2f76c6f3a006f0bbfb88c02a4643702ff52ff34c1fcb59af611b7f1cf47938ffbf2c68a6e31a40bf668544087374f70";
+
+	const char *ng_x = "1534fc82e2566c826b195314b32bf47576c24632444450d701de2601cec0c0d6b6090e7227850005e81f54039066602b";
+	const char *ng_y = "15899715142d265027d1a9fba8f2f10a3f21938071b4bbdb5dce8c5caa0d93588482d33d9a62bcbbd23ab6af6d689710";
+
+	Fp x, y;
+	G1 P, Q;
+	char buf[128];
+	size_t n;
+	P.x.setStr(ok_x, 16);
+	P.y.setStr(ok_y, 16);
+	P.z = 1;
+
+	// valid point, valid order
+	verifyOrderG1(false);
+	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(P.isValidOrder());
+	n = P.serialize(buf, sizeof(buf));
+	n = Q.deserialize(buf, n);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(P, Q);
+
+	verifyOrderG1(true);
+	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(P.isValidOrder());
+	Q.clear();
+	n = Q.deserialize(buf, n);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(P, Q);
+
+	// invalid point
+	P.z = 2;
+	CYBOZU_TEST_ASSERT(!P.isValid());
+
+	// valid point, invalid order
+	verifyOrderG1(false);
+	P.x.setStr(ng_x, 16);
+	P.y.setStr(ng_y, 16);
+	P.z = 1;
+	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(!P.isValidOrder());
+	n = P.serialize(buf, sizeof(buf));
+	n = Q.deserialize(buf, n);
+	CYBOZU_TEST_ASSERT(n > 0); // success because of no-check the order
+	CYBOZU_TEST_EQUAL(P, Q);
+
+	verifyOrderG1(true);
+	CYBOZU_TEST_ASSERT(!P.isValid()); // fail because of invalid order
+	Q.clear();
+	n = Q.deserialize(buf, n); // fail because of invalid order
+	CYBOZU_TEST_ASSERT(n == 0);
+}
+
+CYBOZU_TEST_AUTO(verifyG2)
+{
+	const char *ok_x = "1400ddb63494b2f3717d8706a834f928323cef590dd1f2bc8edaf857889e82c9b4cf242324526c9045bc8fec05f98fe9 14b38e10fd6d2d63dfe704c3f0b1741474dfeaef88d6cdca4334413320701c74e5df8c7859947f6901c0a3c30dba23c9";
+	const char *ok_y = "187452296c28d5206880d2a86e8c7fc79df88e20b906a1fc1d5855da6b2b4ae6f8c83a591e2e5350753d2d7fe3c7b4 9c205210f33e9cdaaa4630b3f6fad29744224e5100456973fcaf031cdbce8ad3f71d42af3f7733a3985d3a3d2f4be53";
+
+	const char *ng_x = "717f18d36bd40d090948f2d4dac2a03f6469d234f4beb75f67e66d51ea5540652189c61d01d1cfe3f5e9318e48bdf8a 13fc0389cb74ad6c8875c34f85e2bb93ca1bed48c14f2dd0f5cd741853014fe278c9551a9ac5850f678a423664f8287f";
+	const char *ng_y = "5412e6cef6b7189f31810c0cbac6b6350b18691be1fefed131a033f2df393b9c3a423c605666226c1efa833de11363b 101ed6eafbf85be7273ec5aec3471aa2c1018d7463cc48dfe9a7c872a7745e81317c88ce0c89a9086975feb4a2749074";
+
+	Fp x, y;
+	G2 P, Q;
+	char buf[128];
+	size_t n;
+	P.x.setStr(ok_x, 16);
+	P.y.setStr(ok_y, 16);
+	P.z = 1;
+
+	// valid point, valid order
+	verifyOrderG2(false);
+	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(P.isValidOrder());
+	n = P.serialize(buf, sizeof(buf));
+	n = Q.deserialize(buf, n);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(P, Q);
+
+	verifyOrderG2(true);
+	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(P.isValidOrder());
+	Q.clear();
+	n = Q.deserialize(buf, n);
+	CYBOZU_TEST_ASSERT(n > 0);
+	CYBOZU_TEST_EQUAL(P, Q);
+
+	// invalid point
+	P.z = 2;
+	CYBOZU_TEST_ASSERT(!P.isValid());
+
+	// valid point, invalid order
+	verifyOrderG2(false);
+	P.x.setStr(ng_x, 16);
+	P.y.setStr(ng_y, 16);
+	P.z = 1;
+	CYBOZU_TEST_ASSERT(P.isValid());
+	CYBOZU_TEST_ASSERT(!P.isValidOrder());
+	n = P.serialize(buf, sizeof(buf));
+	n = Q.deserialize(buf, n);
+	CYBOZU_TEST_ASSERT(n > 0); // success because of no-check the order
+	CYBOZU_TEST_EQUAL(P, Q);
+
+	verifyOrderG2(true);
+	CYBOZU_TEST_ASSERT(!P.isValid()); // fail because of invalid order
+	Q.clear();
+	n = Q.deserialize(buf, n); // fail because of invalid order
+	CYBOZU_TEST_ASSERT(n == 0);
+}
+
+
 typedef std::vector<Fp> FpVec;
 
 void f(FpVec& zv, const FpVec& xv, const FpVec& yv)
