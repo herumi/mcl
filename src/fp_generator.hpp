@@ -78,7 +78,7 @@ struct MixPack {
 	}
 	void removeLast()
 	{
-		if (!size()) throw cybozu::Exception("MixPack:removeLast:empty");
+		assert(size());
 		if (mn > 0) {
 			mn--;
 		} else {
@@ -248,6 +248,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
 		init_inner(op);
+		// ToDo : recover op if false
+		if (Xbyak::GetError()) return false;
 //		printf("code size=%d\n", (int)getSize());
 		setProtectModeRE(); // set read/exec memory
 		return true;
@@ -1822,9 +1824,7 @@ private:
 	*/
 	void sqr2(const Reg64& y3, const Reg64& y2, const Reg64& y1, const Reg64& y0, const Reg64& x1, const Reg64& x0, const Reg64& t1, const Reg64& t0)
 	{
-		if (!useMulx_) {
-			throw cybozu::Exception("sqr2:not support mulx");
-		}
+		assert(useMulx_);
 		mov(rdx, x0);
 		mulx(y1, y0, x0); // x0^2
 		mov(rdx, x1);
@@ -1843,9 +1843,7 @@ private:
 	*/
 	void mul2x2(const RegExp& px, const RegExp& py, const Reg64& t4, const Reg64& t3, const Reg64& t2, const Reg64& t1, const Reg64& t0)
 	{
-		if (!useMulx_) {
-			throw cybozu::Exception("mul2x2:not support mulx");
-		}
+		assert(useMulx_);
 #if 0
 		// # of add is less, but a little slower
 		mov(t4, ptr [py + 8 * 0]);
