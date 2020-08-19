@@ -9,33 +9,6 @@
 */
 namespace mcl {
 
-// ctr = 0 or 1 or 2
-template<class Fp2>
-inline void hashToFp2old(Fp2& out, const void *msg, size_t msgSize, uint8_t ctr, const void *dst, size_t dstSize)
-{
-	const bool addZeroByte = true; // append zero byte to msg
-	assert(ctr <= 2);
-	const size_t degree = 2;
-	uint8_t msg_prime[32];
-	// add '\0' at the end of dst
-	// see. 5.3. Implementation of https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve
-	if (addZeroByte) {
-		fp::hkdf_extract_addZeroByte(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
-	} else {
-		fp::hkdf_extract(msg_prime, reinterpret_cast<const uint8_t*>(dst), dstSize, reinterpret_cast<const uint8_t*>(msg), msgSize);
-	}
-	char info_pfx[] = "H2C000";
-	info_pfx[3] = ctr;
-	for (size_t i = 0; i < degree; i++) {
-		info_pfx[4] = char(i + 1);
-		uint8_t t[64];
-		fp::hkdf_expand(t, msg_prime, info_pfx);
-		bool b;
-		out.getFp0()[i].setBigEndianMod(&b, t, 64);
-		assert(b); (void)b;
-	}
-}
-
 namespace local {
 
 // y^2 = x^3 + 4(1 + i)

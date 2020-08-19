@@ -128,37 +128,6 @@ uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSiz
 	return (uint32_t)cybozu::Sha512().digest(out, maxOutSize, msg, msgSize);
 }
 
-void hkdf_extract_addZeroByte(uint8_t hmac[32], const uint8_t *salt, size_t saltSize, const uint8_t *msg, size_t msgSize)
-{
-	uint8_t saltZero[32];
-	if (salt == 0 || saltSize == 0) {
-		memset(saltZero, 0, sizeof(saltZero));
-		salt = saltZero;
-		saltSize = sizeof(saltZero);
-	}
-	cybozu::hmac256addZeroByte(hmac, salt, saltSize, msg, msgSize);
-}
-
-void hkdf_extract(uint8_t hmac[32], const uint8_t *salt, size_t saltSize, const uint8_t *msg, size_t msgSize)
-{
-	uint8_t saltZero[32];
-	if (salt == 0 || saltSize == 0) {
-		memset(saltZero, 0, sizeof(saltZero));
-		salt = saltZero;
-		saltSize = sizeof(saltZero);
-	}
-	cybozu::hmac256(hmac, salt, saltSize, msg, msgSize);
-}
-
-void hkdf_expand(uint8_t out[64], const uint8_t prk[32], char info[6])
-{
-	info[5] = 1;
-	cybozu::hmac256(out, prk, 32, info, 6);
-	info[5] = 2;
-	memcpy(out + 32, info, 6);
-	cybozu::hmac256(out + 32, prk, 32, out, 32 + 6);
-}
-
 void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
 {
 	assert(outSize == 128 || outSize == 256);
