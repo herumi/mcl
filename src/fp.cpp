@@ -139,7 +139,7 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 	/*
 		Z_apd | msg | BE(outSize, 2) | BE(0, 1) | DST | BE(dstSize, 1)
 	*/
-	uint8_t lenBuf[2] = { 1, 0 }; // 256 = outSize
+	uint8_t lenBuf[2];
 	uint8_t iBuf = 0;
 	uint8_t dstSizeBuf = uint8_t(dstSize);
 	cybozu::Set16bitAsBE(lenBuf, uint16_t(outSize));
