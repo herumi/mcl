@@ -73,10 +73,11 @@ ifeq ($(DEBUG),1)
     LDFLAGS+=-fsanitize=address
   endif
 else
-  CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
+
   ifeq ($(CXX),clang++)
     CFLAGS_OPT+=-O3
   else
+    CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
     ifeq ($(shell expr $(GCC_VER) \> 4.6.0),1)
       CFLAGS_OPT+=-Ofast
     else
