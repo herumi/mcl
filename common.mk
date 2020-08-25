@@ -23,6 +23,13 @@ ifeq ($(UNAME_S),Darwin)
 else
   LIB_SUF=so
 endif
+ifeq ($(UNAME_S),OpenBSD)
+  OS=openbsd
+  CXX=clang++
+  CFLAGS+=-I/usr/local/include
+  LDFLAGS+=-L/usr/local/lib
+endif
+
 ARCH?=$(shell uname -m)
 ifneq ($(findstring $(ARCH),x86_64/amd64),)
   CPU=x86-64
@@ -51,7 +58,7 @@ ifeq ($(ARCH),aarch64)
   CPU=aarch64
   BIT=64
 endif
-ifeq ($(findstring $(OS),mac/mingw64),)
+ifeq ($(findstring $(OS),mac/mingw64/openbsd),)
   LDFLAGS+=-lrt
 endif
 
