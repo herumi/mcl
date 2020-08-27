@@ -11,3 +11,6 @@ GTAGS
 *.exe
 *.swp
 .cvsignore
+build/
+external/
+Testing/
