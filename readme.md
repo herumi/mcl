@@ -152,6 +152,11 @@ cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
 
+For your convenience you could use the build script `build.sh` on Linux, macOS and
+Windows (requires Git Bash).
+
+On Windows, `build.sh` expects [cybozulib_ext](https://github.com/herumi/cybozulib_ext) to be within the same parent directory, otherwise, it will be downloaded into `external\cybozulib_ext` directory.
+
 ## options
 
 ```
