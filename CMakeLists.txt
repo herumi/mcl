@@ -1,5 +1,8 @@
 cmake_minimum_required (VERSION 3.8)
-project(mcl CXX C ASM)
+
+project(mcl
+	VERSION 1.22
+	LANGUAGES CXX C ASM)
 
 option(
 	MCL_MAX_BIT_SIZE
@@ -80,7 +83,10 @@ target_include_directories(mcl PUBLIC
 	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
 set_target_properties(mcl PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
-#set_target_properties(mcl PROPERTIES OUTPUT_NAME mcl VERSION 1.0.0 SOVERSION 1)
+set_target_properties(mcl PROPERTIES
+	OUTPUT_NAME mcl
+	VERSION ${mcl_VERSION}
+	SOVERSION ${mcl_VERSION_MAJOR})
 # For semantics of ABI compatibility including when you must bump SOVERSION, see:
 # https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B#The_Do.27s_and_Don.27ts
 
@@ -322,6 +328,9 @@ foreach(bit IN ITEMS 256 384 384_256 512)
 	target_compile_definitions(mclbn${bit}
 		PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK)
 	target_link_libraries(mclbn${bit} PUBLIC mcl::mcl)
+	set_target_properties(mclbn${bit} PROPERTIES
+		VERSION ${mcl_VERSION}
+		SOVERSION ${mcl_VERSION_MAJOR})
 endforeach()
 
 # mclsheXXX
@@ -336,6 +345,9 @@ foreach(bit IN ITEMS 256 384 384_256)
 	target_compile_definitions(mclshe${bit}
 		PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK MCLSHE_NO_AUTOLINK)
 	target_link_libraries(mclshe${bit} PUBLIC mcl::mcl)
+	set_target_properties(mclshe${bit} PROPERTIES
+		VERSION ${mcl_VERSION}
+		SOVERSION ${mcl_VERSION_MAJOR})
 endforeach()
 
 # ECDSA
@@ -345,6 +357,9 @@ set_target_properties(mclecdsa PROPERTIES
 	CXX_STANDARD 11
 	CXX_STANDARD_REQUIRED YES
 	CXX_EXTENSIONS NO)
+set_target_properties(mclecdsa PROPERTIES
+	VERSION ${mcl_VERSION}
+	SOVERSION ${mcl_VERSION_MAJOR})
 target_link_libraries(mclecdsa PUBLIC mcl::mcl)
 
 if(MSVC)
