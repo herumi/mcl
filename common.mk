@@ -25,7 +25,7 @@ else
 endif
 ifeq ($(UNAME_S),OpenBSD)
   OS=openbsd
-  CXX=clang++
+  CXX?=clang++
   CFLAGS+=-I/usr/local/include
   LDFLAGS+=-L/usr/local/lib
 endif
