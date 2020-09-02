@@ -4,125 +4,126 @@ using System.Runtime.InteropServices;
 
 namespace mcl {
 	public class BN256 {
-		[DllImport("mclBn256.dll")]
+		public const string dllName = "mclBn256";
+		[DllImport(dllName)]
 		public static extern int mclBn_init(int curve, int compiledTimeVar);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_clear(ref Fr x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_setInt(ref Fr y, int x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_setStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_isValid(ref Fr x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_isEqual(ref Fr x, ref Fr y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_isZero(ref Fr x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_isOne(ref Fr x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_setByCSPRNG(ref Fr x);
 
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_setHashOf(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnFr_getStr([Out]StringBuilder buf, long maxBufSize, ref Fr x, int ioMode);
 
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_neg(ref Fr y, ref Fr x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_inv(ref Fr y, ref Fr x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_add(ref Fr z, ref Fr x, ref Fr y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_sub(ref Fr z, ref Fr x, ref Fr y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_mul(ref Fr z, ref Fr x, ref Fr y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnFr_div(ref Fr z, ref Fr x, ref Fr y);
 
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG1_clear(ref G1 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG1_setStr(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG1_isValid(ref G1 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG1_isEqual(ref G1 x, ref G1 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG1_isZero(ref G1 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG1_hashAndMapTo(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern long mclBnG1_getStr([Out]StringBuilder buf, long maxBufSize, ref G1 x, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG1_neg(ref G1 y, ref G1 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG1_dbl(ref G1 y, ref G1 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG1_add(ref G1 z, ref G1 x, ref G1 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG1_sub(ref G1 z, ref G1 x, ref G1 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG1_mul(ref G1 z, ref G1 x, ref Fr y);
 
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG2_clear(ref G2 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG2_isValid(ref G2 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG2_isEqual(ref G2 x, ref G2 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG2_isZero(ref G2 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnG2_hashAndMapTo(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern long mclBnG2_getStr([Out]StringBuilder buf, long maxBufSize, ref G2 x, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG2_neg(ref G2 y, ref G2 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG2_dbl(ref G2 y, ref G2 x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG2_add(ref G2 z, ref G2 x, ref G2 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG2_sub(ref G2 z, ref G2 x, ref G2 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnG2_mul(ref G2 z, ref G2 x, ref Fr y);
 
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_clear(ref GT x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnGT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnGT_isEqual(ref GT x, ref GT y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnGT_isZero(ref GT x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern int mclBnGT_isOne(ref GT x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern long mclBnGT_getStr([Out]StringBuilder buf, long maxBufSize, ref GT x, int ioMode);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_neg(ref GT y, ref GT x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_inv(ref GT y, ref GT x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_add(ref GT z, ref GT x, ref GT y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_sub(ref GT z, ref GT x, ref GT y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_mul(ref GT z, ref GT x, ref GT y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_div(ref GT z, ref GT x, ref GT y);
 
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBnGT_pow(ref GT z, ref GT x, ref Fr y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBn_pairing(ref GT z, ref G1 x, ref G2 y);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBn_finalExp(ref GT y, ref GT x);
-		[DllImport("mclBn256.dll")]
+		[DllImport(dllName)]
 		public static extern void mclBn_millerLoop(ref GT z, ref G1 x, ref G2 y);
 
 		public static void init()
