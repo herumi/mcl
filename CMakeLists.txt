@@ -317,7 +317,7 @@ else()
 endif()
 
 # mclbnXXX
-foreach(bit IN ITEMS 256 384 384_256 512)
+foreach(bit IN ITEMS 256 384 384_256)
 	add_library(mclbn${bit} SHARED src/bn_c${bit}.cpp)
 	add_library(mcl::mclbn${bit} ALIAS mclbn${bit})
 	set_target_properties(mclbn${bit} PROPERTIES
@@ -333,45 +333,14 @@ foreach(bit IN ITEMS 256 384 384_256 512)
 		SOVERSION ${mcl_VERSION_MAJOR})
 endforeach()
 
-# mclsheXXX
-foreach(bit IN ITEMS 256 384 384_256)
-	add_library(mclshe${bit} SHARED src/she_c${bit}.cpp)
-	add_library(mcl::mclshe${bit} ALIAS mclshe${bit})
-	set_target_properties(mclshe${bit} PROPERTIES
-		CXX_STANDARD 11
-		CXX_STANDARD_REQUIRED YES
-		CXX_EXTENSIONS NO)
-	target_compile_options(mclshe${bit} PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_definitions(mclshe${bit}
-		PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK MCLSHE_NO_AUTOLINK)
-	target_link_libraries(mclshe${bit} PUBLIC mcl::mcl)
-	set_target_properties(mclshe${bit} PROPERTIES
-		VERSION ${mcl_VERSION}
-		SOVERSION ${mcl_VERSION_MAJOR})
-endforeach()
-
-# ECDSA
-add_library(mclecdsa SHARED src/ecdsa_c.cpp)
-add_library(mcl::mclecdsa ALIAS mclecdsa)
-set_target_properties(mclecdsa PROPERTIES
-	CXX_STANDARD 11
-	CXX_STANDARD_REQUIRED YES
-	CXX_EXTENSIONS NO)
-set_target_properties(mclecdsa PROPERTIES
-	VERSION ${mcl_VERSION}
-	SOVERSION ${mcl_VERSION_MAJOR})
-target_link_libraries(mclecdsa PUBLIC mcl::mcl)
-
 if(MSVC)
-	install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256 mclbn512 mclshe256
-		mclshe384 mclshe384_256 windows_specific
+	install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256 windows_specific
 		EXPORT mclTargets
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 		RUNTIME DESTINATION lib)
 else()
-	install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256 mclbn512 mclshe256
-		mclshe384 mclshe384_256
+	install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
 		EXPORT mclTargets
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
