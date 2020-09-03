@@ -160,9 +160,16 @@ On Windows, `build.sh` expects [cybozulib_ext](https://github.com/herumi/cybozul
 ## options
 
 ```
-cmake .. USE_GMP=OFF ; without GMP
+cmake .. MCL_USE_GMP=OFF ; without GMP
 ```
 see `cmake .. -LA`.
+
+## tests
+make test binaries in `./bin`.
+```
+cmake .. -DBUILD_TESTING=ON
+make -j4
+```
 
 # How to build for wasm(WebAssembly)
 mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge.

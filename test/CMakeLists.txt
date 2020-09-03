@@ -1,5 +1,5 @@
 # Tests
-set(MCL_TEST_BASE fp_test ec_test fp_util_test window_method_test elgamal_test
+set(MCL_TEST_BASE fp_test ec_test fp_util_test window_method_test elgamal_test bls12_test
 	fp_tower_test gmp_test bn_test glv_test)
 foreach(base IN ITEMS ${MCL_TEST_BASE})
 	add_executable(${base} ${base}.cpp)
