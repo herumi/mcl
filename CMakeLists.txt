@@ -4,10 +4,12 @@ project(mcl
 	VERSION 1.22
 	LANGUAGES CXX C ASM)
 
+set(CMAKE_BUILD_TYPE "Release")
+
 option(
 	MCL_MAX_BIT_SIZE
 	"max bit size for Fp"
-	0
+	384
 )
 if(MSVC)
 	option(
