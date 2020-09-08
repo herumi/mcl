@@ -6,7 +6,9 @@
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
 #else
-#include "detect_cpu.hpp"
+#define XBYAK_ONLY_CLASS_CPU
+#include "xbyak/xbyak_util.h"
+//#include "detect_cpu.hpp"
 #endif
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
@@ -299,13 +301,8 @@ void setOp(Op& op, Mode mode)
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
 #if MCL_LLVM_BMI2 == 1
 		const bool gmpIsFasterThanLLVM = false;//(N == 8 && MCL_SIZEOF_UNIT == 8);
-#ifdef MCL_USE_XBYAK
-		using namespace Xbyak;
-#else
-		using namespace mcl;
-#endif
-		util::Cpu cpu;
-		if (cpu.has(util::Cpu::tBMI2)) {
+		Xbyak::util::Cpu cpu;
+		if (cpu.has(Xbyak::util::Cpu::tBMI2)) {
 			setOp2<N, LBMI2tag, (N * UnitBitSize <= 384), gmpIsFasterThanLLVM>(op);
 		} else
 #endif
