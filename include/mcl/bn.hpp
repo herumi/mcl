@@ -1460,7 +1460,6 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 	Fp12::pow(y, x, (p4 - p2 + 1) / param.r * 3);
 	return;
 #endif
-#if 1
 	Fp12 a0, a1, a2, a3, a4, a5, a6, a7;
 	Fp12::unitaryInv(a0, x); // a0 = x^-1
 	fasterSqr(a1, a0); // x^-2
@@ -1485,19 +1484,6 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 	a7 *= x; // x^(z^2-2z+1) = x^c3
 	Fp12::Frobenius3(y, a7);
 	y *= a1;
-#else
-	Fp12 t1, t2, t3;
-	Fp12::Frobenius(t1, x);
-	Fp12::Frobenius(t2, t1);
-	Fp12::Frobenius(t3, t2);
-	Fp12::pow(t1, t1, param.exp_c1);
-	Fp12::pow(t2, t2, param.exp_c2);
-	Fp12::pow(t3, t3, param.exp_c3);
-	Fp12::pow(y, x, param.exp_c0);
-	y *= t1;
-	y *= t2;
-	y *= t3;
-#endif
 }
 /*
 	Faster Hashing to G2
