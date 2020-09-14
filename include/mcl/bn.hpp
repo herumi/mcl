@@ -1460,6 +1460,33 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 	Fp12::pow(y, x, (p4 - p2 + 1) / param.r * 3);
 	return;
 #endif
+#if 1
+	/*
+		Efficient Final Exponentiation via Cyclotomic Structure
+		for Pairings over Families of Elliptic Curves
+		https://eprint.iacr.org/2020/875.pdf p.13
+		(z-1)^2 (z+p)(z^2+p^2-1)+3
+	*/
+	Fp12 a0, a1, a2, a3, a4;
+	pow_z(a0, x); // z
+	Fp12::unitaryInv(a1, x); // -1
+	a0 *= a1; // z-1
+	pow_z(a1, a0); // (z-1)^z
+	Fp12::unitaryInv(a0, a0); // -(z-1)
+	a0 *= a1; // (z-1)^2
+	pow_z(a1, a0); // z
+	Fp12::Frobenius(a0, a0); // p
+	a0 *=a1; // (z-1)^2 (z+p)
+	pow_z(a1, a0); // z
+	pow_z(a1, a1); // z^2
+	Fp12::Frobenius2(a2, a0); // p^2
+	Fp12::unitaryInv(a0, a0); // -1
+	a0 *= a1;
+	a0 *= a2; // z^2+p^2-1
+	fasterSqr(a1, x);
+	a1 *= x; // x^3
+	Fp12::mul(y, a0, a1);
+#else
 	Fp12 a0, a1, a2, a3, a4, a5, a6, a7;
 	Fp12::unitaryInv(a0, x); // a0 = x^-1
 	fasterSqr(a1, a0); // x^-2
@@ -1484,6 +1511,7 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 	a7 *= x; // x^(z^2-2z+1) = x^c3
 	Fp12::Frobenius3(y, a7);
 	y *= a1;
+#endif
 }
 /*
 	Faster Hashing to G2
