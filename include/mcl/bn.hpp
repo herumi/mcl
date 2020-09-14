@@ -1467,7 +1467,7 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 		https://eprint.iacr.org/2020/875.pdf p.13
 		(z-1)^2 (z+p)(z^2+p^2-1)+3
 	*/
-	Fp12 a0, a1, a2, a3, a4;
+	Fp12 a0, a1, a2;
 	pow_z(a0, x); // z
 	Fp12::unitaryInv(a1, x); // -1
 	a0 *= a1; // z-1
