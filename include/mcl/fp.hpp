@@ -130,10 +130,10 @@ public:
 		xi_a is used for Fp2::mul_xi(), where xi = xi_a + i and i^2 = -1
 		if xi_a = 0 then asm functions for Fp2 are not generated.
 	*/
-	static inline void init(bool *pb, int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO, const char *suf = 0)
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		*pb = op_.init(p, maxBitSize, xi_a, mode);
+		*pb = op_.init(p, maxBitSize, xi_a, mode, suf);
 		if (!*pb) return;
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);
@@ -163,16 +163,16 @@ public:
 #endif
 		*pb = true;
 	}
-	static inline void init(bool *pb, const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, const mpz_class& p, fp::Mode mode = fp::FP_AUTO, const char *suf = 0)
 	{
-		init(pb, 0, p, mode);
+		init(pb, 0, p, mode, suf);
 	}
-	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO, const char *suf = 0)
 	{
 		mpz_class p;
 		gmp::setStr(pb, p, mstr);
 		if (!*pb) return;
-		init(pb, p, mode);
+		init(pb, p, mode, suf);
 	}
 	static inline size_t getModulo(char *buf, size_t bufSize)
 	{

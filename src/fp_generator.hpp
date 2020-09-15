@@ -23,7 +23,58 @@
 	#pragma warning(disable : 4458)
 #endif
 
+//#define MCL_FREEZE_JIT
+
 namespace mcl {
+
+#ifdef MCL_FREEZE_JIT
+struct Profiler {
+	FILE *fp_;
+	const uint8_t *prev_;
+	std::string suf_;
+	Profiler()
+		: fp_(0)
+		, prev_(0)
+	{
+	}
+	~Profiler()
+	{
+		if (fp_) fclose(fp_);
+	}
+	void open(const std::string& fileName)
+	{
+		fp_ = fopen(fileName.c_str(), "wb");
+	}
+	void setStartAddr(const uint8_t *addr)
+	{
+		prev_ = addr;
+	}
+	void setNameSuffix(const char *suf)
+	{
+		suf_ = suf;
+	}
+	void set(const char *name, const uint8_t *end)
+	{
+		fprintf(fp_, "global %s%s\n", suf_.c_str(), name);
+		fprintf(fp_, "align 16\n");
+		fprintf(fp_, "%s%s:\n", suf_.c_str(), name);
+		const uint8_t *p = prev_;
+		size_t remain = end - prev_;
+		while (remain > 0) {
+			size_t n = remain >= 16 ? 16 : remain;
+			fprintf(fp_, "db ");
+			for (size_t i = 0; i < n; i++) {
+				fprintf(fp_, "0x%02x,", *p++);
+			}
+			fprintf(fp_, "\n");
+			remain -= n;
+		}
+		prev_ = end;
+	}
+};
+#else
+typedef Xbyak::util::Profiler Profiler;
+#endif
 
 namespace fp_gen_local {
 
@@ -203,7 +254,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	int pn_;
 	int FpByte_;
 	bool isFullBit_;
-	Xbyak::util::Profiler prof_;
+	Profiler prof_;
 
 	/*
 		@param op [in] ; use op.p, op.N, op.isFullBit
@@ -242,12 +293,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
 	}
-	bool init(Op& op)
+	bool init(Op& op, const char *suf)
 	{
 		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return false;
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
-		init_inner(op);
+		init_inner(op, suf);
 		// ToDo : recover op if false
 		if (Xbyak::GetError()) return false;
 //		printf("code size=%d\n", (int)getSize());
@@ -255,7 +306,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		return true;
 	}
 private:
-	void init_inner(Op& op)
+	void init_inner(Op& op, const char *suf)
 	{
 		op_ = &op;
 		L(pL_);
@@ -269,7 +320,6 @@ private:
 		isFullBit_ = op.isFullBit;
 //		printf("p=%p, pn_=%d, isFullBit_=%d\n", p_, pn_, isFullBit_);
 #ifdef MCL_USE_PROF
-		static char suf[] = "_0";
 		int profMode = 0;
 #ifdef XBYAK_USE_VTUNE
 		profMode = 2;
@@ -281,89 +331,92 @@ private:
 		if (profMode) {
 			prof_.init(profMode);
 			prof_.setStartAddr(getCurr());
+			if (suf == 0) suf = "fp";
 			prof_.setNameSuffix(suf);
 			suf[1]++;
 		}
+#else
+		(void)suf;
 #endif
 
 		op.fp_addPre = gen_addSubPre(true, pn_);
-		prof_.set("Fp_addPre", getCurr());
+		prof_.set("_addPre", getCurr());
 
 		op.fp_subPre = gen_addSubPre(false, pn_);
-		prof_.set("Fp_subPre", getCurr());
+		prof_.set("_subPre", getCurr());
 
 		op.fp_addA_ = gen_fp_add();
-		prof_.set("Fp_add", getCurr());
+		prof_.set("_add", getCurr());
 
 		op.fp_subA_ = gen_fp_sub();
-		prof_.set("Fp_sub", getCurr());
+		prof_.set("_sub", getCurr());
 
 		op.fp_shr1 = gen_shr1();
-		prof_.set("Fp_shr1", getCurr());
+		prof_.set("_shr1", getCurr());
 
 		op.fp_negA_ = gen_fp_neg();
-		prof_.set("Fp_neg", getCurr());
+		prof_.set("_neg", getCurr());
 
 		op.fpDbl_addA_ = gen_fpDbl_add();
-		prof_.set("FpDbl_add", getCurr());
+		prof_.set("Dbl_add", getCurr());
 
 		op.fpDbl_subA_ = gen_fpDbl_sub();
-		prof_.set("FpDbl_sub", getCurr());
+		prof_.set("Dbl_sub", getCurr());
 
 		op.fpDbl_addPre = gen_addSubPre(true, pn_ * 2);
-		prof_.set("FpDbl_addPre", getCurr());
+		prof_.set("Dbl_addPre", getCurr());
 
 		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
-		prof_.set("FpDbl_subPre", getCurr());
+		prof_.set("Dbl_subPre", getCurr());
 
 		op.fpDbl_mulPreA_ = gen_fpDbl_mulPre();
-		prof_.set("FpDbl_mulPre", getCurr());
+		prof_.set("Dbl_mulPre", getCurr());
 
 		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
-		prof_.set("FpDbl_sqrPre", getCurr());
+		prof_.set("Dbl_sqrPre", getCurr());
 
 		op.fpDbl_modA_ = gen_fpDbl_mod(op);
-		prof_.set("FpDbl_mod", getCurr());
+		prof_.set("Dbl_mod", getCurr());
 
 		op.fp_mulA_ = gen_mul();
-		prof_.set("Fp_mul", getCurr());
+		prof_.set("_mul", getCurr());
 		if (op.fp_mulA_) {
 			op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
 		}
 		op.fp_sqrA_ = gen_sqr();
-		prof_.set("Fp_sqr", getCurr());
+		prof_.set("_sqr", getCurr());
 
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
-			prof_.set("preInv", getCurr());
+			prof_.set("_preInv", getCurr());
 		}
 		if (op.xi_a == 0) return; // Fp2 is not used
 		op.fp2_addA_ = gen_fp2_add();
-		prof_.set("Fp2_add", getCurr());
+		prof_.set("2_add", getCurr());
 
 		op.fp2_subA_ = gen_fp2_sub();
-		prof_.set("Fp2_sub", getCurr());
+		prof_.set("2_sub", getCurr());
 
 		op.fp2_negA_ = gen_fp2_neg();
-		prof_.set("Fp2_neg", getCurr());
+		prof_.set("2_neg", getCurr());
 
 		op.fp2_mulNF = 0;
 		op.fp2Dbl_mulPreA_ = gen_fp2Dbl_mulPre();
-		prof_.set("Fp2Dbl_mulPre", getCurr());
+		prof_.set("2Dbl_mulPre", getCurr());
 
 		op.fp2Dbl_sqrPreA_ = gen_fp2Dbl_sqrPre();
-		prof_.set("Fp2Dbl_sqrPre", getCurr());
+		prof_.set("2Dbl_sqrPre", getCurr());
 
 		op.fp2_mulA_ = gen_fp2_mul();
-		prof_.set("Fp2_mul", getCurr());
+		prof_.set("2_mul", getCurr());
 
 		op.fp2_sqrA_ = gen_fp2_sqr();
-		prof_.set("Fp2_sqr", getCurr());
+		prof_.set("2_sqr", getCurr());
 
 		op.fp2_mul_xiA_ = gen_fp2_mul_xi();
-		prof_.set("Fp2_mul_xi", getCurr());
+		prof_.set("2_mul_xi", getCurr());
 	}
 	u3u gen_addSubPre(bool isAdd, int n)
 	{
