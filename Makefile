@@ -237,6 +237,9 @@ endif
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS)
 
+src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -I include -DMCL_FREEZE_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER
+
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 

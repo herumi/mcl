@@ -28,28 +28,31 @@
 namespace mcl {
 
 #ifdef MCL_FREEZE_JIT
+// not profiler, but dump jit code
 struct Profiler {
 	FILE *fp_;
 	const uint8_t *prev_;
 	std::string suf_;
 	Profiler()
-		: fp_(0)
+		: fp_(stdout)
 		, prev_(0)
 	{
 	}
 	~Profiler()
 	{
-		if (fp_) fclose(fp_);
+//		if (fp_) fclose(fp_);
 	}
+#if 0
 	void open(const std::string& fileName)
 	{
 		fp_ = fopen(fileName.c_str(), "wb");
 	}
+#endif
 	void setStartAddr(const uint8_t *addr)
 	{
 		prev_ = addr;
 	}
-	void setNameSuffix(const char *suf)
+	void setNameSuffix(const std::string& suf)
 	{
 		suf_ = suf;
 	}
@@ -70,6 +73,18 @@ struct Profiler {
 			remain -= n;
 		}
 		prev_ = end;
+	}
+	void dumpData(const void *begin, const void *end)
+	{
+		fprintf(fp_, "align 16\n");
+		fprintf(fp_, "dq ");
+		const uint64_t *p = (const uint64_t*)begin;
+		const uint64_t *pe = (const uint64_t*)end;
+		const size_t n = pe - p;
+		for (size_t i = 0; i < n; i++) {
+			fprintf(fp_, "0x%016llx,", (unsigned long long)*p++);
+		}
+		fprintf(fp_, "\n");
 	}
 };
 #else
@@ -314,6 +329,11 @@ private:
 		for (size_t i = 0; i < op.N; i++) {
 			dq(op.p[i]);
 		}
+#ifdef MCL_FREEZE_JIT
+		prof_.dumpData(p_, getCurr());
+		prof_.setStartAddr(getCurr());
+		prof_.setNameSuffix(std::string("mclx_") + suf);
+#endif
 		rp_ = fp::getMontgomeryCoeff(p_[0]);
 		pn_ = (int)op.N;
 		FpByte_ = int(op.maxN * sizeof(uint64_t));
