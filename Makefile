@@ -238,8 +238,17 @@ $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS)
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
-	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -I include -DMCL_FREEZE_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER
 
+src/static_code.asm: src/dump_code
+	$< > $@
+
+obj/static_code.o: src/static_code.asm
+	nasm -felf64 -o $@ $<
+
+bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
+	$(CXX) -o $@ -O3 $^ -DMCL_STATIC_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I include -Wall -Wextra
+ 
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
@@ -391,7 +400,7 @@ update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) src/*.ll lib/*.a
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) src/*.ll lib/*.a src/static_code.asm src/dump_code
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))

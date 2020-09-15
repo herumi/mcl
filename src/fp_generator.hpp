@@ -23,11 +23,11 @@
 	#pragma warning(disable : 4458)
 #endif
 
-//#define MCL_FREEZE_JIT
+//#define MCL_DUMP_JIT
 
 namespace mcl {
 
-#ifdef MCL_FREEZE_JIT
+#ifdef MCL_DUMP_JIT
 // not profiler, but dump jit code
 struct Profiler {
 	FILE *fp_;
@@ -329,7 +329,7 @@ private:
 		for (size_t i = 0; i < op.N; i++) {
 			dq(op.p[i]);
 		}
-#ifdef MCL_FREEZE_JIT
+#ifdef MCL_DUMP_JIT
 		prof_.dumpData(p_, getCurr());
 		prof_.setStartAddr(getCurr());
 		prof_.setNameSuffix(std::string("mclx_") + suf);
