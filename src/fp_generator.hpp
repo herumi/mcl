@@ -77,6 +77,7 @@ struct DumpCode {
 template<class T>
 void setFuncInfo(DumpCode& prof, const char *suf, const char *name, const T& begin, const uint8_t* end)
 {
+	if (suf == 0) suf = "";
 	const uint8_t*p = (const uint8_t*)begin;
 	prof.set(std::string("mclx_") + suf + name, p, end - p);
 }
@@ -84,6 +85,7 @@ void setFuncInfo(DumpCode& prof, const char *suf, const char *name, const T& beg
 template<class T>
 void setFuncInfo(Xbyak::util::Profiler& prof, const char *suf, const char *name, const T& begin, const uint8_t* end)
 {
+	if (suf == 0) suf = "";
 	const uint8_t*p = (const uint8_t*)begin;
 	prof.set((std::string("mclx_") + suf + name).c_str(), p, end - p);
 }
@@ -535,7 +537,7 @@ printf("isFp=%d\n", isFp);
 		}
 		jmp(exit);
 	L(nonZero);
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		for (size_t i = 0; i < t.size(); i++) {
 			mov(rdx, ptr [rax + i * 8]);
 			if (i == 0) {
@@ -663,7 +665,7 @@ printf("isFp=%d\n", isFp);
 			mov(*fullReg, 0);
 			adc(*fullReg, 0);
 		}
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		sub_rm(p1, rax);
 		if (fullReg) {
 			sbb(*fullReg, 0);
@@ -683,7 +685,7 @@ printf("isFp=%d\n", isFp);
 		const Pack& p1 = t.sub(pn_, pn_);
 		load_rm(p0, px);
 		sub_rm(p0, py, withCarry);
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		load_rm(p1, rax);
 		sbb(rax, rax); // rax = (x > y) ? 0 : -1
 		for (size_t i = 0; i < p1.size(); i++) {
@@ -724,7 +726,7 @@ printf("isFp=%d\n", isFp);
 		Label exit;
 		if (isFullBit_) {
 			jnc("@f");
-			mov(t2[0], pL_); // t2 is not used
+			lea(t2[0], ptr[rip+pL_]); // t2[0] is not used
 			sub_rm(t1, t2[0]);
 			jmp(exit);
 		L("@@");
@@ -771,7 +773,7 @@ printf("isFp=%d\n", isFp);
 
 		inLocalLabel();
 		gen_raw_add(pz, px, py, rax, pn_);
-		mov(px, pL_); // destroy px
+		lea(px, ptr[rip+pL_]);
 		if (isFullBit_) {
 			jc(".over", jmpMode);
 		}
@@ -894,7 +896,7 @@ printf("isFp=%d\n", isFp);
 		Label exit;
 		gen_raw_sub(pz, px, py, rax, pn_);
 		jnc(exit, jmpMode);
-		mov(px, pL_);
+		lea(px, ptr[rip+pL_]);
 		gen_raw_add(pz, pz, px, rax, pn_);
 	L(exit);
 		return func;
@@ -1000,7 +1002,7 @@ printf("isFp=%d\n", isFp);
 
 		mov(a, rp_);
 		mul(t6);
-		mov(t0, pL_);
+		lea(t0, ptr[rip+pL_]);
 		mov(t7, a); // q
 
 		// [d:t7:t1] = p * q
@@ -1069,7 +1071,7 @@ printf("isFp=%d\n", isFp);
 
 		mov(a, rp_);
 		mul(t10);
-		mov(t0, pL_);
+		lea(t0, ptr[rip+pL_]);
 		mov(t7, a); // q
 
 		// [d:t7:t2:t1] = p * q
@@ -1149,7 +1151,7 @@ printf("isFp=%d\n", isFp);
 
 		mov(a, rp_);
 		mul(z);
-		mov(t0, pL_);
+		lea(t0, ptr[rip+pL_]);
 		mov(t7, a); // q
 
 		// [d:t7:t3:t2:t1] = p * q
@@ -1405,7 +1407,7 @@ printf("isFp=%d\n", isFp);
 
 	L(fp_mulL);
 		vmovq(xm0, p0); // save p0
-		mov(p0, pL_);
+		lea(p0, ptr[rip+pL_]);
 		vmovq(xm1, p2);
 		mov(p2, ptr [p2]);
 		montgomery4_1(rp_, t0, t7, t3, t2, t1, p1, p2, p0, t4, t5, t6, t8, t9, true, xm2);
@@ -1501,7 +1503,7 @@ printf("isFp=%d\n", isFp);
 		mov(a, rp_);
 		mul(c[0]); // q = a
 		mov(d, a);
-		mov(t1, pL_);
+		lea(t1, ptr[rip+pL_]);
 		// c += p * q
 		mulAdd(c, 6, t1);
 	}
@@ -1547,7 +1549,7 @@ printf("isFp=%d\n", isFp);
 		const Pack z = Pack(t3, t2, t1, t0, t7, t6);
 		const Pack keep = Pack(rdx, rax, px, py, t8, t9);
 		mov_rr(keep, z);
-		mov(t5, pL_);
+		lea(t5, ptr[rip+pL_]);
 		sub_rm(z, t5);
 		cmovc_rr(z, keep);
 		store_mr(pz, z);
@@ -1577,7 +1579,7 @@ printf("isFp=%d\n", isFp);
 		const Reg64& t9 = sf.t[9];
 
 		vmovq(xm0, p0); // save p0
-		mov(t7, pL_);
+		lea(t7, ptr[rip+pL_]);
 		mov(t9, ptr [p2]);
 		//                c3, c2, c1, c0, px, y,  p,
 		montgomery3_1(rp_, t0, t3, t2, t1, p1, t9, t7, t4, t5, t6, t8, p0, true);
@@ -1623,7 +1625,7 @@ printf("isFp=%d\n", isFp);
 		const Reg64& t9 = sf.t[9];
 
 		vmovq(xm0, pz); // save pz
-		mov(t7, pL_);
+		lea(t7, ptr[rip+pL_]);
 		mov(t9, ptr [px]);
 		mul3x1_sqr1(px, t9, t3, t2, t1, t0);
 		mov(t0, rdx);
