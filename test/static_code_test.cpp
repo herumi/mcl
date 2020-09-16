@@ -5,7 +5,11 @@ using namespace mcl::bn;
 int main()
 {
 	initPairing(mcl::BLS12_381);
-	Fr x;
+	Fp x, y, z;
 	x = 3;
-	printf("%s\n", x.getStr(16).c_str());
+	y = 5;
+	z = x + y;
+	printf("x=%s\n", x.getStr(16).c_str());
+	printf("y=%s\n", y.getStr(16).c_str());
+	printf("z=%s\n", z.getStr(16).c_str());
 }
