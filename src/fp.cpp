@@ -3,12 +3,14 @@
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+#ifdef MCL_STATIC_CODE
+#include "fp_static_code.hpp"
+#endif
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
 #else
 #define XBYAK_ONLY_CLASS_CPU
 #include "xbyak/xbyak_util.h"
-//#include "detect_cpu.hpp"
 #endif
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
@@ -315,7 +317,7 @@ void setOp(Op& op, Mode mode)
 #endif
 }
 
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 {
 	Unit r[maxUnitSize];
@@ -372,6 +374,12 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
+#elif defined(MCL_STATIC_CODE)
+	fp::setStaticCode(op);
+	if (op.isMont && N <= 4) {
+		op.fp_invOp = &invOpForMontC;
+		initInvTbl(op);
+	}
 #endif
 	return true;
 }
@@ -403,14 +411,25 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
 */
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 	if (mode == FP_AUTO) mode = FP_XBYAK;
 	if (mode == FP_XBYAK && bitSize > 384) {
 		mode = FP_AUTO;
 	}
+#ifdef MCL_USE_XBYAK
 	if (!isEnableJIT()) {
 		mode = FP_AUTO;
 	}
+#elif MCL_STATIC_CODE
+	{
+		// static jit code uses avx, mulx, adox, adcx
+		using namespace Xbyak::util;
+		Cpu cpu;
+		if (!(cpu.has(Cpu::tAVX) && cpu.has(Cpu::tBMI2) && cpu.has(Cpu::tADX))) {
+			mode = FP_AUTO;
+		}
+	}
+#endif
 #else
 	if (mode == FP_XBYAK) mode = FP_AUTO;
 #endif

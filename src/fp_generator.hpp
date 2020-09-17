@@ -7,7 +7,6 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL
-#define XBYAK_NO_OP_NAMES
 #define XBYAK_DISABLE_AVX512
 #include "xbyak/xbyak_util.h"
 
@@ -24,45 +23,6 @@
 #endif
 
 namespace mcl {
-
-#ifdef MCL_STATIC_JIT
-typedef fp::Unit Unit;
-extern "C" {
-Unit mclx_Fp_addPre(Unit*, const Unit*, const Unit*);
-Unit mclx_Fp_subPre(Unit*, const Unit*, const Unit*);
-void mclx_Fp_add(Unit*, const Unit*, const Unit*);
-void mclx_Fp_sub(Unit*, const Unit*, const Unit*);
-void mclx_Fp_shr1(Unit*, const Unit*);
-void mclx_Fp_neg(Unit*, const Unit*);
-void mclx_Fp_mul(Unit*, const Unit*, const Unit*);
-void mclx_Fp_sqr(Unit*, const Unit*);
-void mclx_FpDbl_add(Unit*, const Unit*, const Unit*);
-void mclx_FpDbl_sub(Unit*, const Unit*, const Unit*);
-void mclx_FpDbl_add(Unit*, const Unit*, const Unit*);
-void mclx_FpDbl_sub(Unit*, const Unit*, const Unit*);
-Unit mclx_FpDbl_addPre(Unit*, const Unit*, const Unit*);
-Unit mclx_FpDbl_subPre(Unit*, const Unit*, const Unit*);
-void mclx_FpDbl_mulPre(Unit*, const Unit*, const Unit*);
-void mclx_FpDbl_sqrPre(Unit*, const Unit*);
-void mclx_FpDbl_mod(Unit*, const Unit*);
-void mclx_Fp2_add(Unit*, const Unit*, const Unit*);
-void mclx_Fp2_sub(Unit*, const Unit*, const Unit*);
-void mclx_Fp2_neg(Unit*, const Unit*);
-void mclx_Fp2_mul(Unit*, const Unit*, const Unit*);
-void mclx_Fp2_sqr(Unit*, const Unit*);
-void mclx_Fp2_mul_xi(Unit*, const Unit*);
-
-Unit mclx_Fr_addPre(Unit*, const Unit*, const Unit*);
-Unit mclx_Fr_subPre(Unit*, const Unit*, const Unit*);
-void mclx_Fr_add(Unit*, const Unit*, const Unit*);
-void mclx_Fr_sub(Unit*, const Unit*, const Unit*);
-void mclx_Fr_shr1(Unit*, const Unit*);
-void mclx_Fr_neg(Unit*, const Unit*);
-void mclx_Fr_mul(Unit*, const Unit*, const Unit*);
-void mclx_Fr_sqr(Unit*, const Unit*);
-int mclx_Fr_preInv(Unit*, const Unit*);
-}
-#endif
 
 #ifdef MCL_DUMP_JIT
 struct DumpCode {
@@ -488,38 +448,6 @@ private:
 		align(16);
 		op.fp2_mul_xiA_ = gen_fp2_mul_xi();
 		setFuncInfo(prof_, suf, "2_mul_xi", op.fp2_mul_xiA_, getCurr());
-
-#ifdef MCL_STATIC_JIT
-		if (op.xi_a) {
-			// Fp, sizeof(Fp) = 48, supports Fp2
-			op.fp_addPre = mclx_Fp_addPre;
-			op.fp_subPre = mclx_Fp_subPre;
-			op.fp_addA_ = mclx_Fp_add;
-			op.fp_subA_ = mclx_Fp_sub;
-			op.fp_shr1 = mclx_Fp_shr1;
-			op.fp_negA_ = mclx_Fp_neg;
-			op.fpDbl_addA_ = mclx_FpDbl_add;
-			op.fpDbl_subA_ = mclx_FpDbl_sub;
-			op.fpDbl_addPre = mclx_FpDbl_addPre;
-			op.fpDbl_subPre = mclx_FpDbl_subPre;
-			op.fpDbl_mulPreA_ = mclx_FpDbl_mulPre;
-			op.fpDbl_sqrPreA_ = mclx_FpDbl_sqrPre;
-			op.fpDbl_modA_ = mclx_FpDbl_mod;
-			op.fp_mulA_ = mclx_Fp_mul;
-			op.fp_sqrA_ = mclx_Fp_sqr;
-		} else {
-			// Fr, sizeof(Fr) = 32
-			op.fp_addPre = mclx_Fr_addPre;
-			op.fp_subPre = mclx_Fr_subPre;
-			op.fp_addA_ = mclx_Fr_add;
-			op.fp_subA_ = mclx_Fr_sub;
-			op.fp_shr1 = mclx_Fr_shr1;
-			op.fp_negA_ = mclx_Fr_neg;
-			op.fp_mulA_ = mclx_Fr_mul;
-			op.fp_sqrA_ = mclx_Fr_sqr;
-			op.fp_preInv = mclx_Fr_preInv;
-		}
-#endif
 	}
 	u3u gen_addSubPre(bool isAdd, int n)
 	{
@@ -2774,7 +2702,7 @@ private:
 		mov(rax, px);
 		// px is free frome here
 		load_mp(vv, rax, t); // v = x
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		load_mp(uu, rax, t); // u = p_
 		// k = 0
 		xor_(rax, rax);
@@ -2852,7 +2780,7 @@ private:
 		const Reg64& t2 = ss.getReg(0);
 		const Reg64& t3 = rdx;
 
-		mov(t2, pL_);
+		lea(t2, ptr[rip+pL_]);
 		if (isFullBit_) {
 			mov(t, ptr [rTop]);
 			test(t, t);
@@ -3724,7 +3652,7 @@ private:
 			}
 		}
 		sub_rr(a, b);
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		load_rm(b, rax);
 		sbb(rax, rax);
 		for (int i = 0; i < pn_; i++) {
@@ -3732,7 +3660,7 @@ private:
 		}
 		add_rr(a, b);
 		store_mr(py, a);
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		mov_rr(a, t);
 		sub_rm(t, rax);
 		cmovc_rr(t, a);
@@ -3750,7 +3678,7 @@ private:
 		mov_rr(b, a);
 		add_rm(b, px + FpByte_);
 		sub_rm(a, px + FpByte_);
-		mov(rax, pL_);
+		lea(rax, ptr[rip+pL_]);
 		jnc("@f");
 		add_rm(a, rax);
 	L("@@");
@@ -3925,7 +3853,7 @@ private:
 				mov(ptr [(RegExp)t2 + i * 8], rax);
 			}
 			// t3 = a + p - b
-			mov(rax, pL_);
+			lea(rax, ptr[rip+pL_]);
 			add_rm(a, rax);
 			sub_rr(a, b);
 			store_mr(t3, a);

@@ -247,7 +247,7 @@ obj/static_code.o: src/static_code.asm
 	nasm -felf64 -o $@ $<
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
-	$(CXX) -o $@ -O3 $^ -DMCL_STATIC_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I include -Wall -Wextra
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I include -Wall -Wextra
  
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel

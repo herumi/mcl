@@ -16,6 +16,9 @@
 #endif
 #if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8)
 	#define MCL_USE_XBYAK
+#endif
+#if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
+	#define MCL_X64_ASM
 	#define MCL_XBYAK_DIRECT_CALL
 #endif
 
@@ -202,6 +205,8 @@ struct Op {
 	Unit R3[maxUnitSize];
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg;
+#endif
+#ifdef MCL_X64_ASM
 	mcl::Array<Unit> invTbl;
 #endif
 	void3u fp_addA_;
@@ -288,7 +293,7 @@ struct Op {
 		memset(one, 0, sizeof(one));
 		memset(R2, 0, sizeof(R2));
 		memset(R3, 0, sizeof(R3));
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		invTbl.clear();
 #endif
 		fp_addA_ = 0;

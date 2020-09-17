@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 		benchRaw(tbl[i], mcl::fp::FP_LLVM);
 		benchRaw(tbl[i], mcl::fp::FP_LLVM_MONT);
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		if (bitSize <= 384) {
 			benchRaw(tbl[i], mcl::fp::FP_XBYAK);
 		}

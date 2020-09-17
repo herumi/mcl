@@ -68,7 +68,7 @@ void benchFp(size_t bitSize, int mode)
 		if (mode & 4) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM);
 		if (mode & 8) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_LLVM_MONT);
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		if (mode & 16) benchFpSub(tbl[i].p, tbl[i].x, tbl[i].y, mcl::fp::FP_XBYAK);
 #endif
 	}
@@ -122,7 +122,7 @@ void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
 		if (mode & 4) benchEcSub(tbl[i], mcl::fp::FP_LLVM, ecMode);
 		if (mode & 8) benchEcSub(tbl[i], mcl::fp::FP_LLVM_MONT, ecMode);
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		if (mode & 16) benchEcSub(tbl[i], mcl::fp::FP_XBYAK, ecMode);
 #endif
 	}
