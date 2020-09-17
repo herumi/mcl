@@ -43,3 +43,28 @@ CYBOZU_TEST_AUTO(Fp2)
 	CYBOZU_TEST_EQUAL(x * y, Fp2(-5, 14));
 }
 
+CYBOZU_TEST_AUTO(G1)
+{
+	G1 P, Q;
+	hashAndMapToG1(P, "abc", 3);
+	Fr r1, r2;
+	r1.setHashOf("abc", 3);
+	r2 = -r1;
+	G1::mul(Q, P, r1);
+	Q = -Q;
+	P *= r2;
+	CYBOZU_TEST_EQUAL(P, Q);
+}
+
+CYBOZU_TEST_AUTO(G2)
+{
+	G2 P, Q;
+	hashAndMapToG2(P, "abc", 3);
+	Fr r1, r2;
+	r1.setHashOf("abc", 3);
+	r2 = -r1;
+	G2::mul(Q, P, r1);
+	Q = -Q;
+	P *= r2;
+	CYBOZU_TEST_EQUAL(P, Q);
+}
