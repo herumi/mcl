@@ -11,6 +11,13 @@ TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
 TEST_SRC+=modp_test.cpp
+ifeq ($(MCL_STATIC_CODE),1)
+  MCL_USE_XBYAK=0
+  MCL_MAX_BIT_SIZE=384
+  CFLAGS+=-DMCL_STATI_CODE
+  LIB_OBJ=obj/static_code.o
+  TEST_SRC=bls12_test.cpp
+endif
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -86,7 +93,7 @@ ifneq ($(CPU),)
   ASM_SRC=$(ASM_SRC_PATH_NAME).s
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
-LIB_OBJ=$(OBJ_DIR)/fp.o
+LIB_OBJ+=$(OBJ_DIR)/fp.o
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
