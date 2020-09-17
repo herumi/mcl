@@ -410,7 +410,9 @@ private:
 		align(16);
 		op.fp_negA_ = gen_fp_neg();
 		setFuncInfo(prof_, suf, "_neg", op.fp_negA_, getCurr());
-
+		align(16);
+		op.fpDbl_modA_ = gen_fpDbl_mod(op);
+		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
 		align(16);
 		op.fp_mulA_ = gen_mul();
 		setFuncInfo(prof_, suf, "_mul", op.fp_mulA_, getCurr());
@@ -455,10 +457,6 @@ private:
 		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPreA_, getCurr());
 
 		align(16);
-		op.fpDbl_modA_ = gen_fpDbl_mod(op);
-		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
-
-		align(16);
 		op.fp2_addA_ = gen_fp2_add();
 		setFuncInfo(prof_, suf, "2_add", op.fp2_addA_, getCurr());
 
@@ -493,7 +491,7 @@ private:
 
 #ifdef MCL_STATIC_JIT
 		if (op.xi_a) {
-			// Fp, sizeof(Fp) = 48
+			// Fp, sizeof(Fp) = 48, supports Fp2
 			op.fp_addPre = mclx_Fp_addPre;
 			op.fp_subPre = mclx_Fp_subPre;
 			op.fp_addA_ = mclx_Fp_add;
