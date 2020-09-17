@@ -34,6 +34,8 @@ void mclx_Fp_add(Unit*, const Unit*, const Unit*);
 void mclx_Fp_sub(Unit*, const Unit*, const Unit*);
 void mclx_Fp_shr1(Unit*, const Unit*);
 void mclx_Fp_neg(Unit*, const Unit*);
+void mclx_Fp_mul(Unit*, const Unit*, const Unit*);
+void mclx_Fp_sqr(Unit*, const Unit*);
 void mclx_FpDbl_add(Unit*, const Unit*, const Unit*);
 void mclx_FpDbl_sub(Unit*, const Unit*, const Unit*);
 void mclx_FpDbl_add(Unit*, const Unit*, const Unit*);
@@ -43,8 +45,6 @@ Unit mclx_FpDbl_subPre(Unit*, const Unit*, const Unit*);
 void mclx_FpDbl_mulPre(Unit*, const Unit*, const Unit*);
 void mclx_FpDbl_sqrPre(Unit*, const Unit*);
 void mclx_FpDbl_mod(Unit*, const Unit*);
-void mclx_Fp_mul(Unit*, const Unit*, const Unit*);
-void mclx_Fp_sqr(Unit*, const Unit*);
 void mclx_Fp2_add(Unit*, const Unit*, const Unit*);
 void mclx_Fp2_sub(Unit*, const Unit*, const Unit*);
 void mclx_Fp2_neg(Unit*, const Unit*);
@@ -58,23 +58,9 @@ void mclx_Fr_add(Unit*, const Unit*, const Unit*);
 void mclx_Fr_sub(Unit*, const Unit*, const Unit*);
 void mclx_Fr_shr1(Unit*, const Unit*);
 void mclx_Fr_neg(Unit*, const Unit*);
-void mclx_FrDbl_add(Unit*, const Unit*, const Unit*);
-void mclx_FrDbl_sub(Unit*, const Unit*, const Unit*);
-void mclx_FrDbl_add(Unit*, const Unit*, const Unit*);
-void mclx_FrDbl_sub(Unit*, const Unit*, const Unit*);
-Unit mclx_FrDbl_addPre(Unit*, const Unit*, const Unit*);
-Unit mclx_FrDbl_subPre(Unit*, const Unit*, const Unit*);
-void mclx_FrDbl_mulPre(Unit*, const Unit*, const Unit*);
-void mclx_FrDbl_sqrPre(Unit*, const Unit*);
-void mclx_FrDbl_mod(Unit*, const Unit*);
 void mclx_Fr_mul(Unit*, const Unit*, const Unit*);
 void mclx_Fr_sqr(Unit*, const Unit*);
-void mclx_Fr2_add(Unit*, const Unit*, const Unit*);
-void mclx_Fr2_sub(Unit*, const Unit*, const Unit*);
-void mclx_Fr2_neg(Unit*, const Unit*);
-void mclx_Fr2_mul(Unit*, const Unit*, const Unit*);
-void mclx_Fr2_sqr(Unit*, const Unit*);
-void mclx_Fr2_mul_xi(Unit*, const Unit*);
+int mclx_Fr_preInv(Unit*, const Unit*);
 }
 #endif
 
@@ -354,12 +340,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
 	}
-	bool init(Op& op, const char *suf)
+	bool init(Op& op)
 	{
 		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return false;
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
-		init_inner(op, suf);
+		init_inner(op);
 		// ToDo : recover op if false
 		if (Xbyak::GetError()) return false;
 //		printf("code size=%d\n", (int)getSize());
@@ -367,9 +353,9 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		return true;
 	}
 private:
-	void init_inner(Op& op, const char *suf)
+	void init_inner(Op& op)
 	{
-		const bool isFp = suf && suf[0] == 'F' && suf[1] == 'p';
+		const char *suf = op.xi_a ? "Fp" : "Fr";
 		op_ = &op;
 		L(pL_);
 		p_ = reinterpret_cast<const uint64_t*>(getCurr());
@@ -413,102 +399,100 @@ private:
 		op.fp_addA_ = gen_fp_add();
 		setFuncInfo(prof_, suf, "_add", op.fp_addA_, getCurr());
 
+		align(16);
 		op.fp_subA_ = gen_fp_sub();
 		setFuncInfo(prof_, suf, "_sub", op.fp_subA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp_shr1 = gen_shr1();
 		setFuncInfo(prof_, suf, "_shr1", op.fp_shr1, getCurr());
-		align(16);
 
+		align(16);
 		op.fp_negA_ = gen_fp_neg();
 		setFuncInfo(prof_, suf, "_neg", op.fp_negA_, getCurr());
-		align(16);
 
-if (op.xi_a) {
-		op.fpDbl_addA_ = gen_fpDbl_add();
-		setFuncInfo(prof_, suf, "Dbl_add", op.fpDbl_addA_, getCurr());
 		align(16);
-
-		op.fpDbl_subA_ = gen_fpDbl_sub();
-		setFuncInfo(prof_, suf, "Dbl_sub", op.fpDbl_subA_, getCurr());
-		align(16);
-
-		op.fpDbl_addPre = gen_addSubPre(true, pn_ * 2);
-		setFuncInfo(prof_, suf, "Dbl_addPre", op.fpDbl_addPre, getCurr());
-		align(16);
-
-		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
-		setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
-		align(16);
-
-		op.fpDbl_mulPreA_ = gen_fpDbl_mulPre();
-		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPreA_, getCurr());
-		align(16);
-
-		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
-		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPreA_, getCurr());
-		align(16);
-
-		op.fpDbl_modA_ = gen_fpDbl_mod(op);
-		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
-		align(16);
-}
-
 		op.fp_mulA_ = gen_mul();
 		setFuncInfo(prof_, suf, "_mul", op.fp_mulA_, getCurr());
-		align(16);
 
 		if (op.fp_mulA_) {
 			op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
 		}
 
+		align(16);
 		op.fp_sqrA_ = gen_sqr();
 		setFuncInfo(prof_, suf, "_sqr", op.fp_sqrA_, getCurr());
-		align(16);
 
 		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
+			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
 			setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
-			align(16);
 		}
 		if (op.xi_a == 0) return; // Fp2 is not used
+		align(16);
+		op.fpDbl_addA_ = gen_fpDbl_add();
+		setFuncInfo(prof_, suf, "Dbl_add", op.fpDbl_addA_, getCurr());
+
+		align(16);
+		op.fpDbl_subA_ = gen_fpDbl_sub();
+		setFuncInfo(prof_, suf, "Dbl_sub", op.fpDbl_subA_, getCurr());
+
+		align(16);
+		op.fpDbl_addPre = gen_addSubPre(true, pn_ * 2);
+		setFuncInfo(prof_, suf, "Dbl_addPre", op.fpDbl_addPre, getCurr());
+
+		align(16);
+		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
+		setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
+
+		align(16);
+		op.fpDbl_mulPreA_ = gen_fpDbl_mulPre();
+		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPreA_, getCurr());
+
+		align(16);
+		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
+		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPreA_, getCurr());
+
+		align(16);
+		op.fpDbl_modA_ = gen_fpDbl_mod(op);
+		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
+
+		align(16);
 		op.fp2_addA_ = gen_fp2_add();
 		setFuncInfo(prof_, suf, "2_add", op.fp2_addA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp2_subA_ = gen_fp2_sub();
 		setFuncInfo(prof_, suf, "2_sub", op.fp2_subA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp2_negA_ = gen_fp2_neg();
 		setFuncInfo(prof_, suf, "2_neg", op.fp2_negA_, getCurr());
-		align(16);
 
 		op.fp2_mulNF = 0;
+		align(16);
 		op.fp2Dbl_mulPreA_ = gen_fp2Dbl_mulPre();
 		if (op.fp2Dbl_mulPreA_) setFuncInfo(prof_, suf, "2Dbl_mulPre", op.fp2Dbl_mulPreA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp2Dbl_sqrPreA_ = gen_fp2Dbl_sqrPre();
 		if (op.fp2Dbl_sqrPreA_) setFuncInfo(prof_, suf, "2Dbl_sqrPre", op.fp2Dbl_sqrPreA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp2_mulA_ = gen_fp2_mul();
 		setFuncInfo(prof_, suf, "2_mul", op.fp2_mulA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp2_sqrA_ = gen_fp2_sqr();
 		setFuncInfo(prof_, suf, "2_sqr", op.fp2_sqrA_, getCurr());
-		align(16);
 
+		align(16);
 		op.fp2_mul_xiA_ = gen_fp2_mul_xi();
 		setFuncInfo(prof_, suf, "2_mul_xi", op.fp2_mul_xiA_, getCurr());
-		align(16);
 
 #ifdef MCL_STATIC_JIT
-		if (isFp) {
+		if (op.xi_a) {
 			// Fp, sizeof(Fp) = 48
 			op.fp_addPre = mclx_Fp_addPre;
 			op.fp_subPre = mclx_Fp_subPre;
@@ -525,15 +509,6 @@ if (op.xi_a) {
 			op.fpDbl_modA_ = mclx_FpDbl_mod;
 			op.fp_mulA_ = mclx_Fp_mul;
 			op.fp_sqrA_ = mclx_Fp_sqr;
-#if 0
-//			op.fp_preInv = mclx_Fp_preInv;
-			op.fp2_addA_ = mclx_Fp2_add;
-			op.fp2_subA_ = mclx_Fp2_sub;
-			op.fp2_negA_ = mclx_Fp2_neg;
-			op.fp2_mulA_ = mclx_Fp2_mul;
-			op.fp2_sqrA_ = mclx_Fp2_sqr;
-			op.fp2_mul_xiA_ = mclx_Fp2_mul_xi;
-#endif
 		} else {
 			// Fr, sizeof(Fr) = 32
 			op.fp_addPre = mclx_Fr_addPre;
@@ -542,13 +517,6 @@ if (op.xi_a) {
 			op.fp_subA_ = mclx_Fr_sub;
 			op.fp_shr1 = mclx_Fr_shr1;
 			op.fp_negA_ = mclx_Fr_neg;
-			op.fpDbl_addA_ = mclx_FpDbl_add;
-			op.fpDbl_subA_ = mclx_FpDbl_sub;
-			op.fpDbl_addPre = mclx_FpDbl_addPre;
-			op.fpDbl_subPre = mclx_FpDbl_subPre;
-			op.fpDbl_mulPreA_ = mclx_FpDbl_mulPre;
-			op.fpDbl_sqrPreA_ = mclx_FpDbl_sqrPre;
-			op.fpDbl_modA_ = mclx_FpDbl_mod;
 			op.fp_mulA_ = mclx_Fr_mul;
 			op.fp_sqrA_ = mclx_Fr_sqr;
 			op.fp_preInv = mclx_Fr_preInv;

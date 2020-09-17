@@ -346,7 +346,7 @@ static void initInvTbl(Op& op)
 }
 #endif
 
-static bool initForMont(Op& op, const Unit *p, Mode mode, const char *suf)
+static bool initForMont(Op& op, const Unit *p, Mode mode)
 {
 	const size_t N = op.N;
 	bool b;
@@ -366,19 +366,17 @@ static bool initForMont(Op& op, const Unit *p, Mode mode, const char *suf)
 	if (mode != FP_XBYAK) return true;
 #ifdef MCL_USE_XBYAK
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
-	bool useXbyak = op.fg->init(op, suf);
+	bool useXbyak = op.fg->init(op);
 
 	if (useXbyak && op.isMont && N <= 4) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
-#else
-	(void)suf;
 #endif
 	return true;
 }
 
-bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, const char *suf, size_t mclMaxBitSize)
+bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
 #ifdef MCL_USE_VINT
@@ -536,7 +534,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, cons
 		if (!b) return false;
 	}
 	modp.init(mp);
-	return fp::initForMont(*this, p, mode, suf);
+	return fp::initForMont(*this, p, mode);
 }
 
 void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)

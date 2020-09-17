@@ -875,9 +875,9 @@ struct Param {
 			assert((p % 6) == 1);
 			r = local::evalPoly(z, rCoff);
 		}
-		Fr::init(pb, r, mode, "Fr");
+		Fr::init(pb, r, mode);
 		if (!*pb) return;
-		Fp::init(pb, cp.xi_a, p, mode, "Fp");
+		Fp::init(pb, cp.xi_a, p, mode);
 		if (!*pb) return;
 		Fp2::init();
 		const Fp2 xi(cp.xi_a, 1);
