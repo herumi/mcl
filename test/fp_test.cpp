@@ -876,7 +876,7 @@ void modpTest()
 }
 
 #include <iostream>
-#if (defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)) && (MCL_MAX_BIT_SIZE >= 521)
+#if (defined(MCL_USE_LLVM) || defined(MCL_X64_ASM)) && (MCL_MAX_BIT_SIZE >= 521)
 CYBOZU_TEST_AUTO(mod_NIST_P521)
 {
 	const size_t len = 521;
@@ -908,7 +908,7 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 		mcl_fpDbl_mod_NIST_P521L(ex, in, Fp::getOp().p);
 		CYBOZU_TEST_EQUAL_ARRAY(ex, ok, N + 1);
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		const mcl::fp::Op& op = Fp::getOp();
 		if (!op.isMont) {
 			op.fpDbl_mod(ex, in, op.p);
@@ -1014,7 +1014,7 @@ CYBOZU_TEST_AUTO(main)
 		sub(mcl::fp::FP_LLVM_MONT);
 	}
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 	if (g_mode.empty() || g_mode == "xbyak") {
 		sub(mcl::fp::FP_XBYAK);
 	}

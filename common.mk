@@ -91,7 +91,7 @@ else
     CFLAGS_OPT+=$(MARCH)
   endif
 endif
-CFLAGS_WARN=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith
+CFLAGS_WARN=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wundef
 CFLAGS+=-g3
 INC_OPT=-I include -I test
 CFLAGS+=$(CFLAGS_WARN) $(BIT_OPT) $(INC_OPT)

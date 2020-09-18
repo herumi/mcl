@@ -100,6 +100,19 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, Fp::inv, x, x);
+	CYBOZU_BENCH_C("Fp::pow       ", C3, Fp::pow, x, x, y);
+	{
+		Fr a, b, c;
+		a.setHashOf("abc", 3);
+		b.setHashOf("123", 3);
+		CYBOZU_BENCH_C("Fr::add       ", C3, Fr::add, a, a, b);
+		CYBOZU_BENCH_C("Fr::sub       ", C3, Fr::sub, a, a, b);
+		CYBOZU_BENCH_C("Fr::neg       ", C3, Fr::neg, a, a);
+		CYBOZU_BENCH_C("Fr::mul       ", C3, Fr::mul, a, a, b);
+		CYBOZU_BENCH_C("Fr::sqr       ", C3, Fr::sqr, a, a);
+		CYBOZU_BENCH_C("Fr::inv       ", C3, Fr::inv, a, a);
+		CYBOZU_BENCH_C("Fr::pow       ", C3, Fr::pow, a, a, b);
+	}
 	Fp2 xx, yy;
 	xx.a = x;
 	xx.b = 3;

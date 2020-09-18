@@ -465,7 +465,7 @@ void testAll()
 		test(p, mcl::fp::FP_LLVM);
 		test(p, mcl::fp::FP_LLVM_MONT);
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		test(p, mcl::fp::FP_XBYAK);
 #endif
 	}

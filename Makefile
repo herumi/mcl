@@ -11,6 +11,13 @@ TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
 TEST_SRC+=modp_test.cpp
+ifeq ($(MCL_STATIC_CODE),1)
+  MCL_USE_XBYAK=0
+  MCL_MAX_BIT_SIZE=384
+  CFLAGS+=-DMCL_STATIC_CODE
+  LIB_OBJ=obj/static_code.o
+  TEST_SRC=bls12_test.cpp
+endif
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
@@ -86,7 +93,7 @@ ifneq ($(CPU),)
   ASM_SRC=$(ASM_SRC_PATH_NAME).s
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
-LIB_OBJ=$(OBJ_DIR)/fp.o
+LIB_OBJ+=$(OBJ_DIR)/fp.o
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
@@ -106,7 +113,9 @@ ifeq ($(MCL_USE_LLVM),1)
   LIB_OBJ+=$(ASM_OBJ)
   # special case for intel with bmi2
   ifeq ($(INTEL),1)
-    LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
+    ifneq ($(MCL_STATIC_CODE),1)
+      LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
+    endif
   endif
 endif
 LLVM_SRC=src/base$(BIT).ll
@@ -237,6 +246,18 @@ endif
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS)
 
+src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER
+
+src/static_code.asm: src/dump_code
+	$< > $@
+
+obj/static_code.o: src/static_code.asm
+	nasm -felf64 -o $@ $<
+
+bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I include -Wall -Wextra
+ 
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
@@ -388,7 +409,7 @@ update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) src/*.ll lib/*.a
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) src/*.ll lib/*.a src/static_code.asm src/dump_code
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))

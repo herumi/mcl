@@ -602,7 +602,7 @@ void test_sub(const mcl::EcParam *para, size_t paraNum)
 		test_sub_sub(para[i], mcl::fp::FP_LLVM);
 		test_sub_sub(para[i], mcl::fp::FP_LLVM_MONT);
 #endif
-#ifdef MCL_USE_XBYAK
+#ifdef MCL_X64_ASM
 		test_sub_sub(para[i], mcl::fp::FP_XBYAK);
 #endif
 		mulVec(para[i]);

@@ -854,6 +854,12 @@ struct Param {
 	{
 		this->cp = cp;
 		isBLS12 = cp.curveType == MCL_BLS12_381;
+#ifdef MCL_STATIC_CODE
+		if (!isBLS12) {
+			*pb = false;
+			return;
+		}
+#endif
 		gmp::setStr(pb, z, cp.z);
 		if (!*pb) return;
 		isNegative = z < 0;
