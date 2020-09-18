@@ -864,7 +864,11 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	g_mode = mcl::fp::StrToMode(mode);
+#ifdef MCL_STATIC_CODE
+	printf("static code for BLS12-381\n");
+#else
 	printf("JIT %d\n", mcl::fp::isEnableJIT());
+#endif
 #if 0
 	initPairing(mcl::BLS12_381);
 	cybozu::XorShift rg;
