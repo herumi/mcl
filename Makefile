@@ -113,7 +113,9 @@ ifeq ($(MCL_USE_LLVM),1)
   LIB_OBJ+=$(ASM_OBJ)
   # special case for intel with bmi2
   ifeq ($(INTEL),1)
-    LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
+    ifneq ($(MCL_STATIC_CODE),1)
+      LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
+    endif
   endif
 endif
 LLVM_SRC=src/base$(BIT).ll

@@ -16,8 +16,10 @@
 #endif
 
 #ifndef MCL_LLVM_BMI2
-	#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && defined(MCL_X64_ASM) && !defined(MCL_USE_VINT)
+	#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && !defined(MCL_STATIC_CODE) && !defined(MCL_USE_VINT)
 		#define MCL_LLVM_BMI2 1
+	#else
+		#define MCL_LLVM_BMI2 0
 	#endif
 #endif
 
