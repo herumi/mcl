@@ -386,7 +386,7 @@ struct ElgamalT {
 		create table g^i for i in [rangeMin, rangeMax]
 	*/
 	struct PowerCache {
-#if (CYBOZU_CPP_VERSION > CYBOZU_CPP_VERSION_CP03)
+#if (CYBOZU_CPP_VERSION > CYBOZU_CPP_VERSION_CPP03)
 		typedef CYBOZU_NAMESPACE_STD::unordered_map<Ec, int> Cache;
 #else
 		typedef std::map<Ec, int> Cache;
