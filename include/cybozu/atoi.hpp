@@ -7,7 +7,6 @@
 */
 
 #include <memory.h>
-#include <limits.h>
 #include <limits>
 #include <cybozu/exception.hpp>
 
@@ -173,7 +172,7 @@ public:
 	}
 	inline operator int() const
 	{
-		return atoi_local::convertToInt<int>(b_, p_, size_, "2147483648", INT_MIN, 214748364, '8');
+		return atoi_local::convertToInt<int>(b_, p_, size_, "2147483648", /*INT_MIN*/-2147483648, 214748364, '8');
 	}
 	inline operator unsigned int() const
 	{
@@ -181,7 +180,7 @@ public:
 	}
 	inline operator long long() const
 	{
-		return atoi_local::convertToInt<long long>(b_, p_, size_, "9223372036854775808", LLONG_MIN, 922337203685477580LL, '8');
+		return atoi_local::convertToInt<long long>(b_, p_, size_, "9223372036854775808", CYBOZU_LLONG_MIN, 922337203685477580LL, '8');
 	}
 	inline operator unsigned long long() const
 	{

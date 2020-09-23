@@ -203,7 +203,6 @@ public:
 	}
 	/**
 		convert NativeErrNo to string(maybe UTF8)
-		@param err [in] errno
 		@note Linux   : same as ConvertErrorNoToString
 			  Windows : for Win32 API(use en-us)
 	*/

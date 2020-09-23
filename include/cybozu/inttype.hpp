@@ -72,6 +72,9 @@
 	#endif
 #endif
 
+// LLONG_MIN in limits.h is not defined in some env.
+#define CYBOZU_LLONG_MIN (-9223372036854775807ll-1)
+
 #define CYBOZU_CPP_VERSION_CPP03 0
 #define CYBOZU_CPP_VERSION_TR1 1
 #define CYBOZU_CPP_VERSION_CPP11 2
@@ -88,7 +91,7 @@
 	#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_CPP17
 #elif (__cplusplus >= 201402)
 	#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_CPP14
-#elif (__cplusplus >= 201103) || (_MSC_VER >= 1500) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#elif (__cplusplus >= 201103) || (defined(_MSC_VER) && _MSC_VER >= 1500) || defined(__GXX_EXPERIMENTAL_CXX0X__)
 	#if defined(_MSC_VER) && (_MSC_VER <= 1600)
 		#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_TR1
 	#else
@@ -150,8 +153,10 @@
 
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 	#define CYBOZU_NOEXCEPT noexcept
+	#define CYBOZU_NULLPTR nullptr
 #else
 	#define CYBOZU_NOEXCEPT throw()
+	#define CYBOZU_NULLPTR 0
 #endif
 namespace cybozu {
 template<class T>

@@ -5,7 +5,6 @@
 
 	@author MITSUNARI Shigeo(@herumi)
 */
-#include <limits.h>
 #ifndef CYBOZU_DONT_USE_STRING
 #include <string>
 #endif
@@ -122,7 +121,7 @@ size_t uintToBin(char *buf, size_t bufSize, UT x)
 template<class T>
 size_t intToDec(char *buf, size_t bufSize, T x)
 {
-	if (x == LLONG_MIN) {
+	if (x == CYBOZU_LLONG_MIN) {
 		const char minStr[] = "-9223372036854775808";
 		const size_t minStrLen = sizeof(minStr) - 1;
 		if (bufSize < minStrLen) {
