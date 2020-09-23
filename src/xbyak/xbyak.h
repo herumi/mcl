@@ -108,7 +108,7 @@
 	#endif
 #endif
 
-#if (__cplusplus >= 201103) || (_MSC_VER >= 1800)
+#if (__cplusplus >= 201103) || (defined(_MSC_VER) && _MSC_VER >= 1800)
 	#undef XBYAK_TLS
 	#define XBYAK_TLS thread_local
 	#define XBYAK_VARIADIC_TEMPLATE
@@ -117,7 +117,7 @@
 	#define XBYAK_NOEXCEPT throw()
 #endif
 
-#if (__cplusplus >= 201402L) || (_MSC_VER >= 1910) // Visual Studio 2017 version 15.0
+#if (__cplusplus >= 201402L) || (defined(_MSC_VER) && _MSC_VER >= 1910) // Visual Studio 2017 version 15.0
 	#define XBYAK_CONSTEXPR constexpr // require c++14 or later
 #else
 	#define XBYAK_CONSTEXPR
@@ -267,13 +267,22 @@ inline const char *ConvertErrorToString(int err)
 #ifdef XBYAK_NO_EXCEPTION
 namespace local {
 
-static XBYAK_TLS int l_err = 0;
-inline void SetError(int err) { if (err) l_err = err; } // keep the first err code
+inline int& GetErrorRef() {
+	static XBYAK_TLS int err = 0;
+	return err;
+}
+
+inline void SetError(int err) {
+	if (local::GetErrorRef()) return; // keep the first err code
+	local::GetErrorRef() = err;
+}
 
 } // local
 
-inline void ClearError() { local::l_err = 0; }
-inline int GetError() { return local::l_err; }
+inline void ClearError() {
+	local::GetErrorRef() = 0;
+}
+inline int GetError() { return local::GetErrorRef(); }
 
 #define XBYAK_THROW(err) { local::SetError(err); return; }
 #define XBYAK_THROW_RET(err, r) { local::SetError(err); return r; }
