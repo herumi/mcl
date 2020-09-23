@@ -3,15 +3,27 @@
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+
+#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || defined(MCL_USE_LLVM)
+
+#ifdef MCL_USE_XBYAK
+	#define XBYAK_DISABLE_AVX512
+#else
+	#define XBYAK_ONLY_CLASS_CPU
+#endif
+
+#include "xbyak/xbyak_util.h"
+Xbyak::util::Cpu g_cpu;
+
 #ifdef MCL_STATIC_CODE
 #include "fp_static_code.hpp"
 #endif
 #ifdef MCL_USE_XBYAK
 #include "fp_generator.hpp"
-#else
-#define XBYAK_ONLY_CLASS_CPU
-#include "xbyak/xbyak_util.h"
 #endif
+
+#endif
+
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "proto.hpp"
@@ -303,8 +315,7 @@ void setOp(Op& op, Mode mode)
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
 #if MCL_LLVM_BMI2 == 1
 		const bool gmpIsFasterThanLLVM = false;//(N == 8 && MCL_SIZEOF_UNIT == 8);
-		Xbyak::util::Cpu cpu;
-		if (cpu.has(Xbyak::util::Cpu::tBMI2)) {
+		if (g_cpu.has(Xbyak::util::Cpu::tBMI2)) {
 			setOp2<N, LBMI2tag, (N * UnitBitSize <= 384), gmpIsFasterThanLLVM>(op);
 		} else
 #endif
@@ -368,9 +379,14 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return true;
 #ifdef MCL_USE_XBYAK
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
-	bool useXbyak = op.fg->init(op);
+	bool useXbyak = op.fg->init(op, g_cpu);
+#ifdef MCL_USE_VINT
+	const int maxN = 6;
+#else
+	const int maxN = 4;
+#endif
 
-	if (useXbyak && op.isMont && N <= 4) {
+	if (useXbyak && op.isMont && N <= maxN) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
@@ -420,12 +436,11 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	if (!isEnableJIT()) {
 		mode = FP_AUTO;
 	}
-#elif MCL_STATIC_CODE
+#elif defined(MCL_STATIC_CODE)
 	{
 		// static jit code uses avx, mulx, adox, adcx
 		using namespace Xbyak::util;
-		Cpu cpu;
-		if (!(cpu.has(Cpu::tAVX) && cpu.has(Cpu::tBMI2) && cpu.has(Cpu::tADX))) {
+		if (!(g_cpu.has(Cpu::tAVX) && g_cpu.has(Cpu::tBMI2) && g_cpu.has(Cpu::tADX))) {
 			mode = FP_AUTO;
 		}
 	}

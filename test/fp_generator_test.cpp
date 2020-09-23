@@ -1,12 +1,10 @@
 #include <cybozu/test.hpp>
-#if MCL_SIZEOF_UNIT == 4
-// not support
-#else
 #include <mcl/gmp_util.hpp>
 #include <stdint.h>
 #include <string>
 #include <cybozu/itoa.hpp>
 #include <mcl/fp.hpp>
+#include "../src/xbyak/xbyak_util.h"
 #include "../src/fp_generator.hpp"
 #include <iostream>
 #include <cybozu/xorshift.hpp>
@@ -204,4 +202,3 @@ CYBOZU_TEST_AUTO(all)
 		test(primeTable[i]);
 	}
 }
-#endif

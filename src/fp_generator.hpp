@@ -7,8 +7,6 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL
-#define XBYAK_DISABLE_AVX512
-#include "xbyak/xbyak_util.h"
 
 #if MCL_SIZEOF_UNIT == 8
 #include <stdio.h>
@@ -230,9 +228,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		Ext2(const Ext2&);
 		void operator=(const Ext2&);
 	};
-	Xbyak::util::Cpu cpu_;
-	bool useMulx_;
-	bool  useAdx_;
 	const Reg64& gp0;
 	const Reg64& gp1;
 	const Reg64& gp2;
@@ -257,6 +252,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	int pn_;
 	int FpByte_;
 	bool isFullBit_;
+	bool useMulx_;
+	bool useAdx_;
 #ifdef MCL_DUMP_JIT
 	DumpCode prof_;
 #else
@@ -297,12 +294,18 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, pn_(0)
 		, FpByte_(0)
 	{
-		useMulx_ = cpu_.has(Xbyak::util::Cpu::tBMI2);
-		useAdx_ = cpu_.has(Xbyak::util::Cpu::tADX);
 	}
-	bool init(Op& op)
+	bool init(Op& op, const Xbyak::util::Cpu& cpu)
 	{
-		if (!cpu_.has(Xbyak::util::Cpu::tAVX)) return false;
+#ifdef MCL_DUMP_JIT
+		useMulx_ = true;
+		useAdx_ = true;
+		(void)cpu;
+#else
+		if (!cpu.has(Xbyak::util::Cpu::tAVX)) return false;
+		useMulx_ = cpu.has(Xbyak::util::Cpu::tBMI2);
+		useAdx_ = cpu.has(Xbyak::util::Cpu::tADX);
+#endif
 		reset(); // reset jit code for reuse
 		setProtectModeRW(); // read/write memory
 		init_inner(op);
