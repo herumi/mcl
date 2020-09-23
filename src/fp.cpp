@@ -380,6 +380,9 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #ifdef MCL_USE_XBYAK
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
 	bool useXbyak = op.fg->init(op, g_cpu);
+#ifdef MCL_DUMP_JIT
+	return true;
+#endif
 #ifdef MCL_USE_VINT
 	const int maxN = 6;
 #else

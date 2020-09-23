@@ -885,6 +885,10 @@ struct Param {
 		if (!*pb) return;
 		Fp::init(pb, cp.xi_a, p, mode);
 		if (!*pb) return;
+#ifdef MCL_DUMP_JIT
+		*pb = true;
+		return;
+#endif
 		Fp2::init();
 		const Fp2 xi(cp.xi_a, 1);
 		g2 = Fp2::get_gTbl()[0];
