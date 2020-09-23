@@ -1,11 +1,13 @@
 GCC_VER=$(shell $(PRE)$(CC) -dumpversion)
 UNAME_S=$(shell uname -s)
+NASM_ELF_OPT=-felf64
 ifeq ($(UNAME_S),Linux)
   OS=Linux
 endif
 ifeq ($(findstring MINGW64,$(UNAME_S)),MINGW64)
   OS=mingw64
   CFLAGS+=-D__USE_MINGW_ANSI_STDIO=1
+  NASM_ELF_OPT=-fwin64
 endif
 ifeq ($(findstring CYGWIN,$(UNAME_S)),CYGWIN)
   OS=cygwin
@@ -20,6 +22,7 @@ ifeq ($(UNAME_S),Darwin)
   GMP_DIR?=/usr/local/opt/gmp
   CFLAGS+=-I$(GMP_DIR)/include
   LDFLAGS+=-L$(GMP_DIR)/lib
+  NASM_ELF_OPT=-fmacho64
 else
   LIB_SUF=so
 endif

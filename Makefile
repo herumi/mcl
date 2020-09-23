@@ -11,11 +11,12 @@ TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=ecdsa_c_test.cpp
 TEST_SRC+=modp_test.cpp
+LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   MCL_USE_XBYAK=0
   MCL_MAX_BIT_SIZE=384
   CFLAGS+=-DMCL_STATIC_CODE
-  LIB_OBJ=obj/static_code.o
+  LIB_OBJ+=obj/static_code.o
   TEST_SRC=bls12_test.cpp
 endif
 ifeq ($(CPU),x86-64)
@@ -93,7 +94,6 @@ ifneq ($(CPU),)
   ASM_SRC=$(ASM_SRC_PATH_NAME).s
 endif
 ASM_OBJ=$(OBJ_DIR)/$(CPU).o
-LIB_OBJ+=$(OBJ_DIR)/fp.o
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
@@ -253,7 +253,7 @@ src/static_code.asm: src/dump_code
 	$< > $@
 
 obj/static_code.o: src/static_code.asm
-	nasm -felf64 -o $@ $<
+	nasm $(NASM_ELF_OPT) -o $@ $<
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
 	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I include -Wall -Wextra

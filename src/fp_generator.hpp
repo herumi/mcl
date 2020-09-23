@@ -65,7 +65,12 @@ void setFuncInfo(DumpCode& prof, const char *suf, const char *name, const T& beg
 {
 	if (suf == 0) suf = "";
 	const uint8_t*p = (const uint8_t*)begin;
-	prof.set(std::string("mclx_") + suf + name, p, end - p);
+#ifdef __APPLE__
+	std::string pre = "_mclx_";
+#else
+	std::string pre = "mclx_";
+#endif
+	prof.set(pre + suf + name, p, end - p);
 }
 #else
 template<class T>
