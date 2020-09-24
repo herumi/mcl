@@ -52,6 +52,12 @@ void benchAddDblG2()
 	CYBOZU_BENCH_C("G2::dbl(2)", C, G2::dbl, P3, P1);
 }
 
+template<class T>
+void invAdd(T& out, const T& x, const T& y)
+{
+	T::inv(out, x);
+	out += y;
+}
 
 void testBench(const G1& P, const G2& Q)
 {
@@ -99,7 +105,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp::neg       ", C3, Fp::neg, x, x);
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
-	CYBOZU_BENCH_C("Fp::inv       ", C3, Fp::inv, x, x);
+	CYBOZU_BENCH_C("Fp::inv       ", C3, invAdd, x, x, y);
 	CYBOZU_BENCH_C("Fp::pow       ", C3, Fp::pow, x, x, y);
 	{
 		Fr a, b, c;
@@ -110,7 +116,7 @@ void testBench(const G1& P, const G2& Q)
 		CYBOZU_BENCH_C("Fr::neg       ", C3, Fr::neg, a, a);
 		CYBOZU_BENCH_C("Fr::mul       ", C3, Fr::mul, a, a, b);
 		CYBOZU_BENCH_C("Fr::sqr       ", C3, Fr::sqr, a, a);
-		CYBOZU_BENCH_C("Fr::inv       ", C3, Fr::inv, a, a);
+		CYBOZU_BENCH_C("Fr::inv       ", C3, invAdd, a, a, b);
 		CYBOZU_BENCH_C("Fr::pow       ", C3, Fr::pow, a, a, b);
 	}
 	Fp2 xx, yy;
@@ -128,7 +134,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp2::mul      ", C3, Fp2::mul, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::mul_xi   ", C3, Fp2::mul_xi, xx, xx);
 	CYBOZU_BENCH_C("Fp2::sqr      ", C3, Fp2::sqr, xx, xx);
-	CYBOZU_BENCH_C("Fp2::inv      ", C3, Fp2::inv, xx, xx);
+	CYBOZU_BENCH_C("Fp2::inv      ", C3, invAdd, xx, xx, yy);
 	CYBOZU_BENCH_C("FpDbl::addPre ", C3, FpDbl::addPre, d1, d1, d0);
 	CYBOZU_BENCH_C("FpDbl::subPre ", C3, FpDbl::subPre, d1, d1, d0);
 	CYBOZU_BENCH_C("FpDbl::add    ", C3, FpDbl::add, d1, d1, d0);
