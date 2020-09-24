@@ -1746,6 +1746,46 @@ public:
 	static void invMod(VintT& y, const VintT& x, const VintT& m)
 	{
 		assert(!x.isZero() && !m.isZero());
+#if 0
+		VintT u = x;
+		VintT v = m;
+		VintT x1 = 1, x2 = 0;
+		VintT t;
+		while (u != 1 && v != 1) {
+			while (u.isEven()) {
+				u >>= 1;
+				if (x1.isOdd()) {
+					x1 += m;
+				}
+				x1 >>= 1;
+			}
+			while (v.isEven()) {
+				v >>= 1;
+				if (x2.isOdd()) {
+					x2 += m;
+				}
+				x2 >>= 1;
+			}
+			if (u >= v) {
+				u -= v;
+				x1 -= x2;
+				if (x1 < 0) {
+					x1 += m;
+				}
+			} else {
+				v -= u;
+				x2 -= x1;
+				if (x2 < 0) {
+					x2 += m;
+				}
+			}
+		}
+		if (u == 1) {
+			y = x1;
+		} else {
+			y = x2;
+		}
+#else
 		if (x == 1) {
 			y = 1;
 			return;
@@ -1778,6 +1818,7 @@ public:
 			}
 			b -= a * q;
 		}
+#endif
 	}
 	/*
 		Miller-Rabin
