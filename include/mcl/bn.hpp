@@ -1932,8 +1932,15 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 }
 #endif
 
+/*
+	e = prod_i ML(Pvec[i], Qvec[i])
+	if initF:
+	  _f = e
+	else:
+	  _f *= e
+*/
 template<size_t N>
-inline void millerLoopVecN(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
+inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
 {
 	assert(n <= N);
 	G1 P[N];
@@ -1949,11 +1956,13 @@ inline void millerLoopVecN(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 			}
 		}
 		if (realN <= 0) {
-			f = 1;
+			if (initF) _f = 1;
 			return;
 		}
 		n = realN; // update n
 	}
+	Fp12 ff;
+	Fp12& f(initF ? _f : ff);
 	// all P[] and Q[] are not zero
 	G2 T[N], negQ[N];
 	G1 adjP[N];
@@ -1993,7 +2002,7 @@ inline void millerLoopVecN(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 	if (BN::param.z < 0) {
 		Fp6::neg(f.b, f.b);
 	}
-	if (BN::param.isBLS12) return;
+	if (BN::param.isBLS12) goto EXIT;
 	for (size_t i = 0; i < n; i++) {
 		if (BN::param.z < 0) {
 			G2::neg(T[i], T[i]);
@@ -2007,6 +2016,8 @@ inline void millerLoopVecN(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 		mulSparse2(ft, d, e);
 		f *= ft;
 	}
+EXIT:
+	if (!initF) _f *= f;
 }
 /*
 	f = prod_{i=0}^{n-1} millerLoop(Pvec[i], Qvec[i])
@@ -2015,12 +2026,10 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
 {
 	const size_t N = 16;
 	size_t remain = fp::min_(N, n);
-	millerLoopVecN<N>(f, Pvec, Qvec, remain);
+	millerLoopVecN<N>(f, Pvec, Qvec, remain, true);
 	for (size_t i = remain; i < n; i += N) {
 		remain = fp::min_(n - i, N);
-		Fp12 ft;
-		millerLoopVecN<N>(ft, Pvec + i, Qvec + i, remain);
-		f *= ft;
+		millerLoopVecN<N>(f, Pvec + i, Qvec + i, remain, false);
 	}
 }
 

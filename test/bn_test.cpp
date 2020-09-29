@@ -253,7 +253,7 @@ void testMillerLoop2(const G1& P1, const G2& Q1)
 
 void testMillerLoopVec()
 {
-	const size_t n = 8;
+	const size_t n = 40;
 	G1 Pvec[n];
 	G2 Qvec[n];
 	char c = 'a';
@@ -262,15 +262,18 @@ void testMillerLoopVec()
 		hashAndMapToG2(Qvec[i], &c, 1);
 		c++;
 	}
-	Fp12 f1, f2;
-	f1 = 1;
-	for (size_t i = 0; i < n; i++) {
-		Fp12 e;
-		millerLoop(e, Pvec[i], Qvec[i]);
-		f1 *= e;
+	for (size_t m = 0; m < n; m++) {
+		Fp12 f1, f2;
+		f1 = 1;
+		f2.clear();
+		for (size_t i = 0; i < m; i++) {
+			Fp12 e;
+			millerLoop(e, Pvec[i], Qvec[i]);
+			f1 *= e;
+		}
+		millerLoopVec(f2, Pvec, Qvec, m);
+		CYBOZU_TEST_EQUAL(f1, f2);
 	}
-	millerLoopVec(f2, Pvec, Qvec, n);
-	CYBOZU_TEST_EQUAL(f1, f2);
 }
 
 void testPairing(const G1& P, const G2& Q, const char *eStr)
