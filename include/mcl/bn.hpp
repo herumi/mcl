@@ -2020,13 +2020,17 @@ EXIT:
 	if (!initF) _f *= f;
 }
 /*
-	f = prod_{i=0}^{n-1} millerLoop(Pvec[i], Qvec[i])
+	_f = prod_{i=0}^{n-1} millerLoop(Pvec[i], Qvec[i])
+	if initF:
+	  f = _f
+	else:
+	  f *= _f
 */
-inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n)
+inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF = true)
 {
 	const size_t N = 16;
 	size_t remain = fp::min_(N, n);
-	millerLoopVecN<N>(f, Pvec, Qvec, remain, true);
+	millerLoopVecN<N>(f, Pvec, Qvec, remain, initF);
 	for (size_t i = remain; i < n; i += N) {
 		remain = fp::min_(n - i, N);
 		millerLoopVecN<N>(f, Pvec + i, Qvec + i, remain, false);
