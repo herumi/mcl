@@ -13,9 +13,6 @@ TEST_SRC+=ecdsa_c_test.cpp
 TEST_SRC+=modp_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
-  MCL_USE_XBYAK=0
-  MCL_MAX_BIT_SIZE=384
-  CFLAGS+=-DMCL_STATIC_CODE
   LIB_OBJ+=obj/static_code.o
   TEST_SRC=bls12_test.cpp
 endif
