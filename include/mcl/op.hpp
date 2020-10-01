@@ -14,7 +14,7 @@
 	#define MCL_DONT_USE_XBYAK
 	#define MCL_DONT_USE_OPENSSL
 #endif
-#if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8)
+#if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8) && !defined(MCL_STATIC_CODE)
 	#define MCL_USE_XBYAK
 #endif
 #if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)

@@ -393,7 +393,7 @@ private:
 		op.fp_sqrA_ = gen_sqr();
 		setFuncInfo(prof_, suf, "_sqr", op.fp_sqrA_, getCurr());
 
-		if (op.primeMode != PM_NIST_P192 && op.N <= 4) { // support general op.N but not fast for op.N > 4
+		if (op.primeMode != PM_NIST_P192 && op.N <= 6) { // support general op.N but not fast for op.N > 4
 			align(16);
 			op.fp_preInv = getCurr<int2u>();
 			gen_preInv();
@@ -2676,7 +2676,7 @@ private:
 	*/
 	void gen_preInv()
 	{
-		assert(1 <= pn_ && pn_ <= 4);
+		assert(1 <= pn_ && pn_ <= 6);
 		const int freeRegNum = 13;
 		StackFrame sf(this, 2, 10 | UseRDX | UseRCX, (std::max<int>(0, pn_ * 5 - freeRegNum) + 1 + (isFullBit_ ? 1 : 0)) * 8);
 		const Reg64& pr = sf.p[0];
