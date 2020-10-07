@@ -378,13 +378,13 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	op.rp = getMontgomeryCoeff(p[0]);
 	if (mode != FP_XBYAK) return true;
 
+#ifdef MCL_X64_ASM
+
 #ifdef MCL_USE_VINT
 	const int maxInvN = 6;
 #else
 	const int maxInvN = 4;
 #endif
-
-#ifdef MCL_X64_ASM
 
 #ifdef MCL_USE_XBYAK
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
