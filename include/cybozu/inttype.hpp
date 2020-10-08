@@ -97,7 +97,7 @@
 	#else
 		#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_CPP11
 	#endif
-#elif CYBOZU_GNUC_PREREQ(4, 5) || (CYBOZU_GNUC_PREREQ(4, 2) && __GLIBCXX__ >= 20070719) || defined(__INTEL_COMPILER) || (__clang_major__ >= 3)
+#elif CYBOZU_GNUC_PREREQ(4, 5) || (CYBOZU_GNUC_PREREQ(4, 2) && (defined(__GLIBCXX__) &&__GLIBCXX__ >= 20070719)) || defined(__INTEL_COMPILER) || (__clang_major__ >= 3)
 	#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_TR1
 #else
 	#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_CPP03
