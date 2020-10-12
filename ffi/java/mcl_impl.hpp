@@ -335,6 +335,7 @@ void mul(G2& z, const G2& x, const Fr& y)
 class GT {
 	mcl::bn::Fp12 self_;
 	friend void mul(GT& z, const GT& x, const GT& y);
+	friend void inv(GT& y, GT& x);
 	friend void pow(GT& z, const GT& x, const Fr& y);
 	friend void pairing(GT& e, const G1& P, const G2& Q);
 public:
@@ -366,6 +367,10 @@ public:
 void mul(GT& z, const GT& x, const GT& y)
 {
 	mcl::bn::Fp12::mul(z.self_, x.self_, y.self_);
+}
+void inv(GT& y, GT& x) 
+{
+	mcl::bn::inv(y.self_, x.self_);
 }
 void pow(GT& z, const GT& x, const Fr& y)
 {
