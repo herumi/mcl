@@ -562,7 +562,7 @@ struct MapTo_WB19 {
 
 	void msgToG1(G1& out, const void *msg, size_t msgSize) const
 	{
-		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+		const char *dst = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_";
 		const size_t dstSize = strlen(dst);
 		msgToG1(out, msg, msgSize, dst, dstSize);
 	}
