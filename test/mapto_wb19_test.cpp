@@ -269,120 +269,96 @@ void testHashToFp2v7(const T& mapto)
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
 	{
-		char msg[] = "asdf";
-		char dst[] = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-		/*
-			https://github.com:cfrg/draft-irtf-cfrg-hash-to-curve
-			tag: draft-irtf-cfrg-hash-to-curve-07
-			the return value of expand_message_xmd in hash_to_field.py
-		*/
-		char expect[] = "ca53fcd6f140590d19138f38819eb13330c014a1670e40f0f8e991de7b35e21a1fca52a14486c8e8acc9d865718cd41fe3638c2fb50fdc75b95690dc58f86494005fb37fc330366a7fef5f6e26bb631f4a5462affab2b9a9630c3b1c63621875baf782dd435500fda05ba7a9e86a766eeffe259128dc6e43c1852c58034856c4c4e2158c3414a881c17b727be5400432bf5c0cd02066a3b763e25e3ca32f19ca69a807bbc14c7c8c7988915fb1df523c536f744aa8b9bd0bbcea9800a236355690a4765491cd8969ca2f8cac8b021d97306e6ce6a2126b2868cf57f59f5fc416385bc1c2ae396c62608adc6b9174bbdb981a4601c3bd81bbe086e385d9a909aa";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[256];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "asdf";
-		char dst[] = "QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_";
-		char expect[] = "ecc25edef8f6b277e27a88cf5ca0cdd4c4a49e8ba273d6069a4f0c9db05d37b78e700a875f4bb5972bfce49a867172ec1cb8c5524b1853994bb8af52a8ad2338d2cf688cf788b732372c10013445cd2c16a08a462028ae8ffff3082c8e47e8437dee5a58801e03ee8320980ae7c071ab022473231789d543d56defe9ff53bdba";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	// Test coming from https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-09#appendix-I.1
-	{
-		char msg[] = "";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "f659819a6473c1835b25ea59e3d38914c98b374f0970b7e4c92181df928fca88";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[32];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "abc";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "1c38f7c211ef233367b2420d04798fa4698080a8901021a795a1151775fe4da7";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[32];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "abcdef0123456789";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "8f7e7b66791f0da0dbb5ec7c22ec637f79758c0a48170bfb7c4611bd304ece89";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[32];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "72d5aa5ec810370d1f0013c0df2f1d65699494ee2a39f72e1716b1b964e1c642";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[32];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "8bcffd1a3cae24cf9cd7ab85628fd111bb17e3739d3b53f89580d217aa79526f1708354a76a402d3569d6a9d19ef3de4d0b991e4f54b9f20dcde9b95a66824cbdf6c1a963a1913d43fd7ac443a02fc5d9d8d77e2071b86ab114a9f34150954a7531da568a1ea8c760861c0cde2005afc2c114042ee7b5848f5303f0611cf297f";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "abc";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "fe994ec51bdaa821598047b3121c149b364b178606d5e72bfbb713933acc29c186f316baecf7ea22212f2496ef3f785a27e84a40d8b299cec56032763eceeff4c61bd1fe65ed81decafff4a31d0198619c0aa0c6c51fca15520789925e813dcfd318b542f8799441271f4db9ee3b8092a7a2e8d5b75b73e28fb1ab6b4573c192";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "abcdef0123456789";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "c9ec7941811b1e19ce98e21db28d22259354d4d0643e301175e2f474e030d32694e9dd5520dde93f3600d8edad94e5c364903088a7228cc9eff685d7eaac50d5a5a8229d083b51de4ccc3733917f4b9535a819b445814890b7029b5de805bf62b33a4dc7e24acdf2c924e9fe50d55a6b832c8c84c7f82474b34e48c6d43867be";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "48e256ddba722053ba462b2b93351fc966026e6d6db493189798181c5f3feea377b5a6f1d8368d7453faef715f9aecb078cd402cbd548c0e179c4ed1e4c7e5b048e0a39d31817b5b24f50db58bb3720fe96ba53db947842120a068816ac05c159bb5266c63658b4f000cbf87b1209a225def8ef1dca917bcda79a1e42acd8069";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
-	}
-	{
-		char msg[] = "a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-		char dst[] = "QUUX-V01-CS02-with-expander";
-		char expect[] = "396962db47f749ec3b5042ce2452b619607f27fd3939ece2746a7614fb83a1d097f554df3927b084e55de92c7871430d6b95c2a13896d8a33bc48587b1f66d21b128a1a8240d5b0c26dfe795a1a842a0807bb148b77c2ef82ed4b6c9f7fcb732e7f94466c8b51e52bf378fba044a31f5cb44583a892f5969dcd73b3fa128816e";
-		size_t msgSize = strlen(msg);
-		size_t dstSize = strlen(dst);
-		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
-		CYBOZU_TEST_EQUAL(toHexStr(md, sizeof(md)), expect);
+		struct Tbl {
+			const char *msg;
+			const char *dst;
+			const char *expect;
+			size_t mdSize;
+		} tbl[] = {
+			{
+				/*
+					https://github.com:cfrg/draft-irtf-cfrg-hash-to-curve
+					tag: draft-irtf-cfrg-hash-to-curve-07
+					the return value of expand_message_xmd in hash_to_field.py
+				*/
+				"asdf",
+				"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_",
+				"ca53fcd6f140590d19138f38819eb13330c014a1670e40f0f8e991de7b35e21a1fca52a14486c8e8acc9d865718cd41fe3638c2fb50fdc75b95690dc58f86494005fb37fc330366a7fef5f6e26bb631f4a5462affab2b9a9630c3b1c63621875baf782dd435500fda05ba7a9e86a766eeffe259128dc6e43c1852c58034856c4c4e2158c3414a881c17b727be5400432bf5c0cd02066a3b763e25e3ca32f19ca69a807bbc14c7c8c7988915fb1df523c536f744aa8b9bd0bbcea9800a236355690a4765491cd8969ca2f8cac8b021d97306e6ce6a2126b2868cf57f59f5fc416385bc1c2ae396c62608adc6b9174bbdb981a4601c3bd81bbe086e385d9a909aa",
+				256,
+			},
+			{
+				"asdf",
+				"QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_",
+				"ecc25edef8f6b277e27a88cf5ca0cdd4c4a49e8ba273d6069a4f0c9db05d37b78e700a875f4bb5972bfce49a867172ec1cb8c5524b1853994bb8af52a8ad2338d2cf688cf788b732372c10013445cd2c16a08a462028ae8ffff3082c8e47e8437dee5a58801e03ee8320980ae7c071ab022473231789d543d56defe9ff53bdba",
+				128,
+			},
+			// Test coming from https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-09#appendix-I.1
+			{
+				"",
+				"QUUX-V01-CS02-with-expander",
+				"f659819a6473c1835b25ea59e3d38914c98b374f0970b7e4c92181df928fca88",
+				32,
+			},
+			{
+				"abc",
+				"QUUX-V01-CS02-with-expander",
+				"1c38f7c211ef233367b2420d04798fa4698080a8901021a795a1151775fe4da7",
+				32,
+			},
+			{
+				"abcdef0123456789",
+				"QUUX-V01-CS02-with-expander",
+				"8f7e7b66791f0da0dbb5ec7c22ec637f79758c0a48170bfb7c4611bd304ece89",
+				32,
+			},
+			{
+				"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+				"QUUX-V01-CS02-with-expander",
+				"72d5aa5ec810370d1f0013c0df2f1d65699494ee2a39f72e1716b1b964e1c642",
+				32,
+			},
+			{
+				"",
+				"QUUX-V01-CS02-with-expander",
+				"8bcffd1a3cae24cf9cd7ab85628fd111bb17e3739d3b53f89580d217aa79526f1708354a76a402d3569d6a9d19ef3de4d0b991e4f54b9f20dcde9b95a66824cbdf6c1a963a1913d43fd7ac443a02fc5d9d8d77e2071b86ab114a9f34150954a7531da568a1ea8c760861c0cde2005afc2c114042ee7b5848f5303f0611cf297f",
+				128,
+			},
+			{
+				"abc",
+				"QUUX-V01-CS02-with-expander",
+				"fe994ec51bdaa821598047b3121c149b364b178606d5e72bfbb713933acc29c186f316baecf7ea22212f2496ef3f785a27e84a40d8b299cec56032763eceeff4c61bd1fe65ed81decafff4a31d0198619c0aa0c6c51fca15520789925e813dcfd318b542f8799441271f4db9ee3b8092a7a2e8d5b75b73e28fb1ab6b4573c192",
+				128,
+			},
+			{
+				"abcdef0123456789",
+				"QUUX-V01-CS02-with-expander",
+				"c9ec7941811b1e19ce98e21db28d22259354d4d0643e301175e2f474e030d32694e9dd5520dde93f3600d8edad94e5c364903088a7228cc9eff685d7eaac50d5a5a8229d083b51de4ccc3733917f4b9535a819b445814890b7029b5de805bf62b33a4dc7e24acdf2c924e9fe50d55a6b832c8c84c7f82474b34e48c6d43867be",
+				128,
+			},
+			{
+				"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+				"QUUX-V01-CS02-with-expander",
+				"48e256ddba722053ba462b2b93351fc966026e6d6db493189798181c5f3feea377b5a6f1d8368d7453faef715f9aecb078cd402cbd548c0e179c4ed1e4c7e5b048e0a39d31817b5b24f50db58bb3720fe96ba53db947842120a068816ac05c159bb5266c63658b4f000cbf87b1209a225def8ef1dca917bcda79a1e42acd8069",
+				128,
+			},
+			{
+				"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"QUUX-V01-CS02-with-expander",
+				"396962db47f749ec3b5042ce2452b619607f27fd3939ece2746a7614fb83a1d097f554df3927b084e55de92c7871430d6b95c2a13896d8a33bc48587b1f66d21b128a1a8240d5b0c26dfe795a1a842a0807bb148b77c2ef82ed4b6c9f7fcb732e7f94466c8b51e52bf378fba044a31f5cb44583a892f5969dcd73b3fa128816e",
+				128,
+			},
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			const char *msg = tbl[i].msg;
+			const char *dst = tbl[i].dst;
+			const char *expect = tbl[i].expect;
+			size_t mdSize = tbl[i].mdSize;
+			uint8_t md[256];
+			size_t msgSize = strlen(msg);
+			size_t dstSize = strlen(dst);
+			mcl::fp::expand_message_xmd(md, mdSize, msg, msgSize, dst, dstSize);
+			CYBOZU_TEST_EQUAL(toHexStr(md, mdSize), expect);
+		}
 	}
 	{
 		const struct {
@@ -456,7 +432,7 @@ void testHashToFp2v7(const T& mapto)
 			// https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.html#name-bls12381g2_xmdsha-256_sswu_
 			{
 				"abc", // msg
-        "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
+				"QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
 				{ // P.x
 					"0x02c2d18e033b960562aae3cab37a27ce00d80ccd5ba4b7fe0e7a210245129dbec7780ccc7954725f4168aff2787776e6",
 					"0x139cddbccdc5e91b9623efd38c49f81a6f83f175e80b06fc374de9eb4b41dfe4ca3a230ed250fbe3a2acf73a41177fd8",
@@ -468,7 +444,7 @@ void testHashToFp2v7(const T& mapto)
 			},
 			{
 				"abcdef0123456789", // msg
-        "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
+				"QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
 				{ // P.x
 					"0x121982811d2491fde9ba7ed31ef9ca474f0e1501297f68c298e9f4c0028add35aea8bb83d53c08cfc007c1e005723cd0",
 					"0x190d119345b94fbd15497bcba94ecf7db2cbfd1e1fe7da034d26cbba169fb3968288b3fafb265f9ebd380512a71c3f2c",
@@ -480,7 +456,7 @@ void testHashToFp2v7(const T& mapto)
 			},
 			{
 				"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", // msg
-        "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
+				"QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
 				{ // P.x
 					"0x19a84dd7248a1066f737cc34502ee5555bd3c19f2ecdb3c7d9e24dc65d4e25e50d83f0f77105e955d78f4762d33c17da",
 					"0x0934aba516a52d8ae479939a91998299c76d39cc0c035cd18813bec433f587e2d7a4fef038260eef0cef4d02aae3eb91",
@@ -492,7 +468,7 @@ void testHashToFp2v7(const T& mapto)
 			},
 			{
 				"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // msg
-        "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
+				"QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_",
 				{ // P.x
 					"0x01a6ba2f9a11fa5598b2d8ace0fbe0a0eacb65deceb476fbbcb64fd24557c2f4b18ecfc5663e54ae16a84f5ab7f62534",
 					"0x11fca2ff525572795a801eed17eb12785887c7b63fb77a42be46ce4a34131d71f7a73e95fee3f812aea3de78b4d01569",
