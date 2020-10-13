@@ -6,6 +6,7 @@
  * the SWIG interface file instead.
  * ----------------------------------------------------------------------------- */
 
+package com.herumi.mcl;
 
 public interface MclConstants {
   public final static int BN254 = 0;

@@ -6,6 +6,7 @@
  * the SWIG interface file instead.
  * ----------------------------------------------------------------------------- */
 
+package com.herumi.mcl;
 
 public class MclJNI {
   public final static native void SystemInit(int jarg1);

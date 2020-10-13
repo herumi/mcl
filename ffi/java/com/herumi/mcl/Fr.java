@@ -6,6 +6,7 @@
  * the SWIG interface file instead.
  * ----------------------------------------------------------------------------- */
 
+package com.herumi.mcl;
 
 public class Fr {
   private transient long swigCPtr;

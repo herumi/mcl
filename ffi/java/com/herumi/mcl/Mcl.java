@@ -6,6 +6,7 @@
  * the SWIG interface file instead.
  * ----------------------------------------------------------------------------- */
 
+package com.herumi.mcl;
 
 public class Mcl implements MclConstants {
   public static void SystemInit(int curveType) {

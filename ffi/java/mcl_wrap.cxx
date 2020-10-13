@@ -249,7 +249,7 @@ static void SWIGUNUSED SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionC
 extern "C" {
 #endif
 
-SWIGEXPORT void JNICALL Java_MclJNI_SystemInit(JNIEnv *jenv, jclass jcls, jint jarg1) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_SystemInit(JNIEnv *jenv, jclass jcls, jint jarg1) {
   int arg1 ;
   
   (void)jenv;
@@ -264,7 +264,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_SystemInit(JNIEnv *jenv, jclass jcls, jint j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_neg_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   Fr *arg1 = 0 ;
   Fr *arg2 = 0 ;
   
@@ -286,7 +286,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_add_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fr *arg1 = 0 ;
   Fr *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -315,7 +315,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_sub_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fr *arg1 = 0 ;
   Fr *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -344,7 +344,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fr *arg1 = 0 ;
   Fr *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -373,7 +373,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G1 *arg1 = 0 ;
   G1 *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -402,7 +402,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G2 *arg1 = 0 ;
   G2 *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -431,7 +431,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_div_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_div_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fr *arg1 = 0 ;
   Fr *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -460,7 +460,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_div_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_pow(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_pow(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   GT *arg1 = 0 ;
   GT *arg2 = 0 ;
   Fr *arg3 = 0 ;
@@ -489,7 +489,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_pow(JNIEnv *jenv, jclass jcls, jlong jarg1, 
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fr_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   Fr *result = 0 ;
   
@@ -501,7 +501,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_10(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   Fr *arg1 = 0 ;
   Fr *result = 0 ;
@@ -520,7 +520,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_11(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fr_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1) {
   jlong jresult = 0 ;
   int arg1 ;
   Fr *result = 0 ;
@@ -534,7 +534,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_12(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jstring jarg1, jint jarg2) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fr_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jstring jarg1, jint jarg2) {
   jlong jresult = 0 ;
   std::string *arg1 = 0 ;
   int arg2 ;
@@ -563,7 +563,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_13(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jstring jarg1) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fr_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jstring jarg1) {
   jlong jresult = 0 ;
   std::string *arg1 = 0 ;
   Fr *result = 0 ;
@@ -590,7 +590,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fr_1_1SWIG_14(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_MclJNI_Fr_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_Fr_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   jboolean jresult = 0 ;
   Fr *arg1 = (Fr *) 0 ;
   Fr *arg2 = 0 ;
@@ -612,7 +612,7 @@ SWIGEXPORT jboolean JNICALL Java_MclJNI_Fr_1equals(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
   Fr *arg1 = (Fr *) 0 ;
   std::string *arg2 = 0 ;
   int arg3 ;
@@ -640,7 +640,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   Fr *arg1 = (Fr *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -666,7 +666,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setInt(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setInt(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   Fr *arg1 = (Fr *) 0 ;
   int arg2 ;
   
@@ -679,7 +679,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setInt(JNIEnv *jenv, jclass jcls, jlong 
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fr_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   Fr *arg1 = (Fr *) 0 ;
   
   (void)jenv;
@@ -690,7 +690,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fr_1clear(JNIEnv *jenv, jclass jcls, jlong j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setByCSPRNG(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setByCSPRNG(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   Fr *arg1 = (Fr *) 0 ;
   
   (void)jenv;
@@ -701,7 +701,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fr_1setByCSPRNG(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_Fr_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_Fr_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   Fr *arg1 = (Fr *) 0 ;
   int arg2 ;
@@ -723,7 +723,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_Fr_1toString_1_1SWIG_10(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_Fr_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_Fr_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   Fr *arg1 = (Fr *) 0 ;
   std::string result;
@@ -743,7 +743,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_Fr_1toString_1_1SWIG_11(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fr_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   Fr *arg1 = (Fr *) 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -774,7 +774,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fr_1deserialize(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jbyteArray JNICALL Java_MclJNI_Fr_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_Fr_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   Fr *arg1 = (Fr *) 0 ;
   std::string *arg2 = 0 ;
@@ -799,7 +799,7 @@ SWIGEXPORT jbyteArray JNICALL Java_MclJNI_Fr_1serialize(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_delete_1Fr(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1Fr(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   Fr *arg1 = (Fr *) 0 ;
   
   (void)jenv;
@@ -809,7 +809,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_delete_1Fr(JNIEnv *jenv, jclass jcls, jlong 
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_neg_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
   
@@ -831,7 +831,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_add_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
   Fp *arg3 = 0 ;
@@ -860,7 +860,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_sub_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
   Fp *arg3 = 0 ;
@@ -889,7 +889,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
   Fp *arg3 = 0 ;
@@ -918,7 +918,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_div_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_div_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
   Fp *arg3 = 0 ;
@@ -947,7 +947,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_div_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fp_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   Fp *result = 0 ;
   
@@ -959,7 +959,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_10(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fp_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   Fp *arg1 = 0 ;
   Fp *result = 0 ;
@@ -978,7 +978,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_11(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fp_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1) {
   jlong jresult = 0 ;
   int arg1 ;
   Fp *result = 0 ;
@@ -992,7 +992,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_12(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jstring jarg1, jint jarg2) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fp_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jstring jarg1, jint jarg2) {
   jlong jresult = 0 ;
   std::string *arg1 = 0 ;
   int arg2 ;
@@ -1021,7 +1021,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_13(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jstring jarg1) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1Fp_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jstring jarg1) {
   jlong jresult = 0 ;
   std::string *arg1 = 0 ;
   Fp *result = 0 ;
@@ -1048,7 +1048,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1Fp_1_1SWIG_14(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_MclJNI_Fp_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_Fp_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   jboolean jresult = 0 ;
   Fp *arg1 = (Fp *) 0 ;
   Fp *arg2 = 0 ;
@@ -1070,7 +1070,7 @@ SWIGEXPORT jboolean JNICALL Java_MclJNI_Fp_1equals(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
   Fp *arg1 = (Fp *) 0 ;
   std::string *arg2 = 0 ;
   int arg3 ;
@@ -1098,7 +1098,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   Fp *arg1 = (Fp *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -1124,7 +1124,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setInt(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1setInt(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   Fp *arg1 = (Fp *) 0 ;
   int arg2 ;
   
@@ -1137,7 +1137,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setInt(JNIEnv *jenv, jclass jcls, jlong 
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fp_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   Fp *arg1 = (Fp *) 0 ;
   
   (void)jenv;
@@ -1148,7 +1148,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fp_1clear(JNIEnv *jenv, jclass jcls, jlong j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setByCSPRNG(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1setByCSPRNG(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   Fp *arg1 = (Fp *) 0 ;
   
   (void)jenv;
@@ -1159,7 +1159,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fp_1setByCSPRNG(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_Fp_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_Fp_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   Fp *arg1 = (Fp *) 0 ;
   int arg2 ;
@@ -1181,7 +1181,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_Fp_1toString_1_1SWIG_10(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_Fp_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_Fp_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   Fp *arg1 = (Fp *) 0 ;
   std::string result;
@@ -1201,7 +1201,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_Fp_1toString_1_1SWIG_11(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_Fp_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fp_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   Fp *arg1 = (Fp *) 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -1232,7 +1232,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_Fp_1deserialize(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jbyteArray JNICALL Java_MclJNI_Fp_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_Fp_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   Fp *arg1 = (Fp *) 0 ;
   std::string *arg2 = 0 ;
@@ -1257,7 +1257,7 @@ SWIGEXPORT jbyteArray JNICALL Java_MclJNI_Fp_1serialize(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_delete_1Fp(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1Fp(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   Fp *arg1 = (Fp *) 0 ;
   
   (void)jenv;
@@ -1267,7 +1267,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_delete_1Fp(JNIEnv *jenv, jclass jcls, jlong 
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_neg_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   G1 *arg1 = 0 ;
   G1 *arg2 = 0 ;
   
@@ -1289,7 +1289,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_dbl_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_dbl_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   G1 *arg1 = 0 ;
   G1 *arg2 = 0 ;
   
@@ -1311,7 +1311,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_dbl_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_add_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G1 *arg1 = 0 ;
   G1 *arg2 = 0 ;
   G1 *arg3 = 0 ;
@@ -1340,7 +1340,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_sub_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G1 *arg1 = 0 ;
   G1 *arg2 = 0 ;
   G1 *arg3 = 0 ;
@@ -1369,7 +1369,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_pairing(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_pairing(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   GT *arg1 = 0 ;
   G1 *arg2 = 0 ;
   G2 *arg3 = 0 ;
@@ -1398,7 +1398,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_pairing(JNIEnv *jenv, jclass jcls, jlong jar
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_hashAndMapToG1(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_hashAndMapToG1(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   G1 *arg1 = 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -1433,7 +1433,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_hashAndMapToG1(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G1_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1G1_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   G1 *result = 0 ;
   
@@ -1445,7 +1445,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G1_1_1SWIG_10(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G1_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1G1_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   G1 *arg1 = 0 ;
   G1 *result = 0 ;
@@ -1464,7 +1464,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G1_1_1SWIG_11(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G1_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1G1_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   jlong jresult = 0 ;
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
@@ -1495,7 +1495,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G1_1_1SWIG_12(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_MclJNI_G1_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_G1_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   jboolean jresult = 0 ;
   G1 *arg1 = (G1 *) 0 ;
   G1 *arg2 = 0 ;
@@ -1517,7 +1517,7 @@ SWIGEXPORT jboolean JNICALL Java_MclJNI_G1_1equals(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G1 *arg1 = (G1 *) 0 ;
   Fp *arg2 = 0 ;
   Fp *arg3 = 0 ;
@@ -1547,7 +1547,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G1_1set(JNIEnv *jenv, jclass jcls, jlong jar
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G1_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   G1 *arg1 = (G1 *) 0 ;
   
   (void)jenv;
@@ -1558,7 +1558,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G1_1clear(JNIEnv *jenv, jclass jcls, jlong j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G1_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
   G1 *arg1 = (G1 *) 0 ;
   std::string *arg2 = 0 ;
   int arg3 ;
@@ -1586,7 +1586,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G1_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G1_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   G1 *arg1 = (G1 *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -1612,7 +1612,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G1_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_G1_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_G1_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   G1 *arg1 = (G1 *) 0 ;
   int arg2 ;
@@ -1634,7 +1634,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_G1_1toString_1_1SWIG_10(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_G1_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_G1_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   G1 *arg1 = (G1 *) 0 ;
   std::string result;
@@ -1654,7 +1654,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_G1_1toString_1_1SWIG_11(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G1_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   G1 *arg1 = (G1 *) 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -1685,7 +1685,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G1_1deserialize(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jbyteArray JNICALL Java_MclJNI_G1_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_G1_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   G1 *arg1 = (G1 *) 0 ;
   std::string *arg2 = 0 ;
@@ -1710,7 +1710,7 @@ SWIGEXPORT jbyteArray JNICALL Java_MclJNI_G1_1serialize(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_delete_1G1(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1G1(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   G1 *arg1 = (G1 *) 0 ;
   
   (void)jenv;
@@ -1720,7 +1720,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_delete_1G1(JNIEnv *jenv, jclass jcls, jlong 
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_neg_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   G2 *arg1 = 0 ;
   G2 *arg2 = 0 ;
   
@@ -1742,7 +1742,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_neg_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_dbl_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_dbl_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   G2 *arg1 = 0 ;
   G2 *arg2 = 0 ;
   
@@ -1764,7 +1764,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_dbl_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_add_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G2 *arg1 = 0 ;
   G2 *arg2 = 0 ;
   G2 *arg3 = 0 ;
@@ -1793,7 +1793,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_add_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_sub_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G2 *arg1 = 0 ;
   G2 *arg2 = 0 ;
   G2 *arg3 = 0 ;
@@ -1822,7 +1822,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_sub_1_1SWIG_13(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_hashAndMapToG2(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_hashAndMapToG2(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   G2 *arg1 = 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -1857,7 +1857,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_hashAndMapToG2(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G2_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1G2_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   G2 *result = 0 ;
   
@@ -1869,7 +1869,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G2_1_1SWIG_10(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G2_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1G2_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   G2 *arg1 = 0 ;
   G2 *result = 0 ;
@@ -1888,7 +1888,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G2_1_1SWIG_11(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G2_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_, jlong jarg4, jobject jarg4_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1G2_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_, jlong jarg4, jobject jarg4_) {
   jlong jresult = 0 ;
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
@@ -1933,7 +1933,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1G2_1_1SWIG_12(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_MclJNI_G2_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_G2_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   jboolean jresult = 0 ;
   G2 *arg1 = (G2 *) 0 ;
   G2 *arg2 = 0 ;
@@ -1955,7 +1955,7 @@ SWIGEXPORT jboolean JNICALL Java_MclJNI_G2_1equals(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_, jlong jarg4, jobject jarg4_, jlong jarg5, jobject jarg5_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_, jlong jarg4, jobject jarg4_, jlong jarg5, jobject jarg5_) {
   G2 *arg1 = (G2 *) 0 ;
   Fp *arg2 = 0 ;
   Fp *arg3 = 0 ;
@@ -1999,7 +1999,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G2_1set(JNIEnv *jenv, jclass jcls, jlong jar
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G2_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   G2 *arg1 = (G2 *) 0 ;
   
   (void)jenv;
@@ -2010,7 +2010,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G2_1clear(JNIEnv *jenv, jclass jcls, jlong j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G2_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
   G2 *arg1 = (G2 *) 0 ;
   std::string *arg2 = 0 ;
   int arg3 ;
@@ -2038,7 +2038,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G2_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G2_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   G2 *arg1 = (G2 *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -2064,7 +2064,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G2_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_G2_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_G2_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   G2 *arg1 = (G2 *) 0 ;
   int arg2 ;
@@ -2086,7 +2086,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_G2_1toString_1_1SWIG_10(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_G2_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_G2_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   G2 *arg1 = (G2 *) 0 ;
   std::string result;
@@ -2106,7 +2106,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_G2_1toString_1_1SWIG_11(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_G2_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   G2 *arg1 = (G2 *) 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -2137,7 +2137,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_G2_1deserialize(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jbyteArray JNICALL Java_MclJNI_G2_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_G2_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   G2 *arg1 = (G2 *) 0 ;
   std::string *arg2 = 0 ;
@@ -2162,7 +2162,7 @@ SWIGEXPORT jbyteArray JNICALL Java_MclJNI_G2_1serialize(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_delete_1G2(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1G2(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   G2 *arg1 = (G2 *) 0 ;
   
   (void)jenv;
@@ -2172,7 +2172,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_delete_1G2(JNIEnv *jenv, jclass jcls, jlong 
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   GT *arg1 = 0 ;
   GT *arg2 = 0 ;
   GT *arg3 = 0 ;
@@ -2201,7 +2201,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_mul_1_1SWIG_14(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_inv(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_inv(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   GT *arg1 = 0 ;
   GT *arg2 = 0 ;
   
@@ -2223,7 +2223,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_inv(JNIEnv *jenv, jclass jcls, jlong jarg1, 
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1GT_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1GT_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   GT *result = 0 ;
   
@@ -2235,7 +2235,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1GT_1_1SWIG_10(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jlong JNICALL Java_MclJNI_new_1GT_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_new_1GT_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   GT *arg1 = 0 ;
   GT *result = 0 ;
@@ -2254,7 +2254,7 @@ SWIGEXPORT jlong JNICALL Java_MclJNI_new_1GT_1_1SWIG_11(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_MclJNI_GT_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_GT_1equals(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   jboolean jresult = 0 ;
   GT *arg1 = (GT *) 0 ;
   GT *arg2 = 0 ;
@@ -2276,7 +2276,7 @@ SWIGEXPORT jboolean JNICALL Java_MclJNI_GT_1equals(JNIEnv *jenv, jclass jcls, jl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_GT_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_GT_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   GT *arg1 = (GT *) 0 ;
   
   (void)jenv;
@@ -2287,7 +2287,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_GT_1clear(JNIEnv *jenv, jclass jcls, jlong j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_GT_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_GT_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
   GT *arg1 = (GT *) 0 ;
   std::string *arg2 = 0 ;
   int arg3 ;
@@ -2315,7 +2315,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_GT_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_GT_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_GT_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   GT *arg1 = (GT *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -2341,7 +2341,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_GT_1setStr_1_1SWIG_11(JNIEnv *jenv, jclass j
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_GT_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_GT_1toString_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   GT *arg1 = (GT *) 0 ;
   int arg2 ;
@@ -2363,7 +2363,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_GT_1toString_1_1SWIG_10(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT jstring JNICALL Java_MclJNI_GT_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_com_herumi_mcl_MclJNI_GT_1toString_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   GT *arg1 = (GT *) 0 ;
   std::string result;
@@ -2383,7 +2383,7 @@ SWIGEXPORT jstring JNICALL Java_MclJNI_GT_1toString_1_1SWIG_11(JNIEnv *jenv, jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_GT_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_GT_1deserialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
   GT *arg1 = (GT *) 0 ;
   char *arg2 = (char *) 0 ;
   size_t arg3 ;
@@ -2414,7 +2414,7 @@ SWIGEXPORT void JNICALL Java_MclJNI_GT_1deserialize(JNIEnv *jenv, jclass jcls, j
 }
 
 
-SWIGEXPORT jbyteArray JNICALL Java_MclJNI_GT_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_GT_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   GT *arg1 = (GT *) 0 ;
   std::string *arg2 = 0 ;
@@ -2439,7 +2439,7 @@ SWIGEXPORT jbyteArray JNICALL Java_MclJNI_GT_1serialize(JNIEnv *jenv, jclass jcl
 }
 
 
-SWIGEXPORT void JNICALL Java_MclJNI_delete_1GT(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1GT(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   GT *arg1 = (GT *) 0 ;
   
   (void)jenv;
