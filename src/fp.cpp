@@ -146,8 +146,8 @@ uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSiz
 
 void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
 {
-	assert(outSize == 128 || outSize == 256);
 	const size_t mdSize = 32;
+	assert((outSize % mdSize) == 0 && 0 < outSize && outSize <= 256);
 	const size_t r_in_bytes = 64;
 	const size_t n = outSize / mdSize;
 	static const uint8_t Z_pad[r_in_bytes] = {};
