@@ -50,6 +50,7 @@ Mcl.SystemInit(curveType); // curveType = Mcl.BN254 or Mcl.BLS12_381
 * `GT::setStr(String str)` ; set by the result of `toString()` method
 * `Mcl.mul(GT z, GT x, GT y)` ; `z = x * y`
 * `Mcl.pow(GT z, GT x, Fr y)` ; `z = x ^ y`
+* `Mcl.inv(GT y, GT x)` ; `y = x^{-1}`
 
 ## pairing
 * `Mcl.pairing(GT e, G1 P, G2 Q)` ; e = e(P, Q)
