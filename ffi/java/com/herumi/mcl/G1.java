@@ -52,6 +52,10 @@ public class G1 {
     return MclJNI.G1_equals(swigCPtr, this, G1.getCPtr(rhs), rhs);
   }
 
+  public boolean isZero() {
+    return MclJNI.G1_isZero(swigCPtr, this);
+  }
+
   public void set(Fp x, Fp y) {
     MclJNI.G1_set(swigCPtr, this, Fp.getCPtr(x), x, Fp.getCPtr(y), y);
   }

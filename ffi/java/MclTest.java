@@ -111,6 +111,7 @@ public class MclTest {
 			Mcl.mul(e1, e1, e2);
 			e2.setStr("1 0 0 0 0 0 0 0 0 0 0 0");
 			assertBool("e1 == 1", e1.equals(e2));
+			assertBool("e1 == 1", e1.isOne());
 
 			BLSsignature(Q);
 			if (errN == 0) {

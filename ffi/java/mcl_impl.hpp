@@ -63,6 +63,7 @@ public:
 	Fr(const std::string& str, int base = 0) throw(std::exception)
 		: self_(str, base) {}
 	bool equals(const Fr& rhs) const { return self_ == rhs.self_; }
+	bool isZero() const { return self_.isZero(); }
 	void setStr(const std::string& str, int base = 0) throw(std::exception)
 	{
 		self_.setStr(str, base);
@@ -135,6 +136,7 @@ public:
 	Fp(const std::string& str, int base = 0) throw(std::exception)
 		: self_(str, base) {}
 	bool equals(const Fp& rhs) const { return self_ == rhs.self_; }
+	bool isZero() const { return self_.isZero(); }
 	void setStr(const std::string& str, int base = 0) throw(std::exception)
 	{
 		self_.setStr(str, base);
@@ -209,6 +211,7 @@ public:
 	G1(const Fp& x, const Fp& y) throw(std::exception)
 		: self_(x.self_, y.self_) { }
 	bool equals(const G1& rhs) const { return self_ == rhs.self_; }
+	bool isZero() const { return self_.isZero(); }
 	void set(const Fp& x, const Fp& y) throw(std::exception)
 	{
 		self_.set(x.self_, y.self_);
@@ -279,6 +282,7 @@ public:
 	{
 	}
 	bool equals(const G2& rhs) const { return self_ == rhs.self_; }
+	bool isZero() const { return self_.isZero(); }
 	void set(const Fp& ax, const Fp& ay, const Fp& bx, const Fp& by) throw(std::exception)
 	{
 		self_.set(mcl::bn::Fp2(ax.self_, ay.self_), mcl::bn::Fp2(bx.self_, by.self_));
@@ -342,6 +346,7 @@ public:
 	GT() {}
 	GT(const GT& rhs) : self_(rhs.self_) {}
 	bool equals(const GT& rhs) const { return self_ == rhs.self_; }
+	bool isOne() const { return self_.isOne(); }
 	void clear()
 	{
 		self_.clear();

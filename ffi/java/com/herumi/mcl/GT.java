@@ -48,6 +48,10 @@ public class GT {
     return MclJNI.GT_equals(swigCPtr, this, GT.getCPtr(rhs), rhs);
   }
 
+  public boolean isOne() {
+    return MclJNI.GT_isOne(swigCPtr, this);
+  }
+
   public void clear() {
     MclJNI.GT_clear(swigCPtr, this);
   }

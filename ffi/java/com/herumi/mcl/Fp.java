@@ -60,6 +60,10 @@ public class Fp {
     return MclJNI.Fp_equals(swigCPtr, this, Fp.getCPtr(rhs), rhs);
   }
 
+  public boolean isZero() {
+    return MclJNI.Fp_isZero(swigCPtr, this);
+  }
+
   public void setStr(String str, int base) {
     MclJNI.Fp_setStr__SWIG_0(swigCPtr, this, str, base);
   }

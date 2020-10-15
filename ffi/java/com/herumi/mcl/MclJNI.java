@@ -24,6 +24,7 @@ public class MclJNI {
   public final static native long new_Fr__SWIG_3(String jarg1, int jarg2);
   public final static native long new_Fr__SWIG_4(String jarg1);
   public final static native boolean Fr_equals(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_);
+  public final static native boolean Fr_isZero(long jarg1, Fr jarg1_);
   public final static native void Fr_setStr__SWIG_0(long jarg1, Fr jarg1_, String jarg2, int jarg3);
   public final static native void Fr_setStr__SWIG_1(long jarg1, Fr jarg1_, String jarg2);
   public final static native void Fr_setInt(long jarg1, Fr jarg1_, int jarg2);
@@ -45,6 +46,7 @@ public class MclJNI {
   public final static native long new_Fp__SWIG_3(String jarg1, int jarg2);
   public final static native long new_Fp__SWIG_4(String jarg1);
   public final static native boolean Fp_equals(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
+  public final static native boolean Fp_isZero(long jarg1, Fp jarg1_);
   public final static native void Fp_setStr__SWIG_0(long jarg1, Fp jarg1_, String jarg2, int jarg3);
   public final static native void Fp_setStr__SWIG_1(long jarg1, Fp jarg1_, String jarg2);
   public final static native void Fp_setInt(long jarg1, Fp jarg1_, int jarg2);
@@ -65,6 +67,7 @@ public class MclJNI {
   public final static native long new_G1__SWIG_1(long jarg1, G1 jarg1_);
   public final static native long new_G1__SWIG_2(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
   public final static native boolean G1_equals(long jarg1, G1 jarg1_, long jarg2, G1 jarg2_);
+  public final static native boolean G1_isZero(long jarg1, G1 jarg1_);
   public final static native void G1_set(long jarg1, G1 jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void G1_clear(long jarg1, G1 jarg1_);
   public final static native void G1_setStr__SWIG_0(long jarg1, G1 jarg1_, String jarg2, int jarg3);
@@ -83,6 +86,7 @@ public class MclJNI {
   public final static native long new_G2__SWIG_1(long jarg1, G2 jarg1_);
   public final static native long new_G2__SWIG_2(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_, long jarg4, Fp jarg4_);
   public final static native boolean G2_equals(long jarg1, G2 jarg1_, long jarg2, G2 jarg2_);
+  public final static native boolean G2_isZero(long jarg1, G2 jarg1_);
   public final static native void G2_set(long jarg1, G2 jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_, long jarg4, Fp jarg4_, long jarg5, Fp jarg5_);
   public final static native void G2_clear(long jarg1, G2 jarg1_);
   public final static native void G2_setStr__SWIG_0(long jarg1, G2 jarg1_, String jarg2, int jarg3);
@@ -97,6 +101,7 @@ public class MclJNI {
   public final static native long new_GT__SWIG_0();
   public final static native long new_GT__SWIG_1(long jarg1, GT jarg1_);
   public final static native boolean GT_equals(long jarg1, GT jarg1_, long jarg2, GT jarg2_);
+  public final static native boolean GT_isOne(long jarg1, GT jarg1_);
   public final static native void GT_clear(long jarg1, GT jarg1_);
   public final static native void GT_setStr__SWIG_0(long jarg1, GT jarg1_, String jarg2, int jarg3);
   public final static native void GT_setStr__SWIG_1(long jarg1, GT jarg1_, String jarg2);
