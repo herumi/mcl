@@ -107,6 +107,10 @@ public class MclTest {
 			Mcl.mul(cP, P, c); // cP = P * c
 			Mcl.pairing(e1, cP, Q);
 			assertBool("e1 == e2", e1.equals(e2));
+			Mcl.inv(e1, e1);
+			Mcl.mul(e1, e1, e2);
+			e2.setStr("1 0 0 0 0 0 0 0 0 0 0 0");
+			assertBool("e1 == 1", e1.equals(e2));
 
 			BLSsignature(Q);
 			if (errN == 0) {

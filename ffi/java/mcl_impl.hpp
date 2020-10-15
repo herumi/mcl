@@ -370,7 +370,7 @@ void mul(GT& z, const GT& x, const GT& y)
 }
 void inv(GT& y, GT& x)
 {
-	mcl::bn::Fp12::inv(y.self_, x.self_);
+	mcl::bn::Fp12::unitaryInv(y.self_, x.self_);
 }
 void pow(GT& z, const GT& x, const Fr& y)
 {
