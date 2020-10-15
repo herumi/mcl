@@ -368,7 +368,7 @@ void mul(GT& z, const GT& x, const GT& y)
 {
 	mcl::bn::Fp12::mul(z.self_, x.self_, y.self_);
 }
-void inv(GT& y, GT& x) 
+void inv(GT& y, GT& x)
 {
 	mcl::bn::Fp12::inv(y.self_, x.self_);
 }
