@@ -424,6 +424,54 @@ void addJacobi(E& R, const E& P, const E& Q)
 	F::sub(R.y, U1, H3);
 }
 
+/*
+	accept P == Q
+	https://github.com/apache/incubator-milagro-crypto-c/blob/fa0a45a3/src/ecp.c.in#L767-L976
+*/
+template<class E>
+void addCTProj(E& R, const E& P, const E& Q)
+{
+	typedef typename E::Fp F;
+	assert(E::a_ == 0);
+	F b3;
+	F::add(b3, E::b_, E::b_);
+	b3 += E::b_;
+	F t0, t1, t2, t3, t4, x3, y3, z3;
+	F::mul(t0, P.x, Q.x);
+	F::mul(t1, P.y, Q.y);
+	F::mul(t2, P.z, Q.z);
+	F::add(t3, P.x, P.y);
+	F::add(t4, Q.x, Q.y);
+	F::mul(t3, t3, t4);
+	F::add(t4, t0, t1);
+	F::sub(t3, t3, t4);
+	F::add(t4, P.y, P.z);
+	F::add(x3, Q.y, Q.z);
+	F::mul(t4, t4, x3);
+	F::add(x3, t1, t2);
+	F::sub(t4, t4, x3);
+	F::add(x3, P.x, P.z);
+	F::add(y3, Q.x, Q.z);
+	F::mul(x3, x3, y3);
+	F::add(y3, t0, t2);
+	F::sub(y3, x3, y3);
+	F::add(x3, t0, t0);
+	F::add(t0, t0, x3);
+	t2 *= b3;
+	F::add(z3, t1, t2);
+	F::sub(t1, t1, t2);
+	y3 *= b3;
+	F::mul(x3, y3, t4);
+	F::mul(t2, t3, t1);
+	F::sub(R.x, t2, x3);
+	F::mul(y3, y3, t0);
+	F::mul(t1, t1, z3);
+	F::add(R.y, y3, t1);
+	F::mul(t0, t0, t3);
+	F::mul(z3, z3, t4);
+	F::add(R.z, z3, t0);
+}
+
 template<class E>
 void normalizeProj(E& P)
 {
