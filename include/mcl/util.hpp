@@ -328,6 +328,7 @@ bool mulSmallUnit(T& z, const T& x, U y)
 	case 9: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::add(z, t, x); break; }
 	case 10: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, x); T::add(z, t, t); break; }
 	case 11: { T t; T::add(t, x, x); T::add(t, t, x); T::add(t, t, t); T::add(t, t, t); T::sub(z, t, x); break; }
+	case 12: { T t; T::add(t, x, x); T::add(t, t, t); T::add(z, t, t); T::add(z, z, t); break; }
 	default:
 		return false;
 	}
