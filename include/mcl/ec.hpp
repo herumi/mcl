@@ -427,6 +427,7 @@ void addJacobi(E& R, const E& P, const E& Q)
 /*
 	accept P == Q
 	https://github.com/apache/incubator-milagro-crypto-c/blob/fa0a45a3/src/ecp.c.in#L767-L976
+	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
 template<class E>
 void addCTProj(E& R, const E& P, const E& Q)

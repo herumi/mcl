@@ -499,20 +499,19 @@ struct Test {
 		Fp y(para.gy);
 		Ec P(x, y), Q, R, Zero;
 		Zero.clear();
+		Zero.y = 1;
 		mcl::ec::addCTProj(Q, P, P);
 		Ec::add(R, P, P);
 		CYBOZU_TEST_EQUAL(Q, R);
 		mcl::ec::addCTProj(Q, Q, P);
 		Ec::add(R, R, P);
 		CYBOZU_TEST_EQUAL(Q, R);
-/*
 		mcl::ec::addCTProj(Q, Q, Zero);
 		Ec::add(R, R, Zero);
 		CYBOZU_TEST_EQUAL(Q, R);
 		mcl::ec::addCTProj(Q, Zero, Q);
 		Ec::add(R, Zero, R);
 		CYBOZU_TEST_EQUAL(Q, R);
-*/
 		mcl::ec::addCTProj(Q, Zero, Zero);
 		Ec::add(R, Zero, Zero);
 		CYBOZU_TEST_EQUAL(Q, R);
