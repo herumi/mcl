@@ -376,17 +376,14 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 		if (!b) return false;
 	}
 	op.rp = getMontgomeryCoeff(p[0]);
-	if (mode != FP_XBYAK) return true;
 
+	(void)mode;
 #ifdef MCL_X64_ASM
 
-#ifdef MCL_USE_VINT
-	const int maxInvN = 6;
-#else
-	const int maxInvN = 4;
-#endif
-
 #ifdef MCL_USE_XBYAK
+#ifndef MCL_DUMP_JIT
+	if (mode != FP_XBYAK) return true;
+#endif
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
 	bool enableInv = op.fg->init(op, g_cpu);
 #ifdef MCL_DUMP_JIT
@@ -397,6 +394,11 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	bool enableInv = true;
 #endif // MCL_USE_XBYAK
 
+#ifdef MCL_USE_VINT
+	const int maxInvN = 6;
+#else
+	const int maxInvN = 4;
+#endif
 	if (enableInv && op.isMont && N <= maxInvN) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
