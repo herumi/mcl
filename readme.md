@@ -102,7 +102,7 @@ env MCL_PROF=2 bin/bls12_test.exe
 
 ## How to build on 32-bit x86 Linux
 
-Build GMP and for 32-bit mode and install `<lib32>` at yourself.
+Build GMP for 32-bit mode (`env ABI=32 ./configure --enable-cxx ...`) and install `<lib32>` at yourself.
 
 ```
 make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,-rpath,<lib32>/lib"
