@@ -32,6 +32,12 @@ ifeq ($(UNAME_S),OpenBSD)
   CFLAGS+=-I/usr/local/include
   LDFLAGS+=-L/usr/local/lib
 endif
+ifeq ($(UNAME_S),FreeBSD)
+  OS=freebsd
+  CXX?=clang++
+  CFLAGS+=-I/usr/local/include
+  LDFLAGS+=-L/usr/local/lib
+endif
 
 ARCH?=$(shell uname -m)
 ifneq ($(findstring $(ARCH),x86_64/amd64),)
