@@ -110,7 +110,7 @@ ifeq ($(DEBUG),0)
 CFLAGS+=$(CFLAGS_OPT_USER)
 endif
 CFLAGS+=$(CFLAGS_USER)
-MCL_USE_GMP?=1
+MCL_USE_GMP?=0
 ifeq ($(OS),mac)
   ifeq ($(shell sw_vers -productVersion),10.15)
     # workaround because of GMP does not run well on Catalina

@@ -51,14 +51,6 @@ see [api.md](api.md)
 # How to build on Linux and macOS
 x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.
 
-## Installation Requirements
-
-[GMP](https://gmplib.org/) is necessary (default setting).
-
-```
-apt install libgmp-dev # on Ubuntu
-```
-
 ## How to build with Makefile
 
 ```
@@ -80,10 +72,15 @@ make bin/bn_c384_256_test.exe && bin/bn_c384_256_test.exe
 make bin/bls12_test.exe && bin/bls12_test.exe
 ```
 
-## How to build without GMP
+## How to build with GMP
+Install [GMP](https://gmplib.org/).
 
 ```
-make MCL_USE_GMP=0
+apt install libgmp-dev # on Ubuntu
+```
+
+```
+make MCL_USE_GMP=1
 
 ```
 Define `MCL_USE_VINT` if using C++ header files.
