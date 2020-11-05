@@ -544,6 +544,7 @@ private:
 	struct ZkpBinTag;
 	struct ZkpEqTag; // d_[] = { c, sp, ss, sm }
 	struct ZkpBinEqTag; // d_[] = { d0, d1, sp0, sp1, ss, sp, sm }
+	struct ZkpDecTag; // d_[] = { c, h }
 public:
 	/*
 		Zkp for m = 0 or 1
@@ -557,6 +558,10 @@ public:
 		Zkp for (m = 0 or 1) and decG1(c1) == decG2(c2)
 	*/
 	typedef ZkpT<ZkpBinEqTag, 7> ZkpBinEq;
+	/*
+		Zkp for Dec(c) = m
+	*/
+	typedef ZkpT<ZkpDecTag, 2> ZkpDec;
 
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
@@ -774,6 +779,50 @@ public:
 			} else {
 				return isZero(c.a_);
 			}
+		}
+		int64_t decWithZkpDec(bool *pok, ZkpDec& zkp, const CipherTextG1& c, const PublicKey& pub) const
+		{
+			/*
+				c = (S, T)
+				S = mP + rxP
+				T = rP
+				R = S - xT = mP
+			*/
+			G1 R;
+			G1::mul(R, c.T_, x_);
+			G1::sub(R, c.S_, R);
+			int64_t m = PhashTbl_.log(R, pok);
+			if (!*pok) return 0;
+			const G1& P1 = P_;
+			const G1& P2 = c.T_; // rP
+			const G1& A1 = pub.xP_;
+			G1 A2;
+			G1::sub(A2, c.S_, R); // rxP
+			Fr b;
+			b.setRand();
+			G1 B1, B2;
+			G1::mul(B1, P1, b);
+			G1::mul(B2, P2, b);
+			char buf[sizeof(G1) * 5];
+			cybozu::MemoryOutputStream os(buf, sizeof(buf));
+			P2.save(os);
+			A1.save(os);
+			A2.save(os);
+			B1.save(os);
+			B2.save(os);
+			Fr& d = zkp.d_[0];
+			Fr& h = zkp.d_[1];
+			h.setHashOf(buf, os.getPos());
+			Fr::mul(d, h, x_);
+			d += b;
+			return m;
+		}
+		int64_t decWithZkpDec(ZkpDec& zkp, const CipherTextG1& c, const PublicKey& pub) const
+		{
+			bool b;
+			int64_t ret = decWithZkpDec(&b, zkp, c, pub);
+			if (!b) throw cybozu::Exception("she:SecretKey:decWithZkpDec");
+			return ret;
 		}
 		template<class InputStream>
 		void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
@@ -1287,6 +1336,38 @@ public:
 		{
 			const MulG<G1> xPmul(xP_);
 			return verifyZkpBin(c.S_, c.T_, P_, zkp, PhashTbl_.getWM(), xPmul);
+		}
+		bool verify(const CipherTextG1& c, int64_t m, const ZkpDec& zkp) const
+		{
+			/*
+				Enc(m;r) - Enc(m;0) = (S, T) - (mP, 0) = (S - mP, T)
+			*/
+			const Fr& d = zkp.d_[0];
+			const Fr& h = zkp.d_[1];
+			const G1& P1 = P_;
+			const G1& P2 = c.T_; // rP
+			const G1& A1 = xP_;
+			G1 A2;
+			G1::mul(A2, P_, m);
+//			PhashTbl_.getWM().mul(A2, m);
+			G1::sub(A2, c.S_, A2); // S - mP = xrP
+			G1 B1, B2, T;
+			G1::mul(B1, P1, d);
+			G1::mul(B2, P2, d);
+			G1::mul(T, A1, h);
+			B1 -= T;
+			G1::mul(T, A2, h);
+			B2 -= T;
+			char buf[sizeof(G1) * 5];
+			cybozu::MemoryOutputStream os(buf, sizeof(buf));
+			P2.save(os);
+			A1.save(os);
+			A2.save(os);
+			B1.save(os);
+			B2.save(os);
+			Fr h2;
+			h2.setHashOf(buf, os.getPos());
+			return h == h2;
 		}
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
 		{
@@ -1896,6 +1977,7 @@ typedef SHE::CipherText CipherText;
 typedef SHE::ZkpBin ZkpBin;
 typedef SHE::ZkpEq ZkpEq;
 typedef SHE::ZkpBinEq ZkpBinEq;
+typedef SHE::ZkpDec ZkpDec;
 
 inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 {
