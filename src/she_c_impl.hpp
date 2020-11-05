@@ -41,6 +41,9 @@ static const ZkpEq *cast(const sheZkpEq *p) { return reinterpret_cast<const ZkpE
 static ZkpBinEq *cast(sheZkpBinEq *p) { return reinterpret_cast<ZkpBinEq*>(p); }
 static const ZkpBinEq *cast(const sheZkpBinEq *p) { return reinterpret_cast<const ZkpBinEq*>(p); }
 
+static ZkpDec *cast(sheZkpDec *p) { return reinterpret_cast<ZkpDec*>(p); }
+static const ZkpDec *cast(const sheZkpDec *p) { return reinterpret_cast<const ZkpDec*>(p); }
+
 int sheInit(int curve, int compiledTimeVar)
 	try
 {
@@ -116,6 +119,11 @@ mclSize sheZkpBinEqSerialize(void *buf, mclSize maxBufSize, const sheZkpBinEq *z
 	return (mclSize)cast(zkp)->serialize(buf, maxBufSize);
 }
 
+mclSize sheZkpDecSerialize(void *buf, mclSize maxBufSize, const sheZkpDec *zkp)
+{
+	return (mclSize)cast(zkp)->serialize(buf, maxBufSize);
+}
+
 mclSize sheSecretKeyDeserialize(sheSecretKey* sec, const void *buf, mclSize bufSize)
 {
 	return (mclSize)cast(sec)->deserialize(buf, bufSize);
@@ -152,6 +160,11 @@ mclSize sheZkpEqDeserialize(sheZkpEq* zkp, const void *buf, mclSize bufSize)
 }
 
 mclSize sheZkpBinEqDeserialize(sheZkpBinEq* zkp, const void *buf, mclSize bufSize)
+{
+	return (mclSize)cast(zkp)->deserialize(buf, bufSize);
+}
+
+mclSize sheZkpDecDeserialize(sheZkpDec* zkp, const void *buf, mclSize bufSize)
 {
 	return (mclSize)cast(zkp)->deserialize(buf, bufSize);
 }
@@ -766,5 +779,17 @@ int shePrecomputedPublicKeyVerifyZkpEq(const shePrecomputedPublicKey *ppub, cons
 int shePrecomputedPublicKeyVerifyZkpBinEq(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c1, const sheCipherTextG2 *c2, const sheZkpBinEq *zkp)
 {
 	return verifyT(*cast(ppub), *cast(c1), *cast(c2), *cast(zkp));
+}
+
+int sheDecWithZkpDecG1(mclInt *m, sheZkpDec *zkp, const sheSecretKey *sec, const sheCipherTextG1 *c, const shePublicKey *pub)
+{
+	bool b;
+	*m = cast(sec)->decWithZkpDec(&b, *cast(zkp), *cast(c), *cast(pub));
+	return b ? 0 : -1;
+}
+
+int sheVerifyZkpDecG1(const shePublicKey *pub, const sheCipherTextG1 *c1, mclInt m, const sheZkpDec *zkp)
+{
+	return cast(pub)->verify(*cast(c1), m, *cast(zkp));
 }
 

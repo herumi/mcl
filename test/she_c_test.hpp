@@ -448,6 +448,28 @@ CYBOZU_TEST_AUTO(ZkpEq)
 	sheSecretKeySetByCSPRNG(&sec);
 	shePublicKey pub;
 	sheGetPublicKey(&pub, &sec);
+	int m = 123;
+	sheCipherTextG1 c1;
+	sheEncG1(&c1, &pub, m);
+	sheZkpDec zkp;
+	int64_t dec;
+	CYBOZU_TEST_EQUAL(sheDecWithZkpDecG1(&dec, &zkp, &sec, &c1, &pub), 0);
+	CYBOZU_TEST_EQUAL(m, dec);
+	CYBOZU_TEST_EQUAL(sheVerifyZkpDecG1(&pub, &c1, m, &zkp), 1);
+	CYBOZU_TEST_EQUAL(sheVerifyZkpDecG1(&pub, &c1, m + 1, &zkp), 0);
+	sheCipherTextG1 c2;
+	sheEncG1(&c2, &pub, m);
+	CYBOZU_TEST_EQUAL(sheVerifyZkpDecG1(&pub, &c2, m, &zkp), 0);
+	zkp.d[0].d[0]++;
+	CYBOZU_TEST_EQUAL(sheVerifyZkpDecG1(&pub, &c1, m, &zkp), 0);
+}
+
+CYBOZU_TEST_AUTO(ZkpDec)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
 
 	ZkpEqTest(&sec, &pub, sheEncWithZkpEq, sheVerifyZkpEq);
 
