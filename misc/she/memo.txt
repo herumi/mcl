@@ -1,0 +1,31 @@
+P ; generator
+x ; secret key
+xP ; public key
+Enc(m;r) = (mP + rxP, rP)
+
+c = (S, T)
+dec(c) := S - xT
+dec(Enc(m;r)) = (mP + rxP) - x(rP) = mP
+DLP(mP) := m
+Dec(c) := DLP(dec(c))
+
+ZKP of dec(c) = m
+
+z := Enc(m;0) = (mP, 0)
+
+c - z = (rxP, rP) ; r is unknown
+
+ZKP of dec(c - z) = 0
+(P1, P2) := (P, rP)
+(A1, A2) := (xP, xrP)
+
+Prover shows that x(P1, P2) = (A1, A2) without revealing x.
+b ; rand
+B = (b P1, b P2)
+h = Hash(P2, A1, A2, B1, B2)
+d = b + h a
+pi = (d, h)
+
+Verifier
+Bi := d Pi - h Ai
+verify h = Hash(P2, A2, A2, B1, B2)
