@@ -4,7 +4,7 @@
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
 
-#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || defined(MCL_USE_LLVM)
+#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL))
 
 #ifdef MCL_USE_XBYAK
 	#define XBYAK_DISABLE_AVX512
