@@ -324,25 +324,61 @@ int log(const G& P, const G& xP)
 	}
 	throw cybozu::Exception("she:log:not found");
 }
-
-struct DummyOut {
-	template<class OutStream>
-	void save(OutStream&) const {}
-};
-template<class F, class T0, class T1, class T2, class T3, class T4 = DummyOut, class T5 = DummyOut, class T6 = DummyOut, class T7 = DummyOut, class T8 = DummyOut, class T9 = DummyOut>
-void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5 = 0, const T6 *t6 = 0, const T7 *t7 = 0, const T8 *t8 = 0, const T9 *t9 = 0)
+// 5
+template<class F, class T0, class T1, class T2, class T3, class T4>
+void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4)
 {
 	cybozu::MemoryOutputStream os(buf, bufSize);
-	if (t0) t0->save(os);
-	if (t1) t1->save(os);
-	if (t2) t2->save(os);
-	if (t3) t3->save(os);
-	if (t4) t4->save(os);
-	if (t5) t5->save(os);
-	if (t6) t6->save(os);
-	if (t7) t7->save(os);
-	if (t8) t8->save(os);
-	if (t9) t9->save(os);
+	t0->save(os);
+	t1->save(os);
+	t2->save(os);
+	t3->save(os);
+	t4->save(os);
+	h.setHashOf(buf, os.getPos());
+}
+// 6
+template<class F, class T0, class T1, class T2, class T3, class T4, class T5>
+void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5)
+{
+	cybozu::MemoryOutputStream os(buf, bufSize);
+	t0->save(os);
+	t1->save(os);
+	t2->save(os);
+	t3->save(os);
+	t4->save(os);
+	t5->save(os);
+	h.setHashOf(buf, os.getPos());
+}
+// 8
+template<class F, class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
+void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5, const T6 *t6, const T7 *t7)
+{
+	cybozu::MemoryOutputStream os(buf, bufSize);
+	t0->save(os);
+	t1->save(os);
+	t2->save(os);
+	t3->save(os);
+	t4->save(os);
+	t5->save(os);
+	t6->save(os);
+	t7->save(os);
+	h.setHashOf(buf, os.getPos());
+}
+// 10
+template<class F, class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9>
+void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5, const T6 *t6, const T7 *t7, const T8 *t8, const T9 *t9)
+{
+	cybozu::MemoryOutputStream os(buf, bufSize);
+	t0->save(os);
+	t1->save(os);
+	t2->save(os);
+	t3->save(os);
+	t4->save(os);
+	t5->save(os);
+	t6->save(os);
+	t7->save(os);
+	t8->save(os);
+	t9->save(os);
 	h.setHashOf(buf, os.getPos());
 }
 
