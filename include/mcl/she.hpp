@@ -325,6 +325,27 @@ int log(const G& P, const G& xP)
 	throw cybozu::Exception("she:log:not found");
 }
 
+struct DummyOut {
+	template<class OutStream>
+	void save(OutStream&) const {}
+};
+template<class F, class T0, class T1, class T2, class T3, class T4 = DummyOut, class T5 = DummyOut, class T6 = DummyOut, class T7 = DummyOut, class T8 = DummyOut, class T9 = DummyOut>
+void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5 = 0, const T6 *t6 = 0, const T7 *t7 = 0, const T8 *t8 = 0, const T9 *t9 = 0)
+{
+	cybozu::MemoryOutputStream os(buf, bufSize);
+	if (t0) t0->save(os);
+	if (t1) t1->save(os);
+	if (t2) t2->save(os);
+	if (t3) t3->save(os);
+	if (t4) t4->save(os);
+	if (t5) t5->save(os);
+	if (t6) t6->save(os);
+	if (t7) t7->save(os);
+	if (t8) t8->save(os);
+	if (t9) t9->save(os);
+	h.setHashOf(buf, os.getPos());
+}
+
 } // mcl::she::local
 
 template<size_t dummyInpl = 0>
@@ -803,16 +824,10 @@ public:
 			G1 B1, B2;
 			G1::mul(B1, P1, b);
 			G1::mul(B2, P2, b);
-			char buf[sizeof(G1) * 5];
-			cybozu::MemoryOutputStream os(buf, sizeof(buf));
-			P2.save(os);
-			A1.save(os);
-			A2.save(os);
-			B1.save(os);
-			B2.save(os);
 			Fr& d = zkp.d_[0];
 			Fr& h = zkp.d_[1];
-			h.setHashOf(buf, os.getPos());
+			char buf[sizeof(G1) * 5];
+			local::makeHash(h, buf, sizeof(buf), &P2, &A1, &A2, &B1, &B2);
 			Fr::mul(d, h, x_);
 			d += b;
 			return m;
@@ -937,15 +952,8 @@ private:
 		Pmul.mul(static_cast<I&>(R[0][m]), r); // R[0][m] = r P
 		xPmul.mul(R[1][m], r); // R[1][m] = r xP
 		char buf[sizeof(G) * 2];
-		cybozu::MemoryOutputStream os(buf, sizeof(buf));
-		S.save(os);
-		T.save(os);
-		R[0][0].save(os);
-		R[0][1].save(os);
-		R[1][0].save(os);
-		R[1][1].save(os);
 		Fr c;
-		c.setHashOf(buf, os.getPos());
+		local::makeHash(c, buf, sizeof(buf), &S, &T, &R[0][0], &R[0][1], &R[1][0], &R[1][1]);
 		d[m] = c - d[1-m];
 		s[m] = r + d[m] * encRand;
 	}
@@ -976,15 +984,8 @@ private:
 		G::mul(T2, T2, d[1]);
 		G::sub(R[1][1], T1, T2);
 		char buf[sizeof(G) * 2];
-		cybozu::MemoryOutputStream os(buf, sizeof(buf));
-		S.save(os);
-		T.save(os);
-		R[0][0].save(os);
-		R[0][1].save(os);
-		R[1][0].save(os);
-		R[1][1].save(os);
 		Fr c;
-		c.setHashOf(buf, os.getPos());
+		local::makeHash(c, buf, sizeof(buf), &S, &T, &R[0][0], &R[0][1], &R[1][0], &R[1][1]);
 		return c == d[0] + d[1];
 	}
 	/*
@@ -1007,20 +1008,11 @@ private:
 		ElGamalEnc(R1, R2, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R3, R4, rm, Qmul, yQmul, &rs);
 		char buf[sizeof(G1) * 4 + sizeof(G2) * 4];
-		cybozu::MemoryOutputStream os(buf, sizeof(buf));
-		S1.save(os);
-		T1.save(os);
-		S2.save(os);
-		T2.save(os);
-		R1.save(os);
-		R2.save(os);
-		R3.save(os);
-		R4.save(os);
 		Fr& c = zkp.d_[0];
 		Fr& sp = zkp.d_[1];
 		Fr& ss = zkp.d_[2];
 		Fr& sm = zkp.d_[3];
-		c.setHashOf(buf, os.getPos());
+		local::makeHash(c, buf, sizeof(buf), &S1, &T1, &S2, &T2, &R1, &R2, &R3, &R4);
 		Fr::mul(sp, c, p);
 		sp += rp;
 		Fr::mul(ss, c, s);
@@ -1048,17 +1040,8 @@ private:
 		G2::mul(X2, T2, c);
 		R4 -= X2;
 		char buf[sizeof(G1) * 4 + sizeof(G2) * 4];
-		cybozu::MemoryOutputStream os(buf, sizeof(buf));
-		S1.save(os);
-		T1.save(os);
-		S2.save(os);
-		T2.save(os);
-		R1.save(os);
-		R2.save(os);
-		R3.save(os);
-		R4.save(os);
 		Fr c2;
-		c2.setHashOf(buf, os.getPos());
+		local::makeHash(c2, buf, sizeof(buf), &S1, &T1, &S2, &T2, &R1, &R2, &R3, &R4);
 		return c == c2;
 	}
 	/*
@@ -1103,19 +1086,8 @@ private:
 		ElGamalEnc(R4, R3, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R6, R5, rm, Qmul, yQmul, &rs);
 		char buf[sizeof(Fp) * 12];
-		cybozu::MemoryOutputStream os(buf, sizeof(buf));
-		S1.save(os);
-		T1.save(os);
-		R1[0].save(os);
-		R1[1].save(os);
-		R2[0].save(os);
-		R2[1].save(os);
-		R3.save(os);
-		R4.save(os);
-		R5.save(os);
-		R6.save(os);
 		Fr c;
-		c.setHashOf(buf, os.getPos());
+		local::makeHash(c, buf, sizeof(buf), &S1, &T1, &R1[0], &R1[1], &R2[0], &R2[1], &R3, &R4, &R5, &R6);
 		Fr::sub(d[m], c, d[1-m]);
 		Fr::mul(spm[m], d[m], p);
 		spm[m] += rpm;
@@ -1163,19 +1135,8 @@ private:
 		G2::mul(X2, S2, c);
 		R6 -= X2;
 		char buf[sizeof(Fp) * 12];
-		cybozu::MemoryOutputStream os(buf, sizeof(buf));
-		S1.save(os);
-		T1.save(os);
-		R1[0].save(os);
-		R1[1].save(os);
-		R2[0].save(os);
-		R2[1].save(os);
-		R3.save(os);
-		R4.save(os);
-		R5.save(os);
-		R6.save(os);
 		Fr c2;
-		c2.setHashOf(buf, os.getPos());
+		local::makeHash(c2, buf, sizeof(buf), &S1, &T1, &R1[0], &R1[1], &R2[0], &R2[1], &R3, &R4, &R5, &R6);
 		return c == c2;
 	}
 	/*
@@ -1359,14 +1320,8 @@ public:
 			G1::mul(T, A2, h);
 			B2 -= T;
 			char buf[sizeof(G1) * 5];
-			cybozu::MemoryOutputStream os(buf, sizeof(buf));
-			P2.save(os);
-			A1.save(os);
-			A2.save(os);
-			B1.save(os);
-			B2.save(os);
 			Fr h2;
-			h2.setHashOf(buf, os.getPos());
+			local::makeHash(h2, buf, sizeof(buf), &P2, &A1, &A2, &B1, &B2);
 			return h == h2;
 		}
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
