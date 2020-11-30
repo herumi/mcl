@@ -28,4 +28,60 @@ pi = (d, h)
 
 Verifier
 Bi := d Pi - h Ai
-verify h = Hash(P2, A2, A2, B1, B2)
+verify h = Hash(P2, A1, A2, B1, B2)
+-----------------------------------------------------------------------------
+CipherTextGT
+P ; generator of GT
+x1, x2 ; secrect key
+(P0, P1, P2, P3) := (P, x1 P, x2 P, x1 x2 P) ; public information
+
+CipherText c = (A0, A1, A2, A3)
+dec(c) = 0 <=> A0 = x2 A1 + x1 A2 - x1 x2 A3 ; (*)
+
+construction of ZKP for dec(c) = 0, i.e., show (*)
+Prover:
+b1, b2, b3 ; random value
+Bi := bi P for i = 1, 2, 3
+X := b1 A2 + b2 A1 - b3 A3
+h := Hash(P0, ..., P3, A0, ..., A3, B1, B2, B3, X)
+d1 := b1 + h x1
+d2 := b2 + h x2
+d3 := b3 + h x1 x2
+pi := (d1, d2, d3, h)
+
+Verifier:
+(pi, {Pi}, {Ai}) given
+Bi' := di P - h Pi for i = 1, 2, 3
+X' := d1 A2 + d2 A1 - d3 A3 - h A0
+verify Hash({Pi}, {Ai}, {Bi'}, X') = h
+
+Completeness
+
+B1' = d1 P - h P1 = (b1 + h x1) P - h x1 P = b1 P = B1
+B2' = d2 P - h P2 = (b2 + h x2) P - h x2 P = b2 P = B2
+B3' = d3 P - h P3 = (b3 + h x1 x2) P - h x1 x2 P = B3
+X' = (b1 + h x1) A2 + (b2 + h x2) A1 - (b3 + h x1 x2)A3 - h A0
+= b1 A2 + b2 A1 - b3 A3 + h (x1 A2 + x2 A1 - x1 x2 A3 - A0) = b1 A2 + b2 A1 - b3 A3 = X
+OK
+
+Soundness
+{Ai}, pi=(d1, d2, d3, h) ; given
+compute Bi', X' as above
+Suppose Hash({Pi}, {Ai}, {Bi'}, X') = h
+
+define
+b1 := d1 - h x1
+b2 := d2 - h x2
+b3 := d3 - h x1 x2
+where x1, x2 are unknown
+d1, d2, d3 are free parameters, so b1, b2, b3 are also free.
+
+B1' = d1 P - h P1 = b1 P
+B2' = b2 P
+B3' = b3 P
+
+Y := x1 A2 + x2 A1 - x1 x2 A3 - A0 ; unknown, but it is fixed
+X' = b1 A2 + b2 A1 - b3 A3 + h Y
+
+Hash({Pi}, {Ai}, b1 P, b2 P, b3 P, b1 A2 + b2 A1 - b3 A3 + h Y) = h
+To found {b1, b2, b3, h} to hold this equation, Y must be 0.
