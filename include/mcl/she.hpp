@@ -26,6 +26,7 @@
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>
 #include <cybozu/serializer.hpp>
+#include <cybozu/sha2.hpp>
 #include <mcl/ecparam.hpp>
 
 namespace mcl { namespace she {
@@ -324,63 +325,26 @@ int log(const G& P, const G& xP)
 	}
 	throw cybozu::Exception("she:log:not found");
 }
-// 5
-template<class F, class T0, class T1, class T2, class T3, class T4>
-void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4)
-{
-	cybozu::MemoryOutputStream os(buf, bufSize);
-	t0->save(os);
-	t1->save(os);
-	t2->save(os);
-	t3->save(os);
-	t4->save(os);
-	h.setHashOf(buf, os.getPos());
-}
-// 6
-template<class F, class T0, class T1, class T2, class T3, class T4, class T5>
-void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5)
-{
-	cybozu::MemoryOutputStream os(buf, bufSize);
-	t0->save(os);
-	t1->save(os);
-	t2->save(os);
-	t3->save(os);
-	t4->save(os);
-	t5->save(os);
-	h.setHashOf(buf, os.getPos());
-}
-// 8
-template<class F, class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
-void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5, const T6 *t6, const T7 *t7)
-{
-	cybozu::MemoryOutputStream os(buf, bufSize);
-	t0->save(os);
-	t1->save(os);
-	t2->save(os);
-	t3->save(os);
-	t4->save(os);
-	t5->save(os);
-	t6->save(os);
-	t7->save(os);
-	h.setHashOf(buf, os.getPos());
-}
-// 10
-template<class F, class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9>
-void makeHash(F& h, char *buf, const size_t bufSize, const T0 *t0, const T1 *t1, const T2 *t2, const T3 *t3, const T4 *t4, const T5 *t5, const T6 *t6, const T7 *t7, const T8 *t8, const T9 *t9)
-{
-	cybozu::MemoryOutputStream os(buf, bufSize);
-	t0->save(os);
-	t1->save(os);
-	t2->save(os);
-	t3->save(os);
-	t4->save(os);
-	t5->save(os);
-	t6->save(os);
-	t7->save(os);
-	t8->save(os);
-	t9->save(os);
-	h.setHashOf(buf, os.getPos());
-}
+
+struct Hash {
+	cybozu::Sha256 h_;
+	template<class T>
+	Hash& operator<<(const T& t)
+	{
+		char buf[sizeof(T)];
+		cybozu::MemoryOutputStream os(buf, sizeof(buf));
+		t.save(os);
+		h_.update(buf, os.getPos());
+		return *this;
+	}
+	template<class F>
+	void get(F& x)
+	{
+		uint8_t md[32];
+		h_.digest(md, sizeof(md), 0, 0);
+		x.setArrayMask(md, sizeof(md));
+	}
+};
 
 } // mcl::she::local
 
@@ -862,8 +826,9 @@ public:
 			G1::mul(B2, P2, b);
 			Fr& d = zkp.d_[0];
 			Fr& h = zkp.d_[1];
-			char buf[sizeof(G1) * 5];
-			local::makeHash(h, buf, sizeof(buf), &P2, &A1, &A2, &B1, &B2);
+			local::Hash hash;
+			hash << P2 << A1 << A2 << B1 << B2;
+			hash.get(h);
 			Fr::mul(d, h, x_);
 			d += b;
 			return m;
@@ -987,9 +952,10 @@ private:
 		r.setRand();
 		Pmul.mul(static_cast<I&>(R[0][m]), r); // R[0][m] = r P
 		xPmul.mul(R[1][m], r); // R[1][m] = r xP
-		char buf[sizeof(G) * 2];
 		Fr c;
-		local::makeHash(c, buf, sizeof(buf), &S, &T, &R[0][0], &R[0][1], &R[1][0], &R[1][1]);
+		local::Hash hash;
+		hash << S << T << R[0][0] << R[0][1] << R[1][0] << R[1][1];
+		hash.get(c);
 		d[m] = c - d[1-m];
 		s[m] = r + d[m] * encRand;
 	}
@@ -1019,9 +985,10 @@ private:
 		G::sub(T2, S, P);
 		G::mul(T2, T2, d[1]);
 		G::sub(R[1][1], T1, T2);
-		char buf[sizeof(G) * 2];
 		Fr c;
-		local::makeHash(c, buf, sizeof(buf), &S, &T, &R[0][0], &R[0][1], &R[1][0], &R[1][1]);
+		local::Hash hash;
+		hash << S << T << R[0][0] << R[0][1] << R[1][0] << R[1][1];
+		hash.get(c);
 		return c == d[0] + d[1];
 	}
 	/*
@@ -1043,12 +1010,13 @@ private:
 		G2 R3, R4;
 		ElGamalEnc(R1, R2, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R3, R4, rm, Qmul, yQmul, &rs);
-		char buf[sizeof(G1) * 4 + sizeof(G2) * 4];
 		Fr& c = zkp.d_[0];
 		Fr& sp = zkp.d_[1];
 		Fr& ss = zkp.d_[2];
 		Fr& sm = zkp.d_[3];
-		local::makeHash(c, buf, sizeof(buf), &S1, &T1, &S2, &T2, &R1, &R2, &R3, &R4);
+		local::Hash hash;
+		hash << S1 << T1 << S2 << T2 << R1 << R2 << R3 << R4;
+		hash.get(c);
 		Fr::mul(sp, c, p);
 		sp += rp;
 		Fr::mul(ss, c, s);
@@ -1075,9 +1043,10 @@ private:
 		R3 -= X2;
 		G2::mul(X2, T2, c);
 		R4 -= X2;
-		char buf[sizeof(G1) * 4 + sizeof(G2) * 4];
 		Fr c2;
-		local::makeHash(c2, buf, sizeof(buf), &S1, &T1, &S2, &T2, &R1, &R2, &R3, &R4);
+		local::Hash hash;
+		hash << S1 << T1 << S2 << T2 << R1 << R2 << R3 << R4;
+		hash.get(c2);
 		return c == c2;
 	}
 	/*
@@ -1121,9 +1090,10 @@ private:
 		G2 R5, R6;
 		ElGamalEnc(R4, R3, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R6, R5, rm, Qmul, yQmul, &rs);
-		char buf[sizeof(Fp) * 12];
 		Fr c;
-		local::makeHash(c, buf, sizeof(buf), &S1, &T1, &R1[0], &R1[1], &R2[0], &R2[1], &R3, &R4, &R5, &R6);
+		local::Hash hash;
+		hash << S1 << T1 << R1[0] << R1[1] << R2[0] << R2[1] << R3 << R4 << R5 << R6;
+		hash.get(c);
 		Fr::sub(d[m], c, d[1-m]);
 		Fr::mul(spm[m], d[m], p);
 		spm[m] += rpm;
@@ -1170,9 +1140,10 @@ private:
 		R5 -= X2;
 		G2::mul(X2, S2, c);
 		R6 -= X2;
-		char buf[sizeof(Fp) * 12];
 		Fr c2;
-		local::makeHash(c2, buf, sizeof(buf), &S1, &T1, &R1[0], &R1[1], &R2[0], &R2[1], &R3, &R4, &R5, &R6);
+		local::Hash hash;
+		hash << S1 << T1 << R1[0] << R1[1] << R2[0] << R2[1] << R3 << R4 << R5 << R6;
+		hash.get(c2);
 		return c == c2;
 	}
 	/*
@@ -1355,9 +1326,10 @@ public:
 			B1 -= T;
 			G1::mul(T, A2, h);
 			B2 -= T;
-			char buf[sizeof(G1) * 5];
 			Fr h2;
-			local::makeHash(h2, buf, sizeof(buf), &P2, &A1, &A2, &B1, &B2);
+			local::Hash hash;
+			hash << P2 << A1 << A2 << B1 << B2;
+			hash.get(h2);
 			return h == h2;
 		}
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
