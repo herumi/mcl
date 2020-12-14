@@ -600,9 +600,9 @@ void mulVec(const mcl::EcParam& para)
 		naiveMulVec(Q1, xVec, yVec, n);
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-#ifndef NDEBUG
+#ifdef NDEBUG
 		printf("n=%zd\n", n);
-		const int C = 400;
+		const int C = 50;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
 		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
 #endif
