@@ -10,26 +10,18 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- support M1 mac
 - dst for mapToG1 has changed to `BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_`.
 - `mclBn_eth*` functions are removed.
 - `mcl::bn::mapToG1(G1& out, const Fp& v)` supports `BLS12_MAP_FP_TO_G1` in [EIP 2537](https://eips.ethereum.org/EIPS/eip-2537).
 - `mcl::bn::hashAndMapToG1(G1& out, const void *msg, size_t msgSize)` supports ([hash-to-curve-09 BLS12381G1_XMD:SHA-256_SSWU_RO_](https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.html#name-bls12381g1_xmdsha-256_sswu_))
 - `MCL_MAP_TO_MODE_HASH_TO_CURVE_07` is added for [hash-to-curve-draft-07](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/07/).
-  - The older version will be removed in the future.
-- change DST of hash-to-curve for `MCL_MAP_TO_MODE_HASH_TO_CURVE_06`.
-- add new hash-to-curve function of [hash-to-curve-draft-06](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/06/) at March 2020.
-  - call `setETHmode(MCL_MAP_TO_MODE_HASH_TO_CURVE_06);`
-  - The older `MAP_TO_MODE` will be removed after the draft is fixed.
-- add new hash functions corresponding to python-impl of [algorand/bls_sig_ref](https://github.com/algorand/bls_sigs_ref).
-  - `mclBn_ethMsgToFp2`(resp. `Hp2`)
-  - `mclBn_ethFp2ToG2`(resp. `opt_swu2_map`)
-  - `mclBn_ethMsgToG2`(resp. `map2curve_osswu2`)
 
 # Support architecture
 
 - x86-64 Windows + Visual Studio
 - x86, x86-64 Linux + gcc/clang
-- x86-64 macOS
+- x86-64, M1 macOS
 - ARM / ARM64 Linux
 - WebAssembly
 - Android
