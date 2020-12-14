@@ -1,5 +1,6 @@
 GCC_VER=$(shell $(PRE)$(CC) -dumpversion)
 UNAME_S=$(shell uname -s)
+ARCH?=$(shell uname -m)
 NASM_ELF_OPT=-felf64
 ifeq ($(UNAME_S),Linux)
   OS=Linux
@@ -13,8 +14,11 @@ ifeq ($(findstring CYGWIN,$(UNAME_S)),CYGWIN)
   OS=cygwin
 endif
 ifeq ($(UNAME_S),Darwin)
-  OS=mac
-  ARCH=x86_64
+  ifeq ($(ARCH),x86_64)
+    OS=mac
+  else
+    OS=mac-m1
+  endif
   LIB_SUF=dylib
   OPENSSL_DIR?=/usr/local/opt/openssl
   CFLAGS+=-I$(OPENSSL_DIR)/include
@@ -39,7 +43,6 @@ ifeq ($(UNAME_S),FreeBSD)
   LDFLAGS+=-L/usr/local/lib
 endif
 
-ARCH?=$(shell uname -m)
 ifneq ($(findstring $(ARCH),x86_64/amd64),)
   CPU=x86-64
   INTEL=1
@@ -63,11 +66,12 @@ ifneq ($(findstring $(ARCH),armv7l/armv6l),)
   BIT=32
   #LOW_ASM_SRC=src/asm/low_arm.s
 endif
-ifeq ($(ARCH),aarch64)
+#ifeq ($(ARCH),aarch64)
+ifneq ($(findstring $(ARCH),aarch64/arm64),)
   CPU=aarch64
   BIT=64
 endif
-ifeq ($(findstring $(OS),mac/mingw64/openbsd),)
+ifeq ($(findstring $(OS),mac/mac-m1/mingw64/openbsd),)
   LDFLAGS+=-lrt
 endif
 
@@ -111,11 +115,8 @@ CFLAGS+=$(CFLAGS_OPT_USER)
 endif
 CFLAGS+=$(CFLAGS_USER)
 MCL_USE_GMP?=1
-ifeq ($(OS),mac)
-  ifeq ($(shell sw_vers -productVersion),10.15)
-    # workaround because of GMP does not run well on Catalina
-    MCL_USE_GMP=0
-  endif
+ifneq ($(OS),mac/mac-m1,)
+  MCL_USE_GMP=0
 endif
 MCL_USE_OPENSSL?=0
 ifeq ($(MCL_USE_GMP),0)
