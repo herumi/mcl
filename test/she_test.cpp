@@ -331,7 +331,7 @@ CYBOZU_TEST_AUTO(ZkpBinEq)
 	ZkpBinEqTest(sec, ppub);
 }
 
-CYBOZU_TEST_AUTO(ZkpDec)
+CYBOZU_TEST_AUTO(ZkpDecG1)
 {
 	const SecretKey& sec = g_sec;
 	PublicKey pub;
@@ -348,6 +348,27 @@ CYBOZU_TEST_AUTO(ZkpDec)
 	CYBOZU_TEST_ASSERT(!pub.verify(c2, m, zkp));
 	zkp.d_[0] += 1;
 	CYBOZU_TEST_ASSERT(!pub.verify(c, m, zkp));
+}
+
+CYBOZU_TEST_AUTO(ZkpDecGT)
+{
+	const SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	AuxiliaryForZkpDecGT aux;
+	pub.getAuxiliaryForZkpDecGT(aux);
+	CipherTextGT c;
+	int m = 123;
+	pub.enc(c, m);
+	ZkpDecGT zkp;
+	CYBOZU_TEST_EQUAL(sec.decWithZkpDec(zkp, c, aux), m);
+	CYBOZU_TEST_ASSERT(pub.verify(c, m, zkp, aux));
+	CYBOZU_TEST_ASSERT(!pub.verify(c, m + 1, zkp, aux));
+	CipherTextGT c2;
+	pub.enc(c2, m);
+	CYBOZU_TEST_ASSERT(!pub.verify(c2, m, zkp, aux));
+	zkp.d_[0] += 1;
+	CYBOZU_TEST_ASSERT(!pub.verify(c, m, zkp, aux));
 }
 
 CYBOZU_TEST_AUTO(add_sub_mul)

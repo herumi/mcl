@@ -370,6 +370,25 @@ struct SHET {
 	static bool useDecG1ViaGT_;
 	static bool useDecG2ViaGT_;
 	static bool isG1only_;
+	/*
+		auxiliary for ZkpDecGT
+		@note GT is multiplicative group though treating GT as additive group in comment
+	*/
+	struct AuxiliaryForZkpDecGT {
+		GT P[4]; // [R = e(P, Q), xR, yR, xyR]
+
+		// dst = v[1] a[0] + v[0] a[1] - v[2] a[2]
+		void f(GT& dst, const GT *v, const Fr *a) const
+		{
+			GT t;
+			GT::pow(dst, v[0], a[1]);
+			GT::pow(t, v[1], a[0]);
+			dst *= t;
+			GT::pow(t, v[2], a[2]);
+			GT::unitaryInv(t, t);
+			dst *= t;
+		}
+	};
 private:
 	template<class G>
 	class CipherTextAT : public fp::Serializable<CipherTextAT<G> > {
@@ -566,6 +585,7 @@ private:
 	struct ZkpEqTag; // d_[] = { c, sp, ss, sm }
 	struct ZkpBinEqTag; // d_[] = { d0, d1, sp0, sp1, ss, sp, sm }
 	struct ZkpDecTag; // d_[] = { c, h }
+	struct ZkpDecGTTag; // d_[] = { d1, d2, d3, h }
 public:
 	/*
 		Zkp for m = 0 or 1
@@ -580,9 +600,13 @@ public:
 	*/
 	typedef ZkpT<ZkpBinEqTag, 7> ZkpBinEq;
 	/*
-		Zkp for Dec(c) = m
+		Zkp for Dec(c) = m for c in G1
 	*/
 	typedef ZkpT<ZkpDecTag, 2> ZkpDec;
+	/*
+		Zkp for Dec(c) = m for c in GT
+	*/
+	typedef ZkpT<ZkpDecGTTag, 4> ZkpDecGT;
 
 	typedef CipherTextAT<G1> CipherTextG1;
 	typedef CipherTextAT<G2> CipherTextG2;
@@ -833,10 +857,53 @@ public:
 			d += b;
 			return m;
 		}
+		// @note GT is multiplicative group though treating GT as additive group in comment
+		int64_t decWithZkpDec(bool *pok, ZkpDecGT& zkp, const CipherTextGT& c, const AuxiliaryForZkpDecGT& aux) const
+		{
+			int64_t m = dec(c, pok);
+			if (!*pok) return 0;
+			// A = c - Enc(m; 0, 0, 0) = c - (m R, 0, 0, 0)
+			GT A[4];
+			GT t;
+			GT::pow(t, aux.P[0], m); // m R
+			GT::unitaryInv(t, t);
+			GT::mul(A[0], c.g_[0], t);
+			A[1] = c.g_[1];
+			A[2] = c.g_[2];
+			A[3] = c.g_[3];
+			// dec(A) = 0
+
+			Fr b[3];
+			GT B[3], X;
+			for (int i = 0; i < 3; i++) {
+				b[i].setByCSPRNG();
+				GT::pow(B[i], aux.P[0], b[i]);
+			}
+			aux.f(X, A + 1, b);
+			local::Hash hash;
+			hash << aux.P[1] << aux.P[2] << aux.P[3] << A[0] << A[1] << A[2] << A[3] << B[0] << B[1] << B[2] << X;
+			Fr *d = &zkp.d_[0];
+			Fr &h = zkp.d_[3];
+			hash.get(h);
+			Fr::mul(d[0], h, x_); // h x
+			Fr::mul(d[1], h, y_); // h y
+			Fr::mul(d[2], d[1], x_); // h xy
+			for (int i = 0; i < 3; i++) {
+				d[i] += b[i];
+			}
+			return m;
+		}
 		int64_t decWithZkpDec(ZkpDec& zkp, const CipherTextG1& c, const PublicKey& pub) const
 		{
 			bool b;
 			int64_t ret = decWithZkpDec(&b, zkp, c, pub);
+			if (!b) throw cybozu::Exception("she:SecretKey:decWithZkpDec");
+			return ret;
+		}
+		int64_t decWithZkpDec(ZkpDecGT& zkp, const CipherTextGT& c, const AuxiliaryForZkpDecGT& aux) const
+		{
+			bool b;
+			int64_t ret = decWithZkpDec(&b, zkp, c, aux);
 			if (!b) throw cybozu::Exception("she:SecretKey:decWithZkpDec");
 			return ret;
 		}
@@ -1284,6 +1351,13 @@ public:
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul);
 		}
 public:
+		void getAuxiliaryForZkpDecGT(AuxiliaryForZkpDecGT& aux) const
+		{
+			aux.P[0] = ePQ_;
+			pairing(aux.P[1], xP_, Q_);
+			pairing(aux.P[2], P_, yQ_);
+			pairing(aux.P[3], xP_, yQ_);
+		}
 		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
@@ -1329,6 +1403,36 @@ public:
 			Fr h2;
 			local::Hash hash;
 			hash << P2 << A1 << A2 << B1 << B2;
+			hash.get(h2);
+			return h == h2;
+		}
+		bool verify(const CipherTextGT& c, int64_t m, const ZkpDecGT& zkp, const AuxiliaryForZkpDecGT& aux) const
+		{
+			const Fr *d = &zkp.d_[0];
+			const Fr &h = zkp.d_[3];
+
+			GT A[4];
+			GT t;
+			GT::pow(t, aux.P[0], m); // m R
+			GT::unitaryInv(t, t);
+			GT::mul(A[0], c.g_[0], t);
+			A[1] = c.g_[1];
+			A[2] = c.g_[2];
+			A[3] = c.g_[3];
+			GT B[3], X;
+			for (int i = 0; i < 3; i++) {
+				GT::pow(B[i], aux.P[0], d[i]);
+				GT::pow(t, aux.P[i+1], h);
+				GT::unitaryInv(t, t);
+				B[i] *= t;
+			}
+			aux.f(X, A + 1, zkp.d_);
+			GT::pow(t, A[0], h);
+			GT::unitaryInv(t, t);
+			X *= t;
+			local::Hash hash;
+			hash << aux.P[1] << aux.P[2] << aux.P[3] << A[0] << A[1] << A[2] << A[3] << B[0] << B[1] << B[2] << X;
+			Fr h2;
 			hash.get(h2);
 			return h == h2;
 		}
@@ -1941,6 +2045,8 @@ typedef SHE::ZkpBin ZkpBin;
 typedef SHE::ZkpEq ZkpEq;
 typedef SHE::ZkpBinEq ZkpBinEq;
 typedef SHE::ZkpDec ZkpDec;
+typedef SHE::AuxiliaryForZkpDecGT AuxiliaryForZkpDecGT;
+typedef SHE::ZkpDecGT ZkpDecGT;
 
 inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 {
