@@ -76,7 +76,7 @@ typedef struct {
 } sheZkpBinEq;
 
 typedef struct {
-	mclBnFr d[7];
+	mclBnFr d[2];
 } sheZkpDec;
 /*
 	initialize this library
