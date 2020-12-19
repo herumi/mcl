@@ -134,6 +134,9 @@ public:
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
 		*pb = op_.init(p, maxBitSize, xi_a, mode);
+#ifdef MCL_DUMP_JIT
+		return;
+#endif
 		if (!*pb) return;
 		{ // set oneRep
 			FpT& one = *reinterpret_cast<FpT*>(op_.oneRep);

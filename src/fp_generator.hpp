@@ -312,12 +312,16 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		useAdx_ = cpu.has(Xbyak::util::Cpu::tADX);
 #endif
 		reset(); // reset jit code for reuse
+#ifndef MCL_DUMP_JIT
 		setProtectModeRW(); // read/write memory
+#endif
 		init_inner(op);
 		// ToDo : recover op if false
 		if (Xbyak::GetError()) return false;
 //		printf("code size=%d\n", (int)getSize());
+#ifndef MCL_DUMP_JIT
 		setProtectModeRE(); // set read/exec memory
+#endif
 		return true;
 	}
 private:
