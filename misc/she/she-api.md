@@ -281,7 +281,9 @@ PK means PublicKey or PrecomputedPublicKey
 * ZkpBinEq ; verify whether `m1 = m2 = 0` or `1` for ciphertexts `encG1(m1)` and `encG2(m2)`
 
 ### API
-PK = PublicKey or PrecomputedPublicKey
+- SK = SecretKey
+- PK = PublicKey or PrecomputedPublicKey
+- AUX = AuxiliaryForZkpDecGT
 
 * `void PK::encWithZkpBin(CipherTextG1& c, Zkp& zkp, int m) const`(C++)
 * `void PK::encWithZkpBin(CipherTextG2& c, Zkp& zkp, int m) const`(C++)
@@ -296,6 +298,14 @@ PK = PublicKey or PrecomputedPublicKey
 * `[CipherTextG1, CipherTextG2, ZkpEqBin] PK::encWithZkpBinEq(m)`(JS)
     * encrypt `m`(=0 or 1) and set ciphertexts `c1`, `c2` and zero-knowledge proof `zkp`(or returns [c1, c2, zkp])
     * throw exception if m != 0 and m != 1
+* `SK::decWithZkp(DecZkpDec& zkp, const CipherTextG1& c, const PublicKey& pub) const`(C++)
+* `[m, ZkpDecG1] SK::decWithZkpDec(c, pub)`(JS)
+  * decrypt CipherTextG1 `c` and get `m` and zkp, which proves that `dec(c) = m`.
+  * `pub` is used for reducing some computation.
+* `SK::decWithZkpDec(ZkpDecGT& zkp, const CipherTextGT& c, const AuxiliaryForZkpDecGT& aux) const`(C++)
+* `[m, ZkpDecGT] SK::decWithZkpDecGT(c, aux)`(JS)
+  * decrypt CipherTextGT `c` and get `m` and zkp, which proves that `dec(c) = m`.
+  * `aux = pub.getAuxiliaryForZkpDecGT()`, which is used for reducing some computation.
 
 ## Global functions
 

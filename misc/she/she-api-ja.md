@@ -275,7 +275,9 @@ PrecomputedPublicKeyはPublicKeyの高速版
 * ZkpBinEq 暗号文encG1(m1), encG2(m2)についてm1 = m2 = 0または1であることを検証できる
 
 ### API
-PK = PublicKey or PrecomputedPublicKey
+- SK = SecretKey
+- PK = PublicKey or PrecomputedPublicKey
+- AUX = AuxiliaryForZkpDecGT
 
 * `void PK::encWithZkpBin(CipherTextG1& c, Zkp& zkp, int m) const`(C++)
 * `void PK::encWithZkpBin(CipherTextG2& c, Zkp& zkp, int m) const`(C++)
@@ -290,6 +292,14 @@ PK = PublicKey or PrecomputedPublicKey
 * `[CipherTextG1, CipherTextG2, ZkpEqBin] PK::encWithZkpBinEq(m)`(JS)
     * m(=0 or 1)を暗号化して暗号文c1, c2とゼロ知識証明zkpをセットする(または[c1, c2, zkp]を返す)
     * mが0でも1でもなければ例外
+* `SK::decWithZkp(DecZkpDec& zkp, const CipherTextG1& c, const PublicKey& pub) const`(C++)
+* `[m, ZkpDecG1] SK::decWithZkpDec(c, pub)`(JS)
+  * CipherTextG1暗号文`c`を復号して`m`と`zkp`を返す. `zkp`は`dec(c) = m`の証明
+  * `pub`は計算コストを減らすために利用する
+* `SK::decWithZkpDec(ZkpDecGT& zkp, const CipherTextGT& c, const AuxiliaryForZkpDecGT& aux) const`(C++)
+* `[m, ZkpDecGT] SK::decWithZkpDecGT(c, aux)`(JS)
+  * CipherTextGT暗号文`c`を復号して`m`と`zkp`を返す. `zkp`は`dec(c) = m`の証明
+  * `aux = pub.getAuxiliaryForZkpDecGT()`. auxは計算コストを減らすために利用する
 
 ## グローバル関数
 
