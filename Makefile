@@ -366,16 +366,8 @@ endif
 ../she-wasm/she_c384.js: src/she_c384.cpp $(SHE_C_DEP)
 	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=384 -s TOTAL_MEMORY=67108864 -s DISABLE_EXCEPTION_CATCHING=1
 
-../mcl-wasm/mcl_c384_256.js: src/bn_c384_256.cpp $(MCL_C_DEP)
-	emcc -o $@ src/fp.cpp src/bn_c384_256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=384 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions -MD -MP -MF obj/mcl_c384_256.d -s SINGLE_FILE=1
-
 ../ecdsa-wasm/ecdsa_c.js: src/ecdsa_c.cpp src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
 	emcc -o $@ src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions
-
-mcl-wasm:
-	$(MAKE) ../mcl-wasm/mcl_c384_256.js
-#	$(MAKE) ../mcl-wasm/mcl_c.js
-#	$(MAKE) ../mcl-wasm/mcl_c512.js
 
 she-wasm:
 	$(MAKE) ../she-wasm/she_c.js
@@ -418,7 +410,7 @@ install: lib/libmcl.a lib/libmcl.$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl.$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test mcl-wasm she-wasm bin/emu
+.PHONY: test she-wasm bin/emu
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))
