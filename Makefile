@@ -360,18 +360,9 @@ ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   SHE_C_DEP+=src/base64m.ll
 endif
-../she-wasm/she_c.js: src/she_c256.cpp $(SHE_C_DEP)
-	emcc -o $@ src/fp.cpp src/she_c256.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -s TOTAL_MEMORY=67108864 -s DISABLE_EXCEPTION_CATCHING=1
-
-../she-wasm/she_c384.js: src/she_c384.cpp $(SHE_C_DEP)
-	emcc -o $@ src/fp.cpp src/she_c384.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=384 -s TOTAL_MEMORY=67108864 -s DISABLE_EXCEPTION_CATCHING=1
 
 ../ecdsa-wasm/ecdsa_c.js: src/ecdsa_c.cpp src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
 	emcc -o $@ src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions
-
-she-wasm:
-	$(MAKE) ../she-wasm/she_c.js
-	$(MAKE) ../she-wasm/she_c384.js
 
 ecdsa-wasm:
 	$(MAKE) ../ecdsa-wasm/ecdsa_c.js
