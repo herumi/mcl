@@ -69,6 +69,7 @@ public class MclJNI {
   public final static native long new_G1__SWIG_2(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
   public final static native boolean G1_equals(long jarg1, G1 jarg1_, long jarg2, G1 jarg2_);
   public final static native boolean G1_isZero(long jarg1, G1 jarg1_);
+  public final static native boolean G1_isValidOrder(long jarg1, G1 jarg1_);
   public final static native void G1_set(long jarg1, G1 jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void G1_clear(long jarg1, G1 jarg1_);
   public final static native void G1_setStr__SWIG_0(long jarg1, G1 jarg1_, String jarg2, int jarg3);

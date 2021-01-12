@@ -222,6 +222,7 @@ public:
 		: self_(x.self_, y.self_) { }
 	bool equals(const G1& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
+	bool isValidOrder() const { return self_.isValidOrder(); }
 	void set(const Fp& x, const Fp& y) throw(std::exception)
 	{
 		self_.set(x.self_, y.self_);

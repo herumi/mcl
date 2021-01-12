@@ -1592,6 +1592,19 @@ SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_G1_1isZero(JNIEnv *jenv, 
   return jresult;
 }
 
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_G1_1isValidOrder(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+    jboolean jresult = 0 ;
+    G1 *arg1 = (G1 *) 0 ;
+    bool result;
+
+    (void)jenv;
+    (void)jcls;
+    (void)jarg1_;
+    arg1 = *(G1 **)&jarg1;
+    result = (bool)((G1 const *)arg1)->isValidOrder();
+    jresult = (jboolean)result;
+    return jresult;
+}
 
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G1 *arg1 = (G1 *) 0 ;
