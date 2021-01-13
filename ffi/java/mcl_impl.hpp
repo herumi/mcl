@@ -29,6 +29,12 @@ void deserializeT(T& x, const char *cbuf, size_t bufSize)
 }
 
 template<class T>
+void setLittleEndianModT(T& x, const char *cbuf, size_t bufSize)
+{
+	x.setLittleEndianMod(cbuf, bufSize);
+}
+
+template<class T>
 void serializeT(std::string& out, const T& x)
 {
 	out.resize(48 * 12);
@@ -87,6 +93,10 @@ public:
 	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
 	{
 		deserializeT(self_, cbuf, bufSize);
+	}
+	void setLittleEndianMod(const char *cbuf, size_t bufSize) throw(std::exception)
+	{
+		setLittleEndianModT(self_, cbuf, bufSize);
 	}
 	void serialize(std::string& out) const throw(std::exception)
 	{
@@ -212,6 +222,7 @@ public:
 		: self_(x.self_, y.self_) { }
 	bool equals(const G1& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
+	bool isValidOrder() const { return self_.isValidOrder(); }
 	void set(const Fp& x, const Fp& y) throw(std::exception)
 	{
 		self_.set(x.self_, y.self_);

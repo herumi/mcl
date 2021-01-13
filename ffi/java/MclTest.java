@@ -51,6 +51,8 @@ public class MclTest {
 				Fr t = new Fr();
 				t.deserialize(b);
 				assertBool("serialize", x.equals(t));
+				t.setLittleEndianMod(b);
+				assertBool("setLittleEndianMod", x.equals(t));
 			}
 			G1 P = new G1();
 			System.out.println("P=" + P);

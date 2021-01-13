@@ -33,6 +33,7 @@ public class MclJNI {
   public final static native String Fr_toString__SWIG_0(long jarg1, Fr jarg1_, int jarg2);
   public final static native String Fr_toString__SWIG_1(long jarg1, Fr jarg1_);
   public final static native void Fr_deserialize(long jarg1, Fr jarg1_, byte[] jarg2);
+  public final static native void Fr_setLittleEndianMod(long jarg1, Fr jarg1_, byte[] jarg2);
   public final static native byte[] Fr_serialize(long jarg1, Fr jarg1_);
   public final static native void delete_Fr(long jarg1);
   public final static native void neg__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
@@ -68,6 +69,7 @@ public class MclJNI {
   public final static native long new_G1__SWIG_2(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
   public final static native boolean G1_equals(long jarg1, G1 jarg1_, long jarg2, G1 jarg2_);
   public final static native boolean G1_isZero(long jarg1, G1 jarg1_);
+  public final static native boolean G1_isValidOrder(long jarg1, G1 jarg1_);
   public final static native void G1_set(long jarg1, G1 jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void G1_clear(long jarg1, G1 jarg1_);
   public final static native void G1_setStr__SWIG_0(long jarg1, G1 jarg1_, String jarg2, int jarg3);

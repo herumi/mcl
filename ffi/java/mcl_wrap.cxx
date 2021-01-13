@@ -789,6 +789,37 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1deserialize(JNIEnv *jenv,
 }
 
 
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setLittleEndianMod(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+  Fr *arg1 = (Fr *) 0 ;
+  char *arg2 = (char *) 0 ;
+  size_t arg3 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(Fr **)&jarg1; 
+  {
+    if (jarg2) {
+      arg2 = (char *) jenv->GetByteArrayElements(jarg2, 0);
+      arg3 = (size_t) jenv->GetArrayLength(jarg2);
+    } else {
+      arg2 = 0;
+      arg3 = 0;
+    }
+  }
+  try {
+    (arg1)->setLittleEndianMod((char const *)arg2,arg3);
+  } catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return ;
+  }
+  {
+    if (jarg2) jenv->ReleaseByteArrayElements(jarg2, (jbyte *)arg2, 0);
+  }
+  
+}
+
+
 SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_Fr_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   Fr *arg1 = (Fr *) 0 ;
@@ -1561,6 +1592,19 @@ SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_G1_1isZero(JNIEnv *jenv, 
   return jresult;
 }
 
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_G1_1isValidOrder(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+    jboolean jresult = 0 ;
+    G1 *arg1 = (G1 *) 0 ;
+    bool result;
+
+    (void)jenv;
+    (void)jcls;
+    (void)jarg1_;
+    arg1 = *(G1 **)&jarg1;
+    result = (bool)((G1 const *)arg1)->isValidOrder();
+    jresult = (jboolean)result;
+    return jresult;
+}
 
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   G1 *arg1 = (G1 *) 0 ;
