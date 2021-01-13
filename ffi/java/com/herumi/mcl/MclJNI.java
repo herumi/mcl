@@ -34,6 +34,7 @@ public class MclJNI {
   public final static native String Fr_toString__SWIG_1(long jarg1, Fr jarg1_);
   public final static native void Fr_deserialize(long jarg1, Fr jarg1_, byte[] jarg2);
   public final static native void Fr_setLittleEndianMod(long jarg1, Fr jarg1_, byte[] jarg2);
+  public final static native void Fr_setHashOf(long jarg1, Fr jarg1_, byte[] jarg2);
   public final static native byte[] Fr_serialize(long jarg1, Fr jarg1_);
   public final static native void delete_Fr(long jarg1);
   public final static native void neg__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
