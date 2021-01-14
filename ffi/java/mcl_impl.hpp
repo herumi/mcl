@@ -35,6 +35,12 @@ void setLittleEndianModT(T& x, const char *cbuf, size_t bufSize)
 }
 
 template<class T>
+void setHashOfT(T& x, const char *cbuf, size_t bufSize)
+{
+	x.setHashOf(cbuf, bufSize);
+}
+
+template<class T>
 void serializeT(std::string& out, const T& x)
 {
 	out.resize(48 * 12);
@@ -97,6 +103,10 @@ public:
 	void setLittleEndianMod(const char *cbuf, size_t bufSize) throw(std::exception)
 	{
 		setLittleEndianModT(self_, cbuf, bufSize);
+	}
+	void setHashOf(const char *cbuf, size_t bufSize) throw(std::exception)
+	{
+		setHashOfT(self_, cbuf, bufSize);
 	}
 	void serialize(std::string& out) const throw(std::exception)
 	{

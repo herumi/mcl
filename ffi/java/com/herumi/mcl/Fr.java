@@ -100,6 +100,10 @@ public class Fr {
     MclJNI.Fr_setLittleEndianMod(swigCPtr, this, cbuf);
   }
 
+  public void setHashOf(byte[] cbuf) {
+    MclJNI.Fr_setHashOf(swigCPtr, this, cbuf);
+  }
+
   public byte[] serialize() { return MclJNI.Fr_serialize(swigCPtr, this); }
 
 }

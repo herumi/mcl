@@ -820,6 +820,37 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setLittleEndianMod(JNIEnv
 }
 
 
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setHashOf(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jbyteArray jarg2) {
+  Fr *arg1 = (Fr *) 0 ;
+  char *arg2 = (char *) 0 ;
+  size_t arg3 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(Fr **)&jarg1; 
+  {
+    if (jarg2) {
+      arg2 = (char *) jenv->GetByteArrayElements(jarg2, 0);
+      arg3 = (size_t) jenv->GetArrayLength(jarg2);
+    } else {
+      arg2 = 0;
+      arg3 = 0;
+    }
+  }
+  try {
+    (arg1)->setHashOf((char const *)arg2,arg3);
+  } catch(std::exception &_e) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, (&_e)->what());
+    return ;
+  }
+  {
+    if (jarg2) jenv->ReleaseByteArrayElements(jarg2, (jbyte *)arg2, 0);
+  }
+  
+}
+
+
 SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_Fr_1serialize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jbyteArray jresult = 0 ;
   Fr *arg1 = (Fr *) 0 ;

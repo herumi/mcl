@@ -53,6 +53,11 @@ public class MclTest {
 				assertBool("serialize", x.equals(t));
 				t.setLittleEndianMod(b);
 				assertBool("setLittleEndianMod", x.equals(t));
+				t.setHashOf(b);
+				assertBool("setHashOf", !x.equals(t));
+				Fr u = new Fr();
+				u.setHashOf(new byte[]{1,2,3});
+				assertBool("setHashOf - different", !u.equals(t));
 			}
 			G1 P = new G1();
 			System.out.println("P=" + P);
