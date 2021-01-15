@@ -24,6 +24,9 @@ int main()
 	mclBnFr_mul(&ab, &a, &b);
 	mclBnFr_getStr(buf, sizeof(buf), &ab, 10);
 	printf("%s x %s = %s\n", aStr, bStr, buf);
+	mclBnFr_sub(&a, &a, &b);
+	mclBnFr_getStr(buf, sizeof(buf), &a, 10);
+	printf("%s - %s = %s\n", aStr, bStr, buf);
 
 	ASSERT(!mclBnG1_hashAndMapTo(&P, "this", 4));
 	ASSERT(!mclBnG2_hashAndMapTo(&Q, "that", 4));
