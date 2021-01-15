@@ -4,16 +4,18 @@ using namespace mcl::bn;
 
 void minimum_sample(const G1& P, const G2& Q)
 {
-	const mpz_class a = 123;
-	const mpz_class b = 456;
+	const Fr a = 123;
+	const Fr b = 456;
 	Fp12 e1, e2;
 	pairing(e1, P, Q);
 	G2 aQ;
 	G1 bP;
+	printf("a - b = %s\n", (a - b).getStr(16).c_str());
 	G2::mul(aQ, Q, a);
 	G1::mul(bP, P, b);
 	pairing(e2, bP, aQ);
 	Fp12::pow(e1, e1, a * b);
+	printf("pairing = %s\n", e1.getStr(16).c_str());
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
 
@@ -38,13 +40,21 @@ void precomputed(const G1& P, const G2& Q)
 	printf("%s\n", e1 == e2 ? "ok" : "ng");
 }
 
-int main()
+int main(int argc, char *[])
 {
-	initPairing(mcl::BLS12_381);
+	if (argc == 1) {
+		initPairing(mcl::BLS12_381);
+		puts("BLS12_381");
+	} else {
+		initPairing(mcl::BN254);//, mcl::fp::FP_GMP);
+		puts("BN254");
+	}
 	G1 P;
 	G2 Q;
 	hashAndMapToG1(P, "abc", 3);
 	hashAndMapToG2(Q, "abc", 3);
+	printf("P = %s\n", P.serializeToHexStr().c_str());
+	printf("Q = %s\n", Q.serializeToHexStr().c_str());
 
 	minimum_sample(P, Q);
 	miller_and_finel_exp(P, Q);
