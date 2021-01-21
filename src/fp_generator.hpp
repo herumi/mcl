@@ -1435,13 +1435,12 @@ private:
 	{
 		const Reg64& a = rax;
 		xor_(c[n + 1], c[n + 1]); // c[n + 1] = 0
-		for (int i = 0; i < n - 1; i++) {
+		for (int i = 0; i < n; i++) {
 			mulx(t0, a, ptr [px + i * 8]);
 			adox(c[i], a);
+			if (i == n - 1) break;
 			adcx(c[i + 1], t0);
 		}
-		mulx(t0, a, ptr [px + (n - 1) * 8]);
-		adox(c[n - 1], a);
 		adox(t0, c[n + 1]); // carry o
 		adcx(c[n], t0);
 		adc(c[n + 1], 0);
