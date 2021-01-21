@@ -1429,22 +1429,22 @@ private:
 	}
 	/*
 		c[n+2] = c[n+1] + px[n] * rdx
-		use rax
+		use rax, t0
 	*/
-	void mulAdd(const Pack& c, int n, const RegExp& px)
+	void mulAdd(const Pack& c, int n, const RegExp& px, const Reg64& t0)
 	{
 		const Reg64& a = rax;
-		xor_(a, a);
-		for (int i = 0; i < n; i++) {
-			mulx(c[n + 1], a, ptr [px + i * 8]);
+		xor_(c[n + 1], c[n + 1]); // c[n + 1] = 0
+		for (int i = 0; i < n - 1; i++) {
+			mulx(t0, a, ptr [px + i * 8]);
 			adox(c[i], a);
-			adcx(c[i + 1], c[n + 1]);
+			adcx(c[i + 1], t0);
 		}
-		mov(a, 0);
-		mov(c[n + 1], a);
-		adox(c[n], a);
-		adcx(c[n + 1], a);
-		adox(c[n + 1], a);
+		mulx(t0, a, ptr [px + (n - 1) * 8]);
+		adox(c[n - 1], a);
+		adox(t0, c[n + 1]); // carry o
+		adcx(c[n], t0);
+		adc(c[n + 1], 0);
 	}
 	/*
 		input
@@ -1481,18 +1481,17 @@ private:
 				}
 				std::swap(pt0, pt1);
 			}
-			mov(c[n], 0);
-			adc(c[n], *pt0);
+			adc(*pt0, 0);
+			mov(c[n], *pt0);
 		} else {
 			// c[7..0] = c[6..0] + px[5..0] * rdx
-			mulAdd(c, 6, px);
+			mulAdd(c, 6, px, t1);
 		}
-		mov(a, rp_);
-		mul(c[0]); // q = a
-		mov(d, a);
-		lea(t1, ptr[rip+pL_]);
+		mov(d, rp_);
+		imul(d, c[0]); // q = d
+		lea(t0, ptr[rip+pL_]);
 		// c += p * q
-		mulAdd(c, 6, t1);
+		mulAdd(c, 6, t0, t1);
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
