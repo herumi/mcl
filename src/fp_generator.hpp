@@ -1772,9 +1772,9 @@ private:
 			if (i == pd.size() - 1) break;
 			adcx(pd[i + 1], hi);
 		}
-		mov(d, 0);
-		adcx(hi, d);
-		adox(hi, d);
+		mov(a, 0);
+		adox(hi, a);
+		adc(hi, a);
 	}
 	/*
 		input : z[n], p[n-1], rdx(implicit)
