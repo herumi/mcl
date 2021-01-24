@@ -1428,31 +1428,35 @@ private:
 		ret();
 	}
 	/*
-		c[n+2] = c[n+1] + px[n] * rdx
-		use rax
+		c[n..0] = c[n-1..0] + px[n-1..0] * rdx if is_cn_zero = true
+		c[n..0] = c[n..0] + px[n-1..0] * rdx if is_cn_zero = false
+		use rax, t0
 	*/
-	void mulAdd(const Pack& c, int n, const RegExp& px)
+	void mulAdd(const Pack& c, int n, const RegExp& px, const Reg64& t0, bool is_cn_zero)
 	{
+		assert(!isFullBit_);
 		const Reg64& a = rax;
-		xor_(a, a);
-		for (int i = 0; i < n; i++) {
-			mulx(c[n + 1], a, ptr [px + i * 8]);
-			adox(c[i], a);
-			adcx(c[i + 1], c[n + 1]);
+		if (is_cn_zero) {
+			xor_(c[n], c[n]);
+		} else {
+			xor_(a, a);
 		}
-		mov(a, 0);
-		mov(c[n + 1], a);
-		adox(c[n], a);
-		adcx(c[n + 1], a);
-		adox(c[n + 1], a);
+		for (int i = 0; i < n; i++) {
+			mulx(t0, a, ptr [px + i * 8]);
+			adox(c[i], a);
+			if (i == n - 1) break;
+			adcx(c[i + 1], t0);
+		}
+		adox(c[n], t0);
+		adc(c[n], 0);
 	}
 	/*
 		input
-		c[6..0]
+		c[5..0]
 		rdx = yi
 		use rax, rdx
 		output
-		c[7..1]
+		c[6..1]
 
 		if first:
 		  c = x[5..0] * rdx
@@ -1462,37 +1466,32 @@ private:
 		c += p * q
 		c >>= 64
 	*/
-	void montgomery6_1(const Pack& c, const RegExp& px, const Reg64& t0, const Reg64& t1, bool isFirst)
+	void montgomery6_1(const Pack& c, const RegExp& px, const RegExp& pp, const Reg64& t0, const Reg64& t1, bool isFirst)
 	{
+		assert(!isFullBit_);
 		const int n = 6;
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
 		if (isFirst) {
-			const Reg64 *pt0 = &a;
-			const Reg64 *pt1 = &t0;
 			// c[6..0] = px[5..0] * rdx
-			mulx(*pt0, c[0], ptr [px + 0 * 8]);
+			mulx(c[1], c[0], ptr [px + 0 * 8]);
 			for (int i = 1; i < n; i++) {
-				mulx(*pt1, c[i], ptr[px + i * 8]);
+				mulx(c[i + 1], a, ptr[px + i * 8]);
 				if (i == 1) {
-					add(c[i], *pt0);
+					add(c[i], a);
 				} else {
-					adc(c[i], *pt0);
+					adc(c[i], a);
 				}
-				std::swap(pt0, pt1);
 			}
-			mov(c[n], 0);
-			adc(c[n], *pt0);
+			adc(c[n], 0);
 		} else {
-			// c[7..0] = c[6..0] + px[5..0] * rdx
-			mulAdd(c, 6, px);
+			// c[6..0] = c[5..0] + px[5..0] * rdx because of not fuill bit
+			mulAdd(c, 6, px, t1, true);
 		}
-		mov(a, rp_);
-		mul(c[0]); // q = a
-		mov(d, a);
-		lea(t1, ptr[rip+pL_]);
-		// c += p * q
-		mulAdd(c, 6, t1);
+		mov(d, rp_);
+		imul(d, c[0]); // q = d
+		// c[6..0] += p * q because of not fuill bit
+		mulAdd(c, 6, pp, t1, false);
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
@@ -1518,26 +1517,26 @@ private:
 		const Reg64& t6 = sf.t[6];
 		const Reg64& t7 = sf.t[7];
 		const Reg64& t8 = sf.t[8];
-		const Reg64& t9 = sf.t[9];
+		const Reg64& pp = sf.t[9];
 	L(fp_mulL);
+		lea(pp, ptr[rip+pL_]);
 		mov(rdx, ptr [py + 0 * 8]);
-		montgomery6_1(Pack(t7, t6, t5, t4, t3, t2, t1, t0), px, t8, t9, true);
+		montgomery6_1(Pack(t6, t5, t4, t3, t2, t1, t0), px, pp, t7, t8, true);
 		mov(rdx, ptr [py + 1 * 8]);
-		montgomery6_1(Pack(t0, t7, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
+		montgomery6_1(Pack(t0, t6, t5, t4, t3, t2, t1), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 2 * 8]);
-		montgomery6_1(Pack(t1, t0, t7, t6, t5, t4, t3, t2), px, t8, t9, false);
+		montgomery6_1(Pack(t1, t0, t6, t5, t4, t3, t2), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 3 * 8]);
-		montgomery6_1(Pack(t2, t1, t0, t7, t6, t5, t4, t3), px, t8, t9, false);
+		montgomery6_1(Pack(t2, t1, t0, t6, t5, t4, t3), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 4 * 8]);
-		montgomery6_1(Pack(t3, t2, t1, t0, t7, t6, t5, t4), px, t8, t9, false);
+		montgomery6_1(Pack(t3, t2, t1, t0, t6, t5, t4), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 5 * 8]);
-		montgomery6_1(Pack(t4, t3, t2, t1, t0, t7, t6, t5), px, t8, t9, false);
-		// [t4:t3:t2:t1:t0:t7:t6]
-		const Pack z = Pack(t3, t2, t1, t0, t7, t6);
-		const Pack keep = Pack(rdx, rax, px, py, t8, t9);
+		montgomery6_1(Pack(t4, t3, t2, t1, t0, t6, t5), px, pp, t7, t8, false);
+
+		const Pack z = Pack(t4, t3, t2, t1, t0, t6);
+		const Pack keep = Pack(rdx, rax, px, py, t7, t8);
 		mov_rr(keep, z);
-		lea(t5, ptr[rip+pL_]);
-		sub_rm(z, t5);
+		sub_rm(z, pp);
 		cmovc_rr(z, keep);
 		store_mr(pz, z);
 		ret();
@@ -1773,9 +1772,9 @@ private:
 			if (i == pd.size() - 1) break;
 			adcx(pd[i + 1], hi);
 		}
-		mov(d, 0);
-		adcx(hi, d);
-		adox(hi, d);
+		mov(a, 0);
+		adox(hi, a);
+		adc(hi, a);
 	}
 	/*
 		input : z[n], p[n-1], rdx(implicit)
