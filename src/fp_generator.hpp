@@ -1473,21 +1473,17 @@ private:
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
 		if (isFirst) {
-			const Reg64 *pt0 = &a;
-			const Reg64 *pt1 = &t0;
 			// c[6..0] = px[5..0] * rdx
-			mulx(*pt0, c[0], ptr [px + 0 * 8]);
+			mulx(c[1], c[0], ptr [px + 0 * 8]);
 			for (int i = 1; i < n; i++) {
-				mulx(*pt1, c[i], ptr[px + i * 8]);
+				mulx(c[i + 1], a, ptr[px + i * 8]);
 				if (i == 1) {
-					add(c[i], *pt0);
+					add(c[i], a);
 				} else {
-					adc(c[i], *pt0);
+					adc(c[i], a);
 				}
-				std::swap(pt0, pt1);
 			}
-			adc(*pt0, 0);
-			mov(c[n], *pt0);
+			adc(c[n], 0);
 		} else {
 			// c[6..0] = c[5..0] + px[5..0] * rdx because of not fuill bit
 			mulAdd(c, 6, px, t1, true);
