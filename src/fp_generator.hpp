@@ -1466,7 +1466,7 @@ private:
 		c += p * q
 		c >>= 64
 	*/
-	void montgomery6_1(const Pack& c, const RegExp& px, const Reg64& t0, const Reg64& t1, bool isFirst)
+	void montgomery6_1(const Pack& c, const RegExp& px, const RegExp& pp, const Reg64& t0, const Reg64& t1, bool isFirst)
 	{
 		assert(!isFullBit_);
 		const int n = 6;
@@ -1494,9 +1494,8 @@ private:
 		}
 		mov(d, rp_);
 		imul(d, c[0]); // q = d
-		lea(t0, ptr[rip+pL_]);
 		// c[6..0] += p * q because of not fuill bit
-		mulAdd(c, 6, t0, t1, false);
+		mulAdd(c, 6, pp, t1, false);
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
@@ -1522,26 +1521,26 @@ private:
 		const Reg64& t6 = sf.t[6];
 		const Reg64& t7 = sf.t[7];
 		const Reg64& t8 = sf.t[8];
-		const Reg64& t9 = sf.t[9];
+		const Reg64& pp = sf.t[9];
 	L(fp_mulL);
+		lea(pp, ptr[rip+pL_]);
 		mov(rdx, ptr [py + 0 * 8]);
-		montgomery6_1(Pack(t6, t5, t4, t3, t2, t1, t0), px, t8, t9, true);
+		montgomery6_1(Pack(t6, t5, t4, t3, t2, t1, t0), px, pp, t7, t8, true);
 		mov(rdx, ptr [py + 1 * 8]);
-		montgomery6_1(Pack(t0, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
+		montgomery6_1(Pack(t0, t6, t5, t4, t3, t2, t1), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 2 * 8]);
-		montgomery6_1(Pack(t1, t0, t6, t5, t4, t3, t2), px, t8, t9, false);
+		montgomery6_1(Pack(t1, t0, t6, t5, t4, t3, t2), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 3 * 8]);
-		montgomery6_1(Pack(t2, t1, t0, t6, t5, t4, t3), px, t8, t9, false);
+		montgomery6_1(Pack(t2, t1, t0, t6, t5, t4, t3), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 4 * 8]);
-		montgomery6_1(Pack(t3, t2, t1, t0, t6, t5, t4), px, t8, t9, false);
+		montgomery6_1(Pack(t3, t2, t1, t0, t6, t5, t4), px, pp, t7, t8, false);
 		mov(rdx, ptr [py + 5 * 8]);
-		montgomery6_1(Pack(t4, t3, t2, t1, t0, t6, t5), px, t8, t9, false);
-		// [t4:t3:t2:t1:t0:t6]
+		montgomery6_1(Pack(t4, t3, t2, t1, t0, t6, t5), px, pp, t7, t8, false);
+
 		const Pack z = Pack(t4, t3, t2, t1, t0, t6);
-		const Pack keep = Pack(rdx, rax, px, py, t8, t9);
+		const Pack keep = Pack(rdx, rax, px, py, t7, t8);
 		mov_rr(keep, z);
-		lea(t5, ptr[rip+pL_]);
-		sub_rm(z, t5);
+		sub_rm(z, pp);
 		cmovc_rr(z, keep);
 		store_mr(pz, z);
 		ret();
