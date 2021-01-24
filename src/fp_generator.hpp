@@ -1436,14 +1436,17 @@ private:
 	{
 		assert(!isFullBit_);
 		const Reg64& a = rax;
-		xor_(a, a);
+		if (is_cn_zero) {
+			xor_(c[n], c[n]);
+		} else {
+			xor_(a, a);
+		}
 		for (int i = 0; i < n; i++) {
 			mulx(t0, a, ptr [px + i * 8]);
 			adox(c[i], a);
 			if (i == n - 1) break;
 			adcx(c[i + 1], t0);
 		}
-		if (is_cn_zero) mov(c[n], 0);
 		adox(c[n], t0);
 		adc(c[n], 0);
 	}
@@ -1524,17 +1527,17 @@ private:
 		mov(rdx, ptr [py + 0 * 8]);
 		montgomery6_1(Pack(t6, t5, t4, t3, t2, t1, t0), px, t8, t9, true);
 		mov(rdx, ptr [py + 1 * 8]);
-		montgomery6_1(Pack(t7, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
+		montgomery6_1(Pack(t0, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
 		mov(rdx, ptr [py + 2 * 8]);
-		montgomery6_1(Pack(t0, t7, t6, t5, t4, t3, t2), px, t8, t9, false);
+		montgomery6_1(Pack(t1, t0, t6, t5, t4, t3, t2), px, t8, t9, false);
 		mov(rdx, ptr [py + 3 * 8]);
-		montgomery6_1(Pack(t1, t0, t7, t6, t5, t4, t3), px, t8, t9, false);
+		montgomery6_1(Pack(t2, t1, t0, t6, t5, t4, t3), px, t8, t9, false);
 		mov(rdx, ptr [py + 4 * 8]);
-		montgomery6_1(Pack(t2, t1, t0, t7, t6, t5, t4), px, t8, t9, false);
+		montgomery6_1(Pack(t3, t2, t1, t0, t6, t5, t4), px, t8, t9, false);
 		mov(rdx, ptr [py + 5 * 8]);
-		montgomery6_1(Pack(t3, t2, t1, t0, t7, t6, t5), px, t8, t9, false);
-		// [t3:t2:t1:t0:t7:t6]
-		const Pack z = Pack(t3, t2, t1, t0, t7, t6);
+		montgomery6_1(Pack(t4, t3, t2, t1, t0, t6, t5), px, t8, t9, false);
+		// [t4:t3:t2:t1:t0:t6]
+		const Pack z = Pack(t4, t3, t2, t1, t0, t6);
 		const Pack keep = Pack(rdx, rax, px, py, t8, t9);
 		mov_rr(keep, z);
 		lea(t5, ptr[rip+pL_]);
