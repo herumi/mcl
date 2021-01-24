@@ -1428,20 +1428,22 @@ private:
 		ret();
 	}
 	/*
-		c[n..0] = c[n..0] + px[n-1..0] * rdx
+		c[n..0] = c[n-1..0] + px[n-1..0] * rdx if is_cn_zero = true
+		c[n..0] = c[n..0] + px[n-1..0] * rdx if is_cn_zero = false
 		use rax, t0
 	*/
-	void mulAdd(const Pack& c, int n, const RegExp& px, const Reg64& t0)
+	void mulAdd(const Pack& c, int n, const RegExp& px, const Reg64& t0, bool is_cn_zero)
 	{
 		assert(!isFullBit_);
 		const Reg64& a = rax;
-		xor_(c[n + 1], c[n + 1]); // c[n + 1] = 0
+		xor_(a, a);
 		for (int i = 0; i < n; i++) {
 			mulx(t0, a, ptr [px + i * 8]);
 			adox(c[i], a);
 			if (i == n - 1) break;
 			adcx(c[i + 1], t0);
 		}
+		if (is_cn_zero) mov(c[n], 0);
 		adox(c[n], t0);
 		adc(c[n], 0);
 	}
@@ -1484,14 +1486,14 @@ private:
 			adc(*pt0, 0);
 			mov(c[n], *pt0);
 		} else {
-			// c[5..0] = c[5..0] + px[5..0] * rdx because of not fuill bit
-			mulAdd(c, 6, px, t1);
+			// c[6..0] = c[5..0] + px[5..0] * rdx because of not fuill bit
+			mulAdd(c, 6, px, t1, true);
 		}
 		mov(d, rp_);
 		imul(d, c[0]); // q = d
 		lea(t0, ptr[rip+pL_]);
-		// c[5..0] += p * q because of not fuill bit
-		mulAdd(c, 6, t0, t1);
+		// c[6..0] += p * q because of not fuill bit
+		mulAdd(c, 6, t0, t1, false);
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
@@ -1520,18 +1522,18 @@ private:
 		const Reg64& t9 = sf.t[9];
 	L(fp_mulL);
 		mov(rdx, ptr [py + 0 * 8]);
-		montgomery6_1(Pack(t7, t6, t5, t4, t3, t2, t1, t0), px, t8, t9, true);
+		montgomery6_1(Pack(t6, t5, t4, t3, t2, t1, t0), px, t8, t9, true);
 		mov(rdx, ptr [py + 1 * 8]);
-		montgomery6_1(Pack(t0, t7, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
+		montgomery6_1(Pack(t7, t6, t5, t4, t3, t2, t1), px, t8, t9, false);
 		mov(rdx, ptr [py + 2 * 8]);
-		montgomery6_1(Pack(t1, t0, t7, t6, t5, t4, t3, t2), px, t8, t9, false);
+		montgomery6_1(Pack(t0, t7, t6, t5, t4, t3, t2), px, t8, t9, false);
 		mov(rdx, ptr [py + 3 * 8]);
-		montgomery6_1(Pack(t2, t1, t0, t7, t6, t5, t4, t3), px, t8, t9, false);
+		montgomery6_1(Pack(t1, t0, t7, t6, t5, t4, t3), px, t8, t9, false);
 		mov(rdx, ptr [py + 4 * 8]);
-		montgomery6_1(Pack(t3, t2, t1, t0, t7, t6, t5, t4), px, t8, t9, false);
+		montgomery6_1(Pack(t2, t1, t0, t7, t6, t5, t4), px, t8, t9, false);
 		mov(rdx, ptr [py + 5 * 8]);
-		montgomery6_1(Pack(t4, t3, t2, t1, t0, t7, t6, t5), px, t8, t9, false);
-		// [t4:t3:t2:t1:t0:t7:t6]
+		montgomery6_1(Pack(t3, t2, t1, t0, t7, t6, t5), px, t8, t9, false);
+		// [t3:t2:t1:t0:t7:t6]
 		const Pack z = Pack(t3, t2, t1, t0, t7, t6);
 		const Pack keep = Pack(rdx, rax, px, py, t8, t9);
 		mov_rr(keep, z);
