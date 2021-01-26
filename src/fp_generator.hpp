@@ -2330,126 +2330,48 @@ private:
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
 
-		const Reg64& a = rax;
 		const Reg64& d = rdx;
-#if 0
 		const Reg64& pp = t[10];
 		lea(pp, ptr[rip + pL_]);
 
-		mov(a, ptr[xy + 0 * 8]);
-		mov(d, rp_);
-		imul(d, a); // q
 		load_rm(Pack(t6, t5, t4, t3, t2, t1, t0), xy);
-		mulAdd2(t9, Pack(t6, t5, t4, t3, t2, t1, t0), 6, pp, t8);
-		// t9 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
-
-		mov(a, ptr[xy + 1 * 8]);
 		mov(d, rp_);
-		imul(d, a);
+		imul(d, t0); // q
+		mulAdd2(t7, Pack(t6, t5, t4, t3, t2, t1, t0), 6, pp, t8);
+		// t7 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
+
+		mov(d, rp_);
+		imul(d, t1);
 		mov(t0, ptr[xy + 7 * 8]);
-		mulAdd2(t7, Pack(t0, t6, t5, t4, t3, t2, t1), 6, pp, t8, &t9);
+		mulAdd2(t9, Pack(t0, t6, t5, t4, t3, t2, t1), 6, pp, t8, &t7);
 
-		mov(a, ptr[xy + 2 * 8]);
 		mov(d, rp_);
-		imul(d, a);
+		imul(d, t2);
 		mov(t1, ptr[xy + 8 * 8]);
-		mulAdd2(t9, Pack(t1, t7, t6, t5, t4, t3, t2), 6, pp, t8, &t7);
+		mulAdd2(t7, Pack(t1, t0, t6, t5, t4, t3, t2), 6, pp, t8, &t9);
 
-		mov(a, ptr[xy + 3 * 8]);
 		mov(d, rp_);
-		imul(d, a);
+		imul(d, t3);
 		mov(t2, ptr[xy + 9 * 8]);
-		mulAdd2(t7, Pack(t2, t1, t7, t6, t5, t4, t3), 6, pp, t8, &t9);
+		mulAdd2(t9, Pack(t2, t1, t0, t6, t5, t4, t3), 6, pp, t8, &t7);
 
-		mov(a, ptr[xy + 4 * 8]);
 		mov(d, rp_);
-		imul(d, a);
+		imul(d, t4);
 		mov(t3, ptr[xy + 10 * 8]);
-		mulAdd2(t9, Pack(t3, t2, t1, t7, t6, t5, t4), 6, pp, t8, &t7);
+		mulAdd2(t7, Pack(t3, t2, t1, t0, t6, t5, t4), 6, pp, t8, &t9);
 
-		mov(a, ptr[xy + 5 * 8]);
 		mov(d, rp_);
-		imul(d, a);
+		imul(d, t5);
 		mov(t4, ptr[xy + 11 * 8]);
-		mulAdd2(t7, Pack(t4, t3, t2, t1, t7, t6, t5), 6, pp, t8, &t9, false);
+		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), 6, pp, t8, &t7, false);
 
-		// z = [t4:t3:t2:t1:t7:t6]
-		Pack zp = Pack(t4, t3, t2, t1, t7, t6);
-		Pack keep = Pack(t0, xy, rax, rdx, t5, t8);
+		// z = [t4:t3:t2:t1:t0:t6]
+		Pack zp = Pack(t4, t3, t2, t1, t0, t6);
+		Pack keep = Pack(t5, xy, rax, rdx, t7, t8);
 		mov_rr(keep, zp);
 		sub_rm(zp, pp); // z -= p
 		cmovc_rr(zp, keep);
 		store_mr(z, zp);
-#else
-		const Reg64& t10 = t[10];
-		vmovq(xm0, z);
-		mov(a, ptr [xy + 0 * 8]);
-		mov(d, rp_);
-		imul(d, a); // q
-		lea(t0, ptr [rip + pL_]);
-		load_rm(Pack(t7, t6, t5, t4, t3, t2, t1), xy);
-		mulPackAddShr(Pack(t7, t6, t5, t4, t3, t2, t1), t0, t10);
-		load_rm(Pack(t1, t0, t10, t9, t8), xy + 7 * 8);
-		adc(t8, rax);
-		adc(t9, rax);
-		adc(t10, rax);
-		adc(t0, rax);
-		adc(t1, rax);
-		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4:t3:t2]
-		mov(a, rp_);
-		mul(t2);
-		vmovq(xm1, t0); // save
-		lea(t0, ptr [rip + pL_]);
-		mov(d, a);
-		vmovq(xm2, t10);
-		mulPackAddShr(Pack(t8, t7, t6, t5, t4, t3, t2), t0, t10);
-		vmovq(t10, xm2);
-		adc(t9, rax);
-		adc(t10, rax);
-		vmovq(t0, xm1); // load
-		adc(t0, rax);
-		adc(t1, rax);
-		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4:t3]
-		mov(a, rp_);
-		mul(t3);
-		lea(t2, ptr [rip + pL_]);
-		mov(d, a);
-		vmovq(xm2, t10);
-		mulPackAddShr(Pack(t9, t8, t7, t6, t5, t4, t3), t2, t10);
-		vmovq(t10, xm2);
-		adc(t10, rax);
-		adc(t0, rax);
-		adc(t1, rax);
-		// z = [t1:t0:t10:t9:t8:t7:t6:t5:t4]
-		mov(a, rp_);
-		mul(t4);
-		lea(t2, ptr [rip + pL_]);
-		mov(d, a);
-		mulPackAddShr(Pack(t10, t9, t8, t7, t6, t5, t4), t2, t3);
-		adc(t0, rax);
-		adc(t1, rax);
-		// z = [t1:t0:t10:t9:t8:t7:t6:t5]
-		mov(a, rp_);
-		mul(t5);
-		lea(t2, ptr [rip + pL_]);
-		mov(d, a);
-		mulPackAddShr(Pack(t0, t10, t9, t8, t7, t6, t5), t2, t3);
-		adc(t1, a);
-		// z = [t1:t0:t10:t9:t8:t7:t6]
-		mov(a, rp_);
-		mul(t6);
-		lea(t2, ptr [rip + pL_]);
-		mov(d, a);
-		mulPackAddShr(Pack(t1, t0, t10, t9, t8, t7, t6), t2, t3, true);
-		// z = [t1:t0:t10:t9:t8:t7]
-		Pack zp = Pack(t1, t0, t10, t9, t8, t7);
-		Pack keep = Pack(z, xy, rax, rdx, t3, t6);
-		mov_rr(keep, zp);
-		sub_rm(zp, t2); // z -= p
-		cmovc_rr(zp, keep);
-		vmovq(z, xm0);
-		store_mr(z, zp);
-#endif
 	}
 	void2u gen_fpDbl_sqrPre()
 	{
