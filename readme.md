@@ -320,6 +320,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2021/Jan/28 v1.31 fix : call setOrder in init for isValidOrder
 - 2021/Jan/28 v1.30 a little optimization of Fp operations
 - 2020/Nov/14 v1.28 support M1 mac
 - 2020/Jun/07 v1.22 remove old hash-to-curve functions
