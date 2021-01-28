@@ -944,6 +944,8 @@ struct Param {
 		GLV1::initForBN(z, isBLS12, cp.curveType);
 		GLV2T<Fr>::init(z, isBLS12);
 		basePoint.clear();
+		G1::setOrder(r);
+		G2::setOrder(r);
 		*pb = true;
 	}
 	void initG1only(bool *pb, const mcl::EcParam& para)
@@ -2166,6 +2168,8 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	Fp12::setPowArrayGLV(local::powArrayGLV2, local::powVecNGLV2);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
+	verifyOrderG1(false);
+	verifyOrderG2(false);
 	*pb = true;
 }
 
