@@ -320,6 +320,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2021/Jan/28 v1.30 a little optimization of Fp operations
 - 2020/Nov/14 v1.28 support M1 mac
 - 2020/Jun/07 v1.22 remove old hash-to-curve functions
 - 2020/Jun/04 v1.21 mapToG1 and hashAndMapToG1 are compatible to irtf/eip-2537
