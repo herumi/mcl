@@ -1,16 +1,14 @@
+#include <stdio.h>
 #include "../src/low_funct.hpp"
 
+#define MCL_USE_VINT
 #define MCL_VINT_FIXED_BUFFER
 #define MCL_SIZEOF_UNIT 4
-#define MCL_MAX_BIT_SIZE 384
+#define MCL_MAX_BIT_SIZE 768
 #include <mcl/vint.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
-
-void mul3(uint32_t z[6], const uint32_t x[3], uint32_t y[3])
-{
-	return mcl::mulT<3>(z, x, y);
-}
+#include <cybozu/benchmark.hpp>
 
 template<class RG>
 void setRand(uint32_t *x, size_t n, RG& rg)
@@ -20,23 +18,38 @@ void setRand(uint32_t *x, size_t n, RG& rg)
 	}
 }
 
-CYBOZU_TEST_AUTO(mul3)
+/*
+g++ -Ofast -DNDEBUG -Wall -Wextra -m32 -I ./include/ misc/low_test.cpp
+Core i7-8700
+         mulT  karatsuba
+N =  6, 182clk   225clk
+N =  8, 300clk   350clk
+N = 12, 594clk   730clk
+*/
+CYBOZU_TEST_AUTO(mulT)
 {
 	cybozu::XorShift rg;
-	uint32_t x[3];
-	uint32_t y[3];
-	uint32_t z[6];
+	const size_t N = 12;
+	uint32_t x[N];
+	uint32_t y[N];
+	uint32_t z[N * 2];
 	for (size_t i = 0; i < 1000; i++) {
-		setRand(x, 3, rg);
-		setRand(y, 3, rg);
+		setRand(x, N, rg);
+		setRand(y, N, rg);
+		// remove MSB
+		x[N - 1] &= 0x7fffffff;
+		y[N - 1] &= 0x7fffffff;
 		mcl::Vint vx, vy;
-		vx.setArray(x, 3);
-		vy.setArray(y, 3);
-		printf("vx=%s\n", vx.getStr(16).c_str());
-		printf("vy=%s\n", vy.getStr(16).c_str());
+		vx.setArray(x, N);
+		vy.setArray(y, N);
 		vx *= vy;
-		printf("xy=%s\n", vx.getStr(16).c_str());
-		mul3(z, x, y);
-		CYBOZU_TEST_EQUAL_ARRAY(z, vx.getUnit(), 6);
+		mcl::mulT<N>(z, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z, vx.getUnit(), N * 2);
+		memset(z, 0, sizeof(z));
+		mcl::karatsubaT<N>(z, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z, vx.getUnit(), N * 2);
 	}
+	CYBOZU_BENCH_C("mulT", 10000, mcl::mulT<N>, z, x, y);
+	CYBOZU_BENCH_C("kara", 10000, mcl::karatsubaT<N>, z, x, y);
 }
+
