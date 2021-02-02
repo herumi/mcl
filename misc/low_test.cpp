@@ -26,10 +26,11 @@ N =  6, 182clk   225clk
 N =  8, 300clk   350clk
 N = 12, 594clk   730clk
 */
-CYBOZU_TEST_AUTO(mulT)
+template<size_t N>
+void mulTest()
 {
+	printf("N=%zd (%zdbit)\n", N, N * 32);
 	cybozu::XorShift rg;
-	const size_t N = 12;
 	uint32_t x[N];
 	uint32_t y[N];
 	uint32_t z[N * 2];
@@ -53,3 +54,8 @@ CYBOZU_TEST_AUTO(mulT)
 	CYBOZU_BENCH_C("kara", 10000, mcl::karatsubaT<N>, z, x, y);
 }
 
+CYBOZU_TEST_AUTO(mulT)
+{
+	mulTest<8>();
+	mulTest<12>();
+}
