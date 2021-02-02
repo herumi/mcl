@@ -3,6 +3,10 @@
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+#if defined(__EMSCRIPTEN__) && MCL_SIZEOF_UNIT == 4
+#define FOR_WASM
+#include "low_funct.hpp"
+#endif
 
 #if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL))
 
@@ -268,6 +272,20 @@ void setOp2(Op& op)
 	} else {
 		op.fp_add = Add<N, false, Tag>::f;
 		op.fp_sub = Sub<N, false, Tag>::f;
+#ifdef FOR_WASM
+		switch (N) {
+		case 8:
+			op.fp_add = mcl::addModT<8>;
+			op.fp_sub = mcl::subModT<8>;
+			break;
+		case 12:
+			op.fp_add = mcl::addModT<12>;
+			op.fp_sub = mcl::subModT<12>;
+			break;
+		default:
+			break;
+		}
+#endif
 	}
 	if (op.isMont) {
 		if (op.isFullBit) {
