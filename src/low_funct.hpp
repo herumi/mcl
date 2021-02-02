@@ -4,12 +4,13 @@
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
+	@note for only 32bit not full bit prime version
+	assert((p[N - 1] & 0x80000000) == 0);
 */
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 
-// only for 32bit not full bit prime version
 
 namespace mcl {
 
@@ -156,6 +157,29 @@ void subModT(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *
 	bool c = subT<N>(z, x, y);
 	if (c) {
 		addT<N>(z, z, p);
+	}
+}
+
+/*
+	z[N] = Montgomery(x[N], y[N], p[N])
+	@remark : assume p[-1] = rp
+*/
+template<size_t N>
+void montT(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *p)
+{
+	const uint32_t rp = p[-1];
+	assert((p[N - 1] & 0x80000000) == 0);
+	uint32_t buf[N * 2];
+	buf[N] = mulUnitT<N>(buf, x, y[0]);
+	uint32_t q = buf[0] * rp;
+	buf[N] += addMulUnitT<N>(buf, p, q);
+	for (size_t i = 1; i < N; i++) {
+		buf[N + i] = addMulUnitT<N>(buf + i, x, y[i]);
+		uint32_t q = buf[i] * rp;
+		buf[N + i] += addMulUnitT<N>(buf + i, p, q);
+	}
+	if (subT<N>(z, buf + N, p)) {
+		copyT<N>(z, buf + N);
 	}
 }
 
