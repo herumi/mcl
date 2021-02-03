@@ -22,6 +22,23 @@ void copyT(uint32_t y[N], const uint32_t x[N])
 	}
 }
 
+template<size_t N>
+uint32_t shlT(uint32_t y[N], const uint32_t x[N], size_t bit)
+{
+	assert(0 < bit && bit < 32);
+	assert((N % 2) == 0);
+	size_t rBit = sizeof(uint32_t) * 8 - bit;
+	uint32_t keep = x[N - 1];
+	uint32_t prev = keep;
+	for (size_t i = N - 1; i > 0; i--) {
+		uint32_t t = x[i - 1];
+		y[i] = (prev << bit) | (t >> rBit);
+		prev = t;
+	}
+	y[0] = prev << bit;
+	return keep >> rBit;
+}
+
 // [return:y[N]] += x
 template<size_t N>
 inline bool addUnitT(uint32_t y[N], uint32_t x)
@@ -101,6 +118,8 @@ void mulT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	}
 }
 
+#if 0
+// slower than mulT
 template<size_t N>
 uint32_t mulUnitWithTblT(uint32_t z[N], const uint64_t *tbl_j)
 {
@@ -128,7 +147,6 @@ uint32_t addMulUnitWithTblT(uint32_t z[N], const uint64_t *tbl_j)
 	return H;
 }
 
-
 // y[N * 2] = x[N] * x[N]
 template<size_t N>
 void sqrT(uint32_t y[N * 2], const uint32_t x[N])
@@ -148,6 +166,7 @@ void sqrT(uint32_t y[N * 2], const uint32_t x[N])
 		y[N + i] = addMulUnitWithTblT<N>(&y[i], tbl + N * i);
 	}
 }
+#endif
 
 /*
 	z[N * 2] = x[N] * y[N]
@@ -157,6 +176,7 @@ void sqrT(uint32_t y[N * 2], const uint32_t x[N])
 	assume a < W/2, c < W/2
 	(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
 	ad + bc = (a + b)(c + d) - ac - bd < (1 << (N * 32))
+	slower than mulT on Core i7 with -m32 for N <= 12
 */
 template<size_t N>
 void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
@@ -165,8 +185,6 @@ void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	assert((x[N - 1] & 0x80000000) == 0);
 	assert((y[N - 1] & 0x80000000) == 0);
 	const size_t H = N / 2;
-	mulT<H>(z, x, y); // bd
-	mulT<H>(z + N, x + H, y + H); // ac
 	uint32_t a_b[H];
 	uint32_t c_d[H];
 	bool c1 = addT<H>(a_b, x, x + H); // a + b
@@ -179,12 +197,45 @@ void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	if (c2) {
 		addT<H>(tmp + H, tmp + H, a_b);
 	}
+	mulT<H>(z, x, y); // bd
+	mulT<H>(z + N, x + H, y + H); // ac
 	// c:tmp[N] = (a + b)(c + d)
 	subT<N>(tmp, tmp, z);
 	subT<N>(tmp, tmp, z + N);
 	// c:tmp[N] = ad + bc
 	if (addT<N>(z + H, z + H, tmp)) {
 		addUnitT<H>(z + N + H, 1);
+	}
+}
+
+/*
+	y[N * 2] = x[N] * x[N]
+	(aW + b)^2 = a^2 W + b^2 + 2abW
+	(a+b)^2 - a^2 - b^2
+*/
+template<size_t N>
+void sqrT(uint32_t y[N * 2], const uint32_t x[N])
+{
+	assert((N % 2) == 0);
+	assert((x[N - 1] & 0x80000000) == 0);
+	const size_t H = N / 2;
+	uint32_t a_b[H];
+	bool c = addT<H>(a_b, x, x + H); // a + b
+	uint32_t tmp[N];
+	mulT<H>(tmp, a_b, a_b);
+	if (c) {
+//		addT<H>(a_b, a_b, a_b);
+		shlT<H>(a_b, a_b, 1);
+		addT<H>(tmp + H, tmp + H, a_b);
+	}
+	mulT<H>(y, x, x); // b^2
+	mulT<H>(y + N, x + H, x + H); // a^2
+	// tmp[N] = (a + b)^2
+	subT<N>(tmp, tmp, y);
+	subT<N>(tmp, tmp, y + N);
+	// tmp[N] = 2ab
+	if (addT<N>(y + H, y + H, tmp)) {
+		addUnitT<H>(y + N + H, 1);
 	}
 }
 

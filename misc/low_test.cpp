@@ -69,7 +69,6 @@ CYBOZU_TEST_AUTO(mulT)
 {
 	mulTest<8>();
 	mulTest<12>();
-	mulTest<16>();
 }
 
 template<size_t N>
@@ -88,11 +87,6 @@ void sqrTest()
 		vx *= vx;
 		mcl::sqrT<N>(y, x);
 		CYBOZU_TEST_EQUAL_ARRAY(y, vx.getUnit(), N * 2);
-#if 0
-		memset(z, 0, sizeof(z));
-		mcl::karatsubaT<N>(z, x, y);
-		CYBOZU_TEST_EQUAL_ARRAY(z, vx.getUnit(), N * 2);
-#endif
 	}
 	CYBOZU_BENCH_C("sqrT", 10000, mcl::sqrT<N>, y, x);
 }
@@ -101,7 +95,6 @@ CYBOZU_TEST_AUTO(sqrT)
 {
 	sqrTest<8>();
 	sqrTest<12>();
-	sqrTest<16>();
 }
 
 struct Montgomery {
