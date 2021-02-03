@@ -76,7 +76,7 @@ uint32_t mulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
 	return H;
 }
 
-// [return:z[N]] = z[N] + x[N] * z
+// [return:z[N]] = z[N] + x[N] * y
 template<size_t N>
 uint32_t addMulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
 {
