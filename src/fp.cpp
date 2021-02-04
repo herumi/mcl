@@ -272,20 +272,6 @@ void setOp2(Op& op)
 	} else {
 		op.fp_add = Add<N, false, Tag>::f;
 		op.fp_sub = Sub<N, false, Tag>::f;
-#ifdef FOR_WASM
-		switch (N) {
-		case 8:
-			op.fp_add = mcl::addModT<8>;
-			op.fp_sub = mcl::subModT<8>;
-			break;
-		case 12:
-			op.fp_add = mcl::addModT<12>;
-			op.fp_sub = mcl::subModT<12>;
-			break;
-		default:
-			break;
-		}
-#endif
 	}
 	if (op.isMont) {
 		if (op.isFullBit) {
@@ -424,6 +410,25 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #endif // MCL_X64_ASM
 	return true;
 }
+
+#ifdef FOR_WASM
+template<size_t N>
+void setWasmOp(Op& op)
+{
+	if (!(op.isMont && !op.isFullBit)) return;
+EM_ASM({console.log($0)}, N);
+//	op.fp_addPre = mcl::addT<N>;
+//	op.fp_subPre = mcl::subT<N>;
+//	op.fpDbl_addPre = mcl::addT<N * 2>;
+//	op.fpDbl_subPre = mcl::subT<N * 2>;
+	op.fp_add = mcl::addModT<N>;
+	op.fp_sub = mcl::subModT<N>;
+	op.fp_mul = mcl::mulMontT<N>;
+	op.fp_sqr = mcl::sqrMontT<N>;
+	op.fpDbl_mulPre = mulT<N>;
+	op.fpDbl_mod = modT<N>;
+}
+#endif
 
 bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize)
 {
@@ -565,6 +570,13 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	default:
 		return false;
 	}
+#ifdef FOR_WASM
+	if (N == 8) {
+		setWasmOp<8>(*this);
+	} else if (N == 12) {
+		setWasmOp<12>(*this);
+	}
+#endif
 #ifdef MCL_USE_LLVM
 	if (primeMode == PM_NIST_P192) {
 		fp_mul = &mcl_fp_mulNIST_P192L;

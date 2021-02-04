@@ -264,7 +264,7 @@ void subModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint
 	@remark : assume p[-1] = rp
 */
 template<size_t N>
-void montT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint32_t p[N])
+void mulMontT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint32_t p[N])
 {
 	const uint32_t rp = p[-1];
 	assert((p[N - 1] & 0x80000000) == 0);
@@ -320,6 +320,22 @@ void modT(uint32_t y[N], const uint32_t xy[N * 2], const uint32_t p[N])
 	if (subT<N>(y, buf + N, p)) {
 		copyT<N>(y, buf + N);
 	}
+}
+
+/*
+	z[N] = Montgomery(x[N], y[N], p[N])
+	@remark : assume p[-1] = rp
+*/
+template<size_t N>
+void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
+{
+#if 1
+	mulMontT<N>(y, x, x, p);
+#else
+	uint32_t xx[N * 2];
+	sqrT<N>(xx, x);
+	modT<N>(y, xx, p);
+#endif
 }
 
 } // mcl
