@@ -137,6 +137,19 @@ struct Montgomery {
 		}
 		z = c;
 	}
+	void mod(mcl::Vint& z, const mcl::Vint& xy) const
+	{
+		z = xy;
+		for (size_t i = 0; i < pn_; i++) {
+			uint32_t q = z.getUnit()[0] * rp_;
+			mcl::Vint t = q;
+			z += p_ * t;
+			z >>= 32;
+		}
+		if (z >= p_) {
+			z -= p_;
+		}
+	}
 };
 
 template<size_t N>
@@ -171,10 +184,44 @@ void montTest(const char *pStr)
 	CYBOZU_BENCH_C("montT", 10000, mcl::montT<N>, z, x, y, p);
 }
 
+template<size_t N>
+void modTest(const char *pStr)
+{
+	mcl::Vint vp;
+	vp.setStr(pStr);
+	Montgomery mont(vp);
+
+	cybozu::XorShift rg;
+	uint32_t xy[N * 2];
+	uint32_t z[N];
+	uint32_t _p[N + 1];
+	uint32_t *const p = _p + 1;
+	vp.getArray(p, N);
+	p[-1] = mont.rp_;
+
+	for (size_t i = 0; i < 1000; i++) {
+		setRand(xy, N * 2, rg);
+		// remove MSB
+		xy[N * 2 - 1] &= 0x7fffffff;
+		mcl::Vint vxy, vz;
+		vxy.setArray(xy, N * 2);
+		mont.mod(vz, vxy);
+		mcl::modT<N>(z, xy, p);
+		CYBOZU_TEST_EQUAL_ARRAY(z, vz.getUnit(), N);
+	}
+	CYBOZU_BENCH_C("modT", 10000, mcl::modT<N>, z, xy, p);
+}
+
 CYBOZU_TEST_AUTO(mont)
 {
 	const char *pBN254 = "0x2523648240000001ba344d80000000086121000000000013a700000000000013";
+	puts("BN254");
 	montTest<8>(pBN254);
+	modTest<8>(pBN254);
+
 	const char *pBLS12_381 = "0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab";
+	puts("BLS12");
 	montTest<12>(pBLS12_381);
+	modTest<12>(pBLS12_381);
 }
+

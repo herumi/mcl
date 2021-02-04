@@ -251,7 +251,7 @@ void addModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint
 }
 
 template<size_t N>
-void subModT(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *p)
+void subModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint32_t p[N])
 {
 	bool c = subT<N>(z, x, y);
 	if (c) {
@@ -264,7 +264,7 @@ void subModT(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *
 	@remark : assume p[-1] = rp
 */
 template<size_t N>
-void montT(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *p)
+void montT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint32_t p[N])
 {
 	const uint32_t rp = p[-1];
 	assert((p[N - 1] & 0x80000000) == 0);
@@ -279,6 +279,46 @@ void montT(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *p)
 	}
 	if (subT<N>(z, buf + N, p)) {
 		copyT<N>(z, buf + N);
+	}
+}
+
+// [return:z[N+1]] = z[N+1] + x[N] * y + (cc << (N * 32))
+template<size_t N>
+bool addMulUnit2T(uint32_t z[N + 1], const uint32_t x[N], uint32_t y, const bool *cc = 0)
+{
+	uint32_t H = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = uint64_t(x[i]) * y;
+		v += H;
+		v += z[i];
+		z[i] = uint32_t(v);
+		H = uint32_t(v >> 32);
+	}
+	if (cc) H += *cc;
+	uint64_t v = uint64_t(z[N]);
+	v += H;
+	z[N] = uint32_t(v);
+	return (v >> 32) != 0;
+}
+
+/*
+	z[N] = Montgomery reduction(y[N], xy[N], p[N])
+	@remark : assume p[-1] = rp
+*/
+template<size_t N>
+void modT(uint32_t y[N], const uint32_t xy[N * 2], const uint32_t p[N])
+{
+	const uint32_t rp = p[-1];
+	assert((p[N - 1] & 0x80000000) == 0);
+	uint32_t buf[N * 2];
+	copyT<N * 2>(buf, xy);
+	bool c = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint32_t q = buf[i] * rp;
+		c = addMulUnit2T<N>(buf + i, p, q, &c);
+	}
+	if (subT<N>(y, buf + N, p)) {
+		copyT<N>(y, buf + N);
 	}
 }
 
