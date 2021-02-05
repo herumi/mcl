@@ -416,7 +416,7 @@ template<size_t N>
 void setWasmOp(Op& op)
 {
 	if (!(op.isMont && !op.isFullBit)) return;
-EM_ASM({console.log($0)}, N);
+//EM_ASM({console.log($0)}, N);
 //	op.fp_addPre = mcl::addT<N>;
 //	op.fp_subPre = mcl::subT<N>;
 //	op.fpDbl_addPre = mcl::addT<N * 2>;
