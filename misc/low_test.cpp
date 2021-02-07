@@ -21,6 +21,8 @@ void dump(const char *msg, const uint32_t *x, size_t n)
 #include <cybozu/benchmark.hpp>
 #include <mcl/util.hpp>
 
+const int C = 10000;
+
 template<class RG>
 void setRand(uint32_t *x, size_t n, RG& rg)
 {
@@ -61,8 +63,8 @@ void mulTest()
 		mcl::karatsubaT<N>(z, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, vx.getUnit(), N * 2);
 	}
-	CYBOZU_BENCH_C("mulT", 10000, mcl::mulT<N>, z, x, y);
-	CYBOZU_BENCH_C("kara", 10000, mcl::karatsubaT<N>, z, x, y);
+	CYBOZU_BENCH_C("mulT", C, mcl::mulT<N>, z, x, y);
+	CYBOZU_BENCH_C("kara", C, mcl::karatsubaT<N>, z, x, y);
 }
 
 CYBOZU_TEST_AUTO(mulT)
@@ -88,7 +90,7 @@ void sqrTest()
 		mcl::sqrT<N>(y, x);
 		CYBOZU_TEST_EQUAL_ARRAY(y, vx.getUnit(), N * 2);
 	}
-	CYBOZU_BENCH_C("sqrT", 10000, mcl::sqrT<N>, y, x);
+	CYBOZU_BENCH_C("sqrT", C, mcl::sqrT<N>, y, x);
 }
 
 CYBOZU_TEST_AUTO(sqrT)
@@ -185,8 +187,8 @@ void mulMontTest(const char *pStr)
 		mcl::sqrMontT<N>(z, x, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z, vz.getUnit(), N);
 	}
-	CYBOZU_BENCH_C("mulMontT", 10000, mcl::mulMontT<N>, x, x, y, p);
-	CYBOZU_BENCH_C("sqrMontT", 10000, mcl::sqrMontT<N>, x, x, p);
+	CYBOZU_BENCH_C("mulMontT", C, mcl::mulMontT<N>, x, x, y, p);
+	CYBOZU_BENCH_C("sqrMontT", C, mcl::sqrMontT<N>, x, x, p);
 }
 
 template<size_t N>
@@ -214,7 +216,7 @@ void modTest(const char *pStr)
 		mcl::modT<N>(z, xy, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z, vz.getUnit(), N);
 	}
-	CYBOZU_BENCH_C("modT", 10000, mcl::modT<N>, z, xy, p);
+	CYBOZU_BENCH_C("modT", C, mcl::modT<N>, z, xy, p);
 }
 
 CYBOZU_TEST_AUTO(mont)

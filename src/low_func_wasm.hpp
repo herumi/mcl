@@ -41,40 +41,40 @@ uint32_t shlT(uint32_t y[N], const uint32_t x[N], size_t bit)
 
 // [return:y[N]] += x
 template<size_t N>
-inline bool addUnitT(uint32_t y[N], uint32_t x)
+inline uint32_t addUnitT(uint32_t y[N], uint32_t x)
 {
 	uint64_t v = uint64_t(y[0]) + x;
 	y[0] = uint32_t(v);
-	bool c = (v >> 32) != 0;
-	if (!c) return false;
+	uint32_t c = v >> 32;
+	if (c == 0) return 0;
 	for (size_t i = 1; i < N; i++) {
 		v = uint64_t(y[i]) + 1;
 		y[i] = uint32_t(v);
-		if ((v >> 32) == 0) return false;
+		if ((v >> 32) == 0) return 0;
 	}
-	return true;
+	return 1;
 }
 
 template<size_t N>
-bool addT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
+uint32_t addT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
 {
-	bool c = false;
+	uint32_t c = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint64_t v = uint64_t(x[i]) + y[i] + c;
 		z[i] = uint32_t(v);
-		c = (v >> 32) != 0;
+		c = uint32_t(v >> 32);
 	}
 	return c;
 }
 
 template<size_t N>
-bool subT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
+uint32_t subT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
 {
-	bool c = false;
+	uint32_t c = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint64_t v = uint64_t(x[i]) - y[i] - c;
 		z[i] = uint32_t(v);
-		c = (v >> 32) != 0;
+		c = uint32_t(v >> 63);
 	}
 	return c;
 }
@@ -187,8 +187,8 @@ void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	const size_t H = N / 2;
 	uint32_t a_b[H];
 	uint32_t c_d[H];
-	bool c1 = addT<H>(a_b, x, x + H); // a + b
-	bool c2 = addT<H>(c_d, y, y + H); // c + d
+	uint32_t c1 = addT<H>(a_b, x, x + H); // a + b
+	uint32_t c2 = addT<H>(c_d, y, y + H); // c + d
 	uint32_t tmp[N];
 	mulT<H>(tmp, a_b, c_d);
 	if (c1) {
@@ -220,11 +220,10 @@ void sqrT(uint32_t y[N * 2], const uint32_t x[N])
 	assert((x[N - 1] & 0x80000000) == 0);
 	const size_t H = N / 2;
 	uint32_t a_b[H];
-	bool c = addT<H>(a_b, x, x + H); // a + b
+	uint32_t c = addT<H>(a_b, x, x + H); // a + b
 	uint32_t tmp[N];
 	mulT<H>(tmp, a_b, a_b);
 	if (c) {
-//		addT<H>(a_b, a_b, a_b);
 		shlT<H>(a_b, a_b, 1);
 		addT<H>(tmp + H, tmp + H, a_b);
 	}
@@ -244,7 +243,7 @@ void addModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint
 {
 	uint32_t t[N];
 	addT<N>(z, x, y);
-	bool c = subT<N>(t, z, p);
+	uint32_t c = subT<N>(t, z, p);
 	if (!c) {
 		copyT<N>(z, t);
 	}
@@ -253,7 +252,7 @@ void addModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint
 template<size_t N>
 void subModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint32_t p[N])
 {
-	bool c = subT<N>(z, x, y);
+	uint32_t c = subT<N>(z, x, y);
 	if (c) {
 		addT<N>(z, z, p);
 	}
@@ -284,7 +283,7 @@ void mulMontT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uin
 
 // [return:z[N+1]] = z[N+1] + x[N] * y + (cc << (N * 32))
 template<size_t N>
-bool addMulUnit2T(uint32_t z[N + 1], const uint32_t x[N], uint32_t y, const bool *cc = 0)
+uint32_t addMulUnit2T(uint32_t z[N + 1], const uint32_t x[N], uint32_t y, const uint32_t *cc = 0)
 {
 	uint32_t H = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -298,7 +297,7 @@ bool addMulUnit2T(uint32_t z[N + 1], const uint32_t x[N], uint32_t y, const bool
 	uint64_t v = uint64_t(z[N]);
 	v += H;
 	z[N] = uint32_t(v);
-	return (v >> 32) != 0;
+	return uint32_t(v >> 32);
 }
 
 /*
@@ -312,7 +311,7 @@ void modT(uint32_t y[N], const uint32_t xy[N * 2], const uint32_t p[N])
 	assert((p[N - 1] & 0x80000000) == 0);
 	uint32_t buf[N * 2];
 	copyT<N * 2>(buf, xy);
-	bool c = 0;
+	uint32_t c = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint32_t q = buf[i] * rp;
 		c = addMulUnit2T<N>(buf + i, p, q, &c);
@@ -332,6 +331,7 @@ void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
 #if 1
 	mulMontT<N>(y, x, x, p);
 #else
+	// slower
 	uint32_t xx[N * 2];
 	sqrT<N>(xx, x);
 	modT<N>(y, xx, p);
