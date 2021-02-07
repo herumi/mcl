@@ -4,8 +4,8 @@
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
 #if defined(__EMSCRIPTEN__) && MCL_SIZEOF_UNIT == 4
-#define FOR_WASM
-#include "low_funct.hpp"
+#define USE_WASM
+#include "low_func_wasm.hpp"
 #endif
 
 #if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL))
@@ -411,12 +411,12 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-#ifdef FOR_WASM
+#ifdef USE_WASM
 template<size_t N>
 void setWasmOp(Op& op)
 {
 	if (!(op.isMont && !op.isFullBit)) return;
-EM_ASM({console.log($0)}, N);
+//EM_ASM({console.log($0)}, N);
 //	op.fp_addPre = mcl::addT<N>;
 //	op.fp_subPre = mcl::subT<N>;
 //	op.fpDbl_addPre = mcl::addT<N * 2>;
@@ -570,7 +570,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	default:
 		return false;
 	}
-#ifdef FOR_WASM
+#ifdef USE_WASM
 	if (N == 8) {
 		setWasmOp<8>(*this);
 	} else if (N == 12) {
