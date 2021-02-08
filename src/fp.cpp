@@ -394,6 +394,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 #endif
 #elif defined(MCL_STATIC_CODE)
+	if (mode != FP_XBYAK) return true;
 	fp::setStaticCode(op);
 	bool enableInv = true;
 #endif // MCL_USE_XBYAK
