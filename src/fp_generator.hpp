@@ -421,12 +421,12 @@ private:
 		setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
 
 		align(16);
-		op.fpDbl_mulPreA_ = gen_fpDbl_mulPre();
-		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPreA_, getCurr());
+		gen_fpDbl_mulPre(op.fpDbl_mulPre);
+		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
 
 		align(16);
-		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
-		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPreA_, getCurr());
+		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
+		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
 
 		align(16);
 		op.fp2_addA_ = gen_fp2_add();
@@ -2373,36 +2373,35 @@ private:
 		cmovc_rr(zp, keep);
 		store_mr(z, zp);
 	}
-	void2u gen_fpDbl_sqrPre()
+	void gen_fpDbl_sqrPre(void2u& f)
 	{
 		void2u func = getCurr<void2u>();
 		if (pn_ == 2 && useMulx_) {
 			StackFrame sf(this, 2, 7 | UseRDX);
 			sqrPre2(sf.p[0], sf.p[1], sf.t);
-			return func;
+			f = func;
 		}
 		if (pn_ == 3) {
 			StackFrame sf(this, 3, 10 | UseRDX);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			sqrPre3(sf.p[0], sf.p[1], t);
-			return func;
+			f = func;
 		}
 		if (pn_ == 4 && useMulx_) {
 			StackFrame sf(this, 3, 10 | UseRDX);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			sqrPre4(sf.p[0], sf.p[1], t);
-			return func;
+			f = func;
 		}
 		if (pn_ == 6 && useMulx_ && useAdx_) {
 			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
 			sqrPre6(sf.p[0], sf.p[1], t);
-			return func;
+			f = func;
 		}
-		return 0;
 #if 0
 #ifdef XBYAK64_WIN
 		mov(r8, rdx);
@@ -2413,18 +2412,18 @@ private:
 		return func;
 #endif
 	}
-	void3u gen_fpDbl_mulPre()
+	void gen_fpDbl_mulPre(void3u& f)
 	{
 		void3u func = getCurr<void3u>();
 		if (pn_ == 2 && useMulx_) {
 			StackFrame sf(this, 3, 5 | UseRDX);
 			mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
-			return func;
+			f = func;
 		}
 		if (pn_ == 3) {
 			StackFrame sf(this, 3, 10 | UseRDX);
 			mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
-			return func;
+			f = func;
 		}
 		if (pn_ == 4) {
 			/*
@@ -2437,7 +2436,7 @@ private:
 		L(mulPreL); // called only from asm code
 			mulPre4(gp0, gp1, gp2, sf.t);
 			ret();
-			return func;
+			f = func;
 		}
 		if (pn_ == 6 && useAdx_) {
 			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
@@ -2446,9 +2445,8 @@ private:
 		L(mulPreL); // called only from asm code
 			mulPre6(sf.t);
 			ret();
-			return func;
+			f = func;
 		}
-		return 0;
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
 	{

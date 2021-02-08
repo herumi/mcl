@@ -65,8 +65,8 @@ void setStaticCode(mcl::fp::Op& op)
 		op.fpDbl_subA_ = mclx_FpDbl_sub;
 		op.fpDbl_addPre = mclx_FpDbl_addPre;
 		op.fpDbl_subPre = mclx_FpDbl_subPre;
-		op.fpDbl_mulPreA_ = mclx_FpDbl_mulPre;
-		op.fpDbl_sqrPreA_ = mclx_FpDbl_sqrPre;
+		op.fpDbl_mulPre = mclx_FpDbl_mulPre;
+		op.fpDbl_sqrPre = mclx_FpDbl_sqrPre;
 		op.fp2_addA_ = mclx_Fp2_add;
 		op.fp2_subA_ = mclx_Fp2_sub;
 		op.fp2_negA_ = mclx_Fp2_neg;

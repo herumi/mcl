@@ -125,8 +125,6 @@ public:
 	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
 	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 #endif
-	static void mulPreC(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
-	static void sqrPreC(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
@@ -152,16 +150,8 @@ public:
 		subPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subPre);
 		if (subPre == 0) subPre = subPreC;
 #endif
-		if (op.fpDbl_mulPreA_) {
-			mulPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&, const Fp&)>(op.fpDbl_mulPreA_);
-		} else {
-			mulPre = mulPreC;
-		}
-		if (op.fpDbl_sqrPreA_) {
-			sqrPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&)>(op.fpDbl_sqrPreA_);
-		} else {
-			sqrPre = sqrPreC;
-		}
+		mulPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&, const Fp&)>(op.fpDbl_mulPre);
+		sqrPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&)>(op.fpDbl_sqrPre);
 	}
 	void operator+=(const FpDblT& x) { add(*this, *this, x); }
 	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
@@ -690,9 +680,9 @@ struct Fp2DblT {
 			mulPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&, const Fp2&)>(op.fp2Dbl_mulPreA_);
 		} else {
 			if (op.isFullBit) {
-				mulPre = fp2Dbl_mulPreW<true>;
+				mulPre = fp2Dbl_mulPreTW<true>;
 			} else {
-				mulPre = fp2Dbl_mulPreW<false>;
+				mulPre = fp2Dbl_mulPreTW<false>;
 			}
 		}
 		if (op.fp2Dbl_sqrPreA_) {
@@ -710,7 +700,7 @@ struct Fp2DblT {
 		@note mod of NIST_P192 is fast
 	*/
 	template<bool isFullBit>
-	static void fp2Dbl_mulPreW(Fp2DblT& z, const Fp2& x, const Fp2& y)
+	static void fp2Dbl_mulPreTW(Fp2DblT& z, const Fp2& x, const Fp2& y)
 	{
 		const Fp& a = x.a;
 		const Fp& b = x.b;
