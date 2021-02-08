@@ -118,56 +118,6 @@ void mulT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	}
 }
 
-#if 0
-// slower than mulT
-template<size_t N>
-uint32_t mulUnitWithTblT(uint32_t z[N], const uint64_t *tbl_j)
-{
-	uint32_t H = 0;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = tbl_j[i];
-		v += H;
-		z[i] = uint32_t(v);
-		H = uint32_t(v >> 32);
-	}
-	return H;
-}
-
-template<size_t N>
-uint32_t addMulUnitWithTblT(uint32_t z[N], const uint64_t *tbl_j)
-{
-	uint32_t H = 0;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = tbl_j[i];
-		v += H;
-		v += z[i];
-		z[i] = uint32_t(v);
-		H = uint32_t(v >> 32);
-	}
-	return H;
-}
-
-// y[N * 2] = x[N] * x[N]
-template<size_t N>
-void sqrT(uint32_t y[N * 2], const uint32_t x[N])
-{
-	uint64_t tbl[N * N]; // x[i]x[j]
-	for (size_t i = 0; i < N; i++) {
-		uint64_t xi = x[i];
-		tbl[i * N + i] = xi * xi;
-		for (size_t j = i + 1; j < N; j++) {
-			uint64_t v = xi * x[j];
-			tbl[i * N + j] = v;
-			tbl[j * N + i] = v;
-		}
-	}
-	y[N] = mulUnitWithTblT<N>(y, tbl);
-	for (size_t i = 1; i < N; i++) {
-		y[N + i] = addMulUnitWithTblT<N>(&y[i], tbl + N * i);
-	}
-}
-#endif
-
 /*
 	z[N * 2] = x[N] * y[N]
 	H = N/2

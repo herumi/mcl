@@ -9,7 +9,7 @@ void dump(const char *msg, const uint32_t *x, size_t n)
 	}
 	printf("\n");
 }
-#include "../src/low_funct.hpp"
+#include "../src/low_func_wasm.hpp"
 
 #define MCL_USE_VINT
 #define MCL_VINT_FIXED_BUFFER
