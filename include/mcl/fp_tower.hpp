@@ -680,9 +680,9 @@ struct Fp2DblT {
 			mulPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&, const Fp2&)>(op.fp2Dbl_mulPreA_);
 		} else {
 			if (op.isFullBit) {
-				mulPre = fp2Dbl_mulPreW<true>;
+				mulPre = fp2Dbl_mulPreTW<true>;
 			} else {
-				mulPre = fp2Dbl_mulPreW<false>;
+				mulPre = fp2Dbl_mulPreTW<false>;
 			}
 		}
 		if (op.fp2Dbl_sqrPreA_) {
@@ -700,7 +700,7 @@ struct Fp2DblT {
 		@note mod of NIST_P192 is fast
 	*/
 	template<bool isFullBit>
-	static void fp2Dbl_mulPreW(Fp2DblT& z, const Fp2& x, const Fp2& y)
+	static void fp2Dbl_mulPreTW(Fp2DblT& z, const Fp2& x, const Fp2& y)
 	{
 		const Fp& a = x.a;
 		const Fp& b = x.b;
