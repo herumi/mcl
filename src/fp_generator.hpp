@@ -425,8 +425,8 @@ private:
 		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPreA_, getCurr());
 
 		align(16);
-		op.fpDbl_sqrPreA_ = gen_fpDbl_sqrPre();
-		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPreA_, getCurr());
+		op.fpDbl_sqrPre = gen_fpDbl_sqrPre();
+		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
 
 		align(16);
 		op.fp2_addA_ = gen_fp2_add();

@@ -128,7 +128,6 @@ public:
 	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 	static void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
 #endif
-	static void sqrPreC(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
@@ -155,11 +154,7 @@ public:
 		mulPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&, const Fp&)>(op.fpDbl_mulPreA_);
 		if (mulPre == 0) mulPre = mulPreC;
 #endif
-		if (op.fpDbl_sqrPreA_) {
-			sqrPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&)>(op.fpDbl_sqrPreA_);
-		} else {
-			sqrPre = sqrPreC;
-		}
+		sqrPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&)>(op.fpDbl_sqrPre);
 	}
 	void operator+=(const FpDblT& x) { add(*this, *this, x); }
 	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
