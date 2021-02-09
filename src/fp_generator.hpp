@@ -1774,12 +1774,20 @@ private:
 		mov(d, ptr [px]);
 		mulx(pd[0], a, ptr [py + 8 * 0]);
 		mov(ptr [pz + 8 * 0], a);
-		for (size_t i = 1; i < pd.size(); i++) {
-			mulx(pd[i], a, ptr [py + 8 * i]);
-			if (i == 1) {
-				add(pd[i - 1], a);
-			} else {
-				adc(pd[i - 1], a);
+		if (useAdx_) {
+			xor_(a, a);
+			for (size_t i = 1; i < pd.size(); i++) {
+				mulx(pd[i], a, ptr [py + 8 * i]);
+				adcx(pd[i - 1], a);
+			}
+		} else {
+			for (size_t i = 1; i < pd.size(); i++) {
+				mulx(pd[i], a, ptr [py + 8 * i]);
+				if (i == 1) {
+					add(pd[i - 1], a);
+				} else {
+					adc(pd[i - 1], a);
+				}
 			}
 		}
 		adc(pd[pd.size() - 1], 0);
@@ -3783,9 +3791,9 @@ private:
 		if (pn_ == 4) {
 			gen_raw_fp_sub((RegExp)d0 + pn_ * 8, (RegExp)d0 + pn_ * 8, (RegExp)d2 + pn_ * 8, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
 		} else {
-			lea(gp0, ptr[d0]);
-			lea(gp2, ptr[d2]);
-			gen_raw_fp_sub6(gp0, gp0, gp2, pn_ * 8, sf.t.sub(0, 6), true);
+			lea(gp0, ptr[(RegExp)d0 + pn_ * 8]);
+			lea(gp2, ptr[(RegExp)d2 + pn_ * 8]);
+			gen_raw_fp_sub6(gp0, gp0, gp2, 0, sf.t.sub(0, 6), true);
 		}
 
 		mov(gp0, ptr [z]);
