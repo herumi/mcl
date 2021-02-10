@@ -214,6 +214,7 @@ struct Op {
 	void2u fp_negA_;
 	void3u fp_mulA_;
 	void2u fp_sqrA_;
+	void2u fp_mul2A_;
 	void3u fp2_addA_;
 	void3u fp2_subA_;
 	void2u fp2_negA_;
@@ -231,6 +232,7 @@ struct Op {
 	void1u fp_clear;
 	void2u fp_copy;
 	void2u fp_shr1;
+	void3u fp_mul2;
 	void3u fp_neg;
 	void4u fp_add;
 	void4u fp_sub;
@@ -299,6 +301,7 @@ struct Op {
 		fp_negA_ = 0;
 		fp_mulA_ = 0;
 		fp_sqrA_ = 0;
+		fp_mul2A_ = 0;
 		fp2_addA_ = 0;
 		fp2_subA_ = 0;
 		fp2_negA_ = 0;
@@ -316,6 +319,7 @@ struct Op {
 		fp_clear = 0;
 		fp_copy = 0;
 		fp_shr1 = 0;
+		fp_mul2 = 0;
 		fp_neg = 0;
 		fp_add = 0;
 		fp_sub = 0;

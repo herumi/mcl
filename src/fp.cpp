@@ -261,6 +261,28 @@ struct SetFpDbl<N, true> {
 	}
 };
 
+// assume !isFullBit
+template<size_t N>
+void Mul2(Unit *y, const Unit *x, const Unit *p)
+{
+	const size_t bit = 1;
+	const size_t rBit = sizeof(Unit) * 8 - bit;
+	Unit prev = x[N - 1];
+	for (size_t i = N - 1; i > 0; i--) {
+		Unit t = x[i - 1];
+		y[i] = (prev << bit) | (t >> rBit);
+		prev = t;
+	}
+	y[0] = prev << bit;
+	for (size_t i = 0; i < N; i++) {
+		Unit a = y[N - 1 - i];
+		Unit b = p[N - 1 - i];
+		if (a < b) return;
+		if (a > b) break;
+	}
+	SubPre<N, Gtag>::f(y, y, p);
+}
+
 template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>
 void setOp2(Op& op)
 {
@@ -269,9 +291,11 @@ void setOp2(Op& op)
 	if (op.isFullBit) {
 		op.fp_add = Add<N, true, Tag>::f;
 		op.fp_sub = Sub<N, true, Tag>::f;
+		op.fp_mul2 = 0; // not supported
 	} else {
 		op.fp_add = Add<N, false, Tag>::f;
 		op.fp_sub = Sub<N, false, Tag>::f;
+		op.fp_mul2 = Mul2<N>;
 	}
 	if (op.isMont) {
 		if (op.isFullBit) {

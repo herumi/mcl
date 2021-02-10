@@ -102,6 +102,8 @@ void testBench(const G1& P, const G2& Q)
 #endif
 	CYBOZU_BENCH_C("Fp::add       ", C3, Fp::add, x, x, y);
 	CYBOZU_BENCH_C("Fp::sub       ", C3, Fp::sub, x, x, y);
+	CYBOZU_BENCH_C("Fp::add 2     ", C3, Fp::add, x, x, x);
+	CYBOZU_BENCH_C("Fp::mul2      ", C3, Fp::mul2, x, x);
 	CYBOZU_BENCH_C("Fp::neg       ", C3, Fp::neg, x, x);
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);

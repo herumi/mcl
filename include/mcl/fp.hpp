@@ -163,6 +163,8 @@ public:
 		if (mul == 0) mul = mulC;
 		sqr = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_sqrA_);
 		if (sqr == 0) sqr = sqrC;
+		mul2 = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_mul2A_);
+		if (mul2 == 0) mul2 = mul2C;
 #endif
 		*pb = true;
 	}
@@ -495,12 +497,15 @@ public:
 	static inline void mulC(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
 	static void (*sqr)(FpT& y, const FpT& x);
 	static inline void sqrC(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }
+	static void (*mul2)(FpT& y, const FpT& x);
+	static inline void mul2C(FpT& y, const FpT& x) { op_.fp_mul2(y.v_, x.v_, op_.p); }
 #else
 	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }
+	static inline void mul2(FpT& y, const FpT& x) { op_.fp_mul2(y.v_, x.v_, op_.p); }
 #endif
 	static inline void addPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_addPre(z.v_, x.v_, y.v_); }
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
@@ -740,6 +745,7 @@ template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sub)(FpT& z,
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::neg)(FpT& y, const FpT& x);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul)(FpT& z, const FpT& x, const FpT& y);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sqr)(FpT& y, const FpT& x);
+template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul2)(FpT& y, const FpT& x);
 #endif
 
 } // mcl
