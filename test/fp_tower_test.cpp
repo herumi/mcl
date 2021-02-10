@@ -401,6 +401,7 @@ void test(const char *p, mcl::fp::Mode mode)
 	const int xi_a = 1;
 	Fp::init(xi_a, p, mode);
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
+	if (Fp::getOp().isFullBit) return;
 	Fp2::init();
 	printf("bitSize=%d\n", (int)Fp::getBitSize());
 #if 0

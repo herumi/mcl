@@ -675,6 +675,7 @@ struct Fp2DblT {
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
 	static void init()
  	{
+		assert(!Fp::getOp().isFullBit);
 		const mcl::fp::Op& op = Fp::getOp();
 		if (op.fp2Dbl_mulPreA_) {
 			mulPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&, const Fp2&)>(op.fp2Dbl_mulPreA_);
