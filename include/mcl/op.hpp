@@ -220,6 +220,7 @@ struct Op {
 	void2u fp2_negA_;
 	void3u fp2_mulA_;
 	void2u fp2_sqrA_;
+	void2u fp2_mul2A_;
 	void3u fpDbl_addA_;
 	void3u fpDbl_subA_;
 	void2u fpDbl_modA_;
@@ -307,6 +308,7 @@ struct Op {
 		fp2_negA_ = 0;
 		fp2_mulA_ = 0;
 		fp2_sqrA_ = 0;
+		fp2_mul2A_ = 0;
 		fpDbl_addA_ = 0;
 		fpDbl_subA_ = 0;
 		fpDbl_modA_ = 0;

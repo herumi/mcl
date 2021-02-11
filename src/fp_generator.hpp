@@ -444,6 +444,10 @@ private:
 		op.fp2_negA_ = gen_fp2_neg();
 		setFuncInfo(prof_, suf, "2_neg", op.fp2_negA_, getCurr());
 
+		align(16);
+		op.fp2_mul2A_ = gen_fp2_mul2();
+		setFuncInfo(prof_, suf, "2_mul2", op.fp2_mul2A_, getCurr());
+
 		op.fp2_mulNF = 0;
 		align(16);
 		op.fp2Dbl_mulPreA_ = gen_fp2Dbl_mulPre();
@@ -919,31 +923,54 @@ private:
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
 		return func;
 	}
-	void2u gen_mul2()
+	// x = x << 1
+	void shl1(const Pack& x)
 	{
-		if (isFullBit_) return 0;
-		if (!(pn_ == 4 || pn_ == 6)) return 0;
-		void2u func = getCurr<void2u>();
-		const int n = pn_ * 2 - 2;
-		StackFrame sf(this, 2, n);
-		Pack x = sf.t.sub(0, pn_);
-		load_rm(x, sf.p[1]);
-#if 0
-		add_rr(x, x);
-#else
-		for (int i = pn_ - 1; i > 0; i--) {
+		for (int i = x.size() - 1; i > 0; i--) {
 			shld(x[i], x[i - 1], 1);
 		}
 		shl(x[0], 1);
-#endif
+	}
+	/*
+		y = (x >= p[]) x - p[] : x
+	*/
+	void sub_mod(const Pack& y, const Pack& x, const RegExp& p)
+	{
+		mov_rr(y, x);
+		sub_rm(y, p);
+		cmovc_rr(y, x);
+	}
+	void2u gen_mul2()
+	{
+		if (isFullBit_ || pn_ > 6) return 0;
+		void2u func = getCurr<void2u>();
+		const int n = pn_ * 2 - 1;
+		StackFrame sf(this, 2, n);
+		Pack x = sf.t.sub(0, pn_);
+		load_rm(x, sf.p[1]);
+		shl1(x);
 		Pack t = sf.t.sub(pn_, n - pn_);
 		t.append(sf.p[1]);
-		t.append(rax); // destroy last
-		mov_rr(t, x);
 		lea(rax, ptr[rip + pL_]);
-		sub_rm(t, rax);
-		cmovc_rr(t, x);
+		sub_mod(t, x, rax);
 		store_mr(sf.p[0], t);
+		return func;
+	}
+	void2u gen_fp2_mul2()
+	{
+		if (isFullBit_ || pn_ > 6) return 0;
+		void2u func = getCurr<void2u>();
+		const int n = pn_ * 2;
+		StackFrame sf(this, 2, n);
+		Pack x = sf.t.sub(0, pn_);
+		Pack t = sf.t.sub(pn_, pn_);
+		lea(rax, ptr[rip + pL_]);
+		for (int i = 0; i < 2; i++) {
+			load_rm(x, sf.p[1] + FpByte_ * i);
+			shl1(x);
+			sub_mod(t, x, rax);
+			store_mr(sf.p[0] + FpByte_ * i, t);
+		}
 		return func;
 	}
 	void3u gen_mul()

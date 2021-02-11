@@ -135,6 +135,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp2::add      ", C3, Fp2::add, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::sub      ", C3, Fp2::sub, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::neg      ", C3, Fp2::neg, xx, xx);
+	CYBOZU_BENCH_C("Fp2::mul2     ", C3, Fp2::mul2, xx, xx);
 	CYBOZU_BENCH_C("Fp2::mul      ", C3, Fp2::mul, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::mul_xi   ", C3, Fp2::mul_xi, xx, xx);
 	CYBOZU_BENCH_C("Fp2::sqr      ", C3, Fp2::sqr, xx, xx);

@@ -226,12 +226,14 @@ public:
 	static void (*neg)(Fp2T& y, const Fp2T& x);
 	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
+	static void (*mul2)(Fp2T& y, const Fp2T& x);
 #else
 	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { addC(z, x, y); }
 	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { subC(z, x, y); }
 	static void neg(Fp2T& y, const Fp2T& x) { negC(y, x); }
 	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { mulC(z, x, y); }
 	static void sqr(Fp2T& y, const Fp2T& x) { sqrC(y, x); }
+	static void mul2(Fp2T& y, const Fp2T& x) { mul2C(y, x); }
 #endif
 	static void (*mul_xi)(Fp2T& y, const Fp2T& x);
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
@@ -386,6 +388,8 @@ public:
 		if (mul == 0) mul = mulC;
 		sqr = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_sqrA_);
 		if (sqr == 0) sqr = sqrC;
+		mul2 = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_mul2A_);
+		if (mul2 == 0) mul2 = mul2C;
 		mul_xi = fp::func_ptr_cast<void (*)(Fp2T&, const Fp2T&)>(op.fp2_mul_xiA_);
 #endif
 		op.fp2_inv = fp2_invW;
@@ -482,6 +486,11 @@ private:
 	{
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
+	}
+	static void mul2C(Fp2T& y, const Fp2T& x)
+	{
+		Fp::mul2(y.a, x.a);
+		Fp::mul2(y.b, x.b);
 	}
 #if 0
 	/*
@@ -607,6 +616,7 @@ template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y
 template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
+template<class Fp_> void (*Fp2T<Fp_>::mul2)(Fp2T& y, const Fp2T& x);
 #endif
 template<class Fp_> void (*Fp2T<Fp_>::mul_xi)(Fp2T& y, const Fp2T& x);
 
