@@ -154,7 +154,8 @@ struct Compress {
 		assert(&nume != &denomi);
 
 		if (g2_.isZero()) {
-			Fp2::add(nume, g4_, g4_);
+//			Fp2::add(nume, g4_, g4_);
+			Fp2::mul2(nume, g4_);
 			nume *= g5_;
 			denomi = g3_;
 		} else {
@@ -163,7 +164,8 @@ struct Compress {
 			Fp2::mul_xi(denomi, nume);
 			Fp2::sqr(nume, g4_);
 			Fp2::sub(t, nume, g3_);
-			t += t;
+//			t += t;
+			Fp2::mul2(t, t);
 			t += nume;
 			Fp2::add(nume, denomi, t);
 			Fp2::divBy4(nume, nume);
@@ -180,7 +182,8 @@ struct Compress {
 		Fp2::sqr(t0, g1_);
 		Fp2::mul(t1, g3_, g4_);
 		t0 -= t1;
-		t0 += t0;
+//		t0 += t0;
+		Fp2::mul2(t0, t0);
 		t0 -= t1;
 		Fp2::mul(t1, g2_, g5_);
 		t0 += t1;
@@ -219,23 +222,27 @@ public:
 		Fp2Dbl::sqrPre(T2, z.g2_);
 		Fp2::mul_xi(t1, t0);
 		z.g2_ += t1;
-		z.g2_ += z.g2_;
+//		z.g2_ += z.g2_;
+		Fp2::mul2(z.g2_, z.g2_);
 		z.g2_ += t1;
 		Fp2::sub(t1, t2, z.g3_);
-		t1 += t1;
+//		t1 += t1;
+		Fp2::mul2(t1, t1);
 		Fp2Dbl::sqrPre(T1, z.g3_);
 		Fp2::add(z.g3_, t1, t2);
 		Fp2Dbl::mul_xi(T0, T1);
 		T0 += T2;
 		Fp2Dbl::mod(t0, T0);
 		Fp2::sub(z.g4_, t0, z.g4_);
-		z.g4_ += z.g4_;
+//		z.g4_ += z.g4_;
+		Fp2::mul2(z.g4_, z.g4_);
 		z.g4_ += t0;
 		Fp2Dbl::addPre(T2, T2, T1);
 		T3 -= T2;
 		Fp2Dbl::mod(t0, T3);
 		z.g5_ += t0;
-		z.g5_ += z.g5_;
+//		z.g5_ += z.g5_;
+		Fp2::mul2(z.g5_, z.g5_);
 		z.g5_ += t0;
 	}
 	static void square_n(Compress& z, int n)
@@ -1077,26 +1084,32 @@ inline void fasterSqr(Fp12& y, const Fp12& x)
 	Fp2 t0, t1;
 	sqrFp4(t0, t1, x0, x1);
 	Fp2::sub(y0, t0, x0);
-	y0 += y0;
+//	y0 += y0;
+	Fp2::mul2(y0, y0);
 	y0 += t0;
 	Fp2::add(y1, t1, x1);
-	y1 += y1;
+//	y1 += y1;
+	Fp2::mul2(y1, y1);
 	y1 += t1;
 	Fp2 t2, t3;
 	sqrFp4(t0, t1, x2, x3);
 	sqrFp4(t2, t3, x4, x5);
 	Fp2::sub(y4, t0, x4);
-	y4 += y4;
+//	y4 += y4;
+	Fp2::mul2(y4, y4);
 	y4 += t0;
 	Fp2::add(y5, t1, x5);
-	y5 += y5;
+//	y5 += y5;
+	Fp2::mul2(y5, y5);
 	y5 += t1;
 	Fp2::mul_xi(t0, t3);
 	Fp2::add(y2, t0, x2);
-	y2 += y2;
+//	y2 += y2;
+	Fp2::mul2(y2, y2);
 	y2 += t0;
 	Fp2::sub(y3, t2, x3);
-	y3 += y3;
+//	y3 += y3;
+	Fp2::mul2(y3, y3);
 	y3 += t2;
 #endif
 }
@@ -1174,13 +1187,15 @@ inline void dblLineWithoutP(Fp6& l, G2& Q)
 	Fp2::sqr(t0, Q.z);
 	Fp2::mul(t4, Q.x, Q.y);
 	Fp2::sqr(t1, Q.y);
-	Fp2::add(t3, t0, t0);
+//	Fp2::add(t3, t0, t0);
+	Fp2::mul2(t3, t0);
 	Fp2::divBy2(t4, t4);
 	Fp2::add(t5, t0, t1);
 	t0 += t3;
 	mul_twist_b(t2, t0);
 	Fp2::sqr(t0, Q.x);
-	Fp2::add(t3, t2, t2);
+//	Fp2::add(t3, t2, t2);
+	Fp2::mul2(t3, t2);
 	t3 += t2;
 	Fp2::sub(Q.x, t1, t3);
 	t3 += t1;
@@ -1598,7 +1613,8 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 inline void makeAdjP(G1& adjP, const G1& P)
 {
 	Fp x2;
-	Fp::add(x2, P.x, P.x);
+//	Fp::add(x2, P.x, P.x);
+	Fp::mul2(x2, P.x);
 	Fp::add(adjP.x, x2, P.x);
 	Fp::neg(adjP.y, P.y);
 	// adjP.z.clear(); // not used

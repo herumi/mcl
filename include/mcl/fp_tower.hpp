@@ -541,7 +541,8 @@ private:
 		const Fp& b = x.b;
 #if 1 // faster than using FpDbl
 		Fp t1, t2, t3;
-		Fp::add(t1, b, b); // 2b
+//		Fp::add(t1, b, b); // 2b
+		Fp::mul2(t1, b);
 		t1 *= a; // 2ab
 		Fp::add(t2, a, b); // a + b
 		Fp::sub(t3, a, b); // a - b
