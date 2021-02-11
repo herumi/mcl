@@ -380,6 +380,10 @@ private:
 		setFuncInfo(prof_, suf, "_shr1", op.fp_shr1, getCurr());
 
 		align(16);
+		op.fp_mul2A_ = gen_mul2();
+		setFuncInfo(prof_, suf, "_mul2", op.fp_mul2A_, getCurr());
+
+		align(16);
 		op.fp_negA_ = gen_fp_neg();
 		setFuncInfo(prof_, suf, "_neg", op.fp_negA_, getCurr());
 		align(16);
@@ -913,6 +917,33 @@ private:
 		}
 		shr(*t0, c);
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
+		return func;
+	}
+	void2u gen_mul2()
+	{
+		if (isFullBit_) return 0;
+		if (!(pn_ == 4 || pn_ == 6)) return 0;
+		void2u func = getCurr<void2u>();
+		const int n = pn_ * 2 - 2;
+		StackFrame sf(this, 2, n);
+		Pack x = sf.t.sub(0, pn_);
+		load_rm(x, sf.p[1]);
+#if 0
+		add_rr(x, x);
+#else
+		for (int i = pn_ - 1; i > 0; i--) {
+			shld(x[i], x[i - 1], 1);
+		}
+		shl(x[0], 1);
+#endif
+		Pack t = sf.t.sub(pn_, n - pn_);
+		t.append(sf.p[1]);
+		t.append(rax); // destroy last
+		mov_rr(t, x);
+		lea(rax, ptr[rip + pL_]);
+		sub_rm(t, rax);
+		cmovc_rr(t, x);
+		store_mr(sf.p[0], t);
 		return func;
 	}
 	void3u gen_mul()
