@@ -924,9 +924,15 @@ private:
 		return func;
 	}
 	// x = x << 1
-	void shl1(const Pack& x)
+	// H = top bit of x
+	void shl1(const Pack& x, const Reg64 *H = 0)
 	{
-		for (int i = x.size() - 1; i > 0; i--) {
+		const int n = (int)x.size();
+		if (H) {
+			mov(*H, x[n - 1]);
+			shr(*H, 63);
+		}
+		for (int i = n - 1; i > 0; i--) {
 			shld(x[i], x[i - 1], 1);
 		}
 		shl(x[0], 1);
@@ -934,25 +940,34 @@ private:
 	/*
 		y = (x >= p[]) x - p[] : x
 	*/
-	void sub_mod(const Pack& y, const Pack& x, const RegExp& p)
+	void sub_p_mod(const Pack& y, const Pack& x, const RegExp& p, const Reg64 *H = 0)
 	{
 		mov_rr(y, x);
 		sub_rm(y, p);
+		if (H) {
+			sbb(*H, 0);
+		}
 		cmovc_rr(y, x);
 	}
 	void2u gen_mul2()
 	{
-		if (isFullBit_ || pn_ > 6) return 0;
+		if (pn_ > 6) return 0;
 		void2u func = getCurr<void2u>();
-		const int n = pn_ * 2 - 1;
-		StackFrame sf(this, 2, n);
+		int n = pn_ * 2 - 1;
+		StackFrame sf(this, 2, n + (isFullBit_ ? 1 : 0));
 		Pack x = sf.t.sub(0, pn_);
-		load_rm(x, sf.p[1]);
-		shl1(x);
 		Pack t = sf.t.sub(pn_, n - pn_);
 		t.append(sf.p[1]);
 		lea(rax, ptr[rip + pL_]);
-		sub_mod(t, x, rax);
+		load_rm(x, sf.p[1]);
+		if (isFullBit_) {
+			const Reg64& H = sf.t[n];
+			shl1(x, &H);
+			sub_p_mod(t, x, rax, &H);
+		} else {
+			shl1(x);
+			sub_p_mod(t, x, rax);
+		}
 		store_mr(sf.p[0], t);
 		return func;
 	}
@@ -960,7 +975,7 @@ private:
 	{
 		if (isFullBit_ || pn_ > 6) return 0;
 		void2u func = getCurr<void2u>();
-		const int n = pn_ * 2;
+		int n = pn_ * 2;
 		StackFrame sf(this, 2, n);
 		Pack x = sf.t.sub(0, pn_);
 		Pack t = sf.t.sub(pn_, pn_);
@@ -968,7 +983,7 @@ private:
 		for (int i = 0; i < 2; i++) {
 			load_rm(x, sf.p[1] + FpByte_ * i);
 			shl1(x);
-			sub_mod(t, x, rax);
+			sub_p_mod(t, x, rax);
 			store_mr(sf.p[0] + FpByte_ * i, t);
 		}
 		return func;

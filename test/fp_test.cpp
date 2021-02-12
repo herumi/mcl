@@ -921,7 +921,6 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 
 void mul2Test()
 {
-	if (Fp::getOp().isFullBit) return;
 	const int x0 = 1234567;
 	Fp x = x0;
 	mpz_class mx = x0;
