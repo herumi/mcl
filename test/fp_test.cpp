@@ -919,6 +919,18 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 }
 #endif
 
+void mul2Test()
+{
+	const int x0 = 1234567;
+	Fp x = x0;
+	mpz_class mx = x0;
+	for (size_t i = 0; i < 100; i++) {
+		Fp::mul2(x, x);
+		mx = (mx * 2) % Fp::getOp().mp;
+		CYBOZU_TEST_EQUAL(mx, x.getMpz());
+	}
+}
+
 void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
@@ -962,6 +974,7 @@ void sub(mcl::fp::Mode mode)
 		const char *pStr = tbl[i];
 		printf("prime=%s\n", pStr);
 		Fp::init(pStr, mode);
+		mul2Test();
 		cstrTest();
 		setStrTest();
 		streamTest();

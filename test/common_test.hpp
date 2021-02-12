@@ -103,8 +103,32 @@ void testMulCT(const G& P)
 	}
 }
 
+void testMul2()
+{
+	puts("testMul2");
+	cybozu::XorShift rg;
+	Fp x1, x2;
+	x1.setByCSPRNG(rg);
+	x2 = x1;
+	for (int i = 0; i < 100; i++) {
+		Fp::mul2(x1, x1);
+		x2 += x2;
+		CYBOZU_TEST_EQUAL(x1, x2);
+	}
+	Fp2 y1;
+	y1.a = x1;
+	y1.b = -x1;
+	Fp2 y2 = y1;
+	for (int i = 0; i < 100; i++) {
+		Fp2::mul2(y1, y1);
+		y2 += y2;
+		CYBOZU_TEST_EQUAL(y1, y2);
+	}
+}
+
 void testCommon(const G1& P, const G2& Q)
 {
+	testMul2();
 	puts("G1");
 	testMulVec(P);
 	puts("G2");

@@ -102,6 +102,8 @@ void testBench(const G1& P, const G2& Q)
 #endif
 	CYBOZU_BENCH_C("Fp::add       ", C3, Fp::add, x, x, y);
 	CYBOZU_BENCH_C("Fp::sub       ", C3, Fp::sub, x, x, y);
+	CYBOZU_BENCH_C("Fp::add 2     ", C3, Fp::add, x, x, x);
+	CYBOZU_BENCH_C("Fp::mul2      ", C3, Fp::mul2, x, x);
 	CYBOZU_BENCH_C("Fp::neg       ", C3, Fp::neg, x, x);
 	CYBOZU_BENCH_C("Fp::mul       ", C3, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
@@ -114,6 +116,8 @@ void testBench(const G1& P, const G2& Q)
 		CYBOZU_BENCH_C("Fr::add       ", C3, Fr::add, a, a, b);
 		CYBOZU_BENCH_C("Fr::sub       ", C3, Fr::sub, a, a, b);
 		CYBOZU_BENCH_C("Fr::neg       ", C3, Fr::neg, a, a);
+		CYBOZU_BENCH_C("Fr::add 2     ", C3, Fr::add, a, a, b);
+		CYBOZU_BENCH_C("Fr::mul2      ", C3, Fr::mul2, a, a);
 		CYBOZU_BENCH_C("Fr::mul       ", C3, Fr::mul, a, a, b);
 		CYBOZU_BENCH_C("Fr::sqr       ", C3, Fr::sqr, a, a);
 		CYBOZU_BENCH_C("Fr::inv       ", C3, invAdd, a, a, b);
@@ -131,6 +135,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp2::add      ", C3, Fp2::add, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::sub      ", C3, Fp2::sub, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::neg      ", C3, Fp2::neg, xx, xx);
+	CYBOZU_BENCH_C("Fp2::mul2     ", C3, Fp2::mul2, xx, xx);
 	CYBOZU_BENCH_C("Fp2::mul      ", C3, Fp2::mul, xx, xx, yy);
 	CYBOZU_BENCH_C("Fp2::mul_xi   ", C3, Fp2::mul_xi, xx, xx);
 	CYBOZU_BENCH_C("Fp2::sqr      ", C3, Fp2::sqr, xx, xx);

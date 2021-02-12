@@ -214,11 +214,13 @@ struct Op {
 	void2u fp_negA_;
 	void3u fp_mulA_;
 	void2u fp_sqrA_;
+	void2u fp_mul2A_;
 	void3u fp2_addA_;
 	void3u fp2_subA_;
 	void2u fp2_negA_;
 	void3u fp2_mulA_;
 	void2u fp2_sqrA_;
+	void2u fp2_mul2A_;
 	void3u fpDbl_addA_;
 	void3u fpDbl_subA_;
 	void2u fpDbl_modA_;
@@ -236,6 +238,7 @@ struct Op {
 	void4u fp_sub;
 	void4u fp_mul;
 	void3u fp_sqr;
+	void3u fp_mul2;
 	void2uOp fp_invOp;
 	void2uIu fp_mulUnit; // fpN1_mod + fp_mulUnitPre
 
@@ -299,11 +302,13 @@ struct Op {
 		fp_negA_ = 0;
 		fp_mulA_ = 0;
 		fp_sqrA_ = 0;
+		fp_mul2A_ = 0;
 		fp2_addA_ = 0;
 		fp2_subA_ = 0;
 		fp2_negA_ = 0;
 		fp2_mulA_ = 0;
 		fp2_sqrA_ = 0;
+		fp2_mul2A_ = 0;
 		fpDbl_addA_ = 0;
 		fpDbl_subA_ = 0;
 		fpDbl_modA_ = 0;
@@ -321,6 +326,7 @@ struct Op {
 		fp_sub = 0;
 		fp_mul = 0;
 		fp_sqr = 0;
+		fp_mul2 = 0;
 		fp_invOp = 0;
 		fp_mulUnit = 0;
 
