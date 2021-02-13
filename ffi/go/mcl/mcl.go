@@ -200,6 +200,16 @@ func (x *Fr) SetLittleEndianMod(buf []byte) error {
 	return nil
 }
 
+// SetBigEndianMod --
+func (x *Fr) SetBigEndianMod(buf []byte) error {
+	// #nosec
+	err := C.mclBnFr_setBigEndianMod(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnFr_setBigEndianMod %x", err)
+	}
+	return nil
+}
+
 // IsEqual --
 func (x *Fr) IsEqual(rhs *Fr) bool {
 	return C.mclBnFr_isEqual(x.getPointer(), rhs.getPointer()) == 1
@@ -366,6 +376,16 @@ func (x *Fp) SetLittleEndianMod(buf []byte) error {
 	err := C.mclBnFp_setLittleEndianMod(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
 	if err != 0 {
 		return fmt.Errorf("err mclBnFp_setLittleEndianMod %x", err)
+	}
+	return nil
+}
+
+// SetBigEndianMod --
+func (x *Fp) SetBigEndianMod(buf []byte) error {
+	// #nosec
+	err := C.mclBnFp_setBigEndianMod(x.getPointer(), unsafe.Pointer(&buf[0]), C.size_t(len(buf)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnFp_setBigEndianMod %x", err)
 	}
 	return nil
 }
