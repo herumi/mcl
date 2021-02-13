@@ -31,6 +31,9 @@ const IO_EC_AFFINE = C.MCLBN_IO_EC_AFFINE
 // IO_EC_PROJ --
 const IO_EC_PROJ = C.MCLBN_IO_EC_PROJ
 
+// IRTF -- for SetMapToMode
+const IRTF = 5 /* MCL_MAP_TO_MODE_HASH_TO_CURVE_07 */
+
 // GetFrUnitSize --
 func GetFrUnitSize() int {
 	return int(C.MCLBN_FR_UNIT_SIZE)
