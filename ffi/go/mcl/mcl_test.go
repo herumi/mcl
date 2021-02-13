@@ -2,6 +2,7 @@ package mcl
 
 import "testing"
 import "fmt"
+import "encoding/hex"
 
 func testBadPointOfG2(t *testing.T) {
 	var Q G2
@@ -261,6 +262,29 @@ func testETHserialize(t *testing.T) {
 	fmt.Printf("AAA x=%s\n", x.GetString(16))
 }
 
+func testMapToG1(t *testing.T) {
+	SetMapToMode(IRTF)
+	fpHex := "0000000000000000000000000000000014406e5bfb9209256a3820879a29ac2f62d6aca82324bf3ae2aa7d3c54792043bd8c791fccdb080c1a52dc68b8b69350"
+	g1Hex := "ad7721bcdb7ce1047557776eb2659a444166dc6dd55c7ca6e240e21ae9aa18f529f04ac31d861b54faf3307692545db7"
+	fpBin, _ := hex.DecodeString(fpHex)
+	var x Fp
+	x.SetBigEndianMod(fpBin)
+	var P1 G1
+	err := MapToG1(&P1, &x)
+	if err != nil {
+		t.Fatal("MapToG1")
+	}
+	g1Str, _ := hex.DecodeString(g1Hex)
+	var P2 G1
+	err = P2.Deserialize(g1Str)
+	if err != nil {
+		t.Fatal("G1.Deserialize")
+	}
+	if !P1.IsEqual(&P2) {
+		t.Fatal("bad MapToG1")
+	}
+}
+
 func TestMclMain(t *testing.T) {
 	t.Logf("GetMaxOpUnitSize() = %d\n", GetMaxOpUnitSize())
 	t.Log("CurveFp254BNb")
@@ -273,5 +297,6 @@ func TestMclMain(t *testing.T) {
 		t.Log("BLS12_381")
 		testMcl(t, BLS12_381)
 		testETHserialize(t)
+		testMapToG1(t)
 	}
 }
