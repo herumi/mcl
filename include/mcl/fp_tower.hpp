@@ -135,6 +135,14 @@ public:
 		if (mulSmallUnit(z, x, y)) return;
 		assert(0); // not supported y
 	}
+	static void sub_p_if_possible(FpDblT& y, const FpDblT& x)
+	{
+		const size_t N = Fp::op_.N;
+		const Unit *xv = &x.v_[N];
+		Unit *yv = &y.v_[N];
+		static const Unit zero[Fp::maxSize] = {};
+		Fp::op_.fp_add(yv, xv, zero, Fp::op_.p);
+	}
 	static void init()
 	{
 		const mcl::fp::Op& op = Fp::getOp();
@@ -684,6 +692,11 @@ struct Fp2DblT {
 #endif
 	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
+	static void sub_p_if_possible(Fp2DblT& y, const Fp2DblT& x)
+	{
+		FpDbl::sub_p_if_possible(y.a, x.a);
+		FpDbl::sub_p_if_possible(y.b, x.b);
+	}
 	static void init()
  	{
 		assert(!Fp::getOp().isFullBit);
@@ -986,6 +999,39 @@ struct Fp6DblT {
 		const Fp2& d = y.a;
 		const Fp2& e = y.b;
 		const Fp2& f = y.c;
+#if 1
+		Fp2Dbl& ZA = z.a;
+		Fp2Dbl& ZB = z.b;
+		Fp2Dbl& ZC = z.c;
+		Fp2 t1, t2;
+		Fp2Dbl BE, CF, AD;
+		Fp2::addPre(t1, b, c);
+		Fp2::addPre(t2, e, f);
+		Fp2Dbl::mulPre(ZA, t1, t2);
+		Fp2::addPre(t1, a, b);
+		Fp2::addPre(t2, e, d);
+		Fp2Dbl::mulPre(ZB, t1, t2);
+		Fp2::addPre(t1, a, c);
+		Fp2::addPre(t2, d, f);
+		Fp2Dbl::mulPre(ZC, t1, t2);
+		Fp2Dbl::mulPre(BE, b, e);
+		Fp2Dbl::mulPre(CF, c, f);
+		Fp2Dbl::mulPre(AD, a, d);
+		Fp2Dbl::sub(ZA, ZA, BE);
+		Fp2Dbl::sub(ZA, ZA, CF);
+//		Fp2Dbl::sub_p_if_possible(ZA, ZA);
+		Fp2Dbl::sub(ZB, ZB, AD);
+		Fp2Dbl::sub(ZB, ZB, BE);
+//		Fp2Dbl::sub_p_if_possible(ZB, ZB);
+		Fp2Dbl::sub(ZC, ZC, AD);
+		Fp2Dbl::sub(ZC, ZC, CF);
+//		Fp2Dbl::sub_p_if_possible(ZC, ZC);
+		Fp2Dbl::mul_xi(ZA, ZA);
+		Fp2Dbl::add(ZA, ZA, AD);
+		Fp2Dbl::mul_xi(CF, CF);
+		Fp2Dbl::add(ZB, ZB, CF);
+		Fp2Dbl::add(ZC, ZC, BE);
+#else
 		Fp2Dbl& za = z.a;
 		Fp2Dbl& zb = z.b;
 		Fp2Dbl& zc = z.c;
@@ -994,7 +1040,7 @@ struct Fp6DblT {
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(zb, c, f);
 
-		Fp2 t1, t2, t3, t4;
+		Fp2 t1, t2;
 		Fp2::add(t1, b, c);
 		Fp2::add(t2, e, f);
 		Fp2Dbl T1;
@@ -1003,16 +1049,16 @@ struct Fp6DblT {
 		Fp2Dbl::sub(T1, T1, zb);
 		Fp2Dbl::mul_xi(T1, T1);
 
-		Fp2::add(t2, a, b);
-		Fp2::add(t3, e, d);
+		Fp2::add(t1, a, b);
+		Fp2::add(t2, e, d);
 		Fp2Dbl T2;
-		Fp2Dbl::mulPre(T2, t2, t3);
+		Fp2Dbl::mulPre(T2, t1, t2);
 		Fp2Dbl::sub(T2, T2, za);
 		Fp2Dbl::sub(T2, T2, BE);
 
-		Fp2::add(t3, a, c);
-		Fp2::add(t4, d, f);
-		Fp2Dbl::mulPre(zc, t3, t4);
+		Fp2::add(t1, a, c);
+		Fp2::add(t2, d, f);
+		Fp2Dbl::mulPre(zc, t1, t2);
 		Fp2Dbl::sub(zc, zc, za);
 		Fp2Dbl::sub(zc, zc, zb);
 
@@ -1020,6 +1066,7 @@ struct Fp6DblT {
 		Fp2Dbl::mul_xi(zb, zb);
 		Fp2Dbl::add(zb, zb, T2);
 		Fp2Dbl::add(zc, zc, BE);
+#endif
 //clk.end();
 	}
 	static void mod(Fp6& y, const Fp6Dbl& x)
