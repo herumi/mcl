@@ -999,7 +999,7 @@ struct Fp6DblT {
 		const Fp2& d = y.a;
 		const Fp2& e = y.b;
 		const Fp2& f = y.c;
-#if 1
+#if 0
 		Fp2Dbl& ZA = z.a;
 		Fp2Dbl& ZB = z.b;
 		Fp2Dbl& ZC = z.c;
