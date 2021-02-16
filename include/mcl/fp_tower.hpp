@@ -135,14 +135,6 @@ public:
 		if (mulSmallUnit(z, x, y)) return;
 		assert(0); // not supported y
 	}
-	static void sub_p_if_possible(FpDblT& y, const FpDblT& x)
-	{
-		const size_t N = Fp::op_.N;
-		const Unit *xv = &x.v_[N];
-		Unit *yv = &y.v_[N];
-		static const Unit zero[Fp::maxSize] = {};
-		Fp::op_.fp_add(yv, xv, zero, Fp::op_.p);
-	}
 	static void init()
 	{
 		const mcl::fp::Op& op = Fp::getOp();
@@ -702,11 +694,6 @@ struct Fp2DblT {
 #endif
 	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
-	static void sub_p_if_possible(Fp2DblT& y, const Fp2DblT& x)
-	{
-		FpDbl::sub_p_if_possible(y.a, x.a);
-		FpDbl::sub_p_if_possible(y.b, x.b);
-	}
 	static void init()
  	{
 		assert(!Fp::getOp().isFullBit);
@@ -1199,7 +1186,6 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		mulVadd(t1, b, a); // bv + a
 		t0 *= t1; // (a + b)(bv + a)
 		Fp6::mul(t1, a, b); // ab
-//		Fp6::add(y.b, t1, t1); // 2ab
 		Fp6::mul2(y.b, t1); // 2ab
 		mulVadd(y.a, t1, t1); // abv + ab
 		Fp6::sub(y.a, t0, y.a);
