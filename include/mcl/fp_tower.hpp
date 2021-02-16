@@ -379,11 +379,16 @@ public:
 	}
 
 	static uint32_t get_xi_a() { return Fp::getOp().xi_a; }
-	static void init()
+	static void init(bool *pb)
 	{
 //		assert(Fp::maxSize <= 256);
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
+		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
+		if ((op.p[op.N - 1] >> (sizeof(fp::Unit) * 8 - 2)) != 0) {
+			*pb = false;
+			return;
+		}
 		mul_xi = 0;
 #ifdef MCL_XBYAK_DIRECT_CALL
 		add = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_addA_);
@@ -440,6 +445,12 @@ public:
 		}
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+	static void init()
+	{
+		bool b;
+		init(&b);
+		if (!b) throw cybozu::Exception("Fp2::init");
+	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
