@@ -915,9 +915,9 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	{
 		Fp2 t1, t2, t3;
 		Fp2::mul(t1, x.a, x.b);
-		t1 += t1; // 2ab
+		Fp2::mul2(t1, t1); // 2ab
 		Fp2::mul(t2, x.b, x.c);
-		t2 += t2; // 2bc
+		Fp2::mul2(t2, t2); // 2bc
 		Fp2::sqr(t3, x.c); // c^2
 		Fp2::add(y.c, x.a, x.c); // a + c, destroy y.c
 		y.c += x.b; // a + b + c
@@ -1170,7 +1170,6 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		Fp6 t1, t2;
 		Fp6::add(t1, a, b);
 		Fp6::add(t2, c, d);
-#if 1
 		Fp6Dbl T, AC, BD;
 		Fp6Dbl::mulPre(AC, a, c);
 		Fp6Dbl::mulPre(BD, b, d);
@@ -1180,15 +1179,6 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		Fp6Dbl::sub(T, T, AC);
 		Fp6Dbl::sub(T, T, BD);
 		Fp6Dbl::mod(z.b, T);
-#else
-		Fp6 ac, bd;
-		t1 *= t2; // (a + b)(c + d)
-		Fp6::mul(ac, a, c);
-		Fp6::mul(bd, b, d);
-		mulVadd(z.a, bd, ac);
-		t1 -= ac;
-		Fp6::sub(z.b, t1, bd);
-#endif
 	}
 	/*
 		x = a + bw, w^2 = v
