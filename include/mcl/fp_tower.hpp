@@ -995,7 +995,11 @@ struct Fp6DblT {
 		Fp2Dbl::sub(z.b, x.b, y.b);
 		Fp2Dbl::sub(z.c, x.c, y.c);
 	}
-	static void sub2(Fp2Dbl& y, const Fp2Dbl& x)
+	/*
+		imaginary part of Fp2Dbl::mul uses only add,
+		so it does not require mod.
+	*/
+	static void specialSub(Fp2Dbl& y, const Fp2Dbl& x)
 	{
 		FpDbl::sub(y.a, y.a, x.a);
 		FpDbl::subPre(y.b, y.b, x.b);
@@ -1006,6 +1010,8 @@ struct Fp6DblT {
 		bf + ce = (b + c)(e + f) - be - cf
 		ae + bd = (a + b)(e + d) - ad - be
 		af + cd = (a + c)(d + f) - ad - cf
+		assum p < W/4 where W = 1 << (sizeof(Unit) * 8 * N)
+		then (b + c)(e + f) < 4p^2 < pW
 	*/
 	static void mulPre(Fp6DblT& z, const Fp6& x, const Fp6& y)
 	{
@@ -1016,7 +1022,6 @@ struct Fp6DblT {
 		const Fp2& d = y.a;
 		const Fp2& e = y.b;
 		const Fp2& f = y.c;
-#if 1
 		Fp2Dbl& ZA = z.a;
 		Fp2Dbl& ZB = z.b;
 		Fp2Dbl& ZC = z.c;
@@ -1034,53 +1039,17 @@ struct Fp6DblT {
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(CF, c, f);
 		Fp2Dbl::mulPre(AD, a, d);
-		sub2(ZA, BE);
-		sub2(ZA, CF);
-		sub2(ZB, AD);
-		sub2(ZB, BE);
-		sub2(ZC, AD);
-		sub2(ZC, CF);
+		specialSub(ZA, BE);
+		specialSub(ZA, CF);
+		specialSub(ZB, AD);
+		specialSub(ZB, BE);
+		specialSub(ZC, AD);
+		specialSub(ZC, CF);
 		Fp2Dbl::mul_xi(ZA, ZA);
 		Fp2Dbl::add(ZA, ZA, AD);
 		Fp2Dbl::mul_xi(CF, CF);
 		Fp2Dbl::add(ZB, ZB, CF);
 		Fp2Dbl::add(ZC, ZC, BE);
-#else
-		Fp2Dbl& za = z.a;
-		Fp2Dbl& zb = z.b;
-		Fp2Dbl& zc = z.c;
-		Fp2Dbl BE;
-		Fp2Dbl::mulPre(za, a, d);
-		Fp2Dbl::mulPre(BE, b, e);
-		Fp2Dbl::mulPre(zb, c, f);
-
-		Fp2 t1, t2;
-		Fp2::add(t1, b, c);
-		Fp2::add(t2, e, f);
-		Fp2Dbl T1;
-		Fp2Dbl::mulPre(T1, t1, t2);
-		Fp2Dbl::sub(T1, T1, BE);
-		Fp2Dbl::sub(T1, T1, zb);
-		Fp2Dbl::mul_xi(T1, T1);
-
-		Fp2::add(t1, a, b);
-		Fp2::add(t2, e, d);
-		Fp2Dbl T2;
-		Fp2Dbl::mulPre(T2, t1, t2);
-		Fp2Dbl::sub(T2, T2, za);
-		Fp2Dbl::sub(T2, T2, BE);
-
-		Fp2::add(t1, a, c);
-		Fp2::add(t2, d, f);
-		Fp2Dbl::mulPre(zc, t1, t2);
-		Fp2Dbl::sub(zc, zc, za);
-		Fp2Dbl::sub(zc, zc, zb);
-
-		Fp2Dbl::add(za, za, T1);
-		Fp2Dbl::mul_xi(zb, zb);
-		Fp2Dbl::add(zb, zb, T2);
-		Fp2Dbl::add(zc, zc, BE);
-#endif
 //clk.end();
 	}
 	static void mod(Fp6& y, const Fp6Dbl& x)

@@ -57,6 +57,7 @@ typedef Fp12 GT;
 
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp2DblT<Fp> Fp2Dbl;
+typedef mcl::Fp6DblT<Fp> Fp6Dbl;
 
 inline void Frobenius(Fp2& y, const Fp2& x)
 {
