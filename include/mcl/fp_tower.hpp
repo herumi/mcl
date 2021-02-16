@@ -560,7 +560,6 @@ private:
 		const Fp& b = x.b;
 #if 1 // faster than using FpDbl
 		Fp t1, t2, t3;
-//		Fp::add(t1, b, b); // 2b
 		Fp::mul2(t1, b);
 		t1 *= a; // 2ab
 		Fp::add(t2, a, b); // a + b
@@ -905,6 +904,12 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp2::neg(y.b, x.b);
 		Fp2::neg(y.c, x.c);
 	}
+	static void mul2(Fp6T& y, const Fp6T& x)
+	{
+		Fp2::mul2(y.a, x.a);
+		Fp2::mul2(y.b, x.b);
+		Fp2::mul2(y.c, x.c);
+	}
 	/*
 		x = a + bv + cv^2, v^3 = xi
 		x^2 = (a^2 + 2bc xi) + (c^2 xi + 2ab)v + (b^2 + 2ac)v^2
@@ -1194,7 +1199,8 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		mulVadd(t1, b, a); // bv + a
 		t0 *= t1; // (a + b)(bv + a)
 		Fp6::mul(t1, a, b); // ab
-		Fp6::add(y.b, t1, t1); // 2ab
+//		Fp6::add(y.b, t1, t1); // 2ab
+		Fp6::mul2(y.b, t1); // 2ab
 		mulVadd(y.a, t1, t1); // abv + ab
 		Fp6::sub(y.a, t0, y.a);
 	}
