@@ -978,6 +978,7 @@ template<class Fp>
 struct Fp6DblT {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
+	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	typedef fp::Unit Unit;
@@ -993,6 +994,11 @@ struct Fp6DblT {
 		Fp2Dbl::sub(z.a, x.a, y.a);
 		Fp2Dbl::sub(z.b, x.b, y.b);
 		Fp2Dbl::sub(z.c, x.c, y.c);
+	}
+	static void sub2(Fp2Dbl& y, const Fp2Dbl& x)
+	{
+		FpDbl::sub(y.a, y.a, x.a);
+		FpDbl::subPre(y.b, y.b, x.b);
 	}
 	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
@@ -1010,7 +1016,7 @@ struct Fp6DblT {
 		const Fp2& d = y.a;
 		const Fp2& e = y.b;
 		const Fp2& f = y.c;
-#if 0
+#if 1
 		Fp2Dbl& ZA = z.a;
 		Fp2Dbl& ZB = z.b;
 		Fp2Dbl& ZC = z.c;
@@ -1028,15 +1034,12 @@ struct Fp6DblT {
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(CF, c, f);
 		Fp2Dbl::mulPre(AD, a, d);
-		Fp2Dbl::sub(ZA, ZA, BE);
-		Fp2Dbl::sub(ZA, ZA, CF);
-//		Fp2Dbl::sub_p_if_possible(ZA, ZA);
-		Fp2Dbl::sub(ZB, ZB, AD);
-		Fp2Dbl::sub(ZB, ZB, BE);
-//		Fp2Dbl::sub_p_if_possible(ZB, ZB);
-		Fp2Dbl::sub(ZC, ZC, AD);
-		Fp2Dbl::sub(ZC, ZC, CF);
-//		Fp2Dbl::sub_p_if_possible(ZC, ZC);
+		sub2(ZA, BE);
+		sub2(ZA, CF);
+		sub2(ZB, AD);
+		sub2(ZB, BE);
+		sub2(ZC, AD);
+		sub2(ZC, CF);
 		Fp2Dbl::mul_xi(ZA, ZA);
 		Fp2Dbl::add(ZA, ZA, AD);
 		Fp2Dbl::mul_xi(CF, CF);
