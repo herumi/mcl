@@ -3,13 +3,12 @@ LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp ecdsa_test.cpp conversion_test.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
 TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cpp
 TEST_SRC+=she_c256_test.cpp she_c384_test.cpp she_c384_256_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
-TEST_SRC+=ecdsa_c_test.cpp
 TEST_SRC+=modp_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
@@ -66,9 +65,8 @@ SHE384_LIB=$(LIB_DIR)/libmclshe384.a
 SHE384_SLIB=$(LIB_DIR)/lib$(SHE384_SNAME).$(LIB_SUF)
 SHE384_256_LIB=$(LIB_DIR)/libmclshe384_256.a
 SHE384_256_SLIB=$(LIB_DIR)/lib$(SHE384_256_SNAME).$(LIB_SUF)
-ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 SHE_LIB_ALL=$(SHE256_LIB) $(SHE256_SLIB) $(SHE384_LIB) $(SHE384_SLIB) $(SHE384_256_LIB) $(SHE384_256_SLIB)
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE_LIB_ALL) $(ECDSA_LIB)
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE_LIB_ALL)
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -102,7 +100,6 @@ BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
 SHE384_256_OBJ=$(OBJ_DIR)/she_c384_256.o
-ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 FUNC_LIST=src/func.list
 ifeq ($(findstring $(OS),mingw64/cygwin),)
   MCL_USE_LLVM?=1
@@ -190,9 +187,6 @@ $(SHE384_SLIB): $(SHE384_OBJ) $(MCL_LIB)
 
 $(SHE384_256_SLIB): $(SHE384_256_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(SHE384_256_OBJ) $(MCL_LIB) -shared $(LDFLAGS) $(SHE384_256_SLIB_LDFLAGS)
-
-$(ECDSA_LIB): $(ECDSA_OBJ)
-	$(AR) $@ $(ECDSA_OBJ)
 
 $(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(BN256_SLIB_LDFLAGS)
@@ -329,9 +323,6 @@ $(EXE_DIR)/she_c384_test.exe: $(OBJ_DIR)/she_c384_test.o $(SHE384_LIB) $(MCL_LIB
 $(EXE_DIR)/she_c384_256_test.exe: $(OBJ_DIR)/she_c384_256_test.o $(SHE384_256_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE384_256_LIB) $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
-	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
-
 $(OBJ_DIR)/modp_test.o: test/modp_test.cpp
 	$(PRE)$(CXX) -c $< -o $@ -MMD -MP -MF $(@:.o=.d) -DMCL_USE_VINT -DMCL_MAX_BIT_SIZE=384 -DMCL_VINT_64BIT_PORTABLE -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I./include -O2 $(CFLAGS_WARN)
 
@@ -360,12 +351,6 @@ ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   SHE_C_DEP+=src/base64m.ll
 endif
-
-../ecdsa-wasm/ecdsa_c.js: src/ecdsa_c.cpp src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
-	emcc -o $@ src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions
-
-ecdsa-wasm:
-	$(MAKE) ../ecdsa-wasm/ecdsa_c.js
 
 # test
 bin/emu:

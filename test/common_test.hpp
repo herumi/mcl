@@ -126,8 +126,44 @@ void testMul2()
 	}
 }
 
+void testABCDsub(const Fp2& a, const Fp2& b, const Fp2& c, const Fp2& d)
+{
+	Fp2 t1, t2;
+	Fp2::addPre(t1, a, b);
+	Fp2::addPre(t2, c, d);
+	Fp2Dbl T1, AC, BD;
+	Fp2Dbl::mulPre(T1, t1, t2);
+	Fp2Dbl::mulPre(AC, a, c);
+	Fp2Dbl::mulPre(BD, b, d);
+	Fp6Dbl::specialSub(T1, AC);
+	Fp6Dbl::specialSub(T1, BD);
+	Fp2Dbl::mod(t1, T1);
+	CYBOZU_TEST_EQUAL(t1, a * d + b * c);
+}
+
+void testABCD()
+{
+	puts("testMisc1");
+	// (a + b)(c + d) - ac - bd = ad + bc
+	Fp2 a[4];
+	a[0].a = -1;
+	a[0].b = -1;
+	a[1] = a[0];
+	a[2] = a[0];
+	a[3] = a[0];
+	testABCDsub(a[0], a[1], a[2], a[3]);
+	for (int i = 0; i < 100; i++) {
+		for (int j = 0; j < 4; j++) {
+			a[j].a.setByCSPRNG();
+			a[j].b.setByCSPRNG();
+		}
+		testABCDsub(a[0], a[1], a[2], a[3]);
+	}
+}
+
 void testCommon(const G1& P, const G2& Q)
 {
+	testABCD();
 	testMul2();
 	puts("G1");
 	testMulVec(P);

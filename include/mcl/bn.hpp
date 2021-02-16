@@ -57,6 +57,7 @@ typedef Fp12 GT;
 
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp2DblT<Fp> Fp2Dbl;
+typedef mcl::Fp6DblT<Fp> Fp6Dbl;
 
 inline void Frobenius(Fp2& y, const Fp2& x)
 {
@@ -889,7 +890,8 @@ struct Param {
 		*pb = true;
 		return;
 #endif
-		Fp2::init();
+		Fp2::init(pb);
+		if (!*pb) return;
 		const Fp2 xi(cp.xi_a, 1);
 		g2 = Fp2::get_gTbl()[0];
 		g3 = Fp2::get_gTbl()[3];
