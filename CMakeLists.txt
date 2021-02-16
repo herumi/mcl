@@ -11,6 +11,11 @@ option(
 	"max bit size for Fp"
 	384
 )
+option(
+	MCL_STATIC_LIB
+	"build static library"
+	OFF
+)
 if(MSVC)
 	option(
 		MCL_DOWNLOAD_SOURCE
@@ -320,7 +325,11 @@ endif()
 
 # mclbnXXX
 foreach(bit IN ITEMS 256 384 384_256)
-	add_library(mclbn${bit} SHARED src/bn_c${bit}.cpp)
+	if (MCL_STATIC_LIB)
+		add_library(mclbn${bit} STATIC src/bn_c${bit}.cpp)
+	else()
+		add_library(mclbn${bit} SHARED src/bn_c${bit}.cpp)
+	endif()
 	add_library(mcl::mclbn${bit} ALIAS mclbn${bit})
 	set_target_properties(mclbn${bit} PROPERTIES
 		CXX_STANDARD 11
