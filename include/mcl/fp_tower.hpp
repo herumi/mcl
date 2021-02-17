@@ -905,24 +905,30 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	*/
 	static void sqr(Fp6T& y, const Fp6T& x)
 	{
-		Fp2 t1, t2, t3;
-		Fp2::mul(t1, x.a, x.b);
-		Fp2::mul2(t1, t1); // 2ab
-		Fp2::mul(t2, x.b, x.c);
-		Fp2::mul2(t2, t2); // 2bc
-		Fp2::sqr(t3, x.c); // c^2
-		Fp2::add(y.c, x.a, x.c); // a + c, destroy y.c
-		y.c += x.b; // a + b + c
-		Fp2::sqr(y.b, y.c); // (a + b + c)^2, destroy y.b
-		y.b -= t2; // (a + b + c)^2 - 2bc
-		Fp2::mul_xi(t2, t2); // 2bc xi
-		Fp2::sqr(y.a, x.a); // a^2, destroy y.a
-		y.b -= y.a; // (a + b + c)^2 - 2bc - a^2
-		y.a += t2; // a^2 + 2bc xi
-		Fp2::sub(y.c, y.b, t3); // (a + b + c)^2 - 2bc - a^2 - c^2
-		Fp2::mul_xi(y.b, t3); // c^2 xi
-		y.b += t1; // c^2 xi + 2ab
-		y.c -= t1; // b^2 + 2ac
+		const Fp2& a = x.a;
+		const Fp2& b = x.b;
+		const Fp2& c = x.c;
+		Fp2 t;
+		Fp2Dbl BC2, AB2, AA, CC, T;
+		Fp2::mul2(t, b);
+		Fp2Dbl::mulPre(BC2, t, c); // 2bc
+		Fp2Dbl::mulPre(AB2, t, a); // 2ab
+		Fp2Dbl::sqrPre(AA, a);
+		Fp2Dbl::sqrPre(CC, c);
+		Fp2::add(t, a, b);
+		Fp2::add(t, t, c);
+		Fp2Dbl::sqrPre(T, t); // (a + b + c)^2
+		Fp2Dbl::sub(T, T, AA);
+		Fp2Dbl::sub(T, T, BC2);
+		Fp2Dbl::sub(T, T, CC);
+		Fp2Dbl::sub(T, T, AB2);
+		Fp2Dbl::mod(y.c, T);
+		Fp2Dbl::mul_xi(BC2, BC2);
+		Fp2Dbl::add(AA, AA, BC2);
+		Fp2Dbl::mod(y.a, AA);
+		Fp2Dbl::mul_xi(CC, CC);
+		Fp2Dbl::add(CC, CC, AB2);
+		Fp2Dbl::mod(y.b, CC);
 	}
 	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y);
 	/*
