@@ -3662,6 +3662,7 @@ private:
 	{
 		if (isFullBit_) return 0;
 		if (op_->xi_a != 1) return 0;
+		if (pn_ > 6) return 0;
 		void2u func = getCurr<void2u>();
 		// y = (x.a - x.b, x.a + x.b)
 		StackFrame sf(this, 2, pn_ * 2, FpByte_ * 2);
@@ -3686,14 +3687,14 @@ private:
 		sub_rm(t1, xb);
 		store_mr(ya, t1);
 		// high : x.a = (x.a - x.b) % p
-		load_rm(t1, xa + FpByte_);
-		sub_rm(t1, xb + FpByte_, true);
+		load_rm(t1, xa + pn_ * 8);
+		sub_rm(t1, xb + pn_ * 8, true);
 		lea(rax, ptr[rip + pL_]);
 		load_rm(t2, rax); // t2 = p
 		sbb(rax, rax);
 		andPack(t2, rax);
 		add_rr(t1, t2); // mod p
-		store_mr(ya + FpByte_, t1);
+		store_mr(ya + pn_ * 8, t1);
 
 		// low : y.b = [rsp]
 		for (int i = 0; i < pn_; i++) {
@@ -3701,10 +3702,10 @@ private:
 			mov(ptr[yb + i * 8], rax);
 		}
 		// high : y.b = (x.a + x.b) % p
-		load_rm(t1, rsp + FpByte_);
+		load_rm(t1, rsp + pn_ * 8);
 		lea(rax, ptr[rip + pL_]);
 		sub_p_mod(t2, t1, rax);
-		store_mr(yb + FpByte_, t2);
+		store_mr(yb + pn_ * 8, t2);
 		return func;
 	}
 	void gen_fp2_add4()
