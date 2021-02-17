@@ -16,6 +16,7 @@ class FpDblT : public fp::Serializable<FpDblT<Fp> > {
 	Unit v_[Fp::maxSize * 2];
 public:
 	static size_t getUnitSize() { return Fp::op_.N * 2; }
+	const fp::Unit *getUnit() const { return v_; }
 	void dump() const
 	{
 		const size_t n = getUnitSize();
@@ -662,25 +663,26 @@ struct Fp2DblT {
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
-	static void mul_xi(Fp2DblT& y, const Fp2DblT& x)
+	static void mul_xi_1C(Fp2DblT& y, const Fp2DblT& x)
+	{
+		FpDbl t;
+		FpDbl::add(t, x.a, x.b);
+		FpDbl::sub(y.a, x.a, x.b);
+		y.b = t;
+	}
+	static void mul_xi_genericC(Fp2DblT& y, const Fp2DblT& x)
 	{
 		const uint32_t xi_a = Fp2::get_xi_a();
-		if (xi_a == 1) {
-			FpDbl t;
-			FpDbl::add(t, x.a, x.b);
-			FpDbl::sub(y.a, x.a, x.b);
-			y.b = t;
-		} else {
-			FpDbl t;
-			FpDbl::mulUnit(t, x.a, xi_a);
-			FpDbl::sub(t, t, x.b);
-			FpDbl::mulUnit(y.b, x.b, xi_a);
-			FpDbl::add(y.b, y.b, x.a);
-			y.a = t;
-		}
+		FpDbl t;
+		FpDbl::mulUnit(t, x.a, xi_a);
+		FpDbl::sub(t, t, x.b);
+		FpDbl::mulUnit(y.b, x.b, xi_a);
+		FpDbl::add(y.b, y.b, x.a);
+		y.a = t;
 	}
 	static void (*mulPre)(Fp2DblT&, const Fp2&, const Fp2&);
 	static void (*sqrPre)(Fp2DblT&, const Fp2&);
+	static void (*mul_xi)(Fp2DblT&, const Fp2DblT&);
 	static void mod(Fp2& y, const Fp2DblT& x)
 	{
 		FpDbl::mod(y.a, x.a);
@@ -715,6 +717,18 @@ struct Fp2DblT {
 			} else {
 				sqrPre = fp2Dbl_sqrPreW<false>;
 			}
+		}
+		const uint32_t xi_a = Fp2::get_xi_a();
+		switch (xi_a) {
+		case 1:
+			mul_xi = mul_xi_1C;
+			if (op.fp2Dbl_mul_xiA_) {
+				mul_xi = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2DblT&)>(op.fp2Dbl_mul_xiA_);
+			}
+			break;
+		default:
+			mul_xi = mul_xi_genericC;
+			break;
 		}
 	}
 	/*
@@ -770,6 +784,7 @@ struct Fp2DblT {
 
 template<class Fp> void (*Fp2DblT<Fp>::mulPre)(Fp2DblT&, const Fp2T<Fp>&, const Fp2T<Fp>&);
 template<class Fp> void (*Fp2DblT<Fp>::sqrPre)(Fp2DblT&, const Fp2T<Fp>&);
+template<class Fp> void (*Fp2DblT<Fp>::mul_xi)(Fp2DblT<Fp>&, const Fp2DblT<Fp>&);
 
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g2[Fp2T<Fp>::gN];
