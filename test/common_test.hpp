@@ -176,7 +176,7 @@ void testFp2Dbl_mul_xi1()
 		a2.setByCSPRNG(rg);
 		FpDbl::mulPre(x.b, a1, a2);
 		Fp2Dbl ok;
-		Fp2Dbl::mul_xi_1C(x, x);
+		Fp2Dbl::mul_xi_1C(ok, x);
 		Fp2Dbl::mul_xi(x, x);
 		CYBOZU_TEST_EQUAL_ARRAY(ok.a.getUnit(), x.a.getUnit(), ok.a.getUnitSize());
 		CYBOZU_TEST_EQUAL_ARRAY(ok.b.getUnit(), x.b.getUnit(), ok.b.getUnitSize());
