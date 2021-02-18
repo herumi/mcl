@@ -154,7 +154,7 @@ if(MSVC)
 else()
 	# Set compiler flags for warnings
 	set(MCL_COMPILE_OPTIONS -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align
-		-Wwrite-strings -Wfloat-equal -Wpointer-arith -march=native)
+		-Wwrite-strings -Wfloat-equal -Wpointer-arith -DNDEBUG -O3 -fPIC)
 
 	target_compile_options(mcl PRIVATE ${MCL_COMPILE_OPTIONS})
 	target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
