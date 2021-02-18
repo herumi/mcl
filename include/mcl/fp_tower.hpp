@@ -16,6 +16,7 @@ class FpDblT : public fp::Serializable<FpDblT<Fp> > {
 	Unit v_[Fp::maxSize * 2];
 public:
 	static size_t getUnitSize() { return Fp::op_.N * 2; }
+	const fp::Unit *getUnit() const { return v_; }
 	void dump() const
 	{
 		const size_t n = getUnitSize();
@@ -662,25 +663,26 @@ struct Fp2DblT {
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
-	static void mul_xi(Fp2DblT& y, const Fp2DblT& x)
+	static void mul_xi_1C(Fp2DblT& y, const Fp2DblT& x)
+	{
+		FpDbl t;
+		FpDbl::add(t, x.a, x.b);
+		FpDbl::sub(y.a, x.a, x.b);
+		y.b = t;
+	}
+	static void mul_xi_genericC(Fp2DblT& y, const Fp2DblT& x)
 	{
 		const uint32_t xi_a = Fp2::get_xi_a();
-		if (xi_a == 1) {
-			FpDbl t;
-			FpDbl::add(t, x.a, x.b);
-			FpDbl::sub(y.a, x.a, x.b);
-			y.b = t;
-		} else {
-			FpDbl t;
-			FpDbl::mulUnit(t, x.a, xi_a);
-			FpDbl::sub(t, t, x.b);
-			FpDbl::mulUnit(y.b, x.b, xi_a);
-			FpDbl::add(y.b, y.b, x.a);
-			y.a = t;
-		}
+		FpDbl t;
+		FpDbl::mulUnit(t, x.a, xi_a);
+		FpDbl::sub(t, t, x.b);
+		FpDbl::mulUnit(y.b, x.b, xi_a);
+		FpDbl::add(y.b, y.b, x.a);
+		y.a = t;
 	}
 	static void (*mulPre)(Fp2DblT&, const Fp2&, const Fp2&);
 	static void (*sqrPre)(Fp2DblT&, const Fp2&);
+	static void (*mul_xi)(Fp2DblT&, const Fp2DblT&);
 	static void mod(Fp2& y, const Fp2DblT& x)
 	{
 		FpDbl::mod(y.a, x.a);
@@ -715,6 +717,18 @@ struct Fp2DblT {
 			} else {
 				sqrPre = fp2Dbl_sqrPreW<false>;
 			}
+		}
+		const uint32_t xi_a = Fp2::get_xi_a();
+		switch (xi_a) {
+		case 1:
+			mul_xi = mul_xi_1C;
+			if (op.fp2Dbl_mul_xiA_) {
+				mul_xi = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2DblT&)>(op.fp2Dbl_mul_xiA_);
+			}
+			break;
+		default:
+			mul_xi = mul_xi_genericC;
+			break;
 		}
 	}
 	/*
@@ -770,6 +784,7 @@ struct Fp2DblT {
 
 template<class Fp> void (*Fp2DblT<Fp>::mulPre)(Fp2DblT&, const Fp2T<Fp>&, const Fp2T<Fp>&);
 template<class Fp> void (*Fp2DblT<Fp>::sqrPre)(Fp2DblT&, const Fp2T<Fp>&);
+template<class Fp> void (*Fp2DblT<Fp>::mul_xi)(Fp2DblT<Fp>&, const Fp2DblT<Fp>&);
 
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g2[Fp2T<Fp>::gN];
@@ -905,24 +920,30 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	*/
 	static void sqr(Fp6T& y, const Fp6T& x)
 	{
-		Fp2 t1, t2, t3;
-		Fp2::mul(t1, x.a, x.b);
-		Fp2::mul2(t1, t1); // 2ab
-		Fp2::mul(t2, x.b, x.c);
-		Fp2::mul2(t2, t2); // 2bc
-		Fp2::sqr(t3, x.c); // c^2
-		Fp2::add(y.c, x.a, x.c); // a + c, destroy y.c
-		y.c += x.b; // a + b + c
-		Fp2::sqr(y.b, y.c); // (a + b + c)^2, destroy y.b
-		y.b -= t2; // (a + b + c)^2 - 2bc
-		Fp2::mul_xi(t2, t2); // 2bc xi
-		Fp2::sqr(y.a, x.a); // a^2, destroy y.a
-		y.b -= y.a; // (a + b + c)^2 - 2bc - a^2
-		y.a += t2; // a^2 + 2bc xi
-		Fp2::sub(y.c, y.b, t3); // (a + b + c)^2 - 2bc - a^2 - c^2
-		Fp2::mul_xi(y.b, t3); // c^2 xi
-		y.b += t1; // c^2 xi + 2ab
-		y.c -= t1; // b^2 + 2ac
+		const Fp2& a = x.a;
+		const Fp2& b = x.b;
+		const Fp2& c = x.c;
+		Fp2 t;
+		Fp2Dbl BC2, AB2, AA, CC, T;
+		Fp2::mul2(t, b);
+		Fp2Dbl::mulPre(BC2, t, c); // 2bc
+		Fp2Dbl::mulPre(AB2, t, a); // 2ab
+		Fp2Dbl::sqrPre(AA, a);
+		Fp2Dbl::sqrPre(CC, c);
+		Fp2::add(t, a, b);
+		Fp2::add(t, t, c);
+		Fp2Dbl::sqrPre(T, t); // (a + b + c)^2
+		Fp2Dbl::sub(T, T, AA);
+		Fp2Dbl::sub(T, T, BC2);
+		Fp2Dbl::sub(T, T, CC);
+		Fp2Dbl::sub(T, T, AB2);
+		Fp2Dbl::mod(y.c, T);
+		Fp2Dbl::mul_xi(BC2, BC2);
+		Fp2Dbl::add(AA, AA, BC2);
+		Fp2Dbl::mod(y.a, AA);
+		Fp2Dbl::mul_xi(CC, CC);
+		Fp2Dbl::add(CC, CC, AB2);
+		Fp2Dbl::mod(y.b, CC);
 	}
 	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y);
 	/*

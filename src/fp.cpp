@@ -264,6 +264,9 @@ struct SetFpDbl<N, true> {
 template<size_t N, bool isFullBit>
 void Mul2(Unit *y, const Unit *x, const Unit *p)
 {
+#ifdef MCL_USE_LLVM
+	Add<N, isFullBit, Ltag>::f(y, x, x, p);
+#else
 	const size_t bit = 1;
 	const size_t rBit = sizeof(Unit) * 8 - bit;
 	Unit tmp[N];
@@ -285,6 +288,7 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 	if (c) {
 		copyC<N>(y, tmp);
 	}
+#endif
 }
 
 template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>

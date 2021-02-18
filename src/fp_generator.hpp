@@ -458,6 +458,10 @@ private:
 		if (op.fp2Dbl_sqrPreA_) setFuncInfo(prof_, suf, "2Dbl_sqrPre", op.fp2Dbl_sqrPreA_, getCurr());
 
 		align(16);
+		op.fp2Dbl_mul_xiA_ = gen_fp2Dbl_mul_xi();
+		if (op.fp2Dbl_mul_xiA_) setFuncInfo(prof_, suf, "2Dbl_mul_xi", op.fp2Dbl_mul_xiA_, getCurr());
+
+		align(16);
 		op.fp2_mulA_ = gen_fp2_mul();
 		setFuncInfo(prof_, suf, "2_mul", op.fp2_mulA_, getCurr());
 
@@ -3173,6 +3177,13 @@ private:
 			}
 		}
 	}
+	// y[i] &= t
+	void andPack(const Pack& y, const Reg64& t)
+	{
+		for (int i = 0; i < (int)y.size(); i++) {
+			and_(y[i], t);
+		}
+	}
 	/*
 		[rdx:x:t0] <- py[1:0] * x
 		destroy x, t
@@ -3645,6 +3656,56 @@ private:
 		lea(gp1, ptr [t1]);
 		lea(gp2, ptr [t2]);
 		call(mulPreL);
+		return func;
+	}
+	void2u gen_fp2Dbl_mul_xi()
+	{
+		if (isFullBit_) return 0;
+		if (op_->xi_a != 1) return 0;
+		if (pn_ > 6) return 0;
+		void2u func = getCurr<void2u>();
+		// y = (x.a - x.b, x.a + x.b)
+		StackFrame sf(this, 2, pn_ * 2, FpByte_ * 2);
+		Pack t1 = sf.t.sub(0, pn_);
+		Pack t2 = sf.t.sub(pn_, pn_);
+		const RegExp& ya = sf.p[0];
+		const RegExp& yb = sf.p[0] + FpByte_ * 2;
+		const RegExp& xa = sf.p[1];
+		const RegExp& xb = sf.p[1] + FpByte_ * 2;
+		// [rsp] = x.a + x.b
+		for (int i = 0; i < pn_ * 2; i++) {
+			mov(rax, ptr[xa + i * 8]);
+			if (i == 0) {
+				add(rax, ptr[xb + i * 8]);
+			} else {
+				adc(rax, ptr[xb + i * 8]);
+			}
+			mov(ptr[rsp + i * 8], rax);
+		}
+		// low : x.a =  x.a - x.b
+		load_rm(t1, xa);
+		sub_rm(t1, xb);
+		store_mr(ya, t1);
+		// high : x.a = (x.a - x.b) % p
+		load_rm(t1, xa + pn_ * 8);
+		sub_rm(t1, xb + pn_ * 8, true);
+		lea(rax, ptr[rip + pL_]);
+		load_rm(t2, rax); // t2 = p
+		sbb(rax, rax);
+		andPack(t2, rax);
+		add_rr(t1, t2); // mod p
+		store_mr(ya + pn_ * 8, t1);
+
+		// low : y.b = [rsp]
+		for (int i = 0; i < pn_; i++) {
+			mov(rax, ptr[rsp + i * 8]);
+			mov(ptr[yb + i * 8], rax);
+		}
+		// high : y.b = (x.a + x.b) % p
+		load_rm(t1, rsp + pn_ * 8);
+		lea(rax, ptr[rip + pL_]);
+		sub_p_mod(t2, t1, rax);
+		store_mr(yb + pn_ * 8, t2);
 		return func;
 	}
 	void gen_fp2_add4()

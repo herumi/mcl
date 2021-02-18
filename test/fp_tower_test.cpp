@@ -378,6 +378,10 @@ void testIo()
 void benchFp2()
 {
 	puts(__FUNCTION__);
+#ifndef NDEBUG
+	puts("skip bench in debug");
+	return;
+#endif
 	Fp2 x, y;
 	x.a.setStr("4");
 	x.b.setStr("464652165165");

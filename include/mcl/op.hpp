@@ -226,6 +226,7 @@ struct Op {
 	void2u fpDbl_modA_;
 	void3u fp2Dbl_mulPreA_;
 	void2u fp2Dbl_sqrPreA_;
+	void2u fp2Dbl_mul_xiA_;
 	size_t maxN;
 	size_t N;
 	size_t bitSize;
@@ -314,6 +315,7 @@ struct Op {
 		fpDbl_modA_ = 0;
 		fp2Dbl_mulPreA_ = 0;
 		fp2Dbl_sqrPreA_ = 0;
+		fp2Dbl_mul_xiA_ = 0;
 		maxN = 0;
 		N = 0;
 		bitSize = 0;
