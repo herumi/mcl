@@ -3,6 +3,10 @@
 void benchAddDblG1()
 {
 	puts("benchAddDblG1");
+#ifndef NDEBUG
+	puts("skip in debug");
+	return;
+#endif
 	const int C = 100000;
 	G1 P1, P2, P3;
 	hashAndMapToG1(P1, "a");
@@ -29,6 +33,10 @@ void benchAddDblG1()
 void benchAddDblG2()
 {
 	puts("benchAddDblG2");
+#ifndef NDEBUG
+	puts("skip in debug");
+	return;
+#endif
 	const int C = 100000;
 	G2 P1, P2, P3;
 	hashAndMapToG2(P1, "a");
@@ -61,6 +69,10 @@ void invAdd(T& out, const T& x, const T& y)
 
 void testBench(const G1& P, const G2& Q)
 {
+#ifndef NDEBUG
+	puts("testBench skip in debug");
+	return;
+#endif
 	G1 Pa;
 	G2 Qa;
 	Fp12 e1, e2;

@@ -5,7 +5,11 @@ CYBOZU_TEST_AUTO(paillier)
 {
 	using namespace mcl::paillier;
 	SecretKey sec;
+#ifndef NDEBUG
+	sec.init(512);
+#else
 	sec.init(2048);
+#endif
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	mpz_class m1("12342340928409"), m2("23049820498204");
