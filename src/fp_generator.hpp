@@ -252,6 +252,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	Label mulPreL;
 	Label fpDbl_modL;
 	Label fp_mulL;
+	Label fp_addL;
 	const uint64_t *p_;
 	uint64_t rp_;
 	int pn_;
@@ -490,12 +491,13 @@ private:
 	*/
 	void gen_raw_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Reg64& t, int n)
 	{
-		mov(t, ptr [px]);
-		add(t, ptr [py]);
-		mov(ptr [pz], t);
-		for (int i = 1; i < n; i++) {
+		for (int i = 0; i < n; i++) {
 			mov(t, ptr [px + i * 8]);
-			adc(t, ptr [py + i * 8]);
+			if (i == 0) {
+				add(t, ptr [py + i * 8]);
+			} else {
+				adc(t, ptr [py + i * 8]);
+			}
 			mov(ptr [pz + i * 8], t);
 		}
 	}
@@ -659,19 +661,12 @@ private:
 		const Reg64 *fullReg = isFullBit_ ? &t[pn_ * 2] : 0;
 		load_rm(p0, px);
 		add_rm(p0, py, withCarry);
-		mov_rr(p1, p0);
 		if (isFullBit_) {
 			mov(*fullReg, 0);
 			adc(*fullReg, 0);
 		}
 		lea(rax, ptr[rip+pL_]);
-		sub_rm(p1, rax);
-		if (fullReg) {
-			sbb(*fullReg, 0);
-		}
-		for (size_t i = 0; i < p1.size(); i++) {
-			cmovc(p1[i], p0[i]);
-		}
+		sub_p_mod(p1, p0, rax, fullReg);
 		store_mr(pz, p1);
 	}
 	/*
@@ -738,8 +733,36 @@ private:
 	L(exit);
 		store_mr(pz, t1);
 	}
+	void gen_raw_fp_add6_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
+	{
+		const Pack& t1 = t.sub(0, pn_);
+		const Pack& t2 = t.sub(pn_, pn_);
+		load_rm(t1, px);
+		add_rm(t1, py, withCarry);
+		if (H) {
+			mov(*H, 0);
+			adc(*H, 0);
+		}
+		sub_p_mod(t2, t1, rip + pL_, H);
+		store_mr(pz, t2);
+	}
 	void gen_fp_add6()
 	{
+#if 1
+		const int n = pn_ * 2 - 2;
+		StackFrame sf(this, 3, n | UseRDX, 0, false);
+		call(fp_addL);
+		sf.close();
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rdx);
+		t.append(rax);
+	L(fp_addL);
+		gen_raw_fp_add6_2(pz, px, py, t);
+		ret();
+#else
 		/*
 			cmov is faster than jmp
 		*/
@@ -752,10 +775,33 @@ private:
 		t2.append(rax);
 		t2.append(px); // destory after used
 		gen_raw_fp_add6(pz, px, py, t1, t2, false);
+#endif
 	}
 	void3u gen_fp_add()
 	{
+		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return 0;
 		void3u func = getCurr<void3u>();
+#if 1
+		int n = pn_ * 2 - 2;
+		if (isFullBit_) {
+			n++;
+		}
+		StackFrame sf(this, 3, n | UseRDX, 0, false);
+		call(fp_addL);
+		sf.close();
+
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rdx);
+		t.append(rax);
+		const Reg64 *H = isFullBit_ ? &t[t.size() - 1] : 0;
+	L(fp_addL);
+		gen_raw_fp_add6_2(pz, px, py, t, false, H);
+		ret();
+		return func;
+#else
 		if (pn_ <= 4) {
 			gen_fp_add_le4();
 			return func;
@@ -799,6 +845,7 @@ private:
 #endif
 		outLocalLabel();
 		return func;
+#endif
 	}
 	void3u gen_fpDbl_add()
 	{
@@ -944,7 +991,8 @@ private:
 	/*
 		y = (x >= p[]) x - p[] : x
 	*/
-	void sub_p_mod(const Pack& y, const Pack& x, const RegExp& p, const Reg64 *H = 0)
+	template<class ADDR>
+	void sub_p_mod(const Pack& y, const Pack& x, const ADDR& p, const Reg64 *H = 0)
 	{
 		mov_rr(y, x);
 		sub_rm(y, p);
@@ -3673,15 +3721,7 @@ private:
 		const RegExp& xa = sf.p[1];
 		const RegExp& xb = sf.p[1] + FpByte_ * 2;
 		// [rsp] = x.a + x.b
-		for (int i = 0; i < pn_ * 2; i++) {
-			mov(rax, ptr[xa + i * 8]);
-			if (i == 0) {
-				add(rax, ptr[xb + i * 8]);
-			} else {
-				adc(rax, ptr[xb + i * 8]);
-			}
-			mov(ptr[rsp + i * 8], rax);
-		}
+		gen_raw_add(rsp, xa, xb, rax, pn_ * 2);
 		// low : x.a =  x.a - x.b
 		load_rm(t1, xa);
 		sub_rm(t1, xb);
