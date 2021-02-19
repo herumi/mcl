@@ -650,25 +650,6 @@ private:
 		}
 	}
 	/*
-		pz[] = px[] + py[] mod p[]
-		use rax, t
-	*/
-	void gen_raw_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
-	{
-		const Pack& p0 = t.sub(0, pn_);
-		const Pack& p1 = t.sub(pn_, pn_);
-		const Reg64 *fullReg = isFullBit_ ? &t[pn_ * 2] : 0;
-		load_rm(p0, px);
-		add_rm(p0, py, withCarry);
-		if (isFullBit_) {
-			mov(*fullReg, 0);
-			adc(*fullReg, 0);
-		}
-		lea(rax, ptr[rip+pL_]);
-		sub_p_mod(p1, p0, rax, fullReg);
-		store_mr(pz, p1);
-	}
-	/*
 		pz[] = px[] - py[] mod p[]
 		use rax, t
 	*/
@@ -687,16 +668,6 @@ private:
 		add_rr(p0, p1);
 		store_mr(pz, p0);
 	}
-	void gen_fp_add_le4()
-	{
-		assert(pn_ <= 4);
-		const int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
-		StackFrame sf(this, 3, tn);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		gen_raw_fp_add(pz, px, py, sf.t, false);
-	}
 	void gen_fp_sub_le4()
 	{
 		assert(pn_ <= 4);
@@ -707,32 +678,7 @@ private:
 		const Reg64& py = sf.p[2];
 		gen_raw_fp_sub(pz, px, py, sf.t, false);
 	}
-	/*
-		add(pz, px, py);
-		size of t1, t2 == 6
-		destroy t0, t1
-	*/
-	void gen_raw_fp_add6(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t1, const Pack& t2, bool withCarry)
-	{
-		load_rm(t1, px);
-		add_rm(t1, py, withCarry);
-		Label exit;
-		if (isFullBit_) {
-			jnc("@f");
-			lea(t2[0], ptr[rip+pL_]); // t2[0] is not used
-			sub_rm(t1, t2[0]);
-			jmp(exit);
-		L("@@");
-		}
-		mov_rr(t2, t1);
-		sub_rm(t2, rip + pL_);
-		for (int i = 0; i < 6; i++) {
-			cmovnc(t1[i], t2[i]);
-		}
-	L(exit);
-		store_mr(pz, t1);
-	}
-	void gen_raw_fp_add_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
+	void gen_raw_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
 	{
 		const Pack& t1 = t.sub(0, pn_);
 		const Pack& t2 = t.sub(pn_, pn_);
@@ -761,7 +707,7 @@ private:
 		Pack t = sf.t;
 		t.append(rax);
 		const Reg64 *H = isFullBit_ ? &rax : 0;
-		gen_raw_fp_add_2(pz, px, py, t, false, H);
+		gen_raw_fp_add(pz, px, py, t, false, H);
 		return func;
 	}
 	void3u gen_fpDbl_add()
@@ -780,7 +726,7 @@ private:
 		t.append(rax);
 		const Reg64 *H = isFullBit_ ? &rax : 0;
 		gen_raw_add(pz, px, py, rax, pn_);
-		gen_raw_fp_add_2(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, t, true, H);
+		gen_raw_fp_add(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, t, true, H);
 		return func;
 	}
 	void3u gen_fpDbl_sub()
@@ -2584,7 +2530,7 @@ private:
 			g_adc(z[i], x[i], t);
 		}
 	}
-	void add_m_m(const RegExp& mz, const RegExp& mx, const Reg64& t, int n)
+	void add_mm(const RegExp& mz, const RegExp& mx, const Reg64& t, int n)
 	{
 		for (int i = 0; i < n; i++) {
 			mov(t, ptr [mx + i * 8]);
@@ -2843,7 +2789,7 @@ private:
 		sub_m_mp_m(t3, t2, rr, t);
 		jnc("@f");
 		// pr[] += p[]
-		add_m_m(t3, t2, t, pn_);
+		add_mm(t3, t2, t, pn_);
 	L("@@");
 		outLocalLabel();
 	}
@@ -3683,8 +3629,8 @@ private:
 		Pack t = sf.t;
 		t.append(rax);
 		const Reg64 *H = isFullBit_ ? &rax : 0;
-		gen_raw_fp_add_2(pz, px, py, t, false, H);
-		gen_raw_fp_add_2(pz + FpByte_, px + FpByte_, py + FpByte_, t, false, H);
+		gen_raw_fp_add(pz, px, py, t, false, H);
+		gen_raw_fp_add(pz + FpByte_, px + FpByte_, py + FpByte_, t, false, H);
 		return func;
 	}
 	void3u gen_fp2_sub()
@@ -3876,6 +3822,8 @@ private:
 	{
 		if (isFullBit_) return 0;
 		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
+		bool nocarry = (p_[pn_ - 1] >> 62) == 0;
+		if (!nocarry) return 0;
 		void2u func = getCurr<void2u>();
 
 		const RegExp y = rsp + 0 * 8;
@@ -3883,39 +3831,23 @@ private:
 		const Ext1 t1(FpByte_, rsp, 2 * 8);
 		const Ext1 t2(FpByte_, rsp, t1.next);
 		const Ext1 t3(FpByte_, rsp, t2.next);
-		bool nocarry = (p_[pn_ - 1] >> 62) == 0;
 		StackFrame sf(this, 3, 10 | UseRDX, t3.next);
 		mov(ptr [y], gp0);
 		mov(ptr [x], gp1);
 		// t1 = b + b
 		lea(gp0, ptr [t1]);
-		if (nocarry) {
-			for (int i = 0; i < pn_; i++) {
-				mov(rax, ptr [gp1 + FpByte_ + i * 8]);
-				if (i == 0) {
-					add(rax, rax);
-				} else {
-					adc(rax, rax);
-				}
-				mov(ptr [gp0 + i * 8], rax);
-			}
-		} else {
-			if (pn_ == 4) {
-				gen_raw_fp_add(gp0, gp1 + FpByte_, gp1 + FpByte_, sf.t, false);
-			} else {
-				assert(pn_ == 6);
-				Pack t = sf.t.sub(6, 4);
-				t.append(rax);
-				t.append(rdx);
-				gen_raw_fp_add6(gp0, gp1 + FpByte_, gp1 + FpByte_, sf.t.sub(0, 6), t, false);
-			}
+		{
+			Pack t = sf.t.sub(0, pn_);
+			load_rm(t, gp1 + FpByte_);
+			shl1(t);
+			store_mr(gp0, t);
 		}
 		// t1 = 2ab
 		mov(gp1, gp0);
 		mov(gp2, ptr [x]);
 		call(fp_mulL);
 
-		if (nocarry) {
+		{
 			Pack t = sf.t;
 			t.append(rdx);
 			t.append(gp1);
@@ -3939,20 +3871,6 @@ private:
 			add_rm(a, rax);
 			sub_rr(a, b);
 			store_mr(t3, a);
-		} else {
-			mov(gp0, ptr [x]);
-			if (pn_ == 4) {
-				gen_raw_fp_add(t2, gp0, gp0 + FpByte_, sf.t, false);
-				gen_raw_fp_sub(t3, gp0, gp0 + FpByte_, sf.t, false);
-			} else {
-				assert(pn_ == 6);
-				Pack p1 = sf.t.sub(0, 6);
-				Pack p2 = sf.t.sub(6, 4);
-				p2.append(rax);
-				p2.append(rdx);
-				gen_raw_fp_add6(t2, gp0, gp0 + FpByte_, p1, p2, false);
-				gen_raw_fp_sub6(t3, gp0, gp0 + FpByte_, 0, p1, false);
-			}
 		}
 
 		mov(gp0, ptr [y]);
