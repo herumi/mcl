@@ -252,7 +252,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	Label mulPreL;
 	Label fpDbl_modL;
 	Label fp_mulL;
-	Label fp_addL;
 	const uint64_t *p_;
 	uint64_t rp_;
 	int pn_;
@@ -733,7 +732,7 @@ private:
 	L(exit);
 		store_mr(pz, t1);
 	}
-	void gen_raw_fp_add6_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
+	void gen_raw_fp_add_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
 	{
 		const Pack& t1 = t.sub(0, pn_);
 		const Pack& t2 = t.sub(pn_, pn_);
@@ -750,18 +749,14 @@ private:
 	{
 #if 1
 		const int n = pn_ * 2 - 2;
-		StackFrame sf(this, 3, n | UseRDX, 0, false);
-		call(fp_addL);
-		sf.close();
+		StackFrame sf(this, 3, n | UseRDX);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
 		t.append(rdx);
 		t.append(rax);
-	L(fp_addL);
-		gen_raw_fp_add6_2(pz, px, py, t);
-		ret();
+		gen_raw_fp_add_2(pz, px, py, t);
 #else
 		/*
 			cmov is faster than jmp
@@ -782,24 +777,19 @@ private:
 		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return 0;
 		void3u func = getCurr<void3u>();
 #if 1
-		int n = pn_ * 2 - 2;
+		int n = pn_ * 2 - 1;
 		if (isFullBit_) {
 			n++;
 		}
-		StackFrame sf(this, 3, n | UseRDX, 0, false);
-		call(fp_addL);
-		sf.close();
+		StackFrame sf(this, 3, n);
 
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
-		t.append(rdx);
 		t.append(rax);
-		const Reg64 *H = isFullBit_ ? &t[t.size() - 1] : 0;
-	L(fp_addL);
-		gen_raw_fp_add6_2(pz, px, py, t, false, H);
-		ret();
+		const Reg64 *H = isFullBit_ ? &rax : 0;
+		gen_raw_fp_add_2(pz, px, py, t, false, H);
 		return func;
 #else
 		if (pn_ <= 4) {
@@ -849,6 +839,24 @@ private:
 	}
 	void3u gen_fpDbl_add()
 	{
+#if 1
+		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return 0;
+		void3u func = getCurr<void3u>();
+		int n = pn_ * 2 - 1;
+		if (isFullBit_) {
+			n++;
+		}
+		StackFrame sf(this, 3, n);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rax);
+		const Reg64 *H = isFullBit_ ? &rax : 0;
+		gen_raw_add(pz, px, py, rax, pn_);
+		gen_raw_fp_add_2(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, t, true, H);
+		return func;
+#else
 		void3u func = getCurr<void3u>();
 		if (pn_ <= 4) {
 			int tn = pn_ * 2 + (isFullBit_ ? 1 : 0);
@@ -873,6 +881,7 @@ private:
 			return func;
 		}
 		return 0;
+#endif
 	}
 	void3u gen_fpDbl_sub()
 	{
@@ -3226,7 +3235,7 @@ private:
 		}
 	}
 	// y[i] &= t
-	void andPack(const Pack& y, const Reg64& t)
+	void and_pr(const Pack& y, const Reg64& t)
 	{
 		for (int i = 0; i < (int)y.size(); i++) {
 			and_(y[i], t);
@@ -3732,7 +3741,7 @@ private:
 		lea(rax, ptr[rip + pL_]);
 		load_rm(t2, rax); // t2 = p
 		sbb(rax, rax);
-		andPack(t2, rax);
+		and_pr(t2, rax);
 		add_rr(t1, t2); // mod p
 		store_mr(ya + pn_ * 8, t1);
 
@@ -3784,6 +3793,24 @@ private:
 	}
 	void3u gen_fp2_add()
 	{
+#if 1
+		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return 0;
+		void3u func = getCurr<void3u>();
+		int n = pn_ * 2 - 1;
+		if (isFullBit_) {
+			n++;
+		}
+		StackFrame sf(this, 3, n);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rax);
+		const Reg64 *H = isFullBit_ ? &rax : 0;
+		gen_raw_fp_add_2(pz, px, py, t, false, H);
+		gen_raw_fp_add_2(pz + FpByte_, px + FpByte_, py + FpByte_, t, false, H);
+		return func;
+#else
 		void3u func = getCurr<void3u>();
 		if (pn_ == 4 && !isFullBit_) {
 			gen_fp2_add4();
@@ -3794,6 +3821,7 @@ private:
 			return func;
 		}
 		return 0;
+#endif
 	}
 	void3u gen_fp2_sub()
 	{
