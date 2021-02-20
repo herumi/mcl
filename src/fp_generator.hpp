@@ -3599,17 +3599,6 @@ private:
 		store_mr(yb + pn_ * 8, t2);
 		return func;
 	}
-	void gen_fp2_sub6()
-	{
-		StackFrame sf(this, 3, 5);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		Pack t = sf.t;
-		t.append(rax);
-		gen_raw_fp_sub6(pz, px, py, 0, t, false);
-		gen_raw_fp_sub6(pz, px, py, FpByte_, t, false);
-	}
 	void3u gen_fp2_add()
 	{
 		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return 0;
@@ -3631,23 +3620,18 @@ private:
 	}
 	void3u gen_fp2_sub()
 	{
+		if (pn_ > 6) return 0;
 		void3u func = getCurr<void3u>();
-		if (pn_ == 4 && !isFullBit_) {
-			gen_fp2_sub4();
-			return func;
-		}
-		if (pn_ == 6 && !isFullBit_) {
-			gen_fp2_sub6();
-			return func;
-		}
-		return 0;
-	}
-	void gen_fp2_sub4()
-	{
-		assert(!isFullBit_);
-		StackFrame sf(this, 3, 8);
-		gen_raw_fp_sub(sf.p[0], sf.p[1], sf.p[2], sf.t, false);
-		gen_raw_fp_sub(sf.p[0] + FpByte_, sf.p[1] + FpByte_, sf.p[2] + FpByte_, sf.t, false);
+		int n = pn_ * 2 - 1;
+		StackFrame sf(this, 3, n);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rax);
+		gen_raw_fp_sub_2(pz, px, py, t, false);
+		gen_raw_fp_sub_2(pz + FpByte_, px + FpByte_, py + FpByte_, t, false);
+		return func;
 	}
 	/*
 		for only xi_a = 1
