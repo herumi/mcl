@@ -755,6 +755,21 @@ private:
 		}
 		return 0;
 	}
+	void gen_raw_fp_sub_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
+	{
+		Pack t1 = t.sub(0, pn_);
+		Pack t2 = t.sub(pn_, pn_);
+		load_rm(t1, px);
+		sub_rm(t1, py, withCarry);
+		push(t1[0]);
+		lea(t1[0], ptr[rip + pL_]);
+		load_rm(t2, t1[0]);
+		sbb(t1[0], t1[0]);
+		and_pr(t2, t1[0]);
+		pop(t1[0]);
+		add_rr(t1, t2);
+		store_mr(pz, t1);
+	}
 	void gen_raw_fp_sub6(const RegExp& pz, const RegExp& px, const RegExp& py, int offset, const Pack& t, bool withCarry)
 	{
 		load_rm(t, px + offset);
@@ -767,39 +782,22 @@ private:
 	L("@@");
 		store_mr(pz + offset, t);
 	}
-	void gen_fp_sub6()
+	void3u gen_fp_sub()
 	{
-		StackFrame sf(this, 3, 4);
+		if (pn_ > 6) return 0;
+		void3u func = getCurr<void3u>();
+		/*
+			micro-benchmark of jmp is faster than and-mask
+			but it's slower for pairings
+		*/
+		int n = pn_ * 2 - 1;
+		StackFrame sf(this, 3, n);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
 		t.append(rax);
-		t.append(px); // |t| = 6
-		gen_raw_fp_sub6(pz, px, py, 0, t, false);
-	}
-	void3u gen_fp_sub()
-	{
-		void3u func = getCurr<void3u>();
-		if (pn_ <= 4) {
-			gen_fp_sub_le4();
-			return func;
-		}
-		if (pn_ == 6) {
-			gen_fp_sub6();
-			return func;
-		}
-		StackFrame sf(this, 3);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		const Xbyak::CodeGenerator::LabelType jmpMode = pn_ < 5 ? T_AUTO : T_NEAR;
-		Label exit;
-		gen_raw_sub(pz, px, py, rax, pn_);
-		jnc(exit, jmpMode);
-		lea(px, ptr[rip+pL_]);
-		gen_raw_add(pz, pz, px, rax, pn_);
-	L(exit);
+		gen_raw_fp_sub_2(pz, px, py, t, false);
 		return func;
 	}
 	void2u gen_fp_neg()
@@ -3513,8 +3511,6 @@ private:
 		// almost same for pn_ == 6
 		if (pn_ != 4) return 0;
 		void2u func = getCurr<void2u>();
-		// almost same for pn_ == 6
-		if (pn_ != 4) return 0;
 		const RegExp y = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
 		const Ext1 t1(FpByte_, rsp, 2 * 8);
