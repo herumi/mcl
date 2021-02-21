@@ -642,7 +642,7 @@ private:
 	/*
 		pz[] = px[]
 	*/
-	void gen_mov(const RegExp& pz, const RegExp& px, const Reg64& t, int n)
+	void mov_mm(const RegExp& pz, const RegExp& px, const Reg64& t, int n)
 	{
 		for (int i = 0; i < n; i++) {
 			mov(t, ptr [px + i * 8]);
@@ -3553,24 +3553,11 @@ private:
 		// [rsp] = x.a + x.b
 		gen_raw_add(rsp, xa, xb, rax, pn_ * 2);
 		// low : x.a =  x.a - x.b
-		load_rm(t1, xa);
-		sub_rm(t1, xb);
-		store_mr(ya, t1);
-		// high : x.a = (x.a - x.b) % p
-		load_rm(t1, xa + pn_ * 8);
-		sub_rm(t1, xb + pn_ * 8, true);
-		lea(rax, ptr[rip + pL_]);
-		load_rm(t2, rax); // t2 = p
-		sbb(rax, rax);
-		and_pr(t2, rax);
-		add_rr(t1, t2); // mod p
-		store_mr(ya + pn_ * 8, t1);
+		gen_raw_sub(ya, xa, xb, rax, pn_);
+		gen_raw_fp_sub_2(ya + pn_ * 8, xa + pn_ * 8, xb + pn_ * 8, sf.t, true);
 
 		// low : y.b = [rsp]
-		for (int i = 0; i < pn_; i++) {
-			mov(rax, ptr[rsp + i * 8]);
-			mov(ptr[yb + i * 8], rax);
-		}
+		mov_mm(yb, rsp, rax, pn_);
 		// high : y.b = (x.a + x.b) % p
 		load_rm(t1, rsp + pn_ * 8);
 		lea(rax, ptr[rip + pL_]);
