@@ -3834,10 +3834,7 @@ private:
 		lea(gp2, ptr [t3]);
 		call(fp_mulL);
 		mov(gp0, ptr [y]);
-		for (int i = 0; i < pn_; i++) {
-			mov(rax, ptr [(RegExp)t1 + i * 8]);
-			mov(ptr [gp0 + FpByte_ + i * 8], rax);
-		}
+		mov_mm(gp0 + FpByte_, t1, rax, pn_);
 		return func;
 	}
 };
