@@ -668,16 +668,6 @@ private:
 		add_rr(p0, p1);
 		store_mr(pz, p0);
 	}
-	void gen_fp_sub_le4()
-	{
-		assert(pn_ <= 4);
-		const int tn = pn_ * 2;
-		StackFrame sf(this, 3, tn);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		gen_raw_fp_sub(pz, px, py, sf.t, false);
-	}
 	void gen_raw_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
 	{
 		const Pack& t1 = t.sub(0, pn_);
@@ -731,29 +721,18 @@ private:
 	}
 	void3u gen_fpDbl_sub()
 	{
+		if (pn_ > 6) return 0;
 		void3u func = getCurr<void3u>();
-		if (pn_ <= 4) {
-			int tn = pn_ * 2;
-			StackFrame sf(this, 3, tn);
-			const Reg64& pz = sf.p[0];
-			const Reg64& px = sf.p[1];
-			const Reg64& py = sf.p[2];
-			gen_raw_sub(pz, px, py, rax, pn_);
-			gen_raw_fp_sub(pz + 8 * pn_, px + 8 * pn_, py + 8 * pn_, sf.t, true);
-			return func;
-		} else if (pn_ == 6) {
-			StackFrame sf(this, 3, 4);
-			const Reg64& pz = sf.p[0];
-			const Reg64& px = sf.p[1];
-			const Reg64& py = sf.p[2];
-			gen_raw_sub(pz, px, py, rax, pn_);
-			Pack t = sf.t;
-			t.append(rax);
-			t.append(px);
-			gen_raw_fp_sub6(pz, px, py, pn_ * 8, t, true);
-			return func;
-		}
-		return 0;
+		int n = pn_ * 2 - 1;
+		StackFrame sf(this, 3, n);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		Pack t = sf.t;
+		t.append(rax);
+		gen_raw_sub(pz, px, py, rax, pn_);
+		gen_raw_fp_sub_2(pz + pn_ * 8, px + pn_ * 8, py + pn_ * 8, t, true);
+		return func;
 	}
 	void gen_raw_fp_sub_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
 	{
