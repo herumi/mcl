@@ -252,6 +252,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	Label mulPreL;
 	Label fpDbl_modL;
 	Label fp_mulL;
+	Label fp2Dbl_mulPreL;
 	const uint64_t *p_;
 	uint64_t rp_;
 	int pn_;
@@ -3427,6 +3428,11 @@ private:
 		void3u func = getCurr<void3u>();
 		bool embedded = pn_ == 4;
 
+		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+		call(fp2Dbl_mulPreL);
+		sf.close();
+
+	L(fp2Dbl_mulPreL);
 		const RegExp z = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
 		const RegExp y = rsp + 2 * 8;
@@ -3434,7 +3440,7 @@ private:
 		const Ext1 t(FpByte_, rsp, s.next);
 		const Ext1 d2(FpByte_ * 2, rsp, t.next);
 		const int SS = d2.next;
-		StackFrame sf(this, 3, 10 | UseRDX, SS);
+		sub(rsp, SS);
 		mov(ptr[z], gp0);
 		mov(ptr[x], gp1);
 		mov(ptr[y], gp2);
@@ -3493,6 +3499,8 @@ private:
 			const RegExp& d2H = (RegExp)d2 + pn_ * 8;
 			gen_raw_fp_sub_2(d0H, d0H, d2H, t, true);
 		}
+		add(rsp, SS);
+		ret();
 		return func;
 	}
 	void2u gen_fp2Dbl_sqrPre()
@@ -3705,83 +3713,20 @@ private:
 		if (isFullBit_) return 0;
 		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
 		void3u func = getCurr<void3u>();
-		bool embedded = pn_ == 4;
-
-		const RegExp z = rsp + 0 * 8;
-		const RegExp x = rsp + 1 * 8;
-		const RegExp y = rsp + 2 * 8;
-		const Ext1 s(FpByte_, rsp, 3 * 8);
-		const Ext1 t(FpByte_, rsp, s.next);
-		const Ext1 d0(FpByte_ * 2, rsp, t.next);
-		const Ext1 d1(FpByte_ * 2, rsp, d0.next);
-		const Ext1 d2(FpByte_ * 2, rsp, d1.next);
-		const int SS = d2.next;
-		StackFrame sf(this, 3, 10 | UseRDX, SS);
-		mov(ptr[z], gp0);
-		mov(ptr[x], gp1);
-		mov(ptr[y], gp2);
-		// s = a + b
-		gen_raw_add(s, gp1, gp1 + FpByte_, rax, pn_);
-		// t = c + d
-		gen_raw_add(t, gp2, gp2 + FpByte_, rax, pn_);
-		// d1 = (a + b)(c + d)
-		if (embedded) {
-			mulPre4(d1, s, t, sf.t);
-		} else {
-			lea(gp0, ptr [d1]);
-			lea(gp1, ptr [s]);
-			lea(gp2, ptr [t]);
-			call(mulPreL);
-		}
-		// d0 = a c
-		mov(gp1, ptr [x]);
-		mov(gp2, ptr [y]);
-		if (embedded) {
-			mulPre4(d0, gp1, gp2, sf.t);
-		} else {
-			lea(gp0, ptr [d0]);
-			call(mulPreL);
-		}
-		// d2 = b d
-		mov(gp1, ptr [x]);
-		add(gp1, FpByte_);
-		mov(gp2, ptr [y]);
-		add(gp2, FpByte_);
-		if (embedded) {
-			mulPre4(d2, gp1, gp2, sf.t);
-		} else {
-			lea(gp0, ptr [d2]);
-			call(mulPreL);
-		}
-
-		{
-			Pack t = sf.t;
-			if (pn_ == 4) {
-				t = t.sub(0, pn_ * 2);
-			} else if (pn_ == 6) {
-				t.append(gp0);
-				t.append(gp2);
-			}
-			assert(t.size() == pn_ * 2);
-
-			load_rm(t, (RegExp)d1);
-			sub_rm(t, (RegExp)d0); // d1 -= d0
-			sub_rm(t, (RegExp)d2); // d1 -= d2
-			store_mr((RegExp)d1, t);
-
-			gen_raw_sub(d0, d0, d2, rax, pn_);
-			const RegExp& d0H = (RegExp)d0 + pn_ * 8;
-			const RegExp& d2H = (RegExp)d2 + pn_ * 8;
-			gen_raw_fp_sub_2(d0H, d0H, d2H, t, true);
-		}
-
-		mov(gp0, ptr [z]);
-		lea(gp1, ptr[d0]);
+		int stackSize = 8 + FpByte_ * 4;
+		StackFrame sf(this, 3, 10 | UseRDX, stackSize);
+		const RegExp d = rsp + 8;
+		mov(ptr[rsp], gp0);
+		lea(gp0, ptr [d]);
+		// d <- x * y
+		call(fp2Dbl_mulPreL);
+		mov(gp0, ptr [rsp]);
+		lea(gp1, ptr [d]);
 		call(fpDbl_modL);
 
-		mov(gp0, ptr [z]);
+		mov(gp0, ptr [rsp]);
 		add(gp0, FpByte_);
-		lea(gp1, ptr[d1]);
+		lea(gp1, ptr[d + FpByte_ * 2]);
 		call(fpDbl_modL);
 		return func;
 	}
