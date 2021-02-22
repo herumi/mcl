@@ -3423,10 +3423,9 @@ private:
 	void3u gen_fp2Dbl_mulPre()
 	{
 		if (isFullBit_) return 0;
-//		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
-		// almost same for pn_ == 6
-		if (pn_ != 4) return 0;
+		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
 		void3u func = getCurr<void3u>();
+		bool embedded = pn_ == 4;
 
 		const RegExp z = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
@@ -3436,51 +3435,63 @@ private:
 		const Ext1 d2(FpByte_ * 2, rsp, t.next);
 		const int SS = d2.next;
 		StackFrame sf(this, 3, 10 | UseRDX, SS);
-		mov(ptr [z], gp0);
-		mov(ptr [x], gp1);
-		mov(ptr [y], gp2);
+		mov(ptr[z], gp0);
+		mov(ptr[x], gp1);
+		mov(ptr[y], gp2);
 		// s = a + b
 		gen_raw_add(s, gp1, gp1 + FpByte_, rax, pn_);
 		// t = c + d
 		gen_raw_add(t, gp2, gp2 + FpByte_, rax, pn_);
 		// d1 = (a + b)(c + d)
-		mov(gp0, ptr [z]);
-		add(gp0, FpByte_ * 2); // d1
-		lea(gp1, ptr [s]);
-		lea(gp2, ptr [t]);
-		call(mulPreL);
-		// d0 = a c
+		lea(gp0, ptr [gp0 + FpByte_ * 2]);
+		if (embedded) {
+			mulPre4(gp0, s, t, sf.t);
+		} else {
+			lea(gp1, ptr [s]);
+			lea(gp2, ptr [t]);
+			call(mulPreL);
+		}
+		// d0 = z.a = a c
 		mov(gp0, ptr [z]);
 		mov(gp1, ptr [x]);
 		mov(gp2, ptr [y]);
-		call(mulPreL);
-
-		// d2 = b d
-		lea(gp0, ptr [d2]);
+		if (embedded) {
+			mulPre4(gp0, gp1, gp2, sf.t);
+		} else {
+			call(mulPreL);
+		}
+		// d2 = z.b = b d
 		mov(gp1, ptr [x]);
 		add(gp1, FpByte_);
 		mov(gp2, ptr [y]);
 		add(gp2, FpByte_);
-		call(mulPreL);
-
-		mov(gp0, ptr [z]);
-		add(gp0, FpByte_ * 2); // d1
-		mov(gp1, gp0);
-		mov(gp2, ptr [z]);
-		gen_raw_sub(gp0, gp1, gp2, rax, pn_ * 2);
-		lea(gp2, ptr [d2]);
-		gen_raw_sub(gp0, gp1, gp2, rax, pn_ * 2);
-
-		mov(gp0, ptr [z]);
-		mov(gp1, gp0);
-		lea(gp2, ptr [d2]);
-
-		gen_raw_sub(gp0, gp1, gp2, rax, pn_);
-		if (pn_ == 4) {
-			gen_raw_fp_sub(gp0 + pn_ * 8, gp1 + pn_ * 8, gp2 + pn_ * 8, Pack(gt0, gt1, gt2, gt3, gt4, gt5, gt6, gt7), true);
+		if (embedded) {
+			mulPre4(d2, gp1, gp2, sf.t);
 		} else {
-			assert(pn_ == 6);
-			gen_raw_fp_sub6(gp0, gp1, gp2, pn_ * 8, sf.t.sub(0, 6), true);
+			lea(gp0, ptr [d2]);
+			call(mulPreL);
+		}
+
+		{
+			Pack t = sf.t;
+			if (pn_ == 4) {
+				t = t.sub(0, pn_ * 2);
+			} else if (pn_ == 6) {
+				t.append(gp1);
+				t.append(gp2);
+			}
+			assert(t.size() == pn_ * 2);
+
+			mov(gp0, ptr [z]);
+			load_rm(t, gp0 + FpByte_ * 2);
+			sub_rm(t, gp0); // d1 -= d0
+			sub_rm(t, (RegExp)d2); // d1 -= d2
+			store_mr(gp0 + FpByte_ * 2, t);
+
+			gen_raw_sub(gp0, gp0, d2, rax, pn_);
+			const RegExp& d0H = gp0 + pn_ * 8;
+			const RegExp& d2H = (RegExp)d2 + pn_ * 8;
+			gen_raw_fp_sub_2(d0H, d0H, d2H, t, true);
 		}
 		return func;
 	}
