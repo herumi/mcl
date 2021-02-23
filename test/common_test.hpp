@@ -135,8 +135,8 @@ void testABCDsub(const Fp2& a, const Fp2& b, const Fp2& c, const Fp2& d)
 	Fp2Dbl::mulPre(T1, t1, t2);
 	Fp2Dbl::mulPre(AC, a, c);
 	Fp2Dbl::mulPre(BD, b, d);
-	Fp6Dbl::specialSub(T1, AC);
-	Fp6Dbl::specialSub(T1, BD);
+	Fp2Dbl::subSpecial(T1, AC);
+	Fp2Dbl::subSpecial(T1, BD);
 	Fp2Dbl::mod(t1, T1);
 	CYBOZU_TEST_EQUAL(t1, a * d + b * c);
 }
@@ -161,8 +161,31 @@ void testABCD()
 	}
 }
 
+void testFp2Dbl_mul_xi1()
+{
+	if (Fp2::get_xi_a() != 1) return;
+	puts("testFp2Dbl_mul_xi1");
+	cybozu::XorShift rg;
+	for (int i = 0; i < 100; i++) {
+		Fp a1, a2;
+		a1.setByCSPRNG(rg);
+		a2.setByCSPRNG(rg);
+		Fp2Dbl x;
+		FpDbl::mulPre(x.a, a1, a2);
+		a1.setByCSPRNG(rg);
+		a2.setByCSPRNG(rg);
+		FpDbl::mulPre(x.b, a1, a2);
+		Fp2Dbl ok;
+		Fp2Dbl::mul_xi_1C(ok, x);
+		Fp2Dbl::mul_xi(x, x);
+		CYBOZU_TEST_EQUAL_ARRAY(ok.a.getUnit(), x.a.getUnit(), ok.a.getUnitSize());
+		CYBOZU_TEST_EQUAL_ARRAY(ok.b.getUnit(), x.b.getUnit(), ok.b.getUnitSize());
+	}
+}
+
 void testCommon(const G1& P, const G2& Q)
 {
+	testFp2Dbl_mul_xi1();
 	testABCD();
 	testMul2();
 	puts("G1");

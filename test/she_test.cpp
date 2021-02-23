@@ -43,6 +43,9 @@ double clk2msec(const cybozu::CpuClock& clk, int n)
 
 CYBOZU_TEST_AUTO(bench2)
 {
+#ifndef NDEBUG
+	puts("skip bench2 in debug");
+#endif
 	puts("msec");
 	setTryNum(1 << 16);
 	useDecG1ViaGT(true);
@@ -571,7 +574,7 @@ CYBOZU_TEST_AUTO(io)
 	}
 }
 
-#ifndef PAPER
+#if !defined(PAPER) && defined(NDEBUG)
 CYBOZU_TEST_AUTO(bench)
 {
 	const SecretKey& sec = g_sec;

@@ -431,6 +431,10 @@ const char *e1Str =
 	finalExp(e2, e0);
 //	finalExpC(e2, e0);
 	CYBOZU_TEST_EQUAL(e1, e2);
+#ifndef NDEBUG
+	puts("skip bench of finalExp in debug");
+	return;
+#endif
 	CYBOZU_BENCH_C("finalExp", 100, finalExp, e2, e0);
 }
 
@@ -685,6 +689,10 @@ void testCurve(const mcl::CurveParam& cp)
 }
 CYBOZU_TEST_AUTO(multi)
 {
+#ifndef NDEBUG
+	puts("skip multi in debug");
+	return;
+#endif
 	G1 P;
 	G2 Q;
 	int i;
@@ -722,6 +730,10 @@ CYBOZU_TEST_AUTO(deserialize)
 	size_t n2 = Q.serialize(buf2, sizeof(buf2));
 	CYBOZU_TEST_ASSERT(n2 > 0);
 	CYBOZU_TEST_EQUAL(Q.deserialize(buf2, n2), n2);
+#ifndef NDEBUG
+	puts("skip bench in debug");
+	return;
+#endif
 	for (int i = 0; i < 2; i++) {
 		bool doVerify = i == 0;
 		printf("verifyOrder(%d)\n", doVerify);
