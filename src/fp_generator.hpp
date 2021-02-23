@@ -3475,7 +3475,7 @@ private:
 	void2u gen_fp2Dbl_sqrPre()
 	{
 		if (isFullBit_) return 0;
-		if (pn_ > 6) return 0;
+		if (pn_ != 4 && pn_ != 6) return 0;
 		void2u func = getCurr<void2u>();
 		const RegExp y = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
