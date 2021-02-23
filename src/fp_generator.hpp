@@ -3506,9 +3506,7 @@ private:
 	void2u gen_fp2Dbl_sqrPre()
 	{
 		if (isFullBit_) return 0;
-//		if (pn_ != 4 && !(pn_ == 6 && useMulx_ && useAdx_)) return 0;
-		// almost same for pn_ == 6
-		if (pn_ != 4) return 0;
+		if (pn_ > 6) return 0;
 		void2u func = getCurr<void2u>();
 		const RegExp y = rsp + 0 * 8;
 		const RegExp x = rsp + 1 * 8;
@@ -3520,7 +3518,7 @@ private:
 		mov(ptr [x], gp1);
 		Pack t = sf.t;
 		if (pn_ == 6) {
-			t.append(rax);
+			t.append(gp2);
 			t.append(rdx);
 		}
 		const Pack a = t.sub(0, pn_);
@@ -3544,12 +3542,7 @@ private:
 		mov(gp2, ptr [x]);
 		call(mulPreL);
 		mov(gp0, ptr [x]);
-		if (pn_ == 4) {
-			gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, sf.t, false);
-		} else {
-			assert(pn_ == 6);
-			gen_raw_fp_sub6(t1, gp0, gp0, FpByte_, a, false);
-		}
+		gen_raw_fp_sub_2(t1, gp0, gp0 + FpByte_, t, false);
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t1]);
 		lea(gp2, ptr [t2]);
