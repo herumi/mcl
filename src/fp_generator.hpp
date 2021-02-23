@@ -650,25 +650,6 @@ private:
 			mov(ptr [pz + i * 8], t);
 		}
 	}
-	/*
-		pz[] = px[] - py[] mod p[]
-		use rax, t
-	*/
-	void gen_raw_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
-	{
-		const Pack& p0 = t.sub(0, pn_);
-		const Pack& p1 = t.sub(pn_, pn_);
-		load_rm(p0, px);
-		sub_rm(p0, py, withCarry);
-		lea(rax, ptr[rip+pL_]);
-		load_rm(p1, rax);
-		sbb(rax, rax); // rax = (x > y) ? 0 : -1
-		for (size_t i = 0; i < p1.size(); i++) {
-			and_(p1[i], rax);
-		}
-		add_rr(p0, p1);
-		store_mr(pz, p0);
-	}
 	void gen_raw_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
 	{
 		const Pack& t1 = t.sub(0, pn_);
@@ -732,11 +713,11 @@ private:
 		Pack t = sf.t;
 		t.append(rax);
 		gen_raw_sub(pz, px, py, rax, pn_);
-		gen_raw_fp_sub_2(pz + pn_ * 8, px + pn_ * 8, py + pn_ * 8, t, true);
+		gen_raw_fp_sub(pz + pn_ * 8, px + pn_ * 8, py + pn_ * 8, t, true);
 		return func;
 	}
 	// require t.size() >= pn_ * 2
-	void gen_raw_fp_sub_2(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
+	void gen_raw_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
 	{
 		Pack t1 = t.sub(0, pn_);
 		Pack t2 = t.sub(pn_, pn_);
@@ -750,18 +731,6 @@ private:
 		pop(t1[0]);
 		add_rr(t1, t2);
 		store_mr(pz, t1);
-	}
-	void gen_raw_fp_sub6(const RegExp& pz, const RegExp& px, const RegExp& py, int offset, const Pack& t, bool withCarry)
-	{
-		load_rm(t, px + offset);
-		sub_rm(t, py + offset, withCarry);
-		/*
-			jmp is faster than and-mask without jmp
-		*/
-		jnc("@f");
-		add_rm(t, rip + pL_);
-	L("@@");
-		store_mr(pz + offset, t);
 	}
 	void3u gen_fp_sub()
 	{
@@ -778,7 +747,7 @@ private:
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
 		t.append(rax);
-		gen_raw_fp_sub_2(pz, px, py, t, false);
+		gen_raw_fp_sub(pz, px, py, t, false);
 		return func;
 	}
 	void2u gen_fp_neg()
@@ -3497,7 +3466,7 @@ private:
 			gen_raw_sub(gp0, gp0, d2, rax, pn_);
 			const RegExp& d0H = gp0 + pn_ * 8;
 			const RegExp& d2H = (RegExp)d2 + pn_ * 8;
-			gen_raw_fp_sub_2(d0H, d0H, d2H, t, true);
+			gen_raw_fp_sub(d0H, d0H, d2H, t, true);
 		}
 		add(rsp, SS);
 		ret();
@@ -3542,7 +3511,7 @@ private:
 		mov(gp2, ptr [x]);
 		call(mulPreL);
 		mov(gp0, ptr [x]);
-		gen_raw_fp_sub_2(t1, gp0, gp0 + FpByte_, t, false);
+		gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, t, false);
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t1]);
 		lea(gp2, ptr [t2]);
@@ -3567,7 +3536,7 @@ private:
 		gen_raw_add(rsp, xa, xb, rax, pn_ * 2);
 		// low : x.a =  x.a - x.b
 		gen_raw_sub(ya, xa, xb, rax, pn_);
-		gen_raw_fp_sub_2(ya + pn_ * 8, xa + pn_ * 8, xb + pn_ * 8, sf.t, true);
+		gen_raw_fp_sub(ya + pn_ * 8, xa + pn_ * 8, xb + pn_ * 8, sf.t, true);
 
 		// low : y.b = [rsp]
 		mov_mm(yb, rsp, rax, pn_);
@@ -3608,8 +3577,8 @@ private:
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
 		t.append(rax);
-		gen_raw_fp_sub_2(pz, px, py, t, false);
-		gen_raw_fp_sub_2(pz + FpByte_, px + FpByte_, py + FpByte_, t, false);
+		gen_raw_fp_sub(pz, px, py, t, false);
+		gen_raw_fp_sub(pz + FpByte_, px + FpByte_, py + FpByte_, t, false);
 		return func;
 	}
 	/*
