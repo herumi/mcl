@@ -504,38 +504,6 @@ private:
 		Fp::mul2(y.a, x.a);
 		Fp::mul2(y.b, x.b);
 	}
-#if 0
-	/*
-		x = a + bi, y = c + di, i^2 = -1
-		z = xy = (a + bi)(c + di) = (ac - bd) + (ad + bc)i
-		ad+bc = (a + b)(c + d) - ac - bd
-		# of mod = 3
-	*/
-	static void fp2_mulW(Unit *z, const Unit *x, const Unit *y)
-	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		const Fp *py = reinterpret_cast<const Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
-		const Fp& c = py[0];
-		const Fp& d = py[1];
-		Fp *pz = reinterpret_cast<Fp*>(z);
-		Fp t1, t2, ac, bd;
-		Fp::add(t1, a, b);
-		Fp::add(t2, c, d);
-		t1 *= t2; // (a + b)(c + d)
-		Fp::mul(ac, a, c);
-		Fp::mul(bd, b, d);
-		Fp::sub(pz[0], ac, bd); // ac - bd
-		Fp::sub(pz[1], t1, ac);
-		pz[1] -= bd;
-	}
-	static void fp2_mulNFW(Fp2T& z, const Fp2T& x, const Fp2T& y)
-	{
-		const fp::Op& op = Fp::op_;
-		op.fp2_mulNF((Unit*)&z, (const Unit*)&x, (const Unit*)&y, op.p);
-	}
-#endif
 	static void mulC(Fp2T& z, const Fp2T& x, const Fp2T& y)
 	{
 		Fp2Dbl d;
@@ -941,6 +909,8 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	*/
 	static void inv(Fp6T& y, const Fp6T& x)
 	{
+// 8.5Kclk
+//clk.begin();
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
 		const Fp2& c = x.c;
@@ -970,6 +940,7 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp2::mul(y.a, p.a, q);
 		Fp2::mul(y.b, p.b, q);
 		Fp2::mul(y.c, p.c, q);
+//clk.end();
 	}
 };
 
@@ -1005,7 +976,6 @@ struct Fp6DblT {
 	*/
 	static void mulPre(Fp6DblT& z, const Fp6& x, const Fp6& y)
 	{
-//clk.begin();
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
 		const Fp2& c = x.c;
@@ -1040,7 +1010,6 @@ struct Fp6DblT {
 		Fp2Dbl::mul_xi(CF, CF);
 		Fp2Dbl::add(ZB, ZB, CF);
 		Fp2Dbl::add(ZC, ZC, BE);
-//clk.end();
 	}
 	static void mod(Fp6& y, const Fp6Dbl& x)
 	{

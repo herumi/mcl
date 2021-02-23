@@ -3455,7 +3455,7 @@ private:
 				t.append(gp1);
 				t.append(gp2);
 			}
-			assert(t.size() == pn_ * 2);
+			assert((int)t.size() == pn_ * 2);
 
 			mov(gp0, ptr [z]);
 			load_rm(t, gp0 + FpByte_ * 2);
