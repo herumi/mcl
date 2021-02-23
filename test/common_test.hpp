@@ -135,8 +135,8 @@ void testABCDsub(const Fp2& a, const Fp2& b, const Fp2& c, const Fp2& d)
 	Fp2Dbl::mulPre(T1, t1, t2);
 	Fp2Dbl::mulPre(AC, a, c);
 	Fp2Dbl::mulPre(BD, b, d);
-	Fp6Dbl::specialSub(T1, AC);
-	Fp6Dbl::specialSub(T1, BD);
+	Fp2Dbl::subSpecial(T1, AC);
+	Fp2Dbl::subSpecial(T1, BD);
 	Fp2Dbl::mod(t1, T1);
 	CYBOZU_TEST_EQUAL(t1, a * d + b * c);
 }

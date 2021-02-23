@@ -658,6 +658,15 @@ struct Fp2DblT {
 		FpDbl::subPre(z.a, x.a, y.a);
 		FpDbl::subPre(z.b, x.b, y.b);
 	}
+	/*
+		imaginary part of Fp2Dbl::mul uses only add,
+		so it does not require mod.
+	*/
+	static void subSpecial(Fp2DblT& y, const Fp2DblT& x)
+	{
+		FpDbl::sub(y.a, y.a, x.a);
+		FpDbl::subPre(y.b, y.b, x.b);
+	}
 	static void neg(Fp2DblT& y, const Fp2DblT& x)
 	{
 		FpDbl::neg(y.a, x.a);
@@ -703,20 +712,12 @@ struct Fp2DblT {
 		if (op.fp2Dbl_mulPreA_) {
 			mulPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&, const Fp2&)>(op.fp2Dbl_mulPreA_);
 		} else {
-			if (op.isFullBit) {
-				mulPre = fp2Dbl_mulPreTW<true>;
-			} else {
-				mulPre = fp2Dbl_mulPreTW<false>;
-			}
+			mulPre = fp2Dbl_mulPreW;
 		}
 		if (op.fp2Dbl_sqrPreA_) {
 			sqrPre = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2&)>(op.fp2Dbl_sqrPreA_);
 		} else {
-			if (op.isFullBit) {
-				sqrPre = fp2Dbl_sqrPreW<true>;
-			} else {
-				sqrPre = fp2Dbl_sqrPreW<false>;
-			}
+			sqrPre = fp2Dbl_sqrPreW;
 		}
 		const uint32_t xi_a = Fp2::get_xi_a();
 		switch (xi_a) {
@@ -735,9 +736,9 @@ struct Fp2DblT {
 		Fp2Dbl::mulPre by FpDblT
 		@note mod of NIST_P192 is fast
 	*/
-	template<bool isFullBit>
-	static void fp2Dbl_mulPreTW(Fp2DblT& z, const Fp2& x, const Fp2& y)
+	static void fp2Dbl_mulPreW(Fp2DblT& z, const Fp2& x, const Fp2& y)
 	{
+		assert(!Fp::getOp().isFullBit);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		const Fp& c = y.a;
@@ -746,36 +747,21 @@ struct Fp2DblT {
 		FpDbl& d1 = z.b;
 		FpDbl d2;
 		Fp s, t;
-		if (isFullBit) {
-			Fp::add(s, a, b);
-			Fp::add(t, c, d);
-		} else {
-			Fp::addPre(s, a, b);
-			Fp::addPre(t, c, d);
-		}
+		Fp::addPre(s, a, b);
+		Fp::addPre(t, c, d);
 		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
 		FpDbl::mulPre(d0, a, c);
 		FpDbl::mulPre(d2, b, d);
-		if (isFullBit) {
-			FpDbl::sub(d1, d1, d0); // (a + b)(c + d) - ac
-			FpDbl::sub(d1, d1, d2); // (a + b)(c + d) - ac - bd
-		} else {
-			FpDbl::subPre(d1, d1, d0);
-			FpDbl::subPre(d1, d1, d2);
-		}
+		FpDbl::subPre(d1, d1, d0);
+		FpDbl::subPre(d1, d1, d2);
 		FpDbl::sub(d0, d0, d2); // ac - bd
 	}
-	template<bool isFullBit>
 	static void fp2Dbl_sqrPreW(Fp2DblT& y, const Fp2& x)
 	{
+		assert(!Fp::getOp().isFullBit);
 		Fp t1, t2;
-		if (isFullBit) {
-			Fp::add(t1, x.b, x.b); // 2b
-			Fp::add(t2, x.a, x.b); // a + b
-		} else {
-			Fp::addPre(t1, x.b, x.b); // 2b
-			Fp::addPre(t2, x.a, x.b); // a + b
-		}
+		Fp::addPre(t1, x.b, x.b); // 2b
+		Fp::addPre(t2, x.a, x.b); // a + b
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
 		Fp::sub(t1, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
@@ -1009,15 +995,6 @@ struct Fp6DblT {
 		Fp2Dbl::sub(z.c, x.c, y.c);
 	}
 	/*
-		imaginary part of Fp2Dbl::mul uses only add,
-		so it does not require mod.
-	*/
-	static void specialSub(Fp2Dbl& y, const Fp2Dbl& x)
-	{
-		FpDbl::sub(y.a, y.a, x.a);
-		FpDbl::subPre(y.b, y.b, x.b);
-	}
-	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
 		xy = (ad + (bf + ce)xi) + ((ae + bd) + cf xi)v + ((af + cd) + be)v^2
 		bf + ce = (b + c)(e + f) - be - cf
@@ -1052,12 +1029,12 @@ struct Fp6DblT {
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(CF, c, f);
 		Fp2Dbl::mulPre(AD, a, d);
-		specialSub(ZA, BE);
-		specialSub(ZA, CF);
-		specialSub(ZB, AD);
-		specialSub(ZB, BE);
-		specialSub(ZC, AD);
-		specialSub(ZC, CF);
+		Fp2Dbl::subSpecial(ZA, BE);
+		Fp2Dbl::subSpecial(ZA, CF);
+		Fp2Dbl::subSpecial(ZB, AD);
+		Fp2Dbl::subSpecial(ZB, BE);
+		Fp2Dbl::subSpecial(ZC, AD);
+		Fp2Dbl::subSpecial(ZC, CF);
 		Fp2Dbl::mul_xi(ZA, ZA);
 		Fp2Dbl::add(ZA, ZA, AD);
 		Fp2Dbl::mul_xi(CF, CF);
