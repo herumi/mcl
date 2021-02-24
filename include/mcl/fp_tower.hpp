@@ -909,38 +909,42 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	*/
 	static void inv(Fp6T& y, const Fp6T& x)
 	{
-// 8.5Kclk
-//clk.begin();
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
 		const Fp2& c = x.c;
-		Fp2 aa, bb, cc, ab, bc, ac;
-		Fp2::sqr(aa, a);
-		Fp2::sqr(bb, b);
-		Fp2::sqr(cc, c);
-		Fp2::mul(ab, a, b);
-		Fp2::mul(bc, b, c);
-		Fp2::mul(ac, c, a);
+		Fp2Dbl aa, bb, cc, ab, bc, ac;
+		Fp2Dbl::sqrPre(aa, a);
+		Fp2Dbl::sqrPre(bb, b);
+		Fp2Dbl::sqrPre(cc, c);
+		Fp2Dbl::mulPre(ab, a, b);
+		Fp2Dbl::mulPre(bc, b, c);
+		Fp2Dbl::mulPre(ac, c, a);
 
 		Fp6T p;
-		Fp2::mul_xi(p.a, bc);
-		Fp2::sub(p.a, aa, p.a); // a^2 - bc xi
-		Fp2::mul_xi(p.b, cc);
-		p.b -= ab; // c^2 xi - ab
-		Fp2::sub(p.c, bb, ac); // b^2 - ac
-		Fp2 q, t;
-		Fp2::mul(q, p.b, c);
-		Fp2::mul(t, p.c, b);
-		q += t;
-		Fp2::mul_xi(q, q);
-		Fp2::mul(t, p.a, a);
-		q += t;
+		Fp2Dbl T;
+		Fp2Dbl::mul_xi(T, bc);
+		Fp2Dbl::sub(T, aa, T); // a^2 - bc xi
+		Fp2Dbl::mod(p.a, T);
+		Fp2Dbl::mul_xi(T, cc);
+		Fp2Dbl::sub(T, T, ab); // c^2 xi - ab
+		Fp2Dbl::mod(p.b, T);
+		Fp2Dbl::sub(T, bb, ac); // b^2 - ac
+		Fp2Dbl::mod(p.c, T);
+
+		Fp2Dbl T2;
+		Fp2Dbl::mulPre(T, p.b, c);
+		Fp2Dbl::mulPre(T2, p.c, b);
+		Fp2Dbl::add(T, T, T2);
+		Fp2Dbl::mul_xi(T, T);
+		Fp2Dbl::mulPre(T2, p.a, a);
+		Fp2Dbl::addPre(T, T, T2);
+		Fp2 q;
+		Fp2Dbl::mod(q, T);
 		Fp2::inv(q, q);
 
 		Fp2::mul(y.a, p.a, q);
 		Fp2::mul(y.b, p.b, q);
 		Fp2::mul(y.c, p.c, q);
-//clk.end();
 	}
 };
 
