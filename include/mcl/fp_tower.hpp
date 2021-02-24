@@ -872,7 +872,12 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp6Dbl::sqrPre(XX, x);
 		Fp6Dbl::mod(y, XX);
 	}
-	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y);
+	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	{
+		Fp6Dbl XY;
+		Fp6Dbl::mulPre(XY, x, y);
+		Fp6Dbl::mod(z, XY);
+	}
 	/*
 		x = a + bv + cv^2, v^3 = xi
 		y = 1/x = p/q where
@@ -1025,14 +1030,6 @@ struct Fp6DblT {
 		Fp2Dbl::mod(y.c, x.c);
 	}
 };
-
-template<class Fp>
-inline void Fp6T<Fp>::mul(Fp6T<Fp>& z, const Fp6T<Fp>& x, const Fp6T<Fp>& y)
-{
-	Fp6DblT<Fp> Z;
-	Fp6DblT<Fp>::mulPre(Z, x, y);
-	Fp6DblT<Fp>::mod(z, Z);
-}
 
 /*
 	Fp12T = Fp6[w] / (w^2 - v)
