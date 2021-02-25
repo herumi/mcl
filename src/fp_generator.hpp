@@ -1937,11 +1937,82 @@ private:
 		store_mr(pz, Pack(t3, t2, t1, t0));
 	}
 	/*
+		(3, 3)(2, 2)(1, 1)(0, 0)
+		   t5 t4 t3 t2 t1 t0
+		   (3, 2)(2, 1)(1, 0)x2
+		      (3, 1)(2, 0)x2
+		         (3, 0)x2
+	*/
+	void sqrPre4NF(const Reg64& py, const Reg64& px, const Pack& t)
+	{
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& x0 = t[6];
+		const Reg64& x1 = t[7];
+		const Reg64& x2 = t[8];
+		const Reg64& x3 = t[9];
+		const Reg64& H = t[10];
+
+		load_rm(Pack(x3, x2, x1, x0), px);
+		mov(rdx, x0);
+		mulx(t3, t2, x3); // (3, 0)
+		mulx(rax, t1, x2); // (2, 0)
+		add(t2, rax);
+		mov(rdx, x1);
+		mulx(t4, rax, x3); // (3, 1)
+		adc(t3, rax);
+		adc(t4, 0); // [t4:t3:t2:t1]
+		mulx(rax, t0, x0); // (1, 0)
+		add(t1, rax);
+		mulx(rdx, rax, x2); // (2, 1)
+		adc(t2, rax);
+		adc(t3, rdx);
+		mov(rdx, x3);
+		mulx(t5, rax, x2); // (3, 2)
+		adc(t4, rax);
+		adc(t5, 0);
+
+		shl1(Pack(t5, t4, t3, t2, t1, t0), &H);
+		mov(rdx, x0);
+		mulx(rdx, rax, rdx);
+		mov(ptr[py + 8 * 0], rax);
+		add(rdx, t0);
+		mov(ptr[py + 8 * 1], rdx);
+		mov(rdx, x1);
+		mulx(rdx, rax, rdx);
+		adc(rax, t1);
+		mov(ptr[py + 8 * 2], rax);
+		adc(rdx, t2);
+		mov(ptr[py + 8 * 3], rdx);
+		mov(rdx, x2);
+		mulx(rdx, rax, rdx);
+		adc(rax, t3);
+		mov(ptr[py + 8 * 4], rax);
+		adc(rdx, t4);
+		mov(ptr[py + 8 * 5], rdx);
+		mov(rdx, x3);
+		mulx(rdx, rax, rdx);
+		adc(rax, t5);
+		mov(ptr[py + 8 * 6], rax);
+		adc(rdx, H);
+		mov(ptr[py + 8 * 7], rdx);
+	}
+	/*
 		py[7..0] = px[3..0] ^ 2
 		use xmm0
 	*/
-	void sqrPre4(const RegExp& py, const RegExp& px, const Pack& t)
+	void sqrPre4(const Reg64& py, const Reg64& px, const Pack& t)
 	{
+#if 1
+		if (useMulx_ && useAdx_) {
+			sqrPre4NF(py, px, t);
+			return;
+		}
+#endif
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
@@ -2250,7 +2321,6 @@ private:
 	/*
 		@input (z, xy)
 		z[5..0] <- montgomery reduction(x[11..0])
-		use xm0, xm1, xm2
 	*/
 	void gen_fpDbl_mod6(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
