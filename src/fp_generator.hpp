@@ -1383,20 +1383,20 @@ private:
 		h = 0 or 1
 		use rax, t0
 	*/
-	void mulAdd2(const Reg64& h, const Pack& c, int n, const RegExp& px, const Reg64& t0, const Reg64 *cc = 0, bool updateCarry = true)
+	void mulAdd2(const Reg64& h, const Pack& c, const RegExp& px, const Reg64& t0, const Reg64 *cc = 0, bool updateCarry = true)
 	{
 		assert(!isFullBit_);
 		const Reg64& a = rax;
 		xor_(h, h); // h = 0
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < pn_; i++) {
 			mulx(t0, a, ptr [px + i * 8]);
 			adox(c[i], a);
-			if (i == n - 1) break;
+			if (i == pn_ - 1) break;
 			adcx(c[i + 1], t0);
 		}
 		adox(t0, h); // no carry
 		if (cc) adox(t0, *cc); // no carry
-		adcx(c[n], t0);
+		adcx(c[pn_], t0);
 		if (updateCarry) adc(h, h);
 	}
 	/*
@@ -2343,33 +2343,33 @@ private:
 		load_rm(Pack(t6, t5, t4, t3, t2, t1, t0), xy);
 		mov(d, rp_);
 		imul(d, t0); // q
-		mulAdd2(t7, Pack(t6, t5, t4, t3, t2, t1, t0), 6, pp, t8);
+		mulAdd2(t7, Pack(t6, t5, t4, t3, t2, t1, t0), pp, t8);
 		// t7 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
 
 		mov(d, rp_);
 		imul(d, t1);
 		mov(t0, ptr[xy + 7 * 8]);
-		mulAdd2(t9, Pack(t0, t6, t5, t4, t3, t2, t1), 6, pp, t8, &t7);
+		mulAdd2(t9, Pack(t0, t6, t5, t4, t3, t2, t1), pp, t8, &t7);
 
 		mov(d, rp_);
 		imul(d, t2);
 		mov(t1, ptr[xy + 8 * 8]);
-		mulAdd2(t7, Pack(t1, t0, t6, t5, t4, t3, t2), 6, pp, t8, &t9);
+		mulAdd2(t7, Pack(t1, t0, t6, t5, t4, t3, t2), pp, t8, &t9);
 
 		mov(d, rp_);
 		imul(d, t3);
 		mov(t2, ptr[xy + 9 * 8]);
-		mulAdd2(t9, Pack(t2, t1, t0, t6, t5, t4, t3), 6, pp, t8, &t7);
+		mulAdd2(t9, Pack(t2, t1, t0, t6, t5, t4, t3), pp, t8, &t7);
 
 		mov(d, rp_);
 		imul(d, t4);
 		mov(t3, ptr[xy + 10 * 8]);
-		mulAdd2(t7, Pack(t3, t2, t1, t0, t6, t5, t4), 6, pp, t8, &t9);
+		mulAdd2(t7, Pack(t3, t2, t1, t0, t6, t5, t4), pp, t8, &t9);
 
 		mov(d, rp_);
 		imul(d, t5);
 		mov(t4, ptr[xy + 11 * 8]);
-		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), 6, pp, t8, &t7, false);
+		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), pp, t8, &t7, false);
 
 		// z = [t4:t3:t2:t1:t0:t6]
 		Pack zp = Pack(t4, t3, t2, t1, t0, t6);
