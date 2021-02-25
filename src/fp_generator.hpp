@@ -881,12 +881,6 @@ private:
 #endif
 			return func;
 		}
-#if 0
-		if (pn_ <= 9) {
-			gen_montMulN(p_, rp_, pn_);
-			return func;
-		}
-#endif
 		return 0;
 	}
 	/*
@@ -1307,44 +1301,6 @@ private:
 			return func;
 		}
 		return 0;
-	}
-	/*
-		input (pz[], px[], py[])
-		z[] <- montgomery(x[], y[])
-	*/
-	void gen_montMulN(const uint64_t *p, uint64_t pp, int n)
-	{
-		assert(1 <= pn_ && pn_ <= 9);
-		const int regNum = useMulx_ ? 4 : 3 + (std::min)(n - 1, 7);
-		const int stackSize = (n * 3 + (isFullBit_ ? 2 : 1)) * 8;
-		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		const Reg64& y = sf.t[0];
-		const Reg64& pAddr = sf.t[1];
-		const Reg64& t = sf.t[2];
-		Pack remain = sf.t.sub(3);
-		size_t rspPos = 0;
-
-		MixPack pw1(remain, rspPos, n - 1);
-		const RegExp pw2 = rsp + rspPos; // pw2[0..n-1]
-		const RegExp pc = pw2 + n * 8; // pc[0..n+1]
-		mov(pAddr, (size_t)p);
-
-		for (int i = 0; i < n; i++) {
-			mov(y, ptr [py + i * 8]);
-			montgomeryN_1(pp, n, pc, px, y, pAddr, t, pw1, pw2, i == 0);
-		}
-		// pz[] = pc[] - p[]
-		gen_raw_sub(pz, pc, pAddr, t, n);
-		if (isFullBit_) sbb(qword[pc + n * 8], 0);
-		jnc("@f");
-		for (int i = 0; i < n; i++) {
-			mov(t, ptr [pc + i * 8]);
-			mov(ptr [pz + i * 8], t);
-		}
-	L("@@");
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
