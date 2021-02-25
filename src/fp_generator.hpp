@@ -1039,14 +1039,62 @@ private:
 		cmovc_rr(Pack(t9, t8, t4), Pack(t2, t1, t10));
 		store_mr(z, Pack(t9, t8, t4));
 	}
+	void gen_fpDbl_mod4NF(const Reg64& z, const Reg64& xy, const Pack& t)
+	{
+		assert(!isFullBit_);
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+
+		const Reg64& d = rdx;
+		const Reg64& pp = t[8];
+		lea(pp, ptr[rip + pL_]);
+
+		load_rm(Pack(t4, t3, t2, t1, t0), xy);
+		mov(d, rp_);
+		imul(d, t0); // q
+		mulAdd2(t5, Pack(t4, t3, t2, t1, t0), pp, t6);
+		// t5 : carry, [t4:t3:t2:t1:t0] += p * q
+
+		mov(d, rp_);
+		imul(d, t1);
+		mov(t0, ptr[xy + 5 * 8]);
+		mulAdd2(t7, Pack(t0, t4, t3, t2, t1), pp, t6, &t5);
+
+		mov(d, rp_);
+		imul(d, t2);
+		mov(t1, ptr[xy + 6 * 8]);
+		mulAdd2(t5, Pack(t1, t0, t4, t3, t2), pp, t6, &t7);
+
+		mov(d, rp_);
+		imul(d, t3);
+		mov(t2, ptr[xy + 7 * 8]);
+		mulAdd2(t7, Pack(t2, t1, t0, t4, t3), pp, t6, &t5, false);
+
+		Pack zp = Pack(t2, t1, t0, t4);
+		Pack keep = Pack(t7, t6, t5, t3);
+		mov_rr(keep, zp);
+		sub_rm(zp, pp); // z -= p
+		cmovc_rr(zp, keep);
+		store_mr(z, zp);
+	}
 	/*
 		@input (z, xy)
 		z[3..0] <- montgomery reduction(x[7..0])
 		@note destroy rax, rdx, t0, ..., t10, xm0, xm1
 		xm2 if isFullBit_
 	*/
-	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t, const Reg64& t10)
+	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
+		if (!isFullBit_) {
+			gen_fpDbl_mod4NF(z, xy, t);
+			return;
+		}
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
@@ -1057,6 +1105,7 @@ private:
 		const Reg64& t7 = t[7];
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
+		const Reg64& t10 = t[10];
 
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
@@ -1183,7 +1232,9 @@ private:
 			call(fpDbl_modL);
 			sf.close();
 		L(fpDbl_modL);
-			gen_fpDbl_mod4(gp0, gp1, sf.t, gp2);
+			Pack t = sf.t;
+			t.append(gp2);
+			gen_fpDbl_mod4(gp0, gp1, t);
 			ret();
 			return func;
 		}
@@ -2371,7 +2422,6 @@ private:
 		mov(t4, ptr[xy + 11 * 8]);
 		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), pp, t8, &t7, false);
 
-		// z = [t4:t3:t2:t1:t0:t6]
 		Pack zp = Pack(t4, t3, t2, t1, t0, t6);
 		Pack keep = Pack(t5, xy, rax, rdx, t7, t8);
 		mov_rr(keep, zp);
