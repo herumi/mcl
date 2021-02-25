@@ -1267,7 +1267,7 @@ private:
 			return func;
 		}
 		if (pn_ == 4 && useMulx_) {
-#if 1
+#if 0
 			// sqr(y, x) = mul(y, x, x)
 #ifdef XBYAK64_WIN
 			mov(r8, rdx);
@@ -1275,7 +1275,7 @@ private:
 			mov(rdx, rsi);
 #endif
 			jmp((const void*)op_->fp_mulA_);
-#else // (sqrPre + mod) is slower than mul
+#else // (sqrPre + mod) is faster than mul
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
