@@ -249,7 +249,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	const mcl::fp::Op *op_;
 	Label pL_; // pointer to p
 	// the following labels assume sf(this, 3, 10 | UseRDX)
-	Label mulPreL;
+	Label fp_mulPreL;
+	Label fp_sqrPreL;
 	Label fpDbl_modL;
 	Label fp_mulL;
 	Label fp2Dbl_mulPreL;
@@ -397,17 +398,6 @@ private:
 		align(16);
 		op.fpDbl_modA_ = gen_fpDbl_mod(op);
 		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
-		align(16);
-		op.fp_mulA_ = gen_mul();
-		setFuncInfo(prof_, suf, "_mul", op.fp_mulA_, getCurr());
-
-		if (op.fp_mulA_) {
-			op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
-		}
-
-		align(16);
-		op.fp_sqrA_ = gen_sqr();
-		setFuncInfo(prof_, suf, "_sqr", op.fp_sqrA_, getCurr());
 
 		if (op.primeMode != PM_NIST_P192 && op.N <= 6) { // support general op.N but not fast for op.N > 4
 			align(16);
@@ -424,6 +414,17 @@ private:
 		align(16);
 		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
 		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
+		align(16);
+		op.fp_mulA_ = gen_mul();
+		setFuncInfo(prof_, suf, "_mul", op.fp_mulA_, getCurr());
+
+		if (op.fp_mulA_) {
+			op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
+		}
+
+		align(16);
+		op.fp_sqrA_ = gen_sqr();
+		setFuncInfo(prof_, suf, "_sqr", op.fp_sqrA_, getCurr());
 		if (op.xi_a == 0) return; // Fp2 is not used
 
 		align(16);
@@ -874,7 +875,7 @@ private:
 			// a little faster
 			gen_montMul6();
 #else
-			if (mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
+			if (fp_mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
 			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
 			/*
 				use xm3
@@ -883,7 +884,7 @@ private:
 			*/
 			vmovq(xm3, gp0);
 			mov(gp0, rsp);
-			call(mulPreL); // gp0, x, y
+			call(fp_mulPreL); // gp0, x, y
 			vmovq(gp0, xm3);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
@@ -1290,24 +1291,29 @@ private:
 			return func;
 		}
 		if (pn_ == 6 && !isFullBit_ && useMulx_ && useAdx_) {
-			if (fpDbl_modL.getAddress() == 0) return 0;
-			StackFrame sf(this, 3, 10 | UseRDX, (12 + 6) * 8);
-			/*
-				use xm3
-				rsp
-				[6 * 8, (12 + 6) * 8) ; sqrPre(x, x)
-				[0..6 * 8) ; stack for sqrPre6
-			*/
-			vmovq(xm3, gp0);
+#if 1
+			StackFrame sf(this, 3, 10 | UseRDX);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
-			// sqrPre6 uses 6 * 8 bytes stack
-			sqrPre6(rsp + 6 * 8, sf.p[1], t);
-			mov(gp0, ptr[rsp + (12 + 6) * 8]);
-			vmovq(gp0, xm3);
-			lea(gp1, ptr[rsp + 6 * 8]);
+			int stackSize = 12 * 8 + 8;
+			sub(rsp, stackSize);
+			mov(ptr[rsp], gp0);
+			lea(gp0, ptr[rsp + 8]);
+			call(fp_sqrPreL);
+			mov(gp0, ptr[rsp]);
+			lea(gp1, ptr[rsp + 8]);
+			call(fpDbl_modL);
+			add(rsp, stackSize);
+			return func;
+#else
+			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			sqrPre6(rsp, sf.p[1], t);
+			lea(gp1, ptr[rsp]);
 			call(fpDbl_modL);
 			return func;
+#endif
 		}
 		return 0;
 	}
@@ -1327,7 +1333,7 @@ private:
 		sub(rsp, stackSize);
 		mov(ptr[rsp], gp0); // save z
 		lea(gp0, ptr[rsp + 8]);
-		call(mulPreL); // stack <- x * y
+		call(fp_mulPreL); // stack <- x * y
 		mov(gp0, ptr[rsp]);
 		lea(gp1, ptr[rsp + 8]);
 		call(fpDbl_modL); // z <- stack
@@ -2496,78 +2502,94 @@ private:
 	}
 	void gen_fpDbl_sqrPre(void2u& f)
 	{
+		if (!(useMulx_ && useAdx_)) return;
 		void2u func = getCurr<void2u>();
-		if (pn_ == 2 && useMulx_) {
-			StackFrame sf(this, 2, 7 | UseRDX);
-			sqrPre2(sf.p[0], sf.p[1], sf.t);
-			f = func;
+		switch (pn_) {
+		case 2:
+			{
+				StackFrame sf(this, 2, 7 | UseRDX);
+				sqrPre2(sf.p[0], sf.p[1], sf.t);
+				f = func;
+			}
+			break;
+		case 3:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				Pack t = sf.t;
+				t.append(sf.p[2]);
+				sqrPre3(sf.p[0], sf.p[1], t);
+				f = func;
+			}
+			break;
+		case 4:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				Pack t = sf.t;
+				t.append(sf.p[2]);
+				sqrPre4(sf.p[0], sf.p[1], t);
+				f = func;
+			}
+			break;
+		case 6:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				call(fp_sqrPreL);
+				sf.close();
+			L(fp_sqrPreL);
+				Pack t = sf.t;
+				t.append(sf.p[2]);
+				sqrPre6(sf.p[0], sf.p[1], t);
+				ret();
+				f = func;
+			}
+			break;
 		}
-		if (pn_ == 3) {
-			StackFrame sf(this, 3, 10 | UseRDX);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre3(sf.p[0], sf.p[1], t);
-			f = func;
-		}
-		if (pn_ == 4 && useMulx_) {
-			StackFrame sf(this, 3, 10 | UseRDX);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre4(sf.p[0], sf.p[1], t);
-			f = func;
-		}
-		if (pn_ == 6 && useMulx_ && useAdx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre6(sf.p[0], sf.p[1], t);
-			f = func;
-		}
-#if 0
-#ifdef XBYAK64_WIN
-		mov(r8, rdx);
-#else
-		mov(rdx, rsi);
-#endif
-		jmp((void*)op.fpDbl_mulPreA_);
-		return func;
-#endif
 	}
 	void gen_fpDbl_mulPre(void3u& f)
 	{
+		if (!(useMulx_ && useAdx_)) return;
 		void3u func = getCurr<void3u>();
-		if (pn_ == 2 && useMulx_) {
-			StackFrame sf(this, 3, 5 | UseRDX);
-			mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
-			f = func;
-		}
-		if (pn_ == 3) {
-			StackFrame sf(this, 3, 10 | UseRDX);
-			mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
-			f = func;
-		}
-		if (pn_ == 4) {
-			/*
-				fpDbl_mulPre is available as C function
-				this function calls mulPreL directly.
-			*/
-			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
-			mulPre4(gp0, gp1, gp2, sf.t);
-//			call(mulPreL);
-			sf.close(); // make epilog
-		L(mulPreL); // called only from asm code
-			mulPre4(gp0, gp1, gp2, sf.t);
-			ret();
-			f = func;
-		}
-		if (pn_ == 6 && useAdx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
-			call(mulPreL);
-			sf.close(); // make epilog
-		L(mulPreL); // called only from asm code
-			mulPre6(sf.t);
-			ret();
-			f = func;
+		switch (pn_) {
+		case 2:
+			{
+				StackFrame sf(this, 3, 5 | UseRDX);
+				mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
+				f = func;
+			}
+			break;
+		case 3:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
+				f = func;
+			}
+			break;
+		case 4:
+			{
+				/*
+					fpDbl_mulPre is available as C function
+					this function calls fp_mulPreL directly.
+				*/
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				mulPre4(gp0, gp1, gp2, sf.t);
+	//			call(fp_mulPreL);
+				sf.close(); // make epilog
+			L(fp_mulPreL); // called only from asm code
+				mulPre4(gp0, gp1, gp2, sf.t);
+				ret();
+				f = func;
+			}
+			break;
+		case 6:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				call(fp_mulPreL);
+				sf.close(); // make epilog
+			L(fp_mulPreL); // called only from asm code
+				mulPre6(sf.t);
+				ret();
+				f = func;
+			}
 		}
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
@@ -3610,7 +3632,7 @@ private:
 		} else {
 			lea(gp1, ptr [s]);
 			lea(gp2, ptr [t]);
-			call(mulPreL);
+			call(fp_mulPreL);
 		}
 		// d0 = z.a = a c
 		mov(gp0, ptr [z]);
@@ -3619,7 +3641,7 @@ private:
 		if (embedded) {
 			mulPre4(gp0, gp1, gp2, sf.t);
 		} else {
-			call(mulPreL);
+			call(fp_mulPreL);
 		}
 		// d2 = z.b = b d
 		mov(gp1, ptr [x]);
@@ -3630,7 +3652,7 @@ private:
 			mulPre4(d2, gp1, gp2, sf.t);
 		} else {
 			lea(gp0, ptr [d2]);
-			call(mulPreL);
+			call(fp_mulPreL);
 		}
 
 		{
@@ -3667,7 +3689,7 @@ private:
 		const RegExp x = rsp + 1 * 8;
 		const Ext1 t1(FpByte_, rsp, 2 * 8);
 		const Ext1 t2(FpByte_, rsp, t1.next);
-		// use mulPreL then use 3
+		// use fp_mulPreL then use 3
 		StackFrame sf(this, 3 /* not 2 */, 10 | UseRDX, t2.next);
 		mov(ptr [y], gp0);
 		mov(ptr [x], gp1);
@@ -3695,13 +3717,13 @@ private:
 		add(gp0, FpByte_ * 2);
 		lea(gp1, ptr [t1]);
 		mov(gp2, ptr [x]);
-		call(mulPreL);
+		call(fp_mulPreL);
 		mov(gp0, ptr [x]);
 		gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, t, false);
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t1]);
 		lea(gp2, ptr [t2]);
-		call(mulPreL);
+		call(fp_mulPreL);
 		return func;
 	}
 	void2u gen_fp2Dbl_mul_xi()
