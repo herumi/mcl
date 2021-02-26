@@ -168,7 +168,6 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("GT::sqr       ", C2, GT::sqr, e1, e1);
 	CYBOZU_BENCH_C("GT::inv       ", C2, GT::inv, e1, e1);
 #endif
-	CYBOZU_BENCH_C("FpDbl::mulPre ", C3, FpDbl::mulPre, d0, x, y);
 	CYBOZU_BENCH_C("pairing       ", 3000, pairing, e1, P, Q);
 	CYBOZU_BENCH_C("millerLoop    ", 3000, millerLoop, e1, P, Q);
 	CYBOZU_BENCH_C("finalExp      ", 3000, finalExp, e1, e1);

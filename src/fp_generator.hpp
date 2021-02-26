@@ -2091,38 +2091,124 @@ private:
 		store_mr(py + 2 * 8, Pack(d, t8, t10, t9, t3, t2));
 	}
 	/*
-		py[11..0] = px[5..0] ^ 2
-		use rax, rdx, stack[6 * 8]
+		(5, 5)(4, 4)(3, 3)(2, 2)(1, 1)(0, 0)
+		   t9 t8 t7 t6 t5 t4 t3 t2 t1 t0
+		   (5, 4)(4, 3)(3, 2)(2, 1)(1, 0)
+		      (5, 3)(4, 2)(3, 1)(2, 0)
+		         (5, 2)(4, 1)(3, 0)
+		            (5, 1)(4, 0)
+		               (5, 0)
 	*/
 	void sqrPre6(const RegExp& py, const RegExp& px, const Pack& t)
 	{
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
-		/*
-			(aN + b)^2 = a^2 N^2 + 2ab N + b^2
-		*/
-		sqrPre3(py, px, t); // [py] <- b^2
-		sqrPre3(py + 6 * 8, px + 3 * 8, t); // [py + 6 * 8] <- a^2
-		mulPre3(rsp, px, px + 3 * 8, t); // ab
-		Pack ab = t.sub(0, 6);
-		load_rm(ab, rsp);
-		xor_(rax, rax);
-		for (int i = 0; i < 6; i++) {
-			if (i == 0) {
-				add(ab[i], ab[i]);
-			} else {
-				adc(ab[i], ab[i]);
-			}
-		}
-		adc(rax, rax);
-		add_rm(ab, py + 3 * 8);
-		store_mr(py + 3 * 8, ab);
-		load_rm(Pack(t2, t1, t0), py + 9 * 8);
-		adc(t0, rax);
-		adc(t1, 0);
-		adc(t2, 0);
-		store_mr(py + 9 * 8, Pack(t2, t1, t0));
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+		const Reg64& t8 = t[8];
+		const Reg64& t9 = t[9];
+		const Reg64& H = t[10];
+
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(t5, t4, ptr[px + 8 * 5]); // [t5:t4] = (5, 0)
+		mulx(rax, t3, ptr[px + 8 * 4]); // (4, 0)
+		add(t4, rax);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(t6, rax, ptr[px + 8 * 5]); // (5, 1)
+		adc(t5, rax);
+		adc(t6, 0); // [t6:t5:t4:t3]
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(rax, t2, ptr[px + 8 * 3]);
+		add(t3, rax);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(H, rax, ptr[px + 8 * 4]);
+		adc(t4, rax);
+		adc(t5, H);
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(t7, rax, ptr[px + 8 * 5]);
+		adc(t6, rax);
+		adc(t7, 0); // [t7:...:t2]
+
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(H, t1, ptr[px + 8 * 2]);
+		adc(t2, H);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(H, rax, ptr[px + 8 * 3]);
+		adc(t3, rax);
+		adc(t4, H);
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(H, rax, ptr[px + 8 * 4]);
+		adc(t5, rax);
+		adc(t6, H);
+		mov(rdx, ptr[px + 8 * 3]);
+		mulx(t8, rax, ptr[px + 8 * 5]);
+		adc(t7, rax);
+		adc(t8, 0); // [t8:...:t1]
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(H, t0, ptr[px + 8 * 1]);
+		add(t1, H);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(H, rax, ptr[px + 8 * 2]);
+		adc(t2, rax);
+		adc(t3, H);
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(H, rax, ptr[px + 8 * 3]);
+		adc(t4, rax);
+		adc(t5, H);
+		mov(rdx, ptr[px + 8 * 3]);
+		mulx(H, rax, ptr[px + 8 * 4]);
+		adc(t6, rax);
+		adc(t7, H);
+		mov(rdx, ptr[px + 8 * 4]);
+		mulx(t9, rax, ptr[px + 8 * 5]);
+		adc(t8, rax);
+		adc(t9, 0); // [t9...:t0]
+		shl1(Pack(t9, t8, t7, t6, t5, t4, t3, t2, t1, t0), &H);
+
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(rdx, rax, rdx);
+		mov(ptr[py + 8 * 0], rax);
+		add(t0, rdx);
+		mov(ptr[py + 8 * 1], t0);
+
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(rdx, rax, rdx);
+		adc(t1, rax);
+		mov(ptr[py + 8 * 2], t1);
+		adc(t2, rdx);
+		mov(ptr[py + 8 * 3], t2);
+
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(rdx, rax, rdx);
+		adc(t3, rax);
+		mov(ptr[py + 8 * 4], t3);
+		adc(t4, edx);
+		mov(ptr[py + 8 * 5], t4);
+
+		mov(rdx, ptr[px + 8 * 3]);
+		mulx(rdx, rax, rdx);
+		adc(t5, rax);
+		mov(ptr[py + 8 * 6], t5);
+		adc(t6, rdx);
+		mov(ptr[py + 8 * 7], t6);
+
+		mov(rdx, ptr[px + 8 * 4]);
+		mulx(rdx, rax, rdx);
+		adc(t7, rax);
+		mov(ptr[py + 8 * 8], t7);
+		adc(t8, rdx);
+		mov(ptr[py + 8 * 9], t8);
+
+		mov(rdx, ptr[px + 8 * 5]);
+		mulx(rdx, rax, rdx);
+		adc(t9, rax);
+		mov(ptr[py + 8 * 10], t9);
+		adc(rdx, H);
+		mov(ptr[py + 8 * 11], rdx);
 	}
 	/*
 		pz[7..0] <- px[3..0] * py[3..0]
