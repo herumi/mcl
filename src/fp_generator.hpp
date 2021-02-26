@@ -1321,6 +1321,19 @@ private:
 		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 		call(fp_mulL);
 		sf.close();
+#if 0 // slower than mont
+	L(fp_mulL);
+		int stackSize = 8 * 8 /* xy */ + 8;
+		sub(rsp, stackSize);
+		mov(ptr[rsp], gp0); // save z
+		lea(gp0, ptr[rsp + 8]);
+		call(mulPreL); // stack <- x * y
+		mov(gp0, ptr[rsp]);
+		lea(gp1, ptr[rsp + 8]);
+		call(fpDbl_modL); // z <- stack
+		add(rsp, stackSize);
+		ret();
+#else
 		const Reg64& p0 = sf.p[0];
 		const Reg64& p1 = sf.p[1];
 		const Reg64& p2 = sf.p[2];
@@ -1370,6 +1383,7 @@ private:
 		vmovq(p0, xm0); // load p0
 		store_mr(p0, Pack(t3, t2, t1, t0));
 		ret();
+#endif
 	}
 	/*
 		c[n..0] = c[n-1..0] + px[n-1..0] * rdx if is_cn_zero = true
@@ -2453,6 +2467,7 @@ private:
 			*/
 			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 			mulPre4(gp0, gp1, gp2, sf.t);
+//			call(mulPreL);
 			sf.close(); // make epilog
 		L(mulPreL); // called only from asm code
 			mulPre4(gp0, gp1, gp2, sf.t);
