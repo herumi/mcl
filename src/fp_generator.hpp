@@ -319,6 +319,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		init_inner(op);
 		// ToDo : recover op if false
 		if (Xbyak::GetError()) return false;
+#ifndef NDEBUG
+		if (hasUndefinedLabel()) {
+			fprintf(stderr, "fp_generator has bugs.\n");
+			exit(1);
+			return false;
+		}
+#endif
 //		printf("code size=%d\n", (int)getSize());
 #ifndef MCL_DUMP_JIT
 		setProtectModeRE(); // set read/exec memory
