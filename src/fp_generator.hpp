@@ -415,7 +415,17 @@ private:
 			gen_preInv();
 			setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
 		}
+
+		// call from Fp::mul and Fp::sqr
+		align(16);
+		gen_fpDbl_mulPre(op.fpDbl_mulPre);
+		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
+
+		align(16);
+		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
+		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
 		if (op.xi_a == 0) return; // Fp2 is not used
+
 		align(16);
 		op.fpDbl_addA_ = gen_fpDbl_add();
 		setFuncInfo(prof_, suf, "Dbl_add", op.fpDbl_addA_, getCurr());
@@ -431,14 +441,6 @@ private:
 		align(16);
 		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
 		setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
-
-		align(16);
-		gen_fpDbl_mulPre(op.fpDbl_mulPre);
-		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
-
-		align(16);
-		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
-		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
 
 		align(16);
 		op.fp2_addA_ = gen_fp2_add();
