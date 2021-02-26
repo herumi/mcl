@@ -45,6 +45,7 @@ CYBOZU_TEST_AUTO(bench2)
 {
 #ifndef NDEBUG
 	puts("skip bench2 in debug");
+	return;
 #endif
 	puts("msec");
 	setTryNum(1 << 16);

@@ -249,7 +249,8 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	const mcl::fp::Op *op_;
 	Label pL_; // pointer to p
 	// the following labels assume sf(this, 3, 10 | UseRDX)
-	Label mulPreL;
+	Label fp_mulPreL;
+	Label fp_sqrPreL;
 	Label fpDbl_modL;
 	Label fp_mulL;
 	Label fp2Dbl_mulPreL;
@@ -319,6 +320,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		init_inner(op);
 		// ToDo : recover op if false
 		if (Xbyak::GetError()) return false;
+#ifndef NDEBUG
+		if (hasUndefinedLabel()) {
+			fprintf(stderr, "fp_generator has bugs.\n");
+			exit(1);
+			return false;
+		}
+#endif
 //		printf("code size=%d\n", (int)getSize());
 #ifndef MCL_DUMP_JIT
 		setProtectModeRE(); // set read/exec memory
@@ -390,6 +398,22 @@ private:
 		align(16);
 		op.fpDbl_modA_ = gen_fpDbl_mod(op);
 		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
+
+		if (op.primeMode != PM_NIST_P192 && op.N <= 6) { // support general op.N but not fast for op.N > 4
+			align(16);
+			op.fp_preInv = getCurr<int2u>();
+			gen_preInv();
+			setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
+		}
+
+		// call from Fp::mul and Fp::sqr
+		align(16);
+		gen_fpDbl_mulPre(op.fpDbl_mulPre);
+		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
+
+		align(16);
+		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
+		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
 		align(16);
 		op.fp_mulA_ = gen_mul();
 		setFuncInfo(prof_, suf, "_mul", op.fp_mulA_, getCurr());
@@ -401,14 +425,8 @@ private:
 		align(16);
 		op.fp_sqrA_ = gen_sqr();
 		setFuncInfo(prof_, suf, "_sqr", op.fp_sqrA_, getCurr());
-
-		if (op.primeMode != PM_NIST_P192 && op.N <= 6) { // support general op.N but not fast for op.N > 4
-			align(16);
-			op.fp_preInv = getCurr<int2u>();
-			gen_preInv();
-			setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
-		}
 		if (op.xi_a == 0) return; // Fp2 is not used
+
 		align(16);
 		op.fpDbl_addA_ = gen_fpDbl_add();
 		setFuncInfo(prof_, suf, "Dbl_add", op.fpDbl_addA_, getCurr());
@@ -424,14 +442,6 @@ private:
 		align(16);
 		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
 		setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
-
-		align(16);
-		gen_fpDbl_mulPre(op.fpDbl_mulPre);
-		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
-
-		align(16);
-		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
-		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
 
 		align(16);
 		op.fp2_addA_ = gen_fp2_add();
@@ -865,7 +875,7 @@ private:
 			// a little faster
 			gen_montMul6();
 #else
-			if (mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
+			if (fp_mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
 			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
 			/*
 				use xm3
@@ -874,19 +884,13 @@ private:
 			*/
 			vmovq(xm3, gp0);
 			mov(gp0, rsp);
-			call(mulPreL); // gp0, x, y
+			call(fp_mulPreL); // gp0, x, y
 			vmovq(gp0, xm3);
 			mov(gp1, rsp);
 			call(fpDbl_modL);
 #endif
 			return func;
 		}
-#if 0
-		if (pn_ <= 9) {
-			gen_montMulN(p_, rp_, pn_);
-			return func;
-		}
-#endif
 		return 0;
 	}
 	/*
@@ -1039,14 +1043,62 @@ private:
 		cmovc_rr(Pack(t9, t8, t4), Pack(t2, t1, t10));
 		store_mr(z, Pack(t9, t8, t4));
 	}
+	void gen_fpDbl_mod4NF(const Reg64& z, const Reg64& xy, const Pack& t)
+	{
+		assert(!isFullBit_);
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+
+		const Reg64& d = rdx;
+		const Reg64& pp = t[8];
+		lea(pp, ptr[rip + pL_]);
+
+		load_rm(Pack(t4, t3, t2, t1, t0), xy);
+		mov(d, rp_);
+		imul(d, t0); // q
+		mulAdd2(t5, Pack(t4, t3, t2, t1, t0), pp, t6);
+		// t5 : carry, [t4:t3:t2:t1:t0] += p * q
+
+		mov(d, rp_);
+		imul(d, t1);
+		mov(t0, ptr[xy + 5 * 8]);
+		mulAdd2(t7, Pack(t0, t4, t3, t2, t1), pp, t6, &t5);
+
+		mov(d, rp_);
+		imul(d, t2);
+		mov(t1, ptr[xy + 6 * 8]);
+		mulAdd2(t5, Pack(t1, t0, t4, t3, t2), pp, t6, &t7);
+
+		mov(d, rp_);
+		imul(d, t3);
+		mov(t2, ptr[xy + 7 * 8]);
+		mulAdd2(t7, Pack(t2, t1, t0, t4, t3), pp, t6, &t5, false);
+
+		Pack zp = Pack(t2, t1, t0, t4);
+		Pack keep = Pack(t7, t6, t5, t3);
+		mov_rr(keep, zp);
+		sub_rm(zp, pp); // z -= p
+		cmovc_rr(zp, keep);
+		store_mr(z, zp);
+	}
 	/*
 		@input (z, xy)
 		z[3..0] <- montgomery reduction(x[7..0])
 		@note destroy rax, rdx, t0, ..., t10, xm0, xm1
 		xm2 if isFullBit_
 	*/
-	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t, const Reg64& t10)
+	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
+		if (!isFullBit_) {
+			gen_fpDbl_mod4NF(z, xy, t);
+			return;
+		}
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
@@ -1057,6 +1109,7 @@ private:
 		const Reg64& t7 = t[7];
 		const Reg64& t8 = t[8];
 		const Reg64& t9 = t[9];
+		const Reg64& t10 = t[10];
 
 		const Reg64& a = rax;
 		const Reg64& d = rdx;
@@ -1183,7 +1236,9 @@ private:
 			call(fpDbl_modL);
 			sf.close();
 		L(fpDbl_modL);
-			gen_fpDbl_mod4(gp0, gp1, sf.t, gp2);
+			Pack t = sf.t;
+			t.append(gp2);
+			gen_fpDbl_mod4(gp0, gp1, t);
 			ret();
 			return func;
 		}
@@ -1216,7 +1271,7 @@ private:
 			return func;
 		}
 		if (pn_ == 4 && useMulx_) {
-#if 1
+#if 0
 			// sqr(y, x) = mul(y, x, x)
 #ifdef XBYAK64_WIN
 			mov(r8, rdx);
@@ -1224,7 +1279,7 @@ private:
 			mov(rdx, rsi);
 #endif
 			jmp((const void*)op_->fp_mulA_);
-#else // (sqrPre + mod) is slower than mul
+#else // (sqrPre + mod) is faster than mul
 			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
@@ -1236,64 +1291,31 @@ private:
 			return func;
 		}
 		if (pn_ == 6 && !isFullBit_ && useMulx_ && useAdx_) {
-			if (fpDbl_modL.getAddress() == 0) return 0;
-			StackFrame sf(this, 3, 10 | UseRDX, (12 + 6) * 8);
-			/*
-				use xm3
-				rsp
-				[6 * 8, (12 + 6) * 8) ; sqrPre(x, x)
-				[0..6 * 8) ; stack for sqrPre6
-			*/
-			vmovq(xm3, gp0);
+#if 1
+			StackFrame sf(this, 3, 10 | UseRDX);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
-			// sqrPre6 uses 6 * 8 bytes stack
-			sqrPre6(rsp + 6 * 8, sf.p[1], t);
-			mov(gp0, ptr[rsp + (12 + 6) * 8]);
-			vmovq(gp0, xm3);
-			lea(gp1, ptr[rsp + 6 * 8]);
+			int stackSize = 12 * 8 + 8;
+			sub(rsp, stackSize);
+			mov(ptr[rsp], gp0);
+			lea(gp0, ptr[rsp + 8]);
+			call(fp_sqrPreL);
+			mov(gp0, ptr[rsp]);
+			lea(gp1, ptr[rsp + 8]);
+			call(fpDbl_modL);
+			add(rsp, stackSize);
+			return func;
+#else
+			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			sqrPre6(rsp, sf.p[1], t);
+			lea(gp1, ptr[rsp]);
 			call(fpDbl_modL);
 			return func;
+#endif
 		}
 		return 0;
-	}
-	/*
-		input (pz[], px[], py[])
-		z[] <- montgomery(x[], y[])
-	*/
-	void gen_montMulN(const uint64_t *p, uint64_t pp, int n)
-	{
-		assert(1 <= pn_ && pn_ <= 9);
-		const int regNum = useMulx_ ? 4 : 3 + (std::min)(n - 1, 7);
-		const int stackSize = (n * 3 + (isFullBit_ ? 2 : 1)) * 8;
-		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
-		const Reg64& pz = sf.p[0];
-		const Reg64& px = sf.p[1];
-		const Reg64& py = sf.p[2];
-		const Reg64& y = sf.t[0];
-		const Reg64& pAddr = sf.t[1];
-		const Reg64& t = sf.t[2];
-		Pack remain = sf.t.sub(3);
-		size_t rspPos = 0;
-
-		MixPack pw1(remain, rspPos, n - 1);
-		const RegExp pw2 = rsp + rspPos; // pw2[0..n-1]
-		const RegExp pc = pw2 + n * 8; // pc[0..n+1]
-		mov(pAddr, (size_t)p);
-
-		for (int i = 0; i < n; i++) {
-			mov(y, ptr [py + i * 8]);
-			montgomeryN_1(pp, n, pc, px, y, pAddr, t, pw1, pw2, i == 0);
-		}
-		// pz[] = pc[] - p[]
-		gen_raw_sub(pz, pc, pAddr, t, n);
-		if (isFullBit_) sbb(qword[pc + n * 8], 0);
-		jnc("@f");
-		for (int i = 0; i < n; i++) {
-			mov(t, ptr [pc + i * 8]);
-			mov(ptr [pz + i * 8], t);
-		}
-	L("@@");
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
@@ -1305,6 +1327,19 @@ private:
 		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 		call(fp_mulL);
 		sf.close();
+#if 0 // slower than mont
+	L(fp_mulL);
+		int stackSize = 8 * 8 /* xy */ + 8;
+		sub(rsp, stackSize);
+		mov(ptr[rsp], gp0); // save z
+		lea(gp0, ptr[rsp + 8]);
+		call(fp_mulPreL); // stack <- x * y
+		mov(gp0, ptr[rsp]);
+		lea(gp1, ptr[rsp + 8]);
+		call(fpDbl_modL); // z <- stack
+		add(rsp, stackSize);
+		ret();
+#else
 		const Reg64& p0 = sf.p[0];
 		const Reg64& p1 = sf.p[1];
 		const Reg64& p2 = sf.p[2];
@@ -1354,6 +1389,7 @@ private:
 		vmovq(p0, xm0); // load p0
 		store_mr(p0, Pack(t3, t2, t1, t0));
 		ret();
+#endif
 	}
 	/*
 		c[n..0] = c[n-1..0] + px[n-1..0] * rdx if is_cn_zero = true
@@ -1383,20 +1419,20 @@ private:
 		h = 0 or 1
 		use rax, t0
 	*/
-	void mulAdd2(const Reg64& h, const Pack& c, int n, const RegExp& px, const Reg64& t0, const Reg64 *cc = 0, bool updateCarry = true)
+	void mulAdd2(const Reg64& h, const Pack& c, const RegExp& px, const Reg64& t0, const Reg64 *cc = 0, bool updateCarry = true)
 	{
 		assert(!isFullBit_);
 		const Reg64& a = rax;
 		xor_(h, h); // h = 0
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < pn_; i++) {
 			mulx(t0, a, ptr [px + i * 8]);
 			adox(c[i], a);
-			if (i == n - 1) break;
+			if (i == pn_ - 1) break;
 			adcx(c[i + 1], t0);
 		}
 		adox(t0, h); // no carry
 		if (cc) adox(t0, *cc); // no carry
-		adcx(c[n], t0);
+		adcx(c[pn_], t0);
 		if (updateCarry) adc(h, h);
 	}
 	/*
@@ -1937,11 +1973,82 @@ private:
 		store_mr(pz, Pack(t3, t2, t1, t0));
 	}
 	/*
+		(3, 3)(2, 2)(1, 1)(0, 0)
+		   t5 t4 t3 t2 t1 t0
+		   (3, 2)(2, 1)(1, 0)x2
+		      (3, 1)(2, 0)x2
+		         (3, 0)x2
+	*/
+	void sqrPre4NF(const Reg64& py, const Reg64& px, const Pack& t)
+	{
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& x0 = t[6];
+		const Reg64& x1 = t[7];
+		const Reg64& x2 = t[8];
+		const Reg64& x3 = t[9];
+		const Reg64& H = t[10];
+
+		load_rm(Pack(x3, x2, x1, x0), px);
+		mov(rdx, x0);
+		mulx(t3, t2, x3); // (3, 0)
+		mulx(rax, t1, x2); // (2, 0)
+		add(t2, rax);
+		mov(rdx, x1);
+		mulx(t4, rax, x3); // (3, 1)
+		adc(t3, rax);
+		adc(t4, 0); // [t4:t3:t2:t1]
+		mulx(rax, t0, x0); // (1, 0)
+		add(t1, rax);
+		mulx(rdx, rax, x2); // (2, 1)
+		adc(t2, rax);
+		adc(t3, rdx);
+		mov(rdx, x3);
+		mulx(t5, rax, x2); // (3, 2)
+		adc(t4, rax);
+		adc(t5, 0);
+
+		shl1(Pack(t5, t4, t3, t2, t1, t0), &H);
+		mov(rdx, x0);
+		mulx(rdx, rax, rdx);
+		mov(ptr[py + 8 * 0], rax);
+		add(rdx, t0);
+		mov(ptr[py + 8 * 1], rdx);
+		mov(rdx, x1);
+		mulx(rdx, rax, rdx);
+		adc(rax, t1);
+		mov(ptr[py + 8 * 2], rax);
+		adc(rdx, t2);
+		mov(ptr[py + 8 * 3], rdx);
+		mov(rdx, x2);
+		mulx(rdx, rax, rdx);
+		adc(rax, t3);
+		mov(ptr[py + 8 * 4], rax);
+		adc(rdx, t4);
+		mov(ptr[py + 8 * 5], rdx);
+		mov(rdx, x3);
+		mulx(rdx, rax, rdx);
+		adc(rax, t5);
+		mov(ptr[py + 8 * 6], rax);
+		adc(rdx, H);
+		mov(ptr[py + 8 * 7], rdx);
+	}
+	/*
 		py[7..0] = px[3..0] ^ 2
 		use xmm0
 	*/
-	void sqrPre4(const RegExp& py, const RegExp& px, const Pack& t)
+	void sqrPre4(const Reg64& py, const Reg64& px, const Pack& t)
 	{
+#if 1
+		if (useMulx_ && useAdx_) {
+			sqrPre4NF(py, px, t);
+			return;
+		}
+#endif
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
@@ -1990,38 +2097,124 @@ private:
 		store_mr(py + 2 * 8, Pack(d, t8, t10, t9, t3, t2));
 	}
 	/*
-		py[11..0] = px[5..0] ^ 2
-		use rax, rdx, stack[6 * 8]
+		(5, 5)(4, 4)(3, 3)(2, 2)(1, 1)(0, 0)
+		   t9 t8 t7 t6 t5 t4 t3 t2 t1 t0
+		   (5, 4)(4, 3)(3, 2)(2, 1)(1, 0)
+		      (5, 3)(4, 2)(3, 1)(2, 0)
+		         (5, 2)(4, 1)(3, 0)
+		            (5, 1)(4, 0)
+		               (5, 0)
 	*/
 	void sqrPre6(const RegExp& py, const RegExp& px, const Pack& t)
 	{
 		const Reg64& t0 = t[0];
 		const Reg64& t1 = t[1];
 		const Reg64& t2 = t[2];
-		/*
-			(aN + b)^2 = a^2 N^2 + 2ab N + b^2
-		*/
-		sqrPre3(py, px, t); // [py] <- b^2
-		sqrPre3(py + 6 * 8, px + 3 * 8, t); // [py + 6 * 8] <- a^2
-		mulPre3(rsp, px, px + 3 * 8, t); // ab
-		Pack ab = t.sub(0, 6);
-		load_rm(ab, rsp);
-		xor_(rax, rax);
-		for (int i = 0; i < 6; i++) {
-			if (i == 0) {
-				add(ab[i], ab[i]);
-			} else {
-				adc(ab[i], ab[i]);
-			}
-		}
-		adc(rax, rax);
-		add_rm(ab, py + 3 * 8);
-		store_mr(py + 3 * 8, ab);
-		load_rm(Pack(t2, t1, t0), py + 9 * 8);
-		adc(t0, rax);
-		adc(t1, 0);
-		adc(t2, 0);
-		store_mr(py + 9 * 8, Pack(t2, t1, t0));
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+		const Reg64& t6 = t[6];
+		const Reg64& t7 = t[7];
+		const Reg64& t8 = t[8];
+		const Reg64& t9 = t[9];
+		const Reg64& H = t[10];
+
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(t5, t4, ptr[px + 8 * 5]); // [t5:t4] = (5, 0)
+		mulx(rax, t3, ptr[px + 8 * 4]); // (4, 0)
+		add(t4, rax);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(t6, rax, ptr[px + 8 * 5]); // (5, 1)
+		adc(t5, rax);
+		adc(t6, 0); // [t6:t5:t4:t3]
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(rax, t2, ptr[px + 8 * 3]);
+		add(t3, rax);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(H, rax, ptr[px + 8 * 4]);
+		adc(t4, rax);
+		adc(t5, H);
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(t7, rax, ptr[px + 8 * 5]);
+		adc(t6, rax);
+		adc(t7, 0); // [t7:...:t2]
+
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(H, t1, ptr[px + 8 * 2]);
+		adc(t2, H);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(H, rax, ptr[px + 8 * 3]);
+		adc(t3, rax);
+		adc(t4, H);
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(H, rax, ptr[px + 8 * 4]);
+		adc(t5, rax);
+		adc(t6, H);
+		mov(rdx, ptr[px + 8 * 3]);
+		mulx(t8, rax, ptr[px + 8 * 5]);
+		adc(t7, rax);
+		adc(t8, 0); // [t8:...:t1]
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(H, t0, ptr[px + 8 * 1]);
+		add(t1, H);
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(H, rax, ptr[px + 8 * 2]);
+		adc(t2, rax);
+		adc(t3, H);
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(H, rax, ptr[px + 8 * 3]);
+		adc(t4, rax);
+		adc(t5, H);
+		mov(rdx, ptr[px + 8 * 3]);
+		mulx(H, rax, ptr[px + 8 * 4]);
+		adc(t6, rax);
+		adc(t7, H);
+		mov(rdx, ptr[px + 8 * 4]);
+		mulx(t9, rax, ptr[px + 8 * 5]);
+		adc(t8, rax);
+		adc(t9, 0); // [t9...:t0]
+		shl1(Pack(t9, t8, t7, t6, t5, t4, t3, t2, t1, t0), &H);
+
+		mov(rdx, ptr[px + 8 * 0]);
+		mulx(rdx, rax, rdx);
+		mov(ptr[py + 8 * 0], rax);
+		add(t0, rdx);
+		mov(ptr[py + 8 * 1], t0);
+
+		mov(rdx, ptr[px + 8 * 1]);
+		mulx(rdx, rax, rdx);
+		adc(t1, rax);
+		mov(ptr[py + 8 * 2], t1);
+		adc(t2, rdx);
+		mov(ptr[py + 8 * 3], t2);
+
+		mov(rdx, ptr[px + 8 * 2]);
+		mulx(rdx, rax, rdx);
+		adc(t3, rax);
+		mov(ptr[py + 8 * 4], t3);
+		adc(t4, edx);
+		mov(ptr[py + 8 * 5], t4);
+
+		mov(rdx, ptr[px + 8 * 3]);
+		mulx(rdx, rax, rdx);
+		adc(t5, rax);
+		mov(ptr[py + 8 * 6], t5);
+		adc(t6, rdx);
+		mov(ptr[py + 8 * 7], t6);
+
+		mov(rdx, ptr[px + 8 * 4]);
+		mulx(rdx, rax, rdx);
+		adc(t7, rax);
+		mov(ptr[py + 8 * 8], t7);
+		adc(t8, rdx);
+		mov(ptr[py + 8 * 9], t8);
+
+		mov(rdx, ptr[px + 8 * 5]);
+		mulx(rdx, rax, rdx);
+		adc(t9, rax);
+		mov(ptr[py + 8 * 10], t9);
+		adc(rdx, H);
+		mov(ptr[py + 8 * 11], rdx);
 	}
 	/*
 		pz[7..0] <- px[3..0] * py[3..0]
@@ -2250,7 +2443,6 @@ private:
 	/*
 		@input (z, xy)
 		z[5..0] <- montgomery reduction(x[11..0])
-		use xm0, xm1, xm2
 	*/
 	void gen_fpDbl_mod6(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
@@ -2273,35 +2465,34 @@ private:
 		load_rm(Pack(t6, t5, t4, t3, t2, t1, t0), xy);
 		mov(d, rp_);
 		imul(d, t0); // q
-		mulAdd2(t7, Pack(t6, t5, t4, t3, t2, t1, t0), 6, pp, t8);
+		mulAdd2(t7, Pack(t6, t5, t4, t3, t2, t1, t0), pp, t8);
 		// t7 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
 
 		mov(d, rp_);
 		imul(d, t1);
 		mov(t0, ptr[xy + 7 * 8]);
-		mulAdd2(t9, Pack(t0, t6, t5, t4, t3, t2, t1), 6, pp, t8, &t7);
+		mulAdd2(t9, Pack(t0, t6, t5, t4, t3, t2, t1), pp, t8, &t7);
 
 		mov(d, rp_);
 		imul(d, t2);
 		mov(t1, ptr[xy + 8 * 8]);
-		mulAdd2(t7, Pack(t1, t0, t6, t5, t4, t3, t2), 6, pp, t8, &t9);
+		mulAdd2(t7, Pack(t1, t0, t6, t5, t4, t3, t2), pp, t8, &t9);
 
 		mov(d, rp_);
 		imul(d, t3);
 		mov(t2, ptr[xy + 9 * 8]);
-		mulAdd2(t9, Pack(t2, t1, t0, t6, t5, t4, t3), 6, pp, t8, &t7);
+		mulAdd2(t9, Pack(t2, t1, t0, t6, t5, t4, t3), pp, t8, &t7);
 
 		mov(d, rp_);
 		imul(d, t4);
 		mov(t3, ptr[xy + 10 * 8]);
-		mulAdd2(t7, Pack(t3, t2, t1, t0, t6, t5, t4), 6, pp, t8, &t9);
+		mulAdd2(t7, Pack(t3, t2, t1, t0, t6, t5, t4), pp, t8, &t9);
 
 		mov(d, rp_);
 		imul(d, t5);
 		mov(t4, ptr[xy + 11 * 8]);
-		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), 6, pp, t8, &t7, false);
+		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), pp, t8, &t7, false);
 
-		// z = [t4:t3:t2:t1:t0:t6]
 		Pack zp = Pack(t4, t3, t2, t1, t0, t6);
 		Pack keep = Pack(t5, xy, rax, rdx, t7, t8);
 		mov_rr(keep, zp);
@@ -2311,77 +2502,94 @@ private:
 	}
 	void gen_fpDbl_sqrPre(void2u& f)
 	{
+		if (!(useMulx_ && useAdx_)) return;
 		void2u func = getCurr<void2u>();
-		if (pn_ == 2 && useMulx_) {
-			StackFrame sf(this, 2, 7 | UseRDX);
-			sqrPre2(sf.p[0], sf.p[1], sf.t);
-			f = func;
+		switch (pn_) {
+		case 2:
+			{
+				StackFrame sf(this, 2, 7 | UseRDX);
+				sqrPre2(sf.p[0], sf.p[1], sf.t);
+				f = func;
+			}
+			break;
+		case 3:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				Pack t = sf.t;
+				t.append(sf.p[2]);
+				sqrPre3(sf.p[0], sf.p[1], t);
+				f = func;
+			}
+			break;
+		case 4:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				Pack t = sf.t;
+				t.append(sf.p[2]);
+				sqrPre4(sf.p[0], sf.p[1], t);
+				f = func;
+			}
+			break;
+		case 6:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				call(fp_sqrPreL);
+				sf.close();
+			L(fp_sqrPreL);
+				Pack t = sf.t;
+				t.append(sf.p[2]);
+				sqrPre6(sf.p[0], sf.p[1], t);
+				ret();
+				f = func;
+			}
+			break;
 		}
-		if (pn_ == 3) {
-			StackFrame sf(this, 3, 10 | UseRDX);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre3(sf.p[0], sf.p[1], t);
-			f = func;
-		}
-		if (pn_ == 4 && useMulx_) {
-			StackFrame sf(this, 3, 10 | UseRDX);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre4(sf.p[0], sf.p[1], t);
-			f = func;
-		}
-		if (pn_ == 6 && useMulx_ && useAdx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, 6 * 8);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre6(sf.p[0], sf.p[1], t);
-			f = func;
-		}
-#if 0
-#ifdef XBYAK64_WIN
-		mov(r8, rdx);
-#else
-		mov(rdx, rsi);
-#endif
-		jmp((void*)op.fpDbl_mulPreA_);
-		return func;
-#endif
 	}
 	void gen_fpDbl_mulPre(void3u& f)
 	{
+		if (!(useMulx_ && useAdx_)) return;
 		void3u func = getCurr<void3u>();
-		if (pn_ == 2 && useMulx_) {
-			StackFrame sf(this, 3, 5 | UseRDX);
-			mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
-			f = func;
-		}
-		if (pn_ == 3) {
-			StackFrame sf(this, 3, 10 | UseRDX);
-			mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
-			f = func;
-		}
-		if (pn_ == 4) {
-			/*
-				fpDbl_mulPre is available as C function
-				this function calls mulPreL directly.
-			*/
-			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
-			mulPre4(gp0, gp1, gp2, sf.t);
-			sf.close(); // make epilog
-		L(mulPreL); // called only from asm code
-			mulPre4(gp0, gp1, gp2, sf.t);
-			ret();
-			f = func;
-		}
-		if (pn_ == 6 && useAdx_) {
-			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
-			call(mulPreL);
-			sf.close(); // make epilog
-		L(mulPreL); // called only from asm code
-			mulPre6(sf.t);
-			ret();
-			f = func;
+		switch (pn_) {
+		case 2:
+			{
+				StackFrame sf(this, 3, 5 | UseRDX);
+				mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
+				f = func;
+			}
+			break;
+		case 3:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX);
+				mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
+				f = func;
+			}
+			break;
+		case 4:
+			{
+				/*
+					fpDbl_mulPre is available as C function
+					this function calls fp_mulPreL directly.
+				*/
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				mulPre4(gp0, gp1, gp2, sf.t);
+	//			call(fp_mulPreL);
+				sf.close(); // make epilog
+			L(fp_mulPreL); // called only from asm code
+				mulPre4(gp0, gp1, gp2, sf.t);
+				ret();
+				f = func;
+			}
+			break;
+		case 6:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				call(fp_mulPreL);
+				sf.close(); // make epilog
+			L(fp_mulPreL); // called only from asm code
+				mulPre6(sf.t);
+				ret();
+				f = func;
+			}
 		}
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
@@ -3424,7 +3632,7 @@ private:
 		} else {
 			lea(gp1, ptr [s]);
 			lea(gp2, ptr [t]);
-			call(mulPreL);
+			call(fp_mulPreL);
 		}
 		// d0 = z.a = a c
 		mov(gp0, ptr [z]);
@@ -3433,7 +3641,7 @@ private:
 		if (embedded) {
 			mulPre4(gp0, gp1, gp2, sf.t);
 		} else {
-			call(mulPreL);
+			call(fp_mulPreL);
 		}
 		// d2 = z.b = b d
 		mov(gp1, ptr [x]);
@@ -3444,7 +3652,7 @@ private:
 			mulPre4(d2, gp1, gp2, sf.t);
 		} else {
 			lea(gp0, ptr [d2]);
-			call(mulPreL);
+			call(fp_mulPreL);
 		}
 
 		{
@@ -3481,7 +3689,7 @@ private:
 		const RegExp x = rsp + 1 * 8;
 		const Ext1 t1(FpByte_, rsp, 2 * 8);
 		const Ext1 t2(FpByte_, rsp, t1.next);
-		// use mulPreL then use 3
+		// use fp_mulPreL then use 3
 		StackFrame sf(this, 3 /* not 2 */, 10 | UseRDX, t2.next);
 		mov(ptr [y], gp0);
 		mov(ptr [x], gp1);
@@ -3509,13 +3717,13 @@ private:
 		add(gp0, FpByte_ * 2);
 		lea(gp1, ptr [t1]);
 		mov(gp2, ptr [x]);
-		call(mulPreL);
+		call(fp_mulPreL);
 		mov(gp0, ptr [x]);
 		gen_raw_fp_sub(t1, gp0, gp0 + FpByte_, t, false);
 		mov(gp0, ptr [y]);
 		lea(gp1, ptr [t1]);
 		lea(gp2, ptr [t2]);
-		call(mulPreL);
+		call(fp_mulPreL);
 		return func;
 	}
 	void2u gen_fp2Dbl_mul_xi()

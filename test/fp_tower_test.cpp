@@ -453,11 +453,15 @@ void testAll()
 		"0x0000000000000001000000000000000000000000000000000000000000000085", // min prime
 		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
 		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
+		// max prime less than 2**256/4
+		"0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0b",
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
 #if MCL_MAX_BIT_SIZE >= 384
 		// N = 6
 		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+		// max prime less than 2**384/4
+		"0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff97",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
 #if MCL_MAX_BIT_SIZE >= 768

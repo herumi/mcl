@@ -866,40 +866,18 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp2::mul2(y.b, x.b);
 		Fp2::mul2(y.c, x.c);
 	}
-	/*
-		x = a + bv + cv^2, v^3 = xi
-		x^2 = (a^2 + 2bc xi) + (c^2 xi + 2ab)v + (b^2 + 2ac)v^2
-
-		b^2 + 2ac = (a + b + c)^2 - a^2 - 2bc - c^2 - 2ab
-	*/
 	static void sqr(Fp6T& y, const Fp6T& x)
 	{
-		const Fp2& a = x.a;
-		const Fp2& b = x.b;
-		const Fp2& c = x.c;
-		Fp2 t;
-		Fp2Dbl BC2, AB2, AA, CC, T;
-		Fp2::mul2(t, b);
-		Fp2Dbl::mulPre(BC2, t, c); // 2bc
-		Fp2Dbl::mulPre(AB2, t, a); // 2ab
-		Fp2Dbl::sqrPre(AA, a);
-		Fp2Dbl::sqrPre(CC, c);
-		Fp2::add(t, a, b);
-		Fp2::add(t, t, c);
-		Fp2Dbl::sqrPre(T, t); // (a + b + c)^2
-		Fp2Dbl::sub(T, T, AA);
-		Fp2Dbl::sub(T, T, BC2);
-		Fp2Dbl::sub(T, T, CC);
-		Fp2Dbl::sub(T, T, AB2);
-		Fp2Dbl::mod(y.c, T);
-		Fp2Dbl::mul_xi(BC2, BC2);
-		Fp2Dbl::add(AA, AA, BC2);
-		Fp2Dbl::mod(y.a, AA);
-		Fp2Dbl::mul_xi(CC, CC);
-		Fp2Dbl::add(CC, CC, AB2);
-		Fp2Dbl::mod(y.b, CC);
+		Fp6Dbl XX;
+		Fp6Dbl::sqrPre(XX, x);
+		Fp6Dbl::mod(y, XX);
 	}
-	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y);
+	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	{
+		Fp6Dbl XY;
+		Fp6Dbl::mulPre(XY, x, y);
+		Fp6Dbl::mod(z, XY);
+	}
 	/*
 		x = a + bv + cv^2, v^3 = xi
 		y = 1/x = p/q where
@@ -909,38 +887,42 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	*/
 	static void inv(Fp6T& y, const Fp6T& x)
 	{
-// 8.5Kclk
-//clk.begin();
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
 		const Fp2& c = x.c;
-		Fp2 aa, bb, cc, ab, bc, ac;
-		Fp2::sqr(aa, a);
-		Fp2::sqr(bb, b);
-		Fp2::sqr(cc, c);
-		Fp2::mul(ab, a, b);
-		Fp2::mul(bc, b, c);
-		Fp2::mul(ac, c, a);
+		Fp2Dbl aa, bb, cc, ab, bc, ac;
+		Fp2Dbl::sqrPre(aa, a);
+		Fp2Dbl::sqrPre(bb, b);
+		Fp2Dbl::sqrPre(cc, c);
+		Fp2Dbl::mulPre(ab, a, b);
+		Fp2Dbl::mulPre(bc, b, c);
+		Fp2Dbl::mulPre(ac, c, a);
 
 		Fp6T p;
-		Fp2::mul_xi(p.a, bc);
-		Fp2::sub(p.a, aa, p.a); // a^2 - bc xi
-		Fp2::mul_xi(p.b, cc);
-		p.b -= ab; // c^2 xi - ab
-		Fp2::sub(p.c, bb, ac); // b^2 - ac
-		Fp2 q, t;
-		Fp2::mul(q, p.b, c);
-		Fp2::mul(t, p.c, b);
-		q += t;
-		Fp2::mul_xi(q, q);
-		Fp2::mul(t, p.a, a);
-		q += t;
+		Fp2Dbl T;
+		Fp2Dbl::mul_xi(T, bc);
+		Fp2Dbl::sub(T, aa, T); // a^2 - bc xi
+		Fp2Dbl::mod(p.a, T);
+		Fp2Dbl::mul_xi(T, cc);
+		Fp2Dbl::sub(T, T, ab); // c^2 xi - ab
+		Fp2Dbl::mod(p.b, T);
+		Fp2Dbl::sub(T, bb, ac); // b^2 - ac
+		Fp2Dbl::mod(p.c, T);
+
+		Fp2Dbl T2;
+		Fp2Dbl::mulPre(T, p.b, c);
+		Fp2Dbl::mulPre(T2, p.c, b);
+		Fp2Dbl::add(T, T, T2);
+		Fp2Dbl::mul_xi(T, T);
+		Fp2Dbl::mulPre(T2, p.a, a);
+		Fp2Dbl::addPre(T, T, T2);
+		Fp2 q;
+		Fp2Dbl::mod(q, T);
 		Fp2::inv(q, q);
 
 		Fp2::mul(y.a, p.a, q);
 		Fp2::mul(y.b, p.b, q);
 		Fp2::mul(y.c, p.c, q);
-//clk.end();
 	}
 };
 
@@ -1011,6 +993,36 @@ struct Fp6DblT {
 		Fp2Dbl::add(ZB, ZB, CF);
 		Fp2Dbl::add(ZC, ZC, BE);
 	}
+	/*
+		x = a + bv + cv^2, v^3 = xi
+		x^2 = (a^2 + 2bc xi) + (c^2 xi + 2ab)v + (b^2 + 2ac)v^2
+
+		b^2 + 2ac = (a + b + c)^2 - a^2 - 2bc - c^2 - 2ab
+	*/
+	static void sqrPre(Fp6DblT& y, const Fp6& x)
+	{
+		const Fp2& a = x.a;
+		const Fp2& b = x.b;
+		const Fp2& c = x.c;
+		Fp2 t;
+		Fp2Dbl BC2, AB2, AA, CC, T;
+		Fp2::mul2(t, b);
+		Fp2Dbl::mulPre(BC2, t, c); // 2bc
+		Fp2Dbl::mulPre(AB2, t, a); // 2ab
+		Fp2Dbl::sqrPre(AA, a);
+		Fp2Dbl::sqrPre(CC, c);
+		Fp2::add(t, a, b);
+		Fp2::add(t, t, c);
+		Fp2Dbl::sqrPre(T, t); // (a + b + c)^2
+		Fp2Dbl::sub(T, T, AA);
+		Fp2Dbl::sub(T, T, BC2);
+		Fp2Dbl::sub(T, T, CC);
+		Fp2Dbl::sub(y.c, T, AB2);
+		Fp2Dbl::mul_xi(BC2, BC2);
+		Fp2Dbl::add(y.a, AA, BC2);
+		Fp2Dbl::mul_xi(CC, CC);
+		Fp2Dbl::add(y.b, CC, AB2);
+	}
 	static void mod(Fp6& y, const Fp6Dbl& x)
 	{
 		Fp2Dbl::mod(y.a, x.a);
@@ -1018,14 +1030,6 @@ struct Fp6DblT {
 		Fp2Dbl::mod(y.c, x.c);
 	}
 };
-
-template<class Fp>
-inline void Fp6T<Fp>::mul(Fp6T<Fp>& z, const Fp6T<Fp>& x, const Fp6T<Fp>& y)
-{
-	Fp6DblT<Fp> Z;
-	Fp6DblT<Fp>::mulPre(Z, x, y);
-	Fp6DblT<Fp>::mod(z, Z);
-}
 
 /*
 	Fp12T = Fp6[w] / (w^2 - v)
@@ -1165,16 +1169,18 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 	{
 		const Fp6& a = x.a;
 		const Fp6& b = x.b;
-		Fp6 t0, t1;
-		Fp6::sqr(t0, a);
-		Fp6::sqr(t1, b);
-		Fp2::mul_xi(t1.c, t1.c);
-		t0.a -= t1.c;
-		t0.b -= t1.a;
-		t0.c -= t1.b; // t0 = a^2 - b^2v
-		Fp6::inv(t0, t0);
-		Fp6::mul(y.a, x.a, t0);
-		Fp6::mul(y.b, x.b, t0);
+		Fp6Dbl AA, BB;
+		Fp6Dbl::sqrPre(AA, a);
+		Fp6Dbl::sqrPre(BB, b);
+		Fp2Dbl::mul_xi(BB.c, BB.c);
+		Fp2Dbl::sub(AA.a, AA.a, BB.c);
+		Fp2Dbl::sub(AA.b, AA.b, BB.a);
+		Fp2Dbl::sub(AA.c, AA.c, BB.b); // a^2 - b^2 v
+		Fp6 t;
+		Fp6Dbl::mod(t, AA);
+		Fp6::inv(t, t);
+		Fp6::mul(y.a, x.a, t);
+		Fp6::mul(y.b, x.b, t);
 		Fp6::neg(y.b, y.b);
 	}
 	/*
