@@ -301,7 +301,7 @@ void dblJacobi(E& R, const E& P)
 	xy += xy; // 4xy^2
 	switch (E::specialA_) {
 	case Zero:
-		F::add(t, x2, x2);
+		F::mul2(t, x2);
 		x2 += t;
 		break;
 	case Minus3:
@@ -312,7 +312,7 @@ void dblJacobi(E& R, const E& P)
 			F::sqr(t, t);
 			x2 -= t;
 		}
-		F::add(t, x2, x2);
+		F::mul2(t, x2);
 		x2 += t;
 		break;
 	case GenericA:
@@ -325,7 +325,7 @@ void dblJacobi(E& R, const E& P)
 			t *= E::a_;
 		}
 		t += x2;
-		x2 += x2;
+		F::mul2(x2, x2);
 		x2 += t;
 		break;
 	}
@@ -337,12 +337,12 @@ void dblJacobi(E& R, const E& P)
 	} else {
 		F::mul(R.z, P.y, P.z);
 	}
-	R.z += R.z;
+	F::mul2(R.z, R.z);
 	F::sub(R.y, xy, R.x);
 	R.y *= x2;
-	y2 += y2;
-	y2 += y2;
-	y2 += y2;
+	F::mul2(y2, y2);
+	F::mul2(y2, y2);
+	F::mul2(y2, y2);
 	R.y -= y2;
 }
 
