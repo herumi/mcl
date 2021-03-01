@@ -509,6 +509,16 @@ public:
 #endif
 	static inline void addPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_addPre(z.v_, x.v_, y.v_); }
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
+	static inline void mulSmall(FpT& z, const FpT& x, const uint32_t y)
+	{
+		assert(y <= op_.smallModp.maxMulN);
+		Unit xy[maxSize + 1];
+		op_.fp_mulUnitPre(xy, x.v_, y);
+		int v = op_.smallModp.approxMul(xy);
+		const Unit *pv = op_.smallModp.getPmul(v);
+		op_.fp_subPre(z.v_, xy, pv);
+		op_.fp_sub(z.v_, z.v_, op_.p, op_.p);
+	}
 	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
 		if (mulSmallUnit(z, x, y)) return;
