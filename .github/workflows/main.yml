@@ -1,0 +1,13 @@
+name: test
+on: [push]
+
+jobs:
+  build:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: make test_ci DEBUG=1 -j3
+    - run: make clean
+    - run: make test_ci DEBUG=1 -j3 CXX=clang++
+

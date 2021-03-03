@@ -1,4 +1,4 @@
-[![Build Status](https://api.travis-ci.com/herumi/mcl.svg?branch=master)](https://travis-ci.com/github/herumi/mcl)
+[![Build Status](https://github.com/herumi/mcl/actions/workflows/main.yml/badge.svg)](https://github.com/herumi/mcl/actions/workflows/main.yml)
 
 # mcl
 
