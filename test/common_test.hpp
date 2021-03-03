@@ -183,8 +183,24 @@ void testFp2Dbl_mul_xi1()
 	}
 }
 
+void testMulSmall()
+{
+	puts("testMulSmall");
+	cybozu::XorShift rg;
+	for (int y = 0; y < 10; y++) {
+		for (int i = 0; i < 40; i++) {
+			Fp x, z1, z2;
+			x.setByCSPRNG(rg);
+			Fp::mulSmall(z1, x, y);
+			z2 = x * y;
+			CYBOZU_TEST_EQUAL(z1, z2);
+		}
+	}
+}
+
 void testCommon(const G1& P, const G2& Q)
 {
+	testMulSmall();
 	testFp2Dbl_mul_xi1();
 	testABCD();
 	testMul2();

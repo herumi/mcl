@@ -943,6 +943,85 @@ public:
 };
 
 /*
+	x mod p for a small value x < (pMulTblN * p).
+*/
+struct SmallModp {
+	typedef mcl::fp::Unit Unit;
+	static const size_t unitBitSize = sizeof(Unit) * 8;
+	static const size_t maxTblSize = (MCL_MAX_BIT_SIZE + unitBitSize - 1) / unitBitSize + 1;
+	static const size_t maxMulN = 9;
+	static const size_t pMulTblN = maxMulN + 1;
+	int N_;
+	uint32_t shiftL_;
+	uint32_t shiftR_;
+	uint32_t maxIdx_;
+	// pMulTbl_[i] = (p * i) >> (pBitSize_ - 1)
+	Unit pMulTbl_[pMulTblN][maxTblSize];
+	// idxTbl_[x] = (x << (pBitSize_ - 1)) / p
+	uint8_t idxTbl_[pMulTblN * 2];
+	// return x >> (pBitSize_ - 1)
+	SmallModp()
+		: N_(0)
+		, shiftL_(0)
+		, shiftR_(0)
+		, maxIdx_(0)
+		, pMulTbl_()
+		, idxTbl_()
+	{
+	}
+	// return argmax { i : x > i * p }
+	uint32_t approxMul(const Unit *x) const
+	{
+		uint32_t top = getTop(x);
+		assert(top <= maxIdx_);
+		return idxTbl_[top];
+	}
+	const Unit *getPmul(size_t v) const
+	{
+		assert(v < pMulTblN);
+		return pMulTbl_[v];
+	}
+	uint32_t getTop(const Unit *x) const
+	{
+		return (x[N_ - 1] >> shiftR_) | (x[N_] << shiftL_);
+	}
+	uint32_t cvtInt(const mpz_class& x) const
+	{
+		assert(mcl::gmp::getUnitSize(x) <= 1);
+		if (x == 0) {
+			return 0;
+		} else {
+			return uint32_t(mcl::gmp::getUnit(x)[0]);
+		}
+	}
+	void init(const mpz_class& p)
+	{
+		size_t pBitSize = mcl::gmp::getBitSize(p);
+		N_ = (pBitSize + unitBitSize - 1) / unitBitSize;
+		shiftR_ = (pBitSize - 1) % unitBitSize;
+		shiftL_ = unitBitSize - shiftR_;
+		mpz_class t = 0;
+		for (size_t i = 0; i < pMulTblN; i++) {
+			bool b;
+			mcl::gmp::getArray(&b, pMulTbl_[i], maxTblSize, t);
+			assert(b);
+			(void)b;
+			if (i == pMulTblN - 1) {
+				maxIdx_ = getTop(pMulTbl_[i]);
+				assert(maxIdx_ < CYBOZU_NUM_OF_ARRAY(idxTbl_));
+				break;
+			}
+			t += p;
+		}
+
+		for (uint32_t i = 0; i <= maxIdx_; i++) {
+			idxTbl_[i] = cvtInt((mpz_class(int(i)) << (pBitSize - 1)) / p);
+		}
+	}
+};
+
+
+/*
 	Barrett Reduction
 	for non GMP version
 	mod of GMP is faster than Modp

@@ -191,6 +191,7 @@ struct Op {
 	uint32_t pmod4;
 	mcl::SquareRoot sq;
 	mcl::Modp modp;
+	mcl::SmallModp smallModp;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
 	/*
@@ -215,6 +216,7 @@ struct Op {
 	void3u fp_mulA_;
 	void2u fp_sqrA_;
 	void2u fp_mul2A_;
+	void2u fp_mul9A_;
 	void3u fp2_addA_;
 	void3u fp2_subA_;
 	void2u fp2_negA_;
@@ -304,6 +306,7 @@ struct Op {
 		fp_mulA_ = 0;
 		fp_sqrA_ = 0;
 		fp_mul2A_ = 0;
+		fp_mul9A_ = 0;
 		fp2_addA_ = 0;
 		fp2_subA_ = 0;
 		fp2_negA_ = 0;

@@ -639,6 +639,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		if (!b) return false;
 	}
 	modp.init(mp);
+	smallModp.init(mp);
 	return fp::initForMont(*this, p, mode);
 }
 
