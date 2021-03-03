@@ -952,13 +952,13 @@ struct SmallModp {
 	static const size_t maxMulN = 9;
 	static const size_t pMulTblN = maxMulN + 1;
 	int N_;
-	int shiftL_;
-	int shiftR_;
-	int maxIdx_;
+	uint32_t shiftL_;
+	uint32_t shiftR_;
+	uint32_t maxIdx_;
 	// pMulTbl_[i] = (p * i) >> (pBitSize_ - 1)
 	Unit pMulTbl_[pMulTblN][maxTblSize];
 	// idxTbl_[x] = (x << (pBitSize_ - 1)) / p
-	int8_t idxTbl_[pMulTblN * 2];
+	uint8_t idxTbl_[pMulTblN * 2];
 	// return x >> (pBitSize_ - 1)
 	SmallModp()
 		: N_(0)
@@ -970,9 +970,9 @@ struct SmallModp {
 	{
 	}
 	// return argmax { i : x > i * p }
-	int approxMul(const Unit *x) const
+	uint32_t approxMul(const Unit *x) const
 	{
-		int top = getTop(x);
+		uint32_t top = getTop(x);
 		assert(top <= maxIdx_);
 		return idxTbl_[top];
 	}
@@ -981,17 +981,17 @@ struct SmallModp {
 		assert(v < pMulTblN);
 		return pMulTbl_[v];
 	}
-	int getTop(const Unit *x) const
+	uint32_t getTop(const Unit *x) const
 	{
 		return (x[N_ - 1] >> shiftR_) | (x[N_] << shiftL_);
 	}
-	int cvtInt(const mpz_class& x) const
+	uint32_t cvtInt(const mpz_class& x) const
 	{
 		assert(mcl::gmp::getUnitSize(x) <= 1);
 		if (x == 0) {
 			return 0;
 		} else {
-			return int(mcl::gmp::getUnit(x)[0]);
+			return uint32_t(mcl::gmp::getUnit(x)[0]);
 		}
 	}
 	void init(const mpz_class& p)
@@ -1014,8 +1014,8 @@ struct SmallModp {
 			t += p;
 		}
 
-		for (int i = 0; i <= maxIdx_; i++) {
-			idxTbl_[i] = cvtInt((mpz_class(i) << (pBitSize - 1)) / p);
+		for (uint32_t i = 0; i <= maxIdx_; i++) {
+			idxTbl_[i] = cvtInt((mpz_class(int(i)) << (pBitSize - 1)) / p);
 		}
 	}
 };
