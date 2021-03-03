@@ -91,7 +91,7 @@ else
     CFLAGS_OPT+=-O3
   else
     ifeq ($(shell expr $(GCC_VER) \> 4.6.0),1)
-      CFLAGS_OPT+=-Ofast
+      CFLAGS_OPT+=-O3
     else
       CFLAGS_OPT+=-O3
     endif
