@@ -7,7 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - run: make test_ci DEBUG=1 -j3
+    - run: lscpu
+    - run: make test_ci DEBUG=1 -j3 || dmesg | tail
     - run: make clean
     - run: make test_ci DEBUG=1 -j3 CXX=clang++
     - run: make clean
