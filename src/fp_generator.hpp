@@ -1095,7 +1095,7 @@ private:
 	*/
 	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
-		if (!isFullBit_) {
+		if (!isFullBit_ && useMulx_ && useAdx_) {
 			gen_fpDbl_mod4NF(z, xy, t);
 			return;
 		}
@@ -2547,7 +2547,7 @@ private:
 	}
 	void gen_fpDbl_mulPre(void3u& f)
 	{
-		if (!(useMulx_ && useAdx_)) return;
+		if (!useMulx_ || (pn_ == 6 && !useAdx_)) return;
 		void3u func = getCurr<void3u>();
 		switch (pn_) {
 		case 2:
