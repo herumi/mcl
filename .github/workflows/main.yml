@@ -15,3 +15,6 @@ jobs:
     - run: make test_go
     - run: sudo apt install openjdk-8-jdk
     - run: make -C ffi/java test JAVA_INC=-I/usr/lib/jvm/java-8-openjdk-amd64/include
+    - run: wget https://software.intel.com/content/dam/develop/external/us/en/documents/downloads/sde-external-8.63.0-2021-01-18-lin.tar.bz2
+    - run: bzip2 -dc sde-external-8.63.0-2021-01-18-lin.tar.bz2 | tar xvf -
+    - run: sde-external-8.63.0-2021-01-18-lin/sde64 -hsw -- bin/bn_test.exe
