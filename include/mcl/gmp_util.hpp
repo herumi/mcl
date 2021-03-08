@@ -951,7 +951,7 @@ struct SmallModp {
 	static const size_t maxTblSize = (MCL_MAX_BIT_SIZE + unitBitSize - 1) / unitBitSize + 1;
 	static const size_t maxMulN = 9;
 	static const size_t pMulTblN = maxMulN + 1;
-	int N_;
+	uint32_t N_;
 	uint32_t shiftL_;
 	uint32_t shiftR_;
 	uint32_t maxIdx_;
@@ -997,7 +997,7 @@ struct SmallModp {
 	void init(const mpz_class& p)
 	{
 		size_t pBitSize = mcl::gmp::getBitSize(p);
-		N_ = (pBitSize + unitBitSize - 1) / unitBitSize;
+		N_ = uint32_t((pBitSize + unitBitSize - 1) / unitBitSize);
 		shiftR_ = (pBitSize - 1) % unitBitSize;
 		shiftL_ = unitBitSize - shiftR_;
 		mpz_class t = 0;
