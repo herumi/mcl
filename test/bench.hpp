@@ -85,16 +85,18 @@ void testBench(const G1& P, const G2& Q)
 	const int C3 = 100000;
 #if 1
 	const int C2 = 3000;
-	mpz_class a = x.getMpz();
-	CYBOZU_BENCH_C("G1::mulCT     ", C, G1::mulCT, Pa, P, a);
-	CYBOZU_BENCH_C("G1::mul       ", C, G1::mul, Pa, Pa, a);
-	CYBOZU_BENCH_C("G1::add       ", C, G1::add, Pa, Pa, P);
-	CYBOZU_BENCH_C("G1::dbl       ", C, G1::dbl, Pa, Pa);
-	CYBOZU_BENCH_C("G2::mulCT     ", C, G2::mulCT, Qa, Q, a);
-	CYBOZU_BENCH_C("G2::mul       ", C, G2::mul, Qa, Qa, a);
-	CYBOZU_BENCH_C("G2::add       ", C, G2::add, Qa, Qa, Q);
-	CYBOZU_BENCH_C("G2::dbl       ", C, G2::dbl, Qa, Qa);
-	CYBOZU_BENCH_C("GT::pow       ", C, GT::pow, e1, e1, a);
+	{
+		mpz_class a = x.getMpz();
+		CYBOZU_BENCH_C("G1::mulCT     ", C, G1::mulCT, Pa, P, a);
+		CYBOZU_BENCH_C("G1::mul       ", C, G1::mul, Pa, Pa, a);
+		CYBOZU_BENCH_C("G1::add       ", C, G1::add, Pa, Pa, P);
+		CYBOZU_BENCH_C("G1::dbl       ", C, G1::dbl, Pa, Pa);
+		CYBOZU_BENCH_C("G2::mulCT     ", C, G2::mulCT, Qa, Q, a);
+		CYBOZU_BENCH_C("G2::mul       ", C, G2::mul, Qa, Qa, a);
+		CYBOZU_BENCH_C("G2::add       ", C, G2::add, Qa, Qa, Q);
+		CYBOZU_BENCH_C("G2::dbl       ", C, G2::dbl, Qa, Qa);
+		CYBOZU_BENCH_C("GT::pow       ", C, GT::pow, e1, e1, a);
+	}
 //	CYBOZU_BENCH_C("GT::powGLV    ", C, BN::param.glv2.pow, e1, e1, a);
 	G1 PP;
 	G2 QQ;

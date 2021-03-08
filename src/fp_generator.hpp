@@ -1095,7 +1095,7 @@ private:
 	*/
 	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
-		if (!isFullBit_) {
+		if (!isFullBit_ && useMulx_ && useAdx_) {
 			gen_fpDbl_mod4NF(z, xy, t);
 			return;
 		}
@@ -2547,7 +2547,7 @@ private:
 	}
 	void gen_fpDbl_mulPre(void3u& f)
 	{
-		if (!(useMulx_ && useAdx_)) return;
+		if (!useMulx_ || (pn_ == 6 && !useAdx_)) return;
 		void3u func = getCurr<void3u>();
 		switch (pn_) {
 		case 2:
@@ -3656,25 +3656,25 @@ private:
 		}
 
 		{
-			Pack t = sf.t;
+			Pack t2 = sf.t;
 			if (pn_ == 4) {
-				t = t.sub(0, pn_ * 2);
+				t2 = t2.sub(0, pn_ * 2);
 			} else if (pn_ == 6) {
-				t.append(gp1);
-				t.append(gp2);
+				t2.append(gp1);
+				t2.append(gp2);
 			}
-			assert((int)t.size() == pn_ * 2);
+			assert((int)t2.size() == pn_ * 2);
 
 			mov(gp0, ptr [z]);
-			load_rm(t, gp0 + FpByte_ * 2);
-			sub_rm(t, gp0); // d1 -= d0
-			sub_rm(t, (RegExp)d2); // d1 -= d2
-			store_mr(gp0 + FpByte_ * 2, t);
+			load_rm(t2, gp0 + FpByte_ * 2);
+			sub_rm(t2, gp0); // d1 -= d0
+			sub_rm(t2, (RegExp)d2); // d1 -= d2
+			store_mr(gp0 + FpByte_ * 2, t2);
 
 			gen_raw_sub(gp0, gp0, d2, rax, pn_);
 			const RegExp& d0H = gp0 + pn_ * 8;
 			const RegExp& d2H = (RegExp)d2 + pn_ * 8;
-			gen_raw_fp_sub(d0H, d0H, d2H, t, true);
+			gen_raw_fp_sub(d0H, d0H, d2H, t2, true);
 		}
 		add(rsp, SS);
 		ret();
