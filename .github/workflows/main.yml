@@ -8,10 +8,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: lscpu
-    - run: wget https://software.intel.com/content/dam/develop/external/us/en/documents/downloads/sde-external-8.63.0-2021-01-18-lin.tar.bz2
-    - run: bzip2 -dc sde-external-8.63.0-2021-01-18-lin.tar.bz2 | tar xvf -
-    - run: make bin/bn_test.exe DEBUG=1 -j4
-    - run: sde-external-8.63.0-2021-01-18-lin/sde64 -hsw -- bin/bn_test.exe
+#    - run: wget https://software.intel.com/content/dam/develop/external/us/en/documents/downloads/sde-external-8.63.0-2021-01-18-lin.tar.bz2
+#    - run: bzip2 -dc sde-external-8.63.0-2021-01-18-lin.tar.bz2 | tar xvf -
+#    - run: make bin/bn_test.exe DEBUG=1 -j4
+#    - run: sde-external-8.63.0-2021-01-18-lin/sde64 -hsw -- bin/bn_test.exe
     - run: make test_ci DEBUG=1 -j4 || dmesg | tail
     - run: make clean
     - run: make test_ci DEBUG=1 -j4 CXX=clang++ || dmesg | tail
