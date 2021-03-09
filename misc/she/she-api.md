@@ -1,6 +1,6 @@
 # she ; Two-level homomorphic encryption library for browser/Node.js by WebAssembly
 
-# Abstruct
+# Abstract
 she is a somewhat(two-level) homomorphic encryption library,
 which is based on pairings.
 This library supports polynomially many homomorphic additions and
@@ -31,7 +31,7 @@ Sum_i Enc(x_i) Enc(y_i) = Enc(Sum_i x_i y_i).
 * decrypt a ciphertext with a secret key
 
 ## Homomorphic operations
-* homomorphic addtion/substraction over ciphertexts of the same ciphertext class
+* homomorphic addition/subtraction over ciphertexts of the same ciphertext class
 * homomprphic multiplication over ciphertext of CipherTextG1 and CipherTextG2
     * The class of the result is CipherTextGT.
 
@@ -39,7 +39,7 @@ Sum_i Enc(x_i) Enc(y_i) = Enc(Sum_i x_i y_i).
 * This library requires to solve a small DLP to decrypt a ciphertext.
 * The decryption timing is O(m/s), where s is the size of table to solve DLP, and m is the size fo a plaintext.
 * call `setRangeForDLP(s)` to set the table size.
-    * The maximun `m/s` is set by `setTryNum(tryNum)`.
+    * The maximum `m/s` is set by `setTryNum(tryNum)`.
 
 ## Zero-knowledge proof class
 * A zero-knowledge proof is simultaneously created when encrypting a plaintext `m`.
@@ -66,7 +66,7 @@ and read `she.js`.
 
 ## A sample for JS
 
-```
+```js
 // initialize a library
 she.init().then(() => {
   const sec = new she.SecretKey()
@@ -103,7 +103,7 @@ she.init().then(() => {
 
 # A sample for C++
 How to build the library, see [mcl](https://github.com/herumi/mcl/#installation-requirements).
-```
+```c++
 #include <mcl/she.hpp>
 int main()
     try
