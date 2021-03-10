@@ -3,5 +3,5 @@
 ## SHE
 
 ```
-make test_she
+make she_test
 ```
