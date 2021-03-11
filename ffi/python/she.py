@@ -1,6 +1,7 @@
 import os
 import platform
 from ctypes import *
+#from ctypes.util import find_library
 
 BN254 = 0
 BLS12_381 = 5
@@ -34,6 +35,7 @@ def init(curveType=BN254):
 		libName = 'mclshe384_256.dll'
 	else:
 		raise RuntimeError("not support yet", name)
+#	lib = cdll.LoadLibrary(find_library(libName))
 	lib = cdll.LoadLibrary(libName)
 	ret = lib.sheInit(curveType, MCLBN_COMPILED_TIME_VAR)
 	if ret != 0:
