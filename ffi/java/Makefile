@@ -32,7 +32,7 @@ mcl_wrap.cxx: mcl.i mcl_impl.hpp
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl.i
 
 $(MCL_LIB):
-	make -C $(TOP_DIR)
+	make -C $(TOP_DIR) lib/libmcl.a
 
 $(ELGAMAL_LIB): elgamal_wrap.cxx $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(MCL_LIB) $(LDFLAGS) -shared
