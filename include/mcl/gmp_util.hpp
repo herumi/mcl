@@ -28,7 +28,7 @@
 	#define MCL_USE_VINT
 #endif
 #ifndef MCL_MAX_BIT_SIZE
-	#define MCL_MAX_BIT_SIZE 521
+	#define MCL_MAX_BIT_SIZE 512
 #endif
 #ifdef MCL_USE_VINT
 #include <mcl/vint.hpp>
