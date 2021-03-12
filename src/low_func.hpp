@@ -510,7 +510,7 @@ const void4u DblSub<N, Tag>::f = DblSub<N, Tag>::func;
 	z[N] <- montRed(xy[N * 2], p[N])
 	REMARK : assume p[-1] = rp
 */
-template<size_t N, class Tag = Gtag>
+template<size_t N, bool isFullBit, class Tag = Gtag>
 struct MontRed {
 	static inline void func(Unit *z, const Unit *xy, const Unit *p)
 	{
@@ -546,8 +546,8 @@ struct MontRed {
 	static const void3u f;
 };
 
-template<size_t N, class Tag>
-const void3u MontRed<N, Tag>::f = MontRed<N, Tag>::func;
+template<size_t N, bool isFullBit, class Tag>
+const void3u MontRed<N, isFullBit, Tag>::f = MontRed<N, isFullBit, Tag>::func;
 
 /*
 	z[N] <- Montgomery(x[N], y[N], p[N])
@@ -560,7 +560,7 @@ struct Mont {
 #if MCL_MAX_BIT_SIZE == 1024 || MCL_SIZEOF_UNIT == 4 // check speed
 		Unit xy[N * 2];
 		MulPre<N, Tag>::f(xy, x, y);
-		MontRed<N, Tag>::f(z, xy, p);
+		MontRed<N, isFullBit, Tag>::f(z, xy, p);
 #else
 		const Unit rp = p[-1];
 		if (isFullBit) {
@@ -644,7 +644,7 @@ struct SqrMont {
 #if MCL_MAX_BIT_SIZE == 1024 || MCL_SIZEOF_UNIT == 4 // check speed
 		Unit xx[N * 2];
 		SqrPre<N, Tag>::f(xx, x);
-		MontRed<N, Tag>::f(y, xx, p);
+		MontRed<N, isFullBit, Tag>::f(y, xx, p);
 #else
 		Mont<N, isFullBit, Tag>::f(y, x, x, p);
 #endif
@@ -702,9 +702,9 @@ struct Fp2MulNF {
 		MulPre<N, Tag>::f(d2, b, d);
 		SubPre<N * 2, Tag>::f(d0, d0, d1);
 		SubPre<N * 2, Tag>::f(d0, d0, d2);
-		MontRed<N, Tag>::f(z + N, d0, p);
+		MontRed<N, false, Tag>::f(z + N, d0, p);
 		DblSub<N, Tag>::f(d1, d1, d2, p);
-		MontRed<N, Tag>::f(z, d1, p);
+		MontRed<N, false, Tag>::f(z, d1, p);
 	}
 	static const void4u f;
 };

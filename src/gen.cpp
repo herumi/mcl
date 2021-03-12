@@ -883,37 +883,65 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_montRed()
+	void gen_mcl_fp_montRed(bool isFullBit = true)
 	{
-		const int bu = bit + unit;
-		const int b2 = bit * 2;
-		const int b2u = b2 + unit;
 		resetGlobalIdx();
 		Operand pz(IntPtr, unit);
 		Operand pxy(IntPtr, unit);
 		Operand pp(IntPtr, unit);
-		std::string name = "mcl_fp_montRed" + cybozu::itoa(N) + "L" + suf;
+		std::string name = "mcl_fp_montRed";
+		if (!isFullBit) {
+			name += "NF";
+		}
+		name += cybozu::itoa(N) + "L" + suf;
 		mcl_fp_montRedM[N] = Function(name, Void, pz, pxy, pp);
 		verifyAndSetPrivate(mcl_fp_montRedM[N]);
 		beginFunc(mcl_fp_montRedM[N]);
 		Operand rp = load(getelementptr(pp, -1));
 		Operand p = loadN(pp, N);
-		Operand xy = loadN(pxy, N * 2);
-		Operand t = zext(xy, b2 + unit);
+		const int bu = bit + unit;
+		const int bu2 = bit + unit * 2;
+		Operand t = loadN(pxy, N);
+		Operand H;
 		for (uint32_t i = 0; i < N; i++) {
-			Operand z = trunc(t, unit);
-			Operand q = mul(z, rp);
+			Operand q;
+			if (N == 1) {
+				q = mul(t, rp);
+			} else {
+				q = mul(trunc(t, unit), rp);
+			}
 			Operand pq = call(mulPvM[bit], pp, q);
-			pq = zext(pq, b2u - unit * i);
-			z = add(t, pq);
-			z = lshr(z, unit);
-			t = trunc(z, b2 - unit * i);
+			if (i > 0) {
+				H = zext(H, bu);
+				H = shl(H, bit);
+				pq = add(pq, H);
+			}
+			t = zext(t, bu);
+			Operand e = load(getelementptr(pxy, N + i));
+			e = zext(e, bu);
+			e = shl(e, bit);
+			t = _or(t, e);
+			t = zext(t, bu2);
+			pq = zext(pq, bu2);
+			t = add(t, pq);
+			t = lshr(t, unit);
+			H = lshr(t, bit);
+			H = trunc(H, bit);
+			t = trunc(t, bit);
 		}
-		p = zext(p, bu);
-		Operand vc = sub(t, p);
-		Operand c = trunc(lshr(vc, bit), 1);
-		Operand z = select(c, t, vc);
-		z = trunc(z, bit);
+		Operand z;
+		if (isFullBit) {
+			p = zext(p, bu);
+			t = zext(t, bu);
+			Operand vc = sub(t, p);
+			Operand c = trunc(lshr(vc, bit), 1);
+			z = select(c, t, vc);
+			z = trunc(z, bit);
+		} else {
+			Operand vc = sub(t, p);
+			Operand c = trunc(lshr(vc, bit - 1), 1);
+			z = select(c, t, vc);
+		}
 		storeN(z, pz);
 		ret(Void);
 		endFunc();
@@ -941,7 +969,8 @@ struct Code : public mcl::Generator {
 		gen_mcl_fpDbl_sqrPre();
 		gen_mcl_fp_mont(true);
 		gen_mcl_fp_mont(false);
-		gen_mcl_fp_montRed();
+		gen_mcl_fp_montRed(true);
+		gen_mcl_fp_montRed(false);
 	}
 	void setBit(uint32_t bit)
 	{

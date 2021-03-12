@@ -37,7 +37,8 @@ template<>const void4u Sub<n, true, tag>::f = &mcl_fp_sub ## n ## suf; \
 template<>const void4u Sub<n, false, tag>::f = &mcl_fp_subNF ## n ## suf; \
 template<>const void4u Mont<n, true, tag>::f = &mcl_fp_mont ## n ## suf; \
 template<>const void4u Mont<n, false, tag>::f = &mcl_fp_montNF ## n ## suf; \
-template<>const void3u MontRed<n, tag>::f = &mcl_fp_montRed ## n ## suf; \
+template<>const void3u MontRed<n, true, tag>::f = &mcl_fp_montRed ## n ## suf; \
+template<>const void3u MontRed<n, false, tag>::f = &mcl_fp_montRedNF ## n ## suf; \
 template<>const void4u DblAdd<n, tag>::f = &mcl_fpDbl_add ## n ## suf; \
 template<>const void4u DblSub<n, tag>::f = &mcl_fpDbl_sub ## n ## suf; \
 
@@ -81,9 +82,6 @@ MCL_DEF_LLVM_FUNC(15)
 #if MCL_SIZEOF_UNIT == 4
 MCL_DEF_LLVM_FUNC(16)
 #else
-/// QQQ : check speed
-template<>const void3u MontRed<16, Ltag>::f = &mcl_fp_montRed16L;
-template<>const void3u MontRed<16, LBMI2tag>::f = &mcl_fp_montRed16Lbmi2;
 #endif
 #endif
 #if MCL_MAX_UNIT_SIZE >= 17
