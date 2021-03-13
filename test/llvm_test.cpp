@@ -70,7 +70,7 @@ void bench(Unit *x, Unit *y, const Unit *p)
 {
 	printf("N=%zd\n", N);
 	Unit xx[N * 2], yy[N * 2];
-	const int C = 1000;
+	const int C = 10000;
 	CYBOZU_BENCH_C("mulPre", C, mulPre<N>, xx, x, y);
 	CYBOZU_BENCH_C("sqrPre", C, sqrPre<N>, yy, x);
 	CYBOZU_BENCH_C("mod   ", C, mod<N>, yy, xx, p);
