@@ -884,6 +884,24 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
+	// return [H:L]
+	Operand pack(Operand H, Operand L)
+	{
+		int size = H.bit + L.bit;
+		H = zext(H, size);
+		H = shl(H, L.bit);
+		L = zext(L, size);
+		H = _or(H, L);
+		return H;
+	}
+	// split x to [ret:L] s.t. size of L = sizeL
+	Operand split(Operand *L, const Operand& x, int sizeL)
+	{
+		Operand ret = lshr(x, sizeL);
+		ret = trunc(ret, ret.bit - sizeL);
+		*L = trunc(x, sizeL);
+		return ret;
+	}
 	void gen_mcl_fp_montRed(bool isFullBit = true)
 	{
 		resetGlobalIdx();
@@ -917,18 +935,14 @@ struct Code : public mcl::Generator {
 				H = shl(H, bit);
 				pq = add(pq, H);
 			}
-			t = zext(t, bu);
-			Operand e = load(getelementptr(pxy, N + i));
-			e = zext(e, bu);
-			e = shl(e, bit);
-			t = _or(t, e);
+			Operand next = load(getelementptr(pxy, N + i));
+			t = pack(next, t);
 			t = zext(t, bu2);
 			pq = zext(pq, bu2);
 			t = add(t, pq);
 			t = lshr(t, unit);
-			H = lshr(t, bit);
-			H = trunc(H, bit);
-			t = trunc(t, bit);
+			t = trunc(t, bu);
+			H = split(&t, t, bit);
 		}
 		Operand z;
 		if (isFullBit) {
