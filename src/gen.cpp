@@ -669,7 +669,7 @@ struct Code : public mcl::Generator {
 		Operand z(Int, bu);
 		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
-		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit);
+		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit) + suf;
 		mulPvM[bit] = Function(name, z, px, y);
 		// workaround at https://github.com/herumi/mcl/pull/82
 //		mulPvM[bit].setPrivate();
@@ -1006,6 +1006,23 @@ struct Code : public mcl::Generator {
 		gen_mulUU();
 #else
 		gen_once();
+#if 1
+		int bitTbl[] = {
+			192,
+			224,
+			256,
+			384,
+			512
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(bitTbl); i++) {
+			uint32_t bit = bitTbl[i];
+			if (unit == 64 && bit == 224) continue;
+			setBit(bit);
+			gen_mul();
+			gen_all();
+			gen_addsub();
+		}
+#else
 		uint32_t end = ((maxBitSize + unit - 1) / unit);
 		for (uint32_t n = 1; n <= end; n++) {
 			setBit(n * unit);
@@ -1013,6 +1030,7 @@ struct Code : public mcl::Generator {
 			gen_all();
 			gen_addsub();
 		}
+#endif
 		if (unit == 64 && maxBitSize == 768) {
 			for (uint32_t i = maxBitSize + unit * 2; i <= maxBitSize * 2; i += unit * 2) {
 				setBit(i);
