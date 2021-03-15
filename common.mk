@@ -20,12 +20,6 @@ ifeq ($(UNAME_S),Darwin)
     OS=mac-m1
   endif
   LIB_SUF=dylib
-  OPENSSL_DIR?=/usr/local/opt/openssl
-  CFLAGS+=-I$(OPENSSL_DIR)/include
-  LDFLAGS+=-L$(OPENSSL_DIR)/lib
-  GMP_DIR?=/usr/local/opt/gmp
-  CFLAGS+=-I$(GMP_DIR)/include
-  LDFLAGS+=-L$(GMP_DIR)/lib
   NASM_ELF_OPT=-fmacho64
 else
   LIB_SUF=so
@@ -130,9 +124,19 @@ ifeq ($(MCL_USE_OPENSSL),0)
 endif
 ifeq ($(MCL_USE_GMP),1)
   GMP_LIB=-lgmp -lgmpxx
+  ifeq ($(UNAME_S),Darwin)
+    GMP_DIR?=/usr/local/opt/gmp
+    CFLAGS+=-I$(GMP_DIR)/include
+    LDFLAGS+=-L$(GMP_DIR)/lib
+  endif
 endif
 ifeq ($(MCL_USE_OPENSSL),1)
   OPENSSL_LIB=-lcrypto
+  ifeq ($(UNAME_S),Darwin)
+    OPENSSL_DIR?=/usr/local/opt/openssl
+    CFLAGS+=-I$(OPENSSL_DIR)/include
+    LDFLAGS+=-L$(OPENSSL_DIR)/lib
+  endif
 endif
 ifeq ($(MCL_STATIC_CODE),1)
   MCL_USE_XBYAK=0
