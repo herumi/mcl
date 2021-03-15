@@ -641,7 +641,7 @@ template<size_t N, bool isFullBit, class Tag = Gtag>
 struct SqrMont {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
-#if MCL_MAX_BIT_SIZE == 1024 || MCL_SIZEOF_UNIT == 4 // check speed
+#if 0 // #if MCL_MAX_BIT_SIZE == 1024 || MCL_SIZEOF_UNIT == 4 // check speed
 		Unit xx[N * 2];
 		SqrPre<N, Tag>::f(xx, x);
 		MontRed<N, isFullBit, Tag>::f(y, xx, p);
