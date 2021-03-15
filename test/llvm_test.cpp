@@ -1,3 +1,26 @@
+/*
+32bit raspi
+N=6
+mulPre 511.30nsec
+sqrPre 598.33nsec
+mod    769.64nsec
+mont     1.283usec
+N=8
+mulPre   1.463usec
+sqrPre   1.422usec
+mod      1.972usec
+mont     2.962usec
+N=12
+mulPre   2.229usec
+sqrPre   2.056usec
+mod      3.811usec
+mont     6.802usec
+N=16
+mulPre   4.955usec
+sqrPre   4.706usec
+mod      6.817usec
+mont    12.916usec
+*/
 #include <stdio.h>
 #include <stdint.h>
 #include <cybozu/inttype.hpp>
@@ -42,10 +65,12 @@ template<>void sqrPre<n>(Unit *z, const Unit *x) { mcl_fpDbl_sqrPre ## n ## suf(
 template<>void mod<n>(Unit *z, const Unit *x, const Unit *p) { mcl_fp_montRedNF ## n ## suf(z, x, p); } \
 template<>void mont<n>(Unit *z, const Unit *x, const Unit *y, const Unit *p) { mcl_fp_montNF ## n ## suf(z, x, y, p); }
 
+#if CYBOZU_OS_BIT == 64
 MCL_FP_DEF_FUNC_SUB(4, L)
 MCL_FP_DEF_FUNC_SUB(5, L)
+#endif
 MCL_FP_DEF_FUNC_SUB(6, L)
-MCL_FP_DEF_FUNC_SUB(7, L)
+//MCL_FP_DEF_FUNC_SUB(7, L)
 MCL_FP_DEF_FUNC_SUB(8, L)
 #if CYBOZU_OS_BIT == 32
 MCL_FP_DEF_FUNC_SUB(12, L)
@@ -70,7 +95,11 @@ void bench(Unit *x, Unit *y, const Unit *p)
 {
 	printf("N=%zd\n", N);
 	Unit xx[N * 2], yy[N * 2];
+#if CYBOZU_OS_BIT == 64
 	const int C = 10000;
+#else
+	const int C = 1000;
+#endif
 	CYBOZU_BENCH_C("mulPre", C, mulPre<N>, xx, x, y);
 	CYBOZU_BENCH_C("sqrPre", C, sqrPre<N>, yy, x);
 	CYBOZU_BENCH_C("mod   ", C, mod<N>, yy, xx, p);
@@ -86,10 +115,12 @@ int main()
 	setRand(x, maxN, rg);
 	setRand(y, maxN, rg);
 	setRand(p, maxN + 1, rg);
+#if CYBOZU_OS_BIT == 64
 	bench<4>(x, y, p + 1);
 	bench<5>(x, y, p + 1);
+#endif
 	bench<6>(x, y, p + 1);
-	bench<7>(x, y, p + 1);
+//	bench<7>(x, y, p + 1);
 	bench<8>(x, y, p + 1);
 #if CYBOZU_OS_BIT == 32
 	bench<12>(x, y, p + 1);
