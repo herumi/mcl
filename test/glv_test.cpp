@@ -153,10 +153,13 @@ void testGLV1()
 		GLV1::mul(P2, P0, ss, true);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
+#ifndef NDEBUG
+	puts("skip testGLV1 in debug");
 	Fr s;
 	mapToG1(P0, 123);
 	CYBOZU_BENCH_C("Ec::mul", 100, P1 = P0; s.setRand(rg); G1::mulGeneric, P2, P1, s.getMpz());
 	CYBOZU_BENCH_C("Ec::glv", 100, P1 = P0; s.setRand(rg); GLV1::mul, P2, P1, s.getMpz());
+#endif
 }
 
 /*
@@ -188,10 +191,13 @@ void testGLV2()
 		GLV2::mul(Q2, Q0, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 	}
+#ifndef NDEBUG
+	puts("skip testGLV2 in debug");
 	Fr s;
 	mapToG2(Q0, 123);
 	CYBOZU_BENCH_C("G2::mul", 1000, Q2 = Q0; s.setRand(rg); G2::mulGeneric, Q2, Q1, s.getMpz());
 	CYBOZU_BENCH_C("G2::glv", 1000, Q1 = Q0; s.setRand(rg); GLV2::mul, Q2, Q1, s.getMpz());
+#endif
 }
 
 void testGT()
