@@ -669,7 +669,7 @@ struct Code : public mcl::Generator {
 		Operand z(Int, bu);
 		Operand px(IntPtr, unit);
 		Operand y(Int, unit);
-		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit);
+		std::string name = "mulPv" + cybozu::itoa(bit) + "x" + cybozu::itoa(unit) + suf;
 		mulPvM[bit] = Function(name, z, px, y);
 		// workaround at https://github.com/herumi/mcl/pull/82
 //		mulPvM[bit].setPrivate();
@@ -715,11 +715,12 @@ struct Code : public mcl::Generator {
 			Operand z = mul(x, y);
 			storeN(z, pz);
 			ret(Void);
-		} else if (N >= 8 && (N % 2) == 0) {
+		} else if (N > 8 && (N % 2) == 0) {
 			/*
 				W = 1 << half
 				(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
 				ad + bc = (a + b)(c + d) - ac - bd
+				@note Karatsuba is slower for N = 8
 			*/
 			const int H = N / 2;
 			const int half = bit / 2;
@@ -883,37 +884,79 @@ struct Code : public mcl::Generator {
 		ret(Void);
 		endFunc();
 	}
-	void gen_mcl_fp_montRed()
+	// return [H:L]
+	Operand pack(Operand H, Operand L)
 	{
-		const int bu = bit + unit;
-		const int b2 = bit * 2;
-		const int b2u = b2 + unit;
+		int size = H.bit + L.bit;
+		H = zext(H, size);
+		H = shl(H, L.bit);
+		L = zext(L, size);
+		H = _or(H, L);
+		return H;
+	}
+	// split x to [ret:L] s.t. size of L = sizeL
+	Operand split(Operand *L, const Operand& x, int sizeL)
+	{
+		Operand ret = lshr(x, sizeL);
+		ret = trunc(ret, ret.bit - sizeL);
+		*L = trunc(x, sizeL);
+		return ret;
+	}
+	void gen_mcl_fp_montRed(bool isFullBit = true)
+	{
 		resetGlobalIdx();
 		Operand pz(IntPtr, unit);
 		Operand pxy(IntPtr, unit);
 		Operand pp(IntPtr, unit);
-		std::string name = "mcl_fp_montRed" + cybozu::itoa(N) + "L" + suf;
+		std::string name = "mcl_fp_montRed";
+		if (!isFullBit) {
+			name += "NF";
+		}
+		name += cybozu::itoa(N) + "L" + suf;
 		mcl_fp_montRedM[N] = Function(name, Void, pz, pxy, pp);
 		verifyAndSetPrivate(mcl_fp_montRedM[N]);
 		beginFunc(mcl_fp_montRedM[N]);
 		Operand rp = load(getelementptr(pp, -1));
 		Operand p = loadN(pp, N);
-		Operand xy = loadN(pxy, N * 2);
-		Operand t = zext(xy, b2 + unit);
+		const int bu = bit + unit;
+		const int bu2 = bit + unit * 2;
+		Operand t = loadN(pxy, N);
+		Operand H;
 		for (uint32_t i = 0; i < N; i++) {
-			Operand z = trunc(t, unit);
-			Operand q = mul(z, rp);
+			Operand q;
+			if (N == 1) {
+				q = mul(t, rp);
+			} else {
+				q = mul(trunc(t, unit), rp);
+			}
 			Operand pq = call(mulPvM[bit], pp, q);
-			pq = zext(pq, b2u - unit * i);
-			z = add(t, pq);
-			z = lshr(z, unit);
-			t = trunc(z, b2 - unit * i);
+			if (i > 0) {
+				H = zext(H, bu);
+				H = shl(H, bit);
+				pq = add(pq, H);
+			}
+			Operand next = load(getelementptr(pxy, N + i));
+			t = pack(next, t);
+			t = zext(t, bu2);
+			pq = zext(pq, bu2);
+			t = add(t, pq);
+			t = lshr(t, unit);
+			t = trunc(t, bu);
+			H = split(&t, t, bit);
 		}
-		p = zext(p, bu);
-		Operand vc = sub(t, p);
-		Operand c = trunc(lshr(vc, bit), 1);
-		Operand z = select(c, t, vc);
-		z = trunc(z, bit);
+		Operand z;
+		if (isFullBit) {
+			p = zext(p, bu);
+			t = zext(t, bu);
+			Operand vc = sub(t, p);
+			Operand c = trunc(lshr(vc, bit), 1);
+			z = select(c, t, vc);
+			z = trunc(z, bit);
+		} else {
+			Operand vc = sub(t, p);
+			Operand c = trunc(lshr(vc, bit - 1), 1);
+			z = select(c, t, vc);
+		}
 		storeN(z, pz);
 		ret(Void);
 		endFunc();
@@ -941,7 +984,8 @@ struct Code : public mcl::Generator {
 		gen_mcl_fpDbl_sqrPre();
 		gen_mcl_fp_mont(true);
 		gen_mcl_fp_mont(false);
-		gen_mcl_fp_montRed();
+		gen_mcl_fp_montRed(true);
+		gen_mcl_fp_montRed(false);
 	}
 	void setBit(uint32_t bit)
 	{
@@ -962,6 +1006,23 @@ struct Code : public mcl::Generator {
 		gen_mulUU();
 #else
 		gen_once();
+#if 1
+		int bitTbl[] = {
+			192,
+			224,
+			256,
+			384,
+			512
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(bitTbl); i++) {
+			uint32_t bit = bitTbl[i];
+			if (unit == 64 && bit == 224) continue;
+			setBit(bit);
+			gen_mul();
+			gen_all();
+			gen_addsub();
+		}
+#else
 		uint32_t end = ((maxBitSize + unit - 1) / unit);
 		for (uint32_t n = 1; n <= end; n++) {
 			setBit(n * unit);
@@ -969,6 +1030,7 @@ struct Code : public mcl::Generator {
 			gen_all();
 			gen_addsub();
 		}
+#endif
 		if (unit == 64 && maxBitSize == 768) {
 			for (uint32_t i = maxBitSize + unit * 2; i <= maxBitSize * 2; i += unit * 2) {
 				setBit(i);

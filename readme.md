@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- set default `MCL_MAX_BIT_SIZE=512` so disable to support `NICT_P521`.
 - improve performance
 - support M1 mac
 - dst for mapToG1 has changed to `BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_`.

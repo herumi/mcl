@@ -15,10 +15,14 @@ typedef mcl::FpT<> Fp;
 const int MAX_N = 4;
 
 const char *primeTable[] = {
+#if 0
 	"0x7fffffffffffffffffffffffffffffff", // 127bit(not full)
 	"0xffffffffffffffffffffffffffffff61", // 128bit(full)
+#endif
+	"0x7fffffffffffffffffffffffffffffffffffffffffffffed", // 191bit(not full)
 	"0xfffffffffffffffffffffffffffffffffffffffeffffee37", // 192bit(full)
 	"0x2523648240000001ba344d80000000086121000000000013a700000000000013", // 254bit(not full)
+	"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // 256bit(full)
 };
 
 void strToArray(uint64_t *p, size_t n, const char *pStr)

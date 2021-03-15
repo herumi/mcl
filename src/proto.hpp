@@ -22,6 +22,7 @@ void mcl_fpDbl_sqrPre ## n ## suf(mcl::fp::Unit* y, const mcl::fp::Unit* x); \
 void mcl_fp_mont ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
 void mcl_fp_montNF ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
 void mcl_fp_montRed ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p); \
+void mcl_fp_montRedNF ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, const mcl::fp::Unit* p); \
 void mcl_fpDbl_add ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p); \
 void mcl_fpDbl_sub ## n ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* x, const mcl::fp::Unit* y, const mcl::fp::Unit* p);
 
@@ -37,38 +38,29 @@ void mcl_fpDbl_mod_NIST_P521 ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, c
 
 extern "C" {
 
-MCL_FP_DEF_FUNC(1)
-MCL_FP_DEF_FUNC(2)
+#if CYBOZU_OS_BIT == 32
+
+MCL_FP_DEF_FUNC(6)
+MCL_FP_DEF_FUNC(7)
+MCL_FP_DEF_FUNC(8)
+#if MCL_MAX_UNIT_SIZE >= 12
+MCL_FP_DEF_FUNC(12)
+#endif
+#if MCL_MAX_UNIT_SIZE >= 16
+MCL_FP_DEF_FUNC(16)
+#endif
+
+#else // 64
+
 MCL_FP_DEF_FUNC(3)
 MCL_FP_DEF_FUNC(4)
 #if MCL_MAX_UNIT_SIZE >= 6
-MCL_FP_DEF_FUNC(5)
 MCL_FP_DEF_FUNC(6)
 #endif
 #if MCL_MAX_UNIT_SIZE >= 8
-MCL_FP_DEF_FUNC(7)
 MCL_FP_DEF_FUNC(8)
 #endif
-#if MCL_MAX_UNIT_SIZE >= 9
-MCL_FP_DEF_FUNC(9)
-#endif
-#if MCL_MAX_UNIT_SIZE >= 10
-MCL_FP_DEF_FUNC(10)
-#endif
-#if MCL_MAX_UNIT_SIZE >= 12
-MCL_FP_DEF_FUNC(11)
-MCL_FP_DEF_FUNC(12)
-#endif
-#if MCL_MAX_UNIT_SIZE >= 14
-MCL_FP_DEF_FUNC(13)
-MCL_FP_DEF_FUNC(14)
-#endif
-#if MCL_MAX_UNIT_SIZE >= 16
-MCL_FP_DEF_FUNC(15)
-MCL_FP_DEF_FUNC(16)
-#endif
-#if MCL_MAX_UNIT_SIZE >= 17
-MCL_FP_DEF_FUNC(17)
+
 #endif
 
 MCL_FP_DEF_FUNC_SPECIAL(L)

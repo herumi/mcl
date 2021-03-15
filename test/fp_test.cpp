@@ -426,6 +426,7 @@ void powTest()
 	CYBOZU_TEST_EQUAL(z, 1);
 	Fp::pow(z, x, Fp::getOp().mp);
 	CYBOZU_TEST_EQUAL(z, x);
+#if 0
 	typedef mcl::FpT<tag2, 128> Fp_other;
 	Fp_other::init("1009");
 	x = 5;
@@ -436,6 +437,7 @@ void powTest()
 	x = 5;
 	Fp::pow(x, x, n);
 	CYBOZU_TEST_EQUAL(x, 125);
+#endif
 }
 
 void mulUnitTest()
@@ -487,6 +489,7 @@ void powGmp()
 
 struct TagAnother;
 
+#if 0
 void anotherFpTest(mcl::fp::Mode mode)
 {
 	typedef mcl::FpT<TagAnother, 128> G;
@@ -496,6 +499,7 @@ void anotherFpTest(mcl::fp::Mode mode)
 	a *= b;
 	CYBOZU_TEST_EQUAL(a, 1);
 }
+#endif
 
 void setArrayTest1()
 {
@@ -508,6 +512,7 @@ void setArrayTest1()
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 }
 
+#if 0
 void setArrayTest2(mcl::fp::Mode mode)
 {
 	Fp::init("0x10000000000001234567a5", mode);
@@ -529,6 +534,7 @@ void setArrayTest2(mcl::fp::Mode mode)
 	uint32_t large[3] = { 0x234567a5, 0x00000001, 0x00100000};
 	CYBOZU_TEST_EXCEPTION(x.setArray(large, 3), cybozu::Exception);
 }
+#endif
 
 void setArrayMaskTest1()
 {
@@ -541,6 +547,7 @@ void setArrayMaskTest1()
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 }
 
+#if 0
 void setArrayMaskTest2(mcl::fp::Mode mode)
 {
 	Fp::init("0x10000000000001234567a5", mode);
@@ -560,6 +567,7 @@ void setArrayMaskTest2(mcl::fp::Mode mode)
 		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
 	}
 }
+#endif
 
 void setArrayModTest()
 {
@@ -602,13 +610,13 @@ void setArrayModTest()
 
 CYBOZU_TEST_AUTO(set64bit)
 {
-	Fp::init("0x1000000000000000000f");
+	Fp::init("3138550867693340381917894711603833208051177722232017256453");
 	const struct {
 		const char *p;
 		int64_t i;
 	} tbl[] = {
 		{ "0x1234567812345678", int64_t(0x1234567812345678ull) },
-		{ "0xfffedcba987edcba997", -int64_t(0x1234567812345678ull) },
+		{ "-5", -5 },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		Fp x(tbl[i].p);
@@ -935,17 +943,7 @@ void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	const char *tbl[] = {
-		// N = 2
-		"0x0000000000000001000000000000000d",
-		"0x7fffffffffffffffffffffffffffffff",
-		"0x8000000000000000000000000000001d",
-		"0xffffffffffffffffffffffffffffff61",
-
 		// N = 3
-		"0x000000000000000100000000000000000000000000000033", // min prime
-		"0x00000000fffffffffffffffffffffffffffffffeffffac73",
-		"0x0000000100000000000000000001b8fa16dfab9aca16b6b3",
-		"0x000000010000000000000000000000000000000000000007",
 		"0x30000000000000000000000000000000000000000000002b",
 		"0x70000000000000000000000000000000000000000000001f",
 		"0x800000000000000000000000000000000000000000000005",
@@ -1001,9 +999,9 @@ void sub(mcl::fp::Mode mode)
 		serializeTest();
 		modpTest();
 	}
-	anotherFpTest(mode);
-	setArrayTest2(mode);
-	setArrayMaskTest2(mode);
+//	anotherFpTest(mode);
+//	setArrayTest2(mode);
+//	setArrayMaskTest2(mode);
 }
 
 std::string g_mode;

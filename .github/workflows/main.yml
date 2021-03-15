@@ -16,6 +16,6 @@ jobs:
     - run: make clean
     - run: make test_ci DEBUG=1 -j4 CXX=clang++ || dmesg | tail
     - run: make clean
-    - run: make test_go
+#    - run: make test_go
     - run: sudo apt install openjdk-8-jdk
     - run: make -C ffi/java test JAVA_INC=-I/usr/lib/jvm/java-8-openjdk-amd64/include

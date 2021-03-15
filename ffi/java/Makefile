@@ -1,14 +1,18 @@
 TOP_DIR=../..
 include $(TOP_DIR)/common.mk
 ifeq ($(UNAME_S),Darwin)
-  JAVA_INC?=-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/JavaVM.framework/Headers/
+  JAVA_INC_DIR?=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/JavaVM.framework/Headers/
+  JAVA_INC?=-I$(JAVA_INC_DIR)
+  CFLAGS+=$(JAVA_INC)/darwin
 else
-  JAVA_INC?=-I/usr/lib/jvm/default-java/include
+  JAVA_INC_DIR?=/usr/lib/jvm/default-java/include
+  JAVA_INC?=-I$(JAVA_INC_DIR)
 #JAVA_INC=-I/usr/lib/jvm/java-7-openjdk-amd64/include
+  CFLAGS+=$(JAVA_INC)/linux
   CFLAGS+=-z noexecstack
   LDFLAGS+=-lrt
 endif
-CFLAGS+=$(JAVA_INC) $(JAVA_INC)/linux -I $(TOP_DIR)/include -I $(TOP_DIR)/../xbyak -I $(TOP_DIR)/../cybozulib/include -Wno-strict-aliasing
+CFLAGS+=$(JAVA_INC) -I $(TOP_DIR)/include -I -Wno-strict-aliasing
 MCL_LIB=$(TOP_DIR)/lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl
@@ -28,7 +32,7 @@ mcl_wrap.cxx: mcl.i mcl_impl.hpp
 	swig -java -package $(PACKAGE_NAME) -outdir $(PACKAGE_DIR) -c++ -Wall mcl.i
 
 $(MCL_LIB):
-	make -C $(TOP_DIR)
+	make -C $(TOP_DIR) lib/libmcl.a
 
 $(ELGAMAL_LIB): elgamal_wrap.cxx $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(CFLAGS) $(MCL_LIB) $(LDFLAGS) -shared
@@ -51,7 +55,7 @@ test_elgamal: ElgamalTest.class $(ELGAMAL_LIB)
 	$(JAVA_EXE) ElgamalTest -e NIST_P256 -h sha256
 	$(JAVA_EXE) ElgamalTest -e secp256k1 -h sha256
 	$(JAVA_EXE) ElgamalTest -e NIST_P384 -h sha384
-	$(JAVA_EXE) ElgamalTest -e NIST_P521 -h sha512
+#	$(JAVA_EXE) ElgamalTest -e NIST_P521 -h sha512
 
 test_mcl: MclTest.class $(MCLJAVA_LIB)
 	$(JAVA_EXE) MclTest
