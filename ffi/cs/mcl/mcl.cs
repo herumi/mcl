@@ -88,6 +88,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG2_add(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_sub(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_mul(ref G2 z, in G2 x, in Fr y);
+        [DllImport(dllName)] public static extern void mclBnG2_mulVec(ref G2 z, [In] G2[] x, [In] Fr[] y, long n);
 
         [DllImport(dllName)] public static extern void mclBnGT_clear(ref GT x);
         [DllImport(dllName)] public static extern int mclBnGT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -248,6 +249,14 @@ namespace mcl {
         public static void Normalize(ref G2 y, in G2 x)
         {
             mclBnG2_normalize(ref y, x);
+        }
+        public static void MulVec(ref G2 z, in G2[] x, in Fr[] y)
+        {
+            int n = x.Length;
+            if (n <= 0 || n != y.Length) {
+                throw new ArgumentException("bad length");
+            }
+            mclBnG2_mulVec(ref z, x, y, (long)n);
         }
         public static void Add(ref GT z, in GT x, in GT y)
         {
