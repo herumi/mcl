@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -73,7 +73,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG1_add(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_sub(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_mul(ref G1 z, in G1 x, in Fr y);
-        [DllImport(dllName)] public static extern void mclBnG1_mulVec(ref G1 x, [In]G1[] vec1, [In]Fr[] vec2, long bufSize);
+        [DllImport(dllName)] public static extern void mclBnG1_mulVec(ref G1 z, [In]G1[] x, [In]Fr[] y, long n);
 
         [DllImport(dllName)] public static extern void mclBnG2_clear(ref G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -216,6 +216,14 @@ namespace mcl {
         public static void Normalize(ref G1 y, in G1 x)
         {
             mclBnG1_normalize(ref y, x);
+        }
+        public static void MulVec(ref G1 z, in G1[] x, in Fr[] y)
+        {
+            int n = x.Length;
+            if (n <= 0 || n != y.Length) {
+                throw new ArgumentException("bad length");
+            }
+            mclBnG1_mulVec(ref z, x, y, (long)n);
         }
         public static void Add(ref G2 z, in G2 x, in G2 y)
         {

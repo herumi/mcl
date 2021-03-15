@@ -164,6 +164,20 @@ namespace mcl {
                 Q.Deserialize(buf);
                 assert("P == Q", P.Equals(Q));
             }
+            {
+                const int n = 5;
+                G1[] xVec = new G1[n];
+                Fr[] yVec = new Fr[n];
+                P.Clear();
+                for (int i = 0; i < n; i++) {
+                    xVec[i].HashAndMapTo(i.ToString());
+                    yVec[i].SetByCSPRNG();
+                    Q.Mul(xVec[i], yVec[i]);
+                    P.Add(P, Q);
+                }
+                MulVec(ref Q, xVec, yVec);
+                assert("mulVecG1", P.Equals(Q));
+            }
         }
         static void TestG2()
         {
