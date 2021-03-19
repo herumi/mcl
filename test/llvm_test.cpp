@@ -65,14 +65,14 @@ template<>void sqrPre<n>(Unit *z, const Unit *x) { mcl_fpDbl_sqrPre ## n ## suf(
 template<>void mod<n>(Unit *z, const Unit *x, const Unit *p) { mcl_fp_montRedNF ## n ## suf(z, x, p); } \
 template<>void mont<n>(Unit *z, const Unit *x, const Unit *y, const Unit *p) { mcl_fp_montNF ## n ## suf(z, x, y, p); }
 
-#if CYBOZU_OS_BIT == 64
+#if MCL_SIZEOF_UNIT == 8
 MCL_FP_DEF_FUNC_SUB(4, L)
 MCL_FP_DEF_FUNC_SUB(5, L)
 #endif
 MCL_FP_DEF_FUNC_SUB(6, L)
 //MCL_FP_DEF_FUNC_SUB(7, L)
 MCL_FP_DEF_FUNC_SUB(8, L)
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 MCL_FP_DEF_FUNC_SUB(12, L)
 MCL_FP_DEF_FUNC_SUB(16, L)
 #endif
@@ -95,7 +95,7 @@ void bench(Unit *x, Unit *y, const Unit *p)
 {
 	printf("N=%zd\n", N);
 	Unit xx[N * 2], yy[N * 2];
-#if CYBOZU_OS_BIT == 64
+#if MCL_SIZEOF_UNIT == 8
 	const int C = 10000;
 #else
 	const int C = 1000;
@@ -115,14 +115,14 @@ int main()
 	setRand(x, maxN, rg);
 	setRand(y, maxN, rg);
 	setRand(p, maxN + 1, rg);
-#if CYBOZU_OS_BIT == 64
+#if MCL_SIZEOF_UNIT == 8
 	bench<4>(x, y, p + 1);
 	bench<5>(x, y, p + 1);
 #endif
 	bench<6>(x, y, p + 1);
 //	bench<7>(x, y, p + 1);
 	bench<8>(x, y, p + 1);
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 	bench<12>(x, y, p + 1);
 	bench<16>(x, y, p + 1);
 #endif

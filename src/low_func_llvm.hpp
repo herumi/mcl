@@ -51,7 +51,7 @@ template<>const void4u DblSub<n, tag>::f = &mcl_fpDbl_sub ## n ## suf; \
 	MCL_DEF_LLVM_FUNC2(n, Ltag, L)
 #endif
 
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 
 MCL_DEF_LLVM_FUNC(6)
 MCL_DEF_LLVM_FUNC(7)
@@ -63,7 +63,7 @@ MCL_DEF_LLVM_FUNC(12)
 MCL_DEF_LLVM_FUNC(16)
 #endif
 
-#else // 64
+#else
 
 MCL_DEF_LLVM_FUNC(3)
 MCL_DEF_LLVM_FUNC(4)

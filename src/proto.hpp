@@ -38,7 +38,7 @@ void mcl_fpDbl_mod_NIST_P521 ## suf(mcl::fp::Unit* z, const mcl::fp::Unit* xy, c
 
 extern "C" {
 
-#if CYBOZU_OS_BIT == 32
+#if MCL_SIZEOF_UNIT == 4
 
 MCL_FP_DEF_FUNC(6)
 MCL_FP_DEF_FUNC(7)
