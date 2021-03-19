@@ -164,6 +164,20 @@ namespace mcl {
                 Q.Deserialize(buf);
                 assert("P == Q", P.Equals(Q));
             }
+            {
+                const int n = 5;
+                G1[] xVec = new G1[n];
+                Fr[] yVec = new Fr[n];
+                P.Clear();
+                for (int i = 0; i < n; i++) {
+                    xVec[i].HashAndMapTo(i.ToString());
+                    yVec[i].SetByCSPRNG();
+                    Q.Mul(xVec[i], yVec[i]);
+                    P.Add(P, Q);
+                }
+                MulVec(ref Q, xVec, yVec);
+                assert("mulVecG1", P.Equals(Q));
+            }
         }
         static void TestG2()
         {
@@ -195,6 +209,20 @@ namespace mcl {
                 Q.Clear();
                 Q.Deserialize(buf);
                 assert("P == Q", P.Equals(Q));
+            }
+            {
+                const int n = 5;
+                G2[] xVec = new G2[n];
+                Fr[] yVec = new Fr[n];
+                P.Clear();
+                for (int i = 0; i < n; i++) {
+                    xVec[i].HashAndMapTo(i.ToString());
+                    yVec[i].SetByCSPRNG();
+                    Q.Mul(xVec[i], yVec[i]);
+                    P.Add(P, Q);
+                }
+                MulVec(ref Q, xVec, yVec);
+                assert("mulVecG2", P.Equals(Q));
             }
         }
         static void TestPairing()
@@ -228,9 +256,8 @@ namespace mcl {
             var tbl = new[] {
                 new {
                     msg = "asdf",
-                    dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_",
-                    x = "bc73d15443009a8ff2ddce864136d892274dd8365c60d0d2d44cc543387348e366a8f1e1401427e37743c29ed2c939a",
-                    y = "101e26428a1b78c05458cb1cc37d2d87876ad3437096d2827f376702d4451667fe1fa82e82795495d33d466133ed1862",
+                    x = "a72df17570d0eb81260042edbea415ad49bdb94a1bc1ce9d1bf147d0d48268170764bb513a3b994d662e1faba137106",
+                    y = "122b77eca1ed58795b7cd456576362f4f7bd7a572a29334b4817898a42414d31e9c0267f2dc481a4daf8bcf4a460322",
                 },
            };
             G1 P = new G1();

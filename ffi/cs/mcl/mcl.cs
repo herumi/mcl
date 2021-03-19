@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -19,6 +19,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBn_init(int curve, int compiledTimeVar);
         [DllImport(dllName)] public static extern void mclBn_setETHserialization(int enable);
         [DllImport(dllName)] public static extern int mclBn_setMapToMode(int mode);
+        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, [In] Fr[] poly, long bufSize, in Fr y);
         [DllImport(dllName)] public static extern void mclBnFr_clear(ref Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_setInt(ref Fr y, int x);
         [DllImport(dllName)] public static extern int mclBnFr_setStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -72,6 +73,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG1_add(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_sub(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_mul(ref G1 z, in G1 x, in Fr y);
+        [DllImport(dllName)] public static extern void mclBnG1_mulVec(ref G1 z, [In]G1[] x, [In]Fr[] y, long n);
 
         [DllImport(dllName)] public static extern void mclBnG2_clear(ref G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -86,6 +88,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG2_add(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_sub(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_mul(ref G2 z, in G2 x, in Fr y);
+        [DllImport(dllName)] public static extern void mclBnG2_mulVec(ref G2 z, [In] G2[] x, [In] Fr[] y, long n);
 
         [DllImport(dllName)] public static extern void mclBnGT_clear(ref GT x);
         [DllImport(dllName)] public static extern int mclBnGT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -215,6 +218,14 @@ namespace mcl {
         {
             mclBnG1_normalize(ref y, x);
         }
+        public static void MulVec(ref G1 z, in G1[] x, in Fr[] y)
+        {
+            int n = x.Length;
+            if (n <= 0 || n != y.Length) {
+                throw new ArgumentException("bad length");
+            }
+            mclBnG1_mulVec(ref z, x, y, (long)n);
+        }
         public static void Add(ref G2 z, in G2 x, in G2 y)
         {
             mclBnG2_add(ref z, x, y);
@@ -238,6 +249,14 @@ namespace mcl {
         public static void Normalize(ref G2 y, in G2 x)
         {
             mclBnG2_normalize(ref y, x);
+        }
+        public static void MulVec(ref G2 z, in G2[] x, in Fr[] y)
+        {
+            int n = x.Length;
+            if (n <= 0 || n != y.Length) {
+                throw new ArgumentException("bad length");
+            }
+            mclBnG2_mulVec(ref z, x, y, (long)n);
         }
         public static void Add(ref GT z, in GT x, in GT y)
         {
@@ -291,6 +310,14 @@ namespace mcl {
         [StructLayout(LayoutKind.Sequential)]
         public struct Fr {
             private U128 v0, v1;
+            public static Fr One()
+            {
+                var fr = new Fr();
+                fr.SetInt(1);
+
+                return fr;
+            }
+            public static Fr Zero() => new Fr();
             public void Clear()
             {
                 mclBnFr_clear(ref this);
@@ -433,6 +460,13 @@ namespace mcl {
         [StructLayout(LayoutKind.Sequential)]
         public struct Fp {
             private U128 v0, v1, v2;
+            public static Fp One()
+            {
+                var fp = new Fp();
+                fp.SetInt(1);
+                return fp;
+            }
+            public static Fp Zero() => new Fp();
             public void Clear()
             {
                 mclBnFp_clear(ref this);
@@ -648,6 +682,30 @@ namespace mcl {
             public void Mul(in G1 x, in Fr y)
             {
                 MCL.Mul(ref this, x, y);
+            }
+            public static G1 operator -(in G1 x)
+            {
+                var result = new G1();
+                result.Neg(x);
+                return result;
+            }
+            public static G1 operator +(in G1 left, in G1 right)
+            {
+                var result = new G1();
+                result.Add(left, right);
+                return result;
+            }
+            public static G1 operator -(in G1 left, in G1 right)
+            {
+                var result = new G1();
+                result.Sub(left, right);
+                return result;
+            }
+            public static G1 operator *(in G1 left, in Fr right)
+            {
+                var result = new G1();
+                result.Mul(left, right);
+                return result;
             }
         }
         [StructLayout(LayoutKind.Sequential)]
