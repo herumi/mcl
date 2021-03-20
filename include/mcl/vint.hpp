@@ -197,14 +197,11 @@ T addN(T *z, const T *x, const T *y, size_t n)
 	T c = 0;
 	for (size_t i = 0; i < n; i++) {
 		T xc = x[i] + c;
-		if (xc < c) {
-			// x[i] = Unit(-1) and c = 1
-			z[i] = y[i];
-		} else {
-			xc += y[i];
-			c = y[i] > xc ? 1 : 0;
-			z[i] = xc;
-		}
+		c = xc < c;
+		T yi = y[i];
+		xc += yi;
+		c += xc < yi;
+		z[i] = xc;
 	}
 	return c;
 }
@@ -285,14 +282,12 @@ T subN(T *z, const T *x, const T *y, size_t n)
 	assert(n > 0);
 	T c = 0;
 	for (size_t i = 0; i < n; i++) {
-		T yc = y[i] + c;
-		if (yc < c) {
-			// y[i] = T(-1) and c = 1
-			z[i] = x[i];
-		} else {
-			c = x[i] < yc ? 1 : 0;
-			z[i] = x[i] - yc;
-		}
+		T yi = y[i];
+		yi += c;
+		c = yi < c;
+		T xi = x[i];
+		c += xi < yi;
+		z[i] = xi - yi;
 	}
 	return c;
 }

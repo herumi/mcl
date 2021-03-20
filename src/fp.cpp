@@ -583,7 +583,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	default:
 		return false;
 	}
-#ifdef USE_WASM
+#if defined(USE_WASM) && MCL_SIZEOF_UNIT == 4
 	if (N == 8) {
 		setWasmOp<8>(*this);
 	} else if (N == 12) {
