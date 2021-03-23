@@ -97,15 +97,17 @@ uint32_t mulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
 template<size_t N>
 uint32_t addMulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
 {
-	uint32_t H = 0;
+	// reduce cast operation
+	uint64_t H = 0;
+	uint64_t yy = y;
 	for (size_t i = 0; i < N; i++) {
-		uint64_t v = uint64_t(x[i]) * y;
+		uint64_t v = x[i] * yy;
 		v += H;
 		v += z[i];
 		z[i] = uint32_t(v);
-		H = uint32_t(v >> 32);
+		H = v >> 32;
 	}
-	return H;
+	return uint32_t(H);
 }
 
 // z[N * 2] = x[N] * y[N]
