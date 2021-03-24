@@ -47,6 +47,7 @@ namespace mcl {
         {
             Console.WriteLine("TestFr");
             Fr x = new Fr();
+            assert("x.isZero", x.IsZero());
             x.Clear();
             assert("0", x.GetStr(10) == "0");
             assert("0.IzZero", x.IsZero());
@@ -92,6 +93,7 @@ namespace mcl {
         {
             Console.WriteLine("TestFp");
             Fp x = new Fp();
+            assert("x.isZero", x.IsZero());
             x.Clear();
             assert("0", x.GetStr(10) == "0");
             assert("0.IzZero", x.IsZero());
@@ -137,6 +139,7 @@ namespace mcl {
         {
             Console.WriteLine("TestG1");
             G1 P = new G1();
+            assert("P.isZero", P.IsZero());
             P.Clear();
             assert("P.IsValid", P.IsValid());
             assert("P.IsZero", P.IsZero());
@@ -178,11 +181,14 @@ namespace mcl {
                 MulVec(ref Q, xVec, yVec);
                 assert("mulVecG1", P.Equals(Q));
             }
+            G1 W = G1.Zero();
+            assert("W.IsZero", W.IsZero());
         }
         static void TestG2()
         {
             Console.WriteLine("TestG2");
             G2 P = new G2();
+            assert("P.isZero", P.IsZero());
             P.Clear();
             assert("P is valid", P.IsValid());
             assert("P is zero", P.IsZero());
@@ -224,6 +230,8 @@ namespace mcl {
                 MulVec(ref Q, xVec, yVec);
                 assert("mulVecG2", P.Equals(Q));
             }
+            G2 W = G2.Zero();
+            assert("W.IsZero", W.IsZero());
         }
         static void TestPairing()
         {

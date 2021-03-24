@@ -312,10 +312,9 @@ namespace mcl {
             private U128 v0, v1;
             public static Fr One()
             {
-                var fr = new Fr();
-                fr.SetInt(1);
-
-                return fr;
+                var x = new Fr();
+                x.SetInt(1);
+                return x;
             }
             public static Fr Zero() => new Fr();
             public void Clear()
@@ -462,9 +461,9 @@ namespace mcl {
             private U128 v0, v1, v2;
             public static Fp One()
             {
-                var fp = new Fp();
-                fp.SetInt(1);
-                return fp;
+                var x = new Fp();
+                x.SetInt(1);
+                return x;
             }
             public static Fp Zero() => new Fp();
             public void Clear()
@@ -606,11 +605,16 @@ namespace mcl {
         [StructLayout(LayoutKind.Sequential)]
         public struct G1 {
             public Fp x, y, z;
+            public static G1 Zero()
+            {
+                var g1 = new G1();
+                return g1;
+            }
             public void Clear()
             {
                 mclBnG1_clear(ref this);
             }
-            public void SetStr(String s, int ioMode)
+            public void SetStr(string s, int ioMode)
             {
                 if (mclBnG1_setStr(ref this, s, s.Length, ioMode) != 0) {
                     throw new ArgumentException("mclBnG1_setStr:" + s);
@@ -711,11 +715,16 @@ namespace mcl {
         [StructLayout(LayoutKind.Sequential)]
         public struct G2 {
             public Fp2 x, y, z;
+            public static G2 Zero()
+            {
+                var g2 = new G2();
+                return g2;
+            }
             public void Clear()
             {
                 mclBnG2_clear(ref this);
             }
-            public void SetStr(String s, int ioMode)
+            public void SetStr(string s, int ioMode)
             {
                 if (mclBnG2_setStr(ref this, s, s.Length, ioMode) != 0) {
                     throw new ArgumentException("mclBnG2_setStr:" + s);
@@ -788,6 +797,30 @@ namespace mcl {
             {
                 MCL.Mul(ref this, x, y);
             }
+            public static G2 operator -(in G2 x)
+            {
+                var result = new G2();
+                result.Neg(x);
+                return result;
+            }
+            public static G2 operator +(in G2 x, in G2 y)
+            {
+                var z = new G2();
+                z.Add(x, y);
+                return z;
+            }
+            public static G2 operator -(in G2 x, in G2 y)
+            {
+                var z = new G2();
+                z.Sub(x, y);
+                return z;
+            }
+            public static G2 operator *(in G2 x, in Fr y)
+            {
+                var z = new G2();
+                z.Mul(x, y);
+                return z;
+            }
         }
         [StructLayout(LayoutKind.Sequential)]
         public struct GT {
@@ -816,7 +849,7 @@ namespace mcl {
             }
             public string GetStr(int ioMode)
             {
-                StringBuilder sb = new StringBuilder(1024);
+                StringBuilder sb = new StringBuilder(2048);
                 long size = mclBnGT_getStr(sb, sb.Capacity, this, ioMode);
                 if (size == 0) {
                     throw new InvalidOperationException("mclBnGT_getStr:");
