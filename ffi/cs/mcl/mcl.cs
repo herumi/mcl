@@ -312,10 +312,9 @@ namespace mcl {
             private U128 v0, v1;
             public static Fr One()
             {
-                var fr = new Fr();
-                fr.SetInt(1);
-
-                return fr;
+                var x = new Fr();
+                x.SetInt(1);
+                return x;
             }
             public static Fr Zero() => new Fr();
             public void Clear()
@@ -462,9 +461,9 @@ namespace mcl {
             private U128 v0, v1, v2;
             public static Fp One()
             {
-                var fp = new Fp();
-                fp.SetInt(1);
-                return fp;
+                var x = new Fp();
+                x.SetInt(1);
+                return x;
             }
             public static Fp Zero() => new Fp();
             public void Clear()
@@ -804,23 +803,23 @@ namespace mcl {
                 result.Neg(x);
                 return result;
             }
-            public static G2 operator +(in G2 left, in G2 right)
+            public static G2 operator +(in G2 x, in G2 y)
             {
-                var result = new G2();
-                result.Add(left, right);
-                return result;
+                var z = new G2();
+                z.Add(x, y);
+                return z;
             }
-            public static G2 operator -(in G2 left, in G2 right)
+            public static G2 operator -(in G2 x, in G2 y)
             {
-                var result = new G2();
-                result.Sub(left, right);
-                return result;
+                var z = new G2();
+                z.Sub(x, y);
+                return z;
             }
-            public static G2 operator *(in G2 left, in Fr right)
+            public static G2 operator *(in G2 x, in Fr y)
             {
-                var result = new G2();
-                result.Mul(left, right);
-                return result;
+                var z = new G2();
+                z.Mul(x, y);
+                return z;
             }
         }
         [StructLayout(LayoutKind.Sequential)]
