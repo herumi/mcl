@@ -606,11 +606,20 @@ namespace mcl {
         [StructLayout(LayoutKind.Sequential)]
         public struct G1 {
             public Fp x, y, z;
+            public static G1 Zero()
+            {
+                var g1 = new G1();
+                g1.x.SetInt(1);
+                g1.y.SetInt(1);
+                g1.z.SetInt(0);
+
+                return g1;
+            }
             public void Clear()
             {
                 mclBnG1_clear(ref this);
             }
-            public void SetStr(String s, int ioMode)
+            public void SetStr(string s, int ioMode)
             {
                 if (mclBnG1_setStr(ref this, s, s.Length, ioMode) != 0) {
                     throw new ArgumentException("mclBnG1_setStr:" + s);
@@ -711,11 +720,22 @@ namespace mcl {
         [StructLayout(LayoutKind.Sequential)]
         public struct G2 {
             public Fp2 x, y, z;
+            public static G2 Zero()
+            {
+                var g2 = new G2();
+                g2.x.a.SetInt(1);
+                g2.x.b.SetInt(0);
+                g2.y.a.SetInt(1);
+                g2.y.b.SetInt(0);
+                g2.x.a.SetInt(0);
+                g2.x.a.SetInt(0);
+                return g2;
+            }
             public void Clear()
             {
                 mclBnG2_clear(ref this);
             }
-            public void SetStr(String s, int ioMode)
+            public void SetStr(string s, int ioMode)
             {
                 if (mclBnG2_setStr(ref this, s, s.Length, ioMode) != 0) {
                     throw new ArgumentException("mclBnG2_setStr:" + s);
@@ -788,6 +808,30 @@ namespace mcl {
             {
                 MCL.Mul(ref this, x, y);
             }
+            public static G2 operator -(in G2 x)
+            {
+                var result = new G2();
+                result.Neg(x);
+                return result;
+            }
+            public static G2 operator +(in G2 left, in G2 right)
+            {
+                var result = new G2();
+                result.Add(left, right);
+                return result;
+            }
+            public static G2 operator -(in G2 left, in G2 right)
+            {
+                var result = new G2();
+                result.Sub(left, right);
+                return result;
+            }
+            public static G2 operator *(in G2 left, in Fr right)
+            {
+                var result = new G2();
+                result.Mul(left, right);
+                return result;
+            }
         }
         [StructLayout(LayoutKind.Sequential)]
         public struct GT {
@@ -816,7 +860,7 @@ namespace mcl {
             }
             public string GetStr(int ioMode)
             {
-                StringBuilder sb = new StringBuilder(1024);
+                StringBuilder sb = new StringBuilder(2048);
                 long size = mclBnGT_getStr(sb, sb.Capacity, this, ioMode);
                 if (size == 0) {
                     throw new InvalidOperationException("mclBnGT_getStr:");

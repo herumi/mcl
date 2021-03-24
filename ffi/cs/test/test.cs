@@ -178,6 +178,8 @@ namespace mcl {
                 MulVec(ref Q, xVec, yVec);
                 assert("mulVecG1", P.Equals(Q));
             }
+            G1 W = G1.Zero();
+            assert("W.IsZero", W.IsZero());
         }
         static void TestG2()
         {
@@ -224,6 +226,8 @@ namespace mcl {
                 MulVec(ref Q, xVec, yVec);
                 assert("mulVecG2", P.Equals(Q));
             }
+            G2 W = G2.Zero();
+            assert("W.IsZero", W.IsZero());
         }
         static void TestPairing()
         {
