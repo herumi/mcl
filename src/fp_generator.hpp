@@ -312,6 +312,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		if (!cpu.has(Xbyak::util::Cpu::tAVX)) return false;
 		useMulx_ = cpu.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu.has(Xbyak::util::Cpu::tADX);
+		if (!(useMulx_ && useAdx_)) return false;
 #endif
 		reset(); // reset jit code for reuse
 #ifndef MCL_DUMP_JIT
