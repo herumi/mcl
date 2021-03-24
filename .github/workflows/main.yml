@@ -8,6 +8,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: lscpu
+    - run: sudo apt install valgrind
+    - run: make bin/pairing.exe -j4
+    - run: valgrind bin/pairing.exe
 #    - run: wget https://software.intel.com/content/dam/develop/external/us/en/documents/downloads/sde-external-8.63.0-2021-01-18-lin.tar.bz2
 #    - run: bzip2 -dc sde-external-8.63.0-2021-01-18-lin.tar.bz2 | tar xvf -
 #    - run: make bin/bn_test.exe DEBUG=1 -j4
