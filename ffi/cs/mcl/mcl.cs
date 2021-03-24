@@ -609,10 +609,6 @@ namespace mcl {
             public static G1 Zero()
             {
                 var g1 = new G1();
-                g1.x.SetInt(1);
-                g1.y.SetInt(1);
-                g1.z.SetInt(0);
-
                 return g1;
             }
             public void Clear()
@@ -723,12 +719,6 @@ namespace mcl {
             public static G2 Zero()
             {
                 var g2 = new G2();
-                g2.x.a.SetInt(1);
-                g2.x.b.SetInt(0);
-                g2.y.a.SetInt(1);
-                g2.y.b.SetInt(0);
-                g2.x.a.SetInt(0);
-                g2.x.a.SetInt(0);
                 return g2;
             }
             public void Clear()
