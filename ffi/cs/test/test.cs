@@ -34,7 +34,6 @@ namespace mcl {
         }
 
         static void TestCurve(int curveType)
-
         {
             Init(curveType);
             TestFr();
@@ -42,6 +41,7 @@ namespace mcl {
             TestG1();
             TestG2();
             TestPairing();
+            TestSS();
         }
         static void TestFr()
         {
@@ -285,6 +285,49 @@ namespace mcl {
         static void TestETH()
         {
             TestETH_mapToG1();
+        }
+        static void TestSS()
+        {
+            const int n = 5;
+            const int k = 3; // can't change because the following loop
+            Fr[] cVec = new Fr[k];
+            // init polynomial
+            for (int i = 0; i < k; i++) {
+                //                cVec[i].SetByCSPRNG();
+                cVec[i].SetInt(i + 1);
+                Console.WriteLine("cVec[" + i + "]=" + cVec[i].GetStr(10));
+            }
+
+            Fr[] xVec = new Fr[n]; // user id
+            Fr[] yVec = new Fr[n];
+            // share cVec[0] with yVec[0], ..., yVec[n-1]
+            for (int i = 0; i < n; i++) {
+                xVec[i].SetInt(i + 2); // non zero value
+                Console.WriteLine("x=" + xVec[i].GetStr(10));
+                MCL.Share(ref yVec[i], cVec, xVec[i]);
+                Console.WriteLine("y=" + yVec[i].GetStr(10));
+            }
+            // recover cVec[0] from xVecSubset and yVecSubset
+            Fr[] xVecSubset = new Fr[k];
+            Fr[] yVecSubset = new Fr[k];
+            Console.WriteLine("cVec[0]=" + cVec[0].GetStr(10));
+            for (int i0 = 0; i0 < n; i0++) {
+                xVecSubset[0] = xVec[i0];
+                yVecSubset[0] = yVec[i0];
+                for (int i1 = i0 + 1; i1 < n; i1++) {
+                    xVecSubset[1] = xVec[i1];
+                    yVecSubset[1] = yVec[i1];
+                    for (int i2 = i1 + 1; i2 < n; i2++) {
+                        xVecSubset[2] = xVec[i2];
+                        yVecSubset[2] = yVec[i2];
+                        Fr s = new Fr();
+                        MCL.Recover(ref s, xVecSubset, yVecSubset);
+                        Console.WriteLine("x=" + i0 + ", " + i1 + ", " + i2);
+                        Console.WriteLine("s=" + s.GetStr(10));
+                        assert("Recover", s.Equals(cVec[0]));
+                    }
+                }
+            }
         }
     }
 }

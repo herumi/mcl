@@ -19,7 +19,6 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBn_init(int curve, int compiledTimeVar);
         [DllImport(dllName)] public static extern void mclBn_setETHserialization(int enable);
         [DllImport(dllName)] public static extern int mclBn_setMapToMode(int mode);
-        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, [In] Fr[] poly, long bufSize, in Fr y);
         [DllImport(dllName)] public static extern void mclBnFr_clear(ref Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_setInt(ref Fr y, int x);
         [DllImport(dllName)] public static extern int mclBnFr_setStr(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -122,6 +121,8 @@ namespace mcl {
         [DllImport(dllName)] public static extern ulong mclBnG1_deserialize(ref G1 x, [In]byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnG2_deserialize(ref G2 x, [In]byte[] buf, ulong bufSize);
 
+        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, in Fr[] cVec, ulong cSize, in Fr x);
+        [DllImport(dllName)] public static extern int mclBn_FrLagrangeInterpolation(ref Fr z, in Fr[] xVec, in Fr[] yVec, ulong k);
         public static void Init(int curveType = BN254)
         {
             if (!System.Environment.Is64BitProcess) {
@@ -301,6 +302,27 @@ namespace mcl {
         public static void MillerLoop(ref GT z, in G1 x, in G2 y)
         {
             mclBn_millerLoop(ref z, x, y);
+        }
+        // y = f(x) with a polynomial f(t) = sum_i cVec[i] t^i
+        public static void Share(ref Fr y, in Fr[] cVec, in Fr x)
+        {
+            ulong k = (ulong)cVec.Length;
+            int ret = mclBn_FrEvaluatePolynomial(ref y, cVec, k, x);
+            if (ret != 0) {
+                throw new ArgumentException("mclBn_FrEvaluatePolynomial");
+            }
+        }
+        // recover z by Lagrange interpolation with {xVec[i], yVec[i]}
+        public static void Recover(ref Fr z, in Fr[] xVec, in Fr[] yVec)
+        {
+            if (xVec.Length != yVec.Length) {
+                throw new ArgumentException("bad length");
+            }
+            ulong k = (ulong)xVec.Length;
+            int ret = mclBn_FrLagrangeInterpolation(ref z, xVec, yVec, k);
+            if (ret != 0) {
+                throw new ArgumentException("mclBn_FrLagrangeInterpolation:" + ret.ToString());
+            }
         }
         [StructLayout(LayoutKind.Sequential)]
         struct U128 {
