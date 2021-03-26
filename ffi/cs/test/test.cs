@@ -293,9 +293,8 @@ namespace mcl {
             Fr[] cVec = new Fr[k];
             // init polynomial
             for (int i = 0; i < k; i++) {
-                //                cVec[i].SetByCSPRNG();
+                cVec[i].SetByCSPRNG();
                 cVec[i].SetInt(i + 1);
-                Console.WriteLine("cVec[" + i + "]=" + cVec[i].GetStr(10));
             }
 
             Fr[] xVec = new Fr[n]; // user id
@@ -303,14 +302,11 @@ namespace mcl {
             // share cVec[0] with yVec[0], ..., yVec[n-1]
             for (int i = 0; i < n; i++) {
                 xVec[i].SetInt(i + 2); // non zero value
-                Console.WriteLine("x=" + xVec[i].GetStr(10));
                 MCL.Share(ref yVec[i], cVec, xVec[i]);
-                Console.WriteLine("y=" + yVec[i].GetStr(10));
             }
             // recover cVec[0] from xVecSubset and yVecSubset
             Fr[] xVecSubset = new Fr[k];
             Fr[] yVecSubset = new Fr[k];
-            Console.WriteLine("cVec[0]=" + cVec[0].GetStr(10));
             for (int i0 = 0; i0 < n; i0++) {
                 xVecSubset[0] = xVec[i0];
                 yVecSubset[0] = yVec[i0];
@@ -322,8 +318,6 @@ namespace mcl {
                         yVecSubset[2] = yVec[i2];
                         Fr s = new Fr();
                         MCL.Recover(ref s, xVecSubset, yVecSubset);
-                        Console.WriteLine("x=" + i0 + ", " + i1 + ", " + i2);
-                        Console.WriteLine("s=" + s.GetStr(10));
                         assert("Recover", s.Equals(cVec[0]));
                     }
                 }

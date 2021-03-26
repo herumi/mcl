@@ -121,8 +121,8 @@ namespace mcl {
         [DllImport(dllName)] public static extern ulong mclBnG1_deserialize(ref G1 x, [In]byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnG2_deserialize(ref G2 x, [In]byte[] buf, ulong bufSize);
 
-        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, in Fr[] cVec, ulong cSize, in Fr x);
-        [DllImport(dllName)] public static extern int mclBn_FrLagrangeInterpolation(ref Fr z, in Fr[] xVec, in Fr[] yVec, ulong k);
+        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, [In]Fr[] cVec, ulong cSize, in Fr x);
+        [DllImport(dllName)] public static extern int mclBn_FrLagrangeInterpolation(ref Fr z, [In]Fr[] xVec, [In]Fr[] yVec, ulong k);
         public static void Init(int curveType = BN254)
         {
             if (!System.Environment.Is64BitProcess) {
