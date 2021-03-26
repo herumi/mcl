@@ -61,6 +61,7 @@ class Fr {
 	friend class G2;
 	friend class GT;
 	friend void neg(Fr& y, const Fr& x);
+	friend void inv(Fr& y, const Fr& x);
 	friend void add(Fr& z, const Fr& x, const Fr& y);
 	friend void sub(Fr& z, const Fr& x, const Fr& y);
 	friend void mul(Fr& z, const Fr& x, const Fr& y);
@@ -76,6 +77,7 @@ public:
 		: self_(str, base) {}
 	bool equals(const Fr& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
+	bool isOne() const { return self_.isOne(); }
 	void setStr(const std::string& str, int base = 0) throw(std::exception)
 	{
 		self_.setStr(str, base);
@@ -119,6 +121,11 @@ void neg(Fr& y, const Fr& x)
 	mcl::bn::Fr::neg(y.self_, x.self_);
 }
 
+void inv(Fr& y, const Fr& x)
+{
+	mcl::bn::Fr::inv(y.self_, x.self_);
+}
+
 void add(Fr& z, const Fr& x, const Fr& y)
 {
 	mcl::bn::Fr::add(z.self_, x.self_, y.self_);
@@ -145,6 +152,7 @@ class Fp {
 	friend class G2;
 	friend class GT;
 	friend void neg(Fp& y, const Fp& x);
+	friend void inv(Fp& y, const Fp& x);
 	friend void add(Fp& z, const Fp& x, const Fp& y);
 	friend void sub(Fp& z, const Fp& x, const Fp& y);
 	friend void mul(Fp& z, const Fp& x, const Fp& y);
@@ -157,6 +165,7 @@ public:
 		: self_(str, base) {}
 	bool equals(const Fp& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
+	bool isOne() const { return self_.isOne(); }
 	void setStr(const std::string& str, int base = 0) throw(std::exception)
 	{
 		self_.setStr(str, base);
@@ -190,6 +199,11 @@ public:
 void neg(Fp& y, const Fp& x)
 {
 	mcl::bn::Fp::neg(y.self_, x.self_);
+}
+
+void inv(Fp& y, const Fp& x)
+{
+	mcl::bn::Fp::inv(y.self_, x.self_);
 }
 
 void add(Fp& z, const Fp& x, const Fp& y)

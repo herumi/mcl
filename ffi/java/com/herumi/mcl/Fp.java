@@ -64,6 +64,10 @@ public class Fp {
     return MclJNI.Fp_isZero(swigCPtr, this);
   }
 
+  public boolean isOne() {
+    return MclJNI.Fp_isOne(swigCPtr, this);
+  }
+
   public void setStr(String str, int base) {
     MclJNI.Fp_setStr__SWIG_0(swigCPtr, this, str, base);
   }

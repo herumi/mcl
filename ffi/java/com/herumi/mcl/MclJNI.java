@@ -11,6 +11,7 @@ package com.herumi.mcl;
 public class MclJNI {
   public final static native void SystemInit(int jarg1);
   public final static native void neg__SWIG_0(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_);
+  public final static native void inv__SWIG_0(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_);
   public final static native void add__SWIG_0(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_, long jarg3, Fr jarg3_);
   public final static native void sub__SWIG_0(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_, long jarg3, Fr jarg3_);
   public final static native void mul__SWIG_0(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_, long jarg3, Fr jarg3_);
@@ -25,6 +26,7 @@ public class MclJNI {
   public final static native long new_Fr__SWIG_4(String jarg1);
   public final static native boolean Fr_equals(long jarg1, Fr jarg1_, long jarg2, Fr jarg2_);
   public final static native boolean Fr_isZero(long jarg1, Fr jarg1_);
+  public final static native boolean Fr_isOne(long jarg1, Fr jarg1_);
   public final static native void Fr_setStr__SWIG_0(long jarg1, Fr jarg1_, String jarg2, int jarg3);
   public final static native void Fr_setStr__SWIG_1(long jarg1, Fr jarg1_, String jarg2);
   public final static native void Fr_setInt(long jarg1, Fr jarg1_, int jarg2);
@@ -38,6 +40,7 @@ public class MclJNI {
   public final static native byte[] Fr_serialize(long jarg1, Fr jarg1_);
   public final static native void delete_Fr(long jarg1);
   public final static native void neg__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
+  public final static native void inv__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
   public final static native void add__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void sub__SWIG_1(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
   public final static native void mul__SWIG_3(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_, long jarg3, Fp jarg3_);
@@ -49,6 +52,7 @@ public class MclJNI {
   public final static native long new_Fp__SWIG_4(String jarg1);
   public final static native boolean Fp_equals(long jarg1, Fp jarg1_, long jarg2, Fp jarg2_);
   public final static native boolean Fp_isZero(long jarg1, Fp jarg1_);
+  public final static native boolean Fp_isOne(long jarg1, Fp jarg1_);
   public final static native void Fp_setStr__SWIG_0(long jarg1, Fp jarg1_, String jarg2, int jarg3);
   public final static native void Fp_setStr__SWIG_1(long jarg1, Fp jarg1_, String jarg2);
   public final static native void Fp_setInt(long jarg1, Fp jarg1_, int jarg2);
@@ -100,7 +104,7 @@ public class MclJNI {
   public final static native byte[] G2_serialize(long jarg1, G2 jarg1_);
   public final static native void delete_G2(long jarg1);
   public final static native void mul__SWIG_4(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, GT jarg3_);
-  public final static native void inv(long jarg1, GT jarg1_, long jarg2, GT jarg2_);
+  public final static native void inv__SWIG_2(long jarg1, GT jarg1_, long jarg2, GT jarg2_);
   public final static native long new_GT__SWIG_0();
   public final static native long new_GT__SWIG_1(long jarg1, GT jarg1_);
   public final static native boolean GT_equals(long jarg1, GT jarg1_, long jarg2, GT jarg2_);

@@ -17,6 +17,10 @@ public class Mcl implements MclConstants {
     MclJNI.neg__SWIG_0(Fr.getCPtr(y), y, Fr.getCPtr(x), x);
   }
 
+  public static void inv(Fr y, Fr x) {
+    MclJNI.inv__SWIG_0(Fr.getCPtr(y), y, Fr.getCPtr(x), x);
+  }
+
   public static void add(Fr z, Fr x, Fr y) {
     MclJNI.add__SWIG_0(Fr.getCPtr(z), z, Fr.getCPtr(x), x, Fr.getCPtr(y), y);
   }
@@ -47,6 +51,10 @@ public class Mcl implements MclConstants {
 
   public static void neg(Fp y, Fp x) {
     MclJNI.neg__SWIG_1(Fp.getCPtr(y), y, Fp.getCPtr(x), x);
+  }
+
+  public static void inv(Fp y, Fp x) {
+    MclJNI.inv__SWIG_1(Fp.getCPtr(y), y, Fp.getCPtr(x), x);
   }
 
   public static void add(Fp z, Fp x, Fp y) {
@@ -114,7 +122,7 @@ public class Mcl implements MclConstants {
   }
 
   public static void inv(GT y, GT x) {
-    MclJNI.inv(GT.getCPtr(y), y, GT.getCPtr(x), x);
+    MclJNI.inv__SWIG_2(GT.getCPtr(y), y, GT.getCPtr(x), x);
   }
 
 }

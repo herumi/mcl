@@ -286,6 +286,28 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_neg_1_1SWIG_10(JNIEnv *jenv, 
 }
 
 
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_inv_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  Fr *arg1 = 0 ;
+  Fr *arg2 = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(Fr **)&jarg1;
+  if (!arg1) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fr & reference is null");
+    return ;
+  } 
+  arg2 = *(Fr **)&jarg2;
+  if (!arg2) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fr const & reference is null");
+    return ;
+  } 
+  inv(*arg1,(Fr const &)*arg2);
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_add_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fr *arg1 = 0 ;
   Fr *arg2 = 0 ;
@@ -627,6 +649,21 @@ SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_Fr_1isZero(JNIEnv *jenv, 
 }
 
 
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_Fr_1isOne(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jboolean jresult = 0 ;
+  Fr *arg1 = (Fr *) 0 ;
+  bool result;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(Fr **)&jarg1; 
+  result = (bool)((Fr const *)arg1)->isOne();
+  jresult = (jboolean)result; 
+  return jresult;
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_Fr_1setStr_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2, jint jarg3) {
   Fr *arg1 = (Fr *) 0 ;
   std::string *arg2 = 0 ;
@@ -908,6 +945,28 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_neg_1_1SWIG_11(JNIEnv *jenv, 
 }
 
 
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_inv_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  Fp *arg1 = 0 ;
+  Fp *arg2 = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(Fp **)&jarg1;
+  if (!arg1) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fp & reference is null");
+    return ;
+  } 
+  arg2 = *(Fp **)&jarg2;
+  if (!arg2) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fp const & reference is null");
+    return ;
+  } 
+  inv(*arg1,(Fp const &)*arg2);
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_add_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_, jlong jarg3, jobject jarg3_) {
   Fp *arg1 = 0 ;
   Fp *arg2 = 0 ;
@@ -1157,6 +1216,21 @@ SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_Fp_1isZero(JNIEnv *jenv, 
   (void)jarg1_;
   arg1 = *(Fp **)&jarg1; 
   result = (bool)((Fp const *)arg1)->isZero();
+  jresult = (jboolean)result; 
+  return jresult;
+}
+
+
+SWIGEXPORT jboolean JNICALL Java_com_herumi_mcl_MclJNI_Fp_1isOne(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jboolean jresult = 0 ;
+  Fp *arg1 = (Fp *) 0 ;
+  bool result;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(Fp **)&jarg1; 
+  result = (bool)((Fp const *)arg1)->isOne();
   jresult = (jboolean)result; 
   return jresult;
 }
@@ -2338,7 +2412,7 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_mul_1_1SWIG_14(JNIEnv *jenv, 
 }
 
 
-SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_inv(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_inv_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   GT *arg1 = 0 ;
   GT *arg2 = 0 ;
   

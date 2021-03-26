@@ -45,6 +45,9 @@ public class MclTest {
 			assertEquals("x == 12", (new Fr("12")).toString(), "12");
 			assertEquals("x == 18", (new Fr("12", 16)).toString(), "18");
 			assertEquals("x == ff", (new Fr("255")).toString(16), "ff");
+			Mcl.inv(y, x);
+			Mcl.mul(x, y, x);
+			assertBool("x == 1", x.isOne());
 
 			{
 				byte[] b = x.serialize();
