@@ -10,7 +10,7 @@ namespace mcl {
             Console.WriteLine("ERR {0}", msg);
             err++;
         }
-        static void Main(string[] args)
+        static void Main()
         {
             err = 0;
             try {
@@ -34,7 +34,6 @@ namespace mcl {
         }
 
         static void TestCurve(int curveType)
-
         {
             Init(curveType);
             TestFr();
@@ -42,6 +41,7 @@ namespace mcl {
             TestG1();
             TestG2();
             TestPairing();
+            TestSS();
         }
         static void TestFr()
         {
@@ -285,6 +285,124 @@ namespace mcl {
         static void TestETH()
         {
             TestETH_mapToG1();
+        }
+        static void TestSS_Fr()
+        {
+            const int n = 5;
+            const int k = 3; // can't change because the following loop
+            Fr[] cVec = new Fr[k];
+            // init polynomial coefficient
+            for (int i = 0; i < k; i++) {
+                cVec[i].SetByCSPRNG();
+            }
+
+            Fr[] xVec = new Fr[n];
+            Fr[] yVec = new Fr[n];
+            // share cVec[0] with yVec[0], ..., yVec[n-1]
+            for (int i = 0; i < n; i++) {
+                xVec[i].SetHashOf(i.ToString());
+                MCL.Share(ref yVec[i], cVec, xVec[i]);
+            }
+            // recover cVec[0] from xVecSubset and yVecSubset
+            Fr[] xVecSubset = new Fr[k];
+            Fr[] yVecSubset = new Fr[k];
+            for (int i0 = 0; i0 < n; i0++) {
+                xVecSubset[0] = xVec[i0];
+                yVecSubset[0] = yVec[i0];
+                for (int i1 = i0 + 1; i1 < n; i1++) {
+                    xVecSubset[1] = xVec[i1];
+                    yVecSubset[1] = yVec[i1];
+                    for (int i2 = i1 + 1; i2 < n; i2++) {
+                        xVecSubset[2] = xVec[i2];
+                        yVecSubset[2] = yVec[i2];
+                        Fr s = new Fr();
+                        MCL.Recover(ref s, xVecSubset, yVecSubset);
+                        assert("Recover", s.Equals(cVec[0]));
+                    }
+                }
+            }
+        }
+        static void TestSS_G1()
+        {
+            const int n = 5;
+            const int k = 3; // can't change because the following loop
+            G1[] cVec = new G1[k];
+            // init polynomial coefficient
+            for (int i = 0; i < k; i++) {
+                Fr x = new Fr();
+                x.SetByCSPRNG();
+                cVec[i].SetHashOf(x.GetStr(16));
+            }
+
+            Fr[] xVec = new Fr[n];
+            G1[] yVec = new G1[n];
+            // share cVec[0] with yVec[0], ..., yVec[n-1]
+            for (int i = 0; i < n; i++) {
+                xVec[i].SetHashOf(i.ToString());
+                MCL.Share(ref yVec[i], cVec, xVec[i]);
+            }
+            // recover cVec[0] from xVecSubset and yVecSubset
+            Fr[] xVecSubset = new Fr[k];
+            G1[] yVecSubset = new G1[k];
+            for (int i0 = 0; i0 < n; i0++) {
+                xVecSubset[0] = xVec[i0];
+                yVecSubset[0] = yVec[i0];
+                for (int i1 = i0 + 1; i1 < n; i1++) {
+                    xVecSubset[1] = xVec[i1];
+                    yVecSubset[1] = yVec[i1];
+                    for (int i2 = i1 + 1; i2 < n; i2++) {
+                        xVecSubset[2] = xVec[i2];
+                        yVecSubset[2] = yVec[i2];
+                        G1 s = new G1();
+                        MCL.Recover(ref s, xVecSubset, yVecSubset);
+                        assert("Recover", s.Equals(cVec[0]));
+                    }
+                }
+            }
+        }
+        static void TestSS_G2()
+        {
+            const int n = 5;
+            const int k = 3; // can't change because the following loop
+            G2[] cVec = new G2[k];
+            // init polynomial coefficient
+            for (int i = 0; i < k; i++) {
+                Fr x = new Fr();
+                x.SetByCSPRNG();
+                cVec[i].SetHashOf(x.GetStr(16));
+            }
+
+            Fr[] xVec = new Fr[n];
+            G2[] yVec = new G2[n];
+            // share cVec[0] with yVec[0], ..., yVec[n-1]
+            for (int i = 0; i < n; i++) {
+                xVec[i].SetHashOf(i.ToString());
+                MCL.Share(ref yVec[i], cVec, xVec[i]);
+            }
+            // recover cVec[0] from xVecSubset and yVecSubset
+            Fr[] xVecSubset = new Fr[k];
+            G2[] yVecSubset = new G2[k];
+            for (int i0 = 0; i0 < n; i0++) {
+                xVecSubset[0] = xVec[i0];
+                yVecSubset[0] = yVec[i0];
+                for (int i1 = i0 + 1; i1 < n; i1++) {
+                    xVecSubset[1] = xVec[i1];
+                    yVecSubset[1] = yVec[i1];
+                    for (int i2 = i1 + 1; i2 < n; i2++) {
+                        xVecSubset[2] = xVec[i2];
+                        yVecSubset[2] = yVec[i2];
+                        G2 s = new G2();
+                        MCL.Recover(ref s, xVecSubset, yVecSubset);
+                        assert("Recover", s.Equals(cVec[0]));
+                    }
+                }
+            }
+        }
+        static void TestSS()
+        {
+            TestSS_Fr();
+            TestSS_G1();
+            TestSS_G2();
         }
     }
 }
