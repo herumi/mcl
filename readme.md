@@ -108,27 +108,34 @@ make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,
 
 # How to build on 64-bit Windows with Visual Studio
 
-Clone cybozulib\_ext,
-which provides compiled binaries of [MPIR](http://mpir.org/).
-
+Open a console window, and
 ```
-mkdir work
-cd work
-git clone git://github.com/herumi/mcl
-git clone git://github.com/herumi/cybozulib_ext
-cd work
+git clone https://github.com/herumi/mcl
+cd mcl
+
 # static library
 mklib
 mk -s test\bls12_test.cpp && bin\bls12_test.exe
+
 # dynamic library
 mklib dll
 mk -d test\bls12_test.cpp && bin\bls12_test.exe
 ```
-
 (not maintenanced)
 Open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
+```
+
+# C# test
+
+```
+cd mcl
+mklib dll
+cd ffi/cs
+dotnet build mcl.sln
+cd ../../bin
+../ffi/cs/test/bin/Debug/netcoreapp3.1/test.exe
 ```
 
 # How to build with CMake
