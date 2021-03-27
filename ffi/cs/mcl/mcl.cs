@@ -72,7 +72,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG1_add(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_sub(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_mul(ref G1 z, in G1 x, in Fr y);
-        [DllImport(dllName)] public static extern void mclBnG1_mulVec(ref G1 z, [In]G1[] x, [In]Fr[] y, long n);
+        [DllImport(dllName)] public static extern void mclBnG1_mulVec(ref G1 z, [In] G1[] x, [In] Fr[] y, long n);
 
         [DllImport(dllName)] public static extern void mclBnG2_clear(ref G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -114,15 +114,19 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBn_getFpByteSize();
         [DllImport(dllName)] public static extern ulong mclBnFp_serialize([Out] byte[] buf, ulong maxBufSize, in Fp x);
         [DllImport(dllName)] public static extern ulong mclBnFr_serialize([Out] byte[] buf, ulong maxBufSize, in Fr x);
-        [DllImport(dllName)] public static extern ulong mclBnG1_serialize([Out]byte[] buf, ulong maxBufSize, in G1 x);
-        [DllImport(dllName)] public static extern ulong mclBnG2_serialize([Out]byte[] buf, ulong maxBufSize, in G2 x);
-        [DllImport(dllName)] public static extern ulong mclBnFr_deserialize(ref Fr x, [In]byte[] buf, ulong bufSize);
-        [DllImport(dllName)] public static extern ulong mclBnFp_deserialize(ref Fp x, [In]byte[] buf, ulong bufSize);
-        [DllImport(dllName)] public static extern ulong mclBnG1_deserialize(ref G1 x, [In]byte[] buf, ulong bufSize);
-        [DllImport(dllName)] public static extern ulong mclBnG2_deserialize(ref G2 x, [In]byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnG1_serialize([Out] byte[] buf, ulong maxBufSize, in G1 x);
+        [DllImport(dllName)] public static extern ulong mclBnG2_serialize([Out] byte[] buf, ulong maxBufSize, in G2 x);
+        [DllImport(dllName)] public static extern ulong mclBnFr_deserialize(ref Fr x, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnFp_deserialize(ref Fp x, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnG1_deserialize(ref G1 x, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnG2_deserialize(ref G2 x, [In] byte[] buf, ulong bufSize);
 
-        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, [In]Fr[] cVec, ulong cSize, in Fr x);
-        [DllImport(dllName)] public static extern int mclBn_FrLagrangeInterpolation(ref Fr z, [In]Fr[] xVec, [In]Fr[] yVec, ulong k);
+        [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, [In] Fr[] cVec, ulong cSize, in Fr x);
+        [DllImport(dllName)] public static extern int mclBn_G1EvaluatePolynomial(ref G1 z, [In] G1[] cVec, ulong cSize, in Fr x);
+        [DllImport(dllName)] public static extern int mclBn_G2EvaluatePolynomial(ref G2 z, [In] G2[] cVec, ulong cSize, in Fr x);
+        [DllImport(dllName)] public static extern int mclBn_FrLagrangeInterpolation(ref Fr z, [In] Fr[] xVec, [In] Fr[] yVec, ulong k);
+        [DllImport(dllName)] public static extern int mclBn_G1LagrangeInterpolation(ref G1 z, [In] Fr[] xVec, [In] G1[] yVec, ulong k);
+        [DllImport(dllName)] public static extern int mclBn_G2LagrangeInterpolation(ref G2 z, [In] Fr[] xVec, [In] G2[] yVec, ulong k);
         public static void Init(int curveType = BN254)
         {
             if (!System.Environment.Is64BitProcess) {
@@ -312,6 +316,22 @@ namespace mcl {
                 throw new ArgumentException("mclBn_FrEvaluatePolynomial");
             }
         }
+        public static void Share(ref G1 y, in G1[] cVec, in Fr x)
+        {
+            ulong k = (ulong)cVec.Length;
+            int ret = mclBn_G1EvaluatePolynomial(ref y, cVec, k, x);
+            if (ret != 0) {
+                throw new ArgumentException("mclBn_G1EvaluatePolynomial");
+            }
+        }
+        public static void Share(ref G2 y, in G2[] cVec, in Fr x)
+        {
+            ulong k = (ulong)cVec.Length;
+            int ret = mclBn_G2EvaluatePolynomial(ref y, cVec, k, x);
+            if (ret != 0) {
+                throw new ArgumentException("mclBn_G2EvaluatePolynomial");
+            }
+        }
         // recover z by Lagrange interpolation with {xVec[i], yVec[i]}
         public static void Recover(ref Fr z, in Fr[] xVec, in Fr[] yVec)
         {
@@ -322,6 +342,28 @@ namespace mcl {
             int ret = mclBn_FrLagrangeInterpolation(ref z, xVec, yVec, k);
             if (ret != 0) {
                 throw new ArgumentException("mclBn_FrLagrangeInterpolation:" + ret.ToString());
+            }
+        }
+        public static void Recover(ref G1 z, in Fr[] xVec, in G1[] yVec)
+        {
+            if (xVec.Length != yVec.Length) {
+                throw new ArgumentException("bad length");
+            }
+            ulong k = (ulong)xVec.Length;
+            int ret = mclBn_G1LagrangeInterpolation(ref z, xVec, yVec, k);
+            if (ret != 0) {
+                throw new ArgumentException("mclBn_G1LagrangeInterpolation:" + ret.ToString());
+            }
+        }
+        public static void Recover(ref G2 z, in Fr[] xVec, in G2[] yVec)
+        {
+            if (xVec.Length != yVec.Length) {
+                throw new ArgumentException("bad length");
+            }
+            ulong k = (ulong)xVec.Length;
+            int ret = mclBn_G2LagrangeInterpolation(ref z, xVec, yVec, k);
+            if (ret != 0) {
+                throw new ArgumentException("mclBn_G2LagrangeInterpolation:" + ret.ToString());
             }
         }
         [StructLayout(LayoutKind.Sequential)]
@@ -660,6 +702,10 @@ namespace mcl {
                     throw new ArgumentException("mclBnG1_hashAndMapTo:" + s);
                 }
             }
+            public void SetHashOf(String s)
+            {
+                HashAndMapTo(s);
+            }
             public string GetStr(int ioMode)
             {
                 StringBuilder sb = new StringBuilder(1024);
@@ -769,6 +815,10 @@ namespace mcl {
                 if (mclBnG2_hashAndMapTo(ref this, s, s.Length) != 0) {
                     throw new ArgumentException("mclBnG2_hashAndMapTo:" + s);
                 }
+            }
+            public void SetHashOf(String s)
+            {
+                HashAndMapTo(s);
             }
             public string GetStr(int ioMode)
             {
