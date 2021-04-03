@@ -12,6 +12,7 @@
 
 #ifdef MCL_USE_XBYAK
 	#define XBYAK_DISABLE_AVX512
+	#define XBYAK_NO_EXCEPTION
 #else
 	#define XBYAK_ONLY_CLASS_CPU
 #endif
