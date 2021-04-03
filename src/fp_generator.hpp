@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <cybozu/exception.hpp>
-#include <cybozu/array.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(push)
