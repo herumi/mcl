@@ -156,7 +156,14 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 	const size_t r_in_bytes = 64;
 	const size_t n = outSize / mdSize;
 	static const uint8_t Z_pad[r_in_bytes] = {};
-	assert(dstSize < 256);
+	uint8_t largeDst[mdSize];
+	if (dstSize > 255) {
+		cybozu::Sha256 h;
+		h.update("H2C-OVERSIZE-DST-", 17);
+		h.digest(largeDst, mdSize, dst, dstSize);
+		dst = largeDst;
+		dstSize = mdSize;
+	}
 	/*
 		Z_apd | msg | BE(outSize, 2) | BE(0, 1) | DST | BE(dstSize, 1)
 	*/
