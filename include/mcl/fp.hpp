@@ -118,6 +118,7 @@ public:
 	static inline size_t getBitSize() { return op_.bitSize; }
 	static inline size_t getByteSize() { return (op_.bitSize + 7) / 8; }
 	static inline const fp::Op& getOp() { return op_; }
+	static inline fp::Op& getOpNonConst() { return op_; }
 	void dump() const
 	{
 		const size_t N = op_.N;
