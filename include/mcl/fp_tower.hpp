@@ -129,8 +129,16 @@ public:
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
-	static void (*mulPre)(FpDblT& xy, const Fp& x, const Fp& y);
-	static void (*sqrPre)(FpDblT& xx, const Fp& x);
+	static void mulPre(FpDblT& xy, const Fp& x, const Fp& y)
+	{
+		const mcl::fp::Op& op = Fp::getOp();
+		op.fpDbl_mulPre(xy.v_, x.v_, y.v_);
+	}
+	static void sqrPre(FpDblT& xx, const Fp& x)
+	{
+		const mcl::fp::Op& op = Fp::getOp();
+		op.fpDbl_sqrPre(xx.v_, x.v_);
+	}
 	static void mulUnit(FpDblT& z, const FpDblT& x, Unit y)
 	{
 		if (mulSmallUnit(z, x, y)) return;
@@ -151,8 +159,6 @@ public:
 		subPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subPre);
 		if (subPre == 0) subPre = subPreC;
 #endif
-		mulPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&, const Fp&)>(op.fpDbl_mulPre);
-		sqrPre = fp::func_ptr_cast<void (*)(FpDblT&, const Fp&)>(op.fpDbl_sqrPre);
 	}
 	void operator+=(const FpDblT& x) { add(*this, *this, x); }
 	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
@@ -165,8 +171,6 @@ template<class Fp> void (*FpDblT<Fp>::mod)(Fp&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::addPre)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::subPre)(FpDblT&, const FpDblT&, const FpDblT&);
 #endif
-template<class Fp> void (*FpDblT<Fp>::mulPre)(FpDblT&, const Fp&, const Fp&);
-template<class Fp> void (*FpDblT<Fp>::sqrPre)(FpDblT&, const Fp&);
 
 template<class Fp> struct Fp12T;
 template<class Fp> class BNT;
