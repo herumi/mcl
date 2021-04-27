@@ -264,6 +264,7 @@ public:
 	{
 		if (isMont()) op_.fromMont(v_, v_);
 	}
+	// deny a string with large length even if the value is in Fp
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
@@ -283,7 +284,7 @@ public:
 			}
 			if (readSize != n) return;
 		} else {
-			char buf[1024];
+			char buf[sizeof(*this) * 8 + 2]; // '0b' + max binary format length
 			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
 			if (n == 0) return;
 			n = fp::strToArray(&isMinus, v_, op_.N, buf, n, ioMode);

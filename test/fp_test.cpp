@@ -105,6 +105,15 @@ void setStrTest()
 		CYBOZU_TEST_EXCEPTION(x.setStr("0b100", 10), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 2), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(x.setStr("0x100", 10), cybozu::Exception);
+
+		x = 1;
+		std::string s;
+		s.resize(Fp::getOp().N * mcl::fp::UnitBitSize, '0');
+		s = "0b" + s;
+		x.setStr(s, 2);
+		CYBOZU_TEST_ASSERT(x.isZero());
+		s += '0';
+		CYBOZU_TEST_EXCEPTION(x.setStr(s, 2), cybozu::Exception);
 	}
 }
 
