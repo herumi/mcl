@@ -1616,6 +1616,10 @@ inline void makeAdjP(G1& adjP, const G1& P)
 */
 inline void finalExp(Fp12& y, const Fp12& x)
 {
+	if (x.isZero()) {
+		y.clear();
+		return;
+	}
 #if 1
 	mapToCyclotomic(y, x);
 #else

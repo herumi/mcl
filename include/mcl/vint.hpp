@@ -126,6 +126,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn);
 */
 inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 {
+	assert(y != 0);
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
 	*pr = uint32_t(t % y);
@@ -134,6 +135,7 @@ inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 #if MCL_SIZEOF_UNIT == 8
 inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
+	assert(y != 0);
 #if defined(MCL_VINT_64BIT_PORTABLE) || (defined(_MSC_VER) && _MSC_VER < 1920)
 	uint32_t px[4] = { uint32_t(L), uint32_t(L >> 32), uint32_t(H), uint32_t(H >> 32) };
 	uint32_t py[2] = { uint32_t(y), uint32_t(y >> 32) };

@@ -531,7 +531,11 @@ public:
 		if (mulSmallUnit(z, x, y)) return;
 		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
 	}
-	static inline void inv(FpT& y, const FpT& x) { op_.fp_invOp(y.v_, x.v_, op_); }
+	static inline void inv(FpT& y, const FpT& x)
+	{
+		assert(!x.isZero());
+		op_.fp_invOp(y.v_, x.v_, op_);
+	}
 	static inline void divBy2(FpT& y, const FpT& x)
 	{
 #if 0
