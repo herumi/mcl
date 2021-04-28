@@ -1456,6 +1456,7 @@ inline void mapToCyclotomic(Fp12& y, const Fp12& x)
 	Fp12 z;
 	Fp12::Frobenius2(z, x); // z = x^(p^2)
 	z *= x; // x^(p^2 + 1)
+	assert(z.isZero());
 	Fp12::inv(y, z);
 	Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
 	y *= z;
@@ -1617,6 +1618,10 @@ inline void makeAdjP(G1& adjP, const G1& P)
 inline void finalExp(Fp12& y, const Fp12& x)
 {
 #if 1
+	if (x.isZero()) {
+		y.clear();
+		return;
+	}
 	mapToCyclotomic(y, x);
 #else
 	const mpz_class& p = param.p;
