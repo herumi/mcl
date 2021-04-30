@@ -973,6 +973,8 @@ CYBOZU_TEST_AUTO(Vint)
 		CYBOZU_TEST_EQUAL(q2, tbl[i].q2);
 		CYBOZU_TEST_EQUAL(r2, tbl[i].r2);
 		CYBOZU_TEST_EQUAL(q2 * b + r2, a);
+		// alias pattern
+		// quotRem
 		r2 = 0;
 		Vint::quotRem(&b, r2, a, b);
 		CYBOZU_TEST_EQUAL(b, tbl[i].q2);
@@ -998,6 +1000,36 @@ CYBOZU_TEST_AUTO(Vint)
 		CYBOZU_TEST_EQUAL(q, tbl[i].q2);
 		CYBOZU_TEST_EQUAL(b, tbl[i].r2);
 		Vint::quotRem(&q, a, a, a);
+		CYBOZU_TEST_EQUAL(q, 1);
+		CYBOZU_TEST_EQUAL(a, 0);
+		// divMod
+		a = tbl[i].a;
+		b = tbl[i].b;
+		r = 0;
+		Vint::divMod(&b, r, a, b);
+		CYBOZU_TEST_EQUAL(b, tbl[i].q);
+		CYBOZU_TEST_EQUAL(r, tbl[i].r);
+		b = tbl[i].b;
+		r = 0;
+		Vint::divMod(&a, r, a, b);
+		CYBOZU_TEST_EQUAL(a, tbl[i].q);
+		CYBOZU_TEST_EQUAL(r, tbl[i].r);
+		a = tbl[i].a;
+		q = 0;
+		Vint::divMod(&q, a, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q);
+		CYBOZU_TEST_EQUAL(a, tbl[i].r);
+		a = tbl[i].a;
+		q = 0;
+		Vint::divMod(&q, a, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q);
+		CYBOZU_TEST_EQUAL(a, tbl[i].r);
+		a = tbl[i].a;
+		q = 0;
+		Vint::divMod(&q, b, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q);
+		CYBOZU_TEST_EQUAL(b, tbl[i].r);
+		Vint::divMod(&q, a, a, a);
 		CYBOZU_TEST_EQUAL(q, 1);
 		CYBOZU_TEST_EQUAL(a, 0);
 	}

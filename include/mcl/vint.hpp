@@ -1491,9 +1491,10 @@ public:
 	*/
 	static void divMod(VintT *q, VintT& r, const VintT& x, const VintT& y)
 	{
-		bool qsign = x.isNeg_ ^ y.isNeg_;
+		bool xNeg = x.isNeg_;
+		bool qsign = xNeg ^ y.isNeg_;
 		udiv(q, r, x.buf_, x.size(), y.buf_, y.size());
-		r.isNeg_ = x.isNeg_;
+		r.isNeg_ = xNeg;
 		if (q) q->isNeg_ = qsign;
 	}
 	static void div(VintT& q, const VintT& x, const VintT& y)
