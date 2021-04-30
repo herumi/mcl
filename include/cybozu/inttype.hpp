@@ -118,7 +118,7 @@
 #endif
 
 #ifndef CYBOZU_OS_BIT
-	#if defined(_WIN64) || defined(__x86_64__) || defined(__AARCH64EL__) || defined(__EMSCRIPTEN__)
+	#if defined(_WIN64) || defined(__x86_64__) || defined(__AARCH64EL__) || defined(__EMSCRIPTEN__) || defined(__LP64__)
 		#define CYBOZU_OS_BIT 64
 	#else
 		#define CYBOZU_OS_BIT 32
@@ -146,6 +146,8 @@
 		#define CYBOZU_ENDIAN CYBOZU_ENDIAN_LITTLE
 	#elif (CYBOZU_HOST == CYBOZU_HOST_ARM) && (defined(__ARM_EABI__) || defined(__AARCH64EL__))
 		#define CYBOZU_ENDIAN CYBOZU_ENDIAN_LITTLE
+	#elif defined(__s390x__)
+		#define CYBOZU_ENDIAN CYBOZU_ENDIAN_BIG
 	#else
 		#define CYBOZU_ENDIAN CYBOZU_ENDIAN_UNKNOWN
 	#endif
