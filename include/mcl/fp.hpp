@@ -417,7 +417,7 @@ public:
 	*/
 	void setLittleEndianMod(bool *pb, const void *buf, size_t bufSize)
 	{
-		setArray(pb, (const char *)buf, bufSize, mcl::fp::Mod);
+		setArray(pb, (const uint8_t *)buf, bufSize, mcl::fp::Mod);
 	}
 	/*
 		set (big endian % p)

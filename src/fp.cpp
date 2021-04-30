@@ -685,7 +685,7 @@ bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMod
 		if (xByteSize > fpByteSize * 2) return false;
 		mpz_class mx;
 		bool b;
-		gmp::setArray(&b, mx, (const char*)x, xByteSize);
+		gmp::setArray(&b, mx, (const uint8_t*)x, xByteSize);
 		if (!b) return false;
 #ifdef MCL_USE_VINT
 		op.modp.modp(mx, mx);

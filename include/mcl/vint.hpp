@@ -1181,6 +1181,9 @@ public:
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t size)
 	{
+		char assert_S_is_unsigned[S(-1) < 0 ? -1 : 1];
+		(void)assert_S_is_unsigned;
+
 		isNeg_ = false;
 		if (size == 0) {
 			clear();
