@@ -1176,7 +1176,7 @@ public:
 	}
 	/*
 		set positive value
-		@note assume little endian system
+		@note x is treated as a little endian
 	*/
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t size)
@@ -1190,14 +1190,23 @@ public:
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
 		buf_.alloc(pb, unitSize);
 		if (!*pb) return;
-		char *dst = (char *)&buf_[0];
-		const char *src = (const char *)x;
+		size_t pos = 0;
 		size_t i = 0;
-		for (; i < sizeof(S) * size; i++) {
-			dst[i] = src[i];
-		}
-		for (; i < sizeof(Unit) * unitSize; i++) {
-			dst[i] = 0;
+		while (i < unitSize) {
+			if (sizeof(Unit) < sizeof(S)) {
+				S s = x[pos++];
+				for (size_t j = 0; j < sizeof(S); j += sizeof(Unit)) {
+					buf_[i++] = Unit(s);
+					s >>= sizeof(Unit) * 8;
+				}
+			} else {
+				Unit u = 0;
+				for (size_t j = 0; j < sizeof(Unit); j += sizeof(S)) {
+					S s = (pos < size) ? x[pos++] : 0;
+					u |= Unit(s) << (j * 8);
+				}
+				buf_[i++] = u;
+			}
 		}
 		trim(unitSize);
 	}

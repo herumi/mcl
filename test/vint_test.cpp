@@ -25,6 +25,111 @@ struct V {
 	unsigned int p[16];
 };
 
+CYBOZU_TEST_AUTO(setArray_u8)
+{
+	struct {
+		uint8_t x[12];
+		size_t size;
+		const char *s;
+	} tbl[] = {
+		{
+			{ 0x12 },
+			1,
+			"12"
+		},
+		{
+			{ 0x12, 0x34 },
+			2,
+			"3412"
+		},
+		{
+			{ 0x12, 0x34, 0x56 },
+			3,
+			"563412",
+		},
+		{
+			{ 0x12, 0x34, 0x56, 0x78 },
+			4,
+			"78563412",
+		},
+		{
+			{ 0x12, 0x34, 0x56, 0x78, 0x9a },
+			5,
+			"9a78563412",
+		},
+		{
+			{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 },
+			8,
+			"8877665544332211",
+		},
+		{
+			{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99 },
+			9,
+			"998877665544332211",
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint v;
+		v.setArray(tbl[i].x, tbl[i].size);
+		CYBOZU_TEST_EQUAL(v.getStr(16), tbl[i].s);
+	}
+}
+
+CYBOZU_TEST_AUTO(setArray_u32)
+{
+	struct {
+		uint32_t x[4];
+		size_t size;
+		const char *s;
+	} tbl[] = {
+		{
+			{ 0x12345678 },
+			1,
+			"12345678"
+		},
+		{
+			{ 0x12345678, 0x11223344 },
+			2,
+			"1122334412345678"
+		},
+		{
+			{ 0x12345678, 0x11223344, 0x55667788 },
+			3,
+			"556677881122334412345678"
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint v;
+		v.setArray(tbl[i].x, tbl[i].size);
+		CYBOZU_TEST_EQUAL(v.getStr(16), tbl[i].s);
+	}
+}
+
+CYBOZU_TEST_AUTO(setArray_u64)
+{
+	struct {
+		uint64_t x[2];
+		size_t size;
+		const char *s;
+	} tbl[] = {
+		{
+			{ uint64_t(0x1122334455667788ull) },
+			1,
+			"1122334455667788"
+		},
+		{
+			{ uint64_t(0x1122334455667788ull), uint64_t(0x8877665544332211ull) },
+			2,
+			"88776655443322111122334455667788"
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint v;
+		v.setArray(tbl[i].x, tbl[i].size);
+		CYBOZU_TEST_EQUAL(v.getStr(16), tbl[i].s);
+	}
+}
+
 CYBOZU_TEST_AUTO(addSub)
 {
 	static const struct {
