@@ -1544,10 +1544,12 @@ public:
 	*/
 	static void quotRem(VintT *q, VintT& r, const VintT& x, const VintT& y)
 	{
+		assert(q != &r);
 		VintT yy = y;
-		bool qsign = x.isNeg_ ^ y.isNeg_;
+		bool yNeg = y.isNeg_;
+		bool qsign = x.isNeg_ ^ yNeg;
 		udiv(q, r, x.buf_, x.size(), y.buf_, y.size());
-		r.isNeg_ = y.isNeg_;
+		r.isNeg_ = yNeg;
 		if (q) q->isNeg_ = qsign;
 		if (!r.isZero() && qsign) {
 			if (q) {
