@@ -11,6 +11,7 @@
 #ifndef CYBOZU_DONT_USE_STRING
 #include <iostream>
 #endif
+#include <mcl/config.hpp>
 #include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
@@ -24,23 +25,11 @@
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
 
-#ifndef MCL_SIZEOF_UNIT
-	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
-		#define MCL_SIZEOF_UNIT 4
-	#else
-		#define MCL_SIZEOF_UNIT 8
-	#endif
-#endif
-
 namespace mcl {
 
 namespace vint {
 
-#if MCL_SIZEOF_UNIT == 8
-typedef uint64_t Unit;
-#else
-typedef uint32_t Unit;
-#endif
+typedef fp::Unit Unit;
 
 template<size_t x>
 struct RoundUp {

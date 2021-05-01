@@ -15,6 +15,7 @@
 #include <cybozu/exception.hpp>
 #endif
 #include <mcl/randgen.hpp>
+#include <mcl/config.hpp>
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4616)
@@ -27,9 +28,6 @@
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_USE_VINT
 #endif
-#ifndef MCL_MAX_BIT_SIZE
-	#define MCL_MAX_BIT_SIZE 512
-#endif
 #ifdef MCL_USE_VINT
 #include <mcl/vint.hpp>
 typedef mcl::Vint mpz_class;
@@ -41,26 +39,7 @@ typedef mcl::Vint mpz_class;
 #endif
 #endif
 
-#ifndef MCL_SIZEOF_UNIT
-	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
-		#define MCL_SIZEOF_UNIT 4
-	#else
-		#define MCL_SIZEOF_UNIT 8
-	#endif
-#endif
-
 namespace mcl {
-
-namespace fp {
-
-#if MCL_SIZEOF_UNIT == 8
-typedef uint64_t Unit;
-#else
-typedef uint32_t Unit;
-#endif
-#define MCL_UNIT_BIT_SIZE (MCL_SIZEOF_UNIT * 8)
-
-} // mcl::fp
 
 namespace gmp {
 
