@@ -1181,9 +1181,6 @@ public:
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t size)
 	{
-		char assert_S_is_unsigned[S(-1) < 0 ? -1 : 1];
-		(void)assert_S_is_unsigned;
-
 		isNeg_ = false;
 		if (size == 0) {
 			clear();
@@ -1193,24 +1190,9 @@ public:
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
 		buf_.alloc(pb, unitSize);
 		if (!*pb) return;
-		size_t pos = 0;
-		size_t i = 0;
-		while (i < unitSize) {
-			if (sizeof(Unit) < sizeof(S)) {
-				S s = x[pos++];
-				for (size_t j = 0; j < sizeof(S); j += sizeof(Unit)) {
-					buf_[i++] = Unit(s);
-					s >>= sizeof(Unit) * 8;
-				}
-			} else {
-				Unit u = 0;
-				for (size_t j = 0; j < sizeof(Unit); j += sizeof(S)) {
-					S s = (pos < size) ? x[pos++] : 0;
-					u |= Unit(s) << (j * 8);
-				}
-				buf_[i++] = u;
-			}
-		}
+		bool b = fp::setArrayAsLE(&buf_[0], unitSize, x, size);
+		assert(b);
+		(void)b;
 		trim(unitSize);
 	}
 	/*
