@@ -1,6 +1,7 @@
 #pragma once
 #include <cybozu/itoa.hpp>
 #include <cybozu/stream.hpp>
+#include <mcl/config.hpp>
 /**
 	@file
 	@brief convertion bin/dec/hex <=> array
@@ -404,17 +405,11 @@ inline size_t arrayToDec(char *buf, size_t bufSize, const UT *x, size_t xn)
 	convert buf[0, bufSize) to x[0, num)
 	return written num if success else 0
 */
-template<class UT>
-inline size_t decToArray(UT *_x, size_t maxN, const char *buf, size_t bufSize)
+inline size_t decToArray(uint32_t *x, size_t maxN, const char *buf, size_t bufSize)
 {
-	assert(sizeof(UT) == 4 || sizeof(UT) == 8);
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
 	if (maxN == 0) return 0;
-	if (sizeof(UT) == 8) {
-		maxN *= 2;
-	}
-	uint32_t *x = reinterpret_cast<uint32_t*>(_x);
 	size_t xn = 1;
 	x[0] = 0;
 	while (bufSize > 0) {
@@ -436,10 +431,20 @@ inline size_t decToArray(UT *_x, size_t maxN, const char *buf, size_t bufSize)
 		buf += n;
 		bufSize -= n;
 	}
-	if (sizeof(UT) == 8 && (xn & 1)) {
-		x[xn++] = 0;
+	return xn;
+}
+
+inline size_t decToArray(uint64_t *x, size_t maxN, const char *buf, size_t bufSize)
+{
+	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * maxN * 2);
+	size_t xn = decToArray(t, maxN * 2, buf, bufSize);
+	if (xn & 1) {
+		t[xn++] = 0;
 	}
-	return xn / (sizeof(UT) / 4);
+	for (size_t i = 0; i < xn; i += 2) {
+		x[i / 2] = (uint64_t(t[i + 1]) << 32) | t[i];
+	}
+	return xn / 2;
 }
 
 /*
