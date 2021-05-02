@@ -24,15 +24,18 @@ namespace mcl { namespace fp {
 template<class D, class S>
 bool setArrayAsLE(D *dst, size_t dstN, const S *src, size_t srcN)
 {
+	char assert_D_is_unsigned[D(-1) < 0 ? -1 : 1];
 	char assert_S_is_unsigned[S(-1) < 0 ? -1 : 1];
+	(void)assert_D_is_unsigned;
 	(void)assert_S_is_unsigned;
 	if (sizeof(D) * dstN < sizeof(S) * srcN) return false;
 	size_t pos = 0;
 	size_t i = 0;
 	while (i < dstN) {
 		if (sizeof(D) < sizeof(S)) {
-			S s = src[pos++];
+			S s = (pos < srcN) ? src[pos++] : 0;
 			for (size_t j = 0; j < sizeof(S); j += sizeof(D)) {
+				assert(i < dstN);
 				dst[i++] = D(s);
 				s >>= sizeof(D) * 8;
 			}

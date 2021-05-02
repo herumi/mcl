@@ -16,6 +16,8 @@
 #endif
 #include <mcl/randgen.hpp>
 #include <mcl/config.hpp>
+#include <mcl/conversion.hpp>
+
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4616)
@@ -61,24 +63,18 @@ void setArray(bool *pb, mpz_class& z, const T *buf, size_t n)
 	buf[0, size) = x
 	buf[size, maxSize) with zero
 */
-template<class T, class U>
-bool getArray_(T *buf, size_t maxSize, const U *x, int xn)//const mpz_srcptr x)
-{
-	const size_t bufByteSize = sizeof(T) * maxSize;
-	if (xn < 0) return false;
-	size_t xByteSize = sizeof(*x) * xn;
-	if (xByteSize > bufByteSize) return false;
-	memcpy(buf, x, xByteSize);
-	memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
-	return true;
-}
 template<class T>
 void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
-	*pb = getArray_(buf, maxSize, x.getUnit(), (int)x.getUnitSize());
+	*pb = fp::setArrayAsLE(buf, maxSize, x.getUnit(), x.getUnitSize());
 #else
-	*pb = getArray_(buf, maxSize, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size);
+	int n = x.get_mpz_t()->_mp_size;
+	if (n < 0) {
+		*pb = false;
+		return;
+	}
+	*pb = fp::setArrayAsLE(buf, maxSize, x.get_mpz_t()->_mp_d, n);
 #endif
 }
 inline void set(mpz_class& z, uint64_t x)
