@@ -1179,7 +1179,7 @@ public:
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
 		buf_.alloc(pb, unitSize);
 		if (!*pb) return;
-		bool b = fp::setArrayAsLE(&buf_[0], unitSize, x, size);
+		bool b = fp::convertArrayAsLE(&buf_[0], unitSize, x, size);
 		assert(b);
 		(void)b;
 		trim(unitSize);

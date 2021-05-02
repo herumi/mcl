@@ -67,14 +67,14 @@ template<class T>
 void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
-	*pb = fp::setArrayAsLE(buf, maxSize, x.getUnit(), x.getUnitSize());
+	*pb = fp::convertArrayAsLE(buf, maxSize, x.getUnit(), x.getUnitSize());
 #else
 	int n = x.get_mpz_t()->_mp_size;
 	if (n < 0) {
 		*pb = false;
 		return;
 	}
-	*pb = fp::setArrayAsLE(buf, maxSize, x.get_mpz_t()->_mp_d, n);
+	*pb = fp::convertArrayAsLE(buf, maxSize, x.get_mpz_t()->_mp_d, n);
 #endif
 }
 inline void set(mpz_class& z, uint64_t x)

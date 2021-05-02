@@ -22,7 +22,7 @@ namespace mcl { namespace fp {
 	return false if sizeof(D) * dstN < sizeof(S) * srcN
 */
 template<class D, class S>
-bool setArrayAsLE(D *dst, size_t dstN, const S *src, size_t srcN)
+bool convertArrayAsLE(D *dst, size_t dstN, const S *src, size_t srcN)
 {
 	char assert_D_is_unsigned[D(-1) < 0 ? -1 : 1];
 	char assert_S_is_unsigned[S(-1) < 0 ? -1 : 1];
