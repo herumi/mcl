@@ -468,7 +468,11 @@ public:
 		setByCSPRNG(rg);
 	}
 	/*
-		hash msg and mask with (1 << (bitLen - 1)) - 1
+		x = SHA-256(msg) as little endian
+		p = order of a finite field
+		L = bit size of p
+		x &= (1 << L) - 1
+		if (x >= p) x &= (1 << (L - 1)) - 1
 	*/
 	void setHashOf(const void *msg, size_t msgSize)
 	{
