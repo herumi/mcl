@@ -368,37 +368,46 @@ inline size_t binToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
 }
 
 /*
-	little endian x[0, xn) to buf
+	little endian t[0, tn) to buf
 	return written size if success else 0
 	data is buf[bufSize - retval, bufSize)
 */
-template<class UT>
-inline size_t arrayToDec(char *buf, size_t bufSize, const UT *x, size_t xn)
+inline size_t inner_arrayToDec(char *buf, size_t bufSize, uint32_t *t, size_t tn)
 {
-	const size_t maxN = 64;
-	uint32_t t[maxN];
-	if (sizeof(UT) == 8) {
-		xn *= 2;
-	}
-	if (xn > maxN) return 0;
-	memcpy(t, x, xn * sizeof(t[0]));
-
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
 	size_t pos = 0;
 	for (;;) {
-		uint32_t r = local::divU32(t, t, xn, i1e9);
-		while (xn > 0 && t[xn - 1] == 0) xn--;
+		uint32_t r = local::divU32(t, t, tn, i1e9);
+		while (tn > 0 && t[tn - 1] == 0) tn--;
 		size_t len = cybozu::itoa_local::uintToDec(buf, bufSize - pos, r);
 		if (len == 0) return 0;
 		assert(0 < len && len <= width);
-		if (xn == 0) return pos + len;
+		if (tn == 0) return pos + len;
 		// fill (width - len) '0'
 		for (size_t j = 0; j < width - len; j++) {
 			buf[bufSize - pos - width + j] = '0';
 		}
 		pos += width;
 	}
+}
+
+inline size_t arrayToDec(char *buf, size_t bufSize, const uint32_t *x, size_t xn)
+{
+	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * xn);
+	memcpy(t, x, sizeof(uint32_t) * xn);
+	return inner_arrayToDec(buf, bufSize, t, xn);
+}
+
+inline size_t arrayToDec(char *buf, size_t bufSize, const uint64_t *x, size_t xn)
+{
+	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * xn * 2);
+	for (size_t i = 0; i < xn; i++) {
+		uint64_t v = x[i];
+		t[i * 2 + 0] = uint32_t(v);
+		t[i * 2 + 1] = uint32_t(v >> 32);
+	}
+	return inner_arrayToDec(buf, bufSize, t, xn * 2);
 }
 
 /*
