@@ -339,22 +339,42 @@ public:
 		cybozu::write(pb, os, buf + sizeof(buf) - len, len);
 	}
 	/*
-		set array x as little endian
+		treat x as little endian
+		if x >= p then error
 	*/
-	template<class S>
-	void setArray_(bool *pb, const S *x, size_t n, mcl::fp::MaskMode mode = fp::NoMask)
-	{
-		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, mode);
-		toMont();
-	}
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t n)
 	{
-		if (!fp::convertArrayAsLE(v_, op_.N, x, n) || fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+		if (!fp::convertArrayAsLE(v_, op_.N, x, n)) {
+			*pb = false;
+			return;
+		}
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
 			*pb = false;
 			return;
 		}
 		*pb = true;
+		toMont();
+	}
+	/*
+		treat x as little endian
+		x &= (1 << bitLen) = 1
+		x &= (1 << (bitLen - 1)) - 1 if x >= p
+	*/
+	template<class S>
+	void setArrayMask(const S *x, size_t n)
+	{
+		const size_t dstByte = sizeof(fp::Unit) * op_.N;
+		if (sizeof(S) * n > dstByte) {
+			n = dstByte / sizeof(S);
+		}
+		bool b = fp::convertArrayAsLE(v_, op_.N, x, n);
+		assert(b);
+		(void)b;
+		fp::maskArray(v_, op_.N, op_.bitSize);
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+			fp::maskArray(v_, op_.N, op_.bitSize - 1);
+		}
 		toMont();
 	}
 	/*
@@ -378,16 +398,6 @@ public:
 #endif
 		gmp::getArray(pb, v_, op_.N, mx);
 		if (!*pb) return;
-		toMont();
-	}
-
-	/*
-		mask x with (1 << (bitLen - 1)) - 1 if x >= p
-	*/
-	template<class S>
-	void setArrayMask(const S *x, size_t n)
-	{
-		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::SmallMask);
 		toMont();
 	}
 	void getBlock(fp::Block& b) const
@@ -488,7 +498,7 @@ public:
 	*/
 	void setHashOf(const void *msg, size_t msgSize)
 	{
-		char buf[MCL_MAX_HASH_BIT_SIZE / 8];
+		uint8_t buf[MCL_MAX_HASH_BIT_SIZE / 8];
 		uint32_t size = op_.hash(buf, static_cast<uint32_t>(sizeof(buf)), msg, static_cast<uint32_t>(msgSize));
 		setArrayMask(buf, size);
 	}

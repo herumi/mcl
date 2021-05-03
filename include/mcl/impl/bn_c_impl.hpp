@@ -159,7 +159,7 @@ int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode)
 }
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize)
 {
-	cast(x)->setArrayMask((const char *)buf, bufSize);
+	cast(x)->setArrayMask((const uint8_t *)buf, bufSize);
 	return 0;
 }
 int mclBnFr_setBigEndianMod(mclBnFr *x, const void *buf, mclSize bufSize)
@@ -176,7 +176,7 @@ mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x)
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	bool b;
-	cast(x)->setArrayMod(&b, (const char *)buf, bufSize);
+	cast(x)->setArrayMod(&b, (const uint8_t *)buf, bufSize);
 	return b ? 0 : -1;
 }
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)
@@ -729,7 +729,7 @@ void mclBnFp_clear(mclBnFp *x)
 
 int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize)
 {
-	cast(x)->setArrayMask((const char *)buf, bufSize);
+	cast(x)->setArrayMask((const uint8_t *)buf, bufSize);
 	return 0;
 }
 
