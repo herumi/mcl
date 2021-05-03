@@ -171,7 +171,7 @@ int mclBnFr_setBigEndianMod(mclBnFr *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x)
 {
-	return cast(x)->getLittleEndian(buf, maxBufSize);
+	return cast(x)->getLittleEndian((uint8_t*)buf, maxBufSize);
 }
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize)
 {
@@ -749,7 +749,7 @@ int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize)
 
 mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x)
 {
-	return cast(x)->getLittleEndian(buf, maxBufSize);
+	return cast(x)->getLittleEndian((uint8_t*)buf, maxBufSize);
 }
 int mclBnFp_isValid(const mclBnFp *x)
 {

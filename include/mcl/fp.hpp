@@ -410,21 +410,23 @@ public:
 		write buf[0] = 0 and return 1 if the value is 0
 		return written size if success else 0
 	*/
-	size_t getLittleEndian(void *buf, size_t maxBufSize) const
+	size_t getLittleEndian(uint8_t *buf, size_t maxN) const
 	{
 		fp::Block b;
 		getBlock(b);
-		const uint8_t *src = (const uint8_t *)b.p;
-		uint8_t *dst = (uint8_t *)buf;
-		size_t n = b.n * sizeof(b.p[0]);
+		size_t n = sizeof(fp::Unit) * b.n;
+		uint8_t *t = (uint8_t*)CYBOZU_ALLOCA(n);
+		if (!fp::convertArrayAsLE(t, n, b.p, b.n)) {
+			return 0;
+		}
 		while (n > 0) {
-			if (src[n - 1]) break;
+			if (t[n - 1]) break;
 			n--;
 		}
 		if (n == 0) n = 1; // zero
-		if (maxBufSize < n) return 0;
+		if (maxN < n) return 0;
 		for (size_t i = 0; i < n; i++) {
-			dst[i] = src[i];
+			buf[i] = t[i];
 		}
 		return n;
 	}
