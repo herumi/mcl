@@ -30,22 +30,25 @@ bool convertArrayAsLE(D *dst, size_t dstN, const S *src, size_t srcN)
 	(void)assert_S_is_unsigned;
 	if (sizeof(D) * dstN < sizeof(S) * srcN) return false;
 	size_t pos = 0;
-	size_t i = 0;
-	while (i < dstN) {
-		if (sizeof(D) < sizeof(S)) {
-			S s = (pos < srcN) ? src[pos++] : 0;
+	if (sizeof(D) < sizeof(S)) {
+		for (size_t i = 0; i < srcN; i++) {
+			S s = src[i];
 			for (size_t j = 0; j < sizeof(S); j += sizeof(D)) {
-				assert(i < dstN);
-				dst[i++] = D(s);
+				dst[pos++] = D(s);
 				s >>= sizeof(D) * 8;
 			}
-		} else {
+		}
+		for (; pos < dstN; pos++) {
+			dst[pos] = 0;
+		}
+	} else {
+		for (size_t i = 0; i < dstN; i++) {
 			D u = 0;
 			for (size_t j = 0; j < sizeof(D); j += sizeof(S)) {
 				S s = (pos < srcN) ? src[pos++] : 0;
 				u |= D(s) << (j * 8);
 			}
-			dst[i++] = u;
+			dst[i] = u;
 		}
 	}
 	return true;
