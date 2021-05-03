@@ -363,13 +363,27 @@ public:
 		toMont();
 	}
 	/*
-		set (array mod p)
-		error if sizeof(S) * n > 64
+		set (x as little endian) % p
+		error if size of x >= sizeof(Fp) * 2
 	*/
 	template<class S>
 	void setArrayMod(bool *pb, const S *x, size_t n)
 	{
-		setArray_(pb, x, n, fp::Mod);
+		if (sizeof(S) * n > sizeof(fp::Unit) * op_.N * 2) {
+			*pb = false;
+			return;
+		}
+		mpz_class mx;
+		gmp::setArray(pb, mx, x, n);
+		if (!*pb) return;
+#ifdef MCL_USE_VINT
+		op_.modp.modp(mx, mx);
+#else
+		mx %= op_.mp;
+#endif
+		gmp::getArray(pb, v_, op_.N, mx);
+		if (!*pb) return;
+		toMont();
 	}
 
 	/*
@@ -437,7 +451,7 @@ public:
 		for (size_t i = 0; i < bufSize; i++) {
 			swapBuf[bufSize - 1 - i] = p[i];
 		}
-		setArray_(pb, swapBuf, bufSize, mcl::fp::Mod);
+		setArrayMod(pb, swapBuf, bufSize);
 	}
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
