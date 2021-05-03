@@ -71,11 +71,10 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 
 namespace local {
 
-inline void byteSwap(void *x, size_t n)
+inline void byteSwap(uint8_t *x, size_t n)
 {
-	char *p = (char *)x;
 	for (size_t i = 0; i < n / 2; i++) {
-		fp::swap_(p[i], p[n - 1 - i]);
+		fp::swap_(x[i], x[n - 1 - i]);
 	}
 }
 
@@ -266,17 +265,18 @@ public:
 		*pb = false;
 		if (fp::isIoSerializeMode(ioMode)) {
 			const size_t n = getByteSize();
-			v_[op_.N - 1] = 0;
+			uint8_t *buf = (uint8_t*)CYBOZU_ALLOCA(n);
 			size_t readSize;
 			if (ioMode & IoSerializeHexStr) {
-				readSize = mcl::fp::readHexStr(v_, n, is);
+				readSize = mcl::fp::readHexStr(buf, n, is);
 			} else {
-				readSize = cybozu::readSome(v_, n, is);
-			}
-			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
-				fp::local::byteSwap(v_, n);
+				readSize = cybozu::readSome(buf, n, is);
 			}
 			if (readSize != n) return;
+			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+				fp::local::byteSwap(buf, n);
+			}
+			fp::convertArrayAsLE(v_, op_.N, buf, n);
 		} else {
 			char buf[sizeof(*this) * 8 + 2]; // '0b' + max binary format length
 			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
@@ -430,28 +430,31 @@ public:
 	}
 	/*
 		set (little endian % p)
-		error if bufSize > 64
+		error if xn > 64
 	*/
-	void setLittleEndianMod(bool *pb, const void *buf, size_t bufSize)
+	void setLittleEndianMod(bool *pb, const uint8_t *x, size_t xn)
 	{
-		setArrayMod(pb, (const uint8_t *)buf, bufSize);
-	}
-	/*
-		set (big endian % p)
-		error if bufSize > 64
-	*/
-	void setBigEndianMod(bool *pb, const void *buf, size_t bufSize)
-	{
-		if (bufSize > 64) {
+		if (xn > 64) {
 			*pb = false;
 			return;
 		}
-		const uint8_t *p = (const uint8_t*)buf;
-		uint8_t swapBuf[64];
-		for (size_t i = 0; i < bufSize; i++) {
-			swapBuf[bufSize - 1 - i] = p[i];
+		setArrayMod(pb, x, xn);
+	}
+	/*
+		set (big endian % p)
+		error if xn > 64
+	*/
+	void setBigEndianMod(bool *pb, const uint8_t *x, size_t xn)
+	{
+		if (xn > 64) {
+			*pb = false;
+			return;
 		}
-		setArrayMod(pb, swapBuf, bufSize);
+		uint8_t swapX[64];
+		for (size_t i = 0; i < xn; i++) {
+			swapX[xn - 1 - i] = x[i];
+		}
+		setArrayMod(pb, swapX, xn);
 	}
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
@@ -461,13 +464,13 @@ public:
 		setArrayMask(v_, op_.N);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-	void setLittleEndianMod(const void *buf, size_t bufSize)
+	void setLittleEndianMod(const uint8_t *buf, size_t bufSize)
 	{
 		bool b;
 		setLittleEndianMod(&b, buf, bufSize);
 		if (!b) throw cybozu::Exception("setLittleEndianMod");
 	}
-	void setBigEndianMod(const void *buf, size_t bufSize)
+	void setBigEndianMod(const uint8_t *buf, size_t bufSize)
 	{
 		bool b;
 		setBigEndianMod(&b, buf, bufSize);
