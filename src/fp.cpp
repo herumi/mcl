@@ -676,25 +676,24 @@ bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMod
 #else
 		mx %= op.mp;
 #endif
-		const Unit *pmx = gmp::getUnit(mx);
-		size_t i = 0;
-		for (const size_t n = gmp::getUnitSize(mx); i < n; i++) {
-			y[i] = pmx[i];
-		}
-		for (; i < op.N; i++) {
-			y[i] = 0;
-		}
+		mcl::fp::convertArrayAsLE(y, op.N, gmp::getUnit(mx), gmp::getUnitSize(mx));
 		return true;
 	}
 	if (xByteSize > fpByteSize) {
 		if (maskMode == NoMask) return false;
 		xByteSize = fpByteSize;
 	}
+#if 0
+	if (!mcl::fp::convertArrayAsLE(y, op.N, x, xByteSize)) {
+		return false;
+	}
+#else
 	// QQQ : fixed later for big endian
 	copyByteToUnitAsLE(y, (const uint8_t*)x, xByteSize);
 	for (size_t i = (xByteSize + sizeof(Unit) - 1) / sizeof(Unit); i < op.N; i++) {
 		y[i] = 0;
 	}
+#endif
 	if (maskMode == mcl::fp::SmallMask || maskMode == mcl::fp::MaskAndMod) {
 		maskArray(y, op.N, op.bitSize);
 	}

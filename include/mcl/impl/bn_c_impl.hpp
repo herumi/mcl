@@ -176,7 +176,7 @@ mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x)
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize)
 {
 	bool b;
-	cast(x)->setArray(&b, (const char *)buf, bufSize, mcl::fp::Mod);
+	cast(x)->setArrayMod(&b, (const char *)buf, bufSize);
 	return b ? 0 : -1;
 }
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize)

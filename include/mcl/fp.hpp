@@ -343,10 +343,15 @@ public:
 		set array x as little endian
 	*/
 	template<class S>
-	void setArray(bool *pb, const S *x, size_t n, mcl::fp::MaskMode mode = fp::NoMask)
+	void setArray_(bool *pb, const S *x, size_t n, mcl::fp::MaskMode mode = fp::NoMask)
 	{
 		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, mode);
 		toMont();
+	}
+	template<class S>
+	void setArray(bool *pb, const S *x, size_t n)
+	{
+		setArray_(pb, x, n, fp::NoMask);
 	}
 	/*
 		mask x with (1 << bitLen) and subtract p if x >= p
@@ -364,7 +369,7 @@ public:
 	template<class S>
 	void setArrayMod(bool *pb, const S *x, size_t n)
 	{
-		setArray(pb, x, n, fp::Mod);
+		setArray_(pb, x, n, fp::Mod);
 	}
 
 	/*
@@ -415,7 +420,7 @@ public:
 	*/
 	void setLittleEndianMod(bool *pb, const void *buf, size_t bufSize)
 	{
-		setArray(pb, (const uint8_t *)buf, bufSize, mcl::fp::Mod);
+		setArrayMod(pb, (const uint8_t *)buf, bufSize);
 	}
 	/*
 		set (big endian % p)
@@ -432,7 +437,7 @@ public:
 		for (size_t i = 0; i < bufSize; i++) {
 			swapBuf[bufSize - 1 - i] = p[i];
 		}
-		setArray(pb, swapBuf, bufSize, mcl::fp::Mod);
+		setArray_(pb, swapBuf, bufSize, mcl::fp::Mod);
 	}
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
