@@ -1041,7 +1041,7 @@ CYBOZU_TEST_AUTO(main)
 #endif
 }
 
-CYBOZU_TEST_AUTO(copyUnitToByteAsLE)
+CYBOZU_TEST_AUTO(copyByteToUnitAsLE)
 {
 	using namespace mcl::fp;
 #if MCL_SIZEOF_UNIT == 4
@@ -1050,12 +1050,6 @@ CYBOZU_TEST_AUTO(copyUnitToByteAsLE)
 	const Unit src[] = { uint64_t(0xaabbccdd12345678ull), uint64_t(0x87654321ffeeddcc) };
 #endif
 	const uint8_t ok[] = { 0x78, 0x56, 0x34, 0x12, 0xdd, 0xcc, 0xbb, 0xaa, 0xcc, 0xdd, 0xee, 0xff, 0x21, 0x43, 0x65, 0x87 };
-	const size_t okN = CYBOZU_NUM_OF_ARRAY(ok);
-	for (size_t i = 0; i < okN; i++) {
-		uint8_t buf[okN] = {};
-		copyUnitToByteAsLE(buf, src, i);
-		CYBOZU_TEST_EQUAL_ARRAY(ok, buf, i);
-	}
 	mcl::fp::Unit dst[2];
 	for (size_t i = 1; i <= sizeof(dst); i++) {
 		memset(dst, 0xff, sizeof(dst));

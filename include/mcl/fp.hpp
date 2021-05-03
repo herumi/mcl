@@ -39,8 +39,6 @@ struct ZnTag;
 namespace fp {
 
 // copy src to dst as little endian
-void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize);
-// copy src to dst as little endian
 void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize);
 
 bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode);

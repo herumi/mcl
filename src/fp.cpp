@@ -632,22 +632,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	return fp::initForMont(*this, p, mode);
 }
 
-void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)
-{
-	while (byteSize >= sizeof(Unit)) {
-		setUnitAsLE(dst, *src++);
-		dst += sizeof(Unit);
-		byteSize -= sizeof(Unit);
-	}
-	if (byteSize == 0) return;
-	Unit x = *src;
-	while (byteSize) {
-		*dst++ = static_cast<uint8_t>(x);
-		x >>= 8;
-		byteSize--;
-	}
-}
-
 void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize)
 {
 	while (byteSize >= sizeof(Unit)) {
