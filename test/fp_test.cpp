@@ -512,11 +512,11 @@ void anotherFpTest(mcl::fp::Mode mode)
 
 void setArrayTest1()
 {
-	char b1[] = { 0x56, 0x34, 0x12 };
+	uint8_t b1[] = { 0x56, 0x34, 0x12 };
 	Fp x;
 	x.setArray(b1, 3);
 	CYBOZU_TEST_EQUAL(x, 0x123456);
-	int b2[] = { 0x12, 0x34 };
+	uint32_t b2[] = { 0x12, 0x34 };
 	x.setArray(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 }

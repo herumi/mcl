@@ -339,7 +339,6 @@ public:
 		cybozu::write(pb, os, buf + sizeof(buf) - len, len);
 	}
 	/*
-		mode = Mod : set x mod p if sizeof(S) * n <= 64 else error
 		set array x as little endian
 	*/
 	template<class S>
@@ -351,15 +350,11 @@ public:
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t n)
 	{
-		setArray_(pb, x, n, fp::NoMask);
-	}
-	/*
-		mask x with (1 << bitLen) and subtract p if x >= p
-	*/
-	template<class S>
-	void setArrayMaskMod(const S *x, size_t n)
-	{
-		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::MaskAndMod);
+		if (!fp::convertArrayAsLE(v_, op_.N, x, n) || fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+			*pb = false;
+			return;
+		}
+		*pb = true;
 		toMont();
 	}
 	/*

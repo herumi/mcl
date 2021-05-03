@@ -665,20 +665,6 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
 {
 	const size_t fpByteSize = sizeof(Unit) * op.N;
-	if (maskMode == Mod) {
-		if (xByteSize > fpByteSize * 2) return false;
-		mpz_class mx;
-		bool b;
-		gmp::setArray(&b, mx, (const uint8_t*)x, xByteSize);
-		if (!b) return false;
-#ifdef MCL_USE_VINT
-		op.modp.modp(mx, mx);
-#else
-		mx %= op.mp;
-#endif
-		mcl::fp::convertArrayAsLE(y, op.N, gmp::getUnit(mx), gmp::getUnitSize(mx));
-		return true;
-	}
 	if (xByteSize > fpByteSize) {
 		if (maskMode == NoMask) return false;
 		xByteSize = fpByteSize;
