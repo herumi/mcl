@@ -333,6 +333,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
+- 2021/May/04 v1.50 support s390x(systemz)
 - 2021/Apr/21 v1.41 fix inner function of mapToGi for large dst (not affect hashAndMapToGi)
 - 2021/May/24 v1.40 fix sigsegv in valgrind
 - 2021/Jan/28 v1.31 fix : call setOrder in init for isValidOrder
