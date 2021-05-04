@@ -1232,6 +1232,8 @@ public:
 						return;
 					}
 				}
+				*pb = isValid();
+				return;
 			} else {
 				*pb = false;
 				return;
