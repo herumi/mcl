@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- support s390x(systemz)
 - improve M1 mac performance
 - set default `MCL_MAX_BIT_SIZE=512` so disable to support `NICT_P521`.
 - improve performance
@@ -29,6 +30,8 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - WebAssembly
 - Android
 - iPhone
+- s390x(systemz)
+  - install llvm and clang, and `make UPDATE_ASM=1` once.
 - (maybe any platform to be supported by LLVM)
 
 # Support curves
@@ -330,7 +333,7 @@ If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but 
 
 # History
 
-- 2021/APr/21 v1.41 fix inner function of mapToGi for large dst (not affect hashAndMapToGi)
+- 2021/Apr/21 v1.41 fix inner function of mapToGi for large dst (not affect hashAndMapToGi)
 - 2021/May/24 v1.40 fix sigsegv in valgrind
 - 2021/Jan/28 v1.31 fix : call setOrder in init for isValidOrder
 - 2021/Jan/28 v1.30 a little optimization of Fp operations
