@@ -173,13 +173,6 @@ enum PrimeMode {
 	PM_NIST_P521
 };
 
-enum MaskMode {
-	NoMask = 0, // throw if greater or equal
-	SmallMask = 1, // 1-bit smaller mask if greater or equal
-	MaskAndMod = 2, // mask and substract if greater or equal
-	Mod = 3 // mod p
-};
-
 struct Op {
 	/*
 		don't change the layout of rp and p

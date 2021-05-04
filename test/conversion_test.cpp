@@ -4,7 +4,7 @@
 CYBOZU_TEST_AUTO(arrayToDec)
 {
 	const struct {
-		uint32_t x[5];
+		uint32_t x[6];
 		size_t xn;
 		const char *s;
 	} tbl[] = {
@@ -44,7 +44,10 @@ CYBOZU_TEST_AUTO(arrayToDec)
 		const size_t strLen = strlen(str);
 		uint64_t x[8] = {};
 		size_t xn = (tbl[i].xn + 1) / 2;
-		memcpy(x, tbl[i].x, tbl[i].xn * sizeof(uint32_t));
+		const uint32_t *src = tbl[i].x;
+		for (size_t i = 0; i < xn; i++) {
+			x[i] = (uint64_t(src[i * 2 + 1]) << 32) | src[i * 2 + 0];
+		}
 		size_t n = mcl::fp::arrayToDec(buf, bufSize, x, xn);
 		CYBOZU_TEST_EQUAL(n, strLen);
 		CYBOZU_TEST_EQUAL_ARRAY(buf + bufSize - n, str, n);

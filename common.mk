@@ -68,6 +68,10 @@ endif
 ifeq ($(findstring $(OS),mac/mac-m1/mingw64/openbsd),)
   LDFLAGS+=-lrt
 endif
+ifeq ($(ARCH),s390x)
+  CPU=systemz
+  BIT=64
+endif
 
 CP=cp -f
 AR=ar r

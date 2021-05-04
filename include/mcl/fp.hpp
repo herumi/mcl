@@ -38,13 +38,6 @@ struct ZnTag;
 
 namespace fp {
 
-// copy src to dst as little endian
-void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize);
-// copy src to dst as little endian
-void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize);
-
-bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode);
-
 uint64_t getUint64(bool *pb, const fp::Block& b);
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
@@ -78,11 +71,10 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 
 namespace local {
 
-inline void byteSwap(void *x, size_t n)
+inline void byteSwap(uint8_t *x, size_t n)
 {
-	char *p = (char *)x;
 	for (size_t i = 0; i < n / 2; i++) {
-		fp::swap_(p[i], p[n - 1 - i]);
+		fp::swap_(x[i], x[n - 1 - i]);
 	}
 }
 
@@ -273,17 +265,18 @@ public:
 		*pb = false;
 		if (fp::isIoSerializeMode(ioMode)) {
 			const size_t n = getByteSize();
-			v_[op_.N - 1] = 0;
+			uint8_t *buf = (uint8_t*)CYBOZU_ALLOCA(n);
 			size_t readSize;
 			if (ioMode & IoSerializeHexStr) {
-				readSize = mcl::fp::readHexStr(v_, n, is);
+				readSize = mcl::fp::readHexStr(buf, n, is);
 			} else {
-				readSize = cybozu::readSome(v_, n, is);
-			}
-			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
-				fp::local::byteSwap(v_, n);
+				readSize = cybozu::readSome(buf, n, is);
 			}
 			if (readSize != n) return;
+			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+				fp::local::byteSwap(buf, n);
+			}
+			fp::convertArrayAsLE(v_, op_.N, buf, n);
 		} else {
 			char buf[sizeof(*this) * 8 + 2]; // '0b' + max binary format length
 			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
@@ -308,23 +301,22 @@ public:
 	{
 		const size_t n = getByteSize();
 		if (fp::isIoSerializeMode(ioMode)) {
+			const size_t xn = sizeof(fp::Unit) * op_.N;
+			uint8_t *x = (uint8_t*)CYBOZU_ALLOCA(xn);
 			if (ioMode & IoArrayRaw) {
-				cybozu::write(pb, os, v_, n);
+				fp::convertArrayAsLE(x, xn, v_, op_.N);
+				cybozu::write(pb, os, x, n);
 			} else {
 				fp::Block b;
 				getBlock(b);
-				const char *src = (const char *)b.p;
-				char rev[fp::maxUnitSize * sizeof(fp::Unit)];
+				fp::convertArrayAsLE(x, xn, b.p, b.n);
 				if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
-					for (size_t i = 0; i < n; i++) {
-						rev[i] = src[n - 1 - i];
-					}
-					src = rev;
+					fp::local::byteSwap(x, n);
 				}
 				if (ioMode & IoSerializeHexStr) {
-					mcl::fp::writeHexStr(pb, os, src, n);
+					mcl::fp::writeHexStr(pb, os, x, n);
 				} else {
-					cybozu::write(pb, os, src, n);
+					cybozu::write(pb, os, x, n);
 				}
 			}
 			return;
@@ -341,41 +333,65 @@ public:
 		cybozu::write(pb, os, buf + sizeof(buf) - len, len);
 	}
 	/*
-		mode = Mod : set x mod p if sizeof(S) * n <= 64 else error
-		set array x as little endian
+		treat x as little endian
+		if x >= p then error
 	*/
 	template<class S>
-	void setArray(bool *pb, const S *x, size_t n, mcl::fp::MaskMode mode = fp::NoMask)
+	void setArray(bool *pb, const S *x, size_t n)
 	{
-		*pb = fp::copyAndMask(v_, x, sizeof(S) * n, op_, mode);
+		if (!fp::convertArrayAsLE(v_, op_.N, x, n)) {
+			*pb = false;
+			return;
+		}
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+			*pb = false;
+			return;
+		}
+		*pb = true;
 		toMont();
 	}
 	/*
-		mask x with (1 << bitLen) and subtract p if x >= p
-	*/
-	template<class S>
-	void setArrayMaskMod(const S *x, size_t n)
-	{
-		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::MaskAndMod);
-		toMont();
-	}
-	/*
-		set (array mod p)
-		error if sizeof(S) * n > 64
-	*/
-	template<class S>
-	void setArrayMod(bool *pb, const S *x, size_t n)
-	{
-		setArray(pb, x, n, fp::Mod);
-	}
-
-	/*
-		mask x with (1 << (bitLen - 1)) - 1 if x >= p
+		treat x as little endian
+		x &= (1 << bitLen) = 1
+		x &= (1 << (bitLen - 1)) - 1 if x >= p
 	*/
 	template<class S>
 	void setArrayMask(const S *x, size_t n)
 	{
-		fp::copyAndMask(v_, x, sizeof(S) * n, op_, fp::SmallMask);
+		const size_t dstByte = sizeof(fp::Unit) * op_.N;
+		if (sizeof(S) * n > dstByte) {
+			n = dstByte / sizeof(S);
+		}
+		bool b = fp::convertArrayAsLE(v_, op_.N, x, n);
+		assert(b);
+		(void)b;
+		fp::maskArray(v_, op_.N, op_.bitSize);
+		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+			fp::maskArray(v_, op_.N, op_.bitSize - 1);
+		}
+		toMont();
+	}
+	/*
+		set (x as little endian) % p
+		error if size of x >= sizeof(Fp) * 2
+	*/
+	template<class S>
+	void setArrayMod(bool *pb, const S *x, size_t n)
+	{
+		if (sizeof(S) * n > sizeof(fp::Unit) * op_.N * 2) {
+			*pb = false;
+			return;
+		}
+		mpz_class mx;
+		gmp::setArray(pb, mx, x, n);
+		if (!*pb) return;
+#ifdef MCL_USE_VINT
+		op_.modp.modp(mx, mx);
+#else
+		mx %= op_.mp;
+#endif
+		gmp::getArray(pb, v_, op_.N, mx);
+		if (!*pb) return;
 		toMont();
 	}
 	void getBlock(fp::Block& b) const
@@ -393,48 +409,53 @@ public:
 		write buf[0] = 0 and return 1 if the value is 0
 		return written size if success else 0
 	*/
-	size_t getLittleEndian(void *buf, size_t maxBufSize) const
+	size_t getLittleEndian(uint8_t *buf, size_t maxN) const
 	{
 		fp::Block b;
 		getBlock(b);
-		const uint8_t *src = (const uint8_t *)b.p;
-		uint8_t *dst = (uint8_t *)buf;
-		size_t n = b.n * sizeof(b.p[0]);
+		size_t n = sizeof(fp::Unit) * b.n;
+		uint8_t *t = (uint8_t*)CYBOZU_ALLOCA(n);
+		if (!fp::convertArrayAsLE(t, n, b.p, b.n)) {
+			return 0;
+		}
 		while (n > 0) {
-			if (src[n - 1]) break;
+			if (t[n - 1]) break;
 			n--;
 		}
 		if (n == 0) n = 1; // zero
-		if (maxBufSize < n) return 0;
+		if (maxN < n) return 0;
 		for (size_t i = 0; i < n; i++) {
-			dst[i] = src[i];
+			buf[i] = t[i];
 		}
 		return n;
 	}
 	/*
 		set (little endian % p)
-		error if bufSize > 64
+		error if xn > 64
 	*/
-	void setLittleEndianMod(bool *pb, const void *buf, size_t bufSize)
+	void setLittleEndianMod(bool *pb, const uint8_t *x, size_t xn)
 	{
-		setArray(pb, (const char *)buf, bufSize, mcl::fp::Mod);
-	}
-	/*
-		set (big endian % p)
-		error if bufSize > 64
-	*/
-	void setBigEndianMod(bool *pb, const void *buf, size_t bufSize)
-	{
-		if (bufSize > 64) {
+		if (xn > 64) {
 			*pb = false;
 			return;
 		}
-		const uint8_t *p = (const uint8_t*)buf;
-		uint8_t swapBuf[64];
-		for (size_t i = 0; i < bufSize; i++) {
-			swapBuf[bufSize - 1 - i] = p[i];
+		setArrayMod(pb, x, xn);
+	}
+	/*
+		set (big endian % p)
+		error if xn > 64
+	*/
+	void setBigEndianMod(bool *pb, const uint8_t *x, size_t xn)
+	{
+		if (xn > 64) {
+			*pb = false;
+			return;
 		}
-		setArray(pb, swapBuf, bufSize, mcl::fp::Mod);
+		uint8_t swapX[64];
+		for (size_t i = 0; i < xn; i++) {
+			swapX[xn - 1 - i] = x[i];
+		}
+		setArrayMod(pb, swapX, xn);
 	}
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
@@ -444,13 +465,13 @@ public:
 		setArrayMask(v_, op_.N);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-	void setLittleEndianMod(const void *buf, size_t bufSize)
+	void setLittleEndianMod(const uint8_t *buf, size_t bufSize)
 	{
 		bool b;
 		setLittleEndianMod(&b, buf, bufSize);
 		if (!b) throw cybozu::Exception("setLittleEndianMod");
 	}
-	void setBigEndianMod(const void *buf, size_t bufSize)
+	void setBigEndianMod(const uint8_t *buf, size_t bufSize)
 	{
 		bool b;
 		setBigEndianMod(&b, buf, bufSize);
@@ -468,11 +489,15 @@ public:
 		setByCSPRNG(rg);
 	}
 	/*
-		hash msg and mask with (1 << (bitLen - 1)) - 1
+		x = SHA-256(msg) as little endian
+		p = order of a finite field
+		L = bit size of p
+		x &= (1 << L) - 1
+		if (x >= p) x &= (1 << (L - 1)) - 1
 	*/
 	void setHashOf(const void *msg, size_t msgSize)
 	{
-		char buf[MCL_MAX_HASH_BIT_SIZE / 8];
+		uint8_t buf[MCL_MAX_HASH_BIT_SIZE / 8];
 		uint32_t size = op_.hash(buf, static_cast<uint32_t>(sizeof(buf)), msg, static_cast<uint32_t>(msgSize));
 		setArrayMask(buf, size);
 	}

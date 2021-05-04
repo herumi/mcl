@@ -632,37 +632,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	return fp::initForMont(*this, p, mode);
 }
 
-void copyUnitToByteAsLE(uint8_t *dst, const Unit *src, size_t byteSize)
-{
-	while (byteSize >= sizeof(Unit)) {
-		setUnitAsLE(dst, *src++);
-		dst += sizeof(Unit);
-		byteSize -= sizeof(Unit);
-	}
-	if (byteSize == 0) return;
-	Unit x = *src;
-	while (byteSize) {
-		*dst++ = static_cast<uint8_t>(x);
-		x >>= 8;
-		byteSize--;
-	}
-}
-
-void copyByteToUnitAsLE(Unit *dst, const uint8_t *src, size_t byteSize)
-{
-	while (byteSize >= sizeof(Unit)) {
-		*dst++ = getUnitAsLE(src);
-		src += sizeof(Unit);
-		byteSize -= sizeof(Unit);
-	}
-	if (byteSize == 0) return;
-	Unit x = 0;
-	for (size_t i = 0; i < byteSize; i++) {
-		x |= Unit(src[i]) << (i * 8);
-	}
-	*dst = x;
-}
-
 #ifndef CYBOZU_DONT_USE_STRING
 int detectIoMode(int ioMode, const std::ios_base& ios)
 {
@@ -677,58 +646,6 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 	return ioMode;
 }
 #endif
-
-bool copyAndMask(Unit *y, const void *x, size_t xByteSize, const Op& op, MaskMode maskMode)
-{
-	const size_t fpByteSize = sizeof(Unit) * op.N;
-	if (maskMode == Mod) {
-		if (xByteSize > fpByteSize * 2) return false;
-		mpz_class mx;
-		bool b;
-		gmp::setArray(&b, mx, (const char*)x, xByteSize);
-		if (!b) return false;
-#ifdef MCL_USE_VINT
-		op.modp.modp(mx, mx);
-#else
-		mx %= op.mp;
-#endif
-		const Unit *pmx = gmp::getUnit(mx);
-		size_t i = 0;
-		for (const size_t n = gmp::getUnitSize(mx); i < n; i++) {
-			y[i] = pmx[i];
-		}
-		for (; i < op.N; i++) {
-			y[i] = 0;
-		}
-		return true;
-	}
-	if (xByteSize > fpByteSize) {
-		if (maskMode == NoMask) return false;
-		xByteSize = fpByteSize;
-	}
-	// QQQ : fixed later for big endian
-	copyByteToUnitAsLE(y, (const uint8_t*)x, xByteSize);
-	for (size_t i = (xByteSize + sizeof(Unit) - 1) / sizeof(Unit); i < op.N; i++) {
-		y[i] = 0;
-	}
-	if (maskMode == mcl::fp::SmallMask || maskMode == mcl::fp::MaskAndMod) {
-		maskArray(y, op.N, op.bitSize);
-	}
-	if (isGreaterOrEqualArray(y, op.p, op.N)) {
-		switch (maskMode) {
-		case mcl::fp::NoMask: return false;
-		case mcl::fp::SmallMask:
-			maskArray(y, op.N, op.bitSize - 1);
-			break;
-		case mcl::fp::MaskAndMod:
-		default:
-			op.fp_subPre(y, y, op.p);
-			break;
-		}
-	}
-	assert(isLessArray(y, op.p, op.N));
-	return true;
-}
 
 static bool isInUint64(uint64_t *pv, const fp::Block& b)
 {

@@ -11,6 +11,7 @@
 #ifndef CYBOZU_DONT_USE_STRING
 #include <iostream>
 #endif
+#include <mcl/config.hpp>
 #include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
@@ -24,23 +25,11 @@
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
 
-#ifndef MCL_SIZEOF_UNIT
-	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
-		#define MCL_SIZEOF_UNIT 4
-	#else
-		#define MCL_SIZEOF_UNIT 8
-	#endif
-#endif
-
 namespace mcl {
 
 namespace vint {
 
-#if MCL_SIZEOF_UNIT == 8
-typedef uint64_t Unit;
-#else
-typedef uint32_t Unit;
-#endif
+typedef fp::Unit Unit;
 
 template<size_t x>
 struct RoundUp {
@@ -1176,7 +1165,7 @@ public:
 	}
 	/*
 		set positive value
-		@note assume little endian system
+		@note x is treated as a little endian
 	*/
 	template<class S>
 	void setArray(bool *pb, const S *x, size_t size)
@@ -1190,15 +1179,9 @@ public:
 		size_t unitSize = (sizeof(S) * size + sizeof(Unit) - 1) / sizeof(Unit);
 		buf_.alloc(pb, unitSize);
 		if (!*pb) return;
-		char *dst = (char *)&buf_[0];
-		const char *src = (const char *)x;
-		size_t i = 0;
-		for (; i < sizeof(S) * size; i++) {
-			dst[i] = src[i];
-		}
-		for (; i < sizeof(Unit) * unitSize; i++) {
-			dst[i] = 0;
-		}
+		bool b = fp::convertArrayAsLE(&buf_[0], unitSize, x, size);
+		assert(b);
+		(void)b;
 		trim(unitSize);
 	}
 	/*
@@ -1482,9 +1465,10 @@ public:
 	*/
 	static void divMod(VintT *q, VintT& r, const VintT& x, const VintT& y)
 	{
-		bool qsign = x.isNeg_ ^ y.isNeg_;
+		bool xNeg = x.isNeg_;
+		bool qsign = xNeg ^ y.isNeg_;
 		udiv(q, r, x.buf_, x.size(), y.buf_, y.size());
-		r.isNeg_ = x.isNeg_;
+		r.isNeg_ = xNeg;
 		if (q) q->isNeg_ = qsign;
 	}
 	static void div(VintT& q, const VintT& x, const VintT& y)
@@ -1535,10 +1519,12 @@ public:
 	*/
 	static void quotRem(VintT *q, VintT& r, const VintT& x, const VintT& y)
 	{
+		assert(q != &r);
 		VintT yy = y;
-		bool qsign = x.isNeg_ ^ y.isNeg_;
+		bool yNeg = y.isNeg_;
+		bool qsign = x.isNeg_ ^ yNeg;
 		udiv(q, r, x.buf_, x.size(), y.buf_, y.size());
-		r.isNeg_ = y.isNeg_;
+		r.isNeg_ = yNeg;
 		if (q) q->isNeg_ = qsign;
 		if (!r.isZero() && qsign) {
 			if (q) {

@@ -151,8 +151,8 @@ public:
 	}
 	static void init()
 	{
-		const mcl::fp::Op& op = Fp::getOp();
 #ifdef MCL_XBYAK_DIRECT_CALL
+		const mcl::fp::Op& op = Fp::getOp();
 		add = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_addA_);
 		if (add == 0) add = addC;
 		sub = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subA_);

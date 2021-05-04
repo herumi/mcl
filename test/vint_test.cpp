@@ -25,6 +25,111 @@ struct V {
 	unsigned int p[16];
 };
 
+CYBOZU_TEST_AUTO(setArray_u8)
+{
+	struct {
+		uint8_t x[12];
+		size_t size;
+		const char *s;
+	} tbl[] = {
+		{
+			{ 0x12 },
+			1,
+			"12"
+		},
+		{
+			{ 0x12, 0x34 },
+			2,
+			"3412"
+		},
+		{
+			{ 0x12, 0x34, 0x56 },
+			3,
+			"563412",
+		},
+		{
+			{ 0x12, 0x34, 0x56, 0x78 },
+			4,
+			"78563412",
+		},
+		{
+			{ 0x12, 0x34, 0x56, 0x78, 0x9a },
+			5,
+			"9a78563412",
+		},
+		{
+			{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 },
+			8,
+			"8877665544332211",
+		},
+		{
+			{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99 },
+			9,
+			"998877665544332211",
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint v;
+		v.setArray(tbl[i].x, tbl[i].size);
+		CYBOZU_TEST_EQUAL(v.getStr(16), tbl[i].s);
+	}
+}
+
+CYBOZU_TEST_AUTO(setArray_u32)
+{
+	struct {
+		uint32_t x[4];
+		size_t size;
+		const char *s;
+	} tbl[] = {
+		{
+			{ 0x12345678 },
+			1,
+			"12345678"
+		},
+		{
+			{ 0x12345678, 0x11223344 },
+			2,
+			"1122334412345678"
+		},
+		{
+			{ 0x12345678, 0x11223344, 0x55667788 },
+			3,
+			"556677881122334412345678"
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint v;
+		v.setArray(tbl[i].x, tbl[i].size);
+		CYBOZU_TEST_EQUAL(v.getStr(16), tbl[i].s);
+	}
+}
+
+CYBOZU_TEST_AUTO(setArray_u64)
+{
+	struct {
+		uint64_t x[2];
+		size_t size;
+		const char *s;
+	} tbl[] = {
+		{
+			{ uint64_t(0x1122334455667788ull) },
+			1,
+			"1122334455667788"
+		},
+		{
+			{ uint64_t(0x1122334455667788ull), uint64_t(0x8877665544332211ull) },
+			2,
+			"88776655443322111122334455667788"
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint v;
+		v.setArray(tbl[i].x, tbl[i].size);
+		CYBOZU_TEST_EQUAL(v.getStr(16), tbl[i].s);
+	}
+}
+
 CYBOZU_TEST_AUTO(addSub)
 {
 	static const struct {
@@ -868,6 +973,65 @@ CYBOZU_TEST_AUTO(Vint)
 		CYBOZU_TEST_EQUAL(q2, tbl[i].q2);
 		CYBOZU_TEST_EQUAL(r2, tbl[i].r2);
 		CYBOZU_TEST_EQUAL(q2 * b + r2, a);
+		// alias pattern
+		// quotRem
+		r2 = 0;
+		Vint::quotRem(&b, r2, a, b);
+		CYBOZU_TEST_EQUAL(b, tbl[i].q2);
+		CYBOZU_TEST_EQUAL(r2, tbl[i].r2);
+		b = tbl[i].b;
+		r2 = 0;
+		Vint::quotRem(&a, r2, a, b);
+		CYBOZU_TEST_EQUAL(a, tbl[i].q2);
+		CYBOZU_TEST_EQUAL(r2, tbl[i].r2);
+		a = tbl[i].a;
+		q = 0;
+		Vint::quotRem(&q, a, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q2);
+		CYBOZU_TEST_EQUAL(a, tbl[i].r2);
+		a = tbl[i].a;
+		q = 0;
+		Vint::quotRem(&q, a, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q2);
+		CYBOZU_TEST_EQUAL(a, tbl[i].r2);
+		a = tbl[i].a;
+		q = 0;
+		Vint::quotRem(&q, b, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q2);
+		CYBOZU_TEST_EQUAL(b, tbl[i].r2);
+		Vint::quotRem(&q, a, a, a);
+		CYBOZU_TEST_EQUAL(q, 1);
+		CYBOZU_TEST_EQUAL(a, 0);
+		// divMod
+		a = tbl[i].a;
+		b = tbl[i].b;
+		r = 0;
+		Vint::divMod(&b, r, a, b);
+		CYBOZU_TEST_EQUAL(b, tbl[i].q);
+		CYBOZU_TEST_EQUAL(r, tbl[i].r);
+		b = tbl[i].b;
+		r = 0;
+		Vint::divMod(&a, r, a, b);
+		CYBOZU_TEST_EQUAL(a, tbl[i].q);
+		CYBOZU_TEST_EQUAL(r, tbl[i].r);
+		a = tbl[i].a;
+		q = 0;
+		Vint::divMod(&q, a, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q);
+		CYBOZU_TEST_EQUAL(a, tbl[i].r);
+		a = tbl[i].a;
+		q = 0;
+		Vint::divMod(&q, a, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q);
+		CYBOZU_TEST_EQUAL(a, tbl[i].r);
+		a = tbl[i].a;
+		q = 0;
+		Vint::divMod(&q, b, a, b);
+		CYBOZU_TEST_EQUAL(q, tbl[i].q);
+		CYBOZU_TEST_EQUAL(b, tbl[i].r);
+		Vint::divMod(&q, a, a, a);
+		CYBOZU_TEST_EQUAL(q, 1);
+		CYBOZU_TEST_EQUAL(a, 0);
 	}
 	CYBOZU_TEST_EQUAL(Vint("15") / Vint("3"), Vint("5"));
 	CYBOZU_TEST_EQUAL(Vint("15") / Vint("-3"), Vint("-5"));

@@ -15,6 +15,9 @@
 #include <cybozu/exception.hpp>
 #endif
 #include <mcl/randgen.hpp>
+#include <mcl/config.hpp>
+#include <mcl/conversion.hpp>
+
 #ifdef _MSC_VER
 	#pragma warning(push)
 	#pragma warning(disable : 4616)
@@ -27,9 +30,6 @@
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_USE_VINT
 #endif
-#ifndef MCL_MAX_BIT_SIZE
-	#define MCL_MAX_BIT_SIZE 512
-#endif
 #ifdef MCL_USE_VINT
 #include <mcl/vint.hpp>
 typedef mcl::Vint mpz_class;
@@ -41,26 +41,7 @@ typedef mcl::Vint mpz_class;
 #endif
 #endif
 
-#ifndef MCL_SIZEOF_UNIT
-	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
-		#define MCL_SIZEOF_UNIT 4
-	#else
-		#define MCL_SIZEOF_UNIT 8
-	#endif
-#endif
-
 namespace mcl {
-
-namespace fp {
-
-#if MCL_SIZEOF_UNIT == 8
-typedef uint64_t Unit;
-#else
-typedef uint32_t Unit;
-#endif
-#define MCL_UNIT_BIT_SIZE (MCL_SIZEOF_UNIT * 8)
-
-} // mcl::fp
 
 namespace gmp {
 
@@ -82,24 +63,20 @@ void setArray(bool *pb, mpz_class& z, const T *buf, size_t n)
 	buf[0, size) = x
 	buf[size, maxSize) with zero
 */
-template<class T, class U>
-bool getArray_(T *buf, size_t maxSize, const U *x, int xn)//const mpz_srcptr x)
-{
-	const size_t bufByteSize = sizeof(T) * maxSize;
-	if (xn < 0) return false;
-	size_t xByteSize = sizeof(*x) * xn;
-	if (xByteSize > bufByteSize) return false;
-	memcpy(buf, x, xByteSize);
-	memset((char*)buf + xByteSize, 0, bufByteSize - xByteSize);
-	return true;
-}
 template<class T>
 void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
-	*pb = getArray_(buf, maxSize, x.getUnit(), (int)x.getUnitSize());
+	const fp::Unit *src = x.getUnit();
+	const size_t n = x.getUnitSize();
+	*pb = fp::convertArrayAsLE(buf, maxSize, src, n);
 #else
-	*pb = getArray_(buf, maxSize, x.get_mpz_t()->_mp_d, x.get_mpz_t()->_mp_size);
+	int n = x.get_mpz_t()->_mp_size;
+	if (n < 0) {
+		*pb = false;
+		return;
+	}
+	*pb = fp::convertArrayAsLE(buf, maxSize, x.get_mpz_t()->_mp_d, n);
 #endif
 }
 inline void set(mpz_class& z, uint64_t x)

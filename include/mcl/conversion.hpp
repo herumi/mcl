@@ -1,6 +1,7 @@
 #pragma once
 #include <cybozu/itoa.hpp>
 #include <cybozu/stream.hpp>
+#include <mcl/config.hpp>
 /**
 	@file
 	@brief convertion bin/dec/hex <=> array
@@ -14,6 +15,44 @@
 #endif
 
 namespace mcl { namespace fp {
+
+/*
+	treat src[] as a little endian and set dst[]
+	fill remain of dst if sizeof(D) * dstN > sizeof(S) * srcN
+	return false if sizeof(D) * dstN < sizeof(S) * srcN
+*/
+template<class D, class S>
+bool convertArrayAsLE(D *dst, size_t dstN, const S *src, size_t srcN)
+{
+	char assert_D_is_unsigned[D(-1) < 0 ? -1 : 1];
+	char assert_S_is_unsigned[S(-1) < 0 ? -1 : 1];
+	(void)assert_D_is_unsigned;
+	(void)assert_S_is_unsigned;
+	if (sizeof(D) * dstN < sizeof(S) * srcN) return false;
+	size_t pos = 0;
+	if (sizeof(D) < sizeof(S)) {
+		for (size_t i = 0; i < srcN; i++) {
+			S s = src[i];
+			for (size_t j = 0; j < sizeof(S); j += sizeof(D)) {
+				dst[pos++] = D(s);
+				s >>= sizeof(D) * 8;
+			}
+		}
+		for (; pos < dstN; pos++) {
+			dst[pos] = 0;
+		}
+	} else {
+		for (size_t i = 0; i < dstN; i++) {
+			D u = 0;
+			for (size_t j = 0; j < sizeof(D); j += sizeof(S)) {
+				S s = (pos < srcN) ? src[pos++] : 0;
+				u |= D(s) << (j * 8);
+			}
+			dst[i] = u;
+		}
+	}
+	return true;
+}
 
 namespace local {
 
@@ -335,31 +374,22 @@ inline size_t binToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
 }
 
 /*
-	little endian x[0, xn) to buf
+	little endian t[0, tn) to buf
 	return written size if success else 0
 	data is buf[bufSize - retval, bufSize)
 */
-template<class UT>
-inline size_t arrayToDec(char *buf, size_t bufSize, const UT *x, size_t xn)
+inline size_t inner_arrayToDec(char *buf, size_t bufSize, uint32_t *t, size_t tn)
 {
-	const size_t maxN = 64;
-	uint32_t t[maxN];
-	if (sizeof(UT) == 8) {
-		xn *= 2;
-	}
-	if (xn > maxN) return 0;
-	memcpy(t, x, xn * sizeof(t[0]));
-
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
 	size_t pos = 0;
 	for (;;) {
-		uint32_t r = local::divU32(t, t, xn, i1e9);
-		while (xn > 0 && t[xn - 1] == 0) xn--;
+		uint32_t r = local::divU32(t, t, tn, i1e9);
+		while (tn > 0 && t[tn - 1] == 0) tn--;
 		size_t len = cybozu::itoa_local::uintToDec(buf, bufSize - pos, r);
 		if (len == 0) return 0;
 		assert(0 < len && len <= width);
-		if (xn == 0) return pos + len;
+		if (tn == 0) return pos + len;
 		// fill (width - len) '0'
 		for (size_t j = 0; j < width - len; j++) {
 			buf[bufSize - pos - width + j] = '0';
@@ -368,21 +398,33 @@ inline size_t arrayToDec(char *buf, size_t bufSize, const UT *x, size_t xn)
 	}
 }
 
+inline size_t arrayToDec(char *buf, size_t bufSize, const uint32_t *x, size_t xn)
+{
+	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * xn);
+	memcpy(t, x, sizeof(uint32_t) * xn);
+	return inner_arrayToDec(buf, bufSize, t, xn);
+}
+
+inline size_t arrayToDec(char *buf, size_t bufSize, const uint64_t *x, size_t xn)
+{
+	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * xn * 2);
+	for (size_t i = 0; i < xn; i++) {
+		uint64_t v = x[i];
+		t[i * 2 + 0] = uint32_t(v);
+		t[i * 2 + 1] = uint32_t(v >> 32);
+	}
+	return inner_arrayToDec(buf, bufSize, t, xn * 2);
+}
+
 /*
 	convert buf[0, bufSize) to x[0, num)
 	return written num if success else 0
 */
-template<class UT>
-inline size_t decToArray(UT *_x, size_t maxN, const char *buf, size_t bufSize)
+inline size_t decToArray(uint32_t *x, size_t maxN, const char *buf, size_t bufSize)
 {
-	assert(sizeof(UT) == 4 || sizeof(UT) == 8);
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
 	if (maxN == 0) return 0;
-	if (sizeof(UT) == 8) {
-		maxN *= 2;
-	}
-	uint32_t *x = reinterpret_cast<uint32_t*>(_x);
 	size_t xn = 1;
 	x[0] = 0;
 	while (bufSize > 0) {
@@ -404,10 +446,20 @@ inline size_t decToArray(UT *_x, size_t maxN, const char *buf, size_t bufSize)
 		buf += n;
 		bufSize -= n;
 	}
-	if (sizeof(UT) == 8 && (xn & 1)) {
-		x[xn++] = 0;
+	return xn;
+}
+
+inline size_t decToArray(uint64_t *x, size_t maxN, const char *buf, size_t bufSize)
+{
+	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * maxN * 2);
+	size_t xn = decToArray(t, maxN * 2, buf, bufSize);
+	if (xn & 1) {
+		t[xn++] = 0;
 	}
-	return xn / (sizeof(UT) / 4);
+	for (size_t i = 0; i < xn; i += 2) {
+		x[i / 2] = (uint64_t(t[i + 1]) << 32) | t[i];
+	}
+	return xn / 2;
 }
 
 /*
