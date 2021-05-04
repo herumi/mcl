@@ -276,12 +276,7 @@ public:
 			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
 				fp::local::byteSwap(buf, n);
 			}
-			if (ioMode & IoArrayRaw) {
-				v_[op_.N - 1] = 0;
-				memcpy(v_, buf, n);
-			} else {
-				fp::convertArrayAsLE(v_, op_.N, buf, n);
-			}
+			fp::convertArrayAsLE(v_, op_.N, buf, n);
 		} else {
 			char buf[sizeof(*this) * 8 + 2]; // '0b' + max binary format length
 			size_t n = fp::local::loadWord(buf, sizeof(buf), is);
@@ -306,16 +301,15 @@ public:
 	{
 		const size_t n = getByteSize();
 		if (fp::isIoSerializeMode(ioMode)) {
+			const size_t xn = sizeof(fp::Unit) * op_.N;
+			uint8_t *x = (uint8_t*)CYBOZU_ALLOCA(xn);
 			if (ioMode & IoArrayRaw) {
-				cybozu::write(pb, os, v_, n);
+				fp::convertArrayAsLE(x, xn, v_, op_.N);
+				cybozu::write(pb, os, x, n);
 			} else {
 				fp::Block b;
 				getBlock(b);
-				uint8_t *x = (uint8_t*)CYBOZU_ALLOCA(sizeof(fp::Unit) * op_.N);
-				if (!fp::convertArrayAsLE(x, sizeof(fp::Unit) * op_.N, b.p, b.n)) {
-					*pb = false;
-					return;
-				}
+				fp::convertArrayAsLE(x, xn, b.p, b.n);
 				if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
 					fp::local::byteSwap(x, n);
 				}
