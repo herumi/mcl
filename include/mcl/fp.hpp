@@ -460,8 +460,11 @@ public:
 	void setByCSPRNG(bool *pb, fp::RandGen rg = fp::RandGen())
 	{
 		if (rg.isZero()) rg = fp::RandGen::get();
-		rg.read(pb, v_, op_.N * sizeof(Unit)); // byte size
+		uint8_t x[sizeof(*this)];
+		const size_t n = op_.N * sizeof(Unit);
+		rg.read(pb, x, n); // byte size
 		if (!pb) return;
+		fp::convertArrayAsLE(v_, op_.N, x, n);
 		setArrayMask(v_, op_.N);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
