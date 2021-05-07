@@ -17,8 +17,21 @@
 namespace mcl { namespace fp {
 
 // some environments do not have utility
-template<class T>
-T abs_(T x) { return x < 0 ? -x : x; }
+inline uint32_t abs_(int32_t x)
+{
+	if (x >= 0) return uint32_t(x);
+	// avoid undefined behavior
+	if (x == -2147483647 - 1) return 2147483648u;
+	return uint32_t(-x);
+}
+
+inline uint64_t abs_(int64_t x)
+{
+	if (x >= 0) return uint64_t(x);
+	// avoid undefined behavior
+	if (x == -9223372036854775807ll - 1) return 9223372036854775808ull;
+	return uint64_t(-x);
+}
 
 template<class T>
 T min_(T x, T y) { return x < y ? x : y; }

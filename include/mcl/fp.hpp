@@ -227,7 +227,7 @@ public:
 		} else {
 			clear();
 			if (x) {
-				int64_t y = x < 0 ? -x : x;
+				uint64_t y = fp::abs_(x);
 				if (sizeof(Unit) == 8) {
 					v_[0] = y;
 				} else {
