@@ -442,6 +442,7 @@ public:
 			Fp2T::mul(g2[i], t, g[i]);
 			g3[i] = g[i] * g2[i];
 		}
+		*pb = true;
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static void init()
