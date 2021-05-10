@@ -146,8 +146,9 @@ public:
 		ioMode_ = 0;
 		isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
-		add = fp::func_ptr_cast<void (*)(FpT& z, const FpT& x, const FpT& y)>(op_.fp_addA_);
-		if (add == 0) add = addC;
+		if (op_.fp_addA_ == 0) {
+			op_.fp_addA_ = addA;
+		}
 		sub = fp::func_ptr_cast<void (*)(FpT& z, const FpT& x, const FpT& y)>(op_.fp_subA_);
 		if (sub == 0) sub = subC;
 		neg = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_negA_);
@@ -518,9 +519,21 @@ public:
 		}
 		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
 	}
+	static void add(FpT& z, const FpT& x, const FpT& y)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*add)(FpT& z, const FpT& x, const FpT& y);
-	static inline void addC(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
+		op_.fp_addA_(z.v_, x.v_, y.v_);
+#else
+		op_.fp_add(z.v_, x.v_, y.v_, op_.p);
+#endif
+	}
+#ifdef MCL_XBYAK_DIRECT_CALL
+	static inline void addA(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.fp_add(z, x, y, op_.p);
+	}
+#endif
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*sub)(FpT& z, const FpT& x, const FpT& y);
 	static inline void subC(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
 	static void (*neg)(FpT& y, const FpT& x);
@@ -534,7 +547,6 @@ public:
 	static void (*mul9)(FpT& y, const FpT& x);
 	static inline void mul9C(FpT& y, const FpT& x) { mulSmall(y, x, 9); }
 #else
-	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
 	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
 	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
 	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
@@ -789,7 +801,6 @@ template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>
 template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 template<class tag, size_t maxBitSize> bool FpT<tag, maxBitSize>::isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::add)(FpT& z, const FpT& x, const FpT& y);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sub)(FpT& z, const FpT& x, const FpT& y);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::neg)(FpT& y, const FpT& x);
 template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul)(FpT& z, const FpT& x, const FpT& y);
