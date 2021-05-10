@@ -695,16 +695,20 @@ struct Fp2DblT {
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
-	static void mul_xi_1C(Fp2DblT& y, const Fp2DblT& x)
+	static void mul_xi_1A(Unit *py, const Unit *px)
 	{
+		Fp2Dbl& y = castD(py);
+		const Fp2Dbl& x = castD(px);
 		FpDbl t;
 		FpDbl::add(t, x.a, x.b);
 		FpDbl::sub(y.a, x.a, x.b);
 		y.b = t;
 	}
-	static void mul_xi_genericC(Fp2DblT& y, const Fp2DblT& x)
+	static void mul_xi_genericA(Unit *py, const Unit *px)
 	{
 		const uint32_t xi_a = Fp2::get_xi_a();
+		Fp2Dbl& y = castD(py);
+		const Fp2Dbl& x = castD(px);
 		FpDbl t;
 		FpDbl::mulUnit(t, x.a, xi_a);
 		FpDbl::sub(t, t, x.b);
@@ -720,7 +724,10 @@ struct Fp2DblT {
 	{
 		Fp::getOp().fp2Dbl_sqrPreA_(y.a.v_, x.getUnit());
 	}
-	static void (*mul_xi)(Fp2DblT&, const Fp2DblT&);
+	static void mul_xi(Fp2DblT& y, const Fp2DblT& x)
+	{
+		Fp::getOp().fp2Dbl_mul_xiA_(y.a.v_, x.a.getUnit());
+	}
 	static void mod(Fp2& y, const Fp2DblT& x)
 	{
 		FpDbl::mod(y.a, x.a);
@@ -744,23 +751,20 @@ struct Fp2DblT {
 		if (op.fp2Dbl_sqrPreA_ == 0) {
 			op.fp2Dbl_sqrPreA_ = sqrPreA;
 		}
-		const uint32_t xi_a = Fp2::get_xi_a();
-		switch (xi_a) {
-		case 1:
-			mul_xi = mul_xi_1C;
-			if (op.fp2Dbl_mul_xiA_) {
-				mul_xi = fp::func_ptr_cast<void (*)(Fp2DblT&, const Fp2DblT&)>(op.fp2Dbl_mul_xiA_);
+		if (op.fp2Dbl_mul_xiA_ == 0) {
+			const uint32_t xi_a = Fp2::get_xi_a();
+			if (xi_a == 1) {
+				op.fp2Dbl_mul_xiA_ = mul_xi_1A;
+			} else {
+				op.fp2Dbl_mul_xiA_ = mul_xi_genericA;
 			}
-			break;
-		default:
-			mul_xi = mul_xi_genericC;
-			break;
 		}
 	}
 private:
 	static Fp2 cast(Unit *x) { return *reinterpret_cast<Fp2*>(x); }
 	static const Fp2 cast(const Unit *x) { return *reinterpret_cast<const Fp2*>(x); }
 	static Fp2Dbl& castD(Unit *x) { return *reinterpret_cast<Fp2Dbl*>(x); }
+	static const Fp2Dbl& castD(const Unit *x) { return *reinterpret_cast<const Fp2Dbl*>(x); }
 	/*
 		Fp2Dbl::mulPre by FpDblT
 		@note mod of NIST_P192 is fast
@@ -801,8 +805,6 @@ private:
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
 	}
 };
-
-template<class Fp> void (*Fp2DblT<Fp>::mul_xi)(Fp2DblT<Fp>&, const Fp2DblT<Fp>&);
 
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
 template<class Fp> Fp2T<Fp> Fp2T<Fp>::g2[Fp2T<Fp>::gN];
