@@ -239,13 +239,19 @@ public:
 		subA(z.a.v_, x.a.v_, y.a.v_);
 #endif
 	}
+	static void neg(Fp2T& y, const Fp2T& x)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*neg)(Fp2T& y, const Fp2T& x);
+		Fp::op_.fp2_negA_(y.a.v_, x.a.v_);
+#else
+		negA(y.a.v_, x.a.v_);
+#endif
+	}
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
 	static void (*mul2)(Fp2T& y, const Fp2T& x);
 #else
-	static void neg(Fp2T& y, const Fp2T& x) { negC(y, x); }
 	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { mulC(z, x, y); }
 	static void sqr(Fp2T& y, const Fp2T& x) { sqrC(y, x); }
 	static void mul2(Fp2T& y, const Fp2T& x) { mul2C(y, x); }
@@ -403,8 +409,9 @@ public:
 		if (op.fp2_subA_ == 0) {
 			op.fp2_subA_ = subA;
 		}
-		neg = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_negA_);
-		if (neg == 0) neg = negC;
+		if (op.fp2_negA_ == 0) {
+			op.fp2_negA_ = negA;
+		}
 		mul = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_mulA_);
 		if (mul == 0) mul = mulC;
 		sqr = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_sqrA_);
@@ -516,8 +523,10 @@ private:
 		Fp::sub(z.a, x.a, y.a);
 		Fp::sub(z.b, x.b, y.b);
 	}
-	static void negC(Fp2T& y, const Fp2T& x)
+	static void negA(Unit *py, const Unit *px)
 	{
+		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
 	}
@@ -613,7 +622,6 @@ private:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul2)(Fp2T& y, const Fp2T& x);
