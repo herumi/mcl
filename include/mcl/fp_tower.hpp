@@ -540,38 +540,40 @@ public:
 	}
 #endif
 private:
+	static Fp2T& cast(Unit *x) { return *reinterpret_cast<Fp2T*>(x); }
+	static const Fp2T& cast(const Unit *x) { return *reinterpret_cast<const Fp2T*>(x); }
 	/*
 		default Fp2T operator
 		Fp2T = Fp[i]/(i^2 + 1)
 	*/
 	static void addA(Unit *pz, const Unit *px, const Unit *py)
 	{
-		Fp2T& z = *reinterpret_cast<Fp2T*>(pz);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
-		const Fp2T& y = *reinterpret_cast<const Fp2T*>(py);
+		Fp2T& z = cast(pz);
+		const Fp2T& x = cast(px);
+		const Fp2T& y = cast(py);
 		Fp::add(z.a, x.a, y.a);
 		Fp::add(z.b, x.b, y.b);
 	}
 	static void subA(Unit *pz, const Unit *px, const Unit *py)
 	{
-		Fp2T& z = *reinterpret_cast<Fp2T*>(pz);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
-		const Fp2T& y = *reinterpret_cast<const Fp2T*>(py);
+		Fp2T& z = cast(pz);
+		const Fp2T& x = cast(px);
+		const Fp2T& y = cast(py);
 		Fp::sub(z.a, x.a, y.a);
 		Fp::sub(z.b, x.b, y.b);
 	}
 	static void negA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
 	}
 	static void mulA(Unit *pz, const Unit *px, const Unit *py)
 	{
-		Fp2T& z = *reinterpret_cast<Fp2T*>(pz);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
-		const Fp2T& y = *reinterpret_cast<const Fp2T*>(py);
+		Fp2T& z = cast(pz);
+		const Fp2T& x = cast(px);
+		const Fp2T& y = cast(py);
 		Fp2Dbl d;
 		Fp2Dbl::mulPre(d, x, y);
 		FpDbl::mod(z.a, d.a);
@@ -579,8 +581,8 @@ private:
 	}
 	static void mul2A(Unit *py, const Unit *px)
 	{
-		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
 		Fp::mul2(y.a, x.a);
 		Fp::mul2(y.b, x.b);
 	}
@@ -590,8 +592,8 @@ private:
 	*/
 	static void sqrA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 #if 1 // faster than using FpDbl
@@ -622,8 +624,8 @@ private:
 	*/
 	static void fp2_mul_xiA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
@@ -639,8 +641,8 @@ private:
 	*/
 	static void fp2_mul_xi_1_1iA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
-		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
