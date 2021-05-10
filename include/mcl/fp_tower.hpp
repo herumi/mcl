@@ -247,12 +247,18 @@ public:
 		negA(y.a.v_, x.a.v_);
 #endif
 	}
+	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
+		Fp::op_.fp2_mulA_(z.a.v_, x.a.v_, y.a.v_);
+#else
+		mulA(z.a.v_, x.a.v_, y.a.v_);
+#endif
+	}
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
 	static void (*mul2)(Fp2T& y, const Fp2T& x);
 #else
-	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { mulC(z, x, y); }
 	static void sqr(Fp2T& y, const Fp2T& x) { sqrC(y, x); }
 	static void mul2(Fp2T& y, const Fp2T& x) { mul2C(y, x); }
 #endif
@@ -412,8 +418,9 @@ public:
 		if (op.fp2_negA_ == 0) {
 			op.fp2_negA_ = negA;
 		}
-		mul = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_mulA_);
-		if (mul == 0) mul = mulC;
+		if (op.fp2_mulA_ == 0) {
+			op.fp2_mulA_ = mulA;
+		}
 		sqr = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_sqrA_);
 		if (sqr == 0) sqr = sqrC;
 		mul2 = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_mul2A_);
@@ -530,17 +537,20 @@ private:
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
 	}
-	static void mul2C(Fp2T& y, const Fp2T& x)
+	static void mulA(Unit *pz, const Unit *px, const Unit *py)
 	{
-		Fp::mul2(y.a, x.a);
-		Fp::mul2(y.b, x.b);
-	}
-	static void mulC(Fp2T& z, const Fp2T& x, const Fp2T& y)
-	{
+		Fp2T& z = *reinterpret_cast<Fp2T*>(pz);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		const Fp2T& y = *reinterpret_cast<const Fp2T*>(py);
 		Fp2Dbl d;
 		Fp2Dbl::mulPre(d, x, y);
 		FpDbl::mod(z.a, d.a);
 		FpDbl::mod(z.b, d.b);
+	}
+	static void mul2C(Fp2T& y, const Fp2T& x)
+	{
+		Fp::mul2(y.a, x.a);
+		Fp::mul2(y.b, x.b);
 	}
 	/*
 		x = a + bi, i^2 = -1
@@ -622,7 +632,6 @@ private:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul2)(Fp2T& y, const Fp2T& x);
 #endif
