@@ -231,14 +231,20 @@ public:
 		addA(z.a.v_, x.a.v_, y.a.v_);
 #endif
 	}
+	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
+		Fp::op_.fp2_subA_(z.a.v_, x.a.v_, y.a.v_);
+#else
+		subA(z.a.v_, x.a.v_, y.a.v_);
+#endif
+	}
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*neg)(Fp2T& y, const Fp2T& x);
 	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
 	static void (*mul2)(Fp2T& y, const Fp2T& x);
 #else
-	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { subC(z, x, y); }
 	static void neg(Fp2T& y, const Fp2T& x) { negC(y, x); }
 	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { mulC(z, x, y); }
 	static void sqr(Fp2T& y, const Fp2T& x) { sqrC(y, x); }
@@ -394,8 +400,9 @@ public:
 		if (op.fp2_addA_ == 0) {
 			op.fp2_addA_ = addA;
 		}
-		sub = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_subA_);
-		if (sub == 0) sub = subC;
+		if (op.fp2_subA_ == 0) {
+			op.fp2_subA_ = subA;
+		}
 		neg = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_negA_);
 		if (neg == 0) neg = negC;
 		mul = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_mulA_);
@@ -501,8 +508,11 @@ private:
 		Fp::add(z.a, x.a, y.a);
 		Fp::add(z.b, x.b, y.b);
 	}
-	static void subC(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void subA(Unit *pz, const Unit *px, const Unit *py)
 	{
+		Fp2T& z = *reinterpret_cast<Fp2T*>(pz);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		const Fp2T& y = *reinterpret_cast<const Fp2T*>(py);
 		Fp::sub(z.a, x.a, y.a);
 		Fp::sub(z.b, x.b, y.b);
 	}
@@ -603,7 +613,6 @@ private:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
