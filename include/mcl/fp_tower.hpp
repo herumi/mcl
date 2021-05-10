@@ -271,7 +271,10 @@ public:
 		mul2A(y.a.v_, x.a.v_);
 #endif
 	}
-	static void (*mul_xi)(Fp2T& y, const Fp2T& x);
+	static void mul_xi(Fp2T& y, const Fp2T& x)
+	{
+		Fp::op_.fp2_mul_xiA_(y.a.v_, x.a.v_);
+	}
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
 	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
 	static void divBy2(Fp2T& y, const Fp2T& x)
@@ -416,7 +419,6 @@ public:
 			*pb = false;
 			return;
 		}
-		mul_xi = 0;
 #ifdef MCL_XBYAK_DIRECT_CALL
 		if (op.fp2_addA_ == 0) {
 			op.fp2_addA_ = addA;
@@ -436,16 +438,15 @@ public:
 		if (op.fp2_mul2A_ == 0) {
 			op.fp2_mul2A_ = mul2A;
 		}
-		mul_xi = fp::func_ptr_cast<void (*)(Fp2T&, const Fp2T&)>(op.fp2_mul_xiA_);
 #endif
-		op.fp2_inv = fp2_invW;
-		if (mul_xi == 0) {
+		if (op.fp2_mul_xiA_ == 0) {
 			if (op.xi_a == 1) {
-				mul_xi = fp2_mul_xi_1_1iC;
+				op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
 			} else {
-				mul_xi = fp2_mul_xiC;
+				op.fp2_mul_xiA_ = fp2_mul_xiA;
 			}
 		}
+		op.fp2_inv = fp2_invW;
 		FpDblT<Fp>::init();
 		Fp2DblT<Fp>::init();
 		// call init before Fp2::pow because FpDbl is used in Fp2T
@@ -601,8 +602,10 @@ private:
 		y = (a + bi)xi = (a + bi)(xi_a + i)
 		=(a * x_ia - b) + (a + b xi_a)i
 	*/
-	static void fp2_mul_xiC(Fp2T& y, const Fp2T& x)
+	static void fp2_mul_xiA(Unit *py, const Unit *px)
 	{
+		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
@@ -616,8 +619,10 @@ private:
 		xi = 1 + i ; xi_a = 1
 		y = (a + bi)xi = (a - b) + (a + b)i
 	*/
-	static void fp2_mul_xi_1_1iC(Fp2T& y, const Fp2T& x)
+	static void fp2_mul_xi_1_1iA(Unit *py, const Unit *px)
 	{
+		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
@@ -645,8 +650,6 @@ private:
 		Fp::neg(py[1], py[1]);
 	}
 };
-
-template<class Fp_> void (*Fp2T<Fp_>::mul_xi)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>
 struct Fp2DblT {
