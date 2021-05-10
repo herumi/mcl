@@ -129,17 +129,23 @@ public:
 		Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p);
 #endif
 	}
+	static inline void mod(Fp& z, const FpDblT& xy)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		Fp::op_.fpDbl_modA_(z.v_, xy.v_);
+#else
+		Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p);
+#endif
+	}
 #ifdef MCL_XBYAK_DIRECT_CALL
 	static void addA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_add(z, x, y, Fp::op_.p); }
 	static void subA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_sub(z, x, y, Fp::op_.p); }
-	static void (*mod)(Fp& z, const FpDblT& xy);
+	static void modA(Unit *z, const Unit *xy) { Fp::op_.fpDbl_mod(z, xy, Fp::op_.p); }
 	static void (*addPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	static void (*subPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
-	static void modC(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
 	static void addPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
 	static void subPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 #else
-	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
 	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
 	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 #endif
@@ -171,8 +177,9 @@ public:
 		if (op.fpDbl_subA_ == 0) {
 			op.fpDbl_subA_ = subA;
 		}
-		mod = fp::func_ptr_cast<void (*)(Fp&, const FpDblT&)>(op.fpDbl_modA_);
-		if (mod == 0) mod = modC;
+		if (op.fpDbl_modA_ == 0) {
+			op.fpDbl_modA_ = modA;
+		}
 		addPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_addPre);
 		if (addPre == 0) addPre = addPreC;
 		subPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subPre);
@@ -184,7 +191,6 @@ public:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp> void (*FpDblT<Fp>::mod)(Fp&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::addPre)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::subPre)(FpDblT&, const FpDblT&, const FpDblT&);
 #endif
