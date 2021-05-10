@@ -255,11 +255,17 @@ public:
 		mulA(z.a.v_, x.a.v_, y.a.v_);
 #endif
 	}
+	static void sqr(Fp2T& y, const Fp2T& x)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*sqr)(Fp2T& y, const Fp2T& x);
+		Fp::op_.fp2_sqrA_(y.a.v_, x.a.v_);
+#else
+		sqrA(y.a.v_, x.a.v_);
+#endif
+	}
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*mul2)(Fp2T& y, const Fp2T& x);
 #else
-	static void sqr(Fp2T& y, const Fp2T& x) { sqrC(y, x); }
 	static void mul2(Fp2T& y, const Fp2T& x) { mul2C(y, x); }
 #endif
 	static void (*mul_xi)(Fp2T& y, const Fp2T& x);
@@ -421,8 +427,9 @@ public:
 		if (op.fp2_mulA_ == 0) {
 			op.fp2_mulA_ = mulA;
 		}
-		sqr = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_sqrA_);
-		if (sqr == 0) sqr = sqrC;
+		if (op.fp2_sqrA_ == 0) {
+			op.fp2_sqrA_ = sqrA;
+		}
 		mul2 = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_mul2A_);
 		if (mul2 == 0) mul2 = mul2C;
 		mul_xi = fp::func_ptr_cast<void (*)(Fp2T&, const Fp2T&)>(op.fp2_mul_xiA_);
@@ -556,8 +563,10 @@ private:
 		x = a + bi, i^2 = -1
 		y = x^2 = (a + bi)^2 = (a + b)(a - b) + 2abi
 	*/
-	static void sqrC(Fp2T& y, const Fp2T& x)
+	static void sqrA(Unit *py, const Unit *px)
 	{
+		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 #if 1 // faster than using FpDbl
@@ -632,7 +641,6 @@ private:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp_> void (*Fp2T<Fp_>::sqr)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul2)(Fp2T& y, const Fp2T& x);
 #endif
 template<class Fp_> void (*Fp2T<Fp_>::mul_xi)(Fp2T& y, const Fp2T& x);
