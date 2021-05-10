@@ -695,27 +695,6 @@ struct Fp2DblT {
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
-	static void mul_xi_1A(Unit *py, const Unit *px)
-	{
-		Fp2Dbl& y = castD(py);
-		const Fp2Dbl& x = castD(px);
-		FpDbl t;
-		FpDbl::add(t, x.a, x.b);
-		FpDbl::sub(y.a, x.a, x.b);
-		y.b = t;
-	}
-	static void mul_xi_genericA(Unit *py, const Unit *px)
-	{
-		const uint32_t xi_a = Fp2::get_xi_a();
-		Fp2Dbl& y = castD(py);
-		const Fp2Dbl& x = castD(px);
-		FpDbl t;
-		FpDbl::mulUnit(t, x.a, xi_a);
-		FpDbl::sub(t, t, x.b);
-		FpDbl::mulUnit(y.b, x.b, xi_a);
-		FpDbl::add(y.b, y.b, x.a);
-		y.a = t;
-	}
 	static void mulPre(Fp2DblT& z, const Fp2& x, const Fp2& y)
 	{
 		Fp::getOp().fp2Dbl_mulPreA_(z.a.v_, x.getUnit(), y.getUnit());
@@ -803,6 +782,27 @@ private:
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
 		Fp::sub(t1, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
+	}
+	static void mul_xi_1A(Unit *py, const Unit *px)
+	{
+		Fp2Dbl& y = castD(py);
+		const Fp2Dbl& x = castD(px);
+		FpDbl t;
+		FpDbl::add(t, x.a, x.b);
+		FpDbl::sub(y.a, x.a, x.b);
+		y.b = t;
+	}
+	static void mul_xi_genericA(Unit *py, const Unit *px)
+	{
+		const uint32_t xi_a = Fp2::get_xi_a();
+		Fp2Dbl& y = castD(py);
+		const Fp2Dbl& x = castD(px);
+		FpDbl t;
+		FpDbl::mulUnit(t, x.a, xi_a);
+		FpDbl::sub(t, t, x.b);
+		FpDbl::mulUnit(y.b, x.b, xi_a);
+		FpDbl::add(y.b, y.b, x.a);
+		y.a = t;
 	}
 };
 

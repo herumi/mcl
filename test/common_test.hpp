@@ -163,10 +163,11 @@ void testABCD()
 
 void testFp2Dbl_mul_xi1()
 {
-	if (Fp2::get_xi_a() != 1) return;
+	const uint32_t xi_a = Fp2::get_xi_a();
+	if (xi_a != 1) return;
 	puts("testFp2Dbl_mul_xi1");
 	cybozu::XorShift rg;
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 10; i++) {
 		Fp a1, a2;
 		a1.setByCSPRNG(rg);
 		a2.setByCSPRNG(rg);
@@ -176,7 +177,12 @@ void testFp2Dbl_mul_xi1()
 		a2.setByCSPRNG(rg);
 		FpDbl::mulPre(x.b, a1, a2);
 		Fp2Dbl ok;
-		Fp2Dbl::mul_xi_1C(ok, x);
+		{
+			FpDbl::mulUnit(ok.a, x.a, xi_a);
+			ok.a -= x.b;
+			FpDbl::mulUnit(ok.b, x.b, xi_a);
+			ok.b += x.a;
+		}
 		Fp2Dbl::mul_xi(x, x);
 		CYBOZU_TEST_EQUAL_ARRAY(ok.a.getUnit(), x.a.getUnit(), ok.a.getUnitSize());
 		CYBOZU_TEST_EQUAL_ARRAY(ok.b.getUnit(), x.b.getUnit(), ok.b.getUnitSize());
