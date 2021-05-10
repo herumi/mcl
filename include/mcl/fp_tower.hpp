@@ -121,18 +121,24 @@ public:
 		Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p);
 #endif
 	}
+	static inline void sub(FpDblT& z, const FpDblT& x, const FpDblT& y)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		Fp::op_.fpDbl_subA_(z.v_, x.v_, y.v_);
+#else
+		Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p);
+#endif
+	}
 #ifdef MCL_XBYAK_DIRECT_CALL
 	static void addA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_add(z, x, y, Fp::op_.p); }
-	static void (*sub)(FpDblT& z, const FpDblT& x, const FpDblT& y);
+	static void subA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_sub(z, x, y, Fp::op_.p); }
 	static void (*mod)(Fp& z, const FpDblT& xy);
 	static void (*addPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
 	static void (*subPre)(FpDblT& z, const FpDblT& x, const FpDblT& y);
-	static void subC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void modC(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
 	static void addPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
 	static void subPreC(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 #else
-	static void sub(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p); }
 	static void mod(Fp& z, const FpDblT& xy) { Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p); }
 	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
 	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
@@ -162,8 +168,9 @@ public:
 		if (op.fpDbl_addA_ == 0) {
 			op.fpDbl_addA_ = addA;
 		}
-		sub = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_subA_);
-		if (sub == 0) sub = subC;
+		if (op.fpDbl_subA_ == 0) {
+			op.fpDbl_subA_ = subA;
+		}
 		mod = fp::func_ptr_cast<void (*)(Fp&, const FpDblT&)>(op.fpDbl_modA_);
 		if (mod == 0) mod = modC;
 		addPre = fp::func_ptr_cast<void (*)(FpDblT&, const FpDblT&, const FpDblT&)>(op.fpDbl_addPre);
@@ -177,7 +184,6 @@ public:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp> void (*FpDblT<Fp>::sub)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::mod)(Fp&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::addPre)(FpDblT&, const FpDblT&, const FpDblT&);
 template<class Fp> void (*FpDblT<Fp>::subPre)(FpDblT&, const FpDblT&, const FpDblT&);
