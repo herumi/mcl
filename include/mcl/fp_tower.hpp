@@ -284,13 +284,15 @@ public:
 		assert(!x.isZero());
 		const Fp& a = x.a;
 		const Fp& b = x.b;
-		Fp aa, bb;
-		Fp::sqr(aa, a);
-		Fp::sqr(bb, b);
-		aa += bb;
-		Fp::inv(aa, aa); // aa = 1 / (a^2 + b^2)
-		Fp::mul(y.a, a, aa);
-		Fp::mul(y.b, b, aa);
+		FpDbl AA, BB;
+		FpDbl::sqrPre(AA, a);
+		FpDbl::sqrPre(BB, b);
+		FpDbl::addPre(AA, AA, BB);
+		Fp r;
+		FpDbl::mod(r, AA);
+		Fp::inv(r, r); // r = 1 / (a^2 + b^2)
+		Fp::mul(y.a, a, r);
+		Fp::mul(y.b, b, r);
 		Fp::neg(y.b, y.b);
 	}
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
