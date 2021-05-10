@@ -275,8 +275,25 @@ public:
 	{
 		Fp::op_.fp2_mul_xiA_(y.a.v_, x.a.v_);
 	}
+	/*
+		x = a + bi
+		1 / x = (a - bi) / (a^2 + b^2)
+	*/
+	static void inv(Fp2T& y, const Fp2T& x)
+	{
+		assert(!x.isZero());
+		const Fp& a = x.a;
+		const Fp& b = x.b;
+		Fp aa, bb;
+		Fp::sqr(aa, a);
+		Fp::sqr(bb, b);
+		aa += bb;
+		Fp::inv(aa, aa); // aa = 1 / (a^2 + b^2)
+		Fp::mul(y.a, a, aa);
+		Fp::mul(y.b, b, aa);
+		Fp::neg(y.b, y.b);
+	}
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
-	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
 	static void divBy2(Fp2T& y, const Fp2T& x)
 	{
 		Fp::divBy2(y.a, x.a);
@@ -446,7 +463,6 @@ public:
 				op.fp2_mul_xiA_ = fp2_mul_xiA;
 			}
 		}
-		op.fp2_inv = fp2_invW;
 		FpDblT<Fp>::init();
 		Fp2DblT<Fp>::init();
 		// call init before Fp2::pow because FpDbl is used in Fp2T
@@ -629,25 +645,6 @@ private:
 		Fp::add(t, a, b);
 		Fp::sub(y.a, a, b);
 		y.b = t;
-	}
-	/*
-		x = a + bi
-		1 / x = (a - bi) / (a^2 + b^2)
-	*/
-	static void fp2_invW(Unit *y, const Unit *x)
-	{
-		const Fp *px = reinterpret_cast<const Fp*>(x);
-		Fp *py = reinterpret_cast<Fp*>(y);
-		const Fp& a = px[0];
-		const Fp& b = px[1];
-		Fp aa, bb;
-		Fp::sqr(aa, a);
-		Fp::sqr(bb, b);
-		aa += bb;
-		Fp::inv(aa, aa); // aa = 1 / (a^2 + b^2)
-		Fp::mul(py[0], a, aa);
-		Fp::mul(py[1], b, aa);
-		Fp::neg(py[1], py[1]);
 	}
 };
 
