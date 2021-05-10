@@ -263,11 +263,14 @@ public:
 		sqrA(y.a.v_, x.a.v_);
 #endif
 	}
+	static void mul2(Fp2T& y, const Fp2T& x)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*mul2)(Fp2T& y, const Fp2T& x);
+		Fp::op_.fp2_mul2A_(y.a.v_, x.a.v_);
 #else
-	static void mul2(Fp2T& y, const Fp2T& x) { mul2C(y, x); }
+		mul2A(y.a.v_, x.a.v_);
 #endif
+	}
 	static void (*mul_xi)(Fp2T& y, const Fp2T& x);
 	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
 	static void inv(Fp2T& y, const Fp2T& x) { Fp::op_.fp2_inv(y.a.v_, x.a.v_); }
@@ -430,8 +433,9 @@ public:
 		if (op.fp2_sqrA_ == 0) {
 			op.fp2_sqrA_ = sqrA;
 		}
-		mul2 = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_mul2A_);
-		if (mul2 == 0) mul2 = mul2C;
+		if (op.fp2_mul2A_ == 0) {
+			op.fp2_mul2A_ = mul2A;
+		}
 		mul_xi = fp::func_ptr_cast<void (*)(Fp2T&, const Fp2T&)>(op.fp2_mul_xiA_);
 #endif
 		op.fp2_inv = fp2_invW;
@@ -554,8 +558,10 @@ private:
 		FpDbl::mod(z.a, d.a);
 		FpDbl::mod(z.b, d.b);
 	}
-	static void mul2C(Fp2T& y, const Fp2T& x)
+	static void mul2A(Unit *py, const Unit *px)
 	{
+		Fp2T& y = *reinterpret_cast<Fp2T*>(py);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
 		Fp::mul2(y.a, x.a);
 		Fp::mul2(y.b, x.b);
 	}
@@ -640,9 +646,6 @@ private:
 	}
 };
 
-#ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp_> void (*Fp2T<Fp_>::mul2)(Fp2T& y, const Fp2T& x);
-#endif
 template<class Fp_> void (*Fp2T<Fp_>::mul_xi)(Fp2T& y, const Fp2T& x);
 
 template<class Fp>
