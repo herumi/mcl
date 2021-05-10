@@ -284,18 +284,18 @@ public:
 		assert(!x.isZero());
 		const Fp& a = x.a;
 		const Fp& b = x.b;
-		FpDbl AA, BB;
-		FpDbl::sqrPre(AA, a);
-		FpDbl::sqrPre(BB, b);
-		FpDbl::addPre(AA, AA, BB);
 		Fp r;
-		FpDbl::mod(r, AA);
+		norm(r, x);
 		Fp::inv(r, r); // r = 1 / (a^2 + b^2)
 		Fp::mul(y.a, a, r);
 		Fp::mul(y.b, b, r);
 		Fp::neg(y.b, y.b);
 	}
-	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y) { Fp::addPre(z.a, x.a, y.a); Fp::addPre(z.b, x.b, y.b); }
+	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	{
+		Fp::addPre(z.a, x.a, y.a);
+		Fp::addPre(z.b, x.b, y.b);
+	}
 	static void divBy2(Fp2T& y, const Fp2T& x)
 	{
 		Fp::divBy2(y.a, x.a);
@@ -400,12 +400,14 @@ public:
 		Fp::mul(y.b, x.b, t2);
 		return true;
 	}
+	// y = a^2 + b^2
 	static void inline norm(Fp& y, const Fp2T& x)
 	{
-		Fp aa, bb;
-		Fp::sqr(aa, x.a);
-		Fp::sqr(bb, x.b);
-		Fp::add(y, aa, bb);
+		FpDbl AA, BB;
+		FpDbl::sqrPre(AA, x.a);
+		FpDbl::sqrPre(BB, x.b);
+		FpDbl::addPre(AA, AA, BB);
+		FpDbl::mod(y, AA);
 	}
 	/*
 		Frobenius
