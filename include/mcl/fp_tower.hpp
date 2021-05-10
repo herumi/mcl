@@ -223,15 +223,21 @@ public:
 		a = a_;
 		b = b_;
 	}
+	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
+		Fp::op_.fp2_addA_(z.a.v_, x.a.v_, y.a.v_);
+#else
+		addA(z.a.v_, x.a.v_, y.a.v_);
+#endif
+	}
+#ifdef MCL_XBYAK_DIRECT_CALL
 	static void (*sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*neg)(Fp2T& y, const Fp2T& x);
 	static void (*mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 	static void (*sqr)(Fp2T& y, const Fp2T& x);
 	static void (*mul2)(Fp2T& y, const Fp2T& x);
 #else
-	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y) { addC(z, x, y); }
 	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y) { subC(z, x, y); }
 	static void neg(Fp2T& y, const Fp2T& x) { negC(y, x); }
 	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y) { mulC(z, x, y); }
@@ -376,7 +382,6 @@ public:
 	static uint32_t get_xi_a() { return Fp::getOp().xi_a; }
 	static void init(bool *pb)
 	{
-//		assert(Fp::maxSize <= 256);
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
 		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
@@ -386,8 +391,9 @@ public:
 		}
 		mul_xi = 0;
 #ifdef MCL_XBYAK_DIRECT_CALL
-		add = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_addA_);
-		if (add == 0) add = addC;
+		if (op.fp2_addA_ == 0) {
+			op.fp2_addA_ = addA;
+		}
 		sub = fp::func_ptr_cast<void (*)(Fp2T& z, const Fp2T& x, const Fp2T& y)>(op.fp2_subA_);
 		if (sub == 0) sub = subC;
 		neg = fp::func_ptr_cast<void (*)(Fp2T& y, const Fp2T& x)>(op.fp2_negA_);
@@ -487,8 +493,11 @@ private:
 		default Fp2T operator
 		Fp2T = Fp[i]/(i^2 + 1)
 	*/
-	static void addC(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void addA(Unit *pz, const Unit *px, const Unit *py)
 	{
+		Fp2T& z = *reinterpret_cast<Fp2T*>(pz);
+		const Fp2T& x = *reinterpret_cast<const Fp2T*>(px);
+		const Fp2T& y = *reinterpret_cast<const Fp2T*>(py);
 		Fp::add(z.a, x.a, y.a);
 		Fp::add(z.b, x.b, y.b);
 	}
@@ -594,7 +603,6 @@ private:
 };
 
 #ifdef MCL_XBYAK_DIRECT_CALL
-template<class Fp_> void (*Fp2T<Fp_>::add)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::sub)(Fp2T& z, const Fp2T& x, const Fp2T& y);
 template<class Fp_> void (*Fp2T<Fp_>::neg)(Fp2T& y, const Fp2T& x);
 template<class Fp_> void (*Fp2T<Fp_>::mul)(Fp2T& z, const Fp2T& x, const Fp2T& y);
