@@ -960,6 +960,7 @@ struct SmallModp {
 	}
 	uint32_t getTop(const Unit *x) const
 	{
+		if (shiftR_ == 0) return x[N_ - 1];
 		return (x[N_ - 1] >> shiftR_) | (x[N_] << shiftL_);
 	}
 	uint32_t cvtInt(const mpz_class& x) const

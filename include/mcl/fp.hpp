@@ -100,6 +100,47 @@ private:
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
 	template<class Fp> friend struct Fp6T;
+#ifdef MCL_XBYAK_DIRECT_CALL
+	static inline void addA(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.fp_add(z, x, y, op_.p);
+	}
+	static inline void subA(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.fp_sub(z, x, y, op_.p);
+	}
+	static inline void negA(Unit *y, const Unit *x)
+	{
+		op_.fp_neg(y, x, op_.p);
+	}
+	static inline void mulA(Unit *z, const Unit *x, const Unit *y)
+	{
+		op_.fp_mul(z, x, y, op_.p);
+	}
+	static inline void sqrA(Unit *y, const Unit *x)
+	{
+		op_.fp_sqr(y, x, op_.p);
+	}
+	static inline void mul2A(Unit *y, const Unit *x)
+	{
+		op_.fp_mul2(y, x, op_.p);
+	}
+#endif
+	static inline void mul9A(Unit *y, const Unit *x)
+	{
+		mulSmall(y, x, 9);
+//		op_.fp_mul9(y, x, op_.p);
+	}
+	static inline void mulSmall(Unit *z, const Unit *x, const uint32_t y)
+	{
+		assert(y <= op_.smallModp.maxMulN);
+		Unit xy[maxSize + 1];
+		op_.fp_mulUnitPre(xy, x, y);
+		int v = op_.smallModp.approxMul(xy);
+		const Unit *pv = op_.smallModp.getPmul(v);
+		op_.fp_subPre(z, xy, pv);
+		op_.fp_sub(z, z, op_.p, op_.p);
+	}
 public:
 	typedef FpT<tag, maxBitSize> BaseFp;
 	// return pointer to array v_[]
@@ -146,20 +187,27 @@ public:
 		ioMode_ = 0;
 		isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
-		add = fp::func_ptr_cast<void (*)(FpT& z, const FpT& x, const FpT& y)>(op_.fp_addA_);
-		if (add == 0) add = addC;
-		sub = fp::func_ptr_cast<void (*)(FpT& z, const FpT& x, const FpT& y)>(op_.fp_subA_);
-		if (sub == 0) sub = subC;
-		neg = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_negA_);
-		if (neg == 0) neg = negC;
-		mul = fp::func_ptr_cast<void (*)(FpT& z, const FpT& x, const FpT& y)>(op_.fp_mulA_);
-		if (mul == 0) mul = mulC;
-		sqr = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_sqrA_);
-		if (sqr == 0) sqr = sqrC;
-		mul2 = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_mul2A_);
-		if (mul2 == 0) mul2 = mul2C;
-		mul9 = fp::func_ptr_cast<void (*)(FpT& y, const FpT& x)>(op_.fp_mul9A_);
-		if (mul9 == 0) mul9 = mul9C;
+		if (op_.fp_addA_ == 0) {
+			op_.fp_addA_ = addA;
+		}
+		if (op_.fp_subA_ == 0) {
+			op_.fp_subA_ = subA;
+		}
+		if (op_.fp_negA_ == 0) {
+			op_.fp_negA_ = negA;
+		}
+		if (op_.fp_mulA_ == 0) {
+			op_.fp_mulA_ = mulA;
+		}
+		if (op_.fp_sqrA_ == 0) {
+			op_.fp_sqrA_ = sqrA;
+		}
+		if (op_.fp_mul2A_ == 0) {
+			op_.fp_mul2A_ = mul2A;
+		}
+		if (op_.fp_mul9A_ == 0) {
+			op_.fp_mul9A_ = mul9A;
+		}
 #endif
 		*pb = true;
 	}
@@ -227,7 +275,7 @@ public:
 		} else {
 			clear();
 			if (x) {
-				int64_t y = x < 0 ? -x : x;
+				uint64_t y = fp::abs_(x);
 				if (sizeof(Unit) == 8) {
 					v_[0] = y;
 				} else {
@@ -518,41 +566,67 @@ public:
 		}
 		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
 	}
+	static void add(FpT& z, const FpT& x, const FpT& y)
+	{
 #ifdef MCL_XBYAK_DIRECT_CALL
-	static void (*add)(FpT& z, const FpT& x, const FpT& y);
-	static inline void addC(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
-	static void (*sub)(FpT& z, const FpT& x, const FpT& y);
-	static inline void subC(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
-	static void (*neg)(FpT& y, const FpT& x);
-	static inline void negC(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
-	static void (*mul)(FpT& z, const FpT& x, const FpT& y);
-	static inline void mulC(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
-	static void (*sqr)(FpT& y, const FpT& x);
-	static inline void sqrC(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }
-	static void (*mul2)(FpT& y, const FpT& x);
-	static inline void mul2C(FpT& y, const FpT& x) { op_.fp_mul2(y.v_, x.v_, op_.p); }
-	static void (*mul9)(FpT& y, const FpT& x);
-	static inline void mul9C(FpT& y, const FpT& x) { mulSmall(y, x, 9); }
+		op_.fp_addA_(z.v_, x.v_, y.v_);
 #else
-	static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }
-	static inline void sub(FpT& z, const FpT& x, const FpT& y) { op_.fp_sub(z.v_, x.v_, y.v_, op_.p); }
-	static inline void neg(FpT& y, const FpT& x) { op_.fp_neg(y.v_, x.v_, op_.p); }
-	static inline void mul(FpT& z, const FpT& x, const FpT& y) { op_.fp_mul(z.v_, x.v_, y.v_, op_.p); }
-	static inline void sqr(FpT& y, const FpT& x) { op_.fp_sqr(y.v_, x.v_, op_.p); }
-	static inline void mul2(FpT& y, const FpT& x) { op_.fp_mul2(y.v_, x.v_, op_.p); }
-	static inline void mul9(FpT& y, const FpT& x) { mulSmall(y, x, 9); }
+		op_.fp_add(z.v_, x.v_, y.v_, op_.p);
 #endif
+	}
+	static void sub(FpT& z, const FpT& x, const FpT& y)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		op_.fp_subA_(z.v_, x.v_, y.v_);
+#else
+		op_.fp_sub(z.v_, x.v_, y.v_, op_.p);
+#endif
+	}
+	static void neg(FpT& y, const FpT& x)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		op_.fp_negA_(y.v_, x.v_);
+#else
+		op_.fp_neg(y.v_, x.v_, op_.p);
+#endif
+	}
+	static void mul(FpT& z, const FpT& x, const FpT& y)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		op_.fp_mulA_(z.v_, x.v_, y.v_);
+#else
+		op_.fp_mul(z.v_, x.v_, y.v_, op_.p);
+#endif
+	}
+	static void sqr(FpT& y, const FpT& x)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		op_.fp_sqrA_(y.v_, x.v_);
+#else
+		op_.fp_sqr(y.v_, x.v_, op_.p);
+#endif
+	}
+	static void mul2(FpT& y, const FpT& x)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		op_.fp_mul2A_(y.v_, x.v_);
+#else
+		op_.fp_mul2(y.v_, x.v_, op_.p);
+#endif
+	}
+	static void mul9(FpT& y, const FpT& x)
+	{
+#ifdef MCL_XBYAK_DIRECT_CALL
+		op_.fp_mul9A_(y.v_, x.v_);
+#else
+		mul9A(y.v_, x.v_);
+#endif
+	}
 	static inline void addPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_addPre(z.v_, x.v_, y.v_); }
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
 	static inline void mulSmall(FpT& z, const FpT& x, const uint32_t y)
 	{
-		assert(y <= op_.smallModp.maxMulN);
-		Unit xy[maxSize + 1];
-		op_.fp_mulUnitPre(xy, x.v_, y);
-		int v = op_.smallModp.approxMul(xy);
-		const Unit *pv = op_.smallModp.getPmul(v);
-		op_.fp_subPre(z.v_, xy, pv);
-		op_.fp_sub(z.v_, z.v_, op_.p, op_.p);
+		mulSmall(z.v_, x.v_, y);
 	}
 	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
@@ -788,15 +862,6 @@ template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
 template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 template<class tag, size_t maxBitSize> bool FpT<tag, maxBitSize>::isETHserialization_ = false;
-#ifdef MCL_XBYAK_DIRECT_CALL
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::add)(FpT& z, const FpT& x, const FpT& y);
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sub)(FpT& z, const FpT& x, const FpT& y);
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::neg)(FpT& y, const FpT& x);
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul)(FpT& z, const FpT& x, const FpT& y);
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::sqr)(FpT& y, const FpT& x);
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul2)(FpT& y, const FpT& x);
-template<class tag, size_t maxBitSize> void (*FpT<tag, maxBitSize>::mul9)(FpT& y, const FpT& x);
-#endif
 
 } // mcl
 
