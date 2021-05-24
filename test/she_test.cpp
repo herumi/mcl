@@ -770,6 +770,8 @@ CYBOZU_TEST_AUTO(liftedElGamal)
 	sec.setByCSPRNG();
 	PublicKey pub;
 	sec.getPublicKey(pub);
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
 	CipherTextG1 c1, c2, c3;
 	int m1 = 12, m2 = 34;
 	pub.enc(c1, m1);
@@ -801,4 +803,9 @@ CYBOZU_TEST_AUTO(liftedElGamal)
 	PublicKey pub3;
 	sec2.getPublicKey(pub3);
 	CYBOZU_TEST_EQUAL(pub, pub3);
+	const int C = 500;
+	CYBOZU_BENCH_C("enc", C, pub.enc, c1, 5);
+	CYBOZU_BENCH_C("enc", C, ppub.enc, c2, 5);
+	CYBOZU_TEST_EQUAL(sec.dec(c1), sec.dec(c2));
+	CYBOZU_BENCH_C("add", C, add, c1, c1, c2);
 }
