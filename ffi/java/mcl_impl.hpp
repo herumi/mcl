@@ -31,7 +31,7 @@ void deserializeT(T& x, const char *cbuf, size_t bufSize)
 template<class T>
 void setLittleEndianModT(T& x, const char *cbuf, size_t bufSize)
 {
-	x.setLittleEndianMod(cbuf, bufSize);
+	x.setLittleEndianMod((const uint8_t*)cbuf, bufSize);
 }
 
 template<class T>
