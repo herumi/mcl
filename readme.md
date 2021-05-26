@@ -331,6 +331,26 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 - break backward compatibility of mapToGi for BLS12. A map-to-function for BN is used.
 If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but this will be removed in the future.
 
+# FAQ
+
+## How do I set the hash value to Fr?
+The behavior of `setHashOf` function may be a little different from what you want.
+  - https://github.com/herumi/mcl/blob/master/api.md#hash-and-mapto-functions
+  - https://github.com/herumi/mcl/blob/master/api.md#set-buf0bufsize-1-to-x-with-masking-according-to-the-following-way
+
+Please use the following code:
+```
+template<class F>
+void setHash(F& x, const void *msg, size_t msgSize)
+{
+    uint8_t md[32];
+    mcl::fp::sha256(md, sizeof(md), msg, msgSize);
+    x.setBigEndianMod(md, sizeof(md));
+    // or x.setLittleEndianMod(md, sizeof(md));
+}
+```
+
+
 # History
 
 - 2021/May/04 v1.50 support s390x(systemz)
