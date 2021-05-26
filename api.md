@@ -257,6 +257,7 @@ int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
 int mclBnFp_setStr(mclBnFp *x, const char *buf, mclSize bufSize, int ioMode);
 ```
 - set `buf[0..bufSize-1]` to `x` accoring to `ioMode`
+- deny too large bufSize. The maximum length depends on compile options, but at least the bit length of the type of x.
 - return 0 if success else -1
 
 If you want to use the same generators of BLS12-381 with [zkcrypto](https://github.com/zkcrypto/pairing/tree/master/src/bls12_381#g2) then,
