@@ -399,25 +399,6 @@ struct MapTo {
 #endif
 	}
 	/*
-		1.2~1.4 times faster than calBN
-	*/
-	template<class G, class F>
-	void naiveMapTo(G& P, const F& t) const
-	{
-		F x = t;
-		for (;;) {
-			F y;
-			G::getWeierstrass(y, x);
-			if (F::squareRoot(y, y)) {
-				bool b;
-				P.set(&b, x, y, false);
-				assert(b);
-				return;
-			}
-			*x.getFp0() += Fp::one();
-		}
-	}
-	/*
 		#(Fp) / r = (z + 1 - t) / r = (z - 1)^2 / 3
 	*/
 	void mulByCofactorBLS12(G1& Q, const G1& P) const
@@ -534,7 +515,7 @@ struct MapTo {
 	bool mapToEc(G& P, const F& t) const
 	{
 		if (mapToMode_ == MCL_MAP_TO_MODE_TRY_AND_INC) {
-			naiveMapTo<G, F>(P, t);
+			ec::tryAndIncMapTo<G>(P, t);
 		} else {
 			if (!calcBN<G, F>(P, t)) return false;
 		}

@@ -738,6 +738,24 @@ void addAffine(E& R, const E& P, const E& Q)
 	R.x = x3;
 }
 
+template<class E>
+void tryAndIncMapTo(E& P, const typename E::Fp& t)
+{
+	typedef typename E::Fp F;
+	F x = t;
+	for (;;) {
+		F y;
+		E::getWeierstrass(y, x);
+		if (F::squareRoot(y, y)) {
+			bool b;
+			P.set(&b, x, y, false);
+			assert(b);
+			return;
+		}
+		*x.getFp0() += F::BaseFp::one();
+	}
+}
+
 } // mcl::ec
 
 /*
