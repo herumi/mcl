@@ -702,17 +702,17 @@ CYBOZU_TEST_AUTO(multi)
 	testCurve(mcl::BN254);
 	i = 1;
 	CYBOZU_BENCH_C("calcBN1", 100, (BN::param.mapTo.calcBN<G1, Fp>), P, i++);
-	CYBOZU_BENCH_C("naiveG2", 100, (BN::param.mapTo.naiveMapTo<G1, Fp>), P, i++);
+	CYBOZU_BENCH_C("naiveG2", 100, (mcl::ec::tryAndIncMapTo<G1>), P, i++);
 	CYBOZU_BENCH_C("calcBN2", 100, (BN::param.mapTo.calcBN<G2, Fp2>), Q, i++);
-	CYBOZU_BENCH_C("naiveG2", 100, (BN::param.mapTo.naiveMapTo<G2, Fp2>), Q, i++);
+	CYBOZU_BENCH_C("naiveG2", 100, (mcl::ec::tryAndIncMapTo<G2>), Q, i++);
 #endif
 	puts("BLS12_381");
 	testCurve(mcl::BLS12_381);
 	i = 1;
 	CYBOZU_BENCH_C("calcBN1", 100, (BN::param.mapTo.calcBN<G1, Fp>), P, i++);
-	CYBOZU_BENCH_C("naiveG1", 100, (BN::param.mapTo.naiveMapTo<G1, Fp>), P, i++);
+	CYBOZU_BENCH_C("naiveG1", 100, (mcl::ec::tryAndIncMapTo<G1>), P, i++);
 	CYBOZU_BENCH_C("calcBN2", 100, (BN::param.mapTo.calcBN<G2, Fp2>), Q, i++);
-	CYBOZU_BENCH_C("naiveG2", 100, (BN::param.mapTo.naiveMapTo<G2, Fp2>), Q, i++);
+	CYBOZU_BENCH_C("naiveG2", 100, (mcl::ec::tryAndIncMapTo<G2>), Q, i++);
 }
 
 CYBOZU_TEST_AUTO(deserialize)
