@@ -153,8 +153,23 @@ public class MclTest {
 		Mcl.pairing(e2, sign, Q); // e2 = e(s H, Q);
 		assertBool("verify signature", e1.equals(e2));
 	}
+	public static void testG1Curve(int curveType, String name) {
+		try {
+			System.out.println("curve=" + name);
+			Mcl.SystemInit(curveType);
+			Fp x = new Fp(123);
+			G1 P = new G1();
+			P.tryAndIncMapTo(x);
+			P.normalize();
+			System.out.println("P.x=" + P.getX());
+			System.out.println("P.y=" + P.getY());
+		} catch (RuntimeException e) {
+			System.out.println("unknown exception :" + e);
+		}
+	}
 	public static void main(String argv[]) {
 		testCurve(Mcl.BN254, "BN254");
 		testCurve(Mcl.BLS12_381, "BLS12_381");
+		testG1Curve(Mcl.SECP256K1, "SECP256K1");
 	}
 }

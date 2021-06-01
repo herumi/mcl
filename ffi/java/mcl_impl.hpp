@@ -9,6 +9,10 @@
 
 void SystemInit(int curveType) throw(std::exception)
 {
+	if (curveType == MCL_SECP256K1) {
+		mcl::initCurve<mcl::bn::G1, mcl::bn::Fr>(curveType);
+		return;
+	}
 	mcl::CurveParam cp;
 	switch (curveType) {
 	case MCL_BN254: cp = mcl::BN254; break;
@@ -274,6 +278,32 @@ public:
 	{
 		serializeT(out, self_);
 	}
+	void normalize()
+	{
+		self_.normalize();
+	}
+	void tryAndIncMapTo(const Fp& x)
+	{
+		mcl::ec::tryAndIncMapTo(self_, x.self_);
+	}
+	Fp getX() const
+	{
+		Fp ret;
+		ret.self_ = self_.x;
+		return ret;
+	}
+	Fp getY() const
+	{
+		Fp ret;
+		ret.self_ = self_.y;
+		return ret;
+	}
+	Fp getZ() const
+	{
+		Fp ret;
+		ret.self_ = self_.z;
+		return ret;
+	}
 };
 
 void neg(G1& y, const G1& x)
@@ -344,6 +374,10 @@ public:
 	void serialize(std::string& out) const throw(std::exception)
 	{
 		serializeT(out, self_);
+	}
+	void normalize()
+	{
+		self_.normalize();
 	}
 };
 

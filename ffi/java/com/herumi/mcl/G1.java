@@ -90,4 +90,24 @@ public class G1 {
 
   public byte[] serialize() { return MclJNI.G1_serialize(swigCPtr, this); }
 
+  public void normalize() {
+    MclJNI.G1_normalize(swigCPtr, this);
+  }
+
+  public void tryAndIncMapTo(Fp x) {
+    MclJNI.G1_tryAndIncMapTo(swigCPtr, this, Fp.getCPtr(x), x);
+  }
+
+  public Fp getX() {
+    return new Fp(MclJNI.G1_getX(swigCPtr, this), true);
+  }
+
+  public Fp getY() {
+    return new Fp(MclJNI.G1_getY(swigCPtr, this), true);
+  }
+
+  public Fp getZ() {
+    return new Fp(MclJNI.G1_getZ(swigCPtr, this), true);
+  }
+
 }

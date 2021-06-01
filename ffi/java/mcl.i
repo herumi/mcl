@@ -26,4 +26,5 @@
 %javaconst(1);
 #define BN254 0
 #define BLS12_381 5
+#define SECP256K1 102
 

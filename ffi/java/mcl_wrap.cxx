@@ -1906,6 +1906,80 @@ SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_G1_1serialize(JNIEnv *j
 }
 
 
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1normalize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  G1 *arg1 = (G1 *) 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(G1 **)&jarg1; 
+  (arg1)->normalize();
+}
+
+
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G1_1tryAndIncMapTo(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  G1 *arg1 = (G1 *) 0 ;
+  Fp *arg2 = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(G1 **)&jarg1; 
+  arg2 = *(Fp **)&jarg2;
+  if (!arg2) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Fp const & reference is null");
+    return ;
+  } 
+  (arg1)->tryAndIncMapTo((Fp const &)*arg2);
+}
+
+
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_G1_1getX(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jlong jresult = 0 ;
+  G1 *arg1 = (G1 *) 0 ;
+  Fp result;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(G1 **)&jarg1; 
+  result = ((G1 const *)arg1)->getX();
+  *(Fp **)&jresult = new Fp((const Fp &)result); 
+  return jresult;
+}
+
+
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_G1_1getY(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jlong jresult = 0 ;
+  G1 *arg1 = (G1 *) 0 ;
+  Fp result;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(G1 **)&jarg1; 
+  result = ((G1 const *)arg1)->getY();
+  *(Fp **)&jresult = new Fp((const Fp &)result); 
+  return jresult;
+}
+
+
+SWIGEXPORT jlong JNICALL Java_com_herumi_mcl_MclJNI_G1_1getZ(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  jlong jresult = 0 ;
+  G1 *arg1 = (G1 *) 0 ;
+  Fp result;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(G1 **)&jarg1; 
+  result = ((G1 const *)arg1)->getZ();
+  *(Fp **)&jresult = new Fp((const Fp &)result); 
+  return jresult;
+}
+
+
 SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1G1(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   G1 *arg1 = (G1 *) 0 ;
   
@@ -2370,6 +2444,17 @@ SWIGEXPORT jbyteArray JNICALL Java_com_herumi_mcl_MclJNI_G2_1serialize(JNIEnv *j
     jenv->SetByteArrayRegion(jresult, 0, arg2->size(), (const jbyte*)arg2->c_str());
   }
   return jresult;
+}
+
+
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_G2_1normalize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+  G2 *arg1 = (G2 *) 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(G2 **)&jarg1; 
+  (arg1)->normalize();
 }
 
 

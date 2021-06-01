@@ -86,4 +86,8 @@ public class G2 {
 
   public byte[] serialize() { return MclJNI.G2_serialize(swigCPtr, this); }
 
+  public void normalize() {
+    MclJNI.G2_normalize(swigCPtr, this);
+  }
+
 }

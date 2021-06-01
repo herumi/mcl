@@ -83,6 +83,11 @@ public class MclJNI {
   public final static native String G1_toString__SWIG_1(long jarg1, G1 jarg1_);
   public final static native void G1_deserialize(long jarg1, G1 jarg1_, byte[] jarg2);
   public final static native byte[] G1_serialize(long jarg1, G1 jarg1_);
+  public final static native void G1_normalize(long jarg1, G1 jarg1_);
+  public final static native void G1_tryAndIncMapTo(long jarg1, G1 jarg1_, long jarg2, Fp jarg2_);
+  public final static native long G1_getX(long jarg1, G1 jarg1_);
+  public final static native long G1_getY(long jarg1, G1 jarg1_);
+  public final static native long G1_getZ(long jarg1, G1 jarg1_);
   public final static native void delete_G1(long jarg1);
   public final static native void neg__SWIG_3(long jarg1, G2 jarg1_, long jarg2, G2 jarg2_);
   public final static native void dbl__SWIG_1(long jarg1, G2 jarg1_, long jarg2, G2 jarg2_);
@@ -102,6 +107,7 @@ public class MclJNI {
   public final static native String G2_toString__SWIG_1(long jarg1, G2 jarg1_);
   public final static native void G2_deserialize(long jarg1, G2 jarg1_, byte[] jarg2);
   public final static native byte[] G2_serialize(long jarg1, G2 jarg1_);
+  public final static native void G2_normalize(long jarg1, G2 jarg1_);
   public final static native void delete_G2(long jarg1);
   public final static native void mul__SWIG_4(long jarg1, GT jarg1_, long jarg2, GT jarg2_, long jarg3, GT jarg3_);
   public final static native void inv__SWIG_2(long jarg1, GT jarg1_, long jarg2, GT jarg2_);
