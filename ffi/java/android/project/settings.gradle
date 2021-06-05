@@ -1,0 +1,2 @@
+include ':mcl-android'
+rootProject.name = "Mcl Android Lib"
