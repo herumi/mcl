@@ -1057,12 +1057,12 @@ CYBOZU_TEST_AUTO(convertArrayAsLE)
 		mcl::fp::convertArrayAsLE(dst, dstN, ok, i);
 		if (i < sizeof(Unit)) {
 			CYBOZU_TEST_EQUAL(src[0] & ((uint64_t(1) << (i * 8)) - 1), dst[0]);
-			CYBOZU_TEST_EQUAL(dst[1], 0);
+			CYBOZU_TEST_EQUAL(dst[1], 0u);
 			continue;
 		}
 		CYBOZU_TEST_EQUAL(dst[0], src[0]);
 		if (i == sizeof(Unit)) {
-			CYBOZU_TEST_EQUAL(dst[1], 0);
+			CYBOZU_TEST_EQUAL(dst[1], 0u);
 			continue;
 		}
 		if (i < sizeof(dst)) {
