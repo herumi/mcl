@@ -500,7 +500,7 @@ struct MapTo {
 	void init(const mpz_class& cofactor, const mpz_class &z, int curveType)
 	{
 		if (0 <= curveType && curveType < MCL_EC_BEGIN) {
-			type_ = curveType == MCL_BLS12_381 ? BLS12type : BNtype;
+			type_ = (curveType == MCL_BLS12_381 || curveType == MCL_BLS12_461) ? BLS12type : BNtype;
 		} else {
 			type_ = STD_ECtype;
 		}
@@ -835,7 +835,7 @@ struct Param {
 	void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	{
 		this->cp = cp;
-		isBLS12 = cp.curveType == MCL_BLS12_381;
+		isBLS12 = (cp.curveType == MCL_BLS12_381) || (cp.curveType == MCL_BLS12_461);
 #ifdef MCL_STATIC_CODE
 		if (!isBLS12) {
 			*pb = false;

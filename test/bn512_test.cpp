@@ -43,6 +43,8 @@ void testCurve(const mcl::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(pairing)
 {
+	puts("BLS12_461");
+	testCurve(mcl::BLS12_461);
 	puts("BN462");
 	testCurve(mcl::BN462);
 	puts("BN381_1");
