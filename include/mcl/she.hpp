@@ -20,7 +20,8 @@
 #elif MCLBN_FP_UNIT_SIZE == 8
 #include <mcl/bn512.hpp>
 #else
-	#error "MCLBN_FP_UNIT_SIZE must be 4, 6, or 8"
+#define MCL_MAX_FP_BIT_SIZE (MCLBN_FP_UNIT_SIZE * 64)
+#include <mcl/bn.hpp>
 #endif
 
 #include <mcl/window_method.hpp>
