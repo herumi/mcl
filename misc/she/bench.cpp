@@ -129,6 +129,7 @@ void exec(const std::string& mode, int addN, int vecN)
 	if (mode == "loadsave") {
 		loadSave(sec, pub, false);
 		loadSave(sec, pub, true);
+		return;
 	}
 	printf("not supported mode=%s\n", mode.c_str());
 }
