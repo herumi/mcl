@@ -1,3 +1,5 @@
+// define this macro if using secp384r1
+// #define MCLBN_FP_UNIT_SIZE 6
 #include <mcl/she.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/benchmark.hpp>
