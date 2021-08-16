@@ -24,34 +24,43 @@ const int maxMsg = 10000;
 
 typedef std::vector<CipherTextG1> CipherTextG1Vec;
 
+template<class T>
+void loadSaveTest(const char *msg, const T& x, bool compress)
+{
+	std::string s;
+	// save
+	{
+		std::ostringstream oss; // you can use std::fstream
+		if (compress) {
+			cybozu::save(oss, x);
+		} else {
+			oss.write((const char*)&x, sizeof(x));
+		}
+		s = oss.str();
+		printf("size=%zd\n", s.size());
+	}
+	// load
+	{
+		std::istringstream iss(s);
+		T y;
+		if (compress) {
+			cybozu::load(y, iss);
+		} else {
+			iss.read((char*)&y, sizeof(y));
+		}
+		printf("save and load %s %s\n", msg, (x == y) ? "ok" : "err");
+	}
+}
+
 void loadSave(const SecretKey& sec, const PublicKey& pub, bool compress)
 {
 	printf("loadSave compress=%d\n", compress);
 	int m = 123;
-	std::string s;
-	{
-		CipherTextG1 c;
-		pub.enc(c, m);
-		std::ostringstream oss;
-		if (compress) {
-			cybozu::save(oss, c);
-		} else {
-			oss.write((const char*)&c, sizeof(c));
-		}
-		s = oss.str();
-		printf("s.size()=%zd\n", s.size());
-	}
-	{
-		std::istringstream iss(s);
-		CipherTextG1 c;
-		if (compress) {
-			cybozu::load(c, iss);
-		} else {
-			iss.read((char*)&c, sizeof(c));
-		}
-		int m2 = sec.dec(c);
-		printf("m2=%d\n", m2);
-	}
+	CipherTextG1 c;
+	pub.enc(c, m);
+	loadSaveTest("sec", sec, compress);
+	loadSaveTest("pub", pub, compress);
+	loadSaveTest("ciphertext", c, compress);
 }
 
 void benchEnc(const PrecomputedPublicKey& ppub, int vecN)
