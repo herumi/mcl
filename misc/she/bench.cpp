@@ -32,7 +32,8 @@ void loadSaveTest(const char *msg, const T& x, bool compress)
 	{
 		std::ostringstream oss; // you can use std::fstream
 		if (compress) {
-			cybozu::save(oss, x);
+//			cybozu::save(oss, x);
+			x.save(oss);
 		} else {
 			oss.write((const char*)&x, sizeof(x));
 		}
@@ -44,7 +45,8 @@ void loadSaveTest(const char *msg, const T& x, bool compress)
 		std::istringstream iss(s);
 		T y;
 		if (compress) {
-			cybozu::load(y, iss);
+//			cybozu::load(y, iss);
+			y.load(iss);
 		} else {
 			iss.read((char*)&y, sizeof(y));
 		}
