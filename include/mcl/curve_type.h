@@ -92,7 +92,7 @@ const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_B
 const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
 const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
 const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
-const CurveParam BLS12_461 = { "-0x1ffffffbfffe00000000", 4, 1, true, MCL_BLS12_381 };
+const CurveParam BLS12_461 = { "-0x1ffffffbfffe00000000", 4, 1, true, MCL_BLS12_461 };
 
 #ifdef __clang__
 	#pragma GCC diagnostic push
