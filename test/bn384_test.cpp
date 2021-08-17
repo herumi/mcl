@@ -51,6 +51,8 @@ CYBOZU_TEST_AUTO(pairing)
 {
 //	puts("BN160");
 //	testCurve(mcl::BN160);
+//	puts("BLS12_377");
+//	testCurve(mcl::BLS12_377);
 	puts("BN254");
 	// support 256-bit pairing
 	testCurve(mcl::BN254);
