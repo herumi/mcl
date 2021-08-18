@@ -123,4 +123,6 @@ public class MclJNI {
   public final static native void GT_deserialize(long jarg1, GT jarg1_, byte[] jarg2);
   public final static native byte[] GT_serialize(long jarg1, GT jarg1_);
   public final static native void delete_GT(long jarg1);
+  public final static native void verifyOrderG1(boolean jarg1);
+  public final static native void verifyOrderG2(boolean jarg1);
 }

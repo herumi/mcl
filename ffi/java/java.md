@@ -36,6 +36,8 @@ Mcl.SystemInit(curveType); // curveType = Mcl.BN254 or Mcl.BLS12_381
 * `Mcl.add(G1 z, G1 x, G1 y)` ; `z = x + y`
 * `Mcl.sub(G1 z, G1 x, G1 y)` ; `z = x - y`
 * `Mcl.mul(G1 z, G1 x, Fr y)` ; `z = x * y`
+* `Mcl.verifyOrderG1(boolean doVerify)` ; If set to `true`, `setStr` of `G1` will automatically check subgroup membership.
+Set to `false` by default, meaning only a on curve check is done by default.
 
 ## G2
 
@@ -44,6 +46,8 @@ Mcl.SystemInit(curveType); // curveType = Mcl.BN254 or Mcl.BLS12_381
 * `Mcl.add(G2 z, G2 x, G2 y)` ; `z = x + y`
 * `Mcl.sub(G2 z, G2 x, G2 y)` ; `z = x - y`
 * `Mcl.mul(G2 z, G2 x, Fr y)` ; `z = x * y`
+* `Mcl.verifyOrderG2(boolean doVerify)` ; If set to `true`, `setStr` of `G2` will automatically check subgroup membership.
+Set to `false` by default, meaning only a on curve check is done by default.
 
 ## GT
 
