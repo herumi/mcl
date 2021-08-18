@@ -465,6 +465,16 @@ void hashAndMapToG2(G2& P, const char *cbuf, size_t bufSize) throw(std::exceptio
 	mcl::bn::hashAndMapToG2(P.self_, cbuf, bufSize);
 }
 
+void verifyOrderG1(bool doVerify)
+{
+    mcl::bn::verifyOrderG1(doVerify);
+}
+
+void verifyOrderG2(bool doVerify)
+{
+    mcl::bn::verifyOrderG2(doVerify);
+}
+
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
