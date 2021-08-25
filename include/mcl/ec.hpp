@@ -782,6 +782,7 @@ public:
 	static mpz_class order_;
 	static void (*mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 	static size_t (*mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
+	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
 	EcT(const Fp& _x, const Fp& _y)
@@ -830,6 +831,7 @@ public:
 		order_ = 0;
 		mulArrayGLV = 0;
 		mulVecNGLV = 0;
+		isValidOrderFast = 0;
 		mode_ = mode;
 	}
 	static inline int getMode() { return mode_; }
@@ -846,6 +848,10 @@ public:
 			verifyOrder_ = false;
 			// don't clear order_ because it is used for isValidOrder()
 		}
+	}
+	static void setVerifyOrderFunc(bool f(const EcT&))
+	{
+		isValidOrderFast = f;
 	}
 	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn) = 0)
 	{
@@ -864,6 +870,9 @@ public:
 	// verify the order
 	bool isValidOrder() const
 	{
+		if (isValidOrderFast) {
+			return isValidOrderFast(*this);
+		}
 		EcT Q;
 		EcT::mulGeneric(Q, *this, order_);
 		return Q.isZero();
@@ -1641,6 +1650,7 @@ template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
 template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 template<class Fp> size_t (*EcT<Fp>::mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
+template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
 template<class Fp> int EcT<Fp>::mode_;
 
 // r = the order of Ec
