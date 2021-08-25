@@ -279,7 +279,6 @@ public:
 	}
 };
 
-
 struct MapTo {
 	enum {
 		BNtype,
@@ -2102,6 +2101,21 @@ inline void verifyOrderG2(bool doVerify)
 	G2::setOrder(doVerify ? BN::param.r : 0);
 }
 
+/*
+	Faster Subgroup Checks for BLS12-381
+	Sean Bowe, https://eprint.iacr.org/2019/814
+	Frob^2(P) - z Frob^3(P) == P
+*/
+inline bool isValidOrderBLS12(const G2& P)
+{
+	G2 T2, T3;
+	Frobenius2(T2, P);
+	Frobenius(T3, T2);
+	G2::mulGeneric(T3, T3, BN::param.z);
+	T2 -= T3;
+	return T2 == P;
+}
+
 // backward compatibility
 using mcl::CurveParam;
 static const CurveParam& CurveFp254BNb = BN254;
@@ -2157,6 +2171,9 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	G2::setCompressedExpression();
 	verifyOrderG1(false);
 	verifyOrderG2(false);
+	if (BN::param.isBLS12) {
+		G2::setVerifyOrderFunc(isValidOrderBLS12);
+	}
 	*pb = true;
 }
 
