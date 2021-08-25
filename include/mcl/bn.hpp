@@ -294,12 +294,10 @@ struct MapTo {
 	Fr g2cofactorAdjInv_;
 	int type_;
 	int mapToMode_;
-	bool useOriginalG2cofactor_;
 	MapTo_WB19<Fp, G1, Fp2, G2> mapTo_WB19_;
 	MapTo()
 		: type_(0)
 		, mapToMode_(MCL_MAP_TO_MODE_ORIGINAL)
-		, useOriginalG2cofactor_(false)
 	{
 	}
 
@@ -422,13 +420,9 @@ struct MapTo {
 		Frobenius2(T1, T1);
 		G2::add(Q, T0, T1);
 	}
-	void mulByCofactorBLS12(G2& Q, const G2& P, bool fast = false) const
+	void mulByCofactorBLS12(G2& Q, const G2& P) const
 	{
 		mulByCofactorBLS12fast(Q, P);
-		if (useOriginalG2cofactor_ && !fast) {
-			Q *= g2cofactorAdj_;
-			return;
-		}
 	}
 	/*
 		cofactor_ is for G2(not used now)
@@ -532,14 +526,14 @@ struct MapTo {
 		}
 		assert(P.isValid());
 	}
-	void mulByCofactor(G2& P, bool fast = false) const
+	void mulByCofactor(G2& P) const
 	{
 		switch(type_) {
 		case BNtype:
 			mulByCofactorBN(P, P);
 			break;
 		case BLS12type:
-			mulByCofactorBLS12(P, P, fast);
+			mulByCofactorBLS12(P, P);
 			break;
 		}
 		assert(P.isValid());
@@ -554,14 +548,14 @@ struct MapTo {
 		mulByCofactor(P);
 		return true;
 	}
-	bool calc(G2& P, const Fp2& t, bool fast = false) const
+	bool calc(G2& P, const Fp2& t) const
 	{
 		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
 			mapTo_WB19_.Fp2ToG2(P, t);
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
-		mulByCofactor(P, fast);
+		mulByCofactor(P);
 		return true;
 	}
 };
@@ -2034,7 +2028,7 @@ inline int getMapToMode()
 	return BN::param.mapTo.mapToMode_;
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
-inline void mapToG2(bool *pb, G2& P, const Fp2& x, bool fast = false) { *pb = BN::param.mapTo.calc(P, x, fast); }
+inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void mapToG1(G1& P, const Fp& x)
 {
@@ -2042,10 +2036,10 @@ inline void mapToG1(G1& P, const Fp& x)
 	mapToG1(&b, P, x);
 	if (!b) throw cybozu::Exception("mapToG1:bad value") << x;
 }
-inline void mapToG2(G2& P, const Fp2& x, bool fast = false)
+inline void mapToG2(G2& P, const Fp2& x)
 {
 	bool b;
-	mapToG2(&b, P, x, fast);
+	mapToG2(&b, P, x);
 	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
 }
 #endif
