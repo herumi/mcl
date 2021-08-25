@@ -2760,6 +2760,26 @@ SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_delete_1GT(JNIEnv *jenv, jcla
 }
 
 
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_verifyOrderG1(JNIEnv *jenv, jclass jcls, jboolean jarg1) {
+  bool arg1 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = jarg1 ? true : false; 
+  verifyOrderG1(arg1);
+}
+
+
+SWIGEXPORT void JNICALL Java_com_herumi_mcl_MclJNI_verifyOrderG2(JNIEnv *jenv, jclass jcls, jboolean jarg1) {
+  bool arg1 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = jarg1 ? true : false; 
+  verifyOrderG2(arg1);
+}
+
+
 #ifdef __cplusplus
 }
 #endif

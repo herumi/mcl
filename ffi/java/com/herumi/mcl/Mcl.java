@@ -125,4 +125,12 @@ public class Mcl implements MclConstants {
     MclJNI.inv__SWIG_2(GT.getCPtr(y), y, GT.getCPtr(x), x);
   }
 
+  public static void verifyOrderG1(boolean doVerify) {
+    MclJNI.verifyOrderG1(doVerify);
+  }
+
+  public static void verifyOrderG2(boolean doVerify) {
+    MclJNI.verifyOrderG2(doVerify);
+  }
+
 }
