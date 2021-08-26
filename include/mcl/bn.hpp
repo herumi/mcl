@@ -288,6 +288,7 @@ struct MapTo {
 	Fp c1_; // sqrt(-3)
 	Fp c2_; // (-1 + sqrt(-3)) / 2
 	mpz_class z_;
+	mpz_class z2_;
 	mpz_class cofactor_;
 	mpz_class g2cofactor_;
 	Fr g2cofactorAdj_;
@@ -448,6 +449,7 @@ struct MapTo {
 	void initBLS12(const mpz_class& z)
 	{
 		z_ = z;
+		z2_ = (z_ * z_ - 1) / 3;
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
 		const int g2Coff[] = { 13, -4, -4, 6, -4, 0, 5, -4, 1 };
@@ -2109,6 +2111,24 @@ inline bool isValidOrderBLS12(const G2& P)
 	T2 -= T3;
 	return T2 == P;
 }
+/*
+	z2 = (z^2-1)/3, c2 = (-1 + sqrt(-3))/2
+	P = (x, y), T1 = (c2 x, y), T0 = (c2^2 x, y)
+	z2(2 T0 - P - T1) == T1
+*/
+inline bool isValidOrderBLS12(const G1& P)
+{
+	G1 T0, T1;
+	T1 = P;
+	T1.x *= BN::param.mapTo.c2_;
+	T0 = T1;
+	T0.x *= BN::param.mapTo.c2_;
+	G1::dbl(T0, T0);
+	T0 -= P;
+	T0 -= T1;
+	G1::mulGeneric(T0, T0, BN::param.mapTo.z2_);
+	return T0 == T1;
+}
 
 // backward compatibility
 using mcl::CurveParam;
@@ -2166,6 +2186,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	verifyOrderG1(false);
 	verifyOrderG2(false);
 	if (BN::param.isBLS12) {
+		G1::setVerifyOrderFunc(isValidOrderBLS12);
 		G2::setVerifyOrderFunc(isValidOrderBLS12);
 	}
 	*pb = true;
