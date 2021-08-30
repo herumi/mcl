@@ -152,6 +152,7 @@ size_t (*Operator<T, E>::powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec,
 */
 template<class T, class E = Empty<T> >
 struct Serializable : public E {
+	// may set *pb = false if the size of str is too large.
 	void setStr(bool *pb, const char *str, int ioMode = 0)
 	{
 		size_t len = strlen(str);
@@ -167,6 +168,7 @@ struct Serializable : public E {
 		return n;
 	}
 #ifndef CYBOZU_DONT_USE_STRING
+	// may throw exception if the size of str is too large.
 	void setStr(const std::string& str, int ioMode = 0)
 	{
 		cybozu::StringInputStream is(str);
