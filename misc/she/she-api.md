@@ -313,6 +313,8 @@ PK means PublicKey or PrecomputedPublicKey
 * `void init(curveType = she.BN254, hashSize = 1024, tryNum = 2048)`(JS)
     * initialize a table to solve a DLP with `hashSize` size and set maximum trying count `tryNum`.
     * the range `m` to be solvable is |m| <= hashSize * tryNum
+* `void initG1only(int curveType, size_t hashSize = 1024, size_t tryNum = 2048)`(C++)
+    * init only G1 (for Lifted ElGamal Encryption with SECP256K1)
 * `getHashTableGT().load(InputStream& is)`(C++)
 * `she.loadTableForGTDLP(Uint8Array a)`(JS)
     * load a DLP table for CipherTextGT
