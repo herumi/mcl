@@ -56,30 +56,9 @@ int sheInit(int curve, int compiledTimeVar)
 	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {
 		return -2;
 	}
-	mcl::CurveParam cp;
-	switch (curve) {
-	case MCL_BN254:
-		cp = mcl::BN254;
-		break;
-	case MCL_BN381_1:
-		cp = mcl::BN381_1;
-		break;
-	case MCL_BN381_2:
-		cp = mcl::BN381_2;
-		break;
-	case MCL_BN462:
-		cp = mcl::BN462;
-		break;
-	case MCL_BN_SNARK1:
-		cp = mcl::BN_SNARK1;
-		break;
-	case MCL_BLS12_381:
-		cp = mcl::BLS12_381;
-		break;
-	default:
-		return -1;
-	}
-	SHE::init(cp);
+	const mcl::CurveParam *cp = mcl::getCurveParam(curve);
+	if (cp == 0) return -3;
+	SHE::init(*cp);
 	return 0;
 } catch (std::exception&) {
 	return -1;
