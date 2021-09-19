@@ -99,6 +99,9 @@ typedef struct {
 */
 MCLSHE_DLL_API int sheInit(int curve, int compiledTimeVar);
 
+// initialize this library for only G1 (such as MCL_SECP256K1)
+MCLSHE_DLL_API int sheInitG1only(int curve, int compiledTimeVar);
+
 // return written byte size if success else 0
 MCLSHE_DLL_API mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec);
 MCLSHE_DLL_API mclSize shePublicKeySerialize(void *buf, mclSize maxBufSize, const shePublicKey *pub);

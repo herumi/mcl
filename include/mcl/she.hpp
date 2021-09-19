@@ -662,14 +662,18 @@ public:
 	/*
 		standard lifted ElGamal encryption
 	*/
-	static void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	static void initG1only(int curveType, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 	{
-		mcl::initCurve<G1, Fr>(para.curveType, &P_);
+		mcl::initCurve<G1, Fr>(curveType, &P_);
 		setRangeForG1DLP(hashSize);
 		useDecG1ViaGT_ = false;
 		useDecG2ViaGT_ = false;
 		isG1only_ = true;
 		setTryNum(tryNum);
+	}
+	static void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	{
+		initG1only(para.curveType, hashSize, tryNum);
 	}
 	/*
 		set range for G1-DLP
@@ -2054,9 +2058,13 @@ inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024,
 {
 	SHE::init(cp, hashSize, tryNum);
 }
+inline void initG1only(int curveType, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+{
+	SHE::initG1only(curveType, hashSize, tryNum);
+}
 inline void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
 {
-	SHE::initG1only(para, hashSize, tryNum);
+	initG1only(para.curveType, hashSize, tryNum);
 }
 inline void init(size_t hashSize, size_t tryNum = local::defaultTryNum) { SHE::init(hashSize, tryNum); }
 inline void setRangeForG1DLP(size_t hashSize) { SHE::setRangeForG1DLP(hashSize); }

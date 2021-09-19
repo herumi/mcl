@@ -64,6 +64,18 @@ int sheInit(int curve, int compiledTimeVar)
 	return -1;
 }
 
+int sheInitG1only(int curve, int compiledTimeVar)
+	try
+{
+	if (compiledTimeVar != MCLBN_COMPILED_TIME_VAR) {
+		return -2;
+	}
+	SHE::initG1only(curve);
+	return 0;
+} catch (std::exception&) {
+	return -1;
+}
+
 mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec)
 {
 	return (mclSize)cast(sec)->serialize(buf, maxBufSize);
