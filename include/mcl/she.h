@@ -317,6 +317,12 @@ MCLSHE_DLL_API void shePrecomputedPublicKeyDestroy(shePrecomputedPublicKey *ppub
 // return 0 if success
 MCLSHE_DLL_API int shePrecomputedPublicKeyInit(shePrecomputedPublicKey *ppub, const shePublicKey *pub);
 
+// return 1 if x == y else 0
+MCLSHE_DLL_API int sheSecretKeyIsEqual(const sheSecretKey *x, const sheSecretKey *y);
+MCLSHE_DLL_API int shePublicKeyIsEqual(const shePublicKey *x, const shePublicKey *y);
+MCLSHE_DLL_API int sheCipherTextG1IsEqual(const sheCipherTextG1 *x, const sheCipherTextG1 *y);
+MCLSHE_DLL_API int sheCipherTextG2IsEqual(const sheCipherTextG2 *x, const sheCipherTextG2 *y);
+MCLSHE_DLL_API int sheCipherTextGTIsEqual(const sheCipherTextGT *x, const sheCipherTextGT *y);
 #ifdef __cplusplus
 }
 #endif

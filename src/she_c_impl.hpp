@@ -817,3 +817,27 @@ int sheVerifyZkpDecGT(const sheAuxiliaryForZkpDecGT *aux, const sheCipherTextGT 
 	return cast(aux)->verify(*cast(ct), m, *cast(zkp));
 }
 
+int sheSecretKeyIsEqual(const sheSecretKey *x, const sheSecretKey *y)
+{
+	return *cast(x) == *cast(y) ? 1 : 0;
+}
+
+int shePublicKeyIsEqual(const shePublicKey *x, const shePublicKey *y)
+{
+	return *cast(x) == *cast(y) ? 1 : 0;
+}
+
+int sheCipherTextG1IsEqual(const sheCipherTextG1 *x, const sheCipherTextG1 *y)
+{
+	return *cast(x) == *cast(y) ? 1 : 0;
+}
+
+int sheCipherTextG2IsEqual(const sheCipherTextG2 *x, const sheCipherTextG2 *y)
+{
+	return *cast(x) == *cast(y) ? 1 : 0;
+}
+
+int sheCipherTextGTIsEqual(const sheCipherTextGT *x, const sheCipherTextGT *y)
+{
+	return *cast(x) == *cast(y) ? 1 : 0;
+}
