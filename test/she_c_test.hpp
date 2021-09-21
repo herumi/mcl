@@ -24,6 +24,7 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(ret, 0);
 	ret = sheSetRangeForDLP(hashSize);
 	CYBOZU_TEST_EQUAL(ret, 0);
+	sheSetTryNum(tryNum);
 }
 
 CYBOZU_TEST_AUTO(encDec)
