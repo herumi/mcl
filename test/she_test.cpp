@@ -152,12 +152,13 @@ void HashTableTest(const G& P)
 {
 	mcl::she::local::HashTable<G> hashTbl, hashTbl2;
 	const int maxSize = 100;
-	const int tryNum = 3;
+	const int tryNum = 9;
 	hashTbl.init(P, maxSize, tryNum);
 	GAHashTableTest(maxSize, tryNum, P, hashTbl);
 	std::stringstream ss;
 	hashTbl.save(ss);
 	hashTbl2.load(ss);
+	hashTbl2.setTryNum(tryNum);
 	GAHashTableTest(maxSize, tryNum, P, hashTbl2);
 }
 
@@ -204,6 +205,7 @@ CYBOZU_TEST_AUTO(GTHashTable)
 	std::stringstream ss;
 	hashTbl.save(ss);
 	hashTbl2.load(ss);
+	hashTbl2.setTryNum(tryNum);
 	GTHashTableTest(maxSize, tryNum, g, hashTbl2);
 }
 
@@ -633,6 +635,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 #if !defined(PAPER) && defined(NDEBUG)
 CYBOZU_TEST_AUTO(hashBench)
 {
+	setTryNum(1024);
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
 	const int C = 500;

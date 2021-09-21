@@ -40,7 +40,8 @@ namespace local {
 	#define MCLSHE_WIN_SIZE 10
 #endif
 static const size_t winSize = MCLSHE_WIN_SIZE;
-static const size_t defaultTryNum = 2048;
+static const size_t defaultHashSize = 1024;
+static const size_t defaultTryNum = 1;
 
 struct KeyCount {
 	uint32_t key;
@@ -136,7 +137,7 @@ public:
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
-	void init(const G& P, size_t hashSize, size_t tryNum = local::defaultTryNum)
+	void init(const G& P, size_t hashSize)
 	{
 		if (hashSize == 0) {
 			kcv_.clear();
@@ -144,7 +145,6 @@ public:
 		}
 		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
 		P_ = P;
-		tryNum_ = tryNum;
 		kcv_.resize(hashSize);
 		G xP;
 		I::clear(xP);
@@ -163,6 +163,11 @@ public:
 		*/
 		std::stable_sort(kcv_.begin(), kcv_.end());
 		setWindowMethod();
+	}
+	void init(const G& P, size_t hashSize, size_t tryNum)
+	{
+		init(P, hashSize);
+		setTryNum(tryNum);
 	}
 	void setTryNum(size_t tryNum)
 	{
@@ -250,7 +255,7 @@ public:
 			*pok = false;
 			return 0;
 		}
-		throw cybozu::Exception("HashTable:log:not found");
+		throw cybozu::Exception("HashTable:log:not found:tryNum") << tryNum_;
 	}
 	/*
 		remark
@@ -642,7 +647,7 @@ public:
 		}
 	};
 
-	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
 		initPairing(cp);
 		hashAndMapToG1(P_, "0");
@@ -655,14 +660,10 @@ public:
 		isG1only_ = false;
 		setTryNum(tryNum);
 	}
-	static void init(size_t hashSize, size_t tryNum = local::defaultTryNum)
-	{
-		init(mcl::BN254, hashSize, tryNum);
-	}
 	/*
 		standard lifted ElGamal encryption
 	*/
-	static void initG1only(int curveType, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	static void initG1only(int curveType, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
 		mcl::initCurve<G1, Fr>(curveType, &P_);
 		setRangeForG1DLP(hashSize);
@@ -671,7 +672,7 @@ public:
 		isG1only_ = true;
 		setTryNum(tryNum);
 	}
-	static void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	static void initG1only(const mcl::EcParam& para, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
 		initG1only(para.curveType, hashSize, tryNum);
 	}
@@ -2054,19 +2055,18 @@ typedef SHE::ZkpDec ZkpDec;
 typedef SHE::AuxiliaryForZkpDecGT AuxiliaryForZkpDecGT;
 typedef SHE::ZkpDecGT ZkpDecGT;
 
-inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 {
 	SHE::init(cp, hashSize, tryNum);
 }
-inline void initG1only(int curveType, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+inline void initG1only(int curveType, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 {
 	SHE::initG1only(curveType, hashSize, tryNum);
 }
-inline void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+inline void initG1only(const mcl::EcParam& para, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 {
 	initG1only(para.curveType, hashSize, tryNum);
 }
-inline void init(size_t hashSize, size_t tryNum = local::defaultTryNum) { SHE::init(hashSize, tryNum); }
 inline void setRangeForG1DLP(size_t hashSize) { SHE::setRangeForG1DLP(hashSize); }
 inline void setRangeForG2DLP(size_t hashSize) { SHE::setRangeForG2DLP(hashSize); }
 inline void setRangeForGTDLP(size_t hashSize) { SHE::setRangeForGTDLP(hashSize); }
