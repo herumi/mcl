@@ -368,52 +368,49 @@ private:
 		(void)suf;
 #endif
 
-		align(16);
-		op.fp_addPre = gen_addSubPre(true, pn_);
-		setFuncInfo(prof_, suf, "_addPre", op.fp_addPre, getCurr());
+		if (gen_addSubPre(op.fp_addPre, true, pn_)) {
+			setFuncInfo(prof_, suf, "_addPre", op.fp_addPre, getCurr());
+		}
 
-		align(16);
-		op.fp_subPre = gen_addSubPre(false, pn_);
-		setFuncInfo(prof_, suf, "_subPre", op.fp_subPre, getCurr());
+		if (gen_addSubPre(op.fp_subPre, false, pn_)) {
+			setFuncInfo(prof_, suf, "_subPre", op.fp_subPre, getCurr());
+		}
 
-		align(16);
-		op.fp_addA_ = gen_fp_add();
-		setFuncInfo(prof_, suf, "_add", op.fp_addA_, getCurr());
+		if (gen_fp_add(op.fp_addA_)) {
+			setFuncInfo(prof_, suf, "_add", op.fp_addA_, getCurr());
+		}
 
-		align(16);
-		op.fp_subA_ = gen_fp_sub();
-		setFuncInfo(prof_, suf, "_sub", op.fp_subA_, getCurr());
+		if (gen_fp_sub(op.fp_subA_)) {
+			setFuncInfo(prof_, suf, "_sub", op.fp_subA_, getCurr());
+		}
 
-		align(16);
-		op.fp_shr1 = gen_shr1();
-		setFuncInfo(prof_, suf, "_shr1", op.fp_shr1, getCurr());
+		if (gen_shr1(op.fp_shr1)) {
+			setFuncInfo(prof_, suf, "_shr1", op.fp_shr1, getCurr());
+		}
 
-		align(16);
-		op.fp_mul2A_ = gen_mul2();
-		setFuncInfo(prof_, suf, "_mul2", op.fp_mul2A_, getCurr());
+		if (gen_mul2(op.fp_mul2A_)) {
+			setFuncInfo(prof_, suf, "_mul2", op.fp_mul2A_, getCurr());
+		}
 
-		align(16);
-		op.fp_negA_ = gen_fp_neg();
-		setFuncInfo(prof_, suf, "_neg", op.fp_negA_, getCurr());
-		align(16);
-		op.fpDbl_modA_ = gen_fpDbl_mod(op);
-		setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
+		if (gen_fp_neg(op.fp_negA_)) {
+			setFuncInfo(prof_, suf, "_neg", op.fp_negA_, getCurr());
+		}
+		if (gen_fpDbl_mod(op.fpDbl_modA_, op)) {
+			setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
+		}
 
-		if (op.primeMode != PM_NIST_P192 && op.N <= 6) { // support general op.N but not fast for op.N > 4
-			align(16);
-			op.fp_preInv = getCurr<int2u>();
-			gen_preInv();
+		if (gen_preInv(op.fp_preInv, op)) {
 			setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
 		}
 
 		// call from Fp::mul and Fp::sqr
-		align(16);
-		gen_fpDbl_mulPre(op.fpDbl_mulPre);
-		setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
+		if (gen_fpDbl_mulPre(op.fpDbl_mulPre)) {
+			setFuncInfo(prof_, suf, "Dbl_mulPre", op.fpDbl_mulPre, getCurr());
+		}
 
-		align(16);
-		gen_fpDbl_sqrPre(op.fpDbl_sqrPre);
-		setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
+		if (gen_fpDbl_sqrPre(op.fpDbl_sqrPre)) {
+			setFuncInfo(prof_, suf, "Dbl_sqrPre", op.fpDbl_sqrPre, getCurr());
+		}
 		align(16);
 		op.fp_mulA_ = gen_mul();
 		setFuncInfo(prof_, suf, "_mul", op.fp_mulA_, getCurr());
@@ -435,13 +432,13 @@ private:
 		op.fpDbl_subA_ = gen_fpDbl_sub();
 		setFuncInfo(prof_, suf, "Dbl_sub", op.fpDbl_subA_, getCurr());
 
-		align(16);
-		op.fpDbl_addPre = gen_addSubPre(true, pn_ * 2);
-		setFuncInfo(prof_, suf, "Dbl_addPre", op.fpDbl_addPre, getCurr());
+		if (gen_addSubPre(op.fpDbl_addPre, true, pn_ * 2)) {
+			setFuncInfo(prof_, suf, "Dbl_addPre", op.fpDbl_addPre, getCurr());
+		}
 
-		align(16);
-		op.fpDbl_subPre = gen_addSubPre(false, pn_ * 2);
-		setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
+		if (gen_addSubPre(op.fpDbl_subPre, false, pn_ * 2)) {
+			setFuncInfo(prof_, suf, "Dbl_subPre", op.fpDbl_subPre, getCurr());
+		}
 
 		align(16);
 		op.fp2_addA_ = gen_fp2_add();
@@ -484,17 +481,17 @@ private:
 		op.fp2_mul_xiA_ = gen_fp2_mul_xi();
 		setFuncInfo(prof_, suf, "2_mul_xi", op.fp2_mul_xiA_, getCurr());
 	}
-	u3u gen_addSubPre(bool isAdd, int n)
+	bool gen_addSubPre(u3u& func, bool isAdd, int n)
 	{
-//		if (isFullBit_) return 0;
-		u3u func = getCurr<u3u>();
+		align(16);
+		func = getCurr<u3u>();
 		StackFrame sf(this, 3);
 		if (isAdd) {
 			gen_raw_add(sf.p[0], sf.p[1], sf.p[2], rax, n);
 		} else {
 			gen_raw_sub(sf.p[0], sf.p[1], sf.p[2], rax, n);
 		}
-		return func;
+		return true;
 	}
 	/*
 		pz[] = px[] + py[]
@@ -649,10 +646,11 @@ private:
 		sub_p_mod(t2, t1, rip + pL_, H);
 		store_mr(pz, t2);
 	}
-	void3u gen_fp_add()
+	bool gen_fp_add(void3u& func)
 	{
-		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return 0;
-		void3u func = getCurr<void3u>();
+		if (!(pn_ < 6 || (pn_ == 6 && !isFullBit_))) return false;
+		align(16);
+		func = getCurr<void3u>();
 		int n = pn_ * 2 - 1;
 		if (isFullBit_) {
 			n++;
@@ -666,7 +664,7 @@ private:
 		t.append(rax);
 		const Reg64 *H = isFullBit_ ? &rax : 0;
 		gen_raw_fp_add(pz, px, py, t, false, H);
-		return func;
+		return true;
 	}
 	void3u gen_fpDbl_add()
 	{
@@ -718,10 +716,11 @@ private:
 		add_rr(t1, t2);
 		store_mr(pz, t1);
 	}
-	void3u gen_fp_sub()
+	bool gen_fp_sub(void3u& func)
 	{
-		if (pn_ > 6) return 0;
-		void3u func = getCurr<void3u>();
+		if (pn_ > 6) return false;
+		align(16);
+		func = getCurr<void3u>();
 		/*
 			micro-benchmark of jmp is faster than and-mask
 			but it's slower for pairings
@@ -734,18 +733,20 @@ private:
 		Pack t = sf.t;
 		t.append(rax);
 		gen_raw_fp_sub(pz, px, py, t, false);
-		return func;
+		return true;
 	}
-	void2u gen_fp_neg()
+	bool gen_fp_neg(void2u& func)
 	{
-		void2u func = getCurr<void2u>();
+		align(16);
+		func = getCurr<void2u>();
 		StackFrame sf(this, 2, UseRDX | pn_);
 		gen_raw_neg(sf.p[0], sf.p[1], sf.t);
-		return func;
+		return true;
 	}
-	void2u gen_shr1()
+	bool gen_shr1(void2u& func)
 	{
-		void2u func = getCurr<void2u>();
+		align(16);
+		func = getCurr<void2u>();
 		const int c = 1;
 		StackFrame sf(this, 2, 1);
 		const Reg64 *t0 = &rax;
@@ -761,7 +762,7 @@ private:
 		}
 		shr(*t0, c);
 		mov(ptr [pz + (pn_ - 1) * 8], *t0);
-		return func;
+		return true;
 	}
 	// x = x << 1
 	// H = top bit of x
@@ -790,10 +791,11 @@ private:
 		}
 		cmovc_rr(y, x);
 	}
-	void2u gen_mul2()
+	bool gen_mul2(void2u& func)
 	{
-		if (pn_ > 6) return 0;
-		void2u func = getCurr<void2u>();
+		if (pn_ > 6) return false;
+		align(16);
+		func = getCurr<void2u>();
 		int n = pn_ * 2 - 1;
 		StackFrame sf(this, 2, n + (isFullBit_ ? 1 : 0));
 		Pack x = sf.t.sub(0, pn_);
@@ -810,7 +812,7 @@ private:
 			sub_p_mod(t, x, rax);
 		}
 		store_mr(sf.p[0], t);
-		return func;
+		return true;
 	}
 	void2u gen_fp2_mul2()
 	{
@@ -1183,30 +1185,35 @@ private:
 		vmovq(z, xm0);
 		store_mr(z, Pack(t10, t9, t8, t4));
 	}
-	void2u gen_fpDbl_mod(const fp::Op& op)
+	bool gen_fpDbl_mod(void2u& func, const fp::Op& op)
 	{
-		void2u func = getCurr<void2u>();
+		align(16);
 		if (op.primeMode == PM_NIST_P192) {
+			func = getCurr<void2u>();
 			StackFrame sf(this, 2, 6 | UseRDX);
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
-			return func;
+			return true;
 		}
 #if 0
 		if (op.primeMode == PM_NIST_P521) {
+			func = getCurr<void2u>();
 			StackFrame sf(this, 2, 8 | UseRDX);
 			fpDbl_mod_NIST_P521(sf.p[0], sf.p[1], sf.t);
-			return func;
+			return true;
 		}
 #endif
 		if (pn_ == 2) {
+			func = getCurr<void2u>();
 			gen_fpDbl_mod2();
-			return func;
+			return true;
 		}
 		if (pn_ == 3) {
+			func = getCurr<void2u>();
 			gen_fpDbl_mod3();
-			return func;
+			return true;
 		}
 		if (pn_ == 4) {
+			func = getCurr<void2u>();
 			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 			call(fpDbl_modL);
 			sf.close();
@@ -1215,9 +1222,10 @@ private:
 			t.append(gp2);
 			gen_fpDbl_mod4(gp0, gp1, t);
 			ret();
-			return func;
+			return true;
 		}
 		if (pn_ == 6 && !isFullBit_) {
+			func = getCurr<void2u>();
 			StackFrame sf(this, 3, 10 | UseRDX, 0, false);
 			call(fpDbl_modL);
 			sf.close();
@@ -1226,9 +1234,9 @@ private:
 			t.append(gp2);
 			gen_fpDbl_mod6(gp0, gp1, t);
 			ret();
-			return func;
+			return true;
 		}
-		return 0;
+		return false;
 	}
 	void2u gen_sqr()
 	{
@@ -2326,15 +2334,15 @@ private:
 		cmovc_rr(zp, keep);
 		store_mr(z, zp);
 	}
-	void gen_fpDbl_sqrPre(void2u& f)
+	bool gen_fpDbl_sqrPre(void2u& func)
 	{
-		void2u func = getCurr<void2u>();
+		align(16);
+		void2u f = getCurr<void2u>();
 		switch (pn_) {
 		case 2:
 			{
 				StackFrame sf(this, 2, 7 | UseRDX);
 				sqrPre2(sf.p[0], sf.p[1], sf.t);
-				f = func;
 			}
 			break;
 		case 3:
@@ -2343,7 +2351,6 @@ private:
 				Pack t = sf.t;
 				t.append(sf.p[2]);
 				sqrPre3(sf.p[0], sf.p[1], t);
-				f = func;
 			}
 			break;
 		case 4:
@@ -2352,7 +2359,6 @@ private:
 				Pack t = sf.t;
 				t.append(sf.p[2]);
 				sqrPre4(sf.p[0], sf.p[1], t);
-				f = func;
 			}
 			break;
 		case 6:
@@ -2365,27 +2371,29 @@ private:
 				t.append(sf.p[2]);
 				sqrPre6(sf.p[0], sf.p[1], t);
 				ret();
-				f = func;
 			}
 			break;
+		default:
+			return false;
 		}
+		func = f;
+		return true;
 	}
-	void gen_fpDbl_mulPre(void3u& f)
+	bool gen_fpDbl_mulPre(void3u& func)
 	{
-		void3u func = getCurr<void3u>();
+		align(16);
+		void3u f = getCurr<void3u>();
 		switch (pn_) {
 		case 2:
 			{
 				StackFrame sf(this, 3, 5 | UseRDX);
 				mulPre2(sf.p[0], sf.p[1], sf.p[2], sf.t);
-				f = func;
 			}
 			break;
 		case 3:
 			{
 				StackFrame sf(this, 3, 10 | UseRDX);
 				mulPre3(sf.p[0], sf.p[1], sf.p[2], sf.t);
-				f = func;
 			}
 			break;
 		case 4:
@@ -2401,7 +2409,6 @@ private:
 			L(fp_mulPreL); // called only from asm code
 				mulPre4(gp0, gp1, gp2, sf.t);
 				ret();
-				f = func;
 			}
 			break;
 		case 6:
@@ -2412,9 +2419,13 @@ private:
 			L(fp_mulPreL); // called only from asm code
 				mulPre6(sf.t);
 				ret();
-				f = func;
 			}
+			break;
+		default:
+			return false;
 		}
+		func = f;
+		return true;
 	}
 	static inline void debug_put_inner(const uint64_t *ptr, int n)
 	{
@@ -2642,10 +2653,14 @@ private:
 	/*
 		int k = preInvC(pr, px)
 	*/
-	void gen_preInv()
+	bool gen_preInv(int2u& func, const Op& op)
 	{
+		// support general op.N but not fast for op.N > 6
+		if (op.primeMode == PM_NIST_P192 || op.N > 6) return false;
 		assert(1 <= pn_ && pn_ <= 6);
 		const int freeRegNum = 13;
+		align(16);
+		func = getCurr<int2u>();
 		StackFrame sf(this, 2, 10 | UseRDX | UseRCX, (std::max<int>(0, pn_ * 5 - freeRegNum) + 1 + (isFullBit_ ? 1 : 0)) * 8);
 		const Reg64& pr = sf.p[0];
 		const Reg64& px = sf.p[1];
@@ -2772,6 +2787,7 @@ private:
 		add_mm(t3, t2, t, pn_);
 	L("@@");
 		outLocalLabel();
+		return true;
 	}
 	void fpDbl_mod_NIST_P192(const RegExp &py, const RegExp& px, const Pack& t)
 	{
