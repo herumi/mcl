@@ -2165,6 +2165,26 @@ private:
 #endif
 	}
 	// [gp0] <- [gp1] * [gp2]
+	void mulPre5(const Pack& t)
+	{
+		const Reg64& pz = gp0;
+		const Reg64& px = gp1;
+		const Reg64& py = gp2;
+		const Reg64& t0 = t[0];
+		const Reg64& t1 = t[1];
+		const Reg64& t2 = t[2];
+		const Reg64& t3 = t[3];
+		const Reg64& t4 = t[4];
+		const Reg64& t5 = t[5];
+
+		mulPack(pz, px, py, Pack(t4, t3, t2, t1, t0)); // [t4:t3:t2:t1:t0]
+		mulPackAdd(pz + 8 * 1, px + 8 * 1, py, t5, Pack(t4, t3, t2, t1, t0)); // [t5:t4:t3:t2:t1]
+		mulPackAdd(pz + 8 * 2, px + 8 * 2, py, t0, Pack(t5, t4, t3, t2, t1)); // [t0:t5:t4:t3:t2]
+		mulPackAdd(pz + 8 * 3, px + 8 * 3, py, t1, Pack(t0, t5, t4, t3, t2)); // [t1:t0:t5:t4:t3]
+		mulPackAdd(pz + 8 * 4, px + 8 * 4, py, t2, Pack(t1, t0, t5, t4, t3)); // [t2:t1:t0:t5:t4]
+		store_mr(pz + 8 * 5, Pack(t2, t1, t0, t5, t4));
+	}
+	// [gp0] <- [gp1] * [gp2]
 	void mulPre6(const Pack& t)
 	{
 		const Reg64& pz = gp0;
@@ -2416,6 +2436,16 @@ private:
 				sf.close(); // make epilog
 			L(fp_mulPreL); // called only from asm code
 				mulPre4(gp0, gp1, gp2, sf.t);
+				ret();
+			}
+			break;
+		case 5:
+			{
+				StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+				call(fp_mulPreL);
+				sf.close(); // make epilog
+			L(fp_mulPreL); // called only from asm code
+				mulPre5(sf.t);
 				ret();
 			}
 			break;
