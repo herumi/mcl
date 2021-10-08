@@ -13,7 +13,7 @@ void aggregateTest(const std::vector<std::string>& msgVec)
                 secVec[i].init();
                 secVec[i].getPublicKey(pubVec[i]);
                 secVec[i].sign(sigVec[i], msgVec[i]);
-                std::cout << "sign " << secVec[i] << std::endl;
+                std::cout << "sign " << sigVec[i] << std::endl;
                 ok = pubVec[i].verify(sigVec[i], msgVec[i]);
                 std::cout << "verify " << (ok ? "ok" : "ng") << std::endl;
         }
