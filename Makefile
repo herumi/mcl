@@ -25,7 +25,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp pairing_c.c multi-sig.cpp she_smpl.cpp
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
   CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
@@ -313,6 +313,9 @@ $(EXE_DIR)/bn_c512_test.exe: $(OBJ_DIR)/bn_c512_test.o $(BN512_LIB) $(MCL_LIB)
 
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN384_256_LIB) $(MCL_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
+
+$(EXE_DIR)/multi-sig.exe: $(OBJ_DIR)/multi-sig.o $(BN384_256_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE256_LIB) $(MCL_LIB) $(LDFLAGS)
