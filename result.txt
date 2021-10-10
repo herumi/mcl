@@ -2,25 +2,9 @@ Result:
 
 andrey@v510:~/mcl$ make bin/multi-sig.exe
 g++ -g3 -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wundef -m64 -I include -I test -fomit-frame-pointer -DNDEBUG -fno-stack-protector -O3  -DMCL_USE_VINT -DMCL_DONT_USE_OPENSSL -fPIC -DMCL_USE_LLVM=1 -c sample/multi-sig.cpp -o obj/multi-sig.o -MMD -MP -MF obj/multi-sig.d
-sample/multi-sig.cpp: In function ‘int main(int, char**)’:
-sample/multi-sig.cpp:27:14: warning: unused parameter ‘argc’ [-Wunused-parameter]
-   27 | int main(int argc, char *argv[])
-      |          ~~~~^~~~
-sample/multi-sig.cpp:27:26: warning: unused parameter ‘argv’ [-Wunused-parameter]
-   27 | int main(int argc, char *argv[])
-      |                    ~~~~~~^~~~~~
 g++ obj/multi-sig.o -o bin/multi-sig.exe lib/libmclbn384_256.a lib/libmcl.a -lrt   -m64 
-andrey@v510:~/mcl$ ./bin/multi-sig.exe
-sign 3 8570049349556488547018338876632717265522095368630400600406628148475241842744
+
+andrey@v510:~/mcl$ ./bin/multi-sig.exe 
 verify ok
-sign 2 16299261544491880338543183798937243818981912456005811331473884033981567330275
-verify ok
-sign 2 15466480657885371319199407217107423537648346453158930282052711186697529751387
-verify ok
-sign 3 147741071426601458206117530560040611669834323287234580036482920707341287635
-verify ok
-sign 3 16097460798953458025109463116922143426803375644253373791657101956638716454084
-verify ok
-aggregate sign 2 9939401720240501775398787780463663394203993965301175558404569422576136785368
-aggregate verify ok
-andrey@v510:~/mcl$ 
+
+
