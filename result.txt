@@ -1,10 +1,7 @@
 Result:
-
 andrey@v510:~/mcl$ make bin/multi-sig.exe
 g++ -g3 -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wundef -m64 -I include -I test -fomit-frame-pointer -DNDEBUG -fno-stack-protector -O3  -DMCL_USE_VINT -DMCL_DONT_USE_OPENSSL -fPIC -DMCL_USE_LLVM=1 -c sample/multi-sig.cpp -o obj/multi-sig.o -MMD -MP -MF obj/multi-sig.d
-g++ obj/multi-sig.o -o bin/multi-sig.exe lib/libmclbn384_256.a lib/libmcl.a -lrt   -m64 
+g++ obj/multi-sig.o -o bin/multi-sig.exe lib/libmclbn384_256.a lib/libmcl.a -lrt   -m64
 
-andrey@v510:~/mcl$ ./bin/multi-sig.exe 
+andrey@v510:~/mcl$ bin/multi-sig.exe       
 verify ok
-
-
