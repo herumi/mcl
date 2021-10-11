@@ -7,7 +7,6 @@ using namespace mcl::bn256;
 
 // H1: M->Zq
 // see https://github.com/herumi/mcl FAQ
-// rewrite x
 template<class F>
 void setHash(F& x, const void *msg, size_t msgSize)
 {
@@ -18,7 +17,7 @@ void setHash(F& x, const void *msg, size_t msgSize)
 
 
 // H0: M->G2
-// rewrite P
+// return P
 void Hash(G1& P, const std::string& m)
 {
         Fp t;
@@ -49,6 +48,24 @@ void CoreSign(G1& sign, const Fr& s, const std::string& m)
         Hash(Hm, m);
         G1::mul(sign, Hm, s); // sign = s H(m)
 }
+
+//return bool
+bool CoreVerify(const G1& sign, const G2& Q, const G2& pub, const std::string& m)
+{
+        Fp12 e1, e2;
+        G1 Hm;
+        Hash(Hm, m);
+        pairing(e1, sign, Q); // e1 = e(sign, Q)
+#if MDEBUG
+        std::cout << "e1" << e1 << std::endl;
+#endif
+        pairing(e2, Hm, pub); // e2 = e(Hm, sQ)
+#if MDEBUG
+        std::cout << "e2" << e2 << std::endl; 
+#endif
+        return e1 == e2;
+}
+
 
 // ai <- H1(public_key_i,{public_key_1 ... public_key_n})
 // rewrite a
@@ -82,7 +99,7 @@ std::string sumP(std::vector<G2>& pubKeyVec) {
 void KAg(std::vector<G2>& pubKeyVec, G2& apk, std::vector<Fr>& aVec)
 {
         const size_t n = pubKeyVec.size();
-        std::string allP = sumP(pubKeyVec); // {pk1 .. pkn}
+        std::string allP = sumP(pubKeyVec);
         std::string pubKey_s;
         std::vector<G2> pubKeyTmp(n);
 
@@ -103,40 +120,26 @@ void KAg(std::vector<G2>& pubKeyVec, G2& apk, std::vector<Fr>& aVec)
                 std::cout << "aggregate public key a[" << i << "]:" << aVec[i] << std::endl;
 #endif 
                 G2::mul(pubKeyTmp[i], pubKeyVec[i], aVec[i]); //aixPi
-                G2::add(apk,apk,pubKeyTmp[i]);// P = 0 + a1xP1 ... + anxPn  P+0=P
+                G2::add(apk,apk,pubKeyTmp[i]);// P = 0 + a1xP1 ... + anxPn .. P+0=P
+        }
+}
+
+
+void Sign(std::vector<Fr>& sk, std::vector<G1>& sign,  const std::string& m) {
+        const size_t n = sk.size();
+        for (size_t i = 0; i < n; i++) {
+                CoreSign(sign[i], sk[i], m); // Si
         }
 }
 
 //S = a1×S1 + a2×S2 + a3×S3 + + anxSn
-//rewrite multisig
-void MultiSign(std::vector<Fr>& sk, const std::string& m, G1& multisig, std::vector<Fr>& aVec) {
-        const size_t n = sk.size();
-        std::vector<G1> s(n);
+void MultiSign(std::vector<G1>& sign, G1& multisig, std::vector<Fr>& aVec) {
+        const size_t n = sign.size();
+        std::vector<G1> sign_new(n); // do not modify the original sign
         for (size_t i = 0; i < n; i++) {
-#if MDEBUG
-                std::cout << "multisig a[" << i << "]:" << aVec[i] << std::endl;
-#endif
-                CoreSign(s[i], sk[i], m); // Si
-                G1::mul(s[i],s[i],aVec[i]); // aixSi
-                G1::add(multisig,multisig,s[i]); // S = 0 + a1×S1 + a2×S2 + a3×S3 + + anxSn S+0=S
+                G1::mul(sign_new[i],sign[i],aVec[i]); // aixSi
+                G1::add(multisig,multisig,sign_new[i]); // S = 0 + a1×S1 + a2×S2 + a3×S3 + + anxSn .. S+0=S
         }
-}
-
-//return bool 
-bool CoreVerify(const G1& sign, const G2& Q, const G2& pub, const std::string& m)
-{
-        Fp12 e1, e2;
-        G1 Hm;
-        Hash(Hm, m);
-        pairing(e1, sign, Q); // e1 = e(sign, Q)
-#if MDEBUG
-        std::cout << "e1" << e1 << std::endl;
-#endif
-        pairing(e2, Hm, pub); // e2 = e(Hm, sQ)
-#if MDEBUG
-        std::cout << "e2" << e2 << std::endl; 
-#endif
-        return e1 == e2;
 }
 
 
@@ -164,20 +167,21 @@ int main(int argc, char *argv[])
 #endif
 
         bool ok;
-        std::vector<Fr> s(n);
-        std::vector<G2> pubKeyPoint(n);
-        std::vector<Fr> a(n);
+        std::vector<Fr> sk(n); // private info
+        std::vector<G2> pubKeyPoint(n); // public info
+        std::vector<Fr> a(n); // public info
+        std::vector<G1> sign(n);  // public info
 
         // generate secret key and public key
         for (size_t i = 0; i < n; i++) {
-                KeyGen(s[i], pubKeyPoint[i], Q);
-        }
-        KAg(pubKeyPoint,apk,a);
-
+                KeyGen(sk[i], pubKeyPoint[i], Q); //private
+         }
+        KAg(pubKeyPoint,apk,a); // any can do it
+        Sign(sk,sign,m); // only owners of private keys can do this
 #if MDEBUG
         std::cout << "aggregate public key " << apk << std::endl;
 #endif
-        MultiSign(s, m, multisig, a);
+        MultiSign(sign, multisig, a);
         ok = CoreVerify(multisig, Q, apk, m);
         std::cout << "verify " << (ok ? "ok" : "ng") << std::endl;
 }
