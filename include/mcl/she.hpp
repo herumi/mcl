@@ -312,6 +312,7 @@ public:
 	{
 		wm_.mul(static_cast<I&>(x), y);
 	}
+	size_t getTableSize() const { return kcv_.size(); }
 };
 
 template<class G>

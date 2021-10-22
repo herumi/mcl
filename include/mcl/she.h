@@ -169,6 +169,13 @@ MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize);
 MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize);
 
 /*
+	get table size for DLP
+*/
+MCLSHE_DLL_API mclSize sheGetTableSizeForG1DLP();
+MCLSHE_DLL_API mclSize sheGetTableSizeForG2DLP();
+MCLSHE_DLL_API mclSize sheGetTableSizeForGTDLP();
+
+/*
 	save table for DLP
 	return written size if success else 0
 */

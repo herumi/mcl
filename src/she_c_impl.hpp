@@ -274,6 +274,10 @@ mclSize sheSaveTableForGTDLP(void *buf, mclSize maxBufSize)
 	return saveTable(buf, maxBufSize, SHE::ePQhashTbl_);
 }
 
+mclSize sheGetTableSizeForG1DLP() { return SHE::PhashTbl_.getTableSize(); }
+mclSize sheGetTableSizeForG2DLP() { return SHE::QhashTbl_.getTableSize(); }
+mclSize sheGetTableSizeForGTDLP() { return SHE::ePQhashTbl_.getTableSize(); }
+
 template<class CT>
 int encT(CT *c, const shePublicKey *pub, mclInt m)
 	try
