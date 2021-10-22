@@ -205,7 +205,7 @@ int sheSetRangeForDLP(mclSize hashSize)
 {
 	return wrapSetRangeForDLP(SHE::setRangeForDLP, hashSize);
 }
-int sheSetRangeForG1DLPnoexcept(mclSize hashSize)
+int sheSetRangeForG1DLP(mclSize hashSize)
 {
 	return wrapSetRangeForDLP(SHE::setRangeForG1DLP, hashSize);
 }
