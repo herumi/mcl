@@ -33,6 +33,31 @@ CYBOZU_TEST_AUTO(log)
 	}
 }
 
+#if 0
+CYBOZU_TEST_AUTO(ZkpSet)
+{
+	cybozu::XorShift rg;
+	mcl::fp::RandGen::setRandGen(rg);
+	const int mVec[] = { 0, 1 };//-7, 0, 1, 3, 5, 11, 23 };
+	const size_t mSizeMax = 2;//CYBOZU_NUM_OF_ARRAY(mVec);
+	Fr zkp[mSizeMax * 2];
+
+	SecretKey sec;
+	sec.setByCSPRNG();
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
+
+	for (size_t mSize = 2; mSize <= mSizeMax; mSize++) {
+printf("mSize=%zd\n", mSize);
+		CipherTextG1 c;
+		ppub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
+		CYBOZU_TEST_ASSERT(ppub.verify(c, zkp, mVec, mSize));
+	}
+}
+#endif
+
 //#define PAPER
 #ifdef PAPER
 double clk2msec(const cybozu::CpuClock& clk, int n)

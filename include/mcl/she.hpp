@@ -1096,6 +1096,106 @@ private:
 		return c == d[0] + d[1];
 	}
 	/*
+		Enc(m; encRand) = (S, T)
+		make ZKP for m in M := mVec[0, mSize)
+		@note zkp has (mSize * 2) elements
+		@note M must satisfy the following properties:
+		1) m[i] < m[i+1] for all i < mSize - 1
+		2) i0 exists such that m[i0] = m
+	*/
+	template<class G, class I, class MulG>
+	static bool makeZkpSet(Fr *zkp, const G& S, const G& T, const Fr& encRand, int m, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	{
+		if (mSize < 2) return false;
+		size_t i0 = mSize;
+		// check m[i] < m[i+1]
+		for (size_t i = 0; i < mSize - 1; i++) {
+			if (mVec[i] >= mVec[i + 1]) return false;
+			if (m == mVec[i]) i0 = i;
+		}
+		if (i0 == mSize) return false;
+		// m[i0] = m
+		Fr *const a = zkp;
+		Fr *const t = zkp + mSize;
+		for (size_t i = 0; i < mSize; i++) {
+			if (i != i0) {
+				a[i].setRand();
+			}
+			t[i].setRand();
+		}
+		local::Hash hash;
+		hash << S << T;
+		Fr sum = 0;
+		for (size_t i = 0; i < mSize; i++) {
+			Fr u;
+			if (i == i0) {
+				u.clear();
+			} else {
+				u = a[i];
+				u *= (m - mVec[i]);
+				sum += a[i];
+			}
+			G R1, R2;
+			ElGamalEnc(R1, R2, u, Pmul, xPmul, &t[i]);
+printf("i=%zd\n", i);
+printf("P R1=%s\n", R1.getStr(16).c_str());
+printf("P R2=%s\n", R2.getStr(16).c_str());
+			hash << R1 << R2;
+			if (i != i0) {
+				// b[i] = t[i] - a[i] r
+				t[i] = t[i] - a[i] * encRand;
+			}
+		}
+		Fr h;
+		hash.get(h); // h = Hash((S, T), {R_i})
+		a[i0] = h - sum;
+		t[i0] = t[i0] - a[i0] * encRand;
+		return true;
+	}
+	/*
+		verify ZKP with Dec(S, T) in mVec[0, mSize)
+		@note zkp has (mSize * 2) elements
+	*/
+	template<class G, class I, class MulG>
+	static bool verifyZkpSet(const G& S, const G& T, const G& P, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	{
+		if (mSize < 2) return false;
+		// check m[i] < m[i+1]
+		for (size_t i = 0; i < mSize - 1; i++) {
+			if (mVec[i] >= mVec[i + 1]) return false;
+		}
+		const Fr *a = zkp;
+		const Fr *b = zkp + mSize;
+		Fr c;
+		local::Hash hash;
+		hash << S << T;
+		/*
+			ai(C - Enc(mi, 0)) - Enc(0, bi)
+			= ai(S - mi P, T) - (bi xP, bi P)
+		*/
+		Fr sum = 0;
+		for (size_t i = 0; i < mSize; i++) {
+printf("i=%zd\n", i);
+			G R1, R2;
+			G::mul(R1, P, mVec[i]);
+			R1 = S - R1;
+			R1 *= a[i];
+			xPmul.mul(R2, b[i]);
+			R1 -= R2;
+printf("V R1=%s\n", R1.getStr(16).c_str());
+			hash << R1;
+			G::mul(R1, T, a[i]);
+			Pmul.mul(static_cast<I&>(R2), b[i]);
+			R1 -= R2;
+printf("V R2=%s\n", R1.getStr(16).c_str());
+			hash << R1;
+			sum += a[i];
+		}
+		Fr h;
+		hash.get(h);
+		return h == sum;
+	}
+	/*
 		encRand1, encRand2 are random values use for ElGamalEnc()
 	*/
 	template<class G1, class G2, class INT, class I1, class I2, class MulG1, class MulG2>
@@ -1639,6 +1739,15 @@ public:
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
 		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			Fr encRand;
+			encRand.setRand();
+			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
+			if (!makeZkpSet(zkp, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_)) {
+				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
+			}
+		}
 		bool verify(const CipherTextG1& c, const ZkpBin& zkp) const
 		{
 			return verifyZkpBin(c.S_, c.T_, P_, zkp, PhashTbl_.getWM(), xPwm_);
@@ -1646,6 +1755,10 @@ public:
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
 		{
 			return verifyZkpBin(c.S_, c.T_, Q_, zkp, QhashTbl_.getWM(), yQwm_);
+		}
+		bool verify(const CipherTextG1& c, const Fr *zkp, const int *mVec, size_t mSize) const
+		{
+			return verifyZkpSet(c.S_, c.T_, P_, zkp, mVec, mSize, PhashTbl_.getWM(), xPwm_);
 		}
 		template<class INT>
 		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const
