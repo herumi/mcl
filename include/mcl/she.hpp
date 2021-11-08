@@ -1152,6 +1152,7 @@ private:
 	/*
 		verify ZKP with Dec(S, T) in mVec[0, mSize)
 		@note zkp has (mSize * 2) elements
+		see https://github.com/herumi/mcl/blob/master/misc/she/nizkp.pdf
 	*/
 	template<class G, class I, class MulG>
 	static bool verifyZkpSet(const G& S, const G& T, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
