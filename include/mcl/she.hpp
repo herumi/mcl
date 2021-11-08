@@ -1120,8 +1120,10 @@ private:
 		for (size_t i = 0; i < mSize; i++) {
 			if (i != i0) {
 				a[i].setRand();
+//printf("a[%zd]=%s\n", i, a[i].getStr(16).c_str());
 			}
 			t[i].setRand();
+//printf("t[%zd]=%s\n", i, t[i].getStr(16).c_str());
 		}
 		local::Hash hash;
 		hash << S << T;
@@ -1144,12 +1146,27 @@ printf("P R2=%s\n", R2.getStr(16).c_str());
 			if (i != i0) {
 				// b[i] = t[i] - a[i] r
 				t[i] = t[i] - a[i] * encRand;
+//printf("b[%zd]=%s\n", i, t[i].getStr(16).c_str());
+{////
+	G1 S1, S2, T1, T2;
+Fr zero = 0;
+ElGamalEnc(S1, T1, mVec[i], Pmul, xPmul, &zero);
+ElGamalEnc(S2, T2, 0, Pmul, xPmul, &t[i]);
+S1 = (S - S1) * a[i] + S2;
+T1 = (T - T1) * a[i] + T2;
+printf("2 R1=%s\n", S1.getStr(16).c_str());
+printf("2 R2=%s\n", T1.getStr(16).c_str());
+}
+
 			}
 		}
 		Fr h;
 		hash.get(h); // h = Hash((S, T), {R_i})
+//printf("h=%s\n", h.getStr(16).c_str());
 		a[i0] = h - sum;
 		t[i0] = t[i0] - a[i0] * encRand;
+//printf("a[%zd]=%s\n", i0, a[i0].getStr(16).c_str());
+//printf("t[%zd]=%s\n", i0, t[i0].getStr(16).c_str());
 		return true;
 	}
 	/*
@@ -1176,6 +1193,17 @@ printf("P R2=%s\n", R2.getStr(16).c_str());
 		Fr sum = 0;
 		for (size_t i = 0; i < mSize; i++) {
 printf("i=%zd\n", i);
+#if 1
+	G1 S1, S2, T1, T2;
+Fr zero = 0;
+ElGamalEnc(S1, T1, mVec[i], Pmul, xPmul, &zero);
+ElGamalEnc(S2, T2, 0, Pmul, xPmul, &b[i]);
+S1 = (S - S1) * a[i] + S2;
+T1 = (T - T1) * a[i] + T2;
+hash << S1 << T1;
+printf("V R1=%s\n", S1.getStr(16).c_str());
+printf("V R2=%s\n", T1.getStr(16).c_str());
+#else
 			G R1, R2;
 			G::mul(R1, P, mVec[i]);
 			R1 = S - R1;
@@ -1189,6 +1217,7 @@ printf("V R1=%s\n", R1.getStr(16).c_str());
 			R1 -= R2;
 printf("V R2=%s\n", R1.getStr(16).c_str());
 			hash << R1;
+#endif
 			sum += a[i];
 		}
 		Fr h;

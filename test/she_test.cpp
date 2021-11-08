@@ -38,8 +38,8 @@ CYBOZU_TEST_AUTO(ZkpSet)
 {
 	cybozu::XorShift rg;
 	mcl::fp::RandGen::setRandGen(rg);
-	const int mVec[] = { 0, 1 };//-7, 0, 1, 3, 5, 11, 23 };
-	const size_t mSizeMax = 2;//CYBOZU_NUM_OF_ARRAY(mVec);
+	const int mVec[] = { -7, 0, 1, 3, 5, 11, 23 };
+	const size_t mSizeMax = CYBOZU_NUM_OF_ARRAY(mVec);
 	Fr zkp[mSizeMax * 2];
 
 	SecretKey sec;
@@ -55,6 +55,7 @@ printf("mSize=%zd\n", mSize);
 		ppub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
 		CYBOZU_TEST_ASSERT(ppub.verify(c, zkp, mVec, mSize));
 	}
+exit(1);
 }
 #endif
 
