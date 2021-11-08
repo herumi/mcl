@@ -1120,10 +1120,8 @@ private:
 		for (size_t i = 0; i < mSize; i++) {
 			if (i != i0) {
 				a[i].setRand();
-//printf("a[%zd]=%s\n", i, a[i].getStr(16).c_str());
 			}
 			t[i].setRand();
-//printf("t[%zd]=%s\n", i, t[i].getStr(16).c_str());
 		}
 		local::Hash hash;
 		hash << S << T;
@@ -1139,34 +1137,16 @@ private:
 			}
 			G R1, R2;
 			ElGamalEnc(R1, R2, u, Pmul, xPmul, &t[i]);
-printf("i=%zd\n", i);
-printf("P R1=%s\n", R1.getStr(16).c_str());
-printf("P R2=%s\n", R2.getStr(16).c_str());
 			hash << R1 << R2;
 			if (i != i0) {
 				// b[i] = t[i] - a[i] r
-				t[i] = t[i] - a[i] * encRand;
-//printf("b[%zd]=%s\n", i, t[i].getStr(16).c_str());
-{////
-	G1 S1, S2, T1, T2;
-Fr zero = 0;
-ElGamalEnc(S1, T1, mVec[i], Pmul, xPmul, &zero);
-ElGamalEnc(S2, T2, 0, Pmul, xPmul, &t[i]);
-S1 = (S - S1) * a[i] + S2;
-T1 = (T - T1) * a[i] + T2;
-printf("2 R1=%s\n", S1.getStr(16).c_str());
-printf("2 R2=%s\n", T1.getStr(16).c_str());
-}
-
+				t[i] -= a[i] * encRand;
 			}
 		}
 		Fr h;
 		hash.get(h); // h = Hash((S, T), {R_i})
-//printf("h=%s\n", h.getStr(16).c_str());
 		a[i0] = h - sum;
-		t[i0] = t[i0] - a[i0] * encRand;
-//printf("a[%zd]=%s\n", i0, a[i0].getStr(16).c_str());
-//printf("t[%zd]=%s\n", i0, t[i0].getStr(16).c_str());
+		t[i0] -= a[i0] * encRand;
 		return true;
 	}
 	/*
@@ -1174,7 +1154,7 @@ printf("2 R2=%s\n", T1.getStr(16).c_str());
 		@note zkp has (mSize * 2) elements
 	*/
 	template<class G, class I, class MulG>
-	static bool verifyZkpSet(const G& S, const G& T, const G& P, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	static bool verifyZkpSet(const G& S, const G& T, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
 		if (mSize < 2) return false;
 		// check m[i] < m[i+1]
@@ -1192,32 +1172,13 @@ printf("2 R2=%s\n", T1.getStr(16).c_str());
 		*/
 		Fr sum = 0;
 		for (size_t i = 0; i < mSize; i++) {
-printf("i=%zd\n", i);
-#if 1
-	G1 S1, S2, T1, T2;
-Fr zero = 0;
-ElGamalEnc(S1, T1, mVec[i], Pmul, xPmul, &zero);
-ElGamalEnc(S2, T2, 0, Pmul, xPmul, &b[i]);
-S1 = (S - S1) * a[i] + S2;
-T1 = (T - T1) * a[i] + T2;
-hash << S1 << T1;
-printf("V R1=%s\n", S1.getStr(16).c_str());
-printf("V R2=%s\n", T1.getStr(16).c_str());
-#else
-			G R1, R2;
-			G::mul(R1, P, mVec[i]);
-			R1 = S - R1;
-			R1 *= a[i];
-			xPmul.mul(R2, b[i]);
-			R1 -= R2;
-printf("V R1=%s\n", R1.getStr(16).c_str());
-			hash << R1;
-			G::mul(R1, T, a[i]);
-			Pmul.mul(static_cast<I&>(R2), b[i]);
-			R1 -= R2;
-printf("V R2=%s\n", R1.getStr(16).c_str());
-			hash << R1;
-#endif
+			G1 S1, S2, T1, T2;
+			Pmul.mul(static_cast<I&>(S1), mVec[i]);
+			xPmul.mul(S2, b[i]);
+			Pmul.mul(static_cast<I&>(T2), b[i]);
+			S1 = (S - S1) * a[i] + S2;
+			T1 = T * a[i] + T2;
+			hash << S1 << T1;
 			sum += a[i];
 		}
 		Fr h;
@@ -1787,7 +1748,7 @@ public:
 		}
 		bool verify(const CipherTextG1& c, const Fr *zkp, const int *mVec, size_t mSize) const
 		{
-			return verifyZkpSet(c.S_, c.T_, P_, zkp, mVec, mSize, PhashTbl_.getWM(), xPwm_);
+			return verifyZkpSet(c.S_, c.T_, zkp, mVec, mSize, PhashTbl_.getWM(), xPwm_);
 		}
 		template<class INT>
 		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const

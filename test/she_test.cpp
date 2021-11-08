@@ -33,7 +33,6 @@ CYBOZU_TEST_AUTO(log)
 	}
 }
 
-#if 0
 CYBOZU_TEST_AUTO(ZkpSet)
 {
 	cybozu::XorShift rg;
@@ -50,14 +49,14 @@ CYBOZU_TEST_AUTO(ZkpSet)
 	ppub.init(pub);
 
 	for (size_t mSize = 2; mSize <= mSizeMax; mSize++) {
-printf("mSize=%zd\n", mSize);
 		CipherTextG1 c;
 		ppub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
 		CYBOZU_TEST_ASSERT(ppub.verify(c, zkp, mVec, mSize));
+		CYBOZU_TEST_ASSERT(!ppub.verify(c, zkp, mVec, mSize - 1));
+		zkp[0] += 1;
+		CYBOZU_TEST_ASSERT(!ppub.verify(c, zkp, mVec, mSize));
 	}
-exit(1);
 }
-#endif
 
 //#define PAPER
 #ifdef PAPER
