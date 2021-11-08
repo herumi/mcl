@@ -35,8 +35,8 @@ CYBOZU_TEST_AUTO(log)
 
 CYBOZU_TEST_AUTO(ZkpSet)
 {
-	cybozu::XorShift rg;
-	mcl::fp::RandGen::setRandGen(rg);
+//	cybozu::XorShift rg;
+//	mcl::fp::RandGen::setRandGen(rg);
 	const int mVec[] = { -7, 0, 1, 3, 5, 11, 23 };
 	const size_t mSizeMax = CYBOZU_NUM_OF_ARRAY(mVec);
 	Fr zkp[mSizeMax * 2];
@@ -657,7 +657,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 	}
 }
 
-#if !defined(PAPER) && defined(NDEBUG)
+#if 0 // !defined(PAPER) && defined(NDEBUG)
 CYBOZU_TEST_AUTO(hashBench)
 {
 	setTryNum(1024);
