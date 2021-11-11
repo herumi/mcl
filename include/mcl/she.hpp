@@ -1104,7 +1104,7 @@ private:
 		2) i0 exists such that m[i0] = m
 	*/
 	template<class G, class I, class MulG>
-	static bool makeZkpSet(Fr *zkp, const G& S, const G& T, const Fr& encRand, int m, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	static bool makeZkpSet(Fr *zkp, const G& xP, const G& S, const G& T, const Fr& encRand, int m, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
 		if (mSize < 2) return false;
 		size_t i0 = mSize;
@@ -1124,7 +1124,7 @@ private:
 			t[i].setRand();
 		}
 		local::Hash hash;
-		hash << S << T;
+		hash << xP << S << T;
 		Fr sum = 0;
 		for (size_t i = 0; i < mSize; i++) {
 			Fr u;
@@ -1155,7 +1155,7 @@ private:
 		see https://github.com/herumi/mcl/blob/master/misc/she/nizkp.pdf
 	*/
 	template<class G, class I, class MulG>
-	static bool verifyZkpSet(const G& S, const G& T, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	static bool verifyZkpSet(const G& xP, const G& S, const G& T, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
 		if (mSize < 2) return false;
 		// check m[i] < m[i+1]
@@ -1166,7 +1166,7 @@ private:
 		const Fr *b = zkp + mSize;
 		Fr c;
 		local::Hash hash;
-		hash << S << T;
+		hash << xP << S << T;
 		/*
 			ai(C - Enc(mi, 0)) - Enc(0, bi)
 			= ai(S - mi P, T) - (bi xP, bi P)
@@ -1735,7 +1735,7 @@ public:
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
-			if (!makeZkpSet(zkp, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_)) {
+			if (!makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_)) {
 				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
 			}
 		}
@@ -1749,7 +1749,7 @@ public:
 		}
 		bool verify(const CipherTextG1& c, const Fr *zkp, const int *mVec, size_t mSize) const
 		{
-			return verifyZkpSet(c.S_, c.T_, zkp, mVec, mSize, PhashTbl_.getWM(), xPwm_);
+			return verifyZkpSet(xPwm_.tbl_[1], c.S_, c.T_, zkp, mVec, mSize, PhashTbl_.getWM(), xPwm_);
 		}
 		template<class INT>
 		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const
