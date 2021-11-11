@@ -1106,15 +1106,20 @@ private:
 	template<class G, class I, class MulG>
 	static bool makeZkpSet(Fr *zkp, const G& xP, const G& S, const G& T, const Fr& encRand, int m, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
-		if (mSize < 2) return false;
-		size_t i0 = mSize;
+		if (mSize < 1) return false;
 		// check m[i] < m[i+1]
 		for (size_t i = 0; i < mSize - 1; i++) {
 			if (mVec[i] >= mVec[i + 1]) return false;
-			if (m == mVec[i]) i0 = i;
+		}
+		// find i0 s.t. m[i0] = m
+		size_t i0 = mSize;
+		for (size_t i = 0; i < mSize; i++) {
+			if (mVec[i] == m) {
+				i0 = i;
+				break;
+			}
 		}
 		if (i0 == mSize) return false;
-		// m[i0] = m
 		Fr *const a = zkp;
 		Fr *const t = zkp + mSize;
 		for (size_t i = 0; i < mSize; i++) {
@@ -1157,7 +1162,7 @@ private:
 	template<class G, class I, class MulG>
 	static bool verifyZkpSet(const G& xP, const G& S, const G& T, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
-		if (mSize < 2) return false;
+		if (mSize < 1) return false;
 		// check m[i] < m[i+1]
 		for (size_t i = 0; i < mSize - 1; i++) {
 			if (mVec[i] >= mVec[i + 1]) return false;

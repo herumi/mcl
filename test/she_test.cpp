@@ -48,7 +48,7 @@ CYBOZU_TEST_AUTO(ZkpSet)
 	PrecomputedPublicKey ppub;
 	ppub.init(pub);
 
-	for (size_t mSize = 2; mSize <= mSizeMax; mSize++) {
+	for (size_t mSize = 1; mSize <= mSizeMax; mSize++) {
 		CipherTextG1 c;
 		ppub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
 		CYBOZU_TEST_ASSERT(ppub.verify(c, zkp, mVec, mSize));
