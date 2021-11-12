@@ -87,7 +87,6 @@ typedef struct {
 	mclBnFr d[4];
 } sheZkpDecGT;
 
-struct sheZkpSet;
 /*
 	initialize this library
 	call this once before using the other functions
@@ -220,12 +219,12 @@ MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinEq(sheCipherTextG1 *c1, s
 	m in mVec[0, mSize)
 	output c and zkp[0, mSize * 2)
 */
-MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpSetG1(sheCipherTextG1 *c, sheZkpSet *zkp, const shePrecomputedPublicKey *ppub, int m, const int *mVec, mclSize mSize);
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpSetG1(sheCipherTextG1 *c, mclBnFr *zkp, const shePrecomputedPublicKey *ppub, int m, const int *mVec, mclSize mSize);
 
 /*
 	return 1 if Dec(c) in mVec[0, mSize) else 0
 */
-MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpSetG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const sheZkpSet *zkp, const int *mVec, mclSize mSize);
+MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpSetG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const mclBnFr *zkp, const int *mVec, mclSize mSize);
 
 /*
 	arbitary m
