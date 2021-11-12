@@ -50,6 +50,9 @@ static const AuxiliaryForZkpDecGT *cast(const sheAuxiliaryForZkpDecGT *p) { retu
 static ZkpDecGT *cast(sheZkpDecGT *p) { return reinterpret_cast<ZkpDecGT*>(p); }
 static const ZkpDecGT *cast(const sheZkpDecGT *p) { return reinterpret_cast<const ZkpDecGT*>(p); }
 
+static mcl::bn::Fr *cast(sheZkpSet *p) { return reinterpret_cast<mcl::bn::Fr*>(p); }
+static const mcl::bn::Fr *cast(const sheZkpSet *p) { return reinterpret_cast<const mcl::bn::Fr*>(p); }
+
 int sheInit(int curve, int compiledTimeVar)
 	try
 {
@@ -366,6 +369,35 @@ int shePrecomputedPublicKeyEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, c
 int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *pub, int m)
 {
 	return encWithZkpBinT(c, zkp, pub, m);
+}
+
+template<class CT, class PK>
+int encWithZkpSetT(CT *c, sheZkpSet *zkp, const PK *pub, int m, const int *mVec, mclSize mSize)
+	try
+{
+	cast(pub)->encWithZkpSet(*cast(c), cast(zkp), m, mVec, mSize);
+	return 0;
+} catch (std::exception&) {
+	return -1;
+}
+
+int shePrecomputedPublicKeyEncWithZkpSetG1(sheCipherTextG1 *c, sheZkpSet *zkp, const shePrecomputedPublicKey *pub, int m, const int *mVec, mclSize mSize)
+{
+	return encWithZkpSetT(c, zkp, pub, m, mVec, mSize);
+}
+
+template<class PK, class CT>
+int verifyT(const PK& pub, const CT& c, const Fr *zkp, const int *mVec, mclSize mSize)
+	try
+{
+	return pub.verify(c, zkp, mVec, mSize);
+} catch (std::exception&) {
+	return 0;
+}
+
+int shePrecomputedPublicKeyVerifyZkpSetG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const sheZkpSet *zkp, const int *mVec, mclSize mSize)
+{
+	return verifyT(*cast(ppub), *cast(c), cast(zkp), mVec, mSize);
 }
 
 template<class PK>
