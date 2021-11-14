@@ -21,21 +21,21 @@ To use BLS12-381, include `mcl/bn_c384_256.h` and link
 - libmclbn384_256.{a,so}
 - libmcl.{a,so} ; core library
 
-`384_256` means the max bit size of `Fp` is 384 and that size of `Fr` is 256.
+`384_256` means the max bit size of `Fp` is 384, and that size of `Fr` is 256.
 
 ## Notation
 
 The elliptic equation of a curve E is `E: y^2 = x^3 + b`.
 
-- `Fp` ; a finite field of a prime order `p`, where curves is defined over.
+- `Fp` ; a finite field of a prime order `p`, where a curve is defined over.
 - `Fr` ; a finite field of a prime order `r`.
 - `Fp2` ; the field extension over Fp with degree 2. Fp[i] / (i^2 + 1).
 - `Fp6` ; the field extension over Fp2 with degree 3. Fp2[v] / (v^3 - Xi) where Xi = i + 1.
 - `Fp12` ; the field extension over Fp6 with degree 2. Fp6[w] / (w^2 - v).
 - `G1` ; the cyclic subgroup of E(Fp).
 - `G2` ; the cyclic subgroup of the inverse image of E'(Fp^2) under a twisting isomorphism from E' to E.
-- `GT` ; the cyclie subgroup of Fp12.
-  - `G1`, `G2` and `GT` have the order `r`.
+- `GT` ; the cyclic subgroup of Fp12.
+  - `G1`, `G2`, and `GT` have the order `r`.
 
 The pairing e: G1 x G2 -> GT is the optimal ate pairing.
 
@@ -55,29 +55,29 @@ BN381       | 2|r = 0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e
 ## Structures
 
 ### `mclBnFp`
-This is a struct of `Fp`. The value is stored as Montgomery representation.
+This is a struct of `Fp`. The value is stored as a Montgomery representation.
 
 ### `mclBnFr`
-This is a struct of `Fr`. The value is stored as Montgomery representation.
+This is a struct of `Fr`. The value is stored as a Montgomery representation.
 
 ### `mclBnFp2`
-This is a struct of `Fp2` which has a member `mclBnFp d[2]`.
+This is a struct of `Fp2` with a member `mclBnFp d[2]`.
 
 An element `x` of `Fp2` is represented as `x = d[0] + d[1] i` where `i^2 = -1`.
 
 ### `mclBnG1`
-This is a struct of `G1` which has three members `x`, `y`, `z` of type `mclBnFp`.
+This is a struct of `G1` with three members `x`, `y`, `z` of type `mclBnFp`.
 
 An element `P` of `G1` is represented as `P = [x:y:z]` of a Jacobi coordinate.
 
 ### `mclBnG2`
-This is a struct of `G2` which has three members `x`, `y`, `z` of type `mclBnFp2`.
+This is a struct of `G2` with three members `x`, `y`, `z` of type `mclBnFp2`.
 
 An element `Q` of `G2` is represented as `Q = [x:y:z]` of a Jacobi coordinate.
 
 ### `mclBnGT`
 
-This is a struct of `GT` which has a member `mclBnFp d[12]`.
+This is a struct of `GT` with a member `mclBnFp d[12]`.
 
 ### sizeof
 
@@ -88,7 +88,7 @@ libmclbn384_256.a |          4       |         6        |   32    |   48    |
 libmclbn384.a     |          6       |         6        |   48    |   48    |
 
 ## Thread safety
-All functions except for initialization and changing global setting are thread-safe.
+All functions except for initialization and changing global settings are thread-safe.
 
 ## Initialization
 
@@ -124,7 +124,7 @@ void mclBn_verifyOrderG2(int doVerify);
 ```
 - verify if `doVerify` is 1 or does not. The default parameter is 0 because the cost of verification is not small.
 - Set `doVerify = 1` if considering subgroup attack is necessary.
-- This is not thread safe.
+- This is not thread-safe.
 
 ## Setter / Getter
 
@@ -164,7 +164,7 @@ int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
 - return 0 if bufSize <= (sizeof(*x) * 8 * 2) else -1
 
-### Get little endian byte sequence `buf` corresponding to `x`
+### Get little-endian byte sequence `buf` corresponding to `x`
 ```
 mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
 mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
@@ -194,7 +194,7 @@ mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x);
 - `G2` ; a compressed fixed size
   - the size is equal to `mclBn_getG1ByteSize() * 2`.
 
-pseudo-code to serialize of `P` of `G1` (resp. `G2`)
+A pseudo-code to serialize `P` of `G1` (resp. `G2`):
 ```
 size = mclBn_getG1ByteSize() # resp. mclBn_getG1ByteSize() * 2
 if P is zero:
@@ -242,7 +242,7 @@ mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMo
   - `MCLBN_IO_EC_PROJ` ; output as Jacobi coordinate
 - return `strlen(buf)` if success else 0.
 
-The meaning of the output of `G1`.
+The meaning of the output of `G1`:
 - `0` ; infinity
 - `1 <x> <y>` ; affine coordinate
 - `4 <x> <y> <z>` ; Jacobi coordinate
@@ -271,8 +271,8 @@ mclBnG2_setStr(&Q, "1 3527010695874666181871391160110601448900299527927752402199
 ```
 
 
-## Set random value
-Set `x` by cryptographically secure pseudo random number generator.
+## Set a random value
+Set `x` by a cryptographically secure pseudo-random number generator.
 ```
 int mclBnFr_setByCSPRNG(mclBnFr *x);
 int mclBnFp_setByCSPRNG(mclBnFp *x);
@@ -289,7 +289,7 @@ void mclBn_setRandFunc(
 - `readFunc` ; user-defined function, which writes random `bufSize` bytes to `buf` and returns `bufSize` if success else returns 0.
   - `readFunc` must be thread-safe.
 - Set the default random function if `self == 0` and `readFunc == 0`.
-- This is not thread safe.
+- This is not thread-safe.
 
 ## Arithmetic operations
 ### neg / inv / sqr / add / sub / mul / div of `Fr`, `Fp`, `Fp2`, `GT`.
@@ -325,7 +325,7 @@ void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 ```
 - use `mclBnGT_invGeneric` for an element in Fp12 - GT.
 
-- NOTE: The following functions do NOT return a GT element because GT is multiplicative group.
+- NOTE: The following functions do NOT return a GT element because GT is a multiplicative group.
 
 ```
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
@@ -339,7 +339,7 @@ int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
 int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
 int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
 ```
-- `y` is one of square root of `x` if `y` exists.
+- `y` is one of a square root of `x` if `y` exists.
 - return 0 if success else -1
 
 ### add / sub / dbl / neg for `G1` and `G2`.
@@ -373,7 +373,7 @@ void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 
 - use `mclBnGT_powGeneric` for an element in Fp12 - GT.
 
-### multi scalar multiplication
+### multi-scalar multiplication
 ```
 void mclBnG1_mulVec(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n);
 void mclBnG2_mulVec(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n);
@@ -390,8 +390,7 @@ int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
 ```
 - always return 0
 - use SHA-256 if sizeof(*x) <= 256 else SHA-512
-- set accoring to the same way as `setLittleEndian`
-  - support the other wasy if you want in the future
+- set according to the same way as `setLittleEndian`.
 
 ### map `x` to G1 / G2.
 ```
@@ -489,7 +488,7 @@ int mclBnG2_isValidOrder(const mclBnG2 *x);
 ```
 - Check whether the order of `x` is valid or not
 - return 1 if true else 0
-- This function always cheks according to `mclBn_verifyOrderG1` and `mclBn_verifyOrderG2`.
+- This function always checks according to `mclBn_verifyOrderG1` and `mclBn_verifyOrderG2`.
 
 ### Is equal / zero / one / isOdd
 ```
