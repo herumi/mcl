@@ -1,13 +1,11 @@
-# C API
-
-## News
-
-APIs for old ethreum hash functions are removed.
-`mclBn_setMapToMode` supports only `MCL_MAP_TO_MODE_ETH2`.
+# C/C++ API
 
 ## Minimum sample
 
-[sample/pairing_c.c](sample/pairing_c.c) is a sample of how to use BLS12-381 pairing.
+A sample of how to use BLS12-381:
+
+### C
+[sample/pairing_c.c](sample/pairing_c.c)
 
 ```
 cd mcl
@@ -15,13 +13,27 @@ make -j4
 make bin/pairing_c.exe && bin/pairing_c.exe
 ```
 
+### C++
+[sample/pairing.cpp](sample/pairing.cpp)
+
+```
+cd mcl
+make -j4
+make bin/pairing.exe && bin/pairing.exe
+```
+
 ## Header and libraries
 
-To use BLS12-381, include `mcl/bn_c384_256.h` and link
+### C
+To use BLS12-381, include `<mcl/bn_c384_256.h>` and link
 - libmclbn384_256.{a,so}
 - libmcl.{a,so} ; core library
 
 `384_256` means the max bit size of `Fp` is 384, and that size of `Fr` is 256.
+
+### C++
+include `<mcl/bls12_381.hpp>` and link
+- libmcl.{a,so} ; core library
 
 ## Notation
 
@@ -52,7 +64,7 @@ BN254       | 2|r = 0x2523648240000001ba344d8000000007ff9f800000000010a100000000
 BLS12-381   | 4|r = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001 <br> p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab |
 BN381       | 2|r = 0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d <br> p = 0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013 |
 
-## Structures
+## C Structures
 
 ### `mclBnFp`
 This is a struct of `Fp`. The value is stored as a Montgomery representation.
@@ -79,6 +91,46 @@ An element `Q` of `G2` is represented as `Q = [x:y:z]` of a Jacobi coordinate.
 
 This is a struct of `GT` with a member `mclBnFp d[12]`.
 
+## C++ Structures
+
+The namespace is `mcl::bn`.
+
+### `Fp`
+This is a class of `Fp`.
+
+### `Fr`
+This is a class of `Fr`.
+
+### `Fp2`
+This is a struct of `Fp2` with a member `a` and `b` of type `Fp`.
+
+An element `x` of `Fp2` is represented as `x = a + b i` where `i^2 = -1`.
+
+### `Fp6`
+This is a struct of `Fp6` with a member `a`, `b`, and `c` of type `Fp2`.
+
+An element `x` of `Fp6` is represented as `x = a + b v + c v^2` where `v^3 = xi := 1 + i`.
+
+### `Fp12`
+This is a struct of `Fp12` with a member `a` and `b` of type `Fp6`.
+
+An element `x` of `Fp12` is represented as `x = a + b w` where `w^2 = v`.
+
+### `G1`
+This is a struct of `G1` with three members `x`, `y`, `z` of type `Fp`.
+
+An element `P` of `G1` is represented as `P = [x:y:z]` of a Jacobi coordinate.
+
+### `G2`
+This is a struct of `G2` with three members `x`, `y`, `z` of type `Fp2`.
+
+An element `Q` of `G2` is represented as `Q = [x:y:z]` of a Jacobi coordinate.
+
+### `GT`
+
+`GT` is an alias of `Fp12`.
+But it means a set `{ x in Fp12 | x^r = 1}`.
+
 ### sizeof
 
 library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|sizeof Fr|sizeof Fp|
@@ -91,6 +143,8 @@ libmclbn384.a     |          6       |         6        |   48    |   48    |
 All functions except for initialization and changing global settings are thread-safe.
 
 ## Initialization
+
+### C
 
 Initialize mcl library. Call this function at first before calling the other functions.
 
@@ -108,20 +162,41 @@ the values are the same when the library is built and used.
 - return 0 if success.
 - This is not thread safe.
 
+### C++
+
+```
+void initPairing(<curve type>);
+```
+curve type is defined in `mcl/curve_type.h`.
+- BN254
+- BN_SNARK1
+- BN381_1
+- BLS12_381
+
 ## Global setting
 
 ```
 int mclBn_setMapToMode(int mode);
 ```
-The map-to-G2 function if `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE`.
+- `mode = MCL_MAP_TO_MODE_ORIGINAL` : the old map-to-function (for backward compatibility)
+- `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE` : the map-to-function defined in IRTF CFRG hash-to-curve
 
 ### Control to verify that a point of the elliptic curve has the order `r`.
 
 This function affects `setStr()` and `deserialize()` for G1/G2.
+
+### C
 ```
 void mclBn_verifyOrderG1(int doVerify);
 void mclBn_verifyOrderG2(int doVerify);
 ```
+
+### C++
+```
+verifyOrderG1(bool doVerify);
+verifyOrderG2(bool doVerify);
+```
+
 - verify if `doVerify` is 1 or does not. The default parameter is 0 because the cost of verification is not small.
 - Set `doVerify = 1` if considering subgroup attack is necessary.
 - This is not thread-safe.
@@ -139,6 +214,11 @@ void mclBnG2_clear(mclBnG2 *x);
 void mclBnGT_clear(mclBnGT *x);
 ```
 
+C++
+```
+T::clear();
+```
+
 ### Set `x` to `y`.
 ```
 void mclBnFp_setInt(mclBnFp *y, mclInt x);
@@ -146,11 +226,22 @@ void mclBnFr_setInt(mclBnFr *y, mclInt x);
 void mclBnGT_setInt(mclBnGT *y, mclInt x);
 ```
 
+C++
+```
+T x = <integer literal>;
+```
+
 ### Set `buf[0..bufSize-1]` to `x` with masking according to the following way.
 ```
 int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
+
+C++
+```
+T::setArrayMask(const uint8_t *buf, size_t n);
+```
+
 1. set x = buf[0..bufSize-1] as little endian
 2. x &= (1 << bitLen(r)) - 1
 3. if (x >= r) x &= (1 << (bitLen(r) - 1)) - 1
@@ -162,6 +253,12 @@ int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
+
+C++
+```
+T::setLittleEndianMod(const uint8_t *buf, mclSize bufSize);
+```
+
 - return 0 if bufSize <= (sizeof(*x) * 8 * 2) else -1
 
 ### Get little-endian byte sequence `buf` corresponding to `x`
@@ -169,6 +266,12 @@ int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
 mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
 ```
+
+C++
+```
+size_t T::getLittleEndian(uint8_t *buf, size_t maxN) const
+```
+
 - write `x` to `buf` as little endian
 - return the written size if sucess else 0
 - NOTE: `buf[0] = 0` and return 1 if `x` is zero.
@@ -183,6 +286,12 @@ mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
 mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
 mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x);
 ```
+
+C++
+```
+mclSize T::serialize(void *buf, mclSize maxBufSize) const;
+```
+
 - serialize `x` into `buf[0..maxBufSize-1]`
 - return written byte size if success else 0
 
@@ -223,6 +332,12 @@ mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
 mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
 mclSize mclBnFp2_deserialize(mclBnFp2 *x, const void *buf, mclSize bufSize);
 ```
+
+C++
+```
+mclSize T::deserialize(const void *buf, mclSize bufSize);
+```
+
 - deserialize `x` from `buf[0..bufSize-1]`
 - return read size if success else 0
 
