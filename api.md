@@ -269,7 +269,7 @@ mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x)
 
 C++
 ```
-size_t T::getLittleEndian(uint8_t *buf, size_t maxN) const
+size_t T::getLittleEndian(uint8_t *buf, size_t maxBufSize) const
 ```
 
 - write `x` to `buf` as little endian
@@ -350,6 +350,12 @@ mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMo
 mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode);
 mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMode);
 ```
+
+C++
+```
+size_t T::getStr(char *buf, size_t maxBufSize, int iMode = 0) const
+```
+
 - write `x` to `buf` according to `ioMode`
 - `ioMode`
   - 10 ; decimal number
@@ -371,9 +377,17 @@ int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
 int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
 int mclBnFp_setStr(mclBnFp *x, const char *buf, mclSize bufSize, int ioMode);
 ```
+
+C++
+```
+void T::setStr(bool *pb, const char *str, int iMode = 0)
+void T::setStr(const char *str, int iMode = 0)
+```
+
 - set `buf[0..bufSize-1]` to `x` accoring to `ioMode`
 - deny too large bufSize. The maximum length depends on compile options, but at least the bit length of the type of x.
 - return 0 if success else -1
+  - *pb = result of setStr or throw exception if error (C++)
 
 If you want to use the same generators of BLS12-381 with [zkcrypto](https://github.com/zkcrypto/pairing/tree/master/src/bls12_381#g2) then,
 
@@ -391,6 +405,10 @@ Set `x` by a cryptographically secure pseudo-random number generator.
 ```
 int mclBnFr_setByCSPRNG(mclBnFr *x);
 int mclBnFp_setByCSPRNG(mclBnFp *x);
+```
+C++
+```
+void T::setByCSPRNG()
 ```
 
 ### Change random generator function
@@ -448,6 +466,15 @@ void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 ```
 
+C++
+- `+`, `-`, `*`, `/`
+  - T::add(T& z, const T& x, const T& y);
+  - T::sub(T& z, const T& x, const T& y);
+  - T::mul(T& z, const T& x, const T& y);
+  - T::div(T& z, const T& x, const T& y);
+  - T::neg(T& y, const T& x);
+  - T::inv(T& y, const T& x);
+
 ### Square root of `x`.
 ```
 int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
@@ -469,12 +496,23 @@ void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x);
 void mclBnG2_add(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
 void mclBnG2_sub(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
 ```
+C++
+- `+`, `-`
+  - T::add(T& z, const T& x, const T& y);
+  - T::sub(T& z, const T& x, const T& y);
+  - T::neg(T& y, const T& x);
 
 ### Convert a point from Jacobi coordinate to affine.
 ```
 void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
 ```
+
+C++
+```
+T::normalize(T& y, const T& x)
+```
+
 - convert `[x:y:z]` to `[x:y:1]` if `z != 0` else `[*:*:0]`
 
 ### scalar multiplication
@@ -483,6 +521,11 @@ void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
 void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
 void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 ```
+C++
+```
+T::mul(const T& z, const T& x, const Fr& y);
+```
+
 - z = x * y for G1 / G2
 - z = pow(x, y) for GT
 
@@ -494,6 +537,11 @@ void mclBnG1_mulVec(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n);
 void mclBnG2_mulVec(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n);
 void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
 ```
+C++
+```
+T::mulVec(T, const T&, const Fr *y, size_t n);
+```
+
 - z = sum_{i=0}^{n-1} mul(x[i], y[i]) for G1 / G2.
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
 
@@ -503,6 +551,11 @@ void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
 int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
 int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
 ```
+C++
+```
+T::setHashOf(const void *msg, size_t msgSize);
+```
+
 - always return 0
 - use SHA-256 if sizeof(*x) <= 256 else SHA-512
 - set according to the same way as `setLittleEndian`.
@@ -512,6 +565,13 @@ int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFp_mapToG1(mclBnG1 *y, const mclBnFp *x);
 int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x);
 ```
+
+C++
+```
+void mapToG1(G1& P, const Fp& x);
+void mapToG2(G2& P, const Fp2& x);
+```
+
 - See `struct MapTo` in `mcl/bn.hpp` for the detail of the algorithm.
 - return 0 if success else -1
 
@@ -519,6 +579,12 @@ int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x);
 ```
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
+```
+
+C++
+```
+void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
+void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
 ```
 - Combine `setHashOf` and `mapTo` functions
 
@@ -535,19 +601,36 @@ The pairing function `e(P, Q)` is consist of two parts:
 ```
 void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 ```
+C++
+```
+void pairing(GT& z, const G1& x, const G2& y);
+```
+
 ### millerLoop
 ```
 void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 ```
+C++
+```
+void millerLoop(GT& z, const G1& x, const G2& y);
+```
 ### finalExp
 ```
 void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
+```
+C++
+```
+void finalExp(GT& y, const GT& x);
 ```
 
 ## Variants of MillerLoop
 ### multi pairing
 ```
 void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
+```
+C++
+```
+void millerLoopVec(GT& z, const G1 *x, const G2 *y, size_t n);
 ```
 - This function is for multi-pairing
   - computes prod_{i=0}^{n-1} MillerLoop(x[i], y[i])
@@ -594,6 +677,10 @@ int mclBnFp_isValid(const mclBnFp *x);
 int mclBnG1_isValid(const mclBnG1 *x);
 int mclBnG2_isValid(const mclBnG2 *x);
 ```
+C++
+```
+bool T::isValid() const;
+```
 - return 1 if true else 0
 
 ### Check the order of a point
@@ -601,6 +688,11 @@ int mclBnG2_isValid(const mclBnG2 *x);
 int mclBnG1_isValidOrder(const mclBnG1 *x);
 int mclBnG2_isValidOrder(const mclBnG2 *x);
 ```
+C++
+```
+bool T::isValidOrder() const;
+```
+
 - Check whether the order of `x` is valid or not
 - return 1 if true else 0
 - This function always checks according to `mclBn_verifyOrderG1` and `mclBn_verifyOrderG2`.
@@ -631,7 +723,14 @@ int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
 int mclBnGT_isZero(const mclBnGT *x);
 int mclBnGT_isOne(const mclBnGT *x);
 ```
-- return 1 if true else 0
+C++
+```
+bool T::operator==(const T& rhs) const;
+bool T::isZero() const;
+bool T::isOne() const;
+```
+
+- return 1 (true) if true else 0 (false)
 
 ### isNegative
 ```
