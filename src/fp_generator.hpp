@@ -1236,7 +1236,7 @@ private:
 		L(fpDbl_modL);
 			Pack t = sf.t;
 			t.append(gp2);
-			gen_fpDbl_mod6(gp0, gp1, t);
+			gen_fpDbl_mod6NF(gp0, gp1, t);
 			ret();
 			return true;
 		}
@@ -2306,7 +2306,7 @@ private:
 		@input (z, xy)
 		z[5..0] <- montgomery reduction(x[11..0])
 	*/
-	void gen_fpDbl_mod6(const Reg64& z, const Reg64& xy, const Pack& t)
+	void gen_fpDbl_mod6NF(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
 		assert(!isFullBit_);
 		const Reg64& t0 = t[0];
