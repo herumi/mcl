@@ -2299,7 +2299,12 @@ private:
 
 		Reg64 pk0 = pk[0];
 		Pack zp = pk.sub(1);
-		Pack keep = Pack(xy, rax, rdx, tt, CF, pk0);
+		Pack keep = Pack(xy, rax, rdx, tt);
+		assert(n == 4 || n == 6);
+		if (n == 6) {
+			keep.append(CF);
+			keep.append(pk0);
+		}
 		mov_rr(keep, zp);
 		sub_rm(zp, pp); // z -= p
 		cmovc_rr(zp, keep);
