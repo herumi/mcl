@@ -1406,23 +1406,45 @@ private:
 	/*
 		(h, c[n..0]) = c[n..0] + px[n-1..0] * rdx + (cc << n)
 		h = 0 or 1
-		use rax, t0
+		use t0
 	*/
 	void mulAdd2(const Reg64& h, const Pack& c, const RegExp& px, const Reg64& t0, const Reg64 *cc = 0, bool updateCarry = true)
 	{
 		assert(!isFullBit_);
-		const Reg64& a = rax;
 		xor_(h, h); // h = 0
 		for (int i = 0; i < pn_; i++) {
-			mulx(t0, a, ptr [px + i * 8]);
-			adox(c[i], a);
+			mulx(t0, h, ptr [px + i * 8]);
+			adox(c[i], h);
 			if (i == pn_ - 1) break;
 			adcx(c[i + 1], t0);
 		}
+		mov(h, 0);
 		adox(t0, h); // no carry
 		if (cc) adox(t0, *cc); // no carry
 		adcx(c[pn_], t0);
 		if (updateCarry) adc(h, h);
+	}
+	/*
+		(c[0], c[n..1]) = c[n..0] + px[n-1..0] * rdx + (cc << n)
+		c[0] = 0 or 1
+		use rax, H
+	*/
+	void mulAdd3(const Pack& c, const RegExp& px, const Reg64& H, const Reg64 *cc = 0, bool updateCarry = true)
+	{
+		assert(!isFullBit_);
+		const Reg64& a = rax;
+		xor_(a, a);
+		for (int i = 0; i < pn_; i++) {
+			mulx(H, a, ptr [px + i * 8]);
+			adox(c[i], a);
+			if (i == pn_ - 1) break;
+			adcx(c[i + 1], H);
+		}
+		// we can suppose that c[0] = 0
+		adox(H, c[0]); // no carry
+		if (cc) adox(H, *cc); // no carry
+		adcx(c[pn_], H);
+		if (updateCarry) setc(c[0].cvt8());
 	}
 	/*
 		input
@@ -2302,6 +2324,12 @@ private:
 		store_mr(pz + 8 * 6, Pack(t3, t2, t1, t0, t6, t5));
 #endif
 	}
+	Pack rotatePack(const Pack& p) const
+	{
+		Pack q = p.sub(1);
+		q.append(p[0]);
+		return q;
+	}
 	/*
 		@input (z, xy)
 		z[5..0] <- montgomery reduction(x[11..0])
@@ -2318,7 +2346,6 @@ private:
 		const Reg64& t6 = t[6];
 		const Reg64& t7 = t[7];
 		const Reg64& t8 = t[8];
-		const Reg64& t9 = t[9];
 
 		const Reg64& d = rdx;
 		const Reg64& pp = t[10];
@@ -2327,36 +2354,36 @@ private:
 		load_rm(Pack(t6, t5, t4, t3, t2, t1, t0), xy);
 		mov(d, rp_);
 		imul(d, t0); // q
-		mulAdd2(t7, Pack(t6, t5, t4, t3, t2, t1, t0), pp, t8);
-		// t7 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
+		mulAdd3(Pack(t6, t5, t4, t3, t2, t1, t0), pp, t8);
+		// t0 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
 
 		mov(d, rp_);
 		imul(d, t1);
-		mov(t0, ptr[xy + 7 * 8]);
-		mulAdd2(t9, Pack(t0, t6, t5, t4, t3, t2, t1), pp, t8, &t7);
+		mov(t7, ptr[xy + 7 * 8]);
+		mulAdd3(Pack(t7, t6, t5, t4, t3, t2, t1), pp, t8, &t0);
 
 		mov(d, rp_);
 		imul(d, t2);
-		mov(t1, ptr[xy + 8 * 8]);
-		mulAdd2(t7, Pack(t1, t0, t6, t5, t4, t3, t2), pp, t8, &t9);
+		mov(t0, ptr[xy + 8 * 8]);
+		mulAdd3(Pack(t0, t7, t6, t5, t4, t3, t2), pp, t8, &t1);
 
 		mov(d, rp_);
 		imul(d, t3);
-		mov(t2, ptr[xy + 9 * 8]);
-		mulAdd2(t9, Pack(t2, t1, t0, t6, t5, t4, t3), pp, t8, &t7);
+		mov(t1, ptr[xy + 9 * 8]);
+		mulAdd3(Pack(t1, t0, t7, t6, t5, t4, t3), pp, t8, &t2);
 
 		mov(d, rp_);
 		imul(d, t4);
-		mov(t3, ptr[xy + 10 * 8]);
-		mulAdd2(t7, Pack(t3, t2, t1, t0, t6, t5, t4), pp, t8, &t9);
+		mov(t2, ptr[xy + 10 * 8]);
+		mulAdd3(Pack(t2, t1, t0, t7, t6, t5, t4), pp, t8, &t3);
 
 		mov(d, rp_);
 		imul(d, t5);
-		mov(t4, ptr[xy + 11 * 8]);
-		mulAdd2(t9, Pack(t4, t3, t2, t1, t0, t6, t5), pp, t8, &t7, false);
+		mov(t3, ptr[xy + 11 * 8]);
+		mulAdd3(Pack(t3, t2, t1, t0, t7, t6, t5), pp, t8, &t4, false);
 
-		Pack zp = Pack(t4, t3, t2, t1, t0, t6);
-		Pack keep = Pack(t5, xy, rax, rdx, t7, t8);
+		Pack zp = Pack(t3, t2, t1, t0, t7, t6);
+		Pack keep = Pack(xy, rax, rdx, t8, t5, t4);
 		mov_rr(keep, zp);
 		sub_rm(zp, pp); // z -= p
 		cmovc_rr(zp, keep);
