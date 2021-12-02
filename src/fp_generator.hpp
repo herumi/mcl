@@ -2267,7 +2267,7 @@ private:
 	}
 	/*
 		@input (z, xy)
-		z[5..0] <- montgomery reduction(x[11..0])
+		z[n-1..0] <- montgomery reduction(x[2n-1..0])
 	*/
 	void gen_fpDbl_modNF(const Reg64& z, const Reg64& xy, const Pack& t, int n)
 	{
