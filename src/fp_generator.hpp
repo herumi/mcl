@@ -2351,21 +2351,25 @@ private:
 		const Reg64& pp = t[10];
 		lea(pp, ptr[rip + pL_]);
 
-		load_rm(Pack(t6, t5, t4, t3, t2, t1, t0), xy);
+		Reg64 CF = t7;
+		Pack pk = t.sub(0, pn_ + 1);
+		load_rm(pk, xy);
 		mov(d, rp_);
-		imul(d, t0); // q
-		mulAdd3(Pack(t6, t5, t4, t3, t2, t1, t0), pp, t8);
-		// t0 : carry, [t6:t5:t4:t3:t2:t1:t0] += p * q
+		imul(d, pk[0]); // q
+		mulAdd3(pk, pp, t8);
 
 		mov(d, rp_);
-		imul(d, t1);
-		mov(t7, ptr[xy + 7 * 8]);
-		mulAdd3(Pack(t7, t6, t5, t4, t3, t2, t1), pp, t8, &t0);
+		imul(d, pk[1]);
+		mov(CF, ptr[xy + 7 * 8]);
+		pk.append(CF);
+		CF = pk[0];
+		pk = pk.sub(1);
+		mulAdd3(pk, pp, t8, &CF);
 
 		mov(d, rp_);
-		imul(d, t2);
-		mov(t0, ptr[xy + 8 * 8]);
-		mulAdd3(Pack(t0, t7, t6, t5, t4, t3, t2), pp, t8, &t1);
+		imul(d, pk[1]);
+		mov(CF, ptr[xy + 8 * 8]);
+		mulAdd3(Pack(CF, t7, t6, t5, t4, t3, t2), pp, t8, &t1);
 
 		mov(d, rp_);
 		imul(d, t3);
