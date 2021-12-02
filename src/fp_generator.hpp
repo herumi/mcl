@@ -2337,57 +2337,34 @@ private:
 	void gen_fpDbl_mod6NF(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
 		assert(!isFullBit_);
-		const Reg64& t0 = t[0];
-		const Reg64& t1 = t[1];
-		const Reg64& t2 = t[2];
-		const Reg64& t3 = t[3];
-		const Reg64& t4 = t[4];
-		const Reg64& t5 = t[5];
-		const Reg64& t6 = t[6];
-		const Reg64& t7 = t[7];
-		const Reg64& t8 = t[8];
+		assert(pn_ + 3 <= 11);
 
 		const Reg64& d = rdx;
-		const Reg64& pp = t[10];
+		Pack pk = t.sub(0, pn_ + 1);
+		Reg64 CF = t[pn_ + 1];
+		const Reg64& tt = t[pn_ + 2];
+		const Reg64& pp = t[pn_ + 3];
+
 		lea(pp, ptr[rip + pL_]);
 
-		Reg64 CF = t7;
-		Pack pk = t.sub(0, pn_ + 1);
 		load_rm(pk, xy);
 		mov(d, rp_);
 		imul(d, pk[0]); // q
-		mulAdd3(pk, pp, t8);
+		mulAdd3(pk, pp, tt);
 
-		mov(d, rp_);
-		imul(d, pk[1]);
-		mov(CF, ptr[xy + 7 * 8]);
-		pk.append(CF);
-		CF = pk[0];
-		pk = pk.sub(1);
-		mulAdd3(pk, pp, t8, &CF);
+		for (int i = 1; i < pn_; i++) {
+			mov(d, rp_);
+			imul(d, pk[1]);
+			mov(CF, ptr[xy + (pn_ + i) * 8]);
+			pk.append(CF);
+			CF = pk[0];
+			pk = pk.sub(1);
+			mulAdd3(pk, pp, tt, &CF, i < pn_ - 1);
+		}
 
-		mov(d, rp_);
-		imul(d, pk[1]);
-		mov(CF, ptr[xy + 8 * 8]);
-		mulAdd3(Pack(CF, t7, t6, t5, t4, t3, t2), pp, t8, &t1);
-
-		mov(d, rp_);
-		imul(d, t3);
-		mov(t1, ptr[xy + 9 * 8]);
-		mulAdd3(Pack(t1, t0, t7, t6, t5, t4, t3), pp, t8, &t2);
-
-		mov(d, rp_);
-		imul(d, t4);
-		mov(t2, ptr[xy + 10 * 8]);
-		mulAdd3(Pack(t2, t1, t0, t7, t6, t5, t4), pp, t8, &t3);
-
-		mov(d, rp_);
-		imul(d, t5);
-		mov(t3, ptr[xy + 11 * 8]);
-		mulAdd3(Pack(t3, t2, t1, t0, t7, t6, t5), pp, t8, &t4, false);
-
-		Pack zp = Pack(t3, t2, t1, t0, t7, t6);
-		Pack keep = Pack(xy, rax, rdx, t8, t5, t4);
+		Reg64 pk0 = pk[0];
+		Pack zp = pk.sub(1);
+		Pack keep = Pack(xy, rax, rdx, tt, CF, pk0);
 		mov_rr(keep, zp);
 		sub_rm(zp, pp); // z -= p
 		cmovc_rr(zp, keep);
