@@ -1024,50 +1024,6 @@ private:
 		cmovc_rr(Pack(t9, t8, t4), Pack(t2, t1, t10));
 		store_mr(z, Pack(t9, t8, t4));
 	}
-	void gen_fpDbl_mod4NF(const Reg64& z, const Reg64& xy, const Pack& t)
-	{
-		assert(!isFullBit_);
-		const Reg64& t0 = t[0];
-		const Reg64& t1 = t[1];
-		const Reg64& t2 = t[2];
-		const Reg64& t3 = t[3];
-		const Reg64& t4 = t[4];
-		const Reg64& t5 = t[5];
-		const Reg64& t6 = t[6];
-		const Reg64& t7 = t[7];
-
-		const Reg64& d = rdx;
-		const Reg64& pp = t[8];
-		lea(pp, ptr[rip + pL_]);
-
-		load_rm(Pack(t4, t3, t2, t1, t0), xy);
-		mov(d, rp_);
-		imul(d, t0); // q
-		mulAdd2(t5, Pack(t4, t3, t2, t1, t0), pp, t6);
-		// t5 : carry, [t4:t3:t2:t1:t0] += p * q
-
-		mov(d, rp_);
-		imul(d, t1);
-		mov(t0, ptr[xy + 5 * 8]);
-		mulAdd2(t7, Pack(t0, t4, t3, t2, t1), pp, t6, &t5);
-
-		mov(d, rp_);
-		imul(d, t2);
-		mov(t1, ptr[xy + 6 * 8]);
-		mulAdd2(t5, Pack(t1, t0, t4, t3, t2), pp, t6, &t7);
-
-		mov(d, rp_);
-		imul(d, t3);
-		mov(t2, ptr[xy + 7 * 8]);
-		mulAdd2(t7, Pack(t2, t1, t0, t4, t3), pp, t6, &t5, false);
-
-		Pack zp = Pack(t2, t1, t0, t4);
-		Pack keep = Pack(t7, t6, t5, t3);
-		mov_rr(keep, zp);
-		sub_rm(zp, pp); // z -= p
-		cmovc_rr(zp, keep);
-		store_mr(z, zp);
-	}
 	/*
 		@input (z, xy)
 		z[3..0] <- montgomery reduction(x[7..0])
@@ -1077,7 +1033,7 @@ private:
 	void gen_fpDbl_mod4(const Reg64& z, const Reg64& xy, const Pack& t)
 	{
 		if (!isFullBit_) {
-			gen_fpDbl_mod4NF(z, xy, t);
+			gen_fpDbl_modNF(z, xy, t, 4);
 			return;
 		}
 		const Reg64& t0 = t[0];
@@ -1236,7 +1192,7 @@ private:
 		L(fpDbl_modL);
 			Pack t = sf.t;
 			t.append(gp2);
-			gen_fpDbl_mod6NF(gp0, gp1, t);
+			gen_fpDbl_modNF(gp0, gp1, t, 6);
 			ret();
 			return true;
 		}
@@ -1404,32 +1360,11 @@ private:
 		adc(c[n], 0);
 	}
 	/*
-		(h, c[n..0]) = c[n..0] + px[n-1..0] * rdx + (cc << n)
-		h = 0 or 1
-		use t0
-	*/
-	void mulAdd2(const Reg64& h, const Pack& c, const RegExp& px, const Reg64& t0, const Reg64 *cc = 0, bool updateCarry = true)
-	{
-		assert(!isFullBit_);
-		xor_(h, h); // h = 0
-		for (int i = 0; i < pn_; i++) {
-			mulx(t0, h, ptr [px + i * 8]);
-			adox(c[i], h);
-			if (i == pn_ - 1) break;
-			adcx(c[i + 1], t0);
-		}
-		mov(h, 0);
-		adox(t0, h); // no carry
-		if (cc) adox(t0, *cc); // no carry
-		adcx(c[pn_], t0);
-		if (updateCarry) adc(h, h);
-	}
-	/*
 		(c[0], c[n..1]) = c[n..0] + px[n-1..0] * rdx + (cc << n)
 		c[0] = 0 or 1
 		use rax, H
 	*/
-	void mulAdd3(const Pack& c, const RegExp& px, const Reg64& H, const Reg64 *cc = 0, bool updateCarry = true)
+	void mulAdd2(const Pack& c, const RegExp& px, const Reg64& H, const Reg64 *cc = 0, bool updateCarry = true)
 	{
 		assert(!isFullBit_);
 		const Reg64& a = rax;
@@ -2334,32 +2269,32 @@ private:
 		@input (z, xy)
 		z[5..0] <- montgomery reduction(x[11..0])
 	*/
-	void gen_fpDbl_mod6NF(const Reg64& z, const Reg64& xy, const Pack& t)
+	void gen_fpDbl_modNF(const Reg64& z, const Reg64& xy, const Pack& t, int n)
 	{
 		assert(!isFullBit_);
-		assert(pn_ + 3 <= 11);
+		assert(n + 3 <= 11);
 
 		const Reg64& d = rdx;
-		Pack pk = t.sub(0, pn_ + 1);
-		Reg64 CF = t[pn_ + 1];
-		const Reg64& tt = t[pn_ + 2];
-		const Reg64& pp = t[pn_ + 3];
+		Pack pk = t.sub(0, n + 1);
+		Reg64 CF = t[n + 1];
+		const Reg64& tt = t[n + 2];
+		const Reg64& pp = t[n + 3];
 
 		lea(pp, ptr[rip + pL_]);
 
 		load_rm(pk, xy);
 		mov(d, rp_);
 		imul(d, pk[0]); // q
-		mulAdd3(pk, pp, tt);
+		mulAdd2(pk, pp, tt);
 
-		for (int i = 1; i < pn_; i++) {
+		for (int i = 1; i < n; i++) {
 			mov(d, rp_);
 			imul(d, pk[1]);
-			mov(CF, ptr[xy + (pn_ + i) * 8]);
+			mov(CF, ptr[xy + (n + i) * 8]);
 			pk.append(CF);
 			CF = pk[0];
 			pk = pk.sub(1);
-			mulAdd3(pk, pp, tt, &CF, i < pn_ - 1);
+			mulAdd2(pk, pp, tt, &CF, i < n - 1);
 		}
 
 		Reg64 pk0 = pk[0];
