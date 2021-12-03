@@ -8,9 +8,9 @@ option(MCL_LINK_DIR "Absolute path where mcl static or dynamic library resides")
 option(GMP_LINK_DIR "Absolute path where GMP static or dynamic library resides")
 
 # Windows linkage problem, see https://stackoverflow.com/a/68375079/13719349
-
+if(MSVC)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-
+endif()
 
 add_library(mcljava SHARED mcl_wrap.cxx)
 add_library(mclelgamaljava SHARED elgamal_wrap.cxx)
@@ -55,5 +55,5 @@ get_target_property(mcl_jar MclTest JAR_FILE)
 get_target_property(mcl_classdir MclTest CLASSDIR)
 
 enable_testing()
-add_test(NAME TestMcl COMMAND ${Java_JAVA_EXECUTABLE} -cp ${mcl_jar} -Djava.library.path=./:./lib/Release MclTest)
-add_test(NAME TestElgamal COMMAND ${Java_JAVA_EXECUTABLE} -cp ${elgamal_jar} -Djava.library.path=./:./lib/Release ElgamalTest)
+add_test(NAME TestMcl COMMAND ${Java_JAVA_EXECUTABLE} -cp ${mcl_jar} -Djava.library.path=$<TARGET_FILE_DIR:mcljava> MclTest)
+add_test(NAME TestElgamal COMMAND ${Java_JAVA_EXECUTABLE} -cp ${elgamal_jar} -Djava.library.path=$<TARGET_FILE_DIR:mclelgamaljava> ElgamalTest)
