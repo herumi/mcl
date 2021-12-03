@@ -17,7 +17,6 @@
 	utility class and functions for Xbyak
 	Xbyak::util::Clock ; rdtsc timer
 	Xbyak::util::Cpu ; detect CPU
-	@note this header is UNDER CONSTRUCTION!
 */
 #include "xbyak.h"
 #endif // XBYAK_ONLY_CLASS_CPU
@@ -27,7 +26,7 @@
 #endif
 
 #ifdef XBYAK_INTEL_CPU_SPECIFIC
-#ifdef _MSC_VER
+#ifdef _WIN32
 	#if (_MSC_VER < 1400) && defined(XBYAK32)
 		static inline __declspec(naked) void __cpuid(int[4], int)
 		{
@@ -258,7 +257,7 @@ public:
 	static inline void getCpuid(unsigned int eaxIn, unsigned int data[4])
 	{
 #ifdef XBYAK_INTEL_CPU_SPECIFIC
-	#ifdef _MSC_VER
+	#ifdef _WIN32
 		__cpuid(reinterpret_cast<int*>(data), eaxIn);
 	#else
 		__cpuid(eaxIn, data[0], data[1], data[2], data[3]);
@@ -271,7 +270,7 @@ public:
 	static inline void getCpuidEx(unsigned int eaxIn, unsigned int ecxIn, unsigned int data[4])
 	{
 #ifdef XBYAK_INTEL_CPU_SPECIFIC
-	#ifdef _MSC_VER
+	#ifdef _WIN32
 		__cpuidex(reinterpret_cast<int*>(data), eaxIn, ecxIn);
 	#else
 		__cpuid_count(eaxIn, ecxIn, data[0], data[1], data[2], data[3]);
@@ -312,7 +311,6 @@ public:
 	static const Type tSSE42 = 1 << 8;
 	static const Type tPOPCNT = 1 << 9;
 	static const Type tAESNI = 1 << 10;
-	static const Type tSSE5 = 1 << 11;
 	static const Type tOSXSAVE = 1 << 12;
 	static const Type tPCLMULQDQ = 1 << 13;
 	static const Type tAVX = 1 << 14;
@@ -320,7 +318,6 @@ public:
 
 	static const Type t3DN = 1 << 16;
 	static const Type tE3DN = 1 << 17;
-	static const Type tSSE4a = 1 << 18;
 	static const Type tRDTSCP = 1 << 19;
 	static const Type tAVX2 = 1 << 20;
 	static const Type tBMI1 = 1 << 21; // andn, bextr, blsi, blsmsk, blsr, tzcnt
@@ -368,6 +365,9 @@ public:
 	static const Type tAMX_TILE = uint64_t(1) << 59;
 	static const Type tAMX_INT8 = uint64_t(1) << 60;
 	static const Type tAMX_BF16 = uint64_t(1) << 61;
+	static const Type tAVX_VNNI = uint64_t(1) << 62;
+	static const Type tAVX512_FP16 = uint64_t(1) << 11;
+	// 18, 63
 
 	Cpu()
 		: type_(NONE)
@@ -389,19 +389,35 @@ public:
 		if (ECX == get32bitAsBE(amd)) {
 			type_ |= tAMD;
 			getCpuid(0x80000001, data);
-			if (EDX & (1U << 31)) type_ |= t3DN;
-			if (EDX & (1U << 15)) type_ |= tCMOV;
-			if (EDX & (1U << 30)) type_ |= tE3DN;
-			if (EDX & (1U << 22)) type_ |= tMMX2;
-			if (EDX & (1U << 27)) type_ |= tRDTSCP;
+			if (EDX & (1U << 31)) {
+				type_ |= t3DN;
+				// 3DNow! implies support for PREFETCHW on AMD
+				type_ |= tPREFETCHW;
+			}
+
+			if (EDX & (1U << 29)) {
+				// Long mode implies support for PREFETCHW on AMD
+				type_ |= tPREFETCHW;
+			}
 		}
 		if (ECX == get32bitAsBE(intel)) {
 			type_ |= tINTEL;
+		}
+
+		// Extended flags information
+		getCpuid(0x80000000, data);
+		if (EAX >= 0x80000001) {
 			getCpuid(0x80000001, data);
+
+			if (EDX & (1U << 31)) type_ |= t3DN;
+			if (EDX & (1U << 30)) type_ |= tE3DN;
 			if (EDX & (1U << 27)) type_ |= tRDTSCP;
+			if (EDX & (1U << 22)) type_ |= tMMX2;
+			if (EDX & (1U << 15)) type_ |= tCMOV;
 			if (ECX & (1U << 5)) type_ |= tLZCNT;
 			if (ECX & (1U << 8)) type_ |= tPREFETCHW;
 		}
+
 		getCpuid(1, data);
 		if (ECX & (1U << 0)) type_ |= tSSE3;
 		if (ECX & (1U << 9)) type_ |= tSSSE3;
@@ -426,7 +442,11 @@ public:
 			if ((bv & 6) == 6) {
 				if (ECX & (1U << 28)) type_ |= tAVX;
 				if (ECX & (1U << 12)) type_ |= tFMA;
-				if (((bv >> 5) & 7) == 7) {
+				// do *not* check AVX-512 state on macOS because it has on-demand AVX-512 support
+#if !defined(__APPLE__)
+				if (((bv >> 5) & 7) == 7)
+#endif
+				{
 					getCpuidEx(7, 0, data);
 					if (EBX & (1U << 16)) type_ |= tAVX512F;
 					if (type_ & tAVX512F) {
@@ -448,17 +468,14 @@ public:
 						if (EDX & (1U << 2)) type_ |= tAVX512_4VNNIW;
 						if (EDX & (1U << 3)) type_ |= tAVX512_4FMAPS;
 						if (EDX & (1U << 8)) type_ |= tAVX512_VP2INTERSECT;
-					}
-					// EAX=07H, ECX=1
-					getCpuidEx(7, 1, data);
-					if (type_ & tAVX512F) {
-						if (EAX & (1U << 5)) type_ |= tAVX512_BF16;
+						if ((type_ & tAVX512BW) && (EDX & (1U << 23))) type_ |= tAVX512_FP16;
 					}
 				}
 			}
 		}
 		if (maxNum >= 7) {
 			getCpuidEx(7, 0, data);
+			const uint32_t maxNumSubLeaves = EAX;
 			if (type_ & tAVX && (EBX & (1U << 5))) type_ |= tAVX2;
 			if (EBX & (1U << 3)) type_ |= tBMI1;
 			if (EBX & (1U << 8)) type_ |= tBMI2;
@@ -474,6 +491,13 @@ public:
 			if (EDX & (1U << 24)) type_ |= tAMX_TILE;
 			if (EDX & (1U << 25)) type_ |= tAMX_INT8;
 			if (EDX & (1U << 22)) type_ |= tAMX_BF16;
+			if (maxNumSubLeaves >= 1) {
+				getCpuidEx(7, 1, data);
+				if (EAX & (1U << 4)) type_ |= tAVX_VNNI;
+				if (type_ & tAVX512F) {
+					if (EAX & (1U << 5)) type_ |= tAVX512_BF16;
+				}
+			}
 		}
 		setFamily();
 		setNumCores();
@@ -539,7 +563,7 @@ const int UseRDX = 1 << 7;
 
 class Pack {
 	static const size_t maxTblNum = 15;
-	const Xbyak::Reg64 *tbl_[maxTblNum];
+	Xbyak::Reg64 tbl_[maxTblNum];
 	size_t n_;
 public:
 	Pack() : tbl_(), n_(0) {}
@@ -556,32 +580,36 @@ public:
 		return *this;
 	}
 	Pack(const Xbyak::Reg64& t0)
-	{ n_ = 1; tbl_[0] = &t0; }
+	{ n_ = 1; tbl_[0] = t0; }
 	Pack(const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 2; tbl_[0] = &t0; tbl_[1] = &t1; }
+	{ n_ = 2; tbl_[0] = t0; tbl_[1] = t1; }
 	Pack(const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 3; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; }
+	{ n_ = 3; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; }
 	Pack(const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 4; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; }
+	{ n_ = 4; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; }
 	Pack(const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 5; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; tbl_[4] = &t4; }
+	{ n_ = 5; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; }
 	Pack(const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 6; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; tbl_[4] = &t4; tbl_[5] = &t5; }
+	{ n_ = 6; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; }
 	Pack(const Xbyak::Reg64& t6, const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 7; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; tbl_[4] = &t4; tbl_[5] = &t5; tbl_[6] = &t6; }
+	{ n_ = 7; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; tbl_[6] = t6; }
 	Pack(const Xbyak::Reg64& t7, const Xbyak::Reg64& t6, const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 8; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; tbl_[4] = &t4; tbl_[5] = &t5; tbl_[6] = &t6; tbl_[7] = &t7; }
+	{ n_ = 8; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; tbl_[6] = t6; tbl_[7] = t7; }
 	Pack(const Xbyak::Reg64& t8, const Xbyak::Reg64& t7, const Xbyak::Reg64& t6, const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 9; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; tbl_[4] = &t4; tbl_[5] = &t5; tbl_[6] = &t6; tbl_[7] = &t7; tbl_[8] = &t8; }
+	{ n_ = 9; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; tbl_[6] = t6; tbl_[7] = t7; tbl_[8] = t8; }
 	Pack(const Xbyak::Reg64& t9, const Xbyak::Reg64& t8, const Xbyak::Reg64& t7, const Xbyak::Reg64& t6, const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
-	{ n_ = 10; tbl_[0] = &t0; tbl_[1] = &t1; tbl_[2] = &t2; tbl_[3] = &t3; tbl_[4] = &t4; tbl_[5] = &t5; tbl_[6] = &t6; tbl_[7] = &t7; tbl_[8] = &t8; tbl_[9] = &t9; }
+	{ n_ = 10; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; tbl_[6] = t6; tbl_[7] = t7; tbl_[8] = t8; tbl_[9] = t9; }
+	Pack(const Xbyak::Reg64& ta, const Xbyak::Reg64& t9, const Xbyak::Reg64& t8, const Xbyak::Reg64& t7, const Xbyak::Reg64& t6, const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
+	{ n_ = 11; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; tbl_[6] = t6; tbl_[7] = t7; tbl_[8] = t8; tbl_[9] = t9; tbl_[10] = ta; }
+	Pack(const Xbyak::Reg64& tb, const Xbyak::Reg64& ta, const Xbyak::Reg64& t9, const Xbyak::Reg64& t8, const Xbyak::Reg64& t7, const Xbyak::Reg64& t6, const Xbyak::Reg64& t5, const Xbyak::Reg64& t4, const Xbyak::Reg64& t3, const Xbyak::Reg64& t2, const Xbyak::Reg64& t1, const Xbyak::Reg64& t0)
+	{ n_ = 12; tbl_[0] = t0; tbl_[1] = t1; tbl_[2] = t2; tbl_[3] = t3; tbl_[4] = t4; tbl_[5] = t5; tbl_[6] = t6; tbl_[7] = t7; tbl_[8] = t8; tbl_[9] = t9; tbl_[10] = ta; tbl_[11] = tb; }
 	Pack& append(const Xbyak::Reg64& t)
 	{
 		if (n_ == maxTblNum) {
 			fprintf(stderr, "ERR Pack::can't append\n");
 			XBYAK_THROW_RET(ERR_BAD_PARAMETER, *this)
 		}
-		tbl_[n_++] = &t;
+		tbl_[n_++] = t;
 		return *this;
 	}
 	void init(const Xbyak::Reg64 *tbl, size_t n)
@@ -592,7 +620,7 @@ public:
 		}
 		n_ = n;
 		for (size_t i = 0; i < n; i++) {
-			tbl_[i] = &tbl[i];
+			tbl_[i] = tbl[i];
 		}
 	}
 	const Xbyak::Reg64& operator[](size_t n) const
@@ -601,7 +629,7 @@ public:
 			fprintf(stderr, "ERR Pack bad n=%d(%d)\n", (int)n, (int)n_);
 			XBYAK_THROW_RET(ERR_BAD_PARAMETER, rax)
 		}
-		return *tbl_[n];
+		return tbl_[n];
 	}
 	size_t size() const { return n_; }
 	/*
@@ -624,7 +652,7 @@ public:
 	void put() const
 	{
 		for (size_t i = 0; i < n_; i++) {
-			printf("%s ", tbl_[i]->toString());
+			printf("%s ", tbl_[i].toString());
 		}
 		printf("\n");
 	}

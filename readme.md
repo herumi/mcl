@@ -353,6 +353,7 @@ void setHash(F& x, const void *msg, size_t msgSize)
 
 # History
 
+- 2021/Aug/26 v1.52 improve {G1,G2}::isValidOrder() for BLS12-381
 - 2021/May/04 v1.50 support s390x(systemz)
 - 2021/Apr/21 v1.41 fix inner function of mapToGi for large dst (not affect hashAndMapToGi)
 - 2021/May/24 v1.40 fix sigsegv in valgrind

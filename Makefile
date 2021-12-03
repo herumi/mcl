@@ -141,7 +141,7 @@ else
   ASM_BMI2_SRC_DEP=
 endif
 
-ifneq ($(findstring $(OS),mac/mingw64),)
+ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
   BN256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib

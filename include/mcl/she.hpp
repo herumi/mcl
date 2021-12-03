@@ -20,7 +20,8 @@
 #elif MCLBN_FP_UNIT_SIZE == 8
 #include <mcl/bn512.hpp>
 #else
-	#error "MCLBN_FP_UNIT_SIZE must be 4, 6, or 8"
+#define MCL_MAX_FP_BIT_SIZE (MCLBN_FP_UNIT_SIZE * 64)
+#include <mcl/bn.hpp>
 #endif
 
 #include <mcl/window_method.hpp>
@@ -39,7 +40,8 @@ namespace local {
 	#define MCLSHE_WIN_SIZE 10
 #endif
 static const size_t winSize = MCLSHE_WIN_SIZE;
-static const size_t defaultTryNum = 2048;
+static const size_t defaultHashSize = 1024;
+static const size_t defaultTryNum = 1;
 
 struct KeyCount {
 	uint32_t key;
@@ -135,7 +137,7 @@ public:
 	/*
 		compute log_P(xP) for |x| <= hashSize * tryNum
 	*/
-	void init(const G& P, size_t hashSize, size_t tryNum = local::defaultTryNum)
+	void init(const G& P, size_t hashSize)
 	{
 		if (hashSize == 0) {
 			kcv_.clear();
@@ -143,7 +145,6 @@ public:
 		}
 		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
 		P_ = P;
-		tryNum_ = tryNum;
 		kcv_.resize(hashSize);
 		G xP;
 		I::clear(xP);
@@ -162,6 +163,11 @@ public:
 		*/
 		std::stable_sort(kcv_.begin(), kcv_.end());
 		setWindowMethod();
+	}
+	void init(const G& P, size_t hashSize, size_t tryNum)
+	{
+		init(P, hashSize);
+		setTryNum(tryNum);
 	}
 	void setTryNum(size_t tryNum)
 	{
@@ -249,7 +255,7 @@ public:
 			*pok = false;
 			return 0;
 		}
-		throw cybozu::Exception("HashTable:log:not found");
+		throw cybozu::Exception("HashTable:log:not found:tryNum") << tryNum_;
 	}
 	/*
 		remark
@@ -306,6 +312,7 @@ public:
 	{
 		wm_.mul(static_cast<I&>(x), y);
 	}
+	size_t getTableSize() const { return kcv_.size(); }
 };
 
 template<class G>
@@ -641,7 +648,7 @@ public:
 		}
 	};
 
-	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
 		initPairing(cp);
 		hashAndMapToG1(P_, "0");
@@ -654,21 +661,21 @@ public:
 		isG1only_ = false;
 		setTryNum(tryNum);
 	}
-	static void init(size_t hashSize, size_t tryNum = local::defaultTryNum)
-	{
-		init(mcl::BN254, hashSize, tryNum);
-	}
 	/*
 		standard lifted ElGamal encryption
 	*/
-	static void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+	static void initG1only(int curveType, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
-		mcl::initCurve<G1, Fr>(para.curveType, &P_);
+		mcl::initCurve<G1, Fr>(curveType, &P_);
 		setRangeForG1DLP(hashSize);
 		useDecG1ViaGT_ = false;
 		useDecG2ViaGT_ = false;
 		isG1only_ = true;
 		setTryNum(tryNum);
+	}
+	static void initG1only(const mcl::EcParam& para, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
+	{
+		initG1only(para.curveType, hashSize, tryNum);
 	}
 	/*
 		set range for G1-DLP
@@ -1087,6 +1094,103 @@ private:
 		hash << S << T << R[0][0] << R[0][1] << R[1][0] << R[1][1];
 		hash.get(c);
 		return c == d[0] + d[1];
+	}
+	// check m[i] < m[i+1]
+	static bool check_mVec(const int *mVec, size_t mSize)
+	{
+		if (mSize < 1) return false;
+		for (size_t i = 0; i < mSize - 1; i++) {
+			if (mVec[i] >= mVec[i + 1]) return false;
+		}
+		return true;
+	}
+	/*
+		Enc(m; encRand) = (S, T)
+		make ZKP for m in M := mVec[0, mSize)
+		@note zkp has (mSize * 2) elements
+		@note M must satisfy the following properties:
+		1) m[i] < m[i+1] for all i < mSize - 1
+		2) i0 exists such that m[i0] = m
+	*/
+	template<class G, class I, class MulG>
+	static bool makeZkpSet(Fr *zkp, const G& xP, const G& S, const G& T, const Fr& encRand, int m, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	{
+		if (!check_mVec(mVec, mSize)) return false;
+		// find i0 s.t. m[i0] = m
+		size_t i0 = mSize;
+		for (size_t i = 0; i < mSize; i++) {
+			if (mVec[i] == m) {
+				i0 = i;
+				break;
+			}
+		}
+		if (i0 == mSize) return false;
+		Fr *const a = zkp;
+		Fr *const t = zkp + mSize;
+		for (size_t i = 0; i < mSize; i++) {
+			if (i != i0) {
+				a[i].setRand();
+			}
+			t[i].setRand();
+		}
+		local::Hash hash;
+		hash << xP << S << T;
+		Fr sum = 0;
+		for (size_t i = 0; i < mSize; i++) {
+			Fr u;
+			if (i == i0) {
+				u.clear();
+			} else {
+				u = a[i];
+				u *= (m - mVec[i]);
+				sum += a[i];
+			}
+			G R1, R2;
+			ElGamalEnc(R1, R2, u, Pmul, xPmul, &t[i]);
+			hash << R1 << R2;
+			if (i != i0) {
+				// b[i] = t[i] - a[i] r
+				t[i] -= a[i] * encRand;
+			}
+		}
+		Fr h;
+		hash.get(h); // h = Hash((S, T), {R_i})
+		a[i0] = h - sum;
+		t[i0] -= a[i0] * encRand;
+		return true;
+	}
+	/*
+		verify ZKP with Dec(S, T) in mVec[0, mSize)
+		@note zkp has (mSize * 2) elements
+		see https://github.com/herumi/mcl/blob/master/misc/she/nizkp.pdf
+	*/
+	template<class G, class I, class MulG>
+	static bool verifyZkpSet(const G& xP, const G& S, const G& T, const Fr *zkp, const int *mVec, size_t mSize, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	{
+		if (!check_mVec(mVec, mSize)) return false;
+		const Fr *a = zkp;
+		const Fr *b = zkp + mSize;
+		Fr c;
+		local::Hash hash;
+		hash << xP << S << T;
+		/*
+			ai(C - Enc(mi, 0)) - Enc(0, bi)
+			= ai(S - mi P, T) - (bi xP, bi P)
+		*/
+		Fr sum = 0;
+		for (size_t i = 0; i < mSize; i++) {
+			G1 S1, S2, T1, T2;
+			Pmul.mul(static_cast<I&>(S1), mVec[i]);
+			xPmul.mul(S2, b[i]);
+			Pmul.mul(static_cast<I&>(T2), b[i]);
+			S1 = (S - S1) * a[i] + S2;
+			T1 = T * a[i] + T2;
+			hash << S1 << T1;
+			sum += a[i];
+		}
+		Fr h;
+		hash.get(h);
+		return h == sum;
 	}
 	/*
 		encRand1, encRand2 are random values use for ElGamalEnc()
@@ -1632,6 +1736,15 @@ public:
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
 		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			Fr encRand;
+			encRand.setRand();
+			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
+			if (!makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_)) {
+				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
+			}
+		}
 		bool verify(const CipherTextG1& c, const ZkpBin& zkp) const
 		{
 			return verifyZkpBin(c.S_, c.T_, P_, zkp, PhashTbl_.getWM(), xPwm_);
@@ -1639,6 +1752,10 @@ public:
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
 		{
 			return verifyZkpBin(c.S_, c.T_, Q_, zkp, QhashTbl_.getWM(), yQwm_);
+		}
+		bool verify(const CipherTextG1& c, const Fr *zkp, const int *mVec, size_t mSize) const
+		{
+			return verifyZkpSet(xPwm_.tbl_[1], c.S_, c.T_, zkp, mVec, mSize, PhashTbl_.getWM(), xPwm_);
 		}
 		template<class INT>
 		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const
@@ -2049,15 +2166,18 @@ typedef SHE::ZkpDec ZkpDec;
 typedef SHE::AuxiliaryForZkpDecGT AuxiliaryForZkpDecGT;
 typedef SHE::ZkpDecGT ZkpDecGT;
 
-inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+inline void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 {
 	SHE::init(cp, hashSize, tryNum);
 }
-inline void initG1only(const mcl::EcParam& para, size_t hashSize = 1024, size_t tryNum = local::defaultTryNum)
+inline void initG1only(int curveType, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 {
-	SHE::initG1only(para, hashSize, tryNum);
+	SHE::initG1only(curveType, hashSize, tryNum);
 }
-inline void init(size_t hashSize, size_t tryNum = local::defaultTryNum) { SHE::init(hashSize, tryNum); }
+inline void initG1only(const mcl::EcParam& para, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
+{
+	initG1only(para.curveType, hashSize, tryNum);
+}
 inline void setRangeForG1DLP(size_t hashSize) { SHE::setRangeForG1DLP(hashSize); }
 inline void setRangeForG2DLP(size_t hashSize) { SHE::setRangeForG2DLP(hashSize); }
 inline void setRangeForGTDLP(size_t hashSize) { SHE::setRangeForGTDLP(hashSize); }

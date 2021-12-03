@@ -33,6 +33,31 @@ CYBOZU_TEST_AUTO(log)
 	}
 }
 
+CYBOZU_TEST_AUTO(ZkpSet)
+{
+//	cybozu::XorShift rg;
+//	mcl::fp::RandGen::setRandGen(rg);
+	const int mVec[] = { -7, 0, 1, 3, 5, 11, 23 };
+	const size_t mSizeMax = CYBOZU_NUM_OF_ARRAY(mVec);
+	Fr zkp[mSizeMax * 2];
+
+	SecretKey sec;
+	sec.setByCSPRNG();
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
+
+	for (size_t mSize = 1; mSize <= mSizeMax; mSize++) {
+		CipherTextG1 c;
+		ppub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
+		CYBOZU_TEST_ASSERT(ppub.verify(c, zkp, mVec, mSize));
+		CYBOZU_TEST_ASSERT(!ppub.verify(c, zkp, mVec, mSize - 1));
+		zkp[0] += 1;
+		CYBOZU_TEST_ASSERT(!ppub.verify(c, zkp, mVec, mSize));
+	}
+}
+
 //#define PAPER
 #ifdef PAPER
 double clk2msec(const cybozu::CpuClock& clk, int n)
@@ -152,12 +177,13 @@ void HashTableTest(const G& P)
 {
 	mcl::she::local::HashTable<G> hashTbl, hashTbl2;
 	const int maxSize = 100;
-	const int tryNum = 3;
+	const int tryNum = 9;
 	hashTbl.init(P, maxSize, tryNum);
 	GAHashTableTest(maxSize, tryNum, P, hashTbl);
 	std::stringstream ss;
 	hashTbl.save(ss);
 	hashTbl2.load(ss);
+	hashTbl2.setTryNum(tryNum);
 	GAHashTableTest(maxSize, tryNum, P, hashTbl2);
 }
 
@@ -204,6 +230,7 @@ CYBOZU_TEST_AUTO(GTHashTable)
 	std::stringstream ss;
 	hashTbl.save(ss);
 	hashTbl2.load(ss);
+	hashTbl2.setTryNum(tryNum);
 	GTHashTableTest(maxSize, tryNum, g, hashTbl2);
 }
 
@@ -630,9 +657,10 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 	}
 }
 
-#if !defined(PAPER) && defined(NDEBUG)
+#if 0 // !defined(PAPER) && defined(NDEBUG)
 CYBOZU_TEST_AUTO(hashBench)
 {
+	setTryNum(1024);
 	SecretKey& sec = g_sec;
 	sec.setByCSPRNG();
 	const int C = 500;

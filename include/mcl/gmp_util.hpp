@@ -483,6 +483,7 @@ inline void getRandPrime(bool *pb, mpz_class& z, size_t bitSize, fp::RandGen rg 
 	for (;;) {
 		getRand(pb, z, bitSize, rg);
 		if (!*pb) return;
+		z |= 1; // odd
 		if (setSecondBit) {
 			z |= mpz_class(1) << (bitSize - 2);
 		}

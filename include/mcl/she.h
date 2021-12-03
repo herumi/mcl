@@ -86,6 +86,7 @@ typedef struct {
 typedef struct {
 	mclBnFr d[4];
 } sheZkpDecGT;
+
 /*
 	initialize this library
 	call this once before using the other functions
@@ -98,6 +99,9 @@ typedef struct {
 	but don't call it while using other functions.
 */
 MCLSHE_DLL_API int sheInit(int curve, int compiledTimeVar);
+
+// initialize this library for only G1 (such as MCL_SECP256K1)
+MCLSHE_DLL_API int sheInitG1only(int curve, int compiledTimeVar);
 
 // return written byte size if success else 0
 MCLSHE_DLL_API mclSize sheSecretKeySerialize(void *buf, mclSize maxBufSize, const sheSecretKey *sec);
@@ -166,6 +170,13 @@ MCLSHE_DLL_API mclSize sheLoadTableForG2DLP(const void *buf, mclSize bufSize);
 MCLSHE_DLL_API mclSize sheLoadTableForGTDLP(const void *buf, mclSize bufSize);
 
 /*
+	get table size for DLP
+*/
+MCLSHE_DLL_API mclSize sheGetTableSizeForG1DLP();
+MCLSHE_DLL_API mclSize sheGetTableSizeForG2DLP();
+MCLSHE_DLL_API mclSize sheGetTableSizeForGTDLP();
+
+/*
 	save table for DLP
 	return written size if success else 0
 */
@@ -203,6 +214,17 @@ MCLSHE_DLL_API int sheEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, 
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *ppub, int m);
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, const shePrecomputedPublicKey *ppub, int m);
 MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const shePrecomputedPublicKey *ppub, int m);
+
+/*
+	m in mVec[0, mSize)
+	output c and zkp[0, mSize * 2)
+*/
+MCLSHE_DLL_API int shePrecomputedPublicKeyEncWithZkpSetG1(sheCipherTextG1 *c, mclBnFr *zkp, const shePrecomputedPublicKey *ppub, int m, const int *mVec, mclSize mSize);
+
+/*
+	return 1 if Dec(c) in mVec[0, mSize) else 0
+*/
+MCLSHE_DLL_API int shePrecomputedPublicKeyVerifyZkpSetG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const mclBnFr *zkp, const int *mVec, mclSize mSize);
 
 /*
 	arbitary m
@@ -314,6 +336,12 @@ MCLSHE_DLL_API void shePrecomputedPublicKeyDestroy(shePrecomputedPublicKey *ppub
 // return 0 if success
 MCLSHE_DLL_API int shePrecomputedPublicKeyInit(shePrecomputedPublicKey *ppub, const shePublicKey *pub);
 
+// return 1 if x == y else 0
+MCLSHE_DLL_API int sheSecretKeyIsEqual(const sheSecretKey *x, const sheSecretKey *y);
+MCLSHE_DLL_API int shePublicKeyIsEqual(const shePublicKey *x, const shePublicKey *y);
+MCLSHE_DLL_API int sheCipherTextG1IsEqual(const sheCipherTextG1 *x, const sheCipherTextG1 *y);
+MCLSHE_DLL_API int sheCipherTextG2IsEqual(const sheCipherTextG2 *x, const sheCipherTextG2 *y);
+MCLSHE_DLL_API int sheCipherTextGTIsEqual(const sheCipherTextGT *x, const sheCipherTextGT *y);
 #ifdef __cplusplus
 }
 #endif

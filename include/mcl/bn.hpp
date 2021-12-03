@@ -279,7 +279,6 @@ public:
 	}
 };
 
-
 struct MapTo {
 	enum {
 		BNtype,
@@ -289,18 +288,17 @@ struct MapTo {
 	Fp c1_; // sqrt(-3)
 	Fp c2_; // (-1 + sqrt(-3)) / 2
 	mpz_class z_;
+	mpz_class z2_;
 	mpz_class cofactor_;
 	mpz_class g2cofactor_;
 	Fr g2cofactorAdj_;
 	Fr g2cofactorAdjInv_;
 	int type_;
 	int mapToMode_;
-	bool useOriginalG2cofactor_;
 	MapTo_WB19<Fp, G1, Fp2, G2> mapTo_WB19_;
 	MapTo()
 		: type_(0)
 		, mapToMode_(MCL_MAP_TO_MODE_ORIGINAL)
-		, useOriginalG2cofactor_(false)
 	{
 	}
 
@@ -423,13 +421,9 @@ struct MapTo {
 		Frobenius2(T1, T1);
 		G2::add(Q, T0, T1);
 	}
-	void mulByCofactorBLS12(G2& Q, const G2& P, bool fast = false) const
+	void mulByCofactorBLS12(G2& Q, const G2& P) const
 	{
 		mulByCofactorBLS12fast(Q, P);
-		if (useOriginalG2cofactor_ && !fast) {
-			Q *= g2cofactorAdj_;
-			return;
-		}
 	}
 	/*
 		cofactor_ is for G2(not used now)
@@ -455,6 +449,7 @@ struct MapTo {
 	void initBLS12(const mpz_class& z)
 	{
 		z_ = z;
+		z2_ = (z_ * z_ - 1) / 3;
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
 		const int g2Coff[] = { 13, -4, -4, 6, -4, 0, 5, -4, 1 };
@@ -500,7 +495,7 @@ struct MapTo {
 	void init(const mpz_class& cofactor, const mpz_class &z, int curveType)
 	{
 		if (0 <= curveType && curveType < MCL_EC_BEGIN) {
-			type_ = curveType == MCL_BLS12_381 ? BLS12type : BNtype;
+			type_ = (curveType == MCL_BLS12_381 || curveType == MCL_BLS12_377 || curveType == MCL_BLS12_461) ? BLS12type : BNtype;
 		} else {
 			type_ = STD_ECtype;
 		}
@@ -533,14 +528,14 @@ struct MapTo {
 		}
 		assert(P.isValid());
 	}
-	void mulByCofactor(G2& P, bool fast = false) const
+	void mulByCofactor(G2& P) const
 	{
 		switch(type_) {
 		case BNtype:
 			mulByCofactorBN(P, P);
 			break;
 		case BLS12type:
-			mulByCofactorBLS12(P, P, fast);
+			mulByCofactorBLS12(P, P);
 			break;
 		}
 		assert(P.isValid());
@@ -555,14 +550,14 @@ struct MapTo {
 		mulByCofactor(P);
 		return true;
 	}
-	bool calc(G2& P, const Fp2& t, bool fast = false) const
+	bool calc(G2& P, const Fp2& t) const
 	{
 		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
 			mapTo_WB19_.Fp2ToG2(P, t);
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
-		mulByCofactor(P, fast);
+		mulByCofactor(P);
 		return true;
 	}
 };
@@ -835,7 +830,7 @@ struct Param {
 	void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	{
 		this->cp = cp;
-		isBLS12 = cp.curveType == MCL_BLS12_381;
+		isBLS12 = (cp.curveType == MCL_BLS12_381 || cp.curveType == MCL_BLS12_377 || cp.curveType == MCL_BLS12_461);
 #ifdef MCL_STATIC_CODE
 		if (!isBLS12) {
 			*pb = false;
@@ -2035,7 +2030,7 @@ inline int getMapToMode()
 	return BN::param.mapTo.mapToMode_;
 }
 inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
-inline void mapToG2(bool *pb, G2& P, const Fp2& x, bool fast = false) { *pb = BN::param.mapTo.calc(P, x, fast); }
+inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 inline void mapToG1(G1& P, const Fp& x)
 {
@@ -2043,10 +2038,10 @@ inline void mapToG1(G1& P, const Fp& x)
 	mapToG1(&b, P, x);
 	if (!b) throw cybozu::Exception("mapToG1:bad value") << x;
 }
-inline void mapToG2(G2& P, const Fp2& x, bool fast = false)
+inline void mapToG2(G2& P, const Fp2& x)
 {
 	bool b;
-	mapToG2(&b, P, x, fast);
+	mapToG2(&b, P, x);
 	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
 }
 #endif
@@ -2100,6 +2095,39 @@ inline void verifyOrderG1(bool doVerify)
 inline void verifyOrderG2(bool doVerify)
 {
 	G2::setOrder(doVerify ? BN::param.r : 0);
+}
+
+/*
+	Faster Subgroup Checks for BLS12-381
+	Sean Bowe, https://eprint.iacr.org/2019/814
+	Frob^2(P) - z Frob^3(P) == P
+*/
+inline bool isValidOrderBLS12(const G2& P)
+{
+	G2 T2, T3;
+	Frobenius2(T2, P);
+	Frobenius(T3, T2);
+	G2::mulGeneric(T3, T3, BN::param.z);
+	T2 -= T3;
+	return T2 == P;
+}
+/*
+	z2 = (z^2-1)/3, c2 = (-1 + sqrt(-3))/2
+	P = (x, y), T1 = (c2 x, y), T0 = (c2^2 x, y)
+	z2(2 T0 - P - T1) == T1
+*/
+inline bool isValidOrderBLS12(const G1& P)
+{
+	G1 T0, T1;
+	T1 = P;
+	T1.x *= BN::param.mapTo.c2_;
+	T0 = T1;
+	T0.x *= BN::param.mapTo.c2_;
+	G1::dbl(T0, T0);
+	T0 -= P;
+	T0 -= T1;
+	G1::mulGeneric(T0, T0, BN::param.mapTo.z2_);
+	return T0 == T1;
 }
 
 // backward compatibility
@@ -2157,6 +2185,10 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	G2::setCompressedExpression();
 	verifyOrderG1(false);
 	verifyOrderG2(false);
+	if (BN::param.isBLS12) {
+		G1::setVerifyOrderFunc(isValidOrderBLS12);
+		G2::setVerifyOrderFunc(isValidOrderBLS12);
+	}
 	*pb = true;
 }
 

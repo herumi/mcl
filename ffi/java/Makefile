@@ -12,7 +12,7 @@ else
   CFLAGS+=-z noexecstack
   LDFLAGS+=-lrt
 endif
-CFLAGS+=$(JAVA_INC) -I $(TOP_DIR)/include -I -Wno-strict-aliasing
+CFLAGS+=$(JAVA_INC) -I $(TOP_DIR)/include -Wno-strict-aliasing -Wno-deprecated-copy
 MCL_LIB=$(TOP_DIR)/lib/libmcl.a
 
 PACKAGE_NAME=com.herumi.mcl

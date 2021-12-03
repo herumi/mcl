@@ -95,6 +95,10 @@
 	#include <stdint.h>
 #endif
 
+#if !defined(MFD_CLOEXEC) // defined only linux 3.17 or later
+	#undef XBYAK_USE_MEMFD
+#endif
+
 #if defined(_WIN64) || defined(__MINGW64__) || (defined(__CYGWIN__) && defined(__x86_64__))
 	#define XBYAK64_WIN
 #elif defined(__x86_64__)
@@ -117,8 +121,11 @@
 	#define XBYAK_NOEXCEPT throw()
 #endif
 
-#if (__cplusplus >= 201402L) || (defined(_MSC_VER) && _MSC_VER >= 1910) // Visual Studio 2017 version 15.0
-	#define XBYAK_CONSTEXPR constexpr // require c++14 or later
+// require c++14 or later
+// Visual Studio 2017 version 15.0 or later
+// g++-6 or later
+#if ((__cplusplus >= 201402L) && !(!defined(__clang__) && defined(__GNUC__) && (__GNUC__ <= 5))) || (defined(_MSC_VER) && _MSC_VER >= 1910)
+	#define XBYAK_CONSTEXPR constexpr
 #else
 	#define XBYAK_CONSTEXPR
 #endif
@@ -135,7 +142,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x5970 /* 0xABCD = A.BC(D) */
+	VERSION = 0x6000 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -206,6 +213,7 @@ enum {
 	ERR_INVALID_MIB_ADDRESS,
 	ERR_X2APIC_IS_NOT_SUPPORTED,
 	ERR_NOT_SUPPORTED,
+	ERR_SAME_REGS_ARE_INVALID,
 	ERR_INTERNAL // Put it at last.
 };
 
@@ -258,6 +266,7 @@ inline const char *ConvertErrorToString(int err)
 		"invalid mib address",
 		"x2APIC is not supported",
 		"not supported",
+		"same regs are invalid",
 		"internal error"
 	};
 	assert(ERR_INTERNAL + 1 == sizeof(errTbl) / sizeof(*errTbl));
@@ -413,18 +422,29 @@ public:
 	{
 		const size_t alignedSizeM1 = inner::ALIGN_PAGE_SIZE - 1;
 		size = (size + alignedSizeM1) & ~alignedSizeM1;
-#if defined(XBYAK_USE_MAP_JIT)
+#if defined(MAP_ANONYMOUS)
 		int mode = MAP_PRIVATE | MAP_ANONYMOUS;
-		const int mojaveVersion = 18;
-		if (util::getMacOsVersion() >= mojaveVersion) mode |= MAP_JIT;
-#elif defined(MAP_ANONYMOUS)
-		const int mode = MAP_PRIVATE | MAP_ANONYMOUS;
 #elif defined(MAP_ANON)
-		const int mode = MAP_PRIVATE | MAP_ANON;
+		int mode = MAP_PRIVATE | MAP_ANON;
 #else
 		#error "not supported"
 #endif
-		void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, mode, -1, 0);
+#if defined(XBYAK_USE_MAP_JIT)
+		const int mojaveVersion = 18;
+		if (util::getMacOsVersion() >= mojaveVersion) mode |= MAP_JIT;
+#endif
+		int fd = -1;
+#if defined(XBYAK_USE_MEMFD)
+		fd = memfd_create("xbyak", MFD_CLOEXEC);
+		if (fd != -1) {
+			mode = MAP_SHARED;
+			if (ftruncate(fd, size) != 0) XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
+		}
+#endif
+		void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, mode, fd, 0);
+#if defined(XBYAK_USE_MEMFD)
+		if (fd != -1) close(fd);
+#endif
 		if (p == MAP_FAILED) XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
 		assert(p);
 		sizeList_[(uintptr_t)p] = size;
@@ -923,6 +943,10 @@ inline RegExp operator+(const RegExp& a, const RegExp& b)
 inline RegExp operator*(const Reg& r, int scale)
 {
 	return RegExp(r, scale);
+}
+inline RegExp operator*(int scale, const Reg& r)
+{
+	return r * scale;
 }
 inline RegExp operator-(const RegExp& e, size_t disp)
 {
@@ -1539,6 +1563,12 @@ inline const uint8_t* Label::getAddress() const
 	return mgr->getCode() + offset;
 }
 
+typedef enum {
+	DefaultEncoding,
+	VexEncoding,
+	EvexEncoding
+} PreferredEncoding;
+
 class CodeGenerator : public CodeArray {
 public:
 	enum LabelType {
@@ -1622,9 +1652,10 @@ private:
 		//
 		T_N_VL = 1 << 3, // N * (1, 2, 4) for VL
 		T_DUP = 1 << 4, // N = (8, 32, 64)
-		T_66 = 1 << 5,
-		T_F3 = 1 << 6,
-		T_F2 = 1 << 7,
+		T_66 = 1 << 5, // pp = 1
+		T_F3 = 1 << 6, // pp = 2
+		T_F2 = T_66 | T_F3, // pp = 3
+		T_ER_R = 1 << 7, // reg{er}
 		T_0F = 1 << 8,
 		T_0F38 = 1 << 9,
 		T_0F3A = 1 << 10,
@@ -1645,11 +1676,17 @@ private:
 		T_MUST_EVEX = 1 << 25, // contains T_EVEX
 		T_B32 = 1 << 26, // m32bcst
 		T_B64 = 1 << 27, // m64bcst
+		T_B16 = T_B32 | T_B64, // m16bcst (Be careful)
 		T_M_K = 1 << 28, // mem{k}
 		T_VSIB = 1 << 29,
 		T_MEM_EVEX = 1 << 30, // use evex if mem
+		T_FP16 = 1 << 31, // avx512-fp16
+		T_MAP5 = T_FP16 | T_0F,
+		T_MAP6 = T_FP16 | T_0F38,
 		T_XXX
 	};
+	// T_66 = 1, T_F3 = 2, T_F2 = 3
+	uint32_t getPP(int type) const { return (type >> 5) & 3; }
 	void vex(const Reg& reg, const Reg& base, const Operand *v, int type, int code, bool x = false)
 	{
 		int w = (type & T_W1) ? 1 : 0;
@@ -1658,7 +1695,7 @@ private:
 		bool b = base.isExtIdx();
 		int idx = v ? v->getIdx() : 0;
 		if ((idx | reg.getIdx() | base.getIdx()) >= 16) XBYAK_THROW(ERR_BAD_COMBINATION)
-		uint32_t pp = (type & T_66) ? 1 : (type & T_F3) ? 2 : (type & T_F2) ? 3 : 0;
+		uint32_t pp = getPP(type);
 		uint32_t vvvv = (((~idx) & 15) << 3) | (is256 ? 4 : 0) | pp;
 		if (!b && !x && !w && (type & T_0F)) {
 			db(0xC5); db((r ? 0 : 0x80) | vvvv);
@@ -1675,6 +1712,7 @@ private:
 	}
 	void verifyER(const Reg& r, int type) const
 	{
+		if ((type & T_ER_R) && r.isREG(32|64)) return;
 		if (((type & T_ER_X) && r.isXMM()) || ((type & T_ER_Y) && r.isYMM()) || ((type & T_ER_Z) && r.isZMM())) return;
 		XBYAK_THROW(ERR_ER_IS_INVALID)
 	}
@@ -1689,9 +1727,9 @@ private:
 	{
 		if (!(type & (T_EVEX | T_MUST_EVEX))) XBYAK_THROW_RET(ERR_EVEX_IS_INVALID, 0)
 		int w = (type & T_EW1) ? 1 : 0;
-		uint32_t mm = (type & T_0F) ? 1 : (type & T_0F38) ? 2 : (type & T_0F3A) ? 3 : 0;
-		uint32_t pp = (type & T_66) ? 1 : (type & T_F3) ? 2 : (type & T_F2) ? 3 : 0;
-
+		uint32_t mmm = (type & T_0F) ? 1 : (type & T_0F38) ? 2 : (type & T_0F3A) ? 3 : 0;
+		if (type & T_FP16) mmm |= 4;
+		uint32_t pp = getPP(type);
 		int idx = v ? v->getIdx() : 0;
 		uint32_t vvvv = ~idx;
 
@@ -1714,7 +1752,7 @@ private:
 			VL = (std::max)((std::max)(reg.getBit(), base.getBit()), VL);
 			LL = (VL == 512) ? 2 : (VL == 256) ? 1 : 0;
 			if (b) {
-				disp8N = (type & T_B32) ? 4 : 8;
+				disp8N = ((type & T_B16) == T_B16) ? 2 : (type & T_B32) ? 4 : 8;
 			} else if (type & T_DUP) {
 				disp8N = VL == 128 ? 8 : VL == 256 ? 32 : 64;
 			} else {
@@ -1733,7 +1771,7 @@ private:
 		if (aaa == 0) aaa = verifyDuplicate(base.getOpmaskIdx(), reg.getOpmaskIdx(), (v ? v->getOpmaskIdx() : 0), ERR_OPMASK_IS_ALREADY_SET);
 		if (aaa == 0) z = 0; // clear T_z if mask is not set
 		db(0x62);
-		db((R ? 0x80 : 0) | (X ? 0x40 : 0) | (B ? 0x20 : 0) | (Rp ? 0x10 : 0) | (mm & 3));
+		db((R ? 0x80 : 0) | (X ? 0x40 : 0) | (B ? 0x20 : 0) | (Rp ? 0x10 : 0) | mmm);
 		db((w == 1 ? 0x80 : 0) | ((vvvv & 15) << 3) | 4 | (pp & 3));
 		db((z ? 0x80 : 0) | ((LL & 3) << 5) | (b ? 0x10 : 0) | (Vp ? 8 : 0) | (aaa & 7));
 		db(code);
@@ -2198,11 +2236,15 @@ private:
 	{
 		if (!(x.isXMM() && op.is(Operand::XMM | Operand::YMM | Operand::MEM)) && !(x.isYMM() && op.is(Operand::ZMM | Operand::MEM))) XBYAK_THROW(ERR_BAD_COMBINATION)
 	}
+	void opCvt(const Xmm& x, const Operand& op, int type, int code)
+	{
+		Operand::Kind kind = x.isXMM() ? (op.isBit(256) ? Operand::YMM : Operand::XMM) : Operand::ZMM;
+		opVex(x.copyAndSetKind(kind), &xm0, op, type, code);
+	}
 	void opCvt2(const Xmm& x, const Operand& op, int type, int code)
 	{
 		checkCvt2(x, op);
-		Operand::Kind kind = x.isXMM() ? (op.isBit(256) ? Operand::YMM : Operand::XMM) : Operand::ZMM;
-		opVex(x.copyAndSetKind(kind), &xm0, op, type, code);
+		opCvt(x, op, type, code);
 	}
 	void opCvt3(const Xmm& x1, const Xmm& x2, const Operand& op, int type, int type64, int type32, uint8_t code)
 	{
@@ -2210,6 +2252,18 @@ private:
 		Xmm x(op.getIdx());
 		const Operand *p = op.isREG() ? &x : &op;
 		opVex(x1, &x2, *p, type | (op.isBit(64) ? type64 : type32), code);
+	}
+	// (x, x/y/xword/yword), (y, z/m)
+	void checkCvt4(const Xmm& x, const Operand& op) const
+	{
+		if (!(x.isXMM() && op.is(Operand::XMM | Operand::YMM | Operand::MEM) && op.isBit(128|256)) && !(x.isYMM() && op.is(Operand::ZMM | Operand::MEM))) XBYAK_THROW(ERR_BAD_COMBINATION)
+	}
+	// (x, x/y/z/xword/yword/zword)
+	void opCvt5(const Xmm& x, const Operand& op, int type, int code)
+	{
+		if (!(x.isXMM() && op.isBit(128|256|512))) XBYAK_THROW(ERR_BAD_COMBINATION)
+		Operand::Kind kind = op.isBit(128) ? Operand::XMM : op.isBit(256) ? Operand::YMM : Operand::ZMM;
+		opVex(x.copyAndSetKind(kind), &xm0, op, type, code);
 	}
 	const Xmm& cvtIdx0(const Operand& x) const
 	{
@@ -2248,7 +2302,11 @@ private:
 			}
 			if (!isOK) XBYAK_THROW(ERR_BAD_VSIB_ADDRESSING)
 		}
-		opAVX_X_X_XM(isAddrYMM ? Ymm(x1.getIdx()) : x1, isAddrYMM ? Ymm(x2.getIdx()) : x2, addr, type, code);
+		int i1 = x1.getIdx();
+		int i2 = regExp.getIndex().getIdx();
+		int i3 = x2.getIdx();
+		if (i1 == i2 || i1 == i3 || i2 == i3) XBYAK_THROW(ERR_SAME_REGS_ARE_INVALID);
+		opAVX_X_X_XM(isAddrYMM ? Ymm(i1) : x1, isAddrYMM ? Ymm(i3) : x2, addr, type, code);
 	}
 	enum {
 		xx_yy_zz = 0,
@@ -2271,7 +2329,12 @@ private:
 	void opGather2(const Xmm& x, const Address& addr, int type, uint8_t code, int mode)
 	{
 		if (x.hasZero()) XBYAK_THROW(ERR_INVALID_ZERO)
-		checkGather2(x, addr.getRegExp().getIndex(), mode);
+		const RegExp& regExp = addr.getRegExp();
+		checkGather2(x, regExp.getIndex(), mode);
+		int maskIdx = x.getOpmaskIdx();
+		if ((type & T_M_K) && addr.getOpmaskIdx()) maskIdx = addr.getOpmaskIdx();
+		if (maskIdx == 0) XBYAK_THROW(ERR_K0_IS_INVALID);
+		if (!(type & T_M_K) && x.getIdx() == regExp.getIndex().getIdx()) XBYAK_THROW(ERR_SAME_REGS_ARE_INVALID);
 		opVex(x, 0, addr, type, code);
 	}
 	/*
@@ -2292,6 +2355,19 @@ private:
 		if (addr.hasZero()) XBYAK_THROW(ERR_INVALID_ZERO)
 		if (addr.getRegExp().getIndex().getKind() != kind) XBYAK_THROW(ERR_BAD_VSIB_ADDRESSING)
 		opVex(x, 0, addr, type, code);
+	}
+	void opVnni(const Xmm& x1, const Xmm& x2, const Operand& op, int type, int code0, PreferredEncoding encoding)
+	{
+		if (encoding == DefaultEncoding) {
+			encoding = EvexEncoding;
+		}
+		if (encoding == EvexEncoding) {
+#ifdef XBYAK_DISABLE_AVX512
+			XBYAK_THROW(ERR_EVEX_IS_INVALID)
+#endif
+			type |= T_MUST_EVEX;
+		}
+		opAVX_X_X_XM(x1, x2, op, type, code0);
 	}
 	void opInOut(const Reg& a, const Reg& d, uint8_t code)
 	{

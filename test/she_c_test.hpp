@@ -24,6 +24,7 @@ CYBOZU_TEST_AUTO(init)
 	CYBOZU_TEST_EQUAL(ret, 0);
 	ret = sheSetRangeForDLP(hashSize);
 	CYBOZU_TEST_EQUAL(ret, 0);
+	sheSetTryNum(tryNum);
 }
 
 CYBOZU_TEST_AUTO(encDec)
@@ -341,6 +342,57 @@ void ZkpBinTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZk
 		CYBOZU_TEST_EQUAL(verify(pub, &c, &zkp), 0);
 	}
 	CYBOZU_TEST_ASSERT(encWithZkp(&c, &zkp, pub, 2) != 0);
+}
+
+template<class CT, class PK, class encWithZkpFunc, class decFunc, class verifyFunc>
+void ZkpSetTest(const sheSecretKey *sec, const PK *pub, encWithZkpFunc encWithZkp, decFunc dec, verifyFunc verify)
+{
+	const int mVec[] = { -5, -1, 0, 1, 2, 3, 9 };
+	const size_t N = CYBOZU_NUM_OF_ARRAY(mVec);
+	CT c;
+	mclBnFr zkp[N * 2];
+	for (size_t mSize = 1; mSize <= N; mSize++) {
+		for (size_t i = 0; i < mSize; i++) {
+			int m = mVec[i];
+			CYBOZU_TEST_EQUAL(encWithZkp(&c, zkp, pub, m, mVec, mSize), 0);
+			mclInt mDec;
+			CYBOZU_TEST_EQUAL(dec(&mDec, sec, &c), 0);
+			CYBOZU_TEST_EQUAL(mDec, m);
+			CYBOZU_TEST_EQUAL(verify(pub, &c, zkp, mVec, mSize), 1);
+#if 0
+			{
+				char buf[4096];
+				size_t n = sheZkpSetSerialize(buf, sizeof(buf), &zkp);
+				CYBOZU_TEST_EQUAL(n, mclBn_getFrByteSize() * CYBOZU_NUM_OF_ARRAY(zkp.d));
+				sheZkpSet zkp2;
+				size_t r = sheZkpSetDeserialize(&zkp2, buf, n);
+				CYBOZU_TEST_EQUAL(r, n);
+				CYBOZU_TEST_EQUAL(r, n);
+				for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zkp.d); i++) {
+					CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&zkp.d[i], &zkp2.d[i]));
+				}
+			}
+#endif
+			zkp[0].d[0]++;
+			CYBOZU_TEST_EQUAL(verify(pub, &c, zkp, mVec, mSize), 0);
+		}
+		CYBOZU_TEST_ASSERT(encWithZkp(&c, zkp, pub, 12345, mVec, mSize) != 0);
+	}
+}
+
+CYBOZU_TEST_AUTO(ZkpSet)
+{
+	sheSecretKey sec;
+	sheSecretKeySetByCSPRNG(&sec);
+	shePublicKey pub;
+	sheGetPublicKey(&pub, &sec);
+
+	shePrecomputedPublicKey *ppub = shePrecomputedPublicKeyCreate();
+	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyInit(ppub, &pub), 0);
+
+	ZkpSetTest<sheCipherTextG1>(&sec, ppub, shePrecomputedPublicKeyEncWithZkpSetG1, sheDecG1, shePrecomputedPublicKeyVerifyZkpSetG1);
+
+	shePrecomputedPublicKeyDestroy(ppub);
 }
 
 CYBOZU_TEST_AUTO(ZkpBin)
