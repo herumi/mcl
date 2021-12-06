@@ -88,5 +88,13 @@ cd ffi/java
 make test
 ```
 
+# Make test for Windows
+Install swig and jre at first.
+```
+cd ffi/java
+make_wrap
+run-mcl
+```
+
 # Sample code
 [MclTest.java](https://github.com/herumi/mcl/blob/master/ffi/java/MclTest.java)
