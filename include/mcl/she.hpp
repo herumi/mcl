@@ -1508,6 +1508,16 @@ public:
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul, &encRand);
 			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
 		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			Fr encRand;
+			encRand.setRand();
+			const MulG<G1> xPmul(xP_);
+			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
+			if (!makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul)) {
+				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
+			}
+		}
 		bool verify(const CipherTextG1& c, const ZkpBin& zkp) const
 		{
 			const MulG<G1> xPmul(xP_);
@@ -1544,6 +1554,11 @@ public:
 		{
 			const MulG<G2> yQmul(yQ_);
 			return verifyZkpBin(c.S_, c.T_, Q_, zkp, QhashTbl_.getWM(), yQmul);
+		}
+		bool verify(const CipherTextG1& c, const Fr *zkp, const int *mVec, size_t mSize) const
+		{
+			const MulG<G1> xPmul(xP_);
+			return verifyZkpSet(P_, c.S_, c.T_, zkp, mVec, mSize, PhashTbl_.getWM(), xPmul);
 		}
 		template<class INT>
 		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const

@@ -50,6 +50,12 @@ CYBOZU_TEST_AUTO(ZkpSet)
 
 	for (size_t mSize = 1; mSize <= mSizeMax; mSize++) {
 		CipherTextG1 c;
+		pub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
+		CYBOZU_TEST_ASSERT(pub.verify(c, zkp, mVec, mSize));
+		CYBOZU_TEST_ASSERT(!pub.verify(c, zkp, mVec, mSize - 1));
+		zkp[0] += 1;
+		CYBOZU_TEST_ASSERT(!pub.verify(c, zkp, mVec, mSize));
+
 		ppub.encWithZkpSet(c, zkp, mVec[0], mVec, mSize);
 		CYBOZU_TEST_ASSERT(ppub.verify(c, zkp, mVec, mSize));
 		CYBOZU_TEST_ASSERT(!ppub.verify(c, zkp, mVec, mSize - 1));
