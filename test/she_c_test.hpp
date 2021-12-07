@@ -390,6 +390,7 @@ CYBOZU_TEST_AUTO(ZkpSet)
 	shePrecomputedPublicKey *ppub = shePrecomputedPublicKeyCreate();
 	CYBOZU_TEST_EQUAL(shePrecomputedPublicKeyInit(ppub, &pub), 0);
 
+	ZkpSetTest<sheCipherTextG1>(&sec, &pub, sheEncWithZkpSetG1, sheDecG1, sheVerifyZkpSetG1);
 	ZkpSetTest<sheCipherTextG1>(&sec, ppub, shePrecomputedPublicKeyEncWithZkpSetG1, sheDecG1, shePrecomputedPublicKeyVerifyZkpSetG1);
 
 	shePrecomputedPublicKeyDestroy(ppub);

@@ -381,9 +381,14 @@ int encWithZkpSetT(CT *c, mclBnFr *zkp, const PK *pub, int m, const int *mVec, m
 	return -1;
 }
 
-int shePrecomputedPublicKeyEncWithZkpSetG1(sheCipherTextG1 *c, mclBnFr *zkp, const shePrecomputedPublicKey *pub, int m, const int *mVec, mclSize mSize)
+int sheEncWithZkpSetG1(sheCipherTextG1 *c, mclBnFr *zkp, const shePublicKey *pub, int m, const int *mVec, mclSize mSize)
 {
 	return encWithZkpSetT(c, zkp, pub, m, mVec, mSize);
+}
+
+int shePrecomputedPublicKeyEncWithZkpSetG1(sheCipherTextG1 *c, mclBnFr *zkp, const shePrecomputedPublicKey *ppub, int m, const int *mVec, mclSize mSize)
+{
+	return encWithZkpSetT(c, zkp, ppub, m, mVec, mSize);
 }
 
 template<class PK, class CT>
@@ -393,6 +398,11 @@ int verifyT(const PK& pub, const CT& c, const Fr *zkp, const int *mVec, mclSize 
 	return pub.verify(c, zkp, mVec, mSize);
 } catch (std::exception&) {
 	return 0;
+}
+
+int sheVerifyZkpSetG1(const shePublicKey *pub, const sheCipherTextG1 *c, const mclBnFr *zkp, const int *mVec, mclSize mSize)
+{
+	return verifyT(*cast(pub), *cast(c), cast2(zkp), mVec, mSize);
 }
 
 int shePrecomputedPublicKeyVerifyZkpSetG1(const shePrecomputedPublicKey *ppub, const sheCipherTextG1 *c, const mclBnFr *zkp, const int *mVec, mclSize mSize)
