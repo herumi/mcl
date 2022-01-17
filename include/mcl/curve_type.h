@@ -50,8 +50,9 @@ enum {
 	MCL_MAP_TO_MODE_WB19, // (deprecated) used in new eth2.0 spec
 	MCL_MAP_TO_MODE_HASH_TO_CURVE_05 = MCL_MAP_TO_MODE_WB19, // (deprecated) draft-irtf-cfrg-hash-to-curve-05
 	MCL_MAP_TO_MODE_HASH_TO_CURVE_06, // (deprecated) draft-irtf-cfrg-hash-to-curve-06
-	MCL_MAP_TO_MODE_HASH_TO_CURVE_07, // draft-irtf-cfrg-hash-to-curve-07
-	MCL_MAP_TO_MODE_HASH_TO_CURVE = MCL_MAP_TO_MODE_HASH_TO_CURVE_07 // the latset version
+	MCL_MAP_TO_MODE_HASH_TO_CURVE_07 = 5, /* don't change this value! */ // draft-irtf-cfrg-hash-to-curve-07
+	MCL_MAP_TO_MODE_HASH_TO_CURVE = MCL_MAP_TO_MODE_HASH_TO_CURVE_07, // the latset version
+	MCL_MAP_TO_MODE_ETH2_LEGACY // backwards compatible version of MCL_MAP_TO_MODE_ETH2 with commit 730c50d4eaff1e0d685a92ac8c896e873749471b
 };
 
 #ifdef __cplusplus
