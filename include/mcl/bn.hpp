@@ -24,6 +24,10 @@ void mulByCofactorBLS12fast(T& Q, const T& P);
 #include <vector>
 #endif
 
+#ifdef MCL_USE_OMP
+#include <omp.h>
+#endif
+
 /*
 	set bit size of Fp and Fr
 */
@@ -2026,6 +2030,38 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, boo
 		remain = fp::min_(n - i, N);
 		millerLoopVecN<N>(f, Pvec + i, Qvec + i, remain, false);
 	}
+}
+
+// multi thread version of millerLoopVec
+// use all CPUs if cpuN = 0
+inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN = 0)
+{
+	if (n == 0) {
+		f = 1;
+		return;
+	}
+#ifdef MCL_USE_OMP
+	if (cpuN == 0) cpuN = omp_get_num_procs();
+	if (cpuN <= 1 || n <= cpuN) {
+		millerLoopVec(f, Pvec, Qvec, n);
+		return;
+	}
+	Fp12 *fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * cpuN);
+	size_t q = n / cpuN;
+	size_t r = n % cpuN;
+	#pragma omp parallel for
+	for (size_t i = 0; i < cpuN; i++) {
+		size_t adj = q * i + fp::min_(i, r);
+		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r));
+	}
+	f = fs[0];
+	for (size_t i = 1; i < cpuN; i++) {
+		f *= fs[i];
+	}
+#else
+	(void)cpuN;
+	millerLoopVec(f, Pvec, Qvec, n);
+#endif
 }
 
 inline bool setMapToMode(int mode)

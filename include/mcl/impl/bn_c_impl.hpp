@@ -623,6 +623,10 @@ void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize
 {
 	millerLoopVec(*cast(z), cast(x), cast(y), n);
 }
+void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN)
+{
+	millerLoopVecMT(*cast(z), cast(x), cast(y), n, cpuN);
+}
 int mclBn_getUint64NumToPrecompute(void)
 {
 	return int(BN::param.precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t));
