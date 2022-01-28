@@ -2054,8 +2054,10 @@ inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, s
 		size_t adj = q * i + fp::min_(i, r);
 		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r));
 	}
-	f = fs[0];
-	for (size_t i = 1; i < cpuN; i++) {
+	f = 1;
+	#pragma omp declare reduction(red:Fp12:omp_out *= omp_in) initializer(omp_priv = omp_orig)
+	#pragma omp parallel for reduction(red:f)
+	for (size_t i = 0; i < cpuN; i++) {
 		f *= fs[i];
 	}
 #else
