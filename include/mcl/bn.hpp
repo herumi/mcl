@@ -477,18 +477,10 @@ struct MapTo {
 		switch (mode) {
 		case MCL_MAP_TO_MODE_ORIGINAL:
 		case MCL_MAP_TO_MODE_TRY_AND_INC:
-//		case MCL_MAP_TO_MODE_ETH2:
-			mapToMode_ = mode;
-			return true;
-			break;
 		case MCL_MAP_TO_MODE_HASH_TO_CURVE_07:
-			mapToMode_ = mode;
-			return true;
-			break;
 		case MCL_MAP_TO_MODE_ETH2_LEGACY:
 			mapToMode_ = mode;
 			return true;
-			break;
 		default:
 			return false;
 		}
