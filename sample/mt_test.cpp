@@ -19,6 +19,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	printf("n=%zd cpuN=%zd\n", n, cpuN);
+	int C = 10;
+	if (n >= 1000) {
+		C = 1;
+	}
 
 	initPairing(mcl::BLS12_381);
 	cybozu::XorShift rg;
@@ -31,8 +35,8 @@ int main(int argc, char *argv[])
 		c++;
 	}
 	Fp12 e1, e2;
-	CYBOZU_BENCH_C("single", 10, millerLoopVec, e1, Pvec.data(), Qvec.data(), n);
-	CYBOZU_BENCH_C("multi ", 10, millerLoopVecMT, e2, Pvec.data(), Qvec.data(), n, cpuN);
+	CYBOZU_BENCH_C("single", C, millerLoopVec, e1, Pvec.data(), Qvec.data(), n);
+	CYBOZU_BENCH_C("multi ", C, millerLoopVecMT, e2, Pvec.data(), Qvec.data(), n, cpuN);
 	printf("ret %s\n", e1 == e2 ? "ok" : "ng");
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
