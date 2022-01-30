@@ -472,9 +472,11 @@ public:
 
 namespace cybozu {
 
-namespace sha2_local {
-
-inline void hmac256_inner(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize, bool addZeroByte)
+/*
+	HMAC-SHA-256
+	hmac must have 32 bytes buffer
+*/
+inline void hmac256(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize)
 {
 	const uint8_t ipad = 0x36;
 	const uint8_t opad = 0x5c;
@@ -492,38 +494,13 @@ inline void hmac256_inner(void *hmac, const void *key, size_t keySize, const voi
 	}
 	memset(k + keySize, ipad, 64 - keySize);
 	hash.update(k, 64);
-	if (addZeroByte) {
-		hash.update(msg, msgSize);
-		const char zero = '\x00';
-		hash.digest(hmac, 32, &zero, 1);
-	} else {
-		hash.digest(hmac, 32, msg, msgSize);
-	}
+	hash.digest(hmac, 32, msg, msgSize);
 	hash.clear();
 	for (size_t i = 0; i < 64; i++) {
 		k[i] = k[i] ^ (ipad ^ opad);
 	}
 	hash.update(k, 64);
 	hash.digest(hmac, 32, hmac, 32);
-}
-
-} // cybozu::sha2_local
-
-/*
-	HMAC-SHA-256
-	hmac must have 32 bytes buffer
-*/
-inline void hmac256(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize)
-{
-	sha2_local::hmac256_inner(hmac, key, keySize, msg, msgSize, false);
-}
-
-/*
-	hmac256 for [msg] + [\x00]
-*/
-inline void hmac256addZeroByte(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize)
-{
-	sha2_local::hmac256_inner(hmac, key, keySize, msg, msgSize, true);
 }
 
 } // cybozu

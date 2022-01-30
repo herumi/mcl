@@ -801,6 +801,58 @@ void testFpToG1(const T& mapto)
 	}
 }
 
+template<class T>
+void testSameUV(const T& mapto)
+{
+	// u is equal to v
+	const struct {
+		const char *in;
+		const char *x;
+		const char *y;
+		const char *x2;
+		const char *y2;
+	} tbl[] = {
+		{
+			"4a6975dab86d4d3320186347d0861fcccb083a6a08462e64f05d90a30599de14",
+			"11e1a490dbbe5c0c55a174ef60a96afadc3399f9a5b19ade1c261bad04cbc5d587084693187e25496d442995e2de6c7b",
+			"175048bd7270177570c013d5ea0789da1d7715c0bbcf1613d6f3c2738efe28dabef3b626f226b3c87d0f6421459dbf13",
+			"11af691e69c9eee42642af1ab9dc571c00fdfd3ce490d3ebfc6051033f56e95d818e6d457bfac95f0f4ed922480511d5 14ed0779f31dc441593f541a73f71c21167ad62d0634cbea09a6973b2e94a68baa9d1fed9cd69f21a2c1fc60c82a2822",
+			"14c196deb0bdd1127821190aa7a555c7f2544d4dcd45db52d1b9d1f27e0566aafa5b65f5be3bd44ee4cdc94b6fb733ca 13f4bb86ec914c82f0a9dfa0a028777b7fcade21e1982830b99e054b5a5467616c623cefd8da39fa3692ce2ce8aa2a3c",
+		},
+		{
+			"0",
+			"19b6652bc7e44b6ca66a7803d1dff1b2d0fd02a32fa1b09f43716e21fec0b508e688e87b2d7a03618c066409ad53665c",
+			"10549370803d643dee27b367d4381b08e1655cc8887914917419eed52ad0472115c9fac1a14974ddea16ada22eb37ba7",
+			"19da1b4d47efeeb154f8968b43da2125376e0999ba722141419b03fd857490562fa42a5d0973956d1932dd20c1e0a284 18426da25dadd359adfda64fbaddac4414da2a841cb467935289877db450fac424361efb2e7fb141b7b98e6b2f888aef",
+			"c2f8d431770d9be9b087c36fc5b66bb83ce6372669f48294193ef646105e0f21d17b134e7d1ad9c18f54b81f6a3707b 3257c3be77016e69b75905a97871008a6dfd2e324a6748c48d3304380156987bd0905991824936fcfe34ab25c3b6caa",
+		},
+		{
+			"1",
+			"1eb4296187e4ff28b54dfb40be85e1725d99e78b57225d76fd9673f6cf444616ddb5bc5d1e849a7cb58aa0bf8db9120",
+			"7c1de2aaf8adec05ae75cf10fd27cde7477987936b8455ba344c625873a5381a64b7754135d8ec61bced3107abd9dce",
+			"b296300065ea264a6d4e0bd647b4c03d607ce7fc8897f618b7642c81e16b5f5f2c2858adc69104eed8161f1e9682829 176bee4273421cd9e13467f5c39493708a0468dc6e54f4b7c20394ebeab4d983d5ebf1c27158ce0ca7179a01dc8b10d6",
+			"b9b6c01f849b11a4f96db02a32b3146085871da1807b5cee7e075e582768d979b667650208b92dd359480ab3761af4a 45166b53c4fb92f85a63f23517f7581b7fa1a5b06060932fcf9a8a0ddd873f812fcbb5fe9a527fdacc668b2df12b2c9",
+		},
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Fp x;
+		x.setStr(tbl[i].in, 16);
+		G1 P;
+		mapto.FpToG1(P, x, &x);
+		P.normalize();
+		CYBOZU_TEST_EQUAL(P.x.getStr(16), tbl[i].x);
+		CYBOZU_TEST_EQUAL(P.y.getStr(16), tbl[i].y);
+		Fp2 x2;
+		x2.a = x;
+		x2.b = x;
+		G2 Q;
+		mapto.Fp2ToG2(Q, x2, &x2);
+		Q.normalize();
+		CYBOZU_TEST_EQUAL(Q.x.getStr(16), tbl[i].x2);
+		CYBOZU_TEST_EQUAL(Q.y.getStr(16), tbl[i].y2);
+	}
+}
+
 CYBOZU_TEST_AUTO(test)
 {
 	initPairing(mcl::BLS12_381);
@@ -815,4 +867,5 @@ CYBOZU_TEST_AUTO(test)
 	testSswuG1(mapto);
 	testMsgToG1(mapto);
 	testFpToG1(mapto);
+	testSameUV(mapto);
 }

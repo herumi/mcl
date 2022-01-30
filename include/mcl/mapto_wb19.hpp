@@ -68,13 +68,9 @@ struct MapTo_WB19 {
 		g2A.b = 240;
 		g2B.a = 1012;
 		g2B.b = 1012;
-		E1::a_.clear();
-		E1::b_ = 4;
-		E1::specialA_ = ec::Zero;
-		E2::a_.clear();
-		E2::b_.a = 4;
-		E2::b_.b = 4;
-		E2::specialA_ = ec::Zero;
+		E2::a_ = g2A;
+		E2::b_ = g2B;
+		E2::specialA_ = ec::GenericA;
 		sqrtConst = Fp::getOp().mp;
 		sqrtConst *= sqrtConst;
 		sqrtConst -= 9;
@@ -128,6 +124,9 @@ struct MapTo_WB19 {
 			assert(b); (void)b;
 		}
 		init_iso11();
+		E1::a_ = g1A;
+		E1::b_ = g1B;
+		E1::specialA_ = ec::GenericA;
 	}
 	void initArray(Fp *dst, const char **s, size_t n) const
 	{
