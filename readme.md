@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- fix FpToG1(P, u, v) and Fp2ToG2(P, u, v) when u == v (This bug does not affect mapToG1 and mapToG2).
 - add millerLoopVecMT (enabled if built with MCL_USE_OMP=1)
 - support s390x(systemz)
 - improve M1 mac performance
