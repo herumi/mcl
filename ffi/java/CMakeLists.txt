@@ -33,8 +33,6 @@ endif()
 # however, this configuration makes it possible to use both on all platforms, depending on what is available
 find_library(GMP_LIBRARY NAMES mpir gmp HINTS ${GMP_LINK_DIR} OPTIONAL)
 
-message (STATUS "MCL_LIBRARY=${MCL_LIBRARY} GMP_LIBRARY=${GMP_LIBRARY}")
-
 # make sure to always link mcl statically, so only one library needs to be installed by users
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a .lib)
 
@@ -43,16 +41,20 @@ include_directories(${JNI_INCLUDE_DIRS} ../../include/ ../../include/cybozu)
 
 find_library(MCL_LIBRARY NAMES mcl HINTS ${MCL_LINK_DIR} REQUIRED)
 
-if((GMP_LIBRARY_FOUND))
+if(GMP_LIBRARY)
+	message(STATUS "GMP found - linking it.")
 	include_directories(../../external/cybozulib_ext/include)
 	target_link_libraries(mcljava ${GMP_LIBRARY})
 	target_link_libraries(mclelgamaljava ${GMP_LIBRARY})
 else()
+	message(STATUS "GMP not found - assuming VINT was used to compile MCL.")
 	add_definitions(-DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER)
 endif()
 
 target_link_libraries(mcljava ${MCL_LIBRARY})
 target_link_libraries(mclelgamaljava ${MCL_LIBRARY})
+
+message (STATUS "MCL_LIBRARY=${MCL_LIBRARY} GMP_LIBRARY=${GMP_LIBRARY}")
 
 # finally, compile the test Java classes
 find_package(Java REQUIRED)
