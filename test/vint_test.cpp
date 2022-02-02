@@ -1390,6 +1390,8 @@ CYBOZU_TEST_AUTO(jacobi)
 	}
 }
 
+#ifdef NDEBUG
+
 CYBOZU_TEST_AUTO(bench)
 {
 	Vint x, y, z;
@@ -1432,6 +1434,7 @@ CYBOZU_TEST_AUTO(bench)
 #endif
 	}
 }
+#endif
 
 struct Seq {
 	const uint32_t *tbl;
@@ -1485,35 +1488,48 @@ CYBOZU_TEST_AUTO(divUnit)
 		}
 	}
 }
+#endif
 
-void compareMod(const uint64_t *x, const uint64_t *p)
+typedef Vint::Unit Unit;
+template<class T, size_t N>
+void compareMod(const T *x, const T (&p)[N])
 {
-	uint64_t y1[4] = {};
-	uint64_t y2[4] = {};
-	mcl::vint::divNM((uint64_t*)0, 0, y1, x, 8, p, 4);
+	T y1[N] = {};
+	T y2[N] = {};
+	mcl::vint::divNM((T*)0, 0, y1, x, N * 2, p, N);
 	mcl::vint::mcl_fpDbl_mod_SECP256K1(y2, x, p);
-	CYBOZU_TEST_EQUAL_ARRAY(y1, y2, 4);
+	CYBOZU_TEST_EQUAL_ARRAY(y1, y2, N);
 }
+
 CYBOZU_TEST_AUTO(SECP256k1)
 {
-	const uint64_t F = uint64_t(-1);
-	const uint64_t p[4] = { uint64_t(0xfffffffefffffc2full), F, F, F };
-	const uint64_t tbl[][8] = {
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+	const Unit F = Unit(-1);
+#if MCL_SIZEOF_UNIT == 8
+	const Unit p[N] = { Unit(0xfffffffefffffc2full), F, F, F };
+	const Unit tbl[][N * 2] = {
 		{ 0, 0, 0, 0, 0, 0, 0, 0 },
 		{ F, F, F, F, F, F, F, F },
 		{ F, F, F, F, 1, 0, 0, 0 },
 	};
+#else
+	const Unit p[N] = { Unit(0xfffffc2f), Unit(0xfffffffe), F, F, F, F, F, F };
+	const Unit tbl[][N * 2] = {
+		{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+		{ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F },
+		{ F, F, F, F, F, F, F, F, 1, 0, 0, 0, 0, 0, 0, 0 },
+	};
+#endif
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const uint64_t *x = tbl[i];
+		const Unit *x = tbl[i];
 		compareMod(x, p);
 	}
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < 100; i++) {
-		uint64_t x[8];
-		for (int j = 0; j < 8; j++) {
+		Unit x[N];
+		for (int j = 0; j < N; j++) {
 			x[j] = rg();
 		}
 		compareMod(x, p);
 	}
 }
-#endif
