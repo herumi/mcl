@@ -1526,8 +1526,8 @@ CYBOZU_TEST_AUTO(SECP256k1)
 	}
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < 100; i++) {
-		Unit x[N];
-		for (int j = 0; j < N; j++) {
+		Unit x[N * 2];
+		for (int j = 0; j < CYBOZU_NUM_OF_ARRAY(x); j++) {
 			x[j] = rg();
 		}
 		compareMod(x, p);
