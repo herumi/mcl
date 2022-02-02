@@ -1549,7 +1549,7 @@ public:
 		VintT yy = y;
 		bool yNeg = y.isNeg_;
 		bool qsign = x.isNeg_ ^ yNeg;
-		udiv(q, r, x.buf_, x.size(), y.buf_, y.size());
+		udiv(q, r, x.buf_, x.size(), yy.buf_, yy.size());
 		r.isNeg_ = yNeg;
 		if (q) q->isNeg_ = qsign;
 		if (!r.isZero() && qsign) {
