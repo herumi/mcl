@@ -831,7 +831,6 @@ public:
 	T& operator[](size_t n) { verify(n); return v_[n]; }
 };
 
-#if MCL_SIZEOF_UNIT == 8
 /*
 	M = 1 << 256
 	a = M mod p = (1 << 32) + 0x3d1
@@ -845,6 +844,8 @@ public:
 */
 inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 {
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+#if MCL_SIZEOF_UNIT == 8
 	const Unit a = (uint64_t(1) << 32) + 0x3d1;
 	Unit buf[5];
 	buf[4] = mulu1(buf, x + 4, 4, a); // H * a
@@ -859,26 +860,51 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 			assert(x3 == 0);
 		}
 	}
-	if (fp::isGreaterOrEqualArray(buf, p, 4)) {
-		subN(z, buf, p, 4);
+#else
+	Unit buf[n + 2];
+	// H * a = H * 0x3d1 + (H << 32)
+	buf[n] = mulu1(buf, x + n, n, 0x3d1u); // H * 0x3d1
+	buf[n + 1] = addN(buf + 1, buf + 1, x + n, n);
+	// t = H * a + L
+	Unit t = addN(buf, buf, x, n);
+	addu1(buf + n, buf + n, 2, t);
+	Unit x2[4];
+	// x2 = buf[n:n+2] * a
+	x2[2] = mulu1(x2, buf + n, 2, 0x3d1u);
+	x2[3] = addN(x2 + 1, x2 + 1, buf + n, 2);
+	Unit x3 = addN(buf, buf, x2, 4);
+	if (x3) {
+		x3 = addu1(buf + 4, buf + 4, n - 4, Unit(1));
+		if (x3) {
+			Unit a[2] = { 0x3d1, 1 };
+			x3 = addN(buf, buf, a, 2);
+			if (x3) {
+				addu1(buf + 2, buf + 2, n - 2, 1u);
+			}
+		}
+	}
+#endif
+	if (fp::isGreaterOrEqualArray(buf, p, n)) {
+		subN(z, buf, p, n);
 	} else {
-		fp::copyArray(z, buf, 4);
+		fp::copyArray(z, buf, n);
 	}
 }
 
 inline void mcl_fp_mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
-	Unit xy[8];
-	mulNM(xy, x, 4, y, 4);
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+	Unit xy[n * 2];
+	mulNM(xy, x, n, y, n);
 	mcl_fpDbl_mod_SECP256K1(z, xy, p);
 }
 inline void mcl_fp_sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
 {
-	Unit xx[8];
-	sqrN(xx, x, 4);
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+	Unit xx[n * 2];
+	sqrN(xx, x, n);
 	mcl_fpDbl_mod_SECP256K1(y, xx, p);
 }
-#endif
 
 } // vint
 
