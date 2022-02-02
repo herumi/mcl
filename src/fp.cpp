@@ -563,7 +563,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		}
 	}
 #endif
-#if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
+#if defined(MCL_USE_VINT)
 	if (mode != FP_LLVM && mode != FP_XBYAK) {
 		const char *secp256k1Str = "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
 		bool b;
@@ -616,7 +616,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	}
 #endif
 #endif
-#if defined(MCL_USE_VINT) && MCL_SIZEOF_UNIT == 8
+#if defined(MCL_USE_VINT)
 	if (primeMode == PM_SECP256K1) {
 		fp_mul = &mcl::vint::mcl_fp_mul_SECP256K1;
 		fp_sqr = &mcl::vint::mcl_fp_sqr_SECP256K1;
