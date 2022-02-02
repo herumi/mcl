@@ -450,9 +450,28 @@ struct MapTo {
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
 	}
-	void initBLS12(const mpz_class& z)
+	void initBLS12(const mpz_class& z, int curveType)
 	{
 		z_ = z;
+		if (curveType == MCL_BLS12_381) {
+			const char *z2 = "396c8c005555e1560000000055555555";
+			const char *cofactor = "396c8c005555e1568c00aaab0000aaab";
+			const char *g2cofactor = "5d543a95414e7f1091d50792876a202cd91de4547085abaa68a205b2e5a7ddfa628f1cb4d9e82ef21537e293a6691ae1616ec6e786f0c70cf1c38e31c7238e5";
+			const char *c1 = "be32ce5fbeed9ca374d38c0ed41eefd5bb675277cdf12d11bc2fb026c41400045c03fffffffdfffd";
+			const char *c2 = "5f19672fdf76ce51ba69c6076a0f77eaddb3a93be6f89688de17d813620a00022e01fffffffefffe";
+			const char *g2cofactorAdjInv = "204d0ec030004ec0600000002fffffffd";
+			const char *g2cofactorAdj = "26a48d1bb889d46d66689d580335f2ac37d2aaab55543d5455555554aaaaaaab";
+			bool b;
+			z2_.setStr(&b, z2, 16); assert(b); (void)b;
+			cofactor_.setStr(&b, cofactor, 16); assert(b); (void)b;
+			g2cofactor_.setStr(&b, g2cofactor, 16); assert(b); (void)b;
+			c1_.setStr(&b, c1, 16); assert(b); (void)b;
+			c2_.setStr(&b, c2, 16); assert(b); (void)b;
+			g2cofactorAdjInv_.setStr(&b, g2cofactorAdjInv, 16); assert(b); (void)b;
+			g2cofactorAdj_.setStr(&b, g2cofactorAdj, 16); assert(b); (void)b;
+			mapTo_WB19_.init();
+			return;
+		}
 		z2_ = (z_ * z_ - 1) / 3;
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
@@ -467,7 +486,6 @@ struct MapTo {
 		assert(b);
 		(void)b;
 		Fr::inv(g2cofactorAdj_, g2cofactorAdjInv_);
-		mapTo_WB19_.init();
 	}
 	/*
 		change mapTo function to mode
@@ -503,7 +521,7 @@ struct MapTo {
 		if (type_ == BNtype) {
 			initBN(cofactor, z, curveType);
 		} else if (type_ == BLS12type) {
-			initBLS12(z);
+			initBLS12(z, curveType);
 		}
 	}
 	template<class G, class F>
