@@ -462,9 +462,9 @@ struct MapTo {
 			const char *g2cofactorAdjInv = "204d0ec030004ec0600000002fffffffd";
 			const char *g2cofactorAdj = "26a48d1bb889d46d66689d580335f2ac37d2aaab55543d5455555554aaaaaaab";
 			bool b;
-			z2_.setStr(&b, z2, 16); assert(b); (void)b;
-			cofactor_.setStr(&b, cofactor, 16); assert(b); (void)b;
-			g2cofactor_.setStr(&b, g2cofactor, 16); assert(b); (void)b;
+			gmp::setStr(&b, z2_, z2, 16); assert(b); (void)b;
+			gmp::setStr(&b, cofactor_, cofactor, 16); assert(b); (void)b;
+			gmp::setStr(&b, g2cofactor_, g2cofactor, 16); assert(b); (void)b;
 			c1_.setStr(&b, c1, 16); assert(b); (void)b;
 			c2_.setStr(&b, c2, 16); assert(b); (void)b;
 			g2cofactorAdjInv_.setStr(&b, g2cofactorAdjInv, 16); assert(b); (void)b;
