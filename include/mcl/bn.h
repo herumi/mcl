@@ -468,7 +468,7 @@ MCLBN_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 
 // z = prod_{i=0}^{n-1} millerLoop(x[i], y[i])
 MCLBN_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
 // multi thread version of millerLoopVec (enabled if the library built with MCL_USE_OMP=1)
-// use all cpus if cpuN = 0
+// the num of thread is automatically detected if cpuN = 0
 MCLBN_DLL_API void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)

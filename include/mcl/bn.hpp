@@ -2051,7 +2051,7 @@ inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, boo
 }
 
 // multi thread version of millerLoopVec
-// use all CPUs if cpuN = 0
+// the num of thread is automatically detected if cpuN = 0
 inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN = 0)
 {
 	if (n == 0) {
@@ -2059,7 +2059,13 @@ inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, s
 		return;
 	}
 #ifdef MCL_USE_OMP
-	if (cpuN == 0) cpuN = omp_get_num_procs();
+	const size_t minN = 16;
+	if (cpuN == 0) {
+		cpuN = omp_get_num_procs();
+		if (n < minN * cpuN) {
+			cpuN = (n + minN - 1) / minN;
+		}
+	}
 	if (cpuN <= 1 || n <= cpuN) {
 		millerLoopVec(f, Pvec, Qvec, n);
 		return;
@@ -2073,8 +2079,8 @@ inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, s
 		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r));
 	}
 	f = 1;
-	#pragma omp declare reduction(red:Fp12:omp_out *= omp_in) initializer(omp_priv = omp_orig)
-	#pragma omp parallel for reduction(red:f)
+//	#pragma omp declare reduction(red:Fp12:omp_out *= omp_in) initializer(omp_priv = omp_orig)
+//	#pragma omp parallel for reduction(red:f)
 	for (size_t i = 0; i < cpuN; i++) {
 		f *= fs[i];
 	}
