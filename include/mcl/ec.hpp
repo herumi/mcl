@@ -1575,6 +1575,7 @@ public:
 		/*
 			mulVecNGLV is a little slow for large n
 		*/
+#if 1
 		if (mulVecNGLV && n < mcl::fp::maxMulVecNGLV) {
 			mpz_class myVec[mcl::fp::maxMulVecNGLV];
 			for (size_t i = 0; i < n; i++) {
@@ -1586,6 +1587,30 @@ public:
 			assert(done == n); (void)done;
 			return;
 		}
+#else
+		if (mulVecNGLV) {
+			EcT r;
+			r.clear();
+			mpz_class myVec[mcl::fp::maxMulVecNGLV];
+			while (n > 0) {
+				size_t nn = mcl::fp::min_(mcl::fp::maxMulVecNGLV, n);
+				for (size_t i = 0; i < nn; i++) {
+					bool b;
+					yVec[i].getMpz(&b, myVec[i]);
+					assert(b); (void)b;
+				}
+				EcT t;
+				size_t done = mulVecNGLV(t, xVec, myVec, nn);
+				assert(nn == done);
+				r += t;
+				xVec += done;
+				yVec += done;
+				n -= done;
+			}
+			z = r;
+			return;
+		}
+#endif
 		EcT r;
 		r.clear();
 		while (n > 0) {
