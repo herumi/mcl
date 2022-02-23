@@ -833,14 +833,15 @@ public:
 
 /*
 	M = 1 << 256
-	a = M mod p = (1 << 32) + 0x3d1
+	a = (1 << 32) + 0x3d1
+	p = M - a
 	[H:L] mod p = H * a + L
 
-	if H = L = M - 1, t = H * a + L = aM + (M - a - 1)
-	H' = a, L' = M - a - 1
-	t' = H' * a + L' = M + (a^2 - a - 1)
-	H'' = 1, L'' = a^2 - a - 1
-	t'' = H'' * a + L'' = a^2 - 1
+	max [H:L] = (p-1)^2 = M(M-2(a+1))+(a+1)^2
+	H = M-2(a+1), L=(a+1)^2
+	Ha+L=Ma-a^2+1=M(a-1)+(M-a^2+1)
+	H'=a-1, L'=M-a^2+1
+	H'a+L'=M-a+1=p+1
 */
 inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 {
