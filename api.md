@@ -766,18 +766,21 @@ mcl supports various mode of hash-to-curve function, serialize/deserialize and g
 for historical reasons and backwards compatibility.
 
 If using BLS12-381 and Ethereum compatibility mode, set
-```C++
+```
+// C++
 Fp::setETHserialization(true);
 Fr::setETHserialization(true);
 bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
 ```
 or
-```C
+```
+// C
 mclBn_setETHserialization(1);
 mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
 ```
 and use
-```C++
+```
+// C++
 void Fp::setBigEndianMod(const uint8_t *x, size_t bufSize);
 size_t T::serialize(void *buf, size_t maxBufSize) const
 size_t T::deserialize(const void *buf, size_t bufSize);
@@ -785,7 +788,8 @@ void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
 void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
 ```
 or
-```C
+```
+// C
 int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
 mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
