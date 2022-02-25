@@ -178,8 +178,8 @@ curve type is defined in `mcl/curve_type.h`.
 ```
 int mclBn_setMapToMode(int mode);
 ```
-- `mode = MCL_MAP_TO_MODE_ORIGINAL` : the old map-to-function (for backward compatibility)
-- `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE` : the map-to-function defined in IRTF CFRG hash-to-curve
+- `mode = MCL_MAP_TO_MODE_ORIGINAL` : the old hash-to-curve (for backward compatibility)
+- `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE` : the hash-to-curve defined in [Hashing to Elliptic Curves](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/)
 
 ### Control to verify that a point of the elliptic curve has the order `r`.
 
@@ -321,7 +321,8 @@ else:
 ```
 void mclBn_setETHserialization(int ETHserialization);
 ```
-- serialize according to [serialization of BLS12-381](https://github.com/zkcrypto/pairing/blob/master/src/bls12_381/README.md#serialization) if BLS12-381 is used and `ETHserialization = 1` (default 0).
+- Set `ETHserialization = 1` for Ethereum compatibility (default 0).
+- See [FAQ](api.md#faq).
 
 ### Deserialize
 ```
@@ -545,7 +546,7 @@ T::mulVec(T, const T&, const Fr *y, size_t n);
 - z = sum_{i=0}^{n-1} mul(x[i], y[i]) for G1 / G2.
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
 
-## hash and mapTo functions
+## hash-to-curve function
 ### Set hash of `buf[0..bufSize-1]` to `x`
 ```
 int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
@@ -770,13 +771,13 @@ If using BLS12-381 and Ethereum compatibility mode, set
 // C++
 Fp::setETHserialization(true);
 Fr::setETHserialization(true);
-bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
 ```
 or
 ```
 // C
 mclBn_setETHserialization(1);
-mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
 ```
 and use
 ```
@@ -784,8 +785,6 @@ and use
 void Fp::setBigEndianMod(const uint8_t *x, size_t bufSize);
 size_t T::serialize(void *buf, size_t maxBufSize) const
 size_t T::deserialize(const void *buf, size_t bufSize);
-void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
-void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
 ```
 or
 ```
@@ -793,6 +792,16 @@ or
 int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
 mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
-int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
-int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
 ```
+
+### serialization of Fp/Fr
+- Fp
+  - 48 bytes data in big-endian format
+- Fr
+  - 32 bytes data in big-endian format
+- G1
+  - zero : `[0xc0 : (47 bytes zero)]`
+  - (x, y) : `d = [48 bytes x]` and `d[0] |= 0x20` if `y < (p+1)/2`.
+- G2
+  - zero : `[0xc0 : (95 bytes zero)]`
+  - (x, y) : `d = [96 bytes x]` and `d[0] |= 0x20` if `b < (p+1)/2` where `y=a+bi`.
