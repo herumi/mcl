@@ -48,7 +48,7 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
 
 # C-API
-see [api.md](api.md)
+see [api.md](api.md) and [FAQ](api.md#faq) for serialization and hash-to-curve.
 
 # How to build on Linux and macOS
 x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.

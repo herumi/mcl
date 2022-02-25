@@ -290,5 +290,103 @@ void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
 #endif
 }
 
+// non reduced version
+// [return:z[N]] = x[N] * y
+template<size_t N>
+uint64_t mulUnitNRT(uint64_t z[N], const uint32_t x[N], uint64_t y)
+{
+	uint64_t H = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = x[i] * y;
+		z[i] = (v & 0xffffffff) + H;
+		H = v >> 32;
+	}
+	return H;
+}
+
+// non reduced version
+// [return:z[N]] = z[N] + x[N] * y
+template<size_t N>
+uint64_t addMulUnitNRT(uint64_t z[N], const uint32_t x[N], uint64_t y)
+{
+	uint64_t H = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = x[i] * y;
+		z[i] += (v & 0xffffffff) + H;
+		H = v >> 32;
+	}
+	return H;
+}
+
+template<size_t N>
+void normalizeT(uint32_t y[N], const uint64_t x[N])
+{
+	uint64_t H = x[0];
+	y[0] = H & 0xffffffff;
+	for (size_t i = 1; i < N; i++) {
+		uint64_t v = x[i] + (H >> 32);
+		y[i] = uint32_t(v & 0xffffffff);
+		H = v;
+	}
+}
+// z[N * 2] = x[N] * y[N]
+template<size_t N>
+void mulNRT(uint32_t z_[N * 2], const uint32_t x[N], const uint32_t y[N])
+{
+	uint64_t z[N * 2];
+	z[N] = mulUnitNRT<N>(z, x, y[0]);
+	for (size_t i = 1; i < N; i++) {
+		z[N + i] = addMulUnitNRT<N>(&z[i], x, y[i]);
+	}
+	normalizeT<N*2>(z_, z);
+}
+
+inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint32_t *p)
+{
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+	uint32_t buf[n + 2];
+	// H * a = H * 0x3d1 + (H << 32)
+	buf[n] = vint::mulu1(buf, x + n, n, 0x3d1u); // H * 0x3d1
+	buf[n + 1] = vint::addN(buf + 1, buf + 1, x + n, n);
+	// t = H * a + L
+	uint32_t t = vint::addN(buf, buf, x, n);
+	vint::addu1(buf + n, buf + n, 2, t);
+	uint32_t x2[4];
+	// x2 = buf[n:n+2] * a
+	x2[2] = vint::mulu1(x2, buf + n, 2, 0x3d1u);
+	x2[3] = vint::addN(x2 + 1, x2 + 1, buf + n, 2);
+	uint32_t x3 = vint::addN(buf, buf, x2, 4);
+	if (x3) {
+		x3 = vint::addu1(buf + 4, buf + 4, n - 4, uint32_t(1));
+		if (x3) {
+			uint32_t a[2] = { 0x3d1, 1 };
+			x3 = vint::addN(buf, buf, a, 2);
+			if (x3) {
+				vint::addu1(buf + 2, buf + 2, n - 2, 1u);
+			}
+		}
+	}
+	if (fp::isGreaterOrEqualArray(buf, p, n)) {
+		subT<n>(z, buf, p);
+	} else {
+		copyT<n>(z, buf);
+	}
+}
+
+inline void mcl_fp_mul_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *p)
+{
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+	uint32_t xy[n * 2];
+	mulT<n>(xy, x, y);
+	mcl_fpDbl_mod_SECP256K1_wasm(z, xy, p);
+}
+inline void mcl_fp_sqr_SECP256K1_wasm(uint32_t *y, const uint32_t *x, const uint32_t *p)
+{
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+	uint32_t xx[n * 2];
+	mulT<n>(xx, x, x);
+	mcl_fpDbl_mod_SECP256K1_wasm(y, xx, p);
+}
+
 } // mcl
 

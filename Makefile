@@ -10,6 +10,7 @@ TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=modp_test.cpp
+TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   LIB_OBJ+=obj/static_code.o
@@ -67,6 +68,7 @@ SHE384_256_LIB=$(LIB_DIR)/libmclshe384_256.a
 SHE384_256_SLIB=$(LIB_DIR)/lib$(SHE384_256_SNAME).$(LIB_SUF)
 SHE_LIB_ALL=$(SHE256_LIB) $(SHE256_SLIB) $(SHE384_LIB) $(SHE384_SLIB) $(SHE384_256_LIB) $(SHE384_256_SLIB)
 all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE_LIB_ALL)
+ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
 #LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
@@ -209,6 +211,10 @@ $(BN384_256_SLIB): $(BN384_256_OBJ) $(MCL_SLIB)
 $(BN512_SLIB): $(BN512_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN512_OBJ) -shared $(LDFLAGS) $(BN512_SLIB_LDFLAGS)
 
+ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
+$(ECDSA_LIB): $(ECDSA_OBJ)
+	$(AR) $@ $(ECDSA_OBJ)
+
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
 
@@ -329,6 +335,9 @@ $(OBJ_DIR)/modp_test.o: test/modp_test.cpp
 $(EXE_DIR)/modp_test.exe: $(OBJ_DIR)/modp_test.o
 	$(PRE)$(CXX) $< -o $@
 
+$(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
+	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
+
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
 
@@ -357,6 +366,8 @@ bin/emu:
 	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_64BIT_PORTABLE -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
 	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=384 -DMCL_VINT_64BIT_PORTABLE -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
+bin/ecdsa-emu:
+	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll

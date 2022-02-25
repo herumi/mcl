@@ -618,8 +618,13 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 #if defined(MCL_USE_VINT)
 	if (primeMode == PM_SECP256K1) {
+#if defined(USE_WASM) && MCL_SIZEOF_UNIT == 4
+		fp_mul = &mcl::mcl_fp_mul_SECP256K1_wasm;
+		fp_sqr = &mcl::mcl_fp_sqr_SECP256K1_wasm;
+#else
 		fp_mul = &mcl::vint::mcl_fp_mul_SECP256K1;
 		fp_sqr = &mcl::vint::mcl_fp_sqr_SECP256K1;
+#endif
 		fpDbl_mod = &mcl::vint::mcl_fpDbl_mod_SECP256K1;
 	}
 #endif
