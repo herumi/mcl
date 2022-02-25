@@ -760,3 +760,35 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 - out = f(x) = c[0] + c[1] * x + ... + c[cSize - 1] * x^{cSize - 1}
 - return 0 if success else -1
   - satisfy cSize >= 1
+
+## FAQ
+mcl supports various mode of hash-to-curve function, serialize/deserialize and getStr/setStr
+for historical reasons and backwards compatibility.
+
+If using BLS12-381 and Ethereum compatibility mode, set
+```C++
+Fp::setETHserialization(true);
+Fr::setETHserialization(true);
+bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+```
+or
+```C
+mclBn_setETHserialization(1);
+mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+```
+and use
+```C++
+void Fp::setBigEndianMod(const uint8_t *x, size_t bufSize);
+size_t T::serialize(void *buf, size_t maxBufSize) const
+size_t T::deserialize(const void *buf, size_t bufSize);
+void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
+void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
+```
+or
+```C
+int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
+mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
+mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
+int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
+int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
+```
