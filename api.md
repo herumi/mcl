@@ -386,6 +386,8 @@ void T::setStr(const char *str, int iMode = 0)
 ```
 
 - set `buf[0..bufSize-1]` to `x` accoring to `ioMode`
+  - mask and truncate the value if it is greater than (r or p).
+  - See [masking](api.md#set-buf0bufsize-1-to-x-with-masking-according-to-the-following-way)
 - deny too large bufSize. The maximum length depends on compile options, but at least the bit length of the type of x.
 - return 0 if success else -1
   - *pb = result of setStr or throw exception if error (C++)
@@ -763,6 +765,11 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
   - satisfy cSize >= 1
 
 ## FAQ
+### Why the value set by Fp::setStr is different?
+The value set by Fp::setStr is masked and truncated if it is greater than p (resp. r).
+See [Set string](api.md##set-string)
+
+### What parameters of configuration are for Ethereum?
 mcl supports various mode of hash-to-curve function, serialize/deserialize and getStr/setStr
 for historical reasons and backwards compatibility.
 
@@ -794,7 +801,7 @@ mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
 mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
 ```
 
-### serialization of Fp/Fr
+Serialization of Fp/Fr
 - Fp
   - 48 bytes data in big-endian format
 - Fr
