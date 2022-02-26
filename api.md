@@ -767,7 +767,7 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 ## FAQ
 ### Why the value set by Fp::setStr is different?
 The value set by Fp::setStr is masked and truncated if it is greater than p (resp. r).
-See [Set string](api.md##set-string)
+See [Set string](api.md#set-string)
 
 ### What parameters of configuration are for Ethereum?
 mcl supports various mode of hash-to-curve function, serialize/deserialize and getStr/setStr
