@@ -290,34 +290,6 @@ void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
 #endif
 }
 
-// non reduced version
-// [return:z[N]] = x[N] * y
-template<size_t N>
-uint64_t mulUnitNRT(uint64_t z[N], const uint32_t x[N], uint64_t y)
-{
-	uint64_t H = 0;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * y;
-		z[i] = (v & 0xffffffff) + H;
-		H = v >> 32;
-	}
-	return H;
-}
-
-// non reduced version
-// [return:z[N]] = z[N] + x[N] * y
-template<size_t N>
-uint64_t addMulUnitNRT(uint64_t z[N], const uint32_t x[N], uint64_t y)
-{
-	uint64_t H = 0;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * y;
-		z[i] += (v & 0xffffffff) + H;
-		H = v >> 32;
-	}
-	return H;
-}
-
 template<size_t N>
 void normalizeT(uint32_t y[N], const uint64_t x[N])
 {
@@ -328,17 +300,6 @@ void normalizeT(uint32_t y[N], const uint64_t x[N])
 		y[i] = uint32_t(v & 0xffffffff);
 		H = v;
 	}
-}
-// z[N * 2] = x[N] * y[N]
-template<size_t N>
-void mulNRT(uint32_t z_[N * 2], const uint32_t x[N], const uint32_t y[N])
-{
-	uint64_t z[N * 2];
-	z[N] = mulUnitNRT<N>(z, x, y[0]);
-	for (size_t i = 1; i < N; i++) {
-		z[N + i] = addMulUnitNRT<N>(&z[i], x, y[i]);
-	}
-	normalizeT<N*2>(z_, z);
 }
 
 inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint32_t *p)
