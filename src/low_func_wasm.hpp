@@ -80,22 +80,22 @@ uint64_t subT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
 }
 
 // [return:z[N]] = x[N] * y
-template<size_t N>
-uint32_t mulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
+template<size_t N, typename T>
+T mulUnitT(T z[N], const uint32_t x[N], uint32_t y)
 {
 	uint64_t H = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint64_t v = uint64_t(x[i]) * y;
 		v += H;
-		z[i] = uint32_t(v);
+		z[i] = T(v);
 		H = v >> 32;
 	}
-	return H;
+	return T(H);
 }
 
 // [return:z[N]] = z[N] + x[N] * y
-template<size_t N>
-uint32_t addMulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
+template<size_t N, typename T>
+T addMulUnitT(T z[N], const uint32_t x[N], uint32_t y)
 {
 	// reduce cast operation
 	uint64_t H = 0;
@@ -104,15 +104,15 @@ uint32_t addMulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y)
 		uint64_t v = x[i] * yy;
 		v += H;
 		v += z[i];
-		z[i] = uint32_t(v);
+		z[i] = T(v);
 		H = v >> 32;
 	}
-	return uint32_t(H);
+	return T(H);
 }
 
 // z[N * 2] = x[N] * y[N]
-template<size_t N>
-void mulT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
+template<size_t N, typename T>
+void mulT(T z[N * 2], const uint32_t x[N], const uint32_t y[N])
 {
 	z[N] = mulUnitT<N>(z, x, y[0]);
 	for (size_t i = 1; i < N; i++) {
