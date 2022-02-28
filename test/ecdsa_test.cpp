@@ -30,6 +30,18 @@ CYBOZU_TEST_AUTO(ecdsa)
 	CYBOZU_TEST_ASSERT(!verify(sig, pub, msg.c_str(), msg.size()));
 }
 
+CYBOZU_TEST_AUTO(mul)
+{
+	mcl::ecdsa::Fp x = -3, y;
+	const mpz_class p = mcl::ecdsa::Fp::getOp().mp;
+	for (int i = 0; i < 100; i++) {
+		Fp::pow(y, x, p - 1);
+		CYBOZU_TEST_EQUAL(y, 1);
+		x = x - 1;
+	}
+	CYBOZU_TEST_EQUAL(Fp(-1) * Fp(-1), 1);
+}
+
 void serializeStrTest(const std::string& msg, const std::string& secHex, const std::string& pubHex, const std::string& sigHex)
 {
 	// old serialization
@@ -246,7 +258,6 @@ CYBOZU_TEST_AUTO(edgeCase)
 		}
 	}
 }
-
 
 CYBOZU_TEST_AUTO(bench)
 {
