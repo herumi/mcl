@@ -112,7 +112,7 @@ T addMulUnitT(T z[N], const uint32_t x[N], uint32_t y)
 
 // z[N * 2] = x[N] * y[N]
 template<size_t N, typename T>
-void mulT(T z[N * 2], const uint32_t x[N], const uint32_t y[N])
+void mulPreT(T z[N * 2], const uint32_t x[N], const uint32_t y[N])
 {
 	z[N] = mulUnitT<N>(z, x, y[0]);
 	for (size_t i = 1; i < N; i++) {
@@ -128,7 +128,7 @@ void mulT(T z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	assume a < W/2, c < W/2
 	(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
 	ad + bc = (a + b)(c + d) - ac - bd < (1 << (N * 32))
-	slower than mulT on Core i7 with -m32 for N <= 12
+	slower than mulPreT on Core i7 with -m32 for N <= 12
 */
 template<size_t N>
 void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
@@ -142,15 +142,15 @@ void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	uint64_t c1 = addT<H>(a_b, x, x + H); // a + b
 	uint64_t c2 = addT<H>(c_d, y, y + H); // c + d
 	uint32_t tmp[N];
-	mulT<H>(tmp, a_b, c_d);
+	mulPreT<H>(tmp, a_b, c_d);
 	if (c1) {
 		addT<H>(tmp + H, tmp + H, c_d);
 	}
 	if (c2) {
 		addT<H>(tmp + H, tmp + H, a_b);
 	}
-	mulT<H>(z, x, y); // bd
-	mulT<H>(z + N, x + H, y + H); // ac
+	mulPreT<H>(z, x, y); // bd
+	mulPreT<H>(z + N, x + H, y + H); // ac
 	// c:tmp[N] = (a + b)(c + d)
 	subT<N>(tmp, tmp, z);
 	subT<N>(tmp, tmp, z + N);
@@ -174,13 +174,13 @@ void sqrT(uint32_t y[N * 2], const uint32_t x[N])
 	uint32_t a_b[H];
 	uint64_t c = addT<H>(a_b, x, x + H); // a + b
 	uint32_t tmp[N];
-	mulT<H>(tmp, a_b, a_b);
+	mulPreT<H>(tmp, a_b, a_b);
 	if (c) {
 		shlT<H>(a_b, a_b, 1);
 		addT<H>(tmp + H, tmp + H, a_b);
 	}
-	mulT<H>(y, x, x); // b^2
-	mulT<H>(y + N, x + H, x + H); // a^2
+	mulPreT<H>(y, x, x); // b^2
+	mulPreT<H>(y + N, x + H, x + H); // a^2
 	// tmp[N] = (a + b)^2
 	subT<N>(tmp, tmp, y);
 	subT<N>(tmp, tmp, y + N);
@@ -304,48 +304,49 @@ void normalizeT(uint32_t y[N], const uint64_t x[N])
 
 inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint32_t *p)
 {
-	const size_t n = 32 / MCL_SIZEOF_UNIT;
-	uint32_t buf[n + 2];
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+	uint32_t buf[N + 2];
 	// H * a = H * 0x3d1 + (H << 32)
-	buf[n] = vint::mulu1(buf, x + n, n, 0x3d1u); // H * 0x3d1
-	buf[n + 1] = vint::addN(buf + 1, buf + 1, x + n, n);
+	buf[N] = mulUnitT<N, uint32_t>(buf, x + N,  0x3d1u); // H * 0x3d1
+	buf[N + 1] = addT<N>(buf + 1, buf + 1, x + N);
 	// t = H * a + L
-	uint32_t t = vint::addN(buf, buf, x, n);
-	vint::addu1(buf + n, buf + n, 2, t);
+	uint32_t t = addT<N>(buf, buf, x);
+	addUnitT<2>(buf + N, t);
+	// H'=buf[N:N+2]<=a-1, L'=buf[0:N]
 	uint32_t x2[4];
-	// x2 = buf[n:n+2] * a
-	x2[2] = vint::mulu1(x2, buf + n, 2, 0x3d1u);
-	x2[3] = vint::addN(x2 + 1, x2 + 1, buf + n, 2);
-	uint32_t x3 = vint::addN(buf, buf, x2, 4);
+	// x2 = buf[N:N+2] * a<=a(a-1)
+	x2[2] = mulUnitT<2>(x2, buf + N, 0x3d1u);
+	x2[3] = addT<2>(x2 + 1, x2 + 1, buf + N);
+	uint32_t x3 = addT<4>(buf, buf, x2);
 	if (x3) {
-		x3 = vint::addu1(buf + 4, buf + 4, n - 4, uint32_t(1));
+		x3 = addUnitT<N - 4>(buf + 4, uint32_t(1));
 		if (x3) {
 			uint32_t a[2] = { 0x3d1, 1 };
-			x3 = vint::addN(buf, buf, a, 2);
+			x3 = addT<2>(buf, buf, a);
 			if (x3) {
-				vint::addu1(buf + 2, buf + 2, n - 2, 1u);
+				addUnitT<N - 2>(buf + 2, 1u);
 			}
 		}
 	}
-	if (fp::isGreaterOrEqualArray(buf, p, n)) {
-		subT<n>(z, buf, p);
+	if (fp::isGreaterOrEqualArray(buf, p, N)) {
+		subT<N>(z, buf, p);
 	} else {
-		copyT<n>(z, buf);
+		copyT<N>(z, buf);
 	}
 }
 
 inline void mcl_fp_mul_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint32_t *y, const uint32_t *p)
 {
-	const size_t n = 32 / MCL_SIZEOF_UNIT;
-	uint32_t xy[n * 2];
-	mulT<n>(xy, x, y);
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+	uint32_t xy[N * 2];
+	mulPreT<N>(xy, x, y);
 	mcl_fpDbl_mod_SECP256K1_wasm(z, xy, p);
 }
 inline void mcl_fp_sqr_SECP256K1_wasm(uint32_t *y, const uint32_t *x, const uint32_t *p)
 {
-	const size_t n = 32 / MCL_SIZEOF_UNIT;
-	uint32_t xx[n * 2];
-	mulT<n>(xx, x, x);
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+	uint32_t xx[N * 2];
+	mulPreT<N>(xx, x, x);
 	mcl_fpDbl_mod_SECP256K1_wasm(y, xx, p);
 }
 
