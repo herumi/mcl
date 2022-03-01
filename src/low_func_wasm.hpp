@@ -302,6 +302,21 @@ void normalizeT(uint32_t y[N], const uint64_t x[N])
 	}
 }
 
+/*
+	M=1<<256
+	a=(1<<32)+0x3d1
+	p=M-a
+	0<=x<=(p-1)^2=M(M-2a-2)+(a+1)^2
+	H=M-2a-2, L=(a+1)^2
+	H=M-2a-3, L=M-1
+	x1=H a + L <= (M-2a-3)a+M-1=Ma+(M-2a^2-3a-1)
+	H2=a, L2=M-2a^2-3a-1
+	H2=a-1, L2=M-1
+	x2=H2 a + L2 <= (a-1)a + M-1=M+(a^2-a-1)
+	H3=1, L3=a^2-a-1
+	H3=0, L3=M-1
+	x3=H3 a + L1 <= M-1
+*/
 inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint32_t *p)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
@@ -309,23 +324,21 @@ inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const u
 	// H * a = H * 0x3d1 + (H << 32)
 	buf[N] = mulUnitT<N, uint32_t>(buf, x + N,  0x3d1u); // H * 0x3d1
 	buf[N + 1] = addT<N>(buf + 1, buf + 1, x + N);
-	// t = H * a + L
+	// x1 = H * a + L
 	uint32_t t = addT<N>(buf, buf, x);
 	addUnitT<2>(buf + N, t);
-	// H'=buf[N:N+2]<=a-1, L'=buf[0:N]
-	uint32_t x2[4];
-	// x2 = buf[N:N+2] * a<=a(a-1)
-	x2[2] = mulUnitT<2>(x2, buf + N, 0x3d1u);
-	x2[3] = addT<2>(x2 + 1, x2 + 1, buf + N);
-	uint32_t x3 = addT<4>(buf, buf, x2);
-	if (x3) {
-		x3 = addUnitT<N - 4>(buf + 4, uint32_t(1));
-		if (x3) {
+	// H2=buf[N:N+2], L2=buf[0:N]
+	uint32_t t2[4];
+	// t2 = buf[N:N+2] * a
+	t2[2] = mulUnitT<2>(t2, buf + N, 0x3d1u);
+	t2[3] = addT<2>(t2 + 1, t2 + 1, buf + N);
+	uint32_t H3 = addT<4>(buf, buf, t2);
+	if (H3) {
+		H3 = addUnitT<N - 4>(buf + 4, uint32_t(1));
+		if (H3) {
 			uint32_t a[2] = { 0x3d1, 1 };
-			x3 = addT<2>(buf, buf, a);
-			if (x3) {
-				addUnitT<N - 2>(buf + 2, 1u);
-			}
+			H3 = addT<2>(buf, buf, a);
+			assert(H3 == 0);
 		}
 	}
 	if (fp::isGreaterOrEqualArray(buf, p, N)) {
