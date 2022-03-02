@@ -369,11 +369,15 @@ inline void mcl_fp_mul_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const uint
 	mulPreT<N>(xy, x, y);
 	mcl_fpDbl_mod_SECP256K1_wasm(z, xy, p);
 }
+
+#include "sqr256_wasm.hpp"
+
 inline void mcl_fp_sqr_SECP256K1_wasm(uint32_t *y, const uint32_t *x, const uint32_t *p)
 {
-	const size_t N = 32 / MCL_SIZEOF_UNIT;
-	uint32_t xx[N * 2];
-	mulPreT<N>(xx, x, x);
+	const size_t n = 32 / MCL_SIZEOF_UNIT;
+	uint32_t xx[n * 2];
+	mulPreT<n>(xx, x, x);
+//	sqrPre(xx, x);
 	mcl_fpDbl_mod_SECP256K1_wasm(y, xx, p);
 }
 
