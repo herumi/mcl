@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-
 namespace mcl {
 
 template<size_t N>
@@ -41,7 +40,7 @@ uint32_t shlT(uint32_t y[N], const uint32_t x[N], size_t bit)
 
 // [return:y[N]] += x
 template<size_t N>
-inline uint32_t addUnitT(uint32_t y[N], uint32_t x)
+uint32_t addUnitT(uint32_t y[N], uint32_t x)
 {
 	uint64_t v = uint64_t(y[0]) + x;
 	y[0] = uint32_t(v);
@@ -80,39 +79,40 @@ uint64_t subT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
 }
 
 // [return:z[N]] = x[N] * y
-template<size_t N, typename T>
-T mulUnitT(T z[N], const uint32_t x[N], uint32_t y)
+template<size_t N>
+uint64_t mulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y_)
 {
 	uint64_t H = 0;
+	uint64_t y = y_;
 	for (size_t i = 0; i < N; i++) {
-		uint64_t v = uint64_t(x[i]) * y;
+		uint64_t v = x[i] * y;
 		v += H;
-		z[i] = T(v);
+		z[i] = uint32_t(v);
 		H = v >> 32;
 	}
-	return T(H);
+	return H;
 }
 
-// [return:z[N]] = z[N] + x[N] * y
-template<size_t N, typename T>
-T addMulUnitT(T z[N], const uint32_t x[N], uint32_t y)
+// [return:z[N]] = z[N] + x[N] * uint32_t(y)
+template<size_t N>
+uint64_t addMulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y_)
 {
 	// reduce cast operation
 	uint64_t H = 0;
-	uint64_t yy = y;
+	uint64_t y = y_;
 	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * yy;
+		uint64_t v = x[i] * y;
 		v += H;
 		v += z[i];
-		z[i] = T(v);
+		z[i] = uint32_t(v);
 		H = v >> 32;
 	}
-	return T(H);
+	return H;
 }
 
 // z[N * 2] = x[N] * y[N]
-template<size_t N, typename T>
-void mulPreT(T z[N * 2], const uint32_t x[N], const uint32_t y[N])
+template<size_t N>
+void mulPreT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 {
 	z[N] = mulUnitT<N>(z, x, y[0]);
 	for (size_t i = 1; i < N; i++) {
@@ -120,6 +120,7 @@ void mulPreT(T z[N * 2], const uint32_t x[N], const uint32_t y[N])
 	}
 }
 
+#if 0
 /*
 	z[N * 2] = x[N] * y[N]
 	H = N/2
@@ -159,6 +160,7 @@ void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
 		addUnitT<H>(z + N + H, 1);
 	}
 }
+#endif
 
 /*
 	y[N * 2] = x[N] * x[N]
@@ -290,6 +292,7 @@ void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
 #endif
 }
 
+#if 0
 template<size_t N>
 void normalizeT(uint32_t y[N], const uint64_t x[N])
 {
@@ -301,7 +304,18 @@ void normalizeT(uint32_t y[N], const uint64_t x[N])
 		H = v;
 	}
 }
+#endif
 
+template<size_t N, typename T>
+int cmpT(const T *x, const T* y)
+{
+	for (size_t i = N - 1; i != size_t(-1); i--) {
+		T a = x[i];
+		T b = y[i];
+		if (a != b) return a < b ? -1 : 1;
+	}
+	return 0;
+}
 /*
 	M=1<<256
 	a=(1<<32)+0x3d1
@@ -322,7 +336,7 @@ inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const u
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
 	uint32_t buf[N + 2];
 	// H * a = H * 0x3d1 + (H << 32)
-	buf[N] = mulUnitT<N, uint32_t>(buf, x + N,  0x3d1u); // H * 0x3d1
+	buf[N] = mulUnitT<N>(buf, x + N,  0x3d1u); // H * 0x3d1
 	buf[N + 1] = addT<N>(buf + 1, buf + 1, x + N);
 	// x1 = H * a + L
 	uint32_t t = addT<N>(buf, buf, x);
@@ -341,7 +355,7 @@ inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const u
 			assert(H3 == 0);
 		}
 	}
-	if (fp::isGreaterOrEqualArray(buf, p, N)) {
+	if (cmpT<N>(buf, p) >= 0) {
 		subT<N>(z, buf, p);
 	} else {
 		copyT<N>(z, buf);
