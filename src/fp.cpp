@@ -467,8 +467,8 @@ void setWasmOp(Op& op)
 	op.fp_sub = mcl::subModT<N>;
 	op.fp_mul = mcl::mulMontT<N>;
 	op.fp_sqr = mcl::sqrMontT<N>;
-	op.fpDbl_mulPre = mulT<N>;
-//	op.fpDbl_sqrPre = sqrT<N>;
+	op.fpDbl_mulPre = mulPreT<N>;
+//	op.fpDbl_sqrPre = sqrPreT<N>;
 	op.fpDbl_mod = modT<N>;
 }
 #endif
