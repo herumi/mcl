@@ -547,7 +547,9 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 			const char *str;
 		} tbl[] = {
 			{ PM_NIST_P192, "0xfffffffffffffffffffffffffffffffeffffffffffffffff" },
+#if MCL_MAX_BIT_SIZE >= 521
 			{ PM_NIST_P521, "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
+#endif
 		};
 		// use fastMode for special primes
 		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
@@ -563,8 +565,11 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		}
 	}
 #endif
+	if (/*mode == FP_XBYAK*/false
 #if defined(MCL_USE_VINT)
-	if (mode != FP_LLVM && mode != FP_XBYAK) {
+		|| mode != FP_LLVM
+#endif
+	) {
 		const char *secp256k1Str = "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
 		bool b;
 		mpz_class secp256k1;
@@ -575,7 +580,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 			isFastMod = true;
 		}
 	}
-#endif
 	switch (N) {
 	case 192/(MCL_SIZEOF_UNIT * 8):  setOp<192/(MCL_SIZEOF_UNIT * 8)>(*this, mode); break;
 #if (MCL_SIZEOF_UNIT * 8) == 32
@@ -617,7 +621,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 #endif
 #if defined(MCL_USE_VINT)
-	if (primeMode == PM_SECP256K1) {
+	if (mode != FP_XBYAK && primeMode == PM_SECP256K1) {
 #if defined(USE_WASM) && MCL_SIZEOF_UNIT == 4
 		fp_mul = &mcl::mcl_fp_mul_SECP256K1_wasm;
 		fp_sqr = &mcl::mcl_fp_sqr_SECP256K1_wasm;
