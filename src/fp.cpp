@@ -565,7 +565,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		}
 	}
 #endif
-	if (/*mode == FP_XBYAK*/false
+	if (mode == FP_XBYAK
 #if defined(MCL_USE_VINT)
 		|| mode != FP_LLVM
 #endif

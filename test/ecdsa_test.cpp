@@ -259,6 +259,42 @@ CYBOZU_TEST_AUTO(edgeCase)
 	}
 }
 
+#ifdef NDEBUG
+CYBOZU_TEST_AUTO(lowBench)
+{
+	const int C = 10000;
+	{
+		Fp x, y;
+		x.setByCSPRNG();
+		y.setByCSPRNG();
+		CYBOZU_BENCH_C("Fp::add", C, Fp::add, x, x, y);
+		CYBOZU_BENCH_C("Fp::sub", C, Fp::sub, x, x, y);
+		CYBOZU_BENCH_C("Fp::mul", C, Fp::mul, x, x, y);
+		CYBOZU_BENCH_C("Fp::inv", C, Fp::inv, x, x);
+		CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, y);
+	}
+	{
+		Zn x, y;
+		x.setByCSPRNG();
+		y.setByCSPRNG();
+		CYBOZU_BENCH_C("Zn::add", C, Zn::add, x, x, y);
+		CYBOZU_BENCH_C("Zn::sub", C, Zn::sub, x, x, y);
+		CYBOZU_BENCH_C("Zn::mul", C, Zn::mul, x, x, y);
+		CYBOZU_BENCH_C("Zn::inv", C, Zn::inv, x, x);
+		CYBOZU_BENCH_C("Zn::pow", C, Zn::pow, x, x, y);
+	}
+	{
+		Ec P, Q;
+		Zn x;
+		x.setByCSPRNG();
+		P = local::getParam().P;
+		Ec::mul(Q, P, x);
+		CYBOZU_BENCH_C("Ec::add", C, Ec::add, P, P, Q);
+		CYBOZU_BENCH_C("Ec::dbl", C, Ec::dbl, P, P);
+		CYBOZU_BENCH_C("Ec::mul", C, Ec::mul, P, P, x);
+	}
+}
+
 CYBOZU_TEST_AUTO(bench)
 {
 	const std::string msg = "hello";
@@ -273,3 +309,4 @@ CYBOZU_TEST_AUTO(bench)
 	CYBOZU_BENCH_C("pub.verify ", 1000, verify, sig, pub, msg.c_str(), msg.size());
 	CYBOZU_BENCH_C("ppub.verify", 1000, verify, sig, ppub, msg.c_str(), msg.size());
 }
+#endif

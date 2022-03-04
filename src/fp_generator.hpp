@@ -399,8 +399,14 @@ private:
 			setFuncInfo(prof_, suf, "Dbl_mod", op.fpDbl_modA_, getCurr());
 		}
 
-		if (gen_preInv(op.fp_preInv, op)) {
-			setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
+		if (op.primeMode == PM_SECP256K1) {
+			if (gen_fp_inv(op.fp_invOp)) {
+				setFuncInfo(prof_, suf, "_inv", op.fp_invOp, getCurr());
+			}
+		} else {
+			if (gen_preInv(op.fp_preInv, op)) {
+				setFuncInfo(prof_, suf, "_preInv", op.fp_preInv, getCurr());
+			}
 		}
 
 		// call from Fp::mul and Fp::sqr
@@ -3344,6 +3350,10 @@ private:
 				vmovq(px, xt);
 			}
 		}
+	}
+	bool gen_fp_inv(void2uOp& func)
+	{
+		return false;
 	}
 	bool gen_fp2Dbl_mulPre(void3u& func)
 	{
