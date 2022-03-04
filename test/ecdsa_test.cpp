@@ -261,44 +261,19 @@ CYBOZU_TEST_AUTO(edgeCase)
 
 #ifdef NDEBUG
 
-template<typename T>
-size_t split4bit(uint8_t *buf, size_t bufSize, const T *x, size_t n)
-{
-	if (bufSize < sizeof(T) * n) return 0;
-	const size_t w = 4;
-	const T mask = (T(1) << w) - 1;
-	size_t usedN = 0;
-	for (size_t i = 0; i < n; i++) {
-		T v = x[i];
-		for (size_t j = 0; j < sizeof(T) * 2; j++) {
-			assert(usedN < bufSize);
-			buf[usedN++] = v & mask;
-			v >>= w;
-		}
-	}
-	while (usedN > 0) {
-		if (buf[usedN - 1]) break;
-		usedN--;
-	}
-	return usedN;
-}
-
 template<class F, typename T>
 void powC(F& z, const F& x, const T *yTbl, size_t yn)
 {
 	const size_t w = 4;
 	const size_t N = 1 << w;
-	uint8_t idxTbl[256/4];
-	size_t idxN = split4bit(idxTbl, sizeof(idxTbl), yTbl, yn);
-	assert(idxN > 0);
-	if (idxN == 1) {
-		switch (idxTbl[0]) {
-		case 0 : z = 1; return;
-		case 1 : z = x; return;
-		case 2 : F::sqr(z, x); return;
-		default: break;
-		}
+	uint8_t idxTbl[256/w];
+	mcl::fp::ArrayIterator<T> iter(yTbl, sizeof(T) * 8 * yn, w);
+	size_t idxN = 0;
+	while (iter.hasNext()) {
+		assert(idxN < sizeof(idxTbl));
+		idxTbl[idxN++] = iter.getNext();
 	}
+	assert(idxN > 0);
 	F tbl[N];
 	tbl[1] = x;
 	for (size_t i = 2; i < N; i++) {
@@ -306,11 +281,9 @@ void powC(F& z, const F& x, const T *yTbl, size_t yn)
 	}
 	z = tbl[idxTbl[idxN - 1]];
 	for (size_t i = 1; i < idxN; i++) {
-		assert(w == 4);
-		F::sqr(z, z);
-		F::sqr(z, z);
-		F::sqr(z, z);
-		F::sqr(z, z);
+		for (size_t j = 0; j < w; j++) {
+			F::sqr(z, z);
+		}
 		uint32_t idx = idxTbl[idxN - 1 - i];
 		if (idx) z *= tbl[idx];
 	}

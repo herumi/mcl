@@ -5,7 +5,9 @@
 	@author MITSUNARI Shigeo(@herumi)
 */
 #include <mcl/array.hpp>
-#include <mcl/fp.hpp>
+#include <mcl/util.hpp>
+#include <mcl/op.hpp>
+#include <assert.h>
 
 namespace mcl { namespace fp {
 
@@ -119,7 +121,7 @@ public:
 		@param z [out] x multiplied by y
 		@param y [in] exponent
 	*/
-	template<class tag2, size_t maxBitSize2>
+	template<class tag2, size_t maxBitSize2, template<class tag2_, size_t maxBitSize2_> class FpT>
 	void mul(Ec& z, const FpT<tag2, maxBitSize2>& y) const
 	{
 		fp::Block b;
