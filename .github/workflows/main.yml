@@ -8,6 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: lscpu
+    - run: sudo apt update
     - run: sudo apt install valgrind
     - run: make bin/pairing.exe -j4
     - run: valgrind bin/pairing.exe
