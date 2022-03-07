@@ -217,7 +217,7 @@ static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
 /*
 	y = (1/x) mod op.p
 */
-static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
+static inline void fp_invC(Unit *y, const Unit *x, const Op& op)
 {
 	const int N = (int)op.N;
 	bool b = false;
@@ -244,10 +244,10 @@ static inline void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 /*
 	inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
 */
-static void fp_invMontOpC(Unit *y, const Unit *x, const Op& op)
+static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 {
-	fp_invOpC(y, x, op);
-	op.fp_mul(y, y, op.R3, op.p);
+	fp_invC(y, x, op);
+	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
 /*
@@ -350,11 +350,7 @@ void setOp(Op& op, Mode mode)
 	op.fp_isZero = isZeroC<N>;
 	op.fp_clear = clearC<N>;
 	op.fp_copy = copyC<N>;
-	if (op.isMont) {
-		op.fp_invOp = fp_invMontOpC;
-	} else {
-		op.fp_invOp = fp_invOpC;
-	}
+	op.fp_invOp = fp_invOpC;
 	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
@@ -376,15 +372,14 @@ void setOp(Op& op, Mode mode)
 #ifdef MCL_X64_ASM
 inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 {
-	Unit r[maxUnitSize];
-	int k = op.fp_preInv(r, x);
+	int k = op.fp_preInv(y, x);
 	/*
 		S = UnitBitSize
 		xr = 2^k
 		R = 2^(N * S)
 		get r2^(-k)R^2 = r 2^(N * S * 2 - k)
 	*/
-	op.fp_mul(y, r, op.invTbl.data() + k * op.N, op.p);
+	op.fp_mul(y, y, op.invTbl.data() + k * op.N, op.p);
 }
 
 static void initInvTbl(Op& op)
