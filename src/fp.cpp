@@ -376,8 +376,11 @@ inline void invOpForMontC(Unit *y, const Unit *x, const Op& op)
 	/*
 		S = UnitBitSize
 		xr = 2^k
+		if isMont:
 		R = 2^(N * S)
 		get r2^(-k)R^2 = r 2^(N * S * 2 - k)
+		else:
+		r 2^(-k)
 	*/
 	op.fp_mul(y, y, op.invTbl.data() + k * op.N, op.p);
 }
@@ -388,13 +391,30 @@ static void initInvTbl(Op& op)
 	const Unit *p = op.p;
 	const size_t invTblN = N * sizeof(Unit) * 8 * 2;
 	op.invTbl.resize(invTblN * N);
-	Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
-	Unit t[maxUnitSize] = {};
-	t[0] = 2;
-	op.toMont(tbl, t);
-	for (size_t i = 0; i < invTblN - 1; i++) {
-		op.fp_add(tbl - N, tbl, tbl, p);
-		tbl -= N;
+	if (op.isMont) {
+		Unit t[maxUnitSize] = {};
+		t[0] = 2;
+		Unit *tbl = op.invTbl.data() + (invTblN - 1) * N;
+		op.toMont(tbl, t);
+		for (size_t i = 0; i < invTblN - 1; i++) {
+			op.fp_add(tbl - N, tbl, tbl, p);
+			tbl -= N;
+		}
+	} else {
+		/*
+			half = 1/2
+			tbl[i] = half^(i)
+		*/
+		Unit *tbl = op.invTbl.data();
+		memset(tbl, 0, sizeof(Unit) * N);
+		tbl[0] = 1;
+		mpz_class half = (op.mp + 1) >> 1;
+		bool b;
+		mcl::gmp::getArray(&b, tbl + N, N, half);
+		assert(b); (void)b;
+		for (size_t i = 2; i < invTblN; i++) {
+			op.fp_mul(tbl + N * i, tbl + N * (i-1), tbl + N, p);
+		}
 	}
 }
 #endif
@@ -440,7 +460,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #else
 	const int maxInvN = 4;
 #endif
-	if (enableInv && op.isMont && N <= maxInvN) {
+	if (enableInv && N <= maxInvN) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
