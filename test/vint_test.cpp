@@ -1296,6 +1296,12 @@ CYBOZU_TEST_AUTO(andOr)
 	CYBOZU_TEST_EQUAL(y, 0);
 }
 
+void invAndInc(Vint& x, const Vint& p)
+{
+	Vint::invMod(x, x, p);
+	x++;
+}
+
 CYBOZU_TEST_AUTO(invMod)
 {
 	Vint m("100000000000000000039");
@@ -1305,6 +1311,20 @@ CYBOZU_TEST_AUTO(invMod)
 		Vint::invMod(y, x, m);
 		CYBOZU_TEST_EQUAL((y * x) % m, 1);
 	}
+#ifdef NDEBUG
+	const char *tbl[] = {
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
+		"0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+		"0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d",
+		"0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001",
+		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		Vint p(tbl[i]);
+		Vint x = 2;
+		CYBOZU_BENCH_C("invMod", 1000, invAndInc, x, p);
+	}
+#endif
 }
 
 CYBOZU_TEST_AUTO(isPrime)

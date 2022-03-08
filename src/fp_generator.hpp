@@ -841,6 +841,13 @@ private:
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
 			return true;
 		}
+		if (op_->primeMode == PM_SECP256K1) {
+			func = getCurr<void3u>();
+			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
+			mulPre4(rsp, sf.p[1], sf.p[2], sf.t);
+			gen_fpDbl_mod_SECP256K1(sf.p[0], rsp, sf.t);
+			return true;
+		}
 		if (pn_ == 3) {
 			func = getCurr<void3u>();
 			gen_montMul3();
@@ -1154,6 +1161,12 @@ private:
 			fpDbl_mod_NIST_P192(sf.p[0], sf.p[1], sf.t);
 			return true;
 		}
+		if (op.primeMode == PM_SECP256K1) {
+			func = getCurr<void2u>();
+			StackFrame sf(this, 2, 8 | UseRDX);
+			gen_fpDbl_mod_SECP256K1(sf.p[0], sf.p[1], sf.t);
+			return true;
+		}
 #if 0
 		if (op.primeMode == PM_NIST_P521) {
 			func = getCurr<void2u>();
@@ -1208,6 +1221,15 @@ private:
 			t.append(sf.p[2]);
 			sqrPre3(rsp, sf.p[1], t);
 			fpDbl_mod_NIST_P192(sf.p[0], rsp, sf.t);
+			return true;
+		}
+		if (op_->primeMode == PM_SECP256K1) {
+			func = getCurr<void2u>();
+			StackFrame sf(this, 3, 10 | UseRDX, 8 * 8);
+			Pack t = sf.t;
+			t.append(sf.p[2]);
+			sqrPre4(rsp, sf.p[1], t);
+			gen_fpDbl_mod_SECP256K1(sf.p[0], rsp, t);
 			return true;
 		}
 		if (pn_ == 3) {
@@ -1343,7 +1365,7 @@ private:
 	*/
 	void mulAdd(const Pack& c, int n, const RegExp& px, const Reg64& t0, bool is_cn_zero)
 	{
-		assert(!isFullBit_);
+//		assert(!isFullBit_);
 		const Reg64& a = rax;
 		if (is_cn_zero) {
 			xor_(c[n], c[n]);
@@ -2872,6 +2894,31 @@ private:
 			mov(ptr[py + i * 8], rax);
 		}
 	L("@@");
+	}
+	void gen_fpDbl_mod_SECP256K1(const RegExp &py, const RegExp& px, const Pack& t)
+	{
+		Pack c = t.sub(0, 5);
+		Pack c4 = t.sub(0, 4);
+		const Reg64& t0 = t[5];
+		const Reg64& t1 = t[6];
+		load_rm(c4, px); // L
+		mov(rdx, 0x1000003d1);
+		mulAdd(c, 4, px + 4 * 8, t0, true); // c = L + H * rdx
+		xor_(rax, rax); // zero
+		mulx(t1, t0, c[4]); // [t1:t0] = c[4] * rdx
+		add(c[0], t0);
+		adc(c[1], t1);
+		adc(c[2], rax);
+		adc(c[3], rax);
+		cmovnc(rdx, rax); // CF ? rdx : 0
+		add(c[0], rdx);
+		adc(c[1], rax);
+		adc(c[2], rax);
+		adc(c[3], rax);
+		mov(rax, size_t(p_));
+		Pack t4 = t.sub(4, 4);
+		sub_p_mod(t4, c4, rax);
+		store_mr(py, t4);
 	}
 private:
 	FpGenerator(const FpGenerator&);

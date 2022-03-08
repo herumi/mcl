@@ -259,6 +259,106 @@ CYBOZU_TEST_AUTO(edgeCase)
 	}
 }
 
+#ifdef NDEBUG
+
+template<class F, typename T>
+void powC(F& z, const F& x, const T *yTbl, size_t yn)
+{
+	const size_t w = 4;
+	const size_t N = 1 << w;
+	uint8_t idxTbl[256/w];
+	mcl::fp::ArrayIterator<T> iter(yTbl, sizeof(T) * 8 * yn, w);
+	size_t idxN = 0;
+	while (iter.hasNext()) {
+		assert(idxN < sizeof(idxTbl));
+		idxTbl[idxN++] = iter.getNext();
+	}
+	assert(idxN > 0);
+	F tbl[N];
+	tbl[1] = x;
+	for (size_t i = 2; i < N; i++) {
+		tbl[i] = tbl[i-1] * x;
+	}
+	z = tbl[idxTbl[idxN - 1]];
+	for (size_t i = 1; i < idxN; i++) {
+		for (size_t j = 0; j < w; j++) {
+			F::sqr(z, z);
+		}
+		uint32_t idx = idxTbl[idxN - 1 - i];
+		if (idx) z *= tbl[idx];
+	}
+}
+
+template<class T>
+void pow2(T& z, const T& x, const mpz_class& y)
+{
+	powC(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
+}
+
+template<class T, class F>
+void pow2(T& z, const T& x, const F& y_)
+{
+	mpz_class y = y_.getMpz();
+	powC(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
+}
+
+template<class T>
+void invByPow(T& y, const T& x)
+{
+	static mpz_class p2 = T::getOp().mp - 2;
+	powC(y, x, mcl::gmp::getUnit(p2), mcl::gmp::getUnitSize(p2));
+}
+
+#include <cybozu/xorshift.hpp>
+
+CYBOZU_TEST_AUTO(lowBench)
+{
+	const int C = 10000;
+	{
+		cybozu::XorShift rg;
+		Fp x, y;
+		x.setByCSPRNG(rg);
+		y.setByCSPRNG(rg);
+		for (int i = 0; i < 4; i++) {
+			Fp t1, t2;
+			Fp::inv(t1, x);
+			invByPow(t2, x);
+//			Fp::pow(t2, x, Fp::getOp().mp - 2);
+			CYBOZU_TEST_EQUAL(t1, t2);
+			x = t1 + x;
+		}
+		CYBOZU_BENCH_C("Fp::add", C, Fp::add, x, x, y);
+		CYBOZU_BENCH_C("Fp::sub", C, Fp::sub, x, x, y);
+		CYBOZU_BENCH_C("Fp::mul", C, Fp::mul, x, x, y);
+		CYBOZU_BENCH_C("Fp::inv", C, Fp::inv, x, x);
+		CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, y);
+		CYBOZU_BENCH_C("pow2", C, pow2, x, x, y);
+		CYBOZU_BENCH_C("Fp::invByPow", C, invByPow, x, x);
+	}
+	{
+		Zn x, y;
+		x.setByCSPRNG();
+		y.setByCSPRNG();
+		CYBOZU_BENCH_C("Zn::add", C, Zn::add, x, x, y);
+		CYBOZU_BENCH_C("Zn::sub", C, Zn::sub, x, x, y);
+		CYBOZU_BENCH_C("Zn::mul", C, Zn::mul, x, x, y);
+		CYBOZU_BENCH_C("Zn::inv", C, Zn::inv, x, x);
+		CYBOZU_BENCH_C("Zn::pow", C, Zn::pow, x, x, y);
+		CYBOZU_BENCH_C("pow2", C, pow2, x, x, y);
+		CYBOZU_BENCH_C("Zn::invByPow", C, invByPow, x, x);
+	}
+	{
+		Ec P, Q;
+		Zn x;
+		x.setByCSPRNG();
+		P = local::getParam().P;
+		Ec::mul(Q, P, x);
+		CYBOZU_BENCH_C("Ec::add", C, Ec::add, P, P, Q);
+		CYBOZU_BENCH_C("Ec::dbl", C, Ec::dbl, P, P);
+		CYBOZU_BENCH_C("Ec::mul", C, Ec::mul, P, P, x);
+	}
+}
+
 CYBOZU_TEST_AUTO(bench)
 {
 	const std::string msg = "hello";
@@ -273,3 +373,4 @@ CYBOZU_TEST_AUTO(bench)
 	CYBOZU_BENCH_C("pub.verify ", 1000, verify, sig, pub, msg.c_str(), msg.size());
 	CYBOZU_BENCH_C("ppub.verify", 1000, verify, sig, ppub, msg.c_str(), msg.size());
 }
+#endif
