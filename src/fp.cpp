@@ -445,14 +445,13 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return true;
 #endif
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
-	bool enableInv = op.fg->init(op, g_cpu);
+	op.fg->init(op, g_cpu);
 #ifdef MCL_DUMP_JIT
 	return true;
 #endif
 #elif defined(MCL_STATIC_CODE)
 	if (mode != FP_XBYAK) return true;
 	fp::setStaticCode(op);
-	bool enableInv = true;
 #endif // MCL_USE_XBYAK
 
 #ifdef MCL_USE_VINT
@@ -460,7 +459,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #else
 	const int maxInvN = 4;
 #endif
-	if (enableInv && N <= maxInvN) {
+	if (op.fp_preInv && N <= maxInvN) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);
 	}
