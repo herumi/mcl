@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- improve SECP256K1 for x64
 - add G1::mulVecMT, G2::mulVecMT (enabled by MCL_USE_OMP=1)
 - improve mulMod of SECP256K1 for wasm
 - fix FpToG1(P, u, v) and Fp2ToG2(P, u, v) when u == v (This bug does not affect mapToG1 and mapToG2).
