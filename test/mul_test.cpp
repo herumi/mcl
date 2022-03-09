@@ -17,6 +17,9 @@ void put(const void *buf, size_t bufSize)
 	printf("\n");
 }
 
+static int ccc_mul;
+static int ccc_sqr;
+
 template<class F, typename T>
 void powC(F& z, const F& x, const T *yTbl, size_t yn)
 {
@@ -34,14 +37,19 @@ void powC(F& z, const F& x, const T *yTbl, size_t yn)
 	tbl[1] = x;
 	for (size_t i = 2; i < N; i++) {
 		tbl[i] = tbl[i-1] * x;
+ccc_mul++;
 	}
 	z = tbl[idxTbl[idxN - 1]];
 	for (size_t i = 1; i < idxN; i++) {
 		for (size_t j = 0; j < w; j++) {
 			F::sqr(z, z);
+ccc_sqr++;
 		}
 		uint32_t idx = idxTbl[idxN - 1 - i];
-		if (idx) z *= tbl[idx];
+		if (idx) {
+			z *= tbl[idx];
+ccc_mul++;
+		}
 	}
 }
 
@@ -88,17 +96,21 @@ void pow3(F& z, const F& x, const mpz_class& y)
 
 	F x2;
 	F::sqr(x2, x);
+ccc_sqr++;
 	tbl[0] = x;
 	for (size_t i = 1; i < tblSize; i++) {
 		F::mul(tbl[i], tbl[i - 1], x2);
+ccc_mul++;
 	}
 	z = 1;
 	for (size_t i = 0; i < binN; i++) {
 		const size_t bit = binN - 1 - i;
 		F::sqr(z, z);
+ccc_sqr++;
 		uint8_t n = bin[bit];
 		if (n > 0) {
 			z *= tbl[(n - 1) >> 1];
+ccc_mul++;
 		}
 	}
 }
@@ -116,11 +128,18 @@ void pow2(T& z, const T& x, const F& y_)
 	powC(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
 }
 
+template<class T, class F>
+void pow3(T& z, const T& x, const F& y_)
+{
+	mpz_class y = y_.getMpz();
+	pow3(z, x, y);
+}
+
 void bench(const char *name, const char *pStr)
 {
 	printf("bench name=%s\n", name);
 	Fp::init(pStr);
-	const int C = 100000;
+	const int C = 10000;
 	cybozu::XorShift rg;
 	Fp x, y;
 	for (int i = 0; i < 100; i++) {
@@ -136,10 +155,15 @@ void bench(const char *name, const char *pStr)
 	CYBOZU_BENCH_C("Fp::mul", C, Fp::mul, x, x, y);
 	CYBOZU_BENCH_C("Fp::sqr", C, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv", C, Fp::inv, x, x);
-	CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, y);
-	mpz_class my = y.getMpz();
-	CYBOZU_BENCH_C("pow3", C, pow3, x, x, my);
-	CYBOZU_BENCH_C("pow2", C, pow2, x, x, y);
+	CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, x);
+ccc_mul=0;
+ccc_sqr=0;
+	CYBOZU_BENCH_C("pow2", C, pow2, x, x, x);
+printf("mul=%d sqr=%d\n", ccc_mul, ccc_sqr);
+ccc_mul=0;
+ccc_sqr=0;
+	CYBOZU_BENCH_C("pow3", C, pow3, x, x, x);
+printf("mul=%d sqr=%d\n", ccc_mul, ccc_sqr);
 }
 
 CYBOZU_TEST_AUTO(main)
