@@ -20,7 +20,7 @@ endif
 MCL_LIB=../../lib/libmcl.a
 
 $(MCL_LIB):
-	$(MAKE) -C ../mcl lib/libmcl.a
+	$(MAKE) -C ../../ lib/libmcl.a
 
 %.o: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
