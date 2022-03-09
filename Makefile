@@ -11,6 +11,7 @@ TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
+TEST_SRC+=mul_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   LIB_OBJ+=obj/static_code.o
