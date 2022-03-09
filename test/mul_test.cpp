@@ -137,6 +137,7 @@ void pow3(T& z, const T& x, const F& y_)
 
 void bench(const char *name, const char *pStr)
 {
+	puts("------------------");
 	printf("bench name=%s\n", name);
 	Fp::init(pStr);
 	const int C = 10000;
@@ -156,6 +157,11 @@ void bench(const char *name, const char *pStr)
 	CYBOZU_BENCH_C("Fp::sqr", C, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv", C, Fp::inv, x, x);
 	CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, x);
+	CYBOZU_BENCH_C("getMpz", C, x.getMpz);
+	uint8_t bin[256];
+	mpz_class mx = x.getMpz();
+	CYBOZU_BENCH_C("getBinary:4", C, getBinary, bin, sizeof(bin), mx, 4);
+	CYBOZU_BENCH_C("getBinary:5", C, getBinary, bin, sizeof(bin), mx, 5);
 ccc_mul=0;
 ccc_sqr=0;
 	CYBOZU_BENCH_C("pow2", C, pow2, x, x, x);
