@@ -17,9 +17,6 @@ void put(const void *buf, size_t bufSize)
 	printf("\n");
 }
 
-static int ccc_mul;
-static int ccc_sqr;
-
 template<class F, typename T>
 void powC(F& z, const F& x, const T *yTbl, size_t yn)
 {
@@ -37,18 +34,15 @@ void powC(F& z, const F& x, const T *yTbl, size_t yn)
 	tbl[1] = x;
 	for (size_t i = 2; i < N; i++) {
 		tbl[i] = tbl[i-1] * x;
-ccc_mul++;
 	}
 	z = tbl[idxTbl[idxN - 1]];
 	for (size_t i = 1; i < idxN; i++) {
 		for (size_t j = 0; j < w; j++) {
 			F::sqr(z, z);
-ccc_sqr++;
 		}
 		uint32_t idx = idxTbl[idxN - 1 - i];
 		if (idx) {
 			z *= tbl[idx];
-ccc_mul++;
 		}
 	}
 }
@@ -79,6 +73,35 @@ inline size_t getBinary(uint8_t *bin, size_t maxBinN, mpz_class x, size_t w)
 	return binN;
 }
 
+template<typename T>
+inline size_t getBinary(uint8_t *bin, size_t maxBinN, const T *x, size_t xN, size_t w)
+{
+	if (w == 0 || w >= 8) return 0;
+	size_t binN = 0;
+	size_t zeroNum = 0;
+	const size_t maskW = (1u << w) - 1;
+	const size_t maxBit = sizeof(T) * 8 * xN;
+	size_t cur = 0;
+	while (cur < maxBit) {
+		size_t z = getLowerZeroBitNum(x);
+		if (z) {
+			x >>= z;
+			zeroNum += z;
+		}
+		for (size_t i = 0; i < zeroNum; i++) {
+			if (binN == maxBinN) return 0;
+			bin[binN++] = 0;
+		}
+		int v = getUnit(x)[0] & maskW;
+		x >>= w;
+		if (binN == maxBinN) return 0;
+		bin[binN++] = v;
+		zeroNum = w - 1;
+	}
+	return binN;
+}
+
+
 template<class F, size_t w = 5>
 void pow3(F& z, const F& x, const mpz_class& y)
 {
@@ -96,21 +119,17 @@ void pow3(F& z, const F& x, const mpz_class& y)
 
 	F x2;
 	F::sqr(x2, x);
-ccc_sqr++;
 	tbl[0] = x;
 	for (size_t i = 1; i < tblSize; i++) {
 		F::mul(tbl[i], tbl[i - 1], x2);
-ccc_mul++;
 	}
 	z = 1;
 	for (size_t i = 0; i < binN; i++) {
 		const size_t bit = binN - 1 - i;
 		F::sqr(z, z);
-ccc_sqr++;
 		uint8_t n = bin[bit];
 		if (n > 0) {
 			z *= tbl[(n - 1) >> 1];
-ccc_mul++;
 		}
 	}
 }
@@ -162,14 +181,8 @@ void bench(const char *name, const char *pStr)
 	mpz_class mx = x.getMpz();
 	CYBOZU_BENCH_C("getBinary:4", C, getBinary, bin, sizeof(bin), mx, 4);
 	CYBOZU_BENCH_C("getBinary:5", C, getBinary, bin, sizeof(bin), mx, 5);
-ccc_mul=0;
-ccc_sqr=0;
 	CYBOZU_BENCH_C("pow2", C, pow2, x, x, x);
-printf("mul=%d sqr=%d\n", ccc_mul, ccc_sqr);
-ccc_mul=0;
-ccc_sqr=0;
 	CYBOZU_BENCH_C("pow3", C, pow3, x, x, x);
-printf("mul=%d sqr=%d\n", ccc_mul, ccc_sqr);
 }
 
 CYBOZU_TEST_AUTO(main)
