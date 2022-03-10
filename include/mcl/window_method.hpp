@@ -17,6 +17,86 @@ namespace mcl { namespace fp {
 	@param bitSize [in] data size
 	@param w [in] split size < UnitBitSize
 */
+#if 1
+template<class T>
+class ArrayIterator {
+	const T *x_;
+	size_t bitSize_;
+	const size_t w_;
+	const T mask_;
+	size_t pos_;
+public:
+	static const size_t TbitSize = sizeof(T) * 8;
+	ArrayIterator(const T *x, size_t bitSize, size_t w)
+		: x_(x)
+		, bitSize_(bitSize)
+		, w_(w)
+		, mask_(makeMask(w))
+		, pos_(0)
+	{
+		assert(w_ <= TbitSize);
+	}
+	static T makeMask(size_t w)
+	{
+		return (w == TbitSize) ? ~T(0) : (T(1) << w) - 1;
+	}
+	bool hasNext() const { return bitSize_ > 0; }
+	T getNext(size_t w = 0)
+	{
+		assert(hasNext() && w <= TbitSize);
+		if (w == 0) w = w_;
+		if (w > bitSize_) {
+			w = bitSize_;
+		}
+		const T mask = w == w_ ? mask_ : makeMask(w);
+		const size_t nextPos = pos_ + w;
+		if (nextPos <= TbitSize) {
+			T v = x_[0] >> pos_;
+			if (nextPos < TbitSize) {
+				pos_ = nextPos;
+				v &= mask;
+			} else {
+				pos_ = 0;
+				x_++;
+			}
+			bitSize_ -= w;
+			return v;
+		}
+		T v = (x_[0] >> pos_) | (x_[1] << (TbitSize - pos_));
+		v &= mask;
+		pos_ = nextPos - TbitSize;
+		bitSize_ -= w;
+		x_++;
+		return v;
+	}
+	T getNext1bit()
+	{
+		assert(hasNext());
+		const size_t w = 1;
+		const T mask = 1;
+		if (pos_ + w <= TbitSize) {
+			T v = x_[0] >> pos_;
+			if (pos_ + w < TbitSize) {
+				pos_ += w;
+				v &= mask;
+			} else {
+				pos_ = 0;
+				x_++;
+			}
+			bitSize_ -= w;
+			return v;
+		}
+		T v = (x_[0] >> pos_) | (x_[1] << (TbitSize - pos_));
+		v &= mask;
+		pos_ = (pos_ + w) - TbitSize;
+		bitSize_ -= w;
+		x_++;
+		return v;
+	}
+};
+
+
+#else
 template<class T>
 struct ArrayIterator {
 	static const size_t TbitSize = sizeof(T) * 8;
@@ -65,6 +145,7 @@ struct ArrayIterator {
 	size_t pos;
 	T mask;
 };
+#endif
 
 template<class Ec>
 class WindowMethod {
