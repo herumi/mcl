@@ -8,8 +8,9 @@
 struct FpTag;
 typedef mcl::FpT<FpTag, 384> Fp;
 
-void put(const void *buf, size_t bufSize)
+void put(const char *msg, const void *buf, size_t bufSize)
 {
+	printf("%s:", msg);
 	const unsigned char* p = (const unsigned char*)buf;
 	for (size_t i = 0; i < bufSize; i++) {
 		printf("%02x", p[i]);
@@ -22,7 +23,7 @@ void powC(F& z, const F& x, const T *yTbl, size_t yn)
 {
 	const size_t w = 4;
 	const size_t N = 1 << w;
-	uint8_t idxTbl[256/w];
+	uint8_t idxTbl[sizeof(F) * 8/w];
 	mcl::fp::ArrayIterator<T> iter(yTbl, sizeof(T) * 8 * yn, w);
 	size_t idxN = 0;
 	while (iter.hasNext()) {
@@ -47,63 +48,42 @@ void powC(F& z, const F& x, const T *yTbl, size_t yn)
 	}
 }
 
+template<typename T>
+inline size_t getBinary2(uint8_t *bin, size_t maxBinN, const T *x, size_t xN, size_t w)
+{
+	if (w == 0 || w >= 8) return 0;
+	size_t binN = 0;
+	size_t zeroNum = 0;
+
+	mcl::fp::ArrayIterator<T> iter(x, sizeof(T) * 8 * xN, w);
+	while (iter.hasNext()) {
+		do {
+			if (iter.peek1bit()) break;
+			zeroNum++;
+			iter.consume1bit();
+		} while (iter.hasNext());
+		for (size_t i = 0; i < zeroNum; i++) {
+			if (binN == maxBinN) return 0;
+			bin[binN++] = 0;
+		}
+		uint32_t v = iter.getNext();
+		if (binN == maxBinN) return 0;
+		bin[binN++] = v;
+		zeroNum = w - 1;
+	}
+	while (binN > 0 && bin[binN - 1] == 0) {
+		binN--;
+	}
+	return binN;
+}
+
 inline size_t getBinary(uint8_t *bin, size_t maxBinN, mpz_class x, size_t w)
 {
-	if (w == 0 || w >= 8) return 0;
-	size_t binN = 0;
-	size_t zeroNum = 0;
-	const size_t maskW = (1u << w) - 1;
-	using namespace mcl::gmp;
-	while (!isZero(x)) {
-		size_t z = getLowerZeroBitNum(x);
-		if (z) {
-			x >>= z;
-			zeroNum += z;
-		}
-		for (size_t i = 0; i < zeroNum; i++) {
-			if (binN == maxBinN) return 0;
-			bin[binN++] = 0;
-		}
-		int v = getUnit(x)[0] & maskW;
-		x >>= w;
-		if (binN == maxBinN) return 0;
-		bin[binN++] = v;
-		zeroNum = w - 1;
-	}
-	return binN;
+	return getBinary2(bin, maxBinN, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x), w);
 }
 
-template<typename T>
-inline size_t getBinary(uint8_t *bin, size_t maxBinN, const T *x, size_t xN, size_t w)
-{
-	if (w == 0 || w >= 8) return 0;
-	size_t binN = 0;
-	size_t zeroNum = 0;
-	const size_t maskW = (1u << w) - 1;
-	const size_t maxBit = sizeof(T) * 8 * xN;
-	size_t cur = 0;
-	while (cur < maxBit) {
-		size_t z = getLowerZeroBitNum(x);
-		if (z) {
-			x >>= z;
-			zeroNum += z;
-		}
-		for (size_t i = 0; i < zeroNum; i++) {
-			if (binN == maxBinN) return 0;
-			bin[binN++] = 0;
-		}
-		int v = getUnit(x)[0] & maskW;
-		x >>= w;
-		if (binN == maxBinN) return 0;
-		bin[binN++] = v;
-		zeroNum = w - 1;
-	}
-	return binN;
-}
-
-
-template<class F, size_t w = 5>
-void pow3(F& z, const F& x, const mpz_class& y)
+template<class F, typename T, size_t w = 5>
+void pow3(F& z, const F& x, const T *y, size_t yN)
 {
 	assert(y >= 0);
 	assert(w > 0);
@@ -112,10 +92,10 @@ void pow3(F& z, const F& x, const mpz_class& y)
 		return;
 	}
 	const size_t tblSize = 1 << (w - 1);
-	uint8_t bin[sizeof(F) * 8];
+	uint8_t bin[sizeof(F) * 8 + 1];
 	F tbl[tblSize];
-	mpz_class u;
-	size_t binN = getBinary(bin, sizeof(bin), y, w);
+	size_t binN = getBinary2(bin, sizeof(bin), y, yN, w);
+	assert(binN > 0);
 
 	F x2;
 	F::sqr(x2, x);
@@ -141,17 +121,21 @@ void pow2(T& z, const T& x, const mpz_class& y)
 }
 
 template<class T, class F>
-void pow2(T& z, const T& x, const F& y_)
+void pow2(T& z, const T& x, const F& y)
 {
-	mpz_class y = y_.getMpz();
-	powC(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
+	pow2(z, x, y.getMpz());
+}
+
+template<class T>
+void pow3(T& z, const T& x, const mpz_class& y)
+{
+	pow3(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
 }
 
 template<class T, class F>
-void pow3(T& z, const T& x, const F& y_)
+void pow3(T& z, const T& x, const F& y)
 {
-	mpz_class y = y_.getMpz();
-	pow3(z, x, y);
+	pow3(z, x, y.getMpz());
 }
 
 void bench(const char *name, const char *pStr)
@@ -161,7 +145,7 @@ void bench(const char *name, const char *pStr)
 	Fp::init(pStr);
 	const int C = 10000;
 	cybozu::XorShift rg;
-	Fp x, y;
+	Fp x, y, x0;
 	for (int i = 0; i < 100; i++) {
 		x.setByCSPRNG(rg);
 		y.setByCSPRNG(rg);
@@ -176,13 +160,13 @@ void bench(const char *name, const char *pStr)
 	CYBOZU_BENCH_C("Fp::sqr", C, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv", C, Fp::inv, x, x);
 	CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, x);
+	CYBOZU_BENCH_C("pow2   ", C, pow2, x, x, x);
+	CYBOZU_BENCH_C("pow3   ", C, pow3, x, x, x);
 	CYBOZU_BENCH_C("getMpz", C, x.getMpz);
-	uint8_t bin[256];
+	uint8_t bin[sizeof(Fp) * 8 + 1];
 	mpz_class mx = x.getMpz();
 	CYBOZU_BENCH_C("getBinary:4", C, getBinary, bin, sizeof(bin), mx, 4);
 	CYBOZU_BENCH_C("getBinary:5", C, getBinary, bin, sizeof(bin), mx, 5);
-	CYBOZU_BENCH_C("pow2", C, pow2, x, x, x);
-	CYBOZU_BENCH_C("pow3", C, pow3, x, x, x);
 }
 
 CYBOZU_TEST_AUTO(main)
