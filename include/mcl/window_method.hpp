@@ -42,11 +42,12 @@ public:
 	bool hasNext() const { return bitSize_ > 0; }
 	T getNext(size_t w = 0)
 	{
-		assert(hasNext() && w <= TbitSize);
 		if (w == 0) w = w_;
+		assert(w <= TbitSize);
 		if (w > bitSize_) {
 			w = bitSize_;
 		}
+		if (!hasNext()) return 0;
 		const T mask = w == w_ ? mask_ : makeMask(w);
 		const size_t nextPos = pos_ + w;
 		if (nextPos <= TbitSize) {
