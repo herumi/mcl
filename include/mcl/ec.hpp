@@ -136,7 +136,7 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 		assert(b);
 		(void)b;
 		for (size_t j = 0; j < loopN; j++) {
-			vTbl[i][loopN - 1 - j] = (uint8_t)itr.getNext();
+			vTbl[i][loopN - 1 - j] = itr.hasNext() ? (uint8_t)itr.getNext() : 0;
 		}
 	}
 	Q.clear();
