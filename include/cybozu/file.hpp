@@ -297,7 +297,7 @@ public:
 			bufSize -= readSize;
 		}
 	}
-	void seek(int64_t pos, std::ios::seek_dir dir)
+	void seek(int64_t pos, std::ios::seekdir dir)
 	{
 #ifdef _WIN32
 		LARGE_INTEGER largePos;

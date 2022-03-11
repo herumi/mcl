@@ -172,7 +172,7 @@ public:
 	}
 	inline operator int() const
 	{
-		return atoi_local::convertToInt<int>(b_, p_, size_, "2147483648", /*INT_MIN*/-2147483648, 214748364, '8');
+		return atoi_local::convertToInt<int>(b_, p_, size_, "2147483648", (std::numeric_limits<int>::min)() /* -2147483648 */, 214748364, '8');
 	}
 	inline operator unsigned int() const
 	{
