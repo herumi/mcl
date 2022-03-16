@@ -54,13 +54,6 @@ struct Operator : public E {
 		y.getBlock(b);
 		powArrayBase(z, x, b.p, b.n, false, false);
 	}
-	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
-	static void powCT(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
-	{
-		fp::Block b;
-		y.getBlock(b);
-		powArray(z, x, b.p, b.n, false, true);
-	}
 	static void pow(T& z, const T& x, int64_t y)
 	{
 		const uint64_t u = fp::abs_(y);
@@ -79,10 +72,6 @@ struct Operator : public E {
 	static void powGeneric(T& z, const T& x, const mpz_class& y)
 	{
 		powArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
-	}
-	static void powCT(T& z, const T& x, const mpz_class& y)
-	{
-		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
 	}
 	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n) = 0)
 	{
