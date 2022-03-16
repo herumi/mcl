@@ -8,6 +8,7 @@
 */
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
+#include <mcl/array_iterator.hpp>
 #ifdef _MSC_VER
 	#ifndef MCL_FORCE_INLINE
 		#define MCL_FORCE_INLINE __forceinline
@@ -40,12 +41,40 @@ struct Operator : public E {
 	static MCL_FORCE_INLINE void div(T& c, const T& a, const T& b) { T t; T::inv(t, b); T::mul(c, a, t); }
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
+	/*
+		powGeneric = pow if T = Fp, Fp2, Fp6
+		pow is for GT (use GLV method and unitaryInv)
+		powGeneric is for Fp12
+	*/
+	static void pow(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
+	{
+		if (powArrayGLV && yn > 1) {
+			powArrayGLV(z, x, y, yn, isNegative, false);
+			return;
+		}
+		powArrayBase(z, x, y, yn, isNegative, false);
+	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powArray(z, x, b.p, b.n, false, false);
+		pow(z, x, b.p, b.n);
+	}
+	static void pow(T& z, const T& x, int64_t y)
+	{
+		const uint64_t u = fp::abs_(y);
+#if MCL_SIZEOF_UNIT == 8
+		pow(z, x, &u, 1, y < 0);
+#else
+		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
+		size_t un = ua[1] ? 2 : 1;
+		pow(z, x, ua, un, y < 0);
+#endif
+	}
+	static void pow(T& z, const T& x, const mpz_class& y)
+	{
+		pow(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void powGeneric(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
@@ -53,21 +82,6 @@ struct Operator : public E {
 		fp::Block b;
 		y.getBlock(b);
 		powArrayBase(z, x, b.p, b.n, false, false);
-	}
-	static void pow(T& z, const T& x, int64_t y)
-	{
-		const uint64_t u = fp::abs_(y);
-#if MCL_SIZEOF_UNIT == 8
-		powArray(z, x, &u, 1, y < 0, false);
-#else
-		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
-		size_t un = ua[1] ? 2 : 1;
-		powArray(z, x, ua, un, y < 0, false);
-#endif
-	}
-	static void pow(T& z, const T& x, const mpz_class& y)
-	{
-		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
 	}
 	static void powGeneric(T& z, const T& x, const mpz_class& y)
 	{
@@ -106,15 +120,7 @@ struct Operator : public E {
 private:
 	static void (*powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
 	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
-	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		if (powArrayGLV && (constTime || yn > 1)) {
-			powArrayGLV(z, x, y, yn, isNegative, constTime);
-			return;
-		}
-		powArrayBase(z, x, y, yn, isNegative, constTime);
-	}
-	static void powArrayBase(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
+	static void powArrayBase(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool)
 	{
 		T tmp;
 		const T *px = &x;
@@ -123,7 +129,7 @@ private:
 			px = &tmp;
 		}
 		z = 1;
-		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, constTime ? T::BaseFp::getBitSize() : 0);
+		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, 0);
 		if (isNegative) {
 			T::inv(z, z);
 		}
