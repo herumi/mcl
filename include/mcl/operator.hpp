@@ -125,7 +125,7 @@ private:
 		while (yn > 0 && y[yn - 1] == 0) {
 			yn--;
 		}
-		if (yn == 0 || (yn == 1 && y[0] == 1)) {
+		if (yn == 0) {
 			z = 1;
 			return;
 		}
