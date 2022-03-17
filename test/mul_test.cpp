@@ -18,36 +18,6 @@ void put(const char *msg, const void *buf, size_t bufSize)
 	printf("\n");
 }
 
-template<class F, typename T>
-void powC(F& z, const F& x, const T *yTbl, size_t yn)
-{
-	const size_t w = 4;
-	const size_t N = 1 << w;
-	uint8_t idxTbl[sizeof(F) * 8/w];
-	mcl::fp::ArrayIterator<T> iter(yTbl, sizeof(T) * 8 * yn, w);
-	size_t idxN = 0;
-	while (iter.hasNext()) {
-		assert(idxN < sizeof(idxTbl));
-		idxTbl[idxN++] = iter.getNext();
-	}
-	assert(idxN > 0);
-	F tbl[N];
-	tbl[1] = x;
-	for (size_t i = 2; i < N; i++) {
-		tbl[i] = tbl[i-1] * x;
-	}
-	z = tbl[idxTbl[idxN - 1]];
-	for (size_t i = 1; i < idxN; i++) {
-		for (size_t j = 0; j < w; j++) {
-			F::sqr(z, z);
-		}
-		uint32_t idx = idxTbl[idxN - 1 - i];
-		if (idx) {
-			z *= tbl[idx];
-		}
-	}
-}
-
 template<typename T>
 inline size_t getBinary2(uint8_t *bin, size_t maxBinN, const T *x, size_t xN, size_t w)
 {
@@ -115,18 +85,6 @@ void pow3(F& z, const F& x, const T *y, size_t yN)
 }
 
 template<class T>
-void pow2(T& z, const T& x, const mpz_class& y)
-{
-	powC(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
-}
-
-template<class T, class F>
-void pow2(T& z, const T& x, const F& y)
-{
-	pow2(z, x, y.getMpz());
-}
-
-template<class T>
 void pow3(T& z, const T& x, const mpz_class& y)
 {
 	pow3(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
@@ -150,7 +108,7 @@ void bench(const char *name, const char *pStr)
 		x.setByCSPRNG(rg);
 		y.setByCSPRNG(rg);
 		Fp t1, t2;
-		Fp::pow(t1, x, y);
+		Fp::pow(t1, x, y.getMpz());
 		pow3(t2, x, y.getMpz());
 		CYBOZU_TEST_EQUAL(t1, t2);
 	}
@@ -160,7 +118,6 @@ void bench(const char *name, const char *pStr)
 	CYBOZU_BENCH_C("Fp::sqr", C, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv", C, Fp::inv, x, x);
 	CYBOZU_BENCH_C("Fp::pow", C, Fp::pow, x, x, x);
-	CYBOZU_BENCH_C("pow2   ", C, pow2, x, x, x);
 	CYBOZU_BENCH_C("pow3   ", C, pow3, x, x, x);
 	CYBOZU_BENCH_C("getMpz", C, x.getMpz);
 	uint8_t bin[sizeof(Fp) * 8 + 1];
