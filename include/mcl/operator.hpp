@@ -122,14 +122,39 @@ private:
 	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
 	static void powArrayBase(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool)
 	{
-		T tmp;
-		const T *px = &x;
-		if (&z == &x) {
-			tmp = x;
-			px = &tmp;
+		while (yn > 0 && y[yn - 1] == 0) {
+			yn--;
 		}
-		z = 1;
-		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, 0);
+		if (yn == 0 || (yn == 1 && y[0] == 1)) {
+			z = 1;
+			return;
+		}
+		const size_t w = 4;
+		const size_t N = 1 << w;
+		uint8_t idxTbl[sizeof(T) * 8 / w];
+		mcl::fp::ArrayIterator<Unit> iter(y, sizeof(Unit) * 8 * yn, w);
+		size_t idxN = 0;
+		while (iter.hasNext()) {
+			assert(idxN < sizeof(idxTbl));
+			idxTbl[idxN++] = iter.getNext();
+		}
+		assert(idxN > 0);
+		T tbl[N];
+		tbl[1] = x;
+		for (size_t i = 2; i < N; i++) {
+			tbl[i] = tbl[i-1] * x;
+		}
+		uint32_t idx = idxTbl[idxN - 1];
+		z = idx == 0 ? 1 : tbl[idx];
+		for (size_t i = 1; i < idxN; i++) {
+			for (size_t j = 0; j < w; j++) {
+				T::sqr(z, z);
+			}
+			idx = idxTbl[idxN - 1 - i];
+			if (idx) {
+				z *= tbl[idx];
+			}
+		}
 		if (isNegative) {
 			T::inv(z, z);
 		}
