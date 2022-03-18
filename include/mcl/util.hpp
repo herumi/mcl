@@ -201,7 +201,8 @@ public:
 	T getNext(size_t w)
 	{
 		assert(0 < w && w <= TbitSize);
-		assert(hasNext());
+//		assert(hasNext());
+		if (!hasNext()) return 0;
 		const size_t q = bitPos_ / TbitSize;
 		const size_t r = bitPos_ % TbitSize;
 		const size_t remain = bitSize_ - bitPos_;
@@ -216,7 +217,8 @@ public:
 	// whethere next bit is 1 or 0 (bitPos is not moved)
 	bool peekBit() const
 	{
-		assert(hasNext());
+//		assert(hasNext());
+		if (!hasNext()) return 0;
 		const size_t q = bitPos_ / TbitSize;
 		const size_t r = bitPos_ % TbitSize;
 		return (x_[q] >> r) & 1;

@@ -132,11 +132,11 @@ private:
 		const size_t w = 4;
 		const size_t N = 1 << w;
 		uint8_t idxTbl[sizeof(T) * 8 / w];
-		mcl::fp::ArrayIterator<Unit> iter(y, sizeof(Unit) * 8 * yn, w);
+		mcl::fp::BitIterator<Unit> iter(y, yn);
 		size_t idxN = 0;
 		while (iter.hasNext()) {
 			assert(idxN < sizeof(idxTbl));
-			idxTbl[idxN++] = iter.getNext();
+			idxTbl[idxN++] = iter.getNext(w);
 		}
 		assert(idxN > 0);
 		T tbl[N];

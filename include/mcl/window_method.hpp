@@ -7,7 +7,7 @@
 #include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/op.hpp>
-#include <mcl/array_iterator.hpp>
+//#include <mcl/array_iterator.hpp>
 #include <assert.h>
 
 namespace mcl { namespace fp {
@@ -101,11 +101,10 @@ public:
 		assert((n << winSize_) <= tbl_.size());
 		if ((n << winSize_) > tbl_.size()) return;
 		assert(y[n - 1]);
-		const size_t bitSize = (n - 1) * UnitBitSize + cybozu::bsr<Unit>(y[n - 1]) + 1;
 		size_t i = 0;
-		ArrayIterator<Unit> ai(y, bitSize, winSize_);
+		BitIterator<Unit> ai(y, n);
 		do {
-			Unit v = ai.getNext();
+			Unit v = ai.getNext(winSize_);
 			if (v) {
 				Ec::add(z, z, tbl_[(i << winSize_) + v]);
 			}
