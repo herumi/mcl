@@ -25,7 +25,6 @@ inline size_t getBinary2(uint8_t *bin, size_t maxBinN, const T *x, size_t xN, si
 	size_t binN = 0;
 	size_t zeroNum = 0;
 
-//	mcl::fp::ArrayIterator<T> iter(x, sizeof(T) * 8 * xN, w);
 	mcl::fp::BitIterator<T> iter(x, xN);
 	while (iter.hasNext()) {
 		do {
