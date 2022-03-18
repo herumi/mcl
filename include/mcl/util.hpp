@@ -211,6 +211,8 @@ public:
 		if (!hasNext()) return 0;
 		const size_t q = bitPos_ / TbitSize;
 		const size_t r = bitPos_ % TbitSize;
+		const size_t remain = bitSize_ - bitPos_;
+		if (w > remain) w = remain;
 		T v = x_[q] >> r;
 		if (r + w > TbitSize) {
 			v |= x_[q + 1] << (TbitSize - r);
