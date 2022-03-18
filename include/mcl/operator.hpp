@@ -52,7 +52,7 @@ struct Operator : public E {
 			powArrayGLV(z, x, y, yn, isNegative, false);
 			return;
 		}
-		powArrayBase(z, x, y, yn, isNegative, false);
+		powT(z, x, y, yn, isNegative);
 	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
@@ -81,11 +81,11 @@ struct Operator : public E {
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powArrayBase(z, x, b.p, b.n, false, false);
+		powT(z, x, b.p, b.n);
 	}
 	static void powGeneric(T& z, const T& x, const mpz_class& y)
 	{
-		powArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
+		powT(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n) = 0)
 	{
@@ -120,7 +120,7 @@ struct Operator : public E {
 private:
 	static void (*powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
 	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
-	static void powArrayBase(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool)
+	static void powT(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		while (yn > 0 && y[yn - 1] == 0) {
 			yn--;
