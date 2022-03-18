@@ -120,23 +120,23 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 		}
 	}
 	mcl::FixedArray<uint8_t, sizeof(F) * 8 / w + 1> vTbl[splitN];
-	size_t bitSizeTbl[splitN];
-	size_t maxBitSize = 0;
-	for (size_t i = 0; i < splitN; i++) {
-		size_t bitSize = gmp::getBitSize(u[i]);
-		bitSizeTbl[i] = bitSize;
-		if (bitSize > maxBitSize) {
-			maxBitSize = bitSize;
+	size_t loopN = 0;
+	{
+		size_t maxBitSize = 0;
+		fp::BitIterator<fp::Unit> itr[splitN];
+		for (int i = 0; i < splitN; i++) {
+			itr[i].init(gmp::getUnit(u[i]), gmp::getUnitSize(u[i]));
+			size_t bitSize = itr[i].getBitSize();
+			if (bitSize > maxBitSize) maxBitSize = bitSize;
 		}
-	}
-	size_t loopN = (maxBitSize + w - 1) / w;
-	for (int i = 0; i < splitN; i++) {
-		fp::ArrayIterator<fp::Unit> itr(gmp::getUnit(u[i]), bitSizeTbl[i], w);
-		bool b = vTbl[i].resize(loopN);
-		assert(b);
-		(void)b;
-		for (size_t j = 0; j < loopN; j++) {
-			vTbl[i][loopN - 1 - j] = (uint8_t)itr.getNext();
+		loopN = (maxBitSize + w - 1) / w;
+		for (int i = 0; i < splitN; i++) {
+			bool b = vTbl[i].resize(loopN);
+			assert(b);
+			(void)b;
+			for (size_t j = 0; j < loopN; j++) {
+				vTbl[i][loopN - 1 - j] = (uint8_t)itr[i].getNext(w);
+			}
 		}
 	}
 	Q.clear();
