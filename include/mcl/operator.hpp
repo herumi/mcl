@@ -8,7 +8,6 @@
 */
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
-#include <mcl/array_iterator.hpp>
 #ifdef _MSC_VER
 	#ifndef MCL_FORCE_INLINE
 		#define MCL_FORCE_INLINE __forceinline

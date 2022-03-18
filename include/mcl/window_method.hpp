@@ -7,7 +7,6 @@
 #include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/op.hpp>
-//#include <mcl/array_iterator.hpp>
 #include <assert.h>
 
 namespace mcl { namespace fp {
