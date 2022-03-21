@@ -156,9 +156,13 @@
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 	#define CYBOZU_NOEXCEPT noexcept
 	#define CYBOZU_NULLPTR nullptr
+	#define CYBOZU_OVERRIDE override
+	#define CYBOZU_FINAL final
 #else
 	#define CYBOZU_NOEXCEPT throw()
 	#define CYBOZU_NULLPTR 0
+	#define CYBOZU_OVERRIDE
+	#define CYBOZU_FINAL
 #endif
 namespace cybozu {
 template<class T>

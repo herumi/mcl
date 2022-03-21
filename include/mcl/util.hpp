@@ -182,26 +182,33 @@ class BitIterator {
 	const T *x_;
 	size_t bitPos_;
 	size_t bitSize_;
+	size_t w_;
+	T mask_;
 	static const size_t TbitSize = sizeof(T) * 8;
 public:
-	BitIterator(const T *x, size_t n)
-		: x_(x)
-		, bitPos_(0)
+	explicit BitIterator(const T *x = 0, size_t n = 0)
 	{
-		assert(n > 0);
-		n = getNonZeroArraySize(x, n);
-		if (n == 1 && x[0] == 0) {
-			bitSize_ = 1;
-		} else {
-			assert(x_[n - 1]);
-			bitSize_ = (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(x_[n - 1]);
-		}
+		init(x, n);
 	}
+	void init(const T *x, size_t n)
+	{
+		x_ = x;
+		bitPos_ = 0;
+		while (n > 0 && (x[n - 1] == 0)) {
+			n--;
+		}
+		if (n == 0) {
+			bitSize_ = 0;
+			return;
+		}
+		bitSize_ = (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(x_[n - 1]);
+	}
+	size_t getBitSize() const { return bitSize_; }
 	bool hasNext() const { return bitPos_ < bitSize_; }
 	T getNext(size_t w)
 	{
 		assert(0 < w && w <= TbitSize);
-		assert(hasNext());
+		if (!hasNext()) return 0;
 		const size_t q = bitPos_ / TbitSize;
 		const size_t r = bitPos_ % TbitSize;
 		const size_t remain = bitSize_ - bitPos_;
@@ -216,7 +223,8 @@ public:
 	// whethere next bit is 1 or 0 (bitPos is not moved)
 	bool peekBit() const
 	{
-		assert(hasNext());
+//		assert(hasNext());
+		if (!hasNext()) return 0;
 		const size_t q = bitPos_ / TbitSize;
 		const size_t r = bitPos_ % TbitSize;
 		return (x_[q] >> r) & 1;

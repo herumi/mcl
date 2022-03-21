@@ -33,6 +33,33 @@ CYBOZU_TEST_AUTO(log)
 	}
 }
 
+#ifdef NDEBUG
+CYBOZU_TEST_AUTO(window)
+{
+	const int C = 500;
+	G1 P, P2;
+	G2 Q, Q2;
+	GT e, e2;
+	mpz_class mr;
+	{
+		Fr r;
+		r.setRand();
+		mr = r.getMpz();
+	}
+	hashAndMapToG1(P, "abc");
+	hashAndMapToG2(Q, "abc");
+	pairing(e, P, Q);
+	P2.clear();
+	Q2.clear();
+	e2 = 1;
+
+	printf("large m\n");
+	CYBOZU_BENCH_C("G1window", C, SHE::PhashTbl_.mulByWindowMethod, P2, mr);
+	CYBOZU_BENCH_C("G2window", C, SHE::QhashTbl_.mulByWindowMethod, Q2, mr);
+	CYBOZU_BENCH_C("GTwindow", C, SHE::ePQhashTbl_.mulByWindowMethod, e, mr);
+}
+#endif
+
 CYBOZU_TEST_AUTO(ZkpSet)
 {
 //	cybozu::XorShift rg;

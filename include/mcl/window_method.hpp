@@ -11,61 +11,6 @@
 
 namespace mcl { namespace fp {
 
-/*
-	get w-bit size from x[0, bitSize)
-	@param x [in] data
-	@param bitSize [in] data size
-	@param w [in] split size < UnitBitSize
-*/
-template<class T>
-struct ArrayIterator {
-	static const size_t TbitSize = sizeof(T) * 8;
-	ArrayIterator(const T *x, size_t bitSize, size_t w)
-		: x(x)
-		, bitSize(bitSize)
-		, w(w)
-		, pos(0)
-		, mask(makeMask(w))
-	{
-		assert(w <= TbitSize);
-	}
-	T makeMask(size_t w) const
-	{
-		return (w == TbitSize) ? ~T(0) : (T(1) << w) - 1;
-	}
-	bool hasNext() const { return bitSize > 0; }
-	T getNext()
-	{
-		if (bitSize < w) {
-			w = bitSize;
-			mask = makeMask(w);
-		}
-		if (pos + w <= TbitSize) {
-			T v = x[0] >> pos;
-			if (pos + w < TbitSize) {
-				pos += w;
-				v &= mask;
-			} else {
-				pos = 0;
-				x++;
-			}
-			bitSize -= w;
-			return v;
-		}
-		T v = (x[0] >> pos) | (x[1] << (TbitSize - pos));
-		v &= mask;
-		pos = (pos + w) - TbitSize;
-		bitSize -= w;
-		x++;
-		return v;
-	}
-	const T *x;
-	size_t bitSize;
-	size_t w;
-	size_t pos;
-	T mask;
-};
-
 template<class Ec>
 class WindowMethod {
 public:
@@ -155,11 +100,10 @@ public:
 		assert((n << winSize_) <= tbl_.size());
 		if ((n << winSize_) > tbl_.size()) return;
 		assert(y[n - 1]);
-		const size_t bitSize = (n - 1) * UnitBitSize + cybozu::bsr<Unit>(y[n - 1]) + 1;
 		size_t i = 0;
-		ArrayIterator<Unit> ai(y, bitSize, winSize_);
+		BitIterator<Unit> ai(y, n);
 		do {
-			Unit v = ai.getNext();
+			Unit v = ai.getNext(winSize_);
 			if (v) {
 				Ec::add(z, z, tbl_[(i << winSize_) + v]);
 			}

@@ -40,49 +40,51 @@ struct Operator : public E {
 	static MCL_FORCE_INLINE void div(T& c, const T& a, const T& b) { T t; T::inv(t, b); T::mul(c, a, t); }
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
+	/*
+		powGeneric = pow if T = Fp, Fp2, Fp6
+		pow is for GT (use GLV method and unitaryInv)
+		powGeneric is for Fp12
+	*/
+	static void pow(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
+	{
+		if (powArrayGLV && yn > 1) {
+			powArrayGLV(z, x, y, yn, isNegative, false);
+			return;
+		}
+		powT(z, x, y, yn, isNegative);
+	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powArray(z, x, b.p, b.n, false, false);
+		pow(z, x, b.p, b.n);
+	}
+	static void pow(T& z, const T& x, int64_t y)
+	{
+		const uint64_t u = fp::abs_(y);
+#if MCL_SIZEOF_UNIT == 8
+		pow(z, x, &u, 1, y < 0);
+#else
+		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
+		size_t un = ua[1] ? 2 : 1;
+		pow(z, x, ua, un, y < 0);
+#endif
+	}
+	static void pow(T& z, const T& x, const mpz_class& y)
+	{
+		pow(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void powGeneric(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powArrayBase(z, x, b.p, b.n, false, false);
-	}
-	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
-	static void powCT(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
-	{
-		fp::Block b;
-		y.getBlock(b);
-		powArray(z, x, b.p, b.n, false, true);
-	}
-	static void pow(T& z, const T& x, int64_t y)
-	{
-		const uint64_t u = fp::abs_(y);
-#if MCL_SIZEOF_UNIT == 8
-		powArray(z, x, &u, 1, y < 0, false);
-#else
-		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
-		size_t un = ua[1] ? 2 : 1;
-		powArray(z, x, ua, un, y < 0, false);
-#endif
-	}
-	static void pow(T& z, const T& x, const mpz_class& y)
-	{
-		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
+		powT(z, x, b.p, b.n);
 	}
 	static void powGeneric(T& z, const T& x, const mpz_class& y)
 	{
-		powArrayBase(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, false);
-	}
-	static void powCT(T& z, const T& x, const mpz_class& y)
-	{
-		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
+		powT(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n) = 0)
 	{
@@ -117,24 +119,41 @@ struct Operator : public E {
 private:
 	static void (*powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
 	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
-	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
+	static void powT(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
-		if (powArrayGLV && (constTime || yn > 1)) {
-			powArrayGLV(z, x, y, yn, isNegative, constTime);
+		while (yn > 0 && y[yn - 1] == 0) {
+			yn--;
+		}
+		if (yn == 0) {
+			z = 1;
 			return;
 		}
-		powArrayBase(z, x, y, yn, isNegative, constTime);
-	}
-	static void powArrayBase(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		T tmp;
-		const T *px = &x;
-		if (&z == &x) {
-			tmp = x;
-			px = &tmp;
+		const size_t w = 4;
+		const size_t N = 1 << w;
+		uint8_t idxTbl[sizeof(T) * 8 / w];
+		mcl::fp::BitIterator<Unit> iter(y, yn);
+		size_t idxN = 0;
+		while (iter.hasNext()) {
+			assert(idxN < sizeof(idxTbl));
+			idxTbl[idxN++] = iter.getNext(w);
 		}
-		z = 1;
-		fp::powGeneric(z, *px, y, yn, T::mul, T::sqr, (void (*)(T&, const T&))0, constTime ? T::BaseFp::getBitSize() : 0);
+		assert(idxN > 0);
+		T tbl[N];
+		tbl[1] = x;
+		for (size_t i = 2; i < N; i++) {
+			tbl[i] = tbl[i-1] * x;
+		}
+		uint32_t idx = idxTbl[idxN - 1];
+		z = idx == 0 ? 1 : tbl[idx];
+		for (size_t i = 1; i < idxN; i++) {
+			for (size_t j = 0; j < w; j++) {
+				T::sqr(z, z);
+			}
+			idx = idxTbl[idxN - 1 - i];
+			if (idx) {
+				z *= tbl[idx];
+			}
+		}
 		if (isNegative) {
 			T::inv(z, z);
 		}
