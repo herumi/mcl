@@ -225,6 +225,29 @@ void normalizeJacobi(E& P)
 	P.z = 1;
 }
 
+template<class E>
+void normalizeVecJacobi(E *Q, const E *P, size_t n)
+{
+	typedef typename E::Fp F;
+	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	for (size_t i = 0; i < n; i++) {
+		inv[i] = P[i].z;
+	}
+	F::invVec(inv, inv, n);
+	for (size_t i = 0; i < n; i++) {
+		if (inv[i].isZero()) {
+			Q[i].clear();
+		} else {
+			F rz2;
+			F::sqr(rz2, inv[i]);
+			F::mul(Q[i].x, P[i].x, rz2);
+			F::mul(Q[i].y, P[i].y, rz2);
+			Q[i].y *= P[i].z;
+			Q[i].z = 1;
+		}
+	}
+}
+
 // (x/z^2, y/z^3)
 template<class E>
 bool isEqualJacobi(const E& P1, const E& P2)
