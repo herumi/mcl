@@ -1576,7 +1576,7 @@ public:
 			mulVecNGLV is a little slow for large n
 		*/
 #if 1
-		if (mulVecNGLV && n < mcl::fp::maxMulVecNGLV) {
+		if (mulVecNGLV && n <= mcl::fp::maxMulVecNGLV) {
 			mpz_class myVec[mcl::fp::maxMulVecNGLV];
 			for (size_t i = 0; i < n; i++) {
 				bool b;

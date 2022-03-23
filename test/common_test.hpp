@@ -18,27 +18,27 @@ template<class G>
 void testMulVec(const G& P)
 {
 	using namespace mcl::bn;
-	const int N = 33;
-	G xVec[N];
-	Fr yVec[N];
+	const int N = 100;
+	std::vector<G> xVec(N);
+	std::vector<Fr> yVec(N);
 
 	for (size_t i = 0; i < N; i++) {
 		G::mul(xVec[i], P, i + 3);
 		yVec[i].setByCSPRNG();
 	}
-	const size_t nTbl[] = { 1, 2, 3, 5, 7, 8, 9, 14, 15, 16, 30, 31, 32, 33 };
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		G Q1, Q2;
 		CYBOZU_TEST_ASSERT(n <= N);
-		naiveMulVec(Q1, xVec, yVec, n);
-		G::mulVec(Q2, xVec, yVec, n);
+		naiveMulVec(Q1, xVec.data(), yVec.data(), n);
+		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-#if 0//#ifdef NDEBUG
+#ifdef NDEBUG
 		printf("n=%zd\n", n);
-		const int C = 400;
-		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
-		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec, yVec, n);
+		const int C = 10;
+		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
 #endif
 	}
 }
