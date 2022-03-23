@@ -951,24 +951,26 @@ void mul2Test()
 
 void invVecTest()
 {
-	const size_t n = 20;
-	Fp x[n], y[n];
+	const size_t maxN = 10;
+	Fp x[maxN], y[maxN];
 	cybozu::XorShift rg;
-	for (int j = 0; j < 30; j++) {
-		for (size_t i = 0; i < n; i++) {
-			if ((j != 0 && (rg.get32() % 5) == 0) || j == 1) {
-				x[i].clear();
-			} else {
-				x[i].setByCSPRNG();
+	for (size_t n = 0; n < maxN; n++) {
+		for (int j = 0; j < 10; j++) {
+			for (size_t i = 0; i < n; i++) {
+				if ((j != 0 && (rg.get32() % 3) == 0) || j == 1) {
+					x[i].clear();
+				} else {
+					x[i].setByCSPRNG(rg);
+				}
+				y[i] = 1;
 			}
-			y[i] = 1;
-		}
-		Fp::invVec(y, x, n);
-		for (size_t i = 0; i < n; i++) {
-			if (x[i].isZero()) {
-				CYBOZU_TEST_ASSERT(y[i].isZero());
-			} else {
-				CYBOZU_TEST_EQUAL(y[i], 1 / x[i]);
+			Fp::invVec(y, x, n);
+			for (size_t i = 0; i < n; i++) {
+				if (x[i].isZero()) {
+					CYBOZU_TEST_ASSERT(y[i].isZero());
+				} else {
+					CYBOZU_TEST_EQUAL(y[i], 1 / x[i]);
+				}
 			}
 		}
 	}
