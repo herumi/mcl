@@ -214,9 +214,17 @@ public:
 		const size_t remain = bitSize_ - bitPos_;
 		if (w > remain) w = remain;
 		T v = x_[q] >> r;
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	// avoid gcc wrong detection
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 		if (r + w > TbitSize) {
 			v |= x_[q + 1] << (TbitSize - r);
 		}
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	#pragma GCC diagnostic pop
+#endif
 		bitPos_ += w;
 		return v & mask(w);
 	}
