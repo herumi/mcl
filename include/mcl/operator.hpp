@@ -67,8 +67,14 @@ struct Operator : public E {
 				y[n - 1 - i].clear();
 			} else {
 				if (pos > 0) {
-					T::mul(y[n - 1 - i], inv, t[pos - 1]);
-					inv *= x[n - 1 - i];
+					if (x != y) {
+						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						inv *= x[n - 1 - i];
+					} else {
+						T tmp = x[n - 1 - i];
+						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						inv *= tmp;
+					}
 					pos--;
 				} else {
 					y[n - 1 - i] = inv;
