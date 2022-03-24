@@ -973,9 +973,7 @@ void invVecTest()
 				}
 			}
 			Fp::invVec(x, x, n); // same addr
-			for (size_t i = 0; i < n; i++) {
-				CYBOZU_TEST_EQUAL(y[i], x[i]);
-			}
+			CYBOZU_TEST_EQUAL_ARRAY(y, x, n);
 		}
 	}
 }
