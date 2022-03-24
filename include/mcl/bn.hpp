@@ -2145,6 +2145,14 @@ inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 	assert(b);
 	(void)b;
 }
+inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
+{
+	BN::param.mapTo.mapTo_WB19_.msgToG1(P, buf, bufSize, dst, dstSize);
+}
+inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
+{
+	BN::param.mapTo.mapTo_WB19_.msgToG2(P, buf, bufSize, dst, dstSize);
+}
 #ifndef CYBOZU_DONT_USE_STRING
 inline void hashAndMapToG1(G1& P, const std::string& str)
 {
