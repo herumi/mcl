@@ -10,6 +10,8 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- add set DST functions for hashMapToGi
+- add F::invVec, G::normalizeVec
 - improve SECP256K1 for x64
 - add G1::mulVecMT, G2::mulVecMT (enabled by MCL_USE_OMP=1)
 - improve mulMod of SECP256K1 for wasm
@@ -357,7 +359,10 @@ void setHash(F& x, const void *msg, size_t msgSize)
 
 
 # History
-
+- 2022/Mar/25 v1.59 add set DST functions for hashMapToGi
+- 2022/Mar/24 add F::invVec, G::normalizeVec
+- 2022/Mar/08 v1.58 improve SECP256K1 for x64
+- 2022/Feb/13 v1.57 add mulVecMT
 - 2021/Aug/26 v1.52 improve {G1,G2}::isValidOrder() for BLS12-381
 - 2021/May/04 v1.50 support s390x(systemz)
 - 2021/Apr/21 v1.41 fix inner function of mapToGi for large dst (not affect hashAndMapToGi)
