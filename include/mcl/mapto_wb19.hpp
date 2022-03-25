@@ -45,6 +45,21 @@ template<class Fp, class G1, class Fp2, class G2>
 struct MapTo_WB19 {
 	typedef local::PointT<Fp> E1;
 	typedef local::PointT<Fp2> E2;
+	struct Dst {
+		static const size_t maxDstLen = 64;
+		char dst[maxDstLen + 1];
+		size_t len;
+		bool set(const char *dst_, size_t len_)
+		{
+			if (len_ > maxDstLen) return false;
+			len = len_;
+			memcpy(dst, dst_, len_);
+			dst[len_] = '\0';
+			return true;
+		}
+	};
+	Dst dstG1;
+	Dst dstG2;
 	mpz_class sqrtConst; // (p^2 - 9) / 16
 	Fp2 root4[4];
 	Fp2 etas[4];
@@ -119,6 +134,12 @@ struct MapTo_WB19 {
 			assert(b); (void)b;
 		}
 		init_iso11();
+		const char *dst = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_";
+		bool ret = dstG1.set(dst, strlen(dst));
+		assert(ret); (void)ret;
+		dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+		ret = dstG2.set(dst, strlen(dst));
+		assert(ret); (void)ret;
 	}
 	void initArray(Fp *dst, const char **s, size_t n) const
 	{
@@ -522,9 +543,7 @@ struct MapTo_WB19 {
 	}
 	void msgToG2(G2& out, const void *msg, size_t msgSize) const
 	{
-		const char *dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
-		const size_t dstSize = strlen(dst);
-		msgToG2(out, msg, msgSize, dst, dstSize);
+		msgToG2(out, msg, msgSize, dstG2.dst, dstG1.len);
 	}
 	void FpToG1(G1& out, const Fp& u0, const Fp *u1 = 0) const
 	{
@@ -553,9 +572,7 @@ struct MapTo_WB19 {
 
 	void msgToG1(G1& out, const void *msg, size_t msgSize) const
 	{
-		const char *dst = "BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_";
-		const size_t dstSize = strlen(dst);
-		msgToG1(out, msg, msgSize, dst, dstSize);
+		msgToG1(out, msg, msgSize, dstG1.dst, dstG1.len);
 	}
 };
 

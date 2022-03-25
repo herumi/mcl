@@ -383,6 +383,11 @@ int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize)
 	hashAndMapToG1(*cast(x), buf, bufSize);
 	return 0;
 }
+int mclBnG1_hashAndMapToWithDst(mclBnG1 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize)
+{
+	hashAndMapToG1(*cast(x), buf, bufSize, dst, dstSize);
+	return 0;
+}
 
 mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode)
 {
@@ -460,6 +465,11 @@ int mclBnG2_isValidOrder(const mclBnG2 *x)
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize)
 {
 	hashAndMapToG2(*cast(x), buf, bufSize);
+	return 0;
+}
+int mclBnG2_hashAndMapToWithDst(mclBnG2 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize)
+{
+	hashAndMapToG2(*cast(x), buf, bufSize, dst, dstSize);
 	return 0;
 }
 

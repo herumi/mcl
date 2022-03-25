@@ -383,6 +383,8 @@ MCLBN_DLL_API int mclBnG1_isZero(const mclBnG1 *x);
 MCLBN_DLL_API int mclBnG1_isValidOrder(const mclBnG1 *x);
 
 MCLBN_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
+// user-defined dst
+MCLBN_DLL_API int mclBnG1_hashAndMapToWithDst(mclBnG1 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize);
 
 
 MCLBN_DLL_API void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
@@ -409,6 +411,8 @@ MCLBN_DLL_API int mclBnG2_isZero(const mclBnG2 *x);
 MCLBN_DLL_API int mclBnG2_isValidOrder(const mclBnG2 *x);
 
 MCLBN_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
+// user-defined dst
+MCLBN_DLL_API int mclBnG2_hashAndMapToWithDst(mclBnG2 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize);
 
 // return written size if sucess else 0
 
