@@ -2153,6 +2153,18 @@ inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *d
 {
 	BN::param.mapTo.mapTo_WB19_.msgToG2(P, buf, bufSize, dst, dstSize);
 }
+// set the default dst for G1
+// return 0 if success else -1
+inline bool setDstG1(const char *dst, size_t dstSize)
+{
+	return BN::nonConstParam.mapTo.mapTo_WB19_.dstG1.set(dst, dstSize);
+}
+// set the default dst for G2
+// return 0 if success else -1
+inline bool setDstG2(const char *dst, size_t dstSize)
+{
+	return BN::nonConstParam.mapTo.mapTo_WB19_.dstG2.set(dst, dstSize);
+}
 #ifndef CYBOZU_DONT_USE_STRING
 inline void hashAndMapToG1(G1& P, const std::string& str)
 {
