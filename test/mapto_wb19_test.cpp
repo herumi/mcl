@@ -853,6 +853,26 @@ void testSameUV(const T& mapto)
 	}
 }
 
+template<class T>
+void testSetDst(const T& mapto)
+{
+	const char *dst = "abc";
+	bool ret;
+	ret = setDstG1(dst, strlen(dst));
+	CYBOZU_TEST_ASSERT(ret);
+	CYBOZU_TEST_EQUAL(mapto.dstG1.dst, dst);
+	ret = setDstG1("def", 1000);
+	CYBOZU_TEST_ASSERT(!ret);
+	CYBOZU_TEST_EQUAL(mapto.dstG1.dst, dst);
+
+	ret = setDstG2(dst, strlen(dst));
+	CYBOZU_TEST_ASSERT(ret);
+	CYBOZU_TEST_EQUAL(mapto.dstG2.dst, dst);
+	ret = setDstG2("def", 1000);
+	CYBOZU_TEST_ASSERT(!ret);
+	CYBOZU_TEST_EQUAL(mapto.dstG2.dst, dst);
+}
+
 CYBOZU_TEST_AUTO(test)
 {
 	initPairing(mcl::BLS12_381);
@@ -868,4 +888,6 @@ CYBOZU_TEST_AUTO(test)
 	testMsgToG1(mapto);
 	testFpToG1(mapto);
 	testSameUV(mapto);
+	// this test should be last
+	testSetDst(mapto);
 }

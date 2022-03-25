@@ -41,6 +41,48 @@ struct Operator : public E {
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 	/*
+		y[i] = 1/x[i] for x[i] != 0 else 0
+	*/
+	static inline void invVec(T *y, const T *x, size_t n)
+	{
+		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * n);
+		size_t pos = 0;
+		for (size_t i = 0; i < n; i++) {
+			if (!x[i].isZero()) {
+				if (pos == 0) {
+					t[pos] = x[i];
+				} else {
+					T::mul(t[pos], t[pos - 1], x[i]);
+				}
+				pos++;
+			}
+		}
+		T inv;
+		if (pos > 0) {
+			T::inv(inv, t[pos - 1]);
+			pos--;
+		}
+		for (size_t i = 0; i < n; i++) {
+			if (x[n - 1 - i].isZero()) {
+				y[n - 1 - i].clear();
+			} else {
+				if (pos > 0) {
+					if (x != y) {
+						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						inv *= x[n - 1 - i];
+					} else {
+						T tmp = x[n - 1 - i];
+						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						inv *= tmp;
+					}
+					pos--;
+				} else {
+					y[n - 1 - i] = inv;
+				}
+			}
+		}
+	}
+	/*
 		powGeneric = pow if T = Fp, Fp2, Fp6
 		pow is for GT (use GLV method and unitaryInv)
 		powGeneric is for Fp12

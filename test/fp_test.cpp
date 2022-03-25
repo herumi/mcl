@@ -8,6 +8,7 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/sha2.hpp>
+#include <cybozu/xorshift.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4127) // const condition
@@ -948,6 +949,35 @@ void mul2Test()
 	}
 }
 
+void invVecTest()
+{
+	const size_t maxN = 10;
+	Fp x[maxN], y[maxN];
+	cybozu::XorShift rg;
+	for (size_t n = 0; n < maxN; n++) {
+		for (int j = 0; j < 10; j++) {
+			for (size_t i = 0; i < n; i++) {
+				if ((j != 0 && (rg.get32() % 3) == 0) || j == 1) {
+					x[i].clear();
+				} else {
+					x[i].setByCSPRNG(rg);
+				}
+				y[i] = 1;
+			}
+			Fp::invVec(y, x, n);
+			for (size_t i = 0; i < n; i++) {
+				if (x[i].isZero()) {
+					CYBOZU_TEST_ASSERT(y[i].isZero());
+				} else {
+					CYBOZU_TEST_EQUAL(y[i], 1 / x[i]);
+				}
+			}
+			Fp::invVec(x, x, n); // same addr
+			CYBOZU_TEST_EQUAL_ARRAY(y, x, n);
+		}
+	}
+}
+
 void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
@@ -982,6 +1012,7 @@ void sub(mcl::fp::Mode mode)
 		const char *pStr = tbl[i];
 		printf("prime=%s\n", pStr);
 		Fp::init(pStr, mode);
+		invVecTest();
 		mul2Test();
 		cstrTest();
 		setStrTest();

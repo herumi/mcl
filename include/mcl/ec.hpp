@@ -225,6 +225,29 @@ void normalizeJacobi(E& P)
 	P.z = 1;
 }
 
+template<class E>
+void normalizeVecJacobi(E *Q, const E *P, size_t n)
+{
+	typedef typename E::Fp F;
+	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	for (size_t i = 0; i < n; i++) {
+		inv[i] = P[i].z;
+	}
+	F::invVec(inv, inv, n);
+	for (size_t i = 0; i < n; i++) {
+		if (inv[i].isZero()) {
+			Q[i].clear();
+		} else {
+			F rz2;
+			F::sqr(rz2, inv[i]);
+			F::mul(Q[i].x, P[i].x, rz2);
+			F::mul(Q[i].y, P[i].y, rz2);
+			Q[i].y *= inv[i];
+			Q[i].z = 1;
+		}
+	}
+}
+
 // (x/z^2, y/z^3)
 template<class E>
 bool isEqualJacobi(const E& P1, const E& P2)
@@ -485,6 +508,26 @@ void normalizeProj(E& P)
 	P.x *= P.z;
 	P.y *= P.z;
 	P.z = 1;
+}
+
+template<class E>
+void normalizeVecProj(E *Q, const E *P, size_t n)
+{
+	typedef typename E::Fp F;
+	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	for (size_t i = 0; i < n; i++) {
+		inv[i] = P[i].z;
+	}
+	F::invVec(inv, inv, n);
+	for (size_t i = 0; i < n; i++) {
+		if (inv[i].isZero()) {
+			Q[i].clear();
+		} else {
+			F::mul(Q[i].x, P[i].x, inv[i]);
+			F::mul(Q[i].y, P[i].y, inv[i]);
+			Q[i].z = 1;
+		}
+	}
 }
 
 // (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
@@ -817,6 +860,23 @@ public:
 	{
 		y = x;
 		y.normalize();
+	}
+	static void normalizeVec(EcT *y, const EcT *x, size_t n)
+	{
+		switch (mode_) {
+		case ec::Jacobi:
+			ec::normalizeVecJacobi(y, x, n);
+			break;
+		case ec::Proj:
+			ec::normalizeVecProj(y, x, n);
+			break;
+		case ec::Affine:
+			if (y == x) return;
+			for (size_t i = 0; i < n; i++) {
+				y[i] = x[i];
+			}
+			break;
+		}
 	}
 	static inline void init(const Fp& a, const Fp& b, int mode = ec::Jacobi)
 	{
@@ -1576,7 +1636,7 @@ public:
 			mulVecNGLV is a little slow for large n
 		*/
 #if 1
-		if (mulVecNGLV && n < mcl::fp::maxMulVecNGLV) {
+		if (mulVecNGLV && n <= mcl::fp::maxMulVecNGLV) {
 			mpz_class myVec[mcl::fp::maxMulVecNGLV];
 			for (size_t i = 0; i < n; i++) {
 				bool b;

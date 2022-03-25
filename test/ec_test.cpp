@@ -201,6 +201,42 @@ struct Test {
 			CYBOZU_TEST_EQUAL(R, R2);
 		}
 	}
+	void normalizeVecTest() const
+	{
+		if (Ec::getMode() == mcl::ec::Affine) return;
+		Fp x_(para.gx);
+		Fp y_(para.gy);
+		Ec P(x_, y_);
+		const size_t maxN = 10;
+		Ec x[maxN], y[maxN];
+		cybozu::XorShift rg;
+		for (size_t n = 0; n < maxN; n++) {
+			for (size_t j = 0; j < 10; j++) {
+				for (size_t i = 0; i < n; i++) {
+					if ((j != 0 && (rg.get32() % 3) == 0) || j == 1) {
+						x[i].clear();
+					} else {
+						Zn r;
+						r.setByCSPRNG(rg);
+						Ec::mul(x[i], P, r);
+					}
+					y[i] = P;
+				}
+				Ec::normalizeVec(y, x, n);
+				for (size_t i = 0; i < n; i++) {
+					if (x[i].isZero()) {
+						CYBOZU_TEST_ASSERT(y[i].isZero());
+					} else {
+						Ec t;
+						Ec::normalize(t, x[i]);
+						CYBOZU_TEST_EQUAL(y[i], t);
+					}
+				}
+				Ec::normalizeVec(x, x, n); // same addr
+				CYBOZU_TEST_EQUAL_ARRAY(y, x, n);
+			}
+		}
+	}
 
 	void mul() const
 	{
@@ -546,6 +582,7 @@ mul 499.00usec
 */
 	void run() const
 	{
+		normalizeVecTest();
 		cstr();
 		ope();
 		mul();
