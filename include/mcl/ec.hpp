@@ -377,7 +377,11 @@ void dblJacobi(E& R, const E& P)
 	R.y -= y2;
 }
 
-// 7M + 4S + 7A
+/*
+	J + J : 12mul + 4sqr + 7add
+	J + A : 8mul + 3sqr + 7add
+	A + A : 4mul + 2sqr + 7add
+*/
 template<class E>
 void addJacobi(E& R, const E& P, const E& Q)
 {
