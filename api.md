@@ -201,6 +201,27 @@ verifyOrderG2(bool doVerify);
 - Set `doVerify = 1` if considering subgroup attack is necessary.
 - This is not thread-safe.
 
+### Set DST for hash functions
+
+### C
+```
+int mclBnG1_setDst(const char *dst, mclSize dstSize);
+int mclBnG2_setDst(const char *dst, mclSize dstSize);
+```
+return 0 if success else -1
+
+### C++
+```
+bool setDstG1(const char *dst, size_t dstSize);
+bool setDstG2(const char *dst, size_t dstSize);
+```
+return true if success else false
+
+- set `dst[0, dstSize)` to the DST for hash functions
+- The default value:
+  - G1 : `BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_`
+  - G2 : `BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_`
+
 ## Setter / Getter
 
 ### Clear
