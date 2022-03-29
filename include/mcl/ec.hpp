@@ -190,7 +190,7 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 			G::add(tbl[0][i][j], tbl[0][i][j - 1], P2);
 		}
 	}
-	G::normalizeVec(&tbl[0][0][0], &tbl[0][0][0], N * tblSize);
+	G::normalizeVec(&tbl[0][0][0], &tbl[0][0][0], n * tblSize);
 	for (size_t i = 0; i < n; i++) {
 		for (int k = 1; k < splitN; k++) {
 			GLV::mulLambda(tbl[k][i][0], tbl[k - 1][i][0]);
