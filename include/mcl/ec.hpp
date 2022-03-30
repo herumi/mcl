@@ -10,6 +10,7 @@
 #include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/window_method.hpp>
+#include <vector>
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -808,6 +809,58 @@ void tryAndIncMapTo(E& P, const typename E::Fp& t)
 			return;
 		}
 		*x.getFp0() += F::BaseFp::one();
+	}
+}
+
+/*
+	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
+	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
+	use about sizeof(G) * n bytes stack
+*/
+template<class G>
+void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+{
+	if (n == 0) {
+		z.clear();
+		return;
+	}
+	const size_t maxBitSize = sizeof(fp::Unit) * yUnitSize * 8;
+	const size_t c = cybozu::bsr(n) + 1; // log_2(n)
+	const size_t tblN = (1 << c) - 1;
+	const size_t winN = maxBitSize / c + 1;
+	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
+	std::vector<G> tbl_(tblN);
+	// about 10% faster
+	// G::normalizeVec(static_cast<G*>(xVec), xVec, n);
+	for (size_t w = 0; w < winN; w++) {
+#if 1
+		G *tbl = tbl_.data();
+#else
+		G *tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
+#endif
+		for (size_t i = 0; i < tblN; i++) {
+			tbl[i].clear();
+		}
+		for (size_t i = 0; i < n; i++) {
+			fp::Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, c * w) & tblN;
+			if (v) {
+				tbl[v - 1] += xVec[i];
+			}
+		}
+		G sum;
+		sum.clear();
+		win[w].clear();
+		for (int i = int(tblN) - 1; i >= 0; i--) {
+			sum += tbl[i];
+			win[w] += sum;
+		}
+	}
+	z.clear();
+	for (size_t w = 0; w < winN; w++) {
+		for (size_t i = 0; i < c; i++) {
+			G::dbl(z, z);
+		}
+		z += win[winN - 1 - w];
 	}
 }
 
