@@ -286,10 +286,14 @@ CYBOZU_TEST_AUTO(BitIterator)
 			mcl::fp::BitIterator<uint32_t> bi(t.v, t.n);
 			mpz_class x;
 			mcl::gmp::setArray(x, t.v, t.n);
+			size_t bitPos = 0;
 			while (bi.hasNext()) {
 				uint32_t v1 = bi.getNext(w);
 				mpz_class v2 = x & bi.mask(w);
 				CYBOZU_TEST_EQUAL(v2, v1);
+				v1 = mcl::fp::getUnitAt(t.v, t.n, bitPos) & bi.mask(w);
+				CYBOZU_TEST_EQUAL(v2, v1);
+				bitPos += w;
 				x >>= w;
 			}
 			CYBOZU_TEST_EQUAL(x, 0);
