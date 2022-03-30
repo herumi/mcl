@@ -33,21 +33,6 @@ void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
 	out = r;
 }
 
-template<class G>
-void mulVecLong(G& z, const G *xVec, const Zn *yVec, size_t n)
-{
-	typedef mcl::fp::Unit Unit;
-	const size_t yUnitSize = Zn::getUnitSize();
-	const size_t next = sizeof(Zn) / sizeof(Unit);
-	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(Zn) * next * n);
-	for (size_t i = 0; i < n; i++) {
-		mcl::fp::Block b;
-		yVec[i].getBlock(b);
-		memcpy(&y[next * i], b.p, sizeof(Unit) * yUnitSize);
-	}
-	mcl::ec::mulVecLong(z, xVec, y, yUnitSize, next, n);
-}
-
 void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 {
 	puts("mulVecTest");
@@ -75,7 +60,7 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
-		mulVecLong(Q2, xVec, yVec, n);
+		mcl::ec::mulVecLong(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 #ifdef NDEBUG
 		if (ecMode != mcl::ec::Jacobi) continue;
@@ -83,7 +68,7 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		const int C = 5;//50;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
 		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
-		CYBOZU_BENCH_C("mulVecLong", C, mulVecLong, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVecLong", C, mcl::ec::mulVecLong, Q1, xVec, yVec, n);
 #endif
 	}
 }

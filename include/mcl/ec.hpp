@@ -829,7 +829,7 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 		return;
 	}
 	const size_t maxBitSize = sizeof(fp::Unit) * yUnitSize * 8;
-	size_t c = size_t(cybozu::bsr(n) * 0.6931); // log_2(n)
+	size_t c = size_t((cybozu::bsr(n) + 1) * 0.6931); // log_2(n)
 	if (c == 0) c = 1;
 	const size_t tblN = (1 << c) - 1;
 	const size_t winN = maxBitSize / c + 1;
@@ -868,6 +868,22 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 		z += win[winN - 1 - w];
 	}
 }
+
+template<class G, class F>
+void mulVecLong(G& z, const G *xVec, const F *yVec, size_t n)
+{
+	typedef mcl::fp::Unit Unit;
+	const size_t yUnitSize = F::getUnitSize();
+	const size_t next = sizeof(F) / sizeof(Unit);
+	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(F) * next * n);
+	for (size_t i = 0; i < n; i++) {
+		mcl::fp::Block b;
+		yVec[i].getBlock(b);
+		memcpy(&y[next * i], b.p, sizeof(Unit) * yUnitSize);
+	}
+	mcl::ec::mulVecLong(z, xVec, y, yUnitSize, next, n);
+}
+
 
 } // mcl::ec
 
