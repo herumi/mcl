@@ -815,9 +815,10 @@ void tryAndIncMapTo(E& P, const typename E::Fp& t)
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
 	use about sizeof(G) * n bytes stack
+	@note xVec can be normlized
 */
 template<class G>
-void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
 {
 	if (n == 0) {
 		z.clear();
@@ -842,7 +843,8 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 		tbl = tbl_;
 	}
 	// about 10% faster
-	G::normalizeVec(const_cast<G*>(xVec), xVec, n);
+//	G::normalizeVec(const_cast<G*>(xVec), xVec, n);
+	G::normalizeVec(xVec, xVec, n);
 	for (size_t w = 0; w < winN; w++) {
 		for (size_t i = 0; i < tblN; i++) {
 			tbl[i].clear();
@@ -872,7 +874,7 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 }
 
 template<class G, class F>
-void mulVecLong(G& z, const G *xVec, const F *yVec, size_t n)
+void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 {
 	typedef mcl::fp::Unit Unit;
 	const size_t yUnitSize = F::getUnitSize();

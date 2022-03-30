@@ -35,6 +35,7 @@ void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
 
 void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 {
+	if (ecMode != mcl::ec::Jacobi) return;
 	puts("mulVecTest");
 //	if (para.bitSize > 384) return;
 	cybozu::XorShift rg;

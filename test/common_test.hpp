@@ -15,18 +15,27 @@ void naiveMulVec(G& out, const G *xVec, const Fr *yVec, size_t n)
 }
 
 template<class G>
+void mulVecCopy(G& z, G *x, const Fr *y, size_t n, const G* x0)
+{
+	for (size_t i = 0; i < n; i++) x[i] = x0[i];
+	mcl::ec::mulVecLong(z, x, y, n);
+}
+
+template<class G>
 void testMulVec(const G& P)
 {
 	using namespace mcl::bn;
-	const int N = 100;
+	const int N = 4096;
+	std::vector<G> x0Vec(N);
 	std::vector<G> xVec(N);
 	std::vector<Fr> yVec(N);
 
 	for (size_t i = 0; i < N; i++) {
-		G::mul(xVec[i], P, i + 3);
+		G::mul(x0Vec[i], P, i + 3);
+		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG();
 	}
-	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, N };
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 2048, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		G Q1, Q2;
@@ -34,11 +43,16 @@ void testMulVec(const G& P)
 		naiveMulVec(Q1, xVec.data(), yVec.data(), n);
 		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
+		Q2.clear();
+		mcl::ec::mulVecLong(Q2, xVec.data(), yVec.data(), n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
 #ifdef NDEBUG
 		printf("n=%zd\n", n);
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("mulVecLong", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
+		CYBOZU_BENCH_C("mulVecLong(normalized)", C, mcl::ec::mulVecLong, Q1, xVec.data(), yVec.data(), n);
 #endif
 	}
 }
