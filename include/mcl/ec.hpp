@@ -824,14 +824,19 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 		z.clear();
 		return;
 	}
+	if (n == 1) {
+		G::mulArray(z, xVec[0], yVec, yUnitSize, false);
+		return;
+	}
 	const size_t maxBitSize = sizeof(fp::Unit) * yUnitSize * 8;
-	const size_t c = cybozu::bsr(n) + 1; // log_2(n)
+	size_t c = size_t(cybozu::bsr(n) * 0.6931); // log_2(n)
+	if (c == 0) c = 1;
 	const size_t tblN = (1 << c) - 1;
 	const size_t winN = maxBitSize / c + 1;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 	std::vector<G> tbl_(tblN);
 	// about 10% faster
-	// G::normalizeVec(static_cast<G*>(xVec), xVec, n);
+	G::normalizeVec(const_cast<G*>(xVec), xVec, n);
 	for (size_t w = 0; w < winN; w++) {
 #if 1
 		G *tbl = tbl_.data();
@@ -850,8 +855,8 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 		G sum;
 		sum.clear();
 		win[w].clear();
-		for (int i = int(tblN) - 1; i >= 0; i--) {
-			sum += tbl[i];
+		for (size_t i = 0; i < tblN; i++) {
+			sum += tbl[tblN - 1 - i];
 			win[w] += sum;
 		}
 	}
