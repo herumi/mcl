@@ -10,7 +10,6 @@
 #include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/window_method.hpp>
-#include <vector>
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -834,15 +833,17 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 	const size_t tblN = (1 << c) - 1;
 	const size_t winN = maxBitSize / c + 1;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
-	std::vector<G> tbl_(tblN);
+	G *tbl_ = 0;
+	G *tbl = 0;
+	if (tblN <= 4096) {
+		tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
+	} else {
+		tbl_ = (G*)malloc(sizeof(G) * tblN);
+		tbl = tbl_;
+	}
 	// about 10% faster
 	G::normalizeVec(const_cast<G*>(xVec), xVec, n);
 	for (size_t w = 0; w < winN; w++) {
-#if 1
-		G *tbl = tbl_.data();
-#else
-		G *tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
-#endif
 		for (size_t i = 0; i < tblN; i++) {
 			tbl[i].clear();
 		}
@@ -867,6 +868,7 @@ void mulVecLong(G& z, const G *xVec, const fp::Unit *yVec, size_t yUnitSize, siz
 		}
 		z += win[winN - 1 - w];
 	}
+	if (tbl_) free(tbl_);
 }
 
 template<class G, class F>
