@@ -843,7 +843,7 @@ size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t 
 
 	c = calcTblNforMulVec(n);
 	tblN = (1 << c) - 1;
-	tbl_ = 0;;//(G*)malloc(sizeof(G) * tblN);
+	tbl_ = (G*)malloc(sizeof(G) * tblN);
 	if (tbl_) {
 		tbl = tbl_;
 		goto main;
