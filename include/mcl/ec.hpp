@@ -811,40 +811,58 @@ void tryAndIncMapTo(E& P, const typename E::Fp& t)
 	}
 }
 
+inline size_t calcTblNforMulVec(size_t n)
+{
+	size_t c = size_t((cybozu::bsr(n) + 1) * 0.693); // log(n) = log_2(n) * log(2)
+	if (c == 0) c = 1;
+	return c;
+}
+
 /*
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
-	use about sizeof(G) * n bytes stack
-	@note xVec can be normlized
+	return numbers of done, which may be smaller than n if malloc fails
+	@note xVec may be normlized
+	fast for n >= 128 (G1) or n >= 256 (G2)
 */
 template<class G>
-void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
 {
 	if (n == 0) {
 		z.clear();
-		return;
+		return 0;
 	}
 	if (n == 1) {
 		G::mulArray(z, xVec[0], yVec, yUnitSize, false);
-		return;
+		return 1;
 	}
+
+	size_t c, tblN;
+	G *tbl_ = 0; // malloc is used if tbl_ != 0
+	G *tbl = 0;
+
+	c = calcTblNforMulVec(n);
+	tblN = (1 << c) - 1;
+	tbl_ = 0;;//(G*)malloc(sizeof(G) * tblN);
+	if (tbl_) {
+		tbl = tbl_;
+		goto main;
+	}
+	// malloc fails so use stack
+	if (n > 256) n = 256;
+	c = calcTblNforMulVec(n);
+	tblN = (1 << c) - 1;
+	assert(sizeof(G) * tblN <= 32 * 1024);
+	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
+	// keep tbl_ = 0
+main:
 	const size_t maxBitSize = sizeof(fp::Unit) * yUnitSize * 8;
-	size_t c = size_t((cybozu::bsr(n) + 1) * 0.6931); // log_2(n)
-	if (c == 0) c = 1;
-	const size_t tblN = (1 << c) - 1;
 	const size_t winN = maxBitSize / c + 1;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
-	G *tbl_ = 0;
-	G *tbl = 0;
-	if (tblN <= 4096) {
-		tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
-	} else {
-		tbl_ = (G*)malloc(sizeof(G) * tblN);
-		tbl = tbl_;
-	}
+
 	// about 10% faster
-//	G::normalizeVec(const_cast<G*>(xVec), xVec, n);
 	G::normalizeVec(xVec, xVec, n);
+
 	for (size_t w = 0; w < winN; w++) {
 		for (size_t i = 0; i < tblN; i++) {
 			tbl[i].clear();
@@ -871,6 +889,21 @@ void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t ne
 		z += win[winN - 1 - w];
 	}
 	if (tbl_) free(tbl_);
+	return n;
+}
+template<class G>
+void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+{
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n);
+	if (done == n) return;
+	do {
+		xVec += done;
+		yVec += next * done;
+		n -= done;
+		G t;
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n);
+		z += t;
+	} while (done < n);
 }
 
 template<class G, class F>
