@@ -811,13 +811,23 @@ void tryAndIncMapTo(E& P, const typename E::Fp& t)
 	}
 }
 
-inline size_t calcTblNforMulVec(size_t n)
+inline size_t ilog2(size_t n)
 {
-	size_t c = size_t((cybozu::bsr(n) + 1) * 0.693); // log(n) = log_2(n) * log(2)
-	if (c == 0) c = 1;
-	return c;
+	if (n == 0) return 0;
+	return cybozu::bsr(n) + 1;
 }
 
+// cal approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
+inline size_t argminForMulVec(size_t n)
+{
+	if (n <= 16) return 2;
+	size_t log2n = ilog2(n);
+	return log2n - ilog2(log2n);
+}
+
+#ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
+	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
+#endif
 /*
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
@@ -841,18 +851,20 @@ size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t 
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	G *tbl = 0;
 
-	c = calcTblNforMulVec(n);
-	tblN = (1 << c) - 1;
-	tbl_ = (G*)malloc(sizeof(G) * tblN);
-	if (tbl_) {
-		tbl = tbl_;
-		goto main;
+	// if n is large then try to use malloc
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
+		c = argminForMulVec(n);
+		tblN = (1 << c) - 1;
+		tbl_ = (G*)malloc(sizeof(G) * tblN);
+		if (tbl_) {
+			tbl = tbl_;
+			goto main;
+		}
 	}
 	// malloc fails so use stack
-	if (n > 256) n = 256;
-	c = calcTblNforMulVec(n);
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
+	c = argminForMulVec(n);
 	tblN = (1 << c) - 1;
-	assert(sizeof(G) * tblN <= 32 * 1024);
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
 main:
