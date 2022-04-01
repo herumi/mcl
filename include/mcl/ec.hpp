@@ -828,7 +828,7 @@ inline size_t argminForMulVec(size_t n)
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
 	// use (1 << argminForMulVec(n)) * sizeof(G) bytes stack + alpha
 	// about 18KiB (G1) or 36KiB (G2) for n = 1024
-	// you can decrese this value but this algorithm is slow if n < 256
+	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
 /*
