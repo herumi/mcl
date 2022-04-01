@@ -826,6 +826,9 @@ inline size_t argminForMulVec(size_t n)
 }
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
+	// use (1 << argminForMulVec(n)) * sizeof(G) bytes stack + alpha
+	// about 18KiB (G1) or 36KiB (G2) for n = 1024
+	// you can decrese this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
 /*
@@ -833,7 +836,7 @@ inline size_t argminForMulVec(size_t n)
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
 	return numbers of done, which may be smaller than n if malloc fails
 	@note xVec may be normlized
-	fast for n >= 128 (G1) or n >= 256 (G2)
+	fast for n >= 256
 */
 template<class G>
 size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
@@ -861,7 +864,7 @@ size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t 
 			goto main;
 		}
 	}
-	// malloc fails so use stack
+	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
 	c = argminForMulVec(n);
 	tblN = (1 << c) - 1;
