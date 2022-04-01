@@ -933,9 +933,8 @@ void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 		yVec[i].getBlock(b);
 		memcpy(&y[next * i], b.p, sizeof(Unit) * yUnitSize);
 	}
-	mcl::ec::mulVecLong(z, xVec, y, yUnitSize, next, n);
+	mulVecLong(z, xVec, y, yUnitSize, next, n);
 }
-
 
 } // mcl::ec
 
@@ -1807,6 +1806,10 @@ public:
 			return;
 		}
 #endif
+		if (n >= 256) {
+			mcl::ec::mulVecLong(z, const_cast<EcT*>(xVec), yVec, n);
+			return;
+		}
 		EcT r;
 		r.clear();
 		while (n > 0) {
