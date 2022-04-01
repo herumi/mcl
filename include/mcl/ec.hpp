@@ -1765,7 +1765,7 @@ private:
 
 public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline void mulVec(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
 		/*
 			mulVecNGLV is a little slow for large n
@@ -1807,7 +1807,7 @@ public:
 		}
 #endif
 		if (n >= 256) {
-			mcl::ec::mulVecLong(z, const_cast<EcT*>(xVec), yVec, n);
+			mcl::ec::mulVecLong(z, xVec, yVec, n);
 			return;
 		}
 		EcT r;
@@ -1825,7 +1825,7 @@ public:
 	// multi thread version of mulVec
 	// the num of thread is automatically detected if cpuN = 0
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVecMT(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, size_t cpuN = 0)
+	static inline void mulVecMT(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, size_t cpuN = 0)
 	{
 #ifdef MCL_USE_OMP
 	const size_t minN = mcl::fp::maxMulVecN;

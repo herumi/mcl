@@ -466,8 +466,9 @@ MCLBN_DLL_API void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnF
 MCLBN_DLL_API void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 
 // z = sum_{i=0}^{n-1} x[i] y[i]
-MCLBN_DLL_API void mclBnG1_mulVec(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n);
-MCLBN_DLL_API void mclBnG2_mulVec(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n);
+// x[] may be normalized (the values are not changed) when computing z
+MCLBN_DLL_API void mclBnG1_mulVec(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n);
+MCLBN_DLL_API void mclBnG2_mulVec(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n);
 MCLBN_DLL_API void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
 
 MCLBN_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
@@ -477,9 +478,10 @@ MCLBN_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 
 MCLBN_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
 // multi thread version of millerLoopVec/mclBnG1_mulVec/mclBnG2_mulVec (enabled if the library built with MCL_USE_OMP=1)
 // the num of thread is automatically detected if cpuN = 0
+// x[] may be normalized (the values are not changed) when computing z
 MCLBN_DLL_API void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
-MCLBN_DLL_API void mclBnG1_mulVecMT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
-MCLBN_DLL_API void mclBnG2_mulVecMT(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+MCLBN_DLL_API void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+MCLBN_DLL_API void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)
 MCLBN_DLL_API int mclBn_getUint64NumToPrecompute(void);
