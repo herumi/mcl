@@ -240,8 +240,8 @@ void normalizeVecJacobi(E *Q, const E *P, size_t n)
 	}
 	F::invVec(inv, inv, n);
 	for (size_t i = 0; i < n; i++) {
-		if (inv[i].isZero()) {
-			Q[i].clear();
+		if (P[i].z.isZero() || P[i].z.isOne()) {
+			if (P != Q) Q[i] = P[i];
 		} else {
 			F rz2;
 			F::sqr(rz2, inv[i]);
@@ -529,8 +529,8 @@ void normalizeVecProj(E *Q, const E *P, size_t n)
 	}
 	F::invVec(inv, inv, n);
 	for (size_t i = 0; i < n; i++) {
-		if (inv[i].isZero()) {
-			Q[i].clear();
+		if (P[i].z.isZero() || P[i].z.isOne()) {
+			if (P != Q) Q[i] = P[i];
 		} else {
 			F::mul(Q[i].x, P[i].x, inv[i]);
 			F::mul(Q[i].y, P[i].y, inv[i]);

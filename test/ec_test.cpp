@@ -268,8 +268,13 @@ struct Test {
 		for (size_t n = 0; n < maxN; n++) {
 			for (size_t j = 0; j < 10; j++) {
 				for (size_t i = 0; i < n; i++) {
+					Ec::dbl(y[i], P);
 					if ((j != 0 && (rg.get32() % 3) == 0) || j == 1) {
-						x[i].clear();
+						if ((i % 2) == 0) {
+							x[i].clear();
+						} else {
+							Ec::normalize(x[i], P);
+						}
 					} else {
 						Zn r;
 						r.setByCSPRNG(rg);
