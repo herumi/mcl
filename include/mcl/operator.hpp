@@ -42,13 +42,14 @@ struct Operator : public E {
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 	/*
 		y[i] = 1/x[i] for x[i] != 0 else 0
+		return num of x[i] not in {0, 1}
 	*/
-	static inline void invVec(T *y, const T *x, size_t n)
+	static inline size_t invVec(T *y, const T *x, size_t n)
 	{
 		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * n);
 		size_t pos = 0;
 		for (size_t i = 0; i < n; i++) {
-			if (!x[i].isZero()) {
+			if (!(x[i].isZero() || x[i].isOne())) {
 				if (pos == 0) {
 					t[pos] = x[i];
 				} else {
@@ -57,30 +58,33 @@ struct Operator : public E {
 				pos++;
 			}
 		}
+		const size_t retNum = pos;
 		T inv;
 		if (pos > 0) {
 			T::inv(inv, t[pos - 1]);
 			pos--;
 		}
 		for (size_t i = 0; i < n; i++) {
-			if (x[n - 1 - i].isZero()) {
-				y[n - 1 - i].clear();
+			const size_t idx = n - 1 - i;
+			if (x[idx].isZero() || x[idx].isOne()) {
+				if (x != y) y[idx] = x[idx];
 			} else {
 				if (pos > 0) {
 					if (x != y) {
-						T::mul(y[n - 1 - i], inv, t[pos - 1]);
-						inv *= x[n - 1 - i];
+						T::mul(y[idx], inv, t[pos - 1]);
+						inv *= x[idx];
 					} else {
-						T tmp = x[n - 1 - i];
-						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						T tmp = x[idx];
+						T::mul(y[idx], inv, t[pos - 1]);
 						inv *= tmp;
 					}
 					pos--;
 				} else {
-					y[n - 1 - i] = inv;
+					y[idx] = inv;
 				}
 			}
 		}
+		return retNum;
 	}
 	/*
 		powGeneric = pow if T = Fp, Fp2, Fp6
