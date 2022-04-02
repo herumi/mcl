@@ -956,15 +956,18 @@ void invVecTest()
 	cybozu::XorShift rg;
 	for (size_t n = 0; n < maxN; n++) {
 		for (int j = 0; j < 10; j++) {
+			size_t retN = 0;
 			for (size_t i = 0; i < n; i++) {
 				if ((j != 0 && (rg.get32() % 3) == 0) || j == 1) {
-					x[i].clear();
+					x[i] = i % 2; // 0 or 1
 				} else {
 					x[i].setByCSPRNG(rg);
+					retN++;
 				}
 				y[i] = 1;
 			}
-			Fp::invVec(y, x, n);
+			size_t ret = Fp::invVec(y, x, n);
+			CYBOZU_TEST_EQUAL(ret, retN);
 			for (size_t i = 0; i < n; i++) {
 				if (x[i].isZero()) {
 					CYBOZU_TEST_ASSERT(y[i].isZero());
