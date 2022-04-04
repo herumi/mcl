@@ -235,10 +235,7 @@ void normalizeVecJacobi(E *Q, const E *P, size_t n)
 {
 	typedef typename E::Fp F;
 	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
-	for (size_t i = 0; i < n; i++) {
-		inv[i] = P[i].z;
-	}
-	F::invVec(inv, inv, n);
+	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
 			if (P != Q) Q[i] = P[i];
@@ -524,10 +521,7 @@ void normalizeVecProj(E *Q, const E *P, size_t n)
 {
 	typedef typename E::Fp F;
 	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
-	for (size_t i = 0; i < n; i++) {
-		inv[i] = P[i].z;
-	}
-	F::invVec(inv, inv, n);
+	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
 			if (P != Q) Q[i] = P[i];
