@@ -162,7 +162,7 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << (w - 2);
 	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
-	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * N * splitN);
+	NafArray naf[N][splitN];
 	G tbl[splitN][N][tblSize];
 	bool b;
 	mpz_class u[splitN], y;
