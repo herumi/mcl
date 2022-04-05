@@ -162,8 +162,9 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << (w - 2);
 	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
-	NafArray naf[N][splitN];
-	G tbl[splitN][N][tblSize];
+	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
+	// layout tbl[splitN][n][tblSize];
+	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
 	bool b;
 	mpz_class u[splitN], y;
 	size_t maxBit = 0;
@@ -185,19 +186,19 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 
 		G P2;
 		G::dbl(P2, xVec[i]);
-		tbl[0][i][0] = xVec[i];
+		tbl[0 * n + i][0] = xVec[i];
 		for (size_t j = 1; j < tblSize; j++) {
-			G::add(tbl[0][i][j], tbl[0][i][j - 1], P2);
+			G::add(tbl[0 * n + i][j], tbl[0 * n + i][j - 1], P2);
 		}
 	}
-	G::normalizeVec(&tbl[0][0][0], &tbl[0][0][0], n * tblSize);
+	G::normalizeVec(&tbl[0][0], &tbl[0][0], n * tblSize);
 	for (size_t i = 0; i < n; i++) {
 		for (int k = 1; k < splitN; k++) {
-			GLV::mulLambda(tbl[k][i][0], tbl[k - 1][i][0]);
+			GLV::mulLambda(tbl[k * n + i][0], tbl[(k - 1) * n + i][0]);
 		}
 		for (size_t j = 1; j < tblSize; j++) {
 			for (int k = 1; k < splitN; k++) {
-				GLV::mulLambda(tbl[k][i][j], tbl[k - 1][i][j]);
+				GLV::mulLambda(tbl[k * n + i][j], tbl[(k - 1) * n + i][j]);
 			}
 		}
 	}
@@ -207,7 +208,7 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 		G::dbl(z, z);
 		for (size_t j = 0; j < n; j++) {
 			for (int k = 0; k < splitN; k++) {
-				mcl::local::addTbl(z, tbl[k][j], naf[j][k], bit);
+				mcl::local::addTbl(z, tbl[k * n + j], naf[j][k], bit);
 			}
 		}
 	}
