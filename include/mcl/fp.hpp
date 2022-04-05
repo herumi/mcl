@@ -461,6 +461,16 @@ public:
 			for (size_t i = 0, n = op_.N; i < n; i++) u[i] = v_[i];
 		}
 	}
+	// u must be the array of the length getUnitSize() (= op_.N)
+	// u[] must be less than p
+	void setUnitArray(const fp::Unit *u)
+	{
+		if (isMont()) {
+			op_.toMont(v_, u);
+		} else {
+			for (size_t i = 0, n = op_.N; i < n; i++) v_[i] = u[i];
+		}
+	}
 	/*
 		write a value with little endian
 		write buf[0] = 0 and return 1 if the value is 0
