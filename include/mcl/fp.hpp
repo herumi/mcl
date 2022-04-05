@@ -452,6 +452,15 @@ public:
 			b.p = &v_[0];
 		}
 	}
+	// u must be the array of the length op_.N
+	void getUnitArray(fp::Unit *u) const
+	{
+		if (isMont()) {
+			op_.fromMont(u, v_);
+		} else {
+			for (size_t i = 0, n = op_.N; i < n; i++) u[i] = v_[i];
+		}
+	}
 	/*
 		write a value with little endian
 		write buf[0] = 0 and return 1 if the value is 0
