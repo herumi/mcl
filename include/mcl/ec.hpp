@@ -920,15 +920,12 @@ template<class G, class F>
 void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 {
 	typedef mcl::fp::Unit Unit;
-	const size_t yUnitSize = F::getUnitSize();
-	const size_t next = sizeof(F) / sizeof(Unit);
-	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(F) * next * n);
+	const size_t next = F::getUnitSize();
+	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * next * n);
 	for (size_t i = 0; i < n; i++) {
-		mcl::fp::Block b;
-		yVec[i].getBlock(b);
-		memcpy(&y[next * i], b.p, sizeof(Unit) * yUnitSize);
+		yVec[i].getUnitArray(&y[i * next]);
 	}
-	mulVecLong(z, xVec, y, yUnitSize, next, n);
+	mulVecLong(z, xVec, y, next, next, n);
 }
 
 } // mcl::ec

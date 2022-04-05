@@ -452,7 +452,7 @@ public:
 			b.p = &v_[0];
 		}
 	}
-	// u must be the array of the length op_.N
+	// u must be the array of the length getUnitSize() (= op_.N)
 	void getUnitArray(fp::Unit *u) const
 	{
 		if (isMont()) {
