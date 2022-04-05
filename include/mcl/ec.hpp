@@ -156,9 +156,10 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	splitN = 2(G1) or 4(G2)
 	w : window size
 */
-template<class GLV, class G, class F, int splitN, int w, size_t N>
+template<class GLV, class G, class F, int splitN, int w>
 static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 {
+	const size_t N = mcl::fp::maxMulVecNGLV; // QQQ
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << (w - 2);
 	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
@@ -1960,12 +1961,12 @@ public:
 		if (constTime) {
 			ec::local::mul1CT<GLV1, Ec, _Fr, 2, 4>(Q, P, x);
 		} else {
-			ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5, 1>(Q, &P, &x, 1);
+			mulVecNGLV(Q, &P, &x, 1);
 		}
 	}
 	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n)
 	{
-		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5, mcl::fp::maxMulVecNGLV>(z, xVec, yVec, n);
+		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5>(z, xVec, yVec, n);
 	}
 	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
