@@ -41,46 +41,52 @@ struct Operator : public E {
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 	/*
-		y[i] = 1/x[i] for x[i] != 0 else 0
+		y[i] = 1/x[i * next] for x[i * next] != 0 else 0
+		return num of x[i] not in {0, 1}
 	*/
-	static inline void invVec(T *y, const T *x, size_t n)
+	static inline size_t invVec(T *y, const T *x, size_t n, size_t next = 1)
 	{
 		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * n);
 		size_t pos = 0;
 		for (size_t i = 0; i < n; i++) {
-			if (!x[i].isZero()) {
+			const size_t xIdx = i * next;
+			if (!(x[xIdx].isZero() || x[xIdx].isOne())) {
 				if (pos == 0) {
-					t[pos] = x[i];
+					t[pos] = x[xIdx];
 				} else {
-					T::mul(t[pos], t[pos - 1], x[i]);
+					T::mul(t[pos], t[pos - 1], x[xIdx]);
 				}
 				pos++;
 			}
 		}
+		const size_t retNum = pos;
 		T inv;
 		if (pos > 0) {
 			T::inv(inv, t[pos - 1]);
 			pos--;
 		}
 		for (size_t i = 0; i < n; i++) {
-			if (x[n - 1 - i].isZero()) {
-				y[n - 1 - i].clear();
+			const size_t yIdx = n - 1 - i;
+			const size_t xIdx = (n - 1 - i) * next;
+			if (x[xIdx].isZero() || x[xIdx].isOne()) {
+				if (x != y) y[yIdx] = x[xIdx];
 			} else {
 				if (pos > 0) {
 					if (x != y) {
-						T::mul(y[n - 1 - i], inv, t[pos - 1]);
-						inv *= x[n - 1 - i];
+						T::mul(y[yIdx], inv, t[pos - 1]);
+						inv *= x[xIdx];
 					} else {
-						T tmp = x[n - 1 - i];
-						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						T tmp = x[xIdx];
+						T::mul(y[yIdx], inv, t[pos - 1]);
 						inv *= tmp;
 					}
 					pos--;
 				} else {
-					y[n - 1 - i] = inv;
+					y[yIdx] = inv;
 				}
 			}
 		}
+		return retNum;
 	}
 	/*
 		powGeneric = pow if T = Fp, Fp2, Fp6

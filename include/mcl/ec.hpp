@@ -156,14 +156,16 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	splitN = 2(G1) or 4(G2)
 	w : window size
 */
-template<class GLV, class G, class F, int splitN, int w, size_t N>
+template<class GLV, class G, class F, int splitN, int w>
 static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 {
+	const size_t N = mcl::fp::maxMulVecNGLV; // QQQ
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << (w - 2);
 	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
-	NafArray naf[N][splitN];
-	G tbl[N][splitN][tblSize];
+	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
+	// layout tbl[splitN][n][tblSize];
+	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
 	bool b;
 	mpz_class u[splitN], y;
 	size_t maxBit = 0;
@@ -185,14 +187,19 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 
 		G P2;
 		G::dbl(P2, xVec[i]);
-		tbl[i][0][0] = xVec[i];
+		tbl[0 * n + i][0] = xVec[i];
+		for (size_t j = 1; j < tblSize; j++) {
+			G::add(tbl[0 * n + i][j], tbl[0 * n + i][j - 1], P2);
+		}
+	}
+	G::normalizeVec(&tbl[0][0], &tbl[0][0], n * tblSize);
+	for (size_t i = 0; i < n; i++) {
 		for (int k = 1; k < splitN; k++) {
-			GLV::mulLambda(tbl[i][k][0], tbl[i][k - 1][0]);
+			GLV::mulLambda(tbl[k * n + i][0], tbl[(k - 1) * n + i][0]);
 		}
 		for (size_t j = 1; j < tblSize; j++) {
-			G::add(tbl[i][0][j], tbl[i][0][j - 1], P2);
 			for (int k = 1; k < splitN; k++) {
-				GLV::mulLambda(tbl[i][k][j], tbl[i][k - 1][j]);
+				GLV::mulLambda(tbl[k * n + i][j], tbl[(k - 1) * n + i][j]);
 			}
 		}
 	}
@@ -202,7 +209,7 @@ static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 		G::dbl(z, z);
 		for (size_t j = 0; j < n; j++) {
 			for (int k = 0; k < splitN; k++) {
-				mcl::local::addTbl(z, tbl[j][k], naf[j][k], bit);
+				mcl::local::addTbl(z, tbl[k * n + j], naf[j][k], bit);
 			}
 		}
 	}
@@ -230,13 +237,10 @@ void normalizeVecJacobi(E *Q, const E *P, size_t n)
 {
 	typedef typename E::Fp F;
 	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
 	for (size_t i = 0; i < n; i++) {
-		inv[i] = P[i].z;
-	}
-	F::invVec(inv, inv, n);
-	for (size_t i = 0; i < n; i++) {
-		if (inv[i].isZero()) {
-			Q[i].clear();
+		if (P[i].z.isZero() || P[i].z.isOne()) {
+			if (P != Q) Q[i] = P[i];
 		} else {
 			F rz2;
 			F::sqr(rz2, inv[i]);
@@ -372,7 +376,11 @@ void dblJacobi(E& R, const E& P)
 	R.y -= y2;
 }
 
-// 7M + 4S + 7A
+/*
+	J + J : 12mul + 4sqr + 7add
+	J + A : 8mul + 3sqr + 7add
+	A + A : 4mul + 2sqr + 7add
+*/
 template<class E>
 void addJacobi(E& R, const E& P, const E& Q)
 {
@@ -515,13 +523,10 @@ void normalizeVecProj(E *Q, const E *P, size_t n)
 {
 	typedef typename E::Fp F;
 	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
 	for (size_t i = 0; i < n; i++) {
-		inv[i] = P[i].z;
-	}
-	F::invVec(inv, inv, n);
-	for (size_t i = 0; i < n; i++) {
-		if (inv[i].isZero()) {
-			Q[i].clear();
+		if (P[i].z.isZero() || P[i].z.isOne()) {
+			if (P != Q) Q[i] = P[i];
 		} else {
 			F::mul(Q[i].x, P[i].x, inv[i]);
 			F::mul(Q[i].y, P[i].y, inv[i]);
@@ -800,6 +805,128 @@ void tryAndIncMapTo(E& P, const typename E::Fp& t)
 		}
 		*x.getFp0() += F::BaseFp::one();
 	}
+}
+
+inline size_t ilog2(size_t n)
+{
+	if (n == 0) return 0;
+	return cybozu::bsr(n) + 1;
+}
+
+// cal approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
+inline size_t argminForMulVec(size_t n)
+{
+	if (n <= 16) return 2;
+	size_t log2n = ilog2(n);
+	return log2n - ilog2(log2n);
+}
+
+#ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
+	// use (1 << argminForMulVec(n)) * sizeof(G) bytes stack + alpha
+	// about 18KiB (G1) or 36KiB (G2) for n = 1024
+	// you can decrease this value but this algorithm is slow if n < 256
+	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
+#endif
+/*
+	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
+	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
+	return numbers of done, which may be smaller than n if malloc fails
+	@note xVec may be normlized
+	fast for n >= 256
+*/
+template<class G>
+size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+{
+	if (n == 0) {
+		z.clear();
+		return 0;
+	}
+	if (n == 1) {
+		G::mulArray(z, xVec[0], yVec, yUnitSize, false);
+		return 1;
+	}
+
+	size_t c, tblN;
+	G *tbl_ = 0; // malloc is used if tbl_ != 0
+	G *tbl = 0;
+
+	// if n is large then try to use malloc
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
+		c = argminForMulVec(n);
+		tblN = (1 << c) - 1;
+		tbl_ = (G*)malloc(sizeof(G) * tblN);
+		if (tbl_) {
+			tbl = tbl_;
+			goto main;
+		}
+	}
+	// n is small or malloc fails so use stack
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
+	c = argminForMulVec(n);
+	tblN = (1 << c) - 1;
+	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
+	// keep tbl_ = 0
+main:
+	const size_t maxBitSize = sizeof(fp::Unit) * yUnitSize * 8;
+	const size_t winN = maxBitSize / c + 1;
+	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
+
+	// about 10% faster
+	G::normalizeVec(xVec, xVec, n);
+
+	for (size_t w = 0; w < winN; w++) {
+		for (size_t i = 0; i < tblN; i++) {
+			tbl[i].clear();
+		}
+		for (size_t i = 0; i < n; i++) {
+			fp::Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, c * w) & tblN;
+			if (v) {
+				tbl[v - 1] += xVec[i];
+			}
+		}
+		G sum;
+		sum.clear();
+		win[w].clear();
+		for (size_t i = 0; i < tblN; i++) {
+			sum += tbl[tblN - 1 - i];
+			win[w] += sum;
+		}
+	}
+	z.clear();
+	for (size_t w = 0; w < winN; w++) {
+		for (size_t i = 0; i < c; i++) {
+			G::dbl(z, z);
+		}
+		z += win[winN - 1 - w];
+	}
+	if (tbl_) free(tbl_);
+	return n;
+}
+template<class G>
+void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+{
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n);
+	if (done == n) return;
+	do {
+		xVec += done;
+		yVec += next * done;
+		n -= done;
+		G t;
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n);
+		z += t;
+	} while (done < n);
+}
+
+template<class G, class F>
+void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
+{
+	typedef mcl::fp::Unit Unit;
+	const size_t next = F::getUnitSize();
+	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * next * n);
+	for (size_t i = 0; i < n; i++) {
+		yVec[i].getUnitArray(&y[i * next]);
+	}
+	mulVecLong(z, xVec, y, next, next, n);
 }
 
 } // mcl::ec
@@ -1619,6 +1746,7 @@ private:
 			}
 		}
 		z.clear();
+		EcT::normalizeVec(&tbl[0][0], &tbl[0][0], n * tblSize);
 		for (size_t i = 0; i < maxBit; i++) {
 			EcT::dbl(z, z);
 			for (size_t j = 0; j < n; j++) {
@@ -1630,7 +1758,7 @@ private:
 
 public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVec(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline void mulVec(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
 		/*
 			mulVecNGLV is a little slow for large n
@@ -1671,6 +1799,10 @@ public:
 			return;
 		}
 #endif
+		if (n >= 256) {
+			mcl::ec::mulVecLong(z, xVec, yVec, n);
+			return;
+		}
 		EcT r;
 		r.clear();
 		while (n > 0) {
@@ -1686,7 +1818,7 @@ public:
 	// multi thread version of mulVec
 	// the num of thread is automatically detected if cpuN = 0
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVecMT(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, size_t cpuN = 0)
+	static inline void mulVecMT(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, size_t cpuN = 0)
 	{
 #ifdef MCL_USE_OMP
 	const size_t minN = mcl::fp::maxMulVecN;
@@ -1829,12 +1961,12 @@ public:
 		if (constTime) {
 			ec::local::mul1CT<GLV1, Ec, _Fr, 2, 4>(Q, P, x);
 		} else {
-			ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5, 1>(Q, &P, &x, 1);
+			mulVecNGLV(Q, &P, &x, 1);
 		}
 	}
 	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n)
 	{
-		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5, mcl::fp::maxMulVecNGLV>(z, xVec, yVec, n);
+		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5>(z, xVec, yVec, n);
 	}
 	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{

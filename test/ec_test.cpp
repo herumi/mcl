@@ -22,10 +22,65 @@ CYBOZU_TEST_AUTO(sizeof)
 	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 3);
 }
 
+void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
+{
+	Ec r, t;
+	r.clear();
+	for (size_t i = 0; i < n; i++) {
+		Ec::mul(t, xVec[i], yVec[i]);
+		r += t;
+	}
+	out = r;
+}
+
+void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
+{
+	if (ecMode != mcl::ec::Jacobi) return;
+	puts("mulVecTest");
+//	if (para.bitSize > 384) return;
+	cybozu::XorShift rg;
+	const Fp x(para.gx);
+	const Fp y(para.gy);
+	Ec P(x, y);
+	P += P;
+	const int N = 100;
+	Ec xVec[N];
+	Zn yVec[N];
+	Ec Q1, Q2;
+
+	Ec::dbl(P, P);
+	for (size_t i = 0; i < N; i++) {
+		Ec::mul(xVec[i], P, i + 3);
+		yVec[i].setByCSPRNG(rg);
+	}
+	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33, N };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		CYBOZU_TEST_ASSERT(n <= N);
+		naiveMulVec(Q1, xVec, yVec, n);
+		Ec::mulVec(Q2, xVec, yVec, n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+		Q2.clear();
+		mcl::ec::mulVecLong(Q2, xVec, yVec, n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+#ifdef NDEBUG
+		if (ecMode != mcl::ec::Jacobi) continue;
+		printf("n=%zd\n", n);
+		const int C = 5;//50;
+		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
+		CYBOZU_BENCH_C("mulVecLong", C, mcl::ec::mulVecLong, Q1, xVec, yVec, n);
+#endif
+	}
+}
+
+
 struct Test {
 	const mcl::EcParam& para;
+	mcl::ec::Mode ecMode;
 	Test(const mcl::EcParam& para, mcl::fp::Mode fpMode, mcl::ec::Mode ecMode)
 		: para(para)
+		, ecMode(ecMode)
 	{
 		printf("fpMode=%s\n", mcl::fp::ModeToStr(fpMode));
 		mcl::initCurve<Ec, Zn>(para.curveType, 0, fpMode, ecMode);
@@ -213,8 +268,13 @@ struct Test {
 		for (size_t n = 0; n < maxN; n++) {
 			for (size_t j = 0; j < 10; j++) {
 				for (size_t i = 0; i < n; i++) {
+					Ec::dbl(y[i], P);
 					if ((j != 0 && (rg.get32() % 3) == 0) || j == 1) {
-						x[i].clear();
+						if ((i % 2) == 0) {
+							x[i].clear();
+						} else {
+							Ec::normalize(x[i], P);
+						}
 					} else {
 						Zn r;
 						r.setByCSPRNG(rg);
@@ -582,6 +642,7 @@ mul 499.00usec
 */
 	void run() const
 	{
+		mulVecTest(para, ecMode);
 		normalizeVecTest();
 		cstr();
 		ope();
@@ -600,51 +661,6 @@ private:
 	Test(const Test&);
 	void operator=(const Test&);
 };
-
-void naiveMulVec(Ec& out, const Ec *xVec, const Zn *yVec, size_t n)
-{
-	Ec r, t;
-	r.clear();
-	for (size_t i = 0; i < n; i++) {
-		Ec::mul(t, xVec[i], yVec[i]);
-		r += t;
-	}
-	out = r;
-}
-
-void mulVec(const mcl::EcParam& para)
-{
-	if (para.bitSize > 384) return;
-	cybozu::XorShift rg;
-	const Fp x(para.gx);
-	const Fp y(para.gy);
-	Ec P(x, y);
-	P += P;
-	const int N = 33;
-	Ec xVec[N];
-	Zn yVec[N];
-	Ec Q1, Q2;
-
-	Ec::dbl(P, P);
-	for (size_t i = 0; i < N; i++) {
-		Ec::mul(xVec[i], P, i + 3);
-		yVec[i].setByCSPRNG(rg);
-	}
-	const size_t nTbl[] = { 1, 2, 3, 5, 30, 31, 32, 33 };
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
-		const size_t n = nTbl[i];
-		CYBOZU_TEST_ASSERT(n <= N);
-		naiveMulVec(Q1, xVec, yVec, n);
-		Ec::mulVec(Q2, xVec, yVec, n);
-		CYBOZU_TEST_EQUAL(Q1, Q2);
-#ifdef NDEBUG
-		printf("n=%zd\n", n);
-		const int C = 50;
-		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
-		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
-#endif
-	}
-}
 
 void test_sub_sub(const mcl::EcParam& para, mcl::fp::Mode fpMode)
 {
@@ -668,7 +684,6 @@ void test_sub(const mcl::EcParam *para, size_t paraNum)
 #ifdef MCL_X64_ASM
 		test_sub_sub(para[i], mcl::fp::FP_XBYAK);
 #endif
-		mulVec(para[i]);
 	}
 }
 

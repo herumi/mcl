@@ -1417,6 +1417,11 @@ struct GroupMtoA : public T {
 		sub(*this, *this, rhs);
 	}
 	void normalize() {}
+	static void normalizeVec(GroupMtoA *y, const GroupMtoA *x, size_t n)
+	{
+		if (y == x) return;
+		for (size_t i = 0; i < n; i++) y[i] = x[i];
+	}
 private:
 	bool isOne() const;
 };

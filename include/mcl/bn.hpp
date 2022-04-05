@@ -789,7 +789,7 @@ struct GLV2T {
 		if (constTime) {
 			ec::local::mul1CT<GLV2, T, Fr, 4, 4>(Q, P, x);
 		} else {
-			ec::local::mulVecNGLVT<GLV2, T, Fr, 4, 5, 1>(Q, &P, &x, 1);
+			mulVecNGLV(Q, &P, &x, 1);
 		}
 	}
 	template<class T>
@@ -800,7 +800,7 @@ struct GLV2T {
 	template<class T>
 	static size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n)
 	{
-		return ec::local::mulVecNGLVT<GLV2, T, Fr, 4, 5, fp::maxMulVecNGLV>(z, xVec, yVec, n);
+		return ec::local::mulVecNGLVT<GLV2, T, Fr, 4, 5>(z, xVec, yVec, n);
 	}
 	static void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false)
 	{
