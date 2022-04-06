@@ -929,6 +929,50 @@ void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 	mulVecLong(z, xVec, y, next, next, n);
 }
 
+template<class GLV, class G, class F, int splitN>
+size_t mulVecGLVCore(G& z, const G *xVec, const void *_yVec, size_t n)
+{
+	assert(n > 0);
+	typedef mcl::fp::Unit Unit;
+	const F* yVec = (const F*)_yVec;
+	const size_t next = F::getUnitSize();
+	mpz_class u[splitN], y;
+	G (*tbl)[splitN] = 0;
+	Unit *yp = 0;
+
+	tbl = (G (*)[splitN])malloc(sizeof(G) * splitN * n);
+	if (tbl == 0) goto exitL;
+	yp = (Unit *)malloc(sizeof(Unit) * next * splitN * n);
+	if (yp == 0) goto exitL;
+
+	F::normalizeVec(tbl, xVec, n);
+	for (int i = 1; i < splitN; i++) {
+		for (size_t j = 0; j < n; j++) {
+			GLV::mulLambda(tbl[i * n + j], tbl[(i - 1) * n + j]);
+		}
+	}
+	for (size_t i = 0; i < n; i++) {
+		bool b;
+		yVec[i].getMpz(&b, y);
+		assert(b); (void)b;
+		GLV::split(u, y);
+		for (size_t j = 0; j < splitN; j++) {
+			size_t idx = j * n + i;
+			if (u[j] < 0) {
+				u[j] = -u[j];
+				G::neg(tbl[idx], tbl[idx]);
+			}
+			mcl::gmp::getArray(&b, &yp[idx * next], next, u[j]);
+			assert(b); (void)b;
+		}
+	}
+	mulVecLong(z, tbl, yp, next, next, n * splitN);
+exitL:
+	if (yp) free(yp);
+	if (tbl) free(tbl);
+	return n;
+}
+
 } // mcl::ec
 
 /*
@@ -955,6 +999,7 @@ public:
 	static mpz_class order_;
 	static void (*mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 	static size_t (*mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
+	static size_t (*mulVecGLVcore)(EcT& z, const EcT *xVec, const void *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1021,6 +1066,7 @@ public:
 		order_ = 0;
 		mulArrayGLV = 0;
 		mulVecNGLV = 0;
+		mulVecGLVcore = 0;
 		isValidOrderFast = 0;
 		mode_ = mode;
 	}
@@ -1047,6 +1093,10 @@ public:
 	{
 		mulArrayGLV = f;
 		mulVecNGLV = g;
+	}
+	static void setMulArrayGLV2(size_t f(EcT& z, const EcT *xVec, const void *yVec, size_t yn) = 0)
+	{
+		mulVecGLVcore = f;
 	}
 	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
 	{
@@ -1906,6 +1956,7 @@ template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
 template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
 template<class Fp> size_t (*EcT<Fp>::mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
+template<class Fp> size_t (*EcT<Fp>::mulVecGLVcore)(EcT& z, const EcT *xVec, const void *yVec, size_t n);
 template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
 template<class Fp> int EcT<Fp>::mode_;
 
