@@ -835,7 +835,7 @@ inline size_t argminForMulVec(size_t n)
 	fast for n >= 256
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
 {
 	if (n == 0) {
 		z.clear();
@@ -872,7 +872,7 @@ main:
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 
 	// about 10% faster
-	G::normalizeVec(xVec, xVec, n);
+	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
 	for (size_t w = 0; w < winN; w++) {
 		for (size_t i = 0; i < tblN; i++) {
@@ -903,16 +903,16 @@ main:
 	return n;
 }
 template<class G>
-void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n)
+void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
 {
-	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n);
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, doNormalize);
 	if (done == n) return;
 	do {
 		xVec += done;
 		yVec += next * done;
 		n -= done;
 		G t;
-		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n);
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, doNormalize);
 		z += t;
 	} while (done < n);
 }
@@ -930,22 +930,22 @@ void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 }
 
 template<class GLV, class G, class F, int splitN>
-size_t mulVecGLVCore(G& z, const G *xVec, const void *_yVec, size_t n)
+size_t mulVecGLVcoreT(G& z, const G *xVec, const void *_yVec, size_t n)
 {
 	assert(n > 0);
 	typedef mcl::fp::Unit Unit;
 	const F* yVec = (const F*)_yVec;
 	const size_t next = F::getUnitSize();
 	mpz_class u[splitN], y;
-	G (*tbl)[splitN] = 0;
+	G *tbl = 0;
 	Unit *yp = 0;
 
-	tbl = (G (*)[splitN])malloc(sizeof(G) * splitN * n);
+	tbl = (G *)malloc(sizeof(G) * splitN * n);
 	if (tbl == 0) goto exitL;
 	yp = (Unit *)malloc(sizeof(Unit) * next * splitN * n);
 	if (yp == 0) goto exitL;
 
-	F::normalizeVec(tbl, xVec, n);
+	G::normalizeVec(tbl, xVec, n);
 	for (int i = 1; i < splitN; i++) {
 		for (size_t j = 0; j < n; j++) {
 			GLV::mulLambda(tbl[i * n + j], tbl[(i - 1) * n + j]);
@@ -966,7 +966,7 @@ size_t mulVecGLVCore(G& z, const G *xVec, const void *_yVec, size_t n)
 			assert(b); (void)b;
 		}
 	}
-	mulVecLong(z, tbl, yp, next, next, n * splitN);
+	mulVecLong(z, tbl, yp, next, next, n * splitN, false);
 exitL:
 	if (yp) free(yp);
 	if (tbl) free(tbl);
@@ -1094,7 +1094,7 @@ public:
 		mulArrayGLV = f;
 		mulVecNGLV = g;
 	}
-	static void setMulArrayGLV2(size_t f(EcT& z, const EcT *xVec, const void *yVec, size_t yn) = 0)
+	static void setMulVecGLVcore(size_t f(EcT& z, const EcT *xVec, const void *yVec, size_t yn) = 0)
 	{
 		mulVecGLVcore = f;
 	}
