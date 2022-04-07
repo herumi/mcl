@@ -686,6 +686,7 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 template<class _Fr>
 struct GLV2T {
 	typedef GLV2T<_Fr> GLV2;
+	static const int splitN = 4;
 	typedef _Fr Fr;
 	static size_t rBitSize;
 	static mpz_class B[4][4];
@@ -787,7 +788,7 @@ struct GLV2T {
 	static void mul(T& Q, const T& P, const mpz_class& x, bool constTime = false)
 	{
 		if (constTime) {
-			ec::local::mul1CT<GLV2, T, Fr, 4, 4>(Q, P, x);
+			ec::local::mul1CT<GLV2, T, Fr, 4>(Q, P, x);
 		} else {
 			mulVecNGLV(Q, &P, &x, 1);
 		}
@@ -800,7 +801,7 @@ struct GLV2T {
 	template<class T>
 	static size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n)
 	{
-		return ec::local::mulVecNGLVT<GLV2, T, Fr, 4, 5>(z, xVec, yVec, n);
+		return ec::local::mulVecNGLVT<GLV2, T, Fr, 5>(z, xVec, yVec, n);
 	}
 	static void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false)
 	{

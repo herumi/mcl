@@ -80,9 +80,10 @@ bool get_a_flag(const mcl::Fp2T<F>& x)
 	splitN = 2(G1) or 4(G2)
 	w : window size
 */
-template<class GLV, class G, class F, int splitN, size_t w>
+template<class GLV, class G, class F, size_t w>
 void mul1CT(G& Q, const G& P, const mpz_class& x)
 {
+	const int splitN = GLV::splitN;
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << w;
 	G tbl[splitN][tblSize];
@@ -156,9 +157,10 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	splitN = 2(G1) or 4(G2)
 	w : window size
 */
-template<class GLV, class G, class F, int splitN, int w>
+template<class GLV, class G, class F, int w>
 static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
 {
+	const int splitN = GLV::splitN;
 	const size_t N = mcl::fp::maxMulVecNGLV; // QQQ
 	const mpz_class& r = F::getOp().mp;
 	const size_t tblSize = 1 << (w - 2);
@@ -1992,6 +1994,7 @@ struct GLV1T {
 	typedef GLV1T<Ec, _Fr> GLV1;
 	typedef typename Ec::Fp Fp;
 	typedef _Fr Fr;
+	static const int splitN = 2;
 	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	static size_t rBitSize;
 	static mpz_class v0, v1;
@@ -2036,14 +2039,14 @@ public:
 	static void mul(Ec& Q, const Ec& P, const mpz_class& x, bool constTime = false)
 	{
 		if (constTime) {
-			ec::local::mul1CT<GLV1, Ec, _Fr, 2, 4>(Q, P, x);
+			ec::local::mul1CT<GLV1, Ec, _Fr, 4>(Q, P, x);
 		} else {
 			mulVecNGLV(Q, &P, &x, 1);
 		}
 	}
 	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n)
 	{
-		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 2, 5>(z, xVec, yVec, n);
+		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 5>(z, xVec, yVec, n);
 	}
 	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
