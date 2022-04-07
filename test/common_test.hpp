@@ -46,15 +46,11 @@ void testMulVec(const G& P)
 		Q2.clear();
 		mcl::ec::mulVecLong(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-		G Q3;
-		G::mulVec2(Q3, xVec.data(), yVec.data(), n);
-		CYBOZU_TEST_EQUAL(Q1, Q3);
 #ifdef NDEBUG
 		printf("n=%zd\n", n);
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
-		CYBOZU_BENCH_C("mulVec2", C, G::mulVec2, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVecLong", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
 		CYBOZU_BENCH_C("mulVecLong(normalized)", C, mcl::ec::mulVecLong, Q1, xVec.data(), yVec.data(), n);
 #endif

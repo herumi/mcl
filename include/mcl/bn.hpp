@@ -2270,8 +2270,8 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	if (!*pb) return;
 	G1::setMulArrayGLV(local::GLV1::mulArrayGLV, local::GLV1::mulVecNGLV);
 	G2::setMulArrayGLV(local::mulArrayGLV2, local::mulVecNGLV2);
-	G1::setMulVecGLVcore(mcl::ec::mulVecGLVcoreT<local::GLV1, G1, Fr, 2>);
-	G2::setMulVecGLVcore(mcl::ec::mulVecGLVcoreT<local::GLV2, G2, Fr, 4>);
+	G1::setMulVecGLVcore(mcl::ec::mulVecGLVcoreT<local::GLV1, G1, Fr>);
+	G2::setMulVecGLVcore(mcl::ec::mulVecGLVcoreT<local::GLV2, G2, Fr>);
 	Fp12::setPowArrayGLV(local::powArrayGLV2, local::powVecNGLV2);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
