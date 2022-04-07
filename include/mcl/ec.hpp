@@ -281,7 +281,6 @@ static size_t mulVecGLVsmallN(G& z, const G *xVec, const F *yVec, size_t n)
 	return n;
 }
 
-
 } // mcl::ec::local
 
 template<class E>
@@ -1280,6 +1279,9 @@ public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
+		if (mulVecGLVcore && mulVecGLVcore(z, &x, &y, 1)) {
+			return;
+		}
 		fp::Block b;
 		y.getBlock(b);
 		mulArray(z, x, b.p, b.n, false);
@@ -2207,8 +2209,10 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 		if (!*pb) return;
 	}
 	if (curveType == MCL_SECP256K1) {
-		GLV1T<Ec, Zn>::initForSecp256k1();
-		Ec::setMulArrayGLV(GLV1T<Ec, Zn>::mulArrayGLV, GLV1T<Ec, Zn>::mulVecNGLV);
+		typedef GLV1T<Ec, Zn> GLV1;
+		GLV1::initForSecp256k1();
+//		Ec::setMulArrayGLV(GLV1T<Ec, Zn>::mulArrayGLV, GLV1T<Ec, Zn>::mulVecNGLV);
+		Ec::setMulVecGLVcore(mcl::ec::mulVecGLVcoreT<GLV1, Ec, Zn>);
 	} else {
 		Ec::setMulArrayGLV(0);
 	}
