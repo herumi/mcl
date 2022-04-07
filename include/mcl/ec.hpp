@@ -1807,6 +1807,22 @@ private:
 	}
 
 public:
+	/*
+		estimation for n multVec
+		GLV method x n-times
+		L : bitsize (=256 for Fr)
+		w : withdow size (=5 for L=256)
+		S : splitSize (=2 for G1, =4 for G2)
+		#DBL = L/S, #ADD = ((2^(w-2) + (L/(Sw)S)) * n
+		mulVecLong
+		c = 5 (for n <= 256), c = 6 for n = 512
+		#DBL = L, #ADD = (n + 2^(c+1)-1)*(L/c)
+
+		#ADD
+		n = 128, 256, 512
+		GLV : 7680, 15360, 30720
+		Long: 9779, 16322, 24533
+	*/
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mulVec(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
