@@ -1865,6 +1865,16 @@ public:
 		}
 		z = r;
 	}
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void mulVec2(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	{
+		if (mulVecGLVcore) {
+			mulVecGLVcore(z, xVec, (const void*)yVec, n);
+		} else {
+			puts("ERR");
+			exit(1);
+		}
+	}
 	// multi thread version of mulVec
 	// the num of thread is automatically detected if cpuN = 0
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
