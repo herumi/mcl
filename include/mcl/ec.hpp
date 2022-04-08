@@ -1004,6 +1004,129 @@ bool mulVecGLVlarge(G& z, const G *xVec, const F *yVec, size_t n)
 	return true;
 }
 
+template<class G>
+bool mulSmallInt(G& z, const G& x, fp::Unit y, bool isNegative)
+{
+	switch (y) {
+	case 0: z.clear(); return true;
+	case 1: z = x; break;
+	case 2: G::dbl(z, x); break;
+	case 3: {
+		G t;
+		G::dbl(t, x);
+		G::add(z, t, x);
+		break;
+	}
+	case 4: {
+		G::dbl(z, x);
+		G::dbl(z, z);
+		break;
+	}
+	case 5: {
+		G t;
+		G::dbl(t, x);
+		G::dbl(t, t);
+		G::add(z, t, x);
+		break;
+	}
+	case 6: {
+		G t;
+		G::dbl(t, x);
+		G::add(z, t, x);
+		G::dbl(z, z);
+		break;
+	}
+	case 7: {
+		G t;
+		G::dbl(t, x);
+		G::dbl(t, t);
+		G::dbl(t, t);
+		G::sub(z, t, x);
+		break;
+	}
+	case 8: {
+		G::dbl(z, x);
+		G::dbl(z, z);
+		G::dbl(z, z);
+		break;
+	}
+	case 9: {
+		G t;
+		G::dbl(t, x);
+		G::dbl(t, t);
+		G::dbl(t, t);
+		G::add(z, t, x);
+		break;
+	}
+	case 10: {
+		G t;
+		G::dbl(t, x);
+		G::dbl(t, t);
+		G::add(z, t, x);
+		G::dbl(z, z);
+		break;
+	}
+	case 11: {
+		G t1, t2;
+		G::dbl(t1, x); // 2x
+		G::dbl(t2, t1);
+		G::dbl(t2, t2); // 8x
+		G::add(t2, t2, t1);
+		G::add(z, t2, x);
+		break;
+	}
+	case 12: {
+		G t1, t2;
+		G::dbl(t1, x);
+		G::dbl(t1, t1); // 4x
+		G::dbl(t2, t1); // 8x
+		G::add(z, t1, t2);
+		break;
+	}
+	case 13: {
+		G t1, t2;
+		G::dbl(t1, x);
+		G::dbl(t1, t1); // 4x
+		G::dbl(t2, t1); // 8x
+		G::add(t1, t1, t2); // 12x
+		G::add(z, t1, x);
+		break;
+	}
+	case 14: {
+		G t;
+		// (8 - 1) * 2
+		G::dbl(t, x);
+		G::dbl(t, t);
+		G::dbl(t, t);
+		G::sub(t, t, x);
+		G::dbl(z, t);
+		break;
+	}
+	case 15: {
+		G t;
+		G::dbl(t, x);
+		G::dbl(t, t);
+		G::dbl(t, t);
+		G::dbl(t, t);
+		G::sub(z, t, x);
+		break;
+	}
+	case 16: {
+		G::dbl(z, x);
+		G::dbl(z, z);
+		G::dbl(z, z);
+		G::dbl(z, z);
+		break;
+	}
+	default:
+		return false;
+	}
+	if (isNegative) {
+		G::neg(z, z);
+	}
+	return true;
+}
+
 /*
 	z += xVec[i] * yVec[i] for i = 0, ..., min(N, n)
 	splitN = 2(G1) or 4(G2)
@@ -1027,6 +1150,12 @@ static void mulVecGLVsmall(G& z, const G *xVec, const F *yVec, size_t n)
 		bool b;
 		yVec[i].getMpz(&b, y);
 		assert(b); (void)b;
+		if (n == 1) {
+			const fp::Unit *y0 = mcl::gmp::getUnit(y);
+			size_t yn = mcl::gmp::getUnitSize(y);
+			yn = fp::getNonZeroArraySize(y0, yn);
+			if (yn <= 1 && mulSmallInt(z, xVec[0], *y0, false)) return;
+		}
 		GLV::split(u, y);
 
 		for (int j = 0; j < splitN; j++) {
@@ -1704,134 +1833,13 @@ public:
 				return;
 			}
 			yn = fp::getNonZeroArraySize(y, yn);
-			if (yn <= 1 && mulSmallInt(z, x, *y, isNegative)) return;
+			if (yn <= 1 && mcl::ec::mulSmallInt(z, x, *y, isNegative)) return;
 		}
 		if (useGLV && mulArrayGLV && (yn * sizeof(fp::Unit) > 8)) {
 			mulArrayGLV(z, x, y, yn, isNegative, constTime);
 			return;
 		}
 		mulArrayBase(z, x, y, yn, isNegative, constTime);
-	}
-	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
-	{
-		switch (y) {
-		case 0: z.clear(); return true;
-		case 1: z = x; break;
-		case 2: dbl(z, x); break;
-		case 3: {
-			EcT t;
-			dbl(t, x);
-			add(z, t, x);
-			break;
-		}
-		case 4: {
-			dbl(z, x);
-			dbl(z, z);
-			break;
-		}
-		case 5: {
-			EcT t;
-			dbl(t, x);
-			dbl(t, t);
-			add(z, t, x);
-			break;
-		}
-		case 6: {
-			EcT t;
-			dbl(t, x);
-			add(z, t, x);
-			dbl(z, z);
-			break;
-		}
-		case 7: {
-			EcT t;
-			dbl(t, x);
-			dbl(t, t);
-			dbl(t, t);
-			sub(z, t, x);
-			break;
-		}
-		case 8: {
-			dbl(z, x);
-			dbl(z, z);
-			dbl(z, z);
-			break;
-		}
-		case 9: {
-			EcT t;
-			dbl(t, x);
-			dbl(t, t);
-			dbl(t, t);
-			add(z, t, x);
-			break;
-		}
-		case 10: {
-			EcT t;
-			dbl(t, x);
-			dbl(t, t);
-			add(z, t, x);
-			dbl(z, z);
-			break;
-		}
-		case 11: {
-			EcT t1, t2;
-			dbl(t1, x); // 2x
-			dbl(t2, t1);
-			dbl(t2, t2); // 8x
-			add(t2, t2, t1);
-			add(z, t2, x);
-			break;
-		}
-		case 12: {
-			EcT t1, t2;
-			dbl(t1, x);
-			dbl(t1, t1); // 4x
-			dbl(t2, t1); // 8x
-			add(z, t1, t2);
-			break;
-		}
-		case 13: {
-			EcT t1, t2;
-			dbl(t1, x);
-			dbl(t1, t1); // 4x
-			dbl(t2, t1); // 8x
-			add(t1, t1, t2); // 12x
-			add(z, t1, x);
-			break;
-		}
-		case 14: {
-			EcT t;
-			// (8 - 1) * 2
-			dbl(t, x);
-			dbl(t, t);
-			dbl(t, t);
-			sub(t, t, x);
-			dbl(z, t);
-			break;
-		}
-		case 15: {
-			EcT t;
-			dbl(t, x);
-			dbl(t, t);
-			dbl(t, t);
-			dbl(t, t);
-			sub(z, t, x);
-			break;
-		}
-		case 16: {
-			dbl(z, x);
-			dbl(z, z);
-			dbl(z, z);
-			dbl(z, z);
-			break;
-		}
-		default:
-			return false;
-		}
-		if (isNegative) {
-			neg(z, z);
-		}
-		return true;
 	}
 	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
