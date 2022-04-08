@@ -958,18 +958,7 @@ struct Param {
 	}
 	void initG1only(bool *pb, const mcl::EcParam& para)
 	{
-		Fp::init(pb, para.p);
-		if (!*pb) return;
-		Fr::init(pb, para.n);
-		if (!*pb) return;
-		G1::init(pb, para.a, para.b);
-		if (!*pb) return;
-		mapTo.init(0, 0, para.curveType);
-		Fp x0, y0;
-		x0.setStr(pb, para.gx);
-		if (!*pb) return;
-		y0.setStr(pb, para.gy);
-		basePoint.set(pb, x0, y0);
+		mcl::initCurve<G1, Fr>(pb, para.curveType, &basePoint);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
