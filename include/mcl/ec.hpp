@@ -1127,19 +1127,53 @@ bool mulSmallInt(G& z, const G& x, fp::Unit y, bool isNegative)
 	return true;
 }
 
+template<class F>
+struct WrapVecF {
+	const F* vec;
+	static const size_t maxBitSize = sizeof(F) * 8;
+	explicit WrapVecF(const F*vec) : vec(vec) {}
+	void getMpzAt(mpz_class& v, size_t i) const
+	{
+		bool b;
+		vec[i].getMpz(&b, v);
+		assert(b); (void)b;
+	}
+};
+
+struct WrapVecUnitArray {
+	const fp::Unit *p;
+	size_t unitSize;
+	size_t next;
+	WrapVecUnitArray(const fp::Unit *p, size_t unitSize, size_t next) : p(p), unitSize(unitSize), next(next) {}
+	void getMpzAt(mpz_class& v, size_t i) const
+	{
+		bool b;
+		mcl::gmp::setArray(&b, v, p + next * i, unitSize);
+		assert(b); (void)b;
+	}
+};
+
+struct WrapVecMpz {
+	const mpz_class *p;
+	explicit WrapVecMpz(const mpz_class *p) : p(p) {}
+	void getMpzAt(mpz_class& v, size_t i) const
+	{
+		v = p[i];
+	}
+};
 /*
 	z += xVec[i] * yVec[i] for i = 0, ..., min(N, n)
 	splitN = 2(G1) or 4(G2)
 	w : window size
 	for n <= 16
 */
-template<class GLV, class G, class F, int w>
-static void mulVecGLVsmall(G& z, const G *xVec, const F *yVec, size_t n)
+template<class GLV, class G, class WrapVec, int w>
+static void mulVecGLVsmall(G& z, const G *xVec, const WrapVec& yVec, size_t n)
 {
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
-	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
+	typedef mcl::FixedArray<int8_t, sizeof(typename G::BaseFp) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
@@ -1147,9 +1181,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const F *yVec, size_t n)
 	size_t maxBit = 0;
 
 	for (size_t i = 0; i < n; i++) {
-		bool b;
-		yVec[i].getMpz(&b, y);
-		assert(b); (void)b;
+		yVec.getMpzAt(y, i);
 		if (n == 1) {
 			const fp::Unit *y0 = mcl::gmp::getUnit(y);
 			size_t yn = mcl::gmp::getUnitSize(y);
@@ -1159,6 +1191,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const F *yVec, size_t n)
 		GLV::split(u, y);
 
 		for (int j = 0; j < splitN; j++) {
+			bool b;
 			gmp::getNAFwidth(&b, naf[i][j], u[j], w);
 			assert(b); (void)b;
 			if (naf[i][j].size() > maxBit) maxBit = naf[i][j].size();
@@ -1200,7 +1233,8 @@ bool mulVecGLVT(G& z, const G *xVec, const void *_yVec, size_t n)
 {
 	const F* yVec = (const F*)_yVec;
 	if (n <= mcl::fp::maxMulVecNGLV) {
-		mulVecGLVsmall<GLV, G, F, 5>(z, xVec, yVec, n);
+		WrapVecF<F> wrapY(yVec);
+		mulVecGLVsmall<GLV, G, WrapVecF<F>, 5>(z, xVec, wrapY, n);
 		return true;
 	}
 	if (n >= 128) {
@@ -1446,12 +1480,13 @@ public:
 	{
 		const uint64_t u = fp::abs_(y);
 #if MCL_SIZEOF_UNIT == 8
-		mulArray(z, x, &u, 1, y < 0);
+		const uint64_t *ua = &u;
+		const size_t un = 1;
 #else
 		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
-		size_t un = ua[1] ? 2 : 1;
-		mulArray(z, x, ua, un, y < 0);
+		const size_t un = ua[1] ? 2 : 1;
 #endif
+		mulArray(z, x, ua, un, y < 0);
 	}
 	static inline void mul(EcT& z, const EcT& x, const mpz_class& y)
 	{
@@ -1840,6 +1875,10 @@ public:
 			return;
 		}
 		mulArrayBase(z, x, y, yn, isNegative, constTime);
+	}
+	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
+	{
+		return mcl::ec::mulSmallInt(z, x, y, isNegative);
 	}
 	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
 	{
