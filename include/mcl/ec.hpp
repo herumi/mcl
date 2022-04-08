@@ -234,11 +234,11 @@ void normalizeJacobi(E& P)
 	P.z = 1;
 }
 
+// inv must be Fp[n]
 template<class E>
-void normalizeVecJacobi(E *Q, const E *P, size_t n)
+void _normalizeVecJacobiWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
 {
 	typedef typename E::Fp F;
-	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
 	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
@@ -252,6 +252,27 @@ void normalizeVecJacobi(E *Q, const E *P, size_t n)
 			Q[i].z = 1;
 		}
 	}
+}
+
+template<class E>
+void gen_normalizeVec(E *Q, const E *P, size_t n, void f(E*, const E*, size_t, typename E::Fp*))
+{
+	const size_t N = 128;
+	typedef typename E::Fp F;
+	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	for (;;) {
+		size_t doneN = (n < N) ? n : N;
+		f(Q, P, doneN, inv);
+		n -= doneN;
+		if (n == 0) return;
+		Q += doneN;
+		P += doneN;
+	}
+}
+template<class E>
+void normalizeVecJacobi(E *Q, const E *P, size_t n)
+{
+	gen_normalizeVec(Q, P, n, _normalizeVecJacobiWork);
 }
 
 // (x/z^2, y/z^3)
@@ -520,11 +541,11 @@ void normalizeProj(E& P)
 	P.z = 1;
 }
 
+// inv must be Fp[n]
 template<class E>
-void normalizeVecProj(E *Q, const E *P, size_t n)
+void _normalizeVecProjWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
 {
 	typedef typename E::Fp F;
-	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
 	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
@@ -535,6 +556,12 @@ void normalizeVecProj(E *Q, const E *P, size_t n)
 			Q[i].z = 1;
 		}
 	}
+}
+
+template<class E>
+void normalizeVecProj(E *Q, const E *P, size_t n)
+{
+	gen_normalizeVec(Q, P, n, _normalizeVecProjWork);
 }
 
 // (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
