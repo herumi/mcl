@@ -43,10 +43,10 @@ struct Operator : public E {
 	/*
 		y[i] = 1/x[i * next] for x[i * next] != 0 else 0
 		return num of x[i] not in {0, 1}
+		t must be T[n]
 	*/
-	static inline size_t invVec(T *y, const T *x, size_t n, size_t next = 1)
+	static inline size_t _invVecWork(T *y, const T *x, size_t n, T *t, size_t next)
 	{
-		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * n);
 		size_t pos = 0;
 		for (size_t i = 0; i < n; i++) {
 			const size_t xIdx = i * next;
@@ -87,6 +87,20 @@ struct Operator : public E {
 			}
 		}
 		return retNum;
+	}
+	static inline size_t invVec(T *y, const T *x, size_t n, size_t next = 1)
+	{
+		const size_t N = 128;
+		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
+		size_t retNum = 0;
+		for (;;) {
+			size_t doneN = (n < N) ? n : N;
+			retNum += _invVecWork(y, x, doneN, t, next);
+			n -= doneN;
+			if (n == 0) return retNum;
+			y += doneN;
+			x += doneN;
+		}
 	}
 	/*
 		powGeneric = pow if T = Fp, Fp2, Fp6
