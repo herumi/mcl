@@ -152,72 +152,6 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	}
 }
 
-/*
-	z += xVec[i] * yVec[i] for i = 0, ..., min(N, n)
-	splitN = 2(G1) or 4(G2)
-	w : window size
-*/
-template<class GLV, class G, class F, int w>
-static size_t mulVecNGLVT(G& z, const G *xVec, const mpz_class *yVec, size_t n)
-{
-	const int splitN = GLV::splitN;
-	const size_t N = mcl::fp::maxMulVecNGLV; // QQQ
-	const mpz_class& r = F::getOp().mp;
-	const size_t tblSize = 1 << (w - 2);
-	typedef mcl::FixedArray<int8_t, sizeof(F) * 8 / splitN + splitN> NafArray;
-	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
-	// layout tbl[splitN][n][tblSize];
-	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
-	bool b;
-	mpz_class u[splitN], y;
-	size_t maxBit = 0;
-
-	if (n > N) n = N;
-	for (size_t i = 0; i < n; i++) {
-		y = yVec[i];
-		y %= r;
-		if (y < 0) {
-			y += r;
-		}
-		GLV::split(u, y);
-
-		for (int j = 0; j < splitN; j++) {
-			gmp::getNAFwidth(&b, naf[i][j], u[j], w);
-			assert(b); (void)b;
-			if (naf[i][j].size() > maxBit) maxBit = naf[i][j].size();
-		}
-
-		G P2;
-		G::dbl(P2, xVec[i]);
-		tbl[0 * n + i][0] = xVec[i];
-		for (size_t j = 1; j < tblSize; j++) {
-			G::add(tbl[0 * n + i][j], tbl[0 * n + i][j - 1], P2);
-		}
-	}
-	G::normalizeVec(&tbl[0][0], &tbl[0][0], n * tblSize);
-	for (size_t i = 0; i < n; i++) {
-		for (int k = 1; k < splitN; k++) {
-			GLV::mulLambda(tbl[k * n + i][0], tbl[(k - 1) * n + i][0]);
-		}
-		for (size_t j = 1; j < tblSize; j++) {
-			for (int k = 1; k < splitN; k++) {
-				GLV::mulLambda(tbl[k * n + i][j], tbl[(k - 1) * n + i][j]);
-			}
-		}
-	}
-	z.clear();
-	for (size_t i = 0; i < maxBit; i++) {
-		const size_t bit = maxBit - 1 - i;
-		G::dbl(z, z);
-		for (size_t j = 0; j < n; j++) {
-			for (int k = 0; k < splitN; k++) {
-				mcl::local::addTbl(z, tbl[k * n + j], naf[j][k], bit);
-			}
-		}
-	}
-	return n;
-}
-
 } // mcl::ec::local
 
 template<class E>
@@ -1173,7 +1107,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const WrapVec& yVec, size_t n)
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
-	typedef mcl::FixedArray<int8_t, sizeof(typename G::BaseFp) * 8 / splitN + splitN> NafArray;
+	typedef mcl::FixedArray<int8_t, WrapVec::maxBitSize / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
@@ -1267,8 +1201,6 @@ public:
 	*/
 	static bool verifyOrder_;
 	static mpz_class order_;
-	static void (*mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
-	static size_t (*mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
@@ -1334,8 +1266,6 @@ public:
 		ioMode_ = 0;
 		verifyOrder_ = false;
 		order_ = 0;
-		mulArrayGLV = 0;
-		mulVecNGLV = 0;
 		mulVecGLV = 0;
 		isValidOrderFast = 0;
 		mode_ = mode;
@@ -1358,11 +1288,6 @@ public:
 	static void setVerifyOrderFunc(bool f(const EcT&))
 	{
 		isValidOrderFast = f;
-	}
-	static void setMulArrayGLV(void f(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn) = 0)
-	{
-		mulArrayGLV = f;
-		mulVecNGLV = g;
 	}
 	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn) = 0)
 	{
@@ -1860,29 +1785,14 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false, bool useGLV = true)
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool /*constTime*/ = false, bool /*useGLV*/ = true)
 	{
-		if (!constTime) {
-			if (yn == 0) {
-				z.clear();
-				return;
-			}
-			yn = fp::getNonZeroArraySize(y, yn);
-			if (yn <= 1 && mcl::ec::mulSmallInt(z, x, *y, isNegative)) return;
-		}
-		if (useGLV && mulArrayGLV && (yn * sizeof(fp::Unit) > 8)) {
-			mulArrayGLV(z, x, y, yn, isNegative, constTime);
+		if (yn == 0) {
+			z.clear();
 			return;
 		}
-		mulArrayBase(z, x, y, yn, isNegative, constTime);
-	}
-	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
-	{
-		return mcl::ec::mulSmallInt(z, x, y, isNegative);
-	}
-	static inline void mulArrayBase(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		(void)constTime;
+		yn = fp::getNonZeroArraySize(y, yn);
+		if (yn <= 1 && mcl::ec::mulSmallInt(z, x, *y, isNegative)) return;
 		mpz_class v;
 		bool b;
 		gmp::setArray(&b, v, y, yn);
@@ -1911,6 +1821,10 @@ public:
 			EcT::dbl(z, z);
 			local::addTbl(z, tbl, naf, naf.size() - 1 - i);
 		}
+	}
+	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
+	{
+		return mcl::ec::mulSmallInt(z, x, y, isNegative);
 	}
 	/*
 		generic mul
@@ -2091,8 +2005,6 @@ template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
-template<class Fp> void (*EcT<Fp>::mulArrayGLV)(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime);
-template<class Fp> size_t (*EcT<Fp>::mulVecNGLV)(EcT& z, const EcT *xVec, const mpz_class *yVec, size_t yn);
 template<class Fp> bool (*EcT<Fp>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n);
 template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
 template<class Fp> int EcT<Fp>::mode_;
@@ -2144,27 +2056,6 @@ public:
 		b = (x * v1) >> rBitSize;
 		a = x - (t * B[0][0] + b * B[1][0]);
 		b = - (t * B[0][1] + b * B[1][1]);
-	}
-	static void mul(Ec& Q, const Ec& P, const mpz_class& x, bool constTime = false)
-	{
-		if (constTime) {
-			ec::local::mul1CT<GLV1, Ec, _Fr, 4>(Q, P, x);
-		} else {
-			mulVecNGLV(Q, &P, &x, 1);
-		}
-	}
-	static inline size_t mulVecNGLV(Ec& z, const Ec *xVec, const mpz_class *yVec, size_t n)
-	{
-		return ec::local::mulVecNGLVT<GLV1, Ec, _Fr, 5>(z, xVec, yVec, n);
-	}
-	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-	{
-		mpz_class s;
-		bool b;
-		mcl::gmp::setArray(&b, s, y, yn);
-		assert(b);
-		if (isNegative) s = -s;
-		mul(z, x, s, constTime);
 	}
 	/*
 		initForBN() is defined in bn.hpp
@@ -2230,7 +2121,6 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 		GLV1::initForSecp256k1();
 		Ec::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, Ec, Zn>);
 	} else {
-		Ec::setMulArrayGLV(0);
 		Ec::setMulVecGLV(0);
 	}
 }

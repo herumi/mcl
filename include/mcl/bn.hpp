@@ -2268,8 +2268,6 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 {
 	BN::nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulArrayGLV(local::GLV1::mulArrayGLV, local::GLV1::mulVecNGLV);
-	G2::setMulArrayGLV(local::mulArrayGLV2, local::mulVecNGLV2);
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
 	Fp12::setPowArrayGLV(local::powArrayGLV2, local::powVecNGLV2);
@@ -2311,11 +2309,11 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = 
 
 inline void initG1only(bool *pb, const mcl::EcParam& para)
 {
+	G1::setMulVecGLV(0);
+	G2::setMulVecGLV(0);
+	Fp12::setPowArrayGLV(0);
 	BN::nonConstParam.initG1only(pb, para);
 	if (!*pb) return;
-	G1::setMulArrayGLV(0);
-	G2::setMulArrayGLV(0);
-	Fp12::setPowArrayGLV(0);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 }
