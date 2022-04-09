@@ -1104,6 +1104,8 @@ struct Fp6DblT {
 template<class Fp>
 struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 	fp::Operator<Fp12T<Fp> > > {
+	typedef fp::Serializable<Fp12T<Fp>, fp::Operator<Fp12T<Fp> > > BaseClass;
+
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
 	typedef Fp2DblT<Fp> Fp2Dbl;
@@ -1361,6 +1363,83 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		return os;
 	}
 #endif
+	static void setPowVecGLV(bool f(Fp12T& z, const Fp12T *xVec, const void *yVec, size_t yn) = 0)
+	{
+		BaseClass::powVecGLV = f;
+	}
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline void powVec(Fp12T& z, Fp12T *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	{
+		if (n == 0) {
+			z.clear();
+			return;
+		}
+		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n)) {
+			return;
+		}
+		Fp12T r;
+		r.clear();
+		while (n > 0) {
+			Fp12T t;
+			size_t done = powVecN(t, xVec, yVec, n);
+			r += t;
+			xVec += done;
+			yVec += done;
+			n -= done;
+		}
+		z = r;
+	}
+private:
+	template<class G, class Vec>
+	static void mulTbl(G& Q, const G *tbl, const Vec& naf, size_t i)
+	{
+		if (i >= naf.size()) return;
+		int n = naf[i];
+		if (n > 0) {
+			Q *= tbl[(n - 1) >> 1];
+		} else if (n < 0) {
+//			Q -= tbl[(-n - 1) >> 1];
+			G inv;
+			G::unitaryInv(inv, tbl[(-n - 1) >> 1]);
+			Q *= inv;
+		}
+	}
+
+	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+	static inline size_t powVecN(Fp12T& z, const Fp12T *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	{
+		const size_t N = mcl::fp::maxMulVecN;
+		if (n > N) n = N;
+		const int w = 5;
+		const size_t tblSize = 1 << (w - 2);
+		typedef mcl::FixedArray<int8_t, sizeof(Fp12T::BaseFp) * 8 + 1> NafArray;
+		NafArray naf[N];
+		Fp12T tbl[N][tblSize];
+		size_t maxBit = 0;
+		mpz_class y;
+		for (size_t i = 0; i < n; i++) {
+			bool b;
+			yVec[i].getMpz(&b, y);
+			assert(b); (void)b;
+			gmp::getNAFwidth(&b, naf[i], y, w);
+			assert(b); (void)b;
+			if (naf[i].size() > maxBit) maxBit = naf[i].size();
+			Fp12T P2;
+			Fp12T::sqr(P2, xVec[i]);
+			tbl[i][0] = xVec[i];
+			for (size_t j = 1; j < tblSize; j++) {
+				Fp12T::mul(tbl[i][j], tbl[i][j - 1], P2);
+			}
+		}
+		z = 1;
+		for (size_t i = 0; i < maxBit; i++) {
+			Fp12T::sqr(z, z);
+			for (size_t j = 0; j < n; j++) {
+				mulTbl(z, tbl[j], naf[j], maxBit - 1 - i);
+			}
+		}
+		return n;
+	}
 };
 
 /*
@@ -1421,6 +1500,10 @@ struct GroupMtoA : public T {
 	{
 		if (y == x) return;
 		for (size_t i = 0; i < n; i++) y[i] = x[i];
+	}
+	static void mulArray(GroupMtoA& z, const GroupMtoA& x, const fp::Unit *y, size_t yn)
+	{
+		T::powArray(z, x, y, yn);
 	}
 private:
 	bool isOne() const;

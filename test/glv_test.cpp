@@ -250,6 +250,6 @@ CYBOZU_TEST_AUTO(glv)
 		testGT(e);
 		testMulVec(P, "G1");
 		testMulVec(Q, "G2");
-//		testPowVec(e);
+		testPowVec(e);
 	}
 }

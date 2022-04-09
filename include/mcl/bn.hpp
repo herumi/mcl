@@ -798,11 +798,6 @@ struct GLV2T {
 	{
 		Frobenius(Q, P);
 	}
-	template<class T>
-	static size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n)
-	{
-		return ec::local::mulVecNGLVT<GLV2, T, Fr, 5>(z, xVec, yVec, n);
-	}
 	static void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false)
 	{
 		typedef GroupMtoA<Fp12> AG; // as additive group
@@ -991,36 +986,12 @@ namespace local {
 
 typedef GLV2T<Fr> GLV2;
 
-inline void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-{
-	mpz_class s;
-	bool b;
-	mcl::gmp::setArray(&b, s, y, yn);
-	assert(b);
-	if (isNegative) s = -s;
-	GLV2::mul(z, x, s, constTime);
-}
-inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-{
-	mpz_class s;
-	bool b;
-	mcl::gmp::setArray(&b, s, y, yn);
-	assert(b);
-	if (isNegative) s = -s;
-	GLV2::pow(z, x, s, constTime);
-}
-
-inline size_t mulVecNGLV2(G2& z, const G2 *xVec, const mpz_class *yVec, size_t n)
-{
-	return GLV2::mulVecNGLV(z, xVec, yVec, n);
-}
-
-inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size_t n)
+inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return GLV2::mulVecNGLV(_z, _xVec, yVec, n);
+	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n);
 }
 
 /*
@@ -2259,7 +2230,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	if (!*pb) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
-	Fp12::setPowArrayGLV(local::powArrayGLV2, local::powVecNGLV2);
+	Fp12::setPowVecGLV(local::powVecGLV);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 	verifyOrderG1(false);
@@ -2300,7 +2271,7 @@ inline void initG1only(bool *pb, const mcl::EcParam& para)
 {
 	G1::setMulVecGLV(0);
 	G2::setMulVecGLV(0);
-	Fp12::setPowArrayGLV(0);
+	Fp12::setPowVecGLV(0);
 	BN::nonConstParam.initG1only(pb, para);
 	if (!*pb) return;
 	G1::setCompressedExpression();
