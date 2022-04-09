@@ -805,7 +805,7 @@ size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t 
 		return 0;
 	}
 	if (n == 1) {
-		G::mulArray(z, xVec[0], yVec, yUnitSize, false);
+		G::mulArray(z, xVec[0], yVec, yUnitSize);
 		return 1;
 	}
 
@@ -1394,12 +1394,13 @@ public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
-		if (mulVecGLV && mulVecGLV(z, &x, &y, 1)) {
+		if (mulVecGLV) {
+			mulVecGLV(z, &x, &y, 1);
 			return;
 		}
 		fp::Block b;
 		y.getBlock(b);
-		mulArray(z, x, b.p, b.n, false);
+		mulArray(z, x, b.p, b.n);
 	}
 	static inline void mul(EcT& z, const EcT& x, int64_t y)
 	{
@@ -1417,16 +1418,17 @@ public:
 	{
 		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
+	// not const time
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mulCT(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		mulArray(z, x, b.p, b.n, false, true);
+		mulArray(z, x, b.p, b.n);
 	}
 	static inline void mulCT(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	/*
 		0 <= P for any P
@@ -1785,7 +1787,7 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool /*constTime*/ = false, bool /*useGLV*/ = true)
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative = false)
 	{
 		if (yn == 0) {
 			z.clear();
@@ -1830,9 +1832,9 @@ public:
 		generic mul
 		GLV can't be applied in Fp12 - GT
 	*/
-	static inline void mulGeneric(EcT& z, const EcT& x, const mpz_class& y, bool constTime = false)
+	static inline void mulGeneric(EcT& z, const EcT& x, const mpz_class& y, bool /*constTime*/ = false)
 	{
-		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, constTime, false);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	/*
 		z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
