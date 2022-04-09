@@ -71,8 +71,9 @@ struct oldGLV {
 };
 
 template<class G>
-void testGLV(const G& P)
+void testGLV(const G& P, const char *name)
 {
+	printf("testGLV %s\n", name);
 	G P1, P2;
 	cybozu::XorShift rg;
 
@@ -114,12 +115,13 @@ template<class G>
 void mulVecCopy(G& z, G *x, const Fr *y, size_t n, const G* x0)
 {
 	for (size_t i = 0; i < n; i++) x[i] = x0[i];
-	mcl::ec::mulVecLong(z, x, y, n);
+	G::mulVec(z, x, y, n);
 }
 
 template<class G>
-void testMulVec(const G& P)
+void testMulVec(const G& P, const char *name)
 {
+	printf("testMulVec %s\n", name);
 	using namespace mcl::bn;
 	const int N = 4096;
 	std::vector<G> x0Vec(N);
@@ -139,57 +141,115 @@ void testMulVec(const G& P)
 		naiveMulVec(Q1, xVec.data(), yVec.data(), n);
 		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-		Q2.clear();
-		mcl::ec::mulVecLong(Q2, xVec.data(), yVec.data(), n);
-		CYBOZU_TEST_EQUAL(Q1, Q2);
 #ifdef NDEBUG
 		printf("n=%zd\n", n);
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
-		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
-		CYBOZU_BENCH_C("mulVecLong", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
-		CYBOZU_BENCH_C("mulVecLong(normalized)", C, mcl::ec::mulVecLong, Q1, xVec.data(), yVec.data(), n);
+//		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("mulVec", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
+//		CYBOZU_BENCH_C("mulVecLong(normalized)", C, mcl::ec::mulVecLong, Q1, xVec.data(), yVec.data(), n);
+#endif
+	}
+}
+
+void naivePowVec(GT& out, const GT *xVec, const Fr *yVec, size_t n)
+{
+	if (n == 1) {
+		GT::pow(out, xVec[0], yVec[0]);
+		return;
+	}
+	GT r, t;
+	r = 1;
+	for (size_t i = 0; i < n; i++) {
+		GT::pow(t, xVec[i], yVec[i]);
+		r *= t;
+	}
+	out = r;
+}
+
+void testPowVec(const GT& e)
+{
+	puts("testPowVec");
+	using namespace mcl::bn;
+	const int N = 4096;
+	std::vector<GT> x0Vec(N);
+	std::vector<GT> xVec(N);
+	std::vector<Fr> yVec(N);
+
+	for (size_t i = 0; i < N; i++) {
+		GT::pow(x0Vec[i], e, i + 3);
+		xVec[i] = x0Vec[i];
+		yVec[i].setByCSPRNG();
+	}
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+printf("i=%zd\n", i);
+		const size_t n = nTbl[i];
+		GT Q1, Q2;
+		CYBOZU_TEST_ASSERT(n <= N);
+		naivePowVec(Q1, xVec.data(), yVec.data(), n);
+		GT::powVec(Q2, xVec.data(), yVec.data(), n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+#if 0//#ifdef NDEBUGT
+		printf("n=%zd\n", n);
+		const int C = 10;
+		CYBOZU_BENCH_C("naive ", C, naivePowVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("powVec", C, GT::powVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("powVecLong", C, powVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
+		CYBOZU_BENCH_C("powVecLong(normalized)", C, mcl::ec::powVecLong, Q1, xVec.data(), yVec.data(), n);
 #endif
 	}
 }
 
 
-void testGT()
+
+void testGT(const GT& e)
 {
-	G1 P;
-	G2 Q;
-	GT x, y, z;
-	hashAndMapToG1(P, "abc", 3);
-	hashAndMapToG2(Q, "abc", 3);
-	pairing(x, P, Q);
-	int n = 200;
-	y = x;
-	for (int i = 0; i < n; i++) {
-		y *= y;
+	GT P1, P2;
+	cybozu::XorShift rg;
+
+	for (int i = -100; i < 100; i++) {
+		Fr s = i;
+		GT::powGeneric(P1, e, s.getMpz());
+		GT::pow(P2, e, i);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		P2.clear();
+		GT::pow(P2, e, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
 	}
-	mpz_class t = 1;
-	t <<= n;
-	GT::pow(z, x, t);
-	CYBOZU_TEST_EQUAL(y, z);
+	for (int i = 1; i < 100; i++) {
+		Fr s;
+		s.setRand(rg);
+		GT::powGeneric(P1, e, s.getMpz());
+		GT::pow(P2, e, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
+	}
 }
 
 CYBOZU_TEST_AUTO(glv)
 {
-	const mcl::CurveParam tbl[] = {
-		mcl::BN254,
-		mcl::BLS12_381,
+	const struct {
+		const mcl::CurveParam& param;
+		const char *name;
+	} tbl[] = {
+		{ mcl::BLS12_381, "BLS12_381" },
+		{ mcl::BN254, "BN254" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const mcl::CurveParam& cp = tbl[i];
+		printf("name=%s\n", tbl[i].name);
+		const mcl::CurveParam& cp = tbl[i].param;
 		initPairing(cp);
 		G1 P;
 		G2 Q;
+		GT e;
 		mapToG1(P, 1);
 		mapToG2(Q, 1);
-		testGLV(P);
-		testGLV(Q);
-		testGT();
-		testMulVec(P);
-		testMulVec(Q);
+		pairing(e, P, Q);
+		testGLV(P, "G1");
+		testGLV(Q, "G2");
+		testGT(e);
+		testMulVec(P, "G1");
+		testMulVec(Q, "G2");
+//		testPowVec(e);
 	}
 }
