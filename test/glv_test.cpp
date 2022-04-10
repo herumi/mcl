@@ -145,9 +145,7 @@ void testMulVec(const G& P, const char *name)
 		printf("n=%zd\n", n);
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
-//		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVec", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
-//		CYBOZU_BENCH_C("mulVecLong(normalized)", C, mcl::ec::mulVecLong, Q1, xVec.data(), yVec.data(), n);
 #endif
 	}
 }
@@ -189,13 +187,10 @@ void testPowVec(const GT& e)
 		naivePowVec(Q1, xVec.data(), yVec.data(), n);
 		GT::powVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-#if 0//#ifdef NDEBUGT
-		printf("n=%zd\n", n);
+#ifndef NDEBUG
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naivePowVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("powVec", C, GT::powVec, Q1, xVec.data(), yVec.data(), n);
-		CYBOZU_BENCH_C("powVecLong", C, powVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
-		CYBOZU_BENCH_C("powVecLong(normalized)", C, mcl::ec::powVecLong, Q1, xVec.data(), yVec.data(), n);
 #endif
 	}
 }

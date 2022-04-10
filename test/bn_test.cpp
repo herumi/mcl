@@ -202,7 +202,7 @@ void testFp12pow(const G1& P, const G2& Q)
 	cybozu::XorShift rg;
 	for (int i = -10; i < 10; i++) {
 		mpz_class xm = i;
-		Fp12::pow(e1, e, xm);
+		Fp12::pow(e1, e, i);
 		Fp12::powGeneric(e2, e, xm);
 		CYBOZU_TEST_EQUAL(e1, e2);
 	}
@@ -210,8 +210,8 @@ void testFp12pow(const G1& P, const G2& Q)
 		Fr x;
 		x.setRand(rg);
 		mpz_class xm = x.getMpz();
-		Fp12::pow(e1, e, xm);
-		local::GLV2::pow(e2, e, xm);
+		Fp12::pow(e2, e, x);
+		Fp12::powGeneric(e1, e, xm);
 		CYBOZU_TEST_EQUAL(e1, e2);
 	}
 }
