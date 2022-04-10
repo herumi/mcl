@@ -183,7 +183,6 @@ void testPowVec(const GT& e)
 	}
 	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
-printf("i=%zd\n", i);
 		const size_t n = nTbl[i];
 		GT Q1, Q2;
 		CYBOZU_TEST_ASSERT(n <= N);
