@@ -108,7 +108,7 @@ struct Test {
 		Ec Q, R;
 		pow2(Q, P, n);
 		Q -= P; // Q = (2^n - 1)P
-		Fp x = 1;
+		Zn x = 1;
 		for (int i = 0; i < n; i++) {
 			x += x;
 		}
