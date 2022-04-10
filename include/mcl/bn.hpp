@@ -785,25 +785,9 @@ struct GLV2T {
 		}
 	}
 	template<class T>
-	static void mul(T& Q, const T& P, const mpz_class& x, bool constTime = false)
-	{
-		if (constTime) {
-			ec::local::mul1CT<GLV2, T, Fr, 4>(Q, P, x);
-		} else {
-			mulVecNGLV(Q, &P, &x, 1);
-		}
-	}
-	template<class T>
 	static void mulLambda(T& Q, const T& P)
 	{
 		Frobenius(Q, P);
-	}
-	static void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false)
-	{
-		typedef GroupMtoA<Fp12> AG; // as additive group
-		AG& _z = static_cast<AG&>(z);
-		const AG& _x = static_cast<const AG&>(x);
-		mul(_z, _x, y, constTime);
 	}
 };
 
