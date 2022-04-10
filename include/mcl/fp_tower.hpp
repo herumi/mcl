@@ -1377,17 +1377,16 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n)) {
 			return;
 		}
-		Fp12T r;
-		r.clear();
-		while (n > 0) {
-			Fp12T t;
-			size_t done = powVecN(t, xVec, yVec, n);
-			r += t;
+		size_t done = powVecN(z, xVec, yVec, n);
+		for (;;) {
 			xVec += done;
 			yVec += done;
 			n -= done;
+			if (n == 0) break;
+			Fp12T t;
+			done = powVecN(t, xVec, yVec, n);
+			z *= t;
 		}
-		z = r;
 	}
 private:
 	template<class G, class Vec>
