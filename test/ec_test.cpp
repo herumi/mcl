@@ -61,15 +61,12 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
-		mcl::ec::mulVecLong(Q2, xVec, yVec, n);
-		CYBOZU_TEST_EQUAL(Q1, Q2);
 #ifdef NDEBUG
 		if (ecMode != mcl::ec::Jacobi) continue;
 		printf("n=%zd\n", n);
 		const int C = 5;//50;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec, yVec, n);
 		CYBOZU_BENCH_C("mulVec", C, Ec::mulVec, Q1, xVec, yVec, n);
-		CYBOZU_BENCH_C("mulVecLong", C, mcl::ec::mulVecLong, Q1, xVec, yVec, n);
 #endif
 	}
 }
