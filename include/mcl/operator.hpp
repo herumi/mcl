@@ -22,6 +22,25 @@
 
 namespace mcl { namespace fp {
 
+typedef void (*getMpzAtType)(mpz_class&, const void *, size_t);
+typedef void (*getUnitAtType)(fp::Unit *, const void *, size_t);
+
+template<class F>
+void getMpzAtT(mpz_class& v, const void *_xVec, size_t i)
+{
+	const F* xVec = (const F*)_xVec;
+	bool b;
+	xVec[i].getMpz(&b, v);
+	assert(b); (void)b;
+}
+
+template<class F>
+void getUnitAtT(fp::Unit *p, const void *_xVec, size_t i)
+{
+	const F* xVec = (const F*)_xVec;
+	xVec[i].getUnitArray(p);
+}
+
 template<class T>
 struct Empty {};
 
@@ -110,8 +129,11 @@ struct Operator : public E {
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
+		typedef FpT<tag2, maxBitSize2> F;
+		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 		if (powVecGLV) {
-			powVecGLV(z, &x, &y, 1);
+			powVecGLV(z, &x, &y, 1, getMpzAt, getUnitAt);
 			return;
 		}
 		fp::Block b;
@@ -146,7 +168,7 @@ struct Operator : public E {
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 protected:
-	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
+	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		while (yn > 0 && y[yn - 1] == 0) {
@@ -189,7 +211,7 @@ protected:
 };
 
 template<class T, class E>
-bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
+bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
 
 /*
 	T must have save and load

@@ -750,8 +750,9 @@ struct GLV2T {
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
 	*/
-	static void split(mpz_class u[4], const mpz_class& x)
+	static void split(mpz_class u[4], mpz_class& x)
 	{
+		Fr::getOp().modp.modp(x, x);
 		if (isBLS12) {
 			/*
 				Frob(P) = zP
@@ -971,12 +972,12 @@ namespace local {
 
 typedef GLV2T<Fr> GLV2;
 
-inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
+inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n);
+	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n, getMpzAt, getUnitAt);
 }
 
 /*

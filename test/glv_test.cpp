@@ -85,12 +85,18 @@ void testGLV(const G& P, const char *name)
 		P2.clear();
 		G::mul(P2, P, s);
 		CYBOZU_TEST_EQUAL(P1, P2);
+		P2.clear();
 	}
 	for (int i = 1; i < 100; i++) {
 		Fr s;
 		s.setRand(rg);
 		G::mulGeneric(P1, P, s.getMpz());
 		G::mul(P2, P, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		Fp ss;
+		ss.setRand(rg);
+		G::mulGeneric(P1, P, ss.getMpz());
+		G::mul(P2, P, ss);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
 }
@@ -187,7 +193,7 @@ void testPowVec(const GT& e)
 		naivePowVec(Q1, xVec.data(), yVec.data(), n);
 		GT::powVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-#ifndef NDEBUG
+#ifdef NDEBUG
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naivePowVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("powVec", C, GT::powVec, Q1, xVec.data(), yVec.data(), n);

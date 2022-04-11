@@ -1363,7 +1363,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		return os;
 	}
 #endif
-	static void setPowVecGLV(bool f(Fp12T& z, const Fp12T *xVec, const void *yVec, size_t yn) = 0)
+	static void setPowVecGLV(bool f(Fp12T& z, const Fp12T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt) = 0)
 	{
 		BaseClass::powVecGLV = f;
 	}
@@ -1374,7 +1374,10 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 			z.clear();
 			return;
 		}
-		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n)) {
+		typedef FpT<tag, maxBitSize> F;
+		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
+		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n, getMpzAt, getUnitAt)) {
 			return;
 		}
 		size_t done = powVecN(z, xVec, yVec, n);

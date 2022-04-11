@@ -18,7 +18,7 @@ template<class G>
 void mulVecCopy(G& z, G *x, const Fr *y, size_t n, const G* x0)
 {
 	for (size_t i = 0; i < n; i++) x[i] = x0[i];
-	mcl::ec::mulVecLong(z, x, y, n);
+	G::mulVec(z, x, y, n);
 }
 
 template<class G>
@@ -44,15 +44,12 @@ void testMulVec(const G& P)
 		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
-		mcl::ec::mulVecLong(Q2, xVec.data(), yVec.data(), n);
-		CYBOZU_TEST_EQUAL(Q1, Q2);
 #ifdef NDEBUG
 		printf("n=%zd\n", n);
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
-		CYBOZU_BENCH_C("mulVecLong", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
-		CYBOZU_BENCH_C("mulVecLong(normalized)", C, mcl::ec::mulVecLong, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("mulVecCopy", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
 #endif
 	}
 }
