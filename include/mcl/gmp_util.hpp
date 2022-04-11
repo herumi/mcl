@@ -1057,6 +1057,10 @@ struct Modp {
 	}
 	void modp(mpz_class& r, const mpz_class& t) const
 	{
+		if (t < p_) {
+			r = t;
+			return;
+		}
 		assert(p_ > 0);
 		const size_t tBitSize = gmp::getBitSize(t);
 		// use gmp::mod if init() fails or t is too large

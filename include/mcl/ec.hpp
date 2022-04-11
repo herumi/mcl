@@ -885,7 +885,7 @@ void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 {
 	typedef mcl::fp::Unit Unit;
 	const size_t next = F::getUnitSize();
-	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * next * n);
+	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * next * n); // QQQ
 	for (size_t i = 0; i < n; i++) {
 		yVec[i].getUnitArray(&y[i * next]);
 	}
@@ -893,11 +893,12 @@ void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
 }
 
 // for n >= 128
-template<class GLV, class G, class F>
-bool mulVecGLVlarge(G& z, const G *xVec, const F *yVec, size_t n)
+template<class GLV, class G>
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt)
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
+	typedef typename GLV::Fr F;
 	typedef mcl::fp::Unit Unit;
 	const size_t next = F::getUnitSize();
 	mpz_class u[splitN], y;
@@ -919,9 +920,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const F *yVec, size_t n)
 		}
 	}
 	for (size_t i = 0; i < n; i++) {
-		bool b;
-		yVec[i].getMpz(&b, y);
-		assert(b); (void)b;
+		getMpzAt(y, yVec, i);
 		GLV::split(u, y);
 		for (size_t j = 0; j < splitN; j++) {
 			size_t idx = j * n + i;
@@ -929,6 +928,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const F *yVec, size_t n)
 				u[j] = -u[j];
 				G::neg(tbl[idx], tbl[idx]);
 			}
+			bool b;
 			mcl::gmp::getArray(&b, &yp[idx * next], next, u[j]);
 			assert(b); (void)b;
 		}
@@ -1101,13 +1101,13 @@ struct WrapVecMpz {
 	w : window size
 	for n <= 16
 */
-template<class GLV, class G, class WrapVec, int w>
-static void mulVecGLVsmall(G& z, const G *xVec, const WrapVec& yVec, size_t n)
+template<class GLV, class G, int w>
+static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n, fp::getMpzAtType getMpzAt)
 {
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
-	typedef mcl::FixedArray<int8_t, WrapVec::maxBitSize / splitN + splitN> NafArray;
+	typedef mcl::FixedArray<int8_t, sizeof(typename GLV::Fr) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
@@ -1115,7 +1115,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const WrapVec& yVec, size_t n)
 	size_t maxBit = 0;
 
 	for (size_t i = 0; i < n; i++) {
-		yVec.getMpzAt(y, i);
+		getMpzAt(y, yVec, i);
 		if (n == 1) {
 			const fp::Unit *y0 = mcl::gmp::getUnit(y);
 			size_t yn = mcl::gmp::getUnitSize(y);
@@ -1163,16 +1163,14 @@ static void mulVecGLVsmall(G& z, const G *xVec, const WrapVec& yVec, size_t n)
 
 // return false if malloc fails or n is not in a target range
 template<class GLV, class G, class F>
-bool mulVecGLVT(G& z, const G *xVec, const void *_yVec, size_t n)
+bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType /*getUnitAt*/)
 {
-	const F* yVec = (const F*)_yVec;
 	if (n <= mcl::fp::maxMulVecNGLV) {
-		WrapVecF<F> wrapY(yVec);
-		mulVecGLVsmall<GLV, G, WrapVecF<F>, 5>(z, xVec, wrapY, n);
+		mulVecGLVsmall<GLV, G, 5>(z, xVec, yVec, n, getMpzAt);
 		return true;
 	}
 	if (n >= 128) {
-		return mulVecGLVlarge<GLV, G, F>(z, xVec, yVec, n);
+		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n, getMpzAt);
 	}
 	return false;
 }
@@ -1201,7 +1199,7 @@ public:
 	*/
 	static bool verifyOrder_;
 	static mpz_class order_;
-	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n);
+	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1289,7 +1287,7 @@ public:
 	{
 		isValidOrderFast = f;
 	}
-	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn) = 0)
+	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt))
 	{
 		mulVecGLV = f;
 	}
@@ -1394,8 +1392,11 @@ public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
 	{
+		typedef FpT<tag, maxBitSize> F;
+		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 		if (mulVecGLV) {
-			mulVecGLV(z, &x, &y, 1);
+			mulVecGLV(z, &x, &y, 1, getMpzAt, getUnitAt);
 			return;
 		}
 		fp::Block b;
@@ -1899,11 +1900,14 @@ public:
 	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
 	static inline void mulVec(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
 	{
+		typedef FpT<tag, maxBitSize> F;
+		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 		if (n == 0) {
 			z.clear();
 			return;
 		}
-		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n)) {
+		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, getMpzAt, getUnitAt)) {
 			return;
 		}
 		EcT r;
@@ -2007,7 +2011,7 @@ template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
-template<class Fp> bool (*EcT<Fp>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n);
+template<class Fp> bool (*EcT<Fp>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
 template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
 template<class Fp> int EcT<Fp>::mode_;
 
@@ -2049,8 +2053,9 @@ public:
 	/*
 		x = u[0] + u[1] * lambda mod r
 	*/
-	static void split(mpz_class u[2], const mpz_class& x)
+	static void split(mpz_class u[2], mpz_class& x)
 	{
+		Fr::getOp().modp.modp(x, x);
 		mpz_class& a = u[0];
 		mpz_class& b = u[1];
 		mpz_class t;

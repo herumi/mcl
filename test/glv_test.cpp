@@ -187,7 +187,7 @@ void testPowVec(const GT& e)
 		naivePowVec(Q1, xVec.data(), yVec.data(), n);
 		GT::powVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
-#ifndef NDEBUG
+#ifdef NDEBUG
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naivePowVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("powVec", C, GT::powVec, Q1, xVec.data(), yVec.data(), n);
