@@ -880,18 +880,6 @@ void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t ne
 	} while (done < n);
 }
 
-template<class G, class F>
-void mulVecLong(G& z, G *xVec, const F *yVec, size_t n)
-{
-	typedef mcl::fp::Unit Unit;
-	const size_t next = F::getUnitSize();
-	Unit *y = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * next * n); // QQQ
-	for (size_t i = 0; i < n; i++) {
-		yVec[i].getUnitArray(&y[i * next]);
-	}
-	mulVecLong(z, xVec, y, next, next, n);
-}
-
 // for n >= 128
 template<class GLV, class G>
 bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt)
@@ -1061,40 +1049,6 @@ bool mulSmallInt(G& z, const G& x, fp::Unit y, bool isNegative)
 	return true;
 }
 
-template<class F>
-struct WrapVecF {
-	const F* vec;
-	static const size_t maxBitSize = sizeof(F) * 8;
-	explicit WrapVecF(const F*vec) : vec(vec) {}
-	void getMpzAt(mpz_class& v, size_t i) const
-	{
-		bool b;
-		vec[i].getMpz(&b, v);
-		assert(b); (void)b;
-	}
-};
-
-struct WrapVecUnitArray {
-	const fp::Unit *p;
-	size_t unitSize;
-	size_t next;
-	WrapVecUnitArray(const fp::Unit *p, size_t unitSize, size_t next) : p(p), unitSize(unitSize), next(next) {}
-	void getMpzAt(mpz_class& v, size_t i) const
-	{
-		bool b;
-		mcl::gmp::setArray(&b, v, p + next * i, unitSize);
-		assert(b); (void)b;
-	}
-};
-
-struct WrapVecMpz {
-	const mpz_class *p;
-	explicit WrapVecMpz(const mpz_class *p) : p(p) {}
-	void getMpzAt(mpz_class& v, size_t i) const
-	{
-		v = p[i];
-	}
-};
 /*
 	z += xVec[i] * yVec[i] for i = 0, ..., min(N, n)
 	splitN = 2(G1) or 4(G2)

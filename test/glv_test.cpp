@@ -85,12 +85,18 @@ void testGLV(const G& P, const char *name)
 		P2.clear();
 		G::mul(P2, P, s);
 		CYBOZU_TEST_EQUAL(P1, P2);
+		P2.clear();
 	}
 	for (int i = 1; i < 100; i++) {
 		Fr s;
 		s.setRand(rg);
 		G::mulGeneric(P1, P, s.getMpz());
 		G::mul(P2, P, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		Fp ss;
+		ss.setRand(rg);
+		G::mulGeneric(P1, P, ss.getMpz());
+		G::mul(P2, P, ss);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
 }
