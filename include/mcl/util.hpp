@@ -177,6 +177,19 @@ size_t getNonZeroArraySize(const T *x, size_t n)
 	return 1;
 }
 
+// return T(x[0:xN] >> bitPos) if bitPos < sizeof(T) * xN else 0
+template<class T>
+T getUnitAt(const T *x, size_t xN, size_t bitPos)
+{
+	const size_t TbitSize = sizeof(T) * 8;
+	if (bitPos >= TbitSize * xN) return 0;
+	const size_t q = bitPos / TbitSize;
+	const size_t r = bitPos % TbitSize;
+	if (r == 0) return x[q];
+	if (q == xN - 1) return x[q] >> r;
+	return (x[q] >> r) | (x[q + 1] << (TbitSize - r));
+}
+
 template<class T>
 class BitIterator {
 	const T *x_;

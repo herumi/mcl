@@ -2,16 +2,10 @@
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
+#include <vector>
 
-#if 1
-#include <mcl/bn384.hpp>
-using namespace mcl::bn384;
-#else
-#include <mcl/bn256.hpp>
-using namespace mcl::bn256;
-#endif
-
-#define PUT(x) std::cout << #x "=" << (x) << std::endl;
+#include <mcl/bls12_381.hpp>
+using namespace mcl::bn;
 
 /*
 	Skew Frobenius Map and Efficient Scalar Multiplication for Pairing-Based Cryptography
@@ -76,162 +70,186 @@ struct oldGLV {
 	}
 };
 
-template<class GLV1, class GLV2>
-void compareLength(const GLV2& lhs)
+template<class G>
+void testGLV(const G& P, const char *name)
 {
-	cybozu::XorShift rg;
-	int lt = 0;
-	int eq = 0;
-	int gt = 0;
-	mpz_class R[2];
-	mpz_class L0, L1, x;
-	mpz_class& R0 = R[0];
-	mpz_class& R1 = R[1];
-	Fr r;
-	for (int i = 1; i < 1000; i++) {
-		r.setRand(rg);
-		x = r.getMpz();
-		mcl::bn::local::GLV1::split(R,x);
-		lhs.split(L0, L1, x);
-
-		size_t R0n = mcl::gmp::getBitSize(R0);
-		size_t R1n = mcl::gmp::getBitSize(R1);
-		size_t L0n = mcl::gmp::getBitSize(L0);
-		size_t L1n = mcl::gmp::getBitSize(L1);
-		size_t Rn = std::max(R0n, R1n);
-		size_t Ln = std::max(L0n, L1n);
-		if (Rn == Ln) {
-			eq++;
-		}
-		if (Rn > Ln) {
-			gt++;
-		}
-		if (Rn < Ln) {
-			lt++;
-		}
-	}
-	printf("#of{<} = %d, #of{=} = %d #of{>} = %d\n", lt, eq, gt);
-}
-
-void testGLV1()
-{
-	G1 P0, P1, P2;
-	mapToG1(P0, 1);
+	printf("testGLV %s\n", name);
+	G P1, P2;
 	cybozu::XorShift rg;
 
-	oldGLV oldGlv;
-	if (!BN::param.isBLS12) {
-		oldGlv.init(BN::param.r, BN::param.z);
+	for (int i = -100; i < 100; i++) {
+		Fr s = i;
+		G::mulGeneric(P1, P, s.getMpz());
+		G::mul(P2, P, i);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		P2.clear();
+		G::mul(P2, P, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		P2.clear();
 	}
-
-	typedef mcl::bn::local::GLV1 GLV1;
-	GLV1::initForBN(BN::param.z, BN::param.isBLS12);
-	if (!BN::param.isBLS12) {
-		compareLength<GLV1>(oldGlv);
-	}
-
 	for (int i = 1; i < 100; i++) {
-		mapToG1(P0, i);
 		Fr s;
 		s.setRand(rg);
-		mpz_class ss = s.getMpz();
-		G1::mulGeneric(P1, P0, ss);
-		GLV1::mul(P2, P0, ss);
+		G::mulGeneric(P1, P, s.getMpz());
+		G::mul(P2, P, s);
 		CYBOZU_TEST_EQUAL(P1, P2);
-		GLV1::mul(P2, P0, ss, true);
-		CYBOZU_TEST_EQUAL(P1, P2);
-		if (!BN::param.isBLS12) {
-			oldGlv.mul(P2, P0, ss);
-			CYBOZU_TEST_EQUAL(P1, P2);
-		}
-	}
-	for (int i = -100; i < 100; i++) {
-		mpz_class ss = i;
-		G1::mulGeneric(P1, P0, ss);
-		GLV1::mul(P2, P0, ss);
-		CYBOZU_TEST_EQUAL(P1, P2);
-		GLV1::mul(P2, P0, ss, true);
+		Fp ss;
+		ss.setRand(rg);
+		G::mulGeneric(P1, P, ss.getMpz());
+		G::mul(P2, P, ss);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
-#ifndef NDEBUG
-	puts("skip testGLV1 in debug");
-	Fr s;
-	mapToG1(P0, 123);
-	CYBOZU_BENCH_C("Ec::mul", 100, P1 = P0; s.setRand(rg); G1::mulGeneric, P2, P1, s.getMpz());
-	CYBOZU_BENCH_C("Ec::glv", 100, P1 = P0; s.setRand(rg); GLV1::mul, P2, P1, s.getMpz());
-#endif
 }
 
-/*
-	lambda = 6 * z * z
-	mul (lambda * 2) = FrobeniusOnTwist * 2
-*/
-void testGLV2()
+template<class G>
+void naiveMulVec(G& out, const G *xVec, const Fr *yVec, size_t n)
 {
-	typedef local::GLV2 GLV2;
-	G2 Q0, Q1, Q2;
-	mpz_class z = BN::param.z;
-	mpz_class r = BN::param.r;
-	GLV2::init(z, BN::param.isBLS12);
-	mpz_class n;
-	cybozu::XorShift rg;
-	mapToG2(Q0, 1);
-	for (int i = -10; i < 10; i++) {
-		n = i;
-		G2::mulGeneric(Q1, Q0, n);
-		GLV2::mul(Q2, Q0, n);
+	if (n == 1) {
+		G::mul(out, xVec[0], yVec[0]);
+		return;
+	}
+	G r, t;
+	r.clear();
+	for (size_t i = 0; i < n; i++) {
+		G::mul(t, xVec[i], yVec[i]);
+		r += t;
+	}
+	out = r;
+}
+
+template<class G>
+void mulVecCopy(G& z, G *x, const Fr *y, size_t n, const G* x0)
+{
+	for (size_t i = 0; i < n; i++) x[i] = x0[i];
+	G::mulVec(z, x, y, n);
+}
+
+template<class G>
+void testMulVec(const G& P, const char *name)
+{
+	printf("testMulVec %s\n", name);
+	using namespace mcl::bn;
+	const int N = 4096;
+	std::vector<G> x0Vec(N);
+	std::vector<G> xVec(N);
+	std::vector<Fr> yVec(N);
+
+	for (size_t i = 0; i < N; i++) {
+		G::mul(x0Vec[i], P, i + 3);
+		xVec[i] = x0Vec[i];
+		yVec[i].setByCSPRNG();
+	}
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		G Q1, Q2;
+		CYBOZU_TEST_ASSERT(n <= N);
+		naiveMulVec(Q1, xVec.data(), yVec.data(), n);
+		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
+#ifdef NDEBUG
+		printf("n=%zd\n", n);
+		const int C = 10;
+		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("mulVec", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
+#endif
+	}
+}
+
+void naivePowVec(GT& out, const GT *xVec, const Fr *yVec, size_t n)
+{
+	if (n == 1) {
+		GT::pow(out, xVec[0], yVec[0]);
+		return;
+	}
+	GT r, t;
+	r = 1;
+	for (size_t i = 0; i < n; i++) {
+		GT::pow(t, xVec[i], yVec[i]);
+		r *= t;
+	}
+	out = r;
+}
+
+void testPowVec(const GT& e)
+{
+	puts("testPowVec");
+	using namespace mcl::bn;
+	const int N = 4096;
+	std::vector<GT> x0Vec(N);
+	std::vector<GT> xVec(N);
+	std::vector<Fr> yVec(N);
+
+	for (size_t i = 0; i < N; i++) {
+		GT::pow(x0Vec[i], e, i + 3);
+		xVec[i] = x0Vec[i];
+		yVec[i].setByCSPRNG();
+	}
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		GT Q1, Q2;
+		CYBOZU_TEST_ASSERT(n <= N);
+		naivePowVec(Q1, xVec.data(), yVec.data(), n);
+		GT::powVec(Q2, xVec.data(), yVec.data(), n);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+#ifdef NDEBUG
+		const int C = 10;
+		CYBOZU_BENCH_C("naive ", C, naivePowVec, Q1, xVec.data(), yVec.data(), n);
+		CYBOZU_BENCH_C("powVec", C, GT::powVec, Q1, xVec.data(), yVec.data(), n);
+#endif
+	}
+}
+
+
+
+void testGT(const GT& e)
+{
+	GT P1, P2;
+	cybozu::XorShift rg;
+
+	for (int i = -100; i < 100; i++) {
+		Fr s = i;
+		GT::powGeneric(P1, e, s.getMpz());
+		GT::pow(P2, e, i);
+		CYBOZU_TEST_EQUAL(P1, P2);
+		P2.clear();
+		GT::pow(P2, e, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
 	}
 	for (int i = 1; i < 100; i++) {
-		mcl::gmp::getRand(n, GLV2::rBitSize, rg);
-		n %= r;
-		n -= r/2;
-		mapToG2(Q0, i);
-		G2::mulGeneric(Q1, Q0, n);
-		GLV2::mul(Q2, Q0, n);
-		CYBOZU_TEST_EQUAL(Q1, Q2);
+		Fr s;
+		s.setRand(rg);
+		GT::powGeneric(P1, e, s.getMpz());
+		GT::pow(P2, e, s);
+		CYBOZU_TEST_EQUAL(P1, P2);
 	}
-#ifndef NDEBUG
-	puts("skip testGLV2 in debug");
-	Fr s;
-	mapToG2(Q0, 123);
-	CYBOZU_BENCH_C("G2::mul", 1000, Q2 = Q0; s.setRand(rg); G2::mulGeneric, Q2, Q1, s.getMpz());
-	CYBOZU_BENCH_C("G2::glv", 1000, Q1 = Q0; s.setRand(rg); GLV2::mul, Q2, Q1, s.getMpz());
-#endif
-}
-
-void testGT()
-{
-	G1 P;
-	G2 Q;
-	GT x, y, z;
-	hashAndMapToG1(P, "abc", 3);
-	hashAndMapToG2(Q, "abc", 3);
-	pairing(x, P, Q);
-	int n = 200;
-	y = x;
-	for (int i = 0; i < n; i++) {
-		y *= y;
-	}
-	mpz_class t = 1;
-	t <<= n;
-	GT::pow(z, x, t);
-	CYBOZU_TEST_EQUAL(y, z);
 }
 
 CYBOZU_TEST_AUTO(glv)
 {
-	const mcl::CurveParam tbl[] = {
-		mcl::BN254,
-		mcl::BN381_1,
-		mcl::BN381_2,
-		mcl::BLS12_381,
+	const struct {
+		const mcl::CurveParam& param;
+		const char *name;
+	} tbl[] = {
+		{ mcl::BLS12_381, "BLS12_381" },
+		{ mcl::BN254, "BN254" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		const mcl::CurveParam& cp = tbl[i];
+		printf("name=%s\n", tbl[i].name);
+		const mcl::CurveParam& cp = tbl[i].param;
 		initPairing(cp);
-		testGLV1();
-		testGLV2();
-		testGT();
+		G1 P;
+		G2 Q;
+		GT e;
+		mapToG1(P, 1);
+		mapToG2(Q, 1);
+		pairing(e, P, Q);
+		testGLV(P, "G1");
+		testGLV(Q, "G2");
+		testGT(e);
+		testMulVec(P, "G1");
+		testMulVec(Q, "G2");
+		testPowVec(e);
 	}
 }

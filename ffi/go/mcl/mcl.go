@@ -144,6 +144,26 @@ func SetMapToMode(mode int) error {
 	return nil
 }
 
+// SetDstG1 --
+func SetDstG1(s string) error {
+	// #nosec
+	err := C.mclBnG1_setDst((*C.char)(getPointer([]byte(s))), C.size_t(len(s)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnG1_setDst")
+	}
+	return nil
+}
+
+// SetDstG2 --
+func SetDstG2(s string) error {
+	// #nosec
+	err := C.mclBnG2_setDst((*C.char)(getPointer([]byte(s))), C.size_t(len(s)))
+	if err != 0 {
+		return fmt.Errorf("err mclBnG2_setDst")
+	}
+	return nil
+}
+
 // Fr --
 type Fr struct {
 	v C.mclBnFr

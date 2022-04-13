@@ -614,11 +614,11 @@ void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y)
 	Fp12::powGeneric(*cast(z), *cast(x), *cast(y));
 }
 
-void mclBnG1_mulVec(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n)
+void mclBnG1_mulVec(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n)
 {
 	G1::mulVec(*cast(z), cast(x), cast(y), n);
 }
-void mclBnG2_mulVec(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n)
+void mclBnG2_mulVec(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n)
 {
 	G2::mulVec(*cast(z), cast(x), cast(y), n);
 }
@@ -647,11 +647,11 @@ void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSi
 {
 	millerLoopVecMT(*cast(z), cast(x), cast(y), n, cpuN);
 }
-void mclBnG1_mulVecMT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN)
+void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN)
 {
 	G1::mulVecMT(*cast(z), cast(x), cast(y), n, cpuN);
 }
-void mclBnG2_mulVecMT(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN)
+void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN)
 {
 	G2::mulVecMT(*cast(z), cast(x), cast(y), n, cpuN);
 }

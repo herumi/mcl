@@ -22,6 +22,25 @@
 
 namespace mcl { namespace fp {
 
+typedef void (*getMpzAtType)(mpz_class&, const void *, size_t);
+typedef void (*getUnitAtType)(fp::Unit *, const void *, size_t);
+
+template<class F>
+void getMpzAtT(mpz_class& v, const void *_xVec, size_t i)
+{
+	const F* xVec = (const F*)_xVec;
+	bool b;
+	xVec[i].getMpz(&b, v);
+	assert(b); (void)b;
+}
+
+template<class F>
+void getUnitAtT(fp::Unit *p, const void *_xVec, size_t i)
+{
+	const F* xVec = (const F*)_xVec;
+	xVec[i].getUnitArray(p);
+}
+
 template<class T>
 struct Empty {};
 
@@ -41,45 +60,65 @@ struct Operator : public E {
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 	/*
-		y[i] = 1/x[i] for x[i] != 0 else 0
+		y[i] = 1/x[i * next] for x[i * next] != 0 else 0
+		return num of x[i] not in {0, 1}
+		t must be T[n]
 	*/
-	static inline void invVec(T *y, const T *x, size_t n)
+	static inline size_t _invVecWork(T *y, const T *x, size_t n, T *t, size_t next)
 	{
-		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * n);
 		size_t pos = 0;
 		for (size_t i = 0; i < n; i++) {
-			if (!x[i].isZero()) {
+			const size_t xIdx = i * next;
+			if (!(x[xIdx].isZero() || x[xIdx].isOne())) {
 				if (pos == 0) {
-					t[pos] = x[i];
+					t[pos] = x[xIdx];
 				} else {
-					T::mul(t[pos], t[pos - 1], x[i]);
+					T::mul(t[pos], t[pos - 1], x[xIdx]);
 				}
 				pos++;
 			}
 		}
+		const size_t retNum = pos;
 		T inv;
 		if (pos > 0) {
 			T::inv(inv, t[pos - 1]);
 			pos--;
 		}
 		for (size_t i = 0; i < n; i++) {
-			if (x[n - 1 - i].isZero()) {
-				y[n - 1 - i].clear();
+			const size_t yIdx = n - 1 - i;
+			const size_t xIdx = (n - 1 - i) * next;
+			if (x[xIdx].isZero() || x[xIdx].isOne()) {
+				if (x != y) y[yIdx] = x[xIdx];
 			} else {
 				if (pos > 0) {
 					if (x != y) {
-						T::mul(y[n - 1 - i], inv, t[pos - 1]);
-						inv *= x[n - 1 - i];
+						T::mul(y[yIdx], inv, t[pos - 1]);
+						inv *= x[xIdx];
 					} else {
-						T tmp = x[n - 1 - i];
-						T::mul(y[n - 1 - i], inv, t[pos - 1]);
+						T tmp = x[xIdx];
+						T::mul(y[yIdx], inv, t[pos - 1]);
 						inv *= tmp;
 					}
 					pos--;
 				} else {
-					y[n - 1 - i] = inv;
+					y[yIdx] = inv;
 				}
 			}
+		}
+		return retNum;
+	}
+	static inline size_t invVec(T *y, const T *x, size_t n, size_t next = 1)
+	{
+		const size_t N = 128;
+		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
+		size_t retNum = 0;
+		for (;;) {
+			size_t doneN = (n < N) ? n : N;
+			retNum += _invVecWork(y, x, doneN, t, next);
+			n -= doneN;
+			if (n == 0) return retNum;
+			y += doneN;
+			x += doneN;
 		}
 	}
 	/*
@@ -87,81 +126,50 @@ struct Operator : public E {
 		pow is for GT (use GLV method and unitaryInv)
 		powGeneric is for Fp12
 	*/
-	static void pow(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
-	{
-		if (powArrayGLV && yn > 1) {
-			powArrayGLV(z, x, y, yn, isNegative, false);
-			return;
-		}
-		powT(z, x, y, yn, isNegative);
-	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
+		typedef FpT<tag2, maxBitSize2> F;
+		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
+		if (powVecGLV) {
+			powVecGLV(z, &x, &y, 1, getMpzAt, getUnitAt);
+			return;
+		}
 		fp::Block b;
 		y.getBlock(b);
-		pow(z, x, b.p, b.n);
+		powArray(z, x, b.p, b.n);
 	}
 	static void pow(T& z, const T& x, int64_t y)
 	{
 		const uint64_t u = fp::abs_(y);
 #if MCL_SIZEOF_UNIT == 8
-		pow(z, x, &u, 1, y < 0);
+		const uint64_t *ua = &u;
+		const size_t un = 1;
 #else
 		uint32_t ua[2] = { uint32_t(u), uint32_t(u >> 32) };
-		size_t un = ua[1] ? 2 : 1;
-		pow(z, x, ua, un, y < 0);
+		const size_t un = ua[1] ? 2 : 1;
 #endif
+		powArray(z, x, ua, un, y < 0);
 	}
 	static void pow(T& z, const T& x, const mpz_class& y)
 	{
-		pow(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
+		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void powGeneric(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;
 		y.getBlock(b);
-		powT(z, x, b.p, b.n);
+		powArray(z, x, b.p, b.n);
 	}
 	static void powGeneric(T& z, const T& x, const mpz_class& y)
 	{
-		powT(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
+		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
-	static void setPowArrayGLV(void f(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime), size_t g(T& z, const T *xVec, const mpz_class *yVec, size_t n) = 0)
-	{
-		powArrayGLV = f;
-		powVecNGLV = g;
-	}
-	static const size_t powVecMaxN = 16;
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static void powVec(T& z, const T* xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
-	{
-		assert(powVecNGLV);
-		T r;
-		r.setOne();
-		const size_t N = mcl::fp::maxMulVecNGLV;
-		mpz_class myVec[N];
-		while (n > 0) {
-			T t;
-			size_t tn = fp::min_(n, N);
-			for (size_t i = 0; i < tn; i++) {
-				bool b;
-				yVec[i].getMpz(&b, myVec[i]);
-				assert(b); (void)b;
-			}
-			size_t done = powVecNGLV(t, xVec, myVec, tn);
-			r *= t;
-			xVec += done;
-			yVec += done;
-			n -= done;
-		}
-		z = r;
-	}
-private:
-	static void (*powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
-	static size_t (*powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
-	static void powT(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
+protected:
+	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
+	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		while (yn > 0 && y[yn - 1] == 0) {
 			yn--;
@@ -203,10 +211,7 @@ private:
 };
 
 template<class T, class E>
-void (*Operator<T, E>::powArrayGLV)(T& z, const T& x, const Unit *y, size_t yn, bool isNegative, bool constTime);
-
-template<class T, class E>
-size_t (*Operator<T, E>::powVecNGLV)(T& z, const T* xVec, const mpz_class *yVec, size_t n);
+bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
 
 /*
 	T must have save and load

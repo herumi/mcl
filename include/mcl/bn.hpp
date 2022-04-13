@@ -686,6 +686,7 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 template<class _Fr>
 struct GLV2T {
 	typedef GLV2T<_Fr> GLV2;
+	static const int splitN = 4;
 	typedef _Fr Fr;
 	static size_t rBitSize;
 	static mpz_class B[4][4];
@@ -749,8 +750,9 @@ struct GLV2T {
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
 	*/
-	static void split(mpz_class u[4], const mpz_class& x)
+	static void split(mpz_class u[4], mpz_class& x)
 	{
+		Fr::getOp().modp.modp(x, x);
 		if (isBLS12) {
 			/*
 				Frob(P) = zP
@@ -784,30 +786,9 @@ struct GLV2T {
 		}
 	}
 	template<class T>
-	static void mul(T& Q, const T& P, const mpz_class& x, bool constTime = false)
-	{
-		if (constTime) {
-			ec::local::mul1CT<GLV2, T, Fr, 4, 4>(Q, P, x);
-		} else {
-			ec::local::mulVecNGLVT<GLV2, T, Fr, 4, 5, 1>(Q, &P, &x, 1);
-		}
-	}
-	template<class T>
 	static void mulLambda(T& Q, const T& P)
 	{
 		Frobenius(Q, P);
-	}
-	template<class T>
-	static size_t mulVecNGLV(T& z, const T *xVec, const mpz_class *yVec, size_t n)
-	{
-		return ec::local::mulVecNGLVT<GLV2, T, Fr, 4, 5, fp::maxMulVecNGLV>(z, xVec, yVec, n);
-	}
-	static void pow(Fp12& z, const Fp12& x, const mpz_class& y, bool constTime = false)
-	{
-		typedef GroupMtoA<Fp12> AG; // as additive group
-		AG& _z = static_cast<AG&>(z);
-		const AG& _x = static_cast<const AG&>(x);
-		mul(_z, _x, y, constTime);
 	}
 };
 
@@ -957,18 +938,8 @@ struct Param {
 	}
 	void initG1only(bool *pb, const mcl::EcParam& para)
 	{
-		Fp::init(pb, para.p);
-		if (!*pb) return;
-		Fr::init(pb, para.n);
-		if (!*pb) return;
-		G1::init(pb, para.a, para.b);
-		if (!*pb) return;
+		mcl::initCurve<G1, Fr>(pb, para.curveType, &basePoint);
 		mapTo.init(0, 0, para.curveType);
-		Fp x0, y0;
-		x0.setStr(pb, para.gx);
-		if (!*pb) return;
-		y0.setStr(pb, para.gy);
-		basePoint.set(pb, x0, y0);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
@@ -1001,36 +972,12 @@ namespace local {
 
 typedef GLV2T<Fr> GLV2;
 
-inline void mulArrayGLV2(G2& z, const G2& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-{
-	mpz_class s;
-	bool b;
-	mcl::gmp::setArray(&b, s, y, yn);
-	assert(b);
-	if (isNegative) s = -s;
-	GLV2::mul(z, x, s, constTime);
-}
-inline void powArrayGLV2(Fp12& z, const Fp12& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
-{
-	mpz_class s;
-	bool b;
-	mcl::gmp::setArray(&b, s, y, yn);
-	assert(b);
-	if (isNegative) s = -s;
-	GLV2::pow(z, x, s, constTime);
-}
-
-inline size_t mulVecNGLV2(G2& z, const G2 *xVec, const mpz_class *yVec, size_t n)
-{
-	return GLV2::mulVecNGLV(z, xVec, yVec, n);
-}
-
-inline size_t powVecNGLV2(Fp12& z, const Fp12 *xVec, const mpz_class *yVec, size_t n)
+inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return GLV2::mulVecNGLV(_z, _xVec, yVec, n);
+	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n, getMpzAt, getUnitAt);
 }
 
 /*
@@ -2267,9 +2214,9 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 {
 	BN::nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulArrayGLV(local::GLV1::mulArrayGLV, local::GLV1::mulVecNGLV);
-	G2::setMulArrayGLV(local::mulArrayGLV2, local::mulVecNGLV2);
-	Fp12::setPowArrayGLV(local::powArrayGLV2, local::powVecNGLV2);
+	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
+	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
+	Fp12::setPowVecGLV(local::powVecGLV);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 	verifyOrderG1(false);
@@ -2308,11 +2255,11 @@ inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = 
 
 inline void initG1only(bool *pb, const mcl::EcParam& para)
 {
+	G1::setMulVecGLV(0);
+	G2::setMulVecGLV(0);
+	Fp12::setPowVecGLV(0);
 	BN::nonConstParam.initG1only(pb, para);
 	if (!*pb) return;
-	G1::setMulArrayGLV(0);
-	G2::setMulArrayGLV(0);
-	Fp12::setPowArrayGLV(0);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 }
