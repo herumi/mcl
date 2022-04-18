@@ -142,7 +142,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x6000 /* 0xABCD = A.BC(D) */
+	VERSION = 0x6040 /* 0xABCD = A.BC(D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -383,6 +383,7 @@ enum LabelMode {
 	custom allocator
 */
 struct Allocator {
+	explicit Allocator(const std::string& = "") {} // same interface with MmapAllocator
 	virtual uint8_t *alloc(size_t size) { return reinterpret_cast<uint8_t*>(AlignedMalloc(size, inner::ALIGN_PAGE_SIZE)); }
 	virtual void free(uint8_t *p) { AlignedFree(p); }
 	virtual ~Allocator() {}
@@ -414,10 +415,12 @@ inline int getMacOsVersion()
 
 } // util
 #endif
-class MmapAllocator : Allocator {
+class MmapAllocator : public Allocator {
+	const std::string name_; // only used with XBYAK_USE_MEMFD
 	typedef XBYAK_STD_UNORDERED_MAP<uintptr_t, size_t> SizeList;
 	SizeList sizeList_;
 public:
+	explicit MmapAllocator(const std::string& name = "xbyak") : name_(name) {}
 	uint8_t *alloc(size_t size)
 	{
 		const size_t alignedSizeM1 = inner::ALIGN_PAGE_SIZE - 1;
@@ -435,7 +438,7 @@ public:
 #endif
 		int fd = -1;
 #if defined(XBYAK_USE_MEMFD)
-		fd = memfd_create("xbyak", MFD_CLOEXEC);
+		fd = memfd_create(name_.c_str(), MFD_CLOEXEC);
 		if (fd != -1) {
 			mode = MAP_SHARED;
 			if (ftruncate(fd, size) != 0) XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
@@ -459,6 +462,8 @@ public:
 		sizeList_.erase(i);
 	}
 };
+#else
+typedef Allocator MmapAllocator;
 #endif
 
 class Address;
@@ -1574,6 +1579,7 @@ public:
 	enum LabelType {
 		T_SHORT,
 		T_NEAR,
+		T_FAR, // far jump
 		T_AUTO // T_SHORT if possible
 	};
 private:
@@ -1621,6 +1627,11 @@ private:
 	static inline bool isREG32_REG32orMEM(const Operand& op1, const Operand& op2)
 	{
 		return op1.isREG(i32e) && ((op2.isREG(i32e) && op1.getBit() == op2.getBit()) || op2.isMEM());
+	}
+	static inline bool isValidSSE(const Operand& op1)
+	{
+		// SSE instructions do not support XMM16 - XMM31
+		return !(op1.isXMM() && op1.getIdx() >= 16);
 	}
 	void rex(const Operand& op1, const Operand& op2 = Operand())
 	{
@@ -1785,8 +1796,15 @@ private:
 	{
 		uint64_t disp64 = e.getDisp();
 #ifdef XBYAK64
+#ifdef XBYAK_OLD_DISP_CHECK
+		// treat 0xffffffff as 0xffffffffffffffff
 		uint64_t high = disp64 >> 32;
 		if (high != 0 && high != 0xFFFFFFFF) XBYAK_THROW(ERR_OFFSET_IS_TOO_BIG)
+#else
+		// displacement should be a signed 32-bit value, so also check sign bit
+		uint64_t high = disp64 >> 31;
+		if (high != 0 && high != 0x1FFFFFFFF) XBYAK_THROW(ERR_OFFSET_IS_TOO_BIG)
+#endif
 #endif
 		uint32_t disp = static_cast<uint32_t>(disp64);
 		const Reg& base = e.getBase();
@@ -1887,6 +1905,7 @@ private:
 	template<class T>
 	void opJmp(T& label, LabelType type, uint8_t shortCode, uint8_t longCode, uint8_t longPref)
 	{
+		if (type == T_FAR) XBYAK_THROW(ERR_NOT_SUPPORTED)
 		if (isAutoGrow() && size_ + 16 >= maxSize_) growMemory(); /* avoid splitting code of jmp */
 		size_t offset = 0;
 		if (labelMgr_.getOffset(&offset, label)) { /* label exists */
@@ -1907,6 +1926,7 @@ private:
 	}
 	void opJmpAbs(const void *addr, LabelType type, uint8_t shortCode, uint8_t longCode, uint8_t longPref = 0)
 	{
+		if (type == T_FAR) XBYAK_THROW(ERR_NOT_SUPPORTED)
 		if (isAutoGrow()) {
 			if (!isNEAR(type)) XBYAK_THROW(ERR_ONLY_T_NEAR_IS_SUPPORTED_IN_AUTO_GROW)
 			if (size_ + 16 >= maxSize_) growMemory();
@@ -1918,6 +1938,16 @@ private:
 			makeJmp(inner::VerifyInInt32(reinterpret_cast<const uint8_t*>(addr) - getCurr()), type, shortCode, longCode, longPref);
 		}
 
+	}
+	void opJmpOp(const Operand& op, LabelType type, int ext)
+	{
+		const int bit = 16|i32e;
+		if (type == T_FAR) {
+			if (!op.isMEM(bit)) XBYAK_THROW(ERR_NOT_SUPPORTED)
+			opR_ModM(op, bit, ext + 1, 0xFF, NONE, NONE, false);
+		} else {
+			opR_ModM(op, bit, ext, 0xFF, NONE, NONE, true);
+		}
 	}
 	// reg is reg field of ModRM
 	// immSize is the size for immediate value
@@ -1945,6 +1975,7 @@ private:
 	void opGen(const Operand& reg, const Operand& op, int code, int pref, bool isValid(const Operand&, const Operand&), int imm8 = NONE, int preCode = NONE)
 	{
 		if (isValid && !isValid(reg, op)) XBYAK_THROW(ERR_BAD_COMBINATION)
+		if (!isValidSSE(reg) || !isValidSSE(op)) XBYAK_THROW(ERR_NOT_SUPPORTED)
 		if (pref != NONE) db(pref);
 		if (op.isMEM()) {
 			opModM(op.getAddress(), reg.getReg(), 0x0F, preCode, code, (imm8 != NONE) ? 1 : 0);
@@ -1955,6 +1986,7 @@ private:
 	}
 	void opMMX_IMM(const Mmx& mmx, int imm8, int code, int ext)
 	{
+		if (!isValidSSE(mmx)) XBYAK_THROW(ERR_NOT_SUPPORTED)
 		if (mmx.isXMM()) db(0x66);
 		opModR(Reg32(ext), mmx, 0x0F, code);
 		db(imm8);
@@ -1965,6 +1997,7 @@ private:
 	}
 	void opMovXMM(const Operand& op1, const Operand& op2, int code, int pref)
 	{
+		if (!isValidSSE(op1) || !isValidSSE(op2)) XBYAK_THROW(ERR_NOT_SUPPORTED)
 		if (pref != NONE) db(pref);
 		if (op1.isXMM() && op2.isMEM()) {
 			opModM(op2.getAddress(), op1.getReg(), 0x0F, code);
@@ -1976,6 +2009,7 @@ private:
 	}
 	void opExt(const Operand& op, const Mmx& mmx, int code, int imm, bool hasMMX2 = false)
 	{
+		if (!isValidSSE(op) || !isValidSSE(mmx)) XBYAK_THROW(ERR_NOT_SUPPORTED)
 		if (hasMMX2 && op.isREG(i32e)) { /* pextrw is special */
 			if (mmx.isXMM()) db(0x66);
 			opModR(op.getReg(), mmx, 0x0F, 0xC5); db(imm);
@@ -2474,13 +2508,13 @@ public:
 
 	// set default type of `jmp` of undefined label to T_NEAR
 	void setDefaultJmpNEAR(bool isNear) { isDefaultJmpNEAR_ = isNear; }
-	void jmp(const Operand& op) { opR_ModM(op, BIT, 4, 0xFF, NONE, NONE, true); }
+	void jmp(const Operand& op, LabelType type = T_AUTO) { opJmpOp(op, type, 4); }
 	void jmp(std::string label, LabelType type = T_AUTO) { opJmp(label, type, 0xEB, 0xE9, 0); }
 	void jmp(const char *label, LabelType type = T_AUTO) { jmp(std::string(label), type); }
 	void jmp(const Label& label, LabelType type = T_AUTO) { opJmp(label, type, 0xEB, 0xE9, 0); }
 	void jmp(const void *addr, LabelType type = T_AUTO) { opJmpAbs(addr, type, 0xEB, 0xE9); }
 
-	void call(const Operand& op) { opR_ModM(op, 16 | i32e, 2, 0xFF, NONE, NONE, true); }
+	void call(const Operand& op, LabelType type = T_AUTO) { opJmpOp(op, type, 2); }
 	// call(string label), not const std::string&
 	void call(std::string label) { opJmp(label, T_NEAR, 0, 0xE8, 0); }
 	void call(const char *label) { call(std::string(label)); }
