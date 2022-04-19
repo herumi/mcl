@@ -26,7 +26,7 @@
 #endif
 
 #ifdef XBYAK_INTEL_CPU_SPECIFIC
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#if (_MSC_VER < 1400) && defined(XBYAK32)
 		static inline __declspec(naked) void __cpuid(int[4], int)
 		{
@@ -257,7 +257,7 @@ public:
 	static inline void getCpuid(unsigned int eaxIn, unsigned int data[4])
 	{
 #ifdef XBYAK_INTEL_CPU_SPECIFIC
-	#ifdef _WIN32
+	#ifdef _MSC_VER
 		__cpuid(reinterpret_cast<int*>(data), eaxIn);
 	#else
 		__cpuid(eaxIn, data[0], data[1], data[2], data[3]);
@@ -270,7 +270,7 @@ public:
 	static inline void getCpuidEx(unsigned int eaxIn, unsigned int ecxIn, unsigned int data[4])
 	{
 #ifdef XBYAK_INTEL_CPU_SPECIFIC
-	#ifdef _WIN32
+	#ifdef _MSC_VER
 		__cpuidex(reinterpret_cast<int*>(data), eaxIn, ecxIn);
 	#else
 		__cpuid_count(eaxIn, ecxIn, data[0], data[1], data[2], data[3]);
@@ -311,6 +311,7 @@ public:
 	static const Type tSSE42 = 1 << 8;
 	static const Type tPOPCNT = 1 << 9;
 	static const Type tAESNI = 1 << 10;
+	static const Type tAVX512_FP16 = 1 << 11;
 	static const Type tOSXSAVE = 1 << 12;
 	static const Type tPCLMULQDQ = 1 << 13;
 	static const Type tAVX = 1 << 14;
@@ -318,6 +319,7 @@ public:
 
 	static const Type t3DN = 1 << 16;
 	static const Type tE3DN = 1 << 17;
+	static const Type tWAITPKG = 1 << 18;
 	static const Type tRDTSCP = 1 << 19;
 	static const Type tAVX2 = 1 << 20;
 	static const Type tBMI1 = 1 << 21; // andn, bextr, blsi, blsmsk, blsr, tzcnt
@@ -366,7 +368,6 @@ public:
 	static const Type tAMX_INT8 = uint64_t(1) << 60;
 	static const Type tAMX_BF16 = uint64_t(1) << 61;
 	static const Type tAVX_VNNI = uint64_t(1) << 62;
-	static const Type tAVX512_FP16 = uint64_t(1) << 11;
 	// 18, 63
 
 	Cpu()
@@ -488,6 +489,7 @@ public:
 			if (EBX & (1U << 14)) type_ |= tMPX;
 			if (EBX & (1U << 29)) type_ |= tSHA;
 			if (ECX & (1U << 0)) type_ |= tPREFETCHWT1;
+			if (ECX & (1U << 5)) type_ |= tWAITPKG;
 			if (EDX & (1U << 24)) type_ |= tAMX_TILE;
 			if (EDX & (1U << 25)) type_ |= tAMX_INT8;
 			if (EDX & (1U << 22)) type_ |= tAMX_BF16;
@@ -513,7 +515,7 @@ public:
 	}
 	bool has(Type type) const
 	{
-		return (type & type_) != 0;
+		return (type & type_) == type;
 	}
 };
 
