@@ -96,6 +96,16 @@ ifeq ($(OS),mac-m1)
   ASM_SRC=src/base64.ll
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
+ifeq ($(MCL_BITINT),1)
+  TEST_SRC+=bitint_if_test.cpp
+  BITINT_SRC=src/bitint_if$(BIT).ll
+  BITINT_OBJ=$(OBJ_DIR)/bitint_if$(BIT).o
+  LIB_OBJ+=$(BITINT_OBJ)
+endif
+$(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp src/bitint_if.hpp
+	clang$(LLVM_VER) -c $< -o - -emit-llvm -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
+$(BITINT_OBJ): $(BITINT_SRC)
+	clang$(LLVM_VER) -c $< -o $@ -O2
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o

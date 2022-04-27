@@ -1,4 +1,4 @@
-#include "bitint_if.hpp"
+#include "../src/bitint_if.hpp"
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <iostream>
@@ -6,6 +6,8 @@
 #include <mcl/gmp_util.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
+
+using namespace mcl::gmp;
 
 typedef mcl::Unit Unit;
 
@@ -16,12 +18,6 @@ void setRand(Unit *x, size_t n, RG& rg)
 		x[i] = (Unit)rg.get64();
 	}
 }
-
-void setArray(mpz_class& z, const Unit *buf, size_t n)
-{
-	mpz_import(z.get_mpz_t(), n, -1, sizeof(*buf), 0, 0, buf);
-}
-
 CYBOZU_TEST_AUTO(divFullBitT)
 {
 	const size_t xN = 7;
