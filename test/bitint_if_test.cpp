@@ -1,4 +1,4 @@
-#include "../src/bitint_if.hpp"
+#include <mcl/bitint_if.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <iostream>

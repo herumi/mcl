@@ -1,4 +1,4 @@
-#include "bitint.hpp"
+#include "../src/bitint.hpp"
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <gmpxx.h>
