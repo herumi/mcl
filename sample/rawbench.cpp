@@ -11,7 +11,7 @@ typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp> Fp12;
 
-typedef mcl::fp::Unit Unit;
+typedef mcl::Unit Unit;
 
 void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)
 {

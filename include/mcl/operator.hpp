@@ -23,7 +23,7 @@
 namespace mcl { namespace fp {
 
 typedef void (*getMpzAtType)(mpz_class&, const void *, size_t);
-typedef void (*getUnitAtType)(fp::Unit *, const void *, size_t);
+typedef void (*getUnitAtType)(Unit *, const void *, size_t);
 
 template<class F>
 void getMpzAtT(mpz_class& v, const void *_xVec, size_t i)
@@ -35,7 +35,7 @@ void getMpzAtT(mpz_class& v, const void *_xVec, size_t i)
 }
 
 template<class F>
-void getUnitAtT(fp::Unit *p, const void *_xVec, size_t i)
+void getUnitAtT(Unit *p, const void *_xVec, size_t i)
 {
 	const F* xVec = (const F*)_xVec;
 	xVec[i].getUnitArray(p);

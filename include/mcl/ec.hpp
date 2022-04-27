@@ -124,7 +124,7 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	size_t loopN = 0;
 	{
 		size_t maxBitSize = 0;
-		fp::BitIterator<fp::Unit> itr[splitN];
+		fp::BitIterator<Unit> itr[splitN];
 		for (int i = 0; i < splitN; i++) {
 			itr[i].init(gmp::getUnit(u[i]), gmp::getUnitSize(u[i]));
 			size_t bitSize = itr[i].getBitSize();
@@ -798,7 +798,7 @@ inline size_t argminForMulVec(size_t n)
 	fast for n >= 256
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
 {
 	if (n == 0) {
 		z.clear();
@@ -830,7 +830,7 @@ size_t mulVecCore(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t 
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
 main:
-	const size_t maxBitSize = sizeof(fp::Unit) * yUnitSize * 8;
+	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
 	const size_t winN = maxBitSize / c + 1;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 
@@ -842,7 +842,7 @@ main:
 			tbl[i].clear();
 		}
 		for (size_t i = 0; i < n; i++) {
-			fp::Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, c * w) & tblN;
+			Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, c * w) & tblN;
 			if (v) {
 				tbl[v - 1] += xVec[i];
 			}
@@ -866,7 +866,7 @@ main:
 	return n;
 }
 template<class G>
-void mulVecLong(G& z, G *xVec, const fp::Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
+void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
 {
 	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, doNormalize);
 	if (done == n) return;
@@ -887,7 +887,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzA
 	const int splitN = GLV::splitN;
 	assert(n > 0);
 	typedef typename GLV::Fr F;
-	typedef mcl::fp::Unit Unit;
+	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
 	mpz_class u[splitN], y;
 	G *tbl = 0;
@@ -927,7 +927,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzA
 }
 
 template<class G>
-bool mulSmallInt(G& z, const G& x, fp::Unit y, bool isNegative)
+bool mulSmallInt(G& z, const G& x, Unit y, bool isNegative)
 {
 	switch (y) {
 	case 0: z.clear(); return true;
@@ -1071,7 +1071,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n, fp::
 	for (size_t i = 0; i < n; i++) {
 		getMpzAt(y, yVec, i);
 		if (n == 1) {
-			const fp::Unit *y0 = mcl::gmp::getUnit(y);
+			const Unit *y0 = mcl::gmp::getUnit(y);
 			size_t yn = mcl::gmp::getUnitSize(y);
 			yn = fp::getNonZeroArraySize(y0, yn);
 			if (yn <= 1 && mulSmallInt(z, xVec[0], *y0, false)) return;
@@ -1742,7 +1742,7 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative = false)
+	static inline void mulArray(EcT& z, const EcT& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		if (yn == 0) {
 			z.clear();
@@ -1760,7 +1760,7 @@ public:
 		/*
 			L = log2(y), w = (L <= 32) ? 3 : (L <= 128) ? 4 : 5;
 		*/
-		const int w = (yn == 1 && *y <= (1ull << 32)) ? 3 : (yn * sizeof(fp::Unit) > 16) ? 5 : 4;
+		const int w = (yn == 1 && *y <= (1ull << 32)) ? 3 : (yn * sizeof(Unit) > 16) ? 5 : 4;
 		const size_t tblSize = size_t(1) << (w - 2);
 		typedef mcl::FixedArray<int8_t, sizeof(EcT::Fp) * 8 + 1> NafArray;
 		NafArray naf;
@@ -1779,7 +1779,7 @@ public:
 			local::addTbl(z, tbl, naf, naf.size() - 1 - i);
 		}
 	}
-	static inline bool mulSmallInt(EcT& z, const EcT& x, fp::Unit y, bool isNegative)
+	static inline bool mulSmallInt(EcT& z, const EcT& x, Unit y, bool isNegative)
 	{
 		return mcl::ec::mulSmallInt(z, x, y, isNegative);
 	}
@@ -2028,7 +2028,7 @@ public:
 		(void)b;
 		rw = -(rw + 1) / 2;
 		rBitSize = Fr::getOp().bitSize;
-		rBitSize = (rBitSize + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);
+		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
 		gmp::setStr(&b, B[0][0], "0x3086d221a7d46bcde86c90e49284eb15");
 		assert(b); (void)b;
 		gmp::setStr(&b, B[0][1], "-0xe4437ed6010e88286f547fa90abfe4c3");

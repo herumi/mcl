@@ -18,7 +18,7 @@ typedef mcl::EcT<Fp> Ec;
 
 CYBOZU_TEST_AUTO(sizeof)
 {
-	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::fp::Unit) * Fp::maxSize);
+	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::Unit) * Fp::maxSize);
 	CYBOZU_TEST_EQUAL(sizeof(Ec), sizeof(Fp) * 3);
 }
 

@@ -22,8 +22,6 @@
 
 namespace mcl {
 
-namespace fp {
-
 #if MCL_SIZEOF_UNIT == 8
 typedef uint64_t Unit;
 #else
@@ -31,4 +29,9 @@ typedef uint32_t Unit;
 #endif
 #define MCL_UNIT_BIT_SIZE (MCL_SIZEOF_UNIT * 8)
 
-} } // mcl::fp
+const size_t UnitBitSize = sizeof(Unit) * 8;
+
+const size_t maxUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
+#define MCL_MAX_UNIT_SIZE ((MCL_MAX_BIT_SIZE + MCL_UNIT_BIT_SIZE - 1) / MCL_UNIT_BIT_SIZE)
+
+} // mcl

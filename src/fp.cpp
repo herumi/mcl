@@ -498,7 +498,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
 	clear();
-	maxN = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
+	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 	N = gmp::getUnitSize(_p);
 	if (N > maxN) return false;
 	{
@@ -678,8 +678,8 @@ int detectIoMode(int ioMode, const std::ios_base& ios)
 
 static bool isInUint64(uint64_t *pv, const fp::Block& b)
 {
-	assert(fp::UnitBitSize == 32 || fp::UnitBitSize == 64);
-	const size_t start = 64 / fp::UnitBitSize;
+	assert(UnitBitSize == 32 || UnitBitSize == 64);
+	const size_t start = 64 / UnitBitSize;
 	for (size_t i = start; i < b.n; i++) {
 		if (b.p[i]) return false;
 	}

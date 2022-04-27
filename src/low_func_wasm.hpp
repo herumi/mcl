@@ -25,7 +25,6 @@ template<size_t N>
 uint32_t shlT(uint32_t y[N], const uint32_t x[N], size_t bit)
 {
 	assert(0 < bit && bit < 32);
-	assert((N % 2) == 0);
 	size_t rBit = sizeof(uint32_t) * 8 - bit;
 	uint32_t keep = x[N - 1];
 	uint32_t prev = keep;

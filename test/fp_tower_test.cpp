@@ -266,7 +266,7 @@ void testFpDbl()
 		std::string pstr;
 		Fp::getModulo(pstr);
 		mpz_class mp(pstr);
-		mp <<= Fp::getUnitSize() * mcl::fp::UnitBitSize;
+		mp <<= Fp::getUnitSize() * mcl::UnitBitSize;
 		mpz_class mp1 = mp - 1;
 		mcl::gmp::getStr(pstr, mp1);
 		const char *tbl[] = {

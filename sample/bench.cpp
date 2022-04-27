@@ -172,7 +172,7 @@ void benchFromStr16()
 		std::string str = tbl[i];
 		Fp x;
 		const size_t N = 64;
-		mcl::fp::Unit buf[N];
+		mcl::Unit buf[N];
 		CYBOZU_BENCH("fp:hexToArray", mcl::fp::hexToArray, buf, N, str.c_str(), str.size());
 
 		mpz_class y;

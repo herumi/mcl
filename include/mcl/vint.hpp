@@ -16,6 +16,9 @@
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
 #include <mcl/conversion.hpp>
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_VINT_64BIT_PORTABLE
@@ -28,8 +31,6 @@
 namespace mcl {
 
 namespace vint {
-
-typedef fp::Unit Unit;
 
 template<size_t x>
 struct RoundUp {
@@ -160,6 +161,15 @@ int compareNM(const T *x, size_t xn, const T *y, size_t yn)
 	assert(xn > 0 && yn > 0);
 	if (xn != yn) return xn > yn ? 1 : -1;
 	for (int i = (int)xn - 1; i >= 0; i--) {
+		if (x[i] != y[i]) return x[i] > y[i] ? 1 : -1;
+	}
+	return 0;
+}
+template<class T>
+int cmpN(const T *x, const T *y, size_t n)
+{
+	assert(n > 0);
+	for (int i = (int)n - 1; i >= 0; i--) {
 		if (x[i] != y[i]) return x[i] > y[i] ? 1 : -1;
 	}
 	return 0;
@@ -511,15 +521,54 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 }
 
 template<class T>
-size_t getRealSize(const T *x, size_t xn)
+size_t getRealSize(const T *x, size_t n)
 {
-	int i = (int)xn - 1;
-	for (; i > 0; i--) {
-		if (x[i]) {
-			return i + 1;
+	while (n > 0) {
+		if (x[n - 1]) break;
+		n--;
+	}
+	return n > 0 ? n : 1;
+}
+
+/*
+	x[xn] = x[xn] % y[yn]
+	q[qn] = x[xn] / y[yn] if q != NULL
+*/
+template<class T>
+size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
+{
+	assert(xn > 0);
+	assert(yn > 0);
+	assert((y[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
+	if (q) clearN(q, qn);
+	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
+	while (xn > yn) {
+		if (x[xn - 1] == 0) {
+			xn--;
+			continue;
+		}
+		size_t d = xn - yn;
+		if (cmpN(x + d, y, yn) >= 0) {
+			vint::subN(x + d, x + d, y, yn);
+			if (q) vint::addu1<T>(q + d, qn - d, 1);
+		} else {
+			T xTop = x[xn - 1];
+			if (xTop == 1) {
+				T ret= vint::subN(x + d - 1, x + d - 1, y, yn);
+				x[xn-1] -= ret;
+			} else {
+				tt[yn] = vint::mulu1(tt, y, yn, xTop);
+				vint::subN(x + d - 1, x + d - 1, tt, yn + 1);
+			}
+			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, xTop);
 		}
 	}
-	return 1;
+	if (xn == yn && cmpN(x, y, yn) >= 0) {
+		subN(x, x, y, yn);
+		if (q) vint::addu1<T>(q, qn, 1);
+	}
+	xn = getRealSize(x, xn);
+	return xn;
 }
 
 /*
@@ -640,37 +689,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		copyN(xx, x, xn);
 		yy = y;
 	}
-	if (q) {
-		clearN(q, qn);
-	}
-	assert((yy[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
-	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
-	while (xn > yn) {
-		size_t d = xn - yn;
-		T xTop = xx[xn - 1];
-		T yTop = yy[yn - 1];
-		if (xTop > yTop || (compareNM(xx + d, xn - d, yy, yn) >= 0)) {
-			vint::subN(xx + d, xx + d, yy, yn);
-			xn = getRealSize(xx, xn);
-			if (q) vint::addu1<T>(q + d, qn - d, 1);
-			continue;
-		}
-		if (xTop == 1) {
-			vint::subNM(xx + d - 1, xx + d - 1, xn - d + 1, yy, yn);
-			xn = getRealSize(xx, xn);
-			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, 1);
-			continue;
-		}
-		tt[yn] = vint::mulu1(tt, yy, yn, xTop);
-		vint::subN(xx + d - 1, xx + d - 1, tt, yn + 1);
-		xn = getRealSize(xx, xn);
-		if (q) vint::addu1<T>(q + d - 1, qn - d + 1, xTop);
-	}
-	if (xn == yn && compareNM(xx, xn, yy, yn) >= 0) {
-		subN(xx, xx, yy, yn);
-		xn = getRealSize(xx, xn);
-		if (q) vint::addu1<T>(q, qn, 1);
-	}
+	xn = divFullBitN(q, qn, xx, xn, yy, yn);
 	if (shift) {
 		shrBit(r, xx, xn, shift);
 	} else {
@@ -2068,9 +2087,9 @@ public:
 };
 
 #ifdef MCL_VINT_FIXED_BUFFER
-typedef VintT<vint::FixedBuffer<mcl::vint::Unit, vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
+typedef VintT<vint::FixedBuffer<mcl::Unit, vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
 #else
-typedef VintT<vint::Buffer<mcl::vint::Unit> > Vint;
+typedef VintT<vint::Buffer<mcl::Unit> > Vint;
 #endif
 
 } // mcl

@@ -85,11 +85,10 @@ inline void byteSwap(uint8_t *x, size_t n)
 template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
 class FpT : public fp::Serializable<FpT<tag, maxBitSize>,
 	fp::Operator<FpT<tag, maxBitSize> > > {
-	typedef fp::Unit Unit;
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
 	typedef fp::Serializable<FpT<tag, maxBitSize>, Operator> Serializer;
 public:
-	static const size_t maxSize = (maxBitSize + fp::UnitBitSize - 1) / fp::UnitBitSize;
+	static const size_t maxSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 private:
 	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
@@ -349,7 +348,7 @@ public:
 	{
 		const size_t n = getByteSize();
 		if (fp::isIoSerializeMode(ioMode)) {
-			const size_t xn = sizeof(fp::Unit) * op_.N;
+			const size_t xn = sizeof(Unit) * op_.N;
 			uint8_t *x = (uint8_t*)CYBOZU_ALLOCA(xn);
 			if (ioMode & IoArrayRaw) {
 				fp::convertArrayAsLE(x, xn, v_, op_.N);
@@ -406,7 +405,7 @@ public:
 	template<class S>
 	void setArrayMask(const S *x, size_t n)
 	{
-		const size_t dstByte = sizeof(fp::Unit) * op_.N;
+		const size_t dstByte = sizeof(Unit) * op_.N;
 		if (sizeof(S) * n > dstByte) {
 			n = dstByte / sizeof(S);
 		}
@@ -426,7 +425,7 @@ public:
 	template<class S>
 	void setArrayMod(bool *pb, const S *x, size_t n)
 	{
-		if (sizeof(S) * n > sizeof(fp::Unit) * op_.N * 2) {
+		if (sizeof(S) * n > sizeof(Unit) * op_.N * 2) {
 			*pb = false;
 			return;
 		}
@@ -453,7 +452,7 @@ public:
 		}
 	}
 	// u must be the array of the length getUnitSize() (= op_.N)
-	void getUnitArray(fp::Unit *u) const
+	void getUnitArray(Unit *u) const
 	{
 		if (isMont()) {
 			op_.fromMont(u, v_);
@@ -463,7 +462,7 @@ public:
 	}
 	// u must be the array of the length getUnitSize() (= op_.N)
 	// u[] must be less than p
-	void setUnitArray(const fp::Unit *u)
+	void setUnitArray(const Unit *u)
 	{
 		if (isMont()) {
 			op_.toMont(v_, u);
@@ -480,7 +479,7 @@ public:
 	{
 		fp::Block b;
 		getBlock(b);
-		size_t n = sizeof(fp::Unit) * b.n;
+		size_t n = sizeof(Unit) * b.n;
 		uint8_t *t = (uint8_t*)CYBOZU_ALLOCA(n);
 		if (!fp::convertArrayAsLE(t, n, b.p, b.n)) {
 			return 0;

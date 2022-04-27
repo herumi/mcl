@@ -15,10 +15,11 @@
 #endif
 
 typedef mcl::FpT<> Fp;
+typedef mcl::Unit Unit;
 
 CYBOZU_TEST_AUTO(sizeof)
 {
-	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::fp::Unit) * Fp::maxSize);
+	CYBOZU_TEST_EQUAL(sizeof(Fp), sizeof(mcl::Unit) * Fp::maxSize);
 }
 
 void cstrTest()
@@ -109,7 +110,7 @@ void setStrTest()
 
 		x = 1;
 		std::string s;
-		s.resize(Fp::getOp().N * mcl::fp::UnitBitSize, '0');
+		s.resize(Fp::getOp().N * mcl::UnitBitSize, '0');
 		s = "0b" + s;
 		x.setStr(s, 2);
 		CYBOZU_TEST_ASSERT(x.isZero());
@@ -216,7 +217,7 @@ void edgeTest()
 	*/
 	mpz_class t = 1;
 	const size_t N = Fp::getUnitSize();
-	const mpz_class R = (t << (N * mcl::fp::UnitBitSize)) % m;
+	const mpz_class R = (t << (N * mcl::UnitBitSize)) % m;
 	const mpz_class tbl[] = {
 		0, 1, R, m - 1, m - R
 	};
@@ -601,10 +602,10 @@ void setArrayModTest()
 	};
 	std::string maxStr(mcl::gmp::getBitSize(p) * 2, '1');
 	mcl::gmp::setStr(tbl[0], maxStr, 2);
-	const size_t unitByteSize = sizeof(mcl::fp::Unit);
+	const size_t unitByteSize = sizeof(mcl::Unit);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];
-		const mcl::fp::Unit *px = mcl::gmp::getUnit(x);
+		const mcl::Unit *px = mcl::gmp::getUnit(x);
 		const size_t xn = mcl::gmp::getUnitSize(x);
 		const size_t xByteSize = xn * unitByteSize;
 		const size_t fpByteSize = unitByteSize * Fp::getOp().N;
@@ -898,7 +899,7 @@ void modpTest()
 CYBOZU_TEST_AUTO(mod_NIST_P521)
 {
 	const size_t len = 521;
-	const size_t N = len / mcl::fp::UnitBitSize;
+	const size_t N = len / mcl::UnitBitSize;
 	const char *tbl[] = {
 		"0",
 		"0xffffffff",
@@ -916,9 +917,9 @@ CYBOZU_TEST_AUTO(mod_NIST_P521)
 	const mpz_class mp(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		mpz_class mx(tbl[i]);
-		mcl::fp::Unit in[N * 2 + 1] = {};
-		mcl::fp::Unit ok[N + 1];
-		mcl::fp::Unit ex[N + 1];
+		mcl::Unit in[N * 2 + 1] = {};
+		mcl::Unit ok[N + 1];
+		mcl::Unit ex[N + 1];
 		mcl::gmp::getArray(in, N * 2 + 1, mx);
 		mpz_class my = mx % mp;
 		mcl::gmp::getArray(ok, N + 1, my);
@@ -1086,7 +1087,7 @@ CYBOZU_TEST_AUTO(convertArrayAsLE)
 #endif
 	const uint8_t ok[] = { 0x78, 0x56, 0x34, 0x12, 0xdd, 0xcc, 0xbb, 0xaa, 0xcc, 0xdd, 0xee, 0xff, 0x21, 0x43, 0x65, 0x87 };
 	const size_t dstN = 2;
-	mcl::fp::Unit dst[dstN];
+	mcl::Unit dst[dstN];
 	for (size_t i = 1; i <= sizeof(dst); i++) {
 		memset(dst, 0xff, sizeof(dst));
 		mcl::fp::convertArrayAsLE(dst, dstN, ok, i);

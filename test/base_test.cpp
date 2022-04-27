@@ -16,7 +16,7 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 
 const size_t MAX_N = 32;
-typedef mcl::fp::Unit Unit;
+typedef mcl::Unit Unit;
 
 size_t getUnitSize(size_t bitSize)
 {
@@ -264,10 +264,10 @@ void test(const Unit *p, size_t bitSize)
 	const void3op mulPre = funcOp.mulPre;
 	const void4Iop mont = funcOp.mont;
 
-	mcl::fp::Unit x[MAX_N], y[MAX_N];
-	mcl::fp::Unit z[MAX_N], w[MAX_N];
-	mcl::fp::Unit z2[MAX_N * 2];
-	mcl::fp::Unit w2[MAX_N * 2];
+	mcl::Unit x[MAX_N], y[MAX_N];
+	mcl::Unit z[MAX_N], w[MAX_N];
+	mcl::Unit z2[MAX_N * 2];
+	mcl::Unit w2[MAX_N * 2];
 	cybozu::XorShift rg;
 	mcl::fp::getRandVal(x, rg, p, bitSize);
 	mcl::fp::getRandVal(y, rg, p, bitSize);

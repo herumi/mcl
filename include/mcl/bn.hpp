@@ -649,7 +649,7 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		(void)b;
 		rw = -(rw + 1) / 2;
 		rBitSize = Fr::getOp().bitSize;
-		rBitSize = (rBitSize + fp::UnitBitSize - 1) & ~(fp::UnitBitSize - 1);// a little better size
+		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);// a little better size
 		if (isBLS12) {
 			/*
 				BLS12
@@ -701,7 +701,7 @@ struct GLV2T {
 		GLV2::abs_z = z < 0 ? -z : z;
 		GLV2::isBLS12 = isBLS12;
 		rBitSize = Fr::getOp().bitSize;
-		rBitSize = (rBitSize + mcl::fp::UnitBitSize - 1) & ~(mcl::fp::UnitBitSize - 1);// a little better size
+		rBitSize = (rBitSize + mcl::UnitBitSize - 1) & ~(mcl::UnitBitSize - 1);// a little better size
 		mpz_class z2p1 = z * 2 + 1;
 		B[0][0] = z + 1;
 		B[0][1] = z;
