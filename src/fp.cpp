@@ -490,9 +490,7 @@ void setWasmOp(Op& op)
 bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
-#ifdef MCL_USE_VINT
-	assert(sizeof(mcl::vint::Unit) == sizeof(Unit));
-#else
+#ifndef MCL_USE_VINT
 	assert(sizeof(mp_limb_t) == sizeof(Unit));
 #endif
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
