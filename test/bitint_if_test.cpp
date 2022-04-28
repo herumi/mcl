@@ -32,12 +32,13 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		y[yN - 1] |= Unit(1) << (sizeof(Unit) * 8 - 1); // full bit
 		setArray(mx, x, xN);
 		setArray(my, y, yN);
-		size_t rn = mcl::bint::divFullBit256(q, qN, x, xN, y);
+		assert(yN == 4);
+		size_t rn = mcl::bint::divFullBit4(q, qN, x, xN, y);
 		setArray(mq, q, qN);
 		setArray(mr, x, rn);
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
 	}
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp", C, mcl::gmp::divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBit256, q, qN, x, xN, y);
+	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBit4, q, qN, x, xN, y);
 }

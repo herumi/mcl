@@ -102,8 +102,8 @@ ifeq ($(MCL_BITINT),1)
   BITINT_OBJ=$(OBJ_DIR)/bitint_if$(BIT).o
   LIB_OBJ+=$(BITINT_OBJ)
 endif
-$(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp src/bitint_if.hpp
-	clang$(LLVM_VER) -c $< -o - -emit-llvm -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
+$(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
+	clang$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 $(BITINT_OBJ): $(BITINT_SRC)
 	clang$(LLVM_VER) -c $< -o $@ -O2
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
