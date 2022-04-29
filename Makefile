@@ -96,7 +96,7 @@ ifeq ($(OS),mac-m1)
   ASM_SRC=src/base64.ll
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
-BITINT_SUF?=$(OS)$(CPU)
+BITINT_SUF?=-$(OS)-$(CPU)
 ifeq ($(MCL_BITINT),1)
   TEST_SRC+=bitint_if_test.cpp
   BITINT_BASENAME=bitint_if$(BITINT_SUF)
@@ -105,7 +105,7 @@ ifeq ($(MCL_BITINT),1)
   LIB_OBJ+=$(BITINT_OBJ)
 endif
 $(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
-	clang++$(LLVM_VER) -S $< -o $@ -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src $(CLANG_TARGET)
+	clang++$(LLVM_VER) -S $< -o $@ -std=c++17 -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src $(CLANG_TARGET)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
 #$(BITINT_LL_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
