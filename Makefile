@@ -96,16 +96,20 @@ ifeq ($(OS),mac-m1)
   ASM_SRC=src/base64.ll
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
+BITINT_SUF?=$(OS)$(CPU)
 ifeq ($(MCL_BITINT),1)
   TEST_SRC+=bitint_if_test.cpp
-  BITINT_SRC=src/bitint_if$(BIT).ll
-  BITINT_OBJ=$(OBJ_DIR)/bitint_if$(BIT).o
+  BITINT_BASENAME=bitint_if$(BITINT_SUF)
+  BITINT_SRC=src/asm/$(BITINT_BASENAME).s
+  BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   LIB_OBJ+=$(BITINT_OBJ)
 endif
 $(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
-	clang$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
+	clang++$(LLVM_VER) -S $< -o $@ -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src $(CLANG_TARGET)
 $(BITINT_OBJ): $(BITINT_SRC)
-	clang$(LLVM_VER) -c $< -o $@ -O2
+	$(AS) $< -o $@
+#$(BITINT_LL_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
+#	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
