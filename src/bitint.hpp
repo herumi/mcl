@@ -335,17 +335,41 @@ inline void clear(Unit *x, size_t n)
 	for (size_t i = 0; i < n; i++) x[i] = 0;
 }
 
+template<size_t N>
+struct FuncT {
+	static inline Unit add(Unit *z, const Unit *x, const Unit *y)
+	{
+		return addT<N>(z, x, y);
+	}
+	static inline Unit sub(Unit *z, const Unit *x, const Unit *y)
+	{
+		return subT<N>(z, x, y);
+	}
+	static inline Unit subN1(Unit *z, const Unit *x, const Unit *y)
+	{
+		return subT<N + 1>(z, x, y);
+	}
+	static inline Unit mulUnit(Unit *z, const Unit *x, Unit y)
+	{
+		return mulUnitT<N>(z, x, y);
+	}
+	static inline bool cmpGe(const Unit *x, const Unit *y)
+	{
+		return cmpGeT<N>(x, y);
+	}
+};
 /*
 	y must be sizeof(Unit) * 8 * N bit
 	x[xn] = x[xn] % y[N]
 	q[qn] = x[xn] / y[N] if q != NULL
 	return new xn
 */
-template<size_t N>
+template<typename Func, size_t N>
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
 	assert((y[N - 1] >> (sizeof(Unit) * 8 - 1)) != 0);
+	assert(q != x && q != y && x != y);
 	if (q) clear(q, qn);
 	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (N + 1));
 	while (xn > N) {
@@ -354,23 +378,23 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 			continue;
 		}
 		size_t d = xn - N;
-		if (cmpGeT<N>(x + d, y)) {
-			subT<N>(x + d, x + d, y);
+		if (Func::cmpGe(x + d, y)) {
+			Func::sub(x + d, x + d, y);
 			if (q) addUnit(q + d, qn - d, 1);
 		} else {
 			Unit xTop = x[xn - 1];
 			if (xTop == 1) {
-				Unit ret= subT<N>(x + d - 1, x + d - 1, y);
+				Unit ret= Func::sub(x + d - 1, x + d - 1, y);
 				x[xn-1] -= ret;
 			} else {
-				t[N] = mulUnitT<N>(t, y, xTop);
-				subT<N + 1>(x + d - 1, x + d - 1, t);
+				t[N] = Func::mulUnit(t, y, xTop);
+				Func::subN1(x + d - 1, x + d - 1, t);
 			}
 			if (q) addUnit(q + d - 1, qn - d + 1, xTop);
 		}
 	}
-	if (cmpGeT<N>(x, y)) {
-		subT<N>(x, x, y);
+	if (Func::cmpGe(x, y)) {
+		Func::sub(x, x, y);
 		if (q) addUnit(q, qn, 1);
 	}
 	xn = getRealSize(x, xn);
