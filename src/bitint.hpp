@@ -12,8 +12,10 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
+#include "bitint_proto.hpp"
 
 namespace mcl { namespace bint {
+
 
 inline uint64_t make64(uint32_t H, uint32_t L)
 {
@@ -164,6 +166,7 @@ bool cmpLtT(const Unit *px, const Unit *py)
 }
 
 // z[N] = x[N] + y[N] and return CF(0 or 1)
+#if 0
 template<size_t N>
 Unit addT(Unit *pz, const Unit *px, const Unit *py)
 {
@@ -186,6 +189,7 @@ Unit subT(Unit *pz, const Unit *px, const Unit *py)
 	z.template cvt<N>().save(pz);
 	return z.getMSB();
 }
+#endif
 
 // [ret:z[N]] = x[N] * y
 template<size_t N>

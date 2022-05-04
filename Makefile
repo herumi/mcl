@@ -104,7 +104,9 @@ ifeq ($(MCL_BITINT),1)
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   LIB_OBJ+=$(BITINT_OBJ)
 endif
-$(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
+src/bitint_proto.hpp: src/gen_bitint_proto.py
+	python3 $< > $@
+$(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp src/bitint_proto.hpp
 	clang++$(LLVM_VER) -S $< -o $@ -std=c++17 -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src $(CLANG_TARGET)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
