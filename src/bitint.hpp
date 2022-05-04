@@ -371,7 +371,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	assert((y[N - 1] >> (sizeof(Unit) * 8 - 1)) != 0);
 	assert(q != x && q != y && x != y);
 	if (q) clear(q, qn);
-	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N + 1);
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
 	while (xn > N) {
 		if (x[xn - 1] == 0) {
 			xn--;
