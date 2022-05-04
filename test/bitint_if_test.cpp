@@ -1,9 +1,9 @@
-#include <mcl/bitint_if.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <iostream>
 #include <cybozu/benchmark.hpp>
 #include <mcl/gmp_util.hpp>
+#include "../src/bitint_if.cpp"
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 

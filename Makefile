@@ -104,10 +104,16 @@ ifeq ($(MCL_BITINT),1)
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   LIB_OBJ+=$(BITINT_OBJ)
 endif
+src/gen_bitint.exe: src/gen_bitint.cpp src/llvm_gen.hpp
+	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra
+src/bitint64.ll: src/gen_bitint.exe
+	$< -u 64 -ver 0x90 > $@
+src/bitint32.ll: src/gen_bitint.exe
+	$< -u 32 -ver 0x90 > $@
 src/bitint_proto.hpp: src/gen_bitint_proto.py
 	python3 $< > $@
-$(BITINT_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp src/bitint_proto.hpp
-	clang++$(LLVM_VER) -S $< -o $@ -std=c++17 -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src $(CLANG_TARGET)
+$(BITINT_SRC): src/bitint$(BIT).ll
+	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
 #$(BITINT_LL_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
@@ -264,6 +270,9 @@ endif
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER
 
+$(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
+	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER
+
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
 	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER
 
@@ -407,6 +416,7 @@ update_cybozulib:
 
 clean:
 	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) lib/*.a src/static_code.asm src/dump_code
+	$(RM) src/gen_bitint.exe
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
