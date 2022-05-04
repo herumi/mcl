@@ -345,10 +345,6 @@ struct FuncT {
 	{
 		return subT<N>(z, x, y);
 	}
-	static inline Unit subN1(Unit *z, const Unit *x, const Unit *y)
-	{
-		return subT<N + 1>(z, x, y);
-	}
 	static inline Unit mulUnit(Unit *z, const Unit *x, Unit y)
 	{
 		return mulUnitT<N>(z, x, y);
@@ -384,11 +380,12 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		} else {
 			Unit xTop = x[xn - 1];
 			if (xTop == 1) {
-				Unit ret= Func::sub(x + d - 1, x + d - 1, y);
+				Unit ret = Func::sub(x + d - 1, x + d - 1, y);
 				x[xn-1] -= ret;
 			} else {
 				t[N] = Func::mulUnit(t, y, xTop);
-				Func::subN1(x + d - 1, x + d - 1, t);
+				Unit ret = Func::sub(x + d - 1, x + d - 1, t);
+				x[xn-1] -= t[N] + ret;
 			}
 			if (q) addUnit(q + d - 1, qn - d + 1, xTop);
 		}
