@@ -45,17 +45,11 @@ struct Code : public mcl::Generator {
 		if (offset > 0) {
 			p = getelementptr(p, offset);
 		}
-		if (r.bit == unit) {
-			store(r, p);
-			return;
-		}
 		const size_t n = r.bit / unit;
-		for (uint32_t i = 0; i < n; i++) {
-			store(trunc(r, unit), getelementptr(p, i));
-			if (i < n - 1) {
-				r = lshr(r, unit);
-			}
+		if (n > 1) {
+			p = bitcast(p, Operand(IntPtr, unit * n));
 		}
+		store(r, p);
 	}
 	Operand loadN(Operand p, size_t n, int offset = 0)
 	{
@@ -65,23 +59,10 @@ struct Code : public mcl::Generator {
 		if (offset > 0) {
 			p = getelementptr(p, offset);
 		}
-#if 1
-		if (n == 1) {
-			return load(p);
+		if (n > 1) {
+			p = bitcast(p, Operand(IntPtr, unit * n));
 		}
-		p = bitcast(p, Operand(IntPtr, unit * n));
 		return load(p);
-#else
-		Operand v = load(p);
-		for (uint32_t i = 1; i < n; i++) {
-			v = zext(v, v.bit + unit);
-			Operand t = load(getelementptr(p, i));
-			t = zext(t, v.bit);
-			t = shl(t, unit * i);
-			v = _or(v, t);
-		}
-		return v;
-#endif
 	}
 	void gen_mulUU()
 	{
