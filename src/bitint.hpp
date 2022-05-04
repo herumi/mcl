@@ -364,7 +364,7 @@ struct FuncT {
 	q[qn] = x[xn] / y[N] if q != NULL
 	return new xn
 */
-template<typename Func, size_t N>
+template<size_t N, typename Func = FuncT<N> >
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cybozu/benchmark.hpp>
 #include <mcl/gmp_util.hpp>
-#include "../src/bitint_if.cpp"
+#include <mcl/bitint_if.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 

@@ -103,6 +103,7 @@ ifeq ($(MCL_BITINT),1)
   BITINT_SRC=src/asm/$(BITINT_BASENAME).s
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   LIB_OBJ+=$(BITINT_OBJ)
+  LIB_OBJ+=$(OBJ_DIR)/bitint_if.o
 endif
 src/gen_bitint.exe: src/gen_bitint.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra
@@ -112,7 +113,7 @@ src/bitint32.ll: src/gen_bitint.exe
 	$< -u 32 -ver 0x90 > $@
 src/bitint_proto.hpp: src/gen_bitint_proto.py
 	python3 $< > $@
-$(BITINT_SRC): src/bitint$(BIT).ll
+$(BITINT_SRC): src/bitint$(BIT).ll src/bitint_proto.hpp
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@

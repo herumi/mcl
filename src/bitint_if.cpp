@@ -3,9 +3,9 @@
 
 namespace mcl {  namespace bint {
 
-size_t divFullBit4(uint64_t *q, size_t qn, uint64_t *x, size_t xn, const uint64_t *y)
+size_t divFullBit4(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
-	return divFullBitT<FuncT<4>, 4>(q, qn, x, xn, y);
+	return divFullBitT<4>(q, qn, x, xn, y);
 }
 
 } } // mcl::bint
