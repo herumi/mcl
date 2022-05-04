@@ -367,7 +367,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	assert((y[N - 1] >> (sizeof(Unit) * 8 - 1)) != 0);
 	assert(q != x && q != y && x != y);
 	if (q) clear(q, qn);
-	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (N + 1));
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N + 1);
 	while (xn > N) {
 		if (x[xn - 1] == 0) {
 			xn--;
@@ -383,9 +383,9 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 				Unit ret = Func::sub(x + d - 1, x + d - 1, y);
 				x[xn-1] -= ret;
 			} else {
-				t[N] = Func::mulUnit(t, y, xTop);
-				Unit ret = Func::sub(x + d - 1, x + d - 1, t);
-				x[xn-1] -= t[N] + ret;
+				Unit ret = Func::mulUnit(t, y, xTop);
+				ret += Func::sub(x + d - 1, x + d - 1, t);
+				x[xn-1] -= ret;
 			}
 			if (q) addUnit(q + d - 1, qn - d + 1, xTop);
 		}
