@@ -26,6 +26,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_shr1_M;
 	FunctionMap mclb_addM;
 	FunctionMap mclb_subM;
+	FunctionMap mclb_mulUnitM;
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
@@ -160,6 +161,36 @@ struct Code : public mcl::Generator {
 			storeN(trunc(z, bit), pz);
 			r = _and(trunc(lshr(z, bit), unit), makeImm(unit, 1));
 		}
+		ret(r);
+		endFunc();
+	}
+	// [r:z[]] = x[] * y
+	void gen_mclb_mulUnit()
+	{
+		resetGlobalIdx();
+		Operand r(Int, unit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand y(Int, unit);
+		std::string name = "mclb_mulUnit" + cybozu::itoa(N);
+		mclb_mulUnitM[N] = Function(name, r, pz, px, y);
+		verifyAndSetPrivate(mclb_mulUnitM[N]);
+		beginFunc(mclb_mulUnitM[N]);
+
+		OperandVec L(N), H(N);
+		for (uint32_t i = 0; i < N; i++) {
+			Operand xy = call(mulPos, px, y, makeImm(unit, i));
+			L[i] = trunc(xy, unit);
+			H[i] = call(extractHigh, xy);
+		}
+		Operand LL = pack(&L[0], N);
+		Operand HH = pack(&H[0], N);
+		LL = zext(LL, bit + unit);
+		HH = zext(HH, bit + unit);
+		HH = shl(HH, unit);
+		Operand z = add(LL, HH);
+		storeN(trunc(z, bit), pz);
+		r = trunc(lshr(z, bit), unit);
 		ret(r);
 		endFunc();
 	}
@@ -560,6 +591,7 @@ fprintf(stderr, "i=%d\n", i);
 		gen_mclb_addsub(true);
 		gen_mclb_addsub(false);
 //		gen_mcl_fp_shr1();
+		gen_mclb_mulUnit();
 	}
 	void gen_mul()
 	{
@@ -586,7 +618,6 @@ fprintf(stderr, "i=%d\n", i);
 		for (uint32_t n = 1; n <= end; n++) {
 			fprintf(stderr, "n=%d\n", n);
 			setBit(n * unit);
-//			gen_mul();
 			gen_all();
 //			gen_addsub();
 		}
