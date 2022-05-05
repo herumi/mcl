@@ -202,7 +202,6 @@ Unit mulUnitT(Unit *pz, const Unit *px, Unit y)
 	z.template cvt<N>().save(pz);
 	return z.getTopUnit();
 }
-#endif
 
 // [ret:z[N]] = z[N] + x[N] * y
 template<size_t N>
@@ -216,6 +215,7 @@ Unit mulUnitAddT(Unit *pz, const Unit *px, Unit y)
 	z.template cvt<N>().save(pz);
 	return z.getTopUnit();
 }
+#endif
 
 // z[2N] = x[N] * y[N]
 template<size_t N>

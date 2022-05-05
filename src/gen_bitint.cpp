@@ -27,6 +27,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mclb_addM;
 	FunctionMap mclb_subM;
 	FunctionMap mclb_mulUnitM;
+	FunctionMap mclb_mulUnitAddM;
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
@@ -189,6 +190,37 @@ struct Code : public mcl::Generator {
 		HH = zext(HH, bit + unit);
 		HH = shl(HH, unit);
 		Operand z = add(LL, HH);
+		storeN(trunc(z, bit), pz);
+		r = trunc(lshr(z, bit), unit);
+		ret(r);
+		endFunc();
+	}
+	// [r:z[]] = z[] + x[] * y
+	void gen_mclb_mulUnitAdd()
+	{
+		resetGlobalIdx();
+		Operand r(Int, unit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand y(Int, unit);
+		std::string name = "mclb_mulUnitAdd" + cybozu::itoa(N);
+		mclb_mulUnitAddM[N] = Function(name, r, pz, px, y);
+		verifyAndSetPrivate(mclb_mulUnitAddM[N]);
+		beginFunc(mclb_mulUnitAddM[N]);
+
+		OperandVec L(N), H(N);
+		for (uint32_t i = 0; i < N; i++) {
+			Operand xy = call(mulPos, px, y, makeImm(unit, i));
+			L[i] = trunc(xy, unit);
+			H[i] = call(extractHigh, xy);
+		}
+		Operand LL = pack(&L[0], N);
+		Operand HH = pack(&H[0], N);
+		LL = zext(LL, bit + unit);
+		HH = zext(HH, bit + unit);
+		HH = shl(HH, unit);
+		Operand z = add(LL, HH);
+		z = add(z, zext(loadN(pz, N), bit + unit));
 		storeN(trunc(z, bit), pz);
 		r = trunc(lshr(z, bit), unit);
 		ret(r);
@@ -592,6 +624,7 @@ fprintf(stderr, "i=%d\n", i);
 		gen_mclb_addsub(false);
 //		gen_mcl_fp_shr1();
 		gen_mclb_mulUnit();
+		gen_mclb_mulUnitAdd();
 	}
 	void gen_mul()
 	{
