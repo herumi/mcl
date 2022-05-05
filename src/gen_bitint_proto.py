@@ -2,8 +2,9 @@ def gen_func(name, ret, args, cname, cargs, n):
 	print(f'''template<size_t N>
 {ret} {name}({args});''')
 	retstr = "" if ret == "void" else " return"
-	for i in range(3, n+1):
+	for i in range(1, n+1):
 		print(f'extern "C" {ret} {cname}{i}({args});')
+	for i in range(1, n+1):
 		print(f'template<> {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({cargs}); }}')
 
 
