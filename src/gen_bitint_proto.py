@@ -15,5 +15,6 @@ namespace mcl { namespace bint {''')
 N = 4
 gen_func("addT", "Unit", "Unit *z, const Unit *x, const Unit *y", "mclb_add", "z, x, y", N)
 gen_func("subT", "Unit", "Unit *z, const Unit *x, const Unit *y", "mclb_sub", "z, x, y", N)
+gen_func("mulUnitT", "Unit", "Unit *z, const Unit *x, Unit y", "mclb_mulUnit", "z, x, y", N)
 
 print('} } // mcl::bint')

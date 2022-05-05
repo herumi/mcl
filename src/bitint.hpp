@@ -189,7 +189,6 @@ Unit subT(Unit *pz, const Unit *px, const Unit *py)
 	z.template cvt<N>().save(pz);
 	return z.getMSB();
 }
-#endif
 
 // [ret:z[N]] = x[N] * y
 template<size_t N>
@@ -203,6 +202,7 @@ Unit mulUnitT(Unit *pz, const Unit *px, Unit y)
 	z.template cvt<N>().save(pz);
 	return z.getTopUnit();
 }
+#endif
 
 // [ret:z[N]] = z[N] + x[N] * y
 template<size_t N>
