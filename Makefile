@@ -114,7 +114,7 @@ src/bitint32.ll: src/gen_bitint.exe
 src/bitint_proto.hpp: src/gen_bitint_proto.py
 	python3 $< > $@
 $(BITINT_SRC): src/bitint$(BIT).ll src/bitint_proto.hpp
-	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET)
+	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
 #$(BITINT_LL_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
