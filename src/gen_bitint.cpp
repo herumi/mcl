@@ -20,14 +20,17 @@ struct Code : public mcl::Generator {
 	Function mulUU;
 	Function extractHigh;
 	Function mulPos;
-	Function makeNIST_P192;
-	Function mcl_fpDbl_mod_NIST_P192;
-	Function mcl_fp_sqr_NIST_P192;
-	FunctionMap mcl_fp_shr1_M;
 	FunctionMap mclb_addM;
 	FunctionMap mclb_subM;
 	FunctionMap mclb_mulUnitM;
 	FunctionMap mclb_mulUnitAddM;
+	FunctionMap mclb_addNFM;
+	FunctionMap mclb_subNFM;
+
+	Function makeNIST_P192;
+	Function mcl_fpDbl_mod_NIST_P192;
+	Function mcl_fp_sqr_NIST_P192;
+	FunctionMap mcl_fp_shr1_M;
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mulPvM;
@@ -165,6 +168,45 @@ struct Code : public mcl::Generator {
 		ret(r);
 		endFunc();
 	}
+	void gen_mclb_addNF()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		std::string name = "mclb_addNF" + cybozu::itoa(N);
+		mclb_addNFM[N] = Function(name, Void, pz, px, py);
+		verifyAndSetPrivate(mclb_addNFM[N]);
+		beginFunc(mclb_addNFM[N]);
+		Operand x = loadN(px, N);
+		Operand y = loadN(py, N);
+		Operand z = add(x, y);
+		storeN(z, pz);
+		ret(Void);
+		endFunc();
+	}
+	void gen_mclb_subNF()
+	{
+		resetGlobalIdx();
+		Operand r(Int, unit);
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		std::string name = "mclb_subNF" + cybozu::itoa(N);
+		mclb_subNFM[N] = Function(name, r, pz, px, py);
+		verifyAndSetPrivate(mclb_subNFM[N]);
+		beginFunc(mclb_subNFM[N]);
+		Operand x = loadN(px, N);
+		Operand y = loadN(py, N);
+		Operand z;
+		z = sub(x, y);
+		storeN(z, pz);
+		r = lshr(z, bit - 1);
+		if (bit != unit) r = trunc(r, unit);
+		r = _and(r, makeImm(unit, 1));
+		ret(r);
+		endFunc();
+	}
 	// [r:z[]] = x[] * y
 	void gen_mclb_mulUnit()
 	{
@@ -226,6 +268,27 @@ struct Code : public mcl::Generator {
 		ret(r);
 		endFunc();
 	}
+#if 0
+	// this bitcode does not effective asm code
+	void gen_mclb_shrRestrected()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand y(Int, unit);
+		std::string name = "mclb_shrRestrected" + cybozu::itoa(N);
+		mclb_shrRestrectedM[N] = Function(name, Void, pz, px, y);
+		verifyAndSetPrivate(mclb_shrRestrectedM[N]);
+		beginFunc(mclb_shrRestrectedM[N]);
+		Operand x = loadN(px, N);
+		y = _and(y, makeImm(unit, unit - 1));
+		if (unit != bit) y = zext(y, bit);
+		x = lshr(x, y);
+		storeN(x, pz);
+		ret(Void);
+		endFunc();
+	}
+#endif
 	void gen_mcl_fp_shr1()
 	{
 		resetGlobalIdx();
@@ -622,9 +685,10 @@ fprintf(stderr, "i=%d\n", i);
 	{
 		gen_mclb_addsub(true);
 		gen_mclb_addsub(false);
-//		gen_mcl_fp_shr1();
 		gen_mclb_mulUnit();
 		gen_mclb_mulUnitAdd();
+//		gen_mclb_addNF();
+//		gen_mclb_subNF();
 	}
 	void gen_mul()
 	{
