@@ -14,19 +14,6 @@
 
 namespace mcl { namespace bint {
 
-// z[N] = x[N] + y[N] and return CF(0 or 1)
-template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
-// z[N] = x[N] - y[N] and return CF(0 or 1)
-template<size_t N>Unit subT(Unit *z, const Unit *x, const Unit *y);
-// [ret:z[N]] = x[N] * y
-template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
-// [ret:z[N]] = z[N] + x[N] * y
-template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
-
-#if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
-#include "bitint_asm.hpp"
-#endif
-
 inline uint64_t make64(uint32_t H, uint32_t L)
 {
 	return ((uint64_t)H << 32) | L;
@@ -36,17 +23,6 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 {
 	*H = uint32_t(x >> 32);
 	*L = uint32_t(x);
-}
-
-// return the real size of x
-// return 1 if x[n] == 0
-inline size_t getRealSize(const Unit *x, size_t n)
-{
-	while (n > 0) {
-		if (x[n - 1]) break;
-		n--;
-	}
-	return n > 0 ? n : 1;
 }
 
 /*
@@ -100,6 +76,29 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	*pr = uint64_t(t % y);
 	return q;
 #endif
+}
+
+
+// z[N] = x[N] + y[N] and return CF(0 or 1)
+template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
+// z[N] = x[N] - y[N] and return CF(0 or 1)
+template<size_t N>Unit subT(Unit *z, const Unit *x, const Unit *y);
+// [ret:z[N]] = x[N] * y
+template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
+// [ret:z[N]] = z[N] + x[N] * y
+template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
+
+#include "bitint_asm.hpp"
+
+// return the real size of x
+// return 1 if x[n] == 0
+inline size_t getRealSize(const Unit *x, size_t n)
+{
+	while (n > 0) {
+		if (x[n - 1]) break;
+		n--;
+	}
+	return n > 0 ? n : 1;
 }
 
 #endif // MCL_SIZEOF_UNIT == 8
