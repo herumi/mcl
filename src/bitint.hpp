@@ -8,16 +8,24 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
-#ifndef MCL_BITCODE_ASM
-	#define MCL_BITCODE_ASM 1
-#endif
-
-#if defined(MCL_BITCODE_ASM) && (MCL_BITCODE_ASM == 1)
-#include "bitint_proto.hpp"
+#ifndef MCL_BITINT_ASM
+	#define MCL_BITINT_ASM 1
 #endif
 
 namespace mcl { namespace bint {
 
+// z[N] = x[N] + y[N] and return CF(0 or 1)
+template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
+// z[N] = x[N] - y[N] and return CF(0 or 1)
+template<size_t N>Unit subT(Unit *z, const Unit *x, const Unit *y);
+// [ret:z[N]] = x[N] * y
+template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
+// [ret:z[N]] = z[N] + x[N] * y
+template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
+
+#if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
+#include "bitint_asm.hpp"
+#endif
 
 inline uint64_t make64(uint32_t H, uint32_t L)
 {
@@ -96,61 +104,40 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 
 #endif // MCL_SIZEOF_UNIT == 8
 
-template<size_t N>
-struct BitInt {
-	static const size_t bitSize = sizeof(Unit) * 8 * N;
-	typedef unsigned _ExtInt(bitSize) Type;
-	Type v;
-	Unit getTopUnit() const
-	{
-		return static_cast<Unit>(v >> (bitSize - sizeof(Unit) * 8));
-	}
-	Unit getMSB() const
-	{
-		return getTopUnit() >> (sizeof(Unit) * 8 - 1);
-	}
-	static const BitInt<N>& load(const void *x)
-	{
-		return *(const BitInt<N>*)x;
-	}
-	void save(void *x) const
-	{
-		*(BitInt<N>*)(x) = *this;
-	}
-	template<size_t M>
-	BitInt<M> cvt() const
-	{
-		BitInt<M> ret;
-		ret.v = static_cast<typename BitInt<M>::Type>(this->v);
-		return ret;
-	}
-};
-
 // true if x[N] == y[N]
 template<size_t N>
 bool cmpEqT(const Unit *px, const Unit *py)
 {
-	const auto& x = BitInt<N>::load(px);
-	const auto& y = BitInt<N>::load(py);
-	return x.v == y.v;
+	for (size_t i = 0; i < N; i++) {
+		if (px[i] != py[i]) return false;
+	}
+	return true;
 }
 
 // true if x[N] >= y[N]
 template<size_t N>
 bool cmpGeT(const Unit *px, const Unit *py)
 {
-	const auto& x = BitInt<N>::load(px);
-	const auto& y = BitInt<N>::load(py);
-	return x.v >= y.v;
+	for (size_t i = 0; i < N; i++) {
+		const Unit x = px[N - 1 - i];
+		const Unit y = py[N - 1 - i];
+		if (x > y) return true;
+		if (x < y) return false;
+	}
+	return true;
 }
 
 // true if x[N] > y[N]
 template<size_t N>
 bool cmpGtT(const Unit *px, const Unit *py)
 {
-	const auto& x = BitInt<N>::load(px);
-	const auto& y = BitInt<N>::load(py);
-	return x.v > y.v;
+	for (size_t i = 0; i < N; i++) {
+		const Unit x = px[N - 1 - i];
+		const Unit y = py[N - 1 - i];
+		if (x > y) return true;
+		if (x < y) return false;
+	}
+	return false;
 }
 
 // true if x[N] <= y[N]
@@ -166,58 +153,6 @@ bool cmpLtT(const Unit *px, const Unit *py)
 {
 	return !cmpGeT<N>(px, py);
 }
-
-// z[N] = x[N] + y[N] and return CF(0 or 1)
-#if 0
-template<size_t N>
-Unit addT(Unit *pz, const Unit *px, const Unit *py)
-{
-	auto x = BitInt<N>::load(px).template cvt<N+1>();
-	auto y = BitInt<N>::load(py).template cvt<N+1>();
-	BitInt<N+1> z;
-	z.v = x.v + y.v;
-	z.template cvt<N>().save(pz);
-	return z.getTopUnit();
-}
-
-// z[N] = x[N] - y[N] and return CF(0 or 1)
-template<size_t N>
-Unit subT(Unit *pz, const Unit *px, const Unit *py)
-{
-	auto x = BitInt<N>::load(px).template cvt<N+1>();
-	auto y = BitInt<N>::load(py).template cvt<N+1>();
-	BitInt<N+1> z;
-	z.v = x.v - y.v;
-	z.template cvt<N>().save(pz);
-	return z.getMSB();
-}
-
-// [ret:z[N]] = x[N] * y
-template<size_t N>
-Unit mulUnitT(Unit *pz, const Unit *px, Unit y)
-{
-	auto x = BitInt<N>::load(px).template cvt<N+1>();
-	BitInt<1> y1;
-	BitInt<N+1> z;
-	y1.v = y;
-	z.v = x.v * y1.template cvt<N+1>().v;
-	z.template cvt<N>().save(pz);
-	return z.getTopUnit();
-}
-
-// [ret:z[N]] = z[N] + x[N] * y
-template<size_t N>
-Unit mulUnitAddT(Unit *pz, const Unit *px, Unit y)
-{
-	auto x = BitInt<N>::load(px).template cvt<N+1>();
-	auto z = BitInt<N>::load(pz).template cvt<N+1>();
-	BitInt<1> y1;
-	y1.v = y;
-	z.v += x.v * y1.template cvt<N+1>().v;
-	z.template cvt<N>().save(pz);
-	return z.getTopUnit();
-}
-#endif
 
 // z[2N] = x[N] * y[N]
 template<size_t N>
