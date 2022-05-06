@@ -1,10 +1,6 @@
 #pragma once
 /*
-	_ExtInt is for only clang-12 or before
-	clang-14 does not support it.
-	so use a generated ll by clang-12.
-	If gcc and clang supports _BitInt then replace them.
-	cpp ->(clang -emit-llvm)-> bc ->(llvm-dis) -> ll
+	low level functions
 */
 
 #include <mcl/config.hpp>
@@ -12,7 +8,13 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
+#ifndef MCL_BITCODE_ASM
+	#define MCL_BITCODE_ASM 1
+#endif
+
+#if defined(MCL_BITCODE_ASM) && MCL_BITCODE_ASM == 1
 #include "bitint_proto.hpp"
+#endif
 
 namespace mcl { namespace bint {
 
@@ -227,26 +229,39 @@ void mulT(Unit *pz, const Unit *px, const Unit *py)
 	}
 }
 
-// [ret:z[N]] = x[N] << y
+// [return:z[N]] = x[N] << y
+// 0 < y < sizeof(Unit) * 8
 template<size_t N>
 Unit shlT(Unit *pz, const Unit *px, Unit y)
 {
 	assert(0 < y && y < sizeof(Unit) * 8);
-	auto x = BitInt<N>::load(px).template cvt<N+1>();
-	BitInt<N+1> z;
-	z.v = x.v << y;
-	z.template cvt<N>().save(pz);
-	return z.getTopUnit();
+	assert(xn > 0);
+	size_t yRev = sizeof(Unit) * 8 - y;
+	Unit prev = px[N - 1];
+	Unit keep = prev;
+	for (size_t i = N - 1; i > 0; i--) {
+		Unit t = px[i - 1];
+		pz[i] = (prev << y) | (t >> yRev);
+		prev = t;
+	}
+	pz[0] = prev << y;
+	return keep >> yRev;
 }
 
 // z[N] = x[N] >> y
+// 0 < y < sizeof(Unit) * 8
 template<size_t N>
-void shrT(Unit *pz, const Unit *px, Unit y)
+void shrT(Unit *pz, const Unit *px, size_t y)
 {
 	assert(0 < y && y < sizeof(Unit) * 8);
-	auto x = BitInt<N>::load(px);
-	x.v >>= y;
-	x.template cvt<N>().save(pz);
+	size_t yRev = sizeof(Unit) * 8 - y;
+	Unit prev = px[0];
+	for (size_t i = 1; i < N; i++) {
+		Unit t = px[i];
+		pz[i - 1] = (prev >> y) | (t << yRev);
+		prev = t;
+	}
+	pz[N - 1] = prev >> y;
 }
 
 // z[n] = x[n] + y
