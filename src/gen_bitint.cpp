@@ -716,7 +716,6 @@ fprintf(stderr, "i=%d\n", i);
 			fprintf(stderr, "n=%d\n", n);
 			setBit(n * unit);
 			gen_all();
-//			gen_addsub();
 		}
 	}
 };

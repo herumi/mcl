@@ -12,7 +12,7 @@
 	#define MCL_BITCODE_ASM 1
 #endif
 
-#if defined(MCL_BITCODE_ASM) && MCL_BITCODE_ASM == 1
+#if defined(MCL_BITCODE_ASM) && (MCL_BITCODE_ASM == 1)
 #include "bitint_proto.hpp"
 #endif
 
