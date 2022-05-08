@@ -8,6 +8,8 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
+
+//#define MCL_BITINT_ASM 0
 #ifndef MCL_BITINT_ASM
 	#define MCL_BITINT_ASM 1
 #endif
@@ -88,7 +90,64 @@ template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
 // [ret:z[N]] = z[N] + x[N] * y
 template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 
+#if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
 #include "bitint_asm.hpp"
+#else
+template<size_t N>
+Unit addT(Unit *z, const Unit *x, const Unit *y)
+{
+	Unit c = 0;
+	for (size_t i = 0; i < N; i++) {
+		Unit xc = x[i] + c;
+		c = xc < c;
+		Unit yi = y[i];
+		xc += yi;
+		c += xc < yi;
+		z[i] = xc;
+	}
+	return c;
+}
+
+template<size_t N>
+Unit subT(Unit *z, const Unit *x, const Unit *y)
+{
+	Unit c = 0;
+	for (size_t i = 0; i < N; i++) {
+		Unit yi = y[i];
+		yi += c;
+		c = yi < c;
+		Unit xi = x[i];
+		c += xi < yi;
+		z[i] = xi - yi;
+	}
+	return c;
+}
+
+template<size_t N>
+Unit mulUnitT(Unit *z, const Unit *x, Unit y)
+{
+	Unit H = 0;
+	for (size_t i = 0; i < N; i++) {
+		Unit t = H;
+		Unit L = mulUnit1(&H, x[i], y);
+		z[i] = t + L;
+		if (z[i] < t) {
+			H++;
+		}
+	}
+	return H; // z[n]
+}
+
+template<size_t N>
+Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
+{
+	Unit xy[N], ret;
+	ret = mulUnitT<N>(xy, x, y);
+	ret += addT<N>(z, z, xy);
+	return ret;
+}
+
+#endif
 
 // return the real size of x
 // return 1 if x[n] == 0
@@ -152,6 +211,52 @@ bool cmpLtT(const Unit *px, const Unit *py)
 {
 	return !cmpGeT<N>(px, py);
 }
+
+// true if x[] == y[]
+inline bool cmpEq(const Unit *px, const Unit *py, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		if (px[i] != py[i]) return false;
+	}
+	return true;
+}
+
+// true if x[n] >= y[n]
+inline bool cmpGe(const Unit *px, const Unit *py, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		const Unit x = px[n - 1 - i];
+		const Unit y = py[n - 1 - i];
+		if (x > y) return true;
+		if (x < y) return false;
+	}
+	return true;
+}
+
+// true if x[n] > y[n]
+inline bool cmpGt(const Unit *px, const Unit *py, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		const Unit x = px[n - 1 - i];
+		const Unit y = py[n - 1 - i];
+		if (x > y) return true;
+		if (x < y) return false;
+	}
+	return false;
+}
+
+// true if x[n] <= y[n]
+inline bool cmpLe(const Unit *px, const Unit *py, size_t n)
+{
+	return !cmpGt(px, py, n);
+}
+
+// true if x[n] < y[n]
+inline bool cmpLt(const Unit *px, const Unit *py, size_t n)
+{
+	return !cmpGe(px, py, n);
+}
+
 
 // z[2N] = x[N] * y[N]
 template<size_t N>
