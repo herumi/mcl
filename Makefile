@@ -112,8 +112,10 @@ src/bitint64.ll: src/gen_bitint.exe
 src/bitint32.ll: src/gen_bitint.exe
 	$< -u 32 -ver 0x90 > $@
 src/bitint_asm.hpp: src/gen_bitint_header.py
-	python3 $< > $@
-$(BITINT_SRC): src/bitint$(BIT).ll src/bitint_asm.hpp src/bitint.hpp
+	python3 $< > $@ asm
+src/bitint_switch.hpp: src/gen_bitint_header.py
+	python3 $< > $@ switch
+$(BITINT_SRC): src/bitint$(BIT).ll src/bitint_asm.hpp src/bitint.hpp src/bitint_switch.hpp
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
