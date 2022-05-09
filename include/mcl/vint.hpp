@@ -86,9 +86,6 @@ inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
 }
 #endif
 
-template<class T>
-void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn);
-
 /*
 	q = [H:L] / y
 	r = [H:L] % y
@@ -588,45 +585,28 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		clearN(r + 1, rn - 1);
 		return;
 	}
-	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
 	assert(yn >= 2);
+	const T yTop = y[yn - 1];
+	const size_t yTopBit = cybozu::bsr(yTop);
 	if (xn == yn) {
-		const size_t xTopBit = cybozu::bsr(x[xn - 1]);
-		if (xTopBit < yTopBit) goto q_is_zero;
-		if (yTopBit == xTopBit) {
-			int ret = compareNM(x, xn, y, yn);
-			if (ret == 0) goto x_is_y;
-			if (ret < 0) goto q_is_zero;
-			if (r) {
-				subN(r, x, y, yn);
-			}
-			if (q) {
-				q[0] = 1;
-				clearN(q + 1, qn - 1);
-			}
-			return;
-		}
-		assert(xTopBit > yTopBit);
+		int ret = cmpN(x, y, xn);
+		if (ret == 0) goto x_is_y;
+		if (ret < 0) goto q_is_zero;
 		// fast reduction for larger than fullbit-3 size p
-		if (yTopBit >= sizeof(T) * 8 - 4) {
+		if (yTopBit >= sizeof(T) * 8 - 3) {
 			T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 			T qv = 0;
-			if (yTopBit == sizeof(T) * 8 - 2) {
-				copyN(xx, x, xn);
+			if (yTop == T(-1)) {
+				subN(xx, x, y, xn);
+				qv = 1;
 			} else {
-				qv = x[xn - 1] >> (yTopBit + 1);
+				qv = x[xn - 1] / (yTop + 1);
 				mulu1(xx, y, yn, qv);
 				subN(xx, x, xx, xn);
-				xn = getRealSize(xx, xn);
 			}
-			for (;;) {
-				T ret = subN(xx, xx, y, yn);
-				if (ret) {
-					addN(xx, xx, y, yn);
-					break;
-				}
+			while (cmpN(xx, y, yn) >= 0) {
+				subN(xx, xx, y, yn);
 				qv++;
-				xn = getRealSize(xx, xn);
 			}
 			if (r) {
 				copyN(r, xx, xn);
