@@ -20,9 +20,6 @@
 #include <intrin.h>
 #endif
 
-#if defined(__EMSCRIPTEN__) || defined(__wasm__)
-	#define MCL_VINT_64BIT_PORTABLE
-#endif
 #ifndef MCL_MAX_BIT_SIZE
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
@@ -78,23 +75,7 @@ inline uint32_t mulUnit(uint32_t *pH, uint32_t x, uint32_t y)
 #if MCL_SIZEOF_UNIT == 8
 inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
 {
-#ifdef MCL_VINT_64BIT_PORTABLE
-	const uint64_t mask = 0xffffffff;
-	uint64_t v = (x & mask) * (y & mask);
-	uint64_t L = uint32_t(v);
-	uint64_t H = v >> 32;
-	uint64_t ad = (x & mask) * uint32_t(y >> 32);
-	uint64_t bc = uint32_t(x >> 32) * (y & mask);
-	H += uint32_t(ad);
-	H += uint32_t(bc);
-	L |= H << 32;
-	H >>= 32;
-	H += ad >> 32;
-	H += bc >> 32;
-	H += (x >> 32) * (y >> 32);
-	*pH = H;
-	return L;
-#elif defined(_WIN64) && !defined(__INTEL_COMPILER)
+#if defined(_WIN64) && !defined(__INTEL_COMPILER)
 	return _umul128(x, y, pH);
 #else
 	typedef __attribute__((mode(TI))) unsigned int uint128;
@@ -125,18 +106,7 @@ inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
 	assert(y != 0);
-#if defined(MCL_VINT_64BIT_PORTABLE) || (defined(_MSC_VER) && _MSC_VER < 1920)
-	uint32_t px[4] = { uint32_t(L), uint32_t(L >> 32), uint32_t(H), uint32_t(H >> 32) };
-	uint32_t py[2] = { uint32_t(y), uint32_t(y >> 32) };
-	size_t xn = 4;
-	size_t yn = 2;
-	uint32_t q[4];
-	uint32_t r[2];
-	size_t qn = xn - yn + 1;
-	divNM(q, qn, r, px, xn, py, yn);
-	*pr = make64(r[1], r[0]);
-	return make64(q[1], q[0]);
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 	return _udiv128(H, L, y, pr);
 #else
 	typedef __attribute__((mode(TI))) unsigned int uint128;
