@@ -8,6 +8,11 @@
 */
 #include <cybozu/inttype.hpp>
 
+#if defined(__EMSCRIPTEN__) || defined(__wasm__)
+	#define MCL_SIZEOF_UNIT 4
+	#define MCL_WASM32
+#endif
+
 #ifndef MCL_SIZEOF_UNIT
 	#if defined(CYBOZU_OS_BIT) && (CYBOZU_OS_BIT == 32)
 		#define MCL_SIZEOF_UNIT 4

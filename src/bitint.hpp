@@ -93,9 +93,42 @@ template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 #if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
 #include "bitint_asm.hpp"
 #else
+
+#ifdef MCL_WASM32
+inline uint64_t load8byte(const uint32_t *x)
+{
+	return x[0] | (uint64_t(x[1]) << 32);
+}
+inline void store8byte(uint32_t *x, uint64_t v)
+{
+	x[0] = uint32_t(v);
+	x[1] = uint32_t(v >> 32);
+}
+#endif
 template<size_t N>
 Unit addT(Unit *z, const Unit *x, const Unit *y)
 {
+#ifdef MCL_WASM32
+	// wasm32 supports 64-bit add
+	Unit c = 0;
+	for (size_t i = 0; i < N / 2; i++) {
+		Unit xc = load8byte(x + i * 2) + c;
+		c = xc < c;
+		Unit yi = load8byte(y + i * 2);
+		xc += yi;
+		c += xc < yi;
+		store8byte(z + i * 2, xc);
+	}
+	if ((N & 1) == 1) {
+		Unit xc = x[N - 1] + c;
+		c = xc < c;
+		Unit yi = y[N - 1];
+		xc += yi;
+		c += xc < yi;
+		z[N - 1] = xc;
+	}
+	return c;
+#else
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
 		Unit xc = x[i] + c;
@@ -106,11 +139,33 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 		z[i] = xc;
 	}
 	return c;
+#endif
 }
 
 template<size_t N>
 Unit subT(Unit *z, const Unit *x, const Unit *y)
 {
+#ifdef MCL_WASM32
+	// wasm32 supports 64-bit sub
+	Unit c = 0;
+	for (size_t i = 0; i < N / 2; i++) {
+		Unit yi = load8byte(y + i * 2);
+		yi += c;
+		c = yi < c;
+		Unit xi = load8byte(x + i * 2);
+		c += xi < yi;
+		store8byte(z + i * 2, xi - yi);
+	}
+	if ((N & 1) == 1) {
+		Unit yi = y[N - 1];
+		yi += c;
+		c = yi < c;
+		Unit xi = x[N - 1];
+		c += xi < yi;
+		z[N - 1] = xi - yi;
+	}
+	return c;
+#else
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
 		Unit yi = y[i];
@@ -121,6 +176,7 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 		z[i] = xi - yi;
 	}
 	return c;
+#endif
 }
 
 template<size_t N>
