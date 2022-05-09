@@ -1,6 +1,10 @@
 #pragma once
 /*
-	low level functions
+	@file
+	@brief low level functions
+	@author MITSUNARI Shigeo(@herumi)
+	@license modified new BSD license
+	http://opensource.org/licenses/BSD-3-Clause
 */
 
 #include <mcl/config.hpp>
