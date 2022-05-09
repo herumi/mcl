@@ -52,6 +52,7 @@ elif arg == 'switch':
 	gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, N)
 	gen_switch('mulUnit', 'Unit', arg_p2u, 'mulUnitT', param_u3, N)
 	gen_switch('mulUnitAdd', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N)
+	gen_switch('mul', 'void', arg_p3, 'mulT', param_u3, N)
 
 else:
 	print('err', arg)
