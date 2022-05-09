@@ -22,7 +22,6 @@
 
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_VINT_64BIT_PORTABLE
-	#define MCL_VINT_FIXED_BUFFER
 #endif
 #ifndef MCL_MAX_BIT_SIZE
 	#error "define MCL_MAX_BIT_SZIE"
@@ -697,82 +696,6 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	}
 	clearN(r + xn, rn - xn);
 }
-
-#ifndef MCL_VINT_FIXED_BUFFER
-template<class T>
-class Buffer {
-	size_t allocSize_;
-	T *ptr_;
-public:
-	typedef T Unit;
-	Buffer() : allocSize_(0), ptr_(0) {}
-	~Buffer()
-	{
-		clear();
-	}
-	Buffer(const Buffer& rhs)
-		: allocSize_(rhs.allocSize_)
-		, ptr_(0)
-	{
-		ptr_ = (T*)malloc(allocSize_ * sizeof(T));
-		if (ptr_ == 0) throw cybozu::Exception("Buffer:malloc") << rhs.allocSize_;
-		memcpy(ptr_, rhs.ptr_, allocSize_ * sizeof(T));
-	}
-	Buffer& operator=(const Buffer& rhs)
-	{
-		Buffer t(rhs);
-		swap(t);
-		return *this;
-	}
-	void swap(Buffer& rhs)
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-		noexcept
-#endif
-	{
-		fp::swap_(allocSize_, rhs.allocSize_);
-		fp::swap_(ptr_, rhs.ptr_);
-	}
-	void clear()
-	{
-		allocSize_ = 0;
-		free(ptr_);
-		ptr_ = 0;
-	}
-
-	/*
-		@note extended buffer may be not cleared
-	*/
-	void alloc(bool *pb, size_t n)
-	{
-		if (n > allocSize_) {
-			T *p = (T*)malloc(n * sizeof(T));
-			if (p == 0) {
-				*pb = false;
-				return;
-			}
-			copyN(p, ptr_, allocSize_);
-			free(ptr_);
-			ptr_ = p;
-			allocSize_ = n;
-		}
-		*pb = true;
-	}
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-	void alloc(size_t n)
-	{
-		bool b;
-		alloc(&b, n);
-		if (!b) throw cybozu::Exception("Buffer:alloc");
-	}
-#endif
-	/*
-		*this = rhs
-		rhs may be destroyed
-	*/
-	const T& operator[](size_t n) const { return ptr_[n]; }
-	T& operator[](size_t n) { return ptr_[n]; }
-};
-#endif
 
 template<class T, size_t BitLen>
 class FixedBuffer {
@@ -2086,11 +2009,7 @@ public:
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
 
-#ifdef MCL_VINT_FIXED_BUFFER
 typedef VintT<vint::FixedBuffer<mcl::Unit, vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
-#else
-typedef VintT<vint::Buffer<mcl::Unit> > Vint;
-#endif
 
 } // mcl
 

@@ -48,7 +48,7 @@ if(GMP_LIBRARY)
 	target_link_libraries(mclelgamaljava ${GMP_LIBRARY})
 else()
 	message(STATUS "GMP not found - assuming VINT was used to compile MCL.")
-	add_definitions(-DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER)
+	add_definitions(-DMCL_USE_VINT)
 endif()
 
 target_link_libraries(mcljava ${MCL_LIBRARY})
