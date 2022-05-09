@@ -38,6 +38,8 @@ struct ZnTag;
 
 namespace fp {
 
+typedef mcl::Unit Unit; // will be removed
+
 uint64_t getUint64(bool *pb, const fp::Block& b);
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
