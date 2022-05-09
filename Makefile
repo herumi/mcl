@@ -12,6 +12,7 @@ TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
 TEST_SRC+=mul_test.cpp
+TEST_SRC+=bitint_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   LIB_OBJ+=obj/static_code.o
@@ -98,7 +99,6 @@ ifeq ($(OS),mac-m1)
 endif
 BITINT_SUF?=-$(OS)-$(CPU)
 ifeq ($(MCL_BITINT),1)
-  TEST_SRC+=bitint_test.cpp
   BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
   BITINT_SRC=src/asm/$(BITINT_BASENAME).s
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
@@ -114,7 +114,7 @@ include/mcl/bitint_asm.hpp: src/gen_bitint_header.py
 	python3 $< > $@ asm
 include/mcl/bitint_switch.hpp: src/gen_bitint_header.py
 	python3 $< > $@ switch
-$(BITINT_SRC): src/bitint$(BIT).ll include/mcl/bitint_asm.hpp include/mcl/bitint_switch.hpp
+$(BITINT_SRC): src/bitint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
