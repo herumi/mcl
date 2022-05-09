@@ -1,11 +1,14 @@
-#include "../src/bitint.hpp"
+#include <mcl/bitint.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <gmpxx.h>
 #include <iostream>
+#include <cybozu/benchmark.hpp>
+#include <mcl/gmp_util.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
+using namespace mcl::gmp;
 using namespace mcl::bint;
 typedef mcl::Unit Unit;
 
@@ -249,4 +252,7 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		setArray(mr, x, rn);
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
 	}
+	const int C = 1000;
+	CYBOZU_BENCH_C("gmp", C, mcl::gmp::divmod, mq, mr, mx, my);
+	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBitT<yN>, q, qN, x, xN, y);
 }

@@ -455,7 +455,6 @@ struct Code : public mcl::Generator {
 		beginFunc(mulPvM[bit]);
 		OperandVec L(N), H(N);
 		for (uint32_t i = 0; i < N; i++) {
-fprintf(stderr, "i=%d\n", i);
 			Operand xy = call(mulPos, px, y, makeImm(unit, i));
 			L[i] = trunc(xy, unit);
 			H[i] = call(extractHigh, xy);
@@ -713,7 +712,6 @@ fprintf(stderr, "i=%d\n", i);
 
 		uint32_t end = ((maxBitSize + unit - 1) / unit);
 		for (uint32_t n = 1; n <= end; n++) {
-			fprintf(stderr, "n=%d\n", n);
 			setBit(n * unit);
 			gen_all();
 		}

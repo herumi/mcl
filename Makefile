@@ -98,12 +98,11 @@ ifeq ($(OS),mac-m1)
 endif
 BITINT_SUF?=-$(OS)-$(CPU)
 ifeq ($(MCL_BITINT),1)
-  TEST_SRC+=bitint_if_test.cpp
-  BITINT_BASENAME=bitint_if$(BITINT_SUF)
+  TEST_SRC+=bitint_test.cpp
+  BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
   BITINT_SRC=src/asm/$(BITINT_BASENAME).s
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   LIB_OBJ+=$(BITINT_OBJ)
-  LIB_OBJ+=$(OBJ_DIR)/bitint_if.o
 endif
 src/gen_bitint.exe: src/gen_bitint.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra
@@ -111,15 +110,15 @@ src/bitint64.ll: src/gen_bitint.exe
 	$< -u 64 -ver 0x90 > $@
 src/bitint32.ll: src/gen_bitint.exe
 	$< -u 32 -ver 0x90 > $@
-src/bitint_asm.hpp: src/gen_bitint_header.py
+include/mcl/bitint_asm.hpp: src/gen_bitint_header.py
 	python3 $< > $@ asm
-src/bitint_switch.hpp: src/gen_bitint_header.py
+include/mcl/bitint_switch.hpp: src/gen_bitint_header.py
 	python3 $< > $@ switch
-$(BITINT_SRC): src/bitint$(BIT).ll src/bitint_asm.hpp src/bitint.hpp src/bitint_switch.hpp
+$(BITINT_SRC): src/bitint$(BIT).ll include/mcl/bitint_asm.hpp include/mcl/bitint_switch.hpp
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
-#$(BITINT_LL_SRC): src/bitint_if.cpp src/bitint.hpp include/mcl/bitint_if.hpp
+#$(BITINT_LL_SRC): src/bitint.cpp src/bitint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
