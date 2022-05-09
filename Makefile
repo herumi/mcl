@@ -275,9 +275,6 @@ endif
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT
 
-$(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT
-
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
 	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8
 
