@@ -346,7 +346,6 @@ template<size_t N>
 Unit shlT(Unit *pz, const Unit *px, Unit y)
 {
 	assert(0 < y && y < sizeof(Unit) * 8);
-	assert(xn > 0);
 	size_t yRev = sizeof(Unit) * 8 - y;
 	Unit prev = px[N - 1];
 	Unit keep = prev;
