@@ -15,7 +15,7 @@
 
 //#define MCL_BITINT_ASM 0
 #ifndef MCL_BITINT_ASM
-	#define MCL_BITINT_ASM 1
+	#define MCL_BITINT_ASM 0//1
 #endif
 
 namespace mcl { namespace bint {
