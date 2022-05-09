@@ -4,11 +4,10 @@
 #include <gmpxx.h>
 #include <iostream>
 #include <cybozu/benchmark.hpp>
-#include <mcl/gmp_util.hpp>
+//#include <mcl/gmp_util.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
-using namespace mcl::gmp;
 using namespace mcl::bint;
 typedef mcl::Unit Unit;
 
@@ -23,6 +22,10 @@ void setRand(Unit *x, size_t n, RG& rg)
 void setArray(mpz_class& z, const Unit *buf, size_t n)
 {
 	mpz_import(z.get_mpz_t(), n, -1, sizeof(*buf), 0, 0, buf);
+}
+void divmod(mpz_class& q, mpz_class& r, const mpz_class& x, const mpz_class& y)
+{
+	mpz_divmod(q.get_mpz_t(), r.get_mpz_t(), x.get_mpz_t(), y.get_mpz_t());
 }
 
 CYBOZU_TEST_AUTO(cmpT)
@@ -253,6 +256,6 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
 	}
 	const int C = 1000;
-	CYBOZU_BENCH_C("gmp", C, mcl::gmp::divmod, mq, mr, mx, my);
+	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBitT<yN>, q, qN, x, xN, y);
 }
