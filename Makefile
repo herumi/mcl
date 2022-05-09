@@ -118,6 +118,9 @@ $(BITINT_SRC): src/bitint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
 	$(AS) $< -o $@
+bitint_header:
+	$(MAKE) include/mcl/bitint_asm.hpp
+	$(MAKE) include/mcl/bitint_switch.hpp
 #$(BITINT_LL_SRC): src/bitint.cpp src/bitint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
