@@ -182,6 +182,17 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 template<size_t N>
 Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 {
+#ifdef MCL_WASM32
+	uint64_t H = 0;
+	uint64_t yy = y;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = x[i] * yy;
+		v += H;
+		z[i] = uint32_t(v);
+		H = v >> 32;
+	}
+	return uint32_t(H);
+#else
 	Unit H = 0;
 	for (size_t i = 0; i < N; i++) {
 		Unit t = H;
@@ -192,6 +203,7 @@ Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 		}
 	}
 	return H; // z[n]
+#endif
 }
 
 template<size_t N>
@@ -463,10 +475,6 @@ struct FuncT {
 	{
 		return mulUnitT<N>(z, x, y);
 	}
-	static inline bool cmpGe(const Unit *x, const Unit *y)
-	{
-		return cmpGeT<N>(x, y);
-	}
 };
 /*
 	y must be sizeof(Unit) * 8 * N bit
@@ -488,23 +496,22 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 			continue;
 		}
 		size_t d = xn - N;
-		if (Func::cmpGe(x + d, y)) {
+		if (cmpGe(x + d, y, N)) {
 			Func::sub(x + d, x + d, y);
 			if (q) addUnit(q + d, qn - d, 1);
 		} else {
-			Unit xTop = x[xn - 1];
+			Unit xTop = x[xn - 1], ret;
 			if (xTop == 1) {
-				Unit ret = Func::sub(x + d - 1, x + d - 1, y);
-				x[xn-1] -= ret;
+				ret = Func::sub(x + d - 1, x + d - 1, y);
 			} else {
-				Unit ret = Func::mulUnit(t, y, xTop);
+				ret = Func::mulUnit(t, y, xTop);
 				ret += Func::sub(x + d - 1, x + d - 1, t);
-				x[xn-1] -= ret;
 			}
+			x[xn-1] -= ret;
 			if (q) addUnit(q + d - 1, qn - d + 1, xTop);
 		}
 	}
-	if (Func::cmpGe(x, y)) {
+	if (cmpGe(x, y, N)) {
 		Func::sub(x, x, y);
 		if (q) addUnit(q, qn, 1);
 	}
