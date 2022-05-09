@@ -6,6 +6,8 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+// always use GMP
+#undef MCL_USE_VINT
 #include <mcl/gmp_util.hpp>
 
 namespace mcl { namespace paillier {
