@@ -508,6 +508,12 @@ CYBOZU_TEST_AUTO(div2)
 			{ 3, { 0xfffffffd, 0xffffffff, 1 } },
 		},
 		{
+			{ 4, { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff } },
+			{ 4, { 1, 0, 0xffffffff, 0xffffffff } },
+			{ 1, { 1 } },
+			{ 2, { 0xfffffffe, 0xffffffff } },
+		},
+		{
 			{ 4, { 0, 0, 1, 1 } },
 			{ 2, { 1, 1 } },
 			{ 3, { 0, 0, 1 } },
