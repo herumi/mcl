@@ -12,6 +12,7 @@ jobs:
     - run: sudo apt install valgrind
     - run: make bitint_header
     - run: make bin/bitint_test.exe DEBUG=1 -j4 CXX=clang++ MCL_BITINT=1 && bin/bitint_test.exe
+    - run: make clean
     - run: make bin/pairing.exe -j4
     - run: valgrind bin/pairing.exe
     - run: make clean
