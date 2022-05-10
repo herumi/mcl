@@ -548,9 +548,10 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 template<class T>
 bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *y, size_t yn)
 {
-	if (xn > yn) return false;
+	assert(yn > 0);
 	const T yTop = y[yn - 1];
-	const size_t yTopBit = cybozu::bsr(yTop);
+	assert(yTop > 0);
+	if (xn > yn) return false;
 	int ret = xn < yn ? -1 : cmpN(x, y, xn);
 	if (ret < 0) { // q = 0, r = x if x < y
 		copyN(r, x, xn);
@@ -566,8 +567,7 @@ bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T 
 		}
 		return true;
 	}
-	// fast reduction for larger than fullbit-3 size p
-	if (yTopBit >= sizeof(T) * 8 - 3) {
+	if (yTop >= T(1) << (sizeof(T) * 8 / 2)) {
 		T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 		T qv = 0;
 		if (yTop == T(-1)) {
@@ -578,10 +578,13 @@ bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T 
 			mulu1(xx, y, yn, qv);
 			subN(xx, x, xx, xn);
 		}
+int ccc=0;
 		while (cmpN(xx, y, yn) >= 0) {
 			subN(xx, xx, y, yn);
 			qv++;
+ccc++;
 		}
+if (ccc>=2) {printf("QQQQ ccc=%d\n", ccc);exit(1); }
 		if (r) {
 			copyN(r, xx, xn);
 			clearN(r + xn, rn - xn);
