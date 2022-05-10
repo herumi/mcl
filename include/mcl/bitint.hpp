@@ -437,7 +437,8 @@ inline Unit subUnit(Unit *z, const Unit *x, size_t n, Unit y)
 */
 inline Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y)
 {
-	assert(n > 0);
+	assert(y);
+	if (n == 0) return 0;
 	Unit r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
 		q[i] = divUnit1(&r, r, x[i], y);
@@ -450,7 +451,8 @@ inline Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y)
 */
 inline Unit modUnit(const Unit *x, size_t n, Unit y)
 {
-	assert(n > 0);
+	assert(y);
+	if (n == 0) return 0;
 	Unit r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
 		divUnit1(&r, r, x[i], y);
