@@ -384,6 +384,7 @@ static inline void sqrN(T *y, const T *x, size_t xn)
 template<class T>
 T divu1(T *q, const T *x, size_t n, T y)
 {
+	if (n == 0) return 0;
 	T r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
 		q[i] = divUnit(&r, r, x[i], y);
@@ -397,6 +398,7 @@ T divu1(T *q, const T *x, size_t n, T y)
 template<class T>
 T modu1(const T *x, size_t n, T y)
 {
+	if (n == 0) return 0;
 	T r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
 		divUnit(&r, r, x[i], y);
@@ -538,6 +540,62 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
+	assme xn <= yn
+	q[qn] = x[xn] / y[yn], r[rn] = x[xn] % y[yn]
+	assume(n >= 2);
+	return true if computed else false
+*/
+template<class T>
+bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *y, size_t yn)
+{
+	if (xn > yn) return false;
+	const T yTop = y[yn - 1];
+	const size_t yTopBit = cybozu::bsr(yTop);
+	int ret = xn < yn ? -1 : cmpN(x, y, xn);
+	if (ret < 0) { // q = 0, r = x if x < y
+		copyN(r, x, xn);
+		clearN(r + xn, rn - xn);
+		if (q) clearN(q, qn);
+		return true;
+	}
+	if (ret == 0) { // q = 1, r = 0 if x == y
+		clearN(r, rn);
+		if (q) {
+			q[0] = 1;
+			clearN(q + 1, qn - 1);
+		}
+		return true;
+	}
+	// fast reduction for larger than fullbit-3 size p
+	if (yTopBit >= sizeof(T) * 8 - 3) {
+		T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
+		T qv = 0;
+		if (yTop == T(-1)) {
+			subN(xx, x, y, xn);
+			qv = 1;
+		} else {
+			qv = x[xn - 1] / (yTop + 1);
+			mulu1(xx, y, yn, qv);
+			subN(xx, x, xx, xn);
+		}
+		while (cmpN(xx, y, yn) >= 0) {
+			subN(xx, xx, y, yn);
+			qv++;
+		}
+		if (r) {
+			copyN(r, xx, xn);
+			clearN(r + xn, rn - xn);
+		}
+		if (q) {
+			q[0] = qv;
+			clearN(q + 1, qn - 1);
+		}
+		return true;
+	}
+	return false;
+}
+
+/*
 	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
 	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
 	allow q == 0
@@ -551,26 +609,6 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	const size_t rn = yn;
 	xn = getRealSize(x, xn);
 	yn = getRealSize(y, yn);
-	if (x == y) {
-		assert(xn == yn);
-	x_is_y:
-		clearN(r, rn);
-		if (q) {
-			q[0] = 1;
-			clearN(q + 1, qn - 1);
-		}
-		return;
-	}
-	if (yn > xn) {
-		/*
-			if y > x then q = 0 and r = x
-		*/
-	q_is_zero:
-		copyN(r, x, xn);
-		clearN(r + xn, rn - xn);
-		if (q) clearN(q, qn);
-		return;
-	}
 	if (yn == 1) {
 		T t;
 		if (q) {
@@ -585,43 +623,11 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		clearN(r + 1, rn - 1);
 		return;
 	}
-	assert(yn >= 2);
-	const T yTop = y[yn - 1];
-	const size_t yTopBit = cybozu::bsr(yTop);
-	if (xn == yn) {
-		int ret = cmpN(x, y, xn);
-		if (ret == 0) goto x_is_y;
-		if (ret < 0) goto q_is_zero;
-		// fast reduction for larger than fullbit-3 size p
-		if (yTopBit >= sizeof(T) * 8 - 3) {
-			T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-			T qv = 0;
-			if (yTop == T(-1)) {
-				subN(xx, x, y, xn);
-				qv = 1;
-			} else {
-				qv = x[xn - 1] / (yTop + 1);
-				mulu1(xx, y, yn, qv);
-				subN(xx, x, xx, xn);
-			}
-			while (cmpN(xx, y, yn) >= 0) {
-				subN(xx, xx, y, yn);
-				qv++;
-			}
-			if (r) {
-				copyN(r, xx, xn);
-				clearN(r + xn, rn - xn);
-			}
-			if (q) {
-				q[0] = qv;
-				clearN(q + 1, qn - 1);
-			}
-			return;
-		}
-	}
+	if (divSmallX(q, qn, r, rn, x, xn, y, yn)) return;
 	/*
 		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
 	*/
+	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
 	const size_t shift = sizeof(T) * 8 - 1 - yTopBit;
 	T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	const T *yy;

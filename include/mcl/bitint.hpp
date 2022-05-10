@@ -522,6 +522,9 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	return xn;
 }
 
+//template<size_t N>
+//void div(Unit *q, size_t qn, Unit *r, const Unit *x, size_t xn, const T *y)
+
 #include "bitint_switch.hpp"
 
 } } // mcl::bint
