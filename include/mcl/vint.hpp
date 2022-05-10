@@ -578,13 +578,11 @@ bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T 
 			mulu1(xx, y, yn, qv);
 			subN(xx, x, xx, xn);
 		}
-int ccc=0;
+		// expect that loop is at most once
 		while (cmpN(xx, y, yn) >= 0) {
 			subN(xx, xx, y, yn);
 			qv++;
-ccc++;
 		}
-if (ccc>=2) {printf("QQQQ ccc=%d\n", ccc);exit(1); }
 		if (r) {
 			copyN(r, xx, xn);
 			clearN(r + xn, rn - xn);
