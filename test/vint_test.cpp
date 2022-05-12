@@ -775,12 +775,11 @@ CYBOZU_TEST_AUTO(shift)
 	Vint x("123423424918471928374192874198274981274918274918274918243");
 	Vint y, z;
 
-	const size_t unitBitSize = Vint::unitBitSize;
 	Vint s;
 	// shl
 	for (size_t i = 1; i < 31; i++) {
 		Vint::shl(y, x, i);
-		z = x * (Vint::Unit(1) << i);
+		z = x * (Unit(1) << i);
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x << i;
 		CYBOZU_TEST_EQUAL(y, z);
@@ -789,14 +788,14 @@ CYBOZU_TEST_AUTO(shift)
 		CYBOZU_TEST_EQUAL(y, z);
 	}
 	for (int i = 0; i < 4; i++) {
-		Vint::shl(y, x, i * unitBitSize);
-		Vint::pow(s, Vint(2), i * unitBitSize);
+		Vint::shl(y, x, i * UnitBitSize);
+		Vint::pow(s, Vint(2), i * UnitBitSize);
 		z = x * s;
 		CYBOZU_TEST_EQUAL(y, z);
-		y = x << (i * unitBitSize);
+		y = x << (i * UnitBitSize);
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x;
-		y <<= (i * unitBitSize);
+		y <<= (i * UnitBitSize);
 		CYBOZU_TEST_EQUAL(y, z);
 	}
 	for (int i = 0; i < 100; i++) {
@@ -812,7 +811,7 @@ CYBOZU_TEST_AUTO(shift)
 	// shr
 	for (size_t i = 1; i < 31; i++) {
 		Vint::shr(y, x, i);
-		z = x / (Vint::Unit(1) << i);
+		z = x / (Unit(1) << i);
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x >> i;
 		CYBOZU_TEST_EQUAL(y, z);
@@ -821,14 +820,14 @@ CYBOZU_TEST_AUTO(shift)
 		CYBOZU_TEST_EQUAL(y, z);
 	}
 	for (int i = 0; i < 3; i++) {
-		Vint::shr(y, x, i * unitBitSize);
-		Vint::pow(s, Vint(2), i * unitBitSize);
+		Vint::shr(y, x, i * UnitBitSize);
+		Vint::pow(s, Vint(2), i * UnitBitSize);
 		z = x / s;
 		CYBOZU_TEST_EQUAL(y, z);
-		y = x >> (i * unitBitSize);
+		y = x >> (i * UnitBitSize);
 		CYBOZU_TEST_EQUAL(y, z);
 		y = x;
-		y >>= (i * unitBitSize);
+		y >>= (i * UnitBitSize);
 		CYBOZU_TEST_EQUAL(y, z);
 	}
 	for (int i = 0; i < 100; i++) {
@@ -842,7 +841,7 @@ CYBOZU_TEST_AUTO(shift)
 	}
 	{
 		Vint a = 0, zero = 0;
-		a <<= Vint::unitBitSize;
+		a <<= UnitBitSize;
 		CYBOZU_TEST_EQUAL(a, zero);
 	}
 }
@@ -852,9 +851,9 @@ CYBOZU_TEST_AUTO(getBitSize)
 	{
 		Vint zero = 0;
 		CYBOZU_TEST_EQUAL(zero.getBitSize(), 1);
-		zero <<= (Vint::unitBitSize - 1);
+		zero <<= UnitBitSize - 1;
 		CYBOZU_TEST_EQUAL(zero.getBitSize(), 1);
-		zero <<= Vint::unitBitSize;
+		zero <<= UnitBitSize;
 		CYBOZU_TEST_EQUAL(zero.getBitSize(), 1);
 	}
 
@@ -1516,7 +1515,6 @@ CYBOZU_TEST_AUTO(divUnit)
 }
 #endif
 
-typedef Vint::Unit Unit;
 template<class T, size_t N>
 void compareMod(const T *x, const T (&p)[N])
 {

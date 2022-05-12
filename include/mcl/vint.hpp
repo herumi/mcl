@@ -30,7 +30,6 @@ namespace vint {
 
 template<size_t x>
 struct RoundUp {
-	static const size_t UnitBitSize = sizeof(Unit) * 8;
 	static const size_t N = (x + UnitBitSize - 1) / UnitBitSize;
 	static const size_t bit = N * UnitBitSize;
 };
@@ -430,16 +429,16 @@ T shlBit(T *y, const T *x, size_t xn, size_t bit)
 
 /*
 	y[yn] = x[xn] << bit
-	yn = xn + (bit + unitBitBit - 1) / unitBitSize
+	yn = xn + (bit + unitBitBit - 1) / UnitBitSize
 	accept y == x
 */
 template<class T>
 void shlN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t unitBitSize = sizeof(T) * 8;
-	size_t q = bit / unitBitSize;
-	size_t r = bit % unitBitSize;
+	const size_t UnitBitSize = sizeof(T) * 8;
+	size_t q = bit / UnitBitSize;
+	size_t r = bit % UnitBitSize;
 	if (r == 0) {
 		// don't use copyN(y + q, x, xn); if overlaped
 		for (size_t i = 0; i < xn; i++) {
@@ -477,9 +476,9 @@ template<class T>
 void shrN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t unitBitSize = sizeof(T) * 8;
-	size_t q = bit / unitBitSize;
-	size_t r = bit % unitBitSize;
+	const size_t UnitBitSize = sizeof(T) * 8;
+	size_t q = bit / UnitBitSize;
+	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
 	if (r == 0) {
 		copyN(y, x + q, xn - q);
@@ -499,8 +498,10 @@ size_t getRealSize(const T *x, size_t n)
 }
 
 /*
+	y must have full bit
 	x[xn] = x[xn] % y[yn]
 	q[qn] = x[xn] / y[yn] if q != NULL
+	return len of remain x
 */
 template<class T>
 size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
@@ -654,15 +655,12 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	clearN(r + xn, rn - xn);
 }
 
-template<class T, size_t BitLen>
+template<size_t BitLen>
 class FixedBuffer {
-	enum {
-		N = (BitLen + sizeof(T) * 8 - 1) / (sizeof(T) * 8)
-	};
+	static const size_t N = (BitLen + UnitBitSize - 1) / UnitBitSize;
 	size_t size_;
-	T v_[N];
+	Unit v_[N];
 public:
-	typedef T Unit;
 	FixedBuffer()
 		: size_(0)
 	{
@@ -726,8 +724,8 @@ public:
 		assert(n <= N);
 		(void)n;
 	}
-	const T& operator[](size_t n) const { verify(n); return v_[n]; }
-	T& operator[](size_t n) { verify(n); return v_[n]; }
+	const Unit& operator[](size_t n) const { verify(n); return v_[n]; }
+	Unit& operator[](size_t n) { verify(n); return v_[n]; }
 };
 
 inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
@@ -803,8 +801,7 @@ template<class _Buffer>
 class VintT {
 public:
 	typedef _Buffer Buffer;
-	typedef typename Buffer::Unit Unit;
-	static const size_t unitBitSize = sizeof(Unit) * 8;
+	static const size_t UnitBitSize = sizeof(Unit) * 8;
 	static const int invalidVar = -2147483647 - 1; // abs(invalidVar) is not defined
 private:
 	Buffer buf_;
@@ -1172,16 +1169,16 @@ public:
 	// ignore sign
 	bool testBit(size_t i) const
 	{
-		size_t q = i / unitBitSize;
-		size_t r = i % unitBitSize;
+		size_t q = i / UnitBitSize;
+		size_t r = i % UnitBitSize;
 		assert(q <= size());
 		Unit mask = Unit(1) << r;
 		return (buf_[q] & mask) != 0;
 	}
 	void setBit(size_t i, bool v = true)
 	{
-		size_t q = i / unitBitSize;
-		size_t r = i % unitBitSize;
+		size_t q = i / UnitBitSize;
+		size_t r = i % UnitBitSize;
 		assert(q <= size());
 		bool b;
 		buf_.alloc(&b, q + 1);
@@ -1207,7 +1204,7 @@ public:
 	void setStr(bool *pb, const char *str, int base = 0)
 	{
 		// allow twice size of MCL_MAX_BIT_SIZE because of multiplication
-		const size_t maxN = (MCL_MAX_BIT_SIZE * 2 + unitBitSize - 1) / unitBitSize;
+		const size_t maxN = (MCL_MAX_BIT_SIZE * 2 + UnitBitSize - 1) / UnitBitSize;
 		buf_.alloc(pb, maxN);
 		if (!*pb) return;
 		*pb = false;
@@ -1467,7 +1464,7 @@ public:
 	static void shl(VintT& y, const VintT& x, size_t shiftBit)
 	{
 		size_t xn = x.size();
-		size_t yn = xn + (shiftBit + unitBitSize - 1) / unitBitSize;
+		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
 		assert(b);
@@ -1483,11 +1480,11 @@ public:
 	static void shr(VintT& y, const VintT& x, size_t shiftBit)
 	{
 		size_t xn = x.size();
-		if (xn * unitBitSize <= shiftBit) {
+		if (xn * UnitBitSize <= shiftBit) {
 			y.clear();
 			return;
 		}
-		size_t yn = xn - shiftBit / unitBitSize;
+		size_t yn = xn - shiftBit / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
 		assert(b);
@@ -1966,7 +1963,7 @@ public:
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
 
-typedef VintT<vint::FixedBuffer<mcl::Unit, vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
+typedef VintT<vint::FixedBuffer<vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
 
 } // mcl
 
