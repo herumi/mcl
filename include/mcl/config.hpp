@@ -36,7 +36,17 @@ typedef uint32_t Unit;
 
 const size_t UnitBitSize = sizeof(Unit) * 8;
 
+static inline size_t roundUp(size_t x, size_t n)
+{
+	return (x + n - 1) / n;
+}
+template<size_t x, size_t n>
+struct RoundUpT {
+	static const size_t N = (x + n - 1) / n;
+};
+#define MCL_ROUNDUP(x, n) ((x + n - 1) / n)
+
 const size_t maxUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
-#define MCL_MAX_UNIT_SIZE ((MCL_MAX_BIT_SIZE + MCL_UNIT_BIT_SIZE - 1) / MCL_UNIT_BIT_SIZE)
+#define MCL_MAX_UNIT_SIZE MCL_ROUNDUP(MCL_MAX_BIT_SIZE, MCL_UNIT_BIT_SIZE)
 
 } // mcl

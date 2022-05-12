@@ -28,12 +28,6 @@ namespace mcl {
 
 namespace vint {
 
-template<size_t x>
-struct RoundUp {
-	static const size_t N = (x + UnitBitSize - 1) / UnitBitSize;
-	static const size_t bit = N * UnitBitSize;
-};
-
 template<class T>
 void dump(const T *x, size_t n, const char *msg = "")
 {
@@ -655,9 +649,8 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	clearN(r + xn, rn - xn);
 }
 
-template<size_t BitLen>
 class FixedBuffer {
-	static const size_t N = (BitLen + UnitBitSize - 1) / UnitBitSize;
+	static const size_t N = maxUnitSize * 2;
 	size_t size_;
 	Unit v_[N];
 public:
@@ -1963,7 +1956,7 @@ public:
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
 
-typedef VintT<vint::FixedBuffer<vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
+typedef VintT<vint::FixedBuffer> Vint;
 
 } // mcl
 
