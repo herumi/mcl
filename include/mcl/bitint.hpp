@@ -8,10 +8,8 @@
 */
 
 #include <mcl/config.hpp>
+#include <cybozu/bit_operation.hpp>
 #include <assert.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
 
 //#define MCL_BITINT_ASM 0
 #ifndef MCL_BITINT_ASM
@@ -363,35 +361,67 @@ void mulT(Unit *pz, const Unit *px, const Unit *py)
 // [return:z[N]] = x[N] << y
 // 0 < y < sizeof(Unit) * 8
 template<size_t N>
-Unit shlT(Unit *pz, const Unit *px, Unit y)
+Unit shlT(Unit *pz, const Unit *px, Unit bit)
 {
-	assert(0 < y && y < sizeof(Unit) * 8);
-	size_t yRev = sizeof(Unit) * 8 - y;
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
 	Unit prev = px[N - 1];
 	Unit keep = prev;
 	for (size_t i = N - 1; i > 0; i--) {
 		Unit t = px[i - 1];
-		pz[i] = (prev << y) | (t >> yRev);
+		pz[i] = (prev << bit) | (t >> bitRev);
 		prev = t;
 	}
-	pz[0] = prev << y;
-	return keep >> yRev;
+	pz[0] = prev << bit;
+	return keep >> bitRev;
 }
 
-// z[N] = x[N] >> y
-// 0 < y < sizeof(Unit) * 8
+// z[N] = x[N] >> bit
+// 0 < bit < sizeof(Unit) * 8
 template<size_t N>
-void shrT(Unit *pz, const Unit *px, size_t y)
+void shrT(Unit *pz, const Unit *px, size_t bit)
 {
-	assert(0 < y && y < sizeof(Unit) * 8);
-	size_t yRev = sizeof(Unit) * 8 - y;
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
 	Unit prev = px[0];
 	for (size_t i = 1; i < N; i++) {
 		Unit t = px[i];
-		pz[i - 1] = (prev >> y) | (t << yRev);
+		pz[i - 1] = (prev >> bit) | (t << bitRev);
 		prev = t;
 	}
-	pz[N - 1] = prev >> y;
+	pz[N - 1] = prev >> bit;
+}
+
+// [return:z[N]] = x[N] << y
+// 0 < y < sizeof(Unit) * 8
+inline Unit shl(Unit *pz, const Unit *px, size_t n, Unit bit)
+{
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
+	Unit prev = px[n - 1];
+	Unit keep = prev;
+	for (size_t i = n - 1; i > 0; i--) {
+		Unit t = px[i - 1];
+		pz[i] = (prev << bit) | (t >> bitRev);
+		prev = t;
+	}
+	pz[0] = prev << bit;
+	return keep >> bitRev;
+}
+
+// z[n] = x[n] >> bit
+// 0 < bit < sizeof(Unit) * 8
+inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
+{
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
+	Unit prev = px[0];
+	for (size_t i = 1; i < n; i++) {
+		Unit t = px[i];
+		pz[i - 1] = (prev >> bit) | (t << bitRev);
+		prev = t;
+	}
+	pz[n - 1] = prev >> bit;
 }
 
 // z[n] = x[n] + y
@@ -565,7 +595,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 /*
 	assume xn <= N
 	x[xn] = x[xn] % y[N]
-	q[qn] = x[xn] / y[N]
+	q[qn] = x[xn] / y[N] if q != NULL
 	assume(n >= 2);
 	return true if computed else false
 */
@@ -612,8 +642,63 @@ EXIT:
 	return true;
 }
 
-//template<size_t N>
-//void div(Unit *q, size_t qn, Unit *r, const Unit *x, size_t xn, const T *y)
+/*
+	x[rn] = x[xn] % y[N] ; rn = N before getRealSize
+	q[qn] = x[xn] / y[N] ; qn == xn - N + 1 if xn >= N if q
+	allow q == 0
+	return new xn
+*/
+template<size_t N>
+void div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+{
+	assert(xn > 0 && N > 1);
+	assert(xn < N || (q == 0 || qn >= xn - N + 1));
+	assert(q != r);
+	assert(y[N - 1] != 0);
+	xn = getRealSize(x, xn);
+	if (divSmallT<N>(q, qn, x, xn, y)) return;
+	/*
+		bitwise left shift x and y to adjust MSB of y[N - 1] = 1
+	*/
+	const size_t yTopBit = cybozu::bsr(y[N - 1]);
+	const size_t shift = UnitBitSize - 1 - yTopBit;
+	const Unit *yy;
+	if (shift) {
+		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));
+		Unit v = shl(xx, x, xn, shift);
+		if (v) {
+			xx[xn] = v;
+			xn++;
+		}
+		Unit yShift[N];
+		shlT<N>(yShift, y, shift);
+		xn = divFullBitN(q, qn, xx, xn, yShift, N);
+		shr(x, xx, xn, shift);
+	} else {
+		divFullBitT<N>(q, qn, x, xn, y);
+	}
+}
+
+template<>
+void div<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+{
+	assert(xn > 0);
+	assert(q == 0 || qn >= xn);
+	assert(q != r);
+	assert(y[0] != 0);
+	xn = getRealSize(x, xn);
+	Unit t;
+	if (q) {
+		if (qn > xn) {
+			clear(q + xn, qn - xn);
+		}
+		t = divUnit(q, x, xn, y[0]);
+	} else {
+		t = modUnit(x, xn, y[0]);
+	}
+	x[0] = t;
+	clear(x + 1, xn - 1);
+}
 
 #include "bitint_switch.hpp"
 
