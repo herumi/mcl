@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <mcl/bitint.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
@@ -255,7 +256,33 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		setArray(mr, x, rn);
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
 	}
+#ifndef NDEBUG
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBitT<yN>, q, qN, x, xN, y);
+#endif
+}
+
+CYBOZU_TEST_AUTO(divSmallT)
+{
+	const size_t N = 4;
+	Unit x[N], y[N], q, r[N];
+	cybozu::XorShift rg;
+	mpz_class mx, my, mr;
+	for (int i = 0; i < 100; i++) {
+		setRand(x, N, rg);
+		setRand(y, N, rg);
+		y[N - 1] |= Unit(1) << (sizeof(Unit) * 8 / 2); // at least half
+		setArray(mx, x, N);
+		setArray(my, y, N);
+		bool done = divSmallT<N>(&q, 1, r, N, x, N, y);
+		CYBOZU_TEST_ASSERT(done);
+		setArray(mr, r, N);
+		CYBOZU_TEST_EQUAL(q * my + mr, mx);
+	}
+#ifndef NDEBUG
+	const int C = 1000;
+	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
+	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBitT<yN>, q, qN, x, xN, y);
+#endif
 }

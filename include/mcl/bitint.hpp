@@ -234,6 +234,17 @@ inline size_t getRealSize(const Unit *x, size_t n)
 
 #endif // MCL_SIZEOF_UNIT == 8
 
+template<size_t N>
+int cmpT(const Unit *px, const Unit *py)
+{
+	for (size_t i = 0; i < N; i++) {
+		const Unit x = px[N - 1 - i];
+		const Unit y = py[N - 1 - i];
+		if (x != y) return x > y ? 1 : -1;
+	}
+	return 0;
+}
+
 // true if x[N] == y[N]
 template<size_t N>
 bool cmpEqT(const Unit *px, const Unit *py)
@@ -329,6 +340,15 @@ inline bool cmpLt(const Unit *px, const Unit *py, size_t n)
 	return !cmpGe(px, py, n);
 }
 
+inline int cmp(const Unit *px, const Unit *py, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		const Unit x = px[n - 1 - i];
+		const Unit y = py[n - 1 - i];
+		if (x != y) return x > y ? 1 : -1;
+	}
+	return 0;
+}
 
 // z[2N] = x[N] * y[N]
 template<size_t N>
@@ -460,6 +480,24 @@ inline Unit modUnit(const Unit *x, size_t n, Unit y)
 	return r;
 }
 
+template<size_t N>
+void copyT(Unit *y, const Unit *x)
+{
+	for (size_t i = 0; i < N; i++) y[i] = x[i];
+}
+
+// y[n] = x[n]
+inline void copy(Unit *y, const Unit *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) y[i] = x[i];
+}
+
+template<size_t N>
+void clearT(Unit *x)
+{
+	for (size_t i = 0; i < N; i++) x[i] = 0;
+}
+
 // x[n] = 0
 inline void clear(Unit *x, size_t n)
 {
@@ -522,6 +560,63 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	}
 	xn = getRealSize(x, xn);
 	return xn;
+}
+
+/*
+	assume xn <= N
+	q[qn] = x[xn] / y[yn], r[rn] = x[xn] % y[yn]
+	assume(n >= 2);
+	return true if computed else false
+*/
+template<size_t N>
+bool divSmallT(Unit *q, size_t qn, Unit *r, size_t rn, const Unit *x, size_t xn, const Unit *y)
+{
+	if (xn > N) return false;
+	const Unit yTop = y[N - 1];
+	assert(yTop > 0);
+	int ret = xn < N ? -1 : cmpT<N>(x, y);
+	if (ret < 0) { // q = 0, r = x if x < y
+		copy(r, x, xn);
+		clear(r + xn, rn - xn);
+		if (q) clear(q, qn);
+		return true;
+	}
+	if (ret == 0) { // q = 1, r = 0 if x == y
+		clear(r, rn);
+		if (q) {
+			q[0] = 1;
+			clear(q + 1, qn - 1);
+		}
+		return true;
+	}
+	assert(xn == N);
+	if (yTop >= Unit(1) << (UnitBitSize / 2)) {
+		Unit xx[N];
+		Unit qv = 0;
+		if (yTop == Unit(-1)) {
+			subT<N>(xx, x, y);
+			qv = 1;
+		} else {
+			qv = x[N - 1] / (yTop + 1);
+			mulUnitT<N>(xx, y, qv);
+			subT<N>(xx, x, xx);
+		}
+		// expect that loop is at most once
+		while (cmpGeT<N>(xx, y)) {
+			subT<N>(xx, xx, y);
+			qv++;
+		}
+		if (r) {
+			copy(r, xx, xn);
+			clear(r + xn, rn - xn);
+		}
+		if (q) {
+			q[0] = qv;
+			clear(q + 1, qn - 1);
+		}
+		return true;
+	}
+	return false;
 }
 
 //template<size_t N>

@@ -541,7 +541,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 	return true if computed else false
 */
 template<class T>
-bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *y, size_t yn)
+bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *y, size_t yn)
 {
 	assert(yn > 0);
 	const T yTop = y[yn - 1];
@@ -619,7 +619,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		clearN(r + 1, rn - 1);
 		return;
 	}
-	if (divSmallX(q, qn, r, rn, x, xn, y, yn)) return;
+	if (divSmall(q, qn, r, rn, x, xn, y, yn)) return;
 	/*
 		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
 	*/
