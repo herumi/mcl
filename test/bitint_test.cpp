@@ -266,7 +266,7 @@ CYBOZU_TEST_AUTO(divFullBitT)
 CYBOZU_TEST_AUTO(divSmallT)
 {
 	const size_t N = 4;
-	Unit x[N], y[N], q, r[N];
+	Unit x[N], y[N], q;
 	cybozu::XorShift rg;
 	mpz_class mx, my, mr;
 	for (int i = 0; i < 100; i++) {
@@ -275,9 +275,9 @@ CYBOZU_TEST_AUTO(divSmallT)
 		y[N - 1] |= Unit(1) << (sizeof(Unit) * 8 / 2); // at least half
 		setArray(mx, x, N);
 		setArray(my, y, N);
-		bool done = divSmallT<N>(&q, 1, r, N, x, N, y);
+		bool done = divSmallT<N>(&q, 1, x, N, y);
 		CYBOZU_TEST_ASSERT(done);
-		setArray(mr, r, N);
+		setArray(mr, x, N);
 		CYBOZU_TEST_EQUAL(q * my + mr, mx);
 	}
 #ifndef NDEBUG

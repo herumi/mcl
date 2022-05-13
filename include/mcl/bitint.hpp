@@ -520,7 +520,7 @@ struct FuncT {
 	}
 };
 /*
-	y must be sizeof(Unit) * 8 * N bit
+	y must be UnitSizeBit * N bit
 	x[xn] = x[xn] % y[N]
 	q[qn] = x[xn] / y[N] if q != NULL
 	return new xn
@@ -529,7 +529,7 @@ template<size_t N, typename Func = FuncT<N> >
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
-	assert((y[N - 1] >> (sizeof(Unit) * 8 - 1)) != 0);
+	assert(y[N - 1] >> (UnitSizeBit - 1));
 	assert(q != x && q != y && x != y);
 	if (q) clear(q, qn);
 	Unit t[N];
@@ -564,59 +564,52 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 
 /*
 	assume xn <= N
-	q[qn] = x[xn] / y[yn], r[rn] = x[xn] % y[yn]
+	x[xn] = x[xn] % y[N]
+	q[qn] = x[xn] / y[N]
 	assume(n >= 2);
 	return true if computed else false
 */
 template<size_t N>
-bool divSmallT(Unit *q, size_t qn, Unit *r, size_t rn, const Unit *x, size_t xn, const Unit *y)
+bool divSmallT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	if (xn > N) return false;
 	const Unit yTop = y[N - 1];
 	assert(yTop > 0);
+	Unit qv = 0;
 	int ret = xn < N ? -1 : cmpT<N>(x, y);
 	if (ret < 0) { // q = 0, r = x if x < y
-		copy(r, x, xn);
-		clear(r + xn, rn - xn);
-		if (q) clear(q, qn);
-		return true;
+		goto EXIT;
 	}
 	if (ret == 0) { // q = 1, r = 0 if x == y
-		clear(r, rn);
-		if (q) {
-			q[0] = 1;
-			clear(q + 1, qn - 1);
-		}
-		return true;
+		clear(x, xn);
+		qv = 1;
+		goto EXIT;
 	}
 	assert(xn == N);
 	if (yTop >= Unit(1) << (UnitBitSize / 2)) {
-		Unit xx[N];
-		Unit qv = 0;
 		if (yTop == Unit(-1)) {
-			subT<N>(xx, x, y);
+			subT<N>(x, x, y);
 			qv = 1;
 		} else {
+			Unit t[N];
 			qv = x[N - 1] / (yTop + 1);
-			mulUnitT<N>(xx, y, qv);
-			subT<N>(xx, x, xx);
+			mulUnitT<N>(t, y, qv);
+			subT<N>(x, x, t);
 		}
 		// expect that loop is at most once
-		while (cmpGeT<N>(xx, y)) {
-			subT<N>(xx, xx, y);
+		while (cmpGe(x, y, N)) {
+			subT<N>(x, x, y);
 			qv++;
 		}
-		if (r) {
-			copy(r, xx, xn);
-			clear(r + xn, rn - xn);
-		}
-		if (q) {
-			q[0] = qv;
-			clear(q + 1, qn - 1);
-		}
-		return true;
+		goto EXIT;
 	}
 	return false;
+EXIT:
+	if (q) {
+		q[0] = qv;
+		clear(q + 1, qn - 1);
+	}
+	return true;
 }
 
 //template<size_t N>
