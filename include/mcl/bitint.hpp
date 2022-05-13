@@ -662,17 +662,16 @@ void div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	*/
 	const size_t yTopBit = cybozu::bsr(y[N - 1]);
 	const size_t shift = UnitBitSize - 1 - yTopBit;
-	const Unit *yy;
 	if (shift) {
+		Unit yShift[N];
+		shlT<N>(yShift, y, shift);
 		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));
 		Unit v = shl(xx, x, xn, shift);
 		if (v) {
 			xx[xn] = v;
 			xn++;
 		}
-		Unit yShift[N];
-		shlT<N>(yShift, y, shift);
-		xn = divFullBitN(q, qn, xx, xn, yShift, N);
+		xn = divFullBitT<N>(q, qn, xx, xn, yShift);
 		shr(x, xx, xn, shift);
 	} else {
 		divFullBitT<N>(q, qn, x, xn, y);

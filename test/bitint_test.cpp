@@ -237,6 +237,14 @@ CYBOZU_TEST_AUTO(divUnit)
 	}
 }
 
+template<size_t N>
+void divFullBitCopy(Unit *q, size_t qn, const Unit *x, size_t xn, const Unit *y)
+{
+	Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+	copy(xx ,x, xn);
+	divFullBitT<N>(q, qn, xx, xn, y);
+}
+
 CYBOZU_TEST_AUTO(divFullBitT)
 {
 	const size_t xN = 7;
@@ -256,11 +264,19 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		setArray(mr, x, rn);
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
 	}
-#ifndef NDEBUG
+#ifdef NDEBUG
 	const int C = 1000;
-	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBitT<yN>, q, qN, x, xN, y);
+	CYBOZU_BENCH_C("gmp  ", C, divmod, mq, mr, mx, my);
+	CYBOZU_BENCH_C("full ", C, divFullBitCopy<yN>, q, qN, x, xN, y);
 #endif
+}
+
+template<size_t N>
+void divSmallCopy(Unit *q, size_t qn, const Unit *x, size_t xn, const Unit *y)
+{
+	Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+	copy(xx ,x, xn);
+	divSmallT<N>(q, qn, xx, xn, y);
 }
 
 CYBOZU_TEST_AUTO(divSmallT)
@@ -280,9 +296,8 @@ CYBOZU_TEST_AUTO(divSmallT)
 		setArray(mr, x, N);
 		CYBOZU_TEST_EQUAL(q * my + mr, mx);
 	}
-#ifndef NDEBUG
+#ifdef NDEBUG
 	const int C = 1000;
-	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("myC", C, mcl::bint::divFullBitT<yN>, q, qN, x, xN, y);
+	CYBOZU_BENCH_C("small", C, divSmallCopy<N>, &q, 1, x, N, y);
 #endif
 }
