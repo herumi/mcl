@@ -1,5 +1,4 @@
 #include <stdio.h>
-#define MCL_MAX_BIT_SIZE 521
 #include <mcl/vint.hpp>
 #include <iostream>
 #include <sstream>

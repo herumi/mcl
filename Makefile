@@ -104,16 +104,19 @@ ifeq ($(MCL_BITINT),1)
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   LIB_OBJ+=$(BITINT_OBJ)
 endif
+ifneq ($(MCL_MAX_BIT_SIZE),)
+  GEN_BITINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
+endif
 src/gen_bitint.exe: src/gen_bitint.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra
+	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
 src/bitint64.ll: src/gen_bitint.exe
 	$< -u 64 -ver 0x90 > $@
 src/bitint32.ll: src/gen_bitint.exe
 	$< -u 32 -ver 0x90 > $@
 include/mcl/bitint_asm.hpp: src/gen_bitint_header.py
-	python3 $< > $@ asm
+	python3 $< > $@ asm $(GEN_BITINT_HEADER_PY_OPT)
 include/mcl/bitint_switch.hpp: src/gen_bitint_header.py
-	python3 $< > $@ switch
+	python3 $< > $@ switch $(GEN_BITINT_HEADER_PY_OPT)
 $(BITINT_SRC): src/bitint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
