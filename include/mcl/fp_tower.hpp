@@ -16,12 +16,11 @@ template<class Fp> struct Fp2DblT;
 
 template<class Fp>
 class FpDblT : public fp::Serializable<FpDblT<Fp> > {
-	typedef fp::Unit Unit;
 	Unit v_[Fp::maxSize * 2];
 	friend struct Fp2DblT<Fp>;
 public:
 	static size_t getUnitSize() { return Fp::op_.N * 2; }
-	const fp::Unit *getUnit() const { return v_; }
+	const Unit *getUnit() const { return v_; }
 	void dump() const
 	{
 		const size_t n = getUnitSize();
@@ -182,7 +181,6 @@ template<class _Fp>
 class Fp2T : public fp::Serializable<Fp2T<_Fp>,
 	fp::Operator<Fp2T<_Fp> > > {
 	typedef _Fp Fp;
-	typedef fp::Unit Unit;
 	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	static const size_t gN = 5;
@@ -436,7 +434,7 @@ public:
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
 		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
-		if ((op.p[op.N - 1] >> (sizeof(fp::Unit) * 8 - 2)) != 0) {
+		if ((op.p[op.N - 1] >> (sizeof(Unit) * 8 - 2)) != 0) {
 			*pb = false;
 			return;
 		}
@@ -659,7 +657,6 @@ struct Fp2DblT {
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2T<Fp> Fp2;
-	typedef fp::Unit Unit;
 	FpDbl a, b;
 	static void add(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
 	{
@@ -999,7 +996,6 @@ struct Fp6DblT {
 	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
-	typedef fp::Unit Unit;
 	Fp2Dbl a, b, c;
 	static void add(Fp6Dbl& z, const Fp6Dbl& x, const Fp6Dbl& y)
 	{
@@ -1503,7 +1499,7 @@ struct GroupMtoA : public T {
 		if (y == x) return;
 		for (size_t i = 0; i < n; i++) y[i] = x[i];
 	}
-	static void mulArray(GroupMtoA& z, const GroupMtoA& x, const fp::Unit *y, size_t yn)
+	static void mulArray(GroupMtoA& z, const GroupMtoA& x, const Unit *y, size_t yn)
 	{
 		T::powArray(z, x, y, yn);
 	}

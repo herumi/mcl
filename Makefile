@@ -12,6 +12,7 @@ TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
 TEST_SRC+=mul_test.cpp
+TEST_SRC+=bitint_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   LIB_OBJ+=obj/static_code.o
@@ -96,6 +97,32 @@ ifeq ($(OS),mac-m1)
   ASM_SRC=src/base64.ll
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
+BITINT_SUF?=-$(OS)-$(CPU)
+ifeq ($(MCL_BITINT),1)
+  BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
+  BITINT_SRC=src/asm/$(BITINT_BASENAME).s
+  BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
+  LIB_OBJ+=$(BITINT_OBJ)
+endif
+src/gen_bitint.exe: src/gen_bitint.cpp src/llvm_gen.hpp
+	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra
+src/bitint64.ll: src/gen_bitint.exe
+	$< -u 64 -ver 0x90 > $@
+src/bitint32.ll: src/gen_bitint.exe
+	$< -u 32 -ver 0x90 > $@
+include/mcl/bitint_asm.hpp: src/gen_bitint_header.py
+	python3 $< > $@ asm
+include/mcl/bitint_switch.hpp: src/gen_bitint_header.py
+	python3 $< > $@ switch
+$(BITINT_SRC): src/bitint$(BIT).ll
+	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
+$(BITINT_OBJ): $(BITINT_SRC)
+	$(AS) $< -o $@
+bitint_header:
+	$(MAKE) include/mcl/bitint_asm.hpp
+	$(MAKE) include/mcl/bitint_switch.hpp
+#$(BITINT_LL_SRC): src/bitint.cpp src/bitint.hpp
+#	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
@@ -246,10 +273,10 @@ else
 endif
 
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER
+	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
-	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8
 
 src/static_code.asm: src/dump_code
 	$< > $@
@@ -258,7 +285,7 @@ obj/static_code.o: src/static_code.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
-	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I include -Wall -Wextra
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -I include -Wall -Wextra
  
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
@@ -331,13 +358,19 @@ $(EXE_DIR)/she_c384_256_test.exe: $(OBJ_DIR)/she_c384_256_test.o $(SHE384_256_LI
 	$(PRE)$(CXX) $< -o $@ $(SHE384_256_LIB) $(MCL_LIB) $(LDFLAGS)
 
 $(OBJ_DIR)/modp_test.o: test/modp_test.cpp
-	$(PRE)$(CXX) -c $< -o $@ -MMD -MP -MF $(@:.o=.d) -DMCL_USE_VINT -DMCL_MAX_BIT_SIZE=384 -DMCL_VINT_64BIT_PORTABLE -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -I./include -O2 $(CFLAGS_WARN)
+	$(PRE)$(CXX) -c $< -o $@ -MMD -MP -MF $(@:.o=.d) -DMCL_USE_VINT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -I./include -O2 $(CFLAGS_WARN)
 
 $(EXE_DIR)/modp_test.exe: $(OBJ_DIR)/modp_test.o
 	$(PRE)$(CXX) $< -o $@
 
 $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
 	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
+
+$(EXE_DIR)/paillier_test.exe: $(OBJ_DIR)/paillier_test.o $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(LDFLAGS) -lgmp -lgmpxx
+
+$(EXE_DIR)/bitint_test.exe: $(OBJ_DIR)/bitint_test.o $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS) -lgmp -lgmpxx
 
 SAMPLE_EXE=$(addprefix $(EXE_DIR)/,$(addsuffix .exe,$(basename $(SAMPLE_SRC))))
 sample: $(SAMPLE_EXE) $(MCL_LIB)
@@ -364,9 +397,9 @@ endif
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_64BIT_PORTABLE -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=256 -I./include
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_VINT_FIXED_BUFFER -DMCL_MAX_BIT_SIZE=384 -DMCL_VINT_64BIT_PORTABLE -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
+	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
 bin/ecdsa-emu:
 	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
 
@@ -391,6 +424,7 @@ update_cybozulib:
 
 clean:
 	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) lib/*.a src/static_code.asm src/dump_code
+	$(RM) src/gen_bitint.exe
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))

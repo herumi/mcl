@@ -308,7 +308,7 @@ int sheEncGT(sheCipherTextGT *c, const shePublicKey *pub, mclInt m)
 
 bool setArray(mpz_class& m, const void *buf, mclSize bufSize)
 {
-	if (bufSize > Fr::getUnitSize() * sizeof(mcl::fp::Unit)) return false;
+	if (bufSize > Fr::getUnitSize() * sizeof(mcl::Unit)) return false;
 	bool b;
 	mcl::gmp::setArray(&b, m, (const uint8_t*)buf, bufSize);
 	return b;

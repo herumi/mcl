@@ -67,7 +67,7 @@ template<class T>
 void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
-	const fp::Unit *src = x.getUnit();
+	const Unit *src = x.getUnit();
 	const size_t n = x.getUnitSize();
 	*pb = fp::convertArrayAsLE(buf, maxSize, src, n);
 #else
@@ -392,15 +392,15 @@ inline void setBit(mpz_class& x, size_t pos, bool v = true)
 	}
 #endif
 }
-inline const fp::Unit *getUnit(const mpz_class& x)
+inline const Unit *getUnit(const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
 	return x.getUnit();
 #else
-	return reinterpret_cast<const fp::Unit*>(x.get_mpz_t()->_mp_d);
+	return reinterpret_cast<const Unit*>(x.get_mpz_t()->_mp_d);
 #endif
 }
-inline fp::Unit getUnit(const mpz_class& x, size_t i)
+inline Unit getUnit(const mpz_class& x, size_t i)
 {
 	return getUnit(x)[i];
 }
@@ -924,7 +924,6 @@ public:
 	x mod p for a small value x < (pMulTblN * p).
 */
 struct SmallModp {
-	typedef mcl::fp::Unit Unit;
 	static const size_t unitBitSize = sizeof(Unit) * 8;
 	static const size_t maxTblSize = (MCL_MAX_BIT_SIZE + unitBitSize - 1) / unitBitSize + 1;
 	static const size_t maxMulN = 9;
@@ -1006,7 +1005,7 @@ struct SmallModp {
 	mod of GMP is faster than Modp
 */
 struct Modp {
-	static const size_t unitBitSize = sizeof(mcl::fp::Unit) * 8;
+	static const size_t unitBitSize = sizeof(mcl::Unit) * 8;
 	mpz_class p_;
 	mpz_class u_;
 	mpz_class a_;

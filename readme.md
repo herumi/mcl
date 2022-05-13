@@ -78,6 +78,12 @@ make -j4
 - `lib/libmcl.*` ; core library
 - `lib/libmclbn384_256.*` ; library to use C-API of BLS12-381 pairing
 
+## How to make src/bitint_if{32,64}.ll
+clang++-12 is necessary. clang-14 is not supported because it uses _ExtInt.
+```
+make MCL_BITINT=1 LLVM_VER=-12 bin/bitint_if_test.exe -j MCL_USE_GMP=1
+```
+
 ## How to test of BLS12-381 pairing
 
 ```

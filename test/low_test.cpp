@@ -9,7 +9,7 @@
 
 cybozu::XorShift rg;
 
-extern "C" void add_test(mcl::fp::Unit *z, const mcl::fp::Unit *x, const mcl::fp::Unit *y);
+extern "C" void add_test(mcl::Unit *z, const mcl::Unit *x, const mcl::Unit *y);
 
 template<size_t bit>
 void bench()

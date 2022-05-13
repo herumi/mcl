@@ -16,7 +16,7 @@ typedef mcl::FpT<> Fp;
 #endif
 
 struct Montgomery {
-	typedef mcl::fp::Unit Unit;
+	typedef mcl::Unit Unit;
 	mpz_class p_;
 	mpz_class R_; // (1 << (pn_ * 64)) % p
 	mpz_class RR_; // (R * R) % p

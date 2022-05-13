@@ -91,7 +91,7 @@ int mclBn_getCurveType()
 
 int mclBn_getOpUnitSize()
 {
-	return (int)Fp::getUnitSize() * sizeof(mcl::fp::Unit) / sizeof(uint64_t);
+	return (int)Fp::getUnitSize() * sizeof(mcl::Unit) / sizeof(uint64_t);
 }
 
 int mclBn_getG1ByteSize()

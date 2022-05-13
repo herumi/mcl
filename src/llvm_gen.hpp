@@ -143,8 +143,11 @@ struct Generator {
 	Eval _or(const Operand& x, const Operand& y);
 	void ret(const Operand& r);
 	Eval lshr(const Operand& x, uint32_t size);
+	Eval lshr(const Operand& x, const Operand& y);
 	Eval ashr(const Operand& x, uint32_t size);
+	Eval ashr(const Operand& x, const Operand& y);
 	Eval shl(const Operand& x, uint32_t size);
+	Eval shl(const Operand& x, const Operand& y);
 	Eval trunc(const Operand& x, uint32_t size);
 	Eval getelementptr(const Operand& p, const Operand& i);
 	Eval getelementptr(const Operand& p, int n);
@@ -400,6 +403,16 @@ inline Generator::Eval shiftSub(const char *name, const Generator::Operand& x, u
 	return e;
 }
 
+inline Generator::Eval shiftSub(const char *name, const Generator::Operand& x, const Generator::Operand& y)
+{
+	Generator::Eval e;
+	e.op = x;
+	e.s = name;
+	e.s += " ";
+	e.s += x.toStr() + ", " + y.getName();
+	return e;
+}
+
 } // mcl::impl
 
 inline void Generator::beginFunc(const Generator::Function& f)
@@ -454,14 +467,29 @@ inline Generator::Eval Generator::lshr(const Generator::Operand& x, uint32_t siz
 	return impl::shiftSub("lshr", x, size);
 }
 
+inline Generator::Eval Generator::lshr(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::shiftSub("lshr", x, y);
+}
+
 inline Generator::Eval Generator::ashr(const Generator::Operand& x, uint32_t size)
 {
 	return impl::shiftSub("ashr", x, size);
 }
 
+inline Generator::Eval Generator::ashr(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::shiftSub("ashr", x, y);
+}
+
 inline Generator::Eval Generator::shl(const Generator::Operand& x, uint32_t size)
 {
 	return impl::shiftSub("shl", x, size);
+}
+
+inline Generator::Eval Generator::shl(const Generator::Operand& x, const Generator::Operand& y)
+{
+	return impl::shiftSub("shl", x, y);
 }
 
 inline Generator::Eval Generator::trunc(const Generator::Operand& x, uint32_t size)

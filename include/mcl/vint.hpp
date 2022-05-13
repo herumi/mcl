@@ -16,11 +16,10 @@
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
 #include <mcl/conversion.hpp>
-
-#if defined(__EMSCRIPTEN__) || defined(__wasm__)
-	#define MCL_VINT_64BIT_PORTABLE
-	#define MCL_VINT_FIXED_BUFFER
+#ifdef _MSC_VER
+#include <intrin.h>
 #endif
+
 #ifndef MCL_MAX_BIT_SIZE
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
@@ -28,15 +27,6 @@
 namespace mcl {
 
 namespace vint {
-
-typedef fp::Unit Unit;
-
-template<size_t x>
-struct RoundUp {
-	static const size_t UnitBitSize = sizeof(Unit) * 8;
-	static const size_t N = (x + UnitBitSize - 1) / UnitBitSize;
-	static const size_t bit = N * UnitBitSize;
-};
 
 template<class T>
 void dump(const T *x, size_t n, const char *msg = "")
@@ -78,23 +68,7 @@ inline uint32_t mulUnit(uint32_t *pH, uint32_t x, uint32_t y)
 #if MCL_SIZEOF_UNIT == 8
 inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
 {
-#ifdef MCL_VINT_64BIT_PORTABLE
-	const uint64_t mask = 0xffffffff;
-	uint64_t v = (x & mask) * (y & mask);
-	uint64_t L = uint32_t(v);
-	uint64_t H = v >> 32;
-	uint64_t ad = (x & mask) * uint32_t(y >> 32);
-	uint64_t bc = uint32_t(x >> 32) * (y & mask);
-	H += uint32_t(ad);
-	H += uint32_t(bc);
-	L |= H << 32;
-	H >>= 32;
-	H += ad >> 32;
-	H += bc >> 32;
-	H += (x >> 32) * (y >> 32);
-	*pH = H;
-	return L;
-#elif defined(_WIN64) && !defined(__INTEL_COMPILER)
+#if defined(_WIN64) && !defined(__INTEL_COMPILER)
 	return _umul128(x, y, pH);
 #else
 	typedef __attribute__((mode(TI))) unsigned int uint128;
@@ -104,9 +78,6 @@ inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
 #endif
 }
 #endif
-
-template<class T>
-void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn);
 
 /*
 	q = [H:L] / y
@@ -125,18 +96,7 @@ inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
 	assert(y != 0);
-#if defined(MCL_VINT_64BIT_PORTABLE) || (defined(_MSC_VER) && _MSC_VER < 1920)
-	uint32_t px[4] = { uint32_t(L), uint32_t(L >> 32), uint32_t(H), uint32_t(H >> 32) };
-	uint32_t py[2] = { uint32_t(y), uint32_t(y >> 32) };
-	size_t xn = 4;
-	size_t yn = 2;
-	uint32_t q[4];
-	uint32_t r[2];
-	size_t qn = xn - yn + 1;
-	divNM(q, qn, r, px, xn, py, yn);
-	*pr = make64(r[1], r[0]);
-	return make64(q[1], q[0]);
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 	return _udiv128(H, L, y, pr);
 #else
 	typedef __attribute__((mode(TI))) unsigned int uint128;
@@ -160,6 +120,15 @@ int compareNM(const T *x, size_t xn, const T *y, size_t yn)
 	assert(xn > 0 && yn > 0);
 	if (xn != yn) return xn > yn ? 1 : -1;
 	for (int i = (int)xn - 1; i >= 0; i--) {
+		if (x[i] != y[i]) return x[i] > y[i] ? 1 : -1;
+	}
+	return 0;
+}
+template<class T>
+int cmpN(const T *x, const T *y, size_t n)
+{
+	assert(n > 0);
+	for (int i = (int)n - 1; i >= 0; i--) {
 		if (x[i] != y[i]) return x[i] > y[i] ? 1 : -1;
 	}
 	return 0;
@@ -408,6 +377,7 @@ static inline void sqrN(T *y, const T *x, size_t xn)
 template<class T>
 T divu1(T *q, const T *x, size_t n, T y)
 {
+	if (n == 0) return 0;
 	T r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
 		q[i] = divUnit(&r, r, x[i], y);
@@ -421,6 +391,7 @@ T divu1(T *q, const T *x, size_t n, T y)
 template<class T>
 T modu1(const T *x, size_t n, T y)
 {
+	if (n == 0) return 0;
 	T r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
 		divUnit(&r, r, x[i], y);
@@ -452,16 +423,16 @@ T shlBit(T *y, const T *x, size_t xn, size_t bit)
 
 /*
 	y[yn] = x[xn] << bit
-	yn = xn + (bit + unitBitBit - 1) / unitBitSize
+	yn = xn + (bit + unitBitBit - 1) / UnitBitSize
 	accept y == x
 */
 template<class T>
 void shlN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t unitBitSize = sizeof(T) * 8;
-	size_t q = bit / unitBitSize;
-	size_t r = bit % unitBitSize;
+	const size_t UnitBitSize = sizeof(T) * 8;
+	size_t q = bit / UnitBitSize;
+	size_t r = bit % UnitBitSize;
 	if (r == 0) {
 		// don't use copyN(y + q, x, xn); if overlaped
 		for (size_t i = 0; i < xn; i++) {
@@ -499,9 +470,9 @@ template<class T>
 void shrN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t unitBitSize = sizeof(T) * 8;
-	size_t q = bit / unitBitSize;
-	size_t r = bit % unitBitSize;
+	const size_t UnitBitSize = sizeof(T) * 8;
+	size_t q = bit / UnitBitSize;
+	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
 	if (r == 0) {
 		copyN(y, x + q, xn - q);
@@ -511,15 +482,113 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 }
 
 template<class T>
-size_t getRealSize(const T *x, size_t xn)
+size_t getRealSize(const T *x, size_t n)
 {
-	int i = (int)xn - 1;
-	for (; i > 0; i--) {
-		if (x[i]) {
-			return i + 1;
+	while (n > 0) {
+		if (x[n - 1]) break;
+		n--;
+	}
+	return n > 0 ? n : 1;
+}
+
+/*
+	y must have full bit
+	x[xn] = x[xn] % y[yn]
+	q[qn] = x[xn] / y[yn] if q != NULL
+	return len of remain x
+*/
+template<class T>
+size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
+{
+	assert(xn > 0);
+	assert(yn > 0);
+	assert((y[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
+	if (q) clearN(q, qn);
+	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
+	while (xn > yn) {
+		if (x[xn - 1] == 0) {
+			xn--;
+			continue;
+		}
+		size_t d = xn - yn;
+		if (cmpN(x + d, y, yn) >= 0) {
+			vint::subN(x + d, x + d, y, yn);
+			if (q) vint::addu1<T>(q + d, qn - d, 1);
+		} else {
+			T xTop = x[xn - 1];
+			if (xTop == 1) {
+				T ret= vint::subN(x + d - 1, x + d - 1, y, yn);
+				x[xn-1] -= ret;
+			} else {
+				tt[yn] = vint::mulu1(tt, y, yn, xTop);
+				vint::subN(x + d - 1, x + d - 1, tt, yn + 1);
+			}
+			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, xTop);
 		}
 	}
-	return 1;
+	if (xn == yn && cmpN(x, y, yn) >= 0) {
+		subN(x, x, y, yn);
+		if (q) vint::addu1<T>(q, qn, 1);
+	}
+	xn = getRealSize(x, xn);
+	return xn;
+}
+
+/*
+	assme xn <= yn
+	q[qn] = x[xn] / y[yn], r[rn] = x[xn] % y[yn]
+	assume(n >= 2);
+	return true if computed else false
+*/
+template<class T>
+bool divSmallX(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *y, size_t yn)
+{
+	assert(yn > 0);
+	const T yTop = y[yn - 1];
+	assert(yTop > 0);
+	if (xn > yn) return false;
+	int ret = xn < yn ? -1 : cmpN(x, y, xn);
+	if (ret < 0) { // q = 0, r = x if x < y
+		copyN(r, x, xn);
+		clearN(r + xn, rn - xn);
+		if (q) clearN(q, qn);
+		return true;
+	}
+	if (ret == 0) { // q = 1, r = 0 if x == y
+		clearN(r, rn);
+		if (q) {
+			q[0] = 1;
+			clearN(q + 1, qn - 1);
+		}
+		return true;
+	}
+	if (yTop >= T(1) << (sizeof(T) * 8 / 2)) {
+		T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
+		T qv = 0;
+		if (yTop == T(-1)) {
+			subN(xx, x, y, xn);
+			qv = 1;
+		} else {
+			qv = x[xn - 1] / (yTop + 1);
+			mulu1(xx, y, yn, qv);
+			subN(xx, x, xx, xn);
+		}
+		// expect that loop is at most once
+		while (cmpN(xx, y, yn) >= 0) {
+			subN(xx, xx, y, yn);
+			qv++;
+		}
+		if (r) {
+			copyN(r, xx, xn);
+			clearN(r + xn, rn - xn);
+		}
+		if (q) {
+			q[0] = qv;
+			clearN(q + 1, qn - 1);
+		}
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -536,26 +605,6 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	const size_t rn = yn;
 	xn = getRealSize(x, xn);
 	yn = getRealSize(y, yn);
-	if (x == y) {
-		assert(xn == yn);
-	x_is_y:
-		clearN(r, rn);
-		if (q) {
-			q[0] = 1;
-			clearN(q + 1, qn - 1);
-		}
-		return;
-	}
-	if (yn > xn) {
-		/*
-			if y > x then q = 0 and r = x
-		*/
-	q_is_zero:
-		copyN(r, x, xn);
-		clearN(r + xn, rn - xn);
-		if (q) clearN(q, qn);
-		return;
-	}
 	if (yn == 1) {
 		T t;
 		if (q) {
@@ -570,60 +619,11 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		clearN(r + 1, rn - 1);
 		return;
 	}
-	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
-	assert(yn >= 2);
-	if (xn == yn) {
-		const size_t xTopBit = cybozu::bsr(x[xn - 1]);
-		if (xTopBit < yTopBit) goto q_is_zero;
-		if (yTopBit == xTopBit) {
-			int ret = compareNM(x, xn, y, yn);
-			if (ret == 0) goto x_is_y;
-			if (ret < 0) goto q_is_zero;
-			if (r) {
-				subN(r, x, y, yn);
-			}
-			if (q) {
-				q[0] = 1;
-				clearN(q + 1, qn - 1);
-			}
-			return;
-		}
-		assert(xTopBit > yTopBit);
-		// fast reduction for larger than fullbit-3 size p
-		if (yTopBit >= sizeof(T) * 8 - 4) {
-			T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-			T qv = 0;
-			if (yTopBit == sizeof(T) * 8 - 2) {
-				copyN(xx, x, xn);
-			} else {
-				qv = x[xn - 1] >> (yTopBit + 1);
-				mulu1(xx, y, yn, qv);
-				subN(xx, x, xx, xn);
-				xn = getRealSize(xx, xn);
-			}
-			for (;;) {
-				T ret = subN(xx, xx, y, yn);
-				if (ret) {
-					addN(xx, xx, y, yn);
-					break;
-				}
-				qv++;
-				xn = getRealSize(xx, xn);
-			}
-			if (r) {
-				copyN(r, xx, xn);
-				clearN(r + xn, rn - xn);
-			}
-			if (q) {
-				q[0] = qv;
-				clearN(q + 1, qn - 1);
-			}
-			return;
-		}
-	}
+	if (divSmallX(q, qn, r, rn, x, xn, y, yn)) return;
 	/*
 		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
 	*/
+	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
 	const size_t shift = sizeof(T) * 8 - 1 - yTopBit;
 	T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	const T *yy;
@@ -640,37 +640,7 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		copyN(xx, x, xn);
 		yy = y;
 	}
-	if (q) {
-		clearN(q, qn);
-	}
-	assert((yy[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
-	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
-	while (xn > yn) {
-		size_t d = xn - yn;
-		T xTop = xx[xn - 1];
-		T yTop = yy[yn - 1];
-		if (xTop > yTop || (compareNM(xx + d, xn - d, yy, yn) >= 0)) {
-			vint::subN(xx + d, xx + d, yy, yn);
-			xn = getRealSize(xx, xn);
-			if (q) vint::addu1<T>(q + d, qn - d, 1);
-			continue;
-		}
-		if (xTop == 1) {
-			vint::subNM(xx + d - 1, xx + d - 1, xn - d + 1, yy, yn);
-			xn = getRealSize(xx, xn);
-			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, 1);
-			continue;
-		}
-		tt[yn] = vint::mulu1(tt, yy, yn, xTop);
-		vint::subN(xx + d - 1, xx + d - 1, tt, yn + 1);
-		xn = getRealSize(xx, xn);
-		if (q) vint::addu1<T>(q + d - 1, qn - d + 1, xTop);
-	}
-	if (xn == yn && compareNM(xx, xn, yy, yn) >= 0) {
-		subN(xx, xx, yy, yn);
-		xn = getRealSize(xx, xn);
-		if (q) vint::addu1<T>(q, qn, 1);
-	}
+	xn = divFullBitN(q, qn, xx, xn, yy, yn);
 	if (shift) {
 		shrBit(r, xx, xn, shift);
 	} else {
@@ -679,91 +649,11 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 	clearN(r + xn, rn - xn);
 }
 
-#ifndef MCL_VINT_FIXED_BUFFER
-template<class T>
-class Buffer {
-	size_t allocSize_;
-	T *ptr_;
-public:
-	typedef T Unit;
-	Buffer() : allocSize_(0), ptr_(0) {}
-	~Buffer()
-	{
-		clear();
-	}
-	Buffer(const Buffer& rhs)
-		: allocSize_(rhs.allocSize_)
-		, ptr_(0)
-	{
-		ptr_ = (T*)malloc(allocSize_ * sizeof(T));
-		if (ptr_ == 0) throw cybozu::Exception("Buffer:malloc") << rhs.allocSize_;
-		memcpy(ptr_, rhs.ptr_, allocSize_ * sizeof(T));
-	}
-	Buffer& operator=(const Buffer& rhs)
-	{
-		Buffer t(rhs);
-		swap(t);
-		return *this;
-	}
-	void swap(Buffer& rhs)
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-		noexcept
-#endif
-	{
-		fp::swap_(allocSize_, rhs.allocSize_);
-		fp::swap_(ptr_, rhs.ptr_);
-	}
-	void clear()
-	{
-		allocSize_ = 0;
-		free(ptr_);
-		ptr_ = 0;
-	}
-
-	/*
-		@note extended buffer may be not cleared
-	*/
-	void alloc(bool *pb, size_t n)
-	{
-		if (n > allocSize_) {
-			T *p = (T*)malloc(n * sizeof(T));
-			if (p == 0) {
-				*pb = false;
-				return;
-			}
-			copyN(p, ptr_, allocSize_);
-			free(ptr_);
-			ptr_ = p;
-			allocSize_ = n;
-		}
-		*pb = true;
-	}
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-	void alloc(size_t n)
-	{
-		bool b;
-		alloc(&b, n);
-		if (!b) throw cybozu::Exception("Buffer:alloc");
-	}
-#endif
-	/*
-		*this = rhs
-		rhs may be destroyed
-	*/
-	const T& operator[](size_t n) const { return ptr_[n]; }
-	T& operator[](size_t n) { return ptr_[n]; }
-};
-#endif
-
-template<class T, size_t BitLen>
 class FixedBuffer {
-	enum {
-		N = (BitLen + sizeof(T) * 8 - 1) / (sizeof(T) * 8)
-	};
+	static const size_t N = maxUnitSize * 2;
 	size_t size_;
-	T v_[N];
+	Unit v_[N];
 public:
-	typedef T Unit;
 	FixedBuffer()
 		: size_(0)
 	{
@@ -827,8 +717,8 @@ public:
 		assert(n <= N);
 		(void)n;
 	}
-	const T& operator[](size_t n) const { verify(n); return v_[n]; }
-	T& operator[](size_t n) { verify(n); return v_[n]; }
+	const Unit& operator[](size_t n) const { verify(n); return v_[n]; }
+	Unit& operator[](size_t n) { verify(n); return v_[n]; }
 };
 
 inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
@@ -904,8 +794,7 @@ template<class _Buffer>
 class VintT {
 public:
 	typedef _Buffer Buffer;
-	typedef typename Buffer::Unit Unit;
-	static const size_t unitBitSize = sizeof(Unit) * 8;
+	static const size_t UnitBitSize = sizeof(Unit) * 8;
 	static const int invalidVar = -2147483647 - 1; // abs(invalidVar) is not defined
 private:
 	Buffer buf_;
@@ -1273,16 +1162,16 @@ public:
 	// ignore sign
 	bool testBit(size_t i) const
 	{
-		size_t q = i / unitBitSize;
-		size_t r = i % unitBitSize;
+		size_t q = i / UnitBitSize;
+		size_t r = i % UnitBitSize;
 		assert(q <= size());
 		Unit mask = Unit(1) << r;
 		return (buf_[q] & mask) != 0;
 	}
 	void setBit(size_t i, bool v = true)
 	{
-		size_t q = i / unitBitSize;
-		size_t r = i % unitBitSize;
+		size_t q = i / UnitBitSize;
+		size_t r = i % UnitBitSize;
 		assert(q <= size());
 		bool b;
 		buf_.alloc(&b, q + 1);
@@ -1308,7 +1197,7 @@ public:
 	void setStr(bool *pb, const char *str, int base = 0)
 	{
 		// allow twice size of MCL_MAX_BIT_SIZE because of multiplication
-		const size_t maxN = (MCL_MAX_BIT_SIZE * 2 + unitBitSize - 1) / unitBitSize;
+		const size_t maxN = (MCL_MAX_BIT_SIZE * 2 + UnitBitSize - 1) / UnitBitSize;
 		buf_.alloc(pb, maxN);
 		if (!*pb) return;
 		*pb = false;
@@ -1568,7 +1457,7 @@ public:
 	static void shl(VintT& y, const VintT& x, size_t shiftBit)
 	{
 		size_t xn = x.size();
-		size_t yn = xn + (shiftBit + unitBitSize - 1) / unitBitSize;
+		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
 		assert(b);
@@ -1584,11 +1473,11 @@ public:
 	static void shr(VintT& y, const VintT& x, size_t shiftBit)
 	{
 		size_t xn = x.size();
-		if (xn * unitBitSize <= shiftBit) {
+		if (xn * UnitBitSize <= shiftBit) {
 			y.clear();
 			return;
 		}
-		size_t yn = xn - shiftBit / unitBitSize;
+		size_t yn = xn - shiftBit / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
 		assert(b);
@@ -2067,11 +1956,7 @@ public:
 	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
 };
 
-#ifdef MCL_VINT_FIXED_BUFFER
-typedef VintT<vint::FixedBuffer<mcl::vint::Unit, vint::RoundUp<MCL_MAX_BIT_SIZE>::bit * 2> > Vint;
-#else
-typedef VintT<vint::Buffer<mcl::vint::Unit> > Vint;
-#endif
+typedef VintT<vint::FixedBuffer> Vint;
 
 } // mcl
 

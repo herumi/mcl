@@ -76,7 +76,7 @@ void test(const std::string& pStr, mcl::fp::Mode mode)
 		return;
 	}
 	const size_t N = 24;
-	mcl::fp::Unit ux[N], uy[N];
+	mcl::Unit ux[N], uy[N];
 	for (size_t i = 0; i < N; i++) {
 		ux[i] = -i * i + 5;
 		uy[i] = -i * i + 9;
