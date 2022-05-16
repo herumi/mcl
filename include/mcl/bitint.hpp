@@ -48,7 +48,7 @@ inline uint32_t mulUnit1(uint32_t *pH, uint32_t x, uint32_t y)
 */
 inline uint32_t divUnit1(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 {
-	assert(y != 0);
+	assert(H < y);
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
 	*pr = uint32_t(t % y);
@@ -70,7 +70,7 @@ inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 
 inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
-	assert(y != 0);
+	assert(H < y);
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
 	return _udiv128(H, L, y, pr);
 #else
@@ -81,7 +81,6 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	return q;
 #endif
 }
-
 
 // z[N] = x[N] + y[N] and return CF(0 or 1)
 template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
@@ -573,15 +572,17 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 			Func::sub(x + d, x + d, y);
 			if (q) addUnit(q + d, qn - d, 1);
 		} else {
-			Unit xTop = x[xn - 1], ret;
-			if (xTop == 1) {
-				ret = Func::sub(x + d - 1, x + d - 1, y);
+			Unit v;
+			if (y[N - 1] == Unit(-1)) {
+				v = x[xn - 1];
 			} else {
-				ret = Func::mulUnit(t, y, xTop);
-				ret += Func::sub(x + d - 1, x + d - 1, t);
+				Unit r;
+				v = divUnit1(&r, x[xn - 1], x[xn - 2], y[N - 1] + 1);
 			}
+			Unit ret = Func::mulUnit(t, y, v);
+			ret += Func::sub(x + d - 1, x + d - 1, t);
 			x[xn-1] -= ret;
-			if (q) addUnit(q + d - 1, qn - d + 1, xTop);
+			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
 	if (cmpGe(x, y, N)) {
@@ -649,14 +650,15 @@ EXIT:
 	return new xn
 */
 template<size_t N>
-void div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+size_t divT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0 && N > 1);
 	assert(xn < N || (q == 0 || qn >= xn - N + 1));
 	assert(q != r);
 	assert(y[N - 1] != 0);
 	xn = getRealSize(x, xn);
-	if (divSmallT<N>(q, qn, x, xn, y)) return;
+	if (divSmallT<N>(q, qn, x, xn, y)) return 1;
+
 	/*
 		bitwise left shift x and y to adjust MSB of y[N - 1] = 1
 	*/
@@ -673,13 +675,14 @@ void div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		}
 		xn = divFullBitT<N>(q, qn, xx, xn, yShift);
 		shr(x, xx, xn, shift);
+		return xn;
 	} else {
-		divFullBitT<N>(q, qn, x, xn, y);
+		return divFullBitT<N>(q, qn, x, xn, y);
 	}
 }
 
 template<>
-void div<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
 	assert(q == 0 || qn >= xn);
@@ -697,6 +700,7 @@ void div<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	}
 	x[0] = t;
 	clear(x + 1, xn - 1);
+	return 1;
 }
 
 #include "bitint_switch.hpp"
