@@ -548,6 +548,7 @@ struct FuncT {
 		return mulUnitT<N>(z, x, y);
 	}
 };
+
 /*
 	y must be UnitBitSize * N bit
 	x[xn] = x[xn] % y[N]
@@ -558,10 +559,19 @@ template<size_t N, typename Func = FuncT<N> >
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
-	assert(y[N - 1] >> (UnitBitSize - 1));
 	assert(q != x && q != y && x != y);
+	const Unit yTop = y[N - 1];
+	assert(yTop >> (UnitBitSize - 1));
 	if (q) clear(q, qn);
 	Unit t[N];
+#if 0
+	Unit rev = 0;
+	// rev = M/2 M / yTop where M = 1 << UnitBitSize
+	if (yTop != Unit(-1)) {
+		Unit r;
+		rev = divUnit1(&r, Unit(1) << (UnitBitSize - 1), 0, yTop + 1);
+	}
+#endif
 	while (xn > N) {
 		if (x[xn - 1] == 0) {
 			xn--;
@@ -573,11 +583,17 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 			if (q) addUnit(q + d, qn - d, 1);
 		} else {
 			Unit v;
-			if (y[N - 1] == Unit(-1)) {
+			if (yTop == Unit(-1)) {
 				v = x[xn - 1];
 			} else {
+#if 0
+				mulUnit1(&v, x[xn - 1], rev);
+				v <<= 1;
+				if (v == 0) v = 1;
+#else
 				Unit r;
 				v = divUnit1(&r, x[xn - 1], x[xn - 2], y[N - 1] + 1);
+#endif
 			}
 			Unit ret = Func::mulUnit(t, y, v);
 			ret += Func::sub(x + d - 1, x + d - 1, t);

@@ -1,11 +1,11 @@
+#include <cybozu/benchmark.hpp>
+//cybozu::CpuClock g_clk;
 #include <stdio.h>
 #include <mcl/bitint.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <gmpxx.h>
 #include <iostream>
-#include <cybozu/benchmark.hpp>
-//#include <mcl/gmp_util.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
@@ -266,9 +266,12 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		CYBOZU_TEST_EQUAL(mr, mx % my);
 	}
 #ifdef NDEBUG
+//g_clk.clear();
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp ", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("full", C, setRandAndTest<xN>, rg, divFullBitT<yN>, q, qN, y);
+//printf("count=%d\n", g_clk.getCount());
+//g_clk.put();
 #endif
 }
 
@@ -278,7 +281,7 @@ CYBOZU_TEST_AUTO(divSmallT)
 	Unit x[N], y[N], q;
 	cybozu::XorShift rg;
 	mpz_class mx, my, mr;
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 100; i++) {
 		setRand(x, N, rg);
 		setRand(y, N, rg);
 		y[N - 1] |= Unit(1) << (sizeof(Unit) * 8 / 2); // at least half
@@ -306,7 +309,7 @@ CYBOZU_TEST_AUTO(divT)
 	Unit x[xN], y[yN], q[qN];
 	cybozu::XorShift rg;
 	mpz_class mx, my, mq, mr;
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 100; i++) {
 		setRand(x, xN, rg);
 		setRand(y, yN, rg);
 		setArray(mx, x, xN);
@@ -319,6 +322,6 @@ CYBOZU_TEST_AUTO(divT)
 #ifdef NDEBUG
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("div", C, setRandAndTest<yN>, rg, divT<yN>, q, qN, y);
+	CYBOZU_BENCH_C("div", C, setRandAndTest<xN>, rg, divT<yN>, q, qN, y);
 #endif
 }
