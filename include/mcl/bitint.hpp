@@ -533,29 +533,13 @@ inline void clear(Unit *x, size_t n)
 	for (size_t i = 0; i < n; i++) x[i] = 0;
 }
 
-template<size_t N>
-struct FuncT {
-	static inline Unit add(Unit *z, const Unit *x, const Unit *y)
-	{
-		return addT<N>(z, x, y);
-	}
-	static inline Unit sub(Unit *z, const Unit *x, const Unit *y)
-	{
-		return subT<N>(z, x, y);
-	}
-	static inline Unit mulUnit(Unit *z, const Unit *x, Unit y)
-	{
-		return mulUnitT<N>(z, x, y);
-	}
-};
-
 /*
 	y must be UnitBitSize * N bit
 	x[xn] = x[xn] % y[N]
 	q[qn] = x[xn] / y[N] if q != NULL
 	return new xn
 */
-template<size_t N, typename Func = FuncT<N> >
+template<size_t N>
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
@@ -564,7 +548,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	assert(yTop >> (UnitBitSize - 1));
 	if (q) clear(q, qn);
 	Unit t[N];
-#if 0
+#if 1
 	Unit rev = 0;
 	// rev = M/2 M / yTop where M = 1 << UnitBitSize
 	if (yTop != Unit(-1)) {
@@ -579,14 +563,14 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		}
 		size_t d = xn - N;
 		if (cmpGe(x + d, y, N)) {
-			Func::sub(x + d, x + d, y);
+			subT<N>(x + d, x + d, y);
 			if (q) addUnit(q + d, qn - d, 1);
 		} else {
 			Unit v;
 			if (yTop == Unit(-1)) {
 				v = x[xn - 1];
 			} else {
-#if 0
+#if 1
 				mulUnit1(&v, x[xn - 1], rev);
 				v <<= 1;
 				if (v == 0) v = 1;
@@ -595,14 +579,14 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 				v = divUnit1(&r, x[xn - 1], x[xn - 2], y[N - 1] + 1);
 #endif
 			}
-			Unit ret = Func::mulUnit(t, y, v);
-			ret += Func::sub(x + d - 1, x + d - 1, t);
+			Unit ret = mulUnitT<N>(t, y, v);
+			ret += subT<N>(x + d - 1, x + d - 1, t);
 			x[xn-1] -= ret;
 			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
 	if (cmpGe(x, y, N)) {
-		Func::sub(x, x, y);
+		subT<N>(x, x, y);
 		if (q) addUnit(q, qn, 1);
 	}
 	xn = getRealSize(x, xn);
