@@ -102,7 +102,9 @@ ifeq ($(MCL_BITINT),1)
   BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
   BITINT_SRC=src/asm/$(BITINT_BASENAME).s
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
+  CFLAGS_USER+=-DMCL_BITINT_ASM=1
   LIB_OBJ+=$(BITINT_OBJ)
+test/bitint_test.cpp: include/mcl/bitint.hpp
 endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
   GEN_BITINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
@@ -124,6 +126,7 @@ $(BITINT_OBJ): $(BITINT_SRC)
 bitint_header:
 	$(MAKE) include/mcl/bitint_asm.hpp
 	$(MAKE) include/mcl/bitint_switch.hpp
+include/mcl/bitint.hpp: include/mcl/bitint_asm.hpp include/mcl/bitint_switch.hpp
 #$(BITINT_LL_SRC): src/bitint.cpp src/bitint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
