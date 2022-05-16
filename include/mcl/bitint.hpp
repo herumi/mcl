@@ -549,7 +549,7 @@ struct FuncT {
 	}
 };
 /*
-	y must be UnitSizeBit * N bit
+	y must be UnitBitSize * N bit
 	x[xn] = x[xn] % y[N]
 	q[qn] = x[xn] / y[N] if q != NULL
 	return new xn
@@ -558,7 +558,7 @@ template<size_t N, typename Func = FuncT<N> >
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
-	assert(y[N - 1] >> (UnitSizeBit - 1));
+	assert(y[N - 1] >> (UnitBitSize - 1));
 	assert(q != x && q != y && x != y);
 	if (q) clear(q, qn);
 	Unit t[N];
@@ -654,7 +654,6 @@ size_t divT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0 && N > 1);
 	assert(xn < N || (q == 0 || qn >= xn - N + 1));
-	assert(q != r);
 	assert(y[N - 1] != 0);
 	xn = getRealSize(x, xn);
 	if (divSmallT<N>(q, qn, x, xn, y)) return 1;
@@ -686,7 +685,6 @@ size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
 	assert(q == 0 || qn >= xn);
-	assert(q != r);
 	assert(y[0] != 0);
 	xn = getRealSize(x, xn);
 	Unit t;
