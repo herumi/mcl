@@ -515,15 +515,17 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 			vint::subN(x + d, x + d, y, yn);
 			if (q) vint::addu1<T>(q + d, qn - d, 1);
 		} else {
-			T xTop = x[xn - 1];
-			if (xTop == 1) {
-				T ret= vint::subN(x + d - 1, x + d - 1, y, yn);
-				x[xn-1] -= ret;
+			T v;
+			if (y[yn - 1] == T(-1)) {
+				v = x[xn - 1];
 			} else {
-				tt[yn] = vint::mulu1(tt, y, yn, xTop);
-				vint::subN(x + d - 1, x + d - 1, tt, yn + 1);
+				T r;
+				v = divUnit(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
 			}
-			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, xTop);
+			T ret = vint::mulu1(tt, y, yn, v);
+			ret += vint::subN(x + d - 1, x + d - 1, tt, yn);
+			x[xn-1] -= ret;
+			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, v);
 		}
 	}
 	if (xn == yn && cmpN(x, y, yn) >= 0) {
