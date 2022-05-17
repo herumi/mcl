@@ -35,7 +35,11 @@ void testMulVec(const G& P)
 		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG();
 	}
-	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256, 512, 1024, 2048, N };
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256,
+#if 0
+		512, 1024, 2048, N
+#endif
+	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
 		const size_t n = nTbl[i];
 		G Q1, Q2;
@@ -44,7 +48,7 @@ void testMulVec(const G& P)
 		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
-#ifdef NDEBUG
+#if 0 // #ifdef NDEBUG
 		printf("n=%zd\n", n);
 		const int C = 10;
 		CYBOZU_BENCH_C("naive ", C, naiveMulVec, Q1, xVec.data(), yVec.data(), n);
