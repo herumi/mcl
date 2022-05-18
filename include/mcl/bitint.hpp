@@ -8,10 +8,8 @@
 */
 
 #include <mcl/config.hpp>
+#include <cybozu/bit_operation.hpp>
 #include <assert.h>
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
 
 //#define MCL_BITINT_ASM 0
 #ifndef MCL_BITINT_ASM
@@ -50,7 +48,7 @@ inline uint32_t mulUnit1(uint32_t *pH, uint32_t x, uint32_t y)
 */
 inline uint32_t divUnit1(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 {
-	assert(y != 0);
+	assert(H < y);
 	uint64_t t = make64(H, L);
 	uint32_t q = uint32_t(t / y);
 	*pr = uint32_t(t % y);
@@ -72,7 +70,7 @@ inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 
 inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
-	assert(y != 0);
+	assert(H < y);
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
 	return _udiv128(H, L, y, pr);
 #else
@@ -83,7 +81,6 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	return q;
 #endif
 }
-
 
 // z[N] = x[N] + y[N] and return CF(0 or 1)
 template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
@@ -234,6 +231,17 @@ inline size_t getRealSize(const Unit *x, size_t n)
 
 #endif // MCL_SIZEOF_UNIT == 8
 
+template<size_t N>
+int cmpT(const Unit *px, const Unit *py)
+{
+	for (size_t i = 0; i < N; i++) {
+		const Unit x = px[N - 1 - i];
+		const Unit y = py[N - 1 - i];
+		if (x != y) return x > y ? 1 : -1;
+	}
+	return 0;
+}
+
 // true if x[N] == y[N]
 template<size_t N>
 bool cmpEqT(const Unit *px, const Unit *py)
@@ -329,6 +337,15 @@ inline bool cmpLt(const Unit *px, const Unit *py, size_t n)
 	return !cmpGe(px, py, n);
 }
 
+inline int cmp(const Unit *px, const Unit *py, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		const Unit x = px[n - 1 - i];
+		const Unit y = py[n - 1 - i];
+		if (x != y) return x > y ? 1 : -1;
+	}
+	return 0;
+}
 
 // z[2N] = x[N] * y[N]
 template<size_t N>
@@ -343,35 +360,67 @@ void mulT(Unit *pz, const Unit *px, const Unit *py)
 // [return:z[N]] = x[N] << y
 // 0 < y < sizeof(Unit) * 8
 template<size_t N>
-Unit shlT(Unit *pz, const Unit *px, Unit y)
+Unit shlT(Unit *pz, const Unit *px, Unit bit)
 {
-	assert(0 < y && y < sizeof(Unit) * 8);
-	size_t yRev = sizeof(Unit) * 8 - y;
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
 	Unit prev = px[N - 1];
 	Unit keep = prev;
 	for (size_t i = N - 1; i > 0; i--) {
 		Unit t = px[i - 1];
-		pz[i] = (prev << y) | (t >> yRev);
+		pz[i] = (prev << bit) | (t >> bitRev);
 		prev = t;
 	}
-	pz[0] = prev << y;
-	return keep >> yRev;
+	pz[0] = prev << bit;
+	return keep >> bitRev;
 }
 
-// z[N] = x[N] >> y
-// 0 < y < sizeof(Unit) * 8
+// z[N] = x[N] >> bit
+// 0 < bit < sizeof(Unit) * 8
 template<size_t N>
-void shrT(Unit *pz, const Unit *px, size_t y)
+void shrT(Unit *pz, const Unit *px, size_t bit)
 {
-	assert(0 < y && y < sizeof(Unit) * 8);
-	size_t yRev = sizeof(Unit) * 8 - y;
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
 	Unit prev = px[0];
 	for (size_t i = 1; i < N; i++) {
 		Unit t = px[i];
-		pz[i - 1] = (prev >> y) | (t << yRev);
+		pz[i - 1] = (prev >> bit) | (t << bitRev);
 		prev = t;
 	}
-	pz[N - 1] = prev >> y;
+	pz[N - 1] = prev >> bit;
+}
+
+// [return:z[N]] = x[N] << y
+// 0 < y < sizeof(Unit) * 8
+inline Unit shl(Unit *pz, const Unit *px, size_t n, Unit bit)
+{
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
+	Unit prev = px[n - 1];
+	Unit keep = prev;
+	for (size_t i = n - 1; i > 0; i--) {
+		Unit t = px[i - 1];
+		pz[i] = (prev << bit) | (t >> bitRev);
+		prev = t;
+	}
+	pz[0] = prev << bit;
+	return keep >> bitRev;
+}
+
+// z[n] = x[n] >> bit
+// 0 < bit < sizeof(Unit) * 8
+inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
+{
+	assert(0 < bit && bit < UnitBitSize);
+	size_t bitRev = UnitBitSize - bit;
+	Unit prev = px[0];
+	for (size_t i = 1; i < n; i++) {
+		Unit t = px[i];
+		pz[i - 1] = (prev >> bit) | (t << bitRev);
+		prev = t;
+	}
+	pz[n - 1] = prev >> bit;
 }
 
 // z[n] = x[n] + y
@@ -460,41 +509,53 @@ inline Unit modUnit(const Unit *x, size_t n, Unit y)
 	return r;
 }
 
+template<size_t N>
+void copyT(Unit *y, const Unit *x)
+{
+	for (size_t i = 0; i < N; i++) y[i] = x[i];
+}
+
+// y[n] = x[n]
+inline void copy(Unit *y, const Unit *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) y[i] = x[i];
+}
+
+template<size_t N>
+void clearT(Unit *x)
+{
+	for (size_t i = 0; i < N; i++) x[i] = 0;
+}
+
 // x[n] = 0
 inline void clear(Unit *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) x[i] = 0;
 }
 
-template<size_t N>
-struct FuncT {
-	static inline Unit add(Unit *z, const Unit *x, const Unit *y)
-	{
-		return addT<N>(z, x, y);
-	}
-	static inline Unit sub(Unit *z, const Unit *x, const Unit *y)
-	{
-		return subT<N>(z, x, y);
-	}
-	static inline Unit mulUnit(Unit *z, const Unit *x, Unit y)
-	{
-		return mulUnitT<N>(z, x, y);
-	}
-};
 /*
-	y must be sizeof(Unit) * 8 * N bit
+	y must be UnitBitSize * N bit
 	x[xn] = x[xn] % y[N]
 	q[qn] = x[xn] / y[N] if q != NULL
 	return new xn
 */
-template<size_t N, typename Func = FuncT<N> >
+template<size_t N>
 size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
-	assert((y[N - 1] >> (sizeof(Unit) * 8 - 1)) != 0);
 	assert(q != x && q != y && x != y);
+	const Unit yTop = y[N - 1];
+	assert(yTop >> (UnitBitSize - 1));
 	if (q) clear(q, qn);
 	Unit t[N];
+#if 1
+	Unit rev = 0;
+	// rev = M/2 M / yTop where M = 1 << UnitBitSize
+	if (yTop != Unit(-1)) {
+		Unit r;
+		rev = divUnit1(&r, Unit(1) << (UnitBitSize - 1), 0, yTop + 1);
+	}
+#endif
 	while (xn > N) {
 		if (x[xn - 1] == 0) {
 			xn--;
@@ -502,30 +563,143 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		}
 		size_t d = xn - N;
 		if (cmpGe(x + d, y, N)) {
-			Func::sub(x + d, x + d, y);
+			subT<N>(x + d, x + d, y);
 			if (q) addUnit(q + d, qn - d, 1);
 		} else {
-			Unit xTop = x[xn - 1], ret;
-			if (xTop == 1) {
-				ret = Func::sub(x + d - 1, x + d - 1, y);
+			Unit v;
+			if (yTop == Unit(-1)) {
+				v = x[xn - 1];
 			} else {
-				ret = Func::mulUnit(t, y, xTop);
-				ret += Func::sub(x + d - 1, x + d - 1, t);
+#if 1
+				mulUnit1(&v, x[xn - 1], rev);
+				v <<= 1;
+				if (v == 0) v = 1;
+#else
+				Unit r;
+				v = divUnit1(&r, x[xn - 1], x[xn - 2], y[N - 1] + 1);
+#endif
 			}
+			Unit ret = mulUnitT<N>(t, y, v);
+			ret += subT<N>(x + d - 1, x + d - 1, t);
 			x[xn-1] -= ret;
-			if (q) addUnit(q + d - 1, qn - d + 1, xTop);
+			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
 	if (cmpGe(x, y, N)) {
-		Func::sub(x, x, y);
+		subT<N>(x, x, y);
 		if (q) addUnit(q, qn, 1);
 	}
 	xn = getRealSize(x, xn);
 	return xn;
 }
 
-//template<size_t N>
-//void div(Unit *q, size_t qn, Unit *r, const Unit *x, size_t xn, const T *y)
+/*
+	assume xn <= N
+	x[xn] = x[xn] % y[N]
+	q[qn] = x[xn] / y[N] if q != NULL
+	assume(n >= 2);
+	return true if computed else false
+*/
+template<size_t N>
+bool divSmallT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+{
+	if (xn > N) return false;
+	const Unit yTop = y[N - 1];
+	assert(yTop > 0);
+	Unit qv = 0;
+	int ret = xn < N ? -1 : cmpT<N>(x, y);
+	if (ret < 0) { // q = 0, r = x if x < y
+		goto EXIT;
+	}
+	if (ret == 0) { // q = 1, r = 0 if x == y
+		clear(x, xn);
+		qv = 1;
+		goto EXIT;
+	}
+	assert(xn == N);
+	if (yTop >= Unit(1) << (UnitBitSize / 2)) {
+		if (yTop == Unit(-1)) {
+			subT<N>(x, x, y);
+			qv = 1;
+		} else {
+			Unit t[N];
+			qv = x[N - 1] / (yTop + 1);
+			mulUnitT<N>(t, y, qv);
+			subT<N>(x, x, t);
+		}
+		// expect that loop is at most once
+		while (cmpGe(x, y, N)) {
+			subT<N>(x, x, y);
+			qv++;
+		}
+		goto EXIT;
+	}
+	return false;
+EXIT:
+	if (q) {
+		q[0] = qv;
+		clear(q + 1, qn - 1);
+	}
+	return true;
+}
+
+/*
+	x[rn] = x[xn] % y[N] ; rn = N before getRealSize
+	q[qn] = x[xn] / y[N] ; qn == xn - N + 1 if xn >= N if q
+	allow q == 0
+	return new xn
+*/
+template<size_t N>
+size_t divT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+{
+	assert(xn > 0 && N > 1);
+	assert(xn < N || (q == 0 || qn >= xn - N + 1));
+	assert(y[N - 1] != 0);
+	xn = getRealSize(x, xn);
+	if (divSmallT<N>(q, qn, x, xn, y)) return 1;
+
+	/*
+		bitwise left shift x and y to adjust MSB of y[N - 1] = 1
+	*/
+	const size_t yTopBit = cybozu::bsr(y[N - 1]);
+	const size_t shift = UnitBitSize - 1 - yTopBit;
+	if (shift) {
+		Unit yShift[N];
+		shlT<N>(yShift, y, shift);
+		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));
+		Unit v = shl(xx, x, xn, shift);
+		if (v) {
+			xx[xn] = v;
+			xn++;
+		}
+		xn = divFullBitT<N>(q, qn, xx, xn, yShift);
+		shr(x, xx, xn, shift);
+		return xn;
+	} else {
+		return divFullBitT<N>(q, qn, x, xn, y);
+	}
+}
+
+template<>
+size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+{
+	assert(xn > 0);
+	assert(q == 0 || qn >= xn);
+	assert(y[0] != 0);
+	xn = getRealSize(x, xn);
+	Unit t;
+	if (q) {
+		if (qn > xn) {
+			clear(q + xn, qn - xn);
+		}
+		t = divUnit(q, x, xn, y[0]);
+	} else {
+		t = modUnit(x, xn, y[0]);
+	}
+	x[0] = t;
+	clear(x + 1, xn - 1);
+	return 1;
+}
 
 #include "bitint_switch.hpp"
 
