@@ -548,15 +548,13 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	assert(yTop >> (UnitBitSize - 1));
 	if (q) clear(q, qn);
 	Unit t[N];
-#if 1
 	Unit rev = 0;
 	// rev = M/2 M / yTop where M = 1 << UnitBitSize
 	if (yTop != Unit(-1)) {
 		Unit r;
 		rev = divUnit1(&r, Unit(1) << (UnitBitSize - 1), 0, yTop + 1);
 	}
-#endif
-	while (xn > N) {
+	while (xn >= N) {
 		if (x[xn - 1] == 0) {
 			xn--;
 			continue;
@@ -565,19 +563,18 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		if (cmpGe(x + d, y, N)) {
 			subT<N>(x + d, x + d, y);
 			if (q) addUnit(q + d, qn - d, 1);
+			if (d == 0) {
+				break;
+			}
 		} else {
+			if (d == 0) break;
 			Unit v;
 			if (yTop == Unit(-1)) {
 				v = x[xn - 1];
 			} else {
-#if 1
 				mulUnit1(&v, x[xn - 1], rev);
 				v <<= 1;
 				if (v == 0) v = 1;
-#else
-				Unit r;
-				v = divUnit1(&r, x[xn - 1], x[xn - 2], y[N - 1] + 1);
-#endif
 			}
 			Unit ret = mulUnitT<N>(t, y, v);
 			ret += subT<N>(x + d - 1, x + d - 1, t);
@@ -585,10 +582,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
-	if (cmpGe(x, y, N)) {
-		subT<N>(x, x, y);
-		if (q) addUnit(q, qn, 1);
-	}
+	assert(xn < N || (xn == N && cmpLtT(x, y, N)));
 	xn = getRealSize(x, xn);
 	return xn;
 }
