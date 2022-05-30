@@ -582,7 +582,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
-	assert(xn < N || (xn == N && cmpLtT(x, y, N)));
+	assert(xn < N || (xn == N && cmpLt(x, y, N)));
 	xn = getRealSize(x, xn);
 	return xn;
 }
