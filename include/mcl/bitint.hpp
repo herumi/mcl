@@ -56,13 +56,18 @@ inline uint32_t divUnit1(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 }
 
 #if MCL_SIZEOF_UNIT == 8
+
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER) || defined(__clang__)
+typedef __attribute__((mode(TI))) unsigned int uint128_t;
+#define MCL_DEFINED_UINT128_T
+#endif
+
 inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 {
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#ifndef MCL_DEFINED_UINT128_T
 	return _umul128(x, y, pH);
 #else
-	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = uint128(x) * y;
+	uint128_t t = uint128_t(x) * y;
 	*pH = uint64_t(t >> 64);
 	return uint64_t(t);
 #endif
@@ -71,11 +76,10 @@ inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
 	assert(H < y);
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#ifndef MCL_DEFINED_UINT128_T
 	return _udiv128(H, L, y, pr);
 #else
-	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = (uint128(H) << 64) | L;
+	uint128_t t = (uint128_t(H) << 64) | L;
 	uint64_t q = uint64_t(t / y);
 	*pr = uint64_t(t % y);
 	return q;
@@ -193,6 +197,15 @@ Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 		H = v >> 32;
 	}
 	return uint32_t(H);
+#elif defined(MCL_DEFINED_UINT128_T)
+	uint64_t H = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint128_t v = uint128_t(x[i]) * y;
+		v += H;
+		z[i] = uint64_t(v);
+		H = uint64_t(v >> 64);
+	}
+	return uint64_t(H); // z[n]
 #else
 	Unit H = 0;
 	for (size_t i = 0; i < N; i++) {
