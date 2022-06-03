@@ -64,25 +64,25 @@ typedef __attribute__((mode(TI))) unsigned int uint128_t;
 
 inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 {
-#ifndef MCL_DEFINED_UINT128_T
-	return _umul128(x, y, pH);
-#else
+#ifdef MCL_DEFINED_UINT128_T
 	uint128_t t = uint128_t(x) * y;
 	*pH = uint64_t(t >> 64);
 	return uint64_t(t);
+#else
+	return _umul128(x, y, pH);
 #endif
 }
 
 inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
 	assert(H < y);
-#ifndef MCL_DEFINED_UINT128_T
-	return _udiv128(H, L, y, pr);
-#else
+#ifdef MCL_DEFINED_UINT128_T
 	uint128_t t = (uint128_t(H) << 64) | L;
 	uint64_t q = uint64_t(t / y);
 	*pr = uint64_t(t % y);
 	return q;
+#else
+	return _udiv128(H, L, y, pr);
 #endif
 }
 
