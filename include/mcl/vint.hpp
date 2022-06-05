@@ -430,7 +430,6 @@ template<class T>
 void shlN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t UnitBitSize = sizeof(T) * 8;
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
 	if (r == 0) {
@@ -470,7 +469,6 @@ template<class T>
 void shrN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t UnitBitSize = sizeof(T) * 8;
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
