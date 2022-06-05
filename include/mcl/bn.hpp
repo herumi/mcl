@@ -2183,7 +2183,7 @@ static const CurveParam& CurveSNARK1 = BN_SNARK1;
 	= (F(x') w^2(p - 1), F(y') w^3(p - 1))
 	= (F(x') g^2, F(y') g^3)
 
-	FrobeniusOnTwist for Dtype
+	FrobeniusOnTwist for Mtype(BLS12-381)
 	use (1/g) instead of g
 */
 inline void Frobenius(G2& D, const G2& S)
