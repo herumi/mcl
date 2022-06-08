@@ -466,12 +466,14 @@ inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
 	y[yn] = x[xn] << bit
 	yn = xn + roundUp(bit, UnitBitSize)
 	accept y == x
+	return yn
 */
-inline void shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
+inline size_t shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
+	size_t yn = xn + q;
 	if (r == 0) {
 		// don't use copyN(y + q, x, xn); if overlaped
 		for (size_t i = 0; i < xn; i++) {
@@ -479,17 +481,19 @@ inline void shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
 		}
 	} else {
 		y[q + xn] = shl(y + q, x, xn, r);
+		yn++;
 	}
 	clear(y, q);
+	return yn;
 }
 
 /*
 	generic version
 	y[yn] = x[xn] >> bit
 	yn = xn - bit / UnitBitSize
-	clear y[yn:xn] if doClear
+	return yn
 */
-void shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit, bool doClear)
+inline size_t shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
@@ -500,9 +504,7 @@ void shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit, bool doClear)
 	} else {
 		shr(y, x + q, xn - q, r);
 	}
-	if (doClear) {
-		clear(y + xn - q, q);
-	}
+	return xn - q;
 }
 
 // z[n] = x[n] + y

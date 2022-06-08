@@ -205,9 +205,9 @@ CYBOZU_TEST_AUTO(shiftLeft)
 		setRand(x, N, rg);
 		setRand(&y, 1, rg);
 		y %= UnitBitSize * 3;
-		shiftLeft(z, x, N, y);
+		size_t yn = shiftLeft(z, x, N, y);
 		setArray(mx, x, N);
-		setArray(mz, z, N + mcl::roundUp(y, UnitBitSize));
+		setArray(mz, z, yn);
 		CYBOZU_TEST_EQUAL(mx << y, mz);
 	}
 }
@@ -224,19 +224,8 @@ CYBOZU_TEST_AUTO(shiftRight)
 		setArray(mx, x, N*2);
 		setRand(&y, 1, rg);
 		y %= UnitBitSize * 3;
-		size_t m = y / UnitBitSize;
-		memset(z, -1, sizeof(z));
-		shiftRight(z, x, N*2, y, false);
-		setArray(mz, z, N*2 - m);
-		CYBOZU_TEST_EQUAL(mx >> y, mz);
-		if (m > 0) {
-			for (size_t j = 0; j < m; j++) {
-				CYBOZU_TEST_EQUAL(z[N*2 - m + j], Unit(-1));
-			}
-		}
-
-		shiftRight(z, x, N*2, y, true);
-		setArray(mz, z, N*2);
+		size_t yn = shiftRight(z, x, N*2, y);
+		setArray(mz, z, yn);
 		CYBOZU_TEST_EQUAL(mx >> y, mz);
 	}
 }
