@@ -4,7 +4,7 @@ import argparse
 def gen_func(name, ret, args, cname, params, i):
 	retstr = '' if ret == 'void' else ' return'
 	print(f'extern "C" {ret} {cname}{i}({args});')
-	print(f'template<> {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
+	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
 def gen_switch(name, ret, args, cname, params, N, N64):
 	ret0 = 'return' if ret == 'void' else 'return 0'
