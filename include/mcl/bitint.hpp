@@ -734,7 +734,7 @@ size_t divT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 }
 
 template<>
-size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+inline size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 {
 	assert(xn > 0);
 	assert(q == 0 || qn >= xn);
