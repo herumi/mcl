@@ -12,6 +12,9 @@
 #include <assert.h>
 
 //#define MCL_BITINT_ASM 0
+#ifdef MCL_WASM32
+	#define MCL_BITINT_ASM 0
+#endif
 #ifndef MCL_BITINT_ASM
 	#define MCL_BITINT_ASM 1
 #endif
