@@ -56,31 +56,6 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 }
 
 /*
-	[H:L] <= x * y
-	@return L
-*/
-inline uint32_t mulUnit(uint32_t *pH, uint32_t x, uint32_t y)
-{
-	uint64_t t = uint64_t(x) * y;
-	uint32_t L;
-	split64(pH, &L, t);
-	return L;
-}
-#if MCL_SIZEOF_UNIT == 8
-inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
-{
-#if defined(_WIN64) && !defined(__INTEL_COMPILER)
-	return _umul128(x, y, pH);
-#else
-	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = uint128(x) * y;
-	*pH = uint64_t(t >> 64);
-	return uint64_t(t);
-#endif
-}
-#endif
-
-/*
 	q = [H:L] / y
 	r = [H:L] % y
 	return q
@@ -710,7 +685,7 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	buf[4] = bint::mulUnitT<n>(buf, x + 4, a); // H * a
 	buf[4] += addN(buf, buf, x, 4); // t = H * a + L
 	Unit x2[2];
-	x2[0] = mulUnit(&x2[1], buf[4], a);
+	x2[0] = bint::mulUnit1(&x2[1], buf[4], a);
 	Unit x3 = addN(buf, buf, x2, 2);
 	if (x3) {
 		x3 = addu1(buf + 2, buf + 2, 2, Unit(1)); // t' = H' * a + L'

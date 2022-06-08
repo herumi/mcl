@@ -1501,7 +1501,7 @@ CYBOZU_TEST_AUTO(divUnit)
 			uint64_t q;
 			while (seq1.next(&q)) {
 				uint64_t x[2];
-				x[0] = mcl::vint::mulUnit(&x[1], q, y);
+				x[0] = mcl::bint::mulUnit1(&x[1], q, y);
 				mcl::vint::addu1(x, x, 2, r);
 				uint64_t Q, R;
 //printf("q=0x%016llxull, r=0x%016llxull, y=0x%016llxull\n", (long long)q, (long long)r, (long long)y);
