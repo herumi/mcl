@@ -11,12 +11,12 @@
 #include <cybozu/bit_operation.hpp>
 #include <assert.h>
 
-//#define MCL_BITINT_ASM 0
+//#define MCL_BITINT_ASM 1
 #ifdef MCL_WASM32
 	#define MCL_BITINT_ASM 0
 #endif
 #ifndef MCL_BITINT_ASM
-	#define MCL_BITINT_ASM 1
+	#define MCL_BITINT_ASM 0 //1
 #endif
 
 namespace mcl { namespace bint {

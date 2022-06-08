@@ -98,8 +98,8 @@ ifeq ($(OS),mac-m1)
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
 BITINT_SUF?=-$(OS)-$(CPU)
-MCL_BITINT?=1
-ifeq ($(MCL_BITINT),1)
+MCL_BITINT_ASM?=0
+ifeq ($(MCL_BITINT_ASM),1)
   BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
   BITINT_SRC=src/asm/$(BITINT_BASENAME).s
   BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
