@@ -507,40 +507,16 @@ inline size_t shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
 	return xn - q;
 }
 
-// z[n] = x[n] + y
-inline Unit addUnit(Unit *z, const Unit *x, size_t n, Unit y)
+// [return:y[n]] += x
+inline Unit addUnit(Unit *y, size_t n, Unit x)
 {
-	assert(n > 0);
-	Unit t = x[0] + y;
-	z[0] = t;
-	size_t i = 0;
-	if (t >= y) goto EXIT_0;
-	i = 1;
-	for (; i < n; i++) {
-		t = x[i] + 1;
-		z[i] = t;
-		if (t != 0) goto EXIT_0;
-	}
-	return 1;
-EXIT_0:
-	i++;
-	for (; i < n; i++) {
-		z[i] = x[i];
-	}
-	return 0;
-}
-// x[n] += y
-inline Unit addUnit(Unit *x, size_t n, Unit y)
-{
-	assert(n > 0);
-	Unit t = x[0] + y;
-	x[0] = t;
-	size_t i = 0;
-	if (t >= y) return 0;
-	i = 1;
-	for (; i < n; i++) {
-		t = x[i] + 1;
-		x[i] = t;
+	if (n == 0) return 0;
+	Unit t = y[0] + x;
+	y[0] = t;
+	if (t >= x) return 0;
+	for (size_t i = 1; i < n; i++) {
+		t = y[i] + 1;
+		y[i] = t;
 		if (t != 0) return 0;
 	}
 	return 1;

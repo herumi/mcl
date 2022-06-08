@@ -246,7 +246,8 @@ CYBOZU_TEST_AUTO(addUnit)
 		const Unit *x = tbl[i].x;
 		Unit y = tbl[i].y;
 		Unit z[N];
-		Unit u = addUnit(z, x, N, y);
+		copy(z, x, N);
+		Unit u = addUnit(z, N, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
 		CYBOZU_TEST_EQUAL(mx + y, mz + (mpz_class(u) << (sizeof(Unit) * N * 8)));
