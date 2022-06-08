@@ -86,6 +86,8 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 #endif
 }
 
+#endif // MCL_SIZEOF_UNIT == 8
+
 // z[N] = x[N] + y[N] and return CF(0 or 1)
 template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
 // z[N] = x[N] - y[N] and return CF(0 or 1)
@@ -229,7 +231,32 @@ Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
 	return ret;
 }
 
-#endif
+#endif // #if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
+
+template<size_t N>
+void copyT(Unit *y, const Unit *x)
+{
+	for (size_t i = 0; i < N; i++) y[i] = x[i];
+}
+
+// y[n] = x[n]
+inline void copy(Unit *y, const Unit *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) y[i] = x[i];
+}
+
+template<size_t N>
+void clearT(Unit *x)
+{
+	for (size_t i = 0; i < N; i++) x[i] = 0;
+}
+
+// x[n] = 0
+inline void clear(Unit *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) x[i] = 0;
+}
+
 
 // return the real size of x
 // return 1 if x[n] == 0
@@ -241,8 +268,6 @@ inline size_t getRealSize(const Unit *x, size_t n)
 	}
 	return n > 0 ? n : 1;
 }
-
-#endif // MCL_SIZEOF_UNIT == 8
 
 template<size_t N>
 int cmpT(const Unit *px, const Unit *py)
@@ -436,6 +461,44 @@ inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
 	pz[n - 1] = prev >> bit;
 }
 
+/*
+	y[yn] = x[xn] << bit
+	yn = xn + (bit + unitBitBit - 1) / UnitBitSize
+	accept y == x
+*/
+inline void shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
+{
+	assert(xn > 0);
+	size_t q = bit / UnitBitSize;
+	size_t r = bit % UnitBitSize;
+	if (r == 0) {
+		// don't use copyN(y + q, x, xn); if overlaped
+		for (size_t i = 0; i < xn; i++) {
+			y[q + xn - 1 - i] = x[xn - 1 - i];
+		}
+	} else {
+		y[q + xn] = shl(y + q, x, xn, r);
+	}
+	clear(y, q);
+}
+
+/*
+	y[yn] = x[xn] >> bit
+	yn = xn - bit / unitBit
+*/
+void shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
+{
+	assert(xn > 0);
+	size_t q = bit / UnitBitSize;
+	size_t r = bit % UnitBitSize;
+	assert(xn >= q);
+	if (r == 0) {
+		copy(y, x + q, xn - q);
+	} else {
+		shr(y, x + q, xn - q, r);
+	}
+}
+
 // z[n] = x[n] + y
 inline Unit addUnit(Unit *z, const Unit *x, size_t n, Unit y)
 {
@@ -521,31 +584,6 @@ inline Unit modUnit(const Unit *x, size_t n, Unit y)
 	}
 	return r;
 }
-
-template<size_t N>
-void copyT(Unit *y, const Unit *x)
-{
-	for (size_t i = 0; i < N; i++) y[i] = x[i];
-}
-
-// y[n] = x[n]
-inline void copy(Unit *y, const Unit *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) y[i] = x[i];
-}
-
-template<size_t N>
-void clearT(Unit *x)
-{
-	for (size_t i = 0; i < N; i++) x[i] = 0;
-}
-
-// x[n] = 0
-inline void clear(Unit *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) x[i] = 0;
-}
-
 /*
 	y must be UnitBitSize * N bit
 	x[xn] = x[xn] % y[N]
