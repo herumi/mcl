@@ -127,6 +127,7 @@ $(BITINT_OBJ): $(BITINT_SRC)
 bitint_header:
 	$(MAKE) include/mcl/bitint_asm.hpp
 	$(MAKE) include/mcl/bitint_switch.hpp
+	$(MAKE) $(BITINT_SRC)
 include/mcl/bitint.hpp: include/mcl/bitint_asm.hpp include/mcl/bitint_switch.hpp
 #$(BITINT_LL_SRC): src/bitint.cpp src/bitint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
