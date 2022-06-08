@@ -395,8 +395,8 @@ void mulT(Unit *pz, const Unit *px, const Unit *py)
 	}
 }
 
-// [return:z[N]] = x[N] << y
-// 0 < y < sizeof(Unit) * 8
+// [return:z[N]] = x[N] << bit
+// 0 < bit < UnitBitSize
 template<size_t N>
 Unit shlT(Unit *pz, const Unit *px, Unit bit)
 {
@@ -414,7 +414,7 @@ Unit shlT(Unit *pz, const Unit *px, Unit bit)
 }
 
 // z[N] = x[N] >> bit
-// 0 < bit < sizeof(Unit) * 8
+// 0 < bit < UnitBitSize
 template<size_t N>
 void shrT(Unit *pz, const Unit *px, size_t bit)
 {
@@ -430,7 +430,7 @@ void shrT(Unit *pz, const Unit *px, size_t bit)
 }
 
 // [return:z[N]] = x[N] << y
-// 0 < y < sizeof(Unit) * 8
+// 0 < y < UnitBitSize
 inline Unit shl(Unit *pz, const Unit *px, size_t n, Unit bit)
 {
 	assert(0 < bit && bit < UnitBitSize);
@@ -447,7 +447,7 @@ inline Unit shl(Unit *pz, const Unit *px, size_t n, Unit bit)
 }
 
 // z[n] = x[n] >> bit
-// 0 < bit < sizeof(Unit) * 8
+// 0 < bit < UnitBitSize
 inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
 {
 	assert(0 < bit && bit < UnitBitSize);
@@ -462,8 +462,9 @@ inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
 }
 
 /*
+	generic version
 	y[yn] = x[xn] << bit
-	yn = xn + (bit + unitBitBit - 1) / UnitBitSize
+	yn = xn + roundUp(bit, UnitBitSize)
 	accept y == x
 */
 inline void shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
@@ -483,10 +484,12 @@ inline void shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
 }
 
 /*
+	generic version
 	y[yn] = x[xn] >> bit
-	yn = xn - bit / unitBit
+	yn = xn - bit / UnitBitSize
+	clear y[yn:xn] if doClear
 */
-void shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
+void shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit, bool doClear)
 {
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
@@ -496,6 +499,9 @@ void shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
 		copy(y, x + q, xn - q);
 	} else {
 		shr(y, x + q, xn - q, r);
+	}
+	if (doClear) {
+		clear(y + xn - q, q);
 	}
 }
 

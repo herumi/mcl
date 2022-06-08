@@ -11,6 +11,7 @@
 
 using namespace mcl::bint;
 typedef mcl::Unit Unit;
+static const size_t UnitBitSize = mcl::UnitBitSize;
 
 template<class RG>
 void setRand(Unit *x, size_t n, RG& rg)
@@ -189,6 +190,53 @@ CYBOZU_TEST_AUTO(shrT)
 		shrT<N>(z, x, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
+		CYBOZU_TEST_EQUAL(mx >> y, mz);
+	}
+}
+
+CYBOZU_TEST_AUTO(shiftLeft)
+{
+	const size_t N = 4;
+	Unit x[N], z[N*2];
+	cybozu::XorShift rg;
+	mpz_class mx, mz;
+	for (int i = 0; i < 100; i++) {
+		Unit y;
+		setRand(x, N, rg);
+		setRand(&y, 1, rg);
+		y %= UnitBitSize * 3;
+		shiftLeft(z, x, N, y);
+		setArray(mx, x, N);
+		setArray(mz, z, N + mcl::roundUp(y, UnitBitSize));
+		CYBOZU_TEST_EQUAL(mx << y, mz);
+	}
+}
+
+CYBOZU_TEST_AUTO(shiftRight)
+{
+	const size_t N = 4;
+	Unit x[N*2], z[N*2];
+	cybozu::XorShift rg;
+	mpz_class mx, mz;
+	for (int i = 0; i < 100; i++) {
+		Unit y;
+		setRand(x, N*2, rg);
+		setArray(mx, x, N*2);
+		setRand(&y, 1, rg);
+		y %= UnitBitSize * 3;
+		size_t m = y / UnitBitSize;
+		memset(z, -1, sizeof(z));
+		shiftRight(z, x, N*2, y, false);
+		setArray(mz, z, N*2 - m);
+		CYBOZU_TEST_EQUAL(mx >> y, mz);
+		if (m > 0) {
+			for (size_t j = 0; j < m; j++) {
+				CYBOZU_TEST_EQUAL(z[N*2 - m + j], Unit(-1));
+			}
+		}
+
+		shiftRight(z, x, N*2, y, true);
+		setArray(mz, z, N*2);
 		CYBOZU_TEST_EQUAL(mx >> y, mz);
 	}
 }
