@@ -14,46 +14,6 @@
 namespace mcl {
 
 template<size_t N>
-void copyT(uint32_t y[N], const uint32_t x[N])
-{
-	for (size_t i = 0; i < N; i++) {
-		y[i] = x[i];
-	}
-}
-
-template<size_t N>
-uint32_t shlT(uint32_t y[N], const uint32_t x[N], size_t bit)
-{
-	assert(0 < bit && bit < 32);
-	size_t rBit = sizeof(uint32_t) * 8 - bit;
-	uint32_t keep = x[N - 1];
-	uint32_t prev = keep;
-	for (size_t i = N - 1; i > 0; i--) {
-		uint32_t t = x[i - 1];
-		y[i] = (prev << bit) | (t >> rBit);
-		prev = t;
-	}
-	y[0] = prev << bit;
-	return keep >> rBit;
-}
-
-// [return:y[N]] += x
-template<size_t N>
-uint32_t addUnitT(uint32_t y[N], uint32_t x)
-{
-	uint64_t v = uint64_t(y[0]) + x;
-	y[0] = uint32_t(v);
-	uint64_t c = v >> 32;
-	if (c == 0) return 0;
-	for (size_t i = 1; i < N; i++) {
-		v = uint64_t(y[i]) + 1;
-		y[i] = uint32_t(v);
-		if ((v >> 32) == 0) return 0;
-	}
-	return 1;
-}
-
-template<size_t N>
 uint64_t addT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N])
 {
 	uint64_t c = 0;
@@ -177,7 +137,7 @@ void sqrT(uint32_t y[N * 2], const uint32_t x[N])
 	uint32_t tmp[N];
 	mulPreT<H>(tmp, a_b, a_b);
 	if (c) {
-		shlT<H>(a_b, a_b, 1);
+		bint::shlT<H>(a_b, a_b, 1);
 		addT<H>(tmp + H, tmp + H, a_b);
 	}
 	mulPreT<H>(y, x, x); // b^2
@@ -187,7 +147,7 @@ void sqrT(uint32_t y[N * 2], const uint32_t x[N])
 	subT<N>(tmp, tmp, y + N);
 	// tmp[N] = 2ab
 	if (addT<N>(y + H, y + H, tmp)) {
-		addUnitT<H>(y + N + H, 1);
+		bint::addUnit(y + N + H, H, 1);
 	}
 }
 
@@ -198,7 +158,7 @@ void addModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint
 	addT<N>(z, x, y);
 	uint64_t c = subT<N>(t, z, p);
 	if (!c) {
-		copyT<N>(z, t);
+		bint::copyT<N>(z, t);
 	}
 }
 
@@ -230,7 +190,7 @@ void mulMontT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uin
 		buf[N + i] += addMulUnitT<N>(buf + i, p, q);
 	}
 	if (subT<N>(z, buf + N, p)) {
-		copyT<N>(z, buf + N);
+		bint::copyT<N>(z, buf + N);
 	}
 }
 
@@ -263,14 +223,14 @@ void modT(uint32_t y[N], const uint32_t xy[N * 2], const uint32_t p[N])
 	const uint32_t rp = p[-1];
 	assert((p[N - 1] & 0x80000000) == 0);
 	uint32_t buf[N * 2];
-	copyT<N * 2>(buf, xy);
+	bint::copyT<N * 2>(buf, xy);
 	uint32_t c = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint32_t q = buf[i] * rp;
 		c = addMulUnit2T<N>(buf + i, p, q, &c);
 	}
 	if (subT<N>(y, buf + N, p)) {
-		copyT<N>(y, buf + N);
+		bint::copyT<N>(y, buf + N);
 	}
 }
 
@@ -339,7 +299,7 @@ inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const u
 	buf[N + 1] = addT<N>(buf + 1, buf + 1, x + N);
 	// x1 = H * a + L
 	uint32_t t = addT<N>(buf, buf, x);
-	addUnitT<2>(buf + N, t);
+	bint::addUnit(buf + N, 2, t);
 	// H2=buf[N:N+2], L2=buf[0:N]
 	uint32_t t2[4];
 	// t2 = buf[N:N+2] * a
@@ -347,7 +307,7 @@ inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const u
 	t2[3] = addT<2>(t2 + 1, t2 + 1, buf + N);
 	uint32_t H3 = addT<4>(buf, buf, t2);
 	if (H3) {
-		H3 = addUnitT<N - 4>(buf + 4, uint32_t(1));
+		H3 = bint::addUnit(buf + 4, N - 4, uint32_t(1));
 		if (H3) {
 			uint32_t a[2] = { 0x3d1, 1 };
 			H3 = addT<2>(buf, buf, a);
@@ -357,7 +317,7 @@ inline void mcl_fpDbl_mod_SECP256K1_wasm(uint32_t *z, const uint32_t *x, const u
 	if (cmpT<N>(buf, p) >= 0) {
 		subT<N>(z, buf, p);
 	} else {
-		copyT<N>(z, buf);
+		bint::copyT<N>(z, buf);
 	}
 }
 
