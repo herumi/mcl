@@ -33,7 +33,7 @@ def roundup(x, n):
 def main():
 	parser = argparse.ArgumentParser(description='gen header')
 	parser.add_argument('out', type=str)
-	parser.add_argument('-max_bit', type=int, default=512)
+	parser.add_argument('-max_bit', type=int, default=512+32)
 	opt = parser.parse_args()
 	if not opt.out in ['asm', 'switch']:
 		print('bad out', opt.out)
