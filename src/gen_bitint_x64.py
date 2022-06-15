@@ -44,7 +44,8 @@ def gen_sub(N):
 		movzx(eax, al)
 
 def gen_mulUnit(N):
-	proc(f'mclb_mulUnit{SUF}{N}')
+	proc(f'mclb_mulUnit_fast{N}')
+	proc(f'mclb_mulUnit_slow{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
@@ -101,7 +102,8 @@ def gen_mulUnit(N):
 
 # [ret:z[N]] = z[N] + x[N] * y
 def gen_mulUnitAdd(N):
-	proc(f'mclb_mulUnitAdd{SUF}{N}')
+	proc(f'mclb_mulUnitAdd_fast{N}')
+	proc(f'mclb_mulUnitAdd_slow{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
@@ -137,6 +139,20 @@ setWin64ABI(param.win)
 N = param.num
 
 initOutput()
+output('segment .data')
+for i in range(N):
+	output(f'global mclb_mulUnit{i}')
+	output(f'global _mclb_mulUnit{i}')
+	output(f'mclb_mulUnit{i}:')
+	output(f'_mclb_mulUnit{i}:')
+	output(f'dq mclb_mulUnit_slow{i}')
+for i in range(N):
+	output(f'global mclb_mulUnitAdd{i}')
+	output(f'global _mclb_mulUnitAdd{i}')
+	output(f'mclb_mulUnitAdd{i}:')
+	output(f'_mclb_mulUnitAdd{i}:')
+	output(f'dq mclb_mulUnitAdd_slow{i}')
+output('segment .text')
 
 for i in range(N):
 	gen_add(i)
