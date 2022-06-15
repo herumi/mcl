@@ -211,16 +211,10 @@ N = param.num
 initOutput()
 output('segment .data')
 for i in range(N):
-	output(f'global mclb_mulUnit{i}')
-	output(f'global _mclb_mulUnit{i}')
-	output(f'mclb_mulUnit{i}:')
-	output(f'_mclb_mulUnit{i}:')
+	defineName(f'mclb_mulUnit{i}')
 	output(f'dq mclb_mulUnit_slow{i}')
 for i in range(N):
-	output(f'global mclb_mulUnitAdd{i}')
-	output(f'global _mclb_mulUnitAdd{i}')
-	output(f'mclb_mulUnitAdd{i}:')
-	output(f'_mclb_mulUnitAdd{i}:')
+	defineName(f'mclb_mulUnitAdd{i}')
 	output(f'dq mclb_mulUnitAdd_slow{i}')
 output('segment .text')
 

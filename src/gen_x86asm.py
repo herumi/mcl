@@ -227,6 +227,15 @@ g_text = []
 def initOutput():
 	global g_text
 	g_text = []
+	defName = '''%imacro defName 1
+global %1
+global _%1
+%1:
+_%1:
+%endmacro'''
+	for line in defName.split('\n'):
+		output(line)
+
 
 def output(s):
 	g_text.append(s)
@@ -244,10 +253,13 @@ def termOutput():
 			i += 1
 
 def defineName(name):
+	output(f'defName {name}')
+"""
 	output('global ' + name)
 	output('global _' + name)
 	output(name + ':')
 	output('_' + name + ':')
+"""
 
 def genFunc(name):
 	def f(*args):
