@@ -21,6 +21,11 @@ void setRand(Unit *x, size_t n, RG& rg)
 	}
 }
 
+mpz_class to_mpz(Unit x)
+{
+	return mp_limb_t(x);
+}
+
 void setArray(mpz_class& z, const Unit *buf, size_t n)
 {
 	mpz_import(z.get_mpz_t(), n, -1, sizeof(*buf), 0, 0, buf);
@@ -66,17 +71,17 @@ CYBOZU_TEST_AUTO(addT)
 	z[1] = 10;
 	CF = addT<1>(z, x, y);
 	CYBOZU_TEST_EQUAL(z[0], ok[0]);
-	CYBOZU_TEST_EQUAL(CF, 1);
-	CYBOZU_TEST_EQUAL(z[1], 10); // not changed
+	CYBOZU_TEST_EQUAL(CF, 1u);
+	CYBOZU_TEST_EQUAL(z[1], 10u); // not changed
 
 	CF = addT<1>(z, x + 1, y + 1);
 	CYBOZU_TEST_EQUAL(z[0], x[1] + y[1]);
-	CYBOZU_TEST_EQUAL(CF, 0);
-	CYBOZU_TEST_EQUAL(z[1], 10); // not changed
+	CYBOZU_TEST_EQUAL(CF, 0u);
+	CYBOZU_TEST_EQUAL(z[1], 10u); // not changed
 
 	CF = addT<3>(z, x, y);
 	CYBOZU_TEST_EQUAL_ARRAY(z, ok, 3);
-	CYBOZU_TEST_EQUAL(CF, 0);
+	CYBOZU_TEST_EQUAL(CF, 0u);
 }
 
 CYBOZU_TEST_AUTO(subT)
@@ -92,7 +97,7 @@ CYBOZU_TEST_AUTO(subT)
 		setArray(mx, x, N);
 		setArray(my, y, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx + my, mz + (mpz_class(CF) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mx + my, mz + (to_mpz(CF) << (sizeof(x) * 8)));
 		Unit CF2 = subT<N>(x2, z, y);
 		CYBOZU_TEST_EQUAL_ARRAY(x, x2, N);
 		CYBOZU_TEST_EQUAL(CF, CF2);
@@ -112,7 +117,7 @@ CYBOZU_TEST_AUTO(mulUnitT)
 		Unit u = mulUnitT<N>(z, x, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx * y, mz + (mpz_class(u) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mx * to_mpz(y), mz + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 #ifdef NDEBUG
 	const int C = 1000;
@@ -135,7 +140,7 @@ CYBOZU_TEST_AUTO(mulUnitAddT)
 		setRand(&y, 1, rg);
 		Unit u = mulUnitAddT<N>(z, x, y);
 		setArray(mt, z, N);
-		CYBOZU_TEST_EQUAL(mz + mx * y, mt + (mpz_class(u) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mz + mx * to_mpz(y), mt + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 }
 
@@ -171,7 +176,7 @@ CYBOZU_TEST_AUTO(shlT)
 		Unit u = shlT<N>(z, x, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx << y, mz + (mpz_class(u) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mx << y, mz + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 }
 
@@ -250,7 +255,7 @@ CYBOZU_TEST_AUTO(addUnit)
 		Unit u = addUnit(z, N, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx + y, mz + (mpz_class(u) << (sizeof(Unit) * N * 8)));
+		CYBOZU_TEST_EQUAL(mx + to_mpz(y), mz + (to_mpz(u) << (sizeof(Unit) * N * 8)));
 		Unit x2[N];
 		Unit u2 = subUnit(x2, z, N, y);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x, N);
@@ -272,7 +277,7 @@ CYBOZU_TEST_AUTO(divUnit)
 		Unit r = divUnit(q, x, N, y);
 		setArray(mx, x, N);
 		setArray(mq, q, N);
-		CYBOZU_TEST_EQUAL(mx, mq * y + r);
+		CYBOZU_TEST_EQUAL(mx, mq * to_mpz(y) + to_mpz(r));
 		Unit r2 = modUnit(x, N, y);
 		CYBOZU_TEST_EQUAL(r, r2);
 	}
@@ -331,7 +336,7 @@ CYBOZU_TEST_AUTO(divSmallT)
 		bool done = divSmallT<N>(&q, 1, x, N, y);
 		CYBOZU_TEST_ASSERT(done);
 		setArray(mr, x, N);
-		CYBOZU_TEST_EQUAL(q * my + mr, mx);
+		CYBOZU_TEST_EQUAL(to_mpz(q) * my + mr, mx);
 	}
 #ifdef NDEBUG
 	mpz_class mq;
