@@ -4,7 +4,8 @@ import argparse
 SUF='_fast'
 
 def gen_add(N):
-	proc(f'mclb_add{N}')
+	align(16)
+	defineName(f'mclb_add{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
@@ -24,7 +25,8 @@ def gen_add(N):
 		movzx(eax, al)
 
 def gen_sub(N):
-	proc(f'mclb_sub{N}')
+	align(16)
+	defineName(f'mclb_sub{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
@@ -44,7 +46,8 @@ def gen_sub(N):
 		movzx(eax, al)
 
 def gen_mulUnit(N, mode='fast'):
-	proc(f'mclb_mulUnit_{mode}{N}')
+	align(16)
+	defineName(f'mclb_mulUnit_{mode}{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
@@ -126,7 +129,8 @@ def gen_mulUnit(N, mode='fast'):
 
 # [ret:z[N]] = z[N] + x[N] * y
 def gen_mulUnitAdd(N, mode='fast'):
-	proc(f'mclb_mulUnitAdd_{mode}{N}')
+	align(16)
+	defineName(f'mclb_mulUnitAdd_{mode}{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
@@ -182,6 +186,18 @@ def gen_mulUnitAdd(N, mode='fast'):
 				adc(rdx, 0)
 				mov(rax, rdx)
 
+def gen_enable_fast(N):
+	align(16)
+	defineName('mclb_enable_fast')
+	for i in range(N):
+		mov(rdx, f'mclb_mulUnit{i}')
+		mov(rax, f'mclb_mulUnit_fast{i}')
+		mov(ptr(rdx), rax)
+	for i in range(N):
+		mov(rdx, f'mclb_mulUnitAdd{i}')
+		mov(rax, f'mclb_mulUnitAdd_fast{i}')
+		mov(ptr(rdx), rax)
+	ret()
 
 
 parser = argparse.ArgumentParser()
@@ -225,5 +241,7 @@ for i in range(N):
 
 for i in range(N):
 	gen_mulUnitAdd(i, 'slow')
+
+gen_enable_fast(N)
 
 termOutput()

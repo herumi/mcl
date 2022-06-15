@@ -243,8 +243,7 @@ def termOutput():
 			print(s)
 			i += 1
 
-def proc(name):
-	align(16)
+def defineName(name):
 	output('global ' + name)
 	output('global _' + name)
 	output(name + ':')
@@ -264,7 +263,7 @@ def genAllFunc():
 	tbl = [
 		'ret',
 		'inc', 'dec', 'setc', 'push', 'pop', 'align',
-		'mov', 'add', 'adc', 'sub', 'sbb', 'adox', 'adcx', 'mul', 'xor_', 'and_', 'movzx',
+		'mov', 'add', 'adc', 'sub', 'sbb', 'adox', 'adcx', 'mul', 'xor_', 'and_', 'movzx', 'lea',
 		'mulx',
 	]
 	for name in tbl:
