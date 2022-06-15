@@ -100,12 +100,10 @@ def gen_mulUnit(N, mode='fast'):
 				mov(ptr(z + (N - 1) * 8), rdx)
 				adc(rax, 0)
 		else:
-			with StackFrame(3, 2, useRDX=True, stackSizeByte=(N - 1) * 2 * 8) as sf:
+			with StackFrame(3, 0, useRDX=True, stackSizeByte=(N - 1) * 2 * 8) as sf:
 				z = sf.p[0]
 				x = sf.p[1]
 				y = sf.p[2]
-				t0 = sf.t[0]
-				t1 = sf.t[1]
 				posH = (N - 1) * 8
 				for i in range(N):
 					mov(rax, ptr(x + i * 8))
@@ -127,33 +125,63 @@ def gen_mulUnit(N, mode='fast'):
 				mov(rax, rdx)
 
 # [ret:z[N]] = z[N] + x[N] * y
-def gen_mulUnitAdd(N):
-	proc(f'mclb_mulUnitAdd_fast{N}')
-	proc(f'mclb_mulUnitAdd_slow{N}')
+def gen_mulUnitAdd(N, mode='fast'):
+	proc(f'mclb_mulUnitAdd_{mode}{N}')
 	if N == 0:
 		xor_(eax, eax)
 		ret()
 		return
-	with StackFrame(3, 2, useRDX=True) as sf:
-		z = sf.p[0]
-		x = sf.p[1]
-		y = sf.p[2]
-		t = sf.t[0]
-		L = sf.t[1]
-		mov(rdx, y)
-		xor_(eax, eax)
-		mov(t, ptr(z))
-		for i in range(N):
-			mulx(rax, L, ptr(x + i * 8))
-			adox(t, L)
-			mov(ptr(z + i * 8), t)
-			if i == N-1:
-				break
-			mov(t, ptr(z + (i+1) * 8))
-			adcx(t, rax)
-		mov(t, 0)
-		adcx(rax, t)
-		adox(rax, t)
+	if mode == 'fast':
+		with StackFrame(3, 2, useRDX=True) as sf:
+			z = sf.p[0]
+			x = sf.p[1]
+			y = sf.p[2]
+			t = sf.t[0]
+			L = sf.t[1]
+			mov(rdx, y)
+			xor_(eax, eax)
+			mov(t, ptr(z))
+			for i in range(N):
+				mulx(rax, L, ptr(x + i * 8))
+				adox(t, L)
+				mov(ptr(z + i * 8), t)
+				if i == N-1:
+					break
+				mov(t, ptr(z + (i+1) * 8))
+				adcx(t, rax)
+			mov(t, 0)
+			adcx(rax, t)
+			adox(rax, t)
+	else:
+			with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
+				z = sf.p[0]
+				x = sf.p[1]
+				y = sf.p[2]
+				posH = N * 8
+				for i in range(N):
+					mov(rax, ptr(x + i * 8))
+					mul(y)
+					mov(ptr(rsp + i * 8), rax)
+					if i < N-1:
+						mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
+				for i in range(N - 1):
+					mov(rax, ptr(rsp + (i + 1) * 8))
+					if i == 0:
+						add(rax, ptr(rsp + posH + i * 8))
+					else:
+						adc(rax, ptr(rsp + posH + i * 8))
+					mov(ptr(rsp + (i + 1) * 8), rax)
+				if N > 1:
+					adc(rdx, 0)
+				for i in range(N):
+					mov(rax, ptr(rsp + i * 8))
+					if i == 0:
+						add(ptr(z + i * 8), rax)
+					else:
+						adc(ptr(z + i * 8), rax)
+				adc(rdx, 0)
+				mov(rax, rdx)
+
 
 
 parser = argparse.ArgumentParser()
@@ -190,9 +218,12 @@ for i in range(N):
 	gen_mulUnit(i, 'fast')
 
 for i in range(N):
-	gen_mulUnitAdd(i)
+	gen_mulUnitAdd(i, 'fast')
 
 for i in range(N):
 	gen_mulUnit(i, 'slow')
+
+for i in range(N):
+	gen_mulUnitAdd(i, 'slow')
 
 termOutput()
