@@ -17,6 +17,21 @@
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+#define XBYAK_ONLY_CLASS_CPU
+#include "../src/xbyak/xbyak_util.h"
+CYBOZU_TEST_AUTO(cpu)
+{
+	using namespace Xbyak::util;
+	Cpu cpu;
+	if (cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+		fprintf(stderr, "bmi2 and adx are available\n");
+		mcl::bint::mclb_enable_fast();
+	}
+}
+
+#endif
+
 using namespace mcl;
 
 struct V {

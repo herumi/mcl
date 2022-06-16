@@ -202,7 +202,7 @@ def gen_enable_fast(N):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
-parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=9)
+parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=10)
 param = parser.parse_args()
 
 setWin64ABI(param.win)
