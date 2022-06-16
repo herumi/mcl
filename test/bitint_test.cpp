@@ -7,6 +7,21 @@
 #include <gmpxx.h>
 #include <iostream>
 
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+#define XBYAK_ONLY_CLASS_CPU
+#include "../src/xbyak/xbyak_util.h"
+CYBOZU_TEST_AUTO(cpu)
+{
+	using namespace Xbyak::util;
+	Cpu cpu;
+	if (cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+		fprintf(stderr, "bmi2 and adx are available\n");
+		mcl::bint::mclb_enable_fast();
+	}
+}
+
+#endif
+
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
 using namespace mcl::bint;
@@ -333,6 +348,7 @@ CYBOZU_TEST_AUTO(divSmallT)
 		y[N - 1] |= Unit(1) << (sizeof(Unit) * 8 / 2); // at least half
 		setArray(mx, x, N);
 		setArray(my, y, N);
+		q = 0;
 		bool done = divSmallT<N>(&q, 1, x, N, y);
 		CYBOZU_TEST_ASSERT(done);
 		setArray(mr, x, N);

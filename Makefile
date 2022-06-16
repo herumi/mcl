@@ -100,11 +100,18 @@ endif
 BITINT_SUF?=-$(OS)-$(CPU)
 MCL_BITINT_ASM?=0
 ifeq ($(MCL_BITINT_ASM),1)
-  BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
-  BITINT_SRC=src/asm/$(BITINT_BASENAME).s
-  BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
   CFLAGS_USER+=-DMCL_BITINT_ASM=1
-  LIB_OBJ+=$(BITINT_OBJ)
+  ifeq ($(CPU),x86-64)
+    BITINT_BASENAME=bitint-x64-amd64
+    BITINT_X64_SRC=src/asm/$(BITINT_BASENAME).asm
+    BITINT_X64_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
+    LIB_OBJ+=$(BITINT_X64_OBJ)
+  else
+    BITINT_BASENAME=bitint$(BIT)$(BITINT_SUF)
+    BITINT_SRC=src/asm/$(BITINT_BASENAME).s
+    BITINT_OBJ=$(OBJ_DIR)/$(BITINT_BASENAME).o
+    LIB_OBJ+=$(BITINT_OBJ)
+  endif
 test/bitint_test.cpp: include/mcl/bitint.hpp
 endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
@@ -120,6 +127,10 @@ include/mcl/bitint_asm.hpp: src/gen_bitint_header.py
 	python3 $< > $@ asm $(GEN_BITINT_HEADER_PY_OPT)
 include/mcl/bitint_switch.hpp: src/gen_bitint_header.py
 	python3 $< > $@ switch $(GEN_BITINT_HEADER_PY_OPT)
+$(BITINT_X64_SRC): src/gen_x86asm.py src/gen_bitint_x64.py
+	python3 src/gen_bitint_x64.py > $(BITINT_X64_SRC)
+$(BITINT_X64_OBJ): $(BITINT_X64_SRC)
+	nasm $(NASM_ELF_OPT) -o $@ $<
 $(BITINT_SRC): src/bitint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BITINT_OBJ): $(BITINT_SRC)
