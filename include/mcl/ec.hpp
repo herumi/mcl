@@ -152,6 +152,22 @@ void mul1CT(G& Q, const G& P, const mpz_class& x)
 	}
 }
 
+// wrapper class to get P[i].z as EzAsArray[i]
+template<class E>
+struct EzAsArray {
+	E* P;
+	EzAsArray(E* P) : P(P) {}
+	typename E::Fp& operator[](size_t i) { return P[i].z; }
+	void operator+=(size_t n) { P += n; }
+};
+template<class E>
+struct EzAsConstArray {
+	const mutable E* P;
+	EzAsConstArray(const E* P) : P(P) {}
+	const typename E::Fp& operator[](size_t i) const { return P[i].z; }
+	void operator+=(size_t n) const { P += n; }
+};
+
 } // mcl::ec::local
 
 template<class E>
@@ -173,7 +189,8 @@ template<class E>
 void _normalizeVecJacobiWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
 {
 	typedef typename E::Fp F;
-	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
+	local::EzAsConstArray<E> Pz(P);
+	F::invVec(inv, Pz, n);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
 			if (P != Q) Q[i] = P[i];
@@ -480,7 +497,8 @@ template<class E>
 void _normalizeVecProjWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
 {
 	typedef typename E::Fp F;
-	F::invVec(inv, &P[0].z, n, 3 /* x,y,z */);
+	local::EzAsConstArray<E> Pz(P);
+	F::invVec(inv, Pz, n);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
 			if (P != Q) Q[i] = P[i];
