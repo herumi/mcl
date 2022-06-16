@@ -17,7 +17,7 @@
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+#ifdef MCL_BITINT_FUNC_PTR
 #define XBYAK_ONLY_CLASS_CPU
 #include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
