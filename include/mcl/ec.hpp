@@ -190,7 +190,7 @@ void _normalizeVecJacobiWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
 {
 	typedef typename E::Fp F;
 	local::EzAsConstArray<E> Pz(P);
-	F::invVec(inv, Pz, n);
+	F::invVecT(inv, Pz, n);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
 			if (P != Q) Q[i] = P[i];
@@ -498,7 +498,7 @@ void _normalizeVecProjWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
 {
 	typedef typename E::Fp F;
 	local::EzAsConstArray<E> Pz(P);
-	F::invVec(inv, Pz, n);
+	F::invVecT(inv, Pz, n);
 	for (size_t i = 0; i < n; i++) {
 		if (P[i].z.isZero() || P[i].z.isOne()) {
 			if (P != Q) Q[i] = P[i];

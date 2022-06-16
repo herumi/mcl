@@ -44,6 +44,26 @@ void getUnitAtT(Unit *p, const void *_xVec, size_t i)
 template<class T>
 struct Empty {};
 
+namespace local {
+
+template<class T>
+struct AsArray {
+	T *p;
+	AsArray(T *p) : p(p) {}
+	T& operator[](size_t i) { return p[i]; }
+	void operator+=(size_t i) { p += i; }
+};
+
+template<class T>
+struct AsConstArray {
+	const T *p;
+	AsConstArray(const T *p) : p(p) {}
+	const T& operator[](size_t i) const { return p[i]; }
+	void operator+=(size_t i) { p += i; }
+};
+
+} // local
+
 /*
 	T must have add, sub, mul, inv, neg
 */
@@ -60,8 +80,8 @@ struct Operator : public E {
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 
-	template<typename Array, typename ConstArray>
-	static inline size_t _invVecWork(Array& y, const ConstArray& x, size_t n, T *t)
+	template<typename Tin>
+	static inline size_t _invVecWork(T *y, Tin& x, size_t n, T *t)
 	{
 		size_t pos = 0;
 		for (size_t i = 0; i < n; i++) {
@@ -104,14 +124,14 @@ struct Operator : public E {
 		return retNum;
 	}
 	/*
+		template version of invVec
 		y[i] = 1/x[i] for x[i] != 0 else 0
 		return num of x[i] not in {0, 1}
 		t must be T[n]
-		y[i] returns i-th T&
 		x[i] returns i-th const T&
 	*/
-	template<typename Array, typename ConstArray>
-	static inline size_t invVec(Array& y, const ConstArray& x, size_t n)
+	template<typename Tin>
+	static inline size_t invVecT(T *y, Tin& x, size_t n)
 	{
 		const size_t N = 128;
 		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
@@ -124,6 +144,12 @@ struct Operator : public E {
 			y += doneN;
 			x += doneN;
 		}
+	}
+	// array version of invVec
+	static inline size_t invVec(T *y, const T* x, size_t n)
+	{
+		local::AsConstArray<T> in(x);
+		return invVecT(y, in, n);
 	}
 	/*
 		powGeneric = pow if T = Fp, Fp2, Fp6
