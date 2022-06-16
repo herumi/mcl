@@ -500,7 +500,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		using namespace Xbyak::util;
 		if (g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
 			mcl::bint::mclb_enable_fast();
-			fprintf(stderr, "mclb_enable_fast\n");
 		}
 	}
 #endif
