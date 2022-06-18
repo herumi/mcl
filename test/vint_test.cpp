@@ -1520,7 +1520,7 @@ CYBOZU_TEST_AUTO(divUnit)
 				mcl::vint::addu1(x, x, 2, r);
 				uint64_t Q, R;
 //printf("q=0x%016llxull, r=0x%016llxull, y=0x%016llxull\n", (long long)q, (long long)r, (long long)y);
-				Q = mcl::vint::divUnit(&R, x[1], x[0], y);
+				Q = bint::divUnit1(&R, x[1], x[0], y);
 				CYBOZU_TEST_EQUAL(q, Q);
 				CYBOZU_TEST_EQUAL(r, R);
 			}

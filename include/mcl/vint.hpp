@@ -44,46 +44,6 @@ void dump(const T *x, size_t n, const char *msg = "")
 	printf("\n");
 }
 
-inline uint64_t make64(uint32_t H, uint32_t L)
-{
-	return ((uint64_t)H << 32) | L;
-}
-
-inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
-{
-	*H = uint32_t(x >> 32);
-	*L = uint32_t(x);
-}
-
-/*
-	q = [H:L] / y
-	r = [H:L] % y
-	return q
-*/
-inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
-{
-	assert(y != 0);
-	uint64_t t = make64(H, L);
-	uint32_t q = uint32_t(t / y);
-	*pr = uint32_t(t % y);
-	return q;
-}
-#if MCL_SIZEOF_UNIT == 8
-inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
-{
-	assert(y != 0);
-#if defined(_MSC_VER)
-	return _udiv128(H, L, y, pr);
-#else
-	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = (uint128(H) << 64) | L;
-	uint64_t q = uint64_t(t / y);
-	*pr = uint64_t(t % y);
-	return q;
-#endif
-}
-#endif
-
 /*
 	compare x[] and y[]
 	@retval positive  if x > y
@@ -335,7 +295,7 @@ T divu1(T *q, const T *x, size_t n, T y)
 	if (n == 0) return 0;
 	T r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
-		q[i] = divUnit(&r, r, x[i], y);
+		q[i] = bint::divUnit1(&r, r, x[i], y);
 	}
 	return r;
 }
@@ -349,7 +309,7 @@ T modu1(const T *x, size_t n, T y)
 	if (n == 0) return 0;
 	T r = 0;
 	for (int i = (int)n - 1; i >= 0; i--) {
-		divUnit(&r, r, x[i], y);
+		bint::divUnit1(&r, r, x[i], y);
 	}
 	return r;
 }
@@ -473,7 +433,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 				v = x[xn - 1];
 			} else {
 				T r;
-				v = divUnit(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
+				v = bint::divUnit1(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
 			}
 			T ret = bint::mulUnit(tt, y, v, yn);
 			ret += vint::subN(x + d - 1, x + d - 1, tt, yn);
