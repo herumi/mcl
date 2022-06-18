@@ -1,6 +1,6 @@
 #include "llvm_gen.hpp" // in mcl/src
 #include <cybozu/option.hpp>
-#include <mcl/op.hpp>
+#include <mcl/config.hpp>
 #include <map>
 #include <set>
 #include <fstream>

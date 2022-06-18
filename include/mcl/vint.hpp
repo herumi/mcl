@@ -23,6 +23,7 @@
 #ifndef MCL_MAX_BIT_SIZE
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
+#include <mcl/bitint.hpp>
 
 namespace mcl {
 
@@ -53,31 +54,6 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 	*H = uint32_t(x >> 32);
 	*L = uint32_t(x);
 }
-
-/*
-	[H:L] <= x * y
-	@return L
-*/
-inline uint32_t mulUnit(uint32_t *pH, uint32_t x, uint32_t y)
-{
-	uint64_t t = uint64_t(x) * y;
-	uint32_t L;
-	split64(pH, &L, t);
-	return L;
-}
-#if MCL_SIZEOF_UNIT == 8
-inline uint64_t mulUnit(uint64_t *pH, uint64_t x, uint64_t y)
-{
-#if defined(_WIN64) && !defined(__INTEL_COMPILER)
-	return _umul128(x, y, pH);
-#else
-	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = uint128(x) * y;
-	*pH = uint64_t(t >> 64);
-	return uint64_t(t);
-#endif
-}
-#endif
 
 /*
 	q = [H:L] / y
@@ -308,33 +284,12 @@ T subNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
-	z[0..n) = x[0..n) * y
-	return z[n]
-	@note accept z == x
-*/
-template<class T>
-T mulu1(T *z, const T *x, size_t n, T y)
-{
-	assert(n > 0);
-	T H = 0;
-	for (size_t i = 0; i < n; i++) {
-		T t = H;
-		T L = mulUnit(&H, x[i], y);
-		z[i] = t + L;
-		if (z[i] < t) {
-			H++;
-		}
-	}
-	return H; // z[n]
-}
-
-/*
 	z[xn * yn] = x[xn] * y[ym]
 */
 template<class T>
-static inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
+inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 {
-	assert(xn > 0 && yn > 0);
+	if (xn == 0 || yn == 0) return;
 	if (yn > xn) {
 		fp::swap_(yn, xn);
 		fp::swap_(x, y);
@@ -350,12 +305,12 @@ static inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 		copyN(p, y, yn);
 		y = p;
 	}
-	z[xn] = vint::mulu1(&z[0], x, xn, y[0]);
+	z[xn] = bint::mulUnit(z, x, y[0], xn);
 	clearN(z + xn + 1, yn - 1);
 
 	T *t2 = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	for (size_t i = 1; i < yn; i++) {
-		t2[xn] = vint::mulu1(&t2[0], x, xn, y[i]);
+		t2[xn] = bint::mulUnit(t2, x, y[i], xn);
 		vint::addN(&z[i], &z[i], &t2[0], xn + 1);
 	}
 }
@@ -430,7 +385,6 @@ template<class T>
 void shlN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t UnitBitSize = sizeof(T) * 8;
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
 	if (r == 0) {
@@ -470,7 +424,6 @@ template<class T>
 void shrN(T *y, const T *x, size_t xn, size_t bit)
 {
 	assert(xn > 0);
-	const size_t UnitBitSize = sizeof(T) * 8;
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
@@ -522,7 +475,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 				T r;
 				v = divUnit(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
 			}
-			T ret = vint::mulu1(tt, y, yn, v);
+			T ret = bint::mulUnit(tt, y, v, yn);
 			ret += vint::subN(x + d - 1, x + d - 1, tt, yn);
 			x[xn-1] -= ret;
 			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, v);
@@ -572,7 +525,7 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 			qv = 1;
 		} else {
 			qv = x[xn - 1] / (yTop + 1);
-			mulu1(xx, y, yn, qv);
+			bint::mulUnit(xx, y, qv, yn);
 			subN(xx, x, xx, xn);
 		}
 		// expect that loop is at most once
@@ -729,10 +682,10 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 #if MCL_SIZEOF_UNIT == 8
 	const Unit a = (uint64_t(1) << 32) + 0x3d1;
 	Unit buf[5];
-	buf[4] = mulu1(buf, x + 4, 4, a); // H * a
+	buf[4] = bint::mulUnitT<n>(buf, x + 4, a); // H * a
 	buf[4] += addN(buf, buf, x, 4); // t = H * a + L
 	Unit x2[2];
-	x2[0] = mulUnit(&x2[1], buf[4], a);
+	x2[0] = bint::mulUnit1(&x2[1], buf[4], a);
 	Unit x3 = addN(buf, buf, x2, 2);
 	if (x3) {
 		x3 = addu1(buf + 2, buf + 2, 2, Unit(1)); // t' = H' * a + L'
@@ -744,14 +697,14 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 #else
 	Unit buf[n + 2];
 	// H * a = H * 0x3d1 + (H << 32)
-	buf[n] = mulu1(buf, x + n, n, 0x3d1u); // H * 0x3d1
+	buf[n] = bint::mulUnitT<n>(buf, x + n, 0x3d1u); // H * 0x3d1
 	buf[n + 1] = addN(buf + 1, buf + 1, x + n, n);
 	// t = H * a + L
 	Unit t = addN(buf, buf, x, n);
 	addu1(buf + n, buf + n, 2, t);
 	Unit x2[4];
 	// x2 = buf[n:n+2] * a
-	x2[2] = mulu1(x2, buf + n, 2, 0x3d1u);
+	x2[2] = bint::mulUnitT<2>(x2, buf + n, 0x3d1u);
 	x2[3] = addN(x2 + 1, x2 + 1, buf + n, 2);
 	Unit x3 = addN(buf, buf, x2, 4);
 	if (x3) {
@@ -1302,7 +1255,7 @@ public:
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = vint::mulu1(&z.buf_[0], &x.buf_[0], xn, y);
+		z.buf_[zn - 1] = bint::mulUnit(&z.buf_[0], &x.buf_[0], y, xn);
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
 	}

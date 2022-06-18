@@ -9,9 +9,9 @@ jobs:
     - uses: actions/checkout@v2
     - run: lscpu
     - run: sudo apt update
-    - run: sudo apt install valgrind
-    - run: make bitint_header
-    - run: make bin/bitint_test.exe DEBUG=1 -j4 CXX=clang++ MCL_BITINT=1 && bin/bitint_test.exe
+    - run: sudo apt install valgrind nasm
+    - run: make bitint_header CXX=clang++
+    - run: make MCL_BITINT_ASM=1 -j DEBUG=1 test_ci
     - run: make clean
     - run: make bin/pairing.exe -j4
     - run: valgrind bin/pairing.exe

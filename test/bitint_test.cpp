@@ -7,10 +7,26 @@
 #include <gmpxx.h>
 #include <iostream>
 
+#ifdef MCL_BITINT_FUNC_PTR
+#define XBYAK_ONLY_CLASS_CPU
+#include "../src/xbyak/xbyak_util.h"
+CYBOZU_TEST_AUTO(cpu)
+{
+	using namespace Xbyak::util;
+	Cpu cpu;
+	if (cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+		fprintf(stderr, "bmi2 and adx are available\n");
+		mcl::bint::mclb_enable_fast();
+	}
+}
+
+#endif
+
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
 using namespace mcl::bint;
 typedef mcl::Unit Unit;
+static const size_t UnitBitSize = mcl::UnitBitSize;
 
 template<class RG>
 void setRand(Unit *x, size_t n, RG& rg)
@@ -18,6 +34,11 @@ void setRand(Unit *x, size_t n, RG& rg)
 	for (size_t i = 0; i < n; i++) {
 		x[i] = (Unit)rg.get64();
 	}
+}
+
+mpz_class to_mpz(Unit x)
+{
+	return mp_limb_t(x);
 }
 
 void setArray(mpz_class& z, const Unit *buf, size_t n)
@@ -65,17 +86,17 @@ CYBOZU_TEST_AUTO(addT)
 	z[1] = 10;
 	CF = addT<1>(z, x, y);
 	CYBOZU_TEST_EQUAL(z[0], ok[0]);
-	CYBOZU_TEST_EQUAL(CF, 1);
-	CYBOZU_TEST_EQUAL(z[1], 10); // not changed
+	CYBOZU_TEST_EQUAL(CF, 1u);
+	CYBOZU_TEST_EQUAL(z[1], 10u); // not changed
 
 	CF = addT<1>(z, x + 1, y + 1);
 	CYBOZU_TEST_EQUAL(z[0], x[1] + y[1]);
-	CYBOZU_TEST_EQUAL(CF, 0);
-	CYBOZU_TEST_EQUAL(z[1], 10); // not changed
+	CYBOZU_TEST_EQUAL(CF, 0u);
+	CYBOZU_TEST_EQUAL(z[1], 10u); // not changed
 
 	CF = addT<3>(z, x, y);
 	CYBOZU_TEST_EQUAL_ARRAY(z, ok, 3);
-	CYBOZU_TEST_EQUAL(CF, 0);
+	CYBOZU_TEST_EQUAL(CF, 0u);
 }
 
 CYBOZU_TEST_AUTO(subT)
@@ -91,7 +112,7 @@ CYBOZU_TEST_AUTO(subT)
 		setArray(mx, x, N);
 		setArray(my, y, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx + my, mz + (mpz_class(CF) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mx + my, mz + (to_mpz(CF) << (sizeof(x) * 8)));
 		Unit CF2 = subT<N>(x2, z, y);
 		CYBOZU_TEST_EQUAL_ARRAY(x, x2, N);
 		CYBOZU_TEST_EQUAL(CF, CF2);
@@ -111,7 +132,7 @@ CYBOZU_TEST_AUTO(mulUnitT)
 		Unit u = mulUnitT<N>(z, x, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx * y, mz + (mpz_class(u) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mx * to_mpz(y), mz + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 #ifdef NDEBUG
 	const int C = 1000;
@@ -134,7 +155,7 @@ CYBOZU_TEST_AUTO(mulUnitAddT)
 		setRand(&y, 1, rg);
 		Unit u = mulUnitAddT<N>(z, x, y);
 		setArray(mt, z, N);
-		CYBOZU_TEST_EQUAL(mz + mx * y, mt + (mpz_class(u) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mz + mx * to_mpz(y), mt + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 }
 
@@ -170,7 +191,7 @@ CYBOZU_TEST_AUTO(shlT)
 		Unit u = shlT<N>(z, x, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx << y, mz + (mpz_class(u) << (sizeof(x) * 8)));
+		CYBOZU_TEST_EQUAL(mx << y, mz + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 }
 
@@ -193,6 +214,42 @@ CYBOZU_TEST_AUTO(shrT)
 	}
 }
 
+CYBOZU_TEST_AUTO(shiftLeft)
+{
+	const size_t N = 4;
+	Unit x[N], z[N*2];
+	cybozu::XorShift rg;
+	mpz_class mx, mz;
+	for (int i = 0; i < 100; i++) {
+		Unit y;
+		setRand(x, N, rg);
+		setRand(&y, 1, rg);
+		y %= UnitBitSize * 3;
+		size_t yn = shiftLeft(z, x, N, y);
+		setArray(mx, x, N);
+		setArray(mz, z, yn);
+		CYBOZU_TEST_EQUAL(mx << y, mz);
+	}
+}
+
+CYBOZU_TEST_AUTO(shiftRight)
+{
+	const size_t N = 4;
+	Unit x[N*2], z[N*2];
+	cybozu::XorShift rg;
+	mpz_class mx, mz;
+	for (int i = 0; i < 100; i++) {
+		Unit y;
+		setRand(x, N*2, rg);
+		setArray(mx, x, N*2);
+		setRand(&y, 1, rg);
+		y %= UnitBitSize * 3;
+		size_t yn = shiftRight(z, x, N*2, y);
+		setArray(mz, z, yn);
+		CYBOZU_TEST_EQUAL(mx >> y, mz);
+	}
+}
+
 CYBOZU_TEST_AUTO(addUnit)
 {
 	const size_t N = 2;
@@ -209,10 +266,11 @@ CYBOZU_TEST_AUTO(addUnit)
 		const Unit *x = tbl[i].x;
 		Unit y = tbl[i].y;
 		Unit z[N];
-		Unit u = addUnit(z, x, N, y);
+		copy(z, x, N);
+		Unit u = addUnit(z, N, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(mx + y, mz + (mpz_class(u) << (sizeof(Unit) * N * 8)));
+		CYBOZU_TEST_EQUAL(mx + to_mpz(y), mz + (to_mpz(u) << (sizeof(Unit) * N * 8)));
 		Unit x2[N];
 		Unit u2 = subUnit(x2, z, N, y);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x, N);
@@ -234,7 +292,7 @@ CYBOZU_TEST_AUTO(divUnit)
 		Unit r = divUnit(q, x, N, y);
 		setArray(mx, x, N);
 		setArray(mq, q, N);
-		CYBOZU_TEST_EQUAL(mx, mq * y + r);
+		CYBOZU_TEST_EQUAL(mx, mq * to_mpz(y) + to_mpz(r));
 		Unit r2 = modUnit(x, N, y);
 		CYBOZU_TEST_EQUAL(r, r2);
 	}
@@ -290,10 +348,11 @@ CYBOZU_TEST_AUTO(divSmallT)
 		y[N - 1] |= Unit(1) << (sizeof(Unit) * 8 / 2); // at least half
 		setArray(mx, x, N);
 		setArray(my, y, N);
+		q = 0;
 		bool done = divSmallT<N>(&q, 1, x, N, y);
 		CYBOZU_TEST_ASSERT(done);
 		setArray(mr, x, N);
-		CYBOZU_TEST_EQUAL(q * my + mr, mx);
+		CYBOZU_TEST_EQUAL(to_mpz(q) * my + mr, mx);
 	}
 #ifdef NDEBUG
 	mpz_class mq;

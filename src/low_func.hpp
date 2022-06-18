@@ -312,7 +312,7 @@ struct MulUnitPre {
 	static inline void func(Unit *z, const Unit *x, Unit y)
 	{
 #ifdef MCL_USE_VINT
-		z[N] = mcl::vint::mulu1(z, x, N, y);
+		z[N] = mcl::bint::mulUnitT<N>(z, x, y);
 #else
 		z[N] = mpn_mul_1((mp_limb_t*)z, (const mp_limb_t*)x, N, y);
 #endif
