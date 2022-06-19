@@ -82,26 +82,6 @@ T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
-	z[] = x[n] - y[n]
-	z may be equal to x or y
-*/
-template<class T>
-T subN(T *z, const T *x, const T *y, size_t n)
-{
-	assert(n > 0);
-	T c = 0;
-	for (size_t i = 0; i < n; i++) {
-		T yi = y[i];
-		yi += c;
-		c = yi < c;
-		T xi = x[i];
-		c += xi < yi;
-		z[i] = xi - yi;
-	}
-	return c;
-}
-
-/*
 	out[] = x[n] - y
 */
 template<class T>
@@ -149,7 +129,7 @@ template<class T>
 T subNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 {
 	assert(xn >= yn);
-	T c = vint::subN(z, x, y, yn);
+	T c = bint::subN(z, x, y, yn);
 	if (xn > yn) {
 		c = vint::subu1(z + yn, x + yn, xn - yn, c);
 	}
@@ -338,7 +318,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 		}
 		size_t d = xn - yn;
 		if (bint::cmp(x + d, y, yn) >= 0) {
-			vint::subN(x + d, x + d, y, yn);
+			bint::subN(x + d, x + d, y, yn);
 			if (q) bint::addUnit(q + d, qn - d, 1);
 		} else {
 			T v;
@@ -349,13 +329,13 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 				v = bint::divUnit1(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
 			}
 			T ret = bint::mulUnit(tt, y, v, yn);
-			ret += vint::subN(x + d - 1, x + d - 1, tt, yn);
+			ret += bint::subN(x + d - 1, x + d - 1, tt, yn);
 			x[xn-1] -= ret;
 			if (q) bint::addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
 	if (xn == yn && bint::cmp(x, y, yn) >= 0) {
-		subN(x, x, y, yn);
+		bint::subN(x, x, y, yn);
 		if (q) bint::addUnit(q, qn, 1);
 	}
 	xn = getRealSize(x, xn);
@@ -394,16 +374,16 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 		T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 		T qv = 0;
 		if (yTop == T(-1)) {
-			subN(xx, x, y, xn);
+			bint::subN(xx, x, y, xn);
 			qv = 1;
 		} else {
 			qv = x[xn - 1] / (yTop + 1);
 			bint::mulUnit(xx, y, qv, yn);
-			subN(xx, x, xx, xn);
+			bint::subN(xx, x, xx, xn);
 		}
 		// expect that loop is at most once
 		while (bint::cmp(xx, y, yn) >= 0) {
-			subN(xx, xx, y, yn);
+			bint::subN(xx, xx, y, yn);
 			qv++;
 		}
 		if (r) {
@@ -592,7 +572,7 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	}
 #endif
 	if (fp::isGreaterOrEqualArray(buf, p, n)) {
-		subN(z, buf, p, n);
+		bint::subN(z, buf, p, n);
 	} else {
 		fp::copyArray(z, buf, n);
 	}
@@ -700,7 +680,7 @@ private:
 			z.clear();
 			return;
 		}
-		Unit c = vint::subN(&z.buf_[0], &x[0], &y[0], yn);
+		Unit c = bint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
 			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
