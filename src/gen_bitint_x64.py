@@ -202,38 +202,40 @@ def gen_enable_fast(N):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
-parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=10)
+parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=9)
+parser.add_argument("-addn", "--addn", help="max size of add/sub", type=int, default=16)
 param = parser.parse_args()
 
 setWin64ABI(param.win)
 N = param.num
+addN = param.addn
 
 initOutput()
 output('segment .data')
-for i in range(N):
+for i in range(N+1):
 	defineName(f'mclb_mulUnit{i}')
 	output(f'dq mclb_mulUnit_slow{i}')
-for i in range(N):
+for i in range(N+1):
 	defineName(f'mclb_mulUnitAdd{i}')
 	output(f'dq mclb_mulUnitAdd_slow{i}')
 output('segment .text')
 
-for i in range(N):
+for i in range(addN+1):
 	gen_add(i)
 
-for i in range(N):
+for i in range(addN+1):
 	gen_sub(i)
 
-for i in range(N):
+for i in range(N+1):
 	gen_mulUnit(i, 'fast')
 
-for i in range(N):
+for i in range(N+1):
 	gen_mulUnitAdd(i, 'fast')
 
-for i in range(N):
+for i in range(N+1):
 	gen_mulUnit(i, 'slow')
 
-for i in range(N):
+for i in range(N+1):
 	gen_mulUnitAdd(i, 'slow')
 
 gen_enable_fast(N)
