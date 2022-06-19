@@ -82,61 +82,6 @@ T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
-	out[] = x[n] - y
-*/
-template<class T>
-T subu1(T *z, const T *x, size_t n, T y)
-{
-	assert(n > 0);
-#if 0
-	T t = x[0];
-	z[0] = t - y;
-	size_t i = 0;
-	if (t >= y) goto EXIT_0;
-	i = 1;
-	for (; i < n; i++ ){
-		t = x[i];
-		z[i] = t - 1;
-		if (t != 0) goto EXIT_0;
-	}
-	return 1;
-EXIT_0:
-	i++;
-	for (; i < n; i++) {
-		z[i] = x[i];
-	}
-	return 0;
-#else
-	T c = x[0] < y ? 1 : 0;
-	z[0] = x[0] - y;
-	for (size_t i = 1; i < n; i++) {
-		if (x[i] < c) {
-			z[i] = T(-1);
-		} else {
-			z[i] = x[i] - c;
-			c = 0;
-		}
-	}
-	return c;
-#endif
-}
-
-/*
-	z[xn] = x[xn] - y[yn]
-	@note xn >= yn
-*/
-template<class T>
-T subNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn >= yn);
-	T c = bint::subN(z, x, y, yn);
-	if (xn > yn) {
-		c = vint::subu1(z + yn, x + yn, xn - yn, c);
-	}
-	return c;
-}
-
-/*
 	z[xn * yn] = x[xn] * y[ym]
 */
 template<class T>
@@ -665,7 +610,10 @@ private:
 			z.clear();
 			return;
 		}
-		Unit c = vint::subu1(&z.buf_[0], &x[0], xn, y);
+		Unit *dst = &z.buf_[0];
+		const Unit *src = &x[0];
+		if (dst != src) bint::copy(dst, src, xn);
+		Unit c = bint::subUnit(dst, xn, y);
 		(void)c;
 		assert(!c);
 		z.trim(zn);
@@ -682,7 +630,12 @@ private:
 		}
 		Unit c = bint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
-			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
+			size_t n = xn - yn;
+			Unit *dst = &z.buf_[yn];
+			const Unit *src = &x[yn];
+			if (dst != src) bint::copy(dst, src, n);
+			c = bint::subUnit(dst, n, c);
+//			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
 		assert(!c);
 		z.trim(xn);
