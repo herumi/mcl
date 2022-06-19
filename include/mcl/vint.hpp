@@ -59,51 +59,6 @@ int compareNM(const T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
-	z[] = x[] + y
-*/
-template<class T>
-T addu1(T *z, const T *x, size_t n, T y)
-{
-	assert(n > 0);
-	T t = x[0] + y;
-	z[0] = t;
-	size_t i = 0;
-	if (t >= y) goto EXIT_0;
-	i = 1;
-	for (; i < n; i++) {
-		t = x[i] + 1;
-		z[i] = t;
-		if (t != 0) goto EXIT_0;
-	}
-	return 1;
-EXIT_0:
-	i++;
-	for (; i < n; i++) {
-		z[i] = x[i];
-	}
-	return 0;
-}
-
-/*
-	x[] += y
-*/
-template<class T>
-T addu1(T *x, size_t n, T y)
-{
-	assert(n > 0);
-	T t = x[0] + y;
-	x[0] = t;
-	size_t i = 0;
-	if (t >= y) return 0;
-	i = 1;
-	for (; i < n; i++) {
-		t = x[i] + 1;
-		x[i] = t;
-		if (t != 0) return 0;
-	}
-	return 1;
-}
-/*
 	z[zn] = x[xn] + y[yn]
 	@note zn = max(xn, yn)
 */
@@ -119,7 +74,9 @@ T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 	size_t min = yn;
 	T c = bint::addN(z, x, y, min);
 	if (max > min) {
-		c = vint::addu1(z + min, x + min, max - min, c);
+		size_t n = max - min;
+		if (z != x) bint::copy(z + min, x + min, n);
+		c = bint::addUnit(z + min, n, c);
 	}
 	return c;
 }
@@ -382,7 +339,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 		size_t d = xn - yn;
 		if (bint::cmp(x + d, y, yn) >= 0) {
 			vint::subN(x + d, x + d, y, yn);
-			if (q) vint::addu1<T>(q + d, qn - d, 1);
+			if (q) bint::addUnit(q + d, qn - d, 1);
 		} else {
 			T v;
 			if (y[yn - 1] == T(-1)) {
@@ -394,12 +351,12 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 			T ret = bint::mulUnit(tt, y, v, yn);
 			ret += vint::subN(x + d - 1, x + d - 1, tt, yn);
 			x[xn-1] -= ret;
-			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, v);
+			if (q) bint::addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
 	if (xn == yn && bint::cmp(x, y, yn) >= 0) {
 		subN(x, x, y, yn);
-		if (q) vint::addu1<T>(q, qn, 1);
+		if (q) bint::addUnit(q, qn, 1);
 	}
 	xn = getRealSize(x, xn);
 	return xn;
@@ -604,9 +561,9 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	x2[0] = bint::mulUnit1(&x2[1], buf[4], a);
 	Unit x3 = bint::addT<2>(buf, buf, x2);
 	if (x3) {
-		x3 = addu1(buf + 2, buf + 2, 2, Unit(1)); // t' = H' * a + L'
+		x3 = bint::addUnit(buf + 2, 2, 1); // t' = H' * a + L'
 		if (x3) {
-			x3 = addu1(buf, buf, 4, a);
+			x3 = bint::addUnit(buf, 4, a);
 			assert(x3 == 0);
 		}
 	}
@@ -617,19 +574,19 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	buf[n + 1] = bint::addT<n>(buf + 1, buf + 1, x + n);
 	// t = H * a + L
 	Unit t = bint::addT<n>(buf, buf, x);
-	addu1(buf + n, buf + n, 2, t);
+	bint::addUnit(buf + n, 2, t);
 	Unit x2[4];
 	// x2 = buf[n:n+2] * a
 	x2[2] = bint::mulUnitT<2>(x2, buf + n, 0x3d1u);
 	x2[3] = addN(x2 + 1, x2 + 1, buf + n, 2);
 	Unit x3 = addN(buf, buf, x2, 4);
 	if (x3) {
-		x3 = addu1(buf + 4, buf + 4, n - 4, Unit(1));
+		x3 = bint::addUnit(buf + 4, buf + 4, n - 4, 1);
 		if (x3) {
 			Unit a[2] = { 0x3d1, 1 };
 			x3 = addN(buf, buf, a, 2);
 			if (x3) {
-				addu1(buf + 2, buf + 2, n - 2, 1u);
+				bint::addUnit(buf + 2, n - 2, 1);
 			}
 		}
 	}
@@ -714,7 +671,8 @@ private:
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = vint::addu1(&z.buf_[0], &x[0], xn, y);
+		if (&z.buf_[0] != &x[0]) bint::copy(&z.buf_[0], &x[0], xn);
+		z.buf_[zn - 1] = bint::addUnit(&z.buf_[0], xn, y);
 		z.trim(zn);
 	}
 	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
