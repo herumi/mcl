@@ -104,12 +104,8 @@ inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 		y = p;
 	}
 	z[xn] = bint::mulUnit(z, x, y[0], xn);
-	bint::clear(z + xn + 1, yn - 1);
-
-	T *t2 = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	for (size_t i = 1; i < yn; i++) {
-		t2[xn] = bint::mulUnit(t2, x, y[i], xn);
-		bint::addN(&z[i], &z[i], &t2[0], xn + 1);
+		z[xn + i] = bint::mulUnitAdd(&z[i], x, y[i], xn);
 	}
 }
 /*
