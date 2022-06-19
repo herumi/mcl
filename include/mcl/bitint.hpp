@@ -525,21 +525,19 @@ inline Unit addUnit(Unit *y, size_t n, Unit x)
 	return 1;
 }
 
-// z[n] = x[n] - y
-inline Unit subUnit(Unit *z, const Unit *x, size_t n, Unit y)
+// y[n] -= x, return CF
+inline Unit subUnit(Unit *y, size_t n, Unit x)
 {
-	assert(n > 0);
-	Unit c = x[0] < y ? 1 : 0;
-	z[0] = x[0] - y;
+	if (n == 0) return 0;
+	Unit t = y[0];
+	y[0] = t - x;
+	if (t >= x) return 0;
 	for (size_t i = 1; i < n; i++) {
-		if (x[i] < c) {
-			z[i] = Unit(-1);
-		} else {
-			z[i] = x[i] - c;
-			c = 0;
-		}
+		t = y[i];
+		y[i] = t - 1;
+		if (t != 0) return 0;
 	}
-	return c;
+	return 1;
 }
 
 /*
