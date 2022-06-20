@@ -59,29 +59,6 @@ int compareNM(const T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
-	z[zn] = x[xn] + y[yn]
-	@note zn = max(xn, yn)
-*/
-template<class T>
-T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
-{
-	if (yn > xn) {
-		fp::swap_(xn, yn);
-		fp::swap_(x, y);
-	}
-	assert(xn >= yn);
-	size_t max = xn;
-	size_t min = yn;
-	T c = bint::addN(z, x, y, min);
-	if (max > min) {
-		size_t n = max - min;
-		if (z != x) bint::copy(z + min, x + min, n);
-		c = bint::addUnit(z + min, n, c);
-	}
-	return c;
-}
-
-/*
 	z[xn * yn] = x[xn] * y[ym]
 */
 template<class T>
@@ -571,16 +548,30 @@ private:
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		size_t zn = fp::max_(xn, yn) + 1;
+		const Unit *px = &x[0];
+		const Unit *py = &y[0];
+		if (yn > xn) {
+			fp::swap_(xn, yn);
+			fp::swap_(px, py);
+		}
+		assert(xn >= yn);
 		bool b;
-		z.buf_.alloc(&b, zn);
+		// &x[0] and &y[0] will not change if z == x or z == y because they are FixedBuffer
+		z.buf_.alloc(&b, xn + 1);
 		assert(b);
 		if (!b) {
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = vint::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
-		z.trim(zn);
+		Unit *dst = &z.buf_[0];
+		Unit c = bint::addN(dst, px, py, yn);
+		if (xn > yn) {
+			size_t n = xn - yn;
+			if (dst != px) bint::copy(dst + yn, px + yn, n);
+			c = bint::addUnit(dst + yn, n, c);
+		}
+		dst[xn] = c;
+		z.trim(xn + 1);
 	}
 	static void uadd1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
