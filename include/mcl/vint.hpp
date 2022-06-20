@@ -96,36 +96,6 @@ static inline void sqrN(T *y, const T *x, size_t xn)
 }
 
 /*
-	q[] = x[] / y
-	@retval r = x[] % y
-	accept q == x
-*/
-template<class T>
-T divu1(T *q, const T *x, size_t n, T y)
-{
-	if (n == 0) return 0;
-	T r = 0;
-	for (int i = (int)n - 1; i >= 0; i--) {
-		q[i] = bint::divUnit1(&r, r, x[i], y);
-	}
-	return r;
-}
-/*
-	q[] = x[] / y
-	@retval r = x[] % y
-*/
-template<class T>
-T modu1(const T *x, size_t n, T y)
-{
-	if (n == 0) return 0;
-	T r = 0;
-	for (int i = (int)n - 1; i >= 0; i--) {
-		bint::divUnit1(&r, r, x[i], y);
-	}
-	return r;
-}
-
-/*
 	y[] = x[] << bit
 	0 < bit < sizeof(T) * 8
 	accept y == x
@@ -337,9 +307,9 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 			if (qn > xn) {
 				bint::clear(q + xn, qn - xn);
 			}
-			t = divu1(q, x, xn, y[0]);
+			t = bint::divUnit(q, x, xn, y[0]);
 		} else {
-			t = modu1(x, xn, y[0]);
+			t = bint::modUnit(x, xn, y[0]);
 		}
 		r[0] = t;
 		bint::clear(r + 1, rn - 1);
@@ -1102,10 +1072,10 @@ public:
 				q->clear();
 				return 0;
 			}
-			r = (int)vint::divu1(&q->buf_[0], &x.buf_[0], xn, absY);
+			r = (int)bint::divUnit(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
 		} else {
-			r = (int)vint::modu1(&x.buf_[0], xn, absY);
+			r = (int)bint::modUnit(&x.buf_[0], xn, absY);
 		}
 		return xNeg ? -r : r;
 	}
@@ -1156,7 +1126,7 @@ public:
 				return 0;
 			}
 		}
-		Unit r = vint::divu1(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
+		Unit r = bint::divUnit(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
 		if (q) {
 			q->trim(xn);
 			q->isNeg_ = false;
