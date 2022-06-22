@@ -210,7 +210,7 @@ ifeq ($(OS),mingw64)
   SHE384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_256_SNAME).a
 endif
 
-$(MCL_LIB): $(LIB_OBJ)
+$(MCL_LIB): $(LIB_OBJ) include/mcl/bitint_switch.hpp
 	$(AR) $@ $(LIB_OBJ)
 
 $(MCL_SLIB): $(LIB_OBJ)
