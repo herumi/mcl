@@ -434,7 +434,7 @@ void shrT(Unit *pz, const Unit *px, size_t bit)
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-inline Unit shl(Unit *pz, const Unit *px, size_t n, Unit bit)
+inline Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n)
 {
 	assert(0 < bit && bit < UnitBitSize);
 	size_t bitRev = UnitBitSize - bit;
@@ -451,7 +451,7 @@ inline Unit shl(Unit *pz, const Unit *px, size_t n, Unit bit)
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
+inline void shr(Unit *pz, const Unit *px, size_t bit, size_t n)
 {
 	assert(0 < bit && bit < UnitBitSize);
 	size_t bitRev = UnitBitSize - bit;
@@ -471,7 +471,7 @@ inline void shr(Unit *pz, const Unit *px, size_t n, size_t bit)
 	accept y == x
 	return yn
 */
-inline size_t shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
+inline size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 {
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
@@ -483,7 +483,7 @@ inline size_t shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
 			y[q + xn - 1 - i] = x[xn - 1 - i];
 		}
 	} else {
-		y[q + xn] = shl(y + q, x, xn, r);
+		y[q + xn] = shl(y + q, x, r, xn);
 		yn++;
 	}
 	clear(y, q);
@@ -496,7 +496,7 @@ inline size_t shiftLeft(Unit *y, const Unit *x, size_t xn, size_t bit)
 	yn = xn - bit / UnitBitSize
 	return yn
 */
-inline size_t shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
+inline size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn)
 {
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
@@ -505,7 +505,7 @@ inline size_t shiftRight(Unit *y, const Unit *x, size_t xn, size_t bit)
 	if (r == 0) {
 		copy(y, x + q, xn - q);
 	} else {
-		shr(y, x + q, xn - q, r);
+		shr(y, x + q, r, xn - q);
 	}
 	return xn - q;
 }
@@ -697,13 +697,13 @@ size_t divT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		Unit yShift[N];
 		shlT<N>(yShift, y, shift);
 		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));
-		Unit v = shl(xx, x, xn, shift);
+		Unit v = shl(xx, x, shift, xn);
 		if (v) {
 			xx[xn] = v;
 			xn++;
 		}
 		xn = divFullBitT<N>(q, qn, xx, xn, yShift);
-		shr(x, xx, xn, shift);
+		shr(x, xx, shift, xn);
 		return xn;
 	} else {
 		return divFullBitT<N>(q, qn, x, xn, y);
