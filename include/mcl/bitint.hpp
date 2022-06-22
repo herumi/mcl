@@ -11,12 +11,12 @@
 #include <cybozu/bit_operation.hpp>
 #include <assert.h>
 
-//#define MCL_BITINT_ASM 1
+//#define MCL_BINT_ASM 1
 #ifdef MCL_WASM32
-	#define MCL_BITINT_ASM 0
+	#define MCL_BINT_ASM 0
 #endif
-#ifndef MCL_BITINT_ASM
-	#define MCL_BITINT_ASM 0 //1
+#ifndef MCL_BINT_ASM
+	#define MCL_BINT_ASM 0 //1
 #endif
 
 namespace mcl { namespace bint {
@@ -100,8 +100,8 @@ template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
 // [ret:z[N]] = z[N] + x[N] * y
 template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 
-#if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
-#include "bitint_asm.hpp"
+#if defined(MCL_BINT_ASM) && (MCL_BINT_ASM == 1)
+#include "bint_asm.hpp"
 #else
 
 #ifdef MCL_WASM32
@@ -234,7 +234,7 @@ Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
 	return ret;
 }
 
-#endif // #if defined(MCL_BITINT_ASM) && (MCL_BITINT_ASM == 1)
+#endif // #if defined(MCL_BINT_ASM) && (MCL_BINT_ASM == 1)
 
 template<size_t N>
 void copyT(Unit *y, const Unit *x)
@@ -731,7 +731,7 @@ inline size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	return 1;
 }
 
-#include "bitint_switch.hpp"
+#include "bint_switch.hpp"
 
 } } // mcl::bint
 

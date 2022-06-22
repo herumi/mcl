@@ -23,7 +23,7 @@
 #ifndef MCL_MAX_BIT_SIZE
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
-#include <mcl/bitint.hpp>
+#include <mcl/bint.hpp>
 
 namespace mcl {
 

@@ -1,13 +1,13 @@
 #include <cybozu/benchmark.hpp>
 //cybozu::CpuClock g_clk;
 #include <stdio.h>
-#include <mcl/bitint.hpp>
+#include <mcl/bint.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <gmpxx.h>
 #include <iostream>
 
-#ifdef MCL_BITINT_FUNC_PTR
+#ifdef MCL_BINT_FUNC_PTR
 #define XBYAK_ONLY_CLASS_CPU
 #include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)

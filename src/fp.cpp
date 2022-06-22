@@ -495,7 +495,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
-#ifdef MCL_BITINT_FUNC_PTR
+#ifdef MCL_BINT_FUNC_PTR
 	{
 		using namespace Xbyak::util;
 		if (g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
