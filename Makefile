@@ -99,7 +99,9 @@ ifeq ($(OS),mac-m1)
 endif
 BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=0
+src/fp.cpp: include/mcl/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
+src/fp.cpp: include/mcl/bint_asm.hpp
   CFLAGS_USER+=-DMCL_BINT_ASM=1
   ifeq ($(CPU),x86-64)
     BINT_BASENAME=bint-x64-amd64
@@ -112,7 +114,6 @@ ifeq ($(MCL_BINT_ASM),1)
     BINT_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
     LIB_OBJ+=$(BINT_OBJ)
   endif
-test/bint_test.cpp: include/mcl/bint.hpp
 endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
   GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
@@ -139,7 +140,6 @@ bint_header:
 	$(MAKE) include/mcl/bint_asm.hpp
 	$(MAKE) include/mcl/bint_switch.hpp
 #	$(MAKE) $(BINT_SRC)
-include/mcl/bint.hpp: include/mcl/bint_asm.hpp include/mcl/bint_switch.hpp
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
@@ -210,7 +210,7 @@ ifeq ($(OS),mingw64)
   SHE384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_256_SNAME).a
 endif
 
-$(MCL_LIB): $(LIB_OBJ) include/mcl/bint_switch.hpp
+$(MCL_LIB): $(LIB_OBJ)
 	$(AR) $@ $(LIB_OBJ)
 
 $(MCL_SLIB): $(LIB_OBJ)
