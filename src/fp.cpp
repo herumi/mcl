@@ -3,6 +3,7 @@
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+#include "bint_impl.hpp"
 #if defined(__EMSCRIPTEN__) && MCL_SIZEOF_UNIT == 4
 #define USE_WASM
 #include "low_func_wasm.hpp"

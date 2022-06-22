@@ -99,7 +99,7 @@ ifeq ($(OS),mac-m1)
 endif
 BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=0
-src/fp.cpp: include/mcl/bint_switch.hpp
+src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_asm.hpp
   CFLAGS_USER+=-DMCL_BINT_ASM=1
@@ -126,7 +126,7 @@ src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
 include/mcl/bint_asm.hpp: src/gen_bint_header.py
 	python3 $< > $@ asm $(GEN_BINT_HEADER_PY_OPT)
-include/mcl/bint_switch.hpp: src/gen_bint_header.py
+src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 $(BINT_X64_SRC): src/gen_x86asm.py src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py > $(BINT_X64_SRC)
@@ -138,7 +138,7 @@ $(BINT_OBJ): $(BINT_SRC)
 	$(AS) $< -o $@
 bint_header:
 	$(MAKE) include/mcl/bint_asm.hpp
-	$(MAKE) include/mcl/bint_switch.hpp
+	$(MAKE) src/bint_switch.hpp
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
