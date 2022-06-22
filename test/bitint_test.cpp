@@ -272,7 +272,8 @@ CYBOZU_TEST_AUTO(addUnit)
 		setArray(mz, z, N);
 		CYBOZU_TEST_EQUAL(mx + to_mpz(y), mz + (to_mpz(u) << (sizeof(Unit) * N * 8)));
 		Unit x2[N];
-		Unit u2 = subUnit(x2, z, N, y);
+		copy(x2, z, N);
+		Unit u2 = subUnit(x2, N, y);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x, N);
 		CYBOZU_TEST_EQUAL(u, u2);
 	}

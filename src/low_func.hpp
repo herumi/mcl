@@ -64,7 +64,7 @@ struct AddPre {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
 #ifdef MCL_USE_VINT
-		return mcl::vint::addN(z, x, y, N);
+		return mcl::bint::addT<N>(z, x, y);
 #else
 		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
 #endif
@@ -107,7 +107,7 @@ struct SubPre {
 	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
 	{
 #ifdef MCL_USE_VINT
-		return mcl::vint::subN(z, x, y, N);
+		return bint::subT<N>(z, x, y);
 #else
 		return mpn_sub_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
 #endif

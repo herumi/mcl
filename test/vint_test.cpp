@@ -1517,10 +1517,10 @@ CYBOZU_TEST_AUTO(divUnit)
 			while (seq1.next(&q)) {
 				uint64_t x[2];
 				x[0] = mcl::bint::mulUnit1(&x[1], q, y);
-				mcl::vint::addu1(x, x, 2, r);
+				bint::addUnit(x, 2, r);
 				uint64_t Q, R;
 //printf("q=0x%016llxull, r=0x%016llxull, y=0x%016llxull\n", (long long)q, (long long)r, (long long)y);
-				Q = mcl::vint::divUnit(&R, x[1], x[0], y);
+				Q = bint::divUnit1(&R, x[1], x[0], y);
 				CYBOZU_TEST_EQUAL(q, Q);
 				CYBOZU_TEST_EQUAL(r, R);
 			}

@@ -44,46 +44,6 @@ void dump(const T *x, size_t n, const char *msg = "")
 	printf("\n");
 }
 
-inline uint64_t make64(uint32_t H, uint32_t L)
-{
-	return ((uint64_t)H << 32) | L;
-}
-
-inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
-{
-	*H = uint32_t(x >> 32);
-	*L = uint32_t(x);
-}
-
-/*
-	q = [H:L] / y
-	r = [H:L] % y
-	return q
-*/
-inline uint32_t divUnit(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
-{
-	assert(y != 0);
-	uint64_t t = make64(H, L);
-	uint32_t q = uint32_t(t / y);
-	*pr = uint32_t(t % y);
-	return q;
-}
-#if MCL_SIZEOF_UNIT == 8
-inline uint64_t divUnit(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
-{
-	assert(y != 0);
-#if defined(_MSC_VER)
-	return _udiv128(H, L, y, pr);
-#else
-	typedef __attribute__((mode(TI))) unsigned int uint128;
-	uint128 t = (uint128(H) << 64) | L;
-	uint64_t q = uint64_t(t / y);
-	*pr = uint64_t(t % y);
-	return q;
-#endif
-}
-#endif
-
 /*
 	compare x[] and y[]
 	@retval positive  if x > y
@@ -95,192 +55,7 @@ int compareNM(const T *x, size_t xn, const T *y, size_t yn)
 {
 	assert(xn > 0 && yn > 0);
 	if (xn != yn) return xn > yn ? 1 : -1;
-	for (int i = (int)xn - 1; i >= 0; i--) {
-		if (x[i] != y[i]) return x[i] > y[i] ? 1 : -1;
-	}
-	return 0;
-}
-template<class T>
-int cmpN(const T *x, const T *y, size_t n)
-{
-	assert(n > 0);
-	for (int i = (int)n - 1; i >= 0; i--) {
-		if (x[i] != y[i]) return x[i] > y[i] ? 1 : -1;
-	}
-	return 0;
-}
-
-template<class T>
-void clearN(T *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) x[i] = 0;
-}
-
-template<class T>
-void copyN(T *y, const T *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) y[i] = x[i];
-}
-
-/*
-	z[] = x[n] + y[n]
-	@note return 1 if having carry
-	z may be equal to x or y
-*/
-template<class T>
-T addN(T *z, const T *x, const T *y, size_t n)
-{
-	T c = 0;
-	for (size_t i = 0; i < n; i++) {
-		T xc = x[i] + c;
-		c = xc < c;
-		T yi = y[i];
-		xc += yi;
-		c += xc < yi;
-		z[i] = xc;
-	}
-	return c;
-}
-
-/*
-	z[] = x[] + y
-*/
-template<class T>
-T addu1(T *z, const T *x, size_t n, T y)
-{
-	assert(n > 0);
-	T t = x[0] + y;
-	z[0] = t;
-	size_t i = 0;
-	if (t >= y) goto EXIT_0;
-	i = 1;
-	for (; i < n; i++) {
-		t = x[i] + 1;
-		z[i] = t;
-		if (t != 0) goto EXIT_0;
-	}
-	return 1;
-EXIT_0:
-	i++;
-	for (; i < n; i++) {
-		z[i] = x[i];
-	}
-	return 0;
-}
-
-/*
-	x[] += y
-*/
-template<class T>
-T addu1(T *x, size_t n, T y)
-{
-	assert(n > 0);
-	T t = x[0] + y;
-	x[0] = t;
-	size_t i = 0;
-	if (t >= y) return 0;
-	i = 1;
-	for (; i < n; i++) {
-		t = x[i] + 1;
-		x[i] = t;
-		if (t != 0) return 0;
-	}
-	return 1;
-}
-/*
-	z[zn] = x[xn] + y[yn]
-	@note zn = max(xn, yn)
-*/
-template<class T>
-T addNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
-{
-	if (yn > xn) {
-		fp::swap_(xn, yn);
-		fp::swap_(x, y);
-	}
-	assert(xn >= yn);
-	size_t max = xn;
-	size_t min = yn;
-	T c = vint::addN(z, x, y, min);
-	if (max > min) {
-		c = vint::addu1(z + min, x + min, max - min, c);
-	}
-	return c;
-}
-
-/*
-	z[] = x[n] - y[n]
-	z may be equal to x or y
-*/
-template<class T>
-T subN(T *z, const T *x, const T *y, size_t n)
-{
-	assert(n > 0);
-	T c = 0;
-	for (size_t i = 0; i < n; i++) {
-		T yi = y[i];
-		yi += c;
-		c = yi < c;
-		T xi = x[i];
-		c += xi < yi;
-		z[i] = xi - yi;
-	}
-	return c;
-}
-
-/*
-	out[] = x[n] - y
-*/
-template<class T>
-T subu1(T *z, const T *x, size_t n, T y)
-{
-	assert(n > 0);
-#if 0
-	T t = x[0];
-	z[0] = t - y;
-	size_t i = 0;
-	if (t >= y) goto EXIT_0;
-	i = 1;
-	for (; i < n; i++ ){
-		t = x[i];
-		z[i] = t - 1;
-		if (t != 0) goto EXIT_0;
-	}
-	return 1;
-EXIT_0:
-	i++;
-	for (; i < n; i++) {
-		z[i] = x[i];
-	}
-	return 0;
-#else
-	T c = x[0] < y ? 1 : 0;
-	z[0] = x[0] - y;
-	for (size_t i = 1; i < n; i++) {
-		if (x[i] < c) {
-			z[i] = T(-1);
-		} else {
-			z[i] = x[i] - c;
-			c = 0;
-		}
-	}
-	return c;
-#endif
-}
-
-/*
-	z[xn] = x[xn] - y[yn]
-	@note xn >= yn
-*/
-template<class T>
-T subNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn >= yn);
-	T c = vint::subN(z, x, y, yn);
-	if (xn > yn) {
-		c = vint::subu1(z + yn, x + yn, xn - yn, c);
-	}
-	return c;
+	return bint::cmp(x, y, xn);
 }
 
 /*
@@ -297,21 +72,17 @@ inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 	assert(xn >= yn);
 	if (z == x) {
 		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-		copyN(p, x, xn);
+		bint::copy(p, x, xn);
 		x = p;
 	}
 	if (z == y) {
 		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		copyN(p, y, yn);
+		bint::copy(p, y, yn);
 		y = p;
 	}
 	z[xn] = bint::mulUnit(z, x, y[0], xn);
-	clearN(z + xn + 1, yn - 1);
-
-	T *t2 = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
 	for (size_t i = 1; i < yn; i++) {
-		t2[xn] = bint::mulUnit(t2, x, y[i], xn);
-		vint::addN(&z[i], &z[i], &t2[0], xn + 1);
+		z[xn + i] = bint::mulUnitAdd(&z[i], x, y[i], xn);
 	}
 }
 /*
@@ -322,36 +93,6 @@ template<class T>
 static inline void sqrN(T *y, const T *x, size_t xn)
 {
 	mulNM(y, x, xn, x, xn);
-}
-
-/*
-	q[] = x[] / y
-	@retval r = x[] % y
-	accept q == x
-*/
-template<class T>
-T divu1(T *q, const T *x, size_t n, T y)
-{
-	if (n == 0) return 0;
-	T r = 0;
-	for (int i = (int)n - 1; i >= 0; i--) {
-		q[i] = divUnit(&r, r, x[i], y);
-	}
-	return r;
-}
-/*
-	q[] = x[] / y
-	@retval r = x[] % y
-*/
-template<class T>
-T modu1(const T *x, size_t n, T y)
-{
-	if (n == 0) return 0;
-	T r = 0;
-	for (int i = (int)n - 1; i >= 0; i--) {
-		divUnit(&r, r, x[i], y);
-	}
-	return r;
 }
 
 /*
@@ -388,14 +129,14 @@ void shlN(T *y, const T *x, size_t xn, size_t bit)
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
 	if (r == 0) {
-		// don't use copyN(y + q, x, xn); if overlaped
+		// don't use bint::copy(y + q, x, xn); if overlaped
 		for (size_t i = 0; i < xn; i++) {
 			y[q + xn - 1 - i] = x[xn - 1 - i];
 		}
 	} else {
 		y[q + xn] = shlBit(y + q, x, xn, r);
 	}
-	clearN(y, q);
+	bint::clear(y, q);
 }
 
 /*
@@ -428,7 +169,7 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
 	if (r == 0) {
-		copyN(y, x + q, xn - q);
+		bint::copy(y, x + q, xn - q);
 	} else {
 		shrBit(y, x + q, xn - q, r);
 	}
@@ -456,7 +197,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 	assert(xn > 0);
 	assert(yn > 0);
 	assert((y[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
-	if (q) clearN(q, qn);
+	if (q) bint::clear(q, qn);
 	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
 	while (xn > yn) {
 		if (x[xn - 1] == 0) {
@@ -464,26 +205,26 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 			continue;
 		}
 		size_t d = xn - yn;
-		if (cmpN(x + d, y, yn) >= 0) {
-			vint::subN(x + d, x + d, y, yn);
-			if (q) vint::addu1<T>(q + d, qn - d, 1);
+		if (bint::cmp(x + d, y, yn) >= 0) {
+			bint::subN(x + d, x + d, y, yn);
+			if (q) bint::addUnit(q + d, qn - d, 1);
 		} else {
 			T v;
 			if (y[yn - 1] == T(-1)) {
 				v = x[xn - 1];
 			} else {
 				T r;
-				v = divUnit(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
+				v = bint::divUnit1(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
 			}
 			T ret = bint::mulUnit(tt, y, v, yn);
-			ret += vint::subN(x + d - 1, x + d - 1, tt, yn);
+			ret += bint::subN(x + d - 1, x + d - 1, tt, yn);
 			x[xn-1] -= ret;
-			if (q) vint::addu1<T>(q + d - 1, qn - d + 1, v);
+			if (q) bint::addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
-	if (xn == yn && cmpN(x, y, yn) >= 0) {
-		subN(x, x, y, yn);
-		if (q) vint::addu1<T>(q, qn, 1);
+	if (xn == yn && bint::cmp(x, y, yn) >= 0) {
+		bint::subN(x, x, y, yn);
+		if (q) bint::addUnit(q, qn, 1);
 	}
 	xn = getRealSize(x, xn);
 	return xn;
@@ -502,18 +243,18 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 	const T yTop = y[yn - 1];
 	assert(yTop > 0);
 	if (xn > yn) return false;
-	int ret = xn < yn ? -1 : cmpN(x, y, xn);
+	int ret = xn < yn ? -1 : bint::cmp(x, y, xn);
 	if (ret < 0) { // q = 0, r = x if x < y
-		copyN(r, x, xn);
-		clearN(r + xn, rn - xn);
-		if (q) clearN(q, qn);
+		bint::copy(r, x, xn);
+		bint::clear(r + xn, rn - xn);
+		if (q) bint::clear(q, qn);
 		return true;
 	}
 	if (ret == 0) { // q = 1, r = 0 if x == y
-		clearN(r, rn);
+		bint::clear(r, rn);
 		if (q) {
 			q[0] = 1;
-			clearN(q + 1, qn - 1);
+			bint::clear(q + 1, qn - 1);
 		}
 		return true;
 	}
@@ -521,25 +262,25 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 		T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
 		T qv = 0;
 		if (yTop == T(-1)) {
-			subN(xx, x, y, xn);
+			bint::subN(xx, x, y, xn);
 			qv = 1;
 		} else {
 			qv = x[xn - 1] / (yTop + 1);
 			bint::mulUnit(xx, y, qv, yn);
-			subN(xx, x, xx, xn);
+			bint::subN(xx, x, xx, xn);
 		}
 		// expect that loop is at most once
-		while (cmpN(xx, y, yn) >= 0) {
-			subN(xx, xx, y, yn);
+		while (bint::cmp(xx, y, yn) >= 0) {
+			bint::subN(xx, xx, y, yn);
 			qv++;
 		}
 		if (r) {
-			copyN(r, xx, xn);
-			clearN(r + xn, rn - xn);
+			bint::copy(r, xx, xn);
+			bint::clear(r + xn, rn - xn);
 		}
 		if (q) {
 			q[0] = qv;
-			clearN(q + 1, qn - 1);
+			bint::clear(q + 1, qn - 1);
 		}
 		return true;
 	}
@@ -564,14 +305,14 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		T t;
 		if (q) {
 			if (qn > xn) {
-				clearN(q + xn, qn - xn);
+				bint::clear(q + xn, qn - xn);
 			}
-			t = divu1(q, x, xn, y[0]);
+			t = bint::divUnit(q, x, xn, y[0]);
 		} else {
-			t = modu1(x, xn, y[0]);
+			t = bint::modUnit(x, xn, y[0]);
 		}
 		r[0] = t;
-		clearN(r + 1, rn - 1);
+		bint::clear(r + 1, rn - 1);
 		return;
 	}
 	if (divSmall(q, qn, r, rn, x, xn, y, yn)) return;
@@ -592,16 +333,16 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		shlBit(yBuf, y, yn ,shift);
 		yy = yBuf;
 	} else {
-		copyN(xx, x, xn);
+		bint::copy(xx, x, xn);
 		yy = y;
 	}
 	xn = divFullBitN(q, qn, xx, xn, yy, yn);
 	if (shift) {
 		shrBit(r, xx, xn, shift);
 	} else {
-		copyN(r, xx, xn);
+		bint::copy(r, xx, xn);
 	}
-	clearN(r + xn, rn - xn);
+	bint::clear(r + xn, rn - xn);
 }
 
 class FixedBuffer {
@@ -683,14 +424,14 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	const Unit a = (uint64_t(1) << 32) + 0x3d1;
 	Unit buf[5];
 	buf[4] = bint::mulUnitT<n>(buf, x + 4, a); // H * a
-	buf[4] += addN(buf, buf, x, 4); // t = H * a + L
+	buf[4] += bint::addT<4>(buf, buf, x); // t = H * a + L
 	Unit x2[2];
 	x2[0] = bint::mulUnit1(&x2[1], buf[4], a);
-	Unit x3 = addN(buf, buf, x2, 2);
+	Unit x3 = bint::addT<2>(buf, buf, x2);
 	if (x3) {
-		x3 = addu1(buf + 2, buf + 2, 2, Unit(1)); // t' = H' * a + L'
+		x3 = bint::addUnit(buf + 2, 2, 1); // t' = H' * a + L'
 		if (x3) {
-			x3 = addu1(buf, buf, 4, a);
+			x3 = bint::addUnit(buf, 4, a);
 			assert(x3 == 0);
 		}
 	}
@@ -698,28 +439,28 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	Unit buf[n + 2];
 	// H * a = H * 0x3d1 + (H << 32)
 	buf[n] = bint::mulUnitT<n>(buf, x + n, 0x3d1u); // H * 0x3d1
-	buf[n + 1] = addN(buf + 1, buf + 1, x + n, n);
+	buf[n + 1] = bint::addT<n>(buf + 1, buf + 1, x + n);
 	// t = H * a + L
-	Unit t = addN(buf, buf, x, n);
-	addu1(buf + n, buf + n, 2, t);
+	Unit t = bint::addT<n>(buf, buf, x);
+	bint::addUnit(buf + n, 2, t);
 	Unit x2[4];
 	// x2 = buf[n:n+2] * a
 	x2[2] = bint::mulUnitT<2>(x2, buf + n, 0x3d1u);
 	x2[3] = addN(x2 + 1, x2 + 1, buf + n, 2);
 	Unit x3 = addN(buf, buf, x2, 4);
 	if (x3) {
-		x3 = addu1(buf + 4, buf + 4, n - 4, Unit(1));
+		x3 = bint::addUnit(buf + 4, buf + 4, n - 4, 1);
 		if (x3) {
 			Unit a[2] = { 0x3d1, 1 };
 			x3 = addN(buf, buf, a, 2);
 			if (x3) {
-				addu1(buf + 2, buf + 2, n - 2, 1u);
+				bint::addUnit(buf + 2, n - 2, 1);
 			}
 		}
 	}
 #endif
 	if (fp::isGreaterOrEqualArray(buf, p, n)) {
-		subN(z, buf, p, n);
+		bint::subN(z, buf, p, n);
 	} else {
 		fp::copyArray(z, buf, n);
 	}
@@ -777,16 +518,30 @@ private:
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		size_t zn = fp::max_(xn, yn) + 1;
+		const Unit *px = &x[0];
+		const Unit *py = &y[0];
+		if (yn > xn) {
+			fp::swap_(xn, yn);
+			fp::swap_(px, py);
+		}
+		assert(xn >= yn);
 		bool b;
-		z.buf_.alloc(&b, zn);
+		// &x[0] and &y[0] will not change if z == x or z == y because they are FixedBuffer
+		z.buf_.alloc(&b, xn + 1);
 		assert(b);
 		if (!b) {
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = vint::addNM(&z.buf_[0], &x[0], xn, &y[0], yn);
-		z.trim(zn);
+		Unit *dst = &z.buf_[0];
+		Unit c = bint::addN(dst, px, py, yn);
+		if (xn > yn) {
+			size_t n = xn - yn;
+			if (dst != px) bint::copy(dst + yn, px + yn, n);
+			c = bint::addUnit(dst + yn, n, c);
+		}
+		dst[xn] = c;
+		z.trim(xn + 1);
 	}
 	static void uadd1(VintT& z, const Buffer& x, size_t xn, Unit y)
 	{
@@ -798,7 +553,8 @@ private:
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = vint::addu1(&z.buf_[0], &x[0], xn, y);
+		if (&z.buf_[0] != &x[0]) bint::copy(&z.buf_[0], &x[0], xn);
+		z.buf_[zn - 1] = bint::addUnit(&z.buf_[0], xn, y);
 		z.trim(zn);
 	}
 	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
@@ -811,7 +567,10 @@ private:
 			z.clear();
 			return;
 		}
-		Unit c = vint::subu1(&z.buf_[0], &x[0], xn, y);
+		Unit *dst = &z.buf_[0];
+		const Unit *src = &x[0];
+		if (dst != src) bint::copy(dst, src, xn);
+		Unit c = bint::subUnit(dst, xn, y);
 		(void)c;
 		assert(!c);
 		z.trim(zn);
@@ -826,9 +585,14 @@ private:
 			z.clear();
 			return;
 		}
-		Unit c = vint::subN(&z.buf_[0], &x[0], &y[0], yn);
+		Unit c = bint::subN(&z.buf_[0], &x[0], &y[0], yn);
 		if (xn > yn) {
-			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
+			size_t n = xn - yn;
+			Unit *dst = &z.buf_[yn];
+			const Unit *src = &x[yn];
+			if (dst != src) bint::copy(dst, src, n);
+			c = bint::subUnit(dst, n, c);
+//			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
 		assert(!c);
 		z.trim(xn);
@@ -1071,8 +835,8 @@ public:
 			*pb = false;
 			return;
 		}
-		vint::copyN(x, &buf_[0], n);
-		vint::clearN(x + n, maxSize - n);
+		bint::copy(x, &buf_[0], n);
+		bint::clear(x + n, maxSize - n);
 		*pb = true;
 	}
 	void clear() { *this = 0; }
@@ -1308,10 +1072,10 @@ public:
 				q->clear();
 				return 0;
 			}
-			r = (int)vint::divu1(&q->buf_[0], &x.buf_[0], xn, absY);
+			r = (int)bint::divUnit(&q->buf_[0], &x.buf_[0], xn, absY);
 			q->trim(xn);
 		} else {
-			r = (int)vint::modu1(&x.buf_[0], xn, absY);
+			r = (int)bint::modUnit(&x.buf_[0], xn, absY);
 		}
 		return xNeg ? -r : r;
 	}
@@ -1362,7 +1126,7 @@ public:
 				return 0;
 			}
 		}
-		Unit r = vint::divu1(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
+		Unit r = bint::divUnit(q ? &q->buf_[0] : 0, &x.buf_[0], xn, y);
 		if (q) {
 			q->trim(xn);
 			q->isNeg_ = false;
@@ -1480,7 +1244,7 @@ public:
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] | y.buf_[i];
 		}
-		vint::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
+		bint::copy(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
 		z.trim(xn);
 	}
 	static void andBit(VintT& z, const VintT& x, const VintT& y)
