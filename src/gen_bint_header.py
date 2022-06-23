@@ -79,9 +79,9 @@ extern "C" void mclb_enable_fast(void);
 	elif opt.out == 'switch':
 		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
 		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
-		gen_switch('mulUnit', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64)
-		gen_switch('mulUnitAdd', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64)
-		gen_switch('mul', 'void', arg_p3, 'mulT', param_u3, N, N64)
+		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64)
+		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64)
+		gen_switch('mulN', 'void', arg_p3, 'mulT', param_u3, N, N64)
 		print('#if MCL_BINT_ASM != 1')
 		gen_inst('addT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('subT', 'Unit', arg_p3, addN, addN64)

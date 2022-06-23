@@ -102,9 +102,9 @@ template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
-Unit mulUnit(Unit *z, const Unit *x, Unit y, size_t n);
-Unit mulUnitAdd(Unit *z, const Unit *x, Unit y, size_t n);
-void mul(Unit *z, const Unit *x, const Unit *y, size_t n);
+Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n);
+Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n);
+void mulN(Unit *z, const Unit *x, const Unit *y, size_t n);
 
 #if MCL_BINT_ASM == 1
 #include "bint_asm.hpp"

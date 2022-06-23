@@ -80,9 +80,9 @@ inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 		bint::copy(p, y, yn);
 		y = p;
 	}
-	z[xn] = bint::mulUnit(z, x, y[0], xn);
+	z[xn] = bint::mulUnitN(z, x, y[0], xn);
 	for (size_t i = 1; i < yn; i++) {
-		z[xn + i] = bint::mulUnitAdd(&z[i], x, y[i], xn);
+		z[xn + i] = bint::mulUnitAddN(&z[i], x, y[i], xn);
 	}
 }
 /*
@@ -216,7 +216,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 				T r;
 				v = bint::divUnit1(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
 			}
-			T ret = bint::mulUnit(tt, y, v, yn);
+			T ret = bint::mulUnitN(tt, y, v, yn);
 			ret += bint::subN(x + d - 1, x + d - 1, tt, yn);
 			x[xn-1] -= ret;
 			if (q) bint::addUnit(q + d - 1, qn - d + 1, v);
@@ -266,7 +266,7 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 			qv = 1;
 		} else {
 			qv = x[xn - 1] / (yTop + 1);
-			bint::mulUnit(xx, y, qv, yn);
+			bint::mulUnitN(xx, y, qv, yn);
 			bint::subN(xx, x, xx, xn);
 		}
 		// expect that loop is at most once
@@ -1019,7 +1019,7 @@ public:
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = bint::mulUnit(&z.buf_[0], &x.buf_[0], y, xn);
+		z.buf_[zn - 1] = bint::mulUnitN(&z.buf_[0], &x.buf_[0], y, xn);
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
 	}
