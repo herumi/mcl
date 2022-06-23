@@ -275,6 +275,167 @@ Unit modUnit(const Unit *x, size_t n, Unit y)
 	return r;
 }
 
+/*
+	assume xn <= yn
+	x[xn] = x[xn] % y[yn]
+	q[qn] = x[xn] / y[yn] if q != NULL
+	assume(n >= 2);
+	return true if computed else false
+*/
+bool divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+{
+	if (xn > yn) return false;
+	const Unit yTop = y[yn - 1];
+	assert(yTop > 0);
+	Unit qv = 0;
+	int ret = xn < yn ? -1 : cmp(x, y, yn);
+	if (ret < 0) { // q = 0, r = x if x < y
+		goto EXIT;
+	}
+	if (ret == 0) { // q = 1, r = 0 if x == y
+		clearN(x, xn);
+		qv = 1;
+		goto EXIT;
+	}
+	assert(xn == yn);
+	if (yTop >= Unit(1) << (UnitBitSize / 2)) {
+		if (yTop == Unit(-1)) {
+			subN(x, x, y, yn);
+			qv = 1;
+		} else {
+			Unit t[yn];
+			qv = x[yn - 1] / (yTop + 1);
+			mulUnitN(t, y, qv, yn);
+			subN(x, x, t, yn);
+		}
+		// expect that loop is at most once
+		while (cmpGe(x, y, yn)) {
+			subN(x, x, y, yn);
+			qv++;
+		}
+		goto EXIT;
+	}
+	return false;
+EXIT:
+	if (q) {
+		q[0] = qv;
+		clearN(q + 1, qn - 1);
+	}
+	return true;
+}
+
+/*
+	y must be UnitBitSize * yn bit
+	x[xn] = x[xn] % y[yn]
+	q[qn] = x[xn] / y[yn] if q != NULL
+	return new xn
+*/
+size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+{
+	assert(xn > 0);
+	assert(q != x && q != y && x != y);
+	const Unit yTop = y[yn - 1];
+	assert(yTop >> (UnitBitSize - 1));
+	if (q) clearN(q, qn);
+	Unit t[yn];
+	Unit rev = 0;
+	// rev = M/2 M / yTop where M = 1 << UnitBitSize
+	if (yTop != Unit(-1)) {
+		Unit r;
+		rev = divUnit1(&r, Unit(1) << (UnitBitSize - 1), 0, yTop + 1);
+	}
+	while (xn >= yn) {
+		if (x[xn - 1] == 0) {
+			xn--;
+			continue;
+		}
+		size_t d = xn - yn;
+		if (cmpGe(x + d, y, yn)) {
+			subN(x + d, x + d, y, yn);
+			if (q) addUnit(q + d, qn - d, 1);
+			if (d == 0) {
+				break;
+			}
+		} else {
+			if (d == 0) break;
+			Unit v;
+			if (yTop == Unit(-1)) {
+				v = x[xn - 1];
+			} else {
+				mulUnit1(&v, x[xn - 1], rev);
+				v <<= 1;
+				if (v == 0) v = 1;
+			}
+			Unit ret = mulUnitN(t, y, v, yn);
+			ret += subN(x + d - 1, x + d - 1, t, yn);
+			x[xn-1] -= ret;
+			if (q) addUnit(q + d - 1, qn - d + 1, v);
+		}
+	}
+	assert(xn < yn || (xn == yn && cmpLt(x, y, yn)));
+	xn = getRealSize(x, xn);
+	return xn;
+}
+
+// yn == 1
+inline size_t div1(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
+{
+	assert(xn > 0);
+	assert(q == 0 || qn >= xn);
+	assert(y[0] != 0);
+	xn = getRealSize(x, xn);
+	Unit t;
+	if (q) {
+		if (qn > xn) {
+			clearN(q + xn, qn - xn);
+		}
+		t = divUnit(q, x, xn, y[0]);
+	} else {
+		t = modUnit(x, xn, y[0]);
+	}
+	x[0] = t;
+	clearN(x + 1, xn - 1);
+	return 1;
+}
+
+/*
+	x[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
+	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
+	allow q == 0
+	return new xn
+*/
+size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+{
+	if (yn == 1) return div1(q, qn, x, xn, y);
+	assert(xn > 0 && yn > 1);
+	assert(xn < yn || (q == 0 || qn >= xn - yn + 1));
+	assert(y[yn - 1] != 0);
+	xn = getRealSize(x, xn);
+	if (divSmall(q, qn, x, xn, y, yn)) return 1;
+
+	/*
+		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
+	*/
+	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
+	const size_t shift = UnitBitSize - 1 - yTopBit;
+	if (shift) {
+//		Unit yShift[yn];
+		Unit *yShift = (Unit *)CYBOZU_ALLOCA(sizeof(Unit) * yn);
+		shl(yShift, y, shift, yn);
+		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));
+		Unit v = shl(xx, x, shift, xn);
+		if (v) {
+			xx[xn] = v;
+			xn++;
+		}
+		xn = divFullBit(q, qn, xx, xn, yShift, yn);
+		shr(x, xx, shift, xn);
+		return xn;
+	} else {
+		return divFullBit(q, qn, x, xn, y, yn);
+	}
+}
+
 #include "bint_switch.hpp"
 
 } } // mcl::bint

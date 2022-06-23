@@ -299,15 +299,16 @@ CYBOZU_TEST_AUTO(divUnit)
 	}
 }
 
-template<size_t xN, class RG, class F>
-void setRandAndTest(RG& rg, const F& f, Unit *q, size_t qn, const Unit *y)
+template<class RG, class F>
+void setRandAndTest(size_t xN, RG& rg, const F& f, Unit *q, size_t qn, const Unit *y, size_t yn)
 {
-	Unit x[xN];
+	Unit *x = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xN);
 	setRand(x, xN, rg);
-	f(q, qn, x, xN, y);
+	f(q, qn, x, xN, y, yn);
 }
 
-CYBOZU_TEST_AUTO(divFullBitT)
+
+CYBOZU_TEST_AUTO(divFullBit)
 {
 	const size_t xN = 8;
 	const size_t yN = 4;
@@ -321,7 +322,7 @@ CYBOZU_TEST_AUTO(divFullBitT)
 		y[yN - 1] |= Unit(1) << (sizeof(Unit) * 8 - 1); // full bit
 		setArray(mx, x, xN);
 		setArray(my, y, yN);
-		size_t rn = divFullBitT<yN>(q, qN, x, xN, y);
+		size_t rn = divFullBit(q, qN, x, xN, y, yN);
 		setArray(mq, q, qN);
 		setArray(mr, x, rn);
 		CYBOZU_TEST_EQUAL(mq, mx / my);
@@ -331,13 +332,13 @@ CYBOZU_TEST_AUTO(divFullBitT)
 //g_clk.clear();
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp ", C, divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("full", C, setRandAndTest<xN>, rg, divFullBitT<yN>, q, qN, y);
+	CYBOZU_BENCH_C("full", C, setRandAndTest, xN, rg, divFullBit, q, qN, y, yN);
 //printf("count=%d\n", g_clk.getCount());
 //g_clk.put();
 #endif
 }
 
-CYBOZU_TEST_AUTO(divSmallT)
+CYBOZU_TEST_AUTO(divSmall)
 {
 	const size_t N = 4;
 	Unit x[N], y[N], q;
@@ -350,7 +351,7 @@ CYBOZU_TEST_AUTO(divSmallT)
 		setArray(mx, x, N);
 		setArray(my, y, N);
 		q = 0;
-		bool done = divSmallT<N>(&q, 1, x, N, y);
+		bool done = divSmall(&q, 1, x, N, y, N);
 		CYBOZU_TEST_ASSERT(done);
 		setArray(mr, x, N);
 		CYBOZU_TEST_EQUAL(to_mpz(q) * my + mr, mx);
@@ -359,12 +360,12 @@ CYBOZU_TEST_AUTO(divSmallT)
 	mpz_class mq;
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp  ", C, divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("small", C, setRandAndTest<N>, rg, divSmallT<N>, &q, 1, y);
+	CYBOZU_BENCH_C("small", C, setRandAndTest, N, rg, divSmall, &q, 1, y, N);
 #endif
 }
 
 
-CYBOZU_TEST_AUTO(divT)
+CYBOZU_TEST_AUTO(div)
 {
 	const size_t xN = 8;
 	const size_t yN = 4;
@@ -377,7 +378,7 @@ CYBOZU_TEST_AUTO(divT)
 		setRand(y, yN, rg);
 		setArray(mx, x, xN);
 		setArray(my, y, yN);
-		size_t xn = divT<yN>(q, qN, x, xN, y);
+		size_t xn = div(q, qN, x, xN, y, yN);
 		setArray(mq, q, qN);
 		setArray(mr, x, xn);
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
@@ -385,6 +386,6 @@ CYBOZU_TEST_AUTO(divT)
 #ifdef NDEBUG
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
-	CYBOZU_BENCH_C("div", C, setRandAndTest<xN>, rg, divT<yN>, q, qN, y);
+	CYBOZU_BENCH_C("div", C, setRandAndTest, xN, rg, mcl::bint::div, q, qN, y, yN);
 #endif
 }
