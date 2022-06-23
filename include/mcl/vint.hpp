@@ -72,12 +72,12 @@ inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
 	assert(xn >= yn);
 	if (z == x) {
 		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-		bint::copy(p, x, xn);
+		bint::copyN(p, x, xn);
 		x = p;
 	}
 	if (z == y) {
 		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		bint::copy(p, y, yn);
+		bint::copyN(p, y, yn);
 		y = p;
 	}
 	z[xn] = bint::mulUnitN(z, x, y[0], xn);
@@ -129,14 +129,14 @@ void shlN(T *y, const T *x, size_t xn, size_t bit)
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
 	if (r == 0) {
-		// don't use bint::copy(y + q, x, xn); if overlaped
+		// don't use bint::copyN(y + q, x, xn); if overlaped
 		for (size_t i = 0; i < xn; i++) {
 			y[q + xn - 1 - i] = x[xn - 1 - i];
 		}
 	} else {
 		y[q + xn] = shlBit(y + q, x, xn, r);
 	}
-	bint::clear(y, q);
+	bint::clearN(y, q);
 }
 
 /*
@@ -169,7 +169,7 @@ void shrN(T *y, const T *x, size_t xn, size_t bit)
 	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
 	if (r == 0) {
-		bint::copy(y, x + q, xn - q);
+		bint::copyN(y, x + q, xn - q);
 	} else {
 		shrBit(y, x + q, xn - q, r);
 	}
@@ -197,7 +197,7 @@ size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
 	assert(xn > 0);
 	assert(yn > 0);
 	assert((y[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
-	if (q) bint::clear(q, qn);
+	if (q) bint::clearN(q, qn);
 	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
 	while (xn > yn) {
 		if (x[xn - 1] == 0) {
@@ -245,16 +245,16 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 	if (xn > yn) return false;
 	int ret = xn < yn ? -1 : bint::cmp(x, y, xn);
 	if (ret < 0) { // q = 0, r = x if x < y
-		bint::copy(r, x, xn);
-		bint::clear(r + xn, rn - xn);
-		if (q) bint::clear(q, qn);
+		bint::copyN(r, x, xn);
+		bint::clearN(r + xn, rn - xn);
+		if (q) bint::clearN(q, qn);
 		return true;
 	}
 	if (ret == 0) { // q = 1, r = 0 if x == y
-		bint::clear(r, rn);
+		bint::clearN(r, rn);
 		if (q) {
 			q[0] = 1;
-			bint::clear(q + 1, qn - 1);
+			bint::clearN(q + 1, qn - 1);
 		}
 		return true;
 	}
@@ -275,12 +275,12 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 			qv++;
 		}
 		if (r) {
-			bint::copy(r, xx, xn);
-			bint::clear(r + xn, rn - xn);
+			bint::copyN(r, xx, xn);
+			bint::clearN(r + xn, rn - xn);
 		}
 		if (q) {
 			q[0] = qv;
-			bint::clear(q + 1, qn - 1);
+			bint::clearN(q + 1, qn - 1);
 		}
 		return true;
 	}
@@ -305,14 +305,14 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		T t;
 		if (q) {
 			if (qn > xn) {
-				bint::clear(q + xn, qn - xn);
+				bint::clearN(q + xn, qn - xn);
 			}
 			t = bint::divUnit(q, x, xn, y[0]);
 		} else {
 			t = bint::modUnit(x, xn, y[0]);
 		}
 		r[0] = t;
-		bint::clear(r + 1, rn - 1);
+		bint::clearN(r + 1, rn - 1);
 		return;
 	}
 	if (divSmall(q, qn, r, rn, x, xn, y, yn)) return;
@@ -333,16 +333,16 @@ void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
 		shlBit(yBuf, y, yn ,shift);
 		yy = yBuf;
 	} else {
-		bint::copy(xx, x, xn);
+		bint::copyN(xx, x, xn);
 		yy = y;
 	}
 	xn = divFullBitN(q, qn, xx, xn, yy, yn);
 	if (shift) {
 		shrBit(r, xx, xn, shift);
 	} else {
-		bint::copy(r, xx, xn);
+		bint::copyN(r, xx, xn);
 	}
-	bint::clear(r + xn, rn - xn);
+	bint::clearN(r + xn, rn - xn);
 }
 
 class FixedBuffer {
@@ -537,7 +537,7 @@ private:
 		Unit c = bint::addN(dst, px, py, yn);
 		if (xn > yn) {
 			size_t n = xn - yn;
-			if (dst != px) bint::copy(dst + yn, px + yn, n);
+			if (dst != px) bint::copyN(dst + yn, px + yn, n);
 			c = bint::addUnit(dst + yn, n, c);
 		}
 		dst[xn] = c;
@@ -553,7 +553,7 @@ private:
 			z.clear();
 			return;
 		}
-		if (&z.buf_[0] != &x[0]) bint::copy(&z.buf_[0], &x[0], xn);
+		if (&z.buf_[0] != &x[0]) bint::copyN(&z.buf_[0], &x[0], xn);
 		z.buf_[zn - 1] = bint::addUnit(&z.buf_[0], xn, y);
 		z.trim(zn);
 	}
@@ -569,7 +569,7 @@ private:
 		}
 		Unit *dst = &z.buf_[0];
 		const Unit *src = &x[0];
-		if (dst != src) bint::copy(dst, src, xn);
+		if (dst != src) bint::copyN(dst, src, xn);
 		Unit c = bint::subUnit(dst, xn, y);
 		(void)c;
 		assert(!c);
@@ -590,7 +590,7 @@ private:
 			size_t n = xn - yn;
 			Unit *dst = &z.buf_[yn];
 			const Unit *src = &x[yn];
-			if (dst != src) bint::copy(dst, src, n);
+			if (dst != src) bint::copyN(dst, src, n);
 			c = bint::subUnit(dst, n, c);
 //			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
@@ -835,8 +835,8 @@ public:
 			*pb = false;
 			return;
 		}
-		bint::copy(x, &buf_[0], n);
-		bint::clear(x + n, maxSize - n);
+		bint::copyN(x, &buf_[0], n);
+		bint::clearN(x + n, maxSize - n);
 		*pb = true;
 	}
 	void clear() { *this = 0; }
@@ -1244,7 +1244,7 @@ public:
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] | y.buf_[i];
 		}
-		bint::copy(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
+		bint::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
 		z.trim(xn);
 	}
 	static void andBit(VintT& z, const VintT& x, const VintT& y)

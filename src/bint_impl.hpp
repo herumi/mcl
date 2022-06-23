@@ -191,7 +191,7 @@ size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 		y[q + xn] = shl(y + q, x, r, xn);
 		yn++;
 	}
-	clear(y, q);
+	clearN(y, q);
 	return yn;
 }
 
@@ -208,7 +208,7 @@ size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn)
 	size_t r = bit % UnitBitSize;
 	assert(xn >= q);
 	if (r == 0) {
-		copy(y, x + q, xn - q);
+		copyN(y, x + q, xn - q);
 	} else {
 		shr(y, x + q, r, xn - q);
 	}

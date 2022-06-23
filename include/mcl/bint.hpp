@@ -117,7 +117,7 @@ void copyT(Unit *y, const Unit *x)
 }
 
 // y[n] = x[n]
-inline void copy(Unit *y, const Unit *x, size_t n)
+inline void copyN(Unit *y, const Unit *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) y[i] = x[i];
 }
@@ -129,7 +129,7 @@ void clearT(Unit *x)
 }
 
 // x[n] = 0
-inline void clear(Unit *x, size_t n)
+inline void clearN(Unit *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) x[i] = 0;
 }
@@ -363,7 +363,7 @@ size_t divFullBitT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	assert(q != x && q != y && x != y);
 	const Unit yTop = y[N - 1];
 	assert(yTop >> (UnitBitSize - 1));
-	if (q) clear(q, qn);
+	if (q) clearN(q, qn);
 	Unit t[N];
 	Unit rev = 0;
 	// rev = M/2 M / yTop where M = 1 << UnitBitSize
@@ -423,7 +423,7 @@ bool divSmallT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 		goto EXIT;
 	}
 	if (ret == 0) { // q = 1, r = 0 if x == y
-		clear(x, xn);
+		clearN(x, xn);
 		qv = 1;
 		goto EXIT;
 	}
@@ -449,7 +449,7 @@ bool divSmallT(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 EXIT:
 	if (q) {
 		q[0] = qv;
-		clear(q + 1, qn - 1);
+		clearN(q + 1, qn - 1);
 	}
 	return true;
 }
@@ -501,14 +501,14 @@ inline size_t divT<1>(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	Unit t;
 	if (q) {
 		if (qn > xn) {
-			clear(q + xn, qn - xn);
+			clearN(q + xn, qn - xn);
 		}
 		t = divUnit(q, x, xn, y[0]);
 	} else {
 		t = modUnit(x, xn, y[0]);
 	}
 	x[0] = t;
-	clear(x + 1, xn - 1);
+	clearN(x + 1, xn - 1);
 	return 1;
 }
 

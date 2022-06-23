@@ -266,13 +266,13 @@ CYBOZU_TEST_AUTO(addUnit)
 		const Unit *x = tbl[i].x;
 		Unit y = tbl[i].y;
 		Unit z[N];
-		copy(z, x, N);
+		copyN(z, x, N);
 		Unit u = addUnit(z, N, y);
 		setArray(mx, x, N);
 		setArray(mz, z, N);
 		CYBOZU_TEST_EQUAL(mx + to_mpz(y), mz + (to_mpz(u) << (sizeof(Unit) * N * 8)));
 		Unit x2[N];
-		copy(x2, z, N);
+		copyN(x2, z, N);
 		Unit u2 = subUnit(x2, N, y);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x, N);
 		CYBOZU_TEST_EQUAL(u, u2);
