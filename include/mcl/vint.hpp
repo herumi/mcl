@@ -145,13 +145,13 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	Unit x2[4];
 	// x2 = buf[n:n+2] * a
 	x2[2] = bint::mulUnitT<2>(x2, buf + n, 0x3d1u);
-	x2[3] = addN(x2 + 1, x2 + 1, buf + n, 2);
-	Unit x3 = addN(buf, buf, x2, 4);
+	x2[3] = bint::addT<2>(x2 + 1, x2 + 1, buf + n);
+	Unit x3 = bint::addT<4>(buf, buf, x2);
 	if (x3) {
-		x3 = bint::addUnit(buf + 4, buf + 4, n - 4, 1);
+		x3 = bint::addUnit(buf + 4, n - 4, 1);
 		if (x3) {
 			Unit a[2] = { 0x3d1, 1 };
-			x3 = addN(buf, buf, a, 2);
+			x3 = bint::addT<2>(buf, buf, a);
 			if (x3) {
 				bint::addUnit(buf + 2, n - 2, 1);
 			}
@@ -159,7 +159,7 @@ inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	}
 #endif
 	if (fp::isGreaterOrEqualArray(buf, p, n)) {
-		bint::subN(z, buf, p, n);
+		bint::subT<n>(z, buf, p);
 	} else {
 		fp::copyArray(z, buf, n);
 	}
