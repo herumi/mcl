@@ -92,7 +92,12 @@ Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n);
 Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n);
+// z[n * 2] = x[n] * y[n]
 void mulN(Unit *z, const Unit *x, const Unit *y, size_t n);
+// y[n * 2] = x[n] * x[n]
+void sqrN(Unit *y, const Unit *x, size_t xn);
+// z[xn * yn] = x[xn] * y[ym]
+void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
 #if MCL_BINT_ASM == 1
 #include "bint_asm.hpp"

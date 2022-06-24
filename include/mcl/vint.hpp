@@ -59,43 +59,6 @@ int compareNM(const T *x, size_t xn, const T *y, size_t yn)
 }
 
 /*
-	z[xn * yn] = x[xn] * y[ym]
-*/
-template<class T>
-inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
-{
-	if (xn == 0 || yn == 0) return;
-	if (yn > xn) {
-		fp::swap_(yn, xn);
-		fp::swap_(x, y);
-	}
-	assert(xn >= yn);
-	if (z == x) {
-		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-		bint::copyN(p, x, xn);
-		x = p;
-	}
-	if (z == y) {
-		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		bint::copyN(p, y, yn);
-		y = p;
-	}
-	z[xn] = bint::mulUnitN(z, x, y[0], xn);
-	for (size_t i = 1; i < yn; i++) {
-		z[xn + i] = bint::mulUnitAddN(&z[i], x, y[i], xn);
-	}
-}
-/*
-	out[xn * 2] = x[xn] * x[xn]
-	QQQ : optimize this
-*/
-template<class T>
-static inline void sqrN(T *y, const T *x, size_t xn)
-{
-	mulNM(y, x, xn, x, xn);
-}
-
-/*
 	y[] = x[] << bit
 	0 < bit < sizeof(T) * 8
 	accept y == x
@@ -412,14 +375,14 @@ inline void mcl_fp_mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Un
 {
 	const size_t n = 32 / MCL_SIZEOF_UNIT;
 	Unit xy[n * 2];
-	mulNM(xy, x, n, y, n);
+	bint::mulN(xy, x, y, n);
 	mcl_fpDbl_mod_SECP256K1(z, xy, p);
 }
 inline void mcl_fp_sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
 {
 	const size_t n = 32 / MCL_SIZEOF_UNIT;
 	Unit xx[n * 2];
-	sqrN(xx, x, n);
+	bint::sqrN(xx, x, n);
 	mcl_fpDbl_mod_SECP256K1(y, xx, p);
 }
 
@@ -927,7 +890,7 @@ public:
 			z.clear();
 			return;
 		}
-		vint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
+		bint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
 	}

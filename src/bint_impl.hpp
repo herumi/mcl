@@ -420,5 +420,35 @@ size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 
 #include "bint_switch.hpp"
 
+void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
+{
+	if (xn == 0 || yn == 0) return;
+	if (yn > xn) {
+		fp::swap_(yn, xn);
+		fp::swap_(x, y);
+	}
+	assert(xn >= yn);
+	if (z == x) {
+		Unit *p = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+		copyN(p, x, xn);
+		x = p;
+	}
+	if (z == y) {
+		Unit *p = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * yn);
+		copyN(p, y, yn);
+		y = p;
+	}
+	z[xn] = mulUnitN(z, x, y[0], xn);
+	for (size_t i = 1; i < yn; i++) {
+		z[xn + i] = bint::mulUnitAddN(&z[i], x, y[i], xn);
+	}
+}
+
+// QQQ : optimize this
+void sqrN(Unit *y, const Unit *x, size_t xn)
+{
+	mulN(y, x, x, xn);
+}
+
 } } // mcl::bint
 

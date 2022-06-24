@@ -158,7 +158,7 @@ struct MulPreCore {
 	static inline void func(Unit *z, const Unit *x, const Unit *y)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::mulNM(z, x, N, y, N);
+		bint::mulT<N>(z, x, y);
 #else
 		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
 #endif
@@ -247,7 +247,7 @@ struct SqrPreCore {
 	static inline void func(Unit *y, const Unit *x)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::sqrN(y, x, N);
+		bint::mulT<N>(y, x, x);
 #else
 		mpn_sqr((mp_limb_t*)y, (const mp_limb_t*)x, N);
 #endif
