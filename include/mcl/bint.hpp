@@ -360,6 +360,7 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn else 1
 	allow q == 0
 	return new xn
+	@note x[new xn:xn] may not be cleared
 */
 size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
