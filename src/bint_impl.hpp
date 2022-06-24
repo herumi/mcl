@@ -275,16 +275,10 @@ Unit modUnit(const Unit *x, size_t n, Unit y)
 	return r;
 }
 
-/*
-	assume xn <= yn
-	x[xn] = x[xn] % y[yn]
-	q[qn] = x[xn] / y[yn] if q != NULL
-	assume(n >= 2);
-	return true if computed else false
-*/
-bool divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 {
-	if (xn > yn) return false;
+	if (xn > yn) return 0;
+	assert(yn > 0);
 	const Unit yTop = y[yn - 1];
 	assert(yTop > 0);
 	Unit qv = 0;
@@ -315,21 +309,15 @@ bool divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 		}
 		goto EXIT;
 	}
-	return false;
+	return 0;
 EXIT:
 	if (q) {
 		q[0] = qv;
 		clearN(q + 1, qn - 1);
 	}
-	return true;
+	return getRealSize(x, xn);
 }
 
-/*
-	y must be UnitBitSize * yn bit
-	x[xn] = x[xn] % y[yn]
-	q[qn] = x[xn] / y[yn] if q != NULL
-	return new xn
-*/
 size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	assert(xn > 0);
@@ -398,12 +386,6 @@ inline size_t div1(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	return 1;
 }
 
-/*
-	x[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
-	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
-	allow q == 0
-	return new xn
-*/
 size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	if (yn == 1) return div1(q, qn, x, xn, y);
@@ -411,7 +393,8 @@ size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 	assert(xn < yn || (q == 0 || qn >= xn - yn + 1));
 	assert(y[yn - 1] != 0);
 	xn = getRealSize(x, xn);
-	if (divSmall(q, qn, x, xn, y, yn)) return 1;
+	size_t new_xn = divSmall(q, qn, x, xn, y, yn);
+	if (new_xn > 0) return new_xn;
 
 	/*
 		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
@@ -419,7 +402,6 @@ size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
 	const size_t shift = UnitBitSize - 1 - yTopBit;
 	if (shift) {
-//		Unit yShift[yn];
 		Unit *yShift = (Unit *)CYBOZU_ALLOCA(sizeof(Unit) * yn);
 		shl(yShift, y, shift, yn);
 		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));

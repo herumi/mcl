@@ -352,7 +352,7 @@ Unit modUnit(const Unit *x, size_t n, Unit y);
 
 /*
 	y must be UnitBitSize * N bit
-	x[xn] = x[xn] % y[yn]
+	x[xn] %= y[yn]
 	q[qn] = x[xn] / y[yn] if q != NULL
 	return new xn
 */
@@ -360,16 +360,16 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 
 /*
 	assume xn <= yn
-	x[xn] = x[xn] % y[yn]
+	x[xn] %= y[yn]
 	q[qn] = x[xn] / y[yn] if q != NULL
 	assume(n >= 2);
-	return true if computed else false
+	return new xn (1 if modulo is zero) if computed else 0
 */
-bool divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
 /*
-	x[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
-	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
+	x[xn] %= y[yn]
+	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn else 1
 	allow q == 0
 	return new xn
 */
