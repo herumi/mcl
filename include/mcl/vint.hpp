@@ -287,64 +287,6 @@ bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *
 	return false;
 }
 
-/*
-	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
-	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
-	allow q == 0
-*/
-template<class T>
-void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn > 0 && yn > 0);
-	assert(xn < yn || (q == 0 || qn == xn - yn + 1));
-	assert(q != r);
-	const size_t rn = yn;
-	xn = getRealSize(x, xn);
-	yn = getRealSize(y, yn);
-	if (yn == 1) {
-		T t;
-		if (q) {
-			if (qn > xn) {
-				bint::clearN(q + xn, qn - xn);
-			}
-			t = bint::divUnit(q, x, xn, y[0]);
-		} else {
-			t = bint::modUnit(x, xn, y[0]);
-		}
-		r[0] = t;
-		bint::clearN(r + 1, rn - 1);
-		return;
-	}
-	if (divSmall(q, qn, r, rn, x, xn, y, yn)) return;
-	/*
-		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
-	*/
-	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
-	const size_t shift = sizeof(T) * 8 - 1 - yTopBit;
-	T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
-	const T *yy;
-	if (shift) {
-		T v = shlBit(xx, x, xn, shift);
-		if (v) {
-			xx[xn] = v;
-			xn++;
-		}
-		T *yBuf = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		shlBit(yBuf, y, yn ,shift);
-		yy = yBuf;
-	} else {
-		bint::copyN(xx, x, xn);
-		yy = y;
-	}
-	xn = divFullBitN(q, qn, xx, xn, yy, yn);
-	if (shift) {
-		shrBit(r, xx, xn, shift);
-	} else {
-		bint::copyN(r, xx, xn);
-	}
-	bint::clearN(r + xn, rn - xn);
-}
-
 class FixedBuffer {
 	static const size_t N = maxUnitSize * 2;
 	size_t size_;

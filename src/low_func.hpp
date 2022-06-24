@@ -329,7 +329,9 @@ struct N1_Mod {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::divNM<Unit>(0, 0, y, x, N + 1, p, N);
+//		mcl::vint::divNM<Unit>(0, 0, y, x, N + 1, p, N);
+		bint::copyN(y, x, N + 1);
+		bint::div(0, 0, y, N + 1, p, N);
 #else
 		mp_limb_t q[2]; // not used
 		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N + 1, (const mp_limb_t*)p, N);
@@ -392,7 +394,9 @@ struct Dbl_Mod {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::divNM<Unit>(0, 0, y, x, N * 2, p, N);
+//		mcl::vint::divNM<Unit>(0, 0, y, x, N * 2, p, N);
+		bint::copyN(y, x, N * 2);
+		bint::div(0, 0, y, N * 2, p, N);
 #else
 		mp_limb_t q[N + 1]; // not used
 		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N * 2, (const mp_limb_t*)p, N);
