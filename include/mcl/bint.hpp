@@ -21,17 +21,6 @@
 
 namespace mcl { namespace bint {
 
-inline uint64_t make64(uint32_t H, uint32_t L)
-{
-	return ((uint64_t)H << 32) | L;
-}
-
-inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
-{
-	*H = uint32_t(x >> 32);
-	*L = uint32_t(x);
-}
-
 /*
 	[H:L] <= x * y
 	@return L
@@ -39,9 +28,8 @@ inline void split64(uint32_t *H, uint32_t *L, uint64_t x)
 inline uint32_t mulUnit1(uint32_t *pH, uint32_t x, uint32_t y)
 {
 	uint64_t t = uint64_t(x) * y;
-	uint32_t L;
-	split64(pH, &L, t);
-	return L;
+	*pH = uint32_t(t >> 32);
+	return uint32_t(t);
 }
 
 /*
@@ -52,7 +40,7 @@ inline uint32_t mulUnit1(uint32_t *pH, uint32_t x, uint32_t y)
 inline uint32_t divUnit1(uint32_t *pr, uint32_t H, uint32_t L, uint32_t y)
 {
 	assert(H < y);
-	uint64_t t = make64(H, L);
+	uint64_t t = (uint64_t(H) << 32) | L;
 	uint32_t q = uint32_t(t / y);
 	*pr = uint32_t(t % y);
 	return q;
