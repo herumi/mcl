@@ -124,7 +124,7 @@ struct Shr1 {
 	static inline void func(Unit *y, const Unit *x)
 	{
 #ifdef MCL_USE_VINT
-		mcl::vint::shrN(y, x, N, 1);
+		bint::shrT<N>(y, x, 1);
 #else
 		mpn_rshift((mp_limb_t*)y, (const mp_limb_t*)x, (int)N, 1);
 #endif

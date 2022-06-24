@@ -44,86 +44,6 @@ void dump(const T *x, size_t n, const char *msg = "")
 	printf("\n");
 }
 
-/*
-	y[] = x[] << bit
-	0 < bit < sizeof(T) * 8
-	accept y == x
-*/
-template<class T>
-T shlBit(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(0 < bit && bit < sizeof(T) * 8);
-	assert(xn > 0);
-	size_t rBit = sizeof(T) * 8 - bit;
-	T keep = x[xn - 1];
-	T prev = keep;
-	for (size_t i = xn - 1; i > 0; i--) {
-		T t = x[i - 1];
-		y[i] = (prev << bit) | (t >> rBit);
-		prev = t;
-	}
-	y[0] = prev << bit;
-	return keep >> rBit;
-}
-
-/*
-	y[yn] = x[xn] << bit
-	yn = xn + (bit + unitBitBit - 1) / UnitBitSize
-	accept y == x
-*/
-template<class T>
-void shlN(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(xn > 0);
-	size_t q = bit / UnitBitSize;
-	size_t r = bit % UnitBitSize;
-	if (r == 0) {
-		// don't use bint::copyN(y + q, x, xn); if overlaped
-		for (size_t i = 0; i < xn; i++) {
-			y[q + xn - 1 - i] = x[xn - 1 - i];
-		}
-	} else {
-		y[q + xn] = shlBit(y + q, x, xn, r);
-	}
-	bint::clearN(y, q);
-}
-
-/*
-	y[] = x[] >> bit
-	0 < bit < sizeof(T) * 8
-*/
-template<class T>
-void shrBit(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(0 < bit && bit < sizeof(T) * 8);
-	assert(xn > 0);
-	size_t rBit = sizeof(T) * 8 - bit;
-	T prev = x[0];
-	for (size_t i = 1; i < xn; i++) {
-		T t = x[i];
-		y[i - 1] = (prev >> bit) | (t << rBit);
-		prev = t;
-	}
-	y[xn - 1] = prev >> bit;
-}
-/*
-	y[yn] = x[xn] >> bit
-	yn = xn - bit / unitBit
-*/
-template<class T>
-void shrN(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(xn > 0);
-	size_t q = bit / UnitBitSize;
-	size_t r = bit % UnitBitSize;
-	assert(xn >= q);
-	if (r == 0) {
-		bint::copyN(y, x + q, xn - q);
-	} else {
-		shrBit(y, x + q, xn - q, r);
-	}
-}
-
 class FixedBuffer {
 	static const size_t N = maxUnitSize * 2;
 	size_t size_;
@@ -957,7 +877,7 @@ public:
 			y.clear();
 			return;
 		}
-		vint::shlN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
+		bint::shiftLeft(&y.buf_[0], &x.buf_[0], shiftBit, xn);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
@@ -977,7 +897,7 @@ public:
 			y.clear();
 			return;
 		}
-		vint::shrN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
+		bint::shiftRight(&y.buf_[0], &x.buf_[0], shiftBit, xn);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
