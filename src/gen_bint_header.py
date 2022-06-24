@@ -62,7 +62,7 @@ def main():
 	if opt.out == 'asm':
 		print('''#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (MCL_SIZEOF_UNIT == 8)
 	#define MCL_BINT_FUNC_PTR
-extern "C" void mclb_enable_fast(void);
+extern "C" void mclb_disable_fast(void);
 #endif''')
 		for i in range(1, addN+1):
 			if i == addN64 + 1:

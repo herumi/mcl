@@ -188,14 +188,14 @@ def gen_mulUnitAdd(N, mode='fast'):
 
 def gen_enable_fast(N):
 	align(16)
-	defineName('mclb_enable_fast')
+	defineName('mclb_disable_fast')
 	for i in range(N):
 		mov(rdx, f'mclb_mulUnit{i}')
-		mov(rax, f'mclb_mulUnit_fast{i}')
+		mov(rax, f'mclb_mulUnit_slow{i}')
 		mov(ptr(rdx), rax)
 	for i in range(N):
 		mov(rdx, f'mclb_mulUnitAdd{i}')
-		mov(rax, f'mclb_mulUnitAdd_fast{i}')
+		mov(rax, f'mclb_mulUnitAdd_slow{i}')
 		mov(ptr(rdx), rax)
 	ret()
 
@@ -214,10 +214,10 @@ initOutput()
 output('segment .data')
 for i in range(N+1):
 	defineName(f'mclb_mulUnit{i}')
-	output(f'dq mclb_mulUnit_slow{i}')
+	output(f'dq mclb_mulUnit_fast{i}')
 for i in range(N+1):
 	defineName(f'mclb_mulUnitAdd{i}')
-	output(f'dq mclb_mulUnitAdd_slow{i}')
+	output(f'dq mclb_mulUnitAdd_fast{i}')
 output('segment .text')
 
 for i in range(addN+1):

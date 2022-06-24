@@ -24,9 +24,9 @@ CYBOZU_TEST_AUTO(cpu)
 {
 	using namespace Xbyak::util;
 	Cpu cpu;
-	if (cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-		fprintf(stderr, "bmi2 and adx are available\n");
-		mcl::bint::mclb_enable_fast();
+	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+		fprintf(stderr, "bmi2 and adx are not available\n");
+		mcl::bint::mclb_disable_fast();
 	}
 }
 
