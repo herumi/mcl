@@ -1290,6 +1290,13 @@ CYBOZU_TEST_AUTO(powMod)
 	CYBOZU_TEST_EQUAL(y, 55277);
 	Vint::powMod(y, x, m - 1, m);
 	CYBOZU_TEST_EQUAL(y, 1);
+
+	x.setStr("2ac00f2c9af814438db241461ec7825ed88d00b0951049aa1b5116e6dca345ec", 16);
+	y.setStr("3fffffffffffffffffffffffffffffffaeabb739abd2280eeff497a3340d905", 16);
+	m.setStr("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+	Vint z;
+	Vint::powMod(z, x, y, m);
+	CYBOZU_TEST_EQUAL(z.getStr(16), "fbb45ff20000000076e674ce000000003960f4840000000010568c8800000000");
 }
 
 CYBOZU_TEST_AUTO(andOr)
