@@ -45,20 +45,6 @@ void dump(const T *x, size_t n, const char *msg = "")
 }
 
 /*
-	compare x[] and y[]
-	@retval positive  if x > y
-	@retval 0         if x == y
-	@retval negative  if x < y
-*/
-template<class T>
-int compareNM(const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn > 0 && yn > 0);
-	if (xn != yn) return xn > yn ? 1 : -1;
-	return bint::cmp(x, y, xn);
-}
-
-/*
 	y[] = x[] << bit
 	0 < bit < sizeof(T) * 8
 	accept y == x
@@ -307,7 +293,8 @@ private:
 	}
 	static int ucompare(const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		return vint::compareNM(&x[0], xn, &y[0], yn);
+		if (xn == yn) return bint::cmp(&x[0], &y[0], xn);
+		return xn > yn ? 1 : -1;
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
@@ -736,7 +723,7 @@ public:
 		} else {
 			// same sign
 			Unit y0 = fp::abs_(y);
-			int c = vint::compareNM(&x.buf_[0], x.size(), &y0, 1);
+			int c = (x.size() > 1) ? 1 : bint::cmpT<1>(&x.buf_[0], &y0);
 			if (x.isNeg_) {
 				return -c;
 			}
