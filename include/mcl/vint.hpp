@@ -678,6 +678,16 @@ public:
 		const size_t xn = x.size();
 		const size_t yn = y.size();
 		size_t zn = xn + yn;
+#if 1
+		Unit *zz = (Unit *)CYBOZU_ALLOCA(zn * MCL_SIZEOF_UNIT);
+		bint::mulNM(zz, &x.buf_[0], xn, &y.buf_[0], yn);
+		bool b;
+		z.buf_.alloc(&b, zn);
+		assert(b); (void)b;
+		bint::copyN(&z.buf_[0], zz, zn);
+		z.trim(zn);
+		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
+#else
 		bool b;
 		z.buf_.alloc(&b, zn);
 		assert(b);
@@ -688,6 +698,7 @@ public:
 		bint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
+#endif
 	}
 	static void sqr(VintT& y, const VintT& x)
 	{

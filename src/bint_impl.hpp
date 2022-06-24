@@ -19,21 +19,22 @@ inline void store8byte(uint32_t *x, uint64_t v)
 template<size_t N>
 Unit addT(Unit *z, const Unit *x, const Unit *y)
 {
-#ifdef MCL_WASM32
+#if 0 // #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+	// error on ecdsa-wasm, check it
 	// wasm32 supports 64-bit add
-	Unit c = 0;
-	for (size_t i = 0; i < N / 2; i++) {
-		Unit xc = load8byte(x + i * 2) + c;
+	uint32_t c = 0;
+	for (size_t i = 0; i < N; i += 2) {
+		uint64_t xc = load8byte(x + i) + c;
 		c = xc < c;
-		Unit yi = load8byte(y + i * 2);
+		uint64_t yi = load8byte(y + i);
 		xc += yi;
 		c += xc < yi;
-		store8byte(z + i * 2, xc);
+		store8byte(z + i, xc);
 	}
-	if ((N & 1) == 1) {
-		Unit xc = x[N - 1] + c;
+	if (N & 1) {
+		uint32_t xc = x[N - 1] + c;
 		c = xc < c;
-		Unit yi = y[N - 1];
+		uint32_t yi = y[N - 1];
 		xc += yi;
 		c += xc < yi;
 		z[N - 1] = xc;
@@ -56,22 +57,22 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 template<size_t N>
 Unit subT(Unit *z, const Unit *x, const Unit *y)
 {
-#ifdef MCL_WASM32
+#if 0 // #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
 	// wasm32 supports 64-bit sub
-	Unit c = 0;
-	for (size_t i = 0; i < N / 2; i++) {
-		Unit yi = load8byte(y + i * 2);
+	uint32_t c = 0;
+	for (size_t i = 0; i < N; i += 2) {
+		uint64_t yi = load8byte(y + i);
 		yi += c;
 		c = yi < c;
-		Unit xi = load8byte(x + i * 2);
+		uint64_t xi = load8byte(x + i);
 		c += xi < yi;
-		store8byte(z + i * 2, xi - yi);
+		store8byte(z + i, xi - yi);
 	}
-	if ((N & 1) == 1) {
-		Unit yi = y[N - 1];
+	if (N & 1) {
+		uint32_t yi = y[N - 1];
 		yi += c;
 		c = yi < c;
-		Unit xi = x[N - 1];
+		uint32_t xi = x[N - 1];
 		c += xi < yi;
 		z[N - 1] = xi - yi;
 	}
@@ -93,11 +94,10 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 template<size_t N>
 Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 {
-#ifdef MCL_WASM32
+#if MCL_SIZEOF_UNIT == 4
 	uint64_t H = 0;
-	uint64_t yy = y;
 	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * yy;
+		uint64_t v = x[i] * uint64_t(y);
 		v += H;
 		z[i] = uint32_t(v);
 		H = v >> 32;
