@@ -582,7 +582,6 @@ CYBOZU_TEST_AUTO(div2)
 		y.setArray(tbl[i].y.p, tbl[i].y.n);
 		q.setArray(tbl[i].q.p, tbl[i].q.n);
 		r.setArray(tbl[i].r.p, tbl[i].r.n);
-
 		Vint qt, rt;
 		Vint::quotRem(&qt, rt, x, y);
 		CYBOZU_TEST_EQUAL(qt, q);
@@ -634,7 +633,7 @@ CYBOZU_TEST_AUTO(div2)
 	}
 }
 
-CYBOZU_TEST_AUTO(quotRem)
+CYBOZU_TEST_AUTO(divMod)
 {
 	const struct {
 		const char *x;

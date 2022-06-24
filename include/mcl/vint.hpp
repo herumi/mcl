@@ -592,7 +592,6 @@ private:
 			const Unit *src = &x[yn];
 			if (dst != src) bint::copyN(dst, src, n);
 			c = bint::subUnit(dst, n, c);
-//			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
 		assert(!c);
 		z.trim(xn);
@@ -664,25 +663,19 @@ private:
 		bool b;
 		if (q) {
 			q->buf_.alloc(&b, qn);
-			assert(b);
-			if (!b) {
-				q->clear();
-				r.clear();
-				return;
-			}
+			assert(b); (void)b;
 		}
-		r.buf_.alloc(&b, yn);
-		assert(b);
-		if (!b) {
-			r.clear();
-			if (q) q->clear();
-			return;
-		}
-		vint::divNM(q ? &q->buf_[0] : 0, qn, &r.buf_[0], &x[0], xn, &y[0], yn);
+		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+		bint::copyN(xx, &x[0], xn);
+		Unit *qq = q ? &q->buf_[0] : 0;
+		size_t rn = bint::div(qq, qn, xx, xn, &y[0], yn);
+		r.buf_.alloc(&b, rn);
+		assert(b); (void)b;
+		bint::copyN(&r.buf_[0], xx, rn);
 		if (q) {
 			q->trim(qn);
 		}
-		r.trim(yn);
+		r.trim(rn);
 	}
 	/*
 		@param x [inout] x <- d
