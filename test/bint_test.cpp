@@ -2,6 +2,7 @@
 //cybozu::CpuClock g_clk;
 #include <stdio.h>
 #include <mcl/bint.hpp>
+#include <mcl/conversion.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <gmpxx.h>
@@ -388,4 +389,129 @@ CYBOZU_TEST_AUTO(div)
 	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("div", C, setRandAndTest, xN, rg, mcl::bint::div, q, qN, y, yN);
 #endif
+}
+
+CYBOZU_TEST_AUTO(divMod)
+{
+	const struct {
+		const char *x;
+		const char *y;
+		const char *r;
+	} tbl[] = {
+		{
+			"1ba632a3ff569785cca9f0822f4b25ccaa5f9ef29f9e65f35230e5410232f6de65e6feab40280f3683d9172f43e5d925d3bfa87144d07bd2fc0811e05aef03f6",
+			"b64000000000ecbf9e00000073543404300018f825373836c206f994412505bf",
+			"a01a4b23364138fb6cf6b0bc1c04db875386bb572e4b762eb303ebb5479ff8c2",
+		},
+		{
+			"1da8c492d8dc0164384dcde24574c8fdda3bd617ff3e1d00ed7f8576351143b6e6e10a6b16c1d78f44b8d87f6b862ef470fa270d3287754b8302edc9265034c",
+			"b64000000000ecbf9e00000073543404300018f825373836c206f994412505bf",
+			"5c89114e7ae32958cbfe9652a5419a870bd8cb2ac262d0578a4ad30cc392506a",
+		},
+		{
+			"ffffffffffffffaa57a034c6472dabe94494c8aa55682873eb7e5dae5f47204abd160817aa4cfaef470fa270d3287754b8302edc9265034c",
+			"b64000000000ecbf9e00000073543404300018f825373836c206f994412505bf",
+			"b3eadcf63f3f9d1cc0c1263a467371fc05b898d850acdc91d8c015c6fd6c1a16",
+		},
+		{
+			"2e0d4c0000003bd2ab3ca0001d2456e4cee1064f33e7640456272330a6360a8f8e6",
+			"b64000000000ecbf9e00000073543404300018f825373836c206f994412505bf",
+			"b64000000000ecbf9e00000073543404300018f825373836c206f994411fc370",
+		},
+		{
+			"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"100000000000000000000000000000000000000000000000001",
+			"fffffffffffffffffffffffffffffffffffffffff000000000",
+		},
+		{
+			"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"1000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+			"fffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000",
+		},
+		{
+			"fffffffffffff000000000000000000000000000000000000000000000000000000000000000000",
+			"100000000000000000000000000000000000000000000000000000000000000000001",
+			"fefffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000001",
+		},
+		{
+			"fffffffffffff000000000000000000000000000000000000000000000000000000000000000000",
+			"fffffffffffff0000000000000000000000000000000000000000000000000000000000000001",
+			"ffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff01",
+		},
+		{
+			"1230000000000000456",
+			"1230000000000000457",
+			"1230000000000000456",
+		},
+		{
+			"1230000000000000456",
+			"1230000000000000456",
+			"0",
+		},
+		{
+			"1230000000000000456",
+			"1230000000000000455",
+			"1",
+		},
+		{
+			"1230000000000000456",
+			"2000000000000000000",
+			"1230000000000000456",
+		},
+		{
+			"ffffffffffffffffffffffffffffffff",
+			"80000000000000000000000000000000",
+			"7fffffffffffffffffffffffffffffff",
+		},
+		{
+			"ffffffffffffffffffffffffffffffff",
+			"7fffffffffffffffffffffffffffffff",
+			"1",
+		},
+		{
+			"ffffffffffffffffffffffffffffffff",
+			"70000000000000000000000000000000",
+			"1fffffffffffffffffffffffffffffff",
+		},
+		{
+			"ffffffffffffffffffffffffffffffff",
+			"30000000000000000000000000000000",
+			"fffffffffffffffffffffffffffffff",
+		},
+		{
+			"ffffffffffffffffffffffffffffffff",
+			"10000000000000000000000000000000",
+			"fffffffffffffffffffffffffffffff",
+		},
+		{
+			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"2523648240000001ba344d80000000086121000000000013a700000000000013",
+			"212ba4f27ffffff5a2c62effffffffcdb939ffffffffff8a15ffffffffffff8d",
+		},
+		{
+			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"2523648240000001ba344d8000000007ff9f800000000010a10000000000000d",
+			"212ba4f27ffffff5a2c62effffffffd00242ffffffffff9c39ffffffffffffb1",
+		},
+	};
+	const size_t N = 8;
+	Unit xBuf[N];
+	Unit yBuf[N];
+	Unit qBuf[N];
+	Unit rBuf[N];
+	mpz_class mx, my, mq, mr, mr2;
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		size_t xn = mcl::fp::hexToArray(xBuf, N, tbl[i].x, strlen(tbl[i].x));
+		size_t yn = mcl::fp::hexToArray(yBuf, N, tbl[i].y, strlen(tbl[i].y));
+		size_t rn = mcl::fp::hexToArray(rBuf, N, tbl[i].r, strlen(tbl[i].r));
+		CYBOZU_TEST_ASSERT(xn > 0 && yn > 0 && rn > 0);
+		setArray(mx, xBuf, xn);
+		setArray(my, yBuf, yn);
+		setArray(mr, rBuf, rn);
+		size_t rn2 = div(qBuf, N, xBuf, xn, yBuf, yn);
+		setArray(mq, qBuf, N);
+		setArray(mr2, xBuf, rn2);
+		CYBOZU_TEST_EQUAL(mr, mr2);
+		CYBOZU_TEST_EQUAL(mx, mq * my + mr2);
+	}
 }
