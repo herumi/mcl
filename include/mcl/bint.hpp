@@ -21,6 +21,20 @@
 
 namespace mcl { namespace bint {
 
+inline void dump(const Unit *x, size_t n, const char *msg = "")
+{
+	if (msg) printf("%s ", msg);
+	for (size_t i = 0; i < n; i++) {
+#if MCL_SIZEOF_UNIT == 4
+		printf("%08x", x[n - 1 - i]);
+#else
+		uint64_t v = x[n - 1 - i];
+		printf("%08x%08x", uint32_t(v >> 32), uint32_t(v));
+#endif
+	}
+	printf("\n");
+}
+
 /*
 	[H:L] <= x * y
 	@return L
