@@ -29,21 +29,6 @@ namespace mcl {
 
 namespace vint {
 
-template<class T>
-void dump(const T *x, size_t n, const char *msg = "")
-{
-	const size_t is4byteUnit = sizeof(*x) == 4;
-	if (msg) printf("%s ", msg);
-	for (size_t i = 0; i < n; i++) {
-		if (is4byteUnit) {
-			printf("%08x", (uint32_t)x[n - 1 - i]);
-		} else {
-			printf("%016llx", (unsigned long long)x[n - 1 - i]);
-		}
-	}
-	printf("\n");
-}
-
 class FixedBuffer {
 	static const size_t N = maxUnitSize * 2;
 	size_t size_;
@@ -477,7 +462,7 @@ public:
 	}
 	void dump(const char *msg = "") const
 	{
-		vint::dump(&buf_[0], size_, msg);
+		bint::dump(&buf_[0], size_, msg);
 	}
 	/*
 		set positive value
