@@ -663,27 +663,12 @@ public:
 		const size_t xn = x.size();
 		const size_t yn = y.size();
 		size_t zn = xn + yn;
-#if 1
-		Unit *zz = (Unit *)CYBOZU_ALLOCA(zn * MCL_SIZEOF_UNIT);
-		bint::mulNM(zz, &x.buf_[0], xn, &y.buf_[0], yn);
 		bool b;
 		z.buf_.alloc(&b, zn);
 		assert(b); (void)b;
-		bint::copyN(&z.buf_[0], zz, zn);
-		z.trim(zn);
-		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
-#else
-		bool b;
-		z.buf_.alloc(&b, zn);
-		assert(b);
-		if (!b) {
-			z.clear();
-			return;
-		}
 		bint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
-		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 		z.trim(zn);
-#endif
+		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 	}
 	static void sqr(VintT& y, const VintT& x)
 	{
@@ -1008,14 +993,13 @@ public:
 	static void powMod(VintT& z, const VintT& x, const VintT& y, const VintT& m)
 	{
 		assert(!y.isNeg_);
-		VintT zz;
 		MulMod mulMod;
 		SqrMod sqrMod;
 		mulMod.pm = &m;
 		sqrMod.pm = &m;
-		zz = 1;
-		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
-		z.swap(zz);
+		const VintT xx = x;
+		z = 1;
+		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
 	}
 	/*
 		inverse mod
