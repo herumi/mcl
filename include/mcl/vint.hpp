@@ -964,9 +964,9 @@ public:
 	static void pow(VintT& z, const VintT& x, const VintT& y)
 	{
 		assert(!y.isNeg_);
-		const VintT xx = x;
-		z = 1;
-		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
+		VintT zz = 1;
+		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
+		z = zz;
 	}
 	/*
 		REMARK y >= 0;
@@ -974,17 +974,17 @@ public:
 	static void pow(VintT& z, const VintT& x, int64_t y)
 	{
 		assert(y >= 0);
-		const VintT xx = x;
-		z = 1;
+		VintT zz = 1;
 #if MCL_SIZEOF_UNIT == 8
 		Unit ua = fp::abs_(y);
-		mcl::fp::powGeneric(z, xx, &ua, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		mcl::fp::powGeneric(zz, x, &ua, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
 #else
 		uint64_t ua = fp::abs_(y);
 		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
 		size_t un = u[1] ? 2 : 1;
-		mcl::fp::powGeneric(z, xx, u, un, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		mcl::fp::powGeneric(zz, x, u, un, mul, sqr, (void (*)(VintT&, const VintT&))0);
 #endif
+		z = zz;
 	}
 	/*
 		z = x ^ y mod m
@@ -997,9 +997,9 @@ public:
 		SqrMod sqrMod;
 		mulMod.pm = &m;
 		sqrMod.pm = &m;
-		const VintT xx = x;
-		z = 1;
-		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
+		VintT zz = 1;
+		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
+		z = zz;
 	}
 	/*
 		inverse mod
