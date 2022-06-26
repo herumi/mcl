@@ -19,11 +19,10 @@ inline void store8byte(uint32_t *x, uint64_t v)
 template<size_t N>
 Unit addT(Unit *z, const Unit *x, const Unit *y)
 {
-#if 0 // #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
-	// error on ecdsa-wasm, check it
+#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
 	// wasm32 supports 64-bit add
 	uint32_t c = 0;
-	for (size_t i = 0; i < N; i += 2) {
+	for (size_t i = 0; i < N - 1; i += 2) {
 		uint64_t xc = load8byte(x + i) + c;
 		c = xc < c;
 		uint64_t yi = load8byte(y + i);
@@ -57,10 +56,10 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 template<size_t N>
 Unit subT(Unit *z, const Unit *x, const Unit *y)
 {
-#if 0 // #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
 	// wasm32 supports 64-bit sub
 	uint32_t c = 0;
-	for (size_t i = 0; i < N; i += 2) {
+	for (size_t i = 0; i < N - 1; i += 2) {
 		uint64_t yi = load8byte(y + i);
 		yi += c;
 		c = yi < c;
