@@ -32,19 +32,19 @@ namespace vint {
 /*
 	z = x^y
 */
-template<class G, class Mul, class Sqr, class T>
-void powT(G& z, const G& x, const T *y, size_t n, const Mul& mul, const Sqr& sqr)
+template<class G, class Mul, class Sqr>
+void powT(G& z, const G& x, const Unit *y, size_t n, const Mul& mul, const Sqr& sqr)
 {
 	while (n > 0) {
 		if (y[n - 1]) break;
 		n--;
 	}
-	if (n == 0) {
-		z = 1;
-		return;
-	}
+	if (n == 0) n = 1;
 	if (n == 1) {
 		switch (y[0]) {
+		case 0:
+			z = 1;
+			return;
 		case 1:
 			z = x;
 			return;
@@ -841,15 +841,12 @@ public:
 	// logical left shift (copy sign)
 	static void shl(VintT& y, const VintT& x, size_t shiftBit)
 	{
+		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
-		assert(b);
-		if (!b) {
-			y.clear();
-			return;
-		}
+		assert(b); (void)b;
 		bint::shiftLeft(&y.buf_[0], &x.buf_[0], shiftBit, xn);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
@@ -857,6 +854,7 @@ public:
 	// logical right shift (copy sign)
 	static void shr(VintT& y, const VintT& x, size_t shiftBit)
 	{
+		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
 		if (xn * UnitBitSize <= shiftBit) {
 			y.clear();
@@ -865,11 +863,7 @@ public:
 		size_t yn = xn - shiftBit / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
-		assert(b);
-		if (!b) {
-			y.clear();
-			return;
-		}
+		assert(b); (void)b;
 		bint::shiftRight(&y.buf_[0], &x.buf_[0], shiftBit, xn);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
