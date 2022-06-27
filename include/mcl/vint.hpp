@@ -29,6 +29,64 @@ namespace mcl {
 
 namespace vint {
 
+/*
+	z = x^y
+*/
+template<class G, class Mul, class Sqr, class T>
+void powT(G& z, const G& x, const T *y, size_t n, const Mul& mul, const Sqr& sqr)
+{
+	while (n > 0) {
+		if (y[n - 1]) break;
+		n--;
+	}
+	if (n == 0) {
+		z = 1;
+		return;
+	}
+	if (n == 1) {
+		switch (y[0]) {
+		case 1:
+			z = x;
+			return;
+		case 2:
+			sqr(z, x);
+			return;
+		case 3:
+			{
+				G t;
+				sqr(t, x);
+				mul(z, t, x);
+			}
+			return;
+		case 4:
+			sqr(z, x);
+			sqr(z, z);
+			return;
+		}
+	}
+	const size_t w = 4; // don't change
+	const size_t m = sizeof(Unit) * 8 / w;
+	const size_t tblSize = 1 << w;
+	const size_t mask = tblSize - 1;
+	G tbl[tblSize];
+	tbl[0] = 1;
+	tbl[1] = x;
+	for (size_t i = 2; i < tblSize; i++) {
+		mul(tbl[i], tbl[i - 1], x);
+	}
+	z = 1; // x is no longer used
+	for (size_t i = 0; i < n; i++) {
+		Unit v = y[n - 1 - i];
+		for (size_t j = 0; j < m; j++) {
+			for (size_t k = 0; k < w; k++) {
+				sqr(z, z);
+			}
+			Unit idx = (v >> ((m - 1 - j) * w)) & mask;
+			if (idx) mul(z, z, tbl[idx]);
+		}
+	}
+}
+
 class FixedBuffer {
 	static const size_t N = maxUnitSize * 2;
 	size_t size_;
@@ -964,9 +1022,7 @@ public:
 	static void pow(VintT& z, const VintT& x, const VintT& y)
 	{
 		assert(!y.isNeg_);
-		VintT zz = 1;
-		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
-		z = zz;
+		powT(z, x, &y.buf_[0], y.size(), mul, sqr);
 	}
 	/*
 		REMARK y >= 0;
@@ -974,17 +1030,15 @@ public:
 	static void pow(VintT& z, const VintT& x, int64_t y)
 	{
 		assert(y >= 0);
-		VintT zz = 1;
 #if MCL_SIZEOF_UNIT == 8
 		Unit ua = fp::abs_(y);
-		mcl::fp::powGeneric(zz, x, &ua, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		powT(z, x, &ua, 1, mul, sqr);
 #else
 		uint64_t ua = fp::abs_(y);
 		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
 		size_t un = u[1] ? 2 : 1;
-		mcl::fp::powGeneric(zz, x, u, un, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		powT(z, x, u, un, mul, sqr);
 #endif
-		z = zz;
 	}
 	/*
 		z = x ^ y mod m
@@ -997,9 +1051,7 @@ public:
 		SqrMod sqrMod;
 		mulMod.pm = &m;
 		sqrMod.pm = &m;
-		VintT zz = 1;
-		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
-		z = zz;
+		powT(z, x, &y.buf_[0], y.size(), mulMod, sqrMod);
 	}
 	/*
 		inverse mod
