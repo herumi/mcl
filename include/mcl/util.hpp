@@ -139,12 +139,6 @@ void clearArray(T *x, size_t begin, size_t end)
 	for (size_t i = begin; i < end; i++) x[i] = 0;
 }
 
-template<class T>
-void copyArray(T *y, const T *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) y[i] = x[i];
-}
-
 /*
 	x &= (1 << bitSize) - 1
 */

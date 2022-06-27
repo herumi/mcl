@@ -295,7 +295,7 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 		c = SubPre<N, Gtag>::f(y, tmp, p);
 	}
 	if (c) {
-		copyC<N>(y, tmp);
+		bint::copyT<N>(y, tmp);
 	}
 #endif
 }
@@ -350,7 +350,7 @@ void setOp(Op& op, Mode mode)
 	// generic setup
 	op.fp_isZero = isZeroC<N>;
 	op.fp_clear = clearC<N>;
-	op.fp_copy = copyC<N>;
+	op.fp_copy = bint::copyT<N>;
 	op.fp_invOp = fp_invOpC;
 	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM

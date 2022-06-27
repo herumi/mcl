@@ -52,12 +52,6 @@ bool isZeroC(const Unit *x)
 	return isZeroArray(x, N);
 }
 
-template<size_t N>
-void copyC(Unit *y, const Unit *x)
-{
-	copyArray(y, x, N);
-}
-
 // (carry, z[N]) <- x[N] + y[N]
 template<size_t N, class Tag = Gtag>
 struct AddPre {
@@ -373,7 +367,7 @@ struct MulUnit {
 			}
 			for (;;) {
 				if (SubPre<N, Tag>::f(z, xy, p)) {
-					copyC<N>(z, xy);
+					bint::copyT<N>(z, xy);
 					return;
 				}
 				if (SubPre<N, Tag>::f(xy, z, p)) {
@@ -418,7 +412,7 @@ struct SubIfPossible {
 	{
 		Unit tmp[N - 1];
 		if (SubPre<N - 1, Tag>::f(tmp, z, p) == 0) {
-			copyC<N - 1>(z, tmp);
+			bint::copyT<N - 1>(z, tmp);
 			z[N - 1] = 0;
 		}
 	}
@@ -443,7 +437,7 @@ struct Add {
 			}
 			Unit tmp[N];
 			if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
-				copyC<N>(z, tmp);
+				bint::copyT<N>(z, tmp);
 			}
 		} else {
 			AddPre<N, Tag>::f(z, x, y);
@@ -525,7 +519,7 @@ struct MontRed {
 		const Unit rp = p[-1];
 		Unit pq[N + 1];
 		Unit buf[N * 2 + 1];
-		copyC<N - 1>(buf + N + 1, xy + N + 1);
+		bint::copyT<N - 1>(buf + N + 1, xy + N + 1);
 		buf[N * 2] = 0;
 		Unit q = xy[0] * rp;
 		MulUnitPre<N, Tag>::f(pq, p, q);
