@@ -1299,6 +1299,8 @@ CYBOZU_TEST_AUTO(powMod)
 	CYBOZU_TEST_EQUAL(z.getStr(16), "6af700db33cdba6c5710093d7f9109c83ebad54f09ebe71a057de152b336cc8e");
 	Vint::powMod(z, x, y, m);
 	CYBOZU_TEST_EQUAL(z, 1);
+	Vint::powMod(x, x, x, m);
+	CYBOZU_TEST_EQUAL(x.getStr(16), "46f4a4a79b4937c14e782cda991fcba63cfb9f51821571e6ce08b7a29b33583d");
 }
 
 CYBOZU_TEST_AUTO(andOr)
