@@ -29,62 +29,6 @@ namespace mcl {
 
 namespace vint {
 
-/*
-	z = x^y
-*/
-template<class G, class Mul, class Sqr>
-void powT(G& z, const G& x, const Unit *y, size_t n, const Mul& mul, const Sqr& sqr)
-{
-	while (n > 0) {
-		if (y[n - 1]) break;
-		n--;
-	}
-	if (n == 0) n = 1;
-	if (n == 1) {
-		switch (y[0]) {
-		case 0:
-			z = 1;
-			return;
-		case 1:
-			z = x;
-			return;
-		case 2:
-			sqr(z, x);
-			return;
-		case 3:
-			{
-				G t;
-				sqr(t, x);
-				mul(z, t, x);
-			}
-			return;
-		case 4:
-			sqr(z, x);
-			sqr(z, z);
-			return;
-		}
-	}
-	const size_t w = 4; // don't change
-	const size_t m = sizeof(Unit) * 8 / w;
-	const size_t tblSize = (1 << w) - 1;
-	G tbl[tblSize];
-	tbl[0] = x;
-	for (size_t i = 1; i < tblSize; i++) {
-		mul(tbl[i], tbl[i - 1], x);
-	}
-	z = 1; // x is no longer used
-	for (size_t i = 0; i < n; i++) {
-		Unit v = y[n - 1 - i];
-		for (size_t j = 0; j < m; j++) {
-			for (size_t k = 0; k < w; k++) {
-				sqr(z, z);
-			}
-			Unit idx = (v >> ((m - 1 - j) * w)) & tblSize;
-			if (idx) mul(z, z, tbl[idx - 1]);
-		}
-	}
-}
-
 class FixedBuffer {
 	static const size_t N = maxUnitSize * 2;
 	size_t size_;
@@ -383,6 +327,66 @@ private:
 			y %= *pm;
 		}
 	};
+	// z = x^y
+	template<class Mul, class Sqr>
+	static void powT(VintT& z, const VintT& x, const Unit *y, size_t n, const Mul& mul, const Sqr& sqr)
+	{
+		while (n > 0) {
+			if (y[n - 1]) break;
+			n--;
+		}
+		if (n == 0) n = 1;
+		if (n == 1) {
+			switch (y[0]) {
+			case 0:
+				z = 1;
+				return;
+			case 1:
+				z = x;
+				return;
+			case 2:
+				sqr(z, x);
+				return;
+			case 3:
+				{
+					VintT t;
+					sqr(t, x);
+					mul(z, t, x);
+				}
+				return;
+			case 4:
+				sqr(z, x);
+				sqr(z, z);
+				return;
+			}
+		}
+		const size_t w = 4; // don't change
+		const size_t m = sizeof(Unit) * 8 / w;
+		const size_t tblSize = (1 << w) - 1;
+		VintT tbl[tblSize];
+		tbl[0] = x;
+		for (size_t i = 1; i < tblSize; i++) {
+			mul(tbl[i], tbl[i - 1], x);
+		}
+		Unit *yy = 0;
+		if (y == &z.buf_[0]) { // keep original y(=z)
+			yy = (Unit *)CYBOZU_ALLOCA(MCL_SIZEOF_UNIT * n);
+			bint::copyN(yy, y, n);
+			y = yy;
+		}
+		z = 1;
+		for (size_t i = 0; i < n; i++) {
+			Unit v = y[n - 1 - i];
+			for (size_t j = 0; j < m; j++) {
+				for (size_t k = 0; k < w; k++) {
+					sqr(z, z);
+				}
+				Unit idx = (v >> ((m - 1 - j) * w)) & tblSize;
+				if (idx) mul(z, z, tbl[idx - 1]);
+			}
+		}
+	}
+
 public:
 	VintT(int x = 0)
 		: size_(0)

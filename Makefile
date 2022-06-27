@@ -416,7 +416,7 @@ bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp includ
 bin/ecdsa-emu:
 	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/ecdsa-c-emu:
-	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BITINT_ASM=0 -DCYBOZU_DONT_USE_OPENSSL -DMCL_USE_VINT -I ./include -DMCL_WASM32
+	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -DCYBOZU_DONT_USE_OPENSSL -DMCL_USE_VINT -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
