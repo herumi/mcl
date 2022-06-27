@@ -41,12 +41,6 @@ template<> struct TagToStr<LBMI2tag> { static const char *f() { return "LBMI2tag
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
 template<size_t N>
-void clearC(Unit *x)
-{
-	clearArray(x, 0, N);
-}
-
-template<size_t N>
 bool isZeroC(const Unit *x)
 {
 	return isZeroArray(x, N);
@@ -135,7 +129,7 @@ struct Neg {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
 		if (isZeroC<N>(x)) {
-			if (x != y) clearC<N>(y);
+			if (x != y) bint::clearT<N>(y);
 			return;
 		}
 		SubPre<N, Tag>::f(y, p, x);
