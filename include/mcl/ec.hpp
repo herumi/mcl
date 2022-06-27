@@ -1374,7 +1374,7 @@ public:
 		}
 		fp::Block b;
 		y.getBlock(b);
-		mulArray(z, x, b.p, b.n);
+		mulArray(z, x, b.p, b.n, false, constTime);
 	}
 	static inline void mul(EcT& z, const EcT& x, int64_t y)
 	{
@@ -1400,7 +1400,7 @@ public:
 	}
 	static inline void mulCT(EcT& z, const EcT& x, const mpz_class& y)
 	{
-		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
+		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0, true);
 	}
 	/*
 		0 <= P for any P
@@ -1759,8 +1759,39 @@ public:
 	bool operator>=(const EcT& rhs) const { return !operator<(rhs); }
 	bool operator>(const EcT& rhs) const { return rhs < *this; }
 	bool operator<=(const EcT& rhs) const { return !operator>(rhs); }
-	static inline void mulArray(EcT& z, const EcT& x, const Unit *y, size_t yn, bool isNegative = false)
+	static inline void mulArrayCT(EcT& z, const EcT& x, const Unit *y, size_t yn, bool isNegative)
 	{
+		const int w = 4; // don't change
+		const size_t tblSize = 1u << w;
+		const size_t mask = tblSize - 1;
+		const size_t m = sizeof(Unit) * 8 / w;
+		EcT tbl[tblSize];
+		tbl[0].clear();
+		tbl[1] = x;
+		for (size_t i = 2; i < tblSize; i++) {
+			add(tbl[i], tbl[i - 1], x);
+		}
+		z.clear();
+		for (size_t i = 0; i < yn; i++) {
+			Unit v = y[yn - 1 - i];
+			for (size_t j = 0; j < m; j++) {
+				for (size_t k = 0; k < w; k++) {
+					EcT::dbl(z, z);
+				}
+				z += tbl[(v >> ((m - 1 - j) * w)) & mask];
+			}
+		}
+		if (isNegative) {
+			EcT::neg(z, z);
+		}
+	}
+
+	static inline void mulArray(EcT& z, const EcT& x, const Unit *y, size_t yn, bool isNegative = false, bool constTime = false)
+	{
+		if (constTime) {
+			mulArrayCT(z, x, y, yn, isNegative);
+			return;
+		}
 		if (yn == 0) {
 			z.clear();
 			return;
