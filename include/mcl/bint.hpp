@@ -383,5 +383,9 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 */
 size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
+void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
+void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
+
 } } // mcl::bint
 

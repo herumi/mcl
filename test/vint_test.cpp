@@ -1544,7 +1544,7 @@ void compareMod(const T *x, const T (&p)[N])
 	T y2[N] = {};
 	bint::copyN(y1, x, N * 2);
 	bint::div((T*)0, 0, y1, N * 2, p, N);
-	mcl::vint::mcl_fpDbl_mod_SECP256K1(y2, x, p);
+	bint::mod_SECP256K1(y2, x, p);
 	CYBOZU_TEST_EQUAL_ARRAY(y1, y2, N);
 }
 

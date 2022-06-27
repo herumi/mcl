@@ -449,5 +449,70 @@ void sqrN(Unit *y, const Unit *x, size_t xn)
 	mulN(y, x, x, xn);
 }
 
+void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
+{
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+#if MCL_SIZEOF_UNIT == 8
+	const Unit a = (uint64_t(1) << 32) + 0x3d1;
+	Unit buf[5];
+	buf[4] = bint::mulUnitT<N>(buf, x + 4, a); // H * a
+	buf[4] += bint::addT<4>(buf, buf, x); // t = H * a + L
+	Unit x2[2];
+	x2[0] = bint::mulUnit1(&x2[1], buf[4], a);
+	Unit x3 = bint::addT<2>(buf, buf, x2);
+	if (x3) {
+		x3 = bint::addUnit(buf + 2, 2, 1); // t' = H' * a + L'
+		if (x3) {
+			x3 = bint::addUnit(buf, 4, a);
+			assert(x3 == 0);
+		}
+	}
+#else
+	Unit buf[N + 2];
+	// H * a = H * 0x3d1 + (H << 32)
+	buf[N] = bint::mulUnitT<N>(buf, x + N, 0x3d1u); // H * 0x3d1
+	buf[N + 1] = bint::addT<N>(buf + 1, buf + 1, x + N);
+	// t = H * a + L
+	Unit t = bint::addT<N>(buf, buf, x);
+	bint::addUnit(buf + N, 2, t);
+	Unit x2[4];
+	// x2 = buf[N:N+2] * a
+	x2[2] = bint::mulUnitT<2>(x2, buf + N, 0x3d1u);
+	x2[3] = bint::addT<2>(x2 + 1, x2 + 1, buf + N);
+	Unit x3 = bint::addT<4>(buf, buf, x2);
+	if (x3) {
+		x3 = bint::addUnit(buf + 4, N - 4, 1);
+		if (x3) {
+			Unit a[2] = { 0x3d1, 1 };
+			x3 = bint::addT<2>(buf, buf, a);
+			if (x3) {
+				bint::addUnit(buf + 2, N - 2, 1);
+			}
+		}
+	}
+#endif
+	if (fp::isGreaterOrEqualArray(buf, p, N)) {
+		bint::subT<N>(z, buf, p);
+	} else {
+		fp::copyArray(z, buf, N);
+	}
+}
+
+void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+	Unit xy[N * 2];
+	mulT<N>(xy, x, y);
+	mod_SECP256K1(z, xy, p);
+}
+
+void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
+{
+	const size_t N = 32 / MCL_SIZEOF_UNIT;
+	Unit xx[N * 2];
+	mulT<N>(xx, x, x);
+	mod_SECP256K1(y, xx, p);
+}
+
 } } // mcl::bint
 
