@@ -66,12 +66,10 @@ void powT(G& z, const G& x, const T *y, size_t n, const Mul& mul, const Sqr& sqr
 	}
 	const size_t w = 4; // don't change
 	const size_t m = sizeof(Unit) * 8 / w;
-	const size_t tblSize = 1 << w;
-	const size_t mask = tblSize - 1;
+	const size_t tblSize = (1 << w) - 1;
 	G tbl[tblSize];
-	tbl[0] = 1;
-	tbl[1] = x;
-	for (size_t i = 2; i < tblSize; i++) {
+	tbl[0] = x;
+	for (size_t i = 1; i < tblSize; i++) {
 		mul(tbl[i], tbl[i - 1], x);
 	}
 	z = 1; // x is no longer used
@@ -81,8 +79,8 @@ void powT(G& z, const G& x, const T *y, size_t n, const Mul& mul, const Sqr& sqr
 			for (size_t k = 0; k < w; k++) {
 				sqr(z, z);
 			}
-			Unit idx = (v >> ((m - 1 - j) * w)) & mask;
-			if (idx) mul(z, z, tbl[idx]);
+			Unit idx = (v >> ((m - 1 - j) * w)) & tblSize;
+			if (idx) mul(z, z, tbl[idx - 1]);
 		}
 	}
 }
