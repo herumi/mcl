@@ -70,60 +70,6 @@ T getMontgomeryCoeff(T pLow)
 	return ret;
 }
 
-template<class T>
-int compareArray(const T* x, const T* y, size_t n)
-{
-	for (size_t i = n - 1; i != size_t(-1); i--) {
-		T a = x[i];
-		T b = y[i];
-		if (a != b) return a < b ? -1 : 1;
-	}
-	return 0;
-}
-
-template<class T>
-bool isLessArray(const T *x, const T* y, size_t n)
-{
-	for (size_t i = n - 1; i != size_t(-1); i--) {
-		T a = x[i];
-		T b = y[i];
-		if (a != b) return a < b;
-	}
-	return false;
-}
-
-template<class T>
-bool isGreaterOrEqualArray(const T *x, const T* y, size_t n)
-{
-	return !isLessArray(x, y, n);
-}
-
-template<class T>
-bool isLessOrEqualArray(const T *x, const T* y, size_t n)
-{
-	for (size_t i = n - 1; i != size_t(-1); i--) {
-		T a = x[i];
-		T b = y[i];
-		if (a != b) return a < b;
-	}
-	return true;
-}
-
-template<class T>
-bool isGreaterArray(const T *x, const T* y, size_t n)
-{
-	return !isLessOrEqualArray(x, y, n);
-}
-
-template<class T>
-bool isEqualArray(const T* x, const T* y, size_t n)
-{
-	for (size_t i = 0; i < n; i++) {
-		if (x[i] != y[i]) return false;
-	}
-	return true;
-}
-
 /*
 	return non zero size of x[]
 	return 1 if x[] == 0

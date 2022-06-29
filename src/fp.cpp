@@ -717,7 +717,7 @@ uint64_t getUint64(bool *pb, const fp::Block& b)
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 {
 	bool isNegative = false;
-	if (fp::isGreaterOrEqualArray(b.p, op.half, op.N)) {
+	if (bint::cmpGeN(b.p, op.half, op.N)) {
 		op.fp_neg(b.v_, b.p, op.p);
 		b.p = b.v_;
 		isNegative = true;

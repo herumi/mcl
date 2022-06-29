@@ -78,7 +78,7 @@ CYBOZU_TEST_AUTO(hexToArray)
 	}
 }
 
-CYBOZU_TEST_AUTO(compareArray)
+CYBOZU_TEST_AUTO(cmp)
 {
 	const struct {
 		uint32_t a[4];
@@ -96,12 +96,12 @@ CYBOZU_TEST_AUTO(compareArray)
 		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 4, -1 },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		int e = mcl::fp::compareArray(tbl[i].a, tbl[i].b, tbl[i].n);
+		int e = mcl::bint::cmpN(tbl[i].a, tbl[i].b, tbl[i].n);
 		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
 	}
 }
 
-CYBOZU_TEST_AUTO(isLessArray)
+CYBOZU_TEST_AUTO(cmpLt)
 {
 	const struct {
 		uint32_t a[4];
@@ -120,14 +120,14 @@ CYBOZU_TEST_AUTO(isLessArray)
 		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 4, true },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		bool e = mcl::fp::isLessArray(tbl[i].a, tbl[i].b, tbl[i].n);
+		bool e = mcl::bint::cmpLtN(tbl[i].a, tbl[i].b, tbl[i].n);
 		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
-		e = mcl::fp::isGreaterArray(tbl[i].b, tbl[i].a, tbl[i].n);
+		e = mcl::bint::cmpGtN(tbl[i].b, tbl[i].a, tbl[i].n);
 		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
 	}
 }
 
-CYBOZU_TEST_AUTO(isLessOrEqualArray)
+CYBOZU_TEST_AUTO(cmpLe)
 {
 	const struct {
 		uint32_t a[4];
@@ -146,9 +146,9 @@ CYBOZU_TEST_AUTO(isLessOrEqualArray)
 		{ { 1, 7, 8, 4 }, { 1, 7, 8, 9 }, 4, true },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		bool e = mcl::fp::isLessOrEqualArray(tbl[i].a, tbl[i].b, tbl[i].n);
+		bool e = mcl::bint::cmpLeN(tbl[i].a, tbl[i].b, tbl[i].n);
 		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
-		e = mcl::fp::isGreaterOrEqualArray(tbl[i].b, tbl[i].a, tbl[i].n);
+		e = mcl::bint::cmpGeN(tbl[i].b, tbl[i].a, tbl[i].n);
 		CYBOZU_TEST_EQUAL(e, tbl[i].expect);
 	}
 }
