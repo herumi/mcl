@@ -21,6 +21,15 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 {
 #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
 	// wasm32 supports 64-bit add
+#if 1
+	uint64_t c = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = uint64_t(x[i]) + y[i] + c;
+		z[i] = uint32_t(v);
+		c = v >> 32;
+	}
+	return uint32_t(c);
+#else
 	uint32_t c = 0;
 	for (size_t i = 0; i < N - 1; i += 2) {
 		uint64_t xc = load8byte(x + i) + c;
@@ -39,6 +48,7 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 		z[N - 1] = xc;
 	}
 	return c;
+#endif
 #else
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -58,6 +68,15 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 {
 #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
 	// wasm32 supports 64-bit sub
+#if 1
+	uint64_t c = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = uint64_t(x[i]) - y[i] - c;
+		z[i] = uint32_t(v);
+		c = v >> 63;
+	}
+	return c;
+#else
 	uint32_t c = 0;
 	for (size_t i = 0; i < N - 1; i += 2) {
 		uint64_t yi = load8byte(y + i);
@@ -76,6 +95,7 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 		z[N - 1] = xi - yi;
 	}
 	return c;
+#endif
 #else
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -94,6 +114,17 @@ template<size_t N>
 Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 {
 #if MCL_SIZEOF_UNIT == 4
+#if 1
+	uint64_t H = 0;
+	uint64_t y_ = y;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = x[i] * y_;
+		v += H;
+		z[i] = uint32_t(v);
+		H = v >> 32;
+	}
+	return uint32_t(H);
+#else
 	uint64_t H = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint64_t v = x[i] * uint64_t(y);
@@ -102,6 +133,7 @@ Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 		H = v >> 32;
 	}
 	return uint32_t(H);
+#endif
 #elif defined(MCL_DEFINED_UINT128_T)
 	uint64_t H = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -128,10 +160,24 @@ Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 template<size_t N>
 Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
 {
+#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+	// reduce cast operation
+	uint64_t H = 0;
+	uint64_t y_ = y;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t v = x[i] * y_;
+		v += H;
+		v += z[i];
+		z[i] = uint32_t(v);
+		H = v >> 32;
+	}
+	return H;
+#else
 	Unit xy[N], ret;
 	ret = mulUnitT<N>(xy, x, y);
 	ret += addT<N>(z, z, xy);
 	return ret;
+#endif
 }
 
 #endif
@@ -451,6 +497,21 @@ void sqrN(Unit *y, const Unit *x, size_t xn)
 	mulN(y, x, x, xn);
 }
 
+/*
+	M=1<<256
+	a=(1<<32)+0x3d1
+	p=M-a
+	0<=x<=(p-1)^2=M(M-2a-2)+(a+1)^2
+	H=M-2a-2, L=(a+1)^2
+	H=M-2a-3, L=M-1
+	x1=H a + L <= (M-2a-3)a+M-1=Ma+(M-2a^2-3a-1)
+	H2=a, L2=M-2a^2-3a-1
+	H2=a-1, L2=M-1
+	x2=H2 a + L2 <= (a-1)a + M-1=M+(a^2-a-1)
+	H3=1, L3=a^2-a-1
+	H3=0, L3=M-1
+	x3=H3 a + L1 <= M-1
+*/
 void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
@@ -496,7 +557,7 @@ void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	if (cmpGeT<N>(buf, p)) {
 		subT<N>(z, buf, p);
 	} else {
-		copyN(z, buf, N);
+		copyT<N>(z, buf);
 	}
 }
 
