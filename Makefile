@@ -99,7 +99,10 @@ ifeq ($(OS),mac-m1)
 endif
 BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=0
-ASM_SUF?=asm
+ASM_SUF?=s
+ifeq ($(OS),win)
+  ASM_SUF=asm
+endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_asm.hpp
@@ -133,8 +136,6 @@ src/asm/$(BINT_BASENAME).asm: src/gen_x86asm.py src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py > $@
 src/asm/$(BINT_BASENAME).s: src/gen_x86asm.py src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py > $@ -gas
-$(BINT_X64_OBJ): src/asm/$(BINT_BASENAME).asm
-	nasm $(NASM_ELF_OPT) -o $@ $<
 $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 $(BINT_OBJ): $(BINT_SRC)
@@ -352,8 +353,11 @@ $(OBJ_DIR)/%.o: %.cpp
 $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
-$(OBJ_DIR)/%.o: %.s
+$(OBJ_DIR)/%.o: src/asm/%.s
 	$(PRE)$(AS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: src/asm/%.asm
+	nasm $(NASM_ELF_OPT) -o $@ $<
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
