@@ -133,12 +133,6 @@ bool isZeroArray(const T *x, size_t n)
 	return true;
 }
 
-template<class T>
-void clearArray(T *x, size_t begin, size_t end)
-{
-	for (size_t i = begin; i < end; i++) x[i] = 0;
-}
-
 /*
 	return non zero size of x[]
 	return 1 if x[] == 0
