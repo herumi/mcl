@@ -70,20 +70,6 @@ T getMontgomeryCoeff(T pLow)
 	return ret;
 }
 
-/*
-	return non zero size of x[]
-	return 1 if x[] == 0
-*/
-template<class T>
-size_t getNonZeroArraySize(const T *x, size_t n)
-{
-	while (n > 0) {
-		if (x[n - 1]) return n;
-		n--;
-	}
-	return 1;
-}
-
 // return T(x[0:xN] >> bitPos) if bitPos < sizeof(T) * xN else 0
 template<class T>
 T getUnitAt(const T *x, size_t xN, size_t bitPos)

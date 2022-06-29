@@ -1088,7 +1088,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n, fp::
 		if (n == 1) {
 			const Unit *y0 = mcl::gmp::getUnit(y);
 			size_t yn = mcl::gmp::getUnitSize(y);
-			yn = fp::getNonZeroArraySize(y0, yn);
+			yn = bint::getRealSize(y0, yn);
 			if (yn <= 1 && mulSmallInt(z, xVec[0], *y0, false)) return;
 		}
 		GLV::split(u, y);
@@ -1796,7 +1796,7 @@ public:
 			z.clear();
 			return;
 		}
-		yn = fp::getNonZeroArraySize(y, yn);
+		yn = bint::getRealSize(y, yn);
 		if (yn <= 1 && mcl::ec::mulSmallInt(z, x, *y, isNegative)) return;
 		mpz_class v;
 		bool b;
