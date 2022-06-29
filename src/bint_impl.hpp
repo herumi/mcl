@@ -283,7 +283,7 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 	const Unit yTop = y[yn - 1];
 	assert(yTop > 0);
 	Unit qv = 0;
-	int ret = xn < yn ? -1 : cmp(x, y, yn);
+	int ret = xn < yn ? -1 : cmpN(x, y, yn);
 	if (ret < 0) { // q = 0, r = x if x < y
 		goto EXIT;
 	}
@@ -304,7 +304,7 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 			subN(x, x, t, yn);
 		}
 		// expect that loop is at most once
-		while (cmpGe(x, y, yn)) {
+		while (cmpGeN(x, y, yn)) {
 			subN(x, x, y, yn);
 			qv++;
 		}
@@ -339,7 +339,7 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 			continue;
 		}
 		size_t d = xn - yn;
-		if (cmpGe(x + d, y, yn)) {
+		if (cmpGeN(x + d, y, yn)) {
 			subN(x + d, x + d, y, yn);
 			if (q) addUnit(q + d, qn - d, 1);
 			if (d == 0) {
@@ -361,7 +361,7 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
 	}
-	assert(xn < yn || (xn == yn && cmpLt(x, y, yn)));
+	assert(xn < yn || (xn == yn && cmpLtN(x, y, yn)));
 	xn = getRealSize(x, xn);
 	return xn;
 }

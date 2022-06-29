@@ -676,7 +676,7 @@ public:
 		divBy2(y, y);
 	}
 	bool isZero() const { return op_.fp_isZero(v_); }
-	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
+	bool isOne() const { return bint::cmpEqN(v_, op_.oneRep, op_.N); }
 	static const inline FpT& one() { return *reinterpret_cast<const FpT*>(op_.oneRep); }
 	/*
 		half = (p + 1) / 2
@@ -705,7 +705,7 @@ public:
 		getBlock(b);
 		return fp::getInt64(pb, b, op_);
 	}
-	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
+	bool operator==(const FpT& rhs) const { return bint::cmpEqN(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	/*
 		@note

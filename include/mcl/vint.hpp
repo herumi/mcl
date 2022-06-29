@@ -134,7 +134,7 @@ private:
 	}
 	static int ucompare(const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		if (xn == yn) return bint::cmp(&x[0], &y[0], xn);
+		if (xn == yn) return bint::cmpN(&x[0], &y[0], xn);
 		return xn > yn ? 1 : -1;
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)

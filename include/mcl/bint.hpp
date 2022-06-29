@@ -229,7 +229,7 @@ bool cmpLtT(const Unit *px, const Unit *py)
 }
 
 // true if x[] == y[]
-inline bool cmpEq(const Unit *px, const Unit *py, size_t n)
+inline bool cmpEqN(const Unit *px, const Unit *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		if (px[i] != py[i]) return false;
@@ -238,7 +238,7 @@ inline bool cmpEq(const Unit *px, const Unit *py, size_t n)
 }
 
 // true if x[n] >= y[n]
-inline bool cmpGe(const Unit *px, const Unit *py, size_t n)
+inline bool cmpGeN(const Unit *px, const Unit *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		const Unit x = px[n - 1 - i];
@@ -250,7 +250,7 @@ inline bool cmpGe(const Unit *px, const Unit *py, size_t n)
 }
 
 // true if x[n] > y[n]
-inline bool cmpGt(const Unit *px, const Unit *py, size_t n)
+inline bool cmpGtN(const Unit *px, const Unit *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		const Unit x = px[n - 1 - i];
@@ -262,18 +262,18 @@ inline bool cmpGt(const Unit *px, const Unit *py, size_t n)
 }
 
 // true if x[n] <= y[n]
-inline bool cmpLe(const Unit *px, const Unit *py, size_t n)
+inline bool cmpLeN(const Unit *px, const Unit *py, size_t n)
 {
-	return !cmpGt(px, py, n);
+	return !cmpGtN(px, py, n);
 }
 
 // true if x[n] < y[n]
-inline bool cmpLt(const Unit *px, const Unit *py, size_t n)
+inline bool cmpLtN(const Unit *px, const Unit *py, size_t n)
 {
-	return !cmpGe(px, py, n);
+	return !cmpGeN(px, py, n);
 }
 
-inline int cmp(const Unit *px, const Unit *py, size_t n)
+inline int cmpN(const Unit *px, const Unit *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		const Unit x = px[n - 1 - i];
