@@ -17,16 +17,16 @@
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-#ifdef MCL_BITINT_FUNC_PTR
+#ifdef MCL_BINT_FUNC_PTR
 #define XBYAK_ONLY_CLASS_CPU
 #include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
 {
 	using namespace Xbyak::util;
 	Cpu cpu;
-	if (cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-		fprintf(stderr, "bmi2 and adx are available\n");
-		mcl::bint::mclb_enable_fast();
+	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+		fprintf(stderr, "bmi2 and adx are not available\n");
+		mcl::bint::mclb_disable_fast();
 	}
 }
 
@@ -582,7 +582,6 @@ CYBOZU_TEST_AUTO(div2)
 		y.setArray(tbl[i].y.p, tbl[i].y.n);
 		q.setArray(tbl[i].q.p, tbl[i].q.n);
 		r.setArray(tbl[i].r.p, tbl[i].r.n);
-
 		Vint qt, rt;
 		Vint::quotRem(&qt, rt, x, y);
 		CYBOZU_TEST_EQUAL(qt, q);
@@ -634,7 +633,7 @@ CYBOZU_TEST_AUTO(div2)
 	}
 }
 
-CYBOZU_TEST_AUTO(quotRem)
+CYBOZU_TEST_AUTO(divMod)
 {
 	const struct {
 		const char *x;
@@ -1291,6 +1290,17 @@ CYBOZU_TEST_AUTO(powMod)
 	CYBOZU_TEST_EQUAL(y, 55277);
 	Vint::powMod(y, x, m - 1, m);
 	CYBOZU_TEST_EQUAL(y, 1);
+
+	x.setStr("2ac00f2c9af814438db241461ec7825ed88d00b0951049aa1b5116e6dca345ec", 16);
+	y.setStr("3fffffffffffffffffffffffffffffffaeabb739abd2280eeff497a3340d905", 16);
+	m.setStr("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16);
+	Vint z;
+	Vint::powMod(z, x, y-1, m);
+	CYBOZU_TEST_EQUAL(z.getStr(16), "6af700db33cdba6c5710093d7f9109c83ebad54f09ebe71a057de152b336cc8e");
+	Vint::powMod(z, x, y, m);
+	CYBOZU_TEST_EQUAL(z, 1);
+	Vint::powMod(x, x, x, m);
+	CYBOZU_TEST_EQUAL(x.getStr(16), "46f4a4a79b4937c14e782cda991fcba63cfb9f51821571e6ce08b7a29b33583d");
 }
 
 CYBOZU_TEST_AUTO(andOr)
@@ -1532,10 +1542,11 @@ CYBOZU_TEST_AUTO(divUnit)
 template<class T, size_t N>
 void compareMod(const T *x, const T (&p)[N])
 {
-	T y1[N] = {};
+	T y1[N * 2];
 	T y2[N] = {};
-	mcl::vint::divNM((T*)0, 0, y1, x, N * 2, p, N);
-	mcl::vint::mcl_fpDbl_mod_SECP256K1(y2, x, p);
+	bint::copyN(y1, x, N * 2);
+	bint::div((T*)0, 0, y1, N * 2, p, N);
+	bint::mod_SECP256K1(y2, x, p);
 	CYBOZU_TEST_EQUAL_ARRAY(y1, y2, N);
 }
 

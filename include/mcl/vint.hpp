@@ -23,327 +23,11 @@
 #ifndef MCL_MAX_BIT_SIZE
 	#error "define MCL_MAX_BIT_SZIE"
 #endif
-#include <mcl/bitint.hpp>
+#include <mcl/bint.hpp>
 
 namespace mcl {
 
 namespace vint {
-
-template<class T>
-void dump(const T *x, size_t n, const char *msg = "")
-{
-	const size_t is4byteUnit = sizeof(*x) == 4;
-	if (msg) printf("%s ", msg);
-	for (size_t i = 0; i < n; i++) {
-		if (is4byteUnit) {
-			printf("%08x", (uint32_t)x[n - 1 - i]);
-		} else {
-			printf("%016llx", (unsigned long long)x[n - 1 - i]);
-		}
-	}
-	printf("\n");
-}
-
-/*
-	compare x[] and y[]
-	@retval positive  if x > y
-	@retval 0         if x == y
-	@retval negative  if x < y
-*/
-template<class T>
-int compareNM(const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn > 0 && yn > 0);
-	if (xn != yn) return xn > yn ? 1 : -1;
-	return bint::cmp(x, y, xn);
-}
-
-/*
-	z[xn * yn] = x[xn] * y[ym]
-*/
-template<class T>
-inline void mulNM(T *z, const T *x, size_t xn, const T *y, size_t yn)
-{
-	if (xn == 0 || yn == 0) return;
-	if (yn > xn) {
-		fp::swap_(yn, xn);
-		fp::swap_(x, y);
-	}
-	assert(xn >= yn);
-	if (z == x) {
-		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-		bint::copy(p, x, xn);
-		x = p;
-	}
-	if (z == y) {
-		T *p = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		bint::copy(p, y, yn);
-		y = p;
-	}
-	z[xn] = bint::mulUnit(z, x, y[0], xn);
-	for (size_t i = 1; i < yn; i++) {
-		z[xn + i] = bint::mulUnitAdd(&z[i], x, y[i], xn);
-	}
-}
-/*
-	out[xn * 2] = x[xn] * x[xn]
-	QQQ : optimize this
-*/
-template<class T>
-static inline void sqrN(T *y, const T *x, size_t xn)
-{
-	mulNM(y, x, xn, x, xn);
-}
-
-/*
-	y[] = x[] << bit
-	0 < bit < sizeof(T) * 8
-	accept y == x
-*/
-template<class T>
-T shlBit(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(0 < bit && bit < sizeof(T) * 8);
-	assert(xn > 0);
-	size_t rBit = sizeof(T) * 8 - bit;
-	T keep = x[xn - 1];
-	T prev = keep;
-	for (size_t i = xn - 1; i > 0; i--) {
-		T t = x[i - 1];
-		y[i] = (prev << bit) | (t >> rBit);
-		prev = t;
-	}
-	y[0] = prev << bit;
-	return keep >> rBit;
-}
-
-/*
-	y[yn] = x[xn] << bit
-	yn = xn + (bit + unitBitBit - 1) / UnitBitSize
-	accept y == x
-*/
-template<class T>
-void shlN(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(xn > 0);
-	size_t q = bit / UnitBitSize;
-	size_t r = bit % UnitBitSize;
-	if (r == 0) {
-		// don't use bint::copy(y + q, x, xn); if overlaped
-		for (size_t i = 0; i < xn; i++) {
-			y[q + xn - 1 - i] = x[xn - 1 - i];
-		}
-	} else {
-		y[q + xn] = shlBit(y + q, x, xn, r);
-	}
-	bint::clear(y, q);
-}
-
-/*
-	y[] = x[] >> bit
-	0 < bit < sizeof(T) * 8
-*/
-template<class T>
-void shrBit(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(0 < bit && bit < sizeof(T) * 8);
-	assert(xn > 0);
-	size_t rBit = sizeof(T) * 8 - bit;
-	T prev = x[0];
-	for (size_t i = 1; i < xn; i++) {
-		T t = x[i];
-		y[i - 1] = (prev >> bit) | (t << rBit);
-		prev = t;
-	}
-	y[xn - 1] = prev >> bit;
-}
-/*
-	y[yn] = x[xn] >> bit
-	yn = xn - bit / unitBit
-*/
-template<class T>
-void shrN(T *y, const T *x, size_t xn, size_t bit)
-{
-	assert(xn > 0);
-	size_t q = bit / UnitBitSize;
-	size_t r = bit % UnitBitSize;
-	assert(xn >= q);
-	if (r == 0) {
-		bint::copy(y, x + q, xn - q);
-	} else {
-		shrBit(y, x + q, xn - q, r);
-	}
-}
-
-template<class T>
-size_t getRealSize(const T *x, size_t n)
-{
-	while (n > 0) {
-		if (x[n - 1]) break;
-		n--;
-	}
-	return n > 0 ? n : 1;
-}
-
-/*
-	y must have full bit
-	x[xn] = x[xn] % y[yn]
-	q[qn] = x[xn] / y[yn] if q != NULL
-	return len of remain x
-*/
-template<class T>
-size_t divFullBitN(T *q, size_t qn, T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn > 0);
-	assert(yn > 0);
-	assert((y[yn - 1] >> (sizeof(T) * 8 - 1)) != 0);
-	if (q) bint::clear(q, qn);
-	T *tt = (T*)CYBOZU_ALLOCA(sizeof(T) * (yn + 1));
-	while (xn > yn) {
-		if (x[xn - 1] == 0) {
-			xn--;
-			continue;
-		}
-		size_t d = xn - yn;
-		if (bint::cmp(x + d, y, yn) >= 0) {
-			bint::subN(x + d, x + d, y, yn);
-			if (q) bint::addUnit(q + d, qn - d, 1);
-		} else {
-			T v;
-			if (y[yn - 1] == T(-1)) {
-				v = x[xn - 1];
-			} else {
-				T r;
-				v = bint::divUnit1(&r, x[xn - 1], x[xn - 2], y[yn - 1] + 1);
-			}
-			T ret = bint::mulUnit(tt, y, v, yn);
-			ret += bint::subN(x + d - 1, x + d - 1, tt, yn);
-			x[xn-1] -= ret;
-			if (q) bint::addUnit(q + d - 1, qn - d + 1, v);
-		}
-	}
-	if (xn == yn && bint::cmp(x, y, yn) >= 0) {
-		bint::subN(x, x, y, yn);
-		if (q) bint::addUnit(q, qn, 1);
-	}
-	xn = getRealSize(x, xn);
-	return xn;
-}
-
-/*
-	assme xn <= yn
-	q[qn] = x[xn] / y[yn], r[rn] = x[xn] % y[yn]
-	assume(n >= 2);
-	return true if computed else false
-*/
-template<class T>
-bool divSmall(T *q, size_t qn, T *r, size_t rn, const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(yn > 0);
-	const T yTop = y[yn - 1];
-	assert(yTop > 0);
-	if (xn > yn) return false;
-	int ret = xn < yn ? -1 : bint::cmp(x, y, xn);
-	if (ret < 0) { // q = 0, r = x if x < y
-		bint::copy(r, x, xn);
-		bint::clear(r + xn, rn - xn);
-		if (q) bint::clear(q, qn);
-		return true;
-	}
-	if (ret == 0) { // q = 1, r = 0 if x == y
-		bint::clear(r, rn);
-		if (q) {
-			q[0] = 1;
-			bint::clear(q + 1, qn - 1);
-		}
-		return true;
-	}
-	if (yTop >= T(1) << (sizeof(T) * 8 / 2)) {
-		T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * xn);
-		T qv = 0;
-		if (yTop == T(-1)) {
-			bint::subN(xx, x, y, xn);
-			qv = 1;
-		} else {
-			qv = x[xn - 1] / (yTop + 1);
-			bint::mulUnit(xx, y, qv, yn);
-			bint::subN(xx, x, xx, xn);
-		}
-		// expect that loop is at most once
-		while (bint::cmp(xx, y, yn) >= 0) {
-			bint::subN(xx, xx, y, yn);
-			qv++;
-		}
-		if (r) {
-			bint::copy(r, xx, xn);
-			bint::clear(r + xn, rn - xn);
-		}
-		if (q) {
-			q[0] = qv;
-			bint::clear(q + 1, qn - 1);
-		}
-		return true;
-	}
-	return false;
-}
-
-/*
-	q[qn] = x[xn] / y[yn] ; qn == xn - yn + 1 if xn >= yn if q
-	r[rn] = x[xn] % y[yn] ; rn = yn before getRealSize
-	allow q == 0
-*/
-template<class T>
-void divNM(T *q, size_t qn, T *r, const T *x, size_t xn, const T *y, size_t yn)
-{
-	assert(xn > 0 && yn > 0);
-	assert(xn < yn || (q == 0 || qn == xn - yn + 1));
-	assert(q != r);
-	const size_t rn = yn;
-	xn = getRealSize(x, xn);
-	yn = getRealSize(y, yn);
-	if (yn == 1) {
-		T t;
-		if (q) {
-			if (qn > xn) {
-				bint::clear(q + xn, qn - xn);
-			}
-			t = bint::divUnit(q, x, xn, y[0]);
-		} else {
-			t = bint::modUnit(x, xn, y[0]);
-		}
-		r[0] = t;
-		bint::clear(r + 1, rn - 1);
-		return;
-	}
-	if (divSmall(q, qn, r, rn, x, xn, y, yn)) return;
-	/*
-		bitwise left shift x and y to adjust MSB of y[yn - 1] = 1
-	*/
-	const size_t yTopBit = cybozu::bsr(y[yn - 1]);
-	const size_t shift = sizeof(T) * 8 - 1 - yTopBit;
-	T *xx = (T*)CYBOZU_ALLOCA(sizeof(T) * (xn + 1));
-	const T *yy;
-	if (shift) {
-		T v = shlBit(xx, x, xn, shift);
-		if (v) {
-			xx[xn] = v;
-			xn++;
-		}
-		T *yBuf = (T*)CYBOZU_ALLOCA(sizeof(T) * yn);
-		shlBit(yBuf, y, yn ,shift);
-		yy = yBuf;
-	} else {
-		bint::copy(xx, x, xn);
-		yy = y;
-	}
-	xn = divFullBitN(q, qn, xx, xn, yy, yn);
-	if (shift) {
-		shrBit(r, xx, xn, shift);
-	} else {
-		bint::copy(r, xx, xn);
-	}
-	bint::clear(r + xn, rn - xn);
-}
 
 class FixedBuffer {
 	static const size_t N = maxUnitSize * 2;
@@ -417,70 +101,6 @@ public:
 	Unit& operator[](size_t n) { verify(n); return v_[n]; }
 };
 
-inline void mcl_fpDbl_mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
-{
-	const size_t n = 32 / MCL_SIZEOF_UNIT;
-#if MCL_SIZEOF_UNIT == 8
-	const Unit a = (uint64_t(1) << 32) + 0x3d1;
-	Unit buf[5];
-	buf[4] = bint::mulUnitT<n>(buf, x + 4, a); // H * a
-	buf[4] += bint::addT<4>(buf, buf, x); // t = H * a + L
-	Unit x2[2];
-	x2[0] = bint::mulUnit1(&x2[1], buf[4], a);
-	Unit x3 = bint::addT<2>(buf, buf, x2);
-	if (x3) {
-		x3 = bint::addUnit(buf + 2, 2, 1); // t' = H' * a + L'
-		if (x3) {
-			x3 = bint::addUnit(buf, 4, a);
-			assert(x3 == 0);
-		}
-	}
-#else
-	Unit buf[n + 2];
-	// H * a = H * 0x3d1 + (H << 32)
-	buf[n] = bint::mulUnitT<n>(buf, x + n, 0x3d1u); // H * 0x3d1
-	buf[n + 1] = bint::addT<n>(buf + 1, buf + 1, x + n);
-	// t = H * a + L
-	Unit t = bint::addT<n>(buf, buf, x);
-	bint::addUnit(buf + n, 2, t);
-	Unit x2[4];
-	// x2 = buf[n:n+2] * a
-	x2[2] = bint::mulUnitT<2>(x2, buf + n, 0x3d1u);
-	x2[3] = addN(x2 + 1, x2 + 1, buf + n, 2);
-	Unit x3 = addN(buf, buf, x2, 4);
-	if (x3) {
-		x3 = bint::addUnit(buf + 4, buf + 4, n - 4, 1);
-		if (x3) {
-			Unit a[2] = { 0x3d1, 1 };
-			x3 = addN(buf, buf, a, 2);
-			if (x3) {
-				bint::addUnit(buf + 2, n - 2, 1);
-			}
-		}
-	}
-#endif
-	if (fp::isGreaterOrEqualArray(buf, p, n)) {
-		bint::subN(z, buf, p, n);
-	} else {
-		fp::copyArray(z, buf, n);
-	}
-}
-
-inline void mcl_fp_mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-{
-	const size_t n = 32 / MCL_SIZEOF_UNIT;
-	Unit xy[n * 2];
-	mulNM(xy, x, n, y, n);
-	mcl_fpDbl_mod_SECP256K1(z, xy, p);
-}
-inline void mcl_fp_sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
-{
-	const size_t n = 32 / MCL_SIZEOF_UNIT;
-	Unit xx[n * 2];
-	sqrN(xx, x, n);
-	mcl_fpDbl_mod_SECP256K1(y, xx, p);
-}
-
 } // vint
 
 /**
@@ -514,7 +134,8 @@ private:
 	}
 	static int ucompare(const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
-		return vint::compareNM(&x[0], xn, &y[0], yn);
+		if (xn == yn) return bint::cmp(&x[0], &y[0], xn);
+		return xn > yn ? 1 : -1;
 	}
 	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
@@ -537,7 +158,7 @@ private:
 		Unit c = bint::addN(dst, px, py, yn);
 		if (xn > yn) {
 			size_t n = xn - yn;
-			if (dst != px) bint::copy(dst + yn, px + yn, n);
+			if (dst != px) bint::copyN(dst + yn, px + yn, n);
 			c = bint::addUnit(dst + yn, n, c);
 		}
 		dst[xn] = c;
@@ -553,7 +174,7 @@ private:
 			z.clear();
 			return;
 		}
-		if (&z.buf_[0] != &x[0]) bint::copy(&z.buf_[0], &x[0], xn);
+		if (&z.buf_[0] != &x[0]) bint::copyN(&z.buf_[0], &x[0], xn);
 		z.buf_[zn - 1] = bint::addUnit(&z.buf_[0], xn, y);
 		z.trim(zn);
 	}
@@ -569,7 +190,7 @@ private:
 		}
 		Unit *dst = &z.buf_[0];
 		const Unit *src = &x[0];
-		if (dst != src) bint::copy(dst, src, xn);
+		if (dst != src) bint::copyN(dst, src, xn);
 		Unit c = bint::subUnit(dst, xn, y);
 		(void)c;
 		assert(!c);
@@ -590,9 +211,8 @@ private:
 			size_t n = xn - yn;
 			Unit *dst = &z.buf_[yn];
 			const Unit *src = &x[yn];
-			if (dst != src) bint::copy(dst, src, n);
+			if (dst != src) bint::copyN(dst, src, n);
 			c = bint::subUnit(dst, n, c);
-//			c = vint::subu1(&z.buf_[yn], &x[yn], xn - yn, c);
 		}
 		assert(!c);
 		z.trim(xn);
@@ -664,25 +284,19 @@ private:
 		bool b;
 		if (q) {
 			q->buf_.alloc(&b, qn);
-			assert(b);
-			if (!b) {
-				q->clear();
-				r.clear();
-				return;
-			}
+			assert(b); (void)b;
 		}
-		r.buf_.alloc(&b, yn);
-		assert(b);
-		if (!b) {
-			r.clear();
-			if (q) q->clear();
-			return;
-		}
-		vint::divNM(q ? &q->buf_[0] : 0, qn, &r.buf_[0], &x[0], xn, &y[0], yn);
+		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+		bint::copyN(xx, &x[0], xn);
+		Unit *qq = q ? &q->buf_[0] : 0;
+		size_t rn = bint::div(qq, qn, xx, xn, &y[0], yn);
+		r.buf_.alloc(&b, rn);
+		assert(b); (void)b;
+		bint::copyN(&r.buf_[0], xx, rn);
 		if (q) {
 			q->trim(qn);
 		}
-		r.trim(yn);
+		r.trim(rn);
 	}
 	/*
 		@param x [inout] x <- d
@@ -713,6 +327,66 @@ private:
 			y %= *pm;
 		}
 	};
+	// z = x^y
+	template<class Mul, class Sqr>
+	static void powT(VintT& z, const VintT& x, const Unit *y, size_t n, const Mul& mul, const Sqr& sqr)
+	{
+		while (n > 0) {
+			if (y[n - 1]) break;
+			n--;
+		}
+		if (n == 0) n = 1;
+		if (n == 1) {
+			switch (y[0]) {
+			case 0:
+				z = 1;
+				return;
+			case 1:
+				z = x;
+				return;
+			case 2:
+				sqr(z, x);
+				return;
+			case 3:
+				{
+					VintT t;
+					sqr(t, x);
+					mul(z, t, x);
+				}
+				return;
+			case 4:
+				sqr(z, x);
+				sqr(z, z);
+				return;
+			}
+		}
+		const size_t w = 4; // don't change
+		const size_t m = sizeof(Unit) * 8 / w;
+		const size_t tblSize = (1 << w) - 1;
+		VintT tbl[tblSize];
+		tbl[0] = x;
+		for (size_t i = 1; i < tblSize; i++) {
+			mul(tbl[i], tbl[i - 1], x);
+		}
+		Unit *yy = 0;
+		if (y == &z.buf_[0]) { // keep original y(=z)
+			yy = (Unit *)CYBOZU_ALLOCA(MCL_SIZEOF_UNIT * n);
+			bint::copyN(yy, y, n);
+			y = yy;
+		}
+		z = 1;
+		for (size_t i = 0; i < n; i++) {
+			Unit v = y[n - 1 - i];
+			for (size_t j = 0; j < m; j++) {
+				for (size_t k = 0; k < w; k++) {
+					sqr(z, z);
+				}
+				Unit idx = (v >> ((m - 1 - j) * w)) & tblSize;
+				if (idx) mul(z, z, tbl[idx - 1]);
+			}
+		}
+	}
+
 public:
 	VintT(int x = 0)
 		: size_(0)
@@ -784,7 +458,7 @@ public:
 	}
 	void dump(const char *msg = "") const
 	{
-		vint::dump(&buf_[0], size_, msg);
+		bint::dump(&buf_[0], size_, msg);
 	}
 	/*
 		set positive value
@@ -835,8 +509,8 @@ public:
 			*pb = false;
 			return;
 		}
-		bint::copy(x, &buf_[0], n);
-		bint::clear(x + n, maxSize - n);
+		bint::copyN(x, &buf_[0], n);
+		bint::clearN(x + n, maxSize - n);
 		*pb = true;
 	}
 	void clear() { *this = 0; }
@@ -950,7 +624,7 @@ public:
 		} else {
 			// same sign
 			Unit y0 = fp::abs_(y);
-			int c = vint::compareNM(&x.buf_[0], x.size(), &y0, 1);
+			int c = (x.size() > 1) ? 1 : bint::cmpT<1>(&x.buf_[0], &y0);
 			if (x.isNeg_) {
 				return -c;
 			}
@@ -987,14 +661,10 @@ public:
 		size_t zn = xn + yn;
 		bool b;
 		z.buf_.alloc(&b, zn);
-		assert(b);
-		if (!b) {
-			z.clear();
-			return;
-		}
-		vint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
-		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
+		assert(b); (void)b;
+		bint::mulNM(&z.buf_[0], &x.buf_[0], xn, &y.buf_[0], yn);
 		z.trim(zn);
+		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 	}
 	static void sqr(VintT& y, const VintT& x)
 	{
@@ -1019,7 +689,7 @@ public:
 			z.clear();
 			return;
 		}
-		z.buf_[zn - 1] = bint::mulUnit(&z.buf_[0], &x.buf_[0], y, xn);
+		z.buf_[zn - 1] = bint::mulUnitN(&z.buf_[0], &x.buf_[0], y, xn);
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
 	}
@@ -1175,22 +845,20 @@ public:
 	// logical left shift (copy sign)
 	static void shl(VintT& y, const VintT& x, size_t shiftBit)
 	{
+		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
-		assert(b);
-		if (!b) {
-			y.clear();
-			return;
-		}
-		vint::shlN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
+		assert(b); (void)b;
+		bint::shiftLeft(&y.buf_[0], &x.buf_[0], shiftBit, xn);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
 	// logical right shift (copy sign)
 	static void shr(VintT& y, const VintT& x, size_t shiftBit)
 	{
+		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
 		if (xn * UnitBitSize <= shiftBit) {
 			y.clear();
@@ -1199,12 +867,8 @@ public:
 		size_t yn = xn - shiftBit / UnitBitSize;
 		bool b;
 		y.buf_.alloc(&b, yn);
-		assert(b);
-		if (!b) {
-			y.clear();
-			return;
-		}
-		vint::shrN(&y.buf_[0], &x.buf_[0], xn, shiftBit);
+		assert(b); (void)b;
+		bint::shiftRight(&y.buf_[0], &x.buf_[0], shiftBit, xn);
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
@@ -1244,7 +908,7 @@ public:
 		for (size_t i = 0; i < yn; i++) {
 			z.buf_[i] = x.buf_[i] | y.buf_[i];
 		}
-		bint::copy(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
+		bint::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
 		z.trim(xn);
 	}
 	static void andBit(VintT& z, const VintT& x, const VintT& y)
@@ -1290,9 +954,7 @@ public:
 	static void pow(VintT& z, const VintT& x, const VintT& y)
 	{
 		assert(!y.isNeg_);
-		const VintT xx = x;
-		z = 1;
-		mcl::fp::powGeneric(z, xx, &y.buf_[0], y.size(), mul, sqr, (void (*)(VintT&, const VintT&))0);
+		powT(z, x, &y.buf_[0], y.size(), mul, sqr);
 	}
 	/*
 		REMARK y >= 0;
@@ -1300,16 +962,14 @@ public:
 	static void pow(VintT& z, const VintT& x, int64_t y)
 	{
 		assert(y >= 0);
-		const VintT xx = x;
-		z = 1;
 #if MCL_SIZEOF_UNIT == 8
 		Unit ua = fp::abs_(y);
-		mcl::fp::powGeneric(z, xx, &ua, 1, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		powT(z, x, &ua, 1, mul, sqr);
 #else
 		uint64_t ua = fp::abs_(y);
 		Unit u[2] = { uint32_t(ua), uint32_t(ua >> 32) };
 		size_t un = u[1] ? 2 : 1;
-		mcl::fp::powGeneric(z, xx, u, un, mul, sqr, (void (*)(VintT&, const VintT&))0);
+		powT(z, x, u, un, mul, sqr);
 #endif
 	}
 	/*
@@ -1319,14 +979,11 @@ public:
 	static void powMod(VintT& z, const VintT& x, const VintT& y, const VintT& m)
 	{
 		assert(!y.isNeg_);
-		VintT zz;
 		MulMod mulMod;
 		SqrMod sqrMod;
 		mulMod.pm = &m;
 		sqrMod.pm = &m;
-		zz = 1;
-		mcl::fp::powGeneric(zz, x, &y.buf_[0], y.size(), mulMod, sqrMod, (void (*)(VintT&, const VintT&))0);
-		z.swap(zz);
+		powT(z, x, &y.buf_[0], y.size(), mulMod, sqrMod);
 	}
 	/*
 		inverse mod

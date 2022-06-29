@@ -139,12 +139,6 @@ void clearArray(T *x, size_t begin, size_t end)
 	for (size_t i = begin; i < end; i++) x[i] = 0;
 }
 
-template<class T>
-void copyArray(T *y, const T *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) y[i] = x[i];
-}
-
 /*
 	x &= (1 << bitSize) - 1
 */
@@ -261,95 +255,6 @@ public:
 		return (w == TbitSize ? T(0) : (T(1) << w)) - 1;
 	}
 };
-
-/*
-	@param out [inout] : set element of G ; out = x^y[]
-	@param x [in]
-	@param y [in]
-	@param n [in] size of y[]
-	@param limitBit [in] const time version if the value is positive
-	@note &out != x and out = the unit element of G
-*/
-template<class G, class Mul, class Sqr, class T>
-void powGeneric(G& out, const G& x, const T *y, size_t n, const Mul& mul, const Sqr& sqr, void normalize(G&, const G&), size_t limitBit = 0)
-{
-	assert(&out != &x);
-	G tbl[4]; // tbl = { discard, x, x^2, x^3 }
-	T v;
-	bool constTime = limitBit > 0;
-	int maxBit = 0;
-	int m = 0;
-	while (n > 0) {
-		if (y[n - 1]) break;
-		n--;
-	}
-	if (n == 0) {
-		if (constTime) goto DummyLoop;
-		return;
-	}
-	if (!constTime && n == 1) {
-		switch (y[0]) {
-		case 1:
-			out = x;
-			return;
-		case 2:
-			sqr(out, x);
-			return;
-		case 3:
-			sqr(out, x);
-			mul(out, out, x);
-			return;
-		case 4:
-			sqr(out, x);
-			sqr(out, out);
-			return;
-		}
-	}
-	if (normalize != 0) {
-		normalize(tbl[0], x);
-	} else {
-		tbl[0] = x;
-	}
-	tbl[1] = tbl[0];
-	sqr(tbl[2], tbl[1]);
-	if (normalize != 0) { normalize(tbl[2], tbl[2]); }
-	mul(tbl[3], tbl[2], x);
-	if (normalize != 0) { normalize(tbl[3], tbl[3]); }
-	v = y[n - 1];
-	assert(v);
-	m = cybozu::bsr<T>(v);
-	maxBit = int(m + (n - 1) * sizeof(T) * 8);
-	if (m & 1) {
-		m--;
-		T idx = (v >> m) & 3;
-		assert(idx > 0);
-		out = tbl[idx];
-	} else {
-		out = x;
-	}
-	for (int i = (int)n - 1; i >= 0; i--) {
-		v = y[i];
-		for (int j = m - 2; j >= 0; j -= 2) {
-			sqr(out, out);
-			sqr(out, out);
-			T idx = (v >> j) & 3;
-			if (idx == 0) {
-				if (constTime) mul(tbl[0], tbl[0], tbl[1]);
-			} else {
-				mul(out, out, tbl[idx]);
-			}
-		}
-		m = (int)sizeof(T) * 8;
-	}
-DummyLoop:
-	if (!constTime) return;
-	G D = out;
-	for (size_t i = maxBit + 1; i < limitBit; i += 2) {
-		sqr(D, D);
-		sqr(D, D);
-		mul(D, D, tbl[1]);
-	}
-}
 
 /*
 	shortcut of multiplication by Unit

@@ -3,6 +3,7 @@
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+#include "bint_impl.hpp"
 #if defined(__EMSCRIPTEN__) && MCL_SIZEOF_UNIT == 4
 #define USE_WASM
 #include "low_func_wasm.hpp"
@@ -294,7 +295,7 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 		c = SubPre<N, Gtag>::f(y, tmp, p);
 	}
 	if (c) {
-		copyC<N>(y, tmp);
+		bint::copyT<N>(y, tmp);
 	}
 #endif
 }
@@ -348,8 +349,8 @@ void setOp(Op& op, Mode mode)
 {
 	// generic setup
 	op.fp_isZero = isZeroC<N>;
-	op.fp_clear = clearC<N>;
-	op.fp_copy = copyC<N>;
+	op.fp_clear = bint::clearT<N>;
+	op.fp_copy = bint::copyT<N>;
 	op.fp_invOp = fp_invOpC;
 	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM
@@ -495,11 +496,11 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
-#ifdef MCL_BITINT_FUNC_PTR
+#ifdef MCL_BINT_FUNC_PTR
 	{
 		using namespace Xbyak::util;
-		if (g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-			mcl::bint::mclb_enable_fast();
+		if (!g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+			mcl::bint::mclb_disable_fast();
 		}
 	}
 #endif
@@ -646,10 +647,10 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		fp_mul = &mcl::mcl_fp_mul_SECP256K1_wasm;
 		fp_sqr = &mcl::mcl_fp_sqr_SECP256K1_wasm;
 #else
-		fp_mul = &mcl::vint::mcl_fp_mul_SECP256K1;
-		fp_sqr = &mcl::vint::mcl_fp_sqr_SECP256K1;
+		fp_mul = &bint::mul_SECP256K1;
+		fp_sqr = &bint::sqr_SECP256K1;
 #endif
-		fpDbl_mod = &mcl::vint::mcl_fpDbl_mod_SECP256K1;
+		fpDbl_mod = &bint::mod_SECP256K1;
 	}
 #endif
 	if (N * UnitBitSize <= 256) {

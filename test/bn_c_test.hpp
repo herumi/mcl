@@ -877,7 +877,7 @@ CYBOZU_TEST_AUTO(mod)
 		mpz_class p(buf);
 		mpz_class x = mpz_class(1) << (mclBn_getFpByteSize() * 2);
 		mclBnFp y;
-		int ret = mclBnFp_setLittleEndianMod(&y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x) * sizeof(void*));
+		int ret = mclBnFp_setLittleEndianMod(&y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x) * MCL_SIZEOF_UNIT);
 		CYBOZU_TEST_EQUAL(ret, 0);
 		mclBnFp_getStr(buf, sizeof(buf), &y, 10);
 		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
@@ -889,7 +889,7 @@ CYBOZU_TEST_AUTO(mod)
 		mpz_class p(buf);
 		mpz_class x = mpz_class(1) << (mclBn_getFrByteSize() * 2);
 		mclBnFr y;
-		int ret = mclBnFr_setLittleEndianMod(&y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x) * sizeof(void*));
+		int ret = mclBnFr_setLittleEndianMod(&y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x) * MCL_SIZEOF_UNIT);
 		CYBOZU_TEST_EQUAL(ret, 0);
 		mclBnFr_getStr(buf, sizeof(buf), &y, 10);
 		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
