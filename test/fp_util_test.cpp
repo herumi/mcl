@@ -195,39 +195,6 @@ struct Rand {
 	}
 };
 
-CYBOZU_TEST_AUTO(maskArray)
-{
-#if 1
-	const size_t n = 2;
-	uint32_t org[n] = { 0xabce1234, 0xffffef32 };
-	for (size_t i = 0; i <= sizeof(org) * 8; i++) {
-		uint32_t x[n];
-		memcpy(x, org, sizeof(org));
-		mcl::fp::maskArray(x, n, i);
-		mpz_class t;
-		mcl::gmp::setArray(t, org, n);
-		t &= (mpz_class(1) << i) - 1;
-		uint32_t y[n];
-		mcl::gmp::getArray(y, n, t);
-		CYBOZU_TEST_EQUAL_ARRAY(x, y, n);
-	}
-#else
-	const size_t n = 4;
-	uint16_t org[n] = { 0x1234, 0xabce, 0xef32, 0xffff };
-	for (size_t i = 0; i <= sizeof(org) * 8; i++) {
-		uint16_t x[n];
-		memcpy(x, org, sizeof(org));
-		mcl::fp::maskArray(x, n, i);
-		mpz_class t;
-		mcl::gmp::setArray(t, org, n);
-		t &= (mpz_class(1) << i) - 1;
-		uint16_t y[n];
-		mcl::gmp::getArray(y, n, t);
-		CYBOZU_TEST_EQUAL_ARRAY(x, y, n);
-	}
-#endif
-}
-
 CYBOZU_TEST_AUTO(stream)
 {
 	const char *nulTbl[] = { "", "    ", " \t\t\n\n  " };

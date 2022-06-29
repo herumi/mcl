@@ -516,5 +516,19 @@ void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
 	mod_SECP256K1(y, xx, p);
 }
 
+// x &= (1 << bitSize) - 1
+void maskN(Unit *x, size_t n, size_t bitSize)
+{
+	assert(bitSize <= UnitBitSize * n);
+	const size_t q = bitSize / UnitBitSize;
+	const size_t r = bitSize % UnitBitSize;
+	if (r) {
+		x[q] &= (Unit(1) << r) - 1;
+		clearN(x + q + 1, n - (q + 1));
+	} else {
+		clearN(x + q, n - q);
+	}
+}
+
 } } // mcl::bint
 

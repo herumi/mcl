@@ -387,5 +387,8 @@ void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
 void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
 
+// x &= (1 << bitSize) - 1
+void maskN(Unit *x, size_t n, size_t bitSize);
+
 } } // mcl::bint
 

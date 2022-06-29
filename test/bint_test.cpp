@@ -515,3 +515,32 @@ CYBOZU_TEST_AUTO(divMod)
 		CYBOZU_TEST_EQUAL(mx, mq * my + mr2);
 	}
 }
+
+CYBOZU_TEST_AUTO(maskN)
+{
+	const size_t n64 = 2;
+	uint64_t org64[n64] = { uint64_t(0xabce1234ffffef32ull), uint64_t(0x12345678ffffffffull) };
+	uint32_t org32[n64 * 2];
+	for (size_t i = 0; i < n64; i++) {
+		org32[i * 2 + 0] = uint32_t(org64[i]);
+		org32[i * 2 + 1] = uint32_t(org64[i] >> 32);
+	}
+#if MCL_SIZEOF_UNIT == 8
+	const uint64_t *org = org64;
+	const size_t n = n64;
+	(void)org32;
+#else
+	const uint64_t *org = org32;
+	const size_t n = n64 * 2;
+#endif
+	mpz_class morg, mx;
+	setArray(morg, org, n);
+	for (size_t i = 0; i <= MCL_SIZEOF_UNIT * 8 * n; i++) {
+		Unit x[n];
+		memcpy(x, org, MCL_SIZEOF_UNIT * n);
+		maskN(x, n, i);
+		setArray(mx, x, n);
+		CYBOZU_TEST_EQUAL(morg & ((mpz_class(1) << i) - 1), mx);
+	}
+}
+

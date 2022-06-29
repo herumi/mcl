@@ -140,24 +140,6 @@ void clearArray(T *x, size_t begin, size_t end)
 }
 
 /*
-	x &= (1 << bitSize) - 1
-*/
-template<class T>
-void maskArray(T *x, size_t n, size_t bitSize)
-{
-	const size_t TbitSize = sizeof(T) * 8;
-	assert(bitSize <= TbitSize * n);
-	const size_t q = bitSize / TbitSize;
-	const size_t r = bitSize % TbitSize;
-	if (r) {
-		x[q] &= (T(1) << r) - 1;
-		clearArray(x, q + 1, n);
-	} else {
-		clearArray(x, q, n);
-	}
-}
-
-/*
 	return non zero size of x[]
 	return 1 if x[] == 0
 */

@@ -414,9 +414,9 @@ public:
 		bool b = fp::convertArrayAsLE(v_, op_.N, x, n);
 		assert(b);
 		(void)b;
-		fp::maskArray(v_, op_.N, op_.bitSize);
+		bint::maskN(v_, op_.N, op_.bitSize);
 		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
-			fp::maskArray(v_, op_.N, op_.bitSize - 1);
+			bint::maskN(v_, op_.N, op_.bitSize - 1);
 		}
 		toMont();
 	}
