@@ -124,15 +124,6 @@ bool isEqualArray(const T* x, const T* y, size_t n)
 	return true;
 }
 
-template<class T>
-bool isZeroArray(const T *x, size_t n)
-{
-	for (size_t i = 0; i < n; i++) {
-		if (x[i]) return false;
-	}
-	return true;
-}
-
 /*
 	return non zero size of x[]
 	return 1 if x[] == 0

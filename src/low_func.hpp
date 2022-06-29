@@ -40,12 +40,6 @@ template<> struct TagToStr<LBMI2tag> { static const char *f() { return "LBMI2tag
 #endif
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
-template<size_t N>
-bool isZeroC(const Unit *x)
-{
-	return isZeroArray(x, N);
-}
-
 // (carry, z[N]) <- x[N] + y[N]
 template<size_t N, class Tag = Gtag>
 struct AddPre {
@@ -128,7 +122,7 @@ template<size_t N, class Tag = Gtag>
 struct Neg {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
-		if (isZeroC<N>(x)) {
+		if (bint::isZeroT<N>(x)) {
 			if (x != y) bint::clearT<N>(y);
 			return;
 		}

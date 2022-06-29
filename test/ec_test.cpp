@@ -502,7 +502,7 @@ struct Test {
 		{
 			std::string s = P.getStr(mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
-			CYBOZU_TEST_ASSERT(mcl::fp::isZeroArray(s.c_str(), s.size()));
+			CYBOZU_TEST_ASSERT(mcl::bint::isZeroN(s.c_str(), s.size()));
 			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}

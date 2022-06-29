@@ -141,6 +141,20 @@ inline void clearN(Unit *x, size_t n)
 	for (size_t i = 0; i < n; i++) x[i] = 0;
 }
 
+// return true if x[] == 0
+template<size_t N, typename T>
+bool isZeroT(const T *x)
+{
+	for (size_t i = 0; i < N; i++) if (x[i]) return false;
+	return true;
+}
+
+template<typename T>
+bool isZeroN(const T *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) if (x[i]) return false;
+	return true;
+}
 
 // return the real size of x
 // return 1 if x[n] == 0

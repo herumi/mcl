@@ -348,7 +348,7 @@ template<size_t N>
 void setOp(Op& op, Mode mode)
 {
 	// generic setup
-	op.fp_isZero = isZeroC<N>;
+	op.fp_isZero = bint::isZeroT<N, Unit>;
 	op.fp_clear = bint::clearT<N>;
 	op.fp_copy = bint::copyT<N>;
 	op.fp_invOp = fp_invOpC;

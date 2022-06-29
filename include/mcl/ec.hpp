@@ -1623,7 +1623,7 @@ public:
 				}
 				goto verifyOrder;
 			}
-			if (fp::isZeroArray(buf, n1)) {
+			if (bint::isZeroN(buf, n1)) {
 				clear();
 				*pb = true;
 				return;
