@@ -279,7 +279,7 @@ def data_dd(s):
 		output(f'dd {s}')
 def data_dq(s):
 	if g_gas:
-		output(f'.quad ${s}')
+		output(f'.quad {s}')
 	else:
 		output(f'dq {s}')
 def align(n):
