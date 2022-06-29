@@ -204,21 +204,22 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
 parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=9)
 parser.add_argument("-addn", "--addn", help="max size of add/sub", type=int, default=16)
+parser.add_argument("-gas", "--gas", help="output gas syntax", default=False, action="store_true")
 param = parser.parse_args()
 
 setWin64ABI(param.win)
 N = param.num
 addN = param.addn
 
-initOutput()
-output('segment .data')
+initOutput(param.gas)
+segment('data')
 for i in range(N+1):
 	defineName(f'mclb_mulUnit{i}')
-	output(f'dq mclb_mulUnit_fast{i}')
+	data_dq(f'mclb_mulUnit_fast{i}')
 for i in range(N+1):
 	defineName(f'mclb_mulUnitAdd{i}')
-	output(f'dq mclb_mulUnitAdd_fast{i}')
-output('segment .text')
+	data_dq(f'mclb_mulUnitAdd_fast{i}')
+segment('text')
 
 for i in range(addN+1):
 	gen_add(i)

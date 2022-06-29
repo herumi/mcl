@@ -15,6 +15,8 @@ R13 = 13
 R14 = 14
 R15 = 15
 
+g_gas = False # gas syntex if True else nasm syntax
+
 class Reg:
 	def __init__(self, idx, bit):
 		self.idx = idx
@@ -28,6 +30,8 @@ class Reg:
 			tbl = ["al", "cl", "dl", "bl", "ah", "ch", "dh", "bh", "r8b", "r9b", "r10b",  "r11b", "r12b", "r13b", "r14b", "r15b"]
 		else:
 			raise Exception('bad bit', self.bit)
+		if g_gas:
+			return '%' + tbl[self.idx]
 		return tbl[self.idx]
 	def __mul__(self, scale):
 		if type(scale) == int:
@@ -67,6 +71,15 @@ class RegExp:
 			return RegExp(self.base, self.index, self.scale, self.offset - rhs)
 		raise Exception(f'bad sub self={self} rhs={rhs}')
 	def __str__(self):
+		if g_gas:
+			s = '('
+			if self.offset:
+				s = f'{self.offset}('
+			if self.base:
+				s += str(self.base)
+			if self.index:
+				s += f',${self.index},{self.scale}'
+			return s + ')'
 		s = ''
 		if self.base:
 			s += str(self.base)
@@ -83,6 +96,10 @@ class RegExp:
 		return s
 
 def ptr(exp):
+	if g_gas:
+		if type(exp) == Reg:
+			return '(' + str(exp) + ')'
+		return str(exp)
 	return '[' + str(exp) + ']'
 
 rax = Reg(RAX, 64)
@@ -224,9 +241,13 @@ class StackFrame:
 		return r
 
 g_text = []
-def initOutput():
+def initOutput(gas):
+	global g_gas
+	g_gas = gas
 	global g_text
 	g_text = []
+	if g_gas:
+		return
 	defName = '''%imacro defName 1
 global %1
 global _%1
@@ -240,41 +261,81 @@ _%1:
 def output(s):
 	g_text.append(s)
 
+def segment(mode):
+	if g_gas:
+		output(f'.{mode}')
+	else:
+		output(f'segment .{mode}')
+
+def data_db(s):
+	if g_gas:
+		output(f'.byte ${s}')
+	else:
+		output(f'db {s}')
+def data_dd(s):
+	if g_gas:
+		output(f'.long ${s}')
+	else:
+		output(f'dd {s}')
+def data_dq(s):
+	if g_gas:
+		output(f'.quad ${s}')
+	else:
+		output(f'dq {s}')
+def align(n):
+	if g_gas:
+		output(f'.align {n}')
+	else:
+		output(f'align {n}')
+
 def termOutput():
 	n = len(g_text)
 	i = 0
 	while i < n:
 		s = g_text[i]
-		# remove unnecessary pattern
-		if s == 'mov r11, rdx' and g_text[i+1] == 'mov rdx, r11':
+		# QQQ (bad knowhow) remove unnecessary pattern
+		if g_gas  and s == 'mov %rdx, %r11' and g_text[i+1] == 'mov %r11, %rdx':
+			i += 2
+		elif not g_gas and s == 'mov r11, rdx' and g_text[i+1] == 'mov rdx, r11':
 			i += 2
 		else:
 			print(s)
 			i += 1
 
 def defineName(name):
+	if g_gas:
+		output('.global ' + name)
+		output('.global _' + name)
+		output(name + ':')
+		output('_' + name + ':')
+		return
 	output(f'defName {name}')
-"""
-	output('global ' + name)
-	output('global _' + name)
-	output(name + ':')
-	output('_' + name + ':')
-"""
 
 def genFunc(name):
 	def f(*args):
+		# special case (mov label, reg)
+		if g_gas and name == 'mov' and type(args[1]) == str and args[1][0].isalpha():
+			output(f'movabs ${args[1]}, {args[0]}')
+			return
 		s = ''
-		for arg in args:
+		param = reversed(args) if g_gas else args
+		for arg in param:
 			if s != '':
 				s += ', '
-			s += str(arg)
+			if g_gas:
+				if type(arg) == int:
+					s += '$' + str(arg)
+				else:
+					s += str(arg)
+			else:
+				s += str(arg)
 		return output(name + ' ' + s)
 	return f
 
 def genAllFunc():
 	tbl = [
 		'ret',
-		'inc', 'dec', 'setc', 'push', 'pop', 'align',
+		'inc', 'dec', 'setc', 'push', 'pop',
 		'mov', 'add', 'adc', 'sub', 'sbb', 'adox', 'adcx', 'mul', 'xor_', 'and_', 'movzx', 'lea',
 		'mulx',
 	]
