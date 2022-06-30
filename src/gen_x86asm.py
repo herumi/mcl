@@ -301,7 +301,7 @@ def termOutput():
 	while i < n:
 		s = g_text[i]
 		# QQQ (bad knowhow) remove unnecessary pattern
-		if g_gas  and s == 'mov %rdx, %r11' and g_text[i+1] == 'mov %r11, %rdx':
+		if g_gas and s == 'mov %rdx, %r11' and g_text[i+1] == 'mov %r11, %rdx':
 			i += 2
 		elif not g_gas and s == 'mov r11, rdx' and g_text[i+1] == 'mov rdx, r11':
 			i += 2
