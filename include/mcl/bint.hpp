@@ -160,7 +160,8 @@ bool isZeroN(const T *x, size_t n)
 
 // return the real size of x
 // return 1 if x[n] == 0
-inline size_t getRealSize(const Unit *x, size_t n)
+template<typename T>
+size_t getRealSize(const T *x, size_t n)
 {
 	while (n > 0) {
 		if (x[n - 1]) break;
