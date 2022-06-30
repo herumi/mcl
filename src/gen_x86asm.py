@@ -95,12 +95,19 @@ class RegExp:
 			s += str(self.offset)
 		return s
 
+class Address:
+	def __init__(self, exp, bit=0):
+		self.exp = exp
+		self.bit = bit
+	def __str__(self):
+		if g_gas:
+			if type(self.exp) == Reg:
+				return '(' + str(self.exp) + ')'
+			return str(self.exp)
+		return '[' + str(self.exp) + ']'
+
 def ptr(exp):
-	if g_gas:
-		if type(exp) == Reg:
-			return '(' + str(exp) + ')'
-		return str(exp)
-	return '[' + str(exp) + ']'
+	return Address(exp)
 
 rax = Reg(RAX, 64)
 rcx = Reg(RCX, 64)
@@ -314,7 +321,7 @@ def defineName(name):
 def genFunc(name):
 	def f(*args):
 		# special case (mov label, reg)
-		if g_gas and name == 'mov' and type(args[1]) == str and args[1][0].isalpha():
+		if g_gas and name == 'mov' and type(args[1]) == str:
 			output(f'movabs ${args[1]}, {args[0]}')
 			return
 		s = ''
