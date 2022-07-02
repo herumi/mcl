@@ -206,7 +206,7 @@ def gen_get_func_ptr(funcName, N):
 		n = sf.p[0]
 		xor_(eax, eax)
 		cmp_(n, N)
-		cmovae(n, rax)
+		cmova(n, rax)
 		mov(rax, f'mclb_{funcName}0')
 		mov(rax, ptr(rax + n * 8))
 
