@@ -78,7 +78,7 @@ class RegExp:
 			if self.base:
 				s += str(self.base)
 			if self.index:
-				s += f',${self.index},{self.scale}'
+				s += f',{self.index},{self.scale}'
 			return s + ')'
 		s = ''
 		if self.base:
