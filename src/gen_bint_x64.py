@@ -189,16 +189,26 @@ def gen_mulUnitAdd(N, mode='fast'):
 def gen_enable_fast(N):
 	align(16)
 	defineName('mclb_disable_fast')
-	for i in range(N):
+	for i in range(1, N):
 		mov(rdx, f'mclb_mulUnit{i}')
 		mov(rax, f'mclb_mulUnit_slow{i}')
 		mov(ptr(rdx), rax)
-	for i in range(N):
+	for i in range(1, N):
 		mov(rdx, f'mclb_mulUnitAdd{i}')
 		mov(rax, f'mclb_mulUnitAdd_slow{i}')
 		mov(ptr(rdx), rax)
 	ret()
 
+def gen_get_func_ptr(funcName, N):
+	align(16)
+	defineName(f'mclb_get_{funcName}')
+	with StackFrame(1) as sf:
+		n = sf.p[0]
+		xor_(eax, eax)
+		cmp_(n, N)
+		cmovae(n, rax)
+		mov(rax, f'mclb_{funcName}0')
+		lea(rax, ptr(rax + n * 8))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
@@ -215,10 +225,16 @@ initOutput(param.gas)
 segment('data')
 for i in range(N+1):
 	defineName(f'mclb_mulUnit{i}')
-	data_dq(f'mclb_mulUnit_fast{i}')
+	if i == 0:
+		data_dq(0)
+	else:
+		data_dq(f'mclb_mulUnit_fast{i}')
 for i in range(N+1):
 	defineName(f'mclb_mulUnitAdd{i}')
-	data_dq(f'mclb_mulUnitAdd_fast{i}')
+	if i == 0:
+		data_dq(0)
+	else:
+		data_dq(f'mclb_mulUnitAdd_fast{i}')
 segment('text')
 
 for i in range(addN+1):
@@ -240,5 +256,6 @@ for i in range(N+1):
 	gen_mulUnitAdd(i, 'slow')
 
 gen_enable_fast(N)
+gen_get_func_ptr('mulUnit', N)
 
 termOutput()

@@ -15,11 +15,15 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 		print(f'extern "C" {ret} {cname}{i}({args});')
 	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
-def gen_switch(name, ret, args, cname, params, N, N64):
+def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 	ret0 = 'return' if ret == 'void' else 'return 0'
 	print(f'''{ret} {name}({args}, size_t n)
-{{
-	switch (n) {{
+{{''')
+	if useFuncPtr:
+		print(f'''#ifdef MCL_BINT_FUNC_PTR
+	return mclb_get_{name[0:-1]}(n)({params});
+#else''')
+	print(f'''\tswitch (n) {{
 	default: assert(0); {ret0};''')
 	for i in range(1, N):
 		if i == N64 + 1:
@@ -29,7 +33,10 @@ def gen_switch(name, ret, args, cname, params, N, N64):
 			print(f'\tcase {i}: {call}; return;')
 		else:
 			print(f'\tcase {i}: return {call};')
-	print('#endif\n\t}\n}')
+	print('#endif\n\t}')
+	if useFuncPtr:
+		print('#endif')
+	print('}')
 
 def gen_inst(name, ret, args, N, N64):
 	for i in range(1, N):
@@ -63,6 +70,7 @@ def main():
 		print('''#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (MCL_SIZEOF_UNIT == 8)
 	#define MCL_BINT_FUNC_PTR
 extern "C" void mclb_disable_fast(void);
+extern "C" Unit (*mclb_get_mulUnit(size_t))(Unit *, const Unit *, Unit);
 #endif''')
 		for i in range(1, addN+1):
 			if i == addN64 + 1:
@@ -79,7 +87,7 @@ extern "C" void mclb_disable_fast(void);
 	elif opt.out == 'switch':
 		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
 		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
-		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64)
+		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
 		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64)
 		gen_switch('mulN', 'void', arg_p3, 'mulT', param_u3, N, N64)
 		print('#if MCL_BINT_ASM != 1')
