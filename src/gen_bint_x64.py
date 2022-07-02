@@ -208,7 +208,7 @@ def gen_get_func_ptr(funcName, N):
 		cmp_(n, N)
 		cmovae(n, rax)
 		mov(rax, f'mclb_{funcName}0')
-		lea(rax, ptr(rax + n * 8))
+		mov(rax, ptr(rax + n * 8))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
