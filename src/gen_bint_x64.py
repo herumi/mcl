@@ -199,17 +199,6 @@ def gen_enable_fast(N):
 		mov(ptr(rdx), rax)
 	ret()
 
-def gen_get_func_ptr(funcName, N):
-	align(16)
-	defineName(f'mclb_get_{funcName}')
-	with StackFrame(1) as sf:
-		n = sf.p[0]
-		xor_(eax, eax)
-		cmp_(n, N)
-		cmova(n, rax)
-		mov(rax, f'mclb_{funcName}0')
-		mov(rax, ptr(rax + n * 8))
-
 parser = argparse.ArgumentParser()
 parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
 parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=9)
@@ -223,12 +212,15 @@ addN = param.addn
 
 initOutput(param.gas)
 segment('data')
+defineName('mclb_mulUnitTbl')
 for i in range(N+1):
 	defineName(f'mclb_mulUnit{i}')
 	if i == 0:
 		data_dq(0)
 	else:
 		data_dq(f'mclb_mulUnit_fast{i}')
+
+defineName('mclb_mulUnitAddTbl')
 for i in range(N+1):
 	defineName(f'mclb_mulUnitAdd{i}')
 	if i == 0:
@@ -256,6 +248,5 @@ for i in range(N+1):
 	gen_mulUnitAdd(i, 'slow')
 
 gen_enable_fast(N)
-gen_get_func_ptr('mulUnit', N)
 
 termOutput()
