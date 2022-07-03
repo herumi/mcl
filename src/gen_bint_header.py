@@ -52,6 +52,18 @@ param_u3 = 'z, x, y'
 def roundup(x, n):
 	return (x + n - 1) // n
 
+def gen_get_func(name, ret, args, N, N64):
+	print(f'''extern "C" {ret} (*mclb_{name}Tbl[])({args});
+inline {ret} (*mclb_get_{name}(size_t n))({args})
+{{
+#if MCL_SIZEOF_UNIT == 8
+	if (n > {N64}) n = 0;
+#else
+	if (n > {N}) n = 0;
+#endif
+	return mclb_{name}Tbl[n];
+}}''')
+
 def main():
 	parser = argparse.ArgumentParser(description='gen header')
 	parser.add_argument('out', type=str)
@@ -70,18 +82,6 @@ def main():
 		print(f'''#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (MCL_SIZEOF_UNIT == 8)
 	#define MCL_BINT_FUNC_PTR
 extern "C" void mclb_disable_fast(void);
-extern "C" Unit (*mclb_mulUnitTbl[])(Unit *, const Unit *, Unit);
-inline Unit (*mclb_get_mulUnit(size_t n))(Unit *, const Unit *, Unit)
-{{
-	if (n > {N64}) n = 0;
-	return mclb_mulUnitTbl[n];
-}}
-extern "C" Unit (*mclb_mulUnitAddTbl[])(Unit *, const Unit *, Unit);
-inline Unit (*mclb_get_mulUnitAdd(size_t n))(Unit *, const Unit *, Unit)
-{{
-	if (n > {N64}) n = 0;
-	return mclb_mulUnitAddTbl[n];
-}}
 #endif''')
 		for i in range(1, addN+1):
 			if i == addN64 + 1:
@@ -95,6 +95,8 @@ inline Unit (*mclb_get_mulUnitAdd(size_t n))(Unit *, const Unit *, Unit)
 			gen_func('mulUnitT', 'Unit', arg_p2u, 'mclb_mulUnit', param_u3, i, True)
 			gen_func('mulUnitAddT', 'Unit', arg_p2u, 'mclb_mulUnitAdd', param_u3, i, True)
 		print('#endif')
+		gen_get_func('mulUnit', 'Unit', arg_p2u, N, N64)
+		gen_get_func('mulUnitAdd', 'Unit', arg_p2u, N, N64)
 	elif opt.out == 'switch':
 		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
 		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
