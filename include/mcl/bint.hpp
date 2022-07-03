@@ -113,9 +113,8 @@ void sqrN(Unit *y, const Unit *x, size_t xn);
 // z[xn * yn] = x[xn] * y[ym]
 void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
-#if MCL_BINT_ASM == 1
+// explicit specialization of template functions and external asm functions
 #include "bint_asm.hpp"
-#endif
 
 template<size_t N, typename T>
 void copyT(T *y, const T *x)
