@@ -16,8 +16,9 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
 def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
-	print(f'''#ifndef MCL_BINT_FUNC_PTR
-Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
+	if useFuncPtr:
+		print('#ifndef MCL_BINT_FUNC_PTR')
+	print(f'''Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
 #if MCL_BINT_ASM == 1''')
 	print('\t0,')
 	for i in range(1, N):
@@ -33,31 +34,15 @@ Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
 		print(f'\t{cname}<{i}>,')
 	print('#endif // MCL_SIZEOF_UNIT == 4')
 	print('''#endif // MCL_BINT_ASM == 1
-};
-#endif // MCL_BINT_FUNC_PTR
-''')
+};''')
+	if useFuncPtr:
+		print('#endif // MCL_BINT_FUNC_PTR')
 
 	ret0 = 'return' if ret == 'void' else 'return 0'
 	print(f'''{ret} {name}({args}, size_t n)
-{{''')
-	if useFuncPtr:
-		print(f'''#ifdef MCL_BINT_FUNC_PTR
+{{
 	return mclb_get_{name[0:-1]}(n)({params});
-#else''')
-	print(f'''\tswitch (n) {{
-	default: assert(0); {ret0};''')
-	for i in range(1, N):
-		if i == N64 + 1:
-			print('#if MCL_SIZEOF_UNIT == 4')
-		call = f'{cname}<{i}>({params})'
-		if ret == 'void':
-			print(f'\tcase {i}: {call}; return;')
-		else:
-			print(f'\tcase {i}: return {call};')
-	print('#endif\n\t}')
-	if useFuncPtr:
-		print('#endif')
-	print('}')
+}}''')
 
 def gen_inst(name, ret, args, N, N64):
 	for i in range(1, N):
@@ -127,17 +112,16 @@ extern "C" void mclb_disable_fast(void);
 		gen_get_func('mulUnit', 'Unit', arg_p2u, 'MCL_BINT_MUL_N', N, N64)
 		gen_get_func('mulUnitAdd', 'Unit', arg_p2u, 'MCL_BINT_MUL_N', N, N64)
 	elif opt.out == 'switch':
-		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
-		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
-		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
-		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64, True)
-		gen_switch('mulN', 'void', arg_p3, 'mulT', param_u3, N, N64)
 		print('#if MCL_BINT_ASM != 1')
 		gen_inst('addT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('subT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('mulUnitT', 'Unit', arg_p2u, N, N64)
 		gen_inst('mulUnitAddT', 'Unit', arg_p2u, N, N64)
-		print('#endif')
+		print('#endif // MCL_BINT_ASM != 1')
+		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
+		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
+		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
+		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64, True)
 	else:
 		print('err : bad out', out)
 

@@ -292,6 +292,18 @@ Unit subUnit(Unit *y, size_t n, Unit x)
 	return 1;
 }
 
+void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	fp::u2uI mulUnit = mclb_get_mulUnit(n);
+	fp::u2uI mulUnitAdd = mclb_get_mulUnitAdd(n);
+	assert(mulUnit);
+	assert(mulUnitAdd);
+	z[n] = mulUnit(z, x, y[0]);
+	for (size_t i = 1; i < n; i++) {
+		z[n + i] = mulUnitAdd(&z[i], x, y[i]);
+	}
+}
+
 /*
 	q[] = x[] / y
 	@retval r = x[] % y
