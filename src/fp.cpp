@@ -496,11 +496,11 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
-#ifdef MCL_BINT_ASM_X64
+#if MCL_BINT_ASM_X64 == 1
 	{
 		using namespace Xbyak::util;
 		if (!g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-			mcl::bint::mclb_disable_fast();
+			mclb_disable_fast();
 		}
 	}
 #endif

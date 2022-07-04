@@ -17,7 +17,7 @@
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-#ifdef MCL_BINT_ASM_X64
+#if MCL_BINT_ASM_X64 == 1
 #define XBYAK_ONLY_CLASS_CPU
 #include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
@@ -26,7 +26,7 @@ CYBOZU_TEST_AUTO(cpu)
 	Cpu cpu;
 	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
 		fprintf(stderr, "bmi2 and adx are not available\n");
-		mcl::bint::mclb_disable_fast();
+		mclb_disable_fast();
 	}
 }
 

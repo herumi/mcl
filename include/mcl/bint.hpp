@@ -19,6 +19,13 @@
 	#define MCL_BINT_ASM 0 //1
 #endif
 
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && !defined(MCL_BINT_ASM_X64)
+	#define MCL_BINT_ASM_X64 1
+extern "C" void mclb_disable_fast(void);
+#else
+	#define MCL_BINT_ASM_X64 0
+#endif
+
 namespace mcl { namespace bint {
 
 inline void dump(const Unit *x, size_t n, const char *msg = "")

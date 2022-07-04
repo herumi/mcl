@@ -2,16 +2,15 @@
 /**
 	emulate mpz_class
 */
+#include <mcl/bint.hpp>
+
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
 #endif
-#include <cybozu/bit_operation.hpp>
 #include <cybozu/xorshift.hpp>
-#include <assert.h>
 #ifndef CYBOZU_DONT_USE_STRING
 #include <iostream>
 #endif
-#include <mcl/config.hpp>
 #include <mcl/array.hpp>
 #include <mcl/util.hpp>
 #include <mcl/randgen.hpp>
@@ -20,10 +19,6 @@
 #include <intrin.h>
 #endif
 
-#ifndef MCL_MAX_BIT_SIZE
-	#error "define MCL_MAX_BIT_SZIE"
-#endif
-#include <mcl/bint.hpp>
 
 namespace mcl {
 
