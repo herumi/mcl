@@ -99,6 +99,7 @@ ifeq ($(OS),mac-m1)
 endif
 BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=0
+MCL_BINT_ASM_X64?=1
 ASM_SUF?=s
 ifeq ($(OS),win)
   ASM_SUF=asm
@@ -106,14 +107,8 @@ endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_proto.hpp
-  CFLAGS_USER+=-DMCL_BINT_ASM=1
-  ifeq ($(CPU),x86-64)
-    MCL_BINT_ASM_X64?=1
-  else
-    MCL_BINT_ASM_X64=0
-    CFLAGS_USER+=-DMCL_BINT_ASM_X64=0
-  endif
-  ifeq ($(MCL_BINT_ASM_X64),1)
+  CFLAGS+=-DMCL_BINT_ASM=1
+  ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
     BINT_BASENAME=bint-x64-amd64
     BINT_X64_SRC=src/asm/$(BINT_BASENAME).$(ASM_SUF)
     BINT_X64_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
@@ -122,6 +117,7 @@ src/fp.cpp: include/mcl/bint_proto.hpp
     BINT_BASENAME=bint$(BIT)$(BINT_SUF)
     BINT_SRC=src/asm/$(BINT_BASENAME).s
     BINT_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
+    CFLAGS+=-DMCL_BINT_ASM_X64=0
     LIB_OBJ+=$(BINT_OBJ)
   endif
 endif
@@ -138,14 +134,14 @@ include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
-src/asm/$(BINT_BASENAME).asm: src/gen_x86asm.py src/gen_bint_x64.py
+src/asm/bint-x64-amd64.asm: src/gen_x86asm.py src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py > $@
-src/asm/$(BINT_BASENAME).s: src/gen_x86asm.py src/gen_bint_x64.py
+src/asm/bint-x64-amd64.s: src/gen_x86asm.py src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py > $@ -gas
 $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
-$(BINT_OBJ): $(BINT_SRC)
-	$(AS) $< -o $@
+#$(BINT_OBJ): $(BINT_SRC)
+#	$(AS) $< -o $@
 bint_header:
 	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
