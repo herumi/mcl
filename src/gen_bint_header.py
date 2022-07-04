@@ -4,7 +4,7 @@ import argparse
 def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	retstr = '' if ret == 'void' else ' return'
 	if asPointer:
-		print('#ifdef MCL_BINT_FUNC_PTR')
+		print('#ifdef MCL_BINT_ASM_X64')
 		print(f'extern "C" {ret} (*{cname}{i})({args});')
 		print(f'extern "C" {ret} {cname}{i}_slow({args});')
 		print(f'extern "C" {ret} {cname}{i}_fast({args});')
@@ -17,7 +17,7 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 
 def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 	if useFuncPtr:
-		print('#ifndef MCL_BINT_FUNC_PTR')
+		print('#ifndef MCL_BINT_ASM_X64')
 	print(f'''Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
 #if MCL_BINT_ASM == 1''')
 	print('\t0,')
@@ -36,7 +36,7 @@ def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 	print('''#endif // MCL_BINT_ASM == 1
 };''')
 	if useFuncPtr:
-		print('#endif // MCL_BINT_FUNC_PTR')
+		print('#endif // MCL_BINT_ASM_X64')
 
 	ret0 = 'return' if ret == 'void' else 'return 0'
 	print(f'''{ret} {name}({args}, size_t n)
@@ -84,7 +84,7 @@ def main():
 	if opt.out == 'asm':
 		print('#if MCL_BINT_ASM == 1')
 		print(f'''#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && (MCL_SIZEOF_UNIT == 8)
-	#define MCL_BINT_FUNC_PTR
+	#define MCL_BINT_ASM_X64
 extern "C" void mclb_disable_fast(void);
 #endif''')
 		for i in range(1, addN+1):

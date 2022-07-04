@@ -180,7 +180,7 @@ Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
 #endif
 }
 
-#endif
+#endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
