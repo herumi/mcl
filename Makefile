@@ -105,7 +105,7 @@ ifeq ($(OS),win)
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
-src/fp.cpp: include/mcl/bint_asm.hpp
+src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS_USER+=-DMCL_BINT_ASM=1
   ifeq ($(CPU),x86-64)
     BINT_BASENAME=bint-x64-amd64
@@ -128,8 +128,8 @@ src/bint64.ll: src/gen_bint.exe
 	$< -u 64 -ver 0x90 > $@
 src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
-include/mcl/bint_asm.hpp: src/gen_bint_header.py
-	python3 $< > $@ asm $(GEN_BINT_HEADER_PY_OPT)
+include/mcl/bint_proto.hpp: src/gen_bint_header.py
+	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/asm/$(BINT_BASENAME).asm: src/gen_x86asm.py src/gen_bint_x64.py
@@ -141,7 +141,7 @@ $(BINT_SRC): src/bint$(BIT).ll
 $(BINT_OBJ): $(BINT_SRC)
 	$(AS) $< -o $@
 bint_header:
-	$(MAKE) include/mcl/bint_asm.hpp
+	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
@@ -452,7 +452,7 @@ clean:
 	$(RM) src/gen_bint.exe
 
 clean_gen:
-	$(RM) include/mcl/bint_asm.hpp src/asm/bint.* src/bint_switch.hpp
+	$(RM) include/mcl/bint_proto.hpp src/asm/bint.* src/bint_switch.hpp
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))

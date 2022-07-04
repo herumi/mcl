@@ -121,7 +121,7 @@ void sqrN(Unit *y, const Unit *x, size_t xn);
 void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
 // explicit specialization of template functions and external asm functions
-#include "bint_asm.hpp"
+#include "bint_proto.hpp"
 
 template<size_t N, typename T>
 void copyT(T *y, const T *x)
