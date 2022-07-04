@@ -108,6 +108,12 @@ ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS_USER+=-DMCL_BINT_ASM=1
   ifeq ($(CPU),x86-64)
+    MCL_BINT_ASM_X64?=1
+  else
+    MCL_BINT_ASM_X64=0
+    CFLAGS_USER+=-DMCL_BINT_ASM_X64=0
+  endif
+  ifeq ($(MCL_BINT_ASM_X64),1)
     BINT_BASENAME=bint-x64-amd64
     BINT_X64_SRC=src/asm/$(BINT_BASENAME).$(ASM_SUF)
     BINT_X64_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
@@ -452,7 +458,7 @@ clean:
 	$(RM) src/gen_bint.exe
 
 clean_gen:
-	$(RM) include/mcl/bint_proto.hpp src/asm/bint.* src/bint_switch.hpp
+	$(RM) include/mcl/bint_proto.hpp src/asm/bint* src/bint_switch.hpp
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
