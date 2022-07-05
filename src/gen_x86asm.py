@@ -96,10 +96,17 @@ class RegExp:
 		return s
 
 class Address:
-	def __init__(self, exp, bit=0):
+	def __init__(self, exp=None, bit=0):
 		self.exp = exp
 		self.bit = bit
+		self.ripLabel = None
+	def setRip(self, label):
+		self.ripLabel = label
 	def __str__(self):
+		if self.ripLabel:
+			if g_gas:
+				return f'{self.ripLabel}(%rip)'
+			return f'[rel {self.ripLabel}]'
 		if g_gas:
 			if type(self.exp) == Reg:
 				return '(' + str(self.exp) + ')'
@@ -108,6 +115,11 @@ class Address:
 
 def ptr(exp):
 	return Address(exp)
+
+def rip(label):
+	addr = Address()
+	addr.setRip(label)
+	return addr
 
 rax = Reg(RAX, 64)
 rcx = Reg(RCX, 64)

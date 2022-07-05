@@ -190,12 +190,12 @@ def gen_enable_fast(N):
 	align(16)
 	defineName('mclb_disable_fast')
 	for i in range(1, N):
-		mov(rdx, f'mclb_mulUnit{i}')
-		mov(rax, f'mclb_mulUnit_slow{i}')
+		lea(rdx, rip(f'mclb_mulUnit{i}'))
+		lea(rax, rip(f'mclb_mulUnit_slow{i}'))
 		mov(ptr(rdx), rax)
 	for i in range(1, N):
-		mov(rdx, f'mclb_mulUnitAdd{i}')
-		mov(rax, f'mclb_mulUnitAdd_slow{i}')
+		lea(rdx, rip(f'mclb_mulUnitAdd{i}'))
+		lea(rax, rip(f'mclb_mulUnitAdd_slow{i}'))
 		mov(ptr(rdx), rax)
 	ret()
 
