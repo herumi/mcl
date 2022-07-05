@@ -7,6 +7,7 @@
 #include <cybozu/xorshift.hpp>
 #include <gmpxx.h>
 #include <iostream>
+#include <cybozu/link_mpir.hpp>
 
 #if MCL_BINT_ASM_X64 == 1
 #define XBYAK_ONLY_CLASS_CPU

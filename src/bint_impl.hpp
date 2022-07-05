@@ -356,7 +356,7 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 			subN(x, x, y, yn);
 			qv = 1;
 		} else {
-			Unit t[yn];
+			Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * yn);
 			qv = x[yn - 1] / (yTop + 1);
 			mulUnitN(t, y, qv, yn);
 			subN(x, x, t, yn);
@@ -384,7 +384,7 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 	const Unit yTop = y[yn - 1];
 	assert(yTop >> (UnitBitSize - 1));
 	if (q) clearN(q, qn);
-	Unit t[yn];
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * yn);
 	Unit rev = 0;
 	// rev = M/2 M / yTop where M = 1 << UnitBitSize
 	if (yTop != Unit(-1)) {
