@@ -297,7 +297,7 @@ def global_(s):
 	else:
 		output(f'global {s}')
 		output(f'global _{s}')
-def make_label(s):
+def makeLabel(s):
 	output(f'{s}:')
 	output(f'_{s}:')
 def align(n):
@@ -322,7 +322,7 @@ def termOutput():
 
 def defineName(name):
 	global_(name)
-	make_label(name)
+	makeLabel(name)
 
 def genFunc(name):
 	def f(*args):
