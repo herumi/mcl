@@ -109,10 +109,8 @@ ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS+=-DMCL_BINT_ASM=1
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
-    BINT_BASENAME=bint-x64-amd64
-    BINT_X64_SRC=src/asm/$(BINT_BASENAME).$(ASM_SUF)
-    BINT_X64_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
-    LIB_OBJ+=$(BINT_X64_OBJ)
+    BINT_ASM_X64_BASENAME=bint-x64-amd64
+    LIB_OBJ+=$(OBJ_DIR)/$(BINT_ASM_X64_BASENAME).o
   else
     BINT_BASENAME=bint$(BIT)$(BINT_SUF)
     BINT_SRC=src/asm/$(BINT_BASENAME).s
@@ -134,10 +132,12 @@ include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
-src/asm/bint-x64-amd64.asm: src/gen_x86asm.py src/gen_bint_x64.py
+src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/gen_x86asm.py src/gen_bint_x64.py
+ifeq ($(ASM_SUF),asm)
 	python3 src/gen_bint_x64.py > $@
-src/asm/bint-x64-amd64.s: src/gen_x86asm.py src/gen_bint_x64.py
+else
 	python3 src/gen_bint_x64.py > $@ -gas
+endif
 $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
