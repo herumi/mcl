@@ -216,17 +216,17 @@ defineName('mclb_mulUnitTbl')
 for i in range(N+1):
 	defineName(f'mclb_mulUnit{i}')
 	if i == 0:
-		data_dq(0)
+		dq_(0)
 	else:
-		data_dq(f'mclb_mulUnit_fast{i}')
+		dq_(f'mclb_mulUnit_fast{i}')
 
 defineName('mclb_mulUnitAddTbl')
 for i in range(N+1):
 	defineName(f'mclb_mulUnitAdd{i}')
 	if i == 0:
-		data_dq(0)
+		dq_(0)
 	else:
-		data_dq(f'mclb_mulUnitAdd_fast{i}')
+		dq_(f'mclb_mulUnitAdd_fast{i}')
 segment('text')
 
 for i in range(addN+1):

@@ -286,17 +286,17 @@ def segment(mode):
 	else:
 		output(f'segment .{mode}')
 
-def data_db(s):
+def db_(s):
 	if g_gas:
 		output(f'.byte ${s}')
 	else:
 		output(f'db {s}')
-def data_dd(s):
+def dd_(s):
 	if g_gas:
 		output(f'.long ${s}')
 	else:
 		output(f'dd {s}')
-def data_dq(s):
+def dq_(s):
 	if g_gas:
 		output(f'.quad {s}')
 	else:
