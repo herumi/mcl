@@ -265,17 +265,6 @@ def initOutput(gas):
 	g_gas = gas
 	global g_text
 	g_text = []
-	if g_gas:
-		return
-	defName = '''%imacro defName 1
-global %1
-global _%1
-%1:
-_%1:
-%endmacro'''
-	for line in defName.split('\n'):
-		output(line)
-
 
 def output(s):
 	g_text.append(s)
@@ -301,6 +290,16 @@ def dq_(s):
 		output(f'.quad {s}')
 	else:
 		output(f'dq {s}')
+def global_(s):
+	if g_gas:
+		output(f'.global {s}')
+		output(f'.global _{s}')
+	else:
+		output(f'global {s}')
+		output(f'global _{s}')
+def make_label(s):
+	output(f'{s}:')
+	output(f'_{s}:')
 def align(n):
 	if g_gas:
 		output(f'.align {n}')
@@ -322,13 +321,8 @@ def termOutput():
 			i += 1
 
 def defineName(name):
-	if g_gas:
-		output('.global ' + name)
-		output('.global _' + name)
-		output(name + ':')
-		output('_' + name + ':')
-		return
-	output(f'defName {name}')
+	global_(name)
+	make_label(name)
 
 def genFunc(name):
 	def f(*args):
