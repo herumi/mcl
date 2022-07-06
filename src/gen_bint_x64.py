@@ -200,17 +200,18 @@ def gen_enable_fast(N):
 	ret()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-win", "--win", help="output win64 abi", action="store_true")
-parser.add_argument("-n", "--num", help="max size of Unit", type=int, default=9)
-parser.add_argument("-addn", "--addn", help="max size of add/sub", type=int, default=16)
-parser.add_argument("-gas", "--gas", help="output gas syntax", default=False, action="store_true")
+parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
+parser.add_argument('-n', '--num', help='max size of Unit', type=int, default=9)
+parser.add_argument('-addn', '--addn', help='max size of add/sub', type=int, default=16)
+parser.add_argument('-gas', '--gas', help='output gas syntax', default=False, action='store_true')
+parser.add_argument('-m', '--mode', help='output asm syntax', default='nasm')
 param = parser.parse_args()
 
 setWin64ABI(param.win)
 N = param.num
 addN = param.addn
 
-initOutput(param.gas)
+init(param.mode)
 segment('data')
 defineName('mclb_mulUnitTbl')
 for i in range(N+1):

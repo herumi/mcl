@@ -23,11 +23,11 @@ class Reg:
 		self.bit = bit
 	def __str__(self):
 		if self.bit == 64:
-			tbl = ["rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi", "r8", "r9", "r10",  "r11", "r12", "r13", "r14", "r15"]
+			tbl = ['rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'r8', 'r9', 'r10',  'r11', 'r12', 'r13', 'r14', 'r15']
 		elif self.bit == 32:
-			tbl = ["eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "r8d", "r9d", "r10d",  "r11d", "r12d", "r13d", "r14d", "r15d"]
+			tbl = ['eax', 'ecx', 'edx', 'ebx', 'esp', 'ebp', 'esi', 'edi', 'r8d', 'r9d', 'r10d',  'r11d', 'r12d', 'r13d', 'r14d', 'r15d']
 		elif self.bit == 8:
-			tbl = ["al", "cl", "dl", "bl", "ah", "ch", "dh", "bh", "r8b", "r9b", "r10b",  "r11b", "r12b", "r13b", "r14b", "r15b"]
+			tbl = ['al', 'cl', 'dl', 'bl', 'ah', 'ch', 'dh', 'bh', 'r8b', 'r9b', 'r10b',  'r11b', 'r12b', 'r13b', 'r14b', 'r15b']
 		else:
 			raise Exception('bad bit', self.bit)
 		if g_gas:
@@ -260,9 +260,10 @@ class StackFrame:
 		return r
 
 g_text = []
-def initOutput(gas):
+def init(mode):
 	global g_gas
-	g_gas = gas
+	g_gas = mode == 'gas'
+	g_masm = mode == 'masm'
 	global g_text
 	g_text = []
 

@@ -100,9 +100,9 @@ endif
 BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=0
 MCL_BINT_ASM_X64?=1
-ASM_SUF?=s
+ASM_MODE?=s
 ifeq ($(OS),win)
-  ASM_SUF=asm
+  ASM_MODE=nasm
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
@@ -132,11 +132,11 @@ include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
-src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/gen_x86asm.py src/gen_bint_x64.py
-ifeq ($(ASM_SUF),asm)
-	python3 src/gen_bint_x64.py > $@
+src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
+ifeq ($(ASM_MODE),nasm)
+	python3 src/gen_bint_x64.py > $@ -m nasm
 else
-	python3 src/gen_bint_x64.py > $@ -gas
+	python3 src/gen_bint_x64.py > $@ -m gas
 endif
 $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
@@ -358,7 +358,7 @@ $(OBJ_DIR)/%.o: %.c
 $(OBJ_DIR)/%.o: src/asm/%.s
 	$(PRE)$(AS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: src/asm/%.asm
+$(OBJ_DIR)/%.o: src/asm/%.nasm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
