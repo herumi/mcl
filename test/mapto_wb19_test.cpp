@@ -1,9 +1,9 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 #include <cybozu/test.hpp>
-#include <cybozu/sha2.hpp>
 #include <mcl/bls12_381.hpp>
 #include <iostream>
 #include <fstream>
+#include <cybozu/sha2.hpp>
 #include <cybozu/atoi.hpp>
 #include <cybozu/file.hpp>
 #include <cybozu/benchmark.hpp>

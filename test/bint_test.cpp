@@ -5,7 +5,7 @@
 #include <mcl/conversion.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
-#include <gmpxx.h>
+#include <gmpxx.h> // for test bint
 #include <iostream>
 #include <cybozu/link_mpir.hpp>
 

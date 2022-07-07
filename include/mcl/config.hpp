@@ -29,6 +29,10 @@
 	#define MCL_DONT_USE_OPENSSL
 #endif
 
+#if !defined(MCL_USE_GMP) && !defined(MCL_USE_VINT)
+	#define MCL_USE_VINT
+#endif
+
 namespace mcl {
 
 #if MCL_SIZEOF_UNIT == 8

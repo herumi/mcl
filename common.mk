@@ -112,16 +112,10 @@ ifeq ($(DEBUG),0)
 CFLAGS+=$(CFLAGS_OPT_USER)
 endif
 CFLAGS+=$(CFLAGS_USER)
-MCL_USE_GMP?=1
-ifneq ($(OS),mac/mac-m1,)
-  MCL_USE_GMP=0
-endif
-ifeq ($(MCL_USE_GMP),0)
-  CFLAGS+=-DMCL_USE_VINT
-endif
 ifneq ($(MCL_SIZEOF_UNIT),)
   CFLAGS+=-DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT)
 endif
+MCL_USE_GMP?=0
 ifeq ($(MCL_USE_GMP),1)
   GMP_LIB=-lgmp -lgmpxx
   ifeq ($(UNAME_S),Darwin)
