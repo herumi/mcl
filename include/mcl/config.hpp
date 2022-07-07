@@ -25,6 +25,10 @@
 	#define MCL_MAX_BIT_SIZE 512
 #endif
 
+#if !defined(MCL_USE_OPENSSL) && !defined(MCL_DONT_USE_OPENSSL)
+	#define MCL_DONT_USE_OPENSSL
+#endif
+
 namespace mcl {
 
 #if MCL_SIZEOF_UNIT == 8

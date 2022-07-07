@@ -32,23 +32,18 @@ linux_build()
     -DBUILD_TESTING=ON \
     -DMCL_BUILD_SAMPLE=ON \
     -DMCL_USE_LLVM=ON \
-    -DMCL_USE_OPENSSL=ON \
     -DCMAKE_INSTALL_PREFIX=${BUILD_DIR}/install
   cmake --build ${BUILD_DIR} --clean-first -- -j
 }
 
 osx_build()
 {
-  OPENSSL_ROOT_DIR="/usr/local/opt/openssl"
-
   cmake -E remove_directory ${BUILD_DIR}
   cmake -E make_directory ${BUILD_DIR}
   cmake -H${SCRIPT_DIR} -B${BUILD_DIR} -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTING=ON \
     -DMCL_BUILD_SAMPLE=ON \
     -DMCL_USE_LLVM=ON \
-    -DMCL_USE_OPENSSL=ON \
-    -DOPENSSL_ROOT_DIR="${OPENSSL_ROOT_DIR}" \
     -DCMAKE_INSTALL_PREFIX=${BUILD_DIR}/install
   cmake --build ${BUILD_DIR} --clean-first -- -j
 }

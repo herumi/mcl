@@ -26,11 +26,6 @@ if(MSVC)
 		)
 endif()
 option(
-	MCL_USE_OPENSSL
-	"use openssl"
-	OFF
-)
-option(
 	MCL_USE_GMP
 	"use gmp"
 	ON
@@ -207,11 +202,6 @@ else()
 		target_link_libraries(mcl PUBLIC GMP::GMPXX GMP::GMP)
 		target_link_libraries(mcl_st PUBLIC GMP::GMPXX GMP::GMP)
 	endif()
-	if(MCL_USE_OPENSSL)
-		find_package(OpenSSL REQUIRED)
-		target_link_libraries(mcl PUBLIC OpenSSL::Crypto)
-		target_link_libraries(mcl_st PUBLIC OpenSSL::Crypto)
-	endif()
 endif()
 
 if(NOT MCL_USE_GMP)
@@ -236,13 +226,7 @@ if(MCL_DOWNLOAD_SOURCE)
 			file(DOWNLOAD https://raw.githubusercontent.com/herumi/cybozulib_ext/${CYBOZULIB_EXT_TAG}/include/${file} ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include/${file})
 			message("download cybozulib_ext/" ${file})
 		endforeach()
-		set(FILES aes.h applink.c asn1.h asn1_mac.h asn1t.h bio.h blowfish.h bn.h buffer.h camellia.h cast.h cmac.h cms.h comp.h conf.h conf_api.h crypto.h des.h des_old.h dh.h dsa.h dso.h dtls1.h e_os2.h ebcdic.h ec.h ecdh.h ecdsa.h engine.h err.h evp.h hmac.h idea.h krb5_asn.h kssl.h lhash.h md4.h md5.h mdc2.h modes.h obj_mac.h objects.h ocsp.h opensslconf.h opensslv.h ossl_typ.h pem.h pem2.h pkcs12.h pkcs7.h pqueue.h rand.h rc2.h rc4.h ripemd.h rsa.h safestack.h seed.h sha.h srp.h srtp.h ssl.h ssl2.h ssl23.h ssl3.h stack.h symhacks.h tls1.h ts.h txt_db.h ui.h ui_compat.h whrlpool.h x509.h x509_vfy.h x509v3.h)
-		foreach(file IN ITEMS ${FILES})
-			file(DOWNLOAD
-				https://raw.githubusercontent.com/herumi/cybozulib_ext/${CYBOZULIB_EXT_TAG}/include/openssl/${file} ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include/openssl/${file})
-			message("download cybozulib_ext/openssl/" ${file})
-		endforeach()
-		set(FILES mpir.lib mpirxx.lib mpirxx.pdb ssleay32.lib libeay32.lib mpir.pdb)
+		set(FILES mpir.lib mpirxx.lib mpirxx.pdb mpir.pdb)
 		foreach(file IN ITEMS ${FILES})
 			file(DOWNLOAD
 			    https://raw.githubusercontent.com/herumi/cybozulib_ext/${CYBOZULIB_EXT_TAG}/lib/mt/14/${file} ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/${file})
@@ -259,16 +243,6 @@ if(MCL_DOWNLOAD_SOURCE)
 		set_target_properties(cybozulib_ext::mpirxx PROPERTIES
 			INTERFACE_INCLUDE_DIRECTORIES ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include
 			IMPORTED_LOCATION ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/mpirxx.lib)
-		# libeay32
-		add_library(cybozulib_ext::libeay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::libeay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include
-			IMPORTED_LOCATION ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/libeay32.lib)
-		# ssleay32
-		add_library(cybozulib_ext::ssleay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::ssleay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include
-			IMPORTED_LOCATION ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/ssleay32.lib)
 		# abstracted cybozulib_ext libraries
 		add_library(windows_specific INTERFACE)
 		add_library(mcl::windows_specific ALIAS windows_specific)
@@ -276,9 +250,7 @@ if(MCL_DOWNLOAD_SOURCE)
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14
 			cybozulib_ext::mpir
-			cybozulib_ext::mpirxx
-			cybozulib_ext::libeay32
-			cybozulib_ext::ssleay32)
+			cybozulib_ext::mpirxx)
 
 		target_link_libraries(mcl PUBLIC mcl::windows_specific)
 		target_link_libraries(mcl_st PUBLIC mcl::windows_specific)
@@ -296,15 +268,6 @@ else()
 			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
 			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/mpirxx.lib)
 		# libeay32
-		add_library(cybozulib_ext::libeay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::libeay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/libeay32.lib)
-		# ssleay32
-		add_library(cybozulib_ext::ssleay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::ssleay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/ssleay32.lib)
 		 # abstracted cybozulib_ext libraries
 		add_library(windows_specific INTERFACE)
 		add_library(mcl::windows_specific ALIAS windows_specific)
@@ -312,9 +275,7 @@ else()
 			-LIBPATH:${MCL_CYBOZULIB_EXT_DIR}/lib
 			-LIBPATH:${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14
 			cybozulib_ext::mpir
-			cybozulib_ext::mpirxx
-			cybozulib_ext::libeay32
-			cybozulib_ext::ssleay32)
+			cybozulib_ext::mpirxx)
 
 		target_link_libraries(mcl PUBLIC mcl::windows_specific)
 		target_link_libraries(mcl_st PUBLIC mcl::windows_specific)

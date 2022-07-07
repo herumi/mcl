@@ -116,15 +116,11 @@ MCL_USE_GMP?=1
 ifneq ($(OS),mac/mac-m1,)
   MCL_USE_GMP=0
 endif
-MCL_USE_OPENSSL?=0
 ifeq ($(MCL_USE_GMP),0)
   CFLAGS+=-DMCL_USE_VINT
 endif
 ifneq ($(MCL_SIZEOF_UNIT),)
   CFLAGS+=-DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT)
-endif
-ifeq ($(MCL_USE_OPENSSL),0)
-  CFLAGS+=-DMCL_DONT_USE_OPENSSL
 endif
 ifeq ($(MCL_USE_GMP),1)
   GMP_LIB=-lgmp -lgmpxx
@@ -132,14 +128,6 @@ ifeq ($(MCL_USE_GMP),1)
     GMP_DIR?=/usr/local/opt/gmp
     CFLAGS+=-I$(GMP_DIR)/include
     LDFLAGS+=-L$(GMP_DIR)/lib
-  endif
-endif
-ifeq ($(MCL_USE_OPENSSL),1)
-  OPENSSL_LIB=-lcrypto
-  ifeq ($(UNAME_S),Darwin)
-    OPENSSL_DIR?=/usr/local/opt/openssl
-    CFLAGS+=-I$(OPENSSL_DIR)/include
-    LDFLAGS+=-L$(OPENSSL_DIR)/lib
   endif
 endif
 ifeq ($(MCL_STATIC_CODE),1)
@@ -157,7 +145,7 @@ ifeq ($(MCL_USE_OMP),1)
     LDFLAGS+=-fopenmp
   endif
 endif
-LDFLAGS+=$(GMP_LIB) $(OPENSSL_LIB) $(BIT_OPT) $(LDFLAGS_USER)
+LDFLAGS+=$(GMP_LIB) $(BIT_OPT) $(LDFLAGS_USER)
 
 CFLAGS+=-fPIC
 
