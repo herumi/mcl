@@ -304,6 +304,8 @@ def global_(s):
 		output(f'global _{s}')
 def makeLabel(s):
 	output(f'{s}:')
+	if g_masm:
+		return
 	output(f'_{s}:')
 def align(n):
 	if g_gas:
