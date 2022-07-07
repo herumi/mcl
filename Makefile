@@ -102,7 +102,7 @@ MCL_BINT_ASM?=0
 MCL_BINT_ASM_X64?=1
 ASM_MODE?=s
 ifeq ($(OS),win)
-  ASM_MODE=nasm
+  ASM_MODE=asm
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
@@ -133,7 +133,7 @@ include/mcl/bint_proto.hpp: src/gen_bint_header.py
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
-ifeq ($(ASM_MODE),nasm)
+ifeq ($(ASM_MODE),asm)
 	python3 src/gen_bint_x64.py > $@ -m nasm
 else
 	python3 src/gen_bint_x64.py > $@ -m gas
@@ -358,7 +358,7 @@ $(OBJ_DIR)/%.o: %.c
 $(OBJ_DIR)/%.o: src/asm/%.s
 	$(PRE)$(AS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: src/asm/%.nasm
+$(OBJ_DIR)/%.o: src/asm/%.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
