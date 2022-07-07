@@ -42,14 +42,7 @@ template<>const void3u MontRed<n, false, tag>::f = &mcl_fp_montRedNF ## n ## suf
 template<>const void4u DblAdd<n, tag>::f = &mcl_fpDbl_add ## n ## suf; \
 template<>const void4u DblSub<n, tag>::f = &mcl_fpDbl_sub ## n ## suf; \
 
-#if MCL_LLVM_BMI2 == 1
-#define MCL_DEF_LLVM_FUNC(n) \
-	MCL_DEF_LLVM_FUNC2(n, Ltag, L) \
-	MCL_DEF_LLVM_FUNC2(n, LBMI2tag, Lbmi2)
-#else
-#define MCL_DEF_LLVM_FUNC(n) \
-	MCL_DEF_LLVM_FUNC2(n, Ltag, L)
-#endif
+#define MCL_DEF_LLVM_FUNC(n) MCL_DEF_LLVM_FUNC2(n, Ltag, L)
 
 #if MCL_SIZEOF_UNIT == 4
 

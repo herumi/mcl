@@ -164,12 +164,6 @@ endif
 ifeq ($(MCL_USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(ASM_OBJ)
-  # special case for intel with bmi2
-  ifeq ($(INTEL),1)
-    ifneq ($(MCL_STATIC_CODE),1)
-      LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
-    endif
-  endif
 endif
 LLVM_SRC=src/base$(BIT).ll
 
@@ -178,11 +172,6 @@ LLVM_SRC=src/base$(BIT).ll
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=-sse
 
-#HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
-#ifeq ($(HAS_BMI2),1)
-#  LLVM_FLAGS+=-mattr=bmi2
-#endif
-
 ifeq ($(USE_LOW_ASM),1)
   LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
   LIB_OBJ+=$(LOW_ASM_OBJ)
@@ -190,10 +179,8 @@ endif
 
 ifeq ($(UPDATE_ASM),1)
   ASM_SRC_DEP=$(LLVM_SRC)
-  ASM_BMI2_SRC_DEP=src/base$(BIT).bmi2.ll
 else
   ASM_SRC_DEP=
-  ASM_BMI2_SRC_DEP=
 endif
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
@@ -276,15 +263,6 @@ $(ASM_SRC): $(ASM_SRC_DEP)
 
 $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
 	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) > $@
-
-$(ASM_SRC_PATH_NAME).bmi2.s: $(ASM_BMI2_SRC_DEP)
-	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS) -mattr=bmi2
-
-$(OBJ_DIR)/$(CPU).bmi2.o: $(ASM_SRC_PATH_NAME).bmi2.s
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
-
-src/base$(BIT).bmi2.ll: $(GEN_EXE)
-	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) -s bmi2 > $@
 
 src/base64m.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@

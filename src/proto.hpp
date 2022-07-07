@@ -26,9 +26,7 @@ void mcl_fp_montRedNF ## n ## suf(mcl::Unit* z, const mcl::Unit* xy, const mcl::
 void mcl_fpDbl_add ## n ## suf(mcl::Unit* z, const mcl::Unit* x, const mcl::Unit* y, const mcl::Unit* p); \
 void mcl_fpDbl_sub ## n ## suf(mcl::Unit* z, const mcl::Unit* x, const mcl::Unit* y, const mcl::Unit* p);
 
-#define MCL_FP_DEF_FUNC(n) \
-	MCL_FP_DEF_FUNC_SUB(n, L) \
-	MCL_FP_DEF_FUNC_SUB(n, Lbmi2)
+#define MCL_FP_DEF_FUNC(n) MCL_FP_DEF_FUNC_SUB(n, L)
 
 #define MCL_FP_DEF_FUNC_SPECIAL(suf) \
 void mcl_fpDbl_mod_NIST_P192 ## suf(mcl::Unit* z, const mcl::Unit* xy, const mcl::Unit* /* dummy */); \
@@ -64,7 +62,6 @@ MCL_FP_DEF_FUNC(8)
 #endif
 
 MCL_FP_DEF_FUNC_SPECIAL(L)
-MCL_FP_DEF_FUNC_SPECIAL(Lbmi2)
 
 }
 

@@ -355,15 +355,7 @@ void setOp(Op& op, Mode mode)
 	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-#if MCL_LLVM_BMI2 == 1
-		const bool gmpIsFasterThanLLVM = false;//(N == 8 && MCL_SIZEOF_UNIT == 8);
-		if (g_cpu.has(Xbyak::util::Cpu::tBMI2)) {
-			setOp2<N, LBMI2tag, (N * UnitBitSize <= 384), gmpIsFasterThanLLVM>(op);
-		} else
-#endif
-		{
-			setOp2<N, Ltag, (N * UnitBitSize <= 384), false>(op);
-		}
+		setOp2<N, Ltag, (N * UnitBitSize <= 384), false>(op);
 	}
 #else
 	(void)mode;
