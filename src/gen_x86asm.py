@@ -107,6 +107,8 @@ class Address:
 		if self.ripLabel:
 			if g_gas:
 				return f'{self.ripLabel}(%rip)'
+			if g_masm:
+				return f'offset {self.ripLabel}'
 			return f'[rel {self.ripLabel}]'
 		if g_gas:
 			if type(self.exp) == Reg:
