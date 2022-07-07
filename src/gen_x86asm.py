@@ -15,7 +15,8 @@ R13 = 13
 R14 = 14
 R15 = 15
 
-g_gas = False # gas syntex if True else nasm syntax
+g_gas = False # gas syntax if True else nasm syntax
+g_masm = False # masm syntax
 
 class Reg:
 	def __init__(self, idx, bit):
@@ -261,10 +262,9 @@ class StackFrame:
 
 g_text = []
 def init(mode):
-	global g_gas
+	global g_gas, g_masm, g_text
 	g_gas = mode == 'gas'
 	g_masm = mode == 'masm'
-	global g_text
 	g_text = []
 
 def output(s):
@@ -273,6 +273,8 @@ def output(s):
 def segment(mode):
 	if g_gas:
 		output(f'.{mode}')
+	elif g_masm:
+		output(f'_{mode} segment')
 	else:
 		output(f'segment .{mode}')
 
@@ -295,6 +297,8 @@ def global_(s):
 	if g_gas:
 		output(f'.global {s}')
 		output(f'.global _{s}')
+	elif g_masm:
+		output(f'public {s}')
 	else:
 		output(f'global {s}')
 		output(f'global _{s}')
@@ -308,6 +312,10 @@ def align(n):
 		output(f'align {n}')
 
 def termOutput():
+	if g_masm:
+		output('_text ends')
+		output('end')
+
 	n = len(g_text)
 	i = 0
 	while i < n:
@@ -324,6 +332,21 @@ def termOutput():
 def defineName(name):
 	global_(name)
 	makeLabel(name)
+
+class FuncProc:
+	def __init__(self, name):
+		if g_masm:
+			self.name = name
+			output(f'{self.name} proc')
+		else:
+			defineName(name)
+	def close(self):
+		if g_masm:
+			output(f'{self.name} endp')
+	def __enter__(self):
+		return self
+	def __exit__(self, ex_type, ex_value, trace):
+		self.close()
 
 def genFunc(name):
 	def f(*args):
