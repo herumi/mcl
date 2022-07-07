@@ -435,6 +435,12 @@ clean:
 clean_gen:
 	$(RM) include/mcl/bint_proto.hpp src/asm/bint* src/bint_switch.hpp
 
+MCL_VER=$(shell awk '/static const int version/ { printf("%.2f\n", substr($$6,3,3)/100)}' include/mcl/op.hpp)
+CMakeLists.txt: include/mcl/op.hpp
+	sed -i -e 's/	VERSION [0-9].[0-9][0-9]$$/	VERSION $(MCL_VER)/' $@
+update_version:
+	$(MAKE) CMakeLists.txt
+
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))
 -include $(DEPEND_FILE)
