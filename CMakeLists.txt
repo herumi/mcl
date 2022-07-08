@@ -19,16 +19,14 @@ option(
 	OFF
 )
 if(MSVC)
-	option(
-		MCL_DOWNLOAD_SOURCE
-		"download cybozulib_ext"
-		OFF
-		)
+	set(MCL_TEST_WITH_GMP_DEFAULT OFF)
+else()
+	set(MCL_TEST_WITH_GMP_DEFAULT ON)
 endif()
 option(
-	MCL_USE_GMP
-	"use gmp"
-	ON
+	MCL_TEST_WITH_GMP
+	"(Windows) download MPIR libraries from cybozulib_ext"
+	${MCL_TEST_WITH_GMP_DEFAULT}
 )
 option(
 	MCL_USE_ASM
@@ -109,10 +107,6 @@ if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	add_executable(gen src/gen.cpp)
 	target_include_directories(gen PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/include)
-	if(MCL_USE_GMP)
-		find_package(GMP REQUIRED)
-		target_link_libraries(gen PRIVATE GMP::GMPXX GMP::GMP)
-	endif()
 
 	add_custom_command(OUTPUT base64.ll
 		COMMAND gen > base64.ll
@@ -201,28 +195,19 @@ else()
 			set(CPU x86-64)
 		endif()
 	endif()
-	if(MCL_USE_GMP)
-		find_package(GMP REQUIRED)
-		target_link_libraries(mcl PUBLIC GMP::GMPXX GMP::GMP)
-		target_link_libraries(mcl_st PUBLIC GMP::GMPXX GMP::GMP)
-	endif()
 endif()
 
-if(NOT MCL_USE_GMP)
-	target_compile_definitions(mcl PUBLIC MCL_USE_VINT)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_VINT)
-endif()
-if(NOT MCL_USE_OPENSSL)
-	target_compile_definitions(mcl PUBLIC MCL_DONT_USE_OPENSSL)
-	target_compile_definitions(mcl_st PUBLIC MCL_DONT_USE_OPENSSL)
-endif()
+target_compile_definitions(mcl PUBLIC MCL_USE_VINT)
+target_compile_definitions(mcl_st PUBLIC MCL_USE_VINT)
 if(NOT MCL_USE_XBYAK)
 	target_compile_definitions(mcl PUBLIC MCL_DONT_USE_XBYAK)
 	target_compile_definitions(mcl_st PUBLIC MCL_DONT_USE_XBYAK)
 endif()
 
-if(MCL_DOWNLOAD_SOURCE)
-	if(MSVC)
+if(MCL_TEST_WITH_GMP)
+	if(NOT MSVC)
+		find_package(GMP REQUIRED)
+	else()
 		set(CYBOZULIB_EXT_DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/cybozulib_ext)
 		set(CYBOZULIB_EXT_TAG release20170521)
 		set(FILES config.h gmp-impl.h gmp-mparam.h gmp.h gmpxx.h longlong.h mpir.h mpirxx.h)
@@ -253,31 +238,6 @@ if(MCL_DOWNLOAD_SOURCE)
 		target_link_libraries(windows_specific INTERFACE
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14
-			cybozulib_ext::mpir
-			cybozulib_ext::mpirxx)
-
-		target_link_libraries(mcl PUBLIC mcl::windows_specific)
-		target_link_libraries(mcl_st PUBLIC mcl::windows_specific)
-	endif()
-else()
-	if(MSVC AND NOT MCL_NO_MPIR)
-		# mpir
-		add_library(cybozulib_ext::mpir STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::mpir PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/mpir.lib)
-		# mpirxx
-		add_library(cybozulib_ext::mpirxx STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::mpirxx PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/mpirxx.lib)
-		# libeay32
-		 # abstracted cybozulib_ext libraries
-		add_library(windows_specific INTERFACE)
-		add_library(mcl::windows_specific ALIAS windows_specific)
-		target_link_libraries(windows_specific INTERFACE
-			-LIBPATH:${MCL_CYBOZULIB_EXT_DIR}/lib
-			-LIBPATH:${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14
 			cybozulib_ext::mpir
 			cybozulib_ext::mpirxx)
 
