@@ -131,6 +131,22 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /Zi /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
+
+	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
+		COMMAND ${ML64} -c ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm -o ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_bint-x64-win.obj
+		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+
+	target_link_libraries(mcl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+	add_dependencies(mcl gen_bint-x64-win.obj)
+	target_link_libraries(mcl_st PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+	add_dependencies(mcl_st gen_bint-x64-win.obj)
+
+	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
+
 	target_compile_definitions(mcl PUBLIC NOMINMAX)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX)
 	# set compiler flags for warnings level
@@ -255,27 +271,12 @@ foreach(bit IN ITEMS 256 384 384_256)
 		SOVERSION ${mcl_VERSION_MAJOR})
 endforeach()
 
-if(MSVC)
-	if(MCL_NO_MPIR)
-		install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
-			EXPORT mclTargets
-			LIBRARY DESTINATION lib
-			ARCHIVE DESTINATION lib
-			RUNTIME DESTINATION lib)
-	else()
-		install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256 windows_specific
-			EXPORT mclTargets
-			LIBRARY DESTINATION lib
-			ARCHIVE DESTINATION lib
-			RUNTIME DESTINATION lib)
-	endif()
-else()
-	install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
-		EXPORT mclTargets
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib
-		RUNTIME DESTINATION lib)
-endif()
+install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
+	EXPORT mclTargets
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION lib)
+
 install(DIRECTORY include/mcl
 	DESTINATION include
 	FILES_MATCHING PATTERN "*.hpp"
