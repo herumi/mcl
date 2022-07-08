@@ -34,11 +34,6 @@ option(
 	ON
 )
 option(
-	MCL_USE_XBYAK
-	"use xbyak"
-	ON
-)
-option(
 	MCL_USE_LLVM
 	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++"
 	OFF
@@ -195,11 +190,6 @@ else()
 			set(CPU x86-64)
 		endif()
 	endif()
-endif()
-
-if(NOT MCL_USE_XBYAK)
-	target_compile_definitions(mcl PUBLIC MCL_DONT_USE_XBYAK)
-	target_compile_definitions(mcl_st PUBLIC MCL_DONT_USE_XBYAK)
 endif()
 
 if(MCL_TEST_WITH_GMP)
