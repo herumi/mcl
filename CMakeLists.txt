@@ -197,8 +197,6 @@ else()
 	endif()
 endif()
 
-target_compile_definitions(mcl PUBLIC MCL_USE_VINT)
-target_compile_definitions(mcl_st PUBLIC MCL_USE_VINT)
 if(NOT MCL_USE_XBYAK)
 	target_compile_definitions(mcl PUBLIC MCL_DONT_USE_XBYAK)
 	target_compile_definitions(mcl_st PUBLIC MCL_DONT_USE_XBYAK)
