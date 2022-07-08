@@ -268,6 +268,12 @@ def init(mode):
 	g_gas = mode == 'gas'
 	g_masm = mode == 'masm'
 	g_text = []
+	if g_gas:
+		output('# for gas')
+	elif g_masm:
+		output('; for masm (ml64.exe)')
+	else:
+		output('# for nasm')
 
 def output(s):
 	g_text.append(s)
