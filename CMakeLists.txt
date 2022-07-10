@@ -193,6 +193,7 @@ else()
 	endif()
 endif()
 
+# Win64
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
