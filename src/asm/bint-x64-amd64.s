@@ -6,7 +6,7 @@
 mclb_add0:
 _mclb_add0:
 xor %eax, %eax
-ret 
+ret
 .align 16
 .global mclb_add1
 .global _mclb_add1
@@ -17,7 +17,7 @@ add (%rdx), %rax
 mov %rax, (%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add2
 .global _mclb_add2
@@ -31,7 +31,7 @@ adc 8(%rdx), %rax
 mov %rax, 8(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add3
 .global _mclb_add3
@@ -48,7 +48,7 @@ adc 16(%rdx), %rax
 mov %rax, 16(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add4
 .global _mclb_add4
@@ -68,7 +68,7 @@ adc 24(%rdx), %rax
 mov %rax, 24(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add5
 .global _mclb_add5
@@ -91,7 +91,7 @@ adc 32(%rdx), %rax
 mov %rax, 32(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add6
 .global _mclb_add6
@@ -117,7 +117,7 @@ adc 40(%rdx), %rax
 mov %rax, 40(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add7
 .global _mclb_add7
@@ -146,7 +146,7 @@ adc 48(%rdx), %rax
 mov %rax, 48(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add8
 .global _mclb_add8
@@ -178,7 +178,7 @@ adc 56(%rdx), %rax
 mov %rax, 56(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add9
 .global _mclb_add9
@@ -213,7 +213,7 @@ adc 64(%rdx), %rax
 mov %rax, 64(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add10
 .global _mclb_add10
@@ -251,7 +251,7 @@ adc 72(%rdx), %rax
 mov %rax, 72(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add11
 .global _mclb_add11
@@ -292,7 +292,7 @@ adc 80(%rdx), %rax
 mov %rax, 80(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add12
 .global _mclb_add12
@@ -336,7 +336,7 @@ adc 88(%rdx), %rax
 mov %rax, 88(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add13
 .global _mclb_add13
@@ -383,7 +383,7 @@ adc 96(%rdx), %rax
 mov %rax, 96(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add14
 .global _mclb_add14
@@ -433,7 +433,7 @@ adc 104(%rdx), %rax
 mov %rax, 104(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add15
 .global _mclb_add15
@@ -486,7 +486,7 @@ adc 112(%rdx), %rax
 mov %rax, 112(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_add16
 .global _mclb_add16
@@ -542,14 +542,14 @@ adc 120(%rdx), %rax
 mov %rax, 120(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub0
 .global _mclb_sub0
 mclb_sub0:
 _mclb_sub0:
 xor %eax, %eax
-ret 
+ret
 .align 16
 .global mclb_sub1
 .global _mclb_sub1
@@ -560,7 +560,7 @@ sub (%rdx), %rax
 mov %rax, (%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub2
 .global _mclb_sub2
@@ -574,7 +574,7 @@ sbb 8(%rdx), %rax
 mov %rax, 8(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub3
 .global _mclb_sub3
@@ -591,7 +591,7 @@ sbb 16(%rdx), %rax
 mov %rax, 16(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub4
 .global _mclb_sub4
@@ -611,7 +611,7 @@ sbb 24(%rdx), %rax
 mov %rax, 24(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub5
 .global _mclb_sub5
@@ -634,7 +634,7 @@ sbb 32(%rdx), %rax
 mov %rax, 32(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub6
 .global _mclb_sub6
@@ -660,7 +660,7 @@ sbb 40(%rdx), %rax
 mov %rax, 40(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub7
 .global _mclb_sub7
@@ -689,7 +689,7 @@ sbb 48(%rdx), %rax
 mov %rax, 48(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub8
 .global _mclb_sub8
@@ -721,7 +721,7 @@ sbb 56(%rdx), %rax
 mov %rax, 56(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub9
 .global _mclb_sub9
@@ -756,7 +756,7 @@ sbb 64(%rdx), %rax
 mov %rax, 64(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub10
 .global _mclb_sub10
@@ -794,7 +794,7 @@ sbb 72(%rdx), %rax
 mov %rax, 72(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub11
 .global _mclb_sub11
@@ -835,7 +835,7 @@ sbb 80(%rdx), %rax
 mov %rax, 80(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub12
 .global _mclb_sub12
@@ -879,7 +879,7 @@ sbb 88(%rdx), %rax
 mov %rax, 88(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub13
 .global _mclb_sub13
@@ -926,7 +926,7 @@ sbb 96(%rdx), %rax
 mov %rax, 96(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub14
 .global _mclb_sub14
@@ -976,7 +976,7 @@ sbb 104(%rdx), %rax
 mov %rax, 104(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub15
 .global _mclb_sub15
@@ -1029,7 +1029,7 @@ sbb 112(%rdx), %rax
 mov %rax, 112(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_sub16
 .global _mclb_sub16
@@ -1085,14 +1085,14 @@ sbb 120(%rdx), %rax
 mov %rax, 120(%rdi)
 setc %al
 movzx %al, %eax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast0
 .global _mclb_mulUnit_fast0
 mclb_mulUnit_fast0:
 _mclb_mulUnit_fast0:
 xor %eax, %eax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast1
 .global _mclb_mulUnit_fast1
@@ -1102,7 +1102,7 @@ mov (%rsi), %rax
 mul %rdx
 mov %rax, (%rdi)
 mov %rdx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast2
 .global _mclb_mulUnit_fast2
@@ -1119,7 +1119,7 @@ add %rcx, %rax
 adc $0, %rdx
 mov %rax, 8(%rdi)
 mov %rdx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast3
 .global _mclb_mulUnit_fast3
@@ -1134,7 +1134,7 @@ mulx 16(%rsi), %rdx, %rax
 adc %rcx, %rdx
 mov %rdx, 16(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast4
 .global _mclb_mulUnit_fast4
@@ -1152,7 +1152,7 @@ mulx 24(%rsi), %rdx, %rax
 adc %r8, %rdx
 mov %rdx, 24(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast5
 .global _mclb_mulUnit_fast5
@@ -1173,7 +1173,7 @@ mulx 32(%rsi), %rdx, %rax
 adc %rcx, %rdx
 mov %rdx, 32(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast6
 .global _mclb_mulUnit_fast6
@@ -1197,7 +1197,7 @@ mulx 40(%rsi), %rdx, %rax
 adc %r8, %rdx
 mov %rdx, 40(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast7
 .global _mclb_mulUnit_fast7
@@ -1224,7 +1224,7 @@ mulx 48(%rsi), %rdx, %rax
 adc %rcx, %rdx
 mov %rdx, 48(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast8
 .global _mclb_mulUnit_fast8
@@ -1254,7 +1254,7 @@ mulx 56(%rsi), %rdx, %rax
 adc %r8, %rdx
 mov %rdx, 56(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_fast9
 .global _mclb_mulUnit_fast9
@@ -1287,14 +1287,14 @@ mulx 64(%rsi), %rdx, %rax
 adc %rcx, %rdx
 mov %rdx, 64(%rdi)
 adc $0, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast0
 .global _mclb_mulUnitAdd_fast0
 mclb_mulUnitAdd_fast0:
 _mclb_mulUnitAdd_fast0:
 xor %eax, %eax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast1
 .global _mclb_mulUnitAdd_fast1
@@ -1308,7 +1308,7 @@ mov %rcx, (%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast2
 .global _mclb_mulUnitAdd_fast2
@@ -1327,7 +1327,7 @@ mov %rcx, 8(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast3
 .global _mclb_mulUnitAdd_fast3
@@ -1351,7 +1351,7 @@ mov %rcx, 16(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast4
 .global _mclb_mulUnitAdd_fast4
@@ -1380,7 +1380,7 @@ mov %rcx, 24(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast5
 .global _mclb_mulUnitAdd_fast5
@@ -1414,7 +1414,7 @@ mov %rcx, 32(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast6
 .global _mclb_mulUnitAdd_fast6
@@ -1453,7 +1453,7 @@ mov %rcx, 40(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast7
 .global _mclb_mulUnitAdd_fast7
@@ -1497,7 +1497,7 @@ mov %rcx, 48(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast8
 .global _mclb_mulUnitAdd_fast8
@@ -1546,7 +1546,7 @@ mov %rcx, 56(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_fast9
 .global _mclb_mulUnitAdd_fast9
@@ -1600,14 +1600,14 @@ mov %rcx, 64(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow0
 .global _mclb_mulUnit_slow0
 mclb_mulUnit_slow0:
 _mclb_mulUnit_slow0:
 xor %eax, %eax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow1
 .global _mclb_mulUnit_slow1
@@ -1617,7 +1617,7 @@ mov (%rsi), %rax
 mul %rdx
 mov %rax, (%rdi)
 mov %rdx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow2
 .global _mclb_mulUnit_slow2
@@ -1634,7 +1634,7 @@ add %rcx, %rax
 adc $0, %rdx
 mov %rax, 8(%rdi)
 mov %rdx, %rax
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow3
 .global _mclb_mulUnit_slow3
@@ -1662,7 +1662,7 @@ mov %rax, 16(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $40, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow4
 .global _mclb_mulUnit_slow4
@@ -1697,7 +1697,7 @@ mov %rax, 24(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $56, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow5
 .global _mclb_mulUnit_slow5
@@ -1739,7 +1739,7 @@ mov %rax, 32(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $72, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow6
 .global _mclb_mulUnit_slow6
@@ -1788,7 +1788,7 @@ mov %rax, 40(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $88, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow7
 .global _mclb_mulUnit_slow7
@@ -1844,7 +1844,7 @@ mov %rax, 48(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $104, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow8
 .global _mclb_mulUnit_slow8
@@ -1907,7 +1907,7 @@ mov %rax, 56(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $120, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnit_slow9
 .global _mclb_mulUnit_slow9
@@ -1977,14 +1977,14 @@ mov %rax, 64(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $136, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow0
 .global _mclb_mulUnitAdd_slow0
 mclb_mulUnitAdd_slow0:
 _mclb_mulUnitAdd_slow0:
 xor %eax, %eax
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow1
 .global _mclb_mulUnitAdd_slow1
@@ -2000,7 +2000,7 @@ add %rax, (%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $8, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow2
 .global _mclb_mulUnitAdd_slow2
@@ -2026,7 +2026,7 @@ adc %rax, 8(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $24, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow3
 .global _mclb_mulUnitAdd_slow3
@@ -2061,7 +2061,7 @@ adc %rax, 16(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $40, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow4
 .global _mclb_mulUnitAdd_slow4
@@ -2105,7 +2105,7 @@ adc %rax, 24(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $56, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow5
 .global _mclb_mulUnitAdd_slow5
@@ -2158,7 +2158,7 @@ adc %rax, 32(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $72, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow6
 .global _mclb_mulUnitAdd_slow6
@@ -2220,7 +2220,7 @@ adc %rax, 40(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $88, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow7
 .global _mclb_mulUnitAdd_slow7
@@ -2291,7 +2291,7 @@ adc %rax, 48(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $104, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow8
 .global _mclb_mulUnitAdd_slow8
@@ -2371,7 +2371,7 @@ adc %rax, 56(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $120, %rsp
-ret 
+ret
 .align 16
 .global mclb_mulUnitAdd_slow9
 .global _mclb_mulUnitAdd_slow9
@@ -2460,4 +2460,4 @@ adc %rax, 64(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $136, %rsp
-ret 
+ret
