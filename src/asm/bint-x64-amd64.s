@@ -1,3 +1,4 @@
+# for gas
 .data
 .global mclb_mulUnitTbl
 .global _mclb_mulUnitTbl
