@@ -33,7 +33,7 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # Support architecture
 
-- x86-64 Windows + Visual Studio
+- x86-64 Windows + Visual Studio 2019 (or later)
 - x86, x86-64 Linux + gcc/clang
 - x86-64, M1 macOS
 - ARM / ARM64 Linux
@@ -70,7 +70,7 @@ apt install libgmp-dev # on Ubuntu
 ## How to build with Makefile
 
 ```
-git clone git://github.com/herumi/mcl
+git clone https://github.com/herumi/mcl
 cd mcl
 make -j4
 ```
@@ -78,11 +78,18 @@ make -j4
 - `lib/libmcl.*` ; core library
 - `lib/libmclbn384_256.*` ; library to use C-API of BLS12-381 pairing
 
-## How to make src/bint_if{32,64}.ll
-clang++-12 is necessary. clang-14 is not supported because it uses _ExtInt.
-```
-make MCL_BINT=1 LLVM_VER=-12 bin/bint_if_test.exe -j MCL_USE_GMP=1
-```
+## How to make from src/{base,bint}{32,64}.ll
+
+clang (clang-cl on Windows) is necessary to build files with a suffix ll.
+
+- BIT = 64 (if 64-bit CPU) else 32
+- `src/base${BIT}.ll` is necessary if `MCL_USE_LLVM` is defined.
+  - This code is used if xbyak is not used.
+- `src/bint${BIT}.ll` is necessary if `MCL_BINT_ASM=1`.
+  - `src/bint-x64-{amd64,win}.asm` is used instead if `MCL_BINT_ASM_X64=1`.
+  - It is faster than `src/bint64.ll` because it uses mulx/adox/adcx.
+
+These files may be going to be unified in the future.
 
 ## How to test of BLS12-381 pairing
 
@@ -93,14 +100,6 @@ make bin/bn_c384_256_test.exe && bin/bn_c384_256_test.exe
 # C++
 make bin/bls12_test.exe && bin/bls12_test.exe
 ```
-
-## How to build without GMP
-
-```
-make MCL_USE_GMP=0
-
-```
-Define `MCL_USE_VINT` if using C++ header files.
 
 ## How to profile on Linux
 
