@@ -257,7 +257,6 @@ Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return mclb_get_sub(n)(z, x, y);
 }
-#if MCL_BINT_ASM_X64 != 1
 Unit (*mclb_mulUnitTbl[])(Unit *z, const Unit *x, Unit y) = {
 #if MCL_BINT_ASM == 1
 	0,
@@ -301,12 +300,10 @@ Unit (*mclb_mulUnitTbl[])(Unit *z, const Unit *x, Unit y) = {
 #endif // MCL_SIZEOF_UNIT == 4
 #endif // MCL_BINT_ASM == 1
 };
-#endif // MCL_BINT_ASM_X64 != 1
 Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n)
 {
 	return mclb_get_mulUnit(n)(z, x, y);
 }
-#if MCL_BINT_ASM_X64 != 1
 Unit (*mclb_mulUnitAddTbl[])(Unit *z, const Unit *x, Unit y) = {
 #if MCL_BINT_ASM == 1
 	0,
@@ -350,8 +347,65 @@ Unit (*mclb_mulUnitAddTbl[])(Unit *z, const Unit *x, Unit y) = {
 #endif // MCL_SIZEOF_UNIT == 4
 #endif // MCL_BINT_ASM == 1
 };
-#endif // MCL_BINT_ASM_X64 != 1
 Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n)
 {
 	return mclb_get_mulUnitAdd(n)(z, x, y);
 }
+#if MCL_BINT_ASM_X64 == 1
+Unit (*mclb_mulUnit1)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast1;
+Unit (*mclb_mulUnitAdd1)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast1;
+Unit (*mclb_mulUnit2)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast2;
+Unit (*mclb_mulUnitAdd2)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast2;
+Unit (*mclb_mulUnit3)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast3;
+Unit (*mclb_mulUnitAdd3)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast3;
+Unit (*mclb_mulUnit4)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast4;
+Unit (*mclb_mulUnitAdd4)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast4;
+Unit (*mclb_mulUnit5)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast5;
+Unit (*mclb_mulUnitAdd5)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast5;
+Unit (*mclb_mulUnit6)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast6;
+Unit (*mclb_mulUnitAdd6)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast6;
+Unit (*mclb_mulUnit7)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast7;
+Unit (*mclb_mulUnitAdd7)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast7;
+Unit (*mclb_mulUnit8)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast8;
+Unit (*mclb_mulUnitAdd8)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast8;
+Unit (*mclb_mulUnit9)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast9;
+Unit (*mclb_mulUnitAdd9)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast9;
+extern "C" void mclb_disable_fast() {
+	mclb_mulUnit1 = mclb_mulUnit_slow1;
+	mclb_mulUnitAdd1 = mclb_mulUnitAdd_slow1;
+	mclb_mulUnit2 = mclb_mulUnit_slow2;
+	mclb_mulUnitAdd2 = mclb_mulUnitAdd_slow2;
+	mclb_mulUnit3 = mclb_mulUnit_slow3;
+	mclb_mulUnitAdd3 = mclb_mulUnitAdd_slow3;
+	mclb_mulUnit4 = mclb_mulUnit_slow4;
+	mclb_mulUnitAdd4 = mclb_mulUnitAdd_slow4;
+	mclb_mulUnit5 = mclb_mulUnit_slow5;
+	mclb_mulUnitAdd5 = mclb_mulUnitAdd_slow5;
+	mclb_mulUnit6 = mclb_mulUnit_slow6;
+	mclb_mulUnitAdd6 = mclb_mulUnitAdd_slow6;
+	mclb_mulUnit7 = mclb_mulUnit_slow7;
+	mclb_mulUnitAdd7 = mclb_mulUnitAdd_slow7;
+	mclb_mulUnit8 = mclb_mulUnit_slow8;
+	mclb_mulUnitAdd8 = mclb_mulUnitAdd_slow8;
+	mclb_mulUnit9 = mclb_mulUnit_slow9;
+	mclb_mulUnitAdd9 = mclb_mulUnitAdd_slow9;
+	mclb_mulUnitTbl[1] = mclb_mulUnit_slow1;
+	mclb_mulUnitAddTbl[1] = mclb_mulUnitAdd_slow1;
+	mclb_mulUnitTbl[2] = mclb_mulUnit_slow2;
+	mclb_mulUnitAddTbl[2] = mclb_mulUnitAdd_slow2;
+	mclb_mulUnitTbl[3] = mclb_mulUnit_slow3;
+	mclb_mulUnitAddTbl[3] = mclb_mulUnitAdd_slow3;
+	mclb_mulUnitTbl[4] = mclb_mulUnit_slow4;
+	mclb_mulUnitAddTbl[4] = mclb_mulUnitAdd_slow4;
+	mclb_mulUnitTbl[5] = mclb_mulUnit_slow5;
+	mclb_mulUnitAddTbl[5] = mclb_mulUnitAdd_slow5;
+	mclb_mulUnitTbl[6] = mclb_mulUnit_slow6;
+	mclb_mulUnitAddTbl[6] = mclb_mulUnitAdd_slow6;
+	mclb_mulUnitTbl[7] = mclb_mulUnit_slow7;
+	mclb_mulUnitAddTbl[7] = mclb_mulUnitAdd_slow7;
+	mclb_mulUnitTbl[8] = mclb_mulUnit_slow8;
+	mclb_mulUnitAddTbl[8] = mclb_mulUnitAdd_slow8;
+	mclb_mulUnitTbl[9] = mclb_mulUnit_slow9;
+	mclb_mulUnitAddTbl[9] = mclb_mulUnitAdd_slow9;
+}
+#endif // MCL_BINT_ASM_X64 == 1

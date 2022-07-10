@@ -132,144 +132,144 @@ template<> inline Unit subT<32>(Unit *z, const Unit *x, const Unit *y) { return 
 #endif // #if MCL_SIZEOF_UNIT == 4
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit1)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit1_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit1_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow1(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast1(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit1(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<1>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit1(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd1)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd1_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd1_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow1(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast1(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd1(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<1>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd1(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit2)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit2_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit2_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow2(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast2(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit2(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<2>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit2(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd2)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd2_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd2_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow2(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast2(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd2(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<2>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd2(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit3)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit3_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit3_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow3(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast3(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit3(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<3>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit3(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd3)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd3_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd3_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow3(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast3(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd3(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<3>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd3(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit4)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit4_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit4_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow4(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast4(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit4(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<4>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit4(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd4)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd4_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd4_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow4(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast4(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd4(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<4>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd4(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit5)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit5_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit5_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow5(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast5(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit5(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<5>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit5(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd5)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd5_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd5_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow5(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast5(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd5(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<5>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd5(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit6)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit6_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit6_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow6(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast6(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit6(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<6>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit6(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd6)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd6_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd6_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow6(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast6(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd6(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<6>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd6(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit7)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit7_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit7_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow7(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast7(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit7(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<7>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit7(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd7)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd7_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd7_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow7(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast7(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd7(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<7>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd7(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit8)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit8_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit8_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow8(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast8(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit8(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<8>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit8(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd8)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd8_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd8_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow8(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast8(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd8(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<8>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd8(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit9)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit9_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit9_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow9(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast9(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit9(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<9>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit9(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd9)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd9_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd9_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow9(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast9(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd9(Unit *z, const Unit *x, Unit y);
 #endif
@@ -277,128 +277,128 @@ template<> inline Unit mulUnitAddT<9>(Unit *z, const Unit *x, Unit y) { return m
 #if MCL_SIZEOF_UNIT == 4
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit10)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit10_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit10_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow10(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast10(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit10(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<10>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit10(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd10)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd10_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd10_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow10(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast10(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd10(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<10>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd10(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit11)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit11_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit11_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow11(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast11(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit11(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<11>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit11(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd11)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd11_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd11_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow11(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast11(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd11(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<11>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd11(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit12)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit12_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit12_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow12(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast12(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit12(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<12>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit12(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd12)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd12_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd12_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow12(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast12(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd12(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<12>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd12(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit13)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit13_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit13_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow13(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast13(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit13(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<13>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit13(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd13)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd13_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd13_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow13(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast13(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd13(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<13>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd13(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit14)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit14_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit14_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow14(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast14(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit14(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<14>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit14(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd14)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd14_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd14_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow14(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast14(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd14(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<14>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd14(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit15)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit15_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit15_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow15(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast15(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit15(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<15>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit15(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd15)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd15_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd15_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow15(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast15(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd15(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<15>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd15(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit16)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit16_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit16_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow16(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast16(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit16(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<16>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit16(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd16)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd16_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd16_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow16(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast16(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd16(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<16>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd16(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit17)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit17_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnit17_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_slow17(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnit_fast17(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnit17(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitT<17>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnit17(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnitAdd17)(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd17_slow(Unit *z, const Unit *x, Unit y);
-extern "C" Unit mclb_mulUnitAdd17_fast(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_slow17(Unit *z, const Unit *x, Unit y);
+extern "C" Unit mclb_mulUnitAdd_fast17(Unit *z, const Unit *x, Unit y);
 #else
 extern "C" Unit mclb_mulUnitAdd17(Unit *z, const Unit *x, Unit y);
 #endif

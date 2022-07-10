@@ -6,8 +6,8 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	if asPointer:
 		print('#if MCL_BINT_ASM_X64 == 1')
 		print(f'extern "C" {ret} (*{cname}{i})({args});')
-		print(f'extern "C" {ret} {cname}{i}_slow({args});')
-		print(f'extern "C" {ret} {cname}{i}_fast({args});')
+		print(f'extern "C" {ret} {cname}_slow{i}({args});')
+		print(f'extern "C" {ret} {cname}_fast{i}({args});')
 		print('#else')
 		print(f'extern "C" {ret} {cname}{i}({args});')
 		print('#endif')
@@ -16,8 +16,8 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
 def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
-	if useFuncPtr:
-		print('#if MCL_BINT_ASM_X64 != 1')
+#	if useFuncPtr:
+#		print('#if MCL_BINT_ASM_X64 != 1')
 	print(f'''Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
 #if MCL_BINT_ASM == 1''')
 	print('\t0,')
@@ -35,8 +35,8 @@ def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 	print('#endif // MCL_SIZEOF_UNIT == 4')
 	print('''#endif // MCL_BINT_ASM == 1
 };''')
-	if useFuncPtr:
-		print('#endif // MCL_BINT_ASM_X64 != 1')
+#	if useFuncPtr:
+#		print('#endif // MCL_BINT_ASM_X64 != 1')
 
 	ret0 = 'return' if ret == 'void' else 'return 0'
 	print(f'''{ret} {name}({args}, size_t n)
@@ -66,6 +66,21 @@ inline {ret} (*mclb_get_{name}(size_t n))({args})
 	assert(n > 0);
 	return mclb_{name}Tbl[n];
 }}''')
+
+def gen_disable(name1, name2, ret, args, N):
+	print('#if MCL_BINT_ASM_X64 == 1')
+	for i in range(1, N+1):
+		print(f'{ret} (*mclb_{name1}{i})({args}) = mclb_{name1}_fast{i};')
+		print(f'{ret} (*mclb_{name2}{i})({args}) = mclb_{name2}_fast{i};')
+	print('extern "C" void mclb_disable_fast() {')
+	for i in range(1, N+1):
+		print(f'\tmclb_{name1}{i} = mclb_{name1}_slow{i};')
+		print(f'\tmclb_{name2}{i} = mclb_{name2}_slow{i};')
+	for i in range(1, N+1):
+		print(f'\tmclb_{name1}Tbl[{i}] = mclb_{name1}_slow{i};')
+		print(f'\tmclb_{name2}Tbl[{i}] = mclb_{name2}_slow{i};')
+	print('}')
+	print('#endif // MCL_BINT_ASM_X64 == 1')
 
 def main():
 	parser = argparse.ArgumentParser(description='gen header')
@@ -118,6 +133,7 @@ def main():
 		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
 		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
 		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64, True)
+		gen_disable('mulUnit', 'mulUnitAdd', 'Unit', arg_p2u, N64)
 	else:
 		print('err : bad out', out)
 

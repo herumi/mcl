@@ -212,6 +212,7 @@ N = param.num
 addN = param.addn
 
 init(param.mode)
+"""
 segment('data')
 defineName('mclb_mulUnitTbl')
 for i in range(N+1):
@@ -228,6 +229,7 @@ for i in range(N+1):
 		dq_(0)
 	else:
 		dq_(f'mclb_mulUnitAdd_fast{i}')
+"""
 segment('text')
 
 for i in range(addN+1):
@@ -248,6 +250,6 @@ for i in range(N+1):
 for i in range(N+1):
 	gen_mulUnitAdd(i, 'slow')
 
-gen_enable_fast(N)
+#gen_enable_fast(N)
 
 termOutput()
