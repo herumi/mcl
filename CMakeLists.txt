@@ -208,6 +208,13 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
 endif()
 
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
+	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.s)
+	target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.s)
+endif()
+
 if(MCL_TEST_WITH_GMP)
 	if(NOT MSVC)
 		find_package(GMP REQUIRED)
