@@ -99,7 +99,7 @@ ifeq ($(OS),mac-m1)
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
 BINT_SUF?=-$(OS)-$(CPU)
-MCL_BINT_ASM?=0
+MCL_BINT_ASM?=1
 MCL_BINT_ASM_X64?=1
 ASM_MODE?=s
 ifeq ($(OS),win)
