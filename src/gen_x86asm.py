@@ -364,6 +364,8 @@ def genFunc(name):
 		if g_gas and name == 'mov' and type(args[1]) == str:
 			output(f'movabs ${args[1]}, {args[0]}')
 			return
+		if not args:
+			return output(name)
 		s = ''
 		param = reversed(args) if g_gas else args
 		for arg in param:
