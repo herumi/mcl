@@ -132,21 +132,6 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
 
-	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
-	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
-		COMMAND ${ML64} -c ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm -o ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(gen_bint-x64-win.obj
-		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
-
-	target_link_libraries(mcl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
-	add_dependencies(mcl gen_bint-x64-win.obj)
-	target_link_libraries(mcl_st PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
-	add_dependencies(mcl_st gen_bint-x64-win.obj)
-
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
-
 	target_compile_definitions(mcl PUBLIC NOMINMAX)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX)
 	# set compiler flags for warnings level
@@ -208,6 +193,21 @@ else()
 	endif()
 endif()
 
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
+		COMMAND ${ML64} -c ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm -o ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_bint-x64-win.obj
+		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+	target_link_libraries(mcl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+	add_dependencies(mcl gen_bint-x64-win.obj)
+	target_link_libraries(mcl_st PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+	add_dependencies(mcl_st gen_bint-x64-win.obj)
+	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
+endif()
+
 if(MCL_TEST_WITH_GMP)
 	if(NOT MSVC)
 		find_package(GMP REQUIRED)
@@ -244,9 +244,6 @@ if(MCL_TEST_WITH_GMP)
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14
 			cybozulib_ext::mpir
 			cybozulib_ext::mpirxx)
-
-		target_link_libraries(mcl PUBLIC mcl::windows_specific)
-		target_link_libraries(mcl_st PUBLIC mcl::windows_specific)
 	endif()
 endif()
 

@@ -68,7 +68,7 @@ _text segment
 align 16
 mclb_add0 proc
 xor eax, eax
-ret 
+ret
 mclb_add0 endp
 align 16
 mclb_add1 proc
@@ -77,7 +77,7 @@ add rax, [r8]
 mov [rcx], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add1 endp
 align 16
 mclb_add2 proc
@@ -89,7 +89,7 @@ adc rax, [r8+8]
 mov [rcx+8], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add2 endp
 align 16
 mclb_add3 proc
@@ -104,7 +104,7 @@ adc rax, [r8+16]
 mov [rcx+16], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add3 endp
 align 16
 mclb_add4 proc
@@ -122,7 +122,7 @@ adc rax, [r8+24]
 mov [rcx+24], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add4 endp
 align 16
 mclb_add5 proc
@@ -143,7 +143,7 @@ adc rax, [r8+32]
 mov [rcx+32], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add5 endp
 align 16
 mclb_add6 proc
@@ -167,7 +167,7 @@ adc rax, [r8+40]
 mov [rcx+40], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add6 endp
 align 16
 mclb_add7 proc
@@ -194,7 +194,7 @@ adc rax, [r8+48]
 mov [rcx+48], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add7 endp
 align 16
 mclb_add8 proc
@@ -224,7 +224,7 @@ adc rax, [r8+56]
 mov [rcx+56], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add8 endp
 align 16
 mclb_add9 proc
@@ -257,7 +257,7 @@ adc rax, [r8+64]
 mov [rcx+64], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add9 endp
 align 16
 mclb_add10 proc
@@ -293,7 +293,7 @@ adc rax, [r8+72]
 mov [rcx+72], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add10 endp
 align 16
 mclb_add11 proc
@@ -332,7 +332,7 @@ adc rax, [r8+80]
 mov [rcx+80], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add11 endp
 align 16
 mclb_add12 proc
@@ -374,7 +374,7 @@ adc rax, [r8+88]
 mov [rcx+88], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add12 endp
 align 16
 mclb_add13 proc
@@ -419,7 +419,7 @@ adc rax, [r8+96]
 mov [rcx+96], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add13 endp
 align 16
 mclb_add14 proc
@@ -467,7 +467,7 @@ adc rax, [r8+104]
 mov [rcx+104], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add14 endp
 align 16
 mclb_add15 proc
@@ -518,7 +518,7 @@ adc rax, [r8+112]
 mov [rcx+112], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add15 endp
 align 16
 mclb_add16 proc
@@ -572,12 +572,12 @@ adc rax, [r8+120]
 mov [rcx+120], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_add16 endp
 align 16
 mclb_sub0 proc
 xor eax, eax
-ret 
+ret
 mclb_sub0 endp
 align 16
 mclb_sub1 proc
@@ -586,7 +586,7 @@ sub rax, [r8]
 mov [rcx], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub1 endp
 align 16
 mclb_sub2 proc
@@ -598,7 +598,7 @@ sbb rax, [r8+8]
 mov [rcx+8], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub2 endp
 align 16
 mclb_sub3 proc
@@ -613,7 +613,7 @@ sbb rax, [r8+16]
 mov [rcx+16], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub3 endp
 align 16
 mclb_sub4 proc
@@ -631,7 +631,7 @@ sbb rax, [r8+24]
 mov [rcx+24], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub4 endp
 align 16
 mclb_sub5 proc
@@ -652,7 +652,7 @@ sbb rax, [r8+32]
 mov [rcx+32], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub5 endp
 align 16
 mclb_sub6 proc
@@ -676,7 +676,7 @@ sbb rax, [r8+40]
 mov [rcx+40], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub6 endp
 align 16
 mclb_sub7 proc
@@ -703,7 +703,7 @@ sbb rax, [r8+48]
 mov [rcx+48], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub7 endp
 align 16
 mclb_sub8 proc
@@ -733,7 +733,7 @@ sbb rax, [r8+56]
 mov [rcx+56], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub8 endp
 align 16
 mclb_sub9 proc
@@ -766,7 +766,7 @@ sbb rax, [r8+64]
 mov [rcx+64], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub9 endp
 align 16
 mclb_sub10 proc
@@ -802,7 +802,7 @@ sbb rax, [r8+72]
 mov [rcx+72], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub10 endp
 align 16
 mclb_sub11 proc
@@ -841,7 +841,7 @@ sbb rax, [r8+80]
 mov [rcx+80], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub11 endp
 align 16
 mclb_sub12 proc
@@ -883,7 +883,7 @@ sbb rax, [r8+88]
 mov [rcx+88], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub12 endp
 align 16
 mclb_sub13 proc
@@ -928,7 +928,7 @@ sbb rax, [r8+96]
 mov [rcx+96], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub13 endp
 align 16
 mclb_sub14 proc
@@ -976,7 +976,7 @@ sbb rax, [r8+104]
 mov [rcx+104], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub14 endp
 align 16
 mclb_sub15 proc
@@ -1027,7 +1027,7 @@ sbb rax, [r8+112]
 mov [rcx+112], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub15 endp
 align 16
 mclb_sub16 proc
@@ -1081,12 +1081,12 @@ sbb rax, [r8+120]
 mov [rcx+120], rax
 setc al
 movzx eax, al
-ret 
+ret
 mclb_sub16 endp
 align 16
 mclb_mulUnit_fast0 proc
 xor eax, eax
-ret 
+ret
 mclb_mulUnit_fast0 endp
 align 16
 mclb_mulUnit_fast1 proc
@@ -1094,7 +1094,7 @@ mov rax, [rdx]
 mul r8
 mov [rcx], rax
 mov rax, rdx
-ret 
+ret
 mclb_mulUnit_fast1 endp
 align 16
 mclb_mulUnit_fast2 proc
@@ -1109,7 +1109,7 @@ add rax, r9
 adc rdx, 0
 mov [rcx+8], rax
 mov rax, rdx
-ret 
+ret
 mclb_mulUnit_fast2 endp
 align 16
 mclb_mulUnit_fast3 proc
@@ -1124,7 +1124,7 @@ mulx rax, rdx, [r11+16]
 adc rdx, r9
 mov [rcx+16], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast3 endp
 align 16
 mclb_mulUnit_fast4 proc
@@ -1142,7 +1142,7 @@ mulx rax, rdx, [r11+24]
 adc rdx, r10
 mov [rcx+24], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast4 endp
 align 16
 mclb_mulUnit_fast5 proc
@@ -1163,7 +1163,7 @@ mulx rax, rdx, [r11+32]
 adc rdx, r9
 mov [rcx+32], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast5 endp
 align 16
 mclb_mulUnit_fast6 proc
@@ -1187,7 +1187,7 @@ mulx rax, rdx, [r11+40]
 adc rdx, r10
 mov [rcx+40], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast6 endp
 align 16
 mclb_mulUnit_fast7 proc
@@ -1214,7 +1214,7 @@ mulx rax, rdx, [r11+48]
 adc rdx, r9
 mov [rcx+48], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast7 endp
 align 16
 mclb_mulUnit_fast8 proc
@@ -1244,7 +1244,7 @@ mulx rax, rdx, [r11+56]
 adc rdx, r10
 mov [rcx+56], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast8 endp
 align 16
 mclb_mulUnit_fast9 proc
@@ -1277,12 +1277,12 @@ mulx rax, rdx, [r11+64]
 adc rdx, r9
 mov [rcx+64], rdx
 adc rax, 0
-ret 
+ret
 mclb_mulUnit_fast9 endp
 align 16
 mclb_mulUnitAdd_fast0 proc
 xor eax, eax
-ret 
+ret
 mclb_mulUnitAdd_fast0 endp
 align 16
 mclb_mulUnitAdd_fast1 proc
@@ -1296,7 +1296,7 @@ mov [rcx], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast1 endp
 align 16
 mclb_mulUnitAdd_fast2 proc
@@ -1315,7 +1315,7 @@ mov [rcx+8], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast2 endp
 align 16
 mclb_mulUnitAdd_fast3 proc
@@ -1339,7 +1339,7 @@ mov [rcx+16], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast3 endp
 align 16
 mclb_mulUnitAdd_fast4 proc
@@ -1368,7 +1368,7 @@ mov [rcx+24], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast4 endp
 align 16
 mclb_mulUnitAdd_fast5 proc
@@ -1402,7 +1402,7 @@ mov [rcx+32], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast5 endp
 align 16
 mclb_mulUnitAdd_fast6 proc
@@ -1441,7 +1441,7 @@ mov [rcx+40], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast6 endp
 align 16
 mclb_mulUnitAdd_fast7 proc
@@ -1485,7 +1485,7 @@ mov [rcx+48], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast7 endp
 align 16
 mclb_mulUnitAdd_fast8 proc
@@ -1534,7 +1534,7 @@ mov [rcx+56], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast8 endp
 align 16
 mclb_mulUnitAdd_fast9 proc
@@ -1588,12 +1588,12 @@ mov [rcx+64], r9
 mov r9, 0
 adcx rax, r9
 adox rax, r9
-ret 
+ret
 mclb_mulUnitAdd_fast9 endp
 align 16
 mclb_mulUnit_slow0 proc
 xor eax, eax
-ret 
+ret
 mclb_mulUnit_slow0 endp
 align 16
 mclb_mulUnit_slow1 proc
@@ -1601,7 +1601,7 @@ mov rax, [rdx]
 mul r8
 mov [rcx], rax
 mov rax, rdx
-ret 
+ret
 mclb_mulUnit_slow1 endp
 align 16
 mclb_mulUnit_slow2 proc
@@ -1616,7 +1616,7 @@ add rax, r9
 adc rdx, 0
 mov [rcx+8], rax
 mov rax, rdx
-ret 
+ret
 mclb_mulUnit_slow2 endp
 align 16
 mclb_mulUnit_slow3 proc
@@ -1642,7 +1642,7 @@ mov [rcx+16], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 40
-ret 
+ret
 mclb_mulUnit_slow3 endp
 align 16
 mclb_mulUnit_slow4 proc
@@ -1675,7 +1675,7 @@ mov [rcx+24], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 56
-ret 
+ret
 mclb_mulUnit_slow4 endp
 align 16
 mclb_mulUnit_slow5 proc
@@ -1715,7 +1715,7 @@ mov [rcx+32], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 72
-ret 
+ret
 mclb_mulUnit_slow5 endp
 align 16
 mclb_mulUnit_slow6 proc
@@ -1762,7 +1762,7 @@ mov [rcx+40], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 88
-ret 
+ret
 mclb_mulUnit_slow6 endp
 align 16
 mclb_mulUnit_slow7 proc
@@ -1816,7 +1816,7 @@ mov [rcx+48], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 104
-ret 
+ret
 mclb_mulUnit_slow7 endp
 align 16
 mclb_mulUnit_slow8 proc
@@ -1877,7 +1877,7 @@ mov [rcx+56], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 120
-ret 
+ret
 mclb_mulUnit_slow8 endp
 align 16
 mclb_mulUnit_slow9 proc
@@ -1945,12 +1945,12 @@ mov [rcx+64], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 136
-ret 
+ret
 mclb_mulUnit_slow9 endp
 align 16
 mclb_mulUnitAdd_slow0 proc
 xor eax, eax
-ret 
+ret
 mclb_mulUnitAdd_slow0 endp
 align 16
 mclb_mulUnitAdd_slow1 proc
@@ -1964,7 +1964,7 @@ add [rcx], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 8
-ret 
+ret
 mclb_mulUnitAdd_slow1 endp
 align 16
 mclb_mulUnitAdd_slow2 proc
@@ -1988,7 +1988,7 @@ adc [rcx+8], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 24
-ret 
+ret
 mclb_mulUnitAdd_slow2 endp
 align 16
 mclb_mulUnitAdd_slow3 proc
@@ -2021,7 +2021,7 @@ adc [rcx+16], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 40
-ret 
+ret
 mclb_mulUnitAdd_slow3 endp
 align 16
 mclb_mulUnitAdd_slow4 proc
@@ -2063,7 +2063,7 @@ adc [rcx+24], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 56
-ret 
+ret
 mclb_mulUnitAdd_slow4 endp
 align 16
 mclb_mulUnitAdd_slow5 proc
@@ -2114,7 +2114,7 @@ adc [rcx+32], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 72
-ret 
+ret
 mclb_mulUnitAdd_slow5 endp
 align 16
 mclb_mulUnitAdd_slow6 proc
@@ -2174,7 +2174,7 @@ adc [rcx+40], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 88
-ret 
+ret
 mclb_mulUnitAdd_slow6 endp
 align 16
 mclb_mulUnitAdd_slow7 proc
@@ -2243,7 +2243,7 @@ adc [rcx+48], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 104
-ret 
+ret
 mclb_mulUnitAdd_slow7 endp
 align 16
 mclb_mulUnitAdd_slow8 proc
@@ -2321,7 +2321,7 @@ adc [rcx+56], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 120
-ret 
+ret
 mclb_mulUnitAdd_slow8 endp
 align 16
 mclb_mulUnitAdd_slow9 proc
@@ -2408,7 +2408,7 @@ adc [rcx+64], rax
 adc rdx, 0
 mov rax, rdx
 add rsp, 136
-ret 
+ret
 mclb_mulUnitAdd_slow9 endp
 align 16
 mclb_disable_fast proc
@@ -2460,7 +2460,7 @@ mov [rdx], rax
 lea rdx, offset mclb_mulUnitAdd8
 lea rax, offset mclb_mulUnitAdd_slow8
 mov [rdx], rax
-ret 
+ret
 mclb_disable_fast endp
 _text ends
 end

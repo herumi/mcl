@@ -181,9 +181,6 @@ On Windows, `build.sh` expects [cybozulib_ext](https://github.com/herumi/cybozul
 
 ## options
 
-```
-cmake .. MCL_USE_GMP=OFF ; without GMP
-```
 see `cmake .. -LA`.
 
 ## tests
