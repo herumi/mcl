@@ -119,7 +119,7 @@ MCL_USE_GMP?=0
 ifeq ($(MCL_USE_GMP),1)
   GMP_LIB=-lgmp -lgmpxx
   ifeq ($(UNAME_S),Darwin)
-    GMP_DIR?=/usr/local/opt/gmp
+    GMP_DIR?=/opt/homebrew/
     CFLAGS+=-I$(GMP_DIR)/include
     LDFLAGS+=-L$(GMP_DIR)/lib
   endif
