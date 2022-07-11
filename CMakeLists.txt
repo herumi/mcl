@@ -174,14 +174,11 @@ endif()
 target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
+	# skip
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 	target_sources(mcl PRIVATE src/asm/x86-64.s)
 	target_sources(mcl_st PRIVATE src/asm/x86-64.s)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-	target_sources(mcl PRIVATE src/asm/aarch64.s)
-	target_sources(mcl_st PRIVATE src/asm/aarch64.s)
-	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 else()
 	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 	message("base_obj=" ${BASE_OBJ})
