@@ -62,6 +62,14 @@ if(MSVC)
 		CACHE PATH "external cybozulib_ext directory")
 endif()
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(BIT "64")
+else()
+	set(BIT "32")
+endif()
+#message("CMAKE_SIZEOF_VOID_P is ${CMAKE_SIZEOF_VOID_P}")
+#message("BIT is ${BIT}")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -98,30 +106,30 @@ set_target_properties(mcl_st PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 #set_target_properties(mcl_st PROPERTIES PREFIX "lib")
 
-if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_executable(gen src/gen.cpp)
-	target_include_directories(gen PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-	add_custom_command(OUTPUT base64.ll
-		COMMAND gen > base64.ll
-		DEPENDS gen
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(gen_base64.ll
-		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.ll)
-
-	add_custom_command(OUTPUT base64.o
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o base64.o base64.ll -O3 -fPIC
-		DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/base64.ll
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(gen_base64.o
-		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-
-	target_link_libraries(mcl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-	add_dependencies(mcl gen_base64.o)
-	target_link_libraries(mcl_st PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-	add_dependencies(mcl_st gen_base64.o)
-endif()
+#if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#	add_executable(gen src/gen.cpp)
+#	target_include_directories(gen PRIVATE
+#		${CMAKE_CURRENT_SOURCE_DIR}/include)
+#
+#	add_custom_command(OUTPUT base64.ll
+#		COMMAND gen > base64.ll
+#		DEPENDS gen
+##		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+#	add_custom_target(gen_base64.ll
+#		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.ll)
+#
+#	add_custom_command(OUTPUT base64.o
+#		COMMAND ${CMAKE_CXX_COMPILER} -c -o base64.o base64.ll -O3 -fPIC
+#		DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/base64.ll
+#		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+#	add_custom_target(gen_base64.o
+#		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
+#
+#	target_link_libraries(mcl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
+#	add_dependencies(mcl gen_base64.o)
+#	target_link_libraries(mcl_st PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
+#	add_dependencies(mcl_st gen_base64.o)
+#endif()
 
 if(MSVC)
 	if(MCL_MSVC_RUNTIME_DLL)
@@ -184,10 +192,10 @@ else()
 			target_sources(mcl_st PRIVATE src/asm/x86-64mac.s)
 			set(CPU x86-64)
 		elseif(UNIX)
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/x86-64.s)
-			target_sources(mcl_st PRIVATE src/asm/x86-64.s)
+#			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+#			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+#			target_sources(mcl PRIVATE src/asm/x86-64.s)
+#			target_sources(mcl_st PRIVATE src/asm/x86-64.s)
 			set(CPU x86-64)
 		endif()
 	endif()
@@ -196,22 +204,41 @@ endif()
 # Win64
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
-	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
-		COMMAND ${ML64} /Fo ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj /c ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm
+	set(BINT_X64_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj")
+	add_custom_command(OUTPUT ${BINT_X64_OBJ}
+		COMMAND ${ML64} /c /Fo ${BINT_X64_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint-x64-win.obj
-		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
-	target_link_libraries(mcl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+		SOURCES ${BINT_X64_OBJ})
+	target_link_libraries(mcl PRIVATE ${BINT_X64_OBJ})
 	add_dependencies(mcl gen_bint-x64-win.obj)
-	target_link_libraries(mcl_st PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
+	target_link_libraries(mcl_st PRIVATE ${BINT_X64_OBJ})
 	add_dependencies(mcl_st gen_bint-x64-win.obj)
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
+	target_compile_definitions(mcl PRIVATE MCL_BINT_ASM=1)
+	target_compile_definitions(mcl_st PRIVATE MCL_BINT_ASM=1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
 	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.s)
 	target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.s)
+	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
+else()
+	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+	message("base_obj=" ${BASE_OBJ})
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
+	endif()
+
+	add_custom_command(OUTPUT ${BASE_OBJ}
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_base.o
+		SOURCES ${BASE_OBJ})
+	target_link_libraries(mcl PRIVATE ${BASE_OBJ})
+	add_dependencies(mcl gen_base.o)
+	target_link_libraries(mcl_st PRIVATE ${BASE_OBJ})
+	add_dependencies(mcl_st gen_base.o)
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 endif()
 
 if(MCL_TEST_WITH_GMP)
