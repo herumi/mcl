@@ -29,11 +29,6 @@ option(
 	${MCL_TEST_WITH_GMP_DEFAULT}
 )
 option(
-	MCL_USE_ASM
-	"use asm"
-	ON
-)
-option(
 	MCL_USE_LLVM
 	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++"
 	OFF
@@ -56,7 +51,6 @@ if(MSVC)
 	)
 endif()
 
-
 if(MSVC)
 	set(MCL_CYBOZULIB_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cybozulib_ext"
 		CACHE PATH "external cybozulib_ext directory")
@@ -75,10 +69,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-if(MCL_USE_LLVM AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	message(WARNING "MCL_USE_LLVM will not be used: requiring clang/clang++.")
-endif()
 
 add_library(mcl SHARED src/fp.cpp)
 add_library(mcl::mcl ALIAS mcl)
@@ -106,30 +96,10 @@ set_target_properties(mcl_st PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 #set_target_properties(mcl_st PROPERTIES PREFIX "lib")
 
-#if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#	add_executable(gen src/gen.cpp)
-#	target_include_directories(gen PRIVATE
-#		${CMAKE_CURRENT_SOURCE_DIR}/include)
-#
-#	add_custom_command(OUTPUT base64.ll
-#		COMMAND gen > base64.ll
-#		DEPENDS gen
-##		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-#	add_custom_target(gen_base64.ll
-#		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.ll)
-#
-#	add_custom_command(OUTPUT base64.o
-#		COMMAND ${CMAKE_CXX_COMPILER} -c -o base64.o base64.ll -O3 -fPIC
-#		DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/base64.ll
-#		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-#	add_custom_target(gen_base64.o
-#		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-#
-#	target_link_libraries(mcl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-#	add_dependencies(mcl gen_base64.o)
-#	target_link_libraries(mcl_st PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-#	add_dependencies(mcl_st gen_base64.o)
-#endif()
+if(${MCL_MAX_BIT_SIZE} GREATER 0)
+	target_compile_definitions(mcl PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
+	target_compile_definitions(mcl_st PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
+endif()
 
 if(MSVC)
 	if(MCL_MSVC_RUNTIME_DLL)
@@ -164,45 +134,10 @@ else()
 	target_compile_features(mcl PUBLIC cxx_std_11)
 	target_compile_features(mcl_st PUBLIC cxx_std_11)
 
-	if(${MCL_MAX_BIT_SIZE} GREATER 0)
-		target_compile_definitions(mcl PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
-		target_compile_definitions(mcl_st PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
-	endif()
-
-	if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-	elseif(MCL_USE_ASM)
-		if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/aarch64.s)
-			target_sources(mcl_st PRIVATE src/asm/aarch64.s)
-			set(CPU arch64)
-		elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/arm.s)
-			target_sources(mcl_st PRIVATE src/asm/arm.s)
-			set(CPU arm)
-		elseif(APPLE)
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/x86-64mac.s)
-			target_sources(mcl_st PRIVATE src/asm/x86-64mac.s)
-			set(CPU x86-64)
-		elseif(UNIX)
-#			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-#			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-#			target_sources(mcl PRIVATE src/asm/x86-64.s)
-#			target_sources(mcl_st PRIVATE src/asm/x86-64.s)
-			set(CPU x86-64)
-		endif()
-	endif()
 endif()
 
-# Win64
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+# use bint-x64 on x64, bint${BIT}.ll on the other CPU
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
 	set(BINT_X64_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj")
 	add_custom_command(OUTPUT ${BINT_X64_OBJ}
@@ -214,13 +149,39 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 	add_dependencies(mcl gen_bint-x64-win.obj)
 	target_link_libraries(mcl_st PRIVATE ${BINT_X64_OBJ})
 	add_dependencies(mcl_st gen_bint-x64-win.obj)
-	target_compile_definitions(mcl PRIVATE MCL_BINT_ASM=1)
-	target_compile_definitions(mcl_st PRIVATE MCL_BINT_ASM=1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.s)
 	target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.s)
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
+else()
+	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
+	message("bint_obj=" ${BINT_OBJ})
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
+	endif()
+
+	add_custom_command(OUTPUT ${BINT_OBJ}
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_bint.o
+		SOURCES ${BINT_OBJ})
+	target_link_libraries(mcl PRIVATE ${BINT_OBJ})
+	add_dependencies(mcl gen_bint.o)
+	target_link_libraries(mcl_st PRIVATE ${BINT_OBJ})
+	add_dependencies(mcl_st gen_bint.o)
+endif()
+
+# use generated asm or compile base${BIT}.ll by clang
+target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+	target_sources(mcl PRIVATE src/asm/x86-64.s)
+	target_sources(mcl_st PRIVATE src/asm/x86-64.s)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+	target_sources(mcl PRIVATE src/asm/aarch64.s)
+	target_sources(mcl_st PRIVATE src/asm/aarch64.s)
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 else()
 	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 	message("base_obj=" ${BASE_OBJ})
@@ -237,8 +198,6 @@ else()
 	add_dependencies(mcl gen_base.o)
 	target_link_libraries(mcl_st PRIVATE ${BASE_OBJ})
 	add_dependencies(mcl_st gen_base.o)
-	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 endif()
 
 if(MCL_TEST_WITH_GMP)
