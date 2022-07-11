@@ -171,20 +171,22 @@ else()
 endif()
 
 # use generated asm or compile base${BIT}.ll by clang
-target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# skip
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 	target_sources(mcl PRIVATE src/asm/x86-64.s)
 	target_sources(mcl_st PRIVATE src/asm/x86-64.s)
 else()
-	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
-	message("base_obj=" ${BASE_OBJ})
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
 	endif()
+	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+	message("base_obj=" ${BASE_OBJ})
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
 	add_custom_command(OUTPUT ${BASE_OBJ}
 		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
