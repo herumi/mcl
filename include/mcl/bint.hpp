@@ -16,7 +16,7 @@
 	#define MCL_BINT_ASM 0
 #endif
 #ifndef MCL_BINT_ASM
-	#define MCL_BINT_ASM 0 //1
+	#define MCL_BINT_ASM 1
 #endif
 
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && !defined(MCL_BINT_ASM_X64)
