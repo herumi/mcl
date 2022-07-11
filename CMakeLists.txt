@@ -197,7 +197,7 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
-		COMMAND ${ML64} -c ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm -o ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj
+		COMMAND ${ML64} /Fo ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj /c ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint-x64-win.obj
 		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj)
@@ -207,9 +207,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
 	add_dependencies(mcl_st gen_bint-x64-win.obj)
 	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
-endif()
-
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=1)
 	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.s)
