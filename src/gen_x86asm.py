@@ -273,7 +273,7 @@ def init(mode):
 	elif g_masm:
 		output('; for masm (ml64.exe)')
 	else:
-		output('# for nasm')
+		output('; for nasm')
 
 def output(s):
 	g_text.append(s)
