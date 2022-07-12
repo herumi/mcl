@@ -145,9 +145,9 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint-x64-win.obj
 		SOURCES ${BINT_X64_OBJ})
-	target_link_libraries(mcl PRIVATE ${BINT_X64_OBJ})
+	target_link_libraries(mcl PUBLIC ${BINT_X64_OBJ})
 	add_dependencies(mcl gen_bint-x64-win.obj)
-	target_link_libraries(mcl_st PRIVATE ${BINT_X64_OBJ})
+	target_link_libraries(mcl_st PUBLIC ${BINT_X64_OBJ})
 	add_dependencies(mcl_st gen_bint-x64-win.obj)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.s)
