@@ -4,7 +4,7 @@
 	@brief link mpir/mpirxx of mpir
 	@author MITSUNARI Shigeo(@herumi)
 */
-#if defined(_WIN32) && defined(_MT)
+#if defined(_MSC_VER) && defined(_MT)
 	#if _MSC_VER >= 1900 // VC2015, VC2017(1910)
 		#pragma comment(lib, "mt/14/mpir.lib")
 		#pragma comment(lib, "mt/14/mpirxx.lib")

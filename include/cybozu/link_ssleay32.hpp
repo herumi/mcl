@@ -4,7 +4,7 @@
 	@brief link ssleay32.lib of openssl
 	@author MITSUNARI Shigeo(@herumi)
 */
-#if defined(_WIN32) && defined(_MT)
+#if defined(_MSC_VER) && defined(_MT)
 	#if _MSC_VER >= 1900 // VC2015
 		#ifdef _WIN64
 			#pragma comment(lib, "mt/14/ssleay32.lib")
