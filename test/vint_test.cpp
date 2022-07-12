@@ -6,10 +6,6 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
-#ifndef MCL_USE_VINT
-#include <gmpxx.h>
-#include <cybozu/link_mpir.hpp>
-#endif
 
 #define PUT(x) std::cout << #x "=" << x << std::endl;
 
@@ -17,7 +13,7 @@
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-#ifdef MCL_BINT_FUNC_PTR
+#if MCL_BINT_ASM_X64 == 1
 #define XBYAK_ONLY_CLASS_CPU
 #include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
@@ -26,7 +22,7 @@ CYBOZU_TEST_AUTO(cpu)
 	Cpu cpu;
 	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
 		fprintf(stderr, "bmi2 and adx are not available\n");
-		mcl::bint::mclb_disable_fast();
+		mclb_disable_fast();
 	}
 }
 
@@ -1475,12 +1471,6 @@ CYBOZU_TEST_AUTO(bench)
 		x.setStr(tbl[i].x);
 		y.setStr(tbl[i].y);
 		CYBOZU_BENCH_C("fast div", N, Vint::div, z, x, y);
-#ifndef MCL_USE_VINT
-		{
-			mpz_class mx(tbl[i].x), my(tbl[i].y), mz;
-			CYBOZU_BENCH_C("gmp", N, mpz_div, mz.get_mpz_t(), mx.get_mpz_t(), my.get_mpz_t());
-		}
-#endif
 	}
 }
 #endif

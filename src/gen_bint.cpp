@@ -680,15 +680,6 @@ struct Code : public mcl::Generator {
 		*L = trunc(x, sizeL);
 		return ret;
 	}
-	void gen_all()
-	{
-		gen_mclb_addsub(true);
-		gen_mclb_addsub(false);
-		gen_mclb_mulUnit();
-		gen_mclb_mulUnitAdd();
-//		gen_mclb_addNF();
-//		gen_mclb_subNF();
-	}
 	void gen_mul()
 	{
 		gen_mulPv();
@@ -705,15 +696,20 @@ struct Code : public mcl::Generator {
 		unit2 = unit * 2;
 		unitStr = cybozu::itoa(unit);
 	}
-	void gen(uint32_t maxBitSize, const std::string& suf)
+	void gen(uint32_t N, uint32_t addN, const std::string& suf)
 	{
 		this->suf = suf;
 		gen_once();
 
-		uint32_t end = ((maxBitSize + unit - 1) / unit);
-		for (uint32_t n = 1; n <= end; n++) {
+		for (uint32_t n = 1; n <= addN; n++) {
 			setBit(n * unit);
-			gen_all();
+			gen_mclb_addsub(true);
+			gen_mclb_addsub(false);
+		}
+		for (uint32_t n = 1; n <= N; n++) {
+			setBit(n * unit);
+			gen_mclb_mulUnit();
+			gen_mclb_mulUnitAdd();
 		}
 	}
 };
@@ -722,23 +718,29 @@ int main(int argc, char *argv[])
 	try
 {
 	uint32_t unit;
+	uint32_t N, addN;
 	int llvmVer;
 	std::string suf;
 	cybozu::Option opt;
 	opt.appendOpt(&unit, uint32_t(sizeof(void*)) * 8, "u", ": unit");
 	opt.appendOpt(&llvmVer, 0x70, "ver", ": llvm version");
 	opt.appendOpt(&suf, "", "s", ": suffix of function name");
+	opt.appendOpt(&N, 0, "n", ": max size of Unit");
+	opt.appendOpt(&addN, 0, "addn", ": max size of add/sub");
 	opt.appendHelp("h");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
 	}
+	if (N == 0) {
+		N = unit == 8 ? 9 : 17;
+		addN = unit == 8 ? 16 : 32;
+	}
 	Code c;
 	c.setLlvmVer(llvmVer);
 	c.setUnit(unit);
-	uint32_t maxBitSize = MCL_MAX_BIT_SIZE;
-	fprintf(stderr, "llvmVer=0x%02x unit=%d maxBitSize=%d\n", llvmVer, unit, maxBitSize);
-	c.gen(maxBitSize, suf);
+	fprintf(stderr, "llvmVer=0x%02x unit=%d N=%d addN=%d\n", llvmVer, unit, N, addN);
+	c.gen(N, addN, suf);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
 	return 1;

@@ -11,7 +11,6 @@ void dump(const char *msg, const uint32_t *x, size_t n)
 }
 #include "../src/low_func_wasm.hpp"
 
-#define MCL_USE_VINT
 #define MCL_SIZEOF_UNIT 4
 #define MCL_MAX_BIT_SIZE 768
 #include <mcl/vint.hpp>

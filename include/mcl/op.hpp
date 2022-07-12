@@ -12,7 +12,6 @@
 
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_DONT_USE_XBYAK
-	#define MCL_DONT_USE_OPENSSL
 #endif
 #if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8) && !defined(MCL_STATIC_CODE)
 	#define MCL_USE_XBYAK
@@ -136,6 +135,7 @@ typedef int (*int2u)(Unit*, const Unit*);
 
 typedef Unit (*u1uII)(Unit*, Unit, Unit);
 typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
+typedef Unit (*u2uI)(Unit*, const Unit *, Unit);
 
 /*
 	disable -Wcast-function-type

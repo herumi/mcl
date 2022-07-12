@@ -15,36 +15,16 @@
 	#pragma warning(disable : 4127)
 #endif
 
-#ifndef MCL_LLVM_BMI2
-	#if (CYBOZU_HOST == CYBOZU_HOST_INTEL) && !defined(MCL_STATIC_CODE) && !defined(MCL_USE_VINT)
-		#define MCL_LLVM_BMI2 1
-	#else
-		#define MCL_LLVM_BMI2 0
-	#endif
-#endif
-
 namespace mcl { namespace fp {
 
 struct Gtag; // GMP
 struct Ltag; // LLVM
-#if MCL_LLVM_BMI2 == 1
-struct LBMI2tag; // LLVM with Intel BMI2 instruction
-#endif
 struct Atag; // asm
 
 template<class Tag> struct TagToStr { };
 template<> struct TagToStr<Gtag> { static const char *f() { return "Gtag"; } };
 template<> struct TagToStr<Ltag> { static const char *f() { return "Ltag"; } };
-#if MCL_LLVM_BMI2 == 1
-template<> struct TagToStr<LBMI2tag> { static const char *f() { return "LBMI2tag"; } };
-#endif
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
-
-template<size_t N>
-bool isZeroC(const Unit *x)
-{
-	return isZeroArray(x, N);
-}
 
 // (carry, z[N]) <- x[N] + y[N]
 template<size_t N, class Tag = Gtag>
@@ -128,7 +108,7 @@ template<size_t N, class Tag = Gtag>
 struct Neg {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
-		if (isZeroC<N>(x)) {
+		if (bint::isZeroT<N>(x)) {
 			if (x != y) bint::clearT<N>(y);
 			return;
 		}

@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 project(mcl
-	VERSION 1.22
+	VERSION 1.64
 	LANGUAGES CXX C ASM)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
@@ -19,31 +19,14 @@ option(
 	OFF
 )
 if(MSVC)
-	option(
-		MCL_DOWNLOAD_SOURCE
-		"download cybozulib_ext"
-		OFF
-		)
+	set(MCL_TEST_WITH_GMP_DEFAULT OFF)
+else()
+	set(MCL_TEST_WITH_GMP_DEFAULT ON)
 endif()
 option(
-	MCL_USE_OPENSSL
-	"use openssl"
-	OFF
-)
-option(
-	MCL_USE_GMP
-	"use gmp"
-	ON
-)
-option(
-	MCL_USE_ASM
-	"use asm"
-	ON
-)
-option(
-	MCL_USE_XBYAK
-	"use xbyak"
-	ON
+	MCL_TEST_WITH_GMP
+	"(Windows) download MPIR libraries from cybozulib_ext"
+	${MCL_TEST_WITH_GMP_DEFAULT}
 )
 option(
 	MCL_USE_LLVM
@@ -68,21 +51,24 @@ if(MSVC)
 	)
 endif()
 
-
 if(MSVC)
 	set(MCL_CYBOZULIB_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cybozulib_ext"
 		CACHE PATH "external cybozulib_ext directory")
 endif()
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(BIT "64")
+else()
+	set(BIT "32")
+endif()
+#message("CMAKE_SIZEOF_VOID_P is ${CMAKE_SIZEOF_VOID_P}")
+#message("BIT is ${BIT}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-if(MCL_USE_LLVM AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	message(WARNING "MCL_USE_LLVM will not be used: requiring clang/clang++.")
-endif()
 
 add_library(mcl SHARED src/fp.cpp)
 add_library(mcl::mcl ALIAS mcl)
@@ -110,33 +96,9 @@ set_target_properties(mcl_st PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 #set_target_properties(mcl_st PROPERTIES PREFIX "lib")
 
-if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	add_executable(gen src/gen.cpp)
-	target_include_directories(gen PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/include)
-	if(MCL_USE_GMP)
-		find_package(GMP REQUIRED)
-		target_link_libraries(gen PRIVATE GMP::GMPXX GMP::GMP)
-	endif()
-
-	add_custom_command(OUTPUT base64.ll
-		COMMAND gen > base64.ll
-		DEPENDS gen
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(gen_base64.ll
-		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.ll)
-
-	add_custom_command(OUTPUT base64.o
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o base64.o base64.ll -O3 -fPIC
-		DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/base64.ll
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(gen_base64.o
-		SOURCES ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-
-	target_link_libraries(mcl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-	add_dependencies(mcl gen_base64.o)
-	target_link_libraries(mcl_st PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/base64.o)
-	add_dependencies(mcl_st gen_base64.o)
+if(${MCL_MAX_BIT_SIZE} GREATER 0)
+	target_compile_definitions(mcl PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
+	target_compile_definitions(mcl_st PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
 endif()
 
 if(MSVC)
@@ -147,6 +109,7 @@ if(MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /Zi /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
+
 	target_compile_definitions(mcl PUBLIC NOMINMAX)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX)
 	# set compiler flags for warnings level
@@ -171,68 +134,88 @@ else()
 	target_compile_features(mcl PUBLIC cxx_std_11)
 	target_compile_features(mcl_st PUBLIC cxx_std_11)
 
-	if(${MCL_MAX_BIT_SIZE} GREATER 0)
-		target_compile_definitions(mcl PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
-		target_compile_definitions(mcl_st PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
+endif()
+
+# use bint-x64 on x64, bint${BIT}.ll on the other CPU
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
+	find_program(ML64 ml64.exe HINTS "${cl_path}" DOC "path to assembler")
+	set(BINT_X64_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj")
+	add_custom_command(OUTPUT ${BINT_X64_OBJ}
+		COMMAND ${ML64} /c /Fo ${BINT_X64_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_bint-x64-win.obj
+		SOURCES ${BINT_X64_OBJ})
+	target_link_libraries(mcl PUBLIC ${BINT_X64_OBJ})
+	add_dependencies(mcl gen_bint-x64-win.obj)
+	target_link_libraries(mcl_st PUBLIC ${BINT_X64_OBJ})
+	add_dependencies(mcl_st gen_bint-x64-win.obj)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.s)
+	target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.s)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+	target_sources(mcl PRIVATE src/asm/bint64-Linux-aarch64.s)
+	target_sources(mcl_st PRIVATE src/asm/bint64-Linux-aarch64.s)
+else()
+	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
+	message("bint_obj=" ${BINT_OBJ})
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
 	endif()
 
-	if(MCL_USE_LLVM AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1 MCL_LLVM_BMI2=0)
-		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1 MCL_LLVM_BMI2=0)
-	elseif(MCL_USE_ASM)
-		if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/aarch64.s)
-			target_sources(mcl_st PRIVATE src/asm/aarch64.s)
-			set(CPU arch64)
-		elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm")
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/arm.s)
-			target_sources(mcl_st PRIVATE src/asm/arm.s)
-			set(CPU arm)
-		elseif(APPLE)
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/x86-64mac.s src/asm/x86-64mac.bmi2.s)
-			target_sources(mcl_st PRIVATE src/asm/x86-64mac.s src/asm/x86-64mac.bmi2.s)
-			set(CPU x86-64)
-		elseif(UNIX)
-			target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-			target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-			target_sources(mcl PRIVATE src/asm/x86-64.s src/asm/x86-64.bmi2.s)
-			target_sources(mcl_st PRIVATE src/asm/x86-64.s src/asm/x86-64.bmi2.s)
-			set(CPU x86-64)
-		endif()
+	add_custom_command(OUTPUT ${BINT_OBJ}
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_bint.o
+		SOURCES ${BINT_OBJ})
+	target_link_libraries(mcl PRIVATE ${BINT_OBJ})
+	add_dependencies(mcl gen_bint.o)
+	target_link_libraries(mcl_st PRIVATE ${BINT_OBJ})
+	add_dependencies(mcl_st gen_bint.o)
+endif()
+
+# use generated asm or compile base${BIT}.ll by clang
+
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
+	# skip
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+	if(APPLE)
+		target_sources(mcl PRIVATE src/asm/x86-64mac.s)
+		target_sources(mcl_st PRIVATE src/asm/x86-64mac.s)
+	else()
+		target_sources(mcl PRIVATE src/asm/x86-64.s)
+		target_sources(mcl_st PRIVATE src/asm/x86-64.s)
 	endif()
-	if(MCL_USE_GMP)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+	target_sources(mcl PRIVATE src/asm/aarch64.s)
+	target_sources(mcl_st PRIVATE src/asm/aarch64.s)
+else()
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
+	endif()
+	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+	message("base_obj=" ${BASE_OBJ})
+	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
+	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+
+	add_custom_command(OUTPUT ${BASE_OBJ}
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(gen_base.o
+		SOURCES ${BASE_OBJ})
+	target_link_libraries(mcl PRIVATE ${BASE_OBJ})
+	add_dependencies(mcl gen_base.o)
+	target_link_libraries(mcl_st PRIVATE ${BASE_OBJ})
+	add_dependencies(mcl_st gen_base.o)
+endif()
+
+if(MCL_TEST_WITH_GMP)
+	if(NOT MSVC)
 		find_package(GMP REQUIRED)
-		target_link_libraries(mcl PUBLIC GMP::GMPXX GMP::GMP)
-		target_link_libraries(mcl_st PUBLIC GMP::GMPXX GMP::GMP)
-	endif()
-	if(MCL_USE_OPENSSL)
-		find_package(OpenSSL REQUIRED)
-		target_link_libraries(mcl PUBLIC OpenSSL::Crypto)
-		target_link_libraries(mcl_st PUBLIC OpenSSL::Crypto)
-	endif()
-endif()
-
-if(NOT MCL_USE_GMP)
-	target_compile_definitions(mcl PUBLIC MCL_USE_VINT)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_VINT)
-endif()
-if(NOT MCL_USE_OPENSSL)
-	target_compile_definitions(mcl PUBLIC MCL_DONT_USE_OPENSSL)
-	target_compile_definitions(mcl_st PUBLIC MCL_DONT_USE_OPENSSL)
-endif()
-if(NOT MCL_USE_XBYAK)
-	target_compile_definitions(mcl PUBLIC MCL_DONT_USE_XBYAK)
-	target_compile_definitions(mcl_st PUBLIC MCL_DONT_USE_XBYAK)
-endif()
-
-if(MCL_DOWNLOAD_SOURCE)
-	if(MSVC)
+	else()
 		set(CYBOZULIB_EXT_DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/cybozulib_ext)
 		set(CYBOZULIB_EXT_TAG release20170521)
 		set(FILES config.h gmp-impl.h gmp-mparam.h gmp.h gmpxx.h longlong.h mpir.h mpirxx.h)
@@ -240,13 +223,7 @@ if(MCL_DOWNLOAD_SOURCE)
 			file(DOWNLOAD https://raw.githubusercontent.com/herumi/cybozulib_ext/${CYBOZULIB_EXT_TAG}/include/${file} ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include/${file})
 			message("download cybozulib_ext/" ${file})
 		endforeach()
-		set(FILES aes.h applink.c asn1.h asn1_mac.h asn1t.h bio.h blowfish.h bn.h buffer.h camellia.h cast.h cmac.h cms.h comp.h conf.h conf_api.h crypto.h des.h des_old.h dh.h dsa.h dso.h dtls1.h e_os2.h ebcdic.h ec.h ecdh.h ecdsa.h engine.h err.h evp.h hmac.h idea.h krb5_asn.h kssl.h lhash.h md4.h md5.h mdc2.h modes.h obj_mac.h objects.h ocsp.h opensslconf.h opensslv.h ossl_typ.h pem.h pem2.h pkcs12.h pkcs7.h pqueue.h rand.h rc2.h rc4.h ripemd.h rsa.h safestack.h seed.h sha.h srp.h srtp.h ssl.h ssl2.h ssl23.h ssl3.h stack.h symhacks.h tls1.h ts.h txt_db.h ui.h ui_compat.h whrlpool.h x509.h x509_vfy.h x509v3.h)
-		foreach(file IN ITEMS ${FILES})
-			file(DOWNLOAD
-				https://raw.githubusercontent.com/herumi/cybozulib_ext/${CYBOZULIB_EXT_TAG}/include/openssl/${file} ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include/openssl/${file})
-			message("download cybozulib_ext/openssl/" ${file})
-		endforeach()
-		set(FILES mpir.lib mpirxx.lib mpirxx.pdb ssleay32.lib libeay32.lib mpir.pdb)
+		set(FILES mpir.lib mpirxx.lib mpirxx.pdb mpir.pdb)
 		foreach(file IN ITEMS ${FILES})
 			file(DOWNLOAD
 			    https://raw.githubusercontent.com/herumi/cybozulib_ext/${CYBOZULIB_EXT_TAG}/lib/mt/14/${file} ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/${file})
@@ -263,16 +240,6 @@ if(MCL_DOWNLOAD_SOURCE)
 		set_target_properties(cybozulib_ext::mpirxx PROPERTIES
 			INTERFACE_INCLUDE_DIRECTORIES ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include
 			IMPORTED_LOCATION ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/mpirxx.lib)
-		# libeay32
-		add_library(cybozulib_ext::libeay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::libeay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include
-			IMPORTED_LOCATION ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/libeay32.lib)
-		# ssleay32
-		add_library(cybozulib_ext::ssleay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::ssleay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${CYBOZULIB_EXT_DOWNLOAD_DIR}/include
-			IMPORTED_LOCATION ${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14/ssleay32.lib)
 		# abstracted cybozulib_ext libraries
 		add_library(windows_specific INTERFACE)
 		add_library(mcl::windows_specific ALIAS windows_specific)
@@ -280,48 +247,7 @@ if(MCL_DOWNLOAD_SOURCE)
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib
 			-LIBPATH:${CYBOZULIB_EXT_DOWNLOAD_DIR}/lib/mt/14
 			cybozulib_ext::mpir
-			cybozulib_ext::mpirxx
-			cybozulib_ext::libeay32
-			cybozulib_ext::ssleay32)
-
-		target_link_libraries(mcl PUBLIC mcl::windows_specific)
-		target_link_libraries(mcl_st PUBLIC mcl::windows_specific)
-	endif()
-else()
-	if(MSVC AND NOT MCL_NO_MPIR)
-		# mpir
-		add_library(cybozulib_ext::mpir STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::mpir PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/mpir.lib)
-		# mpirxx
-		add_library(cybozulib_ext::mpirxx STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::mpirxx PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/mpirxx.lib)
-		# libeay32
-		add_library(cybozulib_ext::libeay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::libeay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/libeay32.lib)
-		# ssleay32
-		add_library(cybozulib_ext::ssleay32 STATIC IMPORTED)
-		set_target_properties(cybozulib_ext::ssleay32 PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${MCL_CYBOZULIB_EXT_DIR}/include
-			IMPORTED_LOCATION ${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14/ssleay32.lib)
-		 # abstracted cybozulib_ext libraries
-		add_library(windows_specific INTERFACE)
-		add_library(mcl::windows_specific ALIAS windows_specific)
-		target_link_libraries(windows_specific INTERFACE
-			-LIBPATH:${MCL_CYBOZULIB_EXT_DIR}/lib
-			-LIBPATH:${MCL_CYBOZULIB_EXT_DIR}/lib/mt/14
-			cybozulib_ext::mpir
-			cybozulib_ext::mpirxx
-			cybozulib_ext::libeay32
-			cybozulib_ext::ssleay32)
-
-		target_link_libraries(mcl PUBLIC mcl::windows_specific)
-		target_link_libraries(mcl_st PUBLIC mcl::windows_specific)
+			cybozulib_ext::mpirxx)
 	endif()
 endif()
 
@@ -346,27 +272,12 @@ foreach(bit IN ITEMS 256 384 384_256)
 		SOVERSION ${mcl_VERSION_MAJOR})
 endforeach()
 
-if(MSVC)
-	if(MCL_NO_MPIR)
-		install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
-			EXPORT mclTargets
-			LIBRARY DESTINATION lib
-			ARCHIVE DESTINATION lib
-			RUNTIME DESTINATION lib)
-	else()
-		install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256 windows_specific
-			EXPORT mclTargets
-			LIBRARY DESTINATION lib
-			ARCHIVE DESTINATION lib
-			RUNTIME DESTINATION lib)
-	endif()
-else()
-	install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
-		EXPORT mclTargets
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib
-		RUNTIME DESTINATION lib)
-endif()
+install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
+	EXPORT mclTargets
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION lib)
+
 install(DIRECTORY include/mcl
 	DESTINATION include
 	FILES_MATCHING PATTERN "*.hpp"

@@ -178,7 +178,7 @@ void modC(Unit *y, const Unit *x, const Unit *p, size_t n)
 	set_mpz_t(my, y, n);
 	set_mpz_t(mp, p, n);
 	mpz_mod(my, mx, mp);
-	mcl::fp::clearArray(y, my->_mp_size, n);
+	mcl::bint::clearN(y + my->_mp_size, n - my->_mp_size);
 }
 
 void mul(Unit *z, const Unit *x, const Unit *y, const Unit *p, size_t n)

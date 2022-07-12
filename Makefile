@@ -28,7 +28,8 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp large.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
+#SAMPLE_SRC+=large.cpp # rebuild of bint is necessary
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
   CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
@@ -98,20 +99,28 @@ ifeq ($(OS),mac-m1)
   ASM_OBJ=$(OBJ_DIR)/base64.o
 endif
 BINT_SUF?=-$(OS)-$(CPU)
-MCL_BINT_ASM?=0
+MCL_BINT_ASM?=1
+MCL_BINT_ASM_X64?=1
+ASM_MODE?=s
+ifeq ($(OS),mingw64)
+  ASM_MODE=asm
+endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
-src/fp.cpp: include/mcl/bint_asm.hpp
-  CFLAGS_USER+=-DMCL_BINT_ASM=1
-  ifeq ($(CPU),x86-64)
-    BINT_BASENAME=bint-x64-amd64
-    BINT_X64_SRC=src/asm/$(BINT_BASENAME).asm
-    BINT_X64_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
-    LIB_OBJ+=$(BINT_X64_OBJ)
+src/fp.cpp: include/mcl/bint_proto.hpp
+  CFLAGS+=-DMCL_BINT_ASM=1
+  ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
+    ifeq ($(OS),mingw64)
+      BINT_ASM_X64_BASENAME=bint-x64
+    else
+      BINT_ASM_X64_BASENAME=bint-x64-amd64
+    endif
+    LIB_OBJ+=$(OBJ_DIR)/$(BINT_ASM_X64_BASENAME).o
   else
     BINT_BASENAME=bint$(BIT)$(BINT_SUF)
     BINT_SRC=src/asm/$(BINT_BASENAME).s
     BINT_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
+    CFLAGS+=-DMCL_BINT_ASM_X64=0
     LIB_OBJ+=$(BINT_OBJ)
   endif
 endif
@@ -124,20 +133,26 @@ src/bint64.ll: src/gen_bint.exe
 	$< -u 64 -ver 0x90 > $@
 src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
-include/mcl/bint_asm.hpp: src/gen_bint_header.py
-	python3 $< > $@ asm $(GEN_BINT_HEADER_PY_OPT)
+include/mcl/bint_proto.hpp: src/gen_bint_header.py
+	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
-$(BINT_X64_SRC): src/gen_x86asm.py src/gen_bint_x64.py
-	python3 src/gen_bint_x64.py > $(BINT_X64_SRC)
-$(BINT_X64_OBJ): $(BINT_X64_SRC)
-	nasm $(NASM_ELF_OPT) -o $@ $<
+src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
+ifeq ($(ASM_MODE),asm)
+  ifeq ($(OS),mingw64)
+	python3 src/gen_bint_x64.py -win -m nasm > $@
+  else
+	python3 src/gen_bint_x64.py -win > $@
+  endif
+else
+	python3 src/gen_bint_x64.py -m gas > $@
+endif
 $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
-$(BINT_OBJ): $(BINT_SRC)
-	$(AS) $< -o $@
+#$(BINT_OBJ): $(BINT_SRC)
+#	$(AS) $< -o $@
 bint_header:
-	$(MAKE) include/mcl/bint_asm.hpp
+	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
@@ -158,12 +173,6 @@ endif
 ifeq ($(MCL_USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(ASM_OBJ)
-  # special case for intel with bmi2
-  ifeq ($(INTEL),1)
-    ifneq ($(MCL_STATIC_CODE),1)
-      LIB_OBJ+=$(OBJ_DIR)/$(CPU).bmi2.o
-    endif
-  endif
 endif
 LLVM_SRC=src/base$(BIT).ll
 
@@ -172,11 +181,6 @@ LLVM_SRC=src/base$(BIT).ll
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=-sse
 
-#HAS_BMI2=$(shell cat "/proc/cpuinfo" | grep bmi2 >/dev/null && echo "1")
-#ifeq ($(HAS_BMI2),1)
-#  LLVM_FLAGS+=-mattr=bmi2
-#endif
-
 ifeq ($(USE_LOW_ASM),1)
   LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
   LIB_OBJ+=$(LOW_ASM_OBJ)
@@ -184,10 +188,8 @@ endif
 
 ifeq ($(UPDATE_ASM),1)
   ASM_SRC_DEP=$(LLVM_SRC)
-  ASM_BMI2_SRC_DEP=src/base$(BIT).bmi2.ll
 else
   ASM_SRC_DEP=
-  ASM_BMI2_SRC_DEP=
 endif
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
@@ -271,15 +273,6 @@ $(ASM_SRC): $(ASM_SRC_DEP)
 $(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
 	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) > $@
 
-$(ASM_SRC_PATH_NAME).bmi2.s: $(ASM_BMI2_SRC_DEP)
-	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS) -mattr=bmi2
-
-$(OBJ_DIR)/$(CPU).bmi2.o: $(ASM_SRC_PATH_NAME).bmi2.s
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
-
-src/base$(BIT).bmi2.ll: $(GEN_EXE)
-	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) -s bmi2 > $@
-
 src/base64m.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
 
@@ -292,10 +285,10 @@ else
 endif
 
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS) -DMCL_USE_VINT
+	$(CXX) -o $@ $< $(CFLAGS)
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
-	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8
 
 src/static_code.asm: src/dump_code
 	$< > $@
@@ -304,8 +297,8 @@ obj/static_code.o: src/static_code.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
-	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -I include -Wall -Wextra
- 
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -I include -Wall -Wextra
+
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
@@ -348,6 +341,12 @@ $(OBJ_DIR)/%.o: %.cpp
 
 $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
+
+$(OBJ_DIR)/%.o: src/asm/%.s
+	$(PRE)$(AS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: src/asm/%.asm
+	nasm $(NASM_ELF_OPT) -o $@ $<
 
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
@@ -410,13 +409,13 @@ endif
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256 -I./include -DMCL_BINT_ASM=0
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256 -I./include -DMCL_BINT_ASM=0
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_DONT_USE_OPENSSL -DMCL_USE_VINT -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
+	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
 bin/ecdsa-emu:
 	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/ecdsa-c-emu:
-	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -DCYBOZU_DONT_USE_OPENSSL -DMCL_USE_VINT -I ./include -DMCL_WASM32
+	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
@@ -440,6 +439,15 @@ update_cybozulib:
 clean:
 	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) lib/*.a src/static_code.asm src/dump_code
 	$(RM) src/gen_bint.exe
+
+clean_gen:
+	$(RM) include/mcl/bint_proto.hpp src/asm/bint* src/bint_switch.hpp
+
+MCL_VER=$(shell awk '/static const int version/ { printf("%.2f\n", substr($$6,3,3)/100)}' include/mcl/op.hpp)
+CMakeLists.txt: include/mcl/op.hpp
+	sed -i -e 's/	VERSION [0-9].[0-9][0-9]$$/	VERSION $(MCL_VER)/' $@
+update_version:
+	$(MAKE) CMakeLists.txt
 
 ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
 DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(addsuffix .d,$(basename $(ALL_SRC))))

@@ -348,22 +348,14 @@ template<size_t N>
 void setOp(Op& op, Mode mode)
 {
 	// generic setup
-	op.fp_isZero = isZeroC<N>;
+	op.fp_isZero = bint::isZeroT<N, Unit>;
 	op.fp_clear = bint::clearT<N>;
 	op.fp_copy = bint::copyT<N>;
 	op.fp_invOp = fp_invOpC;
 	setOp2<N, Gtag, true, false>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-#if MCL_LLVM_BMI2 == 1
-		const bool gmpIsFasterThanLLVM = false;//(N == 8 && MCL_SIZEOF_UNIT == 8);
-		if (g_cpu.has(Xbyak::util::Cpu::tBMI2)) {
-			setOp2<N, LBMI2tag, (N * UnitBitSize <= 384), gmpIsFasterThanLLVM>(op);
-		} else
-#endif
-		{
-			setOp2<N, Ltag, (N * UnitBitSize <= 384), false>(op);
-		}
+		setOp2<N, Ltag, (N * UnitBitSize <= 384), false>(op);
 	}
 #else
 	(void)mode;
@@ -496,11 +488,11 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
-#ifdef MCL_BINT_FUNC_PTR
+#if MCL_BINT_ASM_X64 == 1
 	{
 		using namespace Xbyak::util;
 		if (!g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-			mcl::bint::mclb_disable_fast();
+			mclb_disable_fast();
 		}
 	}
 #endif
@@ -643,13 +635,8 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 #if defined(MCL_USE_VINT)
 	if (mode != FP_XBYAK && primeMode == PM_SECP256K1) {
-#if defined(USE_WASM) && MCL_SIZEOF_UNIT == 4
-		fp_mul = &mcl::mcl_fp_mul_SECP256K1_wasm;
-		fp_sqr = &mcl::mcl_fp_sqr_SECP256K1_wasm;
-#else
 		fp_mul = &bint::mul_SECP256K1;
 		fp_sqr = &bint::sqr_SECP256K1;
-#endif
 		fpDbl_mod = &bint::mod_SECP256K1;
 	}
 #endif
@@ -717,7 +704,7 @@ uint64_t getUint64(bool *pb, const fp::Block& b)
 int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 {
 	bool isNegative = false;
-	if (fp::isGreaterOrEqualArray(b.p, op.half, op.N)) {
+	if (bint::cmpGeN(b.p, op.half, op.N)) {
 		op.fp_neg(b.v_, b.p, op.p);
 		b.p = b.v_;
 		isNegative = true;

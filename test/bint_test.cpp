@@ -5,10 +5,11 @@
 #include <mcl/conversion.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
-#include <gmpxx.h>
+#include <gmpxx.h> // for test bint
 #include <iostream>
+#include <cybozu/link_mpir.hpp>
 
-#ifdef MCL_BINT_FUNC_PTR
+#if MCL_BINT_ASM_X64 == 1
 #define XBYAK_ONLY_CLASS_CPU
 #include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
@@ -17,7 +18,7 @@ CYBOZU_TEST_AUTO(cpu)
 	Cpu cpu;
 	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
 		fprintf(stderr, "bmi2 and adx are not available\n");
-		mcl::bint::mclb_disable_fast();
+		mclb_disable_fast();
 	}
 }
 
@@ -39,7 +40,13 @@ void setRand(Unit *x, size_t n, RG& rg)
 
 mpz_class to_mpz(Unit x)
 {
-	return mp_limb_t(x);
+#if MCL_SIZEOF_UNIT == 4
+	return x;
+#else
+	uint32_t L = uint32_t(x);
+	uint32_t H = uint32_t(x >> 32);
+	return (mpz_class(H) << 32) | L;
+#endif
 }
 
 void setArray(mpz_class& z, const Unit *buf, size_t n)
@@ -515,3 +522,32 @@ CYBOZU_TEST_AUTO(divMod)
 		CYBOZU_TEST_EQUAL(mx, mq * my + mr2);
 	}
 }
+
+CYBOZU_TEST_AUTO(maskN)
+{
+	const size_t n64 = 2;
+	uint64_t org64[n64] = { uint64_t(0xabce1234ffffef32ull), uint64_t(0x12345678ffffffffull) };
+	uint32_t org32[n64 * 2];
+	for (size_t i = 0; i < n64; i++) {
+		org32[i * 2 + 0] = uint32_t(org64[i]);
+		org32[i * 2 + 1] = uint32_t(org64[i] >> 32);
+	}
+#if MCL_SIZEOF_UNIT == 8
+	const uint64_t *org = org64;
+	const size_t n = n64;
+	(void)org32;
+#else
+	const uint64_t *org = org32;
+	const size_t n = n64 * 2;
+#endif
+	mpz_class morg, mx;
+	setArray(morg, org, n);
+	for (size_t i = 0; i <= MCL_SIZEOF_UNIT * 8 * n; i++) {
+		Unit x[n];
+		memcpy(x, org, MCL_SIZEOF_UNIT * n);
+		maskN(x, n, i);
+		setArray(mx, x, n);
+		CYBOZU_TEST_EQUAL(morg & ((mpz_class(1) << i) - 1), mx);
+	}
+}
+

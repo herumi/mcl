@@ -7,7 +7,7 @@
 #include <cybozu/inttype.hpp>
 
 #if (CYBOZU_HOST == CYBOZU_HOST_INTEL)
-	#if defined(_WIN32)
+	#if defined(_MSC_VER)
 		#include <intrin.h>
 	#elif defined(__linux__) || defined(__CYGWIN__) || defined(__clang__)
 		#include <x86intrin.h>
@@ -117,7 +117,7 @@ uint32_t popcnt(T x);
 template<>
 inline uint32_t popcnt<uint32_t>(uint32_t x)
 {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(__clang__)
 	return static_cast<uint32_t>(_mm_popcnt_u32(x));
 #else
 	return static_cast<uint32_t>(__builtin_popcount(x));

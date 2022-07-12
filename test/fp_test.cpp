@@ -836,7 +836,7 @@ CYBOZU_TEST_AUTO(getArray)
 		const size_t bufN = 8;
 		uint32_t buf[bufN];
 		mcl::gmp::getArray(buf, bufN, x);
-		size_t n = mcl::fp::getNonZeroArraySize(buf, bufN);
+		size_t n = mcl::bint::getRealSize(buf, bufN);
 		CYBOZU_TEST_EQUAL(n, tbl[i].vn);
 		CYBOZU_TEST_EQUAL_ARRAY(buf, tbl[i].v, n);
 	}

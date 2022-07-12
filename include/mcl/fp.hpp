@@ -334,7 +334,7 @@ public:
 			if (n == 0) return;
 			for (size_t i = n; i < op_.N; i++) v_[i] = 0;
 		}
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+		if (bint::cmpGeN(v_, op_.p, op_.N)) {
 			return;
 		}
 		if (isMinus) {
@@ -392,7 +392,7 @@ public:
 			*pb = false;
 			return;
 		}
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
+		if (bint::cmpGeN(v_, op_.p, op_.N)) {
 			*pb = false;
 			return;
 		}
@@ -414,9 +414,9 @@ public:
 		bool b = fp::convertArrayAsLE(v_, op_.N, x, n);
 		assert(b);
 		(void)b;
-		fp::maskArray(v_, op_.N, op_.bitSize);
-		if (fp::isGreaterOrEqualArray(v_, op_.p, op_.N)) {
-			fp::maskArray(v_, op_.N, op_.bitSize - 1);
+		bint::maskN(v_, op_.N, op_.bitSize);
+		if (bint::cmpGeN(v_, op_.p, op_.N)) {
+			bint::maskN(v_, op_.N, op_.bitSize - 1);
 		}
 		toMont();
 	}
@@ -676,7 +676,7 @@ public:
 		divBy2(y, y);
 	}
 	bool isZero() const { return op_.fp_isZero(v_); }
-	bool isOne() const { return fp::isEqualArray(v_, op_.oneRep, op_.N); }
+	bool isOne() const { return bint::cmpEqN(v_, op_.oneRep, op_.N); }
 	static const inline FpT& one() { return *reinterpret_cast<const FpT*>(op_.oneRep); }
 	/*
 		half = (p + 1) / 2
@@ -687,11 +687,11 @@ public:
 	{
 		fp::Block b;
 		getBlock(b);
-		return fp::isGreaterOrEqualArray(b.p, op_.half, op_.N);
+		return bint::cmpGeN(b.p, op_.half, op_.N);
 	}
 	bool isValid() const
 	{
-		return fp::isLessArray(v_, op_.p, op_.N);
+		return bint::cmpLtN(v_, op_.p, op_.N);
 	}
 	uint64_t getUint64(bool *pb) const
 	{
@@ -705,7 +705,7 @@ public:
 		getBlock(b);
 		return fp::getInt64(pb, b, op_);
 	}
-	bool operator==(const FpT& rhs) const { return fp::isEqualArray(v_, rhs.v_, op_.N); }
+	bool operator==(const FpT& rhs) const { return bint::cmpEqN(v_, rhs.v_, op_.N); }
 	bool operator!=(const FpT& rhs) const { return !operator==(rhs); }
 	/*
 		@note
@@ -716,14 +716,14 @@ public:
 		fp::Block xb, yb;
 		x.getBlock(xb);
 		y.getBlock(yb);
-		return fp::compareArray(xb.p, yb.p, op_.N);
+		return bint::cmpN(xb.p, yb.p, op_.N);
 	}
 	bool isLess(const FpT& rhs) const
 	{
 		fp::Block xb, yb;
 		getBlock(xb);
 		rhs.getBlock(yb);
-		return fp::isLessArray(xb.p, yb.p, op_.N);
+		return bint::cmpLtN(xb.p, yb.p, op_.N);
 	}
 	bool operator<(const FpT& rhs) const { return isLess(rhs); }
 	bool operator>=(const FpT& rhs) const { return !operator<(rhs); }
@@ -735,11 +735,11 @@ public:
 	*/
 	static inline int compareRaw(const FpT& x, const FpT& y)
 	{
-		return fp::compareArray(x.v_, y.v_, op_.N);
+		return bint::cmpN(x.v_, y.v_, op_.N);
 	}
 	bool isLessRaw(const FpT& rhs) const
 	{
-		return fp::isLessArray(v_, rhs.v_, op_.N);
+		return bint::cmpLtN(v_, rhs.v_, op_.N);
 	}
 	/*
 		set IoMode for operator<<(), or operator>>()

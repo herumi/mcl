@@ -16,7 +16,14 @@
 	#define MCL_BINT_ASM 0
 #endif
 #ifndef MCL_BINT_ASM
-	#define MCL_BINT_ASM 0 //1
+	#define MCL_BINT_ASM 1
+#endif
+
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && !defined(MCL_BINT_ASM_X64)
+	#define MCL_BINT_ASM_X64 1
+extern "C" void mclb_disable_fast(void);
+#else
+	#define MCL_BINT_ASM_X64 0
 #endif
 
 namespace mcl { namespace bint {
@@ -113,38 +120,54 @@ void sqrN(Unit *y, const Unit *x, size_t xn);
 // z[xn * yn] = x[xn] * y[ym]
 void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
-#if MCL_BINT_ASM == 1
-#include "bint_asm.hpp"
-#endif
+// explicit specialization of template functions and external asm functions
+#include "bint_proto.hpp"
 
-template<size_t N>
-void copyT(Unit *y, const Unit *x)
+template<size_t N, typename T>
+void copyT(T *y, const T *x)
 {
 	for (size_t i = 0; i < N; i++) y[i] = x[i];
 }
 
 // y[n] = x[n]
-inline void copyN(Unit *y, const Unit *x, size_t n)
+template<typename T>
+void copyN(T *y, const T *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) y[i] = x[i];
 }
 
-template<size_t N>
-void clearT(Unit *x)
+template<size_t N, typename T>
+void clearT(T *x)
 {
 	for (size_t i = 0; i < N; i++) x[i] = 0;
 }
 
 // x[n] = 0
-inline void clearN(Unit *x, size_t n)
+template<typename T>
+void clearN(T *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) x[i] = 0;
 }
 
+// return true if x[] == 0
+template<size_t N, typename T>
+bool isZeroT(const T *x)
+{
+	for (size_t i = 0; i < N; i++) if (x[i]) return false;
+	return true;
+}
+
+template<typename T>
+bool isZeroN(const T *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) if (x[i]) return false;
+	return true;
+}
 
 // return the real size of x
 // return 1 if x[n] == 0
-inline size_t getRealSize(const Unit *x, size_t n)
+template<typename T>
+size_t getRealSize(const T *x, size_t n)
 {
 	while (n > 0) {
 		if (x[n - 1]) break;
@@ -153,20 +176,20 @@ inline size_t getRealSize(const Unit *x, size_t n)
 	return n > 0 ? n : 1;
 }
 
-template<size_t N>
-int cmpT(const Unit *px, const Unit *py)
+template<size_t N, typename T>
+int cmpT(const T *px, const T *py)
 {
 	for (size_t i = 0; i < N; i++) {
-		const Unit x = px[N - 1 - i];
-		const Unit y = py[N - 1 - i];
+		const T x = px[N - 1 - i];
+		const T y = py[N - 1 - i];
 		if (x != y) return x > y ? 1 : -1;
 	}
 	return 0;
 }
 
 // true if x[N] == y[N]
-template<size_t N>
-bool cmpEqT(const Unit *px, const Unit *py)
+template<size_t N, typename T>
+bool cmpEqT(const T *px, const T *py)
 {
 	for (size_t i = 0; i < N; i++) {
 		if (px[i] != py[i]) return false;
@@ -175,12 +198,12 @@ bool cmpEqT(const Unit *px, const Unit *py)
 }
 
 // true if x[N] >= y[N]
-template<size_t N>
-bool cmpGeT(const Unit *px, const Unit *py)
+template<size_t N, typename T>
+bool cmpGeT(const T *px, const T *py)
 {
 	for (size_t i = 0; i < N; i++) {
-		const Unit x = px[N - 1 - i];
-		const Unit y = py[N - 1 - i];
+		const T x = px[N - 1 - i];
+		const T y = py[N - 1 - i];
 		if (x > y) return true;
 		if (x < y) return false;
 	}
@@ -188,12 +211,12 @@ bool cmpGeT(const Unit *px, const Unit *py)
 }
 
 // true if x[N] > y[N]
-template<size_t N>
-bool cmpGtT(const Unit *px, const Unit *py)
+template<size_t N, typename T>
+bool cmpGtT(const T *px, const T *py)
 {
 	for (size_t i = 0; i < N; i++) {
-		const Unit x = px[N - 1 - i];
-		const Unit y = py[N - 1 - i];
+		const T x = px[N - 1 - i];
+		const T y = py[N - 1 - i];
 		if (x > y) return true;
 		if (x < y) return false;
 	}
@@ -201,21 +224,22 @@ bool cmpGtT(const Unit *px, const Unit *py)
 }
 
 // true if x[N] <= y[N]
-template<size_t N>
-bool cmpLeT(const Unit *px, const Unit *py)
+template<size_t N, typename T>
+bool cmpLeT(const T *px, const T *py)
 {
 	return !cmpGtT<N>(px, py);
 }
 
 // true if x[N] < y[N]
-template<size_t N>
-bool cmpLtT(const Unit *px, const Unit *py)
+template<size_t N, typename T>
+bool cmpLtT(const T *px, const T *py)
 {
 	return !cmpGeT<N>(px, py);
 }
 
 // true if x[] == y[]
-inline bool cmpEq(const Unit *px, const Unit *py, size_t n)
+template<typename T>
+bool cmpEqN(const T *px, const T *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		if (px[i] != py[i]) return false;
@@ -224,11 +248,12 @@ inline bool cmpEq(const Unit *px, const Unit *py, size_t n)
 }
 
 // true if x[n] >= y[n]
-inline bool cmpGe(const Unit *px, const Unit *py, size_t n)
+template<typename T>
+bool cmpGeN(const T *px, const T *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
-		const Unit x = px[n - 1 - i];
-		const Unit y = py[n - 1 - i];
+		const T x = px[n - 1 - i];
+		const T y = py[n - 1 - i];
 		if (x > y) return true;
 		if (x < y) return false;
 	}
@@ -236,11 +261,12 @@ inline bool cmpGe(const Unit *px, const Unit *py, size_t n)
 }
 
 // true if x[n] > y[n]
-inline bool cmpGt(const Unit *px, const Unit *py, size_t n)
+template<typename T>
+bool cmpGtN(const T *px, const T *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
-		const Unit x = px[n - 1 - i];
-		const Unit y = py[n - 1 - i];
+		const T x = px[n - 1 - i];
+		const T y = py[n - 1 - i];
 		if (x > y) return true;
 		if (x < y) return false;
 	}
@@ -248,22 +274,25 @@ inline bool cmpGt(const Unit *px, const Unit *py, size_t n)
 }
 
 // true if x[n] <= y[n]
-inline bool cmpLe(const Unit *px, const Unit *py, size_t n)
+template<typename T>
+bool cmpLeN(const T *px, const T *py, size_t n)
 {
-	return !cmpGt(px, py, n);
+	return !cmpGtN(px, py, n);
 }
 
 // true if x[n] < y[n]
-inline bool cmpLt(const Unit *px, const Unit *py, size_t n)
+template<typename T>
+bool cmpLtN(const T *px, const T *py, size_t n)
 {
-	return !cmpGe(px, py, n);
+	return !cmpGeN(px, py, n);
 }
 
-inline int cmp(const Unit *px, const Unit *py, size_t n)
+template<typename T>
+int cmpN(const T *px, const T *py, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
-		const Unit x = px[n - 1 - i];
-		const Unit y = py[n - 1 - i];
+		const T x = px[n - 1 - i];
+		const T y = py[n - 1 - i];
 		if (x != y) return x > y ? 1 : -1;
 	}
 	return 0;
@@ -386,6 +415,9 @@ size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
 void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
+
+// x &= (1 << bitSize) - 1
+void maskN(Unit *x, size_t n, size_t bitSize);
 
 } } // mcl::bint
 
