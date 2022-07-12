@@ -40,7 +40,13 @@ void setRand(Unit *x, size_t n, RG& rg)
 
 mpz_class to_mpz(Unit x)
 {
-	return mp_limb_t(x);
+#if MCL_SIZEOF_UNIT == 4
+	return x;
+#else
+	uint32_t L = uint32_t(x);
+	uint32_t H = uint32_t(x >> 32);
+	return (mpz_class(H) << 32) | L;
+#endif
 }
 
 void setArray(mpz_class& z, const Unit *buf, size_t n)
