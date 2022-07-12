@@ -102,7 +102,7 @@ BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=1
 MCL_BINT_ASM_X64?=1
 ASM_MODE?=s
-ifeq ($(OS),win)
+ifeq ($(OS),mingw64)
   ASM_MODE=asm
 endif
 src/fp.cpp: src/bint_switch.hpp
@@ -110,7 +110,11 @@ ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS+=-DMCL_BINT_ASM=1
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
-    BINT_ASM_X64_BASENAME=bint-x64-amd64
+    ifeq ($(OS),mingw64)
+      BINT_ASM_X64_BASENAME=bint-x64
+    else
+      BINT_ASM_X64_BASENAME=bint-x64-amd64
+    endif
     LIB_OBJ+=$(OBJ_DIR)/$(BINT_ASM_X64_BASENAME).o
   else
     BINT_BASENAME=bint$(BIT)$(BINT_SUF)
@@ -135,9 +139,13 @@ src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
 ifeq ($(ASM_MODE),asm)
-	python3 src/gen_bint_x64.py > $@ -m nasm
+  ifeq ($(OS),mingw64)
+	python3 src/gen_bint_x64.py -win -m nasm > $@
+  else
+	python3 src/gen_bint_x64.py -win > $@
+  endif
 else
-	python3 src/gen_bint_x64.py > $@ -m gas
+	python3 src/gen_bint_x64.py -m gas > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
@@ -290,7 +298,7 @@ obj/static_code.o: src/static_code.asm
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
 	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -I include -Wall -Wextra
- 
+
 asm: $(LLVM_SRC)
 	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
