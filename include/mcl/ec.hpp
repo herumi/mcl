@@ -905,16 +905,13 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzA
 	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
 	mpz_class u[splitN], y;
-	G *tbl = 0;
-	Unit *yp = 0;
 
 	const size_t tblByteSize = sizeof(G) * splitN * n;
 	const size_t ypByteSize = sizeof(Unit) * next * splitN * n;
-	uint8_t *mem = (uint8_t*)malloc(tblByteSize + ypByteSize);
-	if (mem == 0) return false;
+	G *tbl = (G*)malloc(tblByteSize + ypByteSize);
+	if (tbl == 0) return false;
 
-	tbl = (G *)mem;
-	yp = (Unit *)(mem + tblByteSize);
+	Unit *yp = (Unit *)(tbl + splitN * n);
 
 	G::normalizeVec(tbl, xVec, n);
 	for (int i = 1; i < splitN; i++) {
@@ -937,7 +934,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzA
 		}
 	}
 	mulVecLong(z, tbl, yp, next, next, n * splitN, false);
-	free(mem);
+	free(tbl);
 	return true;
 }
 
