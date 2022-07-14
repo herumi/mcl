@@ -16,8 +16,6 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
 def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
-#	if useFuncPtr:
-#		print('#if MCL_BINT_ASM_X64 != 1')
 	print(f'''Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
 #if MCL_BINT_ASM == 1''')
 	print('\t0,')
@@ -35,8 +33,6 @@ def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 	print('#endif // MCL_SIZEOF_UNIT == 4')
 	print('''#endif // MCL_BINT_ASM == 1
 };''')
-#	if useFuncPtr:
-#		print('#endif // MCL_BINT_ASM_X64 != 1')
 
 	ret0 = 'return' if ret == 'void' else 'return 0'
 	print(f'''{ret} {name}({args}, size_t n)
@@ -55,12 +51,17 @@ arg_p3 = 'Unit *z, const Unit *x, const Unit *y'
 arg_p2u = 'Unit *z, const Unit *x, Unit y'
 param_u3 = 'z, x, y'
 
+protoType = {
+	arg_p3 : 'u_ppp',
+	arg_p2u : 'u_ppu',
+}
+
 def roundup(x, n):
 	return (x + n - 1) // n
 
 def gen_get_func(name, ret, args, maxN, N, N64):
-	print(f'''extern "C" {ret} (*mclb_{name}Tbl[])({args});
-inline {ret} (*mclb_get_{name}(size_t n))({args})
+	print(f'''extern "C" {protoType[args]} mclb_{name}Tbl[];
+inline {protoType[args]} mclb_get_{name}(size_t n)
 {{
 	if (n > {maxN}) n = 0;
 	assert(n > 0);
@@ -70,8 +71,8 @@ inline {ret} (*mclb_get_{name}(size_t n))({args})
 def gen_disable(name1, name2, ret, args, N):
 	print('#if MCL_BINT_ASM_X64 == 1')
 	for i in range(1, N+1):
-		print(f'{ret} (*mclb_{name1}{i})({args}) = mclb_{name1}_fast{i};')
-		print(f'{ret} (*mclb_{name2}{i})({args}) = mclb_{name2}_fast{i};')
+		print(f'{protoType[args]} mclb_{name1}{i} = mclb_{name1}_fast{i};')
+		print(f'{protoType[args]} mclb_{name2}{i} = mclb_{name2}_fast{i};')
 	print('extern "C" void mclb_disable_fast() {')
 	for i in range(1, N+1):
 		print(f'\tmclb_{name1}{i} = mclb_{name1}_slow{i};')
