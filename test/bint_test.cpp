@@ -159,7 +159,7 @@ CYBOZU_TEST_AUTO(mulUnitAddT)
 
 CYBOZU_TEST_AUTO(mulT)
 {
-	const size_t N = 4;
+	const size_t N = 6;
 	Unit x[N], y[N], z[N * 2];
 	cybozu::XorShift rg;
 	mpz_class mx, my, mz;
@@ -172,6 +172,11 @@ CYBOZU_TEST_AUTO(mulT)
 		setArray(mz, z, N * 2);
 		CYBOZU_TEST_EQUAL(mx * my, mz);
 	}
+#ifdef NDEBUG
+	const int C = 1000;
+	CYBOZU_BENCH_C("gmp ", C, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	CYBOZU_BENCH_C("bint", C, mulT<N>, z, x, y);
+#endif
 }
 
 CYBOZU_TEST_AUTO(shlT)
