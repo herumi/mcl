@@ -10,11 +10,14 @@ namespace mcl { namespace bint {
 void initBint()
 {
 #if MCL_BINT_ASM_X64 == 1
+	static bool init = false;
+	if (init) return;
 	using namespace Xbyak::util;
 	Cpu cpu;
 	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
 		mclb_disable_fast();
 	}
+	init = true;
 #endif
 }
 
