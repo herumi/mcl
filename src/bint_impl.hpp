@@ -308,11 +308,8 @@ Unit subUnit(Unit *y, size_t n, Unit x)
 
 void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
-	fp::u2uI mulUnit = mclb_get_mulUnit(n);
-	fp::u2uI mulUnitAdd = mclb_get_mulUnitAdd(n);
-	assert(mulUnit);
-	assert(mulUnitAdd);
-	z[n] = mulUnit(z, x, y[0]);
+	u_ppu mulUnitAdd = mclb_get_mulUnitAdd(n);
+	z[n] = mulUnitN(z, x, y[0], n);
 	for (size_t i = 1; i < n; i++) {
 		z[n + i] = mulUnitAdd(&z[i], x, y[i]);
 	}
@@ -366,18 +363,19 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 	}
 	assert(xn == yn);
 	if (yTop >= Unit(1) << (UnitBitSize / 2)) {
+		u_ppp sub = mclb_get_sub(yn);
 		if (yTop == Unit(-1)) {
-			subN(x, x, y, yn);
+			sub(x, x, y);
 			qv = 1;
 		} else {
 			Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * yn);
 			qv = x[yn - 1] / (yTop + 1);
 			mulUnitN(t, y, qv, yn);
-			subN(x, x, t, yn);
+			sub(x, x, t);
 		}
 		// expect that loop is at most once
 		while (cmpGeN(x, y, yn)) {
-			subN(x, x, y, yn);
+			sub(x, x, y);
 			qv++;
 		}
 		goto EXIT;
@@ -405,6 +403,8 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 		Unit r;
 		rev = divUnit1(&r, Unit(1) << (UnitBitSize - 1), 0, yTop + 1);
 	}
+	u_ppp sub = mclb_get_sub(yn);
+	u_ppu mulUnit = mclb_get_mulUnit(yn);
 	while (xn >= yn) {
 		if (x[xn - 1] == 0) {
 			xn--;
@@ -427,8 +427,8 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 				v <<= 1;
 				if (v == 0) v = 1;
 			}
-			Unit ret = mulUnitN(t, y, v, yn);
-			ret += subN(x + d - 1, x + d - 1, t, yn);
+			Unit ret = mulUnit(t, y, v);
+			ret += sub(x + d - 1, x + d - 1, t);
 			x[xn-1] -= ret;
 			if (q) addUnit(q + d - 1, qn - d + 1, v);
 		}
@@ -512,8 +512,9 @@ void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
 		y = p;
 	}
 	z[xn] = mulUnitN(z, x, y[0], xn);
+	u_ppu mulUnitAdd = mclb_get_mulUnitAdd(xn);
 	for (size_t i = 1; i < yn; i++) {
-		z[xn + i] = mulUnitAddN(&z[i], x, y[i], xn);
+		z[xn + i] = mulUnitAdd(&z[i], x, y[i]);
 	}
 }
 

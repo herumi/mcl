@@ -175,7 +175,8 @@ CYBOZU_TEST_AUTO(mulT)
 #ifdef NDEBUG
 	const int C = 1000;
 	CYBOZU_BENCH_C("gmp ", C, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
-	CYBOZU_BENCH_C("bint", C, mulT<N>, z, x, y);
+	CYBOZU_BENCH_C("mul ", C, mulT<N>, z, x, y);
+	CYBOZU_BENCH_C("mulN", C, mulN, z, x, y, N);
 #endif
 }
 
