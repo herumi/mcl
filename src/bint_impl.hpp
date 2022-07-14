@@ -1,8 +1,22 @@
 #pragma once
+/*
+	This file is supposed to be only once included.
+*/
 
 #include <mcl/bint.hpp>
 
 namespace mcl { namespace bint {
+
+void initBint()
+{
+#if MCL_BINT_ASM_X64 == 1
+	using namespace Xbyak::util;
+	Cpu cpu;
+	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+		mclb_disable_fast();
+	}
+#endif
+}
 
 #if MCL_BINT_ASM != 1
 #ifdef MCL_WASM32

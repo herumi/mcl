@@ -9,20 +9,10 @@
 #include <iostream>
 #include <cybozu/link_mpir.hpp>
 
-#if MCL_BINT_ASM_X64 == 1
-#define XBYAK_ONLY_CLASS_CPU
-#include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
 {
-	using namespace Xbyak::util;
-	Cpu cpu;
-	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-		fprintf(stderr, "bmi2 and adx are not available\n");
-		mclb_disable_fast();
-	}
+	bint::initBint();
 }
-
-#endif
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 

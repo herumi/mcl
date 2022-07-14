@@ -28,6 +28,8 @@ extern "C" void mclb_disable_fast(void);
 
 namespace mcl { namespace bint {
 
+void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
+
 inline void dump(const Unit *x, size_t n, const char *msg = "")
 {
 	if (msg) printf("%s ", msg);
