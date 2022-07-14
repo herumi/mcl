@@ -11,7 +11,7 @@
 
 CYBOZU_TEST_AUTO(cpu)
 {
-	bint::initBint();
+	mcl::bint::initBint();
 }
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;

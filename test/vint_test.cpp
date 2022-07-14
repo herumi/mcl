@@ -15,7 +15,7 @@
 
 CYBOZU_TEST_AUTO(cpu)
 {
-	bint::initBint();
+	mcl::bint::initBint();
 }
 
 using namespace mcl;
