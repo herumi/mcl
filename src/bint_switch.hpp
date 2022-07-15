@@ -352,24 +352,24 @@ Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n)
 	return mclb_get_mulUnitAdd(n)(z, x, y);
 }
 #if MCL_BINT_ASM_X64 == 1
-Unit (*mclb_mulUnit1)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast1;
-Unit (*mclb_mulUnitAdd1)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast1;
-Unit (*mclb_mulUnit2)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast2;
-Unit (*mclb_mulUnitAdd2)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast2;
-Unit (*mclb_mulUnit3)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast3;
-Unit (*mclb_mulUnitAdd3)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast3;
-Unit (*mclb_mulUnit4)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast4;
-Unit (*mclb_mulUnitAdd4)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast4;
-Unit (*mclb_mulUnit5)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast5;
-Unit (*mclb_mulUnitAdd5)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast5;
-Unit (*mclb_mulUnit6)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast6;
-Unit (*mclb_mulUnitAdd6)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast6;
-Unit (*mclb_mulUnit7)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast7;
-Unit (*mclb_mulUnitAdd7)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast7;
-Unit (*mclb_mulUnit8)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast8;
-Unit (*mclb_mulUnitAdd8)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast8;
-Unit (*mclb_mulUnit9)(Unit *z, const Unit *x, Unit y) = mclb_mulUnit_fast9;
-Unit (*mclb_mulUnitAdd9)(Unit *z, const Unit *x, Unit y) = mclb_mulUnitAdd_fast9;
+u_ppu mclb_mulUnit1 = mclb_mulUnit_fast1;
+u_ppu mclb_mulUnitAdd1 = mclb_mulUnitAdd_fast1;
+u_ppu mclb_mulUnit2 = mclb_mulUnit_fast2;
+u_ppu mclb_mulUnitAdd2 = mclb_mulUnitAdd_fast2;
+u_ppu mclb_mulUnit3 = mclb_mulUnit_fast3;
+u_ppu mclb_mulUnitAdd3 = mclb_mulUnitAdd_fast3;
+u_ppu mclb_mulUnit4 = mclb_mulUnit_fast4;
+u_ppu mclb_mulUnitAdd4 = mclb_mulUnitAdd_fast4;
+u_ppu mclb_mulUnit5 = mclb_mulUnit_fast5;
+u_ppu mclb_mulUnitAdd5 = mclb_mulUnitAdd_fast5;
+u_ppu mclb_mulUnit6 = mclb_mulUnit_fast6;
+u_ppu mclb_mulUnitAdd6 = mclb_mulUnitAdd_fast6;
+u_ppu mclb_mulUnit7 = mclb_mulUnit_fast7;
+u_ppu mclb_mulUnitAdd7 = mclb_mulUnitAdd_fast7;
+u_ppu mclb_mulUnit8 = mclb_mulUnit_fast8;
+u_ppu mclb_mulUnitAdd8 = mclb_mulUnitAdd_fast8;
+u_ppu mclb_mulUnit9 = mclb_mulUnit_fast9;
+u_ppu mclb_mulUnitAdd9 = mclb_mulUnitAdd_fast9;
 extern "C" void mclb_disable_fast() {
 	mclb_mulUnit1 = mclb_mulUnit_slow1;
 	mclb_mulUnitAdd1 = mclb_mulUnitAdd_slow1;

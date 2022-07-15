@@ -1,13 +1,11 @@
+#ifdef MCL_DUMP_JIT
+	#define MCL_BINT_ASM 0
+#endif
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
-#include "bint_impl.hpp"
-#if defined(__EMSCRIPTEN__) && MCL_SIZEOF_UNIT == 4
-#define USE_WASM
-#include "low_func_wasm.hpp"
-#endif
 
 #if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL))
 
@@ -28,6 +26,12 @@ Xbyak::util::Cpu g_cpu;
 #include "fp_generator.hpp"
 #endif
 
+#endif
+
+#include "bint_impl.hpp"
+#if defined(__EMSCRIPTEN__) && MCL_SIZEOF_UNIT == 4
+#define USE_WASM
+#include "low_func_wasm.hpp"
 #endif
 
 #include "low_func.hpp"
@@ -488,14 +492,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
-#if MCL_BINT_ASM_X64 == 1
-	{
-		using namespace Xbyak::util;
-		if (!g_cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-			mclb_disable_fast();
-		}
-	}
-#endif
+	bint::initBint();
 	clear();
 	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 	N = gmp::getUnitSize(_p);

@@ -412,29 +412,29 @@ template<> inline Unit mulUnitAddT<17>(Unit *z, const Unit *x, Unit y) { return 
 	#define MCL_BINT_ADD_N 32
 	#define MCL_BINT_MUL_N 17
 #endif
-extern "C" Unit (*mclb_addTbl[])(Unit *z, const Unit *x, const Unit *y);
-inline Unit (*mclb_get_add(size_t n))(Unit *z, const Unit *x, const Unit *y)
+extern "C" u_ppp mclb_addTbl[];
+inline u_ppp mclb_get_add(size_t n)
 {
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_addTbl[n];
 }
-extern "C" Unit (*mclb_subTbl[])(Unit *z, const Unit *x, const Unit *y);
-inline Unit (*mclb_get_sub(size_t n))(Unit *z, const Unit *x, const Unit *y)
+extern "C" u_ppp mclb_subTbl[];
+inline u_ppp mclb_get_sub(size_t n)
 {
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_subTbl[n];
 }
-extern "C" Unit (*mclb_mulUnitTbl[])(Unit *z, const Unit *x, Unit y);
-inline Unit (*mclb_get_mulUnit(size_t n))(Unit *z, const Unit *x, Unit y)
+extern "C" u_ppu mclb_mulUnitTbl[];
+inline u_ppu mclb_get_mulUnit(size_t n)
 {
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);
 	return mclb_mulUnitTbl[n];
 }
-extern "C" Unit (*mclb_mulUnitAddTbl[])(Unit *z, const Unit *x, Unit y);
-inline Unit (*mclb_get_mulUnitAdd(size_t n))(Unit *z, const Unit *x, Unit y)
+extern "C" u_ppu mclb_mulUnitAddTbl[];
+inline u_ppu mclb_get_mulUnitAdd(size_t n)
 {
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);

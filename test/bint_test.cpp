@@ -9,20 +9,10 @@
 #include <iostream>
 #include <cybozu/link_mpir.hpp>
 
-#if MCL_BINT_ASM_X64 == 1
-#define XBYAK_ONLY_CLASS_CPU
-#include "../src/xbyak/xbyak_util.h"
 CYBOZU_TEST_AUTO(cpu)
 {
-	using namespace Xbyak::util;
-	Cpu cpu;
-	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-		fprintf(stderr, "bmi2 and adx are not available\n");
-		mclb_disable_fast();
-	}
+	mcl::bint::initBint();
 }
-
-#endif
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
@@ -169,7 +159,7 @@ CYBOZU_TEST_AUTO(mulUnitAddT)
 
 CYBOZU_TEST_AUTO(mulT)
 {
-	const size_t N = 4;
+	const size_t N = 6;
 	Unit x[N], y[N], z[N * 2];
 	cybozu::XorShift rg;
 	mpz_class mx, my, mz;
@@ -182,6 +172,12 @@ CYBOZU_TEST_AUTO(mulT)
 		setArray(mz, z, N * 2);
 		CYBOZU_TEST_EQUAL(mx * my, mz);
 	}
+#ifdef NDEBUG
+	const int C = 1000;
+	CYBOZU_BENCH_C("gmp ", C, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	CYBOZU_BENCH_C("mul ", C, mulT<N>, z, x, y);
+	CYBOZU_BENCH_C("mulN", C, mulN, z, x, y, N);
+#endif
 }
 
 CYBOZU_TEST_AUTO(shlT)
