@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 project(mcl
-	VERSION 1.65
+	VERSION 1.67
 	LANGUAGES CXX C ASM)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
