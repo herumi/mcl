@@ -199,6 +199,16 @@ def gen_enable_fast(N):
 			mov(ptr(rdx), rax)
 		ret()
 
+def gen_udiv128():
+	align(16)
+	with FuncProc('mclb_udiv128'):
+		mov(rax, rdx);
+		mov(rdx, rcx);
+		div(r8);
+		mov(ptr(r9), rdx);
+		ret();
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
 parser.add_argument('-n', '--num', help='max size of Unit', type=int, default=9)
@@ -251,5 +261,8 @@ for i in range(N+1):
 	gen_mulUnitAdd(i, 'slow')
 
 #gen_enable_fast(N)
+
+if param.win:
+	gen_udiv128()
 
 termOutput()

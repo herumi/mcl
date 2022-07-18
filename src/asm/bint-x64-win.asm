@@ -2345,5 +2345,13 @@ mov rax, rdx
 add rsp, 136
 ret
 mclb_mulUnitAdd_slow9 endp
+align 16
+mclb_udiv128 proc
+mov rax, rdx
+mov rdx, rcx
+div r8
+mov [r9], rdx
+ret
+mclb_udiv128 endp
 _text ends
 end

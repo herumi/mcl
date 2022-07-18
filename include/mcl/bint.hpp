@@ -22,6 +22,16 @@
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && !defined(MCL_BINT_ASM_X64)
 	#define MCL_BINT_ASM_X64 1
 extern "C" void mclb_disable_fast(void);
+
+#if defined(_MSC_VER) && (_MSC_VER < 1920)
+extern "C" unsigned __int64 mclb_udiv128(
+   unsigned __int64 highDividend,
+   unsigned __int64 lowDividend,
+   unsigned __int64 divisor,
+   unsigned __int64 *remainder
+);
+#endif
+
 #else
 	#define MCL_BINT_ASM_X64 0
 #endif
@@ -98,6 +108,8 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	uint64_t q = uint64_t(t / y);
 	*pr = uint64_t(t % y);
 	return q;
+#elif defined(_MSC_VER) && (_MSC_VER < 1920)
+	return mclb_udiv128(H, L, y, pr);
 #else
 	return _udiv128(H, L, y, pr);
 #endif
