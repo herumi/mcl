@@ -33,7 +33,7 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # Support architecture
 
-- x86-64 Windows + Visual Studio 2017 (or later)
+- x86-64 Windows + Visual Studio 2015 (or later)
 - x86, x86-64 Linux + gcc/clang
 - x86-64, M1 macOS
 - ARM / ARM64 Linux
