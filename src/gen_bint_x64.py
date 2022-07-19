@@ -3,9 +3,9 @@ import argparse
 
 SUF='_fast'
 
-def gen_add(N):
+def gen_add(N, NF=False):
 	align(16)
-	with FuncProc(f'mclb_add{N}'):
+	with FuncProc(f'mclb_add{"NF" if NF else ""}{N}'):
 		if N == 0:
 			xor_(eax, eax)
 			ret()
@@ -21,6 +21,8 @@ def gen_add(N):
 				else:
 					adc(rax, ptr(y + 8 * i))
 				mov(ptr(z + 8 * i), rax)
+			if NF:
+				return
 			setc(al)
 			movzx(eax, al)
 
@@ -247,6 +249,9 @@ for i in range(addN+1):
 
 for i in range(addN+1):
 	gen_sub(i)
+
+for i in range(addN+1):
+	gen_add(i, True)
 
 for i in range(N+1):
 	gen_mulUnit(i, 'fast')
