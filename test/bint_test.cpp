@@ -30,6 +30,17 @@ void setRand(Unit *x, size_t n, RG& rg)
 	}
 }
 
+template<class RG>
+void setRandNF(Unit *x, size_t n, RG& rg)
+{
+	setRand(x, n, rg);
+#if MCL_SIZEOF_UNIT == 4
+	x[n - 1] &= 0x7fffffff;
+#else
+	x[n - 1] &= 0x7fffffffffffffffull;
+#endif
+}
+
 mpz_class to_mpz(Unit x)
 {
 #if MCL_SIZEOF_UNIT == 4
@@ -581,6 +592,37 @@ CYBOZU_TEST_AUTO(add)
 }
 
 template<size_t N>
+void testAddNF()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N], z[N];
+	mpz_class mx, my, mz;
+	for (size_t i = 0; i < C; i++) {
+		setRandNF(x, N, rg);
+		setRandNF(y, N, rg);
+		setArray(mx, x, N);
+		setArray(my, y, N);
+		addNFT<N>(z, x, y);
+		setArray(mz, z, N);
+		CYBOZU_TEST_EQUAL(mz, mx + my);
+	}
+	printf("%2zd ", N);
+	CYBOZU_BENCH_C("addNFT", 1000, addNFT<N>, z, x, y);
+}
+
+CYBOZU_TEST_AUTO(addNF)
+{
+	testAddNF<1>();
+	testAddNF<2>();
+	testAddNF<3>();
+	testAddNF<4>();
+	testAddNF<5>();
+	testAddNF<6>();
+	testAddNF<7>();
+	testAddNF<8>();
+}
+
+template<size_t N>
 void testSub()
 {
 	cybozu::XorShift rg;
@@ -593,7 +635,7 @@ void testSub()
 		setArray(my, y, N);
 		CF = subT<N>(z, x, y);
 		setArray(mz, z, N);
-		CYBOZU_TEST_EQUAL(CF, mx < my);
+		CYBOZU_TEST_EQUAL(CF != 0, mx < my);
 		if (mx >= my) {
 			CYBOZU_TEST_EQUAL(mz, mx - my);
 		} else {
