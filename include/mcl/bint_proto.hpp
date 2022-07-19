@@ -4,131 +4,195 @@ extern "C" Unit mclb_add1(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<1>(Unit *z, const Unit *x, const Unit *y) { return mclb_add1(z, x, y); }
 extern "C" Unit mclb_sub1(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<1>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub1(z, x, y); }
+extern "C" void mclb_addNF1(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<1>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF1(z, x, y); }
 extern "C" Unit mclb_add2(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<2>(Unit *z, const Unit *x, const Unit *y) { return mclb_add2(z, x, y); }
 extern "C" Unit mclb_sub2(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<2>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub2(z, x, y); }
+extern "C" void mclb_addNF2(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<2>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF2(z, x, y); }
 extern "C" Unit mclb_add3(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<3>(Unit *z, const Unit *x, const Unit *y) { return mclb_add3(z, x, y); }
 extern "C" Unit mclb_sub3(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<3>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub3(z, x, y); }
+extern "C" void mclb_addNF3(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<3>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF3(z, x, y); }
 extern "C" Unit mclb_add4(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<4>(Unit *z, const Unit *x, const Unit *y) { return mclb_add4(z, x, y); }
 extern "C" Unit mclb_sub4(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<4>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub4(z, x, y); }
+extern "C" void mclb_addNF4(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<4>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF4(z, x, y); }
 extern "C" Unit mclb_add5(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<5>(Unit *z, const Unit *x, const Unit *y) { return mclb_add5(z, x, y); }
 extern "C" Unit mclb_sub5(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<5>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub5(z, x, y); }
+extern "C" void mclb_addNF5(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<5>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF5(z, x, y); }
 extern "C" Unit mclb_add6(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<6>(Unit *z, const Unit *x, const Unit *y) { return mclb_add6(z, x, y); }
 extern "C" Unit mclb_sub6(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<6>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub6(z, x, y); }
+extern "C" void mclb_addNF6(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<6>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF6(z, x, y); }
 extern "C" Unit mclb_add7(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<7>(Unit *z, const Unit *x, const Unit *y) { return mclb_add7(z, x, y); }
 extern "C" Unit mclb_sub7(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<7>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub7(z, x, y); }
+extern "C" void mclb_addNF7(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<7>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF7(z, x, y); }
 extern "C" Unit mclb_add8(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<8>(Unit *z, const Unit *x, const Unit *y) { return mclb_add8(z, x, y); }
 extern "C" Unit mclb_sub8(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<8>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub8(z, x, y); }
+extern "C" void mclb_addNF8(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<8>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF8(z, x, y); }
 extern "C" Unit mclb_add9(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<9>(Unit *z, const Unit *x, const Unit *y) { return mclb_add9(z, x, y); }
 extern "C" Unit mclb_sub9(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<9>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub9(z, x, y); }
+extern "C" void mclb_addNF9(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<9>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF9(z, x, y); }
 extern "C" Unit mclb_add10(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<10>(Unit *z, const Unit *x, const Unit *y) { return mclb_add10(z, x, y); }
 extern "C" Unit mclb_sub10(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<10>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub10(z, x, y); }
+extern "C" void mclb_addNF10(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<10>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF10(z, x, y); }
 extern "C" Unit mclb_add11(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<11>(Unit *z, const Unit *x, const Unit *y) { return mclb_add11(z, x, y); }
 extern "C" Unit mclb_sub11(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<11>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub11(z, x, y); }
+extern "C" void mclb_addNF11(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<11>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF11(z, x, y); }
 extern "C" Unit mclb_add12(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<12>(Unit *z, const Unit *x, const Unit *y) { return mclb_add12(z, x, y); }
 extern "C" Unit mclb_sub12(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<12>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub12(z, x, y); }
+extern "C" void mclb_addNF12(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<12>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF12(z, x, y); }
 extern "C" Unit mclb_add13(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<13>(Unit *z, const Unit *x, const Unit *y) { return mclb_add13(z, x, y); }
 extern "C" Unit mclb_sub13(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<13>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub13(z, x, y); }
+extern "C" void mclb_addNF13(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<13>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF13(z, x, y); }
 extern "C" Unit mclb_add14(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<14>(Unit *z, const Unit *x, const Unit *y) { return mclb_add14(z, x, y); }
 extern "C" Unit mclb_sub14(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<14>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub14(z, x, y); }
+extern "C" void mclb_addNF14(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<14>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF14(z, x, y); }
 extern "C" Unit mclb_add15(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<15>(Unit *z, const Unit *x, const Unit *y) { return mclb_add15(z, x, y); }
 extern "C" Unit mclb_sub15(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<15>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub15(z, x, y); }
+extern "C" void mclb_addNF15(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<15>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF15(z, x, y); }
 extern "C" Unit mclb_add16(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<16>(Unit *z, const Unit *x, const Unit *y) { return mclb_add16(z, x, y); }
 extern "C" Unit mclb_sub16(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<16>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub16(z, x, y); }
+extern "C" void mclb_addNF16(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<16>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF16(z, x, y); }
 #if MCL_SIZEOF_UNIT == 4
 extern "C" Unit mclb_add17(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<17>(Unit *z, const Unit *x, const Unit *y) { return mclb_add17(z, x, y); }
 extern "C" Unit mclb_sub17(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<17>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub17(z, x, y); }
+extern "C" void mclb_addNF17(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<17>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF17(z, x, y); }
 extern "C" Unit mclb_add18(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<18>(Unit *z, const Unit *x, const Unit *y) { return mclb_add18(z, x, y); }
 extern "C" Unit mclb_sub18(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<18>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub18(z, x, y); }
+extern "C" void mclb_addNF18(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<18>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF18(z, x, y); }
 extern "C" Unit mclb_add19(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<19>(Unit *z, const Unit *x, const Unit *y) { return mclb_add19(z, x, y); }
 extern "C" Unit mclb_sub19(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<19>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub19(z, x, y); }
+extern "C" void mclb_addNF19(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<19>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF19(z, x, y); }
 extern "C" Unit mclb_add20(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<20>(Unit *z, const Unit *x, const Unit *y) { return mclb_add20(z, x, y); }
 extern "C" Unit mclb_sub20(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<20>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub20(z, x, y); }
+extern "C" void mclb_addNF20(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<20>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF20(z, x, y); }
 extern "C" Unit mclb_add21(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<21>(Unit *z, const Unit *x, const Unit *y) { return mclb_add21(z, x, y); }
 extern "C" Unit mclb_sub21(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<21>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub21(z, x, y); }
+extern "C" void mclb_addNF21(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<21>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF21(z, x, y); }
 extern "C" Unit mclb_add22(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<22>(Unit *z, const Unit *x, const Unit *y) { return mclb_add22(z, x, y); }
 extern "C" Unit mclb_sub22(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<22>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub22(z, x, y); }
+extern "C" void mclb_addNF22(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<22>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF22(z, x, y); }
 extern "C" Unit mclb_add23(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<23>(Unit *z, const Unit *x, const Unit *y) { return mclb_add23(z, x, y); }
 extern "C" Unit mclb_sub23(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<23>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub23(z, x, y); }
+extern "C" void mclb_addNF23(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<23>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF23(z, x, y); }
 extern "C" Unit mclb_add24(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<24>(Unit *z, const Unit *x, const Unit *y) { return mclb_add24(z, x, y); }
 extern "C" Unit mclb_sub24(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<24>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub24(z, x, y); }
+extern "C" void mclb_addNF24(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<24>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF24(z, x, y); }
 extern "C" Unit mclb_add25(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<25>(Unit *z, const Unit *x, const Unit *y) { return mclb_add25(z, x, y); }
 extern "C" Unit mclb_sub25(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<25>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub25(z, x, y); }
+extern "C" void mclb_addNF25(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<25>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF25(z, x, y); }
 extern "C" Unit mclb_add26(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<26>(Unit *z, const Unit *x, const Unit *y) { return mclb_add26(z, x, y); }
 extern "C" Unit mclb_sub26(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<26>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub26(z, x, y); }
+extern "C" void mclb_addNF26(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<26>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF26(z, x, y); }
 extern "C" Unit mclb_add27(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<27>(Unit *z, const Unit *x, const Unit *y) { return mclb_add27(z, x, y); }
 extern "C" Unit mclb_sub27(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<27>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub27(z, x, y); }
+extern "C" void mclb_addNF27(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<27>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF27(z, x, y); }
 extern "C" Unit mclb_add28(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<28>(Unit *z, const Unit *x, const Unit *y) { return mclb_add28(z, x, y); }
 extern "C" Unit mclb_sub28(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<28>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub28(z, x, y); }
+extern "C" void mclb_addNF28(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<28>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF28(z, x, y); }
 extern "C" Unit mclb_add29(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<29>(Unit *z, const Unit *x, const Unit *y) { return mclb_add29(z, x, y); }
 extern "C" Unit mclb_sub29(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<29>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub29(z, x, y); }
+extern "C" void mclb_addNF29(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<29>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF29(z, x, y); }
 extern "C" Unit mclb_add30(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<30>(Unit *z, const Unit *x, const Unit *y) { return mclb_add30(z, x, y); }
 extern "C" Unit mclb_sub30(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<30>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub30(z, x, y); }
+extern "C" void mclb_addNF30(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<30>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF30(z, x, y); }
 extern "C" Unit mclb_add31(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<31>(Unit *z, const Unit *x, const Unit *y) { return mclb_add31(z, x, y); }
 extern "C" Unit mclb_sub31(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<31>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub31(z, x, y); }
+extern "C" void mclb_addNF31(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<31>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF31(z, x, y); }
 extern "C" Unit mclb_add32(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit addT<32>(Unit *z, const Unit *x, const Unit *y) { return mclb_add32(z, x, y); }
 extern "C" Unit mclb_sub32(Unit *z, const Unit *x, const Unit *y);
 template<> inline Unit subT<32>(Unit *z, const Unit *x, const Unit *y) { return mclb_sub32(z, x, y); }
+extern "C" void mclb_addNF32(Unit *z, const Unit *x, const Unit *y);
+template<> inline void addNFT<32>(Unit *z, const Unit *x, const Unit *y) { mclb_addNF32(z, x, y); }
 #endif // #if MCL_SIZEOF_UNIT == 4
 #if MCL_BINT_ASM_X64 == 1
 extern "C" Unit (*mclb_mulUnit1)(Unit *z, const Unit *x, Unit y);
@@ -425,6 +489,13 @@ inline u_ppp mclb_get_sub(size_t n)
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_subTbl[n];
+}
+extern "C" void_ppp mclb_addNFTbl[];
+inline void_ppp mclb_get_addNF(size_t n)
+{
+	if (n > MCL_BINT_ADD_N) n = 0;
+	assert(n > 0);
+	return mclb_addNFTbl[n];
 }
 extern "C" u_ppu mclb_mulUnitTbl[];
 inline u_ppu mclb_get_mulUnit(size_t n)

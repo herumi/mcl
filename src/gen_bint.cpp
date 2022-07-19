@@ -163,7 +163,8 @@ struct Code : public mcl::Generator {
 		} else {
 			z = sub(x, y);
 			storeN(trunc(z, bit), pz);
-			r = _and(trunc(lshr(z, bit), unit), makeImm(unit, 1));
+			z = trunc(lshr(z, bit), unit);
+			r = _and(z, makeImm(unit, 1));
 		}
 		ret(r);
 		endFunc();
@@ -705,6 +706,7 @@ struct Code : public mcl::Generator {
 			setBit(n * unit);
 			gen_mclb_addsub(true);
 			gen_mclb_addsub(false);
+			gen_mclb_addNF();
 		}
 		for (uint32_t n = 1; n <= N; n++) {
 			setBit(n * unit);

@@ -40,6 +40,7 @@ namespace mcl { namespace bint {
 
 typedef Unit (*u_ppp)(Unit*, const Unit*, const Unit*);
 typedef Unit (*u_ppu)(Unit*, const Unit*, Unit);
+typedef void (*void_ppp)(Unit*, const Unit*, const Unit*);
 
 void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
 
@@ -121,6 +122,8 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
 // z[N] = x[N] - y[N] and return CF(0 or 1)
 template<size_t N>Unit subT(Unit *z, const Unit *x, const Unit *y);
+// z[N] = x[N] + y[N] and return CF(0 or 1) assume x, y are Not Full bit
+template<size_t N>void addNFT(Unit *z, const Unit *x, const Unit *y);
 // [ret:z[N]] = x[N] * y
 template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
 // [ret:z[N]] = z[N] + x[N] * y
@@ -128,6 +131,7 @@ template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
+void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n);
 Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n);
 // z[n * 2] = x[n] * y[n]

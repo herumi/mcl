@@ -45,6 +45,14 @@ store i64 %r10, i64* %r2
 %r14 = and i64 %r12, 1
 ret i64 %r14
 }
+define void @mclb_addNF1(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r4 = load i64, i64* %r2
+%r5 = load i64, i64* %r3
+%r6 = add i64 %r4, %r5
+store i64 %r6, i64* %r1
+ret void
+}
 define i64 @mclb_add2(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i128*
@@ -77,6 +85,17 @@ store i128 %r14, i128* %r16
 %r18 = trunc i192 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF2(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i128*
+%r6 = load i128, i128* %r5
+%r8 = bitcast i64* %r3 to i128*
+%r9 = load i128, i128* %r8
+%r10 = add i128 %r6, %r9
+%r12 = bitcast i64* %r1 to i128*
+store i128 %r10, i128* %r12
+ret void
 }
 define i64 @mclb_add3(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -111,6 +130,17 @@ store i192 %r14, i192* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF3(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i192*
+%r6 = load i192, i192* %r5
+%r8 = bitcast i64* %r3 to i192*
+%r9 = load i192, i192* %r8
+%r10 = add i192 %r6, %r9
+%r12 = bitcast i64* %r1 to i192*
+store i192 %r10, i192* %r12
+ret void
+}
 define i64 @mclb_add4(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i256*
@@ -143,6 +173,17 @@ store i256 %r14, i256* %r16
 %r18 = trunc i320 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF4(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i256*
+%r6 = load i256, i256* %r5
+%r8 = bitcast i64* %r3 to i256*
+%r9 = load i256, i256* %r8
+%r10 = add i256 %r6, %r9
+%r12 = bitcast i64* %r1 to i256*
+store i256 %r10, i256* %r12
+ret void
 }
 define i64 @mclb_add5(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -177,6 +218,17 @@ store i320 %r14, i320* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF5(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i320*
+%r6 = load i320, i320* %r5
+%r8 = bitcast i64* %r3 to i320*
+%r9 = load i320, i320* %r8
+%r10 = add i320 %r6, %r9
+%r12 = bitcast i64* %r1 to i320*
+store i320 %r10, i320* %r12
+ret void
+}
 define i64 @mclb_add6(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i384*
@@ -209,6 +261,17 @@ store i384 %r14, i384* %r16
 %r18 = trunc i448 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF6(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i384*
+%r6 = load i384, i384* %r5
+%r8 = bitcast i64* %r3 to i384*
+%r9 = load i384, i384* %r8
+%r10 = add i384 %r6, %r9
+%r12 = bitcast i64* %r1 to i384*
+store i384 %r10, i384* %r12
+ret void
 }
 define i64 @mclb_add7(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -243,6 +306,17 @@ store i448 %r14, i448* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF7(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i448*
+%r6 = load i448, i448* %r5
+%r8 = bitcast i64* %r3 to i448*
+%r9 = load i448, i448* %r8
+%r10 = add i448 %r6, %r9
+%r12 = bitcast i64* %r1 to i448*
+store i448 %r10, i448* %r12
+ret void
+}
 define i64 @mclb_add8(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i512*
@@ -275,6 +349,17 @@ store i512 %r14, i512* %r16
 %r18 = trunc i576 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF8(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i512*
+%r6 = load i512, i512* %r5
+%r8 = bitcast i64* %r3 to i512*
+%r9 = load i512, i512* %r8
+%r10 = add i512 %r6, %r9
+%r12 = bitcast i64* %r1 to i512*
+store i512 %r10, i512* %r12
+ret void
 }
 define i64 @mclb_add9(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -309,6 +394,17 @@ store i576 %r14, i576* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF9(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i576*
+%r6 = load i576, i576* %r5
+%r8 = bitcast i64* %r3 to i576*
+%r9 = load i576, i576* %r8
+%r10 = add i576 %r6, %r9
+%r12 = bitcast i64* %r1 to i576*
+store i576 %r10, i576* %r12
+ret void
+}
 define i64 @mclb_add10(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i640*
@@ -341,6 +437,17 @@ store i640 %r14, i640* %r16
 %r18 = trunc i704 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF10(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i640*
+%r6 = load i640, i640* %r5
+%r8 = bitcast i64* %r3 to i640*
+%r9 = load i640, i640* %r8
+%r10 = add i640 %r6, %r9
+%r12 = bitcast i64* %r1 to i640*
+store i640 %r10, i640* %r12
+ret void
 }
 define i64 @mclb_add11(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -375,6 +482,17 @@ store i704 %r14, i704* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF11(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i704*
+%r6 = load i704, i704* %r5
+%r8 = bitcast i64* %r3 to i704*
+%r9 = load i704, i704* %r8
+%r10 = add i704 %r6, %r9
+%r12 = bitcast i64* %r1 to i704*
+store i704 %r10, i704* %r12
+ret void
+}
 define i64 @mclb_add12(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i768*
@@ -407,6 +525,17 @@ store i768 %r14, i768* %r16
 %r18 = trunc i832 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF12(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i768*
+%r6 = load i768, i768* %r5
+%r8 = bitcast i64* %r3 to i768*
+%r9 = load i768, i768* %r8
+%r10 = add i768 %r6, %r9
+%r12 = bitcast i64* %r1 to i768*
+store i768 %r10, i768* %r12
+ret void
 }
 define i64 @mclb_add13(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -441,6 +570,17 @@ store i832 %r14, i832* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF13(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i832*
+%r6 = load i832, i832* %r5
+%r8 = bitcast i64* %r3 to i832*
+%r9 = load i832, i832* %r8
+%r10 = add i832 %r6, %r9
+%r12 = bitcast i64* %r1 to i832*
+store i832 %r10, i832* %r12
+ret void
+}
 define i64 @mclb_add14(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i896*
@@ -473,6 +613,17 @@ store i896 %r14, i896* %r16
 %r18 = trunc i960 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF14(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i896*
+%r6 = load i896, i896* %r5
+%r8 = bitcast i64* %r3 to i896*
+%r9 = load i896, i896* %r8
+%r10 = add i896 %r6, %r9
+%r12 = bitcast i64* %r1 to i896*
+store i896 %r10, i896* %r12
+ret void
 }
 define i64 @mclb_add15(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -507,6 +658,17 @@ store i960 %r14, i960* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF15(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i960*
+%r6 = load i960, i960* %r5
+%r8 = bitcast i64* %r3 to i960*
+%r9 = load i960, i960* %r8
+%r10 = add i960 %r6, %r9
+%r12 = bitcast i64* %r1 to i960*
+store i960 %r10, i960* %r12
+ret void
+}
 define i64 @mclb_add16(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1024*
@@ -539,6 +701,17 @@ store i1024 %r14, i1024* %r16
 %r18 = trunc i1088 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF16(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1024*
+%r6 = load i1024, i1024* %r5
+%r8 = bitcast i64* %r3 to i1024*
+%r9 = load i1024, i1024* %r8
+%r10 = add i1024 %r6, %r9
+%r12 = bitcast i64* %r1 to i1024*
+store i1024 %r10, i1024* %r12
+ret void
 }
 define i64 @mclb_add17(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -573,6 +746,17 @@ store i1088 %r14, i1088* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF17(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1088*
+%r6 = load i1088, i1088* %r5
+%r8 = bitcast i64* %r3 to i1088*
+%r9 = load i1088, i1088* %r8
+%r10 = add i1088 %r6, %r9
+%r12 = bitcast i64* %r1 to i1088*
+store i1088 %r10, i1088* %r12
+ret void
+}
 define i64 @mclb_add18(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1152*
@@ -605,6 +789,17 @@ store i1152 %r14, i1152* %r16
 %r18 = trunc i1216 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF18(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1152*
+%r6 = load i1152, i1152* %r5
+%r8 = bitcast i64* %r3 to i1152*
+%r9 = load i1152, i1152* %r8
+%r10 = add i1152 %r6, %r9
+%r12 = bitcast i64* %r1 to i1152*
+store i1152 %r10, i1152* %r12
+ret void
 }
 define i64 @mclb_add19(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -639,6 +834,17 @@ store i1216 %r14, i1216* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF19(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1216*
+%r6 = load i1216, i1216* %r5
+%r8 = bitcast i64* %r3 to i1216*
+%r9 = load i1216, i1216* %r8
+%r10 = add i1216 %r6, %r9
+%r12 = bitcast i64* %r1 to i1216*
+store i1216 %r10, i1216* %r12
+ret void
+}
 define i64 @mclb_add20(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1280*
@@ -671,6 +877,17 @@ store i1280 %r14, i1280* %r16
 %r18 = trunc i1344 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF20(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1280*
+%r6 = load i1280, i1280* %r5
+%r8 = bitcast i64* %r3 to i1280*
+%r9 = load i1280, i1280* %r8
+%r10 = add i1280 %r6, %r9
+%r12 = bitcast i64* %r1 to i1280*
+store i1280 %r10, i1280* %r12
+ret void
 }
 define i64 @mclb_add21(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -705,6 +922,17 @@ store i1344 %r14, i1344* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF21(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1344*
+%r6 = load i1344, i1344* %r5
+%r8 = bitcast i64* %r3 to i1344*
+%r9 = load i1344, i1344* %r8
+%r10 = add i1344 %r6, %r9
+%r12 = bitcast i64* %r1 to i1344*
+store i1344 %r10, i1344* %r12
+ret void
+}
 define i64 @mclb_add22(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1408*
@@ -737,6 +965,17 @@ store i1408 %r14, i1408* %r16
 %r18 = trunc i1472 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF22(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1408*
+%r6 = load i1408, i1408* %r5
+%r8 = bitcast i64* %r3 to i1408*
+%r9 = load i1408, i1408* %r8
+%r10 = add i1408 %r6, %r9
+%r12 = bitcast i64* %r1 to i1408*
+store i1408 %r10, i1408* %r12
+ret void
 }
 define i64 @mclb_add23(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -771,6 +1010,17 @@ store i1472 %r14, i1472* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF23(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1472*
+%r6 = load i1472, i1472* %r5
+%r8 = bitcast i64* %r3 to i1472*
+%r9 = load i1472, i1472* %r8
+%r10 = add i1472 %r6, %r9
+%r12 = bitcast i64* %r1 to i1472*
+store i1472 %r10, i1472* %r12
+ret void
+}
 define i64 @mclb_add24(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1536*
@@ -803,6 +1053,17 @@ store i1536 %r14, i1536* %r16
 %r18 = trunc i1600 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF24(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1536*
+%r6 = load i1536, i1536* %r5
+%r8 = bitcast i64* %r3 to i1536*
+%r9 = load i1536, i1536* %r8
+%r10 = add i1536 %r6, %r9
+%r12 = bitcast i64* %r1 to i1536*
+store i1536 %r10, i1536* %r12
+ret void
 }
 define i64 @mclb_add25(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -837,6 +1098,17 @@ store i1600 %r14, i1600* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF25(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1600*
+%r6 = load i1600, i1600* %r5
+%r8 = bitcast i64* %r3 to i1600*
+%r9 = load i1600, i1600* %r8
+%r10 = add i1600 %r6, %r9
+%r12 = bitcast i64* %r1 to i1600*
+store i1600 %r10, i1600* %r12
+ret void
+}
 define i64 @mclb_add26(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1664*
@@ -869,6 +1141,17 @@ store i1664 %r14, i1664* %r16
 %r18 = trunc i1728 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF26(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1664*
+%r6 = load i1664, i1664* %r5
+%r8 = bitcast i64* %r3 to i1664*
+%r9 = load i1664, i1664* %r8
+%r10 = add i1664 %r6, %r9
+%r12 = bitcast i64* %r1 to i1664*
+store i1664 %r10, i1664* %r12
+ret void
 }
 define i64 @mclb_add27(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -903,6 +1186,17 @@ store i1728 %r14, i1728* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF27(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1728*
+%r6 = load i1728, i1728* %r5
+%r8 = bitcast i64* %r3 to i1728*
+%r9 = load i1728, i1728* %r8
+%r10 = add i1728 %r6, %r9
+%r12 = bitcast i64* %r1 to i1728*
+store i1728 %r10, i1728* %r12
+ret void
+}
 define i64 @mclb_add28(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1792*
@@ -935,6 +1229,17 @@ store i1792 %r14, i1792* %r16
 %r18 = trunc i1856 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF28(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1792*
+%r6 = load i1792, i1792* %r5
+%r8 = bitcast i64* %r3 to i1792*
+%r9 = load i1792, i1792* %r8
+%r10 = add i1792 %r6, %r9
+%r12 = bitcast i64* %r1 to i1792*
+store i1792 %r10, i1792* %r12
+ret void
 }
 define i64 @mclb_add29(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -969,6 +1274,17 @@ store i1856 %r14, i1856* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF29(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1856*
+%r6 = load i1856, i1856* %r5
+%r8 = bitcast i64* %r3 to i1856*
+%r9 = load i1856, i1856* %r8
+%r10 = add i1856 %r6, %r9
+%r12 = bitcast i64* %r1 to i1856*
+store i1856 %r10, i1856* %r12
+ret void
+}
 define i64 @mclb_add30(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i1920*
@@ -1001,6 +1317,17 @@ store i1920 %r14, i1920* %r16
 %r18 = trunc i1984 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF30(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1920*
+%r6 = load i1920, i1920* %r5
+%r8 = bitcast i64* %r3 to i1920*
+%r9 = load i1920, i1920* %r8
+%r10 = add i1920 %r6, %r9
+%r12 = bitcast i64* %r1 to i1920*
+store i1920 %r10, i1920* %r12
+ret void
 }
 define i64 @mclb_add31(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
@@ -1035,6 +1362,17 @@ store i1984 %r14, i1984* %r16
 %r20 = and i64 %r18, 1
 ret i64 %r20
 }
+define void @mclb_addNF31(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i1984*
+%r6 = load i1984, i1984* %r5
+%r8 = bitcast i64* %r3 to i1984*
+%r9 = load i1984, i1984* %r8
+%r10 = add i1984 %r6, %r9
+%r12 = bitcast i64* %r1 to i1984*
+store i1984 %r10, i1984* %r12
+ret void
+}
 define i64 @mclb_add32(i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
 {
 %r6 = bitcast i64* %r3 to i2048*
@@ -1067,6 +1405,17 @@ store i2048 %r14, i2048* %r16
 %r18 = trunc i2112 %r17 to i64
 %r20 = and i64 %r18, 1
 ret i64 %r20
+}
+define void @mclb_addNF32(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3)
+{
+%r5 = bitcast i64* %r2 to i2048*
+%r6 = load i2048, i2048* %r5
+%r8 = bitcast i64* %r3 to i2048*
+%r9 = load i2048, i2048* %r8
+%r10 = add i2048 %r6, %r9
+%r12 = bitcast i64* %r1 to i2048*
+store i2048 %r10, i2048* %r12
+ret void
 }
 define i64 @mclb_mulUnit1(i64* noalias  %r2, i64* noalias  %r3, i64 %r4)
 {
