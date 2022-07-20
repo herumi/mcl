@@ -99,6 +99,39 @@ template void addNFT<29>(Unit *z, const Unit *x, const Unit *y);
 template void addNFT<30>(Unit *z, const Unit *x, const Unit *y);
 template void addNFT<31>(Unit *z, const Unit *x, const Unit *y);
 #endif
+template Unit subNFT<1>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<2>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<3>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<4>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<5>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<6>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<7>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<8>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<9>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<10>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<11>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<12>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<13>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<14>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<15>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<16>(Unit *z, const Unit *x, const Unit *y);
+#if MCL_SIZEOF_UNIT == 4
+template Unit subNFT<17>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<18>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<19>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<20>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<21>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<22>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<23>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<24>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<25>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<26>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<27>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<28>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<29>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<30>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<31>(Unit *z, const Unit *x, const Unit *y);
+#endif
 template Unit mulUnitT<1>(Unit *z, const Unit *x, Unit y);
 template Unit mulUnitT<2>(Unit *z, const Unit *x, Unit y);
 template Unit mulUnitT<3>(Unit *z, const Unit *x, Unit y);
@@ -366,6 +399,83 @@ void_ppp mclb_addNFTbl[] = {
 void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return mclb_get_addNF(n)(z, x, y);
+}
+u_ppp mclb_subNFTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_subNF1,
+	mclb_subNF2,
+	mclb_subNF3,
+	mclb_subNF4,
+	mclb_subNF5,
+	mclb_subNF6,
+	mclb_subNF7,
+	mclb_subNF8,
+	mclb_subNF9,
+	mclb_subNF10,
+	mclb_subNF11,
+	mclb_subNF12,
+	mclb_subNF13,
+	mclb_subNF14,
+	mclb_subNF15,
+	mclb_subNF16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_subNF17,
+	mclb_subNF18,
+	mclb_subNF19,
+	mclb_subNF20,
+	mclb_subNF21,
+	mclb_subNF22,
+	mclb_subNF23,
+	mclb_subNF24,
+	mclb_subNF25,
+	mclb_subNF26,
+	mclb_subNF27,
+	mclb_subNF28,
+	mclb_subNF29,
+	mclb_subNF30,
+	mclb_subNF31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	subNFT<1>,
+	subNFT<2>,
+	subNFT<3>,
+	subNFT<4>,
+	subNFT<5>,
+	subNFT<6>,
+	subNFT<7>,
+	subNFT<8>,
+	subNFT<9>,
+	subNFT<10>,
+	subNFT<11>,
+	subNFT<12>,
+	subNFT<13>,
+	subNFT<14>,
+	subNFT<15>,
+	subNFT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	subNFT<17>,
+	subNFT<18>,
+	subNFT<19>,
+	subNFT<20>,
+	subNFT<21>,
+	subNFT<22>,
+	subNFT<23>,
+	subNFT<24>,
+	subNFT<25>,
+	subNFT<26>,
+	subNFT<27>,
+	subNFT<28>,
+	subNFT<29>,
+	subNFT<30>,
+	subNFT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
+Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return mclb_get_subNF(n)(z, x, y);
 }
 u_ppu mclb_mulUnitTbl[] = {
 #if MCL_BINT_ASM == 1

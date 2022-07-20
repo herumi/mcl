@@ -707,6 +707,7 @@ struct Code : public mcl::Generator {
 			gen_mclb_addsub(true);
 			gen_mclb_addsub(false);
 			gen_mclb_addNF();
+			gen_mclb_subNF();
 		}
 		for (uint32_t n = 1; n <= N; n++) {
 			setBit(n * unit);

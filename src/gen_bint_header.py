@@ -105,6 +105,7 @@ def main():
 			gen_func('addT', 'Unit', arg_p3, 'mclb_add', param_u3, i)
 			gen_func('subT', 'Unit', arg_p3, 'mclb_sub', param_u3, i)
 			gen_func('addNFT', 'void', arg_p3, 'mclb_addNF', param_u3, i)
+			gen_func('subNFT', 'Unit', arg_p3, 'mclb_subNF', param_u3, i)
 		print('#endif // #if MCL_SIZEOF_UNIT == 4')
 		for i in range(1, N+1):
 			if i == N64 + 1:
@@ -123,6 +124,7 @@ def main():
 		gen_get_func('add', 'Unit', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
 		gen_get_func('sub', 'Unit', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
 		gen_get_func('addNF', 'void', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
+		gen_get_func('subNF', 'Unit', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
 		gen_get_func('mulUnit', 'Unit', arg_p2u, 'MCL_BINT_MUL_N', N, N64)
 		gen_get_func('mulUnitAdd', 'Unit', arg_p2u, 'MCL_BINT_MUL_N', N, N64)
 	elif opt.out == 'switch':
@@ -130,12 +132,14 @@ def main():
 		gen_inst('addT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('subT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('addNFT', 'void', arg_p3, addN, addN64)
+		gen_inst('subNFT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('mulUnitT', 'Unit', arg_p2u, N, N64)
 		gen_inst('mulUnitAddT', 'Unit', arg_p2u, N, N64)
 		print('#endif // MCL_BINT_ASM != 1')
 		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
 		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
 		gen_switch('addNFN', 'void', arg_p3, 'addNFT', param_u3, addN, addN64)
+		gen_switch('subNFN', 'Unit', arg_p3, 'subNFT', param_u3, addN, addN64)
 		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
 		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64, True)
 		gen_disable('mulUnit', 'mulUnitAdd', 'Unit', arg_p2u, N64)

@@ -659,6 +659,42 @@ CYBOZU_TEST_AUTO(sub)
 }
 
 template<size_t N>
+void testSubNF()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N], z[N], CF;
+	mpz_class mx, my, mz;
+	for (size_t i = 0; i < C; i++) {
+		setRandNF(x, N, rg);
+		setRandNF(y, N, rg);
+		setArray(mx, x, N);
+		setArray(my, y, N);
+		CF = subNFT<N>(z, x, y);
+		setArray(mz, z, N);
+		CYBOZU_TEST_EQUAL(CF != 0, mx < my);
+		if (mx >= my) {
+			CYBOZU_TEST_EQUAL(mz, mx - my);
+		} else {
+			CYBOZU_TEST_EQUAL(mz, mx - my + (to_mpz(CF) << (N * UnitBitSize)));
+		}
+	}
+	printf("%2zd ", N);
+	CYBOZU_BENCH_C("subNFT", 1000, subNFT<N>, z, x, y);
+}
+
+CYBOZU_TEST_AUTO(subNF)
+{
+	testSubNF<1>();
+	testSubNF<2>();
+	testSubNF<3>();
+	testSubNF<4>();
+	testSubNF<5>();
+	testSubNF<6>();
+	testSubNF<7>();
+	testSubNF<8>();
+}
+
+template<size_t N>
 void testMulUnit()
 {
 	cybozu::XorShift rg;

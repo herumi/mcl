@@ -10,9 +10,7 @@ def gen_add(N, NF=False):
 		name += 'NF'
 	with FuncProc(f'{name}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		with StackFrame(3) as sf:
 			z = sf.p[0]
 			x = sf.p[1]
@@ -36,9 +34,7 @@ def gen_sub(N, NF=False):
 		name += 'NF'
 	with FuncProc(f'{name}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		with StackFrame(3) as sf:
 			z = sf.p[0]
 			x = sf.p[1]
@@ -57,9 +53,7 @@ def gen_mulUnit(N, mode='fast'):
 	align(16)
 	with FuncProc(f'mclb_mulUnit_{mode}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		if N == 1:
 			with StackFrame(3) as sf:
 				z = sf.p[0]
@@ -140,9 +134,7 @@ def gen_mulUnitAdd(N, mode='fast'):
 	align(16)
 	with FuncProc(f'mclb_mulUnitAdd_{mode}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		if mode == 'fast':
 			with StackFrame(3, 2, useRDX=True) as sf:
 				z = sf.p[0]
