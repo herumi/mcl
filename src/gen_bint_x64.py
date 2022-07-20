@@ -5,7 +5,10 @@ SUF='_fast'
 
 def gen_add(N, NF=False):
 	align(16)
-	with FuncProc(f'mclb_add{"NF" if NF else ""}{N}'):
+	name = 'mclb_add'
+	if NF:
+		name += 'NF'
+	with FuncProc(f'{name}{N}'):
 		if N == 0:
 			xor_(eax, eax)
 			ret()
@@ -26,9 +29,12 @@ def gen_add(N, NF=False):
 			setc(al)
 			movzx(eax, al)
 
-def gen_sub(N):
+def gen_sub(N, NF=False):
 	align(16)
-	with FuncProc(f'mclb_sub{N}'):
+	name = 'mclb_sub'
+	if NF:
+		name += 'NF'
+	with FuncProc(f'{name}{N}'):
 		if N == 0:
 			xor_(eax, eax)
 			ret()
@@ -252,6 +258,9 @@ for i in range(addN+1):
 
 for i in range(addN+1):
 	gen_add(i, True)
+
+for i in range(addN+1):
+	gen_sub(i, True)
 
 for i in range(N+1):
 	gen_mulUnit(i, 'fast')
