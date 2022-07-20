@@ -242,28 +242,28 @@ for i in range(N+1):
 """
 segment('text')
 
-for i in range(addN+1):
+for i in range(1,addN+1):
 	gen_add(i)
 
-for i in range(addN+1):
+for i in range(1,addN+1):
 	gen_sub(i)
 
-for i in range(addN+1):
+for i in range(1,addN+1):
 	gen_add(i, True)
 
-for i in range(addN+1):
+for i in range(1,addN+1):
 	gen_sub(i, True)
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnit(i, 'fast')
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnitAdd(i, 'fast')
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnit(i, 'slow')
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnitAdd(i, 'slow')
 
 #gen_enable_fast(N)
