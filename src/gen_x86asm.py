@@ -341,9 +341,12 @@ class Label:
 			return getDefLabel(self.n)
 		global g_undefLabel
 		global g_undefLabelN
-		self.n = -g_undefLabelN
-		g_undefLabelN += 1
-		g_undefLabel.setdefault(-self.n, []).append(getLine())
+		if -self.n in g_undefLabel:
+			g_undefLabel[-self.n].append(getLine())
+		else:
+			self.n = -g_undefLabelN
+			g_undefLabelN += 1
+			g_undefLabel.setdefault(-self.n, []).append(getLine())
 		return getUndefLabel(-self.n)
 
 def L(label):
