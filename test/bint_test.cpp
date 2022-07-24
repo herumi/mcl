@@ -9,7 +9,11 @@
 #include <iostream>
 #include <cybozu/link_mpir.hpp>
 
-const size_t C = 100;
+#ifdef NDEBUG
+const int C = 1000;
+#else
+const int C = 100;
+#endif
 
 CYBOZU_TEST_AUTO(cpu)
 {
@@ -146,7 +150,6 @@ CYBOZU_TEST_AUTO(mulUnitT)
 		CYBOZU_TEST_EQUAL(mx * to_mpz(y), mz + (to_mpz(u) << (sizeof(x) * 8)));
 	}
 #ifdef NDEBUG
-	const int C = 1000;
 	CYBOZU_BENCH_C("mulUnit", C, mulUnitT<N>, z, x, y);
 #endif
 }
@@ -186,7 +189,6 @@ CYBOZU_TEST_AUTO(mulT)
 		CYBOZU_TEST_EQUAL(mx * my, mz);
 	}
 #ifdef NDEBUG
-	const int C = 1000;
 	CYBOZU_BENCH_C("gmp ", C, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
 	CYBOZU_BENCH_C("mul ", C, mulT<N>, z, x, y);
 	CYBOZU_BENCH_C("mulN", C, mulN, z, x, y, N);
@@ -347,7 +349,6 @@ CYBOZU_TEST_AUTO(divFullBit)
 	}
 #ifdef NDEBUG
 //g_clk.clear();
-	const int C = 1000;
 	CYBOZU_BENCH_C("gmp ", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("full", C, setRandAndTest, xN, rg, divFullBit, q, qN, y, yN);
 //printf("count=%d\n", g_clk.getCount());
@@ -375,7 +376,6 @@ CYBOZU_TEST_AUTO(divSmall)
 	}
 #ifdef NDEBUG
 	mpz_class mq;
-	const int C = 1000;
 	CYBOZU_BENCH_C("gmp  ", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("small", C, setRandAndTest, N, rg, divSmall, &q, 1, y, N);
 #endif
@@ -401,7 +401,6 @@ CYBOZU_TEST_AUTO(div)
 		CYBOZU_TEST_EQUAL(mq * my + mr, mx);
 	}
 #ifdef NDEBUG
-	const int C = 1000;
 	CYBOZU_BENCH_C("gmp", C, divmod, mq, mr, mx, my);
 	CYBOZU_BENCH_C("div", C, setRandAndTest, xN, rg, mcl::bint::div, q, qN, y, yN);
 #endif
