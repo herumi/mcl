@@ -15,6 +15,6 @@ set EXE=%EXE:.c=.exe%
 set EXE=%EXE:test\=bin\%
 set EXE=%EXE:sample\=bin\%
 echo cl %CFLAGS% %2 /Fe:%EXE% /link %LDFLAGS%
-cl %CFLAGS% %2 /Fe:%EXE% /link %LDFLAGS%
+cl %CFLAGS% %2 /Fe:%EXE% lib/mcl.lib /link %LDFLAGS%
 
 :exit
