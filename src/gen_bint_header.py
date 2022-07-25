@@ -5,14 +5,14 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	retstr = '' if ret == 'void' else ' return'
 	if asPointer:
 		print('#if MCL_BINT_ASM_X64 == 1')
-		print(f'extern "C" {ret} (*{cname}{i})({args});')
+		print(f'extern "C" MCL_DLL_API {protoType[(ret,args)]} {cname}{i};')
 		print(f'extern "C" {ret} {cname}_slow{i}({args});')
 		print(f'extern "C" {ret} {cname}_fast{i}({args});')
 		print('#else')
-		print(f'extern "C" {ret} {cname}{i}({args});')
+		print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
 		print('#endif')
 	else:
-		print(f'extern "C" {ret} {cname}{i}({args});')
+		print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
 	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
 def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
@@ -60,7 +60,7 @@ def roundup(x, n):
 	return (x + n - 1) // n
 
 def gen_get_func(name, ret, args, maxN, N, N64):
-	print(f'''extern "C" {protoType[(ret, args)]} mclb_{name}Tbl[];
+	print(f'''extern "C" MCL_DLL_API {protoType[(ret, args)]} mclb_{name}Tbl[];
 inline {protoType[(ret,args)]} mclb_get_{name}(size_t n)
 {{
 	if (n > {maxN}) n = 0;
@@ -73,7 +73,7 @@ def gen_disable(name1, name2, ret, args, N):
 	for i in range(1, N+1):
 		print(f'{protoType[(ret, args)]} mclb_{name1}{i} = mclb_{name1}_fast{i};')
 		print(f'{protoType[(ret, args)]} mclb_{name2}{i} = mclb_{name2}_fast{i};')
-	print('extern "C" void mclb_disable_fast() {')
+	print('extern "C" MCL_DLL_API void mclb_disable_fast() {')
 	for i in range(1, N+1):
 		print(f'\tmclb_{name1}{i} = mclb_{name1}_slow{i};')
 		print(f'\tmclb_{name2}{i} = mclb_{name2}_slow{i};')

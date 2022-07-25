@@ -15,7 +15,8 @@ R13 = 13
 R14 = 14
 R15 = 15
 
-g_gas = False # gas syntax if True else nasm syntax
+g_nasm = False # nasm syntax
+g_gas = False # gas syntax
 g_masm = False # masm syntax
 g_text = []
 g_undefLabel = {}
@@ -270,7 +271,8 @@ class StackFrame:
 		return r
 
 def init(mode):
-	global g_gas, g_masm, g_text
+	global g_nasm, g_gas, g_masm, g_text
+	g_nasm = mode == 'nasm'
 	g_gas = mode == 'gas'
 	g_masm = mode == 'masm'
 	g_text = []
@@ -398,8 +400,10 @@ class FuncProc:
 	def __init__(self, name):
 		if g_masm:
 			self.name = name
-			output(f'{self.name} proc')
+			output(f'{self.name} proc export')
 		else:
+			if g_nasm and win64ABI:
+				output(f'export {name}')
 			defineName(name)
 	def close(self):
 		if g_masm:
