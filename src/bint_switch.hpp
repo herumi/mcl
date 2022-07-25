@@ -590,7 +590,7 @@ u_ppu mclb_mulUnit8 = mclb_mulUnit_fast8;
 u_ppu mclb_mulUnitAdd8 = mclb_mulUnitAdd_fast8;
 u_ppu mclb_mulUnit9 = mclb_mulUnit_fast9;
 u_ppu mclb_mulUnitAdd9 = mclb_mulUnitAdd_fast9;
-extern "C" void mclb_disable_fast() {
+extern "C" MCL_DLL_API void mclb_disable_fast() {
 	mclb_mulUnit1 = mclb_mulUnit_slow1;
 	mclb_mulUnitAdd1 = mclb_mulUnitAdd_slow1;
 	mclb_mulUnit2 = mclb_mulUnit_slow2;

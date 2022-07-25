@@ -57,4 +57,14 @@ struct RoundUpT {
 const size_t maxUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
 #define MCL_MAX_UNIT_SIZE MCL_ROUNDUP(MCL_MAX_BIT_SIZE, MCL_UNIT_BIT_SIZE)
 
+#ifdef _MSC_VER
+	#ifdef MCL_DLL_EXPORT
+		#define MCL_DLL_API __declspec(dllexport)
+	#else
+		#define MCL_DLL_API
+	#endif
+#else
+	#define MCL_DLL_API
+#endif
+
 } // mcl
