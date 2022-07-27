@@ -54,15 +54,6 @@ inline Mode StrToMode(const std::string& s)
 }
 #endif
 
-inline void dumpUnit(Unit x)
-{
-#if MCL_SIZEOF_UNIT == 4
-	printf("%08x", (uint32_t)x);
-#else
-	printf("%016llx", (unsigned long long)x);
-#endif
-}
-
 bool isEnableJIT(); // 1st call is not threadsafe
 
 uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
@@ -156,10 +147,7 @@ public:
 	void dump() const
 	{
 		const size_t N = op_.N;
-		for (size_t i = 0; i < N; i++) {
-			fp::dumpUnit(v_[N - 1 - i]);
-		}
-		printf("\n");
+		bint::dump(v_, N);
 	}
 	/*
 		xi_a is used for Fp2::mul_xi(), where xi = xi_a + i and i^2 = -1

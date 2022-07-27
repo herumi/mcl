@@ -8,17 +8,6 @@
 #include <vector>
 #include <mcl/gmp_util.hpp>
 
-template<size_t N>
-std::ostream& dump(std::ostream& os, const uint64_t (&x)[N])
-{
-	for (size_t i = 0; i < N; i++) {
-		char buf[64];
-		CYBOZU_SNPRINTF(buf, sizeof(buf), "%016llx", (long long)x[i]);
-		os << buf;
-	}
-	return os;
-}
-
 CYBOZU_TEST_AUTO(init)
 {
 	int ret;
