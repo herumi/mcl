@@ -31,18 +31,12 @@ cl /c %CFLAGS% src\fp.cpp /Foobj\fp.obj
 lib /nologo /OUT:lib\mcl.lib /nodefaultlib %OBJ%
 
 if "%1"=="dll" (
-rem     cl /c %CFLAGS% src\bn_c256.cpp /Foobj\bn_c256.obj
-rem     link /nologo /DLL /OUT:bin\mclbn256.dll obj\bn_c256.obj %OBJ% %LDFLAGS% /implib:lib\mclbn256.lib
-
      cl /c %CFLAGS% src\bn_c384_256.cpp /Foobj\bn_c384_256.obj
      link /nologo /DLL /OUT:bin\mclbn384_256.dll obj\bn_c384_256.obj %OBJ% %LDFLAGS% /implib:lib\mclbn384_256.lib
 
      cl /c %CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj /DMCL_NO_AUTOLINK
      link /nologo /DLL /OUT:bin\mclshe384_256.dll obj\she_c384_256.obj %OBJ% %LDFLAGS% /implib:lib\mclshe_c384_256.lib
 ) else (
-rem     cl /c %CFLAGS% src\bn_c256.cpp /Foobj\bn_c256.obj
-rem     lib /nologo /OUT:lib\mclbn256.lib /nodefaultlib obj\bn_c256.obj lib\mcl.lib
-
      cl /c %CFLAGS% src\bn_c384_256.cpp /Foobj\bn_c384_256.obj
      lib /nologo /OUT:lib\mclbn384_256.lib /nodefaultlib obj\bn_c384_256.obj lib\mcl.lib
 )
