@@ -5,6 +5,7 @@
 #include <mcl/ecparam.hpp>
 #include <cybozu/test.hpp>
 #include <iostream>
+#include <vector>
 #include <mcl/gmp_util.hpp>
 
 template<size_t N>
@@ -868,6 +869,7 @@ CYBOZU_TEST_AUTO(Fp)
 	CYBOZU_TEST_ASSERT(mclBnFp_isOne(&x1));
 }
 
+#ifndef MCL_USE_VINT
 CYBOZU_TEST_AUTO(mod)
 {
 	{
@@ -895,6 +897,7 @@ CYBOZU_TEST_AUTO(mod)
 		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
 	}
 }
+#endif
 
 CYBOZU_TEST_AUTO(Fp2)
 {
