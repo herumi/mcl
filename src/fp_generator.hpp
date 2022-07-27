@@ -2434,7 +2434,8 @@ private:
 	{
 		printf("debug ");
 		for (int i = 0; i < n; i++) {
-			printf("%016llx", (long long)ptr[n - 1 - i]);
+			uint64_t v = ptr[n - 1 - i];
+			printf("%08x%08x", uint32_t(v >> 32), uint32_t(v));
 		}
 		printf("\n");
 	}
