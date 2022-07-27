@@ -1,0 +1,44 @@
+# this Makefile is for a cross compile win64 dll on Linux
+
+PRE=x86_64-w64-mingw32-
+CFLAGS=-std=c++03 -O2 -DNDEBUG -fPIC # -fno-stack-protector -fno-threadsafe-statics
+CFLAGS+=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wundef
+CFLAGS+=-I ./include -I ./src
+CFLAGS+=-DMCL_MAX_BIT_SIZE=384
+CFLAGS+=-DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
+# for dll
+CFLAGS+=-DMCL_NO_AUTOLINK -DMCLBN_NO_AUTOLINK -DMCL_DLL_EXPORT
+VPATH=src test
+.SUFFIXES: .cpp .exe .o
+
+DLL_NAME=mclbn384_256
+all: bin/$(DLL_NAME).dll
+
+DLL_OBJS=obj/bn_c384_256.obj obj/fp.obj obj/bint-x64.obj
+
+src/bint-x64.asm: src/gen_bint_x64.py
+	python3 src/gen_bint_x64.py -win -m nasm > $@
+
+obj/bint-x64.obj: src/bint-x64.asm
+	nasm -f win64 -o $@ $<
+
+obj/%.obj: %.cpp
+	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
+
+lib/$(DLL_NAME).lib: $(DLL_OBJS)
+	$(PRE)dlltool -l $@ -D $(DLL_NAME).dll $(DLL_OBJS)
+
+bin/$(DLL_NAME).dll: lib/$(DLL_NAME).lib
+	$(PRE)$(LD) -shared -o $@ $(DLL_OBJS)
+
+bin/bn_c384_256_test_single.exe: obj/bn_c384_256_test.obj $(DLL_OBJS)
+	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj $(DLL_OBJS) -static -lstdc++
+
+bin/bn_c384_256_test.exe: obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib
+	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib
+
+test: bin/bn_c384_256_test.exe bin/$(DLL_NAME).dll
+	wine $<
+
+clean:
+	$(RM) bin/*.dll lib/*.lib bin/*.exe obj/*.obj
