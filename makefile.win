@@ -12,9 +12,9 @@ VPATH=src test
 .SUFFIXES: .cpp .exe .o
 
 DLL_NAME=mclbn384_256
-all: bin/$(DLL_NAME).dll
+all: bin/$(DLL_NAME).dll lib/mcl.lib bin/bn_c384_256_test.exe
 
-DLL_OBJS=obj/bn_c384_256.obj obj/fp.obj obj/bint-x64.obj
+DLL_OBJS=obj/bn_c384_256.obj
 
 src/bint-x64.asm: src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py -win -m nasm > $@
@@ -25,20 +25,23 @@ obj/bint-x64.obj: src/bint-x64.asm
 obj/%.obj: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
 
+lib/mcl.lib: obj/fp.obj obj/bint-x64.obj
+	$(PRE)$(AR) r $@ obj/fp.obj obj/bint-x64.obj
+
 lib/$(DLL_NAME).lib: $(DLL_OBJS)
 	$(PRE)dlltool -l $@ -D $(DLL_NAME).dll $(DLL_OBJS)
 
-bin/$(DLL_NAME).dll: lib/$(DLL_NAME).lib
-	$(PRE)$(LD) -shared -o $@ $(DLL_OBJS)
+bin/$(DLL_NAME).dll: lib/$(DLL_NAME).lib lib/mcl.lib
+	$(PRE)$(CXX) -shared -o $@ $(DLL_OBJS) lib/mcl.lib
 
-bin/bn_c384_256_test_single.exe: obj/bn_c384_256_test.obj $(DLL_OBJS)
+bin/bn_c384_256_test_single.exe: obj/bn_c384_256_test.obj $(DLL_OBJS) lib/mcl.lib
 	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj $(DLL_OBJS) -static -lstdc++
 
-bin/bn_c384_256_test.exe: obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib
-	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib
+bin/bn_c384_256_test.exe: obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib lib/mcl.lib
+	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib lib/mcl.lib
 
-test: bin/bn_c384_256_test.exe bin/$(DLL_NAME).dll
-	wine $<
+#test: bin/bn_c384_256_test.exe bin/$(DLL_NAME).dll
+#	wine $<
 
 clean:
 	$(RM) bin/*.dll lib/*.lib bin/*.exe obj/*.obj
