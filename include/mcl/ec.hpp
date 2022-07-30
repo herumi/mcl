@@ -149,20 +149,14 @@ void mulGLV_CT(G& Q, const G& P, const void *yVec, fp::getMpzAtType getMpzAt)
 	}
 }
 
-// wrapper class to get P[i].z as EzAsArray[i]
+// AsArrayOfFp[i] gets P[i].z
 template<class E>
-struct EzAsArray {
-	E* P;
-	EzAsArray(E* P) : P(P) {}
-	typename E::Fp& operator[](size_t i) { return P[i].z; }
+struct AsArrayOfFp {
+	typedef typename E::Fp Fp;
+	const E* P;
+	AsArrayOfFp(const E* P) : P(P) {}
+	const Fp& operator[](size_t i) const { return P[i].z; }
 	void operator+=(size_t n) { P += n; }
-};
-template<class E>
-struct EzAsConstArray {
-	const mutable E* P;
-	EzAsConstArray(const E* P) : P(P) {}
-	const typename E::Fp& operator[](size_t i) const { return P[i].z; }
-	void operator+=(size_t n) const { P += n; }
 };
 
 template<class E>
@@ -202,6 +196,34 @@ void _normalize(E& Q, const E& P, typename E::Fp& inv)
 	}
 }
 
+/*
+	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	AsArray : Pz[i] to access like as F[i] in invVecT
+	N : alloc size
+*/
+template<class F, class Eout, class Ein, class AsArrayOfFp, size_t N = 256>
+void normalizeVecT(Eout& Q, Ein& P, size_t n)
+{
+	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * N);
+	bool PisEqualToQ = &P[0] == &Q[0];
+	for (;;) {
+		size_t doneN = (n < N) ? n : N;
+		AsArrayOfFp Pz(P);
+		invVecT<F>(inv, Pz, doneN);
+		for (size_t i = 0; i < doneN; i++) {
+			if (P[i].z.isZero() || P[i].z.isOne()) {
+				if (!PisEqualToQ) Q[i] = P[i];
+			} else {
+				local::_normalize(Q[i], P[i], inv[i]);
+			}
+		}
+		n -= doneN;
+		if (n == 0) return;
+		Q += doneN;
+		P += doneN;
+	}
+}
+
 } // mcl::ec::local
 
 template<class E>
@@ -213,28 +235,15 @@ void normalizeJacobi(E& P)
 	local::_normalizeJacobi(P, P, P.z);
 }
 
+/*
+	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	AsArray : Pz[i] to access like as F[i] in invVecT
+	N : alloc size
+*/
 template<class E>
 void normalizeVec(E *Q, const E *P, size_t n)
 {
-	const size_t N = 128;
-	typedef typename E::Fp F;
-	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
-	for (;;) {
-		size_t doneN = (n < N) ? n : N;
-		local::EzAsConstArray<E> Pz(P);
-		F::invVecT(inv, Pz, doneN);
-		for (size_t i = 0; i < doneN; i++) {
-			if (P[i].z.isZero() || P[i].z.isOne()) {
-				if (P != Q) Q[i] = P[i];
-			} else {
-				local::_normalize(Q[i], P[i], inv[i]);
-			}
-		}
-		n -= doneN;
-		if (n == 0) return;
-		Q += doneN;
-		P += doneN;
-	}
+	local::normalizeVecT<typename E::Fp, E*, const E*, local::AsArrayOfFp<E> >(Q, P, n);
 }
 
 // (x/z^2, y/z^3)

@@ -353,6 +353,37 @@ struct Hash {
 	}
 };
 
+template<class C>
+struct CipherAsArrayOfEc {
+	typedef typename C::G G;
+	C* c;
+	CipherAsArrayOfEc(C* c) : c(c) {}
+	G& operator[](size_t i)
+	{
+		if (i & 1) {
+			return c[i / 2].getNonConstRefT();
+		} else {
+			return c[i / 2].getNonConstRefS();
+		}
+	}
+	void operator+=(size_t n)
+	{
+		assert((n & 1) == 0);
+		c += n/2;
+	}
+};
+
+// AsArrayOfFp[i] gets P[i].z
+template<class C>
+struct AsArrayOfFp {
+	typedef typename C::G::Fp Fp;
+	C& c;
+	AsArrayOfFp(C& c) : c(c) {}
+	const Fp& operator[](size_t i) const { return c[i].z; }
+	void operator+=(size_t n) { c += n; }
+};
+
+
 } // mcl::she::local
 
 template<size_t dummyInpl = 0>
@@ -378,8 +409,11 @@ struct SHET {
 	static bool useDecG2ViaGT_;
 	static bool isG1only_;
 private:
-	template<class G>
-	class CipherTextAT : public fp::Serializable<CipherTextAT<G> > {
+	template<class _G>
+	class CipherTextAT : public fp::Serializable<CipherTextAT<_G> > {
+	public:
+		typedef _G G;
+	private:
 		G S_, T_;
 		friend class SecretKey;
 		friend class PublicKey;
@@ -2230,6 +2264,15 @@ inline void mul(CipherText& z, const CipherText& x, const INT& y) { CipherText::
 
 inline void mul(CipherTextGT& z, const CipherTextG1& x, const CipherTextG2& y) { CipherTextGT::mul(z, x, y); }
 inline void mul(CipherText& z, const CipherText& x, const CipherText& y) { CipherText::mul(z, x, y); }
+
+template<class G>
+void normalizeVec(SHE::CipherTextAT<G> *v, size_t n)
+{
+	typedef SHE::CipherTextAT<G> Cipher;
+	typedef local::CipherAsArrayOfEc<Cipher> Array;
+	Array arr(v);
+	ec::local::normalizeVecT<typename G::Fp, Array, Array, local::AsArrayOfFp<Array> >(arr, arr, n * 2);
+}
 
 } } // mcl::she
 

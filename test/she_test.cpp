@@ -311,6 +311,34 @@ CYBOZU_TEST_AUTO(enc_dec)
 	}
 }
 
+CYBOZU_TEST_AUTO(normalizeVec)
+{
+	const size_t N = 32;
+	SecretKey& sec = g_sec;
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	CipherTextG1 c1[N];
+	CipherTextG2 c2[N];
+	for (size_t i = 0; i < N; i++) {
+		pub.enc(c1[i], i);
+		pub.enc(c2[i], i);
+		CYBOZU_TEST_ASSERT(!c1[i].getS().z.isOne());
+		CYBOZU_TEST_ASSERT(!c1[i].getT().z.isOne());
+		CYBOZU_TEST_ASSERT(!c2[i].getS().z.isOne());
+		CYBOZU_TEST_ASSERT(!c2[i].getT().z.isOne());
+	}
+	normalizeVec(c1, N);
+	normalizeVec(c2, N);
+	for (size_t i = 0; i < N; i++) {
+		CYBOZU_TEST_ASSERT(c1[i].getS().z.isOne());
+		CYBOZU_TEST_ASSERT(c1[i].getT().z.isOne());
+		CYBOZU_TEST_ASSERT(c2[i].getS().z.isOne());
+		CYBOZU_TEST_ASSERT(c2[i].getT().z.isOne());
+		CYBOZU_TEST_EQUAL(sec.dec(c1[i]), (int)i);
+		CYBOZU_TEST_EQUAL(sec.dec(c2[i]), (int)i);
+	}
+}
+
 template<class CT, class PK>
 void ZkpBinTest(const SecretKey& sec, const PK& pub)
 {

@@ -967,7 +967,7 @@ void invVecTest()
 				}
 				y[i] = 1;
 			}
-			size_t ret = Fp::invVec(y, x, n);
+			size_t ret = invVec(y, x, n);
 			CYBOZU_TEST_EQUAL(ret, retN);
 			for (size_t i = 0; i < n; i++) {
 				if (x[i].isZero()) {
@@ -976,7 +976,7 @@ void invVecTest()
 					CYBOZU_TEST_EQUAL(y[i], 1 / x[i]);
 				}
 			}
-			Fp::invVec(x, x, n); // same addr
+			invVec(x, x, n); // same addr
 			CYBOZU_TEST_EQUAL_ARRAY(y, x, n);
 		}
 	}
