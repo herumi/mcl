@@ -408,7 +408,6 @@ struct SHET {
 	static bool useDecG1ViaGT_;
 	static bool useDecG2ViaGT_;
 	static bool isG1only_;
-private:
 	template<class _G>
 	class CipherTextAT : public fp::Serializable<CipherTextAT<_G> > {
 	public:
@@ -517,6 +516,7 @@ private:
 		}
 		bool operator!=(const CipherTextAT& rhs) const { return !operator==(rhs); }
 	};
+private:
 	/*
 		g1 = millerLoop(P1, Q)
 		g2 = millerLoop(P2, Q)
