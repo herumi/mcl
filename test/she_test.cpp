@@ -693,8 +693,6 @@ CYBOZU_TEST_AUTO(saveHash)
 	CYBOZU_TEST_ASSERT(hashTbl1 == hashTbl2);
 }
 
-static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
-
 template<class CT>
 void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub, int64_t (SecretKey::*dec)(const CT& c, bool *pok) const = &SecretKey::dec)
 {
@@ -719,6 +717,7 @@ void decBench(const char *msg, int C, const SecretKey& sec, const PublicKey& pub
 }
 
 #if 0 // !defined(PAPER) && defined(NDEBUG)
+static inline void putK(double t) { printf("%.2e\n", t * 1e-3); }
 CYBOZU_TEST_AUTO(hashBench)
 {
 	setTryNum(1024);
