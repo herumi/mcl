@@ -189,9 +189,13 @@ CYBOZU_TEST_AUTO(mulT)
 		CYBOZU_TEST_EQUAL(mx * my, mz);
 	}
 #ifdef NDEBUG
-	CYBOZU_BENCH_C("gmp ", C, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
-	CYBOZU_BENCH_C("mul ", C, mulT<N>, z, x, y);
-	CYBOZU_BENCH_C("mulN", C, mulN, z, x, y, N);
+	const int CC = 20000;
+	CYBOZU_BENCH_C("gmp(4)", CC, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)4);
+	CYBOZU_BENCH_C("mul4", CC, mulT<4>, z, x, y);
+	CYBOZU_BENCH_C("mulN(4)", CC, mulN, z, x, y, 4);
+	CYBOZU_BENCH_C("gmp(6)", CC, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	CYBOZU_BENCH_C("mul6", CC, mulT<N>, z, x, y);
+	CYBOZU_BENCH_C("mulN(6)", CC, mulN, z, x, y, N);
 #endif
 }
 
