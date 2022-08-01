@@ -271,4 +271,4 @@ for i in range(1,N+1):
 if param.win:
 	gen_udiv128()
 
-termOutput()
+term()

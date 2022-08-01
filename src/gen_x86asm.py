@@ -374,7 +374,7 @@ def L(label):
 			g_text[line] = g_text[line].replace(oldStr, newStr)
 	output(f'{getDefLabel(label.n)}:')
 
-def termOutput():
+def term():
 	if g_masm:
 		output('_text ends')
 		output('end')
