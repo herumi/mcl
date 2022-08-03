@@ -311,6 +311,24 @@ CYBOZU_TEST_AUTO(enc_dec)
 	}
 }
 
+void normalizeCipher1(const CipherTextG1 *c1, size_t n)
+{
+	G1 cc;
+	for (size_t i = 0; i < n; i++) {
+		G1::normalize(cc, c1[i].getS());
+		G1::normalize(cc, c1[i].getT());
+	}
+}
+
+void normalizeCipher2(const CipherTextG1 *c1, size_t n)
+{
+	CipherTextG1 *cc = (CipherTextG1*)CYBOZU_ALLOCA(sizeof(CipherTextG1) * n);
+	for (size_t i = 0; i < n; i++) {
+		cc[i] = c1[i];
+	}
+	normalizeVec(cc, n);
+}
+
 CYBOZU_TEST_AUTO(normalizeVec)
 {
 	const size_t N = 32;
@@ -327,6 +345,10 @@ CYBOZU_TEST_AUTO(normalizeVec)
 		CYBOZU_TEST_ASSERT(!c2[i].getS().z.isOne());
 		CYBOZU_TEST_ASSERT(!c2[i].getT().z.isOne());
 	}
+#ifdef NDEBUG
+	CYBOZU_BENCH_C("normalize one", 100, normalizeCipher1, c1, N);
+	CYBOZU_BENCH_C("normalizeVec", 100, normalizeCipher2, c1, N);
+#endif
 	normalizeVec(c1, N);
 	normalizeVec(c2, N);
 	for (size_t i = 0; i < N; i++) {
@@ -336,6 +358,30 @@ CYBOZU_TEST_AUTO(normalizeVec)
 		CYBOZU_TEST_ASSERT(c2[i].getT().z.isOne());
 		CYBOZU_TEST_EQUAL(sec.dec(c1[i]), (int)i);
 		CYBOZU_TEST_EQUAL(sec.dec(c2[i]), (int)i);
+	}
+	// G1
+	{
+		std::string s;
+		cybozu::StringOutputStream os(s);
+		serializeVecToAffine(os, c1, N);
+		CipherTextG1 cc[N];
+		cybozu::StringInputStream is(s);
+		deserializeVecFromAffine(cc, N, is);
+		for (size_t i = 0; i < N; i++) {
+			CYBOZU_TEST_EQUAL(sec.dec(cc[i]), (int)i);
+		}
+	}
+	// G2
+	{
+		std::string s;
+		cybozu::StringOutputStream os(s);
+		serializeVecToAffine(os, c2, N);
+		CipherTextG2 cc[N];
+		cybozu::StringInputStream is(s);
+		deserializeVecFromAffine(cc, N, is);
+		for (size_t i = 0; i < N; i++) {
+			CYBOZU_TEST_EQUAL(sec.dec(cc[i]), (int)i);
+		}
 	}
 }
 
