@@ -44,16 +44,16 @@ typedef void (*void_ppp)(Unit*, const Unit*, const Unit*);
 
 MCL_DLL_API void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
 
-inline void dump(const Unit *x, size_t n, const char *msg = "")
+template<class T>
+inline void dump(const T *x, size_t n, const char *msg = "")
 {
 	if (msg) printf("%s ", msg);
 	for (size_t i = 0; i < n; i++) {
-#if MCL_SIZEOF_UNIT == 4
-		printf("%08x", x[n - 1 - i]);
-#else
-		uint64_t v = x[n - 1 - i];
-		printf("%08x%08x", uint32_t(v >> 32), uint32_t(v));
-#endif
+		T v = x[i];
+		for (size_t j = 0; j < sizeof(T); j++) {
+			printf("%02x", uint8_t(v));
+			v >>= 8;
+		}
 	}
 	printf("\n");
 }
