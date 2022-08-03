@@ -310,7 +310,7 @@ public:
 				readSize = cybozu::readSome(buf, n, is);
 			}
 			if (readSize != n) return;
-			if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+			if ((isETHserialization_ || (ioMode & IoBigEndian)) && ioMode & (IoArray | IoSerialize | IoSerializeHexStr)) {
 				fp::local::byteSwap(buf, n);
 			}
 			fp::convertArrayAsLE(v_, op_.N, buf, n);
@@ -347,7 +347,7 @@ public:
 				fp::Block b;
 				getBlock(b);
 				fp::convertArrayAsLE(x, xn, b.p, b.n);
-				if (isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+				if ((isETHserialization_ || (ioMode & IoBigEndian)) && ioMode & (IoArray | IoSerialize | IoSerializeHexStr)) {
 					fp::local::byteSwap(x, n);
 				}
 				if (ioMode & IoSerializeHexStr) {

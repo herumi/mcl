@@ -859,6 +859,34 @@ void serializeTest()
 		y.deserialize(buf, n, mcl::IoSerializeHexStr);
 		CYBOZU_TEST_EQUAL(x, y);
 	}
+	{
+		Fp x;
+		x.setStr("0x112233445566778899");
+		const uint8_t expected[] = { 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 };
+		uint8_t buf[128];
+		{
+			// little endian
+			size_t n = x.serialize(buf, sizeof(buf), mcl::IoArray);
+			CYBOZU_TEST_EQUAL(n, Fp::getByteSize());
+			for (size_t i = 0; i < sizeof(expected); i++) {
+				CYBOZU_TEST_EQUAL(buf[i], expected[i]);
+			}
+			for (size_t i = sizeof(expected); i < n; i++) {
+				CYBOZU_TEST_EQUAL(buf[i], 0);
+			}
+		}
+		// big endian
+		{
+			size_t n = x.serialize(buf, sizeof(buf), mcl::IoArray | mcl::IoBigEndian);
+			CYBOZU_TEST_EQUAL(n, Fp::getByteSize());
+			for (size_t i = 0; i < n - sizeof(expected); i++) {
+				CYBOZU_TEST_EQUAL(buf[i], 0);
+			}
+			for (size_t i = 0; i < sizeof(expected); i++) {
+				CYBOZU_TEST_EQUAL(buf[n - 1 - i], expected[i]);
+			}
+		}
+	}
 }
 
 void modpTest()
