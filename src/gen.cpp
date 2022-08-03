@@ -58,7 +58,9 @@ struct Code : public mcl::Generator {
 		}
 		const size_t n = r.bit / unit;
 		for (uint32_t i = 0; i < n; i++) {
-			store(trunc(r, unit), getelementptr(p, i));
+			Operand pp = getelementptr(p, i);
+			Operand t = trunc(r, unit);
+			store(t, pp);
 			if (i < n - 1) {
 				r = lshr(r, unit);
 			}
@@ -428,7 +430,8 @@ struct Code : public mcl::Generator {
 		} else {
 			z = sub(x, y);
 			storeN(trunc(z, bit), pz);
-			r = _and(trunc(lshr(z, bit), unit), makeImm(unit, 1));
+			Operand one = makeImm(unit, 1);
+			r = _and(trunc(lshr(z, bit), unit), one);
 		}
 		ret(r);
 		endFunc();

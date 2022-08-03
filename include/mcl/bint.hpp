@@ -22,6 +22,16 @@
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && !defined(MCL_BINT_ASM_X64)
 	#define MCL_BINT_ASM_X64 1
 extern "C" void mclb_disable_fast(void);
+
+#if defined(_MSC_VER) && (_MSC_VER < 1920)
+extern "C" unsigned __int64 mclb_udiv128(
+   unsigned __int64 highDividend,
+   unsigned __int64 lowDividend,
+   unsigned __int64 divisor,
+   unsigned __int64 *remainder
+);
+#endif
+
 #else
 	#define MCL_BINT_ASM_X64 0
 #endif
@@ -30,19 +40,20 @@ namespace mcl { namespace bint {
 
 typedef Unit (*u_ppp)(Unit*, const Unit*, const Unit*);
 typedef Unit (*u_ppu)(Unit*, const Unit*, Unit);
+typedef void (*void_ppp)(Unit*, const Unit*, const Unit*);
 
-void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
+MCL_DLL_API void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
 
-inline void dump(const Unit *x, size_t n, const char *msg = "")
+template<class T>
+inline void dump(const T *x, size_t n, const char *msg = "")
 {
 	if (msg) printf("%s ", msg);
 	for (size_t i = 0; i < n; i++) {
-#if MCL_SIZEOF_UNIT == 4
-		printf("%08x", x[n - 1 - i]);
-#else
-		uint64_t v = x[n - 1 - i];
-		printf("%08x%08x", uint32_t(v >> 32), uint32_t(v));
-#endif
+		T v = x[i];
+		for (size_t j = 0; j < sizeof(T); j++) {
+			printf("%02x", uint8_t(v));
+			v >>= 8;
+		}
 	}
 	printf("\n");
 }
@@ -98,6 +109,8 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	uint64_t q = uint64_t(t / y);
 	*pr = uint64_t(t % y);
 	return q;
+#elif defined(_MSC_VER) && (_MSC_VER < 1920)
+	return mclb_udiv128(H, L, y, pr);
 #else
 	return _udiv128(H, L, y, pr);
 #endif
@@ -109,6 +122,10 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
 // z[N] = x[N] - y[N] and return CF(0 or 1)
 template<size_t N>Unit subT(Unit *z, const Unit *x, const Unit *y);
+// z[N] = x[N] + y[N]. assume x, y are Not Full bit
+template<size_t N>void addNFT(Unit *z, const Unit *x, const Unit *y);
+// z[N] = x[N] - y[N] and return CF(0 or 1). assume x, y are Not Full bit
+template<size_t N>Unit subNFT(Unit *z, const Unit *x, const Unit *y);
 // [ret:z[N]] = x[N] * y
 template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
 // [ret:z[N]] = z[N] + x[N] * y
@@ -116,14 +133,16 @@ template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
+void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n);
+Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n);
 Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n);
 // z[n * 2] = x[n] * y[n]
-void mulN(Unit *z, const Unit *x, const Unit *y, size_t n);
+MCL_DLL_API void mulN(Unit *z, const Unit *x, const Unit *y, size_t n);
 // y[n * 2] = x[n] * x[n]
-void sqrN(Unit *y, const Unit *x, size_t xn);
+MCL_DLL_API void sqrN(Unit *y, const Unit *x, size_t xn);
 // z[xn * yn] = x[xn] * y[ym]
-void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
 // explicit specialization of template functions and external asm functions
 #include "bint_proto.hpp"
@@ -349,11 +368,11 @@ void shrT(Unit *pz, const Unit *px, size_t bit)
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n);
+MCL_DLL_API Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n);
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-void shr(Unit *pz, const Unit *px, size_t bit, size_t n);
+MCL_DLL_API void shr(Unit *pz, const Unit *px, size_t bit, size_t n);
 
 /*
 	generic version
@@ -362,7 +381,7 @@ void shr(Unit *pz, const Unit *px, size_t bit, size_t n);
 	accept y == x
 	return yn
 */
-size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn);
+MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn);
 
 /*
 	generic version
@@ -370,26 +389,26 @@ size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn);
 	yn = xn - bit / UnitBitSize
 	return yn
 */
-size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn);
+MCL_DLL_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn);
 
 // [return:y[n]] += x
-Unit addUnit(Unit *y, size_t n, Unit x);
+MCL_DLL_API Unit addUnit(Unit *y, size_t n, Unit x);
 
 // y[n] -= x, return CF
-Unit subUnit(Unit *y, size_t n, Unit x);
+MCL_DLL_API Unit subUnit(Unit *y, size_t n, Unit x);
 
 /*
 	q[] = x[] / y
 	@retval r = x[] % y
 	accept q == x
 */
-Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y);
+MCL_DLL_API Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y);
 
 /*
 	q[] = x[] / y
 	@retval r = x[] % y
 */
-Unit modUnit(const Unit *x, size_t n, Unit y);
+MCL_DLL_API Unit modUnit(const Unit *x, size_t n, Unit y);
 
 /*
 	y must be UnitBitSize * N bit
@@ -397,7 +416,7 @@ Unit modUnit(const Unit *x, size_t n, Unit y);
 	q[qn] = x[xn] / y[yn] if q != NULL
 	return new xn
 */
-size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_DLL_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
 /*
 	assume xn <= yn
@@ -406,7 +425,7 @@ size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t 
 	assume(n >= 2);
 	return new xn (1 if modulo is zero) if computed else 0
 */
-Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_DLL_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
 /*
 	x[xn] %= y[yn]
@@ -415,14 +434,14 @@ Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 	return new xn
 	@note x[new xn:xn] may not be cleared
 */
-size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_DLL_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
-void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
-void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
-void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
+MCL_DLL_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
+MCL_DLL_API void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
 
 // x &= (1 << bitSize) - 1
-void maskN(Unit *x, size_t n, size_t bitSize);
+MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize);
 
 } } // mcl::bint
 

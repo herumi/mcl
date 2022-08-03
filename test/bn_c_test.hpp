@@ -5,18 +5,8 @@
 #include <mcl/ecparam.hpp>
 #include <cybozu/test.hpp>
 #include <iostream>
+#include <vector>
 #include <mcl/gmp_util.hpp>
-
-template<size_t N>
-std::ostream& dump(std::ostream& os, const uint64_t (&x)[N])
-{
-	for (size_t i = 0; i < N; i++) {
-		char buf[64];
-		CYBOZU_SNPRINTF(buf, sizeof(buf), "%016llx", (long long)x[i]);
-		os << buf;
-	}
-	return os;
-}
 
 CYBOZU_TEST_AUTO(init)
 {
@@ -868,6 +858,7 @@ CYBOZU_TEST_AUTO(Fp)
 	CYBOZU_TEST_ASSERT(mclBnFp_isOne(&x1));
 }
 
+#ifndef MCL_USE_VINT
 CYBOZU_TEST_AUTO(mod)
 {
 	{
@@ -895,6 +886,7 @@ CYBOZU_TEST_AUTO(mod)
 		CYBOZU_TEST_EQUAL(mpz_class(buf), x % p);
 	}
 }
+#endif
 
 CYBOZU_TEST_AUTO(Fp2)
 {

@@ -3,13 +3,14 @@ import argparse
 
 SUF='_fast'
 
-def gen_add(N):
+def gen_add(N, NF=False):
 	align(16)
-	with FuncProc(f'mclb_add{N}'):
+	name = 'mclb_add'
+	if NF:
+		name += 'NF'
+	with FuncProc(f'{name}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		with StackFrame(3) as sf:
 			z = sf.p[0]
 			x = sf.p[1]
@@ -21,16 +22,19 @@ def gen_add(N):
 				else:
 					adc(rax, ptr(y + 8 * i))
 				mov(ptr(z + 8 * i), rax)
+			if NF:
+				return
 			setc(al)
 			movzx(eax, al)
 
-def gen_sub(N):
+def gen_sub(N, NF=False):
 	align(16)
-	with FuncProc(f'mclb_sub{N}'):
+	name = 'mclb_sub'
+	if NF:
+		name += 'NF'
+	with FuncProc(f'{name}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		with StackFrame(3) as sf:
 			z = sf.p[0]
 			x = sf.p[1]
@@ -49,9 +53,7 @@ def gen_mulUnit(N, mode='fast'):
 	align(16)
 	with FuncProc(f'mclb_mulUnit_{mode}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		if N == 1:
 			with StackFrame(3) as sf:
 				z = sf.p[0]
@@ -132,9 +134,7 @@ def gen_mulUnitAdd(N, mode='fast'):
 	align(16)
 	with FuncProc(f'mclb_mulUnitAdd_{mode}{N}'):
 		if N == 0:
-			xor_(eax, eax)
-			ret()
-			return
+			raise Exception('N = 0')
 		if mode == 'fast':
 			with StackFrame(3, 2, useRDX=True) as sf:
 				z = sf.p[0]
@@ -199,6 +199,16 @@ def gen_enable_fast(N):
 			mov(ptr(rdx), rax)
 		ret()
 
+def gen_udiv128():
+	align(16)
+	with FuncProc('mclb_udiv128'):
+		mov(rax, rdx);
+		mov(rdx, rcx);
+		div(r8);
+		mov(ptr(r9), rdx);
+		ret();
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
 parser.add_argument('-n', '--num', help='max size of Unit', type=int, default=9)
@@ -232,24 +242,33 @@ for i in range(N+1):
 """
 segment('text')
 
-for i in range(addN+1):
+for i in range(1,addN+1):
 	gen_add(i)
 
-for i in range(addN+1):
+for i in range(1,addN+1):
 	gen_sub(i)
 
-for i in range(N+1):
+for i in range(1,addN+1):
+	gen_add(i, True)
+
+for i in range(1,addN+1):
+	gen_sub(i, True)
+
+for i in range(1,N+1):
 	gen_mulUnit(i, 'fast')
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnitAdd(i, 'fast')
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnit(i, 'slow')
 
-for i in range(N+1):
+for i in range(1,N+1):
 	gen_mulUnitAdd(i, 'slow')
 
 #gen_enable_fast(N)
 
-termOutput()
+if param.win:
+	gen_udiv128()
+
+term()

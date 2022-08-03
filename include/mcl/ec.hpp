@@ -149,78 +149,101 @@ void mulGLV_CT(G& Q, const G& P, const void *yVec, fp::getMpzAtType getMpzAt)
 	}
 }
 
-// wrapper class to get P[i].z as EzAsArray[i]
+// AsArrayOfFp[i] gets P[i].z
 template<class E>
-struct EzAsArray {
-	E* P;
-	EzAsArray(E* P) : P(P) {}
-	typename E::Fp& operator[](size_t i) { return P[i].z; }
+struct AsArrayOfFp {
+	typedef typename E::Fp Fp;
+	const E* P;
+	AsArrayOfFp(const E* P) : P(P) {}
+	const Fp& operator[](size_t i) const { return P[i].z; }
 	void operator+=(size_t n) { P += n; }
 };
-template<class E>
-struct EzAsConstArray {
-	const mutable E* P;
-	EzAsConstArray(const E* P) : P(P) {}
-	const typename E::Fp& operator[](size_t i) const { return P[i].z; }
-	void operator+=(size_t n) const { P += n; }
-};
-
-} // mcl::ec::local
 
 template<class E>
-void normalizeJacobi(E& P)
+void _normalizeJacobi(E& Q, const E& P, typename E::Fp& inv)
 {
 	typedef typename E::Fp F;
-	if (P.z.isZero()) return;
-	F::inv(P.z, P.z);
-	F rz2;
-	F::sqr(rz2, P.z);
-	P.x *= rz2;
-	P.y *= rz2;
-	P.y *= P.z;
-	P.z = 1;
+	F inv2;
+	F::sqr(inv2, inv);
+	F::mul(Q.x, P.x, inv2);
+	F::mul(Q.y, P.y, inv2);
+	Q.y *= inv;
+	Q.z = 1;
 }
 
-// inv must be Fp[n]
 template<class E>
-void _normalizeVecJacobiWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
+void _normalizeProj(E& Q, const E& P, typename E::Fp& inv)
 {
 	typedef typename E::Fp F;
-	local::EzAsConstArray<E> Pz(P);
-	F::invVecT(inv, Pz, n);
-	for (size_t i = 0; i < n; i++) {
-		if (P[i].z.isZero() || P[i].z.isOne()) {
-			if (P != Q) Q[i] = P[i];
-		} else {
-			F rz2;
-			F::sqr(rz2, inv[i]);
-			F::mul(Q[i].x, P[i].x, rz2);
-			F::mul(Q[i].y, P[i].y, rz2);
-			Q[i].y *= inv[i];
-			Q[i].z = 1;
-		}
+	F::mul(Q.x, P.x, inv);
+	F::mul(Q.y, P.y, inv);
+	Q.z = 1;
+}
+
+template<class E>
+void _normalize(E& Q, const E& P, typename E::Fp& inv)
+{
+	switch (E::mode_) {
+	case ec::Jacobi:
+		_normalizeJacobi(Q, P, inv);
+		break;
+	case ec::Proj:
+		_normalizeProj(Q, P, inv);
+		break;
+	default:
+		assert(0);
+		break;
 	}
 }
 
-template<class E>
-void gen_normalizeVec(E *Q, const E *P, size_t n, void f(E*, const E*, size_t, typename E::Fp*))
+/*
+	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	AsArray : Pz[i] to access like as F[i] in invVecT
+	N : alloc size
+*/
+template<class F, class Eout, class Ein, class AsArrayOfFp, size_t N = 256>
+void normalizeVecT(Eout& Q, Ein& P, size_t n)
 {
-	const size_t N = 128;
-	typedef typename E::Fp F;
-	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * N);
+	bool PisEqualToQ = &P[0] == &Q[0];
 	for (;;) {
 		size_t doneN = (n < N) ? n : N;
-		f(Q, P, doneN, inv);
+		AsArrayOfFp Pz(P);
+		invVecT<F>(inv, Pz, doneN);
+		for (size_t i = 0; i < doneN; i++) {
+			if (P[i].z.isZero() || P[i].z.isOne()) {
+				if (!PisEqualToQ) Q[i] = P[i];
+			} else {
+				local::_normalize(Q[i], P[i], inv[i]);
+			}
+		}
 		n -= doneN;
 		if (n == 0) return;
 		Q += doneN;
 		P += doneN;
 	}
 }
+
+} // mcl::ec::local
+
 template<class E>
-void normalizeVecJacobi(E *Q, const E *P, size_t n)
+void normalizeJacobi(E& P)
 {
-	gen_normalizeVec(Q, P, n, _normalizeVecJacobiWork);
+	if (P.z.isZero() || P.z.isOne()) return;
+	typedef typename E::Fp F;
+	F::inv(P.z, P.z);
+	local::_normalizeJacobi(P, P, P.z);
+}
+
+/*
+	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	AsArray : Pz[i] to access like as F[i] in invVecT
+	N : alloc size
+*/
+template<class E>
+void normalizeVec(E *Q, const E *P, size_t n)
+{
+	local::normalizeVecT<typename E::Fp, E*, const E*, local::AsArrayOfFp<E> >(Q, P, n);
 }
 
 // (x/z^2, y/z^3)
@@ -481,36 +504,10 @@ void addCTProj(E& R, const E& P, const E& Q)
 template<class E>
 void normalizeProj(E& P)
 {
-	typedef typename E::Fp F;
 	if (P.z.isZero()) return;
-	F::inv(P.z, P.z);
-	P.x *= P.z;
-	P.y *= P.z;
-	P.z = 1;
-}
-
-// inv must be Fp[n]
-template<class E>
-void _normalizeVecProjWork(E *Q, const E *P, size_t n, typename E::Fp *inv)
-{
 	typedef typename E::Fp F;
-	local::EzAsConstArray<E> Pz(P);
-	F::invVecT(inv, Pz, n);
-	for (size_t i = 0; i < n; i++) {
-		if (P[i].z.isZero() || P[i].z.isOne()) {
-			if (P != Q) Q[i] = P[i];
-		} else {
-			F::mul(Q[i].x, P[i].x, inv[i]);
-			F::mul(Q[i].y, P[i].y, inv[i]);
-			Q[i].z = 1;
-		}
-	}
-}
-
-template<class E>
-void normalizeVecProj(E *Q, const E *P, size_t n)
-{
-	gen_normalizeVec(Q, P, n, _normalizeVecProjWork);
+	F::inv(P.z, P.z);
+	local::_normalizeProj(P, P, P.z);
 }
 
 // (Y^2 - bZ^2)Z = X(X^2 + aZ^2)
@@ -1205,20 +1202,14 @@ public:
 	}
 	static void normalizeVec(EcT *y, const EcT *x, size_t n)
 	{
-		switch (mode_) {
-		case ec::Jacobi:
-			ec::normalizeVecJacobi(y, x, n);
-			break;
-		case ec::Proj:
-			ec::normalizeVecProj(y, x, n);
-			break;
-		case ec::Affine:
+		if (mode_ == ec::Affine) {
 			if (y == x) return;
 			for (size_t i = 0; i < n; i++) {
 				y[i] = x[i];
 			}
-			break;
+			return;
 		}
+		ec::normalizeVec(y, x, n);
 	}
 	static inline void init(const Fp& a, const Fp& b, int mode = ec::Jacobi)
 	{

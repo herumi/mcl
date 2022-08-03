@@ -21,14 +21,14 @@
 #include <stdlib.h> // for size_t
 
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 	#ifdef MCLBN_DONT_EXPORT
 		#define MCLBN_DLL_API
 	#else
 		#ifdef MCLBN_DLL_EXPORT
 			#define MCLBN_DLL_API __declspec(dllexport)
 		#else
-			#define MCLBN_DLL_API __declspec(dllimport)
+			#define MCLBN_DLL_API //__declspec(dllimport)
 		#endif
 	#endif
 	#ifndef MCLBN_NO_AUTOLINK

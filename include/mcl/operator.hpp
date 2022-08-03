@@ -20,7 +20,87 @@
 	#endif
 #endif
 
-namespace mcl { namespace fp {
+namespace mcl {
+
+namespace local {
+
+template<class T>
+struct AsConstArray {
+	const T *p;
+	AsConstArray(const T *p) : p(p) {}
+	const T& operator[](size_t i) const { return p[i]; }
+	void operator+=(size_t i) { p += i; }
+};
+
+template<class Tout, class Tin, class T>
+size_t invVecWork(Tout& y, Tin& x, size_t n, T *t)
+{
+	size_t pos = 0;
+	for (size_t i = 0; i < n; i++) {
+		if (!(x[i].isZero() || x[i].isOne())) {
+			if (pos == 0) {
+				t[pos] = x[i];
+			} else {
+				T::mul(t[pos], t[pos - 1], x[i]);
+			}
+			pos++;
+		}
+	}
+	const size_t retNum = pos;
+	T inv;
+	if (pos > 0) {
+		T::inv(inv, t[pos - 1]);
+		pos--;
+	}
+	bool x_is_equal_y = &x[0] == &y[0];
+	for (size_t i = 0; i < n; i++) {
+		const size_t idx = n - 1 - i;
+		if (x[idx].isZero() || x[idx].isOne()) {
+			if (!x_is_equal_y) y[idx] = x[idx];
+		} else {
+			if (pos > 0) {
+				if (x_is_equal_y) {
+					T tmp = x[idx];
+					T::mul(y[idx], inv, t[pos - 1]);
+					inv *= tmp;
+				} else {
+					T::mul(y[idx], inv, t[pos - 1]);
+					inv *= x[idx];
+				}
+				pos--;
+			} else {
+				y[idx] = inv;
+			}
+		}
+	}
+	return retNum;
+}
+
+} // mcl::local
+
+/*
+	template version of invVec
+	y[i] = 1/x[i] for x[i] != 0 else 0
+	return num of x[i] not in {0, 1}
+	t must be T[n]
+	x[i] returns i-th const T&
+*/
+template<class T, class Tout, class Tin, size_t N = 256>
+size_t invVecT(Tout& y, Tin& x, size_t n)
+{
+	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
+	size_t retNum = 0;
+	for (;;) {
+		size_t doneN = (n < N) ? n : N;
+		retNum += mcl::local::invVecWork(y, x, doneN, t);
+		n -= doneN;
+		if (n == 0) return retNum;
+		y += doneN;
+		x += doneN;
+	}
+}
+
+namespace fp {
 
 typedef void (*getMpzAtType)(mpz_class&, const void *, size_t);
 typedef void (*getUnitAtType)(Unit *, const void *, size_t);
@@ -44,26 +124,6 @@ void getUnitAtT(Unit *p, const void *_xVec, size_t i)
 template<class T>
 struct Empty {};
 
-namespace local {
-
-template<class T>
-struct AsArray {
-	T *p;
-	AsArray(T *p) : p(p) {}
-	T& operator[](size_t i) { return p[i]; }
-	void operator+=(size_t i) { p += i; }
-};
-
-template<class T>
-struct AsConstArray {
-	const T *p;
-	AsConstArray(const T *p) : p(p) {}
-	const T& operator[](size_t i) const { return p[i]; }
-	void operator+=(size_t i) { p += i; }
-};
-
-} // local
-
 /*
 	T must have add, sub, mul, inv, neg
 */
@@ -80,77 +140,6 @@ struct Operator : public E {
 	friend MCL_FORCE_INLINE T operator/(const T& a, const T& b) { T c; T::inv(c, b); c *= a; return c; }
 	MCL_FORCE_INLINE T operator-() const { T c; T::neg(c, static_cast<const T&>(*this)); return c; }
 
-	template<typename Tin>
-	static inline size_t _invVecWork(T *y, Tin& x, size_t n, T *t)
-	{
-		size_t pos = 0;
-		for (size_t i = 0; i < n; i++) {
-			if (!(x[i].isZero() || x[i].isOne())) {
-				if (pos == 0) {
-					t[pos] = x[i];
-				} else {
-					T::mul(t[pos], t[pos - 1], x[i]);
-				}
-				pos++;
-			}
-		}
-		const size_t retNum = pos;
-		T inv;
-		if (pos > 0) {
-			T::inv(inv, t[pos - 1]);
-			pos--;
-		}
-		bool x_is_equal_y = &x[0] == &y[0];
-		for (size_t i = 0; i < n; i++) {
-			const size_t idx = n - 1 - i;
-			if (x[idx].isZero() || x[idx].isOne()) {
-				if (!x_is_equal_y) y[idx] = x[idx];
-			} else {
-				if (pos > 0) {
-					if (x_is_equal_y) {
-						T tmp = x[idx];
-						T::mul(y[idx], inv, t[pos - 1]);
-						inv *= tmp;
-					} else {
-						T::mul(y[idx], inv, t[pos - 1]);
-						inv *= x[idx];
-					}
-					pos--;
-				} else {
-					y[idx] = inv;
-				}
-			}
-		}
-		return retNum;
-	}
-	/*
-		template version of invVec
-		y[i] = 1/x[i] for x[i] != 0 else 0
-		return num of x[i] not in {0, 1}
-		t must be T[n]
-		x[i] returns i-th const T&
-	*/
-	template<typename Tin>
-	static inline size_t invVecT(T *y, Tin& x, size_t n)
-	{
-		const size_t N = 128;
-		T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
-		size_t retNum = 0;
-		for (;;) {
-			size_t doneN = (n < N) ? n : N;
-			retNum += _invVecWork(y, x, doneN, t);
-			n -= doneN;
-			if (n == 0) return retNum;
-			y += doneN;
-			x += doneN;
-		}
-	}
-	// array version of invVec
-	static inline size_t invVec(T *y, const T* x, size_t n)
-	{
-		local::AsConstArray<T> in(x);
-		return invVecT(y, in, n);
-	}
 	/*
 		powGeneric = pow if T = Fp, Fp2, Fp6
 		pow is for GT (use GLV method and unitaryInv)
@@ -315,5 +304,15 @@ struct Serializable : public E {
 	}
 };
 
-} } // mcl::fp
+}
+
+// array version of invVec
+template<class T>
+size_t invVec(T *y, const T* x, size_t n)
+{
+	mcl::local::AsConstArray<T> in(x);
+	return invVecT<T>(y, in, n);
+}
+
+} // mcl::fp
 

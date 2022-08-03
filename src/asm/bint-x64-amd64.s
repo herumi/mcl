@@ -1,13 +1,6 @@
 # for gas
 .text
 .align 16
-.global mclb_add0
-.global _mclb_add0
-mclb_add0:
-_mclb_add0:
-xor %eax, %eax
-ret
-.align 16
 .global mclb_add1
 .global _mclb_add1
 mclb_add1:
@@ -542,13 +535,6 @@ adc 120(%rdx), %rax
 mov %rax, 120(%rdi)
 setc %al
 movzx %al, %eax
-ret
-.align 16
-.global mclb_sub0
-.global _mclb_sub0
-mclb_sub0:
-_mclb_sub0:
-xor %eax, %eax
 ret
 .align 16
 .global mclb_sub1
@@ -1087,11 +1073,1044 @@ setc %al
 movzx %al, %eax
 ret
 .align 16
-.global mclb_mulUnit_fast0
-.global _mclb_mulUnit_fast0
-mclb_mulUnit_fast0:
-_mclb_mulUnit_fast0:
-xor %eax, %eax
+.global mclb_addNF1
+.global _mclb_addNF1
+mclb_addNF1:
+_mclb_addNF1:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+ret
+.align 16
+.global mclb_addNF2
+.global _mclb_addNF2
+mclb_addNF2:
+_mclb_addNF2:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+ret
+.align 16
+.global mclb_addNF3
+.global _mclb_addNF3
+mclb_addNF3:
+_mclb_addNF3:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+ret
+.align 16
+.global mclb_addNF4
+.global _mclb_addNF4
+mclb_addNF4:
+_mclb_addNF4:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+ret
+.align 16
+.global mclb_addNF5
+.global _mclb_addNF5
+mclb_addNF5:
+_mclb_addNF5:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+ret
+.align 16
+.global mclb_addNF6
+.global _mclb_addNF6
+mclb_addNF6:
+_mclb_addNF6:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+ret
+.align 16
+.global mclb_addNF7
+.global _mclb_addNF7
+mclb_addNF7:
+_mclb_addNF7:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+ret
+.align 16
+.global mclb_addNF8
+.global _mclb_addNF8
+mclb_addNF8:
+_mclb_addNF8:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+ret
+.align 16
+.global mclb_addNF9
+.global _mclb_addNF9
+mclb_addNF9:
+_mclb_addNF9:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+ret
+.align 16
+.global mclb_addNF10
+.global _mclb_addNF10
+mclb_addNF10:
+_mclb_addNF10:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+ret
+.align 16
+.global mclb_addNF11
+.global _mclb_addNF11
+mclb_addNF11:
+_mclb_addNF11:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+adc 80(%rdx), %rax
+mov %rax, 80(%rdi)
+ret
+.align 16
+.global mclb_addNF12
+.global _mclb_addNF12
+mclb_addNF12:
+_mclb_addNF12:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+adc 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+adc 88(%rdx), %rax
+mov %rax, 88(%rdi)
+ret
+.align 16
+.global mclb_addNF13
+.global _mclb_addNF13
+mclb_addNF13:
+_mclb_addNF13:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+adc 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+adc 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+adc 96(%rdx), %rax
+mov %rax, 96(%rdi)
+ret
+.align 16
+.global mclb_addNF14
+.global _mclb_addNF14
+mclb_addNF14:
+_mclb_addNF14:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+adc 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+adc 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+adc 96(%rdx), %rax
+mov %rax, 96(%rdi)
+mov 104(%rsi), %rax
+adc 104(%rdx), %rax
+mov %rax, 104(%rdi)
+ret
+.align 16
+.global mclb_addNF15
+.global _mclb_addNF15
+mclb_addNF15:
+_mclb_addNF15:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+adc 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+adc 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+adc 96(%rdx), %rax
+mov %rax, 96(%rdi)
+mov 104(%rsi), %rax
+adc 104(%rdx), %rax
+mov %rax, 104(%rdi)
+mov 112(%rsi), %rax
+adc 112(%rdx), %rax
+mov %rax, 112(%rdi)
+ret
+.align 16
+.global mclb_addNF16
+.global _mclb_addNF16
+mclb_addNF16:
+_mclb_addNF16:
+mov (%rsi), %rax
+add (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+adc 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+adc 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+adc 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+adc 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+adc 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+adc 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+adc 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+adc 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+adc 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+adc 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+adc 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+adc 96(%rdx), %rax
+mov %rax, 96(%rdi)
+mov 104(%rsi), %rax
+adc 104(%rdx), %rax
+mov %rax, 104(%rdi)
+mov 112(%rsi), %rax
+adc 112(%rdx), %rax
+mov %rax, 112(%rdi)
+mov 120(%rsi), %rax
+adc 120(%rdx), %rax
+mov %rax, 120(%rdi)
+ret
+.align 16
+.global mclb_subNF1
+.global _mclb_subNF1
+mclb_subNF1:
+_mclb_subNF1:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF2
+.global _mclb_subNF2
+mclb_subNF2:
+_mclb_subNF2:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF3
+.global _mclb_subNF3
+mclb_subNF3:
+_mclb_subNF3:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF4
+.global _mclb_subNF4
+mclb_subNF4:
+_mclb_subNF4:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF5
+.global _mclb_subNF5
+mclb_subNF5:
+_mclb_subNF5:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF6
+.global _mclb_subNF6
+mclb_subNF6:
+_mclb_subNF6:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF7
+.global _mclb_subNF7
+mclb_subNF7:
+_mclb_subNF7:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF8
+.global _mclb_subNF8
+mclb_subNF8:
+_mclb_subNF8:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF9
+.global _mclb_subNF9
+mclb_subNF9:
+_mclb_subNF9:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF10
+.global _mclb_subNF10
+mclb_subNF10:
+_mclb_subNF10:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF11
+.global _mclb_subNF11
+mclb_subNF11:
+_mclb_subNF11:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+sbb 80(%rdx), %rax
+mov %rax, 80(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF12
+.global _mclb_subNF12
+mclb_subNF12:
+_mclb_subNF12:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+sbb 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+sbb 88(%rdx), %rax
+mov %rax, 88(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF13
+.global _mclb_subNF13
+mclb_subNF13:
+_mclb_subNF13:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+sbb 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+sbb 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+sbb 96(%rdx), %rax
+mov %rax, 96(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF14
+.global _mclb_subNF14
+mclb_subNF14:
+_mclb_subNF14:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+sbb 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+sbb 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+sbb 96(%rdx), %rax
+mov %rax, 96(%rdi)
+mov 104(%rsi), %rax
+sbb 104(%rdx), %rax
+mov %rax, 104(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF15
+.global _mclb_subNF15
+mclb_subNF15:
+_mclb_subNF15:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+sbb 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+sbb 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+sbb 96(%rdx), %rax
+mov %rax, 96(%rdi)
+mov 104(%rsi), %rax
+sbb 104(%rdx), %rax
+mov %rax, 104(%rdi)
+mov 112(%rsi), %rax
+sbb 112(%rdx), %rax
+mov %rax, 112(%rdi)
+setc %al
+movzx %al, %eax
+ret
+.align 16
+.global mclb_subNF16
+.global _mclb_subNF16
+mclb_subNF16:
+_mclb_subNF16:
+mov (%rsi), %rax
+sub (%rdx), %rax
+mov %rax, (%rdi)
+mov 8(%rsi), %rax
+sbb 8(%rdx), %rax
+mov %rax, 8(%rdi)
+mov 16(%rsi), %rax
+sbb 16(%rdx), %rax
+mov %rax, 16(%rdi)
+mov 24(%rsi), %rax
+sbb 24(%rdx), %rax
+mov %rax, 24(%rdi)
+mov 32(%rsi), %rax
+sbb 32(%rdx), %rax
+mov %rax, 32(%rdi)
+mov 40(%rsi), %rax
+sbb 40(%rdx), %rax
+mov %rax, 40(%rdi)
+mov 48(%rsi), %rax
+sbb 48(%rdx), %rax
+mov %rax, 48(%rdi)
+mov 56(%rsi), %rax
+sbb 56(%rdx), %rax
+mov %rax, 56(%rdi)
+mov 64(%rsi), %rax
+sbb 64(%rdx), %rax
+mov %rax, 64(%rdi)
+mov 72(%rsi), %rax
+sbb 72(%rdx), %rax
+mov %rax, 72(%rdi)
+mov 80(%rsi), %rax
+sbb 80(%rdx), %rax
+mov %rax, 80(%rdi)
+mov 88(%rsi), %rax
+sbb 88(%rdx), %rax
+mov %rax, 88(%rdi)
+mov 96(%rsi), %rax
+sbb 96(%rdx), %rax
+mov %rax, 96(%rdi)
+mov 104(%rsi), %rax
+sbb 104(%rdx), %rax
+mov %rax, 104(%rdi)
+mov 112(%rsi), %rax
+sbb 112(%rdx), %rax
+mov %rax, 112(%rdi)
+mov 120(%rsi), %rax
+sbb 120(%rdx), %rax
+mov %rax, 120(%rdi)
+setc %al
+movzx %al, %eax
 ret
 .align 16
 .global mclb_mulUnit_fast1
@@ -1287,13 +2306,6 @@ mulx 64(%rsi), %rdx, %rax
 adc %rcx, %rdx
 mov %rdx, 64(%rdi)
 adc $0, %rax
-ret
-.align 16
-.global mclb_mulUnitAdd_fast0
-.global _mclb_mulUnitAdd_fast0
-mclb_mulUnitAdd_fast0:
-_mclb_mulUnitAdd_fast0:
-xor %eax, %eax
 ret
 .align 16
 .global mclb_mulUnitAdd_fast1
@@ -1600,13 +2612,6 @@ mov %rcx, 64(%rdi)
 mov $0, %rcx
 adcx %rcx, %rax
 adox %rcx, %rax
-ret
-.align 16
-.global mclb_mulUnit_slow0
-.global _mclb_mulUnit_slow0
-mclb_mulUnit_slow0:
-_mclb_mulUnit_slow0:
-xor %eax, %eax
 ret
 .align 16
 .global mclb_mulUnit_slow1
@@ -1977,13 +2982,6 @@ mov %rax, 64(%rdi)
 adc $0, %rdx
 mov %rdx, %rax
 add $136, %rsp
-ret
-.align 16
-.global mclb_mulUnitAdd_slow0
-.global _mclb_mulUnitAdd_slow0
-mclb_mulUnitAdd_slow0:
-_mclb_mulUnitAdd_slow0:
-xor %eax, %eax
 ret
 .align 16
 .global mclb_mulUnitAdd_slow1

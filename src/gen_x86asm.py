@@ -15,8 +15,16 @@ R13 = 13
 R14 = 14
 R15 = 15
 
-g_gas = False # gas syntax if True else nasm syntax
+g_nasm = False # nasm syntax
+g_gas = False # gas syntax
 g_masm = False # masm syntax
+g_text = []
+g_undefLabel = {}
+g_defLabelN = 1
+g_undefLabelN = 1
+
+def getLine():
+	return len(g_text)
 
 class Reg:
 	def __init__(self, idx, bit):
@@ -262,9 +270,9 @@ class StackFrame:
 				return r
 		return r
 
-g_text = []
 def init(mode):
-	global g_gas, g_masm, g_text
+	global g_nasm, g_gas, g_masm, g_text
+	g_nasm = mode == 'nasm'
 	g_gas = mode == 'gas'
 	g_masm = mode == 'masm'
 	g_text = []
@@ -321,7 +329,52 @@ def align(n):
 	else:
 		output(f'align {n}')
 
-def termOutput():
+def getDefLabel(n):
+	return f'@L{n}'
+
+def getUndefLabel(n):
+	return f'@L{n}_undef'
+
+class Label:
+	def __init__(self):
+		self.n = 0
+	def __str__(self):
+		if self.n > 0:
+			return getDefLabel(self.n)
+		global g_undefLabel
+		global g_undefLabelN
+		if -self.n in g_undefLabel:
+			g_undefLabel[-self.n].append(getLine())
+		else:
+			self.n = -g_undefLabelN
+			g_undefLabelN += 1
+			g_undefLabel.setdefault(-self.n, []).append(getLine())
+		return getUndefLabel(-self.n)
+
+def L(label):
+	if type(label) != Label:
+		raise Exception(f'bad type {label}')
+	if label.n > 0:
+		raise Exception(f'already defined {label}')
+	lines = []
+	if label.n < 0:
+		global g_undefLabelN
+		n = -label.n
+		if n in g_undefLabel:
+			lines = g_undefLabel[n]
+			oldStr = getUndefLabel(n)
+			del g_undefLabel[n]
+	global g_defLabelN
+	label.n = g_defLabelN
+	g_defLabelN += 1
+	if lines:
+		newStr = getDefLabel(label.n)
+		global g_text
+		for line in lines:
+			g_text[line] = g_text[line].replace(oldStr, newStr)
+	output(f'{getDefLabel(label.n)}:')
+
+def term():
 	if g_masm:
 		output('_text ends')
 		output('end')
@@ -347,8 +400,10 @@ class FuncProc:
 	def __init__(self, name):
 		if g_masm:
 			self.name = name
-			output(f'{self.name} proc')
+			output(f'{self.name} proc export')
 		else:
+			if g_nasm and win64ABI:
+				output(f'export {name}')
 			defineName(name)
 	def close(self):
 		if g_masm:
@@ -386,12 +441,15 @@ def genAllFunc():
 		'ret',
 		'inc', 'dec', 'setc', 'push', 'pop',
 		'mov', 'add', 'adc', 'sub', 'sbb', 'adox', 'adcx', 'mul', 'xor_', 'and_', 'movzx', 'lea',
-		'mulx',
-		'cmp_', 'test', 'or_',
+		'mulx', 'div',
+		'cmp', 'test', 'or_',
 		'cmova', 'cmovae', 'cmovb', 'cmovbe', 'cmovc', 'cmove', 'cmovg', 'cmovge', 'cmovl', 'cmovle',
 		'cmovna', 'cmovnae', 'cmovnb', 'cmovnbe', 'cmovnc', 'cmovne', 'cmovng', 'cmovnge',
 		'cmovnl', 'cmovnle', 'cmovno', 'cmovnp', 'cmovns', 'cmovnz', 'cmovo', 'cmovp', 'cmovpe',
 		'cmovpo', 'cmovs', 'cmovz',
+		'ja','jae','jb','jbe','jc','je','jg','jge','jl','jle','jna','jnae','jnb','jnbe','jnc','jne','jng',
+		'jnge','jnl','jnle','jno','jnp','jns','jnz','jo','jp','jpe','jpo','js','jz',
+		'jmp',
 	]
 	for name in tbl:
 		asmName = name.strip('_')

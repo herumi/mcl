@@ -31,7 +31,7 @@ option(
 option(
 	MCL_USE_LLVM
 	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++"
-	OFF
+	ON
 )
 option(
 	MCL_BUILD_SAMPLE
@@ -158,6 +158,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
 else()
 	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 	message("bint_obj=" ${BINT_OBJ})
+	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
+	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
 	endif()
@@ -167,9 +169,9 @@ else()
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
-	target_link_libraries(mcl PRIVATE ${BINT_OBJ})
+	target_link_libraries(mcl PUBLIC ${BINT_OBJ})
 	add_dependencies(mcl gen_bint.o)
-	target_link_libraries(mcl_st PRIVATE ${BINT_OBJ})
+	target_link_libraries(mcl_st PUBLIC ${BINT_OBJ})
 	add_dependencies(mcl_st gen_bint.o)
 endif()
 
@@ -192,7 +194,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 	target_sources(mcl PRIVATE src/asm/aarch64.s)
 	target_sources(mcl_st PRIVATE src/asm/aarch64.s)
-else()
+elif(${MCL_USE_LLVM})
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ...")
 	endif()
@@ -206,9 +208,9 @@ else()
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
-	target_link_libraries(mcl PRIVATE ${BASE_OBJ})
+	target_link_libraries(mcl PUBLIC ${BASE_OBJ})
 	add_dependencies(mcl gen_base.o)
-	target_link_libraries(mcl_st PRIVATE ${BASE_OBJ})
+	target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
 	add_dependencies(mcl_st gen_base.o)
 endif()
 

@@ -66,6 +66,72 @@ template Unit subT<29>(Unit *z, const Unit *x, const Unit *y);
 template Unit subT<30>(Unit *z, const Unit *x, const Unit *y);
 template Unit subT<31>(Unit *z, const Unit *x, const Unit *y);
 #endif
+template void addNFT<1>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<2>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<3>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<4>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<5>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<6>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<7>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<8>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<9>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<10>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<11>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<12>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<13>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<14>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<15>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<16>(Unit *z, const Unit *x, const Unit *y);
+#if MCL_SIZEOF_UNIT == 4
+template void addNFT<17>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<18>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<19>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<20>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<21>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<22>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<23>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<24>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<25>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<26>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<27>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<28>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<29>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<30>(Unit *z, const Unit *x, const Unit *y);
+template void addNFT<31>(Unit *z, const Unit *x, const Unit *y);
+#endif
+template Unit subNFT<1>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<2>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<3>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<4>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<5>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<6>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<7>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<8>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<9>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<10>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<11>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<12>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<13>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<14>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<15>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<16>(Unit *z, const Unit *x, const Unit *y);
+#if MCL_SIZEOF_UNIT == 4
+template Unit subNFT<17>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<18>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<19>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<20>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<21>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<22>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<23>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<24>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<25>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<26>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<27>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<28>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<29>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<30>(Unit *z, const Unit *x, const Unit *y);
+template Unit subNFT<31>(Unit *z, const Unit *x, const Unit *y);
+#endif
 template Unit mulUnitT<1>(Unit *z, const Unit *x, Unit y);
 template Unit mulUnitT<2>(Unit *z, const Unit *x, Unit y);
 template Unit mulUnitT<3>(Unit *z, const Unit *x, Unit y);
@@ -103,7 +169,7 @@ template Unit mulUnitAddT<15>(Unit *z, const Unit *x, Unit y);
 template Unit mulUnitAddT<16>(Unit *z, const Unit *x, Unit y);
 #endif
 #endif // MCL_BINT_ASM != 1
-Unit (*mclb_addTbl[])(Unit *z, const Unit *x, const Unit *y) = {
+u_ppp mclb_addTbl[] = {
 #if MCL_BINT_ASM == 1
 	0,
 	mclb_add1,
@@ -180,7 +246,7 @@ Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return mclb_get_add(n)(z, x, y);
 }
-Unit (*mclb_subTbl[])(Unit *z, const Unit *x, const Unit *y) = {
+u_ppp mclb_subTbl[] = {
 #if MCL_BINT_ASM == 1
 	0,
 	mclb_sub1,
@@ -257,7 +323,161 @@ Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return mclb_get_sub(n)(z, x, y);
 }
-Unit (*mclb_mulUnitTbl[])(Unit *z, const Unit *x, Unit y) = {
+void_ppp mclb_addNFTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_addNF1,
+	mclb_addNF2,
+	mclb_addNF3,
+	mclb_addNF4,
+	mclb_addNF5,
+	mclb_addNF6,
+	mclb_addNF7,
+	mclb_addNF8,
+	mclb_addNF9,
+	mclb_addNF10,
+	mclb_addNF11,
+	mclb_addNF12,
+	mclb_addNF13,
+	mclb_addNF14,
+	mclb_addNF15,
+	mclb_addNF16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_addNF17,
+	mclb_addNF18,
+	mclb_addNF19,
+	mclb_addNF20,
+	mclb_addNF21,
+	mclb_addNF22,
+	mclb_addNF23,
+	mclb_addNF24,
+	mclb_addNF25,
+	mclb_addNF26,
+	mclb_addNF27,
+	mclb_addNF28,
+	mclb_addNF29,
+	mclb_addNF30,
+	mclb_addNF31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	addNFT<1>,
+	addNFT<2>,
+	addNFT<3>,
+	addNFT<4>,
+	addNFT<5>,
+	addNFT<6>,
+	addNFT<7>,
+	addNFT<8>,
+	addNFT<9>,
+	addNFT<10>,
+	addNFT<11>,
+	addNFT<12>,
+	addNFT<13>,
+	addNFT<14>,
+	addNFT<15>,
+	addNFT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	addNFT<17>,
+	addNFT<18>,
+	addNFT<19>,
+	addNFT<20>,
+	addNFT<21>,
+	addNFT<22>,
+	addNFT<23>,
+	addNFT<24>,
+	addNFT<25>,
+	addNFT<26>,
+	addNFT<27>,
+	addNFT<28>,
+	addNFT<29>,
+	addNFT<30>,
+	addNFT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
+void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return mclb_get_addNF(n)(z, x, y);
+}
+u_ppp mclb_subNFTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_subNF1,
+	mclb_subNF2,
+	mclb_subNF3,
+	mclb_subNF4,
+	mclb_subNF5,
+	mclb_subNF6,
+	mclb_subNF7,
+	mclb_subNF8,
+	mclb_subNF9,
+	mclb_subNF10,
+	mclb_subNF11,
+	mclb_subNF12,
+	mclb_subNF13,
+	mclb_subNF14,
+	mclb_subNF15,
+	mclb_subNF16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_subNF17,
+	mclb_subNF18,
+	mclb_subNF19,
+	mclb_subNF20,
+	mclb_subNF21,
+	mclb_subNF22,
+	mclb_subNF23,
+	mclb_subNF24,
+	mclb_subNF25,
+	mclb_subNF26,
+	mclb_subNF27,
+	mclb_subNF28,
+	mclb_subNF29,
+	mclb_subNF30,
+	mclb_subNF31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	subNFT<1>,
+	subNFT<2>,
+	subNFT<3>,
+	subNFT<4>,
+	subNFT<5>,
+	subNFT<6>,
+	subNFT<7>,
+	subNFT<8>,
+	subNFT<9>,
+	subNFT<10>,
+	subNFT<11>,
+	subNFT<12>,
+	subNFT<13>,
+	subNFT<14>,
+	subNFT<15>,
+	subNFT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	subNFT<17>,
+	subNFT<18>,
+	subNFT<19>,
+	subNFT<20>,
+	subNFT<21>,
+	subNFT<22>,
+	subNFT<23>,
+	subNFT<24>,
+	subNFT<25>,
+	subNFT<26>,
+	subNFT<27>,
+	subNFT<28>,
+	subNFT<29>,
+	subNFT<30>,
+	subNFT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
+Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return mclb_get_subNF(n)(z, x, y);
+}
+u_ppu mclb_mulUnitTbl[] = {
 #if MCL_BINT_ASM == 1
 	0,
 	mclb_mulUnit1,
@@ -304,7 +524,7 @@ Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n)
 {
 	return mclb_get_mulUnit(n)(z, x, y);
 }
-Unit (*mclb_mulUnitAddTbl[])(Unit *z, const Unit *x, Unit y) = {
+u_ppu mclb_mulUnitAddTbl[] = {
 #if MCL_BINT_ASM == 1
 	0,
 	mclb_mulUnitAdd1,
@@ -370,7 +590,7 @@ u_ppu mclb_mulUnit8 = mclb_mulUnit_fast8;
 u_ppu mclb_mulUnitAdd8 = mclb_mulUnitAdd_fast8;
 u_ppu mclb_mulUnit9 = mclb_mulUnit_fast9;
 u_ppu mclb_mulUnitAdd9 = mclb_mulUnitAdd_fast9;
-extern "C" void mclb_disable_fast() {
+extern "C" MCL_DLL_API void mclb_disable_fast() {
 	mclb_mulUnit1 = mclb_mulUnit_slow1;
 	mclb_mulUnitAdd1 = mclb_mulUnitAdd_slow1;
 	mclb_mulUnit2 = mclb_mulUnit_slow2;

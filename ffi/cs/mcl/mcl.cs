@@ -28,7 +28,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnFr_isOne(in Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_setByCSPRNG(ref Fr x);
 
-        [DllImport(dllName)] public static extern int mclBnFr_setHashOf(ref Fr x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnFr_setHashOf(ref Fr x, [In]byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern int mclBnFr_getStr([Out] StringBuilder buf, long maxBufSize, in Fr x, int ioMode);
 
         [DllImport(dllName)] public static extern void mclBnFr_neg(ref Fr y, in Fr x);
@@ -48,7 +48,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnFp_isOne(in Fp x);
         [DllImport(dllName)] public static extern void mclBnFp_setByCSPRNG(ref Fp x);
 
-        [DllImport(dllName)] public static extern int mclBnFp_setHashOf(ref Fp x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnFp_setHashOf(ref Fp x, [In]byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern int mclBnFp_getStr([Out] StringBuilder buf, long maxBufSize, in Fp x, int ioMode);
 
         [DllImport(dllName)] public static extern void mclBnFp_neg(ref Fp y, in Fp x);
@@ -64,7 +64,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnG1_isValid(in G1 x);
         [DllImport(dllName)] public static extern int mclBnG1_isEqual(in G1 x, in G1 y);
         [DllImport(dllName)] public static extern int mclBnG1_isZero(in G1 x);
-        [DllImport(dllName)] public static extern int mclBnG1_hashAndMapTo(ref G1 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnG1_hashAndMapTo(ref G1 x, [In]byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern long mclBnG1_getStr([Out] StringBuilder buf, long maxBufSize, in G1 x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnG1_neg(ref G1 y, in G1 x);
         [DllImport(dllName)] public static extern void mclBnG1_dbl(ref G1 y, in G1 x);
@@ -79,7 +79,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnG2_isValid(in G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_isEqual(in G2 x, in G2 y);
         [DllImport(dllName)] public static extern int mclBnG2_isZero(in G2 x);
-        [DllImport(dllName)] public static extern int mclBnG2_hashAndMapTo(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnG2_hashAndMapTo(ref G2 x, [In]byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern long mclBnG2_getStr([Out] StringBuilder buf, long maxBufSize, in G2 x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnG2_neg(ref G2 y, in G2 x);
         [DllImport(dllName)] public static extern void mclBnG2_dbl(ref G2 y, in G2 x);
@@ -415,11 +415,15 @@ namespace mcl {
             {
                 mclBnFr_setByCSPRNG(ref this);
             }
-            public void SetHashOf(String s)
+            public void SetHashOf(byte[] buf)
             {
-                if (mclBnFr_setHashOf(ref this, s, s.Length) != 0) {
-                    throw new InvalidOperationException("mclBnFr_setHashOf:" + s);
+                if (mclBnFr_setHashOf(ref this, buf, buf.Length) != 0) {
+                    throw new InvalidOperationException("mclBnFr_setHashOf:" + buf);
                 }
+            }
+            public void SetHashOf(string s)
+            {
+                SetHashOf(Encoding.UTF8.GetBytes(s));
             }
             public string GetStr(int ioMode)
             {
@@ -696,15 +700,23 @@ namespace mcl {
             {
                 return mclBnG1_isZero(this) == 1;
             }
+            public void HashAndMapTo(byte[] buf)
+            {
+                if (mclBnG1_hashAndMapTo(ref this, buf, buf.Length) != 0) {
+                    throw new ArgumentException("mclBnG1_hashAndMapTo:" + buf);
+                }
+            }
+            public void SetHashOf(byte[] buf)
+            {
+                HashAndMapTo(buf);
+            }
             public void HashAndMapTo(String s)
             {
-                if (mclBnG1_hashAndMapTo(ref this, s, s.Length) != 0) {
-                    throw new ArgumentException("mclBnG1_hashAndMapTo:" + s);
-                }
+                HashAndMapTo(Encoding.UTF8.GetBytes(s));
             }
             public void SetHashOf(String s)
             {
-                HashAndMapTo(s);
+                SetHashOf(Encoding.UTF8.GetBytes(s));
             }
             public string GetStr(int ioMode)
             {
@@ -810,15 +822,23 @@ namespace mcl {
             {
                 return mclBnG2_isZero(this) == 1;
             }
+            public void HashAndMapTo(byte[] buf)
+            {
+                if (mclBnG2_hashAndMapTo(ref this, buf, buf.Length) != 0) {
+                    throw new ArgumentException("mclBnG2_hashAndMapTo:" + buf);
+                }
+            }
+            public void SetHashOf(byte[] buf)
+            {
+                HashAndMapTo(buf);
+            }
             public void HashAndMapTo(String s)
             {
-                if (mclBnG2_hashAndMapTo(ref this, s, s.Length) != 0) {
-                    throw new ArgumentException("mclBnG2_hashAndMapTo:" + s);
-                }
+                HashAndMapTo(Encoding.UTF8.GetBytes(s));
             }
             public void SetHashOf(String s)
             {
-                HashAndMapTo(s);
+                SetHashOf(Encoding.UTF8.GetBytes(s));
             }
             public string GetStr(int ioMode)
             {

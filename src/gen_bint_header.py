@@ -5,18 +5,18 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	retstr = '' if ret == 'void' else ' return'
 	if asPointer:
 		print('#if MCL_BINT_ASM_X64 == 1')
-		print(f'extern "C" {ret} (*{cname}{i})({args});')
+		print(f'extern "C" MCL_DLL_API {protoType[(ret,args)]} {cname}{i};')
 		print(f'extern "C" {ret} {cname}_slow{i}({args});')
 		print(f'extern "C" {ret} {cname}_fast{i}({args});')
 		print('#else')
-		print(f'extern "C" {ret} {cname}{i}({args});')
+		print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
 		print('#endif')
 	else:
-		print(f'extern "C" {ret} {cname}{i}({args});')
+		print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
 	print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
 def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
-	print(f'''Unit (*mclb_{name[0:-1]}Tbl[])({args}) = {{
+	print(f'''{protoType[(ret,args)]} mclb_{name[0:-1]}Tbl[] = {{
 #if MCL_BINT_ASM == 1''')
 	print('\t0,')
 	for i in range(1, N):
@@ -34,7 +34,6 @@ def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 	print('''#endif // MCL_BINT_ASM == 1
 };''')
 
-	ret0 = 'return' if ret == 'void' else 'return 0'
 	print(f'''{ret} {name}({args}, size_t n)
 {{
 	return mclb_get_{name[0:-1]}(n)({params});
@@ -52,16 +51,17 @@ arg_p2u = 'Unit *z, const Unit *x, Unit y'
 param_u3 = 'z, x, y'
 
 protoType = {
-	arg_p3 : 'u_ppp',
-	arg_p2u : 'u_ppu',
+	('Unit', arg_p3) : 'u_ppp',
+	('void', arg_p3) : 'void_ppp',
+	('Unit', arg_p2u) : 'u_ppu',
 }
 
 def roundup(x, n):
 	return (x + n - 1) // n
 
 def gen_get_func(name, ret, args, maxN, N, N64):
-	print(f'''extern "C" {protoType[args]} mclb_{name}Tbl[];
-inline {protoType[args]} mclb_get_{name}(size_t n)
+	print(f'''extern "C" MCL_DLL_API {protoType[(ret, args)]} mclb_{name}Tbl[];
+inline {protoType[(ret,args)]} mclb_get_{name}(size_t n)
 {{
 	if (n > {maxN}) n = 0;
 	assert(n > 0);
@@ -71,9 +71,9 @@ inline {protoType[args]} mclb_get_{name}(size_t n)
 def gen_disable(name1, name2, ret, args, N):
 	print('#if MCL_BINT_ASM_X64 == 1')
 	for i in range(1, N+1):
-		print(f'{protoType[args]} mclb_{name1}{i} = mclb_{name1}_fast{i};')
-		print(f'{protoType[args]} mclb_{name2}{i} = mclb_{name2}_fast{i};')
-	print('extern "C" void mclb_disable_fast() {')
+		print(f'{protoType[(ret, args)]} mclb_{name1}{i} = mclb_{name1}_fast{i};')
+		print(f'{protoType[(ret, args)]} mclb_{name2}{i} = mclb_{name2}_fast{i};')
+	print('extern "C" MCL_DLL_API void mclb_disable_fast() {')
 	for i in range(1, N+1):
 		print(f'\tmclb_{name1}{i} = mclb_{name1}_slow{i};')
 		print(f'\tmclb_{name2}{i} = mclb_{name2}_slow{i};')
@@ -104,6 +104,8 @@ def main():
 				print('#if MCL_SIZEOF_UNIT == 4')
 			gen_func('addT', 'Unit', arg_p3, 'mclb_add', param_u3, i)
 			gen_func('subT', 'Unit', arg_p3, 'mclb_sub', param_u3, i)
+			gen_func('addNFT', 'void', arg_p3, 'mclb_addNF', param_u3, i)
+			gen_func('subNFT', 'Unit', arg_p3, 'mclb_subNF', param_u3, i)
 		print('#endif // #if MCL_SIZEOF_UNIT == 4')
 		for i in range(1, N+1):
 			if i == N64 + 1:
@@ -121,17 +123,23 @@ def main():
 #endif''')
 		gen_get_func('add', 'Unit', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
 		gen_get_func('sub', 'Unit', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
+		gen_get_func('addNF', 'void', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
+		gen_get_func('subNF', 'Unit', arg_p3, 'MCL_BINT_ADD_N', addN, addN64)
 		gen_get_func('mulUnit', 'Unit', arg_p2u, 'MCL_BINT_MUL_N', N, N64)
 		gen_get_func('mulUnitAdd', 'Unit', arg_p2u, 'MCL_BINT_MUL_N', N, N64)
 	elif opt.out == 'switch':
 		print('#if MCL_BINT_ASM != 1')
 		gen_inst('addT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('subT', 'Unit', arg_p3, addN, addN64)
+		gen_inst('addNFT', 'void', arg_p3, addN, addN64)
+		gen_inst('subNFT', 'Unit', arg_p3, addN, addN64)
 		gen_inst('mulUnitT', 'Unit', arg_p2u, N, N64)
 		gen_inst('mulUnitAddT', 'Unit', arg_p2u, N, N64)
 		print('#endif // MCL_BINT_ASM != 1')
 		gen_switch('addN', 'Unit', arg_p3, 'addT', param_u3, addN, addN64)
 		gen_switch('subN', 'Unit', arg_p3, 'subT', param_u3, addN, addN64)
+		gen_switch('addNFN', 'void', arg_p3, 'addNFT', param_u3, addN, addN64)
+		gen_switch('subNFN', 'Unit', arg_p3, 'subNFT', param_u3, addN, addN64)
 		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
 		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64, True)
 		gen_disable('mulUnit', 'mulUnitAdd', 'Unit', arg_p2u, N64)
