@@ -2282,14 +2282,7 @@ void serializeVecToAffine(OutputStream& os, SHE::CipherTextAT<G> *v, size_t n)
 	uint8_t *buf = (uint8_t*)CYBOZU_ALLOCA(bufSize);
 	cybozu::MemoryOutputStream mos(buf, bufSize);
 	for (size_t i = 0; i < n; i++) {
-		if (!v[i].getS().isNormalized()) {
-			throw cybozu::Exception("not normalized S");
-		}
-		if (!v[i].getT().isNormalized()) {
-			throw cybozu::Exception("not normalized T");
-		}
-		v[i].getS().save(mos, IoEcAffineSerialize);
-		v[i].getT().save(mos, IoEcAffineSerialize);
+		v[i].save(mos, IoEcAffineSerialize);
 	}
 	assert(mos.getPos() == bufSize);
 	cybozu::write(os, buf, bufSize);
@@ -2303,8 +2296,7 @@ void deserializeVecFromAffine(SHE::CipherTextAT<G> *v, size_t n, InputStream& is
 	cybozu::read(buf, bufSize, is);
 	cybozu::MemoryInputStream mis(buf, bufSize);
 	for (size_t i = 0; i < n; i++) {
-		v[i].getNonConstRefS().load(mis, IoEcAffineSerialize);
-		v[i].getNonConstRefT().load(mis, IoEcAffineSerialize);
+		v[i].load(mis, IoEcAffineSerialize);
 	}
 }
 
