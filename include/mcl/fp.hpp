@@ -487,27 +487,17 @@ public:
 	}
 	/*
 		set (little endian % p)
-		error if xn > 64
 	*/
 	void setLittleEndianMod(bool *pb, const uint8_t *x, size_t xn)
 	{
-		if (xn > 64) {
-			*pb = false;
-			return;
-		}
 		setArrayMod(pb, x, xn);
 	}
 	/*
 		set (big endian % p)
-		error if xn > 64
 	*/
 	void setBigEndianMod(bool *pb, const uint8_t *x, size_t xn)
 	{
-		if (xn > 64) {
-			*pb = false;
-			return;
-		}
-		uint8_t swapX[64];
+		uint8_t *swapX = (uint8_t*)CYBOZU_ALLOCA(xn);
 		for (size_t i = 0; i < xn; i++) {
 			swapX[xn - 1 - i] = x[i];
 		}
