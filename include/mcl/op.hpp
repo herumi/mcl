@@ -104,7 +104,8 @@ enum IoMode {
 	IoFixedSizeByteSeq = IoSerialize, // obsolete
 	IoEcProj = 1024, // projective or jacobi coordinate
 	IoSerializeHexStr = 2048, // printable hex string
-	IoEcAffineSerialize = 4096 // serialize [x:y]
+	IoEcAffineSerialize = 4096, // serialize [x:y]
+	IoBigEndian = 8192 // serialize as big endian (default little endian)
 };
 
 namespace fp {
