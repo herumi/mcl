@@ -186,6 +186,12 @@ def gen_mulUnitAdd(N, mode='fast'):
 				adc(rdx, 0)
 				mov(rax, rdx)
 
+def gen_mul_fast(N):
+	align(16)
+	with FuncProc(f'mclb_mul_fast{N}'):
+		jmp(f'mclb_mul_slow{N}')
+
+"""
 def gen_enable_fast(N):
 	align(16)
 	with FuncProc('mclb_disable_fast'):
@@ -198,6 +204,7 @@ def gen_enable_fast(N):
 			lea(rax, rip(f'mclb_mulUnitAdd_slow{i}'))
 			mov(ptr(rdx), rax)
 		ret()
+"""
 
 def gen_udiv128():
 	align(16)
@@ -265,6 +272,9 @@ for i in range(1,N+1):
 
 for i in range(1,N+1):
 	gen_mulUnitAdd(i, 'slow')
+
+for i in range(1,N+1):
+	gen_mul_fast(i)
 
 #gen_enable_fast(N)
 

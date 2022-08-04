@@ -275,6 +275,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd1(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<1>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd1(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul1;
+extern "C" void mclb_mul_slow1(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast1(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul1(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<1>(Unit *z, const Unit *x, const Unit *y) { mclb_mul1(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit2;
 extern "C" Unit mclb_mulUnit_slow2(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast2(Unit *z, const Unit *x, Unit y);
@@ -290,6 +298,14 @@ extern "C" Unit mclb_mulUnitAdd_fast2(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd2(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<2>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd2(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul2;
+extern "C" void mclb_mul_slow2(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast2(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul2(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<2>(Unit *z, const Unit *x, const Unit *y) { mclb_mul2(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit3;
 extern "C" Unit mclb_mulUnit_slow3(Unit *z, const Unit *x, Unit y);
@@ -307,6 +323,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd3(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<3>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd3(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul3;
+extern "C" void mclb_mul_slow3(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast3(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul3(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<3>(Unit *z, const Unit *x, const Unit *y) { mclb_mul3(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit4;
 extern "C" Unit mclb_mulUnit_slow4(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast4(Unit *z, const Unit *x, Unit y);
@@ -322,6 +346,14 @@ extern "C" Unit mclb_mulUnitAdd_fast4(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd4(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<4>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd4(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul4;
+extern "C" void mclb_mul_slow4(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast4(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul4(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<4>(Unit *z, const Unit *x, const Unit *y) { mclb_mul4(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit5;
 extern "C" Unit mclb_mulUnit_slow5(Unit *z, const Unit *x, Unit y);
@@ -339,6 +371,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd5(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<5>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd5(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul5;
+extern "C" void mclb_mul_slow5(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast5(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul5(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<5>(Unit *z, const Unit *x, const Unit *y) { mclb_mul5(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit6;
 extern "C" Unit mclb_mulUnit_slow6(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast6(Unit *z, const Unit *x, Unit y);
@@ -354,6 +394,14 @@ extern "C" Unit mclb_mulUnitAdd_fast6(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd6(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<6>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd6(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul6;
+extern "C" void mclb_mul_slow6(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast6(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul6(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<6>(Unit *z, const Unit *x, const Unit *y) { mclb_mul6(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit7;
 extern "C" Unit mclb_mulUnit_slow7(Unit *z, const Unit *x, Unit y);
@@ -371,6 +419,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd7(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<7>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd7(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul7;
+extern "C" void mclb_mul_slow7(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast7(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul7(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<7>(Unit *z, const Unit *x, const Unit *y) { mclb_mul7(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit8;
 extern "C" Unit mclb_mulUnit_slow8(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast8(Unit *z, const Unit *x, Unit y);
@@ -387,6 +443,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd8(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<8>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd8(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul8;
+extern "C" void mclb_mul_slow8(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast8(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul8(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<8>(Unit *z, const Unit *x, const Unit *y) { mclb_mul8(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit9;
 extern "C" Unit mclb_mulUnit_slow9(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast9(Unit *z, const Unit *x, Unit y);
@@ -402,6 +466,14 @@ extern "C" Unit mclb_mulUnitAdd_fast9(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd9(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<9>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd9(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul9;
+extern "C" void mclb_mul_slow9(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast9(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul9(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<9>(Unit *z, const Unit *x, const Unit *y) { mclb_mul9(z, x, y); }
 #if MCL_SIZEOF_UNIT == 4
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit10;
@@ -420,6 +492,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd10(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<10>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd10(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul10;
+extern "C" void mclb_mul_slow10(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast10(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul10(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<10>(Unit *z, const Unit *x, const Unit *y) { mclb_mul10(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit11;
 extern "C" Unit mclb_mulUnit_slow11(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast11(Unit *z, const Unit *x, Unit y);
@@ -435,6 +515,14 @@ extern "C" Unit mclb_mulUnitAdd_fast11(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd11(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<11>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd11(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul11;
+extern "C" void mclb_mul_slow11(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast11(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul11(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<11>(Unit *z, const Unit *x, const Unit *y) { mclb_mul11(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit12;
 extern "C" Unit mclb_mulUnit_slow12(Unit *z, const Unit *x, Unit y);
@@ -452,6 +540,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd12(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<12>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd12(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul12;
+extern "C" void mclb_mul_slow12(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast12(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul12(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<12>(Unit *z, const Unit *x, const Unit *y) { mclb_mul12(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit13;
 extern "C" Unit mclb_mulUnit_slow13(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast13(Unit *z, const Unit *x, Unit y);
@@ -467,6 +563,14 @@ extern "C" Unit mclb_mulUnitAdd_fast13(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd13(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<13>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd13(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul13;
+extern "C" void mclb_mul_slow13(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast13(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul13(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<13>(Unit *z, const Unit *x, const Unit *y) { mclb_mul13(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit14;
 extern "C" Unit mclb_mulUnit_slow14(Unit *z, const Unit *x, Unit y);
@@ -484,6 +588,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd14(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<14>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd14(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul14;
+extern "C" void mclb_mul_slow14(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast14(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul14(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<14>(Unit *z, const Unit *x, const Unit *y) { mclb_mul14(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit15;
 extern "C" Unit mclb_mulUnit_slow15(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast15(Unit *z, const Unit *x, Unit y);
@@ -499,6 +611,14 @@ extern "C" Unit mclb_mulUnitAdd_fast15(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd15(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<15>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd15(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul15;
+extern "C" void mclb_mul_slow15(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast15(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul15(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<15>(Unit *z, const Unit *x, const Unit *y) { mclb_mul15(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit16;
 extern "C" Unit mclb_mulUnit_slow16(Unit *z, const Unit *x, Unit y);
@@ -516,6 +636,14 @@ extern "C" MCL_DLL_API Unit mclb_mulUnitAdd16(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<16>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd16(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul16;
+extern "C" void mclb_mul_slow16(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast16(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul16(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<16>(Unit *z, const Unit *x, const Unit *y) { mclb_mul16(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit17;
 extern "C" Unit mclb_mulUnit_slow17(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast17(Unit *z, const Unit *x, Unit y);
@@ -531,6 +659,14 @@ extern "C" Unit mclb_mulUnitAdd_fast17(Unit *z, const Unit *x, Unit y);
 extern "C" MCL_DLL_API Unit mclb_mulUnitAdd17(Unit *z, const Unit *x, Unit y);
 #endif
 template<> inline Unit mulUnitAddT<17>(Unit *z, const Unit *x, Unit y) { return mclb_mulUnitAdd17(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_ppp mclb_mul17;
+extern "C" void mclb_mul_slow17(Unit *z, const Unit *x, const Unit *y);
+extern "C" void mclb_mul_fast17(Unit *z, const Unit *x, const Unit *y);
+#else
+extern "C" MCL_DLL_API void mclb_mul17(Unit *z, const Unit *x, const Unit *y);
+#endif
+template<> inline void mulT<17>(Unit *z, const Unit *x, const Unit *y) { mclb_mul17(z, x, y); }
 #endif // #if MCL_SIZEOF_UNIT == 4
 #endif // #if MCL_BINT_ASM == 1
 #if MCL_SIZEOF_UNIT == 8
@@ -581,4 +717,11 @@ inline u_ppu mclb_get_mulUnitAdd(size_t n)
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);
 	return mclb_mulUnitAddTbl[n];
+}
+extern "C" MCL_DLL_API void_ppp mclb_mulTbl[];
+inline void_ppp mclb_get_mul(size_t n)
+{
+	if (n > MCL_BINT_MUL_N) n = 0;
+	assert(n > 0);
+	return mclb_mulTbl[n];
 }

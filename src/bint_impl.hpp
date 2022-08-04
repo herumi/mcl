@@ -197,6 +197,15 @@ Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
 #endif
 }
 
+// z[2N] = x[N] * y[N]
+template<size_t N>
+void mulT(Unit *pz, const Unit *px, const Unit *py)
+{
+	pz[N] = mulUnitT<N>(pz, px, py[0]);
+	for (size_t i = 1; i < N; i++) {
+		pz[N + i] = mulUnitAddT<N>(&pz[i], px, py[i]);
+	}
+}
 #endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
@@ -309,6 +318,7 @@ MCL_DLL_API Unit subUnit(Unit *y, size_t n, Unit x)
 	return 1;
 }
 
+/*
 MCL_DLL_API void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	u_ppu mulUnitAdd = mclb_get_mulUnitAdd(n);
@@ -317,6 +327,7 @@ MCL_DLL_API void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
 		z[n + i] = mulUnitAdd(&z[i], x, y[i]);
 	}
 }
+*/
 
 /*
 	q[] = x[] / y

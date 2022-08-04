@@ -3459,3 +3459,57 @@ adc $0, %rdx
 mov %rdx, %rax
 add $136, %rsp
 ret
+.align 16
+.global mclb_mul_fast1
+.global _mclb_mul_fast1
+mclb_mul_fast1:
+_mclb_mul_fast1:
+jmp mclb_mul_slow1
+.align 16
+.global mclb_mul_fast2
+.global _mclb_mul_fast2
+mclb_mul_fast2:
+_mclb_mul_fast2:
+jmp mclb_mul_slow2
+.align 16
+.global mclb_mul_fast3
+.global _mclb_mul_fast3
+mclb_mul_fast3:
+_mclb_mul_fast3:
+jmp mclb_mul_slow3
+.align 16
+.global mclb_mul_fast4
+.global _mclb_mul_fast4
+mclb_mul_fast4:
+_mclb_mul_fast4:
+jmp mclb_mul_slow4
+.align 16
+.global mclb_mul_fast5
+.global _mclb_mul_fast5
+mclb_mul_fast5:
+_mclb_mul_fast5:
+jmp mclb_mul_slow5
+.align 16
+.global mclb_mul_fast6
+.global _mclb_mul_fast6
+mclb_mul_fast6:
+_mclb_mul_fast6:
+jmp mclb_mul_slow6
+.align 16
+.global mclb_mul_fast7
+.global _mclb_mul_fast7
+mclb_mul_fast7:
+_mclb_mul_fast7:
+jmp mclb_mul_slow7
+.align 16
+.global mclb_mul_fast8
+.global _mclb_mul_fast8
+mclb_mul_fast8:
+_mclb_mul_fast8:
+jmp mclb_mul_slow8
+.align 16
+.global mclb_mul_fast9
+.global _mclb_mul_fast9
+mclb_mul_fast9:
+_mclb_mul_fast9:
+jmp mclb_mul_slow9

@@ -759,3 +759,39 @@ CYBOZU_TEST_AUTO(mulUnitAdd)
 	testMulUnitAdd<8>();
 }
 
+template<size_t N>
+void testMul()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N], z[N * 2];
+	mpz_class mx, my, mz, mz2;
+	for (size_t i = 0; i < C; i++) {
+		setRand(x, N, rg);
+		setRand(y, N, rg);
+		setArray(mx, x, N);
+		setArray(my, y, N);
+		mulT<N>(z, x, y);
+		setArray(mz2, z, N * 2);
+		CYBOZU_TEST_EQUAL(mz2, mx * my);
+	}
+#ifdef NDEBUG
+	printf("%2zd ", N);
+	CYBOZU_BENCH_C("gmp", 1000, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	printf("%2zd ", N);
+	CYBOZU_BENCH_C("mul", 1000, mulT<N>, z, x, y);
+#endif
+}
+
+CYBOZU_TEST_AUTO(mul)
+{
+	testMul<1>();
+	testMul<2>();
+	testMul<3>();
+	testMul<4>();
+	testMul<5>();
+	testMul<6>();
+	testMul<7>();
+	testMul<8>();
+	testMul<9>();
+}
+

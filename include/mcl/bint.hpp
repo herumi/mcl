@@ -130,6 +130,8 @@ template<size_t N>Unit subNFT(Unit *z, const Unit *x, const Unit *y);
 template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
 // [ret:z[N]] = z[N] + x[N] * y
 template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
+// z[2N] = x[N] * y[N]
+template<size_t N>void mulT(Unit *pz, const Unit *px, const Unit *py);
 
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
@@ -320,16 +322,6 @@ int cmpN(const T *px, const T *py, size_t n)
 		if (x != y) return x > y ? 1 : -1;
 	}
 	return 0;
-}
-
-// z[2N] = x[N] * y[N]
-template<size_t N>
-void mulT(Unit *pz, const Unit *px, const Unit *py)
-{
-	pz[N] = mulUnitT<N>(pz, px, py[0]);
-	for (size_t i = 1; i < N; i++) {
-		pz[N + i] = mulUnitAddT<N>(&pz[i], px, py[i]);
-	}
 }
 
 // [return:z[N]] = x[N] << bit
