@@ -764,21 +764,22 @@ void testMul()
 {
 	cybozu::XorShift rg;
 	Unit x[N], y[N], z[N * 2];
-	mpz_class mx, my, mz, mz2;
+	mpz_class mx, my, mz;
 	for (size_t i = 0; i < C; i++) {
 		setRand(x, N, rg);
 		setRand(y, N, rg);
+		mulT<N>(z, x, y);
 		setArray(mx, x, N);
 		setArray(my, y, N);
-		mulT<N>(z, x, y);
-		setArray(mz2, z, N * 2);
-		CYBOZU_TEST_EQUAL(mz2, mx * my);
+		setArray(mz, z, N * 2);
+		CYBOZU_TEST_EQUAL(mx * my, mz);
 	}
 #ifdef NDEBUG
-	printf("%2zd ", N);
-	CYBOZU_BENCH_C("gmp", 1000, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
-	printf("%2zd ", N);
-	CYBOZU_BENCH_C("mul", 1000, mulT<N>, z, x, y);
+	const int CC = 20000;
+	printf("%zd ", N);
+	CYBOZU_BENCH_C("gmp", CC, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	printf("  ");
+	CYBOZU_BENCH_C("mul", CC, mulT<N>, z, x, y);
 #endif
 }
 

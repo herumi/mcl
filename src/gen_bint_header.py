@@ -94,9 +94,9 @@ def gen_mul_slow(N):
 	for n in range(1,N+1):
 		print(f'''extern "C" MCL_DLL_API void mclb_mul_slow{n}(Unit *z, const Unit *x, const Unit *y)
 {{
-	z[{n}] = mclb_mulUnit_slow{n}(z, x, y[0]);
+	z[{n}] = mulUnitT<{n}>(z, x, y[0]);
 	for (size_t i = 1; i < {n}; i++) {{
-		z[{n} + i] = mclb_mulUnitAdd_slow{n}(&z[i], x, y[i]);
+		z[{n} + i] = mulUnitAddT<{n}>(&z[i], x, y[i]);
 	}}
 }}''')
 	print('#endif // MCL_BINT_ASM_X64 == 1')

@@ -724,65 +724,65 @@ extern "C" MCL_DLL_API void mclb_disable_fast() {
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API void mclb_mul_slow1(Unit *z, const Unit *x, const Unit *y)
 {
-	z[1] = mclb_mulUnit_slow1(z, x, y[0]);
+	z[1] = mulUnitT<1>(z, x, y[0]);
 	for (size_t i = 1; i < 1; i++) {
-		z[1 + i] = mclb_mulUnitAdd_slow1(&z[i], x, y[i]);
+		z[1 + i] = mulUnitAddT<1>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow2(Unit *z, const Unit *x, const Unit *y)
 {
-	z[2] = mclb_mulUnit_slow2(z, x, y[0]);
+	z[2] = mulUnitT<2>(z, x, y[0]);
 	for (size_t i = 1; i < 2; i++) {
-		z[2 + i] = mclb_mulUnitAdd_slow2(&z[i], x, y[i]);
+		z[2 + i] = mulUnitAddT<2>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow3(Unit *z, const Unit *x, const Unit *y)
 {
-	z[3] = mclb_mulUnit_slow3(z, x, y[0]);
+	z[3] = mulUnitT<3>(z, x, y[0]);
 	for (size_t i = 1; i < 3; i++) {
-		z[3 + i] = mclb_mulUnitAdd_slow3(&z[i], x, y[i]);
+		z[3 + i] = mulUnitAddT<3>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow4(Unit *z, const Unit *x, const Unit *y)
 {
-	z[4] = mclb_mulUnit_slow4(z, x, y[0]);
+	z[4] = mulUnitT<4>(z, x, y[0]);
 	for (size_t i = 1; i < 4; i++) {
-		z[4 + i] = mclb_mulUnitAdd_slow4(&z[i], x, y[i]);
+		z[4 + i] = mulUnitAddT<4>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow5(Unit *z, const Unit *x, const Unit *y)
 {
-	z[5] = mclb_mulUnit_slow5(z, x, y[0]);
+	z[5] = mulUnitT<5>(z, x, y[0]);
 	for (size_t i = 1; i < 5; i++) {
-		z[5 + i] = mclb_mulUnitAdd_slow5(&z[i], x, y[i]);
+		z[5 + i] = mulUnitAddT<5>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow6(Unit *z, const Unit *x, const Unit *y)
 {
-	z[6] = mclb_mulUnit_slow6(z, x, y[0]);
+	z[6] = mulUnitT<6>(z, x, y[0]);
 	for (size_t i = 1; i < 6; i++) {
-		z[6 + i] = mclb_mulUnitAdd_slow6(&z[i], x, y[i]);
+		z[6 + i] = mulUnitAddT<6>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow7(Unit *z, const Unit *x, const Unit *y)
 {
-	z[7] = mclb_mulUnit_slow7(z, x, y[0]);
+	z[7] = mulUnitT<7>(z, x, y[0]);
 	for (size_t i = 1; i < 7; i++) {
-		z[7 + i] = mclb_mulUnitAdd_slow7(&z[i], x, y[i]);
+		z[7 + i] = mulUnitAddT<7>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow8(Unit *z, const Unit *x, const Unit *y)
 {
-	z[8] = mclb_mulUnit_slow8(z, x, y[0]);
+	z[8] = mulUnitT<8>(z, x, y[0]);
 	for (size_t i = 1; i < 8; i++) {
-		z[8 + i] = mclb_mulUnitAdd_slow8(&z[i], x, y[i]);
+		z[8 + i] = mulUnitAddT<8>(&z[i], x, y[i]);
 	}
 }
 extern "C" MCL_DLL_API void mclb_mul_slow9(Unit *z, const Unit *x, const Unit *y)
 {
-	z[9] = mclb_mulUnit_slow9(z, x, y[0]);
+	z[9] = mulUnitT<9>(z, x, y[0]);
 	for (size_t i = 1; i < 9; i++) {
-		z[9 + i] = mclb_mulUnitAdd_slow9(&z[i], x, y[i]);
+		z[9 + i] = mulUnitAddT<9>(&z[i], x, y[i]);
 	}
 }
 #endif // MCL_BINT_ASM_X64 == 1
