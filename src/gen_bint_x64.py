@@ -157,34 +157,34 @@ def gen_mulUnitAdd(N, mode='fast'):
 				adcx(rax, t)
 				adox(rax, t)
 		else:
-				with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
-					z = sf.p[0]
-					x = sf.p[1]
-					y = sf.p[2]
-					posH = N * 8
-					for i in range(N):
-						mov(rax, ptr(x + i * 8))
-						mul(y)
-						mov(ptr(rsp + i * 8), rax)
-						if i < N-1:
-							mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
-					for i in range(N - 1):
-						mov(rax, ptr(rsp + (i + 1) * 8))
-						if i == 0:
-							add(rax, ptr(rsp + posH + i * 8))
-						else:
-							adc(rax, ptr(rsp + posH + i * 8))
-						mov(ptr(rsp + (i + 1) * 8), rax)
-					if N > 1:
-						adc(rdx, 0)
-					for i in range(N):
-						mov(rax, ptr(rsp + i * 8))
-						if i == 0:
-							add(ptr(z + i * 8), rax)
-						else:
-							adc(ptr(z + i * 8), rax)
+			with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
+				z = sf.p[0]
+				x = sf.p[1]
+				y = sf.p[2]
+				posH = N * 8
+				for i in range(N):
+					mov(rax, ptr(x + i * 8))
+					mul(y)
+					mov(ptr(rsp + i * 8), rax)
+					if i < N-1:
+						mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
+				for i in range(N - 1):
+					mov(rax, ptr(rsp + (i + 1) * 8))
+					if i == 0:
+						add(rax, ptr(rsp + posH + i * 8))
+					else:
+						adc(rax, ptr(rsp + posH + i * 8))
+					mov(ptr(rsp + (i + 1) * 8), rax)
+				if N > 1:
 					adc(rdx, 0)
-					mov(rax, rdx)
+				for i in range(N):
+					mov(rax, ptr(rsp + i * 8))
+					if i == 0:
+						add(ptr(z + i * 8), rax)
+					else:
+						adc(ptr(z + i * 8), rax)
+				adc(rdx, 0)
+				mov(rax, rdx)
 
 def gen_enable_fast(N):
 	align(16)
