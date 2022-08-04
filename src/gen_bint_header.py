@@ -83,6 +83,18 @@ def gen_disable(name1, name2, ret, args, N):
 	print('}')
 	print('#endif // MCL_BINT_ASM_X64 == 1')
 
+def gen_mul_slow(N):
+	print('#if MCL_BINT_ASM_X64 == 1')
+	for n in range(1,N+1):
+		print(f'''extern "C" MCL_DLL_API void mclb_mul_slow{n}(Unit *z, const Unit *x, const Unit *y)
+{{
+	pz[{n}] = mclb_mulUnit_slow{n}(pz, px, py[0]);
+	for (size_t i = 1; i < {n}; i++) {{
+		pz[{n} + i] = mclb_mulUnitAdd_slow{n}(&pz[i], px, py[i]);
+	}}
+}}''')
+	print('#endif // MCL_BINT_ASM_X64 == 1')
+
 def main():
 	parser = argparse.ArgumentParser(description='gen header')
 	parser.add_argument('out', type=str)
@@ -143,6 +155,7 @@ def main():
 		gen_switch('mulUnitN', 'Unit', arg_p2u, 'mulUnitT', param_u3, N, N64, True)
 		gen_switch('mulUnitAddN', 'Unit', arg_p2u, 'mulUnitAddT', param_u3, N, N64, True)
 		gen_disable('mulUnit', 'mulUnitAdd', 'Unit', arg_p2u, N64)
+		gen_mul_slow(N64)
 	else:
 		print('err : bad out', out)
 

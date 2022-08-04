@@ -629,3 +629,68 @@ extern "C" MCL_DLL_API void mclb_disable_fast() {
 	mclb_mulUnitAddTbl[9] = mclb_mulUnitAdd_slow9;
 }
 #endif // MCL_BINT_ASM_X64 == 1
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void mclb_mul_slow1(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[1] = mclb_mulUnit_slow1(pz, px, py[0]);
+	for (size_t i = 1; i < 1; i++) {
+		pz[1 + i] = mclb_mulUnitAdd_slow1(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow2(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[2] = mclb_mulUnit_slow2(pz, px, py[0]);
+	for (size_t i = 1; i < 2; i++) {
+		pz[2 + i] = mclb_mulUnitAdd_slow2(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow3(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[3] = mclb_mulUnit_slow3(pz, px, py[0]);
+	for (size_t i = 1; i < 3; i++) {
+		pz[3 + i] = mclb_mulUnitAdd_slow3(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow4(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[4] = mclb_mulUnit_slow4(pz, px, py[0]);
+	for (size_t i = 1; i < 4; i++) {
+		pz[4 + i] = mclb_mulUnitAdd_slow4(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow5(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[5] = mclb_mulUnit_slow5(pz, px, py[0]);
+	for (size_t i = 1; i < 5; i++) {
+		pz[5 + i] = mclb_mulUnitAdd_slow5(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow6(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[6] = mclb_mulUnit_slow6(pz, px, py[0]);
+	for (size_t i = 1; i < 6; i++) {
+		pz[6 + i] = mclb_mulUnitAdd_slow6(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow7(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[7] = mclb_mulUnit_slow7(pz, px, py[0]);
+	for (size_t i = 1; i < 7; i++) {
+		pz[7 + i] = mclb_mulUnitAdd_slow7(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow8(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[8] = mclb_mulUnit_slow8(pz, px, py[0]);
+	for (size_t i = 1; i < 8; i++) {
+		pz[8 + i] = mclb_mulUnitAdd_slow8(&pz[i], px, py[i]);
+	}
+}
+extern "C" MCL_DLL_API void mclb_mul_slow9(Unit *z, const Unit *x, const Unit *y)
+{
+	pz[9] = mclb_mulUnit_slow9(pz, px, py[0]);
+	for (size_t i = 1; i < 9; i++) {
+		pz[9 + i] = mclb_mulUnitAdd_slow9(&pz[i], px, py[i]);
+	}
+}
+#endif // MCL_BINT_ASM_X64 == 1
