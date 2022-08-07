@@ -758,7 +758,6 @@ CYBOZU_TEST_AUTO(mulUnitAdd)
 	testMulUnitAdd<7>();
 	testMulUnitAdd<8>();
 }
-
 template<size_t N>
 void testMul()
 {
@@ -795,4 +794,3 @@ CYBOZU_TEST_AUTO(mul)
 	testMul<8>();
 	testMul<9>();
 }
-
