@@ -3464,142 +3464,115 @@ ret
 .global _mclb_mul_fast1
 mclb_mul_fast1:
 _mclb_mul_fast1:
-.extern mclb_mul_slow1
-.extern _mclb_mul_slow1
 jmp mclb_mul_slow1
 .align 16
 .global mclb_mul_fast2
 .global _mclb_mul_fast2
 mclb_mul_fast2:
 _mclb_mul_fast2:
-.extern mclb_mul_slow2
-.extern _mclb_mul_slow2
 jmp mclb_mul_slow2
 .align 16
 .global mclb_mul_fast3
 .global _mclb_mul_fast3
 mclb_mul_fast3:
 _mclb_mul_fast3:
-.extern mclb_mul_slow3
-.extern _mclb_mul_slow3
 jmp mclb_mul_slow3
 .align 16
 .global mclb_mul_fast4
 .global _mclb_mul_fast4
 mclb_mul_fast4:
 _mclb_mul_fast4:
-.extern mclb_mul_slow4
-.extern _mclb_mul_slow4
 jmp mclb_mul_slow4
 .align 16
 .global mclb_mul_fast5
 .global _mclb_mul_fast5
 mclb_mul_fast5:
 _mclb_mul_fast5:
-.extern mclb_mul_slow5
-.extern _mclb_mul_slow5
 jmp mclb_mul_slow5
 .align 16
 .global mclb_mul_fast6
 .global _mclb_mul_fast6
 mclb_mul_fast6:
 _mclb_mul_fast6:
-.extern mclb_mul_slow6
-.extern _mclb_mul_slow6
 jmp mclb_mul_slow6
 .align 16
 .global mclb_mul_fast7
 .global _mclb_mul_fast7
 mclb_mul_fast7:
 _mclb_mul_fast7:
-.extern mclb_mul_slow7
-.extern _mclb_mul_slow7
 jmp mclb_mul_slow7
 .align 16
 .global mclb_mul_fast8
 .global _mclb_mul_fast8
 mclb_mul_fast8:
 _mclb_mul_fast8:
-.extern mclb_mul_slow8
-.extern _mclb_mul_slow8
 jmp mclb_mul_slow8
 .align 16
 .global mclb_mul_fast9
 .global _mclb_mul_fast9
 mclb_mul_fast9:
 _mclb_mul_fast9:
-.extern mclb_mul_slow9
-.extern _mclb_mul_slow9
 jmp mclb_mul_slow9
 .align 16
 .global mclb_sqr_fast1
 .global _mclb_sqr_fast1
 mclb_sqr_fast1:
 _mclb_sqr_fast1:
-.extern mclb_sqr_slow1
-.extern _mclb_sqr_slow1
-jmp mclb_sqr_slow1
+mov %rsi, %rdx
+jmp mclb_mul_fast1
 .align 16
 .global mclb_sqr_fast2
 .global _mclb_sqr_fast2
 mclb_sqr_fast2:
 _mclb_sqr_fast2:
-.extern mclb_sqr_slow2
-.extern _mclb_sqr_slow2
-jmp mclb_sqr_slow2
+mov %rsi, %rdx
+jmp mclb_mul_fast2
 .align 16
 .global mclb_sqr_fast3
 .global _mclb_sqr_fast3
 mclb_sqr_fast3:
 _mclb_sqr_fast3:
-.extern mclb_sqr_slow3
-.extern _mclb_sqr_slow3
-jmp mclb_sqr_slow3
+mov %rsi, %rdx
+jmp mclb_mul_fast3
 .align 16
 .global mclb_sqr_fast4
 .global _mclb_sqr_fast4
 mclb_sqr_fast4:
 _mclb_sqr_fast4:
-.extern mclb_sqr_slow4
-.extern _mclb_sqr_slow4
-jmp mclb_sqr_slow4
+mov %rsi, %rdx
+jmp mclb_mul_fast4
 .align 16
 .global mclb_sqr_fast5
 .global _mclb_sqr_fast5
 mclb_sqr_fast5:
 _mclb_sqr_fast5:
-.extern mclb_sqr_slow5
-.extern _mclb_sqr_slow5
-jmp mclb_sqr_slow5
+mov %rsi, %rdx
+jmp mclb_mul_fast5
 .align 16
 .global mclb_sqr_fast6
 .global _mclb_sqr_fast6
 mclb_sqr_fast6:
 _mclb_sqr_fast6:
-.extern mclb_sqr_slow6
-.extern _mclb_sqr_slow6
-jmp mclb_sqr_slow6
+mov %rsi, %rdx
+jmp mclb_mul_fast6
 .align 16
 .global mclb_sqr_fast7
 .global _mclb_sqr_fast7
 mclb_sqr_fast7:
 _mclb_sqr_fast7:
-.extern mclb_sqr_slow7
-.extern _mclb_sqr_slow7
-jmp mclb_sqr_slow7
+mov %rsi, %rdx
+jmp mclb_mul_fast7
 .align 16
 .global mclb_sqr_fast8
 .global _mclb_sqr_fast8
 mclb_sqr_fast8:
 _mclb_sqr_fast8:
-.extern mclb_sqr_slow8
-.extern _mclb_sqr_slow8
-jmp mclb_sqr_slow8
+mov %rsi, %rdx
+jmp mclb_mul_fast8
 .align 16
 .global mclb_sqr_fast9
 .global _mclb_sqr_fast9
 mclb_sqr_fast9:
 _mclb_sqr_fast9:
-.extern mclb_sqr_slow9
-.extern _mclb_sqr_slow9
-jmp mclb_sqr_slow9
+mov %rsi, %rdx
+jmp mclb_mul_fast9

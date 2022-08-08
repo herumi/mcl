@@ -190,15 +190,17 @@ def gen_mulUnitAdd(N, mode='fast'):
 def gen_mul_fast(N):
 	align(16)
 	with FuncProc(f'mclb_mul_fast{N}'):
-		extern_(f'mclb_mul_slow{N}', 'qword')
 		jmp(f'mclb_mul_slow{N}')
 
 # optimize this later
 def gen_sqr_fast(N):
 	align(16)
 	with FuncProc(f'mclb_sqr_fast{N}'):
-		extern_(f'mclb_sqr_slow{N}', 'qword')
-		jmp(f'mclb_sqr_slow{N}')
+		if param.win:
+			mov(r8, rdx)
+		else:
+			mov(rdx, rsi)
+		jmp(f'mclb_mul_fast{N}')
 
 """
 def gen_enable_fast(N):
