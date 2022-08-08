@@ -335,8 +335,8 @@ void setOp2(Op& op)
 	}
 	op.fp_mulUnit = MulUnit<N, Tag>::f;
 	if (!gmpIsFasterThanLLVM) {
-		op.fpDbl_mulPre = bint::mulT<N>;
-		op.fpDbl_sqrPre = bint::sqrT<N>;
+		op.fpDbl_mulPre = bint::get_mul(N);
+		op.fpDbl_sqrPre = bint::get_sqr(N);
 	}
 	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
 	op.fpN1_mod = N1_Mod<N, Tag>::f;

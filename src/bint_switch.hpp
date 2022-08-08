@@ -280,7 +280,7 @@ u_ppp mclb_addTbl[] = {
 };
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
-	return mclb_get_add(n)(z, x, y);
+	return get_add(n)(z, x, y);
 }
 u_ppp mclb_subTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -357,7 +357,7 @@ u_ppp mclb_subTbl[] = {
 };
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
-	return mclb_get_sub(n)(z, x, y);
+	return get_sub(n)(z, x, y);
 }
 void_ppp mclb_addNFTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -434,7 +434,7 @@ void_ppp mclb_addNFTbl[] = {
 };
 void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
-	return mclb_get_addNF(n)(z, x, y);
+	return get_addNF(n)(z, x, y);
 }
 u_ppp mclb_subNFTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -511,7 +511,7 @@ u_ppp mclb_subNFTbl[] = {
 };
 Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
-	return mclb_get_subNF(n)(z, x, y);
+	return get_subNF(n)(z, x, y);
 }
 u_ppu mclb_mulUnitTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -558,7 +558,7 @@ u_ppu mclb_mulUnitTbl[] = {
 };
 Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n)
 {
-	return mclb_get_mulUnit(n)(z, x, y);
+	return get_mulUnit(n)(z, x, y);
 }
 u_ppu mclb_mulUnitAddTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -605,7 +605,7 @@ u_ppu mclb_mulUnitAddTbl[] = {
 };
 Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n)
 {
-	return mclb_get_mulUnitAdd(n)(z, x, y);
+	return get_mulUnitAdd(n)(z, x, y);
 }
 void_ppp mclb_mulTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -652,7 +652,7 @@ void_ppp mclb_mulTbl[] = {
 };
 void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
-	return mclb_get_mul(n)(z, x, y);
+	return get_mul(n)(z, x, y);
 }
 void_pp mclb_sqrTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -699,7 +699,7 @@ void_pp mclb_sqrTbl[] = {
 };
 void sqrN(Unit *y, const Unit *x, size_t n)
 {
-	return mclb_get_sqr(n)(y, x);
+	return get_sqr(n)(y, x);
 }
 #if MCL_BINT_ASM_X64 == 1
 u_ppu mclb_mulUnit1 = mclb_mulUnit_fast1;

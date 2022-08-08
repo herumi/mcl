@@ -813,56 +813,56 @@ template<> inline void sqrT<17>(Unit *y, const Unit *x) { mclb_sqr17(y, x); }
 	#define MCL_BINT_MUL_N 17
 #endif
 extern "C" MCL_DLL_API u_ppp mclb_addTbl[];
-inline u_ppp mclb_get_add(size_t n)
+inline u_ppp get_add(size_t n)
 {
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_addTbl[n];
 }
 extern "C" MCL_DLL_API u_ppp mclb_subTbl[];
-inline u_ppp mclb_get_sub(size_t n)
+inline u_ppp get_sub(size_t n)
 {
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_subTbl[n];
 }
 extern "C" MCL_DLL_API void_ppp mclb_addNFTbl[];
-inline void_ppp mclb_get_addNF(size_t n)
+inline void_ppp get_addNF(size_t n)
 {
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_addNFTbl[n];
 }
 extern "C" MCL_DLL_API u_ppp mclb_subNFTbl[];
-inline u_ppp mclb_get_subNF(size_t n)
+inline u_ppp get_subNF(size_t n)
 {
 	if (n > MCL_BINT_ADD_N) n = 0;
 	assert(n > 0);
 	return mclb_subNFTbl[n];
 }
 extern "C" MCL_DLL_API u_ppu mclb_mulUnitTbl[];
-inline u_ppu mclb_get_mulUnit(size_t n)
+inline u_ppu get_mulUnit(size_t n)
 {
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);
 	return mclb_mulUnitTbl[n];
 }
 extern "C" MCL_DLL_API u_ppu mclb_mulUnitAddTbl[];
-inline u_ppu mclb_get_mulUnitAdd(size_t n)
+inline u_ppu get_mulUnitAdd(size_t n)
 {
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);
 	return mclb_mulUnitAddTbl[n];
 }
 extern "C" MCL_DLL_API void_ppp mclb_mulTbl[];
-inline void_ppp mclb_get_mul(size_t n)
+inline void_ppp get_mul(size_t n)
 {
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);
 	return mclb_mulTbl[n];
 }
 extern "C" MCL_DLL_API void_pp mclb_sqrTbl[];
-inline void_pp mclb_get_sqr(size_t n)
+inline void_pp get_sqr(size_t n)
 {
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);

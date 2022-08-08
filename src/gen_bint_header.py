@@ -36,7 +36,7 @@ def gen_switch(name, ret, args, cname, params, N, N64, useFuncPtr=False):
 
 	print(f'''{ret} {name}({args}, size_t n)
 {{
-	return mclb_get_{name[0:-1]}(n)({params});
+	return get_{name[0:-1]}(n)({params});
 }}''')
 
 def gen_inst(name, ret, args, N, N64):
@@ -64,7 +64,7 @@ def roundup(x, n):
 
 def gen_get_func(name, ret, args, maxN, N, N64):
 	print(f'''extern "C" MCL_DLL_API {protoType[(ret, args)]} mclb_{name}Tbl[];
-inline {protoType[(ret,args)]} mclb_get_{name}(size_t n)
+inline {protoType[(ret,args)]} get_{name}(size_t n)
 {{
 	if (n > {maxN}) n = 0;
 	assert(n > 0);
