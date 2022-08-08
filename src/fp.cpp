@@ -327,8 +327,8 @@ void setOp2(Op& op)
 	op.fp_subPre = bint::subT<N>;
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
 	if (enableFpDbl) {
-		op.fpDbl_addPre = bint::get_add(N * 2);
-		op.fpDbl_subPre = bint::get_sub(N * 2);
+		op.fpDbl_addPre = bint::addT<N * 2>;
+		op.fpDbl_subPre = bint::subT<N * 2>;
 	}
 }
 
