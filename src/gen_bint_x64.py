@@ -186,11 +186,63 @@ def gen_mulUnitAdd(N, mode='fast'):
 				adc(rdx, 0)
 				mov(rax, rdx)
 
+def mulPack(pz, offset, py, pd):
+	a = rax
+	mulx(pd[0], a, ptr(py + 8 * 0))
+	mov(ptr(pz + offset), a)
+	xor_(a, a)
+	n = len(pd)
+	for i in range(1, n):
+		mulx(pd[i], a, ptr(py + 8 * i))
+		adcx(pd[i - 1], a)
+	adc(pd[n - 1], 0)
+
+def mulPackAdd(pz, offset, py, hi, pd):
+	a = rax
+	xor_(a, a)
+	n = len(pd)
+	for i in range(0, n):
+		mulx(hi, a, ptr(py + i * 8))
+		adox(pd[i], a)
+		if i == 0:
+			mov(ptr(pz + offset), pd[0])
+		if i == n - 1:
+			break
+		adcx(pd[i + 1], hi)
+	mov(a, 0)
+	adox(hi, a)
+	adc(hi, a)
+
+def store_mr(m, x):
+	n = len(x)
+	for i in range(n):
+		mov(ptr(m + 8 * i), x[i])
+
+def gen_mulPreN(pz, px, py, pk, t, N):
+	mov(rdx, ptr(px + 8 * 0))
+	mulPack(pz, 8 * 0, py, pk)
+	for i in range(1, N):
+		mov(rdx, ptr(px + 8 * i))
+		mulPackAdd(pz, 8 * i, py, t, pk)
+		s = pk[0]
+		pk = pk[1:]
+		pk.append(t)
+		t = s
+	store_mr(pz + 8 * N, pk)
+
 # optimize this later
 def gen_mul_fast(N):
 	align(16)
 	with FuncProc(f'mclb_mul_fast{N}'):
-		jmp(f'mclb_mul_slow{N}')
+		if N <= 9:
+			with StackFrame(3, N+1, useRDX=True) as sf:
+				pz = sf.p[0]
+				px = sf.p[1]
+				py = sf.p[2]
+				pk = sf.t[0:N]
+				gen_mulPreN(pz, px, py, pk, sf.t[N], N)
+		else:
+			jmp(f'mclb_mul_slow{N}')
 
 # optimize this later
 def gen_sqr_fast(N):
