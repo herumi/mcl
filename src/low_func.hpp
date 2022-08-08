@@ -34,21 +34,11 @@ struct EnableKaratsuba {
 };
 
 // z[N + 1] <- x[N] * y
-template<size_t N, class Tag = Gtag>
-struct MulUnitPre {
-	static inline void func(Unit *z, const Unit *x, Unit y)
-	{
-#ifdef MCL_USE_VINT
-		z[N] = mcl::bint::mulUnitT<N>(z, x, y);
-#else
-		z[N] = mpn_mul_1((mp_limb_t*)z, (const mp_limb_t*)x, N, y);
-#endif
-	}
-	static const void2uI f;
-};
-
-template<size_t N, class Tag>
-const void2uI MulUnitPre<N, Tag>::f = MulUnitPre<N, Tag>::func;
+template<size_t N>
+static void mulUnitPreT(Unit *z, const Unit *x, Unit y)
+{
+	z[N] = bint::mulUnitT<N>(z, x, y);
+}
 
 // z[N] <- x[N + 1] % p[N]
 template<size_t N, class Tag = Gtag>
@@ -78,7 +68,7 @@ struct MulUnit {
 	static inline void func(Unit *z, const Unit *x, Unit y, const Unit *p)
 	{
 		Unit xy[N + 1];
-		MulUnitPre<N, Tag>::f(xy, x, y);
+		mulUnitPreT<N>(xy, x, y);
 #if 1
 		Unit len = UnitBitSize - 1 - cybozu::bsr(p[N - 1]);
 		Unit v = xy[N];
@@ -94,7 +84,7 @@ struct MulUnit {
 					xy[N] -= bint::subT<N>(xy, xy, p);
 				} else {
 					Unit t[N + 1];
-					MulUnitPre<N, Tag>::f(t, p, v);
+					mulUnitPreT<N>(t, p, v);
 					bint::subT<N + 1>(xy, xy, t);
 				}
 			}
@@ -255,7 +245,7 @@ struct MontRed {
 		bint::copyT<N - 1>(buf + N + 1, xy + N + 1);
 		buf[N * 2] = 0;
 		Unit q = xy[0] * rp;
-		MulUnitPre<N, Tag>::f(pq, p, q);
+		mulUnitPreT<N>(pq, p, q);
 		Unit up = bint::addT<N + 1>(buf, xy, pq);
 		if (up) {
 			buf[N * 2] = bint::addUnit(buf + N + 1, N - 1, 1);
@@ -263,7 +253,7 @@ struct MontRed {
 		Unit *c = buf + 1;
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
-			MulUnitPre<N, Tag>::f(pq, p, q);
+			mulUnitPreT<N>(pq, p, q);
 			up = bint::addT<N + 1>(c, c, pq);
 			if (up) {
 				bint::addUnit(c + N + 1, N - i, 1);
@@ -301,18 +291,18 @@ struct Mont {
 		if (isFullBit) {
 			Unit buf[N * 2 + 2];
 			Unit *c = buf;
-			MulUnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+			mulUnitPreT<N>(c, x, y[0]); // x * y[0]
 			Unit q = c[0] * rp;
 			Unit t[N + 2];
-			MulUnitPre<N, Tag>::f(t, p, q); // p * q
+			mulUnitPreT<N>(t, p, q); // p * q
 			t[N + 1] = 0; // always zero
 			c[N + 1] = bint::addT<N + 1>(c, c, t);
 			c++;
 			for (size_t i = 1; i < N; i++) {
-				MulUnitPre<N, Tag>::f(t, x, y[i]);
+				mulUnitPreT<N>(t, x, y[i]);
 				c[N + 1] = bint::addT<N + 1>(c, c, t);
 				q = c[0] * rp;
-				MulUnitPre<N, Tag>::f(t, p, q);
+				mulUnitPreT<N>(t, p, q);
 				bint::addT<N + 2>(c, c, t);
 				c++;
 			}
@@ -339,21 +329,21 @@ struct Mont {
 			(void)carry;
 			Unit buf[N * 2 + 1];
 			Unit *c = buf;
-			MulUnitPre<N, Tag>::f(c, x, y[0]); // x * y[0]
+			mulUnitPreT<N>(c, x, y[0]); // x * y[0]
 			Unit q = c[0] * rp;
 			Unit t[N + 1];
-			MulUnitPre<N, Tag>::f(t, p, q); // p * q
+			mulUnitPreT<N>(t, p, q); // p * q
 			carry = bint::addT<N + 1>(c, c, t);
 			assert(carry == 0);
 			c++;
 			c[N] = 0;
 			for (size_t i = 1; i < N; i++) {
 				c[N + 1] = 0;
-				MulUnitPre<N, Tag>::f(t, x, y[i]);
+				mulUnitPreT<N>(t, x, y[i]);
 				carry = bint::addT<N + 1>(c, c, t);
 				assert(carry == 0);
 				q = c[0] * rp;
-				MulUnitPre<N, Tag>::f(t, p, q);
+				mulUnitPreT<N>(t, p, q);
 				carry = bint::addT<N + 1>(c, c, t);
 				assert(carry == 0);
 				c++;

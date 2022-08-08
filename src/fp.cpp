@@ -336,7 +336,7 @@ void setOp2(Op& op)
 		op.fpDbl_mulPre = bint::mulT<N>;
 		op.fpDbl_sqrPre = bint::sqrT<N>;
 	}
-	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
+	op.fp_mulUnitPre = mulUnitPreT<N>;
 	op.fpN1_mod = N1_Mod<N, Tag>::f;
 	op.fpDbl_add = DblAdd<N, Tag>::f;
 	op.fpDbl_sub = DblSub<N, Tag>::f;
