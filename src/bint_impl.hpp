@@ -128,6 +128,19 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 }
 
 template<size_t N>
+void addNFT(Unit *z, const Unit *x, const Unit *y)
+{
+	addT<N>(z, x, y);
+}
+
+template<size_t N>
+Unit subNFT(Unit *z, const Unit *x, const Unit *y)
+{
+	return subT<N>(z, x, y);
+}
+
+
+template<size_t N>
 Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 {
 #if MCL_SIZEOF_UNIT == 4
