@@ -274,10 +274,10 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 	tmp[0] = prev << bit;
 	bool c;
 	if (isFullBit) {
-		H -= SubPre<N, Gtag>::f(y, tmp, p);
+		H -= bint::subT<N>(y, tmp, p);
 		c = H >> rBit;
 	} else {
-		c = SubPre<N, Gtag>::f(y, tmp, p);
+		c = bint::subT<N>(y, tmp, p);
 	}
 	if (c) {
 		bint::copyT<N>(y, tmp);

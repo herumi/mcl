@@ -26,14 +26,14 @@ void bench()
 		bint::addT<N>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 
-		SubPre<N, Gtag>::f(z, x, y);
-		SubPre<N, Ltag>::f(w, x, y);
+		bint::subT<N>(z, x, y);
+		bint::subT<N>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 	}
 	const std::string bitS = cybozu::itoa(bit);
 	std::string name;
 	name = "add" + bitS; CYBOZU_BENCH(name.c_str(), bint::addT<N>, x, x, y);
-	name = "sub" + bitS; CYBOZU_BENCH(name.c_str(), (SubPre<N, Ltag>::f), x, x, y);
+	name = "sub" + bitS; CYBOZU_BENCH(name.c_str(), bint::subT<N>, x, x, y);
 }
 
 CYBOZU_TEST_AUTO(addPre64) { bench<64>(); }

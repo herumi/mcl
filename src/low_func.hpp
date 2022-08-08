@@ -53,23 +53,6 @@ struct AddUnitPre {
 template<class Tag>
 const u1uII AddUnitPre<Tag>::f = AddUnitPre<Tag>::func;
 
-// (carry, z[N]) <- x[N] - y[N]
-template<size_t N, class Tag = Gtag>
-struct SubPre {
-	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
-	{
-#ifdef MCL_USE_VINT
-		return bint::subT<N>(z, x, y);
-#else
-		return mpn_sub_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
-#endif
-	}
-	static const u3u f;
-};
-
-template<size_t N, class Tag>
-const u3u SubPre<N, Tag>::f = SubPre<N, Tag>::func;
-
 // y[N] <- (x[N] >> 1)
 template<size_t N, class Tag = Gtag>
 struct Shr1 {
@@ -96,7 +79,7 @@ struct Neg {
 			if (x != y) bint::clearT<N>(y);
 			return;
 		}
-		SubPre<N, Tag>::f(y, p, x);
+		bint::subT<N>(y, p, x);
 	}
 	static const void3u f;
 };
@@ -169,19 +152,19 @@ struct MulUnit {
 				}
 				if (v == 0) break;
 				if (v == 1) {
-					xy[N] -= SubPre<N, Tag>::f(xy, xy, p);
+					xy[N] -= bint::subT<N>(xy, xy, p);
 				} else {
 					Unit t[N + 1];
 					MulUnitPre<N, Tag>::f(t, p, v);
-					SubPre<N + 1, Tag>::f(xy, xy, t);
+					bint::subT<N + 1>(xy, xy, t);
 				}
 			}
 			for (;;) {
-				if (SubPre<N, Tag>::f(z, xy, p)) {
+				if (bint::subT<N>(z, xy, p)) {
 					bint::copyT<N>(z, xy);
 					return;
 				}
-				if (SubPre<N, Tag>::f(xy, z, p)) {
+				if (bint::subT<N>(xy, z, p)) {
 					return;
 				}
 			}
@@ -222,7 +205,7 @@ struct SubIfPossible {
 	static inline void f(Unit *z, const Unit *p)
 	{
 		Unit tmp[N - 1];
-		if (SubPre<N - 1, Tag>::f(tmp, z, p) == 0) {
+		if (bint::subT<N - 1>(tmp, z, p) == 0) {
 			bint::copyT<N - 1>(z, tmp);
 			z[N - 1] = 0;
 		}
@@ -243,11 +226,11 @@ struct Add {
 	{
 		if (isFullBit) {
 			if (bint::addT<N>(z, x, y)) {
-				SubPre<N, Tag>::f(z, z, p);
+				bint::subT<N>(z, z, p);
 				return;
 			}
 			Unit tmp[N];
-			if (SubPre<N, Tag>::f(tmp, z, p) == 0) {
+			if (bint::subT<N>(tmp, z, p) == 0) {
 				bint::copyT<N>(z, tmp);
 			}
 		} else {
@@ -256,7 +239,7 @@ struct Add {
 			Unit b = p[N - 1];
 			if (a < b) return;
 			if (a > b) {
-				SubPre<N, Tag>::f(z, z, p);
+				bint::subT<N>(z, z, p);
 				return;
 			}
 			/* the top of z and p are same */
@@ -274,7 +257,7 @@ template<size_t N, bool isFullBit, class Tag = Gtag>
 struct Sub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (SubPre<N, Tag>::f(z, x, y)) {
+		if (bint::subT<N>(z, x, y)) {
 			bint::addT<N>(z, z, p);
 		}
 	}
@@ -290,11 +273,11 @@ struct DblAdd {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (bint::addT<N * 2>(z, x, y)) {
-			SubPre<N, Tag>::f(z + N, z + N, p);
+			bint::subT<N>(z + N, z + N, p);
 			return;
 		}
 		Unit tmp[N];
-		if (SubPre<N, Tag>::f(tmp, z + N, p) == 0) {
+		if (bint::subT<N>(tmp, z + N, p) == 0) {
 			memcpy(z + N, tmp, sizeof(tmp));
 		}
 	}
@@ -309,7 +292,7 @@ template<size_t N, class Tag = Gtag>
 struct DblSub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (SubPre<N * 2, Tag>::f(z, x, y)) {
+		if (bint::subT<N * 2>(z, x, y)) {
 			bint::addT<N>(z + N, z + N, p);
 		}
 	}
@@ -349,9 +332,9 @@ struct MontRed {
 			c++;
 		}
 		if (c[N]) {
-			SubPre<N, Tag>::f(z, c, p);
+			bint::subT<N>(z, c, p);
 		} else {
-			if (SubPre<N, Tag>::f(z, c, p)) {
+			if (bint::subT<N>(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -395,9 +378,9 @@ struct Mont {
 				c++;
 			}
 			if (c[N]) {
-				SubPre<N, Tag>::f(z, c, p);
+				bint::subT<N>(z, c, p);
 			} else {
-				if (SubPre<N, Tag>::f(z, c, p)) {
+				if (bint::subT<N>(z, c, p)) {
 					memcpy(z, c, N * sizeof(Unit));
 				}
 			}
@@ -437,7 +420,7 @@ struct Mont {
 				c++;
 			}
 			assert(c[N] == 0);
-			if (SubPre<N, Tag>::f(z, c, p)) {
+			if (bint::subT<N>(z, c, p)) {
 				memcpy(z, c, N * sizeof(Unit));
 			}
 		}
@@ -513,8 +496,8 @@ struct Fp2MulNF {
 		bint::mulT<N>(d0, s, t);
 		bint::mulT<N>(d1, a, c);
 		bint::mulT<N>(d2, b, d);
-		SubPre<N * 2, Tag>::f(d0, d0, d1);
-		SubPre<N * 2, Tag>::f(d0, d0, d2);
+		bint::subT<N * 2>(d0, d0, d1);
+		bint::subT<N * 2>(d0, d0, d2);
 		MontRed<N, false, Tag>::f(z + N, d0, p);
 		DblSub<N, Tag>::f(d1, d1, d2, p);
 		MontRed<N, false, Tag>::f(z, d1, p);
