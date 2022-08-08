@@ -26,33 +26,6 @@ template<> struct TagToStr<Gtag> { static const char *f() { return "Gtag"; } };
 template<> struct TagToStr<Ltag> { static const char *f() { return "Ltag"; } };
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
-// (carry, x[N]) <- x[N] + y
-template<class Tag = Gtag>
-struct AddUnitPre {
-	static inline Unit func(Unit *x, Unit n, Unit y)
-	{
-#if 1
-		int ret = 0;
-		Unit t = x[0] + y;
-		x[0] = t;
-		if (t >= y) goto EXIT_0;
-		for (size_t i = 1; i < n; i++) {
-			t = x[i] + 1;
-			x[i] = t;
-			if (t != 0) goto EXIT_0;
-		}
-		ret = 1;
-	EXIT_0:
-		return ret;
-#else
-		return mpn_add_1((mp_limb_t*)x, (const mp_limb_t*)x, (int)n, y);
-#endif
-	}
-	static const u1uII f;
-};
-template<class Tag>
-const u1uII AddUnitPre<Tag>::f = AddUnitPre<Tag>::func;
-
 // y[N] <- (x[N] >> 1)
 template<size_t N, class Tag = Gtag>
 struct Shr1 {
@@ -319,7 +292,7 @@ struct MontRed {
 		MulUnitPre<N, Tag>::f(pq, p, q);
 		Unit up = bint::addT<N + 1>(buf, xy, pq);
 		if (up) {
-			buf[N * 2] = AddUnitPre<Tag>::f(buf + N + 1, N - 1, 1);
+			buf[N * 2] = bint::addUnit(buf + N + 1, N - 1, 1);
 		}
 		Unit *c = buf + 1;
 		for (size_t i = 1; i < N; i++) {
@@ -327,7 +300,7 @@ struct MontRed {
 			MulUnitPre<N, Tag>::f(pq, p, q);
 			up = bint::addT<N + 1>(c, c, pq);
 			if (up) {
-				AddUnitPre<Tag>::f(c + N + 1, N - i, 1);
+				bint::addUnit(c + N + 1, N - i, 1);
 			}
 			c++;
 		}
