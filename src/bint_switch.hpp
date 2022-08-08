@@ -186,6 +186,24 @@ template void mulT<14>(Unit *z, const Unit *x, const Unit *y);
 template void mulT<15>(Unit *z, const Unit *x, const Unit *y);
 template void mulT<16>(Unit *z, const Unit *x, const Unit *y);
 #endif
+template void sqrT<1>(Unit *y, const Unit *x);
+template void sqrT<2>(Unit *y, const Unit *x);
+template void sqrT<3>(Unit *y, const Unit *x);
+template void sqrT<4>(Unit *y, const Unit *x);
+template void sqrT<5>(Unit *y, const Unit *x);
+template void sqrT<6>(Unit *y, const Unit *x);
+template void sqrT<7>(Unit *y, const Unit *x);
+template void sqrT<8>(Unit *y, const Unit *x);
+template void sqrT<9>(Unit *y, const Unit *x);
+#if MCL_SIZEOF_UNIT == 4
+template void sqrT<10>(Unit *y, const Unit *x);
+template void sqrT<11>(Unit *y, const Unit *x);
+template void sqrT<12>(Unit *y, const Unit *x);
+template void sqrT<13>(Unit *y, const Unit *x);
+template void sqrT<14>(Unit *y, const Unit *x);
+template void sqrT<15>(Unit *y, const Unit *x);
+template void sqrT<16>(Unit *y, const Unit *x);
+#endif
 #endif // MCL_BINT_ASM != 1
 u_ppp mclb_addTbl[] = {
 #if MCL_BINT_ASM == 1
@@ -636,89 +654,163 @@ void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return mclb_get_mul(n)(z, x, y);
 }
+void_pp mclb_sqrTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_sqr1,
+	mclb_sqr2,
+	mclb_sqr3,
+	mclb_sqr4,
+	mclb_sqr5,
+	mclb_sqr6,
+	mclb_sqr7,
+	mclb_sqr8,
+	mclb_sqr9,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_sqr10,
+	mclb_sqr11,
+	mclb_sqr12,
+	mclb_sqr13,
+	mclb_sqr14,
+	mclb_sqr15,
+	mclb_sqr16,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	sqrT<1>,
+	sqrT<2>,
+	sqrT<3>,
+	sqrT<4>,
+	sqrT<5>,
+	sqrT<6>,
+	sqrT<7>,
+	sqrT<8>,
+	sqrT<9>,
+#if MCL_SIZEOF_UNIT == 4
+	sqrT<10>,
+	sqrT<11>,
+	sqrT<12>,
+	sqrT<13>,
+	sqrT<14>,
+	sqrT<15>,
+	sqrT<16>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
+void sqrN(Unit *y, const Unit *x, size_t n)
+{
+	return mclb_get_sqr(n)(y, x);
+}
 #if MCL_BINT_ASM_X64 == 1
 u_ppu mclb_mulUnit1 = mclb_mulUnit_fast1;
 u_ppu mclb_mulUnitAdd1 = mclb_mulUnitAdd_fast1;
 void_ppp mclb_mul1 = mclb_mul_fast1;
+void_pp mclb_sqr1 = mclb_sqr_fast1;
 u_ppu mclb_mulUnit2 = mclb_mulUnit_fast2;
 u_ppu mclb_mulUnitAdd2 = mclb_mulUnitAdd_fast2;
 void_ppp mclb_mul2 = mclb_mul_fast2;
+void_pp mclb_sqr2 = mclb_sqr_fast2;
 u_ppu mclb_mulUnit3 = mclb_mulUnit_fast3;
 u_ppu mclb_mulUnitAdd3 = mclb_mulUnitAdd_fast3;
 void_ppp mclb_mul3 = mclb_mul_fast3;
+void_pp mclb_sqr3 = mclb_sqr_fast3;
 u_ppu mclb_mulUnit4 = mclb_mulUnit_fast4;
 u_ppu mclb_mulUnitAdd4 = mclb_mulUnitAdd_fast4;
 void_ppp mclb_mul4 = mclb_mul_fast4;
+void_pp mclb_sqr4 = mclb_sqr_fast4;
 u_ppu mclb_mulUnit5 = mclb_mulUnit_fast5;
 u_ppu mclb_mulUnitAdd5 = mclb_mulUnitAdd_fast5;
 void_ppp mclb_mul5 = mclb_mul_fast5;
+void_pp mclb_sqr5 = mclb_sqr_fast5;
 u_ppu mclb_mulUnit6 = mclb_mulUnit_fast6;
 u_ppu mclb_mulUnitAdd6 = mclb_mulUnitAdd_fast6;
 void_ppp mclb_mul6 = mclb_mul_fast6;
+void_pp mclb_sqr6 = mclb_sqr_fast6;
 u_ppu mclb_mulUnit7 = mclb_mulUnit_fast7;
 u_ppu mclb_mulUnitAdd7 = mclb_mulUnitAdd_fast7;
 void_ppp mclb_mul7 = mclb_mul_fast7;
+void_pp mclb_sqr7 = mclb_sqr_fast7;
 u_ppu mclb_mulUnit8 = mclb_mulUnit_fast8;
 u_ppu mclb_mulUnitAdd8 = mclb_mulUnitAdd_fast8;
 void_ppp mclb_mul8 = mclb_mul_fast8;
+void_pp mclb_sqr8 = mclb_sqr_fast8;
 u_ppu mclb_mulUnit9 = mclb_mulUnit_fast9;
 u_ppu mclb_mulUnitAdd9 = mclb_mulUnitAdd_fast9;
 void_ppp mclb_mul9 = mclb_mul_fast9;
+void_pp mclb_sqr9 = mclb_sqr_fast9;
 extern "C" MCL_DLL_API void mclb_disable_fast() {
 	mclb_mulUnit1 = mclb_mulUnit_slow1;
 	mclb_mulUnitAdd1 = mclb_mulUnitAdd_slow1;
 	mclb_mul1 = mclb_mul_slow1;
+	mclb_sqr1 = mclb_sqr_slow1;
 	mclb_mulUnit2 = mclb_mulUnit_slow2;
 	mclb_mulUnitAdd2 = mclb_mulUnitAdd_slow2;
 	mclb_mul2 = mclb_mul_slow2;
+	mclb_sqr2 = mclb_sqr_slow2;
 	mclb_mulUnit3 = mclb_mulUnit_slow3;
 	mclb_mulUnitAdd3 = mclb_mulUnitAdd_slow3;
 	mclb_mul3 = mclb_mul_slow3;
+	mclb_sqr3 = mclb_sqr_slow3;
 	mclb_mulUnit4 = mclb_mulUnit_slow4;
 	mclb_mulUnitAdd4 = mclb_mulUnitAdd_slow4;
 	mclb_mul4 = mclb_mul_slow4;
+	mclb_sqr4 = mclb_sqr_slow4;
 	mclb_mulUnit5 = mclb_mulUnit_slow5;
 	mclb_mulUnitAdd5 = mclb_mulUnitAdd_slow5;
 	mclb_mul5 = mclb_mul_slow5;
+	mclb_sqr5 = mclb_sqr_slow5;
 	mclb_mulUnit6 = mclb_mulUnit_slow6;
 	mclb_mulUnitAdd6 = mclb_mulUnitAdd_slow6;
 	mclb_mul6 = mclb_mul_slow6;
+	mclb_sqr6 = mclb_sqr_slow6;
 	mclb_mulUnit7 = mclb_mulUnit_slow7;
 	mclb_mulUnitAdd7 = mclb_mulUnitAdd_slow7;
 	mclb_mul7 = mclb_mul_slow7;
+	mclb_sqr7 = mclb_sqr_slow7;
 	mclb_mulUnit8 = mclb_mulUnit_slow8;
 	mclb_mulUnitAdd8 = mclb_mulUnitAdd_slow8;
 	mclb_mul8 = mclb_mul_slow8;
+	mclb_sqr8 = mclb_sqr_slow8;
 	mclb_mulUnit9 = mclb_mulUnit_slow9;
 	mclb_mulUnitAdd9 = mclb_mulUnitAdd_slow9;
 	mclb_mul9 = mclb_mul_slow9;
+	mclb_sqr9 = mclb_sqr_slow9;
 	mclb_mulUnitTbl[1] = mclb_mulUnit_slow1;
 	mclb_mulUnitAddTbl[1] = mclb_mulUnitAdd_slow1;
 	mclb_mulTbl[1] = mclb_mul_slow1;
+	mclb_sqrTbl[1] = mclb_sqr_slow1;
 	mclb_mulUnitTbl[2] = mclb_mulUnit_slow2;
 	mclb_mulUnitAddTbl[2] = mclb_mulUnitAdd_slow2;
 	mclb_mulTbl[2] = mclb_mul_slow2;
+	mclb_sqrTbl[2] = mclb_sqr_slow2;
 	mclb_mulUnitTbl[3] = mclb_mulUnit_slow3;
 	mclb_mulUnitAddTbl[3] = mclb_mulUnitAdd_slow3;
 	mclb_mulTbl[3] = mclb_mul_slow3;
+	mclb_sqrTbl[3] = mclb_sqr_slow3;
 	mclb_mulUnitTbl[4] = mclb_mulUnit_slow4;
 	mclb_mulUnitAddTbl[4] = mclb_mulUnitAdd_slow4;
 	mclb_mulTbl[4] = mclb_mul_slow4;
+	mclb_sqrTbl[4] = mclb_sqr_slow4;
 	mclb_mulUnitTbl[5] = mclb_mulUnit_slow5;
 	mclb_mulUnitAddTbl[5] = mclb_mulUnitAdd_slow5;
 	mclb_mulTbl[5] = mclb_mul_slow5;
+	mclb_sqrTbl[5] = mclb_sqr_slow5;
 	mclb_mulUnitTbl[6] = mclb_mulUnit_slow6;
 	mclb_mulUnitAddTbl[6] = mclb_mulUnitAdd_slow6;
 	mclb_mulTbl[6] = mclb_mul_slow6;
+	mclb_sqrTbl[6] = mclb_sqr_slow6;
 	mclb_mulUnitTbl[7] = mclb_mulUnit_slow7;
 	mclb_mulUnitAddTbl[7] = mclb_mulUnitAdd_slow7;
 	mclb_mulTbl[7] = mclb_mul_slow7;
+	mclb_sqrTbl[7] = mclb_sqr_slow7;
 	mclb_mulUnitTbl[8] = mclb_mulUnit_slow8;
 	mclb_mulUnitAddTbl[8] = mclb_mulUnitAdd_slow8;
 	mclb_mulTbl[8] = mclb_mul_slow8;
+	mclb_sqrTbl[8] = mclb_sqr_slow8;
 	mclb_mulUnitTbl[9] = mclb_mulUnit_slow9;
 	mclb_mulUnitAddTbl[9] = mclb_mulUnitAdd_slow9;
 	mclb_mulTbl[9] = mclb_mul_slow9;
+	mclb_sqrTbl[9] = mclb_sqr_slow9;
 }
 #endif // MCL_BINT_ASM_X64 == 1
 #if MCL_BINT_ASM_X64 == 1
@@ -784,5 +876,43 @@ extern "C" MCL_DLL_API void mclb_mul_slow9(Unit *z, const Unit *x, const Unit *y
 	for (size_t i = 1; i < 9; i++) {
 		z[9 + i] = mulUnitAddT<9>(&z[i], x, y[i]);
 	}
+}
+#endif // MCL_BINT_ASM_X64 == 1
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void mclb_sqr_slow1(Unit *y, const Unit *x)
+{
+	mclb_mul_slow1(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow2(Unit *y, const Unit *x)
+{
+	mclb_mul_slow2(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow3(Unit *y, const Unit *x)
+{
+	mclb_mul_slow3(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow4(Unit *y, const Unit *x)
+{
+	mclb_mul_slow4(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow5(Unit *y, const Unit *x)
+{
+	mclb_mul_slow5(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow6(Unit *y, const Unit *x)
+{
+	mclb_mul_slow6(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow7(Unit *y, const Unit *x)
+{
+	mclb_mul_slow7(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow8(Unit *y, const Unit *x)
+{
+	mclb_mul_slow8(y, x, x);
+}
+extern "C" MCL_DLL_API void mclb_sqr_slow9(Unit *y, const Unit *x)
+{
+	mclb_mul_slow9(y, x, x);
 }
 #endif // MCL_BINT_ASM_X64 == 1

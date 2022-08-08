@@ -283,6 +283,14 @@ extern "C" MCL_DLL_API void mclb_mul1(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<1>(Unit *z, const Unit *x, const Unit *y) { mclb_mul1(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr1;
+extern "C" void mclb_sqr_slow1(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast1(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr1(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<1>(Unit *y, const Unit *x) { mclb_sqr1(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit2;
 extern "C" Unit mclb_mulUnit_slow2(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast2(Unit *z, const Unit *x, Unit y);
@@ -306,6 +314,14 @@ extern "C" void mclb_mul_fast2(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul2(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<2>(Unit *z, const Unit *x, const Unit *y) { mclb_mul2(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr2;
+extern "C" void mclb_sqr_slow2(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast2(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr2(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<2>(Unit *y, const Unit *x) { mclb_sqr2(y, x); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit3;
 extern "C" Unit mclb_mulUnit_slow3(Unit *z, const Unit *x, Unit y);
@@ -331,6 +347,14 @@ extern "C" MCL_DLL_API void mclb_mul3(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<3>(Unit *z, const Unit *x, const Unit *y) { mclb_mul3(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr3;
+extern "C" void mclb_sqr_slow3(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast3(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr3(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<3>(Unit *y, const Unit *x) { mclb_sqr3(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit4;
 extern "C" Unit mclb_mulUnit_slow4(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast4(Unit *z, const Unit *x, Unit y);
@@ -354,6 +378,14 @@ extern "C" void mclb_mul_fast4(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul4(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<4>(Unit *z, const Unit *x, const Unit *y) { mclb_mul4(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr4;
+extern "C" void mclb_sqr_slow4(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast4(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr4(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<4>(Unit *y, const Unit *x) { mclb_sqr4(y, x); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit5;
 extern "C" Unit mclb_mulUnit_slow5(Unit *z, const Unit *x, Unit y);
@@ -379,6 +411,14 @@ extern "C" MCL_DLL_API void mclb_mul5(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<5>(Unit *z, const Unit *x, const Unit *y) { mclb_mul5(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr5;
+extern "C" void mclb_sqr_slow5(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast5(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr5(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<5>(Unit *y, const Unit *x) { mclb_sqr5(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit6;
 extern "C" Unit mclb_mulUnit_slow6(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast6(Unit *z, const Unit *x, Unit y);
@@ -402,6 +442,14 @@ extern "C" void mclb_mul_fast6(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul6(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<6>(Unit *z, const Unit *x, const Unit *y) { mclb_mul6(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr6;
+extern "C" void mclb_sqr_slow6(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast6(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr6(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<6>(Unit *y, const Unit *x) { mclb_sqr6(y, x); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit7;
 extern "C" Unit mclb_mulUnit_slow7(Unit *z, const Unit *x, Unit y);
@@ -427,6 +475,14 @@ extern "C" MCL_DLL_API void mclb_mul7(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<7>(Unit *z, const Unit *x, const Unit *y) { mclb_mul7(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr7;
+extern "C" void mclb_sqr_slow7(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast7(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr7(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<7>(Unit *y, const Unit *x) { mclb_sqr7(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit8;
 extern "C" Unit mclb_mulUnit_slow8(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast8(Unit *z, const Unit *x, Unit y);
@@ -451,6 +507,14 @@ extern "C" MCL_DLL_API void mclb_mul8(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<8>(Unit *z, const Unit *x, const Unit *y) { mclb_mul8(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr8;
+extern "C" void mclb_sqr_slow8(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast8(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr8(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<8>(Unit *y, const Unit *x) { mclb_sqr8(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit9;
 extern "C" Unit mclb_mulUnit_slow9(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast9(Unit *z, const Unit *x, Unit y);
@@ -474,6 +538,14 @@ extern "C" void mclb_mul_fast9(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul9(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<9>(Unit *z, const Unit *x, const Unit *y) { mclb_mul9(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr9;
+extern "C" void mclb_sqr_slow9(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast9(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr9(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<9>(Unit *y, const Unit *x) { mclb_sqr9(y, x); }
 #if MCL_SIZEOF_UNIT == 4
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit10;
@@ -500,6 +572,14 @@ extern "C" MCL_DLL_API void mclb_mul10(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<10>(Unit *z, const Unit *x, const Unit *y) { mclb_mul10(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr10;
+extern "C" void mclb_sqr_slow10(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast10(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr10(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<10>(Unit *y, const Unit *x) { mclb_sqr10(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit11;
 extern "C" Unit mclb_mulUnit_slow11(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast11(Unit *z, const Unit *x, Unit y);
@@ -523,6 +603,14 @@ extern "C" void mclb_mul_fast11(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul11(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<11>(Unit *z, const Unit *x, const Unit *y) { mclb_mul11(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr11;
+extern "C" void mclb_sqr_slow11(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast11(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr11(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<11>(Unit *y, const Unit *x) { mclb_sqr11(y, x); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit12;
 extern "C" Unit mclb_mulUnit_slow12(Unit *z, const Unit *x, Unit y);
@@ -548,6 +636,14 @@ extern "C" MCL_DLL_API void mclb_mul12(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<12>(Unit *z, const Unit *x, const Unit *y) { mclb_mul12(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr12;
+extern "C" void mclb_sqr_slow12(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast12(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr12(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<12>(Unit *y, const Unit *x) { mclb_sqr12(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit13;
 extern "C" Unit mclb_mulUnit_slow13(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast13(Unit *z, const Unit *x, Unit y);
@@ -571,6 +667,14 @@ extern "C" void mclb_mul_fast13(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul13(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<13>(Unit *z, const Unit *x, const Unit *y) { mclb_mul13(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr13;
+extern "C" void mclb_sqr_slow13(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast13(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr13(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<13>(Unit *y, const Unit *x) { mclb_sqr13(y, x); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit14;
 extern "C" Unit mclb_mulUnit_slow14(Unit *z, const Unit *x, Unit y);
@@ -596,6 +700,14 @@ extern "C" MCL_DLL_API void mclb_mul14(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<14>(Unit *z, const Unit *x, const Unit *y) { mclb_mul14(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr14;
+extern "C" void mclb_sqr_slow14(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast14(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr14(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<14>(Unit *y, const Unit *x) { mclb_sqr14(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit15;
 extern "C" Unit mclb_mulUnit_slow15(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast15(Unit *z, const Unit *x, Unit y);
@@ -619,6 +731,14 @@ extern "C" void mclb_mul_fast15(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul15(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<15>(Unit *z, const Unit *x, const Unit *y) { mclb_mul15(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr15;
+extern "C" void mclb_sqr_slow15(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast15(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr15(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<15>(Unit *y, const Unit *x) { mclb_sqr15(y, x); }
 #if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit16;
 extern "C" Unit mclb_mulUnit_slow16(Unit *z, const Unit *x, Unit y);
@@ -644,6 +764,14 @@ extern "C" MCL_DLL_API void mclb_mul16(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<16>(Unit *z, const Unit *x, const Unit *y) { mclb_mul16(z, x, y); }
 #if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr16;
+extern "C" void mclb_sqr_slow16(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast16(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr16(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<16>(Unit *y, const Unit *x) { mclb_sqr16(y, x); }
+#if MCL_BINT_ASM_X64 == 1
 extern "C" MCL_DLL_API u_ppu mclb_mulUnit17;
 extern "C" Unit mclb_mulUnit_slow17(Unit *z, const Unit *x, Unit y);
 extern "C" Unit mclb_mulUnit_fast17(Unit *z, const Unit *x, Unit y);
@@ -667,6 +795,14 @@ extern "C" void mclb_mul_fast17(Unit *z, const Unit *x, const Unit *y);
 extern "C" MCL_DLL_API void mclb_mul17(Unit *z, const Unit *x, const Unit *y);
 #endif
 template<> inline void mulT<17>(Unit *z, const Unit *x, const Unit *y) { mclb_mul17(z, x, y); }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" MCL_DLL_API void_pp mclb_sqr17;
+extern "C" void mclb_sqr_slow17(Unit *y, const Unit *x);
+extern "C" void mclb_sqr_fast17(Unit *y, const Unit *x);
+#else
+extern "C" MCL_DLL_API void mclb_sqr17(Unit *y, const Unit *x);
+#endif
+template<> inline void sqrT<17>(Unit *y, const Unit *x) { mclb_sqr17(y, x); }
 #endif // #if MCL_SIZEOF_UNIT == 4
 #endif // #if MCL_BINT_ASM == 1
 #if MCL_SIZEOF_UNIT == 8
@@ -724,4 +860,11 @@ inline void_ppp mclb_get_mul(size_t n)
 	if (n > MCL_BINT_MUL_N) n = 0;
 	assert(n > 0);
 	return mclb_mulTbl[n];
+}
+extern "C" MCL_DLL_API void_pp mclb_sqrTbl[];
+inline void_pp mclb_get_sqr(size_t n)
+{
+	if (n > MCL_BINT_MUL_N) n = 0;
+	assert(n > 0);
+	return mclb_sqrTbl[n];
 }

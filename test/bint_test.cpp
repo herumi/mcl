@@ -794,3 +794,38 @@ CYBOZU_TEST_AUTO(mul)
 	testMul<8>();
 	testMul<9>();
 }
+
+template<size_t N>
+void testSqr()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N * 2];
+	mpz_class mx, my;
+	for (size_t i = 0; i < C; i++) {
+		setRand(x, N, rg);
+		sqrT<N>(y, x);
+		setArray(mx, x, N);
+		setArray(my, y, N * 2);
+		CYBOZU_TEST_EQUAL(mx * mx, my);
+	}
+#ifdef NDEBUG
+	const int CC = 20000;
+	printf("%zd ", N);
+	CYBOZU_BENCH_C("gmp", CC, mpn_sqr, (mp_limb_t*)y, (const mp_limb_t*)x, (int)N);
+	printf("  ");
+	CYBOZU_BENCH_C("sqr", CC, sqrT<N>, y, x);
+#endif
+}
+
+CYBOZU_TEST_AUTO(sqr)
+{
+	testSqr<1>();
+	testSqr<2>();
+	testSqr<3>();
+	testSqr<4>();
+	testSqr<5>();
+	testSqr<6>();
+	testSqr<7>();
+	testSqr<8>();
+	testSqr<9>();
+}

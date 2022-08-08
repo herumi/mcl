@@ -206,6 +206,14 @@ void mulT(Unit *pz, const Unit *px, const Unit *py)
 		pz[N + i] = mulUnitAddT<N>(&pz[i], px, py[i]);
 	}
 }
+
+// y[2N] = x[N] * x[N]
+template<size_t N>
+void sqrT(Unit *py, const Unit *px)
+{
+	// QQQ : optimize this later
+	mulT<N>(py, px, px);
+}
 #endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
@@ -530,12 +538,6 @@ MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t 
 	for (size_t i = 1; i < yn; i++) {
 		z[xn + i] = mulUnitAdd(&z[i], x, y[i]);
 	}
-}
-
-// QQQ : optimize this
-MCL_DLL_API void sqrN(Unit *y, const Unit *x, size_t xn)
-{
-	mulN(y, x, x, xn);
 }
 
 /*

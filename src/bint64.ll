@@ -9975,6 +9975,22 @@ store i64 %r11, i64* %r10
 store i64 %r15, i64* %r14
 ret void
 }
+define void @mclb_sqr1(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = load i64, i64* %r2
+%r5 = zext i64 %r3 to i128
+%r6 = zext i64 %r4 to i128
+%r7 = mul i128 %r5, %r6
+%r9 = getelementptr i64, i64* %r1, i32 0
+%r10 = trunc i128 %r7 to i64
+store i64 %r10, i64* %r9
+%r11 = lshr i128 %r7, 64
+%r13 = getelementptr i64, i64* %r1, i32 1
+%r14 = trunc i128 %r11 to i64
+store i64 %r14, i64* %r13
+ret void
+}
 define i192 @mulUnit_inner128(i64* noalias  %r2, i64 %r3)
 {
 %r5 = call i128 @mulPos64x64(i64* %r2, i64 %r3, i64 0)
@@ -10071,6 +10087,31 @@ store i64 %r21, i64* %r20
 %r24 = getelementptr i64, i64* %r14, i32 2
 %r25 = trunc i192 %r22 to i64
 store i64 %r25, i64* %r24
+ret void
+}
+define void @mclb_sqr2(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i192 @mulUnit_inner128(i64* %r2, i64 %r3)
+%r5 = trunc i192 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i192 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i192 @mulUnit_inner128(i64* %r2, i64 %r9)
+%r11 = add i192 %r6, %r10
+%r13 = getelementptr i64, i64* %r1, i32 1
+%r15 = getelementptr i64, i64* %r13, i32 0
+%r16 = trunc i192 %r11 to i64
+store i64 %r16, i64* %r15
+%r17 = lshr i192 %r11, 64
+%r19 = getelementptr i64, i64* %r13, i32 1
+%r20 = trunc i192 %r17 to i64
+store i64 %r20, i64* %r19
+%r21 = lshr i192 %r17, 64
+%r23 = getelementptr i64, i64* %r13, i32 2
+%r24 = trunc i192 %r21 to i64
+store i64 %r24, i64* %r23
 ret void
 }
 define i256 @mulUnit_inner192(i64* noalias  %r2, i64 %r3)
@@ -10211,6 +10252,43 @@ store i64 %r34, i64* %r33
 %r37 = getelementptr i64, i64* %r23, i32 3
 %r38 = trunc i256 %r35 to i64
 store i64 %r38, i64* %r37
+ret void
+}
+define void @mclb_sqr3(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i256 @mulUnit_inner192(i64* %r2, i64 %r3)
+%r5 = trunc i256 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i256 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i256 @mulUnit_inner192(i64* %r2, i64 %r9)
+%r11 = add i256 %r6, %r10
+%r12 = trunc i256 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i256 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i256 @mulUnit_inner192(i64* %r2, i64 %r18)
+%r20 = add i256 %r15, %r19
+%r22 = getelementptr i64, i64* %r1, i32 2
+%r24 = getelementptr i64, i64* %r22, i32 0
+%r25 = trunc i256 %r20 to i64
+store i64 %r25, i64* %r24
+%r26 = lshr i256 %r20, 64
+%r28 = getelementptr i64, i64* %r22, i32 1
+%r29 = trunc i256 %r26 to i64
+store i64 %r29, i64* %r28
+%r30 = lshr i256 %r26, 64
+%r32 = getelementptr i64, i64* %r22, i32 2
+%r33 = trunc i256 %r30 to i64
+store i64 %r33, i64* %r32
+%r34 = lshr i256 %r30, 64
+%r36 = getelementptr i64, i64* %r22, i32 3
+%r37 = trunc i256 %r34 to i64
+store i64 %r37, i64* %r36
 ret void
 }
 define i320 @mulUnit_inner256(i64* noalias  %r2, i64 %r3)
@@ -10393,6 +10471,55 @@ store i64 %r47, i64* %r46
 %r50 = getelementptr i64, i64* %r32, i32 4
 %r51 = trunc i320 %r48 to i64
 store i64 %r51, i64* %r50
+ret void
+}
+define void @mclb_sqr4(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i320 @mulUnit_inner256(i64* %r2, i64 %r3)
+%r5 = trunc i320 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i320 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i320 @mulUnit_inner256(i64* %r2, i64 %r9)
+%r11 = add i320 %r6, %r10
+%r12 = trunc i320 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i320 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i320 @mulUnit_inner256(i64* %r2, i64 %r18)
+%r20 = add i320 %r15, %r19
+%r21 = trunc i320 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i320 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i320 @mulUnit_inner256(i64* %r2, i64 %r27)
+%r29 = add i320 %r24, %r28
+%r31 = getelementptr i64, i64* %r1, i32 3
+%r33 = getelementptr i64, i64* %r31, i32 0
+%r34 = trunc i320 %r29 to i64
+store i64 %r34, i64* %r33
+%r35 = lshr i320 %r29, 64
+%r37 = getelementptr i64, i64* %r31, i32 1
+%r38 = trunc i320 %r35 to i64
+store i64 %r38, i64* %r37
+%r39 = lshr i320 %r35, 64
+%r41 = getelementptr i64, i64* %r31, i32 2
+%r42 = trunc i320 %r39 to i64
+store i64 %r42, i64* %r41
+%r43 = lshr i320 %r39, 64
+%r45 = getelementptr i64, i64* %r31, i32 3
+%r46 = trunc i320 %r43 to i64
+store i64 %r46, i64* %r45
+%r47 = lshr i320 %r43, 64
+%r49 = getelementptr i64, i64* %r31, i32 4
+%r50 = trunc i320 %r47 to i64
+store i64 %r50, i64* %r49
 ret void
 }
 define i384 @mulUnit_inner320(i64* noalias  %r2, i64 %r3)
@@ -10617,6 +10744,67 @@ store i64 %r60, i64* %r59
 %r63 = getelementptr i64, i64* %r41, i32 5
 %r64 = trunc i384 %r61 to i64
 store i64 %r64, i64* %r63
+ret void
+}
+define void @mclb_sqr5(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i384 @mulUnit_inner320(i64* %r2, i64 %r3)
+%r5 = trunc i384 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i384 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i384 @mulUnit_inner320(i64* %r2, i64 %r9)
+%r11 = add i384 %r6, %r10
+%r12 = trunc i384 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i384 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i384 @mulUnit_inner320(i64* %r2, i64 %r18)
+%r20 = add i384 %r15, %r19
+%r21 = trunc i384 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i384 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i384 @mulUnit_inner320(i64* %r2, i64 %r27)
+%r29 = add i384 %r24, %r28
+%r30 = trunc i384 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i384 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i384 @mulUnit_inner320(i64* %r2, i64 %r36)
+%r38 = add i384 %r33, %r37
+%r40 = getelementptr i64, i64* %r1, i32 4
+%r42 = getelementptr i64, i64* %r40, i32 0
+%r43 = trunc i384 %r38 to i64
+store i64 %r43, i64* %r42
+%r44 = lshr i384 %r38, 64
+%r46 = getelementptr i64, i64* %r40, i32 1
+%r47 = trunc i384 %r44 to i64
+store i64 %r47, i64* %r46
+%r48 = lshr i384 %r44, 64
+%r50 = getelementptr i64, i64* %r40, i32 2
+%r51 = trunc i384 %r48 to i64
+store i64 %r51, i64* %r50
+%r52 = lshr i384 %r48, 64
+%r54 = getelementptr i64, i64* %r40, i32 3
+%r55 = trunc i384 %r52 to i64
+store i64 %r55, i64* %r54
+%r56 = lshr i384 %r52, 64
+%r58 = getelementptr i64, i64* %r40, i32 4
+%r59 = trunc i384 %r56 to i64
+store i64 %r59, i64* %r58
+%r60 = lshr i384 %r56, 64
+%r62 = getelementptr i64, i64* %r40, i32 5
+%r63 = trunc i384 %r60 to i64
+store i64 %r63, i64* %r62
 ret void
 }
 define i448 @mulUnit_inner384(i64* noalias  %r2, i64 %r3)
@@ -10883,6 +11071,79 @@ store i64 %r73, i64* %r72
 %r76 = getelementptr i64, i64* %r50, i32 6
 %r77 = trunc i448 %r74 to i64
 store i64 %r77, i64* %r76
+ret void
+}
+define void @mclb_sqr6(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i448 @mulUnit_inner384(i64* %r2, i64 %r3)
+%r5 = trunc i448 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i448 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i448 @mulUnit_inner384(i64* %r2, i64 %r9)
+%r11 = add i448 %r6, %r10
+%r12 = trunc i448 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i448 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i448 @mulUnit_inner384(i64* %r2, i64 %r18)
+%r20 = add i448 %r15, %r19
+%r21 = trunc i448 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i448 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i448 @mulUnit_inner384(i64* %r2, i64 %r27)
+%r29 = add i448 %r24, %r28
+%r30 = trunc i448 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i448 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i448 @mulUnit_inner384(i64* %r2, i64 %r36)
+%r38 = add i448 %r33, %r37
+%r39 = trunc i448 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i448 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i448 @mulUnit_inner384(i64* %r2, i64 %r45)
+%r47 = add i448 %r42, %r46
+%r49 = getelementptr i64, i64* %r1, i32 5
+%r51 = getelementptr i64, i64* %r49, i32 0
+%r52 = trunc i448 %r47 to i64
+store i64 %r52, i64* %r51
+%r53 = lshr i448 %r47, 64
+%r55 = getelementptr i64, i64* %r49, i32 1
+%r56 = trunc i448 %r53 to i64
+store i64 %r56, i64* %r55
+%r57 = lshr i448 %r53, 64
+%r59 = getelementptr i64, i64* %r49, i32 2
+%r60 = trunc i448 %r57 to i64
+store i64 %r60, i64* %r59
+%r61 = lshr i448 %r57, 64
+%r63 = getelementptr i64, i64* %r49, i32 3
+%r64 = trunc i448 %r61 to i64
+store i64 %r64, i64* %r63
+%r65 = lshr i448 %r61, 64
+%r67 = getelementptr i64, i64* %r49, i32 4
+%r68 = trunc i448 %r65 to i64
+store i64 %r68, i64* %r67
+%r69 = lshr i448 %r65, 64
+%r71 = getelementptr i64, i64* %r49, i32 5
+%r72 = trunc i448 %r69 to i64
+store i64 %r72, i64* %r71
+%r73 = lshr i448 %r69, 64
+%r75 = getelementptr i64, i64* %r49, i32 6
+%r76 = trunc i448 %r73 to i64
+store i64 %r76, i64* %r75
 ret void
 }
 define i512 @mulUnit_inner448(i64* noalias  %r2, i64 %r3)
@@ -11191,6 +11452,91 @@ store i64 %r86, i64* %r85
 %r89 = getelementptr i64, i64* %r59, i32 7
 %r90 = trunc i512 %r87 to i64
 store i64 %r90, i64* %r89
+ret void
+}
+define void @mclb_sqr7(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i512 @mulUnit_inner448(i64* %r2, i64 %r3)
+%r5 = trunc i512 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i512 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i512 @mulUnit_inner448(i64* %r2, i64 %r9)
+%r11 = add i512 %r6, %r10
+%r12 = trunc i512 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i512 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i512 @mulUnit_inner448(i64* %r2, i64 %r18)
+%r20 = add i512 %r15, %r19
+%r21 = trunc i512 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i512 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i512 @mulUnit_inner448(i64* %r2, i64 %r27)
+%r29 = add i512 %r24, %r28
+%r30 = trunc i512 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i512 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i512 @mulUnit_inner448(i64* %r2, i64 %r36)
+%r38 = add i512 %r33, %r37
+%r39 = trunc i512 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i512 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i512 @mulUnit_inner448(i64* %r2, i64 %r45)
+%r47 = add i512 %r42, %r46
+%r48 = trunc i512 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i512 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i512 @mulUnit_inner448(i64* %r2, i64 %r54)
+%r56 = add i512 %r51, %r55
+%r58 = getelementptr i64, i64* %r1, i32 6
+%r60 = getelementptr i64, i64* %r58, i32 0
+%r61 = trunc i512 %r56 to i64
+store i64 %r61, i64* %r60
+%r62 = lshr i512 %r56, 64
+%r64 = getelementptr i64, i64* %r58, i32 1
+%r65 = trunc i512 %r62 to i64
+store i64 %r65, i64* %r64
+%r66 = lshr i512 %r62, 64
+%r68 = getelementptr i64, i64* %r58, i32 2
+%r69 = trunc i512 %r66 to i64
+store i64 %r69, i64* %r68
+%r70 = lshr i512 %r66, 64
+%r72 = getelementptr i64, i64* %r58, i32 3
+%r73 = trunc i512 %r70 to i64
+store i64 %r73, i64* %r72
+%r74 = lshr i512 %r70, 64
+%r76 = getelementptr i64, i64* %r58, i32 4
+%r77 = trunc i512 %r74 to i64
+store i64 %r77, i64* %r76
+%r78 = lshr i512 %r74, 64
+%r80 = getelementptr i64, i64* %r58, i32 5
+%r81 = trunc i512 %r78 to i64
+store i64 %r81, i64* %r80
+%r82 = lshr i512 %r78, 64
+%r84 = getelementptr i64, i64* %r58, i32 6
+%r85 = trunc i512 %r82 to i64
+store i64 %r85, i64* %r84
+%r86 = lshr i512 %r82, 64
+%r88 = getelementptr i64, i64* %r58, i32 7
+%r89 = trunc i512 %r86 to i64
+store i64 %r89, i64* %r88
 ret void
 }
 define i576 @mulUnit_inner512(i64* noalias  %r2, i64 %r3)
@@ -11541,6 +11887,103 @@ store i64 %r99, i64* %r98
 %r102 = getelementptr i64, i64* %r68, i32 8
 %r103 = trunc i576 %r100 to i64
 store i64 %r103, i64* %r102
+ret void
+}
+define void @mclb_sqr8(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i576 @mulUnit_inner512(i64* %r2, i64 %r3)
+%r5 = trunc i576 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i576 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i576 @mulUnit_inner512(i64* %r2, i64 %r9)
+%r11 = add i576 %r6, %r10
+%r12 = trunc i576 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i576 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i576 @mulUnit_inner512(i64* %r2, i64 %r18)
+%r20 = add i576 %r15, %r19
+%r21 = trunc i576 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i576 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i576 @mulUnit_inner512(i64* %r2, i64 %r27)
+%r29 = add i576 %r24, %r28
+%r30 = trunc i576 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i576 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i576 @mulUnit_inner512(i64* %r2, i64 %r36)
+%r38 = add i576 %r33, %r37
+%r39 = trunc i576 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i576 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i576 @mulUnit_inner512(i64* %r2, i64 %r45)
+%r47 = add i576 %r42, %r46
+%r48 = trunc i576 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i576 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i576 @mulUnit_inner512(i64* %r2, i64 %r54)
+%r56 = add i576 %r51, %r55
+%r57 = trunc i576 %r56 to i64
+%r59 = getelementptr i64, i64* %r1, i32 6
+store i64 %r57, i64* %r59
+%r60 = lshr i576 %r56, 64
+%r62 = getelementptr i64, i64* %r2, i32 7
+%r63 = load i64, i64* %r62
+%r64 = call i576 @mulUnit_inner512(i64* %r2, i64 %r63)
+%r65 = add i576 %r60, %r64
+%r67 = getelementptr i64, i64* %r1, i32 7
+%r69 = getelementptr i64, i64* %r67, i32 0
+%r70 = trunc i576 %r65 to i64
+store i64 %r70, i64* %r69
+%r71 = lshr i576 %r65, 64
+%r73 = getelementptr i64, i64* %r67, i32 1
+%r74 = trunc i576 %r71 to i64
+store i64 %r74, i64* %r73
+%r75 = lshr i576 %r71, 64
+%r77 = getelementptr i64, i64* %r67, i32 2
+%r78 = trunc i576 %r75 to i64
+store i64 %r78, i64* %r77
+%r79 = lshr i576 %r75, 64
+%r81 = getelementptr i64, i64* %r67, i32 3
+%r82 = trunc i576 %r79 to i64
+store i64 %r82, i64* %r81
+%r83 = lshr i576 %r79, 64
+%r85 = getelementptr i64, i64* %r67, i32 4
+%r86 = trunc i576 %r83 to i64
+store i64 %r86, i64* %r85
+%r87 = lshr i576 %r83, 64
+%r89 = getelementptr i64, i64* %r67, i32 5
+%r90 = trunc i576 %r87 to i64
+store i64 %r90, i64* %r89
+%r91 = lshr i576 %r87, 64
+%r93 = getelementptr i64, i64* %r67, i32 6
+%r94 = trunc i576 %r91 to i64
+store i64 %r94, i64* %r93
+%r95 = lshr i576 %r91, 64
+%r97 = getelementptr i64, i64* %r67, i32 7
+%r98 = trunc i576 %r95 to i64
+store i64 %r98, i64* %r97
+%r99 = lshr i576 %r95, 64
+%r101 = getelementptr i64, i64* %r67, i32 8
+%r102 = trunc i576 %r99 to i64
+store i64 %r102, i64* %r101
 ret void
 }
 define i640 @mulUnit_inner576(i64* noalias  %r2, i64 %r3)
@@ -11933,6 +12376,115 @@ store i64 %r112, i64* %r111
 %r115 = getelementptr i64, i64* %r77, i32 9
 %r116 = trunc i640 %r113 to i64
 store i64 %r116, i64* %r115
+ret void
+}
+define void @mclb_sqr9(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i640 @mulUnit_inner576(i64* %r2, i64 %r3)
+%r5 = trunc i640 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i640 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i640 @mulUnit_inner576(i64* %r2, i64 %r9)
+%r11 = add i640 %r6, %r10
+%r12 = trunc i640 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i640 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i640 @mulUnit_inner576(i64* %r2, i64 %r18)
+%r20 = add i640 %r15, %r19
+%r21 = trunc i640 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i640 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i640 @mulUnit_inner576(i64* %r2, i64 %r27)
+%r29 = add i640 %r24, %r28
+%r30 = trunc i640 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i640 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i640 @mulUnit_inner576(i64* %r2, i64 %r36)
+%r38 = add i640 %r33, %r37
+%r39 = trunc i640 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i640 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i640 @mulUnit_inner576(i64* %r2, i64 %r45)
+%r47 = add i640 %r42, %r46
+%r48 = trunc i640 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i640 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i640 @mulUnit_inner576(i64* %r2, i64 %r54)
+%r56 = add i640 %r51, %r55
+%r57 = trunc i640 %r56 to i64
+%r59 = getelementptr i64, i64* %r1, i32 6
+store i64 %r57, i64* %r59
+%r60 = lshr i640 %r56, 64
+%r62 = getelementptr i64, i64* %r2, i32 7
+%r63 = load i64, i64* %r62
+%r64 = call i640 @mulUnit_inner576(i64* %r2, i64 %r63)
+%r65 = add i640 %r60, %r64
+%r66 = trunc i640 %r65 to i64
+%r68 = getelementptr i64, i64* %r1, i32 7
+store i64 %r66, i64* %r68
+%r69 = lshr i640 %r65, 64
+%r71 = getelementptr i64, i64* %r2, i32 8
+%r72 = load i64, i64* %r71
+%r73 = call i640 @mulUnit_inner576(i64* %r2, i64 %r72)
+%r74 = add i640 %r69, %r73
+%r76 = getelementptr i64, i64* %r1, i32 8
+%r78 = getelementptr i64, i64* %r76, i32 0
+%r79 = trunc i640 %r74 to i64
+store i64 %r79, i64* %r78
+%r80 = lshr i640 %r74, 64
+%r82 = getelementptr i64, i64* %r76, i32 1
+%r83 = trunc i640 %r80 to i64
+store i64 %r83, i64* %r82
+%r84 = lshr i640 %r80, 64
+%r86 = getelementptr i64, i64* %r76, i32 2
+%r87 = trunc i640 %r84 to i64
+store i64 %r87, i64* %r86
+%r88 = lshr i640 %r84, 64
+%r90 = getelementptr i64, i64* %r76, i32 3
+%r91 = trunc i640 %r88 to i64
+store i64 %r91, i64* %r90
+%r92 = lshr i640 %r88, 64
+%r94 = getelementptr i64, i64* %r76, i32 4
+%r95 = trunc i640 %r92 to i64
+store i64 %r95, i64* %r94
+%r96 = lshr i640 %r92, 64
+%r98 = getelementptr i64, i64* %r76, i32 5
+%r99 = trunc i640 %r96 to i64
+store i64 %r99, i64* %r98
+%r100 = lshr i640 %r96, 64
+%r102 = getelementptr i64, i64* %r76, i32 6
+%r103 = trunc i640 %r100 to i64
+store i64 %r103, i64* %r102
+%r104 = lshr i640 %r100, 64
+%r106 = getelementptr i64, i64* %r76, i32 7
+%r107 = trunc i640 %r104 to i64
+store i64 %r107, i64* %r106
+%r108 = lshr i640 %r104, 64
+%r110 = getelementptr i64, i64* %r76, i32 8
+%r111 = trunc i640 %r108 to i64
+store i64 %r111, i64* %r110
+%r112 = lshr i640 %r108, 64
+%r114 = getelementptr i64, i64* %r76, i32 9
+%r115 = trunc i640 %r112 to i64
+store i64 %r115, i64* %r114
 ret void
 }
 define i704 @mulUnit_inner640(i64* noalias  %r2, i64 %r3)
@@ -12406,6 +12958,166 @@ store i64 %r171, i64* %r170
 %r174 = getelementptr i64, i64* %r116, i32 14
 %r175 = trunc i960 %r172 to i64
 store i64 %r175, i64* %r174
+ret void
+}
+define void @mclb_sqr10(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r4 = getelementptr i64, i64* %r2, i32 5
+%r6 = getelementptr i64, i64* %r2, i32 5
+%r8 = getelementptr i64, i64* %r1, i32 10
+call void @mclb_mul5(i64* %r1, i64* %r2, i64* %r2)
+call void @mclb_mul5(i64* %r8, i64* %r4, i64* %r6)
+%r10 = bitcast i64* %r4 to i320*
+%r11 = load i320, i320* %r10
+%r12 = zext i320 %r11 to i384
+%r14 = bitcast i64* %r2 to i320*
+%r15 = load i320, i320* %r14
+%r16 = zext i320 %r15 to i384
+%r18 = bitcast i64* %r6 to i320*
+%r19 = load i320, i320* %r18
+%r20 = zext i320 %r19 to i384
+%r22 = bitcast i64* %r2 to i320*
+%r23 = load i320, i320* %r22
+%r24 = zext i320 %r23 to i384
+%r25 = add i384 %r12, %r16
+%r26 = add i384 %r20, %r24
+%r28 = alloca i64, i32 10
+%r29 = trunc i384 %r25 to i320
+%r30 = trunc i384 %r26 to i320
+%r31 = lshr i384 %r25, 320
+%r32 = trunc i384 %r31 to i1
+%r33 = lshr i384 %r26, 320
+%r34 = trunc i384 %r33 to i1
+%r35 = and i1 %r32, %r34
+%r37 = select i1 %r32, i320 %r30, i320 0
+%r39 = select i1 %r34, i320 %r29, i320 0
+%r41 = alloca i64, i32 5
+%r43 = alloca i64, i32 5
+%r45 = getelementptr i64, i64* %r41, i32 0
+%r46 = trunc i320 %r29 to i64
+store i64 %r46, i64* %r45
+%r47 = lshr i320 %r29, 64
+%r49 = getelementptr i64, i64* %r41, i32 1
+%r50 = trunc i320 %r47 to i64
+store i64 %r50, i64* %r49
+%r51 = lshr i320 %r47, 64
+%r53 = getelementptr i64, i64* %r41, i32 2
+%r54 = trunc i320 %r51 to i64
+store i64 %r54, i64* %r53
+%r55 = lshr i320 %r51, 64
+%r57 = getelementptr i64, i64* %r41, i32 3
+%r58 = trunc i320 %r55 to i64
+store i64 %r58, i64* %r57
+%r59 = lshr i320 %r55, 64
+%r61 = getelementptr i64, i64* %r41, i32 4
+%r62 = trunc i320 %r59 to i64
+store i64 %r62, i64* %r61
+%r64 = getelementptr i64, i64* %r43, i32 0
+%r65 = trunc i320 %r30 to i64
+store i64 %r65, i64* %r64
+%r66 = lshr i320 %r30, 64
+%r68 = getelementptr i64, i64* %r43, i32 1
+%r69 = trunc i320 %r66 to i64
+store i64 %r69, i64* %r68
+%r70 = lshr i320 %r66, 64
+%r72 = getelementptr i64, i64* %r43, i32 2
+%r73 = trunc i320 %r70 to i64
+store i64 %r73, i64* %r72
+%r74 = lshr i320 %r70, 64
+%r76 = getelementptr i64, i64* %r43, i32 3
+%r77 = trunc i320 %r74 to i64
+store i64 %r77, i64* %r76
+%r78 = lshr i320 %r74, 64
+%r80 = getelementptr i64, i64* %r43, i32 4
+%r81 = trunc i320 %r78 to i64
+store i64 %r81, i64* %r80
+call void @mclb_mul5(i64* %r28, i64* %r41, i64* %r43)
+%r83 = bitcast i64* %r28 to i640*
+%r84 = load i640, i640* %r83
+%r85 = zext i640 %r84 to i704
+%r86 = zext i1 %r35 to i704
+%r87 = shl i704 %r86, 640
+%r88 = or i704 %r85, %r87
+%r89 = zext i320 %r37 to i704
+%r90 = zext i320 %r39 to i704
+%r91 = shl i704 %r89, 320
+%r92 = shl i704 %r90, 320
+%r93 = add i704 %r88, %r91
+%r94 = add i704 %r93, %r92
+%r96 = bitcast i64* %r1 to i640*
+%r97 = load i640, i640* %r96
+%r98 = zext i640 %r97 to i704
+%r99 = sub i704 %r94, %r98
+%r101 = getelementptr i64, i64* %r1, i32 10
+%r103 = bitcast i64* %r101 to i640*
+%r104 = load i640, i640* %r103
+%r105 = zext i640 %r104 to i704
+%r106 = sub i704 %r99, %r105
+%r107 = zext i704 %r106 to i960
+%r109 = getelementptr i64, i64* %r1, i32 5
+%r111 = bitcast i64* %r109 to i960*
+%r112 = load i960, i960* %r111
+%r113 = add i960 %r107, %r112
+%r115 = getelementptr i64, i64* %r1, i32 5
+%r117 = getelementptr i64, i64* %r115, i32 0
+%r118 = trunc i960 %r113 to i64
+store i64 %r118, i64* %r117
+%r119 = lshr i960 %r113, 64
+%r121 = getelementptr i64, i64* %r115, i32 1
+%r122 = trunc i960 %r119 to i64
+store i64 %r122, i64* %r121
+%r123 = lshr i960 %r119, 64
+%r125 = getelementptr i64, i64* %r115, i32 2
+%r126 = trunc i960 %r123 to i64
+store i64 %r126, i64* %r125
+%r127 = lshr i960 %r123, 64
+%r129 = getelementptr i64, i64* %r115, i32 3
+%r130 = trunc i960 %r127 to i64
+store i64 %r130, i64* %r129
+%r131 = lshr i960 %r127, 64
+%r133 = getelementptr i64, i64* %r115, i32 4
+%r134 = trunc i960 %r131 to i64
+store i64 %r134, i64* %r133
+%r135 = lshr i960 %r131, 64
+%r137 = getelementptr i64, i64* %r115, i32 5
+%r138 = trunc i960 %r135 to i64
+store i64 %r138, i64* %r137
+%r139 = lshr i960 %r135, 64
+%r141 = getelementptr i64, i64* %r115, i32 6
+%r142 = trunc i960 %r139 to i64
+store i64 %r142, i64* %r141
+%r143 = lshr i960 %r139, 64
+%r145 = getelementptr i64, i64* %r115, i32 7
+%r146 = trunc i960 %r143 to i64
+store i64 %r146, i64* %r145
+%r147 = lshr i960 %r143, 64
+%r149 = getelementptr i64, i64* %r115, i32 8
+%r150 = trunc i960 %r147 to i64
+store i64 %r150, i64* %r149
+%r151 = lshr i960 %r147, 64
+%r153 = getelementptr i64, i64* %r115, i32 9
+%r154 = trunc i960 %r151 to i64
+store i64 %r154, i64* %r153
+%r155 = lshr i960 %r151, 64
+%r157 = getelementptr i64, i64* %r115, i32 10
+%r158 = trunc i960 %r155 to i64
+store i64 %r158, i64* %r157
+%r159 = lshr i960 %r155, 64
+%r161 = getelementptr i64, i64* %r115, i32 11
+%r162 = trunc i960 %r159 to i64
+store i64 %r162, i64* %r161
+%r163 = lshr i960 %r159, 64
+%r165 = getelementptr i64, i64* %r115, i32 12
+%r166 = trunc i960 %r163 to i64
+store i64 %r166, i64* %r165
+%r167 = lshr i960 %r163, 64
+%r169 = getelementptr i64, i64* %r115, i32 13
+%r170 = trunc i960 %r167 to i64
+store i64 %r170, i64* %r169
+%r171 = lshr i960 %r167, 64
+%r173 = getelementptr i64, i64* %r115, i32 14
+%r174 = trunc i960 %r171 to i64
+store i64 %r174, i64* %r173
 ret void
 }
 define i768 @mulUnit_inner704(i64* noalias  %r2, i64 %r3)
@@ -12882,6 +13594,139 @@ store i64 %r138, i64* %r137
 %r141 = getelementptr i64, i64* %r95, i32 11
 %r142 = trunc i768 %r139 to i64
 store i64 %r142, i64* %r141
+ret void
+}
+define void @mclb_sqr11(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i768 @mulUnit_inner704(i64* %r2, i64 %r3)
+%r5 = trunc i768 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i768 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i768 @mulUnit_inner704(i64* %r2, i64 %r9)
+%r11 = add i768 %r6, %r10
+%r12 = trunc i768 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i768 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i768 @mulUnit_inner704(i64* %r2, i64 %r18)
+%r20 = add i768 %r15, %r19
+%r21 = trunc i768 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i768 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i768 @mulUnit_inner704(i64* %r2, i64 %r27)
+%r29 = add i768 %r24, %r28
+%r30 = trunc i768 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i768 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i768 @mulUnit_inner704(i64* %r2, i64 %r36)
+%r38 = add i768 %r33, %r37
+%r39 = trunc i768 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i768 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i768 @mulUnit_inner704(i64* %r2, i64 %r45)
+%r47 = add i768 %r42, %r46
+%r48 = trunc i768 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i768 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i768 @mulUnit_inner704(i64* %r2, i64 %r54)
+%r56 = add i768 %r51, %r55
+%r57 = trunc i768 %r56 to i64
+%r59 = getelementptr i64, i64* %r1, i32 6
+store i64 %r57, i64* %r59
+%r60 = lshr i768 %r56, 64
+%r62 = getelementptr i64, i64* %r2, i32 7
+%r63 = load i64, i64* %r62
+%r64 = call i768 @mulUnit_inner704(i64* %r2, i64 %r63)
+%r65 = add i768 %r60, %r64
+%r66 = trunc i768 %r65 to i64
+%r68 = getelementptr i64, i64* %r1, i32 7
+store i64 %r66, i64* %r68
+%r69 = lshr i768 %r65, 64
+%r71 = getelementptr i64, i64* %r2, i32 8
+%r72 = load i64, i64* %r71
+%r73 = call i768 @mulUnit_inner704(i64* %r2, i64 %r72)
+%r74 = add i768 %r69, %r73
+%r75 = trunc i768 %r74 to i64
+%r77 = getelementptr i64, i64* %r1, i32 8
+store i64 %r75, i64* %r77
+%r78 = lshr i768 %r74, 64
+%r80 = getelementptr i64, i64* %r2, i32 9
+%r81 = load i64, i64* %r80
+%r82 = call i768 @mulUnit_inner704(i64* %r2, i64 %r81)
+%r83 = add i768 %r78, %r82
+%r84 = trunc i768 %r83 to i64
+%r86 = getelementptr i64, i64* %r1, i32 9
+store i64 %r84, i64* %r86
+%r87 = lshr i768 %r83, 64
+%r89 = getelementptr i64, i64* %r2, i32 10
+%r90 = load i64, i64* %r89
+%r91 = call i768 @mulUnit_inner704(i64* %r2, i64 %r90)
+%r92 = add i768 %r87, %r91
+%r94 = getelementptr i64, i64* %r1, i32 10
+%r96 = getelementptr i64, i64* %r94, i32 0
+%r97 = trunc i768 %r92 to i64
+store i64 %r97, i64* %r96
+%r98 = lshr i768 %r92, 64
+%r100 = getelementptr i64, i64* %r94, i32 1
+%r101 = trunc i768 %r98 to i64
+store i64 %r101, i64* %r100
+%r102 = lshr i768 %r98, 64
+%r104 = getelementptr i64, i64* %r94, i32 2
+%r105 = trunc i768 %r102 to i64
+store i64 %r105, i64* %r104
+%r106 = lshr i768 %r102, 64
+%r108 = getelementptr i64, i64* %r94, i32 3
+%r109 = trunc i768 %r106 to i64
+store i64 %r109, i64* %r108
+%r110 = lshr i768 %r106, 64
+%r112 = getelementptr i64, i64* %r94, i32 4
+%r113 = trunc i768 %r110 to i64
+store i64 %r113, i64* %r112
+%r114 = lshr i768 %r110, 64
+%r116 = getelementptr i64, i64* %r94, i32 5
+%r117 = trunc i768 %r114 to i64
+store i64 %r117, i64* %r116
+%r118 = lshr i768 %r114, 64
+%r120 = getelementptr i64, i64* %r94, i32 6
+%r121 = trunc i768 %r118 to i64
+store i64 %r121, i64* %r120
+%r122 = lshr i768 %r118, 64
+%r124 = getelementptr i64, i64* %r94, i32 7
+%r125 = trunc i768 %r122 to i64
+store i64 %r125, i64* %r124
+%r126 = lshr i768 %r122, 64
+%r128 = getelementptr i64, i64* %r94, i32 8
+%r129 = trunc i768 %r126 to i64
+store i64 %r129, i64* %r128
+%r130 = lshr i768 %r126, 64
+%r132 = getelementptr i64, i64* %r94, i32 9
+%r133 = trunc i768 %r130 to i64
+store i64 %r133, i64* %r132
+%r134 = lshr i768 %r130, 64
+%r136 = getelementptr i64, i64* %r94, i32 10
+%r137 = trunc i768 %r134 to i64
+store i64 %r137, i64* %r136
+%r138 = lshr i768 %r134, 64
+%r140 = getelementptr i64, i64* %r94, i32 11
+%r141 = trunc i768 %r138 to i64
+store i64 %r141, i64* %r140
 ret void
 }
 define i832 @mulUnit_inner768(i64* noalias  %r2, i64 %r3)
@@ -13435,6 +14280,186 @@ store i64 %r191, i64* %r190
 %r194 = getelementptr i64, i64* %r124, i32 17
 %r195 = trunc i1152 %r192 to i64
 store i64 %r195, i64* %r194
+ret void
+}
+define void @mclb_sqr12(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r4 = getelementptr i64, i64* %r2, i32 6
+%r6 = getelementptr i64, i64* %r2, i32 6
+%r8 = getelementptr i64, i64* %r1, i32 12
+call void @mclb_mul6(i64* %r1, i64* %r2, i64* %r2)
+call void @mclb_mul6(i64* %r8, i64* %r4, i64* %r6)
+%r10 = bitcast i64* %r4 to i384*
+%r11 = load i384, i384* %r10
+%r12 = zext i384 %r11 to i448
+%r14 = bitcast i64* %r2 to i384*
+%r15 = load i384, i384* %r14
+%r16 = zext i384 %r15 to i448
+%r18 = bitcast i64* %r6 to i384*
+%r19 = load i384, i384* %r18
+%r20 = zext i384 %r19 to i448
+%r22 = bitcast i64* %r2 to i384*
+%r23 = load i384, i384* %r22
+%r24 = zext i384 %r23 to i448
+%r25 = add i448 %r12, %r16
+%r26 = add i448 %r20, %r24
+%r28 = alloca i64, i32 12
+%r29 = trunc i448 %r25 to i384
+%r30 = trunc i448 %r26 to i384
+%r31 = lshr i448 %r25, 384
+%r32 = trunc i448 %r31 to i1
+%r33 = lshr i448 %r26, 384
+%r34 = trunc i448 %r33 to i1
+%r35 = and i1 %r32, %r34
+%r37 = select i1 %r32, i384 %r30, i384 0
+%r39 = select i1 %r34, i384 %r29, i384 0
+%r41 = alloca i64, i32 6
+%r43 = alloca i64, i32 6
+%r45 = getelementptr i64, i64* %r41, i32 0
+%r46 = trunc i384 %r29 to i64
+store i64 %r46, i64* %r45
+%r47 = lshr i384 %r29, 64
+%r49 = getelementptr i64, i64* %r41, i32 1
+%r50 = trunc i384 %r47 to i64
+store i64 %r50, i64* %r49
+%r51 = lshr i384 %r47, 64
+%r53 = getelementptr i64, i64* %r41, i32 2
+%r54 = trunc i384 %r51 to i64
+store i64 %r54, i64* %r53
+%r55 = lshr i384 %r51, 64
+%r57 = getelementptr i64, i64* %r41, i32 3
+%r58 = trunc i384 %r55 to i64
+store i64 %r58, i64* %r57
+%r59 = lshr i384 %r55, 64
+%r61 = getelementptr i64, i64* %r41, i32 4
+%r62 = trunc i384 %r59 to i64
+store i64 %r62, i64* %r61
+%r63 = lshr i384 %r59, 64
+%r65 = getelementptr i64, i64* %r41, i32 5
+%r66 = trunc i384 %r63 to i64
+store i64 %r66, i64* %r65
+%r68 = getelementptr i64, i64* %r43, i32 0
+%r69 = trunc i384 %r30 to i64
+store i64 %r69, i64* %r68
+%r70 = lshr i384 %r30, 64
+%r72 = getelementptr i64, i64* %r43, i32 1
+%r73 = trunc i384 %r70 to i64
+store i64 %r73, i64* %r72
+%r74 = lshr i384 %r70, 64
+%r76 = getelementptr i64, i64* %r43, i32 2
+%r77 = trunc i384 %r74 to i64
+store i64 %r77, i64* %r76
+%r78 = lshr i384 %r74, 64
+%r80 = getelementptr i64, i64* %r43, i32 3
+%r81 = trunc i384 %r78 to i64
+store i64 %r81, i64* %r80
+%r82 = lshr i384 %r78, 64
+%r84 = getelementptr i64, i64* %r43, i32 4
+%r85 = trunc i384 %r82 to i64
+store i64 %r85, i64* %r84
+%r86 = lshr i384 %r82, 64
+%r88 = getelementptr i64, i64* %r43, i32 5
+%r89 = trunc i384 %r86 to i64
+store i64 %r89, i64* %r88
+call void @mclb_mul6(i64* %r28, i64* %r41, i64* %r43)
+%r91 = bitcast i64* %r28 to i768*
+%r92 = load i768, i768* %r91
+%r93 = zext i768 %r92 to i832
+%r94 = zext i1 %r35 to i832
+%r95 = shl i832 %r94, 768
+%r96 = or i832 %r93, %r95
+%r97 = zext i384 %r37 to i832
+%r98 = zext i384 %r39 to i832
+%r99 = shl i832 %r97, 384
+%r100 = shl i832 %r98, 384
+%r101 = add i832 %r96, %r99
+%r102 = add i832 %r101, %r100
+%r104 = bitcast i64* %r1 to i768*
+%r105 = load i768, i768* %r104
+%r106 = zext i768 %r105 to i832
+%r107 = sub i832 %r102, %r106
+%r109 = getelementptr i64, i64* %r1, i32 12
+%r111 = bitcast i64* %r109 to i768*
+%r112 = load i768, i768* %r111
+%r113 = zext i768 %r112 to i832
+%r114 = sub i832 %r107, %r113
+%r115 = zext i832 %r114 to i1152
+%r117 = getelementptr i64, i64* %r1, i32 6
+%r119 = bitcast i64* %r117 to i1152*
+%r120 = load i1152, i1152* %r119
+%r121 = add i1152 %r115, %r120
+%r123 = getelementptr i64, i64* %r1, i32 6
+%r125 = getelementptr i64, i64* %r123, i32 0
+%r126 = trunc i1152 %r121 to i64
+store i64 %r126, i64* %r125
+%r127 = lshr i1152 %r121, 64
+%r129 = getelementptr i64, i64* %r123, i32 1
+%r130 = trunc i1152 %r127 to i64
+store i64 %r130, i64* %r129
+%r131 = lshr i1152 %r127, 64
+%r133 = getelementptr i64, i64* %r123, i32 2
+%r134 = trunc i1152 %r131 to i64
+store i64 %r134, i64* %r133
+%r135 = lshr i1152 %r131, 64
+%r137 = getelementptr i64, i64* %r123, i32 3
+%r138 = trunc i1152 %r135 to i64
+store i64 %r138, i64* %r137
+%r139 = lshr i1152 %r135, 64
+%r141 = getelementptr i64, i64* %r123, i32 4
+%r142 = trunc i1152 %r139 to i64
+store i64 %r142, i64* %r141
+%r143 = lshr i1152 %r139, 64
+%r145 = getelementptr i64, i64* %r123, i32 5
+%r146 = trunc i1152 %r143 to i64
+store i64 %r146, i64* %r145
+%r147 = lshr i1152 %r143, 64
+%r149 = getelementptr i64, i64* %r123, i32 6
+%r150 = trunc i1152 %r147 to i64
+store i64 %r150, i64* %r149
+%r151 = lshr i1152 %r147, 64
+%r153 = getelementptr i64, i64* %r123, i32 7
+%r154 = trunc i1152 %r151 to i64
+store i64 %r154, i64* %r153
+%r155 = lshr i1152 %r151, 64
+%r157 = getelementptr i64, i64* %r123, i32 8
+%r158 = trunc i1152 %r155 to i64
+store i64 %r158, i64* %r157
+%r159 = lshr i1152 %r155, 64
+%r161 = getelementptr i64, i64* %r123, i32 9
+%r162 = trunc i1152 %r159 to i64
+store i64 %r162, i64* %r161
+%r163 = lshr i1152 %r159, 64
+%r165 = getelementptr i64, i64* %r123, i32 10
+%r166 = trunc i1152 %r163 to i64
+store i64 %r166, i64* %r165
+%r167 = lshr i1152 %r163, 64
+%r169 = getelementptr i64, i64* %r123, i32 11
+%r170 = trunc i1152 %r167 to i64
+store i64 %r170, i64* %r169
+%r171 = lshr i1152 %r167, 64
+%r173 = getelementptr i64, i64* %r123, i32 12
+%r174 = trunc i1152 %r171 to i64
+store i64 %r174, i64* %r173
+%r175 = lshr i1152 %r171, 64
+%r177 = getelementptr i64, i64* %r123, i32 13
+%r178 = trunc i1152 %r175 to i64
+store i64 %r178, i64* %r177
+%r179 = lshr i1152 %r175, 64
+%r181 = getelementptr i64, i64* %r123, i32 14
+%r182 = trunc i1152 %r179 to i64
+store i64 %r182, i64* %r181
+%r183 = lshr i1152 %r179, 64
+%r185 = getelementptr i64, i64* %r123, i32 15
+%r186 = trunc i1152 %r183 to i64
+store i64 %r186, i64* %r185
+%r187 = lshr i1152 %r183, 64
+%r189 = getelementptr i64, i64* %r123, i32 16
+%r190 = trunc i1152 %r187 to i64
+store i64 %r190, i64* %r189
+%r191 = lshr i1152 %r187, 64
+%r193 = getelementptr i64, i64* %r123, i32 17
+%r194 = trunc i1152 %r191 to i64
+store i64 %r194, i64* %r193
 ret void
 }
 define i896 @mulUnit_inner832(i64* noalias  %r2, i64 %r3)
@@ -13995,6 +15020,163 @@ store i64 %r164, i64* %r163
 %r167 = getelementptr i64, i64* %r113, i32 13
 %r168 = trunc i896 %r165 to i64
 store i64 %r168, i64* %r167
+ret void
+}
+define void @mclb_sqr13(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i896 @mulUnit_inner832(i64* %r2, i64 %r3)
+%r5 = trunc i896 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i896 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i896 @mulUnit_inner832(i64* %r2, i64 %r9)
+%r11 = add i896 %r6, %r10
+%r12 = trunc i896 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i896 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i896 @mulUnit_inner832(i64* %r2, i64 %r18)
+%r20 = add i896 %r15, %r19
+%r21 = trunc i896 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i896 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i896 @mulUnit_inner832(i64* %r2, i64 %r27)
+%r29 = add i896 %r24, %r28
+%r30 = trunc i896 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i896 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i896 @mulUnit_inner832(i64* %r2, i64 %r36)
+%r38 = add i896 %r33, %r37
+%r39 = trunc i896 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i896 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i896 @mulUnit_inner832(i64* %r2, i64 %r45)
+%r47 = add i896 %r42, %r46
+%r48 = trunc i896 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i896 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i896 @mulUnit_inner832(i64* %r2, i64 %r54)
+%r56 = add i896 %r51, %r55
+%r57 = trunc i896 %r56 to i64
+%r59 = getelementptr i64, i64* %r1, i32 6
+store i64 %r57, i64* %r59
+%r60 = lshr i896 %r56, 64
+%r62 = getelementptr i64, i64* %r2, i32 7
+%r63 = load i64, i64* %r62
+%r64 = call i896 @mulUnit_inner832(i64* %r2, i64 %r63)
+%r65 = add i896 %r60, %r64
+%r66 = trunc i896 %r65 to i64
+%r68 = getelementptr i64, i64* %r1, i32 7
+store i64 %r66, i64* %r68
+%r69 = lshr i896 %r65, 64
+%r71 = getelementptr i64, i64* %r2, i32 8
+%r72 = load i64, i64* %r71
+%r73 = call i896 @mulUnit_inner832(i64* %r2, i64 %r72)
+%r74 = add i896 %r69, %r73
+%r75 = trunc i896 %r74 to i64
+%r77 = getelementptr i64, i64* %r1, i32 8
+store i64 %r75, i64* %r77
+%r78 = lshr i896 %r74, 64
+%r80 = getelementptr i64, i64* %r2, i32 9
+%r81 = load i64, i64* %r80
+%r82 = call i896 @mulUnit_inner832(i64* %r2, i64 %r81)
+%r83 = add i896 %r78, %r82
+%r84 = trunc i896 %r83 to i64
+%r86 = getelementptr i64, i64* %r1, i32 9
+store i64 %r84, i64* %r86
+%r87 = lshr i896 %r83, 64
+%r89 = getelementptr i64, i64* %r2, i32 10
+%r90 = load i64, i64* %r89
+%r91 = call i896 @mulUnit_inner832(i64* %r2, i64 %r90)
+%r92 = add i896 %r87, %r91
+%r93 = trunc i896 %r92 to i64
+%r95 = getelementptr i64, i64* %r1, i32 10
+store i64 %r93, i64* %r95
+%r96 = lshr i896 %r92, 64
+%r98 = getelementptr i64, i64* %r2, i32 11
+%r99 = load i64, i64* %r98
+%r100 = call i896 @mulUnit_inner832(i64* %r2, i64 %r99)
+%r101 = add i896 %r96, %r100
+%r102 = trunc i896 %r101 to i64
+%r104 = getelementptr i64, i64* %r1, i32 11
+store i64 %r102, i64* %r104
+%r105 = lshr i896 %r101, 64
+%r107 = getelementptr i64, i64* %r2, i32 12
+%r108 = load i64, i64* %r107
+%r109 = call i896 @mulUnit_inner832(i64* %r2, i64 %r108)
+%r110 = add i896 %r105, %r109
+%r112 = getelementptr i64, i64* %r1, i32 12
+%r114 = getelementptr i64, i64* %r112, i32 0
+%r115 = trunc i896 %r110 to i64
+store i64 %r115, i64* %r114
+%r116 = lshr i896 %r110, 64
+%r118 = getelementptr i64, i64* %r112, i32 1
+%r119 = trunc i896 %r116 to i64
+store i64 %r119, i64* %r118
+%r120 = lshr i896 %r116, 64
+%r122 = getelementptr i64, i64* %r112, i32 2
+%r123 = trunc i896 %r120 to i64
+store i64 %r123, i64* %r122
+%r124 = lshr i896 %r120, 64
+%r126 = getelementptr i64, i64* %r112, i32 3
+%r127 = trunc i896 %r124 to i64
+store i64 %r127, i64* %r126
+%r128 = lshr i896 %r124, 64
+%r130 = getelementptr i64, i64* %r112, i32 4
+%r131 = trunc i896 %r128 to i64
+store i64 %r131, i64* %r130
+%r132 = lshr i896 %r128, 64
+%r134 = getelementptr i64, i64* %r112, i32 5
+%r135 = trunc i896 %r132 to i64
+store i64 %r135, i64* %r134
+%r136 = lshr i896 %r132, 64
+%r138 = getelementptr i64, i64* %r112, i32 6
+%r139 = trunc i896 %r136 to i64
+store i64 %r139, i64* %r138
+%r140 = lshr i896 %r136, 64
+%r142 = getelementptr i64, i64* %r112, i32 7
+%r143 = trunc i896 %r140 to i64
+store i64 %r143, i64* %r142
+%r144 = lshr i896 %r140, 64
+%r146 = getelementptr i64, i64* %r112, i32 8
+%r147 = trunc i896 %r144 to i64
+store i64 %r147, i64* %r146
+%r148 = lshr i896 %r144, 64
+%r150 = getelementptr i64, i64* %r112, i32 9
+%r151 = trunc i896 %r148 to i64
+store i64 %r151, i64* %r150
+%r152 = lshr i896 %r148, 64
+%r154 = getelementptr i64, i64* %r112, i32 10
+%r155 = trunc i896 %r152 to i64
+store i64 %r155, i64* %r154
+%r156 = lshr i896 %r152, 64
+%r158 = getelementptr i64, i64* %r112, i32 11
+%r159 = trunc i896 %r156 to i64
+store i64 %r159, i64* %r158
+%r160 = lshr i896 %r156, 64
+%r162 = getelementptr i64, i64* %r112, i32 12
+%r163 = trunc i896 %r160 to i64
+store i64 %r163, i64* %r162
+%r164 = lshr i896 %r160, 64
+%r166 = getelementptr i64, i64* %r112, i32 13
+%r167 = trunc i896 %r164 to i64
+store i64 %r167, i64* %r166
 ret void
 }
 define i960 @mulUnit_inner896(i64* noalias  %r2, i64 %r3)
@@ -14628,6 +15810,206 @@ store i64 %r211, i64* %r210
 %r214 = getelementptr i64, i64* %r132, i32 20
 %r215 = trunc i1344 %r212 to i64
 store i64 %r215, i64* %r214
+ret void
+}
+define void @mclb_sqr14(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r4 = getelementptr i64, i64* %r2, i32 7
+%r6 = getelementptr i64, i64* %r2, i32 7
+%r8 = getelementptr i64, i64* %r1, i32 14
+call void @mclb_mul7(i64* %r1, i64* %r2, i64* %r2)
+call void @mclb_mul7(i64* %r8, i64* %r4, i64* %r6)
+%r10 = bitcast i64* %r4 to i448*
+%r11 = load i448, i448* %r10
+%r12 = zext i448 %r11 to i512
+%r14 = bitcast i64* %r2 to i448*
+%r15 = load i448, i448* %r14
+%r16 = zext i448 %r15 to i512
+%r18 = bitcast i64* %r6 to i448*
+%r19 = load i448, i448* %r18
+%r20 = zext i448 %r19 to i512
+%r22 = bitcast i64* %r2 to i448*
+%r23 = load i448, i448* %r22
+%r24 = zext i448 %r23 to i512
+%r25 = add i512 %r12, %r16
+%r26 = add i512 %r20, %r24
+%r28 = alloca i64, i32 14
+%r29 = trunc i512 %r25 to i448
+%r30 = trunc i512 %r26 to i448
+%r31 = lshr i512 %r25, 448
+%r32 = trunc i512 %r31 to i1
+%r33 = lshr i512 %r26, 448
+%r34 = trunc i512 %r33 to i1
+%r35 = and i1 %r32, %r34
+%r37 = select i1 %r32, i448 %r30, i448 0
+%r39 = select i1 %r34, i448 %r29, i448 0
+%r41 = alloca i64, i32 7
+%r43 = alloca i64, i32 7
+%r45 = getelementptr i64, i64* %r41, i32 0
+%r46 = trunc i448 %r29 to i64
+store i64 %r46, i64* %r45
+%r47 = lshr i448 %r29, 64
+%r49 = getelementptr i64, i64* %r41, i32 1
+%r50 = trunc i448 %r47 to i64
+store i64 %r50, i64* %r49
+%r51 = lshr i448 %r47, 64
+%r53 = getelementptr i64, i64* %r41, i32 2
+%r54 = trunc i448 %r51 to i64
+store i64 %r54, i64* %r53
+%r55 = lshr i448 %r51, 64
+%r57 = getelementptr i64, i64* %r41, i32 3
+%r58 = trunc i448 %r55 to i64
+store i64 %r58, i64* %r57
+%r59 = lshr i448 %r55, 64
+%r61 = getelementptr i64, i64* %r41, i32 4
+%r62 = trunc i448 %r59 to i64
+store i64 %r62, i64* %r61
+%r63 = lshr i448 %r59, 64
+%r65 = getelementptr i64, i64* %r41, i32 5
+%r66 = trunc i448 %r63 to i64
+store i64 %r66, i64* %r65
+%r67 = lshr i448 %r63, 64
+%r69 = getelementptr i64, i64* %r41, i32 6
+%r70 = trunc i448 %r67 to i64
+store i64 %r70, i64* %r69
+%r72 = getelementptr i64, i64* %r43, i32 0
+%r73 = trunc i448 %r30 to i64
+store i64 %r73, i64* %r72
+%r74 = lshr i448 %r30, 64
+%r76 = getelementptr i64, i64* %r43, i32 1
+%r77 = trunc i448 %r74 to i64
+store i64 %r77, i64* %r76
+%r78 = lshr i448 %r74, 64
+%r80 = getelementptr i64, i64* %r43, i32 2
+%r81 = trunc i448 %r78 to i64
+store i64 %r81, i64* %r80
+%r82 = lshr i448 %r78, 64
+%r84 = getelementptr i64, i64* %r43, i32 3
+%r85 = trunc i448 %r82 to i64
+store i64 %r85, i64* %r84
+%r86 = lshr i448 %r82, 64
+%r88 = getelementptr i64, i64* %r43, i32 4
+%r89 = trunc i448 %r86 to i64
+store i64 %r89, i64* %r88
+%r90 = lshr i448 %r86, 64
+%r92 = getelementptr i64, i64* %r43, i32 5
+%r93 = trunc i448 %r90 to i64
+store i64 %r93, i64* %r92
+%r94 = lshr i448 %r90, 64
+%r96 = getelementptr i64, i64* %r43, i32 6
+%r97 = trunc i448 %r94 to i64
+store i64 %r97, i64* %r96
+call void @mclb_mul7(i64* %r28, i64* %r41, i64* %r43)
+%r99 = bitcast i64* %r28 to i896*
+%r100 = load i896, i896* %r99
+%r101 = zext i896 %r100 to i960
+%r102 = zext i1 %r35 to i960
+%r103 = shl i960 %r102, 896
+%r104 = or i960 %r101, %r103
+%r105 = zext i448 %r37 to i960
+%r106 = zext i448 %r39 to i960
+%r107 = shl i960 %r105, 448
+%r108 = shl i960 %r106, 448
+%r109 = add i960 %r104, %r107
+%r110 = add i960 %r109, %r108
+%r112 = bitcast i64* %r1 to i896*
+%r113 = load i896, i896* %r112
+%r114 = zext i896 %r113 to i960
+%r115 = sub i960 %r110, %r114
+%r117 = getelementptr i64, i64* %r1, i32 14
+%r119 = bitcast i64* %r117 to i896*
+%r120 = load i896, i896* %r119
+%r121 = zext i896 %r120 to i960
+%r122 = sub i960 %r115, %r121
+%r123 = zext i960 %r122 to i1344
+%r125 = getelementptr i64, i64* %r1, i32 7
+%r127 = bitcast i64* %r125 to i1344*
+%r128 = load i1344, i1344* %r127
+%r129 = add i1344 %r123, %r128
+%r131 = getelementptr i64, i64* %r1, i32 7
+%r133 = getelementptr i64, i64* %r131, i32 0
+%r134 = trunc i1344 %r129 to i64
+store i64 %r134, i64* %r133
+%r135 = lshr i1344 %r129, 64
+%r137 = getelementptr i64, i64* %r131, i32 1
+%r138 = trunc i1344 %r135 to i64
+store i64 %r138, i64* %r137
+%r139 = lshr i1344 %r135, 64
+%r141 = getelementptr i64, i64* %r131, i32 2
+%r142 = trunc i1344 %r139 to i64
+store i64 %r142, i64* %r141
+%r143 = lshr i1344 %r139, 64
+%r145 = getelementptr i64, i64* %r131, i32 3
+%r146 = trunc i1344 %r143 to i64
+store i64 %r146, i64* %r145
+%r147 = lshr i1344 %r143, 64
+%r149 = getelementptr i64, i64* %r131, i32 4
+%r150 = trunc i1344 %r147 to i64
+store i64 %r150, i64* %r149
+%r151 = lshr i1344 %r147, 64
+%r153 = getelementptr i64, i64* %r131, i32 5
+%r154 = trunc i1344 %r151 to i64
+store i64 %r154, i64* %r153
+%r155 = lshr i1344 %r151, 64
+%r157 = getelementptr i64, i64* %r131, i32 6
+%r158 = trunc i1344 %r155 to i64
+store i64 %r158, i64* %r157
+%r159 = lshr i1344 %r155, 64
+%r161 = getelementptr i64, i64* %r131, i32 7
+%r162 = trunc i1344 %r159 to i64
+store i64 %r162, i64* %r161
+%r163 = lshr i1344 %r159, 64
+%r165 = getelementptr i64, i64* %r131, i32 8
+%r166 = trunc i1344 %r163 to i64
+store i64 %r166, i64* %r165
+%r167 = lshr i1344 %r163, 64
+%r169 = getelementptr i64, i64* %r131, i32 9
+%r170 = trunc i1344 %r167 to i64
+store i64 %r170, i64* %r169
+%r171 = lshr i1344 %r167, 64
+%r173 = getelementptr i64, i64* %r131, i32 10
+%r174 = trunc i1344 %r171 to i64
+store i64 %r174, i64* %r173
+%r175 = lshr i1344 %r171, 64
+%r177 = getelementptr i64, i64* %r131, i32 11
+%r178 = trunc i1344 %r175 to i64
+store i64 %r178, i64* %r177
+%r179 = lshr i1344 %r175, 64
+%r181 = getelementptr i64, i64* %r131, i32 12
+%r182 = trunc i1344 %r179 to i64
+store i64 %r182, i64* %r181
+%r183 = lshr i1344 %r179, 64
+%r185 = getelementptr i64, i64* %r131, i32 13
+%r186 = trunc i1344 %r183 to i64
+store i64 %r186, i64* %r185
+%r187 = lshr i1344 %r183, 64
+%r189 = getelementptr i64, i64* %r131, i32 14
+%r190 = trunc i1344 %r187 to i64
+store i64 %r190, i64* %r189
+%r191 = lshr i1344 %r187, 64
+%r193 = getelementptr i64, i64* %r131, i32 15
+%r194 = trunc i1344 %r191 to i64
+store i64 %r194, i64* %r193
+%r195 = lshr i1344 %r191, 64
+%r197 = getelementptr i64, i64* %r131, i32 16
+%r198 = trunc i1344 %r195 to i64
+store i64 %r198, i64* %r197
+%r199 = lshr i1344 %r195, 64
+%r201 = getelementptr i64, i64* %r131, i32 17
+%r202 = trunc i1344 %r199 to i64
+store i64 %r202, i64* %r201
+%r203 = lshr i1344 %r199, 64
+%r205 = getelementptr i64, i64* %r131, i32 18
+%r206 = trunc i1344 %r203 to i64
+store i64 %r206, i64* %r205
+%r207 = lshr i1344 %r203, 64
+%r209 = getelementptr i64, i64* %r131, i32 19
+%r210 = trunc i1344 %r207 to i64
+store i64 %r210, i64* %r209
+%r211 = lshr i1344 %r207, 64
+%r213 = getelementptr i64, i64* %r131, i32 20
+%r214 = trunc i1344 %r211 to i64
+store i64 %r214, i64* %r213
 ret void
 }
 define i1024 @mulUnit_inner960(i64* noalias  %r2, i64 %r3)
@@ -15272,6 +16654,187 @@ store i64 %r190, i64* %r189
 %r193 = getelementptr i64, i64* %r131, i32 15
 %r194 = trunc i1024 %r191 to i64
 store i64 %r194, i64* %r193
+ret void
+}
+define void @mclb_sqr15(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r3)
+%r5 = trunc i1024 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i1024 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r9)
+%r11 = add i1024 %r6, %r10
+%r12 = trunc i1024 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i1024 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r18)
+%r20 = add i1024 %r15, %r19
+%r21 = trunc i1024 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i1024 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r27)
+%r29 = add i1024 %r24, %r28
+%r30 = trunc i1024 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i1024 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r36)
+%r38 = add i1024 %r33, %r37
+%r39 = trunc i1024 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i1024 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r45)
+%r47 = add i1024 %r42, %r46
+%r48 = trunc i1024 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i1024 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r54)
+%r56 = add i1024 %r51, %r55
+%r57 = trunc i1024 %r56 to i64
+%r59 = getelementptr i64, i64* %r1, i32 6
+store i64 %r57, i64* %r59
+%r60 = lshr i1024 %r56, 64
+%r62 = getelementptr i64, i64* %r2, i32 7
+%r63 = load i64, i64* %r62
+%r64 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r63)
+%r65 = add i1024 %r60, %r64
+%r66 = trunc i1024 %r65 to i64
+%r68 = getelementptr i64, i64* %r1, i32 7
+store i64 %r66, i64* %r68
+%r69 = lshr i1024 %r65, 64
+%r71 = getelementptr i64, i64* %r2, i32 8
+%r72 = load i64, i64* %r71
+%r73 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r72)
+%r74 = add i1024 %r69, %r73
+%r75 = trunc i1024 %r74 to i64
+%r77 = getelementptr i64, i64* %r1, i32 8
+store i64 %r75, i64* %r77
+%r78 = lshr i1024 %r74, 64
+%r80 = getelementptr i64, i64* %r2, i32 9
+%r81 = load i64, i64* %r80
+%r82 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r81)
+%r83 = add i1024 %r78, %r82
+%r84 = trunc i1024 %r83 to i64
+%r86 = getelementptr i64, i64* %r1, i32 9
+store i64 %r84, i64* %r86
+%r87 = lshr i1024 %r83, 64
+%r89 = getelementptr i64, i64* %r2, i32 10
+%r90 = load i64, i64* %r89
+%r91 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r90)
+%r92 = add i1024 %r87, %r91
+%r93 = trunc i1024 %r92 to i64
+%r95 = getelementptr i64, i64* %r1, i32 10
+store i64 %r93, i64* %r95
+%r96 = lshr i1024 %r92, 64
+%r98 = getelementptr i64, i64* %r2, i32 11
+%r99 = load i64, i64* %r98
+%r100 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r99)
+%r101 = add i1024 %r96, %r100
+%r102 = trunc i1024 %r101 to i64
+%r104 = getelementptr i64, i64* %r1, i32 11
+store i64 %r102, i64* %r104
+%r105 = lshr i1024 %r101, 64
+%r107 = getelementptr i64, i64* %r2, i32 12
+%r108 = load i64, i64* %r107
+%r109 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r108)
+%r110 = add i1024 %r105, %r109
+%r111 = trunc i1024 %r110 to i64
+%r113 = getelementptr i64, i64* %r1, i32 12
+store i64 %r111, i64* %r113
+%r114 = lshr i1024 %r110, 64
+%r116 = getelementptr i64, i64* %r2, i32 13
+%r117 = load i64, i64* %r116
+%r118 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r117)
+%r119 = add i1024 %r114, %r118
+%r120 = trunc i1024 %r119 to i64
+%r122 = getelementptr i64, i64* %r1, i32 13
+store i64 %r120, i64* %r122
+%r123 = lshr i1024 %r119, 64
+%r125 = getelementptr i64, i64* %r2, i32 14
+%r126 = load i64, i64* %r125
+%r127 = call i1024 @mulUnit_inner960(i64* %r2, i64 %r126)
+%r128 = add i1024 %r123, %r127
+%r130 = getelementptr i64, i64* %r1, i32 14
+%r132 = getelementptr i64, i64* %r130, i32 0
+%r133 = trunc i1024 %r128 to i64
+store i64 %r133, i64* %r132
+%r134 = lshr i1024 %r128, 64
+%r136 = getelementptr i64, i64* %r130, i32 1
+%r137 = trunc i1024 %r134 to i64
+store i64 %r137, i64* %r136
+%r138 = lshr i1024 %r134, 64
+%r140 = getelementptr i64, i64* %r130, i32 2
+%r141 = trunc i1024 %r138 to i64
+store i64 %r141, i64* %r140
+%r142 = lshr i1024 %r138, 64
+%r144 = getelementptr i64, i64* %r130, i32 3
+%r145 = trunc i1024 %r142 to i64
+store i64 %r145, i64* %r144
+%r146 = lshr i1024 %r142, 64
+%r148 = getelementptr i64, i64* %r130, i32 4
+%r149 = trunc i1024 %r146 to i64
+store i64 %r149, i64* %r148
+%r150 = lshr i1024 %r146, 64
+%r152 = getelementptr i64, i64* %r130, i32 5
+%r153 = trunc i1024 %r150 to i64
+store i64 %r153, i64* %r152
+%r154 = lshr i1024 %r150, 64
+%r156 = getelementptr i64, i64* %r130, i32 6
+%r157 = trunc i1024 %r154 to i64
+store i64 %r157, i64* %r156
+%r158 = lshr i1024 %r154, 64
+%r160 = getelementptr i64, i64* %r130, i32 7
+%r161 = trunc i1024 %r158 to i64
+store i64 %r161, i64* %r160
+%r162 = lshr i1024 %r158, 64
+%r164 = getelementptr i64, i64* %r130, i32 8
+%r165 = trunc i1024 %r162 to i64
+store i64 %r165, i64* %r164
+%r166 = lshr i1024 %r162, 64
+%r168 = getelementptr i64, i64* %r130, i32 9
+%r169 = trunc i1024 %r166 to i64
+store i64 %r169, i64* %r168
+%r170 = lshr i1024 %r166, 64
+%r172 = getelementptr i64, i64* %r130, i32 10
+%r173 = trunc i1024 %r170 to i64
+store i64 %r173, i64* %r172
+%r174 = lshr i1024 %r170, 64
+%r176 = getelementptr i64, i64* %r130, i32 11
+%r177 = trunc i1024 %r174 to i64
+store i64 %r177, i64* %r176
+%r178 = lshr i1024 %r174, 64
+%r180 = getelementptr i64, i64* %r130, i32 12
+%r181 = trunc i1024 %r178 to i64
+store i64 %r181, i64* %r180
+%r182 = lshr i1024 %r178, 64
+%r184 = getelementptr i64, i64* %r130, i32 13
+%r185 = trunc i1024 %r182 to i64
+store i64 %r185, i64* %r184
+%r186 = lshr i1024 %r182, 64
+%r188 = getelementptr i64, i64* %r130, i32 14
+%r189 = trunc i1024 %r186 to i64
+store i64 %r189, i64* %r188
+%r190 = lshr i1024 %r186, 64
+%r192 = getelementptr i64, i64* %r130, i32 15
+%r193 = trunc i1024 %r190 to i64
+store i64 %r193, i64* %r192
 ret void
 }
 define i1088 @mulUnit_inner1024(i64* noalias  %r2, i64 %r3)
@@ -15985,6 +17548,226 @@ store i64 %r231, i64* %r230
 %r234 = getelementptr i64, i64* %r140, i32 23
 %r235 = trunc i1536 %r232 to i64
 store i64 %r235, i64* %r234
+ret void
+}
+define void @mclb_sqr16(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r4 = getelementptr i64, i64* %r2, i32 8
+%r6 = getelementptr i64, i64* %r2, i32 8
+%r8 = getelementptr i64, i64* %r1, i32 16
+call void @mclb_mul8(i64* %r1, i64* %r2, i64* %r2)
+call void @mclb_mul8(i64* %r8, i64* %r4, i64* %r6)
+%r10 = bitcast i64* %r4 to i512*
+%r11 = load i512, i512* %r10
+%r12 = zext i512 %r11 to i576
+%r14 = bitcast i64* %r2 to i512*
+%r15 = load i512, i512* %r14
+%r16 = zext i512 %r15 to i576
+%r18 = bitcast i64* %r6 to i512*
+%r19 = load i512, i512* %r18
+%r20 = zext i512 %r19 to i576
+%r22 = bitcast i64* %r2 to i512*
+%r23 = load i512, i512* %r22
+%r24 = zext i512 %r23 to i576
+%r25 = add i576 %r12, %r16
+%r26 = add i576 %r20, %r24
+%r28 = alloca i64, i32 16
+%r29 = trunc i576 %r25 to i512
+%r30 = trunc i576 %r26 to i512
+%r31 = lshr i576 %r25, 512
+%r32 = trunc i576 %r31 to i1
+%r33 = lshr i576 %r26, 512
+%r34 = trunc i576 %r33 to i1
+%r35 = and i1 %r32, %r34
+%r37 = select i1 %r32, i512 %r30, i512 0
+%r39 = select i1 %r34, i512 %r29, i512 0
+%r41 = alloca i64, i32 8
+%r43 = alloca i64, i32 8
+%r45 = getelementptr i64, i64* %r41, i32 0
+%r46 = trunc i512 %r29 to i64
+store i64 %r46, i64* %r45
+%r47 = lshr i512 %r29, 64
+%r49 = getelementptr i64, i64* %r41, i32 1
+%r50 = trunc i512 %r47 to i64
+store i64 %r50, i64* %r49
+%r51 = lshr i512 %r47, 64
+%r53 = getelementptr i64, i64* %r41, i32 2
+%r54 = trunc i512 %r51 to i64
+store i64 %r54, i64* %r53
+%r55 = lshr i512 %r51, 64
+%r57 = getelementptr i64, i64* %r41, i32 3
+%r58 = trunc i512 %r55 to i64
+store i64 %r58, i64* %r57
+%r59 = lshr i512 %r55, 64
+%r61 = getelementptr i64, i64* %r41, i32 4
+%r62 = trunc i512 %r59 to i64
+store i64 %r62, i64* %r61
+%r63 = lshr i512 %r59, 64
+%r65 = getelementptr i64, i64* %r41, i32 5
+%r66 = trunc i512 %r63 to i64
+store i64 %r66, i64* %r65
+%r67 = lshr i512 %r63, 64
+%r69 = getelementptr i64, i64* %r41, i32 6
+%r70 = trunc i512 %r67 to i64
+store i64 %r70, i64* %r69
+%r71 = lshr i512 %r67, 64
+%r73 = getelementptr i64, i64* %r41, i32 7
+%r74 = trunc i512 %r71 to i64
+store i64 %r74, i64* %r73
+%r76 = getelementptr i64, i64* %r43, i32 0
+%r77 = trunc i512 %r30 to i64
+store i64 %r77, i64* %r76
+%r78 = lshr i512 %r30, 64
+%r80 = getelementptr i64, i64* %r43, i32 1
+%r81 = trunc i512 %r78 to i64
+store i64 %r81, i64* %r80
+%r82 = lshr i512 %r78, 64
+%r84 = getelementptr i64, i64* %r43, i32 2
+%r85 = trunc i512 %r82 to i64
+store i64 %r85, i64* %r84
+%r86 = lshr i512 %r82, 64
+%r88 = getelementptr i64, i64* %r43, i32 3
+%r89 = trunc i512 %r86 to i64
+store i64 %r89, i64* %r88
+%r90 = lshr i512 %r86, 64
+%r92 = getelementptr i64, i64* %r43, i32 4
+%r93 = trunc i512 %r90 to i64
+store i64 %r93, i64* %r92
+%r94 = lshr i512 %r90, 64
+%r96 = getelementptr i64, i64* %r43, i32 5
+%r97 = trunc i512 %r94 to i64
+store i64 %r97, i64* %r96
+%r98 = lshr i512 %r94, 64
+%r100 = getelementptr i64, i64* %r43, i32 6
+%r101 = trunc i512 %r98 to i64
+store i64 %r101, i64* %r100
+%r102 = lshr i512 %r98, 64
+%r104 = getelementptr i64, i64* %r43, i32 7
+%r105 = trunc i512 %r102 to i64
+store i64 %r105, i64* %r104
+call void @mclb_mul8(i64* %r28, i64* %r41, i64* %r43)
+%r107 = bitcast i64* %r28 to i1024*
+%r108 = load i1024, i1024* %r107
+%r109 = zext i1024 %r108 to i1088
+%r110 = zext i1 %r35 to i1088
+%r111 = shl i1088 %r110, 1024
+%r112 = or i1088 %r109, %r111
+%r113 = zext i512 %r37 to i1088
+%r114 = zext i512 %r39 to i1088
+%r115 = shl i1088 %r113, 512
+%r116 = shl i1088 %r114, 512
+%r117 = add i1088 %r112, %r115
+%r118 = add i1088 %r117, %r116
+%r120 = bitcast i64* %r1 to i1024*
+%r121 = load i1024, i1024* %r120
+%r122 = zext i1024 %r121 to i1088
+%r123 = sub i1088 %r118, %r122
+%r125 = getelementptr i64, i64* %r1, i32 16
+%r127 = bitcast i64* %r125 to i1024*
+%r128 = load i1024, i1024* %r127
+%r129 = zext i1024 %r128 to i1088
+%r130 = sub i1088 %r123, %r129
+%r131 = zext i1088 %r130 to i1536
+%r133 = getelementptr i64, i64* %r1, i32 8
+%r135 = bitcast i64* %r133 to i1536*
+%r136 = load i1536, i1536* %r135
+%r137 = add i1536 %r131, %r136
+%r139 = getelementptr i64, i64* %r1, i32 8
+%r141 = getelementptr i64, i64* %r139, i32 0
+%r142 = trunc i1536 %r137 to i64
+store i64 %r142, i64* %r141
+%r143 = lshr i1536 %r137, 64
+%r145 = getelementptr i64, i64* %r139, i32 1
+%r146 = trunc i1536 %r143 to i64
+store i64 %r146, i64* %r145
+%r147 = lshr i1536 %r143, 64
+%r149 = getelementptr i64, i64* %r139, i32 2
+%r150 = trunc i1536 %r147 to i64
+store i64 %r150, i64* %r149
+%r151 = lshr i1536 %r147, 64
+%r153 = getelementptr i64, i64* %r139, i32 3
+%r154 = trunc i1536 %r151 to i64
+store i64 %r154, i64* %r153
+%r155 = lshr i1536 %r151, 64
+%r157 = getelementptr i64, i64* %r139, i32 4
+%r158 = trunc i1536 %r155 to i64
+store i64 %r158, i64* %r157
+%r159 = lshr i1536 %r155, 64
+%r161 = getelementptr i64, i64* %r139, i32 5
+%r162 = trunc i1536 %r159 to i64
+store i64 %r162, i64* %r161
+%r163 = lshr i1536 %r159, 64
+%r165 = getelementptr i64, i64* %r139, i32 6
+%r166 = trunc i1536 %r163 to i64
+store i64 %r166, i64* %r165
+%r167 = lshr i1536 %r163, 64
+%r169 = getelementptr i64, i64* %r139, i32 7
+%r170 = trunc i1536 %r167 to i64
+store i64 %r170, i64* %r169
+%r171 = lshr i1536 %r167, 64
+%r173 = getelementptr i64, i64* %r139, i32 8
+%r174 = trunc i1536 %r171 to i64
+store i64 %r174, i64* %r173
+%r175 = lshr i1536 %r171, 64
+%r177 = getelementptr i64, i64* %r139, i32 9
+%r178 = trunc i1536 %r175 to i64
+store i64 %r178, i64* %r177
+%r179 = lshr i1536 %r175, 64
+%r181 = getelementptr i64, i64* %r139, i32 10
+%r182 = trunc i1536 %r179 to i64
+store i64 %r182, i64* %r181
+%r183 = lshr i1536 %r179, 64
+%r185 = getelementptr i64, i64* %r139, i32 11
+%r186 = trunc i1536 %r183 to i64
+store i64 %r186, i64* %r185
+%r187 = lshr i1536 %r183, 64
+%r189 = getelementptr i64, i64* %r139, i32 12
+%r190 = trunc i1536 %r187 to i64
+store i64 %r190, i64* %r189
+%r191 = lshr i1536 %r187, 64
+%r193 = getelementptr i64, i64* %r139, i32 13
+%r194 = trunc i1536 %r191 to i64
+store i64 %r194, i64* %r193
+%r195 = lshr i1536 %r191, 64
+%r197 = getelementptr i64, i64* %r139, i32 14
+%r198 = trunc i1536 %r195 to i64
+store i64 %r198, i64* %r197
+%r199 = lshr i1536 %r195, 64
+%r201 = getelementptr i64, i64* %r139, i32 15
+%r202 = trunc i1536 %r199 to i64
+store i64 %r202, i64* %r201
+%r203 = lshr i1536 %r199, 64
+%r205 = getelementptr i64, i64* %r139, i32 16
+%r206 = trunc i1536 %r203 to i64
+store i64 %r206, i64* %r205
+%r207 = lshr i1536 %r203, 64
+%r209 = getelementptr i64, i64* %r139, i32 17
+%r210 = trunc i1536 %r207 to i64
+store i64 %r210, i64* %r209
+%r211 = lshr i1536 %r207, 64
+%r213 = getelementptr i64, i64* %r139, i32 18
+%r214 = trunc i1536 %r211 to i64
+store i64 %r214, i64* %r213
+%r215 = lshr i1536 %r211, 64
+%r217 = getelementptr i64, i64* %r139, i32 19
+%r218 = trunc i1536 %r215 to i64
+store i64 %r218, i64* %r217
+%r219 = lshr i1536 %r215, 64
+%r221 = getelementptr i64, i64* %r139, i32 20
+%r222 = trunc i1536 %r219 to i64
+store i64 %r222, i64* %r221
+%r223 = lshr i1536 %r219, 64
+%r225 = getelementptr i64, i64* %r139, i32 21
+%r226 = trunc i1536 %r223 to i64
+store i64 %r226, i64* %r225
+%r227 = lshr i1536 %r223, 64
+%r229 = getelementptr i64, i64* %r139, i32 22
+%r230 = trunc i1536 %r227 to i64
+store i64 %r230, i64* %r229
+%r231 = lshr i1536 %r227, 64
+%r233 = getelementptr i64, i64* %r139, i32 23
+%r234 = trunc i1536 %r231 to i64
+store i64 %r234, i64* %r233
 ret void
 }
 define i1152 @mulUnit_inner1088(i64* noalias  %r2, i64 %r3)
@@ -16713,5 +18496,210 @@ store i64 %r216, i64* %r215
 %r219 = getelementptr i64, i64* %r149, i32 17
 %r220 = trunc i1152 %r217 to i64
 store i64 %r220, i64* %r219
+ret void
+}
+define void @mclb_sqr17(i64* noalias  %r1, i64* noalias  %r2)
+{
+%r3 = load i64, i64* %r2
+%r4 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r3)
+%r5 = trunc i1152 %r4 to i64
+store i64 %r5, i64* %r1
+%r6 = lshr i1152 %r4, 64
+%r8 = getelementptr i64, i64* %r2, i32 1
+%r9 = load i64, i64* %r8
+%r10 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r9)
+%r11 = add i1152 %r6, %r10
+%r12 = trunc i1152 %r11 to i64
+%r14 = getelementptr i64, i64* %r1, i32 1
+store i64 %r12, i64* %r14
+%r15 = lshr i1152 %r11, 64
+%r17 = getelementptr i64, i64* %r2, i32 2
+%r18 = load i64, i64* %r17
+%r19 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r18)
+%r20 = add i1152 %r15, %r19
+%r21 = trunc i1152 %r20 to i64
+%r23 = getelementptr i64, i64* %r1, i32 2
+store i64 %r21, i64* %r23
+%r24 = lshr i1152 %r20, 64
+%r26 = getelementptr i64, i64* %r2, i32 3
+%r27 = load i64, i64* %r26
+%r28 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r27)
+%r29 = add i1152 %r24, %r28
+%r30 = trunc i1152 %r29 to i64
+%r32 = getelementptr i64, i64* %r1, i32 3
+store i64 %r30, i64* %r32
+%r33 = lshr i1152 %r29, 64
+%r35 = getelementptr i64, i64* %r2, i32 4
+%r36 = load i64, i64* %r35
+%r37 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r36)
+%r38 = add i1152 %r33, %r37
+%r39 = trunc i1152 %r38 to i64
+%r41 = getelementptr i64, i64* %r1, i32 4
+store i64 %r39, i64* %r41
+%r42 = lshr i1152 %r38, 64
+%r44 = getelementptr i64, i64* %r2, i32 5
+%r45 = load i64, i64* %r44
+%r46 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r45)
+%r47 = add i1152 %r42, %r46
+%r48 = trunc i1152 %r47 to i64
+%r50 = getelementptr i64, i64* %r1, i32 5
+store i64 %r48, i64* %r50
+%r51 = lshr i1152 %r47, 64
+%r53 = getelementptr i64, i64* %r2, i32 6
+%r54 = load i64, i64* %r53
+%r55 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r54)
+%r56 = add i1152 %r51, %r55
+%r57 = trunc i1152 %r56 to i64
+%r59 = getelementptr i64, i64* %r1, i32 6
+store i64 %r57, i64* %r59
+%r60 = lshr i1152 %r56, 64
+%r62 = getelementptr i64, i64* %r2, i32 7
+%r63 = load i64, i64* %r62
+%r64 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r63)
+%r65 = add i1152 %r60, %r64
+%r66 = trunc i1152 %r65 to i64
+%r68 = getelementptr i64, i64* %r1, i32 7
+store i64 %r66, i64* %r68
+%r69 = lshr i1152 %r65, 64
+%r71 = getelementptr i64, i64* %r2, i32 8
+%r72 = load i64, i64* %r71
+%r73 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r72)
+%r74 = add i1152 %r69, %r73
+%r75 = trunc i1152 %r74 to i64
+%r77 = getelementptr i64, i64* %r1, i32 8
+store i64 %r75, i64* %r77
+%r78 = lshr i1152 %r74, 64
+%r80 = getelementptr i64, i64* %r2, i32 9
+%r81 = load i64, i64* %r80
+%r82 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r81)
+%r83 = add i1152 %r78, %r82
+%r84 = trunc i1152 %r83 to i64
+%r86 = getelementptr i64, i64* %r1, i32 9
+store i64 %r84, i64* %r86
+%r87 = lshr i1152 %r83, 64
+%r89 = getelementptr i64, i64* %r2, i32 10
+%r90 = load i64, i64* %r89
+%r91 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r90)
+%r92 = add i1152 %r87, %r91
+%r93 = trunc i1152 %r92 to i64
+%r95 = getelementptr i64, i64* %r1, i32 10
+store i64 %r93, i64* %r95
+%r96 = lshr i1152 %r92, 64
+%r98 = getelementptr i64, i64* %r2, i32 11
+%r99 = load i64, i64* %r98
+%r100 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r99)
+%r101 = add i1152 %r96, %r100
+%r102 = trunc i1152 %r101 to i64
+%r104 = getelementptr i64, i64* %r1, i32 11
+store i64 %r102, i64* %r104
+%r105 = lshr i1152 %r101, 64
+%r107 = getelementptr i64, i64* %r2, i32 12
+%r108 = load i64, i64* %r107
+%r109 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r108)
+%r110 = add i1152 %r105, %r109
+%r111 = trunc i1152 %r110 to i64
+%r113 = getelementptr i64, i64* %r1, i32 12
+store i64 %r111, i64* %r113
+%r114 = lshr i1152 %r110, 64
+%r116 = getelementptr i64, i64* %r2, i32 13
+%r117 = load i64, i64* %r116
+%r118 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r117)
+%r119 = add i1152 %r114, %r118
+%r120 = trunc i1152 %r119 to i64
+%r122 = getelementptr i64, i64* %r1, i32 13
+store i64 %r120, i64* %r122
+%r123 = lshr i1152 %r119, 64
+%r125 = getelementptr i64, i64* %r2, i32 14
+%r126 = load i64, i64* %r125
+%r127 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r126)
+%r128 = add i1152 %r123, %r127
+%r129 = trunc i1152 %r128 to i64
+%r131 = getelementptr i64, i64* %r1, i32 14
+store i64 %r129, i64* %r131
+%r132 = lshr i1152 %r128, 64
+%r134 = getelementptr i64, i64* %r2, i32 15
+%r135 = load i64, i64* %r134
+%r136 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r135)
+%r137 = add i1152 %r132, %r136
+%r138 = trunc i1152 %r137 to i64
+%r140 = getelementptr i64, i64* %r1, i32 15
+store i64 %r138, i64* %r140
+%r141 = lshr i1152 %r137, 64
+%r143 = getelementptr i64, i64* %r2, i32 16
+%r144 = load i64, i64* %r143
+%r145 = call i1152 @mulUnit_inner1088(i64* %r2, i64 %r144)
+%r146 = add i1152 %r141, %r145
+%r148 = getelementptr i64, i64* %r1, i32 16
+%r150 = getelementptr i64, i64* %r148, i32 0
+%r151 = trunc i1152 %r146 to i64
+store i64 %r151, i64* %r150
+%r152 = lshr i1152 %r146, 64
+%r154 = getelementptr i64, i64* %r148, i32 1
+%r155 = trunc i1152 %r152 to i64
+store i64 %r155, i64* %r154
+%r156 = lshr i1152 %r152, 64
+%r158 = getelementptr i64, i64* %r148, i32 2
+%r159 = trunc i1152 %r156 to i64
+store i64 %r159, i64* %r158
+%r160 = lshr i1152 %r156, 64
+%r162 = getelementptr i64, i64* %r148, i32 3
+%r163 = trunc i1152 %r160 to i64
+store i64 %r163, i64* %r162
+%r164 = lshr i1152 %r160, 64
+%r166 = getelementptr i64, i64* %r148, i32 4
+%r167 = trunc i1152 %r164 to i64
+store i64 %r167, i64* %r166
+%r168 = lshr i1152 %r164, 64
+%r170 = getelementptr i64, i64* %r148, i32 5
+%r171 = trunc i1152 %r168 to i64
+store i64 %r171, i64* %r170
+%r172 = lshr i1152 %r168, 64
+%r174 = getelementptr i64, i64* %r148, i32 6
+%r175 = trunc i1152 %r172 to i64
+store i64 %r175, i64* %r174
+%r176 = lshr i1152 %r172, 64
+%r178 = getelementptr i64, i64* %r148, i32 7
+%r179 = trunc i1152 %r176 to i64
+store i64 %r179, i64* %r178
+%r180 = lshr i1152 %r176, 64
+%r182 = getelementptr i64, i64* %r148, i32 8
+%r183 = trunc i1152 %r180 to i64
+store i64 %r183, i64* %r182
+%r184 = lshr i1152 %r180, 64
+%r186 = getelementptr i64, i64* %r148, i32 9
+%r187 = trunc i1152 %r184 to i64
+store i64 %r187, i64* %r186
+%r188 = lshr i1152 %r184, 64
+%r190 = getelementptr i64, i64* %r148, i32 10
+%r191 = trunc i1152 %r188 to i64
+store i64 %r191, i64* %r190
+%r192 = lshr i1152 %r188, 64
+%r194 = getelementptr i64, i64* %r148, i32 11
+%r195 = trunc i1152 %r192 to i64
+store i64 %r195, i64* %r194
+%r196 = lshr i1152 %r192, 64
+%r198 = getelementptr i64, i64* %r148, i32 12
+%r199 = trunc i1152 %r196 to i64
+store i64 %r199, i64* %r198
+%r200 = lshr i1152 %r196, 64
+%r202 = getelementptr i64, i64* %r148, i32 13
+%r203 = trunc i1152 %r200 to i64
+store i64 %r203, i64* %r202
+%r204 = lshr i1152 %r200, 64
+%r206 = getelementptr i64, i64* %r148, i32 14
+%r207 = trunc i1152 %r204 to i64
+store i64 %r207, i64* %r206
+%r208 = lshr i1152 %r204, 64
+%r210 = getelementptr i64, i64* %r148, i32 15
+%r211 = trunc i1152 %r208 to i64
+store i64 %r211, i64* %r210
+%r212 = lshr i1152 %r208, 64
+%r214 = getelementptr i64, i64* %r148, i32 16
+%r215 = trunc i1152 %r212 to i64
+store i64 %r215, i64* %r214
+%r216 = lshr i1152 %r212, 64
+%r218 = getelementptr i64, i64* %r148, i32 17
+%r219 = trunc i1152 %r216 to i64
+store i64 %r219, i64* %r218
 ret void
 }

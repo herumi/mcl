@@ -186,10 +186,19 @@ def gen_mulUnitAdd(N, mode='fast'):
 				adc(rdx, 0)
 				mov(rax, rdx)
 
+# optimize this later
 def gen_mul_fast(N):
 	align(16)
 	with FuncProc(f'mclb_mul_fast{N}'):
+		extern_(f'mclb_mul_slow{N}', 'qword')
 		jmp(f'mclb_mul_slow{N}')
+
+# optimize this later
+def gen_sqr_fast(N):
+	align(16)
+	with FuncProc(f'mclb_sqr_fast{N}'):
+		extern_(f'mclb_sqr_slow{N}', 'qword')
+		jmp(f'mclb_sqr_slow{N}')
 
 """
 def gen_enable_fast(N):
@@ -275,6 +284,9 @@ for i in range(1,N+1):
 
 for i in range(1,N+1):
 	gen_mul_fast(i)
+
+for i in range(1,N+1):
+	gen_sqr_fast(i)
 
 #gen_enable_fast(N)
 

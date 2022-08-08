@@ -27,6 +27,7 @@ struct Code : public mcl::Generator {
 	FunctionMap mulUnit_innerM;
 	FunctionMap mul_innerM;
 	FunctionMap mclb_mulM;
+	FunctionMap mclb_sqrM;
 	FunctionMap mclb_addNFM;
 	FunctionMap mclb_subNFM;
 
@@ -37,7 +38,6 @@ struct Code : public mcl::Generator {
 	FunctionMap mcl_fp_addM;
 	FunctionMap mcl_fp_subM;
 	FunctionMap mcl_fp_mulUnitPreM;
-	FunctionMap mcl_fpDbl_sqrPreM;
 	FunctionMap mcl_fp_montM;
 	FunctionMap mcl_fp_montRedM;
 	Code() : unit(0), unit2(0), bit(0), N(0) { }
@@ -594,15 +594,15 @@ struct Code : public mcl::Generator {
 		gen_mul_inner(pz, px, py);
 		endFunc();
 	}
-	void gen_mcl_fpDbl_sqrPre()
+	void gen_mclb_sqr()
 	{
 		resetGlobalIdx();
 		Operand py(IntPtr, unit);
 		Operand px(IntPtr, unit);
-		std::string name = "mcl_fpDbl_sqrPre" + cybozu::itoa(N) + "L" + suf;
-		mcl_fpDbl_sqrPreM[N] = Function(name, Void, py, px);
-		verifyAndSetPrivate(mcl_fpDbl_sqrPreM[N]);
-		beginFunc(mcl_fpDbl_sqrPreM[N]);
+		std::string name = "mclb_sqr" + cybozu::itoa(N);
+		mclb_sqrM[N] = Function(name, Void, py, px);
+		verifyAndSetPrivate(mclb_sqrM[N]);
+		beginFunc(mclb_sqrM[N]);
 		gen_mul_inner(py, px, px);
 		endFunc();
 	}
@@ -730,6 +730,7 @@ struct Code : public mcl::Generator {
 			gen_mclb_mulUnit();
 			gen_mclb_mulUnitAdd();
 			gen_mclb_mul();
+			gen_mclb_sqr();
 		}
 	}
 };

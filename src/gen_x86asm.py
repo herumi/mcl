@@ -318,6 +318,15 @@ def global_(s):
 	else:
 		output(f'global {s}')
 		output(f'global _{s}')
+def extern_(s, size):
+	if g_gas:
+		output(f'.extern {s}')
+		output(f'.extern _{s}')
+	elif g_masm:
+		output(f'extern {s}:{size}')
+	else:
+		output(f'extern {s}')
+		output(f'extern _{s}')
 def makeLabel(s):
 	output(f'{s}:')
 	if g_masm:
