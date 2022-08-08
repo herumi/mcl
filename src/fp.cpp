@@ -335,7 +335,7 @@ void setOp2(Op& op)
 	}
 	op.fp_mulUnit = MulUnit<N, Tag>::f;
 	if (!gmpIsFasterThanLLVM) {
-		op.fpDbl_mulPre = MulPre<N, Tag>::f;
+		op.fpDbl_mulPre = bint::mulT<N>;
 		op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
 	}
 	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;

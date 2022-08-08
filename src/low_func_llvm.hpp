@@ -21,7 +21,6 @@ struct EnableKaratsuba<Ltag> {
 #define MCL_DEF_MUL(n, tag, suf)
 #else
 #define MCL_DEF_MUL(n, tag, suf) \
-template<>const void3u MulPreCore<n, tag>::f = &mcl_fpDbl_mulPre ## n ## suf; \
 template<>const void2u SqrPreCore<n, tag>::f = &mcl_fpDbl_sqrPre ## n ## suf;
 #endif
 

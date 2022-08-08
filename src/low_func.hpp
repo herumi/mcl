@@ -120,93 +120,11 @@ struct Neg {
 template<size_t N, class Tag>
 const void3u Neg<N, Tag>::f = Neg<N, Tag>::func;
 
-// z[N * 2] <- x[N] * y[N]
-template<size_t N, class Tag = Gtag>
-struct MulPreCore {
-	static inline void func(Unit *z, const Unit *x, const Unit *y)
-	{
-#ifdef MCL_USE_VINT
-		bint::mulT<N>(z, x, y);
-#else
-		mpn_mul_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
-#endif
-	}
-	static const void3u f;
-};
-
-template<size_t N, class Tag>
-const void3u MulPreCore<N, Tag>::f = MulPreCore<N, Tag>::func;
-
 template<class Tag = Gtag>
 struct EnableKaratsuba {
 	/* always use mpn* for Gtag */
 	static const size_t minMulN = 100;
 	static const size_t minSqrN = 100;
-};
-
-template<size_t N, class Tag = Gtag>
-struct MulPre {
-	/*
-		W = 1 << H
-		x = aW + b, y = cW + d
-		xy = acW^2 + (ad + bc)W + bd
-		ad + bc = (a + b)(c + d) - ac - bd
-	*/
-	static inline void karatsuba(Unit *z, const Unit *x, const Unit *y)
-	{
-		const size_t H = N / 2;
-		MulPre<H, Tag>::f(z, x, y); // bd
-		MulPre<H, Tag>::f(z + N, x + H, y + H); // ac
-		Unit a_b[H];
-		Unit c_d[H];
-		Unit c1 = AddPre<H, Tag>::f(a_b, x, x + H); // a + b
-		Unit c2 = AddPre<H, Tag>::f(c_d, y, y + H); // c + d
-		Unit tmp[N];
-		MulPre<H, Tag>::f(tmp, a_b, c_d);
-		Unit c = c1 & c2;
-		if (c1) {
-			c += AddPre<H, Tag>::f(tmp + H, tmp + H, c_d);
-		}
-		if (c2) {
-			c += AddPre<H, Tag>::f(tmp + H, tmp + H, a_b);
-		}
-		// c:tmp[N] = (a + b)(c + d)
-		c -= SubPre<N, Tag>::f(tmp, tmp, z);
-		c -= SubPre<N, Tag>::f(tmp, tmp, z + N);
-		// c:tmp[N] = ad + bc
-		c += AddPre<N, Tag>::f(z + H, z + H, tmp);
-		assert(c <= 2);
-		if (c) {
-			AddUnitPre<Tag>::f(z + N + H, H, c);
-		}
-	}
-	static inline void func(Unit *z, const Unit *x, const Unit *y)
-	{
-#if 1
-		if (N >= EnableKaratsuba<Tag>::minMulN && (N % 2) == 0) {
-			karatsuba(z, x, y);
-			return;
-		}
-#endif
-		MulPreCore<N, Tag>::f(z, x, y);
-	}
-	static const void3u f;
-};
-
-template<size_t N, class Tag>
-const void3u MulPre<N, Tag>::f = MulPre<N, Tag>::func;
-
-template<class Tag>
-struct MulPre<0, Tag> {
-	static inline void f(Unit*, const Unit*, const Unit*) {}
-};
-
-template<class Tag>
-struct MulPre<1, Tag> {
-	static inline void f(Unit* z, const Unit* x, const Unit* y)
-	{
-		MulPreCore<1, Tag>::f(z, x, y);
-	}
 };
 
 // z[N * 2] <- x[N] * x[N]
@@ -239,7 +157,7 @@ struct SqrPre {
 		SqrPre<H, Tag>::f(z, x); // b^2
 		SqrPre<H, Tag>::f(z + N, x + H); // a^2
 		Unit ab[N];
-		MulPre<H, Tag>::f(ab, x, x + H); // ab
+		bint::mulT<H>(ab, x, x + H); // ab
 		Unit c = AddPre<N, Tag>::f(ab, ab, ab);
 		c += AddPre<N, Tag>::f(z + H, z + H, ab);
 		if (c) {
@@ -535,7 +453,7 @@ struct Mont {
 	{
 #if MCL_MAX_BIT_SIZE == 1024 || MCL_SIZEOF_UNIT == 4 // check speed
 		Unit xy[N * 2];
-		MulPre<N, Tag>::f(xy, x, y);
+		bint::mulT<N>(xy, x, y);
 		MontRed<N, isFullBit, Tag>::f(z, xy, p);
 #else
 		const Unit rp = p[-1];
@@ -636,7 +554,7 @@ struct Mul {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		Unit xy[N * 2];
-		MulPre<N, Tag>::f(xy, x, y);
+		bint::mulT<N>(xy, x, y);
 		Dbl_Mod<N, Tag>::f(z, xy, p);
 	}
 	static const void4u f;
@@ -673,9 +591,9 @@ struct Fp2MulNF {
 		Unit t[N];
 		AddPre<N, Tag>::f(s, a, b);
 		AddPre<N, Tag>::f(t, c, d);
-		MulPre<N, Tag>::f(d0, s, t);
-		MulPre<N, Tag>::f(d1, a, c);
-		MulPre<N, Tag>::f(d2, b, d);
+		bint::mulT<N>(d0, s, t);
+		bint::mulT<N>(d1, a, c);
+		bint::mulT<N>(d2, b, d);
 		SubPre<N * 2, Tag>::f(d0, d0, d1);
 		SubPre<N * 2, Tag>::f(d0, d0, d2);
 		MontRed<N, false, Tag>::f(z + N, d0, p);

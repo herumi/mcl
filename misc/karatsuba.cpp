@@ -29,11 +29,6 @@ void gggKara(uint64_t *z, const uint64_t *x, const uint64_t *)
 {
 	SqrPre<8, Gtag>::f(z, x);
 }
-void gggLLVM(uint64_t *z, const uint64_t *x, const uint64_t *y)
-{
-	MulPre<8, Ltag>::f(z, x, y);
-}
-
 template<size_t N>
 void benchKaratsuba()
 {
@@ -41,15 +36,11 @@ void benchKaratsuba()
 	printf("N=%d\n", (int)N);
 	Unit z[N * 2];
 	rg.read(z, N);
-	CYBOZU_BENCH("g:mulPre ", (MulPreCore<N, Gtag>::f), z, z, z);
-//	CYBOZU_BENCH("g:mulKara", (MulPre<N, Gtag>::karatsuba), z, z, z);
 	CYBOZU_BENCH("g:sqrPre ", (SqrPreCore<N, Gtag>::f), z, z);
 //	CYBOZU_BENCH("g:sqrKara", (SqrPre<N, Gtag>::karatsuba), z, z);
 
 #ifdef MCL_USE_LLVM
-	CYBOZU_BENCH("l:mulPre ", (MulPreCore<N, Ltag>::f), z, z, z);
 	CYBOZU_BENCH("l:sqrPre ", (SqrPreCore<N, Ltag>::f), z, z);
-	CYBOZU_BENCH("l:mulKara", (MulPre<N, Ltag>::karatsuba), z, z, z);
 	CYBOZU_BENCH("l:sqrKara", (SqrPre<N, Ltag>::karatsuba), z, z);
 #endif
 }
