@@ -255,25 +255,6 @@ static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
-/*
-	large (N * 2) specification of AddPre, SubPre
-*/
-template<size_t N, bool enable>
-struct SetFpDbl {
-	static inline void exec(Op&) {}
-};
-
-template<size_t N>
-struct SetFpDbl<N, true> {
-	static inline void exec(Op& op)
-	{
-//		if (!op.isFullBit) {
-			op.fpDbl_addPre = AddPre<N * 2, Ltag>::f;
-			op.fpDbl_subPre = SubPre<N * 2, Ltag>::f;
-//		}
-	}
-};
-
 template<size_t N, bool isFullBit>
 void Mul2(Unit *y, const Unit *x, const Unit *p)
 {
@@ -335,17 +316,20 @@ void setOp2(Op& op)
 	}
 	op.fp_mulUnit = MulUnit<N, Tag>::f;
 	if (!gmpIsFasterThanLLVM) {
-		op.fpDbl_mulPre = bint::get_mul(N);
-		op.fpDbl_sqrPre = bint::get_sqr(N);
+		op.fpDbl_mulPre = bint::mulT<N>;
+		op.fpDbl_sqrPre = bint::sqrT<N>;
 	}
 	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
 	op.fpN1_mod = N1_Mod<N, Tag>::f;
 	op.fpDbl_add = DblAdd<N, Tag>::f;
 	op.fpDbl_sub = DblSub<N, Tag>::f;
-	op.fp_addPre = AddPre<N, Tag>::f;
-	op.fp_subPre = SubPre<N, Tag>::f;
+	op.fp_addPre = bint::addT<N>;
+	op.fp_subPre = bint::subT<N>;
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
-	SetFpDbl<N, enableFpDbl>::exec(op);
+	if (enableFpDbl) {
+		op.fpDbl_addPre = bint::get_add(N * 2);
+		op.fpDbl_subPre = bint::get_sub(N * 2);
+	}
 }
 
 template<size_t N>
@@ -470,8 +454,6 @@ void setWasmOp(Op& op)
 {
 	if (!(op.isMont && !op.isFullBit)) return;
 //EM_ASM({console.log($0)}, N);
-//	op.fp_addPre = mcl::addT<N>;
-//	op.fp_subPre = mcl::subT<N>;
 //	op.fpDbl_addPre = mcl::addT<N * 2>;
 //	op.fpDbl_subPre = mcl::subT<N * 2>;
 	op.fp_add = mcl::addModT<N>;

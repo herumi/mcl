@@ -26,22 +26,6 @@ template<> struct TagToStr<Gtag> { static const char *f() { return "Gtag"; } };
 template<> struct TagToStr<Ltag> { static const char *f() { return "Ltag"; } };
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
-// (carry, z[N]) <- x[N] + y[N]
-template<size_t N, class Tag = Gtag>
-struct AddPre {
-	static inline Unit func(Unit *z, const Unit *x, const Unit *y)
-	{
-#ifdef MCL_USE_VINT
-		return mcl::bint::addT<N>(z, x, y);
-#else
-		return mpn_add_n((mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, N);
-#endif
-	}
-	static const u3u f;
-};
-template<size_t N, class Tag>
-const u3u AddPre<N, Tag>::f = AddPre<N, Tag>::func;
-
 // (carry, x[N]) <- x[N] + y
 template<class Tag = Gtag>
 struct AddUnitPre {
@@ -258,7 +242,7 @@ struct Add {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (isFullBit) {
-			if (AddPre<N, Tag>::f(z, x, y)) {
+			if (bint::addT<N>(z, x, y)) {
 				SubPre<N, Tag>::f(z, z, p);
 				return;
 			}
@@ -267,7 +251,7 @@ struct Add {
 				bint::copyT<N>(z, tmp);
 			}
 		} else {
-			AddPre<N, Tag>::f(z, x, y);
+			bint::addT<N>(z, x, y);
 			Unit a = z[N - 1];
 			Unit b = p[N - 1];
 			if (a < b) return;
@@ -291,7 +275,7 @@ struct Sub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (SubPre<N, Tag>::f(z, x, y)) {
-			AddPre<N, Tag>::f(z, z, p);
+			bint::addT<N>(z, z, p);
 		}
 	}
 	static const void4u f;
@@ -305,7 +289,7 @@ template<size_t N, class Tag = Gtag>
 struct DblAdd {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
-		if (AddPre<N * 2, Tag>::f(z, x, y)) {
+		if (bint::addT<N * 2>(z, x, y)) {
 			SubPre<N, Tag>::f(z + N, z + N, p);
 			return;
 		}
@@ -326,7 +310,7 @@ struct DblSub {
 	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	{
 		if (SubPre<N * 2, Tag>::f(z, x, y)) {
-			AddPre<N, Tag>::f(z + N, z + N, p);
+			bint::addT<N>(z + N, z + N, p);
 		}
 	}
 	static const void4u f;
@@ -350,7 +334,7 @@ struct MontRed {
 		buf[N * 2] = 0;
 		Unit q = xy[0] * rp;
 		MulUnitPre<N, Tag>::f(pq, p, q);
-		Unit up = AddPre<N + 1, Tag>::f(buf, xy, pq);
+		Unit up = bint::addT<N + 1>(buf, xy, pq);
 		if (up) {
 			buf[N * 2] = AddUnitPre<Tag>::f(buf + N + 1, N - 1, 1);
 		}
@@ -358,7 +342,7 @@ struct MontRed {
 		for (size_t i = 1; i < N; i++) {
 			q = c[0] * rp;
 			MulUnitPre<N, Tag>::f(pq, p, q);
-			up = AddPre<N + 1, Tag>::f(c, c, pq);
+			up = bint::addT<N + 1>(c, c, pq);
 			if (up) {
 				AddUnitPre<Tag>::f(c + N + 1, N - i, 1);
 			}
@@ -400,14 +384,14 @@ struct Mont {
 			Unit t[N + 2];
 			MulUnitPre<N, Tag>::f(t, p, q); // p * q
 			t[N + 1] = 0; // always zero
-			c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
+			c[N + 1] = bint::addT<N + 1>(c, c, t);
 			c++;
 			for (size_t i = 1; i < N; i++) {
 				MulUnitPre<N, Tag>::f(t, x, y[i]);
-				c[N + 1] = AddPre<N + 1, Tag>::f(c, c, t);
+				c[N + 1] = bint::addT<N + 1>(c, c, t);
 				q = c[0] * rp;
 				MulUnitPre<N, Tag>::f(t, p, q);
-				AddPre<N + 2, Tag>::f(c, c, t);
+				bint::addT<N + 2>(c, c, t);
 				c++;
 			}
 			if (c[N]) {
@@ -437,18 +421,18 @@ struct Mont {
 			Unit q = c[0] * rp;
 			Unit t[N + 1];
 			MulUnitPre<N, Tag>::f(t, p, q); // p * q
-			carry = AddPre<N + 1, Tag>::f(c, c, t);
+			carry = bint::addT<N + 1>(c, c, t);
 			assert(carry == 0);
 			c++;
 			c[N] = 0;
 			for (size_t i = 1; i < N; i++) {
 				c[N + 1] = 0;
 				MulUnitPre<N, Tag>::f(t, x, y[i]);
-				carry = AddPre<N + 1, Tag>::f(c, c, t);
+				carry = bint::addT<N + 1>(c, c, t);
 				assert(carry == 0);
 				q = c[0] * rp;
 				MulUnitPre<N, Tag>::f(t, p, q);
-				carry = AddPre<N + 1, Tag>::f(c, c, t);
+				carry = bint::addT<N + 1>(c, c, t);
 				assert(carry == 0);
 				c++;
 			}
@@ -524,8 +508,8 @@ struct Fp2MulNF {
 		Unit d2[N * 2];
 		Unit s[N];
 		Unit t[N];
-		AddPre<N, Tag>::f(s, a, b);
-		AddPre<N, Tag>::f(t, c, d);
+		bint::addT<N>(s, a, b);
+		bint::addT<N>(t, c, d);
 		bint::mulT<N>(d0, s, t);
 		bint::mulT<N>(d1, a, c);
 		bint::mulT<N>(d2, b, d);

@@ -22,8 +22,8 @@ void bench()
 		Unit w[N];
 		rg.read(x, N);
 		rg.read(y, N);
-		AddPre<N, Gtag>::f(z, x, y);
-		AddPre<N, Ltag>::f(w, x, y);
+		bint::addT<N>(z, x, y);
+		bint::addT<N>(w, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z, w, N);
 
 		SubPre<N, Gtag>::f(z, x, y);
@@ -32,7 +32,7 @@ void bench()
 	}
 	const std::string bitS = cybozu::itoa(bit);
 	std::string name;
-	name = "add" + bitS; CYBOZU_BENCH(name.c_str(), (AddPre<N, Ltag>::f), x, x, y);
+	name = "add" + bitS; CYBOZU_BENCH(name.c_str(), bint::addT<N>, x, x, y);
 	name = "sub" + bitS; CYBOZU_BENCH(name.c_str(), (SubPre<N, Ltag>::f), x, x, y);
 }
 
