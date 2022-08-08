@@ -26,40 +26,6 @@ template<> struct TagToStr<Gtag> { static const char *f() { return "Gtag"; } };
 template<> struct TagToStr<Ltag> { static const char *f() { return "Ltag"; } };
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
-// y[N] <- (x[N] >> 1)
-template<size_t N, class Tag = Gtag>
-struct Shr1 {
-	static inline void func(Unit *y, const Unit *x)
-	{
-#ifdef MCL_USE_VINT
-		bint::shrT<N>(y, x, 1);
-#else
-		mpn_rshift((mp_limb_t*)y, (const mp_limb_t*)x, (int)N, 1);
-#endif
-	}
-	static const void2u f;
-};
-
-template<size_t N, class Tag>
-const void2u Shr1<N, Tag>::f = Shr1<N, Tag>::func;
-
-// y[N] <- (-x[N]) % p[N]
-template<size_t N, class Tag = Gtag>
-struct Neg {
-	static inline void func(Unit *y, const Unit *x, const Unit *p)
-	{
-		if (bint::isZeroT<N>(x)) {
-			if (x != y) bint::clearT<N>(y);
-			return;
-		}
-		bint::subT<N>(y, p, x);
-	}
-	static const void3u f;
-};
-
-template<size_t N, class Tag>
-const void3u Neg<N, Tag>::f = Neg<N, Tag>::func;
-
 template<class Tag = Gtag>
 struct EnableKaratsuba {
 	/* always use mpn* for Gtag */

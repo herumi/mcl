@@ -24,7 +24,6 @@ struct EnableKaratsuba<Ltag> {
 #endif
 
 #define MCL_DEF_LLVM_FUNC2(n, tag, suf) \
-template<>const void2u Shr1<n, tag>::f = &mcl_fp_shr1_ ## n ## suf; \
 MCL_DEF_MUL(n, tag, suf) \
 template<>const void2uI MulUnitPre<n, tag>::f = &mcl_fp_mulUnitPre ## n ## suf; \
 template<>const void4u Add<n, true, tag>::f = &mcl_fp_add ## n ## suf; \
