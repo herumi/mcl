@@ -127,71 +127,6 @@ struct EnableKaratsuba {
 	static const size_t minSqrN = 100;
 };
 
-// z[N * 2] <- x[N] * x[N]
-template<size_t N, class Tag = Gtag>
-struct SqrPreCore {
-	static inline void func(Unit *y, const Unit *x)
-	{
-#ifdef MCL_USE_VINT
-		bint::mulT<N>(y, x, x);
-#else
-		mpn_sqr((mp_limb_t*)y, (const mp_limb_t*)x, N);
-#endif
-	}
-	static const void2u f;
-};
-
-template<size_t N, class Tag>
-const void2u SqrPreCore<N, Tag>::f = SqrPreCore<N, Tag>::func;
-
-template<size_t N, class Tag = Gtag>
-struct SqrPre {
-	/*
-		W = 1 << H
-		x = aW + b
-		x^2 = aaW^2 + 2abW + bb
-	*/
-	static inline void karatsuba(Unit *z, const Unit *x)
-	{
-		const size_t H = N / 2;
-		SqrPre<H, Tag>::f(z, x); // b^2
-		SqrPre<H, Tag>::f(z + N, x + H); // a^2
-		Unit ab[N];
-		bint::mulT<H>(ab, x, x + H); // ab
-		Unit c = AddPre<N, Tag>::f(ab, ab, ab);
-		c += AddPre<N, Tag>::f(z + H, z + H, ab);
-		if (c) {
-			AddUnitPre<Tag>::f(z + N + H, H, c);
-		}
-	}
-	static inline void func(Unit *y, const Unit *x)
-	{
-#if 1
-		if (N >= EnableKaratsuba<Tag>::minSqrN && (N % 2) == 0) {
-			karatsuba(y, x);
-			return;
-		}
-#endif
-		SqrPreCore<N, Tag>::f(y, x);
-	}
-	static const void2u f;
-};
-template<size_t N, class Tag>
-const void2u SqrPre<N, Tag>::f = SqrPre<N, Tag>::func;
-
-template<class Tag>
-struct SqrPre<0, Tag> {
-	static inline void f(Unit*, const Unit*) {}
-};
-
-template<class Tag>
-struct SqrPre<1, Tag> {
-	static inline void f(Unit* y, const Unit* x)
-	{
-		SqrPreCore<1, Tag>::f(y, x);
-	}
-};
-
 // z[N + 1] <- x[N] * y
 template<size_t N, class Tag = Gtag>
 struct MulUnitPre {
@@ -537,7 +472,7 @@ struct SqrMont {
 	{
 #if 0 // #if MCL_MAX_BIT_SIZE == 1024 || MCL_SIZEOF_UNIT == 4 // check speed
 		Unit xx[N * 2];
-		SqrPre<N, Tag>::f(xx, x);
+		bint::sqrT<N>f(xx, x);
 		MontRed<N, isFullBit, Tag>::f(y, xx, p);
 #else
 		Mont<N, isFullBit, Tag>::f(y, x, x, p);
@@ -568,7 +503,7 @@ struct Sqr {
 	static inline void func(Unit *y, const Unit *x, const Unit *p)
 	{
 		Unit xx[N * 2];
-		SqrPre<N, Tag>::f(xx, x);
+		bint::sqrT<N>(xx, x);
 		Dbl_Mod<N, Tag>::f(y, xx, p);
 	}
 	static const void3u f;
