@@ -33,6 +33,23 @@ struct EnableKaratsuba {
 	static const size_t minSqrN = 100;
 };
 
+template<size_t N>
+static void shr1T(Unit *y, const Unit *x)
+{
+	bint::shrT<N>(y, x, 1);
+}
+
+// y[N] <- (-x[N]) % p[N]
+template<size_t N>
+static void negT(Unit *y, const Unit *x, const Unit *p)
+{
+	if (bint::isZeroT<N>(x)) {
+		if (x != y) bint::clearT<N>(y);
+		return;
+	}
+	bint::subT<N>(y, p, x);
+}
+
 // z[N + 1] <- x[N] * y
 template<size_t N>
 static void mulUnitPreT(Unit *z, const Unit *x, Unit y)

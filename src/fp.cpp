@@ -7,7 +7,7 @@
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
 
-#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL))
+#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL)) || (MCL_BINT_ASM_X64 == 1)
 
 #ifdef MCL_USE_XBYAK
 	#define XBYAK_DISABLE_AVX512
@@ -283,23 +283,6 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 		bint::copyT<N>(y, tmp);
 	}
 #endif
-}
-
-template<size_t N>
-static void shr1T(Unit *y, const Unit *x)
-{
-	bint::shrT<N>(y, x, 1);
-}
-
-// y[N] <- (-x[N]) % p[N]
-template<size_t N>
-static void negT(Unit *y, const Unit *x, const Unit *p)
-{
-	if (bint::isZeroT<N>(x)) {
-		if (x != y) bint::clearT<N>(y);
-		return;
-	}
-	bint::subT<N>(y, p, x);
 }
 
 template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>
