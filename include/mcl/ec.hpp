@@ -201,15 +201,15 @@ void _normalize(E& Q, const E& P, typename E::Fp& inv)
 	AsArray : Pz[i] to access like as F[i] in invVecT
 	N : alloc size
 */
-template<class F, class Eout, class Ein, class AsArrayOfFp, size_t N = 256>
-void normalizeVecT(Eout& Q, Ein& P, size_t n)
+template<class F, class Eout, class Ein, class AsArrayOfFp>
+void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 {
 	F *inv = (F*)CYBOZU_ALLOCA(sizeof(F) * N);
 	bool PisEqualToQ = &P[0] == &Q[0];
 	for (;;) {
 		size_t doneN = (n < N) ? n : N;
 		AsArrayOfFp Pz(P);
-		invVecT<F>(inv, Pz, doneN);
+		invVecT<F>(inv, Pz, doneN, N);
 		for (size_t i = 0; i < doneN; i++) {
 			if (P[i].z.isZero() || P[i].z.isOne()) {
 				if (!PisEqualToQ) Q[i] = P[i];

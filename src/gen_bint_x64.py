@@ -157,35 +157,104 @@ def gen_mulUnitAdd(N, mode='fast'):
 				adcx(rax, t)
 				adox(rax, t)
 		else:
-				with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
-					z = sf.p[0]
-					x = sf.p[1]
-					y = sf.p[2]
-					posH = N * 8
-					for i in range(N):
-						mov(rax, ptr(x + i * 8))
-						mul(y)
-						mov(ptr(rsp + i * 8), rax)
-						if i < N-1:
-							mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
-					for i in range(N - 1):
-						mov(rax, ptr(rsp + (i + 1) * 8))
-						if i == 0:
-							add(rax, ptr(rsp + posH + i * 8))
-						else:
-							adc(rax, ptr(rsp + posH + i * 8))
-						mov(ptr(rsp + (i + 1) * 8), rax)
-					if N > 1:
-						adc(rdx, 0)
-					for i in range(N):
-						mov(rax, ptr(rsp + i * 8))
-						if i == 0:
-							add(ptr(z + i * 8), rax)
-						else:
-							adc(ptr(z + i * 8), rax)
+			with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
+				z = sf.p[0]
+				x = sf.p[1]
+				y = sf.p[2]
+				posH = N * 8
+				for i in range(N):
+					mov(rax, ptr(x + i * 8))
+					mul(y)
+					mov(ptr(rsp + i * 8), rax)
+					if i < N-1:
+						mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
+				for i in range(N - 1):
+					mov(rax, ptr(rsp + (i + 1) * 8))
+					if i == 0:
+						add(rax, ptr(rsp + posH + i * 8))
+					else:
+						adc(rax, ptr(rsp + posH + i * 8))
+					mov(ptr(rsp + (i + 1) * 8), rax)
+				if N > 1:
 					adc(rdx, 0)
-					mov(rax, rdx)
+				for i in range(N):
+					mov(rax, ptr(rsp + i * 8))
+					if i == 0:
+						add(ptr(z + i * 8), rax)
+					else:
+						adc(ptr(z + i * 8), rax)
+				adc(rdx, 0)
+				mov(rax, rdx)
 
+def mulPack(pz, offset, py, pd):
+	a = rax
+	mulx(pd[0], a, ptr(py + 8 * 0))
+	mov(ptr(pz + offset), a)
+	xor_(a, a)
+	n = len(pd)
+	for i in range(1, n):
+		mulx(pd[i], a, ptr(py + 8 * i))
+		adcx(pd[i - 1], a)
+	adc(pd[n - 1], 0)
+
+def mulPackAdd(pz, offset, py, hi, pd):
+	a = rax
+	xor_(a, a)
+	n = len(pd)
+	for i in range(0, n):
+		mulx(hi, a, ptr(py + i * 8))
+		adox(pd[i], a)
+		if i == 0:
+			mov(ptr(pz + offset), pd[0])
+		if i == n - 1:
+			break
+		adcx(pd[i + 1], hi)
+	mov(a, 0)
+	adox(hi, a)
+	adc(hi, a)
+
+def store_mr(m, x):
+	n = len(x)
+	for i in range(n):
+		mov(ptr(m + 8 * i), x[i])
+
+def gen_mulPreN(pz, px, py, pk, t, N):
+	mov(rdx, ptr(px + 8 * 0))
+	mulPack(pz, 8 * 0, py, pk)
+	for i in range(1, N):
+		mov(rdx, ptr(px + 8 * i))
+		mulPackAdd(pz, 8 * i, py, t, pk)
+		s = pk[0]
+		pk = pk[1:]
+		pk.append(t)
+		t = s
+	store_mr(pz + 8 * N, pk)
+
+# optimize this later
+def gen_mul_fast(N):
+	align(16)
+	with FuncProc(f'mclb_mul_fast{N}'):
+		if N <= 9:
+			with StackFrame(3, N+1, useRDX=True) as sf:
+				pz = sf.p[0]
+				px = sf.p[1]
+				py = sf.p[2]
+				pk = sf.t[0:N]
+				gen_mulPreN(pz, px, py, pk, sf.t[N], N)
+		else:
+			jmp(f'mclb_mul_slow{N}')
+
+# optimize this later
+def gen_sqr_fast(N):
+	align(16)
+	with FuncProc(f'mclb_sqr_fast{N}'):
+		if param.win:
+			mov(r8, rdx)
+		else:
+			mov(rdx, rsi)
+		jmp(f'mclb_mul_fast{N}')
+
+"""
 def gen_enable_fast(N):
 	align(16)
 	with FuncProc('mclb_disable_fast'):
@@ -198,6 +267,7 @@ def gen_enable_fast(N):
 			lea(rax, rip(f'mclb_mulUnitAdd_slow{i}'))
 			mov(ptr(rdx), rax)
 		ret()
+"""
 
 def gen_udiv128():
 	align(16)
@@ -265,6 +335,12 @@ for i in range(1,N+1):
 
 for i in range(1,N+1):
 	gen_mulUnitAdd(i, 'slow')
+
+for i in range(1,N+1):
+	gen_mul_fast(i)
+
+for i in range(1,N+1):
+	gen_sqr_fast(i)
 
 #gen_enable_fast(N)
 

@@ -128,6 +128,19 @@ Unit subT(Unit *z, const Unit *x, const Unit *y)
 }
 
 template<size_t N>
+void addNFT(Unit *z, const Unit *x, const Unit *y)
+{
+	addT<N>(z, x, y);
+}
+
+template<size_t N>
+Unit subNFT(Unit *z, const Unit *x, const Unit *y)
+{
+	return subT<N>(z, x, y);
+}
+
+
+template<size_t N>
 Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 {
 #if MCL_SIZEOF_UNIT == 4
@@ -197,6 +210,23 @@ Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
 #endif
 }
 
+// z[2N] = x[N] * y[N]
+template<size_t N>
+void mulT(Unit *pz, const Unit *px, const Unit *py)
+{
+	pz[N] = mulUnitT<N>(pz, px, py[0]);
+	for (size_t i = 1; i < N; i++) {
+		pz[N + i] = mulUnitAddT<N>(&pz[i], px, py[i]);
+	}
+}
+
+// y[2N] = x[N] * x[N]
+template<size_t N>
+void sqrT(Unit *py, const Unit *px)
+{
+	// QQQ : optimize this later
+	mulT<N>(py, px, px);
+}
 #endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
@@ -309,15 +339,6 @@ MCL_DLL_API Unit subUnit(Unit *y, size_t n, Unit x)
 	return 1;
 }
 
-MCL_DLL_API void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
-{
-	u_ppu mulUnitAdd = mclb_get_mulUnitAdd(n);
-	z[n] = mulUnitN(z, x, y[0], n);
-	for (size_t i = 1; i < n; i++) {
-		z[n + i] = mulUnitAdd(&z[i], x, y[i]);
-	}
-}
-
 /*
 	q[] = x[] / y
 	@retval r = x[] % y
@@ -366,7 +387,7 @@ MCL_DLL_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y,
 	}
 	assert(xn == yn);
 	if (yTop >= Unit(1) << (UnitBitSize / 2)) {
-		u_ppp sub = mclb_get_sub(yn);
+		u_ppp sub = get_sub(yn);
 		if (yTop == Unit(-1)) {
 			sub(x, x, y);
 			qv = 1;
@@ -406,8 +427,8 @@ MCL_DLL_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit
 		Unit r;
 		rev = divUnit1(&r, Unit(1) << (UnitBitSize - 1), 0, yTop + 1);
 	}
-	u_ppp sub = mclb_get_sub(yn);
-	u_ppu mulUnit = mclb_get_mulUnit(yn);
+	u_ppp sub = get_sub(yn);
+	u_ppu mulUnit = get_mulUnit(yn);
 	while (xn >= yn) {
 		if (x[xn - 1] == 0) {
 			xn--;
@@ -515,16 +536,10 @@ MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t 
 		y = p;
 	}
 	z[xn] = mulUnitN(z, x, y[0], xn);
-	u_ppu mulUnitAdd = mclb_get_mulUnitAdd(xn);
+	u_ppu mulUnitAdd = get_mulUnitAdd(xn);
 	for (size_t i = 1; i < yn; i++) {
 		z[xn + i] = mulUnitAdd(&z[i], x, y[i]);
 	}
-}
-
-// QQQ : optimize this
-MCL_DLL_API void sqrN(Unit *y, const Unit *x, size_t xn)
-{
-	mulN(y, x, x, xn);
 }
 
 /*

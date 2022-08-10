@@ -7,7 +7,7 @@
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
 
-#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL))
+#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL)) || (MCL_BINT_ASM_X64 == 1)
 
 #ifdef MCL_USE_XBYAK
 	#define XBYAK_DISABLE_AVX512
@@ -255,25 +255,6 @@ static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
-/*
-	large (N * 2) specification of AddPre, SubPre
-*/
-template<size_t N, bool enable>
-struct SetFpDbl {
-	static inline void exec(Op&) {}
-};
-
-template<size_t N>
-struct SetFpDbl<N, true> {
-	static inline void exec(Op& op)
-	{
-//		if (!op.isFullBit) {
-			op.fpDbl_addPre = AddPre<N * 2, Ltag>::f;
-			op.fpDbl_subPre = SubPre<N * 2, Ltag>::f;
-//		}
-	}
-};
-
 template<size_t N, bool isFullBit>
 void Mul2(Unit *y, const Unit *x, const Unit *p)
 {
@@ -293,10 +274,10 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 	tmp[0] = prev << bit;
 	bool c;
 	if (isFullBit) {
-		H -= SubPre<N, Gtag>::f(y, tmp, p);
+		H -= bint::subT<N>(y, tmp, p);
 		c = H >> rBit;
 	} else {
-		c = SubPre<N, Gtag>::f(y, tmp, p);
+		c = bint::subT<N>(y, tmp, p);
 	}
 	if (c) {
 		bint::copyT<N>(y, tmp);
@@ -307,8 +288,8 @@ void Mul2(Unit *y, const Unit *x, const Unit *p)
 template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>
 void setOp2(Op& op)
 {
-	op.fp_shr1 = Shr1<N, Tag>::f;
-	op.fp_neg = Neg<N, Tag>::f;
+	op.fp_shr1 = shr1T<N>;
+	op.fp_neg = negT<N>;
 	if (op.isFullBit) {
 		op.fp_add = Add<N, true, Tag>::f;
 		op.fp_sub = Sub<N, true, Tag>::f;
@@ -335,17 +316,20 @@ void setOp2(Op& op)
 	}
 	op.fp_mulUnit = MulUnit<N, Tag>::f;
 	if (!gmpIsFasterThanLLVM) {
-		op.fpDbl_mulPre = MulPre<N, Tag>::f;
-		op.fpDbl_sqrPre = SqrPre<N, Tag>::f;
+		op.fpDbl_mulPre = bint::mulT<N>;
+		op.fpDbl_sqrPre = bint::sqrT<N>;
 	}
-	op.fp_mulUnitPre = MulUnitPre<N, Tag>::f;
+	op.fp_mulUnitPre = mulUnitPreT<N>;
 	op.fpN1_mod = N1_Mod<N, Tag>::f;
 	op.fpDbl_add = DblAdd<N, Tag>::f;
 	op.fpDbl_sub = DblSub<N, Tag>::f;
-	op.fp_addPre = AddPre<N, Tag>::f;
-	op.fp_subPre = SubPre<N, Tag>::f;
+	op.fp_addPre = bint::addT<N>;
+	op.fp_subPre = bint::subT<N>;
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
-	SetFpDbl<N, enableFpDbl>::exec(op);
+	if (enableFpDbl) {
+		op.fpDbl_addPre = bint::addT<N * 2>;
+		op.fpDbl_subPre = bint::subT<N * 2>;
+	}
 }
 
 template<size_t N>
@@ -470,16 +454,14 @@ void setWasmOp(Op& op)
 {
 	if (!(op.isMont && !op.isFullBit)) return;
 //EM_ASM({console.log($0)}, N);
-//	op.fp_addPre = mcl::addT<N>;
-//	op.fp_subPre = mcl::subT<N>;
 //	op.fpDbl_addPre = mcl::addT<N * 2>;
 //	op.fpDbl_subPre = mcl::subT<N * 2>;
 	op.fp_add = mcl::addModT<N>;
 	op.fp_sub = mcl::subModT<N>;
 	op.fp_mul = mcl::mulMontT<N>;
 	op.fp_sqr = mcl::sqrMontT<N>;
-	op.fpDbl_mulPre = mulPreT<N>;
-//	op.fpDbl_sqrPre = sqrPreT<N>;
+	op.fpDbl_mulPre = bint::mulT<N>;
+	op.fpDbl_sqrPre = bint::sqrT<N>;
 	op.fpDbl_mod = modT<N>;
 }
 #endif

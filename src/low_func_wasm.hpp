@@ -85,92 +85,6 @@ uint64_t addMulUnitT(uint32_t z[N], const uint32_t x[N], uint32_t y_)
 #endif
 }
 
-// z[N * 2] = x[N] * y[N]
-template<size_t N>
-void mulPreT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
-{
-#if 1
-	mcl::bint::mulT<N>(z, x, y);
-#else
-	z[N] = mulUnitT<N>(z, x, y[0]);
-	for (size_t i = 1; i < N; i++) {
-		z[N + i] = addMulUnitT<N>(&z[i], x, y[i]);
-	}
-#endif
-}
-
-#if 0
-/*
-	z[N * 2] = x[N] * y[N]
-	H = N/2
-	W = 1 << (H * 32)
-	x = aW + b, y = cW + d
-	assume a < W/2, c < W/2
-	(aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
-	ad + bc = (a + b)(c + d) - ac - bd < (1 << (N * 32))
-	slower than mulPreT on Core i7 with -m32 for N <= 12
-*/
-template<size_t N>
-void karatsubaT(uint32_t z[N * 2], const uint32_t x[N], const uint32_t y[N])
-{
-	assert((N % 2) == 0);
-	assert((x[N - 1] & 0x80000000) == 0);
-	assert((y[N - 1] & 0x80000000) == 0);
-	const size_t H = N / 2;
-	uint32_t a_b[H];
-	uint32_t c_d[H];
-	uint64_t c1 = addT<H>(a_b, x, x + H); // a + b
-	uint64_t c2 = addT<H>(c_d, y, y + H); // c + d
-	uint32_t tmp[N];
-	mulPreT<H>(tmp, a_b, c_d);
-	if (c1) {
-		addT<H>(tmp + H, tmp + H, c_d);
-	}
-	if (c2) {
-		addT<H>(tmp + H, tmp + H, a_b);
-	}
-	mulPreT<H>(z, x, y); // bd
-	mulPreT<H>(z + N, x + H, y + H); // ac
-	// c:tmp[N] = (a + b)(c + d)
-	subT<N>(tmp, tmp, z);
-	subT<N>(tmp, tmp, z + N);
-	// c:tmp[N] = ad + bc
-	if (addT<N>(z + H, z + H, tmp)) {
-		addUnitT<H>(z + N + H, 1);
-	}
-}
-#endif
-
-/*
-	y[N * 2] = x[N] * x[N]
-	(aW + b)^2 = a^2 W + b^2 + 2abW
-	(a+b)^2 - a^2 - b^2
-*/
-template<size_t N>
-void sqrT(uint32_t y[N * 2], const uint32_t x[N])
-{
-	assert((N % 2) == 0);
-	assert((x[N - 1] & 0x80000000) == 0);
-	const size_t H = N / 2;
-	uint32_t a_b[H];
-	uint64_t c = addT<H>(a_b, x, x + H); // a + b
-	uint32_t tmp[N];
-	mulPreT<H>(tmp, a_b, a_b);
-	if (c) {
-		bint::shlT<H>(a_b, a_b, 1);
-		addT<H>(tmp + H, tmp + H, a_b);
-	}
-	mulPreT<H>(y, x, x); // b^2
-	mulPreT<H>(y + N, x + H, x + H); // a^2
-	// tmp[N] = (a + b)^2
-	subT<N>(tmp, tmp, y);
-	subT<N>(tmp, tmp, y + N);
-	// tmp[N] = 2ab
-	if (addT<N>(y + H, y + H, tmp)) {
-		bint::addUnit(y + N + H, H, 1);
-	}
-}
-
 template<size_t N>
 void addModT(uint32_t z[N], const uint32_t x[N], const uint32_t y[N], const uint32_t p[N])
 {
@@ -261,14 +175,7 @@ void modT(uint32_t y[N], const uint32_t xy[N * 2], const uint32_t p[N])
 template<size_t N>
 void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
 {
-#if 1
 	mulMontT<N>(y, x, x, p);
-#else
-	// slower
-	uint32_t xx[N * 2];
-	sqrT<N>(xx, x);
-	modT<N>(y, xx, p);
-#endif
 }
 
 #if 0

@@ -318,6 +318,15 @@ def global_(s):
 	else:
 		output(f'global {s}')
 		output(f'global _{s}')
+def extern_(s, size):
+	if g_gas:
+		output(f'.extern {s}')
+		output(f'.extern _{s}')
+	elif g_masm:
+		output(f'extern {s}:{size}')
+	else:
+		output(f'extern {s}')
+		output(f'extern _{s}')
 def makeLabel(s):
 	output(f'{s}:')
 	if g_masm:
@@ -449,7 +458,7 @@ def genAllFunc():
 		'cmovpo', 'cmovs', 'cmovz',
 		'ja','jae','jb','jbe','jc','je','jg','jge','jl','jle','jna','jnae','jnb','jnbe','jnc','jne','jng',
 		'jnge','jnl','jnle','jno','jnp','jns','jnz','jo','jp','jpe','jpo','js','jz',
-		'jmp',
+		'jmp', 'call',
 	]
 	for name in tbl:
 		asmName = name.strip('_')

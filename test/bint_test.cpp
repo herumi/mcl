@@ -758,4 +758,101 @@ CYBOZU_TEST_AUTO(mulUnitAdd)
 	testMulUnitAdd<7>();
 	testMulUnitAdd<8>();
 }
+template<size_t N>
+void testMul()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N], z[N * 2];
+	mpz_class mx, my, mz;
+	for (size_t i = 0; i < C; i++) {
+		setRand(x, N, rg);
+		setRand(y, N, rg);
+		mulT<N>(z, x, y);
+		setArray(mx, x, N);
+		setArray(my, y, N);
+		setArray(mz, z, N * 2);
+		CYBOZU_TEST_EQUAL(mx * my, mz);
+	}
+#ifdef NDEBUG
+	const int CC = 20000;
+	printf("%zd ", N);
+	CYBOZU_BENCH_C("gmp", CC, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
+	printf("  ");
+	CYBOZU_BENCH_C("mul", CC, mulT<N>, z, x, y);
+#endif
+}
 
+CYBOZU_TEST_AUTO(mul)
+{
+	testMul<1>();
+	testMul<2>();
+	testMul<3>();
+	testMul<4>();
+	testMul<5>();
+	testMul<6>();
+	testMul<7>();
+	testMul<8>();
+	testMul<9>();
+}
+
+// slow for N <= 8
+template<size_t N>
+void karatsuba(Unit *z, const Unit *x)
+{
+	const size_t H = N / 2;
+	sqrT<H>(z, x); // b^2
+	sqrT<H>(z + N, x + H); // a^2
+	Unit ab[N];
+	mulT<H>(ab, x, x + H); // ab
+	Unit c = addT<N>(ab, ab, ab);
+	c += addT<N>(z + H, z + H, ab);
+	if (c) {
+		addUnit(z + N + H, H, c);
+	}
+}
+
+template<size_t N>
+void testSqr()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N * 2];
+	mpz_class mx, my;
+	for (size_t i = 0; i < C; i++) {
+		setRand(x, N, rg);
+		sqrT<N>(y, x);
+		setArray(mx, x, N);
+		setArray(my, y, N * 2);
+		CYBOZU_TEST_EQUAL(mx * mx, my);
+		memset(y, 0, sizeof(y));
+		if ((N % 2) == 0 && N >= 4) {
+			karatsuba<N>(y, x);
+			my = 0;
+			setArray(my, y, N * 2);
+			CYBOZU_TEST_EQUAL(mx * mx, my);
+		}
+	}
+#ifdef NDEBUG
+	const int CC = 20000;
+	printf("%zd ", N);
+	CYBOZU_BENCH_C("gmp", CC, mpn_sqr, (mp_limb_t*)y, (const mp_limb_t*)x, (int)N);
+	printf("  ");
+	CYBOZU_BENCH_C("sqr", CC, sqrT<N>, y, x);
+	if ((N % 2) == 0 && N >= 4) {
+		printf("  ");
+		CYBOZU_BENCH_C("kar", CC, karatsuba<N>, y, x);
+	}
+#endif
+}
+
+CYBOZU_TEST_AUTO(sqr)
+{
+	testSqr<1>();
+	testSqr<2>();
+	testSqr<3>();
+	testSqr<4>();
+	testSqr<5>();
+	testSqr<6>();
+	testSqr<7>();
+	testSqr<8>();
+	testSqr<9>();
+}

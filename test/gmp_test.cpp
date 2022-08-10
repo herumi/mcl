@@ -2,6 +2,11 @@
 #include <vector>
 #include <cybozu/test.hpp>
 
+CYBOZU_TEST_AUTO(cpu)
+{
+	mcl::bint::initBint();
+}
+
 CYBOZU_TEST_AUTO(testBit)
 {
 	const size_t maxBit = 100;
