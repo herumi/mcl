@@ -99,7 +99,9 @@
 	#include <stdint.h>
 #endif
 
-#if !defined(MFD_CLOEXEC) // defined only linux 3.17 or later
+// MFD_CLOEXEC defined only linux 3.17 or later.
+// Android wraps the memfd_create syscall from API version 30.
+#if !defined(MFD_CLOEXEC) || (defined(__ANDROID__) && __ANDROID_API__ < 30)
 	#undef XBYAK_USE_MEMFD
 #endif
 
@@ -116,7 +118,7 @@
 	#endif
 #endif
 
-#if (__cplusplus >= 201103) || (defined(_MSC_VER) && _MSC_VER >= 1800)
+#if (__cplusplus >= 201103) || (defined(_MSC_VER) && _MSC_VER >= 1900)
 	#undef XBYAK_TLS
 	#define XBYAK_TLS thread_local
 	#define XBYAK_VARIADIC_TEMPLATE
@@ -146,7 +148,7 @@ namespace Xbyak {
 
 enum {
 	DEFAULT_MAX_CODE_SIZE = 4096,
-	VERSION = 0x6040 /* 0xABCD = A.BC(D) */
+	VERSION = 0x6612 /* 0xABCD = A.BC(.D) */
 };
 
 #ifndef MIE_INTEGER_TYPE_DEFINED
@@ -295,10 +297,10 @@ inline void SetError(int err) {
 inline void ClearError() {
 	local::GetErrorRef() = 0;
 }
-inline int GetError() { return local::GetErrorRef(); }
+inline int GetError() { return Xbyak::local::GetErrorRef(); }
 
-#define XBYAK_THROW(err) { local::SetError(err); return; }
-#define XBYAK_THROW_RET(err, r) { local::SetError(err); return r; }
+#define XBYAK_THROW(err) { Xbyak::local::SetError(err); return; }
+#define XBYAK_THROW_RET(err, r) { Xbyak::local::SetError(err); return r; }
 
 #else
 class Error : public std::exception {
@@ -420,9 +422,18 @@ inline int getMacOsVersion()
 } // util
 #endif
 class MmapAllocator : public Allocator {
+	struct Allocation {
+		size_t size;
+#if defined(XBYAK_USE_MEMFD)
+		// fd_ is only used with XBYAK_USE_MEMFD. We keep the file open
+		// during the lifetime of each allocation in order to support
+		// checkpoint/restore by unprivileged users.
+		int fd;
+#endif
+	};
 	const std::string name_; // only used with XBYAK_USE_MEMFD
-	typedef XBYAK_STD_UNORDERED_MAP<uintptr_t, size_t> SizeList;
-	SizeList sizeList_;
+	typedef XBYAK_STD_UNORDERED_MAP<uintptr_t, Allocation> AllocationList;
+	AllocationList allocList_;
 public:
 	explicit MmapAllocator(const std::string& name = "xbyak") : name_(name) {}
 	uint8_t *alloc(size_t size)
@@ -445,25 +456,35 @@ public:
 		fd = memfd_create(name_.c_str(), MFD_CLOEXEC);
 		if (fd != -1) {
 			mode = MAP_SHARED;
-			if (ftruncate(fd, size) != 0) XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
+			if (ftruncate(fd, size) != 0) {
+				close(fd);
+				XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
+			}
 		}
 #endif
 		void *p = mmap(NULL, size, PROT_READ | PROT_WRITE, mode, fd, 0);
-#if defined(XBYAK_USE_MEMFD)
-		if (fd != -1) close(fd);
-#endif
-		if (p == MAP_FAILED) XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
+		if (p == MAP_FAILED) {
+			if (fd != -1) close(fd);
+			XBYAK_THROW_RET(ERR_CANT_ALLOC, 0)
+		}
 		assert(p);
-		sizeList_[(uintptr_t)p] = size;
+		Allocation &alloc = allocList_[(uintptr_t)p];
+		alloc.size = size;
+#if defined(XBYAK_USE_MEMFD)
+		alloc.fd = fd;
+#endif
 		return (uint8_t*)p;
 	}
 	void free(uint8_t *p)
 	{
 		if (p == 0) return;
-		SizeList::iterator i = sizeList_.find((uintptr_t)p);
-		if (i == sizeList_.end()) XBYAK_THROW(ERR_BAD_PARAMETER)
-		if (munmap((void*)i->first, i->second) < 0) XBYAK_THROW(ERR_MUNMAP)
-		sizeList_.erase(i);
+		AllocationList::iterator i = allocList_.find((uintptr_t)p);
+		if (i == allocList_.end()) XBYAK_THROW(ERR_BAD_PARAMETER)
+		if (munmap((void*)i->first, i->second.size) < 0) XBYAK_THROW(ERR_MUNMAP)
+#if defined(XBYAK_USE_MEMFD)
+		if (i->second.fd != -1) close(i->second.fd);
+#endif
+		allocList_.erase(i);
 	}
 };
 #else
@@ -2170,9 +2191,6 @@ private:
 	{
 		if (op.isBit(32)) XBYAK_THROW(ERR_BAD_COMBINATION)
 		int w = op.isBit(16);
-#ifdef XBYAK64
-		if (op.isHigh8bit()) XBYAK_THROW(ERR_BAD_COMBINATION)
-#endif
 		bool cond = reg.isREG() && (reg.getBit() > op.getBit());
 		opModRM(reg, op, cond && op.isREG(), cond && op.isMEM(), 0x0F, code | w);
 	}
