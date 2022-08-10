@@ -85,8 +85,8 @@ size_t invVecWork(Tout& y, Tin& x, size_t n, T *t)
 	t must be T[n]
 	x[i] returns i-th const T&
 */
-template<class T, class Tout, class Tin, size_t N = 256>
-size_t invVecT(Tout& y, Tin& x, size_t n)
+template<class T, class Tout, class Tin>
+size_t invVecT(Tout& y, Tin& x, size_t n, size_t N = 256)
 {
 	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
 	size_t retNum = 0;
@@ -308,10 +308,10 @@ struct Serializable : public E {
 
 // array version of invVec
 template<class T>
-size_t invVec(T *y, const T* x, size_t n)
+size_t invVec(T *y, const T* x, size_t n, size_t N = 256)
 {
 	mcl::local::AsConstArray<T> in(x);
-	return invVecT<T>(y, in, n);
+	return invVecT<T>(y, in, n, N);
 }
 
 } // mcl::fp
