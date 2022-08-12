@@ -115,7 +115,8 @@ private:
 	}
 	static inline void mul2A(Unit *y, const Unit *x)
 	{
-		op_.fp_mul2(y, x, op_.p);
+//		op_.fp_mul2(y, x, op_.p);
+		op_.fp_add(y, x, x, op_.p);
 	}
 #endif
 	static inline void mul9A(Unit *y, const Unit *x)
@@ -609,7 +610,8 @@ public:
 #ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_mul2A_(y.v_, x.v_);
 #else
-		op_.fp_mul2(y.v_, x.v_, op_.p);
+		add(y, x, x);
+//		op_.fp_mul2(y.v_, x.v_, op_.p);
 #endif
 	}
 	static void mul9(FpT& y, const FpT& x)
