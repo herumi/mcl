@@ -51,21 +51,15 @@ static void mulUnitPreT(Unit *z, const Unit *x, Unit y)
 }
 
 // z[N] <- (x[N] * y) % p[N]
-template<size_t N, class Tag = Gtag>
-struct MulUnit {
-	static inline void func(Unit *z, const Unit *x, Unit y, const Unit *p)
-	{
-		Unit xy[N + 1];
-		mulUnitPreT<N>(xy, x, y);
-		size_t n = bint::div(0, 0, xy, N + 1, p, N);
-		bint::copyN(z, xy, n);
-		bint::clearN(z + n, N - n);
-	}
-	static const void2uIu f;
-};
-
-template<size_t N, class Tag>
-const void2uIu MulUnit<N, Tag>::f = MulUnit<N, Tag>::func;
+template<size_t N>
+static void mulUnitModT(Unit *z, const Unit *x, Unit y, const Unit *p)
+{
+	Unit xy[N + 1];
+	mulUnitPreT<N>(xy, x, y);
+	size_t n = bint::div(0, 0, xy, N + 1, p, N);
+	bint::copyN(z, xy, n);
+	bint::clearN(z + n, N - n);
+}
 
 // z[N] <- x[N * 2] % p[N]
 template<size_t N, class Tag = Gtag>

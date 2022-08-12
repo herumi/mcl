@@ -256,7 +256,7 @@ static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
-template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>
+template<size_t N, class Tag>
 void setOp2(Op& op)
 {
 	if (op.isFullBit) {
@@ -281,21 +281,20 @@ void setOp2(Op& op)
 		op.fp_sqr = Sqr<N, Tag>::f;
 		op.fpDbl_mod = Dbl_Mod<N, Tag>::f;
 	}
-	op.fp_mulUnit = MulUnit<N, Tag>::f;
 	op.fpDbl_add = get_llvm_fpDbl_add(N);
 	op.fpDbl_sub = get_llvm_fpDbl_sub(N);
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
+	// depend on bint
+	op.fp_mulUnit = mulUnitModT<N>;
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
 	op.fp_mulUnitPre = mulUnitPreT<N>;
 	op.fp_addPre = bint::get_add(N);
 	op.fp_subPre = bint::get_sub(N);
+	op.fpDbl_addPre = bint::get_add(N * 2);
+	op.fpDbl_subPre = bint::get_sub(N * 2);
 	op.fpDbl_mulPre = bint::get_mul(N);
 	op.fpDbl_sqrPre = bint::get_sqr(N);
-	if (enableFpDbl) {
-		op.fpDbl_addPre = bint::get_add(N * 2);
-		op.fpDbl_subPre = bint::get_sub(N * 2);
-	}
 }
 
 template<size_t N>
@@ -306,10 +305,10 @@ void setOp(Op& op, Mode mode)
 	op.fp_clear = bint::clearT<N>;
 	op.fp_copy = bint::copyT<N>;
 	op.fp_invOp = fp_invOpC;
-	setOp2<N, Gtag, true, false>(op);
+	setOp2<N, Gtag>(op);
 #ifdef MCL_USE_LLVM
 	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-		setOp2<N, Ltag, (N * UnitBitSize <= 384), false>(op);
+		setOp2<N, Ltag>(op);
 	}
 #else
 	(void)mode;
