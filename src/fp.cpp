@@ -41,6 +41,7 @@ Xbyak::util::Cpu g_cpu;
 #endif
 #include <cybozu/itoa.hpp>
 #include <mcl/randgen.hpp>
+#include "llvm_proto.hpp"
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4127)
@@ -255,59 +256,25 @@ static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
-template<size_t N, bool isFullBit>
-void Mul2(Unit *y, const Unit *x, const Unit *p)
-{
-#ifdef MCL_USE_LLVM
-	Add<N, isFullBit, Ltag>::f(y, x, x, p);
-#else
-	const size_t bit = 1;
-	const size_t rBit = sizeof(Unit) * 8 - bit;
-	Unit tmp[N];
-	Unit prev = x[N - 1];
-	Unit H = isFullBit ? (x[N - 1] >> rBit) : 0;
-	for (size_t i = N - 1; i > 0; i--) {
-		Unit t = x[i - 1];
-		tmp[i] = (prev << bit) | (t >> rBit);
-		prev = t;
-	}
-	tmp[0] = prev << bit;
-	bool c;
-	if (isFullBit) {
-		H -= bint::subT<N>(y, tmp, p);
-		c = H >> rBit;
-	} else {
-		c = bint::subT<N>(y, tmp, p);
-	}
-	if (c) {
-		bint::copyT<N>(y, tmp);
-	}
-#endif
-}
-
 template<size_t N, class Tag, bool enableFpDbl, bool gmpIsFasterThanLLVM>
 void setOp2(Op& op)
 {
-	op.fp_shr1 = shr1T<N>;
-	op.fp_neg = negT<N>;
 	if (op.isFullBit) {
-		op.fp_add = Add<N, true, Tag>::f;
-		op.fp_sub = Sub<N, true, Tag>::f;
-		op.fp_mul2 = Mul2<N, true>;
+		op.fp_add = get_llvm_fp_add(N);
+		op.fp_sub = get_llvm_fp_sub(N);
 	} else {
-		op.fp_add = Add<N, false, Tag>::f;
-		op.fp_sub = Sub<N, false, Tag>::f;
-		op.fp_mul2 = Mul2<N, false>;
+		op.fp_add = get_llvm_fp_addNF(N);
+		op.fp_sub = get_llvm_fp_subNF(N);
 	}
 	if (op.isMont) {
 		if (op.isFullBit) {
-			op.fp_mul = Mont<N, true, Tag>::f;
+			op.fp_mul = get_llvm_fp_mont(N);
 			op.fp_sqr = SqrMont<N, true, Tag>::f;
-			op.fpDbl_mod = MontRed<N, true, Tag>::f;
+			op.fpDbl_mod = get_llvm_fp_montRed(N);
 		} else {
-			op.fp_mul = Mont<N, false, Tag>::f;
+			op.fp_mul = get_llvm_fp_montNF(N);
 			op.fp_sqr = SqrMont<N, false, Tag>::f;
-			op.fpDbl_mod = MontRed<N, false, Tag>::f;
+			op.fpDbl_mod = get_llvm_fp_montRedNF(N);
 		}
 	} else {
 		op.fp_mul = Mul<N, Tag>::f;
@@ -315,19 +282,19 @@ void setOp2(Op& op)
 		op.fpDbl_mod = Dbl_Mod<N, Tag>::f;
 	}
 	op.fp_mulUnit = MulUnit<N, Tag>::f;
-	if (!gmpIsFasterThanLLVM) {
-		op.fpDbl_mulPre = bint::mulT<N>;
-		op.fpDbl_sqrPre = bint::sqrT<N>;
-	}
-	op.fp_mulUnitPre = mulUnitPreT<N>;
-	op.fpDbl_add = DblAdd<N, Tag>::f;
-	op.fpDbl_sub = DblSub<N, Tag>::f;
-	op.fp_addPre = bint::addT<N>;
-	op.fp_subPre = bint::subT<N>;
+	op.fpDbl_add = get_llvm_fpDbl_add(N);
+	op.fpDbl_sub = get_llvm_fpDbl_sub(N);
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
+	op.fp_shr1 = shr1T<N>;
+	op.fp_neg = negT<N>;
+	op.fp_mulUnitPre = mulUnitPreT<N>;
+	op.fp_addPre = bint::get_add(N);
+	op.fp_subPre = bint::get_sub(N);
+	op.fpDbl_mulPre = bint::get_mul(N);
+	op.fpDbl_sqrPre = bint::get_sqr(N);
 	if (enableFpDbl) {
-		op.fpDbl_addPre = bint::addT<N * 2>;
-		op.fpDbl_subPre = bint::subT<N * 2>;
+		op.fpDbl_addPre = bint::get_add(N * 2);
+		op.fpDbl_subPre = bint::get_sub(N * 2);
 	}
 }
 

@@ -137,6 +137,8 @@ include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
+src/llvm_proto.hpp: src/gen_llvm_proto.py
+	python3 $< > $@
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
 ifeq ($(ASM_MODE),asm)
   ifeq ($(OS),mingw64)
@@ -154,6 +156,7 @@ $(BINT_SRC): src/bint$(BIT).ll
 bint_header:
 	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
+	$(MAKE) src/llvm_proto.hpp
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
 #	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
