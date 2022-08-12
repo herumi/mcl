@@ -26,13 +26,6 @@ template<> struct TagToStr<Gtag> { static const char *f() { return "Gtag"; } };
 template<> struct TagToStr<Ltag> { static const char *f() { return "Ltag"; } };
 template<> struct TagToStr<Atag> { static const char *f() { return "Atag"; } };
 
-template<class Tag = Gtag>
-struct EnableKaratsuba {
-	/* always use mpn* for Gtag */
-	static const size_t minMulN = 100;
-	static const size_t minSqrN = 100;
-};
-
 template<size_t N>
 static void shr1T(Unit *y, const Unit *x)
 {

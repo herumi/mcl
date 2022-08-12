@@ -2,17 +2,6 @@
 
 namespace mcl { namespace fp {
 
-template<>
-struct EnableKaratsuba<Ltag> {
-#if MCL_SIZEOF_UNIT == 4
-	static const size_t minMulN = 10;
-	static const size_t minSqrN = 10;
-#else
-	static const size_t minMulN = 8;
-	static const size_t minSqrN = 6;
-#endif
-};
-
 #if MCL_SIZEOF_UNIT == 4
 	#define MCL_GMP_IS_FASTER_THAN_LLVM // QQQ : check later
 #endif
