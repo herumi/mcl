@@ -46,7 +46,6 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	double fp_mulUnitT;
 	double mul9T;
 	double fp_mulUnitPreT;
-	double fpN1_modT;
 	double fpDbl_addT, fpDbl_subT;
 	double fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT;
 	double fp2_sqrT, fp2_mulT;
@@ -59,7 +58,6 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	CYBOZU_BENCH_T(fp_mulUnitT, op.fp_mulUnit, uz, ux, 9, op.p);
 	CYBOZU_BENCH_T(mul9T, mul9, op, uz, ux, op.p);
 	CYBOZU_BENCH_T(fp_mulUnitPreT, op.fp_mulUnitPre, ux, ux, 9);
-	CYBOZU_BENCH_T(fpN1_modT, op.fpN1_mod, ux, uy, op.p);
 	CYBOZU_BENCH_T(fpDbl_addT, op.fpDbl_add, uz, ux, uy, op.p);
 	CYBOZU_BENCH_T(fpDbl_subT, op.fpDbl_sub, uz, uy, ux, op.p);
 	CYBOZU_BENCH_T(fpDbl_sqrPreT, op.fpDbl_sqrPre, uz, ux);
@@ -79,7 +77,6 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 		"mulUnit",
 		"mul9",
 		"mulUnitP",
-		"fpN1_mod",
 		"D_add", "D_sub",
 		"D_sqrPre", "D_mulPre", "D_mod",
 		"fp2_sqr", "fp2_mul",
@@ -95,7 +92,6 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 		fp_mulUnitT,
 		mul9T,
 		fp_mulUnitPreT,
-		fpN1_modT,
 		fpDbl_addT, fpDbl_subT,
 		fpDbl_sqrPreT, fpDbl_mulPreT, fpDbl_modT,
 		fp2_sqrT, fp2_mulT,

@@ -50,28 +50,6 @@ static void mulUnitPreT(Unit *z, const Unit *x, Unit y)
 	z[N] = bint::mulUnitT<N>(z, x, y);
 }
 
-// z[N] <- x[N + 1] % p[N]
-template<size_t N, class Tag = Gtag>
-struct N1_Mod {
-	static inline void func(Unit *y, const Unit *x, const Unit *p)
-	{
-#ifdef MCL_USE_VINT
-		Unit t[N + 1];
-		bint::copyN(t, x, N + 1);
-		size_t n = bint::div(0, 0, t, N + 1, p, N);
-		bint::copyN(y, t, n);
-		bint::clearN(y + n, N - n);
-#else
-		mp_limb_t q[2]; // not used
-		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N + 1, (const mp_limb_t*)p, N);
-#endif
-	}
-	static const void3u f;
-};
-
-template<size_t N, class Tag>
-const void3u N1_Mod<N, Tag>::f = N1_Mod<N, Tag>::func;
-
 // z[N] <- (x[N] * y) % p[N]
 template<size_t N, class Tag = Gtag>
 struct MulUnit {
@@ -79,37 +57,9 @@ struct MulUnit {
 	{
 		Unit xy[N + 1];
 		mulUnitPreT<N>(xy, x, y);
-#if 1
-		Unit len = UnitBitSize - 1 - cybozu::bsr(p[N - 1]);
-		Unit v = xy[N];
-		if (N > 1 && len < 3 && v < 0xff) {
-			for (;;) {
-				if (len == 0) {
-					v = xy[N];
-				} else {
-					v = (xy[N] << len) | (xy[N - 1] >> (UnitBitSize - len));
-				}
-				if (v == 0) break;
-				if (v == 1) {
-					xy[N] -= bint::subT<N>(xy, xy, p);
-				} else {
-					Unit t[N + 1];
-					mulUnitPreT<N>(t, p, v);
-					bint::subT<N + 1>(xy, xy, t);
-				}
-			}
-			for (;;) {
-				if (bint::subT<N>(z, xy, p)) {
-					bint::copyT<N>(z, xy);
-					return;
-				}
-				if (bint::subT<N>(xy, z, p)) {
-					return;
-				}
-			}
-		}
-#endif
-		N1_Mod<N, Tag>::f(z, xy, p);
+		size_t n = bint::div(0, 0, xy, N + 1, p, N);
+		bint::copyN(z, xy, n);
+		bint::clearN(z + n, N - n);
 	}
 	static const void2uIu f;
 };

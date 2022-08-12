@@ -232,13 +232,12 @@ struct Op {
 	void3u fp_sqr;
 	void3u fp_mul2;
 	void2uOp fp_invOp;
-	void2uIu fp_mulUnit; // fpN1_mod + fp_mulUnitPre
+	void2uIu fp_mulUnit; // fp_mulUnitPre
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;
 	int2u fp_preInv;
 	void2uI fp_mulUnitPre; // z[N + 1] = x[N] * y
-	void3u fpN1_mod; // y[N] = x[N + 1] % p[N]
 
 	void4u fpDbl_add;
 	void4u fpDbl_sub;
@@ -327,7 +326,6 @@ struct Op {
 		fpDbl_sqrPre = 0;
 		fp_preInv = 0;
 		fp_mulUnitPre = 0;
-		fpN1_mod = 0;
 
 		fpDbl_add = 0;
 		fpDbl_sub = 0;
