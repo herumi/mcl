@@ -62,26 +62,15 @@ static void mulUnitModT(Unit *z, const Unit *x, Unit y, const Unit *p)
 }
 
 // z[N] <- x[N * 2] % p[N]
-template<size_t N, class Tag = Gtag>
-struct Dbl_Mod {
-	static inline void func(Unit *y, const Unit *x, const Unit *p)
-	{
-#ifdef MCL_USE_VINT
-		Unit t[N * 2];
-		bint::copyN(t, x, N * 2);
-		size_t n = bint::div(0, 0, t, N * 2, p, N);
-		bint::copyN(y, t, n);
-		bint::clearN(y + n, N - n);
-#else
-		mp_limb_t q[N + 1]; // not used
-		mpn_tdiv_qr(q, (mp_limb_t*)y, 0, (const mp_limb_t*)x, N * 2, (const mp_limb_t*)p, N);
-#endif
-	}
-	static const void3u f;
-};
-
-template<size_t N, class Tag>
-const void3u Dbl_Mod<N, Tag>::f = Dbl_Mod<N, Tag>::func;
+template<size_t N>
+static void dblModT(Unit *y, const Unit *x, const Unit *p)
+{
+	Unit t[N * 2];
+	bint::copyN(t, x, N * 2);
+	size_t n = bint::div(0, 0, t, N * 2, p, N);
+	bint::copyN(y, t, n);
+	bint::clearN(y + n, N - n);
+}
 
 template<size_t N, class Tag>
 struct SubIfPossible {
@@ -334,32 +323,22 @@ template<size_t N, bool isFullBit, class Tag>
 const void3u SqrMont<N, isFullBit, Tag>::f = SqrMont<N, isFullBit, Tag>::func;
 
 // z[N] <- (x[N] * y[N]) % p[N]
-template<size_t N, class Tag = Gtag>
-struct Mul {
-	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		Unit xy[N * 2];
-		bint::mulT<N>(xy, x, y);
-		Dbl_Mod<N, Tag>::f(z, xy, p);
-	}
-	static const void4u f;
-};
-template<size_t N, class Tag>
-const void4u Mul<N, Tag>::f = Mul<N, Tag>::func;
+template<size_t N>
+static void mulModT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	Unit xy[N * 2];
+	bint::mulT<N>(xy, x, y);
+	dblModT<N>(z, xy, p);
+}
 
 // y[N] <- (x[N] * x[N]) % p[N]
-template<size_t N, class Tag = Gtag>
-struct Sqr {
-	static inline void func(Unit *y, const Unit *x, const Unit *p)
-	{
-		Unit xx[N * 2];
-		bint::sqrT<N>(xx, x);
-		Dbl_Mod<N, Tag>::f(y, xx, p);
-	}
-	static const void3u f;
-};
-template<size_t N, class Tag>
-const void3u Sqr<N, Tag>::f = Sqr<N, Tag>::func;
+template<size_t N>
+static void sqrModT(Unit *y, const Unit *x, const Unit *p)
+{
+	Unit xx[N * 2];
+	bint::sqrT<N>(xx, x);
+	dblModT<N>(y, xx, p);
+}
 
 template<size_t N, class Tag = Gtag>
 struct Fp2MulNF {

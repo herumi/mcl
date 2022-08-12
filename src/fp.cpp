@@ -259,6 +259,20 @@ static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 template<size_t N, class Tag>
 void setOp2(Op& op)
 {
+	// always use bint functions
+	op.fp_mulUnit = mulUnitModT<N>;
+	op.fp_shr1 = shr1T<N>;
+	op.fp_neg = negT<N>;
+	op.fp_mulUnitPre = mulUnitPreT<N>;
+	op.fp_addPre = bint::get_add(N);
+	op.fp_subPre = bint::get_sub(N);
+	op.fpDbl_addPre = bint::get_add(N * 2);
+	op.fpDbl_subPre = bint::get_sub(N * 2);
+	op.fpDbl_mulPre = bint::get_mul(N);
+	op.fpDbl_sqrPre = bint::get_sqr(N);
+
+
+	// use llvm functions if possible
 	if (op.isFullBit) {
 		op.fp_add = get_llvm_fp_add(N);
 		op.fp_sub = get_llvm_fp_sub(N);
@@ -277,24 +291,13 @@ void setOp2(Op& op)
 			op.fpDbl_mod = get_llvm_fp_montRedNF(N);
 		}
 	} else {
-		op.fp_mul = Mul<N, Tag>::f;
-		op.fp_sqr = Sqr<N, Tag>::f;
-		op.fpDbl_mod = Dbl_Mod<N, Tag>::f;
+		op.fp_mul = mulModT<N>;
+		op.fp_sqr = sqrModT<N>;
+		op.fpDbl_mod = dblModT<N>;
 	}
 	op.fpDbl_add = get_llvm_fpDbl_add(N);
 	op.fpDbl_sub = get_llvm_fpDbl_sub(N);
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
-	// depend on bint
-	op.fp_mulUnit = mulUnitModT<N>;
-	op.fp_shr1 = shr1T<N>;
-	op.fp_neg = negT<N>;
-	op.fp_mulUnitPre = mulUnitPreT<N>;
-	op.fp_addPre = bint::get_add(N);
-	op.fp_subPre = bint::get_sub(N);
-	op.fpDbl_addPre = bint::get_add(N * 2);
-	op.fpDbl_subPre = bint::get_sub(N * 2);
-	op.fpDbl_mulPre = bint::get_mul(N);
-	op.fpDbl_sqrPre = bint::get_sqr(N);
 }
 
 template<size_t N>
