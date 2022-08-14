@@ -32,6 +32,45 @@ static void shr1T(Unit *y, const Unit *x)
 	bint::shrT<N>(y, x, 1);
 }
 
+template<size_t N>
+void addModT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	if (bint::addT<N>(z, x, y)) {
+		bint::subT<N>(z, z, p);
+		return;
+	}
+	Unit tmp[N];
+	if (bint::subT<N>(tmp, z, p) == 0) {
+		bint::copyT<N>(z, tmp);
+	}
+}
+
+template<size_t N>
+void addModNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	bint::addNFT<N>(z, x, y);
+	Unit tmp[N];
+	if (bint::subNFT<N>(tmp, z, p) == 0) {
+		bint::copyT<N>(z, tmp);
+	}
+}
+
+template<size_t N>
+void subModT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	if (bint::subT<N>(z, x, y)) {
+		bint::addT<N>(z, z, p);
+	}
+}
+
+template<size_t N>
+void subModNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	if (bint::subNFT<N>(z, x, y)) {
+		bint::addNFT<N>(z, z, p);
+	}
+}
+
 // y[N] <- (-x[N]) % p[N]
 template<size_t N>
 static void negT(Unit *y, const Unit *x, const Unit *p)
@@ -72,6 +111,7 @@ static void dblModT(Unit *y, const Unit *x, const Unit *p)
 	bint::clearN(y + n, N - n);
 }
 
+#if 0
 template<size_t N, class Tag>
 struct SubIfPossible {
 	static inline void f(Unit *z, const Unit *p)
@@ -89,7 +129,6 @@ struct SubIfPossible<1, Tag> {
 	{
 	}
 };
-
 
 // z[N] <- (x[N] + y[N]) % p[N]
 template<size_t N, bool isFullBit, class Tag = Gtag>
@@ -138,6 +177,7 @@ struct Sub {
 
 template<size_t N, bool isFullBit, class Tag>
 const void4u Sub<N, isFullBit, Tag>::f = Sub<N, isFullBit, Tag>::func;
+#endif
 
 //	z[N * 2] <- (x[N * 2] + y[N * 2]) mod p[N] << (N * UnitBitSize)
 template<size_t N, class Tag = Gtag>

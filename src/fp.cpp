@@ -37,7 +37,7 @@ Xbyak::util::Cpu g_cpu;
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "proto.hpp"
-#include "low_func_llvm.hpp"
+//#include "low_func_llvm.hpp"
 #endif
 #include <cybozu/itoa.hpp>
 #include <mcl/randgen.hpp>
@@ -271,7 +271,6 @@ void setOp2(Op& op)
 	op.fpDbl_mulPre = bint::get_mul(N);
 	op.fpDbl_sqrPre = bint::get_sqr(N);
 
-
 	// use llvm functions if possible
 	if (op.isFullBit) {
 		op.fp_add = get_llvm_fp_add(N);
@@ -298,6 +297,15 @@ void setOp2(Op& op)
 	op.fpDbl_add = get_llvm_fpDbl_add(N);
 	op.fpDbl_sub = get_llvm_fpDbl_sub(N);
 	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
+
+	// use bint functions with mod p
+	if (op.isFullBit) {
+		op.fp_add = addModT<N>;
+		op.fp_sub = subModT<N>;
+	} else {
+		op.fp_add = addModNFT<N>;
+		op.fp_sub = subModNFT<N>;
+	}
 }
 
 template<size_t N>
