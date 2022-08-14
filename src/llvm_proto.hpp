@@ -251,4 +251,30 @@ void4u get_llvm_fpDbl_sub(size_t n)
 #endif
 	}
 }
+template<size_t N>void llvm_sqrT(Unit *z, const Unit *x, const Unit *p);
+#if MCL_SIZEOF_UNIT == 4
+template<> void llvm_sqrT<6>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont6L(z, x, x, p); }
+template<> void llvm_sqrT<7>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont7L(z, x, x, p); }
+template<> void llvm_sqrT<8>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont8L(z, x, x, p); }
+template<> void llvm_sqrT<12>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont12L(z, x, x, p); }
+template<> void llvm_sqrT<16>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont16L(z, x, x, p); }
+#else
+template<> void llvm_sqrT<3>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont3L(z, x, x, p); }
+template<> void llvm_sqrT<4>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont4L(z, x, x, p); }
+template<> void llvm_sqrT<6>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont6L(z, x, x, p); }
+template<> void llvm_sqrT<8>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont8L(z, x, x, p); }
+#endif
+template<size_t N>void llvm_sqrNFT(Unit *z, const Unit *x, const Unit *p);
+#if MCL_SIZEOF_UNIT == 4
+template<> void llvm_sqrNFT<6>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF6L(z, x, x, p); }
+template<> void llvm_sqrNFT<7>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF7L(z, x, x, p); }
+template<> void llvm_sqrNFT<8>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF8L(z, x, x, p); }
+template<> void llvm_sqrNFT<12>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF12L(z, x, x, p); }
+template<> void llvm_sqrNFT<16>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF16L(z, x, x, p); }
+#else
+template<> void llvm_sqrNFT<3>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF3L(z, x, x, p); }
+template<> void llvm_sqrNFT<4>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF4L(z, x, x, p); }
+template<> void llvm_sqrNFT<6>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF6L(z, x, x, p); }
+template<> void llvm_sqrNFT<8>(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF8L(z, x, x, p); }
+#endif
 }}

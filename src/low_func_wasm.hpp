@@ -178,30 +178,5 @@ void sqrMontT(uint32_t y[N], const uint32_t x[N], const uint32_t p[N])
 	mulMontT<N>(y, x, x, p);
 }
 
-#if 0
-template<size_t N>
-void normalizeT(uint32_t y[N], const uint64_t x[N])
-{
-	uint64_t H = x[0];
-	y[0] = H & 0xffffffff;
-	for (size_t i = 1; i < N; i++) {
-		uint64_t v = x[i] + (H >> 32);
-		y[i] = uint32_t(v & 0xffffffff);
-		H = v;
-	}
-}
-
-template<size_t N, typename T>
-int cmpT(const T *x, const T* y)
-{
-	for (size_t i = N - 1; i != size_t(-1); i--) {
-		T a = x[i];
-		T b = y[i];
-		if (a != b) return a < b ? -1 : 1;
-	}
-	return 0;
-}
-#endif
-
 } // mcl
 

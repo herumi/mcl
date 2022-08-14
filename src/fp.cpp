@@ -255,10 +255,21 @@ static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
-template<size_t N, class Tag>
+// set x = y unless y = 0
+template<typename T>
+void setSafe(T& x, T y)
+{
+	if (y != 0) x = y;
+}
+
+template<size_t N>
 void setOp2(Op& op)
 {
 	// always use bint functions
+	op.fp_isZero = bint::isZeroT<N, Unit>;
+	op.fp_clear = bint::clearT<N>;
+	op.fp_copy = bint::copyT<N>;
+	op.fp_invOp = fp_invOpC;
 	op.fp_mulUnit = mulUnitModT<N>;
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
@@ -270,59 +281,53 @@ void setOp2(Op& op)
 	op.fpDbl_mulPre = bint::get_mul(N);
 	op.fpDbl_sqrPre = bint::get_sqr(N);
 
-	// use llvm functions if possible
 	if (op.isFullBit) {
-		op.fp_add = get_llvm_fp_add(N);
-		op.fp_sub = get_llvm_fp_sub(N);
+		op.fp_add = addModT<N>;
+		op.fp_sub = subModT<N>;
+		setSafe(op.fp_add, get_llvm_fp_add(N));
+		setSafe(op.fp_sub, get_llvm_fp_sub(N));
 	} else {
-		op.fp_add = get_llvm_fp_addNF(N);
-		op.fp_sub = get_llvm_fp_subNF(N);
+		op.fp_add = addModNFT<N>;
+		op.fp_sub = subModNFT<N>;
+		setSafe(op.fp_add, get_llvm_fp_addNF(N));
+		setSafe(op.fp_sub, get_llvm_fp_subNF(N));
 	}
 	if (op.isMont) {
 		if (op.isFullBit) {
-			op.fp_mul = get_llvm_fp_mont(N);
-			op.fp_sqr = SqrMont<N, true, Tag>::f;
-			op.fpDbl_mod = get_llvm_fp_montRed(N);
+			op.fp_mul = mulMontT<N>;
+			op.fp_sqr = sqrMontT<N>;
+			op.fpDbl_mod = modRedT<N>;
+			setSafe(op.fp_mul, get_llvm_fp_mont(N));
+#if defined(MCL_USE_LLVM) && (MCL_SIZEOF_UNIT * N) >= MCL_MAX_BIT_SIZE
+			op.fp_sqr = llvm_sqrT<N>;
+#endif
+			setSafe(op.fpDbl_mod, get_llvm_fp_montRed(N));
 		} else {
-			op.fp_mul = get_llvm_fp_montNF(N);
-			op.fp_sqr = SqrMont<N, false, Tag>::f;
-			op.fpDbl_mod = get_llvm_fp_montRedNF(N);
+			op.fp_mul = mulMontNFT<N>;
+			op.fp_sqr = sqrMontNFT<N>;
+			op.fpDbl_mod = modRedNFT<N>;
+			setSafe(op.fp_mul, get_llvm_fp_montNF(N));
+#if defined(MCL_USE_LLVM) && (MCL_SIZEOF_UNIT * N) >= MCL_MAX_BIT_SIZE
+			op.fp_sqr = llvm_sqrNFT<N>;
+#endif
+			setSafe(op.fpDbl_mod, get_llvm_fp_montRedNF(N));
 		}
 	} else {
 		op.fp_mul = mulModT<N>;
 		op.fp_sqr = sqrModT<N>;
 		op.fpDbl_mod = fpDblModT<N>;
 	}
-	op.fpDbl_add = get_llvm_fpDbl_add(N);
-	op.fpDbl_sub = get_llvm_fpDbl_sub(N);
-	op.fp2_mulNF = Fp2MulNF<N, Tag>::f;
-
-	// use bint functions with mod p
-	if (op.isFullBit) {
-		op.fp_add = addModT<N>;
-		op.fp_sub = subModT<N>;
-	} else {
-		op.fp_add = addModNFT<N>;
-		op.fp_sub = subModNFT<N>;
-	}
+	op.fpDbl_add = fpDblAddModT<N>;
+	op.fpDbl_sub = fpDblSubModT<N>;
+	setSafe(op.fpDbl_add, get_llvm_fpDbl_add(N));
+	setSafe(op.fpDbl_sub, get_llvm_fpDbl_sub(N));
+	op.fp2_mulNF = fp2_mulNFT<N>;
 }
 
 template<size_t N>
-void setOp(Op& op, Mode mode)
+void setOp(Op& op, Mode /*mode*/)
 {
-	// generic setup
-	op.fp_isZero = bint::isZeroT<N, Unit>;
-	op.fp_clear = bint::clearT<N>;
-	op.fp_copy = bint::copyT<N>;
-	op.fp_invOp = fp_invOpC;
-	setOp2<N, Gtag>(op);
-#ifdef MCL_USE_LLVM
-	if (mode != fp::FP_GMP && mode != fp::FP_GMP_MONT) {
-		setOp2<N, Ltag>(op);
-	}
-#else
-	(void)mode;
-#endif
+	setOp2<N>(op);
 }
 
 #ifdef MCL_X64_ASM
@@ -423,7 +428,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-#ifdef USE_WASM
+#if 0 // #ifdef USE_WASM
 template<size_t N>
 void setWasmOp(Op& op)
 {
@@ -568,7 +573,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	default:
 		return false;
 	}
-#if defined(USE_WASM) && MCL_SIZEOF_UNIT == 4
+#if 0 // #if defined(USE_WASM) && MCL_SIZEOF_UNIT == 4
 	if (N == 8) {
 		setWasmOp<8>(*this);
 	} else if (N == 12) {

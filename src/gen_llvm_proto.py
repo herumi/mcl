@@ -28,6 +28,19 @@ def gen_proto(t):
 	for i in set(N32tbl+N64tbl):
 		print(f'{ret} mcl_{name}{i}L({args});')
 
+def gen_sqr_mont_impl(suf, n):
+	print(f'template<> void llvm_sqr{suf}T<{n}>(Unit *z, const Unit *x, const Unit *p) {{ return mcl_fp_mont{suf}{n}L(z, x, x, p); }}')
+
+def gen_sqr_mont(suf):
+	print(f'template<size_t N>void llvm_sqr{suf}T(Unit *z, const Unit *x, const Unit *p);')
+	print('#if MCL_SIZEOF_UNIT == 4')
+	for i in N32tbl:
+		gen_sqr_mont_impl(suf, i)
+	print('#else')
+	for i in N64tbl:
+		gen_sqr_mont_impl(suf, i)
+	print('#endif')
+
 void3u = 'Unit*, const Unit*, const Unit*'
 void4u = 'Unit*, const Unit*, const Unit*, const Unit*'
 tbl = [
@@ -52,6 +65,9 @@ print('}')
 
 for t in tbl:
 	gen_get_ptr(t)
+
+gen_sqr_mont('')
+gen_sqr_mont('NF')
 
 print('}}')
 
