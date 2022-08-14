@@ -37,7 +37,6 @@ Xbyak::util::Cpu g_cpu;
 #include "low_func.hpp"
 #ifdef MCL_USE_LLVM
 #include "proto.hpp"
-//#include "low_func_llvm.hpp"
 #endif
 #include <cybozu/itoa.hpp>
 #include <mcl/randgen.hpp>
@@ -292,7 +291,7 @@ void setOp2(Op& op)
 	} else {
 		op.fp_mul = mulModT<N>;
 		op.fp_sqr = sqrModT<N>;
-		op.fpDbl_mod = dblModT<N>;
+		op.fpDbl_mod = fpDblModT<N>;
 	}
 	op.fpDbl_add = get_llvm_fpDbl_add(N);
 	op.fpDbl_sub = get_llvm_fpDbl_sub(N);

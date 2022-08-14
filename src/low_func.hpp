@@ -102,7 +102,7 @@ static void mulUnitModT(Unit *z, const Unit *x, Unit y, const Unit *p)
 
 // z[N] <- x[N * 2] % p[N]
 template<size_t N>
-static void dblModT(Unit *y, const Unit *x, const Unit *p)
+static void fpDblModT(Unit *y, const Unit *x, const Unit *p)
 {
 	Unit t[N * 2];
 	bint::copyN(t, x, N * 2);
@@ -110,74 +110,6 @@ static void dblModT(Unit *y, const Unit *x, const Unit *p)
 	bint::copyN(y, t, n);
 	bint::clearN(y + n, N - n);
 }
-
-#if 0
-template<size_t N, class Tag>
-struct SubIfPossible {
-	static inline void f(Unit *z, const Unit *p)
-	{
-		Unit tmp[N - 1];
-		if (bint::subT<N - 1>(tmp, z, p) == 0) {
-			bint::copyT<N - 1>(z, tmp);
-			z[N - 1] = 0;
-		}
-	}
-};
-template<class Tag>
-struct SubIfPossible<1, Tag> {
-	static inline void f(Unit *, const Unit *)
-	{
-	}
-};
-
-// z[N] <- (x[N] + y[N]) % p[N]
-template<size_t N, bool isFullBit, class Tag = Gtag>
-struct Add {
-	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		if (isFullBit) {
-			if (bint::addT<N>(z, x, y)) {
-				bint::subT<N>(z, z, p);
-				return;
-			}
-			Unit tmp[N];
-			if (bint::subT<N>(tmp, z, p) == 0) {
-				bint::copyT<N>(z, tmp);
-			}
-		} else {
-			bint::addT<N>(z, x, y);
-			Unit a = z[N - 1];
-			Unit b = p[N - 1];
-			if (a < b) return;
-			if (a > b) {
-				bint::subT<N>(z, z, p);
-				return;
-			}
-			/* the top of z and p are same */
-			SubIfPossible<N, Tag>::f(z, p);
-		}
-	}
-	static const void4u f;
-};
-
-template<size_t N, bool isFullBit, class Tag>
-const void4u Add<N, isFullBit, Tag>::f = Add<N, isFullBit, Tag>::func;
-
-// z[N] <- (x[N] - y[N]) % p[N]
-template<size_t N, bool isFullBit, class Tag = Gtag>
-struct Sub {
-	static inline void func(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-	{
-		if (bint::subT<N>(z, x, y)) {
-			bint::addT<N>(z, z, p);
-		}
-	}
-	static const void4u f;
-};
-
-template<size_t N, bool isFullBit, class Tag>
-const void4u Sub<N, isFullBit, Tag>::f = Sub<N, isFullBit, Tag>::func;
-#endif
 
 //	z[N * 2] <- (x[N * 2] + y[N * 2]) mod p[N] << (N * UnitBitSize)
 template<size_t N, class Tag = Gtag>
@@ -368,7 +300,7 @@ static void mulModT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
 	Unit xy[N * 2];
 	bint::mulT<N>(xy, x, y);
-	dblModT<N>(z, xy, p);
+	fpDblModT<N>(z, xy, p);
 }
 
 // y[N] <- (x[N] * x[N]) % p[N]
@@ -377,7 +309,7 @@ static void sqrModT(Unit *y, const Unit *x, const Unit *p)
 {
 	Unit xx[N * 2];
 	bint::sqrT<N>(xx, x);
-	dblModT<N>(y, xx, p);
+	fpDblModT<N>(y, xx, p);
 }
 
 template<size_t N, class Tag = Gtag>
