@@ -17,7 +17,8 @@ mkdir %PACKAGE_DIR%
 set TOP_DIR=../..
 %SWIG% -java -package %PACKAGE_NAME% -outdir %PACKAGE_DIR% -c++ -Wall %NAME%.i
 echo [[make dll]]
-cl /MT /DNOMINMAX /LD /Ox /DNDEBUG /EHsc %NAME%_wrap.cxx %TOP_DIR%/src/fp.cpp -DMCL_NO_AUTOLINK -I%JAVA_INCLUDE% -I%JAVA_INCLUDE%\win32 -I%TOP_DIR%/include -I%TOP_DIR%/../cybozulib/include -I%TOP_DIR%/../cybozulib_ext/include -I%TOP_DIR%/../xbyak /link /LIBPATH:%TOP_DIR%/../cybozulib_ext/lib /OUT:%TOP_DIR%/bin/mcl%LIBNAME%java.dll
+ml64 -c %TOP_DIR%/src\asm\bint-x64-win.asm
+cl /MT /DNOMINMAX /LD /Ox /DNDEBUG /EHsc %NAME%_wrap.cxx %TOP_DIR%/src/fp.cpp bint-x64-win.obj -DMCL_NO_AUTOLINK -I%JAVA_INCLUDE% -I%JAVA_INCLUDE%\win32 -I%TOP_DIR%/include -I%TOP_DIR%/../cybozulib/include -I%TOP_DIR%/../cybozulib_ext/include -I%TOP_DIR%/../xbyak /link /LIBPATH:%TOP_DIR%/../cybozulib_ext/lib /OUT:%TOP_DIR%/bin/mcl%LIBNAME%java.dll
 
 call run-%NAME%.bat
 
