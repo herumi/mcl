@@ -10,12 +10,14 @@ def gen_get_ptr(t):
 	print('{')
 	print('	switch (n) {')
 	print('	default: return 0;')
+	print('#ifdef MCL_USE_LLVM')
 	print('#if MCL_SIZEOF_UNIT == 4')
 	for i in N32tbl:
 		print(f'	case {i}: return mcl_{name}{i}L;')
 	print('#else')
 	for i in N64tbl:
 		print(f'	case {i}: return mcl_{name}{i}L;')
+	print('#endif')
 	print('#endif')
 	print('	}')
 	print('}')
@@ -29,16 +31,17 @@ def gen_proto(t):
 		print(f'{ret} mcl_{name}{i}L({args});')
 
 def gen_sqr_mont_impl(suf, n):
-	print(f'template<> void llvm_sqr{suf}T<{n}>(Unit *z, const Unit *x, const Unit *p) {{ return mcl_fp_mont{suf}{n}L(z, x, x, p); }}')
+	print(f'void mcl_fp_sqrMont{suf}{n}L(Unit *z, const Unit *x, const Unit *p) {{ return mcl_fp_mont{suf}{n}L(z, x, x, p); }}')
 
 def gen_sqr_mont(suf):
-	print(f'template<size_t N>void llvm_sqr{suf}T(Unit *z, const Unit *x, const Unit *p);')
+	print('#ifdef MCL_USE_LLVM')
 	print('#if MCL_SIZEOF_UNIT == 4')
 	for i in N32tbl:
 		gen_sqr_mont_impl(suf, i)
 	print('#else')
 	for i in N64tbl:
 		gen_sqr_mont_impl(suf, i)
+	print('#endif')
 	print('#endif')
 
 void3u = 'Unit*, const Unit*, const Unit*'
@@ -54,6 +57,8 @@ tbl = [
 	('fp_montRedNF', 'void3u', 'void', void3u),
 	('fpDbl_add', 'void4u', 'void', void4u),
 	('fpDbl_sub', 'void4u', 'void', void4u),
+	('fp_sqrMont', 'void3u', 'void', void3u),
+	('fp_sqrMontNF', 'void3u', 'void', void3u),
 ]
 
 print('namespace mcl { namespace fp {')
@@ -61,13 +66,17 @@ print('namespace mcl { namespace fp {')
 print('extern "C" {')
 for t in tbl:
 	gen_proto(t)
+print('void mcl_fp_mulNIST_P192L(Unit *, const Unit *, const Unit *, const Unit *);')
+print('void mcl_fp_sqr_NIST_P192L(Unit *, const Unit *, const Unit *);')
+print('void mcl_fpDbl_mod_NIST_P192L(Unit *, const Unit *, const Unit *);')
+print('void mcl_fpDbl_mod_NIST_P521L(Unit *, const Unit *, const Unit *);')
 print('}')
-
-for t in tbl:
-	gen_get_ptr(t)
 
 gen_sqr_mont('')
 gen_sqr_mont('NF')
+
+for t in tbl:
+	gen_get_ptr(t)
 
 print('}}')
 

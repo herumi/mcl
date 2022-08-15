@@ -298,18 +298,14 @@ void setOp2(Op& op)
 			op.fp_sqr = sqrMontT<N>;
 			op.fpDbl_mod = modRedT<N>;
 			setSafe(op.fp_mul, get_llvm_fp_mont(N));
-#if defined(MCL_USE_LLVM) && (MCL_SIZEOF_UNIT * N) >= MCL_MAX_BIT_SIZE
-			op.fp_sqr = llvm_sqrT<N>;
-#endif
+			setSafe(op.fp_sqr, get_llvm_fp_sqrMont(N));
 			setSafe(op.fpDbl_mod, get_llvm_fp_montRed(N));
 		} else {
 			op.fp_mul = mulMontNFT<N>;
 			op.fp_sqr = sqrMontNFT<N>;
 			op.fpDbl_mod = modRedNFT<N>;
+			setSafe(op.fp_sqr, get_llvm_fp_sqrMontNF(N));
 			setSafe(op.fp_mul, get_llvm_fp_montNF(N));
-#if defined(MCL_USE_LLVM) && (MCL_SIZEOF_UNIT * N) >= MCL_MAX_BIT_SIZE
-			op.fp_sqr = llvm_sqrNFT<N>;
-#endif
 			setSafe(op.fpDbl_mod, get_llvm_fp_montRedNF(N));
 		}
 	} else {
