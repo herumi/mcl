@@ -70,20 +70,6 @@ void mcl_fpDbl_sub7L(Unit*, const Unit*, const Unit*, const Unit*);
 void mcl_fpDbl_sub8L(Unit*, const Unit*, const Unit*, const Unit*);
 void mcl_fpDbl_sub12L(Unit*, const Unit*, const Unit*, const Unit*);
 void mcl_fpDbl_sub16L(Unit*, const Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont3L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont4L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont6L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont7L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont8L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont12L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMont16L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF3L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF4L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF6L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF7L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF8L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF12L(Unit*, const Unit*, const Unit*);
-void mcl_fp_sqrMontNF16L(Unit*, const Unit*, const Unit*);
 void mcl_fp_mulNIST_P192L(Unit *, const Unit *, const Unit *, const Unit *);
 void mcl_fp_sqr_NIST_P192L(Unit *, const Unit *, const Unit *);
 void mcl_fpDbl_mod_NIST_P192L(Unit *, const Unit *, const Unit *);
@@ -91,33 +77,33 @@ void mcl_fpDbl_mod_NIST_P521L(Unit *, const Unit *, const Unit *);
 }
 #ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
-void mcl_fp_sqrMont6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont6L(z, x, x, p); }
-void mcl_fp_sqrMont7L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont7L(z, x, x, p); }
-void mcl_fp_sqrMont8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont8L(z, x, x, p); }
-void mcl_fp_sqrMont12L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont12L(z, x, x, p); }
-void mcl_fp_sqrMont16L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont16L(z, x, x, p); }
+static inline void mcl_fp_sqrMont6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont6L(z, x, x, p); }
+static inline void mcl_fp_sqrMont7L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont7L(z, x, x, p); }
+static inline void mcl_fp_sqrMont8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont8L(z, x, x, p); }
+static inline void mcl_fp_sqrMont12L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont12L(z, x, x, p); }
+static inline void mcl_fp_sqrMont16L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont16L(z, x, x, p); }
 #else
-void mcl_fp_sqrMont3L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont3L(z, x, x, p); }
-void mcl_fp_sqrMont4L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont4L(z, x, x, p); }
-void mcl_fp_sqrMont6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont6L(z, x, x, p); }
-void mcl_fp_sqrMont8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont8L(z, x, x, p); }
+static inline void mcl_fp_sqrMont3L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont3L(z, x, x, p); }
+static inline void mcl_fp_sqrMont4L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont4L(z, x, x, p); }
+static inline void mcl_fp_sqrMont6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont6L(z, x, x, p); }
+static inline void mcl_fp_sqrMont8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_mont8L(z, x, x, p); }
 #endif
 #endif
 #ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
-void mcl_fp_sqrMontNF6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF6L(z, x, x, p); }
-void mcl_fp_sqrMontNF7L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF7L(z, x, x, p); }
-void mcl_fp_sqrMontNF8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF8L(z, x, x, p); }
-void mcl_fp_sqrMontNF12L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF12L(z, x, x, p); }
-void mcl_fp_sqrMontNF16L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF16L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF6L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF7L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF7L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF8L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF12L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF12L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF16L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF16L(z, x, x, p); }
 #else
-void mcl_fp_sqrMontNF3L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF3L(z, x, x, p); }
-void mcl_fp_sqrMontNF4L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF4L(z, x, x, p); }
-void mcl_fp_sqrMontNF6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF6L(z, x, x, p); }
-void mcl_fp_sqrMontNF8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF8L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF3L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF3L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF4L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF4L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF6L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF6L(z, x, x, p); }
+static inline void mcl_fp_sqrMontNF8L(Unit *z, const Unit *x, const Unit *p) { return mcl_fp_montNF8L(z, x, x, p); }
 #endif
 #endif
-void4u get_llvm_fp_add(size_t n)
+static inline bint::void_pppp get_llvm_fp_add(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -137,7 +123,7 @@ void4u get_llvm_fp_add(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fp_sub(size_t n)
+static inline bint::void_pppp get_llvm_fp_sub(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -157,7 +143,7 @@ void4u get_llvm_fp_sub(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fp_addNF(size_t n)
+static inline bint::void_pppp get_llvm_fp_addNF(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -177,7 +163,7 @@ void4u get_llvm_fp_addNF(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fp_subNF(size_t n)
+static inline bint::void_pppp get_llvm_fp_subNF(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -197,7 +183,7 @@ void4u get_llvm_fp_subNF(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fp_mont(size_t n)
+static inline bint::void_pppp get_llvm_fp_mont(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -217,7 +203,7 @@ void4u get_llvm_fp_mont(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fp_montNF(size_t n)
+static inline bint::void_pppp get_llvm_fp_montNF(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -237,7 +223,7 @@ void4u get_llvm_fp_montNF(size_t n)
 #endif
 	}
 }
-void3u get_llvm_fp_montRed(size_t n)
+static inline bint::void_ppp get_llvm_fp_montRed(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -257,7 +243,7 @@ void3u get_llvm_fp_montRed(size_t n)
 #endif
 	}
 }
-void3u get_llvm_fp_montRedNF(size_t n)
+static inline bint::void_ppp get_llvm_fp_montRedNF(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -277,7 +263,7 @@ void3u get_llvm_fp_montRedNF(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fpDbl_add(size_t n)
+static inline bint::void_pppp get_llvm_fpDbl_add(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -297,7 +283,7 @@ void4u get_llvm_fpDbl_add(size_t n)
 #endif
 	}
 }
-void4u get_llvm_fpDbl_sub(size_t n)
+static inline bint::void_pppp get_llvm_fpDbl_sub(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -317,7 +303,7 @@ void4u get_llvm_fpDbl_sub(size_t n)
 #endif
 	}
 }
-void3u get_llvm_fp_sqrMont(size_t n)
+static inline bint::void_ppp get_llvm_fp_sqrMont(size_t n)
 {
 	switch (n) {
 	default: return 0;
@@ -337,7 +323,7 @@ void3u get_llvm_fp_sqrMont(size_t n)
 #endif
 	}
 }
-void3u get_llvm_fp_sqrMontNF(size_t n)
+static inline bint::void_ppp get_llvm_fp_sqrMontNF(size_t n)
 {
 	switch (n) {
 	default: return 0;

@@ -6,7 +6,7 @@ def gen_get_ptr(t):
 	retType = t[1]
 	ret = t[2]
 	args = t[3]
-	print(f'{retType} get_llvm_{name}(size_t n)')
+	print(f'static inline {retType} get_llvm_{name}(size_t n)')
 	print('{')
 	print('	switch (n) {')
 	print('	default: return 0;')
@@ -31,7 +31,7 @@ def gen_proto(t):
 		print(f'{ret} mcl_{name}{i}L({args});')
 
 def gen_sqr_mont_impl(suf, n):
-	print(f'void mcl_fp_sqrMont{suf}{n}L(Unit *z, const Unit *x, const Unit *p) {{ return mcl_fp_mont{suf}{n}L(z, x, x, p); }}')
+	print(f'static inline void mcl_fp_sqrMont{suf}{n}L(Unit *z, const Unit *x, const Unit *p) {{ return mcl_fp_mont{suf}{n}L(z, x, x, p); }}')
 
 def gen_sqr_mont(suf):
 	print('#ifdef MCL_USE_LLVM')
@@ -46,19 +46,20 @@ def gen_sqr_mont(suf):
 
 void3u = 'Unit*, const Unit*, const Unit*'
 void4u = 'Unit*, const Unit*, const Unit*, const Unit*'
+
+void3uType = 'bint::void_ppp'
+void4uType = 'bint::void_pppp'
 tbl = [
-	('fp_add', 'void4u', 'void', void4u),
-	('fp_sub', 'void4u', 'void', void4u),
-	('fp_addNF', 'void4u', 'void', void4u),
-	('fp_subNF', 'void4u', 'void', void4u),
-	('fp_mont', 'void4u', 'void', void4u),
-	('fp_montNF', 'void4u', 'void', void4u),
-	('fp_montRed', 'void3u', 'void', void3u),
-	('fp_montRedNF', 'void3u', 'void', void3u),
-	('fpDbl_add', 'void4u', 'void', void4u),
-	('fpDbl_sub', 'void4u', 'void', void4u),
-	('fp_sqrMont', 'void3u', 'void', void3u),
-	('fp_sqrMontNF', 'void3u', 'void', void3u),
+	('fp_add', void4uType, 'void', void4u),
+	('fp_sub', void4uType, 'void', void4u),
+	('fp_addNF', void4uType, 'void', void4u),
+	('fp_subNF', void4uType, 'void', void4u),
+	('fp_mont', void4uType, 'void', void4u),
+	('fp_montNF', void4uType, 'void', void4u),
+	('fp_montRed', void3uType, 'void', void3u),
+	('fp_montRedNF', void3uType, 'void', void3u),
+	('fpDbl_add', void4uType, 'void', void4u),
+	('fpDbl_sub', void4uType, 'void', void4u),
 ]
 
 print('namespace mcl { namespace fp {')
@@ -74,6 +75,9 @@ print('}')
 
 gen_sqr_mont('')
 gen_sqr_mont('NF')
+
+tbl.append(('fp_sqrMont', void3uType, 'void', void3u))
+tbl.append(('fp_sqrMontNF', void3uType, 'void', void3u))
 
 for t in tbl:
 	gen_get_ptr(t)

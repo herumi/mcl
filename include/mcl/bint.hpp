@@ -40,6 +40,7 @@ namespace mcl { namespace bint {
 
 typedef Unit (*u_ppp)(Unit*, const Unit*, const Unit*);
 typedef Unit (*u_ppu)(Unit*, const Unit*, Unit);
+typedef void (*void_pppp)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef void (*void_ppp)(Unit*, const Unit*, const Unit*);
 typedef void (*void_pp)(Unit*, const Unit*);
 
