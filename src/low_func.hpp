@@ -245,7 +245,7 @@ static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	buf[N] += bint::mulUnitAddT<N>(buf, p, q);
 	for (size_t i = 1; i < N; i++) {
 		buf[N + i] = bint::mulUnitAddT<N>(buf + i, x, y[i]);
-		Unit q = buf[i] * rp;
+		q = buf[i] * rp;
 		buf[N + i] += bint::mulUnitAddT<N>(buf + i, p, q);
 	}
 	if (bint::subT<N>(z, buf + N, p)) {
