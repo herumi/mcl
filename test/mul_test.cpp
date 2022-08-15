@@ -55,7 +55,6 @@ inline size_t getBinary(uint8_t *bin, size_t maxBinN, mpz_class x, size_t w)
 template<class F, typename T, size_t w = 5>
 void pow3(F& z, const F& x, const T *y, size_t yN)
 {
-	assert(yN >= 0);
 	assert(w > 0);
 	if (y == 0) {
 		z = 1;
