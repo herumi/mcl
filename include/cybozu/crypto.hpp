@@ -6,6 +6,13 @@
 */
 
 #include <cybozu/exception.hpp>
+
+#ifndef CYBOZU_USE_OPENSSL_NEW_HASH
+#ifndef _MSC_VER
+#define CYBOZU_USE_OPENSSL_NEW_HASH 1
+#endif
+#endif
+
 #ifdef __APPLE__
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -22,7 +29,9 @@
 #else
 #include <openssl/hmac.h>
 #include <openssl/evp.h>
+#if CYBOZU_USE_OPENSSL_NEW_HASH != 1
 #include <openssl/sha.h>
+#endif
 #endif
 #ifdef _MSC_VER
 	#include <cybozu/link_libeay32.hpp>
@@ -44,20 +53,33 @@ public:
 private:
 	Name name_;
 	size_t hashSize_;
+#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
+	EVP_MD_CTX *ctx_;
+	void setCTX(const char *name)
+	{
+		const EVP_MD *md = EVP_get_digestbyname(name);
+		if (md == 0) {
+			throw cybozu::Exception("EVP_get_digestbyname") << name;
+		}
+		EVP_MD_CTX_reset(ctx_);
+		EVP_DigestInit_ex(ctx_, md, NULL);
+	}
+#else
 	union {
 		SHA_CTX sha1;
 		SHA256_CTX sha256;
 		SHA512_CTX sha512;
 	} ctx_;
+#endif
 public:
 	static inline size_t getSize(Name name)
 	{
 		switch (name) {
-		case N_SHA1:   return SHA_DIGEST_LENGTH;
-		case N_SHA224: return SHA224_DIGEST_LENGTH;
-		case N_SHA256: return SHA256_DIGEST_LENGTH;
-		case N_SHA384: return SHA384_DIGEST_LENGTH;
-		case N_SHA512: return SHA512_DIGEST_LENGTH;
+		case N_SHA1:   return 160 / 8;
+		case N_SHA224: return 224 / 8;
+		case N_SHA256: return 256 / 8;
+		case N_SHA384: return 384 / 8;
+		case N_SHA512: return 512 / 8;
 		default:
 			throw cybozu::Exception("crypto:Hash:getSize") << name;
 		}
@@ -94,11 +116,23 @@ public:
 	explicit Hash(Name name = N_SHA1)
 		: name_(name)
 		, hashSize_(getSize(name))
+#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
+		, ctx_(EVP_MD_CTX_new())
+#endif
 	{
 		reset();
 	}
+#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
+	~Hash()
+	{
+		EVP_MD_CTX_free(ctx_);
+	}
+#endif
 	void update(const void *buf, size_t bufSize)
 	{
+#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
+		EVP_DigestUpdate(ctx_, buf, bufSize);
+#else
 		switch (name_) {
 		case N_SHA1:   SHA1_Update(&ctx_.sha1, buf, bufSize);     break;
 		case N_SHA224: SHA224_Update(&ctx_.sha256, buf, bufSize); break;
@@ -106,6 +140,7 @@ public:
 		case N_SHA384: SHA384_Update(&ctx_.sha512, buf, bufSize); break;
 		case N_SHA512: SHA512_Update(&ctx_.sha512, buf, bufSize); break;
 		}
+#endif
 	}
 	void update(const std::string& buf)
 	{
@@ -114,11 +149,19 @@ public:
 	void reset()
 	{
 		switch (name_) {
+#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
+		case N_SHA1:   setCTX("sha1"); break;
+		case N_SHA224: setCTX("sha224"); break;
+		case N_SHA256: setCTX("sha256"); break;
+		case N_SHA384: setCTX("sha384"); break;
+		case N_SHA512: setCTX("sha512"); break;
+#else
 		case N_SHA1:   SHA1_Init(&ctx_.sha1);     break;
 		case N_SHA224: SHA224_Init(&ctx_.sha256); break;
 		case N_SHA256: SHA256_Init(&ctx_.sha256); break;
 		case N_SHA384: SHA384_Init(&ctx_.sha512); break;
 		case N_SHA512: SHA512_Init(&ctx_.sha512); break;
+#endif
 		default:
 			throw cybozu::Exception("crypto:Hash:rset") << name_;
 		}
@@ -131,6 +174,10 @@ public:
 	{
 		update(buf, bufSize);
 		unsigned char *md = reinterpret_cast<unsigned char*>(out);
+#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
+		unsigned int len;
+		EVP_DigestFinal_ex(ctx_, md, &len);
+#else
 		switch (name_) {
 		case N_SHA1:   SHA1_Final(md, &ctx_.sha1);     break;
 		case N_SHA224: SHA224_Final(md, &ctx_.sha256); break;
@@ -140,6 +187,7 @@ public:
 		default:
 			throw cybozu::Exception("crypto:Hash:digest") << name_;
 		}
+#endif
 		reset();
 	}
 	std::string digest(const void *buf, size_t bufSize)
@@ -159,6 +207,11 @@ public:
 	*/
 	static inline size_t digest(void *out, Name name, const void *buf, size_t bufSize)
 	{
+#if 1
+		Hash h(name);
+		h.digest(out, buf, bufSize);
+		return getSize(name);
+#else
 		unsigned char *md = (unsigned char*)out;
 		const unsigned char *src = cybozu::cast<const unsigned char *>(buf);
 		switch (name) {
@@ -170,6 +223,7 @@ public:
 		default:
 			return 0;
 		}
+#endif
 	}
 	static inline std::string digest(Name name, const void *buf, size_t bufSize)
 	{
