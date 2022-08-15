@@ -18,6 +18,12 @@ typedef mcl::ElgamalT<Ec, Zn> Elgamal;
 #pragma GCC diagnostic ignored "-Wdeprecated"
 #endif
 
+#if __cplusplus >= 201703
+	#define _MCL_THROW noexcept(false)
+#else
+	#define _MCL_THROW throw(std::exception)
+#endif
+
 /*
 	init system
 	@param param [in] string such as "ecParamName hashName"
@@ -26,7 +32,7 @@ typedef mcl::ElgamalT<Ec, Zn> Elgamal;
 	ex2) "secp160k1 sha1" // 160bit security + sha1
 	hashName : sha1 sha224 sha256 sha384 sha512
 */
-void SystemInit(const std::string& param) throw(std::exception)
+void SystemInit(const std::string& param) _MCL_THROW
 {
 	std::istringstream iss(param);
 	std::string ecParamStr;
@@ -48,16 +54,16 @@ class CipherText {
 	friend class PublicKey;
 	friend class PrivateKey;
 public:
-	std::string toStr() const throw(std::exception) { return self_.toStr(); }
-	std::string toString() const throw(std::exception) { return toStr(); }
-	void fromStr(const std::string& str) throw(std::exception) { self_.fromStr(str); }
+	std::string toStr() const _MCL_THROW { return self_.toStr(); }
+	std::string toString() const _MCL_THROW { return toStr(); }
+	void fromStr(const std::string& str) _MCL_THROW { self_.fromStr(str); }
 
-	void add(const CipherText& c) throw(std::exception) { self_.add(c.self_); }
-	void mul(int m) throw(std::exception)
+	void add(const CipherText& c) _MCL_THROW { self_.add(c.self_); }
+	void mul(int m) _MCL_THROW
 	{
 		self_.mul(m);
 	}
-	void mul(const std::string& str) throw(std::exception)
+	void mul(const std::string& str) _MCL_THROW
 	{
 		Zn zn(str);
 		self_.mul(zn);
@@ -68,38 +74,38 @@ class PublicKey {
 	Elgamal::PublicKey self_;
 	friend class PrivateKey;
 public:
-	std::string toStr() const throw(std::exception) { return self_.toStr(); }
-	std::string toString() const throw(std::exception) { return toStr(); }
-	void fromStr(const std::string& str) throw(std::exception) { self_.fromStr(str); }
+	std::string toStr() const _MCL_THROW { return self_.toStr(); }
+	std::string toString() const _MCL_THROW { return toStr(); }
+	void fromStr(const std::string& str) _MCL_THROW { self_.fromStr(str); }
 
-	void save(const std::string& fileName) const throw(std::exception)
+	void save(const std::string& fileName) const _MCL_THROW
 	{
 		std::ofstream ofs(fileName.c_str(), std::ios::binary);
 		if (!(ofs << self_)) throw cybozu::Exception("PublicKey:save") << fileName;
 	}
-	void load(const std::string& fileName) throw(std::exception)
+	void load(const std::string& fileName) _MCL_THROW
 	{
 		std::ifstream ifs(fileName.c_str(), std::ios::binary);
 		if (!(ifs >> self_)) throw cybozu::Exception("PublicKey:load") << fileName;
 	}
-	void enc(CipherText& c, int m) const throw(std::exception)
+	void enc(CipherText& c, int m) const _MCL_THROW
 	{
 		self_.enc(c.self_, m, Param::getParam().rg);
 	}
-	void enc(CipherText& c, const std::string& str) const throw(std::exception)
+	void enc(CipherText& c, const std::string& str) const _MCL_THROW
 	{
 		Zn zn(str);
 		self_.enc(c.self_, zn, Param::getParam().rg);
 	}
-	void rerandomize(CipherText& c) const throw(std::exception)
+	void rerandomize(CipherText& c) const _MCL_THROW
 	{
 		self_.rerandomize(c.self_, Param::getParam().rg);
 	}
-	void add(CipherText& c, int m) const throw(std::exception)
+	void add(CipherText& c, int m) const _MCL_THROW
 	{
 		self_.add(c.self_, m);
 	}
-	void add(CipherText& c, const std::string& str) const throw(std::exception)
+	void add(CipherText& c, const std::string& str) const _MCL_THROW
 	{
 		Zn zn(str);
 		self_.add(c.self_, zn);
@@ -109,21 +115,21 @@ public:
 class PrivateKey {
 	Elgamal::PrivateKey self_;
 public:
-	std::string toStr() const throw(std::exception) { return self_.toStr(); }
-	std::string toString() const throw(std::exception) { return toStr(); }
-	void fromStr(const std::string& str) throw(std::exception) { self_.fromStr(str); }
+	std::string toStr() const _MCL_THROW { return self_.toStr(); }
+	std::string toString() const _MCL_THROW { return toStr(); }
+	void fromStr(const std::string& str) _MCL_THROW { self_.fromStr(str); }
 
-	void save(const std::string& fileName) const throw(std::exception)
+	void save(const std::string& fileName) const _MCL_THROW
 	{
 		std::ofstream ofs(fileName.c_str(), std::ios::binary);
 		if (!(ofs << self_)) throw cybozu::Exception("PrivateKey:save") << fileName;
 	}
-	void load(const std::string& fileName) throw(std::exception)
+	void load(const std::string& fileName) _MCL_THROW
 	{
 		std::ifstream ifs(fileName.c_str(), std::ios::binary);
 		if (!(ifs >> self_)) throw cybozu::Exception("PrivateKey:load") << fileName;
 	}
-	void init() throw(std::exception)
+	void init() _MCL_THROW
 	{
 		Param& p = Param::getParam();
 		const Fp x0(p.ecParam->gx);
@@ -131,21 +137,21 @@ public:
 		Ec P(x0, y0);
 		self_.init(P, Zn::getBitSize(), p.rg);
 	}
-	PublicKey getPublicKey() const throw(std::exception)
+	PublicKey getPublicKey() const _MCL_THROW
 	{
 		PublicKey ret;
 		ret.self_ = self_.getPublicKey();
 		return ret;
 	}
-	int dec(const CipherText& c, bool *b = 0) const throw(std::exception)
+	int dec(const CipherText& c, bool *b = 0) const _MCL_THROW
 	{
 		return self_.dec(c.self_, b);
 	}
-	void setCache(int rangeMin, int rangeMax) throw(std::exception)
+	void setCache(int rangeMin, int rangeMax) _MCL_THROW
 	{
 		self_.setCache(rangeMin, rangeMax);
 	}
-	void clearCache() throw(std::exception)
+	void clearCache() _MCL_THROW
 	{
 		self_.clearCache();
 	}

@@ -7,7 +7,13 @@
 #pragma GCC diagnostic ignored "-Wdeprecated"
 #endif
 
-void SystemInit(int curveType) throw(std::exception)
+#if __cplusplus >= 201703
+	#define _MCL_THROW noexcept(false)
+#else
+	#define _MCL_THROW throw(std::exception)
+#endif
+
+void SystemInit(int curveType) _MCL_THROW
 {
 	if (curveType == MCL_SECP256K1) {
 		mcl::initCurve<mcl::bn::G1, mcl::bn::Fr>(curveType);
@@ -77,12 +83,12 @@ public:
 	Fr() {}
 	Fr(const Fr& rhs) : self_(rhs.self_) {}
 	Fr(int x) : self_(x) {}
-	Fr(const std::string& str, int base = 0) throw(std::exception)
+	Fr(const std::string& str, int base = 0) _MCL_THROW
 		: self_(str, base) {}
 	bool equals(const Fr& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
 	bool isOne() const { return self_.isOne(); }
-	void setStr(const std::string& str, int base = 0) throw(std::exception)
+	void setStr(const std::string& str, int base = 0) _MCL_THROW
 	{
 		self_.setStr(str, base);
 	}
@@ -98,23 +104,23 @@ public:
 	{
 		self_.setByCSPRNG();
 	}
-	std::string toString(int base = 0) const throw(std::exception)
+	std::string toString(int base = 0) const _MCL_THROW
 	{
 		return self_.getStr(base);
 	}
-	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
+	void deserialize(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		deserializeT(self_, cbuf, bufSize);
 	}
-	void setLittleEndianMod(const char *cbuf, size_t bufSize) throw(std::exception)
+	void setLittleEndianMod(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		setLittleEndianModT(self_, cbuf, bufSize);
 	}
-	void setHashOf(const char *cbuf, size_t bufSize) throw(std::exception)
+	void setHashOf(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		setHashOfT(self_, cbuf, bufSize);
 	}
-	void serialize(std::string& out) const throw(std::exception)
+	void serialize(std::string& out) const _MCL_THROW
 	{
 		serializeT(out, self_);
 	}
@@ -165,12 +171,12 @@ public:
 	Fp() {}
 	Fp(const Fp& rhs) : self_(rhs.self_) {}
 	Fp(int x) : self_(x) {}
-	Fp(const std::string& str, int base = 0) throw(std::exception)
+	Fp(const std::string& str, int base = 0) _MCL_THROW
 		: self_(str, base) {}
 	bool equals(const Fp& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
 	bool isOne() const { return self_.isOne(); }
-	void setStr(const std::string& str, int base = 0) throw(std::exception)
+	void setStr(const std::string& str, int base = 0) _MCL_THROW
 	{
 		self_.setStr(str, base);
 	}
@@ -186,15 +192,15 @@ public:
 	{
 		self_.setByCSPRNG();
 	}
-	std::string toString(int base = 0) const throw(std::exception)
+	std::string toString(int base = 0) const _MCL_THROW
 	{
 		return self_.getStr(base);
 	}
-	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
+	void deserialize(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		deserializeT(self_, cbuf, bufSize);
 	}
-	void serialize(std::string& out) const throw(std::exception)
+	void serialize(std::string& out) const _MCL_THROW
 	{
 		serializeT(out, self_);
 	}
@@ -242,16 +248,16 @@ class G1 {
 	friend void sub(G1& z, const G1& x, const G1& y);
 	friend void mul(G1& z, const G1& x, const Fr& y);
 	friend void pairing(GT& e, const G1& P, const G2& Q);
-	friend void hashAndMapToG1(G1& P, const char *cbuf, size_t bufSize) throw(std::exception);
+	friend void hashAndMapToG1(G1& P, const char *cbuf, size_t bufSize) _MCL_THROW;
 public:
 	G1() {}
 	G1(const G1& rhs) : self_(rhs.self_) {}
-	G1(const Fp& x, const Fp& y) throw(std::exception)
+	G1(const Fp& x, const Fp& y) _MCL_THROW
 		: self_(x.self_, y.self_) { }
 	bool equals(const G1& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
 	bool isValidOrder() const { return self_.isValidOrder(); }
-	void set(const Fp& x, const Fp& y) throw(std::exception)
+	void set(const Fp& x, const Fp& y) _MCL_THROW
 	{
 		self_.set(x.self_, y.self_);
 	}
@@ -262,19 +268,19 @@ public:
 	/*
 		compressed format
 	*/
-	void setStr(const std::string& str, int base = 0) throw(std::exception)
+	void setStr(const std::string& str, int base = 0) _MCL_THROW
 	{
 		self_.setStr(str, base);
 	}
-	std::string toString(int base = 0) const throw(std::exception)
+	std::string toString(int base = 0) const _MCL_THROW
 	{
 		return self_.getStr(base);
 	}
-	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
+	void deserialize(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		deserializeT(self_, cbuf, bufSize);
 	}
-	void serialize(std::string& out) const throw(std::exception)
+	void serialize(std::string& out) const _MCL_THROW
 	{
 		serializeT(out, self_);
 	}
@@ -338,17 +344,17 @@ class G2 {
 	friend void sub(G2& z, const G2& x, const G2& y);
 	friend void mul(G2& z, const G2& x, const Fr& y);
 	friend void pairing(GT& e, const G1& P, const G2& Q);
-	friend void hashAndMapToG2(G2& P, const char *cbuf, size_t bufSize) throw(std::exception);
+	friend void hashAndMapToG2(G2& P, const char *cbuf, size_t bufSize) _MCL_THROW;
 public:
 	G2() {}
 	G2(const G2& rhs) : self_(rhs.self_) {}
-	G2(const Fp& ax, const Fp& ay, const Fp& bx, const Fp& by) throw(std::exception)
+	G2(const Fp& ax, const Fp& ay, const Fp& bx, const Fp& by) _MCL_THROW
 		: self_(mcl::bn::Fp2(ax.self_, ay.self_), mcl::bn::Fp2(bx.self_, by.self_))
 	{
 	}
 	bool equals(const G2& rhs) const { return self_ == rhs.self_; }
 	bool isZero() const { return self_.isZero(); }
-	void set(const Fp& ax, const Fp& ay, const Fp& bx, const Fp& by) throw(std::exception)
+	void set(const Fp& ax, const Fp& ay, const Fp& bx, const Fp& by) _MCL_THROW
 	{
 		self_.set(mcl::bn::Fp2(ax.self_, ay.self_), mcl::bn::Fp2(bx.self_, by.self_));
 	}
@@ -359,19 +365,19 @@ public:
 	/*
 		compressed format
 	*/
-	void setStr(const std::string& str, int base = 0) throw(std::exception)
+	void setStr(const std::string& str, int base = 0) _MCL_THROW
 	{
 		self_.setStr(str, base);
 	}
-	std::string toString(int base = 0) const throw(std::exception)
+	std::string toString(int base = 0) const _MCL_THROW
 	{
 		return self_.getStr(base);
 	}
-	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
+	void deserialize(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		deserializeT(self_, cbuf, bufSize);
 	}
-	void serialize(std::string& out) const throw(std::exception)
+	void serialize(std::string& out) const _MCL_THROW
 	{
 		serializeT(out, self_);
 	}
@@ -420,19 +426,19 @@ public:
 	{
 		self_.clear();
 	}
-	void setStr(const std::string& str, int base = 0) throw(std::exception)
+	void setStr(const std::string& str, int base = 0) _MCL_THROW
 	{
 		self_.setStr(str, base);
 	}
-	std::string toString(int base = 0) const throw(std::exception)
+	std::string toString(int base = 0) const _MCL_THROW
 	{
 		return self_.getStr(base);
 	}
-	void deserialize(const char *cbuf, size_t bufSize) throw(std::exception)
+	void deserialize(const char *cbuf, size_t bufSize) _MCL_THROW
 	{
 		deserializeT(self_, cbuf, bufSize);
 	}
-	void serialize(std::string& out) const throw(std::exception)
+	void serialize(std::string& out) const _MCL_THROW
 	{
 		serializeT(out, self_);
 	}
@@ -455,12 +461,12 @@ void pairing(GT& e, const G1& P, const G2& Q)
 	mcl::bn::pairing(e.self_, P.self_, Q.self_);
 }
 
-void hashAndMapToG1(G1& P, const char *cbuf, size_t bufSize) throw(std::exception)
+void hashAndMapToG1(G1& P, const char *cbuf, size_t bufSize) _MCL_THROW
 {
 	mcl::bn::hashAndMapToG1(P.self_, cbuf, bufSize);
 }
 
-void hashAndMapToG2(G2& P, const char *cbuf, size_t bufSize) throw(std::exception)
+void hashAndMapToG2(G2& P, const char *cbuf, size_t bufSize) _MCL_THROW
 {
 	mcl::bn::hashAndMapToG2(P.self_, cbuf, bufSize);
 }

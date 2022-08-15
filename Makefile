@@ -153,7 +153,7 @@ $(BINT_SRC): src/bint$(BIT).ll
 	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
-bint_header:
+header:
 	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
 	$(MAKE) src/llvm_proto.hpp

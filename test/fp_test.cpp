@@ -3,7 +3,6 @@
 #include <cybozu/test.hpp>
 #include <mcl/fp.hpp>
 #include "../src/low_func.hpp"
-#include "../src/proto.hpp"
 #include <time.h>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>

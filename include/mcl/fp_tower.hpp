@@ -592,7 +592,6 @@ private:
 		const Fp2T& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
-#if 1 // faster than using FpDbl
 		Fp t1, t2, t3;
 		Fp::mul2(t1, b);
 		t1 *= a; // 2ab
@@ -600,17 +599,6 @@ private:
 		Fp::sub(t3, a, b); // a - b
 		Fp::mul(y.a, t2, t3); // (a + b)(a - b)
 		y.b = t1;
-#else
-		Fp t1, t2;
-		FpDbl d1, d2;
-		Fp::addPre(t1, b, b); // 2b
-		FpDbl::mulPre(d2, t1, a); // 2ab
-		Fp::addPre(t1, a, b); // a + b
-		Fp::sub(t2, a, b); // a - b
-		FpDbl::mulPre(d1, t1, t2); // (a + b)(a - b)
-		FpDbl::mod(py[0], d1);
-		FpDbl::mod(py[1], d2);
-#endif
 	}
 	/*
 		xi = xi_a + i

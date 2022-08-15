@@ -4,6 +4,11 @@
 
 #define PUT(x) std::cout << #x << "=" << x << std::endl;
 
+CYBOZU_TEST_AUTO(cpu)
+{
+	mcl::bint::initBint();
+}
+
 CYBOZU_TEST_AUTO(modp)
 {
 	const int C = 1000000;
