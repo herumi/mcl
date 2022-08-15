@@ -549,6 +549,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		}
 	}
 	switch (N) {
+	case 128/(MCL_SIZEOF_UNIT * 8):  setOp<128/(MCL_SIZEOF_UNIT * 8)>(*this, mode); break;
 	case 192/(MCL_SIZEOF_UNIT * 8):  setOp<192/(MCL_SIZEOF_UNIT * 8)>(*this, mode); break;
 #if (MCL_SIZEOF_UNIT * 8) == 32
 	case 224/(MCL_SIZEOF_UNIT * 8):  setOp<224/(MCL_SIZEOF_UNIT * 8)>(*this, mode); break;
