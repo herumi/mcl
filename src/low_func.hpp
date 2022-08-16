@@ -138,7 +138,7 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 	bint::copyT<N - 1>(buf + N + 1, xy + N + 1);
 	buf[N * 2] = 0;
 	Unit q = xy[0] * rp;
-	mulUnitPreT<N>(pq, p, q);
+	pq[N] = bint::mulUnitT<N>(pq, p, q);
 	Unit up = bint::addT<N + 1>(buf, xy, pq);
 	if (up) {
 		buf[N * 2] = bint::addUnit(buf + N + 1, N - 1, 1);
@@ -146,7 +146,7 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 	Unit *c = buf + 1;
 	for (size_t i = 1; i < N; i++) {
 		q = c[0] * rp;
-		mulUnitPreT<N>(pq, p, q);
+		pq[N] = bint::mulUnitT<N>(pq, p, q);
 		up = bint::addT<N + 1>(c, c, pq);
 		if (up) {
 			bint::addUnit(c + N + 1, N - i, 1);
@@ -164,7 +164,7 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 
 // [return:z[N+1]] = z[N+1] + x[N] * y + (cc << (N * 32))
 template<size_t N>
-Unit addMulUnit2T(Unit z[N + 1], const Unit x[N], Unit y, const Unit *cc = 0)
+Unit mulUnitAddWithCarryT(Unit z[N + 1], const Unit x[N], Unit y, const Unit *cc = 0)
 {
 	Unit H = bint::mulUnitAddT<N>(z, x, y);
 	if (cc) H += *cc;
@@ -183,7 +183,7 @@ static void modRedNFT(Unit *z, const Unit *xy, const Unit *p)
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
 		Unit q = buf[i] * rp;
-		c = addMulUnit2T<N>(buf + i, p, q, &c);
+		c = mulUnitAddWithCarryT<N>(buf + i, p, q, &c);
 	}
 	if (bint::subT<N>(z, buf + N, p)) {
 		bint::copyT<N>(z, buf + N);
