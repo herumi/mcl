@@ -105,9 +105,9 @@ static inline void mcl_fp_sqrMontNF8L(Unit *z, const Unit *x, const Unit *p) { r
 #endif
 static inline bint::void_pppp get_llvm_fp_add(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_add6L;
 	case 7: return mcl_fp_add7L;
@@ -120,14 +120,17 @@ static inline bint::void_pppp get_llvm_fp_add(size_t n)
 	case 6: return mcl_fp_add6L;
 	case 8: return mcl_fp_add8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fp_sub(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_sub6L;
 	case 7: return mcl_fp_sub7L;
@@ -140,14 +143,17 @@ static inline bint::void_pppp get_llvm_fp_sub(size_t n)
 	case 6: return mcl_fp_sub6L;
 	case 8: return mcl_fp_sub8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fp_addNF(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_addNF6L;
 	case 7: return mcl_fp_addNF7L;
@@ -160,14 +166,17 @@ static inline bint::void_pppp get_llvm_fp_addNF(size_t n)
 	case 6: return mcl_fp_addNF6L;
 	case 8: return mcl_fp_addNF8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fp_subNF(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_subNF6L;
 	case 7: return mcl_fp_subNF7L;
@@ -180,14 +189,17 @@ static inline bint::void_pppp get_llvm_fp_subNF(size_t n)
 	case 6: return mcl_fp_subNF6L;
 	case 8: return mcl_fp_subNF8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fp_mont(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_mont6L;
 	case 7: return mcl_fp_mont7L;
@@ -200,14 +212,17 @@ static inline bint::void_pppp get_llvm_fp_mont(size_t n)
 	case 6: return mcl_fp_mont6L;
 	case 8: return mcl_fp_mont8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fp_montNF(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_montNF6L;
 	case 7: return mcl_fp_montNF7L;
@@ -220,14 +235,17 @@ static inline bint::void_pppp get_llvm_fp_montNF(size_t n)
 	case 6: return mcl_fp_montNF6L;
 	case 8: return mcl_fp_montNF8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_ppp get_llvm_fp_montRed(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_montRed6L;
 	case 7: return mcl_fp_montRed7L;
@@ -240,14 +258,17 @@ static inline bint::void_ppp get_llvm_fp_montRed(size_t n)
 	case 6: return mcl_fp_montRed6L;
 	case 8: return mcl_fp_montRed8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_ppp get_llvm_fp_montRedNF(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_montRedNF6L;
 	case 7: return mcl_fp_montRedNF7L;
@@ -260,14 +281,17 @@ static inline bint::void_ppp get_llvm_fp_montRedNF(size_t n)
 	case 6: return mcl_fp_montRedNF6L;
 	case 8: return mcl_fp_montRedNF8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fpDbl_add(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fpDbl_add6L;
 	case 7: return mcl_fpDbl_add7L;
@@ -280,14 +304,17 @@ static inline bint::void_pppp get_llvm_fpDbl_add(size_t n)
 	case 6: return mcl_fpDbl_add6L;
 	case 8: return mcl_fpDbl_add8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_pppp get_llvm_fpDbl_sub(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fpDbl_sub6L;
 	case 7: return mcl_fpDbl_sub7L;
@@ -300,14 +327,17 @@ static inline bint::void_pppp get_llvm_fpDbl_sub(size_t n)
 	case 6: return mcl_fpDbl_sub6L;
 	case 8: return mcl_fpDbl_sub8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_ppp get_llvm_fp_sqrMont(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_sqrMont6L;
 	case 7: return mcl_fp_sqrMont7L;
@@ -320,14 +350,17 @@ static inline bint::void_ppp get_llvm_fp_sqrMont(size_t n)
 	case 6: return mcl_fp_sqrMont6L;
 	case 8: return mcl_fp_sqrMont8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 static inline bint::void_ppp get_llvm_fp_sqrMontNF(size_t n)
 {
+#ifdef MCL_USE_LLVM
 	switch (n) {
 	default: return 0;
-#ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4
 	case 6: return mcl_fp_sqrMontNF6L;
 	case 7: return mcl_fp_sqrMontNF7L;
@@ -340,7 +373,10 @@ static inline bint::void_ppp get_llvm_fp_sqrMontNF(size_t n)
 	case 6: return mcl_fp_sqrMontNF6L;
 	case 8: return mcl_fp_sqrMontNF8L;
 #endif
-#endif
 	}
+#else
+	(void)n;
+	return 0;
+#endif
 }
 }}

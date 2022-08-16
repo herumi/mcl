@@ -8,9 +8,9 @@ def gen_get_ptr(t):
 	args = t[3]
 	print(f'static inline {retType} get_llvm_{name}(size_t n)')
 	print('{')
+	print('#ifdef MCL_USE_LLVM')
 	print('	switch (n) {')
 	print('	default: return 0;')
-	print('#ifdef MCL_USE_LLVM')
 	print('#if MCL_SIZEOF_UNIT == 4')
 	for i in N32tbl:
 		print(f'	case {i}: return mcl_{name}{i}L;')
@@ -18,9 +18,12 @@ def gen_get_ptr(t):
 	for i in N64tbl:
 		print(f'	case {i}: return mcl_{name}{i}L;')
 	print('#endif')
-	print('#endif')
 	print('	}')
-	print('}')
+	print('''#else
+	(void)n;
+	return 0;
+#endif
+}''')
 
 def gen_proto(t):
 	name = t[0]
