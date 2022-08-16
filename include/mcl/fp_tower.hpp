@@ -429,11 +429,13 @@ public:
 	{
 		mcl::fp::Op& op = Fp::op_;
 		assert(op.xi_a);
+#if 0
 		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
 		if ((op.p[op.N - 1] >> (sizeof(Unit) * 8 - 2)) != 0) {
 			*pb = false;
 			return;
 		}
+#endif
 #ifdef MCL_XBYAK_DIRECT_CALL
 		if (op.fp2_addA_ == 0) {
 			op.fp2_addA_ = addA;
@@ -703,13 +705,21 @@ struct Fp2DblT {
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
 	static void init()
  	{
-		assert(!Fp::getOp().isFullBit);
+		bool isFullBit = Fp::getOp().isFullBit;
 		mcl::fp::Op& op = Fp::getOpNonConst();
 		if (op.fp2Dbl_mulPreA_ == 0) {
-			op.fp2Dbl_mulPreA_ = mulPreA;
+			if (isFullBit) {
+				op.fp2Dbl_mulPreA_ = mulPreA<true>;
+			} else {
+				op.fp2Dbl_mulPreA_ = mulPreA<false>;
+			}
 		}
 		if (op.fp2Dbl_sqrPreA_ == 0) {
-			op.fp2Dbl_sqrPreA_ = sqrPreA;
+			if (isFullBit) {
+				op.fp2Dbl_sqrPreA_ = sqrPreA<true>;
+			} else {
+				op.fp2Dbl_sqrPreA_ = sqrPreA<false>;
+			}
 		}
 		if (op.fp2Dbl_mul_xiA_ == 0) {
 			const uint32_t xi_a = Fp2::get_xi_a();
@@ -729,12 +739,12 @@ private:
 		Fp2Dbl::mulPre by FpDblT
 		@note mod of NIST_P192 is fast
 	*/
+	template<bool isFullBit>
 	static void mulPreA(Unit *pz, const Unit *px, const Unit *py)
 	{
 		Fp2Dbl& z = castD(pz);
 		const Fp2& x = cast(px);
 		const Fp2& y = cast(py);
-		assert(!Fp::getOp().isFullBit);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		const Fp& c = y.a;
@@ -743,23 +753,38 @@ private:
 		FpDbl& d1 = z.b;
 		FpDbl d2;
 		Fp s, t;
-		Fp::addPre(s, a, b);
-		Fp::addPre(t, c, d);
+		if (isFullBit) {
+			Fp::add(s, a, b);
+			Fp::add(t, c, d);
+		} else {
+			Fp::addPre(s, a, b);
+			Fp::addPre(t, c, d);
+		}
 		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
 		FpDbl::mulPre(d0, a, c);
 		FpDbl::mulPre(d2, b, d);
-		FpDbl::subPre(d1, d1, d0);
-		FpDbl::subPre(d1, d1, d2);
+		if (isFullBit) {
+			FpDbl::sub(d1, d1, d0);
+			FpDbl::sub(d1, d1, d2);
+		} else {
+			FpDbl::subPre(d1, d1, d0);
+			FpDbl::subPre(d1, d1, d2);
+		}
 		FpDbl::sub(d0, d0, d2); // ac - bd
 	}
+	template<bool isFullBit>
 	static void sqrPreA(Unit *py, const Unit *px)
 	{
-		assert(!Fp::getOp().isFullBit);
 		Fp2Dbl& y = castD(py);
 		const Fp2& x = cast(px);
 		Fp t1, t2;
-		Fp::addPre(t1, x.b, x.b); // 2b
-		Fp::addPre(t2, x.a, x.b); // a + b
+		if (isFullBit) {
+			Fp::add(t1, x.b, x.b); // 2b
+			Fp::add(t2, x.a, x.b); // a + b
+		} else {
+			Fp::addPre(t1, x.b, x.b); // 2b
+			Fp::addPre(t2, x.a, x.b); // a + b
+		}
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
 		Fp::sub(t1, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
