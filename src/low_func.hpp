@@ -284,30 +284,6 @@ static void sqrModT(Unit *y, const Unit *x, const Unit *p)
 	fpDblModT<N>(y, xx, p);
 }
 
-template<size_t N>
-static void fp2_mulNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-{
-	const Unit *const a = x;
-	const Unit *const b = x + N;
-	const Unit *const c = y;
-	const Unit *const d = y + N;
-	Unit d0[N * 2];
-	Unit d1[N * 2];
-	Unit d2[N * 2];
-	Unit s[N];
-	Unit t[N];
-	bint::addT<N>(s, a, b);
-	bint::addT<N>(t, c, d);
-	bint::mulT<N>(d0, s, t);
-	bint::mulT<N>(d1, a, c);
-	bint::mulT<N>(d2, b, d);
-	bint::subT<N * 2>(d0, d0, d1);
-	bint::subT<N * 2>(d0, d0, d2);
-	modRedNFT<N>(z + N, d0, p);
-	fpDblSubModT<N>(d1, d1, d2, p);
-	modRedNFT<N>(z, d1, p);
-}
-
 } } // mcl::fp
 
 #ifdef _MSC_VER

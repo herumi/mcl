@@ -309,7 +309,6 @@ void setOp(Op& op)
 	op.fpDbl_sub = fpDblSubModT<N>;
 	setSafe(op.fpDbl_add, get_llvm_fpDbl_add(N));
 	setSafe(op.fpDbl_sub, get_llvm_fpDbl_sub(N));
-	op.fp2_mulNF = fp2_mulNFT<N>;
 }
 
 #ifdef MCL_X64_ASM

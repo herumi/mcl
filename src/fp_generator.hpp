@@ -453,7 +453,6 @@ private:
 			setFuncInfo(prof_, suf, "2_mul2", op.fp2_mul2A_, getCurr());
 		}
 
-		op.fp2_mulNF = 0;
 		if (gen_fp2Dbl_mulPre(op.fp2Dbl_mulPreA_)) {
 			setFuncInfo(prof_, suf, "2Dbl_mulPre", op.fp2Dbl_mulPreA_, getCurr());
 		}

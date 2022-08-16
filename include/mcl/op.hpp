@@ -252,7 +252,6 @@ struct Op {
 		x = a + bu
 	*/
 	int xi_a; // xi = xi_a + u
-	void4u fp2_mulNF;
 	void2u fp2_mul_xiA_;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
@@ -337,7 +336,6 @@ struct Op {
 		fpDbl_subPre = 0;
 
 		xi_a = 0;
-		fp2_mulNF = 0;
 		fp2_mul_xiA_ = 0;
 		hash = 0;
 
