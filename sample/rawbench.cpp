@@ -138,10 +138,12 @@ int main(int argc, char *argv[])
 		// N = 5
 		"0x80000000000000000000000000000000000000000000000000000000000000000000000000000009",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff3b",
+#if MCL_MAX_BIT_SIZE >= 384
 		// N = 6
 		"0x800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000171",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec3",
-#if 0 // enable if setOp<7> is added in fp.cpp
+#endif
+#if MCL_MAX_BIT_SIZE >= 448
 		// N = 7
 		"0x8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000063",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff35",
@@ -151,7 +153,7 @@ int main(int argc, char *argv[])
 		"0x8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdc7",
 #endif
-#if MCL_MAX_BIT_SIZE == 1024
+#if MCL_MAX_BIT_SIZE == 1024 // it is necessary to modify parameter of src/gen*
 		"0xc70b1ddda9b96e3965e5855942aa5852d8f8e052c760ac32cdfec16a2ed3d56981e1a475e20a70144ed2f5061ba64900f69451492803f815d446ee133d0668f7a7f3276d6301c95ce231f0e4b0d0f3882f10014fca04454cff55d2e2d4cfc1aad33b8d38397e2fc8b623177e63d0b783269c40a85b8f105654783b8ed2e737df",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff97",
 #endif
