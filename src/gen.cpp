@@ -982,9 +982,11 @@ struct Code : public mcl::Generator {
 	void gen_mul()
 	{
 		gen_mulPv();
-		gen_mcl_fp_mulUnitPre();
-		gen_mcl_fpDbl_mulPre();
-		gen_mcl_fpDbl_sqrPre();
+//		gen_mcl_fp_mulUnitPre();
+		if (bit == 192) {
+			gen_mcl_fpDbl_mulPre();
+			gen_mcl_fpDbl_sqrPre();
+		}
 		gen_mcl_fp_mont(true);
 		gen_mcl_fp_mont(false);
 		gen_mcl_fp_montRed(true);
