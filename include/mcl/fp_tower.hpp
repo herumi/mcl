@@ -668,10 +668,15 @@ struct Fp2DblT {
 		imaginary part of Fp2Dbl::mul uses only add,
 		so it does not require mod.
 	*/
+	template<bool p_lt_Wp4>
 	static void subSpecial(Fp2DblT& y, const Fp2DblT& x)
 	{
 		FpDbl::sub(y.a, y.a, x.a);
-		FpDbl::subPre(y.b, y.b, x.b);
+		if (p_lt_Wp4) {
+			FpDbl::subPre(y.b, y.b, x.b);
+		} else {
+			FpDbl::sub(y.b, y.b, x.b);
+		}
 	}
 	static void neg(Fp2DblT& y, const Fp2DblT& x)
 	{
@@ -1018,6 +1023,7 @@ struct Fp6DblT {
 		Fp2Dbl::sub(z.b, x.b, y.b);
 		Fp2Dbl::sub(z.c, x.c, y.c);
 	}
+	static void (*mulPre)(Fp6DblT& z, const Fp6& x, const Fp6& y);
 	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
 		xy = (ad + (bf + ce)xi) + ((ae + bd) + cf xi)v + ((af + cd) + be)v^2
@@ -1027,7 +1033,8 @@ struct Fp6DblT {
 		assum p < W/4 where W = 1 << (sizeof(Unit) * 8 * N)
 		then (b + c)(e + f) < 4p^2 < pW
 	*/
-	static void mulPre(Fp6DblT& z, const Fp6& x, const Fp6& y)
+	template<bool p_lt_Wp4>
+	static void mulPreT(Fp6DblT& z, const Fp6& x, const Fp6& y)
 	{
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
@@ -1040,24 +1047,39 @@ struct Fp6DblT {
 		Fp2Dbl& ZC = z.c;
 		Fp2 t1, t2;
 		Fp2Dbl BE, CF, AD;
-		Fp2::addPre(t1, b, c);
-		Fp2::addPre(t2, e, f);
+		if (p_lt_Wp4) {
+			Fp2::addPre(t1, b, c);
+			Fp2::addPre(t2, e, f);
+		} else {
+			Fp2::add(t1, b, c);
+			Fp2::add(t2, e, f);
+		}
 		Fp2Dbl::mulPre(ZA, t1, t2);
-		Fp2::addPre(t1, a, b);
-		Fp2::addPre(t2, e, d);
+		if (p_lt_Wp4) {
+			Fp2::addPre(t1, a, b);
+			Fp2::addPre(t2, e, d);
+		} else {
+			Fp2::add(t1, a, b);
+			Fp2::add(t2, e, d);
+		}
 		Fp2Dbl::mulPre(ZB, t1, t2);
-		Fp2::addPre(t1, a, c);
-		Fp2::addPre(t2, d, f);
+		if (p_lt_Wp4) {
+			Fp2::addPre(t1, a, c);
+			Fp2::addPre(t2, d, f);
+		} else {
+			Fp2::add(t1, a, c);
+			Fp2::add(t2, d, f);
+		}
 		Fp2Dbl::mulPre(ZC, t1, t2);
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(CF, c, f);
 		Fp2Dbl::mulPre(AD, a, d);
-		Fp2Dbl::subSpecial(ZA, BE);
-		Fp2Dbl::subSpecial(ZA, CF);
-		Fp2Dbl::subSpecial(ZB, AD);
-		Fp2Dbl::subSpecial(ZB, BE);
-		Fp2Dbl::subSpecial(ZC, AD);
-		Fp2Dbl::subSpecial(ZC, CF);
+		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZA, BE);
+		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZA, CF);
+		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZB, AD);
+		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZB, BE);
+		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZC, AD);
+		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZC, CF);
 		Fp2Dbl::mul_xi(ZA, ZA);
 		Fp2Dbl::add(ZA, ZA, AD);
 		Fp2Dbl::mul_xi(CF, CF);
@@ -1101,6 +1123,8 @@ struct Fp6DblT {
 		Fp2Dbl::mod(y.c, x.c);
 	}
 };
+
+template<class Fp> void (*Fp6DblT<Fp>::mulPre)(Fp6DblT<Fp>&, const Fp6T<Fp>&, const Fp6T<Fp>&) = mulPreT<true>;
 
 /*
 	Fp12T = Fp6[w] / (w^2 - v)
