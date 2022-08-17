@@ -425,76 +425,7 @@ public:
 	}
 
 	static uint32_t get_xi_a() { return Fp::getOp().xi_a; }
-	static void init(bool *pb)
-	{
-		mcl::fp::Op& op = Fp::op_;
-		assert(op.xi_a);
-#if 0
-		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
-		if ((op.p[op.N - 1] >> (sizeof(Unit) * 8 - 2)) != 0) {
-			*pb = false;
-			return;
-		}
-#endif
-#ifdef MCL_XBYAK_DIRECT_CALL
-		if (op.fp2_addA_ == 0) {
-			op.fp2_addA_ = addA;
-		}
-		if (op.fp2_subA_ == 0) {
-			op.fp2_subA_ = subA;
-		}
-		if (op.fp2_negA_ == 0) {
-			op.fp2_negA_ = negA;
-		}
-		if (op.fp2_mulA_ == 0) {
-			op.fp2_mulA_ = mulA;
-		}
-		if (op.fp2_sqrA_ == 0) {
-			op.fp2_sqrA_ = sqrA;
-		}
-		if (op.fp2_mul2A_ == 0) {
-			op.fp2_mul2A_ = mul2A;
-		}
-#endif
-		if (op.fp2_mul_xiA_ == 0) {
-			if (op.xi_a == 1) {
-				op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
-			} else {
-				op.fp2_mul_xiA_ = fp2_mul_xiA;
-			}
-		}
-		FpDblT<Fp>::init();
-		Fp2DblT<Fp>::init();
-		// call init before Fp2::pow because FpDbl is used in Fp2T
-		const Fp2T xi(op.xi_a, 1);
-		const mpz_class& p = Fp::getOp().mp;
-		Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
-		for (size_t i = 1; i < gN; i++) {
-			g[i] = g[i - 1] * g[0];
-		}
-		/*
-			permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
-			g[0] = g^2
-			g[1] = g^4
-			g[2] = g^1
-			g[3] = g^3
-			g[4] = g^5
-		*/
-		{
-			Fp2T t = g[0];
-			g[0] = g[1];
-			g[1] = g[3];
-			g[3] = g[2];
-			g[2] = t;
-		}
-		for (size_t i = 0; i < gN; i++) {
-			Fp2T t(g[i].a, g[i].b);
-			if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
-			Fp2T::mul(g2[i], t, g[i]);
-			g3[i] = g[i] * g2[i];
-		}
-		*pb = true;
-	}
+	static void init(bool *pb);
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static void init()
 	{
@@ -992,7 +923,11 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp2Dbl::add(T, T, T2);
 		Fp2Dbl::mul_xi(T, T);
 		Fp2Dbl::mulPre(T2, p.a, a);
-		Fp2Dbl::addPre(T, T, T2);
+		if (Fp::getOp().isFullBit) {
+			Fp2Dbl::addPre(T, T, T2);
+		} else {
+			Fp2Dbl::add(T, T, T2);
+		}
 		Fp2 q;
 		Fp2Dbl::mod(q, T);
 		Fp2::inv(q, q);
@@ -1122,9 +1057,20 @@ struct Fp6DblT {
 		Fp2Dbl::mod(y.b, x.b);
 		Fp2Dbl::mod(y.c, x.c);
 	}
+	static void init()
+	{
+		const mcl::fp::Op& op = Fp::getOp();
+		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
+		bool p_lt_Wp4 = (op.p[op.N - 1] >> (sizeof(Unit) * 8 - 2)) == 0;
+		if (p_lt_Wp4) {
+			mulPre = mulPreT<true>;
+		} else {
+			mulPre = mulPreT<false>;
+		}
+	}
 };
 
-template<class Fp> void (*Fp6DblT<Fp>::mulPre)(Fp6DblT<Fp>&, const Fp6T<Fp>&, const Fp6T<Fp>&) = mulPreT<true>;
+template<class Fp> void (*Fp6DblT<Fp>::mulPre)(Fp6DblT<Fp>&, const Fp6T<Fp>&, const Fp6T<Fp>&) = 0;//mulPreT<false>;
 
 /*
 	Fp12T = Fp6[w] / (w^2 - v)
@@ -1539,6 +1485,72 @@ struct GroupMtoA : public T {
 private:
 	bool isOne() const;
 };
+
+template<class _Fp> void Fp2T<_Fp>::init(bool *pb)
+{
+	typedef _Fp Fp;
+	mcl::fp::Op& op = Fp::op_;
+	assert(op.xi_a);
+#ifdef MCL_XBYAK_DIRECT_CALL
+	if (op.fp2_addA_ == 0) {
+		op.fp2_addA_ = addA;
+	}
+	if (op.fp2_subA_ == 0) {
+		op.fp2_subA_ = subA;
+	}
+	if (op.fp2_negA_ == 0) {
+		op.fp2_negA_ = negA;
+	}
+	if (op.fp2_mulA_ == 0) {
+		op.fp2_mulA_ = mulA;
+	}
+	if (op.fp2_sqrA_ == 0) {
+		op.fp2_sqrA_ = sqrA;
+	}
+	if (op.fp2_mul2A_ == 0) {
+		op.fp2_mul2A_ = mul2A;
+	}
+#endif
+	if (op.fp2_mul_xiA_ == 0) {
+		if (op.xi_a == 1) {
+			op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
+		} else {
+			op.fp2_mul_xiA_ = fp2_mul_xiA;
+		}
+	}
+	FpDblT<Fp>::init();
+	Fp2DblT<Fp>::init();
+	// call init before Fp2::pow because FpDbl is used in Fp2T
+	const Fp2T xi(op.xi_a, 1);
+	const mpz_class& p = Fp::getOp().mp;
+	Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
+	for (size_t i = 1; i < gN; i++) {
+		g[i] = g[i - 1] * g[0];
+	}
+	/*
+		permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
+		g[0] = g^2
+		g[1] = g^4
+		g[2] = g^1
+		g[3] = g^3
+		g[4] = g^5
+	*/
+	{
+		Fp2T t = g[0];
+		g[0] = g[1];
+		g[1] = g[3];
+		g[3] = g[2];
+		g[2] = t;
+	}
+	for (size_t i = 0; i < gN; i++) {
+		Fp2T t(g[i].a, g[i].b);
+		if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
+		Fp2T::mul(g2[i], t, g[i]);
+		g3[i] = g[i] * g2[i];
+	}
+	Fp6DblT<Fp>::init();
+	*pb = true;
+}
 
 } // mcl
 
