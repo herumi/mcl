@@ -1546,9 +1546,18 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	Fp6 d, e;
 	G1 adjP;
 	makeAdjP(adjP, P);
-	dblLine(d, T, adjP);
-	addLine(e, T, Q, P);
-	mulSparse2(f, d, e);
+	dblLine(e, T, adjP);
+	if (BN::param.siTbl[1]) {
+		if (BN::param.siTbl[1] > 0) {
+			addLine(d, T, Q, P);
+			mulSparse2(f, d, e);
+		} else {
+			addLine(d, T, negQ, P);
+			mulSparse2(f, d, e);
+		}
+	} else {
+		convertFp6toFp12(f, e);
+	}
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
 		dblLine(e, T, adjP);
 		Fp12::sqr(f, f);
