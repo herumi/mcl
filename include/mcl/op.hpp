@@ -256,7 +256,8 @@ struct Op {
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 	PrimeMode primeMode;
-	bool isFullBit; // true if bitSize % uniSize == 0
+	bool isFullBit; // true if bitSize % unitSize == 0
+	bool isLtQuad; // true if (bitSize % unitSize) <= unitSize - 2
 	bool isMont; // true if use Montgomery
 	bool isFastMod; // true if modulo is fast
 
@@ -341,6 +342,7 @@ struct Op {
 
 		primeMode = PM_GENERIC;
 		isFullBit = false;
+		isLtQuad = false;
 		isMont = false;
 		isFastMod = false;
 	}

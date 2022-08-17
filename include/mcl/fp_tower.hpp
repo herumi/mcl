@@ -599,11 +599,11 @@ struct Fp2DblT {
 		imaginary part of Fp2Dbl::mul uses only add,
 		so it does not require mod.
 	*/
-	template<bool p_lt_Wp4>
+	template<bool isLtQuad>
 	static void subSpecial(Fp2DblT& y, const Fp2DblT& x)
 	{
 		FpDbl::sub(y.a, y.a, x.a);
-		if (p_lt_Wp4) {
+		if (isLtQuad) {
 			FpDbl::subPre(y.b, y.b, x.b);
 		} else {
 			FpDbl::sub(y.b, y.b, x.b);
@@ -968,7 +968,7 @@ struct Fp6DblT {
 		assum p < W/4 where W = 1 << (sizeof(Unit) * 8 * N)
 		then (b + c)(e + f) < 4p^2 < pW
 	*/
-	template<bool p_lt_Wp4>
+	template<bool isLtQuad>
 	static void mulPreT(Fp6DblT& z, const Fp6& x, const Fp6& y)
 	{
 		const Fp2& a = x.a;
@@ -982,7 +982,7 @@ struct Fp6DblT {
 		Fp2Dbl& ZC = z.c;
 		Fp2 t1, t2;
 		Fp2Dbl BE, CF, AD;
-		if (p_lt_Wp4) {
+		if (isLtQuad) {
 			Fp2::addPre(t1, b, c);
 			Fp2::addPre(t2, e, f);
 		} else {
@@ -990,7 +990,7 @@ struct Fp6DblT {
 			Fp2::add(t2, e, f);
 		}
 		Fp2Dbl::mulPre(ZA, t1, t2);
-		if (p_lt_Wp4) {
+		if (isLtQuad) {
 			Fp2::addPre(t1, a, b);
 			Fp2::addPre(t2, e, d);
 		} else {
@@ -998,7 +998,7 @@ struct Fp6DblT {
 			Fp2::add(t2, e, d);
 		}
 		Fp2Dbl::mulPre(ZB, t1, t2);
-		if (p_lt_Wp4) {
+		if (isLtQuad) {
 			Fp2::addPre(t1, a, c);
 			Fp2::addPre(t2, d, f);
 		} else {
@@ -1009,12 +1009,12 @@ struct Fp6DblT {
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(CF, c, f);
 		Fp2Dbl::mulPre(AD, a, d);
-		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZA, BE);
-		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZA, CF);
-		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZB, AD);
-		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZB, BE);
-		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZC, AD);
-		Fp2Dbl::template subSpecial<p_lt_Wp4>(ZC, CF);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZA, BE);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZA, CF);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZB, AD);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZB, BE);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZC, AD);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZC, CF);
 		Fp2Dbl::mul_xi(ZA, ZA);
 		Fp2Dbl::add(ZA, ZA, AD);
 		Fp2Dbl::mul_xi(CF, CF);
@@ -1060,9 +1060,7 @@ struct Fp6DblT {
 	static void init()
 	{
 		const mcl::fp::Op& op = Fp::getOp();
-		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
-		bool p_lt_Wp4 = (op.p[op.N - 1] >> (sizeof(Unit) * 8 - 2)) == 0;
-		if (p_lt_Wp4) {
+		if (op.isLtQuad) {
 			mulPre = mulPreT<true>;
 		} else {
 			mulPre = mulPreT<false>;

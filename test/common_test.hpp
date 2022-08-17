@@ -143,15 +143,26 @@ void testMul2()
 
 void testABCDsub(const Fp2& a, const Fp2& b, const Fp2& c, const Fp2& d)
 {
+	const bool isLtQuad = Fp::getOp().isLtQuad;
 	Fp2 t1, t2;
-	Fp2::addPre(t1, a, b);
-	Fp2::addPre(t2, c, d);
+	if (isLtQuad) {
+		Fp2::addPre(t1, a, b);
+		Fp2::addPre(t2, c, d);
+	} else {
+		Fp2::add(t1, a, b);
+		Fp2::add(t2, c, d);
+	}
 	Fp2Dbl T1, AC, BD;
 	Fp2Dbl::mulPre(T1, t1, t2);
 	Fp2Dbl::mulPre(AC, a, c);
 	Fp2Dbl::mulPre(BD, b, d);
-	Fp2Dbl::subSpecial<false>(T1, AC);
-	Fp2Dbl::subSpecial<false>(T1, BD);
+	if (isLtQuad) {
+		Fp2Dbl::subSpecial<true>(T1, AC);
+		Fp2Dbl::subSpecial<true>(T1, BD);
+	} else {
+		Fp2Dbl::subSpecial<false>(T1, AC);
+		Fp2Dbl::subSpecial<false>(T1, BD);
+	}
 	Fp2Dbl::mod(t1, T1);
 	CYBOZU_TEST_EQUAL(t1, a * d + b * c);
 }
