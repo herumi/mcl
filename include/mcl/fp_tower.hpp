@@ -425,74 +425,7 @@ public:
 	}
 
 	static uint32_t get_xi_a() { return Fp::getOp().xi_a; }
-	static void init(bool *pb)
-	{
-		mcl::fp::Op& op = Fp::op_;
-		assert(op.xi_a);
-		// assume p < W/4 where W = 1 << (N * sizeof(Unit) * 8)
-		if ((op.p[op.N - 1] >> (sizeof(Unit) * 8 - 2)) != 0) {
-			*pb = false;
-			return;
-		}
-#ifdef MCL_XBYAK_DIRECT_CALL
-		if (op.fp2_addA_ == 0) {
-			op.fp2_addA_ = addA;
-		}
-		if (op.fp2_subA_ == 0) {
-			op.fp2_subA_ = subA;
-		}
-		if (op.fp2_negA_ == 0) {
-			op.fp2_negA_ = negA;
-		}
-		if (op.fp2_mulA_ == 0) {
-			op.fp2_mulA_ = mulA;
-		}
-		if (op.fp2_sqrA_ == 0) {
-			op.fp2_sqrA_ = sqrA;
-		}
-		if (op.fp2_mul2A_ == 0) {
-			op.fp2_mul2A_ = mul2A;
-		}
-#endif
-		if (op.fp2_mul_xiA_ == 0) {
-			if (op.xi_a == 1) {
-				op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
-			} else {
-				op.fp2_mul_xiA_ = fp2_mul_xiA;
-			}
-		}
-		FpDblT<Fp>::init();
-		Fp2DblT<Fp>::init();
-		// call init before Fp2::pow because FpDbl is used in Fp2T
-		const Fp2T xi(op.xi_a, 1);
-		const mpz_class& p = Fp::getOp().mp;
-		Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
-		for (size_t i = 1; i < gN; i++) {
-			g[i] = g[i - 1] * g[0];
-		}
-		/*
-			permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
-			g[0] = g^2
-			g[1] = g^4
-			g[2] = g^1
-			g[3] = g^3
-			g[4] = g^5
-		*/
-		{
-			Fp2T t = g[0];
-			g[0] = g[1];
-			g[1] = g[3];
-			g[3] = g[2];
-			g[2] = t;
-		}
-		for (size_t i = 0; i < gN; i++) {
-			Fp2T t(g[i].a, g[i].b);
-			if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
-			Fp2T::mul(g2[i], t, g[i]);
-			g3[i] = g[i] * g2[i];
-		}
-		*pb = true;
-	}
+	static void init(bool *pb);
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static void init()
 	{
@@ -666,10 +599,15 @@ struct Fp2DblT {
 		imaginary part of Fp2Dbl::mul uses only add,
 		so it does not require mod.
 	*/
+	template<bool isLtQuad>
 	static void subSpecial(Fp2DblT& y, const Fp2DblT& x)
 	{
 		FpDbl::sub(y.a, y.a, x.a);
-		FpDbl::subPre(y.b, y.b, x.b);
+		if (isLtQuad) {
+			FpDbl::subPre(y.b, y.b, x.b);
+		} else {
+			FpDbl::sub(y.b, y.b, x.b);
+		}
 	}
 	static void neg(Fp2DblT& y, const Fp2DblT& x)
 	{
@@ -703,13 +641,21 @@ struct Fp2DblT {
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
 	static void init()
  	{
-		assert(!Fp::getOp().isFullBit);
+		bool isFullBit = Fp::getOp().isFullBit;
 		mcl::fp::Op& op = Fp::getOpNonConst();
 		if (op.fp2Dbl_mulPreA_ == 0) {
-			op.fp2Dbl_mulPreA_ = mulPreA;
+			if (isFullBit) {
+				op.fp2Dbl_mulPreA_ = mulPreA<true>;
+			} else {
+				op.fp2Dbl_mulPreA_ = mulPreA<false>;
+			}
 		}
 		if (op.fp2Dbl_sqrPreA_ == 0) {
-			op.fp2Dbl_sqrPreA_ = sqrPreA;
+			if (isFullBit) {
+				op.fp2Dbl_sqrPreA_ = sqrPreA<true>;
+			} else {
+				op.fp2Dbl_sqrPreA_ = sqrPreA<false>;
+			}
 		}
 		if (op.fp2Dbl_mul_xiA_ == 0) {
 			const uint32_t xi_a = Fp2::get_xi_a();
@@ -729,12 +675,12 @@ private:
 		Fp2Dbl::mulPre by FpDblT
 		@note mod of NIST_P192 is fast
 	*/
+	template<bool isFullBit>
 	static void mulPreA(Unit *pz, const Unit *px, const Unit *py)
 	{
 		Fp2Dbl& z = castD(pz);
 		const Fp2& x = cast(px);
 		const Fp2& y = cast(py);
-		assert(!Fp::getOp().isFullBit);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		const Fp& c = y.a;
@@ -743,23 +689,38 @@ private:
 		FpDbl& d1 = z.b;
 		FpDbl d2;
 		Fp s, t;
-		Fp::addPre(s, a, b);
-		Fp::addPre(t, c, d);
+		if (isFullBit) {
+			Fp::add(s, a, b);
+			Fp::add(t, c, d);
+		} else {
+			Fp::addPre(s, a, b);
+			Fp::addPre(t, c, d);
+		}
 		FpDbl::mulPre(d1, s, t); // (a + b)(c + d)
 		FpDbl::mulPre(d0, a, c);
 		FpDbl::mulPre(d2, b, d);
-		FpDbl::subPre(d1, d1, d0);
-		FpDbl::subPre(d1, d1, d2);
+		if (isFullBit) {
+			FpDbl::sub(d1, d1, d0);
+			FpDbl::sub(d1, d1, d2);
+		} else {
+			FpDbl::subPre(d1, d1, d0);
+			FpDbl::subPre(d1, d1, d2);
+		}
 		FpDbl::sub(d0, d0, d2); // ac - bd
 	}
+	template<bool isFullBit>
 	static void sqrPreA(Unit *py, const Unit *px)
 	{
-		assert(!Fp::getOp().isFullBit);
 		Fp2Dbl& y = castD(py);
 		const Fp2& x = cast(px);
 		Fp t1, t2;
-		Fp::addPre(t1, x.b, x.b); // 2b
-		Fp::addPre(t2, x.a, x.b); // a + b
+		if (isFullBit) {
+			Fp::add(t1, x.b, x.b); // 2b
+			Fp::add(t2, x.a, x.b); // a + b
+		} else {
+			Fp::addPre(t1, x.b, x.b); // 2b
+			Fp::addPre(t2, x.a, x.b); // a + b
+		}
 		FpDbl::mulPre(y.b, t1, x.a); // 2ab
 		Fp::sub(t1, x.a, x.b); // a - b
 		FpDbl::mulPre(y.a, t1, t2); // (a + b)(a - b)
@@ -962,7 +923,11 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp2Dbl::add(T, T, T2);
 		Fp2Dbl::mul_xi(T, T);
 		Fp2Dbl::mulPre(T2, p.a, a);
-		Fp2Dbl::addPre(T, T, T2);
+		if (Fp::getOp().isFullBit) {
+			Fp2Dbl::addPre(T, T, T2);
+		} else {
+			Fp2Dbl::add(T, T, T2);
+		}
 		Fp2 q;
 		Fp2Dbl::mod(q, T);
 		Fp2::inv(q, q);
@@ -993,6 +958,7 @@ struct Fp6DblT {
 		Fp2Dbl::sub(z.b, x.b, y.b);
 		Fp2Dbl::sub(z.c, x.c, y.c);
 	}
+	static void (*mulPre)(Fp6DblT& z, const Fp6& x, const Fp6& y);
 	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
 		xy = (ad + (bf + ce)xi) + ((ae + bd) + cf xi)v + ((af + cd) + be)v^2
@@ -1002,7 +968,8 @@ struct Fp6DblT {
 		assum p < W/4 where W = 1 << (sizeof(Unit) * 8 * N)
 		then (b + c)(e + f) < 4p^2 < pW
 	*/
-	static void mulPre(Fp6DblT& z, const Fp6& x, const Fp6& y)
+	template<bool isLtQuad>
+	static void mulPreT(Fp6DblT& z, const Fp6& x, const Fp6& y)
 	{
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
@@ -1015,24 +982,39 @@ struct Fp6DblT {
 		Fp2Dbl& ZC = z.c;
 		Fp2 t1, t2;
 		Fp2Dbl BE, CF, AD;
-		Fp2::addPre(t1, b, c);
-		Fp2::addPre(t2, e, f);
+		if (isLtQuad) {
+			Fp2::addPre(t1, b, c);
+			Fp2::addPre(t2, e, f);
+		} else {
+			Fp2::add(t1, b, c);
+			Fp2::add(t2, e, f);
+		}
 		Fp2Dbl::mulPre(ZA, t1, t2);
-		Fp2::addPre(t1, a, b);
-		Fp2::addPre(t2, e, d);
+		if (isLtQuad) {
+			Fp2::addPre(t1, a, b);
+			Fp2::addPre(t2, e, d);
+		} else {
+			Fp2::add(t1, a, b);
+			Fp2::add(t2, e, d);
+		}
 		Fp2Dbl::mulPre(ZB, t1, t2);
-		Fp2::addPre(t1, a, c);
-		Fp2::addPre(t2, d, f);
+		if (isLtQuad) {
+			Fp2::addPre(t1, a, c);
+			Fp2::addPre(t2, d, f);
+		} else {
+			Fp2::add(t1, a, c);
+			Fp2::add(t2, d, f);
+		}
 		Fp2Dbl::mulPre(ZC, t1, t2);
 		Fp2Dbl::mulPre(BE, b, e);
 		Fp2Dbl::mulPre(CF, c, f);
 		Fp2Dbl::mulPre(AD, a, d);
-		Fp2Dbl::subSpecial(ZA, BE);
-		Fp2Dbl::subSpecial(ZA, CF);
-		Fp2Dbl::subSpecial(ZB, AD);
-		Fp2Dbl::subSpecial(ZB, BE);
-		Fp2Dbl::subSpecial(ZC, AD);
-		Fp2Dbl::subSpecial(ZC, CF);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZA, BE);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZA, CF);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZB, AD);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZB, BE);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZC, AD);
+		Fp2Dbl::template subSpecial<isLtQuad>(ZC, CF);
 		Fp2Dbl::mul_xi(ZA, ZA);
 		Fp2Dbl::add(ZA, ZA, AD);
 		Fp2Dbl::mul_xi(CF, CF);
@@ -1075,7 +1057,18 @@ struct Fp6DblT {
 		Fp2Dbl::mod(y.b, x.b);
 		Fp2Dbl::mod(y.c, x.c);
 	}
+	static void init()
+	{
+		const mcl::fp::Op& op = Fp::getOp();
+		if (op.isLtQuad) {
+			mulPre = mulPreT<true>;
+		} else {
+			mulPre = mulPreT<false>;
+		}
+	}
 };
+
+template<class Fp> void (*Fp6DblT<Fp>::mulPre)(Fp6DblT<Fp>&, const Fp6T<Fp>&, const Fp6T<Fp>&) = 0;//mulPreT<false>;
 
 /*
 	Fp12T = Fp6[w] / (w^2 - v)
@@ -1490,6 +1483,72 @@ struct GroupMtoA : public T {
 private:
 	bool isOne() const;
 };
+
+template<class _Fp> void Fp2T<_Fp>::init(bool *pb)
+{
+	typedef _Fp Fp;
+	mcl::fp::Op& op = Fp::op_;
+	assert(op.xi_a);
+#ifdef MCL_XBYAK_DIRECT_CALL
+	if (op.fp2_addA_ == 0) {
+		op.fp2_addA_ = addA;
+	}
+	if (op.fp2_subA_ == 0) {
+		op.fp2_subA_ = subA;
+	}
+	if (op.fp2_negA_ == 0) {
+		op.fp2_negA_ = negA;
+	}
+	if (op.fp2_mulA_ == 0) {
+		op.fp2_mulA_ = mulA;
+	}
+	if (op.fp2_sqrA_ == 0) {
+		op.fp2_sqrA_ = sqrA;
+	}
+	if (op.fp2_mul2A_ == 0) {
+		op.fp2_mul2A_ = mul2A;
+	}
+#endif
+	if (op.fp2_mul_xiA_ == 0) {
+		if (op.xi_a == 1) {
+			op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
+		} else {
+			op.fp2_mul_xiA_ = fp2_mul_xiA;
+		}
+	}
+	FpDblT<Fp>::init();
+	Fp2DblT<Fp>::init();
+	// call init before Fp2::pow because FpDbl is used in Fp2T
+	const Fp2T xi(op.xi_a, 1);
+	const mpz_class& p = Fp::getOp().mp;
+	Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
+	for (size_t i = 1; i < gN; i++) {
+		g[i] = g[i - 1] * g[0];
+	}
+	/*
+		permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
+		g[0] = g^2
+		g[1] = g^4
+		g[2] = g^1
+		g[3] = g^3
+		g[4] = g^5
+	*/
+	{
+		Fp2T t = g[0];
+		g[0] = g[1];
+		g[1] = g[3];
+		g[3] = g[2];
+		g[2] = t;
+	}
+	for (size_t i = 0; i < gN; i++) {
+		Fp2T t(g[i].a, g[i].b);
+		if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
+		Fp2T::mul(g2[i], t, g[i]);
+		g3[i] = g[i] * g2[i];
+	}
+	Fp6DblT<Fp>::init();
+	*pb = true;
+}
 
 } // mcl
 

@@ -309,7 +309,6 @@ void setOp(Op& op)
 	op.fpDbl_sub = fpDblSubModT<N>;
 	setSafe(op.fpDbl_add, get_llvm_fpDbl_add(N));
 	setSafe(op.fpDbl_sub, get_llvm_fpDbl_sub(N));
-	op.fp2_mulNF = fp2_mulNFT<N>;
 }
 
 #ifdef MCL_X64_ASM
@@ -458,6 +457,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	if (mode == FP_AUTO) mode = FP_GMP_MONT;
 	isMont = mode == FP_GMP_MONT || mode == FP_LLVM_MONT || mode == FP_XBYAK;
 	isFullBit = (bitSize % UnitBitSize) == 0;
+	isLtQuad = bitSize <= N * UnitBitSize - 2;
 
 #if defined(MCL_USE_LLVM) || defined(MCL_USE_XBYAK)
 	if (mode == FP_AUTO || mode == FP_LLVM || mode == FP_XBYAK) {
@@ -507,6 +507,9 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 #endif
 #if MCL_MAX_BIT_SIZE >= 384
 	case 384/(MCL_SIZEOF_UNIT * 8):  setOp<384/(MCL_SIZEOF_UNIT * 8)>(*this); break;
+#endif
+#if MCL_MAX_BIT_SIZE >= 448
+	case 448/(MCL_SIZEOF_UNIT * 8):  setOp<448/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
 #if MCL_MAX_BIT_SIZE >= 512
 	case 512/(MCL_SIZEOF_UNIT * 8):  setOp<512/(MCL_SIZEOF_UNIT * 8)>(*this); break;

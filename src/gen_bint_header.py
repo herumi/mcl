@@ -97,7 +97,7 @@ def gen_disable(N):
 def gen_mul_slow(N):
 	print('#if MCL_BINT_ASM_X64 == 1')
 	for n in range(1,N+1):
-		print(f'''extern "C" MCL_DLL_API void mclb_mul_slow{n}(Unit *z, const Unit *x, const Unit *y)
+		print(f'''extern "C" void mclb_mul_slow{n}(Unit *z, const Unit *x, const Unit *y)
 {{
 	z[{n}] = mulUnitT<{n}>(z, x, y[0]);
 	for (size_t i = 1; i < {n}; i++) {{
@@ -109,7 +109,7 @@ def gen_mul_slow(N):
 def gen_sqr_slow(N):
 	print('#if MCL_BINT_ASM_X64 == 1')
 	for n in range(1,N+1):
-		print(f'''extern "C" MCL_DLL_API void mclb_sqr_slow{n}(Unit *y, const Unit *x)
+		print(f'''extern "C" void mclb_sqr_slow{n}(Unit *y, const Unit *x)
 {{
 	mclb_mul_slow{n}(y, x, x);
 }}''')

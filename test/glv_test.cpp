@@ -232,6 +232,7 @@ CYBOZU_TEST_AUTO(glv)
 		const mcl::CurveParam& param;
 		const char *name;
 	} tbl[] = {
+//		{ mcl::BN_P256, "BN_P256" },
 		{ mcl::BLS12_381, "BLS12_381" },
 		{ mcl::BN254, "BN254" },
 	};

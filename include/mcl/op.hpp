@@ -252,12 +252,12 @@ struct Op {
 		x = a + bu
 	*/
 	int xi_a; // xi = xi_a + u
-	void4u fp2_mulNF;
 	void2u fp2_mul_xiA_;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 	PrimeMode primeMode;
-	bool isFullBit; // true if bitSize % uniSize == 0
+	bool isFullBit; // true if bitSize % unitSize == 0
+	bool isLtQuad; // true if (bitSize % unitSize) <= unitSize - 2
 	bool isMont; // true if use Montgomery
 	bool isFastMod; // true if modulo is fast
 
@@ -337,12 +337,12 @@ struct Op {
 		fpDbl_subPre = 0;
 
 		xi_a = 0;
-		fp2_mulNF = 0;
 		fp2_mul_xiA_ = 0;
 		hash = 0;
 
 		primeMode = PM_GENERIC;
 		isFullBit = false;
+		isLtQuad = false;
 		isMont = false;
 		isFastMod = false;
 	}
