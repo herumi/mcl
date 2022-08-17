@@ -1250,7 +1250,6 @@ inline void mul_403(Fp12& z, const Fp6& x)
 	const Fp2& a = x.a;
 	const Fp2& b = x.b;
 	const Fp2& c = x.c;
-#if 1
 	Fp6& z0 = z.a;
 	Fp6& z1 = z.b;
 	Fp6 z0x0, z1x1, t0;
@@ -1269,66 +1268,6 @@ inline void mul_403(Fp12& z, const Fp6& x)
 	Fp2::add(z.a.a, z0x0.a, z1x1.c);
 	Fp2::add(z.a.b, z0x0.b, z1x1.a);
 	Fp2::add(z.a.c, z0x0.c, z1x1.b);
-#else
-	Fp2& z0 = z.a.a;
-	Fp2& z1 = z.a.b;
-	Fp2& z2 = z.a.c;
-	Fp2& z3 = z.b.a;
-	Fp2& z4 = z.b.b;
-	Fp2& z5 = z.b.c;
-	Fp2Dbl Z0B, Z1B, Z2B, Z3C, Z4C, Z5C;
-	Fp2Dbl T0, T1, T2, T3, T4, T5;
-	Fp2 bc, t;
-	Fp2::addPre(bc, b, c);
-	Fp2::addPre(t, z5, z2);
-	Fp2Dbl::mulPre(T5, t, bc);
-	Fp2Dbl::mulPre(Z5C, z5, c);
-	Fp2Dbl::mulPre(Z2B, z2, b);
-	Fp2Dbl::sub(T5, T5, Z5C);
-	Fp2Dbl::sub(T5, T5, Z2B);
-	Fp2Dbl::mulPre(T0, z1, a);
-	T5 += T0;
-
-	Fp2::addPre(t, z4, z1);
-	Fp2Dbl::mulPre(T4, t, bc);
-	Fp2Dbl::mulPre(Z4C, z4, c);
-	Fp2Dbl::mulPre(Z1B, z1, b);
-	Fp2Dbl::sub(T4, T4, Z4C);
-	Fp2Dbl::sub(T4, T4, Z1B);
-	Fp2Dbl::mulPre(T0, z0, a);
-	T4 += T0;
-
-	Fp2::addPre(t, z3, z0);
-	Fp2Dbl::mulPre(T3, t, bc);
-	Fp2Dbl::mulPre(Z3C, z3, c);
-	Fp2Dbl::mulPre(Z0B, z0, b);
-	Fp2Dbl::sub(T3, T3, Z3C);
-	Fp2Dbl::sub(T3, T3, Z0B);
-	Fp2::mul_xi(t, z2);
-	Fp2Dbl::mulPre(T0, t, a);
-	T3 += T0;
-
-	Fp2Dbl::mulPre(T2, z3, a);
-	T2 += Z2B;
-	T2 += Z4C;
-
-	Fp2::mul_xi(t, z5);
-	Fp2Dbl::mulPre(T1, t, a);
-	T1 += Z1B;
-	T1 += Z3C;
-
-	Fp2Dbl::mulPre(T0, z4, a);
-	T0 += Z5C;
-	Fp2Dbl::mul_xi(T0, T0);
-	T0 += Z0B;
-
-	Fp2Dbl::mod(z0, T0);
-	Fp2Dbl::mod(z1, T1);
-	Fp2Dbl::mod(z2, T2);
-	Fp2Dbl::mod(z3, T3);
-	Fp2Dbl::mod(z4, T4);
-	Fp2Dbl::mod(z5, T5);
-#endif
 }
 /*
 	input
