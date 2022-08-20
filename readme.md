@@ -59,14 +59,6 @@ see [api.md](api.md) and [FAQ](api.md#faq) for serialization and hash-to-curve.
 # How to build on Linux and macOS
 x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.
 
-## Installation Requirements
-
-[GMP](https://gmplib.org/) is necessary (default setting).
-
-```
-apt install libgmp-dev # on Ubuntu
-```
-
 ## How to build with Makefile
 
 ```
