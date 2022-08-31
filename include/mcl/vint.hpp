@@ -427,21 +427,6 @@ public:
 		isNeg_ = rhs.isNeg_;
 		return *this;
 	}
-#if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-	VintT(VintT&& rhs)
-		: buf_(rhs.buf_)
-		, size_(rhs.size_)
-		, isNeg_(rhs.isNeg_)
-	{
-	}
-	VintT& operator=(VintT&& rhs)
-	{
-		buf_ = std::move(rhs.buf_);
-		size_ = rhs.size_;
-		isNeg_ = rhs.isNeg_;
-		return *this;
-	}
-#endif
 	void swap(VintT& rhs)
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 		noexcept
