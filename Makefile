@@ -150,7 +150,7 @@ else
 	python3 src/gen_bint_x64.py -m gas > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
-	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
+	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER) -m$(BIT)
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
@@ -346,7 +346,7 @@ $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJ_DIR)/%.o: src/asm/%.s
-	$(PRE)$(AS) -c $< -o $@
+	$(PRE)$(AS) --$(BIT) -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/asm/%.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
