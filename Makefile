@@ -21,9 +21,6 @@ endif
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
-  ifeq ($(USE_LOW_ASM),1)
-    TEST_SRC+=low_test.cpp
-  endif
   ifeq ($(MCL_USE_XBYAK),1)
     TEST_SRC+=fp_generator_test.cpp
   endif
