@@ -26,6 +26,8 @@ struct Montgomery {
 	mpz_class RR_; // (R * R) % p
 	Unit rp_; // rp * p = -1 mod M = 1 << 64
 	size_t pn_;
+	std::vector<Unit> v_;
+	const Unit *rpp_;
 	Montgomery() {}
 	void put() const
 	{
@@ -42,6 +44,10 @@ struct Montgomery {
 		R_ = 1;
 		R_ = (R_ << (pn_ * 64)) % p_;
 		RR_ = (R_ * R_) % p_;
+		v_.resize(pn_ + 1);
+		mcl::gmp::getArray(&v_[1], pn_, p);
+		v_[0] = rp_;
+		rpp_ = v_.data() + 1;
 	}
 
 	void toMont(mpz_class& x) const { mul(x, x, RR_); }
@@ -75,12 +81,42 @@ struct Montgomery {
 	}
 };
 
+template<size_t N>
+void testEdge(const mpz_class& p)
+{
+	Montgomery mont(p);
+	CYBOZU_TEST_EQUAL(mont.pn_, N);
+	mpz_class tbl[] = { 0, 1, 2, 0x1234568, p-1, p-2, p-3 };
+	std::vector<Unit> x1Buf(N);
+	std::vector<Unit> x2Buf(N);
+	std::vector<Unit> yBuf(N);
+	std::vector<Unit> zBuf(N);
+	const size_t n = CYBOZU_NUM_OF_ARRAY(tbl);
+	for (size_t i = 0; i < n; i++) {
+		mpz_class x1 = tbl[i];
+		mont.toMont(x1);
+		mcl::gmp::getArray(x1Buf.data(), N, x1);
+		for (size_t j = i; j < n; j++) {
+			mpz_class x2 = tbl[j];
+			mont.toMont(x2);
+			mcl::gmp::getArray(x2Buf.data(), N, x2);
+			mcl::fp::mulMontT<N>(zBuf.data(), x1Buf.data(), x2Buf.data(), mont.rpp_);
+			mpz_class z1, z2;
+			mcl::gmp::setArray(z1, zBuf.data(), N);
+//			mont.mod(z, x1 * x2);
+			mont.mul(z2, x1, x2);
+			CYBOZU_TEST_EQUAL(z1, z2);
+			mont.fromMont(z1);
+			CYBOZU_TEST_EQUAL(z1, (tbl[i] * tbl[j]) % p);
+		}
+	}
+}
+
 CYBOZU_TEST_AUTO(limit)
 {
 	std::cout << std::hex;
 	const size_t N = 4;
 	mpz_class p = (mpz_class(1) << (sizeof(Unit) * 8 * N)) - 1;
-	Montgomery mont(p);
-	mont.put();
+	testEdge<N>(p);
 }
 
