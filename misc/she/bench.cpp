@@ -82,6 +82,44 @@ void benchEnc(const PrecomputedPublicKey& ppub, int vecN)
 	clk.put("enc");
 }
 
+// encrypt and normalize each ciphertext to Affine
+void benchEncAffine(const PrecomputedPublicKey& ppub, int vecN)
+{
+	cybozu::CpuClock clk;
+	CipherTextG1Vec cv;
+	cv.resize(vecN);
+	const int C = 10;
+	for (int k = 0; k < C; k++) {
+		clk.begin();
+		#pragma omp parallel for
+		for (int i = 0; i < vecN; i++) {
+			ppub.enc(cv[i], i);
+			cv[i].normalize();
+		}
+		clk.end();
+	}
+	clk.put("enc");
+}
+
+// encrypt and normalize all ciphertext to Affine
+void benchEncAffineVec(const PrecomputedPublicKey& ppub, int vecN)
+{
+	cybozu::CpuClock clk;
+	CipherTextG1Vec cv;
+	cv.resize(vecN);
+	const int C = 10;
+	for (int k = 0; k < C; k++) {
+		clk.begin();
+		#pragma omp parallel for
+		for (int i = 0; i < vecN; i++) {
+			ppub.enc(cv[i], i);
+		}
+		normalizeVec(&cv[0], vecN);
+		clk.end();
+	}
+	clk.put("enc");
+}
+
 void benchAdd(const PrecomputedPublicKey& ppub, int addN, int vecN)
 {
 	cybozu::CpuClock clk;
@@ -165,6 +203,14 @@ void exec(const std::string& mode, int addN, int vecN)
 		benchEnc(ppub, vecN);
 		return;
 	}
+	if (mode == "enc-affine") {
+		benchEncAffine(ppub, vecN);
+		return;
+	}
+	if (mode == "enc-affine-vec") {
+		benchEncAffineVec(ppub, vecN);
+		return;
+	}
 	if (mode == "add") {
 		benchAdd(ppub, addN, vecN);
 		return;
@@ -196,7 +242,7 @@ int main(int argc, char *argv[])
 	opt.appendOpt(&cpuN, 1, "cpu", "# of cpus");
 	opt.appendOpt(&addN, 128, "add", "# of add");
 	opt.appendOpt(&vecN, 1024, "n", "# of elements");
-	opt.appendParam(&mode, "mode", "enc|add|add-affine|dec|loadsave");
+	opt.appendParam(&mode, "mode", "enc|enc-affine|enc-affine-vec|add|add-affine|dec|loadsave");
 	opt.appendHelp("h");
 	if (opt.parse(argc, argv)) {
 		opt.put();
