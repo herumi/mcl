@@ -106,6 +106,31 @@ void benchAdd(const PrecomputedPublicKey& ppub, int addN, int vecN)
 	clk.put("add");
 }
 
+void benchAddAffine(const PrecomputedPublicKey& ppub, int addN, int vecN)
+{
+	cybozu::CpuClock clk;
+	CipherTextG1Vec sumv, cv;
+	sumv.resize(vecN);
+	cv.resize(addN);
+	for (int i = 0; i < addN; i++) {
+		ppub.enc(cv[i], i);
+	}
+	normalizeVec(&cv[0], addN);
+	const int C = 10;
+	for (int k = 0; k < C; k++) {
+		clk.begin();
+		#pragma omp parallel for
+		for (int j = 0; j < vecN; j++) {
+			sumv[j] = cv[0];
+			for (int i = 1; i < addN; i++) {
+				sumv[j].add(cv[i]);
+			}
+		}
+		clk.end();
+	}
+	clk.put("add-affine");
+}
+
 void benchDec(const PrecomputedPublicKey& ppub, const SecretKey& sec, int vecN)
 {
 	cybozu::CpuClock clk;
@@ -144,6 +169,10 @@ void exec(const std::string& mode, int addN, int vecN)
 		benchAdd(ppub, addN, vecN);
 		return;
 	}
+	if (mode == "add-affine") {
+		benchAddAffine(ppub, addN, vecN);
+		return;
+	}
 	if (mode == "dec") {
 		benchDec(ppub, sec, vecN);
 		return;
@@ -167,7 +196,7 @@ int main(int argc, char *argv[])
 	opt.appendOpt(&cpuN, 1, "cpu", "# of cpus");
 	opt.appendOpt(&addN, 128, "add", "# of add");
 	opt.appendOpt(&vecN, 1024, "n", "# of elements");
-	opt.appendParam(&mode, "mode", "enc|add|dec|loadsave");
+	opt.appendParam(&mode, "mode", "enc|add|add-affine|dec|loadsave");
 	opt.appendHelp("h");
 	if (opt.parse(argc, argv)) {
 		opt.put();
