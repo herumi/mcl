@@ -435,6 +435,11 @@ struct SHET {
 			S_.clear();
 			T_.clear();
 		}
+		void normalize()
+		{
+			S_.normalize();
+			T_.normalize();
+		}
 		bool isValid() const
 		{
 			return S_.isValid() && T_.isValid();
