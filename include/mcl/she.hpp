@@ -2283,6 +2283,11 @@ template<class OutputStream, class G>
 void serializeVecToAffine(OutputStream& os, SHE::CipherTextAT<G> *v, size_t n)
 {
 	normalizeVec(v, n);
+#if 1
+	for (size_t i = 0; i < n; i++) {
+		v[i].save(os, IoEcAffineSerialize);
+	}
+#else
 	const size_t bufSize = sizeof(typename G::Fp) * 2 /* affine */ * 2 /* (S, T) */ * n;
 	uint8_t *buf = (uint8_t*)CYBOZU_ALLOCA(bufSize);
 	cybozu::MemoryOutputStream mos(buf, bufSize);
@@ -2291,11 +2296,17 @@ void serializeVecToAffine(OutputStream& os, SHE::CipherTextAT<G> *v, size_t n)
 	}
 	assert(mos.getPos() == bufSize);
 	cybozu::write(os, buf, bufSize);
+#endif
 }
 
 template<class InputStream, class G>
 void deserializeVecFromAffine(SHE::CipherTextAT<G> *v, size_t n, InputStream& is)
 {
+#if 1
+	for (size_t i = 0; i < n; i++) {
+		v[i].load(is, IoEcAffineSerialize);
+	}
+#else
 	const size_t bufSize = sizeof(typename G::Fp) * 2 /* affine */ * 2 /* (S, T) */ * n;
 	uint8_t *buf = (uint8_t*)CYBOZU_ALLOCA(bufSize);
 	cybozu::read(buf, bufSize, is);
@@ -2303,6 +2314,7 @@ void deserializeVecFromAffine(SHE::CipherTextAT<G> *v, size_t n, InputStream& is
 	for (size_t i = 0; i < n; i++) {
 		v[i].load(mis, IoEcAffineSerialize);
 	}
+#endif
 }
 
 } } // mcl::she
