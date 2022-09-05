@@ -4,13 +4,6 @@
 */
 // #define MCLBN_FP_UNIT_SIZE 6
 
-/*
-	For secp521r1
-	1. rebuild libmcl.a
-	make clean && make lib/libmcl.a MCL_MAX_BIT_SIZE=576
-	2. define this macro if using secp521r1
-*/
-// #define MCLBN_FP_UNIT_SIZE 9
 #include <mcl/she.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/benchmark.hpp>
@@ -32,7 +25,6 @@ void loadSaveTest(const char *msg, const T& x, bool compress)
 	{
 		std::ostringstream oss; // you can use std::fstream
 		if (compress) {
-//			cybozu::save(oss, x);
 			x.save(oss);
 		} else {
 			oss.write((const char*)&x, sizeof(x));
@@ -45,7 +37,6 @@ void loadSaveTest(const char *msg, const T& x, bool compress)
 		std::istringstream iss(s);
 		T y;
 		if (compress) {
-//			cybozu::load(y, iss);
 			y.load(iss);
 		} else {
 			iss.read((char*)&y, sizeof(y));
@@ -189,6 +180,43 @@ void benchDec(const PrecomputedPublicKey& ppub, const SecretKey& sec, int vecN)
 	clk.put("dec");
 }
 
+void affineSerializeTest(const SecretKey& sec, const PrecomputedPublicKey& ppub)
+{
+	const int N = 4096;
+	size_t FpSize = 256 / 8;
+	// * 2 : affine coordinate x, y
+	// * 2 : group elements of ElGamal ciphertext
+	std::vector<uint8_t> buf(FpSize * 2 * 2 * N);
+	{
+		CipherTextG1Vec cv;
+		cv.resize(N);
+		for (int i = 0; i < N; i++) {
+			ppub.enc(cv[i], i % maxMsg);
+		}
+		// serialize and write {cv[i]} to buf
+		cybozu::MemoryOutputStream os(buf.data(), buf.size());
+		serializeVecToAffine(os, cv.data(), N);
+	}
+	{
+		CipherTextG1Vec cv;
+		cv.resize(N);
+		// deserialize buf to {cv[i]}
+		cybozu::MemoryInputStream is(buf.data(), buf.size());
+		deserializeVecFromAffine(cv.data(), N, is);
+
+		// check values
+		for (int i = 0; i < N; i++) {
+			int x = sec.dec(cv[i]);
+			int y = i % maxMsg;
+			if (x != y) {
+				printf("err i=%d x=%d y=%d\n", i, x, y);
+				exit(1);
+			}
+		}
+		puts("serialize deserialize ok");
+	}
+}
+
 void exec(const std::string& mode, int addN, int vecN)
 {
 	SecretKey sec;
@@ -226,6 +254,7 @@ void exec(const std::string& mode, int addN, int vecN)
 	if (mode == "loadsave") {
 		loadSave(sec, pub, false);
 		loadSave(sec, pub, true);
+		affineSerializeTest(sec, ppub);
 		return;
 	}
 	printf("not supported mode=%s\n", mode.c_str());
