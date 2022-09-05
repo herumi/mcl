@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <cybozu/test.hpp>
 #include "../src/low_func.hpp"
 
