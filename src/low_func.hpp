@@ -164,10 +164,10 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 
 // [return:z[N+1]] = z[N+1] + x[N] * y + (cc << (N * 32))
 template<size_t N>
-Unit mulUnitAddWithCarryT(Unit z[N + 1], const Unit x[N], Unit y, const Unit *cc = 0)
+Unit mulUnitAddWithCF(Unit z[N + 1], const Unit x[N], Unit y, Unit CF)
 {
 	Unit H = bint::mulUnitAddT<N>(z, x, y);
-	if (cc) H += *cc;
+	H += CF;
 	Unit v = z[N];
 	v += H;
 	z[N] = v;
@@ -183,7 +183,7 @@ static void modRedNFT(Unit *z, const Unit *xy, const Unit *p)
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
 		Unit q = buf[i] * rp;
-		c = mulUnitAddWithCarryT<N>(buf + i, p, q, &c);
+		c = mulUnitAddWithCF<N>(buf + i, p, q, c);
 	}
 	if (bint::subT<N>(z, buf + N, p)) {
 		bint::copyT<N>(z, buf + N);
