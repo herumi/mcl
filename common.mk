@@ -74,6 +74,7 @@ ifeq ($(ARCH),s390x)
 endif
 
 AR?=ar
+ARFLAGS?=r
 CP=cp -f
 MKDIR=mkdir -p
 RM=rm -rf
