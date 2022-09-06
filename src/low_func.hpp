@@ -190,6 +190,15 @@ static void modRedNFT(Unit *z, const Unit *xy, const Unit *p)
 	}
 }
 
+// update z[N + 1]
+template<size_t N>
+static Unit mulUnitAddWithCF(Unit *z, const Unit *x, Unit y)
+{
+	Unit v1 = z[N];
+	Unit v2 = v1 + bint::mulUnitAddT<N>(z, x, y);
+	z[N] = v2;
+	return v2 < v1;
+}
 /*
 	z[N] <- Montgomery(x[N], y[N], p[N])
 	REMARK : assume p[-1] = rp
@@ -198,28 +207,20 @@ template<size_t N>
 static void mulMontT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
 	const Unit rp = p[-1];
-	Unit buf[N * 2 + 2];
-	Unit *c = buf;
-	mulUnitPreT<N>(c, x, y[0]); // x * y[0]
-	Unit q = c[0] * rp;
-	Unit t[N + 2];
-	mulUnitPreT<N>(t, p, q); // p * q
-	t[N + 1] = 0; // always zero
-	c[N + 1] = bint::addT<N + 1>(c, c, t);
-	c++;
+	Unit buf[N * 2 + 1];
+	buf[N] = bint::mulUnitT<N>(buf, x, y[0]);
+	Unit q = buf[0] * rp;
+	buf[N + 1] = mulUnitAddWithCF<N>(buf, p, q);
 	for (size_t i = 1; i < N; i++) {
-		mulUnitPreT<N>(t, x, y[i]);
-		c[N + 1] = bint::addT<N + 1>(c, c, t);
-		q = c[0] * rp;
-		mulUnitPreT<N>(t, p, q);
-		bint::addT<N + 2>(c, c, t);
-		c++;
+		buf[N + 1 + i] = mulUnitAddWithCF<N>(buf + i, x, y[i]);
+		q = buf[i] * rp;
+		buf[N + 1 + i] += mulUnitAddWithCF<N>(buf + i, p, q);
 	}
-	if (c[N]) {
-		bint::subT<N>(z, c, p);
+	if (buf[N + N]) {
+		bint::subT<N>(z, buf + N, p);
 	} else {
-		if (bint::subT<N>(z, c, p)) {
-			bint::copyT<N>(z, c);
+		if (bint::subT<N>(z, buf + N, p)) {
+			bint::copyT<N>(z, buf + N);
 		}
 	}
 }

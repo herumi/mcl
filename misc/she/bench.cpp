@@ -4,13 +4,6 @@
 */
 // #define MCLBN_FP_UNIT_SIZE 6
 
-/*
-	For secp521r1
-	1. rebuild libmcl.a
-	make clean && make lib/libmcl.a MCL_MAX_BIT_SIZE=576
-	2. define this macro if using secp521r1
-*/
-// #define MCLBN_FP_UNIT_SIZE 9
 #include <mcl/she.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/benchmark.hpp>
@@ -32,7 +25,6 @@ void loadSaveTest(const char *msg, const T& x, bool compress)
 	{
 		std::ostringstream oss; // you can use std::fstream
 		if (compress) {
-//			cybozu::save(oss, x);
 			x.save(oss);
 		} else {
 			oss.write((const char*)&x, sizeof(x));
@@ -45,7 +37,6 @@ void loadSaveTest(const char *msg, const T& x, bool compress)
 		std::istringstream iss(s);
 		T y;
 		if (compress) {
-//			cybozu::load(y, iss);
 			y.load(iss);
 		} else {
 			iss.read((char*)&y, sizeof(y));
@@ -82,6 +73,44 @@ void benchEnc(const PrecomputedPublicKey& ppub, int vecN)
 	clk.put("enc");
 }
 
+// encrypt and normalize each ciphertext to Affine
+void benchEncAffine(const PrecomputedPublicKey& ppub, int vecN)
+{
+	cybozu::CpuClock clk;
+	CipherTextG1Vec cv;
+	cv.resize(vecN);
+	const int C = 10;
+	for (int k = 0; k < C; k++) {
+		clk.begin();
+		#pragma omp parallel for
+		for (int i = 0; i < vecN; i++) {
+			ppub.enc(cv[i], i);
+			cv[i].normalize();
+		}
+		clk.end();
+	}
+	clk.put("enc");
+}
+
+// encrypt and normalize all ciphertext to Affine
+void benchEncAffineVec(const PrecomputedPublicKey& ppub, int vecN)
+{
+	cybozu::CpuClock clk;
+	CipherTextG1Vec cv;
+	cv.resize(vecN);
+	const int C = 10;
+	for (int k = 0; k < C; k++) {
+		clk.begin();
+		#pragma omp parallel for
+		for (int i = 0; i < vecN; i++) {
+			ppub.enc(cv[i], i);
+		}
+		normalizeVec(&cv[0], vecN);
+		clk.end();
+	}
+	clk.put("enc");
+}
+
 void benchAdd(const PrecomputedPublicKey& ppub, int addN, int vecN)
 {
 	cybozu::CpuClock clk;
@@ -106,6 +135,31 @@ void benchAdd(const PrecomputedPublicKey& ppub, int addN, int vecN)
 	clk.put("add");
 }
 
+void benchAddAffine(const PrecomputedPublicKey& ppub, int addN, int vecN)
+{
+	cybozu::CpuClock clk;
+	CipherTextG1Vec sumv, cv;
+	sumv.resize(vecN);
+	cv.resize(addN);
+	for (int i = 0; i < addN; i++) {
+		ppub.enc(cv[i], i);
+	}
+	normalizeVec(&cv[0], addN);
+	const int C = 10;
+	for (int k = 0; k < C; k++) {
+		clk.begin();
+		#pragma omp parallel for
+		for (int j = 0; j < vecN; j++) {
+			sumv[j] = cv[0];
+			for (int i = 1; i < addN; i++) {
+				sumv[j].add(cv[i]);
+			}
+		}
+		clk.end();
+	}
+	clk.put("add-affine");
+}
+
 void benchDec(const PrecomputedPublicKey& ppub, const SecretKey& sec, int vecN)
 {
 	cybozu::CpuClock clk;
@@ -126,6 +180,43 @@ void benchDec(const PrecomputedPublicKey& ppub, const SecretKey& sec, int vecN)
 	clk.put("dec");
 }
 
+void affineSerializeTest(const SecretKey& sec, const PrecomputedPublicKey& ppub)
+{
+	const int N = 4096;
+	size_t FpSize = 256 / 8;
+	// * 2 : affine coordinate x, y
+	// * 2 : group elements of ElGamal ciphertext
+	std::vector<uint8_t> buf(FpSize * 2 * 2 * N);
+	{
+		CipherTextG1Vec cv;
+		cv.resize(N);
+		for (int i = 0; i < N; i++) {
+			ppub.enc(cv[i], i % maxMsg);
+		}
+		// serialize and write {cv[i]} to buf
+		cybozu::MemoryOutputStream os(buf.data(), buf.size());
+		serializeVecToAffine(os, cv.data(), N);
+	}
+	{
+		CipherTextG1Vec cv;
+		cv.resize(N);
+		// deserialize buf to {cv[i]}
+		cybozu::MemoryInputStream is(buf.data(), buf.size());
+		deserializeVecFromAffine(cv.data(), N, is);
+
+		// check values
+		for (int i = 0; i < N; i++) {
+			int x = sec.dec(cv[i]);
+			int y = i % maxMsg;
+			if (x != y) {
+				printf("err i=%d x=%d y=%d\n", i, x, y);
+				exit(1);
+			}
+		}
+		puts("serialize deserialize ok");
+	}
+}
+
 void exec(const std::string& mode, int addN, int vecN)
 {
 	SecretKey sec;
@@ -140,8 +231,20 @@ void exec(const std::string& mode, int addN, int vecN)
 		benchEnc(ppub, vecN);
 		return;
 	}
+	if (mode == "enc-affine") {
+		benchEncAffine(ppub, vecN);
+		return;
+	}
+	if (mode == "enc-affine-vec") {
+		benchEncAffineVec(ppub, vecN);
+		return;
+	}
 	if (mode == "add") {
 		benchAdd(ppub, addN, vecN);
+		return;
+	}
+	if (mode == "add-affine") {
+		benchAddAffine(ppub, addN, vecN);
 		return;
 	}
 	if (mode == "dec") {
@@ -151,6 +254,7 @@ void exec(const std::string& mode, int addN, int vecN)
 	if (mode == "loadsave") {
 		loadSave(sec, pub, false);
 		loadSave(sec, pub, true);
+		affineSerializeTest(sec, ppub);
 		return;
 	}
 	printf("not supported mode=%s\n", mode.c_str());
@@ -167,7 +271,7 @@ int main(int argc, char *argv[])
 	opt.appendOpt(&cpuN, 1, "cpu", "# of cpus");
 	opt.appendOpt(&addN, 128, "add", "# of add");
 	opt.appendOpt(&vecN, 1024, "n", "# of elements");
-	opt.appendParam(&mode, "mode", "enc|add|dec|loadsave");
+	opt.appendParam(&mode, "mode", "enc|enc-affine|enc-affine-vec|add|add-affine|dec|loadsave");
 	opt.appendHelp("h");
 	if (opt.parse(argc, argv)) {
 		opt.put();

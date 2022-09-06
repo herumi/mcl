@@ -13,6 +13,7 @@ TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
+TEST_SRC+=low_func_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   LIB_OBJ+=obj/static_code.o
@@ -21,9 +22,6 @@ endif
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
   TEST_SRC+=mont_fp_test.cpp sq_test.cpp
-  ifeq ($(USE_LOW_ASM),1)
-    TEST_SRC+=low_test.cpp
-  endif
   ifeq ($(MCL_USE_XBYAK),1)
     TEST_SRC+=fp_generator_test.cpp
   endif
