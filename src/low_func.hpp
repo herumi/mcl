@@ -192,7 +192,7 @@ static void modRedNFT(Unit *z, const Unit *xy, const Unit *p)
 
 // update z[N + 1]
 template<size_t N>
-static Unit mulUnitAddWithCF(Unit *z, const Unit *x, Unit y)
+static Unit mulUnitAddFull(Unit *z, const Unit *x, Unit y)
 {
 	Unit v1 = z[N];
 	Unit v2 = v1 + bint::mulUnitAddT<N>(z, x, y);
@@ -210,11 +210,11 @@ static void mulMontT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	Unit buf[N * 2 + 1];
 	buf[N] = bint::mulUnitT<N>(buf, x, y[0]);
 	Unit q = buf[0] * rp;
-	buf[N + 1] = mulUnitAddWithCF<N>(buf, p, q);
+	buf[N + 1] = mulUnitAddFull<N>(buf, p, q);
 	for (size_t i = 1; i < N; i++) {
-		buf[N + 1 + i] = mulUnitAddWithCF<N>(buf + i, x, y[i]);
+		buf[N + 1 + i] = mulUnitAddFull<N>(buf + i, x, y[i]);
 		q = buf[i] * rp;
-		buf[N + 1 + i] += mulUnitAddWithCF<N>(buf + i, p, q);
+		buf[N + 1 + i] += mulUnitAddFull<N>(buf + i, p, q);
 	}
 	if (buf[N + N]) {
 		bint::subT<N>(z, buf + N, p);

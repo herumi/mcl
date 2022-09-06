@@ -51,8 +51,18 @@ struct Montgomery {
 		rpp_ = v_.data() + 1;
 	}
 
-	void toMont(mpz_class& x) const { mul(x, x, RR_); }
-	void fromMont(mpz_class& x) const { mul(x, x, 1); }
+	mpz_class toMont(const mpz_class& x) const
+	{
+		mpz_class y;
+		mul(y, x, RR_);
+		return y;
+	}
+	mpz_class fromMont(const mpz_class& x) const
+	{
+		mpz_class y;
+		mul(y, x, 1);
+		return y;
+	}
 
 	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
 	{
@@ -83,33 +93,37 @@ struct Montgomery {
 };
 
 template<size_t N>
+void testEdgeOne(const Montgomery& mont, const mpz_class& x1, const mpz_class& x2)
+{
+	Unit x1Buf[N], x2Buf[N], z1Buf[N], z2Buf[N], xyBuf[N * 2];
+	mpz_class xy = (x1 * x2) % mont.p_;
+	mpz_class mx1 = mont.toMont(x1);
+	mpz_class mx2 = mont.toMont(x2);
+	mcl::gmp::getArray(x1Buf, N, mx1);
+	mcl::gmp::getArray(x2Buf, N, mx2);
+	mcl::fp::mulMontT<N>(z1Buf, x1Buf, x2Buf, mont.rpp_);
+	mpz_class z1, z2;
+	mcl::gmp::setArray(z1, z1Buf, N);
+	mont.mul(z2, mx1, mx2);
+	CYBOZU_TEST_EQUAL(z1, z2);
+	mont.fromMont(z1);
+	CYBOZU_TEST_EQUAL(z1, xy);
+	mont.toMont(xy);
+	mcl::gmp::getArray(xyBuf, N * 2, xy);
+	mcl::fp::modRedT<N>(z2Buf, xyBuf, mont.rpp_);
+	CYBOZU_TEST_EQUAL_ARRAY(z1Buf, z2Buf, N);
+}
+
+template<size_t N>
 void testEdge(const mpz_class& p)
 {
 	Montgomery mont(p);
 	CYBOZU_TEST_EQUAL(mont.pn_, N);
 	mpz_class tbl[] = { 0, 1, 2, 0x1234568, p-1, p-2, p-3 };
-	Unit x1Buf[N], x2Buf[N], z1Buf[N], z2Buf[N], xyBuf[N * 2];
 	const size_t n = CYBOZU_NUM_OF_ARRAY(tbl);
 	for (size_t i = 0; i < n; i++) {
-		mpz_class x1 = tbl[i];
-		mont.toMont(x1);
-		mcl::gmp::getArray(x1Buf, N, x1);
 		for (size_t j = i; j < n; j++) {
-			mpz_class x2 = tbl[j];
-			mpz_class xy = tbl[i] * tbl[j] % p;
-			mont.toMont(x2);
-			mcl::gmp::getArray(x2Buf, N, x2);
-			mcl::fp::mulMontT<N>(z1Buf, x1Buf, x2Buf, mont.rpp_);
-			mpz_class z1, z2;
-			mcl::gmp::setArray(z1, z1Buf, N);
-			mont.mul(z2, x1, x2);
-			CYBOZU_TEST_EQUAL(z1, z2);
-			mont.fromMont(z1);
-			CYBOZU_TEST_EQUAL(z1, xy);
-			mont.toMont(xy);
-			mcl::gmp::getArray(xyBuf, N * 2, xy);
-			mcl::fp::modRedT<N>(z2Buf, xyBuf, mont.rpp_);
-			CYBOZU_TEST_EQUAL_ARRAY(z1Buf, z2Buf, N);
+			testEdgeOne<N>(mont, tbl[i], tbl[j]);
 		}
 	}
 }
