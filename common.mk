@@ -73,8 +73,9 @@ ifeq ($(ARCH),s390x)
   BIT=64
 endif
 
+AR?=ar
+ARFLAGS?=r
 CP=cp -f
-AR=ar r
 MKDIR=mkdir -p
 RM=rm -rf
 
