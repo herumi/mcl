@@ -148,7 +148,7 @@ else
 	python3 src/gen_bint_x64.py -m gas > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
-	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER) -m$(BIT)
+	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
