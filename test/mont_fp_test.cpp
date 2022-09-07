@@ -1,8 +1,8 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
+#include <vector>
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
-#include <time.h>
 #include <mcl/fp.hpp>
 #include "../src/low_func.hpp"
 
