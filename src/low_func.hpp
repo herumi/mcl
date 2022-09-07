@@ -125,6 +125,20 @@ static void fpDblSubModT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	}
 }
 
+// [return:z[N+1]] = z[N+1] + x[N] * y + (CF << (N * UnitBitSize))
+template<size_t N>
+Unit mulUnitAddFullWithCF(Unit z[N + 1], const Unit x[N], Unit y, Unit CF)
+{
+	Unit H = bint::mulUnitAddT<N>(z, x, y);
+	Unit v = z[N];
+	v += H;
+	Unit CF2 = v < H;
+	v += CF;
+	CF2 += v < CF;
+	z[N] = v;
+	return CF2;
+}
+
 /*
 	z[N] <- montRed(xy[N * 2], p[N])
 	REMARK : assume p[-1] = rp
@@ -133,25 +147,14 @@ template<size_t N>
 static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 {
 	const Unit rp = p[-1];
-	Unit pq[N + 1];
-	Unit buf[N * 2 + 1];
-	bint::copyT<N - 1>(buf + N + 1, xy + N + 1);
-	buf[N * 2] = 0;
-	Unit q = xy[0] * rp;
-	pq[N] = bint::mulUnitT<N>(pq, p, q);
-	Unit CF = bint::addT<N + 1>(buf, xy, pq);
+	Unit buf[N * 2];
+	bint::copyT<N * 2>(buf, xy);
+	Unit CF = 0;
+	for (size_t i = 0; i < N; i++) {
+		Unit q = buf[i] * rp;
+		CF = mulUnitAddFullWithCF<N>(buf + i, p, q, CF);
+	}
 	if (CF) {
-		buf[N * 2] = bint::addUnit(buf + N + 1, N - 1, 1);
-	}
-	for (size_t i = 1; i < N; i++) {
-		q = buf[i] * rp;
-		pq[N] = bint::mulUnitT<N>(pq, p, q);
-		CF = bint::addT<N + 1>(buf + i, buf + i, pq);
-		if (CF) {
-			bint::addUnit(buf + i + N + 1, N - i, 1);
-		}
-	}
-	if (buf[N + N]) {
 		bint::subT<N>(z, buf + N, p);
 	} else {
 		if (bint::subT<N>(z, buf + N, p)) {
