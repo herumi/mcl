@@ -218,7 +218,7 @@ void edgeTest()
 	const size_t N = Fp::getUnitSize();
 	const mpz_class R = (t << (N * mcl::UnitBitSize)) % m;
 	const mpz_class tbl[] = {
-		0, 1, R, m - 1, m - R
+		0, 1, 2, 0x12345678, R, m - R, m-1, m-2, m-3
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];
