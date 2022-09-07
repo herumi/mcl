@@ -125,12 +125,14 @@ endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
   GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
 endif
+ifeq ($(UPDATE_LL),1)
 src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
 src/bint64.ll: src/gen_bint.exe
 	$< -u 64 -ver 0x90 > $@
 src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
+endif
 include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
