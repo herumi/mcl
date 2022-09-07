@@ -139,35 +139,33 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 	buf[N * 2] = 0;
 	Unit q = xy[0] * rp;
 	pq[N] = bint::mulUnitT<N>(pq, p, q);
-	Unit up = bint::addT<N + 1>(buf, xy, pq);
-	if (up) {
+	Unit CF = bint::addT<N + 1>(buf, xy, pq);
+	if (CF) {
 		buf[N * 2] = bint::addUnit(buf + N + 1, N - 1, 1);
 	}
-	Unit *c = buf + 1;
 	for (size_t i = 1; i < N; i++) {
-		q = c[0] * rp;
+		q = buf[i] * rp;
 		pq[N] = bint::mulUnitT<N>(pq, p, q);
-		up = bint::addT<N + 1>(c, c, pq);
-		if (up) {
-			bint::addUnit(c + N + 1, N - i, 1);
+		CF = bint::addT<N + 1>(buf + i, buf + i, pq);
+		if (CF) {
+			bint::addUnit(buf + i + N + 1, N - i, 1);
 		}
-		c++;
 	}
-	if (c[N]) {
-		bint::subT<N>(z, c, p);
+	if (buf[N + N]) {
+		bint::subT<N>(z, buf + N, p);
 	} else {
-		if (bint::subT<N>(z, c, p)) {
-			bint::copyT<N>(z, c);
+		if (bint::subT<N>(z, buf + N, p)) {
+			bint::copyT<N>(z, buf + N);
 		}
 	}
 }
 
-// [return:z[N+1]] = z[N+1] + x[N] * y + (cc << (N * 32))
+// [return:z[N+1]] = z[N+1] + x[N] * y + (CF << (N * UnitBitSize))
 template<size_t N>
-Unit mulUnitAddWithCarryT(Unit z[N + 1], const Unit x[N], Unit y, const Unit *cc = 0)
+Unit mulUnitAddWithCF(Unit z[N + 1], const Unit x[N], Unit y, Unit CF)
 {
 	Unit H = bint::mulUnitAddT<N>(z, x, y);
-	if (cc) H += *cc;
+	H += CF;
 	Unit v = z[N];
 	v += H;
 	z[N] = v;
@@ -180,10 +178,10 @@ static void modRedNFT(Unit *z, const Unit *xy, const Unit *p)
 	const Unit rp = p[-1];
 	Unit buf[N * 2];
 	bint::copyT<N * 2>(buf, xy);
-	Unit c = 0;
+	Unit CF = 0;
 	for (size_t i = 0; i < N; i++) {
 		Unit q = buf[i] * rp;
-		c = mulUnitAddWithCarryT<N>(buf + i, p, q, &c);
+		CF = mulUnitAddWithCF<N>(buf + i, p, q, CF);
 	}
 	if (bint::subT<N>(z, buf + N, p)) {
 		bint::copyT<N>(z, buf + N);
@@ -192,7 +190,7 @@ static void modRedNFT(Unit *z, const Unit *xy, const Unit *p)
 
 // update z[N + 1]
 template<size_t N>
-static Unit mulUnitAddWithCF(Unit *z, const Unit *x, Unit y)
+static Unit mulUnitAddFull(Unit *z, const Unit *x, Unit y)
 {
 	Unit v1 = z[N];
 	Unit v2 = v1 + bint::mulUnitAddT<N>(z, x, y);
@@ -210,11 +208,11 @@ static void mulMontT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	Unit buf[N * 2 + 1];
 	buf[N] = bint::mulUnitT<N>(buf, x, y[0]);
 	Unit q = buf[0] * rp;
-	buf[N + 1] = mulUnitAddWithCF<N>(buf, p, q);
+	buf[N + 1] = mulUnitAddFull<N>(buf, p, q);
 	for (size_t i = 1; i < N; i++) {
-		buf[N + 1 + i] = mulUnitAddWithCF<N>(buf + i, x, y[i]);
+		buf[N + 1 + i] = mulUnitAddFull<N>(buf + i, x, y[i]);
 		q = buf[i] * rp;
-		buf[N + 1 + i] += mulUnitAddWithCF<N>(buf + i, p, q);
+		buf[N + 1 + i] += mulUnitAddFull<N>(buf + i, p, q);
 	}
 	if (buf[N + N]) {
 		bint::subT<N>(z, buf + N, p);

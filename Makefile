@@ -125,12 +125,14 @@ endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
   GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
 endif
+ifeq ($(UPDATE_LL),1)
 src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
 src/bint64.ll: src/gen_bint.exe
 	$< -u 64 -ver 0x90 > $@
 src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
+endif
 include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
@@ -214,22 +216,22 @@ ifeq ($(OS),mingw64)
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
-	$(AR) $@ $(LIB_OBJ)
+	$(AR) $(ARFLAGS) $@ $(LIB_OBJ)
 
 $(MCL_SLIB): $(LIB_OBJ)
 	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(LDFLAGS) $(MCL_SLIB_LDFLAGS)
 
 $(BN256_LIB): $(BN256_OBJ)
-	$(AR) $@ $(BN256_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BN256_OBJ)
 
 $(SHE256_LIB): $(SHE256_OBJ)
-	$(AR) $@ $(SHE256_OBJ)
+	$(AR) $(ARFLAGS) $@ $(SHE256_OBJ)
 
 $(SHE384_LIB): $(SHE384_OBJ)
-	$(AR) $@ $(SHE384_OBJ)
+	$(AR) $(ARFLAGS) $@ $(SHE384_OBJ)
 
 $(SHE384_256_LIB): $(SHE384_256_OBJ)
-	$(AR) $@ $(SHE384_256_OBJ)
+	$(AR) $(ARFLAGS) $@ $(SHE384_256_OBJ)
 
 $(SHE256_SLIB): $(SHE256_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(SHE256_OBJ) $(MCL_LIB) -shared $(LDFLAGS) $(SHE256_SLIB_LDFLAGS)
@@ -244,13 +246,13 @@ $(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(LDFLAGS) $(BN256_SLIB_LDFLAGS)
 
 $(BN384_LIB): $(BN384_OBJ)
-	$(AR) $@ $(BN384_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BN384_OBJ)
 
 $(BN384_256_LIB): $(BN384_256_OBJ)
-	$(AR) $@ $(BN384_256_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BN384_256_OBJ)
 
 $(BN512_LIB): $(BN512_OBJ)
-	$(AR) $@ $(BN512_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BN512_OBJ)
 
 $(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(LDFLAGS) $(BN384_SLIB_LDFLAGS)
@@ -263,7 +265,7 @@ $(BN512_SLIB): $(BN512_OBJ) $(MCL_SLIB)
 
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
-	$(AR) $@ $(ECDSA_OBJ)
+	$(AR) $(ARFLAGS) $@ $(ECDSA_OBJ)
 
 $(ASM_OBJ): $(ASM_SRC)
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
@@ -344,7 +346,7 @@ $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJ_DIR)/%.o: src/asm/%.s
-	$(PRE)$(AS) -c $< -o $@
+	$(PRE)$(CC) -c $< -o $@ -m$(BIT)
 
 $(OBJ_DIR)/%.o: src/asm/%.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
