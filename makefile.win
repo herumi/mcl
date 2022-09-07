@@ -26,7 +26,7 @@ obj/%.obj: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
 
 lib/mcl.lib: obj/fp.obj obj/bint-x64.obj
-	$(PRE)$(AR) r $@ obj/fp.obj obj/bint-x64.obj
+	$(PRE)$(AR) $(ARFLAGS) $@ obj/fp.obj obj/bint-x64.obj
 
 lib/$(DLL_NAME).lib: $(DLL_OBJS)
 	$(PRE)dlltool -l $@ -D $(DLL_NAME).dll $(DLL_OBJS)
