@@ -139,25 +139,23 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 	buf[N * 2] = 0;
 	Unit q = xy[0] * rp;
 	pq[N] = bint::mulUnitT<N>(pq, p, q);
-	Unit up = bint::addT<N + 1>(buf, xy, pq);
-	if (up) {
+	Unit CF = bint::addT<N + 1>(buf, xy, pq);
+	if (CF) {
 		buf[N * 2] = bint::addUnit(buf + N + 1, N - 1, 1);
 	}
-	Unit *c = buf + 1;
 	for (size_t i = 1; i < N; i++) {
-		q = c[0] * rp;
+		q = buf[i] * rp;
 		pq[N] = bint::mulUnitT<N>(pq, p, q);
-		up = bint::addT<N + 1>(c, c, pq);
-		if (up) {
-			bint::addUnit(c + N + 1, N - i, 1);
+		CF = bint::addT<N + 1>(buf + i, buf + i, pq);
+		if (CF) {
+			bint::addUnit(buf + i + N + 1, N - i, 1);
 		}
-		c++;
 	}
-	if (c[N]) {
-		bint::subT<N>(z, c, p);
+	if (buf[N + N]) {
+		bint::subT<N>(z, buf + N, p);
 	} else {
-		if (bint::subT<N>(z, c, p)) {
-			bint::copyT<N>(z, c);
+		if (bint::subT<N>(z, buf + N, p)) {
+			bint::copyT<N>(z, buf + N);
 		}
 	}
 }
