@@ -1,8 +1,8 @@
 all: low_test
 
-CFLAGS=-I ../include/ -Ofast -Wall -Wextra -DNDEBUG
+CFLAGS=-I ../include/ -O2 -Wall -Wextra -DNDEBUG -DMCL_SIZEOF_UNIT=4 -DMCL_WASM32
 
-low_test: low_test.cpp ../src/low_func_wasm.hpp
+low_test: low_test.cpp ../src/low_func.hpp
 	$(CXX) -o low_test low_test.cpp $(CFLAGS) -m32
 
 sqr.h: gen.py
