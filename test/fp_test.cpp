@@ -1083,12 +1083,14 @@ CYBOZU_TEST_AUTO(main)
 	if (g_mode.empty() || g_mode == "auto") {
 		sub(mcl::fp::FP_AUTO);
 	}
+#if 0 // GMP no longer in use.
 	if (g_mode.empty() || g_mode == "gmp") {
 		sub(mcl::fp::FP_GMP);
 	}
 	if (g_mode.empty() || g_mode == "gmp_mont") {
 		sub(mcl::fp::FP_GMP_MONT);
 	}
+#endif
 #ifdef MCL_USE_LLVM
 	if (g_mode.empty() || g_mode == "llvm") {
 		sub(mcl::fp::FP_LLVM);
