@@ -86,7 +86,10 @@ CYBOZU_TEST_AUTO(limit)
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
-		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", // not prime
+		// not primes
+		"0xffffffffffffffffffffffffffffffffffffffffffffffff0000000000000001",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000001",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
 		printf("p=%s\n", tbl4[i]);
