@@ -400,7 +400,11 @@ public:
 		FpDbl AA, BB;
 		FpDbl::sqrPre(AA, x.a);
 		FpDbl::sqrPre(BB, x.b);
-		FpDbl::addPre(AA, AA, BB);
+		if (Fp::getOp().isFullBit) {
+			FpDbl::add(AA, AA, BB);
+		} else {
+			FpDbl::addPre(AA, AA, BB);
+		}
 		FpDbl::mod(y, AA);
 	}
 	/*
