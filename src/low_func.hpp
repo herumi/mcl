@@ -155,7 +155,9 @@ static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 		CF = mulUnitAddFullWithCF<N>(buf + i, p, q, CF);
 	}
 	if (CF) {
-		bint::subT<N>(z, buf + N, p);
+		CF = bint::subT<N>(z, buf + N, p);
+		assert(CF == 1);
+		(void)CF;
 	} else {
 		if (bint::subT<N>(z, buf + N, p)) {
 			bint::copyT<N>(z, buf + N);
