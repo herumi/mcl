@@ -1515,11 +1515,15 @@ inline void finalExp(Fp12& y, const Fp12& x)
 #if 1
 	mapToCyclotomic(y, x);
 #else
-	const mpz_class& p = param.p;
+	const mpz_class& p = BN::param.p;
 	mpz_class p2 = p * p;
-	mpz_class p4 = p2 * p2;
-	Fp12::pow(y, x, p2 + 1);
-	Fp12::pow(y, y, p4 * p2 - 1);
+	Fp12 y0;
+	Fp12::pow(y0, x, p2 + 1);
+	Fp12::pow(y, y0, p2);
+	Fp12::pow(y, y, p2);
+	Fp12::pow(y, y, p2);
+	Fp12::inv(y0, y0);
+	y *= y0;
 #endif
 	if (BN::param.isBLS12) {
 		expHardPartBLS12(y, y);
@@ -1537,7 +1541,7 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 		f = 1;
 		return;
 	}
-	assert(BN::param.siTbl[1] == 1);
+//	assert(BN::param.siTbl[1] == 1);
 	G2 T = Q;
 	G2 negQ;
 	if (BN::param.useNAF) {
@@ -1550,11 +1554,10 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	if (BN::param.siTbl[1]) {
 		if (BN::param.siTbl[1] > 0) {
 			addLine(d, T, Q, P);
-			mulSparse2(f, d, e);
 		} else {
 			addLine(d, T, negQ, P);
-			mulSparse2(f, d, e);
 		}
+		mulSparse2(f, d, e);
 	} else {
 		convertFp6toFp12(f, e);
 	}
