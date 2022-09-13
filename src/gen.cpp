@@ -950,7 +950,7 @@ struct Code : public mcl::Generator {
 		Operand z;
 		if (isFullBit) {
 			p = zext(p, bu);
-			t = zext(t, bu);
+			t = pack(H, t);
 			Operand vc = sub(t, p);
 			Operand c = trunc(lshr(vc, bit), 1);
 			z = select(c, t, vc);
