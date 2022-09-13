@@ -346,7 +346,7 @@ $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJ_DIR)/%.o: src/asm/%.s
-	$(PRE)$(CC) -c $< -o $@ -m$(BIT)
+	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/asm/%.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
