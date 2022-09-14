@@ -1899,13 +1899,21 @@ inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, b
 		}
 		makeAdjP(adjP[i], P[i]);
 		dblLine(d, T[i], adjP[i]);
-		addLine(e, T[i], Q[i], P[i]);
-		if (i == 0) {
-			mulSparse2(f, d, e);
+		if (BN::param.siTbl[1]) {
+			addLine(e, T[i], Q[i], P[i]);
+			if (i == 0) {
+				mulSparse2(f, d, e);
+			} else {
+				Fp12 ft;
+				mulSparse2(ft, d, e);
+				f *= ft;
+			}
 		} else {
-			Fp12 ft;
-			mulSparse2(ft, d, e);
-			f *= ft;
+			if (i == 0) {
+				convertFp6toFp12(f, d);
+			} else {
+				mulSparse(f, d);
+			}
 		}
 	}
 	for (size_t j = 2; j < BN::param.siTbl.size(); j++) {
