@@ -37,17 +37,19 @@ void testCurve(const mcl::CurveParam& cp)
 		CYBOZU_TEST_EQUAL(e1 * e1, e);
 	}
 	cybozu::XorShift rg;
-	mpz_class a, b;
-	Fr r;
-	G1 aP;
-	G2 bQ;
-	r.setRand(rg); a = r.getMpz();
-	r.setRand(rg); b = r.getMpz();
-	G1::mul(aP, P, a);
-	G2::mul(bQ, Q, b);
-	pairing(e2, aP, bQ);
-	GT::pow(e1, e1, a * b);
-	CYBOZU_TEST_EQUAL(e1, e2);
+	for (int i = 0; i < 100; i++) {
+		Fr a, b;
+		G1 aP;
+		G2 bQ;
+		GT e;
+		a.setRand(rg);
+		b.setRand(rg);
+		aP = P * a;
+		bQ = Q * b;
+		pairing(e2, aP, bQ);
+		GT::pow(e, e1, a * b);
+		CYBOZU_TEST_EQUAL(e2, e);
+	}
 	testCommon(P, Q);
 	testBench(P, Q);
 	testSquareRoot();
@@ -60,8 +62,8 @@ CYBOZU_TEST_AUTO(pairing)
 //	testCurve(mcl::BN160);
 //	puts("BLS12_377");
 //	testCurve(mcl::BLS12_377);
-//	puts("BN_P256");
-//	testCurve(mcl::BN_P256);
+	puts("BN_P256");
+	testCurve(mcl::BN_P256);
 	puts("BN254");
 	testCurve(mcl::BN254);
 	puts("BN381_1");
