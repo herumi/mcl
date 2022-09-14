@@ -927,11 +927,7 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 		Fp2Dbl::add(T, T, T2);
 		Fp2Dbl::mul_xi(T, T);
 		Fp2Dbl::mulPre(T2, p.a, a);
-		if (Fp::getOp().isFullBit) {
-			Fp2Dbl::add(T, T, T2);
-		} else {
-			Fp2Dbl::addPre(T, T, T2);
-		}
+		Fp2Dbl::add(T, T, T2);
 		Fp2 q;
 		Fp2Dbl::mod(q, T);
 		Fp2::inv(q, q);
