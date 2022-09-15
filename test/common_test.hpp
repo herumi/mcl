@@ -30,10 +30,11 @@ void testMulVec(const G& P)
 	std::vector<G> xVec(N);
 	std::vector<Fr> yVec(N);
 
+	cybozu::XorShift rg;
 	for (size_t i = 0; i < N; i++) {
 		G::mul(x0Vec[i], P, i + 3);
 		xVec[i] = x0Vec[i];
-		yVec[i].setByCSPRNG();
+		yVec[i].setByCSPRNG(rg);
 	}
 	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256,
 #if 0
@@ -83,9 +84,10 @@ inline void testPowVec(const G& e)
 	Fr yVec[N];
 
 	xVec[0] = e;
+	cybozu::XorShift rg;
 	for (size_t i = 0; i < N; i++) {
 		if (i > 0) G::mul(xVec[i], xVec[i - 1], e);
-		yVec[i].setByCSPRNG();
+		yVec[i].setByCSPRNG(rg);
 	}
 	const size_t nTbl[] = { 1, 2, 3, 5, 7, 8, 9, 14, 15, 16, 30, 31, 32, 33 };
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
@@ -178,10 +180,11 @@ void testABCD()
 	a[2] = a[0];
 	a[3] = a[0];
 	testABCDsub(a[0], a[1], a[2], a[3]);
+	cybozu::XorShift rg;
 	for (int i = 0; i < 100; i++) {
 		for (int j = 0; j < 4; j++) {
-			a[j].a.setByCSPRNG();
-			a[j].b.setByCSPRNG();
+			a[j].a.setByCSPRNG(rg);
+			a[j].b.setByCSPRNG(rg);
 		}
 		testABCDsub(a[0], a[1], a[2], a[3]);
 	}

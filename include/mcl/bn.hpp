@@ -84,7 +84,8 @@ typedef mcl::FixedArray<int8_t, 128> SignVec;
 
 inline size_t getPrecomputeQcoeffSize(const SignVec& sv)
 {
-	size_t idx = 2 + 2;
+	size_t idx = 2 + 1;
+	if (sv[1]) idx++;
 	for (size_t i = 2; i < sv.size(); i++) {
 		idx++;
 		if (sv[i]) idx++;
@@ -1515,11 +1516,15 @@ inline void finalExp(Fp12& y, const Fp12& x)
 #if 1
 	mapToCyclotomic(y, x);
 #else
-	const mpz_class& p = param.p;
+	const mpz_class& p = BN::param.p;
 	mpz_class p2 = p * p;
-	mpz_class p4 = p2 * p2;
-	Fp12::pow(y, x, p2 + 1);
-	Fp12::pow(y, y, p4 * p2 - 1);
+	Fp12 y0;
+	Fp12::pow(y0, x, p2 + 1);
+	Fp12::pow(y, y0, p2);
+	Fp12::pow(y, y, p2);
+	Fp12::pow(y, y, p2);
+	Fp12::inv(y0, y0);
+	y *= y0;
 #endif
 	if (BN::param.isBLS12) {
 		expHardPartBLS12(y, y);
@@ -1537,7 +1542,6 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 		f = 1;
 		return;
 	}
-	assert(BN::param.siTbl[1] == 1);
 	G2 T = Q;
 	G2 negQ;
 	if (BN::param.useNAF) {
@@ -1550,11 +1554,10 @@ inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	if (BN::param.siTbl[1]) {
 		if (BN::param.siTbl[1] > 0) {
 			addLine(d, T, Q, P);
-			mulSparse2(f, d, e);
 		} else {
 			addLine(d, T, negQ, P);
-			mulSparse2(f, d, e);
 		}
+		mulSparse2(f, d, e);
 	} else {
 		convertFp6toFp12(f, e);
 	}
@@ -1611,9 +1614,10 @@ inline void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	if (BN::param.useNAF) {
 		G2::neg(negQ, Q);
 	}
-	assert(BN::param.siTbl[1] == 1);
 	dblLineWithoutP(Qcoeff[idx++], T);
-	addLineWithoutP(Qcoeff[idx++], T, Q);
+	if (BN::param.siTbl[1]) {
+		addLineWithoutP(Qcoeff[idx++], T, Q);
+	}
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
 		dblLineWithoutP(Qcoeff[idx++], T);
 		if (BN::param.siTbl[i]) {
@@ -1664,12 +1668,16 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	makeAdjP(adjP, P);
 	size_t idx = 0;
 	Fp6 d, e;
-	mulFp6cb_by_G1xy(d, Qcoeff[idx], adjP);
+	mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
 	idx++;
 
-	mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
-	idx++;
-	mulSparse2(f, d, e);
+	if (BN::param.siTbl[1]) {
+		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
+		idx++;
+		mulSparse2(f, d, e);
+	} else {
+		convertFp6toFp12(f, e);
+	}
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
 		idx++;
@@ -1729,13 +1737,17 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, c
 	idx++;
 
 	Fp12 f1, f2;
-	addLine(e1, T, Q1, P1);
-	mulSparse2(f1, d1, e1);
 
-	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-	mulSparse2(f2, d2, e2);
-	Fp12::mul(f, f1, f2);
-	idx++;
+	if (BN::param.siTbl[1]) {
+		addLine(e1, T, Q1, P1);
+		mulSparse2(f1, d1, e1);
+		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
+		idx++;
+		mulSparse2(f2, d2, e2);
+		Fp12::mul(f, f1, f2);
+	} else {
+		mulSparse2(f, d1, d2);
+	}
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
 		dblLine(e1, T, adjP1);
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
@@ -1793,13 +1805,17 @@ inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, c
 	idx++;
 
 	Fp12 f1, f2;
-	mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
-	mulSparse2(f1, d1, e1);
+	if (BN::param.siTbl[1]) {
+		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
+		mulSparse2(f1, d1, e1);
 
-	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-	mulSparse2(f2, d2, e2);
-	Fp12::mul(f, f1, f2);
-	idx++;
+		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
+		mulSparse2(f2, d2, e2);
+		Fp12::mul(f, f1, f2);
+		idx++;
+	} else {
+		mulSparse2(f, d1, d2);
+	}
 	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
 		mulFp6cb_by_G1xy(e1, Q1coeff[idx], adjP1);
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
@@ -1883,13 +1899,21 @@ inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, b
 		}
 		makeAdjP(adjP[i], P[i]);
 		dblLine(d, T[i], adjP[i]);
-		addLine(e, T[i], Q[i], P[i]);
-		if (i == 0) {
-			mulSparse2(f, d, e);
+		if (BN::param.siTbl[1]) {
+			addLine(e, T[i], Q[i], P[i]);
+			if (i == 0) {
+				mulSparse2(f, d, e);
+			} else {
+				Fp12 ft;
+				mulSparse2(ft, d, e);
+				f *= ft;
+			}
 		} else {
-			Fp12 ft;
-			mulSparse2(ft, d, e);
-			f *= ft;
+			if (i == 0) {
+				convertFp6toFp12(f, d);
+			} else {
+				mulSparse(f, d);
+			}
 		}
 	}
 	for (size_t j = 2; j < BN::param.siTbl.size(); j++) {

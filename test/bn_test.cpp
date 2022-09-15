@@ -83,6 +83,20 @@ const struct TestSet {
 		"18569236611881855981733896549089319395087993987737891870319625215675547032585 "
 		"10088832670068482545658647976676953228519838542958787800193793260459700064172 "
 	},
+	{
+		mcl::BN_P256,
+		"BN_P256",
+		{
+			"10793813748249119388663366185155867286988665589653997902671010312229505020762",
+			"38180127804370559801487543606940725252034029064617640659435110855050183227269",
+			"73431760887927251307466131361266587522051698921503209546406677034459618131170",
+			"51612463982296078771831700406593115079246839721481729068545965952224173437665",
+		},
+		{
+			1, 2
+		},
+		0
+	},
 };
 
 CYBOZU_TEST_AUTO(size)
@@ -186,6 +200,7 @@ void testCompress(const G1& P, const G2& Q)
 
 void testPrecomputed(const G1& P, const G2& Q)
 {
+	puts("testPrecomputed");
 	Fp12 e1, e2;
 	pairing(e1, P, Q);
 	std::vector<Fp6> Qcoeff;
@@ -218,6 +233,7 @@ void testFp12pow(const G1& P, const G2& Q)
 
 void testMillerLoop2(const G1& P1, const G2& Q1)
 {
+	puts("testMillerLoop2");
 	Fp12 e1, e2, e3;
 	mpz_class c1("12342342423442");
 	mpz_class c2("329428049820348209482");
@@ -234,9 +250,11 @@ void testMillerLoop2(const G1& P1, const G2& Q1)
 	precomputeG2(Q2coeff, Q2);
 	precomputedMillerLoop2(e2, P1, Q1coeff, P2, Q2coeff);
 	precomputedMillerLoop2mixed(e3, P1, Q1, P2, Q2coeff);
-	CYBOZU_TEST_EQUAL(e2, e3);
 	finalExp(e2, e2);
+	finalExp(e3, e3);
 	CYBOZU_TEST_EQUAL(e1, e2);
+	CYBOZU_TEST_EQUAL(e1, e3);
+	CYBOZU_TEST_EQUAL(e2, e3);
 
 	// special value
 	G2 Z;
@@ -253,6 +271,7 @@ void testMillerLoop2(const G1& P1, const G2& Q1)
 
 void testMillerLoopVec()
 {
+	puts("testMillerLoopVec");
 	const size_t n = 40;
 	G1 Pvec[n];
 	G2 Qvec[n];
@@ -278,6 +297,7 @@ void testMillerLoopVec()
 
 void testMillerLoopVecMT()
 {
+	puts("testMillerLoopVecMT");
 	const size_t n = 40;
 	G1 Pvec[n];
 	G2 Qvec[n];
@@ -305,14 +325,15 @@ void testMillerLoopVecMT()
 
 void testPairing(const G1& P, const G2& Q, const char *eStr)
 {
+	puts("testPairing");
 	Fp12 e1;
 	pairing(e1, P, Q);
 	Fp12 e2;
-	{
+	if (eStr) {
 		std::stringstream ss(eStr);
 		ss >> e2;
+		CYBOZU_TEST_EQUAL(e1, e2);
 	}
-	CYBOZU_TEST_EQUAL(e1, e2);
 
 	Fp12 e = e1, ea;
 	G1 Pa;

@@ -1171,35 +1171,38 @@ define void @mcl_fp_montRed6L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias
 %r200 = trunc i224 %r199 to i32
 %r201 = trunc i224 %r198 to i192
 %r202 = zext i192 %r42 to i224
-%r203 = zext i192 %r201 to i224
-%r204 = sub i224 %r203, %r202
-%r205 = lshr i224 %r204, 192
-%r206 = trunc i224 %r205 to i1
-%r207 = select i1 %r206, i224 %r203, i224 %r204
-%r208 = trunc i224 %r207 to i192
-%r210 = getelementptr i32, i32* %r1, i32 0
-%r211 = trunc i192 %r208 to i32
-store i32 %r211, i32* %r210
-%r212 = lshr i192 %r208, 32
-%r214 = getelementptr i32, i32* %r1, i32 1
-%r215 = trunc i192 %r212 to i32
-store i32 %r215, i32* %r214
-%r216 = lshr i192 %r212, 32
-%r218 = getelementptr i32, i32* %r1, i32 2
-%r219 = trunc i192 %r216 to i32
-store i32 %r219, i32* %r218
-%r220 = lshr i192 %r216, 32
-%r222 = getelementptr i32, i32* %r1, i32 3
-%r223 = trunc i192 %r220 to i32
-store i32 %r223, i32* %r222
-%r224 = lshr i192 %r220, 32
-%r226 = getelementptr i32, i32* %r1, i32 4
-%r227 = trunc i192 %r224 to i32
-store i32 %r227, i32* %r226
-%r228 = lshr i192 %r224, 32
-%r230 = getelementptr i32, i32* %r1, i32 5
-%r231 = trunc i192 %r228 to i32
-store i32 %r231, i32* %r230
+%r203 = zext i32 %r200 to i224
+%r204 = shl i224 %r203, 192
+%r205 = zext i192 %r201 to i224
+%r206 = or i224 %r204, %r205
+%r207 = sub i224 %r206, %r202
+%r208 = lshr i224 %r207, 192
+%r209 = trunc i224 %r208 to i1
+%r210 = select i1 %r209, i224 %r206, i224 %r207
+%r211 = trunc i224 %r210 to i192
+%r213 = getelementptr i32, i32* %r1, i32 0
+%r214 = trunc i192 %r211 to i32
+store i32 %r214, i32* %r213
+%r215 = lshr i192 %r211, 32
+%r217 = getelementptr i32, i32* %r1, i32 1
+%r218 = trunc i192 %r215 to i32
+store i32 %r218, i32* %r217
+%r219 = lshr i192 %r215, 32
+%r221 = getelementptr i32, i32* %r1, i32 2
+%r222 = trunc i192 %r219 to i32
+store i32 %r222, i32* %r221
+%r223 = lshr i192 %r219, 32
+%r225 = getelementptr i32, i32* %r1, i32 3
+%r226 = trunc i192 %r223 to i32
+store i32 %r226, i32* %r225
+%r227 = lshr i192 %r223, 32
+%r229 = getelementptr i32, i32* %r1, i32 4
+%r230 = trunc i192 %r227 to i32
+store i32 %r230, i32* %r229
+%r231 = lshr i192 %r227, 32
+%r233 = getelementptr i32, i32* %r1, i32 5
+%r234 = trunc i192 %r231 to i32
+store i32 %r234, i32* %r233
 ret void
 }
 define void @mcl_fp_montRedNF6L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias  %r3)
@@ -3260,39 +3263,42 @@ define void @mcl_fp_montRed7L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias
 %r235 = trunc i256 %r234 to i32
 %r236 = trunc i256 %r233 to i224
 %r237 = zext i224 %r49 to i256
-%r238 = zext i224 %r236 to i256
-%r239 = sub i256 %r238, %r237
-%r240 = lshr i256 %r239, 224
-%r241 = trunc i256 %r240 to i1
-%r242 = select i1 %r241, i256 %r238, i256 %r239
-%r243 = trunc i256 %r242 to i224
-%r245 = getelementptr i32, i32* %r1, i32 0
-%r246 = trunc i224 %r243 to i32
-store i32 %r246, i32* %r245
-%r247 = lshr i224 %r243, 32
-%r249 = getelementptr i32, i32* %r1, i32 1
-%r250 = trunc i224 %r247 to i32
-store i32 %r250, i32* %r249
-%r251 = lshr i224 %r247, 32
-%r253 = getelementptr i32, i32* %r1, i32 2
-%r254 = trunc i224 %r251 to i32
-store i32 %r254, i32* %r253
-%r255 = lshr i224 %r251, 32
-%r257 = getelementptr i32, i32* %r1, i32 3
-%r258 = trunc i224 %r255 to i32
-store i32 %r258, i32* %r257
-%r259 = lshr i224 %r255, 32
-%r261 = getelementptr i32, i32* %r1, i32 4
-%r262 = trunc i224 %r259 to i32
-store i32 %r262, i32* %r261
-%r263 = lshr i224 %r259, 32
-%r265 = getelementptr i32, i32* %r1, i32 5
-%r266 = trunc i224 %r263 to i32
-store i32 %r266, i32* %r265
-%r267 = lshr i224 %r263, 32
-%r269 = getelementptr i32, i32* %r1, i32 6
-%r270 = trunc i224 %r267 to i32
-store i32 %r270, i32* %r269
+%r238 = zext i32 %r235 to i256
+%r239 = shl i256 %r238, 224
+%r240 = zext i224 %r236 to i256
+%r241 = or i256 %r239, %r240
+%r242 = sub i256 %r241, %r237
+%r243 = lshr i256 %r242, 224
+%r244 = trunc i256 %r243 to i1
+%r245 = select i1 %r244, i256 %r241, i256 %r242
+%r246 = trunc i256 %r245 to i224
+%r248 = getelementptr i32, i32* %r1, i32 0
+%r249 = trunc i224 %r246 to i32
+store i32 %r249, i32* %r248
+%r250 = lshr i224 %r246, 32
+%r252 = getelementptr i32, i32* %r1, i32 1
+%r253 = trunc i224 %r250 to i32
+store i32 %r253, i32* %r252
+%r254 = lshr i224 %r250, 32
+%r256 = getelementptr i32, i32* %r1, i32 2
+%r257 = trunc i224 %r254 to i32
+store i32 %r257, i32* %r256
+%r258 = lshr i224 %r254, 32
+%r260 = getelementptr i32, i32* %r1, i32 3
+%r261 = trunc i224 %r258 to i32
+store i32 %r261, i32* %r260
+%r262 = lshr i224 %r258, 32
+%r264 = getelementptr i32, i32* %r1, i32 4
+%r265 = trunc i224 %r262 to i32
+store i32 %r265, i32* %r264
+%r266 = lshr i224 %r262, 32
+%r268 = getelementptr i32, i32* %r1, i32 5
+%r269 = trunc i224 %r266 to i32
+store i32 %r269, i32* %r268
+%r270 = lshr i224 %r266, 32
+%r272 = getelementptr i32, i32* %r1, i32 6
+%r273 = trunc i224 %r270 to i32
+store i32 %r273, i32* %r272
 ret void
 }
 define void @mcl_fp_montRedNF7L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias  %r3)
@@ -5686,43 +5692,46 @@ define void @mcl_fp_montRed8L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias
 %r270 = trunc i288 %r269 to i32
 %r271 = trunc i288 %r268 to i256
 %r272 = zext i256 %r56 to i288
-%r273 = zext i256 %r271 to i288
-%r274 = sub i288 %r273, %r272
-%r275 = lshr i288 %r274, 256
-%r276 = trunc i288 %r275 to i1
-%r277 = select i1 %r276, i288 %r273, i288 %r274
-%r278 = trunc i288 %r277 to i256
-%r280 = getelementptr i32, i32* %r1, i32 0
-%r281 = trunc i256 %r278 to i32
-store i32 %r281, i32* %r280
-%r282 = lshr i256 %r278, 32
-%r284 = getelementptr i32, i32* %r1, i32 1
-%r285 = trunc i256 %r282 to i32
-store i32 %r285, i32* %r284
-%r286 = lshr i256 %r282, 32
-%r288 = getelementptr i32, i32* %r1, i32 2
-%r289 = trunc i256 %r286 to i32
-store i32 %r289, i32* %r288
-%r290 = lshr i256 %r286, 32
-%r292 = getelementptr i32, i32* %r1, i32 3
-%r293 = trunc i256 %r290 to i32
-store i32 %r293, i32* %r292
-%r294 = lshr i256 %r290, 32
-%r296 = getelementptr i32, i32* %r1, i32 4
-%r297 = trunc i256 %r294 to i32
-store i32 %r297, i32* %r296
-%r298 = lshr i256 %r294, 32
-%r300 = getelementptr i32, i32* %r1, i32 5
-%r301 = trunc i256 %r298 to i32
-store i32 %r301, i32* %r300
-%r302 = lshr i256 %r298, 32
-%r304 = getelementptr i32, i32* %r1, i32 6
-%r305 = trunc i256 %r302 to i32
-store i32 %r305, i32* %r304
-%r306 = lshr i256 %r302, 32
-%r308 = getelementptr i32, i32* %r1, i32 7
-%r309 = trunc i256 %r306 to i32
-store i32 %r309, i32* %r308
+%r273 = zext i32 %r270 to i288
+%r274 = shl i288 %r273, 256
+%r275 = zext i256 %r271 to i288
+%r276 = or i288 %r274, %r275
+%r277 = sub i288 %r276, %r272
+%r278 = lshr i288 %r277, 256
+%r279 = trunc i288 %r278 to i1
+%r280 = select i1 %r279, i288 %r276, i288 %r277
+%r281 = trunc i288 %r280 to i256
+%r283 = getelementptr i32, i32* %r1, i32 0
+%r284 = trunc i256 %r281 to i32
+store i32 %r284, i32* %r283
+%r285 = lshr i256 %r281, 32
+%r287 = getelementptr i32, i32* %r1, i32 1
+%r288 = trunc i256 %r285 to i32
+store i32 %r288, i32* %r287
+%r289 = lshr i256 %r285, 32
+%r291 = getelementptr i32, i32* %r1, i32 2
+%r292 = trunc i256 %r289 to i32
+store i32 %r292, i32* %r291
+%r293 = lshr i256 %r289, 32
+%r295 = getelementptr i32, i32* %r1, i32 3
+%r296 = trunc i256 %r293 to i32
+store i32 %r296, i32* %r295
+%r297 = lshr i256 %r293, 32
+%r299 = getelementptr i32, i32* %r1, i32 4
+%r300 = trunc i256 %r297 to i32
+store i32 %r300, i32* %r299
+%r301 = lshr i256 %r297, 32
+%r303 = getelementptr i32, i32* %r1, i32 5
+%r304 = trunc i256 %r301 to i32
+store i32 %r304, i32* %r303
+%r305 = lshr i256 %r301, 32
+%r307 = getelementptr i32, i32* %r1, i32 6
+%r308 = trunc i256 %r305 to i32
+store i32 %r308, i32* %r307
+%r309 = lshr i256 %r305, 32
+%r311 = getelementptr i32, i32* %r1, i32 7
+%r312 = trunc i256 %r309 to i32
+store i32 %r312, i32* %r311
 ret void
 }
 define void @mcl_fp_montRedNF8L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias  %r3)
@@ -8698,59 +8707,62 @@ define void @mcl_fp_montRed12L(i32* noalias  %r1, i32* noalias  %r2, i32* noalia
 %r410 = trunc i416 %r409 to i32
 %r411 = trunc i416 %r408 to i384
 %r412 = zext i384 %r84 to i416
-%r413 = zext i384 %r411 to i416
-%r414 = sub i416 %r413, %r412
-%r415 = lshr i416 %r414, 384
-%r416 = trunc i416 %r415 to i1
-%r417 = select i1 %r416, i416 %r413, i416 %r414
-%r418 = trunc i416 %r417 to i384
-%r420 = getelementptr i32, i32* %r1, i32 0
-%r421 = trunc i384 %r418 to i32
-store i32 %r421, i32* %r420
-%r422 = lshr i384 %r418, 32
-%r424 = getelementptr i32, i32* %r1, i32 1
-%r425 = trunc i384 %r422 to i32
-store i32 %r425, i32* %r424
-%r426 = lshr i384 %r422, 32
-%r428 = getelementptr i32, i32* %r1, i32 2
-%r429 = trunc i384 %r426 to i32
-store i32 %r429, i32* %r428
-%r430 = lshr i384 %r426, 32
-%r432 = getelementptr i32, i32* %r1, i32 3
-%r433 = trunc i384 %r430 to i32
-store i32 %r433, i32* %r432
-%r434 = lshr i384 %r430, 32
-%r436 = getelementptr i32, i32* %r1, i32 4
-%r437 = trunc i384 %r434 to i32
-store i32 %r437, i32* %r436
-%r438 = lshr i384 %r434, 32
-%r440 = getelementptr i32, i32* %r1, i32 5
-%r441 = trunc i384 %r438 to i32
-store i32 %r441, i32* %r440
-%r442 = lshr i384 %r438, 32
-%r444 = getelementptr i32, i32* %r1, i32 6
-%r445 = trunc i384 %r442 to i32
-store i32 %r445, i32* %r444
-%r446 = lshr i384 %r442, 32
-%r448 = getelementptr i32, i32* %r1, i32 7
-%r449 = trunc i384 %r446 to i32
-store i32 %r449, i32* %r448
-%r450 = lshr i384 %r446, 32
-%r452 = getelementptr i32, i32* %r1, i32 8
-%r453 = trunc i384 %r450 to i32
-store i32 %r453, i32* %r452
-%r454 = lshr i384 %r450, 32
-%r456 = getelementptr i32, i32* %r1, i32 9
-%r457 = trunc i384 %r454 to i32
-store i32 %r457, i32* %r456
-%r458 = lshr i384 %r454, 32
-%r460 = getelementptr i32, i32* %r1, i32 10
-%r461 = trunc i384 %r458 to i32
-store i32 %r461, i32* %r460
-%r462 = lshr i384 %r458, 32
-%r464 = getelementptr i32, i32* %r1, i32 11
-%r465 = trunc i384 %r462 to i32
-store i32 %r465, i32* %r464
+%r413 = zext i32 %r410 to i416
+%r414 = shl i416 %r413, 384
+%r415 = zext i384 %r411 to i416
+%r416 = or i416 %r414, %r415
+%r417 = sub i416 %r416, %r412
+%r418 = lshr i416 %r417, 384
+%r419 = trunc i416 %r418 to i1
+%r420 = select i1 %r419, i416 %r416, i416 %r417
+%r421 = trunc i416 %r420 to i384
+%r423 = getelementptr i32, i32* %r1, i32 0
+%r424 = trunc i384 %r421 to i32
+store i32 %r424, i32* %r423
+%r425 = lshr i384 %r421, 32
+%r427 = getelementptr i32, i32* %r1, i32 1
+%r428 = trunc i384 %r425 to i32
+store i32 %r428, i32* %r427
+%r429 = lshr i384 %r425, 32
+%r431 = getelementptr i32, i32* %r1, i32 2
+%r432 = trunc i384 %r429 to i32
+store i32 %r432, i32* %r431
+%r433 = lshr i384 %r429, 32
+%r435 = getelementptr i32, i32* %r1, i32 3
+%r436 = trunc i384 %r433 to i32
+store i32 %r436, i32* %r435
+%r437 = lshr i384 %r433, 32
+%r439 = getelementptr i32, i32* %r1, i32 4
+%r440 = trunc i384 %r437 to i32
+store i32 %r440, i32* %r439
+%r441 = lshr i384 %r437, 32
+%r443 = getelementptr i32, i32* %r1, i32 5
+%r444 = trunc i384 %r441 to i32
+store i32 %r444, i32* %r443
+%r445 = lshr i384 %r441, 32
+%r447 = getelementptr i32, i32* %r1, i32 6
+%r448 = trunc i384 %r445 to i32
+store i32 %r448, i32* %r447
+%r449 = lshr i384 %r445, 32
+%r451 = getelementptr i32, i32* %r1, i32 7
+%r452 = trunc i384 %r449 to i32
+store i32 %r452, i32* %r451
+%r453 = lshr i384 %r449, 32
+%r455 = getelementptr i32, i32* %r1, i32 8
+%r456 = trunc i384 %r453 to i32
+store i32 %r456, i32* %r455
+%r457 = lshr i384 %r453, 32
+%r459 = getelementptr i32, i32* %r1, i32 9
+%r460 = trunc i384 %r457 to i32
+store i32 %r460, i32* %r459
+%r461 = lshr i384 %r457, 32
+%r463 = getelementptr i32, i32* %r1, i32 10
+%r464 = trunc i384 %r461 to i32
+store i32 %r464, i32* %r463
+%r465 = lshr i384 %r461, 32
+%r467 = getelementptr i32, i32* %r1, i32 11
+%r468 = trunc i384 %r465 to i32
+store i32 %r468, i32* %r467
 ret void
 }
 define void @mcl_fp_montRedNF12L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias  %r3)
@@ -13058,75 +13070,78 @@ define void @mcl_fp_montRed16L(i32* noalias  %r1, i32* noalias  %r2, i32* noalia
 %r550 = trunc i544 %r549 to i32
 %r551 = trunc i544 %r548 to i512
 %r552 = zext i512 %r112 to i544
-%r553 = zext i512 %r551 to i544
-%r554 = sub i544 %r553, %r552
-%r555 = lshr i544 %r554, 512
-%r556 = trunc i544 %r555 to i1
-%r557 = select i1 %r556, i544 %r553, i544 %r554
-%r558 = trunc i544 %r557 to i512
-%r560 = getelementptr i32, i32* %r1, i32 0
-%r561 = trunc i512 %r558 to i32
-store i32 %r561, i32* %r560
-%r562 = lshr i512 %r558, 32
-%r564 = getelementptr i32, i32* %r1, i32 1
-%r565 = trunc i512 %r562 to i32
-store i32 %r565, i32* %r564
-%r566 = lshr i512 %r562, 32
-%r568 = getelementptr i32, i32* %r1, i32 2
-%r569 = trunc i512 %r566 to i32
-store i32 %r569, i32* %r568
-%r570 = lshr i512 %r566, 32
-%r572 = getelementptr i32, i32* %r1, i32 3
-%r573 = trunc i512 %r570 to i32
-store i32 %r573, i32* %r572
-%r574 = lshr i512 %r570, 32
-%r576 = getelementptr i32, i32* %r1, i32 4
-%r577 = trunc i512 %r574 to i32
-store i32 %r577, i32* %r576
-%r578 = lshr i512 %r574, 32
-%r580 = getelementptr i32, i32* %r1, i32 5
-%r581 = trunc i512 %r578 to i32
-store i32 %r581, i32* %r580
-%r582 = lshr i512 %r578, 32
-%r584 = getelementptr i32, i32* %r1, i32 6
-%r585 = trunc i512 %r582 to i32
-store i32 %r585, i32* %r584
-%r586 = lshr i512 %r582, 32
-%r588 = getelementptr i32, i32* %r1, i32 7
-%r589 = trunc i512 %r586 to i32
-store i32 %r589, i32* %r588
-%r590 = lshr i512 %r586, 32
-%r592 = getelementptr i32, i32* %r1, i32 8
-%r593 = trunc i512 %r590 to i32
-store i32 %r593, i32* %r592
-%r594 = lshr i512 %r590, 32
-%r596 = getelementptr i32, i32* %r1, i32 9
-%r597 = trunc i512 %r594 to i32
-store i32 %r597, i32* %r596
-%r598 = lshr i512 %r594, 32
-%r600 = getelementptr i32, i32* %r1, i32 10
-%r601 = trunc i512 %r598 to i32
-store i32 %r601, i32* %r600
-%r602 = lshr i512 %r598, 32
-%r604 = getelementptr i32, i32* %r1, i32 11
-%r605 = trunc i512 %r602 to i32
-store i32 %r605, i32* %r604
-%r606 = lshr i512 %r602, 32
-%r608 = getelementptr i32, i32* %r1, i32 12
-%r609 = trunc i512 %r606 to i32
-store i32 %r609, i32* %r608
-%r610 = lshr i512 %r606, 32
-%r612 = getelementptr i32, i32* %r1, i32 13
-%r613 = trunc i512 %r610 to i32
-store i32 %r613, i32* %r612
-%r614 = lshr i512 %r610, 32
-%r616 = getelementptr i32, i32* %r1, i32 14
-%r617 = trunc i512 %r614 to i32
-store i32 %r617, i32* %r616
-%r618 = lshr i512 %r614, 32
-%r620 = getelementptr i32, i32* %r1, i32 15
-%r621 = trunc i512 %r618 to i32
-store i32 %r621, i32* %r620
+%r553 = zext i32 %r550 to i544
+%r554 = shl i544 %r553, 512
+%r555 = zext i512 %r551 to i544
+%r556 = or i544 %r554, %r555
+%r557 = sub i544 %r556, %r552
+%r558 = lshr i544 %r557, 512
+%r559 = trunc i544 %r558 to i1
+%r560 = select i1 %r559, i544 %r556, i544 %r557
+%r561 = trunc i544 %r560 to i512
+%r563 = getelementptr i32, i32* %r1, i32 0
+%r564 = trunc i512 %r561 to i32
+store i32 %r564, i32* %r563
+%r565 = lshr i512 %r561, 32
+%r567 = getelementptr i32, i32* %r1, i32 1
+%r568 = trunc i512 %r565 to i32
+store i32 %r568, i32* %r567
+%r569 = lshr i512 %r565, 32
+%r571 = getelementptr i32, i32* %r1, i32 2
+%r572 = trunc i512 %r569 to i32
+store i32 %r572, i32* %r571
+%r573 = lshr i512 %r569, 32
+%r575 = getelementptr i32, i32* %r1, i32 3
+%r576 = trunc i512 %r573 to i32
+store i32 %r576, i32* %r575
+%r577 = lshr i512 %r573, 32
+%r579 = getelementptr i32, i32* %r1, i32 4
+%r580 = trunc i512 %r577 to i32
+store i32 %r580, i32* %r579
+%r581 = lshr i512 %r577, 32
+%r583 = getelementptr i32, i32* %r1, i32 5
+%r584 = trunc i512 %r581 to i32
+store i32 %r584, i32* %r583
+%r585 = lshr i512 %r581, 32
+%r587 = getelementptr i32, i32* %r1, i32 6
+%r588 = trunc i512 %r585 to i32
+store i32 %r588, i32* %r587
+%r589 = lshr i512 %r585, 32
+%r591 = getelementptr i32, i32* %r1, i32 7
+%r592 = trunc i512 %r589 to i32
+store i32 %r592, i32* %r591
+%r593 = lshr i512 %r589, 32
+%r595 = getelementptr i32, i32* %r1, i32 8
+%r596 = trunc i512 %r593 to i32
+store i32 %r596, i32* %r595
+%r597 = lshr i512 %r593, 32
+%r599 = getelementptr i32, i32* %r1, i32 9
+%r600 = trunc i512 %r597 to i32
+store i32 %r600, i32* %r599
+%r601 = lshr i512 %r597, 32
+%r603 = getelementptr i32, i32* %r1, i32 10
+%r604 = trunc i512 %r601 to i32
+store i32 %r604, i32* %r603
+%r605 = lshr i512 %r601, 32
+%r607 = getelementptr i32, i32* %r1, i32 11
+%r608 = trunc i512 %r605 to i32
+store i32 %r608, i32* %r607
+%r609 = lshr i512 %r605, 32
+%r611 = getelementptr i32, i32* %r1, i32 12
+%r612 = trunc i512 %r609 to i32
+store i32 %r612, i32* %r611
+%r613 = lshr i512 %r609, 32
+%r615 = getelementptr i32, i32* %r1, i32 13
+%r616 = trunc i512 %r613 to i32
+store i32 %r616, i32* %r615
+%r617 = lshr i512 %r613, 32
+%r619 = getelementptr i32, i32* %r1, i32 14
+%r620 = trunc i512 %r617 to i32
+store i32 %r620, i32* %r619
+%r621 = lshr i512 %r617, 32
+%r623 = getelementptr i32, i32* %r1, i32 15
+%r624 = trunc i512 %r621 to i32
+store i32 %r624, i32* %r623
 ret void
 }
 define void @mcl_fp_montRedNF16L(i32* noalias  %r1, i32* noalias  %r2, i32* noalias  %r3)
