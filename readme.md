@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- support BN\_P256 (hash-to-curve is not yet standard way.)
 - the performance of `{G1,G2}::mulVec(z, xVec, yVec, n)` has improved for n >= 256. (about 2x speed up for n = 512).
   - But it changes the type of xVec from `const G*` to `G*` because xVec may be normalized when computing.
   - fix mul(G, G, F) for F = Fp at v1.61
