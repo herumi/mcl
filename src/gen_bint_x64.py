@@ -22,7 +22,13 @@ def mov_rr(x, y):
 def cmovc_rr(x, y):
   vec_rr(cmovc, x, y)
 
-# t[] -= [px]
+def load_rm(x, m):
+  vec_rm(mov, x, m)
+
+def store_mr(m, x):
+  for i in range(len(x)):
+    mov(ptr(m + 8 * i), x[i])
+
 def add_rm(t, px, withCF=False):
   for i in range(len(t)):
     if not withCF and i == 0:
@@ -246,11 +252,6 @@ def mulPackAdd(pz, offset, py, hi, pd):
   mov(a, 0)
   adox(hi, a)
   adc(hi, a)
-
-def store_mr(m, x):
-  n = len(x)
-  for i in range(n):
-    mov(ptr(m + 8 * i), x[i])
 
 def gen_mulPreN(pz, px, py, pk, t, N):
   mov(rdx, ptr(px + 8 * 0))
