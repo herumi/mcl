@@ -155,7 +155,7 @@ bint_asm:
 	clang++$(LLVM_VER) -S src/bint64.ll -o src/asm/bint64-riscv64.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target riscv64
 	clang++$(LLVM_VER) -S src/bint64.ll -o src/asm/bint64-systemz.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target systemz
 	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-x86.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target i686
-	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-arm.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target armv7a
+	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-arm.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target armv7a -mfloat-abi=hard
 	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-riscv32.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target riscv32
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
