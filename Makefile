@@ -149,8 +149,14 @@ ifeq ($(ASM_MODE),asm)
 else
 	python3 src/gen_bint_x64.py -m gas > $@
 endif
-$(BINT_SRC): src/bint$(BIT).ll
-	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
+bint_asm:
+	clang++$(LLVM_VER) -S src/bint64.ll -o src/asm/bint64-x86-64.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target x86_64
+	clang++$(LLVM_VER) -S src/bint64.ll -o src/asm/bint64-arm64.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target arm64
+	clang++$(LLVM_VER) -S src/bint64.ll -o src/asm/bint64-riscv64.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target riscv64
+	clang++$(LLVM_VER) -S src/bint64.ll -o src/asm/bint64-systemz.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target systemz
+	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-x86.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target i686
+	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-arm.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target armv7a
+	clang++$(LLVM_VER) -S src/bint32.ll -o src/asm/bint32-riscv32.s -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra -target riscv32
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
