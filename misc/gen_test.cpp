@@ -63,17 +63,20 @@ void testFpAdd(const char *pStr)
 		mcl_fp_add4L(z2, x, y, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 	}
-	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, x, p);
-	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z2, z2, x, p);
+	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z1, p);
+	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z2, z2, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)
 {
-	std::cout << std::hex;
-	CYBOZU_TEST_ASSERT(1);
 	const char *tbl4[] = {
 		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
+		"0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+		"0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
 	};
-	testFpAdd<4>(tbl4[0]);
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
+		testFpAdd<4>(tbl4[i]);
+	}
 }
 
