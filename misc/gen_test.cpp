@@ -63,8 +63,21 @@ void testFpAdd(const char *pStr)
 		mcl_fp_add4L(z2, x, y, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 	}
+	puts("random");
 	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z1, p);
-	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z2, z2, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z1, z1, z1, p);
+
+	puts("1");
+	bint::clearN(z2, N);
+	z2[0]++;
+	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z1, z1, z2, p);
+
+	puts("p-1");
+	bint::copyN(z2, p, N);
+	z2[0]--;
+	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z1, z1, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)
