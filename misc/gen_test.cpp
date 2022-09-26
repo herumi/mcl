@@ -13,7 +13,37 @@ typedef mcl::FpT<> Fp;
 
 extern "C" {
 void mclb_fp_add4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+void mclb_fp_add6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
+}
+
+// asm version
+template<size_t N>
+void fp_addA(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+template<size_t N>
+void fp_addL(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+
+template<>
+void fp_addA<4>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	mclb_fp_add4(z, x, y, p);
+}
+template<>
+void fp_addA<6>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	mclb_fp_add6(z, x, y, p);
+}
+
+// llvm version
+template<>
+void fp_addL<4>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	mcl_fp_add4L(z, x, y, p);
+}
+template<>
+void fp_addL<6>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+{
+	mcl_fp_add6L(z, x, y, p);
 }
 
 template<class RG>
@@ -59,25 +89,25 @@ void testFpAdd(const char *pStr)
 	for (size_t i = 0; i < C; i++) {
 		fx.setByCSPRNG(rg);
 		fy.setByCSPRNG(rg);
-		mclb_fp_add4(z1, x, y, p);
-		mcl_fp_add4L(z2, x, y, p);
+		fp_addA<N>(z1, x, y, p);
+		fp_addL<N>(z2, x, y, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 	}
 	puts("random");
-	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z1, p);
-	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z1, z1, z1, p);
+	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z1, p);
+	CYBOZU_BENCH_C("llvm", CC, fp_addL<N>, z1, z1, z1, p);
 
 	puts("1");
 	bint::clearN(z2, N);
 	z2[0]++;
-	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z1, z1, z2, p);
+	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, fp_addL<N>, z1, z1, z2, p);
 
 	puts("p-1");
 	bint::copyN(z2, p, N);
 	z2[0]--;
-	CYBOZU_BENCH_C("asm ", CC, mclb_fp_add4, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, mcl_fp_add4L, z1, z1, z2, p);
+	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, fp_addL<N>, z1, z1, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)
@@ -90,6 +120,13 @@ CYBOZU_TEST_AUTO(add)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
 		testFpAdd<4>(tbl4[i]);
+	}
+	const char *tbl6[] = {
+		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
+		testFpAdd<6>(tbl6[i]);
 	}
 }
 
