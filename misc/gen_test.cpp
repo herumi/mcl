@@ -4,6 +4,7 @@
 #include <mcl/config.hpp>
 
 #include <mcl/fp.hpp>
+#define MCL_USE_LLVM
 #include "../src/llvm_proto.hpp"
 
 using namespace mcl;
@@ -20,8 +21,6 @@ void mclb_fp_add6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 // asm version
 template<size_t N>
 void fp_addA(Unit *z, const Unit *x, const Unit *y, const Unit *p);
-template<size_t N>
-void fp_addL(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
 template<>
 void fp_addA<4>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
@@ -32,18 +31,6 @@ template<>
 void fp_addA<6>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
 	mclb_fp_add6(z, x, y, p);
-}
-
-// llvm version
-template<>
-void fp_addL<4>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-{
-	mcl_fp_add4L(z, x, y, p);
-}
-template<>
-void fp_addL<6>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-{
-	mcl_fp_add6L(z, x, y, p);
 }
 
 template<class RG>
@@ -81,6 +68,7 @@ void testFpAdd(const char *pStr)
 	printf("testFpAdd p=%s\n", pStr);
 	Fp::init(pStr);
 	const Unit *p = Fp::getOp().p;
+	bint::void_pppp addL = get_llvm_fp_add(N);
 	cybozu::XorShift rg;
 	Fp fx, fy;
 	const Unit *x = fx.getUnit();
@@ -90,24 +78,24 @@ void testFpAdd(const char *pStr)
 		fx.setByCSPRNG(rg);
 		fy.setByCSPRNG(rg);
 		fp_addA<N>(z1, x, y, p);
-		fp_addL<N>(z2, x, y, p);
+		addL(z2, x, y, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 	}
 	puts("random");
 	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z1, p);
-	CYBOZU_BENCH_C("llvm", CC, fp_addL<N>, z1, z1, z1, p);
+	CYBOZU_BENCH_C("llvm", CC, addL,       z1, z1, z1, p);
 
 	puts("1");
 	bint::clearN(z2, N);
 	z2[0]++;
 	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, fp_addL<N>, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, addL      , z1, z1, z2, p);
 
 	puts("p-1");
 	bint::copyN(z2, p, N);
 	z2[0]--;
 	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, fp_addL<N>, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, addL      , z1, z1, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)
