@@ -16,21 +16,19 @@ extern "C" {
 void mclb_fp_add4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_add6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
+void mclb_fp_addNF4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+void mclb_fp_addNF6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+
 }
 
 // asm version
-template<size_t N>
-void fp_addA(Unit *z, const Unit *x, const Unit *y, const Unit *p);
-
-template<>
-void fp_addA<4>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+bint::void_pppp get_fp_addA(size_t n)
 {
-	mclb_fp_add4(z, x, y, p);
-}
-template<>
-void fp_addA<6>(Unit *z, const Unit *x, const Unit *y, const Unit *p)
-{
-	mclb_fp_add6(z, x, y, p);
+	switch (n) {
+	default: return 0;
+	case 4: return mclb_fp_add4;
+	case 6: return mclb_fp_add6;
+	}
 }
 
 template<class RG>
@@ -68,6 +66,7 @@ void testFpAdd(const char *pStr)
 	printf("testFpAdd p=%s\n", pStr);
 	Fp::init(pStr);
 	const Unit *p = Fp::getOp().p;
+	bint::void_pppp addA = get_fp_addA(N);
 	bint::void_pppp addL = get_llvm_fp_add(N);
 	cybozu::XorShift rg;
 	Fp fx, fy;
@@ -77,25 +76,25 @@ void testFpAdd(const char *pStr)
 	for (size_t i = 0; i < C; i++) {
 		fx.setByCSPRNG(rg);
 		fy.setByCSPRNG(rg);
-		fp_addA<N>(z1, x, y, p);
+		addA(z1, x, y, p);
 		addL(z2, x, y, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 	}
 	puts("random");
-	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z1, p);
-	CYBOZU_BENCH_C("llvm", CC, addL,       z1, z1, z1, p);
+	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z1, p);
+	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z1, p);
 
 	puts("1");
 	bint::clearN(z2, N);
 	z2[0]++;
-	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, addL      , z1, z1, z2, p);
+	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z2, p);
 
 	puts("p-1");
 	bint::copyN(z2, p, N);
 	z2[0]--;
-	CYBOZU_BENCH_C("asm ", CC, fp_addA<N>, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, addL      , z1, z1, z2, p);
+	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)
