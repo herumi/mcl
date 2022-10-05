@@ -142,5 +142,7 @@ ifeq ($(MCL_USE_OMP),1)
 endif
 LDFLAGS+=$(GMP_LIB) $(BIT_OPT) $(LDFLAGS_USER)
 
-CFLAGS+=-fPIC
+# -fpic is better than -fPIC in exchange for restriction of a size of GOT
+# https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+CFLAGS+=-fpic
 
