@@ -1134,28 +1134,28 @@ mcl_fp_shr1_3L:                         # @mcl_fp_shr1_3L
 	.type	mcl_fp_add3L,@function
 mcl_fp_add3L:                           # @mcl_fp_add3L
 # %bb.0:
-	movq	16(%rsi), %r8
-	movq	(%rsi), %rax
-	movq	8(%rsi), %rsi
-	addq	(%rdx), %rax
-	adcq	8(%rdx), %rsi
-	adcq	16(%rdx), %r8
-	movq	%r8, 16(%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%rax, (%rdi)
+	movq	16(%rsi), %r10
+	movq	(%rsi), %r8
+	movq	8(%rsi), %r9
+	addq	(%rdx), %r8
+	adcq	8(%rdx), %r9
+	adcq	16(%rdx), %r10
 	setb	%dl
-	movzbl	%dl, %edx
-	subq	(%rcx), %rax
-	sbbq	8(%rcx), %rsi
-	sbbq	16(%rcx), %r8
-	sbbq	$0, %rdx
-	testb	$1, %dl
-	jne	.LBB15_2
-# %bb.1:                                # %nocarry
-	movq	%rax, (%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%r8, 16(%rdi)
-.LBB15_2:                               # %carry
+	movzbl	%dl, %r11d
+	movq	%r8, %rsi
+	subq	(%rcx), %rsi
+	movq	%r9, %rax
+	sbbq	8(%rcx), %rax
+	movq	%r10, %rdx
+	sbbq	16(%rcx), %rdx
+	sbbq	$0, %r11
+	testb	$1, %r11b
+	cmovneq	%r10, %rdx
+	movq	%rdx, 16(%rdi)
+	cmovneq	%r9, %rax
+	movq	%rax, 8(%rdi)
+	cmovneq	%r8, %rsi
+	movq	%rsi, (%rdi)
 	retq
 .Lfunc_end15:
 	.size	mcl_fp_add3L, .Lfunc_end15-mcl_fp_add3L
@@ -2313,33 +2313,38 @@ mcl_fp_shr1_4L:                         # @mcl_fp_shr1_4L
 	.type	mcl_fp_add4L,@function
 mcl_fp_add4L:                           # @mcl_fp_add4L
 # %bb.0:
-	movq	24(%rsi), %r8
+	pushq	%r14
+	pushq	%rbx
+	movq	24(%rsi), %r11
 	movq	16(%rsi), %r9
-	movq	(%rsi), %rax
-	movq	8(%rsi), %rsi
-	addq	(%rdx), %rax
-	adcq	8(%rdx), %rsi
+	movq	(%rsi), %r8
+	movq	8(%rsi), %r10
+	addq	(%rdx), %r8
+	adcq	8(%rdx), %r10
 	adcq	16(%rdx), %r9
-	adcq	24(%rdx), %r8
-	movq	%r8, 24(%rdi)
-	movq	%r9, 16(%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%rax, (%rdi)
+	adcq	24(%rdx), %r11
 	setb	%dl
-	movzbl	%dl, %edx
-	subq	(%rcx), %rax
-	sbbq	8(%rcx), %rsi
-	sbbq	16(%rcx), %r9
-	sbbq	24(%rcx), %r8
-	sbbq	$0, %rdx
-	testb	$1, %dl
-	jne	.LBB29_2
-# %bb.1:                                # %nocarry
-	movq	%rax, (%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%r9, 16(%rdi)
-	movq	%r8, 24(%rdi)
-.LBB29_2:                               # %carry
+	movzbl	%dl, %r14d
+	movq	%r8, %rsi
+	subq	(%rcx), %rsi
+	movq	%r10, %rax
+	sbbq	8(%rcx), %rax
+	movq	%r9, %rbx
+	sbbq	16(%rcx), %rbx
+	movq	%r11, %rdx
+	sbbq	24(%rcx), %rdx
+	sbbq	$0, %r14
+	testb	$1, %r14b
+	cmovneq	%r11, %rdx
+	movq	%rdx, 24(%rdi)
+	cmovneq	%r9, %rbx
+	movq	%rbx, 16(%rdi)
+	cmovneq	%r10, %rax
+	movq	%rax, 8(%rdi)
+	cmovneq	%r8, %rsi
+	movq	%rsi, (%rdi)
+	popq	%rbx
+	popq	%r14
 	retq
 .Lfunc_end29:
 	.size	mcl_fp_add4L, .Lfunc_end29-mcl_fp_add4L
@@ -4493,43 +4498,58 @@ mcl_fp_shr1_6L:                         # @mcl_fp_shr1_6L
 	.type	mcl_fp_add6L,@function
 mcl_fp_add6L:                           # @mcl_fp_add6L
 # %bb.0:
-	movq	40(%rsi), %r8
-	movq	32(%rsi), %r9
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	movq	40(%rsi), %r15
+	movq	32(%rsi), %r11
 	movq	24(%rsi), %r10
-	movq	16(%rsi), %r11
-	movq	(%rsi), %rax
-	movq	8(%rsi), %rsi
-	addq	(%rdx), %rax
-	adcq	8(%rdx), %rsi
-	adcq	16(%rdx), %r11
+	movq	16(%rsi), %r9
+	movq	(%rsi), %r8
+	movq	8(%rsi), %r14
+	addq	(%rdx), %r8
+	adcq	8(%rdx), %r14
+	adcq	16(%rdx), %r9
 	adcq	24(%rdx), %r10
-	adcq	32(%rdx), %r9
-	adcq	40(%rdx), %r8
-	movq	%r8, 40(%rdi)
-	movq	%r9, 32(%rdi)
-	movq	%r10, 24(%rdi)
-	movq	%r11, 16(%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%rax, (%rdi)
+	adcq	32(%rdx), %r11
+	adcq	40(%rdx), %r15
 	setb	%dl
-	movzbl	%dl, %edx
-	subq	(%rcx), %rax
+	movzbl	%dl, %r12d
+	movq	%r8, %r13
+	subq	(%rcx), %r13
+	movq	%r14, %rsi
 	sbbq	8(%rcx), %rsi
-	sbbq	16(%rcx), %r11
-	sbbq	24(%rcx), %r10
-	sbbq	32(%rcx), %r9
-	sbbq	40(%rcx), %r8
-	sbbq	$0, %rdx
-	testb	$1, %dl
-	jne	.LBB43_2
-# %bb.1:                                # %nocarry
-	movq	%rax, (%rdi)
+	movq	%r9, %rax
+	sbbq	16(%rcx), %rax
+	movq	%r10, %rdx
+	sbbq	24(%rcx), %rdx
+	movq	%r11, %rbx
+	sbbq	32(%rcx), %rbx
+	movq	%r15, %rbp
+	sbbq	40(%rcx), %rbp
+	sbbq	$0, %r12
+	testb	$1, %r12b
+	cmovneq	%r15, %rbp
+	movq	%rbp, 40(%rdi)
+	cmovneq	%r11, %rbx
+	movq	%rbx, 32(%rdi)
+	cmovneq	%r10, %rdx
+	movq	%rdx, 24(%rdi)
+	cmovneq	%r9, %rax
+	movq	%rax, 16(%rdi)
+	cmovneq	%r14, %rsi
 	movq	%rsi, 8(%rdi)
-	movq	%r11, 16(%rdi)
-	movq	%r10, 24(%rdi)
-	movq	%r9, 32(%rdi)
-	movq	%r8, 40(%rdi)
-.LBB43_2:                               # %carry
+	cmovneq	%r8, %r13
+	movq	%r13, (%rdi)
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
 	retq
 .Lfunc_end43:
 	.size	mcl_fp_add6L, .Lfunc_end43-mcl_fp_add6L
@@ -6518,57 +6538,71 @@ mcl_fp_shr1_8L:                         # @mcl_fp_shr1_8L
 	.type	mcl_fp_add8L,@function
 mcl_fp_add8L:                           # @mcl_fp_add8L
 # %bb.0:
+	pushq	%rbp
+	pushq	%r15
 	pushq	%r14
+	pushq	%r13
+	pushq	%r12
 	pushq	%rbx
 	movq	56(%rsi), %r8
 	movq	48(%rsi), %r9
 	movq	40(%rsi), %r10
-	movq	32(%rsi), %r11
-	movq	24(%rsi), %r14
-	movq	16(%rsi), %rbx
+	movq	32(%rsi), %r15
+	movq	24(%rsi), %r12
+	movq	16(%rsi), %rbp
 	movq	(%rsi), %rax
 	movq	8(%rsi), %rsi
 	addq	(%rdx), %rax
+	movq	%rax, -8(%rsp)                  # 8-byte Spill
 	adcq	8(%rdx), %rsi
-	adcq	16(%rdx), %rbx
-	adcq	24(%rdx), %r14
-	adcq	32(%rdx), %r11
+	movq	%rsi, -16(%rsp)                 # 8-byte Spill
+	adcq	16(%rdx), %rbp
+	movq	%rbp, -24(%rsp)                 # 8-byte Spill
+	adcq	24(%rdx), %r12
+	adcq	32(%rdx), %r15
 	adcq	40(%rdx), %r10
 	adcq	48(%rdx), %r9
 	adcq	56(%rdx), %r8
-	movq	%r8, 56(%rdi)
-	movq	%r9, 48(%rdi)
-	movq	%r10, 40(%rdi)
-	movq	%r11, 32(%rdi)
-	movq	%r14, 24(%rdi)
-	movq	%rbx, 16(%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%rax, (%rdi)
-	setb	%dl
-	movzbl	%dl, %edx
-	subq	(%rcx), %rax
+	setb	-25(%rsp)                       # 1-byte Folded Spill
+	movq	%rax, %rdx
+	subq	(%rcx), %rdx
 	sbbq	8(%rcx), %rsi
-	sbbq	16(%rcx), %rbx
-	sbbq	24(%rcx), %r14
+	sbbq	16(%rcx), %rbp
+	movq	%r12, %rbx
+	sbbq	24(%rcx), %rbx
+	movq	%r15, %r11
 	sbbq	32(%rcx), %r11
-	sbbq	40(%rcx), %r10
-	sbbq	48(%rcx), %r9
-	sbbq	56(%rcx), %r8
-	sbbq	$0, %rdx
-	testb	$1, %dl
-	jne	.LBB57_2
-# %bb.1:                                # %nocarry
-	movq	%rax, (%rdi)
-	movq	%rsi, 8(%rdi)
-	movq	%rbx, 16(%rdi)
-	movq	%r14, 24(%rdi)
+	movq	%r10, %r14
+	sbbq	40(%rcx), %r14
+	movq	%r9, %r13
+	sbbq	48(%rcx), %r13
+	movq	%r8, %rax
+	sbbq	56(%rcx), %rax
+	movzbl	-25(%rsp), %ecx                 # 1-byte Folded Reload
+	sbbq	$0, %rcx
+	testb	$1, %cl
+	cmovneq	%r8, %rax
+	movq	%rax, 56(%rdi)
+	cmovneq	%r9, %r13
+	movq	%r13, 48(%rdi)
+	cmovneq	%r10, %r14
+	movq	%r14, 40(%rdi)
+	cmovneq	%r15, %r11
 	movq	%r11, 32(%rdi)
-	movq	%r10, 40(%rdi)
-	movq	%r9, 48(%rdi)
-	movq	%r8, 56(%rdi)
-.LBB57_2:                               # %carry
+	cmovneq	%r12, %rbx
+	movq	%rbx, 24(%rdi)
+	cmovneq	-24(%rsp), %rbp                 # 8-byte Folded Reload
+	movq	%rbp, 16(%rdi)
+	cmovneq	-16(%rsp), %rsi                 # 8-byte Folded Reload
+	movq	%rsi, 8(%rdi)
+	cmovneq	-8(%rsp), %rdx                  # 8-byte Folded Reload
+	movq	%rdx, (%rdi)
 	popq	%rbx
+	popq	%r12
+	popq	%r13
 	popq	%r14
+	popq	%r15
+	popq	%rbp
 	retq
 .Lfunc_end57:
 	.size	mcl_fp_add8L, .Lfunc_end57-mcl_fp_add8L

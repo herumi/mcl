@@ -2,6 +2,7 @@ include common.mk
 LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
+CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
 TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cpp
@@ -83,19 +84,44 @@ ifeq ($(shell expr $(LLVM_OPT_VERSION) \>= 9),1)
   GEN_EXE_OPT+=-ver 0x90
 endif
 endif
-ifeq ($(OS),mac)
-  ASM_SRC_PATH_NAME=src/asm/$(CPU)mac
+
+# build base$(BIT).ll
+BASE_LL=src/base$(BIT).ll
+BASE_ASM=src/asm/$(CPU).s
+BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
+
+ifeq ($(UPDATE_ASM),1)
+$(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
+	$(CXX) -o $@ $< $(CFLAGS)
+
+$(BASE_LL): $(GEN_EXE)
+	$(GEN_EXE) $(GEN_EXE_OPT) > $@
+
+$(BASE_ASM): $(BASE_LL)
+	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
+endif
+
+ifeq ($(OS)-$(ARCH),Linux-x86_64)
+$(BASE_OBJ): $(BASE_ASM)
+	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
 else
-  ASM_SRC_PATH_NAME=src/asm/$(CPU)
+$(BASE_OBJ): $(BASE_LL)
+	$(CLANG) -c $< -o $@ $(CFLAGS)
 endif
-ifneq ($(CPU),)
-  ASM_SRC=$(ASM_SRC_PATH_NAME).s
+ifeq ($(findstring $(OS),mingw64/cygwin),)
+  MCL_USE_LLVM?=1
+else
+  MCL_USE_LLVM=0
 endif
-ASM_OBJ=$(OBJ_DIR)/$(CPU).o
-ifeq ($(OS),mac-m1)
-  ASM_SRC=src/base64.ll
-  ASM_OBJ=$(OBJ_DIR)/base64.o
+ifeq ($(MCL_USE_LLVM),1)
+  CFLAGS+=-DMCL_USE_LLVM=1
+  LIB_OBJ+=$(BASE_OBJ)
 endif
+# for debug
+asm: $(BASE_LL)
+	$(LLVM_OPT) -O3 -o - $(BASE_LL) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
+
+# build bit$(BIT).ll
 BINT_SUF?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=1
 MCL_BINT_ASM_X64?=1
@@ -107,19 +133,28 @@ src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS+=-DMCL_BINT_ASM=1
+  BINT_LL=src/bint$(BIT).ll
+  BINT_OBJ=$(OBJ_DIR)/bint$(BIT).o
+  LIB_OBJ+=$(BINT_OBJ)
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
     ifeq ($(OS),mingw64)
       BINT_ASM_X64_BASENAME=bint-x64
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).asm
+	nasm $(NASM_ELF_OPT) -o $@ $<
+
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).s
+	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
+
     endif
-    LIB_OBJ+=$(OBJ_DIR)/$(BINT_ASM_X64_BASENAME).o
   else
     BINT_BASENAME=bint$(BIT)$(BINT_SUF)
     BINT_SRC=src/asm/$(BINT_BASENAME).s
-    BINT_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
     CFLAGS+=-DMCL_BINT_ASM_X64=0
-    LIB_OBJ+=$(BINT_OBJ)
+$(BINT_OBJ): $(BINT_LL)
+	$(CLANG) -c $< -o $@ $(CFLAGS)
+
   endif
 endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
@@ -150,7 +185,7 @@ else
 	python3 src/gen_bint_x64.py -m gas > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
-	clang++$(LLVM_VER) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
+	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
@@ -159,7 +194,7 @@ header:
 	$(MAKE) src/llvm_proto.hpp
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
-#	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
+#	$(CLANG) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
@@ -167,33 +202,11 @@ BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
 SHE384_256_OBJ=$(OBJ_DIR)/she_c384_256.o
-FUNC_LIST=src/func.list
-ifeq ($(findstring $(OS),mingw64/cygwin),)
-  MCL_USE_LLVM?=1
-else
-  MCL_USE_LLVM=0
-endif
-ifeq ($(MCL_USE_LLVM),1)
-  CFLAGS+=-DMCL_USE_LLVM=1
-  LIB_OBJ+=$(ASM_OBJ)
-endif
-LLVM_SRC=src/base$(BIT).ll
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=-sse
-
-ifeq ($(USE_LOW_ASM),1)
-  LOW_ASM_OBJ=$(LOW_ASM_SRC:.asm=.o)
-  LIB_OBJ+=$(LOW_ASM_OBJ)
-endif
-
-ifeq ($(UPDATE_ASM),1)
-  ASM_SRC_DEP=$(LLVM_SRC)
-else
-  ASM_SRC_DEP=
-endif
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
   BN256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
@@ -267,28 +280,8 @@ ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
 	$(AR) $(ARFLAGS) $@ $(ECDSA_OBJ)
 
-$(ASM_OBJ): $(ASM_SRC)
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS)
-
-$(ASM_SRC): $(ASM_SRC_DEP)
-	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
-
-$(LLVM_SRC): $(GEN_EXE) $(FUNC_LIST)
-	$(GEN_EXE) $(GEN_EXE_OPT) -f $(FUNC_LIST) > $@
-
 src/base64m.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
-
-$(FUNC_LIST): $(LOW_ASM_SRC)
-ifeq ($(USE_LOW_ASM),1)
-	$(shell awk '/global/ { print $$2}' $(LOW_ASM_SRC) > $(FUNC_LIST))
-	$(shell awk '/proc/ { print $$2}' $(LOW_ASM_SRC) >> $(FUNC_LIST))
-else
-	$(shell touch $(FUNC_LIST))
-endif
-
-$(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS)
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
 	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8
@@ -301,12 +294,6 @@ obj/static_code.o: src/static_code.asm
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
 	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -I include -Wall -Wextra
-
-asm: $(LLVM_SRC)
-	$(LLVM_OPT) -O3 -o - $(LLVM_SRC) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
-
-$(LOW_ASM_OBJ): $(LOW_ASM_SRC)
-	$(ASM) $<
 
 # set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"
@@ -421,10 +408,10 @@ bin/ecdsa-c-emu:
 	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
-	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
+	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
 
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
-	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
+	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
 make_tbl:
 	$(MAKE) ../bls/src/qcoeff-bn254.hpp
@@ -440,7 +427,7 @@ update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) $(FUNC_LIST) lib/*.a src/static_code.asm src/dump_code
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(BASE_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) lib/*.a src/static_code.asm src/dump_code
 	$(RM) src/gen_bint.exe
 
 clean_gen:

@@ -503,21 +503,14 @@ struct Code : public mcl::Generator {
 		if (isFullBit) {
 			x = zext(x, bit + unit);
 			y = zext(y, bit + unit);
-			Operand t0 = add(x, y);
-			Operand t1 = trunc(t0, bit);
-			storeN(t1, pz);
+			x = add(x, y);
 			Operand p = loadN(pp, N);
 			p = zext(p, bit + unit);
-			Operand vc = sub(t0, p);
-			Operand c = lshr(vc, bit);
-			c = trunc(c, 1);
-		Label carry("carry");
-		Label nocarry("nocarry");
-			br(c, carry, nocarry);
-		putLabel(nocarry);
-			storeN(trunc(vc, bit), pz);
-			ret(Void);
-		putLabel(carry);
+			y = sub(x, p);
+			Operand c = trunc(lshr(y, bit), 1);
+			x = select(c, x, y);
+			x = trunc(x, bit);
+			storeN(x, pz);
 		} else {
 			x = add(x, y);
 			Operand p = loadN(pp, N);

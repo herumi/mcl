@@ -62,14 +62,59 @@ x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.
 
 ## How to build with Makefile
 
+For x86-64 Linux and macOS,
+
 ```
 git clone https://github.com/herumi/mcl
 cd mcl
 make -j4
 ```
+clang++ is required except for x86-64 on Linux and Windows.
+
+```
+make -j4 CXX=clang++
+```
 
 - `lib/libmcl.*` ; core library
 - `lib/libmclbn384_256.*` ; library to use C-API of BLS12-381 pairing
+
+# How to build with CMake
+
+For x86-64 Linux and macOS.
+```
+mkdir build
+cd build
+cmake ..
+make
+```
+
+For the other platform, clang++ is required.
+```
+mkdir build
+cd build
+cmake .. -DCMAKE_CXX_COMPILER=clang++
+make
+```
+
+For Visual Studio,
+```
+mkdir build
+cd build
+cmake .. -A x64
+msbuild mcl.sln /p:Configuration=Release /m
+```
+
+## options
+
+see `cmake .. -LA`.
+
+## tests
+make test binaries in `./bin`.
+```
+cmake .. -DBUILD_TESTING=ON
+make -j4
+```
+
 
 ## How to make from src/{base,bint}{32,64}.ll
 
@@ -147,41 +192,6 @@ cd ffi/cs
 dotnet build mcl.sln
 cd ../../bin
 ../ffi/cs/test/bin/Debug/netcoreapp3.1/test.exe
-```
-
-# How to build with CMake
-
-For Linux, macOS, etc.
-```
-mkdir build
-cd build
-cmake ..
-make
-```
-For Visual Studio,
-```
-mkdir build
-cd build
-cmake .. -A x64
-msbuild mcl.sln /p:Configuration=Release /m
-```
-
-Some architectures requre clang.
-```
-mkdir build
-cd build
-cmake .. -DCMAKE_CXX_COMPILER=clang++
-```
-
-## options
-
-see `cmake .. -LA`.
-
-## tests
-make test binaries in `./bin`.
-```
-cmake .. -DBUILD_TESTING=ON
-make -j4
 ```
 
 # How to build for wasm(WebAssembly)
