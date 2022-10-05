@@ -88,6 +88,7 @@ endif
 # build base$(BIT).ll
 BASE_LL=src/base$(BIT).ll
 BASE_ASM=src/asm/$(CPU).s
+BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
 
 ifeq ($(UPDATE_ASM),1)
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
@@ -100,7 +101,6 @@ $(BASE_ASM): $(BASE_LL)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
 endif
 
-BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
 ifeq ($(OS)-$(ARCH),Linux-x86_64)
 $(BASE_OBJ): $(BASE_ASM)
 	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
@@ -108,6 +108,16 @@ else
 $(BASE_OBJ): $(BASE_LL)
 	$(CLANG) -c $< -o $@ $(CFLAGS)
 endif
+ifeq ($(findstring $(OS),mingw64/cygwin),)
+  MCL_USE_LLVM?=1
+else
+  MCL_USE_LLVM=0
+endif
+ifeq ($(MCL_USE_LLVM),1)
+  CFLAGS+=-DMCL_USE_LLVM=1
+  LIB_OBJ+=$(BASE_OBJ)
+endif
+# for debug
 asm: $(BASE_LL)
 	$(LLVM_OPT) -O3 -o - $(BASE_LL) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
@@ -175,7 +185,7 @@ header:
 	$(MAKE) src/llvm_proto.hpp
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
-#	clang++$(LLVM_VER) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
+#	$(CLANG) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
@@ -183,15 +193,6 @@ BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
 SHE384_256_OBJ=$(OBJ_DIR)/she_c384_256.o
-ifeq ($(findstring $(OS),mingw64/cygwin),)
-  MCL_USE_LLVM?=1
-else
-  MCL_USE_LLVM=0
-endif
-ifeq ($(MCL_USE_LLVM),1)
-  CFLAGS+=-DMCL_USE_LLVM=1
-  LIB_OBJ+=$(BASE_OBJ)
-endif
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
@@ -398,10 +399,10 @@ bin/ecdsa-c-emu:
 	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
-	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
+	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
 
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
-	clang++$(LLVM_VER) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
+	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
 make_tbl:
 	$(MAKE) ../bls/src/qcoeff-bn254.hpp
