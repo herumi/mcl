@@ -133,19 +133,28 @@ src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
 src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS+=-DMCL_BINT_ASM=1
+  BINT_LL=src/bint$(BIT).ll
+  BINT_OBJ=$(OBJ_DIR)/bint$(BIT).o
+  LIB_OBJ+=$(BINT_OBJ)
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
     ifeq ($(OS),mingw64)
       BINT_ASM_X64_BASENAME=bint-x64
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).asm
+	nasm $(NASM_ELF_OPT) -o $@ $<
+
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).s
+	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
+
     endif
-    LIB_OBJ+=$(OBJ_DIR)/$(BINT_ASM_X64_BASENAME).o
   else
     BINT_BASENAME=bint$(BIT)$(BINT_SUF)
     BINT_SRC=src/asm/$(BINT_BASENAME).s
-    BINT_OBJ=$(OBJ_DIR)/$(BINT_BASENAME).o
     CFLAGS+=-DMCL_BINT_ASM_X64=0
-    LIB_OBJ+=$(BINT_OBJ)
+$(BINT_OBJ): $(BINT_LL)
+	$(CLANG) -c $< -o $@ $(CFLAGS)
+
   endif
 endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
