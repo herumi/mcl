@@ -3,7 +3,7 @@ from gen_bint_x64 import *
 import argparse
 
 # t[] = [px] + [py]
-def add_rmm(t, px, py):
+def add_pmm(t, px, py):
   for i in range(len(t)):
     mov(t[i], ptr(px + 8 * i))
     if i == 0:
@@ -22,16 +22,16 @@ def gen_fp_add(N):
       X = sf.t[0:N]
       T = sf.t[N:]
       xor_(eax, eax)   # CF = 0
-      load_rm(X, px)   # X = px[]
-      add_rm(X, py)    # X = px[] + py[]
+      load_pm(X, px)   # X = px[]
+      add_pm(X, py)    # X = px[] + py[]
       setc(al)         # set CF
       T.append(px)
       T.append(py)
-      mov_rr(T, X)     # T = X
-      sub_rm(T, pp)    # T -= pp[]
+      mov_pp(T, X)     # T = X
+      sub_pm(T, pp)    # T -= pp[]
       sbb(eax, 0)      # check CF
-      cmovc_rr(T, X)   # T = X if T < 0
-      store_mr(pz, T)
+      cmovc_pp(T, X)   # T = X if T < 0
+      store_mp(pz, T)
 
 def gen_fp_addNF(N):
   align(16)

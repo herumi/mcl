@@ -4,8 +4,12 @@ import argparse
 SUF='_fast'
 param=None
 
+# p : pack of registers
+# r : a register
+# m : memory
+
 # op x[], y[]
-def vec_rr(op, x, y):
+def vec_pp(op, x, y):
   for i in range(len(x)):
     op(x[i], y[i])
 
@@ -15,45 +19,45 @@ def vec_re(op, x, y):
     op(x[i], y)
 
 # op x[], [addr]
-def vec_rm(op, x, addr):
+def vec_pm(op, x, addr):
   for i in range(len(x)):
     op(x[i], ptr(addr + 8 * i))
 
 # op [addr], x[]
-def vec_mr(op, addr, x):
+def vec_mp(op, addr, x):
   for i in range(len(x)):
     op(ptr(addr + 8 * i), x[i])
 
-def mov_rr(x, y):
-  vec_rr(mov, x, y)
+def mov_pp(x, y):
+  vec_pp(mov, x, y)
 
-def cmovc_rr(x, y):
-  vec_rr(cmovc, x, y)
+def cmovc_pp(x, y):
+  vec_pp(cmovc, x, y)
 
-def load_rm(x, m):
-  vec_rm(mov, x, m)
+def load_pm(x, m):
+  vec_pm(mov, x, m)
 
-def store_mr(m, x):
-  vec_mr(mov, m, x)
+def store_mp(m, x):
+  vec_mp(mov, m, x)
 
 def and_re(x, y):
   vec_re(and_, x, y)
 
-def add_rm(t, px, withCF=False):
+def add_pm(t, px, withCF=False):
   for i in range(len(t)):
     if not withCF and i == 0:
       add(t[i], ptr(px + 8 * i))
     else:
       adc(t[i], ptr(px + 8 * i))
 
-def sub_rm(t, px, withCF=False):
+def sub_pm(t, px, withCF=False):
   for i in range(len(t)):
     if not withCF and i == 0:
       sub(t[i], ptr(px + 8 * i))
     else:
       sbb(t[i], ptr(px + 8 * i))
 
-def add_rr(t, x, withCF=False):
+def add_pp(t, x, withCF=False):
   for i in range(len(t)):
     if not withCF and i == 0:
       add(t[i], x[i])
@@ -280,7 +284,7 @@ def gen_mulPreN(pz, px, py, pk, t, N):
     pk = pk[1:]
     pk.append(t)
     t = s
-  store_mr(pz + 8 * N, pk)
+  store_mp(pz + 8 * N, pk)
 
 # optimize this later
 def gen_mul_fast(N):
