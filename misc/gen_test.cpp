@@ -165,6 +165,7 @@ void testFpAdd(const char *pStr)
 	puts("random");
 	CYBOZU_BENCH_C("asm ", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
 	CYBOZU_BENCH_C("asmB", CC, fx.setByCSPRNG(rg);subB, z1, z1, x, p);
+	CYBOZU_BENCH_C("asm ", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
 	CYBOZU_BENCH_C("llvm", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
 	puts("0");
 	bint::clearN(z2, N);
