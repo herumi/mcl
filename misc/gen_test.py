@@ -77,22 +77,24 @@ def gen_fp_sub(N):
 def gen_fp_subB(N):
   align(16)
   with FuncProc(f'mclb_fp_subB{N}'):
-    with StackFrame(4, N*2-2) as sf:
+    with StackFrame(4, N-1) as sf:
       pz = sf.p[0]
       px = sf.p[1]
       py = sf.p[2]
       pp = sf.p[3]
-      X = sf.t[0:N]
-      T = sf.t[N:]
-      T.append(px)
-      T.append(py)
-      load_pm(X, px)   # X = px[]
+      X = sf.t
+      X.append(px)
+      load_pm(X, px)   # X = px[], px is destroyed
       sub_pm(X, py)    # X = px[] - py[]
       lea(rax, rip('ZERO'))
       cmovnc(pp, rax)  # X < 0 ? pp : 0
-      load_pm(T, pp)   # T = X < 0 ? pp : 0
-      add_pp(X, T)
-      store_mp(pz, X)
+      for i in range(N):
+        mov(rax, ptr(pp + i * 8))
+        if i == 0:
+          add(X[i], rax)
+        else:
+          adc(X[i], rax)
+        mov(ptr(pz + i * 8), X[i])
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
