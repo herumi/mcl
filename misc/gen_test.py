@@ -43,19 +43,40 @@ def gen_fp_addNF(N):
       pp = sf.p[3]
       X = sf.t[0:N]
       T = sf.t[N:]
-      load_rm(X, px)   # X = px[]
-      add_rm(X, py)    # X = px[] + py[]
+      load_pm(X, px)   # X = px[]
+      add_pm(X, py)    # X = px[] + py[]
       T.append(px)
       T.append(py)
       T.append(rax)
-      mov_rr(T, X)     # T = X
-      sub_rm(T, pp)    # T -= pp[]
-      cmovc_rr(T, X)   # T = X if T < 0
-      store_mr(pz, T)
+      mov_pp(T, X)     # T = X
+      sub_pm(T, pp)    # T -= pp[]
+      cmovc_pp(T, X)   # T = X if T < 0
+      store_mp(pz, T)
 
 def gen_fp_sub(N):
   align(16)
   with FuncProc(f'mclb_fp_sub{N}'):
+    with StackFrame(4, N*2-3) as sf:
+      pz = sf.p[0]
+      px = sf.p[1]
+      py = sf.p[2]
+      pp = sf.p[3]
+      X = sf.t[0:N]
+      T = sf.t[N:]
+      load_pm(X, px)   # X = px[]
+      sub_pm(X, py)    # X = px[] - py[]
+      T.append(px)
+      T.append(py)
+      T.append(pp)
+      load_pm(T, pp)   # pp is destroyed
+      sbb(rax, rax)
+      and_re(T, rax)   # T = X < 0 ? p : 0
+      add_pp(X, T)
+      store_mp(pz, X)
+
+def gen_fp_subB(N):
+  align(16)
+  with FuncProc(f'mclb_fp_subB{N}'):
     with StackFrame(4, N*2-2) as sf:
       pz = sf.p[0]
       px = sf.p[1]
@@ -63,16 +84,15 @@ def gen_fp_sub(N):
       pp = sf.p[3]
       X = sf.t[0:N]
       T = sf.t[N:]
-      load_rm(X, px)   # X = px[]
-      sub_rm(X, py)    # X = px[] - py[]
       T.append(px)
       T.append(py)
-      T.append(pp)
-      load_rm(T, pp)   # T = pp[], pp is destroyed
-      sbb(rax, rax)
-      and_re(T, rax)   # T = X < 0 ? p : 0
-      add_rr(X, T)
-      store_mr(pz, X)
+      load_pm(X, px)   # X = px[]
+      sub_pm(X, py)    # X = px[] - py[]
+      lea(rax, rip('ZERO'))
+      cmovnc(pp, rax)  # X < 0 ? pp : 0
+      load_pm(T, pp)   # T = X < 0 ? pp : 0
+      add_pp(X, T)
+      store_mp(pz, X)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
@@ -83,9 +103,13 @@ setWin64ABI(param.win)
 #init(param.mode)
 
 segment('text')
+output('ZERO:')
+dq_('0,'*8)
+
 for N in [4, 6]:
   gen_fp_add(N)
   gen_fp_addNF(N)
   gen_fp_sub(N)
+  gen_fp_subB(N)
 
 term()
