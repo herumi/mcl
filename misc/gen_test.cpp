@@ -163,9 +163,9 @@ void testFpAdd(const char *pStr)
 	}
 	puts("testFpSub");
 	puts("random");
-	CYBOZU_BENCH_C("asm ", CC, z2[N-1]=z1[N-2];subA, z1, z2, z1, p);
-	CYBOZU_BENCH_C("asmB", CC, z2[N-1]=z1[N-2];subB, z1, z2, z1, p);
-	CYBOZU_BENCH_C("llvm", CC, z2[N-1]=z1[N-2];subL, z1, z2, z1, p);
+	CYBOZU_BENCH_C("asm ", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
+	CYBOZU_BENCH_C("asmB", CC, fx.setByCSPRNG(rg);subB, z1, z1, x, p);
+	CYBOZU_BENCH_C("llvm", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
 	puts("0");
 	bint::clearN(z2, N);
 	CYBOZU_BENCH_C("asm ", CC, subA, z1, z1, z2, p);
