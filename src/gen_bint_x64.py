@@ -4,14 +4,22 @@ import argparse
 SUF='_fast'
 param=None
 
+# op x[], y[]
 def vec_rr(op, x, y):
   for i in range(len(x)):
     op(x[i], y[i])
 
+# op x[], y
+def vec_re(op, x, y):
+  for i in range(len(x)):
+    op(x[i], y)
+
+# op x[], [addr]
 def vec_rm(op, x, addr):
   for i in range(len(x)):
     op(x[i], ptr(addr + 8 * i))
 
+# op [addr], x[]
 def vec_mr(op, addr, x):
   for i in range(len(x)):
     op(ptr(addr + 8 * i), x[i])
@@ -26,8 +34,10 @@ def load_rm(x, m):
   vec_rm(mov, x, m)
 
 def store_mr(m, x):
-  for i in range(len(x)):
-    mov(ptr(m + 8 * i), x[i])
+  vec_mr(mov, m, x)
+
+def and_re(x, y):
+  vec_re(and_, x, y)
 
 def add_rm(t, px, withCF=False):
   for i in range(len(t)):
@@ -42,6 +52,13 @@ def sub_rm(t, px, withCF=False):
       sub(t[i], ptr(px + 8 * i))
     else:
       sbb(t[i], ptr(px + 8 * i))
+
+def add_rr(t, x, withCF=False):
+  for i in range(len(t)):
+    if not withCF and i == 0:
+      add(t[i], x[i])
+    else:
+      adc(t[i], x[i])
 
 def gen_add(N, NF=False):
   align(16)

@@ -53,6 +53,27 @@ def gen_fp_addNF(N):
       cmovc_rr(T, X)   # T = X if T < 0
       store_mr(pz, T)
 
+def gen_fp_sub(N):
+  align(16)
+  with FuncProc(f'mclb_fp_sub{N}'):
+    with StackFrame(4, N*2-2) as sf:
+      pz = sf.p[0]
+      px = sf.p[1]
+      py = sf.p[2]
+      pp = sf.p[3]
+      X = sf.t[0:N]
+      T = sf.t[N:]
+      load_rm(X, px)   # X = px[]
+      sub_rm(X, py)    # X = px[] - py[]
+      T.append(px)
+      T.append(py)
+      T.append(pp)
+      load_rm(T, pp)   # T = pp[], pp is destroyed
+      sbb(rax, rax)
+      and_re(T, rax)   # T = X < 0 ? p : 0
+      add_rr(X, T)
+      store_mr(pz, X)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
 parser.add_argument('-m', '--mode', help='output asm syntax', default='nasm')
@@ -65,5 +86,6 @@ segment('text')
 for N in [4, 6]:
   gen_fp_add(N)
   gen_fp_addNF(N)
+  gen_fp_sub(N)
 
 term()

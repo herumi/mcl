@@ -19,6 +19,9 @@ void mclb_fp_add6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_addNF4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_addNF6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
+void mclb_fp_sub4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+void mclb_fp_sub6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+
 }
 
 bint::void_pppp get_fp_addA(size_t n)
@@ -36,6 +39,15 @@ bint::void_pppp get_fp_addNFA(size_t n)
 	default: return 0;
 	case 4: return mclb_fp_addNF4;
 	case 6: return mclb_fp_addNF6;
+	}
+}
+
+bint::void_pppp get_fp_subA(size_t n)
+{
+	switch (n) {
+	default: return 0;
+	case 4: return mclb_fp_sub4;
+	case 6: return mclb_fp_sub6;
 	}
 }
 
@@ -79,6 +91,8 @@ void testFpAdd(const char *pStr)
 	bint::void_pppp addL = get_llvm_fp_add(N);
 	bint::void_pppp addNFA = get_fp_addNFA(N);
 	bint::void_pppp addNFL = get_llvm_fp_addNF(N);
+	bint::void_pppp subA = get_fp_subA(N);
+	bint::void_pppp subL = get_llvm_fp_sub(N);
 	cybozu::XorShift rg;
 	Fp fx, fy;
 	const Unit *x = fx.getUnit();
@@ -90,6 +104,10 @@ void testFpAdd(const char *pStr)
 		addA(z1, x, y, p);
 		addL(z2, x, y, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
+		subA(z1, z1, x, p);
+		subL(z2, z2, x, p);
+		CYBOZU_TEST_EQUAL_ARRAY(z1, y, N);
+		CYBOZU_TEST_EQUAL_ARRAY(z2, y, N);
 		if (isNF) {
 			bint::clearN(z1, N);
 			bint::clearN(z2, N);
@@ -107,9 +125,8 @@ void testFpAdd(const char *pStr)
 		CYBOZU_BENCH_C("llvm", CC, addNFL, z1, z1, z1, p);
 	}
 
-	puts("1");
+	puts("0");
 	bint::clearN(z2, N);
-	z2[0]++;
 	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z2, p);
 	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z2, p);
 	if (isNF) {
@@ -128,6 +145,19 @@ void testFpAdd(const char *pStr)
 		CYBOZU_BENCH_C("asm ", CC, addNFA, z1, z1, z2, p);
 		CYBOZU_BENCH_C("llvm", CC, addNFL, z1, z1, z2, p);
 	}
+	puts("testFpSub");
+	puts("random");
+	CYBOZU_BENCH_C("asm ", CC, z2[N-1]=z1[N-2];subA, z1, z2, z1, p);
+	CYBOZU_BENCH_C("llvm", CC, z2[N-1]=z1[N-2];subL, z1, z2, z1, p);
+	puts("0");
+	bint::clearN(z2, N);
+	CYBOZU_BENCH_C("asm ", CC, subA, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, subL, z1, z1, z2, p);
+	puts("p-1");
+	bint::copyN(z2, p, N);
+	z2[0]--;
+	CYBOZU_BENCH_C("asm ", CC, subA, z1, z1, z2, p);
+	CYBOZU_BENCH_C("llvm", CC, subL, z1, z1, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)
