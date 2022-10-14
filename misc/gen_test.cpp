@@ -108,8 +108,8 @@ void testFpAdd(const char *pStr)
 	bint::void_pppp subL = get_llvm_fp_sub(N);
 	cybozu::XorShift rg;
 	Fp fx, fy;
-	const Unit *x = fx.getUnit();
-	const Unit *y = fy.getUnit();
+	Unit *x = const_cast<Unit*>(fx.getUnit());
+	Unit *y = const_cast<Unit*>(fy.getUnit());
 	Unit z1[N], z2[N];
 	for (size_t i = 0; i < C; i++) {
 		fx.setByCSPRNG(rg);
@@ -133,51 +133,51 @@ void testFpAdd(const char *pStr)
 		}
 	}
 	puts("random");
-	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z1, p);
-	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z1, p);
+	CYBOZU_BENCH_C("addA r", CC, addA, z1, z1, z1, p);
+	CYBOZU_BENCH_C("addL r", CC, addL, z1, z1, z1, p);
 	if (isNF) {
 		puts("NF");
-		CYBOZU_BENCH_C("asm ", CC, addNFL, z1, z1, z1, p);
-		CYBOZU_BENCH_C("llvm", CC, addNFL, z1, z1, z1, p);
+		CYBOZU_BENCH_C("addNFA r", CC, addNFA, z1, z1, z1, p);
+		CYBOZU_BENCH_C("addNFL r", CC, addNFL, z1, z1, z1, p);
 	}
 
 	puts("0");
 	bint::clearN(z2, N);
-	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z2, p);
+	CYBOZU_BENCH_C("addA 0", CC, addA, z1, z1, z2, p);
+	CYBOZU_BENCH_C("addL 0", CC, addL, z1, z1, z2, p);
 	if (isNF) {
 		puts("NF");
-		CYBOZU_BENCH_C("asm ", CC, addNFA, z1, z1, z2, p);
-		CYBOZU_BENCH_C("llvm", CC, addNFL, z1, z1, z2, p);
+		CYBOZU_BENCH_C("addNFA 0", CC, addNFA, z1, z1, z2, p);
+		CYBOZU_BENCH_C("addNFL 0", CC, addNFL, z1, z1, z2, p);
 	}
 
 	puts("p-1");
 	bint::copyN(z2, p, N);
 	z2[0]--;
-	CYBOZU_BENCH_C("asm ", CC, addA, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, addL, z1, z1, z2, p);
+	CYBOZU_BENCH_C("addA m", CC, addA, z1, z1, z2, p);
+	CYBOZU_BENCH_C("addL m", CC, addL, z1, z1, z2, p);
 	if (isNF) {
 		puts("NF");
-		CYBOZU_BENCH_C("asm ", CC, addNFA, z1, z1, z2, p);
-		CYBOZU_BENCH_C("llvm", CC, addNFL, z1, z1, z2, p);
+		CYBOZU_BENCH_C("addNFA m", CC, addNFA, z1, z1, z2, p);
+		CYBOZU_BENCH_C("addNFL m", CC, addNFL, z1, z1, z2, p);
 	}
 	puts("testFpSub");
 	puts("random");
-	CYBOZU_BENCH_C("asm ", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
-	CYBOZU_BENCH_C("asmB", CC, fx.setByCSPRNG(rg);subB, z1, z1, x, p);
-	CYBOZU_BENCH_C("asm ", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
-	CYBOZU_BENCH_C("llvm", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
+	CYBOZU_BENCH_C("subA r", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
+	CYBOZU_BENCH_C("subB r", CC, fx.setByCSPRNG(rg);subB, z1, z1, x, p);
+	CYBOZU_BENCH_C("subA r", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
+	CYBOZU_BENCH_C("subL r", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
 	puts("0");
 	bint::clearN(z2, N);
-	CYBOZU_BENCH_C("asm ", CC, subA, z1, z1, z2, p);
-	CYBOZU_BENCH_C("asmB", CC, subB, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, subL, z1, z1, z2, p);
+	CYBOZU_BENCH_C("subA 0", CC, fx.setByCSPRNG(rg);subA, x, x, z2, p);
+	CYBOZU_BENCH_C("subB 0", CC, fx.setByCSPRNG(rg);subB, x, x, z2, p);
+	CYBOZU_BENCH_C("subL 0", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
 	puts("p-1");
 	bint::copyN(z2, p, N);
 	z2[0]--;
-	CYBOZU_BENCH_C("asm ", CC, subA, z1, z1, z2, p);
-	CYBOZU_BENCH_C("asmB", CC, subB, z1, z1, z2, p);
-	CYBOZU_BENCH_C("llvm", CC, subL, z1, z1, z2, p);
+	CYBOZU_BENCH_C("subA m", CC, fx.setByCSPRNG(rg);subA, x, x, z2, p);
+	CYBOZU_BENCH_C("subB m", CC, fx.setByCSPRNG(rg);subB, x, x, z2, p);
+	CYBOZU_BENCH_C("subL m", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
 }
 
 CYBOZU_TEST_AUTO(add)

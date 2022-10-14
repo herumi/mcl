@@ -90,13 +90,12 @@ def gen_fp_subB(N):
       load_pm(X, px)   # X = px[], px is destroyed
       sub_pm(X, py)    # X = px[] - py[]
       lea(rax, rip('ZERO'))
-      cmovnc(pp, rax)  # X < 0 ? pp : 0
+      cmovc(rax, pp)   # X < 0 ? pp : 0
       for i in range(N):
-        mov(rax, ptr(pp + i * 8))
         if i == 0:
-          add(X[i], rax)
+          add(X[i], ptr(rax + i * 8))
         else:
-          adc(X[i], rax)
+          adc(X[i], ptr(rax + i * 8))
         mov(ptr(pz + i * 8), X[i])
 
 parser = argparse.ArgumentParser()
