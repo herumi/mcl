@@ -1034,52 +1034,38 @@ define void @mcl_fp_sub3L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r
 %r32 = zext i64 %r31 to i192
 %r33 = shl i192 %r32, 128
 %r34 = or i192 %r28, %r33
-%r35 = zext i192 %r19 to i256
-%r36 = zext i192 %r34 to i256
-%r37 = sub i256 %r35, %r36
-%r38 = trunc i256 %r37 to i192
-%r39 = lshr i256 %r37, 192
-%r40 = trunc i256 %r39 to i1
-%r42 = getelementptr i64, i64* %r1, i32 0
-%r43 = trunc i192 %r38 to i64
-store i64 %r43, i64* %r42
-%r44 = lshr i192 %r38, 64
-%r46 = getelementptr i64, i64* %r1, i32 1
-%r47 = trunc i192 %r44 to i64
-store i64 %r47, i64* %r46
-%r48 = lshr i192 %r44, 64
-%r50 = getelementptr i64, i64* %r1, i32 2
-%r51 = trunc i192 %r48 to i64
-store i64 %r51, i64* %r50
-br i1%r40, label %carry, label %nocarry
-nocarry:
-ret void
-carry:
-%r52 = load i64, i64* %r4
-%r53 = zext i64 %r52 to i128
-%r55 = getelementptr i64, i64* %r4, i32 1
-%r56 = load i64, i64* %r55
-%r57 = zext i64 %r56 to i128
-%r58 = shl i128 %r57, 64
-%r59 = or i128 %r53, %r58
-%r60 = zext i128 %r59 to i192
-%r62 = getelementptr i64, i64* %r4, i32 2
-%r63 = load i64, i64* %r62
-%r64 = zext i64 %r63 to i192
-%r65 = shl i192 %r64, 128
-%r66 = or i192 %r60, %r65
-%r67 = add i192 %r38, %r66
-%r69 = getelementptr i64, i64* %r1, i32 0
-%r70 = trunc i192 %r67 to i64
-store i64 %r70, i64* %r69
-%r71 = lshr i192 %r67, 64
-%r73 = getelementptr i64, i64* %r1, i32 1
-%r74 = trunc i192 %r71 to i64
-store i64 %r74, i64* %r73
-%r75 = lshr i192 %r71, 64
-%r77 = getelementptr i64, i64* %r1, i32 2
-%r78 = trunc i192 %r75 to i64
-store i64 %r78, i64* %r77
+%r35 = zext i192 %r19 to i193
+%r36 = zext i192 %r34 to i193
+%r37 = sub i193 %r35, %r36
+%r38 = lshr i193 %r37, 192
+%r39 = trunc i193 %r38 to i1
+%r40 = trunc i193 %r37 to i192
+%r41 = load i64, i64* %r4
+%r42 = zext i64 %r41 to i128
+%r44 = getelementptr i64, i64* %r4, i32 1
+%r45 = load i64, i64* %r44
+%r46 = zext i64 %r45 to i128
+%r47 = shl i128 %r46, 64
+%r48 = or i128 %r42, %r47
+%r49 = zext i128 %r48 to i192
+%r51 = getelementptr i64, i64* %r4, i32 2
+%r52 = load i64, i64* %r51
+%r53 = zext i64 %r52 to i192
+%r54 = shl i192 %r53, 128
+%r55 = or i192 %r49, %r54
+%r57 = select i1 %r39, i192 %r55, i192 0
+%r58 = add i192 %r40, %r57
+%r60 = getelementptr i64, i64* %r1, i32 0
+%r61 = trunc i192 %r58 to i64
+store i64 %r61, i64* %r60
+%r62 = lshr i192 %r58, 64
+%r64 = getelementptr i64, i64* %r1, i32 1
+%r65 = trunc i192 %r62 to i64
+store i64 %r65, i64* %r64
+%r66 = lshr i192 %r62, 64
+%r68 = getelementptr i64, i64* %r1, i32 2
+%r69 = trunc i192 %r66 to i64
+store i64 %r69, i64* %r68
 ret void
 }
 define void @mcl_fp_subNF3L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
@@ -2238,66 +2224,48 @@ define void @mcl_fp_sub4L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r
 %r46 = zext i64 %r45 to i256
 %r47 = shl i256 %r46, 192
 %r48 = or i256 %r42, %r47
-%r49 = zext i256 %r26 to i320
-%r50 = zext i256 %r48 to i320
-%r51 = sub i320 %r49, %r50
-%r52 = trunc i320 %r51 to i256
-%r53 = lshr i320 %r51, 256
-%r54 = trunc i320 %r53 to i1
-%r56 = getelementptr i64, i64* %r1, i32 0
-%r57 = trunc i256 %r52 to i64
-store i64 %r57, i64* %r56
-%r58 = lshr i256 %r52, 64
-%r60 = getelementptr i64, i64* %r1, i32 1
-%r61 = trunc i256 %r58 to i64
-store i64 %r61, i64* %r60
-%r62 = lshr i256 %r58, 64
-%r64 = getelementptr i64, i64* %r1, i32 2
-%r65 = trunc i256 %r62 to i64
-store i64 %r65, i64* %r64
-%r66 = lshr i256 %r62, 64
-%r68 = getelementptr i64, i64* %r1, i32 3
-%r69 = trunc i256 %r66 to i64
-store i64 %r69, i64* %r68
-br i1%r54, label %carry, label %nocarry
-nocarry:
-ret void
-carry:
-%r70 = load i64, i64* %r4
-%r71 = zext i64 %r70 to i128
-%r73 = getelementptr i64, i64* %r4, i32 1
-%r74 = load i64, i64* %r73
-%r75 = zext i64 %r74 to i128
-%r76 = shl i128 %r75, 64
-%r77 = or i128 %r71, %r76
-%r78 = zext i128 %r77 to i192
-%r80 = getelementptr i64, i64* %r4, i32 2
-%r81 = load i64, i64* %r80
-%r82 = zext i64 %r81 to i192
-%r83 = shl i192 %r82, 128
-%r84 = or i192 %r78, %r83
-%r85 = zext i192 %r84 to i256
-%r87 = getelementptr i64, i64* %r4, i32 3
-%r88 = load i64, i64* %r87
-%r89 = zext i64 %r88 to i256
-%r90 = shl i256 %r89, 192
-%r91 = or i256 %r85, %r90
-%r92 = add i256 %r52, %r91
-%r94 = getelementptr i64, i64* %r1, i32 0
-%r95 = trunc i256 %r92 to i64
-store i64 %r95, i64* %r94
-%r96 = lshr i256 %r92, 64
-%r98 = getelementptr i64, i64* %r1, i32 1
-%r99 = trunc i256 %r96 to i64
-store i64 %r99, i64* %r98
-%r100 = lshr i256 %r96, 64
-%r102 = getelementptr i64, i64* %r1, i32 2
-%r103 = trunc i256 %r100 to i64
-store i64 %r103, i64* %r102
-%r104 = lshr i256 %r100, 64
-%r106 = getelementptr i64, i64* %r1, i32 3
-%r107 = trunc i256 %r104 to i64
-store i64 %r107, i64* %r106
+%r49 = zext i256 %r26 to i257
+%r50 = zext i256 %r48 to i257
+%r51 = sub i257 %r49, %r50
+%r52 = lshr i257 %r51, 256
+%r53 = trunc i257 %r52 to i1
+%r54 = trunc i257 %r51 to i256
+%r55 = load i64, i64* %r4
+%r56 = zext i64 %r55 to i128
+%r58 = getelementptr i64, i64* %r4, i32 1
+%r59 = load i64, i64* %r58
+%r60 = zext i64 %r59 to i128
+%r61 = shl i128 %r60, 64
+%r62 = or i128 %r56, %r61
+%r63 = zext i128 %r62 to i192
+%r65 = getelementptr i64, i64* %r4, i32 2
+%r66 = load i64, i64* %r65
+%r67 = zext i64 %r66 to i192
+%r68 = shl i192 %r67, 128
+%r69 = or i192 %r63, %r68
+%r70 = zext i192 %r69 to i256
+%r72 = getelementptr i64, i64* %r4, i32 3
+%r73 = load i64, i64* %r72
+%r74 = zext i64 %r73 to i256
+%r75 = shl i256 %r74, 192
+%r76 = or i256 %r70, %r75
+%r78 = select i1 %r53, i256 %r76, i256 0
+%r79 = add i256 %r54, %r78
+%r81 = getelementptr i64, i64* %r1, i32 0
+%r82 = trunc i256 %r79 to i64
+store i64 %r82, i64* %r81
+%r83 = lshr i256 %r79, 64
+%r85 = getelementptr i64, i64* %r1, i32 1
+%r86 = trunc i256 %r83 to i64
+store i64 %r86, i64* %r85
+%r87 = lshr i256 %r83, 64
+%r89 = getelementptr i64, i64* %r1, i32 2
+%r90 = trunc i256 %r87 to i64
+store i64 %r90, i64* %r89
+%r91 = lshr i256 %r87, 64
+%r93 = getelementptr i64, i64* %r1, i32 3
+%r94 = trunc i256 %r91 to i64
+store i64 %r94, i64* %r93
 ret void
 }
 define void @mcl_fp_subNF4L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
@@ -3996,94 +3964,68 @@ define void @mcl_fp_sub6L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r
 %r74 = zext i64 %r73 to i384
 %r75 = shl i384 %r74, 320
 %r76 = or i384 %r70, %r75
-%r77 = zext i384 %r40 to i448
-%r78 = zext i384 %r76 to i448
-%r79 = sub i448 %r77, %r78
-%r80 = trunc i448 %r79 to i384
-%r81 = lshr i448 %r79, 384
-%r82 = trunc i448 %r81 to i1
-%r84 = getelementptr i64, i64* %r1, i32 0
-%r85 = trunc i384 %r80 to i64
-store i64 %r85, i64* %r84
-%r86 = lshr i384 %r80, 64
-%r88 = getelementptr i64, i64* %r1, i32 1
-%r89 = trunc i384 %r86 to i64
-store i64 %r89, i64* %r88
-%r90 = lshr i384 %r86, 64
-%r92 = getelementptr i64, i64* %r1, i32 2
-%r93 = trunc i384 %r90 to i64
-store i64 %r93, i64* %r92
-%r94 = lshr i384 %r90, 64
-%r96 = getelementptr i64, i64* %r1, i32 3
-%r97 = trunc i384 %r94 to i64
-store i64 %r97, i64* %r96
-%r98 = lshr i384 %r94, 64
-%r100 = getelementptr i64, i64* %r1, i32 4
-%r101 = trunc i384 %r98 to i64
-store i64 %r101, i64* %r100
-%r102 = lshr i384 %r98, 64
-%r104 = getelementptr i64, i64* %r1, i32 5
-%r105 = trunc i384 %r102 to i64
-store i64 %r105, i64* %r104
-br i1%r82, label %carry, label %nocarry
-nocarry:
-ret void
-carry:
-%r106 = load i64, i64* %r4
-%r107 = zext i64 %r106 to i128
-%r109 = getelementptr i64, i64* %r4, i32 1
-%r110 = load i64, i64* %r109
-%r111 = zext i64 %r110 to i128
-%r112 = shl i128 %r111, 64
-%r113 = or i128 %r107, %r112
-%r114 = zext i128 %r113 to i192
-%r116 = getelementptr i64, i64* %r4, i32 2
-%r117 = load i64, i64* %r116
-%r118 = zext i64 %r117 to i192
-%r119 = shl i192 %r118, 128
-%r120 = or i192 %r114, %r119
-%r121 = zext i192 %r120 to i256
-%r123 = getelementptr i64, i64* %r4, i32 3
-%r124 = load i64, i64* %r123
-%r125 = zext i64 %r124 to i256
-%r126 = shl i256 %r125, 192
-%r127 = or i256 %r121, %r126
-%r128 = zext i256 %r127 to i320
-%r130 = getelementptr i64, i64* %r4, i32 4
-%r131 = load i64, i64* %r130
-%r132 = zext i64 %r131 to i320
-%r133 = shl i320 %r132, 256
-%r134 = or i320 %r128, %r133
-%r135 = zext i320 %r134 to i384
-%r137 = getelementptr i64, i64* %r4, i32 5
-%r138 = load i64, i64* %r137
-%r139 = zext i64 %r138 to i384
-%r140 = shl i384 %r139, 320
-%r141 = or i384 %r135, %r140
-%r142 = add i384 %r80, %r141
-%r144 = getelementptr i64, i64* %r1, i32 0
-%r145 = trunc i384 %r142 to i64
-store i64 %r145, i64* %r144
-%r146 = lshr i384 %r142, 64
-%r148 = getelementptr i64, i64* %r1, i32 1
-%r149 = trunc i384 %r146 to i64
-store i64 %r149, i64* %r148
-%r150 = lshr i384 %r146, 64
-%r152 = getelementptr i64, i64* %r1, i32 2
-%r153 = trunc i384 %r150 to i64
-store i64 %r153, i64* %r152
-%r154 = lshr i384 %r150, 64
-%r156 = getelementptr i64, i64* %r1, i32 3
-%r157 = trunc i384 %r154 to i64
-store i64 %r157, i64* %r156
-%r158 = lshr i384 %r154, 64
-%r160 = getelementptr i64, i64* %r1, i32 4
-%r161 = trunc i384 %r158 to i64
-store i64 %r161, i64* %r160
-%r162 = lshr i384 %r158, 64
-%r164 = getelementptr i64, i64* %r1, i32 5
-%r165 = trunc i384 %r162 to i64
-store i64 %r165, i64* %r164
+%r77 = zext i384 %r40 to i385
+%r78 = zext i384 %r76 to i385
+%r79 = sub i385 %r77, %r78
+%r80 = lshr i385 %r79, 384
+%r81 = trunc i385 %r80 to i1
+%r82 = trunc i385 %r79 to i384
+%r83 = load i64, i64* %r4
+%r84 = zext i64 %r83 to i128
+%r86 = getelementptr i64, i64* %r4, i32 1
+%r87 = load i64, i64* %r86
+%r88 = zext i64 %r87 to i128
+%r89 = shl i128 %r88, 64
+%r90 = or i128 %r84, %r89
+%r91 = zext i128 %r90 to i192
+%r93 = getelementptr i64, i64* %r4, i32 2
+%r94 = load i64, i64* %r93
+%r95 = zext i64 %r94 to i192
+%r96 = shl i192 %r95, 128
+%r97 = or i192 %r91, %r96
+%r98 = zext i192 %r97 to i256
+%r100 = getelementptr i64, i64* %r4, i32 3
+%r101 = load i64, i64* %r100
+%r102 = zext i64 %r101 to i256
+%r103 = shl i256 %r102, 192
+%r104 = or i256 %r98, %r103
+%r105 = zext i256 %r104 to i320
+%r107 = getelementptr i64, i64* %r4, i32 4
+%r108 = load i64, i64* %r107
+%r109 = zext i64 %r108 to i320
+%r110 = shl i320 %r109, 256
+%r111 = or i320 %r105, %r110
+%r112 = zext i320 %r111 to i384
+%r114 = getelementptr i64, i64* %r4, i32 5
+%r115 = load i64, i64* %r114
+%r116 = zext i64 %r115 to i384
+%r117 = shl i384 %r116, 320
+%r118 = or i384 %r112, %r117
+%r120 = select i1 %r81, i384 %r118, i384 0
+%r121 = add i384 %r82, %r120
+%r123 = getelementptr i64, i64* %r1, i32 0
+%r124 = trunc i384 %r121 to i64
+store i64 %r124, i64* %r123
+%r125 = lshr i384 %r121, 64
+%r127 = getelementptr i64, i64* %r1, i32 1
+%r128 = trunc i384 %r125 to i64
+store i64 %r128, i64* %r127
+%r129 = lshr i384 %r125, 64
+%r131 = getelementptr i64, i64* %r1, i32 2
+%r132 = trunc i384 %r129 to i64
+store i64 %r132, i64* %r131
+%r133 = lshr i384 %r129, 64
+%r135 = getelementptr i64, i64* %r1, i32 3
+%r136 = trunc i384 %r133 to i64
+store i64 %r136, i64* %r135
+%r137 = lshr i384 %r133, 64
+%r139 = getelementptr i64, i64* %r1, i32 4
+%r140 = trunc i384 %r137 to i64
+store i64 %r140, i64* %r139
+%r141 = lshr i384 %r137, 64
+%r143 = getelementptr i64, i64* %r1, i32 5
+%r144 = trunc i384 %r141 to i64
+store i64 %r144, i64* %r143
 ret void
 }
 define void @mcl_fp_subNF6L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)
@@ -6420,122 +6362,88 @@ define void @mcl_fp_sub8L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r
 %r102 = zext i64 %r101 to i512
 %r103 = shl i512 %r102, 448
 %r104 = or i512 %r98, %r103
-%r105 = zext i512 %r54 to i576
-%r106 = zext i512 %r104 to i576
-%r107 = sub i576 %r105, %r106
-%r108 = trunc i576 %r107 to i512
-%r109 = lshr i576 %r107, 512
-%r110 = trunc i576 %r109 to i1
-%r112 = getelementptr i64, i64* %r1, i32 0
-%r113 = trunc i512 %r108 to i64
-store i64 %r113, i64* %r112
-%r114 = lshr i512 %r108, 64
-%r116 = getelementptr i64, i64* %r1, i32 1
-%r117 = trunc i512 %r114 to i64
-store i64 %r117, i64* %r116
-%r118 = lshr i512 %r114, 64
-%r120 = getelementptr i64, i64* %r1, i32 2
-%r121 = trunc i512 %r118 to i64
-store i64 %r121, i64* %r120
-%r122 = lshr i512 %r118, 64
-%r124 = getelementptr i64, i64* %r1, i32 3
-%r125 = trunc i512 %r122 to i64
-store i64 %r125, i64* %r124
-%r126 = lshr i512 %r122, 64
-%r128 = getelementptr i64, i64* %r1, i32 4
-%r129 = trunc i512 %r126 to i64
-store i64 %r129, i64* %r128
-%r130 = lshr i512 %r126, 64
-%r132 = getelementptr i64, i64* %r1, i32 5
-%r133 = trunc i512 %r130 to i64
-store i64 %r133, i64* %r132
-%r134 = lshr i512 %r130, 64
-%r136 = getelementptr i64, i64* %r1, i32 6
-%r137 = trunc i512 %r134 to i64
-store i64 %r137, i64* %r136
-%r138 = lshr i512 %r134, 64
-%r140 = getelementptr i64, i64* %r1, i32 7
-%r141 = trunc i512 %r138 to i64
-store i64 %r141, i64* %r140
-br i1%r110, label %carry, label %nocarry
-nocarry:
-ret void
-carry:
-%r142 = load i64, i64* %r4
-%r143 = zext i64 %r142 to i128
-%r145 = getelementptr i64, i64* %r4, i32 1
-%r146 = load i64, i64* %r145
-%r147 = zext i64 %r146 to i128
-%r148 = shl i128 %r147, 64
-%r149 = or i128 %r143, %r148
-%r150 = zext i128 %r149 to i192
-%r152 = getelementptr i64, i64* %r4, i32 2
-%r153 = load i64, i64* %r152
-%r154 = zext i64 %r153 to i192
-%r155 = shl i192 %r154, 128
-%r156 = or i192 %r150, %r155
-%r157 = zext i192 %r156 to i256
-%r159 = getelementptr i64, i64* %r4, i32 3
-%r160 = load i64, i64* %r159
-%r161 = zext i64 %r160 to i256
-%r162 = shl i256 %r161, 192
-%r163 = or i256 %r157, %r162
-%r164 = zext i256 %r163 to i320
-%r166 = getelementptr i64, i64* %r4, i32 4
-%r167 = load i64, i64* %r166
-%r168 = zext i64 %r167 to i320
-%r169 = shl i320 %r168, 256
-%r170 = or i320 %r164, %r169
-%r171 = zext i320 %r170 to i384
-%r173 = getelementptr i64, i64* %r4, i32 5
-%r174 = load i64, i64* %r173
-%r175 = zext i64 %r174 to i384
-%r176 = shl i384 %r175, 320
-%r177 = or i384 %r171, %r176
-%r178 = zext i384 %r177 to i448
-%r180 = getelementptr i64, i64* %r4, i32 6
-%r181 = load i64, i64* %r180
-%r182 = zext i64 %r181 to i448
-%r183 = shl i448 %r182, 384
-%r184 = or i448 %r178, %r183
-%r185 = zext i448 %r184 to i512
-%r187 = getelementptr i64, i64* %r4, i32 7
-%r188 = load i64, i64* %r187
-%r189 = zext i64 %r188 to i512
-%r190 = shl i512 %r189, 448
-%r191 = or i512 %r185, %r190
-%r192 = add i512 %r108, %r191
-%r194 = getelementptr i64, i64* %r1, i32 0
-%r195 = trunc i512 %r192 to i64
-store i64 %r195, i64* %r194
-%r196 = lshr i512 %r192, 64
-%r198 = getelementptr i64, i64* %r1, i32 1
-%r199 = trunc i512 %r196 to i64
-store i64 %r199, i64* %r198
-%r200 = lshr i512 %r196, 64
-%r202 = getelementptr i64, i64* %r1, i32 2
-%r203 = trunc i512 %r200 to i64
-store i64 %r203, i64* %r202
-%r204 = lshr i512 %r200, 64
-%r206 = getelementptr i64, i64* %r1, i32 3
-%r207 = trunc i512 %r204 to i64
-store i64 %r207, i64* %r206
-%r208 = lshr i512 %r204, 64
-%r210 = getelementptr i64, i64* %r1, i32 4
-%r211 = trunc i512 %r208 to i64
-store i64 %r211, i64* %r210
-%r212 = lshr i512 %r208, 64
-%r214 = getelementptr i64, i64* %r1, i32 5
-%r215 = trunc i512 %r212 to i64
-store i64 %r215, i64* %r214
-%r216 = lshr i512 %r212, 64
-%r218 = getelementptr i64, i64* %r1, i32 6
-%r219 = trunc i512 %r216 to i64
-store i64 %r219, i64* %r218
-%r220 = lshr i512 %r216, 64
-%r222 = getelementptr i64, i64* %r1, i32 7
-%r223 = trunc i512 %r220 to i64
-store i64 %r223, i64* %r222
+%r105 = zext i512 %r54 to i513
+%r106 = zext i512 %r104 to i513
+%r107 = sub i513 %r105, %r106
+%r108 = lshr i513 %r107, 512
+%r109 = trunc i513 %r108 to i1
+%r110 = trunc i513 %r107 to i512
+%r111 = load i64, i64* %r4
+%r112 = zext i64 %r111 to i128
+%r114 = getelementptr i64, i64* %r4, i32 1
+%r115 = load i64, i64* %r114
+%r116 = zext i64 %r115 to i128
+%r117 = shl i128 %r116, 64
+%r118 = or i128 %r112, %r117
+%r119 = zext i128 %r118 to i192
+%r121 = getelementptr i64, i64* %r4, i32 2
+%r122 = load i64, i64* %r121
+%r123 = zext i64 %r122 to i192
+%r124 = shl i192 %r123, 128
+%r125 = or i192 %r119, %r124
+%r126 = zext i192 %r125 to i256
+%r128 = getelementptr i64, i64* %r4, i32 3
+%r129 = load i64, i64* %r128
+%r130 = zext i64 %r129 to i256
+%r131 = shl i256 %r130, 192
+%r132 = or i256 %r126, %r131
+%r133 = zext i256 %r132 to i320
+%r135 = getelementptr i64, i64* %r4, i32 4
+%r136 = load i64, i64* %r135
+%r137 = zext i64 %r136 to i320
+%r138 = shl i320 %r137, 256
+%r139 = or i320 %r133, %r138
+%r140 = zext i320 %r139 to i384
+%r142 = getelementptr i64, i64* %r4, i32 5
+%r143 = load i64, i64* %r142
+%r144 = zext i64 %r143 to i384
+%r145 = shl i384 %r144, 320
+%r146 = or i384 %r140, %r145
+%r147 = zext i384 %r146 to i448
+%r149 = getelementptr i64, i64* %r4, i32 6
+%r150 = load i64, i64* %r149
+%r151 = zext i64 %r150 to i448
+%r152 = shl i448 %r151, 384
+%r153 = or i448 %r147, %r152
+%r154 = zext i448 %r153 to i512
+%r156 = getelementptr i64, i64* %r4, i32 7
+%r157 = load i64, i64* %r156
+%r158 = zext i64 %r157 to i512
+%r159 = shl i512 %r158, 448
+%r160 = or i512 %r154, %r159
+%r162 = select i1 %r109, i512 %r160, i512 0
+%r163 = add i512 %r110, %r162
+%r165 = getelementptr i64, i64* %r1, i32 0
+%r166 = trunc i512 %r163 to i64
+store i64 %r166, i64* %r165
+%r167 = lshr i512 %r163, 64
+%r169 = getelementptr i64, i64* %r1, i32 1
+%r170 = trunc i512 %r167 to i64
+store i64 %r170, i64* %r169
+%r171 = lshr i512 %r167, 64
+%r173 = getelementptr i64, i64* %r1, i32 2
+%r174 = trunc i512 %r171 to i64
+store i64 %r174, i64* %r173
+%r175 = lshr i512 %r171, 64
+%r177 = getelementptr i64, i64* %r1, i32 3
+%r178 = trunc i512 %r175 to i64
+store i64 %r178, i64* %r177
+%r179 = lshr i512 %r175, 64
+%r181 = getelementptr i64, i64* %r1, i32 4
+%r182 = trunc i512 %r179 to i64
+store i64 %r182, i64* %r181
+%r183 = lshr i512 %r179, 64
+%r185 = getelementptr i64, i64* %r1, i32 5
+%r186 = trunc i512 %r183 to i64
+store i64 %r186, i64* %r185
+%r187 = lshr i512 %r183, 64
+%r189 = getelementptr i64, i64* %r1, i32 6
+%r190 = trunc i512 %r187 to i64
+store i64 %r190, i64* %r189
+%r191 = lshr i512 %r187, 64
+%r193 = getelementptr i64, i64* %r1, i32 7
+%r194 = trunc i512 %r191 to i64
+store i64 %r194, i64* %r193
 ret void
 }
 define void @mcl_fp_subNF8L(i64* noalias  %r1, i64* noalias  %r2, i64* noalias  %r3, i64* noalias  %r4)

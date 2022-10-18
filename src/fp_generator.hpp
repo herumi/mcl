@@ -247,6 +247,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	const Reg64& gt9;
 	const mcl::fp::Op *op_;
 	Label pL_; // pointer to p
+	Label zeroL_;
 	// the following labels assume sf(this, 3, 10 | UseRDX)
 	Label fp_mulPreL;
 	Label fp_sqrPreL;
@@ -342,6 +343,11 @@ private:
 		p_ = reinterpret_cast<const uint64_t*>(getCurr());
 		for (size_t i = 0; i < op.N; i++) {
 			dq(op.p[i]);
+		}
+		align(16);
+		L(zeroL_);
+		for (size_t i = 0; i < 64; i++) {
+			dq(0);
 		}
 #ifdef MCL_DUMP_JIT
 		prof_.dumpData(p_, getCurr());
@@ -687,32 +693,29 @@ private:
 		if (pn_ > 6) return false;
 		align(16);
 		func = getCurr<void3u>();
-		int n = pn_ * 2 - 1;
+		int n = pn_ + 1;
 		StackFrame sf(this, 3, n);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
-		t.append(rax);
 		gen_raw_sub(pz, px, py, rax, pn_);
 		gen_raw_fp_sub(pz + pn_ * 8, px + pn_ * 8, py + pn_ * 8, t, true);
 		return true;
 	}
-	// require t.size() >= pn_ * 2
-	void gen_raw_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry)
+	// use rax and require t.size() >= pn_ + 1
+	void gen_raw_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, Pack t, bool withCarry)
 	{
-		Pack t1 = t.sub(0, pn_);
-		Pack t2 = t.sub(pn_, pn_);
-		load_rm(t1, px);
-		sub_rm(t1, py, withCarry);
-		push(t1[0]);
-		lea(t1[0], ptr[rip + pL_]);
-		load_rm(t2, t1[0]);
-		sbb(t1[0], t1[0]);
-		and_pr(t2, t1[0]);
-		pop(t1[0]);
-		add_rr(t1, t2);
-		store_mr(pz, t1);
+		assert(t.size() >= pn_ + 1);
+		const Reg64& pp = t[pn_];
+		t = t.sub(0, pn_);
+		load_rm(t, px);
+		sub_rm(t, py, withCarry);
+		lea(rax, ptr[rip + zeroL_]);
+		lea(pp, ptr[rip + pL_]);
+		cmovc(rax, pp);
+		add_rm(t, rax);
+		store_mr(pz, t);
 	}
 	bool gen_fp_sub(void3u& func)
 	{
@@ -723,14 +726,12 @@ private:
 			micro-benchmark of jmp is faster than and-mask
 			but it's slower for pairings
 		*/
-		int n = pn_ * 2 - 1;
+		int n = pn_ + 1;
 		StackFrame sf(this, 3, n);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
-		Pack t = sf.t;
-		t.append(rax);
-		gen_raw_fp_sub(pz, px, py, t, false);
+		gen_raw_fp_sub(pz, px, py, sf.t, false);
 		return true;
 	}
 	bool gen_fp_neg(void2u& func)
@@ -3530,13 +3531,12 @@ private:
 		if (pn_ > 6) return false;
 		align(16);
 		func = getCurr<void3u>();
-		int n = pn_ * 2 - 1;
+		int n = pn_ + 1;
 		StackFrame sf(this, 3, n);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& py = sf.p[2];
 		Pack t = sf.t;
-		t.append(rax);
 		gen_raw_fp_sub(pz, px, py, t, false);
 		gen_raw_fp_sub(pz + FpByte_, px + FpByte_, py + FpByte_, t, false);
 		return true;

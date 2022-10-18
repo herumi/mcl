@@ -1,7 +1,7 @@
 include common.mk
-LIB_DIR=lib
-OBJ_DIR=obj
-EXE_DIR=bin
+LIB_DIR?=lib
+OBJ_DIR?=obj
+EXE_DIR?=bin
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
@@ -106,7 +106,7 @@ $(BASE_OBJ): $(BASE_ASM)
 	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
 else
 $(BASE_OBJ): $(BASE_LL)
-	$(CLANG) -c $< -o $@ $(CFLAGS)
+	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
 endif
 ifeq ($(findstring $(OS),mingw64/cygwin),)
   MCL_USE_LLVM?=1
@@ -153,7 +153,7 @@ $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).s
     BINT_SRC=src/asm/$(BINT_BASENAME).s
     CFLAGS+=-DMCL_BINT_ASM_X64=0
 $(BINT_OBJ): $(BINT_LL)
-	$(CLANG) -c $< -o $@ $(CFLAGS)
+	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
 
   endif
 endif
@@ -174,7 +174,7 @@ src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
-src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
+src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_MODE),asm)
   ifeq ($(OS),mingw64)
 	python3 src/gen_bint_x64.py -win -m nasm > $@

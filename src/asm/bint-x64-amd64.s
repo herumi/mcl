@@ -4631,8 +4631,11 @@ ret
 .global _mclb_sqr_fast1
 mclb_sqr_fast1:
 _mclb_sqr_fast1:
-mov %rsi, %rdx
-jmp mclb_mul_fast1
+mov (%rsi), %rax
+mul %rax
+mov %rax, (%rdi)
+mov %rdx, 8(%rdi)
+ret
 .align 16
 .global mclb_sqr_fast2
 .global _mclb_sqr_fast2

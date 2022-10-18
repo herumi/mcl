@@ -447,8 +447,8 @@ MCL_DLL_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit
 			if (yTop == Unit(-1)) {
 				v = x[xn - 1];
 			} else {
-				mulUnit1(&v, x[xn - 1], rev);
-				v <<= 1;
+				Unit L = mulUnit1(&v, x[xn - 1], rev);
+				v = (v << 1) | (L >> (UnitBitSize - 1));
 				if (v == 0) v = 1;
 			}
 			Unit ret = mulUnit(t, y, v);

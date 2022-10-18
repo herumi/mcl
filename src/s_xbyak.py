@@ -1,3 +1,5 @@
+# static version of xbyak
+# This file provides a xbyak-like DSL to generate a asm code for nasm/yasm/gas .
 RAX = 0
 RCX = 1
 RDX = 2
@@ -404,6 +406,12 @@ def term():
 def defineName(name):
 	global_(name)
 	makeLabel(name)
+
+# reverse [a, b, c] to [c, b, a] like as Xbyak::util::Pack
+def Pack(*args):
+	a = list(args)
+	a.reverse()
+	return a
 
 class FuncProc:
 	def __init__(self, name):
