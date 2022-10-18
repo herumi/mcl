@@ -310,7 +310,7 @@ def gen_sqr_fast(N):
         px = sf.p[1]
         mov(rax, ptr(px));
         mul(rax);
-        store_mp(py, [rax, rdx]);
+        store_mp(py, Pack(rdx, rax));
         return
     if param.win:
       mov(r8, rdx)

@@ -407,6 +407,12 @@ def defineName(name):
 	global_(name)
 	makeLabel(name)
 
+# reverse [a, b, c] to [c, b, a] like as Xbyak::util::Pack
+def Pack(*args):
+	a = list(args)
+	a.reverse()
+	return a
+
 class FuncProc:
 	def __init__(self, name):
 		if g_masm:
