@@ -714,14 +714,8 @@ private:
 		lea(rax, ptr[rip + zeroL_]);
 		lea(pp, ptr[rip + pL_]);
 		cmovc(rax, pp);
-		for (int i = 0; i < pn_; i++) {
-			if (i == 0) {
-				add(t[i], ptr[rax + i * 8]);
-			} else {
-				adc(t[i], ptr[rax + i * 8]);
-			}
-			mov(ptr[pz + i * 8], t[i]);
-		}
+		add_rm(t, rax);
+		store_mr(pz, t);
 	}
 	bool gen_fp_sub(void3u& func)
 	{
