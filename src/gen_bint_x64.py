@@ -304,6 +304,14 @@ def gen_mul_fast(N):
 def gen_sqr_fast(N):
   align(16)
   with FuncProc(f'mclb_sqr_fast{N}'):
+    if N == 1:
+      with StackFrame(2, 0, useRDX=True) as sf:
+        py = sf.p[0]
+        px = sf.p[1]
+        mov(rax, ptr(px));
+        mul(rax);
+        store_mp(py, [rax, rdx]);
+        return
     if param.win:
       mov(r8, rdx)
     else:
