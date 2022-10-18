@@ -174,7 +174,7 @@ src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
-src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/gen_x86asm.py src/gen_bint_x64.py
+src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_MODE),asm)
   ifeq ($(OS),mingw64)
 	python3 src/gen_bint_x64.py -win -m nasm > $@

@@ -1,4 +1,4 @@
-from gen_x86asm import *
+from s_xbyak import *
 import argparse
 
 SUF='_fast'

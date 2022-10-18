@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../src/')
 
-from gen_x86asm import *
+from s_xbyak import *
 from gen_bint_x64 import *
 import argparse
 

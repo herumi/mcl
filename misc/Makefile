@@ -15,13 +15,7 @@ sqr_test.exe: sqr_test.cpp sqr.h
 sqr_test: sqr_test.exe
 	./sqr_test.exe
 
-gen_x86asm.py:
-	ln -s ../src/gen_x86asm.py .
-
-gen_bint_x64.py:
-	ln -s ../src/gen_bint_x64.py .
-
-gen_test_asm.asm: gen_test.py gen_x86asm.py gen_bint_x64.py
+gen_test_asm.asm: gen_test.py
 	python3 gen_test.py -m nasm > $@
 
 gen_test_asm.o: gen_test_asm.asm

@@ -1,3 +1,5 @@
+# static version of xbyak
+# This file provides a xbyak-like DSL to generate a asm code for nasm/yasm/gas .
 RAX = 0
 RCX = 1
 RDX = 2
