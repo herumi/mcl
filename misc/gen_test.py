@@ -92,12 +92,8 @@ def gen_fp_sub(N):
       sub_pm(X, py)    # X = px[] - py[]
       lea(rax, rip('ZERO'))
       cmovc(rax, pp)   # X < 0 ? pp : 0
-      for i in range(N):
-        if i == 0:
-          add(X[i], ptr(rax + i * 8))
-        else:
-          adc(X[i], ptr(rax + i * 8))
-        mov(ptr(pz + i * 8), X[i])
+      add_pm(X, rax)
+      store_mp(pz, X)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
