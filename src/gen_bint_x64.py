@@ -308,9 +308,9 @@ def gen_sqr_fast(N):
       with StackFrame(2, 0, useRDX=True) as sf:
         py = sf.p[0]
         px = sf.p[1]
-        mov(rax, ptr(px));
-        mul(rax);
-        store_mp(py, Pack(rdx, rax));
+        mov(rax, ptr(px))
+        mul(rax)
+        store_mp(py, Pack(rdx, rax))
         return
     if param.win:
       mov(r8, rdx)
@@ -336,11 +336,11 @@ def gen_enable_fast(N):
 def gen_udiv128():
   align(16)
   with FuncProc('mclb_udiv128'):
-    mov(rax, rdx);
-    mov(rdx, rcx);
-    div(r8);
-    mov(ptr(r9), rdx);
-    ret();
+    mov(rax, rdx)
+    mov(rdx, rcx)
+    div(r8)
+    mov(ptr(r9), rdx)
+    ret()
 
 def main():
   parser = argparse.ArgumentParser()
