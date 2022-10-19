@@ -56,9 +56,10 @@ def gen_fp_addNF(N):
       cmovc_pp(T, X)   # T = X if T < 0
       store_mp(pz, T)
 
-def gen_fp_sub(N):
+# This is almost the same speed as fp_sub, but it requires more registers.
+def gen_fp_subB(N):
   align(16)
-  with FuncProc(f'mclb_fp_sub{N}'):
+  with FuncProc(f'mclb_fp_subB{N}'):
     with StackFrame(4, N*2-3) as sf:
       pz = sf.p[0]
       px = sf.p[1]
@@ -77,9 +78,9 @@ def gen_fp_sub(N):
       add_pp(X, T)
       store_mp(pz, X)
 
-def gen_fp_subB(N):
+def gen_fp_sub(N):
   align(16)
-  with FuncProc(f'mclb_fp_subB{N}'):
+  with FuncProc(f'mclb_fp_sub{N}'):
     with StackFrame(4, N-1) as sf:
       pz = sf.p[0]
       px = sf.p[1]
@@ -114,6 +115,5 @@ for N in [4, 6]:
   gen_fp_add(N)
   gen_fp_addNF(N)
   gen_fp_sub(N)
-  gen_fp_subB(N)
 
 term()
