@@ -1674,10 +1674,13 @@ private:
 		mov(d, ptr [px]);
 		mulx(pd[0], a, ptr [py + 8 * 0]);
 		mov(ptr [pz + 8 * 0], a);
-		xor_(a, a);
 		for (size_t i = 1; i < pd.size(); i++) {
 			mulx(pd[i], a, ptr [py + 8 * i]);
-			adcx(pd[i - 1], a);
+			if (i == 1) {
+				add(pd[i - 1], a);
+			} else {
+				adc(pd[i - 1], a);
+			}
 		}
 		adc(pd[pd.size() - 1], 0);
 	}
