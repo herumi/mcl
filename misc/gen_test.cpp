@@ -22,6 +22,9 @@ void mclb_fp_addNF6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
+void mclb_mulPreLow_fast4(Unit *z, const Unit *x, const Unit *y);
+void mclb_mulPreLow_fast6(Unit *z, const Unit *x, const Unit *y);
+
 }
 
 bint::void_pppp get_fp_addA(size_t n)
@@ -50,6 +53,16 @@ bint::void_pppp get_fp_subA(size_t n)
 	case 6: return mclb_fp_sub6;
 	}
 }
+
+bint::void_ppp get_mulPreLowA(size_t n)
+{
+	switch (n) {
+	default: return 0;
+	case 4: return mclb_mulPreLow_fast4;
+	case 6: return mclb_mulPreLow_fast6;
+	}
+}
+
 
 template<class RG>
 void setRand(Unit *x, size_t n, RG& rg)
@@ -160,7 +173,26 @@ void testFpAdd(const char *pStr)
 	CYBOZU_BENCH_C("subL m", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
 }
 
-CYBOZU_TEST_AUTO(add)
+template<size_t N>
+void testMulPreLow()
+{
+	printf("testMulPreLow %zd\n", N);
+	bint::void_ppp mulPreLow = get_mulPreLowA(N);
+	cybozu::XorShift rg;
+	Unit x[N], y[N];
+	Unit z1[N], z2[N * 2];
+	for (size_t i = 0; i < 10; i++) {
+		setRand(x, N, rg);
+		setRand(y, N, rg);
+		mulPreLow(z1, x, y);
+		mcl::bint::mulT<N>(z2, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
+	}
+	CYBOZU_BENCH_C("mulPreLow", CC, mulPreLow, z1, x, y);
+	CYBOZU_BENCH_C("mulT", CC, mcl::bint::mulT<N>, z2, x, y);
+}
+
+CYBOZU_TEST_AUTO(all)
 {
 	const char *tbl4[] = {
 		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
@@ -178,5 +210,7 @@ CYBOZU_TEST_AUTO(add)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
 		testFpAdd<6>(tbl6[i]);
 	}
+	testMulPreLow<4>();
+	testMulPreLow<6>();
 }
 
