@@ -251,11 +251,13 @@ def mulPack(pz, offset, py, pd):
   a = rax
   mulx(pd[0], a, ptr(py + 8 * 0))
   mov(ptr(pz + offset), a)
-  xor_(a, a)
   n = len(pd)
   for i in range(1, n):
     mulx(pd[i], a, ptr(py + 8 * i))
-    adcx(pd[i - 1], a)
+    if i == 1:
+      add(pd[i - 1], a)
+    else:
+      adc(pd[i - 1], a)
   adc(pd[n - 1], 0)
 
 def mulPackAdd(pz, offset, py, hi, pd):

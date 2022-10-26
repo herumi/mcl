@@ -3468,7 +3468,6 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 adc $0, %rcx
 mov %rcx, 8(%rdi)
 ret
@@ -3481,9 +3480,8 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 adc $0, %r8
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -3508,11 +3506,10 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 adc $0, %r9
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -3556,13 +3553,12 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 mulx 24(%r11), %rax, %r10
-adcx %rax, %r9
+adc %rax, %r9
 adc $0, %r10
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -3632,15 +3628,14 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 mulx 24(%r11), %rax, %r10
-adcx %rax, %r9
+adc %rax, %r9
 mulx 32(%r11), %rax, %rbx
-adcx %rax, %r10
+adc %rax, %r10
 adc $0, %rbx
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -3742,17 +3737,16 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 mulx 24(%r11), %rax, %r10
-adcx %rax, %r9
+adc %rax, %r9
 mulx 32(%r11), %rax, %rbx
-adcx %rax, %r10
+adc %rax, %r10
 mulx 40(%r11), %rax, %rbp
-adcx %rax, %rbx
+adc %rax, %rbx
 adc $0, %rbp
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -3892,19 +3886,18 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 mulx 24(%r11), %rax, %r10
-adcx %rax, %r9
+adc %rax, %r9
 mulx 32(%r11), %rax, %rbx
-adcx %rax, %r10
+adc %rax, %r10
 mulx 40(%r11), %rax, %rbp
-adcx %rax, %rbx
+adc %rax, %rbx
 mulx 48(%r11), %rax, %r12
-adcx %rax, %rbp
+adc %rax, %rbp
 adc $0, %r12
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -4088,21 +4081,20 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 mulx 24(%r11), %rax, %r10
-adcx %rax, %r9
+adc %rax, %r9
 mulx 32(%r11), %rax, %rbx
-adcx %rax, %r10
+adc %rax, %r10
 mulx 40(%r11), %rax, %rbp
-adcx %rax, %rbx
+adc %rax, %rbx
 mulx 48(%r11), %rax, %r12
-adcx %rax, %rbp
+adc %rax, %rbp
 mulx 56(%r11), %rax, %r13
-adcx %rax, %r12
+adc %rax, %r12
 adc $0, %r13
 mov 8(%rsi), %rdx
 xor %rax, %rax
@@ -4336,23 +4328,22 @@ mov %rdx, %r11
 mov (%rsi), %rdx
 mulx (%r11), %rax, %rcx
 mov %rax, (%rdi)
-xor %rax, %rax
 mulx 8(%r11), %rax, %r8
-adcx %rax, %rcx
+add %rax, %rcx
 mulx 16(%r11), %rax, %r9
-adcx %rax, %r8
+adc %rax, %r8
 mulx 24(%r11), %rax, %r10
-adcx %rax, %r9
+adc %rax, %r9
 mulx 32(%r11), %rax, %rbx
-adcx %rax, %r10
+adc %rax, %r10
 mulx 40(%r11), %rax, %rbp
-adcx %rax, %rbx
+adc %rax, %rbx
 mulx 48(%r11), %rax, %r12
-adcx %rax, %rbp
+adc %rax, %rbp
 mulx 56(%r11), %rax, %r13
-adcx %rax, %r12
+adc %rax, %r12
 mulx 64(%r11), %rax, %r14
-adcx %rax, %r13
+adc %rax, %r13
 adc $0, %r14
 mov 8(%rsi), %rdx
 xor %rax, %rax
