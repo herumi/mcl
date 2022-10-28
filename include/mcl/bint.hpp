@@ -364,11 +364,11 @@ void shrT(Unit *pz, const Unit *px, size_t bit)
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-MCL_DLL_API Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n);
+MCL_DLL_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n);
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-MCL_DLL_API void shr(Unit *pz, const Unit *px, size_t bit, size_t n);
+MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n);
 
 /*
 	generic version
