@@ -706,7 +706,7 @@ private:
 	// use rax and require t.size() >= pn_ + 1
 	void gen_raw_fp_sub(const RegExp& pz, const RegExp& px, const RegExp& py, Pack t, bool withCarry)
 	{
-		assert(t.size() >= pn_ + 1);
+		assert(t.size() >= (size_t)pn_ + 1);
 		const Reg64& pp = t[pn_];
 		t = t.sub(0, pn_);
 		load_rm(t, px);
