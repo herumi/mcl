@@ -28,16 +28,17 @@ struct Montgomery {
 	explicit Montgomery(const mpz_class& p)
 	{
 		p_ = p;
-		rp_ = mcl::bint::getMontgomeryCoeff(getLow(p));
 		pn_ = mcl::gmp::getUnitSize(p);
 		R_ = 1;
 		R_ = (R_ << (pn_ * sizeof(Unit) * 8)) % p_;
 		RR_ = (R_ * R_) % p_;
-		v_.resize(pn_ + 1);
-		mcl::gmp::getArray(&v_[1], pn_, p);
-		v_[0] = rp_;
-		rpp_ = v_.data() + 1;
-		isFullBit_ = v_[pn_ - 1] >> (sizeof(Unit) * 8 - 1);
+		v_.resize(pn_ * 2);
+		Unit *base = &v_[pn_];
+		mcl::gmp::getArray(base, pn_, p);
+		mcl::bint::getMontgomeryCoeff(&v_[0], base, pn_);
+		rpp_ = base;
+		rp_ = base[-1];
+		isFullBit_ = rpp_[pn_ - 1] >> (sizeof(Unit) * 8 - 1);
 	}
 
 	void toMont(mpz_class& x) const { mul(x, x, RR_); }

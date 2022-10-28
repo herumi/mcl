@@ -192,6 +192,12 @@ void testMulPreLow()
 	CYBOZU_BENCH_C("mulT", CC, mcl::bint::mulT<N>, z2, x, y);
 }
 
+// y[N] = Montgomery-Reduction(x[N * 2])
+template<size_t N>
+void MontRed(Unit y[N], const Unit x[N * 2], const Mont)
+{
+}
+
 CYBOZU_TEST_AUTO(all)
 {
 	const char *tbl4[] = {
