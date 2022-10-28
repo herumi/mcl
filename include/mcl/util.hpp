@@ -48,28 +48,6 @@ void swap_(T& x, T& y)
 	y = t;
 }
 
-/*
-	get pp such that p * pp = -1 mod M,
-	where p is prime and M = 1 << 64(or 32).
-	@param pLow [in] p mod M
-*/
-template<class T>
-T getMontgomeryCoeff(T pLow)
-{
-	T ret = 0;
-	T t = 0;
-	T x = 1;
-	for (size_t i = 0; i < sizeof(T) * 8; i++) {
-		if ((t & 1) == 0) {
-			t += pLow;
-			ret += x;
-		}
-		t >>= 1;
-		x <<= 1;
-	}
-	return ret;
-}
-
 // return T(x[0:xN] >> bitPos) if bitPos < sizeof(T) * xN else 0
 template<class T>
 T getUnitAt(const T *x, size_t xN, size_t bitPos)

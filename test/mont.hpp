@@ -28,7 +28,7 @@ struct Montgomery {
 	explicit Montgomery(const mpz_class& p)
 	{
 		p_ = p;
-		rp_ = mcl::fp::getMontgomeryCoeff(getLow(p));
+		rp_ = mcl::bint::getMontgomeryCoeff(getLow(p));
 		pn_ = mcl::gmp::getUnitSize(p);
 		R_ = 1;
 		R_ = (R_ << (pn_ * sizeof(Unit) * 8)) % p_;

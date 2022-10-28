@@ -377,7 +377,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 		gmp::getArray(&b, op.R3, N, t);
 		if (!b) return false;
 	}
-	op.rp = getMontgomeryCoeff(p[0]);
+	op.rp = bint::getMontgomeryCoeff(p[0]);
 
 	(void)mode;
 #ifdef MCL_X64_ASM

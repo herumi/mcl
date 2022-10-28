@@ -446,5 +446,28 @@ MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize);
 */
 MCL_DLL_API void getMontgomeryCoeff(Unit *pp, const Unit *p, size_t N);
 
+// ppLow = Unit(p)
+inline Unit getMontgomeryCoeff(Unit pLow)
+{
+#if 1
+	Unit pp = 0;
+	Unit t = 0;
+	Unit x = 1;
+	for (size_t i = 0; i < sizeof(Unit) * 8; i++) {
+		if ((t & 1) == 0) {
+			t += pLow;
+			pp += x;
+		}
+		t >>= 1;
+		x <<= 1;
+	}
+	return pp;
+#else
+	Unit pp;
+	getMontgomeryCoeff(&pp, &pLow, 1);
+	return pp;
+#endif
+}
+
 } } // mcl::bint
 

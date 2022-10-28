@@ -352,7 +352,7 @@ private:
 #ifdef MCL_DUMP_JIT
 		prof_.dumpData(p_, getCurr());
 #endif
-		rp_ = fp::getMontgomeryCoeff(p_[0]);
+		rp_ = bint::getMontgomeryCoeff(p_[0]);
 		pn_ = (int)op.N;
 		FpByte_ = int(op.maxN * sizeof(uint64_t));
 		isFullBit_ = op.isFullBit;
