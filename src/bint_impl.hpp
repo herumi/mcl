@@ -636,5 +636,22 @@ MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize)
 	}
 }
 
+void getMontgomeryCoeff(Unit *pp, const Unit *p, size_t N)
+{
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
+	Unit *x = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
+	clearN(t, N);
+	clearN(x, N); x[0] = 1;
+	clearN(pp, N);
+	for (size_t i = 0; i < sizeof(t) * 8; i++) {
+		if ((t[0] & 1) == 0) {
+			addN(t, t, p, N);
+			addN(pp, pp, x, N);
+		}
+		shrN(t, t, 1, N);
+		shlN(x, x, 1, N);
+	}
+}
+
 } } // mcl::bint
 

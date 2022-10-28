@@ -1009,6 +1009,15 @@ void invVecTest()
 	}
 }
 
+void getMontgomeryCoeffTest()
+{
+	const mcl::fp::Op& op = Fp::getOp();
+	const size_t N = op.N;
+	Unit *pp = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
+	mcl::bint::getMontgomeryCoeff(pp, &op.p[0], 1);
+	CYBOZU_TEST_EQUAL(pp[0], op.rp);
+}
+
 void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
@@ -1043,6 +1052,7 @@ void sub(mcl::fp::Mode mode)
 		const char *pStr = tbl[i];
 		printf("prime=%s\n", pStr);
 		Fp::init(pStr, mode);
+		getMontgomeryCoeffTest();
 		invVecTest();
 		mul2Test();
 		cstrTest();
