@@ -36,12 +36,12 @@ void testEdgeOne(const Montgomery& mont, const mpz_class& x1, const mpz_class& x
 	mcl::gmp::getArray(x1Buf, N, mx1);
 	mcl::gmp::getArray(x2Buf, N, mx2);
 	Unit z1Buf[N] = {};
-	if (mont.isFullBit_) {
-		mcl::fp::mulMontT<N>(z1Buf, x1Buf, x2Buf, mont.rpp_);
+	if (mont.isFullBit) {
+		mcl::fp::mulMontT<N>(z1Buf, x1Buf, x2Buf, mont.p);
 	} else {
-		mcl::fp::mulMontNFT<N>(z1Buf, x1Buf, x2Buf, mont.rpp_);
+		mcl::fp::mulMontNFT<N>(z1Buf, x1Buf, x2Buf, mont.p);
 		Unit z2Buf[N] = {};
-		mcl::fp::mulMontT<N>(z2Buf, x1Buf, x2Buf, mont.rpp_);
+		mcl::fp::mulMontT<N>(z2Buf, x1Buf, x2Buf, mont.p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1Buf, z2Buf, N);
 	}
 	mpz_class mz2;
@@ -49,12 +49,12 @@ void testEdgeOne(const Montgomery& mont, const mpz_class& x1, const mpz_class& x
 	CYBOZU_TEST_EQUAL(mz1, mz2);
 	Unit xyBuf[N * 2] = {};
 	mcl::gmp::getArray(xyBuf, N * 2, mx1 * mx2);
-	if (mont.isFullBit_) {
-		mcl::fp::modRedT<N>(z1Buf, xyBuf, mont.rpp_);
+	if (mont.isFullBit) {
+		mcl::fp::modRedT<N>(z1Buf, xyBuf, mont.p);
 	} else {
-		mcl::fp::modRedNFT<N>(z1Buf, xyBuf, mont.rpp_);
+		mcl::fp::modRedNFT<N>(z1Buf, xyBuf, mont.p);
 		Unit z2Buf[N] = {};
-		mcl::fp::modRedT<N>(z2Buf, xyBuf, mont.rpp_);
+		mcl::fp::modRedT<N>(z2Buf, xyBuf, mont.p);
 		CYBOZU_TEST_EQUAL_ARRAY(z1Buf, z2Buf, N);
 	}
 	mz2 = 0;
@@ -66,8 +66,8 @@ template<size_t N>
 void testEdge(const mpz_class& p)
 {
 	Montgomery mont(p);
-	CYBOZU_TEST_EQUAL(mont.pn_, N);
-	mpz_class tbl[] = { 0, 1, 2, 0x1234568, mont.R_, mont.p_ - mont.R_, p-1, p-2, p-3 };
+	CYBOZU_TEST_EQUAL(mont.N, N);
+	mpz_class tbl[] = { 0, 1, 2, 0x1234568, mont.mR, mont.mp - mont.mR, p-1, p-2, p-3 };
 	const size_t n = CYBOZU_NUM_OF_ARRAY(tbl);
 	for (size_t i = 1; i < n; i++) {
 		for (size_t j = i; j < n; j++) {
