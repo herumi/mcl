@@ -227,6 +227,10 @@ template<size_t N>
 void testMontRed()
 {
 	printf("testMontRed %zd\n", N);
+	if (!Fp::getOp().isMont) {
+		puts("skip");
+		return;
+	}
 	Montgomery mont(Fp::getOp().mp);
 	Unit R[N], R2[N];
 	mcl::gmp::getArray(R, N, mont.mR);
@@ -238,15 +242,22 @@ void testMontRed()
 	for (size_t i = 0; i < 10; i++) {
 		fx.setByCSPRNG(rg);
 		fy.setByCSPRNG(rg);
+		MontMul2<N>(z, fx.getUnit(), fy.getUnit(), mont);
+		fz = fx * fy;
+		CYBOZU_TEST_EQUAL_ARRAY(z, fz.getUnit(), N);
+
+		// fromMont
 		fx.getUnitArray(x);
 		fy.getUnitArray(y);
+		// toMont
 		MontMul2<N>(x, x, R2, mont);
 		MontMul2<N>(y, y, R2, mont);
-		MontMul2<N>(z, x, y, mont);
-		MontMul2<N>(z, z, one, mont);
-		fz = fx * fy;
+		CYBOZU_TEST_EQUAL_ARRAY(x, fx.getUnit(), N);
+		CYBOZU_TEST_EQUAL_ARRAY(y, fy.getUnit(), N);
+		// fromMont
 		Unit z2[N];
-		fz.getUnitArray(z2);
+		MontMul2<N>(z2, z, one, mont);
+		fz.getUnitArray(z);
 		CYBOZU_TEST_EQUAL_ARRAY(z, z2, N);
 	}
 	FpDbl dx;
@@ -265,9 +276,10 @@ CYBOZU_TEST_AUTO(all)
 		"0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d", // BN254-r
 		"0x2523648240000001ba344d80000000086121000000000013a700000000000013", // BN254-p
 		"0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", // BLS12-381-r
-		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
 		"0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
 		"0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1-p
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
 		testFpAdd<4>(tbl4[i]);
@@ -278,6 +290,7 @@ CYBOZU_TEST_AUTO(all)
 		"0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d", // BN381-r
 		"0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013", // BN381-p
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec3",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
 		testFpAdd<6>(tbl6[i]);
