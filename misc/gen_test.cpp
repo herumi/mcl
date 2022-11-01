@@ -262,7 +262,9 @@ void testMontRed()
 CYBOZU_TEST_AUTO(all)
 {
 	const char *tbl4[] = {
-		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d", // BN254-r
+		"0x2523648240000001ba344d80000000086121000000000013a700000000000013", // BN254-p
+		"0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", // BLS12-381-r
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
 		"0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
 		"0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
@@ -272,7 +274,9 @@ CYBOZU_TEST_AUTO(all)
 		testMontRed<4>();
 	}
 	const char *tbl6[] = {
-		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
+		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", // BLS12-381-p
+		"0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d", // BN381-r
+		"0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013", // BN381-p
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
