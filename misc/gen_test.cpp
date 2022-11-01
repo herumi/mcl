@@ -6,6 +6,7 @@
 #include <mcl/fp.hpp>
 #define MCL_USE_LLVM
 #include "../src/llvm_proto.hpp"
+#include "../test/mont.hpp"
 
 using namespace mcl;
 using namespace mcl::fp;
@@ -194,8 +195,55 @@ void testMulPreLow()
 
 // y[N] = Montgomery-Reduction(x[N * 2])
 template<size_t N>
-void MontRed(Unit y[N], const Unit x[N * 2], const Mont)
+void MontRed2(Unit y[N], const Unit x[N * 2], const Montgomery& mont)
 {
+	bint::void_ppp mulPreLow = get_mulPreLowA(N);
+	Unit q[N];
+	mulPreLow(q, x, mont.rp2);
+	Unit t[N * 2];
+	bint::mulT<N>(t, q, mont.p);
+	Unit CF = bint::addT<N*2>(t, t, x);
+	if (CF || bint::cmpGeT<N>(t + N, mont.p)) {
+		bint::subT<N>(y, t + N, mont.p);
+	} else {
+		bint::copyT<N>(y, t + N);
+	}
+}
+
+template<size_t N>
+void MontMul2(Unit z[N], const Unit x[N], const Unit y[N], const Montgomery& mont)
+{
+	Unit xy[N * 2];
+	bint::mulT<N>(xy, x, y);
+	MontRed2<N>(z, xy, mont);
+}
+
+template<size_t N>
+void testMontRed()
+{
+	printf("testMontRed %zd\n", N);
+	Montgomery mont(Fp::getOp().mp);
+	Unit R[N], R2[N];
+	mcl::gmp::getArray(R, N, mont.mR);
+	mcl::gmp::getArray(R2, N, mont.mR2);
+	Unit one[N] = { 1 };
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < 10; i++) {
+		Fp fx, fy;
+		fx.setByCSPRNG(rg);
+		fy.setByCSPRNG(rg);
+		Unit x[N], y[N], z[N];
+		fx.getUnitArray(x);
+		fy.getUnitArray(y);
+		MontMul2<N>(x, x, R2, mont);
+		MontMul2<N>(y, y, R2, mont);
+		MontMul2<N>(z, x, y, mont);
+		MontMul2<N>(z, z, one, mont);
+		Fp fz = fx * fy;
+		Unit z2[N];
+		fz.getUnitArray(z2);
+		CYBOZU_TEST_EQUAL_ARRAY(z, z2, N);
+	}
 }
 
 CYBOZU_TEST_AUTO(all)
@@ -208,6 +256,7 @@ CYBOZU_TEST_AUTO(all)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
 		testFpAdd<4>(tbl4[i]);
+		testMontRed<4>();
 	}
 	const char *tbl6[] = {
 		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
@@ -215,6 +264,7 @@ CYBOZU_TEST_AUTO(all)
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
 		testFpAdd<6>(tbl6[i]);
+		testMontRed<6>();
 	}
 	testMulPreLow<4>();
 	testMulPreLow<6>();

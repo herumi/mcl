@@ -4,13 +4,14 @@
 class Montgomery {
 	typedef mcl::Unit Unit;
 	std::vector<Unit> v_;
-	mpz_class mR2; // (R * R) % p
 public:
 	mpz_class mp;
+	mpz_class mR; // (1 << (N * 64)) % p
+	mpz_class mR2; // (R * R) % p
 	Unit rp; // rp * p = -1 mod M = 1 << 64
 	size_t N;
 	const Unit *p;
-	mpz_class mR; // (1 << (N * 64)) % p
+	const Unit *rp2;
 	bool isFullBit;
 	Montgomery() {}
 	static Unit getLow(const mpz_class& x)
@@ -39,6 +40,7 @@ public:
 		mcl::bint::getMontgomeryCoeff(&v_[0], base, N);
 		p = base;
 		rp = base[-1];
+		rp2 = &v_[0];
 		isFullBit = p[N - 1] >> (sizeof(Unit) * 8 - 1);
 	}
 
