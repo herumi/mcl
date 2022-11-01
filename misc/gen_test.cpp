@@ -4,6 +4,7 @@
 #include <mcl/config.hpp>
 
 #include <mcl/fp.hpp>
+#include <mcl/fp_tower.hpp>
 #define MCL_USE_LLVM
 #include "../src/llvm_proto.hpp"
 #include "../test/mont.hpp"
@@ -12,6 +13,8 @@ using namespace mcl;
 using namespace mcl::fp;
 
 typedef mcl::FpT<> Fp;
+typedef mcl::Fp2T<Fp> Fp2;
+typedef mcl::FpDblT<Fp> FpDbl;
 
 extern "C" {
 void mclb_fp_add4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
@@ -98,7 +101,9 @@ template<size_t N>
 void testFpAdd(const char *pStr)
 {
 	printf("testFpAdd p=%s\n", pStr);
-	Fp::init(pStr);
+	bool b;
+	Fp::init(&b, 1, mpz_class(pStr));
+	Fp2::init(&b);
 	const Unit *p = Fp::getOp().p;
 	bool isNF = !Fp::getOp().isFullBit;
 	bint::void_pppp addA = get_fp_addA(N);
@@ -228,22 +233,30 @@ void testMontRed()
 	mcl::gmp::getArray(R2, N, mont.mR2);
 	Unit one[N] = { 1 };
 	cybozu::XorShift rg;
+	Fp fx, fy, fz;
+	Unit x[N], y[N], z[N];
 	for (size_t i = 0; i < 10; i++) {
-		Fp fx, fy;
 		fx.setByCSPRNG(rg);
 		fy.setByCSPRNG(rg);
-		Unit x[N], y[N], z[N];
 		fx.getUnitArray(x);
 		fy.getUnitArray(y);
 		MontMul2<N>(x, x, R2, mont);
 		MontMul2<N>(y, y, R2, mont);
 		MontMul2<N>(z, x, y, mont);
 		MontMul2<N>(z, z, one, mont);
-		Fp fz = fx * fy;
+		fz = fx * fy;
 		Unit z2[N];
 		fz.getUnitArray(z2);
 		CYBOZU_TEST_EQUAL_ARRAY(z, z2, N);
 	}
+	FpDbl dx;
+	FpDbl::mulPre(dx, fx, fy);
+	Unit xy[N * 2];
+	mcl::bint::mulT<N>(xy, x, y);
+	CYBOZU_BENCH_C("mont-a", CC, Fp::mul, fz, fx, fy);
+	CYBOZU_BENCH_C("mont-b", CC, MontMul2<N>, z, x, y, mont);
+	CYBOZU_BENCH_C("mod-a", CC, FpDbl::mod, fz, dx);
+	CYBOZU_BENCH_C("mod-b", CC, MontRed2<N>, z, xy, mont);
 }
 
 CYBOZU_TEST_AUTO(all)
