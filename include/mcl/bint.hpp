@@ -46,15 +46,15 @@ typedef void (*void_pp)(Unit*, const Unit*);
 
 MCL_DLL_API void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
 
+// show integer as little endian
 template<class T>
 inline void dump(const T *x, size_t n, const char *msg = "")
 {
 	if (msg) printf("%s ", msg);
 	for (size_t i = 0; i < n; i++) {
-		T v = x[i];
+		T v = x[n - 1 - i];
 		for (size_t j = 0; j < sizeof(T); j++) {
-			printf("%02x", uint8_t(v));
-			v >>= 8;
+			printf("%02x", uint8_t(v >> (sizeof(T) - 1 - j) * 8));
 		}
 	}
 	printf("\n");
