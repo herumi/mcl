@@ -199,28 +199,30 @@ void testMulPreLow()
 }
 
 // y[N] = Montgomery-Reduction(x[N * 2])
+// p[-N:0] = rp
+// p[0:N] = p
 template<size_t N>
-void MontRed2(Unit y[N], const Unit x[N * 2], const Montgomery& mont)
+void MontRed2(Unit y[N], const Unit x[N * 2], const Unit *p)
 {
 	bint::void_ppp mulPreLow = get_mulPreLowA(N);
 	Unit q[N];
-	mulPreLow(q, x, mont.rp2);
+	mulPreLow(q, x, p - N);
 	Unit t[N * 2];
-	bint::mulT<N>(t, q, mont.p);
+	bint::mulT<N>(t, q, p);
 	Unit CF = bint::addT<N*2>(t, t, x);
-	if (CF || bint::cmpGeT<N>(t + N, mont.p)) {
-		bint::subT<N>(y, t + N, mont.p);
+	if (CF || bint::cmpGeT<N>(t + N, p)) {
+		bint::subT<N>(y, t + N, p);
 	} else {
 		bint::copyT<N>(y, t + N);
 	}
 }
 
 template<size_t N>
-void MontMul2(Unit z[N], const Unit x[N], const Unit y[N], const Montgomery& mont)
+void MontMul2(Unit z[N], const Unit x[N], const Unit y[N], const Unit *p)
 {
 	Unit xy[N * 2];
 	bint::mulT<N>(xy, x, y);
-	MontRed2<N>(z, xy, mont);
+	MontRed2<N>(z, xy, p);
 }
 
 template<size_t N>
@@ -232,6 +234,7 @@ void testMontRed()
 		return;
 	}
 	Montgomery mont(Fp::getOp().mp);
+	const Unit *p = mont.p;
 	Unit R[N], R2[N];
 	mcl::gmp::getArray(R, N, mont.mR);
 	mcl::gmp::getArray(R2, N, mont.mR2);
@@ -242,7 +245,7 @@ void testMontRed()
 	for (size_t i = 0; i < 10; i++) {
 		fx.setByCSPRNG(rg);
 		fy.setByCSPRNG(rg);
-		MontMul2<N>(z, fx.getUnit(), fy.getUnit(), mont);
+		MontMul2<N>(z, fx.getUnit(), fy.getUnit(), p);
 		fz = fx * fy;
 		CYBOZU_TEST_EQUAL_ARRAY(z, fz.getUnit(), N);
 
@@ -250,13 +253,13 @@ void testMontRed()
 		fx.getUnitArray(x);
 		fy.getUnitArray(y);
 		// toMont
-		MontMul2<N>(x, x, R2, mont);
-		MontMul2<N>(y, y, R2, mont);
+		MontMul2<N>(x, x, R2, p);
+		MontMul2<N>(y, y, R2, p);
 		CYBOZU_TEST_EQUAL_ARRAY(x, fx.getUnit(), N);
 		CYBOZU_TEST_EQUAL_ARRAY(y, fy.getUnit(), N);
 		// fromMont
 		Unit z2[N];
-		MontMul2<N>(z2, z, one, mont);
+		MontMul2<N>(z2, z, one, p);
 		fz.getUnitArray(z);
 		CYBOZU_TEST_EQUAL_ARRAY(z, z2, N);
 	}
@@ -265,9 +268,9 @@ void testMontRed()
 	Unit xy[N * 2];
 	mcl::bint::mulT<N>(xy, x, y);
 	CYBOZU_BENCH_C("mont-a", CC, Fp::mul, fz, fx, fy);
-	CYBOZU_BENCH_C("mont-b", CC, MontMul2<N>, z, x, y, mont);
+	CYBOZU_BENCH_C("mont-b", CC, MontMul2<N>, z, x, y, p);
 	CYBOZU_BENCH_C("mod-a", CC, FpDbl::mod, fz, dx);
-	CYBOZU_BENCH_C("mod-b", CC, MontRed2<N>, z, xy, mont);
+	CYBOZU_BENCH_C("mod-b", CC, MontRed2<N>, z, xy, p);
 }
 
 CYBOZU_TEST_AUTO(all)
