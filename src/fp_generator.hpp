@@ -483,6 +483,24 @@ private:
 			setFuncInfo(prof_, suf, "2_mul_xi", op.fp2_mul_xiA_, getCurr());
 		}
 	}
+	template<class T1, class T2>
+	void add_ex(const T1& t1, const T2& t2, bool noCF)
+	{
+		if (noCF) {
+			add(t1, t2);
+		} else {
+			adc(t1, t2);
+		}
+	}
+	template<class T1, class T2>
+	void sub_ex(const T1& t1, const T2& t2, bool noCF)
+	{
+		if (noCF) {
+			sub(t1, t2);
+		} else {
+			sbb(t1, t2);
+		}
+	}
 	bool gen_addSubPre(u3u& func, bool isAdd, int n)
 	{
 		align(16);
@@ -502,11 +520,7 @@ private:
 	{
 		for (int i = 0; i < n; i++) {
 			mov(t, ptr [px + i * 8]);
-			if (i == 0) {
-				add(t, ptr [py + i * 8]);
-			} else {
-				adc(t, ptr [py + i * 8]);
-			}
+			add_ex(t, ptr [py + i * 8], i == 0);
 			mov(ptr [pz + i * 8], t);
 		}
 	}
@@ -550,11 +564,7 @@ private:
 		lea(rax, ptr[rip+pL_]);
 		for (size_t i = 0; i < t.size(); i++) {
 			mov(rdx, ptr [rax + i * 8]);
-			if (i == 0) {
-				sub(rdx, t[i]);
-			} else {
-				sbb(rdx, t[i]);
-			}
+			sub_ex(rdx, t[i], i == 0);
 			mov(ptr [pz + i * 8], rdx);
 		}
 	L(exit);
@@ -597,11 +607,7 @@ private:
 		const Reg64 *pt1 = &t1;
 		for (size_t i = 1; i < n - 1; i++) {
 			mulx(*pt0, rax, ptr [px + i * 8]);
-			if (i == 1) {
-				add(rax, *pt1);
-			} else {
-				adc(rax, *pt1);
-			}
+			add_ex(rax, *pt1, i == 1);
 			mov(ptr [pz + i * 8], rax);
 			std::swap(pt0, pt1);
 		}
@@ -1656,11 +1662,7 @@ private:
 		mulx(c[1], c[0], ptr [px + 0 * 8]);
 		for (int i = 1; i < n; i++) {
 			mulx(c[i + 1], rax, ptr[px + i * 8]);
-			if (i == 1) {
-				add(c[i], rax);
-			} else {
-				adc(c[i], rax);
-			}
+			add_ex(c[i], rax, i == 1);
 		}
 		adc(c[n], 0);
 	}
@@ -1676,11 +1678,7 @@ private:
 		mov(ptr [pz + 8 * 0], a);
 		for (size_t i = 1; i < pd.size(); i++) {
 			mulx(pd[i], a, ptr [py + 8 * i]);
-			if (i == 1) {
-				add(pd[i - 1], a);
-			} else {
-				adc(pd[i - 1], a);
-			}
+			add_ex(pd[i - 1], a, i == 1);
 		}
 		adc(pd[pd.size() - 1], 0);
 	}
@@ -2532,11 +2530,7 @@ private:
 	{
 		for (int i = 0; i < n; i++) {
 			mov(t, ptr [mx + i * 8]);
-			if (i == 0) {
-				add(ptr [mz + i * 8], t);
-			} else {
-				adc(ptr [mz + i * 8], t);
-			}
+			add_ex(ptr [mz + i * 8], t, i == 0);
 		}
 	}
 	/*
@@ -2546,18 +2540,10 @@ private:
 	{
 		for (size_t i = 0; i < y.size(); i++) {
 			mov(t, ptr [mx + i * 8]);
-			if (i == 0) {
-				if (y.isReg(i)) {
-					sub(t, y.getReg(i));
-				} else {
-					sub(t, ptr [y.getMem(i)]);
-				}
+			if (y.isReg(i)) {
+				sub_ex(t, y.getReg(i), i == 0);
 			} else {
-				if (y.isReg(i)) {
-					sbb(t, y.getReg(i));
-				} else {
-					sbb(t, ptr [y.getMem(i)]);
-				}
+				sub_ex(t, ptr [y.getMem(i)], i == 0);
 			}
 			mov(ptr [mz + i * 8], t);
 		}
@@ -3057,13 +3043,8 @@ private:
 	template<class ADDR>
 	void add_rm(const Pack& z, const ADDR& m, bool withCarry = false)
 	{
-		if (withCarry) {
-			adc(z[0], ptr [m + 8 * 0]);
-		} else {
-			add(z[0], ptr [m + 8 * 0]);
-		}
-		for (int i = 1, n = (int)z.size(); i < n; i++) {
-			adc(z[i], ptr [m + 8 * i]);
+		for (int i = 0, n = (int)z.size(); i < n; i++) {
+			add_ex(z[i], ptr [m + 8 * i], !withCarry && i == 0);
 		}
 	}
 	/*
@@ -3072,13 +3053,8 @@ private:
 	template<class ADDR>
 	void sub_rm(const Pack& z, const ADDR& m, bool withCarry = false)
 	{
-		if (withCarry) {
-			sbb(z[0], ptr [m + 8 * 0]);
-		} else {
-			sub(z[0], ptr [m + 8 * 0]);
-		}
-		for (int i = 1, n = (int)z.size(); i < n; i++) {
-			sbb(z[i], ptr [m + 8 * i]);
+		for (int i = 0, n = (int)z.size(); i < n; i++) {
+			sub_ex(z[i], ptr [m + 8 * i], !withCarry && i == 0);
 		}
 	}
 	void cmovc_rr(const Pack& z, const Pack& x)
@@ -3456,11 +3432,7 @@ private:
 		load_rm(b, gp1 + FpByte_);
 		for (int i = 0; i < pn_; i++) {
 			mov(rax, b[i]);
-			if (i == 0) {
-				add(rax, rax);
-			} else {
-				adc(rax, rax);
-			}
+			add_ex(rax, rax, i == 0);
 			mov(ptr [(const RegExp&)t1 + i * 8], rax);
 		}
 		load_rm(a, gp1);
@@ -3564,11 +3536,7 @@ private:
 		load_rm(b, px + FpByte_);
 		for (int i = 0; i < pn_; i++) {
 			mov(t[i], a[i]);
-			if (i == 0) {
-				add(t[i], b[i]);
-			} else {
-				adc(t[i], b[i]);
-			}
+			add_ex(t[i], b[i], i == 0);
 		}
 		sub_rr(a, b);
 		lea(rax, ptr[rip+pL_]);
@@ -3699,11 +3667,7 @@ private:
 			// t2 = a + b
 			for (int i = 0; i < pn_; i++) {
 				mov(rax, a[i]);
-				if (i == 0) {
-					add(rax, b[i]);
-				} else {
-					adc(rax, b[i]);
-				}
+				add_ex(rax, b[i], i == 0);
 				mov(ptr [(RegExp)t2 + i * 8], rax);
 			}
 			// t3 = a + p - b
