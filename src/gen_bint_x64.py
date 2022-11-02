@@ -43,26 +43,33 @@ def store_mp(m, x):
 def and_re(x, y):
   vec_re(and_, x, y)
 
+# add(x, y) if flag is True
+# adc(x, y) if flag is False
+def add_ex(x, y, flag):
+  if flag:
+    add(x, y)
+  else:
+    adc(x, y)
+
+# sub(x, y) if flag is True
+# sbb(x, y) if flag is False
+def sub_ex(x, y, flag):
+  if flag:
+    sub(x, y)
+  else:
+    sbb(x, y)
+
 def add_pm(t, px, withCF=False):
   for i in range(len(t)):
-    if not withCF and i == 0:
-      add(t[i], ptr(px + 8 * i))
-    else:
-      adc(t[i], ptr(px + 8 * i))
+    add_ex(t[i], ptr(px + i*8), not withCF and i == 0)
 
 def sub_pm(t, px, withCF=False):
   for i in range(len(t)):
-    if not withCF and i == 0:
-      sub(t[i], ptr(px + 8 * i))
-    else:
-      sbb(t[i], ptr(px + 8 * i))
+    sub_ex(t[i], ptr(px + i*8), not withCF and i == 0)
 
 def add_pp(t, x, withCF=False):
   for i in range(len(t)):
-    if not withCF and i == 0:
-      add(t[i], x[i])
-    else:
-      adc(t[i], x[i])
+    add_ex(t[i], x[i], not withCF and i == 0)
 
 def gen_add(N, NF=False):
   align(16)
@@ -78,10 +85,7 @@ def gen_add(N, NF=False):
       y = sf.p[2]
       for i in range(N):
         mov(rax, ptr(x + 8 * i))
-        if i == 0:
-          add(rax, ptr(y + 8 * i))
-        else:
-          adc(rax, ptr(y + 8 * i))
+        add_ex(rax, ptr(y + 8 * i), i == 0)
         mov(ptr(z + 8 * i), rax)
       if NF:
         return
@@ -102,10 +106,7 @@ def gen_sub(N, NF=False):
       y = sf.p[2]
       for i in range(N):
         mov(rax, ptr(x + 8 * i))
-        if i == 0:
-          sub(rax, ptr(y + 8 * i))
-        else:
-          sbb(rax, ptr(y + 8 * i))
+        sub_ex(rax, ptr(y + 8 * i), i == 0)
         mov(ptr(z + 8 * i), rax)
       setc(al)
       movzx(eax, al)
@@ -155,10 +156,7 @@ def gen_mulUnit(N, mode='fast'):
           mov(ptr(z), rax)
           for i in range(1, N-1):
             mulx(t0, rax, ptr(x + i * 8))
-            if i == 1:
-              add(rax, t1)
-            else:
-              adc(rax, t1)
+            add_ex(rax, t1, i == 1)
             mov(ptr(z + i * 8), rax)
             t0, t1 = t1, t0
           mulx(rax, rdx, ptr(x + (N - 1) * 8))
@@ -182,10 +180,7 @@ def gen_mulUnit(N, mode='fast'):
               mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
           for i in range(N - 1):
             mov(rax, ptr(rsp + posH + i * 8))
-            if i == 0:
-              add(rax, ptr(rsp + i * 8))
-            else:
-              adc(rax, ptr(rsp + i * 8))
+            add_ex(rax, ptr(rsp + i * 8), i == 0)
             mov(ptr(z + (i + 1) * 8), rax)
           adc(rdx, 0)
           mov(rax, rdx)
@@ -231,19 +226,13 @@ def gen_mulUnitAdd(N, mode='fast'):
             mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
         for i in range(N - 1):
           mov(rax, ptr(rsp + (i + 1) * 8))
-          if i == 0:
-            add(rax, ptr(rsp + posH + i * 8))
-          else:
-            adc(rax, ptr(rsp + posH + i * 8))
+          add_ex(rax, ptr(rsp + posH + i * 8), i == 0)
           mov(ptr(rsp + (i + 1) * 8), rax)
         if N > 1:
           adc(rdx, 0)
         for i in range(N):
           mov(rax, ptr(rsp + i * 8))
-          if i == 0:
-            add(ptr(z + i * 8), rax)
-          else:
-            adc(ptr(z + i * 8), rax)
+          add_ex(ptr(z + i * 8), rax, i == 0)
         adc(rdx, 0)
         mov(rax, rdx)
 
@@ -254,10 +243,7 @@ def mulPack(pz, offset, py, pd):
   n = len(pd)
   for i in range(1, n):
     mulx(pd[i], a, ptr(py + 8 * i))
-    if i == 1:
-      add(pd[i - 1], a)
-    else:
-      adc(pd[i - 1], a)
+    add_ex(pd[i - 1], a, i == 1)
   adc(pd[n - 1], 0)
 
 def mulPackAdd(pz, offset, py, hi, pd):
