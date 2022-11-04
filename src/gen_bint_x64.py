@@ -43,18 +43,18 @@ def store_mp(m, x):
 def and_re(x, y):
   vec_re(and_, x, y)
 
-# add(x, y) if flag is True
-# adc(x, y) if flag is False
-def add_ex(x, y, flag):
-  if flag:
+# add(x, y) if noCF is True
+# adc(x, y) if noCF is False
+def add_ex(x, y, noCF):
+  if noCF:
     add(x, y)
   else:
     adc(x, y)
 
-# sub(x, y) if flag is True
-# sbb(x, y) if flag is False
-def sub_ex(x, y, flag):
-  if flag:
+# sub(x, y) if noCF is True
+# sbb(x, y) if noCF is False
+def sub_ex(x, y, noCF):
+  if noCF:
     sub(x, y)
   else:
     sbb(x, y)
@@ -263,6 +263,7 @@ def mulPackAdd(pz, offset, py, hi, pd):
   adc(hi, a)
 
 def gen_mulPreN(pz, px, py, pk, t, N):
+  assert len(pk) == N
   mov(rdx, ptr(px + 8 * 0))
   mulPack(pz, 8 * 0, py, pk)
   for i in range(1, N):
