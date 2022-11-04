@@ -95,7 +95,10 @@ def gen_fp_sub(N):
       add_pm(X, rax)
       store_mp(pz, X)
 
-def gen_mulPreLowN(pz, px, py, pk, H, N):
+def gen_mulPreLowN(pz, px, py, ts, N):
+  assert len(ts) >= N-1
+  pk = ts[0:N-1]
+  H = ts[N-1]
   mov(rdx, ptr(px + 8 * 0))
   a = rax
   # [pz[0]:pk[0:N-1]] = px[] * py[0]
@@ -123,7 +126,6 @@ def gen_mulPreLowN(pz, px, py, pk, H, N):
         break
       adcx(pk[j + 1], H)
     pk = pk[1:]
-#  mov(ptr(pz + 8 * (N-1)), pk[0])
 
 # z[N] = the bottom half of (x[N] * y[N])
 def gen_mulPreLow_fast(N):
@@ -134,10 +136,41 @@ def gen_mulPreLow_fast(N):
         pz = sf.p[0]
         px = sf.p[1]
         py = sf.p[2]
-        pk = sf.t[0:N-1]
-        gen_mulPreLowN(pz, px, py, pk, sf.t[N-1], N)
+        gen_mulPreLowN(pz, px, py, sf.t, N)
     else:
       jmp(f'mclb_mulPreLow_slow{N}')
+
+## py[N] = Mont reduction(px[N*2]) with pp
+def gen_montRed2(N):
+  align(16)
+  with FuncProc(f'mclb_montRed_fast{N}'):
+    with StackFrame(3, N*2-2, useRDX=True, stackSizeByte=N*8*3) as sf:
+      py = sf.p[0]
+      px = sf.p[1]
+      pp = sf.p[2]
+      q = rsp # q[N]
+      t = rsp + N*8 # t[N*2]
+      gen_mulPreLowN(q, px, pp - N*8, sf.t, N)
+      gen_mulPreN(t, q, pp, sf.t[0:N], sf.t[N], N)
+      for i in range(N):
+        mov(rax, ptr(t + i*8))
+        add_ex(rax, ptr(px + i*8), i == 0)
+      y1 = sf.t[0:N]
+      y2 = sf.t[N:]
+      y2.append(rdx)
+      y2.append(rax)
+      for i in range(N):
+        mov(y1[i], ptr(t + (N + i)*8))
+        adc(y1[i], ptr(px + (N + i)*8))
+      # px is destroyed
+      mov(px, 0)
+      adc(px, 0)
+      for i in range(N):
+        mov(y2[i], y1[i])
+        sub_ex(y1[i], ptr(pp + i*8), i == 0)
+      sbb(px, 0)
+      vec_pp(cmovnc, y2, y1)
+      store_mp(py, y2)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
@@ -156,5 +189,6 @@ for N in [4, 6]:
   gen_fp_addNF(N)
   gen_fp_sub(N)
   gen_mulPreLow_fast(N)
+  gen_montRed2(N)
 
 term()

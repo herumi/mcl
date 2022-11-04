@@ -29,6 +29,9 @@ void mclb_fp_sub6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_mulPreLow_fast4(Unit *z, const Unit *x, const Unit *y);
 void mclb_mulPreLow_fast6(Unit *z, const Unit *x, const Unit *y);
 
+void mclb_montRed_fast4(Unit *y, const Unit *x, const Unit *p);
+void mclb_montRed_fast6(Unit *y, const Unit *x, const Unit *p);
+
 }
 
 bint::void_pppp get_fp_addA(size_t n)
@@ -67,6 +70,14 @@ bint::void_ppp get_mulPreLowA(size_t n)
 	}
 }
 
+bint::void_ppp get_montRedA(size_t n)
+{
+	switch (n) {
+	default: return 0;
+	case 4: return mclb_montRed_fast4;
+	case 6: return mclb_montRed_fast6;
+	}
+}
 
 template<class RG>
 void setRand(Unit *x, size_t n, RG& rg)
@@ -233,6 +244,7 @@ void testMontRed()
 		puts("skip");
 		return;
 	}
+	bint::void_ppp montRed = get_montRedA(N);
 	Montgomery mont(Fp::getOp().mp);
 	const Unit *p = mont.p;
 	Unit R[N], R2[N];
@@ -247,6 +259,11 @@ void testMontRed()
 		fy.setByCSPRNG(rg);
 		MontMul2<N>(z, fx.getUnit(), fy.getUnit(), p);
 		fz = fx * fy;
+		CYBOZU_TEST_EQUAL_ARRAY(z, fz.getUnit(), N);
+		Unit xy[N * 2];
+		bint::mulT<N>(xy, fx.getUnit(), fy.getUnit());
+		memset(z, 0, sizeof(z));
+		montRed(z, xy, p);
 		CYBOZU_TEST_EQUAL_ARRAY(z, fz.getUnit(), N);
 
 		// fromMont
@@ -267,10 +284,12 @@ void testMontRed()
 	FpDbl::mulPre(dx, fx, fy);
 	Unit xy[N * 2];
 	mcl::bint::mulT<N>(xy, x, y);
+	CYBOZU_BENCH_C("mul", CC, mcl::bint::mulT<N>, xy, x, y);
 	CYBOZU_BENCH_C("mont-a", CC, Fp::mul, fz, fx, fy);
 	CYBOZU_BENCH_C("mont-b", CC, MontMul2<N>, z, x, y, p);
 	CYBOZU_BENCH_C("mod-a", CC, FpDbl::mod, fz, dx);
 	CYBOZU_BENCH_C("mod-b", CC, MontRed2<N>, z, xy, p);
+	CYBOZU_BENCH_C("mod-c", CC, montRed, z, xy, p);
 }
 
 CYBOZU_TEST_AUTO(all)
