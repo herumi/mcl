@@ -856,3 +856,36 @@ CYBOZU_TEST_AUTO(sqr)
 	testSqr<8>();
 	testSqr<9>();
 }
+
+template<size_t N>
+void testMulLow()
+{
+	cybozu::XorShift rg;
+	Unit x[N], y[N];
+	Unit z1[N], z2[N * 2];
+	for (size_t i = 0; i < 10; i++) {
+		setRand(x, N, rg);
+		setRand(y, N, rg);
+		mulLowT<N>(z1, x, y);
+		mulT<N>(z2, x, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
+	}
+#ifdef NDEBUG
+	const int CC = 20000;
+	CYBOZU_BENCH_C("mulLow", CC, mulLowT<N>, z1, x, y);
+	CYBOZU_BENCH_C("mul   ", CC, mulT<N>, z2, x, y);
+#endif
+}
+
+CYBOZU_TEST_AUTO(mulLow)
+{
+	testMulLow<1>();
+	testMulLow<2>();
+	testMulLow<3>();
+	testMulLow<4>();
+	testMulLow<5>();
+	testMulLow<6>();
+	testMulLow<7>();
+	testMulLow<8>();
+	testMulLow<9>();
+}
