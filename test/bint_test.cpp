@@ -862,11 +862,14 @@ void testMulLow()
 {
 	cybozu::XorShift rg;
 	Unit x[N], y[N];
-	Unit z1[N], z2[N * 2];
+	Unit z1[N+1], z2[N * 2];
+	uint w = 0x12345678;
+	z1[N] = w;
 	for (size_t i = 0; i < 10; i++) {
 		setRand(x, N, rg);
 		setRand(y, N, rg);
 		mulLowT<N>(z1, x, y);
+		CYBOZU_TEST_EQUAL(z1[N], w); // check buffer overrun
 		mulT<N>(z2, x, y);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 	}
