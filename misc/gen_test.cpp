@@ -26,8 +26,8 @@ void mclb_fp_addNF6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
-void mclb_mulPreLow_fast4(Unit *z, const Unit *x, const Unit *y);
-void mclb_mulPreLow_fast6(Unit *z, const Unit *x, const Unit *y);
+void mclb_mulLow_fast4(Unit *z, const Unit *x, const Unit *y);
+void mclb_mulLow_fast6(Unit *z, const Unit *x, const Unit *y);
 
 void mclb_montRed_fast4(Unit *y, const Unit *x, const Unit *p);
 void mclb_montRed_fast6(Unit *y, const Unit *x, const Unit *p);
@@ -65,8 +65,8 @@ bint::void_ppp get_mulPreLowA(size_t n)
 {
 	switch (n) {
 	default: return 0;
-	case 4: return mclb_mulPreLow_fast4;
-	case 6: return mclb_mulPreLow_fast6;
+	case 4: return mclb_mulLow_fast4;
+	case 6: return mclb_mulLow_fast6;
 	}
 }
 

@@ -95,51 +95,6 @@ def gen_fp_sub(N):
       add_pm(X, rax)
       store_mp(pz, X)
 
-def gen_mulPreLowN(pz, px, py, ts, N):
-  assert len(ts) >= N-1
-  pk = ts[0:N-1]
-  H = ts[N-1]
-  mov(rdx, ptr(px + 8 * 0))
-  a = rax
-  # [pz[0]:pk[0:N-1]] = px[] * py[0]
-  mulx(pk[0], a, ptr(py + 8 * 0))
-  mov(ptr(pz), a)
-  for i in range(1, N):
-    if i < N-1:
-      mulx(pk[i], a, ptr(py + 8 * i))
-    else:
-      mulx(H, a, ptr(py + 8 * i)) ## H is not used
-    if i == 1:
-      add(pk[i - 1], a)
-    elif i < N:
-      adc(pk[i - 1], a)
-
-  for i in range(1, N):
-    mov(rdx, ptr(px + 8 * i))
-    xor_(a, a)
-    for j in range(0, N-i):
-      mulx(H, a, ptr(py + j * 8))
-      adox(pk[j], a)
-      if j == 0:
-        mov(ptr(pz + 8 * i), pk[0])
-      if j == N-i-1:
-        break
-      adcx(pk[j + 1], H)
-    pk = pk[1:]
-
-# z[N] = the bottom half of (x[N] * y[N])
-def gen_mulPreLow_fast(N):
-  align(16)
-  with FuncProc(f'mclb_mulPreLow_fast{N}'):
-    if N <= 9:
-      with StackFrame(3, N, useRDX=True) as sf:
-        pz = sf.p[0]
-        px = sf.p[1]
-        py = sf.p[2]
-        gen_mulPreLowN(pz, px, py, sf.t, N)
-    else:
-      jmp(f'mclb_mulPreLow_slow{N}')
-
 ## py[N] = Mont reduction(px[N*2]) with pp
 def gen_montRed2(N):
   align(16)
@@ -150,7 +105,7 @@ def gen_montRed2(N):
       pp = sf.p[2]
       q = rsp # q[N]
       t = rsp + N*8 # t[N*2]
-      gen_mulPreLowN(q, px, pp - N*8, sf.t, N)
+      inner_mulLow_fastN(q, px, pp - N*8, sf.t, N)
       gen_mulPreN(t, q, pp, sf.t[0:N], sf.t[N], N)
       for i in range(N):
         mov(rax, ptr(t + i*8))
@@ -188,7 +143,6 @@ for N in [4, 6]:
   gen_fp_add(N)
   gen_fp_addNF(N)
   gen_fp_sub(N)
-  gen_mulPreLow_fast(N)
   gen_montRed2(N)
 
 term()

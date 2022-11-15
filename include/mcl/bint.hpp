@@ -1,5 +1,4 @@
 #pragma once
-  CFLAGS+=-DMCL_BINT_ASM=1
 /*
 	@file
 	@brief low level functions
