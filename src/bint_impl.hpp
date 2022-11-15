@@ -21,6 +21,30 @@ MCL_DLL_API void initBint()
 #endif
 }
 
+namespace impl {
+
+template<size_t N, size_t I = 1>
+struct UnrollMulLowT {
+	static inline void call(Unit *pz, const Unit *px, const Unit *py) {
+		mulUnitAddT<N - I>(&pz[I], px, py[I]);
+		UnrollMulLowT<N, I - 1>::call(pz, px, py);
+	}
+};
+
+template<size_t N>
+struct UnrollMulLowT<N, 0> {
+	static inline void call(Unit *, const Unit *, const Unit *) {
+	}
+};
+
+template<>
+struct UnrollMulLowT<1, 1> {
+	static inline void call(Unit *, const Unit *, const Unit *) {
+	}
+};
+
+} // impl
+
 #if MCL_BINT_ASM != 1
 #ifdef MCL_WASM32
 inline uint64_t load8byte(const uint32_t *x)
@@ -227,6 +251,15 @@ void sqrT(Unit *py, const Unit *px)
 	// QQQ : optimize this later
 	mulT<N>(py, px, px);
 }
+
+// z[N] = the bottom half of x[N] * y[N]
+template<size_t N>
+void mulLowT(Unit *pz, const Unit *px, const Unit *py)
+{
+	mulUnitT<N>(pz, px, py[0]);
+	impl::UnrollMulLowT<N>::call(pz, px, py);
+}
+
 #endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
