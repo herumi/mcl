@@ -4511,6 +4511,639 @@ mov r8, rdx
 jmp mclb_mul_fast9
 mclb_sqr_fast9 endp
 align 16
+mclb_mulLow_fast1 proc export
+mov r11, rdx
+mov rax, [r11]
+mov rdx, [r8]
+mul rdx
+mov [rcx], rax
+ret
+mclb_mulLow_fast1 endp
+align 16
+mclb_mulLow_fast2 proc export
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx r10, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+ret
+mclb_mulLow_fast2 endp
+align 16
+mclb_mulLow_fast3 proc export
+push rdi
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx rdi, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, rdi
+mulx rdi, rax, [r8+8]
+adox r10, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx rdi, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+pop rdi
+ret
+mclb_mulLow_fast3 endp
+align 16
+mclb_mulLow_fast4 proc export
+push rdi
+push rsi
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mulx rsi, rax, [r8+24]
+adc rdi, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx rsi, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, rsi
+mulx rsi, rax, [r8+8]
+adox r10, rax
+adcx rdi, rsi
+mulx rsi, rax, [r8+16]
+adox rdi, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx rsi, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+adcx rdi, rsi
+mulx rsi, rax, [r8+8]
+adox rdi, rax
+mov rdx, [r11+24]
+xor rax, rax
+mulx rsi, rax, [r8]
+adox rdi, rax
+mov [rcx+24], rdi
+pop rsi
+pop rdi
+ret
+mclb_mulLow_fast4 endp
+align 16
+mclb_mulLow_fast5 proc export
+push rdi
+push rsi
+push rbx
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mulx rsi, rax, [r8+24]
+adc rdi, rax
+mulx rbx, rax, [r8+32]
+adc rsi, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx rbx, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, rbx
+mulx rbx, rax, [r8+8]
+adox r10, rax
+adcx rdi, rbx
+mulx rbx, rax, [r8+16]
+adox rdi, rax
+adcx rsi, rbx
+mulx rbx, rax, [r8+24]
+adox rsi, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx rbx, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+adcx rdi, rbx
+mulx rbx, rax, [r8+8]
+adox rdi, rax
+adcx rsi, rbx
+mulx rbx, rax, [r8+16]
+adox rsi, rax
+mov rdx, [r11+24]
+xor rax, rax
+mulx rbx, rax, [r8]
+adox rdi, rax
+mov [rcx+24], rdi
+adcx rsi, rbx
+mulx rbx, rax, [r8+8]
+adox rsi, rax
+mov rdx, [r11+32]
+xor rax, rax
+mulx rbx, rax, [r8]
+adox rsi, rax
+mov [rcx+32], rsi
+pop rbx
+pop rsi
+pop rdi
+ret
+mclb_mulLow_fast5 endp
+align 16
+mclb_mulLow_fast6 proc export
+push rdi
+push rsi
+push rbx
+push rbp
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mulx rsi, rax, [r8+24]
+adc rdi, rax
+mulx rbx, rax, [r8+32]
+adc rsi, rax
+mulx rbp, rax, [r8+40]
+adc rbx, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx rbp, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, rbp
+mulx rbp, rax, [r8+8]
+adox r10, rax
+adcx rdi, rbp
+mulx rbp, rax, [r8+16]
+adox rdi, rax
+adcx rsi, rbp
+mulx rbp, rax, [r8+24]
+adox rsi, rax
+adcx rbx, rbp
+mulx rbp, rax, [r8+32]
+adox rbx, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx rbp, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+adcx rdi, rbp
+mulx rbp, rax, [r8+8]
+adox rdi, rax
+adcx rsi, rbp
+mulx rbp, rax, [r8+16]
+adox rsi, rax
+adcx rbx, rbp
+mulx rbp, rax, [r8+24]
+adox rbx, rax
+mov rdx, [r11+24]
+xor rax, rax
+mulx rbp, rax, [r8]
+adox rdi, rax
+mov [rcx+24], rdi
+adcx rsi, rbp
+mulx rbp, rax, [r8+8]
+adox rsi, rax
+adcx rbx, rbp
+mulx rbp, rax, [r8+16]
+adox rbx, rax
+mov rdx, [r11+32]
+xor rax, rax
+mulx rbp, rax, [r8]
+adox rsi, rax
+mov [rcx+32], rsi
+adcx rbx, rbp
+mulx rbp, rax, [r8+8]
+adox rbx, rax
+mov rdx, [r11+40]
+xor rax, rax
+mulx rbp, rax, [r8]
+adox rbx, rax
+mov [rcx+40], rbx
+pop rbp
+pop rbx
+pop rsi
+pop rdi
+ret
+mclb_mulLow_fast6 endp
+align 16
+mclb_mulLow_fast7 proc export
+push rdi
+push rsi
+push rbx
+push rbp
+push r12
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mulx rsi, rax, [r8+24]
+adc rdi, rax
+mulx rbx, rax, [r8+32]
+adc rsi, rax
+mulx rbp, rax, [r8+40]
+adc rbx, rax
+mulx r12, rax, [r8+48]
+adc rbp, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx r12, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, r12
+mulx r12, rax, [r8+8]
+adox r10, rax
+adcx rdi, r12
+mulx r12, rax, [r8+16]
+adox rdi, rax
+adcx rsi, r12
+mulx r12, rax, [r8+24]
+adox rsi, rax
+adcx rbx, r12
+mulx r12, rax, [r8+32]
+adox rbx, rax
+adcx rbp, r12
+mulx r12, rax, [r8+40]
+adox rbp, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx r12, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+adcx rdi, r12
+mulx r12, rax, [r8+8]
+adox rdi, rax
+adcx rsi, r12
+mulx r12, rax, [r8+16]
+adox rsi, rax
+adcx rbx, r12
+mulx r12, rax, [r8+24]
+adox rbx, rax
+adcx rbp, r12
+mulx r12, rax, [r8+32]
+adox rbp, rax
+mov rdx, [r11+24]
+xor rax, rax
+mulx r12, rax, [r8]
+adox rdi, rax
+mov [rcx+24], rdi
+adcx rsi, r12
+mulx r12, rax, [r8+8]
+adox rsi, rax
+adcx rbx, r12
+mulx r12, rax, [r8+16]
+adox rbx, rax
+adcx rbp, r12
+mulx r12, rax, [r8+24]
+adox rbp, rax
+mov rdx, [r11+32]
+xor rax, rax
+mulx r12, rax, [r8]
+adox rsi, rax
+mov [rcx+32], rsi
+adcx rbx, r12
+mulx r12, rax, [r8+8]
+adox rbx, rax
+adcx rbp, r12
+mulx r12, rax, [r8+16]
+adox rbp, rax
+mov rdx, [r11+40]
+xor rax, rax
+mulx r12, rax, [r8]
+adox rbx, rax
+mov [rcx+40], rbx
+adcx rbp, r12
+mulx r12, rax, [r8+8]
+adox rbp, rax
+mov rdx, [r11+48]
+xor rax, rax
+mulx r12, rax, [r8]
+adox rbp, rax
+mov [rcx+48], rbp
+pop r12
+pop rbp
+pop rbx
+pop rsi
+pop rdi
+ret
+mclb_mulLow_fast7 endp
+align 16
+mclb_mulLow_fast8 proc export
+push rdi
+push rsi
+push rbx
+push rbp
+push r12
+push r13
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mulx rsi, rax, [r8+24]
+adc rdi, rax
+mulx rbx, rax, [r8+32]
+adc rsi, rax
+mulx rbp, rax, [r8+40]
+adc rbx, rax
+mulx r12, rax, [r8+48]
+adc rbp, rax
+mulx r13, rax, [r8+56]
+adc r12, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx r13, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, r13
+mulx r13, rax, [r8+8]
+adox r10, rax
+adcx rdi, r13
+mulx r13, rax, [r8+16]
+adox rdi, rax
+adcx rsi, r13
+mulx r13, rax, [r8+24]
+adox rsi, rax
+adcx rbx, r13
+mulx r13, rax, [r8+32]
+adox rbx, rax
+adcx rbp, r13
+mulx r13, rax, [r8+40]
+adox rbp, rax
+adcx r12, r13
+mulx r13, rax, [r8+48]
+adox r12, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx r13, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+adcx rdi, r13
+mulx r13, rax, [r8+8]
+adox rdi, rax
+adcx rsi, r13
+mulx r13, rax, [r8+16]
+adox rsi, rax
+adcx rbx, r13
+mulx r13, rax, [r8+24]
+adox rbx, rax
+adcx rbp, r13
+mulx r13, rax, [r8+32]
+adox rbp, rax
+adcx r12, r13
+mulx r13, rax, [r8+40]
+adox r12, rax
+mov rdx, [r11+24]
+xor rax, rax
+mulx r13, rax, [r8]
+adox rdi, rax
+mov [rcx+24], rdi
+adcx rsi, r13
+mulx r13, rax, [r8+8]
+adox rsi, rax
+adcx rbx, r13
+mulx r13, rax, [r8+16]
+adox rbx, rax
+adcx rbp, r13
+mulx r13, rax, [r8+24]
+adox rbp, rax
+adcx r12, r13
+mulx r13, rax, [r8+32]
+adox r12, rax
+mov rdx, [r11+32]
+xor rax, rax
+mulx r13, rax, [r8]
+adox rsi, rax
+mov [rcx+32], rsi
+adcx rbx, r13
+mulx r13, rax, [r8+8]
+adox rbx, rax
+adcx rbp, r13
+mulx r13, rax, [r8+16]
+adox rbp, rax
+adcx r12, r13
+mulx r13, rax, [r8+24]
+adox r12, rax
+mov rdx, [r11+40]
+xor rax, rax
+mulx r13, rax, [r8]
+adox rbx, rax
+mov [rcx+40], rbx
+adcx rbp, r13
+mulx r13, rax, [r8+8]
+adox rbp, rax
+adcx r12, r13
+mulx r13, rax, [r8+16]
+adox r12, rax
+mov rdx, [r11+48]
+xor rax, rax
+mulx r13, rax, [r8]
+adox rbp, rax
+mov [rcx+48], rbp
+adcx r12, r13
+mulx r13, rax, [r8+8]
+adox r12, rax
+mov rdx, [r11+56]
+xor rax, rax
+mulx r13, rax, [r8]
+adox r12, rax
+mov [rcx+56], r12
+pop r13
+pop r12
+pop rbp
+pop rbx
+pop rsi
+pop rdi
+ret
+mclb_mulLow_fast8 endp
+align 16
+mclb_mulLow_fast9 proc export
+push rdi
+push rsi
+push rbx
+push rbp
+push r12
+push r13
+push r14
+mov r11, rdx
+mov rdx, [r11]
+mulx r9, rax, [r8]
+mov [rcx], rax
+mulx r10, rax, [r8+8]
+add r9, rax
+mulx rdi, rax, [r8+16]
+adc r10, rax
+mulx rsi, rax, [r8+24]
+adc rdi, rax
+mulx rbx, rax, [r8+32]
+adc rsi, rax
+mulx rbp, rax, [r8+40]
+adc rbx, rax
+mulx r12, rax, [r8+48]
+adc rbp, rax
+mulx r13, rax, [r8+56]
+adc r12, rax
+mulx r14, rax, [r8+64]
+adc r13, rax
+mov rdx, [r11+8]
+xor rax, rax
+mulx r14, rax, [r8]
+adox r9, rax
+mov [rcx+8], r9
+adcx r10, r14
+mulx r14, rax, [r8+8]
+adox r10, rax
+adcx rdi, r14
+mulx r14, rax, [r8+16]
+adox rdi, rax
+adcx rsi, r14
+mulx r14, rax, [r8+24]
+adox rsi, rax
+adcx rbx, r14
+mulx r14, rax, [r8+32]
+adox rbx, rax
+adcx rbp, r14
+mulx r14, rax, [r8+40]
+adox rbp, rax
+adcx r12, r14
+mulx r14, rax, [r8+48]
+adox r12, rax
+adcx r13, r14
+mulx r14, rax, [r8+56]
+adox r13, rax
+mov rdx, [r11+16]
+xor rax, rax
+mulx r14, rax, [r8]
+adox r10, rax
+mov [rcx+16], r10
+adcx rdi, r14
+mulx r14, rax, [r8+8]
+adox rdi, rax
+adcx rsi, r14
+mulx r14, rax, [r8+16]
+adox rsi, rax
+adcx rbx, r14
+mulx r14, rax, [r8+24]
+adox rbx, rax
+adcx rbp, r14
+mulx r14, rax, [r8+32]
+adox rbp, rax
+adcx r12, r14
+mulx r14, rax, [r8+40]
+adox r12, rax
+adcx r13, r14
+mulx r14, rax, [r8+48]
+adox r13, rax
+mov rdx, [r11+24]
+xor rax, rax
+mulx r14, rax, [r8]
+adox rdi, rax
+mov [rcx+24], rdi
+adcx rsi, r14
+mulx r14, rax, [r8+8]
+adox rsi, rax
+adcx rbx, r14
+mulx r14, rax, [r8+16]
+adox rbx, rax
+adcx rbp, r14
+mulx r14, rax, [r8+24]
+adox rbp, rax
+adcx r12, r14
+mulx r14, rax, [r8+32]
+adox r12, rax
+adcx r13, r14
+mulx r14, rax, [r8+40]
+adox r13, rax
+mov rdx, [r11+32]
+xor rax, rax
+mulx r14, rax, [r8]
+adox rsi, rax
+mov [rcx+32], rsi
+adcx rbx, r14
+mulx r14, rax, [r8+8]
+adox rbx, rax
+adcx rbp, r14
+mulx r14, rax, [r8+16]
+adox rbp, rax
+adcx r12, r14
+mulx r14, rax, [r8+24]
+adox r12, rax
+adcx r13, r14
+mulx r14, rax, [r8+32]
+adox r13, rax
+mov rdx, [r11+40]
+xor rax, rax
+mulx r14, rax, [r8]
+adox rbx, rax
+mov [rcx+40], rbx
+adcx rbp, r14
+mulx r14, rax, [r8+8]
+adox rbp, rax
+adcx r12, r14
+mulx r14, rax, [r8+16]
+adox r12, rax
+adcx r13, r14
+mulx r14, rax, [r8+24]
+adox r13, rax
+mov rdx, [r11+48]
+xor rax, rax
+mulx r14, rax, [r8]
+adox rbp, rax
+mov [rcx+48], rbp
+adcx r12, r14
+mulx r14, rax, [r8+8]
+adox r12, rax
+adcx r13, r14
+mulx r14, rax, [r8+16]
+adox r13, rax
+mov rdx, [r11+56]
+xor rax, rax
+mulx r14, rax, [r8]
+adox r12, rax
+mov [rcx+56], r12
+adcx r13, r14
+mulx r14, rax, [r8+8]
+adox r13, rax
+mov rdx, [r11+64]
+xor rax, rax
+mulx r14, rax, [r8]
+adox r13, rax
+mov [rcx+64], r13
+pop r14
+pop r13
+pop r12
+pop rbp
+pop rbx
+pop rsi
+pop rdi
+ret
+mclb_mulLow_fast9 endp
+align 16
 mclb_udiv128 proc export
 mov rax, rdx
 mov rdx, rcx

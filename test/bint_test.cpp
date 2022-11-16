@@ -811,6 +811,28 @@ void karatsuba(Unit *z, const Unit *x)
 	}
 }
 
+template<size_t N, bool exec>
+struct TestKaratsuba {
+	static inline void call(Unit *y, Unit *x, const mpz_class& mx)
+	{
+		karatsuba<N>(y, x);
+		mpz_class my = 0;
+		setArray(my, y, N * 2);
+		CYBOZU_TEST_EQUAL(mx * mx, my);
+	}
+	static inline void bench(Unit *y, Unit *x, int CC)
+	{
+		printf("  ");
+		CYBOZU_BENCH_C("kar", CC, karatsuba<N>, y, x);
+	}
+};
+
+template<size_t N>
+struct TestKaratsuba <N, false> {
+	static inline void call(Unit *, Unit *, const mpz_class&)  {}
+	static inline void bench(Unit *, Unit *, int) {}
+};
+
 template<size_t N>
 void testSqr()
 {
@@ -824,12 +846,7 @@ void testSqr()
 		setArray(my, y, N * 2);
 		CYBOZU_TEST_EQUAL(mx * mx, my);
 		memset(y, 0, sizeof(y));
-		if ((N % 2) == 0 && N >= 4) {
-			karatsuba<N>(y, x);
-			my = 0;
-			setArray(my, y, N * 2);
-			CYBOZU_TEST_EQUAL(mx * mx, my);
-		}
+		TestKaratsuba<N, ((N % 2) == 0 && N >= 4)>::call(y, x, mx);
 	}
 #ifdef NDEBUG
 	const int CC = 20000;
@@ -837,10 +854,7 @@ void testSqr()
 	CYBOZU_BENCH_C("gmp", CC, mpn_sqr, (mp_limb_t*)y, (const mp_limb_t*)x, (int)N);
 	printf("  ");
 	CYBOZU_BENCH_C("sqr", CC, sqrT<N>, y, x);
-	if ((N % 2) == 0 && N >= 4) {
-		printf("  ");
-		CYBOZU_BENCH_C("kar", CC, karatsuba<N>, y, x);
-	}
+	TestKaratsuba<N, ((N % 2) == 0 && N >= 4)>::bench(y, x, C);
 #endif
 }
 
@@ -864,7 +878,7 @@ void testMulLow()
 	cybozu::XorShift rg;
 	Unit x[N], y[N];
 	Unit z1[N+1], z2[N * 2];
-	uint w = 0x12345678;
+	Unit w = 0x12345678;
 	z1[N] = w;
 	for (size_t i = 0; i < 3; i++) {
 		setRand(x, N, rg);
