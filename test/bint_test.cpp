@@ -860,12 +860,13 @@ CYBOZU_TEST_AUTO(sqr)
 template<size_t N>
 void testMulLow()
 {
+	printf("testMulLow=%zd\n", N);
 	cybozu::XorShift rg;
 	Unit x[N], y[N];
 	Unit z1[N+1], z2[N * 2];
 	uint w = 0x12345678;
 	z1[N] = w;
-	for (size_t i = 0; i < 10; i++) {
+	for (size_t i = 0; i < 3; i++) {
 		setRand(x, N, rg);
 		setRand(y, N, rg);
 		mulLowT<N>(z1, x, y);
