@@ -156,6 +156,8 @@ $(BINT_OBJ): $(BINT_LL)
 	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
 
   endif
+else
+  CFLAGS+=-DMCL_BINT_ASM=0
 endif
 ifneq ($(MCL_MAX_BIT_SIZE),)
   GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)

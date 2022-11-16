@@ -25,8 +25,10 @@ struct Code : public mcl::Generator {
 	FunctionMap mclb_mulUnitM;
 	FunctionMap mclb_mulUnitAddM;
 	FunctionMap mulUnit_innerM;
+	FunctionMap mulUnit2_innerM; // the N-unit bottom of (x[N] * y)
 	FunctionMap mul_innerM;
 	FunctionMap mclb_mulM;
+	FunctionMap mclb_mulLowM;
 	FunctionMap mclb_sqrM;
 	FunctionMap mclb_addNFM;
 	FunctionMap mclb_subNFM;
@@ -485,6 +487,41 @@ struct Code : public mcl::Generator {
 		ret(z);
 		endFunc();
 	}
+	/*
+		z = the N-unit bottom of px[0..N] * y
+	*/
+	void gen_mulUnit2_inner()
+	{
+		resetGlobalIdx();
+		Operand z(Int, bit);
+		Operand px(IntPtr, unit);
+		Operand y(Int, unit);
+		std::string name = "mulUnit2_inner" + cybozu::itoa(bit);
+		mulUnit2_innerM[bit] = Function(name, z, px, y);
+		mulUnit2_innerM[bit].setPrivate();
+		verifyAndSetPrivate(mulUnit2_innerM[bit]);
+		beginFunc(mulUnit2_innerM[bit]);
+		if (N == 1) {
+			Operand x = load(px);
+			z = mul(x, y);
+		} else {
+			OperandVec L(N), H(N-1);
+			for (uint32_t i = 0; i < N; i++) {
+				Operand xy = call(mulPos, px, y, makeImm(unit, i));
+				L[i] = trunc(xy, unit);
+				if (i < N - 1) {
+					H[i] = call(extractHigh, xy);
+				}
+			}
+			Operand LL = pack(&L[0], N);
+			Operand HH = pack(&H[0], N - 1);
+			HH = zext(HH, bit);
+			HH = shl(HH, unit);
+			z = add(LL, HH);
+		}
+		ret(z);
+		endFunc();
+	}
 	void gen_mcl_fp_mulUnitPre()
 	{
 		resetGlobalIdx();
@@ -581,6 +618,38 @@ struct Code : public mcl::Generator {
 			ret(Void);
 		}
 	}
+	// pz[N] = the bottom half of px[N] * py[N]
+	void gen_mulLow_inner(const Operand& pz, const Operand& px, const Operand& py)
+	{
+		if (N == 1) {
+			Operand x = load(px);
+			Operand y = load(py);
+			Operand z = mul(x, y);
+			storeN(z, pz);
+			ret(Void);
+			return;
+		}
+		Operand y = load(py);
+		Operand xy = call(mulUnit2_innerM[bit], px, y);
+		store(trunc(xy, unit), pz);
+		Operand t = lshr(xy, unit);
+		t = trunc(t, bit - unit);
+		for (uint32_t i = 1; i < N; i++) {
+			y = loadN(py, 1, i);
+			xy = call(mulUnit2_innerM[bit - unit * i], px, y);
+			t = add(t, xy);
+			if (t.bit == unit) {
+				storeN(t, pz, i);
+			} else {
+				storeN(trunc(t, unit), pz, i);
+			}
+			if (i < N - 1) {
+				t = lshr(t, unit);
+				t = trunc(t, bit - unit * (i+1));
+			}
+		}
+		ret(Void);
+	}
 	void gen_mclb_mul()
 	{
 		resetGlobalIdx();
@@ -604,6 +673,19 @@ struct Code : public mcl::Generator {
 		verifyAndSetPrivate(mclb_sqrM[N]);
 		beginFunc(mclb_sqrM[N]);
 		gen_mul_inner(py, px, px);
+		endFunc();
+	}
+	void gen_mclb_mulLow()
+	{
+		resetGlobalIdx();
+		Operand pz(IntPtr, unit);
+		Operand px(IntPtr, unit);
+		Operand py(IntPtr, unit);
+		std::string name = "mclb_mulLow" + cybozu::itoa(N);
+		mclb_mulLowM[N] = Function(name, Void, pz, px, py);
+		verifyAndSetPrivate(mclb_mulLowM[N]);
+		beginFunc(mclb_mulLowM[N]);
+		gen_mulLow_inner(pz, px, py);
 		endFunc();
 	}
 	void gen_mcl_fp_mont(bool isFullBit = true)
@@ -731,6 +813,8 @@ struct Code : public mcl::Generator {
 			gen_mclb_mulUnitAdd();
 			gen_mclb_mul();
 			gen_mclb_sqr();
+			gen_mulUnit2_inner();
+			gen_mclb_mulLow();
 		}
 	}
 };

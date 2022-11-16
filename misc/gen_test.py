@@ -56,9 +56,10 @@ def gen_fp_addNF(N):
       cmovc_pp(T, X)   # T = X if T < 0
       store_mp(pz, T)
 
-def gen_fp_sub(N):
+# This is almost the same speed as fp_sub, but it requires more registers.
+def gen_fp_subB(N):
   align(16)
-  with FuncProc(f'mclb_fp_sub{N}'):
+  with FuncProc(f'mclb_fp_subB{N}'):
     with StackFrame(4, N*2-3) as sf:
       pz = sf.p[0]
       px = sf.p[1]
@@ -77,9 +78,9 @@ def gen_fp_sub(N):
       add_pp(X, T)
       store_mp(pz, X)
 
-def gen_fp_subB(N):
+def gen_fp_sub(N):
   align(16)
-  with FuncProc(f'mclb_fp_subB{N}'):
+  with FuncProc(f'mclb_fp_sub{N}'):
     with StackFrame(4, N-1) as sf:
       pz = sf.p[0]
       px = sf.p[1]
@@ -91,12 +92,40 @@ def gen_fp_subB(N):
       sub_pm(X, py)    # X = px[] - py[]
       lea(rax, rip('ZERO'))
       cmovc(rax, pp)   # X < 0 ? pp : 0
+      add_pm(X, rax)
+      store_mp(pz, X)
+
+## py[N] = Mont reduction(px[N*2]) with pp
+def gen_montRed2(N):
+  align(16)
+  with FuncProc(f'mclb_montRed_fast{N}'):
+    with StackFrame(3, N*2-2, useRDX=True, stackSizeByte=N*8*3) as sf:
+      py = sf.p[0]
+      px = sf.p[1]
+      pp = sf.p[2]
+      q = rsp # q[N]
+      t = rsp + N*8 # t[N*2]
+      inner_mulLow_fastN(q, px, pp - N*8, sf.t, N)
+      gen_mulPreN(t, q, pp, sf.t[0:N], sf.t[N], N)
       for i in range(N):
-        if i == 0:
-          add(X[i], ptr(rax + i * 8))
-        else:
-          adc(X[i], ptr(rax + i * 8))
-        mov(ptr(pz + i * 8), X[i])
+        mov(rax, ptr(t + i*8))
+        add_ex(rax, ptr(px + i*8), i == 0)
+      y1 = sf.t[0:N]
+      y2 = sf.t[N:]
+      y2.append(rdx)
+      y2.append(rax)
+      for i in range(N):
+        mov(y1[i], ptr(t + (N + i)*8))
+        adc(y1[i], ptr(px + (N + i)*8))
+      # px is destroyed
+      mov(px, 0)
+      adc(px, 0)
+      for i in range(N):
+        mov(y2[i], y1[i])
+        sub_ex(y1[i], ptr(pp + i*8), i == 0)
+      sbb(px, 0)
+      vec_pp(cmovnc, y2, y1)
+      store_mp(py, y2)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
@@ -114,6 +143,6 @@ for N in [4, 6]:
   gen_fp_add(N)
   gen_fp_addNF(N)
   gen_fp_sub(N)
-  gen_fp_subB(N)
+  gen_montRed2(N)
 
 term()

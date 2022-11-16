@@ -1,16 +1,18 @@
 /*
 	Montgomery class for test
 */
-struct Montgomery {
+class Montgomery {
 	typedef mcl::Unit Unit;
-	mpz_class p_;
-	mpz_class R_; // (1 << (pn_ * 64)) % p
-	mpz_class RR_; // (R * R) % p
-	Unit rp_; // rp * p = -1 mod M = 1 << 64
-	size_t pn_;
 	std::vector<Unit> v_;
-	const Unit *rpp_;
-	bool isFullBit_;
+public:
+	mpz_class mp;
+	mpz_class mR; // (1 << (N * 64)) % p
+	mpz_class mR2; // (R * R) % p
+	Unit rp; // rp * p = -1 mod M = 1 << 64
+	size_t N;
+	const Unit *p;
+	const Unit *rp2;
+	bool isFullBit;
 	Montgomery() {}
 	static Unit getLow(const mpz_class& x)
 	{
@@ -20,32 +22,34 @@ struct Montgomery {
 	void put() const
 	{
 		std::cout << std::hex;
-		std::cout << "p=0x" << p_ << std::endl;
-		std::cout << "R=0x" << R_ << std::endl;
-		std::cout << "RR=0x" << RR_ << std::endl;
-		std::cout << "rp=0x" << rp_ << std::endl;
+		std::cout << "p=0x" << mp << std::endl;
+		std::cout << "R=0x" << mR << std::endl;
+		std::cout << "R2=0x" << mR2 << std::endl;
+		std::cout << "rp=0x" << rp << std::endl;
 	}
-	explicit Montgomery(const mpz_class& p)
+	explicit Montgomery(const mpz_class& _p)
 	{
-		p_ = p;
-		rp_ = mcl::fp::getMontgomeryCoeff(getLow(p));
-		pn_ = mcl::gmp::getUnitSize(p);
-		R_ = 1;
-		R_ = (R_ << (pn_ * sizeof(Unit) * 8)) % p_;
-		RR_ = (R_ * R_) % p_;
-		v_.resize(pn_ + 1);
-		mcl::gmp::getArray(&v_[1], pn_, p);
-		v_[0] = rp_;
-		rpp_ = v_.data() + 1;
-		isFullBit_ = v_[pn_ - 1] >> (sizeof(Unit) * 8 - 1);
+		mp = _p;
+		N = mcl::gmp::getUnitSize(_p);
+		mR = 1;
+		mR = (mR << (N * sizeof(Unit) * 8)) % mp;
+		mR2 = (mR * mR) % mp;
+		v_.resize(N * 2);
+		Unit *base = &v_[N];
+		mcl::gmp::getArray(base, N, _p);
+		mcl::bint::getMontgomeryCoeff(&v_[0], base, N);
+		p = base;
+		rp = base[-1];
+		rp2 = &v_[0];
+		isFullBit = p[N - 1] >> (sizeof(Unit) * 8 - 1);
 	}
 
-	void toMont(mpz_class& x) const { mul(x, x, RR_); }
+	void toMont(mpz_class& x) const { mul(x, x, mR2); }
 	void fromMont(mpz_class& x) const { mul(x, x, 1); }
 	mpz_class toMont(const mpz_class& x) const
 	{
 		mpz_class y;
-		mul(y, x, RR_);
+		mul(y, x, mR2);
 		return y;
 	}
 	mpz_class fromMont(const mpz_class& x) const
@@ -60,19 +64,19 @@ struct Montgomery {
 #if 0
 		const size_t ySize = mcl::gmp::getUnitSize(y);
 		mpz_class c = x * mcl::gmp::getUnit(y, 0);
-		Unit q = mcl::gmp::getUnit(c, 0) * rp_;
-		c += p_ * q;
+		Unit q = mcl::gmp::getUnit(c, 0) * rp;
+		c += mp * q;
 		c >>= sizeof(Unit) * 8;
-		for (size_t i = 1; i < pn_; i++) {
+		for (size_t i = 1; i < N; i++) {
 			if (i < ySize) {
 				c += x * mcl::gmp::getUnit(y, i);
 			}
-			Unit q = mcl::gmp::getUnit(c, 0) * rp_;
-			c += p_ * q;
+			Unit q = mcl::gmp::getUnit(c, 0) * rp;
+			c += mp * q;
 			c >>= sizeof(Unit) * 8;
 		}
-		if (c >= p_) {
-			c -= p_;
+		if (c >= mp) {
+			c -= mp;
 		}
 		z = c;
 #else
@@ -82,15 +86,15 @@ struct Montgomery {
 	void mod(mpz_class& z, const mpz_class& xy) const
 	{
 		z = xy;
-		for (size_t i = 0; i < pn_; i++) {
-			Unit q = getLow(z) * rp_;
+		for (size_t i = 0; i < N; i++) {
+			Unit q = getLow(z) * rp;
 			mpz_class t;
 			mcl::gmp::set(t, q);
-			z += p_ * t;
+			z += mp * t;
 			z >>= sizeof(Unit) * 8;
 		}
-		if (z >= p_) {
-			z -= p_;
+		if (z >= mp) {
+			z -= mp;
 		}
 	}
 };

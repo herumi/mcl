@@ -46,15 +46,15 @@ typedef void (*void_pp)(Unit*, const Unit*);
 
 MCL_DLL_API void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
 
+// show integer as little endian
 template<class T>
 inline void dump(const T *x, size_t n, const char *msg = "")
 {
 	if (msg) printf("%s ", msg);
 	for (size_t i = 0; i < n; i++) {
-		T v = x[i];
+		T v = x[n - 1 - i];
 		for (size_t j = 0; j < sizeof(T); j++) {
-			printf("%02x", uint8_t(v));
-			v >>= 8;
+			printf("%02x", uint8_t(v >> (sizeof(T) - 1 - j) * 8));
 		}
 	}
 	printf("\n");
@@ -136,6 +136,9 @@ template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 template<size_t N>void mulT(Unit *pz, const Unit *px, const Unit *py);
 // y[2N] = x[N] * x[N]
 template<size_t N>void sqrT(Unit *py, const Unit *px);
+// z[N] = the bottom half of (x[N] * y[N])
+// assume pz != px, py
+template<size_t N>void mulLowT(Unit *pz, const Unit *px, const Unit *py);
 
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
@@ -364,11 +367,11 @@ void shrT(Unit *pz, const Unit *px, size_t bit)
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-MCL_DLL_API Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n);
+MCL_DLL_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n);
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-MCL_DLL_API void shr(Unit *pz, const Unit *px, size_t bit, size_t n);
+MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n);
 
 /*
 	generic version
@@ -438,6 +441,36 @@ MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
 
 // x &= (1 << bitSize) - 1
 MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize);
+
+/*
+	get pp[N] such that p[N] * pp[N] = -1 mod M
+	M = 1 << (sizeof(Unit) * N)
+	0 < pp[N] < M
+*/
+MCL_DLL_API void getMontgomeryCoeff(Unit *pp, const Unit *p, size_t N);
+
+// ppLow = Unit(p)
+inline Unit getMontgomeryCoeff(Unit pLow)
+{
+#if 1
+	Unit pp = 0;
+	Unit t = 0;
+	Unit x = 1;
+	for (size_t i = 0; i < sizeof(Unit) * 8; i++) {
+		if ((t & 1) == 0) {
+			t += pLow;
+			pp += x;
+		}
+		t >>= 1;
+		x <<= 1;
+	}
+	return pp;
+#else
+	Unit pp;
+	getMontgomeryCoeff(&pp, &pLow, 1);
+	return pp;
+#endif
+}
 
 } } // mcl::bint
 

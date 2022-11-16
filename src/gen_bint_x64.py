@@ -43,26 +43,33 @@ def store_mp(m, x):
 def and_re(x, y):
   vec_re(and_, x, y)
 
+# add(x, y) if noCF is True
+# adc(x, y) if noCF is False
+def add_ex(x, y, noCF):
+  if noCF:
+    add(x, y)
+  else:
+    adc(x, y)
+
+# sub(x, y) if noCF is True
+# sbb(x, y) if noCF is False
+def sub_ex(x, y, noCF):
+  if noCF:
+    sub(x, y)
+  else:
+    sbb(x, y)
+
 def add_pm(t, px, withCF=False):
   for i in range(len(t)):
-    if not withCF and i == 0:
-      add(t[i], ptr(px + 8 * i))
-    else:
-      adc(t[i], ptr(px + 8 * i))
+    add_ex(t[i], ptr(px + i*8), not withCF and i == 0)
 
 def sub_pm(t, px, withCF=False):
   for i in range(len(t)):
-    if not withCF and i == 0:
-      sub(t[i], ptr(px + 8 * i))
-    else:
-      sbb(t[i], ptr(px + 8 * i))
+    sub_ex(t[i], ptr(px + i*8), not withCF and i == 0)
 
 def add_pp(t, x, withCF=False):
   for i in range(len(t)):
-    if not withCF and i == 0:
-      add(t[i], x[i])
-    else:
-      adc(t[i], x[i])
+    add_ex(t[i], x[i], not withCF and i == 0)
 
 def gen_add(N, NF=False):
   align(16)
@@ -78,10 +85,7 @@ def gen_add(N, NF=False):
       y = sf.p[2]
       for i in range(N):
         mov(rax, ptr(x + 8 * i))
-        if i == 0:
-          add(rax, ptr(y + 8 * i))
-        else:
-          adc(rax, ptr(y + 8 * i))
+        add_ex(rax, ptr(y + 8 * i), i == 0)
         mov(ptr(z + 8 * i), rax)
       if NF:
         return
@@ -102,10 +106,7 @@ def gen_sub(N, NF=False):
       y = sf.p[2]
       for i in range(N):
         mov(rax, ptr(x + 8 * i))
-        if i == 0:
-          sub(rax, ptr(y + 8 * i))
-        else:
-          sbb(rax, ptr(y + 8 * i))
+        sub_ex(rax, ptr(y + 8 * i), i == 0)
         mov(ptr(z + 8 * i), rax)
       setc(al)
       movzx(eax, al)
@@ -155,10 +156,7 @@ def gen_mulUnit(N, mode='fast'):
           mov(ptr(z), rax)
           for i in range(1, N-1):
             mulx(t0, rax, ptr(x + i * 8))
-            if i == 1:
-              add(rax, t1)
-            else:
-              adc(rax, t1)
+            add_ex(rax, t1, i == 1)
             mov(ptr(z + i * 8), rax)
             t0, t1 = t1, t0
           mulx(rax, rdx, ptr(x + (N - 1) * 8))
@@ -182,10 +180,7 @@ def gen_mulUnit(N, mode='fast'):
               mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
           for i in range(N - 1):
             mov(rax, ptr(rsp + posH + i * 8))
-            if i == 0:
-              add(rax, ptr(rsp + i * 8))
-            else:
-              adc(rax, ptr(rsp + i * 8))
+            add_ex(rax, ptr(rsp + i * 8), i == 0)
             mov(ptr(z + (i + 1) * 8), rax)
           adc(rdx, 0)
           mov(rax, rdx)
@@ -231,19 +226,13 @@ def gen_mulUnitAdd(N, mode='fast'):
             mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
         for i in range(N - 1):
           mov(rax, ptr(rsp + (i + 1) * 8))
-          if i == 0:
-            add(rax, ptr(rsp + posH + i * 8))
-          else:
-            adc(rax, ptr(rsp + posH + i * 8))
+          add_ex(rax, ptr(rsp + posH + i * 8), i == 0)
           mov(ptr(rsp + (i + 1) * 8), rax)
         if N > 1:
           adc(rdx, 0)
         for i in range(N):
           mov(rax, ptr(rsp + i * 8))
-          if i == 0:
-            add(ptr(z + i * 8), rax)
-          else:
-            adc(ptr(z + i * 8), rax)
+          add_ex(ptr(z + i * 8), rax, i == 0)
         adc(rdx, 0)
         mov(rax, rdx)
 
@@ -251,11 +240,10 @@ def mulPack(pz, offset, py, pd):
   a = rax
   mulx(pd[0], a, ptr(py + 8 * 0))
   mov(ptr(pz + offset), a)
-  xor_(a, a)
   n = len(pd)
   for i in range(1, n):
     mulx(pd[i], a, ptr(py + 8 * i))
-    adcx(pd[i - 1], a)
+    add_ex(pd[i - 1], a, i == 1)
   adc(pd[n - 1], 0)
 
 def mulPackAdd(pz, offset, py, hi, pd):
@@ -275,6 +263,7 @@ def mulPackAdd(pz, offset, py, hi, pd):
   adc(hi, a)
 
 def gen_mulPreN(pz, px, py, pk, t, N):
+  assert len(pk) == N
   mov(rdx, ptr(px + 8 * 0))
   mulPack(pz, 8 * 0, py, pk)
   for i in range(1, N):
@@ -308,15 +297,68 @@ def gen_sqr_fast(N):
       with StackFrame(2, 0, useRDX=True) as sf:
         py = sf.p[0]
         px = sf.p[1]
-        mov(rax, ptr(px));
-        mul(rax);
-        store_mp(py, Pack(rdx, rax));
+        mov(rax, ptr(px))
+        mul(rax)
+        store_mp(py, Pack(rdx, rax))
         return
     if param.win:
       mov(r8, rdx)
     else:
       mov(rdx, rsi)
     jmp(f'mclb_mul_fast{N}')
+
+def inner_mulLow_fastN(pz, px, py, ts, N):
+  assert len(ts) >= N-1
+  pk = ts[0:N-1]
+  H = ts[N-1]
+  mov(rdx, ptr(px + 8 * 0))
+  a = rax
+  # [pz[0]:pk[0:N-1]] = px[] * py[0]
+  mulx(pk[0], a, ptr(py + 8 * 0))
+  mov(ptr(pz), a)
+  for i in range(1, N):
+    if i < N-1:
+      mulx(pk[i], a, ptr(py + 8 * i))
+    else:
+      mulx(H, a, ptr(py + 8 * i)) ## H is not used
+    if i == 1:
+      add(pk[i - 1], a)
+    elif i < N:
+      adc(pk[i - 1], a)
+
+  for i in range(1, N):
+    mov(rdx, ptr(px + 8 * i))
+    xor_(a, a)
+    for j in range(0, N-i):
+      mulx(H, a, ptr(py + j * 8))
+      adox(pk[j], a)
+      if j == 0:
+        mov(ptr(pz + 8 * i), pk[0])
+      if j == N-i-1:
+        break
+      adcx(pk[j + 1], H)
+    pk = pk[1:]
+
+# z[N] = the bottom half of (x[N] * y[N])
+def gen_mulLow_fast(N):
+  align(16)
+  with FuncProc(f'mclb_mulLow_fast{N}'):
+    if N == 1:
+      with StackFrame(3, useRDX=True) as sf:
+        pz = sf.p[0]
+        px = sf.p[1]
+        py = sf.p[2]
+        mov(rax, ptr(px))
+        mov(rdx, ptr(py))
+        mul(rdx)
+        mov(ptr(pz), rax)
+      return
+    if N <= 9:
+      with StackFrame(3, N, useRDX=True) as sf:
+        pz = sf.p[0]
+        px = sf.p[1]
+        py = sf.p[2]
+        inner_mulLow_fastN(pz, px, py, sf.t, N)
 
 """
 def gen_enable_fast(N):
@@ -336,11 +378,11 @@ def gen_enable_fast(N):
 def gen_udiv128():
   align(16)
   with FuncProc('mclb_udiv128'):
-    mov(rax, rdx);
-    mov(rdx, rcx);
-    div(r8);
-    mov(ptr(r9), rdx);
-    ret();
+    mov(rax, rdx)
+    mov(rdx, rcx)
+    div(r8)
+    mov(ptr(r9), rdx)
+    ret()
 
 def main():
   parser = argparse.ArgumentParser()
@@ -388,6 +430,9 @@ def main():
 
   for i in range(1,N+1):
     gen_sqr_fast(i)
+
+  for i in range(1,N+1):
+    gen_mulLow_fast(i)
 
   if param.win:
     gen_udiv128()

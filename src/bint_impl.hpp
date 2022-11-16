@@ -21,6 +21,30 @@ MCL_DLL_API void initBint()
 #endif
 }
 
+namespace impl {
+
+template<size_t N, size_t I = 1>
+struct UnrollMulLowT {
+	static inline void call(Unit *pz, const Unit *px, const Unit *py) {
+		mulUnitAddT<N - I>(&pz[I], px, py[I]);
+		UnrollMulLowT<N, I - 1>::call(pz, px, py);
+	}
+};
+
+template<size_t N>
+struct UnrollMulLowT<N, 0> {
+	static inline void call(Unit *, const Unit *, const Unit *) {
+	}
+};
+
+template<>
+struct UnrollMulLowT<1, 1> {
+	static inline void call(Unit *, const Unit *, const Unit *) {
+	}
+};
+
+} // impl
+
 #if MCL_BINT_ASM != 1
 #ifdef MCL_WASM32
 inline uint64_t load8byte(const uint32_t *x)
@@ -227,11 +251,20 @@ void sqrT(Unit *py, const Unit *px)
 	// QQQ : optimize this later
 	mulT<N>(py, px, px);
 }
+
+// z[N] = the bottom half of x[N] * y[N]
+template<size_t N>
+void mulLowT(Unit *pz, const Unit *px, const Unit *py)
+{
+	mulUnitT<N>(pz, px, py[0]);
+	impl::UnrollMulLowT<N>::call(pz, px, py);
+}
+
 #endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-MCL_DLL_API Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n)
+MCL_DLL_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n)
 {
 	assert(0 < bit && bit < UnitBitSize);
 	size_t bitRev = UnitBitSize - bit;
@@ -248,7 +281,7 @@ MCL_DLL_API Unit shl(Unit *pz, const Unit *px, Unit bit, size_t n)
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-MCL_DLL_API void shr(Unit *pz, const Unit *px, size_t bit, size_t n)
+MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n)
 {
 	assert(0 < bit && bit < UnitBitSize);
 	size_t bitRev = UnitBitSize - bit;
@@ -281,7 +314,7 @@ MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 			y[q + xn - 1 - i] = x[xn - 1 - i];
 		}
 	} else {
-		y[q + xn] = shl(y + q, x, r, xn);
+		y[q + xn] = shlN(y + q, x, r, xn);
 		yn++;
 	}
 	clearN(y, q);
@@ -304,7 +337,7 @@ MCL_DLL_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn)
 	if (r == 0) {
 		copyN(y, x + q, xn - q);
 	} else {
-		shr(y, x + q, r, xn - q);
+		shrN(y, x + q, r, xn - q);
 	}
 	return xn - q;
 }
@@ -500,15 +533,15 @@ MCL_DLL_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, si
 	const size_t shift = UnitBitSize - 1 - yTopBit;
 	if (shift) {
 		Unit *yShift = (Unit *)CYBOZU_ALLOCA(sizeof(Unit) * yn);
-		shl(yShift, y, shift, yn);
+		shlN(yShift, y, shift, yn);
 		Unit *xx = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (xn + 1));
-		Unit v = shl(xx, x, shift, xn);
+		Unit v = shlN(xx, x, shift, xn);
 		if (v) {
 			xx[xn] = v;
 			xn++;
 		}
 		xn = divFullBit(q, qn, xx, xn, yShift, yn);
-		shr(x, xx, shift, xn);
+		shrN(x, xx, shift, xn);
 		return xn;
 	} else {
 		return divFullBit(q, qn, x, xn, y, yn);
@@ -633,6 +666,23 @@ MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize)
 		clearN(x + q + 1, n - (q + 1));
 	} else {
 		clearN(x + q, n - q);
+	}
+}
+
+MCL_DLL_API void getMontgomeryCoeff(Unit *pp, const Unit *p, size_t N)
+{
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
+	Unit *x = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
+	clearN(t, N);
+	clearN(x, N); x[0] = 1;
+	clearN(pp, N);
+	for (size_t i = 0; i < sizeof(Unit) * N * 8; i++) {
+		if ((t[0] & 1) == 0) {
+			addN(t, t, p, N);
+			addN(pp, pp, x, N);
+		}
+		shrN(t, t, 1, N);
+		shlN(x, x, 1, N);
 	}
 }
 
