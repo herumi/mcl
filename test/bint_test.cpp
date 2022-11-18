@@ -797,7 +797,7 @@ CYBOZU_TEST_AUTO(mul)
 
 // slow for N <= 8
 template<size_t N>
-void karatsuba(Unit *z, const Unit *x)
+void sqrKara(Unit *z, const Unit *x)
 {
 	const size_t H = N / 2;
 	sqrT<H>(z, x); // b^2
@@ -812,10 +812,10 @@ void karatsuba(Unit *z, const Unit *x)
 }
 
 template<size_t N, bool exec>
-struct TestKaratsuba {
+struct testSqrKara {
 	static inline void call(Unit *y, Unit *x, const mpz_class& mx)
 	{
-		karatsuba<N>(y, x);
+		sqrKara<N>(y, x);
 		mpz_class my = 0;
 		setArray(my, y, N * 2);
 		CYBOZU_TEST_EQUAL(mx * mx, my);
@@ -823,12 +823,12 @@ struct TestKaratsuba {
 	static inline void bench(Unit *y, Unit *x, int CC)
 	{
 		printf("  ");
-		CYBOZU_BENCH_C("kar", CC, karatsuba<N>, y, x);
+		CYBOZU_BENCH_C("kar", CC, sqrKara<N>, y, x);
 	}
 };
 
 template<size_t N>
-struct TestKaratsuba <N, false> {
+struct testSqrKara <N, false> {
 	static inline void call(Unit *, Unit *, const mpz_class&)  {}
 	static inline void bench(Unit *, Unit *, int) {}
 };
@@ -846,7 +846,7 @@ void testSqr()
 		setArray(my, y, N * 2);
 		CYBOZU_TEST_EQUAL(mx * mx, my);
 		memset(y, 0, sizeof(y));
-		TestKaratsuba<N, ((N % 2) == 0 && N >= 4)>::call(y, x, mx);
+		testSqrKara<N, ((N % 2) == 0 && N >= 4)>::call(y, x, mx);
 	}
 #ifdef NDEBUG
 	const int CC = 20000;
@@ -854,7 +854,7 @@ void testSqr()
 	CYBOZU_BENCH_C("gmp", CC, mpn_sqr, (mp_limb_t*)y, (const mp_limb_t*)x, (int)N);
 	printf("  ");
 	CYBOZU_BENCH_C("sqr", CC, sqrT<N>, y, x);
-	TestKaratsuba<N, ((N % 2) == 0 && N >= 4)>::bench(y, x, C);
+	testSqrKara<N, ((N % 2) == 0 && N >= 4)>::bench(y, x, C);
 #endif
 }
 
