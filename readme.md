@@ -168,6 +168,7 @@ make ARCH=x86 CFLAGS_USER="-I <lib32>/include" LDFLAGS_USER="-L <lib32>/lib -Wl,
 
 # How to build on 64-bit Windows with Visual Studio
 
+Python3 is necessary.
 Open a console window, and
 ```
 git clone https://github.com/herumi/mcl
