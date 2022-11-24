@@ -758,6 +758,58 @@ CYBOZU_TEST_AUTO(mulUnitAdd)
 	testMulUnitAdd<7>();
 	testMulUnitAdd<8>();
 }
+
+static Unit g_zero[32];
+
+// z[N * 2] = x[N] * y[N] by Karatsuba
+// (aM + b)(cM + d) = acM^2 + bd + (ad + bc)M
+// ad + bc = (a + b)(c + d) - ac - bd
+template<size_t N>
+void mulKar(Unit *z, const Unit *x, const Unit *y)
+{
+	assert((N % 2) == 0);
+	const size_t H = N / 2;
+	Unit buf1[H]; // a + b
+	Unit buf2[H]; // c + d
+	Unit buf3[N]; // ad + bc
+	Unit CF1 = addT<H>(buf1, x + H, x);
+	Unit CF2 = addT<H>(buf2, y + H, y);
+	Unit CF3 = CF1 & CF2;
+	const Unit *p1 = CF1 ? buf2 : g_zero;
+	const Unit *p2 = CF2 ? buf1 : g_zero;
+	mulT<H>(buf3, buf1, buf2);
+	CF3 += addT<H>(buf3 + H, buf3 + H, p1);
+	CF3 += addT<H>(buf3 + H, buf3 + H, p2);
+	mulT<H>(z + N, x + H, y + H);
+	mulT<H>(z, x, y);
+	CF3 -= subT<N>(buf3, buf3, z);
+	CF3 -= subT<N>(buf3, buf3, z + N); // buf3[] = ad + bc
+	CF3 += addT<N>(z + H, z + H, buf3);
+	addUnit(z + H * 3, H, CF3);
+}
+
+template<size_t N, bool exec>
+struct testMulKar {
+	static inline void call(Unit *z, const Unit *x, const Unit *y, const mpz_class& mx, const mpz_class& my)
+	{
+		mulKar<N>(z, x, y);
+		mpz_class mz = 0;
+		setArray(mz, z, N * 2);
+		CYBOZU_TEST_EQUAL(mx * my, mz);
+	}
+	static inline void bench(Unit *z, const Unit *x, const Unit *y, int CC)
+	{
+		printf("  ");
+		CYBOZU_BENCH_C("mulKar", CC, mulKar<N>, z, x, y);
+	}
+};
+
+template<size_t N>
+struct testMulKar <N, false> {
+	static inline void call(Unit *, const Unit *, const Unit *, const mpz_class&, const mpz_class&) {}
+	static inline void bench(Unit *, const Unit *, const Unit *, int) {}
+};
+
 template<size_t N>
 void testMul()
 {
@@ -772,6 +824,7 @@ void testMul()
 		setArray(my, y, N);
 		setArray(mz, z, N * 2);
 		CYBOZU_TEST_EQUAL(mx * my, mz);
+		testMulKar<N, ((N % 2) == 0 && N >= 4)>::call(z, x, y, mx, my);
 	}
 #ifdef NDEBUG
 	const int CC = 20000;
@@ -779,6 +832,7 @@ void testMul()
 	CYBOZU_BENCH_C("gmp", CC, mpn_mul_n, (mp_limb_t*)z, (const mp_limb_t*)x, (const mp_limb_t*)y, (int)N);
 	printf("  ");
 	CYBOZU_BENCH_C("mul", CC, mulT<N>, z, x, y);
+	testMulKar<N, ((N % 2) == 0 && N >= 4)>::bench(z, x, y, CC);
 #endif
 }
 
@@ -795,15 +849,16 @@ CYBOZU_TEST_AUTO(mul)
 	testMul<9>();
 }
 
-// slow for N <= 8
+// z[N * 2] = x[N] * x[N] by Kar
 template<size_t N>
-void sqrKara(Unit *z, const Unit *x)
+void sqrKar(Unit *z, const Unit *x)
 {
 	const size_t H = N / 2;
 	sqrT<H>(z, x); // b^2
 	sqrT<H>(z + N, x + H); // a^2
 	Unit ab[N];
 	mulT<H>(ab, x, x + H); // ab
+//	Unit c = shlT<N>(ab, ab, 1);
 	Unit c = addT<N>(ab, ab, ab);
 	c += addT<N>(z + H, z + H, ab);
 	if (c) {
@@ -812,25 +867,25 @@ void sqrKara(Unit *z, const Unit *x)
 }
 
 template<size_t N, bool exec>
-struct testSqrKara {
-	static inline void call(Unit *y, Unit *x, const mpz_class& mx)
+struct testSqrKar {
+	static inline void call(Unit *y, const Unit *x, const mpz_class& mx)
 	{
-		sqrKara<N>(y, x);
+		sqrKar<N>(y, x);
 		mpz_class my = 0;
 		setArray(my, y, N * 2);
 		CYBOZU_TEST_EQUAL(mx * mx, my);
 	}
-	static inline void bench(Unit *y, Unit *x, int CC)
+	static inline void bench(Unit *y, const Unit *x, int CC)
 	{
 		printf("  ");
-		CYBOZU_BENCH_C("kar", CC, sqrKara<N>, y, x);
+		CYBOZU_BENCH_C("sqrKar", CC, sqrKar<N>, y, x);
 	}
 };
 
 template<size_t N>
-struct testSqrKara <N, false> {
-	static inline void call(Unit *, Unit *, const mpz_class&)  {}
-	static inline void bench(Unit *, Unit *, int) {}
+struct testSqrKar <N, false> {
+	static inline void call(Unit *, const Unit *, const mpz_class&)  {}
+	static inline void bench(Unit *, const Unit *, int) {}
 };
 
 template<size_t N>
@@ -846,7 +901,7 @@ void testSqr()
 		setArray(my, y, N * 2);
 		CYBOZU_TEST_EQUAL(mx * mx, my);
 		memset(y, 0, sizeof(y));
-		testSqrKara<N, ((N % 2) == 0 && N >= 4)>::call(y, x, mx);
+		testSqrKar<N, ((N % 2) == 0 && N >= 4)>::call(y, x, mx);
 	}
 #ifdef NDEBUG
 	const int CC = 20000;
@@ -854,7 +909,7 @@ void testSqr()
 	CYBOZU_BENCH_C("gmp", CC, mpn_sqr, (mp_limb_t*)y, (const mp_limb_t*)x, (int)N);
 	printf("  ");
 	CYBOZU_BENCH_C("sqr", CC, sqrT<N>, y, x);
-	testSqrKara<N, ((N % 2) == 0 && N >= 4)>::bench(y, x, C);
+	testSqrKar<N, ((N % 2) == 0 && N >= 4)>::bench(y, x, CC);
 #endif
 }
 
