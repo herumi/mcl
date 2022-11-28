@@ -84,6 +84,12 @@ ifeq ($(DEBUG),1)
     CFLAGS+=-fsanitize=address
     LDFLAGS+=-fsanitize=address
   endif
+endif
+ifeq ($(DEBUG),2)
+  ifeq ($(GCC_EXT),1)
+    CFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
+    LDFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
+  endif
 else
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
   ifeq ($(CXX),clang++)
