@@ -10,7 +10,7 @@ void minimum_sample(const G1& P, const G2& Q)
 	pairing(e1, P, Q);
 	G2 aQ;
 	G1 bP;
-	a.setHashOf("abc");
+	a.setHashOf("abc", 3);
 	printf("a = %s\n", a.getStr(16).c_str());
 	printf("a - b = %s\n", (a - b).getStr(16).c_str());
 	G2::mul(aQ, Q, a);
