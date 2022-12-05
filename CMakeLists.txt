@@ -170,6 +170,7 @@ else()
 	add_dependencies(mcl gen_bint.o)
 	target_link_libraries(mcl_st PUBLIC ${BINT_OBJ})
 	add_dependencies(mcl_st gen_bint.o)
+	target_sources(mcl_st PRIVATE ${BINT_OBJ})
 endif()
 
 # use generated asm or compile base${BIT}.ll by clang
@@ -196,6 +197,7 @@ elseif(${MCL_USE_LLVM})
 	add_dependencies(mcl gen_base.o)
 	target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
 	add_dependencies(mcl_st gen_base.o)
+	target_sources(mcl_st PRIVATE ${BASE_OBJ})
 endif()
 
 if(MCL_TEST_WITH_GMP)
