@@ -8,8 +8,8 @@
 #include <mcl/ecparam.hpp>
 #include <mcl/elgamal.hpp>
 
-typedef mcl::FpT<mcl::FpTag, 521> Fp;
-typedef mcl::FpT<mcl::ZnTag, 521> Zn;
+typedef mcl::FpT<mcl::FpTag> Fp;
+typedef mcl::FpT<mcl::ZnTag> Zn;
 typedef mcl::EcT<Fp> Ec;
 typedef mcl::ElgamalT<Ec, Zn> Elgamal;
 
