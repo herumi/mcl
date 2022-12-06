@@ -26,8 +26,8 @@ void mclb_fp_addNF6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
-void mclb_mulLow_fast4(Unit *z, const Unit *x, const Unit *y);
-void mclb_mulLow_fast6(Unit *z, const Unit *x, const Unit *y);
+//void mclb_mulLow_fast4(Unit *z, const Unit *x, const Unit *y);
+//void mclb_mulLow_fast6(Unit *z, const Unit *x, const Unit *y);
 
 void mclb_montRed_fast4(Unit *y, const Unit *x, const Unit *p);
 void mclb_montRed_fast6(Unit *y, const Unit *x, const Unit *p);
@@ -61,6 +61,7 @@ bint::void_pppp get_fp_subA(size_t n)
 	}
 }
 
+#if 0
 bint::void_ppp get_mulPreLowA(size_t n)
 {
 	switch (n) {
@@ -69,6 +70,7 @@ bint::void_ppp get_mulPreLowA(size_t n)
 	case 6: return mclb_mulLow_fast6;
 	}
 }
+#endif
 
 bint::void_ppp get_montRedA(size_t n)
 {
@@ -190,6 +192,7 @@ void testFpAdd(const char *pStr)
 	CYBOZU_BENCH_C("subL m", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
 }
 
+#if 0
 template<size_t N>
 void testMulPreLow()
 {
@@ -208,6 +211,7 @@ void testMulPreLow()
 	CYBOZU_BENCH_C("mulPreLow", CC, mulPreLow, z1, x, y);
 	CYBOZU_BENCH_C("mulT", CC, mcl::bint::mulT<N>, z2, x, y);
 }
+#endif
 
 // y[N] = Montgomery-Reduction(x[N * 2])
 // p[-N:0] = rp
@@ -318,7 +322,7 @@ CYBOZU_TEST_AUTO(all)
 		testFpAdd<6>(tbl6[i]);
 		testMontRed<6>();
 	}
-	testMulPreLow<4>();
-	testMulPreLow<6>();
+//	testMulPreLow<4>();
+//	testMulPreLow<6>();
 }
 

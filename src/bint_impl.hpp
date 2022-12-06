@@ -253,12 +253,12 @@ void sqrT(Unit *py, const Unit *px)
 }
 
 // z[N] = the bottom half of x[N] * y[N]
-template<size_t N>
-void mulLowT(Unit *pz, const Unit *px, const Unit *py)
-{
-	mulUnitT<N>(pz, px, py[0]);
-	impl::UnrollMulLowT<N>::call(pz, px, py);
-}
+//template<size_t N>
+//void mulLowT(Unit *pz, const Unit *px, const Unit *py)
+//{
+//	mulUnitT<N>(pz, px, py[0]);
+//	impl::UnrollMulLowT<N>::call(pz, px, py);
+//}
 
 #endif // MCL_BINT_ASM != 1
 

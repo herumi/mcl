@@ -926,6 +926,7 @@ CYBOZU_TEST_AUTO(sqr)
 	testSqr<9>();
 }
 
+#if 0
 template<size_t N>
 void testMulLow()
 {
@@ -962,3 +963,4 @@ CYBOZU_TEST_AUTO(mulLow)
 	testMulLow<8>();
 	testMulLow<9>();
 }
+#endif

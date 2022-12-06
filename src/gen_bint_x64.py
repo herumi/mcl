@@ -431,8 +431,8 @@ def main():
   for i in range(1,N+1):
     gen_sqr_fast(i)
 
-  for i in range(1,N+1):
-    gen_mulLow_fast(i)
+#  for i in range(1,N+1):
+#    gen_mulLow_fast(i)
 
   if param.win:
     gen_udiv128()

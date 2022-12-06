@@ -137,9 +137,6 @@ template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
 template<size_t N>void mulT(Unit *pz, const Unit *px, const Unit *py);
 // y[2N] = x[N] * x[N]
 template<size_t N>void sqrT(Unit *py, const Unit *px);
-// z[N] = the bottom half of (x[N] * y[N])
-// assume pz != px, py
-template<size_t N>void mulLowT(Unit *pz, const Unit *px, const Unit *py);
 
 Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
