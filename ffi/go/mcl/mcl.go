@@ -1278,3 +1278,10 @@ func G2LagrangeInterpolation(out *G2, xVec []Fr, yVec []G2) error {
 	}
 	return nil
 }
+
+// G1GetBasePoint --
+func G1GetBasePoint() *G1 {
+        out := new(G1)
+        C.mclBnG1_getBasePoint(out.getPointer())
+        return out
+}
