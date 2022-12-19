@@ -626,8 +626,8 @@ struct Code : public mcl::Generator {
 			Operand y = mul(x, x);
 			storeN(y, py);
 			ret(Void);
-#if 0 // slower for N = 8
-		} else if (N >= 8 && (N % 2) == 0) {
+		// slower for N = 8
+		} else if (N > 8 && (N % 2) == 0) {
 			/*
 				W = 1 << half
 				(aW + b)^2 = a^2W^2 + 2abW + b^2
@@ -651,7 +651,6 @@ struct Code : public mcl::Generator {
 			t = add(t, ab);
 			storeN(t, pyH);
 			ret(Void);
-#endif
 		} else {
 			Operand t1, t2, tt;
 			t1 = load(px);
