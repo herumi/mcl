@@ -748,6 +748,7 @@ struct Code : public mcl::Generator {
 		verifyAndSetPrivate(mclb_sqrM[N]);
 		beginFunc(mclb_sqrM[N]);
 		// on M1, mul is faster than sqr for N <= 6
+		// on A64FX, mul is faster than sqr for N <= 4
 		if (N <= 6) {
 			gen_mul_inner(py, px, px);
 		} else {
