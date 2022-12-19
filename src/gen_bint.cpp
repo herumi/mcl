@@ -626,8 +626,8 @@ struct Code : public mcl::Generator {
 			Operand y = mul(x, x);
 			storeN(y, py);
 			ret(Void);
-#if 0 // not checked yet
-		} else if (N > 8 && (N % 2) == 0) {
+#if 0 // slower for N = 8
+		} else if (N >= 8 && (N % 2) == 0) {
 			/*
 				W = 1 << half
 				(aW + b)^2 = a^2W^2 + 2abW + b^2
@@ -637,19 +637,19 @@ struct Code : public mcl::Generator {
 			const int half = bit / 2;
 			Operand pxW = getelementptr(px, H);
 			Operand pyWW = getelementptr(py, N);
+			Operand abBuf = alloca_(unit, N);
+			call(mclb_mulM[H], abBuf, px, pxW);
 			call(mclb_sqrM[H], py, px); // b^2
 			call(mclb_sqrM[H], pyWW, pxW); // a^2
 
-			Operand a = zext(loadN(pxW, H), half + unit);
-			Operand b = zext(loadN(px, H), half + unit);
-			Operand ab;
-			call(mclb_mulM[H], ab, a, b);
-			ab = zext(ab, bit + half);
+			Operand ab = loadN(abBuf, N);
+			ab = zext(ab, ab.bit + unit);
 			ab = add(ab, ab);
-			Operand pzH = getelementptr(py, H);
-			Operand t = loadN(pzH, N + H);
+			ab = zext(ab, bit + half);
+			Operand pyH = getelementptr(py, H);
+			Operand t = loadN(pyH, N + H);
 			t = add(t, ab);
-			storeN(t, pzH, N + H);
+			storeN(t, pyH);
 			ret(Void);
 #endif
 		} else {
@@ -748,8 +748,12 @@ struct Code : public mcl::Generator {
 		mclb_sqrM[N] = Function(name, Void, py, px);
 		verifyAndSetPrivate(mclb_sqrM[N]);
 		beginFunc(mclb_sqrM[N]);
-//		gen_sqr_inner(py, px);
-		gen_mul_inner(py, px, px);
+		// on M1, mul is faster than sqr for N <= 6
+		if (N <= 6) {
+			gen_mul_inner(py, px, px);
+		} else {
+			gen_sqr_inner(py, px);
+		}
 		endFunc();
 	}
 	void gen_mclb_mulLow()
