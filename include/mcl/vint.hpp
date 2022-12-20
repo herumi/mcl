@@ -62,14 +62,6 @@ public:
 		size_ = n;
 		*pb = true;
 	}
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-	void alloc(size_t n)
-	{
-		bool b;
-		alloc(&b, n);
-		if (!b) throw cybozu::Exception("FixedBuffer:alloc");
-	}
-#endif
 	void swap(FixedBuffer& rhs)
 	{
 		FixedBuffer *p1 = this;
