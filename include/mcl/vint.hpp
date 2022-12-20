@@ -101,10 +101,9 @@ public:
 /**
 	signed integer with variable length
 */
-template<class _Buffer>
-class VintT {
+class Vint {
 public:
-	typedef _Buffer Buffer;
+	typedef vint::FixedBuffer Buffer;
 	static const size_t UnitBitSize = sizeof(Unit) * 8;
 	static const int invalidVar = -2147483647 - 1; // abs(invalidVar) is not defined
 private:
@@ -132,7 +131,7 @@ private:
 		if (xn == yn) return bint::cmpN(&x[0], &y[0], xn);
 		return xn > yn ? 1 : -1;
 	}
-	static void uadd(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
+	static void uadd(Vint& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		const Unit *px = &x[0];
 		const Unit *py = &y[0];
@@ -159,7 +158,7 @@ private:
 		dst[xn] = c;
 		z.trim(xn + 1);
 	}
-	static void uadd1(VintT& z, const Buffer& x, size_t xn, Unit y)
+	static void uadd1(Vint& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn + 1;
 		bool b;
@@ -173,7 +172,7 @@ private:
 		z.buf_[zn - 1] = bint::addUnit(&z.buf_[0], xn, y);
 		z.trim(zn);
 	}
-	static void usub1(VintT& z, const Buffer& x, size_t xn, Unit y)
+	static void usub1(Vint& z, const Buffer& x, size_t xn, Unit y)
 	{
 		size_t zn = xn;
 		bool b;
@@ -191,7 +190,7 @@ private:
 		assert(!c);
 		z.trim(zn);
 	}
-	static void usub(VintT& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
+	static void usub(Vint& z, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		assert(xn >= yn);
 		bool b;
@@ -212,7 +211,7 @@ private:
 		assert(!c);
 		z.trim(xn);
 	}
-	static void _add(VintT& z, const VintT& x, bool xNeg, const VintT& y, bool yNeg)
+	static void _add(Vint& z, const Vint& x, bool xNeg, const Vint& y, bool yNeg)
 	{
 		if ((xNeg ^ yNeg) == 0) {
 			// same sign
@@ -229,7 +228,7 @@ private:
 			z.isNeg_ = yNeg;
 		}
 	}
-	static void _adds1(VintT& z, const VintT& x, int y, bool yNeg)
+	static void _adds1(Vint& z, const Vint& x, int y, bool yNeg)
 	{
 		assert(y >= 0);
 		if ((x.isNeg_ ^ yNeg) == 0) {
@@ -246,7 +245,7 @@ private:
 			z.isNeg_ = yNeg;
 		}
 	}
-	static void _addu1(VintT& z, const VintT& x, Unit y, bool yNeg)
+	static void _addu1(Vint& z, const Vint& x, Unit y, bool yNeg)
 	{
 		if ((x.isNeg_ ^ yNeg) == 0) {
 			// same sign
@@ -266,7 +265,7 @@ private:
 		@param q [out] x / y if q != 0
 		@param r [out] x % y
 	*/
-	static void udiv(VintT* q, VintT& r, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
+	static void udiv(Vint* q, Vint& r, const Buffer& x, size_t xn, const Buffer& y, size_t yn)
 	{
 		assert(q != &r);
 		if (xn < yn) {
@@ -297,7 +296,7 @@ private:
 		@param x [inout] x <- d
 		@retval s for x = 2^s d where d is odd
 	*/
-	static uint32_t countTrailingZero(VintT& x)
+	static uint32_t countTrailingZero(Vint& x)
 	{
 		uint32_t s = 0;
 		while (x.isEven()) {
@@ -307,24 +306,24 @@ private:
 		return s;
 	}
 	struct MulMod {
-		const VintT *pm;
-		void operator()(VintT& z, const VintT& x, const VintT& y) const
+		const Vint *pm;
+		void operator()(Vint& z, const Vint& x, const Vint& y) const
 		{
-			VintT::mul(z, x, y);
+			Vint::mul(z, x, y);
 			z %= *pm;
 		}
 	};
 	struct SqrMod {
-		const VintT *pm;
-		void operator()(VintT& y, const VintT& x) const
+		const Vint *pm;
+		void operator()(Vint& y, const Vint& x) const
 		{
-			VintT::sqr(y, x);
+			Vint::sqr(y, x);
 			y %= *pm;
 		}
 	};
 	// z = x^y
 	template<class Mul, class Sqr>
-	static void powT(VintT& z, const VintT& x, const Unit *y, size_t n, const Mul& mul, const Sqr& sqr)
+	static void powT(Vint& z, const Vint& x, const Unit *y, size_t n, const Mul& mul, const Sqr& sqr)
 	{
 		while (n > 0) {
 			if (y[n - 1]) break;
@@ -344,7 +343,7 @@ private:
 				return;
 			case 3:
 				{
-					VintT t;
+					Vint t;
 					sqr(t, x);
 					mul(z, t, x);
 				}
@@ -358,7 +357,7 @@ private:
 		const size_t w = 4; // don't change
 		const size_t m = sizeof(Unit) * 8 / w;
 		const size_t tblSize = (1 << w) - 1;
-		VintT tbl[tblSize];
+		Vint tbl[tblSize];
 		tbl[0] = x;
 		for (size_t i = 1; i < tblSize; i++) {
 			mul(tbl[i], tbl[i - 1], x);
@@ -383,23 +382,23 @@ private:
 	}
 
 public:
-	VintT(int x = 0)
+	Vint(int x = 0)
 		: size_(0)
 	{
 		*this = x;
 	}
-	VintT(Unit x)
+	Vint(Unit x)
 		: size_(0)
 	{
 		*this = x;
 	}
-	VintT(const VintT& rhs)
+	Vint(const Vint& rhs)
 		: buf_(rhs.buf_)
 		, size_(rhs.size_)
 		, isNeg_(rhs.isNeg_)
 	{
 	}
-	VintT& operator=(int x)
+	Vint& operator=(int x)
 	{
 		assert(x != invalidVar);
 		isNeg_ = x < 0;
@@ -410,7 +409,7 @@ public:
 		size_ = 1;
 		return *this;
 	}
-	VintT& operator=(Unit x)
+	Vint& operator=(Unit x)
 	{
 		isNeg_ = false;
 		bool b;
@@ -420,14 +419,14 @@ public:
 		size_ = 1;
 		return *this;
 	}
-	VintT& operator=(const VintT& rhs)
+	Vint& operator=(const Vint& rhs)
 	{
 		buf_ = rhs.buf_;
 		size_ = rhs.size_;
 		isNeg_ = rhs.isNeg_;
 		return *this;
 	}
-	void swap(VintT& rhs)
+	void swap(Vint& rhs)
 #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
 		noexcept
 #endif
@@ -464,7 +463,7 @@ public:
 	/*
 		set [0, max) randomly
 	*/
-	void setRand(bool *pb, const VintT& max, fp::RandGen rg = fp::RandGen())
+	void setRand(bool *pb, const Vint& max, fp::RandGen rg = fp::RandGen())
 	{
 		assert(max > 0);
 		if (rg.isZero()) rg = fp::RandGen::get();
@@ -581,7 +580,7 @@ public:
 		trim(n);
 		*pb = true;
 	}
-	static int compare(const VintT& x, const VintT& y)
+	static int compare(const Vint& x, const Vint& y)
 	{
 		if (x.isNeg_ ^ y.isNeg_) {
 			if (x.isZero() && y.isZero()) return 0;
@@ -595,7 +594,7 @@ public:
 			return c;
 		}
 	}
-	static int compares1(const VintT& x, int y)
+	static int compares1(const Vint& x, int y)
 	{
 		assert(y != invalidVar);
 		if (x.isNeg_ ^ (y < 0)) {
@@ -611,7 +610,7 @@ public:
 			return c;
 		}
 	}
-	static int compareu1(const VintT& x, uint32_t y)
+	static int compareu1(const Vint& x, uint32_t y)
 	{
 		if (x.isNeg_) return -1;
 		if (x.size() > 1) return 1;
@@ -626,15 +625,15 @@ public:
 	bool isEven() const { return !isOdd(); }
 	const Unit *getUnit() const { return &buf_[0]; }
 	size_t getUnitSize() const { return size_; }
-	static void add(VintT& z, const VintT& x, const VintT& y)
+	static void add(Vint& z, const Vint& x, const Vint& y)
 	{
 		_add(z, x, x.isNeg_, y, y.isNeg_);
 	}
-	static void sub(VintT& z, const VintT& x, const VintT& y)
+	static void sub(Vint& z, const Vint& x, const Vint& y)
 	{
 		_add(z, x, x.isNeg_, y, !y.isNeg_);
 	}
-	static void mul(VintT& z, const VintT& x, const VintT& y)
+	static void mul(Vint& z, const Vint& x, const Vint& y)
 	{
 		const size_t xn = x.size();
 		const size_t yn = y.size();
@@ -646,19 +645,19 @@ public:
 		z.trim(zn);
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 	}
-	static void sqr(VintT& y, const VintT& x)
+	static void sqr(Vint& y, const Vint& x)
 	{
 		mul(y, x, x);
 	}
-	static void addu1(VintT& z, const VintT& x, Unit y)
+	static void addu1(Vint& z, const Vint& x, Unit y)
 	{
 		_addu1(z, x, y, false);
 	}
-	static void subu1(VintT& z, const VintT& x, Unit y)
+	static void subu1(Vint& z, const Vint& x, Unit y)
 	{
 		_addu1(z, x, y, true);
 	}
-	static void mulu1(VintT& z, const VintT& x, Unit y)
+	static void mulu1(Vint& z, const Vint& x, Unit y)
 	{
 		size_t xn = x.size();
 		size_t zn = xn + 1;
@@ -673,27 +672,27 @@ public:
 		z.isNeg_ = x.isNeg_;
 		z.trim(zn);
 	}
-	static void divu1(VintT& q, const VintT& x, Unit y)
+	static void divu1(Vint& q, const Vint& x, Unit y)
 	{
 		udivModu1(&q, x, y);
 	}
-	static void modu1(VintT& r, const VintT& x, Unit y)
+	static void modu1(Vint& r, const Vint& x, Unit y)
 	{
 		bool xNeg = x.isNeg_;
-		r = divModu1(0, x, y);
+		r = udivModu1(0, x, y);
 		r.isNeg_ = xNeg;
 	}
-	static void adds1(VintT& z, const VintT& x, int y)
+	static void adds1(Vint& z, const Vint& x, int y)
 	{
 		assert(y != invalidVar);
 		_adds1(z, x, fp::abs_(y), y < 0);
 	}
-	static void subs1(VintT& z, const VintT& x, int y)
+	static void subs1(Vint& z, const Vint& x, int y)
 	{
 		assert(y != invalidVar);
 		_adds1(z, x, fp::abs_(y), !(y < 0));
 	}
-	static void muls1(VintT& z, const VintT& x, int y)
+	static void muls1(Vint& z, const Vint& x, int y)
 	{
 		assert(y != invalidVar);
 		mulu1(z, x, fp::abs_(y));
@@ -705,7 +704,7 @@ public:
 		@param y [in] must be not zero
 		return x % y
 	*/
-	static int divMods1(VintT *q, const VintT& x, int y)
+	static int divMods1(Vint *q, const Vint& x, int y)
 	{
 		assert(y != invalidVar);
 		bool xNeg = x.isNeg_;
@@ -736,7 +735,7 @@ public:
 		 -13 /  5 = -2 ... -3
 		 -13 / -5 =  2 ... -3
 	*/
-	static void divMod(VintT *q, VintT& r, const VintT& x, const VintT& y)
+	static void divMod(Vint *q, Vint& r, const Vint& x, const Vint& y)
 	{
 		bool xNeg = x.isNeg_;
 		bool qsign = xNeg ^ y.isNeg_;
@@ -744,26 +743,26 @@ public:
 		r.isNeg_ = xNeg;
 		if (q) q->isNeg_ = qsign;
 	}
-	static void div(VintT& q, const VintT& x, const VintT& y)
+	static void div(Vint& q, const Vint& x, const Vint& y)
 	{
-		VintT r;
+		Vint r;
 		divMod(&q, r, x, y);
 	}
-	static void mod(VintT& r, const VintT& x, const VintT& y)
+	static void mod(Vint& r, const Vint& x, const Vint& y)
 	{
 		divMod(0, r, x, y);
 	}
-	static void divs1(VintT& q, const VintT& x, int y)
+	static void divs1(Vint& q, const Vint& x, int y)
 	{
 		divMods1(&q, x, y);
 	}
-	static void mods1(VintT& r, const VintT& x, int y)
+	static void mods1(Vint& r, const Vint& x, int y)
 	{
 		bool xNeg = x.isNeg_;
 		r = divMods1(0, x, y);
 		r.isNeg_ = xNeg;
 	}
-	static Unit udivModu1(VintT *q, const VintT& x, Unit y)
+	static Unit udivModu1(Vint *q, const Vint& x, Unit y)
 	{
 		assert(!x.isNeg_);
 		size_t xn = x.size();
@@ -790,10 +789,10 @@ public:
 		-13 /  5 = -3 ...  2
 		-13 / -5 =  2 ... -3
 	*/
-	static void quotRem(VintT *q, VintT& r, const VintT& x, const VintT& y)
+	static void quotRem(Vint *q, Vint& r, const Vint& x, const Vint& y)
 	{
 		assert(q != &r);
-		VintT yy = y;
+		Vint yy = y;
 		bool yNeg = y.isNeg_;
 		bool qsign = x.isNeg_ ^ yNeg;
 		udiv(q, r, x.buf_, x.size(), yy.buf_, yy.size());
@@ -823,7 +822,7 @@ public:
 		*pb = true;
 	}
 	// logical left shift (copy sign)
-	static void shl(VintT& y, const VintT& x, size_t shiftBit)
+	static void shl(Vint& y, const Vint& x, size_t shiftBit)
 	{
 		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
@@ -836,7 +835,7 @@ public:
 		y.trim(yn);
 	}
 	// logical right shift (copy sign)
-	static void shr(VintT& y, const VintT& x, size_t shiftBit)
+	static void shr(Vint& y, const Vint& x, size_t shiftBit)
 	{
 		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
@@ -852,27 +851,27 @@ public:
 		y.isNeg_ = x.isNeg_;
 		y.trim(yn);
 	}
-	static void neg(VintT& y, const VintT& x)
+	static void neg(Vint& y, const Vint& x)
 	{
 		if (&y != &x) { y = x; }
 		y.isNeg_ = !x.isNeg_;
 	}
-	static void abs(VintT& y, const VintT& x)
+	static void abs(Vint& y, const Vint& x)
 	{
 		if (&y != &x) { y = x; }
 		y.isNeg_ = false;
 	}
-	static VintT abs(const VintT& x)
+	static Vint abs(const Vint& x)
 	{
-		VintT y = x;
+		Vint y = x;
 		abs(y, x);
 		return y;
 	}
 	// accept only non-negative value
-	static void orBit(VintT& z, const VintT& x, const VintT& y)
+	static void orBit(Vint& z, const Vint& x, const Vint& y)
 	{
 		assert(!x.isNeg_ && !y.isNeg_);
-		const VintT *px = &x, *py = &y;
+		const Vint *px = &x, *py = &y;
 		if (x.size() < y.size()) {
 			fp::swap_(px, py);
 		}
@@ -891,10 +890,10 @@ public:
 		bint::copyN(&z.buf_[0] + yn, &px->buf_[0] + yn, xn - yn);
 		z.trim(xn);
 	}
-	static void andBit(VintT& z, const VintT& x, const VintT& y)
+	static void andBit(Vint& z, const Vint& x, const Vint& y)
 	{
 		assert(!x.isNeg_ && !y.isNeg_);
-		const VintT *px = &x, *py = &y;
+		const Vint *px = &x, *py = &y;
 		if (x.size() < y.size()) {
 			fp::swap_(px, py);
 		}
@@ -912,13 +911,13 @@ public:
 		}
 		z.trim(yn);
 	}
-	static void orBitu1(VintT& z, const VintT& x, Unit y)
+	static void orBitu1(Vint& z, const Vint& x, Unit y)
 	{
 		assert(!x.isNeg_);
 		z = x;
 		z.buf_[0] |= y;
 	}
-	static void andBitu1(VintT& z, const VintT& x, Unit y)
+	static void andBitu1(Vint& z, const Vint& x, Unit y)
 	{
 		assert(!x.isNeg_);
 		bool b;
@@ -931,7 +930,7 @@ public:
 	/*
 		REMARK y >= 0;
 	*/
-	static void pow(VintT& z, const VintT& x, const VintT& y)
+	static void pow(Vint& z, const Vint& x, const Vint& y)
 	{
 		assert(!y.isNeg_);
 		powT(z, x, &y.buf_[0], y.size(), mul, sqr);
@@ -939,7 +938,7 @@ public:
 	/*
 		REMARK y >= 0;
 	*/
-	static void pow(VintT& z, const VintT& x, int64_t y)
+	static void pow(Vint& z, const Vint& x, int64_t y)
 	{
 		assert(y >= 0);
 #if MCL_SIZEOF_UNIT == 8
@@ -956,7 +955,7 @@ public:
 		z = x ^ y mod m
 		REMARK y >= 0;
 	*/
-	static void powMod(VintT& z, const VintT& x, const VintT& y, const VintT& m)
+	static void powMod(Vint& z, const Vint& x, const Vint& y, const Vint& m)
 	{
 		assert(!y.isNeg_);
 		MulMod mulMod;
@@ -970,14 +969,14 @@ public:
 		y = 1/x mod m
 		REMARK x != 0 and m != 0;
 	*/
-	static void invMod(VintT& y, const VintT& x, const VintT& m)
+	static void invMod(Vint& y, const Vint& x, const Vint& m)
 	{
 		assert(!x.isZero() && !m.isZero());
 #if 0
-		VintT u = x;
-		VintT v = m;
-		VintT x1 = 1, x2 = 0;
-		VintT t;
+		Vint u = x;
+		Vint v = m;
+		Vint x1 = 1, x2 = 0;
+		Vint t;
 		while (u != 1 && v != 1) {
 			while (u.isEven()) {
 				u >>= 1;
@@ -1017,12 +1016,12 @@ public:
 			y = 1;
 			return;
 		}
-		VintT a = 1;
-		VintT t;
-		VintT q;
+		Vint a = 1;
+		Vint t;
+		Vint q;
 		divMod(&q, t, m, x);
-		VintT s = x;
-		VintT b = -q;
+		Vint s = x;
+		Vint b = -q;
 
 		for (;;) {
 			divMod(&q, s, s, t);
@@ -1050,18 +1049,18 @@ public:
 	/*
 		Miller-Rabin
 	*/
-	static bool isPrime(bool *pb, const VintT& n, int tryNum = 32)
+	static bool isPrime(bool *pb, const Vint& n, int tryNum = 32)
 	{
 		*pb = true;
 		if (n <= 1) return false;
 		if (n == 2 || n == 3) return true;
 		if (n.isEven()) return false;
 		cybozu::XorShift rg;
-		const VintT nm1 = n - 1;
-		VintT d = nm1;
+		const Vint nm1 = n - 1;
+		Vint d = nm1;
 		uint32_t r = countTrailingZero(d);
 		// n - 1 = 2^r d
-		VintT a, x;
+		Vint a, x;
 		for (int i = 0; i < tryNum; i++) {
 			a.setRand(pb, n - 3, rg);
 			if (!*pb) return false;
@@ -1085,9 +1084,9 @@ public:
 	{
 		return isPrime(pb, *this, tryNum);
 	}
-	static void gcd(VintT& z, VintT x, VintT y)
+	static void gcd(Vint& z, Vint x, Vint y)
 	{
-		VintT t;
+		Vint t;
 		for (;;) {
 			if (y.isZero()) {
 				z = x;
@@ -1098,22 +1097,22 @@ public:
 			mod(y, t, y);
 		}
 	}
-	static VintT gcd(const VintT& x, const VintT& y)
+	static Vint gcd(const Vint& x, const Vint& y)
 	{
-		VintT z;
+		Vint z;
 		gcd(z, x, y);
 		return z;
 	}
-	static void lcm(VintT& z, const VintT& x, const VintT& y)
+	static void lcm(Vint& z, const Vint& x, const Vint& y)
 	{
-		VintT c;
+		Vint c;
 		gcd(c, x, y);
 		div(c, x, c);
 		mul(z, c, y);
 	}
-	static VintT lcm(const VintT& x, const VintT& y)
+	static Vint lcm(const Vint& x, const Vint& y)
 	{
-		VintT z;
+		Vint z;
 		lcm(z, x, y);
 		return z;
 	}
@@ -1123,7 +1122,7 @@ public:
 		-1 otherwise
 		@note return legendre_symbol(m, p) for m and odd prime p
 	*/
-	static int jacobi(VintT m, VintT n)
+	static int jacobi(Vint m, Vint n)
 	{
 		assert(n.isOdd());
 		if (n == 1) return 1;
@@ -1135,7 +1134,7 @@ public:
 		if (gcd(m, n) != 1) return 0;
 
 		int j = 1;
-		VintT t;
+		Vint t;
 		goto START;
 		while (m != 1) {
 			if ((m.getLow32bit() % 4) == 3 && (n.getLow32bit() % 4) == 3) {
@@ -1154,7 +1153,7 @@ public:
 		return j;
 	}
 #ifndef CYBOZU_DONT_USE_STRING
-	explicit VintT(const std::string& str)
+	explicit Vint(const std::string& str)
 		: size_(0)
 	{
 		setStr(str);
@@ -1171,11 +1170,11 @@ public:
 		getStr(s, base);
 		return s;
 	}
-	inline friend std::ostream& operator<<(std::ostream& os, const VintT& x)
+	inline friend std::ostream& operator<<(std::ostream& os, const Vint& x)
 	{
 		return os << x.getStr(os.flags() & std::ios_base::hex ? 16 : 10);
 	}
-	inline friend std::istream& operator>>(std::istream& is, VintT& x)
+	inline friend std::istream& operator>>(std::istream& is, Vint& x)
 	{
 		x.load(is);
 		return is;
@@ -1188,7 +1187,7 @@ public:
 		setStr(&b, str.c_str(), base);
 		if (!b) throw cybozu::Exception("Vint:setStr") << str;
 	}
-	void setRand(const VintT& max, fp::RandGen rg = fp::RandGen())
+	void setRand(const Vint& max, fp::RandGen rg = fp::RandGen())
 	{
 		bool b;
 		setRand(&b, max, rg);
@@ -1214,7 +1213,7 @@ public:
 		save(&b, os, base);
 		if (!b) throw cybozu::Exception("Vint:save");
 	}
-	static bool isPrime(const VintT& n, int tryNum = 32)
+	static bool isPrime(const Vint& n, int tryNum = 32)
 	{
 		bool b;
 		bool ret = isPrime(&b, n, tryNum);
@@ -1236,83 +1235,81 @@ public:
 		if (!b) throw cybozu::Exception("Vint:setArray");
 	}
 #endif
-	VintT& operator++() { adds1(*this, *this, 1); return *this; }
-	VintT& operator--() { subs1(*this, *this, 1); return *this; }
-	VintT operator++(int) { VintT c = *this; adds1(*this, *this, 1); return c; }
-	VintT operator--(int) { VintT c = *this; subs1(*this, *this, 1); return c; }
-	friend bool operator<(const VintT& x, const VintT& y) { return compare(x, y) < 0; }
-	friend bool operator>=(const VintT& x, const VintT& y) { return !operator<(x, y); }
-	friend bool operator>(const VintT& x, const VintT& y) { return compare(x, y) > 0; }
-	friend bool operator<=(const VintT& x, const VintT& y) { return !operator>(x, y); }
-	friend bool operator==(const VintT& x, const VintT& y) { return compare(x, y) == 0; }
-	friend bool operator!=(const VintT& x, const VintT& y) { return !operator==(x, y); }
+	Vint& operator++() { adds1(*this, *this, 1); return *this; }
+	Vint& operator--() { subs1(*this, *this, 1); return *this; }
+	Vint operator++(int) { Vint c = *this; adds1(*this, *this, 1); return c; }
+	Vint operator--(int) { Vint c = *this; subs1(*this, *this, 1); return c; }
+	friend bool operator<(const Vint& x, const Vint& y) { return compare(x, y) < 0; }
+	friend bool operator>=(const Vint& x, const Vint& y) { return !operator<(x, y); }
+	friend bool operator>(const Vint& x, const Vint& y) { return compare(x, y) > 0; }
+	friend bool operator<=(const Vint& x, const Vint& y) { return !operator>(x, y); }
+	friend bool operator==(const Vint& x, const Vint& y) { return compare(x, y) == 0; }
+	friend bool operator!=(const Vint& x, const Vint& y) { return !operator==(x, y); }
 
-	friend bool operator<(const VintT& x, int y) { return compares1(x, y) < 0; }
-	friend bool operator>=(const VintT& x, int y) { return !operator<(x, y); }
-	friend bool operator>(const VintT& x, int y) { return compares1(x, y) > 0; }
-	friend bool operator<=(const VintT& x, int y) { return !operator>(x, y); }
-	friend bool operator==(const VintT& x, int y) { return compares1(x, y) == 0; }
-	friend bool operator!=(const VintT& x, int y) { return !operator==(x, y); }
+	friend bool operator<(const Vint& x, int y) { return compares1(x, y) < 0; }
+	friend bool operator>=(const Vint& x, int y) { return !operator<(x, y); }
+	friend bool operator>(const Vint& x, int y) { return compares1(x, y) > 0; }
+	friend bool operator<=(const Vint& x, int y) { return !operator>(x, y); }
+	friend bool operator==(const Vint& x, int y) { return compares1(x, y) == 0; }
+	friend bool operator!=(const Vint& x, int y) { return !operator==(x, y); }
 
-	friend bool operator<(const VintT& x, uint32_t y) { return compareu1(x, y) < 0; }
-	friend bool operator>=(const VintT& x, uint32_t y) { return !operator<(x, y); }
-	friend bool operator>(const VintT& x, uint32_t y) { return compareu1(x, y) > 0; }
-	friend bool operator<=(const VintT& x, uint32_t y) { return !operator>(x, y); }
-	friend bool operator==(const VintT& x, uint32_t y) { return compareu1(x, y) == 0; }
-	friend bool operator!=(const VintT& x, uint32_t y) { return !operator==(x, y); }
+	friend bool operator<(const Vint& x, uint32_t y) { return compareu1(x, y) < 0; }
+	friend bool operator>=(const Vint& x, uint32_t y) { return !operator<(x, y); }
+	friend bool operator>(const Vint& x, uint32_t y) { return compareu1(x, y) > 0; }
+	friend bool operator<=(const Vint& x, uint32_t y) { return !operator>(x, y); }
+	friend bool operator==(const Vint& x, uint32_t y) { return compareu1(x, y) == 0; }
+	friend bool operator!=(const Vint& x, uint32_t y) { return !operator==(x, y); }
 
-	VintT& operator+=(const VintT& rhs) { add(*this, *this, rhs); return *this; }
-	VintT& operator-=(const VintT& rhs) { sub(*this, *this, rhs); return *this; }
-	VintT& operator*=(const VintT& rhs) { mul(*this, *this, rhs); return *this; }
-	VintT& operator/=(const VintT& rhs) { div(*this, *this, rhs); return *this; }
-	VintT& operator%=(const VintT& rhs) { mod(*this, *this, rhs); return *this; }
-	VintT& operator&=(const VintT& rhs) { andBit(*this, *this, rhs); return *this; }
-	VintT& operator|=(const VintT& rhs) { orBit(*this, *this, rhs); return *this; }
+	Vint& operator+=(const Vint& rhs) { add(*this, *this, rhs); return *this; }
+	Vint& operator-=(const Vint& rhs) { sub(*this, *this, rhs); return *this; }
+	Vint& operator*=(const Vint& rhs) { mul(*this, *this, rhs); return *this; }
+	Vint& operator/=(const Vint& rhs) { div(*this, *this, rhs); return *this; }
+	Vint& operator%=(const Vint& rhs) { mod(*this, *this, rhs); return *this; }
+	Vint& operator&=(const Vint& rhs) { andBit(*this, *this, rhs); return *this; }
+	Vint& operator|=(const Vint& rhs) { orBit(*this, *this, rhs); return *this; }
 
-	VintT& operator+=(int rhs) { adds1(*this, *this, rhs); return *this; }
-	VintT& operator-=(int rhs) { subs1(*this, *this, rhs); return *this; }
-	VintT& operator*=(int rhs) { muls1(*this, *this, rhs); return *this; }
-	VintT& operator/=(int rhs) { divs1(*this, *this, rhs); return *this; }
-	VintT& operator%=(int rhs) { mods1(*this, *this, rhs); return *this; }
-	VintT& operator+=(Unit rhs) { addu1(*this, *this, rhs); return *this; }
-	VintT& operator-=(Unit rhs) { subu1(*this, *this, rhs); return *this; }
-	VintT& operator*=(Unit rhs) { mulu1(*this, *this, rhs); return *this; }
-	VintT& operator/=(Unit rhs) { divu1(*this, *this, rhs); return *this; }
-	VintT& operator%=(Unit rhs) { modu1(*this, *this, rhs); return *this; }
+	Vint& operator+=(int rhs) { adds1(*this, *this, rhs); return *this; }
+	Vint& operator-=(int rhs) { subs1(*this, *this, rhs); return *this; }
+	Vint& operator*=(int rhs) { muls1(*this, *this, rhs); return *this; }
+	Vint& operator/=(int rhs) { divs1(*this, *this, rhs); return *this; }
+	Vint& operator%=(int rhs) { mods1(*this, *this, rhs); return *this; }
+	Vint& operator+=(Unit rhs) { addu1(*this, *this, rhs); return *this; }
+	Vint& operator-=(Unit rhs) { subu1(*this, *this, rhs); return *this; }
+	Vint& operator*=(Unit rhs) { mulu1(*this, *this, rhs); return *this; }
+	Vint& operator/=(Unit rhs) { divu1(*this, *this, rhs); return *this; }
+	Vint& operator%=(Unit rhs) { modu1(*this, *this, rhs); return *this; }
 
-	VintT& operator&=(Unit rhs) { andBitu1(*this, *this, rhs); return *this; }
-	VintT& operator|=(Unit rhs) { orBitu1(*this, *this, rhs); return *this; }
+	Vint& operator&=(Unit rhs) { andBitu1(*this, *this, rhs); return *this; }
+	Vint& operator|=(Unit rhs) { orBitu1(*this, *this, rhs); return *this; }
 
-	friend VintT operator+(const VintT& a, const VintT& b) { VintT c; add(c, a, b); return c; }
-	friend VintT operator-(const VintT& a, const VintT& b) { VintT c; sub(c, a, b); return c; }
-	friend VintT operator*(const VintT& a, const VintT& b) { VintT c; mul(c, a, b); return c; }
-	friend VintT operator/(const VintT& a, const VintT& b) { VintT c; div(c, a, b); return c; }
-	friend VintT operator%(const VintT& a, const VintT& b) { VintT c; mod(c, a, b); return c; }
-	friend VintT operator&(const VintT& a, const VintT& b) { VintT c; andBit(c, a, b); return c; }
-	friend VintT operator|(const VintT& a, const VintT& b) { VintT c; orBit(c, a, b); return c; }
+	friend Vint operator+(const Vint& a, const Vint& b) { Vint c; add(c, a, b); return c; }
+	friend Vint operator-(const Vint& a, const Vint& b) { Vint c; sub(c, a, b); return c; }
+	friend Vint operator*(const Vint& a, const Vint& b) { Vint c; mul(c, a, b); return c; }
+	friend Vint operator/(const Vint& a, const Vint& b) { Vint c; div(c, a, b); return c; }
+	friend Vint operator%(const Vint& a, const Vint& b) { Vint c; mod(c, a, b); return c; }
+	friend Vint operator&(const Vint& a, const Vint& b) { Vint c; andBit(c, a, b); return c; }
+	friend Vint operator|(const Vint& a, const Vint& b) { Vint c; orBit(c, a, b); return c; }
 
-	friend VintT operator+(const VintT& a, int b) { VintT c; adds1(c, a, b); return c; }
-	friend VintT operator-(const VintT& a, int b) { VintT c; subs1(c, a, b); return c; }
-	friend VintT operator*(const VintT& a, int b) { VintT c; muls1(c, a, b); return c; }
-	friend VintT operator/(const VintT& a, int b) { VintT c; divs1(c, a, b); return c; }
-	friend VintT operator%(const VintT& a, int b) { VintT c; mods1(c, a, b); return c; }
-	friend VintT operator+(const VintT& a, Unit b) { VintT c; addu1(c, a, b); return c; }
-	friend VintT operator-(const VintT& a, Unit b) { VintT c; subu1(c, a, b); return c; }
-	friend VintT operator*(const VintT& a, Unit b) { VintT c; mulu1(c, a, b); return c; }
-	friend VintT operator/(const VintT& a, Unit b) { VintT c; divu1(c, a, b); return c; }
-	friend VintT operator%(const VintT& a, Unit b) { VintT c; modu1(c, a, b); return c; }
+	friend Vint operator+(const Vint& a, int b) { Vint c; adds1(c, a, b); return c; }
+	friend Vint operator-(const Vint& a, int b) { Vint c; subs1(c, a, b); return c; }
+	friend Vint operator*(const Vint& a, int b) { Vint c; muls1(c, a, b); return c; }
+	friend Vint operator/(const Vint& a, int b) { Vint c; divs1(c, a, b); return c; }
+	friend Vint operator%(const Vint& a, int b) { Vint c; mods1(c, a, b); return c; }
+	friend Vint operator+(const Vint& a, Unit b) { Vint c; addu1(c, a, b); return c; }
+	friend Vint operator-(const Vint& a, Unit b) { Vint c; subu1(c, a, b); return c; }
+	friend Vint operator*(const Vint& a, Unit b) { Vint c; mulu1(c, a, b); return c; }
+	friend Vint operator/(const Vint& a, Unit b) { Vint c; divu1(c, a, b); return c; }
+	friend Vint operator%(const Vint& a, Unit b) { Vint c; modu1(c, a, b); return c; }
 
-	friend VintT operator&(const VintT& a, Unit b) { VintT c; andBitu1(c, a, b); return c; }
-	friend VintT operator|(const VintT& a, Unit b) { VintT c; orBitu1(c, a, b); return c; }
+	friend Vint operator&(const Vint& a, Unit b) { Vint c; andBitu1(c, a, b); return c; }
+	friend Vint operator|(const Vint& a, Unit b) { Vint c; orBitu1(c, a, b); return c; }
 
-	VintT operator-() const { VintT c; neg(c, *this); return c; }
-	VintT& operator<<=(size_t n) { shl(*this, *this, n); return *this; }
-	VintT& operator>>=(size_t n) { shr(*this, *this, n); return *this; }
-	VintT operator<<(size_t n) const { VintT c = *this; c <<= n; return c; }
-	VintT operator>>(size_t n) const { VintT c = *this; c >>= n; return c; }
+	Vint operator-() const { Vint c; neg(c, *this); return c; }
+	Vint& operator<<=(size_t n) { shl(*this, *this, n); return *this; }
+	Vint& operator>>=(size_t n) { shr(*this, *this, n); return *this; }
+	Vint operator<<(size_t n) const { Vint c = *this; c <<= n; return c; }
+	Vint operator>>(size_t n) const { Vint c = *this; c >>= n; return c; }
 };
-
-typedef VintT<vint::FixedBuffer> Vint;
 
 } // mcl
 
