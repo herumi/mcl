@@ -618,6 +618,81 @@ struct Code : public mcl::Generator {
 			ret(Void);
 		}
 	}
+	void gen_sqr_inner(const Operand& py, const Operand& px)
+	{
+		if (N == 1) {
+			Operand x = load(px);
+			x = zext(x, unit * 2);
+			Operand y = mul(x, x);
+			storeN(y, py);
+			ret(Void);
+		// slower for N = 8
+		} else if (N > 8 && (N % 2) == 0) {
+			/*
+				W = 1 << half
+				(aW + b)^2 = a^2W^2 + 2abW + b^2
+				@note Karatsuba is slower for N = 8
+			*/
+			const int H = N / 2;
+			const int half = bit / 2;
+			Operand pxW = getelementptr(px, H);
+			Operand pyWW = getelementptr(py, N);
+			Operand abBuf = alloca_(unit, N);
+			call(mclb_mulM[H], abBuf, px, pxW);
+			call(mclb_sqrM[H], py, px); // b^2
+			call(mclb_sqrM[H], pyWW, pxW); // a^2
+
+			Operand ab = loadN(abBuf, N);
+			ab = zext(ab, ab.bit + unit);
+			ab = add(ab, ab);
+			ab = zext(ab, bit + half);
+			Operand pyH = getelementptr(py, H);
+			Operand t = loadN(pyH, N + H);
+			t = add(t, ab);
+			storeN(t, pyH);
+			ret(Void);
+		} else {
+			Operand t1, t2, tt;
+			t1 = load(px);
+			tt = call(mulUU, t1, t1);
+			store(trunc(tt, unit), py);
+			tt = lshr(tt, unit);
+			t2 = load(getelementptr(px, N - 1));
+			Operand sum = call(mulUU, t1, t2);
+			for (uint32_t i = 2; i < N; i++) {
+				t1 = load(px);
+				t2 = load(getelementptr(px, N - i));
+				Operand line = call(mulUU, t1, t2);
+				for (uint32_t j = 1; j < i; j++) {
+					t1 = load(getelementptr(px, j));
+					t2 = load(getelementptr(px, N - i + j));
+					t1 = call(mulUU, t1, t2);
+					line = zext(line, line.bit + unit * 2);
+					t1 = zext(t1, line.bit);
+					t1 = shl(t1, unit * 2 * j);
+					line = _or(line, t1);
+				}
+				// line = ...[N-1+i 1][N-i 0]
+				if (sum.bit < line.bit) sum = zext(sum, line.bit);
+				sum = shl(sum, unit);
+				sum = add(sum, line);
+			}
+			uint32_t bit2 = unit * (N * 2 - 1);
+			tt = zext(tt, bit2);
+			for (uint32_t i = 1; i < N; i++) {
+				t1 = load(getelementptr(px, i));
+				t1 = call(mulUU, t1, t1);
+				t1 = zext(t1, bit2);
+				t1 = shl(t1, unit * (i * 2 - 1));
+				tt = _or(tt, t1);
+			}
+			sum = zext(sum, bit2);
+			sum = add(sum, sum);
+			tt = add(tt, sum);
+			storeN(tt, py, 1);
+			ret(Void);
+		}
+	}
 	// pz[N] = the bottom half of px[N] * py[N]
 	void gen_mulLow_inner(const Operand& pz, const Operand& px, const Operand& py)
 	{
@@ -672,7 +747,13 @@ struct Code : public mcl::Generator {
 		mclb_sqrM[N] = Function(name, Void, py, px);
 		verifyAndSetPrivate(mclb_sqrM[N]);
 		beginFunc(mclb_sqrM[N]);
-		gen_mul_inner(py, px, px);
+		// on M1, mul is faster than sqr for N <= 6
+		// on A64FX, mul is faster than sqr for N <= 4
+		if (N <= 6) {
+			gen_mul_inner(py, px, px);
+		} else {
+			gen_sqr_inner(py, px);
+		}
 		endFunc();
 	}
 	void gen_mclb_mulLow()
