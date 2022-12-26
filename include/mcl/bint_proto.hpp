@@ -812,59 +812,558 @@ template<> inline void sqrT<17>(Unit *y, const Unit *x) { mclb_sqr17(y, x); }
 	#define MCL_BINT_ADD_N 32
 	#define MCL_BINT_MUL_N 17
 #endif
-extern "C" MCL_DLL_API u_ppp mclb_addTbl[];
+template<int dummy=0>
+struct TblT {
+	static u_ppp addTbl[];
+	static u_ppp subTbl[];
+	static void_ppp addNFTbl[];
+	static u_ppp subNFTbl[];
+	static u_ppu mulUnitTbl[];
+	static u_ppu mulUnitAddTbl[];
+	static void_ppp mulTbl[];
+	static void_pp sqrTbl[];
+};
+template<int dummy>u_ppp TblT<dummy>::addTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_add1,
+	mclb_add2,
+	mclb_add3,
+	mclb_add4,
+	mclb_add5,
+	mclb_add6,
+	mclb_add7,
+	mclb_add8,
+	mclb_add9,
+	mclb_add10,
+	mclb_add11,
+	mclb_add12,
+	mclb_add13,
+	mclb_add14,
+	mclb_add15,
+	mclb_add16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_add17,
+	mclb_add18,
+	mclb_add19,
+	mclb_add20,
+	mclb_add21,
+	mclb_add22,
+	mclb_add23,
+	mclb_add24,
+	mclb_add25,
+	mclb_add26,
+	mclb_add27,
+	mclb_add28,
+	mclb_add29,
+	mclb_add30,
+	mclb_add31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	addT<1>,
+	addT<2>,
+	addT<3>,
+	addT<4>,
+	addT<5>,
+	addT<6>,
+	addT<7>,
+	addT<8>,
+	addT<9>,
+	addT<10>,
+	addT<11>,
+	addT<12>,
+	addT<13>,
+	addT<14>,
+	addT<15>,
+	addT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	addT<17>,
+	addT<18>,
+	addT<19>,
+	addT<20>,
+	addT<21>,
+	addT<22>,
+	addT<23>,
+	addT<24>,
+	addT<25>,
+	addT<26>,
+	addT<27>,
+	addT<28>,
+	addT<29>,
+	addT<30>,
+	addT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline u_ppp get_add(size_t n)
 {
-	if (n > MCL_BINT_ADD_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::addTbl)) n = 0;
 	assert(n > 0);
-	return mclb_addTbl[n];
+	return TblT<>::addTbl[n];
 }
-extern "C" MCL_DLL_API u_ppp mclb_subTbl[];
+inline Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return get_add(n)(z, x, y);
+}
+template<int dummy>u_ppp TblT<dummy>::subTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_sub1,
+	mclb_sub2,
+	mclb_sub3,
+	mclb_sub4,
+	mclb_sub5,
+	mclb_sub6,
+	mclb_sub7,
+	mclb_sub8,
+	mclb_sub9,
+	mclb_sub10,
+	mclb_sub11,
+	mclb_sub12,
+	mclb_sub13,
+	mclb_sub14,
+	mclb_sub15,
+	mclb_sub16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_sub17,
+	mclb_sub18,
+	mclb_sub19,
+	mclb_sub20,
+	mclb_sub21,
+	mclb_sub22,
+	mclb_sub23,
+	mclb_sub24,
+	mclb_sub25,
+	mclb_sub26,
+	mclb_sub27,
+	mclb_sub28,
+	mclb_sub29,
+	mclb_sub30,
+	mclb_sub31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	subT<1>,
+	subT<2>,
+	subT<3>,
+	subT<4>,
+	subT<5>,
+	subT<6>,
+	subT<7>,
+	subT<8>,
+	subT<9>,
+	subT<10>,
+	subT<11>,
+	subT<12>,
+	subT<13>,
+	subT<14>,
+	subT<15>,
+	subT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	subT<17>,
+	subT<18>,
+	subT<19>,
+	subT<20>,
+	subT<21>,
+	subT<22>,
+	subT<23>,
+	subT<24>,
+	subT<25>,
+	subT<26>,
+	subT<27>,
+	subT<28>,
+	subT<29>,
+	subT<30>,
+	subT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline u_ppp get_sub(size_t n)
 {
-	if (n > MCL_BINT_ADD_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::subTbl)) n = 0;
 	assert(n > 0);
-	return mclb_subTbl[n];
+	return TblT<>::subTbl[n];
 }
-extern "C" MCL_DLL_API void_ppp mclb_addNFTbl[];
+inline Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return get_sub(n)(z, x, y);
+}
+template<int dummy>void_ppp TblT<dummy>::addNFTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_addNF1,
+	mclb_addNF2,
+	mclb_addNF3,
+	mclb_addNF4,
+	mclb_addNF5,
+	mclb_addNF6,
+	mclb_addNF7,
+	mclb_addNF8,
+	mclb_addNF9,
+	mclb_addNF10,
+	mclb_addNF11,
+	mclb_addNF12,
+	mclb_addNF13,
+	mclb_addNF14,
+	mclb_addNF15,
+	mclb_addNF16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_addNF17,
+	mclb_addNF18,
+	mclb_addNF19,
+	mclb_addNF20,
+	mclb_addNF21,
+	mclb_addNF22,
+	mclb_addNF23,
+	mclb_addNF24,
+	mclb_addNF25,
+	mclb_addNF26,
+	mclb_addNF27,
+	mclb_addNF28,
+	mclb_addNF29,
+	mclb_addNF30,
+	mclb_addNF31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	addNFT<1>,
+	addNFT<2>,
+	addNFT<3>,
+	addNFT<4>,
+	addNFT<5>,
+	addNFT<6>,
+	addNFT<7>,
+	addNFT<8>,
+	addNFT<9>,
+	addNFT<10>,
+	addNFT<11>,
+	addNFT<12>,
+	addNFT<13>,
+	addNFT<14>,
+	addNFT<15>,
+	addNFT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	addNFT<17>,
+	addNFT<18>,
+	addNFT<19>,
+	addNFT<20>,
+	addNFT<21>,
+	addNFT<22>,
+	addNFT<23>,
+	addNFT<24>,
+	addNFT<25>,
+	addNFT<26>,
+	addNFT<27>,
+	addNFT<28>,
+	addNFT<29>,
+	addNFT<30>,
+	addNFT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline void_ppp get_addNF(size_t n)
 {
-	if (n > MCL_BINT_ADD_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::addNFTbl)) n = 0;
 	assert(n > 0);
-	return mclb_addNFTbl[n];
+	return TblT<>::addNFTbl[n];
 }
-extern "C" MCL_DLL_API u_ppp mclb_subNFTbl[];
+inline void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return get_addNF(n)(z, x, y);
+}
+template<int dummy>u_ppp TblT<dummy>::subNFTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_subNF1,
+	mclb_subNF2,
+	mclb_subNF3,
+	mclb_subNF4,
+	mclb_subNF5,
+	mclb_subNF6,
+	mclb_subNF7,
+	mclb_subNF8,
+	mclb_subNF9,
+	mclb_subNF10,
+	mclb_subNF11,
+	mclb_subNF12,
+	mclb_subNF13,
+	mclb_subNF14,
+	mclb_subNF15,
+	mclb_subNF16,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_subNF17,
+	mclb_subNF18,
+	mclb_subNF19,
+	mclb_subNF20,
+	mclb_subNF21,
+	mclb_subNF22,
+	mclb_subNF23,
+	mclb_subNF24,
+	mclb_subNF25,
+	mclb_subNF26,
+	mclb_subNF27,
+	mclb_subNF28,
+	mclb_subNF29,
+	mclb_subNF30,
+	mclb_subNF31,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	subNFT<1>,
+	subNFT<2>,
+	subNFT<3>,
+	subNFT<4>,
+	subNFT<5>,
+	subNFT<6>,
+	subNFT<7>,
+	subNFT<8>,
+	subNFT<9>,
+	subNFT<10>,
+	subNFT<11>,
+	subNFT<12>,
+	subNFT<13>,
+	subNFT<14>,
+	subNFT<15>,
+	subNFT<16>,
+#if MCL_SIZEOF_UNIT == 4
+	subNFT<17>,
+	subNFT<18>,
+	subNFT<19>,
+	subNFT<20>,
+	subNFT<21>,
+	subNFT<22>,
+	subNFT<23>,
+	subNFT<24>,
+	subNFT<25>,
+	subNFT<26>,
+	subNFT<27>,
+	subNFT<28>,
+	subNFT<29>,
+	subNFT<30>,
+	subNFT<31>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline u_ppp get_subNF(size_t n)
 {
-	if (n > MCL_BINT_ADD_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::subNFTbl)) n = 0;
 	assert(n > 0);
-	return mclb_subNFTbl[n];
+	return TblT<>::subNFTbl[n];
 }
-extern "C" MCL_DLL_API u_ppu mclb_mulUnitTbl[];
+inline Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return get_subNF(n)(z, x, y);
+}
+template<int dummy>u_ppu TblT<dummy>::mulUnitTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_mulUnit1,
+	mclb_mulUnit2,
+	mclb_mulUnit3,
+	mclb_mulUnit4,
+	mclb_mulUnit5,
+	mclb_mulUnit6,
+	mclb_mulUnit7,
+	mclb_mulUnit8,
+	mclb_mulUnit9,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_mulUnit10,
+	mclb_mulUnit11,
+	mclb_mulUnit12,
+	mclb_mulUnit13,
+	mclb_mulUnit14,
+	mclb_mulUnit15,
+	mclb_mulUnit16,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	mulUnitT<1>,
+	mulUnitT<2>,
+	mulUnitT<3>,
+	mulUnitT<4>,
+	mulUnitT<5>,
+	mulUnitT<6>,
+	mulUnitT<7>,
+	mulUnitT<8>,
+	mulUnitT<9>,
+#if MCL_SIZEOF_UNIT == 4
+	mulUnitT<10>,
+	mulUnitT<11>,
+	mulUnitT<12>,
+	mulUnitT<13>,
+	mulUnitT<14>,
+	mulUnitT<15>,
+	mulUnitT<16>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline u_ppu get_mulUnit(size_t n)
 {
-	if (n > MCL_BINT_MUL_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::mulUnitTbl)) n = 0;
 	assert(n > 0);
-	return mclb_mulUnitTbl[n];
+	return TblT<>::mulUnitTbl[n];
 }
-extern "C" MCL_DLL_API u_ppu mclb_mulUnitAddTbl[];
+inline Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n)
+{
+	return get_mulUnit(n)(z, x, y);
+}
+template<int dummy>u_ppu TblT<dummy>::mulUnitAddTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_mulUnitAdd1,
+	mclb_mulUnitAdd2,
+	mclb_mulUnitAdd3,
+	mclb_mulUnitAdd4,
+	mclb_mulUnitAdd5,
+	mclb_mulUnitAdd6,
+	mclb_mulUnitAdd7,
+	mclb_mulUnitAdd8,
+	mclb_mulUnitAdd9,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_mulUnitAdd10,
+	mclb_mulUnitAdd11,
+	mclb_mulUnitAdd12,
+	mclb_mulUnitAdd13,
+	mclb_mulUnitAdd14,
+	mclb_mulUnitAdd15,
+	mclb_mulUnitAdd16,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	mulUnitAddT<1>,
+	mulUnitAddT<2>,
+	mulUnitAddT<3>,
+	mulUnitAddT<4>,
+	mulUnitAddT<5>,
+	mulUnitAddT<6>,
+	mulUnitAddT<7>,
+	mulUnitAddT<8>,
+	mulUnitAddT<9>,
+#if MCL_SIZEOF_UNIT == 4
+	mulUnitAddT<10>,
+	mulUnitAddT<11>,
+	mulUnitAddT<12>,
+	mulUnitAddT<13>,
+	mulUnitAddT<14>,
+	mulUnitAddT<15>,
+	mulUnitAddT<16>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline u_ppu get_mulUnitAdd(size_t n)
 {
-	if (n > MCL_BINT_MUL_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::mulUnitAddTbl)) n = 0;
 	assert(n > 0);
-	return mclb_mulUnitAddTbl[n];
+	return TblT<>::mulUnitAddTbl[n];
 }
-extern "C" MCL_DLL_API void_ppp mclb_mulTbl[];
+inline Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n)
+{
+	return get_mulUnitAdd(n)(z, x, y);
+}
+template<int dummy>void_ppp TblT<dummy>::mulTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_mul1,
+	mclb_mul2,
+	mclb_mul3,
+	mclb_mul4,
+	mclb_mul5,
+	mclb_mul6,
+	mclb_mul7,
+	mclb_mul8,
+	mclb_mul9,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_mul10,
+	mclb_mul11,
+	mclb_mul12,
+	mclb_mul13,
+	mclb_mul14,
+	mclb_mul15,
+	mclb_mul16,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	mulT<1>,
+	mulT<2>,
+	mulT<3>,
+	mulT<4>,
+	mulT<5>,
+	mulT<6>,
+	mulT<7>,
+	mulT<8>,
+	mulT<9>,
+#if MCL_SIZEOF_UNIT == 4
+	mulT<10>,
+	mulT<11>,
+	mulT<12>,
+	mulT<13>,
+	mulT<14>,
+	mulT<15>,
+	mulT<16>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline void_ppp get_mul(size_t n)
 {
-	if (n > MCL_BINT_MUL_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::mulTbl)) n = 0;
 	assert(n > 0);
-	return mclb_mulTbl[n];
+	return TblT<>::mulTbl[n];
 }
-extern "C" MCL_DLL_API void_pp mclb_sqrTbl[];
+inline void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
+{
+	return get_mul(n)(z, x, y);
+}
+template<int dummy>void_pp TblT<dummy>::sqrTbl[] = {
+#if MCL_BINT_ASM == 1
+	0,
+	mclb_sqr1,
+	mclb_sqr2,
+	mclb_sqr3,
+	mclb_sqr4,
+	mclb_sqr5,
+	mclb_sqr6,
+	mclb_sqr7,
+	mclb_sqr8,
+	mclb_sqr9,
+#if MCL_SIZEOF_UNIT == 4
+	mclb_sqr10,
+	mclb_sqr11,
+	mclb_sqr12,
+	mclb_sqr13,
+	mclb_sqr14,
+	mclb_sqr15,
+	mclb_sqr16,
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	0,
+	sqrT<1>,
+	sqrT<2>,
+	sqrT<3>,
+	sqrT<4>,
+	sqrT<5>,
+	sqrT<6>,
+	sqrT<7>,
+	sqrT<8>,
+	sqrT<9>,
+#if MCL_SIZEOF_UNIT == 4
+	sqrT<10>,
+	sqrT<11>,
+	sqrT<12>,
+	sqrT<13>,
+	sqrT<14>,
+	sqrT<15>,
+	sqrT<16>,
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+};
 inline void_pp get_sqr(size_t n)
 {
-	if (n > MCL_BINT_MUL_N) n = 0;
+	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::sqrTbl)) n = 0;
 	assert(n > 0);
-	return mclb_sqrTbl[n];
+	return TblT<>::sqrTbl[n];
+}
+inline void sqrN(Unit *y, const Unit *x, size_t n)
+{
+	return get_sqr(n)(y, x);
 }
