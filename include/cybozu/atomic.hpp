@@ -8,13 +8,17 @@
 */
 #include <cybozu/inttype.hpp>
 #ifdef _WIN32
+#include <intrin.h>
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
 #ifndef WIN32_LEAN_AND_MEAN
 	#define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
-#include <intrin.h>
+#include <windows.h> // _mm_mfence
+#endif
 #else
-#include <emmintrin.h>
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+#include <x86intrin.h>
+#endif
 #endif
 
 namespace cybozu {
@@ -136,10 +140,16 @@ T AtomicExchange(T *p, T newValue)
 
 inline void mfence()
 {
-#ifdef _MSC_VER
+#if defined(_WIN32) && CYBOZU_HOST == CYBOZU_HOST_INTEL
 	MemoryBarrier();
-#else
+#elif defined(_WIN32) && CYBOZU_HOST == CYBOZU_HOST_ARM
+	__dsb(0xf);
+#elif CYBOZU_HOST == CYBOZU_HOST_INTEL
 	_mm_mfence();
+#elif CYBOZU_HOST == CYBOZU_HOST_ARM
+	__sync_synchronize();
+#else
+	#error "not supported"
 #endif
 }
 

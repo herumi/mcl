@@ -856,7 +856,14 @@ public:
 #endif
 };
 
-template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_;
+#if defined(__GNUC__)
+	// x must be in [200, 65535]. lower values indicate a higher priority.
+	#define MCL_INIT_PRIORITY(x) __attribute__((init_priority(x)))
+#else
+	#define MCL_INIT_PRIORITY(x)
+#endif
+// Change the priority ad hoc so that initPairing() can be called in the static constructor before the main function
+template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
 template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
 template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 template<class tag, size_t maxBitSize> bool FpT<tag, maxBitSize>::isETHserialization_ = false;

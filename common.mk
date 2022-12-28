@@ -90,7 +90,11 @@ ifeq ($(DEBUG),2)
     CFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
     LDFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
   endif
-else
+endif
+ifeq ($(DEBUG),3)
+  # no option
+endif
+ifeq ($(DEBUG),0)
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
   ifeq ($(CXX),clang++)
     CFLAGS_OPT+=-O3

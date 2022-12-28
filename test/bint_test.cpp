@@ -15,11 +15,6 @@ const int C = 1000;
 const int C = 100;
 #endif
 
-CYBOZU_TEST_AUTO(cpu)
-{
-	mcl::bint::initBint();
-}
-
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
 using namespace mcl::bint;
