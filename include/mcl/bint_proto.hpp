@@ -812,556 +812,497 @@ template<> inline void sqrT<17>(Unit *y, const Unit *x) { mclb_sqr17(y, x); }
 	#define MCL_BINT_ADD_N 32
 	#define MCL_BINT_MUL_N 17
 #endif
-template<int dummy=0>
-struct TblT {
-	static u_ppp addTbl[];
-	static u_ppp subTbl[];
-	static void_ppp addNFTbl[];
-	static u_ppp subNFTbl[];
-	static u_ppu mulUnitTbl[];
-	static u_ppu mulUnitAddTbl[];
-	static void_ppp mulTbl[];
-	static void_pp sqrTbl[];
-};
-template<int dummy>u_ppp TblT<dummy>::addTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_add1,
-	mclb_add2,
-	mclb_add3,
-	mclb_add4,
-	mclb_add5,
-	mclb_add6,
-	mclb_add7,
-	mclb_add8,
-	mclb_add9,
-	mclb_add10,
-	mclb_add11,
-	mclb_add12,
-	mclb_add13,
-	mclb_add14,
-	mclb_add15,
-	mclb_add16,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_add17,
-	mclb_add18,
-	mclb_add19,
-	mclb_add20,
-	mclb_add21,
-	mclb_add22,
-	mclb_add23,
-	mclb_add24,
-	mclb_add25,
-	mclb_add26,
-	mclb_add27,
-	mclb_add28,
-	mclb_add29,
-	mclb_add30,
-	mclb_add31,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	addT<1>,
-	addT<2>,
-	addT<3>,
-	addT<4>,
-	addT<5>,
-	addT<6>,
-	addT<7>,
-	addT<8>,
-	addT<9>,
-	addT<10>,
-	addT<11>,
-	addT<12>,
-	addT<13>,
-	addT<14>,
-	addT<15>,
-	addT<16>,
-#if MCL_SIZEOF_UNIT == 4
-	addT<17>,
-	addT<18>,
-	addT<19>,
-	addT<20>,
-	addT<21>,
-	addT<22>,
-	addT<23>,
-	addT<24>,
-	addT<25>,
-	addT<26>,
-	addT<27>,
-	addT<28>,
-	addT<29>,
-	addT<30>,
-	addT<31>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline u_ppp get_add(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::addTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::addTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_add1;
+	if (n == 2) return mclb_add2;
+	if (n == 3) return mclb_add3;
+	if (n == 4) return mclb_add4;
+	if (n == 5) return mclb_add5;
+	if (n == 6) return mclb_add6;
+	if (n == 7) return mclb_add7;
+	if (n == 8) return mclb_add8;
+	if (n == 9) return mclb_add9;
+	if (n == 10) return mclb_add10;
+	if (n == 11) return mclb_add11;
+	if (n == 12) return mclb_add12;
+	if (n == 13) return mclb_add13;
+	if (n == 14) return mclb_add14;
+	if (n == 15) return mclb_add15;
+	if (n == 16) return mclb_add16;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return mclb_add17;
+	if (n == 18) return mclb_add18;
+	if (n == 19) return mclb_add19;
+	if (n == 20) return mclb_add20;
+	if (n == 21) return mclb_add21;
+	if (n == 22) return mclb_add22;
+	if (n == 23) return mclb_add23;
+	if (n == 24) return mclb_add24;
+	if (n == 25) return mclb_add25;
+	if (n == 26) return mclb_add26;
+	if (n == 27) return mclb_add27;
+	if (n == 28) return mclb_add28;
+	if (n == 29) return mclb_add29;
+	if (n == 30) return mclb_add30;
+	if (n == 31) return mclb_add31;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return addT<1>;
+	if (n == 2) return addT<2>;
+	if (n == 3) return addT<3>;
+	if (n == 4) return addT<4>;
+	if (n == 5) return addT<5>;
+	if (n == 6) return addT<6>;
+	if (n == 7) return addT<7>;
+	if (n == 8) return addT<8>;
+	if (n == 9) return addT<9>;
+	if (n == 10) return addT<10>;
+	if (n == 11) return addT<11>;
+	if (n == 12) return addT<12>;
+	if (n == 13) return addT<13>;
+	if (n == 14) return addT<14>;
+	if (n == 15) return addT<15>;
+	if (n == 16) return addT<16>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return addT<17>;
+	if (n == 18) return addT<18>;
+	if (n == 19) return addT<19>;
+	if (n == 20) return addT<20>;
+	if (n == 21) return addT<21>;
+	if (n == 22) return addT<22>;
+	if (n == 23) return addT<23>;
+	if (n == 24) return addT<24>;
+	if (n == 25) return addT<25>;
+	if (n == 26) return addT<26>;
+	if (n == 27) return addT<27>;
+	if (n == 28) return addT<28>;
+	if (n == 29) return addT<29>;
+	if (n == 30) return addT<30>;
+	if (n == 31) return addT<31>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return get_add(n)(z, x, y);
 }
-template<int dummy>u_ppp TblT<dummy>::subTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_sub1,
-	mclb_sub2,
-	mclb_sub3,
-	mclb_sub4,
-	mclb_sub5,
-	mclb_sub6,
-	mclb_sub7,
-	mclb_sub8,
-	mclb_sub9,
-	mclb_sub10,
-	mclb_sub11,
-	mclb_sub12,
-	mclb_sub13,
-	mclb_sub14,
-	mclb_sub15,
-	mclb_sub16,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_sub17,
-	mclb_sub18,
-	mclb_sub19,
-	mclb_sub20,
-	mclb_sub21,
-	mclb_sub22,
-	mclb_sub23,
-	mclb_sub24,
-	mclb_sub25,
-	mclb_sub26,
-	mclb_sub27,
-	mclb_sub28,
-	mclb_sub29,
-	mclb_sub30,
-	mclb_sub31,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	subT<1>,
-	subT<2>,
-	subT<3>,
-	subT<4>,
-	subT<5>,
-	subT<6>,
-	subT<7>,
-	subT<8>,
-	subT<9>,
-	subT<10>,
-	subT<11>,
-	subT<12>,
-	subT<13>,
-	subT<14>,
-	subT<15>,
-	subT<16>,
-#if MCL_SIZEOF_UNIT == 4
-	subT<17>,
-	subT<18>,
-	subT<19>,
-	subT<20>,
-	subT<21>,
-	subT<22>,
-	subT<23>,
-	subT<24>,
-	subT<25>,
-	subT<26>,
-	subT<27>,
-	subT<28>,
-	subT<29>,
-	subT<30>,
-	subT<31>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline u_ppp get_sub(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::subTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::subTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_sub1;
+	if (n == 2) return mclb_sub2;
+	if (n == 3) return mclb_sub3;
+	if (n == 4) return mclb_sub4;
+	if (n == 5) return mclb_sub5;
+	if (n == 6) return mclb_sub6;
+	if (n == 7) return mclb_sub7;
+	if (n == 8) return mclb_sub8;
+	if (n == 9) return mclb_sub9;
+	if (n == 10) return mclb_sub10;
+	if (n == 11) return mclb_sub11;
+	if (n == 12) return mclb_sub12;
+	if (n == 13) return mclb_sub13;
+	if (n == 14) return mclb_sub14;
+	if (n == 15) return mclb_sub15;
+	if (n == 16) return mclb_sub16;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return mclb_sub17;
+	if (n == 18) return mclb_sub18;
+	if (n == 19) return mclb_sub19;
+	if (n == 20) return mclb_sub20;
+	if (n == 21) return mclb_sub21;
+	if (n == 22) return mclb_sub22;
+	if (n == 23) return mclb_sub23;
+	if (n == 24) return mclb_sub24;
+	if (n == 25) return mclb_sub25;
+	if (n == 26) return mclb_sub26;
+	if (n == 27) return mclb_sub27;
+	if (n == 28) return mclb_sub28;
+	if (n == 29) return mclb_sub29;
+	if (n == 30) return mclb_sub30;
+	if (n == 31) return mclb_sub31;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return subT<1>;
+	if (n == 2) return subT<2>;
+	if (n == 3) return subT<3>;
+	if (n == 4) return subT<4>;
+	if (n == 5) return subT<5>;
+	if (n == 6) return subT<6>;
+	if (n == 7) return subT<7>;
+	if (n == 8) return subT<8>;
+	if (n == 9) return subT<9>;
+	if (n == 10) return subT<10>;
+	if (n == 11) return subT<11>;
+	if (n == 12) return subT<12>;
+	if (n == 13) return subT<13>;
+	if (n == 14) return subT<14>;
+	if (n == 15) return subT<15>;
+	if (n == 16) return subT<16>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return subT<17>;
+	if (n == 18) return subT<18>;
+	if (n == 19) return subT<19>;
+	if (n == 20) return subT<20>;
+	if (n == 21) return subT<21>;
+	if (n == 22) return subT<22>;
+	if (n == 23) return subT<23>;
+	if (n == 24) return subT<24>;
+	if (n == 25) return subT<25>;
+	if (n == 26) return subT<26>;
+	if (n == 27) return subT<27>;
+	if (n == 28) return subT<28>;
+	if (n == 29) return subT<29>;
+	if (n == 30) return subT<30>;
+	if (n == 31) return subT<31>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return get_sub(n)(z, x, y);
 }
-template<int dummy>void_ppp TblT<dummy>::addNFTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_addNF1,
-	mclb_addNF2,
-	mclb_addNF3,
-	mclb_addNF4,
-	mclb_addNF5,
-	mclb_addNF6,
-	mclb_addNF7,
-	mclb_addNF8,
-	mclb_addNF9,
-	mclb_addNF10,
-	mclb_addNF11,
-	mclb_addNF12,
-	mclb_addNF13,
-	mclb_addNF14,
-	mclb_addNF15,
-	mclb_addNF16,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_addNF17,
-	mclb_addNF18,
-	mclb_addNF19,
-	mclb_addNF20,
-	mclb_addNF21,
-	mclb_addNF22,
-	mclb_addNF23,
-	mclb_addNF24,
-	mclb_addNF25,
-	mclb_addNF26,
-	mclb_addNF27,
-	mclb_addNF28,
-	mclb_addNF29,
-	mclb_addNF30,
-	mclb_addNF31,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	addNFT<1>,
-	addNFT<2>,
-	addNFT<3>,
-	addNFT<4>,
-	addNFT<5>,
-	addNFT<6>,
-	addNFT<7>,
-	addNFT<8>,
-	addNFT<9>,
-	addNFT<10>,
-	addNFT<11>,
-	addNFT<12>,
-	addNFT<13>,
-	addNFT<14>,
-	addNFT<15>,
-	addNFT<16>,
-#if MCL_SIZEOF_UNIT == 4
-	addNFT<17>,
-	addNFT<18>,
-	addNFT<19>,
-	addNFT<20>,
-	addNFT<21>,
-	addNFT<22>,
-	addNFT<23>,
-	addNFT<24>,
-	addNFT<25>,
-	addNFT<26>,
-	addNFT<27>,
-	addNFT<28>,
-	addNFT<29>,
-	addNFT<30>,
-	addNFT<31>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline void_ppp get_addNF(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::addNFTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::addNFTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_addNF1;
+	if (n == 2) return mclb_addNF2;
+	if (n == 3) return mclb_addNF3;
+	if (n == 4) return mclb_addNF4;
+	if (n == 5) return mclb_addNF5;
+	if (n == 6) return mclb_addNF6;
+	if (n == 7) return mclb_addNF7;
+	if (n == 8) return mclb_addNF8;
+	if (n == 9) return mclb_addNF9;
+	if (n == 10) return mclb_addNF10;
+	if (n == 11) return mclb_addNF11;
+	if (n == 12) return mclb_addNF12;
+	if (n == 13) return mclb_addNF13;
+	if (n == 14) return mclb_addNF14;
+	if (n == 15) return mclb_addNF15;
+	if (n == 16) return mclb_addNF16;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return mclb_addNF17;
+	if (n == 18) return mclb_addNF18;
+	if (n == 19) return mclb_addNF19;
+	if (n == 20) return mclb_addNF20;
+	if (n == 21) return mclb_addNF21;
+	if (n == 22) return mclb_addNF22;
+	if (n == 23) return mclb_addNF23;
+	if (n == 24) return mclb_addNF24;
+	if (n == 25) return mclb_addNF25;
+	if (n == 26) return mclb_addNF26;
+	if (n == 27) return mclb_addNF27;
+	if (n == 28) return mclb_addNF28;
+	if (n == 29) return mclb_addNF29;
+	if (n == 30) return mclb_addNF30;
+	if (n == 31) return mclb_addNF31;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return addNFT<1>;
+	if (n == 2) return addNFT<2>;
+	if (n == 3) return addNFT<3>;
+	if (n == 4) return addNFT<4>;
+	if (n == 5) return addNFT<5>;
+	if (n == 6) return addNFT<6>;
+	if (n == 7) return addNFT<7>;
+	if (n == 8) return addNFT<8>;
+	if (n == 9) return addNFT<9>;
+	if (n == 10) return addNFT<10>;
+	if (n == 11) return addNFT<11>;
+	if (n == 12) return addNFT<12>;
+	if (n == 13) return addNFT<13>;
+	if (n == 14) return addNFT<14>;
+	if (n == 15) return addNFT<15>;
+	if (n == 16) return addNFT<16>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return addNFT<17>;
+	if (n == 18) return addNFT<18>;
+	if (n == 19) return addNFT<19>;
+	if (n == 20) return addNFT<20>;
+	if (n == 21) return addNFT<21>;
+	if (n == 22) return addNFT<22>;
+	if (n == 23) return addNFT<23>;
+	if (n == 24) return addNFT<24>;
+	if (n == 25) return addNFT<25>;
+	if (n == 26) return addNFT<26>;
+	if (n == 27) return addNFT<27>;
+	if (n == 28) return addNFT<28>;
+	if (n == 29) return addNFT<29>;
+	if (n == 30) return addNFT<30>;
+	if (n == 31) return addNFT<31>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return get_addNF(n)(z, x, y);
 }
-template<int dummy>u_ppp TblT<dummy>::subNFTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_subNF1,
-	mclb_subNF2,
-	mclb_subNF3,
-	mclb_subNF4,
-	mclb_subNF5,
-	mclb_subNF6,
-	mclb_subNF7,
-	mclb_subNF8,
-	mclb_subNF9,
-	mclb_subNF10,
-	mclb_subNF11,
-	mclb_subNF12,
-	mclb_subNF13,
-	mclb_subNF14,
-	mclb_subNF15,
-	mclb_subNF16,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_subNF17,
-	mclb_subNF18,
-	mclb_subNF19,
-	mclb_subNF20,
-	mclb_subNF21,
-	mclb_subNF22,
-	mclb_subNF23,
-	mclb_subNF24,
-	mclb_subNF25,
-	mclb_subNF26,
-	mclb_subNF27,
-	mclb_subNF28,
-	mclb_subNF29,
-	mclb_subNF30,
-	mclb_subNF31,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	subNFT<1>,
-	subNFT<2>,
-	subNFT<3>,
-	subNFT<4>,
-	subNFT<5>,
-	subNFT<6>,
-	subNFT<7>,
-	subNFT<8>,
-	subNFT<9>,
-	subNFT<10>,
-	subNFT<11>,
-	subNFT<12>,
-	subNFT<13>,
-	subNFT<14>,
-	subNFT<15>,
-	subNFT<16>,
-#if MCL_SIZEOF_UNIT == 4
-	subNFT<17>,
-	subNFT<18>,
-	subNFT<19>,
-	subNFT<20>,
-	subNFT<21>,
-	subNFT<22>,
-	subNFT<23>,
-	subNFT<24>,
-	subNFT<25>,
-	subNFT<26>,
-	subNFT<27>,
-	subNFT<28>,
-	subNFT<29>,
-	subNFT<30>,
-	subNFT<31>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline u_ppp get_subNF(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::subNFTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::subNFTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_subNF1;
+	if (n == 2) return mclb_subNF2;
+	if (n == 3) return mclb_subNF3;
+	if (n == 4) return mclb_subNF4;
+	if (n == 5) return mclb_subNF5;
+	if (n == 6) return mclb_subNF6;
+	if (n == 7) return mclb_subNF7;
+	if (n == 8) return mclb_subNF8;
+	if (n == 9) return mclb_subNF9;
+	if (n == 10) return mclb_subNF10;
+	if (n == 11) return mclb_subNF11;
+	if (n == 12) return mclb_subNF12;
+	if (n == 13) return mclb_subNF13;
+	if (n == 14) return mclb_subNF14;
+	if (n == 15) return mclb_subNF15;
+	if (n == 16) return mclb_subNF16;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return mclb_subNF17;
+	if (n == 18) return mclb_subNF18;
+	if (n == 19) return mclb_subNF19;
+	if (n == 20) return mclb_subNF20;
+	if (n == 21) return mclb_subNF21;
+	if (n == 22) return mclb_subNF22;
+	if (n == 23) return mclb_subNF23;
+	if (n == 24) return mclb_subNF24;
+	if (n == 25) return mclb_subNF25;
+	if (n == 26) return mclb_subNF26;
+	if (n == 27) return mclb_subNF27;
+	if (n == 28) return mclb_subNF28;
+	if (n == 29) return mclb_subNF29;
+	if (n == 30) return mclb_subNF30;
+	if (n == 31) return mclb_subNF31;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return subNFT<1>;
+	if (n == 2) return subNFT<2>;
+	if (n == 3) return subNFT<3>;
+	if (n == 4) return subNFT<4>;
+	if (n == 5) return subNFT<5>;
+	if (n == 6) return subNFT<6>;
+	if (n == 7) return subNFT<7>;
+	if (n == 8) return subNFT<8>;
+	if (n == 9) return subNFT<9>;
+	if (n == 10) return subNFT<10>;
+	if (n == 11) return subNFT<11>;
+	if (n == 12) return subNFT<12>;
+	if (n == 13) return subNFT<13>;
+	if (n == 14) return subNFT<14>;
+	if (n == 15) return subNFT<15>;
+	if (n == 16) return subNFT<16>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 17) return subNFT<17>;
+	if (n == 18) return subNFT<18>;
+	if (n == 19) return subNFT<19>;
+	if (n == 20) return subNFT<20>;
+	if (n == 21) return subNFT<21>;
+	if (n == 22) return subNFT<22>;
+	if (n == 23) return subNFT<23>;
+	if (n == 24) return subNFT<24>;
+	if (n == 25) return subNFT<25>;
+	if (n == 26) return subNFT<26>;
+	if (n == 27) return subNFT<27>;
+	if (n == 28) return subNFT<28>;
+	if (n == 29) return subNFT<29>;
+	if (n == 30) return subNFT<30>;
+	if (n == 31) return subNFT<31>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return get_subNF(n)(z, x, y);
 }
-template<int dummy>u_ppu TblT<dummy>::mulUnitTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_mulUnit1,
-	mclb_mulUnit2,
-	mclb_mulUnit3,
-	mclb_mulUnit4,
-	mclb_mulUnit5,
-	mclb_mulUnit6,
-	mclb_mulUnit7,
-	mclb_mulUnit8,
-	mclb_mulUnit9,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_mulUnit10,
-	mclb_mulUnit11,
-	mclb_mulUnit12,
-	mclb_mulUnit13,
-	mclb_mulUnit14,
-	mclb_mulUnit15,
-	mclb_mulUnit16,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	mulUnitT<1>,
-	mulUnitT<2>,
-	mulUnitT<3>,
-	mulUnitT<4>,
-	mulUnitT<5>,
-	mulUnitT<6>,
-	mulUnitT<7>,
-	mulUnitT<8>,
-	mulUnitT<9>,
-#if MCL_SIZEOF_UNIT == 4
-	mulUnitT<10>,
-	mulUnitT<11>,
-	mulUnitT<12>,
-	mulUnitT<13>,
-	mulUnitT<14>,
-	mulUnitT<15>,
-	mulUnitT<16>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline u_ppu get_mulUnit(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::mulUnitTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::mulUnitTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_mulUnit1;
+	if (n == 2) return mclb_mulUnit2;
+	if (n == 3) return mclb_mulUnit3;
+	if (n == 4) return mclb_mulUnit4;
+	if (n == 5) return mclb_mulUnit5;
+	if (n == 6) return mclb_mulUnit6;
+	if (n == 7) return mclb_mulUnit7;
+	if (n == 8) return mclb_mulUnit8;
+	if (n == 9) return mclb_mulUnit9;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mclb_mulUnit10;
+	if (n == 11) return mclb_mulUnit11;
+	if (n == 12) return mclb_mulUnit12;
+	if (n == 13) return mclb_mulUnit13;
+	if (n == 14) return mclb_mulUnit14;
+	if (n == 15) return mclb_mulUnit15;
+	if (n == 16) return mclb_mulUnit16;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return mulUnitT<1>;
+	if (n == 2) return mulUnitT<2>;
+	if (n == 3) return mulUnitT<3>;
+	if (n == 4) return mulUnitT<4>;
+	if (n == 5) return mulUnitT<5>;
+	if (n == 6) return mulUnitT<6>;
+	if (n == 7) return mulUnitT<7>;
+	if (n == 8) return mulUnitT<8>;
+	if (n == 9) return mulUnitT<9>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mulUnitT<10>;
+	if (n == 11) return mulUnitT<11>;
+	if (n == 12) return mulUnitT<12>;
+	if (n == 13) return mulUnitT<13>;
+	if (n == 14) return mulUnitT<14>;
+	if (n == 15) return mulUnitT<15>;
+	if (n == 16) return mulUnitT<16>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n)
 {
 	return get_mulUnit(n)(z, x, y);
 }
-template<int dummy>u_ppu TblT<dummy>::mulUnitAddTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_mulUnitAdd1,
-	mclb_mulUnitAdd2,
-	mclb_mulUnitAdd3,
-	mclb_mulUnitAdd4,
-	mclb_mulUnitAdd5,
-	mclb_mulUnitAdd6,
-	mclb_mulUnitAdd7,
-	mclb_mulUnitAdd8,
-	mclb_mulUnitAdd9,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_mulUnitAdd10,
-	mclb_mulUnitAdd11,
-	mclb_mulUnitAdd12,
-	mclb_mulUnitAdd13,
-	mclb_mulUnitAdd14,
-	mclb_mulUnitAdd15,
-	mclb_mulUnitAdd16,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	mulUnitAddT<1>,
-	mulUnitAddT<2>,
-	mulUnitAddT<3>,
-	mulUnitAddT<4>,
-	mulUnitAddT<5>,
-	mulUnitAddT<6>,
-	mulUnitAddT<7>,
-	mulUnitAddT<8>,
-	mulUnitAddT<9>,
-#if MCL_SIZEOF_UNIT == 4
-	mulUnitAddT<10>,
-	mulUnitAddT<11>,
-	mulUnitAddT<12>,
-	mulUnitAddT<13>,
-	mulUnitAddT<14>,
-	mulUnitAddT<15>,
-	mulUnitAddT<16>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline u_ppu get_mulUnitAdd(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::mulUnitAddTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::mulUnitAddTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_mulUnitAdd1;
+	if (n == 2) return mclb_mulUnitAdd2;
+	if (n == 3) return mclb_mulUnitAdd3;
+	if (n == 4) return mclb_mulUnitAdd4;
+	if (n == 5) return mclb_mulUnitAdd5;
+	if (n == 6) return mclb_mulUnitAdd6;
+	if (n == 7) return mclb_mulUnitAdd7;
+	if (n == 8) return mclb_mulUnitAdd8;
+	if (n == 9) return mclb_mulUnitAdd9;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mclb_mulUnitAdd10;
+	if (n == 11) return mclb_mulUnitAdd11;
+	if (n == 12) return mclb_mulUnitAdd12;
+	if (n == 13) return mclb_mulUnitAdd13;
+	if (n == 14) return mclb_mulUnitAdd14;
+	if (n == 15) return mclb_mulUnitAdd15;
+	if (n == 16) return mclb_mulUnitAdd16;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return mulUnitAddT<1>;
+	if (n == 2) return mulUnitAddT<2>;
+	if (n == 3) return mulUnitAddT<3>;
+	if (n == 4) return mulUnitAddT<4>;
+	if (n == 5) return mulUnitAddT<5>;
+	if (n == 6) return mulUnitAddT<6>;
+	if (n == 7) return mulUnitAddT<7>;
+	if (n == 8) return mulUnitAddT<8>;
+	if (n == 9) return mulUnitAddT<9>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mulUnitAddT<10>;
+	if (n == 11) return mulUnitAddT<11>;
+	if (n == 12) return mulUnitAddT<12>;
+	if (n == 13) return mulUnitAddT<13>;
+	if (n == 14) return mulUnitAddT<14>;
+	if (n == 15) return mulUnitAddT<15>;
+	if (n == 16) return mulUnitAddT<16>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n)
 {
 	return get_mulUnitAdd(n)(z, x, y);
 }
-template<int dummy>void_ppp TblT<dummy>::mulTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_mul1,
-	mclb_mul2,
-	mclb_mul3,
-	mclb_mul4,
-	mclb_mul5,
-	mclb_mul6,
-	mclb_mul7,
-	mclb_mul8,
-	mclb_mul9,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_mul10,
-	mclb_mul11,
-	mclb_mul12,
-	mclb_mul13,
-	mclb_mul14,
-	mclb_mul15,
-	mclb_mul16,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	mulT<1>,
-	mulT<2>,
-	mulT<3>,
-	mulT<4>,
-	mulT<5>,
-	mulT<6>,
-	mulT<7>,
-	mulT<8>,
-	mulT<9>,
-#if MCL_SIZEOF_UNIT == 4
-	mulT<10>,
-	mulT<11>,
-	mulT<12>,
-	mulT<13>,
-	mulT<14>,
-	mulT<15>,
-	mulT<16>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline void_ppp get_mul(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::mulTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::mulTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_mul1;
+	if (n == 2) return mclb_mul2;
+	if (n == 3) return mclb_mul3;
+	if (n == 4) return mclb_mul4;
+	if (n == 5) return mclb_mul5;
+	if (n == 6) return mclb_mul6;
+	if (n == 7) return mclb_mul7;
+	if (n == 8) return mclb_mul8;
+	if (n == 9) return mclb_mul9;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mclb_mul10;
+	if (n == 11) return mclb_mul11;
+	if (n == 12) return mclb_mul12;
+	if (n == 13) return mclb_mul13;
+	if (n == 14) return mclb_mul14;
+	if (n == 15) return mclb_mul15;
+	if (n == 16) return mclb_mul16;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return mulT<1>;
+	if (n == 2) return mulT<2>;
+	if (n == 3) return mulT<3>;
+	if (n == 4) return mulT<4>;
+	if (n == 5) return mulT<5>;
+	if (n == 6) return mulT<6>;
+	if (n == 7) return mulT<7>;
+	if (n == 8) return mulT<8>;
+	if (n == 9) return mulT<9>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mulT<10>;
+	if (n == 11) return mulT<11>;
+	if (n == 12) return mulT<12>;
+	if (n == 13) return mulT<13>;
+	if (n == 14) return mulT<14>;
+	if (n == 15) return mulT<15>;
+	if (n == 16) return mulT<16>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
 {
 	return get_mul(n)(z, x, y);
 }
-template<int dummy>void_pp TblT<dummy>::sqrTbl[] = {
-#if MCL_BINT_ASM == 1
-	0,
-	mclb_sqr1,
-	mclb_sqr2,
-	mclb_sqr3,
-	mclb_sqr4,
-	mclb_sqr5,
-	mclb_sqr6,
-	mclb_sqr7,
-	mclb_sqr8,
-	mclb_sqr9,
-#if MCL_SIZEOF_UNIT == 4
-	mclb_sqr10,
-	mclb_sqr11,
-	mclb_sqr12,
-	mclb_sqr13,
-	mclb_sqr14,
-	mclb_sqr15,
-	mclb_sqr16,
-#endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
-	0,
-	sqrT<1>,
-	sqrT<2>,
-	sqrT<3>,
-	sqrT<4>,
-	sqrT<5>,
-	sqrT<6>,
-	sqrT<7>,
-	sqrT<8>,
-	sqrT<9>,
-#if MCL_SIZEOF_UNIT == 4
-	sqrT<10>,
-	sqrT<11>,
-	sqrT<12>,
-	sqrT<13>,
-	sqrT<14>,
-	sqrT<15>,
-	sqrT<16>,
-#endif // MCL_SIZEOF_UNIT == 4
-#endif // MCL_BINT_ASM == 1
-};
 inline void_pp get_sqr(size_t n)
 {
-	if (n > CYBOZU_NUM_OF_ARRAY(TblT<>::sqrTbl)) n = 0;
-	assert(n > 0);
-	return TblT<>::sqrTbl[n];
+#if MCL_BINT_ASM == 1
+	if (n == 1) return mclb_sqr1;
+	if (n == 2) return mclb_sqr2;
+	if (n == 3) return mclb_sqr3;
+	if (n == 4) return mclb_sqr4;
+	if (n == 5) return mclb_sqr5;
+	if (n == 6) return mclb_sqr6;
+	if (n == 7) return mclb_sqr7;
+	if (n == 8) return mclb_sqr8;
+	if (n == 9) return mclb_sqr9;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return mclb_sqr10;
+	if (n == 11) return mclb_sqr11;
+	if (n == 12) return mclb_sqr12;
+	if (n == 13) return mclb_sqr13;
+	if (n == 14) return mclb_sqr14;
+	if (n == 15) return mclb_sqr15;
+	if (n == 16) return mclb_sqr16;
+#endif // MCL_SIZEOF_UNIT == 4
+#else // MCL_BITN_ASM == 1
+	if (n == 1) return sqrT<1>;
+	if (n == 2) return sqrT<2>;
+	if (n == 3) return sqrT<3>;
+	if (n == 4) return sqrT<4>;
+	if (n == 5) return sqrT<5>;
+	if (n == 6) return sqrT<6>;
+	if (n == 7) return sqrT<7>;
+	if (n == 8) return sqrT<8>;
+	if (n == 9) return sqrT<9>;
+#if MCL_SIZEOF_UNIT == 4
+	if (n == 10) return sqrT<10>;
+	if (n == 11) return sqrT<11>;
+	if (n == 12) return sqrT<12>;
+	if (n == 13) return sqrT<13>;
+	if (n == 14) return sqrT<14>;
+	if (n == 15) return sqrT<15>;
+	if (n == 16) return sqrT<16>;
+#endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM == 1
+	CYBOZU_ASSUME(false);
 }
 inline void sqrN(Unit *y, const Unit *x, size_t n)
 {

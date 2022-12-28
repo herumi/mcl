@@ -279,42 +279,6 @@ extern "C" MCL_DLL_API void mclb_disable_fast() {
 	mclb_mulUnitAdd9 = mclb_mulUnitAdd_slow9;
 	mclb_mul9 = mclb_mul_slow9;
 	mclb_sqr9 = mclb_sqr_slow9;
-	TblT<>::mulUnitTbl[1] = mclb_mulUnit_slow1;
-	TblT<>::mulUnitAddTbl[1] = mclb_mulUnitAdd_slow1;
-	TblT<>::mulTbl[1] = mclb_mul_slow1;
-	TblT<>::sqrTbl[1] = mclb_sqr_slow1;
-	TblT<>::mulUnitTbl[2] = mclb_mulUnit_slow2;
-	TblT<>::mulUnitAddTbl[2] = mclb_mulUnitAdd_slow2;
-	TblT<>::mulTbl[2] = mclb_mul_slow2;
-	TblT<>::sqrTbl[2] = mclb_sqr_slow2;
-	TblT<>::mulUnitTbl[3] = mclb_mulUnit_slow3;
-	TblT<>::mulUnitAddTbl[3] = mclb_mulUnitAdd_slow3;
-	TblT<>::mulTbl[3] = mclb_mul_slow3;
-	TblT<>::sqrTbl[3] = mclb_sqr_slow3;
-	TblT<>::mulUnitTbl[4] = mclb_mulUnit_slow4;
-	TblT<>::mulUnitAddTbl[4] = mclb_mulUnitAdd_slow4;
-	TblT<>::mulTbl[4] = mclb_mul_slow4;
-	TblT<>::sqrTbl[4] = mclb_sqr_slow4;
-	TblT<>::mulUnitTbl[5] = mclb_mulUnit_slow5;
-	TblT<>::mulUnitAddTbl[5] = mclb_mulUnitAdd_slow5;
-	TblT<>::mulTbl[5] = mclb_mul_slow5;
-	TblT<>::sqrTbl[5] = mclb_sqr_slow5;
-	TblT<>::mulUnitTbl[6] = mclb_mulUnit_slow6;
-	TblT<>::mulUnitAddTbl[6] = mclb_mulUnitAdd_slow6;
-	TblT<>::mulTbl[6] = mclb_mul_slow6;
-	TblT<>::sqrTbl[6] = mclb_sqr_slow6;
-	TblT<>::mulUnitTbl[7] = mclb_mulUnit_slow7;
-	TblT<>::mulUnitAddTbl[7] = mclb_mulUnitAdd_slow7;
-	TblT<>::mulTbl[7] = mclb_mul_slow7;
-	TblT<>::sqrTbl[7] = mclb_sqr_slow7;
-	TblT<>::mulUnitTbl[8] = mclb_mulUnit_slow8;
-	TblT<>::mulUnitAddTbl[8] = mclb_mulUnitAdd_slow8;
-	TblT<>::mulTbl[8] = mclb_mul_slow8;
-	TblT<>::sqrTbl[8] = mclb_sqr_slow8;
-	TblT<>::mulUnitTbl[9] = mclb_mulUnit_slow9;
-	TblT<>::mulUnitAddTbl[9] = mclb_mulUnitAdd_slow9;
-	TblT<>::mulTbl[9] = mclb_mul_slow9;
-	TblT<>::sqrTbl[9] = mclb_sqr_slow9;
 }
 #endif // MCL_BINT_ASM_X64 == 1
 #if MCL_BINT_ASM_X64 == 1
