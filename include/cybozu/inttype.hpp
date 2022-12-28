@@ -72,12 +72,16 @@
 	#endif
 #endif
 #ifndef CYBOZU_ASSUME
-	#if defined(__clang__)
-		#define CYBOZU_ASSUME(x) __builtin_assume(x)
-	#elif defined(_MSC_VER) || defined(__ICC)
-		#define CYBOZU_ASSUME(x) __assume(x)
+	#ifdef NDEBUG
+		#if defined(__clang__)
+			#define CYBOZU_ASSUME(x) __builtin_assume(x)
+		#elif defined(_MSC_VER) || defined(__ICC)
+			#define CYBOZU_ASSUME(x) __assume(x)
+		#else
+			#define CYBOZU_ASSUME(x) if (!(x)) { __builtin_unreachable(); }
+		#endif
 	#else
-		#define CYBOZU_ASSUME(x) if (!(x)) { __builtin_unreachable(); }
+		#define CYBOZU_ASSUME(x) assert(x)
 	#endif
 #endif
 
