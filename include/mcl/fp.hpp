@@ -856,7 +856,7 @@ public:
 #endif
 };
 
-#if defined(__x86_64__) && defined(__GNUC__)
+#if defined(__GNUC__)
 	// x must be in [200, 65535]. lower values indicate a higher priority.
 	#define MCL_INIT_PRIORITY(x) __attribute__((init_priority(x)))
 #else
