@@ -47,6 +47,15 @@ typedef void (*void_pp)(Unit*, const Unit*);
 
 MCL_DLL_API void initBint(); // disable mulx/adox/adcx if they are not available on x64. Do nothing in other environments.
 
+namespace impl {
+static struct Init {
+	Init()
+	{
+		initBint();
+	}
+} g_init;
+}
+
 // show integer as little endian
 template<class T>
 inline void dump(const T *x, size_t n, const char *msg = "")

@@ -13,11 +13,6 @@
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-CYBOZU_TEST_AUTO(cpu)
-{
-	mcl::bint::initBint();
-}
-
 using namespace mcl;
 
 struct V {

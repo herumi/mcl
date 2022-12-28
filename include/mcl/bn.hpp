@@ -840,7 +840,6 @@ struct Param {
 
 	void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	{
-		bint::initBint();
 		this->cp = cp;
 		isBLS12 = (cp.curveType == MCL_BLS12_381 || cp.curveType == MCL_BLS12_377 || cp.curveType == MCL_BLS12_461);
 #ifdef MCL_STATIC_CODE

@@ -410,7 +410,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
 	if (_p <= 0) return false;
-	bint::initBint();
 	clear();
 	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 	N = gmp::getUnitSize(_p);
