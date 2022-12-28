@@ -299,10 +299,12 @@ struct MapTo {
 	Fr g2cofactorAdj_;
 	Fr g2cofactorAdjInv_;
 	int type_;
+	int curveType_;
 	int mapToMode_;
 	MapTo_WB19<Fp, G1, Fp2, G2> mapTo_WB19_;
 	MapTo()
 		: type_(0)
+		, curveType_(0)
 		, mapToMode_(MCL_MAP_TO_MODE_ORIGINAL)
 	{
 	}
@@ -494,14 +496,23 @@ struct MapTo {
 	bool setMapToMode(int mode)
 	{
 		if (type_ == STD_ECtype) {
+			// force
 			mapToMode_ = MCL_MAP_TO_MODE_TRY_AND_INC;
 			return true;
 		}
 		switch (mode) {
 		case MCL_MAP_TO_MODE_ORIGINAL:
+			mapToMode_ = mode;
+			return true;
 		case MCL_MAP_TO_MODE_TRY_AND_INC:
+			mapToMode_ = mode;
+			return true;
 		case MCL_MAP_TO_MODE_HASH_TO_CURVE_07:
+			if (curveType_ != MCL_BLS12_381) return false;
+			mapToMode_ = mode;
+			return true;
 		case MCL_MAP_TO_MODE_ETH2_LEGACY:
+			if (curveType_ != MCL_BLS12_381) return false;
 			mapToMode_ = mode;
 			return true;
 		default:
@@ -513,6 +524,7 @@ struct MapTo {
 	*/
 	void init(const mpz_class& cofactor, const mpz_class &z, int curveType)
 	{
+		curveType_ = curveType;
 		if (0 <= curveType && curveType < MCL_EC_BEGIN) {
 			type_ = (curveType == MCL_BLS12_381 || curveType == MCL_BLS12_377 || curveType == MCL_BLS12_461) ? BLS12type : BNtype;
 		} else {
