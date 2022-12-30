@@ -79,6 +79,7 @@ CP=cp -f
 MKDIR=mkdir -p
 RM=rm -rf
 
+DEBUG?=0
 ifeq ($(DEBUG),1)
   ifeq ($(GCC_EXT),1)
     CFLAGS+=-fsanitize=address
