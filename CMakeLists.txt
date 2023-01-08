@@ -292,8 +292,7 @@ export(PACKAGE mcl)
 
 
 # Tests
-if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MCL_BUILD_TESTING)
-	AND BUILD_TESTING)
+if(MCL_BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(test)
 endif()
