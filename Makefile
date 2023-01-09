@@ -103,7 +103,7 @@ endif
 
 ifeq ($(OS)-$(ARCH),Linux-x86_64)
 $(BASE_OBJ): $(BASE_ASM)
-	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
+	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
 else
 $(BASE_OBJ): $(BASE_LL)
 	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
@@ -145,7 +145,7 @@ $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).asm
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
 $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF)
-	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
+	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
 
     endif
   else
@@ -335,7 +335,7 @@ $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJ_DIR)/%.o: src/asm/%.S
-	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
+	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/asm/%.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
