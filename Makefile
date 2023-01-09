@@ -87,7 +87,7 @@ endif
 
 # build base$(BIT).ll
 BASE_LL=src/base$(BIT).ll
-BASE_ASM=src/asm/$(CPU).s
+BASE_ASM=src/asm/$(CPU).S
 BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
 
 ifeq ($(UPDATE_ASM),1)
@@ -122,12 +122,12 @@ asm: $(BASE_LL)
 	$(LLVM_OPT) -O3 -o - $(BASE_LL) | $(LLVM_LLC) -O3 $(LLVM_FLAGS) -x86-asm-syntax=intel
 
 # build bit$(BIT).ll
-BINT_SUF?=-$(OS)-$(CPU)
+BINT_ARCH?=-$(OS)-$(CPU)
 MCL_BINT_ASM?=1
 MCL_BINT_ASM_X64?=1
-ASM_MODE?=s
+ASM_SUF?=S
 ifeq ($(OS),mingw64)
-  ASM_MODE=asm
+  ASM_SUF=asm
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
@@ -144,13 +144,13 @@ $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).asm
 
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
-$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).s
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF)
 	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
 
     endif
   else
-    BINT_BASENAME=bint$(BIT)$(BINT_SUF)
-    BINT_SRC=src/asm/$(BINT_BASENAME).s
+    BINT_BASENAME=bint$(BIT)$(BINT_ARCH)
+    BINT_SRC=src/asm/$(BINT_BASENAME).$(ASM_SUF)
     CFLAGS+=-DMCL_BINT_ASM_X64=0
 $(BINT_OBJ): $(BINT_LL)
 	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
@@ -176,8 +176,8 @@ src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
-src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_MODE): src/s_xbyak.py src/gen_bint_x64.py
-ifeq ($(ASM_MODE),asm)
+src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
+ifeq ($(ASM_SUF),asm)
   ifeq ($(OS),mingw64)
 	python3 src/gen_bint_x64.py -win -m nasm > $@
   else
@@ -334,7 +334,7 @@ $(OBJ_DIR)/%.o: %.cpp
 $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
-$(OBJ_DIR)/%.o: src/asm/%.s
+$(OBJ_DIR)/%.o: src/asm/%.S
 	$(PRE)$(AS) $(ASFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: src/asm/%.asm
