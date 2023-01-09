@@ -52,7 +52,7 @@ inline size_t getBinary(uint8_t *bin, size_t maxBinN, mpz_class x, size_t w)
 	return getBinary2(bin, maxBinN, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x), w);
 }
 
-template<class F, typename T, size_t w = 5>
+template<class F, typename T, size_t w>
 void pow3(F& z, const F& x, const T *y, size_t yN)
 {
 	assert(w > 0);
@@ -86,7 +86,7 @@ void pow3(F& z, const F& x, const T *y, size_t yN)
 template<class T>
 void pow3(T& z, const T& x, const mpz_class& y)
 {
-	pow3(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
+	pow3<T, mcl::Unit, 3>(z, x, mcl::gmp::getUnit(y), mcl::gmp::getUnitSize(y));
 }
 
 template<class T, class F>
