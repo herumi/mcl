@@ -279,7 +279,16 @@ def init(mode):
 	g_masm = mode == 'masm'
 	g_text = []
 	if g_gas:
-		output('# for gas')
+		output('''# for gas
+#ifdef __linux__
+  #define PRE(x) x
+  #define TYPE(x) .type x, @function
+  #define SIZE(x) .size x, .-x
+#else
+  #define PRE(x) _ ## x
+  #define TYPE(x)
+  #define SIZE(x)
+#endif''')
 	elif g_masm:
 		output('; for masm (ml64.exe)')
 	else:
@@ -313,22 +322,18 @@ def dq_(s):
 		output(f'dq {s}')
 def global_(s):
 	if g_gas:
-		output(f'.global {s}')
-		output(f'.global _{s}')
+		output(f'.global PRE({s})')
 	elif g_masm:
 		output(f'public {s}')
 	else:
-		output(f'global {s}')
-		output(f'global _{s}')
+		output(f'global PRE({s})')
 def extern_(s, size):
 	if g_gas:
-		output(f'.extern {s}')
-		output(f'.extern _{s}')
+		output(f'.extern PRE({s})')
 	elif g_masm:
 		output(f'extern {s}:{size}')
 	else:
-		output(f'extern {s}')
-		output(f'extern _{s}')
+		output(f'extern PRE({s})')
 def makeLabel(s):
 	output(f'{s}:')
 	if g_masm:
@@ -415,16 +420,20 @@ def Pack(*args):
 
 class FuncProc:
 	def __init__(self, name):
+		self.name = name
 		if g_masm:
-			self.name = name
 			output(f'{self.name} proc export')
 		else:
 			if g_nasm and win64ABI:
 				output(f'export {name}')
 			defineName(name)
+		if g_gas:
+			output(f'TYPE({self.name})')
 	def close(self):
 		if g_masm:
 			output(f'{self.name} endp')
+		if g_gas:
+			output(f'SIZE({self.name})')
 	def __enter__(self):
 		return self
 	def __exit__(self, ex_type, ex_value, trace):

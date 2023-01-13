@@ -1024,7 +1024,7 @@ void getMontgomeryCoeffTest()
 	mcl::bint::addUnit(t, N * 2, 1);
 	// (p * pp + 1) mod (1 << sizeof(Unit) * N) = 0
 	for (size_t i = 0; i < N; i++) {
-		CYBOZU_TEST_EQUAL(t[i], 0);
+		CYBOZU_TEST_EQUAL(t[i], 0u);
 	}
 }
 
