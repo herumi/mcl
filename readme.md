@@ -163,11 +163,13 @@ env MCL_PROF=2 bin/bls12_test.exe
 Build GMP for 32-bit mode.
 
 ```
+sudo apt install g++-multilib
+sudo apt install clang-14
 cd <GMP dir>
 env ABI=32 ./configure --enable-cxx --prefix=<install dir>
 make -j install
 cd <mcl dir>
-make ARCH=x86 LLVM_VER=-12 GMP_DIR=<install dir>
+make ARCH=x86 LLVM_VER=-14 GMP_DIR=<install dir>
 ```
 
 # How to build on 64-bit Windows with Visual Studio
