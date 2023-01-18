@@ -68,12 +68,12 @@ func GetFpByteSize() int {
 
 // GetG1ByteSize -- the serialized size of G1
 func GetG1ByteSize() int {
-	return GetFpByteSize()
+	return int(C.mclBn_getG1ByteSize())
 }
 
 // GetG2ByteSize -- the serialized size of G2
 func GetG2ByteSize() int {
-	return GetFpByteSize() * 2
+	return int(C.mclBn_getG2ByteSize())
 }
 
 // allow zero length byte

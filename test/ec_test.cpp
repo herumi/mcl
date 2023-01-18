@@ -476,6 +476,7 @@ struct Test {
 		{
 			std::string s = P.getStr(mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(s.size(), Fp::getByteSize() + adj);
+			CYBOZU_TEST_EQUAL(s.size(), Ec::getSerializedByteSize());
 			Q.setStr(s, mcl::IoSerialize);
 			CYBOZU_TEST_EQUAL(P, Q);
 		}

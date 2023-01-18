@@ -1428,6 +1428,13 @@ public:
 	{
 		return !b_.isZero() && (Fp::BaseFp::getBitSize() & 7) != 0;
 	}
+	// return serialized byte size
+	static inline size_t getSerializedByteSize()
+	{
+		const size_t n = Fp::getByteSize();
+		const size_t adj = isMSBserialize() ? 0 : 1;
+		return n + adj;
+	}
 	template<class OutputStream>
 	void save(bool *pb, OutputStream& os, int ioMode) const
 	{

@@ -166,9 +166,15 @@ MCLBN_DLL_API int mclBn_getCurveType(void);
 MCLBN_DLL_API int mclBn_getOpUnitSize(void);
 
 /*
-	return bytes for serialized G1(=Fp)
+	return bytes for serialized G1(=size of Fp) + adj
+	adj = 1 if p is full bit else 0
 */
 MCLBN_DLL_API int mclBn_getG1ByteSize(void);
+/*
+	return bytes for serialized G2(=size of Fp2) + adj
+	adj = 1 if p is full bit else 0
+*/
+MCLBN_DLL_API int mclBn_getG2ByteSize(void);
 /*
 	return bytes for serialized Fr
 */

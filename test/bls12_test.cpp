@@ -314,6 +314,7 @@ void deserializeAndSerialize(const T& x)
 {
 	char buf[1024];
 	size_t n = x.serialize(buf, sizeof(buf));
+	CYBOZU_TEST_EQUAL(n, T::getSerializedByteSize());
 	CYBOZU_TEST_ASSERT(n > 0);
 	T y;
 	CYBOZU_TEST_EQUAL(y.deserialize(buf, n), n);
