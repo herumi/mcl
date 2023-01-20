@@ -180,6 +180,12 @@ Open a console window, and
 git clone https://github.com/herumi/mcl
 cd mcl
 
+# How to build libmcl.a for arm on Linux
+
+```
+make ARCH=armv7l lib/libmcl.a LLVM_VER=-12 CLANG_TARGET="-target armv7" CXX=g++-12 PRE=arm-linux-gnueabi-
+```
+
 # static library
 mklib
 mk -s test\bls12_test.cpp && bin\bls12_test.exe
