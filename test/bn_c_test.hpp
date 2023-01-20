@@ -125,6 +125,17 @@ CYBOZU_TEST_AUTO(Fr)
 		mclBnFr_getStr(buf, sizeof(buf), &x, 16);
 		printf("%s\n", buf);
 	}
+	mclBnFr_setInt(&x, 10);
+	mclBnFr_setInt(&y, 5);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&x, &y), 1);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&x, &x), 0);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&y, &y), 0);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&y, &x), -1);
+	mclBnFr_setInt(&y, -10); // large value
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&x, &y), -1);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&x, &x), 0);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&y, &y), 0);
+	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&y, &x), 1);
 }
 
 void G1test()

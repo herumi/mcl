@@ -223,6 +223,10 @@ int mclBnFr_isNegative(const mclBnFr *x)
 {
 	return cast(x)->isNegative();
 }
+int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y)
+{
+	return Fr::compare(*cast(x), *cast(y));
+}
 
 #ifndef MCL_DONT_USE_CSRPNG
 int mclBnFr_setByCSPRNG(mclBnFr *x)
@@ -811,6 +815,10 @@ int mclBnFp_isOdd(const mclBnFp *x)
 int mclBnFp_isNegative(const mclBnFp *x)
 {
 	return cast(x)->isNegative();
+}
+int mclBnFp_cmp(const mclBnFp *x, const mclBnFp *y)
+{
+	return Fp::compare(*cast(x), *cast(y));
 }
 
 int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize)
