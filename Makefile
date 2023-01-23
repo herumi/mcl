@@ -300,16 +300,19 @@ bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
 # set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"
 PATH_VAL=$$PATH:$(COMMON_LIB_PATH) LD_LIBRARY_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L../../../lib"
-test_go256: $(MCL_SLIB) $(BN256_SLIB)
-	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn256 .
+test_go256: $(MCL_LIB) $(BN256_LIB)
+	$(RM) $(BLS256_SLIB) $(MCL_SLIB)
+	cd ffi/go/mcl && go test -tags bn256 .
 
-test_go384: $(MCL_SLIB) $(BN384_SLIB)
-	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn384 .
+test_go384: $(MCL_LIB) $(BN384_LIB)
+	$(RM) $(BLS384_SLIB) $(MCL_SLIB)
+	cd ffi/go/mcl && go test -tags bn384 .
 
-test_go384_256: $(MCL_SLIB) $(BN384_256_SLIB)
-	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn384_256 .
+test_go384_256: $(MCL_LIB) $(BN384_256_LIB)
+	$(RM) $(BLS384_256_SLIB) $(MCL_SLIB)
+	cd ffi/go/mcl && go test -tags bn384_256 .
 
-test_go:
+test_go: # Use static libraries, not shared libraries.
 	$(MAKE) test_go256
 	$(MAKE) test_go384
 	$(MAKE) test_go384_256
