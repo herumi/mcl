@@ -929,6 +929,7 @@ CYBOZU_TEST_AUTO(liftedElGamal)
 
 	n = pub.serialize(buf, sizeof(buf));
 	CYBOZU_TEST_EQUAL(n, byteSize + 1); // +1 is for sign of y
+	CYBOZU_TEST_EQUAL(n, G1::getSerializedByteSize());
 	PublicKey pub2;
 	n = pub2.deserialize(buf, n);
 	CYBOZU_TEST_EQUAL(n, byteSize + 1);

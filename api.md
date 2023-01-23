@@ -322,18 +322,20 @@ mclSize T::serialize(void *buf, mclSize maxBufSize) const;
 - `G1` ; a compressed fixed size
   - the size is equal to `mclBn_getG1ByteSize()` (=`mclBn_getFpByteSize()`).
 - `G2` ; a compressed fixed size
-  - the size is equal to `mclBn_getG1ByteSize() * 2`.
+  - the size is equal to `mclBn_getG2ByteSize()`.
 
 A pseudo-code to serialize `P` of `G1` (resp. `G2`):
 ```
-size = mclBn_getG1ByteSize() # resp. mclBn_getG1ByteSize() * 2
+size = mclBn_getG1ByteSize() # resp. mclBn_getG2ByteSize()
 if P is zero:
   return [0] * size
 else:
   P = P.normalize()
   s = P.x.serialize()
   # x in Fp2 is odd <=> x.a is odd
-  if P.y is odd: # resp. P.y.d[0] is odd
+  if Fp is fullBit:
+    s[byte-length(s)] = P.y is odd ? 3 : 2
+  elif P.y is odd: # resp. P.y.d[0] is odd
     s[byte-length(s) - 1] |= 0x80
   return s
 ```

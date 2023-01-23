@@ -166,9 +166,15 @@ MCLBN_DLL_API int mclBn_getCurveType(void);
 MCLBN_DLL_API int mclBn_getOpUnitSize(void);
 
 /*
-	return bytes for serialized G1(=Fp)
+	return bytes for serialized G1(=size of Fp) + adj
+	adj = 1 if p is full bit else 0
 */
 MCLBN_DLL_API int mclBn_getG1ByteSize(void);
+/*
+	return bytes for serialized G2(=size of Fp2) + adj
+	adj = 1 if p is full bit else 0
+*/
+MCLBN_DLL_API int mclBn_getG2ByteSize(void);
 /*
 	return bytes for serialized Fr
 */
@@ -295,6 +301,10 @@ MCLBN_DLL_API int mclBnFr_isOne(const mclBnFr *x);
 MCLBN_DLL_API int mclBnFr_isOdd(const mclBnFr *x);
 // return 1 if half <= x < r, where half = (r + 1) / 2 else 0
 MCLBN_DLL_API int mclBnFr_isNegative(const mclBnFr *x);
+// compare x and y as unsigned
+// return x < y ? -1 : x == y ? 0 : 1;
+// @note two Montgomery conversions may be required
+MCLBN_DLL_API int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y);
 
 MCLBN_DLL_API int mclBnFp_isValid(const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y);
@@ -303,6 +313,10 @@ MCLBN_DLL_API int mclBnFp_isOne(const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp_isOdd(const mclBnFp *x);
 // return 1 if half <= x < p, where half = (p + 1) / 2 else 0
 MCLBN_DLL_API int mclBnFp_isNegative(const mclBnFp *x);
+// compare x and y as unsigned
+// return x < y ? -1 : x == y ? 0 : 1;
+// @note two Montgomery conversions may be required
+MCLBN_DLL_API int mclBnFp_cmp(const mclBnFp *x, const mclBnFp *y);
 
 MCLBN_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
 MCLBN_DLL_API int mclBnFp2_isZero(const mclBnFp2 *x);

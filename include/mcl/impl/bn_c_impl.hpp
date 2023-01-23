@@ -96,7 +96,12 @@ int mclBn_getOpUnitSize()
 
 int mclBn_getG1ByteSize()
 {
-	return mclBn_getFpByteSize();
+	return G1::getSerializedByteSize();
+}
+
+int mclBn_getG2ByteSize()
+{
+	return G2::getSerializedByteSize();
 }
 
 int mclBn_getFrByteSize()
@@ -217,6 +222,10 @@ int mclBnFr_isOdd(const mclBnFr *x)
 int mclBnFr_isNegative(const mclBnFr *x)
 {
 	return cast(x)->isNegative();
+}
+int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y)
+{
+	return Fr::compare(*cast(x), *cast(y));
 }
 
 #ifndef MCL_DONT_USE_CSRPNG
@@ -806,6 +815,10 @@ int mclBnFp_isOdd(const mclBnFp *x)
 int mclBnFp_isNegative(const mclBnFp *x)
 {
 	return cast(x)->isNegative();
+}
+int mclBnFp_cmp(const mclBnFp *x, const mclBnFp *y)
+{
+	return Fp::compare(*cast(x), *cast(y));
 }
 
 int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize)
