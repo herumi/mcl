@@ -127,7 +127,7 @@ MCL_BINT_ASM?=1
 MCL_BINT_ASM_X64?=1
 ASM_SUF?=S
 ifeq ($(OS),mingw64)
-  ASM_SUF=asm
+  WIN_API=-win
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
@@ -139,8 +139,8 @@ src/fp.cpp: include/mcl/bint_proto.hpp
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
     ifeq ($(OS),mingw64)
       BINT_ASM_X64_BASENAME=bint-x64
-$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).asm
-	nasm $(NASM_ELF_OPT) -o $@ $<
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).S
+	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
 
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
@@ -177,14 +177,10 @@ src/bint_switch.hpp: src/gen_bint_header.py
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
-ifeq ($(ASM_SUF),asm)
-  ifeq ($(OS),mingw64)
-	python3 src/gen_bint_x64.py -win -m nasm > $@
-  else
-	python3 src/gen_bint_x64.py -win > $@
-  endif
+ifeq ($(ASM_SUF),S)
+	python3 src/gen_bint_x64.py -m gas $(WIN_API) > $@
 else
-	python3 src/gen_bint_x64.py -m gas > $@
+	python3 src/gen_bint_x64.py -win > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
 	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)

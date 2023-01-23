@@ -285,7 +285,11 @@ def init(mode):
   #define TYPE(x) .type x, @function
   #define SIZE(x) .size x, .-x
 #else
-  #define PRE(x) _ ## x
+  #ifdef _WIN32
+    #define PRE(x) x
+  #else
+    #define PRE(x) _ ## x
+  #endif
   #define TYPE(x)
   #define SIZE(x)
 #endif''')
@@ -335,10 +339,7 @@ def extern_(s, size):
 	else:
 		output(f'extern PRE({s})')
 def makeLabel(s):
-	output(f'{s}:')
-	if g_masm:
-		return
-	output(f'_{s}:')
+	output(f'PRE({s}):')
 def align(n):
 	if g_gas:
 		output(f'.align {n}')
