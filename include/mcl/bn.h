@@ -31,7 +31,7 @@
 			#define MCLBN_DLL_API //__declspec(dllimport)
 		#endif
 	#endif
-	#ifndef MCLBN_NO_AUTOLINK
+	#if defined(_MSC_VER) && !defined(MCLBN_NO_AUTOLINK)
 		#if MCLBN_FP_UNIT_SIZE == 4
 			#pragma comment(lib, "mclbn256.lib")
 		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 4)

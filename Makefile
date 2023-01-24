@@ -127,7 +127,7 @@ MCL_BINT_ASM?=1
 MCL_BINT_ASM_X64?=1
 ASM_SUF?=S
 ifeq ($(OS),mingw64)
-  ASM_SUF=asm
+  WIN_API=-win
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
@@ -139,8 +139,8 @@ src/fp.cpp: include/mcl/bint_proto.hpp
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
     ifeq ($(OS),mingw64)
       BINT_ASM_X64_BASENAME=bint-x64
-$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).asm
-	nasm $(NASM_ELF_OPT) -o $@ $<
+$(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).S
+	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
 
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
@@ -177,14 +177,10 @@ src/bint_switch.hpp: src/gen_bint_header.py
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
-ifeq ($(ASM_SUF),asm)
-  ifeq ($(OS),mingw64)
-	python3 src/gen_bint_x64.py -win -m nasm > $@
-  else
-	python3 src/gen_bint_x64.py -win > $@
-  endif
+ifeq ($(ASM_SUF),S)
+	python3 src/gen_bint_x64.py -m gas $(WIN_API) > $@
 else
-	python3 src/gen_bint_x64.py -m gas > $@
+	python3 src/gen_bint_x64.py -win > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
 	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
@@ -234,7 +230,7 @@ $(MCL_LIB): $(LIB_OBJ)
 	$(AR) $(ARFLAGS) $@ $(LIB_OBJ)
 
 $(MCL_SLIB): $(LIB_OBJ)
-	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(CFLAGS) $(MCL_SLIB_CFLAGS)
+	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(CFLAGS) $(MCL_SLIB_LDFLAGS)
 
 $(BN256_LIB): $(BN256_OBJ)
 	$(AR) $(ARFLAGS) $@ $(BN256_OBJ)
@@ -249,16 +245,16 @@ $(SHE384_256_LIB): $(SHE384_256_OBJ)
 	$(AR) $(ARFLAGS) $@ $(SHE384_256_OBJ)
 
 $(SHE256_SLIB): $(SHE256_OBJ) $(MCL_LIB)
-	$(PRE)$(CXX) -o $@ $(SHE256_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE256_SLIB_CFLAGS)
+	$(PRE)$(CXX) -o $@ $(SHE256_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE256_SLIB_LDFLAGS)
 
 $(SHE384_SLIB): $(SHE384_OBJ) $(MCL_LIB)
-	$(PRE)$(CXX) -o $@ $(SHE384_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE384_SLIB_CFLAGS)
+	$(PRE)$(CXX) -o $@ $(SHE384_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE384_SLIB_LDFLAGS)
 
 $(SHE384_256_SLIB): $(SHE384_256_OBJ) $(MCL_LIB)
-	$(PRE)$(CXX) -o $@ $(SHE384_256_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE384_256_SLIB_CFLAGS)
+	$(PRE)$(CXX) -o $@ $(SHE384_256_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE384_256_SLIB_LDFLAGS)
 
 $(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(CFLAGS) $(BN256_SLIB_CFLAGS)
+	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(CFLAGS) $(BN256_SLIB_LDFLAGS)
 
 $(BN384_LIB): $(BN384_OBJ)
 	$(AR) $(ARFLAGS) $@ $(BN384_OBJ)
@@ -300,16 +296,19 @@ bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
 # set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"
 PATH_VAL=$$PATH:$(COMMON_LIB_PATH) LD_LIBRARY_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L../../../lib"
-test_go256: $(MCL_SLIB) $(BN256_SLIB)
-	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn256 .
+test_go256: $(MCL_LIB) $(BN256_LIB)
+	$(RM) $(BLS256_SLIB) $(MCL_SLIB)
+	cd ffi/go/mcl && go test -tags bn256 .
 
-test_go384: $(MCL_SLIB) $(BN384_SLIB)
-	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn384 .
+test_go384: $(MCL_LIB) $(BN384_LIB)
+	$(RM) $(BLS384_SLIB) $(MCL_SLIB)
+	cd ffi/go/mcl && go test -tags bn384 .
 
-test_go384_256: $(MCL_SLIB) $(BN384_256_SLIB)
-	cd ffi/go/mcl && env PATH=$(PATH_VAL) go test -tags bn384_256 .
+test_go384_256: $(MCL_LIB) $(BN384_256_LIB)
+	$(RM) $(BLS384_256_SLIB) $(MCL_SLIB)
+	cd ffi/go/mcl && go test -tags bn384_256 .
 
-test_go:
+test_go: # Use static libraries, not shared libraries.
 	$(MAKE) test_go256
 	$(MAKE) test_go384
 	$(MAKE) test_go384_256

@@ -96,12 +96,12 @@ int mclBn_getOpUnitSize()
 
 int mclBn_getG1ByteSize()
 {
-	return G1::getSerializedByteSize();
+	return int(G1::getSerializedByteSize());
 }
 
 int mclBn_getG2ByteSize()
 {
-	return G2::getSerializedByteSize();
+	return int(G2::getSerializedByteSize());
 }
 
 int mclBn_getFrByteSize()
