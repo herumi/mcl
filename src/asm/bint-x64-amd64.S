@@ -4645,54 +4645,54 @@ SIZE(mclb_sqr_fast1)
 PRE(mclb_sqr_fast2):
 TYPE(mclb_sqr_fast2)
 mov %rsi, %rdx
-jmp mclb_mul_fast2
+jmp PRE(mclb_mul_fast2)
 SIZE(mclb_sqr_fast2)
 .align 16
 .global PRE(mclb_sqr_fast3)
 PRE(mclb_sqr_fast3):
 TYPE(mclb_sqr_fast3)
 mov %rsi, %rdx
-jmp mclb_mul_fast3
+jmp PRE(mclb_mul_fast3)
 SIZE(mclb_sqr_fast3)
 .align 16
 .global PRE(mclb_sqr_fast4)
 PRE(mclb_sqr_fast4):
 TYPE(mclb_sqr_fast4)
 mov %rsi, %rdx
-jmp mclb_mul_fast4
+jmp PRE(mclb_mul_fast4)
 SIZE(mclb_sqr_fast4)
 .align 16
 .global PRE(mclb_sqr_fast5)
 PRE(mclb_sqr_fast5):
 TYPE(mclb_sqr_fast5)
 mov %rsi, %rdx
-jmp mclb_mul_fast5
+jmp PRE(mclb_mul_fast5)
 SIZE(mclb_sqr_fast5)
 .align 16
 .global PRE(mclb_sqr_fast6)
 PRE(mclb_sqr_fast6):
 TYPE(mclb_sqr_fast6)
 mov %rsi, %rdx
-jmp mclb_mul_fast6
+jmp PRE(mclb_mul_fast6)
 SIZE(mclb_sqr_fast6)
 .align 16
 .global PRE(mclb_sqr_fast7)
 PRE(mclb_sqr_fast7):
 TYPE(mclb_sqr_fast7)
 mov %rsi, %rdx
-jmp mclb_mul_fast7
+jmp PRE(mclb_mul_fast7)
 SIZE(mclb_sqr_fast7)
 .align 16
 .global PRE(mclb_sqr_fast8)
 PRE(mclb_sqr_fast8):
 TYPE(mclb_sqr_fast8)
 mov %rsi, %rdx
-jmp mclb_mul_fast8
+jmp PRE(mclb_mul_fast8)
 SIZE(mclb_sqr_fast8)
 .align 16
 .global PRE(mclb_sqr_fast9)
 PRE(mclb_sqr_fast9):
 TYPE(mclb_sqr_fast9)
 mov %rsi, %rdx
-jmp mclb_mul_fast9
+jmp PRE(mclb_mul_fast9)
 SIZE(mclb_sqr_fast9)
