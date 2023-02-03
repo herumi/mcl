@@ -36,17 +36,22 @@ lib = None
 
 def _init(curveType=BN254, G1only=False):
 	global lib
-	name = platform.system()
-	if name == 'Linux':
+	sysName = platform.system()
+	subDir = 'lib'
+	if sysName == 'Linux':
 		libName = 'libmclshe384_256.so'
-	elif name == 'Darwin':
+	elif sysName == 'Darwin':
 		libName = 'libmclshe384_256.dylib'
-	elif name == 'Windows':
+	elif sysName == 'Windows':
 		libName = 'mclshe384_256.dll'
+		subDir = 'bin'
 	else:
-		raise RuntimeError("not support yet", name)
-#	lib = cdll.LoadLibrary(find_library(libName))
-	lib = cdll.LoadLibrary(libName)
+		raise RuntimeError("not support yet", sysName)
+#	if hasattr(os, 'add_dll_directory'):
+#		dllDir = os.path.abspath(__file__ + '../../../../bin/')
+#		os.add_dll_directory(dllDir)
+	libFullPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../' + subDir + '/' + libName)
+	lib = cdll.LoadLibrary(libFullPath)
 	if G1only:
 		ret = lib.sheInitG1only(curveType, MCLBN_COMPILED_TIME_VAR)
 	else:
