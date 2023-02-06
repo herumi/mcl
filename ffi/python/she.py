@@ -33,9 +33,11 @@ MCLBN_COMPILED_TIME_VAR = (MCLBN_FR_UNIT_SIZE * 10) + MCLBN_FP_UNIT_SIZE
 
 Buffer = c_ubyte * 2304
 lib = None
+sysName = ''
 
 def _init(curveType=BN254, G1only=False):
 	global lib
+	global sysName
 	sysName = platform.system()
 	subDir = 'lib'
 	if sysName == 'Linux':
@@ -121,11 +123,12 @@ class CipherTextGT(Structure):
 
 def _enc(CT, enc, encIntVec, neg, p, m):
 	c = CT()
-	if -0x80000000 <= m <= 0x7fffffff:
-		ret = enc(byref(c.v), p, m)
-		if ret != 0:
-			raise RuntimeError("enc", m)
-		return c
+	if sysName != 'Windows': # bad encoding for negative value on Windows. fix this later
+		if -0x80000000 <= m <= 0x7fffffff:
+			ret = enc(byref(c.v), p, m)
+			if ret != 0:
+				raise RuntimeError("enc", m)
+			return c
 	if m < 0:
 		minus = True
 		m = -m
@@ -337,6 +340,7 @@ if __name__ == '__main__':
 	c12 = pub.encG1(m12)
 	# dec(enc) for G1
 	if sec.dec(c11) != m11: print("err1")
+	if sec.dec(pub.encG1(m22)) != m22: print("err minus")
 
 	# add/sub for G1
 	if sec.dec(add(c11, c12)) != m11 + m12: print("err2")
@@ -413,7 +417,7 @@ if __name__ == '__main__':
 	import sys
 	if sys.version_info.major >= 3:
 		import timeit
-		N = 100000
+		N = 10000
 		print(str(timeit.timeit("pub.encG1(12)", number=N, globals=globals()) / float(N) * 1e3) + "msec")
 		print(str(timeit.timeit("ppub.encG1(12)", number=N, globals=globals()) / float(N) * 1e3) + "msec")
 
