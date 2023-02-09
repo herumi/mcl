@@ -10,6 +10,13 @@
 #include <cmath>
 #include <vector>
 #include <iosfwd>
+
+#if defined(MCL_MAX_FP_BIT_SIZE) && MCL_MAX_FP_BIT_SIZE == 384 && defined(MCL_MAX_FR_BIT_SIZE) && MCL_MAX_FR_BIT_SIZE == 256
+
+// already include bls12_381.hpp
+
+#else
+
 #ifndef MCLBN_FP_UNIT_SIZE
 	#define MCLBN_FP_UNIT_SIZE 4
 #endif
@@ -22,6 +29,8 @@
 #else
 #define MCL_MAX_FP_BIT_SIZE (MCLBN_FP_UNIT_SIZE * 64)
 #include <mcl/bn.hpp>
+#endif
+
 #endif
 
 #include <mcl/window_method.hpp>
