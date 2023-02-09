@@ -298,6 +298,12 @@ def init(mode):
 	else:
 		output('; for nasm')
 
+def addPRE(s):
+	if g_gas:
+		return f'PRE({s})'
+	else:
+		return s
+
 def output(s):
 	g_text.append(s)
 
@@ -339,7 +345,7 @@ def extern_(s, size):
 	else:
 		output(f'extern PRE({s})')
 def makeLabel(s):
-	output(f'PRE({s}):')
+	output(addPRE(s) + ':')
 def align(n):
 	if g_gas:
 		output(f'.align {n}')
