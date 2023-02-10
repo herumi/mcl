@@ -89,11 +89,13 @@ struct Ntt {
 	bool isAllocated_;
 	Fr *ws_; // [N + 1];
 	size_t N_;
+	size_t bitN_;
 
 	Ntt()
 		: isAllocated_(false)
 		, ws_(0)
 		, N_(0)
+		, bitN_(0)
 	{
 		// 32 and 5 are for BLS12-381
 #if 1
@@ -122,7 +124,7 @@ struct Ntt {
 
 	bool verifyN(size_t N) const
 	{
-		return N > 0 && (N & (N - 1)) == 0;
+		return N > 1 && (N & (N - 1)) == 0;
 	}
 	static size_t requiredByteSize(size_t N)
 	{
@@ -143,6 +145,7 @@ struct Ntt {
 			isAllocated_ = true;
 		}
 		N_ = N;
+		bitN_ = cybozu::bsr(N);
 		// w = 2^maxBitN-th root of 1
 		Fr w;
 		Fr::pow(w, root_, (int64_t(1) << 32) / N);
@@ -158,20 +161,17 @@ struct Ntt {
 		xs[i] = sum_{j=0}^{inN-1} xs[j] getW(i)^j for i = 0, ..., N-1
 	*/
 	template<class G>
-	bool _ntt(G *xs, size_t N, const Fr *ws, bool inv) const
+	void _ntt(G *xs, const Fr *ws, bool inv) const
 	{
-		if (!verifyN(N)) return false;
-		if (N == 1) return true;
-		const size_t bitN = cybozu::bsr(N);
-		br_.revArray(xs, bitN);
-		size_t h = N;
-		for (size_t L = 1; L < N; L *= 2) {
+		br_.revArray(xs, bitN_);
+		size_t h = N_;
+		for (size_t L = 1; L < N_; L *= 2) {
 			h >>= 1;
-			for (size_t i = 0; i < N; i += L*2) {
+			for (size_t i = 0; i < N_; i += L*2) {
 				size_t idx = 0;
 				for (size_t j = i; j < L + i; j++) {
 					G tmp;
-					G::mul(tmp, xs[j + L], ws[inv ? N - idx : idx]);
+					G::mul(tmp, xs[j + L], ws[inv ? N_ - idx : idx]);
 					G::sub(xs[j + L], xs[j], tmp);
 					G::add(xs[j], xs[j], tmp);
 					idx += h;
@@ -179,16 +179,15 @@ struct Ntt {
 			}
 		}
 		if (inv) {
-			for (size_t i = 0; i < N; i++) {
+			for (size_t i = 0; i < N_; i++) {
 				G::mul(xs[i], xs[i], invN_);
 			}
 		}
-		return true;
 	}
 	template<class G>
-	bool ntt(G *xs, size_t N) const { return _ntt(xs, N, ws_, false); }
+	void ntt(G *xs) const { _ntt(xs, ws_, false); }
 	template<class G>
-	bool intt(G *xs, size_t N) const { return _ntt(xs, N, ws_, true); }
+	void intt(G *xs) const { _ntt(xs, ws_, true); }
 };
 
 } // mcl

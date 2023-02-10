@@ -72,7 +72,7 @@ void test_sub(NTT& ntt, const G *in, size_t bitN)
 	printf("n=%zd\n", n);
 
 	copy(out, in, n);
-	ntt.ntt(out, n);
+	ntt.ntt(out);
 
 #if 0
 	// compare ntt and naieve
@@ -82,7 +82,7 @@ void test_sub(NTT& ntt, const G *in, size_t bitN)
 
 	// check intt(ntt(in)) == in
 	copy(out2, out, n);
-	ntt.intt(out2, n);
+	ntt.intt(out2);
 	CYBOZU_TEST_EQUAL_ARRAY(out2, in, n);
 }
 
