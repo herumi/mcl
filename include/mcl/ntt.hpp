@@ -81,7 +81,7 @@ struct BitReverse {
 } // mcl::local
 
 template<class Fr>
-struct NTT {
+struct Ntt {
 	local::BitReverse br_;
 	Fr root_; // (r-1)/(2^32)
 	Fr w_;
@@ -90,7 +90,7 @@ struct NTT {
 	Fr *ws_; // [N + 1];
 	size_t N_;
 
-	NTT()
+	Ntt()
 		: isAllocated_(false)
 		, ws_(0)
 		, N_(0)
@@ -115,7 +115,7 @@ struct NTT {
 			isAllocated_ = false;
 		}
 	}
-	~NTT()
+	~Ntt()
 	{
 		clean();
 	}

@@ -115,7 +115,7 @@ CYBOZU_TEST_AUTO(generic)
 		char v[2] = { char(i / 256), char(i % 256) };
 		hashAndMapToG1(inG1[i], v, 2);
 	}
-	typedef mcl::NTT<Fr> NTT;
+	typedef mcl::Ntt<Fr> NTT;
 	NTT ntt;
 
 	puts("Fr");
