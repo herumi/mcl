@@ -795,10 +795,10 @@ public:
 			v *= c.g_[0];
 		}
 	public:
-		void setByCSPRNG()
+		void setByCSPRNG(fp::RandGen rg = fp::RandGen())
 		{
-			x_.setRand();
-			if (!isG1only_) y_.setRand();
+			x_.setRand(rg);
+			if (!isG1only_) y_.setRand(rg);
 		}
 		/*
 			set xP and yQ
