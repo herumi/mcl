@@ -11,7 +11,6 @@ public:
 	Unit rp; // rp * p = -1 mod M = 1 << 64
 	size_t N;
 	const Unit *p;
-	const Unit *rp2;
 	bool isFullBit;
 	Montgomery() {}
 	static Unit getLow(const mpz_class& x)
@@ -37,10 +36,9 @@ public:
 		v_.resize(N * 2);
 		Unit *base = &v_[N];
 		mcl::gmp::getArray(base, N, _p);
-		mcl::bint::getMontgomeryCoeff(&v_[0], base, N);
+		rp = mcl::bint::getMontgomeryCoeff(v_[0]);
 		p = base;
 		rp = base[-1];
-		rp2 = &v_[0];
 		isFullBit = p[N - 1] >> (sizeof(Unit) * 8 - 1);
 	}
 

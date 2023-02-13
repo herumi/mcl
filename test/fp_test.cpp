@@ -1013,19 +1013,11 @@ void getMontgomeryCoeffTest()
 {
 	const mcl::fp::Op& op = Fp::getOp();
 	const size_t N = op.N;
-	Unit *pp = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N);
-	mcl::bint::getMontgomeryCoeff(pp, &op.p[0], 1);
-	CYBOZU_TEST_EQUAL(pp[0], op.rp);
-	mcl::bint::getMontgomeryCoeff(pp, op.p, N);
-	CYBOZU_TEST_EQUAL(pp[0], op.rp);
-	mcl::bint::dump(pp, N, "pp");
-	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * N * 2);
-	mcl::bint::mulN(t, pp, op.p, N);
-	mcl::bint::addUnit(t, N * 2, 1);
-	// (p * pp + 1) mod (1 << sizeof(Unit) * N) = 0
-	for (size_t i = 0; i < N; i++) {
-		CYBOZU_TEST_EQUAL(t[i], 0u);
-	}
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * (N + 1));
+	mcl::bint::mulUnitN(t, op.p, op.rp, N);
+	mcl::bint::addUnit(t, N + 1, 1);
+	// (p * op.rp + 1) mod (1 << sizeof(Unit)) = 0
+	CYBOZU_TEST_EQUAL(t[0], 0u);
 }
 
 void sub(mcl::fp::Mode mode)
