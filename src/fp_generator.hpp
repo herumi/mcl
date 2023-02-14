@@ -641,6 +641,37 @@ private:
 			mov(ptr [pz + i * 8], t);
 		}
 	}
+	/*
+		x = (x >= p[]) x - p[] : x
+		using t and m as workarea
+	*/
+	template<class ADDR>
+	void sub_p_mod2(const Pack& x, const ADDR& p, const Pack& t, const RegExp *m)
+	{
+		(void)m;
+#if 1
+		for (int i = 0; i < pn_; i++) {
+			if (i < (int)t.size()) {
+				mov(t[i], x[i]);
+			} else {
+				mov(ptr[*m + 8 * i], x[i]);
+			}
+		}
+#else
+		mov_rr(t, x);
+#endif
+		sub_rm(x, p);
+		if (isFullBit_) {
+			sbb(rax, 0);
+		}
+		for (int i = 0; i < pn_; i++) {
+			if (i < (int)t.size()) {
+				cmovc(x[i], t[i]);
+			} else {
+				cmovc(x[i], ptr[*m + 8 * i]);
+			}
+		}
+	}
 	void gen_raw_fp_add(const RegExp& pz, const RegExp& px, const RegExp& py, const Pack& t, bool withCarry = false, const Reg64 *H = 0)
 	{
 		const Pack& t1 = t.sub(0, pn_);
@@ -651,8 +682,13 @@ private:
 			mov(*H, 0);
 			adc(*H, 0);
 		}
+#if 1
+		sub_p_mod2(t1, rip + pL_, t2, &pz);
+		store_mr(pz, t1);
+#else
 		sub_p_mod(t2, t1, rip + pL_, H);
 		store_mr(pz, t2);
+#endif
 	}
 	bool gen_fp_add(void3u& func)
 	{
