@@ -296,7 +296,18 @@ def init(mode):
 	elif g_masm:
 		output('; for masm (ml64.exe)')
 	else:
-		output('; for nasm')
+		output('''; for nasm
+%imacro _global 1
+  %ifdef ADD_UNDERSCORE
+    global _%1
+    %1:
+    _%1:
+  %else
+    global %1
+    %1:
+  %endif
+%endmacro
+''')
 
 def addPRE(s):
 	if g_gas:
@@ -333,10 +344,10 @@ def dq_(s):
 def global_(s):
 	if g_gas:
 		output(f'.global PRE({s})')
-	elif g_masm:
+	if g_masm:
 		output(f'public {s}')
-	else:
-		output(f'global PRE({s})')
+	if g_nasm:
+		output(f'_global {s}')
 def extern_(s, size):
 	if g_gas:
 		output(f'.extern PRE({s})')
@@ -430,12 +441,17 @@ class FuncProc:
 		self.name = name
 		if g_masm:
 			output(f'{self.name} proc export')
-		else:
-			if g_nasm and win64ABI:
+			return
+		if g_nasm:
+			if win64ABI:
 				output(f'export {name}')
-			defineName(name)
+			global_(name)
+			return
 		if g_gas:
+			global_(name)
+			output(f'PRE({name}):')
 			output(f'TYPE({self.name})')
+			return
 	def close(self):
 		if g_masm:
 			output(f'{self.name} endp')
