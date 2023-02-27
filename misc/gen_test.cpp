@@ -25,6 +25,7 @@ void mclb_fp_addNF6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
 void mclb_fp_sub4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_sub6(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+void mclb_fp_sub8(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 
 //void mclb_mulLow_fast4(Unit *z, const Unit *x, const Unit *y);
 //void mclb_mulLow_fast6(Unit *z, const Unit *x, const Unit *y);
@@ -58,6 +59,7 @@ bint::void_pppp get_fp_subA(size_t n)
 	default: return 0;
 	case 4: return mclb_fp_sub4;
 	case 6: return mclb_fp_sub6;
+	case 8: return mclb_fp_sub8;
 	}
 }
 
@@ -192,6 +194,44 @@ void testFpAdd(const char *pStr)
 	CYBOZU_BENCH_C("subL m", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
 }
 
+template<size_t N>
+void testFpSub(const char *pStr)
+{
+	printf("testFpSub p=%s\n", pStr);
+	bool b;
+	Fp::init(&b, 1, mpz_class(pStr));
+	const Unit *p = Fp::getOp().p;
+	bint::void_pppp subA = get_fp_subA(N);
+	bint::void_pppp subL = get_llvm_fp_sub(N);
+	cybozu::XorShift rg;
+	Fp fx, fy, fz;
+	Unit *x = const_cast<Unit*>(fx.getUnit());
+	Unit *y = const_cast<Unit*>(fy.getUnit());
+	Unit z1[N], z2[N];
+	for (size_t i = 0; i < C; i++) {
+		fx.setByCSPRNG(rg);
+		fy.setByCSPRNG(rg);
+		Fp::add(fz, fx, fy);
+		subA(z1, fz.getUnit(), x, p);
+		subL(z2, fz.getUnit(), x, p);
+		CYBOZU_TEST_EQUAL_ARRAY(z1, y, N);
+		CYBOZU_TEST_EQUAL_ARRAY(z2, y, N);
+	}
+	puts("testFpSub");
+	puts("random");
+	CYBOZU_BENCH_C("subA r", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
+	CYBOZU_BENCH_C("subL r", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
+	puts("0");
+	bint::clearN(z2, N);
+	CYBOZU_BENCH_C("subA 0", CC, fx.setByCSPRNG(rg);subA, x, x, z2, p);
+	CYBOZU_BENCH_C("subL 0", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
+	puts("p-1");
+	bint::copyN(z2, p, N);
+	z2[0]--;
+	CYBOZU_BENCH_C("subA m", CC, fx.setByCSPRNG(rg);subA, x, x, z2, p);
+	CYBOZU_BENCH_C("subL m", CC, fx.setByCSPRNG(rg);subL, x, x, z2, p);
+}
+
 #if 0
 template<size_t N>
 void testMontRed()
@@ -256,5 +296,7 @@ CYBOZU_TEST_AUTO(all)
 		testFpAdd<6>(tbl6[i]);
 //		testMontRed<6>();
 	}
+	const char *prime8 = "0x65b48e8f740f89bffc8ab0d15e3e4c4ab42d083aedc88c425afbfcc69322c9cda7aac6c567f35507516730cc1f0b4f25c2721bf457aca8351b81b90533c6c87b";
+	testFpSub<8>(prime8);
 }
 

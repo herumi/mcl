@@ -147,4 +147,6 @@ for N in [4, 6]:
   gen_fp_sub(N)
 #  gen_montRed(N)
 
+gen_fp_sub(8)
+
 term()
