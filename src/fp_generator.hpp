@@ -785,7 +785,6 @@ private:
 	}
 	bool gen_fp_sub(void3u& func)
 	{
-		if (pn_ > 6) return false;
 		align(16);
 		func = getCurr<void3u>();
 		/*

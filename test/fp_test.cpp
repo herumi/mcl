@@ -1044,6 +1044,11 @@ void sub(mcl::fp::Mode mode)
 		// N = 6
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
+#if MCL_MAX_BIT_SIZE >= 512
+
+		// N = 8
+		"0x65b48e8f740f89bffc8ab0d15e3e4c4ab42d083aedc88c425afbfcc69322c9cda7aac6c567f35507516730cc1f0b4f25c2721bf457aca8351b81b90533c6c87b",
+#endif
 
 #if MCL_MAX_BIT_SIZE >= 521
 		// N = 9
