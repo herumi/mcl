@@ -115,7 +115,7 @@ const int CC = 10000;
 template<size_t N>
 void testFpAdd(const char *pStr)
 {
-	printf("testFpAdd p=%s\n", pStr);
+	printf("testFpAdd p=%s, N=%zd\n", pStr, N);
 	bool b;
 	Fp::init(&b, 1, mpz_class(pStr));
 	Fp2::init(&b);
@@ -180,6 +180,9 @@ void testFpAdd(const char *pStr)
 		CYBOZU_BENCH_C("addNFL m", CC, addNFL, z1, z1, z2, p);
 	}
 	puts("testFpSub");
+	puts("fixed");
+	CYBOZU_BENCH_C("subA", CC, subA, z1, z1, x, p);
+	CYBOZU_BENCH_C("subL", CC, subL, z1, z1, x, p);
 	puts("random");
 	CYBOZU_BENCH_C("subA r", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
 	CYBOZU_BENCH_C("subL r", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
@@ -197,7 +200,7 @@ void testFpAdd(const char *pStr)
 template<size_t N>
 void testFpSub(const char *pStr)
 {
-	printf("testFpSub p=%s\n", pStr);
+	printf("testFpSub p=%s, N=%zd\n", pStr, N);
 	bool b;
 	Fp::init(&b, 1, mpz_class(pStr));
 	const Unit *p = Fp::getOp().p;
@@ -218,6 +221,9 @@ void testFpSub(const char *pStr)
 		CYBOZU_TEST_EQUAL_ARRAY(z2, y, N);
 	}
 	puts("testFpSub");
+	puts("fixed");
+	CYBOZU_BENCH_C("subA", CC, subA, z1, z1, x, p);
+	CYBOZU_BENCH_C("subL", CC, subL, z1, z1, x, p);
 	puts("random");
 	CYBOZU_BENCH_C("subA r", CC, fx.setByCSPRNG(rg);subA, z1, z1, x, p);
 	CYBOZU_BENCH_C("subL r", CC, fx.setByCSPRNG(rg);subL, z1, z1, x, p);
