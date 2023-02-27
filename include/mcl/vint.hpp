@@ -25,7 +25,7 @@ namespace mcl {
 namespace vint {
 
 class FixedBuffer {
-	static const size_t N = maxUnitSize * 2;
+	static const size_t N = maxUnitSize * 2 + 1;
 	size_t size_;
 	Unit v_[N];
 public:

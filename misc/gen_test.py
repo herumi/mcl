@@ -95,8 +95,9 @@ def gen_fp_sub(N):
       add_pm(X, rax)
       store_mp(pz, X)
 
+"""
 ## py[N] = Mont reduction(px[N*2]) with pp
-def gen_montRed2(N):
+def gen_montRed(N):
   align(16)
   with FuncProc(f'mclb_montRed_fast{N}'):
     with StackFrame(3, N*2-2, useRDX=True, stackSizeByte=N*8*3) as sf:
@@ -126,6 +127,7 @@ def gen_montRed2(N):
       sbb(px, 0)
       vec_pp(cmovnc, y2, y1)
       store_mp(py, y2)
+"""
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-win', '--win', help='output win64 abi', action='store_true')
@@ -133,7 +135,7 @@ parser.add_argument('-m', '--mode', help='output asm syntax', default='nasm')
 param = parser.parse_args()
 
 setWin64ABI(param.win)
-#init(param.mode)
+init(param.mode)
 
 segment('text')
 output('ZERO:')
@@ -143,6 +145,8 @@ for N in [4, 6]:
   gen_fp_add(N)
   gen_fp_addNF(N)
   gen_fp_sub(N)
-  gen_montRed2(N)
+#  gen_montRed(N)
+
+gen_fp_sub(8)
 
 term()

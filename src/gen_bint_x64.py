@@ -287,7 +287,7 @@ def gen_mul_fast(N):
         pk = sf.t[0:N]
         gen_mulPreN(pz, px, py, pk, sf.t[N], N)
     else:
-      jmp(f'PRE(mclb_mul_slow{N})')
+      jmp(addPRE(f'mclb_mul_slow{N}'))
 
 # optimize this later
 def gen_sqr_fast(N):
@@ -305,7 +305,7 @@ def gen_sqr_fast(N):
       mov(r8, rdx)
     else:
       mov(rdx, rsi)
-    jmp(f'PRE(mclb_mul_fast{N})')
+    jmp(addPRE(f'mclb_mul_fast{N}'))
 
 def inner_mulLow_fastN(pz, px, py, ts, N):
   assert len(ts) >= N-1

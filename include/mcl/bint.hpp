@@ -449,17 +449,9 @@ MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
 // x &= (1 << bitSize) - 1
 MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize);
 
-/*
-	get pp[N] such that p[N] * pp[N] = -1 mod M
-	M = 1 << (sizeof(Unit) * N)
-	0 < pp[N] < M
-*/
-MCL_DLL_API void getMontgomeryCoeff(Unit *pp, const Unit *p, size_t N);
-
 // ppLow = Unit(p)
 inline Unit getMontgomeryCoeff(Unit pLow)
 {
-#if 1
 	Unit pp = 0;
 	Unit t = 0;
 	Unit x = 1;
@@ -472,11 +464,6 @@ inline Unit getMontgomeryCoeff(Unit pLow)
 		x <<= 1;
 	}
 	return pp;
-#else
-	Unit pp;
-	getMontgomeryCoeff(&pp, &pLow, 1);
-	return pp;
-#endif
 }
 
 } } // mcl::bint
