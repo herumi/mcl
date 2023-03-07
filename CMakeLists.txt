@@ -18,6 +18,14 @@ option(
 	"build static library"
 	OFF
 )
+option(
+	MCL_STANDALONE
+	"build without standard library"
+	OFF
+)
+
+set(MCL_CFLAGS_STANDALONE -fno-threadsafe-statics -fno-exceptions -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION CACHE STRING "add user defined CFLAGS")
+
 if(MSVC)
 	set(MCL_TEST_WITH_GMP_DEFAULT OFF)
 else()
@@ -114,27 +122,29 @@ if(MSVC)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX)
 	# set compiler flags for warnings level
 	set(MCL_COMPILE_OPTIONS /W4)
-	target_compile_options(mcl PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
 else()
 	# Set compiler flags for warnings
 	set(MCL_COMPILE_OPTIONS -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align
 		-Wwrite-strings -Wfloat-equal -Wpointer-arith -DNDEBUG -O3 -fPIC)
-
-	target_compile_options(mcl PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
-	set_target_properties(mcl PROPERTIES
-		CXX_STANDARD 11
-		CXX_STANDARD_REQUIRED YES
-		CXX_EXTENSIONS NO)
-	set_target_properties(mcl_st PROPERTIES
-		CXX_STANDARD 11
-		CXX_STANDARD_REQUIRED YES
-		CXX_EXTENSIONS NO)
-	target_compile_features(mcl PUBLIC cxx_std_11)
-	target_compile_features(mcl_st PUBLIC cxx_std_11)
-
 endif()
+
+if (${MCL_STANDALONE})
+	set(MCL_COMPILE_OPTIONS ${MCL_COMPILE_OPTIONS} ${MCL_CFLAGS_STANDALONE})
+endif()
+target_compile_options(mcl PRIVATE ${MCL_COMPILE_OPTIONS})
+target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
+
+#	set_target_properties(mcl PROPERTIES
+#		CXX_STANDARD 11
+#		CXX_STANDARD_REQUIRED YES
+#		CXX_EXTENSIONS NO)
+#	set_target_properties(mcl_st PROPERTIES
+#		CXX_STANDARD 11
+#		CXX_STANDARD_REQUIRED YES
+#		CXX_EXTENSIONS NO)
+#	target_compile_features(mcl PUBLIC cxx_std_11)
+#	target_compile_features(mcl_st PUBLIC cxx_std_11)
+
 
 # use bint-x64 on x64, bint${BIT}.ll on the other CPU
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
