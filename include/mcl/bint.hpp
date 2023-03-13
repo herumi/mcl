@@ -10,6 +10,9 @@
 #include <mcl/config.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <assert.h>
+#ifndef MCL_STANDALONE
+#include <stdio.h>
+#endif
 
 //#define MCL_BINT_ASM 1
 #ifdef MCL_WASM32
@@ -61,6 +64,11 @@ static struct Init {
 template<class T>
 inline void dump(const T *x, size_t n, const char *msg = "")
 {
+#ifdef MCL_STANDALONE
+	(void)x;
+	(void)n;
+	(void)msg;
+#else
 	if (msg) printf("%s ", msg);
 	for (size_t i = 0; i < n; i++) {
 		T v = x[n - 1 - i];
@@ -69,6 +77,7 @@ inline void dump(const T *x, size_t n, const char *msg = "")
 		}
 	}
 	printf("\n");
+#endif
 }
 
 /*
