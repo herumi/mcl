@@ -1,3 +1,4 @@
+#define MCL_DONT_CALL_INITBINT
 #include "llvm_gen.hpp"
 #include <cybozu/option.hpp>
 #include <mcl/op.hpp>
