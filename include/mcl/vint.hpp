@@ -18,7 +18,7 @@
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
-
+#include <string.h>
 
 namespace mcl {
 
