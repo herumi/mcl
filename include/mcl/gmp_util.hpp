@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>

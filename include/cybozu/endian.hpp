@@ -8,8 +8,6 @@
 */
 #include <cybozu/inttype.hpp>
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 namespace cybozu {
 

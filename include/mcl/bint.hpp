@@ -10,7 +10,6 @@
 #include <mcl/config.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <assert.h>
-#include <stdio.h>
 
 //#define MCL_BINT_ASM 1
 #ifdef MCL_WASM32
