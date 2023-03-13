@@ -6,15 +6,13 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <stdlib.h>
+#include <mcl/config.hpp>
 #include <assert.h>
-#include <stdint.h>
 #include <cybozu/bit_operation.hpp>
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <cybozu/exception.hpp>
 #endif
 #include <mcl/randgen.hpp>
-#include <mcl/config.hpp>
 #include <mcl/conversion.hpp>
 
 #ifdef _MSC_VER
