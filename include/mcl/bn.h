@@ -18,8 +18,7 @@
 #define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
 #include <stdint.h> // for uint64_t, uint8_t
-#include <stdlib.h> // for size_t
-
+#include <stddef.h> // for size_t
 
 #if defined(_WIN32)
 	#ifdef MCLBN_DONT_EXPORT

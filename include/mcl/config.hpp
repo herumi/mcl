@@ -22,6 +22,15 @@
 	#endif
 #endif
 
+#ifdef MCL_STANDALONE
+	#define MCL_DONT_USE_OPENSSL
+	#define CYBOZU_DONT_USE_STRING
+	#define CYBOZU_DONT_USE_EXCEPTION
+	#define MCL_DONT_USE_CSPRNG
+	#define MCL_DONT_USE_MALLOC
+#endif
+#include <stddef.h> // for size_t
+
 #ifndef MCL_MAX_BIT_SIZE
 	#define MCL_MAX_BIT_SIZE 512
 #endif
