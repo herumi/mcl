@@ -2,6 +2,7 @@ include common.mk
 LIB_DIR?=lib
 OBJ_DIR?=obj
 EXE_DIR?=bin
+MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
@@ -400,9 +401,9 @@ endif
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256 -I./include -DMCL_BINT_ASM=0
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=256 -I./include -DMCL_BINT_ASM=0
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
+	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
 bin/ecdsa-emu:
 	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/ecdsa-c-emu:
@@ -421,7 +422,7 @@ make_tbl:
 	$(CXX) -o misc/precompute misc/precompute.cpp $(CFLAGS) $(MCL_LIB) $(LDFLAGS)
 	./misc/precompute > ../bls/src/qcoeff-bn254.hpp
 
-MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_DONT_USE_OPENSSL -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 -DMCL_DONT_USE_MALLOC
+MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_DONT_USE_OPENSSL -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 -DMCL_DONT_USE_MALLOC
 fp.o: src/fp.cpp
 	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
 bn_c384_256.o: src/bn_c384_256.cpp
