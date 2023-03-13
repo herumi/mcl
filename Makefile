@@ -424,13 +424,15 @@ make_tbl:
 MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_DONT_USE_OPENSSL -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 -DMCL_DONT_USE_MALLOC
 fp.o: src/fp.cpp
 	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+bn_c384_256.o: src/bn_c384_256.cpp
+	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
 base$(BIT).o: src/base$(BIT).ll
 	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
 bint$(BIT).o: src/bint$(BIT).ll
 	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
 libmcl.a: fp.o base$(BIT).o bint$(BIT).o
 	$(AR) $(ARFLAGS) $@ fp.o base$(BIT).o bint$(BIT).o
-libmcl384_256.a: mcl_c384_256.o
+libmclbn384_256.a: bn_c384_256.o
 	$(AR) $(ARFLAGS) $@ $<
 # e.g. make CLANG=clang++-12 CLANG_TARGET=aarch64 standalone
 standalone: libmcl.a libmclbn384_256.a
