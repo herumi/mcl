@@ -878,7 +878,9 @@ main:
 		}
 		z += win[winN - 1 - w];
 	}
+#ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
+#endif
 	return n;
 }
 template<class G>
