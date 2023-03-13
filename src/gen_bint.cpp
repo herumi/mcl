@@ -919,8 +919,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	if (N == 0) {
-		N = unit == 8 ? 9 : 17;
-		addN = unit == 8 ? 16 : 32;
+		N = unit == 64 ? 9 : 17;
+		addN = unit == 64 ? 16 : 32;
 	}
 	Code c;
 	c.setLlvmVer(llvmVer);
