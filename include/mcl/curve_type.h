@@ -58,7 +58,6 @@ enum {
 
 #ifdef __cplusplus
 
-#include <string.h>
 #include <assert.h>
 
 namespace mcl {
@@ -82,7 +81,7 @@ struct CurveParam {
 	int curveType; // same in curve_type.h
 	bool operator==(const CurveParam& rhs) const
 	{
-		return strcmp(z, rhs.z) == 0 && b == rhs.b && xi_a == rhs.xi_a && isMtype == rhs.isMtype;
+		return curveType == rhs.curveType;
 	}
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
