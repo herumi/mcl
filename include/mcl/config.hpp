@@ -11,6 +11,7 @@
 #if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	#define MCL_SIZEOF_UNIT 4
 	#define MCL_WASM32
+	#define MCL_DONT_USE_MALLOC
 #endif
 
 #ifndef MCL_SIZEOF_UNIT
