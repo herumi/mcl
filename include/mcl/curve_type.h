@@ -58,8 +58,6 @@ enum {
 
 #ifdef __cplusplus
 
-#include <assert.h>
-
 namespace mcl {
 
 struct CurveParam {
