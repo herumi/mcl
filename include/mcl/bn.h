@@ -59,6 +59,8 @@
 	#define mclInt int64_t
 #endif
 
+#include <mcl/curve_type.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -108,8 +110,6 @@ typedef struct {
 } mclBnGT;
 
 #endif
-
-#include <mcl/curve_type.h>
 
 #define MCLBN_IO_EC_AFFINE 0
 #define MCLBN_IO_EC_PROJ 1024

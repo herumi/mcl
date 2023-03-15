@@ -58,6 +58,8 @@ enum {
 
 #ifdef __cplusplus
 
+#include <cybozu/inttype.hpp>
+
 namespace mcl {
 
 struct CurveParam {
@@ -113,7 +115,7 @@ inline const CurveParam* getCurveParam(int type)
 	case MCL_BLS12_381: return &mcl::BLS12_381;
 	case MCL_BN160: return &mcl::BN160;
 	default:
-		return nullptr;
+		return CYBOZU_NULLPTR;
 	}
 }
 #ifdef __clang__
