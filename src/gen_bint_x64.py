@@ -13,11 +13,6 @@ def vec_pp(op, x, y):
   for i in range(len(x)):
     op(x[i], y[i])
 
-# op x[], y
-def vec_re(op, x, y):
-  for i in range(len(x)):
-    op(x[i], y)
-
 # op x[], [addr]
 def vec_pm(op, x, addr):
   for i in range(len(x)):
@@ -39,9 +34,6 @@ def load_pm(x, m):
 
 def store_mp(m, x):
   vec_mp(mov, m, x)
-
-def and_re(x, y):
-  vec_re(and_, x, y)
 
 # add(x, y) if noCF is True
 # adc(x, y) if noCF is False
