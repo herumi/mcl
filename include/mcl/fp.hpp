@@ -6,6 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#include <mcl/config.hpp>
 #ifndef CYBOZU_DONT_USE_STRING
 #include <iosfwd>
 #endif

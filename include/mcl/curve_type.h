@@ -58,8 +58,7 @@ enum {
 
 #ifdef __cplusplus
 
-#include <string.h>
-#include <assert.h>
+#include <cybozu/inttype.hpp>
 
 namespace mcl {
 
@@ -82,7 +81,7 @@ struct CurveParam {
 	int curveType; // same in curve_type.h
 	bool operator==(const CurveParam& rhs) const
 	{
-		return strcmp(z, rhs.z) == 0 && b == rhs.b && xi_a == rhs.xi_a && isMtype == rhs.isMtype;
+		return curveType == rhs.curveType;
 	}
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
@@ -116,7 +115,7 @@ inline const CurveParam* getCurveParam(int type)
 	case MCL_BLS12_381: return &mcl::BLS12_381;
 	case MCL_BN160: return &mcl::BN160;
 	default:
-		return 0;
+		return CYBOZU_NULLPTR;
 	}
 }
 #ifdef __clang__

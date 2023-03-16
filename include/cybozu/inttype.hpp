@@ -29,7 +29,9 @@
 		#endif
 	#endif
 #else
+#ifndef MCL_STANDALONE
 	#include <unistd.h> // for ssize_t
+#endif
 #endif
 
 #ifndef CYBOZU_ALIGN

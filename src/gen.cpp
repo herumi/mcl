@@ -1,3 +1,4 @@
+#define MCL_DONT_CALL_INITBINT
 #include "llvm_gen.hpp"
 #include <cybozu/option.hpp>
 #include <mcl/op.hpp>
@@ -52,6 +53,13 @@ struct Code : public mcl::Generator {
 		if (offset > 0) {
 			p = getelementptr(p, offset);
 		}
+#if 1
+		const size_t n = r.bit / unit;
+		if (n > 1) {
+			p = bitcast(p, Operand(IntPtr, unit * n));
+		}
+		store(r, p);
+#else
 		if (r.bit == unit) {
 			store(r, p);
 			return;
@@ -65,6 +73,7 @@ struct Code : public mcl::Generator {
 				r = lshr(r, unit);
 			}
 		}
+#endif
 	}
 	Operand loadN(Operand p, size_t n, int offset = 0)
 	{
@@ -74,6 +83,12 @@ struct Code : public mcl::Generator {
 		if (offset > 0) {
 			p = getelementptr(p, offset);
 		}
+#if 1
+		if (n > 1) {
+			p = bitcast(p, Operand(IntPtr, unit * n));
+		}
+		return load(p);
+#else
 		Operand v = load(p);
 		for (uint32_t i = 1; i < n; i++) {
 			v = zext(v, v.bit + unit);
@@ -83,6 +98,7 @@ struct Code : public mcl::Generator {
 			v = _or(v, t);
 		}
 		return v;
+#endif
 	}
 	void gen_mul32x32()
 	{

@@ -319,6 +319,8 @@ def output(s):
   g_text.append(s)
 
 def segment(mode):
+  if mode == 'text' and g_masm:
+    output(f'_data ends')
   if g_gas:
     output(f'.{mode}')
   elif g_masm:
@@ -462,6 +464,26 @@ class FuncProc:
   def __exit__(self, ex_type, ex_value, trace):
     self.close()
 
+def makeVar(name, bit, v, const=False, static=False):
+  if not static:
+    global_(name)
+  makeLabel(name)
+  L = 64
+  mask = (1<<L)-1
+  n = (bit + L-1) // L
+  if n == 0:
+    n = 1
+  if g_gas:
+    s = '.quad '
+  else:
+    s = 'dq '
+  for i in range(n):
+    if i > 0:
+      s += ', '
+    s += str(v & mask)
+    v >>= L
+  output(s)
+
 def genFunc(name):
   def f(*args):
     # special case (mov label, reg)
@@ -490,7 +512,7 @@ def genAllFunc():
     'ret',
     'inc', 'dec', 'setc', 'push', 'pop',
     'mov', 'add', 'adc', 'sub', 'sbb', 'adox', 'adcx', 'mul', 'xor_', 'and_', 'movzx', 'lea',
-    'mulx', 'div',
+    'mulx', 'div', 'imul',
     'cmp', 'test', 'or_',
     'cmova', 'cmovae', 'cmovb', 'cmovbe', 'cmovc', 'cmove', 'cmovg', 'cmovge', 'cmovl', 'cmovle',
     'cmovna', 'cmovnae', 'cmovnb', 'cmovnbe', 'cmovnc', 'cmovne', 'cmovng', 'cmovnge',

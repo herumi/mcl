@@ -2,6 +2,7 @@ include common.mk
 LIB_DIR?=lib
 OBJ_DIR?=obj
 EXE_DIR?=bin
+MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
@@ -400,9 +401,9 @@ endif
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=256 -I./include -DMCL_BINT_ASM=0
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c256.cpp test/bn_c256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=256 -I./include -DMCL_BINT_ASM=0
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=8 -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
+	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG # -DMCL_DONT_USE_CSPRNG
 bin/ecdsa-emu:
 	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
 bin/ecdsa-c-emu:
@@ -421,6 +422,24 @@ make_tbl:
 	$(CXX) -o misc/precompute misc/precompute.cpp $(CFLAGS) $(MCL_LIB) $(LDFLAGS)
 	./misc/precompute > ../bls/src/qcoeff-bn254.hpp
 
+MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_STANDALONE -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 $(CFLAGS_EXTRA)
+fp.o: src/fp.cpp
+	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+bn_c384_256.o: src/bn_c384_256.cpp
+	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+base$(BIT).o: src/base$(BIT).ll
+	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+bint$(BIT).o: src/bint$(BIT).ll
+	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+libmcl.a: fp.o base$(BIT).o bint$(BIT).o
+	$(AR) $(ARFLAGS) $@ fp.o base$(BIT).o bint$(BIT).o
+libmclbn384_256.a: bn_c384_256.o
+	$(AR) $(ARFLAGS) $@ $<
+# e.g. make CLANG=clang++-12 CLANG_TARGET=aarch64 standalone
+standalone: libmcl.a libmclbn384_256.a
+clean_standalone:
+	$(RM) libmcl.a libmcl384_256.a *.o
+
 update_xbyak:
 	cp -a ../xbyak/xbyak/xbyak.h ../xbyak/xbyak/xbyak_util.h ../xbyak/xbyak/xbyak_mnemonic.h src/xbyak/
 
@@ -430,6 +449,7 @@ update_cybozulib:
 clean:
 	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(BASE_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) lib/*.a src/static_code.asm src/dump_code
 	$(RM) src/gen_bint.exe
+	$(MAKE) clean_standalone
 
 clean_gen:
 	$(RM) include/mcl/bint_proto.hpp src/asm/bint* src/bint_switch.hpp

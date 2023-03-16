@@ -825,6 +825,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	G *tbl = 0;
 
+#ifndef MCL_DONT_USE_MALLOC
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
 		c = argminForMulVec(n);
@@ -835,13 +836,16 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 			goto main;
 		}
 	}
+#endif
 	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
 	c = argminForMulVec(n);
 	tblN = (1 << c) - 1;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
+#ifndef MCL_DONT_USE_MALLOC
 main:
+#endif
 	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
 	const size_t winN = maxBitSize / c + 1;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
@@ -874,7 +878,9 @@ main:
 		}
 		z += win[winN - 1 - w];
 	}
+#ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
+#endif
 	return n;
 }
 template<class G>

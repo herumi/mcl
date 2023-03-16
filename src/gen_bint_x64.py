@@ -13,11 +13,6 @@ def vec_pp(op, x, y):
   for i in range(len(x)):
     op(x[i], y[i])
 
-# op x[], y
-def vec_re(op, x, y):
-  for i in range(len(x)):
-    op(x[i], y)
-
 # op x[], [addr]
 def vec_pm(op, x, addr):
   for i in range(len(x)):
@@ -39,9 +34,6 @@ def load_pm(x, m):
 
 def store_mp(m, x):
   vec_mp(mov, m, x)
-
-def and_re(x, y):
-  vec_re(and_, x, y)
 
 # add(x, y) if noCF is True
 # adc(x, y) if noCF is False
@@ -307,59 +299,6 @@ def gen_sqr_fast(N):
       mov(rdx, rsi)
     jmp(addPRE(f'mclb_mul_fast{N}'))
 
-def inner_mulLow_fastN(pz, px, py, ts, N):
-  assert len(ts) >= N-1
-  pk = ts[0:N-1]
-  H = ts[N-1]
-  mov(rdx, ptr(px + 8 * 0))
-  a = rax
-  # [pz[0]:pk[0:N-1]] = px[] * py[0]
-  mulx(pk[0], a, ptr(py + 8 * 0))
-  mov(ptr(pz), a)
-  for i in range(1, N):
-    if i < N-1:
-      mulx(pk[i], a, ptr(py + 8 * i))
-    else:
-      mulx(H, a, ptr(py + 8 * i)) ## H is not used
-    if i == 1:
-      add(pk[i - 1], a)
-    elif i < N:
-      adc(pk[i - 1], a)
-
-  for i in range(1, N):
-    mov(rdx, ptr(px + 8 * i))
-    xor_(a, a)
-    for j in range(0, N-i):
-      mulx(H, a, ptr(py + j * 8))
-      adox(pk[j], a)
-      if j == 0:
-        mov(ptr(pz + 8 * i), pk[0])
-      if j == N-i-1:
-        break
-      adcx(pk[j + 1], H)
-    pk = pk[1:]
-
-# z[N] = the bottom half of (x[N] * y[N])
-def gen_mulLow_fast(N):
-  align(16)
-  with FuncProc(f'mclb_mulLow_fast{N}'):
-    if N == 1:
-      with StackFrame(3, useRDX=True) as sf:
-        pz = sf.p[0]
-        px = sf.p[1]
-        py = sf.p[2]
-        mov(rax, ptr(px))
-        mov(rdx, ptr(py))
-        mul(rdx)
-        mov(ptr(pz), rax)
-      return
-    if N <= 9:
-      with StackFrame(3, N, useRDX=True) as sf:
-        pz = sf.p[0]
-        px = sf.p[1]
-        py = sf.p[2]
-        inner_mulLow_fastN(pz, px, py, sf.t, N)
-
 """
 def gen_enable_fast(N):
   align(16)
@@ -430,9 +369,6 @@ def main():
 
   for i in range(1,N+1):
     gen_sqr_fast(i)
-
-#  for i in range(1,N+1):
-#    gen_mulLow_fast(i)
 
   if param.win:
     gen_udiv128()

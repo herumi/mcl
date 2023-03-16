@@ -31,9 +31,6 @@ struct RandomGeneratorJS {
 
 #else
 #include <cybozu/random_generator.hpp>
-#if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-#include <random>
-#endif
 #endif
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -52,27 +49,6 @@ uint32_t readWrapper(void *self, void *buf, uint32_t byteSize)
 	return 0;
 }
 
-#if 0 // #if CYBOZU_CPP_VERSION >= CYBOZU_CPP_VERSION_CPP11
-template<>
-inline uint32_t readWrapper<std::random_device>(void *self, void *buf, uint32_t byteSize)
-{
-	const uint32_t keep = byteSize;
-	std::random_device& rg = *reinterpret_cast<std::random_device*>(self);
-	uint8_t *p = reinterpret_cast<uint8_t*>(buf);
-	uint32_t v;
-	while (byteSize >= 4) {
-		v = rg();
-		memcpy(p, &v, 4);
-		p += 4;
-		byteSize -= 4;
-	}
-	if (byteSize > 0) {
-		v = rg();
-		memcpy(p, &v, byteSize);
-	}
-	return keep;
-}
-#endif
 } // local
 /*
 	wrapper of cryptographically secure pseudo random number generator
