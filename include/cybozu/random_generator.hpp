@@ -20,6 +20,7 @@
 #pragma comment (lib, "advapi32.lib")
 #endif
 #else
+#include <stdio.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #endif
