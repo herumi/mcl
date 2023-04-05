@@ -100,11 +100,7 @@ ifeq ($(DEBUG),0)
   ifeq ($(CXX),clang++)
     CFLAGS_OPT+=-O3
   else
-    ifeq ($(shell expr $(GCC_VER) \> 4.6.0),1)
-      CFLAGS_OPT+=-O3
-    else
-      CFLAGS_OPT+=-O3
-    endif
+    CFLAGS_OPT+=-O3
   endif
   ifeq ($(MARCH),)
     ifeq ($(INTEL),1)
