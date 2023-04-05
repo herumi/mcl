@@ -141,7 +141,7 @@ src/fp.cpp: include/mcl/bint_proto.hpp
     ifeq ($(OS),mingw64)
       BINT_ASM_X64_BASENAME=bint-x64
 $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).S
-	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
+	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
 
     else
       BINT_ASM_X64_BASENAME=bint-x64-amd64
