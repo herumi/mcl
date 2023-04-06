@@ -415,14 +415,16 @@ void T::setStr(const char *str, int iMode = 0)
 - return 0 if success else -1
   - *pb = result of setStr or throw exception if error (C++)
 
-If you want to use the same generators of BLS12-381 with [zkcrypto](https://github.com/zkcrypto/pairing/tree/master/src/bls12_381#g2) then,
+If you want to use the same BLS12-381 generator as [zkcrypto](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-11.html#section-4.2.1) then,
 
-```
+```cpp
 mclBnG1 P;
-mclBnG1_setStr(&P, "1 3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507 1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10);
+const char *g1Str = "1 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb 0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1";
+mclBnG1_setStr(&P, g1Str, strlen(g1Str), 16);
 
 mclBnG2 Q;
-mclBnG2_setStr(&Q, "1 352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160 3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758 1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905 927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582");
+const char *g2Str = "1 0x24aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8 0x13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e 0x0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801 0x0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be";
+mclBnG2_setStr(&Q, g2Str, strlen(g2Str), 16);
 ```
 
 
@@ -600,6 +602,18 @@ void mapToG2(G2& P, const Fp2& x);
 
 - See `struct MapTo` in `mcl/bn.hpp` for the detail of the algorithm.
 - return 0 if success else -1
+
+If you want to use the MapTo function defined in [Hashing to Elliptic Curves](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve), then use `mclBn_seMapToMode`.
+
+```
+mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
+```
+And if you want to change DST (domain separation tag), then use `setDst` functions.
+
+```
+int mclBnG1_setDst(const char *dst, mclSize dstSize);
+int mclBnG2_setDst(const char *dst, mclSize dstSize);
+```
 
 ### hash and map to G1 / G2.
 ```
