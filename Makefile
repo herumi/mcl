@@ -446,8 +446,17 @@ update_xbyak:
 update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
 
+ANDROID_TARGET=armeabi-v7a arm64-v8a x86_64
+NDK_BUILD?=ndk-build
+android: $(BASE_LL)
+	@$(NDK_BUILD) -C android/jni NDK_DEBUG=0 MCL_LIB_SHARED=$(MCL_LIB_SHARED)
+	@for target in $(ANDROID_TARGET); do \
+		mkdir -p lib/android/$$target; \
+		cp android/obj/local/$$target/libmclbn384_256.a lib/android/$$target/; \
+	done
+
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(BASE_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) lib/*.a src/static_code.asm src/dump_code
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(BASE_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) lib/*.a src/static_code.asm src/dump_code lib/android
 	$(RM) src/gen_bint.exe
 	$(MAKE) clean_standalone
 
@@ -472,7 +481,7 @@ install: lib/libmcl.a lib/libmcl.$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl.$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test she-wasm bin/emu
+.PHONY: test she-wasm bin/emu android
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))
