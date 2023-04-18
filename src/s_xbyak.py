@@ -318,9 +318,17 @@ def addPRE(s):
 def output(s):
   g_text.append(s)
 
+g_segment_code = False
+
 def segment(mode):
-  if mode == 'text' and g_masm:
-    output(f'_data ends')
+  if g_masm:
+    global g_segment_code
+    if mode == 'code':
+      g_segment_code = True
+    if mode == 'text':
+      if g_segment_code:
+        output(f'_data ends')
+        g_segment_code = False
   if g_gas:
     output(f'.{mode}')
   elif g_masm:
