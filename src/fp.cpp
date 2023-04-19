@@ -254,6 +254,20 @@ void setSafe(T& x, T y)
 	if (y != 0) x = y;
 }
 
+template<size_t N, bool supportDbl>
+struct SetOpt2 {
+	static inline void set(Op&) { }
+};
+
+template<size_t N>
+struct SetOpt2<N, true> {
+	static inline void set(Op& op)
+	{
+		op.fpDbl_add = fpDblAddModT<N>;
+		op.fpDbl_sub = fpDblSubModT<N>;
+	}
+};
+
 template<size_t N>
 void setOp(Op& op)
 {
@@ -305,8 +319,7 @@ void setOp(Op& op)
 		op.fp_sqr = sqrModT<N>;
 		op.fpDbl_mod = fpDblModT<N>;
 	}
-	op.fpDbl_add = fpDblAddModT<N>;
-	op.fpDbl_sub = fpDblSubModT<N>;
+	SetOpt2<N, (N * sizeof(Unit) * 8 <= 512)>::set(op);
 	setSafe(op.fpDbl_add, get_llvm_fpDbl_add(N));
 	setSafe(op.fpDbl_sub, get_llvm_fpDbl_sub(N));
 }
