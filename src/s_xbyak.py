@@ -63,6 +63,26 @@ class Reg:
       return RegExp(self, None, 1, -rhs)
     raise Exception('bad sub type', rhs)
 
+class Xmm(Reg):
+  def __str__(self):
+    if self.bit == 128:
+      p = 'x'
+    elif self.bit == 256:
+      p = 'y'
+    elif self.bit == 512:
+      p = 'z'
+    if g_gas:
+      return f'%{p}mm{self.idx}'
+    else:
+      return f'{p}mm{self.idx}'
+
+class MaskReg(Reg):
+  def __str__(self):
+    if g_gas:
+      return f'%k{self.idx}'
+    else:
+      return f'k{self.idx}'
+
 class RegExp:
   def __init__(self, reg, index = None, scale = 1, offset = 0):
     self.base = reg
@@ -185,6 +205,15 @@ r13b = Reg(R13, 8)
 r14b = Reg(R14, 8)
 r15b = Reg(R15, 8)
 
+# define xmm, ymm, zmm registers
+for (p, bit, n) in [('x', 128, 16), ('y', 256, 16), ('z', 512, 32)]:
+  for i in range(n):
+    globals()[f'{p}mm{i}'] = Xmm(i, bit)
+    globals()[f'{p}m{i}'] = Xmm(i, bit)
+# define mask registers
+for i in range(n):
+  globals()[f'k{i}'] = MaskReg(i, 64)
+
 win64ABI = False
 
 def setWin64ABI(win64):
@@ -213,10 +242,11 @@ def getNoSaveNum():
   return 6 if win64ABI else 8
 
 class StackFrame:
-  def __init__(self, pNum, tNum = 0, useRDX=False, useRCX=False, stackSizeByte=0):
+  def __init__(self, pNum, tNum = 0, useRDX=False, useRCX=False, stackSizeByte=0, callRet=True):
     self.pos = 0
     self.useRDX = useRDX
     self.useRCX = useRCX
+    self.callRet = callRet
     self.p = []
     self.t = []
     allRegNum = pNum + tNum + (1 if useRDX else 0) + (1 if useRCX else 0)
@@ -240,7 +270,7 @@ class StackFrame:
       mov(r10, rcx)
     if self.useRDX and getRdxPos() < pNum:
       mov(r11, rdx)
-  def close(self, callRet = True):
+  def close(self, callRet=True):
     if self.P > 0:
       add(rsp, self.P)
     noSaveNum = getNoSaveNum()
@@ -252,7 +282,7 @@ class StackFrame:
   def __enter__(self):
     return self
   def __exit__(self, ex_type, ex_value, trace):
-    self.close()
+    self.close(self.callRet)
 
   def getRegIdx(self):
     r = getReg(self.pos)
@@ -338,12 +368,12 @@ def segment(mode):
 
 def db_(s):
   if g_gas:
-    output(f'.byte ${s}')
+    output(f'.byte {s}')
   else:
     output(f'db {s}')
 def dd_(s):
   if g_gas:
-    output(f'.long ${s}')
+    output(f'.long {s}')
   else:
     output(f'dd {s}')
 def dq_(s):
@@ -374,7 +404,10 @@ def align(n):
     output(f'align {n}')
 
 def getDefLabel(n):
-  return f'@L{n}'
+  if g_gas:
+    return f'.L{n}'
+  else:
+    return f'@L{n}'
 
 def getUndefLabel(n):
   return f'@L{n}_undef'
@@ -517,18 +550,214 @@ def genFunc(name):
 
 def genAllFunc():
   tbl = [
-    'ret',
-    'inc', 'dec', 'setc', 'push', 'pop',
-    'mov', 'add', 'adc', 'sub', 'sbb', 'adox', 'adcx', 'mul', 'xor_', 'and_', 'movzx', 'lea',
-    'mulx', 'div', 'imul',
-    'cmp', 'test', 'or_',
-    'cmova', 'cmovae', 'cmovb', 'cmovbe', 'cmovc', 'cmove', 'cmovg', 'cmovge', 'cmovl', 'cmovle',
-    'cmovna', 'cmovnae', 'cmovnb', 'cmovnbe', 'cmovnc', 'cmovne', 'cmovng', 'cmovnge',
-    'cmovnl', 'cmovnle', 'cmovno', 'cmovnp', 'cmovns', 'cmovnz', 'cmovo', 'cmovp', 'cmovpe',
-    'cmovpo', 'cmovs', 'cmovz',
-    'ja','jae','jb','jbe','jc','je','jg','jge','jl','jle','jna','jnae','jnb','jnbe','jnc','jne','jng',
-    'jnge','jnl','jnle','jno','jnp','jns','jnz','jo','jp','jpe','jpo','js','jz',
-    'jmp', 'call',
+    'push', 'mov', 'pop', 'jmp', 'test',
+    'aaa','aad','aadd','aam','aand','aas','adc','adcx',
+    'add','addpd','addps','addsd','addss','addsubpd','addsubps','adox',
+    'aesdec','aesdeclast','aesenc','aesenclast','aesimc','aeskeygenassist','and_','andn',
+    'andnpd','andnps','andpd','andps','aor','axor','bextr','blendpd',
+    'blendps','blendvpd','blendvps','blsi','blsmsk','blsr','bnd','bndcl',
+    'bndcn','bndcu','bndldx','bndmk','bndmov','bndstx','bsf','bsr',
+    'bswap','bt','btc','btr','bts','bzhi','cbw','cdq',
+    'cdqe','char','clc','cld','cldemote','clflush','clflushopt','cli',
+    'clui','clwb','clzero','cmc','cmova','cmovae','cmovb','cmovbe',
+    'cmovc','cmove','cmovg','cmovge','cmovl','cmovle','cmovna','cmovnae',
+    'cmovnb','cmovnbe','cmovnc','cmovne','cmovng','cmovnge','cmovnl','cmovnle',
+    'cmovno','cmovnp','cmovns','cmovnz','cmovo','cmovp','cmovpe','cmovpo',
+    'cmovs','cmovz','cmp','cmpbexadd','cmpbxadd','cmpeqpd','cmpeqps','cmpeqsd',
+    'cmpeqss','cmplepd','cmpleps','cmplesd','cmpless','cmplexadd','cmpltpd','cmpltps',
+    'cmpltsd','cmpltss','cmplxadd','cmpnbexadd','cmpnbxadd','cmpneqpd','cmpneqps','cmpneqsd',
+    'cmpneqss','cmpnlepd','cmpnleps','cmpnlesd','cmpnless','cmpnlexadd','cmpnltpd','cmpnltps',
+    'cmpnltsd','cmpnltss','cmpnlxadd','cmpnoxadd','cmpnpxadd','cmpnsxadd','cmpnzxadd','cmpordpd',
+    'cmpordps','cmpordsd','cmpordss','cmpoxadd','cmppd','cmpps','cmppxadd','cmpsb',
+    'cmpsd','cmpsq','cmpss','cmpsw','cmpsxadd','cmpunordpd','cmpunordps','cmpunordsd',
+    'cmpunordss','cmpxchg','cmpxchg16b','cmpxchg8b','cmpzxadd','comisd','comiss','cpuid',
+    'cqo','crc32','cvtdq2pd','cvtdq2ps','cvtpd2dq','cvtpd2pi','cvtpd2ps','cvtpi2pd',
+    'cvtpi2ps','cvtps2dq','cvtps2pd','cvtps2pi','cvtsd2si','cvtsd2ss','cvtsi2sd','cvtsi2ss',
+    'cvtss2sd','cvtss2si','cvttpd2dq','cvttpd2pi','cvttps2dq','cvttps2pi','cvttsd2si','cvttss2si',
+    'cwd','cwde','daa','das','dec','div','divpd','divps',
+    'divsd','divss','dppd','dpps','emms','endbr32','endbr64','enter',
+    'extractps','f2xm1','fabs','fadd','faddp','fbld','fbstp','fchs',
+    'fclex','fcmovb','fcmovbe','fcmove','fcmovnb','fcmovnbe','fcmovne','fcmovnu',
+    'fcmovu','fcom','fcomi','fcomip','fcomp','fcompp','fcos','fdecstp',
+    'fdiv','fdivp','fdivr','fdivrp','ffree','fiadd','ficom','ficomp',
+    'fidiv','fidivr','fild','fimul','fincstp','finit','fist','fistp',
+    'fisttp','fisub','fisubr','fld','fld1','fldcw','fldenv','fldl2e',
+    'fldl2t','fldlg2','fldln2','fldpi','fldz','fmul','fmulp','fnclex',
+    'fninit','fnop','fnsave','fnstcw','fnstenv','fnstsw','fpatan','fprem',
+    'fprem1','fptan','frndint','frstor','fsave','fscale','fsin','fsincos',
+    'fsqrt','fst','fstcw','fstenv','fstp','fstsw','fsub','fsubp',
+    'fsubr','fsubrp','ftst','fucom','fucomi','fucomip','fucomp','fucompp',
+    'fwait','fxam','fxch','fxrstor','fxrstor64','fxtract','fyl2x','fyl2xp1',
+    'gf2p8affineinvqb','gf2p8affineqb','gf2p8mulb','haddpd','haddps','hlt','hsubpd','hsubps',
+    'idiv','imul','in_','inc','insertps','int3','int_','into',
+    'ja','jae','jb','jbe','jc','jcxz','je','jecxz',
+    'jg','jge','jl','jle','jna','jnae','jnb','jnbe',
+    'jnc','jne','jng','jnge','jnl','jnle','jno','jnp',
+    'jns','jnz','jo','jp','jpe','jpo','jrcxz','js',
+    'jz','kaddb','kaddd','kaddq','kaddw','kandb','kandd','kandnb',
+    'kandnd','kandnq','kandnw','kandq','kandw','kmovb','kmovd','kmovq',
+    'kmovw','knotb','knotd','knotq','knotw','korb','kord','korq',
+    'kortestb','kortestd','kortestq','kortestw','korw','kshiftlb','kshiftld','kshiftlq',
+    'kshiftlw','kshiftrb','kshiftrd','kshiftrq','kshiftrw','ktestb','ktestd','ktestq',
+    'ktestw','kunpckbw','kunpckdq','kunpckwd','kxnorb','kxnord','kxnorq','kxnorw',
+    'kxorb','kxord','kxorq','kxorw','lahf','lddqu','ldmxcsr','lds',
+    'ldtilecfg','lea','leave','les','lfence','lfs','lgs','lock',
+    'lodsb','lodsd','lodsq','lodsw','loop','loope','loopne','lss',
+    'lzcnt','maskmovdqu','maskmovq','maxpd','maxps','maxsd','maxss','mfence',
+    'minpd','minps','minsd','minss','monitor','monitorx','movapd','movaps',
+    'movbe','movd','movddup','movdir64b','movdiri','movdq2q','movdqa','movdqu',
+    'movhlps','movhpd','movhps','movlhps','movlpd','movlps','movmskpd','movmskps',
+    'movntdq','movntdqa','movnti','movntpd','movntps','movntq','movq','movq2dq',
+    'movsb','movsd','movshdup','movsldup','movsq','movss','movsw','movsx',
+    'movsxd','movupd','movups','movzx','mpsadbw','mul','mulpd','mulps',
+    'mulsd','mulss','mulx','mwait','mwaitx','neg','not_','or_',
+    'orpd','orps','out_','outsb','outsd','outsw','pabsb','pabsd',
+    'pabsw','packssdw','packsswb','packusdw','packuswb','paddb','paddd','paddq',
+    'paddsb','paddsw','paddusb','paddusw','paddw','palignr','pand','pandn',
+    'pause','pavgb','pavgw','pblendvb','pblendw','pclmulhqhdq','pclmulhqlqdq','pclmullqhdq',
+    'pclmullqlqdq','pclmulqdq','pcmpeqb','pcmpeqd','pcmpeqq','pcmpeqw','pcmpestri','pcmpestrm',
+    'pcmpgtb','pcmpgtd','pcmpgtq','pcmpgtw','pcmpistri','pcmpistrm','pdep','pext',
+    'pextrb','pextrd','pextrq','pextrw','phaddd','phaddsw','phaddw','phminposuw',
+    'phsubd','phsubsw','phsubw','pinsrb','pinsrd','pinsrq','pinsrw','pmaddubsw',
+    'pmaddwd','pmaxsb','pmaxsd','pmaxsw','pmaxub','pmaxud','pmaxuw','pminsb',
+    'pminsd','pminsw','pminub','pminud','pminuw','pmovmskb','pmovsxbd','pmovsxbq',
+    'pmovsxbw','pmovsxdq','pmovsxwd','pmovsxwq','pmovzxbd','pmovzxbq','pmovzxbw','pmovzxdq',
+    'pmovzxwd','pmovzxwq','pmuldq','pmulhrsw','pmulhuw','pmulhw','pmulld','pmullw',
+    'pmuludq','popa','popad','popcnt','popf','popfd','popfq','por',
+    'prefetchit0','prefetchit1','prefetchnta','prefetcht0','prefetcht1','prefetcht2','prefetchw','prefetchwt1',
+    'psadbw','pshufb','pshufd','pshufhw','pshuflw','pshufw','psignb','psignd',
+    'psignw','pslld','pslldq','psllq','psllw','psrad','psraw','psrld',
+    'psrldq','psrlq','psrlw','psubb','psubd','psubq','psubsb','psubsw',
+    'psubusb','psubusw','psubw','ptest','punpckhbw','punpckhdq','punpckhqdq','punpckhwd',
+    'punpcklbw','punpckldq','punpcklqdq','punpcklwd','pusha','pushad','pushf','pushfd',
+    'pushfq','pxor','rcl','rcpps','rcpss','rcr','rdmsr','rdpmc',
+    'rdrand','rdseed','rdtsc','rdtscp','rep','repe','repne','repnz',
+    'repz','ret','retf','rol','ror','rorx','roundpd','roundps',
+    'roundsd','roundss','rsqrtps','rsqrtss','sahf','sal','sar','sarx',
+    'sbb','scasb','scasd','scasq','scasw','senduipi','serialize','seta',
+    'setae','setb','setbe','setc','sete','setg','setge','setl',
+    'setle','setna','setnae','setnb','setnbe','setnc','setne','setng',
+    'setnge','setnl','setnle','setno','setnp','setns','setnz','seto',
+    'setp','setpe','setpo','sets','setz','sfence','sha1msg1','sha1msg2',
+    'sha1nexte','sha1rnds4','sha256msg1','sha256msg2','sha256rnds2','shl','shld','shlx',
+    'shr','shrd','shrx','shufpd','shufps','sqrtpd','sqrtps','sqrtsd',
+    'sqrtss','stac','stc','std','sti','stmxcsr','stosb','stosd',
+    'stosq','stosw','sttilecfg','stui','sub','subpd','subps','subsd',
+    'subss','syscall','sysenter','sysexit','sysret','tdpbf16ps','tdpbssd','tdpbsud',
+    'tdpbusd','tdpbuud','tdpfp16ps','testui','tileloadd','tileloaddt1','tilerelease','tilestored',
+    'tilezero','tpause','tzcnt','ucomisd','ucomiss','ud2','uiret','umonitor',
+    'umwait','unpckhpd','unpckhps','unpcklpd','unpcklps','v4fmaddps','v4fmaddss','v4fnmaddps',
+    'v4fnmaddss','vaddpd','vaddph','vaddps','vaddsd','vaddsh','vaddss','vaddsubpd',
+    'vaddsubps','vaesdec','vaesdeclast','vaesenc','vaesenclast','vaesimc','vaeskeygenassist','valignd',
+    'valignq','vandnpd','vandnps','vandpd','vandps','vbcstnebf162ps','vbcstnesh2ps','vblendmpd',
+    'vblendmps','vblendpd','vblendps','vblendvpd','vblendvps','vbroadcastf128','vbroadcastf32x2','vbroadcastf32x4',
+    'vbroadcastf32x8','vbroadcastf64x2','vbroadcastf64x4','vbroadcasti128','vbroadcasti32x2','vbroadcasti32x4','vbroadcasti32x8','vbroadcasti64x2',
+    'vbroadcasti64x4','vbroadcastsd','vbroadcastss','vcmpeq_ospd','vcmpeq_osps','vcmpeq_ossd','vcmpeq_osss','vcmpeq_uqpd',
+    'vcmpeq_uqps','vcmpeq_uqsd','vcmpeq_uqss','vcmpeq_uspd','vcmpeq_usps','vcmpeq_ussd','vcmpeq_usss','vcmpeqpd',
+    'vcmpeqps','vcmpeqsd','vcmpeqss','vcmpfalse_ospd','vcmpfalse_osps','vcmpfalse_ossd','vcmpfalse_osss','vcmpfalsepd',
+    'vcmpfalseps','vcmpfalsesd','vcmpfalsess','vcmpge_oqpd','vcmpge_oqps','vcmpge_oqsd','vcmpge_oqss','vcmpgepd',
+    'vcmpgeps','vcmpgesd','vcmpgess','vcmpgt_oqpd','vcmpgt_oqps','vcmpgt_oqsd','vcmpgt_oqss','vcmpgtpd',
+    'vcmpgtps','vcmpgtsd','vcmpgtss','vcmple_oqpd','vcmple_oqps','vcmple_oqsd','vcmple_oqss','vcmplepd',
+    'vcmpleps','vcmplesd','vcmpless','vcmplt_oqpd','vcmplt_oqps','vcmplt_oqsd','vcmplt_oqss','vcmpltpd',
+    'vcmpltps','vcmpltsd','vcmpltss','vcmpneq_oqpd','vcmpneq_oqps','vcmpneq_oqsd','vcmpneq_oqss','vcmpneq_ospd',
+    'vcmpneq_osps','vcmpneq_ossd','vcmpneq_osss','vcmpneq_uspd','vcmpneq_usps','vcmpneq_ussd','vcmpneq_usss','vcmpneqpd',
+    'vcmpneqps','vcmpneqsd','vcmpneqss','vcmpnge_uqpd','vcmpnge_uqps','vcmpnge_uqsd','vcmpnge_uqss','vcmpngepd',
+    'vcmpngeps','vcmpngesd','vcmpngess','vcmpngt_uqpd','vcmpngt_uqps','vcmpngt_uqsd','vcmpngt_uqss','vcmpngtpd',
+    'vcmpngtps','vcmpngtsd','vcmpngtss','vcmpnle_uqpd','vcmpnle_uqps','vcmpnle_uqsd','vcmpnle_uqss','vcmpnlepd',
+    'vcmpnleps','vcmpnlesd','vcmpnless','vcmpnlt_uqpd','vcmpnlt_uqps','vcmpnlt_uqsd','vcmpnlt_uqss','vcmpnltpd',
+    'vcmpnltps','vcmpnltsd','vcmpnltss','vcmpord_spd','vcmpord_sps','vcmpord_ssd','vcmpord_sss','vcmpordpd',
+    'vcmpordps','vcmpordsd','vcmpordss','vcmppd','vcmpph','vcmpps','vcmpsd','vcmpsh',
+    'vcmpss','vcmptrue_uspd','vcmptrue_usps','vcmptrue_ussd','vcmptrue_usss','vcmptruepd','vcmptrueps','vcmptruesd',
+    'vcmptruess','vcmpunord_spd','vcmpunord_sps','vcmpunord_ssd','vcmpunord_sss','vcmpunordpd','vcmpunordps','vcmpunordsd',
+    'vcmpunordss','vcomisd','vcomish','vcomiss','vcompressb','vcompresspd','vcompressps','vcompressw',
+    'vcvtdq2pd','vcvtdq2ph','vcvtdq2ps','vcvtne2ps2bf16','vcvtneebf162ps','vcvtneeph2ps','vcvtneobf162ps','vcvtneoph2ps',
+    'vcvtneps2bf16','vcvtpd2dq','vcvtpd2ph','vcvtpd2ps','vcvtpd2qq','vcvtpd2udq','vcvtpd2uqq','vcvtph2dq',
+    'vcvtph2pd','vcvtph2ps','vcvtph2psx','vcvtph2qq','vcvtph2udq','vcvtph2uqq','vcvtph2uw','vcvtph2w',
+    'vcvtps2dq','vcvtps2pd','vcvtps2ph','vcvtps2phx','vcvtps2qq','vcvtps2udq','vcvtps2uqq','vcvtqq2pd',
+    'vcvtqq2ph','vcvtqq2ps','vcvtsd2sh','vcvtsd2si','vcvtsd2ss','vcvtsd2usi','vcvtsh2sd','vcvtsh2si',
+    'vcvtsh2ss','vcvtsh2usi','vcvtsi2sd','vcvtsi2sh','vcvtsi2ss','vcvtss2sd','vcvtss2sh','vcvtss2si',
+    'vcvtss2usi','vcvttpd2dq','vcvttpd2qq','vcvttpd2udq','vcvttpd2uqq','vcvttph2dq','vcvttph2qq','vcvttph2udq',
+    'vcvttph2uqq','vcvttph2uw','vcvttph2w','vcvttps2dq','vcvttps2qq','vcvttps2udq','vcvttps2uqq','vcvttsd2si',
+    'vcvttsd2usi','vcvttsh2si','vcvttsh2usi','vcvttss2si','vcvttss2usi','vcvtudq2pd','vcvtudq2ph','vcvtudq2ps',
+    'vcvtuqq2pd','vcvtuqq2ph','vcvtuqq2ps','vcvtusi2sd','vcvtusi2sh','vcvtusi2ss','vcvtuw2ph','vcvtw2ph',
+    'vdbpsadbw','vdivpd','vdivph','vdivps','vdivsd','vdivsh','vdivss','vdpbf16ps',
+    'vdppd','vdpps','vexp2pd','vexp2ps','vexpandpd','vexpandps','vextractf128','vextractf32x4',
+    'vextractf32x8','vextractf64x2','vextractf64x4','vextracti128','vextracti32x4','vextracti32x8','vextracti64x2','vextracti64x4',
+    'vextractps','vfcmaddcph','vfcmulcph','vfixupimmpd','vfixupimmps','vfixupimmsd','vfixupimmss','vfmadd132pd',
+    'vfmadd132ph','vfmadd132ps','vfmadd132sd','vfmadd132sh','vfmadd132ss','vfmadd213pd','vfmadd213ph','vfmadd213ps',
+    'vfmadd213sd','vfmadd213sh','vfmadd213ss','vfmadd231pd','vfmadd231ph','vfmadd231ps','vfmadd231sd','vfmadd231sh',
+    'vfmadd231ss','vfmaddcph','vfmaddsub132pd','vfmaddsub132ph','vfmaddsub132ps','vfmaddsub213pd','vfmaddsub213ph','vfmaddsub213ps',
+    'vfmaddsub231pd','vfmaddsub231ph','vfmaddsub231ps','vfmsub132pd','vfmsub132ph','vfmsub132ps','vfmsub132sd','vfmsub132sh',
+    'vfmsub132ss','vfmsub213pd','vfmsub213ph','vfmsub213ps','vfmsub213sd','vfmsub213sh','vfmsub213ss','vfmsub231pd',
+    'vfmsub231ph','vfmsub231ps','vfmsub231sd','vfmsub231sh','vfmsub231ss','vfmsubadd132pd','vfmsubadd132ph','vfmsubadd132ps',
+    'vfmsubadd213pd','vfmsubadd213ph','vfmsubadd213ps','vfmsubadd231pd','vfmsubadd231ph','vfmsubadd231ps','vfmulcph','vfnmadd132pd',
+    'vfnmadd132ph','vfnmadd132ps','vfnmadd132sd','vfnmadd132sh','vfnmadd132ss','vfnmadd213pd','vfnmadd213ph','vfnmadd213ps',
+    'vfnmadd213sd','vfnmadd213sh','vfnmadd213ss','vfnmadd231pd','vfnmadd231ph','vfnmadd231ps','vfnmadd231sd','vfnmadd231sh',
+    'vfnmadd231ss','vfnmsub132pd','vfnmsub132ph','vfnmsub132ps','vfnmsub132sd','vfnmsub132sh','vfnmsub132ss','vfnmsub213pd',
+    'vfnmsub213ph','vfnmsub213ps','vfnmsub213sd','vfnmsub213sh','vfnmsub213ss','vfnmsub231pd','vfnmsub231ph','vfnmsub231ps',
+    'vfnmsub231sd','vfnmsub231sh','vfnmsub231ss','vfpclasspd','vfpclassph','vfpclassps','vfpclasssd','vfpclasssh',
+    'vfpclassss','vgatherdpd','vgatherdps','vgatherpf0dpd','vgatherpf0dps','vgatherpf0qpd','vgatherpf0qps','vgatherpf1dpd',
+    'vgatherpf1dps','vgatherpf1qpd','vgatherpf1qps','vgatherqpd','vgatherqps','vgetexppd','vgetexpph','vgetexpps',
+    'vgetexpsd','vgetexpsh','vgetexpss','vgetmantpd','vgetmantph','vgetmantps','vgetmantsd','vgetmantsh',
+    'vgetmantss','vgf2p8affineinvqb','vgf2p8affineqb','vgf2p8mulb','vhaddpd','vhaddps','vhsubpd','vhsubps',
+    'vinsertf128','vinsertf32x4','vinsertf32x8','vinsertf64x2','vinsertf64x4','vinserti128','vinserti32x4','vinserti32x8',
+    'vinserti64x2','vinserti64x4','vinsertps','vlddqu','vldmxcsr','vmaskmovdqu','vmaskmovpd','vmaskmovps',
+    'vmaxpd','vmaxph','vmaxps','vmaxsd','vmaxsh','vmaxss','vminpd','vminph',
+    'vminps','vminsd','vminsh','vminss','vmovapd','vmovaps','vmovd','vmovddup',
+    'vmovdqa','vmovdqa32','vmovdqa64','vmovdqu','vmovdqu16','vmovdqu32','vmovdqu64','vmovdqu8',
+    'vmovhlps','vmovhpd','vmovhps','vmovlhps','vmovlpd','vmovlps','vmovmskpd','vmovmskps',
+    'vmovntdq','vmovntdqa','vmovntpd','vmovntps','vmovq','vmovsd','vmovsh','vmovshdup',
+    'vmovsldup','vmovss','vmovupd','vmovups','vmovw','vmpsadbw','vmulpd','vmulph',
+    'vmulps','vmulsd','vmulsh','vmulss','vorpd','vorps','vp2intersectd','vp2intersectq',
+    'vp4dpwssd','vp4dpwssds','vpabsb','vpabsd','vpabsq','vpabsw','vpackssdw','vpacksswb',
+    'vpackusdw','vpackuswb','vpaddb','vpaddd','vpaddq','vpaddsb','vpaddsw','vpaddusb',
+    'vpaddusw','vpaddw','vpalignr','vpand','vpandd','vpandn','vpandnd','vpandnq',
+    'vpandq','vpavgb','vpavgw','vpblendd','vpblendmb','vpblendmd','vpblendmq','vpblendmw',
+    'vpblendvb','vpblendw','vpbroadcastb','vpbroadcastd','vpbroadcastmb2q','vpbroadcastmw2d','vpbroadcastq','vpbroadcastw',
+    'vpclmulqdq','vpcmpb','vpcmpd','vpcmpeqb','vpcmpeqd','vpcmpeqq','vpcmpeqw','vpcmpestri',
+    'vpcmpestrm','vpcmpgtb','vpcmpgtd','vpcmpgtq','vpcmpgtw','vpcmpistri','vpcmpistrm','vpcmpq',
+    'vpcmpub','vpcmpud','vpcmpuq','vpcmpuw','vpcmpw','vpcompressd','vpcompressq','vpconflictd',
+    'vpconflictq','vpdpbssd','vpdpbssds','vpdpbsud','vpdpbsuds','vpdpbusd','vpdpbusds','vpdpbuud',
+    'vpdpbuuds','vpdpwssd','vpdpwssds','vperm2f128','vperm2i128','vpermb','vpermd','vpermi2b',
+    'vpermi2d','vpermi2pd','vpermi2ps','vpermi2q','vpermi2w','vpermilpd','vpermilps','vpermpd',
+    'vpermps','vpermq','vpermt2b','vpermt2d','vpermt2pd','vpermt2ps','vpermt2q','vpermt2w',
+    'vpermw','vpexpandb','vpexpandd','vpexpandq','vpexpandw','vpextrb','vpextrd','vpextrq',
+    'vpextrw','vpgatherdd','vpgatherdq','vpgatherqd','vpgatherqq','vphaddd','vphaddsw','vphaddw',
+    'vphminposuw','vphsubd','vphsubsw','vphsubw','vpinsrb','vpinsrd','vpinsrq','vpinsrw',
+    'vplzcntd','vplzcntq','vpmadd52huq','vpmadd52luq','vpmaddubsw','vpmaddwd','vpmaskmovd','vpmaskmovq',
+    'vpmaxsb','vpmaxsd','vpmaxsq','vpmaxsw','vpmaxub','vpmaxud','vpmaxuq','vpmaxuw',
+    'vpminsb','vpminsd','vpminsq','vpminsw','vpminub','vpminud','vpminuq','vpminuw',
+    'vpmovb2m','vpmovd2m','vpmovdb','vpmovdw','vpmovm2b','vpmovm2d','vpmovm2q','vpmovm2w',
+    'vpmovmskb','vpmovq2m','vpmovqb','vpmovqd','vpmovqw','vpmovsdb','vpmovsdw','vpmovsqb',
+    'vpmovsqd','vpmovsqw','vpmovswb','vpmovsxbd','vpmovsxbq','vpmovsxbw','vpmovsxdq','vpmovsxwd',
+    'vpmovsxwq','vpmovusdb','vpmovusdw','vpmovusqb','vpmovusqd','vpmovusqw','vpmovuswb','vpmovw2m',
+    'vpmovwb','vpmovzxbd','vpmovzxbq','vpmovzxbw','vpmovzxdq','vpmovzxwd','vpmovzxwq','vpmuldq',
+    'vpmulhrsw','vpmulhuw','vpmulhw','vpmulld','vpmullq','vpmullw','vpmultishiftqb','vpmuludq',
+    'vpopcntb','vpopcntd','vpopcntq','vpopcntw','vpor','vpord','vporq','vprold',
+    'vprolq','vprolvd','vprolvq','vprord','vprorq','vprorvd','vprorvq','vpsadbw',
+    'vpscatterdd','vpscatterdq','vpscatterqd','vpscatterqq','vpshldd','vpshldq','vpshldvd','vpshldvq',
+    'vpshldvw','vpshldw','vpshrdd','vpshrdq','vpshrdvd','vpshrdvq','vpshrdvw','vpshrdw',
+    'vpshufb','vpshufbitqmb','vpshufd','vpshufhw','vpshuflw','vpsignb','vpsignd','vpsignw',
+    'vpslld','vpslldq','vpsllq','vpsllvd','vpsllvq','vpsllvw','vpsllw','vpsrad',
+    'vpsraq','vpsravd','vpsravq','vpsravw','vpsraw','vpsrld','vpsrldq','vpsrlq',
+    'vpsrlvd','vpsrlvq','vpsrlvw','vpsrlw','vpsubb','vpsubd','vpsubq','vpsubsb',
+    'vpsubsw','vpsubusb','vpsubusw','vpsubw','vpternlogd','vpternlogq','vptest','vptestmb',
+    'vptestmd','vptestmq','vptestmw','vptestnmb','vptestnmd','vptestnmq','vptestnmw','vpunpckhbw',
+    'vpunpckhdq','vpunpckhqdq','vpunpckhwd','vpunpcklbw','vpunpckldq','vpunpcklqdq','vpunpcklwd','vpxor',
+    'vpxord','vpxorq','vrangepd','vrangeps','vrangesd','vrangess','vrcp14pd','vrcp14ps',
+    'vrcp14sd','vrcp14ss','vrcp28pd','vrcp28ps','vrcp28sd','vrcp28ss','vrcpph','vrcpps',
+    'vrcpsh','vrcpss','vreducepd','vreduceph','vreduceps','vreducesd','vreducesh','vreducess',
+    'vrndscalepd','vrndscaleph','vrndscaleps','vrndscalesd','vrndscalesh','vrndscaless','vroundpd','vroundps',
+    'vroundsd','vroundss','vrsqrt14pd','vrsqrt14ps','vrsqrt14sd','vrsqrt14ss','vrsqrt28pd','vrsqrt28ps',
+    'vrsqrt28sd','vrsqrt28ss','vrsqrtph','vrsqrtps','vrsqrtsh','vrsqrtss','vscalefpd','vscalefph',
+    'vscalefps','vscalefsd','vscalefsh','vscalefss','vscatterdpd','vscatterdps','vscatterpf0dpd','vscatterpf0dps',
+    'vscatterpf0qpd','vscatterpf0qps','vscatterpf1dpd','vscatterpf1dps','vscatterpf1qpd','vscatterpf1qps','vscatterqpd','vscatterqps',
+    'vshuff32x4','vshuff64x2','vshufi32x4','vshufi64x2','vshufpd','vshufps','vsqrtpd','vsqrtph',
+    'vsqrtps','vsqrtsd','vsqrtsh','vsqrtss','vstmxcsr','vsubpd','vsubph','vsubps',
+    'vsubsd','vsubsh','vsubss','vtestpd','vtestps','vucomisd','vucomish','vucomiss',
+    'vunpckhpd','vunpckhps','vunpcklpd','vunpcklps','vxorpd','vxorps','vzeroall','vzeroupper',
+    'wait','wbinvd','wrmsr','xadd','xgetbv','xlatb','xor_','xorpd',
+    'xorps',
   ]
   for name in tbl:
     asmName = name.strip('_')
