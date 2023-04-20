@@ -1,6 +1,7 @@
 #ifdef MCL_DUMP_JIT
 	#define MCL_BINT_ASM 0
 #endif
+#define MCL_DLL_EXPORT
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <cybozu/sha2.hpp>
