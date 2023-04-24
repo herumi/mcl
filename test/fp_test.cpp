@@ -3,6 +3,7 @@
 #include <cybozu/test.hpp>
 #include <mcl/fp.hpp>
 #include "../src/low_func.hpp"
+#include "../src/llvm_proto.hpp"
 #include <time.h>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
@@ -15,6 +16,7 @@
 
 typedef mcl::FpT<> Fp;
 typedef mcl::Unit Unit;
+using namespace mcl::fp;
 
 CYBOZU_TEST_AUTO(sizeof)
 {
