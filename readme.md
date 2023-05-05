@@ -38,8 +38,8 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - x86, x86-64 Linux + gcc/clang
 - x86-64, M1 macOS
 - ARM / ARM64 Linux
-- WebAssembly
-- Android
+- WebAssembly : see [mcl-wasm](https://github.com/herumi/mcl-wasm)
+- Android : see [mcl-android](https://github.com/herumi/mcl-android)
 - iPhone
 - s390x(systemz)
   - install llvm and clang, and `make UPDATE_ASM=1` once.
@@ -54,8 +54,11 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
   - BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
 - BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
 
+# BLS signature
+See [bls](https://github.com/herumi/bls) if you want mcl for BLS-signature.
+
 # C-API
-see [api.md](api.md) and [FAQ](api.md#faq) for serialization and hash-to-curve.
+See [api.md](api.md) and [FAQ](api.md#faq) for serialization and hash-to-curve.
 
 # How to build on Linux and macOS
 x86-64/ARM/ARM64 Linux, macOS and mingw64 are supported.

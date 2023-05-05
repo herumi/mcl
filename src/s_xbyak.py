@@ -28,60 +28,140 @@ g_undefLabelN = 1
 def getLine():
   return len(g_text)
 
-class Reg:
-  def __init__(self, idx, bit):
+T_REG = 0
+T_FPU = 1
+T_XMM = 2 # contains ymm, zmm
+T_MASK = 3 # k1, k2, ...
+T_ATTR = 4
+
+T_ZERO = 8
+T_SAE = 16+1
+T_RN =  16+2
+T_RD =  16+3
+T_RU =  16+4
+T_RZ =  16+5
+
+class Operand:
+  def __init__(self, idx=0, bit=0, kind=T_REG, attr=0):
     self.idx = idx
     self.bit = bit
+    self.kind = kind
+    self.attr = attr
+  def copy(self):
+    r = Operand()
+    r.idx = self.idx
+    r.bit = self.bit
+    r.kind = self.kind
+    r.attr = self.attr
+    if hasattr(self, 'k'):
+      r.k = self.k
+    return r
+
   def __str__(self):
-    if self.bit == 64:
-      tbl = ['rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'r8', 'r9', 'r10',  'r11', 'r12', 'r13', 'r14', 'r15']
-    elif self.bit == 32:
-      tbl = ['eax', 'ecx', 'edx', 'ebx', 'esp', 'ebp', 'esi', 'edi', 'r8d', 'r9d', 'r10d',  'r11d', 'r12d', 'r13d', 'r14d', 'r15d']
-    elif self.bit == 8:
-      tbl = ['al', 'cl', 'dl', 'bl', 'ah', 'ch', 'dh', 'bh', 'r8b', 'r9b', 'r10b',  'r11b', 'r12b', 'r13b', 'r14b', 'r15b']
-    else:
-      raise Exception('bad bit', self.bit)
+    name = self.getName()
     if g_gas:
-      return '%' + tbl[self.idx]
-    return tbl[self.idx]
+      return '%' + name
+    else:
+      return name
+  def getName(self):
+    if self.kind == T_REG:
+      if self.bit == 64:
+        tbl = ['rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'r8', 'r9', 'r10',  'r11', 'r12', 'r13', 'r14', 'r15']
+      elif self.bit == 32:
+        tbl = ['eax', 'ecx', 'edx', 'ebx', 'esp', 'ebp', 'esi', 'edi', 'r8d', 'r9d', 'r10d',  'r11d', 'r12d', 'r13d', 'r14d', 'r15d']
+      elif self.bit == 8:
+        tbl = ['al', 'cl', 'dl', 'bl', 'ah', 'ch', 'dh', 'bh', 'r8b', 'r9b', 'r10b',  'r11b', 'r12b', 'r13b', 'r14b', 'r15b']
+      else:
+        raise Exception('bad bit', self.bit)
+      return tbl[self.idx]
+
+    # xmm4|k3, k1|k2
+    if self.kind == T_XMM:
+      if self.bit == 128:
+        s = 'x'
+      elif self.bit == 256:
+        s = 'y'
+      elif self.bit == 512:
+        s = 'z'
+      s += f'mm{self.idx}'
+    elif self.kind == T_MASK:
+      s = f'k{self.idx}'
+    elif self.kind == T_ATTR:
+      tbl = {
+        T_ZERO : 'z',
+        T_SAE : 'sae',
+        T_RN : 'rn_sae',
+        T_RD : 'rd_sae',
+        T_RU : 'ru_sae',
+        T_RZ : 'rz_sae',
+      }
+      return '{' + tbl[self.attr] + '}'
+    else:
+      raise Exception('bad kind', self.kind)
+    if hasattr(self, 'k') and self.k.idx > 0:
+      s += f'{{{self.k}}}'
+    if (self.attr & T_ZERO) != 0:
+      s += '{z}'
+    return s
+
   def __mul__(self, scale):
-    if type(scale) == int:
-      if scale not in [1, 2, 4, 8]:
-        raise Exception('bad scale', scale)
+    if isinstance(scale, int) and scale in [1, 2, 4, 8]:
       return RegExp(None, self, scale)
-    raise Exception('bad scale type', scale)
+    raise Exception('bad scale', scale)
+
   def __add__(self, rhs):
-    if type(rhs) == Reg:
-      return RegExp(self, rhs)
-    if type(rhs) == int:
+    if isinstance(rhs, int):
       return RegExp(self, None, 1, rhs)
-    if type(rhs) == RegExp:
+    if isinstance(rhs, RegExp):
       return RegExp(self, rhs.index, rhs.scale, rhs.offset)
+    if rhs.kind == T_REG:
+      return RegExp(self, rhs)
     raise Exception('bad add type', rhs)
+
   def __sub__(self, rhs):
-    if type(rhs) == int:
-      return RegExp(self, None, 1, -rhs)
-    raise Exception('bad sub type', rhs)
+    if not isinstance(rhs, int):
+      raise Exception('bad sub type', rhs)
+    return RegExp(self, None, 1, -rhs)
+
+  def __or__(self, rhs):
+    if rhs.kind == T_MASK:
+      r = self.copy()
+      r.k = rhs
+      return r
+    elif rhs.kind == T_ATTR:
+      r = self.copy()
+      r.attr |= rhs.attr
+      if hasattr(rhs, 'k'):
+        r.k = rhs.k
+      return r
+    else:
+      raise Exception('bad arg', k)
+
+class Reg(Operand):
+  def __init__(self, idx, bit):
+    super().__init__(idx, bit, T_REG)
 
 class Xmm(Reg):
-  def __str__(self):
-    if self.bit == 128:
-      p = 'x'
-    elif self.bit == 256:
-      p = 'y'
-    elif self.bit == 512:
-      p = 'z'
-    if g_gas:
-      return f'%{p}mm{self.idx}'
-    else:
-      return f'{p}mm{self.idx}'
+  def __init__(self, idx, bit):
+    super().__init__(idx, bit)
+    self.kind = T_XMM
 
 class MaskReg(Reg):
-  def __str__(self):
-    if g_gas:
-      return f'%k{self.idx}'
-    else:
-      return f'k{self.idx}'
+  def __init__(self, idx):
+    super().__init__(idx, 64)
+    self.kind = T_MASK
+
+class Attribute(Operand):
+  def __init__(self, attr):
+    super().__init__(0, 0, T_ATTR, attr)
+
+T_z = Attribute(T_ZERO)
+T_sae = Attribute(T_SAE)
+T_rn_sae = Attribute(T_RN)
+T_rd_sae = Attribute(T_RD)
+T_ru_sae = Attribute(T_RU)
+T_rz_sae = Attribute(T_RZ)
+
 
 class RegExp:
   def __init__(self, reg, index = None, scale = 1, offset = 0):
@@ -207,12 +287,13 @@ r15b = Reg(R15, 8)
 
 # define xmm, ymm, zmm registers
 for (p, bit, n) in [('x', 128, 16), ('y', 256, 16), ('z', 512, 32)]:
-  for i in range(n):
-    globals()[f'{p}mm{i}'] = Xmm(i, bit)
-    globals()[f'{p}m{i}'] = Xmm(i, bit)
-# define mask registers
-for i in range(n):
-  globals()[f'k{i}'] = MaskReg(i, 64)
+  for idx in range(n):
+    globals()[f'{p}mm{idx}'] = Xmm(idx, bit)
+    globals()[f'{p}m{idx}'] = Xmm(idx, bit)
+
+# define mask registers k0, ..., k7
+for i in range(8):
+  globals()[f'k{i}'] = MaskReg(i)
 
 win64ABI = False
 
@@ -302,7 +383,14 @@ class StackFrame:
         return r
     return r
 
-def init(mode):
+def init(param):
+  """
+    initialize s_xbyak
+    param.win : use Win64 ABI
+    param.mode : asm mode (nasm|masm|gas)
+  """
+  mode = param.mode
+  setWin64ABI(param.win)
   global g_nasm, g_gas, g_masm, g_text
   g_nasm = mode == 'nasm'
   g_gas = mode == 'gas'
@@ -528,21 +616,28 @@ def makeVar(name, bit, v, const=False, static=False):
 def genFunc(name):
   def f(*args):
     # special case (mov label, reg)
-    if g_gas and name == 'mov' and type(args[1]) == str:
+    if g_gas and name == 'mov' and isinstance(args[1], str):
       output(f'movabs ${args[1]}, {args[0]}')
       return
     if not args:
       return output(name)
+
+    regSize = 0
+    for arg in args:
+      if isinstance(arg, Reg):
+        regSize = max(regSize, arg.bit)
+
     s = ''
     param = reversed(args) if g_gas else args
     for arg in param:
       if s != '':
         s += ', '
-      if g_gas:
-        if type(arg) == int:
-          s += '$' + str(arg)
-        else:
-          s += str(arg)
+      if g_gas and isinstance(arg, int):
+        s += '$' + str(arg)
+      elif g_masm and isinstance(arg, Address) and regSize > 64:
+        tbl = { 128 : 'x', 256 : 'y', 512 : 'z' }
+        attr = f'{tbl[regSize]}mmword ptr '
+        s += attr + str(arg)
       else:
         s += str(arg)
     return output(name + ' ' + s)
@@ -764,3 +859,10 @@ def genAllFunc():
     globals()[name] = genFunc(asmName)
 
 genAllFunc()
+
+import argparse
+def getDefaultParser(description='s_xbyak'):
+  parser = argparse.ArgumentParser(description=description)
+  parser.add_argument('-win', '--win', help='Win64 ABI(default:Amd64 ABI)', action='store_true')
+  parser.add_argument('-m', '--mode', help='asm mode(nasm|masm|gas)', default='nasm')
+  return parser
