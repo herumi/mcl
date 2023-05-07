@@ -1,5 +1,7 @@
 # static version of xbyak
 # This file provides a xbyak-like DSL to generate a asm code for nasm/yasm/gas .
+import struct
+
 RAX = 0
 RCX = 1
 RDX = 2
@@ -30,16 +32,26 @@ def getLine():
 
 T_REG = 0
 T_FPU = 1
-T_XMM = 2 # contains ymm, zmm
-T_MASK = 3 # k1, k2, ...
-T_ATTR = 4
+T_SSE = 2
+T_XMM = 3 # contains ymm, zmm
+T_YMM = 4
+T_ZMM = 5
+T_MASK = 6 # k1, k2, ...
+T_ATTR = 7
 
-T_ZERO = 8
-T_SAE = 16+1
-T_RN =  16+2
-T_RD =  16+3
-T_RU =  16+4
-T_RZ =  16+5
+# attr
+# one of (sae, rn, rd, ru, rz) or zero
+T_ZERO = 1
+T_SAE = (1<<1)
+T_RN =  (2<<1)
+T_RD =  (3<<1)
+T_RU =  (4<<1)
+T_RZ =  (5<<1)
+
+def mergeAttr(attr1, attr2):
+  if (attr1>>1) and (attr2>>1):
+    raise Exception("can't merge attr", attr1, attr2)
+  return attr1 | attr2
 
 class Operand:
   def __init__(self, idx=0, bit=0, kind=T_REG, attr=0):
@@ -58,12 +70,6 @@ class Operand:
     return r
 
   def __str__(self):
-    name = self.getName()
-    if g_gas:
-      return '%' + name
-    else:
-      return name
-  def getName(self):
     if self.kind == T_REG:
       if self.bit == 64:
         tbl = ['rax', 'rcx', 'rdx', 'rbx', 'rsp', 'rbp', 'rsi', 'rdi', 'r8', 'r9', 'r10',  'r11', 'r12', 'r13', 'r14', 'r15']
@@ -73,29 +79,33 @@ class Operand:
         tbl = ['al', 'cl', 'dl', 'bl', 'ah', 'ch', 'dh', 'bh', 'r8b', 'r9b', 'r10b',  'r11b', 'r12b', 'r13b', 'r14b', 'r15b']
       else:
         raise Exception('bad bit', self.bit)
-      return tbl[self.idx]
+      s = '%' if g_gas else ''
+      return s + tbl[self.idx]
 
     # xmm4|k3, k1|k2
-    if self.kind == T_XMM:
+    s = '%' if g_gas else ''
+    if self.bit >= 128:
       if self.bit == 128:
-        s = 'x'
+        s += 'x'
       elif self.bit == 256:
-        s = 'y'
+        s += 'y'
       elif self.bit == 512:
-        s = 'z'
+        s += 'z'
       s += f'mm{self.idx}'
     elif self.kind == T_MASK:
-      s = f'k{self.idx}'
+      s += f'k{self.idx}'
     elif self.kind == T_ATTR:
       tbl = {
-        T_ZERO : 'z',
         T_SAE : 'sae',
-        T_RN : 'rn_sae',
-        T_RD : 'rd_sae',
-        T_RU : 'ru_sae',
-        T_RZ : 'rz_sae',
+        T_RN : 'rn-sae',
+        T_RD : 'rd-sae',
+        T_RU : 'ru-sae',
+        T_RZ : 'rz-sae',
       }
-      return '{' + tbl[self.attr] + '}'
+      # no % even if g_gas
+      # ignore T_z
+      s = '{' + tbl[self.attr & ~1] + '}'
+      return s
     else:
       raise Exception('bad kind', self.kind)
     if hasattr(self, 'k') and self.k.idx > 0:
@@ -130,7 +140,7 @@ class Operand:
       return r
     elif rhs.kind == T_ATTR:
       r = self.copy()
-      r.attr |= rhs.attr
+      r.attr = mergeAttr(r.attr, rhs.attr)
       if hasattr(rhs, 'k'):
         r.k = rhs.k
       return r
@@ -142,9 +152,19 @@ class Reg(Operand):
     super().__init__(idx, bit, T_REG)
 
 class Xmm(Reg):
-  def __init__(self, idx, bit):
-    super().__init__(idx, bit)
+  def __init__(self, idx):
+    super().__init__(idx, 128)
     self.kind = T_XMM
+
+class Ymm(Reg):
+  def __init__(self, idx):
+    super().__init__(idx, 256)
+    self.kind = T_YMM
+
+class Zmm(Reg):
+  def __init__(self, idx):
+    super().__init__(idx, 512)
+    self.kind = T_ZMM
 
 class MaskReg(Reg):
   def __init__(self, idx):
@@ -207,32 +227,136 @@ class RegExp:
     return s
 
 class Address:
-  def __init__(self, exp=None, bit=0):
+  def __init__(self, exp=None, bit=0, broadcast=False):
     self.exp = exp
     self.bit = bit
-    self.ripLabel = None
-  def setRip(self, label):
-    self.ripLabel = label
+    self.broadcast = broadcast
+    self.broadcastRate = 0
+  def copy(self):
+    r = Address()
+    r.exp = self.exp
+    r.bit = self.bit
+    r.broadcast = self.broadcast
+    r.broadcastRate = self.broadcastRate
+    return r
+
+  # compute X of {1toX} by bitSize and T_B64, T_B32.
+  def setBroadcastRage(self, name, bitSize):
+    if name in avx512broadcastTbl:
+      self.broadcastRate = bitSize // avx512broadcastTbl[name]
+      self.bit = bitSize // self.broadcastRate
+  def getBroadcastStr(self):
+    if self.broadcast and self.broadcastRate > 0:
+      return f'{{1to{self.broadcastRate}}}'
+    return ''
   def __str__(self):
-    if self.ripLabel:
-      if g_gas:
-        return f'{self.ripLabel}(%rip)'
-      if g_masm:
-        return f'offset {self.ripLabel}'
-      return f'[rel {self.ripLabel}]'
+    maskStr = ''
+    if hasattr(self, 'k') and self.k.idx > 0:
+      maskStr = f'{{{self.k}}}'
+    if isinstance(self.exp, RipReg):
+      return f'{self.exp}{maskStr}'
     if g_gas:
       if type(self.exp) == Reg:
-        return '(' + str(self.exp) + ')'
-      return str(self.exp)
-    return '[' + str(self.exp) + ']'
+        s = '(' + str(self.exp) + ')'
+      else:
+        s = str(self.exp)
+      s += self.getBroadcastStr() + maskStr
+      return s
+    s = '[' + str(self.exp) + ']'
+    if g_nasm:
+      tbl = { 128 : 'oword', 256 : 'yword', 512 : 'zword' }
+      if self.bit > 64:
+        s = tbl[self.bit] + ' ' + s
+      return s + self.getBroadcastStr() + maskStr
+    # g_masm
+    tbl = { 32 : 'd', 64 : 'q', 128 : 'xmm', 256 : 'ymm', 512 : 'zmm' }
+    if self.broadcast:
+      # To distinguish vcvtpd2dq(xmm0, ptr_b(rax)) and vcvtpd2dq(xmm0, yword_b(rax)) on masm, but that doesn't seem to affect NASM (bug?).
+      # https://developercommunity.visualstudio.com/t/ml64exe-cant-deal-with-vcvtpd2dq-xmm0/10352105
+      if hasattr(self, 'bitForAddress'):
+        s = f'{tbl[self.bitForAddress]}word ptr ' + s
+      s = f'{tbl[self.bit]}word bcst ' + s
+    else:
+      if self.bit > 64:
+        s = f'{tbl[self.bit]}word ptr ' + s
+    return s + maskStr
+
+  def __or__(self, rhs):
+    if rhs.kind == T_MASK:
+      r = self.copy()
+      r.k = rhs
+      return r
+#    elif rhs.kind == T_ATTR:
+#      r = self.copy()
+#      r.attr = mergeAttr(r.attr, rhs.attr)
+#      if hasattr(rhs, 'k'):
+#        r.k = rhs.k
+#      return r
+    else:
+      raise Exception('bad arg', k)
+
+class RipReg:
+  def __init__(self, v=0):
+    if isinstance(v, int):
+      self.label = None
+      self.offset = v
+    else:
+      self.label = v
+      self.offset = 0
+
+  def __str__(self):
+    if self.offset > 0:
+      offset = f'+{self.offset}'
+    elif self.offset == 0:
+      offset = ''
+    else:
+      offset = str(self.offset)
+    if g_gas:
+      return f'{self.label}{offset}(%rip)'
+    if g_masm:
+      return f'offset {self.label}{offset}'
+    # g_nasm
+    return f'[rel {self.label}{offset}]'
+
+  def __add__(self, v):
+    r = RipReg(self.label)
+    if isinstance(v, int):
+      r.offset = self.offset + v
+    elif r.label == None:
+      r.label = v
+    else:
+      raise Exception('label is already set', r.label, v)
+    return r
+
 
 def ptr(exp):
   return Address(exp)
 
-def rip(label):
-  addr = Address()
-  addr.setRip(label)
-  return addr
+def xword(exp):
+  return Address(exp, bit=128)
+
+def yword(exp):
+  return Address(exp, bit=256)
+
+def zword(exp):
+  return Address(exp, bit=512)
+
+def ptr_b(exp):
+  return Address(exp, broadcast=True)
+
+def xword_b(exp):
+  return Address(exp, bit=128, broadcast=True)
+
+def yword_b(exp):
+  return Address(exp, bit=256, broadcast=True)
+
+def zword_b(exp):
+  return Address(exp, bit=512, broadcast=True)
+
+"""
+ptr(rip + label + offset)
+"""
+rip = RipReg()
 
 rax = Reg(RAX, 64)
 rcx = Reg(RCX, 64)
@@ -286,10 +410,10 @@ r14b = Reg(R14, 8)
 r15b = Reg(R15, 8)
 
 # define xmm, ymm, zmm registers
-for (p, bit, n) in [('x', 128, 16), ('y', 256, 16), ('z', 512, 32)]:
-  for idx in range(n):
-    globals()[f'{p}mm{idx}'] = Xmm(idx, bit)
-    globals()[f'{p}m{idx}'] = Xmm(idx, bit)
+for (p, cstr) in [('x', Xmm), ('y', Ymm), ('z', Zmm)]:
+  for idx in range(32):
+    globals()[f'{p}mm{idx}'] = cstr(idx)
+    globals()[f'{p}m{idx}'] = cstr(idx)
 
 # define mask registers k0, ..., k7
 for i in range(8):
@@ -322,27 +446,83 @@ def getRdxPos():
 def getNoSaveNum():
   return 6 if win64ABI else 8
 
+def getSimdSize(vType):
+  if vType == 0: return 0
+  if vType == T_SSE: return 16
+  if vType == T_XMM: return 16
+  if vType == T_YMM: return 32
+  if vType == T_ZMM: return 64
+  raise Exception('bad vType', vType)
+
 class StackFrame:
-  def __init__(self, pNum, tNum = 0, useRDX=False, useRCX=False, stackSizeByte=0, callRet=True):
+  def __init__(self, pNum, tNum=0, useRDX=False, useRCX=False, stackSizeByte=0, callRet=True, vNum=0, vType=0):
+    """
+      make a stackframe of a generated function
+      pNum : # of function arguments assigned to self.p[pNum]
+      tNum : # of temporary registers asigned to self.t[tNum]
+      useRDX : set True if you want to use rdx
+      useRCX : set True if you want to use rcx
+      stackSizeByte : stack for local variables assigned to rsp[stackSizeByte]
+      callRet : automatically restore registers and call ret()
+      vNum : # of SIMD registers
+      vType : SIMD type (T_SSE, T_XMM, T_YMM, T_ZMM)
+    """
     self.pos = 0
     self.useRDX = useRDX
     self.useRCX = useRCX
     self.callRet = callRet
     self.p = []
     self.t = []
+    self.v = []
     allRegNum = pNum + tNum + (1 if useRDX else 0) + (1 if useRCX else 0)
     noSaveNum = getNoSaveNum()
     self.saveNum = max(0, allRegNum - noSaveNum)
     tbl = getRegTbl()[noSaveNum:]
     for i in range(self.saveNum):
       push(tbl[i])
+
+    # restore SIMD registers
+    if vNum > 0 and vType == 0:
+      raise Exception('specify vType')
+    self.vType = vType
+
+    maxFreeN = 5 if win64ABI else 7
+    self.maxFreeN = maxFreeN
+    saveSimdN = max(vNum - maxFreeN, 0)
+    self.saveSimdN = saveSimdN
+    simdSize = getSimdSize(vType)
+    self.simdSize = simdSize
+    for i in range(vNum):
+      if vType in [T_SSE, T_XMM]:
+        self.v.append(Xmm(i))
+      elif vType == T_YMM:
+        self.v.append(Ymm(i))
+      elif vType == T_ZMM:
+        self.v.append(Zmm(i))
+
     self.P = (stackSizeByte + 7) // 8
+    if saveSimdN > 0:
+      if self.P & 1 > 0:
+        self.P += 1
+      self.P += (saveSimdN * simdSize) // 8
+      self.saveTop = (stackSizeByte + 15) & ~15
     # 16 byte alignment
     if self.P > 0 and (self.P & 1) == (self.saveNum & 1):
       self.P += 1
     self.P *= 8
     if self.P > 0:
       sub(rsp, self.P)
+
+    # store SIMD registers
+    for i in range(saveSimdN):
+      if vType == T_SSE:
+        movups(ptr(rsp + self.saveTop + i * simdSize), Xmm(maxFreeN+i))
+      elif vType == T_XMM:
+        vmovups(ptr(rsp + self.saveTop + i * simdSize), Xmm(maxFreeN+i))
+      elif vType == T_YMM:
+        vmovups(ptr(rsp + self.saveTop + i * simdSize), Ymm(maxFreeN+i))
+      elif vType == T_ZMM:
+        vmovups(ptr(rsp + self.saveTop + i * simdSize), Zmm(maxFreeN+i))
     for i in range(pNum):
       self.p.append(self.getRegIdx())
     for i in range(tNum):
@@ -352,6 +532,23 @@ class StackFrame:
     if self.useRDX and getRdxPos() < pNum:
       mov(r11, rdx)
   def close(self, callRet=True):
+    # restore SIMD registers
+    saveSimdN = self.saveSimdN
+    maxFreeN = self.maxFreeN
+    simdSize = self.simdSize
+    vType = self.vType
+    for i in range(saveSimdN):
+      if vType == T_SSE:
+        movups(Xmm(maxFreeN+i), ptr(rsp + self.saveTop + i * simdSize))
+      elif vType == T_XMM:
+        vmovups(Xmm(maxFreeN+i), ptr(rsp + self.saveTop + i * simdSize))
+      elif vType == T_YMM:
+        vmovups(Ymm(maxFreeN+i), ptr(rsp + self.saveTop + i * simdSize))
+      elif vType  == T_ZMM:
+        vmovups(Zmm(maxFreeN+i), ptr(rsp + self.saveTop + i * simdSize))
+#    if saveSimdN > 0 and vType in [T_XMM, T_YMM, T_ZMM]:
+#      vzeroupper()
+
     if self.P > 0:
       add(rsp, self.P)
     noSaveNum = getNoSaveNum()
@@ -593,7 +790,13 @@ class FuncProc:
   def __exit__(self, ex_type, ex_value, trace):
     self.close()
 
-def makeVar(name, bit, v, const=False, static=False):
+def float2uint32(v):
+  return int(struct.pack('>f', v).hex(),16)
+
+def double2uint64(v):
+  return int(struct.pack('>d', v).hex(),16)
+
+def makeVar(name, bit, v, const=False, static=False, base=10):
   if not static:
     global_(name)
   makeLabel(name)
@@ -609,9 +812,23 @@ def makeVar(name, bit, v, const=False, static=False):
   for i in range(n):
     if i > 0:
       s += ', '
-    s += str(v & mask)
+    if base == 10:
+      s += str(v & mask)
+    elif base == 16:
+      s += hex(v & mask)
+    else:
+      raise Exception('bad base', base)
     v >>= L
   output(s)
+
+def getNameSuffix(bit):
+  if bit == 128:
+    return 'x'
+  if bit == 256:
+    return 'y'
+  if bit == 512:
+    return 'z'
+  return ''
 
 def genFunc(name):
   def f(*args):
@@ -622,25 +839,64 @@ def genFunc(name):
     if not args:
       return output(name)
 
-    regSize = 0
+    # check max bit size of regs and attributes
+    bitSize = 0
+    sae = 0
     for arg in args:
-      if isinstance(arg, Reg):
-        regSize = max(regSize, arg.bit)
+      if isinstance(arg, Operand):
+        bitSize = max(bitSize, arg.bit)
+        if arg.attr > 1:
+          sae = arg.attr
+      if isinstance(arg, Address):
+        bitSize = max(bitSize, arg.bit)
+
+    # mnemonic requiring size for Address
+    # bitForAddress is used to detect a suffix of a mnemonic in specialNameTbl for gas and masm
+    bitForAddress = 0
+    specialNameTbl = ['vcvtpd2dq', 'vcvtpd2ps', 'vcvttpd2dq', 'vcvtqq2ps', 'vcvtuqq2ps', 'vcvtpd2udq', 'vcvttpd2udq', 'vfpclasspd', 'vfpclassps']
+
+    # set bit size to Address
+    for arg in args:
+      if isinstance(arg, Address):
+        if arg.broadcast:
+          if g_masm and arg.bit > 128:
+            arg.bitForAddress = arg.bit
+          arg.setBroadcastRage(name, bitSize)
+        elif name in specialNameTbl:
+          if arg.bit == 0:
+            arg.bit = 128 # default size
+          bitForAddress = arg.bit
+        if g_masm and arg.bit == 0:
+          arg.bit = bitSize
+
+    param = list(args)
+
+    # insert sae at the end of arguments.
+    # if the last argument is immediate, insert sae at the front of it.
+    # masm requires sae at the end of arguments without a comma.
+    if not g_masm and sae > 0:
+      if isinstance(args[-1], Operand) and args[-1].kind != T_ATTR:
+        param.append(Attribute(sae))
+      elif isinstance(args[-1], int):
+        param.insert(-1, Attribute(sae))
 
     s = ''
-    param = reversed(args) if g_gas else args
+    if g_gas:
+      param.reverse()
     for arg in param:
       if s != '':
         s += ', '
       if g_gas and isinstance(arg, int):
         s += '$' + str(arg)
-      elif g_masm and isinstance(arg, Address) and regSize > 64:
-        tbl = { 128 : 'x', 256 : 'y', 512 : 'z' }
-        attr = f'{tbl[regSize]}mmword ptr '
-        s += attr + str(arg)
       else:
         s += str(arg)
-    return output(name + ' ' + s)
+    if g_masm and sae > 0:
+      s += str(Attribute(sae))
+
+    suffix = ''
+    if g_gas and bitForAddress > 0:
+      suffix = getNameSuffix(bitForAddress)
+    return output(name + suffix + ' ' + s)
   return f
 
 def genAllFunc():
@@ -859,6 +1115,314 @@ def genAllFunc():
     globals()[name] = genFunc(asmName)
 
 genAllFunc()
+
+# used in Address.setBroadcastRage()
+T_B16 = 16
+T_B32 = 32
+T_B64 = 64
+avx512broadcastTbl = {
+  'vaddpd' : T_B64,
+  'vaddps' : T_B32,
+  'vandnpd' : T_B64,
+  'vandnps' : T_B32,
+  'vandpd' : T_B64,
+  'vandps' : T_B32,
+  'vbcstnebf162ps' : T_B16,
+  'vbcstnesh2ps' : T_B16,
+  'vcvtdq2pd' : T_B32,
+  'vcvtdq2ps' : T_B32,
+  'vcvtneps2bf16' : T_B32,
+  'vcvtpd2dq' : T_B64,
+  'vcvtpd2ps' : T_B64,
+  'vcvtps2dq' : T_B32,
+  'vcvtps2pd' : T_B32,
+  'vcvttpd2dq' : T_B64,
+  'vcvttps2dq' : T_B32,
+  'vdivpd' : T_B64,
+  'vdivps' : T_B32,
+  'vfmadd132pd' : T_B64,
+  'vfmadd132ps' : T_B32,
+  'vfmadd213pd' : T_B64,
+  'vfmadd213ps' : T_B32,
+  'vfmadd231pd' : T_B64,
+  'vfmadd231ps' : T_B32,
+  'vfmaddsub132pd' : T_B64,
+  'vfmaddsub132ps' : T_B32,
+  'vfmaddsub213pd' : T_B64,
+  'vfmaddsub213ps' : T_B32,
+  'vfmaddsub231pd' : T_B64,
+  'vfmaddsub231ps' : T_B32,
+  'vfmsub132pd' : T_B64,
+  'vfmsub132ps' : T_B32,
+  'vfmsub213pd' : T_B64,
+  'vfmsub213ps' : T_B32,
+  'vfmsub231pd' : T_B64,
+  'vfmsub231ps' : T_B32,
+  'vfmsubadd132pd' : T_B64,
+  'vfmsubadd132ps' : T_B32,
+  'vfmsubadd213pd' : T_B64,
+  'vfmsubadd213ps' : T_B32,
+  'vfmsubadd231pd' : T_B64,
+  'vfmsubadd231ps' : T_B32,
+  'vfnmadd132pd' : T_B64,
+  'vfnmadd132ps' : T_B32,
+  'vfnmadd213pd' : T_B64,
+  'vfnmadd213ps' : T_B32,
+  'vfnmadd231pd' : T_B64,
+  'vfnmadd231ps' : T_B32,
+  'vfnmsub132pd' : T_B64,
+  'vfnmsub132ps' : T_B32,
+  'vfnmsub213pd' : T_B64,
+  'vfnmsub213ps' : T_B32,
+  'vfnmsub231pd' : T_B64,
+  'vfnmsub231ps' : T_B32,
+  'vgf2p8affineinvqb' : T_B64,
+  'vgf2p8affineqb' : T_B64,
+  'vmaxpd' : T_B64,
+  'vmaxps' : T_B32,
+  'vminpd' : T_B64,
+  'vminps' : T_B32,
+  'vmulpd' : T_B64,
+  'vmulps' : T_B32,
+  'vorpd' : T_B64,
+  'vorps' : T_B32,
+  'vpabsd' : T_B32,
+  'vpackssdw' : T_B32,
+  'vpackusdw' : T_B32,
+  'vpaddd' : T_B32,
+  'vpaddq' : T_B64,
+  'vpdpbusd' : T_B32,
+  'vpdpbusds' : T_B32,
+  'vpdpwssd' : T_B32,
+  'vpdpwssds' : T_B32,
+  'vpermd' : T_B32,
+  'vpermilpd' : T_B64,
+  'vpermilpd' : T_B64,
+  'vpermilps' : T_B32,
+  'vpermilps' : T_B32,
+  'vpermpd' : T_B64,
+  'vpermpd' : T_B64,
+  'vpermps' : T_B32,
+  'vpermq' : T_B64,
+  'vpermq' : T_B64,
+  'vpmadd52huq' : T_B64,
+  'vpmadd52luq' : T_B64,
+  'vpmaxsd' : T_B32,
+  'vpmaxud' : T_B32,
+  'vpminsd' : T_B32,
+  'vpminud' : T_B32,
+  'vpmuldq' : T_B64,
+  'vpmulld' : T_B32,
+  'vpmuludq' : T_B64,
+  'vpshufd' : T_B32,
+  'vpslld' : T_B32,
+  'vpsllq' : T_B64,
+  'vpsllvd' : T_B32,
+  'vpsllvq' : T_B64,
+  'vpsrad' : T_B32,
+  'vpsravd' : T_B32,
+  'vpsrld' : T_B32,
+  'vpsrlq' : T_B64,
+  'vpsrlvd' : T_B32,
+  'vpsrlvq' : T_B64,
+  'vpsubd' : T_B32,
+  'vpsubq' : T_B64,
+  'vpunpckhdq' : T_B32,
+  'vpunpckhqdq' : T_B64,
+  'vpunpckldq' : T_B32,
+  'vpunpcklqdq' : T_B64,
+  'vshufpd' : T_B64,
+  'vshufps' : T_B32,
+  'vsqrtpd' : T_B64,
+  'vsqrtps' : T_B32,
+  'vsubpd' : T_B64,
+  'vsubps' : T_B32,
+  'vunpckhpd' : T_B64,
+  'vunpckhps' : T_B32,
+  'vunpcklpd' : T_B64,
+  'vunpcklps' : T_B32,
+  'vxorpd' : T_B64,
+  'vxorps' : T_B32,
+  'vaddph' : T_B16,
+  'vblendmpd' : T_B64,
+  'vblendmps' : T_B32,
+  'vcmppd' : T_B64,
+  'vcmpph' : T_B16,
+  'vcmpps' : T_B32,
+  'vcvtdq2ph' : T_B32,
+  'vcvtne2ps2bf16' : T_B32,
+  'vcvtpd2ph' : T_B64,
+  'vcvtpd2qq' : T_B64,
+  'vcvtpd2udq' : T_B64,
+  'vcvtpd2uqq' : T_B64,
+  'vcvtph2dq' : T_B16,
+  'vcvtph2pd' : T_B16,
+  'vcvtph2psx' : T_B16,
+  'vcvtph2qq' : T_B16,
+  'vcvtph2udq' : T_B16,
+  'vcvtph2uqq' : T_B16,
+  'vcvtph2uw' : T_B16,
+  'vcvtph2w' : T_B16,
+  'vcvtps2phx' : T_B32,
+  'vcvtps2qq' : T_B32,
+  'vcvtps2udq' : T_B32,
+  'vcvtps2uqq' : T_B32,
+  'vcvtqq2pd' : T_B64,
+  'vcvtqq2ph' : T_B64,
+  'vcvtqq2ps' : T_B64,
+  'vcvttpd2qq' : T_B64,
+  'vcvttpd2udq' : T_B64,
+  'vcvttpd2uqq' : T_B64,
+  'vcvttph2dq' : T_B16,
+  'vcvttph2qq' : T_B16,
+  'vcvttph2udq' : T_B16,
+  'vcvttph2uqq' : T_B16,
+  'vcvttph2uw' : T_B16,
+  'vcvttph2w' : T_B16,
+  'vcvttps2qq' : T_B32,
+  'vcvttps2udq' : T_B32,
+  'vcvttps2uqq' : T_B32,
+  'vcvtudq2pd' : T_B32,
+  'vcvtudq2ph' : T_B32,
+  'vcvtudq2ps' : T_B32,
+  'vcvtuqq2pd' : T_B64,
+  'vcvtuqq2ph' : T_B64,
+  'vcvtuqq2ps' : T_B64,
+  'vcvtuw2ph' : T_B16,
+  'vcvtw2ph' : T_B16,
+  'vdivph' : T_B16,
+  'vdpbf16ps' : T_B32,
+  'vexp2pd' : T_B64,
+  'vexp2ps' : T_B32,
+  'vfcmaddcph' : T_B32,
+  'vfcmulcph' : T_B32,
+  'vfixupimmpd' : T_B64,
+  'vfixupimmps' : T_B32,
+  'vfmadd132ph' : T_B16,
+  'vfmadd213ph' : T_B16,
+  'vfmadd231ph' : T_B16,
+  'vfmaddcph' : T_B32,
+  'vfmaddsub132ph' : T_B16,
+  'vfmaddsub213ph' : T_B16,
+  'vfmaddsub231ph' : T_B16,
+  'vfmsub132ph' : T_B16,
+  'vfmsub213ph' : T_B16,
+  'vfmsub231ph' : T_B16,
+  'vfmsubadd132ph' : T_B16,
+  'vfmsubadd213ph' : T_B16,
+  'vfmsubadd231ph' : T_B16,
+  'vfmulcph' : T_B32,
+  'vfnmadd132ph' : T_B16,
+  'vfnmadd213ph' : T_B16,
+  'vfnmadd231ph' : T_B16,
+  'vfnmsub132ph' : T_B16,
+  'vfnmsub213ph' : T_B16,
+  'vfnmsub231ph' : T_B16,
+  'vfpclasspd' : T_B64,
+  'vfpclassph' : T_B16,
+  'vfpclassps' : T_B32,
+  'vgetexppd' : T_B64,
+  'vgetexpph' : T_B16,
+  'vgetexpps' : T_B32,
+  'vgetmantpd' : T_B64,
+  'vgetmantph' : T_B16,
+  'vgetmantps' : T_B32,
+  'vmaxph' : T_B16,
+  'vminph' : T_B16,
+  'vmulph' : T_B16,
+  'vp2intersectd' : T_B32,
+  'vp2intersectq' : T_B64,
+  'vpabsq' : T_B64,
+  'vpandd' : T_B32,
+  'vpandnd' : T_B32,
+  'vpandnq' : T_B64,
+  'vpandq' : T_B64,
+  'vpblendmd' : T_B32,
+  'vpblendmq' : T_B64,
+  'vpcmpd' : T_B32,
+  'vpcmpeqd' : T_B32,
+  'vpcmpeqq' : T_B64,
+  'vpcmpgtd' : T_B32,
+  'vpcmpgtq' : T_B64,
+  'vpcmpq' : T_B64,
+  'vpcmpud' : T_B32,
+  'vpcmpuq' : T_B64,
+  'vpconflictd' : T_B32,
+  'vpconflictq' : T_B64,
+  'vpermi2d' : T_B32,
+  'vpermi2pd' : T_B64,
+  'vpermi2ps' : T_B32,
+  'vpermi2q' : T_B64,
+  'vpermt2d' : T_B32,
+  'vpermt2pd' : T_B64,
+  'vpermt2ps' : T_B32,
+  'vpermt2q' : T_B64,
+  'vplzcntd' : T_B32,
+  'vplzcntq' : T_B64,
+  'vpmaxsq' : T_B64,
+  'vpmaxuq' : T_B64,
+  'vpminsq' : T_B64,
+  'vpminuq' : T_B64,
+  'vpmullq' : T_B64,
+  'vpmultishiftqb' : T_B64,
+  'vpopcntd' : T_B32,
+  'vpopcntq' : T_B64,
+  'vpord' : T_B32,
+  'vporq' : T_B64,
+  'vprold' : T_B32,
+  'vprolq' : T_B64,
+  'vprolvd' : T_B32,
+  'vprolvq' : T_B64,
+  'vprord' : T_B32,
+  'vprorq' : T_B64,
+  'vprorvd' : T_B32,
+  'vprorvq' : T_B64,
+  'vpshldd' : T_B32,
+  'vpshldq' : T_B64,
+  'vpshldvd' : T_B32,
+  'vpshldvq' : T_B64,
+  'vpshrdd' : T_B32,
+  'vpshrdq' : T_B64,
+  'vpshrdvd' : T_B32,
+  'vpshrdvq' : T_B64,
+  'vpsraq' : T_B64,
+  'vpsravq' : T_B64,
+  'vpternlogd' : T_B32,
+  'vpternlogq' : T_B64,
+  'vptestmd' : T_B32,
+  'vptestmq' : T_B64,
+  'vptestnmd' : T_B32,
+  'vptestnmq' : T_B64,
+  'vpxord' : T_B32,
+  'vpxorq' : T_B64,
+  'vrangepd' : T_B64,
+  'vrangeps' : T_B32,
+  'vrcp14pd' : T_B64,
+  'vrcp14ps' : T_B32,
+  'vrcp28pd' : T_B64,
+  'vrcp28ps' : T_B32,
+  'vrcpph' : T_B16,
+  'vreducepd' : T_B64,
+  'vreduceph' : T_B16,
+  'vreduceps' : T_B32,
+  'vrndscalepd' : T_B64,
+  'vrndscaleph' : T_B16,
+  'vrndscaleps' : T_B32,
+  'vrsqrt14pd' : T_B64,
+  'vrsqrt14ps' : T_B32,
+  'vrsqrt28pd' : T_B64,
+  'vrsqrt28ps' : T_B32,
+  'vrsqrtph' : T_B16,
+  'vscalefpd' : T_B64,
+  'vscalefph' : T_B16,
+  'vscalefps' : T_B32,
+  'vshuff32x4' : T_B32,
+  'vshuff64x2' : T_B64,
+  'vshufi32x4' : T_B32,
+  'vshufi64x2' : T_B64,
+  'vsqrtph' : T_B16,
+  'vsubph' : T_B16,
+}
 
 import argparse
 def getDefaultParser(description='s_xbyak'):
