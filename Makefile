@@ -102,12 +102,23 @@ $(BASE_ASM): $(BASE_LL)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
 endif
 
+# specify ARCH=x86_64 CLANG_TARGET=x86_64-apple-macos for x86_64 on M1 mac
+# specify ARCH=arm64 CLANG_TARGET=arm64-apple-macos for aarch64 on Intel mac
+# see https://developer.apple.com/documentation/apple-silicon/building-a-universal-macos-binary
+ifeq ($(UNAME_S),Darwin)
+ifeq ($(CLANG_TARGET),)
+CLANG_TARGET?=$(ARCH)-apple-macos
+endif
+endif
+ifneq ($(CLANG_TARGET),)
+  CFLAGS+=-target $(CLANG_TARGET)
+endif
 ifeq ($(OS)-$(ARCH),Linux-x86_64)
 $(BASE_OBJ): $(BASE_ASM)
-	$(PRE)$(CC) $(CFLAGS) -c $< -o $@
+	$(PRE)$(CC) -c $< -o $@ $(CFLAGS) $(CFLAGS_USER)
 else
 $(BASE_OBJ): $(BASE_LL)
-	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
+	$(CLANG) -c $< -o $@ $(CFLAGS) $(CFLAGS_USER)
 endif
 ifeq ($(findstring $(OS),mingw64/cygwin),)
   MCL_USE_LLVM?=1
@@ -154,7 +165,7 @@ $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF)
     BINT_SRC=src/asm/$(BINT_BASENAME).$(ASM_SUF)
     CFLAGS+=-DMCL_BINT_ASM_X64=0
 $(BINT_OBJ): $(BINT_LL)
-	$(CLANG) -c $< -o $@ $(CFLAGS) $(CLANG_TARGET) $(CFLAGS_USER)
+	$(CLANG) -c $< -o $@ $(CFLAGS) $(CFLAGS_USER)
 
   endif
 else
@@ -340,6 +351,9 @@ $(OBJ_DIR)/%.o: src/asm/%.S
 $(OBJ_DIR)/%.o: src/asm/%.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
+ifneq ($(CLANG_TARGET),)
+  LDFLAGS+=-target $(CLANG_TARGET)
+endif
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
@@ -423,14 +437,17 @@ make_tbl:
 	./misc/precompute > ../bls/src/qcoeff-bn254.hpp
 
 MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_STANDALONE -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 $(CFLAGS_EXTRA)
+ifneq ($(CLANG_TARGET),)
+  MCL_STANDALONE+=-target $(CLANG_TARGET)
+endif
 fp.o: src/fp.cpp
-	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+	$(CLANG) -c $< $(MCL_STANDALONE)
 bn_c384_256.o: src/bn_c384_256.cpp
-	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+	$(CLANG) -c $< $(MCL_STANDALONE)
 base$(BIT).o: src/base$(BIT).ll
-	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+	$(CLANG) -c $< $(MCL_STANDALONE)
 bint$(BIT).o: src/bint$(BIT).ll
-	$(CLANG) -c $< $(MCL_STANDALONE) -target $(CLANG_TARGET)
+	$(CLANG) -c $< $(MCL_STANDALONE)
 libmcl.a: fp.o base$(BIT).o bint$(BIT).o
 	$(AR) $(ARFLAGS) $@ fp.o base$(BIT).o bint$(BIT).o
 libmclbn384_256.a: bn_c384_256.o

@@ -3,6 +3,7 @@
   #define PRE(x) x
   #define TYPE(x) .type x, @function
   #define SIZE(x) .size x, .-x
+.section .note.GNU-stack,"",%progbits
 #else
   #ifdef _WIN32
     #define PRE(x) x
