@@ -412,6 +412,9 @@ void T::setStr(const char *str, int iMode = 0)
   - mask and truncate the value if it is greater than (r or p).
   - See [masking](api.md#set-buf0bufsize-1-to-x-with-masking-according-to-the-following-way)
 - deny too large bufSize. The maximum length depends on compile options, but at least the bit length of the type of x.
+- The set string of G1/G2 fails if the point is not on the elliptic curve.
+  - And check whether the point has the valid order of G1/G2(default).
+  - You can disable this check by `mclBn_verifyOrderG1/G2`(0).
 - return 0 if success else -1
   - *pb = result of setStr or throw exception if error (C++)
 
@@ -849,3 +852,5 @@ Serialization of Fp/Fr
 - G2
   - zero : `[0xc0 : (95 bytes zero)]`
   - (x, y) : `d = [96 bytes x]` and `d[0] |= 0x20` if `b < (p+1)/2` where `y=a+bi`.
+
+See [Point Serialization Procedure](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-08.html#name-point-serialization-procedu) for details.
