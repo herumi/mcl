@@ -2253,6 +2253,17 @@ inline const G1& getG1basePoint()
 	return BN::param.basePoint;
 }
 
+/*
+	check x in Fp12 is in GT.
+	return true if x^r = 1
+*/
+inline bool isValidGT(const GT& x)
+{
+	GT y;
+	GT::powGeneric(y, x, Fr::getOp().mp);
+	return y.isOne();
+}
+
 } } // mcl::bn
 
 namespace mcl { namespace local {

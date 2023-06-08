@@ -455,6 +455,7 @@ MCLBN_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
 MCLBN_DLL_API int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
 MCLBN_DLL_API int mclBnGT_isZero(const mclBnGT *x);
 MCLBN_DLL_API int mclBnGT_isOne(const mclBnGT *x);
+MCLBN_DLL_API int mclBnGT_isValid(const mclBnGT *x);
 
 MCLBN_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x);

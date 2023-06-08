@@ -408,6 +408,10 @@ CYBOZU_TEST_AUTO(pairing)
 	mclBnGT_mul(&e2, &e, &e);
 	mclBnGT_mul(&e2, &e2, &e);
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &e2));
+
+	CYBOZU_TEST_ASSERT(mclBnGT_isValid(&e1));
+	e1.d[0].d[0]++;
+	CYBOZU_TEST_ASSERT(!mclBnGT_isValid(&e1));
 }
 
 CYBOZU_TEST_AUTO(precomputed)

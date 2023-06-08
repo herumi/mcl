@@ -570,6 +570,10 @@ int mclBnGT_isOne(const mclBnGT *x)
 {
 	return cast(x)->isOne();
 }
+int mclBnGT_isValid(const mclBnGT *x)
+{
+	return mcl::bn::isValidGT(*cast(x));
+}
 
 mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode)
 {

@@ -364,6 +364,8 @@ mclSize T::deserialize(const void *buf, mclSize bufSize);
 
 - deserialize `x` from `buf[0..bufSize-1]`
 - return read size if success else 0
+  - mclBnG1_deserialize and mclBnG2_deserialize check whether the point has the correct order of G1/G2.
+  - mclBnGT_deserialize does not check it. Call mclBnGT_isValid if necessary.
 
 ## String conversion
 ### Get string
@@ -417,6 +419,8 @@ void T::setStr(const char *str, int iMode = 0)
   - You can disable this check by `mclBn_verifyOrderG1/G2`(0).
 - return 0 if success else -1
   - *pb = result of setStr or throw exception if error (C++)
+  - mclBnG1_setStr and mclBnG2_setStr check whether the point has the correct order of G1/G2.
+  - mclBnGT_setStr does not check it. Call mclBnGT_isValid if necessary.
 
 If you want to use the same BLS12-381 generator as [zkcrypto](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-11.html#section-4.2.1) then,
 
