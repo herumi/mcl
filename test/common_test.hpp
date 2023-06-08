@@ -248,4 +248,8 @@ void testCommon(const G1& P, const G2& Q)
 	mcl::bn::pairing(e, P, Q);
 	puts("GT");
 	testPowVec(e);
+	CYBOZU_TEST_ASSERT(mcl::bn::isValidGT(e));
+	GT e2 = e;
+	e2 += 1;
+	CYBOZU_TEST_ASSERT(!mcl::bn::isValidGT(e2));
 }
