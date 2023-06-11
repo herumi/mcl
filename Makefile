@@ -195,7 +195,7 @@ else
 	python3 src/gen_bint_x64.py -win > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
-	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
+	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CFLAGS) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
