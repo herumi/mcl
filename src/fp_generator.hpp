@@ -22,6 +22,7 @@
 namespace mcl {
 
 #ifdef MCL_DUMP_JIT
+static bool g_outputGNUstack = false;
 struct DumpCode {
 	FILE *fp_;
 	DumpCode()
@@ -57,6 +58,13 @@ struct DumpCode {
 			fprintf(fp_, "0x%016llx,", (unsigned long long)*p++);
 		}
 		fprintf(fp_, "\n");
+	}
+	void makeGNUstackSection()
+	{
+		fprintf(fp_, "%%ifidn __OUTPUT_FORMAT__,elf64\n");
+		fprintf(fp_, "section .note.GNU-stack noalloc noexec nowrite progbits\n");
+		fprintf(fp_, "%%endif\n");
+		fprintf(fp_, "segment .text\n");
 	}
 };
 template<class T>
@@ -361,6 +369,10 @@ private:
 			dq(0);
 		}
 #ifdef MCL_DUMP_JIT
+		if (!g_outputGNUstack) {
+			prof_.makeGNUstackSection();
+			g_outputGNUstack = true;
+		}
 		prof_.dumpData(p_, getCurr());
 #endif
 		rp_ = bint::getMontgomeryCoeff(p_[0]);
