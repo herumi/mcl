@@ -275,7 +275,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 	PublicKey pub;
 	sec.getPublicKey(pub);
 	CipherText c;
-	for (int i = -5; i < 5; i++) {
+	for (int i = -50; i < 50; i++) {
 		pub.enc(c, i);
 		CYBOZU_TEST_EQUAL(sec.dec(c), i);
 		pub.reRand(c);
@@ -286,7 +286,7 @@ CYBOZU_TEST_AUTO(enc_dec)
 	CipherTextG1 c1;
 	CipherTextG2 c2;
 	CipherTextGT ct1, ct2;
-	for (int i = -5; i < 5; i++) {
+	for (int i = -50; i < 50; i++) {
 		pub.enc(ct1, i);
 		CYBOZU_TEST_EQUAL(sec.dec(ct1), i);
 		CYBOZU_TEST_EQUAL(sec.isZero(ct1), i == 0);
@@ -419,7 +419,7 @@ void ZkpEqTest(const SecretKey& sec, const PubT& pub)
 	CipherTextG1 c1;
 	CipherTextG2 c2;
 	ZkpEq zkp;
-	for (int m = -4; m < 4; m++) {
+	for (int m = -50; m < 50; m++) {
 		pub.encWithZkpEq(c1, c2, zkp, m);
 		CYBOZU_TEST_EQUAL(sec.dec(c1), m);
 		CYBOZU_TEST_EQUAL(sec.dec(c2), m);
