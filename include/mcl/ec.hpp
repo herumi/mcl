@@ -872,12 +872,10 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	}
 
 	size_t c, tblN;
-	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	G *tbl = 0;
 
-#ifdef MCL_DONT_USE_MALLOC
-	(void)tbl_;
-#else
+#ifndef MCL_DONT_USE_MALLOC
+	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
 		c = argminForMulVec(n);
