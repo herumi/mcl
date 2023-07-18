@@ -71,9 +71,7 @@ struct InterfaceForHashTable : G {
 	static const G& castG(const InterfaceForHashTable& x) { return static_cast<const G&>(x); }
 	void clear() { clear(castG(*this)); }
 	void normalize() { normalize(castG(*this)); }
-	static bool isOdd(const G& P) { return P.y.isOdd(); }
 	static bool isZero(const G& P) { return P.isZero(); }
-	static bool isSameX(const G& P, const G& Q) { return P.x == Q.x; }
 	static int isEqualOrMinus(const G& P, const G& Q) { return P.isEqualOrMinus(Q); }
 	static uint32_t getHash(const G& P) { return uint32_t(*P.x.getUnit()); }
 	static void clear(G& P) { P.clear(); }
@@ -96,9 +94,7 @@ struct InterfaceForHashTable<G, false> : G {
 	static const G& castG(const InterfaceForHashTable& x) { return static_cast<const G&>(x); }
 	void clear() { clear(castG(*this)); }
 	void normalize() { normalize(castG(*this)); }
-	static bool isOdd(const G& x) { return x.b.a.a.isOdd(); }
 	static bool isZero(const G& x) { return x.isOne(); }
-	static bool isSameX(const G& x, const G& Q) { return x.a == Q.a; }
 	// (P == Q) ? 1 : (P == 1/Q) ? -1 : 0
 	static int isEqualOrMinus(const G& P, const G& Q)
 	{
@@ -171,7 +167,7 @@ public:
 			I::add(xP, xP, P_);
 			I::normalize(xP);
 			kcv_[i - 1].key = I::getHash(xP);
-			kcv_[i - 1].count = I::isOdd(xP) ? i : -i;
+			kcv_[i - 1].count = i;
 		}
 		nextP_ = xP;
 		I::dbl(nextP_, nextP_);
