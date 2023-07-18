@@ -270,6 +270,33 @@ bool isEqualJacobi(const E& P1, const E& P2)
 	return t1 == t2;
 }
 
+// return (P1 == P2) ? 1 : (P1 == -P2) ? -1 : 0
+template<class E>
+int isEqualOrMinusJacobi(const E& P1, const E& P2)
+{
+	typedef typename E::Fp F;
+	bool zero1 = P1.isZero();
+	bool zero2 = P2.isZero();
+	if (zero1) {
+		return zero2 ? 1 : 0;
+	}
+	if (zero2) return 0;
+	F s1, s2, t1, t2;
+	F::sqr(s1, P1.z);
+	F::sqr(s2, P2.z);
+	F::mul(t1, P1.x, s2);
+	F::mul(t2, P2.x, s1);
+	if (t1 != t2) return 0;
+	F::mul(t1, P1.y, s2);
+	F::mul(t2, P2.y, s1);
+	t1 *= P2.z;
+	t2 *= P1.z;
+	if (t1 == t2) return 1;
+	F::neg(t1, t1);
+	if (t1 == t2) return -1;
+	return 0;
+}
+
 // Y^2 == X(X^2 + aZ^4) + bZ^6
 template<class E>
 bool isValidJacobi(const E& P)
@@ -546,6 +573,29 @@ bool isEqualProj(const E& P1, const E& P2)
 	F::mul(t1, P1.y, P2.z);
 	F::mul(t2, P2.y, P1.z);
 	return t1 == t2;
+}
+
+// return (P1 == P2) ? 1 : (P1 == -P2) ? -1 : 0
+template<class E>
+int isEqualOrMinusProj(const E& P1, const E& P2)
+{
+	typedef typename E::Fp F;
+	bool zero1 = P1.isZero();
+	bool zero2 = P2.isZero();
+	if (zero1) {
+		return zero2 ? 1 : 0;
+	}
+	if (zero2) return 0;
+	F t1, t2;
+	F::mul(t1, P1.x, P2.z);
+	F::mul(t2, P2.x, P1.z);
+	if (t1 != t2) return 0;
+	F::mul(t1, P1.y, P2.z);
+	F::mul(t2, P2.y, P1.z);
+	if (t1 == t2) return 1;
+	F::neg(t1, t1);
+	if (t1 == t2) return -1;
+	return 0;
 }
 
 /*
@@ -1750,6 +1800,23 @@ public:
 		case ec::Affine:
 		default:
 			return x == rhs.x && y == rhs.y && z == rhs.z;
+		}
+	}
+	// return (==rhs) ? 1 : (==-rhs) ? -1 : 0
+	int isEqualOrMinus(const EcT& rhs) const
+	{
+		switch (mode_) {
+		case ec::Jacobi:
+			return ec::isEqualOrMinusJacobi(*this, rhs);
+		case ec::Proj:
+			return ec::isEqualOrMinusProj(*this, rhs);
+		case ec::Affine:
+		default:
+			if (x == rhs.x && z == rhs.z) {
+				if (y == rhs.y) return 1;
+				if (y == -rhs.y) return -1;
+			}
+			return 0;
 		}
 	}
 	bool operator!=(const EcT& rhs) const { return !operator==(rhs); }

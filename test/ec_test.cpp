@@ -253,6 +253,23 @@ struct Test {
 			CYBOZU_TEST_EQUAL(R, R2);
 		}
 	}
+	void equalOrMinusTest() const
+	{
+		Fp x(para.gx);
+		Fp y(para.gy);
+		Ec P(x, y), Q, R;
+		Ec::mul(Q, P, 100); // Q = 100P
+		Ec::mul(R, P, 25);
+		R += R;
+		R += R; // R = 100P
+		if (Ec::getMode() != mcl::ec::Affine) {
+			CYBOZU_TEST_EQUAL(Q.x, R.x);
+		}
+		CYBOZU_TEST_EQUAL(Q.isEqualOrMinus(R), 1);
+		Ec::neg(R, R);
+		CYBOZU_TEST_EQUAL(Q.isEqualOrMinus(R), -1);
+		CYBOZU_TEST_EQUAL(P.isEqualOrMinus(R), 0);
+	}
 	void normalizeVecTest() const
 	{
 		if (Ec::getMode() == mcl::ec::Affine) return;
@@ -641,6 +658,7 @@ mul 499.00usec
 	void run() const
 	{
 		mulVecTest(para, ecMode);
+		equalOrMinusTest();
 		normalizeVecTest();
 		cstr();
 		ope();
