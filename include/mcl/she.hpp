@@ -74,6 +74,7 @@ struct InterfaceForHashTable : G {
 	static bool isOdd(const G& P) { return P.y.isOdd(); }
 	static bool isZero(const G& P) { return P.isZero(); }
 	static bool isSameX(const G& P, const G& Q) { return P.x == Q.x; }
+	static int isEqualOrMinus(const G& P, const G& Q) { return P.isEqualOrMinus(Q); }
 	static uint32_t getHash(const G& P) { return uint32_t(*P.x.getUnit()); }
 	static void clear(G& P) { P.clear(); }
 	static void normalize(G& P) { P.normalize(); }
@@ -98,6 +99,15 @@ struct InterfaceForHashTable<G, false> : G {
 	static bool isOdd(const G& x) { return x.b.a.a.isOdd(); }
 	static bool isZero(const G& x) { return x.isOne(); }
 	static bool isSameX(const G& x, const G& Q) { return x.a == Q.a; }
+	// (P == Q) ? 1 : (P == 1/Q) ? -1 : 0
+	static int isEqualOrMinus(const G& P, const G& Q)
+	{
+		if (P.a == Q.a) {
+			if (P.b == Q.b) return 1;
+			if (P.b == -Q.b) return -1;
+		}
+		return 0;
+	}
 	static uint32_t getHash(const G& x) { return uint32_t(*x.getFp0()->getUnit()); }
 	static void clear(G& x) { x = 1; }
 	static void normalize(G&) { }
@@ -212,11 +222,9 @@ public:
 //			I::mul(T, P, abs_c - prev);
 			mulByWindowMethod(T, abs_c - prev);
 			I::add(Q, Q, T);
-			I::normalize(Q);
-			if (I::isSameX(Q, xP)) {
-				bool QisOdd = I::isOdd(Q);
-				bool xPisOdd = I::isOdd(xP);
-				if (QisOdd ^ xPisOdd ^ neg) return -count;
+			int v = I::isEqualOrMinus(Q, xP);
+			if (v) {
+				if ((v == -1) ^ neg) return -count;
 				return count;
 			}
 			prev = abs_c;
