@@ -832,7 +832,7 @@ public:
 #endif
 		int64_t dec(const CipherTextG1& c, bool *pok = 0) const
 		{
-			if (useDecG1ViaGT_) return decViaGT(c);
+			if (useDecG1ViaGT_) return decViaGT(c, pok);
 			/*
 				S = mP + rxP
 				T = rP
@@ -845,7 +845,7 @@ public:
 		}
 		int64_t dec(const CipherTextG2& c, bool *pok = 0) const
 		{
-			if (useDecG2ViaGT_) return decViaGT(c);
+			if (useDecG2ViaGT_) return decViaGT(c, pok);
 			G2 R;
 			G2::mul(R, c.T_, y_);
 			G2::sub(R, c.S_, R);

@@ -440,12 +440,10 @@ int shePrecomputedPublicKeyEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 
 
 template<class CT>
 int decT(mclInt *m, const sheSecretKey *sec, const CT *c)
-	try
 {
-	*m = (cast(sec)->dec)(*cast(c));
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	bool b;
+	*m = (cast(sec)->dec)(*cast(c), &b);
+	return b ? 0 : -1;
 }
 
 int sheDecG1(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
