@@ -1084,9 +1084,9 @@ private:
 		s[m] = r + d[m] encRand
 	*/
 	template<class G, class I, class MulG>
-	static void makeZkpBin(ZkpBin& zkp, const G& S, const G& T, const Fr& encRand, const G& P, int m, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	static bool makeZkpBin(ZkpBin& zkp, const G& S, const G& T, const Fr& encRand, const G& P, int m, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
-		if (m != 0 && m != 1) throw cybozu::Exception("makeZkpBin:bad m") << m;
+		if (m != 0 && m != 1) return false;
 		Fr *s = &zkp.d_[0];
 		Fr *d = &zkp.d_[2];
 		G R[2][2];
@@ -1114,6 +1114,7 @@ private:
 		hash.get(c);
 		d[m] = c - d[1-m];
 		s[m] = r + d[m] * encRand;
+		return true;
 	}
 	/*
 		R[0][i] = s[i] P - d[i] T ; i = 0,1
@@ -1544,29 +1545,51 @@ public:
 			pairing(aux.R_[2], P_, yQ_);
 			pairing(aux.R_[3], xP_, yQ_);
 		}
-		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(bool *pb, CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			const MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
 		}
-		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G1 m") << m;
+			}
+		}
+		void encWithZkpBin(bool *pb, CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			const MulG<G2> yQmul(yQ_);
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
 		}
-		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G2 m") << m;
+			}
+		}
+		void encWithZkpSet(bool *pb, CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			const MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
-			if (!makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul)) {
+			*pb = makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul);
+		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			bool b;
+			encWithZkpSet(&b, c, zkp, m, mVec, mSize);
+			if (!b) {
 				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
 			}
 		}
@@ -1789,26 +1812,48 @@ public:
 			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
 			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
 		}
-		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(bool *pb, CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPwm_);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPwm_);
 		}
-		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G1 m") << m;
+			}
+		}
+		void encWithZkpBin(bool *pb, CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
 		}
-		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G2 m") << m;
+			}
+		}
+		void encWithZkpSet(bool *pb, CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
-			if (!makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_)) {
+			*pb = makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_);
+		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			bool b;
+			encWithZkpSet(&b, c, zkp, m, mVec, mSize);
+			if (!b) {
 				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
 			}
 		}
