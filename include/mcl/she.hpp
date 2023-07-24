@@ -1307,9 +1307,9 @@ private:
 		encRand1, encRand2 are random values use for ElGamalEnc()
 	*/
 	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
-	static void makeZkpBinEq(ZkpBinEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, int m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
+	static bool makeZkpBinEq(ZkpBinEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, int m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
 	{
-		if (m != 0 && m != 1) throw cybozu::Exception("makeZkpBinEq:bad m") << m;
+		if (m != 0 && m != 1) return false;
 		Fr *d = &zkp.d_[0];
 		Fr *spm = &zkp.d_[2];
 		Fr& ss = zkp.d_[4];
@@ -1357,6 +1357,7 @@ private:
 		ss += rs;
 		Fr::mul(sm, c, m);
 		sm += rm;
+		return true;
 	}
 	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
 	static bool verifyZkpBinEq(const ZkpBinEq& zkp, const G1& S1, const G1& T1, const G2& S2, const G2& T2, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
@@ -1648,11 +1649,19 @@ public:
 			const MulG<G2> yQmul(yQ_);
 			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
-		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		void encWithZkpBinEq(bool *pb, CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
 		{
 			const MulG<G1> xPmul(xP_);
 			const MulG<G2> yQmul(yQ_);
-			makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+			*pb = makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+		}
+		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBinEq(&b, c1, c2, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBinEq:bad m") << m;
+			}
 		}
 		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
 		{
@@ -1878,9 +1887,17 @@ public:
 		{
 			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
 		}
+		void encWithZkpBinEq(bool *pb, CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		{
+			*pb = makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+		}
 		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
 		{
-			makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+			bool b;
+			encWithZkpBinEq(&b, c1, c2, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBinEq:bad m") << m;
+			}
 		}
 		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
 		{
