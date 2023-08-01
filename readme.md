@@ -184,11 +184,12 @@ Open a console window, and
 git clone https://github.com/herumi/mcl
 cd mcl
 
-# How to build a library for arm on Linux
+# How to build a library for arm with clang++ on Linux
 
 ```
 make -f Makefile.cross BIT=32 TARGET=armv7l
-arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -I ./include/ lib/libmclbn384_256.a -DMCL_MAX_BIT_SIZE=384
+sudo apt install g++-arm-linux-gnueabi
+arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn384_256.a -DMCL_MAX_BIT_SIZE=384
 env QEMU_LD_PREFIX=/usr/arm-linux-gnueabi/ qemu-arm ./a.out
 ```
 
