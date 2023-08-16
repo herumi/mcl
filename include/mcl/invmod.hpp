@@ -1,11 +1,22 @@
+#pragma once
+/**
+	@file
+	@brief invMod by safegcd
+	@author MITSUNARI Shigeo(@herumi)
+	cf. The original code is https://github.com/bitcoin-core/secp256k1/blob/master/doc/safegcd_implementation.md
+	It is offered under the MIT license.
+	@license modified new BSD license
+	http://opensource.org/licenses/BSD-3-Clause
+*/
+
 #include <cybozu/bit_operation.hpp>
 #include <mcl/gmp_util.hpp>
-#include <mcl/util.hpp>
 #include <mcl/bint.hpp>
+
+namespace mcl {
 
 template<int N>
 struct SintT {
-	typedef mcl::Unit Unit;
 	bool sign;
 	Unit v[N];
 	static inline bool _add(Unit *z, const SintT& x, const Unit *y, bool ySign)
@@ -59,24 +70,34 @@ struct SintT {
 		for (int i = 1; i < N; i++) r |= v[i];
 		return r == 0;
 	}
-	template<typename INT>
-	INT getLow() const
-	{
-		INT r = v[0];
-		return sign ? -r : r;
-	}
 };
 
-template<typename Unit, int N, typename INT>
+template<int N>
 struct InvModT {
 	typedef SintT<N> Sint;
+#if MCL_SIZEOF_UNIT == 4
+	typedef int32_t INT;
+	static const int modL = 30;
+#else
+	typedef int64_t INT;
 	static const int modL = 62;
-	static const INT MASK = (INT(1) << modL) - 1;
+#endif
+	static const INT modN = INT(1) << modL;
+	static const INT half = modN / 2;
+	static const INT MASK = modN - 1;
 	Sint M;
-	INT invM;
+	INT Mi;
 	struct Tmp {
 		INT u, v, q, r;
 	};
+	void init(const mpz_class& mM)
+	{
+		toSint(M, mM);
+		mpz_class inv;
+		mpz_class mod = mpz_class(1) << modL;
+		mcl::gmp::invMod(inv, mM, mod);
+		Mi = mcl::gmp::getUnit(inv)[0] & MASK;
+	}
 
 	INT divsteps_n_matrix(Tmp& t, INT eta, INT f, INT g) const
 	{
@@ -84,7 +105,8 @@ struct InvModT {
 		INT u = 1, v = 0, q = 0, r = 1;
 		int i = modL;
 		for (;;) {
-			INT zeros = mcl::fp::min_<int>(i, cybozu::bsf(g));
+			INT zeros = g == 0 ? i : cybozu::bsf(g);
+			if (i < zeros) zeros = i;
 			eta -= zeros;
 			i -= zeros;
 			g >>= zeros;
@@ -116,30 +138,6 @@ struct InvModT {
 		return eta;
 	}
 
-	template<int N2>
-	void toMpz(mpz_class& y, const SintT<N2>& x) const
-	{
-		mcl::gmp::setArray(y, x.v, N);
-		if (x.sign) y = -y;
-	}
-	template<int N2>
-	void toSint(SintT<N2>& y, const mpz_class& x) const
-	{
-		if (x > 0) {
-			mcl::gmp::getArray(y.v, N, x);
-			y.sign = false;
-		} else {
-			mcl::gmp::getArray(y.v, N, -x);
-			y.sign = true;
-		}
-	}
-	template<int N2>
-	INT getMod2powN(const SintT<N2>& x) const
-	{
-		INT r = x.v[0];
-		if (x.sign) r = -r;
-		return r & MASK;
-	}
 	void update_fg(Sint& f, Sint& g, const Tmp& t) const
 	{
 		SintT<N+1> f1, f2, g1, g2;
@@ -176,10 +174,14 @@ struct InvModT {
 		e2.sign = SintT<N>::mulUnit(e2.v, e, t.r);
 		d1.sign = SintT<N+1>::add(d1.v, d1, e1);
 		e1.sign = SintT<N+1>::add(e1.v, d2, e2);
-		INT di = d1.template getLow<INT>() + M.template getLow<INT>() * md;
-		INT ei = e1.template getLow<INT>() + M.template getLow<INT>() * me;
-		md -= (invM * di) & MASK;
-		me -= (invM * ei) & MASK;
+		INT di = getLow(d1) + getLow(M) * md;
+		INT ei = getLow(e1) + getLow(M) * me;
+		md -= Mi * di;
+		me -= Mi * ei;
+		md &= MASK;
+		me &= MASK;
+		if (md >= half) md -= modN;
+		if (me >= half) me -= modN;
 		// d = (d + M * md) >> modL
 		// e = (e + M * me) >> modL
 		d2.sign = SintT<N>::mulUnit(d2.v, M, md);
@@ -203,6 +205,19 @@ struct InvModT {
 			v.sign = Sint::add(v.v, v, M);
 		}
 	}
+	template<class SINT>
+	INT getLow(const SINT& x) const
+	{
+		INT r = x.v[0];
+		if (x.sign) r = -r;
+		return r;
+	}
+	template<class SINT>
+	INT getLowMask(const SINT& x) const
+	{
+		INT r = getLow(x);
+		return r & MASK;
+	}
 
 	void inv(mpz_class& y, const mpz_class& x) const
 	{
@@ -216,8 +231,8 @@ struct InvModT {
 		e.v[0] = 1;
 		Tmp t;
 		while (!g.isZero()) {
-			INT sfLow = f.template getLow<INT>() & MASK;
-			INT sgLow = g.template getLow<INT>() & MASK;
+			INT sfLow = getLowMask(f);
+			INT sgLow = getLowMask(g);
 			eta = divsteps_n_matrix(t, eta, sfLow, sgLow);
 			update_fg(f, g, t);
 			update_de(d, e, t);
@@ -225,13 +240,23 @@ struct InvModT {
 		normalize(d, f.sign);
 		toMpz(y, d);
 	}
-	void init(const mpz_class& mM)
+	template<int N2>
+	void toSint(SintT<N2>& y, const mpz_class& x) const
 	{
-		toSint(M, mM);
-		mpz_class inv;
-		mpz_class mod = mpz_class(1) << modL;
-		mcl::gmp::invMod(inv, mM, mod);
-		invM = mcl::gmp::getUnit(inv)[0];
-		printf("invM=%lld\n", (long long)invM);
+		const size_t n = mcl::gmp::getUnitSize(x);
+		const Unit *p = mcl::gmp::getUnit(x);
+		for (size_t i = 0; i < n; i++) {
+			y.v[i] = p[i];
+		}
+		for (size_t i = n; i < N2; i++) y.v[i] = 0;
+		y.sign = x < 0;
+	}
+	template<int N2>
+	void toMpz(mpz_class& y, const SintT<N2>& x) const
+	{
+		mcl::gmp::setArray(y, x.v, N2);
+		if (x.sign) y = -y;
 	}
 };
+
+} // mcl
