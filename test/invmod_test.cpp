@@ -8,31 +8,31 @@ void test(const char *Mstr)
 	printf("p=%s\n", Mstr);
 	mpz_class M;
 	mcl::gmp::setStr(M, Mstr, 16);
-	mcl::InvModT<N> invMod;
-	invMod.init(M);
+	mcl::inv::InvModT<N> im;
+	mcl::inv::init(im, M);
 	mpz_class x, y, z;
 	x = 1;
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
-		invMod.inv(z, x);
+		mcl::inv::exec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 		x++;
 	}
 	x = M - 1;
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
-		invMod.inv(z, x);
+		mcl::inv::exec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 		x--;
 	}
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
-		invMod.inv(z, x);
+		mcl::inv::exec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 		x = y + 1;
 	}
 #ifdef NDEBUG
-	CYBOZU_BENCH_C("invMod", 1000, x++;invMod.inv, x, x);
+	CYBOZU_BENCH_C("invMod", 1000, x++;mcl::inv::exec, im, x, x);
 #endif
 }
 
