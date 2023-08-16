@@ -19,58 +19,69 @@ template<int N>
 struct SintT {
 	bool sign;
 	Unit v[N];
-	static inline bool _add(Unit *z, const SintT& x, const Unit *y, bool ySign)
-	{
-		if (x.sign == ySign) {
-			Unit ret = mcl::bint::addT<N>(z, x.v, y);
-			(void)ret;
-			assert(ret == 0);
-			return x.sign;
-		}
-		int r = mcl::bint::cmpT<N>(x.v, y);
-		if (r >= 0) {
-			mcl::bint::subT<N>(z, x.v, y);
-			return x.sign;
-		}
-		mcl::bint::subT<N>(z, y, x.v);
-		return ySign;
-	}
-	static inline bool add(Unit *z, const SintT& x, const SintT& y)
-	{
-		return _add(z, x, y.v, y.sign);
-	}
-	static inline bool sub(Unit *z, const SintT& x, const SintT& y)
-	{
-		return _add(z, x, y.v, !y.sign);
-	}
-	template<typename INT>
-	static inline bool mulUnit(Unit (&z)[N+1], const SintT& x, INT y)
-	{
-		INT abs_y = y < 0 ? -y : y;
-		z[N] = mcl::bint::mulUnitT<N>(z, x.v, abs_y);
-		return x.sign ^ (y < 0);
-	}
-	void clear()
-	{
-		sign = false;
-		mcl::bint::clearT<N>(v);
-	}
-	void dump() const
-	{
-		mcl::bint::dump(v, N, "Sint");
-	}
-	void set(const Unit *x, bool sign)
-	{
-		for (int i = 0; i < N; i++) v[i] = x[i];
-		this->sign = sign;
-	}
-	bool isZero() const
-	{
-		Unit r = v[0];
-		for (int i = 1; i < N; i++) r |= v[i];
-		return r == 0;
-	}
 };
+
+template<int N>
+void _add(SintT<N>& z, const SintT<N>& x, const Unit *y, bool ySign)
+{
+	if (x.sign == ySign) {
+		Unit ret = mcl::bint::addT<N>(z.v, x.v, y);
+		(void)ret;
+		assert(ret == 0);
+		z.sign = x.sign;
+		return;
+	}
+	int r = mcl::bint::cmpT<N>(x.v, y);
+	if (r >= 0) {
+		mcl::bint::subT<N>(z.v, x.v, y);
+		z.sign = x.sign;
+		return;
+	}
+	mcl::bint::subT<N>(z.v, y, x.v);
+	z.sign = ySign;
+}
+
+template<int N>
+void set(SintT<N>& y, const Unit *x, bool sign)
+{
+	mcl::bint::copyT<N>(y.v, x);
+	y.sign = sign;
+}
+
+template<int N>
+void clear(SintT<N>& x)
+{
+	x.sign = false;
+	mcl::bint::clearT<N>(x.v);
+}
+
+template<int N>
+bool isZero(const SintT<N>& x)
+{
+	Unit r = x.v[0];
+	for (int i = 1; i < N; i++) r |= x.v[i];
+	return r == 0;
+}
+
+template<int N>
+void add(SintT<N>& z, const SintT<N>& x, const SintT<N>& y)
+{
+	_add(z, x, y.v, y.sign);
+}
+
+template<int N>
+void sub(SintT<N>& z, const SintT<N>& x, const SintT<N>& y)
+{
+	_add(z, x, y.v, !y.sign);
+}
+
+template<int N, typename INT>
+void mulUnit(SintT<N+1>&z, const SintT<N>& x, INT y)
+{
+	Unit abs_y = y < 0 ? -y : y;
+	z.v[N] = mcl::bint::mulUnitT<N>(z.v, x.v, abs_y);
+	z.sign = x.sign ^ (y < 0);
+}
 
 template<int N>
 struct InvModT {
@@ -87,7 +98,7 @@ struct InvModT {
 	static const INT MASK = modN - 1;
 	Sint M;
 	INT Mi;
-	struct Tmp {
+	struct Quad {
 		INT u, v, q, r;
 	};
 	void init(const mpz_class& mM)
@@ -99,7 +110,7 @@ struct InvModT {
 		Mi = mcl::gmp::getUnit(inv)[0] & MASK;
 	}
 
-	INT divsteps_n_matrix(Tmp& t, INT eta, INT f, INT g) const
+	INT divsteps_n_matrix(Quad& t, INT eta, INT f, INT g) const
 	{
 		static const int tbl[] = { 15, 5, 3, 9, 7, 13, 11, 1 };
 		INT u = 1, v = 0, q = 0, r = 1;
@@ -138,22 +149,24 @@ struct InvModT {
 		return eta;
 	}
 
-	void update_fg(Sint& f, Sint& g, const Tmp& t) const
+	void update_fg(Sint& f, Sint& g, const Quad& t) const
 	{
 		SintT<N+1> f1, f2, g1, g2;
-		f1.sign = SintT<N>::mulUnit(f1.v, f, t.u);
-		f2.sign = SintT<N>::mulUnit(f2.v, f, t.q);
-		g1.sign = SintT<N>::mulUnit(g1.v, g, t.v);
-		g2.sign = SintT<N>::mulUnit(g2.v, g, t.r);
-		f1.sign = SintT<N+1>::add(f1.v, f1, g1);
-		g1.sign = SintT<N+1>::add(g1.v, f2, g2);
+		mulUnit(f1, f, t.u);
+		mulUnit(f2, f, t.q);
+		mulUnit(g1, g, t.v);
+		mulUnit(g2, g, t.r);
+		add(f1, f1, g1);
+		add(g1, f2, g2);
 		mcl::bint::shrT<N+1>(f1.v, f1.v, modL);
 		mcl::bint::shrT<N+1>(g1.v, g1.v, modL);
-		f.set(f1.v, f1.sign);
-		g.set(g1.v, g1.sign);
+		assert(f1.v[N] == 0);
+		assert(g1.v[N] == 0);
+		set(f, f1.v, f1.sign);
+		set(g, g1.v, g1.sign);
 	}
 
-	void update_de(Sint& d, Sint& e, const Tmp& t) const
+	void update_de(Sint& d, Sint& e, const Quad& t) const
 	{
 		INT md = 0;
 		INT me = 0;
@@ -168,12 +181,12 @@ struct InvModT {
 		SintT<N+1> d1, d2, e1, e2;
 		// d = d * u + e * v
 		// e = d * q + e * r
-		d1.sign = SintT<N>::mulUnit(d1.v, d, t.u);
-		d2.sign = SintT<N>::mulUnit(d2.v, d, t.q);
-		e1.sign = SintT<N>::mulUnit(e1.v, e, t.v);
-		e2.sign = SintT<N>::mulUnit(e2.v, e, t.r);
-		d1.sign = SintT<N+1>::add(d1.v, d1, e1);
-		e1.sign = SintT<N+1>::add(e1.v, d2, e2);
+		mulUnit(d1, d, t.u);
+		mulUnit(d2, d, t.q);
+		mulUnit(e1, e, t.v);
+		mulUnit(e2, e, t.r);
+		add(d1, d1, e1);
+		add(e1, d2, e2);
 		INT di = getLow(d1) + getLow(M) * md;
 		INT ei = getLow(e1) + getLow(M) * me;
 		md -= Mi * di;
@@ -184,25 +197,27 @@ struct InvModT {
 		if (me >= half) me -= modN;
 		// d = (d + M * md) >> modL
 		// e = (e + M * me) >> modL
-		d2.sign = SintT<N>::mulUnit(d2.v, M, md);
-		e2.sign = SintT<N>::mulUnit(e2.v, M, me);
-		d1.sign = SintT<N+1>::add(d1.v, d1, d2);
-		e1.sign = SintT<N+1>::add(e1.v, e1, e2);
+		mulUnit(d2, M, md);
+		mulUnit(e2, M, me);
+		add(d1, d1, d2);
+		add(e1, e1, e2);
 		mcl::bint::shrT<N+1>(d1.v, d1.v, modL);
 		mcl::bint::shrT<N+1>(e1.v, e1.v, modL);
-		d.set(d1.v, d1.sign);
-		e.set(e1.v, e1.sign);
+		assert(d1.v[N] == 0);
+		assert(e1.v[N] == 0);
+		set(d, d1.v, d1.sign);
+		set(e, e1.v, e1.sign);
 	}
 	void normalize(Sint& v, bool minus) const
 	{
 		if (v.sign) {
-			v.sign = Sint::add(v.v, v, M);
+			add(v, v, M);
 		}
 		if (minus) {
-			v.sign = Sint::sub(v.v, M, v);
+			sub(v, M, v);
 		}
 		if (v.sign) {
-			v.sign = Sint::add(v.v, v, M);
+			add(v, v, M);
 		}
 	}
 	template<class SINT>
@@ -223,16 +238,15 @@ struct InvModT {
 	{
 		INT eta = -1;
 		Sint f = M, g, d, e;
-		g.set(px, false);
+		set(g, px, false);
 
-		d.clear();
-		e.clear();
-		e.v[0] = 1;
-		Tmp t;
-		while (!g.isZero()) {
-			INT sfLow = getLowMask(f);
-			INT sgLow = getLowMask(g);
-			eta = divsteps_n_matrix(t, eta, sfLow, sgLow);
+		clear(d);
+		clear(e); e.v[0] = 1;
+		Quad t;
+		while (!isZero(g)) {
+			INT fLow = getLowMask(f);
+			INT gLow = getLowMask(g);
+			eta = divsteps_n_matrix(t, eta, fLow, gLow);
 			update_fg(f, g, t);
 			update_de(d, e, t);
 		}
