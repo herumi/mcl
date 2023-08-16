@@ -83,24 +83,26 @@ void mulUnit(SintT<N+1>&z, const SintT<N>& x, INT y)
 	z.sign = x.sign ^ (y < 0);
 }
 
+#if MCL_SIZEOF_UNIT == 4
+typedef int32_t INT;
+static const int modL = 30;
+#else
+typedef int64_t INT;
+static const int modL = 62;
+#endif
+static const INT modN = INT(1) << modL;
+static const INT half = modN / 2;
+static const INT MASK = modN - 1;
+
+struct Quad {
+	INT u, v, q, r;
+};
+
 template<int N>
 struct InvModT {
 	typedef SintT<N> Sint;
-#if MCL_SIZEOF_UNIT == 4
-	typedef int32_t INT;
-	static const int modL = 30;
-#else
-	typedef int64_t INT;
-	static const int modL = 62;
-#endif
-	static const INT modN = INT(1) << modL;
-	static const INT half = modN / 2;
-	static const INT MASK = modN - 1;
 	Sint M;
 	INT Mi;
-	struct Quad {
-		INT u, v, q, r;
-	};
 	void init(const mpz_class& mM)
 	{
 		toSint(M, mM);
