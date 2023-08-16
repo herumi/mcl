@@ -1,7 +1,7 @@
 #pragma once
 /**
 	@file
-	@brief invMod by safegcd
+	@brief non constant time invMod by safegcd
 	@author MITSUNARI Shigeo(@herumi)
 	cf. The original code is https://github.com/bitcoin-core/secp256k1/blob/master/doc/safegcd_implementation.md
 	It is offered under the MIT license.
@@ -9,9 +9,9 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 
-#include <cybozu/bit_operation.hpp>
 #include <mcl/gmp_util.hpp>
 #include <mcl/bint.hpp>
+#include <cybozu/bit_operation.hpp>
 
 namespace mcl {
 
@@ -219,13 +219,12 @@ struct InvModT {
 		return r & MASK;
 	}
 
-	void inv(mpz_class& y, const mpz_class& x) const
+	void inv(Unit *py, const Unit *px) const
 	{
 		INT eta = -1;
-		SintT<N> f = M, g;
-		toSint(g, x);
-		
-		Sint d, e;
+		Sint f = M, g, d, e;
+		g.set(px, false);
+
 		d.clear();
 		e.clear();
 		e.v[0] = 1;
@@ -238,7 +237,14 @@ struct InvModT {
 			update_de(d, e, t);
 		}
 		normalize(d, f.sign);
-		toMpz(y, d);
+		mcl::bint::copyT<N>(py, d.v);
+	}
+	void inv(mpz_class& y, const mpz_class& x) const
+	{
+		Unit ux[N], uy[N];
+		mcl::gmp::getArray(ux, N, x);
+		inv(uy, ux);
+		mcl::gmp::setArray(y, uy, N);
 	}
 	template<int N2>
 	void toSint(SintT<N2>& y, const mpz_class& x) const
