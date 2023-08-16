@@ -8,6 +8,7 @@
 */
 #include <mcl/gmp_util.hpp>
 #include <mcl/array.hpp>
+#include <mcl/invmod_fwd.hpp>
 #ifndef MCL_STANDALONE
 #include <stdio.h>
 #endif
@@ -24,6 +25,7 @@
 #endif
 
 #define MCL_MAX_HASH_BIT_SIZE 512
+
 
 namespace mcl {
 
@@ -181,6 +183,7 @@ struct Op {
 	mpz_class mp;
 	uint32_t pmod4;
 	mcl::SquareRoot sq;
+	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
 	mcl::Modp modp;
 	mcl::SmallModp smallModp;
 	Unit half[maxUnitSize]; // (p + 1) / 2

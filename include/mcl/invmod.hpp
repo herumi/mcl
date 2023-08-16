@@ -12,37 +12,14 @@
 #include <mcl/gmp_util.hpp>
 #include <mcl/bint.hpp>
 #include <cybozu/bit_operation.hpp>
+#include <mcl/invmod_fwd.hpp>
 
 namespace mcl {
 
 namespace inv {
 
-#if MCL_SIZEOF_UNIT == 4
-typedef int32_t INT;
-static const int modL = 30;
-#else
-typedef int64_t INT;
-static const int modL = 62;
-#endif
-static const INT modN = INT(1) << modL;
-static const INT half = modN / 2;
-static const INT MASK = modN - 1;
-
-template<int N>
-struct SintT {
-	bool sign;
-	Unit v[N];
-};
-
 struct Quad {
 	INT u, v, q, r;
-};
-
-template<int N>
-struct InvModT {
-	typedef SintT<N> Sint;
-	Sint M;
-	INT Mi;
 };
 
 template<int N>
@@ -227,8 +204,8 @@ void update_de(const InvModT<N>& im, SintT<N>& d, SintT<N>& e, const Quad& t)
 	mulUnit(e2, e, t.r);
 	add(d1, d1, e1);
 	add(e1, d2, e2);
-	INT di = getLow(d1) + getLow(M) * md;
-	INT ei = getLow(e1) + getLow(M) * me;
+	INT di = getLow(d1) + im.lowM * md;
+	INT ei = getLow(e1) + im.lowM * me;
 	md -= Mi * di;
 	me -= Mi * ei;
 	md &= MASK;
@@ -298,6 +275,7 @@ template<int N>
 void init(InvModT<N>& invMod, const mpz_class& mM)
 {
 	toSint(invMod.M, mM);
+	invMod.lowM = getLow(invMod.M);
 	mpz_class inv;
 	mpz_class mod = mpz_class(1) << modL;
 	mcl::gmp::invMod(inv, mM, mod);
