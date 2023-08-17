@@ -7,6 +7,7 @@
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+#include <mcl/invmod.hpp>
 
 #if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL)) || (MCL_BINT_ASM_X64 == 1)
 
@@ -197,6 +198,7 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 	}
 }
 
+#if 0
 
 #ifndef MCL_USE_VINT
 static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
@@ -239,12 +241,20 @@ static inline void fp_invC(Unit *y, const Unit *x, const Op& op)
 #endif
 }
 
-/*
-	inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
-*/
 static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
 {
 	fp_invC(y, x, op);
+	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
+}
+#endif
+
+/*
+	inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
+*/
+template<size_t N>
+static void fp_invMod(Unit *y, const Unit *x, const Op& op)
+{
+	mcl::inv::exec<N>(*reinterpret_cast<const mcl::inv::InvModT<N>*>(op.im), y, x);
 	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
 }
 
@@ -276,7 +286,12 @@ void setOp(Op& op)
 	op.fp_isZero = bint::isZeroT<N, Unit>;
 	op.fp_clear = bint::clearT<N>;
 	op.fp_copy = bint::copyT<N>;
+#if 1
+	mcl::inv::init(*reinterpret_cast<mcl::inv::InvModT<N>*>(op.im), op.mp);
+	op.fp_invOp = fp_invMod<N>;
+#else
 	op.fp_invOp = fp_invOpC;
+#endif
 	op.fp_mulUnit = mulUnitModT<N>;
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
@@ -410,7 +425,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	fp::setStaticCode(op);
 #endif // MCL_USE_XBYAK
 
-	const int maxInvN = 6;
+	const int maxInvN = 4;
 	if (op.fp_preInv && N <= maxInvN) {
 		op.fp_invOp = &invOpForMontC;
 		initInvTbl(op);

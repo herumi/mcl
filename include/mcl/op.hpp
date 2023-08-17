@@ -8,6 +8,7 @@
 */
 #include <mcl/gmp_util.hpp>
 #include <mcl/array.hpp>
+#include <mcl/invmod_fwd.hpp>
 #ifndef MCL_STANDALONE
 #include <stdio.h>
 #endif
@@ -25,9 +26,10 @@
 
 #define MCL_MAX_HASH_BIT_SIZE 512
 
+
 namespace mcl {
 
-static const int version = 0x184; /* 0xABC = A.BC */
+static const int version = 0x185; /* 0xABC = A.BC */
 
 /*
 	specifies available string format mode for X::setIoMode()
@@ -181,6 +183,7 @@ struct Op {
 	mpz_class mp;
 	uint32_t pmod4;
 	mcl::SquareRoot sq;
+	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
 	mcl::Modp modp;
 	mcl::SmallModp smallModp;
 	Unit half[maxUnitSize]; // (p + 1) / 2

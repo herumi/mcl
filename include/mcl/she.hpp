@@ -71,9 +71,8 @@ struct InterfaceForHashTable : G {
 	static const G& castG(const InterfaceForHashTable& x) { return static_cast<const G&>(x); }
 	void clear() { clear(castG(*this)); }
 	void normalize() { normalize(castG(*this)); }
-	static bool isOdd(const G& P) { return P.y.isOdd(); }
 	static bool isZero(const G& P) { return P.isZero(); }
-	static bool isSameX(const G& P, const G& Q) { return P.x == Q.x; }
+	static int isEqualOrMinus(const G& P, const G& Q) { return P.isEqualOrMinus(Q); }
 	static uint32_t getHash(const G& P) { return uint32_t(*P.x.getUnit()); }
 	static void clear(G& P) { P.clear(); }
 	static void normalize(G& P) { P.normalize(); }
@@ -95,9 +94,16 @@ struct InterfaceForHashTable<G, false> : G {
 	static const G& castG(const InterfaceForHashTable& x) { return static_cast<const G&>(x); }
 	void clear() { clear(castG(*this)); }
 	void normalize() { normalize(castG(*this)); }
-	static bool isOdd(const G& x) { return x.b.a.a.isOdd(); }
 	static bool isZero(const G& x) { return x.isOne(); }
-	static bool isSameX(const G& x, const G& Q) { return x.a == Q.a; }
+	// (P == Q) ? 1 : (P == 1/Q) ? -1 : 0
+	static int isEqualOrMinus(const G& P, const G& Q)
+	{
+		if (P.a == Q.a) {
+			if (P.b == Q.b) return 1;
+			if (P.b == -Q.b) return -1;
+		}
+		return 0;
+	}
 	static uint32_t getHash(const G& x) { return uint32_t(*x.getFp0()->getUnit()); }
 	static void clear(G& x) { x = 1; }
 	static void normalize(G&) { }
@@ -161,7 +167,7 @@ public:
 			I::add(xP, xP, P_);
 			I::normalize(xP);
 			kcv_[i - 1].key = I::getHash(xP);
-			kcv_[i - 1].count = I::isOdd(xP) ? i : -i;
+			kcv_[i - 1].count = i;
 		}
 		nextP_ = xP;
 		I::dbl(nextP_, nextP_);
@@ -212,11 +218,9 @@ public:
 //			I::mul(T, P, abs_c - prev);
 			mulByWindowMethod(T, abs_c - prev);
 			I::add(Q, Q, T);
-			I::normalize(Q);
-			if (I::isSameX(Q, xP)) {
-				bool QisOdd = I::isOdd(Q);
-				bool xPisOdd = I::isOdd(xP);
-				if (QisOdd ^ xPisOdd ^ neg) return -count;
+			int v = I::isEqualOrMinus(Q, xP);
+			if (v) {
+				if ((v == -1) ^ neg) return -count;
 				return count;
 			}
 			prev = abs_c;
@@ -828,7 +832,7 @@ public:
 #endif
 		int64_t dec(const CipherTextG1& c, bool *pok = 0) const
 		{
-			if (useDecG1ViaGT_) return decViaGT(c);
+			if (useDecG1ViaGT_) return decViaGT(c, pok);
 			/*
 				S = mP + rxP
 				T = rP
@@ -841,7 +845,7 @@ public:
 		}
 		int64_t dec(const CipherTextG2& c, bool *pok = 0) const
 		{
-			if (useDecG2ViaGT_) return decViaGT(c);
+			if (useDecG2ViaGT_) return decViaGT(c, pok);
 			G2 R;
 			G2::mul(R, c.T_, y_);
 			G2::sub(R, c.S_, R);
@@ -1080,9 +1084,9 @@ private:
 		s[m] = r + d[m] encRand
 	*/
 	template<class G, class I, class MulG>
-	static void makeZkpBin(ZkpBin& zkp, const G& S, const G& T, const Fr& encRand, const G& P, int m, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+	static bool makeZkpBin(ZkpBin& zkp, const G& S, const G& T, const Fr& encRand, const G& P, int m, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
 	{
-		if (m != 0 && m != 1) throw cybozu::Exception("makeZkpBin:bad m") << m;
+		if (m != 0 && m != 1) return false;
 		Fr *s = &zkp.d_[0];
 		Fr *d = &zkp.d_[2];
 		G R[2][2];
@@ -1110,6 +1114,7 @@ private:
 		hash.get(c);
 		d[m] = c - d[1-m];
 		s[m] = r + d[m] * encRand;
+		return true;
 	}
 	/*
 		R[0][i] = s[i] P - d[i] T ; i = 0,1
@@ -1302,9 +1307,9 @@ private:
 		encRand1, encRand2 are random values use for ElGamalEnc()
 	*/
 	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
-	static void makeZkpBinEq(ZkpBinEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, int m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
+	static bool makeZkpBinEq(ZkpBinEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, int m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
 	{
-		if (m != 0 && m != 1) throw cybozu::Exception("makeZkpBinEq:bad m") << m;
+		if (m != 0 && m != 1) return false;
 		Fr *d = &zkp.d_[0];
 		Fr *spm = &zkp.d_[2];
 		Fr& ss = zkp.d_[4];
@@ -1352,6 +1357,7 @@ private:
 		ss += rs;
 		Fr::mul(sm, c, m);
 		sm += rm;
+		return true;
 	}
 	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
 	static bool verifyZkpBinEq(const ZkpBinEq& zkp, const G1& S1, const G1& T1, const G2& S2, const G2& T2, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
@@ -1540,29 +1546,51 @@ public:
 			pairing(aux.R_[2], P_, yQ_);
 			pairing(aux.R_[3], xP_, yQ_);
 		}
-		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(bool *pb, CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			const MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
 		}
-		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G1 m") << m;
+			}
+		}
+		void encWithZkpBin(bool *pb, CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			const MulG<G2> yQmul(yQ_);
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
 		}
-		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G2 m") << m;
+			}
+		}
+		void encWithZkpSet(bool *pb, CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			const MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
-			if (!makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul)) {
+			*pb = makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul);
+		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			bool b;
+			encWithZkpSet(&b, c, zkp, m, mVec, mSize);
+			if (!b) {
 				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
 			}
 		}
@@ -1621,11 +1649,19 @@ public:
 			const MulG<G2> yQmul(yQ_);
 			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
-		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		void encWithZkpBinEq(bool *pb, CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
 		{
 			const MulG<G1> xPmul(xP_);
 			const MulG<G2> yQmul(yQ_);
-			makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+			*pb = makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
+		}
+		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBinEq(&b, c1, c2, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBinEq:bad m") << m;
+			}
 		}
 		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
 		{
@@ -1785,26 +1821,48 @@ public:
 			eyPQwm_.init(static_cast<const GTasEC&>(eyPQ_), bitSize, local::winSize);
 			exyPQwm_.init(static_cast<const GTasEC&>(exyPQ_), bitSize, local::winSize);
 		}
-		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(bool *pb, CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPwm_);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPwm_);
 		}
-		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		void encWithZkpBin(CipherTextG1& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G1 m") << m;
+			}
+		}
+		void encWithZkpBin(bool *pb, CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_, &encRand);
-			makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
+			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
 		}
-		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		void encWithZkpBin(CipherTextG2& c, ZkpBin& zkp, int m) const
+		{
+			bool b;
+			encWithZkpBin(&b, c, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBin:bad G2 m") << m;
+			}
+		}
+		void encWithZkpSet(bool *pb, CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
 		{
 			Fr encRand;
 			encRand.setRand();
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
-			if (!makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_)) {
+			*pb = makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_);
+		}
+		void encWithZkpSet(CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
+		{
+			bool b;
+			encWithZkpSet(&b, c, zkp, m, mVec, mSize);
+			if (!b) {
 				throw cybozu::Exception("encWithZkpSet:bad mVec") << mSize;
 			}
 		}
@@ -1829,9 +1887,17 @@ public:
 		{
 			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
 		}
+		void encWithZkpBinEq(bool *pb, CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
+		{
+			*pb = makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+		}
 		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
 		{
-			makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPwm_, QhashTbl_.getWM(), yQwm_);
+			bool b;
+			encWithZkpBinEq(&b, c1, c2, zkp, m);
+			if (!b) {
+				throw cybozu::Exception("encWithZkpBinEq:bad m") << m;
+			}
 		}
 		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
 		{

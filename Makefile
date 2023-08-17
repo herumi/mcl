@@ -16,6 +16,7 @@ TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp static_init_test.cpp
+TEST_SRC+=invmod_test.cpp
 LIB_OBJ=$(OBJ_DIR)/fp.o
 ifeq ($(MCL_STATIC_CODE),1)
   LIB_OBJ+=obj/static_code.o
@@ -195,7 +196,7 @@ else
 	python3 src/gen_bint_x64.py -win > $@
 endif
 $(BINT_SRC): src/bint$(BIT).ll
-	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CLANG_TARGET) $(CFLAGS_USER)
+	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CFLAGS) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:

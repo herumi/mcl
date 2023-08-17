@@ -283,12 +283,9 @@ mclSize sheGetTableSizeForGTDLP() { return SHE::ePQhashTbl_.getTableSize(); }
 
 template<class CT>
 int encT(CT *c, const shePublicKey *pub, mclInt m)
-	try
 {
 	cast(pub)->enc(*cast(c), m);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheEncG1(sheCipherTextG1 *c, const shePublicKey *pub, mclInt m)
@@ -343,12 +340,10 @@ int sheEncIntVecGT(sheCipherTextGT *c, const shePublicKey *pub, const void *buf,
 
 template<class CT, class PK>
 int encWithZkpBinT(CT *c, sheZkpBin *zkp, const PK *pub, int m)
-	try
 {
-	cast(pub)->encWithZkpBin(*cast(c), *cast(zkp), m);
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	bool b;
+	cast(pub)->encWithZkpBin(&b, *cast(c), *cast(zkp), m);
+	return b ? 0 : -1;
 }
 
 int sheEncWithZkpBinG1(sheCipherTextG1 *c, sheZkpBin *zkp, const shePublicKey *pub, int m)
@@ -373,12 +368,10 @@ int shePrecomputedPublicKeyEncWithZkpBinG2(sheCipherTextG2 *c, sheZkpBin *zkp, c
 
 template<class CT, class PK>
 int encWithZkpSetT(CT *c, mclBnFr *zkp, const PK *pub, int m, const int *mVec, mclSize mSize)
-	try
 {
-	cast(pub)->encWithZkpSet(*cast(c), cast2(zkp), m, mVec, mSize);
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	bool b;
+	cast(pub)->encWithZkpSet(&b, *cast(c), cast2(zkp), m, mVec, mSize);
+	return b ? 0 : -1;
 }
 
 int sheEncWithZkpSetG1(sheCipherTextG1 *c, mclBnFr *zkp, const shePublicKey *pub, int m, const int *mVec, mclSize mSize)
@@ -412,12 +405,9 @@ int shePrecomputedPublicKeyVerifyZkpSetG1(const shePrecomputedPublicKey *ppub, c
 
 template<class PK>
 int encWithZkpEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpEq *zkp, const PK *pub, mclInt m)
-	try
 {
 	cast(pub)->encWithZkpEq(*cast(c1), *cast(c2), *cast(zkp), m);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheEncWithZkpEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpEq *zkp, const shePublicKey *pub, mclInt m)
@@ -432,12 +422,10 @@ int shePrecomputedPublicKeyEncWithZkpEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2
 
 template<class PK>
 int encWithZkpBinEqT(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const PK *pub, int m)
-	try
 {
-	cast(pub)->encWithZkpBinEq(*cast(c1), *cast(c2), *cast(zkp), m);
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	bool b;
+	cast(pub)->encWithZkpBinEq(&b, *cast(c1), *cast(c2), *cast(zkp), m);
+	return b ? 0 : -1;
 }
 
 int sheEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 *c2, sheZkpBinEq *zkp, const shePublicKey *pub, int m)
@@ -452,12 +440,10 @@ int shePrecomputedPublicKeyEncWithZkpBinEq(sheCipherTextG1 *c1, sheCipherTextG2 
 
 template<class CT>
 int decT(mclInt *m, const sheSecretKey *sec, const CT *c)
-	try
 {
-	*m = (cast(sec)->dec)(*cast(c));
-	return 0;
-} catch (std::exception&) {
-	return -1;
+	bool b;
+	*m = (cast(sec)->dec)(*cast(c), &b);
+	return b ? 0 : -1;
 }
 
 int sheDecG1(mclInt *m, const sheSecretKey *sec, const sheCipherTextG1 *c)
@@ -520,12 +506,9 @@ int sheIsZeroGT(const sheSecretKey *sec, const sheCipherTextGT *c)
 
 template<class CT>
 int negT(CT& y, const CT& x)
-	try
 {
 	CT::neg(y, x);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheNegG1(sheCipherTextG1 *y, const sheCipherTextG1 *x)
@@ -545,12 +528,9 @@ int sheNegGT(sheCipherTextGT *y, const sheCipherTextGT *x)
 
 template<class CT>
 int addT(CT& z, const CT& x, const CT& y)
-	try
 {
 	CT::add(z, x, y);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheAddG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const sheCipherTextG1 *y)
@@ -570,12 +550,9 @@ int sheAddGT(sheCipherTextGT *z, const sheCipherTextGT *x, const sheCipherTextGT
 
 template<class CT>
 int subT(CT& z, const CT& x, const CT& y)
-	try
 {
 	CT::sub(z, x, y);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheSubG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, const sheCipherTextG1 *y)
@@ -595,12 +572,9 @@ int sheSubGT(sheCipherTextGT *z, const sheCipherTextGT *x, const sheCipherTextGT
 
 template<class CT1, class CT2, class CT3>
 int mulT(CT1& z, const CT2& x, const CT3& y)
-	try
 {
 	CT1::mul(z, x, y);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheMulG1(sheCipherTextG1 *z, const sheCipherTextG1 *x, mclInt y)
@@ -651,31 +625,22 @@ int sheMul(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *
 }
 
 int sheMulML(sheCipherTextGT *z, const sheCipherTextG1 *x, const sheCipherTextG2 *y)
-	try
 {
 	CipherTextGT::mulML(*cast(z), *cast(x), *cast(y));
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheFinalExpGT(sheCipherTextGT *y, const sheCipherTextGT *x)
-	try
 {
 	CipherTextGT::finalExp(*cast(y), *cast(x));
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 template<class CT>
 int reRandT(CT& c, const shePublicKey *pub)
-	try
 {
 	cast(pub)->reRand(c);
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheReRandG1(sheCipherTextG1 *c, const shePublicKey *pub)
@@ -695,12 +660,9 @@ int sheReRandGT(sheCipherTextGT *c, const shePublicKey *pub)
 
 template<class CT>
 int convert(sheCipherTextGT *y, const shePublicKey *pub, const CT *x)
-	try
 {
 	cast(pub)->convert(*cast(y), *cast(x));
 	return 0;
-} catch (std::exception&) {
-	return -1;
 }
 
 int sheConvertG1(sheCipherTextGT *y, const shePublicKey *pub, const sheCipherTextG1 *x)

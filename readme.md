@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- improve performance of Fr::inv on M1 mac
 - add mcl::bn::isValidGT(x) and mclBnGT_isValid(x) to check x in GT for x in Fp12.
 - support BN\_P256 (hash-to-curve is not yet standard way.)
 - the performance of `{G1,G2}::mulVec(z, xVec, yVec, n)` has improved for n >= 256. (about 2x speed up for n = 512).
@@ -184,10 +185,13 @@ Open a console window, and
 git clone https://github.com/herumi/mcl
 cd mcl
 
-# How to build libmcl.a for arm on Linux
+# How to build a library for arm with clang++ on Linux
 
 ```
-make ARCH=armv7l lib/libmcl.a LLVM_VER=-12 CLANG_TARGET="-target armv7" CXX=g++-12 PRE=arm-linux-gnueabi-
+make -f Makefile.cross BIT=32 TARGET=armv7l
+sudo apt install g++-arm-linux-gnueabi
+arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn384_256.a -DMCL_MAX_BIT_SIZE=384
+env QEMU_LD_PREFIX=/usr/arm-linux-gnueabi/ qemu-arm ./a.out
 ```
 
 # static library
