@@ -288,7 +288,7 @@ void setOp(Op& op)
 	op.fp_copy = bint::copyT<N>;
 #if 1
 	mcl::inv::init(*reinterpret_cast<mcl::inv::InvModT<N>*>(op.im), op.mp);
-	op.fp_invOp = fp_invMod<N>;;
+	op.fp_invOp = fp_invMod<N>;
 #else
 	op.fp_invOp = fp_invOpC;
 #endif
