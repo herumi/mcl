@@ -31,6 +31,22 @@ void test(const char *Mstr)
 		CYBOZU_TEST_EQUAL(y, z);
 		x = y + 1;
 	}
+	typedef mcl::Unit Unit;
+	const Unit ff = Unit(-1);
+	const Unit _80 = Unit(1) << (MCL_UNIT_BIT_SIZE-1);
+	const Unit tbl[] = {
+		ff, ff >> 1, _80, _80-1,
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+			Unit v[2] = { tbl[i], tbl[j] };
+			mcl::gmp::setArray(x, v, 2);
+			if (x == 0) continue;
+			mcl::gmp::invMod(y, x, M);
+			mcl::inv::exec(im, z, x);
+			CYBOZU_TEST_EQUAL(y, z);
+		}
+	}
 #ifdef NDEBUG
 	CYBOZU_BENCH_C("invMod", 1000, x++;mcl::inv::exec, im, x, x);
 #endif
