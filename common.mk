@@ -92,6 +92,12 @@ ifeq ($(DEBUG),2)
     LDFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
   endif
 endif
+ifeq ($(DEBUG),4)
+  ifeq ($(GCC_EXT),1)
+    CFLAGS+=-fsanitize=undefined
+    LDFLAGS+=-fsanitize=undefined
+  endif
+endif
 ifeq ($(DEBUG),3)
   # no option
 endif

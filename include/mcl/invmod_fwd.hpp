@@ -31,8 +31,8 @@ struct SintT {
 
 template<int N>
 struct InvModT {
-	INT lowM;
-	INT Mi;
+	Unit lowM;
+	Unit Mi;
 	SintT<N> M;
 };
 
