@@ -19,7 +19,7 @@ namespace mcl {
 namespace inv {
 
 struct Quad {
-	INT u, v, q, r;
+	Unit u, v, q, r;
 };
 
 template<int N>
@@ -85,23 +85,23 @@ void mulUnit(SintT<N+1>&z, const SintT<N>& x, INT y)
 }
 
 template<int N>
-void shr(SintT<N>& y, INT x)
+void shr(SintT<N>& y, int x)
 {
 	mcl::bint::shrT<N>(y.v, y.v, x);
 }
 
 template<int N>
-INT getLow(const SintT<N>& x)
+Unit getLow(const SintT<N>& x)
 {
-	INT r = x.v[0];
+	Unit r = x.v[0];
 	if (x.sign) r = -r;
 	return r;
 }
 
 template<int N>
-INT getLowMask(const SintT<N>& x)
+Unit getLowMask(const SintT<N>& x)
 {
-	INT r = getLow(x);
+	Unit r = getLow(x);
 	return r & MASK;
 }
 
@@ -123,10 +123,10 @@ void toMpz(mpz_class& y, const SintT<N2>& x)
 	if (x.sign) y = -y;
 }
 
-static inline INT divsteps_n_matrix(Quad& t, INT eta, INT f, INT g)
+static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 {
-	static const int tbl[] = { 15, 5, 3, 9, 7, 13, 11, 1 };
-	INT u = 1, v = 0, q = 0, r = 1;
+	static const uint32_t tbl[] = { 15, 5, 3, 9, 7, 13, 11, 1 };
+	Unit u = 1, v = 0, q = 0, r = 1;
 	int i = modL;
 	for (;;) {
 		INT zeros = g == 0 ? i : cybozu::bsf(g);
@@ -138,9 +138,9 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, INT f, INT g)
 		v <<= zeros;
 		if (i == 0) break;
 		if (eta < 0) {
-			INT u0 = u;
-			INT v0 = v;
-			INT f0 = f;
+			Unit u0 = u;
+			Unit v0 = v;
+			Unit f0 = f;
 			eta = -eta;
 			f = g;
 			u = q;
@@ -150,7 +150,7 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, INT f, INT g)
 			r = -v0;
 		}
 		int limit = mcl::fp::min_<INT>(mcl::fp::min_<INT>(eta + 1, i), 4);
-		INT w = (g * tbl[(f & 15)>>1]) & ((1<<limit)-1);
+		Unit w = (g * tbl[(f & 15)>>1]) & ((1u<<limit)-1);
 		g += w * f;
 		q += w * u;
 		r += w * v;
@@ -185,15 +185,15 @@ void update_de(const InvModT<N>& im, SintT<N>& d, SintT<N>& e, const Quad& t)
 {
 	const SintT<N>& M = im.M;
 	const INT Mi = im.Mi;
-	INT md = 0;
-	INT me = 0;
+	Unit ud = 0;
+	Unit ue = 0;
 	if (d.sign) {
-		md += t.u;
-		me += t.q;
+		ud = t.u;
+		ue = t.q;
 	}
 	if (e.sign) {
-		md += t.v;
-		me += t.r;
+		ud += t.v;
+		ue += t.r;
 	}
 	SintT<N+1> d1, d2, e1, e2;
 	// d = d * u + e * v
@@ -204,18 +204,18 @@ void update_de(const InvModT<N>& im, SintT<N>& d, SintT<N>& e, const Quad& t)
 	mulUnit(e2, e, t.r);
 	add(d1, d1, e1);
 	add(e1, d2, e2);
-	INT di = getLow(d1) + im.lowM * md;
-	INT ei = getLow(e1) + im.lowM * me;
-	md -= Mi * di;
-	me -= Mi * ei;
-	md &= MASK;
-	me &= MASK;
-	if (md >= half) md -= modN;
-	if (me >= half) me -= modN;
-	// d = (d + M * md) >> modL
-	// e = (e + M * me) >> modL
-	mulUnit(d2, M, md);
-	mulUnit(e2, M, me);
+	Unit di = getLow(d1) + im.lowM * ud;
+	Unit ei = getLow(e1) + im.lowM * ue;
+	ud -= Mi * di;
+	ue -= Mi * ei;
+	INT sd = ud & MASK;
+	INT se = ue & MASK;
+	if (sd >= half) sd -= modN;
+	if (se >= half) se -= modN;
+	// d = (d + M * sd) >> modL
+	// e = (e + M * se) >> modL
+	mulUnit(d2, M, sd);
+	mulUnit(e2, M, se);
 	add(d1, d1, d2);
 	add(e1, e1, e2);
 	shr(d1, modL);
@@ -252,8 +252,8 @@ void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 	clear(e); e.v[0] = 1;
 	Quad t;
 	while (!isZero(g)) {
-		INT fLow = getLowMask(f);
-		INT gLow = getLowMask(g);
+		Unit fLow = getLowMask(f);
+		Unit gLow = getLowMask(g);
 		eta = divsteps_n_matrix(t, eta, fLow, gLow);
 		update_fg(f, g, t);
 		update_de(im, d, e, t);
