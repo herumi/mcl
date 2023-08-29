@@ -82,25 +82,24 @@ RM=rm -rf
 DEBUG?=0
 ifeq ($(DEBUG),1)
   ifeq ($(GCC_EXT),1)
-    CFLAGS+=-fsanitize=address
-    LDFLAGS+=-fsanitize=address
+    SANITIZE_OPT?=-fsanitize=address
   endif
 endif
 ifeq ($(DEBUG),2)
   ifeq ($(GCC_EXT),1)
-    CFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
-    LDFLAGS+=-fsanitize=memory -fsanitize-memory-track-origins=2
-  endif
-endif
-ifeq ($(DEBUG),4)
-  ifeq ($(GCC_EXT),1)
-    CFLAGS+=-fsanitize=undefined
-    LDFLAGS+=-fsanitize=undefined
+    SANITIZE_OPT?=-fsanitize=memory -fsanitize-memory-track-origins=2
   endif
 endif
 ifeq ($(DEBUG),3)
   # no option
 endif
+ifeq ($(DEBUG),4)
+  ifeq ($(GCC_EXT),1)
+    SANITIZE_OPT?=-fsanitize=undefined -fno-sanitize-recover
+  endif
+endif
+CFLAGS+=$(SANITIZE_OPT)
+LDFLAGS+=$(SANITIZE_OPT)
 ifeq ($(DEBUG),0)
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
   ifeq ($(CXX),clang++)
