@@ -146,7 +146,7 @@ ifeq ($(MCL_STATIC_CODE),1)
 endif
 ifeq ($(MCL_USE_OMP),1)
   CFLAGS+=-DMCL_USE_OMP
-  ifeq ($(OS),mac)
+  ifneq ($(findstring $(OS),mac/mac-m1),)
     CFLAGS+=-Xpreprocessor -fopenmp
     LDFLAGS+=-lomp
   else
