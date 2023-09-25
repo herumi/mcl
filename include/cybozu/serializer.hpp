@@ -261,6 +261,7 @@ void load(Container<T, Alloc>& x, InputStream& is)
 {
 	size_t size;
 	load(size, is);
+	x.clear();
 	serializer_local::reserve_if_exists(x, size);
 	for (size_t i = 0; i < size; i++) {
 		x.push_back(T());
