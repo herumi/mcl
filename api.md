@@ -516,6 +516,11 @@ int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
 int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
 int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
 ```
+C++
+```
+bool T::squareRoot(T& y, const T& x);
+```
+
 - `y` is one of a square root of `x` if `y` exists.
 - return 0 if success else -1
 
@@ -568,17 +573,18 @@ T::mul(const T& z, const T& x, const Fr& y);
 
 ### multi-scalar multiplication
 ```
-void mclBnG1_mulVec(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y, mclSize n);
-void mclBnG2_mulVec(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y, mclSize n);
+void mclBnG1_mulVec(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n);
+void mclBnG2_mulVec(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n);
 void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
 ```
 C++
 ```
-T::mulVec(T, const T&, const Fr *y, size_t n);
+T::mulVec(T& z, T* x, const Fr *y, size_t n);
 ```
 
 - z = sum_{i=0}^{n-1} mul(x[i], y[i]) for G1 / G2.
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
+- `x[]` does not const because they may be normailzed (The value does not change).
 
 ## hash-to-curve function
 ### Set hash of `buf[0..bufSize-1]` to `x`
