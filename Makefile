@@ -295,7 +295,7 @@ src/base64m.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
-	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -DNDEBUG
 
 src/static_code.asm: src/dump_code
 	$< > $@

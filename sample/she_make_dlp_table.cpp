@@ -12,6 +12,7 @@ struct Param {
 	int hashBitSize;
 	int group;
 	std::string path;
+	bool g1only;
 };
 
 template<class HashTable, class G>
@@ -30,7 +31,11 @@ void makeTable(const Param& param, const char *groupStr, HashTable& hashTbl, con
 
 void run(const Param& param)
 {
-	SHE::init(*mcl::getCurveParam(param.curveType));
+	if (param.g1only) {
+		SHE::initG1only(param.curveType);
+	} else {
+		SHE::init(*mcl::getCurveParam(param.curveType));
+	}
 
 	switch (param.group) {
 	case 1:
@@ -52,10 +57,11 @@ int main(int argc, char *argv[])
 {
 	cybozu::Option opt;
 	Param param;
-	opt.appendOpt(&param.curveType, 0, "ct", ": curveType(0:BN254, 1:BN381_1, 5:BLS12_381)");
+	opt.appendOpt(&param.curveType, 0, "ct", ": curveType(0:BN254, 1:BN381_1, 5:BLS12_381, 102:SECP256K1)");
 	opt.appendOpt(&param.hashBitSize, 20, "hb", ": hash bit size");
 	opt.appendOpt(&param.group, 3, "g", ": group(1:G1, 2:G2, 3:GT");
 	opt.appendOpt(&param.path, "./", "path", ": path to table");
+	opt.appendBoolOpt(&param.g1only, "g1only", ": g1only");
 	opt.appendHelp("h");
 	if (opt.parse(argc, argv)) {
 		run(param);
