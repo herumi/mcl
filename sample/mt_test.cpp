@@ -1,3 +1,7 @@
+/*
+	make clean && make MCL_USE_OMP=1 -j bin/mt_test.exe
+	bin/mt_test.exe -n 2000
+*/
 #include <cybozu/benchmark.hpp>
 #include <mcl/bls12_381.hpp>
 #include <cybozu/xorshift.hpp>
