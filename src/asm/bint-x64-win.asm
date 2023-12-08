@@ -1,5 +1,5 @@
 ; for masm (ml64.exe)
-_text segment
+_text$x segment align(64) execute
 align 16
 mclb_add1 proc export
 mov rax, [rdx]
@@ -4518,5 +4518,5 @@ div r8
 mov [r9], rdx
 ret
 mclb_udiv128 endp
-_text ends
+_text$x ends
 end
