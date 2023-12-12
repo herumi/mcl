@@ -32,6 +32,7 @@
 typedef mcl::Vint mpz_class;
 #else
 #include <gmpxx.h>
+#include <mcl/bint.hpp>
 #ifdef _MSC_VER
 	#pragma warning(pop)
 	#include <cybozu/link_mpir.hpp>

@@ -138,6 +138,7 @@ ifeq ($(MCL_USE_GMP),1)
     CFLAGS+=-I$(GMP_DIR)/include
     LDFLAGS+=-L$(GMP_DIR)/lib
   endif
+  CFLAGS+=-DMCL_USE_GMP=1
 endif
 ifeq ($(MCL_STATIC_CODE),1)
   MCL_USE_XBYAK=0

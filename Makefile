@@ -386,7 +386,7 @@ $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) s
 	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/paillier_test.exe: $(OBJ_DIR)/paillier_test.o $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(LDFLAGS) -lgmp -lgmpxx
+	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS) -lgmp -lgmpxx
 
 $(EXE_DIR)/bint_test.exe: $(OBJ_DIR)/bint_test.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS) -lgmp -lgmpxx
