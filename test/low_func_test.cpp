@@ -75,21 +75,21 @@ CYBOZU_TEST_AUTO(limit)
 {
 	std::cout << std::hex;
 	const char *tbl4[] = {
-		"0x0000000000000001000000000000000000000000000000000000000000000085", // min prime
-		"0x2523648240000001ba344d80000000086121000000000013a700000000000013",
-		"0x7523648240000001ba344d80000000086121000000000013a700000000000017",
-		"0x800000000000000000000000000000000000000000000000000000000000005f",
-		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
-		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+		"0000000000000001000000000000000000000000000000000000000000000085", // min prime
+		"2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"7523648240000001ba344d80000000086121000000000013a700000000000017",
+		"800000000000000000000000000000000000000000000000000000000000005f",
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
 		// not primes
-		"0xffffffffffffffffffffffffffffffffffffffffffffffff0000000000000001",
-		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000001",
-		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"ffffffffffffffffffffffffffffffffffffffffffffffff0000000000000001",
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000001",
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
 		printf("p=%s\n", tbl4[i]);
 		mpz_class p;
-		p.setStr(tbl4[i], 16);
+		mcl::gmp::setStr(p, tbl4[i], 16);
 		testEdge<4 * (8 / sizeof(Unit))>(p);
 	}
 }

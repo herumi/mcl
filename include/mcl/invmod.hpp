@@ -13,6 +13,7 @@
 #include <mcl/bint.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <mcl/invmod_fwd.hpp>
+#include <mcl/util.hpp>
 
 namespace mcl {
 

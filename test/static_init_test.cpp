@@ -1,3 +1,7 @@
+/*
+	If the binary compiled with DEBUG=1 and MCL_USE_GMP=1 calls init in a constructor of a static value,
+	then it will show GMP memory leaks, but this is a rare case.
+*/
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <mcl/bn256.hpp>
