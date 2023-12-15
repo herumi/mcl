@@ -128,7 +128,7 @@ CFLAGS+=$(CFLAGS_USER)
 ifneq ($(MCL_SIZEOF_UNIT),)
   CFLAGS+=-DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT)
 endif
-MCL_USE_GMP?=0
+MCL_USE_GMP?=1
 ifeq ($(MCL_USE_GMP),1)
   GMP_LIB=-lgmp -lgmpxx
   ifeq ($(UNAME_S),Darwin)
@@ -138,7 +138,7 @@ ifeq ($(MCL_USE_GMP),1)
     CFLAGS+=-I$(GMP_DIR)/include
     LDFLAGS+=-L$(GMP_DIR)/lib
   endif
-  CFLAGS+=-DMCL_USE_GMP=1
+#  CFLAGS+=-DMCL_USE_GMP=1
 endif
 ifeq ($(MCL_STATIC_CODE),1)
   MCL_USE_XBYAK=0

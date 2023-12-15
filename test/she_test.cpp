@@ -943,4 +943,8 @@ CYBOZU_TEST_AUTO(liftedElGamal)
 	CYBOZU_BENCH_C("enc", C, ppub.enc, c2, 5);
 	CYBOZU_TEST_EQUAL(sec.dec(c1), sec.dec(c2));
 	CYBOZU_BENCH_C("add", C, add, c1, c1, c2);
+	Fr r;
+	r.setByCSPRNG();
+	CYBOZU_BENCH_C("mul", C, mul, c1, c1, r);
+	CYBOZU_BENCH_C("isZero", C, sec.isZero, c1);
 }
