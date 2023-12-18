@@ -384,6 +384,7 @@ size_t T::getStr(char *buf, size_t maxBufSize, int iMode = 0) const
 
 - write `x` to `buf` according to `ioMode`
 - `ioMode`
+  - 2 ; binary number
   - 10 ; decimal number
   - 16 ; hexadecimal number
   - `MCLBN_IO_EC_PROJ` ; output as Jacobi coordinate
