@@ -69,6 +69,10 @@ GMP is necessary only to build test programs.
 - `sudo apt install libgmp-dev` on Ubuntu
 - `brew install gmp` on macOS
 
+OpenMP is optional (`make MCL_USE_OMP=1` to use OpenMP for `mulVec`)
+- `sudo apt install libomp-dev` on Ubuntu
+- `brew install libomp`
+
 ## How to build with Makefile
 
 For x86-64 Linux and macOS,

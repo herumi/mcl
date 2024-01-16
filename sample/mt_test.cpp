@@ -1,5 +1,5 @@
 /*
-	make clean && make MCL_USE_OMP=1 -j bin/mt_test.exe
+	make clean && make MCL_USE_OMP=1 -j bin/mt_test.exe CFLAGS_USER=-DCYBOZU_BENCH_USE_GETTIMEOFDAY
 	bin/mt_test.exe -n 2000
 */
 #include <cybozu/benchmark.hpp>
