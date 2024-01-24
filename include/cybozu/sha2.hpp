@@ -56,7 +56,7 @@ struct NewHash {
 		, md_(EVP_get_digestbyname(name))
 	{
 		if (md_ == 0) {
-			fprintf(stderr, "fatail error NewHash %s\n", name);
+			fprintf(stderr, "fatal error NewHash %s\n", name);
 		}
 		assert(md_);
 	}
