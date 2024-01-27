@@ -813,6 +813,7 @@ CYBOZU_TEST_AUTO(shift)
 		y >>= i;
 		CYBOZU_TEST_EQUAL(y, z);
 	}
+
 	for (int i = 0; i < 3; i++) {
 		Vint::shr(y, x, i * UnitBitSize);
 		Vint::pow(s, Vint(2), i * UnitBitSize);
@@ -1291,7 +1292,14 @@ CYBOZU_TEST_AUTO(andOr)
 	Vint z;
 	z = x & y;
 	CYBOZU_TEST_EQUAL(z, Vint("1209221003550923564822922"));
+	z.clear();
+	z = y & x;
+	CYBOZU_TEST_EQUAL(z, Vint("1209221003550923564822922"));
+	z.clear();
 	z = x | y;
+	CYBOZU_TEST_EQUAL(z, Vint("29348220482094820948208435244134352108849315802"));
+	z.clear();
+	z = y | x;
 	CYBOZU_TEST_EQUAL(z, Vint("29348220482094820948208435244134352108849315802"));
 #ifndef MCL_AVOID_EXCEPTION_TEST
 //	CYBOZU_TEST_EXCEPTION(Vint("-2") | Vint("5"), cybozu::Exception);
