@@ -33,12 +33,11 @@ public:
 		mR = 1;
 		mR = (mR << (N * sizeof(Unit) * 8)) % mp;
 		mR2 = (mR * mR) % mp;
-		v_.resize(N * 2);
-		Unit *base = &v_[N];
+		v_.resize(N + 1);
+		Unit *base = &v_[1];
 		mcl::gmp::getArray(base, N, _p);
-		rp = mcl::bint::getMontgomeryCoeff(v_[0]);
+		base[-1] = rp = mcl::bint::getMontgomeryCoeff(base[0]);
 		p = base;
-		rp = base[-1];
 		isFullBit = p[N - 1] >> (sizeof(Unit) * 8 - 1);
 	}
 
