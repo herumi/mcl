@@ -626,6 +626,19 @@ struct Test {
 		mcl::ec::addCTProj(Q, Zero, Zero);
 		Ec::add(R, Zero, Zero);
 		CYBOZU_TEST_EQUAL(Q, R);
+		mcl::ec::addCTProj(Q, Q, Q);
+		Ec::add(R, R, R);
+		CYBOZU_TEST_EQUAL(Q, R);
+
+		// dbl
+		mcl::ec::dblCTProj(P, Q);
+		Ec::dbl(R, R);
+		CYBOZU_TEST_EQUAL(Q, R);
+		mcl::ec::dblCTProj(Q, Q);
+		Ec::dbl(R, R);
+		CYBOZU_TEST_EQUAL(Q, R);
+		mcl::ec::dblCTProj(Q, Zero);
+		CYBOZU_TEST_EQUAL(Q, Zero);
 	}
 	void ProjJacobi() const
 	{
