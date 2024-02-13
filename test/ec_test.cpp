@@ -627,6 +627,29 @@ struct Test {
 		Ec::add(R, Zero, Zero);
 		CYBOZU_TEST_EQUAL(Q, R);
 	}
+	void ProjJacobi() const
+	{
+		if (Ec::getMode() == mcl::ec::Affine) return;
+		Fp x(para.gx);
+		Fp y(para.gy);
+		Ec P(x, y), Q, R;
+		P *= 123;
+		if (Ec::getMode() == mcl::ec::Proj) {
+			mcl::ec::ProjToJacobi(Q, P);
+			mcl::ec::normalizeJacobi(Q);
+			CYBOZU_TEST_EQUAL(Q, P);
+			mcl::ec::ProjToJacobi(Q, P);
+			mcl::ec::JacobiToProj(R, Q);
+			CYBOZU_TEST_EQUAL(R, P);
+		} else {
+			mcl::ec::JacobiToProj(Q, P);
+			mcl::ec::normalizeProj(Q);
+			CYBOZU_TEST_EQUAL(Q, P);
+			mcl::ec::JacobiToProj(Q, P);
+			mcl::ec::ProjToJacobi(R, Q);
+			CYBOZU_TEST_EQUAL(R, P);
+		}
+	}
 
 	template<class F>
 	void test(F f, const char *msg) const
@@ -672,6 +695,7 @@ mul 499.00usec
 		mulCT();
 		compare();
 		addCT();
+		ProjJacobi();
 	}
 private:
 	Test(const Test&);
