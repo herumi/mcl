@@ -505,7 +505,6 @@ void addJacobi(E& R, const E& P, const E& Q)
 /*
 	accept P == Q
 	https://github.com/apache/incubator-milagro-crypto-c/blob/fa0a45a3/src/ecp.c.in#L767-L976
-	// 14M
 	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
 template<class E>
@@ -516,6 +515,7 @@ void clearCTProj(E& P)
 	P.z.clear();
 }
 
+// 14M
 template<class E>
 void addCTProj(E& R, const E& P, const E& Q)
 {
@@ -542,10 +542,10 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::sub(y3, x3, y3);
 	F::add(x3, t0, t0);
 	F::add(t0, t0, x3);
-	t2 *= E::b3_;
+	F::mul(t2, t2, E::b3_);
 	F::add(R.z, t1, t2);
 	F::sub(t1, t1, t2);
-	y3 *= E::b3_;
+	F::mul(y3, y3, E::b3_);
 	F::mul(x3, y3, t4);
 	F::mul(t2, t3, t1);
 	F::sub(R.x, t2, x3);
@@ -556,6 +556,7 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::mul(R.z, R.z, t4);
 	F::add(R.z, R.z, t0);
 }
+// 7M+2S
 template<class E>
 void dblCTProj(E& R, const E& P)
 {
@@ -577,9 +578,9 @@ void dblCTProj(E& R, const E& P)
 	F::mul(t1, P.x, P.y);
 	F::sub(t0, t0, t2);
 	F::mul(R.y, y3, t0);
-	R.y += x3;
+	F::add(R.y, R.y, x3);
 	F::mul(R.x, t0, t1);
-	R.x += R.x;
+	F::add(R.x, R.x, R.x);
 }
 
 template<class E>
