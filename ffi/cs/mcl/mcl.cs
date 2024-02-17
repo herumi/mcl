@@ -28,7 +28,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnFr_isOne(in Fr x);
         [DllImport(dllName)] public static extern void mclBnFr_setByCSPRNG(ref Fr x);
 
-        [DllImport(dllName)] public static extern int mclBnFr_setHashOf(ref Fr x, [In]byte[] buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnFr_setHashOf(ref Fr x, [In] byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern int mclBnFr_getStr([Out] StringBuilder buf, long maxBufSize, in Fr x, int ioMode);
 
         [DllImport(dllName)] public static extern void mclBnFr_neg(ref Fr y, in Fr x);
@@ -48,7 +48,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnFp_isOne(in Fp x);
         [DllImport(dllName)] public static extern void mclBnFp_setByCSPRNG(ref Fp x);
 
-        [DllImport(dllName)] public static extern int mclBnFp_setHashOf(ref Fp x, [In]byte[] buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnFp_setHashOf(ref Fp x, [In] byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern int mclBnFp_getStr([Out] StringBuilder buf, long maxBufSize, in Fp x, int ioMode);
 
         [DllImport(dllName)] public static extern void mclBnFp_neg(ref Fp y, in Fp x);
@@ -64,7 +64,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnG1_isValid(in G1 x);
         [DllImport(dllName)] public static extern int mclBnG1_isEqual(in G1 x, in G1 y);
         [DllImport(dllName)] public static extern int mclBnG1_isZero(in G1 x);
-        [DllImport(dllName)] public static extern int mclBnG1_hashAndMapTo(ref G1 x, [In]byte[] buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnG1_hashAndMapTo(ref G1 x, [In] byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern long mclBnG1_getStr([Out] StringBuilder buf, long maxBufSize, in G1 x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnG1_neg(ref G1 y, in G1 x);
         [DllImport(dllName)] public static extern void mclBnG1_dbl(ref G1 y, in G1 x);
@@ -79,7 +79,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern int mclBnG2_isValid(in G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_isEqual(in G2 x, in G2 y);
         [DllImport(dllName)] public static extern int mclBnG2_isZero(in G2 x);
-        [DllImport(dllName)] public static extern int mclBnG2_hashAndMapTo(ref G2 x, [In]byte[] buf, long bufSize);
+        [DllImport(dllName)] public static extern int mclBnG2_hashAndMapTo(ref G2 x, [In] byte[] buf, long bufSize);
         [DllImport(dllName)] public static extern long mclBnG2_getStr([Out] StringBuilder buf, long maxBufSize, in G2 x, int ioMode);
         [DllImport(dllName)] public static extern void mclBnG2_neg(ref G2 y, in G2 x);
         [DllImport(dllName)] public static extern void mclBnG2_dbl(ref G2 y, in G2 x);
@@ -952,7 +952,7 @@ namespace mcl {
             }
             public byte[] Serialize()
             {
-                byte[] buf = new byte[mclBn_getFpByteSize()*12];
+                byte[] buf = new byte[mclBn_getFpByteSize() * 12];
                 ulong n = mclBnGT_serialize(buf, (ulong)buf.Length, this);
                 if (n != (ulong)buf.Length) {
                     throw new ArithmeticException("mclBnGT_serialize");
