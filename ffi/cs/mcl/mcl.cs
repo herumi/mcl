@@ -116,10 +116,12 @@ namespace mcl {
         [DllImport(dllName)] public static extern ulong mclBnFr_serialize([Out] byte[] buf, ulong maxBufSize, in Fr x);
         [DllImport(dllName)] public static extern ulong mclBnG1_serialize([Out] byte[] buf, ulong maxBufSize, in G1 x);
         [DllImport(dllName)] public static extern ulong mclBnG2_serialize([Out] byte[] buf, ulong maxBufSize, in G2 x);
+        [DllImport(dllName)] public static extern ulong mclBnGT_serialize([Out] byte[] buf, ulong maxBufSize, in GT x);
         [DllImport(dllName)] public static extern ulong mclBnFr_deserialize(ref Fr x, [In] byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnFp_deserialize(ref Fp x, [In] byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnG1_deserialize(ref G1 x, [In] byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnG2_deserialize(ref G2 x, [In] byte[] buf, ulong bufSize);
+        [DllImport(dllName)] public static extern ulong mclBnGT_deserialize(ref GT x, [In] byte[] buf, ulong bufSize);
 
         [DllImport(dllName)] public static extern int mclBn_FrEvaluatePolynomial(ref Fr z, [In] Fr[] cVec, ulong cSize, in Fr x);
         [DllImport(dllName)] public static extern int mclBn_G1EvaluatePolynomial(ref G1 z, [In] G1[] cVec, ulong cSize, in Fr x);
@@ -947,6 +949,22 @@ namespace mcl {
                     throw new InvalidOperationException("mclBnGT_getStr:");
                 }
                 return sb.ToString();
+            }
+            public byte[] Serialize()
+            {
+                byte[] buf = new byte[mclBn_getFpByteSize()*12];
+                ulong n = mclBnGT_serialize(buf, (ulong)buf.Length, this);
+                if (n != (ulong)buf.Length) {
+                    throw new ArithmeticException("mclBnGT_serialize");
+                }
+                return buf;
+            }
+            public void Deserialize(byte[] buf)
+            {
+                ulong n = mclBnGT_deserialize(ref this, buf, (ulong)buf.Length);
+                if (n == 0) {
+                    throw new ArithmeticException("mclBnGT_deserialize");
+                }
             }
             public void Neg(in GT x)
             {
