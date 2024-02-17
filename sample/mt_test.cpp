@@ -14,34 +14,37 @@ int main(int argc, char *argv[])
 {
 	cybozu::Option opt;
 	size_t n;
+	int bit;
 	size_t cpuN;
+	bool g1only;
+	int C;
 	opt.appendOpt(&n, 100, "n");
 	opt.appendOpt(&cpuN, 0, "cpu");
+	opt.appendOpt(&C, 50, "c");
+	opt.appendOpt(&bit, 0, "b");
+	opt.appendBoolOpt(&g1only, "g1");
 	opt.appendHelp("h");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
 	}
-	printf("n=%zd cpuN=%zd\n", n, cpuN);
-	int C = 10;
-	if (n >= 1000) {
-		C = 1;
-	}
+	if (bit) n = 1u << bit;
+	printf("n=%zd cpuN=%zd C=%d\n", n, cpuN, C);
 
 	initPairing(mcl::BLS12_381);
 	cybozu::XorShift rg;
 	std::vector<G1> Pvec(n);
 	std::vector<G2> Qvec(n);
 	std::vector<Fr> xVec(n);
-	char c = '0';
-	for (size_t i = 0; i < n; i++) {
-		hashAndMapToG1(Pvec[i], &c, 1);
-		hashAndMapToG2(Qvec[i], &c, 1);
-		xVec[i].setRand(rg);
-		c++;
+	hashAndMapToG1(Pvec[0], "abc", 3);
+	hashAndMapToG2(Qvec[0], "abc", 3);
+	for (size_t i = 1; i < n; i++) {
+		G1::add(Pvec[i], Pvec[i-1], Pvec[0]);
+		G2::add(Qvec[i], Qvec[i-1], Qvec[0]);
 	}
 	G1 P1, P2;
 	CYBOZU_BENCH_C("single", C, G1::mulVec, P1, Pvec.data(), xVec.data(), n);
+	if (g1only) return 0;
 	CYBOZU_BENCH_C("multi ", C, G1::mulVecMT, P2, Pvec.data(), xVec.data(), n, cpuN);
 	printf("G1 ret %s\n", P1 == P2 ? "ok" : "ng");
 	G2 Q1, Q2;

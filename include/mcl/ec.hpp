@@ -226,6 +226,29 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 
 } // mcl::ec::local
 
+// [X:Y:Z] as Proj = (X/Z, Y/Z) as Affine = [XZ:YZ^2:Z] as Jacobi
+template<class E>
+void ProjToJacobi(E& Q, const E& P)
+{
+	typedef typename E::Fp F;
+	F::mul(Q.x, P.x, P.z);
+	F::mul(Q.y, P.y, P.z);
+	Q.y *= P.z;
+	Q.z = P.z;
+}
+
+// [X:Y:Z] as Jacobi = (X/Z^2, Y/Z^3) as Affine = [XZ:Y:Z^3] as Proj
+template<class E>
+void JacobiToProj(E& Q, const E& P)
+{
+	typedef typename E::Fp F;
+	F::mul(Q.x, P.x, P.z);
+	Q.y = P.y;
+	F t;
+	F::sqr(t, P.z);
+	F::mul(Q.z, P.z, t);
+}
+
 template<class E>
 void normalizeJacobi(E& P)
 {
@@ -485,14 +508,20 @@ void addJacobi(E& R, const E& P, const E& Q)
 	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
 template<class E>
+void clearCTProj(E& P)
+{
+	P.x.clear();
+	P.y = 1;
+	P.z.clear();
+}
+
+// 14M
+template<class E>
 void addCTProj(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
 	assert(E::a_ == 0);
-	F b3;
-	F::add(b3, E::b_, E::b_);
-	b3 += E::b_;
-	F t0, t1, t2, t3, t4, x3, y3, z3;
+	F t0, t1, t2, t3, t4, x3, y3;
 	F::mul(t0, P.x, Q.x);
 	F::mul(t1, P.y, Q.y);
 	F::mul(t2, P.z, Q.z);
@@ -513,19 +542,45 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::sub(y3, x3, y3);
 	F::add(x3, t0, t0);
 	F::add(t0, t0, x3);
-	t2 *= b3;
-	F::add(z3, t1, t2);
+	F::mul(t2, t2, E::b3_);
+	F::add(R.z, t1, t2);
 	F::sub(t1, t1, t2);
-	y3 *= b3;
+	F::mul(y3, y3, E::b3_);
 	F::mul(x3, y3, t4);
 	F::mul(t2, t3, t1);
 	F::sub(R.x, t2, x3);
 	F::mul(y3, y3, t0);
-	F::mul(t1, t1, z3);
+	F::mul(t1, t1, R.z);
 	F::add(R.y, y3, t1);
 	F::mul(t0, t0, t3);
-	F::mul(z3, z3, t4);
-	F::add(R.z, z3, t0);
+	F::mul(R.z, R.z, t4);
+	F::add(R.z, R.z, t0);
+}
+// 7M+2S
+template<class E>
+void dblCTProj(E& R, const E& P)
+{
+	typedef typename E::Fp F;
+	assert(E::a_ == 0);
+	F t0, t1, t2, x3, y3;
+	F::sqr(t0, P.y);
+	F::mul(t1, P.y, P.z);
+	F::sqr(t2, P.z);
+	F::add(R.z, t0, t0);
+	F::add(R.z, R.z, R.z);
+	F::add(R.z, R.z, R.z);
+	F::mul(t2, t2, E::b3_);
+	F::mul(x3, t2, P.z);
+	F::add(y3, t0, t2);
+	F::mul(R.z, R.z, t1);
+	F::add(t1, t2, t2);
+	F::add(t2, t2, t1);
+	F::mul(t1, P.x, P.y);
+	F::sub(t0, t0, t2);
+	F::mul(R.y, y3, t0);
+	F::add(R.y, R.y, x3);
+	F::mul(R.x, t0, t1);
+	F::add(R.x, R.x, R.x);
 }
 
 template<class E>
@@ -1214,6 +1269,7 @@ public:
 	static int mode_;
 	static Fp a_;
 	static Fp b_;
+	static Fp b3_;
 	static int specialA_;
 	static int ioMode_;
 	/*
@@ -1271,6 +1327,7 @@ public:
 	{
 		a_ = a;
 		b_ = b;
+		b3_ = b * 3;
 		if (a_.isZero()) {
 			specialA_ = ec::Zero;
 		} else if (a_ == -3) {
@@ -2077,6 +2134,7 @@ public:
 
 template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
+template<class Fp> Fp EcT<Fp>::b3_;
 template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;

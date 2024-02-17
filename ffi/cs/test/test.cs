@@ -77,7 +77,7 @@ namespace mcl {
             Console.WriteLine("exception test");
             try {
                 x.SetStr("1234567891234x", 10);
-                Console.WriteLine("x = {0}", x);
+                Console.WriteLine("ERR ; not here");
             } catch (Exception e) {
                 Console.WriteLine("OK ; expected exception: {0}", e);
             }
@@ -123,7 +123,7 @@ namespace mcl {
             Console.WriteLine("exception test");
             try {
                 x.SetStr("1234567891234x", 10);
-                Console.WriteLine("x = {0}", x);
+                Console.WriteLine("ERR ; not here");
             } catch (Exception e) {
                 Console.WriteLine("OK ; expected exception: {0}", e);
             }
@@ -258,6 +258,12 @@ namespace mcl {
             e2.Pairing(P, bQ);
             e3.Pow(e1, b);
             assert("e2.Equals(e3)", e2.Equals(e3));
+            {
+                byte[] buf = e1.Serialize();
+                e2.Clear();
+                e2.Deserialize(buf);
+                assert("e1 == e2", e1.Equals(e2));
+            }
         }
         static void TestETH_mapToG1()
         {

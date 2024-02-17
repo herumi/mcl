@@ -22,17 +22,6 @@
 
 namespace mcl {
 
-// return the max size in x[0..n)
-inline int getRealSize(const Unit *x, int n)
-{
-	assert(n > 0);
-	while (n > 0) {
-		if (x[n - 1]) return n;
-		n--;
-	}
-	return 1;
-}
-
 /**
 	signed integer with variable length
 */
