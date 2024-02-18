@@ -91,6 +91,7 @@ namespace mcl {
 
         [DllImport(dllName)] public static extern void mclBnGT_clear(ref GT x);
         [DllImport(dllName)] public static extern int mclBnGT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
+        [DllImport(dllName)] public static extern int mclBnGT_isValid(in GT x);
         [DllImport(dllName)] public static extern int mclBnGT_isEqual(in GT x, in GT y);
         [DllImport(dllName)] public static extern int mclBnGT_isZero(in GT x);
         [DllImport(dllName)] public static extern int mclBnGT_isOne(in GT x);
@@ -928,6 +929,10 @@ namespace mcl {
                 if (mclBnGT_setStr(ref this, s, s.Length, ioMode) != 0) {
                     throw new ArgumentException("mclBnGT_setStr:" + s);
                 }
+            }
+            public bool IsValid()
+            {
+                return mclBnGT_isValid(this) == 1;
             }
             public bool Equals(in GT rhs)
             {
