@@ -73,6 +73,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG1_sub(ref G1 z, in G1 x, in G1 y);
         [DllImport(dllName)] public static extern void mclBnG1_mul(ref G1 z, in G1 x, in Fr y);
         [DllImport(dllName)] public static extern void mclBnG1_mulVec(ref G1 z, [In] G1[] x, [In] Fr[] y, long n);
+        [DllImport(dllName)] public static extern int mclBnG1_setDst([In][MarshalAs(UnmanagedType.LPStr)] string dst, long dstSize);
 
         [DllImport(dllName)] public static extern void mclBnG2_clear(ref G2 x);
         [DllImport(dllName)] public static extern int mclBnG2_setStr(ref G2 x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -88,6 +89,7 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBnG2_sub(ref G2 z, in G2 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBnG2_mul(ref G2 z, in G2 x, in Fr y);
         [DllImport(dllName)] public static extern void mclBnG2_mulVec(ref G2 z, [In] G2[] x, [In] Fr[] y, long n);
+        [DllImport(dllName)] public static extern int mclBnG2_setDst([In][MarshalAs(UnmanagedType.LPStr)] string dst, long dstSize);
 
         [DllImport(dllName)] public static extern void mclBnGT_clear(ref GT x);
         [DllImport(dllName)] public static extern int mclBnGT_setStr(ref GT x, [In][MarshalAs(UnmanagedType.LPStr)] string buf, long bufSize, int ioMode);
@@ -144,6 +146,18 @@ namespace mcl {
         {
             mclBn_setETHserialization(1);
             mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
+        }
+        public static void G1setDst(string s)
+        {
+            if (mclBnG1_setDst(s, s.Length) != 0) {
+                throw new ArgumentException("mclBnG1_setDst");
+            }
+        }
+        public static void G2setDst(string s)
+        {
+            if (mclBnG2_setDst(s, s.Length) != 0) {
+                throw new ArgumentException("mclBnG2_setDst");
+            }
         }
         public static void Add(ref Fr z, in Fr x, in Fr y)
         {
