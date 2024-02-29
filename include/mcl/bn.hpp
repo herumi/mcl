@@ -654,15 +654,15 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		}
 		return false;
 	}
-	static void initForBN(const mpz_class& z, bool isBLS12 = false, int curveType = -1)
+	static void init(const mpz_class& z, bool isBLS12, int curveType)
 	{
+		optimizedSplit = 0;
 		if (usePrecomputedTable(curveType)) return;
 		bool b = Fp::squareRoot(rw, -3);
 		assert(b);
 		(void)b;
 		rw = -(rw + 1) / 2;
 		rBitSize = Fr::getOp().bitSize;
-		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);// a little better size
 		if (isBLS12) {
 			/*
 				BLS12
@@ -670,10 +670,15 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 				(-z^2+1) + L = 0
 				1 + z^2 L = 0
 			*/
-			B[0][0] = -z * z + 1;
-			B[0][1] = 1;
-			B[1][0] = 1;
-			B[1][1] = z * z;
+			// only B[0][0] and v0 are used
+			const mpz_class& r = Fr::getOp().mp;
+			B[0][0] = z * z - 1; // L
+			v0 = (B[0][0] << rBitSize) / r;
+			if (curveType == BLS12_381.curveType && MCL_SIZEOF_UNIT == 8) {
+				optimizedSplit = optimizedSplitForBLS12_381;
+			} else {
+				optimizedSplit = splitForBLS12;
+			}
 		} else {
 			/*
 				BN
@@ -685,11 +690,44 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 			B[0][1] = -2 * z - 1;
 			B[1][0] = -2 * z - 1;
 			B[1][1] = -6 * z * z - 4 * z - 1;
+			// [v0 v1] = [r 0] * B^(-1)
+			const mpz_class& r = Fr::getOp().mp;
+			v0 = ((-B[1][1]) << rBitSize) / r;
+			v1 = ((B[1][0]) << rBitSize) / r;
 		}
-		// [v0 v1] = [r 0] * B^(-1)
-		const mpz_class& r = Fr::getOp().mp;
-		v0 = ((-B[1][1]) << rBitSize) / r;
-		v1 = ((B[1][0]) << rBitSize) / r;
+	}
+	// x = (a + b L) mod r
+	static inline void splitForBLS12(mpz_class u[2], const mpz_class& x)
+	{
+		mpz_class& a = u[0];
+		mpz_class& b = u[1];
+		mpz_class t;
+		b = (x * v0) >> rBitSize;
+		a = x - b * B[0][0];
+	}
+	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
+	{
+		/*
+			z = -0xd201000000010000
+			L = z^2-1 = 0xac45a4010001a40200000000ffffffff
+			r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+			s=255
+			v = 0xbe35f678f00fd56eb1fb72917b67f718
+		*/
+		mpz_class& a = u[0];
+		mpz_class& b = u[1];
+		static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
+		static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
+		static const size_t n = 128 / mcl::UnitBitSize;
+		Unit t[n*3];
+		mcl::bint::mulNM(t, x.getUnit(), n*2, (const Unit*)vv, n);
+		mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
+		bool dummy;
+		b.setArray(&dummy, t, n);
+		mcl::bint::mulT<n>(t, t, (const Unit*)Lv);
+		mcl::bint::subT<n>(t, x.getUnit(), t);
+		a.setArray(&dummy, t, n);
+		(void)dummy;
 	}
 };
 
@@ -942,7 +980,7 @@ struct Param {
 		} else {
 			mapTo.init(2 * p - r, z, cp.curveType);
 		}
-		GLV1::initForBN(z, isBLS12, cp.curveType);
+		GLV1::init(z, isBLS12, cp.curveType);
 		GLV2T<Fr>::init(z, isBLS12);
 		basePoint.clear();
 		G1::setOrder(r);

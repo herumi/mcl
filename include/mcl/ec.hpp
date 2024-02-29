@@ -2154,6 +2154,7 @@ struct GLV1T {
 	static size_t rBitSize;
 	static mpz_class v0, v1;
 	static mpz_class B[2][2];
+	static void (*optimizedSplit)(mpz_class u[2], const mpz_class& x);
 public:
 #ifndef CYBOZU_DONT_USE_STRING
 	static void dump(const mpz_class& x)
@@ -2184,6 +2185,10 @@ public:
 	static void split(mpz_class u[2], mpz_class& x)
 	{
 		Fr::getOp().modp.modp(x, x);
+		if (optimizedSplit) {
+			optimizedSplit(u, x);
+			return;
+		}
 		mpz_class& a = u[0];
 		mpz_class& b = u[1];
 		mpz_class t;
@@ -2193,7 +2198,7 @@ public:
 		b = - (t * B[0][1] + b * B[1][1]);
 	}
 	/*
-		initForBN() is defined in bn.hpp
+		init() is defined in bn.hpp
 	*/
 	static void initForSecp256k1()
 	{
@@ -2213,6 +2218,7 @@ public:
 		const mpz_class& r = Fr::getOp().mp;
 		v0 = ((B[1][1]) << rBitSize) / r;
 		v1 = ((-B[0][1]) << rBitSize) / r;
+		optimizedSplit = 0;
 	}
 };
 
@@ -2222,6 +2228,7 @@ template<class Ec, class Fr> size_t GLV1T<Ec, Fr>::rBitSize;
 template<class Ec, class Fr> mpz_class GLV1T<Ec, Fr>::v0;
 template<class Ec, class Fr> mpz_class GLV1T<Ec, Fr>::v1;
 template<class Ec, class Fr> mpz_class GLV1T<Ec, Fr>::B[2][2];
+template<class Ec, class Fr> void (*GLV1T<Ec, Fr>::optimizedSplit)(mpz_class u[2], const mpz_class& x);
 
 /*
 	Ec : elliptic curve
