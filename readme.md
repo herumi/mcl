@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- a little performance improvement of G1::mulVec of BLS12-381
 - improve performance of Fr::inv on M1 mac
 - add mcl::bn::isValidGT(x) and mclBnGT_isValid(x) to check x in GT for x in Fp12.
 - support BN\_P256 (hash-to-curve is not yet standard way.)
