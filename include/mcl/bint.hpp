@@ -460,12 +460,12 @@ MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
 MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize);
 
 // ppLow = Unit(p)
-inline Unit getMontgomeryCoeff(Unit pLow)
+inline Unit getMontgomeryCoeff(Unit pLow, size_t bitSize = sizeof(Unit) * 8)
 {
 	Unit pp = 0;
 	Unit t = 0;
 	Unit x = 1;
-	for (size_t i = 0; i < sizeof(Unit) * 8; i++) {
+	for (size_t i = 0; i < bitSize; i++) {
 		if ((t & 1) == 0) {
 			t += pLow;
 			pp += x;
