@@ -663,7 +663,6 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		(void)b;
 		rw = -(rw + 1) / 2;
 		rBitSize = Fr::getOp().bitSize;
-//		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);// a little better size
 		if (isBLS12) {
 			/*
 				BLS12
@@ -671,10 +670,15 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 				(-z^2+1) + L = 0
 				1 + z^2 L = 0
 			*/
-			B[0][0] = -z * z + 1;
-			B[0][1] = 1;
-			B[1][0] = 1;
-			B[1][1] = z * z;
+			// only B[0][0] and v0 are used
+			const mpz_class& r = Fr::getOp().mp;
+			B[0][0] = z * z - 1; // L
+			v0 = (B[0][0] << rBitSize) / r;
+			if (curveType == BLS12_381.curveType && MCL_SIZEOF_UNIT == 8) {
+				optimizedSplit = optimizedSplitForBLS12_381;
+			} else {
+				optimizedSplit = splitForBLS12;
+			}
 		} else {
 			/*
 				BN
@@ -686,18 +690,21 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 			B[0][1] = -2 * z - 1;
 			B[1][0] = -2 * z - 1;
 			B[1][1] = -6 * z * z - 4 * z - 1;
-		}
-		// [v0 v1] = [r 0] * B^(-1)
-		const mpz_class& r = Fr::getOp().mp;
-		v0 = ((-B[1][1]) << rBitSize) / r;
-		v1 = ((B[1][0]) << rBitSize) / r;
-		if (curveType == BLS12_381.curveType) {
-			optimizedSplit = optimizedSplitForBLS12_381;
-			v0 = -v0;
-			B[0][0] = -B[0][0];
+			// [v0 v1] = [r 0] * B^(-1)
+			const mpz_class& r = Fr::getOp().mp;
+			v0 = ((-B[1][1]) << rBitSize) / r;
+			v1 = ((B[1][0]) << rBitSize) / r;
 		}
 	}
 	// x = (a + b L) mod r
+	static inline void splitForBLS12(mpz_class u[2], const mpz_class& x)
+	{
+		mpz_class& a = u[0];
+		mpz_class& b = u[1];
+		mpz_class t;
+		b = (x * v0) >> rBitSize;
+		a = x - b * B[0][0];
+	}
 	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
 	{
 		/*
@@ -709,7 +716,6 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		*/
 		mpz_class& a = u[0];
 		mpz_class& b = u[1];
-#if MCL_SIZEOF_UNIT == 8
 		static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
 		static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
 		static const size_t n = 128 / mcl::UnitBitSize;
@@ -722,11 +728,6 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		mcl::bint::subT<n>(t, x.getUnit(), t);
 		a.setArray(&dummy, t, n);
 		(void)dummy;
-#else
-		mpz_class t;
-		b = (x * v0) >> 255;
-		a = x - b * B[0][0];
-#endif
 	}
 };
 
