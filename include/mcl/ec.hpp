@@ -570,7 +570,7 @@ void dblCTProj(E& R, const E& P)
 	F::add(R.z, R.z, R.z);
 	F::add(R.z, R.z, R.z);
 	F::mul(t2, t2, E::b3_);
-	F::mul(x3, t2, P.z);
+	F::mul(x3, t2, R.z);
 	F::add(y3, t0, t2);
 	F::mul(R.z, R.z, t1);
 	F::add(t1, t2, t2);
