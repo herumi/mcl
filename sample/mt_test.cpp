@@ -9,6 +9,16 @@
 
 using namespace mcl::bls12;
 
+void mulVec_naive(G1& P, const G1 *x, const Fr *y, size_t n)
+{
+	G1::mul(P, x[0], y[0]);
+	for (size_t i = 1; i < n; i++) {
+		G1 T;
+		G1::mul(T, x[i], y[i]);
+		P += T;
+	}
+}
+
 int main(int argc, char *argv[])
 	try
 {
@@ -28,7 +38,7 @@ int main(int argc, char *argv[])
 		opt.usage();
 		return 1;
 	}
-	if (bit) n = 1u << bit;
+	if (bit) n = size_t(1) << bit;
 	printf("n=%zd cpuN=%zd C=%d\n", n, cpuN, C);
 
 	initPairing(mcl::BLS12_381);
@@ -42,19 +52,27 @@ int main(int argc, char *argv[])
 		G1::add(Pvec[i], Pvec[i-1], Pvec[0]);
 		G2::add(Qvec[i], Qvec[i-1], Qvec[0]);
 	}
+	for (size_t i = 0; i < n; i++) {
+		xVec[i].setByCSPRNG(rg);
+	}
 	G1 P1, P2;
-	CYBOZU_BENCH_C("single", C, G1::mulVec, P1, Pvec.data(), xVec.data(), n);
+	CYBOZU_BENCH_C("G1 single", C, G1::mulVec, P1, Pvec.data(), xVec.data(), n);
+	if (n < 1024) {
+		CYBOZU_BENCH_C("naive", C, mulVec_naive, P2, Pvec.data(), xVec.data(), n);
+		if (P1 != P2) puts("G1::mulVec err");
+	}
 	if (g1only) return 0;
-	CYBOZU_BENCH_C("multi ", C, G1::mulVecMT, P2, Pvec.data(), xVec.data(), n, cpuN);
-	printf("G1 ret %s\n", P1 == P2 ? "ok" : "ng");
+	P2.clear();
+	CYBOZU_BENCH_C("G1 multi ", C, G1::mulVecMT, P2, Pvec.data(), xVec.data(), n, cpuN);
+	if (P1 != P2) puts("G1::mulVecMT err");
 	G2 Q1, Q2;
-	CYBOZU_BENCH_C("single", C, G2::mulVec, Q1, Qvec.data(), xVec.data(), n);
-	CYBOZU_BENCH_C("multi ", C, G2::mulVecMT, Q2, Qvec.data(), xVec.data(), n, cpuN);
-	printf("G2 ret %s\n", Q1 == Q2 ? "ok" : "ng");
+	CYBOZU_BENCH_C("G2 single", C, G2::mulVec, Q1, Qvec.data(), xVec.data(), n);
+	CYBOZU_BENCH_C("G2 multi ", C, G2::mulVecMT, Q2, Qvec.data(), xVec.data(), n, cpuN);
+	if (Q1 != Q2) puts("G2::mulVecMT err");
 	Fp12 e1, e2;
-	CYBOZU_BENCH_C("single", C, millerLoopVec, e1, Pvec.data(), Qvec.data(), n);
-	CYBOZU_BENCH_C("multi ", C, millerLoopVecMT, e2, Pvec.data(), Qvec.data(), n, cpuN);
-	printf("GT ret %s\n", e1 == e2 ? "ok" : "ng");
+	CYBOZU_BENCH_C("ML single", 10, millerLoopVec, e1, Pvec.data(), Qvec.data(), n);
+	CYBOZU_BENCH_C("ML multi ", 10, millerLoopVecMT, e2, Pvec.data(), Qvec.data(), n, cpuN);
+	if (e1 != e2) puts("millerLoopVec err");
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	return 1;
