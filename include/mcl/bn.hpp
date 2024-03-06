@@ -720,13 +720,13 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
 		static const size_t n = 128 / mcl::UnitBitSize;
 		Unit t[n*3];
-		mcl::bint::mulNM(t, x.getUnit(), n*2, (const Unit*)vv, n);
+		mcl::bint::mulNM(t, gmp::getUnit(x), n*2, (const Unit*)vv, n);
 		mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
 		bool dummy;
-		b.setArray(&dummy, t, n);
+		gmp::setArray(&dummy, b, t, n);
 		mcl::bint::mulT<n>(t, t, (const Unit*)Lv);
-		mcl::bint::subT<n>(t, x.getUnit(), t);
-		a.setArray(&dummy, t, n);
+		mcl::bint::subT<n>(t, gmp::getUnit(x), t);
+		gmp::setArray(&dummy, a, t, n);
 		(void)dummy;
 	}
 };
