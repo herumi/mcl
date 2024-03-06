@@ -968,16 +968,16 @@ main:
 				tbl[v - 1] += xVec[i];
 			}
 		}
-		G sum;
-		sum.clear();
-		win[w].clear();
-		for (size_t i = 0; i < tblN; i++) {
+		G sum = tbl[tblN - 1];
+		win[w] = sum;
+		for (size_t i = 1; i < tblN; i++) {
 			sum += tbl[tblN - 1 - i];
 			win[w] += sum;
 		}
 	}
-	z.clear();
-	for (size_t w = 0; w < winN; w++) {
+	z.clear(); // remove a wrong gcc warning
+	z = win[winN - 1];
+	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(z, z);
 		}
