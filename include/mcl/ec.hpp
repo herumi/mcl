@@ -233,7 +233,7 @@ void ProjToJacobi(E& Q, const E& P)
 	typedef typename E::Fp F;
 	F::mul(Q.x, P.x, P.z);
 	F::mul(Q.y, P.y, P.z);
-	Q.y *= P.z;
+	F::mul(Q.y, Q.y, P.z);
 	Q.z = P.z;
 }
 
