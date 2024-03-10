@@ -67,7 +67,7 @@ bool get_a_flag(const F& x)
 	return x.isNegative();
 }
 
-// Im(x) is negative <=> Im(x)  < half(:=(p+1)/2) <=> a = 1
+// Im(x) is negative <=> Im(x) < half(:=(p+1)/2) <=> a = 1
 
 template<class F>
 bool get_a_flag(const mcl::Fp2T<F>& x)
@@ -197,7 +197,7 @@ void _normalize(E& Q, const E& P, typename E::Fp& inv)
 }
 
 /*
-	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	Q[i] = normalize(P[i]) for i = 0, ..., n-1
 	AsArray : Pz[i] to access like as F[i] in invVecT
 	N : alloc size
 */
@@ -259,7 +259,7 @@ void normalizeJacobi(E& P)
 }
 
 /*
-	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	Q[i] = normalize(P[i]) for i = 0, ..., n-1
 	AsArray : Pz[i] to access like as F[i] in invVecT
 	N : alloc size
 */
@@ -893,7 +893,7 @@ inline size_t ilog2(size_t n)
 	return cybozu::bsr(n) + 1;
 }
 
-// cal approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
+// calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
 inline size_t argminForMulVec(size_t n)
 {
 	if (n <= 16) return 2;
