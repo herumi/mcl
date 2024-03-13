@@ -22,5 +22,6 @@ $(OBJ_DIR)/%.o: %.cpp
 
 $(OBJ_DIR)/bint.o: src/bint$(BIT).ll
 	$(CXX) -c $< -o $@ $(CFLAGS)
-                                                                                                                                                                                                                                                              $(OBJ_DIR)/base.o: src/base$(BIT).ll
+
+$(OBJ_DIR)/base.o: src/base$(BIT).ll
 	$(CXX) -c $< -o $@ $(CFLAGS)
