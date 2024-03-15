@@ -19,7 +19,11 @@
 #endif
 
 #include "xbyak/xbyak_util.h"
-Xbyak::util::Cpu g_cpu;
+static const Xbyak::util::Cpu& getCpu()
+{
+	static Xbyak::util::Cpu cpu;
+	return cpu;
+}
 
 #ifdef MCL_STATIC_CODE
 #include "fp_static_code.hpp"
@@ -416,7 +420,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return true;
 #endif
 	if (op.fg == 0) op.fg = Op::createFpGenerator();
-	op.fg->init(op, g_cpu);
+	op.fg->init(op, getCpu());
 #ifdef MCL_DUMP_JIT
 	return true;
 #endif
@@ -469,7 +473,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	{
 		// static jit code uses avx, mulx, adox, adcx
 		using namespace Xbyak::util;
-		if (!(g_cpu.has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX))) {
+		if (!(getCpu().has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX))) {
 			mode = FP_AUTO;
 		}
 	}
