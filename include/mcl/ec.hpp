@@ -952,7 +952,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 main:
 #endif
 	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
-	const size_t winN = maxBitSize / c + 1;
+	const size_t winN = (maxBitSize + c-1) / c;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 
 	// about 10% faster
