@@ -28,12 +28,12 @@ int main(int argc, char *argv[])
 	size_t cpuN;
 	bool g1only;
 	int C;
-	opt.appendOpt(&n, 100, "n");
-	opt.appendOpt(&cpuN, 0, "cpu");
-	opt.appendOpt(&C, 50, "c");
-	opt.appendOpt(&bit, 0, "b");
-	opt.appendBoolOpt(&g1only, "g1");
-	opt.appendHelp("h");
+	opt.appendOpt(&n, 100, "n", ": array size");
+	opt.appendOpt(&bit, 0, "b", ": set n to 1<<b");
+	opt.appendOpt(&cpuN, 0, "cpu", ": # of cpu for OpenMP");
+	opt.appendOpt(&C, 50, "c", ": count of loop");
+	opt.appendBoolOpt(&g1only, "g1", ": benchmark for G1 only");
+	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
