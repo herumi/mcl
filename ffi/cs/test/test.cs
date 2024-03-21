@@ -471,8 +471,8 @@ namespace mcl {
             GT e1 = new GT();
             GT e2 = new GT();
             G2 g2 = new G2();
+            g2.HashAndMapTo(msg);
             if (false) {
-                g2.HashAndMapTo(msg);
                 e1.Pairing(pub, g2);
                 e2.Pairing(gen, sig);
                 return e1.Equals(e2);
@@ -518,6 +518,8 @@ namespace mcl {
             byte[] md = SHA256.Create().ComputeHash(roundByte);
             PutByte("md", md);
             assert("verify", Verify(gen, pub, sig, md));
+            md[0]++;
+            assert("not verify", !Verify(gen, pub, sig, md));
         }
     }
 }
