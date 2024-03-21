@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace mcl {
     using static MCL;
@@ -23,6 +25,8 @@ namespace mcl {
                 Console.WriteLine("BLS12_381 eth");
                 ETHmode();
                 TestETH();
+                TestDFINITY();
+                TestDRAND();
                 if (err == 0) {
                     Console.WriteLine("all tests succeed");
                 } else {
@@ -461,6 +465,59 @@ namespace mcl {
             sig.Deserialize(FromHexStr(sigStr));
             assert("verify", Verify(gen, pub, sig, System.Text.Encoding.ASCII.GetBytes("hello")));
             assert("verify", !Verify(gen, pub, sig, System.Text.Encoding.ASCII.GetBytes("hallo")));
+        }
+        public static Boolean Verify(G1 gen, G1 pub, G2 sig, byte[] msg)
+        {
+            GT e1 = new GT();
+            GT e2 = new GT();
+            G2 g2 = new G2();
+            if (false) {
+                g2.HashAndMapTo(msg);
+                e1.Pairing(pub, g2);
+                e2.Pairing(gen, sig);
+                return e1.Equals(e2);
+            } else {
+                e1.MillerLoop(pub, g2);
+                e2.MillerLoop(gen, sig);
+                e1.Inv(e1);
+                e1.Mul(e1, e2);
+                e1.FinalExp(e1);
+                return e1.IsOne();
+            }
+        }
+        public static void PutByte(String msg, byte[] b)
+        {
+            Console.WriteLine("{0} = {1}", msg, BitConverter.ToString(b).Replace("-", " "));
+        }
+        public static void TestDRAND()
+        {
+            Console.WriteLine("TestDRAND");
+            // it is alread called in Main
+            // Init(BLS12_381);
+            // ETHmode();
+            // https://drand.love/docs/specification/#cryptographic-specification
+            G2setDst("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_");
+            G2 gen = new G2();
+            // https://docs.rs/ark-bls12-381/latest/ark_bls12_381/g2/index.html
+            gen.SetStr("1 0x24aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8 0x13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e 0x0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801 0x0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be", 16);
+
+            G2 pub = new G2();
+            G1 sig = new G1();
+            ulong round = 5928395;
+            // https://api.drand.sh/52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971/info
+            String pubStr = "83cf0f2896adee7eb8b5f01fcad3912212c437e0073e911fb90022d3e760183c8c4b450b6a0a6c3ac6a5776a2d1064510d1fec758c921cc22b0e17e63aaf4bcb5ed66304de9cf809bd274ca73bab4af5a6e9c76a4bc09e76eae8991ef5ece45a";
+            // https://api.drand.sh/52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971/public/5928395
+            String sigStr = "a5d07c0071b4e386b3ae09206522253c68fefe8490ad59ecc44a7dd0d0745be91da5779e2247a82403fbc0cb9a34cb61";
+
+            pub.Deserialize(FromHexStr(pubStr));
+            sig.Deserialize(FromHexStr(sigStr));
+            // convert round to 8 bytes big endian
+            byte[] roundByte = BitConverter.GetBytes(round).Reverse().ToArray();
+            PutByte("round", roundByte);
+
+            byte[] md = SHA256.Create().ComputeHash(roundByte);
+            PutByte("md", md);
+            assert("verify", Verify(gen, pub, sig, md));
         }
     }
 }
