@@ -432,17 +432,29 @@ namespace mcl {
             GT e2 = new GT();
             G1 g1 = new G1();
             g1.HashAndMapTo(msg);
-            /*
-                        e1.Pairing(g1, pub);
-                        e2.Pairing(sig, gen);
-                        return e1.Equals(e2);
-            */
-            e1.MillerLoop(g1, pub);
-            e2.MillerLoop(sig, gen);
-            e1.Inv(e1);
-            e1.Mul(e1, e2);
-            e1.FinalExp(e1);
-            return e1.IsOne();
+            const int algo = 2;
+            switch (algo) {
+                case 0:
+                    e1.Pairing(g1, pub);
+                    e2.Pairing(sig, gen);
+                    return e1.Equals(e2);
+                case 1:
+                    e1.MillerLoop(g1, pub);
+                    e2.MillerLoop(sig, gen);
+                    e1.Inv(e1);
+                    e1.Mul(e1, e2);
+                    e1.FinalExp(e1);
+                    return e1.IsOne();
+                case 2: {
+                        G1[] v1 = new G1[] { sig, g1 };
+                        G2[] v2 = new G2[2];
+                        v2[0] = gen;
+                        MCL.Neg(ref v2[1], pub);
+                        mclBn_millerLoopVec(ref e1, v1, v2, 2);
+                        e1.FinalExp(e1);
+                        return e1.IsOne();
+                    }
+            }
         }
         public static void TestDFINITY()
         {
@@ -472,17 +484,29 @@ namespace mcl {
             GT e2 = new GT();
             G2 g2 = new G2();
             g2.HashAndMapTo(msg);
-            if (false) {
-                e1.Pairing(pub, g2);
-                e2.Pairing(gen, sig);
-                return e1.Equals(e2);
-            } else {
-                e1.MillerLoop(pub, g2);
-                e2.MillerLoop(gen, sig);
-                e1.Inv(e1);
-                e1.Mul(e1, e2);
-                e1.FinalExp(e1);
-                return e1.IsOne();
+            const int algo = 0;
+            switch (algo) {
+                case 0:
+                    e1.Pairing(pub, g2);
+                    e2.Pairing(gen, sig);
+                    return e1.Equals(e2);
+                case 1:
+                    e1.MillerLoop(pub, g2);
+                    e2.MillerLoop(gen, sig);
+                    e1.Inv(e1);
+                    e1.Mul(e1, e2);
+                    e1.FinalExp(e1);
+                    return e1.IsOne();
+                case 2: {
+                        G1[] v1 = new G1[2];
+                        v1[0] = gen;
+                        MCL.Neg(ref v1[0], pub);
+                        G2[] v2 = new G2[] { sig, g2 };
+                        mclBn_millerLoopVec(ref e1, v1, v2, 2);
+                        e1.FinalExp(e1);
+                        return e1.IsOne();
+                    }
+
             }
         }
         public static void PutByte(String msg, byte[] b)
