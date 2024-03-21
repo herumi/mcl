@@ -410,5 +410,57 @@ namespace mcl {
             TestSS_G1();
             TestSS_G2();
         }
+        public static byte[] FromHexStr(string s)
+        {
+            if (s.Length % 2 == 1) {
+                throw new ArgumentException("s.Length is odd." + s.Length);
+            }
+            int n = s.Length / 2;
+            var buf = new byte[n];
+            for (int i = 0; i < n; i++) {
+                buf[i] = Convert.ToByte(s.Substring(i * 2, 2), 16);
+            }
+            return buf;
+        }
+        public static Boolean Verify(G2 gen, G2 pub, G1 sig, byte[] msg)
+        {
+            GT e1 = new GT();
+            GT e2 = new GT();
+            G1 g1 = new G1();
+            g1.HashAndMapTo(msg);
+            /*
+                        e1.Pairing(g1, pub);
+                        e2.Pairing(sig, gen);
+                        return e1.Equals(e2);
+            */
+            e1.MillerLoop(g1, pub);
+            e2.MillerLoop(sig, gen);
+            e1.Inv(e1);
+            e1.Mul(e1, e2);
+            e1.FinalExp(e1);
+            return e1.IsOne();
+        }
+        public static void TestDFINITY()
+        {
+            // This sample is how to use mcl. https://github.com/herumi/bls/tree/master/ffi/cs is better.
+            Console.WriteLine("TestDFINITY");
+            // it is alread called in Main
+            // Init(BLS12_381);
+            // ETHmode();
+            G1setDst("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_");
+            G2 gen = new G2();
+            gen.SetStr("1 0x24aa2b2f08f0a91260805272dc51051c6e47ad4fa403b02b4510b647ae3d1770bac0326a805bbefd48056c8c121bdb8 0x13e02b6052719f607dacd3a088274f65596bd0d09920b61ab5da61bbdc7f5049334cf11213945d57e5ac7d055d042b7e 0x0ce5d527727d6e118cc9cdc6da2e351aadfd9baa8cbdd3a76d429a695160d12c923ac9cc3baca289e193548608b82801 0x0606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be", 16);
+
+
+            // test of https://github.com/dfinity/agent-js/blob/5214dc1fc4b9b41f023a88b1228f04d2f2536987/packages/bls-verify/src/index.test.ts#L101
+            String pubStr = "a7623a93cdb56c4d23d99c14216afaab3dfd6d4f9eb3db23d038280b6d5cb2caaee2a19dd92c9df7001dede23bf036bc0f33982dfb41e8fa9b8e96b5dc3e83d55ca4dd146c7eb2e8b6859cb5a5db815db86810b8d12cee1588b5dbf34a4dc9a5";
+            String sigStr = "b89e13a212c830586eaa9ad53946cd968718ebecc27eda849d9232673dcd4f440e8b5df39bf14a88048c15e16cbcaabe";
+            G2 pub = new G2();
+            G1 sig = new G1();
+            pub.Deserialize(FromHexStr(pubStr));
+            sig.Deserialize(FromHexStr(sigStr));
+            assert("verify", Verify(gen, pub, sig, System.Text.Encoding.ASCII.GetBytes("hello")));
+            assert("verify", !Verify(gen, pub, sig, System.Text.Encoding.ASCII.GetBytes("hallo")));
+        }
     }
 }
