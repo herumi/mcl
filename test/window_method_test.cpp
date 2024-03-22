@@ -7,7 +7,8 @@
 CYBOZU_TEST_AUTO(int)
 {
 	typedef mcl::FpT<> Fp;
-	typedef mcl::EcT<Fp> Ec;
+	typedef mcl::FpT<mcl::ZnTag> Fr;
+	typedef mcl::EcT<Fp, Fr> Ec;
 	const struct mcl::EcParam& para = mcl::ecparam::secp192k1;
 	Fp::init(para.p);
 	Ec::init(para.a, para.b);

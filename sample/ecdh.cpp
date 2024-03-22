@@ -7,7 +7,7 @@
 
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::FpT<mcl::ZnTag, 256> Fr;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Fr> Ec;
 
 void put(const char *msg, const Ec& P)
 {

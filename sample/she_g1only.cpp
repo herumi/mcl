@@ -13,7 +13,7 @@ void elgamal()
 	struct TagZn;
 	typedef mcl::FpT<> Fp;
 	typedef mcl::FpT<TagZn> Zn;
-	typedef mcl::EcT<Fp> Ec;
+	typedef mcl::EcT<Fp, Zn> Ec;
 	typedef mcl::ElgamalT<Ec, Zn> ElgamalEc;
 	Ec P;
 	mcl::initCurve<Ec, Zn>(g_para.curveType, &P);

@@ -55,8 +55,8 @@ typedef mcl::FpT<local::FrTag, MCL_MAX_FR_BIT_SIZE> Fr;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp> Fp12;
-typedef mcl::EcT<Fp> G1;
-typedef mcl::EcT<Fp2> G2;
+typedef mcl::EcT<Fp, Fr> G1;
+typedef mcl::EcT<Fp2, Fr> G2;
 typedef Fp12 GT;
 
 typedef mcl::FpDblT<Fp> FpDbl;

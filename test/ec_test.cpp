@@ -14,7 +14,7 @@
 typedef mcl::FpT<> Fp;
 struct tagZn;
 typedef mcl::FpT<tagZn> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Zn> Ec;
 
 CYBOZU_TEST_AUTO(sizeof)
 {

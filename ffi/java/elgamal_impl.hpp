@@ -10,7 +10,7 @@
 
 typedef mcl::FpT<mcl::FpTag> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Zn> Ec;
 typedef mcl::ElgamalT<Ec, Zn> Elgamal;
 
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)

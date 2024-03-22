@@ -7,7 +7,7 @@
 struct TagZn;
 typedef mcl::FpT<> Fp;
 typedef mcl::FpT<TagZn> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Zn> Ec;
 typedef mcl::ElgamalT<Ec, Zn> ElgamalEc;
 
 const mcl::EcParam& para = mcl::ecparam::secp192k1;

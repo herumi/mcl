@@ -7,7 +7,7 @@
 
 typedef mcl::FpT<> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Fr> Ec;
 
 void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
 {

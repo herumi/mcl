@@ -32,7 +32,7 @@ struct ZnTag;
 
 typedef mcl::FpT<local::FpTag, 256> Fp;
 typedef mcl::FpT<local::ZnTag, 256> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Zn> Ec;
 
 namespace local {
 
