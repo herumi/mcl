@@ -8,7 +8,7 @@ struct TagZn;
 typedef mcl::FpT<> Fp;
 typedef mcl::FpT<TagZn> Zn;
 typedef mcl::EcT<Fp, Zn> Ec;
-typedef mcl::ElgamalT<Ec, Zn> ElgamalEc;
+typedef mcl::ElgamalT<Ec> ElgamalEc;
 
 const mcl::EcParam& para = mcl::ecparam::secp192k1;
 cybozu::RandomGenerator g_rg;
@@ -16,7 +16,7 @@ cybozu::RandomGenerator g_rg;
 CYBOZU_TEST_AUTO(testEc)
 {
 	Ec P;
-	mcl::initCurve<Ec, Zn>(para.curveType, &P);
+	mcl::initCurve<Ec>(para.curveType, &P);
 	const size_t bitSize = Zn::getBitSize();
 	/*
 		Zn = <P>

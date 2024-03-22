@@ -2236,10 +2236,11 @@ template<class Ec, class Fr> void (*GLV1T<Ec, Fr>::optimizedSplit)(mpz_class u[2
 	Zn : cyclic group of the order |Ec|
 	set P the generator of Ec if P != 0
 */
-template<class Ec, class Zn>
+template<class Ec>
 void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	typedef typename Ec::Fp Fp;
+	typedef typename Ec::Fr Zn;
 	*pb = false;
 	const EcParam *ecParam = getEcParam(curveType);
 	if (ecParam == 0) return;
@@ -2269,11 +2270,11 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-template<class Ec, class Zn>
+template<class Ec>
 void initCurve(int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	bool b;
-	initCurve<Ec, Zn>(&b, curveType, P, mode, ecMode);
+	initCurve<Ec>(&b, curveType, P, mode, ecMode);
 	if (!b) throw cybozu::Exception("mcl:initCurve") << curveType << mode << ecMode;
 }
 #endif

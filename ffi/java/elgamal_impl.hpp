@@ -11,7 +11,7 @@
 typedef mcl::FpT<mcl::FpTag> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
 typedef mcl::EcT<Fp, Zn> Ec;
-typedef mcl::ElgamalT<Ec, Zn> Elgamal;
+typedef mcl::ElgamalT<Ec> Elgamal;
 
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -41,7 +41,7 @@ void SystemInit(const std::string& param) _MCL_THROW
 		Param& p = Param::getParam();
 		p.ecParam = mcl::getEcParam(ecParamStr);
 		if (p.ecParam) {
-			mcl::initCurve<Ec, Zn>(p.ecParam->curveType);
+			mcl::initCurve<Ec>(p.ecParam->curveType);
 			p.hashName = cybozu::crypto::Hash::getName(hashNameStr);
 			return;
 		}

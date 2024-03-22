@@ -120,7 +120,7 @@ const local::Param& param = local::getParam();
 inline void init(bool *pb)
 {
 	local::Param& p = local::getParam();
-	mcl::initCurve<Ec, Zn>(pb, MCL_SECP256K1, &p.P);
+	mcl::initCurve<Ec>(pb, MCL_SECP256K1, &p.P);
 	if (!*pb) return;
 	p.bitSize = 256;
 	p.Pbase.init(pb, p.P, p.bitSize, local::winSize);

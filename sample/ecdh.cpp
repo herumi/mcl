@@ -21,7 +21,7 @@ int main()
 		the cyclic group of <P> is isomorphic to Fr
 	*/
 	Ec P;
-	mcl::initCurve<Ec, Fr>(MCL_SECP256K1, &P);
+	mcl::initCurve<Ec>(MCL_SECP256K1, &P);
 	put("P=", P);
 
 	/*
