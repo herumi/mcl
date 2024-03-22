@@ -67,7 +67,7 @@ bool get_a_flag(const F& x)
 	return x.isNegative();
 }
 
-// Im(x) is negative <=> Im(x)  < half(:=(p+1)/2) <=> a = 1
+// Im(x) is negative <=> Im(x) < half(:=(p+1)/2) <=> a = 1
 
 template<class F>
 bool get_a_flag(const mcl::Fp2T<F>& x)
@@ -197,7 +197,7 @@ void _normalize(E& Q, const E& P, typename E::Fp& inv)
 }
 
 /*
-	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	Q[i] = normalize(P[i]) for i = 0, ..., n-1
 	AsArray : Pz[i] to access like as F[i] in invVecT
 	N : alloc size
 */
@@ -233,7 +233,7 @@ void ProjToJacobi(E& Q, const E& P)
 	typedef typename E::Fp F;
 	F::mul(Q.x, P.x, P.z);
 	F::mul(Q.y, P.y, P.z);
-	Q.y *= P.z;
+	F::mul(Q.y, Q.y, P.z);
 	Q.z = P.z;
 }
 
@@ -259,7 +259,7 @@ void normalizeJacobi(E& P)
 }
 
 /*
-	Q[i] = normalie(P[i]) for i = 0, ..., n-1
+	Q[i] = normalize(P[i]) for i = 0, ..., n-1
 	AsArray : Pz[i] to access like as F[i] in invVecT
 	N : alloc size
 */
@@ -893,7 +893,7 @@ inline size_t ilog2(size_t n)
 	return cybozu::bsr(n) + 1;
 }
 
-// cal approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
+// calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
 inline size_t argminForMulVec(size_t n)
 {
 	if (n <= 16) return 2;
@@ -952,7 +952,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 main:
 #endif
 	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
-	const size_t winN = maxBitSize / c + 1;
+	const size_t winN = (maxBitSize + c-1) / c;
 	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 
 	// about 10% faster
@@ -968,16 +968,16 @@ main:
 				tbl[v - 1] += xVec[i];
 			}
 		}
-		G sum;
-		sum.clear();
-		win[w].clear();
-		for (size_t i = 0; i < tblN; i++) {
+		G sum = tbl[tblN - 1];
+		win[w] = sum;
+		for (size_t i = 1; i < tblN; i++) {
 			sum += tbl[tblN - 1 - i];
 			win[w] += sum;
 		}
 	}
-	z.clear();
-	for (size_t w = 0; w < winN; w++) {
+	z.clear(); // remove a wrong gcc warning
+	z = win[winN - 1];
+	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(z, z);
 		}

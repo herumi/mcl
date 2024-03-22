@@ -206,6 +206,8 @@ int main(int argc, char *argv[])
 		ecMode = mcl::ec::Jacobi;
 	} else if (ecModeStr == "proj") {
 		ecMode = mcl::ec::Proj;
+	} else if (ecModeStr == "affine") {
+		ecMode = mcl::ec::Affine;
 	} else {
 		printf("bad ecstr %s\n", ecModeStr.c_str());
 		opt.usage();

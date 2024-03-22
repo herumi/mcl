@@ -602,6 +602,7 @@ T::setHashOf(const void *msg, size_t msgSize);
 - always return 0
 - use SHA-256 if sizeof(*x) <= 256 else SHA-512
 - set according to the same way as `setLittleEndian`.
+- This is a function for backward compatibility only. Do not use it.
 
 ### map `x` to G1 / G2.
 ```

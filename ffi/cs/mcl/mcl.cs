@@ -109,6 +109,8 @@ namespace mcl {
         [DllImport(dllName)] public static extern void mclBn_pairing(ref GT z, in G1 x, in G2 y);
         [DllImport(dllName)] public static extern void mclBn_finalExp(ref GT y, in GT x);
         [DllImport(dllName)] public static extern void mclBn_millerLoop(ref GT z, in G1 x, in G2 y);
+        [DllImport(dllName)] public static extern void mclBn_millerLoopVec(ref GT z, [In] G1[] xVec, [In] G2[] yVec, ulong n);
+
         [DllImport(dllName)] public static extern ulong mclBnFp_setLittleEndianMod(ref Fp y, [In] byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnFr_setLittleEndianMod(ref Fr y, [In] byte[] buf, ulong bufSize);
         [DllImport(dllName)] public static extern ulong mclBnFp_setBigEndianMod(ref Fp y, [In] byte[] buf, ulong bufSize);
@@ -323,6 +325,11 @@ namespace mcl {
         public static void MillerLoop(ref GT z, in G1 x, in G2 y)
         {
             mclBn_millerLoop(ref z, x, y);
+        }
+        public static void MilloerLoopVec(ref GT z, in G1[] xVec, in G2[] yVec)
+        {
+            if (xVec.Length != yVec.Length) throw new ArgumentException("bad length");
+            mclBn_millerLoopVec(ref z, xVec, yVec, (ulong)xVec.Length);
         }
         // y = f(x) with a polynomial f(t) = sum_i cVec[i] t^i
         public static void Share(ref Fr y, in Fr[] cVec, in Fr x)
