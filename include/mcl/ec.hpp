@@ -507,13 +507,6 @@ void addJacobi(E& R, const E& P, const E& Q)
 	https://github.com/apache/incubator-milagro-crypto-c/blob/fa0a45a3/src/ecp.c.in#L767-L976
 	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
-template<class E>
-void clearCTProj(E& P)
-{
-	P.x.clear();
-	P.y = 1;
-	P.z.clear();
-}
 
 // 14M
 template<class E>
@@ -586,7 +579,7 @@ void dblCTProj(E& R, const E& P)
 template<class E>
 void normalizeProj(E& P)
 {
-	if (P.z.isZero()) return;
+	if (P.z.isZero() || P.z.isOne()) return;
 	typedef typename E::Fp F;
 	F::inv(P.z, P.z);
 	local::_normalizeProj(P, P, P.z);
@@ -1416,8 +1409,12 @@ public:
 	}
 	void clear()
 	{
-		x.clear();
-		y.clear();
+		if (mode_ == ec::Jacobi) {
+			x = 1;
+		} else {
+			x.clear();
+		}
+		y = 1;
 		z.clear();
 	}
 	static inline void dbl(EcT& R, const EcT& P)
