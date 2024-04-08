@@ -492,17 +492,16 @@ public:
 	static int compares1(const Vint& x, int y)
 	{
 		assert(y != invalidVar);
-		if (x.isNeg_ ^ (y < 0)) {
-			if (x.isZero() && y == 0) return 0;
-			return x.isNeg_ ? -1 : 1;
-		} else {
-			// same sign
+		size_t n = x.size();
+		assert(n > 0);
+		CYBOZU_ASSUME(n > 0);
+		if (x.isZero()) return y > 0 ? -1 : y == 0 ? 0 : 1;
+		if (n == 1 && x.isNeg_ == (y < 0)) { // same sign
 			Unit y0 = fp::abs_(y);
-			int c = (x.size() > 1) ? 1 : bint::cmpT<1>(x.buf_, &y0);
-			if (x.isNeg_) {
-				return -c;
-			}
-			return c;
+			int c = bint::cmpT<1>(x.buf_, &y0);
+			return x.isNeg_ ? -c : c;
+		} else {
+			return x.isNeg_ ? -1 : 1;
 		}
 	}
 	static int compareu1(const Vint& x, uint32_t y)
