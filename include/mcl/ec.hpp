@@ -53,6 +53,11 @@ enum ModeCoeffA {
 	GenericA
 };
 
+enum ModeCoeffB {
+	Plus4,
+	GenericB
+};
+
 namespace local {
 
 /*
@@ -73,6 +78,22 @@ template<class F>
 bool get_a_flag(const mcl::Fp2T<F>& x)
 {
 	return get_a_flag(x.b); // x = a + bi
+}
+
+template<class F>
+void mul4(F& x)
+{
+	F::add(x, x, x);
+	F::add(x, x, x);
+}
+
+template<class F>
+void mul12(F& x)
+{
+	F t;
+	F::add(t, x, x);
+	F::add(x, t, x); // 3x
+	mul4(x);
 }
 
 /*
@@ -334,7 +355,11 @@ bool isValidJacobi(const E& P)
 	t += x2;
 	t *= P.x;
 	z4 *= z2;
-	z4 *= E::b_;
+	if (E::specialB_ == ec::Plus4) {
+		local::mul4(z4);
+	} else {
+		z4 *= E::b_;
+	}
 	t += z4;
 	return y2 == t;
 }
@@ -535,10 +560,18 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::sub(y3, x3, y3);
 	F::add(x3, t0, t0);
 	F::add(t0, t0, x3);
-	F::mul(t2, t2, E::b3_);
+	if (E::specialB_ == ec::Plus4) {
+		local::mul12(t2);
+	} else {
+		F::mul(t2, t2, E::b3_);
+	}
 	F::add(R.z, t1, t2);
 	F::sub(t1, t1, t2);
-	F::mul(y3, y3, E::b3_);
+	if (E::specialB_ == ec::Plus4) {
+		local::mul12(y3);
+	} else {
+		F::mul(y3, y3, E::b3_);
+	}
 	F::mul(x3, y3, t4);
 	F::mul(t2, t3, t1);
 	F::sub(R.x, t2, x3);
@@ -562,7 +595,11 @@ void dblCTProj(E& R, const E& P)
 	F::add(R.z, t0, t0);
 	F::add(R.z, R.z, R.z);
 	F::add(R.z, R.z, R.z);
-	F::mul(t2, t2, E::b3_);
+	if (E::specialB_ == ec::Plus4) {
+		local::mul12(t2);
+	} else {
+		F::mul(t2, t2, E::b3_);
+	}
 	F::mul(x3, t2, R.z);
 	F::add(y3, t0, t2);
 	F::mul(R.z, R.z, t1);
@@ -1265,6 +1302,7 @@ public:
 	static Fp b_;
 	static Fp b3_;
 	static int specialA_;
+	static int specialB_;
 	static int ioMode_;
 	/*
 		order_ is the order of G2 which is the subgroup of EcT<Fp2, Fr>.
@@ -1328,6 +1366,11 @@ public:
 			specialA_ = ec::Minus3;
 		} else {
 			specialA_ = ec::GenericA;
+		}
+		if (b_ == 4) {
+			specialB_ = ec::Plus4;
+		} else {
+			specialB_ = ec::GenericB;
 		}
 		ioMode_ = 0;
 		verifyOrder_ = false;
@@ -2132,6 +2175,7 @@ template<class Fp, class Fr> Fp EcT<Fp, Fr>::a_;
 template<class Fp, class Fr> Fp EcT<Fp, Fr>::b_;
 template<class Fp, class Fr> Fp EcT<Fp, Fr>::b3_;
 template<class Fp, class Fr> int EcT<Fp, Fr>::specialA_;
+template<class Fp, class Fr> int EcT<Fp, Fr>::specialB_;
 template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
 template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
 template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_;
