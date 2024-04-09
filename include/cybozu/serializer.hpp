@@ -45,6 +45,14 @@ void reserve_if_exists(T& t, size_t size)
 	dispatch_reserve(t, size, 0);
 }
 
+// detect whether T::iterator exists
+template <typename T>
+struct has_iterator {
+    template <typename U> static char test(typename U::iterator*);
+    template <typename U> static int test(...);
+    static const bool value = sizeof(test<T>(0)) == 1;
+};
+
 } // serializer_local
 
 template<class InputStream, class T>
@@ -257,7 +265,7 @@ void save(OutputStream& os, const char *x)
 
 // for vector, list
 template<class InputStream, class T, class Alloc, template<class T_, class Alloc_>class Container>
-void load(Container<T, Alloc>& x, InputStream& is)
+void load(Container<T, Alloc>& x, InputStream& is, typename stream_local::enable_if<serializer_local::has_iterator<Container<T, Alloc> >::value>::type* = 0)
 {
 	size_t size;
 	load(size, is);
@@ -271,7 +279,7 @@ void load(Container<T, Alloc>& x, InputStream& is)
 }
 
 template<class OutputStream, class T, class Alloc, template<class T_, class Alloc_>class Container>
-void save(OutputStream& os, const Container<T, Alloc>& x)
+void save(OutputStream& os, const Container<T, Alloc>& x, typename stream_local::enable_if<serializer_local::has_iterator<Container<T, Alloc> >::value>::type* = 0)
 {
 	typedef Container<T, Alloc> V;
 	save(os, x.size());
@@ -282,7 +290,7 @@ void save(OutputStream& os, const Container<T, Alloc>& x)
 
 // for set
 template<class InputStream, class K, class Pred, class Alloc, template<class K_, class Pred_, class Alloc_>class Container>
-void load(Container<K, Pred, Alloc>& x, InputStream& is)
+void load(Container<K, Pred, Alloc>& x, InputStream& is, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, Pred, Alloc> >::value>::type* = 0)
 {
 	size_t size;
 	load(size, is);
@@ -294,7 +302,7 @@ void load(Container<K, Pred, Alloc>& x, InputStream& is)
 }
 
 template<class OutputStream, class K, class Pred, class Alloc, template<class K_, class Pred_, class Alloc_>class Container>
-void save(OutputStream& os, const Container<K, Pred, Alloc>& x)
+void save(OutputStream& os, const Container<K, Pred, Alloc>& x, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, Pred, Alloc> >::value>::type* = 0)
 {
 	typedef Container<K, Pred, Alloc> Set;
 	save(os, x.size());
@@ -305,7 +313,7 @@ void save(OutputStream& os, const Container<K, Pred, Alloc>& x)
 
 // for map
 template<class InputStream, class K, class V, class Pred, class Alloc, template<class K_, class V_, class Pred_, class Alloc_>class Container>
-void load(Container<K, V, Pred, Alloc>& x, InputStream& is)
+void load(Container<K, V, Pred, Alloc>& x, InputStream& is, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, V, Pred, Alloc> >::value>::type* = 0)
 {
 	typedef Container<K, V, Pred, Alloc> Map;
 	size_t size;
@@ -319,7 +327,7 @@ void load(Container<K, V, Pred, Alloc>& x, InputStream& is)
 }
 
 template<class OutputStream, class K, class V, class Pred, class Alloc, template<class K_, class V_, class Pred_, class Alloc_>class Container>
-void save(OutputStream& os, const Container<K, V, Pred, Alloc>& x)
+void save(OutputStream& os, const Container<K, V, Pred, Alloc>& x, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, V, Pred, Alloc> >::value>::type* = 0)
 {
 	typedef Container<K, V, Pred, Alloc> Map;
 	save(os, x.size());
@@ -331,7 +339,7 @@ void save(OutputStream& os, const Container<K, V, Pred, Alloc>& x)
 
 // unordered_map
 template<class InputStream, class K, class V, class Hash, class Pred, class Alloc, template<class K_, class V_, class Hash_, class Pred_, class Alloc_>class Container>
-void load(Container<K, V, Hash, Pred, Alloc>& x, InputStream& is)
+void load(Container<K, V, Hash, Pred, Alloc>& x, InputStream& is, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, V, Hash, Pred, Alloc> >::value>::type* = 0)
 {
 	typedef Container<K, V, Hash, Pred, Alloc> Map;
 	size_t size;
@@ -347,7 +355,7 @@ void load(Container<K, V, Hash, Pred, Alloc>& x, InputStream& is)
 }
 
 template<class OutputStream, class K, class V, class Hash, class Pred, class Alloc, template<class K_, class V_, class Hash_, class Pred_, class Alloc_>class Container>
-void save(OutputStream& os, const Container<K, V, Hash, Pred, Alloc>& x)
+void save(OutputStream& os, const Container<K, V, Hash, Pred, Alloc>& x, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, V, Hash, Pred, Alloc> >::value>::type* = 0)
 {
 	typedef Container<K, V, Hash, Pred, Alloc> Map;
 	save(os, x.size());
