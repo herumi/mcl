@@ -23,22 +23,6 @@ namespace mcl {
 
 template<class _Fp> class Fp2T;
 
-namespace local {
-
-template<class Ec, class Vec>
-void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
-{
-	if (i >= naf.size()) return;
-	int n = naf[i];
-	if (n > 0) {
-		Q += tbl[(n - 1) >> 1];
-	} else if (n < 0) {
-		Q -= tbl[(-n - 1) >> 1];
-	}
-}
-
-} // mcl::local
-
 namespace ec {
 
 enum Mode {
@@ -59,6 +43,18 @@ enum ModeCoeffB {
 };
 
 namespace local {
+
+template<class Ec, class Vec>
+void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
+{
+	if (i >= naf.size()) return;
+	int n = naf[i];
+	if (n > 0) {
+		Q += tbl[(n - 1) >> 1];
+	} else if (n < 0) {
+		Q -= tbl[(-n - 1) >> 1];
+	}
+}
 
 /*
 	elliptic class E must have
@@ -1259,7 +1255,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n, fp::
 		G::dbl(z, z);
 		for (size_t j = 0; j < n; j++) {
 			for (int k = 0; k < splitN; k++) {
-				mcl::local::addTbl(z, tbl[k * n + j], naf[j][k], bit);
+				local::addTbl(z, tbl[k * n + j], naf[j][k], bit);
 			}
 		}
 	}
@@ -1988,7 +1984,7 @@ public:
 		z.clear();
 		for (size_t i = 0; i < naf.size(); i++) {
 			EcT::dbl(z, z);
-			local::addTbl(z, tbl, naf, naf.size() - 1 - i);
+			ec::local::addTbl(z, tbl, naf, naf.size() - 1 - i);
 		}
 	}
 	static inline bool mulSmallInt(EcT& z, const EcT& x, Unit y, bool isNegative)
@@ -2040,7 +2036,7 @@ private:
 		for (size_t i = 0; i < maxBit; i++) {
 			EcT::dbl(z, z);
 			for (size_t j = 0; j < n; j++) {
-				local::addTbl(z, tbl[j], naf[j], maxBit - 1 - i);
+				ec::local::addTbl(z, tbl[j], naf[j], maxBit - 1 - i);
 			}
 		}
 		return n;
