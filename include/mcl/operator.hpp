@@ -148,11 +148,8 @@ struct Operator : public E {
 	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
-		typedef FpT<tag2, maxBitSize2> F;
-		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
-		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 		if (powVecGLV) {
-			powVecGLV(z, &x, &y, 1, getMpzAt, getUnitAt);
+			powVecGLV(z, &x, &y, 1);
 			return;
 		}
 		fp::Block b;
@@ -187,7 +184,7 @@ struct Operator : public E {
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 protected:
-	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
+	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
 		while (yn > 0 && y[yn - 1] == 0) {
@@ -230,7 +227,7 @@ protected:
 };
 
 template<class T, class E>
-bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt);
+bool (*Operator<T, E>::powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
 
 /*
 	T must have save and load

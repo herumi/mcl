@@ -54,9 +54,9 @@ typedef mcl::FpT<local::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;
 typedef mcl::FpT<local::FrTag, MCL_MAX_FR_BIT_SIZE> Fr;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::Fp6T<Fp> Fp6;
-typedef mcl::Fp12T<Fp> Fp12;
-typedef mcl::EcT<Fp> G1;
-typedef mcl::EcT<Fp2> G2;
+typedef mcl::Fp12T<Fp, Fr> Fp12;
+typedef mcl::EcT<Fp, Fr> G1;
+typedef mcl::EcT<Fp2, Fr> G2;
 typedef Fp12 GT;
 
 typedef mcl::FpDblT<Fp> FpDbl;
@@ -115,6 +115,11 @@ enum TwistBtype {
 */
 inline void updateLine(Fp6& l, const G1& P)
 {
+	if (P.isZero()) {
+		l.b.clear();
+		l.c.clear();
+		return;
+	}
 	l.b.a *= P.y;
 	l.b.b *= P.y;
 	l.c.a *= P.x;
@@ -989,7 +994,7 @@ struct Param {
 	}
 	void initG1only(bool *pb, const mcl::EcParam& para)
 	{
-		mcl::initCurve<G1, Fr>(pb, para.curveType, &basePoint);
+		mcl::initCurve<G1>(pb, para.curveType, &basePoint);
 		mapTo.init(0, 0, para.curveType);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
@@ -1023,12 +1028,12 @@ namespace local {
 
 typedef GLV2T<Fr> GLV2;
 
-inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt)
+inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n, getMpzAt, getUnitAt);
+	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n);
 }
 
 /*
@@ -1248,6 +1253,11 @@ inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 {
 	y.a = x.a;
+	if (P.isZero()) {
+		y.c.clear();
+		y.b.clear();
+		return;
+	}
 	Fp2::mulFp(y.c, x.c, P.x);
 	Fp2::mulFp(y.b, x.b, P.y);
 }
@@ -1536,16 +1546,26 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 #endif
 }
 /*
-	adjP = (P.x * 3, -P.y)
+	assume P is normalized
+	if P == 0:
+	  adjP = (0, 0, 0)
+	else:
+	  adjP = (P.x * 3, -P.y, 1)
 	remark : returned value is NOT on a curve
 */
 inline void makeAdjP(G1& adjP, const G1& P)
 {
+	if (P.isZero()) {
+		adjP.x.clear();
+		adjP.y.clear();
+		adjP.z.clear();
+		return;
+	}
 	Fp x2;
 	Fp::mul2(x2, P.x);
 	Fp::add(adjP.x, x2, P.x);
 	Fp::neg(adjP.y, P.y);
-	// adjP.z.clear(); // not used
+	adjP.z = P.z;
 }
 
 } // mcl::bn::local

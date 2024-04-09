@@ -93,7 +93,7 @@ void testGLV(const G& P, const char *name)
 		G::mulGeneric(P1, P, s.getMpz());
 		G::mul(P2, P, s);
 		CYBOZU_TEST_EQUAL(P1, P2);
-		Fp ss;
+		Fr ss;
 		ss.setRand(rg);
 		G::mulGeneric(P1, P, ss.getMpz());
 		G::mul(P2, P, ss);

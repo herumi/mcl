@@ -86,7 +86,9 @@ void testBench(const G1& P, const G2& Q)
 #if 1
 	const int C2 = 3000;
 	{
-		mpz_class a = x.getMpz();
+		cybozu::XorShift rg;
+		Fr a;
+		a.setByCSPRNG(rg);
 		CYBOZU_BENCH_C("G1::mulCT     ", C, G1::mulCT, Pa, P, a);
 		CYBOZU_BENCH_C("G1::mul       ", C, G1::mul, Pa, Pa, a);
 		CYBOZU_BENCH_C("G1::add       ", C, G1::add, Pa, Pa, P);

@@ -19,7 +19,7 @@ typedef mcl::FpT<mcl::FpTag, 384> Fp;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
-typedef mcl::Fp12T<Fp> Fp12;
+typedef mcl::Fp12T<Fp, Fp/*dummy*/> Fp12;
 
 bool g_benchOnly = false;
 

@@ -16,7 +16,7 @@
 void SystemInit(int curveType) _MCL_THROW
 {
 	if (curveType == MCL_SECP256K1) {
-		mcl::initCurve<mcl::bn::G1, mcl::bn::Fr>(curveType);
+		mcl::initCurve<mcl::bn::G1>(curveType);
 		return;
 	}
 	mcl::CurveParam cp;

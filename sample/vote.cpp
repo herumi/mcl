@@ -18,8 +18,8 @@
 
 typedef mcl::FpT<mcl::FpTag> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp> Ec;
-typedef mcl::ElgamalT<Ec, Zn> Elgamal;
+typedef mcl::EcT<Fp, Zn> Ec;
+typedef mcl::ElgamalT<Ec> Elgamal;
 
 cybozu::RandomGenerator rg;
 
@@ -59,7 +59,7 @@ struct Param {
 
 void SysInit()
 {
-	mcl::initCurve<Ec, Zn>(MCL_SECP192K1);
+	mcl::initCurve<Ec>(MCL_SECP192K1);
 }
 
 template<class T>

@@ -7,7 +7,7 @@
 
 typedef mcl::FpT<mcl::FpTag, 256> Fp;
 typedef mcl::FpT<mcl::ZnTag, 256> Fr;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Fr> Ec;
 
 void put(const char *msg, const Ec& P)
 {
@@ -21,7 +21,7 @@ int main()
 		the cyclic group of <P> is isomorphic to Fr
 	*/
 	Ec P;
-	mcl::initCurve<Ec, Fr>(MCL_SECP256K1, &P);
+	mcl::initCurve<Ec>(MCL_SECP256K1, &P);
 	put("P=", P);
 
 	/*

@@ -718,7 +718,7 @@ public:
 	*/
 	static void initG1only(int curveType, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
-		mcl::initCurve<G1, Fr>(curveType, &P_);
+		mcl::initCurve<G1>(curveType, &P_);
 		setRangeForG1DLP(hashSize);
 		useDecG1ViaGT_ = false;
 		useDecG2ViaGT_ = false;

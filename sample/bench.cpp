@@ -7,7 +7,7 @@
 
 typedef mcl::FpT<> Fp;
 typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Zn> Ec;
 
 void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
 {
@@ -79,7 +79,7 @@ void benchFp(size_t bitSize, int mode)
 void benchEcSub(const mcl::EcParam& para, mcl::fp::Mode mode, mcl::ec::Mode ecMode)
 {
 	Ec P;
-	mcl::initCurve<Ec, Zn>(para.curveType, &P, mode, ecMode);
+	mcl::initCurve<Ec>(para.curveType, &P, mode, ecMode);
 	Ec P2; Ec::add(P2, P, P);
 	Ec Q = P + P + P;
 	double addT, add2T, subT, dblT, mulT, mulCTT, mulRandT, mulCTRandT, normT;

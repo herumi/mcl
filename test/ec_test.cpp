@@ -14,7 +14,7 @@
 typedef mcl::FpT<> Fp;
 struct tagZn;
 typedef mcl::FpT<tagZn> Zn;
-typedef mcl::EcT<Fp> Ec;
+typedef mcl::EcT<Fp, Zn> Ec;
 
 CYBOZU_TEST_AUTO(sizeof)
 {
@@ -80,7 +80,7 @@ struct Test {
 		, ecMode(ecMode)
 	{
 		printf("fpMode=%s\n", mcl::fp::ModeToStr(fpMode));
-		mcl::initCurve<Ec, Zn>(para.curveType, 0, fpMode, ecMode);
+		mcl::initCurve<Ec>(para.curveType, 0, fpMode, ecMode);
 	}
 	void cstr() const
 	{

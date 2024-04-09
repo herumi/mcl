@@ -24,9 +24,10 @@
 
 namespace mcl {
 
-template<class _Ec, class Zn>
+template<class _Ec>
 struct ElgamalT {
 	typedef _Ec Ec;
+	typedef typename _Ec::Fr Zn;
 	struct CipherText {
 		Ec c1;
 		Ec c2;

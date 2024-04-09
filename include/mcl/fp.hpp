@@ -82,7 +82,6 @@ class FpT : public fp::Serializable<FpT<tag, maxBitSize>,
 public:
 	static const size_t maxSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 private:
-	template<class tag2, size_t maxBitSize2> friend class FpT;
 	Unit v_[maxSize];
 	static fp::Op op_;
 	static FpT<tag, maxBitSize> inv2_;
@@ -562,7 +561,7 @@ public:
 			*pb = false;
 			return;
 		}
-		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
+		setArrayMod(pb, gmp::getUnit(x), gmp::getUnitSize(x));
 	}
 	static void add(FpT& z, const FpT& x, const FpT& y)
 	{
