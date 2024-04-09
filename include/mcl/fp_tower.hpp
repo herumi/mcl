@@ -10,7 +10,7 @@
 
 namespace mcl {
 
-template<class Fp> struct Fp12T;
+template<class Fp, class _Fr> struct Fp12T;
 template<class Fp> class BNT;
 template<class Fp> struct Fp2DblT;
 
@@ -1074,16 +1074,17 @@ template<class Fp> void (*Fp6DblT<Fp>::mulPre)(Fp6DblT<Fp>&, const Fp6T<Fp>&, co
 	Fp12T = Fp6[w] / (w^2 - v)
 	x = a + b w
 */
-template<class Fp>
-struct Fp12T : public fp::Serializable<Fp12T<Fp>,
-	fp::Operator<Fp12T<Fp> > > {
-	typedef fp::Serializable<Fp12T<Fp>, fp::Operator<Fp12T<Fp> > > BaseClass;
+template<class Fp, class _Fr>
+struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
+	fp::Operator<Fp12T<Fp, _Fr> > > {
+	typedef fp::Serializable<Fp12T<Fp, _Fr>, fp::Operator<Fp12T<Fp, _Fr> > > BaseClass;
 
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	typedef Fp BaseFp;
+	typedef _Fr Fr; // group order
 	Fp6 a, b;
 	Fp12T() {}
 	Fp12T(int64_t a) : a(a), b(0) {}
@@ -1336,21 +1337,17 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp>,
 		return os;
 	}
 #endif
-	static void setPowVecGLV(bool f(Fp12T& z, const Fp12T *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt) = 0)
+	static void setPowVecGLV(bool f(Fp12T& z, const Fp12T *xVec, const void *yVec, size_t yn) = 0)
 	{
 		BaseClass::powVecGLV = f;
 	}
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void powVec(Fp12T& z, const Fp12T *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline void powVec(Fp12T& z, const Fp12T *xVec, const Fp12T::Fr *yVec, size_t n)
 	{
 		if (n == 0) {
 			z.clear();
 			return;
 		}
-		typedef FpT<tag, maxBitSize> F;
-		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
-		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
-		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n, getMpzAt, getUnitAt)) {
+		if (BaseClass::powVecGLV && BaseClass::powVecGLV(z, xVec, yVec, n)) {
 			return;
 		}
 		size_t done = powVecN(z, xVec, yVec, n);

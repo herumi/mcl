@@ -98,10 +98,11 @@ void mul12(F& x)
 	w : window size
 */
 template<class GLV, class G>
-void mulGLV_CT(G& Q, const G& P, const void *yVec, fp::getMpzAtType getMpzAt)
+void mulGLV_CT(G& Q, const G& P, const void *yVec)
 {
 	const size_t w = 4;
 	typedef typename GLV::Fr F;
+	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << w;
 	G tbl[splitN][tblSize];
@@ -1031,11 +1032,12 @@ void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, 
 
 // for n >= 128
 template<class GLV, class G>
-bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt)
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n)
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
 	typedef typename GLV::Fr F;
+	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
 	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
 	mpz_class u[splitN], y;
@@ -1202,11 +1204,13 @@ bool mulSmallInt(G& z, const G& x, Unit y, bool isNegative)
 	for n <= 16
 */
 template<class GLV, class G, int w>
-static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n, fp::getMpzAtType getMpzAt)
+static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 {
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
+	typedef typename GLV::Fr F;
+	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
 	typedef mcl::FixedArray<int8_t, sizeof(typename GLV::Fr) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
@@ -1263,18 +1267,18 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n, fp::
 
 // return false if malloc fails or n is not in a target range
 template<class GLV, class G, class F>
-bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType /*getUnitAt*/, bool constTime = false)
+bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime = false)
 {
 	if (n == 1 && constTime) {
-		local::mulGLV_CT<GLV, G>(z, xVec[0], yVec, getMpzAt);
+		local::mulGLV_CT<GLV, G>(z, xVec[0], yVec);
 		return true;
 	}
 	if (n <= mcl::fp::maxMulVecNGLV) {
-		mulVecGLVsmall<GLV, G, 5>(z, xVec, yVec, n, getMpzAt);
+		mulVecGLVsmall<GLV, G, 5>(z, xVec, yVec, n);
 		return true;
 	}
 	if (n >= 128) {
-		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n, getMpzAt);
+		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n);
 	}
 	return false;
 }
@@ -1306,7 +1310,7 @@ public:
 	*/
 	static bool verifyOrder_;
 	static mpz_class order_;
-	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt, bool constTime);
+	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1394,7 +1398,7 @@ public:
 	{
 		isValidOrderFast = f;
 	}
-	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt, bool constTime))
+	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, bool constTime))
 	{
 		mulVecGLV = f;
 	}
@@ -1502,10 +1506,8 @@ public:
 	}
 	static inline void mul(EcT& z, const EcT& x, const EcT::Fr& y, bool constTime = false)
 	{
-		fp::getMpzAtType getMpzAt = fp::getMpzAtT<Fr>;
-		fp::getUnitAtType getUnitAt = fp::getUnitAtT<Fr>;
 		if (mulVecGLV) {
-			mulVecGLV(z, &x, &y, 1, getMpzAt, getUnitAt, constTime);
+			mulVecGLV(z, &x, &y, 1, constTime);
 			return;
 		}
 		fp::Block b;
@@ -2004,8 +2006,7 @@ public:
 		@note &z != xVec[i]
 	*/
 private:
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline size_t mulVecN(EcT& z, const EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline size_t mulVecN(EcT& z, const EcT *xVec, const EcT::Fr *yVec, size_t n)
 	{
 		const size_t N = mcl::fp::maxMulVecN;
 		if (n > N) n = N;
@@ -2058,17 +2059,13 @@ public:
 		GLV : 7680, 15360, 30720
 		Long: 9779, 16322, 24533
 	*/
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVec(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	static inline void mulVec(EcT& z, EcT *xVec, const EcT::Fr *yVec, size_t n)
 	{
-		typedef FpT<tag, maxBitSize> F;
-		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
-		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 		if (n == 0) {
 			z.clear();
 			return;
 		}
-		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, getMpzAt, getUnitAt, false)) {
+		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false)) {
 			return;
 		}
 		EcT r;
@@ -2085,8 +2082,7 @@ public:
 	}
 	// multi thread version of mulVec
 	// the num of thread is automatically detected if cpuN = 0
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mulVecMT(EcT& z, EcT *xVec, const FpT<tag, maxBitSize> *yVec, size_t n, size_t cpuN = 0)
+	static inline void mulVecMT(EcT& z, EcT *xVec, const EcT::Fr *yVec, size_t n, size_t cpuN = 0)
 	{
 #ifdef MCL_USE_OMP
 	const size_t minN = mcl::fp::maxMulVecN;
@@ -2174,7 +2170,7 @@ template<class Fp, class Fr> int EcT<Fp, Fr>::specialB_;
 template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
 template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
 template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_;
-template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt, bool constTime);
+template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
 

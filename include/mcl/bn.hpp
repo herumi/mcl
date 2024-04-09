@@ -54,7 +54,7 @@ typedef mcl::FpT<local::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;
 typedef mcl::FpT<local::FrTag, MCL_MAX_FR_BIT_SIZE> Fr;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::Fp6T<Fp> Fp6;
-typedef mcl::Fp12T<Fp> Fp12;
+typedef mcl::Fp12T<Fp, Fr> Fp12;
 typedef mcl::EcT<Fp, Fr> G1;
 typedef mcl::EcT<Fp2, Fr> G2;
 typedef Fp12 GT;
@@ -1028,12 +1028,12 @@ namespace local {
 
 typedef GLV2T<Fr> GLV2;
 
-inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n, fp::getMpzAtType getMpzAt, fp::getUnitAtType getUnitAt)
+inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
 {
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n, getMpzAt, getUnitAt);
+	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n);
 }
 
 /*
