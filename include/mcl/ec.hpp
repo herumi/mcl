@@ -31,6 +31,8 @@ enum Mode {
 	Affine
 };
 
+namespace local {
+
 enum ModeCoeffA {
 	Zero,
 	Minus3,
@@ -41,8 +43,6 @@ enum ModeCoeffB {
 	Plus4,
 	GenericB
 };
-
-namespace local {
 
 template<class Ec, class Vec>
 void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
@@ -351,7 +351,7 @@ bool isValidJacobi(const E& P)
 	t += x2;
 	t *= P.x;
 	z4 *= z2;
-	if (E::specialB_ == ec::Plus4) {
+	if (E::specialB_ == ec::local::Plus4) {
 		local::mul4(z4);
 	} else {
 		z4 *= E::b_;
@@ -395,11 +395,11 @@ void dblJacobi(E& R, const E& P)
 	}
 	xy += xy; // 4xy^2
 	switch (E::specialA_) {
-	case Zero:
+	case local::Zero:
 		F::mul2(t, x2);
 		x2 += t;
 		break;
-	case Minus3:
+	case local::Minus3:
 		if (isPzOne) {
 			x2 -= P.z;
 		} else {
@@ -410,7 +410,7 @@ void dblJacobi(E& R, const E& P)
 		F::mul2(t, x2);
 		x2 += t;
 		break;
-	case GenericA:
+	case local::GenericA:
 	default:
 		if (isPzOne) {
 			t = E::a_;
@@ -556,14 +556,14 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::sub(y3, x3, y3);
 	F::add(x3, t0, t0);
 	F::add(t0, t0, x3);
-	if (E::specialB_ == ec::Plus4) {
+	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(t2);
 	} else {
 		F::mul(t2, t2, E::b3_);
 	}
 	F::add(R.z, t1, t2);
 	F::sub(t1, t1, t2);
-	if (E::specialB_ == ec::Plus4) {
+	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(y3);
 	} else {
 		F::mul(y3, y3, E::b3_);
@@ -591,7 +591,7 @@ void dblCTProj(E& R, const E& P)
 	F::add(R.z, t0, t0);
 	F::add(R.z, R.z, R.z);
 	F::add(R.z, R.z, R.z);
-	if (E::specialB_ == ec::Plus4) {
+	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(t2);
 	} else {
 		F::mul(t2, t2, E::b3_);
@@ -696,12 +696,12 @@ void dblProj(E& R, const E& P)
 	const bool isPzOne = P.z.isOne();
 	F w, t, h;
 	switch (E::specialA_) {
-	case Zero:
+	case local::Zero:
 		F::sqr(w, P.x);
 		F::add(t, w, w);
 		w += t;
 		break;
-	case Minus3:
+	case local::Minus3:
 		F::sqr(w, P.x);
 		if (isPzOne) {
 			w -= P.z;
@@ -712,7 +712,7 @@ void dblProj(E& R, const E& P)
 		F::add(t, w, w);
 		w += t;
 		break;
-	case GenericA:
+	case local::GenericA:
 	default:
 		if (isPzOne) {
 			w = E::a_;
@@ -1357,16 +1357,16 @@ public:
 		b_ = b;
 		b3_ = b * 3;
 		if (a_.isZero()) {
-			specialA_ = ec::Zero;
+			specialA_ = ec::local::Zero;
 		} else if (a_ == -3) {
-			specialA_ = ec::Minus3;
+			specialA_ = ec::local::Minus3;
 		} else {
-			specialA_ = ec::GenericA;
+			specialA_ = ec::local::GenericA;
 		}
 		if (b_ == 4) {
-			specialB_ = ec::Plus4;
+			specialB_ = ec::local::Plus4;
 		} else {
-			specialB_ = ec::GenericB;
+			specialB_ = ec::local::GenericB;
 		}
 		ioMode_ = 0;
 		verifyOrder_ = false;

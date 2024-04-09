@@ -37,7 +37,7 @@ struct PointT {
 
 template<class F> F PointT<F>::a_;
 template<class F> F PointT<F>::b_;
-template<class F> int PointT<F>::specialA_ = ec::GenericA;
+template<class F> int PointT<F>::specialA_ = ec::local::GenericA;
 
 } // mcl::local
 
