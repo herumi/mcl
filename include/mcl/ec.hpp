@@ -1461,12 +1461,10 @@ public:
 		Fp::neg(R.y, P.y);
 		R.z = P.z;
 	}
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y, bool constTime = false)
+	static inline void mul(EcT& z, const EcT& x, const EcT::Fr& y, bool constTime = false)
 	{
-		typedef FpT<tag, maxBitSize> F;
-		fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
-		fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
+		fp::getMpzAtType getMpzAt = fp::getMpzAtT<Fr>;
+		fp::getUnitAtType getUnitAt = fp::getUnitAtT<Fr>;
 		if (mulVecGLV) {
 			mulVecGLV(z, &x, &y, 1, getMpzAt, getUnitAt, constTime);
 			return;

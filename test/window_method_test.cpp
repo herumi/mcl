@@ -11,6 +11,7 @@ CYBOZU_TEST_AUTO(int)
 	typedef mcl::EcT<Fp, Fr> Ec;
 	const struct mcl::EcParam& para = mcl::ecparam::secp192k1;
 	Fp::init(para.p);
+	Fr::init(para.n);
 	Ec::init(para.a, para.b);
 	const Fp x(para.gx);
 	const Fp y(para.gy);
@@ -33,6 +34,8 @@ CYBOZU_TEST_AUTO(int)
 	Ec::mul(R, P, -12345);
 	CYBOZU_TEST_EQUAL(Q, R);
 	mpz_class t(para.gx);
+	Fr r;
+	r.setMpz(t);
 	pw.mul(Q, t);
 	Ec::mul(R, P, t);
 	CYBOZU_TEST_EQUAL(Q, R);
@@ -41,11 +44,11 @@ CYBOZU_TEST_AUTO(int)
 	Ec::mul(R, P, t);
 	CYBOZU_TEST_EQUAL(Q, R);
 
-	pw.mul(Q, x);
-	Ec::mul(R, P, x);
+	pw.mul(Q, r);
+	Ec::mul(R, P, r);
 	CYBOZU_TEST_EQUAL(Q, R);
 
-	pw.mul(Q, y);
-	Ec::mul(R, P, y);
+	pw.mul(Q, r);
+	Ec::mul(R, P, r);
 	CYBOZU_TEST_EQUAL(Q, R);
 }

@@ -562,7 +562,7 @@ public:
 			*pb = false;
 			return;
 		}
-		setArray(pb, gmp::getUnit(x), gmp::getUnitSize(x));
+		setArrayMod(pb, gmp::getUnit(x), gmp::getUnitSize(x));
 	}
 	static void add(FpT& z, const FpT& x, const FpT& y)
 	{
