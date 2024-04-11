@@ -115,11 +115,15 @@ enum TwistBtype {
 */
 inline void updateLine(Fp6& l, const G1& P)
 {
+#if 1
+	assert(!P.isZero());
+#else
 	if (P.isZero()) {
 		l.b.clear();
 		l.c.clear();
 		return;
 	}
+#endif
 	l.b.a *= P.y;
 	l.b.b *= P.y;
 	l.c.a *= P.x;
@@ -1253,11 +1257,15 @@ inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 {
 	y.a = x.a;
+#if 1
+	assert(!P.isZero());
+#else
 	if (P.isZero()) {
 		y.c.clear();
 		y.b.clear();
 		return;
 	}
+#endif
 	Fp2::mulFp(y.c, x.c, P.x);
 	Fp2::mulFp(y.b, x.b, P.y);
 }
@@ -1555,12 +1563,16 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 */
 inline void makeAdjP(G1& adjP, const G1& P)
 {
+#if 1
+	assert(!P.isZero());
+#else
 	if (P.isZero()) {
 		adjP.x.clear();
 		adjP.y.clear();
 		adjP.z.clear();
 		return;
 	}
+#endif
 	Fp x2;
 	Fp::mul2(x2, P.x);
 	Fp::add(adjP.x, x2, P.x);
@@ -1603,14 +1615,14 @@ inline void finalExp(Fp12& y, const Fp12& x)
 }
 inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 {
-	G1 P(P_);
-	G2 Q(Q_);
-	P.normalize();
-	Q.normalize();
-	if (Q.isZero()) {
+	if (P_.isZero() || Q_.isZero()) {
 		f = 1;
 		return;
 	}
+	G1 P;
+	G2 Q;
+	G1::normalize(P, P_);
+	G2::normalize(Q, Q_);
 	G2 T = Q;
 	G2 negQ;
 	if (BN::param.useNAF) {
@@ -1731,8 +1743,12 @@ void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 
 inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
-	G1 P(P_);
-	P.normalize();
+	if (P_.isZero()) {
+		f = 1;
+		return;
+	}
+	G1 P;
+	G1::normalize(P, P_);
 	G1 adjP;
 	makeAdjP(adjP, P);
 	size_t idx = 0;
