@@ -149,17 +149,19 @@ int NIAT_ReadBit(NIAT_Token token, Fr sk_I[3], G2 pk_I[3], const G1& P) {
     G1 lhs, rhs;
     G1::mul(rhs, P, sk_I[0]);
 
-    Fr x2_inv;
-    Fr::inv(x2_inv, sk_I[1]);
-    G1::mul(lhs, token.t[2], x2_inv);
+    Fr x2_neg;
+    Fr::neg(x2_neg, sk_I[1]);
+    G1::mul(lhs, token.t[2], x2_neg);
     G1::add(lhs, token.t[1], lhs);
 
     if (lhs == rhs) {
         return 1;
-    } else {
-        std::cout << "lhs  " << lhs << std::endl;
-        std::cout << "rhs  " << rhs << std::endl;
+    } else if (lhs.isZero()) {
+        return 0;
     }
+    // uh oh, botch, why
+    std::cout << "lhs  " << lhs << std::endl;
+    std::cout << "rhs  " << rhs << std::endl;
     return -1;
 }
 
@@ -249,7 +251,5 @@ int main(int argc, char *argv[]) {
     // redeem
     int b_star = NIAT_ReadBit(token, sk_I, pk_I, P);
     std::cout << "ReadBit correctly? " << (b==b_star ? "ok" : "ng") << std::endl;
-    std::cout << "ReadBit correctly? " << (b==b_star ? "ok" : "ng") << std::endl;
-
     return 0;
 }
