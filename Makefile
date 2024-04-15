@@ -32,7 +32,7 @@ ifeq ($(CPU),x86-64)
     TEST_SRC+=fp_generator_test.cpp
   endif
 endif
-SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
+SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp sps_eq.cpp
 #SAMPLE_SRC+=large.cpp # rebuild of bint is necessary
 
 ifneq ($(MCL_MAX_BIT_SIZE),)
