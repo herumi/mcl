@@ -532,7 +532,8 @@ void addJacobi(E& R, const E& P, const E& Q)
 	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
 
-// 14M
+// (b=4) 12M+27A
+// (generic) 14M+19A
 template<class E>
 void addCTProj(E& R, const E& P, const E& Q)
 {
@@ -581,7 +582,8 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::mul(R.z, R.z, t4);
 	F::add(R.z, R.z, t0);
 }
-// 7M+2S
+// (b = 4) 6M+2S+13A
+// (generic) 7M+2S+9A
 template<class E>
 void dblCTProj(E& R, const E& P)
 {

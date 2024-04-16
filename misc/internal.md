@@ -94,3 +94,11 @@ def mul(P, x):
 ```
 The values of tbl1[i] are 0, P, ..., 15P, and the values of tbl2[i] are 0, LP, ... , 15LP.
 Since L is odd and Q is a multiple of 16 just before AAA, Q != tbl1[j1] and Q != tbl2[j2]. So we can omit the ehckd of x == y in add(x, y).
+
+## Jacobi and Proj
+`sqr` is equal to `mul` on AVX-512.
+
+-|add|dbl
+-|-|-
+Proj|12M+27A|8M+13A
+Jacobi|16M+7A|7M+12A

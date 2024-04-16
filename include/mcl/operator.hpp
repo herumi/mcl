@@ -311,5 +311,5 @@ size_t invVec(T *y, const T* x, size_t n, size_t N = 256)
 	return invVecT<T>(y, in, n, N);
 }
 
-} // mcl::fp
+} // mcl
 
