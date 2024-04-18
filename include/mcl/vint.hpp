@@ -471,7 +471,10 @@ public:
 	{
 		size_t len = strlen(str);
 		size_t n = fp::strToArray(&isNeg_, buf_, N, str, len, base);
-		if (n == 0 || !setSize(n)) return;
+		if (n == 0 || !setSize(n)) {
+			*pb = false;
+			return;
+		}
 		trim();
 		*pb = true;
 	}
