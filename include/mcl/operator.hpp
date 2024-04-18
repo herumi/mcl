@@ -195,7 +195,7 @@ protected:
 			return;
 		}
 		const size_t w = 4;
-		const size_t N = 1 << w;
+		const size_t n = 1 << w;
 		uint8_t idxTbl[sizeof(T) * 8 / w];
 		mcl::fp::BitIterator<Unit> iter(y, yn);
 		size_t idxN = 0;
@@ -204,9 +204,9 @@ protected:
 			idxTbl[idxN++] = iter.getNext(w);
 		}
 		assert(idxN > 0);
-		T tbl[N];
+		T tbl[n];
 		tbl[1] = x;
-		for (size_t i = 2; i < N; i++) {
+		for (size_t i = 2; i < n; i++) {
 			tbl[i] = tbl[i-1] * x;
 		}
 		uint32_t idx = idxTbl[idxN - 1];
