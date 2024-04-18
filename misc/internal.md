@@ -1,4 +1,20 @@
-# Internal Algorithm
+# Internal Algorithm of mulVec with AVX-512
+
+# bencmark
+
+```
+make bin/mt_test.exe CFLAGS_USER=-DCYBOZU_BENCH_USE_GETTIMEOFDAY
+bin/mt_test.exe -g1 -n num
+```
+
+mulVec on Xeon w9-3495X (turbo boost on) with AVX-512 IFMA
+
+unit : msec
+n|8192|16384|32768|65536
+-|-|-|-|-
+w/o IFMA|66.498|122.666|227.042|426.498
+w IFMA|46.411|87.002|153.958|300.331
+speed up rate|1.43|1.41|1.47|1.42
 
 # GLV method
 
