@@ -84,7 +84,6 @@ public:
 private:
 	Unit v_[maxSize];
 	static fp::Op op_;
-	static int ioMode_;
 	static bool isETHserialization_;
 	template<class Fp> friend class FpDblT;
 	template<class Fp> friend class Fp2T;
@@ -170,7 +169,6 @@ public:
 			gmp::getArray(pb, op_.half, op_.N, half);
 			if (!*pb) return;
 		}
-		ioMode_ = 0;
 		isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
 		if (op_.fp_addA_ == 0) {
@@ -718,7 +716,7 @@ public:
 	*/
 	static inline void setIoMode(int ioMode)
 	{
-		ioMode_ = ioMode;
+		op_.ioMode_ = ioMode;
 	}
 	static void setETHserialization(bool ETHserialization)
 	{
@@ -729,7 +727,7 @@ public:
 		return isETHserialization_;
 	}
 	static inline bool isETHserialization() { return isETHserialization_; }
-	static inline int getIoMode() { return ioMode_; }
+	static inline int getIoMode() { return op_.ioMode_; }
 	static inline size_t getModBitLen() { return getBitSize(); }
 	static inline void setHashFunc(uint32_t hash(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize))
 	{
@@ -858,7 +856,6 @@ public:
 #endif
 // Change the priority ad hoc so that initPairing() can be called in the static constructor before the main function
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
-template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 template<class tag, size_t maxBitSize> bool FpT<tag, maxBitSize>::isETHserialization_ = false;
 
 } // mcl
