@@ -266,6 +266,7 @@ struct Op {
 	bool isLtQuad; // true if (bitSize % unitSize) <= unitSize - 2
 	bool isMont; // true if use Montgomery
 	bool isFastMod; // true if modulo is fast
+	bool ETHserialization_;
 
 	Op()
 	{
@@ -352,6 +353,7 @@ struct Op {
 		isLtQuad = false;
 		isMont = false;
 		isFastMod = false;
+		ETHserialization_ = false;
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{

@@ -1640,7 +1640,7 @@ public:
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			uint8_t buf[sizeof(Fp) + 1];
-			if (Fp::BaseFp::isETHserialization()) {
+			if (Fp::BaseFp::getETHserialization()) {
 				const uint8_t c_flag = 0x80;
 				const uint8_t b_flag = 0x40;
 				const uint8_t a_flag = 0x20;
@@ -1745,7 +1745,7 @@ public:
 				*pb = false;
 				return;
 			}
-			if (Fp::BaseFp::isETHserialization()) {
+			if (Fp::BaseFp::getETHserialization()) {
 				const uint8_t c_flag = 0x80;
 				const uint8_t b_flag = 0x40;
 				const uint8_t a_flag = 0x20;
