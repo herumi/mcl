@@ -194,7 +194,7 @@ ifeq ($(MCL_MSM),1)
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma $(CFLAGS_USER)
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER)
 endif
 include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)

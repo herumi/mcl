@@ -7,12 +7,14 @@
 */
 #include <stdint.h>
 #include <stdio.h>
-#include <mcl/bls12_381.hpp>
+#include <mcl/fp.hpp>
+#include <mcl/ec.hpp>
 #ifdef _WIN32
 #include <intrin.h>
 #else
 #include <x86intrin.h>
 #endif
+#define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
 typedef mcl::Unit Unit;
@@ -25,12 +27,8 @@ const size_t N = 8; // = ceil(384/52)
 const size_t M = sizeof(Vec) / sizeof(Unit);
 const uint64_t g_mask = (Unit(1)<<W) - 1;
 
-static mpz_class g_mp, g_mr;
-
-static mpz_class g_rw;
-
 // split into 52 bits
-static Unit g_p[N];
+//static Unit g_p[N];
 
 static Unit g_mpM2[6]; // x^(-1) = x^(p-2) mod p
 
@@ -41,6 +39,27 @@ static Vec g_vmpM2[6]; // NOT 52-bit but 64-bit
 static Vec g_vmask4;
 static Vec g_offset;
 static Vec g_vi192;
+
+
+namespace mcl {
+
+extern void initMsm(const mcl::CurveParam& cp, const mcl::fp::Op *FpOp, const mcl::fp::Op *FrOp);
+
+namespace bn {
+
+namespace local {
+struct FpTag;
+struct FrTag;
+}
+
+typedef mcl::FpT<local::FpTag, 368> Fp;
+typedef mcl::FpT<local::FrTag, 256> Fr;
+typedef mcl::EcT<Fp, Fr> G1;
+
+} } // mcl::bn
+
+static const mcl::fp::Op *g_fp;
+static const mcl::fp::Op *g_fr;
 
 inline Unit getMask(int w)
 {
@@ -775,6 +794,15 @@ struct FpM {
 			}
 		}
 	}
+	void setFp(const Unit *v)
+	{
+		Unit v8[6*8];
+		for (size_t i = 0; i < 8; i++) {
+			mcl::bint::copyT<6>(v8+i*6, v);
+		}
+		cvt6Ux8to8Ux8(this->v, v8);
+		FpM::mul(*this, *this, FpM::m64to52_);
+	}
 	void setFp(const mcl::bn::Fp v[M])
 	{
 		cvt6Ux8to8Ux8(this->v, (const Unit*)v);
@@ -1385,24 +1413,24 @@ static void mulVecAVX512(mcl::bn::G1& P, mcl::bn::G1 *x, const mcl::bn::Fr *y, s
 
 namespace mcl {
 
-void initMsm(const mcl::CurveParam& cp)
+void initMsm(const mcl::CurveParam& cp, const mcl::fp::Op *fp, const mcl::fp::Op *fr, const Unit *rw)
 {
 	if (cp != mcl::BLS12_381) return;
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return;
 	typedef void (*msmFunc)(mcl::bn::G1& z, mcl::bn::G1 *xVec, const void *yVec, size_t n);
 	mcl::bn::G1::setMulVecOpti((msmFunc)mulVecAVX512);
+printf("g_fp=%p %p\n", fp, &mcl::bn::Fp::getOp());
+	g_fp = fp;
+	g_fr = fr;
 
 	Montgomery& mont = g_mont;
-	const char *pStr = "1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab";
-	const char *rStr = "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001";
-	mcl::gmp::setStr(g_mp, pStr, 16);
-	mcl::gmp::setStr(g_mr, rStr, 16);
-	mont.set(g_mp);
-	toArray<N>(g_p, g_mp);
-	toArray<6, 64>(g_mpM2, g_mp-2);
+	const mpz_class& mp = g_fp->mp;
+
+	mont.set(mp);
+	toArray<6, 64>(g_mpM2, mp-2);
 	expand(vmask, g_mask);
-	expandN(vpN, g_mp);
+	expandN(vpN, mp);
 	expand(vrp, mont.rp);
 	for (int i = 0; i < 6; i++) {
 		expand(g_vmpM2[i], g_mpM2[i]);
@@ -1421,11 +1449,8 @@ void initMsm(const mcl::CurveParam& cp)
 		FpM::m64to52_.set(t);
 		FpM::pow(FpM::m52to64_, FpM::m64to52_, g_vmpM2, 6);
 	}
+	FpM::rw_.setFp(rw);
 	EcM::init(mont);
-	const char *rwStr = "1a0111ea397fe699ec02408663d4de85aa0d857d89759ad4897d29650fb85f9b409427eb4f49fffd8bfd00000000aaac";
-	mpz_class rw;
-	mcl::gmp::setStr(rw, rwStr, 16);
-	FpM::rw_.set(rw);
 }
 
 } // mcl
