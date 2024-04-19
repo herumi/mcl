@@ -84,7 +84,6 @@ public:
 private:
 	Unit v_[maxSize];
 	static fp::Op op_;
-	static FpT<tag, maxBitSize> inv2_;
 	static int ioMode_;
 	static bool isETHserialization_;
 	template<class Fp> friend class FpDblT;
@@ -171,7 +170,6 @@ public:
 			gmp::getArray(pb, op_.half, op_.N, half);
 			if (!*pb) return;
 		}
-		inv(inv2_, 2);
 		ioMode_ = 0;
 		isETHserialization_ = false;
 #ifdef MCL_XBYAK_DIRECT_CALL
@@ -638,15 +636,11 @@ public:
 	}
 	static inline void divBy2(FpT& y, const FpT& x)
 	{
-#if 0
-		mul(y, x, inv2_);
-#else
 		bool odd = (x.v_[0] & 1) != 0;
 		op_.fp_shr1(y.v_, x.v_);
 		if (odd) {
 			op_.fp_addPre(y.v_, y.v_, op_.half);
 		}
-#endif
 	}
 	static inline void divBy4(FpT& y, const FpT& x)
 	{
@@ -864,7 +858,6 @@ public:
 #endif
 // Change the priority ad hoc so that initPairing() can be called in the static constructor before the main function
 template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
-template<class tag, size_t maxBitSize> FpT<tag, maxBitSize> FpT<tag, maxBitSize>::inv2_;
 template<class tag, size_t maxBitSize> int FpT<tag, maxBitSize>::ioMode_ = IoAuto;
 template<class tag, size_t maxBitSize> bool FpT<tag, maxBitSize>::isETHserialization_ = false;
 
