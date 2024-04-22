@@ -2295,7 +2295,9 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
 	param.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
+	param.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
 	param.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
+	param.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
 	#pragma GCC diagnostic pop
 #endif

@@ -7,7 +7,6 @@
 */
 #include <stdint.h>
 #include <stdio.h>
-#include <mcl/fp.hpp>
 #include <mcl/ec.hpp>
 #ifdef _WIN32
 #include <intrin.h>
@@ -1296,55 +1295,45 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 	Xbyak::AlignedFree(tbl);
 }
 
-#if 0
-inline void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
+void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
 {
-#if 0
-	using namespace mcl::bn;
-	G1::mul(P, x[0], y[0]);
-	for (size_t i = 1; i < n; i++) {
-		G1 T;
-		G1::mul(T, x[i], y[i]);
-		P += T;
-	}
-#else
 	size_t c = mcl::ec::argminForMulVec(n);
 	size_t tblN = (1 << c) - 0;
-	mcl::bn::G1 *tbl = (mcl::bn::G1*)CYBOZU_ALLOCA(sizeof(mcl::bn::G1) * tblN);
+	mcl::msm::G1A *tbl = (mcl::msm::G1A*)CYBOZU_ALLOCA(sizeof(mcl::msm::G1A) * tblN);
 	const size_t maxBitSize = 256;
 	const size_t winN = (maxBitSize + c-1) / c;
-	mcl::bn::G1 *win = (mcl::bn::G1*)CYBOZU_ALLOCA(sizeof(mcl::bn::G1) * winN);
+	mcl::msm::G1A *win = (mcl::msm::G1A*)CYBOZU_ALLOCA(sizeof(mcl::msm::G1A) * winN);
 
-	Unit *yVec = (Unit*)CYBOZU_ALLOCA(sizeof(mcl::bn::Fr) * n);
+	Unit *yVec = (Unit*)CYBOZU_ALLOCA(sizeof(mcl::msm::FrA) * n);
+	const mcl::msm::addG1Func addG1 = g_param.addG1;
+	const mcl::msm::dblG1Func dblG1 = g_param.dblG1;
+	const mcl::msm::clearG1Func clearG1 = g_param.clearG1;
 	for (size_t i = 0; i < n; i++) {
-		g_param.fr->fromMont(yVec+i*4, y[i].getUnit());
+		g_param.fr->fromMont(yVec+i*4, y[i].v);
 	}
 	for (size_t w = 0; w < winN; w++) {
 		for (size_t i = 0; i < tblN; i++) {
-			tbl[i].clear();
+			clearG1(tbl[i]);
 		}
 		for (size_t i = 0; i < n; i++) {
 			Unit v = mcl::fp::getUnitAt(yVec+i*4, 4, c * w) & (tblN-1);
-			tbl[v] += x[i];
+			addG1(tbl[v], tbl[v], x[i]);
 		}
-		mcl::bn::G1 sum = tbl[tblN-1];
+		mcl::msm::G1A sum = tbl[tblN-1];
 		win[w] = sum;
 		for (size_t i = 1; i < tblN-1; i++) {
-			sum += tbl[tblN - 1 - i];
-			win[w] += sum;
+			addG1(sum, sum, tbl[tblN - 1 - i]);
+			addG1(win[w], win[w], sum);
 		}
 	}
-	P.clear(); // remove a wrong gcc warning
 	P = win[winN - 1];
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
-			mcl::bn::G1::dbl(P, P);
+			dblG1(P, P);
 		}
-		P += win[winN - 1 - w];
+		addG1(P, P, win[winN - 1 - w]);
 	}
-#endif
 }
-#endif
 
 namespace mcl { namespace msm {
 

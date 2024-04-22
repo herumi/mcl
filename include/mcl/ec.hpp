@@ -1470,6 +1470,10 @@ public:
 		y = 1;
 		z.clear();
 	}
+	static inline void clear(EcT& P)
+	{
+		P.clear();
+	}
 	static inline void dbl(EcT& R, const EcT& P)
 	{
 		switch (mode_) {

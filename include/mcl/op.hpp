@@ -427,7 +427,9 @@ struct G1A {
 typedef size_t (*invVecFpFunc)(FpA *y, const FpA *x, size_t n, size_t _N);
 typedef void (*normalizeVecG1Func)(G1A *y, const G1A *x, size_t n);
 typedef void (*addG1Func)(G1A& z, const G1A& x, const G1A& y);
+typedef void (*dblG1Func)(G1A& z, const G1A& x);
 typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
+typedef void (*clearG1Func)(G1A& z);
 
 struct Param {
 	const mcl::fp::Op *fp;
@@ -436,7 +438,9 @@ struct Param {
 	invVecFpFunc invVecFp;
 	normalizeVecG1Func normalizeVecG1;
 	addG1Func addG1;
+	dblG1Func dblG1;
 	mulG1Func mulG1;
+	clearG1Func clearG1;
 };
 
 } } // mcl::msm
