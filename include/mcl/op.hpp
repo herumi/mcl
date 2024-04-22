@@ -412,6 +412,7 @@ inline void dump(const std::string& s)
 
 namespace mcl { namespace msm {
 
+// only for BLS12-381
 struct FrA {
 	uint64_t v[4];
 };

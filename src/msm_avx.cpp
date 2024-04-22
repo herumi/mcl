@@ -6,7 +6,6 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdint.h>
-#include <stdio.h>
 #include <mcl/ec.hpp>
 #ifdef _WIN32
 #include <intrin.h>
@@ -485,11 +484,11 @@ inline void split(Unit a[2], Unit b[2], const Unit x[4])
 	static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
 	static const size_t n = 128 / mcl::UnitBitSize;
 	Unit t[n*3];
-	mcl::bint::mulNM(t, x, n*2, (const Unit*)vv, n);
+	mcl::bint::mulNM(t, x, n*2, vv, n);
 	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
 	b[0] = t[0];
 	b[1] = t[1];
-	mcl::bint::mulT<n>(t, t, (const Unit*)Lv);
+	mcl::bint::mulT<n>(t, t, Lv);
 	mcl::bint::subT<n>(a, x, t);
 }
 
@@ -515,9 +514,7 @@ public:
 		mR = (mR << (W * N)) % mp;
 		mR2 = (mR * mR) % mp;
 		toArray<N>(v_, _p);
-//		::put(v_, "v_");
 		rp = mcl::bint::getMontgomeryCoeff(v_[0], W);
-//		printf("rp=%zx\n", rp);
 		p = v_;
 		isFullBit = p[N-1] >> (W-1);
 	}
@@ -1295,6 +1292,7 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 	Xbyak::AlignedFree(tbl);
 }
 
+#if 0
 void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
 {
 	size_t c = mcl::ec::argminForMulVec(n);
@@ -1334,15 +1332,17 @@ void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA 
 		addG1(P, P, win[winN - 1 - w]);
 	}
 }
+#endif
 
 namespace mcl { namespace msm {
 
 void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 {
-	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
+	G1A& P = *(G1A*)_P;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	const size_t n8 = n/8;
+	const mcl::fp::Op *fr = g_param.fr;
 #if 1
 //	mcl::ec::normalizeVec(x, x, n);
 	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8 * 2, 64);
@@ -1355,7 +1355,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	for (size_t i = 0; i < n8; i++) {
 		for (size_t j = 0; j < 8; j++) {
 			Unit ya[4];
-			g_param.fr->fromMont(ya, y[i*8+j].v);
+			fr->fromMont(ya, y[i*8+j].v);
 			Unit a[2], b[2];
 			split(a, b, ya);
 			py[j+0] = a[0];
