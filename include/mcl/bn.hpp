@@ -2275,6 +2275,7 @@ namespace BN {
 
 using namespace mcl::bn; // backward compatibility
 
+
 inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	BN::nonConstParam.init(pb, cp, mode);
@@ -2288,8 +2289,16 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	param.rw = local::GLV1::rw.getUnit();
 	param.invVecFp = mcl::msm::invVecFpFunc(mcl::invVec<mcl::bn::Fp>);
 	param.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	// avoid gcc wrong detection
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
 	param.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
 	param.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	#pragma GCC diagnostic pop
+#endif
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
 		if (mcl::msm::initMsm(cp, &param)) {
 			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
