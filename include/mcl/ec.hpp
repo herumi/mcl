@@ -1315,7 +1315,7 @@ public:
 	static bool verifyOrder_;
 	static mpz_class order_;
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
-	static void (*mulVecOpti)(EcT& z, EcT *xVec, const void *yVec, size_t n);
+	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1408,7 +1408,7 @@ public:
 	{
 		mulVecGLV = f;
 	}
-	static void setMulVecOpti(void f(EcT& z, EcT *xVec, const void *yVec, size_t yn))
+	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn))
 	{
 		mulVecOpti = f;
 	}
@@ -2076,7 +2076,7 @@ public:
 			return;
 		}
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti(z, xVec, yVec, n);
+			mulVecOpti((Unit*)&z, (Unit*)xVec, (const Unit*)yVec, n);
 			return;
 		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false)) {
@@ -2185,7 +2185,7 @@ template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
 template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
 template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_;
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
-template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(EcT& z, EcT *xVec, const void *yVec, size_t n);
+template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
 

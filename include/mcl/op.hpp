@@ -409,3 +409,34 @@ inline void dump(const std::string& s)
 #endif
 
 } } // mcl::fp
+
+namespace mcl { namespace msm {
+
+struct FrA {
+	uint64_t v[4];
+};
+
+struct FpA {
+	uint64_t v[6];
+};
+
+struct G1A {
+	uint64_t v[6*3];
+};
+
+typedef size_t (*invVecFpFunc)(FpA *y, const FpA *x, size_t n, size_t _N);
+typedef void (*normalizeVecG1Func)(G1A *y, const G1A *x, size_t n);
+typedef void (*addG1Func)(G1A& z, const G1A& x, const G1A& y);
+typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
+
+struct Param {
+	const mcl::fp::Op *fp;
+	const mcl::fp::Op *fr;
+	const Unit *rw;
+	invVecFpFunc invVecFp;
+	normalizeVecG1Func normalizeVecG1;
+	addG1Func addG1;
+	mulG1Func mulG1;
+};
+
+} } // mcl::msm

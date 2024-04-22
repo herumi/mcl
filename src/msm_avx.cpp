@@ -21,14 +21,13 @@ typedef mcl::Unit Unit;
 typedef __m512i Vec;
 typedef __mmask8 Vmask;
 
+static mcl::msm::Param g_param;
+
 const size_t S = sizeof(Unit)*8-1; // 63
 const size_t W = 52;
 const size_t N = 8; // = ceil(384/52)
 const size_t M = sizeof(Vec) / sizeof(Unit);
 const uint64_t g_mask = (Unit(1)<<W) - 1;
-
-// split into 52 bits
-//static Unit g_p[N];
 
 static Unit g_mpM2[6]; // x^(-1) = x^(p-2) mod p
 
@@ -39,27 +38,6 @@ static Vec g_vmpM2[6]; // NOT 52-bit but 64-bit
 static Vec g_vmask4;
 static Vec g_offset;
 static Vec g_vi192;
-
-
-namespace mcl {
-
-extern void initMsm(const mcl::CurveParam& cp, const mcl::fp::Op *FpOp, const mcl::fp::Op *FrOp);
-
-namespace bn {
-
-namespace local {
-struct FpTag;
-struct FrTag;
-}
-
-typedef mcl::FpT<local::FpTag, 368> Fp;
-typedef mcl::FpT<local::FrTag, 256> Fr;
-typedef mcl::EcT<Fp, Fr> G1;
-
-} } // mcl::bn
-
-static const mcl::fp::Op *g_fp;
-static const mcl::fp::Op *g_fr;
 
 inline Unit getMask(int w)
 {
@@ -803,12 +781,12 @@ struct FpM {
 		cvt6Ux8to8Ux8(this->v, v8);
 		FpM::mul(*this, *this, FpM::m64to52_);
 	}
-	void setFp(const mcl::bn::Fp v[M])
+	void setFp(const mcl::msm::FpA v[M])
 	{
-		cvt6Ux8to8Ux8(this->v, (const Unit*)v);
+		cvt6Ux8to8Ux8(this->v, v[0].v);
 		FpM::mul(*this, *this, FpM::m64to52_);
 	}
-	void getFp(mcl::bn::Fp v[M]) const
+	void getFp(mcl::msm::FpA v[M]) const
 	{
 		FpM t;
 		FpM::mul(t, *this, FpM::m52to64_);
@@ -817,9 +795,9 @@ struct FpM {
 	static void inv(FpM& z, const FpM& x)
 	{
 #if 1
-		mcl::bn::Fp v[M];
+		mcl::msm::FpA v[M];
 		x.getFp(v);
-		mcl::invVec(v, v, M);
+		g_param.invVecFp(v, v, M, M);
 		z.setFp(v);
 #else
 		pow(z, x, g_vmpM2, 6);
@@ -1041,10 +1019,10 @@ struct EcM {
 	{
 		cvt8Ux8x3to6Ux3x8(a, x.v);
 	}
-	void setG1(const mcl::bn::G1 v[M], bool JacobiToProj = true)
+	void setG1(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
 #if 1
-		setArray((const Unit*)v);
+		setArray(v[0].v);
 		FpM::mul(x, x, FpM::m64to52_);
 		FpM::mul(y, y, FpM::m64to52_);
 		FpM::mul(z, z, FpM::m64to52_);
@@ -1061,7 +1039,7 @@ struct EcM {
 #endif
 		if (JacobiToProj) mcl::ec::JacobiToProj(*this, *this);
 	}
-	void getG1(mcl::bn::G1 v[M], bool ProjToJacobi = true) const
+	void getG1(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
@@ -1069,7 +1047,7 @@ struct EcM {
 		FpM::mul(T.x, T.x, FpM::m52to64_);
 		FpM::mul(T.y, T.y, FpM::m52to64_);
 		FpM::mul(T.z, T.z, FpM::m52to64_);
-		T.getArray((Unit*)v);
+		T.getArray(v[0].v);
 #else
 		T.x.fromMont(T.x);
 		T.y.fromMont(T.y);
@@ -1195,11 +1173,12 @@ struct EcM {
 #endif
 		if (!isProj) mcl::ec::JacobiToProj(Q, Q);
 	}
-	static void mulGLVbn(mcl::bn::G1 _Q[8], mcl::bn::G1 _P[8], const Vec y[4])
+	static void mulGLVbn(mcl::msm::G1A _Q[8], mcl::msm::G1A _P[8], const Vec y[4])
 	{
 		const bool isProj = false;
 		const bool mixed = true;
-		mcl::ec::normalizeVec(_P, _P, 8);
+//		mcl::ec::normalizeVec(_P, _P, 8);
+		g_param.normalizeVecG1(_P, _P, 8);
 		EcM P, Q;
 		P.setG1(_P, isProj);
 		mulGLV<isProj, mixed>(Q, P, y);
@@ -1233,28 +1212,28 @@ FpM EcM::b3_;
 EcM EcM::zeroProj_;
 EcM EcM::zeroJacobi_;
 
-inline void reduceSum(mcl::bn::G1& Q, const EcM& P)
+inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 {
 
-	mcl::bn::G1 z[8];
+	mcl::msm::G1A z[8];
 	P.getG1(z);
 	Q = z[0];
 	for (int i = 1; i < 8; i++) {
-		Q += z[i];
+		g_param.addG1(Q, Q, z[i]);
 	}
 }
 
-inline void cvtFr8toVec4(Vec yv[4], const mcl::bn::Fr y[8])
+inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
 {
 	Unit ya[4*8];
 	for (size_t i = 0; i < 8; i++) {
-		mcl::bn::Fr::getOp().fromMont(ya+i*4, y[i].getUnit());
+		g_param.fr->fromMont(ya+i*4, y[i].v);
 	}
 	cvt4Ux8to8Ux4(yv, ya);
 }
 
 template<bool isProj=true>
-inline void mulVecAVX512_naive(mcl::bn::G1& P, const mcl::bn::G1 *x, const mcl::bn::Fr *y, size_t n)
+inline void mulVecAVX512_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
 {
 	assert(n % 8 == 0);
 	EcM R;
@@ -1276,7 +1255,7 @@ inline void mulVecAVX512_naive(mcl::bn::G1& P, const mcl::bn::G1 *x, const mcl::
 
 // xVec[n], yVec[n * maxBitSize/64]
 // assume xVec[] is normalized
-inline void mulVecAVX512_inner(mcl::bn::G1& P, const EcM *xVec, const Vec *yVec, size_t n, size_t maxBitSize)
+inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVec, size_t n, size_t maxBitSize)
 {
 	size_t c = mcl::ec::argminForMulVec(n);
 	size_t tblN = size_t(1) << c;
@@ -1317,7 +1296,8 @@ inline void mulVecAVX512_inner(mcl::bn::G1& P, const EcM *xVec, const Vec *yVec,
 	Xbyak::AlignedFree(tbl);
 }
 
-inline void mulVec_naive(mcl::bn::G1& P, const mcl::bn::G1 *x, const mcl::bn::Fr *y, size_t n)
+#if 0
+inline void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
 {
 #if 0
 	using namespace mcl::bn;
@@ -1337,7 +1317,7 @@ inline void mulVec_naive(mcl::bn::G1& P, const mcl::bn::G1 *x, const mcl::bn::Fr
 
 	Unit *yVec = (Unit*)CYBOZU_ALLOCA(sizeof(mcl::bn::Fr) * n);
 	for (size_t i = 0; i < n; i++) {
-		mcl::bn::Fr::getOp().fromMont(yVec+i*4, y[i].getUnit());
+		g_param.fr->fromMont(yVec+i*4, y[i].getUnit());
 	}
 	for (size_t w = 0; w < winN; w++) {
 		for (size_t i = 0; i < tblN; i++) {
@@ -1364,9 +1344,15 @@ inline void mulVec_naive(mcl::bn::G1& P, const mcl::bn::G1 *x, const mcl::bn::Fr
 	}
 #endif
 }
+#endif
 
-static void mulVecAVX512(mcl::bn::G1& P, mcl::bn::G1 *x, const mcl::bn::Fr *y, size_t n)
+namespace mcl { namespace msm {
+
+void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 {
+	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
+	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
+	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	const size_t n8 = n/8;
 #if 1
 //	mcl::ec::normalizeVec(x, x, n);
@@ -1380,7 +1366,7 @@ static void mulVecAVX512(mcl::bn::G1& P, mcl::bn::G1 *x, const mcl::bn::Fr *y, s
 	for (size_t i = 0; i < n8; i++) {
 		for (size_t j = 0; j < 8; j++) {
 			Unit ya[4];
-			mcl::bn::Fr::getOp().fromMont(ya, y[i*8+j].getUnit());
+			g_param.fr->fromMont(ya, y[i*8+j].v);
 			Unit a[2], b[2];
 			split(a, b, ya);
 			py[j+0] = a[0];
@@ -1404,28 +1390,23 @@ static void mulVecAVX512(mcl::bn::G1& P, mcl::bn::G1 *x, const mcl::bn::Fr *y, s
 #endif
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
+	const bool constTime = false;
 	for (size_t i = n8*8; i < n; i++) {
-		mcl::bn::G1 Q;
-		mcl::bn::G1::mul(Q, x[i], y[i]);
-		P += Q;
+		mcl::msm::G1A Q;
+		g_param.mulG1(Q, x[i], y[i], constTime);
+		g_param.addG1(P, P, Q);
 	}
 }
 
-namespace mcl {
-
-void initMsm(const mcl::CurveParam& cp, const mcl::fp::Op *fp, const mcl::fp::Op *fr, const Unit *rw)
+bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 {
-	if (cp != mcl::BLS12_381) return;
+	if (cp != mcl::BLS12_381) return false;
 	Xbyak::util::Cpu cpu;
-	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return;
-	typedef void (*msmFunc)(mcl::bn::G1& z, mcl::bn::G1 *xVec, const void *yVec, size_t n);
-	mcl::bn::G1::setMulVecOpti((msmFunc)mulVecAVX512);
-printf("g_fp=%p %p\n", fp, &mcl::bn::Fp::getOp());
-	g_fp = fp;
-	g_fr = fr;
+	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
+	g_param = *param;
 
 	Montgomery& mont = g_mont;
-	const mpz_class& mp = g_fp->mp;
+	const mpz_class& mp = g_param.fp->mp;
 
 	mont.set(mp);
 	toArray<6, 64>(g_mpM2, mp-2);
@@ -1449,9 +1430,10 @@ printf("g_fp=%p %p\n", fp, &mcl::bn::Fp::getOp());
 		FpM::m64to52_.set(t);
 		FpM::pow(FpM::m52to64_, FpM::m64to52_, g_vmpM2, 6);
 	}
-	FpM::rw_.setFp(rw);
+	FpM::rw_.setFp(g_param.rw);
 	EcM::init(mont);
+	return true;
 }
 
-} // mcl
+} } // mcl::msm
 
