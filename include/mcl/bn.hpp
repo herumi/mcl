@@ -43,12 +43,14 @@ void mulByCofactorBLS12fast(T& Q, const T& P);
 #endif
 namespace mcl {
 
+#if MCL_MSM == 1
 namespace msm {
 
 bool initMsm(const mcl::CurveParam& cp, const Param *param);
 void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n);
 
 } // mcl::msm
+#endif
 
 namespace MCL_NAMESPACE_BN {
 
@@ -2282,7 +2284,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	if (!*pb) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
-#ifdef MCL_MSM
+#if MCL_MSM == 1
 	mcl::msm::Param para;
 	para.fp = &Fp::getOp();
 	para.fr = &Fr::getOp();
