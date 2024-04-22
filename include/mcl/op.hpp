@@ -411,7 +411,7 @@ inline void dump(const std::string& s)
 } } // mcl::fp
 
 #ifndef MCL_MSM
-  #if (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8)
+  #if (defined(_WIN64) || defined(__x86_64__)) && !defined(__APPLE__) && (MCL_SIZEOF_UNIT == 8)
     #define MCL_MSM 1
   #else
     #define MCL_MSM 0
