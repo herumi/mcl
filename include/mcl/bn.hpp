@@ -43,6 +43,15 @@ void mulByCofactorBLS12fast(T& Q, const T& P);
 #endif
 namespace mcl {
 
+#if MCL_MSM == 1
+namespace msm {
+
+bool initMsm(const mcl::CurveParam& cp, const Param *param);
+void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n);
+
+} // mcl::msm
+#endif
+
 namespace MCL_NAMESPACE_BN {
 
 namespace local {
@@ -115,11 +124,15 @@ enum TwistBtype {
 */
 inline void updateLine(Fp6& l, const G1& P)
 {
+#if 1
+	assert(!P.isZero());
+#else
 	if (P.isZero()) {
 		l.b.clear();
 		l.c.clear();
 		return;
 	}
+#endif
 	l.b.a *= P.y;
 	l.b.b *= P.y;
 	l.c.a *= P.x;
@@ -1253,11 +1266,15 @@ inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 {
 	y.a = x.a;
+#if 1
+	assert(!P.isZero());
+#else
 	if (P.isZero()) {
 		y.c.clear();
 		y.b.clear();
 		return;
 	}
+#endif
 	Fp2::mulFp(y.c, x.c, P.x);
 	Fp2::mulFp(y.b, x.b, P.y);
 }
@@ -1555,12 +1572,16 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 */
 inline void makeAdjP(G1& adjP, const G1& P)
 {
+#if 1
+	assert(!P.isZero());
+#else
 	if (P.isZero()) {
 		adjP.x.clear();
 		adjP.y.clear();
 		adjP.z.clear();
 		return;
 	}
+#endif
 	Fp x2;
 	Fp::mul2(x2, P.x);
 	Fp::add(adjP.x, x2, P.x);
@@ -1603,14 +1624,14 @@ inline void finalExp(Fp12& y, const Fp12& x)
 }
 inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 {
-	G1 P(P_);
-	G2 Q(Q_);
-	P.normalize();
-	Q.normalize();
-	if (Q.isZero()) {
+	if (P_.isZero() || Q_.isZero()) {
 		f = 1;
 		return;
 	}
+	G1 P;
+	G2 Q;
+	G1::normalize(P, P_);
+	G2::normalize(Q, Q_);
 	G2 T = Q;
 	G2 negQ;
 	if (BN::param.useNAF) {
@@ -1731,8 +1752,12 @@ void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 
 inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
-	G1 P(P_);
-	P.normalize();
+	if (P_.isZero()) {
+		f = 1;
+		return;
+	}
+	G1 P;
+	G1::normalize(P, P_);
 	G1 adjP;
 	makeAdjP(adjP, P);
 	size_t idx = 0;
@@ -2252,12 +2277,38 @@ namespace BN {
 
 using namespace mcl::bn; // backward compatibility
 
+
 inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
 {
 	BN::nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
+#if MCL_MSM == 1
+	mcl::msm::Param para;
+	para.fp = &Fp::getOp();
+	para.fr = &Fr::getOp();
+	para.rw = local::GLV1::rw.getUnit();
+	para.invVecFp = mcl::msm::invVecFpFunc(mcl::invVec<mcl::bn::Fp>);
+	para.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	// avoid gcc wrong detection
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+	para.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
+	para.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
+	para.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
+	para.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+	#pragma GCC diagnostic pop
+#endif
+	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
+		if (mcl::msm::initMsm(cp, &para)) {
+			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
+		}
+	}
+#endif
 	Fp12::setPowVecGLV(local::powVecGLV);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();

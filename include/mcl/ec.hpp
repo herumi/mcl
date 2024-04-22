@@ -245,6 +245,7 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 } // mcl::ec::local
 
 // [X:Y:Z] as Proj = (X/Z, Y/Z) as Affine = [XZ:YZ^2:Z] as Jacobi
+// Remark. convert P = [1:0:0] to Q = [0:0:0]
 template<class E>
 void ProjToJacobi(E& Q, const E& P)
 {
@@ -256,6 +257,7 @@ void ProjToJacobi(E& Q, const E& P)
 }
 
 // [X:Y:Z] as Jacobi = (X/Z^2, Y/Z^3) as Affine = [XZ:Y:Z^3] as Proj
+// Remark. convert P = [1:1:0] to Q = [0:1:0]
 template<class E>
 void JacobiToProj(E& Q, const E& P)
 {
@@ -530,7 +532,8 @@ void addJacobi(E& R, const E& P, const E& Q)
 	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
 
-// 14M
+// (b=4) 12M+27A
+// (generic) 14M+19A
 template<class E>
 void addCTProj(E& R, const E& P, const E& Q)
 {
@@ -579,7 +582,8 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F::mul(R.z, R.z, t4);
 	F::add(R.z, R.z, t0);
 }
-// 7M+2S
+// (b = 4) 6M+2S+13A
+// (generic) 7M+2S+9A
 template<class E>
 void dblCTProj(E& R, const E& P)
 {
@@ -1311,6 +1315,7 @@ public:
 	static bool verifyOrder_;
 	static mpz_class order_;
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
+	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1376,6 +1381,7 @@ public:
 		verifyOrder_ = false;
 		order_ = 0;
 		mulVecGLV = 0;
+		mulVecOpti = 0;
 		isValidOrderFast = 0;
 		mode_ = mode;
 	}
@@ -1401,6 +1407,10 @@ public:
 	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, bool constTime))
 	{
 		mulVecGLV = f;
+	}
+	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn))
+	{
+		mulVecOpti = f;
 	}
 	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
 	{
@@ -1459,6 +1469,10 @@ public:
 		}
 		y = 1;
 		z.clear();
+	}
+	static inline void clear(EcT& P)
+	{
+		P.clear();
 	}
 	static inline void dbl(EcT& R, const EcT& P)
 	{
@@ -1630,7 +1644,7 @@ public:
 			const size_t n = Fp::getByteSize();
 			const size_t adj = isMSBserialize() ? 0 : 1;
 			uint8_t buf[sizeof(Fp) + 1];
-			if (Fp::BaseFp::isETHserialization()) {
+			if (Fp::BaseFp::getETHserialization()) {
 				const uint8_t c_flag = 0x80;
 				const uint8_t b_flag = 0x40;
 				const uint8_t a_flag = 0x20;
@@ -1735,7 +1749,7 @@ public:
 				*pb = false;
 				return;
 			}
-			if (Fp::BaseFp::isETHserialization()) {
+			if (Fp::BaseFp::getETHserialization()) {
 				const uint8_t c_flag = 0x80;
 				const uint8_t b_flag = 0x40;
 				const uint8_t a_flag = 0x20;
@@ -2065,6 +2079,10 @@ public:
 			z.clear();
 			return;
 		}
+		if (mulVecOpti && n >= 128) {
+			mulVecOpti((Unit*)&z, (Unit*)xVec, (const Unit*)yVec, n);
+			return;
+		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false)) {
 			return;
 		}
@@ -2171,6 +2189,7 @@ template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
 template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
 template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_;
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
+template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
 

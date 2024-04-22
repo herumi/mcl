@@ -62,6 +62,7 @@
 	#else
 		#define CYBOZU_ALLOCA(x) __builtin_alloca(x)
 	#endif
+	#define CYBOZU_ALIGNED_ALLOCA(x, align) (void*)(size_t(CYBOZU_ALLOCA((x)+(align)-1)) & ~(size_t(align)-1))
 #endif
 #ifndef CYBOZU_NUM_OF_ARRAY
 	#define CYBOZU_NUM_OF_ARRAY(x) (sizeof(x) / sizeof(*x))

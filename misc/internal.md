@@ -1,4 +1,20 @@
-# Internal Algorithm
+# Internal Algorithm of mulVec with AVX-512
+
+# bencmark
+
+```
+make bin/mt_test.exe CFLAGS_USER=-DCYBOZU_BENCH_USE_GETTIMEOFDAY
+bin/mt_test.exe -g1 -n num
+```
+
+mulVec on Xeon w9-3495X (turbo boost on) with AVX-512 IFMA
+
+unit : msec
+n|8192|16384|32768|65536
+-|-|-|-|-
+w/o IFMA|66.498|122.666|227.042|426.498
+w IFMA|46.411|87.002|153.958|300.331
+speed up rate|1.43|1.41|1.47|1.42
 
 # GLV method
 
@@ -52,3 +68,53 @@ aS = (x - bL)S = xS - bSL = xS - (xv - r1)L = x(S - vL) + r1 L = r0 x + r1 L
 ```
 Then, a < H.
 So for x in [0, M-1], set x = x - r if x >= H and apply split() to x.
+
+## window size
+- 128-bit (Fr is 256 bit and use GLV method)
+- w-bit window size
+
+```python
+def f(w):
+  return 2**w+(128+w-1)//w
+```
+
+w|1|2|3|4|5|6
+-|-|-|-|-|-|-
+f(w)|130|68|51|48|58|86
+
+argmin f(w) = 4
+
+## Use projective coordinates
+
+- psuedo code of GLV method
+
+```python
+def mul(P, x):
+  (a, b) = split(x)
+  # a, b < 1<<128
+  w = 4
+  for i in range(1<<w):
+    tbl1[i] = P * i
+    tbl2[i] = mulLamba(tbl1[i])
+
+  mask = (1<<w)-1
+  Q = 0
+  for i in range(128//w):
+    for j in range(w):
+      Q = dbl(Q)
+    j1 = (a >> (w*i)) & mask
+    j2 = (b >> (w*i)) & mask ### AAA
+    Q = add(Q, tbl1[j1])
+    Q = add(Q, tbl2[j2])
+  return Q
+```
+The values of tbl1[i] are 0, P, ..., 15P, and the values of tbl2[i] are 0, LP, ... , 15LP.
+Since L is odd and Q is a multiple of 16 just before AAA, Q != tbl1[j1] and Q != tbl2[j2]. So we can omit the ehckd of x == y in add(x, y).
+
+## Jacobi and Proj
+`sqr` is equal to `mul` on AVX-512.
+
+-|add|dbl
+-|-|-
+Proj|12M+27A|8M+13A
+Jacobi|16M+7A|7M+12A

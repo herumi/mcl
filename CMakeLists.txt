@@ -59,10 +59,10 @@ if(MSVC)
 	)
 endif()
 
-if(MSVC)
-	set(MCL_CYBOZULIB_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cybozulib_ext"
-		CACHE PATH "external cybozulib_ext directory")
-endif()
+#if(MSVC)
+#	set(MCL_CYBOZULIB_EXT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cybozulib_ext"
+#		CACHE PATH "external cybozulib_ext directory")
+#endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(BIT "64")
@@ -208,6 +208,36 @@ elseif(${MCL_USE_LLVM})
 	target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
 	add_dependencies(mcl_st gen_base.o)
 	target_sources(mcl_st PRIVATE ${BASE_OBJ})
+endif()
+
+# use src/msm_avx.cpp on x64
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
+#	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
+
+#	add_custom_command(OUTPUT ${MSM_OBJ}
+#		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /Ox /Oy /Gm- /EHsc /MT /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
+#		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+#	add_custom_target(msm_avx.o
+#		SOURCES ${MSM_OBJ})
+#	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
+#	add_dependencies(mcl msm_avx.o)
+#	target_link_libraries(mcl_st PUBLIC ${MSM_OBJ})
+#	add_dependencies(mcl_st msm_avx.o)
+#	target_sources(mcl_st PRIVATE ${MSM_OBJ})
+
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
+	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.o")
+
+	add_custom_command(OUTPUT ${MSM_OBJ}
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -mavx512f -mavx512ifma -std=c++11 -fno-exceptions -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(msm_avx.o
+		SOURCES ${MSM_OBJ})
+	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
+	add_dependencies(mcl msm_avx.o)
+	target_link_libraries(mcl_st PUBLIC ${MSM_OBJ})
+	add_dependencies(mcl_st msm_avx.o)
+	target_sources(mcl_st PRIVATE ${MSM_OBJ})
 endif()
 
 if(MCL_TEST_WITH_GMP)

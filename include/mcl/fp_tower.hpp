@@ -318,7 +318,7 @@ public:
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
 		Fp *ap = &a, *bp = &b;
-		if (Fp::isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+		if (Fp::getETHserialization() && ioMode & (IoSerialize | IoSerializeHexStr)) {
 			fp::swap_(ap, bp);
 		}
 		ap->load(pb, is, ioMode);
@@ -332,7 +332,7 @@ public:
 	void save(bool *pb, OutputStream& os, int ioMode) const
 	{
 		const Fp *ap = &a, *bp = &b;
-		if (Fp::isETHserialization_ && ioMode & (IoSerialize | IoSerializeHexStr)) {
+		if (Fp::getETHserialization() && ioMode & (IoSerialize | IoSerializeHexStr)) {
 			fp::swap_(ap, bp);
 		}
 		const char sep = *fp::getIoSeparator(ioMode);

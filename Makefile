@@ -186,6 +186,16 @@ src/bint64.ll: src/gen_bint.exe
 src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
 endif
+ifeq ($(ARCH),x86_64)
+  MSM=msm_avx
+  MCL_MSM?=1
+endif
+ifeq ($(MCL_MSM),1)
+  CFLAGS+=-DMCL_MSM=1
+  LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
+$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER)
+endif
 include/mcl/bint_proto.hpp: src/gen_bint_header.py
 	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py

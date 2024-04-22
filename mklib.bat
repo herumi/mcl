@@ -25,9 +25,10 @@ if "%1"=="dll" (
 )
 echo CFLAGS=%CFLAGS%
 
-set OBJ=obj\fp.obj bint-x64-win.obj
+set OBJ=obj\fp.obj obj\msm_avx.obj bint-x64-win.obj
 
 cl /c %CFLAGS% src\fp.cpp /Foobj\fp.obj
+cl /c %CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj /arch:AVX512
 lib /nologo /OUT:lib\mcl.lib /nodefaultlib %OBJ%
 
 if "%1"=="dll" (
