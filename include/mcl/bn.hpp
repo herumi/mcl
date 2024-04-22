@@ -2283,26 +2283,26 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
 #ifdef MCL_MSM
-	mcl::msm::Param param;
-	param.fp = &Fp::getOp();
-	param.fr = &Fr::getOp();
-	param.rw = local::GLV1::rw.getUnit();
-	param.invVecFp = mcl::msm::invVecFpFunc(mcl::invVec<mcl::bn::Fp>);
-	param.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
+	mcl::msm::Param para;
+	para.fp = &Fp::getOp();
+	para.fr = &Fr::getOp();
+	para.rw = local::GLV1::rw.getUnit();
+	para.invVecFp = mcl::msm::invVecFpFunc(mcl::invVec<mcl::bn::Fp>);
+	para.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
 	// avoid gcc wrong detection
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
-	param.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
-	param.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
-	param.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
-	param.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
+	para.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
+	para.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
+	para.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
+	para.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
 	#pragma GCC diagnostic pop
 #endif
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
-		if (mcl::msm::initMsm(cp, &param)) {
+		if (mcl::msm::initMsm(cp, &para)) {
 			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
 		}
 	}
