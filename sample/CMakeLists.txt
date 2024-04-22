@@ -1,5 +1,5 @@
 # Samples
-set(MCL_SAMPLE bench ecdh random rawbench vote pairing large tri-dh bls_sig she_smpl)
+set(MCL_SAMPLE bench ecdh random rawbench vote pairing large tri-dh bls_sig she_smpl mt_test)
 foreach(sample IN ITEMS ${MCL_SAMPLE})
 	add_executable(sample_${sample} ${sample}.cpp)
 	target_link_libraries(sample_${sample} PRIVATE mcl::mcl)
