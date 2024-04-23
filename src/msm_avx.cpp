@@ -1389,7 +1389,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
 	assert(n % 8 == 0);
-	const bool isProj = false;
+	const bool isProj = true;
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;

@@ -67,8 +67,8 @@ void testMulVec(const G& P)
 		G::mulEach(xVec.data(), yVec.data(), n);
 		for (size_t j = 0; j < n; j++) {
 			G T;
-			G::mul(T, x0Vec[i], yVec[i]);
-			CYBOZU_TEST_EQUAL(xVec[i], T);
+			G::mul(T, x0Vec[j], yVec[j]);
+			CYBOZU_TEST_EQUAL(xVec[j], T);
 		}
 	}
 }
