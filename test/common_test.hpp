@@ -57,6 +57,17 @@ void testMulVec(const G& P)
 		CYBOZU_BENCH_C("mulVecCopy", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
 #endif
 	}
+	puts("mulEach");
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		xVec = x0Vec;
+		G::mulEach(xVec.data(), yVec.data(), n);
+		for (size_t j = 0; j < n; j++) {
+			G T;
+			G::mul(T, x0Vec[i], yVec[i]);
+			CYBOZU_TEST_EQUAL(xVec[i], T);
+		}
+	}
 }
 
 template<class G>

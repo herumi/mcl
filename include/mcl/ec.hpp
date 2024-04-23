@@ -1316,6 +1316,7 @@ public:
 	static mpz_class order_;
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
 	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
+	static void (*mulEachOpti)(void *xVec, const void *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1382,6 +1383,7 @@ public:
 		order_ = 0;
 		mulVecGLV = 0;
 		mulVecOpti = 0;
+		mulEachOpti = 0;
 		isValidOrderFast = 0;
 		mode_ = mode;
 	}
@@ -2080,7 +2082,7 @@ public:
 			return;
 		}
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti((Unit*)&z, (Unit*)xVec, (const Unit*)yVec, n);
+			mulVecOpti((Unit*)&z, (Unit*)xVec, yVec[0].getUnit(), n);
 			return;
 		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false)) {
@@ -2132,6 +2134,20 @@ public:
 		(void)cpuN;
 		mulVec(z, xVec, yVec, n);
 #endif
+	}
+	// xVec[i] *= yVec[i]
+	static void mulEach(EcT *xVec, const EcT::Fr *yVec, size_t n)
+	{
+		if (mulEachOpti && n >= 8) {
+			size_t n8 = n & ~size_t(7);
+			mulEachOpti(xVec, yVec, n8);
+			xVec += n8;
+			yVec += n8;
+			n -= n8;
+		}
+		for (size_t i = 0; i < n; i++) {
+			xVec[i] *= yVec[i];
+		}
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
@@ -2192,6 +2208,7 @@ template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *x
 template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
+template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulEachOpti)(void *xVec, const void *yVec, size_t n);
 
 // r = the order of Ec
 template<class Ec, class _Fr>
