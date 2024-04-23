@@ -33,6 +33,9 @@ void testMulVec(const G& P)
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < N; i++) {
 		G::mul(x0Vec[i], P, i + 3);
+		if (i == 30) {
+			x0Vec[i].clear(); // x0Vec[i] contains zero value
+		}
 		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG(rg);
 	}

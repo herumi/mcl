@@ -48,6 +48,7 @@ namespace msm {
 
 bool initMsm(const mcl::CurveParam& cp, const Param *param);
 void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n);
+void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
 
 } // mcl::msm
 #endif
@@ -2314,6 +2315,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
 		if (mcl::msm::initMsm(cp, &para)) {
 			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
+			G1::setMulEachOpti(mcl::msm::mulEachAVX512);
 		}
 	}
 #endif

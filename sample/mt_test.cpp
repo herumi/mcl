@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
 	P2.clear();
 	CYBOZU_BENCH_C("G1 multi ", C, G1::mulVecMT, P2, Pvec.data(), xVec.data(), n, cpuN);
 	if (P1 != P2) puts("G1::mulVecMT err");
+	CYBOZU_BENCH_C("G1 mulEach", C, G1::mulEach, Pvec.data(), xVec.data(), n);
 	G2 Q1, Q2;
 	CYBOZU_BENCH_C("G2 single", C, G2::mulVec, Q1, Qvec.data(), xVec.data(), n);
 	CYBOZU_BENCH_C("G2 multi ", C, G2::mulVecMT, Q2, Qvec.data(), xVec.data(), n, cpuN);

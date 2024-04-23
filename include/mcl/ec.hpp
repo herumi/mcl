@@ -1316,7 +1316,7 @@ public:
 	static mpz_class order_;
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
 	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
-	static void (*mulEachOpti)(void *xVec, const void *yVec, size_t n);
+	static void (*mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1413,6 +1413,10 @@ public:
 	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn))
 	{
 		mulVecOpti = f;
+	}
+	static void setMulEachOpti(void f(Unit *_xVec, const Unit *_yVec, size_t yn))
+	{
+		mulEachOpti = f;
 	}
 	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
 	{
@@ -2140,7 +2144,7 @@ public:
 	{
 		if (mulEachOpti && n >= 8) {
 			size_t n8 = n & ~size_t(7);
-			mulEachOpti(xVec, yVec, n8);
+			mulEachOpti((Unit*)xVec, yVec[0].getUnit(), n8);
 			xVec += n8;
 			yVec += n8;
 			n -= n8;
@@ -2208,7 +2212,7 @@ template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *x
 template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
-template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulEachOpti)(void *xVec, const void *yVec, size_t n);
+template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
 
 // r = the order of Ec
 template<class Ec, class _Fr>

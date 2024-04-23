@@ -1173,7 +1173,6 @@ struct EcM {
 	{
 		const bool isProj = false;
 		const bool mixed = true;
-//		mcl::ec::normalizeVec(_P, _P, 8);
 		g_param.normalizeVecG1(_P, _P, 8);
 		EcM P, Q;
 		P.setG1(_P, isProj);
@@ -1384,6 +1383,24 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 		mcl::msm::G1A Q;
 		g_param.mulG1(Q, x[i], y[i], constTime);
 		g_param.addG1(P, P, Q);
+	}
+}
+
+void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
+{
+	assert(n % 8 == 0);
+	const bool isProj = false;
+	const bool mixed = true;
+	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
+	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
+	g_param.normalizeVecG1(x, x, n);
+	for (size_t i = 0; i < n; i += 8) {
+		EcM P;
+		Vec yv[4];
+		cvtFr8toVec4(yv, y+i);
+		P.setG1(x+i, isProj);
+		EcM::mulGLV<isProj, mixed>(P, P, yv);
+		P.getG1(x+i);
 	}
 }
 
