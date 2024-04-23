@@ -16,6 +16,10 @@ w/o IFMA|66.498|122.666|227.042|426.498
 w IFMA|46.411|87.002|153.958|300.331
 speed up rate|1.43|1.41|1.47|1.42
 
+G1 mulEach
+- w/o IFMA : 42.166Mclk
+- w IFMA : 16.643Mclk
+
 # GLV method
 
 ## Split function for BLS12-381
