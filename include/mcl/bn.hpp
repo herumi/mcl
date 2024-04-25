@@ -725,6 +725,7 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 	}
 	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
 	{
+		assert(sizeof(Unit) == 8);
 		/*
 			z = -0xd201000000010000
 			L = z^2-1 = 0xac45a4010001a40200000000ffffffff
@@ -738,12 +739,19 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
 		static const size_t n = 128 / mcl::UnitBitSize;
 		Unit t[n*3];
+		// n = 128 bit
+		// t[n*3] = x[n*2] * vv[n]
 		mcl::bint::mulNM(t, gmp::getUnit(x), n*2, (const Unit*)vv, n);
+		// t[n] <- t[n*3]
 		mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
 		bool dummy;
 		gmp::setArray(&dummy, b, t, n);
-		mcl::bint::mulT<n>(t, t, (const Unit*)Lv);
-		mcl::bint::subT<n>(t, gmp::getUnit(x), t);
+		Unit t2[n*2];
+		// t2[n*2] = t[n] * Lv[n]
+		// Do not overlap I/O buffers on pre-Broadwell CPUs.
+		mcl::bint::mulT<n>(t2, t, (const Unit*)Lv);
+		// t[n] = x[n*2] - t2[n*2]
+		mcl::bint::subT<n>(t, gmp::getUnit(x), t2);
 		gmp::setArray(&dummy, a, t, n);
 		(void)dummy;
 	}
