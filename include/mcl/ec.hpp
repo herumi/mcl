@@ -242,6 +242,35 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 	}
 }
 
+inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
+{
+	assert(sizeof(Unit) == 8);
+	/*
+		z = -0xd201000000010000
+		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
+		r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+		s=255
+		v = 0xbe35f678f00fd56eb1fb72917b67f718
+	*/
+	static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
+	static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
+	static const size_t n = 128 / mcl::UnitBitSize;
+	Unit t[n*3];
+	// n = 128 bit
+	// t[n*3] = x[n*2] * vv[n]
+	mcl::bint::mulNM(t, x, n*2, vv, n);
+	// b[n] = t[n*3]>>255
+	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
+	b[0] = t[0];
+	b[1] = t[1];
+	Unit t2[n*2];
+	// t2[n*2] = t[n] * Lv[n]
+	// Do not overlap I/O buffers on pre-Broadwell CPUs.
+	mcl::bint::mulT<n>(t2, t, Lv);
+	// a[n] = x[n*2] - t2[n*2]
+	mcl::bint::subT<n>(a, x, t2);
+}
+
 } // mcl::ec::local
 
 // [X:Y:Z] as Proj = (X/Z, Y/Z) as Affine = [XZ:YZ^2:Z] as Jacobi

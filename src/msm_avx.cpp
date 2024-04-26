@@ -471,27 +471,6 @@ inline Vec getUnitAt(const Vec *x, size_t xN, size_t bitPos)
 	return vor(vpsrlq(x[q], r), vpsllq(x[q+1], bitSize - r));
 }
 
-inline void split(Unit a[2], Unit b[2], const Unit x[4])
-{
-	/*
-		z = -0xd201000000010000
-		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
-		r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-		s=255
-		v = 0xbe35f678f00fd56eb1fb72917b67f718
-	*/
-	static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
-	static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
-	static const size_t n = 128 / mcl::UnitBitSize;
-	Unit t[n*3];
-	mcl::bint::mulNM(t, x, n*2, vv, n);
-	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
-	b[0] = t[0];
-	b[1] = t[1];
-	mcl::bint::mulT<n>(t, t, Lv);
-	mcl::bint::subT<n>(a, x, t);
-}
-
 class Montgomery {
 	Unit v_[N];
 public:
@@ -1120,7 +1099,7 @@ struct EcM {
 	static void mulGLV(EcM& Q, const EcM& _P, const Vec y[4])
 	{
 		EcM P = _P;
-		if (!isProj) mcl::ec::ProjToJacobi(P, _P);
+//		if (!isProj) mcl::ec::ProjToJacobi(P, _P);
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
 		makeTable<isProj, mixed>(tbl1, P);
@@ -1134,7 +1113,7 @@ struct EcM {
 		for (size_t i = 0; i < M; i++) {
 			Unit buf[4] = { src[i+M*0], src[i+M*1], src[i+M*2], src[i+M*3] };
 			Unit aa[2], bb[2];
-			split(aa, bb, buf);
+			mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
 			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
 			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
 		}
@@ -1167,7 +1146,7 @@ struct EcM {
 		mul(T, T, b, 2);
 		add(Q, Q, T);
 #endif
-		if (!isProj) mcl::ec::JacobiToProj(Q, Q);
+//		if (!isProj) mcl::ec::JacobiToProj(Q, Q);
 	}
 	static void mulGLVbn(mcl::msm::G1A _Q[8], mcl::msm::G1A _P[8], const Vec y[4])
 	{
@@ -1356,7 +1335,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 			Unit ya[4];
 			fr->fromMont(ya, y[i*8+j].v);
 			Unit a[2], b[2];
-			split(a, b, ya);
+			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
 			py[j+0] = a[0];
 			py[j+8] = a[1];
 			py[j+16] = b[0];
@@ -1393,7 +1372,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	g_param.normalizeVecG1(x, x, n);
+	if (!isProj) g_param.normalizeVecG1(x, x, n);
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
 		Vec yv[4];

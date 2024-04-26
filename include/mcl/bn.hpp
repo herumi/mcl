@@ -726,34 +726,13 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 	}
 	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
 	{
-		assert(sizeof(Unit) == 8);
-		/*
-			z = -0xd201000000010000
-			L = z^2-1 = 0xac45a4010001a40200000000ffffffff
-			r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-			s=255
-			v = 0xbe35f678f00fd56eb1fb72917b67f718
-		*/
-		mpz_class& a = u[0];
-		mpz_class& b = u[1];
-		static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
-		static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
 		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit t[n*3];
-		// n = 128 bit
-		// t[n*3] = x[n*2] * vv[n]
-		mcl::bint::mulNM(t, gmp::getUnit(x), n*2, (const Unit*)vv, n);
-		// t[n] <- t[n*3]
-		mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
+		Unit xa[n*2], a[2], b[2];
+		mcl::gmp::getArray(xa, n*2, x);
+		ec::local::optimizedSplitRawForBLS12_381(a, b, xa);
 		bool dummy;
-		gmp::setArray(&dummy, b, t, n);
-		Unit t2[n*2];
-		// t2[n*2] = t[n] * Lv[n]
-		// Do not overlap I/O buffers on pre-Broadwell CPUs.
-		mcl::bint::mulT<n>(t2, t, (const Unit*)Lv);
-		// t[n] = x[n*2] - t2[n*2]
-		mcl::bint::subT<n>(t, gmp::getUnit(x), t2);
-		gmp::setArray(&dummy, a, t, n);
+		gmp::setArray(&dummy, u[0], a, n);
+		gmp::setArray(&dummy, u[1], b, n);
 		(void)dummy;
 	}
 };
