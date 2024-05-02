@@ -242,6 +242,7 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 	}
 }
 
+#if MCL_SIZEOF_UNIT == 8
 inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 {
 	assert(sizeof(Unit) == 8);
@@ -270,6 +271,7 @@ inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 	// a[n] = x[n*2] - t2[n*2]
 	mcl::bint::subT<n>(a, x, t2);
 }
+#endif
 
 } // mcl::ec::local
 
