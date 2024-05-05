@@ -253,7 +253,7 @@ C++
 T x = <integer literal>;
 ```
 
-### Set `buf[0..bufSize-1]` to `x` with masking according to the following way.
+### Set `bufSize` bytes `buf` to `x` with masking according to the following way.
 ```
 int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
@@ -270,7 +270,7 @@ T::setArrayMask(const uint8_t *buf, size_t n);
 
 - always return 0
 
-### Set (`buf[0..bufSize-1]` mod `p` or `r`) to `x`.
+### Set `bufSize` bytes `buf` of mod `p` or `r` to `x`.
 ```
 int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
@@ -281,7 +281,7 @@ C++
 T::setLittleEndianMod(const uint8_t *buf, mclSize bufSize);
 ```
 
-- return 0 if bufSize <= (sizeof(*x) * 8 * 2) else -1
+- return 0 if bufSize <= (sizeof(T) * 2) else -1
 
 ### Get little-endian byte sequence `buf` corresponding to `x`
 ```
