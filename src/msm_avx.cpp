@@ -6,18 +6,22 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdint.h>
-#include <mcl/ec.hpp>
 #ifdef _WIN32
 #include <intrin.h>
 #else
 #include <x86intrin.h>
 #endif
+
+#include <mcl/ec.hpp>
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
 typedef mcl::Unit Unit;
 typedef __m512i Vec;
 typedef __mmask8 Vmask;
+
+//namespace {
+
 
 static mcl::msm::Param g_param;
 
@@ -27,12 +31,10 @@ const size_t N = 8; // = ceil(384/52)
 const size_t M = sizeof(Vec) / sizeof(Unit);
 const uint64_t g_mask = (Unit(1)<<W) - 1;
 
-static Unit g_mpM2[6]; // x^(-1) = x^(p-2) mod p
 
-static Vec vmask;
-static Vec vrp;
-static Vec vpN[N];
-static Vec g_vmpM2[6]; // NOT 52-bit but 64-bit
+static Vec g_vmask;
+static Vec g_vrp;
+static Vec g_vpN[N];
 static Vec g_vmask4;
 static Vec g_offset;
 static Vec g_vi192;
@@ -250,7 +252,7 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec t = vadd(x[0], y[0]);
 	Vec c = vpsrlq(t, W);
-	z[0] = vand(t, vmask);
+	z[0] = vand(t, g_vmask);
 
 	for (size_t i = 1; i < n; i++) {
 		t = vadd(x[i], y[i]);
@@ -260,7 +262,7 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 			return;
 		}
 		c = vpsrlq(t, W);
-		z[i] = vand(t, vmask);
+		z[i] = vand(t, g_vmask);
 	}
 }
 
@@ -269,12 +271,12 @@ inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec t = vsub(x[0], y[0]);
 	Vec c = vpsrlq(t, S);
-	z[0] = vand(t, vmask);
+	z[0] = vand(t, g_vmask);
 	for (size_t i = 1; i < n; i++) {
 		t = vsub(x[i], y[i]);
 		t = vsub(t, c);
 		c = vpsrlq(t, S);
-		z[i] = vand(t, vmask);
+		z[i] = vand(t, g_vmask);
 	}
 	return vcmpneq(c, vzero());
 }
@@ -290,7 +292,7 @@ inline void uvadd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	vrawAdd(sN, x, y);
-	Vmask c = vrawSub(tN, sN, vpN);
+	Vmask c = vrawSub(tN, sN, g_vpN);
 	uvselect(z, c, sN, tN);
 }
 
@@ -298,8 +300,8 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	Vmask c = vrawSub(sN, x, y);
-	vrawAdd(tN, sN, vpN);
-	tN[N-1] = vand(tN[N-1], vmask);
+	vrawAdd(tN, sN, g_vpN);
+	tN[N-1] = vand(tN[N-1], g_vmask);
 	uvselect(z, c, tN, sN);
 }
 
@@ -406,15 +408,15 @@ inline void vset(Vec *t, const Vmask& c, const Vec a[n])
 inline void uvmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
-		Vec q = vmulL(xy[i], vrp);
-		xy[N+i] = vadd(xy[N+i], vrawMulUnitAdd(xy+i, vpN, q));
+		Vec q = vmulL(xy[i], g_vrp);
+		xy[N+i] = vadd(xy[N+i], vrawMulUnitAdd(xy+i, g_vpN, q));
 		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
 	}
 	for (size_t i = N; i < N*2-1; i++) {
 		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
-		xy[i] = vand(xy[i], vmask);
+		xy[i] = vand(xy[i], g_vmask);
 	}
-	Vmask c = vrawSub(z, xy+N, vpN);
+	Vmask c = vrawSub(z, xy+N, g_vpN);
 	uvselect(z, c, xy+N, z);
 }
 
@@ -427,19 +429,19 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 #else
 	Vec t[N*2], q;
 	vrawMulUnit(t, x, y[0]);
-	q = vmulL(t[0], vrp);
-	t[N] = vadd(t[N], vrawMulUnitAdd(t, vpN, q));
+	q = vmulL(t[0], g_vrp);
+	t[N] = vadd(t[N], vrawMulUnitAdd(t, g_vpN, q));
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vrawMulUnitAdd(t+i, x, y[i]);
 		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		q = vmulL(t[i], vrp);
-		t[N+i] = vadd(t[N+i], vrawMulUnitAdd(t+i, vpN, q));
+		q = vmulL(t[i], g_vrp);
+		t[N+i] = vadd(t[N+i], vrawMulUnitAdd(t+i, g_vpN, q));
 	}
 	for (size_t i = N; i < N*2; i++) {
 		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		t[i-1] = vand(t[i-1], vmask);
+		t[i-1] = vand(t[i-1], g_vmask);
 	}
-	Vmask c = vrawSub(z, t+N, vpN);
+	Vmask c = vrawSub(z, t+N, g_vpN);
 	uvselect(z, c, t+N, z);
 #endif
 }
@@ -486,7 +488,7 @@ public:
 		if (x == 0) return 0;
 		return mcl::gmp::getUnit(x, 0) & g_mask;
 	}
-	void set(const mpz_class& _p)
+	void init(const mpz_class& _p)
 	{
 		mp = _p;
 		mR = 1;
@@ -530,7 +532,6 @@ public:
 	}
 };
 
-Montgomery g_mont;
 
 /*
 	 |64   |64   |64   |64   |64    |64   |
@@ -540,13 +541,13 @@ Montgomery g_mont;
 inline void split52bit(Vec y[8], const Vec x[6])
 {
 	assert(&y != &x);
-	y[0] = vand(x[0], vmask);
-	y[1] = vand(vor(vpsrlq(x[0], 52), vpsllq(x[1], 12)), vmask);
-	y[2] = vand(vor(vpsrlq(x[1], 40), vpsllq(x[2], 24)), vmask);
-	y[3] = vand(vor(vpsrlq(x[2], 28), vpsllq(x[3], 36)), vmask);
-	y[4] = vand(vor(vpsrlq(x[3], 16), vpsllq(x[4], 48)), vmask);
-	y[5] = vand(vpsrlq(x[4], 4), vmask);
-	y[6] = vand(vor(vpsrlq(x[4], 56), vpsllq(x[5], 8)), vmask);
+	y[0] = vand(x[0], g_vmask);
+	y[1] = vand(vor(vpsrlq(x[0], 52), vpsllq(x[1], 12)), g_vmask);
+	y[2] = vand(vor(vpsrlq(x[1], 40), vpsllq(x[2], 24)), g_vmask);
+	y[3] = vand(vor(vpsrlq(x[2], 28), vpsllq(x[3], 36)), g_vmask);
+	y[4] = vand(vor(vpsrlq(x[3], 16), vpsllq(x[4], 48)), g_vmask);
+	y[5] = vand(vpsrlq(x[4], 4), g_vmask);
+	y[6] = vand(vor(vpsrlq(x[4], 56), vpsllq(x[5], 8)), g_vmask);
 	y[7] = vpsrlq(x[5], 44);
 }
 
@@ -646,6 +647,7 @@ struct FpM {
 	static FpM mR2_;
 	static FpM m64to52_;
 	static FpM m52to64_;
+	static Montgomery g_mont;
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvadd(z.v, x.v, y.v);
@@ -769,14 +771,10 @@ struct FpM {
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
-#if 1
 		mcl::msm::FpA v[M];
 		x.getFp(v);
 		g_param.invVecFp(v, v, M, M);
 		z.setFp(v);
-#else
-		pow(z, x, g_vmpM2, 6);
-#endif
 	}
 	// condition set (set x if c)
 	void cset(const Vmask& c, const FpM& x)
@@ -784,6 +782,10 @@ struct FpM {
 		for (size_t i = 0; i < N; i++) {
 			v[i] = vselect(c, x.v[i], v[i]);
 		}
+	}
+	static void init(const mpz_class& mp)
+	{
+		g_mont.init(mp);
 	}
 };
 
@@ -793,6 +795,7 @@ FpM FpM::rw_;
 FpM FpM::mR2_;
 FpM FpM::m64to52_;
 FpM FpM::m52to64_;
+Montgomery FpM::g_mont;
 
 template<class E>
 inline Vmask isZero(const E& P)
@@ -964,7 +967,7 @@ struct EcM {
 			dblJacobiNoCheck(z, x);
 		}
 	}
-	static void init(Montgomery& mont)
+	static void init(const Montgomery& mont)
 	{
 		const int b = 4;
 		mpz_class b3 = mont.toMont(b * 3);
@@ -1148,6 +1151,7 @@ struct EcM {
 #endif
 //		if (!isProj) mcl::ec::JacobiToProj(Q, Q);
 	}
+#if 0
 	static void mulGLVbn(mcl::msm::G1A _Q[8], mcl::msm::G1A _P[8], const Vec y[4])
 	{
 		const bool isProj = false;
@@ -1158,6 +1162,7 @@ struct EcM {
 		mulGLV<isProj, mixed>(Q, P, y);
 		Q.getG1(_Q);
 	}
+#endif
 	void cset(const Vmask& c, const EcM& v)
 	{
 		x.cset(c, v.x);
@@ -1206,6 +1211,7 @@ inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
 	cvt4Ux8to8Ux4(yv, ya);
 }
 
+#if 0
 template<bool isProj=true>
 inline void mulVecAVX512_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
 {
@@ -1226,6 +1232,7 @@ inline void mulVecAVX512_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const m
 	if (!isProj) mcl::ec::JacobiToProj(R, R);
 	reduceSum(P, R);
 }
+#endif
 
 // xVec[n], yVec[n * maxBitSize/64]
 // assume xVec[] is normalized
@@ -1311,6 +1318,7 @@ void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA 
 	}
 }
 #endif
+//} // namespace
 
 namespace mcl { namespace msm {
 
@@ -1390,30 +1398,31 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
 	g_param = *param;
 
-	Montgomery& mont = g_mont;
 	const mpz_class& mp = g_param.fp->mp;
-
-	mont.set(mp);
-	toArray<6, 64>(g_mpM2, mp-2);
-	expand(vmask, g_mask);
-	expandN(vpN, mp);
-	expand(vrp, mont.rp);
+	FpM::init(mp);
+	Montgomery& mont = FpM::g_mont;
+	Unit pM2[6]; // x^(-1) = x^(p-2) mod p
+	toArray<6, 64>(pM2, mp-2);
+	expand(g_vmask, g_mask);
+	expandN(g_vpN, mp);
+	expand(g_vrp, mont.rp);
+	Vec vpM2[6]; // NOT 52-bit but 64-bit
 	for (int i = 0; i < 6; i++) {
-		expand(g_vmpM2[i], g_mpM2[i]);
+		expand(vpM2[i], pM2[i]);
 	}
 	expand(g_vmask4, getMask(4));
 	for (int i = 0; i < 8; i++) {
 		((Unit*)&g_offset)[i] = i;
 	}
 	expand(g_vi192, 192);
-	expandN(FpM::one_.v, g_mont.toMont(1));
+	expandN(FpM::one_.v, mont.toMont(1));
 	expandN(FpM::rawOne_.v, mpz_class(1));
-	expandN(FpM::mR2_.v, g_mont.mR2);
+	expandN(FpM::mR2_.v, mont.mR2);
 	{
 		mpz_class t(1);
 		t <<= 32;
-		FpM::m64to52_.set(t);
-		FpM::pow(FpM::m52to64_, FpM::m64to52_, g_vmpM2, 6);
+		FpM::m64to52_.set(t); // 2^32
+		FpM::pow(FpM::m52to64_, FpM::m64to52_, vpM2, 6);
 	}
 	FpM::rw_.setFp(g_param.rw);
 	EcM::init(mont);
