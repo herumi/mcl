@@ -20,8 +20,7 @@ typedef mcl::Unit Unit;
 typedef __m512i Vec;
 typedef __mmask8 Vmask;
 
-//namespace {
-
+namespace {
 
 static mcl::msm::Param g_param;
 
@@ -999,44 +998,20 @@ struct EcM {
 	}
 	void setG1(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
-#if 1
 		setArray(v[0].v);
 		FpM::mul(x, x, FpM::m64to52_);
 		FpM::mul(y, y, FpM::m64to52_);
 		FpM::mul(z, z, FpM::m64to52_);
-#else
-		Unit a[6*3*M];
-		const Unit *src = (const Unit *)v;
-		for (size_t i = 0; i < M*3; i++) {
-			mcl::bn::Fp::getOp().fromMont(a+i*6, src+i*6);
-		}
-		setArray(a);
-		x.toMont(x);
-		y.toMont(y);
-		z.toMont(z);
-#endif
 		if (JacobiToProj) mcl::ec::JacobiToProj(*this, *this);
 	}
 	void getG1(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
-#if 1
 		FpM::mul(T.x, T.x, FpM::m52to64_);
 		FpM::mul(T.y, T.y, FpM::m52to64_);
 		FpM::mul(T.z, T.z, FpM::m52to64_);
 		T.getArray(v[0].v);
-#else
-		T.x.fromMont(T.x);
-		T.y.fromMont(T.y);
-		T.z.fromMont(T.z);
-		Unit a[6*3*M];
-		T.getArray(a);
-		Unit *dst = (Unit *)v;
-		for (size_t i = 0; i < M*3; i++) {
-			mcl::bn::Fp::getOp().toMont(dst+i*6, a+i*6);
-		}
-#endif
 	}
 	void normalize()
 	{
@@ -1211,29 +1186,6 @@ inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
 	cvt4Ux8to8Ux4(yv, ya);
 }
 
-#if 0
-template<bool isProj=true>
-inline void mulVecAVX512_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
-{
-	assert(n % 8 == 0);
-	EcM R;
-	for (size_t i = 0; i < n; i += 8) {
-		Vec yv[4];
-		cvtFr8toVec4(yv, y+i);
-		EcM T, X;
-		X.setG1(x+i, isProj);
-		if (i == 0) {
-			EcM::mulGLV<isProj>(R, X, yv);
-		} else {
-			EcM::mulGLV<isProj>(T, X, yv);
-			EcM::add<isProj>(R, R, T);
-		}
-	}
-	if (!isProj) mcl::ec::JacobiToProj(R, R);
-	reduceSum(P, R);
-}
-#endif
-
 // xVec[n], yVec[n * maxBitSize/64]
 // assume xVec[] is normalized
 inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVec, size_t n, size_t maxBitSize)
@@ -1277,48 +1229,7 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 	Xbyak::AlignedFree(tbl);
 }
 
-#if 0
-void mulVec_naive(mcl::msm::G1A& P, const mcl::msm::G1A *x, const mcl::msm::FrA *y, size_t n)
-{
-	size_t c = mcl::ec::argminForMulVec(n);
-	size_t tblN = (1 << c) - 0;
-	mcl::msm::G1A *tbl = (mcl::msm::G1A*)CYBOZU_ALLOCA(sizeof(mcl::msm::G1A) * tblN);
-	const size_t maxBitSize = 256;
-	const size_t winN = (maxBitSize + c-1) / c;
-	mcl::msm::G1A *win = (mcl::msm::G1A*)CYBOZU_ALLOCA(sizeof(mcl::msm::G1A) * winN);
-
-	Unit *yVec = (Unit*)CYBOZU_ALLOCA(sizeof(mcl::msm::FrA) * n);
-	const mcl::msm::addG1Func addG1 = g_param.addG1;
-	const mcl::msm::dblG1Func dblG1 = g_param.dblG1;
-	const mcl::msm::clearG1Func clearG1 = g_param.clearG1;
-	for (size_t i = 0; i < n; i++) {
-		g_param.fr->fromMont(yVec+i*4, y[i].v);
-	}
-	for (size_t w = 0; w < winN; w++) {
-		for (size_t i = 0; i < tblN; i++) {
-			clearG1(tbl[i]);
-		}
-		for (size_t i = 0; i < n; i++) {
-			Unit v = mcl::fp::getUnitAt(yVec+i*4, 4, c * w) & (tblN-1);
-			addG1(tbl[v], tbl[v], x[i]);
-		}
-		mcl::msm::G1A sum = tbl[tblN-1];
-		win[w] = sum;
-		for (size_t i = 1; i < tblN-1; i++) {
-			addG1(sum, sum, tbl[tblN - 1 - i]);
-			addG1(win[w], win[w], sum);
-		}
-	}
-	P = win[winN - 1];
-	for (size_t w = 1; w < winN; w++) {
-		for (size_t i = 0; i < c; i++) {
-			dblG1(P, P);
-		}
-		addG1(P, P, win[winN - 1 - w]);
-	}
-}
-#endif
-//} // namespace
+} // namespace
 
 namespace mcl { namespace msm {
 
