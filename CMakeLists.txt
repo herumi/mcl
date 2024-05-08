@@ -125,7 +125,7 @@ if(MSVC)
 else()
 	# Set compiler flags for warnings
 	set(MCL_COMPILE_OPTIONS -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align
-		-Wwrite-strings -Wfloat-equal -Wpointer-arith -DNDEBUG -O3 -fPIC)
+		-Wwrite-strings -Wfloat-equal -Wpointer-arith -DNDEBUG -O3 -fPIC -mcmodel=large )
 endif()
 
 if (${MCL_STANDALONE})
@@ -172,7 +172,7 @@ else()
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 
 	add_custom_command(OUTPUT ${BINT_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC -mcmodel=large 
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
@@ -199,7 +199,7 @@ elseif(${MCL_USE_LLVM})
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
 	add_custom_command(OUTPUT ${BASE_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC
+		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC  -mcmodel=large 
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
