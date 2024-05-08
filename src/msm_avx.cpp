@@ -16,6 +16,10 @@
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
+#if defined(__GNUC__) && !defined(__EMSCRIPTEN__)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 typedef mcl::Unit Unit;
 typedef __m512i Vec;
 typedef __mmask8 Vmask;
@@ -934,8 +938,6 @@ inline void dblJacobiNoCheck(E& R, const E& P)
 
 struct EcM {
 	typedef FpM Fp;
-	static const int a_ = 0;
-	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
 	static const int w = 4;
 	static const int tblN = 1<<w;
@@ -1126,18 +1128,6 @@ struct EcM {
 #endif
 //		if (!isProj) mcl::ec::JacobiToProj(Q, Q);
 	}
-#if 0
-	static void mulGLVbn(mcl::msm::G1A _Q[8], mcl::msm::G1A _P[8], const Vec y[4])
-	{
-		const bool isProj = false;
-		const bool mixed = true;
-		g_param.normalizeVecG1(_P, _P, 8);
-		EcM P, Q;
-		P.setG1(_P, isProj);
-		mulGLV<isProj, mixed>(Q, P, y);
-		Q.getG1(_Q);
-	}
-#endif
 	void cset(const Vmask& c, const EcM& v)
 	{
 		x.cset(c, v.x);
@@ -1347,18 +1337,47 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 
+using namespace mcl::bn;
+
+CYBOZU_TEST_AUTO(init)
+{
+	initPairing(mcl::BLS12_381);
+}
+
+void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
+{
+	for (size_t i = 0; i < n; i++) {
+		uint32_t v = rg.get32();
+		hashAndMapToG1(P[i], &v, sizeof(v));
+		x[i].setByCSPRNG(rg);
+	}
+}
+
+CYBOZU_TEST_AUTO(normalizeVec)
+{
+	const size_t n = 8;
+	G1 P[n], Q[n];
+	Fr x[n];
+	cybozu::XorShift rg;
+	setParam(P, x, n, rg);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
+	}
+	g_param.normalizeVecG1((mcl::msm::G1A*)Q, (const mcl::msm::G1A*)P, n);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_ASSERT(Q[i].z.isOne());
+	}
+	CYBOZU_TEST_EQUAL_ARRAY(P, Q, n);
+}
+
 CYBOZU_TEST_AUTO(mulEach)
 {
-	using namespace mcl::bn;
-	initPairing(mcl::BLS12_381);
 	const size_t n = 8;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
 	cybozu::XorShift rg;
+	setParam(P, x, n, rg);
 	for (size_t i = 0; i < n; i++) {
-		char c = 'a' + i;
-		hashAndMapToG1(P[i], &c, 1);
-		x[i].setByCSPRNG(rg);
 		Q[i] = P[i];
 		G1::mul(R[i], Q[i], x[i]);
 	}
