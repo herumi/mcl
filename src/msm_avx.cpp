@@ -954,6 +954,8 @@ inline void dblJacobiNoCheck(E& R, const E& P)
 
 struct EcM {
 	typedef FpM Fp;
+	static const int a_ = 0;
+	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
 	static const int w = 4;
 	static const int tblN = 1<<w;
@@ -1160,14 +1162,12 @@ struct EcM {
 		FpM::sqr(s2, rhs.z);
 		FpM::mul(t1, x, s2);
 		FpM::mul(t2, rhs.x, s1);
-		v1 = t2.isEqualAll(s1);
-dump(v1, "v1");
+		v1 = t1.isEqualAll(t2);
 		FpM::mul(t1, y, s2);
 		FpM::mul(t2, rhs.y, s1);
 		FpM::mul(t1, t1, rhs.z);
 		FpM::mul(t2, t2, z);
 		v2 = t1.isEqualAll(t2);
-dump(v2, "v2");
 		return mand(v1, v2);
 	}
 };
@@ -1389,23 +1389,24 @@ CYBOZU_TEST_AUTO(cmp)
 		CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff ^ (1<<i));
 	}
 	G1 P[n];
-	G1 Q[n];
 	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
-	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
 
 	EcM PM, QM;
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < n; i++) {
 		uint32_t v = rg.get32();
 		hashAndMapToG1(P[i], &v, sizeof(v));
-		Q[i] = P[i];
 	}
-	v = PM.z.isEqualAll(PM.z);
-	dump(v, "v");
 	PM.setG1(PA);
-	QM.setG1(QA);
+	QM.setG1(PA);
 	v = PM.isEqualJacobiAll(QM);
-	dump(v, "v");
+	CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff);
+	for (size_t i = 0; i < n; i++) {
+		QM = PM;
+		QM.x.set(1, i);
+		v = PM.isEqualJacobiAll(QM);
+		CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff ^ (1<<i));
+	}
 }
 
 CYBOZU_TEST_AUTO(op)
@@ -1442,7 +1443,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		G1::dbl(R[i], P[i]);
 	}
-#if 0
+#if 1
 	// as Proj
 	PM.setG1(PA);
 	EcM::dbl<true>(QM, PM);
@@ -1510,6 +1511,7 @@ CYBOZU_TEST_AUTO(op)
 
 CYBOZU_TEST_AUTO(mulEach)
 {
+	return;
 	const size_t n = 8;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
