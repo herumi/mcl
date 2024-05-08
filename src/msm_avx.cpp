@@ -1079,7 +1079,6 @@ struct EcM {
 	static void mulGLV(EcM& Q, const EcM& _P, const Vec y[4])
 	{
 		EcM P = _P;
-//		if (!isProj) mcl::ec::ProjToJacobi(P, _P);
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
 		makeTable<isProj, mixed>(tbl1, P);
@@ -1126,7 +1125,6 @@ struct EcM {
 		mul(T, T, b, 2);
 		add(Q, Q, T);
 #endif
-//		if (!isProj) mcl::ec::JacobiToProj(Q, Q);
 	}
 	void cset(const Vmask& c, const EcM& v)
 	{
@@ -1344,11 +1342,12 @@ CYBOZU_TEST_AUTO(init)
 	initPairing(mcl::BLS12_381);
 }
 
-void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
+void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg, bool containsZero = false)
 {
 	for (size_t i = 0; i < n; i++) {
 		uint32_t v = rg.get32();
 		hashAndMapToG1(P[i], &v, sizeof(v));
+		if (containsZero && i == 3) P[i].clear();
 		x[i].setByCSPRNG(rg);
 	}
 }
@@ -1367,13 +1366,13 @@ CYBOZU_TEST_AUTO(op)
 
 	EcM PM, QM, RM;
 	cybozu::XorShift rg;
-	setParam(P, x, n, rg);
+	setParam(P, x, n, rg, true);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
 	}
 	g_param.normalizeVecG1(QA, PA, n);
 	for (size_t i = 0; i < n; i++) {
-		CYBOZU_TEST_ASSERT(Q[i].z.isOne());
+		CYBOZU_TEST_ASSERT(Q[i].z.isOne() || Q[i].z.isZero());
 	}
 	CYBOZU_TEST_EQUAL_ARRAY(P, Q, n);
 
@@ -1425,6 +1424,29 @@ CYBOZU_TEST_AUTO(op)
 	RM.getG1(TA, false);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(T[i], R[i]);
+	}
+
+	// as Jacobi (mixed)
+	PM.setG1(PA, false);
+	for (size_t i = 0; i < n; i++) {
+		Q[i].normalize();
+	}
+	QM.setG1(QA, false);
+	EcM::add<false, true>(RM, PM, QM);
+	RM.getG1(TA, false);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(T[i], R[i]);
+	}
+
+	// mulEachAVX512
+	for (size_t i = 0; i < n; i++) {
+		P[i] = R[i];
+		Q[i] = R[i];
+		G1::mul(R[i], P[i], x[i]);
+	}
+	mcl::msm::mulEachAVX512((Unit*)Q, (const Unit*)x, n);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(Q[i], R[i]);
 	}
 }
 
