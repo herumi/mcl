@@ -1353,21 +1353,79 @@ void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
 	}
 }
 
-CYBOZU_TEST_AUTO(normalizeVec)
+CYBOZU_TEST_AUTO(op)
 {
 	const size_t n = 8;
-	G1 P[n], Q[n];
+	G1 P[n];
+	G1 Q[n];
+	G1 R[n];
+	G1 T[n];
 	Fr x[n];
+	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
+	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
+	mcl::msm::G1A *TA = (mcl::msm::G1A*)T;
+
+	EcM PM, QM, RM;
 	cybozu::XorShift rg;
 	setParam(P, x, n, rg);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
 	}
-	g_param.normalizeVecG1((mcl::msm::G1A*)Q, (const mcl::msm::G1A*)P, n);
+	g_param.normalizeVecG1(QA, PA, n);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(Q[i].z.isOne());
 	}
 	CYBOZU_TEST_EQUAL_ARRAY(P, Q, n);
+
+	// not normalize
+	for (size_t i = 0; i < n; i++) {
+		G1::dbl(P[i], P[i]);
+	}
+
+	// test dbl
+	// R = 2P
+	for (size_t i = 0; i < n; i++) {
+		G1::dbl(R[i], P[i]);
+	}
+	// as Proj
+	PM.setG1(PA);
+	EcM::dbl<true>(QM, PM);
+	QM.getG1(QA);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(Q[i], R[i]);
+	}
+
+	// as Jacobi
+	PM.setG1(PA, false);
+	EcM::dbl<false>(QM, PM);
+	QM.getG1(QA, false);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(Q[i], R[i]);
+	}
+
+	// test add
+	// R = P + Q
+	for (size_t i = 0; i < n; i++) {
+		G1::add(R[i], P[i], Q[i]);
+	}
+
+	// as Proj
+	PM.setG1(PA);
+	QM.setG1(QA);
+	EcM::add<true>(RM, PM, QM);
+	RM.getG1(TA);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(T[i], R[i]);
+	}
+
+	// as Jacobi
+	PM.setG1(PA, false);
+	QM.setG1(QA, false);
+	EcM::add<false>(RM, PM, QM);
+	RM.getG1(TA, false);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(T[i], R[i]);
+	}
 }
 
 CYBOZU_TEST_AUTO(mulEach)
