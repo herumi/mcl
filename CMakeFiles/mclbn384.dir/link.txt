@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -mcmodel=large -O3 -lpthread -pthread  -shared -Wl,-soname,libmclbn384.so.1 -o ../../lib/libmclbn384.so.1.74 CMakeFiles/mclbn384.dir/src/bn_c384.cpp.o  -Wl,-rpath,/home/cc/zkTransformer/3rd/hyrax-bls12-381/lib: ../../lib/libmcl.so.1.74 

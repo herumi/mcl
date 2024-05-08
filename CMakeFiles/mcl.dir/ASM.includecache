@@ -1,0 +1,12 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/cc/zkTransformer/3rd/hyrax-bls12-381/3rd/mcl/src/asm/bint-x64-amd64.S
+
+/home/cc/zkTransformer/3rd/hyrax-bls12-381/3rd/mcl/src/asm/x86-64.S
+

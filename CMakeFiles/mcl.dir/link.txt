@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -mcmodel=large -O3 -lpthread -pthread  -shared -Wl,-soname,libmcl.so.1 -o ../../lib/libmcl.so.1.74 CMakeFiles/mcl.dir/src/fp.cpp.o CMakeFiles/mcl.dir/src/asm/bint-x64-amd64.S.o CMakeFiles/mcl.dir/src/asm/x86-64.S.o 

@@ -924,7 +924,7 @@ public:
 struct SmallModp {
 	static const size_t unitBitSize = sizeof(Unit) * 8;
 	static const size_t maxTblSize = (MCL_MAX_BIT_SIZE + unitBitSize - 1) / unitBitSize + 1;
-	static const size_t maxMulN = 9;
+	static const size_t maxMulN = 65535;
 	static const size_t pMulTblN = maxMulN + 1;
 	uint32_t N_;
 	uint32_t shiftL_;
