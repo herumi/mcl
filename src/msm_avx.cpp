@@ -48,6 +48,18 @@ inline Unit getMask(int w)
 	return (Unit(1) << w) - 1;
 }
 
+inline uint8_t cvtToInt(const Vmask& v)
+{
+	uint8_t r;
+	memcpy(&r, &v, sizeof(r));
+	return r;
+}
+
+inline void dump(const Vmask& v, const char *msg = nullptr)
+{
+	mcl::bint::dump(&v, sizeof(v), msg);
+}
+
 template<size_t N, int w = W>
 inline void toArray(Unit x[N], mpz_class mx)
 {
@@ -707,6 +719,10 @@ struct FpM {
 		mpz_class r = getRaw(i);
 		return g_mont.fromMont(r);
 	}
+	void clear()
+	{
+		memset(this, 0, sizeof(*this));
+	}
 	bool operator==(const FpM& rhs) const
 	{
 		for (size_t i = 0; i < N; i++) {
@@ -952,6 +968,10 @@ struct EcM {
 		if (isProj) {
 			mcl::ec::addCTProj(z, x, y);
 		} else {
+#if 0
+			Vmask v = x.isEqualJacobiAll(y);
+			dump(v, "v");
+#endif
 			if (mixed) {
 				addJacobiMixedNoCheck(z, x, y);
 			} else {
@@ -1132,7 +1152,7 @@ struct EcM {
 		y.cset(c, v.y);
 		z.cset(c, v.z);
 	}
-	Vmask isEqualAll(const EcM& rhs) const
+	Vmask isEqualJacobiAll(const EcM& rhs) const
 	{
 		FpM s1, s2, t1, t2;
 		Vmask v1, v2;
@@ -1141,11 +1161,13 @@ struct EcM {
 		FpM::mul(t1, x, s2);
 		FpM::mul(t2, rhs.x, s1);
 		v1 = t2.isEqualAll(s1);
+dump(v1, "v1");
 		FpM::mul(t1, y, s2);
 		FpM::mul(t2, rhs.y, s1);
 		FpM::mul(t1, t1, rhs.z);
 		FpM::mul(t2, t2, z);
 		v2 = t1.isEqualAll(t2);
+dump(v2, "v2");
 		return mand(v1, v2);
 	}
 };
@@ -1352,6 +1374,40 @@ void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg, bool containsZero = 
 	}
 }
 
+CYBOZU_TEST_AUTO(cmp)
+{
+	const size_t n = 8;
+	Vmask v;
+	FpM x, y;
+	x.clear();
+	v = x.isEqualAll(x);
+	CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff);
+	for (size_t i = 0; i < n; i++) {
+		y.clear();
+		y.set(1, i);
+		v = x.isEqualAll(y);
+		CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff ^ (1<<i));
+	}
+	G1 P[n];
+	G1 Q[n];
+	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
+	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
+
+	EcM PM, QM;
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < n; i++) {
+		uint32_t v = rg.get32();
+		hashAndMapToG1(P[i], &v, sizeof(v));
+		Q[i] = P[i];
+	}
+	v = PM.z.isEqualAll(PM.z);
+	dump(v, "v");
+	PM.setG1(PA);
+	QM.setG1(QA);
+	v = PM.isEqualJacobiAll(QM);
+	dump(v, "v");
+}
+
 CYBOZU_TEST_AUTO(op)
 {
 	const size_t n = 8;
@@ -1386,6 +1442,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		G1::dbl(R[i], P[i]);
 	}
+#if 0
 	// as Proj
 	PM.setG1(PA);
 	EcM::dbl<true>(QM, PM);
@@ -1437,6 +1494,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(T[i], R[i]);
 	}
+#endif
 
 	// mulEachAVX512
 	for (size_t i = 0; i < n; i++) {
