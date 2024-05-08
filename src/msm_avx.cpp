@@ -1431,3 +1431,29 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 
 } } // mcl::msm
 
+#ifdef MCL_MSM_TEST
+#include <mcl/bls12_381.hpp>
+#include <cybozu/test.hpp>
+#include <cybozu/xorshift.hpp>
+
+CYBOZU_TEST_AUTO(mulEach)
+{
+	using namespace mcl::bn;
+	initPairing(mcl::BLS12_381);
+	const size_t n = 8;
+	G1 P[n], Q[n], R[n];
+	Fr x[n];
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < n; i++) {
+		char c = 'a' + i;
+		hashAndMapToG1(P[i], &c, 1);
+		x[i].setByCSPRNG(rg);
+		Q[i] = P[i];
+		G1::mul(R[i], Q[i], x[i]);
+	}
+	G1::mulEach(P, x, n);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(P[i], R[i]);
+	}
+}
+#endif
