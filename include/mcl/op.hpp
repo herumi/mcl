@@ -29,7 +29,7 @@
 
 namespace mcl {
 
-static const int version = 0x189; /* 0xABC = A.BC */
+static const int version = 0x191; /* 0xABC = A.BC */
 
 /*
 	specifies available string format mode for X::setIoMode()
@@ -261,10 +261,12 @@ struct Op {
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 	PrimeMode primeMode;
+	int ioMode_;
 	bool isFullBit; // true if bitSize % unitSize == 0
 	bool isLtQuad; // true if (bitSize % unitSize) <= unitSize - 2
 	bool isMont; // true if use Montgomery
 	bool isFastMod; // true if modulo is fast
+	bool ETHserialization_;
 
 	Op()
 	{
@@ -346,10 +348,12 @@ struct Op {
 		hash = 0;
 
 		primeMode = PM_GENERIC;
+		ioMode_ = IoAuto;
 		isFullBit = false;
 		isLtQuad = false;
 		isMont = false;
 		isFastMod = false;
+		ETHserialization_ = false;
 	}
 	void fromMont(Unit* y, const Unit *x) const
 	{
@@ -405,3 +409,50 @@ inline void dump(const std::string& s)
 #endif
 
 } } // mcl::fp
+
+#ifndef MCL_MSM
+  #if (/*defined(_WIN64) ||*/ defined(__x86_64__)) && !defined(__APPLE__) && (MCL_SIZEOF_UNIT == 8)
+    #define MCL_MSM 1
+  #else
+    #define MCL_MSM 0
+  #endif
+#endif
+
+#if MCL_MSM == 1
+namespace mcl { namespace msm {
+
+// only for BLS12-381
+struct FrA {
+	uint64_t v[4];
+};
+
+struct FpA {
+	uint64_t v[6];
+};
+
+struct G1A {
+	uint64_t v[6*3];
+};
+
+typedef size_t (*invVecFpFunc)(FpA *y, const FpA *x, size_t n, size_t _N);
+typedef void (*normalizeVecG1Func)(G1A *y, const G1A *x, size_t n);
+typedef void (*addG1Func)(G1A& z, const G1A& x, const G1A& y);
+typedef void (*dblG1Func)(G1A& z, const G1A& x);
+typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
+typedef void (*clearG1Func)(G1A& z);
+
+struct Param {
+	const mcl::fp::Op *fp;
+	const mcl::fp::Op *fr;
+	const Unit *rw;
+	invVecFpFunc invVecFp;
+	normalizeVecG1Func normalizeVecG1;
+	addG1Func addG1;
+	dblG1Func dblG1;
+	mulG1Func mulG1;
+	clearG1Func clearG1;
+};
+
+} } // mcl::msm
+
+#endif
