@@ -1501,11 +1501,13 @@ public:
 	{
 		if (mode_ == ec::Jacobi) {
 			x = 1;
-		} else {
+			y = 1;
+			z.clear();
+		} else { // ec::Proj
 			x.clear();
+			y = 1;
+			z.clear();
 		}
-		y = 1;
-		z.clear();
 	}
 	static inline void clear(EcT& P)
 	{

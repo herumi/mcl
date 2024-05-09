@@ -739,6 +739,14 @@ struct FpM {
 		}
 		return vcmpeq(t, vzero());
 	}
+	Vmask isZero() const
+	{
+		Vec t = v[0];
+		for (size_t i = 1; i < M; i++) {
+			t = vor(t, v[i]);
+		}
+		return vcmpeq(t, vzero());
+	}
 	static void pow(FpM& z, const FpM& x, const Vec *y, size_t yn)
 	{
 		const int w = 4;
@@ -802,6 +810,15 @@ struct FpM {
 			v[i] = vselect(c, x.v[i], v[i]);
 		}
 	}
+	// return c ? a : b;
+	static FpM select(const Vmask& c, const FpM& a, const FpM& b)
+	{
+		FpM d;
+		for (size_t i = 0; i < N; i++) {
+			d.v[i] = vselect(c, a.v[i], b.v[i]);
+		}
+		return d;
+	}
 	static void init(const mpz_class& mp)
 	{
 		g_mont.init(mp);
@@ -815,16 +832,6 @@ FpM FpM::mR2_;
 FpM FpM::m64to52_;
 FpM FpM::m52to64_;
 Montgomery FpM::g_mont;
-
-template<class E>
-inline Vmask isZero(const E& P)
-{
-	Vec v = P.z.v[0];
-	for (size_t i = 1; i < N; i++) {
-		v = vor(v, P.z.v[i]);
-	}
-	return vcmpeq(v, vzero());
-}
 
 template<class E, size_t n>
 inline void normalizeJacobiVec(E P[n])
@@ -863,8 +870,6 @@ template<class E>
 inline void addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
-	Vmask c = isZero(Q);
-	E saveP = P;
 	F r, U1, S1, H, H3;
 	F::sqr(r, P.z);
 	U1 = P.x;
@@ -886,7 +891,6 @@ inline void addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
 	F::mul(U1, U1, r);
 	F::mul(H3, H3, S1);
 	F::sub(R.y, U1, H3);
-	R.cset(c, saveP);
 }
 
 // 12M+4S+7A
@@ -895,8 +899,6 @@ template<class E>
 inline void addJacobiNoCheck(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
-	Vmask c = isZero(Q);
-	E saveP = P;
 	F r, U1, S1, H, H3;
 	F::sqr(r, P.z);
 	F::sqr(S1, Q.z);
@@ -921,7 +923,6 @@ inline void addJacobiNoCheck(E& R, const E& P, const E& Q)
 	F::mul(U1, U1, r);
 	F::mul(H3, H3, S1);
 	F::sub(R.y, U1, H3);
-	R.cset(c, saveP);
 }
 
 // assume a = 0
@@ -970,15 +971,14 @@ struct EcM {
 		if (isProj) {
 			mcl::ec::addCTProj(z, x, y);
 		} else {
-#if 0
-			Vmask v = x.isEqualJacobiAll(y);
-			dump(v, "v");
-#endif
+			EcM t;
 			if (mixed) {
-				addJacobiMixedNoCheck(z, x, y);
+				addJacobiMixedNoCheck(t, x, y);
 			} else {
-				addJacobiNoCheck(z, x, y);
+				addJacobiNoCheck(t, x, y);
 			}
+			t = select(x.isZero(), y, t);
+			z = select(y.isZero(), x, t);
 		}
 	}
 	template<bool isProj=true>
@@ -995,12 +995,20 @@ struct EcM {
 		const int b = 4;
 		mpz_class b3 = mont.toMont(b * 3);
 		expandN(b3_.v, b3);
-		zeroJacobi_.x.set(1);
-		zeroJacobi_.y.set(1);
+		zeroJacobi_.x.set(0);
+		zeroJacobi_.y.set(0);
 		zeroJacobi_.z.set(0);
 		zeroProj_.x.set(0);
 		zeroProj_.y.set(1);
 		zeroProj_.z.set(0);
+	}
+	static EcM select(const Vmask& c, const EcM& a, const EcM& b)
+	{
+		EcM d;
+		d.x = FpM::select(c, a.x, b.x);
+		d.y = FpM::select(c, a.y, b.y);
+		d.z = FpM::select(c, a.z, b.z);
+		return d;
 	}
 	template<bool isProj=true>
 	static const EcM& zero()
@@ -1026,7 +1034,10 @@ struct EcM {
 		FpM::mul(x, x, FpM::m64to52_);
 		FpM::mul(y, y, FpM::m64to52_);
 		FpM::mul(z, z, FpM::m64to52_);
-		if (JacobiToProj) mcl::ec::JacobiToProj(*this, *this);
+		if (JacobiToProj) {
+			mcl::ec::JacobiToProj(*this, *this);
+			y = FpM::select(z.isZero(), FpM::one_, y);
+		}
 	}
 	void getG1(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
 	{
@@ -1154,6 +1165,10 @@ struct EcM {
 		y.cset(c, v.y);
 		z.cset(c, v.z);
 	}
+	Vmask isZero() const
+	{
+		return z.isZero();
+	}
 	Vmask isEqualJacobiAll(const EcM& rhs) const
 	{
 		FpM s1, s2, t1, t2;
@@ -1170,6 +1185,9 @@ struct EcM {
 		v2 = t1.isEqualAll(t2);
 		return mand(v1, v2);
 	}
+#ifdef MCL_MSM_TEST
+	void dump(bool isProj, size_t n, const char *msg = nullptr) const;
+#endif
 };
 
 FpM EcM::b3_;
@@ -1298,7 +1316,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
 	assert(n % 8 == 0);
 	const bool isProj = true;
-	const bool mixed = true;
+	const bool mixed = false;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	if (!isProj) g_param.normalizeVecG1(x, x, n);
@@ -1308,12 +1326,17 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 		cvtFr8toVec4(yv, y+i);
 		P.setG1(x+i, isProj);
 		EcM::mulGLV<isProj, mixed>(P, P, yv);
-		P.getG1(x+i);
+		P.getG1(x+i, isProj);
 	}
 }
 
 bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 {
+	assert(EcM::a_ == 0);
+	assert(EcM::b_ == 4);
+	(void)EcM::a_; // disable unused warning
+	(void)EcM::b_;
+
 	if (cp != mcl::BLS12_381) return false;
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
@@ -1356,20 +1379,30 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 #include <mcl/bls12_381.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
+#include <cybozu/benchmark.hpp>
 
 using namespace mcl::bn;
+
+void EcM::dump(bool isProj, size_t n, const char *msg) const
+{
+	G1 T[8];
+	getG1((mcl::msm::G1A*)T, isProj);
+	if (msg) printf("%s\n", msg);
+	for (size_t i = 0; i < n; i++) {
+		printf("  [%zd]=%s\n", i, T[i].getStr(16|mcl::IoEcProj).c_str());
+	}
+}
 
 CYBOZU_TEST_AUTO(init)
 {
 	initPairing(mcl::BLS12_381);
 }
 
-void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg, bool containsZero = false)
+void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
 {
 	for (size_t i = 0; i < n; i++) {
 		uint32_t v = rg.get32();
 		hashAndMapToG1(P[i], &v, sizeof(v));
-		if (containsZero && i == 3) P[i].clear();
 		x[i].setByCSPRNG(rg);
 	}
 }
@@ -1424,8 +1457,10 @@ CYBOZU_TEST_AUTO(op)
 
 	EcM PM, QM, TM;
 	cybozu::XorShift rg;
-	setParam(P, x, n, rg, false);
-	setParam(Q, x, n, rg, true); // contains zero
+	setParam(P, x, n, rg);
+	setParam(Q, x, n, rg);
+	P[3].clear();
+	Q[4].clear();
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
 	}
@@ -1490,6 +1525,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
+#if 1
 	// mulEachAVX512
 	for (size_t i = 0; i < n; i++) {
 		Q[i] = P[i];
@@ -1499,23 +1535,47 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], Q[i]);
 	}
+#endif
+}
+
+CYBOZU_TEST_AUTO(mulEach_special)
+{
+	const size_t n = 8;
+	G1 P[n], Q[n], R[n];
+	Fr x[n];
+	for (size_t i = 0; i < n; i++) P[i].clear();
+	P[0].setStr("1 13de196893df2bb5b57882ff1eec37d98966aa71b828fd25125d04ed2c75ddc55d5bc68bd797bd555f9a827387ee6b28 5d59257a0fccd5215cdeb0928296a7a4d684823db76aef279120d2d71c4b54604ec885eb554f99780231ade171979a3", 16);
+	x[0].setStr("5b4b92c347ffcd8543904dd1b22a60d94b4a9c243046456b8befd41507bec5d", 16);
+	for (size_t i = 0; i < n; i++) Q[i] = P[i];
+	G1::mul(R[0], P[0], x[0]);
+	G1::mulEach(Q, x, 8);
+	CYBOZU_TEST_EQUAL(R[0], Q[0]);
 }
 
 CYBOZU_TEST_AUTO(mulEach)
 {
-	return;
-	const size_t n = 8;
+	const size_t n = 64;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
 	cybozu::XorShift rg;
 	setParam(P, x, n, rg);
+	P[n/2].clear();
 	for (size_t i = 0; i < n; i++) {
 		Q[i] = P[i];
-		G1::mul(R[i], Q[i], x[i]);
+		G1::mul(R[i], P[i], x[i]);
 	}
-	G1::mulEach(P, x, n);
+	G1::mulEach(Q, x, n);
 	for (size_t i = 0; i < n; i++) {
-		CYBOZU_TEST_EQUAL(P[i], R[i]);
+		CYBOZU_TEST_EQUAL(R[i], Q[i]);
+		if (R[i] != Q[i]) {
+			printf("P[%zd]=%s\n", i, P[i].getStr(16).c_str());
+			printf("x[%zd]=%s\n", i, x[i].getStr(16).c_str());
+			printf("R[%zd]=%s\n", i, R[i].getStr(16|mcl::IoEcProj).c_str());
+			printf("Q[%zd]=%s\n", i, Q[i].getStr(16|mcl::IoEcProj).c_str());
+		}
 	}
+#ifdef NDEBUG
+	CYBOZU_BENCH_C("mulEach", 100, G1::mulEach, Q, x, n);
+#endif
 }
 #endif
