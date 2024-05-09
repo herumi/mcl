@@ -276,7 +276,7 @@ inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 } // mcl::ec::local
 
 // [X:Y:Z] as Proj = (X/Z, Y/Z) as Affine = [XZ:YZ^2:Z] as Jacobi
-// Remark. convert P = [1:0:0] to Q = [0:0:0]
+// Remark. convert P = [*:*:0] to Q = [0:0:0]
 template<class E>
 void ProjToJacobi(E& Q, const E& P)
 {
@@ -288,7 +288,7 @@ void ProjToJacobi(E& Q, const E& P)
 }
 
 // [X:Y:Z] as Jacobi = (X/Z^2, Y/Z^3) as Affine = [XZ:Y:Z^3] as Proj
-// Remark. convert P = [1:1:0] to Q = [0:1:0]
+// Remark. convert P = [*:1:0] to Q = [0:1:0]
 template<class E>
 void JacobiToProj(E& Q, const E& P)
 {
