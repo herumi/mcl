@@ -283,8 +283,10 @@ endif()
 foreach(bit IN ITEMS 256 384 384_256)
 	if (MCL_STATIC_LIB)
 		add_library(mclbn${bit} STATIC src/bn_c${bit}.cpp)
+		target_link_libraries(mclbn${bit} PUBLIC mcl::mcl_st)
 	else()
 		add_library(mclbn${bit} SHARED src/bn_c${bit}.cpp)
+		target_link_libraries(mclbn${bit} PUBLIC mcl::mcl)
 	endif()
 	add_library(mcl::mclbn${bit} ALIAS mclbn${bit})
 	set_target_properties(mclbn${bit} PROPERTIES
@@ -294,7 +296,6 @@ foreach(bit IN ITEMS 256 384 384_256)
 	target_compile_options(mclbn${bit} PRIVATE ${MCL_COMPILE_OPTIONS})
 	target_compile_definitions(mclbn${bit}
 		PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK)
-	target_link_libraries(mclbn${bit} PUBLIC mcl::mcl)
 	set_target_properties(mclbn${bit} PROPERTIES
 		VERSION ${mcl_VERSION}
 		SOVERSION ${mcl_VERSION_MAJOR})
