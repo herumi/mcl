@@ -1578,10 +1578,33 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	for (size_t i = 0; i < n; i++) P[i].clear();
 	P[0].setStr("1 13de196893df2bb5b57882ff1eec37d98966aa71b828fd25125d04ed2c75ddc55d5bc68bd797bd555f9a827387ee6b28 5d59257a0fccd5215cdeb0928296a7a4d684823db76aef279120d2d71c4b54604ec885eb554f99780231ade171979a3", 16);
 	x[0].setStr("5b4b92c347ffcd8543904dd1b22a60d94b4a9c243046456b8befd41507bec5d", 16);
+//	x[0].setStr("457977620305299156129707153920788267006"); // L+L
 	for (size_t i = 0; i < n; i++) Q[i] = P[i];
 	G1::mul(R[0], P[0], x[0]);
 	G1::mulEach(Q, x, 8);
 	CYBOZU_TEST_EQUAL(R[0], Q[0]);
+	mpz_class L;
+	L.setStr("0xac45a4010001a40200000000ffffffff");
+	mpz_class tbl[] = {
+		0,
+		1,
+		L,
+	};
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		const mpz_class& a = tbl[i];
+		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+			const mpz_class& b = tbl[j];
+			setParam(P, x, n, rg);
+			x[0].setMpz(a * L + b);
+			for (size_t k = 0; k < 8; k++) {
+				Q[k] = P[k];
+				G1::mul(R[k], P[k], x[k]);
+			}
+			G1::mulEach(Q, x, n);
+			CYBOZU_TEST_EQUAL_ARRAY(R, Q, n);
+		}
+	}
 }
 
 CYBOZU_TEST_AUTO(mulEach)
