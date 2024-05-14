@@ -243,7 +243,11 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 }
 
 #if MCL_SIZEOF_UNIT == 8
-inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
+/*
+	split x to (a, b) such that x = a + b L where 0 <= a, b <= L, 0 <= x <= r-1 = L^2+L
+	if adj is true, then 0 <= a < L, 0 <= b <= L+1
+*/
+inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4], bool adj = true)
 {
 	assert(sizeof(Unit) == 8);
 	/*
@@ -251,25 +255,33 @@ inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
 		r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 		s=255
-		v = 0xbe35f678f00fd56eb1fb72917b67f718
+		v = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
 	*/
-	static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
-	static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
+	static const uint64_t L[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
+	static const uint64_t v[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
+	static const uint64_t one[] = { 1, 0 };
 	static const size_t n = 128 / mcl::UnitBitSize;
 	Unit t[n*3];
 	// n = 128 bit
-	// t[n*3] = x[n*2] * vv[n]
-	mcl::bint::mulNM(t, x, n*2, vv, n);
+	// t[n*3] = x[n*2] * v[n]
+	mcl::bint::mulNM(t, x, n*2, v, n);
 	// b[n] = t[n*3]>>255
 	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
 	b[0] = t[0];
 	b[1] = t[1];
 	Unit t2[n*2];
-	// t2[n*2] = t[n] * Lv[n]
+	// t2[n*2] = t[n] * L[n]
 	// Do not overlap I/O buffers on pre-Broadwell CPUs.
-	mcl::bint::mulT<n>(t2, t, Lv);
+	mcl::bint::mulT<n>(t2, t, L);
 	// a[n] = x[n*2] - t2[n*2]
 	mcl::bint::subT<n>(a, x, t2);
+	if (adj) {
+		if (mcl::bint::cmpEqT<n>(a, L)) {
+			// if a == L then b = b + 1 and a = 0
+			mcl::bint::addT<n>(b, b, one);
+			mcl::bint::clearT<n>(a);
+		}
+	}
 }
 #endif
 
