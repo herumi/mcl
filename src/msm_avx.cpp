@@ -823,6 +823,9 @@ struct FpM {
 	{
 		g_mont.init(mp);
 	}
+#ifdef MCL_MSM_TEST
+	void dump(size_t pos, const char *msg = nullptr) const;
+#endif
 };
 
 FpM FpM::one_;
@@ -839,27 +842,28 @@ inline void normalizeJacobiVec(E P[n])
 	assert(n >= 2);
 	typedef typename E::Fp F;
 	F tbl[n];
-	tbl[0] = P[0].z;
+	tbl[0] = F::select(P[0].z.isZero(), F::one_, P[0].z);
 	for (size_t i = 1; i < n; i++) {
-		F::mul(tbl[i], tbl[i-1], P[i].z);
+		F t = F::select(P[i].z.isZero(), F::one_, P[i].z);
+		F::mul(tbl[i], tbl[i-1], t);
 	}
 	F r;
 	F::inv(r, tbl[n-1]);
 	for (size_t i = 0; i < n; i++) {
 		size_t pos = n-1-i;
-		F t = P[pos].z;
+		F& z = P[pos].z;
 		F rz, rz2;
-		if (pos > 0) {
-			F::mul(rz, r, tbl[pos-1]);
-			F::mul(r, r, t);
-		} else {
+		if (pos == 0) {
 			rz = r;
+		} else {
+			F::mul(rz, r, tbl[pos-1]);
+			F::mul(r, r, F::select(z.isZero(), F::one_, z));
 		}
 		F::sqr(rz2, rz);
 		F::mul(P[pos].x, P[pos].x, rz2); // xz^-2
 		F::mul(rz2, rz2, rz);
 		F::mul(P[pos].y, P[pos].y, rz2); // yz^-3
-		P[pos].z = F::one_;
+		z = F::select(z.isZero(), z, F::one_);
 	}
 }
 
@@ -1059,7 +1063,7 @@ struct EcM {
 	template<bool isProj=true, bool mixed=false>
 	static void makeTable(EcM *tbl, const EcM& P)
 	{
-		tbl[0].clear();
+		tbl[0].clear<isProj>();
 		tbl[1] = P;
 		dbl<isProj>(tbl[2], P);
 		for (size_t i = 3; i < tblN; i++) {
@@ -1109,13 +1113,13 @@ struct EcM {
 		Q.z = P.z;
 	}
 	template<bool isProj=true, bool mixed=false>
-	static void mulGLV(EcM& Q, const EcM& _P, const Vec y[4])
+	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
-		EcM P = _P;
+		// QQQ (n=1024) isProj=T : 36.8, isProj=F&&mixed=F : 36.0, isProj=F&&mixed=T : 34.6
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
 		makeTable<isProj, mixed>(tbl1, P);
-		if (!isProj) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
+		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
 		for (size_t i = 0; i < tblN; i++) {
 			mulLambda(tbl2[i], tbl1[i]);
 		}
@@ -1186,7 +1190,7 @@ struct EcM {
 		return mand(v1, v2);
 	}
 #ifdef MCL_MSM_TEST
-	void dump(bool isProj, size_t n, const char *msg = nullptr) const;
+	void dump(bool isProj, size_t pos, const char *msg = nullptr) const;
 #endif
 };
 
@@ -1315,11 +1319,11 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
 	assert(n % 8 == 0);
-	const bool isProj = true;
-	const bool mixed = false;
+	const bool isProj = false;
+	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	if (!isProj) g_param.normalizeVecG1(x, x, n);
+	if (!isProj && mixed) g_param.normalizeVecG1(x, x, n);
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
 		Vec yv[4];
@@ -1383,14 +1387,21 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 
 using namespace mcl::bn;
 
-void EcM::dump(bool isProj, size_t n, const char *msg) const
+void FpM::dump(size_t pos, const char *msg) const
+{
+	Fp T[8];
+	getFp((mcl::msm::FpA*)T);
+	if (msg) printf("%s\n", msg);
+	printf("  [%zd]=%s\n", pos, T[pos].getStr(16).c_str());
+}
+
+void EcM::dump(bool isProj, size_t pos, const char *msg) const
 {
 	G1 T[8];
 	getG1((mcl::msm::G1A*)T, isProj);
 	if (msg) printf("%s\n", msg);
-	for (size_t i = 0; i < n; i++) {
-		printf("  [%zd]=%s\n", i, T[i].getStr(16|mcl::IoEcProj).c_str());
-	}
+	printf("  [%zd]=%s\n", pos, T[pos].getStr(16|mcl::IoEcProj).c_str());
+//	printf("  [%zd]=%s\n", pos, T[pos].getStr(16|mcl::IoEcAffine).c_str());
 }
 
 CYBOZU_TEST_AUTO(init)
@@ -1403,7 +1414,7 @@ void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
 	for (size_t i = 0; i < n; i++) {
 		uint32_t v = rg.get32();
 		hashAndMapToG1(P[i], &v, sizeof(v));
-		x[i].setByCSPRNG(rg);
+		if (x) x[i].setByCSPRNG(rg);
 	}
 }
 
@@ -1538,6 +1549,27 @@ CYBOZU_TEST_AUTO(op)
 #endif
 }
 
+CYBOZU_TEST_AUTO(normalizeJacobiVec)
+{
+	const bool isProj = false;
+	const size_t n = 64;
+	G1 P[n], Q[n], R[n];
+	EcM PP[n/8];
+	cybozu::XorShift rg;
+	setParam(P, 0, n, rg);
+	P[n/2].clear();
+	P[n/3].clear();
+	mcl::ec::normalizeVec(Q, P, n);
+	for (size_t i = 0; i < n/8; i++) {
+		PP[i].setG1((mcl::msm::G1A*)&P[i*8], isProj);
+	}
+	normalizeJacobiVec<EcM, n/8>(PP);
+	for (size_t i = 0; i < n/8; i++) {
+		PP[i].getG1((mcl::msm::G1A*)&R[i*8], isProj);
+	}
+	CYBOZU_TEST_EQUAL_ARRAY(P, R, n);
+}
+
 CYBOZU_TEST_AUTO(mulEach_special)
 {
 	const size_t n = 8;
@@ -1554,11 +1586,12 @@ CYBOZU_TEST_AUTO(mulEach_special)
 
 CYBOZU_TEST_AUTO(mulEach)
 {
-	const size_t n = 64;
+	const size_t n = 1024;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
 	cybozu::XorShift rg;
 	setParam(P, x, n, rg);
+	if (n > 32) P[32].clear();
 	P[n/2].clear();
 	for (size_t i = 0; i < n; i++) {
 		Q[i] = P[i];

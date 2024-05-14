@@ -1500,8 +1500,8 @@ public:
 	void clear()
 	{
 		if (mode_ == ec::Jacobi) {
-			x = 1;
-			y = 1;
+			x = 0;
+			y = 0;
 			z.clear();
 		} else { // ec::Proj
 			x.clear();
