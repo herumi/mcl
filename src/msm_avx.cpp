@@ -1144,16 +1144,17 @@ struct EcM {
 				if (!first) for (int k = 0; k < w; k++) EcM::dbl<isProj>(Q, Q);
 				EcM T;
 				Vec idx;
-				idx = vand(vpsrlq(v1, bitLen-w-j*w), g_vmask4);
+				// compute v2 first before v1. see misc/internal.md
+				idx = vand(vpsrlq(v2, bitLen-w-j*w), g_vmask4);
 				if (first) {
-					Q.gather(tbl1, idx);
+					Q.gather(tbl2, idx);
 					first = false;
 				} else {
-					T.gather(tbl1, idx);
+					T.gather(tbl2, idx);
 					add<isProj, mixed>(Q, Q, T);
 				}
-				idx = vand(vpsrlq(v2, bitLen-w-j*w), g_vmask4);
-				T.gather(tbl2, idx);
+				idx = vand(vpsrlq(v1, bitLen-w-j*w), g_vmask4);
+				T.gather(tbl1, idx);
 				add<isProj, mixed>(Q, Q, T);
 			}
 		}

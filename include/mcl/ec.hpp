@@ -247,8 +247,9 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 	split x to (a, b) such that x = a + b L where 0 <= a, b <= L, 0 <= x <= r-1 = L^2+L
 	if adj is true, then 0 <= a < L, 0 <= b <= L+1
 */
-inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4], bool adj = true)
+inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 {
+	const bool adj = false;
 	assert(sizeof(Unit) == 8);
 	/*
 		z = -0xd201000000010000
