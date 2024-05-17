@@ -242,10 +242,54 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 	}
 }
 
+#if MCL_SIZEOF_UNIT == 8
+/*
+	split x to (a, b) such that x = a + b L where 0 <= a, b <= L, 0 <= x <= r-1 = L^2+L
+	if adj is true, then 0 <= a < L, 0 <= b <= L+1
+*/
+inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
+{
+	const bool adj = false;
+	assert(sizeof(Unit) == 8);
+	/*
+		z = -0xd201000000010000
+		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
+		r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+		s=255
+		v = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
+	*/
+	static const uint64_t L[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
+	static const uint64_t v[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
+	static const uint64_t one[] = { 1, 0 };
+	static const size_t n = 128 / mcl::UnitBitSize;
+	Unit t[n*3];
+	// n = 128 bit
+	// t[n*3] = x[n*2] * v[n]
+	mcl::bint::mulNM(t, x, n*2, v, n);
+	// b[n] = t[n*3]>>255
+	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
+	b[0] = t[0];
+	b[1] = t[1];
+	Unit t2[n*2];
+	// t2[n*2] = t[n] * L[n]
+	// Do not overlap I/O buffers on pre-Broadwell CPUs.
+	mcl::bint::mulT<n>(t2, t, L);
+	// a[n] = x[n*2] - t2[n*2]
+	mcl::bint::subT<n>(a, x, t2);
+	if (adj) {
+		if (mcl::bint::cmpEqT<n>(a, L)) {
+			// if a == L then b = b + 1 and a = 0
+			mcl::bint::addT<n>(b, b, one);
+			mcl::bint::clearT<n>(a);
+		}
+	}
+}
+#endif
+
 } // mcl::ec::local
 
 // [X:Y:Z] as Proj = (X/Z, Y/Z) as Affine = [XZ:YZ^2:Z] as Jacobi
-// Remark. convert P = [1:0:0] to Q = [0:0:0]
+// Remark. convert P = [*:*:0] to Q = [0:0:0]
 template<class E>
 void ProjToJacobi(E& Q, const E& P)
 {
@@ -257,7 +301,7 @@ void ProjToJacobi(E& Q, const E& P)
 }
 
 // [X:Y:Z] as Jacobi = (X/Z^2, Y/Z^3) as Affine = [XZ:Y:Z^3] as Proj
-// Remark. convert P = [1:1:0] to Q = [0:1:0]
+// Remark. convert P = [*:1:0] to Q = [0:1:0]
 template<class E>
 void JacobiToProj(E& Q, const E& P)
 {
@@ -1316,6 +1360,7 @@ public:
 	static mpz_class order_;
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
 	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
+	static void (*mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1382,6 +1427,7 @@ public:
 		order_ = 0;
 		mulVecGLV = 0;
 		mulVecOpti = 0;
+		mulEachOpti = 0;
 		isValidOrderFast = 0;
 		mode_ = mode;
 	}
@@ -1411,6 +1457,10 @@ public:
 	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn))
 	{
 		mulVecOpti = f;
+	}
+	static void setMulEachOpti(void f(Unit *_xVec, const Unit *_yVec, size_t yn))
+	{
+		mulEachOpti = f;
 	}
 	static inline void init(bool *pb, const char *astr, const char *bstr, int mode = ec::Jacobi)
 	{
@@ -1463,12 +1513,14 @@ public:
 	void clear()
 	{
 		if (mode_ == ec::Jacobi) {
-			x = 1;
-		} else {
+			x = 0;
+			y = 0;
+			z.clear();
+		} else { // ec::Proj
 			x.clear();
+			y = 1;
+			z.clear();
 		}
-		y = 1;
-		z.clear();
 	}
 	static inline void clear(EcT& P)
 	{
@@ -2080,7 +2132,7 @@ public:
 			return;
 		}
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti((Unit*)&z, (Unit*)xVec, (const Unit*)yVec, n);
+			mulVecOpti((Unit*)&z, (Unit*)xVec, yVec[0].getUnit(), n);
 			return;
 		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false)) {
@@ -2132,6 +2184,20 @@ public:
 		(void)cpuN;
 		mulVec(z, xVec, yVec, n);
 #endif
+	}
+	// xVec[i] *= yVec[i]
+	static void mulEach(EcT *xVec, const EcT::Fr *yVec, size_t n)
+	{
+		if (mulEachOpti && n >= 8) {
+			size_t n8 = n & ~size_t(7);
+			mulEachOpti((Unit*)xVec, yVec[0].getUnit(), n8);
+			xVec += n8;
+			yVec += n8;
+			n -= n8;
+		}
+		for (size_t i = 0; i < n; i++) {
+			xVec[i] *= yVec[i];
+		}
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
@@ -2192,6 +2258,7 @@ template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *x
 template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
+template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
 
 // r = the order of Ec
 template<class Ec, class _Fr>

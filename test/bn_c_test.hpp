@@ -1078,13 +1078,21 @@ CYBOZU_TEST_AUTO(mulVec)
 	for (size_t i = 0; i < N; i++) {
 		char c = char('a' + i);
 		mclBnG1_hashAndMapTo(&x1Vec[i], &c, 1);
+		if (i == 10) {
+			mclBnG1_clear(&x1Vec[i]); // x1Vec[i] contains zero
+		}
 		mclBnG2_hashAndMapTo(&x2Vec[i], &c, 1);
 		mclBn_pairing(&xtVec[i], &x1Vec[i], &x2Vec[i]);
-		mclBnFr_setByCSPRNG(&yVec[i]);
+//		mclBnFr_setByCSPRNG(&yVec[i]);
+		mclBnFr_setHashOf(&yVec[i], &c, 1);
 	}
+	mclBnG1 x1Vec2[N];
+	memcpy(x1Vec2, x1Vec, sizeof(x1Vec));
+
 	mclBnG1_mulVec(&z1, x1Vec, yVec, N);
 	mclBnG2_mulVec(&z2, x2Vec, yVec, N);
 	mclBnGT_powVec(&zt, xtVec, yVec, N);
+	mclBnG1_mulEach(x1Vec2, yVec, N);
 
 	mclBnG1_clear(&w1);
 	mclBnG2_clear(&w2);
@@ -1094,6 +1102,22 @@ CYBOZU_TEST_AUTO(mulVec)
 		mclBnG2 t2;
 		mclBnGT tt;
 		mclBnG1_mul(&t1, &x1Vec[i], &yVec[i]);
+		CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&t1, &x1Vec2[i]));
+#if 0
+		if (mclBnG1_isEqual(&t1, &x1Vec2[i]) == 0) {
+			char buf[1024];
+			printf("i=%zd\n", i);
+			mclBnG1_getStr(buf, sizeof(buf), &x1Vec[i], 10);
+			printf("x1=%s\n", buf);
+			mclBnFr_getStr(buf, sizeof(buf), &yVec[i], 10);
+			printf("y=%s\n", buf);
+			mclBnG1_getStr(buf, sizeof(buf), &t1, 10);
+			printf("xy=%s\n", buf);
+			mclBnG1_getStr(buf, sizeof(buf), &x1Vec2[i], 10);
+			printf("ng=%s\n", buf);
+			exit(1);
+		}
+#endif
 		mclBnG2_mul(&t2, &x2Vec[i], &yVec[i]);
 		mclBnGT_pow(&tt, &xtVec[i], &yVec[i]);
 		mclBnG1_add(&w1, &w1, &t1);

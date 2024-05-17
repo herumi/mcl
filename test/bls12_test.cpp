@@ -359,6 +359,32 @@ void testSerialize(const G1& P, const G2& Q)
 
 #include "bench.hpp"
 
+void testMulVec()
+{
+	puts("testMulVec");
+	const size_t n = 8192;
+	cybozu::XorShift rg;
+	std::vector<G1> Pvec(n);
+	std::vector<Fr> xVec(n);
+	hashAndMapToG1(Pvec[0], "abc", 3);
+	for (size_t i = 1; i < n; i++) {
+		G1::add(Pvec[i], Pvec[i-1], Pvec[0]);
+	}
+	for (size_t i = 0; i < n; i++) {
+		xVec[i].setByCSPRNG(rg);
+	}
+	G1 P;
+	G1 P8191;
+	P8191.setStr("1 c252fef934098904eca8e3fbd9cc8c78877e434d9ce01e424ef07302cec5652dc17d341b8abd4278255a75718cebd67 17455f24f76e7e7d1dd3231d8f144a40decc40d5b129734879b8aad4a209a2e6d83d8256221e46aaf8205e254355d9ad", 16);
+	G1 P8192;
+	P8192.setStr("1 f0d44ba84af56d1db97f46660bfd12401aae239a6650cdfc168158d1076d68c5149ac3a311b9c058ad4e61ad1b8063 b2240da1e42c5f469ccf818e58901aca2283d1bd29565f5efbfa14e48cdae199c7a7981b958bfec332f6e613cf36990", 16);
+	G1::mulVec(P, Pvec.data(), xVec.data(), n-1);
+	CYBOZU_TEST_EQUAL(P, P8191);
+	G1::mulVec(P, Pvec.data(), xVec.data(), n);
+	CYBOZU_TEST_EQUAL(P, P8192);
+}
+
+
 CYBOZU_TEST_AUTO(naive)
 {
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
@@ -375,6 +401,7 @@ CYBOZU_TEST_AUTO(naive)
 		clk.put();
 		return;
 #endif
+		testMulVec();
 		testSerialize(P, Q);
 		testParam(ts);
 		testIo(P, Q);
@@ -856,7 +883,6 @@ CYBOZU_TEST_AUTO(verifyG2)
 	n = Q.deserialize(buf, n); // fail because of invalid order
 	CYBOZU_TEST_ASSERT(n == 0);
 }
-
 
 typedef std::vector<Fp> FpVec;
 

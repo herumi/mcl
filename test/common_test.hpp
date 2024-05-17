@@ -33,6 +33,9 @@ void testMulVec(const G& P)
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < N; i++) {
 		G::mul(x0Vec[i], P, i + 3);
+		if (i == 30) {
+			x0Vec[i].clear(); // x0Vec[i] contains zero value
+		}
 		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG(rg);
 	}
@@ -56,6 +59,17 @@ void testMulVec(const G& P)
 		CYBOZU_BENCH_C("mulVec", C, G::mulVec, Q1, xVec.data(), yVec.data(), n);
 		CYBOZU_BENCH_C("mulVecCopy", C, mulVecCopy, Q1, xVec.data(), yVec.data(), n, x0Vec.data());
 #endif
+	}
+	puts("mulEach");
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		xVec = x0Vec;
+		G::mulEach(xVec.data(), yVec.data(), n);
+		for (size_t j = 0; j < n; j++) {
+			G T;
+			G::mul(T, x0Vec[j], yVec[j]);
+			CYBOZU_TEST_EQUAL(xVec[j], T);
+		}
 	}
 }
 

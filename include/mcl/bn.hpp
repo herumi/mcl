@@ -48,6 +48,7 @@ namespace msm {
 
 bool initMsm(const mcl::CurveParam& cp, const Param *param);
 void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n);
+void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
 
 } // mcl::msm
 #endif
@@ -692,9 +693,12 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 			const mpz_class& r = Fr::getOp().mp;
 			B[0][0] = z * z - 1; // L
 			v0 = (B[0][0] << rBitSize) / r;
-			if (curveType == BLS12_381.curveType && MCL_SIZEOF_UNIT == 8) {
+#if MCL_SIZEOF_UNIT == 8
+			if (curveType == BLS12_381.curveType) {
 				optimizedSplit = optimizedSplitForBLS12_381;
-			} else {
+			} else
+#endif
+			{
 				optimizedSplit = splitForBLS12;
 			}
 		} else {
@@ -723,38 +727,19 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		b = (x * v0) >> rBitSize;
 		a = x - b * B[0][0];
 	}
+#if MCL_SIZEOF_UNIT == 8
 	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
 	{
-		assert(sizeof(Unit) == 8);
-		/*
-			z = -0xd201000000010000
-			L = z^2-1 = 0xac45a4010001a40200000000ffffffff
-			r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-			s=255
-			v = 0xbe35f678f00fd56eb1fb72917b67f718
-		*/
-		mpz_class& a = u[0];
-		mpz_class& b = u[1];
-		static const uint64_t Lv[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
-		static const uint64_t vv[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
 		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit t[n*3];
-		// n = 128 bit
-		// t[n*3] = x[n*2] * vv[n]
-		mcl::bint::mulNM(t, gmp::getUnit(x), n*2, (const Unit*)vv, n);
-		// t[n] <- t[n*3]
-		mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
+		Unit xa[n*2], a[2], b[2];
+		mcl::gmp::getArray(xa, n*2, x);
+		ec::local::optimizedSplitRawForBLS12_381(a, b, xa);
 		bool dummy;
-		gmp::setArray(&dummy, b, t, n);
-		Unit t2[n*2];
-		// t2[n*2] = t[n] * Lv[n]
-		// Do not overlap I/O buffers on pre-Broadwell CPUs.
-		mcl::bint::mulT<n>(t2, t, (const Unit*)Lv);
-		// t[n] = x[n*2] - t2[n*2]
-		mcl::bint::subT<n>(t, gmp::getUnit(x), t2);
-		gmp::setArray(&dummy, a, t, n);
+		gmp::setArray(&dummy, u[0], a, n);
+		gmp::setArray(&dummy, u[1], b, n);
 		(void)dummy;
 	}
+#endif
 };
 
 /*
@@ -2314,6 +2299,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
 		if (mcl::msm::initMsm(cp, &para)) {
 			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
+			G1::setMulEachOpti(mcl::msm::mulEachAVX512);
 		}
 	}
 #endif
