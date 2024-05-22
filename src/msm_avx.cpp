@@ -1087,26 +1087,6 @@ struct EcM {
 			vpscatterqq(&tbl[0].z.v[i], idx, z.v[i]);
 		}
 	}
-
-#if 0
-	static void mul(EcM& Q, const EcM& P, const Vec *y, size_t yn)
-	{
-		EcM tbl[tblN];
-		makeTable(tbl, P);
-		const size_t jn = bitLen / w;
-		Q = tbl[0];
-		for (size_t i = 0; i < yn; i++) {
-			const Vec& v = y[yn-1-i];
-			for (size_t j = 0; j < jn; j++) {
-				for (int k = 0; k < w; k++) EcM::dbl(Q, Q);
-				Vec idx = vand(vpsrlq(v, bitLen-w-j*w), g_vmask4);
-				EcM T;
-				T.gather(tbl, idx);
-				add(Q, Q, T);
-			}
-		}
-	}
-#endif
 	static void mulLambda(EcM& Q, const EcM& P)
 	{
 		FpM::mul(Q.x, P.x, FpM::rw_);
