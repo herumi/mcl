@@ -962,8 +962,6 @@ struct EcM {
 	static const int a_ = 0;
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
-	static const int w = 4;
-	static const int tblN = 1<<w;
 	static const size_t bitLen = sizeof(Unit)*8;
 	static FpM b3_;
 	static EcM zeroProj_;
@@ -1060,9 +1058,10 @@ struct EcM {
 		FpM::mul(y, y, r);
 		z = FpM::one_;
 	}
-	template<bool isProj=true, bool mixed=false>
+	template<size_t w, bool isProj=true, bool mixed=false>
 	static void makeTable(EcM *tbl, const EcM& P)
 	{
+		const size_t tblN = 1<<w;
 		tbl[0].clear<isProj>();
 		tbl[1] = P;
 		dbl<isProj>(tbl[2], P);
@@ -1089,6 +1088,7 @@ struct EcM {
 		}
 	}
 
+#if 0
 	static void mul(EcM& Q, const EcM& P, const Vec *y, size_t yn)
 	{
 		EcM tbl[tblN];
@@ -1106,6 +1106,7 @@ struct EcM {
 			}
 		}
 	}
+#endif
 	static void mulLambda(EcM& Q, const EcM& P)
 	{
 		FpM::mul(Q.x, P.x, FpM::rw_);
@@ -1115,10 +1116,12 @@ struct EcM {
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
+		const size_t w = 4;
+		const size_t tblN = 1<<w;
 		// QQQ (n=1024) isProj=T : 36.8, isProj=F&&mixed=F : 36.0, isProj=F&&mixed=T : 34.6
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
-		makeTable<isProj, mixed>(tbl1, P);
+		makeTable<w, isProj, mixed>(tbl1, P);
 		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
 		for (size_t i = 0; i < tblN; i++) {
 			mulLambda(tbl2[i], tbl1[i]);
@@ -1133,36 +1136,34 @@ struct EcM {
 			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
 			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
 		}
-#if 1
-		const size_t jn = bitLen / w;
-		const size_t yn = 2;
+		const size_t bitLen = 128;
+		Vec vmask = vpbroadcastq(tblN-1);
 		bool first = true;
-		for (size_t i = 0; i < yn; i++) {
-			const Vec& v1 = a[yn-1-i];
-			const Vec& v2 = b[yn-1-i];
-			for (size_t j = 0; j < jn; j++) {
-				if (!first) for (int k = 0; k < w; k++) EcM::dbl<isProj>(Q, Q);
-				EcM T;
-				Vec idx;
-				// compute v2 first before v1. see misc/internal.md
-				idx = vand(vpsrlq(v2, bitLen-w-j*w), g_vmask4);
-				if (first) {
-					Q.gather(tbl2, idx);
-					first = false;
-				} else {
-					T.gather(tbl2, idx);
-					add<isProj, mixed>(Q, Q, T);
-				}
-				idx = vand(vpsrlq(v1, bitLen-w-j*w), g_vmask4);
-				T.gather(tbl1, idx);
+		size_t pos = bitLen;
+		for (size_t i = 0; i < (bitLen + w-1)/w; i++) {
+			size_t dblN = w;
+			if (pos < w) {
+				vmask = vpbroadcastq((1<<pos)-1);
+				dblN = pos;
+				pos = 0;
+			} else {
+				pos -= w;
+			}
+			if (!first) for (size_t k = 0; k < dblN; k++) EcM::dbl<isProj>(Q, Q);
+			EcM T;
+			Vec idx;
+			idx = vand(getUnitAt(b, 2, pos), vmask);
+			if (first) {
+				Q.gather(tbl2, idx);
+				first = false;
+			} else {
+				T.gather(tbl2, idx);
 				add<isProj, mixed>(Q, Q, T);
 			}
+			idx = vand(getUnitAt(a, 2, pos), vmask);
+			T.gather(tbl1, idx);
+			add<isProj, mixed>(Q, Q, T);
 		}
-#else
-		mul(Q, P, a, 2);
-		mul(T, T, b, 2);
-		add(Q, Q, T);
-#endif
 	}
 	void cset(const Vmask& c, const EcM& v)
 	{
