@@ -235,6 +235,11 @@ inline Vmask vcmpgt(const Vec& a, const Vec& b)
 	return _mm512_cmpgt_epi64_mask(a, b);
 }
 
+inline Vmask vcmpge(const Vec& a, const Vec& b)
+{
+	return _mm512_cmpge_epi64_mask(a, b);
+}
+
 inline Vmask mand(const Vmask& a, const Vmask& b)
 {
 	return _mm512_kand(a, b);
@@ -656,6 +661,7 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 
 struct FpM {
 	Vec v[N];
+	static FpM zero_;
 	static FpM one_;
 	static FpM rawOne_;
 	static FpM rw_;
@@ -796,6 +802,12 @@ struct FpM {
 		FpM::mul(t, *this, FpM::m52to64_);
 		cvt8Ux8to6Ux8((Unit*)v, t.v);
 	}
+	FpM neg() const
+	{
+		FpM t;
+		FpM::sub(t, FpM::zero_, *this);
+		return t;
+	}
 	static void inv(FpM& z, const FpM& x)
 	{
 		mcl::msm::FpA v[M];
@@ -828,6 +840,7 @@ struct FpM {
 #endif
 };
 
+FpM FpM::zero_;
 FpM FpM::one_;
 FpM FpM::rawOne_;
 FpM FpM::rw_;
@@ -1093,6 +1106,8 @@ struct EcM {
 		Q.y = P.y;
 		Q.z = P.z;
 	}
+#if 1
+	// Treat idx as an unsigned integer
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
@@ -1117,7 +1132,7 @@ struct EcM {
 			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
 		}
 		const size_t bitLen = 128;
-		Vec vmask = vpbroadcastq(tblN-1);
+		Vec vmask = vpbroadcastq((1<<w)-1);
 		bool first = true;
 		size_t pos = bitLen;
 		for (size_t i = 0; i < (bitLen + w-1)/w; i++) {
@@ -1145,6 +1160,91 @@ struct EcM {
 			add<isProj, mixed>(Q, Q, T);
 		}
 	}
+#else
+	template<size_t bitLen, size_t w>
+	static void makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
+	{
+		const Vec vmask = vpbroadcastq((1<<w)-1);
+		const Vec W = vpbroadcastq(1<<w);
+		const Vec H = vpbroadcastq(1<<(w-1));
+		const size_t remain = bitLen % w;
+		size_t pos = 0;
+		Vec CF = vzero();
+		size_t i = 0;
+		while (pos < bitLen) {
+			Vec idx = getUnitAt(a, 2, pos);
+			if (pos == 0 && remain) {
+				// always CF = 0
+				idx = vand(idx, vpbroadcastq((1<<remain)-1));
+				negTbl[i] = vcmpge(idx, H); // = 0 because always idx < H
+				pos = remain;
+			} else {
+				idx = vadd(idx, CF);
+				CF = vpsrlq(idx, w);
+				idx = vand(idx, vmask);
+				negTbl[i] = vcmpge(idx, H);
+				idx = vselect(negTbl[i], vsub(W, idx), idx); // idx >= H ? W - idx : idx;
+				pos += w;
+			}
+			idxTbl[i] = idx;
+			i++;
+		}
+		assert(i == (bitLen+w-1)/w);
+	}
+	// Treat idx as a signed integer
+	template<bool isProj=true, bool mixed=false>
+	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
+	{
+		const size_t w = 4;
+		const size_t tblN = (1<<(w-1))+1;
+//		const size_t tblN = 1<<w;
+		Vec a[2], b[2];
+		EcM tbl1[tblN], tbl2[tblN];
+		makeTable<w, isProj, mixed>(tbl1, P);
+		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
+		for (size_t i = 0; i < tblN; i++) {
+			mulLambda(tbl2[i], tbl1[i]);
+		}
+		const Unit *src = (const Unit*)y;
+		Unit *pa = (Unit*)a;
+		Unit *pb = (Unit*)b;
+		for (size_t i = 0; i < M; i++) {
+			Unit buf[4] = { src[i+M*0], src[i+M*1], src[i+M*2], src[i+M*3] };
+			Unit aa[2], bb[2];
+			mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
+			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
+			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
+		}
+		const size_t bitLen = 128;
+		const size_t n = (bitLen + w-1)/w;
+		Vec aTbl[n], bTbl[n];
+		Vmask aNegTbl[n], bNegTbl[n];
+		makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
+		makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
+
+		const size_t remain = bitLen % w;
+		bool first = true;
+		for (int i = int(n)-1; i >= 0; i--) {
+			size_t dblN = (i == 0 && remain) ? remain : w;
+			if (!first) for (size_t k = 0; k < dblN; k++) EcM::dbl<isProj>(Q, Q);
+
+			EcM T;
+			Vec idx = bTbl[i];
+			T.gather(tbl2, idx);
+			T.y = FpM::select(bNegTbl[i], T.y.neg(), T.y);
+			if (first) {
+				Q = T;
+				first = false;
+			} else {
+				add<isProj, mixed>(Q, Q, T);
+			}
+			idx = aTbl[i];
+			T.gather(tbl1, idx);
+			T.y = FpM::select(aNegTbl[i], T.y.neg(), T.y);
+			add<isProj, mixed>(Q, Q, T);
+		}
+	}
+#endif
 	void cset(const Vmask& c, const EcM& v)
 	{
 		x.cset(c, v.x);
@@ -1345,6 +1445,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 		((Unit*)&g_offset)[i] = i;
 	}
 	expand(g_vi192, 192);
+	FpM::zero_.clear();
 	expandN(FpM::one_.v, mont.toMont(1));
 	expandN(FpM::rawOne_.v, mpz_class(1));
 	expandN(FpM::mR2_.v, mont.mR2);
