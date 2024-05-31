@@ -732,11 +732,13 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 	{
 		static const size_t n = 128 / mcl::UnitBitSize;
 		Unit xa[n*2], a[2], b[2];
-		mcl::gmp::getArray(xa, n*2, x);
-		ec::local::optimizedSplitRawForBLS12_381(a, b, xa);
 		bool dummy;
+		mcl::gmp::getArray(&dummy, xa, n*2, x);
+		assert(dummy);
+		ec::local::optimizedSplitRawForBLS12_381(a, b, xa);
 		gmp::setArray(&dummy, u[0], a, n);
 		gmp::setArray(&dummy, u[1], b, n);
+		assert(dummy);
 		(void)dummy;
 	}
 #endif
