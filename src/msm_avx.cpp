@@ -1106,7 +1106,11 @@ struct EcM {
 		tbl[1] = P;
 		dbl<isProj>(tbl[2], P);
 		for (size_t i = 3; i < tblN; i++) {
-			add<isProj, mixed>(tbl[i], tbl[i-1], P);
+			if (i & 1) {
+				add<isProj, mixed>(tbl[i], tbl[i-1], P);
+			} else {
+				dbl<isProj>(tbl[i], tbl[i/2]);
+			}
 		}
 	}
 	void gather(const EcM *tbl, Vec idx)
@@ -1133,8 +1137,9 @@ struct EcM {
 		Q.y = P.y;
 		Q.z = P.z;
 	}
-#if 0
+#if 1
 	// Treat idx as an unsigned integer
+	// 33.6M clk
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
@@ -1189,30 +1194,29 @@ struct EcM {
 	}
 #else
 	template<size_t bitLen, size_t w>
-	static Vmask makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
+	static void makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
 	{
 		const Vec vmask = vpbroadcastq((1<<w)-1);
-		const Vec W = vpbroadcastq(1<<w);
+		const Vec F = vpbroadcastq(1<<w);
 		const Vec H = vpbroadcastq(1<<(w-1));
 		const Vec one = vpbroadcastq(1);
 		size_t pos = 0;
-		Vmask CF = mzero();
+		Vec CF = vzero();
 		const size_t n = (bitLen+w-1)/w;
 		for (size_t i = 0; i < n; i++) {
 			Vec idx = getUnitAt(a, 2, pos);
 			idx = vand(idx, vmask);
-			idx = vadd(CF, idx, one);
+			idx = vadd(idx, CF);
 			Vec masked = vand(idx, vmask);
 			negTbl[i] = vcmpge(masked, H);
-			idx = vselect(negTbl[i], vsub(W, masked), masked); // idx >= H ? W - idx : idx;
-			idxTbl[i] = idx;
-			CF = vcmpge(idx, W);
-			CF = mor(negTbl[i], CF);
+			idxTbl[i] = vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
+			CF = vpsrlq(idx, w);
+			CF = vadd(negTbl[i], CF, one);
 			pos += w;
 		}
-		return CF;
 	}
 	// Treat idx as a signed integer
+	// 34.6M clk
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
@@ -1239,13 +1243,9 @@ struct EcM {
 		const size_t n = (bitLen + w-1)/w;
 		Vec aTbl[n], bTbl[n];
 		Vmask aNegTbl[n], bNegTbl[n];
-		Vmask CF1 = makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
-		Vmask CF2 = makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
+		makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
+		makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
 
-		assert(cvtToInt(CF1) == 0);
-		assert(cvtToInt(CF2) == 0);
-		(void)CF1;
-		(void)CF2;
 		for (size_t i = 0; i < n; i++) {
 			if (i > 0) for (size_t k = 0; k < w; k++) EcM::dbl<isProj>(Q, Q);
 			const size_t pos = n-1-i;
@@ -1422,7 +1422,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
 	assert(n % 8 == 0);
-	const bool isProj = true;
+	const bool isProj = false;
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
@@ -1642,25 +1642,22 @@ CYBOZU_TEST_AUTO(op)
 	}
 #if 1
 	// mulEachAVX512
-	for (int t = 0; t < 0x1000; t += 8) {
-		for (size_t i = 0; i < n; i++) {
-			Q[i] = P[i];
-			x[i] = t + i;
-			G1::mul(R[i], P[i], x[i]);
-		}
-		mcl::msm::mulEachAVX512((Unit*)Q, (const Unit*)x, n);
-		for (size_t i = 0; i < n; i++) {
-			CYBOZU_TEST_EQUAL(R[i], Q[i]);
-#if 1
-			if (R[i] != Q[i]) {
-				printf("x[%zd]=%s\n", i, x[i].getStr(16).c_str());
-				printf("ok %s\n", R[i].getStr(mcl::IoEcAffine|16).c_str());
-				printf("ng %s\n", Q[i].getStr(mcl::IoEcAffine|16).c_str());
+	for (int mode = 0; mode < 2; mode++) {
+		for (int t = 0; t < 0x1000; t += 8) {
+			for (size_t i = 0; i < n; i++) {
+				Q[i] = P[i];
+				switch (mode) {
+				case 0: x[i] = t + i; break;
+				case 1: x[i].setByCSPRNG(rg); break;
+				}
+				G1::mul(R[i], P[i], x[i]);
 			}
-#endif
+			mcl::msm::mulEachAVX512((Unit*)Q, (const Unit*)x, n);
+			for (size_t i = 0; i < n; i++) {
+				CYBOZU_TEST_EQUAL(R[i], Q[i]);
+			}
 		}
 	}
-exit(1);
 #endif
 }
 
