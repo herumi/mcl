@@ -1098,10 +1098,9 @@ struct EcM {
 		FpM::mul(y, y, r);
 		z = FpM::one_;
 	}
-	template<size_t w, bool isProj=true, bool mixed=false>
-	static void makeTable(EcM *tbl, const EcM& P)
+	template<bool isProj=true, bool mixed=false>
+	static void makeTable(EcM *tbl, size_t tblN, const EcM& P)
 	{
-		const size_t tblN = 1<<w;
 		tbl[0].clear<isProj>();
 		tbl[1] = P;
 		dbl<isProj>(tbl[2], P);
@@ -1137,7 +1136,7 @@ struct EcM {
 		Q.y = P.y;
 		Q.z = P.z;
 	}
-#if 1
+#if 0
 	// Treat idx as an unsigned integer
 	// 33.6M clk
 	template<bool isProj=true, bool mixed=false>
@@ -1148,7 +1147,7 @@ struct EcM {
 		// QQQ (n=1024) isProj=T : 36.8, isProj=F&&mixed=F : 36.0, isProj=F&&mixed=T : 34.6
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
-		makeTable<w, isProj, mixed>(tbl1, P);
+		makeTable<isProj, mixed>(tbl1, tblN, P);
 		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
 		for (size_t i = 0; i < tblN; i++) {
 			mulLambda(tbl2[i], tbl1[i]);
@@ -1216,7 +1215,7 @@ struct EcM {
 		}
 	}
 	// Treat idx as a signed integer
-	// 34.6M clk
+	// 32.4M clk
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
@@ -1224,7 +1223,7 @@ struct EcM {
 		const size_t tblN = (1<<(w-1))+1; // [0, 2^(w-1)]
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
-		makeTable<w, isProj, mixed>(tbl1, P);
+		makeTable<isProj, mixed>(tbl1, tblN, P);
 		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
 		for (size_t i = 0; i < tblN; i++) {
 			mulLambda(tbl2[i], tbl1[i]);
