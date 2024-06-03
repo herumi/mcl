@@ -708,6 +708,10 @@ struct FpM {
 	{
 		uvsub(z.v, x.v, y.v);
 	}
+	static void neg(FpM& z, const FpM& x)
+	{
+		FpM::sub(z, FpM::zero_, x);
+	}
 	static void mul(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvmul(z.v, x.v, y.v);
@@ -1136,6 +1140,12 @@ struct EcM {
 		Q.y = P.y;
 		Q.z = P.z;
 	}
+	static void neg(EcM& Q, const EcM& P)
+	{
+		Q.x = P.x;
+		FpM::neg(Q.y, P.y);
+		Q.z = P.z;
+	}
 #if 0
 	// Treat idx as an unsigned integer
 	// 33.6M clk
@@ -1192,11 +1202,16 @@ struct EcM {
 		}
 	}
 #else
+//#define SIGNED_TABLE // a little slower (32.1Mclk->32.4Mclk)
 	template<size_t bitLen, size_t w>
 	static void makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
 	{
 		const Vec vmask = vpbroadcastq((1<<w)-1);
+#ifdef SIGNED_TABLE
+		(void)negTbl;
+#else
 		const Vec F = vpbroadcastq(1<<w);
+#endif
 		const Vec H = vpbroadcastq(1<<(w-1));
 		const Vec one = vpbroadcastq(1);
 		size_t pos = 0;
@@ -1206,11 +1221,19 @@ struct EcM {
 			Vec idx = getUnitAt(a, 2, pos);
 			idx = vand(idx, vmask);
 			idx = vadd(idx, CF);
+#ifdef SIGNED_TABLE
 			Vec masked = vand(idx, vmask);
-			negTbl[i] = vcmpge(masked, H);
+			Vmask v = vcmpgt(masked, H);
+			idxTbl[i] = masked; //vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
+			CF = vpsrlq(idx, w);
+			CF = vadd(v, CF, one);
+#else
+			Vec masked = vand(idx, vmask);
+			negTbl[i] = vcmpgt(masked, H);
 			idxTbl[i] = vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
 			CF = vadd(negTbl[i], CF, one);
+#endif
 			pos += w;
 		}
 	}
@@ -1220,14 +1243,25 @@ struct EcM {
 	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
 	{
 		const size_t w = 5;
-		const size_t tblN = (1<<(w-1))+1; // [0, 2^(w-1)]
+		const size_t halfN = (1<<(w-1))+1; // [0, 2^(w-1)]
+#ifdef SIGNED_TABLE
+		const size_t tblN = 1<<w;
+#else
+		const size_t tblN = halfN;
+#endif
 		Vec a[2], b[2];
 		EcM tbl1[tblN], tbl2[tblN];
-		makeTable<isProj, mixed>(tbl1, tblN, P);
-		if (!isProj && mixed) normalizeJacobiVec<EcM, tblN-1>(tbl1+1);
-		for (size_t i = 0; i < tblN; i++) {
+		makeTable<isProj, mixed>(tbl1, halfN, P);
+		if (!isProj && mixed) normalizeJacobiVec<EcM, halfN-1>(tbl1+1);
+		for (size_t i = 0; i < halfN; i++) {
 			mulLambda(tbl2[i], tbl1[i]);
 		}
+#ifdef SIGNED_TABLE
+		for (size_t i = halfN; i < tblN; i++) {
+			EcM::neg(tbl1[i], tbl1[tblN-i]);
+			EcM::neg(tbl2[i], tbl2[tblN-i]);
+		}
+#endif
 		const Unit *src = (const Unit*)y;
 		Unit *pa = (Unit*)a;
 		Unit *pb = (Unit*)b;
@@ -1252,7 +1286,9 @@ struct EcM {
 			EcM T;
 			Vec idx = bTbl[pos];
 			T.gather(tbl2, idx);
+#ifndef SIGNED_TABLE
 			T.y = FpM::select(bNegTbl[pos], T.y.neg(), T.y);
+#endif
 			if (i == 0) {
 				Q = T;
 			} else {
@@ -1260,7 +1296,9 @@ struct EcM {
 			}
 			idx = aTbl[pos];
 			T.gather(tbl1, idx);
+#ifndef SIGNED_TABLE
 			T.y = FpM::select(aNegTbl[pos], T.y.neg(), T.y);
+#endif
 			add<isProj, mixed>(Q, Q, T);
 		}
 	}
