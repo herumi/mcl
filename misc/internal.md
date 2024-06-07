@@ -163,3 +163,7 @@ def naf(x, w=3):
     tbl.reverse()
   return tbl
 ```
+
+Consider to apply `w=5` to `(a, b)=split(x)`.
+The max value of `a` is `1.1 L = 0b101...` of 128-bit length.
+`0b101` is less than `(1<<(w-1))-1` and so negativity and CF operation are unnecessary.
