@@ -527,8 +527,10 @@ size_t getContinuousVal(const Vec& v, size_t pos, int val)
 template<class Vec>
 void convertToNAF(Vec& v, const Vec& in)
 {
+	assert(in.size() > 0);
 	v.copy(in);
 	size_t pos = v.size() - 1;
+	if (pos == 0) return;
 	for (;;) {
 		size_t p = getContinuousVal(v, pos, 0);
 		if (p == 1) return;
