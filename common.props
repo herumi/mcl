@@ -7,20 +7,16 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)../cybozulib/include;$(SolutionDir)../cybozulib_ext/include;$(SolutionDir)include;$(SolutionDir)../xbyak</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NOMINMAX</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NOMINMAX;MCL_MAX_BIT_SIZE=384;MCL_MSM=1</PreprocessorDefinitions>
     </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)../cybozulib_ext/lib;$(SolutionDir)lib</AdditionalLibraryDirectories>
-    </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

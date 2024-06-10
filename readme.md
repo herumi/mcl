@@ -112,13 +112,17 @@ cmake .. -DCMAKE_CXX_COMPILER=clang++
 make
 ```
 
-For Visual Studio,
+For Visual Studio, (REMARK : It is not maintained; use the vcxproj file.)
 ```
 mkdir build
 cd build
 cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
+
+## How to build a static library with Visual Studio
+Open `mcl.sln` and build it.
+`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib` which is defined `MCL_MAX_BIT_SIZE=384`.
 
 ## options
 

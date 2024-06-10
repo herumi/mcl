@@ -36,15 +36,7 @@ s = r.bit_length()
 S = 1<<s
 v = S // L
 r0 = S % L
-```
 
-variables|z|L|r|S|v
--|-|-|-|-|-
-bit_length|64|128|255|255|128
-
-
-### Split function
-```python
 adj = False
 def split(x):
     b = (x * v) >> s
@@ -55,6 +47,11 @@ def split(x):
         b += 1
     return (a, b)
 ```
+
+variables|z|L|r|S|v
+-|-|-|-|-|-
+bit_length|64|128|255|255|128
+
 - x in [0, r-1]
 - a + b L = x for (a, b) = split(x).
 
@@ -144,3 +141,29 @@ Otherwise, Q is bigger than L P, so Q != tbl1[j1].
 -|-|-
 Proj|12M+27A|8M+13A
 Jacobi|16M+7A|7M+12A
+
+## NAF (Non-Adjacent Form)
+
+```
+def naf(x, w=3):
+  tbl = []
+  H=2**(w-1)
+  W=H*2
+  mask = W-1
+  while x >= 1:
+    if x & 1:
+      t = x & mask
+      if t >= H:
+        t -= W
+      x = x - t
+    else:
+      t = 0
+    x = x >> 1
+    tbl.append(t)
+    tbl.reverse()
+  return tbl
+```
+
+Consider to apply `w=5` to `(a, b)=split(x)`.
+The max value of `a` is `1.1 L = 0b101...` of 128-bit length.
+`0b101` is less than `(1<<(w-1))-1` and so negativity and CF operation are unnecessary.
