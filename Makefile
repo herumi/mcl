@@ -447,7 +447,7 @@ $(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -DMCL_MSM_TEST
 MSM_TEST_OBJ=$(OBJ_DIR)/$(MSM)_test.o $(filter-out $(OBJ_DIR)/msm_avx.o,$(LIB_OBJ))
 $(EXE_DIR)/msm_test.exe: $(MSM_TEST_OBJ)
-	$(PRE)$(CXX) -o $@ $(LDFLAGS) $(MSM_TEST_OBJ)
+	$(PRE)$(CXX) -o $@ $(MSM_TEST_OBJ) $(LDFLAGS)
 -include $(OBJ_DIR)/msm_test.d
 
 make_tbl:
