@@ -1733,7 +1733,7 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	G1::mulEach(Q, x, 8);
 	CYBOZU_TEST_EQUAL(R[0], Q[0]);
 	mpz_class L;
-	L.setStr("0xac45a4010001a40200000000ffffffff");
+	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
 	mpz_class tbl[] = {
 		0,
 		1,
