@@ -518,7 +518,7 @@ public:
 	bool isZero() const { return size() == 1 && buf_[0] == 0; }
 	bool isNegative() const { return !isZero() && isNeg_; }
 	uint32_t getLow32bit() const { return (uint32_t)buf_[0]; }
-	bool isOdd() const { return (buf_[0] & 1) == 1; }
+	bool isOdd() const { return size() > 0 && (buf_[0] & 1) == 1; }
 	bool isEven() const { return !isOdd(); }
 	const Unit *getUnit() const { return buf_; }
 	size_t getUnitSize() const { return size_; }
