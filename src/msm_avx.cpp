@@ -71,13 +71,13 @@ inline void dump(const Vec& v, const char *msg = nullptr)
 }
 
 template<size_t N, int w = W>
-inline void toArray(Unit x[N], mpz_class mx)
+inline void toArray(Unit x[N], const mpz_class& mx)
 {
 	const Unit mask = getMask(w);
+	Unit tmp[N];
+	mcl::gmp::getArray(tmp, N, mx);
 	for (size_t i = 0; i < N; i++) {
-		mpz_class a = mx & mask;
-		x[i] = mcl::gmp::getUnit(a)[0];
-		mx >>= w;
+		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
 	}
 }
 
@@ -1733,7 +1733,7 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	G1::mulEach(Q, x, 8);
 	CYBOZU_TEST_EQUAL(R[0], Q[0]);
 	mpz_class L;
-	L.setStr("0xac45a4010001a40200000000ffffffff");
+	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
 	mpz_class tbl[] = {
 		0,
 		1,
