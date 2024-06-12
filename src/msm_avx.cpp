@@ -71,13 +71,13 @@ inline void dump(const Vec& v, const char *msg = nullptr)
 }
 
 template<size_t N, int w = W>
-inline void toArray(Unit x[N], mpz_class mx)
+inline void toArray(Unit x[N], const mpz_class& mx)
 {
 	const Unit mask = getMask(w);
+	Unit tmp[N];
+	mcl::gmp::getArray(tmp, N, mx);
 	for (size_t i = 0; i < N; i++) {
-		mpz_class a = mx & mask;
-		x[i] = mcl::gmp::getUnit(a)[0];
-		mx >>= w;
+		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
 	}
 }
 
