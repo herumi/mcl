@@ -77,7 +77,7 @@ void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 		*pb = false;
 		return;
 	}
-	const Unit *src = x.get_mpz_t()->_mp_d;
+	const Unit *src = (const Unit*)x.get_mpz_t()->_mp_d;
 #endif
 	*pb = fp::convertArrayAsLE(buf, maxSize, src, n);
 }
