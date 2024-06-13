@@ -86,16 +86,10 @@ void getArray(bool *pb, T *buf, size_t maxSize, const mpz_class& x)
 }
 inline void set(mpz_class& z, uint64_t x)
 {
-#if 1
-	z = uint32_t(x>>32);
-	z <<= 32;
-	z += uint32_t(x);
-#else
 	bool b;
 	setArray(&b, z, &x, 1);
 	assert(b);
 	(void)b;
-#endif
 }
 // z = x
 inline void setUnit(mpz_class& z, Unit x)
