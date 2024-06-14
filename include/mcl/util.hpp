@@ -62,6 +62,18 @@ T getUnitAt(const T *x, size_t xN, size_t bitPos)
 }
 
 template<class T>
+size_t getBitSize(const T *x, size_t n)
+{
+	while (n > 0 && (x[n - 1] == 0)) {
+		n--;
+	}
+	if (n == 0) {
+		return 0;
+	}
+	return (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(x[n - 1]);
+}
+
+template<class T>
 class BitIterator {
 	const T *x_;
 	size_t bitPos_;
@@ -78,14 +90,7 @@ public:
 	{
 		x_ = x;
 		bitPos_ = 0;
-		while (n > 0 && (x[n - 1] == 0)) {
-			n--;
-		}
-		if (n == 0) {
-			bitSize_ = 0;
-			return;
-		}
-		bitSize_ = (n - 1) * sizeof(T) * 8 + 1 + cybozu::bsr<T>(x_[n - 1]);
+		bitSize_ = mcl::fp::getBitSize(x, n);
 	}
 	size_t getBitSize() const { return bitSize_; }
 	bool hasNext() const { return bitPos_ < bitSize_; }
