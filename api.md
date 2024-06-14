@@ -46,7 +46,7 @@ The elliptic equation of a curve E is `E: y^2 = x^3 + b`.
 - `Fp12` ; the field extension over Fp6 with degree 2. Fp6[w] / (w^2 - v).
 - `G1` ; the cyclic subgroup of E(Fp).
 - `G2` ; the cyclic subgroup of the inverse image of E'(Fp^2) under a twisting isomorphism from E' to E.
-- `GT` ; the cyclic subgroup of Fp12, which is an alias of Fp12.
+- `GT` ; the cyclic subgroup of Fp12.
   - `G1`, `G2`, and `GT` have the order `r`.
 
 The pairing e: G1 x G2 -> GT is the optimal ate pairing.
