@@ -46,7 +46,7 @@ The elliptic equation of a curve E is `E: y^2 = x^3 + b`.
 - `Fp12` ; the field extension over Fp6 with degree 2. Fp6[w] / (w^2 - v).
 - `G1` ; the cyclic subgroup of E(Fp).
 - `G2` ; the cyclic subgroup of the inverse image of E'(Fp^2) under a twisting isomorphism from E' to E.
-- `GT` ; the cyclic subgroup of Fp12.
+- `GT` ; the cyclic subgroup of Fp12, which is an alias of Fp12.
   - `G1`, `G2`, and `GT` have the order `r`.
 
 The pairing e: G1 x G2 -> GT is the optimal ate pairing.
@@ -588,6 +588,18 @@ T::mulVec(T& z, T* x, const Fr *y, size_t n);
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
 - `x[]` does not const because they may be normailzed (The value does not change).
 
+### scalar multiplication of each point
+```
+void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
+```
+C++
+```
+G1::mulEach(G1 *xVec, const Fr *yVec, size_t n);
+```
+
+- xVec[i] *= yVec[i]
+- `G1::mulVec` and `G1::mulEach` for BLS12-381 use AVX-512 IFMA if possible
+
 ## hash-to-curve function
 ### Set hash of `buf[0..bufSize-1]` to `x`
 ```
@@ -602,7 +614,7 @@ T::setHashOf(const void *msg, size_t msgSize);
 - always return 0
 - use SHA-256 if sizeof(*x) <= 256 else SHA-512
 - set according to the same way as `setLittleEndian`.
-- This is a function for backward compatibility only. Do not use it.
+- This is a function for backward compatibility only. DO'NT use it. Instead of this, use setLittleEndianMod to the hashed value.
 
 ### map `x` to G1 / G2.
 ```
