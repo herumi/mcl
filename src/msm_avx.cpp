@@ -84,10 +84,11 @@ inline void toArray(Unit x[N], const mpz_class& mx)
 template<size_t N>
 inline mpz_class fromArray(const Unit x[N])
 {
-	mpz_class mx = x[N-1];
+	mpz_class mx;
+	mcl::gmp::setUnit(mx, x[N-1]);
 	for (size_t i = 1; i < N; i++) {
 		mx <<= W;
-		mx += x[N-1-i];
+		mcl::gmp::addUnit(mx, x[N-1-i]);
 	}
 	return mx;
 }
@@ -567,9 +568,10 @@ public:
 	void mod(mpz_class& z, const mpz_class& xy) const
 	{
 		z = xy;
+		mpz_class t;
 		for (size_t i = 0; i < N; i++) {
 			Unit q = (getLow(z) * rp) & g_mask;
-			mpz_class t = q;
+			mcl::gmp::setUnit(t, q);
 			z += mp * t;
 			z >>= W;
 		}

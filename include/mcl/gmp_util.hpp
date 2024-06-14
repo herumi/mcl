@@ -37,6 +37,9 @@ typedef mcl::Vint mpz_class;
 	#pragma warning(pop)
 	#include <cybozu/link_mpir.hpp>
 #endif
+#if MCL_SIZEOF_UNIT == 8 && (defined(_LONG_LONG_LIMB) || defined(__APPLE__))
+	#define MCL_GMP_CANT_USE_UINT
+#endif
 #endif
 
 namespace mcl {
@@ -88,6 +91,28 @@ inline void set(mpz_class& z, uint64_t x)
 	assert(b);
 	(void)b;
 }
+// z = x
+inline void setUnit(mpz_class& z, Unit x)
+{
+#ifdef MCL_GMP_CANT_USE_UINT
+	set(z, x);
+#else
+	z = x;
+#endif
+}
+
+// z += x
+inline void addUnit(mpz_class& z, Unit x)
+{
+#ifdef MCL_GMP_CANT_USE_UINT
+	mpz_class t;
+	setUnit(t, x);
+	z += t;
+#else
+	z += x;
+#endif
+}
+
 inline void setStr(bool *pb, mpz_class& z, const char *str, int base = 0)
 {
 #ifdef MCL_USE_VINT
