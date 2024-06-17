@@ -2,6 +2,7 @@
 #include <vector>
 #include <cybozu/test.hpp>
 #include "../src/low_func.hpp"
+#include <cybozu/benchmark.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
@@ -71,12 +72,58 @@ void testEdge(const mpz_class& p)
 	}
 }
 
+template<size_t N>
+void setAndMod(const mcl::fp::SmallModP<N>& smp, Unit *x)
+{
+	x[N] = x[0] & 0x3f;
+	if (!smp.mod(x, N+1)) {
+		puts("ERR");
+	}
+}
+
+template<size_t N>
+void testSmallModP(const mpz_class& p)
+{
+	mcl::fp::SmallModP<N> smp(p.getUnit());
+	cybozu::XorShift rg;
+	mpz_class x;
+	for (size_t i = 0; i < 1000; i++) {
+		x.setRand(p, rg);
+		x += p;
+		x *= int(rg.get32() % 128) + 1;
+		Unit Q1, Q2;
+		Q1 = (x / p).getLow32bit();
+		bool b;
+		b = smp.quot(&Q2, x.getUnit(), x.getUnitSize());
+		CYBOZU_TEST_ASSERT(b);
+		if (b) {
+			CYBOZU_TEST_ASSERT(Q1 == Q2 || Q1 == Q2 + 1);
+		}
+		Unit x2[N+1] = {};
+		mcl::bint::copyN(x2, x.getUnit(), x.getUnitSize());
+		b = smp.mod(x2, x.getUnitSize());
+		mpz_class x3 = x % p;
+		CYBOZU_TEST_ASSERT(b);
+		CYBOZU_TEST_EQUAL_ARRAY(x2, x3.getUnit(), x3.getUnitSize());
+	}
+#ifdef NDEBUG
+	{
+		if ((smp.p_[N-1] >> (MCL_UNIT_BIT_SIZE - 8)) == 0) return; // top 8-bit must be not zero
+		Unit x[N+1];
+		mcl::gmp::getArray(x, N+1, p);
+		CYBOZU_BENCH_C("mod", 1000, setAndMod, smp, x);
+	}
+#endif
+}
+
 CYBOZU_TEST_AUTO(limit)
 {
+	const size_t adj = 8 / sizeof(Unit);
 	std::cout << std::hex;
 	const char *tbl4[] = {
 		"0000000000000001000000000000000000000000000000000000000000000085", // min prime
 		"2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", // BLS12-381 r
 		"7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"800000000000000000000000000000000000000000000000000000000000005f",
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
@@ -90,7 +137,20 @@ CYBOZU_TEST_AUTO(limit)
 		printf("p=%s\n", tbl4[i]);
 		mpz_class p;
 		mcl::gmp::setStr(p, tbl4[i], 16);
-		testEdge<4 * (8 / sizeof(Unit))>(p);
+		testEdge<4 * adj>(p);
+		testSmallModP<4 * adj>(p);
+	}
+	const char *tbl6[] = {
+		"1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", // BLS12-381 p
+		"240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d", // BN381 r
+		"240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013", // BN381 p
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
+		printf("p=%s\n", tbl6[i]);
+		mpz_class p;
+		mcl::gmp::setStr(p, tbl6[i], 16);
+		testEdge<6 * adj>(p);
+		testSmallModP<6 * adj>(p);
 	}
 }
 
