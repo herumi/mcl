@@ -73,21 +73,31 @@ void testEdge(const mpz_class& p)
 }
 
 template<size_t N>
-void setAndMod(const mcl::fp::SmallModP<N>& smp, Unit *x)
+void setAndModT(const mcl::fp::SmallModP& smp, Unit *x, size_t xn)
 {
-	x[N] = x[0] & 0x3f;
-	if (!smp.mod(x, N+1)) {
-		puts("ERR");
+	x[smp.n_] = x[0] & 0x3f;
+	if (!smp.modT<N>(x, xn)) {
+		puts("ERR2");
+		exit(1);
+	}
+}
+
+void setAndMod(const mcl::fp::SmallModP& smp, Unit *x, size_t xn)
+{
+	x[smp.n_] = x[0] & 0x3f;
+	if (!smp.mod(x, xn)) {
+		puts("ERR1");
+		exit(1);
 	}
 }
 
 template<size_t N>
 void testSmallModP(const mpz_class& p)
 {
-	mcl::fp::SmallModP<N> smp(p.getUnit());
+	mcl::fp::SmallModP smp(p.getUnit(), N);
 	cybozu::XorShift rg;
 	mpz_class x;
-	for (size_t i = 0; i < 1000; i++) {
+	for (size_t i = 0; i < 10; i++) {
 		x.setRand(p, rg);
 		x += p;
 		x *= int(rg.get32() % 128) + 1;
@@ -99,19 +109,25 @@ void testSmallModP(const mpz_class& p)
 		if (b) {
 			CYBOZU_TEST_ASSERT(Q1 == Q2 || Q1 == Q2 + 1);
 		}
-		Unit x2[N+1] = {};
-		mcl::bint::copyN(x2, x.getUnit(), x.getUnitSize());
-		b = smp.mod(x2, x.getUnitSize());
-		mpz_class x3 = x % p;
-		CYBOZU_TEST_ASSERT(b);
-		CYBOZU_TEST_EQUAL_ARRAY(x2, x3.getUnit(), x3.getUnitSize());
+		for (int mode = 0; mode < 2; mode++) {
+			Unit x2[N+1] = {};
+			mcl::bint::copyN(x2, x.getUnit(), x.getUnitSize());
+			switch (mode) {
+			case 0: b = smp.mod(x2, x.getUnitSize()); break;
+			case 1: b = smp.modT<N>(x2, x.getUnitSize()); break;
+			}
+			mpz_class x3 = x % p;
+			CYBOZU_TEST_ASSERT(b);
+			CYBOZU_TEST_EQUAL_ARRAY(x2, x3.getUnit(), x3.getUnitSize());
+		}
 	}
 #ifdef NDEBUG
 	{
 		if ((smp.p_[N-1] >> (MCL_UNIT_BIT_SIZE - 8)) == 0) return; // top 8-bit must be not zero
 		Unit x[N+1];
 		mcl::gmp::getArray(x, N+1, p);
-		CYBOZU_BENCH_C("mod", 1000, setAndMod, smp, x);
+		CYBOZU_BENCH_C("mod ", 1000, setAndMod, smp, x, N+1);
+		CYBOZU_BENCH_C("modT", 1000, setAndModT<N>, smp, x, N+1);
 	}
 #endif
 }

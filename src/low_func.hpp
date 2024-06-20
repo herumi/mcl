@@ -288,19 +288,22 @@ static void sqrModT(Unit *y, const Unit *x, const Unit *p)
 	fpDblModT<N>(y, xx, p);
 }
 
-template<size_t N, size_t d = 16>
 struct SmallModP {
+	const size_t d = 16; // d = 26 if use double in approx
 	const size_t maxE_ = d - 2;
 	const Unit *p_;
+	const size_t n_;
 	const size_t l_;
 	uint32_t p0_;
 
 	// p must not be temporary.
-	explicit SmallModP(const Unit *p)
+	explicit SmallModP(const Unit *p, size_t n)
 		: p_(p)
-		, l_(getBitSize(p, N))
+		, n_(n)
+		, l_(getBitSize(p, n))
 	{
-		Unit t[N+1] = {};
+		Unit *t = (Unit*)CYBOZU_ALLOCA((n_+1)*sizeof(Unit));
+		mcl::bint::clearN(t, n_+1);
 		size_t pos = d + l_ - 1;
 		{
 			size_t q = pos / MCL_UNIT_BIT_SIZE;
@@ -309,7 +312,7 @@ struct SmallModP {
 		}
 		// p0 = 2**(d+l-1)/p
 		Unit q[2];
-		mcl::bint::div(q, 2, t, N+1, p, N);
+		mcl::bint::div(q, 2, t, n_+1, p, n_);
 		assert(q[1] == 0);
 		p0_ = uint32_t(q[0]);
 	}
@@ -320,7 +323,7 @@ struct SmallModP {
 		return Unit(t >> (2 * d + l_ - 1 - a));
 	}
 	// x[xn] %= p
-	// the effective range of return value is [0, N)
+	// the effective range of return value is [0, n_)
 	bool quot(Unit *pQ, const Unit *x, size_t xn) const
 	{
 		size_t a = getBitSize(x, xn);
@@ -336,6 +339,24 @@ struct SmallModP {
 	}
 	// return false if x[0, xn) is large
 	bool mod(Unit *x, size_t xn) const
+	{
+		assert(xn <= n_ + 1);
+		Unit Q;
+		if (!quot(&Q, x, xn)) return false;
+		if (Q == 0) return true;
+		Unit *t = (Unit*)CYBOZU_ALLOCA((n_+1)*sizeof(Unit));
+		t[n_] = mcl::bint::mulUnitN(t, p_, Q, n_);
+		mcl::bint::subN(t, x, t, n_+1);
+		if (mcl::bint::cmpGeN(t, p_, n_)) {
+			mcl::bint::subN(x, t, p_, n_);
+		} else {
+			mcl::bint::copyN(x, t, n_);
+		}
+		return true;
+	}
+	template<size_t N>
+	// return false if x[0, xn) is large
+	bool modT(Unit *x, size_t xn) const
 	{
 		assert(xn <= N + 1);
 		Unit Q;
