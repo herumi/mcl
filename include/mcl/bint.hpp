@@ -8,7 +8,7 @@
 */
 
 #include <mcl/config.hpp>
-#include <cybozu/bit_operation.hpp>
+#include <mcl/util.hpp>
 #include <assert.h>
 #ifndef MCL_STANDALONE
 #include <stdio.h>
@@ -475,6 +475,105 @@ inline Unit getMontgomeryCoeff(Unit pLow, size_t bitSize = sizeof(Unit) * 8)
 	}
 	return pp;
 }
+
+struct SmallModP {
+	const size_t d = 16; // d = 26 if use double in approx
+	const size_t maxE_ = d - 2;
+	const Unit *p_;
+	size_t n_;
+	size_t l_;
+	uint32_t p0_;
+
+	SmallModP()
+		: n_(0)
+		, l_(0)
+		, p0_(0)
+	{
+	}
+	// p must not be temporary.
+	void init(const Unit *p, size_t n)
+	{
+		p_ = p;
+		n_ = n;
+		l_ = mcl::fp::getBitSize(p, n);
+		Unit *t = (Unit*)CYBOZU_ALLOCA((n_+1)*sizeof(Unit));
+		mcl::bint::clearN(t, n_+1);
+		size_t pos = d + l_ - 1;
+		{
+			size_t q = pos / MCL_UNIT_BIT_SIZE;
+			size_t r = pos % MCL_UNIT_BIT_SIZE;
+			t[q] = Unit(1) << r;
+		}
+		// p0 = 2**(d+l-1)/p
+		Unit q[2];
+		mcl::bint::div(q, 2, t, n_+1, p, n_);
+		assert(q[1] == 0);
+		p0_ = uint32_t(q[0]);
+	}
+	Unit approx(Unit x0, size_t a) const
+	{
+//		uint64_t t = uint64_t(double(x0) * double(p0_)); // for d = 26
+		uint32_t t = uint32_t(x0 * p0_);
+		return Unit(t >> (2 * d + l_ - 1 - a));
+	}
+	// x[xn] %= p
+	// the effective range of return value is [0, n_)
+	bool quot(Unit *pQ, const Unit *x, size_t xn) const
+	{
+		size_t a = mcl::fp::getBitSize(x, xn);
+		if (a < l_) {
+			*pQ = 0;
+			return true;
+		}
+		size_t e = a - l_ + 1;
+		if (e > maxE_) return false;
+		Unit x0 = mcl::fp::getUnitAt(x, xn, a - d);
+		*pQ = approx(x0, a);
+		return true;
+	}
+	// return false if x[0, xn) is large
+	bool mod(Unit *z, const Unit *x, size_t xn) const
+	{
+		assert(xn <= n_ + 1);
+		Unit Q;
+		if (!quot(&Q, x, xn)) return false;
+		if (Q == 0) return true;
+		Unit *t = (Unit*)CYBOZU_ALLOCA((n_+1)*sizeof(Unit));
+		t[n_] = mcl::bint::mulUnitN(t, p_, Q, n_);
+		mcl::bint::subN(t, x, t, n_+1);
+		if (mcl::bint::cmpGeN(t, p_, n_)) {
+			mcl::bint::subN(z, t, p_, n_);
+		} else {
+			mcl::bint::copyN(z, t, n_);
+		}
+		return true;
+	}
+	// return false if x[0, xn) is large
+	template<size_t N>
+	bool modT(Unit z[N], const Unit *x, size_t xn) const
+	{
+		assert(xn <= N + 1);
+		Unit Q;
+		if (!quot(&Q, x, xn)) return false;
+		if (Q == 0) return true;
+		Unit t[N+1];
+		t[N] = mcl::bint::mulUnitT<N>(t, p_, Q);
+		mcl::bint::subT<N+1>(t, x, t);
+		if (mcl::bint::cmpGeT<N>(t, p_)) {
+			mcl::bint::subT<N>(z, t, p_);
+		} else {
+			mcl::bint::copyT<N>(z, t);
+		}
+		return true;
+	}
+	template<size_t N>
+	static bool mulUnit(const SmallModP& smp, Unit z[N], const Unit x[N], Unit y)
+	{
+		Unit xy[N+1];
+		xy[N] = mulUnitT<N>(x, y);
+		return modT<N>(z, xy, N+1);
+	}
+};
 
 } } // mcl::bint
 

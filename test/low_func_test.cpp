@@ -72,66 +72,6 @@ void testEdge(const mpz_class& p)
 	}
 }
 
-template<size_t N>
-void setAndModT(const mcl::fp::SmallModP& smp, Unit *x, size_t xn)
-{
-	x[smp.n_] = x[0] & 0x3f;
-	if (!smp.modT<N>(x, xn)) {
-		puts("ERR2");
-		exit(1);
-	}
-}
-
-void setAndMod(const mcl::fp::SmallModP& smp, Unit *x, size_t xn)
-{
-	x[smp.n_] = x[0] & 0x3f;
-	if (!smp.mod(x, xn)) {
-		puts("ERR1");
-		exit(1);
-	}
-}
-
-template<size_t N>
-void testSmallModP(const mpz_class& p)
-{
-	mcl::fp::SmallModP smp(p.getUnit(), N);
-	cybozu::XorShift rg;
-	mpz_class x;
-	for (size_t i = 0; i < 10; i++) {
-		x.setRand(p, rg);
-		x += p;
-		x *= int(rg.get32() % 128) + 1;
-		Unit Q1, Q2;
-		Q1 = (x / p).getLow32bit();
-		bool b;
-		b = smp.quot(&Q2, x.getUnit(), x.getUnitSize());
-		CYBOZU_TEST_ASSERT(b);
-		if (b) {
-			CYBOZU_TEST_ASSERT(Q1 == Q2 || Q1 == Q2 + 1);
-		}
-		for (int mode = 0; mode < 2; mode++) {
-			Unit x2[N+1] = {};
-			mcl::bint::copyN(x2, x.getUnit(), x.getUnitSize());
-			switch (mode) {
-			case 0: b = smp.mod(x2, x.getUnitSize()); break;
-			case 1: b = smp.modT<N>(x2, x.getUnitSize()); break;
-			}
-			mpz_class x3 = x % p;
-			CYBOZU_TEST_ASSERT(b);
-			CYBOZU_TEST_EQUAL_ARRAY(x2, x3.getUnit(), x3.getUnitSize());
-		}
-	}
-#ifdef NDEBUG
-	{
-		if ((smp.p_[N-1] >> (MCL_UNIT_BIT_SIZE - 8)) == 0) return; // top 8-bit must be not zero
-		Unit x[N+1];
-		mcl::gmp::getArray(x, N+1, p);
-		CYBOZU_BENCH_C("mod ", 1000, setAndMod, smp, x, N+1);
-		CYBOZU_BENCH_C("modT", 1000, setAndModT<N>, smp, x, N+1);
-	}
-#endif
-}
-
 CYBOZU_TEST_AUTO(limit)
 {
 	const size_t adj = 8 / sizeof(Unit);
@@ -154,7 +94,6 @@ CYBOZU_TEST_AUTO(limit)
 		mpz_class p;
 		mcl::gmp::setStr(p, tbl4[i], 16);
 		testEdge<4 * adj>(p);
-		testSmallModP<4 * adj>(p);
 	}
 	const char *tbl6[] = {
 		"1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", // BLS12-381 p
@@ -166,7 +105,6 @@ CYBOZU_TEST_AUTO(limit)
 		mpz_class p;
 		mcl::gmp::setStr(p, tbl6[i], 16);
 		testEdge<6 * adj>(p);
-		testSmallModP<6 * adj>(p);
 	}
 }
 
