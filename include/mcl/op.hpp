@@ -239,6 +239,7 @@ struct Op {
 	void3u fp_mul2;
 	void2uOp fp_invOp;
 	void2uIu fp_mulUnit; // fp_mulUnitPre
+	bool (*mulSmallUnit2)(const mcl::bint::SmallModP&, Unit *z, const Unit *x, Unit y);
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;
@@ -329,6 +330,7 @@ struct Op {
 		fp_mul2 = 0;
 		fp_invOp = 0;
 		fp_mulUnit = 0;
+		mulSmallUnit2 = 0;
 
 		fpDbl_mulPre = 0;
 		fpDbl_sqrPre = 0;

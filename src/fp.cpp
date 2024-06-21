@@ -300,6 +300,7 @@ void setOp(Op& op)
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
 	op.fp_mulUnitPre = mulUnitPreT<N>;
+	op.mulSmallUnit2 = bint::SmallModP::mulUnit<N>;
 	op.fp_addPre = bint::get_add(N);
 	op.fp_subPre = bint::get_sub(N);
 	op.fpDbl_addPre = bint::get_add(N * 2);

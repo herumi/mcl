@@ -627,6 +627,7 @@ public:
 	}
 	static inline void mulUnit2(FpT& z, const FpT& x, const Unit y)
 	{
+		if (op_.mulSmallUnit2(op_.smallModP, z.v_, x.v_, y)) return;
 		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
 	}
 	static inline void inv(FpT& y, const FpT& x)

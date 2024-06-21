@@ -537,10 +537,14 @@ struct SmallModP {
 		assert(xn <= n_ + 1);
 		Unit Q;
 		if (!quot(&Q, x, xn)) return false;
-		if (Q == 0) return true;
+		if (Q == 0) {
+			mcl::bint::copyN(z, x, n_);
+			return true;
+		}
 		Unit *t = (Unit*)CYBOZU_ALLOCA((n_+1)*sizeof(Unit));
 		t[n_] = mcl::bint::mulUnitN(t, p_, Q, n_);
-		mcl::bint::subN(t, x, t, n_+1);
+		bool b = mcl::bint::subN(t, x, t, n_+1);
+		assert(!b); (void)b;
 		if (mcl::bint::cmpGeN(t, p_, n_)) {
 			mcl::bint::subN(z, t, p_, n_);
 		} else {
@@ -555,10 +559,14 @@ struct SmallModP {
 		assert(xn <= N + 1);
 		Unit Q;
 		if (!quot(&Q, x, xn)) return false;
-		if (Q == 0) return true;
+		if (Q == 0) {
+			mcl::bint::copyT<N>(z, x);
+			return true;
+		}
 		Unit t[N+1];
 		t[N] = mcl::bint::mulUnitT<N>(t, p_, Q);
-		mcl::bint::subT<N+1>(t, x, t);
+		bool b = mcl::bint::subT<N+1>(t, x, t);
+		assert(!b); (void)b;
 		if (mcl::bint::cmpGeT<N>(t, p_)) {
 			mcl::bint::subT<N>(z, t, p_);
 		} else {
@@ -570,8 +578,8 @@ struct SmallModP {
 	static bool mulUnit(const SmallModP& smp, Unit z[N], const Unit x[N], Unit y)
 	{
 		Unit xy[N+1];
-		xy[N] = mulUnitT<N>(x, y);
-		return modT<N>(z, xy, N+1);
+		xy[N] = mulUnitT<N>(xy, x, y);
+		return smp.modT<N>(z, xy, N+1);
 	}
 };
 
