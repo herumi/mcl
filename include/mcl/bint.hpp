@@ -477,9 +477,11 @@ inline Unit getMontgomeryCoeff(Unit pLow, size_t bitSize = sizeof(Unit) * 8)
 }
 
 struct SmallModP {
-	const size_t d = 16; // d = 26 if use double in approx
-	const size_t maxE_ = d - 2;
+	static const size_t d = 16; // d = 26 if use double in approx
+	static const size_t MAX_MUL_N = 10;
+	static const size_t maxE_ = d - 2;
 	const Unit *p_;
+	Unit tbl_[MAX_MUL_N][MCL_MAX_UNIT_SIZE+1];
 	size_t n_;
 	size_t l_;
 	uint32_t p0_;
@@ -509,6 +511,9 @@ struct SmallModP {
 		mcl::bint::div(q, 2, t, n_+1, p, n_);
 		assert(q[1] == 0);
 		p0_ = uint32_t(q[0]);
+		for (size_t i = 0; i < MAX_MUL_N; i++) {
+			tbl_[i][n_] = mcl::bint::mulUnitN(tbl_[i], p_, Unit(i+1), n_); // 1~MAX_MUL_N
+		}
 	}
 	Unit approx(Unit x0, size_t a) const
 	{
@@ -542,16 +547,24 @@ struct SmallModP {
 			return true;
 		}
 		Unit *t = (Unit*)CYBOZU_ALLOCA((n_+1)*sizeof(Unit));
-		t[n_] = mcl::bint::mulUnitN(t, p_, Q, n_);
-		bool b = mcl::bint::subN(t, x, t, n_+1);
+		const Unit *pQ = 0;
+		if (Q <= MAX_MUL_N) {
+			assert(Q > 0);
+			pQ = tbl_[Q-1];
+		} else {
+			t[n_] = mcl::bint::mulUnitN(t, p_, Q, n_);
+			pQ = t;
+		}
+		bool b = mcl::bint::subN(t, x, pQ, xn);
 		assert(!b); (void)b;
-		if (mcl::bint::cmpGeN(t, p_, n_)) {
+		if (mcl::bint::cmpGeN(t, tbl_[0], xn)) { // tbl_[0] == p and tbl_[n_] = 0
 			mcl::bint::subN(z, t, p_, n_);
 		} else {
 			mcl::bint::copyN(z, t, n_);
 		}
 		return true;
 	}
+#if 1
 	// return false if x[0, xn) is large
 	template<size_t N>
 	bool modT(Unit z[N], const Unit *x, size_t xn) const
@@ -564,22 +577,30 @@ struct SmallModP {
 			return true;
 		}
 		Unit t[N+1];
-		t[N] = mcl::bint::mulUnitT<N>(t, p_, Q);
-		bool b = mcl::bint::subT<N+1>(t, x, t);
+		const Unit *pQ = 0;
+		if (false&&Q <= MAX_MUL_N) {
+			pQ = tbl_[Q-1];
+		} else {
+			t[N] = mcl::bint::mulUnitT<N>(t, p_, Q);
+			pQ = t;
+		}
+		bool b = mcl::bint::subT<N+1>(t, x, pQ);
 		assert(!b); (void)b;
-		if (mcl::bint::cmpGeT<N>(t, p_)) {
+		if (mcl::bint::cmpGeT<N+1>(t, tbl_[0])) {
 			mcl::bint::subT<N>(z, t, p_);
 		} else {
 			mcl::bint::copyT<N>(z, t);
 		}
 		return true;
 	}
+#endif
 	template<size_t N>
 	static bool mulUnit(const SmallModP& smp, Unit z[N], const Unit x[N], Unit y)
 	{
 		Unit xy[N+1];
 		xy[N] = mulUnitT<N>(xy, x, y);
 		return smp.modT<N>(z, xy, N+1);
+//		return smp.mod(z, xy, N+1);
 	}
 };
 
