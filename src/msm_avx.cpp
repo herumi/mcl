@@ -75,7 +75,9 @@ inline void toArray(Unit x[N], const mpz_class& mx)
 {
 	const Unit mask = getMask(w);
 	Unit tmp[N];
-	mcl::gmp::getArray(tmp, N, mx);
+	bool b;
+	mcl::gmp::getArray(&b, tmp, N, mx);
+	assert(b); (void)b;
 	for (size_t i = 0; i < N; i++) {
 		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
 	}
