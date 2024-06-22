@@ -28,6 +28,8 @@ jobs:
     - run: make test_ci DEBUG=4 -j4 CXX=clang++
     - run: make clean
     - run: make bin/pairing_c_min.exe && bin/pairing_c_min.exe
+    - run: make clean
+    - run: make lib/libmcl.a MCL_STATIC_CODE=1
 #    - run: make test_go
 #    - run: sudo apt install openjdk-8-jdk
 #    - run: make -C ffi/java test JAVA_INC=-I/usr/lib/jvm/java-8-openjdk-amd64/include
