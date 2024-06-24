@@ -300,7 +300,7 @@ void setOp(Op& op)
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
 	op.fp_mulUnitPre = mulUnitPreT<N>;
-	op.mulSmallUnit2 = bint::SmallModP::mulUnit<N>;
+	op.mulSmallUnit = bint::SmallModP::mulUnit<N>;
 	op.fp_addPre = bint::get_add(N);
 	op.fp_subPre = bint::get_sub(N);
 	op.fpDbl_addPre = bint::get_add(N * 2);
@@ -581,7 +581,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		if (!b) return false;
 	}
 	modp.init(mp);
-	smallModp.init(mp);
+//	smallModp.init(mp);
 	smallModP.init(p, N);
 	return fp::initForMont(*this, p, mode);
 }

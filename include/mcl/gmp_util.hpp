@@ -949,6 +949,7 @@ public:
 #endif
 };
 
+#if 0
 /*
 	x mod p for a small value x < (pMulTblN * p).
 */
@@ -1026,7 +1027,7 @@ struct SmallModp {
 		}
 	}
 };
-
+#endif
 
 /*
 	Barrett Reduction

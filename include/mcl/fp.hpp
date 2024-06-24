@@ -114,11 +114,14 @@ private:
 		op_.fp_add(y, x, x, op_.p);
 	}
 #endif
+#if 0
 	static inline void mul9A(Unit *y, const Unit *x)
 	{
-		mulSmall(y, x, 9);
+		mulUnit(y, x, 9);
 //		op_.fp_mul9(y, x, op_.p);
 	}
+#endif
+#if 0
 	static inline void mulSmall(Unit *z, const Unit *x, const uint32_t y)
 	{
 		assert(y <= op_.smallModp.maxMulN);
@@ -129,6 +132,7 @@ private:
 		op_.fp_subPre(z, xy, pv);
 		op_.fp_sub(z, z, op_.p, op_.p);
 	}
+#endif
 public:
 	typedef FpT<tag, maxBitSize> BaseFp;
 	// return pointer to array v_[]
@@ -187,9 +191,11 @@ public:
 		if (op_.fp_mul2A_ == 0) {
 			op_.fp_mul2A_ = mul2A;
 		}
+#if 0
 		if (op_.fp_mul9A_ == 0) {
 			op_.fp_mul9A_ = mul9A;
 		}
+#endif
 #endif
 		*pb = true;
 	}
@@ -608,14 +614,19 @@ public:
 	}
 	static void mul9(FpT& y, const FpT& x)
 	{
+#if 1
+		mulUnit(y, x, 9);
+#else
 #ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_mul9A_(y.v_, x.v_);
 #else
 		mul9A(y.v_, x.v_);
 #endif
+#endif
 	}
 	static inline void addPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_addPre(z.v_, x.v_, y.v_); }
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
+#if 0
 	static inline void mulSmall(FpT& z, const FpT& x, const uint32_t y)
 	{
 		mulSmall(z.v_, x.v_, y);
@@ -625,12 +636,15 @@ public:
 		if (mulSmallUnit(z, x, y)) return;
 		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
 	}
-	static inline void mulUnit2(FpT& z, const FpT& x, const Unit y)
+#endif
+	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
-//		if (mulSmallUnit(z, x, y)) return;
-		if (op_.mulSmallUnit2(op_.smallModP, z.v_, x.v_, y)) return;
+		if (mcl::fp::mulSmallUnit(z, x, y)) return;
+		if (op_.mulSmallUnit(op_.smallModP, z.v_, x.v_, y)) return;
 		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
 	}
+	// alias of mulUnit
+	static inline void mulSmall(FpT& z, const FpT& x, const uint32_t y) { mulUnit(z, x, y); }
 	static inline void inv(FpT& y, const FpT& x)
 	{
 		assert(!x.isZero());

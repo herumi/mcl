@@ -478,7 +478,7 @@ inline Unit getMontgomeryCoeff(Unit pLow, size_t bitSize = sizeof(Unit) * 8)
 
 struct SmallModP {
 	static const size_t d = 16; // d = 26 if use double in approx
-	static const size_t MAX_MUL_N = 10;
+	static const size_t MAX_MUL_N = 1; // not used because mulSmallUnit is call at first.
 	static const size_t maxE_ = d - 2;
 	const Unit *p_;
 	Unit tbl_[MAX_MUL_N][MCL_MAX_UNIT_SIZE+1];
@@ -578,7 +578,7 @@ struct SmallModP {
 		}
 		Unit t[N+1];
 		const Unit *pQ = 0;
-		if (false&&Q <= MAX_MUL_N) {
+		if (Q <= MAX_MUL_N) {
 			pQ = tbl_[Q-1];
 		} else {
 			t[N] = mcl::bint::mulUnitT<N>(t, p_, Q);

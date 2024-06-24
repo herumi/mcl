@@ -154,10 +154,13 @@ bool mulSmallUnit(T& z, const T& x, U y)
 	case 6: { T t; T::add(t, x, x); T::add(t, t, x); T::add(z, t, t); break; }
 	case 7: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::sub(z, t, x); break; }
 	case 8: T::add(z, x, x); T::add(z, z, z); T::add(z, z, z); break;
+	// slower than SmallModP
+#if 0
 	case 9: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::add(z, t, x); break; }
 	case 10: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, x); T::add(z, t, t); break; }
 	case 11: { T t; T::add(t, x, x); T::add(t, t, x); T::add(t, t, t); T::add(t, t, t); T::sub(z, t, x); break; }
 	case 12: { T t; T::add(t, x, x); T::add(t, t, t); T::add(z, t, t); T::add(z, z, t); break; }
+#endif
 	default:
 		return false;
 	}
