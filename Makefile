@@ -16,6 +16,7 @@ TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
+TEST_SRC+=smallmodp_test.cpp
 ifneq ($(MCL_USE_GMP),1)
   TEST_SRC+=static_init_test.cpp
 endif
