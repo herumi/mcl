@@ -921,6 +921,98 @@ CYBOZU_TEST_AUTO(sqr)
 	testSqr<9>();
 }
 
+template<size_t N>
+void setAndModT(const mcl::bint::SmallModP& smp, Unit x[N+1])
+{
+	x[N-1] = mcl::bint::mulUnit1(&x[N], x[N-1], x[0] & 0x3f);
+	size_t xn = x[N] == 0 ? N : N+1;
+	if (!smp.modT<N>(x, x, xn)) {
+		puts("ERR2");
+		exit(1);
+	}
+}
+
+template<size_t N>
+void setAndMod(const mcl::bint::SmallModP& smp, Unit x[N+1])
+{
+	x[N-1] = mcl::bint::mulUnit1(&x[N], x[N-1], x[0] & 0x3f);
+	size_t xn = x[N] == 0 ? N : N+1;
+	if (!smp.mod(x, x, xn)) {
+		puts("ERR1");
+		exit(1);
+	}
+}
+
+template<size_t N>
+void testSmallModP(const char *pStr)
+{
+	printf("p=%s\n", pStr);
+	Unit p[N];
+	const size_t FACTOR = 128;
+	size_t xn = mcl::fp::hexToArray(p, N, pStr, strlen(pStr));
+	CYBOZU_TEST_EQUAL(xn, N);
+	mcl::bint::SmallModP smp;
+	smp.init(p, N);
+	cybozu::XorShift rg;
+	Unit x[N+1];
+	mcl::bint::copyT<N>(x, p);
+	for (size_t i = 0; i < 10; i++) {
+		uint32_t a = rg.get32() % FACTOR;
+		x[N-1] = mcl::bint::mulUnit1(&x[N], x[N-1], a);
+		size_t xn = x[N] == 0 ? N : N+1;
+		Unit q[2], r[N+1];
+		mcl::bint::copyN(r, x, xn);
+		mcl::bint::div(q, 2, r, xn, p, N);
+		CYBOZU_TEST_ASSERT(q[0] <= FACTOR && q[1] == 0);
+		for (int mode = 0; mode < 2; mode++) {
+			Unit r2[N];
+			bool b = false;
+			switch (mode) {
+			case 0: b = smp.mod(r2, x, xn); break;
+			case 1: b = smp.modT<N>(r2, x, xn); break;
+			}
+			CYBOZU_TEST_ASSERT(b);
+			CYBOZU_TEST_EQUAL_ARRAY(r2, r, N);
+		}
+		mcl::bint::copyT<N>(x, r);
+	}
+#ifdef NDEBUG
+	{
+		if ((smp.p_[N-1] >> (MCL_UNIT_BIT_SIZE - 8)) == 0) return; // top 8-bit must be not zero
+		CYBOZU_BENCH_C("mod ", 1000, setAndMod<N>, smp, x);
+		CYBOZU_BENCH_C("modT", 1000, setAndModT<N>, smp, x);
+	}
+#endif
+}
+
+CYBOZU_TEST_AUTO(SmallModP)
+{
+	const size_t adj = 8 / sizeof(Unit);
+	const char *tbl4[] = {
+		"2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", // BLS12-381 r
+		"7523648240000001ba344d80000000086121000000000013a700000000000017",
+		"800000000000000000000000000000000000000000000000000000000000005f",
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
+		// not primes
+		"ffffffffffffffffffffffffffffffffffffffffffffffff0000000000000001",
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000001",
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl4); i++) {
+		testSmallModP<4 * adj>(tbl4[i]);
+	}
+	const char *tbl6[] = {
+		"1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", // BLS12-381 p
+		"240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d", // BN381 r
+		"240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013", // BN381 p
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
+		testSmallModP<6 * adj>(tbl6[i]);
+	}
+}
+
 #if 0
 template<size_t N>
 void testMulLow()

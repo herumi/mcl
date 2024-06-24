@@ -2,6 +2,7 @@
 #include <vector>
 #include <cybozu/test.hpp>
 #include "../src/low_func.hpp"
+#include <cybozu/benchmark.hpp>
 
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
 
@@ -73,10 +74,12 @@ void testEdge(const mpz_class& p)
 
 CYBOZU_TEST_AUTO(limit)
 {
+	const size_t adj = 8 / sizeof(Unit);
 	std::cout << std::hex;
 	const char *tbl4[] = {
 		"0000000000000001000000000000000000000000000000000000000000000085", // min prime
 		"2523648240000001ba344d80000000086121000000000013a700000000000013",
+		"73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", // BLS12-381 r
 		"7523648240000001ba344d80000000086121000000000013a700000000000017",
 		"800000000000000000000000000000000000000000000000000000000000005f",
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
@@ -90,7 +93,18 @@ CYBOZU_TEST_AUTO(limit)
 		printf("p=%s\n", tbl4[i]);
 		mpz_class p;
 		mcl::gmp::setStr(p, tbl4[i], 16);
-		testEdge<4 * (8 / sizeof(Unit))>(p);
+		testEdge<4 * adj>(p);
+	}
+	const char *tbl6[] = {
+		"1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", // BLS12-381 p
+		"240026400f3d82b2e42de125b00158405b710818ac000007e0042f008e3e00000000001080046200000000000000000d", // BN381 r
+		"240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013", // BN381 p
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl6); i++) {
+		printf("p=%s\n", tbl6[i]);
+		mpz_class p;
+		mcl::gmp::setStr(p, tbl6[i], 16);
+		testEdge<6 * adj>(p);
 	}
 }
 

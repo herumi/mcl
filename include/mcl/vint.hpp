@@ -429,9 +429,8 @@ public:
 	{
 		if (isZero()) return 1;
 		size_t n = size();
-		Unit v = buf_[n - 1];
-		assert(v);
-		return (n - 1) * sizeof(Unit) * 8 + 1 + cybozu::bsr<Unit>(v);
+		assert(buf_[n-1]);
+		return mcl::fp::getBitSize(buf_, n);
 	}
 	// ignore sign
 	bool testBit(size_t i) const
