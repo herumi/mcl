@@ -28,14 +28,19 @@ namespace {
 
 static mcl::msm::Func g_func;
 
-const size_t S = sizeof(Unit)*8-1; // 63
-const size_t W = 52;
-const size_t N = 8; // = ceil(384/52)
-const size_t M = sizeof(Vec) / sizeof(Unit);
-const uint64_t g_mask = (Unit(1)<<W) - 1;
+static const size_t S = sizeof(Unit)*8-1; // 63
+static const size_t W = 52;
+static const size_t N = 8; // = ceil(384/52)
+static const size_t M = sizeof(Vec) / sizeof(Unit);
+#if 0
+static const uint64_t g_mask = (Unit(1)<<W) - 1;
+static const uint64_t g_vmask_[] = { g_mask, g_mask, g_mask, g_mask, g_mask, g_mask, g_mask, g_mask };
 
-
-static Vec g_vmask;
+struct G {
+	static const Vec& vmask() { return *(const Vec*)g_vmask_; }
+};
+#endif
+#include "msm_avx_bls12_381.h"
 static Vec g_vrp;
 static Vec g_vpN[N];
 static Vec g_vmask4;
@@ -302,7 +307,7 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec t = vadd(x[0], y[0]);
 	Vec c = vpsrlq(t, W);
-	z[0] = vand(t, g_vmask);
+	z[0] = vand(t, G::vmask());
 
 	for (size_t i = 1; i < n; i++) {
 		t = vadd(x[i], y[i]);
@@ -312,7 +317,7 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 			return;
 		}
 		c = vpsrlq(t, W);
-		z[i] = vand(t, g_vmask);
+		z[i] = vand(t, G::vmask());
 	}
 }
 
@@ -321,12 +326,12 @@ inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec t = vsub(x[0], y[0]);
 	Vec c = vpsrlq(t, S);
-	z[0] = vand(t, g_vmask);
+	z[0] = vand(t, G::vmask());
 	for (size_t i = 1; i < n; i++) {
 		t = vsub(x[i], y[i]);
 		t = vsub(t, c);
 		c = vpsrlq(t, S);
-		z[i] = vand(t, g_vmask);
+		z[i] = vand(t, G::vmask());
 	}
 	return vcmpneq(c, vzero());
 }
@@ -351,7 +356,7 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 	Vec sN[N], tN[N];
 	Vmask c = vrawSub(sN, x, y);
 	vrawAdd(tN, sN, g_vpN);
-	tN[N-1] = vand(tN[N-1], g_vmask);
+	tN[N-1] = vand(tN[N-1], G::vmask());
 	uvselect(z, c, tN, sN);
 }
 
@@ -464,7 +469,7 @@ inline void uvmont(Vec z[N], Vec xy[N*2])
 	}
 	for (size_t i = N; i < N*2-1; i++) {
 		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
-		xy[i] = vand(xy[i], g_vmask);
+		xy[i] = vand(xy[i], G::vmask());
 	}
 	Vmask c = vrawSub(z, xy+N, g_vpN);
 	uvselect(z, c, xy+N, z);
@@ -489,7 +494,7 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 	}
 	for (size_t i = N; i < N*2; i++) {
 		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		t[i-1] = vand(t[i-1], g_vmask);
+		t[i-1] = vand(t[i-1], G::vmask());
 	}
 	Vmask c = vrawSub(z, t+N, g_vpN);
 	uvselect(z, c, t+N, z);
@@ -592,13 +597,13 @@ public:
 inline void split52bit(Vec y[8], const Vec x[6])
 {
 	assert(&y != &x);
-	y[0] = vand(x[0], g_vmask);
-	y[1] = vand(vor(vpsrlq(x[0], 52), vpsllq(x[1], 12)), g_vmask);
-	y[2] = vand(vor(vpsrlq(x[1], 40), vpsllq(x[2], 24)), g_vmask);
-	y[3] = vand(vor(vpsrlq(x[2], 28), vpsllq(x[3], 36)), g_vmask);
-	y[4] = vand(vor(vpsrlq(x[3], 16), vpsllq(x[4], 48)), g_vmask);
-	y[5] = vand(vpsrlq(x[4], 4), g_vmask);
-	y[6] = vand(vor(vpsrlq(x[4], 56), vpsllq(x[5], 8)), g_vmask);
+	y[0] = vand(x[0], G::vmask());
+	y[1] = vand(vor(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::vmask());
+	y[2] = vand(vor(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::vmask());
+	y[3] = vand(vor(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::vmask());
+	y[4] = vand(vor(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::vmask());
+	y[5] = vand(vpsrlq(x[4], 4), G::vmask());
+	y[6] = vand(vor(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::vmask());
 	y[7] = vpsrlq(x[5], 44);
 }
 
@@ -1495,7 +1500,6 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	Montgomery& mont = FpM::g_mont;
 	Unit pM2[6]; // x^(-1) = x^(p-2) mod p
 	toArray<6, 64>(pM2, mp-2);
-	expand(g_vmask, g_mask);
 	expandN(g_vpN, mp);
 	expand(g_vrp, mont.rp);
 	Vec vpM2[6]; // NOT 52-bit but 64-bit

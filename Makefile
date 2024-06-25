@@ -194,8 +194,10 @@ endif
 ifeq ($(MCL_MSM),1)
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
-$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp
+$(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER)
+src/$(MSM)_bls12_381.h: src/gen_msm_para.py
+	python3 src/gen_msm_para.py > $@
 else
   CFLAGS+=-DMCL_MSM=0
 endif
