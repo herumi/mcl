@@ -32,16 +32,7 @@ static const size_t S = sizeof(Unit)*8-1; // 63
 static const size_t W = 52;
 static const size_t N = 8; // = ceil(384/52)
 static const size_t M = sizeof(Vec) / sizeof(Unit);
-#if 0
-static const uint64_t g_mask = (Unit(1)<<W) - 1;
-static const uint64_t g_vmask_[] = { g_mask, g_mask, g_mask, g_mask, g_mask, g_mask, g_mask, g_mask };
-
-struct G {
-	static const Vec& vmask() { return *(const Vec*)g_vmask_; }
-};
-#endif
 #include "msm_avx_bls12_381.h"
-static Vec g_vrp;
 static Vec g_vpN[N];
 static Vec g_vmask4;
 static Vec g_offset;
@@ -463,7 +454,7 @@ inline void vset(Vec *t, const Vmask& c, const Vec a[n])
 inline void uvmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
-		Vec q = vmulL(xy[i], g_vrp);
+		Vec q = vmulL(xy[i], G::vrp());
 		xy[N+i] = vadd(xy[N+i], vrawMulUnitAdd(xy+i, g_vpN, q));
 		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
 	}
@@ -484,12 +475,12 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 #else
 	Vec t[N*2], q;
 	vrawMulUnit(t, x, y[0]);
-	q = vmulL(t[0], g_vrp);
+	q = vmulL(t[0], G::vrp());
 	t[N] = vadd(t[N], vrawMulUnitAdd(t, g_vpN, q));
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vrawMulUnitAdd(t+i, x, y[i]);
 		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		q = vmulL(t[i], g_vrp);
+		q = vmulL(t[i], G::vrp());
 		t[N+i] = vadd(t[N+i], vrawMulUnitAdd(t+i, g_vpN, q));
 	}
 	for (size_t i = N; i < N*2; i++) {
@@ -1501,7 +1492,6 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	Unit pM2[6]; // x^(-1) = x^(p-2) mod p
 	toArray<6, 64>(pM2, mp-2);
 	expandN(g_vpN, mp);
-	expand(g_vrp, mont.rp);
 	Vec vpM2[6]; // NOT 52-bit but 64-bit
 	for (int i = 0; i < 6; i++) {
 		expand(vpM2[i], pM2[i]);
