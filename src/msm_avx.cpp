@@ -26,7 +26,7 @@ typedef __mmask8 Vmask;
 
 namespace {
 
-static mcl::msm::Param g_param;
+static mcl::msm::Func g_func;
 
 const size_t S = sizeof(Unit)*8-1; // 63
 const size_t W = 52;
@@ -847,7 +847,7 @@ struct FpM {
 	{
 		mcl::msm::FpA v[M];
 		x.getFp(v);
-		g_param.invVecFp(v, v, M, M);
+		g_func.invVecFp(v, v, M, M);
 		z.setFp(v);
 	}
 	// condition set (set x if c)
@@ -1349,7 +1349,7 @@ inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 	P.getG1(z);
 	Q = z[0];
 	for (int i = 1; i < 8; i++) {
-		g_param.addG1(Q, Q, z[i]);
+		g_func.addG1(Q, Q, z[i]);
 	}
 }
 
@@ -1357,7 +1357,7 @@ inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
 {
 	Unit ya[4*8];
 	for (size_t i = 0; i < 8; i++) {
-		g_param.fr->fromMont(ya+i*4, y[i].v);
+		g_func.fr->fromMont(ya+i*4, y[i].v);
 	}
 	cvt4Ux8to8Ux4(yv, ya);
 }
@@ -1415,7 +1415,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	const size_t n8 = n/8;
-	const mcl::fp::Op *fr = g_param.fr;
+	const mcl::fp::Op *fr = g_func.fr;
 #if 1
 //	mcl::ec::normalizeVec(x, x, n);
 	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8 * 2, 64);
@@ -1455,8 +1455,8 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const bool constTime = false;
 	for (size_t i = n8*8; i < n; i++) {
 		mcl::msm::G1A Q;
-		g_param.mulG1(Q, x[i], y[i], constTime);
-		g_param.addG1(P, P, Q);
+		g_func.mulG1(Q, x[i], y[i], constTime);
+		g_func.addG1(P, P, Q);
 	}
 }
 
@@ -1467,7 +1467,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	if (!isProj && mixed) g_param.normalizeVecG1(x, x, n);
+	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
 		Vec yv[4];
@@ -1478,7 +1478,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	}
 }
 
-bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
+bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 {
 	assert(EcM::a_ == 0);
 	assert(EcM::b_ == 4);
@@ -1488,9 +1488,9 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 	if (cp != mcl::BLS12_381) return false;
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
-	g_param = *param;
+	g_func = *func;
 
-	const mpz_class& mp = g_param.fp->mp;
+	const mpz_class& mp = g_func.fp->mp;
 	FpM::init(mp);
 	Montgomery& mont = FpM::g_mont;
 	Unit pM2[6]; // x^(-1) = x^(p-2) mod p
@@ -1517,7 +1517,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 		FpM::m64to52_.set(t); // 2^32
 		FpM::pow(FpM::m52to64_, FpM::m64to52_, vpM2, 6);
 	}
-	FpM::rw_.setFp(g_param.rw);
+	FpM::rw_.setFp(g_func.rw);
 	EcM::init(mont);
 	return true;
 }
@@ -1620,7 +1620,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
 	}
-	g_param.normalizeVecG1(RA, PA, n);
+	g_func.normalizeVecG1(RA, PA, n);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(R[i].z.isOne() || R[i].z.isZero());
 	}

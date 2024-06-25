@@ -442,7 +442,7 @@ typedef void (*dblG1Func)(G1A& z, const G1A& x);
 typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
 typedef void (*clearG1Func)(G1A& z);
 
-struct Param {
+struct Func {
 	const mcl::fp::Op *fp;
 	const mcl::fp::Op *fr;
 	const Unit *rw;
