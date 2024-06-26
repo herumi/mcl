@@ -33,9 +33,7 @@ static const size_t W = 52;
 static const size_t N = 8; // = ceil(384/52)
 static const size_t M = sizeof(Vec) / sizeof(Unit);
 #include "msm_avx_bls12_381.h"
-static Vec g_vmask4;
 static Vec g_offset;
-static Vec g_vi192;
 
 inline Unit getMask(int w)
 {
@@ -797,11 +795,12 @@ struct FpM {
 		const size_t bitLen = sizeof(Unit)*8;
 		const size_t jn = bitLen / w;
 		z = tbl[0];
+		const Vec vmask4 = vpbroadcastq(getMask(4));
 		for (size_t i = 0; i < yn; i++) {
 			const Vec& v = y[yn-1-i];
 			for (size_t j = 0; j < jn; j++) {
 				for (int k = 0; k < w; k++) FpM::sqr(z, z);
-				Vec idx = vand(vpsrlq(v, bitLen-w-j*w), g_vmask4);
+				Vec idx = vand(vpsrlq(v, bitLen-w-j*w), vmask4);
 				idx = vpsllq(idx, 6); // 512 B = 64 Unit
 				idx = vadd(idx, g_offset);
 				FpM t;
@@ -1117,7 +1116,8 @@ struct EcM {
 	}
 	void gather(const EcM *tbl, Vec idx)
 	{
-		idx = vmulL(idx, g_vi192, g_offset);
+		const Vec i192 = vpbroadcastq(192);
+		idx = vmulL(idx, i192, g_offset);
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
 			y.v[i] = vpgatherqq(idx, &tbl[0].y.v[i]);
@@ -1126,7 +1126,8 @@ struct EcM {
 	}
 	void scatter(EcM *tbl, Vec idx) const
 	{
-		idx = vmulL(idx, g_vi192, g_offset);
+		const Vec i192 = vpbroadcastq(192);
+		idx = vmulL(idx, i192, g_offset);
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
 			vpscatterqq(&tbl[0].y.v[i], idx, y.v[i]);
@@ -1494,11 +1495,9 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	for (int i = 0; i < 6; i++) {
 		expand(vpM2[i], pM2[i]);
 	}
-	expand(g_vmask4, getMask(4));
 	for (int i = 0; i < 8; i++) {
 		((Unit*)&g_offset)[i] = i;
 	}
-	expand(g_vi192, 192);
 	FpM::zero_.clear();
 	expandN(FpM::one_.v, mont.toMont(1));
 	expandN(FpM::rawOne_.v, mpz_class(1));
