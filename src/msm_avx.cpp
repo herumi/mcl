@@ -33,7 +33,6 @@ static const size_t W = 52;
 static const size_t N = 8; // = ceil(384/52)
 static const size_t M = sizeof(Vec) / sizeof(Unit);
 #include "msm_avx_bls12_381.h"
-static Vec g_offset;
 
 inline Unit getMask(int w)
 {
@@ -693,6 +692,7 @@ struct FpM {
 	static FpM m64to52_;
 	static FpM m52to64_;
 	static Montgomery g_mont;
+	static const FpM& one() { return one_; }
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvadd(z.v, x.v, y.v);
@@ -787,7 +787,7 @@ struct FpM {
 		assert(w == 4);
 		const int tblN = 1<<w;
 		FpM tbl[tblN];
-		tbl[0] = one_;
+		tbl[0] = FpM::one();
 		tbl[1] = x;
 		for (size_t i = 2; i < tblN; i++) {
 			mul(tbl[i], tbl[i-1], x);
@@ -802,7 +802,7 @@ struct FpM {
 				for (int k = 0; k < w; k++) FpM::sqr(z, z);
 				Vec idx = vand(vpsrlq(v, bitLen-w-j*w), vmask4);
 				idx = vpsllq(idx, 6); // 512 B = 64 Unit
-				idx = vadd(idx, g_offset);
+				idx = vadd(idx, G::offset());
 				FpM t;
 				for (size_t k = 0; k < N; k++) {
 					t.v[k] = vpgatherqq(idx, &tbl[0].v[k]);
@@ -884,9 +884,9 @@ inline void normalizeJacobiVec(E P[n])
 	assert(n >= 2);
 	typedef typename E::Fp F;
 	F tbl[n];
-	tbl[0] = F::select(P[0].z.isZero(), F::one_, P[0].z);
+	tbl[0] = F::select(P[0].z.isZero(), F::one(), P[0].z);
 	for (size_t i = 1; i < n; i++) {
-		F t = F::select(P[i].z.isZero(), F::one_, P[i].z);
+		F t = F::select(P[i].z.isZero(), F::one(), P[i].z);
 		F::mul(tbl[i], tbl[i-1], t);
 	}
 	F r;
@@ -899,13 +899,13 @@ inline void normalizeJacobiVec(E P[n])
 			rz = r;
 		} else {
 			F::mul(rz, r, tbl[pos-1]);
-			F::mul(r, r, F::select(z.isZero(), F::one_, z));
+			F::mul(r, r, F::select(z.isZero(), F::one(), z));
 		}
 		F::sqr(rz2, rz);
 		F::mul(P[pos].x, P[pos].x, rz2); // xz^-2
 		F::mul(rz2, rz2, rz);
 		F::mul(P[pos].y, P[pos].y, rz2); // yz^-3
-		z = F::select(z.isZero(), z, F::one_);
+		z = F::select(z.isZero(), z, F::one());
 	}
 }
 
@@ -1080,7 +1080,7 @@ struct EcM {
 		FpM::mul(z, z, FpM::m64to52_);
 		if (JacobiToProj) {
 			mcl::ec::JacobiToProj(*this, *this);
-			y = FpM::select(z.isZero(), FpM::one_, y);
+			y = FpM::select(z.isZero(), FpM::one(), y);
 		}
 	}
 	void getG1(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
@@ -1098,7 +1098,7 @@ struct EcM {
 		FpM::inv(r, z);
 		FpM::mul(x, x, r);
 		FpM::mul(y, y, r);
-		z = FpM::one_;
+		z = FpM::one();
 	}
 	template<bool isProj=true, bool mixed=false>
 	static void makeTable(EcM *tbl, size_t tblN, const EcM& P)
@@ -1117,7 +1117,7 @@ struct EcM {
 	void gather(const EcM *tbl, Vec idx)
 	{
 		const Vec i192 = vpbroadcastq(192);
-		idx = vmulL(idx, i192, g_offset);
+		idx = vmulL(idx, i192, G::offset());
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
 			y.v[i] = vpgatherqq(idx, &tbl[0].y.v[i]);
@@ -1127,7 +1127,7 @@ struct EcM {
 	void scatter(EcM *tbl, Vec idx) const
 	{
 		const Vec i192 = vpbroadcastq(192);
-		idx = vmulL(idx, i192, g_offset);
+		idx = vmulL(idx, i192, G::offset());
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
 			vpscatterqq(&tbl[0].y.v[i], idx, y.v[i]);
@@ -1495,17 +1495,17 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	for (int i = 0; i < 6; i++) {
 		expand(vpM2[i], pM2[i]);
 	}
-	for (int i = 0; i < 8; i++) {
-		((Unit*)&g_offset)[i] = i;
-	}
 	FpM::zero_.clear();
 	expandN(FpM::one_.v, mont.toMont(1));
+mcl::bint::dump((const uint64_t*)&FpM::one_, 64, "one");
 	expandN(FpM::rawOne_.v, mpz_class(1));
 	expandN(FpM::mR2_.v, mont.mR2);
+mcl::bint::dump((const uint64_t*)&FpM::mR2_, 64, "mR2");
 	{
 		mpz_class t(1);
 		t <<= 32;
 		FpM::m64to52_.set(t); // 2^32
+mcl::bint::dump((const uint64_t*)&FpM::m64to52_, 8, "m64to52_");
 		FpM::pow(FpM::m52to64_, FpM::m64to52_, vpM2, 6);
 	}
 	FpM::rw_.setFp(g_func.rw);
