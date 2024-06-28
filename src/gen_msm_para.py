@@ -1,3 +1,5 @@
+g_W = 52 # use 52-bit integer multiplication
+g_N = 8 # store 381-bit integer in 8 bytes N arrays
 
 def getMontgomeryCoeff(pLow, W):
   pp = 0
@@ -15,12 +17,12 @@ def getMask(w):
   return (1<<w)-1
 
 # return w-bit array of size N
-def toArray(x, N, w):
-  mask = getMask(w)
+def toArray(x, W=g_W, N=g_N):
+  mask = getMask(W)
   a=[]
   for i in range(N):
     a.append(x & mask)
-    x >>= w
+    x >>= W
   return a
 
 class Montgomery:
@@ -78,8 +80,10 @@ def putCode(curve, mont):
   print(f'static const uint64_t g_mask = {hex(mont.mask)};')
   expand("g_vmask_", mont.mask)
   expand("g_vrp_", mont.rp)
-  vp = toArray(curve.p, mont.N, mont.W)
-  expandN('g_vpN_', vp)
+  expandN('g_vpN_', toArray(curve.p))
+  expandN('g_vR_', toArray(mont.R)) # Fp:M::one()
+  expandN('g_vR2_', toArray(mont.R2)) # Fp:M::R2()
+  expandN('g_vrawOne_', toArray(1)) # Fp:M::rawOne()
   expand("g_offset_", [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
   print(f'''

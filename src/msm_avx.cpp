@@ -12,14 +12,14 @@
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
-#if defined(__GNUC__) && !defined(__EMSCRIPTEN__)
+#if defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
-
-typedef mcl::Unit Unit;
 
 namespace {
 
+typedef mcl::Unit Unit;
 static mcl::msm::Func g_func;
 
 static const size_t S = sizeof(Unit)*8-1; // 63
@@ -528,14 +528,15 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 struct FpM {
 	Vec v[N];
 	static FpM zero_;
-	static FpM one_;
 	static FpM rawOne_;
 	static FpM rw_;
-	static FpM mR2_;
 	static FpM m64to52_;
 	static FpM m52to64_;
 	static Montgomery g_mont;
-	static const FpM& one() { return one_; }
+	static const FpM& zero() { return zero_; }
+	static const FpM& one() { return *(const FpM*)g_vR_; }
+	static const FpM& R2() { return *(const FpM*)g_vR2_; }
+	static const FpM& rawOne() { return *(const FpM*)g_vrawOne_; }
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvadd(z.v, x.v, y.v);
@@ -550,7 +551,7 @@ struct FpM {
 	}
 	static void neg(FpM& z, const FpM& x)
 	{
-		FpM::sub(z, FpM::zero_, x);
+		FpM::sub(z, zero(), x);
 	}
 	static void mul(FpM& z, const FpM& x, const FpM& y)
 	{
@@ -579,11 +580,11 @@ struct FpM {
 	}
 	void toMont(FpM& x) const
 	{
-		mul(x, *this, mR2_);
+		mul(x, *this, R2());
 	}
 	void fromMont(const FpM &x)
 	{
-		mul(*this, x, rawOne_);
+		mul(*this, x, rawOne());
 	}
 	mpz_class getRaw(size_t i) const
 	{
@@ -677,7 +678,7 @@ struct FpM {
 	FpM neg() const
 	{
 		FpM t;
-		FpM::sub(t, FpM::zero_, *this);
+		FpM::sub(t, zero(), *this);
 		return t;
 	}
 	static void inv(FpM& z, const FpM& x)
@@ -713,10 +714,7 @@ struct FpM {
 };
 
 FpM FpM::zero_;
-FpM FpM::one_;
-FpM FpM::rawOne_;
 FpM FpM::rw_;
-FpM FpM::mR2_;
 FpM FpM::m64to52_;
 FpM FpM::m52to64_;
 Montgomery FpM::g_mont;
@@ -847,7 +845,6 @@ struct EcM {
 	static const int a_ = 0;
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
-	static const size_t bitLen = sizeof(Unit)*8;
 	static FpM b3_;
 	static EcM zeroProj_;
 	static EcM zeroJacobi_;
@@ -1339,11 +1336,6 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 		expand(vpM2[i], pM2[i]);
 	}
 	FpM::zero_.clear();
-	expandN(FpM::one_.v, mont.toMont(1));
-mcl::bint::dump((const uint64_t*)&FpM::one_, 64, "one");
-	expandN(FpM::rawOne_.v, mpz_class(1));
-	expandN(FpM::mR2_.v, mont.mR2);
-mcl::bint::dump((const uint64_t*)&FpM::mR2_, 64, "mR2");
 	{
 		mpz_class t(1);
 		t <<= 32;
