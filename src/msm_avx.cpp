@@ -6,11 +6,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdint.h>
-#ifdef _WIN32
-#include <intrin.h>
-#else
-#include <x86intrin.h>
-#endif
+#include "avx512.hpp"
 
 #include <mcl/ec.hpp>
 #define XBYAK_NO_EXCEPTION
@@ -21,8 +17,6 @@
 #endif
 
 typedef mcl::Unit Unit;
-typedef __m512i Vec;
-typedef __mmask8 Vmask;
 
 namespace {
 
@@ -87,23 +81,6 @@ inline mpz_class fromArray(const Unit x[N])
 	return mx;
 }
 
-inline Vec vzero()
-{
-	return _mm512_setzero_epi32();
-}
-
-inline Vmask mzero()
-{
-	Vmask v;
-	memset(&v, 0, sizeof(v));
-	return v;
-}
-
-inline Vec vone()
-{
-	return _mm512_set1_epi32(1);
-}
-
 // set x[j] to i-th SIMD element of v[j]
 inline void set(Vec v[N], size_t i, const Unit x[N])
 {
@@ -155,172 +132,38 @@ inline void expandN(Vec v[N], const mpz_class& x)
 	}
 }
 
-// low(c+a*b)
-inline Vec vmulL(const Vec& a, const Vec& b, const Vec& c = vzero())
-{
-	return _mm512_madd52lo_epu64(c, a, b);
-}
-
-// high(c+a*b)
-inline Vec vmulH(const Vec& a, const Vec& b, const Vec& c = vzero())
-{
-	return _mm512_madd52hi_epu64(c, a, b);
-}
-
-inline Vec vadd(const Vec& a, const Vec& b)
-{
-	return _mm512_add_epi64(a, b);
-}
-
-inline Vec vadd(const Vmask& v, const Vec& a, const Vec& b)
-{
-	return _mm512_mask_add_epi64(a, v, a, b);
-}
-
-inline Vec vsub(const Vec& a, const Vec& b)
-{
-	return _mm512_sub_epi64(a, b);
-}
-
-inline Vec vsub(const Vmask& v, const Vec& a, const Vec& b)
-{
-	return _mm512_mask_sub_epi64(a, v, a, b);
-}
-
-inline Vec vpsrlq(const Vec& a, size_t b)
-{
-	return _mm512_srli_epi64(a, int(b));
-}
-
-inline Vec vpsllq(const Vec& a, size_t b)
-{
-	return _mm512_slli_epi64(a, int(b));
-}
-
-inline Vec vand(const Vec& a, const Vec& b)
-{
-	return _mm512_and_epi64(a, b);
-}
-
-inline Vec vor(const Vec& a, const Vec& b)
-{
-	return _mm512_or_epi64(a, b);
-}
-
-inline Vec vxor(const Vec& a, const Vec& b)
-{
-	return _mm512_xor_epi64(a, b);
-}
-
-//template<int scale=8>
-inline Vec vpgatherqq(const Vec& idx, const void *base)
-{
-#if 0
-	const Unit *p = (const Unit *)&idx;
-	const Unit *src = (const Unit *)base;
-	Vec v;
-	Unit *q = (Unit *)&v;
-	for (size_t i = 0; i < M; i++) {
-		q[i] = src[idx[i]];
-	}
-	return v;
-#else
-	const int scale = 8;
-	return _mm512_i64gather_epi64(idx, base, scale);
-#endif
-}
-
-inline void vpscatterqq(void *base, const Vec& idx, const Vec& v)
-{
-	const int scale = 8;
-	_mm512_i64scatter_epi64(base, idx, v, scale);
-}
-
-// return [H:L][idx]
-inline Vec vperm2tq(const Vec& L, const Vec& idx, const Vec& H)
-{
-	return _mm512_permutex2var_epi64(L, idx, H);
-}
-
-inline Vmask vcmpeq(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpeq_epi64_mask(a, b);
-}
-
-inline Vmask vcmpneq(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpneq_epi64_mask(a, b);
-}
-
-inline Vmask vcmpgt(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpgt_epi64_mask(a, b);
-}
-
-inline Vmask vcmpge(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpge_epi64_mask(a, b);
-}
-
-inline Vmask mand(const Vmask& a, const Vmask& b)
-{
-	return _mm512_kand(a, b);
-}
-
-inline Vmask mor(const Vmask& a, const Vmask& b)
-{
-	return _mm512_kor(a, b);
-}
-
-inline Vec vpbroadcastq(int64_t a)
-{
-	return _mm512_set1_epi64(a);
-}
-
-// return c ? a&b : d;
-inline Vec vand(const Vmask& c, const Vec& a, const Vec& b, const Vec& d)
-{
-	return _mm512_mask_and_epi64(d, c, a, b);
-}
-
-// return c ? a : b;
-inline Vec vselect(const Vmask& c, const Vec& a, const Vec& b)
-{
-	return vand(c, a, a, b);
-}
-
 template<size_t n=N>
 inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 {
-	Vec t = vadd(x[0], y[0]);
+	Vec t = vpaddq(x[0], y[0]);
 	Vec c = vpsrlq(t, W);
-	z[0] = vand(t, G::vmask());
+	z[0] = vpandq(t, G::vmask());
 
 	for (size_t i = 1; i < n; i++) {
-		t = vadd(x[i], y[i]);
-		t = vadd(t, c);
+		t = vpaddq(x[i], y[i]);
+		t = vpaddq(t, c);
 		if (i == n-1) {
 			z[i] = t;
 			return;
 		}
 		c = vpsrlq(t, W);
-		z[i] = vand(t, G::vmask());
+		z[i] = vpandq(t, G::vmask());
 	}
 }
 
 template<size_t n=N>
 inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
 {
-	Vec t = vsub(x[0], y[0]);
+	Vec t = vpsubq(x[0], y[0]);
 	Vec c = vpsrlq(t, S);
-	z[0] = vand(t, G::vmask());
+	z[0] = vpandq(t, G::vmask());
 	for (size_t i = 1; i < n; i++) {
-		t = vsub(x[i], y[i]);
-		t = vsub(t, c);
+		t = vpsubq(x[i], y[i]);
+		t = vpsubq(t, c);
 		c = vpsrlq(t, S);
-		z[i] = vand(t, G::vmask());
+		z[i] = vpandq(t, G::vmask());
 	}
-	return vcmpneq(c, vzero());
+	return vcmpneqq(c, vzero());
 }
 
 inline void uvselect(Vec *z, const Vmask& c, const Vec *a, const Vec *b)
@@ -343,7 +186,7 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 	Vec sN[N], tN[N];
 	Vmask c = vrawSub(sN, x, y);
 	vrawAdd(tN, sN, G::vpN());
-	tN[N-1] = vand(tN[N-1], G::vmask());
+	tN[N-1] = vpandq(tN[N-1], G::vmask());
 	uvselect(z, c, tN, sN);
 }
 
@@ -356,7 +199,7 @@ inline void vrawMulUnitOrg(Vec *z, const Vec *x, const Vec& y)
 	}
 	z[0] = L[0];
 	for (size_t i = 1; i < N; i++) {
-		z[i] = vadd(L[i], H[i-1]);
+		z[i] = vpaddq(L[i], H[i-1]);
 	}
 	z[N] = H[N-1];
 }
@@ -368,9 +211,9 @@ inline Vec vrawMulUnitAddOrg(Vec *z, const Vec *x, const Vec& y)
 		L[i] = vmulL(x[i], y);
 		H[i] = vmulH(x[i], y);
 	}
-	z[0] = vadd(z[0], L[0]);
+	z[0] = vpaddq(z[0], L[0]);
 	for (size_t i = 1; i < N; i++) {
-		z[i] = vadd(z[i], vadd(L[i], H[i-1]));
+		z[i] = vpaddq(z[i], vpaddq(L[i], H[i-1]));
 	}
 	return H[N-1];
 }
@@ -395,7 +238,7 @@ inline Vec vrawMulUnitAdd(Vec *z, const Vec *x, const Vec& y)
 	z[0] = vmulL(x[0], y, z[0]);
 	H = vmulH(x[0], y);
 	for (size_t i = 1; i < n; i++) {
-		z[i] = vadd(vmulL(x[i], y, H), z[i]);
+		z[i] = vpaddq(vmulL(x[i], y, H), z[i]);
 		H = vmulH(x[i], y);
 	}
 	return H;
@@ -419,19 +262,19 @@ inline void vrawSqr(Vec z[n*2], const Vec x[n])
 	}
 	for (size_t j = 2; j < n; j++) {
 		for (size_t i = j; i < n; i++) {
-//			z[i*2-j  ] = vadd(z[i*2-j  ], vmulL(x[i], x[i-j]));
-//			z[i*2-j+1] = vadd(z[i*2-j+1], vmulH(x[i], x[i-j]));
+//			z[i*2-j  ] = vpaddq(z[i*2-j  ], vmulL(x[i], x[i-j]));
+//			z[i*2-j+1] = vpaddq(z[i*2-j+1], vmulH(x[i], x[i-j]));
 			z[i*2-j  ] = vmulL(x[i], x[i-j], z[i*2-j  ]);
 			z[i*2-j+1] = vmulH(x[i], x[i-j], z[i*2-j+1]);
 		}
 	}
 	for (size_t i = 1; i < n*2-1; i++) {
-		z[i] = vadd(z[i], z[i]);
+		z[i] = vpaddq(z[i], z[i]);
 	}
 	z[0] = vmulL(x[0], x[0]);
 	for (size_t i = 1; i < n; i++) {
-//		z[i*2-1] = vadd(z[i*2-1], vmulH(x[i-1], x[i-1]));
-//		z[i*2] = vadd(z[i*2], vmulL(x[i], x[i]));
+//		z[i*2-1] = vpaddq(z[i*2-1], vmulH(x[i-1], x[i-1]));
+//		z[i*2] = vpaddq(z[i*2], vmulL(x[i], x[i]));
 		z[i*2-1] = vmulH(x[i-1], x[i-1], z[i*2-1]);
 		z[i*2] = vmulL(x[i], x[i], z[i*2]);
 	}
@@ -451,12 +294,12 @@ inline void uvmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
 		Vec q = vmulL(xy[i], G::vrp());
-		xy[N+i] = vadd(xy[N+i], vrawMulUnitAdd(xy+i, G::vpN(), q));
-		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
+		xy[N+i] = vpaddq(xy[N+i], vrawMulUnitAdd(xy+i, G::vpN(), q));
+		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
 	}
 	for (size_t i = N; i < N*2-1; i++) {
-		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
-		xy[i] = vand(xy[i], G::vmask());
+		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
+		xy[i] = vpandq(xy[i], G::vmask());
 	}
 	Vmask c = vrawSub(z, xy+N, G::vpN());
 	uvselect(z, c, xy+N, z);
@@ -472,16 +315,16 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 	Vec t[N*2], q;
 	vrawMulUnit(t, x, y[0]);
 	q = vmulL(t[0], G::vrp());
-	t[N] = vadd(t[N], vrawMulUnitAdd(t, G::vpN(), q));
+	t[N] = vpaddq(t[N], vrawMulUnitAdd(t, G::vpN(), q));
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vrawMulUnitAdd(t+i, x, y[i]);
-		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
 		q = vmulL(t[i], G::vrp());
-		t[N+i] = vadd(t[N+i], vrawMulUnitAdd(t+i, G::vpN(), q));
+		t[N+i] = vpaddq(t[N+i], vrawMulUnitAdd(t+i, G::vpN(), q));
 	}
 	for (size_t i = N; i < N*2; i++) {
-		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		t[i-1] = vand(t[i-1], G::vmask());
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		t[i-1] = vpandq(t[i-1], G::vmask());
 	}
 	Vmask c = vrawSub(z, t+N, G::vpN());
 	uvselect(z, c, t+N, z);
@@ -512,7 +355,7 @@ inline Vec getUnitAt(const Vec *x, size_t xN, size_t bitPos)
 	const size_t r = bitPos % bitSize;
 	if (r == 0) return x[q];
 	if (q == xN - 1) return vpsrlq(x[q], r);
-	return vor(vpsrlq(x[q], r), vpsllq(x[q+1], bitSize - r));
+	return vporq(vpsrlq(x[q], r), vpsllq(x[q+1], bitSize - r));
 }
 
 class Montgomery {
@@ -584,13 +427,13 @@ public:
 inline void split52bit(Vec y[8], const Vec x[6])
 {
 	assert(&y != &x);
-	y[0] = vand(x[0], G::vmask());
-	y[1] = vand(vor(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::vmask());
-	y[2] = vand(vor(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::vmask());
-	y[3] = vand(vor(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::vmask());
-	y[4] = vand(vor(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::vmask());
-	y[5] = vand(vpsrlq(x[4], 4), G::vmask());
-	y[6] = vand(vor(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::vmask());
+	y[0] = vpandq(x[0], G::vmask());
+	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::vmask());
+	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::vmask());
+	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::vmask());
+	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::vmask());
+	y[5] = vpandq(vpsrlq(x[4], 4), G::vmask());
+	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::vmask());
 	y[7] = vpsrlq(x[5], 44);
 }
 
@@ -602,12 +445,12 @@ inline void split52bit(Vec y[8], const Vec x[6])
 inline void concat52bit(Vec y[6], const Vec x[8])
 {
 	assert(&y != &x);
-	y[0] = vor(x[0], vpsllq(x[1], 52));
-	y[1] = vor(vpsrlq(x[1], 12), vpsllq(x[2], 40));
-	y[2] = vor(vpsrlq(x[2], 24), vpsllq(x[3], 28));
-	y[3] = vor(vpsrlq(x[3], 36), vpsllq(x[4], 16));
-	y[4] = vor(vor(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
-	y[5] = vor(vpsrlq(x[6], 8), vpsllq(x[7], 44));
+	y[0] = vporq(x[0], vpsllq(x[1], 52));
+	y[1] = vporq(vpsrlq(x[1], 12), vpsllq(x[2], 40));
+	y[2] = vporq(vpsrlq(x[2], 24), vpsllq(x[3], 28));
+	y[3] = vporq(vpsrlq(x[3], 36), vpsllq(x[4], 16));
+	y[4] = vporq(vporq(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
+	y[5] = vporq(vpsrlq(x[6], 8), vpsllq(x[7], 44));
 }
 
 /*
@@ -767,19 +610,19 @@ struct FpM {
 	bool operator!=(const FpM& rhs) const { return !operator==(rhs); }
 	Vmask isEqualAll(const FpM& rhs) const
 	{
-		Vec t = vxor(v[0], rhs.v[0]);
+		Vec t = vpxorq(v[0], rhs.v[0]);
 		for (size_t i = 1; i < M; i++) {
-			t = vor(t, vxor(v[i], rhs.v[i]));
+			t = vporq(t, vpxorq(v[i], rhs.v[i]));
 		}
-		return vcmpeq(t, vzero());
+		return vcmpeqq(t, vzero());
 	}
 	Vmask isZero() const
 	{
 		Vec t = v[0];
 		for (size_t i = 1; i < M; i++) {
-			t = vor(t, v[i]);
+			t = vporq(t, v[i]);
 		}
-		return vcmpeq(t, vzero());
+		return vcmpeqq(t, vzero());
 	}
 	static void pow(FpM& z, const FpM& x, const Vec *y, size_t yn)
 	{
@@ -800,9 +643,9 @@ struct FpM {
 			const Vec& v = y[yn-1-i];
 			for (size_t j = 0; j < jn; j++) {
 				for (int k = 0; k < w; k++) FpM::sqr(z, z);
-				Vec idx = vand(vpsrlq(v, bitLen-w-j*w), vmask4);
+				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), vmask4);
 				idx = vpsllq(idx, 6); // 512 B = 64 Unit
-				idx = vadd(idx, G::offset());
+				idx = vpaddq(idx, G::offset());
 				FpM t;
 				for (size_t k = 0; k < N; k++) {
 					t.v[k] = vpgatherqq(idx, &tbl[0].v[k]);
@@ -1188,7 +1031,7 @@ struct EcM {
 			if (!first) for (size_t k = 0; k < dblN; k++) EcM::dbl<isProj>(Q, Q);
 			EcM T;
 			Vec idx;
-			idx = vand(getUnitAt(b, 2, pos), vmask);
+			idx = vpandq(getUnitAt(b, 2, pos), vmask);
 			if (first) {
 				Q.gather(tbl2, idx);
 				first = false;
@@ -1196,7 +1039,7 @@ struct EcM {
 				T.gather(tbl2, idx);
 				add<isProj, mixed>(Q, Q, T);
 			}
-			idx = vand(getUnitAt(a, 2, pos), vmask);
+			idx = vpandq(getUnitAt(a, 2, pos), vmask);
 			T.gather(tbl1, idx);
 			add<isProj, mixed>(Q, Q, T);
 		}
@@ -1219,20 +1062,20 @@ struct EcM {
 		const size_t n = (bitLen+w-1)/w;
 		for (size_t i = 0; i < n; i++) {
 			Vec idx = getUnitAt(a, 2, pos);
-			idx = vand(idx, vmask);
-			idx = vadd(idx, CF);
+			idx = vpandq(idx, vmask);
+			idx = vpaddq(idx, CF);
 #ifdef SIGNED_TABLE
-			Vec masked = vand(idx, vmask);
-			Vmask v = vcmpgt(masked, H);
-			idxTbl[i] = masked; //vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
+			Vec masked = vpandq(idx, vmask);
+			Vmask v = vcmpgtq(masked, H);
+			idxTbl[i] = masked; //vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
-			CF = vadd(v, CF, one);
+			CF = vpaddq(v, CF, one);
 #else
-			Vec masked = vand(idx, vmask);
-			negTbl[i] = vcmpgt(masked, H);
-			idxTbl[i] = vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
+			Vec masked = vpandq(idx, vmask);
+			negTbl[i] = vcmpgtq(masked, H);
+			idxTbl[i] = vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
-			CF = vadd(negTbl[i], CF, one);
+			CF = vpaddq(negTbl[i], CF, one);
 #endif
 			pos += w;
 		}
@@ -1327,7 +1170,7 @@ struct EcM {
 		FpM::mul(t1, t1, rhs.z);
 		FpM::mul(t2, t2, z);
 		v2 = t1.isEqualAll(t2);
-		return mand(v1, v2);
+		return kandb(v1, v2);
 	}
 #ifdef MCL_MSM_TEST
 	void dump(bool isProj, size_t pos, const char *msg = nullptr) const;
@@ -1376,7 +1219,7 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 		}
 		for (size_t i = 0; i < n; i++) {
 			Vec v = getUnitAt(yVec+i*yn, yn, c*w);
-			v = vand(v, m);
+			v = vpandq(v, m);
 			EcM T;
 			T.gather(tbl, v);
 			EcM::add(T, T, xVec[i]);
