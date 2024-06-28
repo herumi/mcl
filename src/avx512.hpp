@@ -128,7 +128,7 @@ inline Vmask vcmpgtq(const Vec& a, const Vec& b)
 
 inline Vmask kandb(const Vmask& a, const Vmask& b)
 {
-	return _mm512_kand(a, b);
+	return (Vmask)_mm512_kand(a, b);
 }
 
 inline Vec vpbroadcastq(int64_t a)
