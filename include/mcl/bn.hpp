@@ -2283,7 +2283,6 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	mcl::msm::Func func;
 	func.fp = &Fp::getOp();
 	func.fr = &Fr::getOp();
-	func.rw = local::GLV1::rw.getUnit();
 	func.invVecFp = mcl::msm::invVecFpFunc(mcl::invVec<mcl::bn::Fp>);
 	func.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)

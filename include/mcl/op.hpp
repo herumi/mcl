@@ -445,7 +445,6 @@ typedef void (*clearG1Func)(G1A& z);
 struct Func {
 	const mcl::fp::Op *fp;
 	const mcl::fp::Op *fr;
-	const Unit *rw;
 	invVecFpFunc invVecFp;
 	normalizeVecG1Func normalizeVecG1;
 	addG1Func addG1;

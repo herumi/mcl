@@ -137,7 +137,7 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec t = vpaddq(x[0], y[0]);
 	Vec c = vpsrlq(t, W);
-	z[0] = vpandq(t, G::vmask());
+	z[0] = vpandq(t, G::mask());
 
 	for (size_t i = 1; i < n; i++) {
 		t = vpaddq(x[i], y[i]);
@@ -147,7 +147,7 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 			return;
 		}
 		c = vpsrlq(t, W);
-		z[i] = vpandq(t, G::vmask());
+		z[i] = vpandq(t, G::mask());
 	}
 }
 
@@ -156,12 +156,12 @@ inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec t = vpsubq(x[0], y[0]);
 	Vec c = vpsrlq(t, S);
-	z[0] = vpandq(t, G::vmask());
+	z[0] = vpandq(t, G::mask());
 	for (size_t i = 1; i < n; i++) {
 		t = vpsubq(x[i], y[i]);
 		t = vpsubq(t, c);
 		c = vpsrlq(t, S);
-		z[i] = vpandq(t, G::vmask());
+		z[i] = vpandq(t, G::mask());
 	}
 	return vcmpneqq(c, vzero());
 }
@@ -177,7 +177,7 @@ inline void uvadd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	vrawAdd(sN, x, y);
-	Vmask c = vrawSub(tN, sN, G::vpN());
+	Vmask c = vrawSub(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
 
@@ -185,8 +185,8 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	Vmask c = vrawSub(sN, x, y);
-	vrawAdd(tN, sN, G::vpN());
-	tN[N-1] = vpandq(tN[N-1], G::vmask());
+	vrawAdd(tN, sN, G::ap());
+	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
 
@@ -293,15 +293,15 @@ inline void vset(Vec *t, const Vmask& c, const Vec a[n])
 inline void uvmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
-		Vec q = vmulL(xy[i], G::vrp());
-		xy[N+i] = vpaddq(xy[N+i], vrawMulUnitAdd(xy+i, G::vpN(), q));
+		Vec q = vmulL(xy[i], G::rp());
+		xy[N+i] = vpaddq(xy[N+i], vrawMulUnitAdd(xy+i, G::ap(), q));
 		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
 	}
 	for (size_t i = N; i < N*2-1; i++) {
 		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
-		xy[i] = vpandq(xy[i], G::vmask());
+		xy[i] = vpandq(xy[i], G::mask());
 	}
-	Vmask c = vrawSub(z, xy+N, G::vpN());
+	Vmask c = vrawSub(z, xy+N, G::ap());
 	uvselect(z, c, xy+N, z);
 }
 
@@ -314,19 +314,19 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 #else
 	Vec t[N*2], q;
 	vrawMulUnit(t, x, y[0]);
-	q = vmulL(t[0], G::vrp());
-	t[N] = vpaddq(t[N], vrawMulUnitAdd(t, G::vpN(), q));
+	q = vmulL(t[0], G::rp());
+	t[N] = vpaddq(t[N], vrawMulUnitAdd(t, G::ap(), q));
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vrawMulUnitAdd(t+i, x, y[i]);
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
-		q = vmulL(t[i], G::vrp());
-		t[N+i] = vpaddq(t[N+i], vrawMulUnitAdd(t+i, G::vpN(), q));
+		q = vmulL(t[i], G::rp());
+		t[N+i] = vpaddq(t[N+i], vrawMulUnitAdd(t+i, G::ap(), q));
 	}
 	for (size_t i = N; i < N*2; i++) {
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
-		t[i-1] = vpandq(t[i-1], G::vmask());
+		t[i-1] = vpandq(t[i-1], G::mask());
 	}
-	Vmask c = vrawSub(z, t+N, G::vpN());
+	Vmask c = vrawSub(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
 #endif
 }
@@ -427,13 +427,13 @@ public:
 inline void split52bit(Vec y[8], const Vec x[6])
 {
 	assert(&y != &x);
-	y[0] = vpandq(x[0], G::vmask());
-	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::vmask());
-	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::vmask());
-	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::vmask());
-	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::vmask());
-	y[5] = vpandq(vpsrlq(x[4], 4), G::vmask());
-	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::vmask());
+	y[0] = vpandq(x[0], G::mask());
+	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
+	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
+	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
+	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
+	y[5] = vpandq(vpsrlq(x[4], 4), G::mask());
+	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
 	y[7] = vpsrlq(x[5], 44);
 }
 
@@ -527,16 +527,14 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 
 struct FpM {
 	Vec v[N];
-	static FpM zero_;
-	static FpM rawOne_;
-	static FpM rw_;
 	static Montgomery g_mont;
-	static const FpM& zero() { return zero_; }
-	static const FpM& one() { return *(const FpM*)g_vR_; }
-	static const FpM& R2() { return *(const FpM*)g_vR2_; }
-	static const FpM& rawOne() { return *(const FpM*)g_vrawOne_; }
+	static const FpM& zero() { return *(const FpM*)g_zero_; }
+	static const FpM& one() { return *(const FpM*)g_R_; }
+	static const FpM& R2() { return *(const FpM*)g_R2_; }
+	static const FpM& rawOne() { return *(const FpM*)g_rawOne_; }
 	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
 	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
+	static const FpM& rw() { return *(const FpM*)g_rw_; }
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvadd(z.v, x.v, y.v);
@@ -639,12 +637,12 @@ struct FpM {
 		const size_t bitLen = sizeof(Unit)*8;
 		const size_t jn = bitLen / w;
 		z = tbl[0];
-		const Vec vmask4 = vpbroadcastq(getMask(4));
+		const Vec mask4 = vpbroadcastq(getMask(4));
 		for (size_t i = 0; i < yn; i++) {
 			const Vec& v = y[yn-1-i];
 			for (size_t j = 0; j < jn; j++) {
 				for (int k = 0; k < w; k++) FpM::sqr(z, z);
-				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), vmask4);
+				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), mask4);
 				idx = vpsllq(idx, 6); // 512 B = 64 Unit
 				idx = vpaddq(idx, G::offset());
 				FpM t;
@@ -704,17 +702,11 @@ struct FpM {
 		}
 		return d;
 	}
-	static void init(const mpz_class& mp)
-	{
-		g_mont.init(mp);
-	}
 #ifdef MCL_MSM_TEST
 	void dump(size_t pos, const char *msg = nullptr) const;
 #endif
 };
 
-FpM FpM::zero_;
-FpM FpM::rw_;
 Montgomery FpM::g_mont;
 
 template<class E, size_t n>
@@ -974,7 +966,7 @@ struct EcM {
 	}
 	static void mulLambda(EcM& Q, const EcM& P)
 	{
-		FpM::mul(Q.x, P.x, FpM::rw_);
+		FpM::mul(Q.x, P.x, FpM::rw());
 		Q.y = P.y;
 		Q.z = P.z;
 	}
@@ -1011,13 +1003,13 @@ struct EcM {
 			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
 		}
 		const size_t bitLen = 128;
-		Vec vmask = vpbroadcastq((1<<w)-1);
+		Vec mask = vpbroadcastq((1<<w)-1);
 		bool first = true;
 		size_t pos = bitLen;
 		for (size_t i = 0; i < (bitLen + w-1)/w; i++) {
 			size_t dblN = w;
 			if (pos < w) {
-				vmask = vpbroadcastq((1<<pos)-1);
+				mask = vpbroadcastq((1<<pos)-1);
 				dblN = pos;
 				pos = 0;
 			} else {
@@ -1026,7 +1018,7 @@ struct EcM {
 			if (!first) for (size_t k = 0; k < dblN; k++) EcM::dbl<isProj>(Q, Q);
 			EcM T;
 			Vec idx;
-			idx = vpandq(getUnitAt(b, 2, pos), vmask);
+			idx = vpandq(getUnitAt(b, 2, pos), mask);
 			if (first) {
 				Q.gather(tbl2, idx);
 				first = false;
@@ -1034,7 +1026,7 @@ struct EcM {
 				T.gather(tbl2, idx);
 				add<isProj, mixed>(Q, Q, T);
 			}
-			idx = vpandq(getUnitAt(a, 2, pos), vmask);
+			idx = vpandq(getUnitAt(a, 2, pos), mask);
 			T.gather(tbl1, idx);
 			add<isProj, mixed>(Q, Q, T);
 		}
@@ -1044,7 +1036,7 @@ struct EcM {
 	template<size_t bitLen, size_t w>
 	static void makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
 	{
-		const Vec vmask = vpbroadcastq((1<<w)-1);
+		const Vec mask = vpbroadcastq((1<<w)-1);
 #ifdef SIGNED_TABLE
 		(void)negTbl;
 #else
@@ -1057,16 +1049,16 @@ struct EcM {
 		const size_t n = (bitLen+w-1)/w;
 		for (size_t i = 0; i < n; i++) {
 			Vec idx = getUnitAt(a, 2, pos);
-			idx = vpandq(idx, vmask);
+			idx = vpandq(idx, mask);
 			idx = vpaddq(idx, CF);
 #ifdef SIGNED_TABLE
-			Vec masked = vpandq(idx, vmask);
+			Vec masked = vpandq(idx, mask);
 			Vmask v = vcmpgtq(masked, H);
 			idxTbl[i] = masked; //vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
 			CF = vpaddq(v, CF, one);
 #else
-			Vec masked = vpandq(idx, vmask);
+			Vec masked = vpandq(idx, mask);
 			negTbl[i] = vcmpgtq(masked, H);
 			idxTbl[i] = vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
@@ -1325,10 +1317,9 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	g_func = *func;
 
 	const mpz_class& mp = g_func.fp->mp;
-	FpM::init(mp);
+	FpM::g_mont.init(mp);
+//	FpM::init(mp);
 	Montgomery& mont = FpM::g_mont;
-	FpM::zero_.clear();
-	FpM::rw_.setFp(g_func.rw);
 	EcM::init(mont);
 	return true;
 }
