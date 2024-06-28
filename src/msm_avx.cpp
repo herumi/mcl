@@ -530,13 +530,13 @@ struct FpM {
 	static FpM zero_;
 	static FpM rawOne_;
 	static FpM rw_;
-	static FpM m64to52_;
-	static FpM m52to64_;
 	static Montgomery g_mont;
 	static const FpM& zero() { return zero_; }
 	static const FpM& one() { return *(const FpM*)g_vR_; }
 	static const FpM& R2() { return *(const FpM*)g_vR2_; }
 	static const FpM& rawOne() { return *(const FpM*)g_vrawOne_; }
+	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
+	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvadd(z.v, x.v, y.v);
@@ -662,17 +662,17 @@ struct FpM {
 			mcl::bint::copyT<6>(v8+i*6, v);
 		}
 		cvt6Ux8to8Ux8(this->v, v8);
-		FpM::mul(*this, *this, FpM::m64to52_);
+		FpM::mul(*this, *this, FpM::m64to52());
 	}
 	void setFp(const mcl::msm::FpA v[M])
 	{
 		cvt6Ux8to8Ux8(this->v, v[0].v);
-		FpM::mul(*this, *this, FpM::m64to52_);
+		FpM::mul(*this, *this, FpM::m64to52());
 	}
 	void getFp(mcl::msm::FpA v[M]) const
 	{
 		FpM t;
-		FpM::mul(t, *this, FpM::m52to64_);
+		FpM::mul(t, *this, FpM::m52to64());
 		cvt8Ux8to6Ux8((Unit*)v, t.v);
 	}
 	FpM neg() const
@@ -715,8 +715,6 @@ struct FpM {
 
 FpM FpM::zero_;
 FpM FpM::rw_;
-FpM FpM::m64to52_;
-FpM FpM::m52to64_;
 Montgomery FpM::g_mont;
 
 template<class E, size_t n>
@@ -915,9 +913,9 @@ struct EcM {
 	void setG1(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
 		setArray(v[0].v);
-		FpM::mul(x, x, FpM::m64to52_);
-		FpM::mul(y, y, FpM::m64to52_);
-		FpM::mul(z, z, FpM::m64to52_);
+		FpM::mul(x, x, FpM::m64to52());
+		FpM::mul(y, y, FpM::m64to52());
+		FpM::mul(z, z, FpM::m64to52());
 		if (JacobiToProj) {
 			mcl::ec::JacobiToProj(*this, *this);
 			y = FpM::select(z.isZero(), FpM::one(), y);
@@ -927,9 +925,9 @@ struct EcM {
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
-		FpM::mul(T.x, T.x, FpM::m52to64_);
-		FpM::mul(T.y, T.y, FpM::m52to64_);
-		FpM::mul(T.z, T.z, FpM::m52to64_);
+		FpM::mul(T.x, T.x, FpM::m52to64());
+		FpM::mul(T.y, T.y, FpM::m52to64());
+		FpM::mul(T.z, T.z, FpM::m52to64());
 		T.getArray(v[0].v);
 	}
 	void normalize()
@@ -1329,20 +1327,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	const mpz_class& mp = g_func.fp->mp;
 	FpM::init(mp);
 	Montgomery& mont = FpM::g_mont;
-	Unit pM2[6]; // x^(-1) = x^(p-2) mod p
-	toArray<6, 64>(pM2, mp-2);
-	Vec vpM2[6]; // NOT 52-bit but 64-bit
-	for (int i = 0; i < 6; i++) {
-		expand(vpM2[i], pM2[i]);
-	}
 	FpM::zero_.clear();
-	{
-		mpz_class t(1);
-		t <<= 32;
-		FpM::m64to52_.set(t); // 2^32
-mcl::bint::dump((const uint64_t*)&FpM::m64to52_, 8, "m64to52_");
-		FpM::pow(FpM::m52to64_, FpM::m64to52_, vpM2, 6);
-	}
 	FpM::rw_.setFp(g_func.rw);
 	EcM::init(mont);
 	return true;
@@ -1421,6 +1406,22 @@ CYBOZU_TEST_AUTO(cmp)
 		QM.x.set(1, i);
 		v = PM.isEqualJacobiAll(QM);
 		CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff ^ (1<<i));
+	}
+}
+
+CYBOZU_TEST_AUTO(conv)
+{
+	const int C = 16;
+	FpM x1;
+	mcl::bn::Fp x2[8], x3[8];
+	cybozu::XorShift rg;
+	for (int i = 0; i < C; i++) {
+		for (int j = 0; j < 8; j++) {
+			x2[j].setByCSPRNG(rg);
+		}
+		x1.setFp((const mcl::msm::FpA*)x2);
+		x1.getFp((mcl::msm::FpA*)x3);
+		CYBOZU_TEST_EQUAL_ARRAY(x2, x3, 8);
 	}
 }
 

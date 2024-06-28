@@ -83,6 +83,8 @@ def putCode(curve, mont):
   expandN('g_vpN_', toArray(curve.p))
   expandN('g_vR_', toArray(mont.R)) # Fp:M::one()
   expandN('g_vR2_', toArray(mont.R2)) # Fp:M::R2()
+  expandN('g_m64to52_', toArray(mont.toMont(2**32)))
+  expandN('g_m52to64_', toArray(mont.toMont(pow(2**32, -1, curve.p))))
   expandN('g_vrawOne_', toArray(1)) # Fp:M::rawOne()
   expand("g_offset_", [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
@@ -101,7 +103,6 @@ def main():
   mont = Montgomery(curve.p)
   print('#if 0')
   mont.put()
-  print(f'm64to52={hex(mont.toMont(2**32))}')
   print('#endif')
   putCode(curve, mont)
 
