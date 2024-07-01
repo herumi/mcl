@@ -56,31 +56,6 @@ inline void dump(const Vec& v, const char *msg = nullptr)
 	mcl::bint::dump((const uint64_t*)&v, sizeof(v)/sizeof(uint64_t), msg);
 }
 
-template<size_t N, int w = W>
-inline void toArray(Unit x[N], const mpz_class& mx)
-{
-	const Unit mask = getMask(w);
-	Unit tmp[N];
-	bool b;
-	mcl::gmp::getArray(&b, tmp, N, mx);
-	assert(b); (void)b;
-	for (size_t i = 0; i < N; i++) {
-		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
-	}
-}
-
-template<size_t N>
-inline mpz_class fromArray(const Unit x[N])
-{
-	mpz_class mx;
-	mcl::gmp::setUnit(mx, x[N-1]);
-	for (size_t i = 1; i < N; i++) {
-		mx <<= W;
-		mcl::gmp::addUnit(mx, x[N-1-i]);
-	}
-	return mx;
-}
-
 // set x[j] to i-th SIMD element of v[j]
 inline void set(Vec v[N], size_t i, const Unit x[N])
 {
@@ -1211,6 +1186,31 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 #include <cybozu/benchmark.hpp>
 
 using namespace mcl::bn;
+
+template<size_t N, int w = W>
+inline void toArray(Unit x[N], const mpz_class& mx)
+{
+	const Unit mask = getMask(w);
+	Unit tmp[N];
+	bool b;
+	mcl::gmp::getArray(&b, tmp, N, mx);
+	assert(b); (void)b;
+	for (size_t i = 0; i < N; i++) {
+		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
+	}
+}
+
+template<size_t N>
+inline mpz_class fromArray(const Unit x[N])
+{
+	mpz_class mx;
+	mcl::gmp::setUnit(mx, x[N-1]);
+	for (size_t i = 1; i < N; i++) {
+		mx <<= W;
+		mcl::gmp::addUnit(mx, x[N-1-i]);
+	}
+	return mx;
+}
 
 class Montgomery {
 	Unit v_[N];

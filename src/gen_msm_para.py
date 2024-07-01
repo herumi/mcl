@@ -126,9 +126,9 @@ def main():
   curve = BLS12()
 
   mont = Montgomery(curve.p)
-  print('#if 0')
-  mont.put()
-  print('#endif')
+#  print('#if 0')
+#  mont.put()
+#  print('#endif')
   putCode(curve, mont)
 
 if __name__ == '__main__':
