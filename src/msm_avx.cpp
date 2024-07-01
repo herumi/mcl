@@ -1533,6 +1533,13 @@ CYBOZU_TEST_AUTO(op)
 		}
 	}
 #endif
+#ifdef NDEBUG
+	const int C = 10000;
+	FpM a = PM.x;
+	FpM b = PM.y;
+	CYBOZU_BENCH_C("add", C, FpM::add, a, a, b);
+	CYBOZU_BENCH_C("mul", C, FpM::mul, a, a, b);
+#endif
 }
 
 CYBOZU_TEST_AUTO(normalizeJacobiVec)
