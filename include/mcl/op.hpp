@@ -442,6 +442,7 @@ typedef void (*dblG1Func)(G1A& z, const G1A& x);
 typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
 typedef void (*clearG1Func)(G1A& z);
 
+// functions called in src/msm_avx.cpp
 struct Func {
 	const mcl::fp::Op *fp;
 	const mcl::fp::Op *fr;

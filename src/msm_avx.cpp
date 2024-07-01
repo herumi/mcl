@@ -114,24 +114,6 @@ inline void cvt(Unit y[N*M], const Vec xN[N])
 	}
 }
 
-// expand x to Vec
-inline void expand(Vec& v, Unit x)
-{
-	Unit *p = (Unit *)&v;
-	for (size_t i = 0; i < M; i++) {
-		p[i] = x;
-	}
-}
-
-inline void expandN(Vec v[N], const mpz_class& x)
-{
-	Unit a[N];
-	toArray<N>(a, x);
-	for (size_t i = 0; i < N; i++) {
-		expand(v[i], a[i]);
-	}
-}
-
 template<size_t n=N>
 inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 {
@@ -358,68 +340,6 @@ inline Vec getUnitAt(const Vec *x, size_t xN, size_t bitPos)
 	return vporq(vpsrlq(x[q], r), vpsllq(x[q+1], bitSize - r));
 }
 
-class Montgomery {
-	Unit v_[N];
-public:
-	mpz_class mp;
-	mpz_class mR; // (1 << (N * 64)) % p
-	mpz_class mR2; // (R * R) % p
-	Unit rp; // rp * p = -1 mod M = 1 << 64
-	const Unit *p;
-	bool isFullBit;
-	Montgomery() {}
-	static Unit getLow(const mpz_class& x)
-	{
-		if (x == 0) return 0;
-		return mcl::gmp::getUnit(x, 0) & g_mask;
-	}
-	void init(const mpz_class& _p)
-	{
-		mp = _p;
-		mR = 1;
-		mR = (mR << (W * N)) % mp;
-		mR2 = (mR * mR) % mp;
-		toArray<N>(v_, _p);
-		rp = mcl::bint::getMontgomeryCoeff(v_[0], W);
-		p = v_;
-		isFullBit = p[N-1] >> (W-1);
-	}
-
-	mpz_class toMont(const mpz_class& x) const
-	{
-		mpz_class y;
-		mul(y, x, mR2);
-		return y;
-	}
-	mpz_class fromMont(const mpz_class& x) const
-	{
-		mpz_class y;
-		mul(y, x, 1);
-		return y;
-	}
-
-	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
-	{
-		mod(z, x * y);
-	}
-	void mod(mpz_class& z, const mpz_class& xy) const
-	{
-		z = xy;
-		mpz_class t;
-		for (size_t i = 0; i < N; i++) {
-			Unit q = (getLow(z) * rp) & g_mask;
-			mcl::gmp::setUnit(t, q);
-			z += mp * t;
-			z >>= W;
-		}
-		if (z >= mp) {
-			z -= mp;
-		}
-	}
-};
-
-static Montgomery g_mont;
-
 /*
 	 |64   |64   |64   |64   |64    |64   |
 	x|52:12|40:24|28:36|16:48|4:52:8|44:20|
@@ -560,22 +480,6 @@ struct FpM {
 //		uvsqr(z.v, x.v); // slow
 		mul(z, x, x);
 	}
-	void set(const mpz_class& x, size_t i)
-	{
-		mpz_class r = g_mont.toMont(x);
-		Unit rv[N];
-		toArray<N>(rv, r);
-		::set(v, i, rv);
-	}
-	void set(const mpz_class& x)
-	{
-		mpz_class r = g_mont.toMont(x);
-		Unit rv[N];
-		toArray<N>(rv, r);
-		for (size_t i = 0; i < M; i++) {
-			::set(v, i, rv);
-		}
-	}
 	void toMont(FpM& x) const
 	{
 		mul(x, *this, R2());
@@ -583,17 +487,6 @@ struct FpM {
 	void fromMont(const FpM &x)
 	{
 		mul(*this, x, rawOne());
-	}
-	mpz_class getRaw(size_t i) const
-	{
-		Unit x[N];
-		::get(x, v, i);
-		return fromArray<N>(x);
-	}
-	mpz_class get(size_t i) const
-	{
-		mpz_class r = getRaw(i);
-		return g_mont.fromMont(r);
 	}
 	void clear()
 	{
@@ -704,6 +597,10 @@ struct FpM {
 	}
 #ifdef MCL_MSM_TEST
 	void dump(size_t pos, const char *msg = nullptr) const;
+	void set(const mpz_class& x, size_t i);
+	void set(const mpz_class& x);
+	mpz_class getRaw(size_t i) const;
+	mpz_class get(size_t i) const;
 #endif
 };
 
@@ -1302,9 +1199,6 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
 	g_func = *func;
-
-	const mpz_class& mp = g_func.fp->mp;
-	g_mont.init(mp);
 	return true;
 }
 
@@ -1318,12 +1212,102 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 
 using namespace mcl::bn;
 
+class Montgomery {
+	Unit v_[N];
+public:
+	mpz_class mp;
+	mpz_class mR; // (1 << (N * 64)) % p
+	mpz_class mR2; // (R * R) % p
+	Unit rp; // rp * p = -1 mod M = 1 << 64
+	const Unit *p;
+	bool isFullBit;
+	Montgomery() {}
+	static Unit getLow(const mpz_class& x)
+	{
+		if (x == 0) return 0;
+		return mcl::gmp::getUnit(x, 0) & g_mask;
+	}
+	void init(const mpz_class& _p)
+	{
+		mp = _p;
+		mR = 1;
+		mR = (mR << (W * N)) % mp;
+		mR2 = (mR * mR) % mp;
+		toArray<N>(v_, _p);
+		rp = mcl::bint::getMontgomeryCoeff(v_[0], W);
+		p = v_;
+		isFullBit = p[N-1] >> (W-1);
+	}
+
+	mpz_class toMont(const mpz_class& x) const
+	{
+		mpz_class y;
+		mul(y, x, mR2);
+		return y;
+	}
+	mpz_class fromMont(const mpz_class& x) const
+	{
+		mpz_class y;
+		mul(y, x, 1);
+		return y;
+	}
+
+	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
+	{
+		mod(z, x * y);
+	}
+	void mod(mpz_class& z, const mpz_class& xy) const
+	{
+		z = xy;
+		mpz_class t;
+		for (size_t i = 0; i < N; i++) {
+			Unit q = (getLow(z) * rp) & g_mask;
+			mcl::gmp::setUnit(t, q);
+			z += mp * t;
+			z >>= W;
+		}
+		if (z >= mp) {
+			z -= mp;
+		}
+	}
+};
+
+static Montgomery g_mont;
+
 void FpM::dump(size_t pos, const char *msg) const
 {
 	Fp T[8];
 	getFp((mcl::msm::FpA*)T);
 	if (msg) printf("%s\n", msg);
 	printf("  [%zd]=%s\n", pos, T[pos].getStr(16).c_str());
+}
+
+void FpM::set(const mpz_class& x, size_t i)
+{
+	mpz_class r = g_mont.toMont(x);
+	Unit rv[N];
+	toArray<N>(rv, r);
+	::set(v, i, rv);
+}
+void FpM::set(const mpz_class& x)
+{
+	mpz_class r = g_mont.toMont(x);
+	Unit rv[N];
+	toArray<N>(rv, r);
+	for (size_t i = 0; i < M; i++) {
+		::set(v, i, rv);
+	}
+}
+mpz_class FpM::getRaw(size_t i) const
+{
+	Unit x[N];
+	::get(x, v, i);
+	return fromArray<N>(x);
+}
+mpz_class FpM::get(size_t i) const
+{
+	mpz_class r = getRaw(i);
+	return g_mont.fromMont(r);
 }
 
 void EcM::dump(bool isProj, size_t pos, const char *msg) const
@@ -1338,6 +1322,7 @@ void EcM::dump(bool isProj, size_t pos, const char *msg) const
 CYBOZU_TEST_AUTO(init)
 {
 	initPairing(mcl::BLS12_381);
+	g_mont.init(mcl::bn::Fp::getOp().mp);
 }
 
 void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
