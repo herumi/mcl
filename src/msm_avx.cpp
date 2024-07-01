@@ -6,41 +6,27 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdint.h>
-#ifdef _WIN32
-#include <intrin.h>
-#else
-#include <x86intrin.h>
-#endif
+#include "avx512.hpp"
 
 #include <mcl/ec.hpp>
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
-#if defined(__GNUC__) && !defined(__EMSCRIPTEN__)
+#if defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
-
-typedef mcl::Unit Unit;
-typedef __m512i Vec;
-typedef __mmask8 Vmask;
 
 namespace {
 
-static mcl::msm::Param g_param;
+typedef mcl::Unit Unit;
+static mcl::msm::Func g_func;
 
-const size_t S = sizeof(Unit)*8-1; // 63
-const size_t W = 52;
-const size_t N = 8; // = ceil(384/52)
-const size_t M = sizeof(Vec) / sizeof(Unit);
-const uint64_t g_mask = (Unit(1)<<W) - 1;
-
-
-static Vec g_vmask;
-static Vec g_vrp;
-static Vec g_vpN[N];
-static Vec g_vmask4;
-static Vec g_offset;
-static Vec g_vi192;
+static const size_t S = sizeof(Unit)*8-1; // 63
+static const size_t W = 52;
+static const size_t N = 8; // = ceil(384/52)
+static const size_t M = sizeof(Vec) / sizeof(Unit);
+#include "msm_avx_bls12_381.h"
 
 inline Unit getMask(int w)
 {
@@ -68,48 +54,6 @@ inline void dump(const Vmask& v, const char *msg = nullptr)
 inline void dump(const Vec& v, const char *msg = nullptr)
 {
 	mcl::bint::dump((const uint64_t*)&v, sizeof(v)/sizeof(uint64_t), msg);
-}
-
-template<size_t N, int w = W>
-inline void toArray(Unit x[N], const mpz_class& mx)
-{
-	const Unit mask = getMask(w);
-	Unit tmp[N];
-	bool b;
-	mcl::gmp::getArray(&b, tmp, N, mx);
-	assert(b); (void)b;
-	for (size_t i = 0; i < N; i++) {
-		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
-	}
-}
-
-template<size_t N>
-inline mpz_class fromArray(const Unit x[N])
-{
-	mpz_class mx;
-	mcl::gmp::setUnit(mx, x[N-1]);
-	for (size_t i = 1; i < N; i++) {
-		mx <<= W;
-		mcl::gmp::addUnit(mx, x[N-1-i]);
-	}
-	return mx;
-}
-
-inline Vec vzero()
-{
-	return _mm512_setzero_epi32();
-}
-
-inline Vmask mzero()
-{
-	Vmask v;
-	memset(&v, 0, sizeof(v));
-	return v;
-}
-
-inline Vec vone()
-{
-	return _mm512_set1_epi32(1);
 }
 
 // set x[j] to i-th SIMD element of v[j]
@@ -145,191 +89,57 @@ inline void cvt(Unit y[N*M], const Vec xN[N])
 	}
 }
 
-// expand x to Vec
-inline void expand(Vec& v, Unit x)
-{
-	Unit *p = (Unit *)&v;
-	for (size_t i = 0; i < M; i++) {
-		p[i] = x;
-	}
-}
-
-inline void expandN(Vec v[N], const mpz_class& x)
-{
-	Unit a[N];
-	toArray<N>(a, x);
-	for (size_t i = 0; i < N; i++) {
-		expand(v[i], a[i]);
-	}
-}
-
-// low(c+a*b)
-inline Vec vmulL(const Vec& a, const Vec& b, const Vec& c = vzero())
-{
-	return _mm512_madd52lo_epu64(c, a, b);
-}
-
-// high(c+a*b)
-inline Vec vmulH(const Vec& a, const Vec& b, const Vec& c = vzero())
-{
-	return _mm512_madd52hi_epu64(c, a, b);
-}
-
-inline Vec vadd(const Vec& a, const Vec& b)
-{
-	return _mm512_add_epi64(a, b);
-}
-
-inline Vec vadd(const Vmask& v, const Vec& a, const Vec& b)
-{
-	return _mm512_mask_add_epi64(a, v, a, b);
-}
-
-inline Vec vsub(const Vec& a, const Vec& b)
-{
-	return _mm512_sub_epi64(a, b);
-}
-
-inline Vec vsub(const Vmask& v, const Vec& a, const Vec& b)
-{
-	return _mm512_mask_sub_epi64(a, v, a, b);
-}
-
-inline Vec vpsrlq(const Vec& a, size_t b)
-{
-	return _mm512_srli_epi64(a, int(b));
-}
-
-inline Vec vpsllq(const Vec& a, size_t b)
-{
-	return _mm512_slli_epi64(a, int(b));
-}
-
-inline Vec vand(const Vec& a, const Vec& b)
-{
-	return _mm512_and_epi64(a, b);
-}
-
-inline Vec vor(const Vec& a, const Vec& b)
-{
-	return _mm512_or_epi64(a, b);
-}
-
-inline Vec vxor(const Vec& a, const Vec& b)
-{
-	return _mm512_xor_epi64(a, b);
-}
-
-//template<int scale=8>
-inline Vec vpgatherqq(const Vec& idx, const void *base)
-{
-#if 0
-	const Unit *p = (const Unit *)&idx;
-	const Unit *src = (const Unit *)base;
-	Vec v;
-	Unit *q = (Unit *)&v;
-	for (size_t i = 0; i < M; i++) {
-		q[i] = src[idx[i]];
-	}
-	return v;
-#else
-	const int scale = 8;
-	return _mm512_i64gather_epi64(idx, base, scale);
-#endif
-}
-
-inline void vpscatterqq(void *base, const Vec& idx, const Vec& v)
-{
-	const int scale = 8;
-	_mm512_i64scatter_epi64(base, idx, v, scale);
-}
-
-// return [H:L][idx]
-inline Vec vperm2tq(const Vec& L, const Vec& idx, const Vec& H)
-{
-	return _mm512_permutex2var_epi64(L, idx, H);
-}
-
-inline Vmask vcmpeq(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpeq_epi64_mask(a, b);
-}
-
-inline Vmask vcmpneq(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpneq_epi64_mask(a, b);
-}
-
-inline Vmask vcmpgt(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpgt_epi64_mask(a, b);
-}
-
-inline Vmask vcmpge(const Vec& a, const Vec& b)
-{
-	return _mm512_cmpge_epi64_mask(a, b);
-}
-
-inline Vmask mand(const Vmask& a, const Vmask& b)
-{
-	return _mm512_kand(a, b);
-}
-
-inline Vmask mor(const Vmask& a, const Vmask& b)
-{
-	return _mm512_kor(a, b);
-}
-
-inline Vec vpbroadcastq(int64_t a)
-{
-	return _mm512_set1_epi64(a);
-}
-
-// return c ? a&b : d;
-inline Vec vand(const Vmask& c, const Vec& a, const Vec& b, const Vec& d)
-{
-	return _mm512_mask_and_epi64(d, c, a, b);
-}
-
-// return c ? a : b;
-inline Vec vselect(const Vmask& c, const Vec& a, const Vec& b)
-{
-	return vand(c, a, a, b);
-}
-
 template<size_t n=N>
 inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 {
-	Vec t = vadd(x[0], y[0]);
+	Vec t = vpaddq(x[0], y[0]);
 	Vec c = vpsrlq(t, W);
-	z[0] = vand(t, g_vmask);
+	z[0] = vpandq(t, G::mask());
 
 	for (size_t i = 1; i < n; i++) {
-		t = vadd(x[i], y[i]);
-		t = vadd(t, c);
+		t = vpaddq(x[i], y[i]);
+		t = vpaddq(t, c);
 		if (i == n-1) {
 			z[i] = t;
 			return;
 		}
 		c = vpsrlq(t, W);
-		z[i] = vand(t, g_vmask);
+		z[i] = vpandq(t, G::mask());
 	}
 }
 
 template<size_t n=N>
 inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
 {
-	Vec t = vsub(x[0], y[0]);
+	Vec t = vpsubq(x[0], y[0]);
 	Vec c = vpsrlq(t, S);
-	z[0] = vand(t, g_vmask);
+	z[0] = vpandq(t, G::mask());
 	for (size_t i = 1; i < n; i++) {
-		t = vsub(x[i], y[i]);
-		t = vsub(t, c);
+		t = vpsubq(x[i], y[i]);
+		t = vpsubq(t, c);
 		c = vpsrlq(t, S);
-		z[i] = vand(t, g_vmask);
+		z[i] = vpandq(t, G::mask());
 	}
-	return vcmpneq(c, vzero());
+	return vpcmpneqq(c, vzero());
 }
+
+#if 1
+template<size_t n=N>
+inline Vmask vrawNeg(Vec *z, const Vec *x)
+{
+	Vec zero = vzero();
+	Vec t = vpsubq(zero, x[0]);
+	Vec c = vpsrlq(t, S);
+	z[0] = vpandq(t, G::mask());
+	for (size_t i = 1; i < n; i++) {
+		t = vpsubq(zero, x[i]);
+		t = vpsubq(t, c);
+		c = vpsrlq(t, S);
+		z[i] = vpandq(t, G::mask());
+	}
+	return vpcmpneqq(c, zero);
+}
+#endif
 
 inline void uvselect(Vec *z, const Vmask& c, const Vec *a, const Vec *b)
 {
@@ -342,7 +152,7 @@ inline void uvadd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	vrawAdd(sN, x, y);
-	Vmask c = vrawSub(tN, sN, g_vpN);
+	Vmask c = vrawSub(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
 
@@ -350,9 +160,36 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	Vmask c = vrawSub(sN, x, y);
-	vrawAdd(tN, sN, g_vpN);
-	tN[N-1] = vand(tN[N-1], g_vmask);
+	vrawAdd(tN, sN, G::ap());
+	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
+}
+
+inline void uvneg(Vec *z, const Vec *x)
+{
+#if 1
+	Vec tN[N];
+	Vec t = vpsubq(G::ap()[0], x[0]);
+	Vec c = vpsrlq(t, S);
+	tN[0] = vpandq(t, G::mask());
+	Vec w  = x[0];
+	for (size_t i = 1; i < N; i++) {
+		w = vporq(w, x[i]);
+		t = vpsubq(G::ap()[i], x[i]);
+		t = vpsubq(t, c);
+		c = vpsrlq(t, S);
+		tN[i] = vpandq(t, G::mask());
+	}
+	Vec zero = vzero();
+	Vmask isZero = vpcmpeqq(w, zero);
+	uvselect(z, isZero, x, tN);
+#else
+	Vec sN[N], tN[N];
+	Vmask c = vrawNeg(sN, x);
+	vrawAdd(tN, sN, G::ap());
+	tN[N-1] = vpandq(tN[N-1], G::mask());
+	uvselect(z, c, tN, sN);
+#endif
 }
 
 inline void vrawMulUnitOrg(Vec *z, const Vec *x, const Vec& y)
@@ -364,7 +201,7 @@ inline void vrawMulUnitOrg(Vec *z, const Vec *x, const Vec& y)
 	}
 	z[0] = L[0];
 	for (size_t i = 1; i < N; i++) {
-		z[i] = vadd(L[i], H[i-1]);
+		z[i] = vpaddq(L[i], H[i-1]);
 	}
 	z[N] = H[N-1];
 }
@@ -376,9 +213,9 @@ inline Vec vrawMulUnitAddOrg(Vec *z, const Vec *x, const Vec& y)
 		L[i] = vmulL(x[i], y);
 		H[i] = vmulH(x[i], y);
 	}
-	z[0] = vadd(z[0], L[0]);
+	z[0] = vpaddq(z[0], L[0]);
 	for (size_t i = 1; i < N; i++) {
-		z[i] = vadd(z[i], vadd(L[i], H[i-1]));
+		z[i] = vpaddq(z[i], vpaddq(L[i], H[i-1]));
 	}
 	return H[N-1];
 }
@@ -403,7 +240,7 @@ inline Vec vrawMulUnitAdd(Vec *z, const Vec *x, const Vec& y)
 	z[0] = vmulL(x[0], y, z[0]);
 	H = vmulH(x[0], y);
 	for (size_t i = 1; i < n; i++) {
-		z[i] = vadd(vmulL(x[i], y, H), z[i]);
+		z[i] = vpaddq(vmulL(x[i], y, H), z[i]);
 		H = vmulH(x[i], y);
 	}
 	return H;
@@ -427,19 +264,19 @@ inline void vrawSqr(Vec z[n*2], const Vec x[n])
 	}
 	for (size_t j = 2; j < n; j++) {
 		for (size_t i = j; i < n; i++) {
-//			z[i*2-j  ] = vadd(z[i*2-j  ], vmulL(x[i], x[i-j]));
-//			z[i*2-j+1] = vadd(z[i*2-j+1], vmulH(x[i], x[i-j]));
+//			z[i*2-j  ] = vpaddq(z[i*2-j  ], vmulL(x[i], x[i-j]));
+//			z[i*2-j+1] = vpaddq(z[i*2-j+1], vmulH(x[i], x[i-j]));
 			z[i*2-j  ] = vmulL(x[i], x[i-j], z[i*2-j  ]);
 			z[i*2-j+1] = vmulH(x[i], x[i-j], z[i*2-j+1]);
 		}
 	}
 	for (size_t i = 1; i < n*2-1; i++) {
-		z[i] = vadd(z[i], z[i]);
+		z[i] = vpaddq(z[i], z[i]);
 	}
 	z[0] = vmulL(x[0], x[0]);
 	for (size_t i = 1; i < n; i++) {
-//		z[i*2-1] = vadd(z[i*2-1], vmulH(x[i-1], x[i-1]));
-//		z[i*2] = vadd(z[i*2], vmulL(x[i], x[i]));
+//		z[i*2-1] = vpaddq(z[i*2-1], vmulH(x[i-1], x[i-1]));
+//		z[i*2] = vpaddq(z[i*2], vmulL(x[i], x[i]));
 		z[i*2-1] = vmulH(x[i-1], x[i-1], z[i*2-1]);
 		z[i*2] = vmulL(x[i], x[i], z[i*2]);
 	}
@@ -458,15 +295,15 @@ inline void vset(Vec *t, const Vmask& c, const Vec a[n])
 inline void uvmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
-		Vec q = vmulL(xy[i], g_vrp);
-		xy[N+i] = vadd(xy[N+i], vrawMulUnitAdd(xy+i, g_vpN, q));
-		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
+		Vec q = vmulL(xy[i], G::rp());
+		xy[N+i] = vpaddq(xy[N+i], vrawMulUnitAdd(xy+i, G::ap(), q));
+		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
 	}
 	for (size_t i = N; i < N*2-1; i++) {
-		xy[i+1] = vadd(xy[i+1], vpsrlq(xy[i], W));
-		xy[i] = vand(xy[i], g_vmask);
+		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
+		xy[i] = vpandq(xy[i], G::mask());
 	}
-	Vmask c = vrawSub(z, xy+N, g_vpN);
+	Vmask c = vrawSub(z, xy+N, G::ap());
 	uvselect(z, c, xy+N, z);
 }
 
@@ -479,19 +316,19 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 #else
 	Vec t[N*2], q;
 	vrawMulUnit(t, x, y[0]);
-	q = vmulL(t[0], g_vrp);
-	t[N] = vadd(t[N], vrawMulUnitAdd(t, g_vpN, q));
+	q = vmulL(t[0], G::rp());
+	t[N] = vpaddq(t[N], vrawMulUnitAdd(t, G::ap(), q));
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vrawMulUnitAdd(t+i, x, y[i]);
-		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		q = vmulL(t[i], g_vrp);
-		t[N+i] = vadd(t[N+i], vrawMulUnitAdd(t+i, g_vpN, q));
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		q = vmulL(t[i], G::rp());
+		t[N+i] = vpaddq(t[N+i], vrawMulUnitAdd(t+i, G::ap(), q));
 	}
 	for (size_t i = N; i < N*2; i++) {
-		t[i] = vadd(t[i], vpsrlq(t[i-1], W));
-		t[i-1] = vand(t[i-1], g_vmask);
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		t[i-1] = vpandq(t[i-1], G::mask());
 	}
-	Vmask c = vrawSub(z, t+N, g_vpN);
+	Vmask c = vrawSub(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
 #endif
 }
@@ -520,69 +357,8 @@ inline Vec getUnitAt(const Vec *x, size_t xN, size_t bitPos)
 	const size_t r = bitPos % bitSize;
 	if (r == 0) return x[q];
 	if (q == xN - 1) return vpsrlq(x[q], r);
-	return vor(vpsrlq(x[q], r), vpsllq(x[q+1], bitSize - r));
+	return vporq(vpsrlq(x[q], r), vpsllq(x[q+1], bitSize - r));
 }
-
-class Montgomery {
-	Unit v_[N];
-public:
-	mpz_class mp;
-	mpz_class mR; // (1 << (N * 64)) % p
-	mpz_class mR2; // (R * R) % p
-	Unit rp; // rp * p = -1 mod M = 1 << 64
-	const Unit *p;
-	bool isFullBit;
-	Montgomery() {}
-	static Unit getLow(const mpz_class& x)
-	{
-		if (x == 0) return 0;
-		return mcl::gmp::getUnit(x, 0) & g_mask;
-	}
-	void init(const mpz_class& _p)
-	{
-		mp = _p;
-		mR = 1;
-		mR = (mR << (W * N)) % mp;
-		mR2 = (mR * mR) % mp;
-		toArray<N>(v_, _p);
-		rp = mcl::bint::getMontgomeryCoeff(v_[0], W);
-		p = v_;
-		isFullBit = p[N-1] >> (W-1);
-	}
-
-	mpz_class toMont(const mpz_class& x) const
-	{
-		mpz_class y;
-		mul(y, x, mR2);
-		return y;
-	}
-	mpz_class fromMont(const mpz_class& x) const
-	{
-		mpz_class y;
-		mul(y, x, 1);
-		return y;
-	}
-
-	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
-	{
-		mod(z, x * y);
-	}
-	void mod(mpz_class& z, const mpz_class& xy) const
-	{
-		z = xy;
-		mpz_class t;
-		for (size_t i = 0; i < N; i++) {
-			Unit q = (getLow(z) * rp) & g_mask;
-			mcl::gmp::setUnit(t, q);
-			z += mp * t;
-			z >>= W;
-		}
-		if (z >= mp) {
-			z -= mp;
-		}
-	}
-};
-
 
 /*
 	 |64   |64   |64   |64   |64    |64   |
@@ -592,13 +368,13 @@ public:
 inline void split52bit(Vec y[8], const Vec x[6])
 {
 	assert(&y != &x);
-	y[0] = vand(x[0], g_vmask);
-	y[1] = vand(vor(vpsrlq(x[0], 52), vpsllq(x[1], 12)), g_vmask);
-	y[2] = vand(vor(vpsrlq(x[1], 40), vpsllq(x[2], 24)), g_vmask);
-	y[3] = vand(vor(vpsrlq(x[2], 28), vpsllq(x[3], 36)), g_vmask);
-	y[4] = vand(vor(vpsrlq(x[3], 16), vpsllq(x[4], 48)), g_vmask);
-	y[5] = vand(vpsrlq(x[4], 4), g_vmask);
-	y[6] = vand(vor(vpsrlq(x[4], 56), vpsllq(x[5], 8)), g_vmask);
+	y[0] = vpandq(x[0], G::mask());
+	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
+	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
+	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
+	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
+	y[5] = vpandq(vpsrlq(x[4], 4), G::mask());
+	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
 	y[7] = vpsrlq(x[5], 44);
 }
 
@@ -610,12 +386,12 @@ inline void split52bit(Vec y[8], const Vec x[6])
 inline void concat52bit(Vec y[6], const Vec x[8])
 {
 	assert(&y != &x);
-	y[0] = vor(x[0], vpsllq(x[1], 52));
-	y[1] = vor(vpsrlq(x[1], 12), vpsllq(x[2], 40));
-	y[2] = vor(vpsrlq(x[2], 24), vpsllq(x[3], 28));
-	y[3] = vor(vpsrlq(x[3], 36), vpsllq(x[4], 16));
-	y[4] = vor(vor(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
-	y[5] = vor(vpsrlq(x[6], 8), vpsllq(x[7], 44));
+	y[0] = vporq(x[0], vpsllq(x[1], 52));
+	y[1] = vporq(vpsrlq(x[1], 12), vpsllq(x[2], 40));
+	y[2] = vporq(vpsrlq(x[2], 24), vpsllq(x[3], 28));
+	y[3] = vporq(vpsrlq(x[3], 36), vpsllq(x[4], 16));
+	y[4] = vporq(vporq(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
+	y[5] = vporq(vpsrlq(x[6], 8), vpsllq(x[7], 44));
 }
 
 /*
@@ -692,14 +468,13 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 
 struct FpM {
 	Vec v[N];
-	static FpM zero_;
-	static FpM one_;
-	static FpM rawOne_;
-	static FpM rw_;
-	static FpM mR2_;
-	static FpM m64to52_;
-	static FpM m52to64_;
-	static Montgomery g_mont;
+	static const FpM& zero() { return *(const FpM*)g_zero_; }
+	static const FpM& one() { return *(const FpM*)g_R_; }
+	static const FpM& R2() { return *(const FpM*)g_R2_; }
+	static const FpM& rawOne() { return *(const FpM*)g_rawOne_; }
+	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
+	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
+	static const FpM& rw() { return *(const FpM*)g_rw_; }
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
 		uvadd(z.v, x.v, y.v);
@@ -714,7 +489,8 @@ struct FpM {
 	}
 	static void neg(FpM& z, const FpM& x)
 	{
-		FpM::sub(z, FpM::zero_, x);
+		FpM::sub(z, zero(), x);
+//		uvneg(z.v, x.v);
 	}
 	static void mul(FpM& z, const FpM& x, const FpM& y)
 	{
@@ -725,40 +501,13 @@ struct FpM {
 //		uvsqr(z.v, x.v); // slow
 		mul(z, x, x);
 	}
-	void set(const mpz_class& x, size_t i)
-	{
-		mpz_class r = g_mont.toMont(x);
-		Unit rv[N];
-		toArray<N>(rv, r);
-		::set(v, i, rv);
-	}
-	void set(const mpz_class& x)
-	{
-		mpz_class r = g_mont.toMont(x);
-		Unit rv[N];
-		toArray<N>(rv, r);
-		for (size_t i = 0; i < M; i++) {
-			::set(v, i, rv);
-		}
-	}
 	void toMont(FpM& x) const
 	{
-		mul(x, *this, mR2_);
+		mul(x, *this, R2());
 	}
 	void fromMont(const FpM &x)
 	{
-		mul(*this, x, rawOne_);
-	}
-	mpz_class getRaw(size_t i) const
-	{
-		Unit x[N];
-		::get(x, v, i);
-		return fromArray<N>(x);
-	}
-	mpz_class get(size_t i) const
-	{
-		mpz_class r = getRaw(i);
-		return g_mont.fromMont(r);
+		mul(*this, x, rawOne());
 	}
 	void clear()
 	{
@@ -774,19 +523,19 @@ struct FpM {
 	bool operator!=(const FpM& rhs) const { return !operator==(rhs); }
 	Vmask isEqualAll(const FpM& rhs) const
 	{
-		Vec t = vxor(v[0], rhs.v[0]);
+		Vec t = vpxorq(v[0], rhs.v[0]);
 		for (size_t i = 1; i < M; i++) {
-			t = vor(t, vxor(v[i], rhs.v[i]));
+			t = vporq(t, vpxorq(v[i], rhs.v[i]));
 		}
-		return vcmpeq(t, vzero());
+		return vpcmpeqq(t, vzero());
 	}
 	Vmask isZero() const
 	{
 		Vec t = v[0];
 		for (size_t i = 1; i < M; i++) {
-			t = vor(t, v[i]);
+			t = vporq(t, v[i]);
 		}
-		return vcmpeq(t, vzero());
+		return vpcmpeqq(t, vzero());
 	}
 	static void pow(FpM& z, const FpM& x, const Vec *y, size_t yn)
 	{
@@ -794,7 +543,7 @@ struct FpM {
 		assert(w == 4);
 		const int tblN = 1<<w;
 		FpM tbl[tblN];
-		tbl[0] = one_;
+		tbl[0] = FpM::one();
 		tbl[1] = x;
 		for (size_t i = 2; i < tblN; i++) {
 			mul(tbl[i], tbl[i-1], x);
@@ -802,13 +551,14 @@ struct FpM {
 		const size_t bitLen = sizeof(Unit)*8;
 		const size_t jn = bitLen / w;
 		z = tbl[0];
+		const Vec mask4 = vpbroadcastq(getMask(4));
 		for (size_t i = 0; i < yn; i++) {
 			const Vec& v = y[yn-1-i];
 			for (size_t j = 0; j < jn; j++) {
 				for (int k = 0; k < w; k++) FpM::sqr(z, z);
-				Vec idx = vand(vpsrlq(v, bitLen-w-j*w), g_vmask4);
+				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), mask4);
 				idx = vpsllq(idx, 6); // 512 B = 64 Unit
-				idx = vadd(idx, g_offset);
+				idx = vpaddq(idx, G::offset());
 				FpM t;
 				for (size_t k = 0; k < N; k++) {
 					t.v[k] = vpgatherqq(idx, &tbl[0].v[k]);
@@ -824,30 +574,30 @@ struct FpM {
 			mcl::bint::copyT<6>(v8+i*6, v);
 		}
 		cvt6Ux8to8Ux8(this->v, v8);
-		FpM::mul(*this, *this, FpM::m64to52_);
+		FpM::mul(*this, *this, FpM::m64to52());
 	}
 	void setFp(const mcl::msm::FpA v[M])
 	{
 		cvt6Ux8to8Ux8(this->v, v[0].v);
-		FpM::mul(*this, *this, FpM::m64to52_);
+		FpM::mul(*this, *this, FpM::m64to52());
 	}
 	void getFp(mcl::msm::FpA v[M]) const
 	{
 		FpM t;
-		FpM::mul(t, *this, FpM::m52to64_);
+		FpM::mul(t, *this, FpM::m52to64());
 		cvt8Ux8to6Ux8((Unit*)v, t.v);
 	}
 	FpM neg() const
 	{
 		FpM t;
-		FpM::sub(t, FpM::zero_, *this);
+		FpM::sub(t, zero(), *this);
 		return t;
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
 		mcl::msm::FpA v[M];
 		x.getFp(v);
-		g_param.invVecFp(v, v, M, M);
+		g_func.invVecFp(v, v, M, M);
 		z.setFp(v);
 	}
 	// condition set (set x if c)
@@ -866,23 +616,15 @@ struct FpM {
 		}
 		return d;
 	}
-	static void init(const mpz_class& mp)
-	{
-		g_mont.init(mp);
-	}
 #ifdef MCL_MSM_TEST
 	void dump(size_t pos, const char *msg = nullptr) const;
+	void set(const mpz_class& x, size_t i);
+	void set(const mpz_class& x);
+	mpz_class getRaw(size_t i) const;
+	mpz_class get(size_t i) const;
 #endif
 };
 
-FpM FpM::zero_;
-FpM FpM::one_;
-FpM FpM::rawOne_;
-FpM FpM::rw_;
-FpM FpM::mR2_;
-FpM FpM::m64to52_;
-FpM FpM::m52to64_;
-Montgomery FpM::g_mont;
 
 template<class E, size_t n>
 inline void normalizeJacobiVec(E P[n])
@@ -890,9 +632,9 @@ inline void normalizeJacobiVec(E P[n])
 	assert(n >= 2);
 	typedef typename E::Fp F;
 	F tbl[n];
-	tbl[0] = F::select(P[0].z.isZero(), F::one_, P[0].z);
+	tbl[0] = F::select(P[0].z.isZero(), F::one(), P[0].z);
 	for (size_t i = 1; i < n; i++) {
-		F t = F::select(P[i].z.isZero(), F::one_, P[i].z);
+		F t = F::select(P[i].z.isZero(), F::one(), P[i].z);
 		F::mul(tbl[i], tbl[i-1], t);
 	}
 	F r;
@@ -905,13 +647,13 @@ inline void normalizeJacobiVec(E P[n])
 			rz = r;
 		} else {
 			F::mul(rz, r, tbl[pos-1]);
-			F::mul(r, r, F::select(z.isZero(), F::one_, z));
+			F::mul(r, r, F::select(z.isZero(), F::one(), z));
 		}
 		F::sqr(rz2, rz);
 		F::mul(P[pos].x, P[pos].x, rz2); // xz^-2
 		F::mul(rz2, rz2, rz);
 		F::mul(P[pos].y, P[pos].y, rz2); // yz^-3
-		z = F::select(z.isZero(), z, F::one_);
+		z = F::select(z.isZero(), z, F::one());
 	}
 }
 
@@ -1010,10 +752,9 @@ struct EcM {
 	static const int a_ = 0;
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
-	static const size_t bitLen = sizeof(Unit)*8;
-	static FpM b3_;
-	static EcM zeroProj_;
-	static EcM zeroJacobi_;
+	static const FpM &b3_;
+	static const EcM &zeroProj_;
+	static const EcM &zeroJacobi_;
 	FpM x, y, z;
 	template<bool isProj=true, bool mixed=false>
 	static void add(EcM& z, const EcM& x, const EcM& y)
@@ -1039,18 +780,6 @@ struct EcM {
 		} else {
 			dblJacobiNoCheck(z, x);
 		}
-	}
-	static void init(const Montgomery& mont)
-	{
-		const int b = 4;
-		mpz_class b3 = mont.toMont(b * 3);
-		expandN(b3_.v, b3);
-		zeroJacobi_.x.set(0);
-		zeroJacobi_.y.set(0);
-		zeroJacobi_.z.set(0);
-		zeroProj_.x.set(0);
-		zeroProj_.y.set(1);
-		zeroProj_.z.set(0);
 	}
 	static EcM select(const Vmask& c, const EcM& a, const EcM& b)
 	{
@@ -1081,21 +810,21 @@ struct EcM {
 	void setG1(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
 		setArray(v[0].v);
-		FpM::mul(x, x, FpM::m64to52_);
-		FpM::mul(y, y, FpM::m64to52_);
-		FpM::mul(z, z, FpM::m64to52_);
+		FpM::mul(x, x, FpM::m64to52());
+		FpM::mul(y, y, FpM::m64to52());
+		FpM::mul(z, z, FpM::m64to52());
 		if (JacobiToProj) {
 			mcl::ec::JacobiToProj(*this, *this);
-			y = FpM::select(z.isZero(), FpM::one_, y);
+			y = FpM::select(z.isZero(), FpM::one(), y);
 		}
 	}
 	void getG1(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
-		FpM::mul(T.x, T.x, FpM::m52to64_);
-		FpM::mul(T.y, T.y, FpM::m52to64_);
-		FpM::mul(T.z, T.z, FpM::m52to64_);
+		FpM::mul(T.x, T.x, FpM::m52to64());
+		FpM::mul(T.y, T.y, FpM::m52to64());
+		FpM::mul(T.z, T.z, FpM::m52to64());
 		T.getArray(v[0].v);
 	}
 	void normalize()
@@ -1104,7 +833,7 @@ struct EcM {
 		FpM::inv(r, z);
 		FpM::mul(x, x, r);
 		FpM::mul(y, y, r);
-		z = FpM::one_;
+		z = FpM::one();
 	}
 	template<bool isProj=true, bool mixed=false>
 	static void makeTable(EcM *tbl, size_t tblN, const EcM& P)
@@ -1122,7 +851,8 @@ struct EcM {
 	}
 	void gather(const EcM *tbl, Vec idx)
 	{
-		idx = vmulL(idx, g_vi192, g_offset);
+		const Vec i192 = vpbroadcastq(192);
+		idx = vmulL(idx, i192, G::offset());
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
 			y.v[i] = vpgatherqq(idx, &tbl[0].y.v[i]);
@@ -1131,7 +861,8 @@ struct EcM {
 	}
 	void scatter(EcM *tbl, Vec idx) const
 	{
-		idx = vmulL(idx, g_vi192, g_offset);
+		const Vec i192 = vpbroadcastq(192);
+		idx = vmulL(idx, i192, G::offset());
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
 			vpscatterqq(&tbl[0].y.v[i], idx, y.v[i]);
@@ -1140,7 +871,7 @@ struct EcM {
 	}
 	static void mulLambda(EcM& Q, const EcM& P)
 	{
-		FpM::mul(Q.x, P.x, FpM::rw_);
+		FpM::mul(Q.x, P.x, FpM::rw());
 		Q.y = P.y;
 		Q.z = P.z;
 	}
@@ -1177,13 +908,13 @@ struct EcM {
 			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
 		}
 		const size_t bitLen = 128;
-		Vec vmask = vpbroadcastq((1<<w)-1);
+		Vec mask = vpbroadcastq((1<<w)-1);
 		bool first = true;
 		size_t pos = bitLen;
 		for (size_t i = 0; i < (bitLen + w-1)/w; i++) {
 			size_t dblN = w;
 			if (pos < w) {
-				vmask = vpbroadcastq((1<<pos)-1);
+				mask = vpbroadcastq((1<<pos)-1);
 				dblN = pos;
 				pos = 0;
 			} else {
@@ -1192,7 +923,7 @@ struct EcM {
 			if (!first) for (size_t k = 0; k < dblN; k++) EcM::dbl<isProj>(Q, Q);
 			EcM T;
 			Vec idx;
-			idx = vand(getUnitAt(b, 2, pos), vmask);
+			idx = vpandq(getUnitAt(b, 2, pos), mask);
 			if (first) {
 				Q.gather(tbl2, idx);
 				first = false;
@@ -1200,7 +931,7 @@ struct EcM {
 				T.gather(tbl2, idx);
 				add<isProj, mixed>(Q, Q, T);
 			}
-			idx = vand(getUnitAt(a, 2, pos), vmask);
+			idx = vpandq(getUnitAt(a, 2, pos), mask);
 			T.gather(tbl1, idx);
 			add<isProj, mixed>(Q, Q, T);
 		}
@@ -1210,7 +941,7 @@ struct EcM {
 	template<size_t bitLen, size_t w>
 	static void makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
 	{
-		const Vec vmask = vpbroadcastq((1<<w)-1);
+		const Vec mask = vpbroadcastq((1<<w)-1);
 #ifdef SIGNED_TABLE
 		(void)negTbl;
 #else
@@ -1223,20 +954,20 @@ struct EcM {
 		const size_t n = (bitLen+w-1)/w;
 		for (size_t i = 0; i < n; i++) {
 			Vec idx = getUnitAt(a, 2, pos);
-			idx = vand(idx, vmask);
-			idx = vadd(idx, CF);
+			idx = vpandq(idx, mask);
+			idx = vpaddq(idx, CF);
 #ifdef SIGNED_TABLE
-			Vec masked = vand(idx, vmask);
-			Vmask v = vcmpgt(masked, H);
-			idxTbl[i] = masked; //vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
+			Vec masked = vpandq(idx, mask);
+			Vmask v = vpcmpgtq(masked, H);
+			idxTbl[i] = masked; //vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
-			CF = vadd(v, CF, one);
+			CF = vpaddq(v, CF, one);
 #else
-			Vec masked = vand(idx, vmask);
-			negTbl[i] = vcmpgt(masked, H);
-			idxTbl[i] = vselect(negTbl[i], vsub(F, masked), masked); // idx >= H ? F - idx : idx;
+			Vec masked = vpandq(idx, mask);
+			negTbl[i] = vpcmpgtq(masked, H);
+			idxTbl[i] = vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
-			CF = vadd(negTbl[i], CF, one);
+			CF = vpaddq(negTbl[i], CF, one);
 #endif
 			pos += w;
 		}
@@ -1331,16 +1062,16 @@ struct EcM {
 		FpM::mul(t1, t1, rhs.z);
 		FpM::mul(t2, t2, z);
 		v2 = t1.isEqualAll(t2);
-		return mand(v1, v2);
+		return kandb(v1, v2);
 	}
 #ifdef MCL_MSM_TEST
 	void dump(bool isProj, size_t pos, const char *msg = nullptr) const;
 #endif
 };
 
-FpM EcM::b3_;
-EcM EcM::zeroProj_;
-EcM EcM::zeroJacobi_;
+const FpM& EcM::b3_ = *(const FpM*)g_b3_;
+const EcM& EcM::zeroProj_ = *(const EcM*)g_zeroProj_;
+const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
 
 inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 {
@@ -1349,7 +1080,7 @@ inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 	P.getG1(z);
 	Q = z[0];
 	for (int i = 1; i < 8; i++) {
-		g_param.addG1(Q, Q, z[i]);
+		g_func.addG1(Q, Q, z[i]);
 	}
 }
 
@@ -1357,7 +1088,7 @@ inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
 {
 	Unit ya[4*8];
 	for (size_t i = 0; i < 8; i++) {
-		g_param.fr->fromMont(ya+i*4, y[i].v);
+		g_func.fr->fromMont(ya+i*4, y[i].v);
 	}
 	cvt4Ux8to8Ux4(yv, ya);
 }
@@ -1380,7 +1111,7 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 		}
 		for (size_t i = 0; i < n; i++) {
 			Vec v = getUnitAt(yVec+i*yn, yn, c*w);
-			v = vand(v, m);
+			v = vpandq(v, m);
 			EcM T;
 			T.gather(tbl, v);
 			EcM::add(T, T, xVec[i]);
@@ -1415,7 +1146,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	const size_t n8 = n/8;
-	const mcl::fp::Op *fr = g_param.fr;
+	const mcl::fp::Op *fr = g_func.fr;
 #if 1
 //	mcl::ec::normalizeVec(x, x, n);
 	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8 * 2, 64);
@@ -1455,8 +1186,8 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const bool constTime = false;
 	for (size_t i = n8*8; i < n; i++) {
 		mcl::msm::G1A Q;
-		g_param.mulG1(Q, x[i], y[i], constTime);
-		g_param.addG1(P, P, Q);
+		g_func.mulG1(Q, x[i], y[i], constTime);
+		g_func.addG1(P, P, Q);
 	}
 }
 
@@ -1467,7 +1198,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	if (!isProj && mixed) g_param.normalizeVecG1(x, x, n);
+	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
 		Vec yv[4];
@@ -1478,7 +1209,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	}
 }
 
-bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
+bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 {
 	assert(EcM::a_ == 0);
 	assert(EcM::b_ == 4);
@@ -1488,37 +1219,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 	if (cp != mcl::BLS12_381) return false;
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
-	g_param = *param;
-
-	const mpz_class& mp = g_param.fp->mp;
-	FpM::init(mp);
-	Montgomery& mont = FpM::g_mont;
-	Unit pM2[6]; // x^(-1) = x^(p-2) mod p
-	toArray<6, 64>(pM2, mp-2);
-	expand(g_vmask, g_mask);
-	expandN(g_vpN, mp);
-	expand(g_vrp, mont.rp);
-	Vec vpM2[6]; // NOT 52-bit but 64-bit
-	for (int i = 0; i < 6; i++) {
-		expand(vpM2[i], pM2[i]);
-	}
-	expand(g_vmask4, getMask(4));
-	for (int i = 0; i < 8; i++) {
-		((Unit*)&g_offset)[i] = i;
-	}
-	expand(g_vi192, 192);
-	FpM::zero_.clear();
-	expandN(FpM::one_.v, mont.toMont(1));
-	expandN(FpM::rawOne_.v, mpz_class(1));
-	expandN(FpM::mR2_.v, mont.mR2);
-	{
-		mpz_class t(1);
-		t <<= 32;
-		FpM::m64to52_.set(t); // 2^32
-		FpM::pow(FpM::m52to64_, FpM::m64to52_, vpM2, 6);
-	}
-	FpM::rw_.setFp(g_param.rw);
-	EcM::init(mont);
+	g_func = *func;
 	return true;
 }
 
@@ -1532,12 +1233,127 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Param *param)
 
 using namespace mcl::bn;
 
+template<size_t N, int w = W>
+inline void toArray(Unit x[N], const mpz_class& mx)
+{
+	const Unit mask = getMask(w);
+	Unit tmp[N];
+	bool b;
+	mcl::gmp::getArray(&b, tmp, N, mx);
+	assert(b); (void)b;
+	for (size_t i = 0; i < N; i++) {
+		x[i] = mcl::fp::getUnitAt(tmp, N, i*w) & mask;
+	}
+}
+
+template<size_t N>
+inline mpz_class fromArray(const Unit x[N])
+{
+	mpz_class mx;
+	mcl::gmp::setUnit(mx, x[N-1]);
+	for (size_t i = 1; i < N; i++) {
+		mx <<= W;
+		mcl::gmp::addUnit(mx, x[N-1-i]);
+	}
+	return mx;
+}
+
+class Montgomery {
+	Unit v_[N];
+public:
+	mpz_class mp;
+	mpz_class mR; // (1 << (N * 64)) % p
+	mpz_class mR2; // (R * R) % p
+	Unit rp; // rp * p = -1 mod M = 1 << 64
+	const Unit *p;
+	bool isFullBit;
+	Montgomery() {}
+	static Unit getLow(const mpz_class& x)
+	{
+		if (x == 0) return 0;
+		return mcl::gmp::getUnit(x, 0) & g_mask;
+	}
+	void init(const mpz_class& _p)
+	{
+		mp = _p;
+		mR = 1;
+		mR = (mR << (W * N)) % mp;
+		mR2 = (mR * mR) % mp;
+		toArray<N>(v_, _p);
+		rp = mcl::bint::getMontgomeryCoeff(v_[0], W);
+		p = v_;
+		isFullBit = p[N-1] >> (W-1);
+	}
+
+	mpz_class toMont(const mpz_class& x) const
+	{
+		mpz_class y;
+		mul(y, x, mR2);
+		return y;
+	}
+	mpz_class fromMont(const mpz_class& x) const
+	{
+		mpz_class y;
+		mul(y, x, 1);
+		return y;
+	}
+
+	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
+	{
+		mod(z, x * y);
+	}
+	void mod(mpz_class& z, const mpz_class& xy) const
+	{
+		z = xy;
+		mpz_class t;
+		for (size_t i = 0; i < N; i++) {
+			Unit q = (getLow(z) * rp) & g_mask;
+			mcl::gmp::setUnit(t, q);
+			z += mp * t;
+			z >>= W;
+		}
+		if (z >= mp) {
+			z -= mp;
+		}
+	}
+};
+
+static Montgomery g_mont;
+
 void FpM::dump(size_t pos, const char *msg) const
 {
 	Fp T[8];
 	getFp((mcl::msm::FpA*)T);
 	if (msg) printf("%s\n", msg);
 	printf("  [%zd]=%s\n", pos, T[pos].getStr(16).c_str());
+}
+
+void FpM::set(const mpz_class& x, size_t i)
+{
+	mpz_class r = g_mont.toMont(x);
+	Unit rv[N];
+	toArray<N>(rv, r);
+	::set(v, i, rv);
+}
+void FpM::set(const mpz_class& x)
+{
+	mpz_class r = g_mont.toMont(x);
+	Unit rv[N];
+	toArray<N>(rv, r);
+	for (size_t i = 0; i < M; i++) {
+		::set(v, i, rv);
+	}
+}
+mpz_class FpM::getRaw(size_t i) const
+{
+	Unit x[N];
+	::get(x, v, i);
+	return fromArray<N>(x);
+}
+mpz_class FpM::get(size_t i) const
+{
+	mpz_class r = getRaw(i);
+	return g_mont.fromMont(r);
 }
 
 void EcM::dump(bool isProj, size_t pos, const char *msg) const
@@ -1552,6 +1368,7 @@ void EcM::dump(bool isProj, size_t pos, const char *msg) const
 CYBOZU_TEST_AUTO(init)
 {
 	initPairing(mcl::BLS12_381);
+	g_mont.init(mcl::bn::Fp::getOp().mp);
 }
 
 void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
@@ -1598,6 +1415,22 @@ CYBOZU_TEST_AUTO(cmp)
 	}
 }
 
+CYBOZU_TEST_AUTO(conv)
+{
+	const int C = 16;
+	FpM x1;
+	mcl::bn::Fp x2[8], x3[8];
+	cybozu::XorShift rg;
+	for (int i = 0; i < C; i++) {
+		for (int j = 0; j < 8; j++) {
+			x2[j].setByCSPRNG(rg);
+		}
+		x1.setFp((const mcl::msm::FpA*)x2);
+		x1.getFp((mcl::msm::FpA*)x3);
+		CYBOZU_TEST_EQUAL_ARRAY(x2, x3, 8);
+	}
+}
+
 CYBOZU_TEST_AUTO(op)
 {
 	const size_t n = 8; // fixed
@@ -1620,7 +1453,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
 	}
-	g_param.normalizeVecG1(RA, PA, n);
+	g_func.normalizeVecG1(RA, PA, n);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(R[i].z.isOne() || R[i].z.isZero());
 	}
