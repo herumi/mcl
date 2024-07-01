@@ -1431,6 +1431,12 @@ CYBOZU_TEST_AUTO(conv)
 	}
 }
 
+template<class T>
+void lpN(void f(T&, const T&, const T&), T *z, const T *x, const T *y, size_t n)
+{
+	for (size_t i = 0; i < n; i++) f(z[i], x[i], y[i]);
+}
+
 CYBOZU_TEST_AUTO(op)
 {
 	const size_t n = 8; // fixed
@@ -1534,11 +1540,19 @@ CYBOZU_TEST_AUTO(op)
 	}
 #endif
 #ifdef NDEBUG
-	const int C = 10000;
-	FpM a = PM.x;
-	FpM b = PM.y;
-	CYBOZU_BENCH_C("add", C, FpM::add, a, a, b);
-	CYBOZU_BENCH_C("mul", C, FpM::mul, a, a, b);
+	{
+		const int C = 10000;
+		const size_t n = 128;
+		FpM a[n], b[n];
+		for (size_t i = 0; i < n; i++) {
+			a[i] = PM.x;
+			b[i] = PM.y;
+		}
+		CYBOZU_BENCH_C("add", C, FpM::add, a[0], a[0], b[0]);
+		CYBOZU_BENCH_C("mul", C, FpM::mul, a[0], a[0], b[0]);
+		CYBOZU_BENCH_C("addn", C, lpN, FpM::add, a, a, b, n);
+		CYBOZU_BENCH_C("muln", C, lpN, FpM::mul, a, a, b, n);
+	}
 #endif
 }
 
