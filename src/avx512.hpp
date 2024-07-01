@@ -111,17 +111,17 @@ inline Vec vperm2tq(const Vec& L, const Vec& idx, const Vec& H)
 	return _mm512_permutex2var_epi64(L, idx, H);
 }
 
-inline Vmask vcmpeqq(const Vec& a, const Vec& b)
+inline Vmask vpcmpeqq(const Vec& a, const Vec& b)
 {
 	return _mm512_cmpeq_epi64_mask(a, b);
 }
 
-inline Vmask vcmpneqq(const Vec& a, const Vec& b)
+inline Vmask vpcmpneqq(const Vec& a, const Vec& b)
 {
 	return _mm512_cmpneq_epi64_mask(a, b);
 }
 
-inline Vmask vcmpgtq(const Vec& a, const Vec& b)
+inline Vmask vpcmpgtq(const Vec& a, const Vec& b)
 {
 	return _mm512_cmpgt_epi64_mask(a, b);
 }

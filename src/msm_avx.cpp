@@ -120,8 +120,26 @@ inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
 		c = vpsrlq(t, S);
 		z[i] = vpandq(t, G::mask());
 	}
-	return vcmpneqq(c, vzero());
+	return vpcmpneqq(c, vzero());
 }
+
+#if 1
+template<size_t n=N>
+inline Vmask vrawNeg(Vec *z, const Vec *x)
+{
+	Vec zero = vzero();
+	Vec t = vpsubq(zero, x[0]);
+	Vec c = vpsrlq(t, S);
+	z[0] = vpandq(t, G::mask());
+	for (size_t i = 1; i < n; i++) {
+		t = vpsubq(zero, x[i]);
+		t = vpsubq(t, c);
+		c = vpsrlq(t, S);
+		z[i] = vpandq(t, G::mask());
+	}
+	return vpcmpneqq(c, zero);
+}
+#endif
 
 inline void uvselect(Vec *z, const Vmask& c, const Vec *a, const Vec *b)
 {
@@ -145,6 +163,33 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 	vrawAdd(tN, sN, G::ap());
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
+}
+
+inline void uvneg(Vec *z, const Vec *x)
+{
+#if 1
+	Vec tN[N];
+	Vec t = vpsubq(G::ap()[0], x[0]);
+	Vec c = vpsrlq(t, S);
+	tN[0] = vpandq(t, G::mask());
+	Vec w  = x[0];
+	for (size_t i = 1; i < N; i++) {
+		w = vporq(w, x[i]);
+		t = vpsubq(G::ap()[i], x[i]);
+		t = vpsubq(t, c);
+		c = vpsrlq(t, S);
+		tN[i] = vpandq(t, G::mask());
+	}
+	Vec zero = vzero();
+	Vmask isZero = vpcmpeqq(w, zero);
+	uvselect(z, isZero, x, tN);
+#else
+	Vec sN[N], tN[N];
+	Vmask c = vrawNeg(sN, x);
+	vrawAdd(tN, sN, G::ap());
+	tN[N-1] = vpandq(tN[N-1], G::mask());
+	uvselect(z, c, tN, sN);
+#endif
 }
 
 inline void vrawMulUnitOrg(Vec *z, const Vec *x, const Vec& y)
@@ -445,6 +490,7 @@ struct FpM {
 	static void neg(FpM& z, const FpM& x)
 	{
 		FpM::sub(z, zero(), x);
+//		uvneg(z.v, x.v);
 	}
 	static void mul(FpM& z, const FpM& x, const FpM& y)
 	{
@@ -481,7 +527,7 @@ struct FpM {
 		for (size_t i = 1; i < M; i++) {
 			t = vporq(t, vpxorq(v[i], rhs.v[i]));
 		}
-		return vcmpeqq(t, vzero());
+		return vpcmpeqq(t, vzero());
 	}
 	Vmask isZero() const
 	{
@@ -489,7 +535,7 @@ struct FpM {
 		for (size_t i = 1; i < M; i++) {
 			t = vporq(t, v[i]);
 		}
-		return vcmpeqq(t, vzero());
+		return vpcmpeqq(t, vzero());
 	}
 	static void pow(FpM& z, const FpM& x, const Vec *y, size_t yn)
 	{
@@ -912,13 +958,13 @@ struct EcM {
 			idx = vpaddq(idx, CF);
 #ifdef SIGNED_TABLE
 			Vec masked = vpandq(idx, mask);
-			Vmask v = vcmpgtq(masked, H);
+			Vmask v = vpcmpgtq(masked, H);
 			idxTbl[i] = masked; //vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
 			CF = vpaddq(v, CF, one);
 #else
 			Vec masked = vpandq(idx, mask);
-			negTbl[i] = vcmpgtq(masked, H);
+			negTbl[i] = vpcmpgtq(masked, H);
 			idxTbl[i] = vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
 			CF = vpsrlq(idx, w);
 			CF = vpaddq(negTbl[i], CF, one);
