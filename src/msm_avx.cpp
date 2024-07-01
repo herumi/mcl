@@ -418,6 +418,7 @@ public:
 	}
 };
 
+static Montgomery g_mont;
 
 /*
 	 |64   |64   |64   |64   |64    |64   |
@@ -527,7 +528,6 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 
 struct FpM {
 	Vec v[N];
-	static Montgomery g_mont;
 	static const FpM& zero() { return *(const FpM*)g_zero_; }
 	static const FpM& one() { return *(const FpM*)g_R_; }
 	static const FpM& R2() { return *(const FpM*)g_R2_; }
@@ -707,7 +707,6 @@ struct FpM {
 #endif
 };
 
-Montgomery FpM::g_mont;
 
 template<class E, size_t n>
 inline void normalizeJacobiVec(E P[n])
@@ -835,9 +834,9 @@ struct EcM {
 	static const int a_ = 0;
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
-	static FpM b3_;
-	static EcM zeroProj_;
-	static EcM zeroJacobi_;
+	static const FpM &b3_;
+	static const EcM &zeroProj_;
+	static const EcM &zeroJacobi_;
 	FpM x, y, z;
 	template<bool isProj=true, bool mixed=false>
 	static void add(EcM& z, const EcM& x, const EcM& y)
@@ -863,18 +862,6 @@ struct EcM {
 		} else {
 			dblJacobiNoCheck(z, x);
 		}
-	}
-	static void init(const Montgomery& mont)
-	{
-		const int b = 4;
-		mpz_class b3 = mont.toMont(b * 3);
-		expandN(b3_.v, b3);
-		zeroJacobi_.x.set(0);
-		zeroJacobi_.y.set(0);
-		zeroJacobi_.z.set(0);
-		zeroProj_.x.set(0);
-		zeroProj_.y.set(1);
-		zeroProj_.z.set(0);
 	}
 	static EcM select(const Vmask& c, const EcM& a, const EcM& b)
 	{
@@ -1164,9 +1151,9 @@ struct EcM {
 #endif
 };
 
-FpM EcM::b3_;
-EcM EcM::zeroProj_;
-EcM EcM::zeroJacobi_;
+const FpM& EcM::b3_ = *(const FpM*)g_b3_;
+const EcM& EcM::zeroProj_ = *(const EcM*)g_zeroProj_;
+const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
 
 inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 {
@@ -1317,10 +1304,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	g_func = *func;
 
 	const mpz_class& mp = g_func.fp->mp;
-	FpM::g_mont.init(mp);
-//	FpM::init(mp);
-	Montgomery& mont = FpM::g_mont;
-	EcM::init(mont);
+	g_mont.init(mp);
 	return true;
 }
 
