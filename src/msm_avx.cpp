@@ -609,7 +609,6 @@ struct FpM {
 		return d;
 	}
 #ifdef MCL_MSM_TEST
-	void dump(size_t pos, const char *msg = nullptr) const;
 	void set(const mpz_class& x, size_t i);
 	void set(const mpz_class& x);
 	mpz_class getRaw(size_t i) const;
@@ -1056,9 +1055,6 @@ struct EcM {
 		v2 = t1.isEqualAll(t2);
 		return kandb(v1, v2);
 	}
-#ifdef MCL_MSM_TEST
-	void dump(bool isProj, size_t pos, const char *msg = nullptr) const;
-#endif
 };
 
 const FpM& EcM::b3_ = *(const FpM*)g_b3_;
@@ -1126,6 +1122,47 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 	reduceSum(P, T);
 	Xbyak::AlignedFree(win);
 	Xbyak::AlignedFree(tbl);
+}
+
+struct FpMA {
+	VecA v[N];
+};
+
+void cvtFpM2FpMA(FpMA& y, const FpM x[vN])
+{
+	for (size_t i = 0; i < vN; i++) {
+		for (size_t j = 0; j < N; j++) {
+			y.v[j].v[i] = x[i].v[j];
+		}
+	}
+}
+
+void cvtFpMA2FpM(FpM y[vN], const FpMA& x)
+{
+	for (size_t i = 0; i < vN; i++) {
+		for (size_t j = 0; j < N; j++) {
+			y[i].v[j] = x.v[j].v[i];
+		}
+	}
+}
+
+template<size_t n=N>
+inline void vrawAdd(VecA *z, const VecA *x, const VecA *y)
+{
+	VecA t = vpaddq(x[0], y[0]);
+	VecA c = vpsrlq(t, W);
+	z[0] = vpandq(t, G::mask());
+
+	for (size_t i = 1; i < n; i++) {
+		t = vpaddq(x[i], y[i]);
+		t = vpaddq(t, c);
+		if (i == n-1) {
+			z[i] = t;
+			return;
+		}
+		c = vpsrlq(t, W);
+		z[i] = vpandq(t, G::mask());
+	}
 }
 
 } // namespace
@@ -1312,12 +1349,16 @@ public:
 
 static Montgomery g_mont;
 
-void FpM::dump(size_t pos, const char *msg) const
+void dump(const FpM& x, const char *msg = nullptr, size_t pos = size_t(-1))
 {
 	Fp T[8];
-	getFp((mcl::msm::FpA*)T);
+	x.getFp((mcl::msm::FpA*)T);
 	if (msg) printf("%s\n", msg);
-	printf("  [%zd]=%s\n", pos, T[pos].getStr(16).c_str());
+	for (size_t i = 0; i < 8; i++) {
+		if (i == pos || pos == size_t(-1)) {
+			printf("  [%zd]=%s\n", i, T[i].getStr(16).c_str());
+		}
+	}
 }
 
 void FpM::set(const mpz_class& x, size_t i)
@@ -1348,52 +1389,14 @@ mpz_class FpM::get(size_t i) const
 	return g_mont.fromMont(r);
 }
 
-void EcM::dump(bool isProj, size_t pos, const char *msg) const
+void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = size_t(-1))
 {
 	G1 T[8];
-	getG1((mcl::msm::G1A*)T, isProj);
+	x.getG1((mcl::msm::G1A*)T, isProj);
 	if (msg) printf("%s\n", msg);
-	printf("  [%zd]=%s\n", pos, T[pos].getStr(16|mcl::IoEcProj).c_str());
-//	printf("  [%zd]=%s\n", pos, T[pos].getStr(16|mcl::IoEcAffine).c_str());
-}
-
-template<size_t n=N>
-inline void vrawAdd(VecA *z, const VecA *x, const VecA *y)
-{
-	VecA t = vpaddq(x[0], y[0]);
-	VecA c = vpsrlq(t, W);
-	z[0] = vpandq(t, G::mask());
-
-	for (size_t i = 1; i < n; i++) {
-		t = vpaddq(x[i], y[i]);
-		t = vpaddq(t, c);
-		if (i == n-1) {
-			z[i] = t;
-			return;
-		}
-		c = vpsrlq(t, W);
-		z[i] = vpandq(t, G::mask());
-	}
-}
-
-struct FpMA {
-	VecA v[N];
-};
-
-void cvtFpM2FpMA(FpMA& y, const FpM x[vN])
-{
-	for (size_t i = 0; i < vN; i++) {
-		for (size_t j = 0; j < N; j++) {
-			y.v[j].v[i] = x[i].v[j];
-		}
-	}
-}
-
-void cvtFpMA2FpM(FpM y[vN], const FpMA& x)
-{
-	for (size_t i = 0; i < vN; i++) {
-		for (size_t j = 0; j < N; j++) {
-			y[i].v[j] = x.v[j].v[i];
+	for (size_t i = 0; i < 8; i++) {
+		if (i == pos || pos == size_t(-1)) {
+			printf("  [%zd]=%s\n", i, T[i].getStr(16|mcl::IoEcProj).c_str());
 		}
 	}
 }
@@ -1448,6 +1451,15 @@ CYBOZU_TEST_AUTO(cmp)
 	}
 }
 
+void setRand(FpM& x, cybozu::XorShift& rg, mcl::bn::Fp *t = 0)
+{
+	if (t == 0) t = (mcl::bn::Fp*)CYBOZU_ALLOCA(sizeof(mcl::bn::Fp)*N);
+	for (size_t i = 0; i < N; i++) {
+		t[i].setByCSPRNG(rg);
+	}
+	x.setFp((const mcl::msm::FpA*)t);
+}
+
 CYBOZU_TEST_AUTO(conv)
 {
 	const int C = 16;
@@ -1455,10 +1467,7 @@ CYBOZU_TEST_AUTO(conv)
 	mcl::bn::Fp x2[8], x3[8];
 	cybozu::XorShift rg;
 	for (int i = 0; i < C; i++) {
-		for (int j = 0; j < 8; j++) {
-			x2[j].setByCSPRNG(rg);
-		}
-		x1.setFp((const mcl::msm::FpA*)x2);
+		setRand(x1, rg, x2);
 		x1.getFp((mcl::msm::FpA*)x3);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x3, 8);
 	}
@@ -1466,10 +1475,7 @@ CYBOZU_TEST_AUTO(conv)
 		FpM x[vN], y[vN];
 		FpMA z;
 		for (size_t i = 0; i < vN; i++) {
-			for (int j = 0; j < 8; j++) {
-				x2[j].setByCSPRNG(rg);
-			}
-			x[i].setFp((const mcl::msm::FpA*)x2);
+			setRand(x[i], rg);
 		}
 		cvtFpM2FpMA(z, x);
 		cvtFpMA2FpM(y, z);
@@ -1477,6 +1483,33 @@ CYBOZU_TEST_AUTO(conv)
 			CYBOZU_TEST_ASSERT(x[i] == y[i]);
 		}
 	}
+}
+
+CYBOZU_TEST_AUTO(vrawAdd)
+{
+	FpM x[vN], y[vN], z[vN], w[vN];
+	FpMA xa, ya, za;
+	cybozu::XorShift rg;
+	for (int i = 0; i < 1; i++) {
+		for (size_t j = 0; j < vN; j++) {
+			setRand(x[j], rg);
+			setRand(y[j], rg);
+			vrawAdd(z[j].v, x[j].v, y[j].v);
+		}
+		cvtFpM2FpMA(xa, x);
+		cvtFpM2FpMA(ya, y);
+		vrawAdd(za.v, xa.v, ya.v);
+		cvtFpMA2FpM(w, za);
+		for (size_t j = 0; j < vN; j++) {
+			CYBOZU_TEST_ASSERT(z[j] == w[j]);
+		}
+	}
+#ifdef NDEBUG
+	const int C = 100000;
+	CYBOZU_BENCH_C("vrawAdd::Vec", C, vrawAdd, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("vrawAdd::VecA", C, vrawAdd, za.v, za.v, xa.v);
+	printf("%d\n", *(const uint8_t*)z + *(const uint8_t*)&za); // dummy to avoid optimization
+#endif
 }
 
 template<class T>
