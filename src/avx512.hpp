@@ -221,6 +221,13 @@ inline VecA vpandq(const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VecA vpandq(const VecA& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpandq(a.v[i], b);
+	return r;
+}
+
 inline VecA vporq(const VecA& a, const VecA& b)
 {
 	VecA r;

@@ -1365,6 +1365,47 @@ void EcM::dump(bool isProj, size_t pos, const char *msg) const
 //	printf("  [%zd]=%s\n", pos, T[pos].getStr(16|mcl::IoEcAffine).c_str());
 }
 
+template<size_t n=N>
+inline void vrawAdd(VecA *z, const VecA *x, const VecA *y)
+{
+	VecA t = vpaddq(x[0], y[0]);
+	VecA c = vpsrlq(t, W);
+	z[0] = vpandq(t, G::mask());
+
+	for (size_t i = 1; i < n; i++) {
+		t = vpaddq(x[i], y[i]);
+		t = vpaddq(t, c);
+		if (i == n-1) {
+			z[i] = t;
+			return;
+		}
+		c = vpsrlq(t, W);
+		z[i] = vpandq(t, G::mask());
+	}
+}
+
+struct FpMA {
+	VecA v[N];
+};
+
+void cvtFpM2FpMA(FpMA& y, const FpM x[vN])
+{
+	for (size_t i = 0; i < vN; i++) {
+		for (size_t j = 0; j < N; j++) {
+			y.v[j].v[i] = x[i].v[j];
+		}
+	}
+}
+
+void cvtFpMA2FpM(FpM y[vN], const FpMA& x)
+{
+	for (size_t i = 0; i < vN; i++) {
+		for (size_t j = 0; j < N; j++) {
+			y[i].v[j] = x.v[j].v[i];
+		}
+	}
+}
+
 CYBOZU_TEST_AUTO(init)
 {
 	initPairing(mcl::BLS12_381);
@@ -1428,6 +1469,21 @@ CYBOZU_TEST_AUTO(conv)
 		x1.setFp((const mcl::msm::FpA*)x2);
 		x1.getFp((mcl::msm::FpA*)x3);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x3, 8);
+	}
+	{
+		FpM x[vN], y[vN];
+		FpMA z;
+		for (size_t i = 0; i < vN; i++) {
+			for (int j = 0; j < 8; j++) {
+				x2[j].setByCSPRNG(rg);
+			}
+			x[i].setFp((const mcl::msm::FpA*)x2);
+		}
+		cvtFpM2FpMA(z, x);
+		cvtFpMA2FpM(y, z);
+		for (size_t i = 0; i < vN; i++) {
+			CYBOZU_TEST_ASSERT(x[i] == y[i]);
+		}
 	}
 }
 
