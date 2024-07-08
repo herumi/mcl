@@ -149,25 +149,6 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 	uvselect(z, c, tN, sN);
 }
 
-inline void uvneg(Vec *z, const Vec *x)
-{
-	Vec tN[N];
-	Vec t = vpsubq(G::ap()[0], x[0]);
-	Vec c = vpsrlq(t, S);
-	tN[0] = vpandq(t, G::mask());
-	Vec w  = x[0];
-	for (size_t i = 1; i < N; i++) {
-		w = vporq(w, x[i]);
-		t = vpsubq(G::ap()[i], x[i]);
-		t = vpsubq(t, c);
-		c = vpsrlq(t, S);
-		tN[i] = vpandq(t, G::mask());
-	}
-	Vec zero = vzero();
-	Vmask isZero = vpcmpeqq(w, zero);
-	uvselect(z, isZero, x, tN);
-}
-
 inline void vmulUnit(Vec *z, const Vec *x, const Vec& y)
 {
 	Vec H;
@@ -398,7 +379,6 @@ struct FpM {
 	static void neg(FpM& z, const FpM& x)
 	{
 		FpM::sub(z, zero(), x);
-//		uvneg(z.v, x.v);
 	}
 	static void mul(FpM& z, const FpM& x, const FpM& y)
 	{
