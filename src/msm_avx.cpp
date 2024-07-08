@@ -89,10 +89,11 @@ inline void cvt(Unit y[N*M], const Vec xN[N])
 	}
 }
 
-inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
+template<class V>
+inline void vaddPre(V *z, const V *x, const V *y)
 {
-	Vec t = vpaddq(x[0], y[0]);
-	Vec c = vpsrlq(t, W);
+	V t = vpaddq(x[0], y[0]);
+	V c = vpsrlq(t, W);
 	z[0] = vpandq(t, G::mask());
 
 	for (size_t i = 1; i < N; i++) {
@@ -107,10 +108,11 @@ inline void vrawAdd(Vec *z, const Vec *x, const Vec *y)
 	}
 }
 
-inline Vmask vrawSub(Vec *z, const Vec *x, const Vec *y)
+template<class VM=Vmask, class V>
+inline VM vsubPre(V *z, const V *x, const V *y)
 {
-	Vec t = vpsubq(x[0], y[0]);
-	Vec c = vpsrlq(t, S);
+	V t = vpsubq(x[0], y[0]);
+	V c = vpsrlq(t, S);
 	z[0] = vpandq(t, G::mask());
 	for (size_t i = 1; i < N; i++) {
 		t = vpsubq(x[i], y[i]);
@@ -138,26 +140,28 @@ inline Vmask vrawNeg(Vec *z, const Vec *x)
 }
 #endif
 
-inline void uvselect(Vec *z, const Vmask& c, const Vec *a, const Vec *b)
+template<class VM=Vmask, class V>
+inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 {
 	for (size_t i = 0; i < N; i++) {
 		z[i] = vselect(c, a[i], b[i]);
 	}
 }
 
-inline void uvadd(Vec *z, const Vec *x, const Vec *y)
+template<class VM=Vmask, class V>
+inline void uvadd(V *z, const V *x, const V *y)
 {
-	Vec sN[N], tN[N];
-	vrawAdd(sN, x, y);
-	Vmask c = vrawSub(tN, sN, G::ap());
-	uvselect(z, c, sN, tN);
+	V sN[N], tN[N];
+	vaddPre(sN, x, y);
+	VM c = vsubPre<VM>(tN, sN, G::ap());
+	uvselect<VM>(z, c, sN, tN);
 }
 
 inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
-	Vmask c = vrawSub(sN, x, y);
-	vrawAdd(tN, sN, G::ap());
+	Vmask c = vsubPre(sN, x, y);
+	vaddPre(tN, sN, G::ap());
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
@@ -183,7 +187,7 @@ inline void uvneg(Vec *z, const Vec *x)
 #else
 	Vec sN[N], tN[N];
 	Vmask c = vrawNeg(sN, x);
-	vrawAdd(tN, sN, G::ap());
+	vaddPre(tN, sN, G::ap());
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 #endif
@@ -295,7 +299,7 @@ inline void uvmont(Vec z[N], Vec xy[N*2])
 		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
 		xy[i] = vpandq(xy[i], G::mask());
 	}
-	Vmask c = vrawSub(z, xy+N, G::ap());
+	Vmask c = vsubPre(z, xy+N, G::ap());
 	uvselect(z, c, xy+N, z);
 }
 
@@ -320,7 +324,7 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
 		t[i-1] = vpandq(t[i-1], G::mask());
 	}
-	Vmask c = vrawSub(z, t+N, G::ap());
+	Vmask c = vsubPre(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
 #endif
 }
@@ -1146,25 +1150,6 @@ void cvtFpMA2FpM(FpM y[vN], const FpMA& x)
 	}
 }
 
-template<size_t n=N>
-inline void vrawAdd(VecA *z, const VecA *x, const VecA *y)
-{
-	VecA t = vpaddq(x[0], y[0]);
-	VecA c = vpsrlq(t, W);
-	z[0] = vpandq(t, G::mask());
-
-	for (size_t i = 1; i < n; i++) {
-		t = vpaddq(x[i], y[i]);
-		t = vpaddq(t, c);
-		if (i == n-1) {
-			z[i] = t;
-			return;
-		}
-		c = vpsrlq(t, W);
-		z[i] = vpandq(t, G::mask());
-	}
-}
-
 } // namespace
 
 namespace mcl { namespace msm {
@@ -1485,30 +1470,64 @@ CYBOZU_TEST_AUTO(conv)
 	}
 }
 
-CYBOZU_TEST_AUTO(vrawAdd)
+template<class T>
+void forcedRead(const T& x)
+{
+	const uint8_t *p = (const uint8_t*)&x;
+	uint8_t r = 0;
+	for (size_t i = 0; i < sizeof(T); i++) {
+		r += p[i];
+	}
+	volatile uint8_t dummy = r;
+	(void)dummy;
+}
+
+CYBOZU_TEST_AUTO(vaddPre)
 {
 	FpM x[vN], y[vN], z[vN], w[vN];
 	FpMA xa, ya, za;
 	cybozu::XorShift rg;
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < 10; i++) {
+		// vaddPre, vsubPre
 		for (size_t j = 0; j < vN; j++) {
 			setRand(x[j], rg);
 			setRand(y[j], rg);
-			vrawAdd(z[j].v, x[j].v, y[j].v);
+			vaddPre(z[j].v, x[j].v, y[j].v);
 		}
 		cvtFpM2FpMA(xa, x);
 		cvtFpM2FpMA(ya, y);
-		vrawAdd(za.v, xa.v, ya.v);
+		vaddPre(za.v, xa.v, ya.v);
 		cvtFpMA2FpM(w, za);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
+		vsubPre<VmaskA>(za.v, za.v, ya.v);
+		cvtFpMA2FpM(w, za);
+		for (size_t j = 0; j < vN; j++) {
+			CYBOZU_TEST_ASSERT(x[j] == w[j]);
+		}
+#if 0
+		// uvadd, uvsub
+		for (size_t j = 0; j < vN; j++) {
+			uvadd(z[j].v, x[j].v, y[j].v);
+		}
+		cvtFpM2FpMA(xa, x);
+		cvtFpM2FpMA(ya, y);
+		uvadd<VmaskA, VecA>(za.v, xa.v, ya.v);
+		cvtFpMA2FpM(w, za);
+		for (size_t j = 0; j < vN; j++) {
+			CYBOZU_TEST_ASSERT(z[j] == w[j]);
+		}
+#endif
 	}
 #ifdef NDEBUG
 	const int C = 100000;
-	CYBOZU_BENCH_C("vrawAdd::Vec", C, vrawAdd, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("vrawAdd::VecA", C, vrawAdd, za.v, za.v, xa.v);
-	printf("%d\n", *(const uint8_t*)z + *(const uint8_t*)&za); // dummy to avoid optimization
+	CYBOZU_BENCH_C("vaddPre::Vec", C, vaddPre, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("vsubPre::Vec", C, vsubPre, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("vaddPre::VecA", C, vaddPre, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("vsubPre::VecA", C, vsubPre<VmaskA>, za.v, za.v, xa.v);
+	forcedRead(z);
+	forcedRead(za);
 #endif
 }
 

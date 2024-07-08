@@ -277,6 +277,13 @@ inline VmaskA vpcmpneqq(const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VmaskA vpcmpneqq(const VecA& a, const Vec& b)
+{
+	VmaskA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpcmpneqq(a.v[i], b);
+	return r;
+}
+
 inline VmaskA vpcmpgtq(const VecA& a, const VecA& b)
 {
 	VmaskA r;
