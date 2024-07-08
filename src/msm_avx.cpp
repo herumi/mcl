@@ -123,23 +123,6 @@ inline VM vsubPre(V *z, const V *x, const V *y)
 	return vpcmpneqq(c, vzero());
 }
 
-#if 1
-inline Vmask vrawNeg(Vec *z, const Vec *x)
-{
-	Vec zero = vzero();
-	Vec t = vpsubq(zero, x[0]);
-	Vec c = vpsrlq(t, S);
-	z[0] = vpandq(t, G::mask());
-	for (size_t i = 1; i < N; i++) {
-		t = vpsubq(zero, x[i]);
-		t = vpsubq(t, c);
-		c = vpsrlq(t, S);
-		z[i] = vpandq(t, G::mask());
-	}
-	return vpcmpneqq(c, zero);
-}
-#endif
-
 template<class VM=Vmask, class V>
 inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 {
@@ -168,7 +151,6 @@ inline void uvsub(Vec *z, const Vec *x, const Vec *y)
 
 inline void uvneg(Vec *z, const Vec *x)
 {
-#if 1
 	Vec tN[N];
 	Vec t = vpsubq(G::ap()[0], x[0]);
 	Vec c = vpsrlq(t, S);
@@ -184,44 +166,9 @@ inline void uvneg(Vec *z, const Vec *x)
 	Vec zero = vzero();
 	Vmask isZero = vpcmpeqq(w, zero);
 	uvselect(z, isZero, x, tN);
-#else
-	Vec sN[N], tN[N];
-	Vmask c = vrawNeg(sN, x);
-	vaddPre(tN, sN, G::ap());
-	tN[N-1] = vpandq(tN[N-1], G::mask());
-	uvselect(z, c, tN, sN);
-#endif
 }
 
-inline void vrawMulUnitOrg(Vec *z, const Vec *x, const Vec& y)
-{
-	Vec L[N], H[N];
-	for (size_t i = 0; i < N; i++) {
-		L[i] = vmulL(x[i], y);
-		H[i] = vmulH(x[i], y);
-	}
-	z[0] = L[0];
-	for (size_t i = 1; i < N; i++) {
-		z[i] = vpaddq(L[i], H[i-1]);
-	}
-	z[N] = H[N-1];
-}
-
-inline Vec vrawMulUnitAddOrg(Vec *z, const Vec *x, const Vec& y)
-{
-	Vec L[N], H[N];
-	for (size_t i = 0; i < N; i++) {
-		L[i] = vmulL(x[i], y);
-		H[i] = vmulH(x[i], y);
-	}
-	z[0] = vpaddq(z[0], L[0]);
-	for (size_t i = 1; i < N; i++) {
-		z[i] = vpaddq(z[i], vpaddq(L[i], H[i-1]));
-	}
-	return H[N-1];
-}
-
-inline void vrawMulUnit(Vec *z, const Vec *x, const Vec& y)
+inline void vmulUnit(Vec *z, const Vec *x, const Vec& y)
 {
 	Vec H;
 	z[0] = vmulL(x[0], y);
@@ -233,7 +180,7 @@ inline void vrawMulUnit(Vec *z, const Vec *x, const Vec& y)
 	z[N] = H;
 }
 
-inline Vec vrawMulUnitAdd(Vec *z, const Vec *x, const Vec& y)
+inline Vec vmulUnitAdd(Vec *z, const Vec *x, const Vec& y)
 {
 	Vec H;
 	z[0] = vmulL(x[0], y, z[0]);
@@ -245,39 +192,12 @@ inline Vec vrawMulUnitAdd(Vec *z, const Vec *x, const Vec& y)
 	return H;
 }
 
-inline void vrawMul(Vec z[N*2], const Vec x[N], const Vec y[N])
+inline void vmulPre(Vec z[N*2], const Vec x[N], const Vec y[N])
 {
-	vrawMulUnit(z, x, y[0]);
+	vmulUnit(z, x, y[0]);
 	for (size_t i = 1; i < N; i++) {
-		z[N+i] = vrawMulUnitAdd(z+i, x, y[i]);
+		z[N+i] = vmulUnitAdd(z+i, x, y[i]);
 	}
-}
-
-inline void vrawSqr(Vec z[N*2], const Vec x[N])
-{
-	for (size_t i = 1; i < N; i++) {
-		z[i*2-1] = vmulL(x[i], x[i-1]);
-		z[i*2  ] = vmulH(x[i], x[i-1]);
-	}
-	for (size_t j = 2; j < N; j++) {
-		for (size_t i = j; i < N; i++) {
-//			z[i*2-j  ] = vpaddq(z[i*2-j  ], vmulL(x[i], x[i-j]));
-//			z[i*2-j+1] = vpaddq(z[i*2-j+1], vmulH(x[i], x[i-j]));
-			z[i*2-j  ] = vmulL(x[i], x[i-j], z[i*2-j  ]);
-			z[i*2-j+1] = vmulH(x[i], x[i-j], z[i*2-j+1]);
-		}
-	}
-	for (size_t i = 1; i < N*2-1; i++) {
-		z[i] = vpaddq(z[i], z[i]);
-	}
-	z[0] = vmulL(x[0], x[0]);
-	for (size_t i = 1; i < N; i++) {
-//		z[i*2-1] = vpaddq(z[i*2-1], vmulH(x[i-1], x[i-1]));
-//		z[i*2] = vpaddq(z[i*2], vmulL(x[i], x[i]));
-		z[i*2-1] = vmulH(x[i-1], x[i-1], z[i*2-1]);
-		z[i*2] = vmulL(x[i], x[i], z[i*2]);
-	}
-	z[N*2-1] = vmulH(x[N-1], x[N-1]);
 }
 
 // t[N] = c ? a[N] : zero
@@ -292,7 +212,7 @@ inline void uvmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
 		Vec q = vmulL(xy[i], G::rp());
-		xy[N+i] = vpaddq(xy[N+i], vrawMulUnitAdd(xy+i, G::ap(), q));
+		xy[N+i] = vpaddq(xy[N+i], vmulUnitAdd(xy+i, G::ap(), q));
 		xy[i+1] = vpaddq(xy[i+1], vpsrlq(xy[i], W));
 	}
 	for (size_t i = N; i < N*2-1; i++) {
@@ -307,18 +227,18 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 {
 #if 0
 	Vec xy[N*2];
-	vrawMul(xy, x, y);
+	vmulPre(xy, x, y);
 	uvmont(z, xy);
 #else
 	Vec t[N*2], q;
-	vrawMulUnit(t, x, y[0]);
+	vmulUnit(t, x, y[0]);
 	q = vmulL(t[0], G::rp());
-	t[N] = vpaddq(t[N], vrawMulUnitAdd(t, G::ap(), q));
+	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
 	for (size_t i = 1; i < N; i++) {
-		t[N+i] = vrawMulUnitAdd(t+i, x, y[i]);
+		t[N+i] = vmulUnitAdd(t+i, x, y[i]);
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
 		q = vmulL(t[i], G::rp());
-		t[N+i] = vpaddq(t[N+i], vrawMulUnitAdd(t+i, G::ap(), q));
+		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
 	}
 	for (size_t i = N; i < N*2; i++) {
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
@@ -327,14 +247,6 @@ inline void uvmul(Vec *z, const Vec *x, const Vec *y)
 	Vmask c = vsubPre(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
 #endif
-}
-
-// slower than uvmul
-inline void uvsqr(Vec *z, const Vec *x)
-{
-	Vec xx[N*2];
-	vrawSqr(xx, x);
-	uvmont(z, xx);
 }
 
 // out = c ? a : b
@@ -494,7 +406,6 @@ struct FpM {
 	}
 	static void sqr(FpM& z, const FpM& x)
 	{
-//		uvsqr(z.v, x.v); // slow
 		mul(z, x, x);
 	}
 	void toMont(FpM& x) const
