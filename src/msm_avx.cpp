@@ -132,7 +132,7 @@ inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 }
 
 template<class VM=Vmask, class V>
-inline void uvadd(V *z, const V *x, const V *y)
+inline void vadd(V *z, const V *x, const V *y)
 {
 	V sN[N], tN[N];
 	vaddPre(sN, x, y);
@@ -141,7 +141,7 @@ inline void uvadd(V *z, const V *x, const V *y)
 }
 
 template<class VM=Vmask, class V>
-inline void uvsub(V *z, const V *x, const V *y)
+inline void vsub(V *z, const V *x, const V *y)
 {
 	V sN[N], tN[N];
 	VM c = vsubPre<VM>(sN, x, y);
@@ -190,7 +190,7 @@ inline void vset(Vec *t, const Vmask& c, const Vec a[N])
 	}
 }
 
-inline void uvmont(Vec z[N], Vec xy[N*2])
+inline void vmont(Vec z[N], Vec xy[N*2])
 {
 	for (size_t i = 0; i < N; i++) {
 		Vec q = vmulL(xy[i], G::rp());
@@ -205,12 +205,12 @@ inline void uvmont(Vec z[N], Vec xy[N*2])
 	uvselect(z, c, xy+N, z);
 }
 
-inline void uvmul(Vec *z, const Vec *x, const Vec *y)
+inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {
 #if 0
 	Vec xy[N*2];
 	vmulPre(xy, x, y);
-	uvmont(z, xy);
+	vmont(z, xy);
 #else
 	Vec t[N*2], q;
 	vmulUnit(t, x, y[0]);
@@ -367,7 +367,7 @@ struct FpM {
 	static const FpM& rw() { return *(const FpM*)g_rw_; }
 	static void add(FpM& z, const FpM& x, const FpM& y)
 	{
-		uvadd(z.v, x.v, y.v);
+		vadd(z.v, x.v, y.v);
 	}
 	static void mul2(FpM& z, const FpM& x)
 	{
@@ -375,7 +375,7 @@ struct FpM {
 	}
 	static void sub(FpM& z, const FpM& x, const FpM& y)
 	{
-		uvsub(z.v, x.v, y.v);
+		vsub(z.v, x.v, y.v);
 	}
 	static void neg(FpM& z, const FpM& x)
 	{
@@ -383,7 +383,7 @@ struct FpM {
 	}
 	static void mul(FpM& z, const FpM& x, const FpM& y)
 	{
-		uvmul(z.v, x.v, y.v);
+		vmul(z.v, x.v, y.v);
 	}
 	static void sqr(FpM& z, const FpM& x)
 	{
@@ -1398,18 +1398,18 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
 		}
-		// uvadd, uvsub
+		// vadd, vsub
 		for (size_t j = 0; j < vN; j++) {
-			uvadd(z[j].v, x[j].v, y[j].v);
+			vadd(z[j].v, x[j].v, y[j].v);
 		}
 		cvtFpM2FpMA(xa, x);
 		cvtFpM2FpMA(ya, y);
-		uvadd<VmaskA>(za.v, xa.v, ya.v);
+		vadd<VmaskA>(za.v, xa.v, ya.v);
 		cvtFpMA2FpM(w, za);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
-		uvsub<VmaskA>(za.v, za.v, ya.v);
+		vsub<VmaskA>(za.v, za.v, ya.v);
 		cvtFpMA2FpM(w, za);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
