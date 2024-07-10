@@ -165,10 +165,46 @@ inline VecA vmulL(const VecA& a, const VecA& b, const VecA& c)
 	return r;
 }
 
+inline VecA vmulL(const VecA& a, const VecA& b, const Vec& c = vzero())
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vmulL(a.v[i], b.v[i], c);
+	return r;
+}
+
+inline VecA vmulL(const Vec& a, const VecA& b, const VecA& c)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vmulL(a, b.v[i], c.v[i]);
+	return r;
+}
+
+
+inline VecA vmulL(const VecA& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vmulL(a.v[i], b);
+	return r;
+}
+
 inline VecA vmulH(const VecA& a, const VecA& b, const VecA& c)
 {
 	VecA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vmulH(a.v[i], b.v[i], c.v[i]);
+	return r;
+}
+
+inline VecA vmulH(const VecA& a, const VecA& b, const Vec& c = vzero())
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vmulH(a.v[i], b.v[i], c);
+	return r;
+}
+
+inline VecA vmulH(const Vec& a, const VecA& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vmulH(a, b.v[i]);
 	return r;
 }
 
