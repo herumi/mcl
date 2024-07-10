@@ -179,6 +179,13 @@ inline VecA vpaddq(const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VecA vpaddq(const VecA& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpaddq(a.v[i], b);
+	return r;
+}
+
 inline VecA vpaddq(const VmaskA& v, const VecA& a, const VecA& b)
 {
 	VecA r;
@@ -190,6 +197,13 @@ inline VecA vpsubq(const VecA& a, const VecA& b)
 {
 	VecA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vpsubq(a.v[i], b.v[i]);
+	return r;
+}
+
+inline VecA vpsubq(const VecA& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpsubq(a.v[i], b);
 	return r;
 }
 
