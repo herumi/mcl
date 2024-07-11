@@ -15,6 +15,10 @@
 #if defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#ifndef __clang__
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized" // false positive
+#pragma GCC diagnostic ignored "-Wignored-attributes" // false positive
+#endif
 #endif
 
 namespace {
@@ -246,7 +250,8 @@ inline void select(Unit *out, bool c, const Unit *a, const Unit *b)
 	}
 }
 
-inline Vec getUnitAt(const Vec *x, size_t xN, size_t bitPos)
+template<class V>
+inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 {
 	const size_t bitSize = 64;
 	const size_t q = bitPos / bitSize;
@@ -261,7 +266,8 @@ inline Vec getUnitAt(const Vec *x, size_t xN, size_t bitPos)
 	x|52:12|40:24|28:36|16:48|4:52:8|44:20|
     y|52|52   |52   |52   |52  |52|52  |20|
 */
-inline void split52bit(Vec y[8], const Vec x[6])
+template<class V>
+inline void split52bit(V y[8], const V x[6])
 {
 	assert(&y != &x);
 	y[0] = vpandq(x[0], G::mask());
@@ -279,7 +285,8 @@ inline void split52bit(Vec y[8], const Vec x[6])
 	x|52|12:40|24:28|36:16|48:4|52|8:44|20|
     y|64   |64   |64   |64   |64    |64
 */
-inline void concat52bit(Vec y[6], const Vec x[8])
+template<class V>
+inline void concat52bit(V y[6], const V x[8])
 {
 	assert(&y != &x);
 	y[0] = vporq(x[0], vpsllq(x[1], 52));
@@ -362,82 +369,79 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 	split52bit(y, t);
 }
 
-struct FpM {
-	Vec v[N];
-	static const FpM& zero() { return *(const FpM*)g_zero_; }
-	static const FpM& one() { return *(const FpM*)g_R_; }
-	static const FpM& R2() { return *(const FpM*)g_R2_; }
-	static const FpM& rawOne() { return *(const FpM*)g_rawOne_; }
-	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
-	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
-	static const FpM& rw() { return *(const FpM*)g_rw_; }
-	static void add(FpM& z, const FpM& x, const FpM& y)
+template<class T, class VM=Vmask, class V=Vec>
+struct FpMT {
+	V v[N];
+	static void add(T& z, const T& x, const T& y)
 	{
 		vadd(z.v, x.v, y.v);
 	}
-	static void mul2(FpM& z, const FpM& x)
+	static void mul2(T& z, const T& x)
 	{
 		add(z, x, x);
 	}
-	static void sub(FpM& z, const FpM& x, const FpM& y)
+	static void sub(T& z, const T& x, const T& y)
 	{
 		vsub(z.v, x.v, y.v);
 	}
-	static void neg(FpM& z, const FpM& x)
+	static void neg(T& z, const T& x)
 	{
-		FpM::sub(z, zero(), x);
+		T::sub(z, T::zero(), x);
 	}
-	static void mul(FpM& z, const FpM& x, const FpM& y)
+	T neg() const
+	{
+		T t;
+		T::sub(t, T::zero(), static_cast<const T&>(*this));
+		return t;
+	}
+	static void mul(T& z, const T& x, const T& y)
 	{
 		vmul(z.v, x.v, y.v);
 	}
-	static void sqr(FpM& z, const FpM& x)
+	static void sqr(T& z, const T& x)
 	{
 		mul(z, x, x);
 	}
-	void toMont(FpM& x) const
+	void toMont(T& x) const
 	{
-		mul(x, *this, R2());
+		mul(x, *this, T::R2());
 	}
-	void fromMont(const FpM &x)
+	void fromMont(const T &x)
 	{
-		mul(*this, x, rawOne());
+		mul(*this, x, T::rawOne());
 	}
 	void clear()
 	{
 		memset(this, 0, sizeof(*this));
 	}
-	bool operator==(const FpM& rhs) const
+	bool operator==(const T& rhs) const
 	{
-		for (size_t i = 0; i < N; i++) {
-			if (memcmp(&v[i], &rhs.v[i], sizeof(Vec)) != 0) return false;
-		}
-		return true;
+		return memcmp(this, &rhs, sizeof(rhs)) == 0;
 	}
-	bool operator!=(const FpM& rhs) const { return !operator==(rhs); }
-	Vmask isEqualAll(const FpM& rhs) const
+	bool operator!=(const T& rhs) const { return !operator==(rhs); }
+	VM isEqualAll(const T& rhs) const
 	{
-		Vec t = vpxorq(v[0], rhs.v[0]);
+		V t = vpxorq(v[0], rhs.v[0]);
 		for (size_t i = 1; i < M; i++) {
 			t = vporq(t, vpxorq(v[i], rhs.v[i]));
 		}
 		return vpcmpeqq(t, vzero());
 	}
-	Vmask isZero() const
+	VM isZero() const
 	{
-		Vec t = v[0];
+		V t = v[0];
 		for (size_t i = 1; i < M; i++) {
 			t = vporq(t, v[i]);
 		}
 		return vpcmpeqq(t, vzero());
 	}
-	static void pow(FpM& z, const FpM& x, const Vec *y, size_t yn)
+	static void pow(T& z, const T& x, const V *y, size_t yn)
 	{
 		const int w = 4;
 		assert(w == 4);
 		const int tblN = 1<<w;
-		FpM tbl[tblN];
-		tbl[0] = FpM::one();
+		T tbl[tblN];
+		tbl[0] = T::one();
 		tbl[1] = x;
 		for (size_t i = 2; i < tblN; i++) {
 			mul(tbl[i], tbl[i-1], x);
@@ -449,11 +453,11 @@ struct FpM {
 		for (size_t i = 0; i < yn; i++) {
 			const Vec& v = y[yn-1-i];
 			for (size_t j = 0; j < jn; j++) {
-				for (int k = 0; k < w; k++) FpM::sqr(z, z);
+				for (int k = 0; k < w; k++) T::sqr(z, z);
 				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), mask4);
 				idx = vpsllq(idx, 6); // 512 B = 64 Unit
-				idx = vpaddq(idx, G::offset());
-				FpM t;
+				idx = vpaddq(idx, T::offset());
+				T t;
 				for (size_t k = 0; k < N; k++) {
 					t.v[k] = vpgatherqq(idx, &tbl[0].v[k]);
 				}
@@ -461,6 +465,17 @@ struct FpM {
 			}
 		}
 	}
+};
+
+struct FpM : FpMT<FpM, Vmask, Vec> {
+	static const Vec& offset() { return *(const Vec*)g_offset_; }
+	static const FpM& zero() { return *(const FpM*)g_zero_; }
+	static const FpM& one() { return *(const FpM*)g_R_; }
+	static const FpM& R2() { return *(const FpM*)g_R2_; }
+	static const FpM& rawOne() { return *(const FpM*)g_rawOne_; }
+	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
+	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
+	static const FpM& rw() { return *(const FpM*)g_rw_; }
 	void setFp(const Unit *v)
 	{
 		Unit v8[6*8];
@@ -480,12 +495,6 @@ struct FpM {
 		FpM t;
 		FpM::mul(t, *this, FpM::m52to64());
 		cvt8Ux8to6Ux8((Unit*)v, t.v);
-	}
-	FpM neg() const
-	{
-		FpM t;
-		FpM::sub(t, zero(), *this);
-		return t;
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
@@ -517,7 +526,6 @@ struct FpM {
 	mpz_class get(size_t i) const;
 #endif
 };
-
 
 template<class E, size_t n>
 inline void normalizeJacobiVec(E P[n])
@@ -745,7 +753,7 @@ struct EcM {
 	void gather(const EcM *tbl, Vec idx)
 	{
 		const Vec i192 = vpbroadcastq(192);
-		idx = vmulL(idx, i192, G::offset());
+		idx = vmulL(idx, i192, FpM::offset());
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
 			y.v[i] = vpgatherqq(idx, &tbl[0].y.v[i]);
@@ -755,7 +763,7 @@ struct EcM {
 	void scatter(EcM *tbl, Vec idx) const
 	{
 		const Vec i192 = vpbroadcastq(192);
-		idx = vmulL(idx, i192, G::offset());
+		idx = vmulL(idx, i192, FpM::offset());
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
 			vpscatterqq(&tbl[0].y.v[i], idx, y.v[i]);
@@ -1026,8 +1034,7 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 	Xbyak::AlignedFree(tbl);
 }
 
-struct FpMA {
-	VecA v[N];
+struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 };
 
 void cvtFpM2FpMA(FpMA& y, const FpM x[vN])
