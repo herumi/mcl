@@ -369,8 +369,10 @@ inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
 	split52bit(y, t);
 }
 
-template<class T, class VM=Vmask, class V=Vec>
+template<class T, class _VM=Vmask, class _V=Vec>
 struct FpMT {
+	typedef _VM VM;
+	typedef _V V;
 	V v[N];
 	static void add(T& z, const T& x, const T& y)
 	{
@@ -648,22 +650,30 @@ inline void dblJacobiNoCheck(E& R, const E& P)
 	F::sub(R.y, R.y, y2);
 }
 
-struct EcM {
-	typedef FpM Fp;
+template<class T, class F>
+struct EcMT {
+	typedef F Fp;
+	typedef typename F::V V;
+	typedef typename F::VM VM;
+	F x, y, z;
 	static const int a_ = 0;
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
-	static const FpM &b3_;
-	static const EcM &zeroProj_;
-	static const EcM &zeroJacobi_;
-	FpM x, y, z;
+	static T select(const VM& c, const T& a, const T& b)
+	{
+		T d;
+		d.x = F::select(c, a.x, b.x);
+		d.y = F::select(c, a.y, b.y);
+		d.z = F::select(c, a.z, b.z);
+		return d;
+	}
 	template<bool isProj=true, bool mixed=false>
-	static void add(EcM& z, const EcM& x, const EcM& y)
+	static void add(T& z, const T& x, const T& y)
 	{
 		if (isProj) {
 			mcl::ec::addCTProj(z, x, y);
 		} else {
-			EcM t;
+			T t;
 			if (mixed) {
 				addJacobiMixedNoCheck(t, x, y);
 			} else {
@@ -673,6 +683,12 @@ struct EcM {
 			z = select(y.isZero(), x, t);
 		}
 	}
+};
+
+struct EcM : EcMT<EcM, FpM> {
+	static const FpM &b3_;
+	static const EcM &zeroProj_;
+	static const EcM &zeroJacobi_;
 	template<bool isProj=true>
 	static void dbl(EcM& z, const EcM& x)
 	{
@@ -681,14 +697,6 @@ struct EcM {
 		} else {
 			dblJacobiNoCheck(z, x);
 		}
-	}
-	static EcM select(const Vmask& c, const EcM& a, const EcM& b)
-	{
-		EcM d;
-		d.x = FpM::select(c, a.x, b.x);
-		d.y = FpM::select(c, a.y, b.y);
-		d.z = FpM::select(c, a.z, b.z);
-		return d;
 	}
 	template<bool isProj=true>
 	static const EcM& zero()
@@ -1035,6 +1043,14 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 }
 
 struct FpMA : FpMT<FpMA, VmaskA, VecA> {
+//	static const Vec& offset() { return *(const Vec*)g_offsetA_; }
+	static const FpMA& zero() { return *(const FpMA*)g_zeroA_; }
+	static const FpMA& one() { return *(const FpMA*)g_RA_; }
+	static const FpMA& R2() { return *(const FpMA*)g_R2A_; }
+	static const FpMA& rawOne() { return *(const FpMA*)g_rawOneA_; }
+	static const FpMA& m64to52() { return *(const FpMA*)g_m64to52A_; }
+	static const FpMA& m52to64() { return *(const FpMA*)g_m52to64A_; }
+	static const FpMA& rw() { return *(const FpMA*)g_rwA_; }
 };
 
 void cvtFpM2FpMA(FpMA& y, const FpM x[vN])

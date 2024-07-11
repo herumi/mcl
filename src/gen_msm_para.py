@@ -72,7 +72,7 @@ def expand(name, v):
 
 def expandN(name, v, n=1):
   if n > 1:
-    name = f'{name}_{v}'
+    name = f'{name}A'
   print(f'static const CYBOZU_ALIGN(64) uint64_t {name}_[] = {{')
   for i in range(len(v)):
     print(('\t' + f'{hex(v[i])}, '*n*8).strip())
@@ -105,7 +105,7 @@ def putCode(curve, mont):
 
   # for FpM/FpMA
   expand('g_offset', [0, 1, 2, 3, 4, 5, 6, 7, 8])
-  for n in range(1, 2):
+  for n in range(1, 3):
     expandN('g_zero', toArray(0), n) # FpM::zero()
     expandN('g_R', toArray(mont.R), n) # FpM::one()
     expandN('g_R2', toArray(mont.R2), n) # FpM::R2()
