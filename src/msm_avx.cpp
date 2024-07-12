@@ -376,7 +376,7 @@ struct FpMT {
 	V v[N];
 	static void add(T& z, const T& x, const T& y)
 	{
-		vadd(z.v, x.v, y.v);
+		vadd<VM>(z.v, x.v, y.v);
 	}
 	static void mul2(T& z, const T& x)
 	{
@@ -384,7 +384,7 @@ struct FpMT {
 	}
 	static void sub(T& z, const T& x, const T& y)
 	{
-		vsub(z.v, x.v, y.v);
+		vsub<VM>(z.v, x.v, y.v);
 	}
 	static void neg(T& z, const T& x)
 	{
@@ -398,7 +398,7 @@ struct FpMT {
 	}
 	static void mul(T& z, const T& x, const T& y)
 	{
-		vmul(z.v, x.v, y.v);
+		vmul<VM>(z.v, x.v, y.v);
 	}
 	static void sqr(T& z, const T& x)
 	{
@@ -1061,7 +1061,7 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 			t[i].getFpA(v+M*i);
 		}
 	}
-	static void inv(FpM& z, const FpM& x)
+	static void inv(FpMA& z, const FpMA& x)
 	{
 		mcl::msm::FpA v[M*vN];
 		x.getFpA(v);
@@ -1448,12 +1448,12 @@ CYBOZU_TEST_AUTO(vaddPre)
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
-		vadd<VmaskA>(za.v, xa.v, ya.v);
+		FpMA::add(za, xa, ya);
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
-		vsub<VmaskA>(za.v, za.v, ya.v);
+		FpMA::sub(za, za, ya);
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
@@ -1464,7 +1464,17 @@ CYBOZU_TEST_AUTO(vaddPre)
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
-		vmul<VmaskA>(za.v, xa.v, ya.v);
+		FpMA::mul(za, xa, ya);
+		za.getFpM(w);
+		for (size_t j = 0; j < vN; j++) {
+			CYBOZU_TEST_ASSERT(z[j] == w[j]);
+		}
+		// inv
+		for (size_t j = 0; j < vN; j++) {
+			FpM::inv(z[j], x[j]);
+		}
+		xa.setFpM(x);
+		FpMA::inv(za, xa);
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
