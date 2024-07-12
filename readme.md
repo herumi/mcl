@@ -104,13 +104,14 @@ cmake ..
 make
 ```
 
-For the other platform, clang++ is required.
+For the other platform (including mingw), clang++ is required.
 ```
 mkdir build
 cd build
 cmake .. -DCMAKE_CXX_COMPILER=clang++
 make
 ```
+Use `clang++` instead of gcc on mingw.
 
 For Visual Studio, (REMARK : It is not maintained; use the vcxproj file.)
 ```
