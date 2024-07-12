@@ -683,14 +683,8 @@ struct EcMT {
 			z = select(y.isZero(), x, t);
 		}
 	}
-};
-
-struct EcM : EcMT<EcM, FpM> {
-	static const FpM &b3_;
-	static const EcM &zeroProj_;
-	static const EcM &zeroJacobi_;
 	template<bool isProj=true>
-	static void dbl(EcM& z, const EcM& x)
+	static void dbl(T& z, const T& x)
 	{
 		if (isProj) {
 			mcl::ec::dblCTProj(z, x);
@@ -699,15 +693,21 @@ struct EcM : EcMT<EcM, FpM> {
 		}
 	}
 	template<bool isProj=true>
-	static const EcM& zero()
+	static const T& zero()
 	{
-		return isProj ? zeroProj_ : zeroJacobi_;
+		return isProj ? T::zeroProj_ : T::zeroJacobi_;
 	}
 	template<bool isProj=true>
 	void clear()
 	{
 		*this = zero<isProj>();
 	}
+};
+
+struct EcM : EcMT<EcM, FpM> {
+	static const FpM &b3_;
+	static const EcM &zeroProj_;
+	static const EcM &zeroJacobi_;
 	void setArray(const Unit a[6*3*M])
 	{
 		cvt6Ux3x8to8Ux8x3(x.v, a);
@@ -738,6 +738,7 @@ struct EcM : EcMT<EcM, FpM> {
 	}
 	void normalize()
 	{
+		// assume !isZero()
 		FpM r;
 		FpM::inv(r, z);
 		FpM::mul(x, x, r);
@@ -981,7 +982,6 @@ const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
 
 inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 {
-
 	mcl::msm::G1A z[8];
 	P.getG1(z);
 	Q = z[0];
