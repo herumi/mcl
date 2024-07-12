@@ -13,7 +13,7 @@
 
 typedef __m512i Vec;
 typedef __mmask8 Vmask;
-static const size_t vN = 2;
+static const size_t vN = 2; // fixed
 struct VecA {
 	Vec v[vN];
 };

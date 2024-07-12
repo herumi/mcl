@@ -451,13 +451,13 @@ struct FpMT {
 		const size_t bitLen = sizeof(Unit)*8;
 		const size_t jn = bitLen / w;
 		z = tbl[0];
-		const Vec mask4 = vpbroadcastq(getMask(4));
+		const Vec mask4 = vpbroadcastq(getMask(w));
 		for (size_t i = 0; i < yn; i++) {
 			const Vec& v = y[yn-1-i];
 			for (size_t j = 0; j < jn; j++) {
 				for (int k = 0; k < w; k++) T::sqr(z, z);
 				Vec idx = vpandq(vpsrlq(v, bitLen-w-j*w), mask4);
-				idx = vpsllq(idx, 6); // 512 B = 64 Unit
+				idx = vpsllq(idx, 6); // 512 B = 64 Unit = 2^6
 				idx = vpaddq(idx, T::offset());
 				T t;
 				for (size_t k = 0; k < N; k++) {
@@ -466,6 +466,22 @@ struct FpMT {
 				mul(z, z, t);
 			}
 		}
+	}
+	// condition set (set x if c)
+	void cset(const VM& c, const T& x)
+	{
+		for (size_t i = 0; i < N; i++) {
+			v[i] = vselect(c, x.v[i], v[i]);
+		}
+	}
+	// return c ? a : b;
+	static T select(const VM& c, const T& a, const T& b)
+	{
+		T d;
+		for (size_t i = 0; i < N; i++) {
+			d.v[i] = vselect(c, a.v[i], b.v[i]);
+		}
+		return d;
 	}
 };
 
@@ -478,21 +494,12 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
 	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
 	static const FpM& rw() { return *(const FpM*)g_rw_; }
-	void setFp(const Unit *v)
-	{
-		Unit v8[6*8];
-		for (size_t i = 0; i < 8; i++) {
-			mcl::bint::copyT<6>(v8+i*6, v);
-		}
-		cvt6Ux8to8Ux8(this->v, v8);
-		FpM::mul(*this, *this, FpM::m64to52());
-	}
-	void setFp(const mcl::msm::FpA v[M])
+	void setFpA(const mcl::msm::FpA v[M])
 	{
 		cvt6Ux8to8Ux8(this->v, v[0].v);
 		FpM::mul(*this, *this, FpM::m64to52());
 	}
-	void getFp(mcl::msm::FpA v[M]) const
+	void getFpA(mcl::msm::FpA v[M]) const
 	{
 		FpM t;
 		FpM::mul(t, *this, FpM::m52to64());
@@ -501,25 +508,9 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	static void inv(FpM& z, const FpM& x)
 	{
 		mcl::msm::FpA v[M];
-		x.getFp(v);
+		x.getFpA(v);
 		g_func.invVecFp(v, v, M, M);
-		z.setFp(v);
-	}
-	// condition set (set x if c)
-	void cset(const Vmask& c, const FpM& x)
-	{
-		for (size_t i = 0; i < N; i++) {
-			v[i] = vselect(c, x.v[i], v[i]);
-		}
-	}
-	// return c ? a : b;
-	static FpM select(const Vmask& c, const FpM& a, const FpM& b)
-	{
-		FpM d;
-		for (size_t i = 0; i < N; i++) {
-			d.v[i] = vselect(c, a.v[i], b.v[i]);
-		}
-		return d;
+		z.setFpA(v);
 	}
 #ifdef MCL_MSM_TEST
 	void set(const mpz_class& x, size_t i);
@@ -1042,6 +1033,9 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 	Xbyak::AlignedFree(tbl);
 }
 
+struct FpMA;
+
+
 struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 //	static const Vec& offset() { return *(const Vec*)g_offsetA_; }
 	static const FpMA& zero() { return *(const FpMA*)g_zeroA_; }
@@ -1051,25 +1045,46 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	static const FpMA& m64to52() { return *(const FpMA*)g_m64to52A_; }
 	static const FpMA& m52to64() { return *(const FpMA*)g_m52to64A_; }
 	static const FpMA& rw() { return *(const FpMA*)g_rwA_; }
+	void setFpA(const mcl::msm::FpA v[M*vN])
+	{
+		FpM t[vN];
+		for (size_t i = 0; i < vN; i++) {
+			t[i].setFpA(v+M*i);
+		}
+		setFpM(t);
+	}
+	void getFpA(mcl::msm::FpA v[M*vN]) const
+	{
+		FpM t[vN];
+		getFpM(t);
+		for (size_t i = 0; i < vN; i++) {
+			t[i].getFpA(v+M*i);
+		}
+	}
+	static void inv(FpM& z, const FpM& x)
+	{
+		mcl::msm::FpA v[M*vN];
+		x.getFpA(v);
+		g_func.invVecFp(v, v, M*vN, M*vN);
+		z.setFpA(v);
+	}
+	void setFpM(const FpM x[vN])
+	{
+		for (size_t i = 0; i < vN; i++) {
+			for (size_t j = 0; j < N; j++) {
+				v[j].v[i] = x[i].v[j];
+			}
+		}
+	}
+	void getFpM(FpM y[vN]) const
+	{
+		for (size_t i = 0; i < vN; i++) {
+			for (size_t j = 0; j < N; j++) {
+				y[i].v[j] = v[j].v[i];
+			}
+		}
+	}
 };
-
-void cvtFpM2FpMA(FpMA& y, const FpM x[vN])
-{
-	for (size_t i = 0; i < vN; i++) {
-		for (size_t j = 0; j < N; j++) {
-			y.v[j].v[i] = x[i].v[j];
-		}
-	}
-}
-
-void cvtFpMA2FpM(FpM y[vN], const FpMA& x)
-{
-	for (size_t i = 0; i < vN; i++) {
-		for (size_t j = 0; j < N; j++) {
-			y[i].v[j] = x.v[j].v[i];
-		}
-	}
-}
 
 } // namespace
 
@@ -1258,7 +1273,7 @@ static Montgomery g_mont;
 void dump(const FpM& x, const char *msg = nullptr, size_t pos = size_t(-1))
 {
 	Fp T[8];
-	x.getFp((mcl::msm::FpA*)T);
+	x.getFpA((mcl::msm::FpA*)T);
 	if (msg) printf("%s\n", msg);
 	for (size_t i = 0; i < 8; i++) {
 		if (i == pos || pos == size_t(-1)) {
@@ -1363,7 +1378,7 @@ void setRand(FpM& x, cybozu::XorShift& rg, mcl::bn::Fp *t = 0)
 	for (size_t i = 0; i < N; i++) {
 		t[i].setByCSPRNG(rg);
 	}
-	x.setFp((const mcl::msm::FpA*)t);
+	x.setFpA((const mcl::msm::FpA*)t);
 }
 
 CYBOZU_TEST_AUTO(conv)
@@ -1374,7 +1389,7 @@ CYBOZU_TEST_AUTO(conv)
 	cybozu::XorShift rg;
 	for (int i = 0; i < C; i++) {
 		setRand(x1, rg, x2);
-		x1.getFp((mcl::msm::FpA*)x3);
+		x1.getFpA((mcl::msm::FpA*)x3);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x3, 8);
 	}
 	{
@@ -1383,8 +1398,8 @@ CYBOZU_TEST_AUTO(conv)
 		for (size_t i = 0; i < vN; i++) {
 			setRand(x[i], rg);
 		}
-		cvtFpM2FpMA(z, x);
-		cvtFpMA2FpM(y, z);
+		z.setFpM(x);
+		z.getFpM(y);
 		for (size_t i = 0; i < vN; i++) {
 			CYBOZU_TEST_ASSERT(x[i] == y[i]);
 		}
@@ -1415,15 +1430,15 @@ CYBOZU_TEST_AUTO(vaddPre)
 			setRand(y[j], rg);
 			vaddPre(z[j].v, x[j].v, y[j].v);
 		}
-		cvtFpM2FpMA(xa, x);
-		cvtFpM2FpMA(ya, y);
+		xa.setFpM(x);
+		ya.setFpM(y);
 		vaddPre(za.v, xa.v, ya.v);
-		cvtFpMA2FpM(w, za);
+		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
 		vsubPre<VmaskA>(za.v, za.v, ya.v);
-		cvtFpMA2FpM(w, za);
+		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
 		}
@@ -1431,15 +1446,15 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			vadd(z[j].v, x[j].v, y[j].v);
 		}
-		cvtFpM2FpMA(xa, x);
-		cvtFpM2FpMA(ya, y);
+		xa.setFpM(x);
+		ya.setFpM(y);
 		vadd<VmaskA>(za.v, xa.v, ya.v);
-		cvtFpMA2FpM(w, za);
+		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
 		vsub<VmaskA>(za.v, za.v, ya.v);
-		cvtFpMA2FpM(w, za);
+		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
 		}
@@ -1447,10 +1462,10 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			vmul(z[j].v, x[j].v, y[j].v);
 		}
-		cvtFpM2FpMA(xa, x);
-		cvtFpM2FpMA(ya, y);
+		xa.setFpM(x);
+		ya.setFpM(y);
 		vmul<VmaskA>(za.v, xa.v, ya.v);
-		cvtFpMA2FpM(w, za);
+		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
