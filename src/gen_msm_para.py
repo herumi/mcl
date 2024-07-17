@@ -105,6 +105,10 @@ def putCode(curve, mont):
   expand('g_rp', mont.rp)
   expandN('g_ap', toArray(curve.p)) # array of p
 
+  m64to52 = toArray(mont.toMont(2**32))
+  m52to64 = toArray(mont.toMont(pow(2**32, -1, curve.p)))
+  expand('g_m64to52u', m64to52)
+
   # for FpM/FpMA
   expand('g_offset', [0, 1, 2, 3, 4, 5, 6, 7, 8])
   for n in [1, 2]:
@@ -112,8 +116,8 @@ def putCode(curve, mont):
     expandN('g_R', toArray(mont.R), n) # FpM::one()
     expandN('g_R2', toArray(mont.R2), n) # FpM::R2()
     expandN('g_rawOne', toArray(1), n) # FpM::rawOne()
-    expandN('g_m64to52', toArray(mont.toMont(2**32)), n)
-    expandN('g_m52to64', toArray(mont.toMont(pow(2**32, -1, curve.p))), n)
+    expandN('g_m64to52', m64to52, n)
+    expandN('g_m52to64', m52to64, n)
     expandN('g_rw', toArray(mont.toMont(rw)), n)
     # for EcM/EcMA
     b = 4
