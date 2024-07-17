@@ -707,7 +707,7 @@ struct EcM : EcMT<EcM, FpM> {
 	{
 		cvt8Ux8x3to6Ux3x8(a, x.v);
 	}
-	void setG1(const mcl::msm::G1A v[M], bool JacobiToProj = true)
+	void setG1A(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
 		setArray(v[0].v);
 		FpM::mul(x, x, FpM::m64to52());
@@ -718,7 +718,7 @@ struct EcM : EcMT<EcM, FpM> {
 			y = FpM::select(z.isZero(), FpM::one(), y);
 		}
 	}
-	void getG1(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
+	void getG1A(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
@@ -974,7 +974,7 @@ const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
 inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 {
 	mcl::msm::G1A z[8];
-	P.getG1(z);
+	P.getG1A(z);
 	Q = z[0];
 	for (int i = 1; i < 8; i++) {
 		g_func.addG1(Q, Q, z[i]);
@@ -1101,7 +1101,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 //	mcl::ec::normalizeVec(x, x, n);
 	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8 * 2, 64);
 	for (size_t i = 0; i < n8; i++) {
-		xVec[i*2].setG1(x+i*8);
+		xVec[i*2].setG1A(x+i*8);
 		EcM::mulLambda(xVec[i*2+1], xVec[i*2]);
 	}
 	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
@@ -1123,7 +1123,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 #else
 	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8, 64);
 	for (size_t i = 0; i < n8; i++) {
-		xVec[i].setG1(x+i*8);
+		xVec[i].setG1A(x+i*8);
 	}
 	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
 	for (size_t i = 0; i < n8; i++) {
@@ -1153,9 +1153,9 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 		EcM P;
 		Vec yv[4];
 		cvtFr8toVec4(yv, y+i);
-		P.setG1(x+i, isProj);
+		P.setG1A(x+i, isProj);
 		EcM::mulGLV<isProj, mixed>(P, P, yv);
-		P.getG1(x+i, isProj);
+		P.getG1A(x+i, isProj);
 	}
 }
 
@@ -1313,7 +1313,7 @@ mpz_class FpM::get(size_t i) const
 void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = size_t(-1))
 {
 	G1 T[8];
-	x.getG1((mcl::msm::G1A*)T, isProj);
+	x.getG1A((mcl::msm::G1A*)T, isProj);
 	if (msg) printf("%s\n", msg);
 	for (size_t i = 0; i < 8; i++) {
 		if (i == pos || pos == size_t(-1)) {
@@ -1360,8 +1360,8 @@ CYBOZU_TEST_AUTO(cmp)
 		uint32_t v = rg.get32();
 		hashAndMapToG1(P[i], &v, sizeof(v));
 	}
-	PM.setG1(PA);
-	QM.setG1(PA);
+	PM.setG1A(PA);
+	QM.setG1A(PA);
 	v = PM.isEqualJacobiAll(QM);
 	CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff);
 	for (size_t i = 0; i < n; i++) {
@@ -1492,6 +1492,8 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vsub::VecA", C, vsub<VmaskA>, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vmul::Vec", C, vmul, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vmul::VecA", C, vmul<VmaskA>, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("FpM::inv", C/100, FpM::inv, z[0], z[0]);
+	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
 	forcedRead(z);
 	forcedRead(za);
 #endif
@@ -1537,17 +1539,17 @@ CYBOZU_TEST_AUTO(op)
 		G1::dbl(R[i], P[i]);
 	}
 	// as Proj
-	PM.setG1(PA);
+	PM.setG1A(PA);
 	EcM::dbl<true>(TM, PM);
-	TM.getG1(TA);
+	TM.getG1A(TA);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
 
 	// as Jacobi
-	PM.setG1(PA, false);
+	PM.setG1A(PA, false);
 	EcM::dbl<false>(TM, PM);
-	TM.getG1(TA, false);
+	TM.getG1A(TA, false);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
@@ -1559,19 +1561,19 @@ CYBOZU_TEST_AUTO(op)
 	}
 
 	// as Proj
-	PM.setG1(PA);
-	QM.setG1(QA);
+	PM.setG1A(PA);
+	QM.setG1A(QA);
 	EcM::add<true>(TM, PM, QM);
-	TM.getG1(TA);
+	TM.getG1A(TA);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
 
 	// as Jacobi
-	PM.setG1(PA, false);
-	QM.setG1(QA, false);
+	PM.setG1A(PA, false);
+	QM.setG1A(QA, false);
 	EcM::add<false>(TM, PM, QM);
-	TM.getG1(TA, false);
+	TM.getG1A(TA, false);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
@@ -1580,9 +1582,9 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		Q[i].normalize();
 	}
-	QM.setG1(QA, false);
+	QM.setG1A(QA, false);
 	EcM::add<false, true>(TM, PM, QM);
-	TM.getG1(TA, false);
+	TM.getG1A(TA, false);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
@@ -1634,11 +1636,11 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 	P[n/3].clear();
 	mcl::ec::normalizeVec(Q, P, n);
 	for (size_t i = 0; i < n/8; i++) {
-		PP[i].setG1((mcl::msm::G1A*)&P[i*8], isProj);
+		PP[i].setG1A((mcl::msm::G1A*)&P[i*8], isProj);
 	}
 	normalizeJacobiVec<EcM, n/8>(PP);
 	for (size_t i = 0; i < n/8; i++) {
-		PP[i].getG1((mcl::msm::G1A*)&R[i*8], isProj);
+		PP[i].getG1A((mcl::msm::G1A*)&R[i*8], isProj);
 	}
 	CYBOZU_TEST_EQUAL_ARRAY(P, R, n);
 }
