@@ -22,9 +22,18 @@ struct VmaskA {
 	Vmask v[vN];
 };
 
-inline Vec vzero()
+template<class V=Vec>
+inline V vzero()
 {
 	return _mm512_setzero_epi32();
+}
+
+template<>
+inline VecA vzero()
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vzero();
+	return r;
 }
 
 inline Vec vone()
@@ -179,6 +188,12 @@ inline VecA vmulL(const Vec& a, const VecA& b, const VecA& c)
 	return r;
 }
 
+inline VecA vmulL(const VecA& a, const Vec& b, const VecA& c)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vmulL(a.v[i], b, c.v[i]);
+	return r;
+}
 
 inline VecA vmulL(const VecA& a, const Vec& b)
 {
@@ -229,6 +244,13 @@ inline VecA vpaddq(const VmaskA& v, const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VecA vpaddq(const VmaskA& v, const VecA& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpaddq(v.v[i], a.v[i], b);
+	return r;
+}
+
 inline VecA vpsubq(const VecA& a, const VecA& b)
 {
 	VecA r;
@@ -240,6 +262,13 @@ inline VecA vpsubq(const VecA& a, const Vec& b)
 {
 	VecA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vpsubq(a.v[i], b);
+	return r;
+}
+
+inline VecA vpsubq(const Vec& a, const VecA& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpsubq(a, b.v[i]);
 	return r;
 }
 
@@ -293,16 +322,16 @@ inline VecA vpxorq(const VecA& a, const VecA& b)
 }
 
 //template<int scale=8>
-inline VecA vpgatherqq(const VecA& idx, const void *base[])
+inline VecA vpgatherqq(const VecA& idx, const void *base)
 {
 	VecA r;
-	for (size_t i = 0; i < vN; i++) r.v[i] = vpgatherqq(idx.v[i], base[i]);
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpgatherqq(idx.v[i], base);
 	return r;
 }
 
-inline void vpscatterqq(void *base[], const VecA& idx, const VecA& v)
+inline void vpscatterqq(void *base, const VecA& idx, const VecA& v)
 {
-	for (size_t i = 0; i < vN; i++) vpscatterqq(base[i], idx.v[i], v.v[i]);
+	for (size_t i = 0; i < vN; i++) vpscatterqq(base, idx.v[i], v.v[i]);
 }
 
 // return [H:L][idx]
@@ -317,6 +346,13 @@ inline VmaskA vpcmpeqq(const VecA& a, const VecA& b)
 {
 	VmaskA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vpcmpeqq(a.v[i], b.v[i]);
+	return r;
+}
+
+inline VmaskA vpcmpeqq(const VecA& a, const Vec& b)
+{
+	VmaskA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpcmpeqq(a.v[i], b);
 	return r;
 }
 
@@ -341,6 +377,12 @@ inline VmaskA vpcmpgtq(const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VmaskA vpcmpgtq(const VecA& a, const Vec& b)
+{
+	VmaskA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpcmpgtq(a.v[i], b);
+	return r;
+}
 inline VmaskA kandb(const VmaskA& a, const VmaskA& b)
 {
 	VmaskA r;

@@ -110,7 +110,7 @@ def putCode(curve, mont):
   expand('g_m64to52u', m64to52)
 
   # for FpM/FpMA
-  expand('g_offset', [0, 1, 2, 3, 4, 5, 6, 7, 8])
+  expand('g_offset', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
   for n in [1, 2]:
     expandN('g_zero', toArray(0), n) # FpM::zero()
     expandN('g_R', toArray(mont.R), n) # FpM::one()

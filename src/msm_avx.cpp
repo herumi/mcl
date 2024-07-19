@@ -216,7 +216,17 @@ inline void vmont(V z[N], V xy[N*2])
 
 inline Vec broadcast(const Vec& v) { return v; }
 inline VecA broadcast(const VecA& v) { return v; }
-inline Vec broadcast(uint64_t v) { return vpbroadcastq(v); }
+template<class V=Vec>
+inline V broadcast(uint64_t v) { return vpbroadcastq(v); }
+
+template<>
+inline VecA broadcast(uint64_t v)
+{
+	VecA r;
+	r.v[0] = broadcast(v);
+	r.v[1] = broadcast(v);
+	return r;
+}
 
 template<class VM=Vmask, class V, typename U>
 inline void vmul(V *z, const V *x, const U *y)
@@ -340,12 +350,13 @@ inline void cvt8Ux8x3to6Ux3x8(Unit y[6*3*8], const Vec x[8*3])
 }
 
 // Fr x 8 = U4x8 => Vec(U8) x 4
-inline void cvt4Ux8to8Ux4(Vec y[4], const Unit x[4*8])
+template<typename V=Vec, size_t n=M>
+inline void cvtUxnToV(V y[4], const Unit x[4*M])
 {
 	const size_t w = 4;
-	for (size_t j = 0; j < M; j++) {
+	for (size_t j = 0; j < n; j++) {
 		for (size_t i = 0; i < w; i++) {
-			((Unit *)y)[i*M+j] = x[j*w+i];
+			((Unit *)y)[i*n+j] = x[j*w+i];
 		}
 	}
 }
@@ -727,8 +738,8 @@ struct EcMT {
 	}
 	void gather(const T *tbl, V idx)
 	{
-		const V i192 = vpbroadcastq(192);
-		idx = vmulL(idx, i192, F::offset());
+		const Vec factor = vpbroadcastq(3 * 64);
+		idx = vmulL(idx, factor, F::offset());
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
 			y.v[i] = vpgatherqq(idx, &tbl[0].y.v[i]);
@@ -737,8 +748,8 @@ struct EcMT {
 	}
 	void scatter(T *tbl, V idx) const
 	{
-		const V i192 = vpbroadcastq(192);
-		idx = vmulL(idx, i192, F::offset());
+		const Vec factor = vpbroadcastq(3 * 64);
+		idx = vmulL(idx, factor, F::offset());
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
 			vpscatterqq(&tbl[0].y.v[i], idx, y.v[i]);
@@ -782,6 +793,106 @@ struct EcMT {
 		F::mul(t2, t2, z);
 		v2 = t1.isEqualAll(t2);
 		return kandb(v1, v2);
+	}
+//#define SIGNED_TABLE // a little slower (32.1Mclk->32.4Mclk)
+	template<size_t bitLen, size_t w>
+	static void makeNAFtbl(V *idxTbl, VM *negTbl, const V a[2])
+	{
+		const Vec mask = vpbroadcastq((1<<w)-1);
+#ifdef SIGNED_TABLE
+		(void)negTbl;
+#else
+		const Vec Fu = vpbroadcastq(1<<w);
+#endif
+		const Vec H = vpbroadcastq(1<<(w-1));
+		const Vec one = vpbroadcastq(1);
+		size_t pos = 0;
+		V CF = vzero<V>();
+		const size_t n = (bitLen+w-1)/w;
+		for (size_t i = 0; i < n; i++) {
+			V idx = getUnitAt(a, 2, pos);
+			idx = vpandq(idx, mask);
+			idx = vpaddq(idx, CF);
+#ifdef SIGNED_TABLE
+			V masked = vpandq(idx, mask);
+			VM v = vpcmpgtq(masked, H);
+			idxTbl[i] = masked; //vselect(negTbl[i], vpsubq(Fu, masked), masked); // idx >= H ? Fu - idx : idx;
+			CF = vpsrlq(idx, w);
+			CF = vpaddq(v, CF, one);
+#else
+			V masked = vpandq(idx, mask);
+			negTbl[i] = vpcmpgtq(masked, H);
+			idxTbl[i] = vselect(negTbl[i], vpsubq(Fu, masked), masked); // idx >= H ? F - idx : idx;
+			CF = vpsrlq(idx, w);
+			CF = vpaddq(negTbl[i], CF, one);
+#endif
+			pos += w;
+		}
+	}
+	// Treat idx as a signed integer
+	// 32.4M clk
+	template<bool isProj=true, bool mixed=false>
+	static void mulGLV(T& Q, const T& P, const V y[4])
+	{
+		const size_t w = 5;
+		const size_t halfN = (1<<(w-1))+1; // [0, 2^(w-1)]
+#ifdef SIGNED_TABLE
+		const size_t tblN = 1<<w;
+#else
+		const size_t tblN = halfN;
+#endif
+		V a[2], b[2];
+		T tbl1[tblN], tbl2[tblN];
+		makeTable<isProj, mixed>(tbl1, halfN, P);
+		if (!isProj && mixed) normalizeJacobiVec<T, halfN-1>(tbl1+1);
+		for (size_t i = 0; i < halfN; i++) {
+			mulLambda(tbl2[i], tbl1[i]);
+		}
+#ifdef SIGNED_TABLE
+		for (size_t i = halfN; i < tblN; i++) {
+			T::neg(tbl1[i], tbl1[tblN-i]);
+			T::neg(tbl2[i], tbl2[tblN-i]);
+		}
+#endif
+		const Unit *src = (const Unit*)y;
+		Unit *pa = (Unit*)a;
+		Unit *pb = (Unit*)b;
+		for (size_t i = 0; i < M; i++) {
+			Unit buf[4] = { src[i+M*0], src[i+M*1], src[i+M*2], src[i+M*3] };
+			Unit aa[2], bb[2];
+			mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
+			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
+			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
+		}
+		const size_t bitLen = 128;
+		const size_t n = (bitLen + w-1)/w;
+		V aTbl[n], bTbl[n];
+		VM aNegTbl[n], bNegTbl[n];
+		makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
+		makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
+
+		for (size_t i = 0; i < n; i++) {
+			if (i > 0) for (size_t k = 0; k < w; k++) T::template dbl<isProj>(Q, Q);
+			const size_t pos = n-1-i;
+
+			T t;
+			V idx = bTbl[pos];
+			t.gather(tbl2, idx);
+#ifndef SIGNED_TABLE
+			t.y = F::select(bNegTbl[pos], t.y.neg(), t.y);
+#endif
+			if (i == 0) {
+				Q = t;
+			} else {
+				add<isProj, mixed>(Q, Q, t);
+			}
+			idx = aTbl[pos];
+			t.gather(tbl1, idx);
+#ifndef SIGNED_TABLE
+			t.y = F::select(aNegTbl[pos], t.y.neg(), t.y);
+#endif
+			add<isProj, mixed>(Q, Q, t);
+		}
 	}
 };
 
@@ -879,106 +990,6 @@ struct EcM : EcMT<EcM, FpM> {
 		}
 	}
 #else
-//#define SIGNED_TABLE // a little slower (32.1Mclk->32.4Mclk)
-	template<size_t bitLen, size_t w>
-	static void makeNAFtbl(Vec *idxTbl, Vmask *negTbl, const Vec a[2])
-	{
-		const Vec mask = vpbroadcastq((1<<w)-1);
-#ifdef SIGNED_TABLE
-		(void)negTbl;
-#else
-		const Vec F = vpbroadcastq(1<<w);
-#endif
-		const Vec H = vpbroadcastq(1<<(w-1));
-		const Vec one = vpbroadcastq(1);
-		size_t pos = 0;
-		Vec CF = vzero();
-		const size_t n = (bitLen+w-1)/w;
-		for (size_t i = 0; i < n; i++) {
-			Vec idx = getUnitAt(a, 2, pos);
-			idx = vpandq(idx, mask);
-			idx = vpaddq(idx, CF);
-#ifdef SIGNED_TABLE
-			Vec masked = vpandq(idx, mask);
-			Vmask v = vpcmpgtq(masked, H);
-			idxTbl[i] = masked; //vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
-			CF = vpsrlq(idx, w);
-			CF = vpaddq(v, CF, one);
-#else
-			Vec masked = vpandq(idx, mask);
-			negTbl[i] = vpcmpgtq(masked, H);
-			idxTbl[i] = vselect(negTbl[i], vpsubq(F, masked), masked); // idx >= H ? F - idx : idx;
-			CF = vpsrlq(idx, w);
-			CF = vpaddq(negTbl[i], CF, one);
-#endif
-			pos += w;
-		}
-	}
-	// Treat idx as a signed integer
-	// 32.4M clk
-	template<bool isProj=true, bool mixed=false>
-	static void mulGLV(EcM& Q, const EcM& P, const Vec y[4])
-	{
-		const size_t w = 5;
-		const size_t halfN = (1<<(w-1))+1; // [0, 2^(w-1)]
-#ifdef SIGNED_TABLE
-		const size_t tblN = 1<<w;
-#else
-		const size_t tblN = halfN;
-#endif
-		Vec a[2], b[2];
-		EcM tbl1[tblN], tbl2[tblN];
-		makeTable<isProj, mixed>(tbl1, halfN, P);
-		if (!isProj && mixed) normalizeJacobiVec<EcM, halfN-1>(tbl1+1);
-		for (size_t i = 0; i < halfN; i++) {
-			mulLambda(tbl2[i], tbl1[i]);
-		}
-#ifdef SIGNED_TABLE
-		for (size_t i = halfN; i < tblN; i++) {
-			EcM::neg(tbl1[i], tbl1[tblN-i]);
-			EcM::neg(tbl2[i], tbl2[tblN-i]);
-		}
-#endif
-		const Unit *src = (const Unit*)y;
-		Unit *pa = (Unit*)a;
-		Unit *pb = (Unit*)b;
-		for (size_t i = 0; i < M; i++) {
-			Unit buf[4] = { src[i+M*0], src[i+M*1], src[i+M*2], src[i+M*3] };
-			Unit aa[2], bb[2];
-			mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
-			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
-			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
-		}
-		const size_t bitLen = 128;
-		const size_t n = (bitLen + w-1)/w;
-		Vec aTbl[n], bTbl[n];
-		Vmask aNegTbl[n], bNegTbl[n];
-		makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
-		makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
-
-		for (size_t i = 0; i < n; i++) {
-			if (i > 0) for (size_t k = 0; k < w; k++) EcM::dbl<isProj>(Q, Q);
-			const size_t pos = n-1-i;
-
-			EcM T;
-			Vec idx = bTbl[pos];
-			T.gather(tbl2, idx);
-#ifndef SIGNED_TABLE
-			T.y = FpM::select(bNegTbl[pos], T.y.neg(), T.y);
-#endif
-			if (i == 0) {
-				Q = T;
-			} else {
-				add<isProj, mixed>(Q, Q, T);
-			}
-			idx = aTbl[pos];
-			T.gather(tbl1, idx);
-#ifndef SIGNED_TABLE
-			T.y = FpM::select(aNegTbl[pos], T.y.neg(), T.y);
-#endif
-			add<isProj, mixed>(Q, Q, T);
-		}
-	}
 #endif
 };
 
@@ -1002,7 +1013,16 @@ inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
 	for (size_t i = 0; i < 8; i++) {
 		g_func.fr->fromMont(ya+i*4, y[i].v);
 	}
-	cvt4Ux8to8Ux4(yv, ya);
+	cvtUxnToV<Vec, M>(yv, ya);
+}
+
+inline void cvtFr16toVecA4(VecA yv[4], const mcl::msm::FrA y[16])
+{
+	Unit ya[4*8*vN];
+	for (size_t i = 0; i < 8*vN; i++) {
+		g_func.fr->fromMont(ya+i*4, y[i].v);
+	}
+	cvtUxnToV<VecA,M*vN>(yv, ya);
 }
 
 // xVec[n], yVec[n * maxBitSize/64]
@@ -1049,6 +1069,7 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 }
 
 struct FpMA : FpMT<FpMA, VmaskA, VecA> {
+	static const VecA& offset() { return *(const VecA*)g_offset_; }
 	static const FpMA& zero() { return *(const FpMA*)g_zeroA_; }
 	static const FpMA& one() { return *(const FpMA*)g_RA_; }
 	static const FpMA& R2() { return *(const FpMA*)g_R2A_; }
@@ -1097,21 +1118,21 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	}
 };
 
-void cvtVec2toVecA(VecA v[N], const Vec *a, const Vec *b)
+void cvtFpM2FpMA(FpMA& z, const FpM& x, const FpM& y)
 {
 	assert(vN == 2);
 	for (size_t i = 0; i < N; i++) {
-		v[i].v[0] = a[i];
-		v[i].v[1] = b[i];
+		z.v[i].v[0] = x.v[i];
+		z.v[i].v[1] = y.v[i];
 	}
 }
 
-void cvtVecAtoVec2(Vec *a, Vec *b, const VecA v[N])
+void cvtFpMA2FpM(FpM& a, FpM& b, const FpMA& c)
 {
 	assert(vN == 2);
 	for (size_t i = 0; i < N; i++) {
-		a[i] = v[i].v[0];
-		b[i] = v[i].v[1];
+		a.v[i] = c.v[i].v[0];
+		b.v[i] = c.v[i].v[1];
 	}
 }
 
@@ -1119,11 +1140,34 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	static const FpMA &b3_;
 	static const EcMA &zeroProj_;
 	static const EcMA &zeroJacobi_;
-#if 0
-	void setEcM(const EcM x[vN])
+	void setEcM(const EcM P[vN])
 	{
+		cvtFpM2FpMA(x, P[0].x, P[1].x);
+		cvtFpM2FpMA(y, P[0].y, P[1].y);
+		cvtFpM2FpMA(z, P[0].z, P[1].z);
 	}
-#endif
+	void getEcM(EcM P[vN]) const
+	{
+		cvtFpMA2FpM(P[0].x, P[1].x, x);
+		cvtFpMA2FpM(P[0].y, P[1].y, y);
+		cvtFpMA2FpM(P[0].z, P[1].z, z);
+	}
+	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
+	{
+		EcM P[vN];
+		for (size_t i = 0; i < vN; i++) {
+			P[i].setG1A(v+i*M, JacobiToProj);
+		}
+		setEcM(P);
+	}
+	void getG1A(mcl::msm::G1A v[M*vN], bool ProjToJacobi = true) const
+	{
+		EcM P[vN];
+		getEcM(P);
+		for (size_t i = 0; i < vN; i++) {
+			P[i].getG1A(v+i*M, ProjToJacobi);
+		}
+	}
 };
 
 const FpMA& EcMA::b3_ = *(const FpMA*)g_b3A_;
@@ -1187,12 +1231,22 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
-	assert(n % 8 == 0);
+	assert(n % 16 == 0);
 	const bool isProj = false;
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
+#if 0
+	for (size_t i = 0; i < n; i += 16) {
+		EcMA P;
+		VecA yv[4];
+		cvtFr16toVecA4(yv, y+i);
+		P.setG1A(x+i, isProj);
+		EcMA::mulGLV<isProj, mixed>(P, P, yv);
+		P.getG1A(x+i, isProj);
+	}
+#else
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
 		Vec yv[4];
@@ -1201,6 +1255,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 		EcM::mulGLV<isProj, mixed>(P, P, yv);
 		P.getG1A(x+i, isProj);
 	}
+#endif
 }
 
 bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
@@ -1209,8 +1264,13 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	assert(EcM::b_ == 4);
 	(void)EcM::a_; // disable unused warning
 	(void)EcM::b_;
+	(void)EcM::zeroProj_;
+	(void)EcM::zeroJacobi_;
 	(void)EcMA::a_;
 	(void)EcMA::b_;
+	(void)EcMA::b3_;
+	(void)EcMA::zeroProj_;
+	(void)EcMA::zeroJacobi_;
 
 	if (cp != mcl::BLS12_381) return false;
 	Xbyak::util::Cpu cpu;
@@ -1665,8 +1725,8 @@ CYBOZU_TEST_AUTO(op)
 			a[i] = PM.x;
 			b[i] = PM.y;
 		}
-		CYBOZU_BENCH_C("add", C, FpM::add, a[0], a[0], b[0]);
-		CYBOZU_BENCH_C("mul", C, FpM::mul, a[0], a[0], b[0]);
+		CYBOZU_BENCH_C("FpM::add", C, FpM::add, a[0], a[0], b[0]);
+		CYBOZU_BENCH_C("FpM::mul", C, FpM::mul, a[0], a[0], b[0]);
 		CYBOZU_BENCH_C("mulu", C, FpM::mul, a[0], a[0], g_m64to52u_);
 		CYBOZU_BENCH_C("addn", C, lpN, FpM::add, a, a, b, n);
 		CYBOZU_BENCH_C("muln", C, lpN, FpM::mul, a, a, b, n);
@@ -1674,15 +1734,14 @@ CYBOZU_TEST_AUTO(op)
 #endif
 }
 
-#if 0
 CYBOZU_TEST_AUTO(opA)
 {
-	const size_t n = 8; // fixed
-	G1 P[n*vN];
-	G1 Q[n*vN];
-	G1 R[n*vN];
-	G1 T[n*vN];
-	Fr x[n*vN];
+	const size_t n = N*vN;
+	G1 P[n];
+	G1 Q[n];
+	G1 R[n];
+	G1 T[n];
+	Fr x[n];
 	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
 	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
 	mcl::msm::G1A *RA = (mcl::msm::G1A*)R;
@@ -1706,8 +1765,60 @@ CYBOZU_TEST_AUTO(opA)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
+
+	// as Jacobi
+	PM.setG1A(PA, false);
+	EcMA::dbl<false>(TM, PM);
+	TM.getG1A(TA, false);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(R[i], T[i]);
+	}
+
+	// test add
+	// R = P + Q
+	for (size_t i = 0; i < n; i++) {
+		G1::add(R[i], P[i], Q[i]);
+	}
+
+	// as Proj
+	PM.setG1A(PA);
+	QM.setG1A(QA);
+	EcMA::add<true>(TM, PM, QM);
+	TM.getG1A(TA);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(R[i], T[i]);
+	}
+
+	// as Jacobi
+	PM.setG1A(PA, false);
+	QM.setG1A(QA, false);
+	EcMA::add<false>(TM, PM, QM);
+	TM.getG1A(TA, false);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(R[i], T[i]);
+	}
+
+	// as Jacobi (mixed)
+	for (size_t i = 0; i < n; i++) {
+		Q[i].normalize();
+	}
+	QM.setG1A(QA, false);
+	EcMA::add<false, true>(TM, PM, QM);
+	TM.getG1A(TA, false);
+	for (size_t i = 0; i < n; i++) {
+		CYBOZU_TEST_EQUAL(R[i], T[i]);
+	}
+	{
+		EcM PM2, QM2;
+		PM2.setG1A(PA);
+		QM2.setG1A(QA);
+		const int C = 10000;
+		CYBOZU_BENCH_C("EcM::dbl", C, EcM::dbl, QM2, QM2);
+		CYBOZU_BENCH_C("EcM::add", C, EcM::add, PM2, PM2, QM2);
+		CYBOZU_BENCH_C("EcMA::dbl", C, EcMA::dbl, QM, QM);
+		CYBOZU_BENCH_C("EcMA::add", C, EcMA::add, TM, TM, QM);
+	}
 }
-#endif
 
 CYBOZU_TEST_AUTO(normalizeJacobiVec)
 {
