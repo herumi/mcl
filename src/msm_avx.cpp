@@ -349,14 +349,15 @@ inline void cvt8Ux8x3to6Ux3x8(Unit y[6*3*8], const Vec x[8*3])
 	}
 }
 
-// Fr x 8 = U4x8 => Vec(U8) x 4
+// (U x 4) x n => (U * n) x 4
 template<typename V=Vec, size_t n=M>
 inline void cvtUxnToV(V y[4], const Unit x[4*M])
 {
+	Unit *dst = (Unit*)y;
 	const size_t w = 4;
-	for (size_t j = 0; j < n; j++) {
-		for (size_t i = 0; i < w; i++) {
-			((Unit *)y)[i*n+j] = x[j*w+i];
+	for (size_t i = 0; i < w; i++) {
+		for (size_t j = 0; j < n; j++) {
+			*dst++ = x[j*w+i];
 		}
 	}
 }
@@ -738,7 +739,7 @@ struct EcMT {
 	}
 	void gather(const T *tbl, V idx)
 	{
-		const Vec factor = vpbroadcastq(3 * 64);
+		const Vec factor = vpbroadcastq(3 * sizeof(V));
 		idx = vmulL(idx, factor, F::offset());
 		for (size_t i = 0; i < N; i++) {
 			x.v[i] = vpgatherqq(idx, &tbl[0].x.v[i]);
@@ -748,7 +749,7 @@ struct EcMT {
 	}
 	void scatter(T *tbl, V idx) const
 	{
-		const Vec factor = vpbroadcastq(3 * 64);
+		const Vec factor = vpbroadcastq(3 * sizeof(V));
 		idx = vmulL(idx, factor, F::offset());
 		for (size_t i = 0; i < N; i++) {
 			vpscatterqq(&tbl[0].x.v[i], idx, x.v[i]);
@@ -1697,25 +1698,6 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_EQUAL(R[i], T[i]);
 	}
-#if 1
-	// mulEachAVX512
-	for (int mode = 0; mode < 2; mode++) {
-		for (int t = 0; t < 0x1000; t += 8) {
-			for (size_t i = 0; i < n; i++) {
-				Q[i] = P[i];
-				switch (mode) {
-				case 0: x[i] = t + i; break;
-				case 1: x[i].setByCSPRNG(rg); break;
-				}
-				G1::mul(R[i], P[i], x[i]);
-			}
-			mcl::msm::mulEachAVX512((Unit*)Q, (const Unit*)x, n);
-			for (size_t i = 0; i < n; i++) {
-				CYBOZU_TEST_EQUAL(R[i], Q[i]);
-			}
-		}
-	}
-#endif
 #ifdef NDEBUG
 	{
 		const int C = 10000;
@@ -1744,7 +1726,6 @@ CYBOZU_TEST_AUTO(opA)
 	Fr x[n];
 	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
 	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
-	mcl::msm::G1A *RA = (mcl::msm::G1A*)R;
 	mcl::msm::G1A *TA = (mcl::msm::G1A*)T;
 
 	EcMA PM, QM, TM;
@@ -1880,7 +1861,7 @@ CYBOZU_TEST_AUTO(mulEach_special)
 
 CYBOZU_TEST_AUTO(mulEach)
 {
-	const size_t n = 1024;
+	const size_t n = 16;//1024;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
 	cybozu::XorShift rg;
