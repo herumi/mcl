@@ -817,11 +817,10 @@ struct EcMT {
 			pos += w;
 		}
 	}
-	// Treat idx as a signed integer
-	// 32.4M clk
 	template<bool isProj=true, bool mixed=false>
-	static void mulGLV(T& Q, const T& P, const V y[4])
+	static void mulGLV(T& Q, const T& P, const mcl::msm::FrA *y)
 	{
+		const size_t m = sizeof(V)/8;
 		const size_t w = 5;
 		const size_t halfN = (1<<(w-1))+1; // [0, 2^(w-1)]
 #ifdef SIGNED_TABLE
@@ -842,15 +841,15 @@ struct EcMT {
 			T::neg(tbl2[i], tbl2[tblN-i]);
 		}
 #endif
-		const Unit *src = (const Unit*)y;
 		Unit *pa = (Unit*)a;
 		Unit *pb = (Unit*)b;
-		for (size_t i = 0; i < M; i++) {
-			Unit buf[4] = { src[i+M*0], src[i+M*1], src[i+M*2], src[i+M*3] };
+		for (size_t i = 0; i < m; i++) {
+			Unit buf[4];
+			g_func.fr->fromMont(buf, y[i].v);
 			Unit aa[2], bb[2];
 			mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
-			pa[i+M*0] = aa[0]; pa[i+M*1] = aa[1];
-			pb[i+M*0] = bb[0]; pb[i+M*1] = bb[1];
+			pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
+			pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
 		}
 		const size_t bitLen = 128;
 		const size_t n = (bitLen + w-1)/w;
@@ -1231,22 +1230,18 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
-#if 0
+#if 1
 	for (size_t i = 0; i < n; i += 16) {
 		EcMA P;
-		VecA yv[4];
-		cvtFrA(yv, y+i);
 		P.setG1A(x+i, isProj);
-		EcMA::mulGLV<isProj, mixed>(P, P, yv);
+		EcMA::mulGLV<isProj, mixed>(P, P, y+i);
 		P.getG1A(x+i, isProj);
 	}
 #else
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
-		Vec yv[4];
-		cvtFrA(yv, y+i);
 		P.setG1A(x+i, isProj);
-		EcM::mulGLV<isProj, mixed>(P, P, yv);
+		EcM::mulGLV<isProj, mixed>(P, P, y+i);
 		P.getG1A(x+i, isProj);
 	}
 #endif
@@ -1854,7 +1849,7 @@ CYBOZU_TEST_AUTO(mulEach_special)
 
 CYBOZU_TEST_AUTO(mulEach)
 {
-	const size_t n = 16;//1024;
+	const size_t n = 1024;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
 	cybozu::XorShift rg;
