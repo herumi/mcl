@@ -160,8 +160,13 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	target_link_libraries(mcl_st PUBLIC ${BINT_X64_OBJ})
 	add_dependencies(mcl_st gen_bint-x64-win.obj)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
-	target_sources(mcl PRIVATE src/asm/bint-x64-amd64.S)
-	target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
+	if (CMAKE_SYSTEM_NAME STREQUAL "MSYS")
+		target_sources(mcl PRIVATE src/asm/bint-x64-mingw.S)
+		target_sources(mcl_st PRIVATE src/asm/bint-x64-mingw.S)
+	else()
+		target_sources(mcl PRIVATE src/asm/bint-x64-amd64.S)
+		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
+	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ..")
@@ -185,9 +190,15 @@ endif()
 
 # use generated asm or compile base${BIT}.ll by clang
 
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "MSYS")
+  set(X86_64_LINUX TRUE)
+else()
+  set(X86_64_LINUX FALSE)
+endif()
+
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# skip
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
+elseif(X86_64_LINUX)
 	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 	target_sources(mcl PRIVATE src/asm/x86-64.S)

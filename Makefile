@@ -155,7 +155,7 @@ src/fp.cpp: include/mcl/bint_proto.hpp
   LIB_OBJ+=$(BINT_OBJ)
   ifeq ($(CPU)-$(MCL_BINT_ASM_X64),x86-64-1)
     ifeq ($(OS),mingw64)
-      BINT_ASM_X64_BASENAME=bint-x64
+      BINT_ASM_X64_BASENAME=bint-x64-mingw
 $(BINT_OBJ): src/asm/$(BINT_ASM_X64_BASENAME).S
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
 

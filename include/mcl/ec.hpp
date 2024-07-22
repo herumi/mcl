@@ -2188,12 +2188,12 @@ public:
 	// xVec[i] *= yVec[i]
 	static void mulEach(EcT *xVec, const EcT::Fr *yVec, size_t n)
 	{
-		if (mulEachOpti && n >= 8) {
-			size_t n8 = n & ~size_t(7);
-			mulEachOpti((Unit*)xVec, yVec[0].getUnit(), n8);
-			xVec += n8;
-			yVec += n8;
-			n -= n8;
+		if (mulEachOpti && n >= 16) {
+			size_t n16 = n & ~size_t(16-1);
+			mulEachOpti((Unit*)xVec, yVec[0].getUnit(), n16);
+			xVec += n16;
+			yVec += n16;
+			n -= n16;
 		}
 		for (size_t i = 0; i < n; i++) {
 			xVec[i] *= yVec[i];
