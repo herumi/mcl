@@ -994,30 +994,6 @@ inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 	}
 }
 
-// (U x 4) x n => (U * n) x 4
-template<typename V=Vec>
-inline void cvtUxnToV(V y[4], const Unit x[])
-{
-	const size_t n = sizeof(V)/8;
-	Unit *dst = (Unit*)y;
-	const size_t w = 4;
-	for (size_t i = 0; i < w; i++) {
-		for (size_t j = 0; j < n; j++) {
-			*dst++ = x[j*w+i];
-		}
-	}
-}
-
-template<class V>
-inline void cvtFrA(V yv[4], const mcl::msm::FrA y[8])
-{
-	Unit ya[4*sizeof(V)/8];
-	for (size_t i = 0; i < 8; i++) {
-		g_func.fr->fromMont(ya+i*4, y[i].v);
-	}
-	cvtUxnToV(yv, ya);
-}
-
 // xVec[n], yVec[n * maxBitSize/64]
 // assume xVec[] is normalized
 inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVec, size_t n, size_t maxBitSize)
@@ -1178,14 +1154,16 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	const size_t n8 = n/8;
 	const mcl::fp::Op *fr = g_func.fr;
-#if 1
 //	mcl::ec::normalizeVec(x, x, n);
+
 	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8 * 2, 64);
+	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
+
 	for (size_t i = 0; i < n8; i++) {
 		xVec[i*2].setG1A(x+i*8);
 		EcM::mulLambda(xVec[i*2+1], xVec[i*2]);
 	}
-	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
+
 	Unit *py = (Unit*)yVec;
 	for (size_t i = 0; i < n8; i++) {
 		for (size_t j = 0; j < 8; j++) {
@@ -1201,19 +1179,10 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 		py += 32;
 	}
 	mulVecAVX512_inner(P, xVec, yVec, n8*2, 128);
-#else
-	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8, 64);
-	for (size_t i = 0; i < n8; i++) {
-		xVec[i].setG1A(x+i*8);
-	}
-	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
-	for (size_t i = 0; i < n8; i++) {
-		cvtFrA(yVec+i*4, y+i*8);
-	}
-	mulVecAVX512_inner(P, xVec, yVec, n8, 256);
-#endif
+
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
+
 	const bool constTime = false;
 	for (size_t i = n8*8; i < n; i++) {
 		mcl::msm::G1A Q;
@@ -1231,6 +1200,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
 #if 1
+	// 30.6Mclk at n=1024
 	for (size_t i = 0; i < n; i += 16) {
 		EcMA P;
 		P.setG1A(x+i, isProj);
