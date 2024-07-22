@@ -349,19 +349,6 @@ inline void cvt8Ux8x3to6Ux3x8(Unit y[6*3*8], const Vec x[8*3])
 	}
 }
 
-// (U x 4) x n => (U * n) x 4
-template<typename V=Vec, size_t n=M>
-inline void cvtUxnToV(V y[4], const Unit x[4*M])
-{
-	Unit *dst = (Unit*)y;
-	const size_t w = 4;
-	for (size_t i = 0; i < w; i++) {
-		for (size_t j = 0; j < n; j++) {
-			*dst++ = x[j*w+i];
-		}
-	}
-}
-
 static const CYBOZU_ALIGN(64) uint64_t g_pickUpFp[8] = {
 	6*0, 6*1, 6*2, 6*3, 6*4, 6*5, 6*6, 6*7,
 };
@@ -1008,22 +995,28 @@ inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
 	}
 }
 
-inline void cvtFr8toVec4(Vec yv[4], const mcl::msm::FrA y[8])
+// (U x 4) x n => (U * n) x 4
+template<typename V=Vec>
+inline void cvtUxnToV(V y[4], const Unit x[])
 {
-	Unit ya[4*8];
+	const size_t n = sizeof(V)/8;
+	Unit *dst = (Unit*)y;
+	const size_t w = 4;
+	for (size_t i = 0; i < w; i++) {
+		for (size_t j = 0; j < n; j++) {
+			*dst++ = x[j*w+i];
+		}
+	}
+}
+
+template<class V>
+inline void cvtFrA(V yv[4], const mcl::msm::FrA y[8])
+{
+	Unit ya[4*sizeof(V)/8];
 	for (size_t i = 0; i < 8; i++) {
 		g_func.fr->fromMont(ya+i*4, y[i].v);
 	}
-	cvtUxnToV<Vec, M>(yv, ya);
-}
-
-inline void cvtFr16toVecA4(VecA yv[4], const mcl::msm::FrA y[16])
-{
-	Unit ya[4*8*vN];
-	for (size_t i = 0; i < 8*vN; i++) {
-		g_func.fr->fromMont(ya+i*4, y[i].v);
-	}
-	cvtUxnToV<VecA,M*vN>(yv, ya);
+	cvtUxnToV(yv, ya);
 }
 
 // xVec[n], yVec[n * maxBitSize/64]
@@ -1216,7 +1209,7 @@ void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	}
 	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
 	for (size_t i = 0; i < n8; i++) {
-		cvtFr8toVec4(yVec+i*4, y+i*8);
+		cvtFrA(yVec+i*4, y+i*8);
 	}
 	mulVecAVX512_inner(P, xVec, yVec, n8, 256);
 #endif
@@ -1242,7 +1235,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	for (size_t i = 0; i < n; i += 16) {
 		EcMA P;
 		VecA yv[4];
-		cvtFr16toVecA4(yv, y+i);
+		cvtFrA(yv, y+i);
 		P.setG1A(x+i, isProj);
 		EcMA::mulGLV<isProj, mixed>(P, P, yv);
 		P.getG1A(x+i, isProj);
@@ -1251,7 +1244,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	for (size_t i = 0; i < n; i += 8) {
 		EcM P;
 		Vec yv[4];
-		cvtFr8toVec4(yv, y+i);
+		cvtFrA(yv, y+i);
 		P.setG1A(x+i, isProj);
 		EcM::mulGLV<isProj, mixed>(P, P, yv);
 		P.getG1A(x+i, isProj);
