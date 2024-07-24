@@ -1844,4 +1844,27 @@ CYBOZU_TEST_AUTO(mulEach)
 	CYBOZU_BENCH_C("mulEach", 100, G1::mulEach, Q, x, n);
 #endif
 }
+
+CYBOZU_TEST_AUTO(mulVec)
+{
+	const size_t n = 8203;
+	G1 P[n], Q, R;
+	Fr x[n];
+	cybozu::XorShift rg;
+	setParam(P, x, n, rg);
+	if (n > 32) P[32].clear();
+	P[n/2].clear();
+	Q.clear();
+	for (size_t i = 0; i < n; i++) {
+		G1 T;
+		G1::mul(T, P[i], x[i]);
+		Q += T;
+	}
+	mcl::msm::mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
+//	G1::mulVec(R, P, x, n);
+	CYBOZU_TEST_EQUAL(Q, R);
+#ifdef NDEBUG
+	CYBOZU_BENCH_C("mulVec", 30, mcl::msm::mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
+#endif
+}
 #endif
