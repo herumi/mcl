@@ -984,26 +984,28 @@ const FpM& EcM::b3_ = *(const FpM*)g_b3_;
 const EcM& EcM::zeroProj_ = *(const EcM*)g_zeroProj_;
 const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
 
-inline void reduceSum(mcl::msm::G1A& Q, const EcM& P)
+template<class G>
+inline void reduceSum(mcl::msm::G1A& Q, const G& P)
 {
-	mcl::msm::G1A z[8];
+	const size_t m = sizeof(P)/sizeof(EcM)*8;
+	mcl::msm::G1A z[m];
 	P.getG1A(z);
 	Q = z[0];
-	for (int i = 1; i < 8; i++) {
+	for (size_t i = 1; i < m; i++) {
 		g_func.addG1(Q, Q, z[i]);
 	}
 }
 
 // xVec[n], yVec[n * maxBitSize/64]
-// assume xVec[] is normalized
-inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVec, size_t n, size_t maxBitSize)
+template<class G=EcM, class V=Vec>
+inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize)
 {
 	size_t c = mcl::ec::argminForMulVec(n);
 	size_t tblN = size_t(1) << c;
-	EcM *tbl = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * tblN, 64);
+	G *tbl = (G*)Xbyak::AlignedMalloc(sizeof(G) * tblN, 64);
 	const size_t yn = maxBitSize / 64;
 	const size_t winN = (maxBitSize + c-1) / c;
-	EcM *win = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * winN, 64);
+	G *win = (G*)Xbyak::AlignedMalloc(sizeof(G) * winN, 64);
 
 	const Vec m = vpbroadcastq(tblN-1);
 	for (size_t w = 0; w < winN; w++) {
@@ -1011,26 +1013,26 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const EcM *xVec, const Vec *yVe
 			tbl[i].clear();
 		}
 		for (size_t i = 0; i < n; i++) {
-			Vec v = getUnitAt(yVec+i*yn, yn, c*w);
+			V v = getUnitAt(yVec+i*yn, yn, c*w);
 			v = vpandq(v, m);
-			EcM T;
+			G T;
 			T.gather(tbl, v);
-			EcM::add(T, T, xVec[i]);
+			G::add(T, T, xVec[i]);
 			T.scatter(tbl, v);
 		}
-		EcM sum = tbl[tblN - 1];
+		G sum = tbl[tblN - 1];
 		win[w] = sum;
 		for (size_t i = 1; i < tblN - 1; i++) {
-			EcM::add(sum, sum, tbl[tblN - 1- i]);
-			EcM::add(win[w], win[w], sum);
+			G::add(sum, sum, tbl[tblN - 1- i]);
+			G::add(win[w], win[w], sum);
 		}
 	}
-	EcM T = win[winN - 1];
+	G T = win[winN - 1];
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
-			EcM::dbl(T, T);
+			G::dbl(T, T);
 		}
-		EcM::add(T, T, win[winN - 1- w]);
+		G::add(T, T, win[winN - 1- w]);
 	}
 	reduceSum(P, T);
 	Xbyak::AlignedFree(win);
@@ -1143,52 +1145,60 @@ const FpMA& EcMA::b3_ = *(const FpMA*)g_b3A_;
 const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_zeroProjA_;
 const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 
-} // namespace
-
-namespace mcl { namespace msm {
-
-void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n)
+template<class G=EcM, class V=Vec>
+void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 {
-	G1A& P = *(G1A*)_P;
+	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	const size_t n8 = n/8;
+	const size_t m = sizeof(V)/8;
+	const size_t d = n/m;
 	const mcl::fp::Op *fr = g_func.fr;
 //	mcl::ec::normalizeVec(x, x, n);
 
-	EcM *xVec = (EcM*)Xbyak::AlignedMalloc(sizeof(EcM) * n8 * 2, 64);
-	Vec *yVec = (Vec*)Xbyak::AlignedMalloc(sizeof(Vec) * n8 * 4, 64);
+	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * 2, 64);
+	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
 
-	for (size_t i = 0; i < n8; i++) {
-		xVec[i*2].setG1A(x+i*8);
-		EcM::mulLambda(xVec[i*2+1], xVec[i*2]);
+	for (size_t i = 0; i < d; i++) {
+		xVec[i*2].setG1A(x+i*m);
+		G::mulLambda(xVec[i*2+1], xVec[i*2]);
 	}
 
 	Unit *py = (Unit*)yVec;
-	for (size_t i = 0; i < n8; i++) {
-		for (size_t j = 0; j < 8; j++) {
+	for (size_t i = 0; i < d; i++) {
+		for (size_t j = 0; j < m; j++) {
 			Unit ya[4];
-			fr->fromMont(ya, y[i*8+j].v);
+			fr->fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
 			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
 			py[j+0] = a[0];
-			py[j+8] = a[1];
-			py[j+16] = b[0];
-			py[j+24] = b[1];
+			py[j+m] = a[1];
+			py[j+m*2] = b[0];
+			py[j+m*3] = b[1];
 		}
-		py += 32;
+		py += m*4;
 	}
-	mulVecAVX512_inner(P, xVec, yVec, n8*2, 128);
+	mulVecAVX512_inner(P, xVec, yVec, d*2, 128);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
 
 	const bool constTime = false;
-	for (size_t i = n8*8; i < n; i++) {
+	for (size_t i = d*m; i < n; i++) {
 		mcl::msm::G1A Q;
 		g_func.mulG1(Q, x[i], y[i], constTime);
 		g_func.addG1(P, P, Q);
 	}
+}
+
+} // namespace
+
+namespace mcl { namespace msm {
+
+void mulVecAVX512(Unit *P, Unit *x, const Unit *y, size_t n)
+{
+	mulVecAVX512T<EcM, Vec>(P, x, y, n);
+//	mulVecAVX512T<EcMA, VecA>(P, x, y, n); // slower
 }
 
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
