@@ -984,7 +984,7 @@ inline size_t argminForMulVec(size_t n)
 
 /*
 	Extract w bits from yVec[i] starting at the pos-th bit, assign this value to v.
-	tbl[v] += xVec[i]
+	tbl[v-1] += xVec[i]
 	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
 */
 template<class G>

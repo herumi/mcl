@@ -996,6 +996,29 @@ inline void reduceSum(mcl::msm::G1A& Q, const G& P)
 	}
 }
 
+template<class G, class V>
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec, size_t yn, size_t pos, size_t n)
+{
+	const Vec m = vpbroadcastq(tblN-1);
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t i = 0; i < n; i++) {
+		V v = getUnitAt(yVec+i*yn, yn, pos);
+		v = vpandq(v, m);
+		G T;
+		T.gather(tbl, v);
+		G::add(T, T, xVec[i]);
+		T.scatter(tbl, v);
+	}
+	G sum = tbl[tblN - 1];
+	win = sum;
+	for (size_t i = 1; i < tblN - 1; i++) {
+		G::add(sum, sum, tbl[tblN - 1- i]);
+		G::add(win, win, sum);
+	}
+}
+
 // xVec[n], yVec[n * maxBitSize/64]
 template<class G=EcM, class V=Vec>
 inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize)
@@ -1005,37 +1028,18 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, s
 	G *tbl = (G*)Xbyak::AlignedMalloc(sizeof(G) * tblN, 64);
 	const size_t yn = maxBitSize / 64;
 	const size_t winN = (maxBitSize + c-1) / c;
-	G *win = (G*)Xbyak::AlignedMalloc(sizeof(G) * winN, 64);
 
-	const Vec m = vpbroadcastq(tblN-1);
-	for (size_t w = 0; w < winN; w++) {
-		for (size_t i = 0; i < tblN; i++) {
-			tbl[i].clear();
-		}
-		for (size_t i = 0; i < n; i++) {
-			V v = getUnitAt(yVec+i*yn, yn, c*w);
-			v = vpandq(v, m);
-			G T;
-			T.gather(tbl, v);
-			G::add(T, T, xVec[i]);
-			T.scatter(tbl, v);
-		}
-		G sum = tbl[tblN - 1];
-		win[w] = sum;
-		for (size_t i = 1; i < tblN - 1; i++) {
-			G::add(sum, sum, tbl[tblN - 1- i]);
-			G::add(win[w], win[w], sum);
-		}
-	}
-	G T = win[winN - 1];
+	G T;
+	mulVecUpdateTable<G, V>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1), n);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(T, T);
 		}
-		G::add(T, T, win[winN - 1- w]);
+		G win;
+		mulVecUpdateTable<G, V>(win, tbl, tblN, xVec, yVec, yn, c*(winN-1-w), n);
+		G::add(T, T, win);
 	}
 	reduceSum(P, T);
-	Xbyak::AlignedFree(win);
 	Xbyak::AlignedFree(tbl);
 }
 
