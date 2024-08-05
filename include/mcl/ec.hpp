@@ -981,6 +981,31 @@ inline size_t argminForMulVec(size_t n)
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
+
+/*
+	Extract w bits from yVec[i] starting at the pos-th bit, assign this value to v.
+	tbl[v] += xVec[i]
+	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
+*/
+template<class G>
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n)
+{
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t i = 0; i < n; i++) {
+		Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, pos) & tblN;
+		if (v) {
+			tbl[v - 1] += xVec[i];
+		}
+	}
+	G sum = tbl[tblN - 1];
+	win = sum;
+	for (size_t i = 1; i < tblN; i++) {
+		sum += tbl[tblN - 1 - i];
+		win += sum;
+	}
+}
 /*
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
@@ -1027,35 +1052,18 @@ main:
 #endif
 	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
 	const size_t winN = (maxBitSize + c-1) / c;
-	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	for (size_t w = 0; w < winN; w++) {
-		for (size_t i = 0; i < tblN; i++) {
-			tbl[i].clear();
-		}
-		for (size_t i = 0; i < n; i++) {
-			Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, c * w) & tblN;
-			if (v) {
-				tbl[v - 1] += xVec[i];
-			}
-		}
-		G sum = tbl[tblN - 1];
-		win[w] = sum;
-		for (size_t i = 1; i < tblN; i++) {
-			sum += tbl[tblN - 1 - i];
-			win[w] += sum;
-		}
-	}
-	z.clear(); // remove a wrong gcc warning
-	z = win[winN - 1];
+	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1), n);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(z, z);
 		}
-		z += win[winN - 1 - w];
+		G win;
+		mulVecUpdateTable(win, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1-w), n);
+		z += win;
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
