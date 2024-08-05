@@ -693,11 +693,9 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 			const mpz_class& r = Fr::getOp().mp;
 			B[0][0] = z * z - 1; // L
 			v0 = (B[0][0] << rBitSize) / r;
-#if MCL_SIZEOF_UNIT == 8
 			if (curveType == BLS12_381.curveType) {
 				optimizedSplit = optimizedSplitForBLS12_381;
 			} else
-#endif
 			{
 				optimizedSplit = splitForBLS12;
 			}
@@ -727,11 +725,10 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		b = (x * v0) >> rBitSize;
 		a = x - b * B[0][0];
 	}
-#if MCL_SIZEOF_UNIT == 8
 	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
 	{
 		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit xa[n*2], a[2], b[2];
+		Unit xa[n*2], a[n], b[n];
 		bool dummy;
 		mcl::gmp::getArray(&dummy, xa, n*2, x);
 		assert(dummy);
@@ -741,7 +738,6 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		assert(dummy);
 		(void)dummy;
 	}
-#endif
 };
 
 /*

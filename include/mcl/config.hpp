@@ -22,6 +22,12 @@
 	#endif
 #endif
 
+#if MCL_SIZEOF_UNIT == 8
+	#define MCL_U64_TO_UNIT(x) Unit(x)
+#else
+	#define MCL_U64_TO_UNIT(x) Unit(x), Unit(uint64_t(x)>>32)
+#endif
+
 #ifdef MCL_STANDALONE
 	#define MCL_DONT_USE_OPENSSL
 	#define CYBOZU_DONT_USE_STRING
