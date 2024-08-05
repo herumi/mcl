@@ -967,12 +967,29 @@ inline size_t ilog2(size_t n)
 	return cybozu::bsr(n) + 1;
 }
 
+inline size_t costMulVec(size_t n, size_t x)
+{
+	return (n + (1<<(x+1))-1)/x;
+}
 // calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
-inline size_t argminForMulVec(size_t n)
+inline size_t argminForMulVec0(size_t n)
 {
 	if (n <= 16) return 2;
 	size_t log2n = ilog2(n);
 	return log2n - ilog2(log2n);
+}
+
+/*
+	First, get approximate value x and compute costMulVec of x-1 and x+1,
+	and return the minimum value.
+*/
+inline size_t argminForMulVec(size_t n)
+{
+	size_t x = argminForMulVec0(n);
+	size_t v = costMulVec(n, x);
+	if (x > 0 && costMulVec(n, x-1) <= v) return x-1;
+	if (costMulVec(n,x+1) < v) return x+1;
+	return x;
 }
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC

@@ -3,7 +3,8 @@
 
 int f(int n, int x)
 {
-	return int((n + pow(2, x+1) - 1)/x);
+//	return int((n + pow(2, x+1) - 1)/x);
+	return int((n + (1ull<<(x+1))-2)/x);
 }
 
 void put(int n, int x)
@@ -25,14 +26,25 @@ int getmin(int n)
 	return a;
 }
 
+int getmin2(int n)
+{
+	int x = mcl::ec::argminForMulVec(n);
+	int v = f(n, x);
+	if (x > 0 && f(n, x-1) <= v) return x-1;
+	if (f(n,x+1) < v) return x+1;
+	return x;
+}
+
 void disp(int n)
 {
 	int x0 = getmin(n);
 	int x1 = mcl::ec::argminForMulVec(n);
+	int x2 = getmin2(n);
 	printf("n=%d", n);
 	put(n, x0);
 	put(n, x1);
-	printf(" diff=%d\n", x1-x0);
+	put(n, x2);
+	printf(" diff=%d x0==x2=%d\n", x1-x0, x0==x2);
 }
 
 int main()
