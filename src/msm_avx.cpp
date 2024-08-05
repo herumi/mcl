@@ -997,7 +997,7 @@ inline void reduceSum(mcl::msm::G1A& Q, const G& P)
 }
 
 template<class G, class V>
-void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec, size_t yn, size_t pos, size_t n)
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec, size_t yn, size_t pos, size_t n, bool first)
 {
 	const Vec m = vpbroadcastq(tblN-1);
 	for (size_t i = 0; i < tblN; i++) {
@@ -1012,7 +1012,11 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 		T.scatter(tbl, v);
 	}
 	G sum = tbl[tblN - 1];
-	win = sum;
+	if (first) {
+		win = sum;
+	} else {
+		G::add(win, win, sum);
+	}
 	for (size_t i = 1; i < tblN - 1; i++) {
 		G::add(sum, sum, tbl[tblN - 1- i]);
 		G::add(win, win, sum);
@@ -1030,14 +1034,12 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, s
 	const size_t winN = (maxBitSize + c-1) / c;
 
 	G T;
-	mulVecUpdateTable<G, V>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1), n);
+	mulVecUpdateTable<G, V>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1), n, true);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(T, T);
 		}
-		G win;
-		mulVecUpdateTable<G, V>(win, tbl, tblN, xVec, yVec, yn, c*(winN-1-w), n);
-		G::add(T, T, win);
+		mulVecUpdateTable<G, V>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1-w), n, false);
 	}
 	reduceSum(P, T);
 	Xbyak::AlignedFree(tbl);

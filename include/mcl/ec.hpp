@@ -988,7 +988,7 @@ inline size_t argminForMulVec(size_t n)
 	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
 */
 template<class G>
-void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n)
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first)
 {
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
@@ -1000,7 +1000,11 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *y
 		}
 	}
 	G sum = tbl[tblN - 1];
-	win = sum;
+	if (first) {
+		win = sum;
+	} else {
+		win += sum;
+	}
 	for (size_t i = 1; i < tblN; i++) {
 		sum += tbl[tblN - 1 - i];
 		win += sum;
@@ -1056,14 +1060,12 @@ main:
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1), n);
+	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1), n, true);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(z, z);
 		}
-		G win;
-		mulVecUpdateTable(win, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1-w), n);
-		z += win;
+		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1-w), n, false);
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
