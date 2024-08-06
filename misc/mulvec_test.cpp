@@ -30,7 +30,7 @@ int getmin2(int n)
 {
 	int x = mcl::ec::argminForMulVec(n);
 	int v = f(n, x);
-	if (x > 0 && f(n, x-1) <= v) return x-1;
+	if (x > 1 && f(n, x-1) <= v) return x-1;
 	if (f(n,x+1) < v) return x+1;
 	return x;
 }
