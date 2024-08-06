@@ -986,9 +986,13 @@ inline size_t argminForMulVec0(size_t n)
 inline size_t argminForMulVec(size_t n)
 {
 	size_t x = argminForMulVec0(n);
-	size_t v = costMulVec(n, x);
-	if (x > 1 && costMulVec(n, x-1) <= v) return x-1;
-	if (costMulVec(n,x+1) < v) return x+1;
+#if 1
+	size_t vm1 = x > 1 ? costMulVec(n, x-1) : n;
+	size_t v0 = costMulVec(n, x);
+	size_t vp1 = costMulVec(n, x+1);
+	if (vm1 <= v0) return x-1;
+	if (vp1 < v0) return x+1;
+#endif
 	return x;
 }
 
