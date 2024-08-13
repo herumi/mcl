@@ -255,15 +255,6 @@ inline void vmul(V *z, const V *x, const U *y)
 #endif
 }
 
-// out = c ? a : b
-inline void select(Unit *out, bool c, const Unit *a, const Unit *b)
-{
-	const Unit *o = c ? a : b;
-	for (size_t i = 0; i < N; i++) {
-		out[i] = o[i];
-	}
-}
-
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 {
@@ -484,11 +475,20 @@ struct FpMT {
 	// return c ? a : b;
 	static T select(const VM& c, const T& a, const T& b)
 	{
+#if 1 // faster on gcc
+		const V mask = ::vselect(c, broadcast(uint64_t(-1)), broadcast(0));
+		T d;
+		for (size_t i = 0; i < N; i++) {
+			d.v[i] = vporq(vpandq(mask, a.v[i]), vpandnq(mask, b.v[i]));
+		}
+		return d;
+#else
 		T d;
 		for (size_t i = 0; i < N; i++) {
 			d.v[i] = vselect(c, a.v[i], b.v[i]);
 		}
 		return d;
+#endif
 	}
 };
 
@@ -1131,11 +1131,46 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
 	{
+#if 0
+		assert(vN == 2);
+		EcM P[vN];
+
+		P[0].setArray(v[0*M].v);
+		P[1].setArray(v[1*M].v);
+		FpM::mul(P[0].x, P[0].x, g_m64to52u_);
+		FpM::mul(P[1].x, P[1].x, g_m64to52u_);
+
+		FpM::mul(P[0].y, P[0].y, g_m64to52u_);
+		FpM::mul(P[1].y, P[1].y, g_m64to52u_);
+
+		FpM::mul(P[0].z, P[0].z, g_m64to52u_);
+		FpM::mul(P[1].z, P[1].z, g_m64to52u_);
+#if 1
+		cvtFpM2FpMA(x, P[0].x, P[1].x);
+		cvtFpM2FpMA(y, P[0].y, P[1].y);
+		cvtFpM2FpMA(z, P[0].z, P[1].z);
+		if (JacobiToProj) {
+			mcl::ec::JacobiToProj(*this, *this);
+			y = FpMA::select(z.isZero(), FpMA::one(), y);
+		}
+#else
+		if (JacobiToProj) {
+			mcl::ec::JacobiToProj(P[0], P[0]);
+			mcl::ec::JacobiToProj(P[1], P[1]);
+			P[0].y = FpM::select(P[0].z.isZero(), FpM::one(), P[0].y);
+			P[1].y = FpM::select(P[1].z.isZero(), FpM::one(), P[1].y);
+		}
+		cvtFpM2FpMA(x, P[0].x, P[1].x);
+		cvtFpM2FpMA(y, P[0].y, P[1].y);
+		cvtFpM2FpMA(z, P[0].z, P[1].z);
+#endif
+#else
 		EcM P[vN];
 		for (size_t i = 0; i < vN; i++) {
 			P[i].setG1A(v+i*M, JacobiToProj);
 		}
 		setEcM(P);
+#endif
 	}
 	void getG1A(mcl::msm::G1A v[M*vN], bool ProjToJacobi = true) const
 	{

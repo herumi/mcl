@@ -88,6 +88,12 @@ inline Vec vpandq(const Vec& a, const Vec& b)
 	return _mm512_and_epi64(a, b);
 }
 
+// return !a & b
+inline Vec vpandnq(const Vec& a, const Vec& b)
+{
+	return _mm512_andnot_epi64(a, b);
+}
+
 inline Vec vporq(const Vec& a, const Vec& b)
 {
 	return _mm512_or_epi64(a, b);
@@ -300,6 +306,13 @@ inline VecA vpandq(const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VecA vpandnq(const VecA& a, const VecA& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpandnq(a.v[i], b.v[i]);
+	return r;
+}
+
 inline VecA vpandq(const VecA& a, const Vec& b)
 {
 	VecA r;
@@ -410,6 +423,14 @@ inline VecA vselect(const VmaskA& c, const VecA& a, const VecA& b)
 {
 	VecA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vselect(c.v[i], a.v[i], b.v[i]);
+	return r;
+}
+
+// return c ? a : b;
+inline VecA vselect(const VmaskA& c, const Vec& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vselect(c.v[i], a, b);
 	return r;
 }
 
