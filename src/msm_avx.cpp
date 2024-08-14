@@ -214,17 +214,21 @@ inline void vmont(V z[N], V xy[N*2])
 	uvselect(z, c, xy+N, z);
 }
 
-inline Vec broadcast(const Vec& v) { return v; }
-inline VecA broadcast(const VecA& v) { return v; }
-template<class V=Vec>
-inline V broadcast(uint64_t v) { return vpbroadcastq(v); }
+template<class V, class U = V>
+inline V broadcast(const U& v);
 
 template<>
-inline VecA broadcast(uint64_t v)
+inline Vec broadcast(const Vec& v) { return v; }
+template<>
+inline VecA broadcast(const VecA& v) { return v; }
+template<>
+inline Vec broadcast(const uint64_t& v) { return vpbroadcastq(v); }
+template<>
+inline VecA broadcast(const uint64_t& v)
 {
 	VecA r;
-	r.v[0] = broadcast(v);
-	r.v[1] = broadcast(v);
+	r.v[0] = broadcast<Vec>(v);
+	r.v[1] = broadcast<Vec>(v);
 	return r;
 }
 
@@ -237,11 +241,11 @@ inline void vmul(V *z, const V *x, const U *y)
 	vmont(z, xy);
 #else
 	V t[N*2], q;
-	vmulUnit(t, x, broadcast(y[0]));
+	vmulUnit(t, x, broadcast<V>(y[0]));
 	q = vmulL(t[0], G::rp());
 	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
 	for (size_t i = 1; i < N; i++) {
-		t[N+i] = vmulUnitAdd(t+i, x, broadcast(y[i]));
+		t[N+i] = vmulUnitAdd(t+i, x, broadcast<V>(y[i]));
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
 		q = vmulL(t[i], G::rp());
 		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
@@ -504,13 +508,14 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	void setFpA(const mcl::msm::FpA v[M])
 	{
 		cvt6Ux8to8Ux8(this->v, v[0].v);
-		FpM::mul(*this, *this, FpM::m64to52());
-//		FpM::mul(*this, *this, g_m64to52u_);
+//		FpM::mul(*this, *this, FpM::m64to52());
+		FpM::mul(*this, *this, g_m64to52u_);
 	}
 	void getFpA(mcl::msm::FpA v[M]) const
 	{
 		FpM t;
-		FpM::mul(t, *this, FpM::m52to64());
+//		FpM::mul(t, *this, FpM::m52to64());
+		FpM::mul(t, *this, g_m52to64u_);
 		cvt8Ux8to6Ux8((Unit*)v, t.v);
 	}
 	static void inv(FpM& z, const FpM& x)
@@ -899,7 +904,7 @@ struct EcM : EcMT<EcM, FpM> {
 	void setG1A(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
 		setArray(v[0].v);
-#if 0
+#if 1
 		FpM::mul(x, x, g_m64to52u_);
 		FpM::mul(y, y, g_m64to52u_);
 		FpM::mul(z, z, g_m64to52u_);
@@ -917,9 +922,15 @@ struct EcM : EcMT<EcM, FpM> {
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
+#if 1
+		FpM::mul(T.x, T.x, g_m52to64u_);
+		FpM::mul(T.y, T.y, g_m52to64u_);
+		FpM::mul(T.z, T.z, g_m52to64u_);
+#else
 		FpM::mul(T.x, T.x, FpM::m52to64());
 		FpM::mul(T.y, T.y, FpM::m52to64());
 		FpM::mul(T.z, T.z, FpM::m52to64());
+#endif
 		T.getArray(v[0].v);
 	}
 #if 0
@@ -1132,7 +1143,7 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
 	{
-#if 0
+#if 1
 		assert(vN == 2);
 		EcM P[vN];
 
@@ -1140,31 +1151,21 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		P[1].setArray(v[1*M].v);
 		FpM::mul(P[0].x, P[0].x, g_m64to52u_);
 		FpM::mul(P[1].x, P[1].x, g_m64to52u_);
+		cvtFpM2FpMA(x, P[0].x, P[1].x);
+//		FpMA::mul(x, x, g_m64to52u_);
 
 		FpM::mul(P[0].y, P[0].y, g_m64to52u_);
 		FpM::mul(P[1].y, P[1].y, g_m64to52u_);
+		cvtFpM2FpMA(y, P[0].y, P[1].y);
 
 		FpM::mul(P[0].z, P[0].z, g_m64to52u_);
 		FpM::mul(P[1].z, P[1].z, g_m64to52u_);
-#if 1
-		cvtFpM2FpMA(x, P[0].x, P[1].x);
-		cvtFpM2FpMA(y, P[0].y, P[1].y);
 		cvtFpM2FpMA(z, P[0].z, P[1].z);
+
 		if (JacobiToProj) {
 			mcl::ec::JacobiToProj(*this, *this);
 			y = FpMA::select(z.isZero(), FpMA::one(), y);
 		}
-#else
-		if (JacobiToProj) {
-			mcl::ec::JacobiToProj(P[0], P[0]);
-			mcl::ec::JacobiToProj(P[1], P[1]);
-			P[0].y = FpM::select(P[0].z.isZero(), FpM::one(), P[0].y);
-			P[1].y = FpM::select(P[1].z.isZero(), FpM::one(), P[1].y);
-		}
-		cvtFpM2FpMA(x, P[0].x, P[1].x);
-		cvtFpM2FpMA(y, P[0].y, P[1].y);
-		cvtFpM2FpMA(z, P[0].z, P[1].z);
-#endif
 #else
 		EcM P[vN];
 		for (size_t i = 0; i < vN; i++) {

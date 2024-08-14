@@ -108,6 +108,7 @@ def putCode(curve, mont):
   m64to52 = toArray(mont.toMont(2**32))
   m52to64 = toArray(mont.toMont(pow(2**32, -1, curve.p)))
   expand('g_m64to52u', m64to52)
+  expand('g_m52to64u', m52to64)
 
   # for FpM/FpMA
   expand('g_offset', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
