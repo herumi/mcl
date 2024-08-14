@@ -310,10 +310,12 @@ inline void concat52bit(V y[6], const V x[8])
 	384bit = 6U (U=64)
 	G1(=6U x 3(x, y, z)) x 8 => 8Ux8x3
 */
-static CYBOZU_ALIGN(64) uint64_t g_pickUpEc[8] = {
+static CYBOZU_ALIGN(64) uint64_t g_pickUpEc[] = {
 	18*0, 18*1, 18*2, 18*3, 18*4, 18*5, 18*6, 18*7,
+	18*8, 18*9, 18*10, 18*11, 18*12, 18*13, 18*14, 18*15,
 };
 static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
+static const VecA& v_pickUpEcA = *(const VecA*)g_pickUpEc;
 
 inline void cvt6Ux8to8Ux8Ec(Vec *y, const Unit *x)
 {
@@ -329,6 +331,16 @@ inline void cvt6Ux3x8to8Ux8x3(Vec y[8*3], const Unit x[6*3*8])
 	for (int j = 0; j < 3; j++) {
 		cvt6Ux8to8Ux8Ec(y+j*8, x+j*6);
 	}
+}
+
+// convert G1.x (, y or z) to VecA
+inline void cvtToEcMAx(VecA *y, const Unit *x)
+{
+	VecA t[6];
+	for (int i = 0; i < 6; i++) {
+		t[i] = vpgatherqq(v_pickUpEcA, x+i);
+	}
+	split52bit(y, t);
 }
 
 // EcM(=8Ux8x3) => G1(=6U x 3) x 8
@@ -1148,30 +1160,14 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		cvtFpMA2FpM(P[0].z, P[1].z, z);
 	}
 
-	void setG1AtoX2(Vec *z, const Unit *x) const
-	{
-		Vec t[6];
-		for (int i = 0; i < 6; i++) {
-			t[i] = vpgatherqq(v_pickUpEc, x+i);
-		}
-		split52bit<Vec, vN>(z, t);
-	}
-	void setG1AtoX(FpMA& z, const Unit *x) const
-	{
-		const Unit *x0 = x;
-		const Unit *x1 = x+sizeof(mcl::msm::G1A)/sizeof(Unit)*M;
-
-		setG1AtoX2(&z.v[0].v[0], x0);
-		setG1AtoX2(&z.v[0].v[1], x1);
-	}
 	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
 	{
 #if 0 // very slow on gcc, faster on clang
 		assert(vN == 2);
 
-		for (int j = 0; j < 3; j++) {
-			setG1AtoX(*(&x+j), v[0].v+j*6);
-		}
+		cvtToEcMAx(x.v, v[0].v+0*6);
+		cvtToEcMAx(y.v, v[0].v+1*6);
+		cvtToEcMAx(z.v, v[0].v+2*6);
 
 		FpMA::mul(x, x, g_m64to52u_);
 		FpMA::mul(y, y, g_m64to52u_);
