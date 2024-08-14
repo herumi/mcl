@@ -1149,18 +1149,14 @@ struct EcMA : EcMT<EcMA, FpMA> {
 
 		P[0].setArray(v[0*M].v);
 		P[1].setArray(v[1*M].v);
-		FpM::mul(P[0].x, P[0].x, g_m64to52u_);
-		FpM::mul(P[1].x, P[1].x, g_m64to52u_);
 		cvtFpM2FpMA(x, P[0].x, P[1].x);
-//		FpMA::mul(x, x, g_m64to52u_);
+		FpMA::mul(x, x, g_m64to52u_);
 
-		FpM::mul(P[0].y, P[0].y, g_m64to52u_);
-		FpM::mul(P[1].y, P[1].y, g_m64to52u_);
 		cvtFpM2FpMA(y, P[0].y, P[1].y);
+		FpMA::mul(y, y, g_m64to52u_);
 
-		FpM::mul(P[0].z, P[0].z, g_m64to52u_);
-		FpM::mul(P[1].z, P[1].z, g_m64to52u_);
 		cvtFpM2FpMA(z, P[0].z, P[1].z);
+		FpMA::mul(z, z, g_m64to52u_);
 
 		if (JacobiToProj) {
 			mcl::ec::JacobiToProj(*this, *this);
@@ -1809,6 +1805,8 @@ CYBOZU_TEST_AUTO(opA)
 		CYBOZU_BENCH_C("EcM::add", C, EcM::add, PM2, PM2, QM2);
 		CYBOZU_BENCH_C("EcMA::dbl", C, EcMA::dbl, QM, QM);
 		CYBOZU_BENCH_C("EcMA::add", C, EcMA::add, TM, TM, QM);
+		CYBOZU_BENCH_C("EcMA::setG1A:proj", C, PM.setG1A, PA, true);
+		CYBOZU_BENCH_C("EcMA::setG1A:jacobi", C, PM.setG1A, PA, false);
 	}
 }
 
@@ -1831,6 +1829,9 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 		PP[i].getG1A((mcl::msm::G1A*)&R[i*8], isProj);
 	}
 	CYBOZU_TEST_EQUAL_ARRAY(P, R, n);
+	const int C = 10000;
+	CYBOZU_BENCH_C("EcM::setG1A:proj", C, PP[0].setG1A, (mcl::msm::G1A*)P, true);
+	CYBOZU_BENCH_C("EcM::setG1A:jacobi", C, PP[0].setG1A, (mcl::msm::G1A*)P, false);
 }
 
 CYBOZU_TEST_AUTO(mulEach_special)
