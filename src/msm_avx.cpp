@@ -475,7 +475,7 @@ struct FpMT {
 	// return c ? a : b;
 	static T select(const VM& c, const T& a, const T& b)
 	{
-#if 1 // faster on gcc
+#if 0 // faster on gcc, same on clang
 		const V mask = ::vselect(c, broadcast(uint64_t(-1)), broadcast(0));
 		T d;
 		for (size_t i = 0; i < N; i++) {
@@ -544,18 +544,19 @@ inline void normalizeJacobiVec(E P[n])
 	for (size_t i = 0; i < n; i++) {
 		size_t pos = n-1-i;
 		F& z = P[pos].z;
+		const typename E::VM zIsZero = z.isZero();
 		F rz, rz2;
 		if (pos == 0) {
 			rz = r;
 		} else {
 			F::mul(rz, r, tbl[pos-1]);
-			F::mul(r, r, F::select(z.isZero(), F::one(), z));
+			F::mul(r, r, F::select(zIsZero, F::one(), z));
 		}
 		F::sqr(rz2, rz);
 		F::mul(P[pos].x, P[pos].x, rz2); // xz^-2
 		F::mul(rz2, rz2, rz);
 		F::mul(P[pos].y, P[pos].y, rz2); // yz^-3
-		z = F::select(z.isZero(), z, F::one());
+		z = F::select(zIsZero, z, F::one());
 	}
 }
 
