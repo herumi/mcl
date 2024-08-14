@@ -275,18 +275,18 @@ inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 	x|52:12|40:24|28:36|16:48|4:52:8|44:20|
     y|52|52   |52   |52   |52  |52|52  |20|
 */
-template<class V>
+template<class V, size_t D=1>
 inline void split52bit(V y[8], const V x[6])
 {
 	assert(&y != &x);
-	y[0] = vpandq(x[0], G::mask());
-	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
-	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
-	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
-	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
-	y[5] = vpandq(vpsrlq(x[4], 4), G::mask());
-	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
-	y[7] = vpsrlq(x[5], 44);
+	y[0*D] = vpandq(x[0], G::mask());
+	y[1*D] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
+	y[2*D] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
+	y[3*D] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
+	y[4*D] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
+	y[5*D] = vpandq(vpsrlq(x[4], 4), G::mask());
+	y[6*D] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
+	y[7*D] = vpsrlq(x[5], 44);
 }
 
 /*
@@ -314,14 +314,20 @@ static CYBOZU_ALIGN(64) uint64_t g_pickUpEc[8] = {
 	18*0, 18*1, 18*2, 18*3, 18*4, 18*5, 18*6, 18*7,
 };
 static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
+
+inline void cvt6Ux8to8Ux8Ec(Vec *y, const Unit *x)
+{
+	Vec t[6];
+	for (int i = 0; i < 6; i++) {
+		t[i] = vpgatherqq(v_pickUpEc, x+i);
+	}
+	split52bit(y, t);
+}
+
 inline void cvt6Ux3x8to8Ux8x3(Vec y[8*3], const Unit x[6*3*8])
 {
 	for (int j = 0; j < 3; j++) {
-		Vec t[6];
-		for (int i = 0; i < 6; i++) {
-			t[i] = vpgatherqq(v_pickUpEc, x+j*6+i);
-		}
-		split52bit(&y[j*8], t);
+		cvt6Ux8to8Ux8Ec(y+j*8, x+j*6);
 	}
 }
 
@@ -358,7 +364,7 @@ inline void cvt8Ux8to6Ux8(Unit y[6*8], const Vec x[8])
 	}
 }
 // Fp(=6U)x8 => FpM(8Ux8)
-inline void cvt6Ux8to8Ux8(Vec y[8], const Unit x[6*8])
+inline void cvt6Ux8to8Ux8Fp(Vec y[8], const Unit x[6*8])
 {
 	Vec t[6];
 	for (int i = 0; i < 6; i++) {
@@ -507,7 +513,7 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	static const FpM& rw() { return *(const FpM*)g_rw_; }
 	void setFpA(const mcl::msm::FpA v[M])
 	{
-		cvt6Ux8to8Ux8(this->v, v[0].v);
+		cvt6Ux8to8Ux8Fp(this->v, v[0].v);
 //		FpM::mul(*this, *this, FpM::m64to52());
 		FpM::mul(*this, *this, g_m64to52u_);
 	}
@@ -1141,21 +1147,34 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		cvtFpMA2FpM(P[0].y, P[1].y, y);
 		cvtFpMA2FpM(P[0].z, P[1].z, z);
 	}
+
+	void setG1AtoX2(Vec *z, const Unit *x) const
+	{
+		Vec t[6];
+		for (int i = 0; i < 6; i++) {
+			t[i] = vpgatherqq(v_pickUpEc, x+i);
+		}
+		split52bit<Vec, vN>(z, t);
+	}
+	void setG1AtoX(FpMA& z, const Unit *x) const
+	{
+		const Unit *x0 = x;
+		const Unit *x1 = x+sizeof(mcl::msm::G1A)/sizeof(Unit)*M;
+
+		setG1AtoX2(&z.v[0].v[0], x0);
+		setG1AtoX2(&z.v[0].v[1], x1);
+	}
 	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
 	{
-#if 1
+#if 0 // very slow on gcc, faster on clang
 		assert(vN == 2);
-		EcM P[vN];
 
-		P[0].setArray(v[0*M].v);
-		P[1].setArray(v[1*M].v);
-		cvtFpM2FpMA(x, P[0].x, P[1].x);
+		for (int j = 0; j < 3; j++) {
+			setG1AtoX(*(&x+j), v[0].v+j*6);
+		}
+
 		FpMA::mul(x, x, g_m64to52u_);
-
-		cvtFpM2FpMA(y, P[0].y, P[1].y);
 		FpMA::mul(y, y, g_m64to52u_);
-
-		cvtFpM2FpMA(z, P[0].z, P[1].z);
 		FpMA::mul(z, z, g_m64to52u_);
 
 		if (JacobiToProj) {
