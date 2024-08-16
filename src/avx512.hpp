@@ -171,6 +171,12 @@ inline Vec vselect(const Vmask& c, const Vec& a, const Vec& b)
 	return vpandq(c, a, a, b);
 }
 
+template<uint8_t imm>
+inline Vec vpternlogq(const Vec& a, const Vec& b, const Vec& c)
+{
+	return _mm512_ternarylogic_epi64(a, b, c, imm);
+}
+
 /////
 
 inline VecA vmulL(const VecA& a, const VecA& b, const VecA& c)
@@ -431,6 +437,22 @@ inline VecA vselect(const VmaskA& c, const Vec& a, const Vec& b)
 {
 	VecA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vselect(c.v[i], a, b);
+	return r;
+}
+
+template<uint8_t imm>
+inline VecA vpternlogq(const VecA& a, const VecA& b, const VecA& c)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpternlogq<imm>(a.v[i], b.v[i], c.v[i]);
+	return r;
+}
+
+template<uint8_t imm>
+inline VecA vpternlogq(const VecA& a, const VecA& b, const Vec& c)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpternlogq<imm>(a.v[i], b.v[i], c);
 	return r;
 }
 

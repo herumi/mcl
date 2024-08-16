@@ -275,18 +275,32 @@ inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 	x|52:12|40:24|28:36|16:48|4:52:8|44:20|
     y|52|52   |52   |52   |52  |52|52  |20|
 */
-template<class V, size_t D=1>
+template<class V>
 inline void split52bit(V y[8], const V x[6])
 {
 	assert(&y != &x);
-	y[0*D] = vpandq(x[0], G::mask());
-	y[1*D] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
-	y[2*D] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
-	y[3*D] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
-	y[4*D] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
-	y[5*D] = vpandq(vpsrlq(x[4], 4), G::mask());
-	y[6*D] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
-	y[7*D] = vpsrlq(x[5], 44);
+#if 1
+	const Vec m = vpbroadcastq(getMask(52));
+	// and(or(A, B), C) = andCorAB = 0xa8
+	const uint8_t imm = 0xA8;
+	y[0] = vpandq(x[0], m);
+	y[1] = vpternlogq<imm>(vpsrlq(x[0], 52), vpsllq(x[1], 12), m);
+	y[2] = vpternlogq<imm>(vpsrlq(x[1], 40), vpsllq(x[2], 24), m);
+	y[3] = vpternlogq<imm>(vpsrlq(x[2], 28), vpsllq(x[3], 36), m);
+	y[4] = vpternlogq<imm>(vpsrlq(x[3], 16), vpsllq(x[4], 48), m);
+	y[5] = vpandq(vpsrlq(x[4], 4), m);
+	y[6] = vpternlogq<imm>(vpsrlq(x[4], 56), vpsllq(x[5], 8), m);
+	y[7] = vpsrlq(x[5], 44);
+#else
+	y[0] = vpandq(x[0], G::mask());
+	y[1] = vpandq(vporq(vpsrlq(x[0], 52), vpsllq(x[1], 12)), G::mask());
+	y[2] = vpandq(vporq(vpsrlq(x[1], 40), vpsllq(x[2], 24)), G::mask());
+	y[3] = vpandq(vporq(vpsrlq(x[2], 28), vpsllq(x[3], 36)), G::mask());
+	y[4] = vpandq(vporq(vpsrlq(x[3], 16), vpsllq(x[4], 48)), G::mask());
+	y[5] = vpandq(vpsrlq(x[4], 4), G::mask());
+	y[6] = vpandq(vporq(vpsrlq(x[4], 56), vpsllq(x[5], 8)), G::mask());
+	y[7] = vpsrlq(x[5], 44);
+#endif
 }
 
 /*
