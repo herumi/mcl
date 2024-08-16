@@ -312,12 +312,13 @@ inline void concat52bit(V y[6], const V x[8])
 */
 static CYBOZU_ALIGN(64) uint64_t g_pickUpEc[] = {
 	18*0, 18*1, 18*2, 18*3, 18*4, 18*5, 18*6, 18*7,
-	18*8, 18*9, 18*10, 18*11, 18*12, 18*13, 18*14, 18*15,
+//	18*8, 18*9, 18*10, 18*11, 18*12, 18*13, 18*14, 18*15,
 };
 static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
-static const VecA& v_pickUpEcA = *(const VecA*)g_pickUpEc;
+//static const VecA& v_pickUpEcA = *(const VecA*)g_pickUpEc;
 
-inline void cvt6Ux8to8Ux8Ec(Vec *y, const Unit *x)
+// convert G1.x (, y or z) to Vec
+inline void cvtFromG1Ax(Vec *y, const Unit *x)
 {
 	Vec t[6];
 	for (int i = 0; i < 6; i++) {
@@ -326,39 +327,40 @@ inline void cvt6Ux8to8Ux8Ec(Vec *y, const Unit *x)
 	split52bit(y, t);
 }
 
-inline void cvt6Ux3x8to8Ux8x3(Vec y[8*3], const Unit x[6*3*8])
-{
-	for (int j = 0; j < 3; j++) {
-		cvt6Ux8to8Ux8Ec(y+j*8, x+j*6);
-	}
-}
-
 // convert G1.x (, y or z) to VecA
-inline void cvtToEcMAx(VecA *y, const Unit *x)
+inline void cvtFromG1Ax(VecA *y, const Unit *x)
 {
 	VecA t[6];
 	for (int i = 0; i < 6; i++) {
+#if 1
+		assert(vN == 2);
+		t[i].v[0] = vpgatherqq(v_pickUpEc, x+i);
+		t[i].v[1] = vpgatherqq(v_pickUpEc, x+i+18*8);
+#else
 		t[i] = vpgatherqq(v_pickUpEcA, x+i);
+#endif
 	}
 	split52bit(y, t);
 }
 
 // EcM(=8Ux8x3) => G1(=6U x 3) x 8
-inline void cvt8Ux8x3to6Ux3x8(Unit y[6*3*8], const Vec x[8*3])
+// convert Vec to G1.x
+inline void cvtToG1Ax(Unit *y, const Vec *x)
 {
-	for (size_t j = 0; j < 3; j++) {
-		Vec t[6];
-		concat52bit(t, x+8*j);
-		for (size_t i = 0; i < 6; i++) {
-#if 1
-			vpscatterqq(y+j*6+i, v_pickUpEc, t[i]);
-#else
-			const Unit *pt = (const Unit *)t;
-			for (size_t k = 0; k < 8; k++) {
-				y[j*6+k*18+i] = pt[k+i*8];
-			}
-#endif
-		}
+	Vec t[6];
+	concat52bit(t, x);
+	for (size_t i = 0; i < 6; i++) {
+		vpscatterqq(y+i, v_pickUpEc, t[i]);
+	}
+}
+
+inline void cvtToG1Ax(Unit *y, const VecA *x)
+{
+	VecA t[6];
+	concat52bit(t, x);
+	for (size_t i = 0; i < 6; i++) {
+		vpscatterqq(y+i, v_pickUpEc, t[i].v[0]);
+		vpscatterqq(y+i+18*8, v_pickUpEc, t[i].v[1]);
 	}
 }
 
@@ -911,26 +913,16 @@ struct EcM : EcMT<EcM, FpM> {
 	static const FpM &b3_;
 	static const EcM &zeroProj_;
 	static const EcM &zeroJacobi_;
-	void setArray(const Unit a[6*3*M])
-	{
-		cvt6Ux3x8to8Ux8x3(x.v, a);
-	}
-	void getArray(Unit a[6*3*M]) const
-	{
-		cvt8Ux8x3to6Ux3x8(a, x.v);
-	}
 	void setG1A(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
-		setArray(v[0].v);
-#if 1
+		cvtFromG1Ax(x.v, v[0].v+0*6);
+		cvtFromG1Ax(y.v, v[0].v+1*6);
+		cvtFromG1Ax(z.v, v[0].v+2*6);
+
 		FpM::mul(x, x, g_m64to52u_);
 		FpM::mul(y, y, g_m64to52u_);
 		FpM::mul(z, z, g_m64to52u_);
-#else
-		FpM::mul(x, x, FpM::m64to52());
-		FpM::mul(y, y, FpM::m64to52());
-		FpM::mul(z, z, FpM::m64to52());
-#endif
+
 		if (JacobiToProj) {
 			mcl::ec::JacobiToProj(*this, *this);
 			y = FpM::select(z.isZero(), FpM::one(), y);
@@ -940,16 +932,14 @@ struct EcM : EcMT<EcM, FpM> {
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
-#if 1
+
 		FpM::mul(T.x, T.x, g_m52to64u_);
 		FpM::mul(T.y, T.y, g_m52to64u_);
 		FpM::mul(T.z, T.z, g_m52to64u_);
-#else
-		FpM::mul(T.x, T.x, FpM::m52to64());
-		FpM::mul(T.y, T.y, FpM::m52to64());
-		FpM::mul(T.z, T.z, FpM::m52to64());
-#endif
-		T.getArray(v[0].v);
+
+		cvtToG1Ax(v[0].v+0*6, T.x.v);
+		cvtToG1Ax(v[0].v+1*6, T.y.v);
+		cvtToG1Ax(v[0].v+2*6, T.z.v);
 	}
 #if 0
 	// Treat idx as an unsigned integer
@@ -1162,12 +1152,12 @@ struct EcMA : EcMT<EcMA, FpMA> {
 
 	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
 	{
-#if 0 // very slow on gcc, faster on clang
+#ifdef __clang__ // very slow on gcc, faster on clang
 		assert(vN == 2);
 
-		cvtToEcMAx(x.v, v[0].v+0*6);
-		cvtToEcMAx(y.v, v[0].v+1*6);
-		cvtToEcMAx(z.v, v[0].v+2*6);
+		cvtFromG1Ax(x.v, v[0].v+0*6);
+		cvtFromG1Ax(y.v, v[0].v+1*6);
+		cvtFromG1Ax(z.v, v[0].v+2*6);
 
 		FpMA::mul(x, x, g_m64to52u_);
 		FpMA::mul(y, y, g_m64to52u_);
@@ -1187,11 +1177,24 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 	void getG1A(mcl::msm::G1A v[M*vN], bool ProjToJacobi = true) const
 	{
+#ifdef __clang__ // very slow on gcc, faster on clang
+		EcMA T = *this;
+		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
+
+		FpMA::mul(T.x, T.x, g_m52to64u_);
+		FpMA::mul(T.y, T.y, g_m52to64u_);
+		FpMA::mul(T.z, T.z, g_m52to64u_);
+
+		cvtToG1Ax(v[0].v+0*6, T.x.v);
+		cvtToG1Ax(v[0].v+1*6, T.y.v);
+		cvtToG1Ax(v[0].v+2*6, T.z.v);
+#else
 		EcM P[vN];
 		getEcM(P);
 		for (size_t i = 0; i < vN; i++) {
 			P[i].getG1A(v+i*M, ProjToJacobi);
 		}
+#endif
 	}
 };
 
@@ -1822,6 +1825,8 @@ CYBOZU_TEST_AUTO(opA)
 		CYBOZU_BENCH_C("EcMA::add", C, EcMA::add, TM, TM, QM);
 		CYBOZU_BENCH_C("EcMA::setG1A:proj", C, PM.setG1A, PA, true);
 		CYBOZU_BENCH_C("EcMA::setG1A:jacobi", C, PM.setG1A, PA, false);
+		CYBOZU_BENCH_C("EcMA::getG1A:proj", C, PM.getG1A, PA, true);
+		CYBOZU_BENCH_C("EcMA::getG1A:jacobi", C, PM.getG1A, PA, false);
 	}
 }
 
@@ -1847,6 +1852,8 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 	const int C = 10000;
 	CYBOZU_BENCH_C("EcM::setG1A:proj", C, PP[0].setG1A, (mcl::msm::G1A*)P, true);
 	CYBOZU_BENCH_C("EcM::setG1A:jacobi", C, PP[0].setG1A, (mcl::msm::G1A*)P, false);
+	CYBOZU_BENCH_C("EcM::getG1A:proj", C, PP[0].getG1A, (mcl::msm::G1A*)P, true);
+	CYBOZU_BENCH_C("EcM::getG1A:jacobi", C, PP[0].getG1A, (mcl::msm::G1A*)P, false);
 }
 
 CYBOZU_TEST_AUTO(mulEach_special)
