@@ -54,28 +54,24 @@ def gen_vaddPre(mont, vN=1):
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
 
-      un(vmovdqa64)(t, ptr(x))
-      un(vpaddq)(t, t, ptr(y))
-      un(vpsrlq)(c, t, W)
-      un(vpandq)(t, t, vmask)
-      un(vmovdqa64)(ptr(z), t)
-
-      for i in range(1, mont.N+1):
-        un(vmovdqa64)(t, ptr(x+i*64))
-        un(vpaddq)(t, t, ptr(y+i*64))
-        un(vpaddq)(t, t, c);
+      for i in range(0, mont.N+1):
+        un(vmovdqa64)(t, ptr(x+i*64*vN))
+        un(vpaddq)(t, t, ptr(y+i*64*vN))
+        if i > 0:
+          un(vpaddq)(t, t, c);
         if i == mont.N-1:
-          un(vmovdqa64)(ptr(z+i*64), t)
+          un(vmovdqa64)(ptr(z+i*64*vN), t)
           return
         un(vpsrlq)(c, t, W)
         un(vpandq)(t, t, vmask)
-        un(vmovdqa64)(ptr(z+i*64), t)
+        un(vmovdqa64)(ptr(z+i*64*vN), t)
 
 def msm_data(mont):
   pass
 
 def msm_code(mont):
-  gen_vaddPre(mont)
+  for vN in [1, 2]:
+    gen_vaddPre(mont, vN)
 
 SUF='_fast'
 param=None

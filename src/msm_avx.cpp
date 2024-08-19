@@ -147,7 +147,6 @@ inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 	}
 }
 
-#if 1
 template<class VM=Vmask, class V>
 inline void vadd(V *z, const V *x, const V *y)
 {
@@ -156,26 +155,6 @@ inline void vadd(V *z, const V *x, const V *y)
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
-
-template<>
-inline void vadd(Vec *z, const Vec *x, const Vec *y)
-{
-	Vec sN[N], tN[N];
-	vaddPre(sN, x, y);
-//	mcl_c5_vaddPre(sN, x, y);
-	Vmask c = vsubPre<Vmask>(tN, sN, G::ap());
-	uvselect(z, c, sN, tN);
-}
-#else
-template<class VM=Vmask, class V>
-inline void vadd(V *z, const V *x, const V *y)
-{
-	V sN[N], tN[N];
-	vaddPre(sN, x, y);
-	VM c = vsubPre<VM>(tN, sN, G::ap());
-	uvselect(z, c, sN, tN);
-}
-#endif
 
 template<class VM=Vmask, class V>
 inline void vsub(V *z, const V *x, const V *y)
@@ -1608,7 +1587,7 @@ void forcedRead(const T& x)
 CYBOZU_TEST_AUTO(vaddPre)
 {
 	FpM x[vN], y[vN], z[vN], w[vN];
-	FpMA xa, ya, za;
+	FpMA xa, ya, za, wa;
 	cybozu::XorShift rg;
 	for (int i = 0; i < 10; i++) {
 		// vaddPre, vsubPre
@@ -1629,6 +1608,8 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
+		mcl_c5_vaddPreA(wa.v, xa.v, ya.v);
+		CYBOZU_TEST_ASSERT(za == wa);
 		vsubPre<VmaskA>(za.v, za.v, ya.v);
 		za.getFpM(w);
 		for (size_t j = 0; j < vN; j++) {

@@ -67,6 +67,103 @@ vpaddq %zmm1, %zmm2, %zmm2
 vmovdqa64 %zmm2, 448(%rdi)
 ret
 SIZE(mcl_c5_vaddPre)
+.global PRE(mcl_c5_vaddPreA)
+PRE(mcl_c5_vaddPreA):
+TYPE(mcl_c5_vaddPreA)
+mov $4503599627370495, %rax
+vpbroadcastq %rax, %zmm0
+vmovdqa64 (%rsi), %zmm3
+vmovdqa64 64(%rsi), %zmm4
+vpaddq (%rdx), %zmm3, %zmm3
+vpaddq 64(%rdx), %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, (%rdi)
+vmovdqa64 %zmm4, 64(%rdi)
+vmovdqa64 128(%rsi), %zmm3
+vmovdqa64 192(%rsi), %zmm4
+vpaddq 128(%rdx), %zmm3, %zmm3
+vpaddq 192(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 128(%rdi)
+vmovdqa64 %zmm4, 192(%rdi)
+vmovdqa64 256(%rsi), %zmm3
+vmovdqa64 320(%rsi), %zmm4
+vpaddq 256(%rdx), %zmm3, %zmm3
+vpaddq 320(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 256(%rdi)
+vmovdqa64 %zmm4, 320(%rdi)
+vmovdqa64 384(%rsi), %zmm3
+vmovdqa64 448(%rsi), %zmm4
+vpaddq 384(%rdx), %zmm3, %zmm3
+vpaddq 448(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 384(%rdi)
+vmovdqa64 %zmm4, 448(%rdi)
+vmovdqa64 512(%rsi), %zmm3
+vmovdqa64 576(%rsi), %zmm4
+vpaddq 512(%rdx), %zmm3, %zmm3
+vpaddq 576(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 512(%rdi)
+vmovdqa64 %zmm4, 576(%rdi)
+vmovdqa64 640(%rsi), %zmm3
+vmovdqa64 704(%rsi), %zmm4
+vpaddq 640(%rdx), %zmm3, %zmm3
+vpaddq 704(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 640(%rdi)
+vmovdqa64 %zmm4, 704(%rdi)
+vmovdqa64 768(%rsi), %zmm3
+vmovdqa64 832(%rsi), %zmm4
+vpaddq 768(%rdx), %zmm3, %zmm3
+vpaddq 832(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vpsrlq $52, %zmm3, %zmm1
+vpsrlq $52, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 768(%rdi)
+vmovdqa64 %zmm4, 832(%rdi)
+vmovdqa64 896(%rsi), %zmm3
+vmovdqa64 960(%rsi), %zmm4
+vpaddq 896(%rdx), %zmm3, %zmm3
+vpaddq 960(%rdx), %zmm4, %zmm4
+vpaddq %zmm1, %zmm3, %zmm3
+vpaddq %zmm2, %zmm4, %zmm4
+vmovdqa64 %zmm3, 896(%rdi)
+vmovdqa64 %zmm4, 960(%rdi)
+ret
+SIZE(mcl_c5_vaddPreA)
 .align 16
 .global PRE(mclb_add1)
 PRE(mclb_add1):
