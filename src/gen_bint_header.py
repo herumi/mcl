@@ -1,5 +1,9 @@
 import sys
 import argparse
+from montgomery import *
+
+def msm():
+	pass
 
 def gen_func(name, ret, args, cname, params, i, asPointer=False):
 	retstr = '' if ret == 'void' else ' return'
@@ -173,5 +177,8 @@ def main():
 	else:
 		print('err : bad out', out)
 
-main()
+	msm()
+
+if __name__ == '__main__':
+	main()
 
