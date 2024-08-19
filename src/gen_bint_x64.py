@@ -2,37 +2,74 @@ from s_xbyak import *
 import argparse
 from montgomery import *
 
-MSM_PRE='mcl_msm_c5_'
+# c5 means curve param=5 (BLS12_381)
+MSM_PRE='mcl_c5_'
 
-def gen_vaddPre(mont):
-  with FuncProc(MSM_PRE+'vaddPre'):
-    with StackFrame(3, 0, vNum=11, vType=T_ZMM) as sf:
+SIMD_BYTE = 64
+
+# expand args
+# Unroll(2, op, [xm0, xm1], [xm2, xm3], xm4)
+# -> op(xm0, xm2, xm4)
+#    op(xm1, xm3, xm4)
+def Unroll(n, op, *args, addrOffset=None):
+  xs = list(args)
+  for i in range(n):
+    ys = []
+    for e in xs:
+      if isinstance(e, list):
+        ys.append(e[i])
+      elif isinstance(e, Address):
+        if addrOffset == None:
+          if e.broadcast:
+            addrOffset = 0
+          else:
+            addrOffset = SIMD_BYTE
+        ys.append(e + addrOffset*i)
+      else:
+        ys.append(e)
+    op(*ys)
+
+def genUnrollFunc(n):
+  """
+    return a function takes op and outputs a function that takes *args and outputs n unrolled op
+  """
+  def fn(op, addrOffset=None):
+    def gn(*args):
+      Unroll(n, op, *args, addrOffset=addrOffset)
+    return gn
+  return fn
+
+def gen_vaddPre(mont, vN=1):
+  SUF = 'A' if vN == 2 else ''
+  with FuncProc(MSM_PRE+'vaddPre'+SUF):
+    with StackFrame(3, 0, vNum=1+vN*2, vType=T_ZMM) as sf:
+      un = genUnrollFunc(vN)
       W = mont.W
       z = sf.p[0]
       x = sf.p[1]
       y = sf.p[2]
-      t = zmm8
-      c = zmm9
-      vmask = zmm10
+      vmask = zmm0
+      c = sf.v[1:1+vN]
+      t = sf.v[1+vN:1+vN*2]
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
 
-      vmovdqa64(t, ptr(x))
-      vpaddq(t, t, ptr(y))
-      vpsrlq(c, t, W)
-      vpandq(t, t, vmask)
-      vmovdqa64(ptr(z), t)
+      un(vmovdqa64)(t, ptr(x))
+      un(vpaddq)(t, t, ptr(y))
+      un(vpsrlq)(c, t, W)
+      un(vpandq)(t, t, vmask)
+      un(vmovdqa64)(ptr(z), t)
 
       for i in range(1, mont.N+1):
-        vmovdqa64(t, ptr(x+i*64))
-        vpaddq(t, t, ptr(y+i*64))
-        vpaddq(t, t, c);
+        un(vmovdqa64)(t, ptr(x+i*64))
+        un(vpaddq)(t, t, ptr(y+i*64))
+        un(vpaddq)(t, t, c);
         if i == mont.N-1:
-          vmovdqa64(ptr(z+i*64), t)
+          un(vmovdqa64)(ptr(z+i*64), t)
           return
-        vpsrlq(c, t, W)
-        vpandq(t, t, vmask)
-        vmovdqa64(ptr(z+i*64), t)
+        un(vpsrlq)(c, t, W)
+        un(vpandq)(t, t, vmask)
+        un(vmovdqa64)(ptr(z+i*64), t)
 
 def msm_data(mont):
   pass

@@ -23,7 +23,8 @@
 
 extern "C" {
 
-void mcl_msm_c5_vaddPre(Vec *, const Vec *, const Vec *);
+void mcl_c5_vaddPre(Vec *, const Vec *, const Vec *);
+void mcl_c5_vaddPreA(VecA *, const VecA *, const VecA *);
 
 }
 
@@ -161,7 +162,7 @@ inline void vadd(Vec *z, const Vec *x, const Vec *y)
 {
 	Vec sN[N], tN[N];
 	vaddPre(sN, x, y);
-//	mcl_msm_c5_vaddPre(sN, x, y);
+//	mcl_c5_vaddPre(sN, x, y);
 	Vmask c = vsubPre<Vmask>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
@@ -1616,7 +1617,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 			setRand(y[j], rg);
 			vaddPre(z[j].v, x[j].v, y[j].v);
 			Vec t[N];
-			mcl_msm_c5_vaddPre(t, x[j].v, y[j].v);
+			mcl_c5_vaddPre(t, x[j].v, y[j].v);
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(t[k], z[j].v[k]));
 			}
