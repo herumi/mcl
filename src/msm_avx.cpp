@@ -316,7 +316,12 @@ inline void concat52bit(V y[6], const V x[8])
 	y[1] = vporq(vpsrlq(x[1], 12), vpsllq(x[2], 40));
 	y[2] = vporq(vpsrlq(x[2], 24), vpsllq(x[3], 28));
 	y[3] = vporq(vpsrlq(x[3], 36), vpsllq(x[4], 16));
+#if 1
+	// or(A, B, C) = orABC = 0xFE
+	y[4] = vpternlogq<0xFE>(vpsrlq(x[4], 48), vpsllq(x[5], 4), vpsllq(x[6], 56));
+#else
 	y[4] = vporq(vporq(vpsrlq(x[4], 48), vpsllq(x[5], 4)), vpsllq(x[6], 56));
+#endif
 	y[5] = vporq(vpsrlq(x[6], 8), vpsllq(x[7], 44));
 }
 
