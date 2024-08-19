@@ -1,9 +1,5 @@
 import sys
 import argparse
-from montgomery import *
-
-def msm():
-  pass
 
 def gen_func(name, ret, args, cname, params, i, asPointer=False):
   retstr = '' if ret == 'void' else ' return'
@@ -176,8 +172,6 @@ def main():
     gen_sqr_slow(N64)
   else:
     print('err : bad out', out)
-
-  msm()
 
 if __name__ == '__main__':
   main()

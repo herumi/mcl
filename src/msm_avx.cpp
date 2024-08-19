@@ -21,6 +21,12 @@
 #endif
 #endif
 
+extern "C" {
+
+void mcl_msm_c5_vaddPre(Vec *, const Vec *, const Vec *);
+
+}
+
 namespace {
 
 typedef mcl::Unit Unit;
@@ -43,6 +49,11 @@ inline uint8_t cvtToInt(const Vmask& v)
 	uint8_t r;
 	memcpy(&r, &v, sizeof(r));
 	return r;
+}
+
+inline bool isEqual(const Vec& a, const Vec& b)
+{
+	return memcmp(&a, &b, sizeof(a)) == 0;
 }
 
 inline void dump(const Vmask& v, const char *msg = nullptr)
@@ -135,6 +146,7 @@ inline void uvselect(V *z, const VM& c, const V *a, const V *b)
 	}
 }
 
+#if 1
 template<class VM=Vmask, class V>
 inline void vadd(V *z, const V *x, const V *y)
 {
@@ -143,6 +155,26 @@ inline void vadd(V *z, const V *x, const V *y)
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
+
+template<>
+inline void vadd(Vec *z, const Vec *x, const Vec *y)
+{
+	Vec sN[N], tN[N];
+	vaddPre(sN, x, y);
+//	mcl_msm_c5_vaddPre(sN, x, y);
+	Vmask c = vsubPre<Vmask>(tN, sN, G::ap());
+	uvselect(z, c, sN, tN);
+}
+#else
+template<class VM=Vmask, class V>
+inline void vadd(V *z, const V *x, const V *y)
+{
+	V sN[N], tN[N];
+	vaddPre(sN, x, y);
+	VM c = vsubPre<VM>(tN, sN, G::ap());
+	uvselect(z, c, sN, tN);
+}
+#endif
 
 template<class VM=Vmask, class V>
 inline void vsub(V *z, const V *x, const V *y)
@@ -1583,6 +1615,11 @@ CYBOZU_TEST_AUTO(vaddPre)
 			setRand(x[j], rg);
 			setRand(y[j], rg);
 			vaddPre(z[j].v, x[j].v, y[j].v);
+			Vec t[N];
+			mcl_msm_c5_vaddPre(t, x[j].v, y[j].v);
+			for (size_t k = 0; k < N; k++) {
+				CYBOZU_TEST_ASSERT(isEqual(t[k], z[j].v[k]));
+			}
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);

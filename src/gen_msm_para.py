@@ -13,16 +13,6 @@ def toArray(x, W=g_W, N=g_N):
     x >>= W
   return a
 
-
-class BLS12:
-  def __init__(self, z=-0xd201000000010000):
-    self.M = 1<<256
-    self.H = 1<<128
-    self.z = z
-    self.L = self.z**2 - 1
-    self.r = self.L*(self.L+1) + 1
-    self.p = (z-1)**2*self.r//3 + z
-
 def expand(name, v):
   if type(v) == int:
     s = f'{hex(v)}, '*8
@@ -96,7 +86,6 @@ struct G {{
 
 def main():
   curve = BLS12()
-
   mont = Montgomery(curve.p)
 #  print('#if 0')
 #  mont.put()

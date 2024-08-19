@@ -1,5 +1,44 @@
 from s_xbyak import *
 import argparse
+from montgomery import *
+
+MSM_PRE='mcl_msm_c5_'
+
+def gen_vaddPre(mont):
+  with FuncProc(MSM_PRE+'vaddPre'):
+    with StackFrame(3, 0, vNum=11, vType=T_ZMM) as sf:
+      W = mont.W
+      z = sf.p[0]
+      x = sf.p[1]
+      y = sf.p[2]
+      t = zmm8
+      c = zmm9
+      vmask = zmm10
+      mov(rax, mont.mask)
+      vpbroadcastq(vmask, rax)
+
+      vmovdqa64(t, ptr(x))
+      vpaddq(t, t, ptr(y))
+      vpsrlq(c, t, W)
+      vpandq(t, t, vmask)
+      vmovdqa64(ptr(z), t)
+
+      for i in range(1, mont.N+1):
+        vmovdqa64(t, ptr(x+i*64))
+        vpaddq(t, t, ptr(y+i*64))
+        vpaddq(t, t, c);
+        if i == mont.N-1:
+          vmovdqa64(ptr(z+i*64), t)
+          return
+        vpsrlq(c, t, W)
+        vpandq(t, t, vmask)
+        vmovdqa64(ptr(z+i*64), t)
+
+def msm_data(mont):
+  pass
+
+def msm_code(mont):
+  gen_vaddPre(mont)
 
 SUF='_fast'
 param=None
@@ -334,7 +373,12 @@ def main():
   addN = param.addn
 
   init(param)
+  curve = BLS12()
+  mont = Montgomery(curve.p)
+  segment('data')
+  msm_data(mont)
   segment('text')
+  msm_code(mont)
 
   for i in range(1,addN+1):
     gen_add(i)
