@@ -26,6 +26,9 @@ extern "C" {
 void mcl_c5_vaddPre(Vec *, const Vec *, const Vec *);
 void mcl_c5_vaddPreA(VecA *, const VecA *, const VecA *);
 
+void mcl_c5_vsubPre(Vec *, const Vec *, const Vec *);
+void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
+
 }
 
 namespace {
@@ -1600,6 +1603,14 @@ CYBOZU_TEST_AUTO(vaddPre)
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(t[k], z[j].v[k]));
 			}
+			vsubPre(w[j].v, z[j].v, x[j].v);
+			for (size_t k = 0; k < N; k++) {
+				CYBOZU_TEST_ASSERT(isEqual(w[j].v[k], y[j].v[k]));
+			}
+			mcl_c5_vsubPre(w[j].v, z[j].v, y[j].v);
+			for (size_t k = 0; k < N; k++) {
+				CYBOZU_TEST_ASSERT(isEqual(w[j].v[k], x[j].v[k]));
+			}
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
@@ -1659,6 +1670,12 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vsubPre::Vec", C, vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vaddPre::VecA", C, vaddPre, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vsubPre::VecA", C, vsubPre<VmaskA>, za.v, za.v, xa.v);
+#if 0
+	CYBOZU_BENCH_C("asm vaddPre", C, mcl_c5_vaddPre, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("asm vsubPre", C, mcl_c5_vsubPre, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
+#endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vadd::VecA", C, vadd<VmaskA>, za.v, za.v, xa.v);

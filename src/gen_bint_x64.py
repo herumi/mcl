@@ -66,12 +66,40 @@ def gen_vaddPre(mont, vN=1):
         un(vpandq)(t, t, vmask)
         un(vmovdqa64)(ptr(z+i*64*vN), t)
 
+def gen_vsubPre(mont, vN=1):
+  SUF = 'A' if vN == 2 else ''
+  with FuncProc(MSM_PRE+'vsubPre'+SUF):
+    with StackFrame(3, 0, vNum=1+vN*2, vType=T_ZMM) as sf:
+      un = genUnrollFunc(vN)
+      S = 63
+      z = sf.p[0]
+      x = sf.p[1]
+      y = sf.p[2]
+      vmask = zmm0
+      c = sf.v[1:1+vN]
+      t = sf.v[1+vN:1+vN*2]
+      mov(rax, mont.mask)
+      vpbroadcastq(vmask, rax)
+
+      for i in range(0, mont.N+1):
+        un(vmovdqa64)(t, ptr(x+i*64*vN))
+        un(vpsubq)(t, t, ptr(y+i*64*vN))
+        if i > 0:
+          un(vpsubq)(t, t, c);
+        un(vpsrlq)(c, t, S)
+        un(vpandq)(t, t, vmask)
+        un(vmovdqa64)(ptr(z+i*64*vN), t)
+      z = t[0]
+      vpxorq(z, z, z)
+      un(vpcmpgtq)([k1, k2], c, z)
+
 def msm_data(mont):
   pass
 
 def msm_code(mont):
   for vN in [1, 2]:
     gen_vaddPre(mont, vN)
+    gen_vsubPre(mont, vN)
 
 SUF='_fast'
 param=None

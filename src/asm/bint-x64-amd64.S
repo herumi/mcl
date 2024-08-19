@@ -67,6 +67,68 @@ vpaddq %zmm1, %zmm2, %zmm2
 vmovdqa64 %zmm2, 448(%rdi)
 ret
 SIZE(mcl_c5_vaddPre)
+.global PRE(mcl_c5_vsubPre)
+PRE(mcl_c5_vsubPre):
+TYPE(mcl_c5_vsubPre)
+mov $4503599627370495, %rax
+vpbroadcastq %rax, %zmm0
+vmovdqa64 (%rsi), %zmm2
+vpsubq (%rdx), %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, (%rdi)
+vmovdqa64 64(%rsi), %zmm2
+vpsubq 64(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 64(%rdi)
+vmovdqa64 128(%rsi), %zmm2
+vpsubq 128(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 128(%rdi)
+vmovdqa64 192(%rsi), %zmm2
+vpsubq 192(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 192(%rdi)
+vmovdqa64 256(%rsi), %zmm2
+vpsubq 256(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 256(%rdi)
+vmovdqa64 320(%rsi), %zmm2
+vpsubq 320(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 320(%rdi)
+vmovdqa64 384(%rsi), %zmm2
+vpsubq 384(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 384(%rdi)
+vmovdqa64 448(%rsi), %zmm2
+vpsubq 448(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 448(%rdi)
+vmovdqa64 512(%rsi), %zmm2
+vpsubq 512(%rdx), %zmm2, %zmm2
+vpsubq %zmm1, %zmm2, %zmm2
+vpsrlq $63, %zmm2, %zmm1
+vpandq %zmm0, %zmm2, %zmm2
+vmovdqa64 %zmm2, 512(%rdi)
+vpxorq %zmm2, %zmm2, %zmm2
+vpcmpgtq %zmm2, %zmm1, %k1
+ret
+SIZE(mcl_c5_vsubPre)
 .global PRE(mcl_c5_vaddPreA)
 PRE(mcl_c5_vaddPreA):
 TYPE(mcl_c5_vaddPreA)
@@ -164,6 +226,122 @@ vmovdqa64 %zmm3, 896(%rdi)
 vmovdqa64 %zmm4, 960(%rdi)
 ret
 SIZE(mcl_c5_vaddPreA)
+.global PRE(mcl_c5_vsubPreA)
+PRE(mcl_c5_vsubPreA):
+TYPE(mcl_c5_vsubPreA)
+mov $4503599627370495, %rax
+vpbroadcastq %rax, %zmm0
+vmovdqa64 (%rsi), %zmm3
+vmovdqa64 64(%rsi), %zmm4
+vpsubq (%rdx), %zmm3, %zmm3
+vpsubq 64(%rdx), %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, (%rdi)
+vmovdqa64 %zmm4, 64(%rdi)
+vmovdqa64 128(%rsi), %zmm3
+vmovdqa64 192(%rsi), %zmm4
+vpsubq 128(%rdx), %zmm3, %zmm3
+vpsubq 192(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 128(%rdi)
+vmovdqa64 %zmm4, 192(%rdi)
+vmovdqa64 256(%rsi), %zmm3
+vmovdqa64 320(%rsi), %zmm4
+vpsubq 256(%rdx), %zmm3, %zmm3
+vpsubq 320(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 256(%rdi)
+vmovdqa64 %zmm4, 320(%rdi)
+vmovdqa64 384(%rsi), %zmm3
+vmovdqa64 448(%rsi), %zmm4
+vpsubq 384(%rdx), %zmm3, %zmm3
+vpsubq 448(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 384(%rdi)
+vmovdqa64 %zmm4, 448(%rdi)
+vmovdqa64 512(%rsi), %zmm3
+vmovdqa64 576(%rsi), %zmm4
+vpsubq 512(%rdx), %zmm3, %zmm3
+vpsubq 576(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 512(%rdi)
+vmovdqa64 %zmm4, 576(%rdi)
+vmovdqa64 640(%rsi), %zmm3
+vmovdqa64 704(%rsi), %zmm4
+vpsubq 640(%rdx), %zmm3, %zmm3
+vpsubq 704(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 640(%rdi)
+vmovdqa64 %zmm4, 704(%rdi)
+vmovdqa64 768(%rsi), %zmm3
+vmovdqa64 832(%rsi), %zmm4
+vpsubq 768(%rdx), %zmm3, %zmm3
+vpsubq 832(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 768(%rdi)
+vmovdqa64 %zmm4, 832(%rdi)
+vmovdqa64 896(%rsi), %zmm3
+vmovdqa64 960(%rsi), %zmm4
+vpsubq 896(%rdx), %zmm3, %zmm3
+vpsubq 960(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 896(%rdi)
+vmovdqa64 %zmm4, 960(%rdi)
+vmovdqa64 1024(%rsi), %zmm3
+vmovdqa64 1088(%rsi), %zmm4
+vpsubq 1024(%rdx), %zmm3, %zmm3
+vpsubq 1088(%rdx), %zmm4, %zmm4
+vpsubq %zmm1, %zmm3, %zmm3
+vpsubq %zmm2, %zmm4, %zmm4
+vpsrlq $63, %zmm3, %zmm1
+vpsrlq $63, %zmm4, %zmm2
+vpandq %zmm0, %zmm3, %zmm3
+vpandq %zmm0, %zmm4, %zmm4
+vmovdqa64 %zmm3, 1024(%rdi)
+vmovdqa64 %zmm4, 1088(%rdi)
+vpxorq %zmm3, %zmm3, %zmm3
+vpcmpgtq %zmm3, %zmm1, %k1
+vpcmpgtq %zmm3, %zmm2, %k2
+ret
+SIZE(mcl_c5_vsubPreA)
 .align 16
 .global PRE(mclb_add1)
 PRE(mclb_add1):
