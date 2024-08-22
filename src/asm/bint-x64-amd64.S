@@ -67,6 +67,7 @@ vmovdqa64 448(%rsi), %zmm2
 vpaddq 448(%rdx), %zmm2, %zmm2
 vpaddq %zmm1, %zmm2, %zmm2
 vmovdqa64 %zmm2, 448(%rdi)
+vzeroupper
 ret
 SIZE(mcl_c5_vaddPre)
 .global PRE(mcl_c5_vsubPre)
@@ -123,6 +124,7 @@ vpandq %zmm0, %zmm2, %zmm2
 vmovdqa64 %zmm2, 448(%rdi)
 vpxorq %zmm2, %zmm2, %zmm2
 vpcmpgtq %zmm2, %zmm1, %k1
+vzeroupper
 ret
 SIZE(mcl_c5_vsubPre)
 .global PRE(mcl_c5_vaddPreA)
@@ -220,6 +222,7 @@ vpaddq %zmm1, %zmm3, %zmm3
 vpaddq %zmm2, %zmm4, %zmm4
 vmovdqa64 %zmm3, 896(%rdi)
 vmovdqa64 %zmm4, 960(%rdi)
+vzeroupper
 ret
 SIZE(mcl_c5_vaddPreA)
 .global PRE(mcl_c5_vsubPreA)
@@ -324,24 +327,12 @@ vmovdqa64 %zmm4, 960(%rdi)
 vpxorq %zmm3, %zmm3, %zmm3
 vpcmpgtq %zmm3, %zmm1, %k1
 vpcmpgtq %zmm3, %zmm2, %k2
+vzeroupper
 ret
 SIZE(mcl_c5_vsubPreA)
-.global PRE(mcl_c5_vadd_fast)
-PRE(mcl_c5_vadd_fast):
-TYPE(mcl_c5_vadd_fast)
-sub $776, %rsp
-vmovups %zmm7, (%rsp)
-vmovups %zmm8, 64(%rsp)
-vmovups %zmm9, 128(%rsp)
-vmovups %zmm10, 192(%rsp)
-vmovups %zmm11, 256(%rsp)
-vmovups %zmm12, 320(%rsp)
-vmovups %zmm13, 384(%rsp)
-vmovups %zmm14, 448(%rsp)
-vmovups %zmm15, 512(%rsp)
-vmovups %zmm16, 576(%rsp)
-vmovups %zmm17, 640(%rsp)
-vmovups %zmm18, 704(%rsp)
+.global PRE(mcl_c5_vadd)
+PRE(mcl_c5_vadd):
+TYPE(mcl_c5_vadd)
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm16
 vmovdqa64 (%rsi), %zmm0
@@ -412,39 +403,27 @@ vpsubq PRE(p)+56(%rip){1to8}, %zmm7, %zmm15
 vpsubq %zmm18, %zmm15, %zmm15
 vpsrlq $63, %zmm15, %zmm18
 vpandq %zmm16, %zmm15, %zmm15
-vpxorq %zmm8, %zmm8, %zmm8
-vpcmpgtq %zmm8, %zmm18, %k1
-vmovdqa64 %zmm8, %zmm0{%k1}
-vmovdqa64 %zmm0, (%rdi)
-vmovdqa64 %zmm9, %zmm1{%k1}
-vmovdqa64 %zmm1, 64(%rdi)
-vmovdqa64 %zmm10, %zmm2{%k1}
-vmovdqa64 %zmm2, 128(%rdi)
-vmovdqa64 %zmm11, %zmm3{%k1}
-vmovdqa64 %zmm3, 192(%rdi)
-vmovdqa64 %zmm12, %zmm4{%k1}
-vmovdqa64 %zmm4, 256(%rdi)
-vmovdqa64 %zmm13, %zmm5{%k1}
-vmovdqa64 %zmm5, 320(%rdi)
-vmovdqa64 %zmm14, %zmm6{%k1}
-vmovdqa64 %zmm6, 384(%rdi)
-vmovdqa64 %zmm15, %zmm7{%k1}
-vmovdqa64 %zmm7, 448(%rdi)
-vmovups (%rsp), %zmm7
-vmovups 64(%rsp), %zmm8
-vmovups 128(%rsp), %zmm9
-vmovups 192(%rsp), %zmm10
-vmovups 256(%rsp), %zmm11
-vmovups 320(%rsp), %zmm12
-vmovups 384(%rsp), %zmm13
-vmovups 448(%rsp), %zmm14
-vmovups 512(%rsp), %zmm15
-vmovups 576(%rsp), %zmm16
-vmovups 640(%rsp), %zmm17
-vmovups 704(%rsp), %zmm18
-add $776, %rsp
+vpxorq %zmm17, %zmm17, %zmm17
+vpcmpgtq %zmm17, %zmm18, %k1
+vmovdqa64 %zmm0, %zmm8{%k1}
+vmovdqa64 %zmm8, (%rdi)
+vmovdqa64 %zmm1, %zmm9{%k1}
+vmovdqa64 %zmm9, 64(%rdi)
+vmovdqa64 %zmm2, %zmm10{%k1}
+vmovdqa64 %zmm10, 128(%rdi)
+vmovdqa64 %zmm3, %zmm11{%k1}
+vmovdqa64 %zmm11, 192(%rdi)
+vmovdqa64 %zmm4, %zmm12{%k1}
+vmovdqa64 %zmm12, 256(%rdi)
+vmovdqa64 %zmm5, %zmm13{%k1}
+vmovdqa64 %zmm13, 320(%rdi)
+vmovdqa64 %zmm6, %zmm14{%k1}
+vmovdqa64 %zmm14, 384(%rdi)
+vmovdqa64 %zmm7, %zmm15{%k1}
+vmovdqa64 %zmm15, 448(%rdi)
+vzeroupper
 ret
-SIZE(mcl_c5_vadd_fast)
+SIZE(mcl_c5_vadd)
 .align 16
 .global PRE(mclb_add1)
 PRE(mclb_add1):

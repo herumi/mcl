@@ -1631,7 +1631,15 @@ CYBOZU_TEST_AUTO(vaddPre)
 		// vadd, vsub
 		for (size_t j = 0; j < vN; j++) {
 			vadd(z[j].v, x[j].v, y[j].v);
+			Vec u[8];
+			mcl_c5_vadd(u, x[j].v, y[j].v);
+			for (size_t k = 0; k < N; k++) {
+				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], u[k]));
+			}
 		}
+		w[0].clear();
+		w[1].clear();
+
 		xa.setFpM(x);
 		ya.setFpM(y);
 		FpMA::add(za, xa, ya);
@@ -1667,7 +1675,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 		}
 	}
 #ifdef NDEBUG
-	const int C = 100000;
+	const int C = 10000000;
 	CYBOZU_BENCH_C("vaddPre::Vec", C, vaddPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsubPre::Vec", C, vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vaddPre::VecA", C, vaddPre, za.v, za.v, xa.v);
@@ -1677,13 +1685,14 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("asm vsubPre", C, mcl_c5_vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("asm vadd", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
 #endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vadd::VecA", C, vadd<VmaskA>, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vsub::VecA", C, vsub<VmaskA>, za.v, za.v, xa.v);
-	CYBOZU_BENCH_C("vmul::Vec", C, vmul, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("vmul::VecA", C, vmul<VmaskA>, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("vmul::Vec", C/10, vmul, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("vmul::VecA", C/10, vmul<VmaskA>, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("FpM::inv", C/100, FpM::inv, z[0], z[0]);
 	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
 	forcedRead(z);

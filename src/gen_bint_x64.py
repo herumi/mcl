@@ -102,7 +102,7 @@ def gen_vsubPre(mont, vN=1):
       un(vpcmpgtq)([k1, k2], c, t[0])
 
 def gen_vadd(mont):
-  with FuncProc(MSM_PRE+'vadd'+SUF):
+  with FuncProc(MSM_PRE+'vadd'):
     with StackFrame(3, 0, vNum=mont.N*2+3, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
@@ -121,6 +121,29 @@ def gen_vadd(mont):
       vpbroadcastq(vmask, rax)
 
       # s = x+y
+      # t = s-p
+      # s = x+y
+      for i in range(0, N):
+        vmovdqa64(s[i], ptr(x+i*64))
+        vpaddq(s[i], s[i], ptr(y+i*64))
+
+        if i > 0:
+          vpaddq(s[i], s[i], c1);
+        if i == mont.N-1:
+          break
+        vpsrlq(c1, s[i], W)
+        vpandq(s[i], s[i], vmask)
+
+      # t = s-p
+      for i in range(0, N):
+        vpsubq(t[i], s[i], ptr_b(rip+C_p+i*8))
+        if i > 0:
+          vpsubq(t[i], t[i], c2);
+        vpsrlq(c2, t[i], S)
+        vpandq(t[i], t[i], vmask)
+
+      """
+      # s = x+y
       for i in range(0, N):
         vmovdqa64(s[i], ptr(x+i*64))
         vpaddq(s[i], s[i], ptr(y+i*64))
@@ -138,14 +161,15 @@ def gen_vadd(mont):
           vpsubq(t[i], t[i], c2);
         vpsrlq(c2, t[i], S)
         vpandq(t[i], t[i], vmask)
+      """
 
-      vpxorq(t[0], t[0], t[0])
-      vpcmpgtq(k1, c2, t[0])
+      vpxorq(c1, c1, c1)
+      vpcmpgtq(k1, c2, c1) # k1 = t<0
 
-      # z = select(c, s, t)
+      # z = select(k1, s, t)
       for i in range(N):
-        vmovdqa64(s[i]|k1, t[i])
-        vmovdqa64(ptr(z+i*64), s[i])
+        vmovdqa64(t[i]|k1, s[i])
+        vmovdqa64(ptr(z+i*64), t[i])
 
 def msm_data(mont):
   makeLabel(C_p)
