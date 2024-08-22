@@ -4,14 +4,11 @@ g_W = 52 # use 52-bit integer multiplication
 g_N = 8 # store 381-bit integer in 8 bytes N arrays
 g_vN = 2 # loop unroll
 
+g_mont = None
+
 # return w-bit array of size N
-def toArray(x, W=g_W, N=g_N):
-  mask = getMask(W)
-  a=[]
-  for i in range(N):
-    a.append(x & mask)
-    x >>= W
-  return a
+def toArray(x):
+  return g_mont.toArray(x)
 
 def expand(name, v):
   if type(v) == int:
@@ -87,6 +84,8 @@ struct G {{
 def main():
   curve = BLS12()
   mont = Montgomery(curve.p)
+  global g_mont
+  g_mont = mont
 #  print('#if 0')
 #  mont.put()
 #  print('#endif')

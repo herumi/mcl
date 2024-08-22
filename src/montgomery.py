@@ -49,3 +49,11 @@ mask={hex(self.mask)}
 R={hex(self.R)}
 R2={hex(self.R2)}
 rp={hex(self.rp)}''')
+
+  def toArray(self, x):
+    mask = getMask(self.W)
+    a=[]
+    for i in range(self.N):
+      a.append(x & self.mask)
+      x >>= self.W
+    return a

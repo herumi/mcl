@@ -4,8 +4,16 @@ from montgomery import *
 
 # c5 means curve param=5 (BLS12_381)
 MSM_PRE='mcl_c5_'
+C_p='p'
 
 SIMD_BYTE = 64
+
+# return n-times pop
+def pops(x, n):
+  r = []
+  for i in range(n):
+    r.append(x.pop())
+  return r
 
 # expand args
 # Unroll(2, op, [xm0, xm1], [xm2, xm3], xm4)
@@ -54,7 +62,7 @@ def gen_vaddPre(mont, vN=1):
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
 
-      for i in range(0, mont.N+1):
+      for i in range(0, mont.N):
         un(vmovdqa64)(t, ptr(x+i*64*vN))
         un(vpaddq)(t, t, ptr(y+i*64*vN))
         if i > 0:
@@ -81,7 +89,7 @@ def gen_vsubPre(mont, vN=1):
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
 
-      for i in range(0, mont.N+1):
+      for i in range(0, mont.N):
         un(vmovdqa64)(t, ptr(x+i*64*vN))
         un(vpsubq)(t, t, ptr(y+i*64*vN))
         if i > 0:
@@ -89,17 +97,65 @@ def gen_vsubPre(mont, vN=1):
         un(vpsrlq)(c, t, S)
         un(vpandq)(t, t, vmask)
         un(vmovdqa64)(ptr(z+i*64*vN), t)
-      z = t[0]
-      vpxorq(z, z, z)
-      un(vpcmpgtq)([k1, k2], c, z)
+
+      vpxorq(t[0], t[0], t[0])
+      un(vpcmpgtq)([k1, k2], c, t[0])
+
+def gen_vadd(mont):
+  with FuncProc(MSM_PRE+'vadd'+SUF):
+    with StackFrame(3, 0, vNum=mont.N*2+3, vType=T_ZMM) as sf:
+      regs = list(reversed(sf.v))
+      W = mont.W
+      N = mont.N
+      S = 63
+      z = sf.p[0]
+      x = sf.p[1]
+      y = sf.p[2]
+      s = pops(regs, N)
+      t = pops(regs, N)
+      vmask = pops(regs, 1)[0]
+      c1 = pops(regs, 1)[0]
+      c2 = pops(regs, 1)[0]
+
+      mov(rax, mont.mask)
+      vpbroadcastq(vmask, rax)
+
+      # s = x+y
+      for i in range(0, N):
+        vmovdqa64(s[i], ptr(x+i*64))
+        vpaddq(s[i], s[i], ptr(y+i*64))
+        if i > 0:
+          vpaddq(s[i], s[i], c1);
+        if i == mont.N-1:
+          break
+        vpsrlq(c1, s[i], W)
+        vpandq(s[i], s[i], vmask)
+
+      # t = s-p
+      for i in range(0, N):
+        vpsubq(t[i], s[i], ptr_b(rip+C_p+i*8))
+        if i > 0:
+          vpsubq(t[i], t[i], c2);
+        vpsrlq(c2, t[i], S)
+        vpandq(t[i], t[i], vmask)
+
+      vpxorq(t[0], t[0], t[0])
+      vpcmpgtq(k1, c2, t[0])
+
+      # z = select(c, s, t)
+      for i in range(N):
+        vmovdqa64(s[i]|k1, t[i])
+        vmovdqa64(ptr(z+i*64), s[i])
 
 def msm_data(mont):
-  pass
+  makeLabel(C_p)
+  dq_(', '.join(map(hex, mont.toArray(mont.p))))
 
 def msm_code(mont):
   for vN in [1, 2]:
     gen_vaddPre(mont, vN)
     gen_vsubPre(mont, vN)
+  gen_vadd(mont)
 
 SUF='_fast'
 param=None

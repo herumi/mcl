@@ -29,6 +29,8 @@ void mcl_c5_vaddPreA(VecA *, const VecA *, const VecA *);
 void mcl_c5_vsubPre(Vec *, const Vec *, const Vec *);
 void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
 
+void mcl_c5_vadd(Vec *, const Vec *, const Vec *);
+
 }
 
 namespace {
@@ -1670,7 +1672,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vsubPre::Vec", C, vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vaddPre::VecA", C, vaddPre, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vsubPre::VecA", C, vsubPre<VmaskA>, za.v, za.v, xa.v);
-#if 0
+#if 1
 	CYBOZU_BENCH_C("asm vaddPre", C, mcl_c5_vaddPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("asm vsubPre", C, mcl_c5_vsubPre, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
