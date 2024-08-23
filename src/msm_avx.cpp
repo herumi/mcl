@@ -30,7 +30,9 @@ void mcl_c5_vsubPre(Vec *, const Vec *, const Vec *);
 void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
 
 void mcl_c5_vadd(Vec *, const Vec *, const Vec *);
-void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
+void mcl_c5_vsub(Vec *, const Vec *, const Vec *);
+//void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
+
 
 }
 
@@ -185,6 +187,13 @@ inline void vsub(V *z, const V *x, const V *y)
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
+#if 0
+template<>
+inline void vsub(Vec *z, const Vec *x, const Vec *y)
+{
+	mcl_c5_vsub(z, x, y);
+}
+#endif
 
 template<class V>
 inline void vmulUnit(V *z, const V *x, const V& y)
@@ -1360,11 +1369,23 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 
 #ifdef MCL_MSM_TEST
 #include <mcl/bls12_381.hpp>
-#include <cybozu/test.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
 
 using namespace mcl::bn;
+
+#if 0
+#include <string.h>
+int main(int argc, char *argv[])
+{
+	Vec x[8], y[8];
+	memset(x, argc, sizeof(x));
+	memset(y, argc+1, sizeof(y));
+	vsub(x, x, y);
+	mcl::bint::dump((const uint8_t*)x, sizeof(x));
+}
+#else
+#include <cybozu/test.hpp>
 
 template<size_t N, int w = W>
 inline void toArray(Unit x[N], const mpz_class& mx)
@@ -1651,6 +1672,10 @@ CYBOZU_TEST_AUTO(vaddPre)
 			for (size_t k = 0; k < N; k++) {
 				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], u[k]));
 			}
+			mcl_c5_vsub(u, u, y[j].v);
+			for (size_t k = 0; k < N; k++) {
+				CYBOZU_TEST_ASSERT(isEqual(x[j].v[k], u[k]));
+			}
 		}
 		w[0].clear();
 		w[1].clear();
@@ -1701,7 +1726,8 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vadd", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
-	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("asm vsub", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
+//	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
 #endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);
@@ -2025,4 +2051,5 @@ CYBOZU_TEST_AUTO(mulVec)
 	CYBOZU_BENCH_C("mulVec", 30, mcl::msm::mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
 #endif
 }
+#endif
 #endif

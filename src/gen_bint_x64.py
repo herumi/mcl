@@ -184,6 +184,51 @@ def gen_vadd(mont, vN=1):
         sub(ecx, 1)
         jnz(lpL)
 
+def gen_vsub(mont):
+  with FuncProc(MSM_PRE+'vsub'):
+    with StackFrame(3, 0, vNum=mont.N*2+2, vType=T_ZMM) as sf:
+      regs = list(reversed(sf.v))
+      W = mont.W
+      N = mont.N
+      S = 63
+      z = sf.p[0]
+      x = sf.p[1]
+      y = sf.p[2]
+      s = pops(regs, N)
+      t = pops(regs, N)
+      vmask = pops(regs, 1)[0]
+      c = pops(regs, 1)[0]
+
+      mov(rax, mont.mask)
+      vpbroadcastq(vmask, rax)
+
+      un = genUnrollFunc()
+
+      # s = x-y
+      for i in range(0, N):
+        vmovdqa64(s[i], ptr(x+i*64))
+        vpsubq(s[i], s[i], ptr(y+i*64))
+        if i > 0:
+          vpsubq(s[i], s[i], c);
+        vpsrlq(c, s[i], S)
+        vpandq(s[i], s[i], vmask)
+
+      vpxorq(t[0], t[0], t[0])
+      vpcmpgtq(k1, c, t[0]) # k1 = x<y
+
+      # t = s+p
+      for i in range(0, N):
+        vpaddq(t[i], s[i], ptr_b(rip+C_p+i*8))
+        if i > 0:
+          vpaddq(t[i], t[i], c);
+        vpsrlq(c, t[i], W)
+        vpandq(t[i], t[i], vmask)
+
+      # z = select(k1, t, s)
+      for i in range(N):
+        vmovdqa64(s[i]|k1, t[i])
+      un(vmovdqa64)(ptr(z), s)
+
 def msm_data(mont):
   makeLabel(C_p)
   dq_(', '.join(map(hex, mont.toArray(mont.p))))
@@ -192,7 +237,9 @@ def msm_code(mont):
   for vN in [1, 2]:
     gen_vaddPre(mont, vN)
     gen_vsubPre(mont, vN)
-    gen_vadd(mont, vN)
+
+  gen_vadd(mont)
+  gen_vsub(mont)
 
 SUF='_fast'
 param=None
