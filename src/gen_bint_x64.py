@@ -108,7 +108,7 @@ def gen_vsubPre(mont, vN=1):
 
 def gen_vadd(mont):
   with FuncProc(MSM_PRE+'vadd'):
-    with StackFrame(3, 0, vNum=mont.N*2+3, vType=T_ZMM) as sf:
+    with StackFrame(3, 0, vNum=mont.N*2+2, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -129,46 +129,40 @@ def gen_vadd(mont):
       # s = x+y
 
       un = genUnrollFunc()
-      unb = genUnrollFunc(addrOffset=8)
 
-      """
-      un(vmovdqa64)(s, ptr(x))
-      un(vpaddq)(s, s, ptr(y))
-
-      for i in range(N-1):
-        vpsrlq(c, s[i], W)
-        vpaddq(s[i+1], s[i+1], c)
-
-      un(vpandq)(s, s, vmask)
-      unb(vpsubq)(t, s, ptr_b(rip+C_p))
-
-      for i in range(0, N):
-        if i > 0:
-          vpsubq(t[i], t[i], c)
-        vpsrlq(c, t[i], S)
-
-      un(vpandq)(t, t, vmask)
-
-      """
-      # s = x+y
-      for i in range(0, N):
-        vmovdqa64(s[i], ptr(x+i*64))
-        vpaddq(s[i], s[i], ptr(y+i*64))
-        if i > 0:
-          vpaddq(s[i], s[i], c);
-        if i == mont.N-1:
-          break
-        vpsrlq(c, s[i], W)
-        vpandq(s[i], s[i], vmask)
-
-      # t = s-p
-      for i in range(0, N):
-        vpsubq(t[i], s[i], ptr_b(rip+C_p+i*8))
-        if i > 0:
-          vpsubq(t[i], t[i], c);
-        vpsrlq(c, t[i], S)
-        vpandq(t[i], t[i], vmask)
-      #"""
+      if False:
+        unb = genUnrollFunc(addrOffset=8)
+        un(vmovdqa64)(s, ptr(x))
+        un(vpaddq)(s, s, ptr(y))
+        for i in range(N-1):
+          vpsrlq(c, s[i], W)
+          vpaddq(s[i+1], s[i+1], c)
+        un(vpandq)(s, s, vmask)
+        unb(vpsubq)(t, s, ptr_b(rip+C_p))
+        for i in range(0, N):
+          if i > 0:
+            vpsubq(t[i], t[i], c)
+          vpsrlq(c, t[i], S)
+        un(vpandq)(t, t, vmask)
+      else:
+        # a little faster
+        # s = x+y
+        for i in range(0, N):
+          vmovdqa64(s[i], ptr(x+i*64))
+          vpaddq(s[i], s[i], ptr(y+i*64))
+          if i > 0:
+            vpaddq(s[i], s[i], c);
+          if i == mont.N-1:
+            break
+          vpsrlq(c, s[i], W)
+          vpandq(s[i], s[i], vmask)
+        # t = s-p
+        for i in range(0, N):
+          vpsubq(t[i], s[i], ptr_b(rip+C_p+i*8))
+          if i > 0:
+            vpsubq(t[i], t[i], c);
+          vpsrlq(c, t[i], S)
+          vpandq(t[i], t[i], vmask)
 
       vpxorq(vmask, vmask, vmask)
       vpcmpgtq(k1, c, vmask) # k1 = t<0
