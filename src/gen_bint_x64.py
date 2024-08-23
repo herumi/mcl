@@ -106,9 +106,10 @@ def gen_vsubPre(mont, vN=1):
       vpxorq(t[0], t[0], t[0])
       un(vpcmpgtq)([k1, k2], c, t[0])
 
-def gen_vadd(mont):
-  with FuncProc(MSM_PRE+'vadd'):
-    with StackFrame(3, 0, vNum=mont.N*2+2, vType=T_ZMM) as sf:
+def gen_vadd(mont, vN=1):
+  SUF = 'A' if vN == 2 else ''
+  with FuncProc(MSM_PRE+'vadd'+SUF):
+    with StackFrame(3, 0, useRCX=True, vNum=mont.N*2+2, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -129,6 +130,11 @@ def gen_vadd(mont):
       # s = x+y
 
       un = genUnrollFunc()
+
+      if vN == 2:
+        mov(ecx, 2)
+        lpL = Label()
+        L(lpL)
 
       if False:
         unb = genUnrollFunc(addrOffset=8)
@@ -166,11 +172,17 @@ def gen_vadd(mont):
 
       vpxorq(vmask, vmask, vmask)
       vpcmpgtq(k1, c, vmask) # k1 = t<0
-
       # z = select(k1, s, t)
       for i in range(N):
         vmovdqa64(t[i]|k1, s[i])
       un(vmovdqa64)(ptr(z), t)
+
+      if vN == 2:
+        add(x, 64)
+        add(y, 64)
+        add(z, 64)
+        sub(ecx, 1)
+        jnz(lpL)
 
 def msm_data(mont):
   makeLabel(C_p)
@@ -180,7 +192,7 @@ def msm_code(mont):
   for vN in [1, 2]:
     gen_vaddPre(mont, vN)
     gen_vsubPre(mont, vN)
-  gen_vadd(mont)
+    gen_vadd(mont, vN)
 
 SUF='_fast'
 param=None

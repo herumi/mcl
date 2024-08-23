@@ -30,6 +30,7 @@ void mcl_c5_vsubPre(Vec *, const Vec *, const Vec *);
 void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
 
 void mcl_c5_vadd(Vec *, const Vec *, const Vec *);
+void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
 
 }
 
@@ -166,6 +167,13 @@ inline void vadd(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vadd(z, x, y);
 }
+#if 0
+template<>
+inline void vadd(VecA *z, const VecA *x, const VecA *y)
+{
+	mcl_c5_vaddA(z, x, y);
+}
+#endif
 #endif
 
 template<class VM=Vmask, class V>
@@ -1693,6 +1701,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("asm vaddPreA", C, mcl_c5_vaddPreA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vadd", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
 #endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);
