@@ -160,6 +160,13 @@ inline void vadd(V *z, const V *x, const V *y)
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
+#if 1
+template<>
+inline void vadd(Vec *z, const Vec *x, const Vec *y)
+{
+	mcl_c5_vadd(z, x, y);
+}
+#endif
 
 template<class VM=Vmask, class V>
 inline void vsub(V *z, const V *x, const V *y)

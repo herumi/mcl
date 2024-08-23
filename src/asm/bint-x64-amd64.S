@@ -373,53 +373,53 @@ vmovdqa64 448(%rsi), %zmm7
 vpaddq 448(%rdx), %zmm7, %zmm7
 vpaddq %zmm17, %zmm7, %zmm7
 vpsubq PRE(p)(%rip){1to8}, %zmm0, %zmm8
-vpsrlq $63, %zmm8, %zmm18
+vpsrlq $63, %zmm8, %zmm17
 vpandq %zmm16, %zmm8, %zmm8
 vpsubq PRE(p)+8(%rip){1to8}, %zmm1, %zmm9
-vpsubq %zmm18, %zmm9, %zmm9
-vpsrlq $63, %zmm9, %zmm18
+vpsubq %zmm17, %zmm9, %zmm9
+vpsrlq $63, %zmm9, %zmm17
 vpandq %zmm16, %zmm9, %zmm9
 vpsubq PRE(p)+16(%rip){1to8}, %zmm2, %zmm10
-vpsubq %zmm18, %zmm10, %zmm10
-vpsrlq $63, %zmm10, %zmm18
+vpsubq %zmm17, %zmm10, %zmm10
+vpsrlq $63, %zmm10, %zmm17
 vpandq %zmm16, %zmm10, %zmm10
 vpsubq PRE(p)+24(%rip){1to8}, %zmm3, %zmm11
-vpsubq %zmm18, %zmm11, %zmm11
-vpsrlq $63, %zmm11, %zmm18
+vpsubq %zmm17, %zmm11, %zmm11
+vpsrlq $63, %zmm11, %zmm17
 vpandq %zmm16, %zmm11, %zmm11
 vpsubq PRE(p)+32(%rip){1to8}, %zmm4, %zmm12
-vpsubq %zmm18, %zmm12, %zmm12
-vpsrlq $63, %zmm12, %zmm18
+vpsubq %zmm17, %zmm12, %zmm12
+vpsrlq $63, %zmm12, %zmm17
 vpandq %zmm16, %zmm12, %zmm12
 vpsubq PRE(p)+40(%rip){1to8}, %zmm5, %zmm13
-vpsubq %zmm18, %zmm13, %zmm13
-vpsrlq $63, %zmm13, %zmm18
+vpsubq %zmm17, %zmm13, %zmm13
+vpsrlq $63, %zmm13, %zmm17
 vpandq %zmm16, %zmm13, %zmm13
 vpsubq PRE(p)+48(%rip){1to8}, %zmm6, %zmm14
-vpsubq %zmm18, %zmm14, %zmm14
-vpsrlq $63, %zmm14, %zmm18
+vpsubq %zmm17, %zmm14, %zmm14
+vpsrlq $63, %zmm14, %zmm17
 vpandq %zmm16, %zmm14, %zmm14
 vpsubq PRE(p)+56(%rip){1to8}, %zmm7, %zmm15
-vpsubq %zmm18, %zmm15, %zmm15
-vpsrlq $63, %zmm15, %zmm18
+vpsubq %zmm17, %zmm15, %zmm15
+vpsrlq $63, %zmm15, %zmm17
 vpandq %zmm16, %zmm15, %zmm15
-vpxorq %zmm17, %zmm17, %zmm17
-vpcmpgtq %zmm17, %zmm18, %k1
+vpxorq %zmm16, %zmm16, %zmm16
+vpcmpgtq %zmm16, %zmm17, %k1
 vmovdqa64 %zmm0, %zmm8{%k1}
-vmovdqa64 %zmm8, (%rdi)
 vmovdqa64 %zmm1, %zmm9{%k1}
-vmovdqa64 %zmm9, 64(%rdi)
 vmovdqa64 %zmm2, %zmm10{%k1}
-vmovdqa64 %zmm10, 128(%rdi)
 vmovdqa64 %zmm3, %zmm11{%k1}
-vmovdqa64 %zmm11, 192(%rdi)
 vmovdqa64 %zmm4, %zmm12{%k1}
-vmovdqa64 %zmm12, 256(%rdi)
 vmovdqa64 %zmm5, %zmm13{%k1}
-vmovdqa64 %zmm13, 320(%rdi)
 vmovdqa64 %zmm6, %zmm14{%k1}
-vmovdqa64 %zmm14, 384(%rdi)
 vmovdqa64 %zmm7, %zmm15{%k1}
+vmovdqa64 %zmm8, (%rdi)
+vmovdqa64 %zmm9, 64(%rdi)
+vmovdqa64 %zmm10, 128(%rdi)
+vmovdqa64 %zmm11, 192(%rdi)
+vmovdqa64 %zmm12, 256(%rdi)
+vmovdqa64 %zmm13, 320(%rdi)
+vmovdqa64 %zmm14, 384(%rdi)
 vmovdqa64 %zmm15, 448(%rdi)
 vzeroupper
 ret
