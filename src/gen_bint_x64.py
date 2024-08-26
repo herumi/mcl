@@ -79,6 +79,7 @@ def gen_vadd(mont, vN=1):
 
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
+      lea(rax, ptr(rip+C_p))
 
       # s = x+y
       # t = s-p
@@ -99,7 +100,6 @@ def gen_vadd(mont, vN=1):
           vpsrlq(c, s[i], W)
           vpaddq(s[i+1], s[i+1], c)
         un(vpandq)(s, s, vmask)
-        lea(rax, ptr(rip+C_p))
         unb(vpsubq)(t, s, ptr_b(rax))
         for i in range(0, N):
           if i > 0:
@@ -118,7 +118,6 @@ def gen_vadd(mont, vN=1):
           vpsrlq(c, s[i], W)
           vpandq(s[i], s[i], vmask)
         # t = s-p
-        lea(rax, ptr(rip+C_p))
         for i in range(0, N):
           vpsubq(t[i], s[i], ptr_b(rax+i*8))
           if i > 0:
@@ -139,9 +138,10 @@ def gen_vadd(mont, vN=1):
         sub(ecx, 1)
         jnz(lpL)
 
-def gen_vsub(mont):
-  with FuncProc(MSM_PRE+'vsub'):
-    with StackFrame(3, 0, vNum=mont.N*2+2, vType=T_ZMM) as sf:
+def gen_vsub(mont, vN=1):
+  SUF = 'A' if vN == 2 else ''
+  with FuncProc(MSM_PRE+'vsub'+SUF):
+    with StackFrame(3, 0, useRCX=True, vNum=mont.N*2+2, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -156,8 +156,14 @@ def gen_vsub(mont):
 
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
+      lea(rax, ptr(rip+C_p));
 
       un = genUnrollFunc()
+
+      if vN == 2:
+        mov(ecx, 2)
+        lpL = Label()
+        L(lpL)
 
       # s = x-y
       for i in range(0, N):
@@ -172,7 +178,6 @@ def gen_vsub(mont):
       vpcmpgtq(k1, c, t[0]) # k1 = x<y
 
       # t = s+p
-      lea(rax, ptr(rip+C_p));
       for i in range(0, N):
         vpaddq(t[i], s[i], ptr_b(rax+i*8))
         if i > 0:
@@ -183,6 +188,13 @@ def gen_vsub(mont):
         vpandq(s[i]|k1, t[i], vmask)
 
       un(vmovdqa64)(ptr(z), s)
+
+      if vN == 2:
+        add(x, 64)
+        add(y, 64)
+        add(z, 64)
+        sub(ecx, 1)
+        jnz(lpL)
 
 def vmulL(z, x, y):
   vpmadd52luq(z, x, y)
@@ -260,8 +272,8 @@ def msm_code(mont):
     gen_vaddPre(mont, vN)
     gen_vsubPre(mont, vN)
     gen_vadd(mont, vN)
+    gen_vsub(mont, vN)
 
-  gen_vsub(mont)
   gen_vmul(mont)
 
 SUF='_fast'
