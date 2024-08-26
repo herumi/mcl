@@ -969,7 +969,7 @@ inline size_t ilog2(size_t n)
 
 inline size_t costMulVec(size_t n, size_t x)
 {
-	return (n + (1<<(x+1))-1)/x;
+	return (n + (size_t(1)<<(x+1))-1)/x;
 }
 // calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
 inline size_t argminForMulVec0(size_t n)
