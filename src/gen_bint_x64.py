@@ -6,52 +6,6 @@ from montgomery import *
 MSM_PRE='mcl_c5_'
 C_p='p'
 
-SIMD_BYTE = 64
-
-# return n-times pop
-def pops(x, n):
-  r = []
-  for i in range(n):
-    r.append(x.pop())
-  return r
-
-# expand args
-# Unroll(2, op, [xm0, xm1], [xm2, xm3], xm4)
-# -> op(xm0, xm2, xm4)
-#    op(xm1, xm3, xm4)
-def Unroll(op, *args, addrOffset=None):
-  xs = list(args)
-  n = 100
-  for e in xs:
-    if isinstance(e, list):
-      n = min(n, len(e))
-
-  for i in range(n):
-    ys = []
-    for e in xs:
-      if isinstance(e, list):
-        ys.append(e[i])
-      elif isinstance(e, Address):
-        if addrOffset == None:
-          if e.broadcast:
-            addrOffset = 0
-          else:
-            addrOffset = SIMD_BYTE
-        ys.append(e + addrOffset*i)
-      else:
-        ys.append(e)
-    op(*ys)
-
-def genUnrollFunc(addrOffset=None):
-  """
-    return a function takes op and outputs a function that takes *args and outputs n unrolled op
-  """
-  def fn(op):
-    def gn(*args):
-      Unroll(op, *args, addrOffset=addrOffset)
-    return gn
-  return fn
-
 def gen_vaddPre(mont, vN=1):
   SUF = 'A' if vN == 2 else ''
   with FuncProc(MSM_PRE+'vaddPre'+SUF):
@@ -144,7 +98,8 @@ def gen_vadd(mont, vN=1):
           vpsrlq(c, s[i], W)
           vpaddq(s[i+1], s[i+1], c)
         un(vpandq)(s, s, vmask)
-        unb(vpsubq)(t, s, ptr_b(rip+C_p))
+        lea(rax, ptr(rip+C_p))
+        unb(vpsubq)(t, s, ptr_b(rax))
         for i in range(0, N):
           if i > 0:
             vpsubq(t[i], t[i], c)
@@ -163,8 +118,9 @@ def gen_vadd(mont, vN=1):
           vpsrlq(c, s[i], W)
           vpandq(s[i], s[i], vmask)
         # t = s-p
+        lea(rax, ptr(rip+C_p))
         for i in range(0, N):
-          vpsubq(t[i], s[i], ptr_b(rip+C_p+i*8))
+          vpsubq(t[i], s[i], ptr_b(rax+i*8))
           if i > 0:
             vpsubq(t[i], t[i], c);
           vpsrlq(c, t[i], S)
@@ -217,16 +173,16 @@ def gen_vsub(mont):
       vpcmpgtq(k1, c, t[0]) # k1 = x<y
 
       # t = s+p
+      lea(rax, ptr(rip+C_p));
       for i in range(0, N):
-        vpaddq(t[i], s[i], ptr_b(rip+C_p+i*8))
+        vpaddq(t[i], s[i], ptr_b(rax+i*8))
         if i > 0:
           vpaddq(t[i], t[i], c);
-        vpsrlq(c, t[i], W)
-        vpandq(t[i], t[i], vmask)
+        if i < N-1:
+          vpsrlq(c, t[i], W)
+        # z = select(k1, t, s)
+        vpandq(s[i]|k1, t[i], vmask)
 
-      # z = select(k1, t, s)
-      for i in range(N):
-        vmovdqa64(s[i]|k1, t[i])
       un(vmovdqa64)(ptr(z), s)
 
 def msm_data(mont):

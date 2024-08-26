@@ -7,7 +7,7 @@ import struct
 import re
 import argparse
 
-VERSION="0.9.3"
+VERSION="0.9.4"
 
 def getDefaultParser(description='s_xbyak'):
   parser = argparse.ArgumentParser(description=description)
@@ -663,6 +663,51 @@ class StackFrame:
         self.pos += 1
         return r
     return r
+
+# return n-times pop
+def pops(x, n):
+  r = []
+  for i in range(n):
+    r.append(x.pop())
+  return r
+
+# expand args
+# Unroll(2, op, [xm0, xm1], [xm2, xm3], xm4)
+# -> op(xm0, xm2, xm4)
+#    op(xm1, xm3, xm4)
+def Unroll(op, *args, addrOffset, simdByte):
+  xs = list(args)
+  n = 100
+  for e in xs:
+    if isinstance(e, list):
+      n = min(n, len(e))
+
+  for i in range(n):
+    ys = []
+    for e in xs:
+      if isinstance(e, list):
+        ys.append(e[i])
+      elif isinstance(e, Address):
+        if addrOffset == None:
+          if e.broadcast:
+            addrOffset = 0
+          else:
+            addrOffset = simdByte
+        ys.append(e + addrOffset*i)
+      else:
+        ys.append(e)
+    op(*ys)
+
+SIMD_BYTE = 64
+def genUnrollFunc(addrOffset=None):
+  """
+    return a function takes op and outputs a function that takes *args and outputs n unrolled op
+  """
+  def fn(op):
+    def gn(*args):
+      Unroll(op, *args, addrOffset=addrOffset, simdByte=SIMD_BYTE)
+    return gn
+  return fn
 
 def init(param):
   """
