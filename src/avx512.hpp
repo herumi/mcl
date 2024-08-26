@@ -42,12 +42,14 @@ inline Vec vone()
 }
 
 // low(c+a*b)
+// vpmadd52luq
 inline Vec vmulL(const Vec& a, const Vec& b, const Vec& c = vzero())
 {
 	return _mm512_madd52lo_epu64(c, a, b);
 }
 
 // high(c+a*b)
+// vpmadd52huq
 inline Vec vmulH(const Vec& a, const Vec& b, const Vec& c = vzero())
 {
 	return _mm512_madd52hi_epu64(c, a, b);
