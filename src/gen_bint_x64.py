@@ -191,7 +191,7 @@ def vmulL(z, x, y):
 def vmulH(z, x, y):
   vpmadd52huq(z, x, y)
 
-# [H:z] = x[] * y
+# z[0:N+1] = x[0:N] * y
 def vmulUnit(z, px, y, N, H, t):
   vpxorq(z[0], z[0], z[0])
   vmovdqa64(t, ptr(px))
@@ -202,9 +202,29 @@ def vmulUnit(z, px, y, N, H, t):
     vmovdqa64(z[i], H)
     vmovdqa64(t, ptr(px+i*64))
     vmulL(z[i], t, y)
-    vpxorq(H, H, H)
-    vmulH(H, t, y)
+    if i < N-1:
+      vpxorq(H, H, H)
+      vmulH(H, t, y)
+    else:
+      vpxorq(z[N], z[N], z[N])
+      vmulH(z[N], t, y)
 
+# [H]:z[0:N] = z[0:N] + x[] * y
+def vmulUnitAdd(z, px, y, N, H, t):
+  vmovdqa64(t, ptr(px))
+  vmulL(z[0], t, y)
+  vpxorq(H, H, H)
+  vmulH(H, t, y)
+  for i in range(1, N):
+    vmovdqa64(t, ptr(px+i*64))
+    vmulL(z[i], t, y)
+    vpaddq(z[i], z[i], H)
+    if i < N-1:
+      vpxorq(H, H, H)
+      vmulH(H, t, y)
+    else:
+      vpxorq(z[N], z[N], z[N])
+      vmulH(z[N], t, y)
 
 def msm_data(mont):
   makeLabel(C_p)
