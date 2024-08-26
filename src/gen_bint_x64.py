@@ -185,6 +185,27 @@ def gen_vsub(mont):
 
       un(vmovdqa64)(ptr(z), s)
 
+def vmulL(z, x, y):
+  vpmadd52luq(z, x, y)
+
+def vmulH(z, x, y):
+  vpmadd52huq(z, x, y)
+
+# [H:z] = x[] * y
+def vmulUnit(z, px, y, N, H, t):
+  vpxorq(z[0], z[0], z[0])
+  vmovdqa64(t, ptr(px))
+  vmulL(z[0], t, y)
+  vpxorq(H, H, H)
+  vmulH(H, t, y)
+  for i in range(1, N):
+    vmovdqa64(z[i], H)
+    vmovdqa64(t, ptr(px+i*64))
+    vmulL(z[i], t, y)
+    vpxorq(H, H, H)
+    vmulH(H, t, y)
+
+
 def msm_data(mont):
   makeLabel(C_p)
   dq_(', '.join(map(hex, mont.toArray(mont.p))))
