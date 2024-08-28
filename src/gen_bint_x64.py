@@ -5,6 +5,7 @@ from montgomery import *
 # c5 means curve param=5 (BLS12_381)
 MSM_PRE='mcl_c5_'
 C_p='p'
+C_ap='ap'
 C_rp='rp'
 
 def gen_vaddPre(mont, vN=1):
@@ -206,47 +207,43 @@ def vmulH(z, x, y):
   vpmadd52huq(z, x, y)
 
 # z[0:N+1] = x[0:N] * y
-def vmulUnit(z, px, y, N, H, t):
+def vmulUnit(z, px, y, N, H):
   for i in range(0, N):
     if i == 0:
       vpxorq(z[0], z[0], z[0])
     else:
       vmovdqa64(z[i], H)
-    vmovdqa64(t, ptr(px+i*64))
-    vmulL(z[i], t, y)
+    vmulL(z[i], y, ptr(px+i*64))
     if i < N-1:
       vpxorq(H, H, H)
-      vmulH(H, t, y)
+      vmulH(H, y, ptr(px+i*64))
     else:
       vpxorq(z[N], z[N], z[N])
-      vmulH(z[N], t, y)
+      vmulH(z[N], y, ptr(px+i*64))
 
 # [H]:z[0:N] = z[0:N] + x[] * y
-def vmulUnitAdd(z, px, y, N, H, t):
+def vmulUnitAdd(z, px, y, N, H):
   for i in range(0, N):
-    vmovdqa64(t, ptr(px+i*64))
-    vmulL(z[i], y, t)
+    vmulL(z[i], y, ptr(px+i*64))
     if i > 0:
       vpaddq(z[i], z[i], H)
     if i < N-1:
       vpxorq(H, H, H)
-      vmulH(H, y, t)
+      vmulH(H, y, ptr(px+i*64))
     else:
-      vpxorq(z[N], z[N], z[N])
-      vmulH(z[N], y, t)
+      vmulH(z[N], y, ptr(px+i*64))
 
 # z[0:N+1] = z[0:N+1] + broadcast(x[]) * y
-def vmulUnitAddBroadcast(z, px, y, N, H, t):
+def vmulUnitAddBroadcast(z, px, y, N, H):
   for i in range(0, N):
-    vpbroadcastq(t, ptr_b(px+i*8))
-    vmulL(z[i], y, t)
+    vmulL(z[i], y, ptr_b(px+i*8))
     if i > 0:
       vpaddq(z[i], z[i], H)
     if i < N-1:
       vpxorq(H, H, H)
-      vmulH(H, y, t)
+      vmulH(H, y, ptr_b(px+i*8))
     else:
-      vmulH(z[N], y, t)
+      vmulH(z[N], y, ptr_b(px+i*8))
 
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
@@ -267,29 +264,41 @@ def gen_vmul(mont):
       H = pops(regs, 1)[0]
       q = pops(regs, 1)[0]
 
+      vmulUnitAddL = Label()
+
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
-      lea(rax, ptr(rip+C_p))
       vpbroadcastq(rp, ptr_b(rip+C_rp))
 
       un = genUnrollFunc()
 
       vmovdqa64(y, ptr_b(py))
-      vmulUnit(t, px, y, N, H, c)
+      vmulUnit(t, px, y, N, H)
 
       vpxorq(q, q, q)
       vmulL(q, t[0], rp)
 
-      vmulUnitAddBroadcast(t, rax, q, N, H, c)
+      lea(rax, ptr(rip+C_ap))
+      #vmulUnitAdd(t, rax, q, N, H)
+      call(vmulUnitAddL)
       un(vmovdqa64)(ptr(pz), t[0:N+1])
-      return
       
-      un(vmovdqa64)(ptr(pz), t[0:N])
+      #un(vmovdqa64)(ptr(pz), t[0:N])
+      sf.close()
+      # out of vmul
+      align(32)
+      L(vmulUnitAddL)
+      #rax = px
+      vmulUnitAdd(t, rax, q, N, H)
+      ret()
 
 def msm_data(mont):
-  align(32)
+  align(64)
   makeLabel(C_p)
   dq_(', '.join(map(hex, mont.toArray(mont.p))))
+  makeLabel(C_ap)
+  for e in mont.toArray(mont.p):
+    dq_(', '.join([hex(e)]*8))
   makeLabel(C_rp)
   dq_(mont.rp)
 

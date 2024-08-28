@@ -14,9 +14,18 @@
   #define SIZE(x)
 #endif
 .data
-.align 32
+.align 64
 PRE(p):
 .quad 0xeffffffffaaab, 0xfeb153ffffb9f, 0x6b0f6241eabff, 0x12bf6730d2a0f, 0x764774b84f385, 0x1ba7b6434bacd, 0x1ea397fe69a4b, 0x1a011
+PRE(ap):
+.quad 0xeffffffffaaab, 0xeffffffffaaab, 0xeffffffffaaab, 0xeffffffffaaab, 0xeffffffffaaab, 0xeffffffffaaab, 0xeffffffffaaab, 0xeffffffffaaab
+.quad 0xfeb153ffffb9f, 0xfeb153ffffb9f, 0xfeb153ffffb9f, 0xfeb153ffffb9f, 0xfeb153ffffb9f, 0xfeb153ffffb9f, 0xfeb153ffffb9f, 0xfeb153ffffb9f
+.quad 0x6b0f6241eabff, 0x6b0f6241eabff, 0x6b0f6241eabff, 0x6b0f6241eabff, 0x6b0f6241eabff, 0x6b0f6241eabff, 0x6b0f6241eabff, 0x6b0f6241eabff
+.quad 0x12bf6730d2a0f, 0x12bf6730d2a0f, 0x12bf6730d2a0f, 0x12bf6730d2a0f, 0x12bf6730d2a0f, 0x12bf6730d2a0f, 0x12bf6730d2a0f, 0x12bf6730d2a0f
+.quad 0x764774b84f385, 0x764774b84f385, 0x764774b84f385, 0x764774b84f385, 0x764774b84f385, 0x764774b84f385, 0x764774b84f385, 0x764774b84f385
+.quad 0x1ba7b6434bacd, 0x1ba7b6434bacd, 0x1ba7b6434bacd, 0x1ba7b6434bacd, 0x1ba7b6434bacd, 0x1ba7b6434bacd, 0x1ba7b6434bacd, 0x1ba7b6434bacd
+.quad 0x1ea397fe69a4b, 0x1ea397fe69a4b, 0x1ea397fe69a4b, 0x1ea397fe69a4b, 0x1ea397fe69a4b, 0x1ea397fe69a4b, 0x1ea397fe69a4b, 0x1ea397fe69a4b
+.quad 0x1a011, 0x1a011, 0x1a011, 0x1a011, 0x1a011, 0x1a011, 0x1a011, 0x1a011
 PRE(rp):
 .quad 1125887021744125
 .text
@@ -702,89 +711,44 @@ PRE(mcl_c5_vmul):
 TYPE(mcl_c5_vmul)
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm25
-lea PRE(p)(%rip), %rax
 vpbroadcastq PRE(rp)(%rip), %zmm26
 vmovdqa64 (%rdx), %zmm28
 vpxorq %zmm0, %zmm0, %zmm0
-vmovdqa64 (%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm0
+vpmadd52luq (%rsi), %zmm28, %zmm0
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq (%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm1
-vmovdqa64 64(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm1
+vpmadd52luq 64(%rsi), %zmm28, %zmm1
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq 64(%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm2
-vmovdqa64 128(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm2
+vpmadd52luq 128(%rsi), %zmm28, %zmm2
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq 128(%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm3
-vmovdqa64 192(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm3
+vpmadd52luq 192(%rsi), %zmm28, %zmm3
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq 192(%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm4
-vmovdqa64 256(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm4
+vpmadd52luq 256(%rsi), %zmm28, %zmm4
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq 256(%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm5
-vmovdqa64 320(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm5
+vpmadd52luq 320(%rsi), %zmm28, %zmm5
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq 320(%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm6
-vmovdqa64 384(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm6
+vpmadd52luq 384(%rsi), %zmm28, %zmm6
 vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm28, %zmm27, %zmm29
+vpmadd52huq 384(%rsi), %zmm28, %zmm29
 vmovdqa64 %zmm29, %zmm7
-vmovdqa64 448(%rsi), %zmm27
-vpmadd52luq %zmm28, %zmm27, %zmm7
+vpmadd52luq 448(%rsi), %zmm28, %zmm7
 vpxorq %zmm8, %zmm8, %zmm8
-vpmadd52huq %zmm28, %zmm27, %zmm8
+vpmadd52huq 448(%rsi), %zmm28, %zmm8
 vpxorq %zmm30, %zmm30, %zmm30
 vpmadd52luq %zmm26, %zmm0, %zmm30
-vpbroadcastq (%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm0
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 8(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm1
-vpaddq %zmm29, %zmm1, %zmm1
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 16(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm2
-vpaddq %zmm29, %zmm2, %zmm2
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 24(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm3
-vpaddq %zmm29, %zmm3, %zmm3
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 32(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm4
-vpaddq %zmm29, %zmm4, %zmm4
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 40(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm5
-vpaddq %zmm29, %zmm5, %zmm5
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 48(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm6
-vpaddq %zmm29, %zmm6, %zmm6
-vpxorq %zmm29, %zmm29, %zmm29
-vpmadd52huq %zmm27, %zmm30, %zmm29
-vpbroadcastq 56(%rax), %zmm27
-vpmadd52luq %zmm27, %zmm30, %zmm7
-vpaddq %zmm29, %zmm7, %zmm7
-vpmadd52huq %zmm27, %zmm30, %zmm8
+lea PRE(ap)(%rip), %rax
+call .L3
 vmovdqa64 %zmm0, (%rdi)
 vmovdqa64 %zmm1, 64(%rdi)
 vmovdqa64 %zmm2, 128(%rdi)
@@ -795,6 +759,39 @@ vmovdqa64 %zmm6, 384(%rdi)
 vmovdqa64 %zmm7, 448(%rdi)
 vmovdqa64 %zmm8, 512(%rdi)
 vzeroupper
+ret
+.align 32
+.L3:
+vpmadd52luq (%rax), %zmm30, %zmm0
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq (%rax), %zmm30, %zmm29
+vpmadd52luq 64(%rax), %zmm30, %zmm1
+vpaddq %zmm29, %zmm1, %zmm1
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq 64(%rax), %zmm30, %zmm29
+vpmadd52luq 128(%rax), %zmm30, %zmm2
+vpaddq %zmm29, %zmm2, %zmm2
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq 128(%rax), %zmm30, %zmm29
+vpmadd52luq 192(%rax), %zmm30, %zmm3
+vpaddq %zmm29, %zmm3, %zmm3
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq 192(%rax), %zmm30, %zmm29
+vpmadd52luq 256(%rax), %zmm30, %zmm4
+vpaddq %zmm29, %zmm4, %zmm4
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq 256(%rax), %zmm30, %zmm29
+vpmadd52luq 320(%rax), %zmm30, %zmm5
+vpaddq %zmm29, %zmm5, %zmm5
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq 320(%rax), %zmm30, %zmm29
+vpmadd52luq 384(%rax), %zmm30, %zmm6
+vpaddq %zmm29, %zmm6, %zmm6
+vpxorq %zmm29, %zmm29, %zmm29
+vpmadd52huq 384(%rax), %zmm30, %zmm29
+vpmadd52luq 448(%rax), %zmm30, %zmm7
+vpaddq %zmm29, %zmm7, %zmm7
+vpmadd52huq 448(%rax), %zmm30, %zmm8
 ret
 SIZE(mcl_c5_vmul)
 .align 16
