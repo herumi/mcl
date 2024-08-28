@@ -5,6 +5,7 @@ from montgomery import *
 # c5 means curve param=5 (BLS12_381)
 MSM_PRE='mcl_c5_'
 C_p='p'
+C_rp='rp'
 
 def gen_vaddPre(mont, vN=1):
   SUF = 'A' if vN == 2 else ''
@@ -112,7 +113,7 @@ def gen_vadd(mont, vN=1):
           vmovdqa64(s[i], ptr(x+i*64))
           vpaddq(s[i], s[i], ptr(y+i*64))
           if i > 0:
-            vpaddq(s[i], s[i], c);
+            vpaddq(s[i], s[i], c)
           if i == mont.N-1:
             break
           vpsrlq(c, s[i], W)
@@ -121,7 +122,7 @@ def gen_vadd(mont, vN=1):
         for i in range(0, N):
           vpsubq(t[i], s[i], ptr_b(rax+i*8))
           if i > 0:
-            vpsubq(t[i], t[i], c);
+            vpsubq(t[i], t[i], c)
           vpsrlq(c, t[i], S)
 
       vpxorq(zero, zero, zero)
@@ -156,7 +157,7 @@ def gen_vsub(mont, vN=1):
 
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
-      lea(rax, ptr(rip+C_p));
+      lea(rax, ptr(rip+C_p))
 
       un = genUnrollFunc()
 
@@ -196,21 +197,21 @@ def gen_vsub(mont, vN=1):
         sub(ecx, 1)
         jnz(lpL)
 
+# z = low(z + x * y)
 def vmulL(z, x, y):
   vpmadd52luq(z, x, y)
 
+# z = high(z + x * y)
 def vmulH(z, x, y):
   vpmadd52huq(z, x, y)
 
 # z[0:N+1] = x[0:N] * y
 def vmulUnit(z, px, y, N, H, t):
-  vpxorq(z[0], z[0], z[0])
-  vmovdqa64(t, ptr(px))
-  vmulL(z[0], t, y)
-  vpxorq(H, H, H)
-  vmulH(H, t, y)
-  for i in range(1, N):
-    vmovdqa64(z[i], H)
+  for i in range(0, N):
+    if i == 0:
+      vpxorq(z[0], z[0], z[0])
+    else:
+      vmovdqa64(z[i], H)
     vmovdqa64(t, ptr(px+i*64))
     vmulL(z[i], t, y)
     if i < N-1:
@@ -222,24 +223,34 @@ def vmulUnit(z, px, y, N, H, t):
 
 # [H]:z[0:N] = z[0:N] + x[] * y
 def vmulUnitAdd(z, px, y, N, H, t):
-  vmovdqa64(t, ptr(px))
-  vmulL(z[0], t, y)
-  vpxorq(H, H, H)
-  vmulH(H, t, y)
-  for i in range(1, N):
+  for i in range(0, N):
     vmovdqa64(t, ptr(px+i*64))
-    vmulL(z[i], t, y)
-    vpaddq(z[i], z[i], H)
+    vmulL(z[i], y, t)
+    if i > 0:
+      vpaddq(z[i], z[i], H)
     if i < N-1:
       vpxorq(H, H, H)
-      vmulH(H, t, y)
+      vmulH(H, y, t)
     else:
       vpxorq(z[N], z[N], z[N])
-      vmulH(z[N], t, y)
+      vmulH(z[N], y, t)
+
+# z[0:N+1] = z[0:N+1] + broadcast(x[]) * y
+def vmulUnitAddBroadcast(z, px, y, N, H, t):
+  for i in range(0, N):
+    vpbroadcastq(t, ptr_b(px+i*8))
+    vmulL(z[i], y, t)
+    if i > 0:
+      vpaddq(z[i], z[i], H)
+    if i < N-1:
+      vpxorq(H, H, H)
+      vmulH(H, y, t)
+    else:
+      vmulH(z[N], y, t)
 
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
-    with StackFrame(3, 0, vNum=mont.N*2+4, vType=T_ZMM) as sf:
+    with StackFrame(3, 0, vNum=mont.N*3+7, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -248,24 +259,39 @@ def gen_vmul(mont):
       py = sf.p[2]
 
       t = pops(regs, N*2)
+      t2 = pops(regs, N+1)
       vmask = pops(regs, 1)[0]
+      rp = pops(regs, 1)[0]
       c = pops(regs, 1)[0]
       y = pops(regs, 1)[0]
       H = pops(regs, 1)[0]
+      q = pops(regs, 1)[0]
 
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
+      lea(rax, ptr(rip+C_p))
+      vpbroadcastq(rp, ptr_b(rip+C_rp))
 
       un = genUnrollFunc()
 
-      vmovdqa64(y, ptr(py))
-      un(vmovdqa64)(t[0:N], ptr(pz))
-      vmulUnitAdd(t, px, y, N, H, c)
+      vmovdqa64(y, ptr_b(py))
+      vmulUnit(t, px, y, N, H, c)
+
+      vpxorq(q, q, q)
+      vmulL(q, t[0], rp)
+
+      vmulUnitAddBroadcast(t, rax, q, N, H, c)
       un(vmovdqa64)(ptr(pz), t[0:N+1])
+      return
+      
+      un(vmovdqa64)(ptr(pz), t[0:N])
 
 def msm_data(mont):
+  align(32)
   makeLabel(C_p)
   dq_(', '.join(map(hex, mont.toArray(mont.p))))
+  makeLabel(C_rp)
+  dq_(mont.rp)
 
 def msm_code(mont):
   for vN in [1, 2]:

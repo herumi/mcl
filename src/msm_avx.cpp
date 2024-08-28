@@ -304,6 +304,30 @@ inline void vmul(V *z, const V *x, const U *y)
 #endif
 }
 
+template<class VM=Vmask, class V, typename U>
+inline void vmul2(V *z, const V *x, const U *y)
+{
+	V t[N*2], q;
+	vmulUnit(t, x, broadcast<V>(y[0]));
+	q = vmulL(t[0], G::rp());
+	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
+mcl::bint::copyT<N+1>(z, t);
+return;
+	for (size_t i = 1; i < N; i++) {
+		t[N+i] = vmulUnitAdd(t+i, x, broadcast<V>(y[i]));
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		q = vmulL(t[i], G::rp());
+		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
+	}
+	for (size_t i = N; i < N*2; i++) {
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		t[i-1] = vpandq(t[i-1], G::mask());
+	}
+	VM c = vsubPre<VM>(z, t+N, G::ap());
+	uvselect(z, c, t+N, z);
+}
+
+
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 {
@@ -1699,6 +1723,23 @@ CYBOZU_TEST_AUTO(vaddPre)
 		// vmul
 		for (size_t j = 0; j < vN; j++) {
 			vmul(z[j].v, x[j].v, y[j].v);
+#if 0
+const Vec *px = x[j].v;
+const Vec *py = y[j].v;
+dump(px[0], "x");
+dump(py[0], "y");
+static Vec v[9], w[9];
+memcpy(v, px, sizeof(v[0])*8);
+memcpy(w, px, sizeof(v[0])*8);
+vmul2(v, px, py);
+mcl_c5_vmul(w, px, py);
+for (int i = 0; i < 9; i++) {
+printf("i=%d\n", i);
+  dump(v[i], "v");
+  dump(w[i], "w");
+}
+exit(1);
+#endif
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
