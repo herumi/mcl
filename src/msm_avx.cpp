@@ -303,32 +303,13 @@ inline void vmul(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
-
-template<class VM=Vmask, class V, typename U>
-inline void vmul2(V *z, const V *x, const U *y)
+#if 1
+template<>
+inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {
-	V t[N*2], q;
-	vmulUnit(t, x, broadcast<V>(y[0]));
-	q = vmulL(t[0], G::rp());
-	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
-	for (size_t i = 1; i < N; i++) {
-		t[N+i] = vmulUnitAdd(t+i, x, broadcast<V>(y[i]));
-		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
-		q = vmulL(t[i], G::rp());
-		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
-//mcl::bint::copyT<N+1>(z, t+i);
-//return;
-	}
-mcl::bint::copyT<N+1>(z, t+N-1);
-return;
-	for (size_t i = N; i < N*2; i++) {
-		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
-		t[i-1] = vpandq(t[i-1], G::mask());
-	}
-	VM c = vsubPre<VM>(z, t+N, G::ap());
-	uvselect(z, c, t+N, z);
+	mcl_c5_vmul(z, x, y);
 }
-
+#endif
 
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
@@ -1725,24 +1706,11 @@ CYBOZU_TEST_AUTO(vaddPre)
 		// vmul
 		for (size_t j = 0; j < vN; j++) {
 			vmul(z[j].v, x[j].v, y[j].v);
-#if 0
-const Vec *px = x[j].v;
-const Vec *py = y[j].v;
-dump(px[0], "x");
-dump(py[0], "y");
-static Vec v[9], w[9];
-memcpy(v, px, sizeof(v[0])*8);
-memcpy(w, px, sizeof(v[0])*8);
-vmul2(v, px, py);
-mcl_c5_vmul(w, px, py);
-for (int i = 0; i < 9; i++) {
-printf("i=%d\n", i);
-  dump(v[i], "v");
-  dump(w[i], "w");
-  if (memcmp(&v[i], &w[i], sizeof(v[i])) != 0) printf("ERR");
-}
-exit(1);
-#endif
+			Vec w[8];
+			mcl_c5_vmul(w, x[j].v, y[j].v);
+			for (size_t k = 0; k < N; k++) {
+				CYBOZU_TEST_ASSERT(isEqual(z[j].v[k], w[k]));
+			}
 		}
 		xa.setFpM(x);
 		ya.setFpM(y);
@@ -1775,6 +1743,7 @@ exit(1);
 	CYBOZU_BENCH_C("asm vsubPreA", C, mcl_c5_vsubPreA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vadd", C, mcl_c5_vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("asm vsub", C, mcl_c5_vsub, z[0].v, z[0].v, x[0].v);
+	CYBOZU_BENCH_C("asm vmul", C, mcl_c5_vmul, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vsubA", C, mcl_c5_vsubA, za.v, za.v, xa.v);
 #endif
