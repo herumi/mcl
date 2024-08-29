@@ -311,14 +311,16 @@ inline void vmul2(V *z, const V *x, const U *y)
 	vmulUnit(t, x, broadcast<V>(y[0]));
 	q = vmulL(t[0], G::rp());
 	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
-mcl::bint::copyT<N+1>(z, t);
-return;
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vmulUnitAdd(t+i, x, broadcast<V>(y[i]));
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
 		q = vmulL(t[i], G::rp());
 		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
+//mcl::bint::copyT<N+1>(z, t+i);
+//return;
 	}
+mcl::bint::copyT<N+1>(z, t+N-1);
+return;
 	for (size_t i = N; i < N*2; i++) {
 		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
 		t[i-1] = vpandq(t[i-1], G::mask());
@@ -1737,6 +1739,7 @@ for (int i = 0; i < 9; i++) {
 printf("i=%d\n", i);
   dump(v[i], "v");
   dump(w[i], "w");
+  if (memcmp(&v[i], &w[i], sizeof(v[i])) != 0) printf("ERR");
 }
 exit(1);
 #endif

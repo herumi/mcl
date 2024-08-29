@@ -245,9 +245,15 @@ def vmulUnitAddBroadcast(z, px, y, N, H):
     else:
       vmulH(z[N], y, ptr_b(px+i*8))
 
+def shift(v, s):
+  vmovdqa64(s, v[0])
+  for i in range(1, len(v)):
+    vmovdqa64(v[i-1], v[i])
+  vpxorq(v[-1], v[-1], v[-1])
+
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
-    with StackFrame(3, 0, vNum=mont.N*3+7, vType=T_ZMM) as sf:
+    with StackFrame(3, 0, useRCX=True, vNum=mont.N+8, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -255,14 +261,15 @@ def gen_vmul(mont):
       px = sf.p[1]
       py = sf.p[2]
 
-      t = pops(regs, N*2)
-      t2 = pops(regs, N+1)
+      t = pops(regs, N+1)
       vmask = pops(regs, 1)[0]
       rp = pops(regs, 1)[0]
       c = pops(regs, 1)[0]
       y = pops(regs, 1)[0]
       H = pops(regs, 1)[0]
       q = pops(regs, 1)[0]
+      s = pops(regs, 1)[0]
+      lpL = Label()
 
       vmulUnitAddL = Label()
 
@@ -272,23 +279,45 @@ def gen_vmul(mont):
 
       un = genUnrollFunc()
 
-      vmovdqa64(y, ptr_b(py))
+      vmovdqa64(y, ptr(py))
+      add(py, 64)
       vmulUnit(t, px, y, N, H)
 
       vpxorq(q, q, q)
       vmulL(q, t[0], rp)
 
       lea(rax, ptr(rip+C_ap))
-      #vmulUnitAdd(t, rax, q, N, H)
-      call(vmulUnitAddL)
-      un(vmovdqa64)(ptr(pz), t[0:N+1])
-      
-      #un(vmovdqa64)(ptr(pz), t[0:N])
+      call(vmulUnitAddL) # t += p * q
+
+
+      mov(ecx, N-1)
+      align(32)
+      L(lpL)
+
+      mov(rax, px)
+      vmovdqa64(q, ptr(py))
+      add(py, 64)
+      shift(t, s)
+      call(vmulUnitAddL) # t += x * py[i]
+      vpsrlq(q, s, W)
+      vpaddq(t[0], t[0], q)
+
+      vpxorq(q, q, q)
+      vmulL(q, t[0], rp)
+
+      lea(rax, ptr(rip+C_ap))
+      call(vmulUnitAddL) # t += p * q
+
+      dec(ecx)
+      jnz(lpL)
+
+      un(vmovdqa64)(ptr(pz), t)
+
       sf.close()
       # out of vmul
       align(32)
       L(vmulUnitAddL)
-      #rax = px
+      #set rax(= px) and q(= y)
       vmulUnitAdd(t, rax, q, N, H)
       ret()
 
