@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- mulVec is a little improved.
 - mulEach with AVX-512 IFMA is improved slightly and 2.8 times faster than G1::mul on BLS12-381.
 - mulVec (multi scalar multiplication) with AVX-512 IFMA is 1.4 times faster on Xeon w9-3495X
 - a little performance improvement of G1::mulVec of BLS12-381
