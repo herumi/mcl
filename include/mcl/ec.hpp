@@ -242,15 +242,16 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 	}
 }
 
-#if MCL_SIZEOF_UNIT == 8
 /*
 	split x to (a, b) such that x = a + b L where 0 <= a, b <= L, 0 <= x <= r-1 = L^2+L
 	if adj is true, then 0 <= a < L, 0 <= b <= L+1
+	a[] : 128 bit
+	b[] : 128 bit
+	x[] : 256 bit
 */
-inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
+inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 {
 	const bool adj = false;
-	assert(sizeof(Unit) == 8);
 	/*
 		z = -0xd201000000010000
 		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
@@ -258,9 +259,9 @@ inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 		s=255
 		v = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
 	*/
-	static const uint64_t L[] = { 0x00000000ffffffff, 0xac45a4010001a402 };
-	static const uint64_t v[] = { 0xb1fb72917b67f718, 0xbe35f678f00fd56e };
-	static const uint64_t one[] = { 1, 0 };
+	static const Unit L[] = { MCL_U64_TO_UNIT(0x00000000ffffffff), MCL_U64_TO_UNIT(0xac45a4010001a402) };
+	static const Unit v[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
+	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
 	static const size_t n = 128 / mcl::UnitBitSize;
 	Unit t[n*3];
 	// n = 128 bit
@@ -268,8 +269,7 @@ inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 	mcl::bint::mulNM(t, x, n*2, v, n);
 	// b[n] = t[n*3]>>255
 	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
-	b[0] = t[0];
-	b[1] = t[1];
+	mcl::bint::copyT<n>(b, t);
 	Unit t2[n*2];
 	// t2[n*2] = t[n] * L[n]
 	// Do not overlap I/O buffers on pre-Broadwell CPUs.
@@ -284,7 +284,6 @@ inline void optimizedSplitRawForBLS12_381(Unit a[2], Unit b[2], const Unit x[4])
 		}
 	}
 }
-#endif
 
 } // mcl::ec::local
 
@@ -968,12 +967,33 @@ inline size_t ilog2(size_t n)
 	return cybozu::bsr(n) + 1;
 }
 
+inline size_t costMulVec(size_t n, size_t x)
+{
+	return (n + (size_t(1)<<(x+1))-1)/x;
+}
 // calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
-inline size_t argminForMulVec(size_t n)
+inline size_t argminForMulVec0(size_t n)
 {
 	if (n <= 16) return 2;
 	size_t log2n = ilog2(n);
 	return log2n - ilog2(log2n);
+}
+
+/*
+	First, get approximate value x and compute costMulVec of x-1 and x+1,
+	and return the minimum value.
+*/
+inline size_t argminForMulVec(size_t n)
+{
+	size_t x = argminForMulVec0(n);
+#if 1
+	size_t vm1 = x > 1 ? costMulVec(n, x-1) : n;
+	size_t v0 = costMulVec(n, x);
+	size_t vp1 = costMulVec(n, x+1);
+	if (vm1 <= v0) return x-1;
+	if (vp1 < v0) return x+1;
+#endif
+	return x;
 }
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
@@ -982,6 +1002,35 @@ inline size_t argminForMulVec(size_t n)
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
+
+/*
+	Extract w bits from yVec[i] starting at the pos-th bit, assign this value to v.
+	tbl[v-1] += xVec[i]
+	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
+*/
+template<class G>
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first)
+{
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t i = 0; i < n; i++) {
+		Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, pos) & tblN;
+		if (v) {
+			tbl[v - 1] += xVec[i];
+		}
+	}
+	G sum = tbl[tblN - 1];
+	if (first) {
+		win = sum;
+	} else {
+		win += sum;
+	}
+	for (size_t i = 1; i < tblN; i++) {
+		sum += tbl[tblN - 1 - i];
+		win += sum;
+	}
+}
 /*
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
@@ -1028,35 +1077,16 @@ main:
 #endif
 	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
 	const size_t winN = (maxBitSize + c-1) / c;
-	G *win = (G*)CYBOZU_ALLOCA(sizeof(G) * winN);
 
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	for (size_t w = 0; w < winN; w++) {
-		for (size_t i = 0; i < tblN; i++) {
-			tbl[i].clear();
-		}
-		for (size_t i = 0; i < n; i++) {
-			Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, c * w) & tblN;
-			if (v) {
-				tbl[v - 1] += xVec[i];
-			}
-		}
-		G sum = tbl[tblN - 1];
-		win[w] = sum;
-		for (size_t i = 1; i < tblN; i++) {
-			sum += tbl[tblN - 1 - i];
-			win[w] += sum;
-		}
-	}
-	z.clear(); // remove a wrong gcc warning
-	z = win[winN - 1];
+	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1), n, true);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(z, z);
 		}
-		z += win[winN - 1 - w];
+		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1-w), n, false);
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);

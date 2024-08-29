@@ -42,12 +42,14 @@ inline Vec vone()
 }
 
 // low(c+a*b)
+// vpmadd52luq
 inline Vec vmulL(const Vec& a, const Vec& b, const Vec& c = vzero())
 {
 	return _mm512_madd52lo_epu64(c, a, b);
 }
 
 // high(c+a*b)
+// vpmadd52huq
 inline Vec vmulH(const Vec& a, const Vec& b, const Vec& c = vzero())
 {
 	return _mm512_madd52hi_epu64(c, a, b);
@@ -86,6 +88,12 @@ inline Vec vpsllq(const Vec& a, size_t b)
 inline Vec vpandq(const Vec& a, const Vec& b)
 {
 	return _mm512_and_epi64(a, b);
+}
+
+// return !a & b
+inline Vec vpandnq(const Vec& a, const Vec& b)
+{
+	return _mm512_andnot_epi64(a, b);
 }
 
 inline Vec vporq(const Vec& a, const Vec& b)
@@ -163,6 +171,12 @@ inline Vec vpandq(const Vmask& c, const Vec& a, const Vec& b, const Vec& d)
 inline Vec vselect(const Vmask& c, const Vec& a, const Vec& b)
 {
 	return vpandq(c, a, a, b);
+}
+
+template<uint8_t imm>
+inline Vec vpternlogq(const Vec& a, const Vec& b, const Vec& c)
+{
+	return _mm512_ternarylogic_epi64(a, b, c, imm);
 }
 
 /////
@@ -300,6 +314,13 @@ inline VecA vpandq(const VecA& a, const VecA& b)
 	return r;
 }
 
+inline VecA vpandnq(const VecA& a, const VecA& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpandnq(a.v[i], b.v[i]);
+	return r;
+}
+
 inline VecA vpandq(const VecA& a, const Vec& b)
 {
 	VecA r;
@@ -410,6 +431,30 @@ inline VecA vselect(const VmaskA& c, const VecA& a, const VecA& b)
 {
 	VecA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = vselect(c.v[i], a.v[i], b.v[i]);
+	return r;
+}
+
+// return c ? a : b;
+inline VecA vselect(const VmaskA& c, const Vec& a, const Vec& b)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vselect(c.v[i], a, b);
+	return r;
+}
+
+template<uint8_t imm>
+inline VecA vpternlogq(const VecA& a, const VecA& b, const VecA& c)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpternlogq<imm>(a.v[i], b.v[i], c.v[i]);
+	return r;
+}
+
+template<uint8_t imm>
+inline VecA vpternlogq(const VecA& a, const VecA& b, const Vec& c)
+{
+	VecA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = vpternlogq<imm>(a.v[i], b.v[i], c);
 	return r;
 }
 
