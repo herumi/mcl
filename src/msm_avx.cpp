@@ -21,6 +21,8 @@
 #endif
 #endif
 
+#define USE_ASM
+
 extern "C" {
 
 void mcl_c5_vaddPre(Vec *, const Vec *, const Vec *);
@@ -179,14 +181,14 @@ inline void vadd(V *z, const V *x, const V *y)
 	VM c = vsubPre<VM>(tN, sN, G::ap());
 	uvselect(z, c, sN, tN);
 }
-#if 1
+#ifdef USE_ASM
 template<>
 inline void vadd(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vadd(z, x, y);
 }
 #endif
-#if 1
+#ifdef USE_ASM
 template<>
 inline void vadd<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
@@ -203,14 +205,14 @@ inline void vsub(V *z, const V *x, const V *y)
 	tN[N-1] = vpandq(tN[N-1], G::mask());
 	uvselect(z, c, tN, sN);
 }
-#if 1
+#ifdef USE_ASM
 template<>
 inline void vsub(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vsub(z, x, y);
 }
 #endif
-#if 1
+#ifdef USE_ASM
 template<>
 inline void vsub<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
@@ -322,14 +324,14 @@ inline void vmul(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
-#if 1
+#ifdef USE_ASM
 template<>
 inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vmul(z, x, y);
 }
 #endif
-#if 1
+#ifdef USE_ASM
 template<>
 inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
