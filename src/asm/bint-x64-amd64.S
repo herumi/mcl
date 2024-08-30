@@ -711,7 +711,7 @@ PRE(mcl_c5_vmul):
 TYPE(mcl_c5_vmul)
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm9
-lea PRE(rp)(%rip), %r10
+lea PRE(rp)(%rip), %rcx
 vmovdqa64 (%rdx), %zmm11
 add $64, %rdx
 vpxorq %zmm0, %zmm0, %zmm0
@@ -747,10 +747,10 @@ vpmadd52luq 448(%rsi), %zmm11, %zmm7
 vpxorq %zmm8, %zmm8, %zmm8
 vpmadd52huq 448(%rsi), %zmm11, %zmm8
 vpxorq %zmm11, %zmm11, %zmm11
-vpmadd52luq (%r10){1to8}, %zmm0, %zmm11
+vpmadd52luq (%rcx){1to8}, %zmm0, %zmm11
 lea PRE(ap)(%rip), %rax
 call .L4
-mov $7, %ecx
+mov $7, %r8
 .align 32
 .L3:
 mov %rsi, %rax
@@ -770,10 +770,10 @@ call .L4
 vpsrlq $52, %zmm12, %zmm11
 vpaddq %zmm11, %zmm0, %zmm0
 vpxorq %zmm11, %zmm11, %zmm11
-vpmadd52luq (%r10){1to8}, %zmm0, %zmm11
+vpmadd52luq (%rcx){1to8}, %zmm0, %zmm11
 lea PRE(ap)(%rip), %rax
 call .L4
-dec %ecx
+dec %r8
 jnz .L3
 vpsrlq $52, %zmm0, %zmm11
 vpaddq %zmm11, %zmm1, %zmm1

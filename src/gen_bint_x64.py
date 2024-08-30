@@ -253,7 +253,7 @@ def shift(v, s):
 
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
-    with StackFrame(3, 1, useRCX=True, vNum=mont.N*2+3, vType=T_ZMM) as sf:
+    with StackFrame(3, 2, vNum=mont.N*2+3, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -262,6 +262,7 @@ def gen_vmul(mont):
       px = sf.p[1]
       py = sf.p[2]
       rp = sf.t[0]
+      i_ = sf.t[1]
 
       t = pops(regs, N+1)
       vmask = pops(regs, 1)[0]
@@ -291,7 +292,7 @@ def gen_vmul(mont):
       call(vmulUnitAddL) # t += p * q
 
       # N-1 times loop
-      mov(ecx, N-1)
+      mov(i_, N-1)
       align(32)
       L(lpL)
 
@@ -309,7 +310,7 @@ def gen_vmul(mont):
       lea(rax, ptr(rip+C_ap))
       call(vmulUnitAddL) # t += p * q
 
-      dec(ecx)
+      dec(i_)
       jnz(lpL)
 
       for i in range(1, N+1):
