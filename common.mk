@@ -1,5 +1,5 @@
 GCC_VER=$(shell $(PRE)$(CC) -dumpversion)
-UNAME_S=$(shell uname -s)
+UNAME_S?=$(shell uname -s)
 ARCH?=$(shell uname -m)
 NASM_ELF_OPT=-felf64
 ifeq ($(UNAME_S),Linux)

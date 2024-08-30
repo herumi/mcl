@@ -12,6 +12,15 @@ dq 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385
 dq 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh
 dq 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh
 dq 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h
+apA:
+dq 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh, 0effffffffaaabh
+dq 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh, 0feb153ffffb9fh
+dq 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh, 6b0f6241eabffh
+dq 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh, 12bf6730d2a0fh
+dq 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h, 764774b84f385h
+dq 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh, 1ba7b6434bacdh
+dq 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh, 1ea397fe69a4bh
+dq 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h, 1a011h
 rp:
 dq 1125887021744125
 _data$x ends
@@ -135,7 +144,6 @@ vmovups xmmword ptr [rsp+112], xmm12
 vmovups xmmword ptr [rsp+128], xmm13
 vmovups xmmword ptr [rsp+144], xmm14
 vmovups xmmword ptr [rsp+160], xmm15
-mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
 lea rax, p
@@ -209,14 +217,14 @@ vpandq zmm4{k1}, zmm12, zmm16
 vpandq zmm5{k1}, zmm13, zmm16
 vpandq zmm6{k1}, zmm14, zmm16
 vpandq zmm7{k1}, zmm15, zmm16
-vmovdqa64 zmmword ptr [r10], zmm0
-vmovdqa64 zmmword ptr [r10+64], zmm1
-vmovdqa64 zmmword ptr [r10+128], zmm2
-vmovdqa64 zmmword ptr [r10+192], zmm3
-vmovdqa64 zmmword ptr [r10+256], zmm4
-vmovdqa64 zmmword ptr [r10+320], zmm5
-vmovdqa64 zmmword ptr [r10+384], zmm6
-vmovdqa64 zmmword ptr [r10+448], zmm7
+vmovdqa64 zmmword ptr [rcx], zmm0
+vmovdqa64 zmmword ptr [rcx+64], zmm1
+vmovdqa64 zmmword ptr [rcx+128], zmm2
+vmovdqa64 zmmword ptr [rcx+192], zmm3
+vmovdqa64 zmmword ptr [rcx+256], zmm4
+vmovdqa64 zmmword ptr [rcx+320], zmm5
+vmovdqa64 zmmword ptr [rcx+384], zmm6
+vmovdqa64 zmmword ptr [rcx+448], zmm7
 vmovups xmm5, xmmword ptr [rsp]
 vmovups xmm6, xmmword ptr [rsp+16]
 vmovups xmm7, xmmword ptr [rsp+32]
@@ -245,7 +253,6 @@ vmovups xmmword ptr [rsp+112], xmm12
 vmovups xmmword ptr [rsp+128], xmm13
 vmovups xmmword ptr [rsp+144], xmm14
 vmovups xmmword ptr [rsp+160], xmm15
-mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
 lea rax, p
@@ -320,14 +327,14 @@ vpandq zmm6{k1}, zmm14, zmm16
 vpaddq zmm15, zmm7, qword bcst [rax+56]
 vpaddq zmm15, zmm15, zmm17
 vpandq zmm7{k1}, zmm15, zmm16
-vmovdqa64 zmmword ptr [r10], zmm0
-vmovdqa64 zmmword ptr [r10+64], zmm1
-vmovdqa64 zmmword ptr [r10+128], zmm2
-vmovdqa64 zmmword ptr [r10+192], zmm3
-vmovdqa64 zmmword ptr [r10+256], zmm4
-vmovdqa64 zmmword ptr [r10+320], zmm5
-vmovdqa64 zmmword ptr [r10+384], zmm6
-vmovdqa64 zmmword ptr [r10+448], zmm7
+vmovdqa64 zmmword ptr [rcx], zmm0
+vmovdqa64 zmmword ptr [rcx+64], zmm1
+vmovdqa64 zmmword ptr [rcx+128], zmm2
+vmovdqa64 zmmword ptr [rcx+192], zmm3
+vmovdqa64 zmmword ptr [rcx+256], zmm4
+vmovdqa64 zmmword ptr [rcx+320], zmm5
+vmovdqa64 zmmword ptr [rcx+384], zmm6
+vmovdqa64 zmmword ptr [rcx+448], zmm7
 vmovups xmm5, xmmword ptr [rsp]
 vmovups xmm6, xmmword ptr [rsp+16]
 vmovups xmm7, xmmword ptr [rsp+32]
@@ -555,48 +562,47 @@ vmovups xmmword ptr [rsp+112], xmm12
 vmovups xmmword ptr [rsp+128], xmm13
 vmovups xmmword ptr [rsp+144], xmm14
 vmovups xmmword ptr [rsp+160], xmm15
-mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
 lea rax, p
-mov ecx, 2
+mov r9, 2
 @L1:
 vmovdqa64 zmm0, zmmword ptr [rdx]
 vpaddq zmm0, zmm0, zmmword ptr [r8]
 vpsrlq zmm17, zmm0, 52
 vpandq zmm0, zmm0, zmm16
-vmovdqa64 zmm1, zmmword ptr [rdx+64]
-vpaddq zmm1, zmm1, zmmword ptr [r8+64]
+vmovdqa64 zmm1, zmmword ptr [rdx+128]
+vpaddq zmm1, zmm1, zmmword ptr [r8+128]
 vpaddq zmm1, zmm1, zmm17
 vpsrlq zmm17, zmm1, 52
 vpandq zmm1, zmm1, zmm16
-vmovdqa64 zmm2, zmmword ptr [rdx+128]
-vpaddq zmm2, zmm2, zmmword ptr [r8+128]
+vmovdqa64 zmm2, zmmword ptr [rdx+256]
+vpaddq zmm2, zmm2, zmmword ptr [r8+256]
 vpaddq zmm2, zmm2, zmm17
 vpsrlq zmm17, zmm2, 52
 vpandq zmm2, zmm2, zmm16
-vmovdqa64 zmm3, zmmword ptr [rdx+192]
-vpaddq zmm3, zmm3, zmmword ptr [r8+192]
+vmovdqa64 zmm3, zmmword ptr [rdx+384]
+vpaddq zmm3, zmm3, zmmword ptr [r8+384]
 vpaddq zmm3, zmm3, zmm17
 vpsrlq zmm17, zmm3, 52
 vpandq zmm3, zmm3, zmm16
-vmovdqa64 zmm4, zmmword ptr [rdx+256]
-vpaddq zmm4, zmm4, zmmword ptr [r8+256]
+vmovdqa64 zmm4, zmmword ptr [rdx+512]
+vpaddq zmm4, zmm4, zmmword ptr [r8+512]
 vpaddq zmm4, zmm4, zmm17
 vpsrlq zmm17, zmm4, 52
 vpandq zmm4, zmm4, zmm16
-vmovdqa64 zmm5, zmmword ptr [rdx+320]
-vpaddq zmm5, zmm5, zmmword ptr [r8+320]
+vmovdqa64 zmm5, zmmword ptr [rdx+640]
+vpaddq zmm5, zmm5, zmmword ptr [r8+640]
 vpaddq zmm5, zmm5, zmm17
 vpsrlq zmm17, zmm5, 52
 vpandq zmm5, zmm5, zmm16
-vmovdqa64 zmm6, zmmword ptr [rdx+384]
-vpaddq zmm6, zmm6, zmmword ptr [r8+384]
+vmovdqa64 zmm6, zmmword ptr [rdx+768]
+vpaddq zmm6, zmm6, zmmword ptr [r8+768]
 vpaddq zmm6, zmm6, zmm17
 vpsrlq zmm17, zmm6, 52
 vpandq zmm6, zmm6, zmm16
-vmovdqa64 zmm7, zmmword ptr [rdx+448]
-vpaddq zmm7, zmm7, zmmword ptr [r8+448]
+vmovdqa64 zmm7, zmmword ptr [rdx+896]
+vpaddq zmm7, zmm7, zmmword ptr [r8+896]
 vpaddq zmm7, zmm7, zmm17
 vpsubq zmm8, zmm0, qword bcst [rax]
 vpsrlq zmm17, zmm8, 63
@@ -631,18 +637,18 @@ vpandq zmm4{k1}, zmm12, zmm16
 vpandq zmm5{k1}, zmm13, zmm16
 vpandq zmm6{k1}, zmm14, zmm16
 vpandq zmm7{k1}, zmm15, zmm16
-vmovdqa64 zmmword ptr [r10], zmm0
-vmovdqa64 zmmword ptr [r10+64], zmm1
-vmovdqa64 zmmword ptr [r10+128], zmm2
-vmovdqa64 zmmword ptr [r10+192], zmm3
-vmovdqa64 zmmword ptr [r10+256], zmm4
-vmovdqa64 zmmword ptr [r10+320], zmm5
-vmovdqa64 zmmword ptr [r10+384], zmm6
-vmovdqa64 zmmword ptr [r10+448], zmm7
+vmovdqa64 zmmword ptr [rcx], zmm0
+vmovdqa64 zmmword ptr [rcx+128], zmm1
+vmovdqa64 zmmword ptr [rcx+256], zmm2
+vmovdqa64 zmmword ptr [rcx+384], zmm3
+vmovdqa64 zmmword ptr [rcx+512], zmm4
+vmovdqa64 zmmword ptr [rcx+640], zmm5
+vmovdqa64 zmmword ptr [rcx+768], zmm6
+vmovdqa64 zmmword ptr [rcx+896], zmm7
 add rdx, 64
 add r8, 64
-add r10, 64
-sub ecx, 1
+add rcx, 64
+sub r9, 1
 jnz @L1
 vmovups xmm5, xmmword ptr [rsp]
 vmovups xmm6, xmmword ptr [rsp+16]
@@ -672,48 +678,47 @@ vmovups xmmword ptr [rsp+112], xmm12
 vmovups xmmword ptr [rsp+128], xmm13
 vmovups xmmword ptr [rsp+144], xmm14
 vmovups xmmword ptr [rsp+160], xmm15
-mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
 lea rax, p
-mov ecx, 2
+mov r9, 2
 @L2:
 vmovdqa64 zmm0, zmmword ptr [rdx]
 vpsubq zmm0, zmm0, zmmword ptr [r8]
 vpsrlq zmm17, zmm0, 63
 vpandq zmm0, zmm0, zmm16
-vmovdqa64 zmm1, zmmword ptr [rdx+64]
-vpsubq zmm1, zmm1, zmmword ptr [r8+64]
+vmovdqa64 zmm1, zmmword ptr [rdx+128]
+vpsubq zmm1, zmm1, zmmword ptr [r8+128]
 vpsubq zmm1, zmm1, zmm17
 vpsrlq zmm17, zmm1, 63
 vpandq zmm1, zmm1, zmm16
-vmovdqa64 zmm2, zmmword ptr [rdx+128]
-vpsubq zmm2, zmm2, zmmword ptr [r8+128]
+vmovdqa64 zmm2, zmmword ptr [rdx+256]
+vpsubq zmm2, zmm2, zmmword ptr [r8+256]
 vpsubq zmm2, zmm2, zmm17
 vpsrlq zmm17, zmm2, 63
 vpandq zmm2, zmm2, zmm16
-vmovdqa64 zmm3, zmmword ptr [rdx+192]
-vpsubq zmm3, zmm3, zmmword ptr [r8+192]
+vmovdqa64 zmm3, zmmword ptr [rdx+384]
+vpsubq zmm3, zmm3, zmmword ptr [r8+384]
 vpsubq zmm3, zmm3, zmm17
 vpsrlq zmm17, zmm3, 63
 vpandq zmm3, zmm3, zmm16
-vmovdqa64 zmm4, zmmword ptr [rdx+256]
-vpsubq zmm4, zmm4, zmmword ptr [r8+256]
+vmovdqa64 zmm4, zmmword ptr [rdx+512]
+vpsubq zmm4, zmm4, zmmword ptr [r8+512]
 vpsubq zmm4, zmm4, zmm17
 vpsrlq zmm17, zmm4, 63
 vpandq zmm4, zmm4, zmm16
-vmovdqa64 zmm5, zmmword ptr [rdx+320]
-vpsubq zmm5, zmm5, zmmword ptr [r8+320]
+vmovdqa64 zmm5, zmmword ptr [rdx+640]
+vpsubq zmm5, zmm5, zmmword ptr [r8+640]
 vpsubq zmm5, zmm5, zmm17
 vpsrlq zmm17, zmm5, 63
 vpandq zmm5, zmm5, zmm16
-vmovdqa64 zmm6, zmmword ptr [rdx+384]
-vpsubq zmm6, zmm6, zmmword ptr [r8+384]
+vmovdqa64 zmm6, zmmword ptr [rdx+768]
+vpsubq zmm6, zmm6, zmmword ptr [r8+768]
 vpsubq zmm6, zmm6, zmm17
 vpsrlq zmm17, zmm6, 63
 vpandq zmm6, zmm6, zmm16
-vmovdqa64 zmm7, zmmword ptr [rdx+448]
-vpsubq zmm7, zmm7, zmmword ptr [r8+448]
+vmovdqa64 zmm7, zmmword ptr [rdx+896]
+vpsubq zmm7, zmm7, zmmword ptr [r8+896]
 vpsubq zmm7, zmm7, zmm17
 vpsrlq zmm17, zmm7, 63
 vpandq zmm7, zmm7, zmm16
@@ -749,18 +754,18 @@ vpandq zmm6{k1}, zmm14, zmm16
 vpaddq zmm15, zmm7, qword bcst [rax+56]
 vpaddq zmm15, zmm15, zmm17
 vpandq zmm7{k1}, zmm15, zmm16
-vmovdqa64 zmmword ptr [r10], zmm0
-vmovdqa64 zmmword ptr [r10+64], zmm1
-vmovdqa64 zmmword ptr [r10+128], zmm2
-vmovdqa64 zmmword ptr [r10+192], zmm3
-vmovdqa64 zmmword ptr [r10+256], zmm4
-vmovdqa64 zmmword ptr [r10+320], zmm5
-vmovdqa64 zmmword ptr [r10+384], zmm6
-vmovdqa64 zmmword ptr [r10+448], zmm7
+vmovdqa64 zmmword ptr [rcx], zmm0
+vmovdqa64 zmmword ptr [rcx+128], zmm1
+vmovdqa64 zmmword ptr [rcx+256], zmm2
+vmovdqa64 zmmword ptr [rcx+384], zmm3
+vmovdqa64 zmmword ptr [rcx+512], zmm4
+vmovdqa64 zmmword ptr [rcx+640], zmm5
+vmovdqa64 zmmword ptr [rcx+768], zmm6
+vmovdqa64 zmmword ptr [rcx+896], zmm7
 add rdx, 64
 add r8, 64
-add r10, 64
-sub ecx, 1
+add rcx, 64
+sub r9, 1
 jnz @L2
 vmovups xmm5, xmmword ptr [rsp]
 vmovups xmm6, xmmword ptr [rsp+16]
@@ -790,7 +795,6 @@ vmovups xmmword ptr [rsp+112], xmm12
 vmovups xmmword ptr [rsp+128], xmm13
 vmovups xmmword ptr [rsp+144], xmm14
 vmovups xmmword ptr [rsp+160], xmm15
-mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm9, rax
 lea r9, rp
@@ -832,7 +836,7 @@ vpxorq zmm11, zmm11, zmm11
 vpmadd52luq zmm11, zmm0, qword bcst [r9]
 lea rax, ap
 call @L4
-mov ecx, 7
+mov r10, 7
 align 32
 @L3:
 mov rax, rdx
@@ -855,7 +859,7 @@ vpxorq zmm11, zmm11, zmm11
 vpmadd52luq zmm11, zmm0, qword bcst [r9]
 lea rax, ap
 call @L4
-dec ecx
+dec r10
 jnz @L3
 vpsrlq zmm11, zmm0, 52
 vpaddq zmm1, zmm1, zmm11
@@ -882,31 +886,31 @@ vpsrlq zmm11, zmm7, 52
 vpaddq zmm8, zmm8, zmm11
 vpandq zmm7, zmm7, zmm9
 lea rax, ap
-vpsubq zmm12, zmm12, zmmword ptr [rax]
+vpsubq zmm12, zmm1, zmmword ptr [rax]
 vpsrlq zmm11, zmm12, 63
-vpsubq zmm13, zmm13, zmmword ptr [rax+64]
+vpsubq zmm13, zmm2, zmmword ptr [rax+64]
 vpsubq zmm13, zmm13, zmm11
 vpsrlq zmm11, zmm13, 63
-vpsubq zmm14, zmm14, zmmword ptr [rax+128]
+vpsubq zmm14, zmm3, zmmword ptr [rax+128]
 vpsubq zmm14, zmm14, zmm11
 vpsrlq zmm11, zmm14, 63
-vpsubq zmm15, zmm15, zmmword ptr [rax+192]
+vpsubq zmm15, zmm4, zmmword ptr [rax+192]
 vpsubq zmm15, zmm15, zmm11
 vpsrlq zmm11, zmm15, 63
-vpsubq zmm16, zmm16, zmmword ptr [rax+256]
+vpsubq zmm16, zmm5, zmmword ptr [rax+256]
 vpsubq zmm16, zmm16, zmm11
 vpsrlq zmm11, zmm16, 63
-vpsubq zmm17, zmm17, zmmword ptr [rax+320]
+vpsubq zmm17, zmm6, zmmword ptr [rax+320]
 vpsubq zmm17, zmm17, zmm11
 vpsrlq zmm11, zmm17, 63
-vpsubq zmm18, zmm18, zmmword ptr [rax+384]
+vpsubq zmm18, zmm7, zmmword ptr [rax+384]
 vpsubq zmm18, zmm18, zmm11
 vpsrlq zmm11, zmm18, 63
-vpsubq zmm11, zmm11, zmmword ptr [rax+448]
-vpsubq zmm11, zmm11, zmm11
-vpsrlq zmm11, zmm11, 63
+vpsubq zmm19, zmm8, zmmword ptr [rax+448]
+vpsubq zmm19, zmm19, zmm11
+vpsrlq zmm11, zmm19, 63
 vpxorq zmm10, zmm10, zmm10
-vpcmpgtq k1, zmm11, zmm10
+vpcmpeqq k1, zmm11, zmm10
 vpandq zmm1{k1}, zmm12, zmm9
 vpandq zmm2{k1}, zmm13, zmm9
 vpandq zmm3{k1}, zmm14, zmm9
@@ -914,15 +918,15 @@ vpandq zmm4{k1}, zmm15, zmm9
 vpandq zmm5{k1}, zmm16, zmm9
 vpandq zmm6{k1}, zmm17, zmm9
 vpandq zmm7{k1}, zmm18, zmm9
-vpandq zmm8{k1}, zmm11, zmm9
-vmovdqa64 zmmword ptr [r10], zmm1
-vmovdqa64 zmmword ptr [r10+64], zmm2
-vmovdqa64 zmmword ptr [r10+128], zmm3
-vmovdqa64 zmmword ptr [r10+192], zmm4
-vmovdqa64 zmmword ptr [r10+256], zmm5
-vmovdqa64 zmmword ptr [r10+320], zmm6
-vmovdqa64 zmmword ptr [r10+384], zmm7
-vmovdqa64 zmmword ptr [r10+448], zmm8
+vpandq zmm8{k1}, zmm19, zmm9
+vmovdqa64 zmmword ptr [rcx], zmm1
+vmovdqa64 zmmword ptr [rcx+64], zmm2
+vmovdqa64 zmmword ptr [rcx+128], zmm3
+vmovdqa64 zmmword ptr [rcx+192], zmm4
+vmovdqa64 zmmword ptr [rcx+256], zmm5
+vmovdqa64 zmmword ptr [rcx+320], zmm6
+vmovdqa64 zmmword ptr [rcx+384], zmm7
+vmovdqa64 zmmword ptr [rcx+448], zmm8
 vmovups xmm5, xmmword ptr [rsp]
 vmovups xmm6, xmmword ptr [rsp+16]
 vmovups xmm7, xmmword ptr [rsp+32]
@@ -971,6 +975,352 @@ vpaddq zmm7, zmm7, zmm10
 vpmadd52huq zmm8, zmm11, zmmword ptr [rax+448]
 ret
 mcl_c5_vmul endp
+mcl_c5_vmulA proc export
+sub rsp, 184
+vmovups xmmword ptr [rsp], xmm5
+vmovups xmmword ptr [rsp+16], xmm6
+vmovups xmmword ptr [rsp+32], xmm7
+vmovups xmmword ptr [rsp+48], xmm8
+vmovups xmmword ptr [rsp+64], xmm9
+vmovups xmmword ptr [rsp+80], xmm10
+vmovups xmmword ptr [rsp+96], xmm11
+vmovups xmmword ptr [rsp+112], xmm12
+vmovups xmmword ptr [rsp+128], xmm13
+vmovups xmmword ptr [rsp+144], xmm14
+vmovups xmmword ptr [rsp+160], xmm15
+mov rax, 4503599627370495
+vpbroadcastq zmm18, rax
+lea r9, rp
+vmovdqa64 zmm21, zmmword ptr [r8]
+vmovdqa64 zmm22, zmmword ptr [r8+64]
+add r8, 128
+vpxorq zmm0, zmm0, zmm0
+vpxorq zmm1, zmm1, zmm1
+vpmadd52luq zmm0, zmm21, zmmword ptr [rdx]
+vpmadd52luq zmm1, zmm22, zmmword ptr [rdx+64]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+64]
+vmovdqa64 zmm2, zmm19
+vmovdqa64 zmm3, zmm20
+vpmadd52luq zmm2, zmm21, zmmword ptr [rdx+128]
+vpmadd52luq zmm3, zmm22, zmmword ptr [rdx+192]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx+128]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+192]
+vmovdqa64 zmm4, zmm19
+vmovdqa64 zmm5, zmm20
+vpmadd52luq zmm4, zmm21, zmmword ptr [rdx+256]
+vpmadd52luq zmm5, zmm22, zmmword ptr [rdx+320]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx+256]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+320]
+vmovdqa64 zmm6, zmm19
+vmovdqa64 zmm7, zmm20
+vpmadd52luq zmm6, zmm21, zmmword ptr [rdx+384]
+vpmadd52luq zmm7, zmm22, zmmword ptr [rdx+448]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx+384]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+448]
+vmovdqa64 zmm8, zmm19
+vmovdqa64 zmm9, zmm20
+vpmadd52luq zmm8, zmm21, zmmword ptr [rdx+512]
+vpmadd52luq zmm9, zmm22, zmmword ptr [rdx+576]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx+512]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+576]
+vmovdqa64 zmm10, zmm19
+vmovdqa64 zmm11, zmm20
+vpmadd52luq zmm10, zmm21, zmmword ptr [rdx+640]
+vpmadd52luq zmm11, zmm22, zmmword ptr [rdx+704]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx+640]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+704]
+vmovdqa64 zmm12, zmm19
+vmovdqa64 zmm13, zmm20
+vpmadd52luq zmm12, zmm21, zmmword ptr [rdx+768]
+vpmadd52luq zmm13, zmm22, zmmword ptr [rdx+832]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rdx+768]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rdx+832]
+vmovdqa64 zmm14, zmm19
+vmovdqa64 zmm15, zmm20
+vpmadd52luq zmm14, zmm21, zmmword ptr [rdx+896]
+vpmadd52luq zmm15, zmm22, zmmword ptr [rdx+960]
+vpxorq zmm16, zmm16, zmm16
+vpxorq zmm17, zmm17, zmm17
+vpmadd52huq zmm16, zmm21, zmmword ptr [rdx+896]
+vpmadd52huq zmm17, zmm22, zmmword ptr [rdx+960]
+vpxorq zmm21, zmm21, zmm21
+vpxorq zmm22, zmm22, zmm22
+vpmadd52luq zmm21, zmm0, qword bcst [r9]
+vpmadd52luq zmm22, zmm1, qword bcst [r9]
+lea rax, apA
+call @L6
+mov r10, 7
+align 32
+@L5:
+mov rax, rdx
+vmovdqa64 zmm21, zmmword ptr [r8]
+vmovdqa64 zmm22, zmmword ptr [r8+64]
+add r8, 128
+vmovdqa64 zmm23, zmm0
+vmovdqa64 zmm24, zmm1
+vmovdqa64 zmm0, zmm2
+vmovdqa64 zmm1, zmm3
+vmovdqa64 zmm2, zmm4
+vmovdqa64 zmm3, zmm5
+vmovdqa64 zmm4, zmm6
+vmovdqa64 zmm5, zmm7
+vmovdqa64 zmm6, zmm8
+vmovdqa64 zmm7, zmm9
+vmovdqa64 zmm8, zmm10
+vmovdqa64 zmm9, zmm11
+vmovdqa64 zmm10, zmm12
+vmovdqa64 zmm11, zmm13
+vmovdqa64 zmm12, zmm14
+vmovdqa64 zmm13, zmm15
+vmovdqa64 zmm14, zmm16
+vmovdqa64 zmm15, zmm17
+vpxorq zmm16, zmm16, zmm16
+vpxorq zmm17, zmm17, zmm17
+call @L6
+vpsrlq zmm21, zmm23, 52
+vpsrlq zmm22, zmm24, 52
+vpaddq zmm0, zmm0, zmm21
+vpaddq zmm1, zmm1, zmm22
+vpxorq zmm21, zmm21, zmm21
+vpxorq zmm22, zmm22, zmm22
+vpmadd52luq zmm21, zmm0, qword bcst [r9]
+vpmadd52luq zmm22, zmm1, qword bcst [r9]
+lea rax, apA
+call @L6
+dec r10
+jnz @L5
+vpsrlq zmm21, zmm0, 52
+vpsrlq zmm22, zmm1, 52
+vpaddq zmm2, zmm2, zmm21
+vpaddq zmm3, zmm3, zmm22
+vpandq zmm0, zmm0, zmm18
+vpandq zmm1, zmm1, zmm18
+vpsrlq zmm21, zmm2, 52
+vpsrlq zmm22, zmm3, 52
+vpaddq zmm4, zmm4, zmm21
+vpaddq zmm5, zmm5, zmm22
+vpandq zmm2, zmm2, zmm18
+vpandq zmm3, zmm3, zmm18
+vpsrlq zmm21, zmm4, 52
+vpsrlq zmm22, zmm5, 52
+vpaddq zmm6, zmm6, zmm21
+vpaddq zmm7, zmm7, zmm22
+vpandq zmm4, zmm4, zmm18
+vpandq zmm5, zmm5, zmm18
+vpsrlq zmm21, zmm6, 52
+vpsrlq zmm22, zmm7, 52
+vpaddq zmm8, zmm8, zmm21
+vpaddq zmm9, zmm9, zmm22
+vpandq zmm6, zmm6, zmm18
+vpandq zmm7, zmm7, zmm18
+vpsrlq zmm21, zmm8, 52
+vpsrlq zmm22, zmm9, 52
+vpaddq zmm10, zmm10, zmm21
+vpaddq zmm11, zmm11, zmm22
+vpandq zmm8, zmm8, zmm18
+vpandq zmm9, zmm9, zmm18
+vpsrlq zmm21, zmm10, 52
+vpsrlq zmm22, zmm11, 52
+vpaddq zmm12, zmm12, zmm21
+vpaddq zmm13, zmm13, zmm22
+vpandq zmm10, zmm10, zmm18
+vpandq zmm11, zmm11, zmm18
+vpsrlq zmm21, zmm12, 52
+vpsrlq zmm22, zmm13, 52
+vpaddq zmm14, zmm14, zmm21
+vpaddq zmm15, zmm15, zmm22
+vpandq zmm12, zmm12, zmm18
+vpandq zmm13, zmm13, zmm18
+vpsrlq zmm21, zmm14, 52
+vpsrlq zmm22, zmm15, 52
+vpaddq zmm16, zmm16, zmm21
+vpaddq zmm17, zmm17, zmm22
+vpandq zmm14, zmm14, zmm18
+vpandq zmm15, zmm15, zmm18
+lea rax, ap
+vpsubq zmm23, zmm2, zmmword ptr [rax]
+vpsrlq zmm21, zmm23, 63
+vpsubq zmm24, zmm4, zmmword ptr [rax+64]
+vpsubq zmm24, zmm24, zmm21
+vpsrlq zmm21, zmm24, 63
+vpsubq zmm25, zmm6, zmmword ptr [rax+128]
+vpsubq zmm25, zmm25, zmm21
+vpsrlq zmm21, zmm25, 63
+vpsubq zmm26, zmm8, zmmword ptr [rax+192]
+vpsubq zmm26, zmm26, zmm21
+vpsrlq zmm21, zmm26, 63
+vpsubq zmm27, zmm10, zmmword ptr [rax+256]
+vpsubq zmm27, zmm27, zmm21
+vpsrlq zmm21, zmm27, 63
+vpsubq zmm28, zmm12, zmmword ptr [rax+320]
+vpsubq zmm28, zmm28, zmm21
+vpsrlq zmm21, zmm28, 63
+vpsubq zmm29, zmm14, zmmword ptr [rax+384]
+vpsubq zmm29, zmm29, zmm21
+vpsrlq zmm21, zmm29, 63
+vpsubq zmm30, zmm16, zmmword ptr [rax+448]
+vpsubq zmm30, zmm30, zmm21
+vpsrlq zmm21, zmm30, 63
+vpxorq zmm19, zmm19, zmm19
+vpcmpeqq k1, zmm21, zmm19
+vpandq zmm2{k1}, zmm23, zmm18
+vpandq zmm4{k1}, zmm24, zmm18
+vpandq zmm6{k1}, zmm25, zmm18
+vpandq zmm8{k1}, zmm26, zmm18
+vpandq zmm10{k1}, zmm27, zmm18
+vpandq zmm12{k1}, zmm28, zmm18
+vpandq zmm14{k1}, zmm29, zmm18
+vpandq zmm16{k1}, zmm30, zmm18
+vmovdqa64 zmmword ptr [rcx], zmm2
+vmovdqa64 zmmword ptr [rcx+64], zmm3
+vmovdqa64 zmmword ptr [rcx+128], zmm4
+vmovdqa64 zmmword ptr [rcx+192], zmm5
+vmovdqa64 zmmword ptr [rcx+256], zmm6
+vmovdqa64 zmmword ptr [rcx+320], zmm7
+vmovdqa64 zmmword ptr [rcx+384], zmm8
+vmovdqa64 zmmword ptr [rcx+448], zmm9
+vmovdqa64 zmmword ptr [rcx+512], zmm10
+vmovdqa64 zmmword ptr [rcx+576], zmm11
+vmovdqa64 zmmword ptr [rcx+640], zmm12
+vmovdqa64 zmmword ptr [rcx+704], zmm13
+vmovdqa64 zmmword ptr [rcx+768], zmm14
+vmovdqa64 zmmword ptr [rcx+832], zmm15
+vmovdqa64 zmmword ptr [rcx+896], zmm16
+vmovdqa64 zmmword ptr [rcx+960], zmm17
+vpsubq zmm23, zmm3, zmmword ptr [rax]
+vpsrlq zmm21, zmm23, 63
+vpsubq zmm24, zmm5, zmmword ptr [rax+64]
+vpsubq zmm24, zmm24, zmm21
+vpsrlq zmm21, zmm24, 63
+vpsubq zmm25, zmm7, zmmword ptr [rax+128]
+vpsubq zmm25, zmm25, zmm21
+vpsrlq zmm21, zmm25, 63
+vpsubq zmm26, zmm9, zmmword ptr [rax+192]
+vpsubq zmm26, zmm26, zmm21
+vpsrlq zmm21, zmm26, 63
+vpsubq zmm27, zmm11, zmmword ptr [rax+256]
+vpsubq zmm27, zmm27, zmm21
+vpsrlq zmm21, zmm27, 63
+vpsubq zmm28, zmm13, zmmword ptr [rax+320]
+vpsubq zmm28, zmm28, zmm21
+vpsrlq zmm21, zmm28, 63
+vpsubq zmm29, zmm15, zmmword ptr [rax+384]
+vpsubq zmm29, zmm29, zmm21
+vpsrlq zmm21, zmm29, 63
+vpsubq zmm30, zmm17, zmmword ptr [rax+448]
+vpsubq zmm30, zmm30, zmm21
+vpsrlq zmm21, zmm30, 63
+vpxorq zmm19, zmm19, zmm19
+vpcmpeqq k1, zmm21, zmm19
+vpandq zmm3{k1}, zmm23, zmm18
+vpandq zmm5{k1}, zmm24, zmm18
+vpandq zmm7{k1}, zmm25, zmm18
+vpandq zmm9{k1}, zmm26, zmm18
+vpandq zmm11{k1}, zmm27, zmm18
+vpandq zmm13{k1}, zmm28, zmm18
+vpandq zmm15{k1}, zmm29, zmm18
+vpandq zmm17{k1}, zmm30, zmm18
+vmovdqa64 zmmword ptr [rcx+512], zmm10
+vmovdqa64 zmmword ptr [rcx+576], zmm11
+vmovdqa64 zmmword ptr [rcx+640], zmm12
+vmovdqa64 zmmword ptr [rcx+704], zmm13
+vmovdqa64 zmmword ptr [rcx+768], zmm14
+vmovdqa64 zmmword ptr [rcx+832], zmm15
+vmovdqa64 zmmword ptr [rcx+896], zmm16
+vmovdqa64 zmmword ptr [rcx+960], zmm17
+vmovups xmm5, xmmword ptr [rsp]
+vmovups xmm6, xmmword ptr [rsp+16]
+vmovups xmm7, xmmword ptr [rsp+32]
+vmovups xmm8, xmmword ptr [rsp+48]
+vmovups xmm9, xmmword ptr [rsp+64]
+vmovups xmm10, xmmword ptr [rsp+80]
+vmovups xmm11, xmmword ptr [rsp+96]
+vmovups xmm12, xmmword ptr [rsp+112]
+vmovups xmm13, xmmword ptr [rsp+128]
+vmovups xmm14, xmmword ptr [rsp+144]
+vmovups xmm15, xmmword ptr [rsp+160]
+vzeroupper
+add rsp, 184
+ret
+align 32
+@L6:
+vpmadd52luq zmm0, zmm21, zmmword ptr [rax]
+vpmadd52luq zmm1, zmm22, zmmword ptr [rax+64]
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+64]
+vpmadd52luq zmm2, zmm21, zmmword ptr [rax+128]
+vpmadd52luq zmm3, zmm22, zmmword ptr [rax+192]
+vpaddq zmm2, zmm2, zmm19
+vpaddq zmm3, zmm3, zmm20
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax+128]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+192]
+vpmadd52luq zmm4, zmm21, zmmword ptr [rax+256]
+vpmadd52luq zmm5, zmm22, zmmword ptr [rax+320]
+vpaddq zmm4, zmm4, zmm19
+vpaddq zmm5, zmm5, zmm20
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax+256]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+320]
+vpmadd52luq zmm6, zmm21, zmmword ptr [rax+384]
+vpmadd52luq zmm7, zmm22, zmmword ptr [rax+448]
+vpaddq zmm6, zmm6, zmm19
+vpaddq zmm7, zmm7, zmm20
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax+384]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+448]
+vpmadd52luq zmm8, zmm21, zmmword ptr [rax+512]
+vpmadd52luq zmm9, zmm22, zmmword ptr [rax+576]
+vpaddq zmm8, zmm8, zmm19
+vpaddq zmm9, zmm9, zmm20
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax+512]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+576]
+vpmadd52luq zmm10, zmm21, zmmword ptr [rax+640]
+vpmadd52luq zmm11, zmm22, zmmword ptr [rax+704]
+vpaddq zmm10, zmm10, zmm19
+vpaddq zmm11, zmm11, zmm20
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax+640]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+704]
+vpmadd52luq zmm12, zmm21, zmmword ptr [rax+768]
+vpmadd52luq zmm13, zmm22, zmmword ptr [rax+832]
+vpaddq zmm12, zmm12, zmm19
+vpaddq zmm13, zmm13, zmm20
+vpxorq zmm19, zmm19, zmm19
+vpxorq zmm20, zmm20, zmm20
+vpmadd52huq zmm19, zmm21, zmmword ptr [rax+768]
+vpmadd52huq zmm20, zmm22, zmmword ptr [rax+832]
+vpmadd52luq zmm14, zmm21, zmmword ptr [rax+896]
+vpmadd52luq zmm15, zmm22, zmmword ptr [rax+960]
+vpaddq zmm14, zmm14, zmm19
+vpaddq zmm15, zmm15, zmm20
+vpmadd52huq zmm16, zmm21, zmmword ptr [rax+896]
+vpmadd52huq zmm17, zmm22, zmmword ptr [rax+960]
+ret
+mcl_c5_vmulA endp
 align 16
 mclb_add1 proc export
 mov rax, [rdx]

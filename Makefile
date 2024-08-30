@@ -213,6 +213,11 @@ ifeq ($(ASM_SUF),S)
 else
 	python3 src/gen_bint_x64.py -win > $@
 endif
+update_bint_x64_asm:
+	python3 src/gen_bint_x64.py -win -m masm > src/asm/bint-x64-win.asm
+	python3 src/gen_bint_x64.py -m gas > src/asm/bint-x64-amd64.S
+	python3 src/gen_bint_x64.py -m gas -win > src/asm/bint-x64-mingw.S
+
 $(BINT_SRC): src/bint$(BIT).ll
 	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CFLAGS) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
@@ -524,7 +529,7 @@ install: lib/libmcl.a lib/libmcl.$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl.$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test she-wasm bin/emu android
+.PHONY: test she-wasm bin/emu android update_bint_x64_asm
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))
