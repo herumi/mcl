@@ -34,6 +34,7 @@ void mcl_c5_vsub(Vec *, const Vec *, const Vec *);
 void mcl_c5_vmul(Vec *, const Vec *, const Vec *);
 void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
 void mcl_c5_vsubA(VecA *, const VecA *, const VecA *);
+void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
 
 }
 
@@ -66,6 +67,11 @@ inline bool isEqual(const Vec& a, const Vec& b)
 	return memcmp(&a, &b, sizeof(a)) == 0;
 }
 
+inline bool isEqual(const VecA& a, const VecA& b)
+{
+	return memcmp(&a, &b, sizeof(a)) == 0;
+}
+
 inline void dump(const Vmask& v, const char *msg = nullptr)
 {
 	if (msg) printf("%s ", msg);
@@ -79,6 +85,15 @@ inline void dump(const Vmask& v, const char *msg = nullptr)
 inline void dump(const Vec& v, const char *msg = nullptr)
 {
 	mcl::bint::dump((const uint64_t*)&v, sizeof(v)/sizeof(uint64_t), msg);
+}
+
+inline void dump(const VecA& v, const char *msg = nullptr)
+{
+	if (msg) printf("%s\n", msg);
+	for (size_t i = 0; i < 2; i++) {
+		printf("%zd ", i);
+		dump(v.v[i]);
+	}
 }
 
 // set x[j] to i-th SIMD element of v[j]
@@ -170,8 +185,10 @@ inline void vadd(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vadd(z, x, y);
 }
+#endif
+#if 1
 template<>
-inline void vadd(VecA *z, const VecA *x, const VecA *y)
+inline void vadd<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
 	mcl_c5_vaddA(z, x, y);
 }
@@ -192,8 +209,10 @@ inline void vsub(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vsub(z, x, y);
 }
+#endif
+#if 1
 template<>
-inline void vsub(VecA *z, const VecA *x, const VecA *y)
+inline void vsub<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 {
 	mcl_c5_vsubA(z, x, y);
 }
@@ -308,6 +327,13 @@ template<>
 inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {
 	mcl_c5_vmul(z, x, y);
+}
+#endif
+#if 1
+template<>
+inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
+{
+	mcl_c5_vmulA(z, x, y);
 }
 #endif
 
@@ -1719,6 +1745,15 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(z[j] == w[j]);
 		}
+		{ // vmulA
+			VecA u[8];
+			vmul<VmaskA>(u, xa.v, ya.v);
+			VecA w[8];
+			mcl_c5_vmulA(w, xa.v, ya.v);
+			for (size_t i = 0; i < 8; i++) {
+				CYBOZU_TEST_ASSERT(isEqual(u[i], w[i]));
+			}
+		}
 		// inv
 		for (size_t j = 0; j < vN; j++) {
 			FpM::inv(z[j], x[j]);
@@ -1746,6 +1781,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("asm vmul", C, mcl_c5_vmul, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("asm vaddA", C, mcl_c5_vaddA, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("asm vsubA", C, mcl_c5_vsubA, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("asm vmulA", C, mcl_c5_vmulA, za.v, za.v, xa.v);
 #endif
 	CYBOZU_BENCH_C("vadd::Vec", C, vadd, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vsub::Vec", C, vsub, z[0].v, z[0].v, x[0].v);

@@ -6,6 +6,7 @@ from montgomery import *
 MSM_PRE='mcl_c5_'
 C_p='p'
 C_ap='ap'
+C_apA='apA'
 C_rp='rp'
 
 def gen_vaddPre(mont, vN=1):
@@ -237,18 +238,6 @@ def vmulUnitAdd(z, px, y, N, H):
     else:
       vmulH(z[N], y, ptr(px+i*64))
 
-# z[0:N+1] = z[0:N+1] + broadcast(x[]) * y
-def vmulUnitAddBroadcast(z, px, y, N, H):
-  for i in range(0, N):
-    vmulL(z[i], y, ptr_b(px+i*8))
-    if i > 0:
-      vpaddq(z[i], z[i], H)
-    if i < N-1:
-      vpxorq(H, H, H)
-      vmulH(H, y, ptr_b(px+i*8))
-    else:
-      vmulH(z[N], y, ptr_b(px+i*8))
-
 def shift(v, s):
   vmovdqa64(s, v[0])
   for i in range(1, len(v)):
@@ -257,7 +246,7 @@ def shift(v, s):
 
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
-    with StackFrame(3, 2, vNum=mont.N*2+3, vType=T_ZMM) as sf:
+    with StackFrame(3, 2, vNum=mont.N*2+4, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -272,7 +261,7 @@ def gen_vmul(mont):
       vmask = pops(regs, 1)[0]
       H = pops(regs, 1)[0]
       q = pops(regs, 1)[0]
-      s = pops(regs, N-1)
+      s = pops(regs, N)
       s0 = s[0] # alias
       lpL = Label()
 
@@ -322,19 +311,16 @@ def gen_vmul(mont):
         vpaddq(t[i], t[i], q)
         vpandq(t[i-1], t[i-1], vmask)
 
-      s += [q]
-      assert(len(s) == N)
-
       # s = t[1:] - p
       lea(rax, ptr(rip+C_ap))
       for i in range(N):
-        vpsubq(s[i], s[i], ptr(rax+i*64))
+        vpsubq(s[i], t[1+i], ptr(rax+i*64))
         if i > 0:
           vpsubq(s[i], s[i], q);
         vpsrlq(q, s[i], S)
 
       vpxorq(H, H, H)
-      vpcmpgtq(k1, q, H) # k1 = x<y
+      vpcmpeqq(k1, q, H) # k1 = x<y
 
       for i in range(N):
         vpandq(t[1+i]|k1, s[i], vmask)
@@ -349,6 +335,146 @@ def gen_vmul(mont):
       vmulUnitAdd(t, rax, q, N, H)
       ret()
 
+def vmulUnitA(z, px, y, N, H):
+  un = genUnrollFunc()
+  vN = 2
+  for i in range(0, N):
+    if i == 0:
+      un(vpxorq)(z[0], z[0], z[0])
+    else:
+      un(vmovdqa64)(z[i], H)
+    un(vmulL)(z[i], y, ptr(px+i*64*vN))
+    if i < N-1:
+      un(vpxorq)(H, H, H)
+      un(vmulH)(H, y, ptr(px+i*64*vN))
+    else:
+      un(vpxorq)(z[N], z[N], z[N])
+      un(vmulH)(z[N], y, ptr(px+i*64*vN))
+
+def vmulUnitAddA(z, px, y, N, H):
+  un = genUnrollFunc()
+  vN = 2
+  for i in range(0, N):
+    un(vmulL)(z[i], y, ptr(px+i*64*vN))
+    if i > 0:
+      un(vpaddq)(z[i], z[i], H)
+    if i < N-1:
+      un(vpxorq)(H, H, H)
+      un(vmulH)(H, y, ptr(px+i*64*vN))
+    else:
+      un(vmulH)(z[N], y, ptr(px+i*64*vN))
+
+def shiftA(v, s):
+  un = genUnrollFunc()
+  un(vmovdqa64)(s, v[0])
+  for i in range(1, len(v)):
+    un(vmovdqa64)(v[i-1], v[i])
+  un(vpxorq)(v[-1], v[-1], v[-1])
+
+def gen_vmulA(mont):
+  with FuncProc(MSM_PRE+'vmulA'):
+    vN = 2
+    with StackFrame(3, 2, vNum=mont.N*3+7, vType=T_ZMM) as sf:
+      regs = list(reversed(sf.v))
+      W = mont.W
+      N = mont.N
+      S = 63
+      pz = sf.p[0]
+      px = sf.p[1]
+      py = sf.p[2]
+      rp = sf.t[0]
+      i_ = sf.t[1]
+
+      torg = pops(regs, (N+1)*vN)
+      t = [torg[i:i+2] for i in range(0, len(torg), 2)]
+      vmask = pops(regs, 1)[0]
+      H = pops(regs, vN)
+      q = pops(regs, vN)
+      s = pops(regs, N)
+      s0 = s[0:vN] # alias
+      lpL = Label()
+
+      vmulUnitAddAL = Label()
+
+      mov(rax, mont.mask)
+      vpbroadcastq(vmask, rax)
+      lea(rp, ptr(rip+C_rp))
+
+      un = genUnrollFunc()
+      unb = genUnrollFunc(addrOffset=8)
+
+      un(vmovdqa64)(q, ptr(py))
+      add(py, 64*vN)
+      vmulUnitA(t, px, q, N, H)
+
+
+      un(vpxorq)(q, q, q)
+      un(vmulL)(q, t[0], ptr_b(rp))
+
+      lea(rax, ptr(rip+C_apA))
+
+      call(vmulUnitAddAL) # t += p * q
+
+      # N-1 times loop
+      mov(i_, N-1)
+      align(32)
+      L(lpL)
+
+      mov(rax, px)
+      un(vmovdqa64)(q, ptr(py))
+      add(py, 64*vN)
+      shiftA(t, s0)
+      call(vmulUnitAddAL) # t += x * py[i]
+      un(vpsrlq)(q, s0, W)
+      un(vpaddq)(t[0], t[0], q)
+
+      un(vpxorq)(q, q, q)
+      un(vmulL)(q, t[0], ptr_b(rp))
+
+      lea(rax, ptr(rip+C_apA))
+      call(vmulUnitAddAL) # t += p * q
+
+      dec(i_)
+      jnz(lpL)
+
+      for i in range(1, N+1):
+        un(vpsrlq)(q, t[i-1], W)
+        un(vpaddq)(t[i], t[i], q)
+        un(vpandq)(t[i-1], t[i-1], vmask)
+
+
+      # [[a,b], [c,d], ...] -> [(a, c, ...), (b, d, ...)]
+      t0, t1 = map(list, zip(*t))
+      t2 = [t0[1:], t1[1:]]
+      # s = t[1:] - p
+      lea(rax, ptr(rip+C_ap))
+
+      q0 = q[0]
+      H0 = H[0]
+
+      for j in range(vN):
+        for i in range(N):
+          vpsubq(s[i], t2[j][i], ptr(rax+i*64))
+          if i > 0:
+            vpsubq(s[i], s[i], q0);
+          vpsrlq(q0, s[i], S)
+
+        vpxorq(H0, H0, H0)
+        vpcmpeqq(k1, q0, H0) # k1 = x<y
+        for i in range(N):
+          vpandq(t2[j][i]|k1, s[i], vmask)
+        # store
+        un(vmovdqa64)(ptr(pz+j*64*N), torg[2+j*N:])
+
+      sf.close()
+      # out of vmul
+      align(32)
+      L(vmulUnitAddAL)
+      #set rax(= px) and q(= y)
+      vmulUnitAddA(t, rax, q, N, H)
+      ret()
+
+
 def msm_data(mont):
   align(64)
   makeLabel(C_p)
@@ -356,6 +482,9 @@ def msm_data(mont):
   makeLabel(C_ap)
   for e in mont.toArray(mont.p):
     dq_(', '.join([hex(e)]*8))
+  makeLabel(C_apA)
+  for e in mont.toArray(mont.p):
+    dq_(', '.join([f'{hex(e)}, {hex(e)}']*8))
   makeLabel(C_rp)
   dq_(mont.rp)
 
@@ -367,6 +496,7 @@ def msm_code(mont):
     gen_vsub(mont, vN)
 
   gen_vmul(mont)
+  gen_vmulA(mont)
 
 SUF='_fast'
 param=None
