@@ -1731,6 +1731,15 @@ CYBOZU_TEST_AUTO(vaddPre)
 		for (size_t j = 0; j < vN; j++) {
 			CYBOZU_TEST_ASSERT(x[j] == w[j]);
 		}
+		{ // vsubA
+			VecA u[8];
+			vsub<VmaskA>(u, xa.v, ya.v);
+			VecA w[8];
+			mcl_c5_vsubA(w, xa.v, ya.v);
+			for (size_t i = 0; i < 8; i++) {
+				CYBOZU_TEST_ASSERT(isEqual(u[i], w[i]));
+			}
+		}
 		// vmul
 		for (size_t j = 0; j < vN; j++) {
 			vmul(z[j].v, x[j].v, y[j].v);
