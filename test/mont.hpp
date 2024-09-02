@@ -47,6 +47,8 @@ public:
 
 	void toMont(mpz_class& x) const { toMont(x, x); }
 	void fromMont(mpz_class& x) const { fromMont(x, x); }
+	mpz_class toMont(const mpz_class& x) const { mpz_class y; toMont(y, x); return y; }
+	mpz_class fromMont(const mpz_class& x) const { mpz_class y; fromMont(y, x); return y; }
 	void toMont(mpz_class& mx, const mpz_class& x) const
 	{
 		mul(mx, x, mR2);
