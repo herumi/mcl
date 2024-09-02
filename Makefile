@@ -491,6 +491,9 @@ clean_standalone:
 update_xbyak:
 	cp -a ../xbyak/xbyak/xbyak.h ../xbyak/xbyak/xbyak_util.h ../xbyak/xbyak/xbyak_mnemonic.h src/xbyak/
 
+update_s_xbyak:
+	cp -a ../s_xbyak/s_xbyak.py src/
+
 update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
 
