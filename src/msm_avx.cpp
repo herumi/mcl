@@ -1664,6 +1664,61 @@ void forcedRead(const T& x)
 	(void)dummy;
 }
 
+void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
+{
+	mcl::bn::Fp z[8];
+	FpM xm, ym, zm, wm;
+	xm.setFpA((const mcl::msm::FpA*)x);
+	ym.setFpA((const mcl::msm::FpA*)y);
+	// add
+	for (size_t i = 0; i < 8; i++) {
+		mcl::bn::Fp::add(z[i], x[i], y[i]);
+	}
+	mcl_c5_vadd(zm.v, xm.v, ym.v);
+	wm.setFpA((const mcl::msm::FpA*)z);
+	CYBOZU_TEST_ASSERT(zm == wm);
+	// sub
+	for (size_t i = 0; i < 8; i++) {
+		mcl::bn::Fp::sub(z[i], x[i], y[i]);
+	}
+	mcl_c5_vsub(zm.v, xm.v, ym.v);
+	wm.setFpA((const mcl::msm::FpA*)z);
+	CYBOZU_TEST_ASSERT(zm == wm);
+	// mul
+	for (size_t i = 0; i < 8; i++) {
+		mcl::bn::Fp::mul(z[i], x[i], y[i]);
+	}
+	mcl_c5_vmul(zm.v, xm.v, ym.v);
+	wm.setFpA((const mcl::msm::FpA*)z);
+	CYBOZU_TEST_ASSERT(zm == wm);
+	if (zm != wm) {
+		for (size_t i = 0; i < 8; i++) {
+			printf("i=%zd\n", i);
+			dump(zm.v[i], "ok");
+			dump(wm.v[i], "ng");
+		}
+	}
+}
+
+#if 1
+CYBOZU_TEST_AUTO(asm)
+{
+	cybozu::XorShift rg;
+	mcl::bn::Fp x[8], y[8];
+	for (int i = 0; i < 30; i++) {
+		for (int k = 0; k < 8; k++) {
+			x[k] = i*8+k;
+		}
+		for (int j = 0; j < 30; j++) {
+			for (int k = 0; k < 8; k++) {
+				y[k] = j*8+k;
+			}
+		}
+		asmTest(x, y);
+	}
+}
+#endif
+
 CYBOZU_TEST_AUTO(vaddPre)
 {
 	FpM x[vN], y[vN], z[vN], w[vN];

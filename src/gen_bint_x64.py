@@ -66,7 +66,7 @@ def gen_vsubPre(mont, vN=1):
 def gen_vadd(mont, vN=1):
   SUF = 'A' if vN == 2 else ''
   with FuncProc(MSM_PRE+'vadd'+SUF):
-    with StackFrame(3, 1, vNum=mont.N*2+3, vType=T_ZMM) as sf:
+    with StackFrame(3, vN-1, useRCX=True, vNum=mont.N*2+3, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -74,7 +74,8 @@ def gen_vadd(mont, vN=1):
       z = sf.p[0]
       x = sf.p[1]
       y = sf.p[2]
-      i_ = sf.t[0]
+      if vN == 2:
+        i_ = sf.t[0]
       s = pops(regs, N)
       t = pops(regs, N)
       vmask = pops(regs, 1)[0]
@@ -112,7 +113,7 @@ def gen_vadd(mont, vN=1):
       else:
         # a little faster
         # s = x+y
-        for i in range(0, N):
+        for i in range(N):
           vmovdqa64(s[i], ptr(x+i*64*vN))
           vpaddq(s[i], s[i], ptr(y+i*64*vN))
           if i > 0:
@@ -122,7 +123,7 @@ def gen_vadd(mont, vN=1):
           vpsrlq(c, s[i], W)
           vpandq(s[i], s[i], vmask)
         # t = s-p
-        for i in range(0, N):
+        for i in range(N):
           vpsubq(t[i], s[i], ptr_b(rax+i*8))
           if i > 0:
             vpsubq(t[i], t[i], c)
@@ -142,7 +143,6 @@ def gen_vadd(mont, vN=1):
         add(z, 64)
         sub(i_, 1)
         jnz(lpL)
-
 
 def gen_vaddA(mont):
   vN = 2
@@ -211,7 +211,7 @@ def gen_vaddA(mont):
 def gen_vsub(mont, vN=1):
   SUF = 'A' if vN == 2 else ''
   with FuncProc(MSM_PRE+'vsub'+SUF):
-    with StackFrame(3, 1, vNum=mont.N*2+2, vType=T_ZMM) as sf:
+    with StackFrame(3, vN-1, vNum=mont.N*2+2, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -219,7 +219,8 @@ def gen_vsub(mont, vN=1):
       z = sf.p[0]
       x = sf.p[1]
       y = sf.p[2]
-      i_ = sf.t[0]
+      if vN == 2:
+        i_ = sf.t[0]
       s = pops(regs, N)
       t = pops(regs, N)
       vmask = pops(regs, 1)[0]
@@ -321,7 +322,6 @@ def gen_vsubA(mont):
 
       un(vmovdqa64)(ptr(z), s)
 
-
 # z = low(z + x * y)
 def vmulL(z, x, y):
   vpmadd52luq(z, x, y)
@@ -365,7 +365,7 @@ def shift(v, s):
 
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
-    with StackFrame(3, 2, vNum=mont.N*2+4, vType=T_ZMM) as sf:
+    with StackFrame(3, 1, useRCX=True, vNum=mont.N*2+3, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -374,13 +374,12 @@ def gen_vmul(mont):
       px = sf.p[1]
       py = sf.p[2]
       rp = sf.t[0]
-      i_ = sf.t[1]
 
       t = pops(regs, N+1)
       vmask = pops(regs, 1)[0]
       H = pops(regs, 1)[0]
       q = pops(regs, 1)[0]
-      s = pops(regs, N)
+      s = pops(regs, N-1)
       s0 = s[0] # alias
       lpL = Label()
 
@@ -404,7 +403,7 @@ def gen_vmul(mont):
       call(vmulUnitAddL) # t += p * q
 
       # N-1 times loop
-      mov(i_, N-1)
+      mov(ecx, N-1)
       align(32)
       L(lpL)
 
@@ -422,13 +421,16 @@ def gen_vmul(mont):
       lea(rax, ptr(rip+C_ap))
       call(vmulUnitAddL) # t += p * q
 
-      dec(i_)
+      dec(ecx)
       jnz(lpL)
 
       for i in range(1, N+1):
         vpsrlq(q, t[i-1], W)
         vpaddq(t[i], t[i], q)
         vpandq(t[i-1], t[i-1], vmask)
+
+      s += [q]
+      assert(len(s) == N)
 
       # s = t[1:] - p
       lea(rax, ptr(rip+C_ap))
@@ -439,10 +441,10 @@ def gen_vmul(mont):
         vpsrlq(q, s[i], S)
 
       vpxorq(H, H, H)
-      vpcmpeqq(k1, q, H) # k1 = x<y
+      vpcmpgtq(k1, q, H) # k1 = t < p
 
-      for i in range(N):
-        vpandq(t[1+i]|k1, s[i], vmask)
+      #for i in range(N):
+      #  vpandq(t[1+i]|k1, s[i], vmask)
 
       un(vmovdqa64)(ptr(pz), t[1:])
 
@@ -578,7 +580,7 @@ def gen_vmulA(mont):
           vpsrlq(q0, s[i], S)
 
         vpxorq(H0, H0, H0)
-        vpcmpeqq(k1, q0, H0) # k1 = x<y
+        vpcmpeqq(k1, q0, H0) # k1 = t >= p # QQQ
         for i in range(N):
           vpandq(t2[j][i]|k1, s[i], vmask)
         # store
@@ -591,8 +593,6 @@ def gen_vmulA(mont):
       #set rax(= px) and q(= y)
       vmulUnitAddA(t, rax, q, N, H)
       ret()
-
-
 def msm_data(mont):
   align(64)
   makeLabel(C_p)
@@ -607,20 +607,20 @@ def msm_data(mont):
   dq_(mont.rp)
 
 def msm_code(mont):
-  gen_vaddPre(mont)
-  gen_vsubPre(mont)
+  for vN in [1, 2]:
+    gen_vaddPre(mont, vN)
+    gen_vsubPre(mont, vN)
+
   gen_vadd(mont)
   gen_vsub(mont)
-
-  gen_vaddPre(mont, 2)
-  gen_vsubPre(mont, 2)
+  gen_vmul(mont)
 
   gen_vadd(mont, 2) # a little faster
   #gen_vaddA(mont)
 
   #gen_vsub(mont, 2)
   gen_vsubA(mont) # a little faster
-  gen_vmul(mont)
+
   gen_vmulA(mont)
 
 SUF='_fast'
