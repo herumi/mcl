@@ -189,11 +189,13 @@ src/bint32.ll: src/gen_bint.exe
 endif
 ifeq ($(ARCH),x86_64)
   ifneq ($(UNAME_S),Darwin)
-    MSM=msm_avx
     MCL_MSM?=1
   endif
 endif
 ifeq ($(MCL_MSM),1)
+  ifeq ($(ARCH),x86_64)
+    MSM=msm_avx
+  endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h src/avx512.hpp
