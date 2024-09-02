@@ -97,37 +97,23 @@ def gen_vadd(mont, vN=1):
         lpL = Label()
         L(lpL)
 
-      if False:
-        unb = genUnrollFunc(addrOffset=8)
-        un(vmovdqa64)(s, ptr(x))
-        un(vpaddq)(s, s, ptr(y))
-        for i in range(N-1):
-          vpsrlq(c, s[i], W)
-          vpaddq(s[i+1], s[i+1], c)
-        un(vpandq)(s, s, vmask)
-        unb(vpsubq)(t, s, ptr_b(rax))
-        for i in range(0, N):
-          if i > 0:
-            vpsubq(t[i], t[i], c)
-          vpsrlq(c, t[i], S)
-      else:
-        # a little faster
-        # s = x+y
-        for i in range(N):
-          vmovdqa64(s[i], ptr(x+i*64*vN))
-          vpaddq(s[i], s[i], ptr(y+i*64*vN))
-          if i > 0:
-            vpaddq(s[i], s[i], c)
-          if i == mont.N-1:
-            break
-          vpsrlq(c, s[i], W)
-          vpandq(s[i], s[i], vmask)
-        # t = s-p
-        for i in range(N):
-          vpsubq(t[i], s[i], ptr_b(rax+i*8))
-          if i > 0:
-            vpsubq(t[i], t[i], c)
-          vpsrlq(c, t[i], S)
+      # s = x+y
+      for i in range(N):
+        vmovdqa64(s[i], ptr(x+i*64*vN))
+        vpaddq(s[i], s[i], ptr(y+i*64*vN))
+        if i > 0:
+          vpaddq(s[i], s[i], c)
+        if i == mont.N-1:
+          break
+        vpsrlq(c, s[i], W)
+        vpandq(s[i], s[i], vmask)
+
+      # t = s-p
+      for i in range(N):
+        vpsubq(t[i], s[i], ptr_b(rax+i*8))
+        if i > 0:
+          vpsubq(t[i], t[i], c)
+        vpsrlq(c, t[i], S)
 
       vpxorq(zero, zero, zero)
       vpcmpeqq(k1, c, zero) # k1 = t>=0
