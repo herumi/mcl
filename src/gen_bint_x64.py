@@ -63,6 +63,30 @@ def gen_vsubPre(mont, vN=1):
       vpxorq(t[0], t[0], t[0])
       un(vpcmpgtq)([k1, k2], c, t[0])
 
+# input : s[N]
+# output : t[N] = s >= p ? s-p : t
+# k : mask register
+# c : for CF
+# z : for zero
+# pp : pointer to C_p
+
+def sub_p_if_possible(t, s, k, z, c, pp, vmask):
+  S = 63
+  N = 8
+  assert(len(t) == N and len(s) == N)
+  # t = t-p
+  for i in range(N):
+    vpsubq(s[i], t[i], ptr_b(pp+i*8))
+    if i > 0:
+      vpsubq(s[i], s[i], c)
+    vpsrlq(c, s[i], S)
+
+  vpxorq(z, z, z)
+  vpcmpeqq(k, c, z) # k = s>=0
+  # z = select(k, t, s)
+  for i in range(N):
+    vpandq(t[i]|k, s[i], vmask)
+
 def gen_vadd(mont, vN=1):
   SUF = 'A' if vN == 2 else ''
   with FuncProc(MSM_PRE+'vadd'+SUF):
@@ -108,18 +132,8 @@ def gen_vadd(mont, vN=1):
         vpsrlq(c, s[i], W)
         vpandq(s[i], s[i], vmask)
 
-      # t = s-p
-      for i in range(N):
-        vpsubq(t[i], s[i], ptr_b(rax+i*8))
-        if i > 0:
-          vpsubq(t[i], t[i], c)
-        vpsrlq(c, t[i], S)
+      sub_p_if_possible(s, t, k1, zero, c, rax, vmask)
 
-      vpxorq(zero, zero, zero)
-      vpcmpeqq(k1, c, zero) # k1 = t>=0
-      # z = select(k1, s, t)
-      for i in range(N):
-        vpandq(s[i]|k1, t[i], vmask)
       for i in range(N):
         vmovdqa64(ptr(z+i*64*vN), s[i])
 
@@ -351,7 +365,7 @@ def shift(v, s):
 
 def gen_vmul(mont):
   with FuncProc(MSM_PRE+'vmul'):
-    with StackFrame(3, 1, useRCX=True, vNum=mont.N*2+3, vType=T_ZMM) as sf:
+    with StackFrame(3, 1, useRCX=True, vNum=mont.N*2+4, vType=T_ZMM) as sf:
       regs = list(reversed(sf.v))
       W = mont.W
       N = mont.N
@@ -365,7 +379,7 @@ def gen_vmul(mont):
       vmask = pops(regs, 1)[0]
       H = pops(regs, 1)[0]
       q = pops(regs, 1)[0]
-      s = pops(regs, N-1)
+      s = pops(regs, N)
       s0 = s[0] # alias
       lpL = Label()
 
@@ -415,22 +429,9 @@ def gen_vmul(mont):
         vpaddq(t[i], t[i], q)
         vpandq(t[i-1], t[i-1], vmask)
 
-      s += [q]
-      assert(len(s) == N)
 
-      # s = t[1:] - p
-      lea(rax, ptr(rip+C_ap))
-      for i in range(N):
-        vpsubq(s[i], t[1+i], ptr(rax+i*64))
-        if i > 0:
-          vpsubq(s[i], s[i], q);
-        vpsrlq(q, s[i], S)
-
-      vpxorq(H, H, H)
-      vpcmpgtq(k1, q, H) # k1 = t < p
-
-      #for i in range(N):
-      #  vpandq(t[1+i]|k1, s[i], vmask)
+      lea(rax, ptr(rip+C_p))
+      sub_p_if_possible(t[1:], s, k1, H, q, rax, vmask)
 
       un(vmovdqa64)(ptr(pz), t[1:])
 
