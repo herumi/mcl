@@ -14,7 +14,7 @@
   #define SIZE(x)
 #endif
 .data
-.align 64
+.balign 64
 PRE(p):
 .quad 0xeffffffffaaab, 0xfeb153ffffb9f, 0x6b0f6241eabff, 0x12bf6730d2a0f, 0x764774b84f385, 0x1ba7b6434bacd, 0x1ea397fe69a4b, 0x1a011
 PRE(ap):
@@ -571,7 +571,7 @@ vpmadd52luq (%r10){1to8}, %zmm0, %zmm11
 lea PRE(ap)(%rip), %rax
 call .L2
 mov $7, %ecx
-.align 32
+.balign 32
 .L1:
 mov %rsi, %rax
 vmovdqa64 (%rdx), %zmm11
@@ -663,7 +663,7 @@ vmovdqa64 %zmm7, 384(%rdi)
 vmovdqa64 %zmm8, 448(%rdi)
 vzeroupper
 ret
-.align 32
+.balign 32
 .L2:
 vpmadd52luq (%rax), %zmm11, %zmm0
 vpxorq %zmm10, %zmm10, %zmm10
@@ -1037,7 +1037,7 @@ vpmadd52luq (%rcx){1to8}, %zmm1, %zmm22
 lea PRE(apA)(%rip), %rax
 call .L5
 mov $7, %r8
-.align 32
+.balign 32
 .L4:
 mov %rsi, %rax
 vmovdqa64 (%rdx), %zmm21
@@ -1216,7 +1216,7 @@ vmovdqa64 %zmm16, 896(%rdi)
 vmovdqa64 %zmm17, 960(%rdi)
 vzeroupper
 ret
-.align 32
+.balign 32
 .L5:
 vpmadd52luq (%rax), %zmm21, %zmm0
 vpmadd52luq 64(%rax), %zmm22, %zmm1
@@ -1280,7 +1280,7 @@ vpmadd52huq 896(%rax), %zmm21, %zmm16
 vpmadd52huq 960(%rax), %zmm22, %zmm17
 ret
 SIZE(mcl_c5_vmulA)
-.align 16
+.balign 16
 .global PRE(mclb_add1)
 PRE(mclb_add1):
 TYPE(mclb_add1)
@@ -1291,7 +1291,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add1)
-.align 16
+.balign 16
 .global PRE(mclb_add2)
 PRE(mclb_add2):
 TYPE(mclb_add2)
@@ -1305,7 +1305,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add2)
-.align 16
+.balign 16
 .global PRE(mclb_add3)
 PRE(mclb_add3):
 TYPE(mclb_add3)
@@ -1322,7 +1322,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add3)
-.align 16
+.balign 16
 .global PRE(mclb_add4)
 PRE(mclb_add4):
 TYPE(mclb_add4)
@@ -1342,7 +1342,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add4)
-.align 16
+.balign 16
 .global PRE(mclb_add5)
 PRE(mclb_add5):
 TYPE(mclb_add5)
@@ -1365,7 +1365,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add5)
-.align 16
+.balign 16
 .global PRE(mclb_add6)
 PRE(mclb_add6):
 TYPE(mclb_add6)
@@ -1391,7 +1391,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add6)
-.align 16
+.balign 16
 .global PRE(mclb_add7)
 PRE(mclb_add7):
 TYPE(mclb_add7)
@@ -1420,7 +1420,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add7)
-.align 16
+.balign 16
 .global PRE(mclb_add8)
 PRE(mclb_add8):
 TYPE(mclb_add8)
@@ -1452,7 +1452,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add8)
-.align 16
+.balign 16
 .global PRE(mclb_add9)
 PRE(mclb_add9):
 TYPE(mclb_add9)
@@ -1487,7 +1487,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add9)
-.align 16
+.balign 16
 .global PRE(mclb_add10)
 PRE(mclb_add10):
 TYPE(mclb_add10)
@@ -1525,7 +1525,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add10)
-.align 16
+.balign 16
 .global PRE(mclb_add11)
 PRE(mclb_add11):
 TYPE(mclb_add11)
@@ -1566,7 +1566,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add11)
-.align 16
+.balign 16
 .global PRE(mclb_add12)
 PRE(mclb_add12):
 TYPE(mclb_add12)
@@ -1610,7 +1610,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add12)
-.align 16
+.balign 16
 .global PRE(mclb_add13)
 PRE(mclb_add13):
 TYPE(mclb_add13)
@@ -1657,7 +1657,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add13)
-.align 16
+.balign 16
 .global PRE(mclb_add14)
 PRE(mclb_add14):
 TYPE(mclb_add14)
@@ -1707,7 +1707,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add14)
-.align 16
+.balign 16
 .global PRE(mclb_add15)
 PRE(mclb_add15):
 TYPE(mclb_add15)
@@ -1760,7 +1760,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add15)
-.align 16
+.balign 16
 .global PRE(mclb_add16)
 PRE(mclb_add16):
 TYPE(mclb_add16)
@@ -1816,7 +1816,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_add16)
-.align 16
+.balign 16
 .global PRE(mclb_sub1)
 PRE(mclb_sub1):
 TYPE(mclb_sub1)
@@ -1827,7 +1827,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub1)
-.align 16
+.balign 16
 .global PRE(mclb_sub2)
 PRE(mclb_sub2):
 TYPE(mclb_sub2)
@@ -1841,7 +1841,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub2)
-.align 16
+.balign 16
 .global PRE(mclb_sub3)
 PRE(mclb_sub3):
 TYPE(mclb_sub3)
@@ -1858,7 +1858,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub3)
-.align 16
+.balign 16
 .global PRE(mclb_sub4)
 PRE(mclb_sub4):
 TYPE(mclb_sub4)
@@ -1878,7 +1878,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub4)
-.align 16
+.balign 16
 .global PRE(mclb_sub5)
 PRE(mclb_sub5):
 TYPE(mclb_sub5)
@@ -1901,7 +1901,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub5)
-.align 16
+.balign 16
 .global PRE(mclb_sub6)
 PRE(mclb_sub6):
 TYPE(mclb_sub6)
@@ -1927,7 +1927,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub6)
-.align 16
+.balign 16
 .global PRE(mclb_sub7)
 PRE(mclb_sub7):
 TYPE(mclb_sub7)
@@ -1956,7 +1956,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub7)
-.align 16
+.balign 16
 .global PRE(mclb_sub8)
 PRE(mclb_sub8):
 TYPE(mclb_sub8)
@@ -1988,7 +1988,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub8)
-.align 16
+.balign 16
 .global PRE(mclb_sub9)
 PRE(mclb_sub9):
 TYPE(mclb_sub9)
@@ -2023,7 +2023,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub9)
-.align 16
+.balign 16
 .global PRE(mclb_sub10)
 PRE(mclb_sub10):
 TYPE(mclb_sub10)
@@ -2061,7 +2061,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub10)
-.align 16
+.balign 16
 .global PRE(mclb_sub11)
 PRE(mclb_sub11):
 TYPE(mclb_sub11)
@@ -2102,7 +2102,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub11)
-.align 16
+.balign 16
 .global PRE(mclb_sub12)
 PRE(mclb_sub12):
 TYPE(mclb_sub12)
@@ -2146,7 +2146,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub12)
-.align 16
+.balign 16
 .global PRE(mclb_sub13)
 PRE(mclb_sub13):
 TYPE(mclb_sub13)
@@ -2193,7 +2193,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub13)
-.align 16
+.balign 16
 .global PRE(mclb_sub14)
 PRE(mclb_sub14):
 TYPE(mclb_sub14)
@@ -2243,7 +2243,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub14)
-.align 16
+.balign 16
 .global PRE(mclb_sub15)
 PRE(mclb_sub15):
 TYPE(mclb_sub15)
@@ -2296,7 +2296,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub15)
-.align 16
+.balign 16
 .global PRE(mclb_sub16)
 PRE(mclb_sub16):
 TYPE(mclb_sub16)
@@ -2352,7 +2352,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_sub16)
-.align 16
+.balign 16
 .global PRE(mclb_addNF1)
 PRE(mclb_addNF1):
 TYPE(mclb_addNF1)
@@ -2361,7 +2361,7 @@ add (%rdx), %rax
 mov %rax, (%rdi)
 ret
 SIZE(mclb_addNF1)
-.align 16
+.balign 16
 .global PRE(mclb_addNF2)
 PRE(mclb_addNF2):
 TYPE(mclb_addNF2)
@@ -2373,7 +2373,7 @@ adc 8(%rdx), %rax
 mov %rax, 8(%rdi)
 ret
 SIZE(mclb_addNF2)
-.align 16
+.balign 16
 .global PRE(mclb_addNF3)
 PRE(mclb_addNF3):
 TYPE(mclb_addNF3)
@@ -2388,7 +2388,7 @@ adc 16(%rdx), %rax
 mov %rax, 16(%rdi)
 ret
 SIZE(mclb_addNF3)
-.align 16
+.balign 16
 .global PRE(mclb_addNF4)
 PRE(mclb_addNF4):
 TYPE(mclb_addNF4)
@@ -2406,7 +2406,7 @@ adc 24(%rdx), %rax
 mov %rax, 24(%rdi)
 ret
 SIZE(mclb_addNF4)
-.align 16
+.balign 16
 .global PRE(mclb_addNF5)
 PRE(mclb_addNF5):
 TYPE(mclb_addNF5)
@@ -2427,7 +2427,7 @@ adc 32(%rdx), %rax
 mov %rax, 32(%rdi)
 ret
 SIZE(mclb_addNF5)
-.align 16
+.balign 16
 .global PRE(mclb_addNF6)
 PRE(mclb_addNF6):
 TYPE(mclb_addNF6)
@@ -2451,7 +2451,7 @@ adc 40(%rdx), %rax
 mov %rax, 40(%rdi)
 ret
 SIZE(mclb_addNF6)
-.align 16
+.balign 16
 .global PRE(mclb_addNF7)
 PRE(mclb_addNF7):
 TYPE(mclb_addNF7)
@@ -2478,7 +2478,7 @@ adc 48(%rdx), %rax
 mov %rax, 48(%rdi)
 ret
 SIZE(mclb_addNF7)
-.align 16
+.balign 16
 .global PRE(mclb_addNF8)
 PRE(mclb_addNF8):
 TYPE(mclb_addNF8)
@@ -2508,7 +2508,7 @@ adc 56(%rdx), %rax
 mov %rax, 56(%rdi)
 ret
 SIZE(mclb_addNF8)
-.align 16
+.balign 16
 .global PRE(mclb_addNF9)
 PRE(mclb_addNF9):
 TYPE(mclb_addNF9)
@@ -2541,7 +2541,7 @@ adc 64(%rdx), %rax
 mov %rax, 64(%rdi)
 ret
 SIZE(mclb_addNF9)
-.align 16
+.balign 16
 .global PRE(mclb_addNF10)
 PRE(mclb_addNF10):
 TYPE(mclb_addNF10)
@@ -2577,7 +2577,7 @@ adc 72(%rdx), %rax
 mov %rax, 72(%rdi)
 ret
 SIZE(mclb_addNF10)
-.align 16
+.balign 16
 .global PRE(mclb_addNF11)
 PRE(mclb_addNF11):
 TYPE(mclb_addNF11)
@@ -2616,7 +2616,7 @@ adc 80(%rdx), %rax
 mov %rax, 80(%rdi)
 ret
 SIZE(mclb_addNF11)
-.align 16
+.balign 16
 .global PRE(mclb_addNF12)
 PRE(mclb_addNF12):
 TYPE(mclb_addNF12)
@@ -2658,7 +2658,7 @@ adc 88(%rdx), %rax
 mov %rax, 88(%rdi)
 ret
 SIZE(mclb_addNF12)
-.align 16
+.balign 16
 .global PRE(mclb_addNF13)
 PRE(mclb_addNF13):
 TYPE(mclb_addNF13)
@@ -2703,7 +2703,7 @@ adc 96(%rdx), %rax
 mov %rax, 96(%rdi)
 ret
 SIZE(mclb_addNF13)
-.align 16
+.balign 16
 .global PRE(mclb_addNF14)
 PRE(mclb_addNF14):
 TYPE(mclb_addNF14)
@@ -2751,7 +2751,7 @@ adc 104(%rdx), %rax
 mov %rax, 104(%rdi)
 ret
 SIZE(mclb_addNF14)
-.align 16
+.balign 16
 .global PRE(mclb_addNF15)
 PRE(mclb_addNF15):
 TYPE(mclb_addNF15)
@@ -2802,7 +2802,7 @@ adc 112(%rdx), %rax
 mov %rax, 112(%rdi)
 ret
 SIZE(mclb_addNF15)
-.align 16
+.balign 16
 .global PRE(mclb_addNF16)
 PRE(mclb_addNF16):
 TYPE(mclb_addNF16)
@@ -2856,7 +2856,7 @@ adc 120(%rdx), %rax
 mov %rax, 120(%rdi)
 ret
 SIZE(mclb_addNF16)
-.align 16
+.balign 16
 .global PRE(mclb_subNF1)
 PRE(mclb_subNF1):
 TYPE(mclb_subNF1)
@@ -2867,7 +2867,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF1)
-.align 16
+.balign 16
 .global PRE(mclb_subNF2)
 PRE(mclb_subNF2):
 TYPE(mclb_subNF2)
@@ -2881,7 +2881,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF2)
-.align 16
+.balign 16
 .global PRE(mclb_subNF3)
 PRE(mclb_subNF3):
 TYPE(mclb_subNF3)
@@ -2898,7 +2898,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF3)
-.align 16
+.balign 16
 .global PRE(mclb_subNF4)
 PRE(mclb_subNF4):
 TYPE(mclb_subNF4)
@@ -2918,7 +2918,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF4)
-.align 16
+.balign 16
 .global PRE(mclb_subNF5)
 PRE(mclb_subNF5):
 TYPE(mclb_subNF5)
@@ -2941,7 +2941,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF5)
-.align 16
+.balign 16
 .global PRE(mclb_subNF6)
 PRE(mclb_subNF6):
 TYPE(mclb_subNF6)
@@ -2967,7 +2967,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF6)
-.align 16
+.balign 16
 .global PRE(mclb_subNF7)
 PRE(mclb_subNF7):
 TYPE(mclb_subNF7)
@@ -2996,7 +2996,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF7)
-.align 16
+.balign 16
 .global PRE(mclb_subNF8)
 PRE(mclb_subNF8):
 TYPE(mclb_subNF8)
@@ -3028,7 +3028,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF8)
-.align 16
+.balign 16
 .global PRE(mclb_subNF9)
 PRE(mclb_subNF9):
 TYPE(mclb_subNF9)
@@ -3063,7 +3063,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF9)
-.align 16
+.balign 16
 .global PRE(mclb_subNF10)
 PRE(mclb_subNF10):
 TYPE(mclb_subNF10)
@@ -3101,7 +3101,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF10)
-.align 16
+.balign 16
 .global PRE(mclb_subNF11)
 PRE(mclb_subNF11):
 TYPE(mclb_subNF11)
@@ -3142,7 +3142,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF11)
-.align 16
+.balign 16
 .global PRE(mclb_subNF12)
 PRE(mclb_subNF12):
 TYPE(mclb_subNF12)
@@ -3186,7 +3186,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF12)
-.align 16
+.balign 16
 .global PRE(mclb_subNF13)
 PRE(mclb_subNF13):
 TYPE(mclb_subNF13)
@@ -3233,7 +3233,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF13)
-.align 16
+.balign 16
 .global PRE(mclb_subNF14)
 PRE(mclb_subNF14):
 TYPE(mclb_subNF14)
@@ -3283,7 +3283,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF14)
-.align 16
+.balign 16
 .global PRE(mclb_subNF15)
 PRE(mclb_subNF15):
 TYPE(mclb_subNF15)
@@ -3336,7 +3336,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF15)
-.align 16
+.balign 16
 .global PRE(mclb_subNF16)
 PRE(mclb_subNF16):
 TYPE(mclb_subNF16)
@@ -3392,7 +3392,7 @@ setc %al
 movzx %al, %eax
 ret
 SIZE(mclb_subNF16)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast1)
 PRE(mclb_mulUnit_fast1):
 TYPE(mclb_mulUnit_fast1)
@@ -3402,7 +3402,7 @@ mov %rax, (%rdi)
 mov %rdx, %rax
 ret
 SIZE(mclb_mulUnit_fast1)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast2)
 PRE(mclb_mulUnit_fast2):
 TYPE(mclb_mulUnit_fast2)
@@ -3419,7 +3419,7 @@ mov %rax, 8(%rdi)
 mov %rdx, %rax
 ret
 SIZE(mclb_mulUnit_fast2)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast3)
 PRE(mclb_mulUnit_fast3):
 TYPE(mclb_mulUnit_fast3)
@@ -3434,7 +3434,7 @@ mov %rdx, 16(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast3)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast4)
 PRE(mclb_mulUnit_fast4):
 TYPE(mclb_mulUnit_fast4)
@@ -3452,7 +3452,7 @@ mov %rdx, 24(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast4)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast5)
 PRE(mclb_mulUnit_fast5):
 TYPE(mclb_mulUnit_fast5)
@@ -3473,7 +3473,7 @@ mov %rdx, 32(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast5)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast6)
 PRE(mclb_mulUnit_fast6):
 TYPE(mclb_mulUnit_fast6)
@@ -3497,7 +3497,7 @@ mov %rdx, 40(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast6)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast7)
 PRE(mclb_mulUnit_fast7):
 TYPE(mclb_mulUnit_fast7)
@@ -3524,7 +3524,7 @@ mov %rdx, 48(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast7)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast8)
 PRE(mclb_mulUnit_fast8):
 TYPE(mclb_mulUnit_fast8)
@@ -3554,7 +3554,7 @@ mov %rdx, 56(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast8)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_fast9)
 PRE(mclb_mulUnit_fast9):
 TYPE(mclb_mulUnit_fast9)
@@ -3587,7 +3587,7 @@ mov %rdx, 64(%rdi)
 adc $0, %rax
 ret
 SIZE(mclb_mulUnit_fast9)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast1)
 PRE(mclb_mulUnitAdd_fast1):
 TYPE(mclb_mulUnitAdd_fast1)
@@ -3601,7 +3601,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast1)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast2)
 PRE(mclb_mulUnitAdd_fast2):
 TYPE(mclb_mulUnitAdd_fast2)
@@ -3620,7 +3620,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast2)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast3)
 PRE(mclb_mulUnitAdd_fast3):
 TYPE(mclb_mulUnitAdd_fast3)
@@ -3644,7 +3644,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast3)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast4)
 PRE(mclb_mulUnitAdd_fast4):
 TYPE(mclb_mulUnitAdd_fast4)
@@ -3673,7 +3673,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast4)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast5)
 PRE(mclb_mulUnitAdd_fast5):
 TYPE(mclb_mulUnitAdd_fast5)
@@ -3707,7 +3707,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast5)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast6)
 PRE(mclb_mulUnitAdd_fast6):
 TYPE(mclb_mulUnitAdd_fast6)
@@ -3746,7 +3746,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast6)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast7)
 PRE(mclb_mulUnitAdd_fast7):
 TYPE(mclb_mulUnitAdd_fast7)
@@ -3790,7 +3790,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast7)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast8)
 PRE(mclb_mulUnitAdd_fast8):
 TYPE(mclb_mulUnitAdd_fast8)
@@ -3839,7 +3839,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast8)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_fast9)
 PRE(mclb_mulUnitAdd_fast9):
 TYPE(mclb_mulUnitAdd_fast9)
@@ -3893,7 +3893,7 @@ adcx %rcx, %rax
 adox %rcx, %rax
 ret
 SIZE(mclb_mulUnitAdd_fast9)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow1)
 PRE(mclb_mulUnit_slow1):
 TYPE(mclb_mulUnit_slow1)
@@ -3903,7 +3903,7 @@ mov %rax, (%rdi)
 mov %rdx, %rax
 ret
 SIZE(mclb_mulUnit_slow1)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow2)
 PRE(mclb_mulUnit_slow2):
 TYPE(mclb_mulUnit_slow2)
@@ -3920,7 +3920,7 @@ mov %rax, 8(%rdi)
 mov %rdx, %rax
 ret
 SIZE(mclb_mulUnit_slow2)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow3)
 PRE(mclb_mulUnit_slow3):
 TYPE(mclb_mulUnit_slow3)
@@ -3948,7 +3948,7 @@ mov %rdx, %rax
 add $40, %rsp
 ret
 SIZE(mclb_mulUnit_slow3)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow4)
 PRE(mclb_mulUnit_slow4):
 TYPE(mclb_mulUnit_slow4)
@@ -3983,7 +3983,7 @@ mov %rdx, %rax
 add $56, %rsp
 ret
 SIZE(mclb_mulUnit_slow4)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow5)
 PRE(mclb_mulUnit_slow5):
 TYPE(mclb_mulUnit_slow5)
@@ -4025,7 +4025,7 @@ mov %rdx, %rax
 add $72, %rsp
 ret
 SIZE(mclb_mulUnit_slow5)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow6)
 PRE(mclb_mulUnit_slow6):
 TYPE(mclb_mulUnit_slow6)
@@ -4074,7 +4074,7 @@ mov %rdx, %rax
 add $88, %rsp
 ret
 SIZE(mclb_mulUnit_slow6)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow7)
 PRE(mclb_mulUnit_slow7):
 TYPE(mclb_mulUnit_slow7)
@@ -4130,7 +4130,7 @@ mov %rdx, %rax
 add $104, %rsp
 ret
 SIZE(mclb_mulUnit_slow7)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow8)
 PRE(mclb_mulUnit_slow8):
 TYPE(mclb_mulUnit_slow8)
@@ -4193,7 +4193,7 @@ mov %rdx, %rax
 add $120, %rsp
 ret
 SIZE(mclb_mulUnit_slow8)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnit_slow9)
 PRE(mclb_mulUnit_slow9):
 TYPE(mclb_mulUnit_slow9)
@@ -4263,7 +4263,7 @@ mov %rdx, %rax
 add $136, %rsp
 ret
 SIZE(mclb_mulUnit_slow9)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow1)
 PRE(mclb_mulUnitAdd_slow1):
 TYPE(mclb_mulUnitAdd_slow1)
@@ -4279,7 +4279,7 @@ mov %rdx, %rax
 add $8, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow1)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow2)
 PRE(mclb_mulUnitAdd_slow2):
 TYPE(mclb_mulUnitAdd_slow2)
@@ -4305,7 +4305,7 @@ mov %rdx, %rax
 add $24, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow2)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow3)
 PRE(mclb_mulUnitAdd_slow3):
 TYPE(mclb_mulUnitAdd_slow3)
@@ -4340,7 +4340,7 @@ mov %rdx, %rax
 add $40, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow3)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow4)
 PRE(mclb_mulUnitAdd_slow4):
 TYPE(mclb_mulUnitAdd_slow4)
@@ -4384,7 +4384,7 @@ mov %rdx, %rax
 add $56, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow4)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow5)
 PRE(mclb_mulUnitAdd_slow5):
 TYPE(mclb_mulUnitAdd_slow5)
@@ -4437,7 +4437,7 @@ mov %rdx, %rax
 add $72, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow5)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow6)
 PRE(mclb_mulUnitAdd_slow6):
 TYPE(mclb_mulUnitAdd_slow6)
@@ -4499,7 +4499,7 @@ mov %rdx, %rax
 add $88, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow6)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow7)
 PRE(mclb_mulUnitAdd_slow7):
 TYPE(mclb_mulUnitAdd_slow7)
@@ -4570,7 +4570,7 @@ mov %rdx, %rax
 add $104, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow7)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow8)
 PRE(mclb_mulUnitAdd_slow8):
 TYPE(mclb_mulUnitAdd_slow8)
@@ -4650,7 +4650,7 @@ mov %rdx, %rax
 add $120, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow8)
-.align 16
+.balign 16
 .global PRE(mclb_mulUnitAdd_slow9)
 PRE(mclb_mulUnitAdd_slow9):
 TYPE(mclb_mulUnitAdd_slow9)
@@ -4739,7 +4739,7 @@ mov %rdx, %rax
 add $136, %rsp
 ret
 SIZE(mclb_mulUnitAdd_slow9)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast1)
 PRE(mclb_mul_fast1):
 TYPE(mclb_mul_fast1)
@@ -4751,7 +4751,7 @@ adc $0, %rcx
 mov %rcx, 8(%rdi)
 ret
 SIZE(mclb_mul_fast1)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast2)
 PRE(mclb_mul_fast2):
 TYPE(mclb_mul_fast2)
@@ -4777,7 +4777,7 @@ mov %r8, 16(%rdi)
 mov %r9, 24(%rdi)
 ret
 SIZE(mclb_mul_fast2)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast3)
 PRE(mclb_mul_fast3):
 TYPE(mclb_mul_fast3)
@@ -4823,7 +4823,7 @@ mov %r10, 32(%rdi)
 mov %rcx, 40(%rdi)
 ret
 SIZE(mclb_mul_fast3)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast4)
 PRE(mclb_mul_fast4):
 TYPE(mclb_mul_fast4)
@@ -4897,7 +4897,7 @@ mov %r8, 56(%rdi)
 pop %rbx
 ret
 SIZE(mclb_mul_fast4)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast5)
 PRE(mclb_mul_fast5):
 TYPE(mclb_mul_fast5)
@@ -5005,7 +5005,7 @@ pop %rbp
 pop %rbx
 ret
 SIZE(mclb_mul_fast5)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast6)
 PRE(mclb_mul_fast6):
 TYPE(mclb_mul_fast6)
@@ -5153,7 +5153,7 @@ pop %rbp
 pop %rbx
 ret
 SIZE(mclb_mul_fast6)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast7)
 PRE(mclb_mul_fast7):
 TYPE(mclb_mul_fast7)
@@ -5347,7 +5347,7 @@ pop %rbp
 pop %rbx
 ret
 SIZE(mclb_mul_fast7)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast8)
 PRE(mclb_mul_fast8):
 TYPE(mclb_mul_fast8)
@@ -5593,7 +5593,7 @@ pop %rbp
 pop %rbx
 ret
 SIZE(mclb_mul_fast8)
-.align 16
+.balign 16
 .global PRE(mclb_mul_fast9)
 PRE(mclb_mul_fast9):
 TYPE(mclb_mul_fast9)
@@ -5897,7 +5897,7 @@ pop %rbp
 pop %rbx
 ret
 SIZE(mclb_mul_fast9)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast1)
 PRE(mclb_sqr_fast1):
 TYPE(mclb_sqr_fast1)
@@ -5907,56 +5907,56 @@ mov %rax, (%rdi)
 mov %rdx, 8(%rdi)
 ret
 SIZE(mclb_sqr_fast1)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast2)
 PRE(mclb_sqr_fast2):
 TYPE(mclb_sqr_fast2)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast2)
 SIZE(mclb_sqr_fast2)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast3)
 PRE(mclb_sqr_fast3):
 TYPE(mclb_sqr_fast3)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast3)
 SIZE(mclb_sqr_fast3)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast4)
 PRE(mclb_sqr_fast4):
 TYPE(mclb_sqr_fast4)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast4)
 SIZE(mclb_sqr_fast4)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast5)
 PRE(mclb_sqr_fast5):
 TYPE(mclb_sqr_fast5)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast5)
 SIZE(mclb_sqr_fast5)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast6)
 PRE(mclb_sqr_fast6):
 TYPE(mclb_sqr_fast6)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast6)
 SIZE(mclb_sqr_fast6)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast7)
 PRE(mclb_sqr_fast7):
 TYPE(mclb_sqr_fast7)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast7)
 SIZE(mclb_sqr_fast7)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast8)
 PRE(mclb_sqr_fast8):
 TYPE(mclb_sqr_fast8)
 mov %rsi, %rdx
 jmp PRE(mclb_mul_fast8)
 SIZE(mclb_sqr_fast8)
-.align 16
+.balign 16
 .global PRE(mclb_sqr_fast9)
 PRE(mclb_sqr_fast9):
 TYPE(mclb_sqr_fast9)
