@@ -10,6 +10,7 @@ public:
 	mpz_class mR2; // (R * R) % p
 	Unit rp; // rp * p = -1 mod M = 1 << 64
 	size_t N;
+	size_t W;
 	const Unit *p;
 	bool isFullBit;
 	Montgomery() {}
@@ -22,43 +23,59 @@ public:
 	{
 		std::cout << std::hex;
 		std::cout << "p=0x" << mp << std::endl;
+		printf("W=%zd\n", W);
+		printf("N=%zd\n", N);
 		std::cout << "R=0x" << mR << std::endl;
 		std::cout << "R2=0x" << mR2 << std::endl;
 		std::cout << "rp=0x" << rp << std::endl;
 	}
-	explicit Montgomery(const mpz_class& _p)
+	explicit Montgomery(const mpz_class& _p, size_t _w = 0)
 	{
+		W = _w == 0 ? MCL_UNIT_BIT_SIZE : _w;
 		mp = _p;
-		N = mcl::gmp::getUnitSize(_p);
+		N = mcl::roundUp(mcl::gmp::getBitSize(_p), W);
 		mR = 1;
-		mR = (mR << (N * sizeof(Unit) * 8)) % mp;
+		mR = (mR << (N * W)) % mp;
 		mR2 = (mR * mR) % mp;
 		v_.resize(N + 1);
 		Unit *base = &v_[1];
 		mcl::gmp::getArray(base, N, _p);
-		base[-1] = rp = mcl::bint::getMontgomeryCoeff(base[0]);
+		base[-1] = rp = mcl::bint::getMontgomeryCoeff(base[0], W);
 		p = base;
-		isFullBit = p[N - 1] >> (sizeof(Unit) * 8 - 1);
+		isFullBit = p[N - 1] >> (W - 1);
 	}
 
-	void toMont(mpz_class& x) const { mul(x, x, mR2); }
-	void fromMont(mpz_class& x) const { mul(x, x, 1); }
-	mpz_class toMont(const mpz_class& x) const
+	void toMont(mpz_class& x) const { toMont(x, x); }
+	void fromMont(mpz_class& x) const { fromMont(x, x); }
+	void toMont(mpz_class& mx, const mpz_class& x) const
 	{
-		mpz_class y;
-		mul(y, x, mR2);
-		return y;
+		mul(mx, x, mR2);
 	}
-	mpz_class fromMont(const mpz_class& x) const
+	void fromMont(mpz_class& x, const mpz_class& mx) const
 	{
-		mpz_class y;
-		mul(y, x, 1);
-		return y;
+		mul(x, mx, 1);
 	}
 
 	void mul(mpz_class& z, const mpz_class& x, const mpz_class& y) const
 	{
-#if 0
+#if 1
+		if (x == 0 || y == 0) {
+			z = 0;
+			return;
+		}
+#if 1
+		mpz_class mask = 1;
+		mask <<= W;
+		mask -= 1;
+		mpz_class c = 0;
+		mpz_class q;
+		for (size_t i = 0; i < N; i++) {
+			c += x * ((y >> (W * i)) & mask);
+			q = ((c & mask) * rp) & mask;
+			c += q * mp;
+			c >>= W;
+		}
+#else
 		const size_t ySize = mcl::gmp::getUnitSize(y);
 		mpz_class c = x * mcl::gmp::getUnit(y, 0);
 		Unit q = mcl::gmp::getUnit(c, 0) * rp;
@@ -70,9 +87,11 @@ public:
 			}
 			Unit q = mcl::gmp::getUnit(c, 0) * rp;
 			c += mp * q;
-			c >>= sizeof(Unit) * 8;
+			c >>= W;
 		}
+#endif
 		if (c >= mp) {
+			std::cout << "over\nx=" << x << ", y=" << y << std::endl;
 			c -= mp;
 		}
 		z = c;
