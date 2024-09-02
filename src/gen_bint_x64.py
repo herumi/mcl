@@ -74,16 +74,16 @@ def sub_p_if_possible(t, s, k, z, c, pp, vmask):
   S = 63
   N = 8
   assert(len(t) == N and len(s) == N)
-  # t = t-p
+  # s = t-p
   for i in range(N):
     vpsubq(s[i], t[i], ptr_b(pp+i*8))
     if i > 0:
       vpsubq(s[i], s[i], c)
     vpsrlq(c, s[i], S)
 
-  vpxorq(z, z, z)
+  #vpxorq(z, z, z)
   vpcmpeqq(k, c, z) # k = s>=0
-  # z = select(k, t, s)
+  # t = select(k, t, s&mask)
   for i in range(N):
     vpandq(t[i]|k, s[i], vmask)
 
@@ -132,6 +132,7 @@ def gen_vadd(mont, vN=1):
         vpsrlq(c, s[i], W)
         vpandq(s[i], s[i], vmask)
 
+      vpxorq(zero, zero, zero)
       sub_p_if_possible(s, t, k1, zero, c, rax, vmask)
 
       for i in range(N):
@@ -429,8 +430,8 @@ def gen_vmul(mont):
         vpaddq(t[i], t[i], q)
         vpandq(t[i-1], t[i-1], vmask)
 
-
       lea(rax, ptr(rip+C_p))
+      vpxorq(H, H, H) # zero
       sub_p_if_possible(t[1:], s, k1, H, q, rax, vmask)
 
       un(vmovdqa64)(ptr(pz), t[1:])
@@ -494,6 +495,7 @@ def gen_vmulA(mont):
       i_ = sf.t[1]
 
       torg = pops(regs, (N+1)*vN)
+      # [a, b, c, d, ....] -> [[a, b], [c, d], ...]
       t = [torg[i:i+2] for i in range(0, len(torg), 2)]
       vmask = pops(regs, 1)[0]
       H = pops(regs, vN)
@@ -554,23 +556,14 @@ def gen_vmulA(mont):
       t0, t1 = map(list, zip(*t))
       t2 = [t0[1:], t1[1:]]
       # s = t[1:] - p
-      lea(rax, ptr(rip+C_ap))
 
       q0 = q[0]
       H0 = H[0]
 
+      lea(rax, ptr(rip+C_p))
+      vpxorq(H0, H0, H0)
       for j in range(vN):
-        for i in range(N):
-          vpsubq(s[i], t2[j][i], ptr(rax+i*64))
-          if i > 0:
-            vpsubq(s[i], s[i], q0);
-          vpsrlq(q0, s[i], S)
-
-        vpxorq(H0, H0, H0)
-        vpcmpeqq(k1, q0, H0) # k1 = t >= p # QQQ
-        for i in range(N):
-          vpandq(t2[j][i]|k1, s[i], vmask)
-        # store
+        sub_p_if_possible(t2[j], s, k1, H0, q0, rax, vmask)
         un(vmovdqa64)(ptr(pz+j*64*N), torg[2+j*N:])
 
       sf.close()

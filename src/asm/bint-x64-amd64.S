@@ -394,6 +394,7 @@ vpandq %zmm16, %zmm6, %zmm6
 vmovdqa64 448(%rsi), %zmm7
 vpaddq 448(%rdx), %zmm7, %zmm7
 vpaddq %zmm17, %zmm7, %zmm7
+vpxorq %zmm18, %zmm18, %zmm18
 vpsubq (%rax){1to8}, %zmm0, %zmm8
 vpsrlq $63, %zmm8, %zmm17
 vpsubq 8(%rax){1to8}, %zmm1, %zmm9
@@ -417,7 +418,6 @@ vpsrlq $63, %zmm14, %zmm17
 vpsubq 56(%rax){1to8}, %zmm7, %zmm15
 vpsubq %zmm17, %zmm15, %zmm15
 vpsrlq $63, %zmm15, %zmm17
-vpxorq %zmm18, %zmm18, %zmm18
 vpcmpeqq %zmm18, %zmm17, %k1
 vpandq %zmm16, %zmm8, %zmm0{%k1}
 vpandq %zmm16, %zmm9, %zmm1{%k1}
@@ -620,6 +620,7 @@ vpsrlq $52, %zmm7, %zmm11
 vpaddq %zmm11, %zmm8, %zmm8
 vpandq %zmm9, %zmm7, %zmm7
 lea PRE(p)(%rip), %rax
+vpxorq %zmm10, %zmm10, %zmm10
 vpsubq (%rax){1to8}, %zmm1, %zmm12
 vpsrlq $63, %zmm12, %zmm11
 vpsubq 8(%rax){1to8}, %zmm2, %zmm13
@@ -643,7 +644,6 @@ vpsrlq $63, %zmm18, %zmm11
 vpsubq 56(%rax){1to8}, %zmm8, %zmm19
 vpsubq %zmm11, %zmm19, %zmm19
 vpsrlq $63, %zmm19, %zmm11
-vpxorq %zmm10, %zmm10, %zmm10
 vpcmpeqq %zmm10, %zmm11, %k1
 vpandq %zmm9, %zmm12, %zmm1{%k1}
 vpandq %zmm9, %zmm13, %zmm2{%k1}
@@ -742,6 +742,7 @@ vpandq %zmm16, %zmm6, %zmm6
 vmovdqa64 896(%rsi), %zmm7
 vpaddq 896(%rdx), %zmm7, %zmm7
 vpaddq %zmm17, %zmm7, %zmm7
+vpxorq %zmm18, %zmm18, %zmm18
 vpsubq (%rax){1to8}, %zmm0, %zmm8
 vpsrlq $63, %zmm8, %zmm17
 vpsubq 8(%rax){1to8}, %zmm1, %zmm9
@@ -765,7 +766,6 @@ vpsrlq $63, %zmm14, %zmm17
 vpsubq 56(%rax){1to8}, %zmm7, %zmm15
 vpsubq %zmm17, %zmm15, %zmm15
 vpsrlq $63, %zmm15, %zmm17
-vpxorq %zmm18, %zmm18, %zmm18
 vpcmpeqq %zmm18, %zmm17, %k1
 vpandq %zmm16, %zmm8, %zmm0{%k1}
 vpandq %zmm16, %zmm9, %zmm1{%k1}
@@ -1124,31 +1124,31 @@ vpaddq %zmm21, %zmm16, %zmm16
 vpaddq %zmm22, %zmm17, %zmm17
 vpandq %zmm18, %zmm14, %zmm14
 vpandq %zmm18, %zmm15, %zmm15
-lea PRE(ap)(%rip), %rax
-vpsubq (%rax), %zmm2, %zmm23
+lea PRE(p)(%rip), %rax
+vpxorq %zmm19, %zmm19, %zmm19
+vpsubq (%rax){1to8}, %zmm2, %zmm23
 vpsrlq $63, %zmm23, %zmm21
-vpsubq 64(%rax), %zmm4, %zmm24
+vpsubq 8(%rax){1to8}, %zmm4, %zmm24
 vpsubq %zmm21, %zmm24, %zmm24
 vpsrlq $63, %zmm24, %zmm21
-vpsubq 128(%rax), %zmm6, %zmm25
+vpsubq 16(%rax){1to8}, %zmm6, %zmm25
 vpsubq %zmm21, %zmm25, %zmm25
 vpsrlq $63, %zmm25, %zmm21
-vpsubq 192(%rax), %zmm8, %zmm26
+vpsubq 24(%rax){1to8}, %zmm8, %zmm26
 vpsubq %zmm21, %zmm26, %zmm26
 vpsrlq $63, %zmm26, %zmm21
-vpsubq 256(%rax), %zmm10, %zmm27
+vpsubq 32(%rax){1to8}, %zmm10, %zmm27
 vpsubq %zmm21, %zmm27, %zmm27
 vpsrlq $63, %zmm27, %zmm21
-vpsubq 320(%rax), %zmm12, %zmm28
+vpsubq 40(%rax){1to8}, %zmm12, %zmm28
 vpsubq %zmm21, %zmm28, %zmm28
 vpsrlq $63, %zmm28, %zmm21
-vpsubq 384(%rax), %zmm14, %zmm29
+vpsubq 48(%rax){1to8}, %zmm14, %zmm29
 vpsubq %zmm21, %zmm29, %zmm29
 vpsrlq $63, %zmm29, %zmm21
-vpsubq 448(%rax), %zmm16, %zmm30
+vpsubq 56(%rax){1to8}, %zmm16, %zmm30
 vpsubq %zmm21, %zmm30, %zmm30
 vpsrlq $63, %zmm30, %zmm21
-vpxorq %zmm19, %zmm19, %zmm19
 vpcmpeqq %zmm19, %zmm21, %k1
 vpandq %zmm18, %zmm23, %zmm2{%k1}
 vpandq %zmm18, %zmm24, %zmm4{%k1}
@@ -1174,30 +1174,29 @@ vmovdqa64 %zmm14, 768(%rdi)
 vmovdqa64 %zmm15, 832(%rdi)
 vmovdqa64 %zmm16, 896(%rdi)
 vmovdqa64 %zmm17, 960(%rdi)
-vpsubq (%rax), %zmm3, %zmm23
+vpsubq (%rax){1to8}, %zmm3, %zmm23
 vpsrlq $63, %zmm23, %zmm21
-vpsubq 64(%rax), %zmm5, %zmm24
+vpsubq 8(%rax){1to8}, %zmm5, %zmm24
 vpsubq %zmm21, %zmm24, %zmm24
 vpsrlq $63, %zmm24, %zmm21
-vpsubq 128(%rax), %zmm7, %zmm25
+vpsubq 16(%rax){1to8}, %zmm7, %zmm25
 vpsubq %zmm21, %zmm25, %zmm25
 vpsrlq $63, %zmm25, %zmm21
-vpsubq 192(%rax), %zmm9, %zmm26
+vpsubq 24(%rax){1to8}, %zmm9, %zmm26
 vpsubq %zmm21, %zmm26, %zmm26
 vpsrlq $63, %zmm26, %zmm21
-vpsubq 256(%rax), %zmm11, %zmm27
+vpsubq 32(%rax){1to8}, %zmm11, %zmm27
 vpsubq %zmm21, %zmm27, %zmm27
 vpsrlq $63, %zmm27, %zmm21
-vpsubq 320(%rax), %zmm13, %zmm28
+vpsubq 40(%rax){1to8}, %zmm13, %zmm28
 vpsubq %zmm21, %zmm28, %zmm28
 vpsrlq $63, %zmm28, %zmm21
-vpsubq 384(%rax), %zmm15, %zmm29
+vpsubq 48(%rax){1to8}, %zmm15, %zmm29
 vpsubq %zmm21, %zmm29, %zmm29
 vpsrlq $63, %zmm29, %zmm21
-vpsubq 448(%rax), %zmm17, %zmm30
+vpsubq 56(%rax){1to8}, %zmm17, %zmm30
 vpsubq %zmm21, %zmm30, %zmm30
 vpsrlq $63, %zmm30, %zmm21
-vpxorq %zmm19, %zmm19, %zmm19
 vpcmpeqq %zmm19, %zmm21, %k1
 vpandq %zmm18, %zmm23, %zmm3{%k1}
 vpandq %zmm18, %zmm24, %zmm5{%k1}
