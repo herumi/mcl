@@ -188,8 +188,10 @@ src/bint32.ll: src/gen_bint.exe
 	$< -u 32 -ver 0x90 > $@
 endif
 ifeq ($(ARCH),x86_64)
-  MSM=msm_avx
-  MCL_MSM?=1
+  ifneq ($(UNAME_S),Darwin)
+    MSM=msm_avx
+    MCL_MSM?=1
+  endif
 endif
 ifeq ($(MCL_MSM),1)
   CFLAGS+=-DMCL_MSM=1
