@@ -70,6 +70,43 @@ inline void byteSwap(uint8_t *x, size_t n)
 	}
 }
 
+/*
+	len(bin) = sizeof(Unit) * xn + 1
+	bin[i] = 0 or (|bin[i]| <= 2^w-1 and odd)
+	x = sum_i bin[ret-1-i] 2^i
+	return the size of bin
+	return 1 if x == 0
+*/
+inline size_t getBinWidth(uint8_t *bin, size_t maxBinN, const Unit *_x, size_t xn, size_t w)
+{
+	Unit *x = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+	bint::copyN(x, _x, xn);
+	size_t pos = 0;
+	size_t zeroNum = 0;
+	const Unit maskW = (Unit(1) << w) - 1;
+	while (!bint::isZeroN(x, xn)) {
+		size_t z = gmp::getLowerZeroBitNum(x, xn);
+		if (z) {
+			xn = bint::shiftRight(x, x, z, xn);
+			zeroNum += z;
+		}
+		for (size_t i = 0; i < zeroNum; i++) {
+			if (pos == maxBinN) return 0;
+			bin[pos++] = 0;
+		}
+		int v = x[0] & maskW;
+		xn = bint::shiftRight(x, x, w, xn);
+		if (pos == maxBinN) return 0;
+		bin[pos++] = v;
+		zeroNum = w - 1;
+	}
+	if (pos == 0) {
+		bin[0] = 0;
+		return 1;
+	}
+	return pos;
+}
+
 } // mcl::fp::local
 
 } // mcl::fp
