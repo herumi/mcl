@@ -121,6 +121,104 @@ void getUnitAtT(Unit *p, const void *_xVec, size_t i)
 	xVec[i].getUnitArray(p);
 }
 
+/*
+	len(bin) = sizeof(Unit) * xn + 1
+	bin[i] = 0 or (|bin[i]| <= 2^w-1 and odd)
+	x = sum_i bin[ret-1-i] 2^i
+	return the size of bin
+	return 1 if x == 0
+*/
+inline size_t getBinWidth(uint8_t *bin, size_t maxBinN, const Unit *_x, size_t xn, size_t w)
+{
+	Unit *x = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+	bint::copyN(x, _x, xn);
+	size_t pos = 0;
+	size_t zeroNum = 0;
+	const Unit maskW = (Unit(1) << w) - 1;
+	while (!bint::isZeroN(x, xn)) {
+		size_t z = gmp::getLowerZeroBitNum(x, xn);
+		if (z) {
+			xn = bint::shiftRight(x, x, z, xn);
+			zeroNum += z;
+		}
+		for (size_t i = 0; i < zeroNum; i++) {
+			if (pos == maxBinN) return 0;
+			bin[pos++] = 0;
+		}
+		int v = x[0] & maskW;
+		xn = bint::shiftRight(x, x, w, xn);
+		if (pos == maxBinN) return 0;
+		bin[pos++] = v;
+		zeroNum = w - 1;
+	}
+	if (pos == 0) {
+		bin[0] = 0;
+		return 1;
+	}
+	return pos;
+}
+
+// argmin (size//w + 2**(w-1))
+inline size_t argminWforPow(size_t size)
+{
+	if (size <= 12) return 2;
+	if (size <= 56) return 3;
+	if (size <= 175) return 4;
+	return 5;
+}
+
+// z = x^y[yn]
+template<class F>
+void powUnit(F& z, const F& x, const Unit *y, size_t yn)
+{
+	yn = bint::getRealSize(y, yn);
+	if (yn == 1) {
+		switch (y[0]) {
+		case 0:
+			z = 1;
+			return;
+		case 1:
+			z = x;
+			return;
+		case 2:
+			F::sqr(z, x);
+			return;
+		case 3:
+			{
+				F t;
+				F::sqr(t, x);
+				F::mul(z, t, x);
+			}
+			return;
+		case 4:
+			F::sqr(z, x);
+			F::sqr(z, z);
+			return;
+		}
+	}
+	const size_t w = argminWforPow(mcl::fp::getBitSize(y, yn));
+	size_t bn = sizeof(Unit) * 8 * yn + 1;
+	uint8_t *bin = (uint8_t*)CYBOZU_ALLOCA(bn);
+	bn = getBinWidth(bin, bn, y, yn, w);
+	assert(bn > 0);
+	const size_t tblSize = size_t(1) << (w - 1);
+	F *tbl = (F*)CYBOZU_ALLOCA(sizeof(F) * tblSize);
+	tbl[0] = x;
+	F x2;
+	F::sqr(x2, x);
+	for (size_t i = 1; i < tblSize; i++) {
+		F::mul(tbl[i], tbl[i - 1], x2);
+	}
+	z = 1;
+	for (size_t i = 0; i < bn; i++) {
+		F::sqr(z, z);
+		uint8_t v = bin[bn-1-i];
+		if (v) {
+			F::mul(z, z, tbl[(v-1)/2]);
+		}
+	}
+}
+
 template<class T>
 struct Empty {};
 
@@ -187,39 +285,7 @@ protected:
 	static bool (*powVecGLV)(T& z, const T *xVec, const void *yVec, size_t yn);
 	static void powArray(T& z, const T& x, const Unit *y, size_t yn, bool isNegative = false)
 	{
-		while (yn > 0 && y[yn - 1] == 0) {
-			yn--;
-		}
-		if (yn == 0) {
-			z = 1;
-			return;
-		}
-		const size_t w = 4;
-		const size_t n = 1 << w;
-		uint8_t idxTbl[sizeof(T) * 8 / w];
-		mcl::fp::BitIterator<Unit> iter(y, yn);
-		size_t idxN = 0;
-		while (iter.hasNext()) {
-			assert(idxN < sizeof(idxTbl));
-			idxTbl[idxN++] = iter.getNext(w);
-		}
-		assert(idxN > 0);
-		T tbl[n];
-		tbl[1] = x;
-		for (size_t i = 2; i < n; i++) {
-			tbl[i] = tbl[i-1] * x;
-		}
-		uint32_t idx = idxTbl[idxN - 1];
-		z = idx == 0 ? 1 : tbl[idx];
-		for (size_t i = 1; i < idxN; i++) {
-			for (size_t j = 0; j < w; j++) {
-				T::sqr(z, z);
-			}
-			idx = idxTbl[idxN - 1 - i];
-			if (idx) {
-				z *= tbl[idx];
-			}
-		}
+		powUnit(z, x, y, yn);
 		if (isNegative) {
 			T::inv(z, z);
 		}

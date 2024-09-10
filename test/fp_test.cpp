@@ -1025,7 +1025,7 @@ void getMontgomeryCoeffTest()
 void getBinWidthTest1(const mpz_class& x, size_t w)
 {
 	uint8_t bin[512];
-	size_t len = mcl::fp::local::getBinWidth(bin, sizeof(bin), mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x), w);
+	size_t len = mcl::fp::getBinWidth(bin, sizeof(bin), mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x), w);
 	CYBOZU_TEST_ASSERT(len > 0);
 	mpz_class y = 0;
 	for (size_t i = 0; i < len; i++) {
