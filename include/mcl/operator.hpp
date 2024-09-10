@@ -171,6 +171,10 @@ inline size_t argminWforPow(size_t size)
 template<class F>
 void powUnit(F& z, const F& x, const Unit *y, size_t yn)
 {
+	if (yn == 0) {
+		z = 1;
+		return;
+	}
 	yn = bint::getRealSize(y, yn);
 	if (yn == 1) {
 		switch (y[0]) {
