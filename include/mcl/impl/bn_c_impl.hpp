@@ -884,27 +884,27 @@ int mclBnG1_getBasePoint(mclBnG1 *x)
 }
 
 template<class F>
-static int F_pow(F& z, const F& x, const uint8_t *_y, mclSize ySize)
+static int F_powArray(F& z, const F& x, const uint8_t *_y, mclSize ySize)
 {
 	if (ySize == 0) {
 		z = 1;
 		return 0;
 	}
-	const size_t maxSize = 64;
+	const size_t maxSize = F::getByteSize();
 	if (ySize > maxSize) return -1;
-	const size_t yN = maxSize / sizeof(mcl::Unit);
+	const size_t yN = mcl::roundUp(maxSize, sizeof(mcl::Unit));
 	mcl::Unit y[yN];
 	if (!mcl::fp::convertArrayAsLE(y, yN, _y, ySize)) return -1;
 	mcl::fp::powUnit(z, x, y, yN);
 	return 0;
 }
 
-int mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize)
+int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize)
 {
-	return F_pow(*cast(z), *cast(x), y, ySize);
+	return F_powArray(*cast(z), *cast(x), y, ySize);
 }
 
-int mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize)
+int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize)
 {
-	return F_pow(*cast(z), *cast(x), y, ySize);
+	return F_powArray(*cast(z), *cast(x), y, ySize);
 }

@@ -379,9 +379,13 @@ MCLBN_DLL_API int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
 
 // z = x^y[0:ySize] : y[] is little endian
-// return 0 if ySize <= 64 (This value may be changed) else -1
-MCLBN_DLL_API int mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize);
-MCLBN_DLL_API int mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize);
+MCLBN_DLL_API void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCLBN_DLL_API void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+
+// return 0 if ySize <= mclBn_getFrByteSize() else -1
+MCLBN_DLL_API int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize);
+// return 0 if ySize <= mclBn_getFpByteSize() else -1
+MCLBN_DLL_API int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize);
 ////////////////////////////////////////////////
 // set zero
 MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
