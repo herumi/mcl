@@ -884,6 +884,24 @@ int mclBnG1_getBasePoint(mclBnG1 *x)
 }
 
 template<class F>
+static void F_pow(F& z, const F& x, const F& y)
+{
+	mcl::fp::Block b;
+	y.getBlock(b);
+	mcl::fp::powUnit(z, x, b.p, b.n);
+}
+
+void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
+{
+	F_pow(*cast(z), *cast(x), *cast(y));
+}
+
+void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
+{
+	F_pow(*cast(z), *cast(x), *cast(y));
+}
+
+template<class F>
 static int F_powArray(F& z, const F& x, const uint8_t *_y, mclSize ySize)
 {
 	if (ySize == 0) {
@@ -893,7 +911,7 @@ static int F_powArray(F& z, const F& x, const uint8_t *_y, mclSize ySize)
 	const size_t maxSize = F::getByteSize();
 	if (ySize > maxSize) return -1;
 	const size_t yN = mcl::roundUp(maxSize, sizeof(mcl::Unit));
-	mcl::Unit y[yN];
+	mcl::Unit *y = (mcl::Unit*)CYBOZU_ALLOCA(sizeof(mcl::Unit) * yN);
 	if (!mcl::fp::convertArrayAsLE(y, yN, _y, ySize)) return -1;
 	mcl::fp::powUnit(z, x, y, yN);
 	return 0;
