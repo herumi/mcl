@@ -140,7 +140,7 @@ CYBOZU_TEST_AUTO(Fr)
 
 CYBOZU_TEST_AUTO(Fr_pow)
 {
-	mclBnFr x, z1, z2;
+	mclBnFr x, y, z1, z2, z3;
 	const char *s = "123456789123456789123";
 	CYBOZU_TEST_ASSERT(!mclBnFr_setStr(&x, s, strlen(s), 10));
 	mclBnFr_setInt(&z1, 1);
@@ -148,18 +148,23 @@ CYBOZU_TEST_AUTO(Fr_pow)
 	for (uint8_t i = 0; i < 100; i++) {
 		CYBOZU_TEST_ASSERT(!mclBnFr_powArray(&z2, &x, &i, 1));
 		CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&z1, &z2));
+		mclBnFr_setInt(&y, i);
+		mclBnFr_pow(&z3, &x, &y);
+		CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&z1, &z3));
 		mclBnFr_mul(&z1, &z1, &x);
 	}
 	mclBnFr one, negOne;
 	mclBnFr_setInt(&one, 1);
 	mclBnFr_setInt(&negOne, -1); // p-1
 	// large pow
-	mclBnFr y = z1;
+	y = z1;
 	for (int i = 0; i < 100; i++) {
 		uint8_t yBuf[64];
 		size_t yn = mclBnFr_getLittleEndian(yBuf, sizeof(yBuf), &y);
 		CYBOZU_TEST_ASSERT(yn > 0);
 		mclBnFr_powArray(&z1, &x, yBuf, yn); // z1 = x^{y}
+		mclBnFr_pow(&z3, &x, &y);
+		CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&z1, &z3));
 		mclBnFr_sub(&y, &negOne, &y); // y = p-1-y
 		yn = mclBnFr_getLittleEndian(yBuf, sizeof(yBuf), &y);
 		mclBnFr_powArray(&z2, &x, yBuf, yn); // z2 = x^{p-1-y}
@@ -176,7 +181,7 @@ CYBOZU_TEST_AUTO(Fr_pow)
 
 CYBOZU_TEST_AUTO(Fp_pow)
 {
-	mclBnFp x, z1, z2;
+	mclBnFp x, y, z1, z2, z3;
 	const char *s = "123456789123456789123";
 	CYBOZU_TEST_ASSERT(!mclBnFp_setStr(&x, s, strlen(s), 10));
 	mclBnFp_setInt(&z1, 1);
@@ -184,18 +189,23 @@ CYBOZU_TEST_AUTO(Fp_pow)
 	for (uint8_t i = 0; i < 100; i++) {
 		CYBOZU_TEST_ASSERT(!mclBnFp_powArray(&z2, &x, &i, 1));
 		CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&z1, &z2));
+		mclBnFp_setInt(&y, i);
+		mclBnFp_pow(&z3, &x, &y);
+		CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&z1, &z3));
 		mclBnFp_mul(&z1, &z1, &x);
 	}
 	mclBnFp one, negOne;
 	mclBnFp_setInt(&one, 1);
 	mclBnFp_setInt(&negOne, -1); // p-1
 	// large pow
-	mclBnFp y = z1;
+	y = z1;
 	for (int i = 0; i < 100; i++) {
 		uint8_t yBuf[64];
 		size_t yn = mclBnFp_getLittleEndian(yBuf, sizeof(yBuf), &y);
 		CYBOZU_TEST_ASSERT(yn > 0);
 		mclBnFp_powArray(&z1, &x, yBuf, yn); // z1 = x^{y}
+		mclBnFp_pow(&z3, &x, &y);
+		CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&z1, &z3));
 		mclBnFp_sub(&y, &negOne, &y); // y = p-1-y
 		yn = mclBnFp_getLittleEndian(yBuf, sizeof(yBuf), &y);
 		mclBnFp_powArray(&z2, &x, yBuf, yn); // z2 = x^{p-1-y}
