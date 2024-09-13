@@ -262,6 +262,21 @@ void G1test()
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&x, &z));
 	mclBnG1_normalize(&y, &z);
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&y, &z));
+	const size_t N = 10;
+	mclBnG1 v1[N], v2[N];
+	mclBnG1_dbl(&v1[0], &z);
+	for (size_t i = 1; i < N; i++) {
+		mclBnG1_add(&v1[i], &v1[i-1], &y);
+	}
+	mclBnG1_clear(&v1[N/2]);
+	for (size_t i = 0; i < N; i++) {
+		v2[i] = v1[i];
+	}
+	mclBnG1_normalizeVec(v1, N);
+	for (size_t i = 0; i < N; i++) {
+		CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&v1[i], &v2[i]));
+		CYBOZU_TEST_ASSERT(mclBnFp_isOne(&v1[i].z) || mclBnFp_isZero(&v1[i].z));
+	}
 }
 
 CYBOZU_TEST_AUTO(G1)
@@ -311,6 +326,21 @@ CYBOZU_TEST_AUTO(G2)
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&x, &z));
 	mclBnG2_normalize(&y, &z);
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&y, &z));
+	const size_t N = 10;
+	mclBnG2 v1[N], v2[N];
+	mclBnG2_dbl(&v1[0], &z);
+	for (size_t i = 1; i < N; i++) {
+		mclBnG2_add(&v1[i], &v1[i-1], &y);
+	}
+	mclBnG2_clear(&v1[N/2]);
+	for (size_t i = 0; i < N; i++) {
+		v2[i] = v1[i];
+	}
+	mclBnG2_normalizeVec(v1, N);
+	for (size_t i = 0; i < N; i++) {
+		CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&v1[i], &v2[i]));
+		CYBOZU_TEST_ASSERT(mclBnFp2_isOne(&v1[i].z) || mclBnFp2_isZero(&v1[i].z));
+	}
 }
 
 CYBOZU_TEST_AUTO(GT)

@@ -936,3 +936,13 @@ mclSize mclBnFp_invVec(mclBnFp *x, mclSize n)
 {
 	return mcl::invVec(cast(x), cast(x), n);
 }
+
+void mclBnG1_normalizeVec(mclBnG1 *x, mclSize n)
+{
+	mcl::ec::normalizeVec(cast(x), cast(x), n);
+}
+
+void mclBnG2_normalizeVec(mclBnG2 *x, mclSize n)
+{
+	mcl::ec::normalizeVec(cast(x), cast(x), n);
+}
