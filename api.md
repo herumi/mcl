@@ -7,7 +7,7 @@ A sample of how to use BLS12-381:
 ### C
 [sample/pairing_c.c](sample/pairing_c.c)
 
-```
+```bash
 cd mcl
 make -j4
 make bin/pairing_c.exe && bin/pairing_c.exe
@@ -16,7 +16,7 @@ make bin/pairing_c.exe && bin/pairing_c.exe
 ### C++
 [sample/pairing.cpp](sample/pairing.cpp)
 
-```
+```bash
 cd mcl
 make -j4
 make bin/pairing.exe && bin/pairing.exe
@@ -149,7 +149,7 @@ All functions except for initialization and changing global settings are thread-
 
 Initialize mcl library. Call this function at first before calling the other functions.
 
-```
+```c
 int mclBn_init(int curve, int compiledTimeVar);
 ```
 
@@ -165,7 +165,7 @@ the values are the same when the library is built and used.
 
 ### C++
 
-```
+```c
 void initPairing(<curve type>);
 ```
 curve type is defined in `mcl/curve_type.h`.
@@ -176,7 +176,7 @@ curve type is defined in `mcl/curve_type.h`.
 
 ## Global setting
 
-```
+```c
 int mclBn_setMapToMode(int mode);
 ```
 - `mode = MCL_MAP_TO_MODE_ORIGINAL` : the old hash-to-curve (for backward compatibility)
@@ -187,13 +187,13 @@ int mclBn_setMapToMode(int mode);
 This function affects `setStr()` and `deserialize()` for G1/G2.
 
 ### C
-```
+```c
 void mclBn_verifyOrderG1(int doVerify);
 void mclBn_verifyOrderG2(int doVerify);
 ```
 
 ### C++
-```
+```cpp
 verifyOrderG1(bool doVerify);
 verifyOrderG2(bool doVerify);
 ```
@@ -205,14 +205,14 @@ verifyOrderG2(bool doVerify);
 ### Set DST for hash functions
 
 ### C
-```
+```c
 int mclBnG1_setDst(const char *dst, mclSize dstSize);
 int mclBnG2_setDst(const char *dst, mclSize dstSize);
 ```
 return 0 if success else -1
 
 ### C++
-```
+```cpp
 bool setDstG1(const char *dst, size_t dstSize);
 bool setDstG2(const char *dst, size_t dstSize);
 ```
@@ -227,7 +227,7 @@ return true if success else false
 
 ### Clear
 Set `x` is zero.
-```
+```cpp
 void mclBnFr_clear(mclBnFr *x);
 void mclBnFp_clear(mclBnFp *x);
 void mclBnFp2_clear(mclBnFp2 *x);
@@ -237,30 +237,30 @@ void mclBnGT_clear(mclBnGT *x);
 ```
 
 C++
-```
+```c
 T::clear();
 ```
 
 ### Set `x` to `y`.
-```
+```c
 void mclBnFp_setInt(mclBnFp *y, mclInt x);
 void mclBnFr_setInt(mclBnFr *y, mclInt x);
 void mclBnGT_setInt(mclBnGT *y, mclInt x);
 ```
 
 C++
-```
+```cpp
 T x = <integer literal>;
 ```
 
 ### Set `bufSize` bytes `buf` to `x` with masking according to the following way.
-```
+```c
 int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
 
 C++
-```
+```cpp
 T::setArrayMask(const uint8_t *buf, size_t n);
 ```
 
@@ -271,26 +271,26 @@ T::setArrayMask(const uint8_t *buf, size_t n);
 - always return 0
 
 ### Set `bufSize` bytes `buf` of mod `p` or `r` to `x`.
-```
+```c
 int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
 
 C++
-```
+```cpp
 T::setLittleEndianMod(const uint8_t *buf, mclSize bufSize);
 ```
 
 - return 0 if bufSize <= (sizeof(T) * 2) else -1
 
 ### Get little-endian byte sequence `buf` corresponding to `x`
-```
+```c
 mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
 mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
 ```
 
 C++
-```
+```cpp
 size_t T::getLittleEndian(uint8_t *buf, size_t maxBufSize) const
 ```
 
@@ -300,7 +300,7 @@ size_t T::getLittleEndian(uint8_t *buf, size_t maxBufSize) const
 
 ### Serialization
 ### Serialize
-```
+```c
 mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x);
 mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
 mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
@@ -310,7 +310,7 @@ mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x);
 ```
 
 C++
-```
+```cpp
 mclSize T::serialize(void *buf, mclSize maxBufSize) const;
 ```
 
@@ -326,7 +326,7 @@ mclSize T::serialize(void *buf, mclSize maxBufSize) const;
   - the size is equal to `mclBn_getG2ByteSize()`.
 
 A pseudo-code to serialize `P` of `G1` (resp. `G2`):
-```
+```python
 size = mclBn_getG1ByteSize() # resp. mclBn_getG2ByteSize()
 if P is zero:
   return [0] * size
@@ -342,14 +342,14 @@ else:
 ```
 
 ### Ethereum serialization mode for BLS12-381
-```
+```c
 void mclBn_setETHserialization(int ETHserialization);
 ```
 - Set `ETHserialization = 1` for Ethereum compatibility (default 0).
 - See [FAQ](api.md#faq).
 
 ### Deserialize
-```
+```c
 mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
 mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
 mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
@@ -359,7 +359,7 @@ mclSize mclBnFp2_deserialize(mclBnFp2 *x, const void *buf, mclSize bufSize);
 ```
 
 C++
-```
+```cpp
 mclSize T::deserialize(const void *buf, mclSize bufSize);
 ```
 
@@ -370,7 +370,7 @@ mclSize T::deserialize(const void *buf, mclSize bufSize);
 
 ## String conversion
 ### Get string
-```
+```c
 mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode);
 mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode);
 mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode);
@@ -379,7 +379,7 @@ mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMo
 ```
 
 C++
-```
+```cpp
 size_t T::getStr(char *buf, size_t maxBufSize, int iMode = 0) const
 ```
 
@@ -398,7 +398,7 @@ The meaning of the output of `G1`:
 - the element `<x>` of `G2` outputs `d[0] d[1]`.
 
 ### Set string
-```
+```c
 int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
 int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
 int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
@@ -407,7 +407,7 @@ int mclBnFp_setStr(mclBnFp *x, const char *buf, mclSize bufSize, int ioMode);
 ```
 
 C++
-```
+```cpp
 void T::setStr(bool *pb, const char *str, int iMode = 0)
 void T::setStr(const char *str, int iMode = 0)
 ```
@@ -426,7 +426,7 @@ void T::setStr(const char *str, int iMode = 0)
 
 If you want to use the same BLS12-381 generator as [zkcrypto](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-11.html#section-4.2.1) then,
 
-```cpp
+```c
 mclBnG1 P;
 const char *g1Str = "1 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb 0x08b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1";
 mclBnG1_setStr(&P, g1Str, strlen(g1Str), 16);
@@ -439,17 +439,17 @@ mclBnG2_setStr(&Q, g2Str, strlen(g2Str), 16);
 
 ## Set a random value
 Set `x` by a cryptographically secure pseudo-random number generator.
-```
+```c
 int mclBnFr_setByCSPRNG(mclBnFr *x);
 int mclBnFp_setByCSPRNG(mclBnFp *x);
 ```
 C++
-```
+```cpp
 void T::setByCSPRNG()
 ```
 
 ### Change random generator function
-```
+```c
 void mclBn_setRandFunc(
   void *self,
   unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize)
@@ -463,7 +463,7 @@ void mclBn_setRandFunc(
 
 ## Arithmetic operations
 ### neg / inv / sqr / add / sub / mul / div of `Fr`, `Fp`, `Fp2`, `GT`.
-```
+```c
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
 void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x);
@@ -497,7 +497,7 @@ void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 
 - NOTE: The following functions do NOT return a GT element because GT is a multiplicative group.
 
-```
+```c
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
 void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
@@ -505,12 +505,14 @@ void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 
 C++
 - `+`, `-`, `*`, `/`
-  - T::add(T& z, const T& x, const T& y);
-  - T::sub(T& z, const T& x, const T& y);
-  - T::mul(T& z, const T& x, const T& y);
-  - T::div(T& z, const T& x, const T& y);
-  - T::neg(T& y, const T& x);
-  - T::inv(T& y, const T& x);
+```cpp
+T::add(T& z, const T& x, const T& y);
+T::sub(T& z, const T& x, const T& y);
+T::mul(T& z, const T& x, const T& y);
+T::div(T& z, const T& x, const T& y);
+T::neg(T& y, const T& x);
+T::inv(T& y, const T& x);
+```
 
 ### pow of `Fr`, `Fp`
 - `pow(z, x, y)` means `z = x^y`.
@@ -534,7 +536,7 @@ int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
 int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
 ```
 C++
-```
+```cpp
 bool T::squareRoot(T& y, const T& x);
 ```
 
@@ -542,7 +544,7 @@ bool T::squareRoot(T& y, const T& x);
 - return 0 if success else -1
 
 ### add / sub / dbl / neg for `G1` and `G2`.
-```
+```c
 void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
@@ -560,26 +562,26 @@ C++
   - T::neg(T& y, const T& x);
 
 ### Convert a point from Jacobi coordinate to affine.
-```
+```c
 void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
 ```
 
 C++
-```
+```cpp
 T::normalize(T& y, const T& x)
 ```
 
 - convert `[x:y:z]` to `[x:y:1]` if `z != 0` else `[*:*:0]`
 
 ### scalar multiplication
-```
+```c
 void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
 void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
 void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 ```
 C++
-```
+```cpp
 T::mul(const T& z, const T& x, const Fr& y);
 ```
 
@@ -589,13 +591,13 @@ T::mul(const T& z, const T& x, const Fr& y);
 - use `mclBnGT_powGeneric` for an element in Fp12 - GT.
 
 ### multi-scalar multiplication
-```
+```c
 void mclBnG1_mulVec(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n);
 void mclBnG2_mulVec(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n);
 void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
 ```
 C++
-```
+```cpp
 T::mulVec(T& z, T* x, const Fr *y, size_t n);
 ```
 
@@ -604,11 +606,11 @@ T::mulVec(T& z, T* x, const Fr *y, size_t n);
 - `x[]` does not const because they may be normailzed (The value does not change).
 
 ### scalar multiplication of each point
-```
+```c
 void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
 ```
 C++
-```
+```cpp
 G1::mulEach(G1 *xVec, const Fr *yVec, size_t n);
 ```
 
@@ -617,12 +619,12 @@ G1::mulEach(G1 *xVec, const Fr *yVec, size_t n);
 
 ## hash-to-curve function
 ### Set hash of `buf[0..bufSize-1]` to `x`
-```
+```c
 int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
 int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
 ```
 C++
-```
+```cpp
 T::setHashOf(const void *msg, size_t msgSize);
 ```
 
@@ -632,13 +634,13 @@ T::setHashOf(const void *msg, size_t msgSize);
 - This is a function for backward compatibility only. DO'NT use it. Instead of this, use setLittleEndianMod to the hashed value.
 
 ### map `x` to G1 / G2.
-```
+```c
 int mclBnFp_mapToG1(mclBnG1 *y, const mclBnFp *x);
 int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x);
 ```
 
 C++
-```
+```cpp
 void mapToG1(G1& P, const Fp& x);
 void mapToG2(G2& P, const Fp2& x);
 ```
@@ -648,24 +650,24 @@ void mapToG2(G2& P, const Fp2& x);
 
 If you want to use the MapTo function defined in [Hashing to Elliptic Curves](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve), then use `mclBn_seMapToMode`.
 
-```
+```c
 mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
 ```
 And if you want to change DST (domain separation tag), then use `setDst` functions.
 
-```
+```c
 int mclBnG1_setDst(const char *dst, mclSize dstSize);
 int mclBnG2_setDst(const char *dst, mclSize dstSize);
 ```
 
 ### hash and map to G1 / G2.
-```
+```c
 int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
 int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
 ```
 
 C++
-```
+```cpp
 void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
 void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
 ```
@@ -681,38 +683,38 @@ The pairing function `e(P, Q)` is consist of two parts:
   - `e(P1, Q1) e(P2, Q2) = finalExp(MillerLoop(P1, Q1) MillerLoop(P2, Q2))`
 
 ### pairing
-```
+```c
 void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 ```
 C++
-```
+```cpp
 void pairing(GT& z, const G1& x, const G2& y);
 ```
 
 ### millerLoop
-```
+```c
 void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 ```
 C++
-```
+```cpp
 void millerLoop(GT& z, const G1& x, const G2& y);
 ```
 ### finalExp
-```
+```c
 void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
 ```
 C++
-```
+```cpp
 void finalExp(GT& y, const GT& x);
 ```
 
 ## Variants of MillerLoop
 ### multi pairing
-```
+```c
 void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
 ```
 C++
-```
+```cpp
 void millerLoopVec(GT& z, const G1 *x, const G2 *y, size_t n);
 ```
 - This function is for multi-pairing
@@ -720,20 +722,20 @@ void millerLoopVec(GT& z, const G1 *x, const G2 *y, size_t n);
   - prod_{i=0}^{n-1} e(x[i], y[i]) = finalExp(prod_{i=0}^{n-1} MillerLoop(x[i], y[i]))
 
 ### pairing for a fixed point of G2
-```
+```c
 int mclBn_getUint64NumToPrecompute(void);
 void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q);
 void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf);
 ```
 These functions is the same computation of `pairing(P, Q);` as the followings:
-```
+```c
 uint64_t *Qbuf = (uint64_t*)malloc(mclBn_getUint64NumToPrecompute() * sizeof(uint64_t));
 mclBn_precomputeG2(Qbuf, Q); // precomputing of Q
 mclBn_precomputedMillerLoop(f, P, Qbuf); // pairing of any P of G1 and the fixed Q
 free(p);
 ```
 
-```
+```c
 void mclBn_precomputedMillerLoop2(
   mclBnGT *f,
   const mclBnG1 *P1, const uint64_t *Q1buf,
@@ -743,7 +745,7 @@ void mclBn_precomputedMillerLoop2(
 - compute `MillerLoop(P1, Q1buf) * MillerLoop(P2, Q2buf)`
 
 
-```
+```c
 void mclBn_precomputedMillerLoop2mixed(
   mclBnGT *f,
   const mclBnG1 *P1, const mclBnG2 *Q1,
@@ -754,25 +756,25 @@ void mclBn_precomputedMillerLoop2mixed(
 
 ## Check value
 ### Check validness
-```
+```c
 int mclBnFr_isValid(const mclBnFr *x);
 int mclBnFp_isValid(const mclBnFp *x);
 int mclBnG1_isValid(const mclBnG1 *x);
 int mclBnG2_isValid(const mclBnG2 *x);
 ```
 C++
-```
+```cpp
 bool T::isValid() const;
 ```
 - return 1 if true else 0
 
 ### Check the order of a point
-```
+```c
 int mclBnG1_isValidOrder(const mclBnG1 *x);
 int mclBnG2_isValidOrder(const mclBnG2 *x);
 ```
 C++
-```
+```cpp
 bool T::isValidOrder() const;
 ```
 
@@ -781,7 +783,7 @@ bool T::isValidOrder() const;
 - This function always checks according to `mclBn_verifyOrderG1` and `mclBn_verifyOrderG2`.
 
 ### Is equal / zero / one / isOdd
-```
+```c
 int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y);
 int mclBnFr_isZero(const mclBnFr *x);
 int mclBnFr_isOne(const mclBnFr *x);
@@ -807,7 +809,7 @@ int mclBnGT_isZero(const mclBnGT *x);
 int mclBnGT_isOne(const mclBnGT *x);
 ```
 C++
-```
+```cpp
 bool T::operator==(const T& rhs) const;
 bool T::isZero() const;
 bool T::isOne() const;
@@ -816,7 +818,7 @@ bool T::isOne() const;
 - return 1 (true) if true else 0 (false)
 
 ### isNegative
-```
+```c
 int mclBnFr_isNegative(const mclBnFr *x);
 int mclBnFp_isNegative(const mclBnFr *x);
 ```
@@ -824,7 +826,7 @@ return 1 if x >= half where half = (r + 1) / 2 (resp. (p + 1) / 2).
 
 ## Lagrange interpolation
 
-```
+```c
 int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k);
 int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k);
 int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k);
@@ -834,7 +836,7 @@ int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBn
 - return 0 if success else -1
   - satisfy that xVec[i] != 0, xVec[i] != xVec[j] for i != j
 
-```
+```c
 int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x);
 int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x);
 int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x);
@@ -854,20 +856,20 @@ mcl supports various mode of hash-to-curve function, serialize/deserialize and g
 for historical reasons and backwards compatibility.
 
 If using BLS12-381 and Ethereum compatibility mode, set
-```
+```cpp
 // C++
 Fp::setETHserialization(true);
 Fr::setETHserialization(true);
 bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
 ```
 or
-```
+```c
 // C
 mclBn_setETHserialization(1);
 mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
 ```
 and use
-```
+```cpp
 // C++
 void Fp::setBigEndianMod(const uint8_t *x, size_t bufSize);
 size_t T::serialize(void *buf, size_t maxBufSize) const
