@@ -466,6 +466,9 @@ void mclBn_setRandFunc(
 ```c
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
+// x[i] = 1/x[i] if x[i] != 0 else 0
+// faster than normalizing each one individually
+void mclBnFr_invVec(mclBnFr *x, mclSize n);
 void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x);
 void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
@@ -474,6 +477,7 @@ void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 
 void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
 void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
+void mclBnFp_invVec(mclBnFp *x, mclSize n);
 void mclBnFp_sqr(mclBnFp *y, const mclBnFp *x);
 void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
@@ -512,6 +516,8 @@ T::mul(T& z, const T& x, const T& y);
 T::div(T& z, const T& x, const T& y);
 T::neg(T& y, const T& x);
 T::inv(T& y, const T& x);
+// y[i] = 1/x[i] if x[i] != 0 else 0
+mcl::invVec(T y[], const T x[], size_t n);
 ```
 
 ### pow of `Fr`, `Fp`
@@ -561,15 +567,21 @@ C++
   - T::sub(T& z, const T& x, const T& y);
   - T::neg(T& y, const T& x);
 
-### Convert a point from Jacobi coordinate to affine.
+### Convert a point from Jacobi/Projective coordinate to affine.
 ```c
 void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
+
+// normalize x[i] for i = 0, 1, ..., n-1
+// faster than normalizing each one individually
+void mclBnG1_normalizeVec(mclBnG1 *x, mclSize n);
+void mclBnG2_normalizeVec(mclBnG2 *x, mclSize n);
 ```
 
 C++
 ```cpp
-T::normalize(T& y, const T& x)
+T::normalize(T& y, const T& x);
+T::normalizeVec(T& y[n], const T& x[n], size_t n);
 ```
 
 - convert `[x:y:z]` to `[x:y:1]` if `z != 0` else `[*:*:0]`
