@@ -67,6 +67,27 @@ void invAdd(T& out, const T& x, const T& y)
 	out += y;
 }
 
+template<class F>
+void invVecBench(const char *msg)
+{
+	const size_t n = 1000;
+	F x[n];
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < n; i++) {
+		x[i].setByCSPRNG(rg);
+	}
+	const size_t zeroTbl[] = { 10, 20, 30, 40 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zeroTbl); i++) {
+		x[zeroTbl[i]].clear();
+	}
+	const size_t oneTbl[] = { 100, 200, 300 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(oneTbl); i++) {
+		x[oneTbl[i]] = 1;
+	}
+	const int C = 10;
+	CYBOZU_BENCH_C(msg, C, mcl::invVec, x, x, n);
+}
+
 void testBench(const G1& P, const G2& Q)
 {
 #ifndef NDEBUG
@@ -130,6 +151,8 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, invAdd, x, x, y);
 	CYBOZU_BENCH_C("Fp::pow       ", C3, Fp::pow, x, x, y);
+	invVecBench<Fp>("Fp:invVec");
+	invVecBench<Fr>("Fr:invVec");
 	{
 		Fr a, b, c;
 		a.setHashOf("abc", 3);

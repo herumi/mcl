@@ -413,6 +413,80 @@ CYBOZU_TEST_AUTO(GT_inv)
 	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&e4));
 }
 
+CYBOZU_TEST_AUTO(Fp_invVec)
+{
+	const size_t n = 1024;
+	mclBnFr x[n], y[n];
+	mclBnFr_setInt(&x[0], 1234567);
+	for (size_t i = 1; i < n; i++) {
+		mclBnFr_sqr(&x[i], &x[i-1]);
+	}
+	const size_t zeroTbl[] = { 10, 20, 30, 40 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zeroTbl); i++) {
+		mclBnFr_clear(&x[zeroTbl[i]]);
+	}
+	const size_t oneTbl[] = { 100, 200, 300 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(oneTbl); i++) {
+		mclBnFr_setInt(&x[oneTbl[i]], 1);
+	}
+	for (size_t i = 0; i < n; i++) {
+		y[i] = x[i];
+	}
+	size_t doneN = mclBnFr_invVec(x, n);
+	size_t c = 0;
+	for (size_t i = 0; i < n; i++) {
+		if (mclBnFr_isZero(&y[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isZero(&x[i]));
+			c++;
+		} else if (mclBnFr_isOne(&y[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&x[i]));
+			c++;
+		} else {
+			mclBnFr t;
+			mclBnFr_mul(&t, &x[i], &y[i]);
+			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&t));
+		}
+	}
+	CYBOZU_TEST_EQUAL(doneN, n-c);
+}
+
+CYBOZU_TEST_AUTO(Fr_invVec)
+{
+	const size_t n = 1024;
+	mclBnFr x[n], y[n];
+	mclBnFr_setInt(&x[0], 1234567);
+	for (size_t i = 1; i < n; i++) {
+		mclBnFr_sqr(&x[i], &x[i-1]);
+	}
+	const size_t zeroTbl[] = { 10, 20, 30, 40 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(zeroTbl); i++) {
+		mclBnFr_clear(&x[zeroTbl[i]]);
+	}
+	const size_t oneTbl[] = { 100, 200, 300 };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(oneTbl); i++) {
+		mclBnFr_setInt(&x[oneTbl[i]], 1);
+	}
+	for (size_t i = 0; i < n; i++) {
+		y[i] = x[i];
+	}
+	size_t doneN = mclBnFr_invVec(x, n);
+	size_t c = 0;
+	for (size_t i = 0; i < n; i++) {
+		if (mclBnFr_isZero(&y[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isZero(&x[i]));
+			c++;
+		} else if (mclBnFr_isOne(&y[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&x[i]));
+			c++;
+		} else {
+			mclBnFr t;
+			mclBnFr_mul(&t, &x[i], &y[i]);
+			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&t));
+		}
+	}
+	CYBOZU_TEST_EQUAL(doneN, n-c);
+}
+
 CYBOZU_TEST_AUTO(Fr_isNegative)
 {
 	mclBnFr a, half, one;
