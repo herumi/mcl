@@ -926,3 +926,13 @@ int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySi
 {
 	return F_powArray(*cast(z), *cast(x), y, ySize);
 }
+
+mclSize mclBnFr_invVec(mclBnFr *x, mclSize n)
+{
+	return mcl::invVec(cast(x), cast(x), n);
+}
+
+mclSize mclBnFp_invVec(mclBnFp *x, mclSize n)
+{
+	return mcl::invVec(cast(x), cast(x), n);
+}

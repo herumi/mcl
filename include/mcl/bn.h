@@ -496,6 +496,15 @@ MCLBN_DLL_API void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y
 // x[i] *= y[i]
 MCLBN_DLL_API void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
 
+// x[i] = 1/x[i] for x[i] != 0 else 0
+// return # of x[i] not in {0, 1}
+MCLBN_DLL_API mclSize mclBnFr_invVec(mclBnFr *x, mclSize n);
+MCLBN_DLL_API mclSize mclBnFp_invVec(mclBnFp *x, mclSize n);
+// x[i] = normalize(x[i])
+// normalized x[i].z = 1 or 0
+MCLBN_DLL_API void mclBnG1_normalizeVec(mclBnG1 *x, mclSize n);
+MCLBN_DLL_API void mclBnG2_normalizeVec(mclBnG1 *x, mclSize n);
+
 MCLBN_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 MCLBN_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
 MCLBN_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
