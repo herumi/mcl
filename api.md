@@ -512,8 +512,23 @@ C++
   - T::neg(T& y, const T& x);
   - T::inv(T& y, const T& x);
 
-### Square root of `x`.
+### pow of `Fr`, `Fp`
+- `pow(z, x, y)` means `z = x^y`.
+- `powArray(z, x, y, ySize)` means z = x^y where y is a little endian `ySize`-byte sequence.
+
+```c
+// z = x^y
+void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+
+// return 0 if ySize <= mclBn_getFrByteSize() else -1
+int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize);
+// return 0 if ySize <= mclBn_getFpByteSize() else -1
+int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize);
 ```
+
+### Square root of `x`.
+```c
 int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
 int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
 int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
