@@ -453,17 +453,14 @@ CYBOZU_TEST_AUTO(Fp_invVec)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(oneTbl); i++) {
 		mclBnFr_setInt(&x[oneTbl[i]], 1);
 	}
-	for (size_t i = 0; i < n; i++) {
-		y[i] = x[i];
-	}
-	size_t doneN = mclBnFr_invVec(x, n);
+	size_t doneN = mclBnFr_invVec(y, x, n);
 	size_t c = 0;
 	for (size_t i = 0; i < n; i++) {
-		if (mclBnFr_isZero(&y[i])) {
-			CYBOZU_TEST_ASSERT(mclBnFr_isZero(&x[i]));
+		if (mclBnFr_isZero(&x[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isZero(&y[i]));
 			c++;
-		} else if (mclBnFr_isOne(&y[i])) {
-			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&x[i]));
+		} else if (mclBnFr_isOne(&x[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&y[i]));
 			c++;
 		} else {
 			mclBnFr t;
@@ -490,17 +487,14 @@ CYBOZU_TEST_AUTO(Fr_invVec)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(oneTbl); i++) {
 		mclBnFr_setInt(&x[oneTbl[i]], 1);
 	}
-	for (size_t i = 0; i < n; i++) {
-		y[i] = x[i];
-	}
-	size_t doneN = mclBnFr_invVec(x, n);
+	size_t doneN = mclBnFr_invVec(y, x, n);
 	size_t c = 0;
 	for (size_t i = 0; i < n; i++) {
-		if (mclBnFr_isZero(&y[i])) {
-			CYBOZU_TEST_ASSERT(mclBnFr_isZero(&x[i]));
+		if (mclBnFr_isZero(&x[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isZero(&y[i]));
 			c++;
-		} else if (mclBnFr_isOne(&y[i])) {
-			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&x[i]));
+		} else if (mclBnFr_isOne(&x[i])) {
+			CYBOZU_TEST_ASSERT(mclBnFr_isOne(&y[i]));
 			c++;
 		} else {
 			mclBnFr t;

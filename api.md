@@ -466,9 +466,9 @@ void mclBn_setRandFunc(
 ```c
 void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
 void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
-// x[i] = 1/x[i] if x[i] != 0 else 0
+// y[i] = 1/x[i] if x[i] != 0 else 0
 // faster than normalizing each one individually
-void mclBnFr_invVec(mclBnFr *x, mclSize n);
+void mclBnFr_invVec(mclBnFr *y, const mclBnFr *x, mclSize n);
 void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x);
 void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
@@ -477,7 +477,7 @@ void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 
 void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
 void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
-void mclBnFp_invVec(mclBnFp *x, mclSize n);
+void mclBnFp_invVec(mclBnFp *y, const mclBnFp *x, mclSize n);
 void mclBnFp_sqr(mclBnFp *y, const mclBnFp *x);
 void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);

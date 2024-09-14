@@ -496,10 +496,10 @@ MCLBN_DLL_API void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y
 // x[i] *= y[i]
 MCLBN_DLL_API void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
 
-// x[i] = 1/x[i] for x[i] != 0 else 0
+// y[i] = 1/x[i] for x[i] != 0 else 0
 // return # of x[i] not in {0, 1}
-MCLBN_DLL_API mclSize mclBnFr_invVec(mclBnFr *x, mclSize n);
-MCLBN_DLL_API mclSize mclBnFp_invVec(mclBnFp *x, mclSize n);
+MCLBN_DLL_API mclSize mclBnFr_invVec(mclBnFr *y, const mclBnFr *x, mclSize n);
+MCLBN_DLL_API mclSize mclBnFp_invVec(mclBnFp *y, const mclBnFp *x, mclSize n);
 
 // y[i] = normalize(x[i]) : [X:Y:Z] -> [x:y:1] or 0 where (x, y) is Affine coordinate
 MCLBN_DLL_API void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n);
