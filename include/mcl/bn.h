@@ -501,9 +501,9 @@ MCLBN_DLL_API void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
 MCLBN_DLL_API mclSize mclBnFr_invVec(mclBnFr *x, mclSize n);
 MCLBN_DLL_API mclSize mclBnFp_invVec(mclBnFp *x, mclSize n);
 
-// x[i] = normalize(x[i]) : [X:Y:Z] -> [x:y:1] or 0 where (x, y) is Affine coordinate
-MCLBN_DLL_API void mclBnG1_normalizeVec(mclBnG1 *x, mclSize n);
-MCLBN_DLL_API void mclBnG2_normalizeVec(mclBnG2 *x, mclSize n);
+// y[i] = normalize(x[i]) : [X:Y:Z] -> [x:y:1] or 0 where (x, y) is Affine coordinate
+MCLBN_DLL_API void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n);
+MCLBN_DLL_API void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n);
 
 MCLBN_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 MCLBN_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);

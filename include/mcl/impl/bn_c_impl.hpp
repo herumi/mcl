@@ -937,12 +937,12 @@ mclSize mclBnFp_invVec(mclBnFp *x, mclSize n)
 	return mcl::invVec(cast(x), cast(x), n);
 }
 
-void mclBnG1_normalizeVec(mclBnG1 *x, mclSize n)
+void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n)
 {
-	mcl::ec::normalizeVec(cast(x), cast(x), n);
+	mcl::ec::normalizeVec(cast(y), cast(x), n);
 }
 
-void mclBnG2_normalizeVec(mclBnG2 *x, mclSize n)
+void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n)
 {
-	mcl::ec::normalizeVec(cast(x), cast(x), n);
+	mcl::ec::normalizeVec(cast(y), cast(x), n);
 }

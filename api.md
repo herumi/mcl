@@ -572,10 +572,10 @@ C++
 void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
 
-// normalize x[i] for i = 0, 1, ..., n-1
+// y[i] = normalize(x[i]) for i = 0, 1, ..., n-1
 // faster than normalizing each one individually
-void mclBnG1_normalizeVec(mclBnG1 *x, mclSize n);
-void mclBnG2_normalizeVec(mclBnG2 *x, mclSize n);
+void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n);
+void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n);
 ```
 
 C++
