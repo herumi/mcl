@@ -1022,6 +1022,36 @@ void getMontgomeryCoeffTest()
 	CYBOZU_TEST_EQUAL(t[0], 0u);
 }
 
+void getBinWidthTest1(const mpz_class& x, size_t w)
+{
+	uint8_t bin[512];
+	size_t len = mcl::fp::getBinWidth(bin, sizeof(bin), mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x), w);
+	CYBOZU_TEST_ASSERT(len > 0);
+	mpz_class y = 0;
+	for (size_t i = 0; i < len; i++) {
+		y <<= 1;
+		uint8_t b = bin[len-1-i];
+		CYBOZU_TEST_ASSERT(b < (1<<w));
+		CYBOZU_TEST_ASSERT(b == 0 || (b & 1) == 1);
+		y += b;
+	}
+	CYBOZU_TEST_EQUAL(x, y);
+}
+
+CYBOZU_TEST_AUTO(getBinWidth)
+{
+	for (int i = 0; i < 100; i++) {
+		getBinWidthTest1(mpz_class(i), 4);
+	}
+	cybozu::XorShift rg;
+	mpz_class x;
+	for (int i = 0; i < 100; i++) {
+		mcl::gmp::getRand(x, 255, rg);
+		size_t w = (rg.get32() & 3) + 3;
+		getBinWidthTest1(x, w);
+	}
+}
+
 void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));

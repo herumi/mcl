@@ -883,3 +883,66 @@ int mclBnG1_getBasePoint(mclBnG1 *x)
 	return 0;
 }
 
+template<class F>
+static void F_pow(F& z, const F& x, const F& y)
+{
+	mcl::fp::Block b;
+	y.getBlock(b);
+	mcl::fp::powUnit(z, x, b.p, b.n);
+}
+
+void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
+{
+	F_pow(*cast(z), *cast(x), *cast(y));
+}
+
+void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
+{
+	F_pow(*cast(z), *cast(x), *cast(y));
+}
+
+template<class F>
+static int F_powArray(F& z, const F& x, const uint8_t *_y, mclSize ySize)
+{
+	if (ySize == 0) {
+		z = 1;
+		return 0;
+	}
+	const size_t maxSize = F::getByteSize();
+	if (ySize > maxSize) return -1;
+	const size_t yN = mcl::roundUp(maxSize, sizeof(mcl::Unit));
+	mcl::Unit *y = (mcl::Unit*)CYBOZU_ALLOCA(sizeof(mcl::Unit) * yN);
+	if (!mcl::fp::convertArrayAsLE(y, yN, _y, ySize)) return -1;
+	mcl::fp::powUnit(z, x, y, yN);
+	return 0;
+}
+
+int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize)
+{
+	return F_powArray(*cast(z), *cast(x), y, ySize);
+}
+
+int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize)
+{
+	return F_powArray(*cast(z), *cast(x), y, ySize);
+}
+
+mclSize mclBnFr_invVec(mclBnFr *y, const mclBnFr *x, mclSize n)
+{
+	return mcl::invVec(cast(y), cast(x), n);
+}
+
+mclSize mclBnFp_invVec(mclBnFp *y, const mclBnFp *x, mclSize n)
+{
+	return mcl::invVec(cast(y), cast(x), n);
+}
+
+void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n)
+{
+	mcl::ec::normalizeVec(cast(y), cast(x), n);
+}
+
+void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n)
+{
+	mcl::ec::normalizeVec(cast(y), cast(x), n);
+}

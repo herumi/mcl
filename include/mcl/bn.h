@@ -378,6 +378,14 @@ MCLBN_DLL_API int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
 MCLBN_DLL_API int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
 MCLBN_DLL_API int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
 
+// z = x^y[0:ySize] : y[] is little endian
+MCLBN_DLL_API void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCLBN_DLL_API void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+
+// return 0 if ySize <= mclBn_getFrByteSize() else -1
+MCLBN_DLL_API int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize);
+// return 0 if ySize <= mclBn_getFpByteSize() else -1
+MCLBN_DLL_API int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize);
 ////////////////////////////////////////////////
 // set zero
 MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
@@ -487,6 +495,15 @@ MCLBN_DLL_API void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y
 
 // x[i] *= y[i]
 MCLBN_DLL_API void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
+
+// y[i] = 1/x[i] for x[i] != 0 else 0
+// return # of x[i] not in {0, 1}
+MCLBN_DLL_API mclSize mclBnFr_invVec(mclBnFr *y, const mclBnFr *x, mclSize n);
+MCLBN_DLL_API mclSize mclBnFp_invVec(mclBnFp *y, const mclBnFp *x, mclSize n);
+
+// y[i] = normalize(x[i]) : [X:Y:Z] -> [x:y:1] or 0 where (x, y) is Affine coordinate
+MCLBN_DLL_API void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n);
+MCLBN_DLL_API void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n);
 
 MCLBN_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 MCLBN_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);

@@ -48,7 +48,6 @@ class Montgomery:
       t += q * self.p
       t >>= W
     if t >= self.p:
-      print(f'over {x=} {y=} {t=} {self.p-x=} {self.p-y=}')
       t -= self.p
     return t
   def toMont(self, x):

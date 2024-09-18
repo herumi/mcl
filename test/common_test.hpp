@@ -247,9 +247,27 @@ void testMulSmall()
 	}
 }
 
+void testPow()
+{
+	puts("testPow");
+	cybozu::XorShift rg;
+	Fp x, z1, z2;
+	x.setByCSPRNG(rg);
+	z1 = 1;
+	mpz_class my;
+	for (mcl::Unit y = 0; y < 100; y++) {
+//		Fp::pow(z2, x, y);
+//		CYBOZU_TEST_EQUAL(z1, z2);
+		mcl::fp::powUnit(z2, x, &y, 1);
+		CYBOZU_TEST_EQUAL(z1, z2);
+		z1 *= x;
+	}
+}
+
 void testCommon(const G1& P, const G2& Q)
 {
 	testMulSmall();
+	testPow();
 	testFp2Dbl_mul_xi1();
 	testABCD();
 	testMul2();
