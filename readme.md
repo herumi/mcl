@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- Add batch inversion for Fr and Fp elements, and batch normalization for G1 and G2 points.
 - mulVec is a little improved.
 - mulEach with AVX-512 IFMA is improved slightly and 2.8 times faster than G1::mul on BLS12-381.
 - mulVec (multi scalar multiplication) with AVX-512 IFMA is 1.4 times faster on Xeon w9-3495X
@@ -32,11 +33,6 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - set default `MCL_MAX_BIT_SIZE=512` so disable to support `NICT_P521`.
 - improve performance
 - support M1 mac
-- dst for mapToG1 has changed to `BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_POP_`.
-- `mclBn_eth*` functions are removed.
-- `mcl::bn::mapToG1(G1& out, const Fp& v)` supports `BLS12_MAP_FP_TO_G1` in [EIP 2537](https://eips.ethereum.org/EIPS/eip-2537).
-- `mcl::bn::hashAndMapToG1(G1& out, const void *msg, size_t msgSize)` supports ([hash-to-curve-09 BLS12381G1_XMD:SHA-256_SSWU_RO_](https://www.ietf.org/id/draft-irtf-cfrg-hash-to-curve-09.html#name-bls12381g1_xmdsha-256_sswu_))
-- `MCL_MAP_TO_MODE_HASH_TO_CURVE_07` is added for [hash-to-curve-draft-07](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/07/).
 
 # Support architecture
 
