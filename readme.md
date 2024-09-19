@@ -165,7 +165,7 @@ make lib/libmcl.a MCL_STATIC_CODE=1 -j
 # test of pairing
 make test_static
 ```
-The generated library supports only *BLS12_381*.
+The generated library supports only *BLS12_381* and requires compiler options `-DMCL_MAX_BIT_SIZE=384 -DMCL_STATIC_CODE`.
 
 ## How to profile on Linux
 
