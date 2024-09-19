@@ -157,6 +157,16 @@ make bin/bn_c384_256_test.exe && bin/bn_c384_256_test.exe
 make bin/bls12_test.exe && bin/bls12_test.exe
 ```
 
+### How to make a library for BLS12-381 without Xbyak
+On x64 environment, mcl uses JIT code, but if you want to avoid them,
+
+```
+make lib/libmcl.a MCL_STATIC_CODE=1 -j
+# test of pairing
+make test_static
+```
+The generated library supports only *BLS12_381*.
+
 ## How to profile on Linux
 
 ### Use perf

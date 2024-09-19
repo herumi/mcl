@@ -457,6 +457,12 @@ bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
 	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
+# clear before testing
+test_static:
+	$(MAKE) lib/libmcl.a MCL_STATIC_CODE=1 -j
+	$(CXX) -O2 -DNDEBUG -g -o bin/pairing_static.exe sample/pairing.cpp -I ./include lib/libmcl.a -DMCL_MAX_BIT_SIZE=384 -DMCL_STATIC_CODE
+	bin/pairing_static.exe
+
 $(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -DMCL_MSM_TEST
 MSM_TEST_OBJ=$(OBJ_DIR)/$(MSM)_test.o $(filter-out $(OBJ_DIR)/msm_avx.o,$(LIB_OBJ))

@@ -43,13 +43,14 @@ void precomputed(const G1& P, const G2& Q)
 }
 
 int main(int argc, char *[])
+	try
 {
 	if (argc == 1) {
-		initPairing(mcl::BLS12_381);
 		puts("BLS12_381");
+		initPairing(mcl::BLS12_381);
 	} else {
-		initPairing(mcl::BN254);//, mcl::fp::FP_GMP);
 		puts("BN254");
+		initPairing(mcl::BN254);//, mcl::fp::FP_GMP);
 	}
 	G1 P;
 	G2 Q;
@@ -61,5 +62,7 @@ int main(int argc, char *[])
 	minimum_sample(P, Q);
 	miller_and_finel_exp(P, Q);
 	precomputed(P, Q);
+} catch (std::exception& e) {
+	printf("ERR %s\n", e.what());
+	return 1;
 }
-
