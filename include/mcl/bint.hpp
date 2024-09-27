@@ -143,15 +143,15 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 // z[N] = x[N] + y[N] and return CF(0 or 1)
 template<size_t N>Unit addT(Unit *z, const Unit *x, const Unit *y);
 // z[N] = x[N] - y[N] and return CF(0 or 1)
-template<size_t N>Unit subT(Unit *z, const Unit *x, const Unit *y);
+template<size_t N, typename T>Unit subT(Unit *z, const T *x, const Unit *y);
 // z[N] = x[N] + y[N]. assume x, y are Not Full bit
 template<size_t N>void addNFT(Unit *z, const Unit *x, const Unit *y);
 // z[N] = x[N] - y[N] and return CF(0 or 1). assume x, y are Not Full bit
 template<size_t N>Unit subNFT(Unit *z, const Unit *x, const Unit *y);
 // [ret:z[N]] = x[N] * y
-template<size_t N>Unit mulUnitT(Unit *z, const Unit *x, Unit y);
+template<size_t N, typename T>Unit mulUnitT(T *z, const Unit *x, Unit y);
 // [ret:z[N]] = z[N] + x[N] * y
-template<size_t N>Unit mulUnitAddT(Unit *z, const Unit *x, Unit y);
+template<size_t N, typename T>Unit mulUnitAddT(T *z, const Unit *x, Unit y);
 // z[2N] = x[N] * y[N]
 template<size_t N>void mulT(Unit *pz, const Unit *px, const Unit *py);
 // y[2N] = x[N] * x[N]
@@ -173,17 +173,17 @@ MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t 
 // explicit specialization of template functions and external asm functions
 #include "bint_proto.hpp"
 
-template<size_t N, typename T>
-void copyT(T *y, const T *x)
+template<size_t N, typename T, typename U>
+void copyT(T *y, const U *x)
 {
-	for (size_t i = 0; i < N; i++) y[i] = x[i];
+	for (size_t i = 0; i < N; i++) y[i] = T(x[i]);
 }
 
 // y[n] = x[n]
-template<typename T>
-void copyN(T *y, const T *x, size_t n)
+template<typename T, typename U>
+void copyN(T *y, const U *x, size_t n)
 {
-	for (size_t i = 0; i < n; i++) y[i] = x[i];
+	for (size_t i = 0; i < n; i++) y[i] = T(x[i]);
 }
 
 template<size_t N, typename T>
