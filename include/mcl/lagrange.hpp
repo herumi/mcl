@@ -39,6 +39,37 @@ void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 	/*
 		f(0) = sum_i f(S[i]) delta_{i,S}(0)
 	*/
+#if 1
+	// reduce # of inv
+	// d[i] = S[i] prod_{j!=i}(S[j] - S[i])
+	F *d = (F*)CYBOZU_ALLOCA(sizeof(F) * k);
+	for (size_t i = 0; i < k; i++) {
+		d[i] = S[i];
+	}
+	for (size_t i = 0; i < k; i++) {
+		for (size_t j = 0; j < k; j++) {
+			if (j != i) {
+				F v;
+				F::sub(v, S[j], S[i]);
+				if (v.isZero()) {
+					*pb = false;
+					return;
+				}
+				d[i] *= v;
+			}
+		}
+	}
+	mcl::invVec(d, d, k);
+	G r;
+	d[0] *= a;
+	G::mul(r, vec[0], d[0]);
+	for (size_t i = 1; i < k; i++) {
+		d[i] *= a;
+		G t;
+		G::mul(t, vec[i], d[i]);
+		r += t;
+	}
+#else
 	G r;
 	r.clear();
 	for (size_t i = 0; i < k; i++) {
@@ -57,6 +88,7 @@ void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
 		G::mul(t, vec[i], a / b);
 		r += t;
 	}
+#endif
 	out = r;
 	*pb = true;
 }

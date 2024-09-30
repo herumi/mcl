@@ -126,11 +126,11 @@ static void fpDblSubModT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 }
 
 // [return:z[N+1]] = z[N+1] + x[N] * y + (CF << (N * UnitBitSize))
-template<size_t N>
-Unit mulUnitAddFullWithCF(Unit z[N + 1], const Unit x[N], Unit y, Unit CF)
+template<size_t N, typename T>
+Unit mulUnitAddFullWithCF(T z[N + 1], const Unit x[N], Unit y, Unit CF)
 {
 	Unit H = bint::mulUnitAddT<N>(z, x, y);
-	Unit v = z[N];
+	T v = z[N];
 	v += H;
 	Unit CF2 = v < H;
 	v += CF;
@@ -147,7 +147,11 @@ template<size_t N>
 static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 {
 	const Unit rp = p[-1];
+#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+	uint64_t buf[N * 2];
+#else
 	Unit buf[N * 2];
+#endif
 	bint::copyT<N * 2>(buf, xy);
 	Unit CF = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -243,7 +247,12 @@ static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 		t >> 64 <= (F - 2)(R - 1)/R = (F - 2) - (F - 2)/R
 			t + (t >> 64) = (F - 2)R - (F - 2)/R < FR
 	*/
+#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+	// use uint64_t if Unit = uint32_t to reduce conversion
+	uint64_t buf[N * 2];
+#else
 	Unit buf[N * 2];
+#endif
 	buf[N] = bint::mulUnitT<N>(buf, x, y[0]);
 	Unit q = buf[0] * rp;
 	buf[N] += bint::mulUnitAddT<N>(buf, p, q);

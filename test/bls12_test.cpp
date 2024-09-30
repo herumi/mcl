@@ -401,6 +401,7 @@ CYBOZU_TEST_AUTO(naive)
 		clk.put();
 		return;
 #endif
+		testLagrange();
 		testMulVec();
 		testSerialize(P, Q);
 		testParam(ts);

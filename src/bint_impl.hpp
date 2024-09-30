@@ -104,8 +104,8 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 #endif
 }
 
-template<size_t N>
-Unit subT(Unit *z, const Unit *x, const Unit *y)
+template<size_t N, typename T>
+Unit subT(Unit *z, const T *x, const Unit *y)
 {
 #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
 	// wasm32 supports 64-bit sub
@@ -164,30 +164,19 @@ Unit subNFT(Unit *z, const Unit *x, const Unit *y)
 }
 
 
-template<size_t N>
-Unit mulUnitT(Unit *z, const Unit *x, Unit y)
+template<size_t N, typename T>
+Unit mulUnitT(T *z, const Unit *x, Unit y)
 {
 #if MCL_SIZEOF_UNIT == 4
-#if 1
-	uint64_t H = 0;
+// use T as uint64_t to reduce conversion
 	uint64_t y_ = y;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * y_;
-		v += H;
+	uint64_t v = x[0] * y_;
+	z[0] = uint32_t(v);
+	for (size_t i = 1; i < N; i++) {
+		v = x[i] * y_ + (v >> 32);
 		z[i] = uint32_t(v);
-		H = v >> 32;
 	}
-	return uint32_t(H);
-#else
-	uint64_t H = 0;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * uint64_t(y);
-		v += H;
-		z[i] = uint32_t(v);
-		H = v >> 32;
-	}
-	return uint32_t(H);
-#endif
+	return uint32_t(v >> 32);
 #elif defined(MCL_DEFINED_UINT128_T)
 	uint64_t H = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -211,21 +200,18 @@ Unit mulUnitT(Unit *z, const Unit *x, Unit y)
 #endif
 }
 
-template<size_t N>
-Unit mulUnitAddT(Unit *z, const Unit *x, Unit y)
+template<size_t N, typename T>
+Unit mulUnitAddT(T *z, const Unit *x, Unit y)
 {
 #if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
-	// reduce cast operation
-	uint64_t H = 0;
 	uint64_t y_ = y;
-	for (size_t i = 0; i < N; i++) {
-		uint64_t v = x[i] * y_;
-		v += H;
-		v += z[i];
+	uint64_t v = z[0] + x[0] * y_;
+	z[0] = uint32_t(v);
+	for (size_t i = 1; i < N; i++) {
+		v = z[i] + x[i] * y_ + (v >> 32);
 		z[i] = uint32_t(v);
-		H = v >> 32;
 	}
-	return H;
+	return uint32_t(v >> 32);
 #else
 	Unit xy[N], ret;
 	ret = mulUnitT<N>(xy, x, y);
