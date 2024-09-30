@@ -86,7 +86,7 @@ size_t invVecWork(Tout& y, Tin& x, size_t n, T *t)
 	x[i] returns i-th const T&
 */
 template<class T, class Tout, class Tin>
-size_t invVecT(Tout& y, Tin& x, size_t n, size_t N = 256)
+size_t invVecT(Tout& y, Tin& x, size_t n, size_t N = 1024)
 {
 	T *t = (T*)CYBOZU_ALLOCA(sizeof(T) * N);
 	size_t retNum = 0;

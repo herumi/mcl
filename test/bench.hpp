@@ -285,4 +285,28 @@ void testLagrange()
 			}
 		}
 	}
+	{
+		const int n = 50;
+		cybozu::XorShift rg;
+		const int k = 40;
+		Fr c[k];
+		Fr x[n], y[n];
+		for (size_t i = 0; i < k; i++) {
+			c[i].setByCSPRNG(rg);
+		}
+		for (size_t i = 0; i < n; i++) {
+			x[i].setByCSPRNG(rg);
+			mcl::evaluatePolynomial(y[i], c, k, x[i]);
+		}
+		Fr s;
+		bool b;
+		mcl::LagrangeInterpolation(&b, s, x, y, k);
+		CYBOZU_TEST_ASSERT(b);
+		CYBOZU_TEST_EQUAL(s, c[0]);
+#ifndef NDEBUG
+	puts("lagrange bench skip in debug");
+	return;
+#endif
+		CYBOZU_BENCH_C("LagrangeInterpolation", 100, mcl::LagrangeInterpolation, &b, s, x, y, k);
+	}
 }
