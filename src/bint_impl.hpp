@@ -46,23 +46,11 @@ struct UnrollMulLowT<1, 1> {
 } // impl
 
 #if MCL_BINT_ASM != 1
-#ifdef MCL_WASM32
-inline uint64_t load8byte(const uint32_t *x)
-{
-	return x[0] | (uint64_t(x[1]) << 32);
-}
-inline void store8byte(uint32_t *x, uint64_t v)
-{
-	x[0] = uint32_t(v);
-	x[1] = uint32_t(v >> 32);
-}
-#endif
 template<size_t N>
 Unit addT(Unit *z, const Unit *x, const Unit *y)
 {
-#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+#ifdef MCL_WASM32
 	// wasm32 supports 64-bit add
-#if 1
 	uint64_t c = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint64_t v = uint64_t(x[i]) + y[i] + c;
@@ -70,26 +58,6 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 		c = v >> 32;
 	}
 	return uint32_t(c);
-#else
-	uint32_t c = 0;
-	for (size_t i = 0; i < N - 1; i += 2) {
-		uint64_t xc = load8byte(x + i) + c;
-		c = xc < c;
-		uint64_t yi = load8byte(y + i);
-		xc += yi;
-		c += xc < yi;
-		store8byte(z + i, xc);
-	}
-	if (N & 1) {
-		uint32_t xc = x[N - 1] + c;
-		c = xc < c;
-		uint32_t yi = y[N - 1];
-		xc += yi;
-		c += xc < yi;
-		z[N - 1] = xc;
-	}
-	return c;
-#endif
 #else
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -107,9 +75,8 @@ Unit addT(Unit *z, const Unit *x, const Unit *y)
 template<size_t N, typename T>
 Unit subT(Unit *z, const T *x, const Unit *y)
 {
-#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+#ifdef MCL_WASM32
 	// wasm32 supports 64-bit sub
-#if 1
 	uint64_t c = 0;
 	for (size_t i = 0; i < N; i++) {
 		uint64_t v = uint64_t(x[i]) - y[i] - c;
@@ -117,26 +84,6 @@ Unit subT(Unit *z, const T *x, const Unit *y)
 		c = v >> 63;
 	}
 	return c;
-#else
-	uint32_t c = 0;
-	for (size_t i = 0; i < N - 1; i += 2) {
-		uint64_t yi = load8byte(y + i);
-		yi += c;
-		c = yi < c;
-		uint64_t xi = load8byte(x + i);
-		c += xi < yi;
-		store8byte(z + i, xi - yi);
-	}
-	if (N & 1) {
-		uint32_t yi = y[N - 1];
-		yi += c;
-		c = yi < c;
-		uint32_t xi = x[N - 1];
-		c += xi < yi;
-		z[N - 1] = xi - yi;
-	}
-	return c;
-#endif
 #else
 	Unit c = 0;
 	for (size_t i = 0; i < N; i++) {
@@ -203,7 +150,7 @@ Unit mulUnitT(T *z, const Unit *x, Unit y)
 template<size_t N, typename T>
 Unit mulUnitAddT(T *z, const Unit *x, Unit y)
 {
-#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+#ifdef MCL_WASM32
 	uint64_t y_ = y;
 	uint64_t v = z[0] + x[0] * y_;
 	z[0] = uint32_t(v);

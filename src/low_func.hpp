@@ -9,6 +9,10 @@
 #include <mcl/op.hpp>
 #include <mcl/util.hpp>
 #include <cybozu/bit_operation.hpp>
+//#ifdef MCL_WASM32
+// compiler option : -msimd128
+//	#include <wasm_simd128.h>
+//#endif
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -147,7 +151,7 @@ template<size_t N>
 static void modRedT(Unit *z, const Unit *xy, const Unit *p)
 {
 	const Unit rp = p[-1];
-#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+#ifdef MCL_WASM32
 	uint64_t buf[N * 2];
 #else
 	Unit buf[N * 2];
@@ -232,6 +236,98 @@ static void mulMontT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	}
 }
 
+#if 0 // #ifdef MCL_WASM32
+template<size_t N>
+uint64_t mulUnitLazyT(uint64_t *z, const Unit *x, Unit y)
+{
+#if 1
+	uint64_t y_ = y;
+	uint64_t H = x[0] * y_;
+	z[0] = uint32_t(H);
+	uint64_t Ls[N-1], Hs[N-1];
+	Hs[0] = H >> 32;
+	for (size_t i = 1; i < N - 1; i++) {
+		H = x[i] * y_;
+		Ls[i-1] = uint32_t(H);
+		Hs[i] = H >> 32;
+	}
+	H = x[N-1] * y_;
+	Ls[N-2] = uint32_t(H);
+#if 1
+	for (size_t i = 0; i < ((N - 1) & ~1); i += 2) {
+//		z[i+1] = Hs[i] + Ls[i];
+		v128_t vH = wasm_v128_load(&Hs[i]);
+		v128_t vL = wasm_v128_load(&Ls[i]);
+		wasm_v128_store(&z[i+1], wasm_i64x2_add(vH, vL));
+	}
+	if ((N & 1) == 0) {
+		z[N - 1] = Hs[N - 2] + Ls[N - 2];
+	}
+#else
+	for (size_t i = 0; i < N - 1; i++) {
+		z[i+1] = Hs[i] + Ls[i];
+	}
+#endif
+	return H >> 32;
+#else
+	uint64_t y_ = y;
+	uint64_t H = x[0] * y_;
+	z[0] = uint32_t(H);
+	for (size_t i = 1; i < N; i++) {
+		uint64_t v = x[i] * y_;
+		z[i] = uint32_t(v) + (H >> 32);
+		H = v;
+	}
+	return H >> 32;
+#endif
+}
+
+template<size_t N>
+uint64_t mulUnitAddLazyT(uint64_t *z, const Unit *x, Unit y)
+{
+#if 1
+	uint64_t y_ = y;
+	uint64_t H = x[0] * y_ + z[0];
+	z[0] = uint32_t(H);
+	uint64_t Ls[N-1], Hs[N-1];
+	Hs[0] = H >> 32;
+	for (size_t i = 1; i < N - 1; i++) {
+		H = x[i] * y_;
+		Ls[i-1] = uint32_t(H);
+		Hs[i] = H >> 32;
+	}
+	H = x[N-1] * y_;
+	Ls[N-2] = uint32_t(H);
+#if 1
+	for (size_t i = 0; i < ((N - 1) & ~1); i += 2) {
+		v128_t t = wasm_v128_load(&z[i+1]);
+		t = wasm_i64x2_add(t, wasm_v128_load(&Hs[i]));
+		t = wasm_i64x2_add(t, wasm_v128_load(&Ls[i]));
+		wasm_v128_store(&z[i+1], t);
+	}
+	if ((N & 1) == 0) {
+		z[N - 1] += Hs[N - 2] + Ls[N - 2];
+	}
+#else
+	for (size_t i = 0; i < N - 1; i++) {
+		z[i+1] += Hs[i] + Ls[i];
+	}
+#endif
+	return H >> 32;
+#else
+	uint64_t y_ = y;
+	uint64_t H = z[0] + x[0] * y_;
+	z[0] = uint32_t(H);
+	for (size_t i = 1; i < N; i++) {
+		uint64_t v = x[i] * y_;
+		z[i] = z[i] + uint32_t(v) + (H >> 32);
+		H = v;
+	}
+	return H >> 32;
+#endif
+}
+#endif
+
 template<size_t N>
 static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
@@ -247,7 +343,28 @@ static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 		t >> 64 <= (F - 2)(R - 1)/R = (F - 2) - (F - 2)/R
 			t + (t >> 64) = (F - 2)R - (F - 2)/R < FR
 	*/
-#if defined(MCL_WASM32) && MCL_SIZEOF_UNIT == 4
+#if 0 // #ifdef MCL_WASM32
+	// use uint64_t if Unit = uint32_t to reduce conversion
+	uint64_t buf[N * 2];
+	buf[N] = mulUnitLazyT<N>(buf, x, y[0]);
+	Unit q = buf[0] * rp;
+	buf[N] += mulUnitAddLazyT<N>(buf, p, q);
+	for (size_t i = 1; i < N; i++) {
+		buf[N + i] = mulUnitAddLazyT<N>(buf + i, x, y[i]);
+		q = buf[i] * rp;
+		buf[N + i] += mulUnitAddLazyT<N>(buf + i, p, q);
+	}
+	uint64_t H = 0;
+	for (size_t i = N; i < N*2; i++) {
+		uint64_t v = buf[i] + (H >> 32);
+		buf[i] = uint32_t(v);
+		H = v;
+	}
+	if (bint::subT<N>(z, buf + N, p)) {
+		bint::copyT<N>(z, buf + N);
+	}
+#endif
+#ifdef MCL_WASM32
 	// use uint64_t if Unit = uint32_t to reduce conversion
 	uint64_t buf[N * 2];
 #else
