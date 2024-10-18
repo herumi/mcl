@@ -329,6 +329,63 @@ uint64_t mulUnitAddLazyT(uint64_t *z, const Unit *x, Unit y)
 #endif
 
 template<size_t N>
+uint64_t mulUnitLazyT(uint64_t *z, const Unit *x, Unit y)
+{
+	uint64_t y_ = y;
+	uint64_t H = x[0] * y_;
+	z[0] = uint32_t(H);
+	for (size_t i = 1; i < N; i++) {
+		uint64_t v = x[i] * y_;
+		z[i] = uint32_t(v) + (H >> 32);
+		H = v;
+	}
+	return H >> 32;
+}
+
+template<size_t N>
+uint64_t mulUnitAddLazyT(uint64_t *z, const Unit *x, Unit y)
+{
+	uint64_t y_ = y;
+	uint64_t H = z[0] + x[0] * y_;
+	z[0] = uint32_t(H);
+	for (size_t i = 1; i < N; i++) {
+		uint64_t v = x[i] * y_;
+		z[i] = z[i] + uint32_t(v) + (H >> 32);
+		H = v;
+	}
+	return H >> 32;
+}
+
+/*
+	r = bint::mulUnitAddT<N>(z, x, *y);
+	q = z[0] * rp;
+	r += bint::mulUnitAddT<N>(z, p, q);
+	return r;
+*/
+template<size_t N>
+uint64_t mulUnitAddLazy2T(uint64_t *z, const Unit *x, Unit y, const Unit *p, Unit rp)
+{
+	uint64_t y_ = y;
+	uint64_t H1 = z[0] + x[0] * y_;
+	uint64_t t = uint32_t(H1);
+	uint64_t q = uint32_t(t * rp);
+	uint64_t H2 = t + p[0] * q;
+	assert(uint32_t(H2) == 0);
+//	z[0] = uint32_t(H2); // set is unnecessary because it must be zero
+	for (size_t i = 1; i < N; i++) {
+		t = z[i];
+		t += H1 >> 32;
+		H1 = x[i] * y_;
+		t += uint32_t(H1);
+		t += H2 >> 32;
+		H2 = p[i] * q;
+		t += uint32_t(H2);
+		z[i] = t;
+	}
+	return (H1 >> 32) + (H2 >> 32);
+}
+
+template<size_t N>
 static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
 	const Unit rp = p[-1];
@@ -350,9 +407,13 @@ static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	Unit q = buf[0] * rp;
 	buf[N] += mulUnitAddLazyT<N>(buf, p, q);
 	for (size_t i = 1; i < N; i++) {
+#if 1
+		buf[N + i] = mulUnitAddLazy2T<N>(buf + i, x, y[i], p, rp);
+#else
 		buf[N + i] = mulUnitAddLazyT<N>(buf + i, x, y[i]);
 		q = buf[i] * rp;
 		buf[N + i] += mulUnitAddLazyT<N>(buf + i, p, q);
+#endif
 	}
 	uint64_t H = 0;
 	for (size_t i = N; i < N*2; i++) {
@@ -363,7 +424,7 @@ static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	if (bint::subT<N>(z, buf + N, p)) {
 		bint::copyT<N>(z, buf + N);
 	}
-#endif
+#else
 #ifdef MCL_WASM32
 	// use uint64_t if Unit = uint32_t to reduce conversion
 	uint64_t buf[N * 2];
@@ -381,6 +442,7 @@ static void mulMontNFT(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 	if (bint::subT<N>(z, buf + N, p)) {
 		bint::copyT<N>(z, buf + N);
 	}
+#endif
 }
 
 // z[N] <- Montgomery(x[N], x[N], p[N])
