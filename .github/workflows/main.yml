@@ -11,8 +11,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: lscpu
-    - run: apt -y update
-    - run: apt -y install valgrind nasm
+    - run: sudo apt update
+    - run: sudo apt install valgrind nasm
     - run: make bin/pairing.exe -j4
     - run: valgrind bin/pairing.exe
     - run: make clean
