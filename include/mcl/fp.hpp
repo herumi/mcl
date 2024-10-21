@@ -207,15 +207,7 @@ public:
 	}
 	static inline bool squareRoot(FpT& y, const FpT& x)
 	{
-		if (isMont()) return op_.sq.get(y, x);
-		mpz_class mx, my;
-		bool b = false;
-		x.getMpz(&b, mx);
-		if (!b) return false;
-		b = op_.sq.get(my, mx);
-		if (!b) return false;
-		y.setMpz(&b, my);
-		return b;
+		return op_.sq.get(y, x);
 	}
 	FpT() {}
 	FpT(const FpT& x)

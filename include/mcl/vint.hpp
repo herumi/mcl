@@ -696,6 +696,9 @@ public:
 	// logical left shift (copy sign)
 	static void shl(Vint& y, const Vint& x, size_t shiftBit)
 	{
+if (shiftBit > MCL_MAX_BIT_SIZE*2) {
+	printf("shiftBit=%zd\n", shiftBit);
+}
 		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
