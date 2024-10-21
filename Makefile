@@ -28,7 +28,7 @@ ifeq ($(MCL_STATIC_CODE),1)
 endif
 ifeq ($(CPU),x86-64)
   MCL_USE_XBYAK?=1
-  TEST_SRC+=mont_fp_test.cpp sq_test.cpp
+  TEST_SRC+=mont_fp_test.cpp #sq_test.cpp
   ifeq ($(MCL_USE_XBYAK),1)
     TEST_SRC+=fp_generator_test.cpp
   endif

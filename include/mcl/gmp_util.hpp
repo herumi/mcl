@@ -784,6 +784,61 @@ class SquareRoot {
 		}
 		return false;
 	}
+	/*
+		solve x^2 = a in Fp
+	*/
+	template<class Fp>
+	bool getCandidate(Fp& x, const Fp& a) const
+	{
+		assert(Fp::getOp().mp == p);
+		if (a.isZero() || a.isOne()) {
+			x = a;
+			return true;
+		}
+		if (r == 1) {
+			// (p + 1) / 4 = (q + 1) / 2
+			Fp::pow(x, a, q_add_1_div_2);
+			return true;
+		}
+		Fp c, d;
+		{
+			bool b;
+			c.setMpz(&b, s);
+			assert(b);
+		}
+		int e = r;
+		Fp::pow(d, a, q);
+		Fp::pow(x, a, q_add_1_div_2); // destroy a if &x == &a
+		Fp dd;
+		Fp b;
+		while (!d.isOne()) {
+			int i = 1;
+			Fp::sqr(dd, d);
+			while (!dd.isOne()) {
+				Fp::sqr(dd, dd);
+				i++;
+				if (i >= e) return false;
+			}
+			assert(e > i);
+			int t = e - i - 1;
+			const int tMax = 30; // int32_t max
+			if (t < tMax) {
+				b = 1 << t;
+			} else {
+				b = 1 << tMax;
+				t -= tMax;
+				for (int j = 0; j < t; j++) {
+					b += b;
+				}
+			}
+			Fp::pow(b, c, b);
+			x *= b;
+			Fp::sqr(c, b);
+			d *= c;
+			e = i;
+		}
+		return true;
+	}
 public:
 	SquareRoot() { clear(); }
 	bool isPrecomputed() const { return isPrecomputed_; }
@@ -838,100 +893,18 @@ public:
 		q_add_1_div_2 = (q + 1) / 2;
 		*pb = true;
 	}
-	/*
-		solve x^2 = a mod p
-	*/
-	bool get(mpz_class& x, const mpz_class& a) const
+	template<class T>
+	bool get(T& x, const T& a) const
 	{
-		if (!isPrime) {
-			return false;
-		}
-		if (a == 0) {
-			x = 0;
-			return true;
-		}
-		if (gmp::legendre(a, p) < 0) return false;
-		if (r == 1) {
-			// (p + 1) / 4 = (q + 1) / 2
-			gmp::powMod(x, a, q_add_1_div_2, p);
-			return true;
-		}
-		mpz_class c = s, d;
-		int e = r;
-		gmp::powMod(d, a, q, p);
-		gmp::powMod(x, a, q_add_1_div_2, p); // destroy a if &x == &a
-		mpz_class dd;
-		mpz_class b;
-		while (d != 1) {
-			int i = 1;
-			dd = d * d; dd %= p;
-			while (dd != 1) {
-				dd *= dd; dd %= p;
-				i++;
+		T t, t2;
+		if (getCandidate(t, a)) {
+			T::sqr(t2, t);
+			if (t2 == a) {
+				x = t;
+				return true;
 			}
-			b = 1;
-			b <<= e - i - 1;
-			gmp::powMod(b, c, b, p);
-			x *= b; x %= p;
-			c = b * b; c %= p;
-			d *= c; d %= p;
-			e = i;
 		}
-		return true;
-	}
-	/*
-		solve x^2 = a in Fp
-	*/
-	template<class Fp>
-	bool get(Fp& x, const Fp& a) const
-	{
-		assert(Fp::getOp().mp == p);
-		if (a == 0) {
-			x = 0;
-			return true;
-		}
-		{
-			bool b;
-			mpz_class aa;
-			a.getMpz(&b, aa);
-			assert(b);
-			if (gmp::legendre(aa, p) < 0) return false;
-		}
-		if (r == 1) {
-			// (p + 1) / 4 = (q + 1) / 2
-			Fp::pow(x, a, q_add_1_div_2);
-			return true;
-		}
-		Fp c, d;
-		{
-			bool b;
-			c.setMpz(&b, s);
-			assert(b);
-		}
-		int e = r;
-		Fp::pow(d, a, q);
-		Fp::pow(x, a, q_add_1_div_2); // destroy a if &x == &a
-		Fp dd;
-		Fp b;
-		while (!d.isOne()) {
-			int i = 1;
-			Fp::sqr(dd, d);
-			while (!dd.isOne()) {
-				dd *= dd;
-				i++;
-			}
-			b = 1;
-//			b <<= e - i - 1;
-			for (int j = 0; j < e - i - 1; j++) {
-				b += b;
-			}
-			Fp::pow(b, c, b);
-			x *= b;
-			Fp::sqr(c, b);
-			d *= c;
-			e = i;
-		}
-		return true;
+		return false;
 	}
 	bool operator==(const SquareRoot& rhs) const
 	{

@@ -88,6 +88,20 @@ void invVecBench(const char *msg)
 	CYBOZU_BENCH_C(msg, C, mcl::invVec, x, x, n);
 }
 
+template<class T>
+void sqrBench(const T& x, const char *msg)
+{
+	T y = x * x, z;
+	CYBOZU_BENCH_C((std::string(msg) + "::squareRoot T").c_str(), 10000, T::squareRoot, z, y);
+	for (int i = 0; i < 100; i++) {
+		if (!T::squareRoot(z, y)) {
+			break;
+		}
+		y += T::one();
+	}
+	CYBOZU_BENCH_C((std::string(msg) + "::squareRoot F").c_str(), 10000, T::squareRoot, z, y);
+}
+
 void testBench(const G1& P, const G2& Q)
 {
 #ifndef NDEBUG
@@ -151,6 +165,7 @@ void testBench(const G1& P, const G2& Q)
 	CYBOZU_BENCH_C("Fp::sqr       ", C3, Fp::sqr, x, x);
 	CYBOZU_BENCH_C("Fp::inv       ", C3, invAdd, x, x, y);
 	CYBOZU_BENCH_C("Fp::pow       ", C3, Fp::pow, x, x, y);
+	sqrBench(x, "Fp");
 	invVecBench<Fp>("Fp:invVec");
 	invVecBench<Fr>("Fr:invVec");
 	{
@@ -168,6 +183,7 @@ void testBench(const G1& P, const G2& Q)
 		CYBOZU_BENCH_C("Fr::sqr       ", C3, Fr::sqr, a, a);
 		CYBOZU_BENCH_C("Fr::inv       ", C3, invAdd, a, a, b);
 		CYBOZU_BENCH_C("Fr::pow       ", C3, Fr::pow, a, a, b);
+		sqrBench(a, "Fr");
 	}
 	Fp2 xx, yy;
 	xx.a = x;

@@ -385,19 +385,37 @@ struct Test {
 	}
 	void squareRoot() const
 	{
+		Ec P(Fp(para.gx), Fp(para.gy));
+
+		for (int i = 0; i < 100; i++) {
+			Ec::dbl(P, P);
+			P.normalize();
+			Fp x = P.x;
+			Fp y = P.y;
+			Fp yy;
+			CYBOZU_TEST_ASSERT(Ec::getYfromX(yy, x, y.isOdd()));
+			CYBOZU_TEST_EQUAL(yy, y);
+			Fp::neg(y, y);
+			yy.clear();
+			CYBOZU_TEST_ASSERT(Ec::getYfromX(yy, x, y.isOdd()));
+			CYBOZU_TEST_EQUAL(yy, y);
+			yy += P.y;
+			CYBOZU_TEST_ASSERT(yy.isZero());
+		}
+
 		Fp x(para.gx);
-		Fp y(para.gy);
-		bool odd = y.isOdd();
-		Fp yy;
-		bool b = Ec::getYfromX(yy, x, odd);
-		CYBOZU_TEST_ASSERT(b);
-		CYBOZU_TEST_EQUAL(yy, y);
-		Fp::neg(y, y);
-		odd = y.isOdd();
-		yy.clear();
-		b = Ec::getYfromX(yy, x, odd);
-		CYBOZU_TEST_ASSERT(b);
-		CYBOZU_TEST_EQUAL(yy, y);
+		for (int i = 0; i < 100; i++) {
+			mpz_class mx = x.getMpz();
+			int ret = mcl::gmp::legendre(mx, Fp::getOp().mp);
+			Fp y;
+			if (Fp::squareRoot(y, x)) {
+				CYBOZU_TEST_EQUAL(y*y, x);
+				CYBOZU_TEST_EQUAL(ret, 1);
+			} else {
+				CYBOZU_TEST_EQUAL(ret, -1);
+			}
+			x += 1;
+		}
 	}
 	void mul_fp() const
 	{
