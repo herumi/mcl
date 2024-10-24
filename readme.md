@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- Add {Fp,Fr,Fp2}::squareRoot.
 - Improve the performance of squareRoot.
 - Add batch inversion for Fr and Fp elements, and batch normalization for G1 and G2 points.
 - mulVec is a little improved.
