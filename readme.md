@@ -206,6 +206,8 @@ arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn
 env QEMU_LD_PREFIX=/usr/arm-linux-gnueabi/ qemu-arm ./a.out
 ```
 
+The static library `libbls384_256.a` built by `bls/Makefile.onelib` in [bls](https://github.com/herumi/bls) contains all mcl functions. So please see [the comment of Makefile.onelib](https://github.com/herumi/bls/blob/master/Makefile.onelib#L198) if you want to build this library on the other platform such as Mingw64 on Linux.
+
 # How to build on 64-bit Windows with Visual Studio
 
 Python3 is necessary.
