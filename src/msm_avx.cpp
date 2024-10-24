@@ -1857,6 +1857,11 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vmul::VecA", C/10, vmul<VmaskA>, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("FpM::inv", C/100, FpM::inv, z[0], z[0]);
 	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
+	{
+		mcl::bn::Fp vv[8*vN];
+		za.getFpA((mcl::msm::FpA*)vv);
+		CYBOZU_BENCH_C("Fp::inv(8)", C/100, mcl::invVec<mcl::bn::Fp>, vv, vv, 8*vN);
+	}
 	forcedRead(z);
 	forcedRead(za);
 #endif
