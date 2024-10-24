@@ -237,6 +237,20 @@ template<class V, class U>
 inline V vmulUnitAdd(V *z, const U *x, const V& y)
 {
 	V H;
+#if 1
+	V v = x[0];
+	z[0] = vmulL(v, y, z[0]);
+	H = vmulH(v, y, z[1]);
+	for (size_t i = 1; i < N-1; i++) {
+		v = x[i];
+		z[i] = vmulL(v, y, H);
+		H = vmulH(v, y, z[i+1]);
+	}
+	v = x[N-1];
+	z[N-1] = vmulL(v, y, H);
+	H = vmulH(v, y);
+	return H;
+#else
 	z[0] = vmulL(x[0], y, z[0]);
 	H = vmulH(x[0], y);
 	for (size_t i = 1; i < N; i++) {
@@ -244,6 +258,7 @@ inline V vmulUnitAdd(V *z, const U *x, const V& y)
 		H = vmulH(x[i], y);
 	}
 	return H;
+#endif
 }
 
 template<class V>
@@ -324,7 +339,7 @@ inline void vmul(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
-#ifdef USE_ASM
+#if defined(USE_ASM) && defined(__clang__)
 template<>
 inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {

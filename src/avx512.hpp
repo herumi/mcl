@@ -16,6 +16,14 @@ typedef __mmask8 Vmask;
 static const size_t vN = 2; // fixed
 struct VecA {
 	Vec v[vN];
+	VecA& operator=(const Vec& x)
+	{
+		v[0] = x;
+		v[1] = x;
+		return *this;
+	}
+	VecA() {}
+	VecA(const Vec& x) { v[0] = x; v[1] = x; }
 };
 
 struct VmaskA {

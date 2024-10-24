@@ -350,13 +350,7 @@ def vmulUnit(z, px, y, N, H):
 def vmulUnitAdd(z, px, y, N, H):
   for i in range(0, N):
     vmulL(z[i], y, ptr(px+i*64))
-    if i > 0:
-      vpaddq(z[i], z[i], H)
-    if i < N-1:
-      vpxorq(H, H, H)
-      vmulH(H, y, ptr(px+i*64))
-    else:
-      vmulH(z[N], y, ptr(px+i*64))
+    vmulH(z[i+1], y, ptr(px+i*64))
 
 def shift(v, s):
   vmovdqa64(s, v[0])
@@ -465,13 +459,7 @@ def vmulUnitAddA(z, px, y, N, H):
   vN = 2
   for i in range(0, N):
     un(vmulL)(z[i], y, ptr(px+i*64*vN))
-    if i > 0:
-      un(vpaddq)(z[i], z[i], H)
-    if i < N-1:
-      un(vpxorq)(H, H, H)
-      un(vmulH)(H, y, ptr(px+i*64*vN))
-    else:
-      un(vmulH)(z[N], y, ptr(px+i*64*vN))
+    un(vmulH)(z[i+1], y, ptr(px+i*64*vN))
 
 def shiftA(v, s):
   un = genUnrollFunc()
