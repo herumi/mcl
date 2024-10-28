@@ -339,7 +339,7 @@ inline void vmul(V *z, const V *x, const U *y)
 	uvselect(z, c, t+N, z);
 #endif
 }
-#if defined(USE_ASM) && defined(__clang__)
+#ifdef USE_ASM
 template<>
 inline void vmul(Vec *z, const Vec *x, const Vec *y)
 {
