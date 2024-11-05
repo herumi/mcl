@@ -399,7 +399,6 @@ def gen_vmul(mont):
       q = pops(regs, 1)[0]
       s = pops(regs, N)
       vp = pops(regs, N)
-      s0 = s[0] # alias
       lpL = Label()
 
       # vp = load(C_ap)
@@ -435,10 +434,10 @@ def gen_vmul(mont):
       mov(rax, px)
       vmovdqa64(q, ptr(py))
       add(py, 64)
-      shift(t, s0)
+      shift(t, H)
       #call(vmulUnitAddL) # t += x * py[i]
       vmulUnitAdd(t, rax, q, N)
-      vpsrlq(q, s0, W)
+      vpsrlq(q, H, W)
       vpaddq(t[0], t[0], q)
 
       vpxorq(q, q, q)
@@ -523,8 +522,7 @@ def gen_vmulA(mont):
       vmask = pops(regs, 1)[0]
       H = pops(regs, vN)
       q = pops(regs, vN)
-      s = pops(regs, N)
-      s0 = s[0:vN] # alias
+      vp = pops(regs, N)
       lpL = Label()
 
       vmulUnitAddAL = Label()
@@ -555,10 +553,10 @@ def gen_vmulA(mont):
       mov(rax, px)
       un(vmovdqa64)(q, ptr(py))
       add(py, 64*vN)
-      shiftA(t, s0)
+      shiftA(t, H)
       #call(vmulUnitAddAL) # t += x * py[i]
       vmulUnitAddA(t, rax, q, N)
-      un(vpsrlq)(q, s0, W)
+      un(vpsrlq)(q, H, W)
       un(vpaddq)(t[0], t[0], q)
 
       un(vpxorq)(q, q, q)
@@ -580,7 +578,7 @@ def gen_vmulA(mont):
       # [[a,b], [c,d], ...] -> [(a, c, ...), (b, d, ...)]
       t0, t1 = map(list, zip(*t))
       t2 = [t0[1:], t1[1:]]
-      # s = t[1:] - p
+      # vp = t[1:] - p
 
       q0 = q[0]
       H0 = H[0]
@@ -588,7 +586,7 @@ def gen_vmulA(mont):
       lea(rax, ptr(rip+C_p))
       vpxorq(H0, H0, H0)
       for j in range(vN):
-        sub_p_if_possible(t2[j], s, k1, H0, q0, rax, vmask)
+        sub_p_if_possible(t2[j], vp, k1, H0, q0, rax, vmask)
         un(vmovdqa64)(ptr(pz+j*64*N), torg[2+j*N:])
 
       sf.close()

@@ -599,7 +599,7 @@ mov $7, %ecx
 mov %rsi, %rax
 vmovdqa64 (%rdx), %zmm11
 add $64, %rdx
-vmovdqa64 %zmm0, %zmm12
+vmovdqa64 %zmm0, %zmm10
 vmovdqa64 %zmm1, %zmm0
 vmovdqa64 %zmm2, %zmm1
 vmovdqa64 %zmm3, %zmm2
@@ -625,7 +625,7 @@ vpmadd52luq 384(%rax), %zmm11, %zmm6
 vpmadd52huq 384(%rax), %zmm11, %zmm7
 vpmadd52luq 448(%rax), %zmm11, %zmm7
 vpmadd52huq 448(%rax), %zmm11, %zmm8
-vpsrlq $52, %zmm12, %zmm11
+vpsrlq $52, %zmm10, %zmm11
 vpaddq %zmm11, %zmm0, %zmm0
 vpxorq %zmm11, %zmm11, %zmm11
 vpmadd52luq (%r10){1to8}, %zmm0, %zmm11
@@ -1111,8 +1111,8 @@ mov %rsi, %rax
 vmovdqa64 (%rdx), %zmm21
 vmovdqa64 64(%rdx), %zmm22
 add $128, %rdx
-vmovdqa64 %zmm0, %zmm23
-vmovdqa64 %zmm1, %zmm24
+vmovdqa64 %zmm0, %zmm19
+vmovdqa64 %zmm1, %zmm20
 vmovdqa64 %zmm2, %zmm0
 vmovdqa64 %zmm3, %zmm1
 vmovdqa64 %zmm4, %zmm2
@@ -1163,8 +1163,8 @@ vpmadd52luq 896(%rax), %zmm21, %zmm14
 vpmadd52luq 960(%rax), %zmm22, %zmm15
 vpmadd52huq 896(%rax), %zmm21, %zmm16
 vpmadd52huq 960(%rax), %zmm22, %zmm17
-vpsrlq $52, %zmm23, %zmm21
-vpsrlq $52, %zmm24, %zmm22
+vpsrlq $52, %zmm19, %zmm21
+vpsrlq $52, %zmm20, %zmm22
 vpaddq %zmm21, %zmm0, %zmm0
 vpaddq %zmm22, %zmm1, %zmm1
 vpxorq %zmm21, %zmm21, %zmm21
