@@ -63,8 +63,9 @@ def gen_vsubPre(mont, vN=1):
       vpxorq(t[0], t[0], t[0])
       un(vpcmpgtq)([k1, k2], c, t[0])
 
-# input : s[N]
-# output : t[N] = s >= p ? s-p : t
+# input : t[N]
+# output : t[N] = t >= p ? t-p : t
+# s : temporary regs
 # k : mask register
 # c : for CF
 # z : for zero
@@ -87,8 +88,9 @@ def sub_p_if_possible(t, s, k, z, c, pp, vmask):
   for i in range(N):
     vpandq(t[i]|k, s[i], vmask)
 
-# input : s[N]
-# output : t[N] = s >= p ? s-p : t
+# input : t[N]
+# output : t[N] = t >= p ? t-p : t
+# s : temporary regs
 # k : mask register
 # c : for CF
 # z : for zero
@@ -405,7 +407,7 @@ def gen_vmul(mont):
       lea(rax, ptr(rip+C_ap))
       for i in range(N):
         vmovdqa64(vp[i], ptr(rax+i*64))
-      vmulUnitAddL = Label()
+#      vmulUnitAddL = Label()
 
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
@@ -466,10 +468,10 @@ def gen_vmul(mont):
 
       sf.close()
       # out of vmul
-      align(32)
-      L(vmulUnitAddL)
+#      align(32)
+#      L(vmulUnitAddL)
       #set rax(= px) and q(= y)
-      vmulUnitAdd(t, rax, q, N)
+#      vmulUnitAdd(t, rax, q, N)
       ret()
 
 def vmulUnitA(z, px, y, N, H):
@@ -525,7 +527,11 @@ def gen_vmulA(mont):
       vp = pops(regs, N)
       lpL = Label()
 
-      vmulUnitAddAL = Label()
+      # vp = load(C_ap)
+      lea(rax, ptr(rip+C_ap))
+      for i in range(N):
+        vmovdqa64(vp[i], ptr(rax+i*64))
+#      vmulUnitAddAL = Label()
 
       mov(rax, mont.mask)
       vpbroadcastq(vmask, rax)
@@ -541,9 +547,12 @@ def gen_vmulA(mont):
       un(vpxorq)(q, q, q)
       un(vmulL)(q, t[0], ptr_b(rp))
 
-      lea(rax, ptr(rip+C_apA))
+      #lea(rax, ptr(rip+C_apA))
       #call(vmulUnitAddAL) # t += p * q
-      vmulUnitAddA(t, rax, q, N)
+      #vmulUnitAddA(t, rax, q, N)
+      for i in range(0, N):
+        un(vmulL)(t[i], q, vp[i])
+        un(vmulH)(t[i+1], q, vp[i])
 
       # N-1 times loop
       mov(i_, N-1)
@@ -562,9 +571,12 @@ def gen_vmulA(mont):
       un(vpxorq)(q, q, q)
       un(vmulL)(q, t[0], ptr_b(rp))
 
-      lea(rax, ptr(rip+C_apA))
+      #lea(rax, ptr(rip+C_apA))
       #call(vmulUnitAddAL) # t += p * q
-      vmulUnitAddA(t, rax, q, N)
+      #vmulUnitAddA(t, rax, q, N)
+      for i in range(0, N):
+        un(vmulL)(t[i], q, vp[i])
+        un(vmulH)(t[i+1], q, vp[i])
 
       dec(i_)
       jnz(lpL)
@@ -585,17 +597,22 @@ def gen_vmulA(mont):
 
       lea(rax, ptr(rip+C_p))
       vpxorq(H0, H0, H0)
-      for j in range(vN):
-        sub_p_if_possible(t2[j], vp, k1, H0, q0, rax, vmask)
-        un(vmovdqa64)(ptr(pz+j*64*N), torg[2+j*N:])
+#      for j in range(vN):
+#        sub_p_if_possible(t2[j], vp, k1, H0, q0, rax, vmask)
+#        un(vmovdqa64)(ptr(pz+j*64*N), torg[2+j*N:])
+      sub_p_if_possible2(t2[0], vp, k1, H0, q0, vp, vmask)
+      un(vmovdqa64)(ptr(pz), torg[2:])
+      sub_p_if_possible(t2[1], vp, k1, H0, q0, rax, vmask)
+      un(vmovdqa64)(ptr(pz+64*N), torg[2+N:])
 
       sf.close()
       # out of vmul
-      align(32)
-      L(vmulUnitAddAL)
+#      align(32)
+#      L(vmulUnitAddAL)
       #set rax(= px) and q(= y)
-      vmulUnitAddA(t, rax, q, N)
+#      vmulUnitAddA(t, rax, q, N)
       ret()
+
 def msm_data(mont):
   align(64)
   makeLabel(C_p)
