@@ -667,8 +667,9 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 #endif
 };
 
+// set y = 1 if isProj
 template<class E>
-inline void normalizeJacobiVec(E *P, size_t n)
+inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 {
 	typedef typename E::Fp F;
 	F *tbl = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
@@ -695,6 +696,7 @@ inline void normalizeJacobiVec(E *P, size_t n)
 		F::mul(rz2, rz2, rz);
 		F::mul(P[pos].y, P[pos].y, rz2); // yz^-3
 		z = F::select(zIsZero, z, F::one());
+		if (isProj) P[pos].y = F::select(zIsZero, F::one(), P[pos].y);
 	}
 }
 
@@ -1336,30 +1338,33 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const mcl::fp::Op *fr = g_func.fr;
 	const bool mixed = true;
 	if (mixed) {
-		g_func.normalizeVecG1(x, x, n);
+//		g_func.normalizeVecG1(x, x, n);
 	}
 
 	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * 2, 64);
 	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
 
 	for (size_t i = 0; i < d; i++) {
-		xVec[i*2].template setG1A<mixed>(x+i*m);
-		G::mulLambda(xVec[i*2+1], xVec[i*2]);
+		xVec[i].template setG1A<mixed>(x+i*m);
+	}
+	normalizeJacobiVec(xVec, d, true);
+	for (size_t i = 0; i < d; i++) {
+		G::mulLambda(xVec[d+i], xVec[i]);
 	}
 
-	Unit *py = (Unit*)yVec;
+	Unit *const py = (Unit*)yVec;
+	Unit *const py2 = py + d*m*2;
 	for (size_t i = 0; i < d; i++) {
 		for (size_t j = 0; j < m; j++) {
 			Unit ya[4];
 			fr->fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
 			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
-			py[j+0] = a[0];
-			py[j+m] = a[1];
-			py[j+m*2] = b[0];
-			py[j+m*3] = b[1];
+			py[i*m*2+j+0] = a[0];
+			py[i*m*2+j+m] = a[1];
+			py2[i*m*2+j+0] = b[0];
+			py2[i*m*2+j+m] = b[1];
 		}
-		py += m*4;
 	}
 	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d*2, 128);
 
@@ -2183,6 +2188,13 @@ CYBOZU_TEST_AUTO(mulEach)
 #endif
 }
 
+void copyMulVec(G1& R, const G1 *_P, const Fr *x, size_t n)
+{
+	G1 *P = (G1*)CYBOZU_ALLOCA(sizeof(G1) * n);
+	mcl::bint::copyN(P, _P, n);
+	mcl::msm::mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
+}
+
 CYBOZU_TEST_AUTO(mulVec)
 {
 	const size_t n = 8203;
@@ -2198,11 +2210,16 @@ CYBOZU_TEST_AUTO(mulVec)
 		G1::mul(T, P[i], x[i]);
 		Q += T;
 	}
+	G1 P2[n];
+	mcl::bint::copyN(P2, P, n);
 	mcl::msm::mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
 //	G1::mulVec(R, P, x, n);
 	CYBOZU_TEST_EQUAL(Q, R);
 #ifdef NDEBUG
+	G1 R2;
+	CYBOZU_BENCH_C("mulVec(copy)", 30, copyMulVec, R2, P2, x, n);
 	CYBOZU_BENCH_C("mulVec", 30, mcl::msm::mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	CYBOZU_TEST_EQUAL(R, R2);
 #endif
 }
 #endif
