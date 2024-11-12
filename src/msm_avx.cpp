@@ -667,12 +667,11 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 #endif
 };
 
-template<class E, size_t n>
-inline void normalizeJacobiVec(E P[n])
+template<class E>
+inline void normalizeJacobiVec(E *P, size_t n)
 {
-	assert(n >= 2);
 	typedef typename E::Fp F;
-	F tbl[n];
+	F *tbl = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
 	tbl[0] = F::select(P[0].z.isZero(), F::one(), P[0].z);
 	for (size_t i = 1; i < n; i++) {
 		F t = F::select(P[i].z.isZero(), F::one(), P[i].z);
@@ -977,7 +976,7 @@ struct EcMT {
 		V a[2], b[2];
 		T tbl1[tblN], tbl2[tblN];
 		makeTable<isProj, mixed>(tbl1, halfN, P);
-		if (!isProj && mixed) normalizeJacobiVec<T, halfN-1>(tbl1+1);
+		if (!isProj && mixed) normalizeJacobiVec<T>(tbl1+1, halfN-1);
 		for (size_t i = 0; i < halfN; i++) {
 			mulLambda(tbl2[i], tbl1[i]);
 		}
@@ -2094,22 +2093,24 @@ CYBOZU_TEST_AUTO(opA)
 CYBOZU_TEST_AUTO(normalizeJacobiVec)
 {
 	const bool isProj = false;
-	const size_t n = 64;
-	G1 P[n], Q[n], R[n];
-	EcM PP[n/8];
-	cybozu::XorShift rg;
-	setParam(P, 0, n, rg);
-	P[n/2].clear();
-	P[n/3].clear();
-	mcl::ec::normalizeVec(Q, P, n);
-	for (size_t i = 0; i < n/8; i++) {
-		PP[i].setG1A((mcl::msm::G1A*)&P[i*8], isProj);
+	const size_t N = 64;
+	G1 P[N], Q[N], R[N];
+	EcM PP[N/8];
+	for (size_t n = 8; n < N; n += 8) {
+		cybozu::XorShift rg;
+		setParam(P, 0, n, rg);
+		P[n/2].clear();
+		P[n/3].clear();
+		mcl::ec::normalizeVec(Q, P, n);
+		for (size_t i = 0; i < n/8; i++) {
+			PP[i].setG1A((mcl::msm::G1A*)&P[i*8], isProj);
+		}
+		normalizeJacobiVec<EcM>(PP, n/8);
+		for (size_t i = 0; i < n/8; i++) {
+			PP[i].getG1A((mcl::msm::G1A*)&R[i*8], isProj);
+		}
+		CYBOZU_TEST_EQUAL_ARRAY(P, R, n);
 	}
-	normalizeJacobiVec<EcM, n/8>(PP);
-	for (size_t i = 0; i < n/8; i++) {
-		PP[i].getG1A((mcl::msm::G1A*)&R[i*8], isProj);
-	}
-	CYBOZU_TEST_EQUAL_ARRAY(P, R, n);
 	const int C = 10000;
 	CYBOZU_BENCH_C("EcM::setG1A:proj", C, PP[0].setG1A, (mcl::msm::G1A*)P, true);
 	CYBOZU_BENCH_C("EcM::setG1A:jacobi", C, PP[0].setG1A, (mcl::msm::G1A*)P, false);
