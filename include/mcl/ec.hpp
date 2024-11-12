@@ -577,7 +577,8 @@ void addJacobi(E& R, const E& P, const E& Q)
 
 // (b=4) 12M+27A
 // (generic) 14M+19A
-template<class E>
+// Q.z = 1 if mixed
+template<class E, bool mixed = false>
 void addCTProj(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
@@ -585,7 +586,11 @@ void addCTProj(E& R, const E& P, const E& Q)
 	F t0, t1, t2, t3, t4, x3, y3;
 	F::mul(t0, P.x, Q.x);
 	F::mul(t1, P.y, Q.y);
-	F::mul(t2, P.z, Q.z);
+	if (mixed) {
+		t2 = P.z;
+	} else {
+		F::mul(t2, P.z, Q.z);
+	}
 	F::add(t3, P.x, P.y);
 	F::add(t4, Q.x, Q.y);
 	F::mul(t3, t3, t4);

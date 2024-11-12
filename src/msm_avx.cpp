@@ -810,7 +810,13 @@ struct EcMT {
 	static void add(T& z, const T& x, const T& y)
 	{
 		if (isProj) {
-			mcl::ec::addCTProj(z, x, y);
+			if (mixed) {
+				T t;
+				mcl::ec::addCTProj<T, mixed>(t, x, y);
+				z = select(y.isZero(), x, t);
+			} else {
+				mcl::ec::addCTProj<T, mixed>(z, x, y);
+			}
 		} else {
 			T t;
 			if (mixed) {
@@ -1131,9 +1137,10 @@ inline void reduceSum(mcl::msm::G1A& Q, const G& P)
 	}
 }
 
-template<class G, class V>
+template<class G, class V, bool mixed=false>
 void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec, size_t yn, size_t pos, size_t n, bool first)
 {
+	const bool isProj = true;
 	const Vec m = vpbroadcastq(tblN-1);
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
@@ -1143,7 +1150,7 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 		v = vpandq(v, m);
 		G T;
 		T.gather(tbl, v);
-		G::add(T, T, xVec[i]);
+		G::template add<isProj, mixed>(T, T, xVec[i]);
 		T.scatter(tbl, v);
 	}
 	G sum = tbl[tblN - 1];
@@ -1159,7 +1166,7 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 }
 
 // xVec[n], yVec[n * maxBitSize/64]
-template<class G=EcM, class V=Vec>
+template<class G=EcM, class V=Vec, bool mixed = false>
 inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize)
 {
 	size_t c = mcl::ec::argminForMulVec(n);
@@ -1169,12 +1176,12 @@ inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, s
 	const size_t winN = (maxBitSize + c-1) / c;
 
 	G T;
-	mulVecUpdateTable<G, V>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1), n, true);
+	mulVecUpdateTable<G, V, mixed>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1), n, true);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < c; i++) {
 			G::dbl(T, T);
 		}
-		mulVecUpdateTable<G, V>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1-w), n, false);
+		mulVecUpdateTable<G, V, mixed>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1-w), n, false);
 	}
 	reduceSum(P, T);
 	Xbyak::AlignedFree(tbl);
@@ -1280,6 +1287,7 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		FpMA::mul(z, z, g_m64to52u_);
 
 		if (JacobiToProj) {
+			// Jacobi = Proj if normalized
 			if (!isNormalized) mcl::ec::JacobiToProj(*this, *this);
 			y = FpMA::select(z.isZero(), FpMA::one(), y);
 		}
@@ -1327,7 +1335,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const size_t m = sizeof(V)/8;
 	const size_t d = n/m;
 	const mcl::fp::Op *fr = g_func.fr;
-	const bool mixed = !false;
+	const bool mixed = true;
 	if (mixed) {
 		g_func.normalizeVecG1(x, x, n);
 	}
@@ -1336,7 +1344,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
 
 	for (size_t i = 0; i < d; i++) {
-		xVec[i*2].setG1A(x+i*m);
+		xVec[i*2].template setG1A<mixed>(x+i*m);
 		G::mulLambda(xVec[i*2+1], xVec[i*2]);
 	}
 
@@ -1354,7 +1362,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 		}
 		py += m*4;
 	}
-	mulVecAVX512_inner(P, xVec, yVec, d*2, 128);
+	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d*2, 128);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
