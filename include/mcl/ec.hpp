@@ -578,8 +578,8 @@ void addJacobi(E& R, const E& P, const E& Q)
 // (b=4) 12M+27A
 // (generic) 14M+19A
 // Q.z = 1 if mixed
-template<class E, bool mixed = false>
-void addCTProj(E& R, const E& P, const E& Q)
+template<class E>
+void addCTProj(E& R, const E& P, const E& Q, bool mixed = false)
 {
 	typedef typename E::Fp F;
 	assert(E::a_ == 0);

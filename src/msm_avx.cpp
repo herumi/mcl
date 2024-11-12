@@ -813,10 +813,10 @@ struct EcMT {
 		if (isProj) {
 			if (mixed) {
 				T t;
-				mcl::ec::addCTProj<T, mixed>(t, x, y);
+				mcl::ec::addCTProj(t, x, y, mixed);
 				z = select(y.isZero(), x, t);
 			} else {
-				mcl::ec::addCTProj<T, mixed>(z, x, y);
+				mcl::ec::addCTProj(z, x, y);
 			}
 		} else {
 			T t;
