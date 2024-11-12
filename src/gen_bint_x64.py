@@ -466,14 +466,6 @@ def gen_vmul(mont):
 
       un(vmovdqa64)(ptr(pz), t[1:])
 
-      sf.close()
-      # out of vmul
-#      align(32)
-#      L(vmulUnitAddL)
-      #set rax(= px) and q(= y)
-#      vmulUnitAdd(t, rax, q, N)
-      ret()
-
 def vmulUnitA(z, px, y, N, H):
   un = genUnrollFunc()
   vN = 2
@@ -604,14 +596,6 @@ def gen_vmulA(mont):
       un(vmovdqa64)(ptr(pz), torg[2:])
       sub_p_if_possible(t2[1], vp, k1, H0, q0, rax, vmask)
       un(vmovdqa64)(ptr(pz+64*N), torg[2+N:])
-
-      sf.close()
-      # out of vmul
-#      align(32)
-#      L(vmulUnitAddAL)
-      #set rax(= px) and q(= y)
-#      vmulUnitAddA(t, rax, q, N)
-      ret()
 
 def msm_data(mont):
   align(64)

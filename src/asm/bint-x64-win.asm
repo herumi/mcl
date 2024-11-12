@@ -761,7 +761,6 @@ vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
 add rsp, 184
 ret
-ret
 mcl_c5_vmul endp
 mcl_c5_vaddA proc export
 sub rsp, 184
@@ -1448,7 +1447,6 @@ vmovups xmm14, xmmword ptr [rsp+144]
 vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
 add rsp, 184
-ret
 ret
 mcl_c5_vmulA endp
 align 16

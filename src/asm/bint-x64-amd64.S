@@ -714,7 +714,6 @@ vmovdqa64 %zmm7, 384(%rdi)
 vmovdqa64 %zmm8, 448(%rdi)
 vzeroupper
 ret
-ret
 SIZE(mcl_c5_vmul)
 .global PRE(mcl_c5_vaddA)
 PRE(mcl_c5_vaddA):
@@ -1334,7 +1333,6 @@ vmovdqa64 %zmm15, 832(%rdi)
 vmovdqa64 %zmm16, 896(%rdi)
 vmovdqa64 %zmm17, 960(%rdi)
 vzeroupper
-ret
 ret
 SIZE(mcl_c5_vmulA)
 .balign 16

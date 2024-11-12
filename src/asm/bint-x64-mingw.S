@@ -788,7 +788,6 @@ vmovups 160(%rsp), %xmm15
 vzeroupper
 add $184, %rsp
 ret
-ret
 SIZE(mcl_c5_vmul)
 .global PRE(mcl_c5_vaddA)
 PRE(mcl_c5_vaddA):
@@ -1481,7 +1480,6 @@ vmovups 144(%rsp), %xmm14
 vmovups 160(%rsp), %xmm15
 vzeroupper
 add $184, %rsp
-ret
 ret
 SIZE(mcl_c5_vmulA)
 .balign 16
