@@ -1027,6 +1027,7 @@ struct EcM : EcMT<EcM, FpM> {
 	static const FpM &b3_;
 	static const EcM &zeroProj_;
 	static const EcM &zeroJacobi_;
+	template<bool isNormalized = false>
 	void setG1A(const mcl::msm::G1A v[M], bool JacobiToProj = true)
 	{
 		cvtFromG1Ax(x.v, v[0].v+0*6);
@@ -1038,7 +1039,7 @@ struct EcM : EcMT<EcM, FpM> {
 		FpM::mul(z, z, g_m64to52u_);
 
 		if (JacobiToProj) {
-			mcl::ec::JacobiToProj(*this, *this);
+			if (!isNormalized) mcl::ec::JacobiToProj(*this, *this);
 			y = FpM::select(z.isZero(), FpM::one(), y);
 		}
 	}
@@ -1264,9 +1265,10 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		cvtFpMA2FpM(P[0].z, P[1].z, z);
 	}
 
+	template<bool isNormalized = false>
 	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
 	{
-#ifdef __clang__ // very slow on gcc, faster on clang
+#if 1
 		assert(vN == 2);
 
 		cvtFromG1Ax(x.v, v[0].v+0*6);
@@ -1278,7 +1280,7 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		FpMA::mul(z, z, g_m64to52u_);
 
 		if (JacobiToProj) {
-			mcl::ec::JacobiToProj(*this, *this);
+			if (!isNormalized) mcl::ec::JacobiToProj(*this, *this);
 			y = FpMA::select(z.isZero(), FpMA::one(), y);
 		}
 #else
@@ -1291,7 +1293,7 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 	void getG1A(mcl::msm::G1A v[M*vN], bool ProjToJacobi = true) const
 	{
-#ifdef __clang__ // very slow on gcc, faster on clang
+#if 1
 		EcMA T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
 
@@ -1325,7 +1327,10 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const size_t m = sizeof(V)/8;
 	const size_t d = n/m;
 	const mcl::fp::Op *fr = g_func.fr;
-//	mcl::ec::normalizeVec(x, x, n);
+	const bool mixed = !false;
+	if (mixed) {
+		g_func.normalizeVecG1(x, x, n);
+	}
 
 	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * 2, 64);
 	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
