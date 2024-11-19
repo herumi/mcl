@@ -409,6 +409,8 @@ inline void dump(const std::string& s)
 }
 #endif
 
+size_t& getRefArgminForce(size_t = 0);
+
 } } // mcl::fp
 
 #ifndef MCL_MSM

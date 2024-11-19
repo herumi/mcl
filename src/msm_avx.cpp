@@ -672,7 +672,14 @@ template<class E>
 inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 {
 	typedef typename E::Fp F;
-	F *tbl = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	bool alocated = false;
+	F *tbl = 0;
+	if (sizeof(F) * n < 1024 * 1024) {
+		tbl = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
+	} else {
+		tbl = (F*)Xbyak::AlignedMalloc(sizeof(F) * n, 64);
+		alocated = true;
+	}
 	tbl[0] = F::select(P[0].z.isZero(), F::one(), P[0].z);
 	for (size_t i = 1; i < n; i++) {
 		F t = F::select(P[i].z.isZero(), F::one(), P[i].z);
@@ -697,6 +704,9 @@ inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 		F::mul(P[pos].y, P[pos].y, rz2); // yz^-3
 		z = F::select(zIsZero, z, F::one());
 		if (isProj) P[pos].y = F::select(zIsZero, F::one(), P[pos].y);
+	}
+	if (alocated) {
+		Xbyak::AlignedFree(tbl);
 	}
 }
 
@@ -1327,6 +1337,8 @@ const FpMA& EcMA::b3_ = *(const FpMA*)g_b3A_;
 const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_zeroProjA_;
 const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 
+#define USE_GLV
+
 template<class G=EcM, class V=Vec>
 void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 {
@@ -1335,19 +1347,25 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	const size_t m = sizeof(V)/8;
 	const size_t d = n/m;
+#ifdef USE_GLV
+	const size_t e = 2;
+#else
+	const size_t e = 1;
+#endif
 	const mcl::fp::Op *fr = g_func.fr;
 	const bool mixed = true;
 	if (mixed) {
 //		g_func.normalizeVecG1(x, x, n);
 	}
 
-	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * 2, 64);
+	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * e, 64);
 	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
 
 	for (size_t i = 0; i < d; i++) {
 		xVec[i].template setG1A<mixed>(x+i*m);
 	}
 	normalizeJacobiVec(xVec, d, true);
+#ifdef USE_GLV
 	for (size_t i = 0; i < d; i++) {
 		G::mulLambda(xVec[d+i], xVec[i]);
 	}
@@ -1366,7 +1384,19 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 			py2[i*m*2+j+m] = b[1];
 		}
 	}
-	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d*2, 128);
+#else
+	Unit *const py = (Unit*)yVec;
+	for (size_t i = 0; i < d; i++) {
+		for (size_t j = 0; j < m; j++) {
+			Unit ya[4];
+			fr->fromMont(ya, y[i*m+j].v);
+			for (size_t k = 0; k < 4; k++) {
+				py[(i*4+k)*m+j] = ya[k];
+			}
+		}
+	}
+#endif
+	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);

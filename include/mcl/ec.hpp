@@ -990,6 +990,8 @@ inline size_t argminForMulVec0(size_t n)
 */
 inline size_t argminForMulVec(size_t n)
 {
+	size_t v = mcl::fp::getRefArgminForce(n);
+	if (v) return v;
 	size_t x = argminForMulVec0(n);
 #if 1
 	size_t vm1 = x > 1 ? costMulVec(n, x-1) : n;

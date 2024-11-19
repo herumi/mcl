@@ -48,4 +48,8 @@ int main()
 //		if (std::abs(x0-x1) > 1) printf("i=%d x0=%d x1=%d\n", i, x0, x1);
 		if (x0 != x1) printf("i=%d x0=%d x1=%d\n", i, x0, x1);
 	}
+	for (int i = 1; i <= 100000000; i *= 10) {
+		int x = mcl::ec::argminForMulVec(i);
+		printf("i=%d x=%d\n", i, x);
+	}
 }
