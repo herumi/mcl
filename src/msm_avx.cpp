@@ -369,20 +369,20 @@ inline void vsqr(V *z, const V *x)
 		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
 	}
 #else
+	t[0] = vmulL(x[0], x[0]);
 	for (size_t i = 1; i < N; i++) {
 		t[i*2-1] = vmulL(x[i], x[i-1]);
 		t[i*2  ] = vmulH(x[i], x[i-1]);
 	}
-	for (size_t j = 2; j < N; j++) {
-		for (size_t i = j; i < N; i++) {
-			t[i*2-j  ] = vmulL(x[i], x[i-j], t[i*2-j  ]);
-			t[i*2-j+1] = vmulH(x[i], x[i-j], t[i*2-j+1]);
+	for (size_t i = 2; i < N; i++) {
+		for (size_t j = i; j < N; j++) {
+			t[j*2-i  ] = vmulL(x[j], x[j-i], t[j*2-i  ]);
+			t[j*2-i+1] = vmulH(x[j], x[j-i], t[j*2-i+1]);
 		}
 	}
 	for (size_t i = 1; i < N*2-1; i++) {
 		t[i] = vpaddq(t[i], t[i]);
 	}
-	t[0] = vmulL(x[0], x[0]);
 	for (size_t i = 1; i < N; i++) {
 		t[i*2-1] = vmulH(x[i-1], x[i-1], t[i*2-1]);
 		t[i*2] = vmulL(x[i], x[i], t[i*2]);
@@ -403,6 +403,12 @@ inline void vsqr(V *z, const V *x)
 	}
 	VM c = vsubPre<VM>(z, t+N, G::ap());
 	uvselect(z, c, t+N, z);
+}
+
+template<>
+inline void vsqr<VmaskA, VecA>(VecA *z, const VecA *x)
+{
+	mcl_c5_vmulA(z, x, x);
 }
 
 template<class V>
