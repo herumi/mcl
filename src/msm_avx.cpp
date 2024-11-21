@@ -354,6 +354,57 @@ inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 }
 #endif
 
+template<class VM=Vmask, class V>
+inline void vsqr(V *z, const V *x)
+{
+	V t[N*2], q;
+#if 0
+	vmulUnit(t, x, x[0]);
+	q = vmulL(t[0], G::rp());
+	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
+	for (size_t i = 1; i < N; i++) {
+		t[N+i] = vmulUnitAdd(t+i, x, x[i]);
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		q = vmulL(t[i], G::rp());
+		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
+	}
+#else
+	for (size_t i = 1; i < N; i++) {
+		t[i*2-1] = vmulL(x[i], x[i-1]);
+		t[i*2  ] = vmulH(x[i], x[i-1]);
+	}
+	for (size_t j = 2; j < N; j++) {
+		for (size_t i = j; i < N; i++) {
+			t[i*2-j  ] = vmulL(x[i], x[i-j], t[i*2-j  ]);
+			t[i*2-j+1] = vmulH(x[i], x[i-j], t[i*2-j+1]);
+		}
+	}
+	for (size_t i = 1; i < N*2-1; i++) {
+		t[i] = vpaddq(t[i], t[i]);
+	}
+	t[0] = vmulL(x[0], x[0]);
+	for (size_t i = 1; i < N; i++) {
+		t[i*2-1] = vmulH(x[i-1], x[i-1], t[i*2-1]);
+		t[i*2] = vmulL(x[i], x[i], t[i*2]);
+	}
+	t[N*2-1] = vmulH(x[N-1], x[N-1]);
+
+	q = vmulL(t[0], G::rp());
+	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
+	for (size_t i = 1; i < N; i++) {
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		q = vmulL(t[i], G::rp());
+		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
+	}
+#endif
+	for (size_t i = N; i < N*2; i++) {
+		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		t[i-1] = vpandq(t[i-1], G::mask());
+	}
+	VM c = vsubPre<VM>(z, t+N, G::ap());
+	uvselect(z, c, t+N, z);
+}
+
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
 {
@@ -538,7 +589,8 @@ struct FpMT {
 	}
 	static void sqr(T& z, const T& x)
 	{
-		mul(z, x, x);
+		vsqr<VM>(z.v, x.v);
+//		mul(z, x, x);
 	}
 	void toMont(T& x) const
 	{
@@ -1917,6 +1969,8 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("vsub::VecA", C, vsub<VmaskA>, za.v, za.v, xa.v);
 	CYBOZU_BENCH_C("vmul::Vec", C/10, vmul, z[0].v, z[0].v, x[0].v);
 	CYBOZU_BENCH_C("vmul::VecA", C/10, vmul<VmaskA>, za.v, za.v, xa.v);
+	CYBOZU_BENCH_C("vsqr::Vec", C/10, vsqr, z[0].v, z[0].v);
+	CYBOZU_BENCH_C("vsqr::VecA", C/10, vsqr<VmaskA>, za.v, za.v);
 	CYBOZU_BENCH_C("FpM::inv", C/100, FpM::inv, z[0], z[0]);
 	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
 	{
@@ -2029,6 +2083,7 @@ CYBOZU_TEST_AUTO(op)
 		}
 		CYBOZU_BENCH_C("FpM::add", C, FpM::add, a[0], a[0], b[0]);
 		CYBOZU_BENCH_C("FpM::mul", C, FpM::mul, a[0], a[0], b[0]);
+		CYBOZU_BENCH_C("FpM::sqr", C, FpM::sqr, a[0], a[0]);
 		CYBOZU_BENCH_C("mulu", C, FpM::mul, a[0], a[0], g_m64to52u_);
 		CYBOZU_BENCH_C("addn", C, lpN, FpM::add, a, a, b, n);
 		CYBOZU_BENCH_C("muln", C, lpN, FpM::mul, a, a, b, n);
