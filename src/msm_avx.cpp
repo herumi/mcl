@@ -34,6 +34,7 @@ void mcl_c5_vsubPreA(VecA *, const VecA *, const VecA *);
 void mcl_c5_vadd(Vec *, const Vec *, const Vec *);
 void mcl_c5_vsub(Vec *, const Vec *, const Vec *);
 void mcl_c5_vmul(Vec *, const Vec *, const Vec *);
+void mcl_c5_vsqr(Vec *, const Vec *);
 void mcl_c5_vaddA(VecA *, const VecA *, const VecA *);
 void mcl_c5_vsubA(VecA *, const VecA *, const VecA *);
 void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
@@ -357,10 +358,10 @@ inline void vmul<VmaskA, VecA>(VecA *z, const VecA *x, const VecA *y)
 template<class VM=Vmask, class V>
 inline void vsqr(V *z, const V *x)
 {
-	V t[N*2], q;
 #if 0
+	V t[N*2];
 	vmulUnit(t, x, x[0]);
-	q = vmulL(t[0], G::rp());
+	V q = vmulL(t[0], G::rp());
 	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
 	for (size_t i = 1; i < N; i++) {
 		t[N+i] = vmulUnitAdd(t+i, x, x[i]);
@@ -369,6 +370,7 @@ inline void vsqr(V *z, const V *x)
 		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
 	}
 #else
+	V t[N*2];
 	t[0] = vmulL(x[0], x[0]);
 	for (size_t i = 1; i < N; i++) {
 		t[i*2-1] = vmulL(x[i], x[i-1]);
@@ -389,11 +391,9 @@ inline void vsqr(V *z, const V *x)
 	}
 	t[N*2-1] = vmulH(x[N-1], x[N-1]);
 
-	q = vmulL(t[0], G::rp());
-	t[N] = vpaddq(t[N], vmulUnitAdd(t, G::ap(), q));
-	for (size_t i = 1; i < N; i++) {
-		t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
-		q = vmulL(t[i], G::rp());
+	for (size_t i = 0; i < N; i++) {
+		if (i > 0) t[i] = vpaddq(t[i], vpsrlq(t[i-1], W));
+		V q = vmulL(t[i], G::rp());
 		t[N+i] = vpaddq(t[N+i], vmulUnitAdd(t+i, G::ap(), q));
 	}
 #endif
@@ -405,11 +405,20 @@ inline void vsqr(V *z, const V *x)
 	uvselect(z, c, t+N, z);
 }
 
+#if 1
+template<>
+inline void vsqr(Vec *z, const Vec *x)
+{
+	mcl_c5_vsqr(z, x);
+//	mcl_c5_vmul(z, x, x);
+}
+
 template<>
 inline void vsqr<VmaskA, VecA>(VecA *z, const VecA *x)
 {
 	mcl_c5_vmulA(z, x, x);
 }
+#endif
 
 template<class V>
 inline V getUnitAt(const V *x, size_t xN, size_t bitPos)
@@ -1691,6 +1700,26 @@ CYBOZU_TEST_AUTO(init)
 	g_mont.init(mcl::bn::Fp::getOp().mp);
 }
 
+#if 0
+CYBOZU_TEST_AUTO(sqr)
+{
+	const size_t n = 8;
+	cybozu::XorShift rg;
+	Vec v[n];
+	Vec z1[n], z2[n];
+	for (size_t i = 0; i < n*8; i++) ((Unit*)v)[i] = rg.get32();
+	for (size_t i = 0; i < n; i++) dump(v[i], "v");
+	
+	vsqr(z1, v);
+	mcl_c5_vsqr(z2, v);
+	for (size_t i = 0; i < n*2; i++) {
+		printf("i=%zd eq=%s\n", i, memcmp(&z1[i], &z2[i], sizeof(Vec)) == 0 ? "o" : "x");
+		dump(z1[i], "z1");
+		dump(z2[i], "z2");
+	}
+}
+#endif
+
 void setParam(G1 *P, Fr *x, size_t n, cybozu::XorShift& rg)
 {
 	for (size_t i = 0; i < n; i++) {
@@ -1719,10 +1748,7 @@ CYBOZU_TEST_AUTO(cmp)
 
 	EcM PM, QM;
 	cybozu::XorShift rg;
-	for (size_t i = 0; i < n; i++) {
-		uint32_t v = rg.get32();
-		hashAndMapToG1(P[i], &v, sizeof(v));
-	}
+	setParam(P, 0, n, rg);
 	PM.setG1A(PA);
 	QM.setG1A(PA);
 	v = PM.isEqualJacobiAll(QM);
@@ -1809,6 +1835,20 @@ void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
 		mcl::bn::Fp::mul(z[i], x[i], y[i]);
 	}
 	mcl_c5_vmul(zm.v, xm.v, ym.v);
+	wm.setFpA((const mcl::msm::FpA*)z);
+	CYBOZU_TEST_ASSERT(zm == wm);
+	if (zm != wm) {
+		for (size_t i = 0; i < 8; i++) {
+			printf("i=%zd\n", i);
+			dump(zm.v[i], "ok");
+			dump(wm.v[i], "ng");
+		}
+	}
+	// sqr
+	for (size_t i = 0; i < 8; i++) {
+		mcl::bn::Fp::sqr(z[i], x[i]);
+	}
+	mcl_c5_vsqr(zm.v, xm.v);
 	wm.setFpA((const mcl::msm::FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
@@ -2251,6 +2291,13 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	}
 }
 
+void mulEachOrg(G1 *P, const Fr *x, size_t n)
+{
+	for (size_t i = 0; i < n; i++) {
+		G1::mul(P[i], P[i], x[i]);
+	}
+}
+
 CYBOZU_TEST_AUTO(mulEach)
 {
 	const size_t n = 1024;
@@ -2275,6 +2322,7 @@ CYBOZU_TEST_AUTO(mulEach)
 		}
 	}
 #ifdef NDEBUG
+	CYBOZU_BENCH_C("mulEachOrg", 100, mulEachOrg, Q, x, n);
 	CYBOZU_BENCH_C("mulEach", 100, G1::mulEach, Q, x, n);
 #endif
 }

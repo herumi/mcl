@@ -167,3 +167,46 @@ def naf(x, w=3):
 Consider to apply `w=5` to `(a, b)=split(x)`.
 The max value of `a` is `1.1 L = 0b101...` of 128-bit length.
 `0b101` is less than `(1<<(w-1))-1` and so negativity and CF operation are unnecessary.
+
+-----------------------------------------------------------------------------
+Vec
+gcc + mul
+vsqr::Vec 110.10 clk
+
+gcc + sqr
+vsqr::Vec 136.29 clk
+
+clang + mul
+vsqr::Vec 129.06 clk
+
+clang + sqr
+vsqr::Vec 102.91 clk
+
+VecA
+gcc + mul
+vsqr::VecA 269.07 clk
+
+gcc + sqr
+vsqr::VecA 243.14 clk
+
+clang + mul
+vsqr::VecA 183.07 clk
+
+clang + sqr
+vsqr::VecA 174.61 clk
+
+Vec
+compiler|gcc|clang
+-|-|-
+mul|110|129
+sqr|136|102
+
+VecA
+compiler|gcc|clang
+-|-|-
+mul|269|183
+sqr|243|174
+
+asm
+Vec::mul 117.66 clk
+VecA::mul 181.90 clk

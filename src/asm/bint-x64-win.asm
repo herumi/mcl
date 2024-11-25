@@ -762,6 +762,381 @@ vzeroupper
 add rsp, 184
 ret
 mcl_c5_vmul endp
+mcl_c5_vsqr proc export
+sub rsp, 184
+vmovups xmmword ptr [rsp], xmm5
+vmovups xmmword ptr [rsp+16], xmm6
+vmovups xmmword ptr [rsp+32], xmm7
+vmovups xmmword ptr [rsp+48], xmm8
+vmovups xmmword ptr [rsp+64], xmm9
+vmovups xmmword ptr [rsp+80], xmm10
+vmovups xmmword ptr [rsp+96], xmm11
+vmovups xmmword ptr [rsp+112], xmm12
+vmovups xmmword ptr [rsp+128], xmm13
+vmovups xmmword ptr [rsp+144], xmm14
+vmovups xmmword ptr [rsp+160], xmm15
+mov r10, rcx
+vmovdqa64 zmm19, zmmword ptr [rdx]
+vmovdqa64 zmm20, zmmword ptr [rdx+64]
+vmovdqa64 zmm21, zmmword ptr [rdx+128]
+vmovdqa64 zmm22, zmmword ptr [rdx+192]
+vmovdqa64 zmm23, zmmword ptr [rdx+256]
+vmovdqa64 zmm24, zmmword ptr [rdx+320]
+vmovdqa64 zmm25, zmmword ptr [rdx+384]
+vmovdqa64 zmm26, zmmword ptr [rdx+448]
+vpxorq zmm0, zmm0, zmm0
+vpmadd52luq zmm0, zmm19, zmm19
+vpxorq zmm1, zmm1, zmm1
+vpxorq zmm2, zmm2, zmm2
+vpmadd52luq zmm1, zmm20, zmm19
+vpmadd52huq zmm2, zmm20, zmm19
+vpxorq zmm3, zmm3, zmm3
+vpxorq zmm4, zmm4, zmm4
+vpmadd52luq zmm3, zmm21, zmm20
+vpmadd52huq zmm4, zmm21, zmm20
+vpxorq zmm5, zmm5, zmm5
+vpxorq zmm6, zmm6, zmm6
+vpmadd52luq zmm5, zmm22, zmm21
+vpmadd52huq zmm6, zmm22, zmm21
+vpxorq zmm7, zmm7, zmm7
+vpxorq zmm8, zmm8, zmm8
+vpmadd52luq zmm7, zmm23, zmm22
+vpmadd52huq zmm8, zmm23, zmm22
+vpxorq zmm9, zmm9, zmm9
+vpxorq zmm10, zmm10, zmm10
+vpmadd52luq zmm9, zmm24, zmm23
+vpmadd52huq zmm10, zmm24, zmm23
+vpxorq zmm11, zmm11, zmm11
+vpxorq zmm12, zmm12, zmm12
+vpmadd52luq zmm11, zmm25, zmm24
+vpmadd52huq zmm12, zmm25, zmm24
+vpxorq zmm13, zmm13, zmm13
+vpxorq zmm14, zmm14, zmm14
+vpmadd52luq zmm13, zmm26, zmm25
+vpmadd52huq zmm14, zmm26, zmm25
+vpmadd52luq zmm2, zmm21, zmm19
+vpmadd52huq zmm3, zmm21, zmm19
+vpmadd52luq zmm4, zmm22, zmm20
+vpmadd52huq zmm5, zmm22, zmm20
+vpmadd52luq zmm6, zmm23, zmm21
+vpmadd52huq zmm7, zmm23, zmm21
+vpmadd52luq zmm8, zmm24, zmm22
+vpmadd52huq zmm9, zmm24, zmm22
+vpmadd52luq zmm10, zmm25, zmm23
+vpmadd52huq zmm11, zmm25, zmm23
+vpmadd52luq zmm12, zmm26, zmm24
+vpmadd52huq zmm13, zmm26, zmm24
+vpmadd52luq zmm3, zmm22, zmm19
+vpmadd52huq zmm4, zmm22, zmm19
+vpmadd52luq zmm5, zmm23, zmm20
+vpmadd52huq zmm6, zmm23, zmm20
+vpmadd52luq zmm7, zmm24, zmm21
+vpmadd52huq zmm8, zmm24, zmm21
+vpmadd52luq zmm9, zmm25, zmm22
+vpmadd52huq zmm10, zmm25, zmm22
+vpmadd52luq zmm11, zmm26, zmm23
+vpmadd52huq zmm12, zmm26, zmm23
+vpmadd52luq zmm4, zmm23, zmm19
+vpmadd52huq zmm5, zmm23, zmm19
+vpmadd52luq zmm6, zmm24, zmm20
+vpmadd52huq zmm7, zmm24, zmm20
+vpmadd52luq zmm8, zmm25, zmm21
+vpmadd52huq zmm9, zmm25, zmm21
+vpmadd52luq zmm10, zmm26, zmm22
+vpmadd52huq zmm11, zmm26, zmm22
+vpmadd52luq zmm5, zmm24, zmm19
+vpmadd52huq zmm6, zmm24, zmm19
+vpmadd52luq zmm7, zmm25, zmm20
+vpmadd52huq zmm8, zmm25, zmm20
+vpmadd52luq zmm9, zmm26, zmm21
+vpmadd52huq zmm10, zmm26, zmm21
+vpmadd52luq zmm6, zmm25, zmm19
+vpmadd52huq zmm7, zmm25, zmm19
+vpmadd52luq zmm8, zmm26, zmm20
+vpmadd52huq zmm9, zmm26, zmm20
+vpmadd52luq zmm7, zmm26, zmm19
+vpmadd52huq zmm8, zmm26, zmm19
+vpaddq zmm1, zmm1, zmm1
+vpaddq zmm2, zmm2, zmm2
+vpaddq zmm3, zmm3, zmm3
+vpaddq zmm4, zmm4, zmm4
+vpaddq zmm5, zmm5, zmm5
+vpaddq zmm6, zmm6, zmm6
+vpaddq zmm7, zmm7, zmm7
+vpaddq zmm8, zmm8, zmm8
+vpaddq zmm9, zmm9, zmm9
+vpaddq zmm10, zmm10, zmm10
+vpaddq zmm11, zmm11, zmm11
+vpaddq zmm12, zmm12, zmm12
+vpaddq zmm13, zmm13, zmm13
+vpaddq zmm14, zmm14, zmm14
+vmovdqa64 zmm16, zmmword ptr [rdx]
+vpmadd52huq zmm1, zmm19, zmm19
+vpmadd52luq zmm2, zmm20, zmm20
+vpmadd52huq zmm3, zmm20, zmm20
+vpmadd52luq zmm4, zmm21, zmm21
+vpmadd52huq zmm5, zmm21, zmm21
+vpmadd52luq zmm6, zmm22, zmm22
+vpmadd52huq zmm7, zmm22, zmm22
+vpmadd52luq zmm8, zmm23, zmm23
+vpmadd52huq zmm9, zmm23, zmm23
+vpmadd52luq zmm10, zmm24, zmm24
+vpmadd52huq zmm11, zmm24, zmm24
+vpmadd52luq zmm12, zmm25, zmm25
+vpmadd52huq zmm13, zmm25, zmm25
+vpmadd52luq zmm14, zmm26, zmm26
+vpxorq zmm15, zmm15, zmm15
+vpmadd52huq zmm15, zmm26, zmm26
+lea rax, ap
+vmovdqa64 zmm19, zmmword ptr [rax]
+vmovdqa64 zmm20, zmmword ptr [rax+64]
+vmovdqa64 zmm21, zmmword ptr [rax+128]
+vmovdqa64 zmm22, zmmword ptr [rax+192]
+vmovdqa64 zmm23, zmmword ptr [rax+256]
+vmovdqa64 zmm24, zmmword ptr [rax+320]
+vmovdqa64 zmm25, zmmword ptr [rax+384]
+vmovdqa64 zmm26, zmmword ptr [rax+448]
+mov rax, 4503599627370495
+vpbroadcastq zmm18, rax
+vpbroadcastq zmm27, qword ptr rp
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm0, zmm27
+vpmadd52luq zmm0, zmm16, zmm19
+vpmadd52huq zmm1, zmm16, zmm19
+vpmadd52luq zmm1, zmm16, zmm20
+vpmadd52huq zmm2, zmm16, zmm20
+vpmadd52luq zmm2, zmm16, zmm21
+vpmadd52huq zmm3, zmm16, zmm21
+vpmadd52luq zmm3, zmm16, zmm22
+vpmadd52huq zmm4, zmm16, zmm22
+vpmadd52luq zmm4, zmm16, zmm23
+vpmadd52huq zmm5, zmm16, zmm23
+vpmadd52luq zmm5, zmm16, zmm24
+vpmadd52huq zmm6, zmm16, zmm24
+vpmadd52luq zmm6, zmm16, zmm25
+vpmadd52huq zmm7, zmm16, zmm25
+vpmadd52luq zmm7, zmm16, zmm26
+vpmadd52huq zmm8, zmm16, zmm26
+vpsrlq zmm16, zmm0, 52
+vpaddq zmm1, zmm1, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm1, zmm27
+vpmadd52luq zmm1, zmm16, zmm19
+vpmadd52huq zmm2, zmm16, zmm19
+vpmadd52luq zmm2, zmm16, zmm20
+vpmadd52huq zmm3, zmm16, zmm20
+vpmadd52luq zmm3, zmm16, zmm21
+vpmadd52huq zmm4, zmm16, zmm21
+vpmadd52luq zmm4, zmm16, zmm22
+vpmadd52huq zmm5, zmm16, zmm22
+vpmadd52luq zmm5, zmm16, zmm23
+vpmadd52huq zmm6, zmm16, zmm23
+vpmadd52luq zmm6, zmm16, zmm24
+vpmadd52huq zmm7, zmm16, zmm24
+vpmadd52luq zmm7, zmm16, zmm25
+vpmadd52huq zmm8, zmm16, zmm25
+vpmadd52luq zmm8, zmm16, zmm26
+vpmadd52huq zmm9, zmm16, zmm26
+vpsrlq zmm16, zmm1, 52
+vpaddq zmm2, zmm2, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm2, zmm27
+vpmadd52luq zmm2, zmm16, zmm19
+vpmadd52huq zmm3, zmm16, zmm19
+vpmadd52luq zmm3, zmm16, zmm20
+vpmadd52huq zmm4, zmm16, zmm20
+vpmadd52luq zmm4, zmm16, zmm21
+vpmadd52huq zmm5, zmm16, zmm21
+vpmadd52luq zmm5, zmm16, zmm22
+vpmadd52huq zmm6, zmm16, zmm22
+vpmadd52luq zmm6, zmm16, zmm23
+vpmadd52huq zmm7, zmm16, zmm23
+vpmadd52luq zmm7, zmm16, zmm24
+vpmadd52huq zmm8, zmm16, zmm24
+vpmadd52luq zmm8, zmm16, zmm25
+vpmadd52huq zmm9, zmm16, zmm25
+vpmadd52luq zmm9, zmm16, zmm26
+vpmadd52huq zmm10, zmm16, zmm26
+vpsrlq zmm16, zmm2, 52
+vpaddq zmm3, zmm3, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm3, zmm27
+vpmadd52luq zmm3, zmm16, zmm19
+vpmadd52huq zmm4, zmm16, zmm19
+vpmadd52luq zmm4, zmm16, zmm20
+vpmadd52huq zmm5, zmm16, zmm20
+vpmadd52luq zmm5, zmm16, zmm21
+vpmadd52huq zmm6, zmm16, zmm21
+vpmadd52luq zmm6, zmm16, zmm22
+vpmadd52huq zmm7, zmm16, zmm22
+vpmadd52luq zmm7, zmm16, zmm23
+vpmadd52huq zmm8, zmm16, zmm23
+vpmadd52luq zmm8, zmm16, zmm24
+vpmadd52huq zmm9, zmm16, zmm24
+vpmadd52luq zmm9, zmm16, zmm25
+vpmadd52huq zmm10, zmm16, zmm25
+vpmadd52luq zmm10, zmm16, zmm26
+vpmadd52huq zmm11, zmm16, zmm26
+vpsrlq zmm16, zmm3, 52
+vpaddq zmm4, zmm4, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm4, zmm27
+vpmadd52luq zmm4, zmm16, zmm19
+vpmadd52huq zmm5, zmm16, zmm19
+vpmadd52luq zmm5, zmm16, zmm20
+vpmadd52huq zmm6, zmm16, zmm20
+vpmadd52luq zmm6, zmm16, zmm21
+vpmadd52huq zmm7, zmm16, zmm21
+vpmadd52luq zmm7, zmm16, zmm22
+vpmadd52huq zmm8, zmm16, zmm22
+vpmadd52luq zmm8, zmm16, zmm23
+vpmadd52huq zmm9, zmm16, zmm23
+vpmadd52luq zmm9, zmm16, zmm24
+vpmadd52huq zmm10, zmm16, zmm24
+vpmadd52luq zmm10, zmm16, zmm25
+vpmadd52huq zmm11, zmm16, zmm25
+vpmadd52luq zmm11, zmm16, zmm26
+vpmadd52huq zmm12, zmm16, zmm26
+vpsrlq zmm16, zmm4, 52
+vpaddq zmm5, zmm5, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm5, zmm27
+vpmadd52luq zmm5, zmm16, zmm19
+vpmadd52huq zmm6, zmm16, zmm19
+vpmadd52luq zmm6, zmm16, zmm20
+vpmadd52huq zmm7, zmm16, zmm20
+vpmadd52luq zmm7, zmm16, zmm21
+vpmadd52huq zmm8, zmm16, zmm21
+vpmadd52luq zmm8, zmm16, zmm22
+vpmadd52huq zmm9, zmm16, zmm22
+vpmadd52luq zmm9, zmm16, zmm23
+vpmadd52huq zmm10, zmm16, zmm23
+vpmadd52luq zmm10, zmm16, zmm24
+vpmadd52huq zmm11, zmm16, zmm24
+vpmadd52luq zmm11, zmm16, zmm25
+vpmadd52huq zmm12, zmm16, zmm25
+vpmadd52luq zmm12, zmm16, zmm26
+vpmadd52huq zmm13, zmm16, zmm26
+vpsrlq zmm16, zmm5, 52
+vpaddq zmm6, zmm6, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm6, zmm27
+vpmadd52luq zmm6, zmm16, zmm19
+vpmadd52huq zmm7, zmm16, zmm19
+vpmadd52luq zmm7, zmm16, zmm20
+vpmadd52huq zmm8, zmm16, zmm20
+vpmadd52luq zmm8, zmm16, zmm21
+vpmadd52huq zmm9, zmm16, zmm21
+vpmadd52luq zmm9, zmm16, zmm22
+vpmadd52huq zmm10, zmm16, zmm22
+vpmadd52luq zmm10, zmm16, zmm23
+vpmadd52huq zmm11, zmm16, zmm23
+vpmadd52luq zmm11, zmm16, zmm24
+vpmadd52huq zmm12, zmm16, zmm24
+vpmadd52luq zmm12, zmm16, zmm25
+vpmadd52huq zmm13, zmm16, zmm25
+vpmadd52luq zmm13, zmm16, zmm26
+vpmadd52huq zmm14, zmm16, zmm26
+vpsrlq zmm16, zmm6, 52
+vpaddq zmm7, zmm7, zmm16
+vpxorq zmm16, zmm16, zmm16
+vpmadd52luq zmm16, zmm7, zmm27
+vpmadd52luq zmm7, zmm16, zmm19
+vpmadd52huq zmm8, zmm16, zmm19
+vpmadd52luq zmm8, zmm16, zmm20
+vpmadd52huq zmm9, zmm16, zmm20
+vpmadd52luq zmm9, zmm16, zmm21
+vpmadd52huq zmm10, zmm16, zmm21
+vpmadd52luq zmm10, zmm16, zmm22
+vpmadd52huq zmm11, zmm16, zmm22
+vpmadd52luq zmm11, zmm16, zmm23
+vpmadd52huq zmm12, zmm16, zmm23
+vpmadd52luq zmm12, zmm16, zmm24
+vpmadd52huq zmm13, zmm16, zmm24
+vpmadd52luq zmm13, zmm16, zmm25
+vpmadd52huq zmm14, zmm16, zmm25
+vpmadd52luq zmm14, zmm16, zmm26
+vpmadd52huq zmm15, zmm16, zmm26
+vpsrlq zmm16, zmm7, 52
+vpaddq zmm8, zmm8, zmm16
+vpandq zmm7, zmm7, zmm18
+vpsrlq zmm16, zmm8, 52
+vpaddq zmm9, zmm9, zmm16
+vpandq zmm8, zmm8, zmm18
+vpsrlq zmm16, zmm9, 52
+vpaddq zmm10, zmm10, zmm16
+vpandq zmm9, zmm9, zmm18
+vpsrlq zmm16, zmm10, 52
+vpaddq zmm11, zmm11, zmm16
+vpandq zmm10, zmm10, zmm18
+vpsrlq zmm16, zmm11, 52
+vpaddq zmm12, zmm12, zmm16
+vpandq zmm11, zmm11, zmm18
+vpsrlq zmm16, zmm12, 52
+vpaddq zmm13, zmm13, zmm16
+vpandq zmm12, zmm12, zmm18
+vpsrlq zmm16, zmm13, 52
+vpaddq zmm14, zmm14, zmm16
+vpandq zmm13, zmm13, zmm18
+vpsrlq zmm16, zmm14, 52
+vpaddq zmm15, zmm15, zmm16
+vpandq zmm14, zmm14, zmm18
+vpxorq zmm27, zmm27, zmm27
+vpsubq zmm0, zmm8, zmm19
+vpsrlq zmm16, zmm0, 63
+vpsubq zmm1, zmm9, zmm20
+vpsubq zmm1, zmm1, zmm16
+vpsrlq zmm16, zmm1, 63
+vpsubq zmm2, zmm10, zmm21
+vpsubq zmm2, zmm2, zmm16
+vpsrlq zmm16, zmm2, 63
+vpsubq zmm3, zmm11, zmm22
+vpsubq zmm3, zmm3, zmm16
+vpsrlq zmm16, zmm3, 63
+vpsubq zmm4, zmm12, zmm23
+vpsubq zmm4, zmm4, zmm16
+vpsrlq zmm16, zmm4, 63
+vpsubq zmm5, zmm13, zmm24
+vpsubq zmm5, zmm5, zmm16
+vpsrlq zmm16, zmm5, 63
+vpsubq zmm6, zmm14, zmm25
+vpsubq zmm6, zmm6, zmm16
+vpsrlq zmm16, zmm6, 63
+vpsubq zmm7, zmm15, zmm26
+vpsubq zmm7, zmm7, zmm16
+vpsrlq zmm16, zmm7, 63
+vpcmpeqq k1, zmm16, zmm27
+vpandq zmm8{k1}, zmm0, zmm18
+vpandq zmm9{k1}, zmm1, zmm18
+vpandq zmm10{k1}, zmm2, zmm18
+vpandq zmm11{k1}, zmm3, zmm18
+vpandq zmm12{k1}, zmm4, zmm18
+vpandq zmm13{k1}, zmm5, zmm18
+vpandq zmm14{k1}, zmm6, zmm18
+vpandq zmm15{k1}, zmm7, zmm18
+vmovdqa64 zmmword ptr [r10], zmm8
+vmovdqa64 zmmword ptr [r10+64], zmm9
+vmovdqa64 zmmword ptr [r10+128], zmm10
+vmovdqa64 zmmword ptr [r10+192], zmm11
+vmovdqa64 zmmword ptr [r10+256], zmm12
+vmovdqa64 zmmword ptr [r10+320], zmm13
+vmovdqa64 zmmword ptr [r10+384], zmm14
+vmovdqa64 zmmword ptr [r10+448], zmm15
+vmovups xmm5, xmmword ptr [rsp]
+vmovups xmm6, xmmword ptr [rsp+16]
+vmovups xmm7, xmmword ptr [rsp+32]
+vmovups xmm8, xmmword ptr [rsp+48]
+vmovups xmm9, xmmword ptr [rsp+64]
+vmovups xmm10, xmmword ptr [rsp+80]
+vmovups xmm11, xmmword ptr [rsp+96]
+vmovups xmm12, xmmword ptr [rsp+112]
+vmovups xmm13, xmmword ptr [rsp+128]
+vmovups xmm14, xmmword ptr [rsp+144]
+vmovups xmm15, xmmword ptr [rsp+160]
+vzeroupper
+add rsp, 184
+ret
+mcl_c5_vsqr endp
 mcl_c5_vaddA proc export
 sub rsp, 184
 vmovups xmmword ptr [rsp], xmm5

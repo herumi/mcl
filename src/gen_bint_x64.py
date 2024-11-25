@@ -466,6 +466,89 @@ def gen_vmul(mont):
 
       un(vmovdqa64)(ptr(pz), t[1:])
 
+def gen_vsqr(mont):
+  with FuncProc(MSM_PRE+'vsqr'):
+    with StackFrame(2, 1, useRCX=True, vNum=mont.N*3+4, vType=T_ZMM) as sf:
+      regs = list(reversed(sf.v))
+      W = mont.W
+      N = mont.N
+      S = 63
+      un = genUnrollFunc()
+
+      pz = sf.p[0]
+      px = sf.p[1]
+      rp = sf.t[0]
+
+      t = pops(regs, N*2)
+      q = pops(regs, 1)[0]
+      H = pops(regs, 1)[0]
+      vmask = pops(regs, 1)[0]
+      vx = pops(regs, N)
+      vrp = pops(regs, 1)[0]
+
+      un(vmovdqa64)(vx, ptr(px))
+      # square
+      vpxorq(t[0], t[0], t[0])
+      vmulL(t[0], vx[0], vx[0])
+      for i in range(1, N):
+        tL = t[i*2-1]
+        tH = t[i*2]
+        vpxorq(tL, tL, tL)
+        vpxorq(tH, tH, tH)
+        vmulL(tL, vx[i], vx[i-1])
+        vmulH(tH, vx[i], vx[i-1])
+
+      for i in range(2, N):
+        for j in range(i, N):
+          vmulL(t[j*2-i  ], vx[j], vx[j-i])
+          vmulH(t[j*2-i+1], vx[j], vx[j-i])
+
+      for i in range(1, N*2-1):
+        vpaddq(t[i], t[i], t[i])
+
+      vmovdqa64(q, ptr(px))
+      for i in range(1, N):
+        vmulH(t[i*2-1], vx[i-1], vx[i-1])
+        vmulL(t[i*2], vx[i], vx[i])
+      vpxorq(t[N*2-1], t[N*2-1], t[N*2-1])
+      vmulH(t[N*2-1], vx[i], vx[i])
+
+      # reduction
+      # rename vx to vp
+      (vp, vx) = (vx, None)
+
+      lea(rax, ptr(rip+C_ap))
+      un(vmovdqa64)(vp, ptr(rax))
+
+      mov(rax, mont.mask)
+      vpbroadcastq(vmask, rax)
+      vpbroadcastq(vrp, ptr(rip+C_rp))
+
+      for i in range(N):
+        if i > 0:
+          vpsrlq(q, t[i-1], W)
+          vpaddq(t[i], t[i], q)
+        vpxorq(q, q, q)
+        vmulL(q, t[i], vrp)
+
+        #call(vmulUnitAddL) # t += p * q
+        for j in range(0, N):
+          vmulL(t[i+j], q, vp[j])
+          vmulH(t[i+j+1], q, vp[j])
+
+      for i in range(N, N*2):
+        vpsrlq(q, t[i-1], W)
+        vpaddq(t[i], t[i], q)
+        vpandq(t[i-1], t[i-1], vmask)
+
+      s = t[0:N]
+      t = t[N:N*2]
+
+      vpxorq(vrp, vrp, vrp)
+      sub_p_if_possible2(t, s, k1, vrp, q, vp, vmask)
+
+      un(vmovdqa64)(ptr(pz), t)
+
 def vmulUnitA(z, px, y, N, H):
   un = genUnrollFunc()
   vN = 2
@@ -618,6 +701,7 @@ def msm_code(mont):
   gen_vadd(mont)
   gen_vsub(mont)
   gen_vmul(mont)
+  gen_vsqr(mont)
 
   gen_vadd(mont, 2) # a little faster
   #gen_vaddA(mont)
