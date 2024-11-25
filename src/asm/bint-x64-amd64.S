@@ -812,7 +812,6 @@ vpaddq %zmm11, %zmm11, %zmm11
 vpaddq %zmm12, %zmm12, %zmm12
 vpaddq %zmm13, %zmm13, %zmm13
 vpaddq %zmm14, %zmm14, %zmm14
-vmovdqa64 (%rsi), %zmm16
 vpmadd52huq %zmm19, %zmm19, %zmm1
 vpmadd52luq %zmm20, %zmm20, %zmm2
 vpmadd52huq %zmm20, %zmm20, %zmm3

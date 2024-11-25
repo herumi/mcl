@@ -870,7 +870,6 @@ vpaddq zmm11, zmm11, zmm11
 vpaddq zmm12, zmm12, zmm12
 vpaddq zmm13, zmm13, zmm13
 vpaddq zmm14, zmm14, zmm14
-vmovdqa64 zmm16, zmmword ptr [rdx]
 vpmadd52huq zmm1, zmm19, zmm19
 vpmadd52luq zmm2, zmm20, zmm20
 vpmadd52huq zmm3, zmm20, zmm20

@@ -412,7 +412,9 @@ inline void vsqr(Vec *z, const Vec *x)
 	mcl_c5_vsqr(z, x);
 //	mcl_c5_vmul(z, x, x);
 }
+#endif
 
+#if 1
 template<>
 inline void vsqr<VmaskA, VecA>(VecA *z, const VecA *x)
 {
@@ -1709,7 +1711,7 @@ CYBOZU_TEST_AUTO(sqr)
 	Vec z1[n], z2[n];
 	for (size_t i = 0; i < n*8; i++) ((Unit*)v)[i] = rg.get32();
 	for (size_t i = 0; i < n; i++) dump(v[i], "v");
-	
+
 	vsqr(z1, v);
 	mcl_c5_vsqr(z2, v);
 	for (size_t i = 0; i < n*2; i++) {

@@ -506,7 +506,6 @@ def gen_vsqr(mont):
       for i in range(1, N*2-1):
         vpaddq(t[i], t[i], t[i])
 
-      vmovdqa64(q, ptr(px))
       for i in range(1, N):
         vmulH(t[i*2-1], vx[i-1], vx[i-1])
         vmulL(t[i*2], vx[i], vx[i])
