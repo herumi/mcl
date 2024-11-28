@@ -60,16 +60,10 @@ int main(int argc, char *argv[])
 	G1 P1, P2;
 #ifdef MCL_MSM
 	if (msmOnly) {
-#define USE_GLV
-#ifdef USE_GLV
-		const size_t e = 2;
-#else
-		const size_t e = 1;
-#endif
 		const cybozu::CpuClock& clk = cybozu::bench::g_clk;
-		for (size_t nn = 1u<<10; nn <= n; nn *= 2) {
-			const size_t c = mcl::ec::argminForMulVec(nn*e /* GLV */);
-			for (size_t bucketN = c-4; bucketN <= c; bucketN++) {
+		for (size_t nn = 1u<<8; nn <= n; nn *= 2) {
+			const size_t c = mcl::ec::argminForMulVec(nn);
+			for (size_t bucketN = c-3; bucketN <= c; bucketN++) {
 				mcl::fp::getRefArgminForce() = bucketN;
 				CYBOZU_BENCH_C("", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
 				mcl::fp::getRefArgminForce() = 0;

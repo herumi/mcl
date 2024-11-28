@@ -208,5 +208,5 @@ mul|269|183
 sqr|243|174
 
 asm
-Vec::mul 117.66 clk
+Vec::mul 108 clk < Vec::asm
 VecA::mul 181.90 clk
