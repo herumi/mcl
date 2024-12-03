@@ -21,6 +21,16 @@
 #endif
 #endif
 
+//#define USE_CLK
+#ifdef USE_CLK
+#include <cybozu/benchmark.hpp>
+cybozu::CpuClock clk0;
+cybozu::CpuClock clk1;
+cybozu::CpuClock clk2;
+cybozu::CpuClock clk3;
+cybozu::CpuClock clk4;
+#endif
+
 #define USE_ASM
 
 extern "C" {
@@ -1222,6 +1232,9 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 {
 	const bool isProj = true;
 	const Vec m = vpbroadcastq(tblN-1);
+#ifdef USE_CLK
+clk3.begin();
+#endif
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
 	}
@@ -1233,6 +1246,10 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 		G::template add<isProj, mixed>(T, T, xVec[i]);
 		T.scatter(tbl, v);
 	}
+#ifdef USE_CLK
+clk3.end();
+clk4.begin();
+#endif
 	G sum = tbl[tblN - 1];
 	if (first) {
 		win = sum;
@@ -1243,6 +1260,9 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 		G::add(sum, sum, tbl[tblN - 1- i]);
 		G::add(win, win, sum);
 	}
+#ifdef USE_CLK
+clk4.end();
+#endif
 }
 
 // xVec[n], yVec[n * maxBitSize/64]
@@ -1430,10 +1450,25 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * e, 64);
 	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
 
+#ifdef USE_CLK
+	clk0.begin();
+#endif
 	for (size_t i = 0; i < d; i++) {
 		xVec[i].template setG1A<mixed>(x+i*m);
 	}
+#ifdef USE_CLK
+	clk0.end();
+#endif
+#ifdef USE_CLK
+	clk1.begin();
+#endif
 	normalizeJacobiVec(xVec, d, true);
+#ifdef USE_CLK
+	clk1.end();
+#endif
+#ifdef USE_CLK
+	clk2.begin();
+#endif
 #ifdef USE_GLV
 	for (size_t i = 0; i < d; i++) {
 		G::mulLambda(xVec[d+i], xVec[i]);
@@ -1464,6 +1499,9 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 			}
 		}
 	}
+#endif
+#ifdef USE_CLK
+	clk2.end();
 #endif
 	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e);
 

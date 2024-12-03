@@ -7,7 +7,7 @@
 
 typedef std::map<size_t, double> Mem2Clk;
 
-void gatherBench(Mem2Clk& bench, const uint64_t *base, size_t bit, size_t c, cybozu::XorShift& rg)
+void gatherBench(Mem2Clk& bench, uint64_t *base, size_t bit, size_t c, cybozu::XorShift& rg, int mode)
 {
 	cybozu::CpuClock clk;
 	clk.begin();
@@ -23,6 +23,9 @@ void gatherBench(Mem2Clk& bench, const uint64_t *base, size_t bit, size_t c, cyb
 		Vec idx;
 		memcpy(&idx, tbl, sizeof(idx));
 		v = vpaddq(v, vpgatherqq(idx, base));
+		if (mode == 1) {
+			vpscatterqq(base, idx, v);
+		}
 	}
 	clk.end();
 	uint64_t s = 0;
@@ -83,10 +86,13 @@ int main()
 	for (size_t i = 0; i < n; i++) {
 		v[i] = rg.get32();
 	}
-	Mem2Clk bench;
-	for (size_t b = 8; b <= maxB; b++) {
-		gatherBench(bench, v.data(), b, 100000, rg);
+	for (int mode = 0; mode < 2; mode++) {
+		printf("%s\n", mode == 0 ? "RO" : "RW");
+		Mem2Clk bench;
+		for (size_t b = 8; b <= maxB; b++) {
+			gatherBench(bench, v.data(), b, 100000, rg, mode);
+		}
+		printTable(bench, true);
+		printTable(bench, false);
 	}
-	printTable(bench, true);
-	printTable(bench, false);
 }
