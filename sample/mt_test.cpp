@@ -27,6 +27,20 @@ extern cybozu::CpuClock clk2;
 extern cybozu::CpuClock clk3;
 extern cybozu::CpuClock clk4;
 #endif
+inline size_t argminForMulVecAVX512(size_t n)
+{
+	if (n <= 2) return 2;
+	size_t log2n = mcl::ec::ilog2(n);
+	const size_t tblMin = 7;
+	if (log2n < tblMin) return 4;
+	// n >= 2^tblMin
+	static const size_t tbl[] = {
+		4, 5, 5, 6, 7, 8, 8, 10, 10, 10, 10, 10, 13, 15, 15, 16, 16, 16, 16, 16
+	};
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 16;
+	size_t ret = tbl[log2n - tblMin];
+	return ret;
+}
 
 int main(int argc, char *argv[])
 	try
@@ -69,28 +83,18 @@ int main(int argc, char *argv[])
 	G1 P1, P2;
 #ifdef MCL_MSM
 	if (msmOnly) {
-		const cybozu::CpuClock& clk = cybozu::bench::g_clk;
-#if 1
-		const size_t adj = 8; // AVX-512
-#else
-		const size_t adj = 1; // scalar
-#endif
 		for (size_t nn = 1u<<9; nn <= n; nn *= 2) {
-			const size_t c = mcl::ec::argminForMulVec(nn/adj*2);
-			for (size_t bucketN = c-4; bucketN <= c; bucketN++) {
-				mcl::fp::getRefArgminForce() = bucketN;
-				CYBOZU_BENCH_C("", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
-				mcl::fp::getRefArgminForce() = 0;
-				printf("% 8zd % 8zd %.2f Mclk\n", nn, bucketN, double(clk.getClock())/double(clk.getCount()*C)*1e-6); fflush(stdout);
+			printf("% 8zd", nn);
+			CYBOZU_BENCH_C(" ", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
+			fflush(stdout);
 #ifdef USE_CLK
 printf("getCount g=%d %d %d %d %d %d %d\n", clk.getCount(), clk0.getCount(), clk1.getCount(), clk2.getCount(), clk3.getCount(), clk4.getCount(), clk5.getCount());
-				clk0.put("clk0"); clk0.clear();
-				clk1.put("clk1"); clk1.clear();
-				clk2.put("clk2"); clk2.clear();
-				clk3.put("clk3"); clk3.clear();
-				clk4.put("clk4"); clk4.clear();
+			clk0.put("clk0"); clk0.clear();
+			clk1.put("clk1"); clk1.clear();
+			clk2.put("clk2"); clk2.clear();
+			clk3.put("clk3"); clk3.clear();
+			clk4.put("clk4"); clk4.clear();
 #endif
-			}
 		}
 		return 0;
 	}

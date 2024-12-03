@@ -1265,11 +1265,26 @@ clk4.end();
 #endif
 }
 
+inline size_t argminForMulVecAVX512(size_t n)
+{
+	if (n <= 2) return 2;
+	size_t log2n = mcl::ec::ilog2(n);
+	const size_t tblMin = 7;
+	if (log2n < tblMin) return 4;
+	// n >= 2^tblMin
+	static const size_t tbl[] = {
+		4, 5, 5, 6, 7, 8, 8, 10, 10, 10, 10, 10, 13, 15, 15, 16, 16, 16, 16, 16
+	};
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 16;
+	size_t ret = tbl[log2n - tblMin];
+	return ret;
+}
 // xVec[n], yVec[n * maxBitSize/64]
 template<class G=EcM, class V=Vec, bool mixed = false>
 inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize)
 {
-	size_t c = mcl::ec::argminForMulVec(n);
+//	size_t c = mcl::ec::argminForMulVec(n);
+	size_t c = argminForMulVecAVX512(n);
 	size_t tblN = size_t(1) << c;
 	G *tbl = (G*)Xbyak::AlignedMalloc(sizeof(G) * tblN, 64);
 	const size_t yn = maxBitSize / 64;
