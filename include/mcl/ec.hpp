@@ -990,6 +990,19 @@ inline size_t argminForMulVec0(size_t n)
 */
 inline size_t argminForMulVec(size_t n)
 {
+#if 1
+	if (n <= 2) return 2;
+	size_t log2n = mcl::ec::ilog2(n);
+	const size_t tblMin = 8;
+	if (log2n < tblMin) return 3;
+	// n >= 2^tblMin
+	static const size_t tbl[] = {
+		3, 4, 5, 5, 8, 8, 9, 10, 11, 12, 13, 13, 13, 16, 16, 16, 18, 19, 19, 19, 19, 19
+	};
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 19;
+	size_t ret = tbl[log2n - tblMin];
+	return ret;
+#else
 	size_t v = mcl::fp::getRefArgminForce(n);
 	if (v) return v;
 	size_t x = argminForMulVec0(n);
@@ -1001,6 +1014,7 @@ inline size_t argminForMulVec(size_t n)
 	if (vp1 < v0) return x+1;
 #endif
 	return x;
+#endif
 }
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
