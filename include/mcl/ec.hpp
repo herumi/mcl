@@ -243,30 +243,45 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 }
 
 /*
-	split x to (a, b) such that x = a + b L where 0 <= a, b <= L, 0 <= x <= r-1 = L^2+L
-	if adj is true, then 0 <= a < L, 0 <= b <= L+1
+	split x in [0, r-1] to (a, b) such that x = a + b L, 0 <= a < L, 0 <= b <= L+1
 	a[] : 128 bit
 	b[] : 128 bit
 	x[] : 256 bit
 */
 inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 {
-	const bool adj = false;
 	/*
 		z = -0xd201000000010000
 		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
 		r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 		s=255
-		v = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
+		q = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
+		H = 1<<128
 	*/
 	static const Unit L[] = { MCL_U64_TO_UNIT(0x00000000ffffffff), MCL_U64_TO_UNIT(0xac45a4010001a402) };
-	static const Unit v[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
+	static const Unit q[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
 	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
 	static const size_t n = 128 / mcl::UnitBitSize;
+#if 1
+	Unit xH[n+1]; // x = xH * (H/2) + xL
+	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-1); // >>127
+	Unit t[n*2];
+	mcl::bint::mulT<n>(t, xH, q);
+	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
+	mcl::bint::mulT<n>(t, b, L); // bL
+	mcl::bint::subT<n*2>(t, x, t); // x - bL
+	Unit d = mcl::bint::subT<n>(a, t, L);
+	if (t[n] - d == 0) {
+		mcl::bint::addT<n>(b, b, one);
+	} else {
+		mcl::bint::copyT<n>(a, t);
+	}
+#else
+	const bool adj = false;
 	Unit t[n*3];
 	// n = 128 bit
-	// t[n*3] = x[n*2] * v[n]
-	mcl::bint::mulNM(t, x, n*2, v, n);
+	// t[n*3] = x[n*2] * q[n]
+	mcl::bint::mulNM(t, x, n*2, q, n);
 	// b[n] = t[n*3]>>255
 	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
 	mcl::bint::copyT<n>(b, t);
@@ -283,6 +298,7 @@ inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 			mcl::bint::clearT<n>(a);
 		}
 	}
+#endif
 }
 
 } // mcl::ec::local
@@ -571,7 +587,7 @@ void addJacobi(E& R, const E& P, const E& Q)
 
 /*
 	accept P == Q
-	https://github.com/apache/incubator-milagro-crypto-c/blob/fa0a45a3/src/ecp.c.in#L767-L976
+	https://eprint.iacr.org/2015/1060
 	(x, y, z) is zero <=> x = 0, y = 1, z = 0
 */
 
