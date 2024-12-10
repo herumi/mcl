@@ -988,12 +988,13 @@ inline size_t ilog2(size_t n)
 	return cybozu::bsr(n) + 1;
 }
 
-inline size_t costMulVec(size_t n, size_t x)
+// The number of ADD for n-elements with bucket size b
+inline size_t glvCost(size_t n, size_t b)
 {
-	return (n + (size_t(1)<<(x+1))-1)/x;
+	return (n + (size_t(1)<<(b+1))-1)/b;
 }
-// calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
-inline size_t argminForMulVec0(size_t n)
+// approximate value such that argmin { b : glvCost(n, b) }
+inline size_t glvEstimateBucketSize(size_t n)
 {
 	if (n <= 16) return 2;
 	size_t log2n = ilog2(n);
@@ -1001,10 +1002,10 @@ inline size_t argminForMulVec0(size_t n)
 }
 
 /*
-	First, get approximate value x and compute costMulVec of x-1 and x+1,
+	First, get approximate value x and compute glvCost of x-1 and x+1,
 	and return the minimum value.
 */
-inline size_t argminForMulVec(size_t n)
+inline size_t glvGetBucketSize(size_t n)
 {
 #if 1
 	if (n <= 2) return 2;
@@ -1019,13 +1020,11 @@ inline size_t argminForMulVec(size_t n)
 	size_t ret = tbl[log2n - tblMin];
 	return ret;
 #else
-	size_t v = mcl::fp::getRefArgminForce(n);
-	if (v) return v;
-	size_t x = argminForMulVec0(n);
+	size_t x = glvEstimateBucketSize(n);
 #if 1
-	size_t vm1 = x > 1 ? costMulVec(n, x-1) : n;
-	size_t v0 = costMulVec(n, x);
-	size_t vp1 = costMulVec(n, x+1);
+	size_t vm1 = x > 1 ? glvCost(n, x-1) : n;
+	size_t v0 = glvCost(n, x);
+	size_t vp1 = glvCost(n, x+1);
 	if (vm1 <= v0) return x-1;
 	if (vp1 < v0) return x+1;
 #endif
@@ -1034,7 +1033,7 @@ inline size_t argminForMulVec(size_t n)
 }
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
-	// use (1 << argminForMulVec(n)) * sizeof(G) bytes stack + alpha
+	// use (1 << glvGetBucketSize(n)) * sizeof(G) bytes stack + alpha
 	// about 18KiB (G1) or 36KiB (G2) for n = 1024
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
@@ -1094,7 +1093,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
-		c = argminForMulVec(n);
+		c = glvGetBucketSize(n);
 		tblN = (1 << c) - 1;
 		tbl_ = (G*)malloc(sizeof(G) * tblN);
 		if (tbl_) {
@@ -1105,7 +1104,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 #endif
 	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
-	c = argminForMulVec(n);
+	c = glvGetBucketSize(n);
 	tblN = (1 << c) - 1;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0

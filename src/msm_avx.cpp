@@ -1265,7 +1265,7 @@ clk4.end();
 #endif
 }
 
-inline size_t argminForMulVecAVX512(size_t n)
+inline size_t glvGetBucketSizeAVX512(size_t n)
 {
 	if (n <= 2) return 2;
 	size_t log2n = mcl::ec::ilog2(n);
@@ -1283,8 +1283,8 @@ inline size_t argminForMulVecAVX512(size_t n)
 template<class G=EcM, class V=Vec, bool mixed = false>
 inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize)
 {
-//	size_t c = mcl::ec::argminForMulVec(n);
-	size_t c = argminForMulVecAVX512(n);
+//	size_t c = mcl::ec::glvGetBucketSize(n);
+	size_t c = glvGetBucketSizeAVX512(n);
 	size_t tblN = size_t(1) << c;
 	G *tbl = (G*)Xbyak::AlignedMalloc(sizeof(G) * tblN, 64);
 	const size_t yn = maxBitSize / 64;

@@ -27,7 +27,7 @@ extern cybozu::CpuClock clk2;
 extern cybozu::CpuClock clk3;
 extern cybozu::CpuClock clk4;
 #endif
-inline size_t argminForMulVecAVX512(size_t n)
+inline size_t glvGetBucketSizeAVX512(size_t n)
 {
 	if (n <= 2) return 2;
 	size_t log2n = mcl::ec::ilog2(n);

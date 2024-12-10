@@ -662,12 +662,6 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	return 0;
 }
 
-size_t& getRefArgminForce(size_t)
-{
-	static size_t v = 0;
-	return v;
-}
-
 #ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
