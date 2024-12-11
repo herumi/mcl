@@ -41,7 +41,7 @@ inline size_t glvCost(size_t n, size_t x)
 	return (n + (size_t(1)<<(x+1))-1)/x;
 }
 // calculate approximate value such that argmin { x : (n + 2^(x+1)-1)/x }
-inline size_t glvEstimateBucketSize(size_t n)
+inline size_t estimateBucketSize(size_t n)
 {
 	if (n <= 16) return 2;
 	size_t log2n = ilog2(n);
@@ -54,7 +54,7 @@ inline size_t glvEstimateBucketSize(size_t n)
 */
 inline size_t glvGetBucketSize(size_t n)
 {
-	size_t x = glvEstimateBucketSize(n);
+	size_t x = estimateBucketSize(n);
 #if 1
 	size_t vm1 = x > 1 ? glvCost(n, x-1) : n;
 	size_t v0 = glvCost(n, x);

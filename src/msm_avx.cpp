@@ -1707,6 +1707,32 @@ CYBOZU_TEST_AUTO(init)
 	g_mont.init(mcl::bn::Fp::getOp().mp);
 }
 
+CYBOZU_TEST_AUTO(glvParam)
+{
+	const char *item[] = {"d", "exact b", "cost", "MiB", "heuristic b", "cost", "MiB" };
+	const size_t itemN = CYBOZU_NUM_OF_ARRAY(item);
+	for (size_t i = 0; i < itemN; i++) {
+		if (i > 0) putchar('|');
+		printf("%s", item[i]);
+	}
+	printf("\n");
+	for (size_t i = 0; i < itemN; i++) {
+		if (i > 0) putchar('|');
+		putchar('-');
+	}
+	printf("\n");
+	for (size_t d = 9; d < 28; d++) {
+		size_t n = (size_t(1) << d)/8*2; // /(#SIMD)*(GLV)
+		size_t b1 = mcl::ec::getTheoreticBucketSize(n);
+		size_t cost1 = mcl::ec::glvCost(n, b1);
+		double mem1 = (8*8*8*3) * (size_t(1) << b1) / 1024.0 / 1024;
+		size_t b2 = glvGetBucketSizeAVX512(n);
+		size_t cost2 = mcl::ec::glvCost(n, b2);
+		double mem2 = (8*8*8*3) * (size_t(1) << b2) / 1024.0 / 1024;
+		printf("%zd|%zd|%zd|%.2f|%zd|%zd(%.2fx)|%.2f(%.2fx)\n", d, b1, cost1, mem1, b2, cost2, cost2/double(cost1), mem2, mem1/mem2);
+	}
+}
+
 #if 0
 CYBOZU_TEST_AUTO(sqr)
 {

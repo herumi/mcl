@@ -994,7 +994,7 @@ inline size_t glvCost(size_t n, size_t b)
 	return (n + (size_t(1)<<(b+1))-1)/b;
 }
 // approximate value such that argmin { b : glvCost(n, b) }
-inline size_t glvEstimateBucketSize(size_t n)
+inline size_t estimateBucketSize(size_t n)
 {
 	if (n <= 16) return 2;
 	size_t log2n = ilog2(n);
@@ -1005,9 +1005,9 @@ inline size_t glvEstimateBucketSize(size_t n)
 	First, get approximate value x and compute glvCost of x-1 and x+1,
 	and return the minimum value.
 */
-inline size_t glvExactBucketSize(size_t n)
+inline size_t getTheoreticBucketSize(size_t n)
 {
-	size_t x = glvEstimateBucketSize(n);
+	size_t x = estimateBucketSize(n);
 	size_t vm1 = x > 1 ? glvCost(n, x-1) : n;
 	size_t v0 = glvCost(n, x);
 	size_t vp1 = glvCost(n, x+1);
@@ -1016,7 +1016,7 @@ inline size_t glvExactBucketSize(size_t n)
 	return x;
 }
 
-//	return heuristic backet size which is faster than glvExactBucketSize
+//	return heuristic backet size which is faster than getTheoreticBucketSize
 inline size_t glvGetBucketSize(size_t n)
 {
 	if (n <= 2) return 2;
