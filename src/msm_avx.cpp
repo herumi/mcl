@@ -21,16 +21,6 @@
 #endif
 #endif
 
-//#define USE_CLK
-#ifdef USE_CLK
-#include <cybozu/benchmark.hpp>
-cybozu::CpuClock clk0;
-cybozu::CpuClock clk1;
-cybozu::CpuClock clk2;
-cybozu::CpuClock clk3;
-cybozu::CpuClock clk4;
-#endif
-
 #define USE_ASM
 
 extern "C" {
@@ -1232,9 +1222,6 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 {
 	const bool isProj = true;
 	const Vec m = vpbroadcastq(tblN-1);
-#ifdef USE_CLK
-clk3.begin();
-#endif
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
 	}
@@ -1246,10 +1233,6 @@ clk3.begin();
 		G::template add<isProj, mixed>(T, T, xVec[i]);
 		T.scatter(tbl, v);
 	}
-#ifdef USE_CLK
-clk3.end();
-clk4.begin();
-#endif
 	G sum = tbl[tblN - 1];
 	if (first) {
 		win = sum;
@@ -1260,9 +1243,6 @@ clk4.begin();
 		G::add(sum, sum, tbl[tblN - 1- i]);
 		G::add(win, win, sum);
 	}
-#ifdef USE_CLK
-clk4.end();
-#endif
 }
 
 inline size_t glvGetBucketSizeAVX512(size_t n)
@@ -1465,25 +1445,10 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * e, 64);
 	V *yVec = (V*)Xbyak::AlignedMalloc(sizeof(V) * d * 4, 64);
 
-#ifdef USE_CLK
-	clk0.begin();
-#endif
 	for (size_t i = 0; i < d; i++) {
 		xVec[i].template setG1A<mixed>(x+i*m);
 	}
-#ifdef USE_CLK
-	clk0.end();
-#endif
-#ifdef USE_CLK
-	clk1.begin();
-#endif
 	normalizeJacobiVec(xVec, d, true);
-#ifdef USE_CLK
-	clk1.end();
-#endif
-#ifdef USE_CLK
-	clk2.begin();
-#endif
 #ifdef USE_GLV
 	for (size_t i = 0; i < d; i++) {
 		G::mulLambda(xVec[d+i], xVec[i]);
@@ -1514,9 +1479,6 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 			}
 		}
 	}
-#endif
-#ifdef USE_CLK
-	clk2.end();
 #endif
 	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e);
 
@@ -1595,20 +1557,11 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
 
-using namespace mcl::bn;
-
-#if 0
-#include <string.h>
-int main(int argc, char *argv[])
-{
-	Vec x[8], y[8];
-	memset(x, argc, sizeof(x));
-	memset(y, argc+1, sizeof(y));
-	vsub(x, x, y);
-	mcl::bint::dump((const uint8_t*)x, sizeof(x));
-}
-#else
+#define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
+#include <cybozu/option.hpp>
+
+using namespace mcl::bn;
 
 template<size_t N, int w = W>
 inline void toArray(Unit x[N], const mpz_class& mx)
@@ -2416,5 +2369,45 @@ CYBOZU_TEST_AUTO(mulVec)
 	CYBOZU_TEST_EQUAL(R, R2);
 #endif
 }
-#endif
+
+void msmBench(size_t bit, int C)
+{
+	initPairing(mcl::BLS12_381);
+
+	const size_t n = size_t(1) << bit;
+	cybozu::XorShift rg;
+	std::vector<G1> Pvec(n);
+	std::vector<Fr> xVec(n);
+	hashAndMapToG1(Pvec[0], "abc", 3);
+	for (size_t i = 1; i < n; i++) {
+		G1::add(Pvec[i], Pvec[i-1], Pvec[0]);
+		xVec[i].setByCSPRNG(rg);
+	}
+	G1 P1;
+	for (size_t nn = 1u<<9; nn <= n; nn *= 2) {
+		printf("% 8zd", nn);
+		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), nn);
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	cybozu::Option opt;
+	int bit;
+	bool msmOnly;
+	int C;
+	opt.appendOpt(&bit, 9, "b", ": set n to 1<<b");
+	opt.appendOpt(&C, 50, "c", ": count of loop");
+	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
+	opt.appendHelp("h", ": show this message");
+	if (!opt.parse(argc, argv)) {
+		opt.usage();
+		return 1;
+	}
+	if (msmOnly) {
+		msmBench(bit, C);
+		return 0;
+	}
+	return cybozu::test::autoRun.run(argc, argv);
+}
 #endif
