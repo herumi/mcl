@@ -1261,22 +1261,21 @@ inline size_t glvGetBucketSizeAVX512(size_t n)
 }
 // xVec[n], yVec[n * maxBitSize/64]
 template<class G=EcM, class V=Vec, bool mixed = false>
-inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize)
+inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize, size_t b)
 {
-//	size_t c = mcl::ec::glvGetBucketSize(n);
-	size_t c = glvGetBucketSizeAVX512(n);
-	size_t tblN = size_t(1) << c;
+	if (b == 0) b = glvGetBucketSizeAVX512(n);
+	size_t tblN = size_t(1) << b;
 	G *tbl = (G*)Xbyak::AlignedMalloc(sizeof(G) * tblN, 64);
 	const size_t yn = maxBitSize / 64;
-	const size_t winN = (maxBitSize + c-1) / c;
+	const size_t winN = (maxBitSize + b-1) / b;
 
 	G T;
-	mulVecUpdateTable<G, V, mixed>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1), n, true);
+	mulVecUpdateTable<G, V, mixed>(T, tbl, tblN, xVec, yVec, yn, b*(winN-1), n, true);
 	for (size_t w = 1; w < winN; w++) {
-		for (size_t i = 0; i < c; i++) {
+		for (size_t i = 0; i < b; i++) {
 			G::dbl(T, T);
 		}
-		mulVecUpdateTable<G, V, mixed>(T, tbl, tblN, xVec, yVec, yn, c*(winN-1-w), n, false);
+		mulVecUpdateTable<G, V, mixed>(T, tbl, tblN, xVec, yVec, yn, b*(winN-1-w), n, false);
 	}
 	reduceSum(P, T);
 	Xbyak::AlignedFree(tbl);
@@ -1424,7 +1423,7 @@ const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 #define USE_GLV
 
 template<class G=EcM, class V=Vec>
-void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
+void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b = 0)
 {
 	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
@@ -1480,7 +1479,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 		}
 	}
 #endif
-	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e);
+	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, b);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
@@ -1497,10 +1496,10 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n)
 
 namespace mcl { namespace msm {
 
-void mulVecAVX512(Unit *P, Unit *x, const Unit *y, size_t n)
+void mulVecAVX512(Unit *P, Unit *x, const Unit *y, size_t n, size_t b = 0)
 {
-	mulVecAVX512T<EcM, Vec>(P, x, y, n);
-//	mulVecAVX512T<EcMA, VecA>(P, x, y, n); // slower
+	mulVecAVX512T<EcM, Vec>(P, x, y, n, b);
+//	mulVecAVX512T<EcMA, VecA>(P, x, y, n, b); // slower
 }
 
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)

@@ -1005,9 +1005,20 @@ inline size_t glvEstimateBucketSize(size_t n)
 	First, get approximate value x and compute glvCost of x-1 and x+1,
 	and return the minimum value.
 */
+inline size_t glvExactBucketSize(size_t n)
+{
+	size_t x = glvEstimateBucketSize(n);
+	size_t vm1 = x > 1 ? glvCost(n, x-1) : n;
+	size_t v0 = glvCost(n, x);
+	size_t vp1 = glvCost(n, x+1);
+	if (vm1 <= v0) return x-1;
+	if (vp1 < v0) return x+1;
+	return x;
+}
+
+//	return heuristic backet size which is faster than glvExactBucketSize
 inline size_t glvGetBucketSize(size_t n)
 {
-#if 1
 	if (n <= 2) return 2;
 	size_t log2n = mcl::ec::ilog2(n);
 	const size_t tblMin = 8;
@@ -1019,17 +1030,6 @@ inline size_t glvGetBucketSize(size_t n)
 	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 19;
 	size_t ret = tbl[log2n - tblMin];
 	return ret;
-#else
-	size_t x = glvEstimateBucketSize(n);
-#if 1
-	size_t vm1 = x > 1 ? glvCost(n, x-1) : n;
-	size_t v0 = glvCost(n, x);
-	size_t vp1 = glvCost(n, x+1);
-	if (vm1 <= v0) return x-1;
-	if (vp1 < v0) return x+1;
-#endif
-	return x;
-#endif
 }
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
@@ -1075,7 +1075,7 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *y
 	fast for n >= 256
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
 {
 	if (n == 0) {
 		z.clear();
@@ -1086,15 +1086,15 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		return 1;
 	}
 
-	size_t c, tblN;
+	size_t tblN;
 	G *tbl = 0;
 
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
-		c = glvGetBucketSize(n);
-		tblN = (1 << c) - 1;
+		if (b == 0) b = glvGetBucketSize(n);
+		tblN = (1 << b) - 1;
 		tbl_ = (G*)malloc(sizeof(G) * tblN);
 		if (tbl_) {
 			tbl = tbl_;
@@ -1104,25 +1104,25 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 #endif
 	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
-	c = glvGetBucketSize(n);
-	tblN = (1 << c) - 1;
+	if (b == 0) b = glvGetBucketSize(n);
+	tblN = (1 << b) - 1;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
 #ifndef MCL_DONT_USE_MALLOC
 main:
 #endif
 	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
-	const size_t winN = (maxBitSize + c-1) / c;
+	const size_t winN = (maxBitSize + b-1) / b;
 
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1), n, true);
+	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1), n, true);
 	for (size_t w = 1; w < winN; w++) {
-		for (size_t i = 0; i < c; i++) {
+		for (size_t i = 0; i < b; i++) {
 			G::dbl(z, z);
 		}
-		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, c * (winN-1-w), n, false);
+		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false);
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
@@ -1130,23 +1130,23 @@ main:
 	return n;
 }
 template<class G>
-void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, bool doNormalize = true)
+void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
 {
-	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, doNormalize);
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize);
 	if (done == n) return;
 	do {
 		xVec += done;
 		yVec += next * done;
 		n -= done;
 		G t;
-		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, doNormalize);
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize);
 		z += t;
 	} while (done < n);
 }
 
 // for n >= 128
 template<class GLV, class G>
-bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n)
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t b)
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
@@ -1183,7 +1183,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n)
 			assert(b); (void)b;
 		}
 	}
-	mulVecLong(z, tbl, yp, next, next, n * splitN, false);
+	mulVecLong(z, tbl, yp, next, next, n * splitN, false, b);
 	free(tbl);
 	return true;
 }
@@ -1381,7 +1381,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 
 // return false if malloc fails or n is not in a target range
 template<class GLV, class G, class F>
-bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime = false)
+bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime = false, size_t b = 0)
 {
 	if (n == 1 && constTime) {
 		local::mulGLV_CT<GLV, G>(z, xVec[0], yVec);
@@ -1392,7 +1392,7 @@ bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime 
 		return true;
 	}
 	if (n >= 128) {
-		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n);
+		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n, b);
 	}
 	return false;
 }
@@ -1424,8 +1424,8 @@ public:
 	*/
 	static bool verifyOrder_;
 	static mpz_class order_;
-	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
-	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
+	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
+	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n, size_t b);
 	static void (*mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
@@ -1516,11 +1516,11 @@ public:
 	{
 		isValidOrderFast = f;
 	}
-	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, bool constTime))
+	static void setMulVecGLV(bool f(EcT& z, const EcT *xVec, const void *yVec, size_t yn, bool constTime, size_t b))
 	{
 		mulVecGLV = f;
 	}
-	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn))
+	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn, size_t b))
 	{
 		mulVecOpti = f;
 	}
@@ -1639,7 +1639,7 @@ public:
 	static inline void mul(EcT& z, const EcT& x, const EcT::Fr& y, bool constTime = false)
 	{
 		if (mulVecGLV) {
-			mulVecGLV(z, &x, &y, 1, constTime);
+			mulVecGLV(z, &x, &y, 1, constTime, 0);
 			return;
 		}
 		fp::Block b;
@@ -2191,17 +2191,17 @@ public:
 		GLV : 7680, 15360, 30720
 		Long: 9779, 16322, 24533
 	*/
-	static inline void mulVec(EcT& z, EcT *xVec, const EcT::Fr *yVec, size_t n)
+	static inline void mulVec(EcT& z, EcT *xVec, const EcT::Fr *yVec, size_t n, size_t b = 0)
 	{
 		if (n == 0) {
 			z.clear();
 			return;
 		}
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti((Unit*)&z, (Unit*)xVec, yVec[0].getUnit(), n);
+			mulVecOpti((Unit*)&z, (Unit*)xVec, yVec[0].getUnit(), n, b);
 			return;
 		}
-		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false)) {
+		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b)) {
 			return;
 		}
 		EcT r;
@@ -2320,8 +2320,8 @@ template<class Fp, class Fr> int EcT<Fp, Fr>::specialB_;
 template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
 template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
 template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_;
-template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime);
-template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n);
+template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
+template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n, size_t b);
 template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
 template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
 template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);

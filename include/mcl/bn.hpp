@@ -47,7 +47,7 @@ namespace mcl {
 namespace msm {
 
 bool initMsm(const mcl::CurveParam& cp, const msm::Func *func);
-void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n);
+void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b);
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
 
 } // mcl::msm
