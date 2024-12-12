@@ -1722,7 +1722,7 @@ CYBOZU_TEST_AUTO(glvParam)
 	printf("\n");
 	for (size_t d = 9; d < 28; d++) {
 		size_t n = (size_t(1) << d)/8*2; // /(#SIMD)*(GLV)
-		size_t b1 = mcl::ec::getTheoreticBucketSize(n);
+		size_t b1 = mcl::ec::glvGetTheoreticBucketSize(n);
 		size_t cost1 = mcl::ec::glvCost(n, b1);
 		double mem1 = (8*8*8*3) * (size_t(1) << b1) / 1024.0 / 1024;
 		size_t b2 = glvGetBucketSizeAVX512(n);
@@ -2411,13 +2411,12 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 	G1 P1;
 	for (size_t d = db; d <= de; d++) {
 		size_t n = size_t(1) << d;
-		size_t db = glvGetBucketSizeAVX512(n/4);
-		printf("% 8zd % 2zd", n, size_t(db));
-		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, db);
-		if (b) {
-			printf("% 8zd % 2zd", n, b);
-			CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b);
-		}
+		size_t b1 = glvGetBucketSizeAVX512(n/4);
+		printf("% 8zd % 2zd", n, b1);
+		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b1);
+		size_t b2 = b ? b : mcl::ec::glvGetTheoreticBucketSize(n/4);
+		printf("% 8zd % 2zd", n, size_t(b2));
+		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b2);
 	}
 }
 
@@ -2429,7 +2428,7 @@ void showParams()
 		size_t nn = n/8*2; // /#SIMD*GLV
 		size_t b1 = glvGetBucketSizeAVX512(nn);
 		size_t c1 = mcl::ec::glvCost(nn, b1);
-		size_t b2 = mcl::ec::getTheoreticBucketSize(nn);
+		size_t b2 = mcl::ec::glvGetTheoreticBucketSize(nn);
 		size_t c2 = mcl::ec::glvCost(nn, b2);
 		printf("%zd|%zd|%zd|%zd|%zd|%.2f\n", d, b1, c1, b2, c2, c1/double(c2));
 	}
@@ -2446,7 +2445,7 @@ int main(int argc, char *argv[])
 	opt.appendOpt(&d, 9, "d", ": set n to 1<<d");
 	opt.appendOpt(&db, 0, "db", ": set begin of d");
 	opt.appendOpt(&de, 0, "de", ": set end of d");
-	opt.appendOpt(&C, 50, "c", ": count of loop");
+	opt.appendOpt(&C, 10, "c", ": count of loop");
 	opt.appendBoolOpt(&msm, "msm", ": msm bench");
 	opt.appendBoolOpt(&show, "show", ": show params");
 	opt.appendHelp("h", ": show this message");
