@@ -1247,13 +1247,12 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const V *yVec
 
 inline size_t glvGetBucketSizeAVX512(size_t n)
 {
-	if (n <= 2) return 2;
 	size_t log2n = mcl::ec::ilog2(n);
-	const size_t tblMin = 7;
-	if (log2n < tblMin) return 4;
+	const size_t tblMin = 6;
+	if (log2n < tblMin) return 2;
 	// n >= 2^tblMin
 	static const size_t tbl[] = {
-		4, 5, 5, 6, 7, 8, 8, 10, 10, 10, 10, 10, 13, 15, 15, 16, 16, 16, 16, 16
+		3, 4, 5, 5, 6, 7, 8, 8, 10, 10, 10, 10, 10, 13, 15, 15, 16, 16, 16, 16, 16
 	};
 	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 16;
 	size_t ret = tbl[log2n - tblMin];
@@ -2395,42 +2394,78 @@ CYBOZU_TEST_AUTO(mulVec)
 #endif
 }
 
-void msmBench(size_t bit, int C)
+void msmBench(int C, size_t db, size_t de, size_t b)
 {
 	initPairing(mcl::BLS12_381);
 
-	const size_t n = size_t(1) << bit;
+	printf("d = [%zd, %zd], b = %zd\n", db, de, b);
+	const size_t maxN = size_t(1) << de;
 	cybozu::XorShift rg;
-	std::vector<G1> Pvec(n);
-	std::vector<Fr> xVec(n);
+	std::vector<G1> Pvec(maxN);
+	std::vector<Fr> xVec(maxN);
 	hashAndMapToG1(Pvec[0], "abc", 3);
-	for (size_t i = 1; i < n; i++) {
+	for (size_t i = 1; i < maxN; i++) {
 		G1::add(Pvec[i], Pvec[i-1], Pvec[0]);
 		xVec[i].setByCSPRNG(rg);
 	}
 	G1 P1;
-	for (size_t nn = 1u<<9; nn <= n; nn *= 2) {
-		printf("% 8zd", nn);
-		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), nn);
+	for (size_t d = db; d <= de; d++) {
+		size_t n = size_t(1) << d;
+		size_t db = glvGetBucketSizeAVX512(n/4);
+		printf("% 8zd % 2zd", n, size_t(db));
+		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, db);
+		if (b) {
+			printf("% 8zd % 2zd", n, b);
+			CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b);
+		}
+	}
+}
+
+void showParams()
+{
+	puts("d|b|cost_b|theoretic|cost_t|cost_b/cost_t");
+	for (size_t d = 7; d <= 27; d++) {
+		size_t n = size_t(1) << d;
+		size_t nn = n/8*2; // /#SIMD*GLV
+		size_t b1 = glvGetBucketSizeAVX512(nn);
+		size_t c1 = mcl::ec::glvCost(nn, b1);
+		size_t b2 = mcl::ec::getTheoreticBucketSize(nn);
+		size_t c2 = mcl::ec::glvCost(nn, b2);
+		printf("%zd|%zd|%zd|%zd|%zd|%.2f\n", d, b1, c1, b2, c2, c1/double(c2));
 	}
 }
 
 int main(int argc, char *argv[])
 {
 	cybozu::Option opt;
-	int bit;
-	bool msmOnly;
+	size_t db, de, d;
+	size_t b;
+	bool msm, show;
 	int C;
-	opt.appendOpt(&bit, 9, "b", ": set n to 1<<b");
+	opt.appendOpt(&b, 0, "b", ": set bucket size");
+	opt.appendOpt(&d, 9, "d", ": set n to 1<<d");
+	opt.appendOpt(&db, 0, "db", ": set begin of d");
+	opt.appendOpt(&de, 0, "de", ": set end of d");
 	opt.appendOpt(&C, 50, "c", ": count of loop");
-	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
+	opt.appendBoolOpt(&msm, "msm", ": msm bench");
+	opt.appendBoolOpt(&show, "show", ": show params");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
 	}
-	if (msmOnly) {
-		msmBench(bit, C);
+	if (show) {
+		showParams();
+		return 0;
+	}
+	if (db == 0) {
+		db = d;
+	}
+	if (de == 0) {
+		de = d;
+	}
+	if (msm) {
+		msmBench(C, db, de, b);
 		return 0;
 	}
 	return cybozu::test::autoRun.run(argc, argv);
