@@ -27,28 +27,27 @@ G1 mulEach
 ### Definition of parameters
 
 ```python
-M = 1<<256
-H = 1<<128
+m = 128
+H = 1<<m
 z = -0xd201000000010000
 L = z*z - 1
 r = L*L + L + 1
 s = r.bit_length()
-S = 1<<s
-v = S // L
+S = 1<<s # H * (H/2)
+q = S // L
 r0 = S % L
 
-adj = False
 def split(x):
-    b = (x * v) >> s
-    a = x - b * L
-    if adj:
-      if a >= L:
+  xH = x >> (m-1) # x // (H/2)
+  b = (xH * q) >> m # (xH * q) // H
+  a = x - b * L
+  if a >= L:
         a -= L
         b += 1
-    return (a, b)
+  return (a, b)
 ```
 
-variables|z|L|r|S|v
+variables|z|L|r|S|q
 -|-|-|-|-|-
 bit_length|64|128|255|255|128
 
@@ -56,27 +55,31 @@ bit_length|64|128|255|255|128
 - a + b L = x for (a, b) = split(x).
 
 ### Theorem
-0 <= a < 1.11 L < H and 0 <= b < L+1 for x in [0, r-1].
+0 <= a < L and 0 <= b <= L+1
 
 ### Proof
+```
+S = q * L + r0 where 0 <= r0 < L, r0 ~ 0.11 L
+H/2 ~ 0.74 L
+x = xH * (H/2) + xL where 0 <= xL < H/2, xH <= (r-1)/(H/2)
 
-```
-Let r0 := L S % r, then S=v L + r0 and r0 in [0, L-1]. In fact, r0 ~ 0.11 L.
-Let r1 := x v % S, then x v = b S + r1 and r1 in [0, S-1].
-```
+b = (xH * q) // H <= xH * q / H = xH * H/2 * q / (H * H/2) = (x-xL) * q / S
+   <= x * (S//L) / S <= x /L <= (r-1) / L = L+1
 
-```
-b <=  xv / S < (r-1) (S/L)/S = (r-1)/L = L+1.
-```
+=> 0 <= x - b L = a
 
+xH * q = b * H + r1 where 0 <= r1 < H
+
+a H = (x - b L) * H = x * H - b * H * L = (xH * (H/2) + xL) * H - (xH * q - r1) * L
+ = xH * S + xL * H - xH * q * L + r1 * L
+ = xH * S + xL * H - xH * (S - r0) + r1 * L
+ = xL * H + xH * r0 + r1 * L
+
+a = xL + xH * r0 / H + r1 * L / H
+ <= H/2 + (r-1)/(H/2) * r0 / H + (H-1) * L / H
+ = H/2 + (r-1)/S*r0 + L
+ = 0.74 L + 0.1 L + L = 1.8 L
 ```
-aS = (x - bL)S = xS - bSL = xS - (xv - r1)L = x(S - vL) + r1 L = r0 x + r1 L
-     <= r0 (r-1) + (S-1)L = S L + (r-1)r0 - L.
-a <= L + ((r-1)r0 - L)/S
-((r-1)r0 - L)/S ~ 0.10016 L < 0.11 L.
-```
-### Remark
-If adj is true, then a is in [0, L-1].
 
 
 ## window size
@@ -167,3 +170,46 @@ def naf(x, w=3):
 Consider to apply `w=5` to `(a, b)=split(x)`.
 The max value of `a` is `1.1 L = 0b101...` of 128-bit length.
 `0b101` is less than `(1<<(w-1))-1` and so negativity and CF operation are unnecessary.
+
+-----------------------------------------------------------------------------
+Vec
+gcc + mul
+vsqr::Vec 110.10 clk
+
+gcc + sqr
+vsqr::Vec 136.29 clk
+
+clang + mul
+vsqr::Vec 129.06 clk
+
+clang + sqr
+vsqr::Vec 102.91 clk
+
+VecA
+gcc + mul
+vsqr::VecA 269.07 clk
+
+gcc + sqr
+vsqr::VecA 243.14 clk
+
+clang + mul
+vsqr::VecA 183.07 clk
+
+clang + sqr
+vsqr::VecA 174.61 clk
+
+Vec
+compiler|gcc|clang
+-|-|-
+mul|110|129
+sqr|136|102
+
+VecA
+compiler|gcc|clang
+-|-|-
+mul|269|183
+sqr|243|174
+
+asm
+Vec::mul 108 clk < Vec::asm
+VecA::mul 181.90 clk

@@ -885,6 +885,38 @@ CYBOZU_TEST_AUTO(verifyG2)
 	CYBOZU_TEST_ASSERT(n == 0);
 }
 
+void splitTest(const mpz_class& mx, const mpz_class& L)
+{
+	mcl::Unit x[4], a[2], b[2];
+	mcl::gmp::getArray(x, 4, mx);
+	mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, x);
+	mpz_class ma, mb;
+	mcl::gmp::setArray(ma, a, 2);
+	mcl::gmp::setArray(mb, b, 2);
+	CYBOZU_TEST_EQUAL(mb, mx / L);
+	CYBOZU_TEST_EQUAL(ma, mx % L);
+}
+
+CYBOZU_TEST_AUTO(split)
+{
+	const char *Ls = "ac45a4010001a40200000000ffffffff";
+	mpz_class L;
+	mcl::gmp::setStr(L, Ls, 16);
+	cybozu::XorShift rg;
+	Fr x;
+	for (int i = 0; i < 100; i++) {
+		x.setByCSPRNG(rg);
+		splitTest(x.getMpz(), L);
+	}
+	const mpz_class LL = L*L;
+	const mpz_class tbl[] = {
+		0, 1, 2, 3, L-1, L, L+1, L*2, L*2-1, L*2+1, LL-L, LL-1, LL+1, LL+L-2, LL+L-1, LL+L,
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		splitTest(tbl[i], L);
+	}
+}
+
 typedef std::vector<Fp> FpVec;
 
 void f(FpVec& zv, const FpVec& xv, const FpVec& yv)

@@ -27,12 +27,14 @@ int main(int argc, char *argv[])
 	int bit;
 	size_t cpuN;
 	bool g1only;
+	bool msmOnly;
 	int C;
 	opt.appendOpt(&n, 100, "n", ": array size");
 	opt.appendOpt(&bit, 0, "b", ": set n to 1<<b");
 	opt.appendOpt(&cpuN, 0, "cpu", ": # of cpu for OpenMP");
 	opt.appendOpt(&C, 50, "c", ": count of loop");
 	opt.appendBoolOpt(&g1only, "g1", ": benchmark for G1 only");
+	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
@@ -56,6 +58,16 @@ int main(int argc, char *argv[])
 		xVec[i].setByCSPRNG(rg);
 	}
 	G1 P1, P2;
+#ifdef MCL_MSM
+	if (msmOnly) {
+		for (size_t nn = 1u<<9; nn <= n; nn *= 2) {
+			printf("% 8zd", nn);
+			CYBOZU_BENCH_C(" ", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
+			fflush(stdout);
+		}
+		return 0;
+	}
+#endif
 	CYBOZU_BENCH_C("G1 single", C, G1::mulVec, P1, Pvec.data(), xVec.data(), n);
 	if (n < 1024) {
 		CYBOZU_BENCH_C("naive", C, mulVec_naive, P2, Pvec.data(), xVec.data(), n);
