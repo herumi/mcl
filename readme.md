@@ -461,3 +461,4 @@ MITSUNARI Shigeo(herumi@nifty.com)
 
 # Sponsors welcome
 [GitHub Sponsor](https://github.com/sponsors/herumi)
+[<img src="https://api.gitsponsors.com/api/badge/img?id=35067668" height="20">](https://api.gitsponsors.com/api/badge/link?p=aJnQH1/b0pd6UHRgMZai+TNuVbs80QBlrUXyx2RxBk3f/cSvZ/3D/ayT1tBmEZ3r2KtII/yVcvGkwNiN6NDz+8K6sR9RWc9mZYYP6VThU9x7+SuzjW8EYrD6o7p5uyAhTFY1JK1YlbfftbdzJEnH+w==)
