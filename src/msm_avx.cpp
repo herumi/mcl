@@ -1489,7 +1489,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
 	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
-	const size_t u = 4;
+	const size_t u = 1;
 	const size_t q = n / u;
 #if 1
 	typedef EcMA V;
