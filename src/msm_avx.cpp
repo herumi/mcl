@@ -1033,11 +1033,12 @@ struct EcMT {
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(T *Q, const T *P, const mcl::msm::FrA *y, size_t n = 1)
 	{
+		assert(n > 0);
 		const size_t m = sizeof(V)/8;
 		const size_t w = 5;
 		const size_t tblN = (1<<(w-1))+1; // [0, 2^(w-1)]
 
-		T tbl1s[tblN*n];
+		T *tbl1s = (T*)CYBOZU_ALIGNED_ALLOCA(sizeof(T)*tblN*n, 64);
 		for (size_t k = 0; k < n; k++) {
 			makeTable<isProj, mixed>(tbl1s + tblN*k, tblN, P[k]);
 		}
@@ -1402,7 +1403,7 @@ const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 #define USE_GLV
 
 template<class G=EcM, class V=Vec>
-void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b = 0)
+void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket = 0)
 {
 	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
@@ -1458,7 +1459,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b = 0)
 		}
 	}
 #endif
-	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, b);
+	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, bucket);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
@@ -1483,35 +1484,41 @@ void mulVecAVX512(Unit *P, Unit *x, const Unit *y, size_t n, size_t b = 0)
 
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
-	assert(n % 16 == 0);
-	const bool isProj = false;
-	const bool mixed = true;
-	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
-	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
-	const size_t u = 1;
-	const size_t q = n / u;
 #if 1
 	typedef EcMA V;
 #else
 	typedef EcM V;
 #endif
 	const size_t m = sizeof(V)/(sizeof(FpM)*3)*8;
-	for (size_t i = 0; i < n; i += m*u) {
-		V P[u];
+	assert(n % m == 0);
+	const size_t d = n / m;
+	const bool isProj = false;
+	const bool mixed = true;
+	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
+	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
+	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
+	const size_t u = 4;
+	const size_t q = d / u;
+	const size_t remain = d % u;
+	V P[u];
+	for (size_t i = 0; i < q; i++) {
 		for (size_t k = 0; k < u; k++) {
-			P[k].setG1A(x+i+k*m, isProj);
+			P[k].setG1A(x+k*m, isProj);
 		}
-		V::mulGLV<isProj, mixed>(P, P, y+i, u);
+		V::mulGLV<isProj, mixed>(P, P, y, u);
 		for (size_t k = 0; k < u; k++) {
-			P[k].getG1A(x+i+k*m, isProj);
+			P[k].getG1A(x+k*m, isProj);
 		}
+		x += m*u;
+		y += m*u;
 	}
-	for (size_t i = q*m*u; i < n; i += m) {
-		V P;
-		P.setG1A(x+i, isProj);
-		V::mulGLV<isProj, mixed>(&P, &P, y+i);
-		P.getG1A(x+i, isProj);
+	if (remain == 0) return;
+	for (size_t k = 0; k < remain; k++) {
+		P[k].setG1A(x+k*m, isProj);
+	}
+	V::mulGLV<isProj, mixed>(P, P, y, remain);
+	for (size_t k = 0; k < remain; k++) {
+		P[k].getG1A(x+k*m, isProj);
 	}
 }
 

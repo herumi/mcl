@@ -1146,7 +1146,7 @@ void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, 
 
 // for n >= 128
 template<class GLV, class G>
-bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t b)
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket)
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
@@ -1183,7 +1183,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t b)
 			assert(b); (void)b;
 		}
 	}
-	mulVecLong(z, tbl, yp, next, next, n * splitN, false, b);
+	mulVecLong(z, tbl, yp, next, next, n * splitN, false, bucket);
 	free(tbl);
 	return true;
 }
