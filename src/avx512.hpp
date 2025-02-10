@@ -114,6 +114,16 @@ inline Vec vpxorq(const Vec& a, const Vec& b)
 	return _mm512_xor_epi64(a, b);
 }
 
+inline Vec vpunpcklqdq(const Vec& a, const Vec& b)
+{
+	return _mm512_unpacklo_epi64(a, b);
+}
+
+inline Vec vpunpckhqdq(const Vec& a, const Vec& b)
+{
+	return _mm512_unpackhi_epi64(a, b);
+}
+
 //template<int scale=8>
 inline Vec vpgatherqq(const Vec& idx, const void *base)
 {
