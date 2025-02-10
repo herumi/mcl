@@ -2325,6 +2325,15 @@ void mulEachOrg(G1 *P, const Fr *x, size_t n)
 	}
 }
 
+void mulVecOrg(G1& Q, G1 *P, const Fr *x, size_t n)
+{
+	mulEachOrg(P, x, n);
+	Q = P[0];
+	for (size_t i = 1; i < n; i++) {
+		Q += P[i];
+	}
+}
+
 CYBOZU_TEST_AUTO(mulEach)
 {
 	const size_t n = 1024;
@@ -2386,6 +2395,7 @@ CYBOZU_TEST_AUTO(mulVec)
 	CYBOZU_BENCH_C("mulVec(copy)", 30, copyMulVec, R2, P2, x, n);
 	CYBOZU_BENCH_C("mulVec", 30, mcl::msm::mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
 	CYBOZU_TEST_EQUAL(R, R2);
+	CYBOZU_BENCH_C("mulVecOrg", 3, mulVecOrg, R2, P2, x, n);
 #endif
 }
 
