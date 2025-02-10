@@ -124,6 +124,12 @@ inline Vec vpunpckhqdq(const Vec& a, const Vec& b)
 	return _mm512_unpackhi_epi64(a, b);
 }
 
+template<uint8_t imm>
+inline Vec vshuffi64x2(const Vec& a, const Vec& b)
+{
+	return _mm512_shuffle_i64x2(a, b, imm);
+}
+
 //template<int scale=8>
 inline Vec vpgatherqq(const Vec& idx, const void *base)
 {
@@ -140,6 +146,16 @@ inline Vec vpgatherqq(const Vec& idx, const void *base)
 	const int scale = 8;
 	return _mm512_i64gather_epi64(idx, base, scale);
 #endif
+}
+
+inline Vec vmovdqu64(const void *base)
+{
+	return _mm512_loadu_epi64(base);
+}
+
+inline Vec vmovdqu64(const Vmask& v, const void *base)
+{
+	return _mm512_maskz_loadu_epi64(v, base);
 }
 
 inline void vpscatterqq(void *base, const Vec& idx, const Vec& v)

@@ -132,6 +132,46 @@ inline void cvt(Unit y[N*M], const Vec xN[N])
 	}
 }
 
+/*
+	d[] = transpose(s[]), destroy s[]
+	s = [a7, a6, a5, a4, a3, a2, a1, a0]
+	    [b7, b6, b5, b4, b3, b2, b1, b0]
+	    [c7, c6, c5, c4, c3, c2, c1, c0]
+	    ....
+*/
+template<bool out8=true>
+inline void trans8x8(Vec d[8], Vec s[8])
+{
+	d[0] = vpunpcklqdq(s[0], s[1]);
+	d[1] = vpunpckhqdq(s[0], s[1]);
+	d[2] = vpunpcklqdq(s[2], s[3]);
+	d[3] = vpunpckhqdq(s[2], s[3]);
+	d[4] = vpunpcklqdq(s[4], s[5]);
+	d[5] = vpunpckhqdq(s[4], s[5]);
+	d[6] = vpunpcklqdq(s[6], s[7]);
+	d[7] = vpunpckhqdq(s[6], s[7]);
+
+	s[0] = vshuffi64x2<0x44>(d[0], d[2]);
+	s[1] = vshuffi64x2<0x44>(d[1], d[3]);
+	s[2] = vshuffi64x2<0x44>(d[4], d[6]);
+	s[3] = vshuffi64x2<0x44>(d[5], d[7]);
+	s[4] = vshuffi64x2<0xee>(d[0], d[2]);
+	s[5] = vshuffi64x2<0xee>(d[1], d[3]);
+	s[6] = vshuffi64x2<0xee>(d[4], d[6]);
+	s[7] = vshuffi64x2<0xee>(d[5], d[7]);
+
+	d[0] = vshuffi64x2<0x88>(s[0], s[2]);
+	d[1] = vshuffi64x2<0x88>(s[1], s[3]);
+	d[2] = vshuffi64x2<0xdd>(s[0], s[2]);
+	d[3] = vshuffi64x2<0xdd>(s[1], s[3]);
+	d[4] = vshuffi64x2<0x88>(s[4], s[6]);
+	d[5] = vshuffi64x2<0x88>(s[5], s[7]);
+	if (out8) {
+		d[6] = vshuffi64x2<0xdd>(s[4], s[6]);
+		d[7] = vshuffi64x2<0xdd>(s[5], s[7]);
+	}
+}
+
 template<class V, class U>
 inline void vaddPre(V *z, const V *x, const U *y)
 {
@@ -502,10 +542,19 @@ static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
 // convert G1.x (, y or z) to Vec
 inline void cvtFromG1Ax(Vec *y, const Unit *x)
 {
+#if 1
 	Vec t[6];
 	for (int i = 0; i < 6; i++) {
 		t[i] = vpgatherqq(v_pickUpEc, x+i);
 	}
+#else // faster
+	Vec s[8], t[8]; // need 8 size work area
+	Vmask v = getMask(6);
+	for (int i = 0; i < 8; i++) {
+		s[i] = vmovdqu64(v, x+i*6*3);
+	}
+	trans8x8<false>(t, s);
+#endif
 	split52bit(y, t);
 }
 
@@ -1699,6 +1748,36 @@ CYBOZU_TEST_AUTO(init)
 {
 	initPairing(mcl::BLS12_381);
 	g_mont.init(mcl::bn::Fp::getOp().mp);
+}
+
+void putA(const uint64_t a[64], const char *msg)
+{
+	printf("%s\n", msg);
+	for (size_t i = 0; i < 8; i++) {
+		for (size_t j = 0; j < 8; j++) {
+			printf("%02d ", int(a[i * 8 + j]));
+		}
+		printf("\n");
+	}
+}
+
+CYBOZU_TEST_AUTO(trans8x8)
+{
+	MIE_ALIGN(64) uint64_t sa[64], da[64];
+	for (size_t i = 0; i < 8; i++) {
+		for (size_t j = 0; j < 8; j++) {
+			sa[i*8+j] = uint64_t(j + i * 10);
+		}
+	}
+	Vec s[8], d[8];
+	memcpy(s, sa, sizeof(s));
+	trans8x8(d, s);
+	memcpy(da, d, sizeof(d));
+	for (size_t i = 0; i < 8; i++) {
+		for (size_t j = 0; j < 8; j++) {
+			CYBOZU_TEST_EQUAL(sa[i*8+j], da[i+j*8]);
+		}
+	}
 }
 
 CYBOZU_TEST_AUTO(glvParam)
