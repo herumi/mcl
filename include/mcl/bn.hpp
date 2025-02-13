@@ -930,7 +930,7 @@ struct Param {
 		}
 		Fr::init(pb, r, mode);
 		if (!*pb) return;
-		Fp::init(pb, cp.xi_a, p, mode);
+		Fp::init(pb, cp.xi_a, p, mode, cp.u);
 		if (!*pb) return;
 #ifdef MCL_DUMP_JIT
 		*pb = true;

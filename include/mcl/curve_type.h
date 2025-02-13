@@ -79,9 +79,9 @@ struct CurveParam {
 	*/
 	bool isMtype;
 	int curveType; // same in curve_type.h
-	int nr; // Fp2 = Fp[x]/(x^2+nr)
-	CurveParam(const char *z = "", int b = 0, int xi_a = 0, bool isMtype = false, int curveType = 0, int nr = 1)
-		: z(z), b(b), xi_a(xi_a), isMtype(isMtype), curveType(curveType), nr(nr) {}
+	int u; // Fp2 = Fp[X]/(X^2+u)
+	CurveParam(const char *z = "", int b = 0, int xi_a = 0, bool isMtype = false, int curveType = 0, int u = 1)
+		: z(z), b(b), xi_a(xi_a), isMtype(isMtype), curveType(curveType), u(u) {}
 	bool operator==(const CurveParam& rhs) const
 	{
 		return curveType == rhs.curveType;

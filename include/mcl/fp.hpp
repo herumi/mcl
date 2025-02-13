@@ -134,10 +134,10 @@ public:
 		xi_a is used for Fp2::mul_xi(), where xi = xi_a + i and i^2 = -1
 		if xi_a = 0 then asm functions for Fp2 are not generated.
 	*/
-	static inline void init(bool *pb, int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO, int nr = 1)
+	static inline void init(bool *pb, int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO, int u = 1)
 	{
 		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		*pb = op_.init(p, maxBitSize, xi_a, mode, MCL_MAX_BIT_SIZE, nr);
+		*pb = op_.init(p, maxBitSize, xi_a, mode, MCL_MAX_BIT_SIZE, u);
 #ifdef MCL_DUMP_JIT
 		return;
 #endif

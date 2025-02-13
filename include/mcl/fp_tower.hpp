@@ -169,9 +169,8 @@ public:
 };
 
 /*
-	beta = -1
-	Fp2 = F[i] / (i^2 + 1)
-	x = a + bi
+	Fp2 = F[i] / (i^2 + u)
+	x = a + b i
 */
 template<class _Fp>
 class Fp2T : public fp::Serializable<Fp2T<_Fp>,
@@ -570,6 +569,41 @@ private:
 		Fp::add(t, a, b);
 		Fp::sub(y.a, a, b);
 		y.b = t;
+	}
+	// The following functions are for u != 1.
+	/*
+		xi = xi_a + i
+		x = a + bi
+		y = (a + bi)xi = (a + bi)(xi_a + i)
+		=(a x_ia - b u) + (a + b xi_a)i
+	*/
+	static void fp2u_mul_xiA(Unit *py, const Unit *px)
+	{
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
+		const Fp& a = x.a;
+		const Fp& b = x.b;
+		Fp t;
+		Fp::mulUnit(t, a, Fp::getOp().xi_a);
+		Fp bu;
+		Fp::mulUnit(bu, b, Fp::getOp().u);
+		t -= bu;
+		Fp::mulUnit(y.b, b, Fp::getOp().xi_a);
+		y.b += a;
+		y.a = t;
+	}
+	/*
+		xi = i ; xi_a = 0
+		y = (a + bi)xi = (-u) b + a i
+	*/
+	static void fp2u_mul_xi_0_1iA(Unit *py, const Unit *px)
+	{
+		Fp2T& y = cast(py);
+		const Fp2T& x = cast(px);
+		Fp t;
+		Fp::mulUnit(t, x.b, Fp::getOp().u);
+		y.b = x.a;
+		Fp::neg(y.a, t);
 	}
 };
 
@@ -1495,22 +1529,36 @@ template<class _Fp> void Fp2T<_Fp>::init(bool *pb)
 	if (op.fp2_negA_ == 0) {
 		op.fp2_negA_ = negA;
 	}
-	if (op.fp2_mulA_ == 0) {
-		op.fp2_mulA_ = mulA;
-	}
-	if (op.fp2_sqrA_ == 0) {
-		op.fp2_sqrA_ = sqrA;
-	}
 	if (op.fp2_mul2A_ == 0) {
 		op.fp2_mul2A_ = mul2A;
 	}
 #endif
-	if (op.fp2_mul_xiA_ == 0) {
-		if (op.xi_a == 1) {
-			op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
-		} else {
-			op.fp2_mul_xiA_ = fp2_mul_xiA;
+	if (op.u == 1) {
+#ifdef MCL_XBYAK_DIRECT_CALL
+		if (op.fp2_mulA_ == 0) {
+			op.fp2_mulA_ = mulA;
 		}
+		if (op.fp2_sqrA_ == 0) {
+			op.fp2_sqrA_ = sqrA;
+		}
+#endif
+		if (op.fp2_mul_xiA_ == 0) {
+			if (op.xi_a == 1) {
+				op.fp2_mul_xiA_ = fp2_mul_xi_1_1iA;
+			} else {
+				op.fp2_mul_xiA_ = fp2_mul_xiA;
+			}
+		}
+	} else {
+		if (op.fp2_mul_xiA_ == 0) {
+			if (op.xi_a == 0) {
+				op.fp2_mul_xiA_ = fp2u_mul_xi_0_1iA;
+			} else {
+				op.fp2_mul_xiA_ = fp2u_mul_xiA;
+			}
+		}
+		printf("not implemented u=%d\n", op.u);
+		exit(1);
 	}
 	FpDblT<Fp>::init();
 	Fp2DblT<Fp>::init();

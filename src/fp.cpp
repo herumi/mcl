@@ -440,7 +440,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize, int _nr)
+bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize, int _u)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
@@ -457,7 +457,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	mp = _p;
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
-	this->nr = _nr;
+	this->u = _u;
 	this->xi_a = _xi_a;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
