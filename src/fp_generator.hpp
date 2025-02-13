@@ -328,6 +328,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		useAdx_ = true;
 		(void)cpu;
 #else
+		if (op.nr != 1) return false;
 		if (!cpu.has(Xbyak::util::Cpu::tAVX)) return false;
 		useMulx_ = cpu.has(Xbyak::util::Cpu::tBMI2);
 		useAdx_ = cpu.has(Xbyak::util::Cpu::tADX);
