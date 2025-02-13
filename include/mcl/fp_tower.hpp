@@ -1485,7 +1485,6 @@ template<class _Fp> void Fp2T<_Fp>::init(bool *pb)
 {
 	typedef _Fp Fp;
 	mcl::fp::Op& op = Fp::op_;
-	assert(op.xi_a);
 #ifdef MCL_XBYAK_DIRECT_CALL
 	if (op.fp2_addA_ == 0) {
 		op.fp2_addA_ = addA;

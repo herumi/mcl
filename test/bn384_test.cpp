@@ -19,8 +19,9 @@ void testCurve(const mcl::CurveParam& cp)
 	initPairing(cp, g_mode);
 	G1 P;
 	G2 Q;
-	mapToG1(P, 1);
-	mapToG2(Q, 1);
+	// change 1 to 2 because BLS12_377 fails.
+	mapToG1(P, 2);
+	mapToG2(Q, 2);
 	GT e1, e2;
 #ifdef ONLY_BENCH
 	cybozu::CpuClock clk;

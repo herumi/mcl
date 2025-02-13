@@ -79,6 +79,9 @@ struct CurveParam {
 	*/
 	bool isMtype;
 	int curveType; // same in curve_type.h
+	int nr; // Fp2 = Fp[x]/(x^2+nr)
+	CurveParam(const char *z = "", int b = 0, int xi_a = 0, bool isMtype = false, int curveType = 0, int nr = 1)
+		: z(z), b(b), xi_a(xi_a), isMtype(isMtype), curveType(curveType), nr(nr) {}
 	bool operator==(const CurveParam& rhs) const
 	{
 		return curveType == rhs.curveType;
@@ -96,8 +99,8 @@ const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1
 const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
 const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
 const CurveParam BLS12_461 = { "-0x1ffffffbfffe00000000", 4, 1, true, MCL_BLS12_461 };
-// QQQ BLS12_377 is under construction
-const CurveParam BLS12_377 = { "0x8508c00000000001", 1, 0, false, MCL_BLS12_377 }; // not supported yet
+// BLS12_377 is under construction (i^2=-5)
+const CurveParam BLS12_377 = { "0x8508c00000000001", 1, 0, false, MCL_BLS12_377, 5 };
 
 #ifdef __clang__
 	#pragma GCC diagnostic push
