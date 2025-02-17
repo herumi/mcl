@@ -330,8 +330,8 @@ src/static_code.asm: src/dump_code
 obj/static_code.o: src/static_code.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
-bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o
-	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -I include -Wall -Wextra
+bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o $(BINT_OBJ)
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -DMCL_MSM=0 -I include -Wall -Wextra
 
 # set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"

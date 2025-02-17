@@ -22,7 +22,8 @@ static struct Init {
 	}
 } init;
 
-int main()
+int main(int argc, char *argv[])
+	try
 {
 	CYBOZU_TEST_ASSERT(Fr::getOp().N > 0);
 	CYBOZU_TEST_ASSERT(Fp::getOp().N > 0);
@@ -32,4 +33,8 @@ int main()
 	CYBOZU_TEST_ASSERT(mcl::bint::get_mulUnit(1));
 	mcl::bn::Fr fr;
 	fr.setByCSPRNG();
+	return cybozu::test::autoRun.run(argc, argv);
+} catch (std::exception& e) {
+	printf("ERR %s\n", e.what());
+	return 1;
 }
