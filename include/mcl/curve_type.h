@@ -89,18 +89,18 @@ struct CurveParam {
 	bool operator!=(const CurveParam& rhs) const { return !operator==(rhs); }
 };
 
-const CurveParam BN254 = { "-0x4080000000000001", 2, 1, false, MCL_BN254 }; // -(2^62 + 2^55 + 1)
-const CurveParam BN_P256 = { "-0x6882f5c030b0a801", 3, 1, true, MCL_BN_P256 }; // BN P256 defined in TCG Algorithm Registry Family "2.0", Revision 1.32
+const CurveParam BN254("-0x4080000000000001", 2, 1, false, MCL_BN254); // -(2^62 + 2^55 + 1)
+const CurveParam BN_P256("-0x6882f5c030b0a801", 3, 1, true, MCL_BN_P256); // BN P256 defined in TCG Algorithm Registry Family "2.0", Revision 1.32
 // provisional(experimental) param with maxBitSize = 384
-const CurveParam BN381_1 = { "-0x400011000000000000000001", 2, 1, false, MCL_BN381_1 }; // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
-const CurveParam BN381_2 = { "-0x400040090001000000000001", 2, 1, false, MCL_BN381_2 }; // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
-const CurveParam BN462 = { "0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462 }; // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
-const CurveParam BN_SNARK1 = { "4965661367192848881", 3, 9, false, MCL_BN_SNARK1 };
-const CurveParam BLS12_381 = { "-0xd201000000010000", 4, 1, true, MCL_BLS12_381 };
-const CurveParam BN160 = { "0x4000000031", 3, 4, false, MCL_BN160 };
-const CurveParam BLS12_461 = { "-0x1ffffffbfffe00000000", 4, 1, true, MCL_BLS12_461 };
+const CurveParam BN381_1("-0x400011000000000000000001", 2, 1, false, MCL_BN381_1); // -(2^94 + 2^76 + 2^72 + 1) // A Family of Implementation-Friendly BN Elliptic Curves
+const CurveParam BN381_2("-0x400040090001000000000001", 2, 1, false, MCL_BN381_2); // -(2^94 + 2^78 + 2^67 + 2^64 + 2^48 + 1) // used in relic-toolkit
+const CurveParam BN462("0x4001fffffffffffffffffffffbfff", 5, 2, false, MCL_BN462); // 2^114 + 2^101 - 2^14 - 1 // https://eprint.iacr.org/2017/334
+const CurveParam BN_SNARK1("4965661367192848881", 3, 9, false, MCL_BN_SNARK1);
+const CurveParam BLS12_381("-0xd201000000010000", 4, 1, true, MCL_BLS12_381);
+const CurveParam BN160("0x4000000031", 3, 4, false, MCL_BN160);
+const CurveParam BLS12_461("-0x1ffffffbfffe00000000", 4, 1, true, MCL_BLS12_461);
 // BLS12_377 is under construction (i^2=-5)
-//const CurveParam BLS12_377 = { "0x8508c00000000001", 1, 0, false, MCL_BLS12_377, 5 };
+//const CurveParam BLS12_377("0x8508c00000000001", 1, 0, false, MCL_BLS12_377, 5);
 
 #ifdef __clang__
 	#pragma GCC diagnostic push
