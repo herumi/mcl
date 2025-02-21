@@ -260,7 +260,12 @@ public:
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_sqrA_(y.a.v_, x.a.v_);
 #else
-		sqrA(y.a.v_, x.a.v_);
+		if (Fp::op_.u == 1) {
+			sqrA(y.a.v_, x.a.v_);
+		} else {
+			assert(Fp::op_.u == 5);
+			sqrAu5(y.a.v_, x.a.v_);
+		}
 #endif
 	}
 	static void mul2(Fp2T& y, const Fp2T& x)
@@ -590,8 +595,7 @@ private:
 		const Fp2T& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
-		uint32_t u = Fp::getOp().u;
-		assert(u == 5);
+		assert(Fp::getOp().u == 5);
 		Fp t1, t2, t3;
 		Fp::mul2(t1, b); // 2b
 		Fp::mul2(t2, t1); // 4b
@@ -876,8 +880,7 @@ private:
 	{
 		Fp2Dbl& y = castD(py);
 		const Fp2& x = cast(px);
-		uint32_t u = Fp::getOp().u;
-		assert(u == 5);
+		assert(Fp::getOp().u == 5);
 		Fp t1, t2, t3;
 		Fp::mul2(t1, x.b); // 2b
 		FpDbl::mulPre(y.b, x.a, t1); // 2ab

@@ -19,11 +19,13 @@
 #endif
 
 #include "xbyak/xbyak_util.h"
+#ifdef MCL_USE_XBYAK
 static const Xbyak::util::Cpu& getCpu()
 {
 	static Xbyak::util::Cpu cpu;
 	return cpu;
 }
+#endif
 
 #ifdef MCL_STATIC_CODE
 #include "fp_static_code.hpp"
