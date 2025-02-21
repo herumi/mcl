@@ -19,7 +19,7 @@
 #endif
 
 #include "xbyak/xbyak_util.h"
-#ifdef MCL_USE_XBYAK
+#if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
 static const Xbyak::util::Cpu& getCpu()
 {
 	static Xbyak::util::Cpu cpu;
