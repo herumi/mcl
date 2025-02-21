@@ -65,7 +65,7 @@ namespace mcl {
 struct CurveParam {
 	/*
 		y^2 = x^3 + b
-		i^2 = -1
+		i^2 = -u
 		xi = xi_a + i
 		v^3 = xi
 		w^2 = v
@@ -99,8 +99,7 @@ const CurveParam BN_SNARK1("4965661367192848881", 3, 9, false, MCL_BN_SNARK1);
 const CurveParam BLS12_381("-0xd201000000010000", 4, 1, true, MCL_BLS12_381);
 const CurveParam BN160("0x4000000031", 3, 4, false, MCL_BN160);
 const CurveParam BLS12_461("-0x1ffffffbfffe00000000", 4, 1, true, MCL_BLS12_461);
-// BLS12_377 is under construction (i^2=-5)
-//const CurveParam BLS12_377("0x8508c00000000001", 1, 0, false, MCL_BLS12_377, 5);
+const CurveParam BLS12_377("0x8508c00000000001", 1, 0, false, MCL_BLS12_377, 5);
 
 #ifdef __clang__
 	#pragma GCC diagnostic push
