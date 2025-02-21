@@ -234,6 +234,7 @@ CYBOZU_TEST_AUTO(glv)
 	} tbl[] = {
 //		{ mcl::BN_P256, "BN_P256" },
 		{ mcl::BLS12_381, "BLS12_381" },
+		{ mcl::BLS12_377, "BLS12_377" },
 		{ mcl::BN254, "BN254" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {

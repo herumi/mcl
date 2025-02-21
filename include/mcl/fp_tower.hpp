@@ -1385,10 +1385,10 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	}
 	/*
 		Frobenius
-		i^2 = -1
+		i^2 = -u
 		(a + bi)^p = a + bi^p in Fp
-		= a + bi if p = 1 mod 4
-		= a - bi if p = 3 mod 4
+		= a + bi c if p = 1 mod 4
+		= a - bi c if p = 3 mod 4 where c = u^((p-1)/2)
 
 		g = xi^(p - 1) / 6
 		v^3 = xi in Fp2
@@ -1417,7 +1417,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 		Frobenius(y, y);
 #else
 		y.getFp2()[0] = x.getFp2()[0];
-		if (Fp::getOp().pmod4 == 1) {
+		if (Fp::getOp().pmod4 == 1 && Fp::getOp().u == 1) {
 			for (int i = 1; i < 6; i++) {
 				Fp2::mul(y.getFp2()[i], x.getFp2()[i], Fp2::get_g2Tbl()[i]);
 			}
