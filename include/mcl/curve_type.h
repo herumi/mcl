@@ -115,6 +115,7 @@ inline const CurveParam* getCurveParam(int type)
 	case MCL_BN462: return &mcl::BN462;
 	case MCL_BN_SNARK1: return &mcl::BN_SNARK1;
 	case MCL_BLS12_381: return &mcl::BLS12_381;
+	case MCL_BLS12_377: return &mcl::BLS12_377;
 	case MCL_BN160: return &mcl::BN160;
 	default:
 		return CYBOZU_NULLPTR;
