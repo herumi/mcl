@@ -8,38 +8,7 @@
 #include <vector>
 #include <mcl/gmp_util.hpp>
 
-CYBOZU_TEST_AUTO(init)
-{
-	int ret;
-	CYBOZU_TEST_EQUAL(sizeof(mclBnFr), sizeof(Fr));
-	CYBOZU_TEST_EQUAL(sizeof(mclBnG1), sizeof(G1));
-	CYBOZU_TEST_EQUAL(sizeof(mclBnG2), sizeof(G2));
-	CYBOZU_TEST_EQUAL(sizeof(mclBnGT), sizeof(Fp12));
-	int curveType;
-
-#if MCLBN_FP_UNIT_SIZE >= 4
-	printf("test BN254 %d\n", MCLBN_FP_UNIT_SIZE);
-	curveType = MCL_BN254;
-#endif
-#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 4
-	printf("test BLS12_381 %d\n", MCLBN_FP_UNIT_SIZE);
-	curveType = MCL_BLS12_381;
-#endif
-#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
-	printf("test BN381_1 %d\n", MCLBN_FP_UNIT_SIZE);
-	curveType = MCL_BN381_1;
-#endif
-#if MCLBN_FP_UNIT_SIZE == 8
-	printf("test BN462 %d\n", MCLBN_FP_UNIT_SIZE);
-	curveType = MCL_BN462;
-#endif
-	ret = mclBn_init(curveType, MCLBN_COMPILED_TIME_VAR);
-	CYBOZU_TEST_EQUAL(ret, 0);
-	if (ret != 0) exit(1);
-	CYBOZU_TEST_EQUAL(curveType, mclBn_getCurveType());
-}
-
-CYBOZU_TEST_AUTO(Fr)
+void FrTest()
 {
 	mclBnFr x, y;
 	memset(&x, 0xff, sizeof(x));
@@ -138,7 +107,7 @@ CYBOZU_TEST_AUTO(Fr)
 	CYBOZU_TEST_EQUAL(mclBnFr_cmp(&y, &x), 1);
 }
 
-CYBOZU_TEST_AUTO(Fr_pow)
+void Fr_powTest()
 {
 	mclBnFr x, y, z1, z2, z3;
 	const char *s = "123456789123456789123";
@@ -179,7 +148,7 @@ CYBOZU_TEST_AUTO(Fr_pow)
 	}
 }
 
-CYBOZU_TEST_AUTO(Fp_pow)
+void Fp_powTest()
 {
 	mclBnFp x, y, z1, z2, z3;
 	const char *s = "123456789123456789123";
@@ -220,7 +189,7 @@ CYBOZU_TEST_AUTO(Fp_pow)
 	}
 }
 
-void G1test()
+void G1Test()
 {
 	mclBnG1 x, y, z;
 	memset(&x, 0x1, sizeof(x));
@@ -276,12 +245,7 @@ void G1test()
 	}
 }
 
-CYBOZU_TEST_AUTO(G1)
-{
-	G1test();
-}
-
-CYBOZU_TEST_AUTO(G2)
+void G2Test()
 {
 	mclBnG2 x, y, z;
 	/*
@@ -337,7 +301,7 @@ CYBOZU_TEST_AUTO(G2)
 	}
 }
 
-CYBOZU_TEST_AUTO(GT)
+void GTTest()
 {
 	mclBnGT x, y, z;
 	memset(&x, 1, sizeof(x));
@@ -408,7 +372,7 @@ CYBOZU_TEST_AUTO(GT)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&x, &y));
 }
 
-CYBOZU_TEST_AUTO(GT_inv)
+void GT_invTest()
 {
 	mclBnG1 P;
 	mclBnG2 Q;
@@ -437,7 +401,7 @@ CYBOZU_TEST_AUTO(GT_inv)
 	CYBOZU_TEST_ASSERT(mclBnGT_isOne(&e4));
 }
 
-CYBOZU_TEST_AUTO(Fp_invVec)
+void Fp_invVecTest()
 {
 	const size_t n = 1024;
 	mclBnFr x[n], y[n];
@@ -471,7 +435,7 @@ CYBOZU_TEST_AUTO(Fp_invVec)
 	CYBOZU_TEST_EQUAL(doneN, n-c);
 }
 
-CYBOZU_TEST_AUTO(Fr_invVec)
+void Fr_invVecTest()
 {
 	const size_t n = 1024;
 	mclBnFr x[n], y[n];
@@ -505,7 +469,7 @@ CYBOZU_TEST_AUTO(Fr_invVec)
 	CYBOZU_TEST_EQUAL(doneN, n-c);
 }
 
-CYBOZU_TEST_AUTO(Fr_isNegative)
+void Fr_isNegativeTest()
 {
 	mclBnFr a, half, one;
 	mclBnFr_setInt(&half, 2);
@@ -517,7 +481,7 @@ CYBOZU_TEST_AUTO(Fr_isNegative)
 	CYBOZU_TEST_ASSERT(mclBnFr_isNegative(&a));
 }
 
-CYBOZU_TEST_AUTO(Fp_isNegative)
+void Fp_isNegativeTest()
 {
 	mclBnFp a, half, one;
 	mclBnFp_setInt(&half, 2);
@@ -529,7 +493,7 @@ CYBOZU_TEST_AUTO(Fp_isNegative)
 	CYBOZU_TEST_ASSERT(mclBnFp_isNegative(&a));
 }
 
-CYBOZU_TEST_AUTO(Fr_isOdd)
+void Fr_isOddTest()
 {
 	mclBnFr x, one;
 	mclBnFr_clear(&x);
@@ -540,7 +504,7 @@ CYBOZU_TEST_AUTO(Fr_isOdd)
 	}
 }
 
-CYBOZU_TEST_AUTO(Fp_isOdd)
+void Fp_isOddTest()
 {
 	mclBnFp x, one;
 	mclBnFp_clear(&x);
@@ -551,7 +515,7 @@ CYBOZU_TEST_AUTO(Fp_isOdd)
 	}
 }
 
-CYBOZU_TEST_AUTO(pairing)
+void pairingTest()
 {
 	mclBnFr a, b, ab;
 	mclBnFr_setInt(&a, 123);
@@ -588,7 +552,7 @@ CYBOZU_TEST_AUTO(pairing)
 	CYBOZU_TEST_ASSERT(!mclBnGT_isValid(&e1));
 }
 
-CYBOZU_TEST_AUTO(precomputed)
+void precomputedTest()
 {
 	mclBnG1 P1, P2;
 	mclBnG2 Q1, Q2;
@@ -624,7 +588,7 @@ CYBOZU_TEST_AUTO(precomputed)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &f3));
 }
 
-CYBOZU_TEST_AUTO(millerLoopVec)
+void millerLoopVecTest()
 {
 	const size_t n = 7;
 	mclBnG1 Pvec[n];
@@ -644,7 +608,7 @@ CYBOZU_TEST_AUTO(millerLoopVec)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&e1, &e2));
 }
 
-CYBOZU_TEST_AUTO(millerLoopVecMT)
+void millerLoopVecMTTest()
 {
 	const size_t n = 10;
 	mclBnG1 Pvec[n];
@@ -666,7 +630,7 @@ CYBOZU_TEST_AUTO(millerLoopVecMT)
 	}
 }
 
-CYBOZU_TEST_AUTO(serialize)
+void serializeTest()
 {
 	const size_t FrSize = mclBn_getFrByteSize();
 	const size_t G1Size = mclBn_getG1ByteSize();
@@ -741,7 +705,7 @@ CYBOZU_TEST_AUTO(serialize)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 }
 
-CYBOZU_TEST_AUTO(serializeToHexStr)
+void serializeToHexStrTest()
 {
 	const size_t FrSize = mclBn_getFrByteSize();
 	const size_t G1Size = mclBn_getG1ByteSize();
@@ -816,7 +780,7 @@ CYBOZU_TEST_AUTO(serializeToHexStr)
 	CYBOZU_TEST_EQUAL(n, expectSize);
 }
 
-CYBOZU_TEST_AUTO(ETHserialization)
+void ETHserializationTest()
 {
 	int curveType = mclBn_getCurveType();
 	if (curveType != MCL_BLS12_381) return;
@@ -898,7 +862,7 @@ struct Sequential {
 	}
 };
 
-CYBOZU_TEST_AUTO(setRandFunc)
+void setRandFuncTest()
 {
 	Sequential seq;
 	for (int j = 0; j < 3; j++) {
@@ -921,7 +885,7 @@ CYBOZU_TEST_AUTO(setRandFunc)
 	}
 }
 
-CYBOZU_TEST_AUTO(Fp_1)
+void Fp_1Test()
 {
 	mclBnFp x, y;
 	memset(&x, 0xff, sizeof(x));
@@ -1009,7 +973,7 @@ CYBOZU_TEST_AUTO(Fp_1)
 	}
 }
 
-CYBOZU_TEST_AUTO(Fp)
+void FpTest()
 {
 	mclBnFp x1, x2;
 	char buf[1024];
@@ -1077,7 +1041,7 @@ CYBOZU_TEST_AUTO(mod)
 }
 #endif
 
-CYBOZU_TEST_AUTO(Fp2)
+void Fp2Test()
 {
 	mclBnFp2 x1, x2;
 	char buf[1024];
@@ -1120,7 +1084,7 @@ CYBOZU_TEST_AUTO(Fp2)
 	CYBOZU_TEST_ASSERT(mclBnFp2_isZero(&x1));
 }
 
-CYBOZU_TEST_AUTO(squareRootFr)
+void squareRootFrTest()
 {
 	mclBnFr x, y, y2;
 	for (int i = 0; i < 10; i++) {
@@ -1147,7 +1111,7 @@ CYBOZU_TEST_AUTO(squareRootFr)
 	}
 }
 
-CYBOZU_TEST_AUTO(squareRootFp)
+void squareRootFpTest()
 {
 	mclBnFp x, y, y2;
 	for (int i = 0; i < 10; i++) {
@@ -1174,7 +1138,7 @@ CYBOZU_TEST_AUTO(squareRootFp)
 	}
 }
 
-CYBOZU_TEST_AUTO(squareRootFp2)
+void squareRootFp2Test()
 {
 	mclBnFp2 x, y, y2;
 	for (int i = 0; i < 10; i++) {
@@ -1187,7 +1151,7 @@ CYBOZU_TEST_AUTO(squareRootFp2)
 	}
 }
 
-CYBOZU_TEST_AUTO(mapToG1)
+void mapToG1Test()
 {
 	mclBnFp x;
 	mclBnG1 P1, P2;
@@ -1198,7 +1162,7 @@ CYBOZU_TEST_AUTO(mapToG1)
 	CYBOZU_TEST_ASSERT(mclBnG1_isEqual(&P1, &P2));
 }
 
-CYBOZU_TEST_AUTO(mapToG2)
+void mapToG2Test()
 {
 	mclBnFp2 x;
 	mclBnG2 P1, P2;
@@ -1210,7 +1174,7 @@ CYBOZU_TEST_AUTO(mapToG2)
 	CYBOZU_TEST_ASSERT(mclBnG2_isEqual(&P1, &P2));
 }
 
-CYBOZU_TEST_AUTO(getLittleEndian)
+void getLittleEndianTest()
 {
 	const struct {
 		const char *in;
@@ -1241,7 +1205,7 @@ CYBOZU_TEST_AUTO(getLittleEndian)
 	}
 }
 
-CYBOZU_TEST_AUTO(mulVec)
+void mulVecTest()
 {
 	const size_t N = 70;
 	mclBnG1 x1Vec[N], z1, w1;
@@ -1303,6 +1267,75 @@ CYBOZU_TEST_AUTO(mulVec)
 	CYBOZU_TEST_ASSERT(mclBnGT_isEqual(&zt, &wt));
 }
 
+void testAll(int curveType)
+{
+	int ret = mclBn_init(curveType, MCLBN_COMPILED_TIME_VAR);
+	CYBOZU_TEST_EQUAL(ret, 0);
+	CYBOZU_TEST_EQUAL(curveType, mclBn_getCurveType());
+	FrTest();
+	Fr_powTest();
+	Fp_powTest();
+	G1Test();
+	G2Test();
+	GTTest();
+	GT_invTest();
+	Fp_invVecTest();
+	Fr_invVecTest();
+	Fr_isNegativeTest();
+	Fp_isNegativeTest();
+	Fr_isOddTest();
+	Fp_isOddTest();
+	pairingTest();
+	precomputedTest();
+	millerLoopVecTest();
+	millerLoopVecMTTest();
+	serializeTest();
+	serializeToHexStrTest();
+	ETHserializationTest();
+	setRandFuncTest();
+	Fp_1Test();
+	FpTest();
+	Fp2Test();
+	squareRootFrTest();
+	squareRootFpTest();
+	squareRootFp2Test();
+	mapToG1Test();
+	mapToG2Test();
+	getLittleEndianTest();
+	mulVecTest();
+}
+
+CYBOZU_TEST_AUTO(init)
+{
+	CYBOZU_TEST_EQUAL(sizeof(mclBnFr), sizeof(Fr));
+	CYBOZU_TEST_EQUAL(sizeof(mclBnG1), sizeof(G1));
+	CYBOZU_TEST_EQUAL(sizeof(mclBnG2), sizeof(G2));
+	CYBOZU_TEST_EQUAL(sizeof(mclBnGT), sizeof(Fp12));
+
+	const struct {
+		const char *name;
+		int type;
+	} tbl[] = {
+#if MCLBN_FP_UNIT_SIZE >= 4
+		{ "BN254", MCL_BN254 },
+#endif
+#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 4
+		{ "BLS12_381", MCL_BLS12_381 },
+		{ "BLS12_377", MCL_BLS12_377 },
+#endif
+#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
+		{ "BN381_1", MCL_BN381_1 },
+#endif
+#if MCLBN_FP_UNIT_SIZE == 8
+		{ "BN462", MCL_BN462 },
+#endif
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		printf("test %s\n", tbl[i].name);
+		testAll(tbl[i].type);
+	}
+}
+
 void G1onlyTest(int curve)
 {
 	printf("curve=%d\n", curve);
@@ -1316,7 +1349,7 @@ void G1onlyTest(int curve)
 	size_t n = mclBnG1_getStr(buf, sizeof(buf), &P0, 16);
 	CYBOZU_TEST_ASSERT(n > 0);
 	printf("basePoint=%s\n", buf);
-	G1test();
+	G1Test();
 }
 
 CYBOZU_TEST_AUTO(G1only)
