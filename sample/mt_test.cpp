@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 	size_t cpuN;
 	bool g1only;
 	bool msmOnly;
+	int minb;
 	int C;
 	opt.appendOpt(&n, 100, "n", ": array size");
 	opt.appendOpt(&bit, 0, "b", ": set n to 1<<b");
@@ -35,6 +36,7 @@ int main(int argc, char *argv[])
 	opt.appendOpt(&C, 50, "c", ": count of loop");
 	opt.appendBoolOpt(&g1only, "g1", ": benchmark for G1 only");
 	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
+	opt.appendOpt(&minb, 9, "minb", ": start from n=1<<(min b)");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
 	G1 P1, P2;
 #ifdef MCL_MSM
 	if (msmOnly) {
-		for (size_t nn = 1u<<9; nn <= n; nn *= 2) {
+		for (size_t nn = 1u<<minb; nn <= n; nn *= 2) {
 			printf("% 8zd", nn);
 			CYBOZU_BENCH_C(" ", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
 			fflush(stdout);
