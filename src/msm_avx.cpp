@@ -1282,7 +1282,10 @@ inline size_t glvGetBucketSizeAVX512(size_t n)
 	if (log2n < tblMin) return 2;
 	// n >= 2^tblMin
 	static const size_t tbl[] = {
+	// elem num 2^a i          : a= 16  17  18  19  20  21
+	// simd elem num 2^b=2^a/4 : b= 14  15  16  17  18  19
 		3, 4, 5, 5, 6, 7, 8, 8, 10, 10, 10, 10, 10, 13, 15, 15, 16, 16, 16, 16, 16
+		                                      //13 (almost same)
 	};
 	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 16;
 	size_t ret = tbl[log2n - tblMin];
