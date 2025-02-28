@@ -696,6 +696,11 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 			if (curveType == BLS12_381.curveType) {
 				optimizedSplit = optimizedSplitForBLS12_381;
 			} else
+#if 1
+			if (curveType == BLS12_377.curveType) {
+				optimizedSplit = optimizedSplitForBLS12_377;
+			} else
+#endif
 			{
 				optimizedSplit = splitForBLS12;
 			}
@@ -733,6 +738,19 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 		mcl::gmp::getArray(&dummy, xa, n*2, x);
 		assert(dummy);
 		ec::local::optimizedSplitRawForBLS12_381(a, b, xa);
+		gmp::setArray(&dummy, u[0], a, n);
+		gmp::setArray(&dummy, u[1], b, n);
+		assert(dummy);
+		(void)dummy;
+	}
+	static inline void optimizedSplitForBLS12_377(mpz_class u[2], const mpz_class& x)
+	{
+		static const size_t n = 128 / mcl::UnitBitSize;
+		Unit xa[n*2], a[n], b[n];
+		bool dummy;
+		mcl::gmp::getArray(&dummy, xa, n*2, x);
+		assert(dummy);
+		ec::local::optimizedSplitRawForBLS12_377(a, b, xa);
 		gmp::setArray(&dummy, u[0], a, n);
 		gmp::setArray(&dummy, u[1], b, n);
 		assert(dummy);

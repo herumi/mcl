@@ -28,11 +28,11 @@ class SP:
     print(f'(r-1)r0 / S + H2 + L = {(r-1)*r0/S/L + self.H2/L + 1:0.3f} L')
 
   def split(self, x):
-    xH = x // self.H2
-    # xH = x >> self.m2
+    # xH = x // self.H2
+    xH = x >> self.m2
     assert(xH.bit_length() <= m)
-    b = (xH * self.q) // H
-    # b = (xH * self.q) >> m
+    # b = (xH * self.q) // H
+    b = (xH * self.q) >> m
     a = x - b * self.L
     if a >= self.L:
       a -= self.L
