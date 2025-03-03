@@ -234,6 +234,12 @@ header:
 	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
 	$(MAKE) src/llvm_proto.hpp
+
+update_gen:
+	$(shell touch src/*.py)
+	$(MAKE) update_bint_x64_asm
+	$(MAKE) header
+
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
 #	$(CLANG) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
