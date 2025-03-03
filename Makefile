@@ -192,16 +192,20 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
+MCL_MSM_CURVE_BIT?=381
 ifeq ($(MCL_MSM),1)
   ifeq ($(ARCH),x86_64)
     MSM=msm_avx
+    ifeq ($(MCL_MSM_CURVE_BIT),377)
+      CFLAGS+=-DMCL_MSM_BLS12_377
+    endif
   endif
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h src/avx512.hpp
 	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER)
 src/$(MSM)_bls12_381.h: src/gen_msm_para.py
-	python3 src/gen_msm_para.py > $@
+	python3 src/gen_msm_para.py $(MCL_MSM_CURVE_BIT) > $@
 else
   CFLAGS+=-DMCL_MSM=0
 endif
@@ -213,14 +217,14 @@ src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_SUF),S)
-	python3 src/gen_bint_x64.py -m gas $(WIN_API) > $@
+	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas $(WIN_API) > $@
 else
-	python3 src/gen_bint_x64.py -win > $@
+	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -win > $@
 endif
 update_bint_x64_asm:
-	python3 src/gen_bint_x64.py -win -m masm > src/asm/bint-x64-win.asm
-	python3 src/gen_bint_x64.py -m gas > src/asm/bint-x64-amd64.S
-	python3 src/gen_bint_x64.py -m gas -win > src/asm/bint-x64-mingw.S
+	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -win -m masm > src/asm/bint-x64-win.asm
+	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas > src/asm/bint-x64-amd64.S
+	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas -win > src/asm/bint-x64-mingw.S
 
 $(BINT_SRC): src/bint$(BIT).ll
 	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CFLAGS) $(CFLAGS_USER)

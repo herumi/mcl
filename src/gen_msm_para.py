@@ -87,12 +87,10 @@ struct G {{
 ''')
 
 def main():
-#  if len(sys.argv) == 1:
-#    curve = BLS12(-0xd201000000010000)
-#  else:
-#    curve = BLS12(0x8508c00000000001)
-  curve = BLS12(-0xd201000000010000)
-#  curve = BLS12(0x8508c00000000001)
+  curveBit = 381
+  if len(sys.argv) == 2:
+    curveBit = int(sys.argv[1])
+  curve = BLS12(curveBit)
   mont = Montgomery(curve.p)
   global g_mont
   g_mont = mont

@@ -21,7 +21,7 @@
 #endif
 #endif
 
-//#define MSM_BLS12_377
+//#define MCL_MSM_BLS12_377
 #define USE_ASM
 
 extern "C" {
@@ -926,7 +926,7 @@ struct EcMT {
 	typedef typename F::VM VM;
 	F x, y, z;
 	static const int a_ = 0;
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 	static const int b_ = 1;
 	static const int specialB_ = mcl::ec::local::Plus1;
 #else
@@ -1112,7 +1112,7 @@ struct EcMT {
 				Unit buf[4];
 				g_func.fr->fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 				mcl::ec::local::optimizedSplitRawForBLS12_377(aa, bb, buf);
 #else
 				mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
@@ -1502,7 +1502,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 			Unit ya[4];
 			fr->fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 			mcl::ec::local::optimizedSplitRawForBLS12_377(a, b, ya);
 #else
 			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
@@ -1591,7 +1591,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 {
 	assert(EcM::a_ == 0);
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 	assert(EcM::b_ == 1);
 #else
 	assert(EcM::b_ == 4);
@@ -1606,7 +1606,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	(void)EcMA::zeroProj_;
 	(void)EcMA::zeroJacobi_;
 
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 	if (cp != mcl::BLS12_377) return false;
 #else
 	if (cp != mcl::BLS12_381) return false;
@@ -1771,9 +1771,11 @@ void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = siz
 
 CYBOZU_TEST_AUTO(init)
 {
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
+	puts("BLS12_377");
 	initPairing(mcl::BLS12_377);
 #else
+	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
 #endif
 	g_mont.init(mcl::bn::Fp::getOp().mp);
@@ -1995,7 +1997,7 @@ void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
 	}
 }
 
-#if 1
+#ifdef USE_ASM
 CYBOZU_TEST_AUTO(asm)
 {
 	cybozu::XorShift rg;
@@ -2398,7 +2400,7 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	for (size_t i = 0; i < n; i++) P[i].clear();
 	mcl::bn::hashAndMapToG1(P[0], "abc");
 	x[0].setHashOf("abc", 3);
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 	mcl::gmp::setStr(L, "0x452217cc900000010a11800000000000");
 #else
 	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
@@ -2512,7 +2514,7 @@ CYBOZU_TEST_AUTO(mulVec)
 
 void msmBench(int C, size_t db, size_t de, size_t b)
 {
-#ifdef MSM_BLS12_377
+#ifdef MCL_MSM_BLS12_377
 	puts("BLS12_377");
 	initPairing(mcl::BLS12_377);
 #else

@@ -1,5 +1,11 @@
 class BLS12:
-  def __init__(self, z=-0xd201000000010000):
+  def __init__(self, curveBit=381):
+    if curveBit == 381:
+      z = -0xd201000000010000
+    elif curveBit == 377:
+      z = 0x8508c00000000001
+    else:
+      raise Exception(f'not supported {curveBit=}')
     self.M = 1<<256
     self.H = 1<<128
     self.z = z
