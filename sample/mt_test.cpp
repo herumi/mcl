@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 	bool g1only;
 	bool msmOnly;
 	int minb;
+	int curveBit;
 	int C;
 	opt.appendOpt(&n, 100, "n", ": array size");
 	opt.appendOpt(&bit, 0, "b", ": set n to 1<<b");
@@ -37,6 +38,7 @@ int main(int argc, char *argv[])
 	opt.appendBoolOpt(&g1only, "g1", ": benchmark for G1 only");
 	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
 	opt.appendOpt(&minb, 9, "minb", ": start from n=1<<(min b)");
+	opt.appendOpt(&curveBit, 381, "curvebit", ": 381 or 377");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
@@ -45,7 +47,19 @@ int main(int argc, char *argv[])
 	if (bit) n = size_t(1) << bit;
 	printf("n=%zd cpuN=%zd C=%d\n", n, cpuN, C);
 
-	initPairing(mcl::BLS12_381);
+	switch (curveBit) {
+	case 381:
+		puts("BLS12-381");
+		initPairing(mcl::BLS12_381);
+		break;
+	case 377:
+		puts("BLS12-377");
+		initPairing(mcl::BLS12_377);
+		break;
+	default:
+		printf("err curveBit=%d\n", curveBit);
+		return 1;
+	}
 	cybozu::XorShift rg;
 	std::vector<G1> Pvec(n);
 	std::vector<G2> Qvec(n);

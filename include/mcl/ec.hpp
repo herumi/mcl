@@ -40,6 +40,7 @@ enum ModeCoeffA {
 };
 
 enum ModeCoeffB {
+	Plus1,
 	Plus4,
 	GenericB
 };
@@ -74,6 +75,14 @@ template<class F>
 bool get_a_flag(const mcl::Fp2T<F>& x)
 {
 	return get_a_flag(x.b); // x = a + bi
+}
+
+template<class F>
+void mul3(F& x)
+{
+	F t;
+	F::add(t, x, x);
+	F::add(x, t, x); // 3x
 }
 
 template<class F>
@@ -416,9 +425,13 @@ bool isValidJacobi(const E& P)
 	t += x2;
 	t *= P.x;
 	z4 *= z2;
+	if (E::specialB_ == ec::local::Plus1) {
+		// pass
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul4(z4);
-	} else {
+	} else
+	{
 		z4 *= E::b_;
 	}
 	t += z4;
@@ -627,16 +640,24 @@ void addCTProj(E& R, const E& P, const E& Q, bool mixed = false)
 	F::sub(y3, x3, y3);
 	F::add(x3, t0, t0);
 	F::add(t0, t0, x3);
+	if (E::specialB_ == ec::local::Plus1) {
+		local::mul3(t2);
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(t2);
-	} else {
+	} else
+	{
 		F::mul(t2, t2, E::b3_);
 	}
 	F::add(R.z, t1, t2);
 	F::sub(t1, t1, t2);
+	if (E::specialB_ == ec::local::Plus1) {
+		local::mul3(y3);
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(y3);
-	} else {
+	} else
+	{
 		F::mul(y3, y3, E::b3_);
 	}
 	F::mul(x3, y3, t4);
@@ -663,9 +684,13 @@ void dblCTProj(E& R, const E& P)
 	F::add(R.z, t0, t0);
 	F::add(R.z, R.z, R.z);
 	F::add(R.z, R.z, R.z);
+	if (E::specialB_ == ec::local::Plus1) {
+		local::mul3(t2);
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(t2);
-	} else {
+	} else
+	{
 		F::mul(t2, t2, E::b3_);
 	}
 	F::mul(x3, t2, R.z);
@@ -1486,9 +1511,13 @@ public:
 		} else {
 			specialA_ = ec::local::GenericA;
 		}
+		if (b_ == 1) {
+			specialB_ = ec::local::Plus1;
+		} else
 		if (b_ == 4) {
 			specialB_ = ec::local::Plus4;
-		} else {
+		} else
+		{
 			specialB_ = ec::local::GenericB;
 		}
 		ioMode_ = 0;

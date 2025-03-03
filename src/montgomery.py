@@ -71,20 +71,18 @@ rp={hex(self.rp)}''')
       x >>= self.W
     return a
 
-def main():
-  curve = BLS12()
+def testMont(name, z):
+  print(f'test {name} z={hex(z)}')
+  curve = BLS12(z)
   p = curve.p
   mont = Montgomery(p)
   mont.put()
   x = p-5
   for j in range(1, 100):
-    print(f'{j=}')
     x = p-j
-    for i in range(1, 1000000):
+    for i in range(1, 1000):
       y = p-i
       mont.montOrg(x, y)
-
-
 
   tbl = [0, 1, 2, 3, 4, p-6, p-5, p-4, p-3, p-2, p-1]
   for x in tbl:
@@ -93,6 +91,11 @@ def main():
       b = mont.montOrg(x, y)
       if a != b:
         print(f'{x=} {y=} {a=} {b=} {p-x=} {p-y=}')
+  print('test end')
+
+def main():
+  testMont('BLS12_381', -0xd201000000010000)
+  testMont('BLS12_377', 0x8508c00000000001)
 
 if __name__ == '__main__':
   main()

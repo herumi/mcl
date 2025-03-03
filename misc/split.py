@@ -5,17 +5,20 @@ class SP:
   def __init__(self, z):
     L = z*z - 1
     r = L*L + L + 1
+    p = (z-1)**2 * r // 3 + z
     m2 = L.bit_length() - 1
     s = m2 + m
     S = 1 << s
     q = S // L
     self.L = L
     self.r = r
+    self.p = p
     self.S = S
     self.q = q
     self.m2 = m2
     self.H2 = 2**m2
     print(f'{L.bit_length()=} {hex(L)=}')
+    print(f'{p.bit_length()=} {hex(p)=}')
     print(f'{r.bit_length()=} {hex(r)=}')
     print(f'{q.bit_length()=} {hex(q)=}')
     print(f'S=2**{S.bit_length()-1}')
@@ -26,6 +29,11 @@ class SP:
     print(f'(r-1)r0 / S ~ {(r-1)*r0/S/L:0.4f} L')
     print(f'H2 ~ {self.H2/L:0.4f} L')
     print(f'(r-1)r0 / S + H2 + L = {(r-1)*r0/S/L + self.H2/L + 1:0.3f} L')
+    print(f'{(p+1)%4=}')
+    print(f'{(r+1)%4=}')
+    rw = pow(-3, (p+1)//4, p)
+    rw = p-(rw+1)//2
+    print(f'{hex(rw)=} {(rw*rw+rw+1)%p=}')
 
   def split(self, x):
     # xH = x // self.H2
@@ -47,8 +55,8 @@ def test(sp, x):
   assert(a + b * L == x)
 
 def main():
-  for z in [-0xd201000000010000, 0x8508c00000000001]:
-    print(f'{hex(z)=}')
+  for (name, z) in [('BLS12_381', -0xd201000000010000), ('BLS12_377', 0x8508c00000000001)]:
+    print(f'{name} {hex(z)=}')
     sp = SP(z)
 
     r = sp.r

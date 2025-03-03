@@ -21,6 +21,7 @@
 #endif
 #endif
 
+//#define MSM_BLS12_377
 #define USE_ASM
 
 extern "C" {
@@ -925,8 +926,13 @@ struct EcMT {
 	typedef typename F::VM VM;
 	F x, y, z;
 	static const int a_ = 0;
+#ifdef MSM_BLS12_377
+	static const int b_ = 1;
+	static const int specialB_ = mcl::ec::local::Plus1;
+#else
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
+#endif
 	static T select(const VM& c, const T& a, const T& b)
 	{
 		T d;
@@ -1106,7 +1112,11 @@ struct EcMT {
 				Unit buf[4];
 				g_func.fr->fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
+#ifdef MSM_BLS12_377
+				mcl::ec::local::optimizedSplitRawForBLS12_377(aa, bb, buf);
+#else
 				mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
+#endif
 				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
 				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
 			}
@@ -1492,7 +1502,11 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 			Unit ya[4];
 			fr->fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
+#ifdef MSM_BLS12_377
+			mcl::ec::local::optimizedSplitRawForBLS12_377(a, b, ya);
+#else
 			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
+#endif
 			py[i*m*2+j+0] = a[0];
 			py[i*m*2+j+m] = a[1];
 			py2[i*m*2+j+0] = b[0];
@@ -1577,7 +1591,11 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 {
 	assert(EcM::a_ == 0);
+#ifdef MSM_BLS12_377
+	assert(EcM::b_ == 1);
+#else
 	assert(EcM::b_ == 4);
+#endif
 	(void)EcM::a_; // disable unused warning
 	(void)EcM::b_;
 	(void)EcM::zeroProj_;
@@ -1588,7 +1606,11 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	(void)EcMA::zeroProj_;
 	(void)EcMA::zeroJacobi_;
 
+#ifdef MSM_BLS12_377
+	if (cp != mcl::BLS12_377) return false;
+#else
 	if (cp != mcl::BLS12_381) return false;
+#endif
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
 	g_func = *func;
@@ -1749,7 +1771,11 @@ void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = siz
 
 CYBOZU_TEST_AUTO(init)
 {
+#ifdef MSM_BLS12_377
+	initPairing(mcl::BLS12_377);
+#else
 	initPairing(mcl::BLS12_381);
+#endif
 	g_mont.init(mcl::bn::Fp::getOp().mp);
 }
 
@@ -2368,16 +2394,19 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	const size_t n = 8;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
+	mpz_class L;
 	for (size_t i = 0; i < n; i++) P[i].clear();
-	P[0].setStr("1 13de196893df2bb5b57882ff1eec37d98966aa71b828fd25125d04ed2c75ddc55d5bc68bd797bd555f9a827387ee6b28 5d59257a0fccd5215cdeb0928296a7a4d684823db76aef279120d2d71c4b54604ec885eb554f99780231ade171979a3", 16);
-	x[0].setStr("5b4b92c347ffcd8543904dd1b22a60d94b4a9c243046456b8befd41507bec5d", 16);
-//	x[0].setStr("457977620305299156129707153920788267006"); // L+L
+	mcl::bn::hashAndMapToG1(P[0], "abc");
+	x[0].setHashOf("abc", 3);
+#ifdef MSM_BLS12_377
+	mcl::gmp::setStr(L, "0x452217cc900000010a11800000000000");
+#else
+	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
+#endif
 	for (size_t i = 0; i < n; i++) Q[i] = P[i];
 	G1::mul(R[0], P[0], x[0]);
 	G1::mulEach(Q, x, 8);
 	CYBOZU_TEST_EQUAL(R[0], Q[0]);
-	mpz_class L;
-	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
 	mpz_class tbl[] = {
 		0,
 		1,
@@ -2483,7 +2512,13 @@ CYBOZU_TEST_AUTO(mulVec)
 
 void msmBench(int C, size_t db, size_t de, size_t b)
 {
+#ifdef MSM_BLS12_377
+	puts("BLS12_377");
+	initPairing(mcl::BLS12_377);
+#else
+	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
+#endif
 
 	printf("d = [%zd, %zd], b = %zd\n", db, de, b);
 	const size_t maxN = size_t(1) << de;
