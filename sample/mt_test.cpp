@@ -24,42 +24,44 @@ int main(int argc, char *argv[])
 {
 	cybozu::Option opt;
 	size_t n;
-	int bit;
+	int minb, maxb;
 	size_t cpuN;
 	bool g1only;
 	bool msmOnly;
-	int minb;
-	int curveBit;
+	std::string curveName;
 	int C;
-	opt.appendOpt(&n, 100, "n", ": array size");
-	opt.appendOpt(&bit, 0, "b", ": set n to 1<<b");
+	opt.appendOpt(&maxb, 16, "b", ": set n to 1<<b");
 	opt.appendOpt(&cpuN, 0, "cpu", ": # of cpu for OpenMP");
 	opt.appendOpt(&C, 50, "c", ": count of loop");
 	opt.appendBoolOpt(&g1only, "g1", ": benchmark for G1 only");
 	opt.appendBoolOpt(&msmOnly, "msm", ": msm bench");
 	opt.appendOpt(&minb, 9, "minb", ": start from n=1<<(min b)");
-	opt.appendOpt(&curveBit, 381, "curvebit", ": 381 or 377");
+	opt.appendOpt(&curveName, "bls12-381", "curve", "bls12-381, bls12-377, bn254, snark1");
 	opt.appendHelp("h", ": show this message");
 	if (!opt.parse(argc, argv)) {
 		opt.usage();
 		return 1;
 	}
-	if (bit) n = size_t(1) << bit;
+	n = size_t(1) << maxb;
 	printf("n=%zd cpuN=%zd C=%d\n", n, cpuN, C);
 
-	switch (curveBit) {
-	case 381:
-		puts("BLS12-381");
+	if (curveName == "bls12-381") {
 		initPairing(mcl::BLS12_381);
-		break;
-	case 377:
-		puts("BLS12-377");
+	} else
+	if (curveName == "bls12-377") {
 		initPairing(mcl::BLS12_377);
-		break;
-	default:
-		printf("err curveBit=%d\n", curveBit);
+	} else
+	if (curveName == "bn254") {
+		initPairing(mcl::BN254);
+	} else
+	if (curveName == "snark1") {
+		initPairing(mcl::BN_SNARK1);
+	} else
+	{
+		printf("not supported curveName=%s\n", curveName.c_str());
 		return 1;
 	}
+	printf("curve=%s\n", curveName.c_str());
 	cybozu::XorShift rg;
 	std::vector<G1> Pvec(n);
 	std::vector<G2> Qvec(n);
@@ -76,8 +78,9 @@ int main(int argc, char *argv[])
 	G1 P1, P2;
 #ifdef MCL_MSM
 	if (msmOnly) {
-		for (size_t nn = 1u<<minb; nn <= n; nn *= 2) {
-			printf("% 8zd", nn);
+		for (int b = minb; b <= maxb; b++) {
+			size_t nn = 1u << b;
+			printf("% 8zd %2d", nn, b);
 			CYBOZU_BENCH_C(" ", C, G1::mulVec, P1, Pvec.data(), xVec.data(), nn);
 			fflush(stdout);
 		}
