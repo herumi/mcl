@@ -669,6 +669,24 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	#pragma warning(pop)
 #endif
 
+#ifdef __GNUC__
+	#define MCL_ATTRIBUTE __attribute__((constructor))
+#else
+	#define MCL_ATTRIBUTE
+#endif
+
+static void MCL_ATTRIBUTE initMcl()
+{
+//	puts("initMcl");
+	mcl::bint::initBint();
+}
+
+#ifdef _MSC_VER
+#pragma section(".CRT$XCU", read)
+__declspec(allocate(".CRT$XCU")) void(*ptr_initMcl)() = initMcl;
+#endif
+
+
 } } // mcl::fp
 
 #ifdef _MSC_VER
