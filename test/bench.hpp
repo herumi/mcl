@@ -273,31 +273,33 @@ void testSquareRoot()
 void testLagrange()
 {
 	puts("testLagrange");
-	const int n = 5;
-	const int k = 3;
-	Fr c[k];
-	Fr x[n], y[n];
-	for (size_t i = 0; i < k; i++) {
-		c[i].setByCSPRNG();
-	}
-	for (size_t i = 0; i < n; i++) {
-		x[i].setByCSPRNG();
-		mcl::evaluatePolynomial(y[i], c, k, x[i]);
-	}
-	Fr xs[k], ys[k];
-	for (int i0 = 0; i0 < n; i0++) {
-		xs[0] = x[i0];
-		ys[0] = y[i0];
-		for (int i1 = i0 + 1; i1 < n; i1++) {
-			xs[1] = x[i1];
-			ys[1] = y[i1];
-			for (int i2 = i1 + 1; i2 < n; i2++) {
-				xs[2] = x[i2];
-				ys[2] = y[i2];
-				Fr s;
-				s.clear();
-				mcl::LagrangeInterpolation(s, xs, ys, k);
-				CYBOZU_TEST_EQUAL(s, c[0]);
+	{
+		const int n = 5;
+		const int k = 3;
+		Fr c[k];
+		Fr x[n], y[n];
+		for (size_t i = 0; i < k; i++) {
+			c[i].setByCSPRNG();
+		}
+		for (size_t i = 0; i < n; i++) {
+			x[i].setByCSPRNG();
+			mcl::evaluatePolynomial(y[i], c, k, x[i]);
+		}
+		Fr xs[k], ys[k];
+		for (int i0 = 0; i0 < n; i0++) {
+			xs[0] = x[i0];
+			ys[0] = y[i0];
+			for (int i1 = i0 + 1; i1 < n; i1++) {
+				xs[1] = x[i1];
+				ys[1] = y[i1];
+				for (int i2 = i1 + 1; i2 < n; i2++) {
+					xs[2] = x[i2];
+					ys[2] = y[i2];
+					Fr s;
+					s.clear();
+					mcl::LagrangeInterpolation(s, xs, ys, k);
+					CYBOZU_TEST_EQUAL(s, c[0]);
+				}
 			}
 		}
 	}
