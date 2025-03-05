@@ -244,7 +244,6 @@ public:
 		}
 		return *this;
 	}
-	explicit FpT(const Unit* a, size_t n) { assert(n <= maxSize); bint::copyN(v_, a, n); }
 	static inline bool isMont() { return op_.isMont; }
 	/*
 		convert normal value to Montgomery value
