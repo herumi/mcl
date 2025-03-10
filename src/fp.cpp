@@ -682,8 +682,11 @@ static void MCL_ATTRIBUTE initMcl()
 }
 
 #ifdef _MSC_VER
-#pragma section(".CRT$XCU", read)
-__declspec(allocate(".CRT$XCU")) void(*ptr_initMcl)() = initMcl;
+#pragma warning(default:5247)
+#pragma warning(default:5248)
+// XCT is before XCU then, initMcl is called before C++ static/dynamic initializer.
+#pragma section(".CRT$XCT", read)
+__declspec(allocate(".CRT$XCT")) void(*ptr_initMcl)() = initMcl;
 #endif
 
 
