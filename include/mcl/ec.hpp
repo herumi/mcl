@@ -2001,7 +2001,7 @@ public:
 		}
 		goto verifyOrder;
 	}
-	// deplicated
+	// deprecated
 	static void setCompressedExpression(bool compressedExpression = true)
 	{
 		if (compressedExpression) {
