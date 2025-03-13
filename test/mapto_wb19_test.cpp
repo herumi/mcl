@@ -11,7 +11,7 @@
 using namespace mcl;
 using namespace mcl::bn;
 
-typedef mcl::MapTo_WB19<Fp, G1, Fp2, G2> MapTo;
+typedef mcl::MapTo_WB19 MapTo;
 typedef MapTo::E2 E2;
 
 void dump(const void *msg, size_t msgSize)

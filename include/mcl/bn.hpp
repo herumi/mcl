@@ -12,8 +12,7 @@
 namespace mcl { namespace local {
 
 // to export fast cofactor multiplication to mapto_wb19
-template<class T>
-void mulByCofactorBLS12fast(T& Q, const T& P);
+void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P);
 
 } } // mcl::local
 #include <mcl/mapto_wb19.hpp>
@@ -40,6 +39,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
 
 namespace bn {
 
+// backward compatibility
 typedef mcl::Fp Fp;
 typedef mcl::Fr Fr;
 typedef mcl::G1 G1;
@@ -300,7 +300,7 @@ struct MapTo {
 	int type_;
 	int curveType_;
 	int mapToMode_;
-	MapTo_WB19<Fp, G1, Fp2, G2> mapTo_WB19_;
+	MapTo_WB19 mapTo_WB19_;
 	MapTo()
 		: type_(0)
 		, curveType_(0)
@@ -2372,7 +2372,7 @@ inline bool isValidGT(const GT& x)
 } } // mcl::bn
 
 namespace mcl { namespace local {
-template<>
+
 inline void mulByCofactorBLS12fast(mcl::bn::G2& Q, const mcl::bn::G2& P)
 {
 	mcl::bn::BN::param.mapTo.mulByCofactorBLS12fast(Q, P);
