@@ -510,10 +510,6 @@ struct MapTo {
 			if (curveType_ != MCL_BLS12_381) return false;
 			mapToMode_ = mode;
 			return true;
-		case MCL_MAP_TO_MODE_ETH2_LEGACY:
-			if (curveType_ != MCL_BLS12_381) return false;
-			mapToMode_ = mode;
-			return true;
 		default:
 			return false;
 		}
@@ -539,7 +535,7 @@ struct MapTo {
 	template<class G, class F>
 	bool mapToEc(G& P, const F& t) const
 	{
-		if (mapToMode_ == MCL_MAP_TO_MODE_TRY_AND_INC || mapToMode_ == MCL_MAP_TO_MODE_ETH2_LEGACY) {
+		if (mapToMode_ == MCL_MAP_TO_MODE_TRY_AND_INC) {
 			ec::tryAndIncMapTo<G>(P, t);
 		} else {
 			if (!calcBN<G, F>(P, t)) return false;
@@ -587,18 +583,7 @@ struct MapTo {
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
-		if (mapToMode_ == MCL_MAP_TO_MODE_ETH2_LEGACY) {
-			Fp2 negY;
-			Fp2::neg(negY, P.y);
-			int cmp = Fp::compare(P.y.b, negY.b);
-			if (!(cmp > 0 || (cmp == 0 && P.y.a > negY.a))) {
-				P.y = negY;
-			}
-		}
 		mulByCofactor(P);
-		if (mapToMode_ == MCL_MAP_TO_MODE_ETH2_LEGACY) {
-			P *= g2cofactorAdj_;
-		}
 		return true;
 	}
 };
