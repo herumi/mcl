@@ -41,7 +41,6 @@ template<class F> int PointT<F>::specialA_ = ec::local::GenericA;
 
 } // mcl::local
 
-template<class Fp, class G1, class Fp2, class G2>
 struct MapTo_WB19 {
 	typedef local::PointT<Fp> E1;
 	typedef local::PointT<Fp2> E2;
