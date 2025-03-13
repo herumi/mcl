@@ -1,7 +1,7 @@
 #pragma once
 /**
 	@file
-	@brief Define class Fp and Fr and G1
+	@brief Define class G1, Fp, Fr
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
