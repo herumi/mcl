@@ -4,9 +4,9 @@ OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 CLANG?=clang++$(LLVM_VER)
-SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cpp
+SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp she_c256.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
+TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp
 TEST_SRC+=she_c256_test.cpp she_c384_test.cpp she_c384_256_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
@@ -55,7 +55,6 @@ MCL_SNAME=mcl
 BN256_SNAME=mclbn256
 BN384_SNAME=mclbn384
 BN384_256_SNAME=mclbn384_256
-BN512_SNAME=mclbn512
 SHE256_SNAME=mclshe256
 SHE384_SNAME=mclshe384
 SHE384_256_SNAME=mclshe384_256
@@ -66,8 +65,6 @@ BN384_LIB=$(LIB_DIR)/libmclbn384.a
 BN384_SLIB=$(LIB_DIR)/lib$(BN384_SNAME).$(LIB_SUF)
 BN384_256_LIB=$(LIB_DIR)/libmclbn384_256.a
 BN384_256_SLIB=$(LIB_DIR)/lib$(BN384_256_SNAME).$(LIB_SUF)
-BN512_LIB=$(LIB_DIR)/libmclbn512.a
-BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
 SHE256_LIB=$(LIB_DIR)/libmclshe256.a
 SHE256_SLIB=$(LIB_DIR)/lib$(SHE256_SNAME).$(LIB_SUF)
 SHE384_LIB=$(LIB_DIR)/libmclshe384.a
@@ -75,7 +72,7 @@ SHE384_SLIB=$(LIB_DIR)/lib$(SHE384_SNAME).$(LIB_SUF)
 SHE384_256_LIB=$(LIB_DIR)/libmclshe384_256.a
 SHE384_256_SLIB=$(LIB_DIR)/lib$(SHE384_256_SNAME).$(LIB_SUF)
 SHE_LIB_ALL=$(SHE256_LIB) $(SHE256_SLIB) $(SHE384_LIB) $(SHE384_SLIB) $(SHE384_256_LIB) $(SHE384_256_SLIB)
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE_LIB_ALL)
+all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(SHE_LIB_ALL)
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
 #LLVM_VER=-3.8
@@ -246,7 +243,6 @@ update_gen:
 BN256_OBJ=$(OBJ_DIR)/bn_c256.o
 BN384_OBJ=$(OBJ_DIR)/bn_c384.o
 BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
-BN512_OBJ=$(OBJ_DIR)/bn_c512.o
 SHE256_OBJ=$(OBJ_DIR)/she_c256.o
 SHE384_OBJ=$(OBJ_DIR)/she_c384.o
 SHE384_256_OBJ=$(OBJ_DIR)/she_c384_256.o
@@ -260,7 +256,6 @@ ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
   BN256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   BN384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  BN512_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   SHE256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   SHE384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   SHE384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
@@ -270,7 +265,6 @@ ifeq ($(OS),mingw64)
   BN256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN256_SNAME).a
   BN384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_SNAME).a
   BN384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_256_SNAME).a
-  BN512_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN512_SNAME).a
   SHE256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE256_SNAME).a
   SHE384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_SNAME).a
   SHE384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_256_SNAME).a
@@ -312,17 +306,11 @@ $(BN384_LIB): $(BN384_OBJ)
 $(BN384_256_LIB): $(BN384_256_OBJ)
 	$(AR) $(ARFLAGS) $@ $(BN384_256_OBJ)
 
-$(BN512_LIB): $(BN512_OBJ)
-	$(AR) $(ARFLAGS) $@ $(BN512_OBJ)
-
 $(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(CFLAGS) $(BN384_SLIB_LDFLAGS)
 
 $(BN384_256_SLIB): $(BN384_256_OBJ) $(MCL_SLIB)
 	$(PRE)$(CXX) -o $@ $(BN384_256_OBJ) -shared $(CFLAGS) $(BN384_256_SLIB_LDFLAGS)
-
-$(BN512_SLIB): $(BN512_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN512_OBJ) -shared $(CFLAGS) $(BN512_SLIB_LDFLAGS)
 
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
@@ -403,9 +391,6 @@ $(EXE_DIR)/bn_c384_test.exe: $(OBJ_DIR)/bn_c384_test.o $(BN384_LIB) $(MCL_LIB)
 
 $(EXE_DIR)/bn_c384_256_test.exe: $(OBJ_DIR)/bn_c384_256_test.o $(BN384_256_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS)
-
-$(EXE_DIR)/bn_c512_test.exe: $(OBJ_DIR)/bn_c512_test.o $(BN512_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN512_LIB) $(MCL_LIB) $(LDFLAGS)
 
 $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN384_256_LIB) $(MCL_LIB)
 	$(PRE)$(CC) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
@@ -527,7 +512,7 @@ android: $(BASE_LL)
 	done
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(BASE_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) lib/*.a src/static_code.asm src/dump_code lib/android
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) lib/*.a src/static_code.asm src/dump_code lib/android
 	$(RM) src/gen_bint.exe
 	$(MAKE) clean_standalone
 
