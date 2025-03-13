@@ -1,6 +1,4 @@
-#ifndef MCL_INCLUDE_MCL_BN_HPP
-#define MCL_INCLUDE_MCL_BN_HPP
-// use MCL_INCLUDE_MCL_BN_HPP instead of #pragma once to be able to include twice
+#pragma once
 /**
 	@file
 	@brief optimal ate pairing over BN-curve / BLS12-curve
@@ -38,9 +36,6 @@ void mulByCofactorBLS12fast(T& Q, const T& P);
 #ifndef MCL_MAX_FR_BIT_SIZE
 	#define MCL_MAX_FR_BIT_SIZE MCL_MAX_FP_BIT_SIZE
 #endif
-#ifndef MCL_NAMESPACE_BN
-	#define MCL_NAMESPACE_BN bn
-#endif
 namespace mcl {
 
 #if MCL_MSM == 1
@@ -53,7 +48,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
 } // mcl::msm
 #endif
 
-namespace MCL_NAMESPACE_BN {
+namespace bn {
 
 namespace local {
 struct FpTag;
@@ -2386,9 +2381,8 @@ inline bool isValidGT(const GT& x)
 
 namespace mcl { namespace local {
 template<>
-inline void mulByCofactorBLS12fast(mcl::MCL_NAMESPACE_BN::G2& Q, const mcl::MCL_NAMESPACE_BN::G2& P)
+inline void mulByCofactorBLS12fast(mcl::bn::G2& Q, const mcl::bn::G2& P)
 {
-	mcl::MCL_NAMESPACE_BN::BN::param.mapTo.mulByCofactorBLS12fast(Q, P);
+	mcl::bn::BN::param.mapTo.mulByCofactorBLS12fast(Q, P);
 }
 } } // mcl::local
-#endif
