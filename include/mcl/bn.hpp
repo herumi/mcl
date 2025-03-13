@@ -847,12 +847,6 @@ struct Param {
 	*/
 	Fp2 twist_b;
 	local::TwistBtype twist_b_type;
-/*
-	mpz_class exp_c0;
-	mpz_class exp_c1;
-	mpz_class exp_c2;
-	mpz_class exp_c3;
-*/
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
 	local::SignVec siTbl;
@@ -934,22 +928,6 @@ struct Param {
 		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = local::getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
-/*
-		if (isBLS12) {
-			mpz_class z2 = z * z;
-			mpz_class z3 = z2 * z;
-			mpz_class z4 = z3 * z;
-			mpz_class z5 = z4 * z;
-			exp_c0 = z5 - 2 * z4 + 2 * z2 - z + 3;
-			exp_c1 = z4 - 2 * z3 + 2 * z - 1;
-			exp_c2 = z3 - 2 * z2 + z;
-			exp_c3 = z2 - 2 * z + 1;
-		} else {
-			exp_c0 = -2 + z * (-18 + z * (-30 - 36 * z));
-			exp_c1 = 1 + z * (-12 + z * (-18 - 36 * z));
-			exp_c2 = 6 * z * z + 1;
-		}
-*/
 		if (isBLS12) {
 			mapTo.init(0, z, cp.curveType);
 		} else {
@@ -1393,14 +1371,6 @@ inline void mapToCyclotomic(Fp12& y, const Fp12& x)
 */
 inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 {
-#if 0
-	const mpz_class& p = param.p;
-	mpz_class p2 = p * p;
-	mpz_class p4 = p2 * p2;
-	Fp12::pow(y, x, (p4 - p2 + 1) / param.r * 3);
-	return;
-#endif
-#if 1
 	/*
 		Efficient Final Exponentiation via Cyclotomic Structure
 		for Pairings over Families of Elliptic Curves
@@ -1426,32 +1396,6 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 	fasterSqr(a1, x);
 	a1 *= x; // x^3
 	Fp12::mul(y, a0, a1);
-#else
-	Fp12 a0, a1, a2, a3, a4, a5, a6, a7;
-	Fp12::unitaryInv(a0, x); // a0 = x^-1
-	fasterSqr(a1, a0); // x^-2
-	pow_z(a2, x); // x^z
-	fasterSqr(a3, a2); // x^2z
-	a1 *= a2; // a1 = x^(z-2)
-	pow_z(a7, a1); // a7 = x^(z^2-2z)
-	pow_z(a4, a7); // a4 = x^(z^3-2z^2)
-	pow_z(a5, a4); // a5 = x^(z^4-2z^3)
-	a3 *= a5; // a3 = x^(z^4-2z^3+2z)
-	pow_z(a6, a3); // a6 = x^(z^5-2z^4+2z^2)
-
-	Fp12::unitaryInv(a1, a1); // x^(2-z)
-	a1 *= a6; // x^(z^5-2z^4+2z^2-z+2)
-	a1 *= x; // x^(z^5-2z^4+2z^2-z+3) = x^c0
-	a3 *= a0; // x^(z^4-2z^3-1) = x^c1
-	Fp12::Frobenius(a3, a3); // x^(c1 p)
-	a1 *= a3; // x^(c0 + c1 p)
-	a4 *= a2; // x^(z^3-2z^2+z) = x^c2
-	Fp12::Frobenius2(a4, a4);  // x^(c2 p^2)
-	a1 *= a4; // x^(c0 + c1 p + c2 p^2)
-	a7 *= x; // x^(z^2-2z+1) = x^c3
-	Fp12::Frobenius3(y, a7);
-	y *= a1;
-#endif
 }
 /*
 	Faster Hashing to G2
@@ -1475,14 +1419,6 @@ inline void expHardPartBLS12(Fp12& y, const Fp12& x)
 */
 inline void expHardPartBN(Fp12& y, const Fp12& x)
 {
-#if 0
-	const mpz_class& p = param.p;
-	mpz_class p2 = p * p;
-	mpz_class p4 = p2 * p2;
-	Fp12::pow(y, x, (p4 - p2 + 1) / param.r);
-	return;
-#endif
-#if 1
 	Fp12 a, b;
 	Fp12 a2, a3;
 	pow_z(b, x); // x^z
@@ -1506,18 +1442,6 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 	a *= b;
 	Fp12::Frobenius3(y, y);
 	y *= a;
-#else
-	Fp12 t1, t2, t3;
-	Fp12::Frobenius(t1, x);
-	Fp12::Frobenius(t2, t1);
-	Fp12::Frobenius(t3, t2);
-	Fp12::pow(t1, t1, param.exp_c1);
-	Fp12::pow(t2, t2, param.exp_c2);
-	Fp12::pow(y, x, param.exp_c0);
-	y *= t1;
-	y *= t2;
-	y *= t3;
-#endif
 }
 /*
 	assume P is normalized
@@ -1561,19 +1485,7 @@ inline void finalExp(Fp12& y, const Fp12& x)
 		y.clear();
 		return;
 	}
-#if 1
 	mapToCyclotomic(y, x);
-#else
-	const mpz_class& p = BN::param.p;
-	mpz_class p2 = p * p;
-	Fp12 y0;
-	Fp12::pow(y0, x, p2 + 1);
-	Fp12::pow(y, y0, p2);
-	Fp12::pow(y, y, p2);
-	Fp12::pow(y, y, p2);
-	Fp12::inv(y0, y0);
-	y *= y0;
-#endif
 	if (BN::param.isBLS12) {
 		expHardPartBLS12(y, y);
 	} else {
