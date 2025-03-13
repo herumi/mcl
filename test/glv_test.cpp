@@ -233,6 +233,7 @@ CYBOZU_TEST_AUTO(glv)
 		const char *name;
 	} tbl[] = {
 //		{ mcl::BN_P256, "BN_P256" },
+		{ mcl::BLS12_377, "BLS12_377" },
 		{ mcl::BLS12_381, "BLS12_381" },
 		{ mcl::BN254, "BN254" },
 	};

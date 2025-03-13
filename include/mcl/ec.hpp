@@ -40,6 +40,7 @@ enum ModeCoeffA {
 };
 
 enum ModeCoeffB {
+	Plus1,
 	Plus4,
 	GenericB
 };
@@ -74,6 +75,14 @@ template<class F>
 bool get_a_flag(const mcl::Fp2T<F>& x)
 {
 	return get_a_flag(x.b); // x = a + bi
+}
+
+template<class F>
+void mul3(F& x)
+{
+	F t;
+	F::add(t, x, x);
+	F::add(x, t, x); // 3x
 }
 
 template<class F>
@@ -253,7 +262,6 @@ inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 	/*
 		z = -0xd201000000010000
 		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
-		r = L^2+L+1 = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 		s=255
 		q = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
 		H = 1<<128
@@ -262,7 +270,6 @@ inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 	static const Unit q[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
 	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
 	static const size_t n = 128 / mcl::UnitBitSize;
-#if 1
 	Unit xH[n+1]; // x = xH * (H/2) + xL
 	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-1); // >>127
 	Unit t[n*2];
@@ -276,29 +283,34 @@ inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 	} else {
 		mcl::bint::copyT<n>(a, t);
 	}
-#else
-	const bool adj = false;
-	Unit t[n*3];
-	// n = 128 bit
-	// t[n*3] = x[n*2] * q[n]
-	mcl::bint::mulNM(t, x, n*2, q, n);
-	// b[n] = t[n*3]>>255
-	mcl::bint::shrT<n+1>(t, t+n*2-1, mcl::UnitBitSize-1); // >>255
-	mcl::bint::copyT<n>(b, t);
-	Unit t2[n*2];
-	// t2[n*2] = t[n] * L[n]
-	// Do not overlap I/O buffers on pre-Broadwell CPUs.
-	mcl::bint::mulT<n>(t2, t, L);
-	// a[n] = x[n*2] - t2[n*2]
-	mcl::bint::subT<n>(a, x, t2);
-	if (adj) {
-		if (mcl::bint::cmpEqT<n>(a, L)) {
-			// if a == L then b = b + 1 and a = 0
-			mcl::bint::addT<n>(b, b, one);
-			mcl::bint::clearT<n>(a);
-		}
+}
+
+inline void optimizedSplitRawForBLS12_377(Unit *a, Unit *b, const Unit *x)
+{
+	/*
+		z = -0xd201000000010000
+		L = z^2-1 = 0x452217cc900000010a11800000000000
+		s=254
+		q = (1<<s)//L = 0xecfdeaa5a7f4dc581fdcbb4cabe4060b
+		H = 1<<128
+	*/
+	static const Unit L[] = { MCL_U64_TO_UNIT(0x0a11800000000000), MCL_U64_TO_UNIT(0x452217cc90000001) };
+	static const Unit q[] = { MCL_U64_TO_UNIT(0x1fdcbb4cabe4060b), MCL_U64_TO_UNIT(0xecfdeaa5a7f4dc58) };
+	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
+	static const size_t n = 128 / mcl::UnitBitSize;
+	Unit xH[n+1]; // x = xH * (H/4) + xL
+	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-2); // >>126
+	Unit t[n*2];
+	mcl::bint::mulT<n>(t, xH, q);
+	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
+	mcl::bint::mulT<n>(t, b, L); // bL
+	mcl::bint::subT<n*2>(t, x, t); // x - bL
+	Unit d = mcl::bint::subT<n>(a, t, L);
+	if (d == 0) {
+		mcl::bint::addT<n>(b, b, one);
+	} else {
+		mcl::bint::copyT<n>(a, t);
 	}
-#endif
 }
 
 } // mcl::ec::local
@@ -413,9 +425,13 @@ bool isValidJacobi(const E& P)
 	t += x2;
 	t *= P.x;
 	z4 *= z2;
+	if (E::specialB_ == ec::local::Plus1) {
+		// pass
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul4(z4);
-	} else {
+	} else
+	{
 		z4 *= E::b_;
 	}
 	t += z4;
@@ -624,16 +640,24 @@ void addCTProj(E& R, const E& P, const E& Q, bool mixed = false)
 	F::sub(y3, x3, y3);
 	F::add(x3, t0, t0);
 	F::add(t0, t0, x3);
+	if (E::specialB_ == ec::local::Plus1) {
+		local::mul3(t2);
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(t2);
-	} else {
+	} else
+	{
 		F::mul(t2, t2, E::b3_);
 	}
 	F::add(R.z, t1, t2);
 	F::sub(t1, t1, t2);
+	if (E::specialB_ == ec::local::Plus1) {
+		local::mul3(y3);
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(y3);
-	} else {
+	} else
+	{
 		F::mul(y3, y3, E::b3_);
 	}
 	F::mul(x3, y3, t4);
@@ -660,9 +684,13 @@ void dblCTProj(E& R, const E& P)
 	F::add(R.z, t0, t0);
 	F::add(R.z, R.z, R.z);
 	F::add(R.z, R.z, R.z);
+	if (E::specialB_ == ec::local::Plus1) {
+		local::mul3(t2);
+	} else
 	if (E::specialB_ == ec::local::Plus4) {
 		local::mul12(t2);
-	} else {
+	} else
+	{
 		F::mul(t2, t2, E::b3_);
 	}
 	F::mul(x3, t2, R.z);
@@ -1146,7 +1174,7 @@ void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, 
 
 // for n >= 128
 template<class GLV, class G>
-bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t b)
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket)
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
@@ -1183,7 +1211,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t b)
 			assert(b); (void)b;
 		}
 	}
-	mulVecLong(z, tbl, yp, next, next, n * splitN, false, b);
+	mulVecLong(z, tbl, yp, next, next, n * splitN, false, bucket);
 	free(tbl);
 	return true;
 }
@@ -1483,9 +1511,13 @@ public:
 		} else {
 			specialA_ = ec::local::GenericA;
 		}
+		if (b_ == 1) {
+			specialB_ = ec::local::Plus1;
+		} else
 		if (b_ == 4) {
 			specialB_ = ec::local::Plus4;
-		} else {
+		} else
+		{
 			specialB_ = ec::local::GenericB;
 		}
 		ioMode_ = 0;

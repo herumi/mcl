@@ -21,6 +21,7 @@
 #endif
 #endif
 
+//#define MCL_MSM_BLS12_377
 #define USE_ASM
 
 extern "C" {
@@ -129,6 +130,46 @@ inline void cvt(Unit y[N*M], const Vec xN[N])
 {
 	for (size_t i = 0; i < M; i++) {
 		get(y+i*N, xN, i);
+	}
+}
+
+/*
+	d[] = transpose(s[]), destroy s[]
+	s = [a7, a6, a5, a4, a3, a2, a1, a0]
+	    [b7, b6, b5, b4, b3, b2, b1, b0]
+	    [c7, c6, c5, c4, c3, c2, c1, c0]
+	    ....
+*/
+template<bool out8=true>
+inline void trans8x8(Vec d[8], Vec s[8])
+{
+	d[0] = vpunpcklqdq(s[0], s[1]);
+	d[1] = vpunpckhqdq(s[0], s[1]);
+	d[2] = vpunpcklqdq(s[2], s[3]);
+	d[3] = vpunpckhqdq(s[2], s[3]);
+	d[4] = vpunpcklqdq(s[4], s[5]);
+	d[5] = vpunpckhqdq(s[4], s[5]);
+	d[6] = vpunpcklqdq(s[6], s[7]);
+	d[7] = vpunpckhqdq(s[6], s[7]);
+
+	s[0] = vshuffi64x2<0x44>(d[0], d[2]);
+	s[1] = vshuffi64x2<0x44>(d[1], d[3]);
+	s[2] = vshuffi64x2<0x44>(d[4], d[6]);
+	s[3] = vshuffi64x2<0x44>(d[5], d[7]);
+	s[4] = vshuffi64x2<0xee>(d[0], d[2]);
+	s[5] = vshuffi64x2<0xee>(d[1], d[3]);
+	s[6] = vshuffi64x2<0xee>(d[4], d[6]);
+	s[7] = vshuffi64x2<0xee>(d[5], d[7]);
+
+	d[0] = vshuffi64x2<0x88>(s[0], s[2]);
+	d[1] = vshuffi64x2<0x88>(s[1], s[3]);
+	d[2] = vshuffi64x2<0xdd>(s[0], s[2]);
+	d[3] = vshuffi64x2<0xdd>(s[1], s[3]);
+	d[4] = vshuffi64x2<0x88>(s[4], s[6]);
+	d[5] = vshuffi64x2<0x88>(s[5], s[7]);
+	if (out8) {
+		d[6] = vshuffi64x2<0xdd>(s[4], s[6]);
+		d[7] = vshuffi64x2<0xdd>(s[5], s[7]);
 	}
 }
 
@@ -502,10 +543,19 @@ static const Vec& v_pickUpEc = *(const Vec*)g_pickUpEc;
 // convert G1.x (, y or z) to Vec
 inline void cvtFromG1Ax(Vec *y, const Unit *x)
 {
+#if 1
 	Vec t[6];
 	for (int i = 0; i < 6; i++) {
 		t[i] = vpgatherqq(v_pickUpEc, x+i);
 	}
+#else // faster
+	Vec s[8], t[8]; // need 8 size work area
+	Vmask v = getMask(6);
+	for (int i = 0; i < 8; i++) {
+		s[i] = vmovdqu64(v, x+i*6*3);
+	}
+	trans8x8<false>(t, s);
+#endif
 	split52bit(y, t);
 }
 
@@ -876,8 +926,13 @@ struct EcMT {
 	typedef typename F::VM VM;
 	F x, y, z;
 	static const int a_ = 0;
+#ifdef MCL_MSM_BLS12_377
+	static const int b_ = 1;
+	static const int specialB_ = mcl::ec::local::Plus1;
+#else
 	static const int b_ = 4;
 	static const int specialB_ = mcl::ec::local::Plus4;
+#endif
 	static T select(const VM& c, const T& a, const T& b)
 	{
 		T d;
@@ -1033,11 +1088,12 @@ struct EcMT {
 	template<bool isProj=true, bool mixed=false>
 	static void mulGLV(T *Q, const T *P, const mcl::msm::FrA *y, size_t n = 1)
 	{
+		assert(n > 0);
 		const size_t m = sizeof(V)/8;
 		const size_t w = 5;
 		const size_t tblN = (1<<(w-1))+1; // [0, 2^(w-1)]
 
-		T tbl1s[tblN*n];
+		T *tbl1s = (T*)CYBOZU_ALIGNED_ALLOCA(sizeof(T)*tblN*n, 64);
 		for (size_t k = 0; k < n; k++) {
 			makeTable<isProj, mixed>(tbl1s + tblN*k, tblN, P[k]);
 		}
@@ -1056,7 +1112,11 @@ struct EcMT {
 				Unit buf[4];
 				g_func.fr->fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
+#ifdef MCL_MSM_BLS12_377
+				mcl::ec::local::optimizedSplitRawForBLS12_377(aa, bb, buf);
+#else
 				mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
+#endif
 				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
 				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
 			}
@@ -1232,7 +1292,10 @@ inline size_t glvGetBucketSizeAVX512(size_t n)
 	if (log2n < tblMin) return 2;
 	// n >= 2^tblMin
 	static const size_t tbl[] = {
+	// elem num 2^a i          : a= 16  17  18  19  20  21
+	// simd elem num 2^b=2^a/4 : b= 14  15  16  17  18  19
 		3, 4, 5, 5, 6, 7, 8, 8, 10, 10, 10, 10, 10, 13, 15, 15, 16, 16, 16, 16, 16
+		                                      //13 (almost same)
 	};
 	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 16;
 	size_t ret = tbl[log2n - tblMin];
@@ -1402,7 +1465,7 @@ const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 #define USE_GLV
 
 template<class G=EcM, class V=Vec>
-void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b = 0)
+void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket = 0)
 {
 	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
@@ -1439,7 +1502,11 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b = 0)
 			Unit ya[4];
 			fr->fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
+#ifdef MCL_MSM_BLS12_377
+			mcl::ec::local::optimizedSplitRawForBLS12_377(a, b, ya);
+#else
 			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
+#endif
 			py[i*m*2+j+0] = a[0];
 			py[i*m*2+j+m] = a[1];
 			py2[i*m*2+j+0] = b[0];
@@ -1458,7 +1525,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b = 0)
 		}
 	}
 #endif
-	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, b);
+	mulVecAVX512_inner<G, V, mixed>(P, xVec, yVec, d * e, 256 / e, bucket);
 
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
@@ -1483,42 +1550,52 @@ void mulVecAVX512(Unit *P, Unit *x, const Unit *y, size_t n, size_t b = 0)
 
 void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 {
-	assert(n % 16 == 0);
-	const bool isProj = false;
-	const bool mixed = true;
-	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
-	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
-	const size_t u = 1;
-	const size_t q = n / u;
 #if 1
 	typedef EcMA V;
 #else
 	typedef EcM V;
 #endif
 	const size_t m = sizeof(V)/(sizeof(FpM)*3)*8;
-	for (size_t i = 0; i < n; i += m*u) {
-		V P[u];
+	assert(n % m == 0);
+	const size_t d = n / m;
+	const bool isProj = false;
+	const bool mixed = true;
+	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
+	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
+	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
+	const size_t u = 4;
+	const size_t q = d / u;
+	const size_t remain = d % u;
+	V P[u];
+	for (size_t i = 0; i < q; i++) {
 		for (size_t k = 0; k < u; k++) {
-			P[k].setG1A(x+i+k*m, isProj);
+			P[k].setG1A(x+k*m, isProj);
 		}
-		V::mulGLV<isProj, mixed>(P, P, y+i, u);
+		V::mulGLV<isProj, mixed>(P, P, y, u);
 		for (size_t k = 0; k < u; k++) {
-			P[k].getG1A(x+i+k*m, isProj);
+			P[k].getG1A(x+k*m, isProj);
 		}
+		x += m*u;
+		y += m*u;
 	}
-	for (size_t i = q*m*u; i < n; i += m) {
-		V P;
-		P.setG1A(x+i, isProj);
-		V::mulGLV<isProj, mixed>(&P, &P, y+i);
-		P.getG1A(x+i, isProj);
+	if (remain == 0) return;
+	for (size_t k = 0; k < remain; k++) {
+		P[k].setG1A(x+k*m, isProj);
+	}
+	V::mulGLV<isProj, mixed>(P, P, y, remain);
+	for (size_t k = 0; k < remain; k++) {
+		P[k].getG1A(x+k*m, isProj);
 	}
 }
 
 bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 {
 	assert(EcM::a_ == 0);
+#ifdef MCL_MSM_BLS12_377
+	assert(EcM::b_ == 1);
+#else
 	assert(EcM::b_ == 4);
+#endif
 	(void)EcM::a_; // disable unused warning
 	(void)EcM::b_;
 	(void)EcM::zeroProj_;
@@ -1529,7 +1606,11 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	(void)EcMA::zeroProj_;
 	(void)EcMA::zeroJacobi_;
 
+#ifdef MCL_MSM_BLS12_377
+	if (cp != mcl::BLS12_377) return false;
+#else
 	if (cp != mcl::BLS12_381) return false;
+#endif
 	Xbyak::util::Cpu cpu;
 	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
 	g_func = *func;
@@ -1690,8 +1771,44 @@ void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = siz
 
 CYBOZU_TEST_AUTO(init)
 {
+#ifdef MCL_MSM_BLS12_377
+	puts("BLS12_377");
+	initPairing(mcl::BLS12_377);
+#else
+	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
+#endif
 	g_mont.init(mcl::bn::Fp::getOp().mp);
+}
+
+void putA(const uint64_t a[64], const char *msg)
+{
+	printf("%s\n", msg);
+	for (size_t i = 0; i < 8; i++) {
+		for (size_t j = 0; j < 8; j++) {
+			printf("%02d ", int(a[i * 8 + j]));
+		}
+		printf("\n");
+	}
+}
+
+CYBOZU_TEST_AUTO(trans8x8)
+{
+	MIE_ALIGN(64) uint64_t sa[64], da[64];
+	for (size_t i = 0; i < 8; i++) {
+		for (size_t j = 0; j < 8; j++) {
+			sa[i*8+j] = uint64_t(j + i * 10);
+		}
+	}
+	Vec s[8], d[8];
+	memcpy(s, sa, sizeof(s));
+	trans8x8(d, s);
+	memcpy(da, d, sizeof(d));
+	for (size_t i = 0; i < 8; i++) {
+		for (size_t j = 0; j < 8; j++) {
+			CYBOZU_TEST_EQUAL(sa[i*8+j], da[i+j*8]);
+		}
+	}
 }
 
 CYBOZU_TEST_AUTO(glvParam)
@@ -1880,7 +1997,7 @@ void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
 	}
 }
 
-#if 1
+#ifdef USE_ASM
 CYBOZU_TEST_AUTO(asm)
 {
 	cybozu::XorShift rg;
@@ -2279,16 +2396,19 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	const size_t n = 8;
 	G1 P[n], Q[n], R[n];
 	Fr x[n];
+	mpz_class L;
 	for (size_t i = 0; i < n; i++) P[i].clear();
-	P[0].setStr("1 13de196893df2bb5b57882ff1eec37d98966aa71b828fd25125d04ed2c75ddc55d5bc68bd797bd555f9a827387ee6b28 5d59257a0fccd5215cdeb0928296a7a4d684823db76aef279120d2d71c4b54604ec885eb554f99780231ade171979a3", 16);
-	x[0].setStr("5b4b92c347ffcd8543904dd1b22a60d94b4a9c243046456b8befd41507bec5d", 16);
-//	x[0].setStr("457977620305299156129707153920788267006"); // L+L
+	mcl::bn::hashAndMapToG1(P[0], "abc");
+	x[0].setHashOf("abc", 3);
+#ifdef MCL_MSM_BLS12_377
+	mcl::gmp::setStr(L, "0x452217cc900000010a11800000000000");
+#else
+	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
+#endif
 	for (size_t i = 0; i < n; i++) Q[i] = P[i];
 	G1::mul(R[0], P[0], x[0]);
 	G1::mulEach(Q, x, 8);
 	CYBOZU_TEST_EQUAL(R[0], Q[0]);
-	mpz_class L;
-	mcl::gmp::setStr(L, "0xac45a4010001a40200000000ffffffff");
 	mpz_class tbl[] = {
 		0,
 		1,
@@ -2315,6 +2435,15 @@ void mulEachOrg(G1 *P, const Fr *x, size_t n)
 {
 	for (size_t i = 0; i < n; i++) {
 		G1::mul(P[i], P[i], x[i]);
+	}
+}
+
+void mulVecOrg(G1& Q, G1 *P, const Fr *x, size_t n)
+{
+	mulEachOrg(P, x, n);
+	Q = P[0];
+	for (size_t i = 1; i < n; i++) {
+		Q += P[i];
 	}
 }
 
@@ -2379,12 +2508,19 @@ CYBOZU_TEST_AUTO(mulVec)
 	CYBOZU_BENCH_C("mulVec(copy)", 30, copyMulVec, R2, P2, x, n);
 	CYBOZU_BENCH_C("mulVec", 30, mcl::msm::mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
 	CYBOZU_TEST_EQUAL(R, R2);
+	CYBOZU_BENCH_C("mulVecOrg", 3, mulVecOrg, R2, P2, x, n);
 #endif
 }
 
 void msmBench(int C, size_t db, size_t de, size_t b)
 {
+#ifdef MCL_MSM_BLS12_377
+	puts("BLS12_377");
+	initPairing(mcl::BLS12_377);
+#else
+	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
+#endif
 
 	printf("d = [%zd, %zd], b = %zd\n", db, de, b);
 	const size_t maxN = size_t(1) << de;

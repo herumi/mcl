@@ -254,10 +254,11 @@ struct Op {
 	u3u fpDbl_addPre;
 	u3u fpDbl_subPre;
 	/*
-		for Fp2 = F[u] / (u^2 + 1)
+		for Fp2 = F[X] / (X^2 + u)
 		x = a + bu
 	*/
-	int xi_a; // xi = xi_a + u
+	int u;
+	int xi_a; // xi = xi_a + i
 	void2u fp2_mul_xiA_;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
@@ -344,6 +345,7 @@ struct Op {
 		fpDbl_addPre = 0;
 		fpDbl_subPre = 0;
 
+		u = 0;
 		xi_a = 0;
 		fp2_mul_xiA_ = 0;
 		hash = 0;
@@ -371,7 +373,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	bool init(const mpz_class& p, size_t maxBitSize, int xi_a, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE);
+	bool init(const mpz_class& p, size_t maxBitSize, int xi_a, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE, int u = 1);
 #ifdef MCL_USE_XBYAK
 	static FpGenerator* createFpGenerator();
 	static void destroyFpGenerator(FpGenerator *fg);

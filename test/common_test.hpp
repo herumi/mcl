@@ -39,7 +39,7 @@ void testMulVec(const G& P)
 		xVec[i] = x0Vec[i];
 		yVec[i].setByCSPRNG(rg);
 	}
-	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 32, 64, 128, 256,
+	const size_t nTbl[] = { 1, 2, 3, 15, 16, 17, 31, 32, 64, 128, 256,
 #if 0
 		512, 1024, 2048, N
 #endif

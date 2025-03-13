@@ -51,6 +51,8 @@ CYBOZU_TEST_AUTO(pairing)
 	testCurve(mcl::BN381_1);
 	puts("BLS12_381");
 	testCurve(mcl::BLS12_381);
+	puts("BLS12_377");
+	testCurve(mcl::BLS12_377);
 	puts("BN254");
 	testCurve(mcl::BN254);
 }

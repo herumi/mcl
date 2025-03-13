@@ -481,6 +481,7 @@ private:
 		if (gen_fp2_mul2(op.fp2_mul2A_)) {
 			setFuncInfo(prof_, suf, "2_mul2", op.fp2_mul2A_, getCurr());
 		}
+		if (op.u != 1) return;
 
 		if (gen_fp2Dbl_mulPre(op.fp2Dbl_mulPreA_)) {
 			setFuncInfo(prof_, suf, "2Dbl_mulPre", op.fp2Dbl_mulPreA_, getCurr());

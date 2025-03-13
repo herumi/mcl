@@ -12,7 +12,7 @@
 #include <iosfwd>
 #include <set>
 #ifndef MCLBN_FP_UNIT_SIZE
-	#define MCLBN_FP_UNIT_SIZE 4
+	#define MCLBN_FP_UNIT_SIZE 6
 #endif
 #if MCLBN_FP_UNIT_SIZE == 4
 #include <mcl/bn256.hpp>
@@ -281,9 +281,9 @@ public:
 			return x_ == rhs.x_;
 		}
 		bool operator!=(const SecretKey& rhs) const { return !operator==(rhs); }
-		void init()
+		void init(fp::RandGen rg = fp::RandGen())
 		{
-			x_.setByCSPRNG();
+			x_.setByCSPRNG(rg);
 		}
 		void getPublicKey(PublicKey& pub) const
 		{

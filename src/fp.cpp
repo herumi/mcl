@@ -19,11 +19,13 @@
 #endif
 
 #include "xbyak/xbyak_util.h"
+#if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
 static const Xbyak::util::Cpu& getCpu()
 {
 	static Xbyak::util::Cpu cpu;
 	return cpu;
 }
+#endif
 
 #ifdef MCL_STATIC_CODE
 #include "fp_static_code.hpp"
@@ -440,7 +442,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize)
+bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize, int _u)
 {
 	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
 	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
@@ -457,6 +459,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	mp = _p;
 	bitSize = gmp::getBitSize(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
+	this->u = _u;
 	this->xi_a = _xi_a;
 /*
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
@@ -665,6 +668,27 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 #ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
+
+#ifdef __GNUC__
+	#define MCL_ATTRIBUTE __attribute__((constructor))
+#else
+	#define MCL_ATTRIBUTE
+#endif
+
+static void MCL_ATTRIBUTE initMcl()
+{
+//	puts("initMcl");
+	mcl::bint::initBint();
+}
+
+#ifdef _MSC_VER
+#pragma warning(default:5247)
+#pragma warning(default:5248)
+// XCT is before XCU then, initMcl is called before C++ static/dynamic initializer.
+#pragma section(".CRT$XCT", read)
+__declspec(allocate(".CRT$XCT")) void(*ptr_initMcl)() = initMcl;
+#endif
+
 
 } } // mcl::fp
 

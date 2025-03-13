@@ -22,65 +22,47 @@ G1 mulEach
 
 # GLV method
 
-## Split function for BLS12-381
+## Split function for BLS12-381 and BLS12-377
 
 ### Definition of parameters
 
-```python
-m = 128
-H = 1<<m
-z = -0xd201000000010000
-L = z*z - 1
-r = L*L + L + 1
-s = r.bit_length()
-S = 1<<s # H * (H/2)
-q = S // L
-r0 = S % L
+see [split.py]
 
-def split(x):
-  xH = x >> (m-1) # x // (H/2)
-  b = (xH * q) >> m # (xH * q) // H
-  a = x - b * L
-  if a >= L:
-        a -= L
-        b += 1
-  return (a, b)
-```
-
-variables|z|L|r|S|q
+variables|bitLen(L)|bitLen(r)|bitLen(q)|S|H2
 -|-|-|-|-|-
-bit_length|64|128|255|255|128
+BLS12-381|128|255|128|2**255 | 2**127
+BLS12-377|127|253|128|2**254 | 2**126
 
 - x in [0, r-1]
-- a + b L = x for (a, b) = split(x).
+- a + b L = x for (a, b) = sp.split(x).
 
 ### Theorem
 0 <= a < L and 0 <= b <= L+1
 
 ### Proof
 ```
-S = q * L + r0 where 0 <= r0 < L, r0 ~ 0.11 L
-H/2 ~ 0.74 L
-x = xH * (H/2) + xL where 0 <= xL < H/2, xH <= (r-1)/(H/2)
+S = H H2
+q = S // L
+xH = x // H2
+b <= xH q / H <= (x/H2) (S/L) (1/H) = (x S) / (H H2 L) = (x S) / (S L) = x / L.
+Then a = x - b L >= 0.
+b <= (r-1) / L = L + 1.
 
-b = (xH * q) // H <= xH * q / H = xH * H/2 * q / (H * H/2) = (x-xL) * q / S
-   <= x * (S//L) / S <= x /L <= (r-1) / L = L+1
+S = q L + r0 where 0 <= r0 < L.
+x = xH H2 + xL where 0 <= xL < H2. xH <= (r-1) // H2.
+xH q = b H + r1 where 0 <= r1 < H.
 
-=> 0 <= x - b L = a
-
-xH * q = b * H + r1 where 0 <= r1 < H
-
-a H = (x - b L) * H = x * H - b * H * L = (xH * (H/2) + xL) * H - (xH * q - r1) * L
- = xH * S + xL * H - xH * q * L + r1 * L
- = xH * S + xL * H - xH * (S - r0) + r1 * L
- = xL * H + xH * r0 + r1 * L
-
-a = xL + xH * r0 / H + r1 * L / H
- <= H/2 + (r-1)/(H/2) * r0 / H + (H-1) * L / H
- = H/2 + (r-1)/S*r0 + L
- = 0.74 L + 0.1 L + L = 1.8 L
+a H = (x - b L) H = x H - b H L = (xH H2 + xL) H - (xH q - r1)L = xH (H2 H - q L) + xL H + r1 L
+= xH r0 + xL H + r1 L.
+a = xH r0 / H + xL + r1 L / H
+  <= ((r-1) / H2) (r0 / H) + H2 + H L / H
+  = (r-1)r0 / S + H2 + L.
 ```
 
+param|(r-1)r0/S|H2| (r-1)r0 / S + H2 + L
+-|-|-|-
+BLS12-381|0.1 L|0.743 L|1.84 L
+BLS12-377|0.01 L|0.926 L|1.94 L
 
 ## window size
 - 128-bit (Fr is 256 bit and use GLV method)

@@ -823,7 +823,7 @@ class SquareRoot {
 			int t = e - i - 1;
 			const int tMax = 30; // int32_t max
 			if (t < tMax) {
-				b = 1 << t;
+				b = int(1 << t);
 			} else {
 				b = 1 << tMax;
 				t -= tMax;
