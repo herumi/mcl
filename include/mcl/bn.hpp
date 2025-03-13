@@ -7,7 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/g1_def.hpp>
-#include <mcl/fp_tower.hpp>
+#include <mcl/g2_def.hpp>
 #include <mcl/curve_type.h>
 namespace mcl { namespace local {
 
@@ -43,15 +43,15 @@ namespace bn {
 typedef mcl::Fp Fp;
 typedef mcl::Fr Fr;
 typedef mcl::G1 G1;
+typedef mcl::G2 G2;
+typedef mcl::GT GT;
+typedef mcl::Fp2 Fp2;
+typedef mcl::Fp6 Fp6;
+typedef mcl::Fp12 Fp12;
 
-typedef mcl::Fp2T<Fp> Fp2;
-typedef mcl::Fp6T<Fp> Fp6;
-typedef mcl::Fp12T<Fp, Fr> Fp12;
-typedef Fp12 GT;
-typedef mcl::EcT<Fp2, Fr> G2;
-typedef mcl::FpDblT<Fp> FpDbl;
-typedef mcl::Fp2DblT<Fp> Fp2Dbl;
-typedef mcl::Fp6DblT<Fp> Fp6Dbl;
+typedef mcl::FpDbl FpDbl;
+typedef mcl::Fp2Dbl Fp2Dbl;
+typedef mcl::Fp6Dbl Fp6Dbl;
 
 inline void Frobenius(Fp2& y, const Fp2& x)
 {
