@@ -294,9 +294,6 @@ struct MapTo {
 	mpz_class z_;
 	mpz_class z2_;
 	mpz_class cofactor_;
-	mpz_class g2cofactor_;
-	Fr g2cofactorAdj_;
-	Fr g2cofactorAdjInv_;
 	int type_;
 	int curveType_;
 	int mapToMode_;
@@ -413,7 +410,6 @@ struct MapTo {
 		Efficient hash maps to G2 on BLS curves
 		Alessandro Budroni, Federico Pintore
 		Q = (z(z-1)-1)P + Frob((z-1)P) + Frob^2(2P)
-		original G2 cofactor = this cofactor * g2cofactorAdj_
 	*/
 	void mulByCofactorBLS12fast(G2& Q, const G2& P) const
 	{
@@ -458,36 +454,23 @@ struct MapTo {
 		if (curveType == MCL_BLS12_381) {
 			const char *z2 = "396c8c005555e1560000000055555555";
 			const char *cofactor = "396c8c005555e1568c00aaab0000aaab";
-			const char *g2cofactor = "5d543a95414e7f1091d50792876a202cd91de4547085abaa68a205b2e5a7ddfa628f1cb4d9e82ef21537e293a6691ae1616ec6e786f0c70cf1c38e31c7238e5";
 			const char *c1 = "be32ce5fbeed9ca374d38c0ed41eefd5bb675277cdf12d11bc2fb026c41400045c03fffffffdfffd";
 			const char *c2 = "5f19672fdf76ce51ba69c6076a0f77eaddb3a93be6f89688de17d813620a00022e01fffffffefffe";
-			const char *g2cofactorAdjInv = "204d0ec030004ec0600000002fffffffd";
-			const char *g2cofactorAdj = "26a48d1bb889d46d66689d580335f2ac37d2aaab55543d5455555554aaaaaaab";
 			bool b;
 			gmp::setStr(&b, z2_, z2, 16); assert(b); (void)b;
 			gmp::setStr(&b, cofactor_, cofactor, 16); assert(b); (void)b;
-			gmp::setStr(&b, g2cofactor_, g2cofactor, 16); assert(b); (void)b;
 			c1_.setStr(&b, c1, 16); assert(b); (void)b;
 			c2_.setStr(&b, c2, 16); assert(b); (void)b;
-			g2cofactorAdjInv_.setStr(&b, g2cofactorAdjInv, 16); assert(b); (void)b;
-			g2cofactorAdj_.setStr(&b, g2cofactorAdj, 16); assert(b); (void)b;
 			mapTo_WB19_.init();
 			return;
 		}
 		z2_ = (z_ * z_ - 1) / 3;
 		// cofactor for G1
 		cofactor_ = (z - 1) * (z - 1) / 3;
-		const int g2Coff[] = { 13, -4, -4, 6, -4, 0, 5, -4, 1 };
-		g2cofactor_ = local::evalPoly(z, g2Coff) / 9;
 		bool b = Fp::squareRoot(c1_, -3);
 		assert(b);
 		(void)b;
 		c2_ = (c1_ - 1) / 2;
-		mpz_class t = (z * z - 1) * 3;;
-		g2cofactorAdjInv_.setMpz(&b, t);
-		assert(b);
-		(void)b;
-		Fr::inv(g2cofactorAdj_, g2cofactorAdjInv_);
 	}
 	/*
 		change mapTo function to mode
