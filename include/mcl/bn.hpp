@@ -6,8 +6,8 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#include <mcl/g1_def.hpp>
 #include <mcl/fp_tower.hpp>
-#include <mcl/ec.hpp>
 #include <mcl/curve_type.h>
 namespace mcl { namespace local {
 
@@ -26,16 +26,6 @@ void mulByCofactorBLS12fast(T& Q, const T& P);
 #include <omp.h>
 #endif
 
-/*
-	set bit size of Fp and Fr
-*/
-#ifndef MCL_MAX_FP_BIT_SIZE
-	#define MCL_MAX_FP_BIT_SIZE 256
-#endif
-
-#ifndef MCL_MAX_FR_BIT_SIZE
-	#define MCL_MAX_FR_BIT_SIZE MCL_MAX_FP_BIT_SIZE
-#endif
 namespace mcl {
 
 #if MCL_MSM == 1
@@ -50,20 +40,15 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
 
 namespace bn {
 
-namespace local {
-struct FpTag;
-struct FrTag;
-}
+typedef mcl::Fp Fp;
+typedef mcl::Fr Fr;
+typedef mcl::G1 G1;
 
-typedef mcl::FpT<local::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;
-typedef mcl::FpT<local::FrTag, MCL_MAX_FR_BIT_SIZE> Fr;
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp, Fr> Fp12;
-typedef mcl::EcT<Fp, Fr> G1;
-typedef mcl::EcT<Fp2, Fr> G2;
 typedef Fp12 GT;
-
+typedef mcl::EcT<Fp2, Fr> G2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp2DblT<Fp> Fp2Dbl;
 typedef mcl::Fp6DblT<Fp> Fp6Dbl;
@@ -1603,6 +1588,7 @@ inline void makeAdjP(G1& adjP, const G1& P)
 */
 inline void finalExp(Fp12& y, const Fp12& x)
 {
+	using namespace local;
 	if (x.isZero()) {
 		y.clear();
 		return;
@@ -1628,6 +1614,7 @@ inline void finalExp(Fp12& y, const Fp12& x)
 }
 inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 {
+	using namespace local;
 	if (P_.isZero() || Q_.isZero()) {
 		f = 1;
 		return;
@@ -1694,6 +1681,7 @@ inline void pairing(Fp12& f, const G1& P, const G2& Q)
 */
 inline void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 {
+	using namespace local;
 	size_t idx = 0;
 	G2 Q(Q_);
 	Q.normalize();
@@ -1756,6 +1744,7 @@ void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 
 inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
+	using namespace local;
 	if (P_.isZero()) {
 		f = 1;
 		return;
@@ -1811,6 +1800,7 @@ inline void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& 
 */
 inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff)
 {
+	using namespace local;
 	G1 P1(P1_), P2(P2_);
 	G2 Q1(Q1_);
 	P1.normalize();
@@ -1890,6 +1880,7 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, c
 */
 inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1& P2_, const Fp6* Q2coeff)
 {
+	using namespace local;
 	G1 P1(P1_), P2(P2_);
 	P1.normalize();
 	P2.normalize();
@@ -1965,6 +1956,7 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 template<size_t N>
 inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
 {
+	using namespace local;
 	assert(n <= N);
 	G1 P[N];
 	G2 Q[N];
