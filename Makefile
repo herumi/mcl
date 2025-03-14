@@ -4,10 +4,10 @@ OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 CLANG?=clang++$(LLVM_VER)
-SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp she_c256.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp
-TEST_SRC+=she_c256_test.cpp she_c384_test.cpp she_c384_256_test.cpp
+SRC_SRC=fp.cpp bn_c256.cpp bn_c384_256.cpp she_c256.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
+TEST_SRC+=bn_c256_test.cpp bn_c384_256_test.cpp
+TEST_SRC+=she_c256_test.cpp she_c384_256_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=bls12_test.cpp
 TEST_SRC+=mapto_wb19_test.cpp
@@ -17,6 +17,7 @@ TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
 TEST_SRC+=smallmodp_test.cpp
+#TEST_SRC+=bn_c384.cpp bn384_test.cpp bn_c384_test.cpp she_c384_test.cpp
 ifneq ($(MCL_USE_GMP),1)
   TEST_SRC+=static_init_test.cpp
 endif
