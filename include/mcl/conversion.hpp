@@ -190,11 +190,10 @@ inline bool hexCharToUint8(uint8_t *v, char _c)
 	return true;
 }
 
-template<class UT>
-bool hexToUint(UT *px, const char *p, size_t size)
+inline bool hexToUint(Unit *px, const char *p, size_t size)
 {
-	assert(0 < size && size <= sizeof(UT) * 2);
-	UT x = 0;
+	assert(0 < size && size <= sizeof(Unit) * 2);
+	Unit x = 0;
 	for (size_t i = 0; i < size; i++) {
 		uint8_t v;
 		if (!hexCharToUint8(&v, p[i])) return false;
@@ -204,13 +203,12 @@ bool hexToUint(UT *px, const char *p, size_t size)
 	return true;
 }
 
-template<class UT>
-bool binToUint(UT *px, const char *p, size_t size)
+inline bool binToUint(Unit *px, const char *p, size_t size)
 {
-	assert(0 < size && size <= sizeof(UT) * 8);
-	UT x = 0;
+	assert(0 < size && size <= sizeof(Unit) * 8);
+	Unit x = 0;
 	for (size_t i = 0; i < size; i++) {
-		UT c = static_cast<uint8_t>(p[i]);
+		Unit c = static_cast<uint8_t>(p[i]);
 		if (c == '0') {
 			x = x * 2;
 		} else if (c == '1') {
@@ -297,11 +295,10 @@ size_t arrayToHex(char *buf, size_t bufSize, const T *x, size_t n, bool withPref
 /*
 	convert little endian x[0, xn) to buf
 	return written size if success else 0
-	data is buf[bufSize - retval, bufSize)
+	buf[bufSize - return value, bufSize) is output data
 	start "0b" if withPrefix
 */
-template<class T>
-size_t arrayToBin(char *buf, size_t bufSize, const T *x, size_t n, bool withPrefix)
+inline size_t arrayToBin(char *buf, size_t bufSize, const Unit *x, size_t n, bool withPrefix)
 {
 	size_t fullN = 0;
 	if (n > 1) {
@@ -312,10 +309,10 @@ size_t arrayToBin(char *buf, size_t bufSize, const T *x, size_t n, bool withPref
 		}
 		if (pos > 0) fullN = pos;
 	}
-	const T v = n == 0 ? 0 : x[fullN];
+	const Unit v = n == 0 ? 0 : x[fullN];
 	const size_t topLen = cybozu::getBinLength(v);
 	const size_t startPos = withPrefix ? 2 : 0;
-	const size_t lenT = sizeof(T) * 8;
+	const size_t lenT = sizeof(Unit) * 8;
 	const size_t totalSize = startPos + fullN * lenT + topLen;
 	if (totalSize > bufSize) return 0;
 	char *const top = buf + bufSize - totalSize;
@@ -334,11 +331,10 @@ size_t arrayToBin(char *buf, size_t bufSize, const T *x, size_t n, bool withPref
 	convert hex string to x[0..xn)
 	hex string = [0-9a-fA-F]+
 */
-template<class UT>
-inline size_t hexToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
+inline size_t hexToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize)
 {
 	if (bufSize == 0) return 0;
-	const size_t unitLen = sizeof(UT) * 2;
+	const size_t unitLen = sizeof(Unit) * 2;
 	const size_t q = bufSize / unitLen;
 	const size_t r = bufSize % unitLen;
 	const size_t requireSize = q + (r ? 1 : 0);
@@ -355,11 +351,10 @@ inline size_t hexToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
 	convert bin string to x[0..xn)
 	bin string = [01]+
 */
-template<class UT>
-inline size_t binToArray(UT *x, size_t maxN, const char *buf, size_t bufSize)
+inline size_t binToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize)
 {
 	if (bufSize == 0) return 0;
-	const size_t unitLen = sizeof(UT) * 8;
+	const size_t unitLen = sizeof(Unit) * 8;
 	const size_t q = bufSize / unitLen;
 	const size_t r = bufSize % unitLen;
 	const size_t requireSize = q + (r ? 1 : 0);
@@ -466,8 +461,7 @@ inline size_t decToArray(uint64_t *x, size_t maxN, const char *buf, size_t bufSi
 	return retavl is written size if success else 0
 	REMARK : the top of string is buf + bufSize - retval
 */
-template<class UT>
-size_t arrayToStr(char *buf, size_t bufSize, const UT *x, size_t n, int base, bool withPrefix)
+inline size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int base, bool withPrefix)
 {
 	switch (base) {
 	case 0:
@@ -482,8 +476,7 @@ size_t arrayToStr(char *buf, size_t bufSize, const UT *x, size_t n, int base, bo
 	}
 }
 
-template<class UT>
-size_t strToArray(bool *pIsMinus, UT *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
+inline size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode)
 {
 	ioMode &= 31;
 	size_t readSize;
