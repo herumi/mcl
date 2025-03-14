@@ -7,16 +7,17 @@
 
 CYBOZU_TEST_AUTO(arrayToHex)
 {
+	const bool bit64 = MCL_UNIT_BIT_SIZE == 64;
 	const struct {
-		uint32_t x[4];
+		uint64_t x[128 / MCL_UNIT_BIT_SIZE];
 		size_t n;
 		const char *str;
 	} tbl[] = {
-		{ { 0, 0, 0, 0 }, 0, "0" },
-		{ { 0x123, 0, 0, 0 }, 1, "123" },
-		{ { 0x12345678, 0xaabbcc, 0, 0 }, 2, "aabbcc12345678" },
-		{ { 0, 0x12, 0x234a, 0 }, 3, "234a0000001200000000" },
-		{ { 1, 2, 0xffffffff, 0x123abc }, 4, "123abcffffffff0000000200000001" },
+		{ { MCL_U64_TO_UNIT(0), MCL_U64_TO_UNIT(0) }, 0, "0" },
+		{ { MCL_U64_TO_UNIT(0x123), MCL_U64_TO_UNIT(0) }, 1, "123" },
+		{ { MCL_U64_TO_UNIT(0xaabbcc12345678), MCL_U64_TO_UNIT(0) }, bit64 ? 2 : 3, "aabbcc12345678" },
+		{ { MCL_U64_TO_UNIT(0x1200000000), MCL_U64_TO_UNIT(0x234a) }, bit64 ? 2 : 3, "234a0000001200000000" },
+		{ { MCL_U64_TO_UNIT(0x200000001), MCL_U64_TO_UNIT(0x123abcffffffff) }, bit64 ? 2 : 4, "123abcffffffff0000000200000001" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		char buf[64];
