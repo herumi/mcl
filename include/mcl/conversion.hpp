@@ -143,17 +143,13 @@ size_t binToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
 	return written size if success else 0
 	data is buf[bufSize - retval, bufSize)
 */
-size_t arrayToDec(char *buf, size_t bufSize, const uint32_t *x, size_t xn);
-
-size_t arrayToDec(char *buf, size_t bufSize, const uint64_t *x, size_t xn);
+size_t arrayToDec(char *buf, size_t bufSize, const Unit *x, size_t xn);
 
 /*
 	convert buf[0, bufSize) to x[0, num)
 	return written num if success else 0
 */
-size_t decToArray(uint32_t *x, size_t maxN, const char *buf, size_t bufSize);
-
-size_t decToArray(uint64_t *x, size_t maxN, const char *buf, size_t bufSize);
+size_t decToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
 
 /*
 	return retavl is written size if success else 0

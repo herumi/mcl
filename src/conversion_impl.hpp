@@ -333,7 +333,7 @@ size_t arrayToDec(char *buf, size_t bufSize, const uint64_t *x, size_t xn)
 	convert buf[0, bufSize) to x[0, num)
 	return written num if success else 0
 */
-size_t decToArray(uint32_t *x, size_t maxN, const char *buf, size_t bufSize)
+size_t decToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize)
 {
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
@@ -344,14 +344,14 @@ size_t decToArray(uint32_t *x, size_t maxN, const char *buf, size_t bufSize)
 		size_t n = bufSize % width;
 		if (n == 0) n = width;
 		bool b;
-		uint32_t v = local::decToU32(buf, n, &b);
+		Unit v = local::decToU32(buf, n, &b);
 		if (!b) return 0;
-		uint32_t H = local::mulU32(x, x, xn, i1e9);
+		Unit H = mcl::bint::mulUnitN(x, x, i1e9, xn);
 		if (H > 0) {
 			if (xn == maxN) return 0;
 			x[xn++] = H;
 		}
-		H = local::addU32(x, xn, v);
+		H = mcl::bint::addUnit(x, xn, v);
 		if (H > 0) {
 			if (xn == maxN) return 0;
 			x[xn++] = H;
@@ -360,19 +360,6 @@ size_t decToArray(uint32_t *x, size_t maxN, const char *buf, size_t bufSize)
 		bufSize -= n;
 	}
 	return xn;
-}
-
-size_t decToArray(uint64_t *x, size_t maxN, const char *buf, size_t bufSize)
-{
-	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * maxN * 2);
-	size_t xn = decToArray(t, maxN * 2, buf, bufSize);
-	if (xn & 1) {
-		t[xn++] = 0;
-	}
-	for (size_t i = 0; i < xn; i += 2) {
-		x[i / 2] = (uint64_t(t[i + 1]) << 32) | t[i];
-	}
-	return xn / 2;
 }
 
 /*
