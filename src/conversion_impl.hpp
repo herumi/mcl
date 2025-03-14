@@ -153,7 +153,62 @@ inline bool parsePrefix(size_t *readSize, bool *isMinus, int *base, const char *
 	return true;
 }
 
+/*
+	x[0, xn) += y
+	return 1 if overflow else 0
+*/
+bool hexCharToUint8(uint8_t *v, char _c)
+{
+	uint32_t c = uint8_t(_c); // cast is necessary
+	if (c - '0' <= '9' - '0') {
+		c = c - '0';
+	} else if (c - 'a' <= 'f' - 'a') {
+		c = (c - 'a') + 10;
+	} else if (c - 'A' <= 'F' - 'A') {
+		c = (c - 'A') + 10;
+	} else {
+		return false;
+	}
+	*v = uint8_t(c);
+	return true;
+}
+
 } // mcl::fp::local
+
+/*
+	convert little endian x[0, xn) to buf
+	return written size if success else 0
+	data is buf[bufSize - retval, bufSize)
+	start "0x" if withPrefix
+*/
+size_t arrayToHex(char *buf, size_t bufSize, const Unit *x, size_t n, bool withPrefix)
+{
+	size_t fullN = 0;
+	if (n > 1) {
+		size_t pos = n - 1;
+		while (pos > 0) {
+			if (x[pos]) break;
+			pos--;
+		}
+		if (pos > 0) fullN = pos;
+	}
+	const Unit v = n == 0 ? 0 : x[fullN];
+	const size_t topLen = cybozu::getHexLength(v);
+	const size_t startPos = withPrefix ? 2 : 0;
+	const size_t lenT = sizeof(Unit) * 2;
+	const size_t totalSize = startPos + fullN * lenT + topLen;
+	if (totalSize > bufSize) return 0;
+	char *const top = buf + bufSize - totalSize;
+	if (withPrefix) {
+		top[0] = '0';
+		top[1] = 'x';
+	}
+	cybozu::itohex(&top[startPos], topLen, v, false);
+	for (size_t i = 0; i < fullN; i++) {
+		cybozu::itohex(&top[startPos + topLen + i * lenT], lenT, x[fullN - 1 - i], false);
+	}
+	return totalSize;
+}
 
 /*
 	convert little endian x[0, xn) to buf
