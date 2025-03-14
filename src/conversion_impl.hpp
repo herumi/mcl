@@ -18,61 +18,6 @@ namespace mcl { namespace fp {
 
 namespace local {
 
-/*
-	q = x[] / x
-	@retval r = x[] % x
-	@note accept q == x
-*/
-inline uint32_t divU32(uint32_t *q, const uint32_t *x, size_t xn, uint32_t y)
-{
-	if (xn == 0) return 0;
-	uint32_t r = 0;
-	for (int i = (int)xn - 1; i >= 0; i--) {
-		uint64_t t = (uint64_t(r) << 32) | x[i];
-		q[i] = uint32_t(t / y);
-		r = uint32_t(t % y);
-	}
-	return r;
-}
-
-/*
-	z[0, xn) = x[0, xn) * y
-	return z[xn]
-	@note accept z == x
-*/
-inline uint32_t mulU32(uint32_t *z, const uint32_t *x, size_t xn, uint32_t y)
-{
-	uint32_t H = 0;
-	for (size_t i = 0; i < xn; i++) {
-		uint32_t t = H;
-		uint64_t v = uint64_t(x[i]) * y;
-		uint32_t L = uint32_t(v);
-		H = uint32_t(v >> 32);
-		z[i] = t + L;
-		if (z[i] < t) {
-			H++;
-		}
-	}
-	return H;
-}
-
-/*
-	x[0, xn) += y
-	return 1 if overflow else 0
-*/
-inline uint32_t addU32(uint32_t *x, size_t xn, uint32_t y)
-{
-	uint32_t t = x[0] + y;
-	x[0] = t;
-	if (t >= y) return 0;
-	for (size_t i = 1; i < xn; i++) {
-		t = x[i] + 1;
-		x[i] = t;
-		if (t != 0) return 0;
-	}
-	return 1;
-}
-
 inline uint32_t decToU32(const char *p, size_t size, bool *pb)
 {
 	assert(0 < size && size <= 9);
