@@ -275,7 +275,7 @@ size_t decToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize)
 		bool b;
 		Unit v = local::decToU32(buf, n, &b);
 		if (!b) return 0;
-		Unit H = mcl::bint::mulUnitN(x, x, i1e9, xn);
+		Unit H = mcl::bint::mulUnitNany(x, x, i1e9, xn);
 		if (H > 0) {
 			if (xn == maxN) return 0;
 			x[xn++] = H;

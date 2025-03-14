@@ -149,6 +149,21 @@ Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n);
 void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n);
 Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n);
+
+// no restriction of xn
+inline Unit mulUnitNany(Unit *z, const Unit *x, Unit y, size_t xn)
+{
+	Unit H = 0;
+	for (size_t i = 0; i < xn; i++) {
+		Unit t = H;
+		Unit L = mulUnit1(&H, x[i], y);
+		z[i] = t + L;
+		if (z[i] < t) {
+			H++;
+		}
+	}
+	return H;
+}
 Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n);
 // z[n * 2] = x[n] * y[n]
 MCL_DLL_API void mulN(Unit *z, const Unit *x, const Unit *y, size_t n);
