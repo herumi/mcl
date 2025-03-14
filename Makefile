@@ -452,10 +452,22 @@ bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
 	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
+test_emu_32bit:
+	$(MAKE) MCL_SIZEOF_UNIT=4 bin/emu && bin/emu
+
+test_fp_util_32bit:
+	$(CXX) -m32 src/fp.cpp test/fp_util_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/fp_util_test.exe && bin/fp_util_test.exe
+test_conversion_32bit:
+	$(CXX) -m32 src/fp.cpp test/conversion_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/conversion_test.exe && bin/conversion_test.exe
+
+test_bls12_32bit:
+	$(CXX) -m32 src/fp.cpp test/bls12_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/bls12_test.exe && bin/bls12_test.exe
+
 test_32bit:
-	$(MAKE) bin/emu && bin/emu
-	$(CXX) src/fp.cpp test/fp_util_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/fp_util_test.exe && bin/fp_util_test.exe
-	$(CXX) src/fp.cpp test/bls12_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/bls12_test.exe && bin/bls12_test.exe
+	$(MAKE) test_bls12_32bit
+	$(MAKE) test_fp_util_32bit
+	$(MAKE) test_conversion_32bit
+	$(MAKE) test_emu_32bit
 
 # clear before testing
 test_static:
