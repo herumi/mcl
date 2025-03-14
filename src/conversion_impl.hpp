@@ -291,42 +291,26 @@ size_t binToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize)
 	return written size if success else 0
 	data is buf[bufSize - retval, bufSize)
 */
-inline size_t inner_arrayToDec(char *buf, size_t bufSize, uint32_t *t, size_t tn)
+size_t arrayToDec(char *buf, size_t bufSize, const Unit *x, size_t xn)
 {
+	Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * xn);
+	mcl::bint::copyN(t, x, xn);
 	const size_t width = 9;
 	const uint32_t i1e9 = 1000000000U;
 	size_t pos = 0;
 	for (;;) {
-		uint32_t r = local::divU32(t, t, tn, i1e9);
-		while (tn > 0 && t[tn - 1] == 0) tn--;
+		Unit r = mcl::bint::divUnit(t, t, xn, i1e9);
+		while (xn > 0 && t[xn - 1] == 0) xn--;
 		size_t len = cybozu::itoa_local::uintToDec(buf, bufSize - pos, r);
 		if (len == 0) return 0;
 		assert(0 < len && len <= width);
-		if (tn == 0) return pos + len;
+		if (xn == 0) return pos + len;
 		// fill (width - len) '0'
 		for (size_t j = 0; j < width - len; j++) {
 			buf[bufSize - pos - width + j] = '0';
 		}
 		pos += width;
 	}
-}
-
-size_t arrayToDec(char *buf, size_t bufSize, const uint32_t *x, size_t xn)
-{
-	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * xn);
-	memcpy(t, x, sizeof(uint32_t) * xn);
-	return inner_arrayToDec(buf, bufSize, t, xn);
-}
-
-size_t arrayToDec(char *buf, size_t bufSize, const uint64_t *x, size_t xn)
-{
-	uint32_t *t = (uint32_t*)CYBOZU_ALLOCA(sizeof(uint32_t) * xn * 2);
-	for (size_t i = 0; i < xn; i++) {
-		uint64_t v = x[i];
-		t[i * 2 + 0] = uint32_t(v);
-		t[i * 2 + 1] = uint32_t(v >> 32);
-	}
-	return inner_arrayToDec(buf, bufSize, t, xn * 2);
 }
 
 /*
