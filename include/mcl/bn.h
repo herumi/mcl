@@ -6,48 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-/*
-	the order of an elliptic curve over Fp is Fr
-*/
-#ifndef MCLBN_FP_UNIT_SIZE
-	#error "define MCLBN_FP_UNIT_SIZE 4(, 6 or 8)"
-#endif
-#ifndef MCLBN_FR_UNIT_SIZE
-	#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
-#endif
-#define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
-
-#include <stdint.h> // for uint64_t, uint8_t
-#include <stddef.h> // for size_t
-
-#if defined(_WIN32)
-	#ifdef MCLBN_DONT_EXPORT
-		#define MCLBN_DLL_API
-	#else
-		#ifdef MCLBN_DLL_EXPORT
-			#define MCLBN_DLL_API __declspec(dllexport)
-		#else
-			#define MCLBN_DLL_API //__declspec(dllimport)
-		#endif
-	#endif
-	#if defined(_MSC_VER) && !defined(MCLBN_NO_AUTOLINK)
-		#if MCLBN_FP_UNIT_SIZE == 4
-			#pragma comment(lib, "mclbn256.lib")
-		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 4)
-			#pragma comment(lib, "mclbn384_256.lib")
-		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 6)
-			#pragma comment(lib, "mclbn384.lib")
-		#elif MCLBN_FP_UNIT_SIZE == 8
-			#pragma comment(lib, "mclbn512.lib")
-		#endif
-	#endif
-#elif defined(__EMSCRIPTEN__) && !defined(MCLBN_DONT_EXPORT)
-	#define MCLBN_DLL_API __attribute__((used))
-#elif defined(__wasm__) && !defined(MCLBN_DONT_EXPORT)
-	#define MCLBN_DLL_API __attribute__((visibility("default")))
-#else
-	#define MCLBN_DLL_API
-#endif
+#include <mcl/config.hpp>
 
 #ifdef __EMSCRIPTEN__
 	// avoid 64-bit integer
@@ -60,6 +19,16 @@
 #endif
 
 #include <mcl/curve_type.h>
+/*
+	the order of an elliptic curve over Fp is Fr
+*/
+#ifndef MCLBN_FP_UNIT_SIZE
+	#error "define MCLBN_FP_UNIT_SIZE 4(, 6 or 8)"
+#endif
+#ifndef MCLBN_FR_UNIT_SIZE
+	#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
+#endif
+#define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
 #ifdef __cplusplus
 extern "C" {
