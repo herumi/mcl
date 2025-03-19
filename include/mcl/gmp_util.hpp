@@ -986,7 +986,7 @@ struct Modp {
 		assert(p_ > 0);
 		const size_t tBitSize = gmp::getBitSize(t);
 		// use gmp::mod if init() fails or t is too large
-		if (tBitSize > unitBitSize * 2 * N_ || !initU_) {
+		if (tBitSize > pBitSize_ + unitBitSize * N_ - 1 || !initU_) {
 			gmp::mod(r, t, p_);
 			return;
 		}
