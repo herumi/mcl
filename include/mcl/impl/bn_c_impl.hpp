@@ -4,18 +4,7 @@
 */
 #define MCLBN_DLL_EXPORT
 #include <mcl/bn.h>
-
-#if MCLBN_FP_UNIT_SIZE == 4 && MCLBN_FR_UNIT_SIZE == 4
-#include <mcl/bn256.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
-#include <mcl/bn384.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
-#include <mcl/bls12_381.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 8 && MCLBN_FR_UNIT_SIZE == 8
-#include <mcl/bn512.hpp>
-#else
-	#error "not supported size"
-#endif
+#include <mcl/bn.hpp>
 #include <mcl/lagrange.hpp>
 #include <mcl/ecparam.hpp>
 using namespace mcl::bn;
