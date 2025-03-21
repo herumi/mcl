@@ -47,10 +47,26 @@
 	#define MCLBN_FR_UNIT_SIZE 4
 #endif
 
-#ifndef MCL_MAX_BIT_SIZE
+#ifndef MCL_MAX_FP_BIT_SIZE
 	#define MCL_MAX_FP_BIT_SIZE (MCLBN_FP_UNIT_SIZE*64)
+#endif
+#ifndef MCL_MAX_FR_BIT_SIZE
 	#define MCL_MAX_FR_BIT_SIZE (MCLBN_FR_UNIT_SIZE*64)
+#endif
+
+#ifndef MCL_MAX_BIT_SIZE
 	#define MCL_MAX_BIT_SIZE MCL_MAX_FP_BIT_SIZE
+#endif
+
+// check correctness
+#if (MCLBN_FP_UNIT_SIZE*64) != MCL_MAX_FP_BIT_SIZE
+	#error "conflict MCLBN_FP_UNIT_SIZE and MCL_MAX_FP_BIT_SIZE"
+#endif
+#if (MCLBN_FR_UNIT_SIZE*64) != MCL_MAX_FR_BIT_SIZE
+	#error "conflict MCLBN_FR_UNIT_SIZE and MCL_MAX_FR_BIT_SIZE"
+#endif
+#if MCL_MAX_BIT_SIZE < MCL_MAX_FP_BIT_SIZE
+	#error "bad MCL_MAX_BIT_SIZE and MCL_MAX_FP_BIT_SIZE"
 #endif
 
 #if !defined(MCL_USE_OPENSSL) && !defined(MCL_DONT_USE_OPENSSL)
