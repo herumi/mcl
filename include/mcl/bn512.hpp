@@ -6,7 +6,6 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#define MCL_MAX_FP_BIT_SIZE 512
 #include <mcl/bn.hpp>
 
 namespace mcl { namespace bn512 {

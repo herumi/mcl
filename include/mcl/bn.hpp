@@ -8,7 +8,8 @@
 */
 #include <mcl/g1_def.hpp>
 #include <mcl/g2_def.hpp>
-#include <mcl/curve_type.h>
+#include <mcl/curve_type.hpp>
+
 namespace mcl { namespace local {
 
 // to export fast cofactor multiplication to mapto_wb19

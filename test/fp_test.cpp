@@ -1055,6 +1055,7 @@ CYBOZU_TEST_AUTO(getBinWidth)
 void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
+	printf("MCL_MAX_BIT_SIZE=%d\n", MCL_MAX_BIT_SIZE);
 	const char *tbl[] = {
 		// N = 3
 		"0x30000000000000000000000000000000000000000000002b",
