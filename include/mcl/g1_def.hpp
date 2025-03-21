@@ -10,17 +10,6 @@
 #include <mcl/fp.hpp>
 #include <mcl/ec.hpp>
 
-/*
-	set bit size of Fp and Fr
-*/
-#ifndef MCL_MAX_FP_BIT_SIZE
-	#define MCL_MAX_FP_BIT_SIZE 256
-#endif
-
-#ifndef MCL_MAX_FR_BIT_SIZE
-	#define MCL_MAX_FR_BIT_SIZE MCL_MAX_FP_BIT_SIZE
-#endif
-
 namespace mcl {
 
 typedef mcl::FpT<mcl::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;

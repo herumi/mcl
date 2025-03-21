@@ -11,27 +11,7 @@
 #include <vector>
 #include <iosfwd>
 
-#if defined(MCL_MAX_FP_BIT_SIZE) && MCL_MAX_FP_BIT_SIZE == 384 && defined(MCL_MAX_FR_BIT_SIZE) && MCL_MAX_FR_BIT_SIZE == 256
-
-// already include bls12_381.hpp
-
-#else
-
-#ifndef MCLBN_FP_UNIT_SIZE
-	#define MCLBN_FP_UNIT_SIZE 4
-#endif
-#if MCLBN_FP_UNIT_SIZE == 4
-#include <mcl/bn256.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6
-#include <mcl/bn384.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 8
-#include <mcl/bn512.hpp>
-#else
-#define MCL_MAX_FP_BIT_SIZE (MCLBN_FP_UNIT_SIZE * 64)
 #include <mcl/bn.hpp>
-#endif
-
-#endif
 
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>

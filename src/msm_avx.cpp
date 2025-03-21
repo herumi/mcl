@@ -9,6 +9,7 @@
 #include "avx512.hpp"
 
 #include <mcl/ec.hpp>
+#include <mcl/curve_type.hpp>
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
