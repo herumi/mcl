@@ -9,12 +9,13 @@
 /*
 	the order of an elliptic curve over Fp is Fr
 */
-#ifndef MCLBN_FP_UNIT_SIZE
-	#error "define MCLBN_FP_UNIT_SIZE 4(, 6 or 8)"
+#if !defined(MCL_MAX_FP_BYTE) || !defined(MCL_MAX_FR_BYTE)
+	#error "define MCL_MAX_FP_BYTE and MCL_MAX_FR_BYTE"
 #endif
-#ifndef MCLBN_FR_UNIT_SIZE
-	#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
-#endif
+
+#define MCLBN_FP_UNIT_SIZE ((MCL_MAX_FP_BYTE)/8)
+#define MCLBN_FR_UNIT_SIZE ((MCL_MAX_FR_BYTE)/8)
+
 #define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
 #include <stdint.h> // for uint64_t, uint8_t
@@ -28,17 +29,6 @@
 			#define MCLBN_DLL_API __declspec(dllexport)
 		#else
 			#define MCLBN_DLL_API //__declspec(dllimport)
-		#endif
-	#endif
-	#if defined(_MSC_VER) && !defined(MCLBN_NO_AUTOLINK)
-		#if MCLBN_FP_UNIT_SIZE == 4
-			#pragma comment(lib, "mclbn256.lib")
-		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 4)
-			#pragma comment(lib, "mclbn384_256.lib")
-		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 6)
-			#pragma comment(lib, "mclbn384.lib")
-		#elif MCLBN_FP_UNIT_SIZE == 8
-			#pragma comment(lib, "mclbn512.lib")
 		#endif
 	#endif
 #elif defined(__EMSCRIPTEN__) && !defined(MCLBN_DONT_EXPORT)

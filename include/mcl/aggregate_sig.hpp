@@ -11,27 +11,10 @@
 #include <vector>
 #include <iosfwd>
 #include <set>
-#ifndef MCLBN_FP_UNIT_SIZE
-	#define MCLBN_FP_UNIT_SIZE 6
-#endif
-#if MCLBN_FP_UNIT_SIZE == 4
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 namespace mcl {
-using namespace mcl::bn256;
+using namespace mcl::bn;
 }
-#elif MCLBN_FP_UNIT_SIZE == 6
-#include <mcl/bn384.hpp>
-namespace mcl {
-using namespace mcl::bn384;
-}
-#elif MCLBN_FP_UNIT_SIZE == 8
-#include <mcl/bn512.hpp>
-namespace mcl {
-using namespace mcl::bn512;
-}
-#else
-	#error "MCLBN_FP_UNIT_SIZE must be 4, 6, or 8"
-#endif
 
 namespace mcl { namespace aggs {
 

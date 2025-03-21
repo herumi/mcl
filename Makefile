@@ -3,8 +3,21 @@ LIB_DIR?=lib
 OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
-MCLBN_FP_UNIT_SIZE?=6
-MCLBN_FR_UNIT_SIZE?=4
+ifneq ($(MCL_MAX_BIT_SIZE),)
+  MCL_MAX_FP_BYTE?=$(shell expr $(MCL_MAX_BIT_SIZE) / 8)
+endif
+MCL_MAX_FP_BYTE?=48
+MCL_MAX_FR_BYTE?=32
+
+ifneq ($(MCL_MAX_FP_BYTE),)
+  CFLAGS+=-DMCL_MAX_FP_BYTE=$(MCL_MAX_FP_BYTE)
+endif
+ifneq ($(MCL_MAX_FR_BYTE),)
+  CFLAGS+=-DMCL_MAX_FR_BYTE=$(MCL_MAX_FR_BYTE)
+endif
+ifneq ($(MCL_MAX_BIT_SIZE),)
+  CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
+endif
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
@@ -16,18 +29,18 @@ TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
 TEST_SRC+=smallmodp_test.cpp
 
-ifeq ($(MCLBN_FP_UNIT_SIZE),4)
+ifeq ($(MCL_MAX_FP_BYTE)$(MCL_MAX_FR_BYTE),3232)
   SRC_SRC+=bn_c256.cpp she_c256.cpp
   TEST_SRC+=bn_c256_test.cpp
   TEST_SRC+=she_c256_test.cpp
 endif
-ifeq ($(MCLBN_FP_UNIT_SIZE)$(MCLBN_FR_UNIT_SIZE),64)
+ifeq ($(MCL_MAX_FP_BYTE)$(MCL_MAX_FR_BYTE),4832)
   SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
   TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
   TEST_SRC+=bls12_test.cpp
   TEST_SRC+=mapto_wb19_test.cpp
 endif
-ifeq ($(MCLBN_FP_UNIT_SIZE)$(MCLBN_FR_UNIT_SIZE),66)
+ifeq ($(MCL_MAX_FP_BYTE)$(MCL_MAX_FR_BYTE),4848)
   SRC_SRC+=bn_c384.cpp
   TEST_SRC+=bn_c384_test.cpp she_c384_test.cpp
 endif
@@ -52,9 +65,6 @@ endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
 #SAMPLE_SRC+=large.cpp # rebuild of bint is necessary
 
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
-endif
 ifeq ($(MCL_USE_XBYAK),0)
   CFLAGS+=-DMCL_DONT_USE_XBYAK
 endif

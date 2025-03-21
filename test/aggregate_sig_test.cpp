@@ -1,4 +1,4 @@
-//#define MCLBN_FP_UNIT_SIZE 8
+//#define MCL_MAX_FP_BYTE 64
 #include <cybozu/test.hpp>
 #include <mcl/aggregate_sig.hpp>
 #include <cybozu/benchmark.hpp>

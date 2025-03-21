@@ -13,15 +13,6 @@
 #define MCLSHE_DLL_API __declspec(dllexport)
 #else
 #define MCLSHE_DLL_API __declspec(dllimport)
-#ifndef MCLSHE_NO_AUTOLINK
-	#if MCLBN_FP_UNIT_SIZE == 4
-		#pragma comment(lib, "mclshe256.lib")
-	#elif MCLBN_FP_UNIT_SIZE == 6
-		#pragma comment(lib, "mclshe384.lib")
-	#else
-		#pragma comment(lib, "mclshe512.lib")
-	#endif
-#endif
 #endif
 #else
 #ifdef __EMSCRIPTEN__

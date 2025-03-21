@@ -21,7 +21,7 @@ enum {
 
 	/*
 		for only G1
-		the size of curve must be <= MCLBN_FP_UNIT_SIZE
+		the size of curve must be <= MCL_MAX_FP_BYTE
 	*/
 	MCL_EC_BEGIN = 100,
 	MCL_SECP192K1 = MCL_EC_BEGIN,

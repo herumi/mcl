@@ -1,2 +1,2 @@
-#define MCLBN_FP_UNIT_SIZE 6
+#define MCL_MAX_FP_BYTE 48
 #include "she_c_test.hpp"

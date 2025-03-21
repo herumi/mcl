@@ -12,8 +12,8 @@
 
 namespace mcl {
 
-typedef mcl::FpT<mcl::FpTag, MCL_MAX_FP_BIT_SIZE> Fp;
-typedef mcl::FpT<mcl::ZnTag, MCL_MAX_FR_BIT_SIZE> Fr;
+typedef mcl::FpT<mcl::FpTag, MCL_MAX_FP_BYTE*8> Fp;
+typedef mcl::FpT<mcl::ZnTag, MCL_MAX_FR_BYTE*8> Fr;
 
 typedef mcl::EcT<Fp, Fr> G1;
 
