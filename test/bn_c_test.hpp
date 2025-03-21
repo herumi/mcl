@@ -834,7 +834,7 @@ void setFp2(mclBnFp2 *x, const Fp2Str& s)
 	CYBOZU_TEST_EQUAL(mclBnFp_setStr(&x->d[1], s.b, strlen(s.b), 16), 0);
 }
 
-#if MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE >= 6
+#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 48
 CYBOZU_TEST_AUTO(badG2)
 {
 	int ret;
@@ -1316,18 +1316,13 @@ CYBOZU_TEST_AUTO(init)
 		const char *name;
 		int type;
 	} tbl[] = {
-#if MCLBN_FP_UNIT_SIZE >= 4
 		{ "BN254", MCL_BN254 },
-#endif
-#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 4
+#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 32
 		{ "BLS12_381", MCL_BLS12_381 },
 		{ "BLS12_377", MCL_BLS12_377 },
 #endif
-#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
+#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 48
 		{ "BN381_1", MCL_BN381_1 },
-#endif
-#if MCLBN_FP_UNIT_SIZE == 8
-		{ "BN462", MCL_BN462 },
 #endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
@@ -1361,7 +1356,7 @@ CYBOZU_TEST_AUTO(G1only)
 		MCL_NIST_P224, // hashAndMapTo is error
 		MCL_SECP256K1,
 		MCL_NIST_P256,
-#if MCLBN_FP_UNIT_SIZE >= 6 && MCLBN_FR_UNIT_SIZE >= 6
+#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 48
 		MCL_SECP384R1,
 #endif
 	};

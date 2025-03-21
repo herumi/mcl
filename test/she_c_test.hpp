@@ -9,14 +9,12 @@ const size_t tryNum = 1024;
 
 CYBOZU_TEST_AUTO(init)
 {
-#if MCLBN_FP_UNIT_SIZE == 4
+#if MCL_MAX_FP_BYTE == 32
 	int curve = MCL_BN254;
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
+#elif MCL_MAX_FP_BYTE == 48 && MCL_MAX_FR_BYTE == 32
 	int curve = MCL_BLS12_381;
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
+#elif MCL_MAX_FP_BYTE == 48 && MCL_MAX_FR_BYTE == 48
 	int curve = MCL_BN381_1;
-#elif MCLBN_FP_UNIT_SIZE == 8
-	int curve = MCL_BN462;
 #endif
 	int ret;
 	printf("curve=%d\n", curve);
