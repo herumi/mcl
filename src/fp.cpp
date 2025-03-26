@@ -211,56 +211,6 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 	}
 }
 
-#if 0
-
-#ifndef MCL_USE_VINT
-static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
-{
-	int s = n;
-	while (s > 0) {
-		if (p[s - 1]) break;
-		s--;
-	}
-	z->_mp_alloc = n;
-	z->_mp_size = s;
-	z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
-}
-#endif
-
-/*
-	y = (1/x) mod op.p
-*/
-static inline void fp_invC(Unit *y, const Unit *x, const Op& op)
-{
-	const int N = (int)op.N;
-	bool b = false;
-#ifdef MCL_USE_VINT
-	Vint vx, vy, vp;
-	vx.setArray(&b, x, N);
-	assert(b); (void)b;
-	vp.setArray(&b, op.p, N);
-	assert(b); (void)b;
-	Vint::invMod(vy, vx, vp);
-	vy.getArray(&b, y, N);
-	assert(b); (void)b;
-#else
-	mpz_class my;
-	mpz_t mx, mp;
-	set_mpz_t(mx, x, N);
-	set_mpz_t(mp, op.p, N);
-	mpz_invert(my.get_mpz_t(), mx, mp);
-	gmp::getArray(&b, y, N, my);
-	assert(b);
-#endif
-}
-
-static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
-{
-	fp_invC(y, x, op);
-	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
-}
-#endif
-
 /*
 	inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
 */

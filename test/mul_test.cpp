@@ -1,12 +1,11 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl;
-#include <mcl/fp.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 
-struct FpTag;
-typedef mcl::FpT<FpTag, 384> Fp;
+typedef mcl::Fp Fp;
 
 void put(const char *msg, const void *buf, size_t bufSize)
 {
