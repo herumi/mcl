@@ -50,6 +50,9 @@ static const Xbyak::util::Cpu& getCpu()
 	#pragma warning(disable : 4127)
 #endif
 
+// define Fp, Fr, G1
+#include <mcl/g1_def.hpp>
+
 namespace mcl {
 
 namespace fp {
