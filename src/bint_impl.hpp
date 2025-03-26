@@ -236,7 +236,7 @@ MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n)
 */
 MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 {
-	assert(bit <= MCL_MAX_BIT_SIZE * 2); // many be too big
+	assert(bit <= MCL_FP_BIT * 2); // many be too big
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;

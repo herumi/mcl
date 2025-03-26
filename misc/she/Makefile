@@ -13,8 +13,8 @@ else
   CFLAGS+=-fopenmp
   LDFLAGS+=-fopenmp
 endif
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
+ifneq ($(MCL_FP_BIT),)
+  CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
 endif
 
 MCL_LIB=../../lib/libmcl.a

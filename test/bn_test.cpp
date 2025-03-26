@@ -101,8 +101,8 @@ const struct TestSet {
 
 CYBOZU_TEST_AUTO(size)
 {
-	CYBOZU_TEST_EQUAL(sizeof(Fp), MCL_MAX_FP_BYTE);
-	CYBOZU_TEST_EQUAL(sizeof(Fr), MCL_MAX_FR_BYTE);
+	CYBOZU_TEST_EQUAL(sizeof(Fp), (MCL_FP_BIT / 8));
+	CYBOZU_TEST_EQUAL(sizeof(Fr), MCL_FR_BIT / 8);
 	CYBOZU_TEST_EQUAL(sizeof(Fp2), sizeof(Fp) * 2);
 	CYBOZU_TEST_EQUAL(sizeof(Fp6), sizeof(Fp) * 6);
 	CYBOZU_TEST_EQUAL(sizeof(Fp12), sizeof(Fp) * 12);

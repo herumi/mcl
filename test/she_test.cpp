@@ -13,14 +13,14 @@ SecretKey g_sec;
 
 CYBOZU_TEST_AUTO(log)
 {
-printf("MCL_MAX_FP_BYTE=%d MCL_MAX_FR_BYTE=%d\n", MCL_MAX_FP_BYTE, MCL_MAX_FR_BYTE);
-#if MCL_MAX_FP_BYTE == 32
+printf("MCL_FP_BIT=%d MCL_FR_BIT=%d\n", MCL_FP_BIT, MCL_FR_BIT);
+#if MCL_FP_BIT == 256
 	const mcl::CurveParam& cp = mcl::BN254;
 	puts("BN254");
-#elif MCL_MAX_FP_BYTE == 48 && MCL_MAX_FR_BYTE == 32
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 256
 	const mcl::CurveParam& cp = mcl::BLS12_381;
 	puts("BLS12_381");
-#elif MCL_MAX_FP_BYTE == 48 && MCL_MAX_FR_BYTE == 48
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 384
 	const mcl::CurveParam& cp = mcl::BN381_1;
 	puts("BN381_1");
 #endif

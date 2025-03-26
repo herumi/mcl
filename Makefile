@@ -3,20 +3,14 @@ LIB_DIR?=lib
 OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  MCL_MAX_FP_BYTE?=$(shell expr $(MCL_MAX_BIT_SIZE) / 8)
-endif
-MCL_MAX_FP_BYTE?=48
-MCL_MAX_FR_BYTE?=32
+MCL_FP_BIT?=384
+MCL_FR_BIT?=256
 
-ifneq ($(MCL_MAX_FP_BYTE),)
-  CFLAGS+=-DMCL_MAX_FP_BYTE=$(MCL_MAX_FP_BYTE)
+ifneq ($(MCL_FP_BIT),)
+  CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
 endif
-ifneq ($(MCL_MAX_FR_BYTE),)
-  CFLAGS+=-DMCL_MAX_FR_BYTE=$(MCL_MAX_FR_BYTE)
-endif
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
+ifneq ($(MCL_FR_BIT),)
+  CFLAGS+=-DMCL_FR_BIT=$(MCL_FR_BIT)
 endif
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp
@@ -29,18 +23,18 @@ TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
 TEST_SRC+=smallmodp_test.cpp
 
-ifeq ($(MCL_MAX_FP_BYTE)$(MCL_MAX_FR_BYTE),3232)
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
   SRC_SRC+=bn_c256.cpp she_c256.cpp
   TEST_SRC+=bn_c256_test.cpp
   TEST_SRC+=she_c256_test.cpp
 endif
-ifeq ($(MCL_MAX_FP_BYTE)$(MCL_MAX_FR_BYTE),4832)
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_256)
   SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
   TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
   TEST_SRC+=bls12_test.cpp
   TEST_SRC+=mapto_wb19_test.cpp
 endif
-ifeq ($(MCL_MAX_FP_BYTE)$(MCL_MAX_FR_BYTE),4848)
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_384)
   SRC_SRC+=bn_c384.cpp
   TEST_SRC+=bn_c384_test.cpp she_c384_test.cpp
 endif
@@ -199,8 +193,8 @@ $(BINT_OBJ): $(BINT_LL)
 else
   CFLAGS+=-DMCL_BINT_ASM=0
 endif
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
+ifneq ($(MCL_FP_BIT),)
+  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
 endif
 ifeq ($(UPDATE_LL),1)
 src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
@@ -346,7 +340,7 @@ src/base64m.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
-	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -DNDEBUG -DMCL_MSM=0
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_SIZEOF_UNIT=8 -DNDEBUG -DMCL_MSM=0
 
 src/static_code.asm: src/dump_code
 	$< > $@
@@ -355,7 +349,7 @@ obj/static_code.o: src/static_code.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o $(BINT_OBJ)
-	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -DMCL_MSM=0 -I include -Wall -Wextra
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_SIZEOF_UNIT=8 -DMCL_MSM=0 -I include -Wall -Wextra
 
 # set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"
@@ -464,13 +458,13 @@ endif
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c384_256.cpp test/bn_c384_256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 $(CFLAGS_USER)
+	$(CXX) -g -o $@ src/fp.cpp src/bn_c384_256.cpp test/bn_c384_256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 $(CFLAGS_USER)
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_BINT_ASM=0 -DMCL_MSM=0 # -DMCL_DONT_USE_CSPRNG
+	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_FP_BIT=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_BINT_ASM=0 -DMCL_MSM=0 # -DMCL_DONT_USE_CSPRNG
 bin/ecdsa-emu:
-	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
+	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_FP_BIT=256 -I./include
 bin/ecdsa-c-emu:
-	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
+	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_FP_BIT=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
@@ -482,12 +476,12 @@ test_emu_32bit:
 	$(MAKE) MCL_SIZEOF_UNIT=4 bin/emu && bin/emu
 
 test_fp_util_32bit:
-	$(CXX) -m32 src/fp.cpp test/fp_util_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/fp_util_test.exe && bin/fp_util_test.exe
+	$(CXX) -m32 src/fp.cpp test/fp_util_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/fp_util_test.exe && bin/fp_util_test.exe
 test_conversion_32bit:
-	$(CXX) -m32 src/fp.cpp test/conversion_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/conversion_test.exe && bin/conversion_test.exe
+	$(CXX) -m32 src/fp.cpp test/conversion_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/conversion_test.exe && bin/conversion_test.exe
 
 test_bls12_32bit:
-	$(CXX) -m32 src/fp.cpp test/bls12_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/bls12_test.exe && bin/bls12_test.exe
+	$(CXX) -m32 src/fp.cpp test/bls12_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/bls12_test.exe && bin/bls12_test.exe
 
 test_32bit:
 	$(MAKE) test_bls12_32bit
@@ -498,7 +492,7 @@ test_32bit:
 # clear before testing
 test_static:
 	$(MAKE) lib/libmcl.a MCL_STATIC_CODE=1 -j
-	$(CXX) -O2 -DNDEBUG -g -o bin/pairing_static.exe sample/pairing.cpp -I ./include lib/libmcl.a -DMCL_MAX_BIT_SIZE=384 -DMCL_STATIC_CODE
+	$(CXX) -O2 -DNDEBUG -g -o bin/pairing_static.exe sample/pairing.cpp -I ./include lib/libmcl.a -DMCL_FP_BIT=384 -DMCL_STATIC_CODE
 	bin/pairing_static.exe
 
 $(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
@@ -515,7 +509,7 @@ make_tbl:
 	$(CXX) -o misc/precompute misc/precompute.cpp $(CFLAGS) $(MCL_LIB) $(LDFLAGS)
 	./misc/precompute > ../bls/src/qcoeff-bn254.hpp
 
-MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_STANDALONE -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 $(CFLAGS_EXTRA)
+MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_STANDALONE -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_FP_BIT=384 -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 $(CFLAGS_EXTRA)
 ifneq ($(CLANG_TARGET),)
   MCL_STANDALONE+=-target $(CLANG_TARGET)
 endif

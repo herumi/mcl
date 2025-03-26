@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#define MCL_MAX_FP_BYTE 48
-#define MCL_MAX_FR_BYTE 48
+#define MCL_FP_BIT 384
+#define MCL_FR_BIT 48
 #include <mcl/bn.h>
 

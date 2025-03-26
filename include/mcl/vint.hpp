@@ -696,7 +696,7 @@ public:
 	// logical left shift (copy sign)
 	static void shl(Vint& y, const Vint& x, size_t shiftBit)
 	{
-		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
+		assert(shiftBit <= MCL_FP_BIT * 2); // many be too big
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
 		bint::shiftLeft(y.buf_, x.buf_, shiftBit, xn);
@@ -707,7 +707,7 @@ public:
 	// logical right shift (copy sign)
 	static void shr(Vint& y, const Vint& x, size_t shiftBit)
 	{
-		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
+		assert(shiftBit <= MCL_FP_BIT * 2); // many be too big
 		size_t xn = x.size();
 		if (xn * UnitBitSize <= shiftBit) {
 			y.clear();

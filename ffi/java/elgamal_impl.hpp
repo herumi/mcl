@@ -1,5 +1,5 @@
 #pragma once
-//#define MCL_MAX_BIT_SIZE 521
+//#define MCL_FP_BIT 521
 #include <iostream>
 #include <fstream>
 #include <cybozu/random_generator.hpp>

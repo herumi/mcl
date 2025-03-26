@@ -834,7 +834,7 @@ void setFp2(mclBnFp2 *x, const Fp2Str& s)
 	CYBOZU_TEST_EQUAL(mclBnFp_setStr(&x->d[1], s.b, strlen(s.b), 16), 0);
 }
 
-#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 48
+#if MCL_FP_BIT >= 384 && MCL_FR_BIT >= 384
 CYBOZU_TEST_AUTO(badG2)
 {
 	int ret;
@@ -1317,11 +1317,11 @@ CYBOZU_TEST_AUTO(init)
 		int type;
 	} tbl[] = {
 		{ "BN254", MCL_BN254 },
-#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 32
+#if MCL_FP_BIT >= 384 && MCL_FR_BIT >= 256
 		{ "BLS12_381", MCL_BLS12_381 },
 		{ "BLS12_377", MCL_BLS12_377 },
 #endif
-#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 48
+#if MCL_FP_BIT >= 384 && MCL_FR_BIT >= 384
 		{ "BN381_1", MCL_BN381_1 },
 #endif
 	};
@@ -1356,7 +1356,7 @@ CYBOZU_TEST_AUTO(G1only)
 		MCL_NIST_P224, // hashAndMapTo is error
 		MCL_SECP256K1,
 		MCL_NIST_P256,
-#if MCL_MAX_FP_BYTE >= 48 && MCL_MAX_FR_BYTE >= 48
+#if MCL_FP_BIT >= 384 && MCL_FR_BIT >= 384
 		MCL_SECP384R1,
 #endif
 	};

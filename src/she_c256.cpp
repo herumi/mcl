@@ -1,2 +1,2 @@
-#define MCL_MAX_FP_BYTE 32
+#define MCL_FP_BIT 256
 #include "she_c_impl.hpp"

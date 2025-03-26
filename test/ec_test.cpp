@@ -782,7 +782,7 @@ CYBOZU_TEST_AUTO(all)
 		test_sub(para4, CYBOZU_NUM_OF_ARRAY(para4));
 	}
 
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 	if (g_partial & (1 << 6)) {
 		const struct mcl::EcParam para6[] = {
 //			mcl::ecparam::secp384r1,
@@ -792,7 +792,7 @@ CYBOZU_TEST_AUTO(all)
 	}
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 	if (g_partial & (1 << 9)) {
 		const struct mcl::EcParam para9[] = {
 	//		mcl::ecparam::secp521r1,
