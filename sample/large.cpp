@@ -4,7 +4,7 @@
 */
 #include <cybozu/benchmark.hpp>
 #include <iostream>
-#include <mcl/g1_def.hpp>
+#include <mcl/fp_def.hpp>
 #include "../src/low_func.hpp"
 
 using namespace mcl;

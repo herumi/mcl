@@ -3,8 +3,7 @@
 #include <mcl/ecparam.hpp>
 #include <cybozu/random_generator.hpp>
 #include <map>
-#include <mcl/g1_def.hpp>
-#include <mcl/fp.hpp>
+#include <mcl/fp_def.hpp>
 
 using namespace mcl;
 

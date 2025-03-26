@@ -6,7 +6,7 @@
 #include <iostream>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
-#include <mcl/g1_def.hpp>
+#include <mcl/fp_def.hpp>
 #include "../src/xbyak/xbyak_util.h"
 #include "../src/fp_generator.hpp"
 

@@ -1,7 +1,7 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
-#include <mcl/g1_def.hpp>
+#include <mcl/fp_def.hpp>
 #include "../src/low_func.hpp"
 #include "../src/llvm_proto.hpp"
 #include <time.h>

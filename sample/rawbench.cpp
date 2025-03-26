@@ -3,7 +3,7 @@
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 #include <mcl/fp_tower.hpp>
-#include <mcl/g1_def.hpp>
+#include <mcl/fp_def.hpp>
 
 using namespace mcl;
 
