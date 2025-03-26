@@ -447,8 +447,8 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 
 bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize, int _u)
 {
-	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
-	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
+	if (mclMaxBitSize != MCL_FP_BIT) return false;
+	if (maxBitSize > MCL_FP_BIT) return false;
 	if (_p <= 0) return false;
 	clear();
 	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
@@ -506,7 +506,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 			const char *str;
 		} tbl[] = {
 			{ PM_NIST_P192, "0xfffffffffffffffffffffffffffffffeffffffffffffffff" },
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 			{ PM_NIST_P521, "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
 #endif
 		};
@@ -542,19 +542,19 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	case 224/(MCL_SIZEOF_UNIT * 8):  setOp<224/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
 	case 256/(MCL_SIZEOF_UNIT * 8):  setOp<256/(MCL_SIZEOF_UNIT * 8)>(*this); break;
-#if MCL_MAX_BIT_SIZE >= 320
+#if MCL_FP_BIT >= 320
 	case 320/(MCL_SIZEOF_UNIT * 8):  setOp<320/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 	case 384/(MCL_SIZEOF_UNIT * 8):  setOp<384/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 448
+#if MCL_FP_BIT >= 448
 	case 448/(MCL_SIZEOF_UNIT * 8):  setOp<448/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 512
+#if MCL_FP_BIT >= 512
 	case 512/(MCL_SIZEOF_UNIT * 8):  setOp<512/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 576
+#if MCL_FP_BIT >= 576
 	case 576/(MCL_SIZEOF_UNIT * 8):  setOp<576/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
 	default:
@@ -566,7 +566,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		fp_sqr = &mcl_fp_sqr_NIST_P192L;
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192L;
 	}
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 	if (primeMode == PM_NIST_P521) {
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521L;
 	}

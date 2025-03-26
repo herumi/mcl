@@ -9,12 +9,14 @@ const size_t tryNum = 1024;
 
 CYBOZU_TEST_AUTO(init)
 {
-#if MCL_MAX_FP_BYTE == 32
+#if MCL_FP_BIT == 256
 	int curve = MCL_BN254;
-#elif MCL_MAX_FP_BYTE == 48 && MCL_MAX_FR_BYTE == 32
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 256
 	int curve = MCL_BLS12_381;
-#elif MCL_MAX_FP_BYTE == 48 && MCL_MAX_FR_BYTE == 48
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 384
 	int curve = MCL_BN381_1;
+#else
+	#error "not supported"
 #endif
 	int ret;
 	printf("curve=%d\n", curve);

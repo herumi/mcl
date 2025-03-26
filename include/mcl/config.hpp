@@ -39,27 +39,16 @@
 #include <stdint.h> // for uint64_t, uint8_t
 #include <stddef.h> // for size_t
 
-// check MCL_MAX_BIT_SIZE and MCL_MAX_FP_BYTE for backward compatilibity
-#ifdef MCL_MAX_BIT_SIZE
-	#ifndef MCL_MAX_FP_BYTE
-		#define MCL_MAX_FP_BYTE ((MCL_MAX_BIT_SIZE)/8)
-	#endif
+// check MCL_ and MCL_FP_BIT for backward compatilibity
+#ifndef MCL_FP_BIT
+	#define MCL_FP_BIT 384
+#endif
+#if defined(MCL_MAX_BIT_SIZE) && MCL_MAX_BIT_SIZE != MCL_FP_BIT
+	#error "MCL_MAX_BIT_SIZE is deprecated. use MCL_FP_BIT instead of it."
 #endif
 
-#ifndef MCL_MAX_FP_BYTE
-	#define MCL_MAX_FP_BYTE 48
-#endif
-
-#ifndef MCL_MAX_BIT_SIZE
-	#define MCL_MAX_BIT_SIZE ((MCL_MAX_FP_BYTE)*8)
-#endif
-
-#if MCL_MAX_BIT_SIZE != ((MCL_MAX_FP_BYTE)*8)
-	#error "bad MCL_MAX_BIT_SIZE"
-#endif
-
-#ifndef MCL_MAX_FR_BYTE
-	#define MCL_MAX_FR_BYTE 32
+#ifndef MCL_FR_BIT
+	#define MCL_FR_BIT 256
 #endif
 
 #if !defined(MCL_USE_OPENSSL) && !defined(MCL_DONT_USE_OPENSSL)
@@ -73,7 +62,7 @@
 #define MCL_UNIT_BIT_SIZE (MCL_SIZEOF_UNIT * 8)
 #define MCL_ROUNDUP(x, n) (((x) + (n) - 1) / (n))
 
-#define MCL_MAX_UNIT_SIZE MCL_ROUNDUP(MCL_MAX_BIT_SIZE, MCL_UNIT_BIT_SIZE)
+#define MCL_MAX_UNIT_SIZE MCL_ROUNDUP(MCL_FP_BIT, MCL_UNIT_BIT_SIZE)
 
 #ifdef _MSC_VER
 	#ifdef MCL_DLL_EXPORT
@@ -105,7 +94,7 @@ struct RoundUpT {
 	static const size_t N = (x + n - 1) / n;
 };
 
-const size_t maxUnitSize = (MCL_MAX_BIT_SIZE + UnitBitSize - 1) / UnitBitSize;
+const size_t maxUnitSize = (MCL_FP_BIT + UnitBitSize - 1) / UnitBitSize;
 
 } // mcl
 #endif

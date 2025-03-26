@@ -68,7 +68,7 @@ struct Test {
 	}
 };
 
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 void customTest(const char *pStr, const char *xStr, const char *yStr)
 {
 	struct ZnTag;
@@ -142,13 +142,13 @@ CYBOZU_TEST_AUTO(test)
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 		// N = 6
 		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 		// N = 9
 		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 #endif

@@ -52,7 +52,7 @@ void benchFp(size_t bitSize, int mode)
 			"0x209348209481094820984209842094820948204204243123456789012345679003423084720472047204224233321972",
 			
 		},
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 		{
 			521,
 			"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -112,7 +112,7 @@ void benchEc(size_t bitSize, int mode, mcl::ec::Mode ecMode)
 		mcl::ecparam::NIST_P256,
 //		mcl::ecparam::secp384r1,
 		mcl::ecparam::NIST_P384,
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 //		mcl::ecparam::secp521r1,
 		mcl::ecparam::NIST_P521,
 #endif

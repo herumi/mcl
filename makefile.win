@@ -4,7 +4,7 @@ PRE=x86_64-w64-mingw32-
 CFLAGS=-std=c++03 -O2 -DNDEBUG -fPIC # -fno-stack-protector -fno-threadsafe-statics
 CFLAGS+=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wundef
 CFLAGS+=-I ./include -I ./src
-CFLAGS+=-DMCL_MAX_BIT_SIZE=384
+CFLAGS+=-DMCL_FP_BIT=384
 CFLAGS+=-DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
 # for dll
 CFLAGS+=-DMCL_NO_AUTOLINK -DMCLBN_NO_AUTOLINK -DMCL_DLL_EXPORT

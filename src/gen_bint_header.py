@@ -24,7 +24,7 @@ def gen_switch(name, ret, args, params, N, N64, useFuncPtr=False):
       print('#if MCL_SIZEOF_UNIT == 4')
     print(f'\tif (n == {i}) return mclb_{name}{i};')
   print('#endif // MCL_SIZEOF_UNIT == 4')
-  print('#else // MCL_BITN_ASM == 1')
+  print('#else // MCL_FP_BITN_ASM == 1')
   for i in range(1, N):
     if i == N64 + 1:
       print('#if MCL_SIZEOF_UNIT == 4')

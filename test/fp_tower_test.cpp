@@ -11,8 +11,8 @@
 	#pragma warning(disable : 4456)
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 768
-typedef mcl::FpT<mcl::FpTag, MCL_MAX_BIT_SIZE> Fp;
+#if MCL_FP_BIT >= 768
+typedef mcl::FpT<mcl::FpTag, MCL_FP_BIT> Fp;
 #else
 typedef mcl::FpT<mcl::FpTag, 384> Fp;
 #endif
@@ -27,7 +27,7 @@ void testFp2()
 {
 	using namespace mcl;
 	puts(__FUNCTION__);
-#if MCL_MAX_BIT_SIZE < 768
+#if MCL_FP_BIT < 768
 	const size_t FpSize = 48;
 	CYBOZU_TEST_EQUAL(sizeof(Fp), FpSize);
 	CYBOZU_TEST_EQUAL(sizeof(Fp2), FpSize * 2);
@@ -448,14 +448,14 @@ void testAll()
 		"0xfffffffffffcf0cd46e5f25eee71a49f0cdc65fb12980a82d3292ddbaed33013", // BN_P256 p
 		"0xfffffffffffcf0cd46e5f25eee71a49e0cdc65fb1299921af62d536cd10b500d", // BN_P256 r
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 		// N = 6
 		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
 		// max prime less than 2**384/4
 		"0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff97",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
-#if MCL_MAX_BIT_SIZE >= 768
+#if MCL_FP_BIT >= 768
 		"776259046150354467574489744231251277628443008558348305569526019013025476343188443165439204414323238975243865348565536603085790022057407195722143637520590569602227488010424952775132642815799222412631499596858234375446423426908029627",
 #endif
 	};

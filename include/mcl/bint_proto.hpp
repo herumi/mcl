@@ -848,7 +848,7 @@ inline u_ppp get_add(size_t n)
 	if (n == 30) return mclb_add30;
 	if (n == 31) return mclb_add31;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return addT<1>;
 	if (n == 2) return addT<2>;
 	if (n == 3) return addT<3>;
@@ -925,7 +925,7 @@ inline u_ppp get_sub(size_t n)
 	if (n == 30) return mclb_sub30;
 	if (n == 31) return mclb_sub31;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return subT<1>;
 	if (n == 2) return subT<2>;
 	if (n == 3) return subT<3>;
@@ -1002,7 +1002,7 @@ inline void_ppp get_addNF(size_t n)
 	if (n == 30) return mclb_addNF30;
 	if (n == 31) return mclb_addNF31;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return addNFT<1>;
 	if (n == 2) return addNFT<2>;
 	if (n == 3) return addNFT<3>;
@@ -1079,7 +1079,7 @@ inline u_ppp get_subNF(size_t n)
 	if (n == 30) return mclb_subNF30;
 	if (n == 31) return mclb_subNF31;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return subNFT<1>;
 	if (n == 2) return subNFT<2>;
 	if (n == 3) return subNFT<3>;
@@ -1141,7 +1141,7 @@ inline u_ppu get_mulUnit(size_t n)
 	if (n == 15) return mclb_mulUnit15;
 	if (n == 16) return mclb_mulUnit16;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return mulUnitT<1>;
 	if (n == 2) return mulUnitT<2>;
 	if (n == 3) return mulUnitT<3>;
@@ -1188,7 +1188,7 @@ inline u_ppu get_mulUnitAdd(size_t n)
 	if (n == 15) return mclb_mulUnitAdd15;
 	if (n == 16) return mclb_mulUnitAdd16;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return mulUnitAddT<1>;
 	if (n == 2) return mulUnitAddT<2>;
 	if (n == 3) return mulUnitAddT<3>;
@@ -1235,7 +1235,7 @@ inline void_ppp get_mul(size_t n)
 	if (n == 15) return mclb_mul15;
 	if (n == 16) return mclb_mul16;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return mulT<1>;
 	if (n == 2) return mulT<2>;
 	if (n == 3) return mulT<3>;
@@ -1282,7 +1282,7 @@ inline void_pp get_sqr(size_t n)
 	if (n == 15) return mclb_sqr15;
 	if (n == 16) return mclb_sqr16;
 #endif // MCL_SIZEOF_UNIT == 4
-#else // MCL_BITN_ASM == 1
+#else // MCL_FP_BITN_ASM == 1
 	if (n == 1) return sqrT<1>;
 	if (n == 2) return sqrT<2>;
 	if (n == 3) return sqrT<3>;

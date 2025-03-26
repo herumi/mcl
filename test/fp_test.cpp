@@ -924,7 +924,7 @@ void modpTest()
 }
 
 #include <iostream>
-#if (defined(MCL_USE_LLVM) || defined(MCL_X64_ASM)) && (MCL_MAX_BIT_SIZE >= 521)
+#if (defined(MCL_USE_LLVM) || defined(MCL_X64_ASM)) && (MCL_FP_BIT >= 521)
 CYBOZU_TEST_AUTO(mod_NIST_P521)
 {
 	const size_t len = 521;
@@ -1055,7 +1055,7 @@ CYBOZU_TEST_AUTO(getBinWidth)
 void sub(mcl::fp::Mode mode)
 {
 	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
-	printf("MCL_MAX_BIT_SIZE=%d\n", MCL_MAX_BIT_SIZE);
+	printf("MCL_FP_BIT=%d\n", MCL_FP_BIT);
 	const char *tbl[] = {
 		// N = 3
 		"0x30000000000000000000000000000000000000000000002b",
@@ -1072,18 +1072,18 @@ void sub(mcl::fp::Mode mode)
 		"0x800000000000000000000000000000000000000000000000000000000000005f",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", // secp256k1
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 
 		// N = 6
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
-#if MCL_MAX_BIT_SIZE >= 512
+#if MCL_FP_BIT >= 512
 
 		// N = 8
 		"0x65b48e8f740f89bffc8ab0d15e3e4c4ab42d083aedc88c425afbfcc69322c9cda7aac6c567f35507516730cc1f0b4f25c2721bf457aca8351b81b90533c6c87b",
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 		// N = 9
 		"0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 #endif

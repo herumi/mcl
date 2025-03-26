@@ -9,7 +9,7 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 endif()
 
 option(
-	MCL_MAX_BIT_SIZE
+	MCL_FP_BIT
 	"max bit size for Fp"
 	384
 )
@@ -109,9 +109,9 @@ set_target_properties(mcl_st PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 #set_target_properties(mcl_st PROPERTIES PREFIX "lib")
 
-if(${MCL_MAX_BIT_SIZE} GREATER 0)
-	target_compile_definitions(mcl PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
-	target_compile_definitions(mcl_st PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
+if(${MCL_FP_BIT} GREATER 0)
+	target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT})
+	target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT})
 endif()
 
 if(MSVC)

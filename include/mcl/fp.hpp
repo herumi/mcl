@@ -74,7 +74,7 @@ inline void byteSwap(uint8_t *x, size_t n)
 
 } // mcl::fp
 
-template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
+template<class tag = FpTag, size_t maxBitSize = MCL_FP_BIT>
 class FpT : public fp::Serializable<FpT<tag, maxBitSize>,
 	fp::Operator<FpT<tag, maxBitSize> > > {
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
@@ -136,8 +136,8 @@ public:
 	*/
 	static inline void init(bool *pb, int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO, int u = 1)
 	{
-		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		*pb = op_.init(p, maxBitSize, xi_a, mode, MCL_MAX_BIT_SIZE, u);
+		assert(maxBitSize <= MCL_FP_BIT);
+		*pb = op_.init(p, maxBitSize, xi_a, mode, MCL_FP_BIT, u);
 #ifdef MCL_DUMP_JIT
 		return;
 #endif

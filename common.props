@@ -15,7 +15,7 @@
       <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NOMINMAX;MCL_MAX_BIT_SIZE=384;MCL_MSM=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions);NOMINMAX;MCL_FP_BIT=384;MCL_MSM=1</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

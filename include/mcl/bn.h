@@ -9,12 +9,12 @@
 /*
 	the order of an elliptic curve over Fp is Fr
 */
-#if !defined(MCL_MAX_FP_BYTE) || !defined(MCL_MAX_FR_BYTE)
-	#error "define MCL_MAX_FP_BYTE and MCL_MAX_FR_BYTE"
+#if !defined(MCL_FP_BIT) || !defined(MCL_FR_BIT)
+	#error "define MCL_FP_BIT and MCL_FR_BIT"
 #endif
 
-#define MCLBN_FP_UNIT_SIZE ((MCL_MAX_FP_BYTE)/8)
-#define MCLBN_FR_UNIT_SIZE ((MCL_MAX_FR_BYTE)/8)
+#define MCLBN_FP_UNIT_SIZE ((MCL_FP_BIT)/64)
+#define MCLBN_FR_UNIT_SIZE ((MCL_FR_BIT)/64)
 
 #define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 

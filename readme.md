@@ -34,7 +34,7 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - add millerLoopVecMT (enabled if built with MCL_USE_OMP=1)
 - support s390x(systemz)
 - improve M1 mac performance
-- set default `MCL_MAX_BIT_SIZE=512` so disable to support `NICT_P521`.
+- set default `MCL_FP_BIT=512` so disable to support `NICT_P521`.
 - improve performance
 - support M1 mac
 
@@ -124,7 +124,7 @@ msbuild mcl.sln /p:Configuration=Release /m
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.
-`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib` which is defined `MCL_MAX_BIT_SIZE=384`.
+`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib` which is defined `MCL_FP_BIT=384`.
 
 ## options
 
@@ -169,7 +169,7 @@ make lib/libmcl.a MCL_STATIC_CODE=1 -j
 # test of pairing
 make test_static
 ```
-The generated library supports only *BLS12_381* and requires compiler options `-DMCL_MAX_BIT_SIZE=384 -DMCL_STATIC_CODE`.
+The generated library supports only *BLS12_381* and requires compiler options `-DMCL_FP_BIT=384 -DMCL_STATIC_CODE`.
 
 ## How to profile on Linux
 
@@ -205,7 +205,7 @@ make ARCH=x86 LLVM_VER=-14 GMP_DIR=<install dir>
 ```
 make -f Makefile.cross BIT=32 TARGET=armv7l
 sudo apt install g++-arm-linux-gnueabi
-arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn384_256.a -DMCL_MAX_BIT_SIZE=384
+arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn384_256.a -DMCL_FP_BIT=384
 env QEMU_LD_PREFIX=/usr/arm-linux-gnueabi/ qemu-arm ./a.out
 ```
 
@@ -352,7 +352,7 @@ For example, specify `-3.8` for `<llvm-version>` if `opt-3.8` and `llc-3.8` are 
 
 If you want to use Fp with 1024-bit prime on x86-64, then
 ```
-make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1 MCL_MAX_BIT_SIZE=1024
+make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1 MCL_FP_BIT=1024
 ```
 
 # API for Two level homomorphic encryption
