@@ -5,11 +5,10 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#include <mcl/bls12_381.hpp>
 #include <stdint.h>
 #include "avx512.hpp"
 
-#include <mcl/ec.hpp>
-#include <mcl/curve_type.hpp>
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
@@ -775,8 +774,10 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	static void inv(FpM& z, const FpM& x)
 	{
 		mcl::msm::FpA v[M];
+		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
-		g_func.invVecFp(v, v, M, M);
+//		g_func.invVecFp(vv, vv, M, M);
+		mcl::invVec<mcl::Fp>(vv, vv, M, M);
 		z.setFpA(v);
 	}
 #ifdef MCL_MSM_TEST
@@ -1352,8 +1353,10 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	static void inv(FpMA& z, const FpMA& x)
 	{
 		mcl::msm::FpA v[M*vN];
+		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
-		g_func.invVecFp(v, v, M*vN, M*vN);
+		g_func.invVecFp(vv, vv, M*vN, M*vN);
+//		mcl::invVec<mcl::Fp>(vv, vv, M, M);
 		z.setFpA(v);
 	}
 	void setFpM(const FpM x[vN])
@@ -1621,7 +1624,6 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 } } // mcl::msm
 
 #ifdef MCL_MSM_TEST
-#include <mcl/bls12_381.hpp>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
 
