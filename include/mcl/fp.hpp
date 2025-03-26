@@ -823,7 +823,7 @@ public:
 #endif
 // Declare op_ as an external variable
 template<class tag, size_t maxBitSize>
-extern fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
+fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
 #endif
 
 } // mcl
