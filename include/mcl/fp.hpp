@@ -34,9 +34,6 @@
 
 namespace mcl {
 
-struct FpTag;
-struct ZnTag;
-
 namespace fp {
 
 uint64_t getUint64(bool *pb, const fp::Block& b);
@@ -74,7 +71,7 @@ inline void byteSwap(uint8_t *x, size_t n)
 
 } // mcl::fp
 
-template<class tag = FpTag, size_t maxBitSize = MCL_FP_BIT>
+template<class tag, size_t maxBitSize = MCL_FP_BIT>
 class FpT : public fp::Serializable<FpT<tag, maxBitSize>,
 	fp::Operator<FpT<tag, maxBitSize> > > {
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;

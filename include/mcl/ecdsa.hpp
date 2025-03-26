@@ -6,8 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <mcl/fp.hpp>
-#include <mcl/ec.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/window_method.hpp>
 
@@ -25,14 +24,11 @@ namespace local {
 #endif
 static const size_t winSize = MCLSHE_WIN_SIZE;
 
-struct FpTag;
-struct ZnTag;
-
 } // mcl::ecdsa::local
 
-typedef mcl::FpT<local::FpTag, 256> Fp;
-typedef mcl::FpT<local::ZnTag, 256> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
+typedef mcl::Fp Fp;
+typedef mcl::Fr Zn;
+typedef mcl::G1 Ec;
 
 namespace local {
 
