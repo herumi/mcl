@@ -1,13 +1,13 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
-#include <mcl/fp.hpp>
 #include <mcl/conversion.hpp>
 #include <mcl/ecparam.hpp>
+#include <mcl/g1_def.hpp>
 
-typedef mcl::FpT<> Fp;
-typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
+using namespace mcl;
+typedef Fr Zn;
+typedef G1 Ec;
 
 void benchFpSub(const char *pStr, const char *xStr, const char *yStr, mcl::fp::Mode mode)
 {

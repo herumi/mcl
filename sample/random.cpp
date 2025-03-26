@@ -3,8 +3,10 @@
 #include <mcl/ecparam.hpp>
 #include <cybozu/random_generator.hpp>
 #include <map>
+#include <mcl/g1_def.hpp>
 #include <mcl/fp.hpp>
-typedef mcl::FpT<> Fp;
+
+using namespace mcl;
 
 typedef std::map<std::string, int> Map;
 
