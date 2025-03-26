@@ -3,11 +3,10 @@
 */
 #include <iostream>
 #include <fstream>
-#include <mcl/ec.hpp>
+#include <mcl/g1_def.hpp>
 
-typedef mcl::FpT<mcl::FpTag, 256> Fp;
-typedef mcl::FpT<mcl::ZnTag, 256> Fr;
-typedef mcl::EcT<Fp, Fr> Ec;
+using namespace mcl;
+typedef G1 Ec;
 
 void put(const char *msg, const Ec& P)
 {

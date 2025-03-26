@@ -2,15 +2,14 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
-#include <mcl/fp.hpp>
 #include <mcl/fp_tower.hpp>
+#include <mcl/g1_def.hpp>
 
-typedef mcl::FpT<mcl::FpTag> Fp;
+using namespace mcl;
+
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
-
-typedef mcl::Unit Unit;
 
 void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)
 {

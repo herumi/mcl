@@ -2,12 +2,12 @@
 	large prime sample for 64-bit arch
 	make MCL_USE_LLVM=1 MCL_FP_BIT=768
 */
-#include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
 #include <iostream>
+#include <mcl/g1_def.hpp>
 #include "../src/low_func.hpp"
 
-typedef mcl::FpT<> Fp;
+using namespace mcl;
 
 using namespace mcl::fp;
 const size_t N = 12;
