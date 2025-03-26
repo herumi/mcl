@@ -23,6 +23,7 @@ jobs:
 #    - run: bzip2 -dc sde-external-8.63.0-2021-01-18-lin.tar.bz2 | tar xvf -
 #    - run: make bin/bn_test.exe DEBUG=1 -j4
 #    - run: sde-external-8.63.0-2021-01-18-lin/sde64 -hsw -- bin/bn_test.exe
+    - run: git reset --hard
     - run: make test_ci DEBUG=1 -j4
     - run: make clean
     - run: make test_ci DEBUG=1 -j4 CXX=clang++
