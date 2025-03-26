@@ -1,7 +1,7 @@
 #define PUT(x) std::cout << #x "=" << (x) << std::endl
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
-#include <mcl/fp.hpp>
+#include <mcl/g1_def.hpp>
 #include "../src/low_func.hpp"
 #include "../src/llvm_proto.hpp"
 #include <time.h>
@@ -14,8 +14,7 @@
 	#pragma warning(disable: 4127) // const condition
 #endif
 
-typedef mcl::FpT<> Fp;
-typedef mcl::Unit Unit;
+using namespace mcl;
 using namespace mcl::fp;
 
 CYBOZU_TEST_AUTO(sizeof)
@@ -438,18 +437,6 @@ void powTest()
 	CYBOZU_TEST_EQUAL(z, 1);
 	Fp::pow(z, x, Fp::getOp().mp);
 	CYBOZU_TEST_EQUAL(z, x);
-#if 0
-	typedef mcl::FpT<tag2, 128> Fp_other;
-	Fp_other::init("1009");
-	x = 5;
-	Fp_other n = 3;
-	z = 3;
-	Fp::pow(x, x, z);
-	CYBOZU_TEST_EQUAL(x, 125);
-	x = 5;
-	Fp::pow(x, x, n);
-	CYBOZU_TEST_EQUAL(x, 125);
-#endif
 }
 
 void mulUnitTest()
@@ -499,20 +486,6 @@ void powGmp()
 	}
 }
 
-struct TagAnother;
-
-#if 0
-void anotherFpTest(mcl::fp::Mode mode)
-{
-	typedef mcl::FpT<TagAnother, 128> G;
-	G::init("13", mode);
-	G a = 3;
-	G b = 9;
-	a *= b;
-	CYBOZU_TEST_EQUAL(a, 1);
-}
-#endif
-
 void setArrayTest1()
 {
 	uint8_t b1[] = { 0x56, 0x34, 0x12 };
@@ -524,30 +497,6 @@ void setArrayTest1()
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 }
 
-#if 0
-void setArrayTest2(mcl::fp::Mode mode)
-{
-	Fp::init("0x10000000000001234567a5", mode);
-	const struct {
-		uint32_t buf[3];
-		size_t bufN;
-		const char *expected;
-	} tbl[] = {
-		{ { 0x234567a4, 0x00000001, 0x00100000}, 1, "0x234567a4" },
-		{ { 0x234567a4, 0x00000001, 0x00100000}, 2, "0x1234567a4" },
-		{ { 0x234567a4, 0x00000001, 0x00080000}, 3, "0x08000000000001234567a4" },
-		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x10000000000001234567a4" },
-	};
-	Fp x;
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		x.setArray(tbl[i].buf, tbl[i].bufN);
-		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
-	}
-	uint32_t large[3] = { 0x234567a5, 0x00000001, 0x00100000};
-	CYBOZU_TEST_EXCEPTION(x.setArray(large, 3), cybozu::Exception);
-}
-#endif
-
 void setArrayMaskTest1()
 {
 	uint8_t b1[] = { 0x56, 0x34, 0x12 };
@@ -558,28 +507,6 @@ void setArrayMaskTest1()
 	x.setArrayMask(b2, 2);
 	CYBOZU_TEST_EQUAL(x, Fp("0x3400000012"));
 }
-
-#if 0
-void setArrayMaskTest2(mcl::fp::Mode mode)
-{
-	Fp::init("0x10000000000001234567a5", mode);
-	const struct {
-		uint32_t buf[3];
-		size_t bufN;
-		const char *expected;
-	} tbl[] = {
-		{ { 0x234567a4, 0x00000001, 0x00100000}, 1, "0x234567a4" },
-		{ { 0x234567a4, 0x00000001, 0x00100000}, 2, "0x1234567a4" },
-		{ { 0x234567a4, 0x00000001, 0x00100000}, 3, "0x10000000000001234567a4" },
-		{ { 0x234567a5, 0xfffffff1, 0xffffffff}, 3, "0x0ffffffffffff1234567a5" },
-	};
-	Fp x;
-	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		x.setArrayMask(tbl[i].buf, tbl[i].bufN);
-		CYBOZU_TEST_EQUAL(x, Fp(tbl[i].expected));
-	}
-}
-#endif
 
 void setArrayModTest()
 {

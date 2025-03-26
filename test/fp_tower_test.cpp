@@ -4,18 +4,15 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
 #include <time.h>
-#include <mcl/fp.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/fp_tower.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4456)
 #endif
 
-#if MCL_FP_BIT >= 768
-typedef mcl::FpT<mcl::FpTag, MCL_FP_BIT> Fp;
-#else
-typedef mcl::FpT<mcl::FpTag, 384> Fp;
-#endif
+using namespace mcl;
+
 typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;

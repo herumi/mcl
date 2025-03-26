@@ -3,14 +3,14 @@
 #include <stdint.h>
 #include <string>
 #include <cybozu/itoa.hpp>
-#include <mcl/fp.hpp>
-#include "../src/xbyak/xbyak_util.h"
-#include "../src/fp_generator.hpp"
 #include <iostream>
 #include <cybozu/xorshift.hpp>
 #include <cybozu/benchmark.hpp>
+#include <mcl/g1_def.hpp>
+#include "../src/xbyak/xbyak_util.h"
+#include "../src/fp_generator.hpp"
 
-typedef mcl::FpT<> Fp;
+using namespace mcl;
 
 const int MAX_N = 4;
 

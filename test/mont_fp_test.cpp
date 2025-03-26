@@ -3,10 +3,10 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
-#include <mcl/fp.hpp>
+#include <mcl/g1_def.hpp>
 #include "../src/low_func.hpp"
 
-typedef mcl::FpT<> Fp;
+using namespace mcl;
 
 #include "mont.hpp"
 
@@ -71,8 +71,7 @@ struct Test {
 #if MCL_FP_BIT >= 521
 void customTest(const char *pStr, const char *xStr, const char *yStr)
 {
-	struct ZnTag;
-	typedef mcl::FpT<ZnTag> Zn;
+	typedef mcl::Fr Zn;
 	std::string rOrg, rC, rAsm;
 	Zn::init(pStr);
 	Zn s(xStr), t(yStr);

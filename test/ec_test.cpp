@@ -5,16 +5,14 @@
 #include <cybozu/xorshift.hpp>
 #include <mcl/gmp_util.hpp>
 
-#include <mcl/fp.hpp>
-#include <mcl/ec.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <time.h>
 #include <math.h>
 
-typedef mcl::FpT<> Fp;
-struct tagZn;
-typedef mcl::FpT<tagZn> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
+using namespace mcl;
+typedef Fr Zn;
+typedef G1 Ec;
 
 CYBOZU_TEST_AUTO(sizeof)
 {
@@ -782,7 +780,7 @@ CYBOZU_TEST_AUTO(all)
 		test_sub(para4, CYBOZU_NUM_OF_ARRAY(para4));
 	}
 
-#if MCL_FP_BIT >= 384
+#if MCL_FP_BIT >= 384 && MCL_FR_BIT >= 384
 	if (g_partial & (1 << 6)) {
 		const struct mcl::EcParam para6[] = {
 //			mcl::ecparam::secp384r1,

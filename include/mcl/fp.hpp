@@ -814,14 +814,17 @@ public:
 #endif
 };
 
+#if 1
 #if defined(__GNUC__) && !defined(__ANDROID__)
 	// x must be in [200, 65535]. lower values indicate a higher priority.
 	#define MCL_INIT_PRIORITY(x) __attribute__((init_priority(x)))
 #else
 	#define MCL_INIT_PRIORITY(x)
 #endif
-// Change the priority ad hoc so that initPairing() can be called in the static constructor before the main function
-template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
+// Declare op_ as an external variable
+template<class tag, size_t maxBitSize>
+extern fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
+#endif
 
 } // mcl
 
