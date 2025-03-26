@@ -135,11 +135,11 @@ But it means a set `{ x in Fp12 | x^r = 1}`.
 
 ### sizeof
 
-library           |MCLBN_FR_UNIT_SIZE|MCLBN_FP_UNIT_SIZE|sizeof Fr|sizeof Fp|
+library           |MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|
 ------------------|------------------|------------------|---------|---------|
-libmclbn256.a     |          4       |         4        |   32    |   32    |
-libmclbn384_256.a |          4       |         6        |   32    |   48    |
-libmclbn384.a     |          6       |         6        |   48    |   48    |
+libmclbn256.a     |          256     |         256      |   32    |   32    |
+libmclbn384_256.a |          384     |         256      |   32    |   48    |
+libmclbn384.a     |          384     |         384      |   48    |   48    |
 
 ## Thread safety
 All functions except for initialization and changing global settings are thread-safe.
