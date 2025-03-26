@@ -17,7 +17,7 @@ SRC_SRC=fp.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
 TEST_SRC+=modp_test.cpp
-TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
+TEST_SRC+=ecdsa_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
@@ -27,6 +27,7 @@ ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
   SRC_SRC+=bn_c256.cpp she_c256.cpp
   TEST_SRC+=bn_c256_test.cpp
   TEST_SRC+=she_c256_test.cpp
+  TEST_SRC+=ecdsa_c_test.cpp
 endif
 ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_256)
   SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
