@@ -37,6 +37,9 @@ jobs:
     - run: make bin/pairing_c_min.exe && bin/pairing_c_min.exe
     - run: make clean
     - run: make lib/libmcl.a MCL_STATIC_CODE=1
+    - run: make clean
+    - run: make MCL_FP_BIT=256 MCL_FR_BIT=256 DEBUG=3 bin/ecdsa_c_test.exe && bin/ecdsa_c_test.exe
+#    - run: make MCL_FP_BIT=256 MCL_FR_BIT=256 DEBUG=3 test_ci -j4 # check setArrayMod
 #    - run: make test_go
 #    - run: sudo apt install openjdk-8-jdk
 #    - run: make -C ffi/java test JAVA_INC=-I/usr/lib/jvm/java-8-openjdk-amd64/include
