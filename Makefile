@@ -194,9 +194,9 @@ $(BINT_OBJ): $(BINT_LL)
 else
   CFLAGS+=-DMCL_BINT_ASM=0
 endif
-ifneq ($(MCL_FP_BIT),)
-  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
-endif
+#ifneq ($(MCL_FP_BIT),)
+#  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
+#endif
 ifeq ($(UPDATE_LL),1)
 src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
@@ -517,7 +517,7 @@ libmclbn384_256.a: bn_c384_256.o
 # e.g. make CLANG=clang++-12 CLANG_TARGET=aarch64 standalone
 standalone: libmcl.a libmclbn384_256.a
 clean_standalone:
-	$(RM) libmcl.a libmcl384_256.a *.o
+	$(RM) libmcl.a libmcl384_256.a
 
 update_xbyak:
 	cp -a ../xbyak/xbyak/xbyak.h ../xbyak/xbyak/xbyak_util.h ../xbyak/xbyak/xbyak_mnemonic.h src/xbyak/
