@@ -14,7 +14,8 @@ MCL_DLL_API void initBint()
 	if (init) return;
 	using namespace Xbyak::util;
 	Cpu cpu;
-	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+	const char *env = getenv("MCL_CPU");
+	if ((env && strcmp(env, "snb") == 0) || !cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
 		mclb_disable_fast();
 	}
 	init = true;
