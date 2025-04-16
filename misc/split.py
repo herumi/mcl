@@ -2,7 +2,7 @@ m = 128 # fix
 H = 1<<m
 
 class SP:
-  def __init__(self, z):
+  def __init__(self, z, name):
     L = z*z - 1
     r = L*L + L + 1
     p = (z-1)**2 * r // 3 + z
@@ -10,6 +10,7 @@ class SP:
     s = m2 + m
     S = 1 << s
     q = S // L
+    self.name = name
     self.L = L
     self.r = r
     self.p = p
@@ -47,17 +48,32 @@ class SP:
       b += 1
     return (a, b)
 
+  def split_377(self, x):
+    xH = x >> 125
+    assert(xH.bit_length() <= m)
+    b = (xH * 0x767ef552d3fa6e2c0fee5da655f20305) >> m
+    a = x - b * self.L
+    if a >= self.L:
+      a -= self.L
+      b += 1
+    return (a, b)
+
 def test(sp, x):
   L = sp.L
   (a, b) = sp.split(x)
   assert(0 <= a < L)
   assert(0 <= b <= L+1)
   assert(a + b * L == x)
+  if sp.name != 'BLS12_377':
+    return
+  (a2, b2) = sp.split_377(x)
+  assert(a == a2)
+  assert(b == b2)
 
 def main():
   for (name, z) in [('BLS12_381', -0xd201000000010000), ('BLS12_377', 0x8508c00000000001)]:
     print(f'{name} {hex(z)=}')
-    sp = SP(z)
+    sp = SP(z, name)
 
     r = sp.r
     L = sp.L
