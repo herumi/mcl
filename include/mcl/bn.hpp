@@ -2299,7 +2299,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	func.fr = &Fr::getOp();
 	func.invVecFp = mcl::msm::invVecFpFunc(mcl::invVec<mcl::bn::Fp>);
 	func.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
-#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__))  && !defined(__EMSCRIPTEN__)
 	// avoid gcc wrong detection
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wcast-function-type"
@@ -2308,7 +2308,7 @@ inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode
 	func.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
 	func.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
 	func.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
-#if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(__EMSCRIPTEN__)
 	#pragma GCC diagnostic pop
 #endif
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
