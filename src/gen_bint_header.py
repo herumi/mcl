@@ -29,35 +29,31 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
     print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
   print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
-def gen_prototype(out, ft): #name, ret, args, params, N, N64, useFuncPtr=False):
-  (name, ret, args, _, params, N, N64, asPointer) = ft
+def gen_prototype(out, ft):
+  (name, ret, args, _, params, N, N64, _) = ft
   if out == 'proto':
     print(f'{protoType[(ret,args)]} get_{name}(size_t n);')
-  else:
-    print(f'''{protoType[(ret,args)]} get_{name}(size_t n)
+    print(f'inline {ret} {name}N({args}, size_t n) {{ return get_{name}(n)({params}); }}')
+    return
+
+  print(f'''{protoType[(ret,args)]} get_{name}(size_t n)
 {{
 #if MCL_BINT_ASM == 1''')
-    for i in range(1, N):
-      if i == N64 + 1:
-        print('#if MCL_SIZEOF_UNIT == 4')
-      print(f'\tif (n == {i}) return mclb_{name}{i};')
-    print('#endif // MCL_SIZEOF_UNIT == 4')
-    print('#else // MCL_FP_BITN_ASM == 1')
-    for i in range(1, N):
-      if i == N64 + 1:
-        print('#if MCL_SIZEOF_UNIT == 4')
-      print(f'\tif (n == {i}) return {name}T<{i}>;')
-    print('''#endif // MCL_SIZEOF_UNIT == 4
+  for i in range(1, N):
+    if i == N64 + 1:
+      print('#if MCL_SIZEOF_UNIT == 4')
+    print(f'\tif (n == {i}) return mclb_{name}{i};')
+  print('#endif // MCL_SIZEOF_UNIT == 4')
+  print('#else // MCL_FP_BITN_ASM == 1')
+  for i in range(1, N):
+    if i == N64 + 1:
+      print('#if MCL_SIZEOF_UNIT == 4')
+    print(f'\tif (n == {i}) return {name}T<{i}>;')
+  print('''#endif // MCL_SIZEOF_UNIT == 4
 #endif // MCL_BINT_ASM == 1
 	// CYBOZU_ASSUME(false);
   return 0;
 }''')
-    return
-
-  print(f'''inline {ret} {name}N({args}, size_t n)
-{{
-	return get_{name}(n)({params});
-}}''')
 
 def gen_inst(name, ret, args, N, N64):
   for i in range(1, N):

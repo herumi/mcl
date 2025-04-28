@@ -678,42 +678,18 @@ template<> inline void sqrT<17>(Unit *y, const Unit *x) { mclb_sqr17(y, x); }
 #endif // #if MCL_SIZEOF_UNIT == 4
 #endif // #if MCL_BINT_ASM == 1
 u_ppp get_add(size_t n);
-inline Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n)
-{
-	return get_add(n)(z, x, y);
-}
+inline Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_add(n)(z, x, y); }
 u_ppp get_sub(size_t n);
-inline Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n)
-{
-	return get_sub(n)(z, x, y);
-}
+inline Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_sub(n)(z, x, y); }
 void_ppp get_addNF(size_t n);
-inline void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
-{
-	return get_addNF(n)(z, x, y);
-}
+inline void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_addNF(n)(z, x, y); }
 u_ppp get_subNF(size_t n);
-inline Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n)
-{
-	return get_subNF(n)(z, x, y);
-}
+inline Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_subNF(n)(z, x, y); }
 u_ppu get_mulUnit(size_t n);
-inline Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n)
-{
-	return get_mulUnit(n)(z, x, y);
-}
+inline Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n) { return get_mulUnit(n)(z, x, y); }
 u_ppu get_mulUnitAdd(size_t n);
-inline Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n)
-{
-	return get_mulUnitAdd(n)(z, x, y);
-}
+inline Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n) { return get_mulUnitAdd(n)(z, x, y); }
 void_ppp get_mul(size_t n);
-inline void mulN(Unit *z, const Unit *x, const Unit *y, size_t n)
-{
-	return get_mul(n)(z, x, y);
-}
+inline void mulN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_mul(n)(z, x, y); }
 void_pp get_sqr(size_t n);
-inline void sqrN(Unit *y, const Unit *x, size_t n)
-{
-	return get_sqr(n)(y, x);
-}
+inline void sqrN(Unit *y, const Unit *x, size_t n) { return get_sqr(n)(y, x); }
