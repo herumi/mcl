@@ -6,8 +6,6 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
   if asPointer:
     print('#if MCL_BINT_ASM_X64 == 1')
     print(f'extern "C" MCL_DLL_API {protoType[(ret,args)]} {cname}{i};')
-    print(f'extern "C" {ret} {cname}_slow{i}({args});')
-    print(f'extern "C" {ret} {cname}_fast{i}({args});')
     print('#else')
     print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
     print('#endif')
@@ -71,6 +69,19 @@ def gen_disable(N):
   name1 = 'mulUnit'
   name2 = 'mulUnitAdd'
   print('#if MCL_BINT_ASM_X64 == 1')
+
+  print('extern "C" {')
+  for i in range(1, N+1):
+    for (ret, args, cname) in [
+      ('Unit', arg_p2u, 'mclb_mulUnit'),
+      ('Unit', arg_p2u, 'mclb_mulUnitAdd'),
+      ('Unit', arg_p2u, 'mclb_mulUnitAdd'),
+      ('void', arg_p3, 'mclb_mul'),
+      ('void', arg_p2, 'mclb_sqr')]:
+      print(f'{ret} {cname}_slow{i}({args});')
+      print(f'{ret} {cname}_fast{i}({args});')
+  print('}')
+
   for i in range(1, N+1):
     print(f'u_ppu mclb_{name1}{i} = mclb_{name1}_fast{i};')
     print(f'u_ppu mclb_{name2}{i} = mclb_{name2}_fast{i};')
