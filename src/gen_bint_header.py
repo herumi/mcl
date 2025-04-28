@@ -15,24 +15,30 @@ def gen_func(name, ret, args, cname, params, i, asPointer=False):
     print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
   print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
 
-def gen_switch(name, ret, args, params, N, N64, useFuncPtr=False):
-  print(f'''inline {protoType[(ret,args)]} get_{name}(size_t n)
+def gen_switch(out, name, ret, args, params, N, N64, useFuncPtr=False):
+  if out == 'proto':
+    print(f'{protoType[(ret,args)]} get_{name}(size_t n);')
+  else:
+    print(f'''{protoType[(ret,args)]} get_{name}(size_t n)
 {{
 #if MCL_BINT_ASM == 1''')
-  for i in range(1, N):
-    if i == N64 + 1:
-      print('#if MCL_SIZEOF_UNIT == 4')
-    print(f'\tif (n == {i}) return mclb_{name}{i};')
-  print('#endif // MCL_SIZEOF_UNIT == 4')
-  print('#else // MCL_FP_BITN_ASM == 1')
-  for i in range(1, N):
-    if i == N64 + 1:
-      print('#if MCL_SIZEOF_UNIT == 4')
-    print(f'\tif (n == {i}) return {name}T<{i}>;')
-  print('''#endif // MCL_SIZEOF_UNIT == 4
+    for i in range(1, N):
+      if i == N64 + 1:
+        print('#if MCL_SIZEOF_UNIT == 4')
+      print(f'\tif (n == {i}) return mclb_{name}{i};')
+    print('#endif // MCL_SIZEOF_UNIT == 4')
+    print('#else // MCL_FP_BITN_ASM == 1')
+    for i in range(1, N):
+      if i == N64 + 1:
+        print('#if MCL_SIZEOF_UNIT == 4')
+      print(f'\tif (n == {i}) return {name}T<{i}>;')
+    print('''#endif // MCL_SIZEOF_UNIT == 4
 #endif // MCL_BINT_ASM == 1
-	CYBOZU_ASSUME(false);
+	// CYBOZU_ASSUME(false);
+  return 0;
 }''')
+    return
+
   print(f'''inline {ret} {name}N({args}, size_t n)
 {{
 	return get_{name}(n)({params});
@@ -148,14 +154,6 @@ def main():
 	#define MCL_BINT_ADD_N {addN}
 	#define MCL_BINT_MUL_N {N}
 #endif''')
-    gen_switch('add', 'Unit', arg_p3, param_u3, addN, addN64)
-    gen_switch('sub', 'Unit', arg_p3, param_u3, addN, addN64)
-    gen_switch('addNF', 'void', arg_p3, param_u3, addN, addN64)
-    gen_switch('subNF', 'Unit', arg_p3, param_u3, addN, addN64)
-    gen_switch('mulUnit', 'Unit', arg_p2u, param_u3, N, N64, True)
-    gen_switch('mulUnitAdd', 'Unit', arg_p2u, param_u3, N, N64, True)
-    gen_switch('mul', 'void', arg_p3, param_u3, N, N64, True)
-    gen_switch('sqr', 'void', arg_p2, param_u2, N, N64, True)
   elif opt.out == 'switch':
     print('#if MCL_BINT_ASM != 1')
     gen_inst('addT', 'Unit', arg_p3, addN, addN64)
@@ -173,6 +171,16 @@ def main():
     gen_sqr_slow(N64)
   else:
     print('err : bad out', out)
+
+  # common
+  gen_switch(opt.out, 'add', 'Unit', arg_p3, param_u3, addN, addN64)
+  gen_switch(opt.out, 'sub', 'Unit', arg_p3, param_u3, addN, addN64)
+  gen_switch(opt.out, 'addNF', 'void', arg_p3, param_u3, addN, addN64)
+  gen_switch(opt.out, 'subNF', 'Unit', arg_p3, param_u3, addN, addN64)
+  gen_switch(opt.out, 'mulUnit', 'Unit', arg_p2u, param_u3, N, N64, True)
+  gen_switch(opt.out, 'mulUnitAdd', 'Unit', arg_p2u, param_u3, N, N64, True)
+  gen_switch(opt.out, 'mul', 'void', arg_p3, param_u3, N, N64, True)
+  gen_switch(opt.out, 'sqr', 'void', arg_p2, param_u2, N, N64, True)
 
 if __name__ == '__main__':
   main()
