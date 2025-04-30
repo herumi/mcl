@@ -278,8 +278,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	int pn_;
 	int FpByte_;
 	bool isFullBit_;
-	bool useMulx_;
-	bool useAdx_;
 #ifdef MCL_DUMP_JIT
 	DumpCode prof_;
 #else
@@ -321,17 +319,10 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		, FpByte_(0)
 	{
 	}
-	bool init(Op& op, const Xbyak::util::Cpu& cpu)
+	bool init(Op& op)
 	{
-#ifdef MCL_DUMP_JIT
-		useMulx_ = true;
-		useAdx_ = true;
-		(void)cpu;
-#else
-		if (!cpu.has(Xbyak::util::Cpu::tAVX)) return false;
-		useMulx_ = cpu.has(Xbyak::util::Cpu::tBMI2);
-		useAdx_ = cpu.has(Xbyak::util::Cpu::tADX);
-		if (!(useMulx_ && useAdx_)) return false;
+#ifndef MCL_DUMP_JIT
+		if ((mcl::bint::g_cpuType & mcl::bint::tAVX_BMI2_ADX) == 0) return false;
 #endif
 		reset(); // reset jit code for reuse
 #ifndef MCL_DUMP_JIT
@@ -597,9 +588,7 @@ private:
 		(rdx:pz[0..n-1]) = px[0..n-1] * y
 		use t, rax, rdx
 		if n > 2
-		use
-		wk[0] if useMulx_
-		wk[0..n-2] otherwise
+		use wk[0]
 	*/
 	void gen_raw_mulUnit(const RegExp& pz, const RegExp& px, const Reg64& y, const MixPack& wk, const Reg64& t, size_t n)
 	{
@@ -1832,17 +1821,6 @@ private:
 		const Reg64& t9 = t[9];
 
 		mulPack(pz, px, py, Pack(t2, t1, t0));
-#if 0 // a little slow
-		if (useAdx_) {
-			// [t2:t1:t0]
-			mulPackAdd(pz + 8 * 1, px + 8 * 1, py, t3, Pack(t2, t1, t0));
-			// [t3:t2:t1]
-			mulPackAdd(pz + 8 * 2, px + 8 * 2, py, t4, Pack(t3, t2, t1));
-			// [t4:t3:t2]
-			store_mr(pz + 8 * 3, Pack(t4, t3, t2));
-			return;
-		}
-#endif
 		// here [t2:t1:t0]
 
 		mov(t9, ptr [px + 8]);

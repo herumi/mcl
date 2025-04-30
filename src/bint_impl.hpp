@@ -11,10 +11,8 @@ uint32_t g_cpuType;
 
 uint32_t initBint()
 {
+#if MCL_BINT_ASM_X64 == 1
 	uint32_t type = 0;
-#if MCL_BINT_ASM_X64 != 1
-	return type;
-#endif
 
 	using namespace Xbyak::util;
 	Cpu cpu;
@@ -53,6 +51,9 @@ uint32_t initBint()
 #endif
 	}
 	return type;
+#else
+	return 0;
+#endif
 }
 
 namespace impl {

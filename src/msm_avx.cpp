@@ -1615,8 +1615,7 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 #else
 	if (cp != mcl::BLS12_381) return false;
 #endif
-	Xbyak::util::Cpu cpu;
-	if (!cpu.has(Xbyak::util::Cpu::tAVX512_IFMA)) return false;
+	if ((mcl::bint::g_cpuType & mcl::bint::tAVX512_IFMA) == 0) return false;
 	g_func = *func;
 	return true;
 }
