@@ -17,13 +17,6 @@
 	#ifndef NOMINMAX
 		#define NOMINMAX
 	#endif
-	#ifndef MCL_NO_AUTOLINK
-		#ifdef NDEBUG
-			#pragma comment(lib, "mcl.lib")
-		#else
-			#pragma comment(lib, "mcl.lib")
-		#endif
-	#endif
 #endif
 #include <cybozu/hash.hpp>
 #include <cybozu/stream.hpp>
