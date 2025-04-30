@@ -634,7 +634,10 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 static void MCL_ATTRIBUTE initMcl()
 {
 //	puts("initMcl");
-	mcl::bint::initBint();
+	mcl::bint::g_cpuType = mcl::bint::initBint();
+#ifndef NDEBUG
+	printf("g_cpuType=%d\n", mcl::bint::g_cpuType);
+#endif
 }
 
 #ifdef _MSC_VER
