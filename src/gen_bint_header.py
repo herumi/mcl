@@ -87,7 +87,7 @@ def gen_disable(N):
     print(f'u_ppu mclb_{name2}{i} = mclb_{name2}_fast{i};')
     print(f'void_ppp mclb_mul{i} = mclb_mul_fast{i};')
     print(f'void_pp mclb_sqr{i} = mclb_sqr_fast{i};')
-  print('extern "C" MCL_DLL_API void mclb_disable_fast() {')
+  print('extern "C" void mclb_disable_fast() {')
   for i in range(1, N+1):
     print(f'\tmclb_{name1}{i} = mclb_{name1}_slow{i};')
     print(f'\tmclb_{name2}{i} = mclb_{name2}_slow{i};')
