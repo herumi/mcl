@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 	CYBOZU_TEST_ASSERT(mcl::bint::get_mulUnit(1));
 	mcl::bn::Fr fr;
 	fr.setByCSPRNG();
+	printf("fr=%s\n", fr.getStr(16).c_str());
 	return cybozu::test::autoRun.run(argc, argv);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());
