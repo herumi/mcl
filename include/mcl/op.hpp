@@ -388,27 +388,9 @@ inline const char* getIoSeparator(int ioMode)
 	return (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr | IoEcAffineSerialize)) ? "" : " ";
 }
 
-inline void dump(const void *buf, size_t n)
-{
-#ifdef MCL_STANDALONE
-	(void)buf;
-	(void)n;
-#else
-	const uint8_t *s = (const uint8_t *)buf;
-	for (size_t i = 0; i < n; i++) {
-		printf("%02x ", s[i]);
-	}
-	printf("\n");
-#endif
-}
-
 #ifndef CYBOZU_DONT_USE_STRING
 int detectIoMode(int ioMode, const std::ios_base& ios);
 
-inline void dump(const std::string& s)
-{
-	dump(s.c_str(), s.size());
-}
 #endif
 
 } } // mcl::fp
