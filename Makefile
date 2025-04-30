@@ -538,7 +538,7 @@ android: $(BASE_LL)
 	done
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) lib/*.a src/static_code.asm src/dump_code lib/android
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) src/static_code.asm src/dump_code lib/android
 	$(RM) src/gen_bint.exe
 	$(MAKE) clean_standalone
 
