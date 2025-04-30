@@ -7,19 +7,52 @@
 
 namespace mcl { namespace bint {
 
-MCL_DLL_API void initBint()
+uint32_t g_cpuType;
+
+uint32_t initBint()
 {
-#if MCL_BINT_ASM_X64 == 1
-	static bool init = false;
-	if (init) return;
+	uint32_t type = 0;
+#if MCL_BINT_ASM_X64 != 1
+	return type;
+#endif
+
 	using namespace Xbyak::util;
 	Cpu cpu;
-	const char *env = getenv("MCL_CPU");
-	if ((env && strcmp(env, "snb") == 0) || !cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
+	if (cpu.has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX)) {
+		type |= tAVX_BMI2_ADX;
+	} else {
 		mclb_disable_fast();
 	}
-	init = true;
+	if (cpu.has(Cpu::tAVX512_IFMA)) {
+		type |= tAVX512_IFMA;
+	}
+	const char *env = 0;
+	const char *key = "MCL_CPU";
+#ifdef _WIN32
+	char envBuf[128];
+	size_t size;
+	if (getenv_s(&size, envBuf, key) == 0) {
+		if (size > 0) {
+			env = envBuf;
+		}
+	}
+#else
+	env = getenv(key);
 #endif
+	if (env) {
+		if (strcmp(env, "noadx") == 0) {
+			type = 0;
+		} else if (strcmp(env, "noifma") == 0) {
+			type &= tAVX512_IFMA;
+		}
+	}
+	if (type == 0) {
+		mclb_disable_fast();
+#ifndef NDEBUG
+		puts("mclb_disable_fast");
+#endif
+	}
+	return type;
 }
 
 namespace impl {
