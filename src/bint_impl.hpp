@@ -1,6 +1,6 @@
 #pragma once
 /*
-	This file is supposed to be only once included.
+	This file is intended to be included only once and exclusively from src/fp.cpp
 */
 
 #include <mcl/bint.hpp>
@@ -64,30 +64,6 @@ uint32_t initBint()
 }
 
 const uint32_t g_cpuType = initBint();
-
-namespace impl {
-
-template<size_t N, size_t I = 1>
-struct UnrollMulLowT {
-	static inline void call(Unit *pz, const Unit *px, const Unit *py) {
-		mulUnitAddT<N - I>(&pz[I], px, py[I]);
-		UnrollMulLowT<N, I - 1>::call(pz, px, py);
-	}
-};
-
-template<size_t N>
-struct UnrollMulLowT<N, 0> {
-	static inline void call(Unit *, const Unit *, const Unit *) {
-	}
-};
-
-template<>
-struct UnrollMulLowT<1, 1> {
-	static inline void call(Unit *, const Unit *, const Unit *) {
-	}
-};
-
-} // impl
 
 #if MCL_BINT_ASM != 1
 template<size_t N>
@@ -228,14 +204,6 @@ void sqrT(Unit *py, const Unit *px)
 	// QQQ : optimize this later
 	mulT<N>(py, px, px);
 }
-
-// z[N] = the bottom half of x[N] * y[N]
-//template<size_t N>
-//void mulLowT(Unit *pz, const Unit *px, const Unit *py)
-//{
-//	mulUnitT<N>(pz, px, py[0]);
-//	impl::UnrollMulLowT<N>::call(pz, px, py);
-//}
 
 #endif // MCL_BINT_ASM != 1
 
