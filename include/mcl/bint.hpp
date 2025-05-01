@@ -22,7 +22,7 @@
 	#define MCL_BINT_ASM 1
 #endif
 
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && !defined(MCL_BINT_ASM_X64)
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && (!defined(MCL_BINT_ASM_X64) || MCL_BINT_ASM_X64 == 1)
 	#define MCL_BINT_ASM_X64 1
 extern "C" void mclb_disable_fast(void);
 
@@ -50,7 +50,8 @@ enum CpuType {
 	tAVX_BMI2_ADX = 1<<0,
 	tAVX512_IFMA = 1<<1
 };
-extern uint32_t g_cpuType;
+extern const uint32_t g_cpuType;
+extern uint32_t initBint();
 
 // show integer as little endian
 template<class T>

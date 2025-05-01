@@ -2,26 +2,14 @@
 	#define MCL_BINT_ASM 0
 #endif
 #define MCL_DLL_EXPORT
+#include <mcl/bint.hpp>
+#include "bint_impl.hpp"
 #include <mcl/op.hpp>
-#include <mcl/util.hpp>
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
 #include "conversion_impl.hpp"
 #include <mcl/invmod.hpp>
-
-#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL)) || (MCL_BINT_ASM_X64 == 1)
-
-#ifdef MCL_USE_XBYAK
-	#define XBYAK_DISABLE_AVX512
-	#ifndef XBYAK_NO_EXCEPTION
-		#define XBYAK_NO_EXCEPTION
-	#endif
-#else
-	#define XBYAK_ONLY_CLASS_CPU
-#endif
-
-#include "xbyak/xbyak_util.h"
 
 #ifdef MCL_STATIC_CODE
 #include "fp_static_code.hpp"
@@ -30,9 +18,6 @@
 #include "fp_generator.hpp"
 #endif
 
-#endif // MCL_STATIC_CODE
-
-#include "bint_impl.hpp"
 #include "low_func.hpp"
 #include <cybozu/itoa.hpp>
 #include <mcl/randgen.hpp>
@@ -613,34 +598,6 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	*pb = false;
 	return 0;
 }
-
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
-
-#ifdef __GNUC__
-	#define MCL_ATTRIBUTE __attribute__((constructor))
-#else
-	#define MCL_ATTRIBUTE
-#endif
-
-static void MCL_ATTRIBUTE initMcl()
-{
-//	puts("initMcl");
-	mcl::bint::g_cpuType = mcl::bint::initBint();
-#ifndef NDEBUG
-	printf("g_cpuType=%d\n", mcl::bint::g_cpuType);
-#endif
-}
-
-#ifdef _MSC_VER
-#pragma warning(default:5247)
-#pragma warning(default:5248)
-// XCT is before XCU then, initMcl is called before C++ static/dynamic initializer.
-#pragma section(".CRT$XCT", read)
-__declspec(allocate(".CRT$XCT")) void(*ptr_initMcl)() = initMcl;
-#endif
-
 
 } } // mcl::fp
 
