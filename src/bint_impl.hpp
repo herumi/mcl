@@ -16,9 +16,11 @@
 
 #include "xbyak/xbyak_util.h"
 
+extern "C" void mclb_enable_fast();
 #endif
 
 namespace mcl { namespace bint {
+
 
 uint32_t initBint()
 {
@@ -55,8 +57,8 @@ uint32_t initBint()
 		}
 	}
 #if MCL_BINT_ASM_X64 == 1
-	if (type == 0) {
-		mclb_disable_fast();
+	if (type & tAVX_BMI2_ADX) {
+		mclb_enable_fast();
 	}
 #endif
 #endif
@@ -64,6 +66,8 @@ uint32_t initBint()
 }
 
 const uint32_t g_cpuType = initBint();
+
+#include "bint_switch.hpp"
 
 #if MCL_BINT_ASM != 1
 template<size_t N>
@@ -493,9 +497,8 @@ MCL_DLL_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, si
 	}
 }
 
-#include "bint_switch.hpp"
 
-MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
+void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	if (xn == 0 || yn == 0) return;
 	if (yn > xn) {
