@@ -5,21 +5,31 @@
 
 #include <mcl/bint.hpp>
 
-namespace mcl { namespace bint {
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
 
-uint32_t g_cpuType;
+#include <string.h>
+
+#define XBYAK_DISABLE_AVX512
+#ifndef XBYAK_NO_EXCEPTION
+	#define XBYAK_NO_EXCEPTION
+#endif
+
+#include "xbyak/xbyak_util.h"
+
+#endif
+
+namespace mcl { namespace bint {
 
 uint32_t initBint()
 {
-#if MCL_BINT_ASM_X64 == 1
 	uint32_t type = 0;
+
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
 
 	using namespace Xbyak::util;
 	Cpu cpu;
 	if (cpu.has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX)) {
 		type |= tAVX_BMI2_ADX;
-	} else {
-		mclb_disable_fast();
 	}
 	if (cpu.has(Cpu::tAVX512_IFMA)) {
 		type |= tAVX512_IFMA;
@@ -44,17 +54,16 @@ uint32_t initBint()
 			type &= tAVX512_IFMA;
 		}
 	}
+#if MCL_BINT_ASM_X64 == 1
 	if (type == 0) {
 		mclb_disable_fast();
-#ifndef NDEBUG
-		puts("mclb_disable_fast");
-#endif
 	}
-	return type;
-#else
-	return 0;
 #endif
+#endif
+	return type;
 }
+
+const uint32_t g_cpuType = initBint();
 
 namespace impl {
 
