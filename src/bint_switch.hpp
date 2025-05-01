@@ -211,16 +211,12 @@ Unit mclb_mulUnit_slow1(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast1(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow1(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast1(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow1(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast1(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow1(Unit *z, const Unit *x, const Unit *y);
 void mclb_mul_fast1(Unit *z, const Unit *x, const Unit *y);
 void mclb_sqr_slow1(Unit *y, const Unit *x);
 void mclb_sqr_fast1(Unit *y, const Unit *x);
 Unit mclb_mulUnit_slow2(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast2(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow2(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast2(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow2(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast2(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow2(Unit *z, const Unit *x, const Unit *y);
@@ -231,16 +227,12 @@ Unit mclb_mulUnit_slow3(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast3(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow3(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast3(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow3(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast3(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow3(Unit *z, const Unit *x, const Unit *y);
 void mclb_mul_fast3(Unit *z, const Unit *x, const Unit *y);
 void mclb_sqr_slow3(Unit *y, const Unit *x);
 void mclb_sqr_fast3(Unit *y, const Unit *x);
 Unit mclb_mulUnit_slow4(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast4(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow4(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast4(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow4(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast4(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow4(Unit *z, const Unit *x, const Unit *y);
@@ -251,16 +243,12 @@ Unit mclb_mulUnit_slow5(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast5(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow5(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast5(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow5(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast5(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow5(Unit *z, const Unit *x, const Unit *y);
 void mclb_mul_fast5(Unit *z, const Unit *x, const Unit *y);
 void mclb_sqr_slow5(Unit *y, const Unit *x);
 void mclb_sqr_fast5(Unit *y, const Unit *x);
 Unit mclb_mulUnit_slow6(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast6(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow6(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast6(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow6(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast6(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow6(Unit *z, const Unit *x, const Unit *y);
@@ -271,8 +259,6 @@ Unit mclb_mulUnit_slow7(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast7(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow7(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast7(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow7(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast7(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow7(Unit *z, const Unit *x, const Unit *y);
 void mclb_mul_fast7(Unit *z, const Unit *x, const Unit *y);
 void mclb_sqr_slow7(Unit *y, const Unit *x);
@@ -281,16 +267,12 @@ Unit mclb_mulUnit_slow8(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast8(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow8(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast8(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow8(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast8(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow8(Unit *z, const Unit *x, const Unit *y);
 void mclb_mul_fast8(Unit *z, const Unit *x, const Unit *y);
 void mclb_sqr_slow8(Unit *y, const Unit *x);
 void mclb_sqr_fast8(Unit *y, const Unit *x);
 Unit mclb_mulUnit_slow9(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnit_fast9(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_slow9(Unit *z, const Unit *x, Unit y);
-Unit mclb_mulUnitAdd_fast9(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_slow9(Unit *z, const Unit *x, Unit y);
 Unit mclb_mulUnitAdd_fast9(Unit *z, const Unit *x, Unit y);
 void mclb_mul_slow9(Unit *z, const Unit *x, const Unit *y);
@@ -419,64 +401,73 @@ extern "C" void mclb_enable_fast() {
 extern "C" void mclb_mul_slow1(Unit *z, const Unit *x, const Unit *y)
 {
 	z[1] = mulUnitT<1>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(1);
 	for (size_t i = 1; i < 1; i++) {
-		z[1 + i] = mulUnitAddT<1>(&z[i], x, y[i]);
+		z[1 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow2(Unit *z, const Unit *x, const Unit *y)
 {
 	z[2] = mulUnitT<2>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(2);
 	for (size_t i = 1; i < 2; i++) {
-		z[2 + i] = mulUnitAddT<2>(&z[i], x, y[i]);
+		z[2 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow3(Unit *z, const Unit *x, const Unit *y)
 {
 	z[3] = mulUnitT<3>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(3);
 	for (size_t i = 1; i < 3; i++) {
-		z[3 + i] = mulUnitAddT<3>(&z[i], x, y[i]);
+		z[3 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow4(Unit *z, const Unit *x, const Unit *y)
 {
 	z[4] = mulUnitT<4>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(4);
 	for (size_t i = 1; i < 4; i++) {
-		z[4 + i] = mulUnitAddT<4>(&z[i], x, y[i]);
+		z[4 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow5(Unit *z, const Unit *x, const Unit *y)
 {
 	z[5] = mulUnitT<5>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(5);
 	for (size_t i = 1; i < 5; i++) {
-		z[5 + i] = mulUnitAddT<5>(&z[i], x, y[i]);
+		z[5 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow6(Unit *z, const Unit *x, const Unit *y)
 {
 	z[6] = mulUnitT<6>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(6);
 	for (size_t i = 1; i < 6; i++) {
-		z[6 + i] = mulUnitAddT<6>(&z[i], x, y[i]);
+		z[6 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow7(Unit *z, const Unit *x, const Unit *y)
 {
 	z[7] = mulUnitT<7>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(7);
 	for (size_t i = 1; i < 7; i++) {
-		z[7 + i] = mulUnitAddT<7>(&z[i], x, y[i]);
+		z[7 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow8(Unit *z, const Unit *x, const Unit *y)
 {
 	z[8] = mulUnitT<8>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(8);
 	for (size_t i = 1; i < 8; i++) {
-		z[8 + i] = mulUnitAddT<8>(&z[i], x, y[i]);
+		z[8 + i] = f(&z[i], x, y[i]);
 	}
 }
 extern "C" void mclb_mul_slow9(Unit *z, const Unit *x, const Unit *y)
 {
 	z[9] = mulUnitT<9>(z, x, y[0]);
+	u_ppu f = get_mulUnitAdd(9);
 	for (size_t i = 1; i < 9; i++) {
-		z[9 + i] = mulUnitAddT<9>(&z[i], x, y[i]);
+		z[9 + i] = f(&z[i], x, y[i]);
 	}
 }
 #endif // MCL_BINT_ASM_X64 == 1
