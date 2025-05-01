@@ -13,6 +13,7 @@ static struct Init {
 	{
 		puts("init");
 		mcl::Unit x[2] = { 1, 2 }, z[4];
+		printf("ptr=%p\n", mcl::bint::get_mulUnit(2));
 		mcl::bint::mulT<2>(z, x, x);
 		// must be nonzero
 		CYBOZU_TEST_ASSERT(mcl::bint::get_mulUnit(1));

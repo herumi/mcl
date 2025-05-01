@@ -166,7 +166,6 @@ ifeq ($(OS),mingw64)
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
-src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS+=-DMCL_BINT_ASM=1
   BINT_LL=src/bint$(BIT).ll
   BINT_OBJ=$(OBJ_DIR)/bint$(BIT).o
@@ -227,8 +226,6 @@ src/$(MSM)_bls12_381.h: src/gen_msm_para.py
 else
   CFLAGS+=-DMCL_MSM=0
 endif
-include/mcl/bint_proto.hpp: src/gen_bint_header.py
-	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
@@ -249,7 +246,6 @@ $(BINT_SRC): src/bint$(BIT).ll
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
-	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
 	$(MAKE) src/llvm_proto.hpp
 
@@ -543,7 +539,7 @@ clean:
 	$(MAKE) clean_standalone
 
 clean_gen:
-	$(RM) include/mcl/bint_proto.hpp src/asm/bint* src/bint_switch.hpp
+	$(RM) src/asm/bint* src/bint_switch.hpp
 
 MCL_VER=$(shell awk '/static const int version/ { printf("%.2f\n", substr($$6,3,3)/100)}' include/mcl/op.hpp)
 CMakeLists.txt: include/mcl/op.hpp

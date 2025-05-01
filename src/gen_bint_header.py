@@ -20,14 +20,9 @@ FuncType = collections.namedtuple('FuncType', 'name, ret, args, cname, prams, N,
 def gen_func(name, ret, args, cname, params, i, asPointer=False):
   retstr = '' if ret == 'void' else ' return'
   if asPointer:
-    print('#if MCL_BINT_ASM_X64 == 1')
-    print(f'extern "C" MCL_DLL_API {protoType[(ret,args)]} {cname}{i};')
-    print('#else')
-    print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
-    print('#endif')
+    print(f'{ret} {cname}{i}({args});')
   else:
-    print(f'extern "C" MCL_DLL_API {ret} {cname}{i}({args});')
-  print(f'template<> inline {ret} {name}<{i}>({args}) {{{retstr} {cname}{i}({params}); }}')
+    print(f'{ret} {cname}{i}({args});')
 
 def gen_prototype(out, ft):
   (name, ret, args, _, params, N, N64, _) = ft
@@ -82,18 +77,30 @@ def gen_disable(N):
       print(f'{ret} {cname}_fast{i}({args});')
   print('}')
 
+  print('#ifdef _WIN32')
+  print('static const bool g_adx = g_cpuType & tAVX_BMI2_ADX;')
   for i in range(1, N+1):
-    print(f'u_ppu mclb_{name1}{i} = mclb_{name1}_fast{i};')
-    print(f'u_ppu mclb_{name2}{i} = mclb_{name2}_fast{i};')
-    print(f'void_ppp mclb_mul{i} = mclb_mul_fast{i};')
-    print(f'void_pp mclb_sqr{i} = mclb_sqr_fast{i};')
-  print('extern "C" void mclb_disable_fast() {')
-  for i in range(1, N+1):
-    print(f'\tmclb_{name1}{i} = mclb_{name1}_slow{i};')
-    print(f'\tmclb_{name2}{i} = mclb_{name2}_slow{i};')
-    print(f'\tmclb_mul{i} = mclb_mul_slow{i};')
-    print(f'\tmclb_sqr{i} = mclb_sqr_slow{i};')
+    print(f'const u_ppu mclb_{name1}{i} = g_adx ? mclb_{name1}_fast{i} : mclb_{name1}_slow{i};')
+    print(f'const u_ppu mclb_{name2}{i} = g_adx ? mclb_{name2}_fast{i} : mclb_{name2}_slow{i};')
+    print(f'const void_ppp mclb_mul{i} = g_adx ? mclb_mul_fast{i} : mclb_mul_slow{i};')
+    print(f'const void_pp mclb_sqr{i} = g_adx ? mclb_sqr_fast{i} : mclb_sqr_slow{i};')
+  print('extern "C" void mclb_enable_fast() {')
   print('}')
+  print('#else')
+  for i in range(1, N+1):
+    print(f'u_ppu mclb_{name1}{i} = mclb_{name1}_slow{i};')
+    print(f'u_ppu mclb_{name2}{i} = mclb_{name2}_slow{i};')
+    print(f'void_ppp mclb_mul{i} = mclb_mul_slow{i};')
+    print(f'void_pp mclb_sqr{i} = mclb_sqr_slow{i};')
+  print('extern "C" void mclb_enable_fast() {')
+  for i in range(1, N+1):
+    print(f'	mclb_{name1}{i} = mclb_{name1}_fast{i};')
+    print(f'	mclb_{name2}{i} = mclb_{name2}_fast{i};')
+    print(f'	mclb_mul{i} = mclb_mul_fast{i};')
+    print(f'	mclb_sqr{i} = mclb_sqr_fast{i};')
+  print('}')
+  print('#endif')
+
   print('#endif // MCL_BINT_ASM_X64 == 1')
 
 def gen_mul_slow(N):
@@ -161,6 +168,7 @@ def main():
       gen_func('addNFT', 'void', arg_p3, 'mclb_addNF', param_u3, i)
       gen_func('subNFT', 'Unit', arg_p3, 'mclb_subNF', param_u3, i)
     print('#endif // #if MCL_SIZEOF_UNIT == 4')
+    print('#if MCL_BINT_ASM_X64 != 1')
     for i in range(1, N+1):
       if i == N64 + 1:
         print('#if MCL_SIZEOF_UNIT == 4')
@@ -169,18 +177,34 @@ def main():
       gen_func('mulT', 'void', arg_p3, 'mclb_mul', param_u3, i, True)
       gen_func('sqrT', 'void', arg_p2, 'mclb_sqr', param_u2, i, True)
     print('#endif // #if MCL_SIZEOF_UNIT == 4')
+    print('#endif')
     print('#endif // #if MCL_BINT_ASM == 1')
   elif opt.out == 'switch':
-    print('#if MCL_BINT_ASM != 1')
-    gen_inst('addT', 'Unit', arg_p3, addN, addN64)
-    gen_inst('subT', 'Unit', arg_p3, addN, addN64)
-    gen_inst('addNFT', 'void', arg_p3, addN, addN64)
-    gen_inst('subNFT', 'Unit', arg_p3, addN, addN64)
-    gen_inst('mulUnitT', 'Unit', arg_p2u, N, N64)
-    gen_inst('mulUnitAddT', 'Unit', arg_p2u, N, N64)
-    gen_inst('mulT', 'void', arg_p3, N, N64)
-    gen_inst('sqrT', 'void', arg_p2, N, N64)
-    print('#endif // MCL_BINT_ASM != 1')
+
+    print('#if MCL_BINT_ASM == 1')
+    print('extern "C" {')
+    for i in range(1, addN+1):
+      if i == addN64 + 1:
+        print('#if MCL_SIZEOF_UNIT == 4')
+      gen_func('addT', 'Unit', arg_p3, 'mclb_add', param_u3, i)
+      gen_func('subT', 'Unit', arg_p3, 'mclb_sub', param_u3, i)
+      gen_func('addNFT', 'void', arg_p3, 'mclb_addNF', param_u3, i)
+      gen_func('subNFT', 'Unit', arg_p3, 'mclb_subNF', param_u3, i)
+    print('#endif // #if MCL_SIZEOF_UNIT == 4')
+    print('#if MCL_BINT_ASM_X64 != 1')
+    for i in range(1, N+1):
+      if i == N64 + 1:
+        print('#if MCL_SIZEOF_UNIT == 4')
+      gen_func('mulUnitT', 'Unit', arg_p2u, 'mclb_mulUnit', param_u3, i, True)
+      gen_func('mulUnitAddT', 'Unit', arg_p2u, 'mclb_mulUnitAdd', param_u3, i, True)
+      gen_func('mulT', 'void', arg_p3, 'mclb_mul', param_u3, i, True)
+      gen_func('sqrT', 'void', arg_p2, 'mclb_sqr', param_u2, i, True)
+    print('#endif // #if MCL_SIZEOF_UNIT == 4')
+    print('#endif')
+    print('}')
+    print('#endif // #if MCL_BINT_ASM == 1')
+
+
     gen_disable(N64)
     gen_mul_slow(N64)
     gen_sqr_slow(N64)
