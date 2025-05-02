@@ -117,8 +117,7 @@ public:
 	static inline fp::Op& getOpNonConst() { return op_; }
 	void dump() const
 	{
-		const size_t N = op_.N;
-		bint::dump(v_, N);
+		bint::dump(v_, op_.N);
 	}
 	/*
 		xi_a is used for Fp2::mul_xi(), where xi = xi_a + i and i^2 = -1

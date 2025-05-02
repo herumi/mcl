@@ -11,8 +11,6 @@
 
 namespace mcl {
 
-template<class Fp> class BNT;
-
 class FpDbl : public fp::Serializable<FpDbl> {
 	Unit v_[Fp::maxSize * 2];
 	friend struct Fp2Dbl;
@@ -1435,7 +1433,14 @@ private:
 	template<class _F>
 	static inline size_t powVecN(Fp12& z, const Fp12 *xVec, const _F *yVec, size_t n)
 	{
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable : 4459)
+#endif
 		const size_t N = mcl::fp::maxMulVecN;
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
 		if (n > N) n = N;
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
