@@ -600,8 +600,14 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	return 0;
 }
 
-} } // mcl::fp
-
 #ifdef _MSC_VER
 	#pragma warning(pop)
 #endif
+
+} } // mcl::fp
+
+namespace mcl {
+
+#include "map_impl.hpp"
+
+}
