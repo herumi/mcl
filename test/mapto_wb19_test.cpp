@@ -7,11 +7,12 @@
 #include <cybozu/atoi.hpp>
 #include <cybozu/file.hpp>
 #include <cybozu/benchmark.hpp>
+#include "../src/mapto_wb19.hpp"
 
 using namespace mcl;
 using namespace mcl::bn;
 
-typedef mcl::MapTo_WB19 MapTo;
+typedef mcl::bn::MapTo_WB19 MapTo;
 typedef MapTo::E2 E2;
 
 void dump(const void *msg, size_t msgSize)
@@ -240,7 +241,7 @@ void iso3Test(const T& mapto)
 	mapto.iso3(Q2, P);
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 	set(Q1, clearPs);
-	mcl::local::mulByCofactorBLS12fast(Q2, Q2);
+	mcl::bn::local::mulByCofactorBLS12fast(Q2, Q2);
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
@@ -854,21 +855,21 @@ void testSameUV(const T& mapto)
 }
 
 template<class T>
-void testSetDst(const T& mapto)
+void testSetDst(T& mapto)
 {
 	const char *dst = "abc";
 	bool ret;
-	ret = setDstG1(dst, strlen(dst));
+	ret = mapto.dstG1.set(dst, strlen(dst));
 	CYBOZU_TEST_ASSERT(ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG1.dst, dst);
-	ret = setDstG1("def", 1000);
+	ret = mapto.dstG1.set("def", 1000);
 	CYBOZU_TEST_ASSERT(!ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG1.dst, dst);
 
-	ret = setDstG2(dst, strlen(dst));
+	ret = mapto.dstG2.set(dst, strlen(dst));
 	CYBOZU_TEST_ASSERT(ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG2.dst, dst);
-	ret = setDstG2("def", 1000);
+	ret = mapto.dstG2.set("def", 1000);
 	CYBOZU_TEST_ASSERT(!ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG2.dst, dst);
 }
@@ -878,7 +879,8 @@ CYBOZU_TEST_AUTO(test)
 	initPairing(mcl::BLS12_381);
 	Fp::setETHserialization(true);
 	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
-	const MapTo& mapto = BN::param.mapTo.mapTo_WB19_;
+	MapTo mapto;
+	mapto.init();
 	addTest();
 	iso3Test(mapto);
 	testHMAC();
