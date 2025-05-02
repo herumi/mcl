@@ -7,7 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 	ref. https://eprint.iacr.org/2019/403 , https://github.com/algorand/bls_sigs_ref
 */
-namespace mcl {
+//namespace mcl {
 
 namespace local {
 
@@ -42,8 +42,8 @@ template<class F> int PointT<F>::specialA_ = ec::local::GenericA;
 } // mcl::local
 
 struct MapTo_WB19 {
-	typedef local::PointT<Fp> E1;
-	typedef local::PointT<Fp2> E2;
+	typedef local::PointT<mcl::Fp> E1;
+	typedef local::PointT<mcl::Fp2> E2;
 	struct Dst {
 		static const size_t maxDstLen = 64;
 		char dst[maxDstLen + 1];
@@ -575,5 +575,5 @@ struct MapTo_WB19 {
 	}
 };
 
-} // mcl
+//} // mcl
 

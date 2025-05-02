@@ -16,7 +16,6 @@ namespace mcl { namespace local {
 void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P);
 
 } } // mcl::local
-#include <mcl/mapto_wb19.hpp>
 #include <assert.h>
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #include <vector>
@@ -59,7 +58,7 @@ typedef void (*dblG1Func)(G1A& z, const G1A& x);
 typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
 typedef void (*clearG1Func)(G1A& z);
 
-// functions called in src/msm_avx.cpp
+unctions called in src/msm_avx.cpp
 struct Func {
 	const mcl::fp::Op *fp;
 	const mcl::fp::Op *fr;
@@ -109,6 +108,9 @@ inline void Frobenius(Fp12& y, const Fp12& x)
 void Frobenius(G2& D, const G2& S);
 void Frobenius2(G2& D, const G2& S);
 void Frobenius3(G2& D, const G2& S);
+
+// mapTo
+void mapToInit(const mpz_class& cofactor, const mpz_class &z, int curveType);
 
 namespace local {
 
@@ -325,6 +327,7 @@ public:
 	}
 };
 
+#if 0
 struct MapTo {
 	enum {
 		BNtype,
@@ -503,7 +506,8 @@ struct MapTo {
 			gmp::setStr(&b, cofactor_, cofactor, 16); assert(b); (void)b;
 			c1_.setStr(&b, c1, 16); assert(b); (void)b;
 			c2_.setStr(&b, c2, 16); assert(b); (void)b;
-			mapTo_WB19_.init();
+//			mapTo_WB19_.init();
+			mapTo_WB19_init();
 			return;
 		}
 		z2_ = (z_ * z_ - 1) / 3;
@@ -594,7 +598,8 @@ struct MapTo {
 	bool calc(G1& P, const Fp& t) const
 	{
 		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
-			mapTo_WB19_.FpToG1(P, t);
+//			mapTo_WB19_.FpToG1(P, t);
+			mapTo_WB19_FpToG1(P, t);
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
@@ -604,7 +609,8 @@ struct MapTo {
 	bool calc(G2& P, const Fp2& t) const
 	{
 		if (mapToMode_ == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
-			mapTo_WB19_.Fp2ToG2(P, t);
+//			mapTo_WB19_.Fp2ToG2(P, t);
+			mapTo_WB19_Fp2ToG2(P, t);
 			return true;
 		}
 		if (!mapToEc(P, t)) return false;
@@ -612,7 +618,7 @@ struct MapTo {
 		return true;
 	}
 };
-
+#endif
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
@@ -875,7 +881,7 @@ struct Param {
 	bool isBLS12;
 	mpz_class p;
 	mpz_class r;
-	local::MapTo mapTo;
+//	local::MapTo mapTo;
 	// for G2 Frobenius
 	Fp2 g2;
 	Fp2 g3;
@@ -971,9 +977,11 @@ struct Param {
 		precomputedQcoeffSize = local::getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
 		if (isBLS12) {
-			mapTo.init(0, z, cp.curveType);
+//			mapTo.init(0, z, cp.curveType);
+			mapToInit(0, z, cp.curveType);
 		} else {
-			mapTo.init(2 * p - r, z, cp.curveType);
+//			mapTo.init(2 * p - r, z, cp.curveType);
+			mapToInit(2 * p - r, z, cp.curveType);
 		}
 		GLV1::init(z, isBLS12, cp.curveType);
 		GLV2T<Fr>::init(z, isBLS12);
@@ -985,7 +993,8 @@ struct Param {
 	void initG1only(bool *pb, const mcl::EcParam& para)
 	{
 		mcl::initCurve<G1>(pb, para.curveType, &basePoint);
-		mapTo.init(0, 0, para.curveType);
+		mapToInit(0, 0, para.curveType);
+//		mapTo.init(0, 0, para.curveType);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	void init(const mcl::CurveParam& cp, fp::Mode mode)
@@ -2022,6 +2031,34 @@ inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, s
 #endif
 }
 
+#if 1
+bool setMapToMode(int mode);
+int getMapToMode();
+void mapToG1(bool *pb, G1& P, const Fp& x);
+void mapToG2(bool *pb, G2& P, const Fp2& x);
+
+#ifndef CYBOZU_DONT_USE_EXCEPTION
+void mapToG1(G1& P, const Fp& x);
+void mapToG2(G2& P, const Fp2& x);
+#endif
+
+void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
+void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
+void hashAndMapToG1(G1& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize);
+void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize);
+// set the default dst for G1
+// return 0 if success else -1
+bool setDstG1(const char *dst, size_t dstSize);
+// set the default dst for G2
+// return 0 if success else -1
+bool setDstG2(const char *dst, size_t dstSize);
+
+#ifndef CYBOZU_DONT_USE_STRING
+void hashAndMapToG1(G1& P, const std::string& str);
+void hashAndMapToG2(G2& P, const std::string& str);
+#endif
+
+#else
 inline bool setMapToMode(int mode)
 {
 	return BN::nonConstParam.mapTo.setMapToMode(mode);
@@ -2106,6 +2143,8 @@ inline void hashAndMapToG2(G2& P, const std::string& str)
 {
 	hashAndMapToG2(P, str.c_str(), str.size());
 }
+#endif
+
 #endif
 inline void verifyOrderG1(bool doVerify)
 {
