@@ -889,22 +889,16 @@ private:
 	}
 };
 
-template<class Fp>
-struct Fp6DblT;
 /*
-	Fp6T = Fp2[v] / (v^3 - xi)
+	Fp6 = Fp2[v] / (v^3 - xi)
 	x = a + b v + c v^2
 */
-template<class _Fp>
-struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
-	fp::Operator<Fp6T<_Fp> > > {
-	typedef _Fp Fp;
-	typedef Fp6DblT<Fp> Fp6Dbl;
+struct Fp6 : public fp::Serializable<Fp6, fp::Operator<Fp6> > {
 	typedef Fp BaseFp;
 	Fp2 a, b, c;
-	Fp6T() { }
-	Fp6T(int64_t a) : a(a) , b(0) , c(0) { }
-	Fp6T(const Fp2& a, const Fp2& b, const Fp2& c) : a(a) , b(b) , c(c) { }
+	Fp6() { }
+	Fp6(int64_t a) : a(a) , b(0) , c(0) { }
+	Fp6(const Fp2& a, const Fp2& b, const Fp2& c) : a(a) , b(b) , c(c) { }
 	void clear()
 	{
 		a.clear();
@@ -929,11 +923,11 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	{
 		return a.isOne() && b.isZero() && c.isZero();
 	}
-	bool operator==(const Fp6T& rhs) const
+	bool operator==(const Fp6& rhs) const
 	{
 		return a == rhs.a && b == rhs.b && c == rhs.c;
 	}
-	bool operator!=(const Fp6T& rhs) const { return !operator==(rhs); }
+	bool operator!=(const Fp6& rhs) const { return !operator==(rhs); }
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode)
 	{
@@ -963,116 +957,58 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	{
 		bool b;
 		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("Fp6T:load");
+		if (!b) throw cybozu::Exception("Fp6:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
 		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("Fp6T:save");
+		if (!b) throw cybozu::Exception("Fp6:save");
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_STRING
-	friend std::istream& operator>>(std::istream& is, Fp6T& self)
+	friend std::istream& operator>>(std::istream& is, Fp6& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
 		return is;
 	}
-	friend std::ostream& operator<<(std::ostream& os, const Fp6T& self)
+	friend std::ostream& operator<<(std::ostream& os, const Fp6& self)
 	{
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
 	}
 #endif
-	static void add(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	static void add(Fp6& z, const Fp6& x, const Fp6& y)
 	{
 		Fp2::add(z.a, x.a, y.a);
 		Fp2::add(z.b, x.b, y.b);
 		Fp2::add(z.c, x.c, y.c);
 	}
-	static void sub(Fp6T& z, const Fp6T& x, const Fp6T& y)
+	static void sub(Fp6& z, const Fp6& x, const Fp6& y)
 	{
 		Fp2::sub(z.a, x.a, y.a);
 		Fp2::sub(z.b, x.b, y.b);
 		Fp2::sub(z.c, x.c, y.c);
 	}
-	static void neg(Fp6T& y, const Fp6T& x)
+	static void neg(Fp6& y, const Fp6& x)
 	{
 		Fp2::neg(y.a, x.a);
 		Fp2::neg(y.b, x.b);
 		Fp2::neg(y.c, x.c);
 	}
-	static void mul2(Fp6T& y, const Fp6T& x)
+	static void mul2(Fp6& y, const Fp6& x)
 	{
 		Fp2::mul2(y.a, x.a);
 		Fp2::mul2(y.b, x.b);
 		Fp2::mul2(y.c, x.c);
 	}
-	static void sqr(Fp6T& y, const Fp6T& x)
-	{
-		Fp6Dbl XX;
-		Fp6Dbl::sqrPre(XX, x);
-		Fp6Dbl::mod(y, XX);
-	}
-	static inline void mul(Fp6T& z, const Fp6T& x, const Fp6T& y)
-	{
-		Fp6Dbl XY;
-		Fp6Dbl::mulPre(XY, x, y);
-		Fp6Dbl::mod(z, XY);
-	}
-	/*
-		x = a + bv + cv^2, v^3 = xi
-		y = 1/x = p/q where
-		p = (a^2 - bc xi) + (c^2 xi - ab)v + (b^2 - ac)v^2
-		q = c^3 xi^2 + b(b^2 - 3ac)xi + a^3
-		  = (a^2 - bc xi)a + ((c^2 xi - ab)c + (b^2 - ac)b) xi
-	*/
-	static void inv(Fp6T& y, const Fp6T& x)
-	{
-		const Fp2& a = x.a;
-		const Fp2& b = x.b;
-		const Fp2& c = x.c;
-		Fp2Dbl aa, bb, cc, ab, bc, ac;
-		Fp2Dbl::sqrPre(aa, a);
-		Fp2Dbl::sqrPre(bb, b);
-		Fp2Dbl::sqrPre(cc, c);
-		Fp2Dbl::mulPre(ab, a, b);
-		Fp2Dbl::mulPre(bc, b, c);
-		Fp2Dbl::mulPre(ac, c, a);
-
-		Fp6T p;
-		Fp2Dbl T;
-		Fp2Dbl::mul_xi(T, bc);
-		Fp2Dbl::sub(T, aa, T); // a^2 - bc xi
-		Fp2Dbl::mod(p.a, T);
-		Fp2Dbl::mul_xi(T, cc);
-		Fp2Dbl::sub(T, T, ab); // c^2 xi - ab
-		Fp2Dbl::mod(p.b, T);
-		Fp2Dbl::sub(T, bb, ac); // b^2 - ac
-		Fp2Dbl::mod(p.c, T);
-
-		Fp2Dbl T2;
-		Fp2Dbl::mulPre(T, p.b, c);
-		Fp2Dbl::mulPre(T2, p.c, b);
-		Fp2Dbl::add(T, T, T2);
-		Fp2Dbl::mul_xi(T, T);
-		Fp2Dbl::mulPre(T2, p.a, a);
-		Fp2Dbl::add(T, T, T2);
-		Fp2 q;
-		Fp2Dbl::mod(q, T);
-		Fp2::inv(q, q);
-
-		Fp2::mul(y.a, p.a, q);
-		Fp2::mul(y.b, p.b, q);
-		Fp2::mul(y.c, p.c, q);
-	}
+	static void sqr(Fp6& y, const Fp6& x);
+	static void mul(Fp6& z, const Fp6& x, const Fp6& y);
+	static void inv(Fp6& y, const Fp6& x);
 };
 
-template<class Fp>
-struct Fp6DblT {
-	typedef Fp6T<Fp> Fp6;
-	typedef Fp6DblT<Fp> Fp6Dbl;
+struct Fp6Dbl {
 	Fp2Dbl a, b, c;
 	static void add(Fp6Dbl& z, const Fp6Dbl& x, const Fp6Dbl& y)
 	{
@@ -1086,7 +1022,7 @@ struct Fp6DblT {
 		Fp2Dbl::sub(z.b, x.b, y.b);
 		Fp2Dbl::sub(z.c, x.c, y.c);
 	}
-	static void (*mulPre)(Fp6DblT& z, const Fp6& x, const Fp6& y);
+	static void (*mulPre)(Fp6Dbl& z, const Fp6& x, const Fp6& y);
 	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
 		xy = (ad + (bf + ce)xi) + ((ae + bd) + cf xi)v + ((af + cd) + be)v^2
@@ -1097,7 +1033,7 @@ struct Fp6DblT {
 		then (b + c)(e + f) < 4p^2 < pW
 	*/
 	template<bool isLtQuad>
-	static void mulPreT(Fp6DblT& z, const Fp6& x, const Fp6& y)
+	static void mulPreT(Fp6Dbl& z, const Fp6& x, const Fp6& y)
 	{
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
@@ -1155,7 +1091,7 @@ struct Fp6DblT {
 
 		b^2 + 2ac = (a + b + c)^2 - a^2 - 2bc - c^2 - 2ab
 	*/
-	static void sqrPre(Fp6DblT& y, const Fp6& x)
+	static void sqrPre(Fp6Dbl& y, const Fp6& x)
 	{
 		const Fp2& a = x.a;
 		const Fp2& b = x.b;
@@ -1196,8 +1132,6 @@ struct Fp6DblT {
 	}
 };
 
-template<class Fp> void (*Fp6DblT<Fp>::mulPre)(Fp6DblT<Fp>&, const Fp6T<Fp>&, const Fp6T<Fp>&) = 0;//mulPreT<false>;
-
 /*
 	Fp12T = Fp6[w] / (w^2 - v)
 	x = a + b w
@@ -1207,8 +1141,6 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	fp::Operator<Fp12T<Fp, _Fr> > > {
 	typedef fp::Serializable<Fp12T<Fp, _Fr>, fp::Operator<Fp12T<Fp, _Fr> > > BaseClass;
 
-	typedef Fp6T<Fp> Fp6;
-	typedef Fp6DblT<Fp> Fp6Dbl;
 	typedef Fp BaseFp;
 	typedef _Fr Fr; // group order
 	Fp6 a, b;
