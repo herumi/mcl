@@ -7,10 +7,10 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/fp_def.hpp>
+#include <mcl/fr_def.hpp>
 
 namespace mcl {
 
-template<class Fp, class _Fr> struct Fp12T;
 template<class Fp> class BNT;
 
 class FpDbl : public fp::Serializable<FpDbl> {
@@ -1133,20 +1133,17 @@ struct Fp6Dbl {
 };
 
 /*
-	Fp12T = Fp6[w] / (w^2 - v)
+	Fp12 = Fp6[w] / (w^2 - v)
 	x = a + b w
 */
-template<class Fp, class _Fr>
-struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
-	fp::Operator<Fp12T<Fp, _Fr> > > {
-	typedef fp::Serializable<Fp12T<Fp, _Fr>, fp::Operator<Fp12T<Fp, _Fr> > > BaseClass;
+struct Fp12 : public fp::Serializable<Fp12, fp::Operator<Fp12> > {
+	typedef fp::Serializable<Fp12, fp::Operator<Fp12> > BaseClass;
 
 	typedef Fp BaseFp;
-	typedef _Fr Fr; // group order
 	Fp6 a, b;
-	Fp12T() {}
-	Fp12T(int64_t a) : a(a), b(0) {}
-	Fp12T(const Fp6& a, const Fp6& b) : a(a), b(b) {}
+	Fp12() {}
+	Fp12(int64_t a) : a(a), b(0) {}
+	Fp12(const Fp6& a, const Fp6& b) : a(a), b(b) {}
 	void clear()
 	{
 		a.clear();
@@ -1176,22 +1173,22 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	{
 		return a.isOne() && b.isZero();
 	}
-	bool operator==(const Fp12T& rhs) const
+	bool operator==(const Fp12& rhs) const
 	{
 		return a == rhs.a && b == rhs.b;
 	}
-	bool operator!=(const Fp12T& rhs) const { return !operator==(rhs); }
-	static void add(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	bool operator!=(const Fp12& rhs) const { return !operator==(rhs); }
+	static void add(Fp12& z, const Fp12& x, const Fp12& y)
 	{
 		Fp6::add(z.a, x.a, y.a);
 		Fp6::add(z.b, x.b, y.b);
 	}
-	static void sub(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	static void sub(Fp12& z, const Fp12& x, const Fp12& y)
 	{
 		Fp6::sub(z.a, x.a, y.a);
 		Fp6::sub(z.b, x.b, y.b);
 	}
-	static void neg(Fp12T& z, const Fp12T& x)
+	static void neg(Fp12& z, const Fp12& x)
 	{
 		Fp6::neg(z.a, x.a);
 		Fp6::neg(z.b, x.b);
@@ -1223,7 +1220,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 
 		in Fp6 : (a + bv + cv^2)v = cv^3 + av + bv^2 = cxi + av + bv^2
 	*/
-	static void mul(Fp12T& z, const Fp12T& x, const Fp12T& y)
+	static void mul(Fp12& z, const Fp12& x, const Fp12& y)
 	{
 		// 4.7Kclk -> 4.55Kclk
 		const Fp6& a = x.a;
@@ -1248,7 +1245,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 		y = x^2 = (a + bw)^2 = (a^2 + b^2v) + 2abw
 		a^2 + b^2v = (a + b)(bv + a) - (abv + ab)
 	*/
-	static void sqr(Fp12T& y, const Fp12T& x)
+	static void sqr(Fp12& y, const Fp12& x)
 	{
 		const Fp6& a = x.a;
 		const Fp6& b = x.b;
@@ -1265,7 +1262,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 		x = a + bw, w^2 = v
 		y = 1/x = (a - bw) / (a^2 - b^2v)
 	*/
-	static void inv(Fp12T& y, const Fp12T& x)
+	static void inv(Fp12& y, const Fp12& x)
 	{
 		const Fp6& a = x.a;
 		const Fp6& b = x.b;
@@ -1286,7 +1283,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	/*
 		y = 1 / x = conjugate of x if |x| = 1
 	*/
-	static void unitaryInv(Fp12T& y, const Fp12T& x)
+	static void unitaryInv(Fp12& y, const Fp12& x)
 	{
 		if (&y != &x) y.a = x.a;
 		Fp6::neg(y.b, x.b);
@@ -1306,10 +1303,10 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 		= F(a) + F(b)g^2 v + F(c) g^4 v^2
 
 		w^p = ((w^6) ^ (p-1)/6) w = g w
-		((a + bv + cv^2)w)^p in Fp12T
+		((a + bv + cv^2)w)^p in Fp12
 		= (F(a) g + F(b) g^3 v + F(c) g^5 v^2)w
 	*/
-	static void Frobenius(Fp12T& y, const Fp12T& x)
+	static void Frobenius(Fp12& y, const Fp12& x)
 	{
 		for (int i = 0; i < 6; i++) {
 			Fp2::Frobenius(y.getFp2()[i], x.getFp2()[i]);
@@ -1318,7 +1315,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 			y.getFp2()[i] *= Fp2::get_gTbl()[i - 1];
 		}
 	}
-	static void Frobenius2(Fp12T& y, const Fp12T& x)
+	static void Frobenius2(Fp12& y, const Fp12& x)
 	{
 #if 0
 		Frobenius(y, x);
@@ -1336,7 +1333,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 		}
 #endif
 	}
-	static void Frobenius3(Fp12T& y, const Fp12T& x)
+	static void Frobenius3(Fp12& y, const Fp12& x)
 	{
 #if 0
 		Frobenius(y, x);
@@ -1373,33 +1370,33 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	{
 		bool b;
 		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("Fp12T:load");
+		if (!b) throw cybozu::Exception("Fp12:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
 		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("Fp12T:save");
+		if (!b) throw cybozu::Exception("Fp12:save");
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_STRING
-	friend std::istream& operator>>(std::istream& is, Fp12T& self)
+	friend std::istream& operator>>(std::istream& is, Fp12& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
 		return is;
 	}
-	friend std::ostream& operator<<(std::ostream& os, const Fp12T& self)
+	friend std::ostream& operator<<(std::ostream& os, const Fp12& self)
 	{
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
 	}
 #endif
-	static void setPowVecGLV(bool f(Fp12T& z, const Fp12T *xVec, const void *yVec, size_t yn) = 0)
+	static void setPowVecGLV(bool f(Fp12& z, const Fp12 *xVec, const void *yVec, size_t yn) = 0)
 	{
 		BaseClass::powVecGLV = f;
 	}
-	static inline void powVec(Fp12T& z, const Fp12T *xVec, const Fp12T::Fr *yVec, size_t n)
+	static inline void powVec(Fp12& z, const Fp12 *xVec, const Fr *yVec, size_t n)
 	{
 		if (n == 0) {
 			z.clear();
@@ -1414,7 +1411,7 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 			yVec += done;
 			n -= done;
 			if (n == 0) break;
-			Fp12T t;
+			Fp12 t;
 			done = powVecN(t, xVec, yVec, n);
 			z *= t;
 		}
@@ -1435,16 +1432,16 @@ private:
 		}
 	}
 
-	template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
-	static inline size_t powVecN(Fp12T& z, const Fp12T *xVec, const FpT<tag, maxBitSize> *yVec, size_t n)
+	template<class _F>
+	static inline size_t powVecN(Fp12& z, const Fp12 *xVec, const _F *yVec, size_t n)
 	{
 		const size_t N = mcl::fp::maxMulVecN;
 		if (n > N) n = N;
 		const int w = 5;
 		const size_t tblSize = 1 << (w - 2);
-		typedef mcl::FixedArray<int8_t, sizeof(Fp12T::BaseFp) * 8 + 1> NafArray;
+		typedef mcl::FixedArray<int8_t, sizeof(Fp12::BaseFp) * 8 + 1> NafArray;
 		NafArray naf[N];
-		Fp12T tbl[N][tblSize];
+		Fp12 tbl[N][tblSize];
 		size_t maxBit = 0;
 		mpz_class y;
 		for (size_t i = 0; i < n; i++) {
@@ -1454,16 +1451,16 @@ private:
 			gmp::getNAFwidth(&b, naf[i], y, w);
 			assert(b); (void)b;
 			if (naf[i].size() > maxBit) maxBit = naf[i].size();
-			Fp12T P2;
-			Fp12T::sqr(P2, xVec[i]);
+			Fp12 P2;
+			Fp12::sqr(P2, xVec[i]);
 			tbl[i][0] = xVec[i];
 			for (size_t j = 1; j < tblSize; j++) {
-				Fp12T::mul(tbl[i][j], tbl[i][j - 1], P2);
+				Fp12::mul(tbl[i][j], tbl[i][j - 1], P2);
 			}
 		}
 		z = 1;
 		for (size_t i = 0; i < maxBit; i++) {
-			Fp12T::sqr(z, z);
+			Fp12::sqr(z, z);
 			for (size_t j = 0; j < n; j++) {
 				mulTbl(z, tbl[j], naf[j], maxBit - 1 - i);
 			}

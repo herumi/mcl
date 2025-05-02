@@ -13,8 +13,6 @@
 
 using namespace mcl;
 
-typedef mcl::Fp12T<Fp, Fp/*dummy*/> Fp12;
-
 bool g_benchOnly = false;
 
 void testFp2()
