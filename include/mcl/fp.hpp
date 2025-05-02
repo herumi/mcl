@@ -75,7 +75,7 @@ private:
 	Unit v_[maxSize];
 	static fp::Op op_;
 	friend class FpDbl;
-	template<class Fp> friend class Fp2T;
+	friend class Fp2;
 	template<class Fp> friend struct Fp6T;
 #ifdef MCL_XBYAK_DIRECT_CALL
 	static inline void addA(Unit *z, const Unit *x, const Unit *y)

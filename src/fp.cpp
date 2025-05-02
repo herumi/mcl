@@ -30,6 +30,7 @@
 
 // define Fp, Fr, G1
 #include <mcl/g1_def.hpp>
+#include "fp_tower_impl.hpp"
 
 namespace mcl {
 
