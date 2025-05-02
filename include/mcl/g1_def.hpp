@@ -8,12 +8,10 @@
 */
 
 #include <mcl/fp_def.hpp>
+#include <mcl/fr_def.hpp>
 #include <mcl/ec.hpp>
 
 namespace mcl {
-
-struct FrTag;
-typedef FpT<FrTag, MCL_FR_BIT> Fr;
 
 typedef EcT<Fp, Fr> G1;
 

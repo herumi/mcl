@@ -1,18 +1,17 @@
 #pragma once
 /**
 	@file
-	@brief Define class extension of G2, GT, extension of Fp
+	@brief Define class Fr
 	@author MITSUNARI Shigeo(@herumi)
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
 
-#include <mcl/g1_def.hpp>
-#include <mcl/fp_tower.hpp>
+#include <mcl/fp.hpp>
 
 namespace mcl {
 
-typedef Fp12 GT;
-typedef EcT<Fp2, Fr> G2;
+struct FrTag;
+typedef FpT<FrTag, MCL_FR_BIT> Fr;
 
 } // mcl
