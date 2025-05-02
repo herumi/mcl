@@ -7,8 +7,6 @@
 
 using namespace mcl;
 
-typedef mcl::Fp6T<Fp> Fp6;
-
 void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)
 {
 	const size_t maxN = sizeof(Fp) / sizeof(Unit);

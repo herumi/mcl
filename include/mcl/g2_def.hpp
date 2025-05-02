@@ -12,10 +12,8 @@
 
 namespace mcl {
 
-typedef Fp6T<Fp> Fp6;
 typedef Fp12T<Fp, Fr> Fp12;
 typedef Fp12 GT;
 typedef EcT<Fp2, Fr> G2;
-typedef Fp6DblT<Fp> Fp6Dbl;
 
 } // mcl
