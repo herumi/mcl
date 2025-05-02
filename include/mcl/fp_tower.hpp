@@ -12,11 +12,10 @@ namespace mcl {
 
 template<class Fp, class _Fr> struct Fp12T;
 template<class Fp> class BNT;
-template<class Fp> struct Fp2DblT;
 
 class FpDbl : public fp::Serializable<FpDbl> {
 	Unit v_[Fp::maxSize * 2];
-	friend struct Fp2DblT<Fp>;
+	friend struct Fp2Dbl;
 public:
 	static size_t getUnitSize() { return Fp::op_.N * 2; }
 	const Unit *getUnit() const { return v_; }
@@ -178,7 +177,6 @@ public:
 	x = a + b i
 */
 class Fp2 : public fp::Serializable<Fp2, fp::Operator<Fp2> > {
-	typedef Fp2DblT<Fp> Fp2Dbl;
 	static const size_t gN = 5;
 	static Fp u_pm1o2; // u^((p-1)/2)
 	/*
@@ -642,26 +640,24 @@ private:
 	}
 };
 
-template<class Fp>
-struct Fp2DblT {
-	typedef Fp2DblT<Fp> Fp2Dbl;
+struct Fp2Dbl {
 	FpDbl a, b;
-	static void add(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
+	static void add(Fp2Dbl& z, const Fp2Dbl& x, const Fp2Dbl& y)
 	{
 		FpDbl::add(z.a, x.a, y.a);
 		FpDbl::add(z.b, x.b, y.b);
 	}
-	static void addPre(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
+	static void addPre(Fp2Dbl& z, const Fp2Dbl& x, const Fp2Dbl& y)
 	{
 		FpDbl::addPre(z.a, x.a, y.a);
 		FpDbl::addPre(z.b, x.b, y.b);
 	}
-	static void sub(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
+	static void sub(Fp2Dbl& z, const Fp2Dbl& x, const Fp2Dbl& y)
 	{
 		FpDbl::sub(z.a, x.a, y.a);
 		FpDbl::sub(z.b, x.b, y.b);
 	}
-	static void subPre(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
+	static void subPre(Fp2Dbl& z, const Fp2Dbl& x, const Fp2Dbl& y)
 	{
 		FpDbl::subPre(z.a, x.a, y.a);
 		FpDbl::subPre(z.b, x.b, y.b);
@@ -671,7 +667,7 @@ struct Fp2DblT {
 		so it does not require mod.
 	*/
 	template<bool isLtQuad>
-	static void subSpecial(Fp2DblT& y, const Fp2DblT& x)
+	static void subSpecial(Fp2Dbl& y, const Fp2Dbl& x)
 	{
 		FpDbl::sub(y.a, y.a, x.a);
 		if (isLtQuad) {
@@ -680,30 +676,30 @@ struct Fp2DblT {
 			FpDbl::sub(y.b, y.b, x.b);
 		}
 	}
-	static void neg(Fp2DblT& y, const Fp2DblT& x)
+	static void neg(Fp2Dbl& y, const Fp2Dbl& x)
 	{
 		FpDbl::neg(y.a, x.a);
 		FpDbl::neg(y.b, x.b);
 	}
-	static void mulPre(Fp2DblT& z, const Fp2& x, const Fp2& y)
+	static void mulPre(Fp2Dbl& z, const Fp2& x, const Fp2& y)
 	{
 		Fp::getOp().fp2Dbl_mulPreA_(z.a.v_, x.getUnit(), y.getUnit());
 	}
-	static void sqrPre(Fp2DblT& y, const Fp2& x)
+	static void sqrPre(Fp2Dbl& y, const Fp2& x)
 	{
 		Fp::getOp().fp2Dbl_sqrPreA_(y.a.v_, x.getUnit());
 	}
-	static void mul_xi(Fp2DblT& y, const Fp2DblT& x)
+	static void mul_xi(Fp2Dbl& y, const Fp2Dbl& x)
 	{
 		Fp::getOp().fp2Dbl_mul_xiA_(y.a.v_, x.a.getUnit());
 	}
-	static void mod(Fp2& y, const Fp2DblT& x)
+	static void mod(Fp2& y, const Fp2Dbl& x)
 	{
 		FpDbl::mod(y.a, x.a);
 		FpDbl::mod(y.b, x.b);
 	}
-	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
-	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
+	void operator+=(const Fp2Dbl& x) { add(*this, *this, x); }
+	void operator-=(const Fp2Dbl& x) { sub(*this, *this, x); }
 	static void init()
  	{
 		bool isFullBit = Fp::getOp().isFullBit;
@@ -903,7 +899,6 @@ template<class _Fp>
 struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	fp::Operator<Fp6T<_Fp> > > {
 	typedef _Fp Fp;
-	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	typedef Fp BaseFp;
 	Fp2 a, b, c;
@@ -1077,7 +1072,6 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 template<class Fp>
 struct Fp6DblT {
 	typedef Fp6T<Fp> Fp6;
-	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	Fp2Dbl a, b, c;
 	static void add(Fp6Dbl& z, const Fp6Dbl& x, const Fp6Dbl& y)
@@ -1214,7 +1208,6 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	typedef fp::Serializable<Fp12T<Fp, _Fr>, fp::Operator<Fp12T<Fp, _Fr> > > BaseClass;
 
 	typedef Fp6T<Fp> Fp6;
-	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	typedef Fp BaseFp;
 	typedef _Fr Fr; // group order

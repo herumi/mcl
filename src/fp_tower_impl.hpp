@@ -9,7 +9,6 @@ Fp2 Fp2::g3[Fp2::gN];
 
 void Fp2::mulA(Unit *pz, const Unit *px, const Unit *py)
 {
-	typedef Fp2DblT<Fp> Fp2Dbl;
 	Fp2& z = cast(pz);
 	const Fp2& x = cast(px);
 	const Fp2& y = cast(py);
@@ -68,7 +67,7 @@ void Fp2::init(bool *pb)
 		}
 	}
 	FpDbl::init();
-	Fp2DblT<Fp>::init();
+	Fp2Dbl::init();
 	// call init before Fp2::pow because FpDbl is used in Fp2
 	const Fp2 xi(op.xi_a, 1);
 	const mpz_class& p = Fp::getOp().mp;
