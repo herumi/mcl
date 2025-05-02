@@ -8,7 +8,6 @@
 using namespace mcl;
 
 typedef mcl::Fp2T<Fp> Fp2;
-typedef mcl::FpDblT<Fp> FpDbl;
 typedef mcl::Fp6T<Fp> Fp6;
 
 void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)

@@ -155,7 +155,7 @@ bool mulSmallUnit(T& z, const T& x, U y)
 	case 6: { T t; T::add(t, x, x); T::add(t, t, x); T::add(z, t, t); break; }
 	case 7: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::sub(z, t, x); break; }
 	case 8: T::add(z, x, x); T::add(z, z, z); T::add(z, z, z); break;
-	// require FpDblT::mulPre for xi.a = 9
+	// require FpDbl::mulPre for xi.a = 9
 	case 9: { T t; T::add(t, x, x); T::add(t, t, t); T::add(t, t, t); T::add(z, t, x); break; }
 	// slower than SmallModP
 #if 0
