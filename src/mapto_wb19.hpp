@@ -7,9 +7,11 @@
 	http://opensource.org/licenses/BSD-3-Clause
 	ref. https://eprint.iacr.org/2019/403 , https://github.com/algorand/bls_sigs_ref
 */
-//namespace mcl {
+namespace mcl { namespace bn {
 
 namespace local {
+
+void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P);
 
 // y^2 = x^3 + 4(1 + i)
 template<class F>
@@ -521,7 +523,7 @@ struct MapTo_WB19 {
 			ec::addJacobi(Pp, Pp, P2);
 		}
 		iso3(P, Pp);
-		mcl::local::mulByCofactorBLS12fast(P, P);
+		local::mulByCofactorBLS12fast(P, P);
 	}
 	void hashToFp2(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
@@ -575,5 +577,5 @@ struct MapTo_WB19 {
 	}
 };
 
-//} // mcl
+} } // mcl::bn
 
