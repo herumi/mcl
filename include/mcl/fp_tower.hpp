@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <mcl/fp.hpp>
+#include <mcl/fp_def.hpp>
 
 namespace mcl {
 
@@ -14,8 +14,7 @@ template<class Fp, class _Fr> struct Fp12T;
 template<class Fp> class BNT;
 template<class Fp> struct Fp2DblT;
 
-template<class Fp>
-class FpDblT : public fp::Serializable<FpDblT<Fp> > {
+class FpDbl : public fp::Serializable<FpDbl> {
 	Unit v_[Fp::maxSize * 2];
 	friend struct Fp2DblT<Fp>;
 public:
@@ -54,20 +53,20 @@ public:
 	{
 		bool b;
 		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("FpDblT:save") << ioMode;
+		if (!b) throw cybozu::Exception("FpDbl:save") << ioMode;
 	}
 	template<class InputStream>
 	void load(InputStream& is, int ioMode = IoSerialize)
 	{
 		bool b;
 		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("FpDblT:load") << ioMode;
+		if (!b) throw cybozu::Exception("FpDbl:load") << ioMode;
 	}
 	void getMpz(mpz_class& x) const
 	{
 		bool b;
 		getMpz(&b, x);
-		if (!b) throw cybozu::Exception("FpDblT:getMpz");
+		if (!b) throw cybozu::Exception("FpDbl:getMpz");
 	}
 	mpz_class getMpz() const
 	{
@@ -83,7 +82,7 @@ public:
 			v_[i] = 0;
 		}
 	}
-	FpDblT& operator=(const FpDblT& rhs)
+	FpDbl& operator=(const FpDbl& rhs)
 	{
 		const size_t n = getUnitSize();
 		for (size_t i = 0; i < n; i++) {
@@ -108,7 +107,7 @@ public:
 	{
 		gmp::setArray(pb, x, v_, Fp::op_.N * 2);
 	}
-	static inline void add(FpDblT& z, const FpDblT& x, const FpDblT& y)
+	static inline void add(FpDbl& z, const FpDbl& x, const FpDbl& y)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fpDbl_addA_(z.v_, x.v_, y.v_);
@@ -116,7 +115,7 @@ public:
 		Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p);
 #endif
 	}
-	static inline void sub(FpDblT& z, const FpDblT& x, const FpDblT& y)
+	static inline void sub(FpDbl& z, const FpDbl& x, const FpDbl& y)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fpDbl_subA_(z.v_, x.v_, y.v_);
@@ -124,13 +123,13 @@ public:
 		Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p);
 #endif
 	}
-	static inline void neg(FpDblT& z, const FpDblT& x)
+	static inline void neg(FpDbl& z, const FpDbl& x)
 	{
 		static const Unit zero_[Fp::maxSize * 2] = {};
-		const FpDblT& zero = *(const FpDblT*)zero_;
+		const FpDbl& zero = *(const FpDbl*)zero_;
 		sub(z, zero, x);
 	}
-	static inline void mod(Fp& z, const FpDblT& xy)
+	static inline void mod(Fp& z, const FpDbl& xy)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fpDbl_modA_(z.v_, xy.v_);
@@ -143,14 +142,14 @@ public:
 	static void subA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_sub(z, x, y, Fp::op_.p); }
 	static void modA(Unit *z, const Unit *xy) { Fp::op_.fpDbl_mod(z, xy, Fp::op_.p); }
 #endif
-	static void addPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
-	static void subPre(FpDblT& z, const FpDblT& x, const FpDblT& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
+	static void addPre(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
+	static void subPre(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 	/*
 		mul(z, x, y) = mulPre(xy, x, y) + mod(z, xy)
 	*/
-	static void mulPre(FpDblT& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
-	static void sqrPre(FpDblT& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
-	static void mulUnit(FpDblT& z, const FpDblT& x, Unit y)
+	static void mulPre(FpDbl& xy, const Fp& x, const Fp& y) { Fp::op_.fpDbl_mulPre(xy.v_, x.v_, y.v_); }
+	static void sqrPre(FpDbl& xx, const Fp& x) { Fp::op_.fpDbl_sqrPre(xx.v_, x.v_); }
+	static void mulUnit(FpDbl& z, const FpDbl& x, Unit y)
 	{
 		if (mulSmallUnit(z, x, y)) return;
 		assert(0); // not supported y
@@ -170,8 +169,8 @@ public:
 		}
 #endif
 	}
-	void operator+=(const FpDblT& x) { add(*this, *this, x); }
-	void operator-=(const FpDblT& x) { sub(*this, *this, x); }
+	void operator+=(const FpDbl& x) { add(*this, *this, x); }
+	void operator-=(const FpDbl& x) { sub(*this, *this, x); }
 };
 
 /*
@@ -182,7 +181,6 @@ template<class _Fp>
 class Fp2T : public fp::Serializable<Fp2T<_Fp>,
 	fp::Operator<Fp2T<_Fp> > > {
 	typedef _Fp Fp;
-	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	static const size_t gN = 5;
 	static Fp u_pm1o2; // u^((p-1)/2)
@@ -648,7 +646,6 @@ private:
 template<class Fp>
 struct Fp2DblT {
 	typedef Fp2DblT<Fp> Fp2Dbl;
-	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2T<Fp> Fp2;
 	FpDbl a, b;
 	static void add(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
@@ -707,11 +704,13 @@ struct Fp2DblT {
 		FpDbl::mod(y.a, x.a);
 		FpDbl::mod(y.b, x.b);
 	}
+#if 0
 #ifndef CYBOZU_DONT_USE_STRING
 	friend std::ostream& operator<<(std::ostream& os, const Fp2DblT& x)
 	{
 		return os << x.a << ' ' << x.b;
 	}
+#endif
 #endif
 	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
@@ -761,7 +760,7 @@ private:
 	static Fp2Dbl& castD(Unit *x) { return *reinterpret_cast<Fp2Dbl*>(x); }
 	static const Fp2Dbl& castD(const Unit *x) { return *reinterpret_cast<const Fp2Dbl*>(x); }
 	/*
-		Fp2Dbl::mulPre by FpDblT
+		Fp2Dbl::mulPre by FpDbl
 		(a + bi)(c + di) = (ac-bd) + ((a+b)(c+d)-ac-bd)i
 		@note mod of NIST_P192 is fast
 	*/
@@ -1095,7 +1094,6 @@ template<class Fp>
 struct Fp6DblT {
 	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
-	typedef FpDblT<Fp> FpDbl;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	Fp2Dbl a, b, c;
@@ -1683,7 +1681,7 @@ template<class _Fp> void Fp2T<_Fp>::init(bool *pb)
 			}
 		}
 	}
-	FpDblT<Fp>::init();
+	FpDbl::init();
 	Fp2DblT<Fp>::init();
 	// call init before Fp2::pow because FpDbl is used in Fp2T
 	const Fp2T xi(op.xi_a, 1);
