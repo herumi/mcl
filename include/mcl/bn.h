@@ -6,6 +6,14 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+// for backward compatibility
+#ifdef MCLBN_FP_UNIT_SIZE
+	#define MCL_FP_BIT ((MCLBN_FP_UNIT_SIZE)*64)
+	#ifndef MCLBN_FR_UNIT_SIZE
+		#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
+	#endif
+	#define MCL_FR_BIT ((MCLBN_FR_UNIT_SIZE)*64)
+#endif
 /*
 	the order of an elliptic curve over Fp is Fr
 */
@@ -13,8 +21,12 @@
 	#error "define MCL_FP_BIT and MCL_FR_BIT"
 #endif
 
-#define MCLBN_FP_UNIT_SIZE ((MCL_FP_BIT)/64)
-#define MCLBN_FR_UNIT_SIZE ((MCL_FR_BIT)/64)
+#ifndef MCLBN_FP_UNIT_SIZE
+	#define MCLBN_FP_UNIT_SIZE ((MCL_FP_BIT)/64)
+#endif
+#ifndef MCLBN_FR_UNIT_SIZE
+	#define MCLBN_FR_UNIT_SIZE ((MCL_FR_BIT)/64)
+#endif
 
 #define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
