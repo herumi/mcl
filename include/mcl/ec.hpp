@@ -7,7 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <stdlib.h>
-#include <mcl/fp.hpp>
+#include <mcl/fp_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/window_method.hpp>
 
@@ -20,8 +20,6 @@
 #endif
 
 namespace mcl {
-
-template<class _Fp> class Fp2T;
 
 namespace ec {
 
@@ -63,16 +61,15 @@ void addTbl(Ec& Q, const Ec *tbl, const Vec& naf, size_t i)
 	static member a_, b_, specialA_
 */
 // x is negative <=> x < half(:=(p+1)/2) <=> a = 1
-template<class F>
-bool get_a_flag(const F& x)
+inline bool get_a_flag(const Fp& x)
 {
 	return x.isNegative();
 }
 
 // Im(x) is negative <=> Im(x) < half(:=(p+1)/2) <=> a = 1
 
-template<class F>
-bool get_a_flag(const mcl::Fp2T<F>& x)
+template<class _Fp2>
+inline bool get_a_flag(const _Fp2& x)
 {
 	return get_a_flag(x.b); // x = a + bi
 }

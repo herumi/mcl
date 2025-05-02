@@ -177,10 +177,7 @@ public:
 	Fp2 = F[i] / (i^2 + u)
 	x = a + b i
 */
-template<class _Fp>
-class Fp2T : public fp::Serializable<Fp2T<_Fp>,
-	fp::Operator<Fp2T<_Fp> > > {
-	typedef _Fp Fp;
+class Fp2 : public fp::Serializable<Fp2, fp::Operator<Fp2> > {
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	static const size_t gN = 5;
 	static Fp u_pm1o2; // u^((p-1)/2)
@@ -188,13 +185,13 @@ class Fp2T : public fp::Serializable<Fp2T<_Fp>,
 		g = xi^((p - 1) / 6)
 		g[] = { g^2, g^4, g^1, g^3, g^5 }
 	*/
-	static Fp2T g[gN];
-	static Fp2T g2[gN];
-	static Fp2T g3[gN];
+	static Fp2 g[gN];
+	static Fp2 g2[gN];
+	static Fp2 g3[gN];
 public:
-	static const Fp2T *get_gTbl() { return &g[0]; }
-	static const Fp2T *get_g2Tbl() { return &g2[0]; }
-	static const Fp2T *get_g3Tbl() { return &g3[0]; }
+	static const Fp2 *get_gTbl() { return &g[0]; }
+	static const Fp2 *get_g2Tbl() { return &g2[0]; }
+	static const Fp2 *get_g3Tbl() { return &g3[0]; }
 	typedef typename Fp::BaseFp BaseFp;
 	static const size_t maxSize = Fp::maxSize * 2;
 	static inline size_t getByteSize() { return Fp::getByteSize() * 2; }
@@ -204,10 +201,10 @@ public:
 		b.dump();
 	}
 	Fp a, b;
-	Fp2T() { }
-	Fp2T(int64_t a) : a(a), b(0) { }
-	Fp2T(const Fp& a, const Fp& b) : a(a), b(b) { }
-	Fp2T(int64_t a, int64_t b) : a(a), b(b) { }
+	Fp2() { }
+	Fp2(int64_t a) : a(a), b(0) { }
+	Fp2(const Fp& a, const Fp& b) : a(a), b(b) { }
+	Fp2(int64_t a, int64_t b) : a(a), b(b) { }
 	Fp* getFp0() { return &a; }
 	const Fp* getFp0() const { return &a; }
 	const Unit* getUnit() const { return a.getUnit(); }
@@ -221,7 +218,7 @@ public:
 		a = a_;
 		b = b_;
 	}
-	static void add(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void add(Fp2& z, const Fp2& x, const Fp2& y)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_addA_(z.a.v_, x.a.v_, y.a.v_);
@@ -229,7 +226,7 @@ public:
 		addA(z.a.v_, x.a.v_, y.a.v_);
 #endif
 	}
-	static void sub(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void sub(Fp2& z, const Fp2& x, const Fp2& y)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_subA_(z.a.v_, x.a.v_, y.a.v_);
@@ -237,7 +234,7 @@ public:
 		subA(z.a.v_, x.a.v_, y.a.v_);
 #endif
 	}
-	static void neg(Fp2T& y, const Fp2T& x)
+	static void neg(Fp2& y, const Fp2& x)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_negA_(y.a.v_, x.a.v_);
@@ -245,7 +242,7 @@ public:
 		negA(y.a.v_, x.a.v_);
 #endif
 	}
-	static void mul(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void mul(Fp2& z, const Fp2& x, const Fp2& y)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_mulA_(z.a.v_, x.a.v_, y.a.v_);
@@ -253,7 +250,7 @@ public:
 		mulA(z.a.v_, x.a.v_, y.a.v_);
 #endif
 	}
-	static void sqr(Fp2T& y, const Fp2T& x)
+	static void sqr(Fp2& y, const Fp2& x)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_sqrA_(y.a.v_, x.a.v_);
@@ -266,7 +263,7 @@ public:
 		}
 #endif
 	}
-	static void mul2(Fp2T& y, const Fp2T& x)
+	static void mul2(Fp2& y, const Fp2& x)
 	{
 #ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_mul2A_(y.a.v_, x.a.v_);
@@ -274,7 +271,7 @@ public:
 		mul2A(y.a.v_, x.a.v_);
 #endif
 	}
-	static void mul_xi(Fp2T& y, const Fp2T& x)
+	static void mul_xi(Fp2& y, const Fp2& x)
 	{
 		Fp::op_.fp2_mul_xiA_(y.a.v_, x.a.v_);
 	}
@@ -282,7 +279,7 @@ public:
 		x = a + bi
 		1 / x = (a - bi) / (a^2 + b^2 u)
 	*/
-	static void inv(Fp2T& y, const Fp2T& x)
+	static void inv(Fp2& y, const Fp2& x)
 	{
 		assert(!x.isZero());
 		const Fp& a = x.a;
@@ -294,22 +291,22 @@ public:
 		Fp::mul(y.b, b, r);
 		Fp::neg(y.b, y.b);
 	}
-	static void addPre(Fp2T& z, const Fp2T& x, const Fp2T& y)
+	static void addPre(Fp2& z, const Fp2& x, const Fp2& y)
 	{
 		Fp::addPre(z.a, x.a, y.a);
 		Fp::addPre(z.b, x.b, y.b);
 	}
-	static void divBy2(Fp2T& y, const Fp2T& x)
+	static void divBy2(Fp2& y, const Fp2& x)
 	{
 		Fp::divBy2(y.a, x.a);
 		Fp::divBy2(y.b, x.b);
 	}
-	static void divBy4(Fp2T& y, const Fp2T& x)
+	static void divBy4(Fp2& y, const Fp2& x)
 	{
 		Fp::divBy4(y.a, x.a);
 		Fp::divBy4(y.b, x.b);
 	}
-	static void mulFp(Fp2T& z, const Fp2T& x, const Fp& y)
+	static void mulFp(Fp2& z, const Fp2& x, const Fp& y)
 	{
 		Fp::mul(z.a, x.a, y);
 		Fp::mul(z.b, x.b, y);
@@ -335,7 +332,7 @@ public:
 		bp->load(pb, is, ioMode);
 	}
 	/*
-		Fp2T = <a> + ' ' + <b>
+		Fp2 = <a> + ' ' + <b>
 	*/
 	template<class OutputStream>
 	void save(bool *pb, OutputStream& os, int ioMode) const
@@ -355,8 +352,8 @@ public:
 	}
 	bool isZero() const { return a.isZero() && b.isZero(); }
 	bool isOne() const { return a.isOne() && b.isZero(); }
-	bool operator==(const Fp2T& rhs) const { return a == rhs.a && b == rhs.b; }
-	bool operator!=(const Fp2T& rhs) const { return !operator==(rhs); }
+	bool operator==(const Fp2& rhs) const { return a == rhs.a && b == rhs.b; }
+	bool operator!=(const Fp2& rhs) const { return !operator==(rhs); }
 	/*
 		return true is a is odd (do not consider b)
 		this function is for only compressed reprezentation of EC
@@ -370,7 +367,7 @@ public:
 		A = (c +/- sqrt(c^2 + d^2 u))/2
 		b = d / 2a
 	*/
-	static inline bool squareRoot(Fp2T& y, const Fp2T& x)
+	static inline bool squareRoot(Fp2& y, const Fp2& x)
 	{
 		Fp t1, t2;
 		if (x.b.isZero()) {
@@ -402,7 +399,7 @@ public:
 		return true;
 	}
 	// y = a^2 + b^2 u
-	static void inline norm(Fp& y, const Fp2T& x)
+	static void inline norm(Fp& y, const Fp2& x)
 	{
 		FpDbl AA, BB;
 		FpDbl::sqrPre(AA, x.a);
@@ -426,7 +423,7 @@ public:
 		= a - bi c if p = 3 mod 4
 		where c = u^((p-1)/2)
 	*/
-	static void Frobenius(Fp2T& y, const Fp2T& x)
+	static void Frobenius(Fp2& y, const Fp2& x)
 	{
 		if (Fp::getOp().pmod4 == 1) {
 			if (&y != &x) {
@@ -457,80 +454,82 @@ public:
 	{
 		bool b;
 		load(&b, is, ioMode);
-		if (!b) throw cybozu::Exception("Fp2T:load");
+		if (!b) throw cybozu::Exception("Fp2:load");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
 	{
 		bool b;
 		save(&b, os, ioMode);
-		if (!b) throw cybozu::Exception("Fp2T:save");
+		if (!b) throw cybozu::Exception("Fp2:save");
 	}
 	template<class S>
 	void setArray(const S *buf, size_t n)
 	{
 		bool b;
 		setArray(&b, buf, n);
-		if (!b) throw cybozu::Exception("Fp2T:setArray");
+		if (!b) throw cybozu::Exception("Fp2:setArray");
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_STRING
-	Fp2T(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
-	friend std::istream& operator>>(std::istream& is, Fp2T& self)
+	Fp2(const std::string& a, const std::string& b, int base = 0) : a(a, base), b(b, base) {}
+	friend std::istream& operator>>(std::istream& is, Fp2& self)
 	{
 		self.load(is, fp::detectIoMode(Fp::BaseFp::getIoMode(), is));
 		return is;
 	}
-	friend std::ostream& operator<<(std::ostream& os, const Fp2T& self)
+	friend std::ostream& operator<<(std::ostream& os, const Fp2& self)
 	{
 		self.save(os, fp::detectIoMode(Fp::BaseFp::getIoMode(), os));
 		return os;
 	}
 #endif
 private:
-	static Fp2T& cast(Unit *x) { return *reinterpret_cast<Fp2T*>(x); }
-	static const Fp2T& cast(const Unit *x) { return *reinterpret_cast<const Fp2T*>(x); }
+	static Fp2& cast(Unit *x) { return *reinterpret_cast<Fp2*>(x); }
+	static const Fp2& cast(const Unit *x) { return *reinterpret_cast<const Fp2*>(x); }
 	/*
-		default Fp2T operator
-		Fp2T = Fp[i]/(i^2 + 1)
+		default Fp2 operator
+		Fp2 = Fp[i]/(i^2 + 1)
 	*/
 	static void addA(Unit *pz, const Unit *px, const Unit *py)
 	{
-		Fp2T& z = cast(pz);
-		const Fp2T& x = cast(px);
-		const Fp2T& y = cast(py);
+		Fp2& z = cast(pz);
+		const Fp2& x = cast(px);
+		const Fp2& y = cast(py);
 		Fp::add(z.a, x.a, y.a);
 		Fp::add(z.b, x.b, y.b);
 	}
 	static void subA(Unit *pz, const Unit *px, const Unit *py)
 	{
-		Fp2T& z = cast(pz);
-		const Fp2T& x = cast(px);
-		const Fp2T& y = cast(py);
+		Fp2& z = cast(pz);
+		const Fp2& x = cast(px);
+		const Fp2& y = cast(py);
 		Fp::sub(z.a, x.a, y.a);
 		Fp::sub(z.b, x.b, y.b);
 	}
 	static void negA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
 	}
-	static void mulA(Unit *pz, const Unit *px, const Unit *py)
+	static void mulA(Unit *pz, const Unit *px, const Unit *py);
+#if 0
 	{
-		Fp2T& z = cast(pz);
-		const Fp2T& x = cast(px);
-		const Fp2T& y = cast(py);
+		Fp2& z = cast(pz);
+		const Fp2& x = cast(px);
+		const Fp2& y = cast(py);
 		Fp2Dbl d;
 		Fp2Dbl::mulPre(d, x, y);
 		FpDbl::mod(z.a, d.a);
 		FpDbl::mod(z.b, d.b);
 	}
+#endif
 	static void mul2A(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		Fp::mul2(y.a, x.a);
 		Fp::mul2(y.b, x.b);
 	}
@@ -540,8 +539,8 @@ private:
 	*/
 	static void sqrA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t1, t2, t3;
@@ -560,8 +559,8 @@ private:
 	*/
 	static void fp2_mul_xi_a_iA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
@@ -577,8 +576,8 @@ private:
 	*/
 	static void fp2_mul_xi_1_iA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
@@ -589,8 +588,8 @@ private:
 	// The following functions are for u != 1.
 	static void sqrAu5(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		assert(Fp::getOp().u == 5);
@@ -614,8 +613,8 @@ private:
 	*/
 	static void fp2u_mul_xi_a_iA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		const Fp& a = x.a;
 		const Fp& b = x.b;
 		Fp t;
@@ -634,8 +633,8 @@ private:
 	*/
 	static void fp2u_mul_xi_0_iA(Unit *py, const Unit *px)
 	{
-		Fp2T& y = cast(py);
-		const Fp2T& x = cast(px);
+		Fp2& y = cast(py);
+		const Fp2& x = cast(px);
 		Fp t;
 		Fp::mulUnit(t, x.b, Fp::getOp().u);
 		y.b = x.a;
@@ -646,7 +645,6 @@ private:
 template<class Fp>
 struct Fp2DblT {
 	typedef Fp2DblT<Fp> Fp2Dbl;
-	typedef Fp2T<Fp> Fp2;
 	FpDbl a, b;
 	static void add(Fp2DblT& z, const Fp2DblT& x, const Fp2DblT& y)
 	{
@@ -704,14 +702,6 @@ struct Fp2DblT {
 		FpDbl::mod(y.a, x.a);
 		FpDbl::mod(y.b, x.b);
 	}
-#if 0
-#ifndef CYBOZU_DONT_USE_STRING
-	friend std::ostream& operator<<(std::ostream& os, const Fp2DblT& x)
-	{
-		return os << x.a << ' ' << x.b;
-	}
-#endif
-#endif
 	void operator+=(const Fp2DblT& x) { add(*this, *this, x); }
 	void operator-=(const Fp2DblT& x) { sub(*this, *this, x); }
 	static void init()
@@ -903,11 +893,6 @@ private:
 	}
 };
 
-template<class Fp> Fp Fp2T<Fp>::u_pm1o2;
-template<class Fp> Fp2T<Fp> Fp2T<Fp>::g[Fp2T<Fp>::gN];
-template<class Fp> Fp2T<Fp> Fp2T<Fp>::g2[Fp2T<Fp>::gN];
-template<class Fp> Fp2T<Fp> Fp2T<Fp>::g3[Fp2T<Fp>::gN];
-
 template<class Fp>
 struct Fp6DblT;
 /*
@@ -918,7 +903,6 @@ template<class _Fp>
 struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 	fp::Operator<Fp6T<_Fp> > > {
 	typedef _Fp Fp;
-	typedef Fp2T<Fp> Fp2;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
 	typedef Fp BaseFp;
@@ -1092,7 +1076,6 @@ struct Fp6T : public fp::Serializable<Fp6T<_Fp>,
 
 template<class Fp>
 struct Fp6DblT {
-	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
@@ -1230,7 +1213,6 @@ struct Fp12T : public fp::Serializable<Fp12T<Fp, _Fr>,
 	fp::Operator<Fp12T<Fp, _Fr> > > {
 	typedef fp::Serializable<Fp12T<Fp, _Fr>, fp::Operator<Fp12T<Fp, _Fr> > > BaseClass;
 
-	typedef Fp2T<Fp> Fp2;
 	typedef Fp6T<Fp> Fp6;
 	typedef Fp2DblT<Fp> Fp2Dbl;
 	typedef Fp6DblT<Fp> Fp6Dbl;
@@ -1631,90 +1613,6 @@ struct GroupMtoA : public T {
 private:
 	bool isOne() const;
 };
-
-template<class _Fp> void Fp2T<_Fp>::init(bool *pb)
-{
-	typedef _Fp Fp;
-	mcl::fp::Op& op = Fp::op_;
-	uint32_t u = Fp::getOp().u;
-#ifdef MCL_XBYAK_DIRECT_CALL
-	if (op.fp2_addA_ == 0) {
-		op.fp2_addA_ = addA;
-	}
-	if (op.fp2_subA_ == 0) {
-		op.fp2_subA_ = subA;
-	}
-	if (op.fp2_negA_ == 0) {
-		op.fp2_negA_ = negA;
-	}
-	if (op.fp2_mul2A_ == 0) {
-		op.fp2_mul2A_ = mul2A;
-	}
-	if (op.fp2_mulA_ == 0) {
-		op.fp2_mulA_ = mulA;
-	}
-	if (op.fp2_sqrA_ == 0) {
-		if (u == 1) {
-			op.fp2_sqrA_ = sqrA;
-		} else if (u == 5) {
-			op.fp2_sqrA_ = sqrAu5;
-		} else {
-			assert(0);
-		}
-	}
-#endif
-	if (op.fp2_mul_xiA_ == 0) {
-		if (u == 1) {
-			if (op.xi_a == 1) {
-				op.fp2_mul_xiA_ = fp2_mul_xi_1_iA;
-			} else {
-				op.fp2_mul_xiA_ = fp2_mul_xi_a_iA;
-			}
-		} else {
-			if (op.fp2_mul_xiA_ == 0) {
-				if (op.xi_a == 0) {
-					op.fp2_mul_xiA_ = fp2u_mul_xi_0_iA;
-				} else {
-					assert(0);
-//					op.fp2_mul_xiA_ = fp2u_mul_xi_a_iA;
-				}
-			}
-		}
-	}
-	FpDbl::init();
-	Fp2DblT<Fp>::init();
-	// call init before Fp2::pow because FpDbl is used in Fp2T
-	const Fp2T xi(op.xi_a, 1);
-	const mpz_class& p = Fp::getOp().mp;
-	Fp::pow(u_pm1o2, int(op.u), (p - 1) / 2);
-	Fp2T::pow(g[0], xi, (p - 1) / 6); // g = xi^((p-1)/6)
-	for (size_t i = 1; i < gN; i++) {
-		g[i] = g[i - 1] * g[0];
-	}
-	/*
-		permutate [0, 1, 2, 3, 4] => [1, 3, 0, 2, 4]
-		g[0] = g^2
-		g[1] = g^4
-		g[2] = g^1
-		g[3] = g^3
-		g[4] = g^5
-	*/
-	{
-		Fp2T t = g[0];
-		g[0] = g[1];
-		g[1] = g[3];
-		g[3] = g[2];
-		g[2] = t;
-	}
-	for (size_t i = 0; i < gN; i++) {
-		Fp2T t(g[i].a, g[i].b);
-		if (Fp::getOp().pmod4 == 3) Fp::neg(t.b, t.b);
-		Fp2T::mul(g2[i], t, g[i]);
-		g3[i] = g[i] * g2[i];
-	}
-	Fp6DblT<Fp>::init();
-	*pb = true;
-}
 
 } // mcl
 

@@ -13,7 +13,6 @@
 
 using namespace mcl;
 
-typedef mcl::Fp2T<Fp> Fp2;
 typedef mcl::Fp6T<Fp> Fp6;
 typedef mcl::Fp12T<Fp, Fp/*dummy*/> Fp12;
 
