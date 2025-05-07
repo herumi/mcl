@@ -720,218 +720,11 @@ namespace local {
 
 typedef GLV2T<Fr> GLV2;
 
-inline bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
-{
-	typedef GroupMtoA<Fp12> AG; // as additive group
-	AG& _z = static_cast<AG&>(z);
-	const AG *_xVec = static_cast<const AG*>(xVec);
-	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n);
-}
+bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n);
 
-/*
-	Faster Squaring in the Cyclotomic Subgroup of Sixth Degree Extensions
-	Robert Granger, Michael Scott
-*/
-inline void sqrFp4(Fp2& z0, Fp2& z1, const Fp2& x0, const Fp2& x1)
-{
-#if 1
-	Fp2Dbl T0, T1, T2;
-	Fp2Dbl::sqrPre(T0, x0);
-	Fp2Dbl::sqrPre(T1, x1);
-	Fp2Dbl::mul_xi(T2, T1);
-	Fp2Dbl::add(T2, T2, T0);
-	Fp2::add(z1, x0, x1);
-	Fp2Dbl::mod(z0, T2);
-	Fp2Dbl::sqrPre(T2, z1);
-	Fp2Dbl::sub(T2, T2, T0);
-	Fp2Dbl::sub(T2, T2, T1);
-	Fp2Dbl::mod(z1, T2);
-#else
-	Fp2 t0, t1, t2;
-	Fp2::sqr(t0, x0);
-	Fp2::sqr(t1, x1);
-	Fp2::mul_xi(z0, t1);
-	z0 += t0;
-	Fp2::add(z1, x0, x1);
-	Fp2::sqr(z1, z1);
-	z1 -= t0;
-	z1 -= t1;
-#endif
-}
+void dblLineWithoutP(Fp6& l, G2& Q);
+void addLineWithoutP(Fp6& l, G2& R, const G2& Q);
 
-inline void fasterSqr(Fp12& y, const Fp12& x)
-{
-#if 0
-	Fp12::sqr(y, x);
-#else
-	const Fp2& x0(x.a.a);
-	const Fp2& x4(x.a.b);
-	const Fp2& x3(x.a.c);
-	const Fp2& x2(x.b.a);
-	const Fp2& x1(x.b.b);
-	const Fp2& x5(x.b.c);
-	Fp2& y0(y.a.a);
-	Fp2& y4(y.a.b);
-	Fp2& y3(y.a.c);
-	Fp2& y2(y.b.a);
-	Fp2& y1(y.b.b);
-	Fp2& y5(y.b.c);
-	Fp2 t0, t1;
-	sqrFp4(t0, t1, x0, x1);
-	Fp2::sub(y0, t0, x0);
-	Fp2::mul2(y0, y0);
-	y0 += t0;
-	Fp2::add(y1, t1, x1);
-	Fp2::mul2(y1, y1);
-	y1 += t1;
-	Fp2 t2, t3;
-	sqrFp4(t0, t1, x2, x3);
-	sqrFp4(t2, t3, x4, x5);
-	Fp2::sub(y4, t0, x4);
-	Fp2::mul2(y4, y4);
-	y4 += t0;
-	Fp2::add(y5, t1, x5);
-	Fp2::mul2(y5, y5);
-	y5 += t1;
-	Fp2::mul_xi(t0, t3);
-	Fp2::add(y2, t0, x2);
-	Fp2::mul2(y2, y2);
-	y2 += t0;
-	Fp2::sub(y3, t2, x3);
-	Fp2::mul2(y3, y3);
-	y3 += t2;
-#endif
-}
-
-/*
-	y = x^z if z > 0
-	  = unitaryInv(x^(-z)) if z < 0
-*/
-inline void pow_z(Fp12& y, const Fp12& x)
-{
-#if 1
-	if (BN::param.cp.curveType == MCL_BN254) {
-		Compress::fixed_power(y, x);
-	} else {
-		Fp12 orgX = x;
-		y = x;
-		Fp12 conj;
-		conj.a = x.a;
-		Fp6::neg(conj.b, x.b);
-		for (size_t i = 1; i < BN::param.zReplTbl.size(); i++) {
-			fasterSqr(y, y);
-			if (BN::param.zReplTbl[i] > 0) {
-				y *= orgX;
-			} else if (BN::param.zReplTbl[i] < 0) {
-				y *= conj;
-			}
-		}
-	}
-#else
-	Fp12::pow(y, x, param.abs_z);
-#endif
-	if (BN::param.isNegative) {
-		Fp12::unitaryInv(y, y);
-	}
-}
-inline void mul_twist_b(Fp2& y, const Fp2& x)
-{
-	switch (BN::param.twist_b_type) {
-	case local::tb_1m1i:
-		/*
-			b / xi = 1 - 1i
-			(a + bi)(1 - 1i) = (a + b) + (b - a)i
-		*/
-		{
-			Fp t;
-			Fp::add(t, x.a, x.b);
-			Fp::sub(y.b, x.b, x.a);
-			y.a = t;
-		}
-		return;
-	case local::tb_1m2i:
-		/*
-			b / xi = 1 - 2i
-			(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
-		*/
-		{
-			Fp t;
-			Fp::sub(t, x.b, x.a);
-			t -= x.a;
-			Fp::add(y.a, x.a, x.b);
-			y.a += x.b;
-			y.b = t;
-		}
-		return;
-	case local::tb_generic:
-		Fp2::mul(y, x, BN::param.twist_b);
-		return;
-	}
-}
-
-inline void dblLineWithoutP(Fp6& l, G2& Q)
-{
-	Fp2 t0, t1, t2, t3, t4, t5;
-	Fp2Dbl T0, T1;
-	Fp2::sqr(t0, Q.z);
-	Fp2::mul(t4, Q.x, Q.y);
-	Fp2::sqr(t1, Q.y);
-	Fp2::mul2(t3, t0);
-	Fp2::divBy2(t4, t4);
-	Fp2::add(t5, t0, t1);
-	t0 += t3;
-	mul_twist_b(t2, t0);
-	Fp2::sqr(t0, Q.x);
-	Fp2::mul2(t3, t2);
-	t3 += t2;
-	Fp2::sub(Q.x, t1, t3);
-	t3 += t1;
-	Q.x *= t4;
-	Fp2::divBy2(t3, t3);
-	Fp2Dbl::sqrPre(T0, t3);
-	Fp2Dbl::sqrPre(T1, t2);
-	Fp2Dbl::sub(T0, T0, T1);
-	Fp2Dbl::add(T1, T1, T1);
-	Fp2Dbl::sub(T0, T0, T1);
-	Fp2::add(t3, Q.y, Q.z);
-	Fp2Dbl::mod(Q.y, T0);
-	Fp2::sqr(t3, t3);
-	t3 -= t5;
-	Fp2::mul(Q.z, t1, t3);
-	Fp2::sub(l.a, t2, t1);
-	l.c = t0;
-	l.b = t3;
-}
-inline void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
-{
-	Fp2 t1, t2, t3, t4;
-	Fp2Dbl T1, T2;
-	Fp2::mul(t1, R.z, Q.x);
-	Fp2::mul(t2, R.z, Q.y);
-	Fp2::sub(t1, R.x, t1);
-	Fp2::sub(t2, R.y, t2);
-	Fp2::sqr(t3, t1);
-	Fp2::mul(R.x, t3, R.x);
-	Fp2::sqr(t4, t2);
-	t3 *= t1;
-	t4 *= R.z;
-	t4 += t3;
-	t4 -= R.x;
-	t4 -= R.x;
-	R.x -= t4;
-	Fp2Dbl::mulPre(T1, t2, R.x);
-	Fp2Dbl::mulPre(T2, t3, R.y);
-	Fp2Dbl::sub(T2, T1, T2);
-	Fp2Dbl::mod(R.y, T2);
-	Fp2::mul(R.x, t1, t4);
-	Fp2::mul(R.z, t3, R.z);
-	Fp2::neg(l.c, t2);
-	Fp2Dbl::mulPre(T1, t2, Q.x);
-	Fp2Dbl::mulPre(T2, t1, Q.y);
-	Fp2Dbl::sub(T1, T1, T2);
-	l.b = t1;
-	Fp2Dbl::mod(l.a, T1);
-}
 inline void dblLine(Fp6& l, G2& Q, const G1& P)
 {
 	dblLineWithoutP(l, Q);
@@ -942,277 +735,8 @@ inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 	addLineWithoutP(l, R, Q);
 	local::updateLine(l, P);
 }
-inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
-{
-	y.a = x.a;
-#if 1
-	assert(!P.isZero());
-#else
-	if (P.isZero()) {
-		y.c.clear();
-		y.b.clear();
-		return;
-	}
-#endif
-	Fp2::mulFp(y.c, x.c, P.x);
-	Fp2::mulFp(y.b, x.b, P.y);
-}
 
-/*
-	x = a + bv + cv^2
-	y = (y0, y4, y2) -> (y0, 0, y2, 0, y4, 0)
-	z = xy = (a + bv + cv^2)(d + ev)
-	= (ad + ce xi) + ((a + b)(d + e) - ad - be)v + (be + cd)v^2
-*/
-inline void Fp6mul_01(Fp6& z, const Fp6& x, const Fp2& d, const Fp2& e)
-{
-	const Fp2& a = x.a;
-	const Fp2& b = x.b;
-	const Fp2& c = x.c;
-	Fp2 t0, t1;
-	Fp2Dbl AD, CE, BE, CD, T;
-	Fp2Dbl::mulPre(AD, a, d);
-	Fp2Dbl::mulPre(CE, c, e);
-	Fp2Dbl::mulPre(BE, b, e);
-	Fp2Dbl::mulPre(CD, c, d);
-	Fp2::add(t0, a, b);
-	Fp2::add(t1, d, e);
-	Fp2Dbl::mulPre(T, t0, t1);
-	T -= AD;
-	T -= BE;
-	Fp2Dbl::mod(z.b, T);
-	Fp2Dbl::mul_xi(CE, CE);
-	AD += CE;
-	Fp2Dbl::mod(z.a, AD);
-	BE += CD;
-	Fp2Dbl::mod(z.c, BE);
-}
-/*
-	input
-	z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w = Z0 + Z1w
-	                  0        3  4
-	x = (a, b, c) -> (b, 0, 0, c, a, 0) = X0 + X1w
-	X0 = b = (b, 0, 0)
-	X1 = c + av = (c, a, 0)
-	w^2 = v, v^3 = xi
-	output
-	z <- zx = (Z0X0 + Z1X1v) + ((Z0 + Z1)(X0 + X1) - Z0X0 - Z1X1)w
-	Z0X0 = Z0 b
-	Z1X1 = Z1 (c, a, 0)
-	(Z0 + Z1)(X0 + X1) = (Z0 + Z1) (b + c, a, 0)
-*/
-inline void mul_403(Fp12& z, const Fp6& x)
-{
-	const Fp2& a = x.a;
-	const Fp2& b = x.b;
-	const Fp2& c = x.c;
-	Fp6& z0 = z.a;
-	Fp6& z1 = z.b;
-	Fp6 z0x0, z1x1, t0;
-	Fp2 t1;
-	Fp2::add(t1, x.b, c);
-	Fp6::add(t0, z0, z1);
-	Fp2::mul(z0x0.a, z0.a, b);
-	Fp2::mul(z0x0.b, z0.b, b);
-	Fp2::mul(z0x0.c, z0.c, b);
-	Fp6mul_01(z1x1, z1, c, a);
-	Fp6mul_01(t0, t0, t1, a);
-	Fp6::sub(z.b, t0, z0x0);
-	z.b -= z1x1;
-	// a + bv + cv^2 = cxi + av + bv^2
-	Fp2::mul_xi(z1x1.c, z1x1.c);
-	Fp2::add(z.a.a, z0x0.a, z1x1.c);
-	Fp2::add(z.a.b, z0x0.b, z1x1.a);
-	Fp2::add(z.a.c, z0x0.c, z1x1.b);
-}
-/*
-	input
-	z = (z0 + z1v + z2v^2) + (z3 + z4v + z5v^2)w = Z0 + Z1w
-	                  0  1        4
-	x = (a, b, c) -> (a, c, 0, 0, b, 0) = X0 + X1w
-	X0 = (a, c, 0)
-	X1 = (0, b, 0)
-	w^2 = v, v^3 = xi
-	output
-	z <- zx = (Z0X0 + Z1X1v) + ((Z0 + Z1)(X0 + X1) - Z0X0 - Z1X1)w
-	Z0X0 = Z0 (a, c, 0)
-	Z1X1 = Z1 (0, b, 0) = Z1 bv
-	(Z0 + Z1)(X0 + X1) = (Z0 + Z1) (a, b + c, 0)
-
-	(a + bv + cv^2)v = c xi + av + bv^2
-*/
-inline void mul_041(Fp12& z, const Fp6& x)
-{
-	const Fp2& a = x.a;
-	const Fp2& b = x.b;
-	const Fp2& c = x.c;
-	Fp6& z0 = z.a;
-	Fp6& z1 = z.b;
-	Fp6 z0x0, z1x1, t0;
-	Fp2 t1;
-	Fp2::mul(z1x1.a, z1.c, b);
-	Fp2::mul_xi(z1x1.a, z1x1.a);
-	Fp2::mul(z1x1.b, z1.a, b);
-	Fp2::mul(z1x1.c, z1.b, b);
-	Fp2::add(t1, x.b, c);
-	Fp6::add(t0, z0, z1);
-	Fp6mul_01(z0x0, z0, a, c);
-	Fp6mul_01(t0, t0, a, t1);
-	Fp6::sub(z.b, t0, z0x0);
-	z.b -= z1x1;
-	// a + bv + cv^2 = cxi + av + bv^2
-	Fp2::mul_xi(z1x1.c, z1x1.c);
-	Fp2::add(z.a.a, z0x0.a, z1x1.c);
-	Fp2::add(z.a.b, z0x0.b, z1x1.a);
-	Fp2::add(z.a.c, z0x0.c, z1x1.b);
-}
-inline void mulSparse(Fp12& z, const Fp6& x)
-{
-	if (BN::param.cp.isMtype) {
-		mul_041(z, x);
-	} else {
-		mul_403(z, x);
-	}
-}
-inline void convertFp6toFp12(Fp12& y, const Fp6& x)
-{
-	if (BN::param.cp.isMtype) {
-		// (a, b, c) -> (a, c, 0, 0, b, 0)
-		y.a.a = x.a;
-		y.b.b = x.b;
-		y.a.b = x.c;
-		y.a.c.clear();
-		y.b.a.clear();
-		y.b.c.clear();
-	} else {
-		// (a, b, c) -> (b, 0, 0, c, a, 0)
-		y.b.b = x.a;
-		y.a.a = x.b;
-		y.b.a = x.c;
-		y.a.b.clear();
-		y.a.c.clear();
-		y.b.c.clear();
-	}
-}
-inline void mulSparse2(Fp12& z, const Fp6& x, const Fp6& y)
-{
-	convertFp6toFp12(z, x);
-	mulSparse(z, y);
-}
-inline void mapToCyclotomic(Fp12& y, const Fp12& x)
-{
-	Fp12 z;
-	Fp12::Frobenius2(z, x); // z = x^(p^2)
-	z *= x; // x^(p^2 + 1)
-	Fp12::inv(y, z);
-	Fp6::neg(z.b, z.b); // z^(p^6) = conjugate of z
-	y *= z;
-}
-/*
-	Implementing Pairings at the 192-bit Security Level
-	D.F.Aranha, L.F.Castaneda, E.Knapp, A.Menezes, F.R.Henriquez
-	Section 4
-*/
-inline void expHardPartBLS12(Fp12& y, const Fp12& x)
-{
-	/*
-		Efficient Final Exponentiation via Cyclotomic Structure
-		for Pairings over Families of Elliptic Curves
-		https://eprint.iacr.org/2020/875.pdf p.13
-		(z-1)^2 (z+p)(z^2+p^2-1)+3
-	*/
-	Fp12 a0, a1, a2;
-	pow_z(a0, x); // z
-	Fp12::unitaryInv(a1, x); // -1
-	a0 *= a1; // z-1
-	pow_z(a1, a0); // (z-1)^z
-	Fp12::unitaryInv(a0, a0); // -(z-1)
-	a0 *= a1; // (z-1)^2
-	pow_z(a1, a0); // z
-	Fp12::Frobenius(a0, a0); // p
-	a0 *=a1; // (z-1)^2 (z+p)
-	pow_z(a1, a0); // z
-	pow_z(a1, a1); // z^2
-	Fp12::Frobenius2(a2, a0); // p^2
-	Fp12::unitaryInv(a0, a0); // -1
-	a0 *= a1;
-	a0 *= a2; // z^2+p^2-1
-	fasterSqr(a1, x);
-	a1 *= x; // x^3
-	Fp12::mul(y, a0, a1);
-}
-/*
-	Faster Hashing to G2
-	Laura Fuentes-Castaneda, Edward Knapp, Francisco Rodriguez-Henriquez
-	section 4.1
-	y = x^(d 2z(6z^2 + 3z + 1)) where
-	p = p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1
-	r = r(z) = 36z^4 + 36z^3 + 18z^2 + 6z + 1
-	d = (p^4 - p^2 + 1) / r
-	d1 = d 2z(6z^2 + 3z + 1)
-	= c0 + c1 p + c2 p^2 + c3 p^3
-
-	c0 = 1 + 6z + 12z^2 + 12z^3
-	c1 = 4z + 6z^2 + 12z^3
-	c2 = 6z + 6z^2 + 12z^3
-	c3 = -1 + 4z + 6z^2 + 12z^3
-	x -> x^z -> x^2z -> x^4z -> x^6z -> x^(6z^2) -> x^(12z^2) -> x^(12z^3)
-	a = x^(6z) x^(6z^2) x^(12z^3)
-	b = a / (x^2z)
-	x^d1 = (a x^(6z^2) x) b^p a^(p^2) (b / x)^(p^3)
-*/
-inline void expHardPartBN(Fp12& y, const Fp12& x)
-{
-	Fp12 a, b;
-	Fp12 a2, a3;
-	pow_z(b, x); // x^z
-	fasterSqr(b, b); // x^2z
-	fasterSqr(a, b); // x^4z
-	a *= b; // x^6z
-	pow_z(a2, a); // x^(6z^2)
-	a *= a2;
-	fasterSqr(a3, a2); // x^(12z^2)
-	pow_z(a3, a3); // x^(12z^3)
-	a *= a3;
-	Fp12::unitaryInv(b, b);
-	b *= a;
-	a2 *= a;
-	Fp12::Frobenius2(a, a);
-	a *= a2;
-	a *= x;
-	Fp12::unitaryInv(y, x);
-	y *= b;
-	Fp12::Frobenius(b, b);
-	a *= b;
-	Fp12::Frobenius3(y, y);
-	y *= a;
-}
-/*
-	assume P is normalized
-	if P == 0:
-	  adjP = (0, 0, 0)
-	else:
-	  adjP = (P.x * 3, -P.y, 1)
-	remark : returned value is NOT on a curve
-*/
-inline void makeAdjP(G1& adjP, const G1& P)
-{
-#if 1
-	assert(!P.isZero());
-#else
-	if (P.isZero()) {
-		adjP.x.clear();
-		adjP.y.clear();
-		adjP.z.clear();
-		return;
-	}
-#endif
-	Fp x2;
-	Fp::mul2(x2, P.x);
-	Fp::add(adjP.x, x2, P.x);
-	Fp::neg(adjP.y, P.y);
-	adjP.z = P.z;
-}
+void mulSparse(Fp12& z, const Fp6& x);
 
 } // mcl::bn::local
 
@@ -1222,79 +746,9 @@ inline void makeAdjP(G1& adjP, const G1& P)
 	(a + bw)^(p^6) = a - bw in Fp12
 	(p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
 */
-inline void finalExp(Fp12& y, const Fp12& x)
-{
-	using namespace local;
-	if (x.isZero()) {
-		y.clear();
-		return;
-	}
-	mapToCyclotomic(y, x);
-	if (BN::param.isBLS12) {
-		expHardPartBLS12(y, y);
-	} else {
-		expHardPartBN(y, y);
-	}
-}
-inline void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
-{
-	using namespace local;
-	if (P_.isZero() || Q_.isZero()) {
-		f = 1;
-		return;
-	}
-	G1 P;
-	G2 Q;
-	G1::normalize(P, P_);
-	G2::normalize(Q, Q_);
-	G2 T = Q;
-	G2 negQ;
-	if (BN::param.useNAF) {
-		G2::neg(negQ, Q);
-	}
-	Fp6 d, e;
-	G1 adjP;
-	makeAdjP(adjP, P);
-	dblLine(e, T, adjP);
-	if (BN::param.siTbl[1]) {
-		if (BN::param.siTbl[1] > 0) {
-			addLine(d, T, Q, P);
-		} else {
-			addLine(d, T, negQ, P);
-		}
-		mulSparse2(f, d, e);
-	} else {
-		convertFp6toFp12(f, e);
-	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		dblLine(e, T, adjP);
-		Fp12::sqr(f, f);
-		mulSparse(f, e);
-		if (BN::param.siTbl[i]) {
-			if (BN::param.siTbl[i] > 0) {
-				addLine(e, T, Q, P);
-			} else {
-				addLine(e, T, negQ, P);
-			}
-			mulSparse(f, e);
-		}
-	}
-	if (BN::param.z < 0) {
-		Fp6::neg(f.b, f.b);
-	}
-	if (BN::param.isBLS12) return;
-	if (BN::param.z < 0) {
-		G2::neg(T, T);
-	}
-	Frobenius(Q, Q);
-	addLine(d, T, Q, P);
-	Frobenius(Q, Q);
-	G2::neg(Q, Q);
-	addLine(e, T, Q, P);
-	Fp12 ft;
-	mulSparse2(ft, d, e);
-	f *= ft;
-}
+void finalExp(Fp12& y, const Fp12& x);
+void millerLoop(Fp12& f, const G1& P_, const G2& Q_);
+
 inline void pairing(Fp12& f, const G1& P, const G2& Q)
 {
 	millerLoop(f, P, Q);
@@ -1303,48 +757,8 @@ inline void pairing(Fp12& f, const G1& P, const G2& Q)
 /*
 	allocate param.precomputedQcoeffSize elements of Fp6 for Qcoeff
 */
-inline void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
-{
-	using namespace local;
-	size_t idx = 0;
-	G2 Q(Q_);
-	Q.normalize();
-	if (Q.isZero()) {
-		for (size_t i = 0; i < BN::param.precomputedQcoeffSize; i++) {
-			Qcoeff[i] = 1;
-		}
-		return;
-	}
-	G2 T = Q;
-	G2 negQ;
-	if (BN::param.useNAF) {
-		G2::neg(negQ, Q);
-	}
-	dblLineWithoutP(Qcoeff[idx++], T);
-	if (BN::param.siTbl[1]) {
-		addLineWithoutP(Qcoeff[idx++], T, Q);
-	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		dblLineWithoutP(Qcoeff[idx++], T);
-		if (BN::param.siTbl[i]) {
-			if (BN::param.siTbl[i] > 0) {
-				addLineWithoutP(Qcoeff[idx++], T, Q);
-			} else {
-				addLineWithoutP(Qcoeff[idx++], T, negQ);
-			}
-		}
-	}
-	if (BN::param.z < 0) {
-		G2::neg(T, T);
-	}
-	if (BN::param.isBLS12) return;
-	Frobenius(Q, Q);
-	addLineWithoutP(Qcoeff[idx++], T, Q);
-	Frobenius(Q, Q);
-	G2::neg(Q, Q);
-	addLineWithoutP(Qcoeff[idx++], T, Q);
-	assert(idx == BN::param.precomputedQcoeffSize);
-}
+void precomputeG2(Fp6 *Qcoeff, const G2& Q_);
+
 /*
 	millerLoop(e, P, Q) is same as the following
 	std::vector<Fp6> Qcoeff;
@@ -1352,12 +766,9 @@ inline void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	precomputedMillerLoop(e, P, Qcoeff);
 */
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
-{
-	Qcoeff.resize(BN::param.precomputedQcoeffSize);
-	precomputeG2(Qcoeff.data(), Q);
-}
+void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q);
 #endif
+
 template<class Array>
 void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 {
@@ -1366,306 +777,27 @@ void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 	precomputeG2(Qcoeff.data(), Q);
 }
 
-inline void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
-{
-	using namespace local;
-	if (P_.isZero()) {
-		f = 1;
-		return;
-	}
-	G1 P;
-	G1::normalize(P, P_);
-	G1 adjP;
-	makeAdjP(adjP, P);
-	size_t idx = 0;
-	Fp6 d, e;
-	mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
-	idx++;
+void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff);
 
-	if (BN::param.siTbl[1]) {
-		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
-		idx++;
-		mulSparse2(f, d, e);
-	} else {
-		convertFp6toFp12(f, e);
-	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
-		idx++;
-		Fp12::sqr(f, f);
-		mulSparse(f, e);
-		if (BN::param.siTbl[i]) {
-			mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
-			idx++;
-			mulSparse(f, e);
-		}
-	}
-	if (BN::param.z < 0) {
-		Fp6::neg(f.b, f.b);
-	}
-	if (BN::param.isBLS12) return;
-	mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
-	idx++;
-	mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
-	idx++;
-	Fp12 ft;
-	mulSparse2(ft, d, e);
-	f *= ft;
-}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
-{
-	precomputedMillerLoop(f, P, Qcoeff.data());
-}
+void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff);
 #endif
 /*
 	f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
 	Q2coeff : precomputed Q2
 */
-inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff)
-{
-	using namespace local;
-	G1 P1(P1_), P2(P2_);
-	G2 Q1(Q1_);
-	P1.normalize();
-	P2.normalize();
-	Q1.normalize();
-	if (Q1.isZero()) {
-		precomputedMillerLoop(f, P2_, Q2coeff);
-		return;
-	}
-	G2 T = Q1;
-	G2 negQ1;
-	if (BN::param.useNAF) {
-		G2::neg(negQ1, Q1);
-	}
-	G1 adjP1, adjP2;
-	makeAdjP(adjP1, P1);
-	makeAdjP(adjP2, P2);
-	size_t idx = 0;
-	Fp6 d1, d2, e1, e2;
-	dblLine(d1, T, adjP1);
-	mulFp6cb_by_G1xy(d2, Q2coeff[idx], adjP2);
-	idx++;
-
-	Fp12 f1, f2;
-
-	if (BN::param.siTbl[1]) {
-		addLine(e1, T, Q1, P1);
-		mulSparse2(f1, d1, e1);
-		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-		idx++;
-		mulSparse2(f2, d2, e2);
-		Fp12::mul(f, f1, f2);
-	} else {
-		mulSparse2(f, d1, d2);
-	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		dblLine(e1, T, adjP1);
-		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
-		idx++;
-		Fp12::sqr(f, f);
-		mulSparse2(f1, e1, e2);
-		f *= f1;
-		if (BN::param.siTbl[i]) {
-			if (BN::param.siTbl[i] > 0) {
-				addLine(e1, T, Q1, P1);
-			} else {
-				addLine(e1, T, negQ1, P1);
-			}
-			mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-			idx++;
-			mulSparse2(f1, e1, e2);
-			f *= f1;
-		}
-	}
-	if (BN::param.z < 0) {
-		G2::neg(T, T);
-		Fp6::neg(f.b, f.b);
-	}
-	if (BN::param.isBLS12) return;
-	Frobenius(Q1, Q1);
-	addLine(d1, T, Q1, P1);
-	mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
-	idx++;
-	Frobenius(Q1, Q1);
-	G2::neg(Q1, Q1);
-	addLine(e1, T, Q1, P1);
-	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-	idx++;
-	mulSparse2(f1, d1, e1);
-	mulSparse2(f2, d2, e2);
-	f *= f1;
-	f *= f2;
-}
+void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff);
 /*
 	f = MillerLoop(P1, Q1) x MillerLoop(P2, Q2)
 	Q1coeff, Q2coeff : precomputed Q1, Q2
 */
-inline void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1& P2_, const Fp6* Q2coeff)
-{
-	using namespace local;
-	G1 P1(P1_), P2(P2_);
-	P1.normalize();
-	P2.normalize();
-	G1 adjP1, adjP2;
-	makeAdjP(adjP1, P1);
-	makeAdjP(adjP2, P2);
-	size_t idx = 0;
-	Fp6 d1, d2, e1, e2;
-	mulFp6cb_by_G1xy(d1, Q1coeff[idx], adjP1);
-	mulFp6cb_by_G1xy(d2, Q2coeff[idx], adjP2);
-	idx++;
+void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1& P2_, const Fp6* Q2coeff);
 
-	Fp12 f1, f2;
-	if (BN::param.siTbl[1]) {
-		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
-		mulSparse2(f1, d1, e1);
-
-		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-		mulSparse2(f2, d2, e2);
-		Fp12::mul(f, f1, f2);
-		idx++;
-	} else {
-		mulSparse2(f, d1, d2);
-	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
-		mulFp6cb_by_G1xy(e1, Q1coeff[idx], adjP1);
-		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
-		idx++;
-		Fp12::sqr(f, f);
-		mulSparse2(f1, e1, e2);
-		f *= f1;
-		if (BN::param.siTbl[i]) {
-			mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
-			mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-			idx++;
-			mulSparse2(f1, e1, e2);
-			f *= f1;
-		}
-	}
-	if (BN::param.z < 0) {
-		Fp6::neg(f.b, f.b);
-	}
-	if (BN::param.isBLS12) return;
-	mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
-	mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
-	idx++;
-	mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
-	mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
-	idx++;
-	mulSparse2(f1, d1, e1);
-	mulSparse2(f2, d2, e2);
-	f *= f1;
-	f *= f2;
-}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
-{
-	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
-}
-inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, const G1& P2, const std::vector<Fp6>& Q2coeff)
-{
-	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
-}
+void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff);
+void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, const G1& P2, const std::vector<Fp6>& Q2coeff);
 #endif
 
-/*
-	e = prod_i ML(Pvec[i], Qvec[i])
-	if initF:
-	  _f = e
-	else:
-	  _f *= e
-*/
-template<size_t N>
-inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
-{
-	using namespace local;
-	assert(n <= N);
-	G1 P[N];
-	G2 Q[N];
-	// remove zero elements
-	{
-		size_t realN = 0;
-		for (size_t i = 0; i < n; i++) {
-			if (!Pvec[i].isZero() && !Qvec[i].isZero()) {
-				G1::normalize(P[realN], Pvec[i]);
-				G2::normalize(Q[realN], Qvec[i]);
-				realN++;
-			}
-		}
-		if (realN <= 0) {
-			if (initF) _f = 1;
-			return;
-		}
-		n = realN; // update n
-	}
-	Fp12 ff;
-	Fp12& f(initF ? _f : ff);
-	// all P[] and Q[] are not zero
-	G2 T[N], negQ[N];
-	G1 adjP[N];
-	Fp6 d, e;
-	for (size_t i = 0; i < n; i++) {
-		T[i] = Q[i];
-		if (BN::param.useNAF) {
-			G2::neg(negQ[i], Q[i]);
-		}
-		makeAdjP(adjP[i], P[i]);
-		dblLine(d, T[i], adjP[i]);
-		if (BN::param.siTbl[1]) {
-			addLine(e, T[i], Q[i], P[i]);
-			if (i == 0) {
-				mulSparse2(f, d, e);
-			} else {
-				Fp12 ft;
-				mulSparse2(ft, d, e);
-				f *= ft;
-			}
-		} else {
-			if (i == 0) {
-				convertFp6toFp12(f, d);
-			} else {
-				mulSparse(f, d);
-			}
-		}
-	}
-	for (size_t j = 2; j < BN::param.siTbl.size(); j++) {
-		Fp12::sqr(f, f);
-		for (size_t i = 0; i < n; i++) {
-			dblLine(e, T[i], adjP[i]);
-			mulSparse(f, e);
-			int v = BN::param.siTbl[j];
-			if (v) {
-				if (v > 0) {
-					addLine(e, T[i], Q[i], P[i]);
-				} else {
-					addLine(e, T[i], negQ[i], P[i]);
-				}
-				mulSparse(f, e);
-			}
-		}
-	}
-	if (BN::param.z < 0) {
-		Fp6::neg(f.b, f.b);
-	}
-	if (BN::param.isBLS12) goto EXIT;
-	for (size_t i = 0; i < n; i++) {
-		if (BN::param.z < 0) {
-			G2::neg(T[i], T[i]);
-		}
-		Frobenius(Q[i], Q[i]);
-		addLine(d, T[i], Q[i], P[i]);
-		Frobenius(Q[i], Q[i]);
-		G2::neg(Q[i], Q[i]);
-		addLine(e, T[i], Q[i], P[i]);
-		Fp12 ft;
-		mulSparse2(ft, d, e);
-		f *= ft;
-	}
-EXIT:
-	if (!initF) _f *= f;
-}
 /*
 	_f = prod_{i=0}^{n-1} millerLoop(Pvec[i], Qvec[i])
 	if initF:
@@ -1673,58 +805,12 @@ EXIT:
 	else:
 	  f *= _f
 */
-inline void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF = true)
-{
-	const size_t N = 16;
-	size_t remain = fp::min_(N, n);
-	millerLoopVecN<N>(f, Pvec, Qvec, remain, initF);
-	for (size_t i = remain; i < n; i += N) {
-		remain = fp::min_(n - i, N);
-		millerLoopVecN<N>(f, Pvec + i, Qvec + i, remain, false);
-	}
-}
+void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF = true);
 
 // multi thread version of millerLoopVec
 // the num of thread is automatically detected if cpuN = 0
-inline void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN = 0)
-{
-	if (n == 0) {
-		f = 1;
-		return;
-	}
-#ifdef MCL_USE_OMP
-	const size_t minN = 16;
-	if (cpuN == 0) {
-		cpuN = omp_get_num_procs();
-		if (n < minN * cpuN) {
-			cpuN = (n + minN - 1) / minN;
-		}
-	}
-	if (cpuN <= 1 || n <= cpuN) {
-		millerLoopVec(f, Pvec, Qvec, n);
-		return;
-	}
-	Fp12 *fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * cpuN);
-	size_t q = n / cpuN;
-	size_t r = n % cpuN;
-	#pragma omp parallel for
-	for (size_t i = 0; i < cpuN; i++) {
-		size_t adj = q * i + fp::min_(i, r);
-		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r));
-	}
-	f = 1;
-//	#pragma omp declare reduction(red:Fp12:omp_out *= omp_in) initializer(omp_priv = omp_orig)
-//	#pragma omp parallel for reduction(red:f)
-	for (size_t i = 0; i < cpuN; i++) {
-		f *= fs[i];
-	}
-#else
-	(void)cpuN;
-	millerLoopVec(f, Pvec, Qvec, n);
-#endif
-}
+void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN = 0);
 
-#if 1
 bool setMapToMode(int mode);
 int getMapToMode();
 void mapToG1(bool *pb, G1& P, const Fp& x);
@@ -1751,119 +837,15 @@ void hashAndMapToG1(G1& P, const std::string& str);
 void hashAndMapToG2(G2& P, const std::string& str);
 #endif
 
-#else
-inline bool setMapToMode(int mode)
-{
-	return BN::nonConstParam.mapTo.setMapToMode(mode);
-}
-inline int getMapToMode()
-{
-	return BN::param.mapTo.mapToMode_;
-}
-inline void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = BN::param.mapTo.calc(P, x); }
-inline void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = BN::param.mapTo.calc(P, x); }
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void mapToG1(G1& P, const Fp& x)
-{
-	bool b;
-	mapToG1(&b, P, x);
-	if (!b) throw cybozu::Exception("mapToG1:bad value") << x;
-}
-inline void mapToG2(G2& P, const Fp2& x)
-{
-	bool b;
-	mapToG2(&b, P, x);
-	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
-}
-#endif
-inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
-{
-	int mode = getMapToMode();
-	if (mode == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
-		BN::param.mapTo.mapTo_WB19_.msgToG1(P, buf, bufSize);
-		return;
-	}
-	Fp t;
-	t.setHashOf(buf, bufSize);
-	bool b;
-	mapToG1(&b, P, t);
-	// It will not happen that the hashed value is equal to special value
-	assert(b);
-	(void)b;
-}
-inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
-{
-	int mode = getMapToMode();
-	if (mode == MCL_MAP_TO_MODE_WB19 || mode >= MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
-		BN::param.mapTo.mapTo_WB19_.msgToG2(P, buf, bufSize);
-		return;
-	}
-	Fp2 t;
-	t.a.setHashOf(buf, bufSize);
-	t.b.clear();
-	bool b;
-	mapToG2(&b, P, t);
-	// It will not happen that the hashed value is equal to special value
-	assert(b);
-	(void)b;
-}
-inline void hashAndMapToG1(G1& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
-{
-	BN::param.mapTo.mapTo_WB19_.msgToG1(P, buf, bufSize, dst, dstSize);
-}
-inline void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
-{
-	BN::param.mapTo.mapTo_WB19_.msgToG2(P, buf, bufSize, dst, dstSize);
-}
-// set the default dst for G1
-// return 0 if success else -1
-inline bool setDstG1(const char *dst, size_t dstSize)
-{
-	return BN::nonConstParam.mapTo.mapTo_WB19_.dstG1.set(dst, dstSize);
-}
-// set the default dst for G2
-// return 0 if success else -1
-inline bool setDstG2(const char *dst, size_t dstSize)
-{
-	return BN::nonConstParam.mapTo.mapTo_WB19_.dstG2.set(dst, dstSize);
-}
-#ifndef CYBOZU_DONT_USE_STRING
-inline void hashAndMapToG1(G1& P, const std::string& str)
-{
-	hashAndMapToG1(P, str.c_str(), str.size());
-}
-inline void hashAndMapToG2(G2& P, const std::string& str)
-{
-	hashAndMapToG2(P, str.c_str(), str.size());
-}
-#endif
-
-#endif
-inline void verifyOrderG1(bool doVerify)
-{
-	if (BN::param.isBLS12) {
-		G1::setOrder(doVerify ? BN::param.r : 0);
-	}
-}
-inline void verifyOrderG2(bool doVerify)
-{
-	G2::setOrder(doVerify ? BN::param.r : 0);
-}
+void verifyOrderG1(bool doVerify);
+void verifyOrderG2(bool doVerify);
 
 /*
 	Faster Subgroup Checks for BLS12-381
 	Sean Bowe, https://eprint.iacr.org/2019/814
 	Frob^2(P) - z Frob^3(P) == P
 */
-inline bool isValidOrderBLS12(const G2& P)
-{
-	G2 T2, T3;
-	Frobenius2(T2, P);
-	Frobenius(T3, T2);
-	G2::mulGeneric(T3, T3, BN::param.z);
-	T2 -= T3;
-	return T2 == P;
-}
+bool isValidOrderBLS12(const G2& P);
 bool isValidOrderBLS12(const G1& P);
 
 // backward compatibility
@@ -1886,125 +868,38 @@ static const CurveParam& CurveSNARK1 = BN_SNARK1;
 	FrobeniusOnTwist for Mtype(BLS12-381)
 	use (1/g) instead of g
 */
-inline void Frobenius(G2& D, const G2& S)
-{
-	Fp2::Frobenius(D.x, S.x);
-	Fp2::Frobenius(D.y, S.y);
-	Fp2::Frobenius(D.z, S.z);
-	D.x *= BN::param.g2;
-	D.y *= BN::param.g3;
-}
-inline void Frobenius2(G2& D, const G2& S)
-{
-	Frobenius(D, S);
-	Frobenius(D, D);
-}
-inline void Frobenius3(G2& D, const G2& S)
-{
-	Frobenius(D, S);
-	Frobenius(D, D);
-	Frobenius(D, D);
-}
+void Frobenius(G2& D, const G2& S);
+void Frobenius2(G2& D, const G2& S);
+void Frobenius3(G2& D, const G2& S);
 
 namespace BN {
 
 using namespace mcl::bn; // backward compatibility
 
 
-inline void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
-{
-	BN::nonConstParam.init(pb, cp, mode);
-	if (!*pb) return;
-	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
-	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
-#if MCL_MSM == 1
-	mcl::msm::Func func;
-	func.fp = &Fp::getOp();
-	func.fr = &Fr::getOp();
-	func.invVecFp = mcl::invVec<mcl::bn::Fp>;
-	func.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
-#if (defined(__GNUC__) || defined(__clang__))  && !defined(__EMSCRIPTEN__)
-	// avoid gcc wrong detection
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wcast-function-type"
-#endif
-	func.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
-	func.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
-	func.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
-	func.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(__EMSCRIPTEN__)
-	#pragma GCC diagnostic pop
-#endif
-	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
-		if (mcl::msm::initMsm(cp, &func)) {
-			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
-			G1::setMulEachOpti(mcl::msm::mulEachAVX512);
-		}
-	}
-#endif
-	Fp12::setPowVecGLV(local::powVecGLV);
-	G1::setCompressedExpression();
-	G2::setCompressedExpression();
-	verifyOrderG1(false);
-	verifyOrderG2(false);
-	if (BN::param.isBLS12) {
-		G1::setVerifyOrderFunc(isValidOrderBLS12);
-		G2::setVerifyOrderFunc(isValidOrderBLS12);
-	}
-	*pb = true;
-}
+void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
-{
-	bool b;
-	init(&b, cp, mode);
-	if (!b) throw cybozu::Exception("BN:init");
-}
+void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
 #endif
 
 } // mcl::bn::BN
 
-inline void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
-{
-	BN::init(pb, cp, mode);
-}
+void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
-{
-	bool b;
-	BN::init(&b, cp, mode);
-	if (!b) throw cybozu::Exception("bn:initPairing");
-}
+void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
 #endif
 
-inline void initG1only(bool *pb, const mcl::EcParam& para)
-{
-	G1::setMulVecGLV(0);
-	G2::setMulVecGLV(0);
-	Fp12::setPowVecGLV(0);
-	BN::nonConstParam.initG1only(pb, para);
-	if (!*pb) return;
-	G1::setCompressedExpression();
-	G2::setCompressedExpression();
-}
+void initG1only(bool *pb, const mcl::EcParam& para);
 
-inline const G1& getG1basePoint()
-{
-	return BN::param.basePoint;
-}
+const G1& getG1basePoint();
 
 /*
 	check x in Fp12 is in GT.
 	return true if x^r = 1
 */
-inline bool isValidGT(const GT& x)
-{
-	GT y;
-	GT::powGeneric(y, x, Fr::getOp().mp);
-	return y.isOne();
-}
+bool isValidGT(const GT& x);
 
 } } // mcl::bn
 
