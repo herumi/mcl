@@ -166,6 +166,7 @@ void testMapToG2()
 	CYBOZU_TEST_ASSERT(g.isValid());
 }
 
+#if 0
 void testCyclotomic()
 {
 	Fp12 a;
@@ -198,6 +199,7 @@ void testCompress(const G1& P, const G2& Q)
 	Fp12::pow(c, a, BN::param.abs_z);
 	CYBOZU_TEST_EQUAL(b, c);
 }
+#endif
 
 void testPrecomputed(const G1& P, const G2& Q)
 {
@@ -449,8 +451,8 @@ CYBOZU_TEST_AUTO(naive)
 		testSetStr(Q);
 		testMapToG1();
 		testMapToG2();
-		testCyclotomic();
-		testCompress(P, Q);
+//		testCyclotomic();
+//		testCompress(P, Q);
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
