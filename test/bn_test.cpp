@@ -130,11 +130,11 @@ void testMapToG1()
 		mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
-		G1::mulGeneric(gr, g, BN::param.r);
+		G1::mulGeneric(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.cp.b == 2) {
+	if (getCurveParam().b == 2) {
 		Fp c1;
 		bool b = Fp::squareRoot(c1, -3);
 		CYBOZU_TEST_ASSERT(b);
@@ -152,11 +152,11 @@ void testMapToG2()
 		mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
-		G2::mulGeneric(gr, g, BN::param.r);
+		G2::mulGeneric(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.cp.b == 2) {
+	if (getCurveParam().b == 2) {
 		CYBOZU_TEST_EXCEPTION(mapToG2(g, 0), cybozu::Exception);
 	}
 #endif
@@ -189,7 +189,7 @@ void testCyclotomic()
 
 void testCompress(const G1& P, const G2& Q)
 {
-	if (BN::param.cp.curveType != MCL_BN254) return;
+	if (getCurveParam().curveType != MCL_BN254) return;
 	Fp12 a;
 	pairing(a, P, Q);
 	local::mapToCyclotomic(a, a);

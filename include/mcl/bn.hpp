@@ -566,158 +566,6 @@ template<class Fr> mpz_class GLV2T<Fr>::z;
 template<class Fr> mpz_class GLV2T<Fr>::abs_z;
 template<class Fr> bool GLV2T<Fr>::isBLS12 = false;
 
-struct Param {
-	CurveParam cp;
-	mpz_class z;
-	mpz_class abs_z;
-	bool isNegative;
-	bool isBLS12;
-	mpz_class p;
-	mpz_class r;
-//	local::MapTo mapTo;
-	// for G2 Frobenius
-	Fp2 g2;
-	Fp2 g3;
-	/*
-		Dtype twist
-		(x', y') = phi(x, y) = (x/w^2, y/w^3)
-		y^2 = x^3 + b
-		=> (y'w^3)^2 = (x'w^2)^3 + b
-		=> y'^2 = x'^3 + b / w^6 ; w^6 = xi
-		=> y'^2 = x'^3 + twist_b;
-	*/
-	Fp2 twist_b;
-	local::TwistBtype twist_b_type;
-
-	// Loop parameter for the Miller loop part of opt. ate pairing.
-	local::SignVec siTbl;
-	size_t precomputedQcoeffSize;
-	bool useNAF;
-	local::SignVec zReplTbl;
-
-	// for initG1only
-	G1 basePoint;
-
-	void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
-	{
-		this->cp = cp;
-		isBLS12 = (cp.curveType == MCL_BLS12_381 || cp.curveType == MCL_BLS12_377 || cp.curveType == MCL_BLS12_461);
-#ifdef MCL_STATIC_CODE
-		if (!isBLS12) {
-			*pb = false;
-			return;
-		}
-#endif
-		gmp::setStr(pb, z, cp.z);
-		if (!*pb) return;
-		isNegative = z < 0;
-		if (isNegative) {
-			abs_z = -z;
-		} else {
-			abs_z = z;
-		}
-		if (isBLS12) {
-			mpz_class z2 = z * z;
-			mpz_class z4 = z2 * z2;
-			r = z4 - z2 + 1;
-			p = z - 1;
-			p = p * p * r / 3 + z;
-		} else {
-			const int pCoff[] = { 1, 6, 24, 36, 36 };
-			const int rCoff[] = { 1, 6, 18, 36, 36 };
-			p = local::evalPoly(z, pCoff);
-			assert((p % 6) == 1);
-			r = local::evalPoly(z, rCoff);
-		}
-		Fr::init(pb, r, mode);
-		if (!*pb) return;
-		Fp::init(pb, cp.xi_a, p, mode, cp.u);
-		if (!*pb) return;
-#ifdef MCL_DUMP_JIT
-		*pb = true;
-		return;
-#endif
-		Fp2::init(pb);
-		if (!*pb) return;
-		const Fp2 xi(cp.xi_a, 1);
-		g2 = Fp2::get_gTbl()[0];
-		g3 = Fp2::get_gTbl()[3];
-		if (cp.isMtype) {
-			Fp2::inv(g2, g2);
-			Fp2::inv(g3, g3);
-		}
-		if (cp.isMtype) {
-			twist_b = Fp2(cp.b) * xi;
-		} else {
-			if (cp.b == 2 && cp.xi_a == 1) {
-				twist_b = Fp2(1, -1); // shortcut
-			} else {
-				twist_b = Fp2(cp.b) / xi;
-			}
-		}
-		if (twist_b == Fp2(1, -1)) {
-			twist_b_type = tb_1m1i;
-		} else if (twist_b == Fp2(1, -2)) {
-			twist_b_type = tb_1m2i;
-		} else {
-			twist_b_type = tb_generic;
-		}
-		G1::init(0, cp.b, mcl::ec::Jacobi);
-		G2::init(0, twist_b, mcl::ec::Jacobi);
-
-		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
-		useNAF = gmp::getNAF(siTbl, largest_c);
-		precomputedQcoeffSize = local::getPrecomputeQcoeffSize(siTbl);
-		gmp::getNAF(zReplTbl, gmp::abs(z));
-		if (isBLS12) {
-//			mapTo.init(0, z, cp.curveType);
-			mapToInit(0, z, cp.curveType);
-		} else {
-//			mapTo.init(2 * p - r, z, cp.curveType);
-			mapToInit(2 * p - r, z, cp.curveType);
-		}
-		GLV1::init(z, isBLS12, cp.curveType);
-		GLV2T<Fr>::init(z, isBLS12);
-		basePoint.clear();
-		G1::setOrder(r);
-		G2::setOrder(r);
-		*pb = true;
-	}
-	void initG1only(bool *pb, const mcl::EcParam& para)
-	{
-		mcl::initCurve<G1>(pb, para.curveType, &basePoint);
-		mapToInit(0, 0, para.curveType);
-//		mapTo.init(0, 0, para.curveType);
-	}
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-	void init(const mcl::CurveParam& cp, fp::Mode mode)
-	{
-		bool b;
-		init(&b, cp, mode);
-		if (!b) throw cybozu::Exception("Param:init");
-	}
-#endif
-};
-
-template<size_t dummyImpl = 0>
-struct StaticVar {
-	static local::Param param;
-};
-
-template<size_t dummyImpl>
-local::Param StaticVar<dummyImpl>::param;
-
-} // mcl::bn::local
-
-namespace BN {
-
-static const local::Param& param = local::StaticVar<>::param;
-static local::Param& nonConstParam = local::StaticVar<>::param;
-
-} // mcl::bn::BN
-
-namespace local {
-
 typedef GLV2T<Fr> GLV2;
 
 bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n);
@@ -769,10 +617,12 @@ void precomputeG2(Fp6 *Qcoeff, const G2& Q_);
 void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q);
 #endif
 
+size_t getPrecomputedQcoeffSize();
+
 template<class Array>
 void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 {
-	*pb = Qcoeff.resize(BN::param.precomputedQcoeffSize);
+	*pb = Qcoeff.resize(getPrecomputedQcoeffSize());
 	if (!*pb) return;
 	precomputeG2(Qcoeff.data(), Q);
 }
@@ -884,6 +734,9 @@ void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
 #endif
 
 } // mcl::bn::BN
+
+const CurveParam& getCurveParam();
+int getCurveType();
 
 void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
 

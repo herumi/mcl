@@ -77,14 +77,14 @@ CYBOZU_TEST_AUTO(size)
 
 void testParam(const TestSet& ts)
 {
-	CYBOZU_TEST_EQUAL(BN::param.r, mpz_class(ts.r));
-	CYBOZU_TEST_EQUAL(BN::param.p, mpz_class(ts.p));
+	CYBOZU_TEST_EQUAL(Fr::getOp().mp, mpz_class(ts.r));
+	CYBOZU_TEST_EQUAL(Fp::getOp().mp, mpz_class(ts.p));
 }
 
 void finalExpC(Fp12& y, const Fp12& x)
 {
-	const mpz_class& r = BN::param.r;
-	const mpz_class& p = BN::param.p;
+	const mpz_class& r = Fr::getOp().mp;
+	const mpz_class& p = Fp::getOp().mp;
 	mpz_class p2 = p * p;
 	mpz_class p4 = p2 * p2;
 #if 1
@@ -158,7 +158,7 @@ void testMapToG1()
 		mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
-		G1::mul(gr, g, BN::param.r);
+		G1::mul(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 }
@@ -170,7 +170,7 @@ void testMapToG2()
 		mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
-		G2::mul(gr, g, BN::param.r);
+		G2::mul(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 	Fp x;
@@ -605,7 +605,7 @@ const char *q1Str =
 	Q1.setStr(q1Str, mode);
 	CYBOZU_TEST_EQUAL(l, m);
 	CYBOZU_TEST_EQUAL(Q, Q1);
-	G1::setOrder(BN::param.r);
+	G1::setOrder(Fr::getOp().mp);
 }
 #endif
 
@@ -750,7 +750,7 @@ CYBOZU_TEST_AUTO(multi)
 
 CYBOZU_TEST_AUTO(deserialize)
 {
-	if (BN::param.cp.curveType != MCL_BLS12_381) return;
+	if (getCurveType() != MCL_BLS12_381) return;
 	G1 P;
 	G2 Q;
 	mapToG1(P, 5);

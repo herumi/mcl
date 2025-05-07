@@ -75,7 +75,7 @@ int mclBn_init(int curve, int compiledTimeVar)
 
 int mclBn_getCurveType()
 {
-	return mcl::bn::BN::param.cp.curveType;
+	return mcl::bn::getCurveType();
 }
 
 int mclBn_getOpUnitSize()
@@ -663,7 +663,7 @@ void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSi
 }
 int mclBn_getUint64NumToPrecompute(void)
 {
-	return int(BN::param.precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t));
+	return int(getPrecomputedQcoeffSize() * sizeof(Fp6) / sizeof(uint64_t));
 }
 
 void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q)
