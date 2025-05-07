@@ -11,10 +11,10 @@ cybozu::CpuClock clk;
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-typedef mcl::bn::local::Compress Compress;
 using namespace mcl::bn;
 
 #include "common_test.hpp"
+#include "../src/compress.hpp"
 
 mcl::fp::Mode g_mode;
 
