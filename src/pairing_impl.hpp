@@ -450,11 +450,8 @@ struct GLV1 : mcl::GLV1T<G1, Fr> {
 /*
 	GLV method for G2 and GT on BN/BLS12
 */
-template<class _Fr>
-struct GLV2T {
-	typedef GLV2T<_Fr> GLV2;
+struct GLV2 {
 	static const int splitN = 4;
-	typedef _Fr Fr;
 	static size_t rBitSize;
 	static mpz_class B[4][4];
 	static mpz_class v[4];
@@ -559,12 +556,12 @@ struct GLV2T {
 	}
 };
 
-template<class Fr> size_t GLV2T<Fr>::rBitSize = 0;
-template<class Fr> mpz_class GLV2T<Fr>::B[4][4];
-template<class Fr> mpz_class GLV2T<Fr>::v[4];
-template<class Fr> mpz_class GLV2T<Fr>::z;
-template<class Fr> mpz_class GLV2T<Fr>::abs_z;
-template<class Fr> bool GLV2T<Fr>::isBLS12 = false;
+size_t GLV2::rBitSize = 0;
+mpz_class GLV2::B[4][4];
+mpz_class GLV2::v[4];
+mpz_class GLV2::z;
+mpz_class GLV2::abs_z;
+bool GLV2::isBLS12 = false;
 
 struct Param {
 	CurveParam cp;
@@ -677,7 +674,7 @@ struct Param {
 			mapToInit(2 * p - r, z, cp.curveType);
 		}
 		GLV1::init(z, isBLS12, cp.curveType);
-		GLV2T<Fr>::init(z, isBLS12);
+		GLV2::init(z, isBLS12);
 		basePoint.clear();
 		G1::setOrder(r);
 		G2::setOrder(r);
@@ -727,8 +724,6 @@ int getCurveType()
 }
 
 namespace local {
-
-typedef GLV2T<Fr> GLV2;
 
 bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
 {

@@ -8,6 +8,7 @@
 */
 #include <stdlib.h>
 #include <mcl/fp_def.hpp>
+#include <mcl/fr_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/window_method.hpp>
 
@@ -107,7 +108,7 @@ template<class GLV, class G>
 void mulGLV_CT(G& Q, const G& P, const void *yVec)
 {
 	const size_t w = 4;
-	typedef typename GLV::Fr F;
+	typedef Fr F;
 	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << w;
@@ -1175,7 +1176,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 {
 	const int splitN = GLV::splitN;
 	assert(n > 0);
-	typedef typename GLV::Fr F;
+	typedef Fr F;
 	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
 	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
@@ -1348,9 +1349,9 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 	assert(n <= mcl::fp::maxMulVecNGLV);
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
-	typedef typename GLV::Fr F;
+	typedef Fr F;
 	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
-	typedef mcl::FixedArray<int8_t, sizeof(typename GLV::Fr) * 8 / splitN + splitN> NafArray;
+	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
