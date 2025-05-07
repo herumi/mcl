@@ -8,6 +8,7 @@
 #include <mcl/bls12_381.hpp>
 #include <stdint.h>
 #include "avx512.hpp"
+#include "msm.hpp"
 
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"

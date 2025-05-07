@@ -14,7 +14,6 @@ cybozu::CpuClock clk;
 using namespace mcl::bn;
 
 #include "common_test.hpp"
-#include "../src/compress.hpp"
 
 mcl::fp::Mode g_mode;
 
@@ -451,8 +450,6 @@ CYBOZU_TEST_AUTO(naive)
 		testSetStr(Q);
 		testMapToG1();
 		testMapToG2();
-//		testCyclotomic();
-//		testCompress(P, Q);
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
