@@ -264,9 +264,9 @@ inline void SquareRootPrecomputeTest(const mpz_class& p)
 
 void testSquareRoot()
 {
-	if (BN::param.cp == mcl::BN254 || BN::param.cp == mcl::BLS12_381) {
-		SquareRootPrecomputeTest(BN::param.p);
-		SquareRootPrecomputeTest(BN::param.r);
+	if (getCurveParam() == mcl::BN254 || getCurveParam() == mcl::BLS12_381) {
+		SquareRootPrecomputeTest(Fp::getOp().mp);
+		SquareRootPrecomputeTest(Fr::getOp().mp);
 	}
 }
 

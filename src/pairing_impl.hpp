@@ -716,6 +716,16 @@ static local::Param& nonConstParam = local::StaticVar<>::param;
 
 } // mcl::bn::BN
 
+const CurveParam& getCurveParam()
+{
+	return BN::param.cp;
+}
+
+int getCurveType()
+{
+	return getCurveParam().curveType;
+}
+
 namespace local {
 
 typedef GLV2T<Fr> GLV2;
@@ -810,7 +820,7 @@ inline void fasterSqr(Fp12& y, const Fp12& x)
 inline void pow_z(Fp12& y, const Fp12& x)
 {
 #if 1
-	if (BN::param.cp.curveType == MCL_BN254) {
+	if (mcl::bn::getCurveType() == MCL_BN254) {
 		Compress::fixed_power(y, x);
 	} else {
 		Fp12 orgX = x;
@@ -1070,7 +1080,7 @@ inline void mul_041(Fp12& z, const Fp6& x)
 
 void mulSparse(Fp12& z, const Fp6& x)
 {
-	if (BN::param.cp.isMtype) {
+	if (getCurveParam().isMtype) {
 		mul_041(z, x);
 	} else {
 		mul_403(z, x);
@@ -1078,7 +1088,7 @@ void mulSparse(Fp12& z, const Fp6& x)
 }
 inline void convertFp6toFp12(Fp12& y, const Fp6& x)
 {
-	if (BN::param.cp.isMtype) {
+	if (getCurveParam().isMtype) {
 		// (a, b, c) -> (a, c, 0, 0, b, 0)
 		y.a.a = x.a;
 		y.b.b = x.b;
@@ -1293,6 +1303,11 @@ void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	f *= ft;
 }
 
+size_t getPrecomputedQcoeffSize()
+{
+	return BN::param.precomputedQcoeffSize;
+}
+
 void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 {
 	using namespace local;
@@ -1300,7 +1315,7 @@ void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	G2 Q(Q_);
 	Q.normalize();
 	if (Q.isZero()) {
-		for (size_t i = 0; i < BN::param.precomputedQcoeffSize; i++) {
+		for (size_t i = 0; i < getPrecomputedQcoeffSize(); i++) {
 			Qcoeff[i] = 1;
 		}
 		return;
@@ -1333,7 +1348,7 @@ void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	Frobenius(Q, Q);
 	G2::neg(Q, Q);
 	addLineWithoutP(Qcoeff[idx++], T, Q);
-	assert(idx == BN::param.precomputedQcoeffSize);
+	assert(idx == getPrecomputedQcoeffSize());
 }
 /*
 	millerLoop(e, P, Q) is same as the following
@@ -1344,7 +1359,7 @@ void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 {
-	Qcoeff.resize(BN::param.precomputedQcoeffSize);
+	Qcoeff.resize(getPrecomputedQcoeffSize());
 	precomputeG2(Qcoeff.data(), Q);
 }
 #endif
@@ -1352,7 +1367,7 @@ void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
 template<class Array>
 void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
 {
-	*pb = Qcoeff.resize(BN::param.precomputedQcoeffSize);
+	*pb = Qcoeff.resize(getPrecomputedQcoeffSize());
 	if (!*pb) return;
 	precomputeG2(Qcoeff.data(), Q);
 }
@@ -1731,12 +1746,12 @@ void hashAndMapToG2(G2& P, const std::string& str);
 void verifyOrderG1(bool doVerify)
 {
 	if (BN::param.isBLS12) {
-		G1::setOrder(doVerify ? BN::param.r : 0);
+		G1::setOrder(doVerify ? Fr::getOp().mp : 0);
 	}
 }
 void verifyOrderG2(bool doVerify)
 {
-	G2::setOrder(doVerify ? BN::param.r : 0);
+	G2::setOrder(doVerify ? Fr::getOp().mp : 0);
 }
 
 bool isValidOrderBLS12(const G2& P)
