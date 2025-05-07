@@ -18,59 +18,7 @@
 #include <omp.h>
 #endif
 
-namespace mcl {
-
-#ifndef MCL_MSM
-  #if (/*defined(_WIN64) ||*/ defined(__x86_64__)) && !defined(__APPLE__) && (MCL_SIZEOF_UNIT == 8)
-    #define MCL_MSM 1
-  #else
-    #define MCL_MSM 0
-  #endif
-#endif
-
-#if MCL_MSM == 1
-namespace msm {
-
-// only for BLS12-381
-struct FrA {
-	uint64_t v[4];
-};
-
-struct FpA {
-	uint64_t v[6];
-};
-
-struct G1A {
-	uint64_t v[6*3];
-};
-
-typedef size_t (*invVecFpFunc)(Fp *y, const Fp *x, size_t n, size_t _N);
-typedef void (*normalizeVecG1Func)(G1A *y, const G1A *x, size_t n);
-typedef void (*addG1Func)(G1A& z, const G1A& x, const G1A& y);
-typedef void (*dblG1Func)(G1A& z, const G1A& x);
-typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
-typedef void (*clearG1Func)(G1A& z);
-
-struct Func {
-	const mcl::fp::Op *fp;
-	const mcl::fp::Op *fr;
-	invVecFpFunc invVecFp;
-	normalizeVecG1Func normalizeVecG1;
-	addG1Func addG1;
-	dblG1Func dblG1;
-	mulG1Func mulG1;
-	clearG1Func clearG1;
-};
-
-
-bool initMsm(const mcl::CurveParam& cp, const msm::Func *func);
-void mulVecAVX512(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t b);
-void mulEachAVX512(Unit *_x, const Unit *_y, size_t n);
-
-} // mcl::msm
-#endif
-
-namespace bn {
+namespace mcl { namespace bn {
 
 // backward compatibility
 typedef mcl::Fp Fp;
@@ -102,56 +50,22 @@ namespace local {
 
 typedef mcl::FixedArray<int8_t, 128> SignVec;
 
-inline size_t getPrecomputeQcoeffSize(const SignVec& sv)
-{
-	size_t idx = 2 + 1;
-	if (sv[1]) idx++;
-	for (size_t i = 2; i < sv.size(); i++) {
-		idx++;
-		if (sv[i]) idx++;
-	}
-	return idx;
-}
+size_t getPrecomputeQcoeffSize(const SignVec& sv);
 
-template<class X, class C, size_t N>
-X evalPoly(const X& x, const C (&c)[N])
-{
-	X ret = c[N - 1];
-	for (size_t i = 1; i < N; i++) {
-		ret *= x;
-		ret += c[N - 1 - i];
-	}
-	return ret;
-}
-
-enum TwistBtype {
-	tb_generic,
-	tb_1m1i, // 1 - 1i
-	tb_1m2i // 1 - 2i
-};
+void dblLineWithoutP(Fp6& l, G2& Q);
+void addLineWithoutP(Fp6& l, G2& R, const G2& Q);
 
 /*
 	l = (a, b, c) => (a, b * P.y, c * P.x)
 */
 inline void updateLine(Fp6& l, const G1& P)
 {
-#if 1
 	assert(!P.isZero());
-#else
-	if (P.isZero()) {
-		l.b.clear();
-		l.c.clear();
-		return;
-	}
-#endif
 	l.b.a *= P.y;
 	l.b.b *= P.y;
 	l.c.a *= P.x;
 	l.c.b *= P.x;
 }
-
-void dblLineWithoutP(Fp6& l, G2& Q);
-void addLineWithoutP(Fp6& l, G2& R, const G2& Q);
 
 inline void dblLine(Fp6& l, G2& Q, const G1& P)
 {
@@ -301,19 +215,6 @@ static const CurveParam& CurveSNARK1 = BN_SNARK1;
 void Frobenius(G2& D, const G2& S);
 void Frobenius2(G2& D, const G2& S);
 void Frobenius3(G2& D, const G2& S);
-
-namespace BN {
-
-using namespace mcl::bn; // backward compatibility
-
-
-void init(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
-
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void init(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
-#endif
-
-} // mcl::bn::BN
 
 const CurveParam& getCurveParam();
 int getCurveType();
