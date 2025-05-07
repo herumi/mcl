@@ -162,7 +162,6 @@ struct Param {
 	bool isBLS12;
 	mpz_class p;
 	mpz_class r;
-//	local::MapTo mapTo;
 	// for G2 Frobenius
 	Fp2 g2;
 	Fp2 g3;
@@ -287,26 +286,14 @@ struct Param {
 #endif
 };
 
-template<size_t dummyImpl = 0>
-struct StaticVar {
-	static local::Param param;
-};
-
-template<size_t dummyImpl>
-local::Param StaticVar<dummyImpl>::param;
-
 } // mcl::bn::local
 
-namespace BN {
-
-static const local::Param& param = local::StaticVar<>::param;
-static local::Param& nonConstParam = local::StaticVar<>::param;
-
-} // mcl::bn::BN
+static local::Param s_nonConstParam;
+static const local::Param& s_param = s_nonConstParam;
 
 const CurveParam& getCurveParam()
 {
-	return BN::param.cp;
+	return s_param.cp;
 }
 
 int getCurveType()
@@ -414,11 +401,11 @@ inline void pow_z(Fp12& y, const Fp12& x)
 		Fp12 conj;
 		conj.a = x.a;
 		Fp6::neg(conj.b, x.b);
-		for (size_t i = 1; i < BN::param.zReplTbl.size(); i++) {
+		for (size_t i = 1; i < s_param.zReplTbl.size(); i++) {
 			fasterSqr(y, y);
-			if (BN::param.zReplTbl[i] > 0) {
+			if (s_param.zReplTbl[i] > 0) {
 				y *= orgX;
-			} else if (BN::param.zReplTbl[i] < 0) {
+			} else if (s_param.zReplTbl[i] < 0) {
 				y *= conj;
 			}
 		}
@@ -426,13 +413,13 @@ inline void pow_z(Fp12& y, const Fp12& x)
 #else
 	Fp12::pow(y, x, param.abs_z);
 #endif
-	if (BN::param.isNegative) {
+	if (s_param.isNegative) {
 		Fp12::unitaryInv(y, y);
 	}
 }
 inline void mul_twist_b(Fp2& y, const Fp2& x)
 {
-	switch (BN::param.twist_b_type) {
+	switch (s_param.twist_b_type) {
 	case local::tb_1m1i:
 		/*
 			b / xi = 1 - 1i
@@ -460,7 +447,7 @@ inline void mul_twist_b(Fp2& y, const Fp2& x)
 		}
 		return;
 	case local::tb_generic:
-		Fp2::mul(y, x, BN::param.twist_b);
+		Fp2::mul(y, x, s_param.twist_b);
 		return;
 	}
 }
@@ -822,7 +809,7 @@ void finalExp(Fp12& y, const Fp12& x)
 		return;
 	}
 	mapToCyclotomic(y, x);
-	if (BN::param.isBLS12) {
+	if (s_param.isBLS12) {
 		expHardPartBLS12(y, y);
 	} else {
 		expHardPartBN(y, y);
@@ -842,15 +829,15 @@ void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	G2::normalize(Q, Q_);
 	G2 T = Q;
 	G2 negQ;
-	if (BN::param.useNAF) {
+	if (s_param.useNAF) {
 		G2::neg(negQ, Q);
 	}
 	Fp6 d, e;
 	G1 adjP;
 	makeAdjP(adjP, P);
 	dblLine(e, T, adjP);
-	if (BN::param.siTbl[1]) {
-		if (BN::param.siTbl[1] > 0) {
+	if (s_param.siTbl[1]) {
+		if (s_param.siTbl[1] > 0) {
 			addLine(d, T, Q, P);
 		} else {
 			addLine(d, T, negQ, P);
@@ -859,12 +846,12 @@ void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	} else {
 		convertFp6toFp12(f, e);
 	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
+	for (size_t i = 2; i < s_param.siTbl.size(); i++) {
 		dblLine(e, T, adjP);
 		Fp12::sqr(f, f);
 		mulSparse(f, e);
-		if (BN::param.siTbl[i]) {
-			if (BN::param.siTbl[i] > 0) {
+		if (s_param.siTbl[i]) {
+			if (s_param.siTbl[i] > 0) {
 				addLine(e, T, Q, P);
 			} else {
 				addLine(e, T, negQ, P);
@@ -872,11 +859,11 @@ void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 			mulSparse(f, e);
 		}
 	}
-	if (BN::param.z < 0) {
+	if (s_param.z < 0) {
 		Fp6::neg(f.b, f.b);
 	}
-	if (BN::param.isBLS12) return;
-	if (BN::param.z < 0) {
+	if (s_param.isBLS12) return;
+	if (s_param.z < 0) {
 		G2::neg(T, T);
 	}
 	Frobenius(Q, Q);
@@ -891,7 +878,7 @@ void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 
 size_t getPrecomputedQcoeffSize()
 {
-	return BN::param.precomputedQcoeffSize;
+	return s_param.precomputedQcoeffSize;
 }
 
 void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
@@ -908,27 +895,27 @@ void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	}
 	G2 T = Q;
 	G2 negQ;
-	if (BN::param.useNAF) {
+	if (s_param.useNAF) {
 		G2::neg(negQ, Q);
 	}
 	dblLineWithoutP(Qcoeff[idx++], T);
-	if (BN::param.siTbl[1]) {
+	if (s_param.siTbl[1]) {
 		addLineWithoutP(Qcoeff[idx++], T, Q);
 	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
+	for (size_t i = 2; i < s_param.siTbl.size(); i++) {
 		dblLineWithoutP(Qcoeff[idx++], T);
-		if (BN::param.siTbl[i]) {
-			if (BN::param.siTbl[i] > 0) {
+		if (s_param.siTbl[i]) {
+			if (s_param.siTbl[i] > 0) {
 				addLineWithoutP(Qcoeff[idx++], T, Q);
 			} else {
 				addLineWithoutP(Qcoeff[idx++], T, negQ);
 			}
 		}
 	}
-	if (BN::param.z < 0) {
+	if (s_param.z < 0) {
 		G2::neg(T, T);
 	}
-	if (BN::param.isBLS12) return;
+	if (s_param.isBLS12) return;
 	Frobenius(Q, Q);
 	addLineWithoutP(Qcoeff[idx++], T, Q);
 	Frobenius(Q, Q);
@@ -974,28 +961,28 @@ void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
 	idx++;
 
-	if (BN::param.siTbl[1]) {
+	if (s_param.siTbl[1]) {
 		mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
 		idx++;
 		mulSparse2(f, d, e);
 	} else {
 		convertFp6toFp12(f, e);
 	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
+	for (size_t i = 2; i < s_param.siTbl.size(); i++) {
 		mulFp6cb_by_G1xy(e, Qcoeff[idx], adjP);
 		idx++;
 		Fp12::sqr(f, f);
 		mulSparse(f, e);
-		if (BN::param.siTbl[i]) {
+		if (s_param.siTbl[i]) {
 			mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
 			idx++;
 			mulSparse(f, e);
 		}
 	}
-	if (BN::param.z < 0) {
+	if (s_param.z < 0) {
 		Fp6::neg(f.b, f.b);
 	}
-	if (BN::param.isBLS12) return;
+	if (s_param.isBLS12) return;
 	mulFp6cb_by_G1xy(d, Qcoeff[idx], P);
 	idx++;
 	mulFp6cb_by_G1xy(e, Qcoeff[idx], P);
@@ -1026,7 +1013,7 @@ void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1
 	}
 	G2 T = Q1;
 	G2 negQ1;
-	if (BN::param.useNAF) {
+	if (s_param.useNAF) {
 		G2::neg(negQ1, Q1);
 	}
 	G1 adjP1, adjP2;
@@ -1040,7 +1027,7 @@ void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1
 
 	Fp12 f1, f2;
 
-	if (BN::param.siTbl[1]) {
+	if (s_param.siTbl[1]) {
 		addLine(e1, T, Q1, P1);
 		mulSparse2(f1, d1, e1);
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
@@ -1050,15 +1037,15 @@ void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1
 	} else {
 		mulSparse2(f, d1, d2);
 	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
+	for (size_t i = 2; i < s_param.siTbl.size(); i++) {
 		dblLine(e1, T, adjP1);
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
 		idx++;
 		Fp12::sqr(f, f);
 		mulSparse2(f1, e1, e2);
 		f *= f1;
-		if (BN::param.siTbl[i]) {
-			if (BN::param.siTbl[i] > 0) {
+		if (s_param.siTbl[i]) {
+			if (s_param.siTbl[i] > 0) {
 				addLine(e1, T, Q1, P1);
 			} else {
 				addLine(e1, T, negQ1, P1);
@@ -1069,11 +1056,11 @@ void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1
 			f *= f1;
 		}
 	}
-	if (BN::param.z < 0) {
+	if (s_param.z < 0) {
 		G2::neg(T, T);
 		Fp6::neg(f.b, f.b);
 	}
-	if (BN::param.isBLS12) return;
+	if (s_param.isBLS12) return;
 	Frobenius(Q1, Q1);
 	addLine(d1, T, Q1, P1);
 	mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
@@ -1105,7 +1092,7 @@ void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1
 	idx++;
 
 	Fp12 f1, f2;
-	if (BN::param.siTbl[1]) {
+	if (s_param.siTbl[1]) {
 		mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
 		mulSparse2(f1, d1, e1);
 
@@ -1116,14 +1103,14 @@ void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1
 	} else {
 		mulSparse2(f, d1, d2);
 	}
-	for (size_t i = 2; i < BN::param.siTbl.size(); i++) {
+	for (size_t i = 2; i < s_param.siTbl.size(); i++) {
 		mulFp6cb_by_G1xy(e1, Q1coeff[idx], adjP1);
 		mulFp6cb_by_G1xy(e2, Q2coeff[idx], adjP2);
 		idx++;
 		Fp12::sqr(f, f);
 		mulSparse2(f1, e1, e2);
 		f *= f1;
-		if (BN::param.siTbl[i]) {
+		if (s_param.siTbl[i]) {
 			mulFp6cb_by_G1xy(e1, Q1coeff[idx], P1);
 			mulFp6cb_by_G1xy(e2, Q2coeff[idx], P2);
 			idx++;
@@ -1131,10 +1118,10 @@ void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1
 			f *= f1;
 		}
 	}
-	if (BN::param.z < 0) {
+	if (s_param.z < 0) {
 		Fp6::neg(f.b, f.b);
 	}
-	if (BN::param.isBLS12) return;
+	if (s_param.isBLS12) return;
 	mulFp6cb_by_G1xy(d1, Q1coeff[idx], P1);
 	mulFp6cb_by_G1xy(d2, Q2coeff[idx], P2);
 	idx++;
@@ -1195,12 +1182,12 @@ inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, b
 	Fp6 d, e;
 	for (size_t i = 0; i < n; i++) {
 		T[i] = Q[i];
-		if (BN::param.useNAF) {
+		if (s_param.useNAF) {
 			G2::neg(negQ[i], Q[i]);
 		}
 		makeAdjP(adjP[i], P[i]);
 		dblLine(d, T[i], adjP[i]);
-		if (BN::param.siTbl[1]) {
+		if (s_param.siTbl[1]) {
 			addLine(e, T[i], Q[i], P[i]);
 			if (i == 0) {
 				mulSparse2(f, d, e);
@@ -1217,12 +1204,12 @@ inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, b
 			}
 		}
 	}
-	for (size_t j = 2; j < BN::param.siTbl.size(); j++) {
+	for (size_t j = 2; j < s_param.siTbl.size(); j++) {
 		Fp12::sqr(f, f);
 		for (size_t i = 0; i < n; i++) {
 			dblLine(e, T[i], adjP[i]);
 			mulSparse(f, e);
-			int v = BN::param.siTbl[j];
+			int v = s_param.siTbl[j];
 			if (v) {
 				if (v > 0) {
 					addLine(e, T[i], Q[i], P[i]);
@@ -1233,12 +1220,12 @@ inline void millerLoopVecN(Fp12& _f, const G1* Pvec, const G2* Qvec, size_t n, b
 			}
 		}
 	}
-	if (BN::param.z < 0) {
+	if (s_param.z < 0) {
 		Fp6::neg(f.b, f.b);
 	}
-	if (BN::param.isBLS12) goto EXIT;
+	if (s_param.isBLS12) goto EXIT;
 	for (size_t i = 0; i < n; i++) {
-		if (BN::param.z < 0) {
+		if (s_param.z < 0) {
 			G2::neg(T[i], T[i]);
 		}
 		Frobenius(Q[i], Q[i]);
@@ -1331,7 +1318,7 @@ void hashAndMapToG2(G2& P, const std::string& str);
 
 void verifyOrderG1(bool doVerify)
 {
-	if (BN::param.isBLS12) {
+	if (s_param.isBLS12) {
 		G1::setOrder(doVerify ? Fr::getOp().mp : 0);
 	}
 }
@@ -1345,7 +1332,7 @@ bool isValidOrderBLS12(const G2& P)
 	G2 T2, T3;
 	Frobenius2(T2, P);
 	Frobenius(T3, T2);
-	G2::mulGeneric(T3, T3, BN::param.z);
+	G2::mulGeneric(T3, T3, s_param.z);
 	T2 -= T3;
 	return T2 == P;
 }
@@ -1364,8 +1351,8 @@ void Frobenius(G2& D, const G2& S)
 	Fp2::Frobenius(D.x, S.x);
 	Fp2::Frobenius(D.y, S.y);
 	Fp2::Frobenius(D.z, S.z);
-	D.x *= BN::param.g2;
-	D.y *= BN::param.g3;
+	D.x *= s_param.g2;
+	D.y *= s_param.g3;
 }
 void Frobenius2(G2& D, const G2& S)
 {
@@ -1379,13 +1366,11 @@ void Frobenius3(G2& D, const G2& S)
 	Frobenius(D, D);
 }
 
-namespace BN {
-
 using namespace mcl::bn; // backward compatibility
 
 void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 {
-	BN::nonConstParam.init(pb, cp, mode);
+	s_nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
@@ -1419,7 +1404,7 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	G2::setCompressedExpression();
 	verifyOrderG1(false);
 	verifyOrderG2(false);
-	if (BN::param.isBLS12) {
+	if (s_param.isBLS12) {
 		G1::setVerifyOrderFunc(isValidOrderBLS12);
 		G2::setVerifyOrderFunc(isValidOrderBLS12);
 	}
@@ -1435,18 +1420,16 @@ void init(const mcl::CurveParam& cp, fp::Mode mode)
 }
 #endif
 
-} // mcl::bn::BN
-
 void initPairing(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 {
-	BN::init(pb, cp, mode);
+	init(pb, cp, mode);
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 void initPairing(const mcl::CurveParam& cp, fp::Mode mode)
 {
 	bool b;
-	BN::init(&b, cp, mode);
+	init(&b, cp, mode);
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
 #endif
@@ -1456,7 +1439,7 @@ void initG1only(bool *pb, const mcl::EcParam& para)
 	G1::setMulVecGLV(0);
 	G2::setMulVecGLV(0);
 	Fp12::setPowVecGLV(0);
-	BN::nonConstParam.initG1only(pb, para);
+	s_nonConstParam.initG1only(pb, para);
 	if (!*pb) return;
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
@@ -1464,7 +1447,7 @@ void initG1only(bool *pb, const mcl::EcParam& para)
 
 const G1& getG1basePoint()
 {
-	return BN::param.basePoint;
+	return s_param.basePoint;
 }
 
 bool isValidGT(const GT& x)
