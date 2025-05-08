@@ -389,7 +389,18 @@ inline const char* getIoSeparator(int ioMode)
 }
 
 #ifndef CYBOZU_DONT_USE_STRING
-int detectIoMode(int ioMode, const std::ios_base& ios);
+inline int detectIoMode(int ioMode, const std::ios_base& ios)
+{
+	if (ioMode & ~IoPrefix) return ioMode;
+	// IoAuto or IoPrefix
+	const std::ios_base::fmtflags f = ios.flags();
+	assert(!(f & std::ios_base::oct));
+	ioMode |= (f & std::ios_base::hex) ? IoHex : 0;
+	if (f & std::ios_base::showbase) {
+		ioMode |= IoPrefix;
+	}
+	return ioMode;
+}
 
 #endif
 

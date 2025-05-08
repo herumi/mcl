@@ -9,7 +9,7 @@
 */
 namespace mcl {
 
-void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P);
+void mulByCofactorBLS12fast(G2& Q, const G2& P);
 
 // y^2 = x^3 + 4(1 + i)
 template<class F>
@@ -40,8 +40,8 @@ template<class F> F PointT<F>::b_;
 template<class F> int PointT<F>::specialA_ = ec::local::GenericA;
 
 struct MapTo_WB19 {
-	typedef PointT<mcl::Fp> E1;
-	typedef PointT<mcl::Fp2> E2;
+	typedef PointT<Fp> E1;
+	typedef PointT<Fp2> E2;
 	struct Dst {
 		static const size_t maxDstLen = 64;
 		char dst[maxDstLen + 1];
@@ -524,7 +524,7 @@ struct MapTo_WB19 {
 	void hashToFp2(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
 		uint8_t md[256];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
+		fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		Fp *x = out[0].getFp0();
 		for (size_t i = 0; i < 4; i++) {
 			bool b;
@@ -557,7 +557,7 @@ struct MapTo_WB19 {
 	void msgToG1(G1& out, const void *msg, size_t msgSize, const char *dst, size_t dstSize) const
 	{
 		uint8_t md[128];
-		mcl::fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
+		fp::expand_message_xmd(md, sizeof(md), msg, msgSize, dst, dstSize);
 		Fp u[2];
 		for (size_t i = 0; i < 2; i++) {
 			bool b;
