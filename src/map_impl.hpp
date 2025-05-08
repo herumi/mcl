@@ -96,13 +96,6 @@ struct MapTo {
 	*/
 	void mulByCofactorBN(G2& Q, const G2& P) const
 	{
-#if 0
-		G2::mulGeneric(Q, P, cofactor_);
-#else
-#if 0
-		mpz_class t = -(1 + z_ * (3 + z_ * (12 + z_ * 18)));
-		G2::mulGeneric(Q, P, t * cofactor_);
-#else
 		G2 T0, T1, T2;
 		/*
 			G2::mul (GLV method) can't be used because P is not on G2
@@ -116,8 +109,6 @@ struct MapTo {
 		T0 += T2;
 		bn::Frobenius3(T2, P);
 		G2::add(Q, T0, T2);
-#endif
-#endif
 	}
 	/*
 		#(Fp) / r = (z + 1 - t) / r = (z - 1)^2 / 3
@@ -420,13 +411,9 @@ bool isValidOrderBLS12(const G1& P)
 	return T0 == T1;
 }
 
-namespace local {
-
 void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P)
 {
 	mapTo.mulByCofactorBLS12fast(Q, P);
-}
-
 }
 
 } } // mcl::bn

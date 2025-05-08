@@ -9,8 +9,6 @@
 */
 namespace mcl { namespace bn {
 
-namespace local {
-
 void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P);
 
 // y^2 = x^3 + 4(1 + i)
@@ -41,11 +39,9 @@ template<class F> F PointT<F>::a_;
 template<class F> F PointT<F>::b_;
 template<class F> int PointT<F>::specialA_ = ec::local::GenericA;
 
-} // mcl::local
-
 struct MapTo_WB19 {
-	typedef local::PointT<mcl::Fp> E1;
-	typedef local::PointT<mcl::Fp2> E2;
+	typedef PointT<mcl::Fp> E1;
+	typedef PointT<mcl::Fp2> E2;
 	struct Dst {
 		static const size_t maxDstLen = 64;
 		char dst[maxDstLen + 1];
@@ -523,7 +519,7 @@ struct MapTo_WB19 {
 			ec::addJacobi(Pp, Pp, P2);
 		}
 		iso3(P, Pp);
-		local::mulByCofactorBLS12fast(P, P);
+		mulByCofactorBLS12fast(P, P);
 	}
 	void hashToFp2(Fp2 out[2], const void *msg, size_t msgSize, const void *dst, size_t dstSize) const
 	{
