@@ -7,7 +7,6 @@
 using namespace mcl;
 typedef Fr Zn;
 typedef G1 Ec;
-typedef mcl::ElgamalT<Ec> ElgamalEc;
 
 const mcl::EcParam& para = mcl::ecparam::secp192k1;
 cybozu::RandomGenerator g_rg;
