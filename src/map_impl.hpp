@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace mcl { namespace bn {
+namespace mcl {
 
 struct MapTo {
 	enum {
@@ -103,11 +103,11 @@ struct MapTo {
 		G2::mulGeneric(T0, P, z_);
 		G2::dbl(T1, T0);
 		T1 += T0; // 3zP
-		bn::Frobenius(T1, T1);
-		bn::Frobenius2(T2, T0);
+		Frobenius(T1, T1);
+		Frobenius2(T2, T0);
 		T0 += T1;
 		T0 += T2;
-		bn::Frobenius3(T2, P);
+		Frobenius3(T2, P);
 		G2::add(Q, T0, T2);
 	}
 	/*
@@ -128,10 +128,10 @@ struct MapTo {
 		G2::mulGeneric(T0, P, z_ - 1);
 		G2::mulGeneric(T1, T0, z_);
 		T1 -= P;
-		bn::Frobenius(T0, T0);
+		Frobenius(T0, T0);
 		T0 += T1;
 		G2::dbl(T1, P);
-		bn::Frobenius2(T1, T1);
+		Frobenius2(T1, T1);
 		G2::add(Q, T0, T1);
 	}
 	void mulByCofactorBLS12(G2& Q, const G2& P) const
@@ -416,4 +416,4 @@ void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P)
 	mapTo.mulByCofactorBLS12fast(Q, P);
 }
 
-} } // mcl::bn
+} // mcl

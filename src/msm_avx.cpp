@@ -1781,7 +1781,7 @@ CYBOZU_TEST_AUTO(init)
 	puts("BLS12_381");
 	initPairing(mcl::BLS12_381);
 #endif
-	g_mont.init(mcl::bn::Fp::getOp().mp);
+	g_mont.init(mcl::Fp::getOp().mp);
 }
 
 void putA(const uint64_t a[64], const char *msg)
@@ -1904,9 +1904,9 @@ CYBOZU_TEST_AUTO(cmp)
 #endif
 }
 
-void setRand(FpM& x, cybozu::XorShift& rg, mcl::bn::Fp *t = 0)
+void setRand(FpM& x, cybozu::XorShift& rg, mcl::Fp *t = 0)
 {
-	if (t == 0) t = (mcl::bn::Fp*)CYBOZU_ALLOCA(sizeof(mcl::bn::Fp)*N);
+	if (t == 0) t = (mcl::Fp*)CYBOZU_ALLOCA(sizeof(mcl::Fp)*N);
 	for (size_t i = 0; i < N; i++) {
 		t[i].setByCSPRNG(rg);
 	}
@@ -1917,7 +1917,7 @@ CYBOZU_TEST_AUTO(conv)
 {
 	const int C = 16;
 	FpM x1;
-	mcl::bn::Fp x2[8], x3[8];
+	mcl::Fp x2[8], x3[8];
 	cybozu::XorShift rg;
 	for (int i = 0; i < C; i++) {
 		setRand(x1, rg, x2);
@@ -1950,29 +1950,29 @@ void forcedRead(const T& x)
 	(void)dummy;
 }
 
-void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
+void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 {
-	mcl::bn::Fp z[8];
+	mcl::Fp z[8];
 	FpM xm, ym, zm, wm;
 	xm.setFpA((const mcl::msm::FpA*)x);
 	ym.setFpA((const mcl::msm::FpA*)y);
 	// add
 	for (size_t i = 0; i < 8; i++) {
-		mcl::bn::Fp::add(z[i], x[i], y[i]);
+		mcl::Fp::add(z[i], x[i], y[i]);
 	}
 	mcl_c5_vadd(zm.v, xm.v, ym.v);
 	wm.setFpA((const mcl::msm::FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// sub
 	for (size_t i = 0; i < 8; i++) {
-		mcl::bn::Fp::sub(z[i], x[i], y[i]);
+		mcl::Fp::sub(z[i], x[i], y[i]);
 	}
 	mcl_c5_vsub(zm.v, xm.v, ym.v);
 	wm.setFpA((const mcl::msm::FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// mul
 	for (size_t i = 0; i < 8; i++) {
-		mcl::bn::Fp::mul(z[i], x[i], y[i]);
+		mcl::Fp::mul(z[i], x[i], y[i]);
 	}
 	mcl_c5_vmul(zm.v, xm.v, ym.v);
 	wm.setFpA((const mcl::msm::FpA*)z);
@@ -1986,7 +1986,7 @@ void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
 	}
 	// sqr
 	for (size_t i = 0; i < 8; i++) {
-		mcl::bn::Fp::sqr(z[i], x[i]);
+		mcl::Fp::sqr(z[i], x[i]);
 	}
 	mcl_c5_vsqr(zm.v, xm.v);
 	wm.setFpA((const mcl::msm::FpA*)z);
@@ -2004,7 +2004,7 @@ void asmTest(const mcl::bn::Fp x[8], const mcl::bn::Fp y[8])
 CYBOZU_TEST_AUTO(asm)
 {
 	cybozu::XorShift rg;
-	mcl::bn::Fp x[8], y[8];
+	mcl::Fp x[8], y[8];
 	for (int i = 0; i < 30; i++) {
 		for (int k = 0; k < 8; k++) {
 			x[k] = i*8+k;
@@ -2160,9 +2160,9 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("FpM::inv", C/100, FpM::inv, z[0], z[0]);
 	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
 	{
-		mcl::bn::Fp vv[8*vN];
+		mcl::Fp vv[8*vN];
 		za.getFpA((mcl::msm::FpA*)vv);
-		CYBOZU_BENCH_C("Fp::inv(8)", C/100, mcl::invVec<mcl::bn::Fp>, vv, vv, 8*vN);
+		CYBOZU_BENCH_C("Fp::inv(8)", C/100, mcl::invVec<mcl::Fp>, vv, vv, 8*vN);
 	}
 	forcedRead(z);
 	forcedRead(za);
@@ -2401,7 +2401,7 @@ CYBOZU_TEST_AUTO(mulEach_special)
 	Fr x[n];
 	mpz_class L;
 	for (size_t i = 0; i < n; i++) P[i].clear();
-	mcl::bn::hashAndMapToG1(P[0], "abc");
+	mcl::hashAndMapToG1(P[0], "abc");
 	x[0].setHashOf("abc", 3);
 #ifdef MCL_MSM_BLS12_377
 	mcl::gmp::setStr(L, "0x452217cc900000010a11800000000000");

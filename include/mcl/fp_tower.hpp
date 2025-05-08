@@ -1541,5 +1541,15 @@ private:
 	bool isOne() const;
 };
 
+inline void Frobenius(Fp2& y, const Fp2& x)
+{
+	Fp2::Frobenius(y, x);
+}
+
+inline void Frobenius(Fp12& y, const Fp12& x)
+{
+	Fp12::Frobenius(y, x);
+}
+
 } // mcl
 

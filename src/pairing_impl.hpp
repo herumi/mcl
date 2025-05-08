@@ -23,31 +23,6 @@
 
 namespace mcl {
 
-namespace bn {
-
-// backward compatibility
-typedef mcl::Fp Fp;
-typedef mcl::Fr Fr;
-typedef mcl::G1 G1;
-typedef mcl::G2 G2;
-typedef mcl::GT GT;
-typedef mcl::Fp2 Fp2;
-typedef mcl::Fp6 Fp6;
-typedef mcl::Fp12 Fp12;
-
-typedef mcl::FpDbl FpDbl;
-typedef mcl::Fp2Dbl Fp2Dbl;
-typedef mcl::Fp6Dbl Fp6Dbl;
-
-inline void Frobenius(Fp2& y, const Fp2& x)
-{
-	Fp2::Frobenius(y, x);
-}
-inline void Frobenius(Fp12& y, const Fp12& x)
-{
-	Fp12::Frobenius(y, x);
-}
-
 // mapTo
 void mapToInit(const mpz_class& cofactor, const mpz_class &z, int curveType);
 
@@ -327,7 +302,7 @@ inline void fasterSqr(Fp12& y, const Fp12& x)
 inline void pow_z(Fp12& y, const Fp12& x)
 {
 #if 1
-	if (mcl::bn::getCurveType() == MCL_BN254) {
+	if (mcl::getCurveType() == MCL_BN254) {
 		Compress::fixed_power(y, x);
 	} else {
 		Fp12 orgX = x;
@@ -1277,7 +1252,6 @@ bool isValidOrderBLS12(const G2& P)
 bool isValidOrderBLS12(const G1& P);
 
 // backward compatibility
-using mcl::CurveParam;
 static const CurveParam& CurveFp254BNb = BN254;
 static const CurveParam& CurveFp382_1 = BN381_1;
 static const CurveParam& CurveFp382_2 = BN381_2;
@@ -1304,8 +1278,6 @@ void Frobenius3(G2& D, const G2& S)
 	Frobenius(D, D);
 }
 
-using namespace mcl::bn; // backward compatibility
-
 void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 {
 	s_nonConstParam.init(pb, cp, mode);
@@ -1316,8 +1288,8 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	mcl::msm::Func func;
 	func.fp = &Fp::getOp();
 	func.fr = &Fr::getOp();
-	func.invVecFp = mcl::invVec<mcl::bn::Fp>;
-	func.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::bn::G1>);
+	func.invVecFp = mcl::invVec<mcl::Fp>;
+	func.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::G1>);
 #if (defined(__GNUC__) || defined(__clang__))  && !defined(__EMSCRIPTEN__)
 	// avoid gcc wrong detection
 	#pragma GCC diagnostic push
@@ -1395,5 +1367,5 @@ bool isValidGT(const GT& x)
 	return y.isOne();
 }
 
-} } // mcl::bn
+} // mcl
 

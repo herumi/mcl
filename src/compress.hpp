@@ -1,6 +1,6 @@
 #pragma once
 
-namespace mcl { namespace bn {
+namespace mcl {
 
 struct Compress {
 	Fp12& z_;
@@ -165,5 +165,5 @@ public:
 	}
 };
 
-} } // mcl::bn
+} // mcl
 
