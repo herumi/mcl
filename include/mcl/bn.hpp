@@ -18,30 +18,7 @@
 #include <omp.h>
 #endif
 
-namespace mcl { namespace bn {
-
-// backward compatibility
-typedef mcl::Fp Fp;
-typedef mcl::Fr Fr;
-typedef mcl::G1 G1;
-typedef mcl::G2 G2;
-typedef mcl::GT GT;
-typedef mcl::Fp2 Fp2;
-typedef mcl::Fp6 Fp6;
-typedef mcl::Fp12 Fp12;
-
-typedef mcl::FpDbl FpDbl;
-typedef mcl::Fp2Dbl Fp2Dbl;
-typedef mcl::Fp6Dbl Fp6Dbl;
-
-inline void Frobenius(Fp2& y, const Fp2& x)
-{
-	Fp2::Frobenius(y, x);
-}
-inline void Frobenius(Fp12& y, const Fp12& x)
-{
-	Fp12::Frobenius(y, x);
-}
+namespace mcl {
 
 // mapTo
 void mapToInit(const mpz_class& cofactor, const mpz_class &z, int curveType);
@@ -160,22 +137,6 @@ static const CurveParam& CurveFp382_2 = BN381_2;
 static const CurveParam& CurveFp462 = BN462;
 static const CurveParam& CurveSNARK1 = BN_SNARK1;
 
-/*
-	FrobeniusOnTwist for Dtype
-	p mod 6 = 1, w^6 = xi
-	Frob(x', y') = phi Frob phi^-1(x', y')
-	= phi Frob (x' w^2, y' w^3)
-	= phi (x'^p w^2p, y'^p w^3p)
-	= (F(x') w^2(p - 1), F(y') w^3(p - 1))
-	= (F(x') g^2, F(y') g^3)
-
-	FrobeniusOnTwist for Mtype(BLS12-381)
-	use (1/g) instead of g
-*/
-void Frobenius(G2& D, const G2& S);
-void Frobenius2(G2& D, const G2& S);
-void Frobenius3(G2& D, const G2& S);
-
 const CurveParam& getCurveParam();
 int getCurveType();
 
@@ -195,5 +156,9 @@ const G1& getG1basePoint();
 */
 bool isValidGT(const GT& x);
 
-} } // mcl::bn
+// for backward compatibility
+namespace bn {
+using namespace mcl;
+} // mcl::bn
 
+} // mcl

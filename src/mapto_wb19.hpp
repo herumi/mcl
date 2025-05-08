@@ -7,7 +7,7 @@
 	http://opensource.org/licenses/BSD-3-Clause
 	ref. https://eprint.iacr.org/2019/403 , https://github.com/algorand/bls_sigs_ref
 */
-namespace mcl { namespace bn {
+namespace mcl {
 
 void mulByCofactorBLS12fast(mcl::G2& Q, const mcl::G2& P);
 
@@ -573,5 +573,5 @@ struct MapTo_WB19 {
 	}
 };
 
-} } // mcl::bn
+} // mcl
 

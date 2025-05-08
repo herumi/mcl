@@ -3,6 +3,6 @@
 
 int main()
 {
-	mcl::bn::initPairing(mcl::BLS12_381);
+	mcl::initPairing(mcl::BLS12_381);
 }
 
