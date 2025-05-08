@@ -10,9 +10,6 @@
 #include <mcl/g2_def.hpp>
 #include <mcl/curve_type.hpp>
 #include <assert.h>
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-#include <vector>
-#endif
 
 #ifdef MCL_USE_OMP
 #include <omp.h>
@@ -40,7 +37,7 @@ size_t getPrecomputeQcoeffSize(const Int8Vec& sv)
 }
 
 template<class X, class C, size_t N>
-X evalPoly(const X& x, const C (&c)[N])
+inline X evalPoly(const X& x, const C (&c)[N])
 {
 	X ret = c[N - 1];
 	for (size_t i = 1; i < N; i++) {
@@ -189,14 +186,6 @@ struct Param {
 		mcl::initCurve<G1>(pb, para.curveType, &basePoint);
 		mapToInit(0, 0, para.curveType);
 	}
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-	void init(const mcl::CurveParam& cp, fp::Mode mode)
-	{
-		bool b;
-		init(&b, cp, mode);
-		if (!b) throw cybozu::Exception("Param:init");
-	}
-#endif
 };
 
 static Param s_nonConstParam;
@@ -691,16 +680,7 @@ inline void expHardPartBN(Fp12& y, const Fp12& x)
 */
 inline void makeAdjP(G1& adjP, const G1& P)
 {
-#if 1
 	assert(!P.isZero());
-#else
-	if (P.isZero()) {
-		adjP.x.clear();
-		adjP.y.clear();
-		adjP.z.clear();
-		return;
-	}
-#endif
 	Fp x2;
 	Fp::mul2(x2, P.x);
 	Fp::add(adjP.x, x2, P.x);
@@ -836,27 +816,6 @@ void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	addLineWithoutP(Qcoeff[idx++], T, Q);
 	assert(idx == getPrecomputedQcoeffSize());
 }
-/*
-	millerLoop(e, P, Q) is same as the following
-	std::vector<Fp6> Qcoeff;
-	precomputeG2(Qcoeff, Q);
-	precomputedMillerLoop(e, P, Qcoeff);
-*/
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void precomputeG2(std::vector<Fp6>& Qcoeff, const G2& Q)
-{
-	Qcoeff.resize(getPrecomputedQcoeffSize());
-	precomputeG2(Qcoeff.data(), Q);
-}
-#endif
-
-template<class Array>
-void precomputeG2(bool *pb, Array& Qcoeff, const G2& Q)
-{
-	*pb = Qcoeff.resize(getPrecomputedQcoeffSize());
-	if (!*pb) return;
-	precomputeG2(Qcoeff.data(), Q);
-}
 
 void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
@@ -904,13 +863,6 @@ void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	mulSparse2(ft, d, e);
 	f *= ft;
 }
-
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void precomputedMillerLoop(Fp12& f, const G1& P, const std::vector<Fp6>& Qcoeff)
-{
-	precomputedMillerLoop(f, P, Qcoeff.data());
-}
-#endif
 
 void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff)
 {
@@ -1046,16 +998,6 @@ void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1
 	f *= f1;
 	f *= f2;
 }
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void precomputedMillerLoop2(Fp12& f, const G1& P1, const std::vector<Fp6>& Q1coeff, const G1& P2, const std::vector<Fp6>& Q2coeff)
-{
-	precomputedMillerLoop2(f, P1, Q1coeff.data(), P2, Q2coeff.data());
-}
-void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, const G1& P2, const std::vector<Fp6>& Q2coeff)
-{
-	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
-}
-#endif
 
 /*
 	e = prod_i ML(Pvec[i], Qvec[i])
@@ -1203,32 +1145,6 @@ void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t c
 #endif
 }
 
-bool setMapToMode(int mode);
-int getMapToMode();
-void mapToG1(bool *pb, G1& P, const Fp& x);
-void mapToG2(bool *pb, G2& P, const Fp2& x);
-
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void mapToG1(G1& P, const Fp& x);
-void mapToG2(G2& P, const Fp2& x);
-#endif
-
-void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
-void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
-void hashAndMapToG1(G1& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize);
-void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize);
-// set the default dst for G1
-// return 0 if success else -1
-bool setDstG1(const char *dst, size_t dstSize);
-// set the default dst for G2
-// return 0 if success else -1
-bool setDstG2(const char *dst, size_t dstSize);
-
-#ifndef CYBOZU_DONT_USE_STRING
-void hashAndMapToG1(G1& P, const std::string& str);
-void hashAndMapToG2(G2& P, const std::string& str);
-#endif
-
 void verifyOrderG1(bool doVerify)
 {
 	if (s_param.isBLS12) {
@@ -1251,12 +1167,14 @@ bool isValidOrderBLS12(const G2& P)
 }
 bool isValidOrderBLS12(const G1& P);
 
+#if 0
 // backward compatibility
 static const CurveParam& CurveFp254BNb = BN254;
 static const CurveParam& CurveFp382_1 = BN381_1;
 static const CurveParam& CurveFp382_2 = BN381_2;
 static const CurveParam& CurveFp462 = BN462;
 static const CurveParam& CurveSNARK1 = BN_SNARK1;
+#endif
 
 void Frobenius(G2& D, const G2& S)
 {
@@ -1321,28 +1239,10 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	*pb = true;
 }
 
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void init(const mcl::CurveParam& cp, fp::Mode mode)
-{
-	bool b;
-	init(&b, cp, mode);
-	if (!b) throw cybozu::Exception("BN:init");
-}
-#endif
-
 void initPairing(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 {
 	init(pb, cp, mode);
 }
-
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void initPairing(const mcl::CurveParam& cp, fp::Mode mode)
-{
-	bool b;
-	init(&b, cp, mode);
-	if (!b) throw cybozu::Exception("bn:initPairing");
-}
-#endif
 
 void initG1only(bool *pb, const mcl::EcParam& para)
 {

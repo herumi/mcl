@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace mcl {
 
 struct MapTo {
@@ -316,20 +315,6 @@ int getMapToMode()
 void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = mapTo.calc(P, x); }
 void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = mapTo.calc(P, x); }
 
-#ifndef CYBOZU_DONT_USE_EXCEPTION
-void mapToG1(G1& P, const Fp& x)
-{
-	bool b;
-	mapToG1(&b, P, x);
-	if (!b) throw cybozu::Exception("mapToG1:bad value") << x;
-}
-void mapToG2(G2& P, const Fp2& x)
-{
-	bool b;
-	mapToG2(&b, P, x);
-	if (!b) throw cybozu::Exception("mapToG2:bad value") << x;
-}
-#endif
 void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 {
 	int mode = getMapToMode();
@@ -381,16 +366,6 @@ bool setDstG2(const char *dst, size_t dstSize)
 {
 	return mapTo.mapTo_WB19_.dstG2.set(dst, dstSize);
 }
-#ifndef CYBOZU_DONT_USE_STRING
-void hashAndMapToG1(G1& P, const std::string& str)
-{
-	hashAndMapToG1(P, str.c_str(), str.size());
-}
-void hashAndMapToG2(G2& P, const std::string& str)
-{
-	hashAndMapToG2(P, str.c_str(), str.size());
-}
-#endif
 
 /*
 	z2 = (z^2-1)/3, c2 = (-1 + sqrt(-3))/2

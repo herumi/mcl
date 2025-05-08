@@ -525,21 +525,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	return fp::initForMont(*this, p, mode);
 }
 
-#ifndef CYBOZU_DONT_USE_STRING
-int detectIoMode(int ioMode, const std::ios_base& ios)
-{
-	if (ioMode & ~IoPrefix) return ioMode;
-	// IoAuto or IoPrefix
-	const std::ios_base::fmtflags f = ios.flags();
-	assert(!(f & std::ios_base::oct));
-	ioMode |= (f & std::ios_base::hex) ? IoHex : 0;
-	if (f & std::ios_base::showbase) {
-		ioMode |= IoPrefix;
-	}
-	return ioMode;
-}
-#endif
-
 static bool isInUint64(uint64_t *pv, const fp::Block& b)
 {
 	assert(UnitBitSize == 32 || UnitBitSize == 64);
