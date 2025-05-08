@@ -21,13 +21,13 @@
 #include <cybozu/itoa.hpp>
 #include <cybozu/atoi.hpp>
 #include <mcl/window_method.hpp>
+#include <mcl/g1_def.hpp>
 
 namespace mcl {
 
-template<class _Ec>
-struct ElgamalT {
-	typedef _Ec Ec;
-	typedef typename _Ec::Fr Zn;
+struct ElgamalEc {
+	typedef G1 Ec;
+	typedef Fr Zn;
 	struct CipherText {
 		Ec c1;
 		Ec c2;
@@ -395,7 +395,7 @@ struct ElgamalT {
 		Cache cache;
 		void init(const Ec& g, int rangeMin, int rangeMax)
 		{
-			if (rangeMin > rangeMax) throw cybozu::Exception("mcl:ElgamalT:PowerCache:bad range") << rangeMin << rangeMax;
+			if (rangeMin > rangeMax) throw cybozu::Exception("ElgamalEc:PowerCache:bad range") << rangeMin << rangeMax;
 			Ec x;
 			x.clear();
 			cache[x] = 0;
@@ -422,7 +422,7 @@ struct ElgamalT {
 					*b = false;
 					return 0;
 				}
-				throw cybozu::Exception("Elgamal:PowerCache:getExponent:not found") << y;
+				throw cybozu::Exception("ElgamalEc:PowerCache:getExponent:not found") << y;
 			}
 			if (b) *b = true;
 			return i->second;

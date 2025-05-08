@@ -18,7 +18,7 @@
 using namespace mcl;
 typedef Fr Zn;
 typedef G1 Ec;
-typedef mcl::ElgamalT<Ec> Elgamal;
+typedef ElgamalEc Elgamal;
 
 cybozu::RandomGenerator rg;
 

@@ -13,7 +13,6 @@ const mcl::EcParam& g_para = mcl::ecparam::secp256k1;
 void elgamal()
 {
 	puts("elgamal");
-	typedef mcl::ElgamalT<Ec> ElgamalEc;
 	Ec P;
 	mcl::initCurve<Ec>(g_para.curveType, &P);
 	const size_t bitSize = Zn::getBitSize();
