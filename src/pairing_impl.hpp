@@ -51,11 +51,9 @@ inline void Frobenius(Fp12& y, const Fp12& x)
 // mapTo
 void mapToInit(const mpz_class& cofactor, const mpz_class &z, int curveType);
 
-namespace local {
+typedef mcl::FixedArray<int8_t, 128> Int8Vec;
 
-typedef mcl::FixedArray<int8_t, 128> SignVec;
-
-size_t getPrecomputeQcoeffSize(const SignVec& sv)
+size_t getPrecomputeQcoeffSize(const Int8Vec& sv)
 {
 	size_t idx = 2 + 1;
 	if (sv[1]) idx++;
@@ -88,15 +86,7 @@ enum TwistBtype {
 */
 inline void updateLine(Fp6& l, const G1& P)
 {
-#if 1
 	assert(!P.isZero());
-#else
-	if (P.isZero()) {
-		l.b.clear();
-		l.c.clear();
-		return;
-	}
-#endif
 	l.b.a *= P.y;
 	l.b.b *= P.y;
 	l.c.a *= P.x;
@@ -125,13 +115,13 @@ struct Param {
 		=> y'^2 = x'^3 + twist_b;
 	*/
 	Fp2 twist_b;
-	local::TwistBtype twist_b_type;
+	TwistBtype twist_b_type;
 
 	// Loop parameter for the Miller loop part of opt. ate pairing.
-	local::SignVec siTbl;
+	Int8Vec siTbl;
 	size_t precomputedQcoeffSize;
 	bool useNAF;
-	local::SignVec zReplTbl;
+	Int8Vec zReplTbl;
 
 	// for initG1only
 	G1 basePoint;
@@ -163,9 +153,9 @@ struct Param {
 		} else {
 			const int pCoff[] = { 1, 6, 24, 36, 36 };
 			const int rCoff[] = { 1, 6, 18, 36, 36 };
-			p = local::evalPoly(z, pCoff);
+			p = evalPoly(z, pCoff);
 			assert((p % 6) == 1);
-			r = local::evalPoly(z, rCoff);
+			r = evalPoly(z, rCoff);
 		}
 		Fr::init(pb, r, mode);
 		if (!*pb) return;
@@ -205,7 +195,7 @@ struct Param {
 
 		const mpz_class largest_c = isBLS12 ? abs_z : gmp::abs(z * 6 + 2);
 		useNAF = gmp::getNAF(siTbl, largest_c);
-		precomputedQcoeffSize = local::getPrecomputeQcoeffSize(siTbl);
+		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
 		if (isBLS12) {
 			mapToInit(0, z, cp.curveType);
@@ -234,10 +224,8 @@ struct Param {
 #endif
 };
 
-} // mcl::bn::local
-
-static local::Param s_nonConstParam;
-static const local::Param& s_param = s_nonConstParam;
+static Param s_nonConstParam;
+static const Param& s_param = s_nonConstParam;
 
 const CurveParam& getCurveParam()
 {
@@ -248,8 +236,6 @@ int getCurveType()
 {
 	return getCurveParam().curveType;
 }
-
-namespace local {
 
 bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
 {
@@ -368,7 +354,7 @@ inline void pow_z(Fp12& y, const Fp12& x)
 inline void mul_twist_b(Fp2& y, const Fp2& x)
 {
 	switch (s_param.twist_b_type) {
-	case local::tb_1m1i:
+	case tb_1m1i:
 		/*
 			b / xi = 1 - 1i
 			(a + bi)(1 - 1i) = (a + b) + (b - a)i
@@ -380,7 +366,7 @@ inline void mul_twist_b(Fp2& y, const Fp2& x)
 			y.a = t;
 		}
 		return;
-	case local::tb_1m2i:
+	case tb_1m2i:
 		/*
 			b / xi = 1 - 2i
 			(a + bi)(1 - 2i) = (a + 2b) + (b - 2a)i
@@ -394,13 +380,13 @@ inline void mul_twist_b(Fp2& y, const Fp2& x)
 			y.b = t;
 		}
 		return;
-	case local::tb_generic:
+	case tb_generic:
 		Fp2::mul(y, x, s_param.twist_b);
 		return;
 	}
 }
 
-void dblLineWithoutP(Fp6& l, G2& Q)
+inline void dblLineWithoutP(Fp6& l, G2& Q)
 {
 	Fp2 t0, t1, t2, t3, t4, t5;
 	Fp2Dbl T0, T1;
@@ -434,7 +420,7 @@ void dblLineWithoutP(Fp6& l, G2& Q)
 	l.b = t3;
 }
 
-void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
+inline void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 {
 	Fp2 t1, t2, t3, t4;
 	Fp2Dbl T1, T2;
@@ -467,12 +453,12 @@ void addLineWithoutP(Fp6& l, G2& R, const G2& Q)
 inline void dblLine(Fp6& l, G2& Q, const G1& P)
 {
 	dblLineWithoutP(l, Q);
-	local::updateLine(l, P);
+	updateLine(l, P);
 }
 inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
 {
 	addLineWithoutP(l, R, Q);
-	local::updateLine(l, P);
+	updateLine(l, P);
 }
 inline void mulFp6cb_by_G1xy(Fp6& y, const Fp6& x, const G1& P)
 {
@@ -599,7 +585,7 @@ inline void mul_041(Fp12& z, const Fp6& x)
 	Fp2::add(z.a.c, z0x0.c, z1x1.b);
 }
 
-void mulSparse(Fp12& z, const Fp6& x)
+inline void mulSparse(Fp12& z, const Fp6& x)
 {
 	if (getCurveParam().isMtype) {
 		mul_041(z, x);
@@ -747,8 +733,6 @@ inline void makeAdjP(G1& adjP, const G1& P)
 	adjP.z = P.z;
 }
 
-} // mcl::bn::local
-
 void finalExp(Fp12& y, const Fp12& x)
 {
 	using namespace local;
@@ -822,6 +806,12 @@ void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	Fp12 ft;
 	mulSparse2(ft, d, e);
 	f *= ft;
+}
+
+void pairing(Fp12& f, const G1& P, const G2& Q)
+{
+	millerLoop(f, P, Q);
+	finalExp(f, f);
 }
 
 size_t getPrecomputedQcoeffSize()
@@ -1320,8 +1310,8 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 {
 	s_nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV1, G1, Fr>);
-	G2::setMulVecGLV(mcl::ec::mulVecGLVT<local::GLV2, G2, Fr>);
+	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1, Fr>);
+	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2, Fr>);
 #if MCL_MSM == 1
 	mcl::msm::Func func;
 	func.fp = &Fp::getOp();
@@ -1347,7 +1337,7 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 		}
 	}
 #endif
-	Fp12::setPowVecGLV(local::powVecGLV);
+	Fp12::setPowVecGLV(powVecGLV);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
 	verifyOrderG1(false);

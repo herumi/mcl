@@ -46,42 +46,6 @@ inline void Frobenius(Fp12& y, const Fp12& x)
 // mapTo
 void mapToInit(const mpz_class& cofactor, const mpz_class &z, int curveType);
 
-namespace local {
-
-typedef mcl::FixedArray<int8_t, 128> SignVec;
-
-size_t getPrecomputeQcoeffSize(const SignVec& sv);
-
-void dblLineWithoutP(Fp6& l, G2& Q);
-void addLineWithoutP(Fp6& l, G2& R, const G2& Q);
-
-/*
-	l = (a, b, c) => (a, b * P.y, c * P.x)
-*/
-inline void updateLine(Fp6& l, const G1& P)
-{
-	assert(!P.isZero());
-	l.b.a *= P.y;
-	l.b.b *= P.y;
-	l.c.a *= P.x;
-	l.c.b *= P.x;
-}
-
-inline void dblLine(Fp6& l, G2& Q, const G1& P)
-{
-	dblLineWithoutP(l, Q);
-	local::updateLine(l, P);
-}
-inline void addLine(Fp6& l, G2& R, const G2& Q, const G1& P)
-{
-	addLineWithoutP(l, R, Q);
-	local::updateLine(l, P);
-}
-
-void mulSparse(Fp12& z, const Fp6& x);
-
-} // mcl::bn::local
-
 /*
 	y = x^((p^12 - 1) / r)
 	(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
@@ -90,12 +54,8 @@ void mulSparse(Fp12& z, const Fp6& x);
 */
 void finalExp(Fp12& y, const Fp12& x);
 void millerLoop(Fp12& f, const G1& P_, const G2& Q_);
+void pairing(Fp12& f, const G1& P, const G2& Q);
 
-inline void pairing(Fp12& f, const G1& P, const G2& Q)
-{
-	millerLoop(f, P, Q);
-	finalExp(f, f);
-}
 /*
 	allocate param.precomputedQcoeffSize elements of Fp6 for Qcoeff
 */
