@@ -1203,25 +1203,16 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
 #if MCL_MSM == 1
-	mcl::msm::Func func;
-	func.fp = &Fp::getOp();
-	func.fr = &Fr::getOp();
-	func.invVecFp = mcl::invVec<mcl::Fp>;
-	func.normalizeVecG1 = mcl::msm::normalizeVecG1Func(mcl::ec::normalizeVec<mcl::G1>);
 #if (defined(__GNUC__) || defined(__clang__))  && !defined(__EMSCRIPTEN__)
 	// avoid gcc wrong detection
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
-	func.addG1 = mcl::msm::addG1Func((void (*)(G1&, const G1&, const G1&))G1::add);
-	func.dblG1 = mcl::msm::dblG1Func((void (*)(G1&, const G1&))G1::dbl);
-	func.mulG1 = mcl::msm::mulG1Func((void (*)(G1&, const G1&, const Fr&, bool))G1::mul);
-	func.clearG1 = mcl::msm::clearG1Func((void (*)(G1&))G1::clear);
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(__EMSCRIPTEN__)
 	#pragma GCC diagnostic pop
 #endif
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
-		if (mcl::msm::initMsm(cp, &func)) {
+		if (mcl::msm::initMsm(cp)) {
 			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
 			G1::setMulEachOpti(mcl::msm::mulEachAVX512);
 		}

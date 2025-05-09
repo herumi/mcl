@@ -46,7 +46,6 @@ void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
 namespace {
 
 typedef mcl::Unit Unit;
-static mcl::msm::Func g_func;
 
 static const size_t S = sizeof(Unit)*8-1; // 63
 static const size_t W = 52;
@@ -777,7 +776,6 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 		mcl::msm::FpA v[M];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
-//		g_func.invVecFp(vv, vv, M, M);
 		mcl::invVec<mcl::Fp>(vv, vv, M, M);
 		z.setFpA(v);
 	}
@@ -1102,6 +1100,7 @@ struct EcMT {
 		}
 		if (!isProj && mixed) normalizeJacobiVec<T>(tbl1s+1, tblN*n-1);
 
+		const mcl::fp::Op& fr = mcl::Fr::getOp();
 		for (size_t k = 0; k < n; k++) {
 			const T *tbl1 = &tbl1s[tblN*k];
 			T tbl2[tblN];
@@ -1113,7 +1112,7 @@ struct EcMT {
 			Unit *pb = (Unit*)b;
 			for (size_t i = 0; i < m; i++) {
 				Unit buf[4];
-				g_func.fr->fromMont(buf, y[k*m+i].v);
+				fr.fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
 #ifdef MCL_MSM_BLS12_377
 				mcl::ec::local::optimizedSplitRawForBLS12_377(aa, bb, buf);
@@ -1256,7 +1255,7 @@ inline void reduceSum(mcl::msm::G1A& Q, const G& P)
 	P.getG1A(z);
 	Q = z[0];
 	for (size_t i = 1; i < m; i++) {
-		g_func.addG1(Q, Q, z[i]);
+		mcl::G1::add((mcl::G1&)Q, (const mcl::G1&)Q, (const mcl::G1&)z[i]);
 	}
 }
 
@@ -1356,7 +1355,6 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 		mcl::msm::FpA v[M*vN];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
-//		g_func.invVecFp(vv, vv, M*vN, M*vN);
 		mcl::invVec<mcl::Fp>(vv, vv, M*vN, M*vN);
 		z.setFpA(v);
 	}
@@ -1482,10 +1480,9 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 #else
 	const size_t e = 1;
 #endif
-	const mcl::fp::Op *fr = g_func.fr;
 	const bool mixed = true;
 	if (mixed) {
-//		g_func.normalizeVecG1(x, x, n);
+// 		ec::normalizeVec<G1>(x, x, n);
 	}
 
 	G *xVec = (G*)Xbyak::AlignedMalloc(sizeof(G) * d * e, 64);
@@ -1505,7 +1502,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 	for (size_t i = 0; i < d; i++) {
 		for (size_t j = 0; j < m; j++) {
 			Unit ya[4];
-			fr->fromMont(ya, y[i*m+j].v);
+			mcl::Fr::getOp().fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
 #ifdef MCL_MSM_BLS12_377
 			mcl::ec::local::optimizedSplitRawForBLS12_377(a, b, ya);
@@ -1519,11 +1516,12 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 		}
 	}
 #else
+	const mcl::fp::Op& fr = mcl::Fr::getOp();
 	Unit *const py = (Unit*)yVec;
 	for (size_t i = 0; i < d; i++) {
 		for (size_t j = 0; j < m; j++) {
 			Unit ya[4];
-			fr->fromMont(ya, y[i*m+j].v);
+			fr.fromMont(ya, y[i*m+j].v);
 			for (size_t k = 0; k < 4; k++) {
 				py[(i*4+k)*m+j] = ya[k];
 			}
@@ -1535,11 +1533,10 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 	Xbyak::AlignedFree(yVec);
 	Xbyak::AlignedFree(xVec);
 
-	const bool constTime = false;
 	for (size_t i = d*m; i < n; i++) {
 		mcl::msm::G1A Q;
-		g_func.mulG1(Q, x[i], y[i], constTime);
-		g_func.addG1(P, P, Q);
+		mcl::G1::mul((mcl::G1&)Q, (const mcl::G1&)x[i], (const mcl::Fr&)y[i]);
+		mcl::G1::add((mcl::G1&)P, (const mcl::G1&)P, (const mcl::G1&)Q);
 	}
 }
 
@@ -1567,7 +1564,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	const bool mixed = true;
 	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
 	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
-	if (!isProj && mixed) g_func.normalizeVecG1(x, x, n);
+	if (!isProj && mixed) ec::normalizeVec((G1*)x, (G1*)x, n);
 	const size_t u = 4;
 	const size_t q = d / u;
 	const size_t remain = d % u;
@@ -1593,7 +1590,7 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	}
 }
 
-bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
+bool initMsm(const mcl::CurveParam& cp)
 {
 	assert(EcM::a_ == 0);
 #ifdef MCL_MSM_BLS12_377
@@ -1617,7 +1614,6 @@ bool initMsm(const mcl::CurveParam& cp, const mcl::msm::Func *func)
 	if (cp != mcl::BLS12_381) return false;
 #endif
 	if ((mcl::bint::g_cpuType & mcl::bint::tAVX512_IFMA) == 0) return false;
-	g_func = *func;
 	return true;
 }
 
@@ -2173,7 +2169,6 @@ CYBOZU_TEST_AUTO(op)
 	Fr x[n];
 	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
 	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
-	mcl::msm::G1A *RA = (mcl::msm::G1A*)R;
 	mcl::msm::G1A *TA = (mcl::msm::G1A*)T;
 
 	EcM PM, QM, TM;
@@ -2185,7 +2180,7 @@ CYBOZU_TEST_AUTO(op)
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(!P[i].z.isOne());
 	}
-	g_func.normalizeVecG1(RA, PA, n);
+	ec::normalizeVec(R, P, n);
 	for (size_t i = 0; i < n; i++) {
 		CYBOZU_TEST_ASSERT(R[i].z.isOne() || R[i].z.isZero());
 	}
