@@ -1406,7 +1406,7 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 }
 
 // return false if malloc fails or n is not in a target range
-template<class GLV, class G, class F>
+template<class GLV, class G>
 bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime = false, size_t b = 0)
 {
 	if (n == 1 && constTime) {
@@ -1430,11 +1430,11 @@ bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime 
 	y^2 = x^3 + ax + b (affine)
 	y^2 = x^3 + az^4 + bz^6 (Jacobi) x = X/Z^2, y = Y/Z^3
 */
-template<class _Fp, class _Fr>
-class EcT : public fp::Serializable<EcT<_Fp, _Fr> > {
+template<class _Fp>
+class EcT : public fp::Serializable<EcT<_Fp> > {
 public:
 	typedef _Fp Fp; // definition field
-	typedef _Fr Fr; // group order
+	typedef mcl::Fr Fr; // group order
 	typedef _Fp BaseFp;
 	Fp x, y, z;
 	static int mode_;
@@ -1445,7 +1445,7 @@ public:
 	static int specialB_;
 	static int ioMode_;
 	/*
-		order_ is the order of G2 which is the subgroup of EcT<Fp2, Fr>.
+		order_ is the order of G2 which is the subgroup of EcT<Fp2>.
 		check the order of the elements if verifyOrder_ is true
 	*/
 	static bool verifyOrder_;
@@ -1666,7 +1666,7 @@ public:
 		Fp::neg(R.y, P.y);
 		R.z = P.z;
 	}
-	static inline void mul(EcT& z, const EcT& x, const EcT::Fr& y, bool constTime = false)
+	static inline void mul(EcT& z, const EcT& x, const Fr& y, bool constTime = false)
 	{
 		if (mulVecGLV) {
 			mulVecGLV(z, &x, &y, 1, constTime, 0);
@@ -1693,7 +1693,7 @@ public:
 		mulArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
 	// not const time
-	static inline void mulCT(EcT& z, const EcT& x, const EcT::Fr& y)
+	static inline void mulCT(EcT& z, const EcT& x, const Fr& y)
 	{
 		mul(z, x, y, true);
 	}
@@ -2168,7 +2168,7 @@ public:
 		@note &z != xVec[i]
 	*/
 private:
-	static inline size_t mulVecN(EcT& z, const EcT *xVec, const EcT::Fr *yVec, size_t n)
+	static inline size_t mulVecN(EcT& z, const EcT *xVec, const Fr *yVec, size_t n)
 	{
 		const size_t N = mcl::fp::maxMulVecN;
 		if (n > N) n = N;
@@ -2221,7 +2221,7 @@ public:
 		GLV : 7680, 15360, 30720
 		Long: 9779, 16322, 24533
 	*/
-	static inline void mulVec(EcT& z, EcT *xVec, const EcT::Fr *yVec, size_t n, size_t b = 0)
+	static inline void mulVec(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
 		if (n == 0) {
 			z.clear();
@@ -2248,7 +2248,7 @@ public:
 	}
 	// multi thread version of mulVec
 	// the num of thread is automatically detected if cpuN = 0
-	static inline void mulVecMT(EcT& z, EcT *xVec, const EcT::Fr *yVec, size_t n, size_t cpuN = 0)
+	static inline void mulVecMT(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t cpuN = 0)
 	{
 #ifdef MCL_USE_OMP
 	const size_t minN = mcl::fp::maxMulVecN;
@@ -2282,7 +2282,7 @@ public:
 #endif
 	}
 	// xVec[i] *= yVec[i]
-	static void mulEach(EcT *xVec, const EcT::Fr *yVec, size_t n)
+	static void mulEach(EcT *xVec, const Fr *yVec, size_t n)
 	{
 		if (mulEachOpti && n >= 16) {
 			size_t n16 = n & ~size_t(16-1);
@@ -2342,26 +2342,25 @@ public:
 #endif
 };
 
-template<class Fp, class Fr> Fp EcT<Fp, Fr>::a_;
-template<class Fp, class Fr> Fp EcT<Fp, Fr>::b_;
-template<class Fp, class Fr> Fp EcT<Fp, Fr>::b3_;
-template<class Fp, class Fr> int EcT<Fp, Fr>::specialA_;
-template<class Fp, class Fr> int EcT<Fp, Fr>::specialB_;
-template<class Fp, class Fr> int EcT<Fp, Fr>::ioMode_;
-template<class Fp, class Fr> bool EcT<Fp, Fr>::verifyOrder_;
-template<class Fp, class Fr> mpz_class EcT<Fp, Fr>::order_;
-template<class Fp, class Fr> bool (*EcT<Fp, Fr>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n, size_t b);
-template<class Fp, class Fr> bool (*EcT<Fp, Fr>::isValidOrderFast)(const EcT& x);
-template<class Fp, class Fr> int EcT<Fp, Fr>::mode_;
-template<class Fp, class Fr> void (*EcT<Fp, Fr>::mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
+template<class Fp> Fp EcT<Fp>::a_;
+template<class Fp> Fp EcT<Fp>::b_;
+template<class Fp> Fp EcT<Fp>::b3_;
+template<class Fp> int EcT<Fp>::specialA_;
+template<class Fp> int EcT<Fp>::specialB_;
+template<class Fp> int EcT<Fp>::ioMode_;
+template<class Fp> bool EcT<Fp>::verifyOrder_;
+template<class Fp> mpz_class EcT<Fp>::order_;
+template<class Fp> bool (*EcT<Fp>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
+template<class Fp> void (*EcT<Fp>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n, size_t b);
+template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
+template<class Fp> int EcT<Fp>::mode_;
+template<class Fp> void (*EcT<Fp>::mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
 
 // r = the order of Ec
-template<class Ec, class _Fr>
+template<class Ec>
 struct GLV1T {
-	typedef GLV1T<Ec, _Fr> GLV1;
+	typedef GLV1T<Ec> GLV1;
 	typedef typename Ec::Fp Fp;
-	typedef _Fr Fr;
 	static const int splitN = 2;
 	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
 	static size_t rBitSize;
@@ -2436,12 +2435,12 @@ public:
 };
 
 // rw = 1 / w = (-1 - sqrt(-3)) / 2
-template<class Ec, class Fr> typename Ec::Fp GLV1T<Ec, Fr>::rw;
-template<class Ec, class Fr> size_t GLV1T<Ec, Fr>::rBitSize;
-template<class Ec, class Fr> mpz_class GLV1T<Ec, Fr>::v0;
-template<class Ec, class Fr> mpz_class GLV1T<Ec, Fr>::v1;
-template<class Ec, class Fr> mpz_class GLV1T<Ec, Fr>::B[2][2];
-template<class Ec, class Fr> void (*GLV1T<Ec, Fr>::optimizedSplit)(mpz_class u[2], const mpz_class& x);
+template<class Ec> typename Ec::Fp GLV1T<Ec>::rw;
+template<class Ec> size_t GLV1T<Ec>::rBitSize;
+template<class Ec> mpz_class GLV1T<Ec>::v0;
+template<class Ec> mpz_class GLV1T<Ec>::v1;
+template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
+template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(mpz_class u[2], const mpz_class& x);
 
 /*
 	Ec : elliptic curve
@@ -2452,12 +2451,11 @@ template<class Ec>
 void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	typedef typename Ec::Fp Fp;
-	typedef typename Ec::Fr Zn;
 	*pb = false;
 	const EcParam *ecParam = getEcParam(curveType);
 	if (ecParam == 0) return;
 
-	Zn::init(pb, ecParam->n, mode);
+	Fr::init(pb, ecParam->n, mode);
 	if (!*pb) return;
 	Fp::init(pb, ecParam->p, mode);
 	if (!*pb) return;
@@ -2473,9 +2471,9 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 		if (!*pb) return;
 	}
 	if (curveType == MCL_SECP256K1) {
-		typedef GLV1T<Ec, Zn> GLV1;
+		typedef GLV1T<Ec> GLV1;
 		GLV1::initForSecp256k1();
-		Ec::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, Ec, Zn>);
+		Ec::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, Ec>);
 	} else {
 		Ec::setMulVecGLV(0);
 	}
@@ -2496,11 +2494,11 @@ void initCurve(int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 #ifdef CYBOZU_USE_BOOST
 namespace mcl {
-template<class Fp, class Fr>
-size_t hash_value(const mcl::EcT<Fp, Fr>& P_)
+template<class Fp>
+size_t hash_value(const mcl::EcT<Fp>& P_)
 {
 	if (P_.isZero()) return 0;
-	mcl::EcT<Fp, Fr> P(P_); P.normalize();
+	mcl::EcT<Fp> P(P_); P.normalize();
 	return mcl::hash_value(P.y, mcl::hash_value(P.x));
 }
 
@@ -2508,12 +2506,12 @@ size_t hash_value(const mcl::EcT<Fp, Fr>& P_)
 #else
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 
-template<class Fp, class Fr>
-struct hash<mcl::EcT<Fp, Fr> > {
-	size_t operator()(const mcl::EcT<Fp, Fr>& P_) const
+template<class Fp>
+struct hash<mcl::EcT<Fp> > {
+	size_t operator()(const mcl::EcT<Fp>& P_) const
 	{
 		if (P_.isZero()) return 0;
-		mcl::EcT<Fp, Fr> P(P_); P.normalize();
+		mcl::EcT<Fp> P(P_); P.normalize();
 		return hash<Fp>()(P.y, hash<Fp>()(P.x));
 	}
 };

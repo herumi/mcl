@@ -206,7 +206,7 @@ bool powVecGLV(Fp12& z, const Fp12 *xVec, const void *yVec, size_t n)
 	typedef GroupMtoA<Fp12> AG; // as additive group
 	AG& _z = static_cast<AG&>(z);
 	const AG *_xVec = static_cast<const AG*>(xVec);
-	return mcl::ec::mulVecGLVT<GLV2, AG, Fr>(_z, _xVec, yVec, n);
+	return mcl::ec::mulVecGLVT<GLV2, AG>(_z, _xVec, yVec, n);
 }
 
 /*
@@ -1200,8 +1200,8 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 {
 	s_nonConstParam.init(pb, cp, mode);
 	if (!*pb) return;
-	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1, Fr>);
-	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2, Fr>);
+	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
+	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
 #if MCL_MSM == 1
 	mcl::msm::Func func;
 	func.fp = &Fp::getOp();

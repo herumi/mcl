@@ -803,7 +803,6 @@ public:
 #endif
 };
 
-#if 1
 #if defined(__GNUC__) && !defined(__ANDROID__)
 	// x must be in [200, 65535]. lower values indicate a higher priority.
 	#define MCL_INIT_PRIORITY(x) __attribute__((init_priority(x)))
@@ -813,7 +812,6 @@ public:
 // Declare op_ as an external variable
 template<class tag, size_t maxBitSize>
 fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
-#endif
 
 } // mcl
 

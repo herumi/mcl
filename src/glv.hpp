@@ -4,7 +4,7 @@
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN/BLS12
 */
-struct GLV1 : mcl::GLV1T<G1, Fr> {
+struct GLV1 : mcl::GLV1T<G1> {
 	static bool usePrecomputedTable(int curveType)
 	{
 		if (curveType < 0) return false;

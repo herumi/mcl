@@ -13,7 +13,7 @@
 namespace mcl {
 
 typedef Fp12 GT;
-typedef EcT<Fp2, Fr> G2;
+typedef EcT<Fp2> G2;
 
 /*
 	twisted Frobenius for G2
