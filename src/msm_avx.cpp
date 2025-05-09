@@ -1356,8 +1356,8 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 		mcl::msm::FpA v[M*vN];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
-		g_func.invVecFp(vv, vv, M*vN, M*vN);
-//		mcl::invVec<mcl::Fp>(vv, vv, M, M);
+//		g_func.invVecFp(vv, vv, M*vN, M*vN);
+		mcl::invVec<mcl::Fp>(vv, vv, M*vN, M*vN);
 		z.setFpA(v);
 	}
 	void setFpM(const FpM x[vN])
@@ -1770,18 +1770,6 @@ void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = siz
 			printf("  [%zd]=%s\n", i, T[i].getStr(16|mcl::IoEcProj).c_str());
 		}
 	}
-}
-
-CYBOZU_TEST_AUTO(init)
-{
-#ifdef MCL_MSM_BLS12_377
-	puts("BLS12_377");
-	initPairing(mcl::BLS12_377);
-#else
-	puts("BLS12_381");
-	initPairing(mcl::BLS12_381);
-#endif
-	g_mont.init(mcl::Fp::getOp().mp);
 }
 
 void putA(const uint64_t a[64], const char *msg)
@@ -2517,14 +2505,6 @@ CYBOZU_TEST_AUTO(mulVec)
 
 void msmBench(int C, size_t db, size_t de, size_t b)
 {
-#ifdef MCL_MSM_BLS12_377
-	puts("BLS12_377");
-	initPairing(mcl::BLS12_377);
-#else
-	puts("BLS12_381");
-	initPairing(mcl::BLS12_381);
-#endif
-
 	printf("d = [%zd, %zd], b = %zd\n", db, de, b);
 	const size_t maxN = size_t(1) << de;
 	cybozu::XorShift rg;
@@ -2590,6 +2570,14 @@ int main(int argc, char *argv[])
 	if (de == 0) {
 		de = d;
 	}
+#ifdef MCL_MSM_BLS12_377
+	puts("BLS12_377");
+	initPairing(mcl::BLS12_377);
+#else
+	puts("BLS12_381");
+	initPairing(mcl::BLS12_381);
+#endif
+	g_mont.init(mcl::Fp::getOp().mp);
 	if (msm) {
 		msmBench(C, db, de, b);
 		return 0;
