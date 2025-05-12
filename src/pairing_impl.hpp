@@ -1203,11 +1203,9 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
 #if MCL_MSM == 1
-	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
-		if (mcl::msm::initMsm(cp)) {
-			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
-			G1::setMulEachOpti(mcl::msm::mulEachAVX512);
-		}
+	if (mcl::msm::initMsm(cp)) {
+		G1::setMulVecOpti(mcl::msm::mulVecAVX512);
+		G1::setMulEachOpti(mcl::msm::mulEachAVX512);
 	}
 #endif
 	Fp12::setPowVecGLV(powVecGLV);

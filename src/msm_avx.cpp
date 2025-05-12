@@ -47,6 +47,20 @@ namespace {
 
 typedef mcl::Unit Unit;
 
+// only for BLS12-381
+struct FrA {
+	uint64_t v[4];
+};
+
+struct FpA {
+	uint64_t v[6];
+};
+
+
+struct G1A {
+	uint64_t v[6*3];
+};
+
 static const size_t S = sizeof(Unit)*8-1; // 63
 static const size_t W = 52;
 static const size_t N = 8; // = ceil(384/52)
@@ -758,13 +772,13 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	static const FpM& m64to52() { return *(const FpM*)g_m64to52_; }
 	static const FpM& m52to64() { return *(const FpM*)g_m52to64_; }
 	static const FpM& rw() { return *(const FpM*)g_rw_; }
-	void setFpA(const mcl::msm::FpA v[M])
+	void setFpA(const FpA v[M])
 	{
 		cvt6Ux8to8Ux8Fp(this->v, v[0].v);
 //		FpM::mul(*this, *this, FpM::m64to52());
 		FpM::mul(*this, *this, g_m64to52u_);
 	}
-	void getFpA(mcl::msm::FpA v[M]) const
+	void getFpA(FpA v[M]) const
 	{
 		FpM t;
 //		FpM::mul(t, *this, FpM::m52to64());
@@ -773,7 +787,7 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
-		mcl::msm::FpA v[M];
+		FpA v[M];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
 		mcl::invVec<mcl::Fp>(vv, vv, M, M);
@@ -1087,7 +1101,7 @@ struct EcMT {
 		}
 	}
 	template<bool isProj=true, bool mixed=false>
-	static void mulGLV(T *Q, const T *P, const mcl::msm::FrA *y, size_t n = 1)
+	static void mulGLV(T *Q, const T *P, const FrA *y, size_t n = 1)
 	{
 		assert(n > 0);
 		const size_t m = sizeof(V)/8;
@@ -1156,7 +1170,7 @@ struct EcM : EcMT<EcM, FpM> {
 	static const EcM &zeroProj_;
 	static const EcM &zeroJacobi_;
 	template<bool isNormalized = false>
-	void setG1A(const mcl::msm::G1A v[M], bool JacobiToProj = true)
+	void setG1A(const G1A v[M], bool JacobiToProj = true)
 	{
 		cvtFromG1Ax(x.v, v[0].v+0*6);
 		cvtFromG1Ax(y.v, v[0].v+1*6);
@@ -1171,7 +1185,7 @@ struct EcM : EcMT<EcM, FpM> {
 			y = FpM::select(z.isZero(), FpM::one(), y);
 		}
 	}
-	void getG1A(mcl::msm::G1A v[M], bool ProjToJacobi = true) const
+	void getG1A(G1A v[M], bool ProjToJacobi = true) const
 	{
 		EcM T = *this;
 		if (ProjToJacobi) mcl::ec::ProjToJacobi(T, T);
@@ -1248,10 +1262,10 @@ const EcM& EcM::zeroProj_ = *(const EcM*)g_zeroProj_;
 const EcM& EcM::zeroJacobi_ = *(const EcM*)g_zeroJacobi_;
 
 template<class G>
-inline void reduceSum(mcl::msm::G1A& Q, const G& P)
+inline void reduceSum(G1A& Q, const G& P)
 {
 	const size_t m = sizeof(P)/sizeof(EcM)*8;
-	mcl::msm::G1A z[m];
+	G1A z[m];
 	P.getG1A(z);
 	Q = z[0];
 	for (size_t i = 1; i < m; i++) {
@@ -1305,7 +1319,7 @@ inline size_t glvGetBucketSizeAVX512(size_t n)
 }
 // xVec[n], yVec[n * maxBitSize/64]
 template<class G=EcM, class V=Vec, bool mixed = false>
-inline void mulVecAVX512_inner(mcl::msm::G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize, size_t b)
+inline void mulVecAVX512_inner(G1A& P, const G *xVec, const V *yVec, size_t n, size_t maxBitSize, size_t b)
 {
 	if (b == 0) b = glvGetBucketSizeAVX512(n);
 	size_t tblN = size_t(1) << b;
@@ -1334,7 +1348,7 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	static const FpMA& m64to52() { return *(const FpMA*)g_m64to52A_; }
 	static const FpMA& m52to64() { return *(const FpMA*)g_m52to64A_; }
 	static const FpMA& rw() { return *(const FpMA*)g_rwA_; }
-	void setFpA(const mcl::msm::FpA v[M*vN])
+	void setFpA(const FpA v[M*vN])
 	{
 		FpM t[vN];
 		for (size_t i = 0; i < vN; i++) {
@@ -1342,7 +1356,7 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 		}
 		setFpM(t);
 	}
-	void getFpA(mcl::msm::FpA v[M*vN]) const
+	void getFpA(FpA v[M*vN]) const
 	{
 		FpM t[vN];
 		getFpM(t);
@@ -1352,7 +1366,7 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	}
 	static void inv(FpMA& z, const FpMA& x)
 	{
-		mcl::msm::FpA v[M*vN];
+		FpA v[M*vN];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
 		mcl::invVec<mcl::Fp>(vv, vv, M*vN, M*vN);
@@ -1412,7 +1426,7 @@ struct EcMA : EcMT<EcMA, FpMA> {
 	}
 
 	template<bool isNormalized = false>
-	void setG1A(const mcl::msm::G1A v[M*vN], bool JacobiToProj = true)
+	void setG1A(const G1A v[M*vN], bool JacobiToProj = true)
 	{
 #if 1
 		assert(vN == 2);
@@ -1438,7 +1452,7 @@ struct EcMA : EcMT<EcMA, FpMA> {
 		setEcM(P);
 #endif
 	}
-	void getG1A(mcl::msm::G1A v[M*vN], bool ProjToJacobi = true) const
+	void getG1A(G1A v[M*vN], bool ProjToJacobi = true) const
 	{
 #if 1
 		EcMA T = *this;
@@ -1470,9 +1484,9 @@ const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 template<class G=EcM, class V=Vec>
 void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket = 0)
 {
-	mcl::msm::G1A& P = *(mcl::msm::G1A*)_P;
-	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
-	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
+	G1A& P = *(G1A*)_P;
+	G1A *x = (G1A*)_x;
+	const FrA *y = (const FrA*)_y;
 	const size_t m = sizeof(V)/8;
 	const size_t d = n/m;
 #ifdef USE_GLV
@@ -1534,7 +1548,7 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 	Xbyak::AlignedFree(xVec);
 
 	for (size_t i = d*m; i < n; i++) {
-		mcl::msm::G1A Q;
+		G1A Q;
 		mcl::G1::mul((mcl::G1&)Q, (const mcl::G1&)x[i], (const mcl::Fr&)y[i]);
 		mcl::G1::add((mcl::G1&)P, (const mcl::G1&)P, (const mcl::G1&)Q);
 	}
@@ -1562,8 +1576,8 @@ void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
 	const size_t d = n / m;
 	const bool isProj = false;
 	const bool mixed = true;
-	mcl::msm::G1A *x = (mcl::msm::G1A*)_x;
-	const mcl::msm::FrA *y = (const mcl::msm::FrA*)_y;
+	G1A *x = (G1A*)_x;
+	const FrA *y = (const FrA*)_y;
 	if (!isProj && mixed) ec::normalizeVec((G1*)x, (G1*)x, n);
 	const size_t u = 4;
 	const size_t q = d / u;
@@ -1630,6 +1644,7 @@ bool initMsm(const mcl::CurveParam& cp)
 #include "glv.hpp"
 
 using namespace mcl::bn;
+using namespace mcl::msm;
 
 template<size_t N, int w = W>
 inline void toArray(Unit x[N], const mpz_class& mx)
@@ -1721,7 +1736,7 @@ static Montgomery g_mont;
 void dump(const FpM& x, const char *msg = nullptr, size_t pos = size_t(-1))
 {
 	Fp T[8];
-	x.getFpA((mcl::msm::FpA*)T);
+	x.getFpA((FpA*)T);
 	if (msg) printf("%s\n", msg);
 	for (size_t i = 0; i < 8; i++) {
 		if (i == pos || pos == size_t(-1)) {
@@ -1761,7 +1776,7 @@ mpz_class FpM::get(size_t i) const
 void dump(const EcM& x, bool isProj, const char *msg = nullptr, size_t pos = size_t(-1))
 {
 	G1 T[8];
-	x.getG1A((mcl::msm::G1A*)T, isProj);
+	x.getG1A((G1A*)T, isProj);
 	if (msg) printf("%s\n", msg);
 	for (size_t i = 0; i < 8; i++) {
 		if (i == pos || pos == size_t(-1)) {
@@ -1870,7 +1885,7 @@ CYBOZU_TEST_AUTO(cmp)
 		CYBOZU_TEST_EQUAL(cvtToInt(v), 0xff ^ (1<<i));
 	}
 	G1 P[n];
-	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
+	G1A *PA = (G1A*)P;
 
 	EcM PM, QM;
 	cybozu::XorShift rg;
@@ -1896,7 +1911,7 @@ void setRand(FpM& x, cybozu::XorShift& rg, mcl::Fp *t = 0)
 	for (size_t i = 0; i < N; i++) {
 		t[i].setByCSPRNG(rg);
 	}
-	x.setFpA((const mcl::msm::FpA*)t);
+	x.setFpA((const FpA*)t);
 }
 
 CYBOZU_TEST_AUTO(conv)
@@ -1907,7 +1922,7 @@ CYBOZU_TEST_AUTO(conv)
 	cybozu::XorShift rg;
 	for (int i = 0; i < C; i++) {
 		setRand(x1, rg, x2);
-		x1.getFpA((mcl::msm::FpA*)x3);
+		x1.getFpA((FpA*)x3);
 		CYBOZU_TEST_EQUAL_ARRAY(x2, x3, 8);
 	}
 	{
@@ -1940,28 +1955,28 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 {
 	mcl::Fp z[8];
 	FpM xm, ym, zm, wm;
-	xm.setFpA((const mcl::msm::FpA*)x);
-	ym.setFpA((const mcl::msm::FpA*)y);
+	xm.setFpA((const FpA*)x);
+	ym.setFpA((const FpA*)y);
 	// add
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::add(z[i], x[i], y[i]);
 	}
 	mcl_c5_vadd(zm.v, xm.v, ym.v);
-	wm.setFpA((const mcl::msm::FpA*)z);
+	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// sub
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::sub(z[i], x[i], y[i]);
 	}
 	mcl_c5_vsub(zm.v, xm.v, ym.v);
-	wm.setFpA((const mcl::msm::FpA*)z);
+	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	// mul
 	for (size_t i = 0; i < 8; i++) {
 		mcl::Fp::mul(z[i], x[i], y[i]);
 	}
 	mcl_c5_vmul(zm.v, xm.v, ym.v);
-	wm.setFpA((const mcl::msm::FpA*)z);
+	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
 		for (size_t i = 0; i < 8; i++) {
@@ -1975,7 +1990,7 @@ void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 		mcl::Fp::sqr(z[i], x[i]);
 	}
 	mcl_c5_vsqr(zm.v, xm.v);
-	wm.setFpA((const mcl::msm::FpA*)z);
+	wm.setFpA((const FpA*)z);
 	CYBOZU_TEST_ASSERT(zm == wm);
 	if (zm != wm) {
 		for (size_t i = 0; i < 8; i++) {
@@ -2147,7 +2162,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
 	{
 		mcl::Fp vv[8*vN];
-		za.getFpA((mcl::msm::FpA*)vv);
+		za.getFpA((FpA*)vv);
 		CYBOZU_BENCH_C("Fp::inv(8)", C/100, mcl::invVec<mcl::Fp>, vv, vv, 8*vN);
 	}
 	forcedRead(z);
@@ -2169,9 +2184,9 @@ CYBOZU_TEST_AUTO(op)
 	G1 R[n];
 	G1 T[n];
 	Fr x[n];
-	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
-	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
-	mcl::msm::G1A *TA = (mcl::msm::G1A*)T;
+	G1A *PA = (G1A*)P;
+	G1A *QA = (G1A*)Q;
+	G1A *TA = (G1A*)T;
 
 	EcM PM, QM, TM;
 	cybozu::XorShift rg;
@@ -2270,9 +2285,9 @@ CYBOZU_TEST_AUTO(opA)
 	G1 R[n];
 	G1 T[n];
 	Fr x[n];
-	mcl::msm::G1A *PA = (mcl::msm::G1A*)P;
-	mcl::msm::G1A *QA = (mcl::msm::G1A*)Q;
-	mcl::msm::G1A *TA = (mcl::msm::G1A*)T;
+	G1A *PA = (G1A*)P;
+	G1A *QA = (G1A*)Q;
+	G1A *TA = (G1A*)T;
 
 	EcMA PM, QM, TM;
 	cybozu::XorShift rg;
@@ -2364,19 +2379,19 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 		P[n/3].clear();
 		mcl::ec::normalizeVec(Q, P, n);
 		for (size_t i = 0; i < n/8; i++) {
-			PP[i].setG1A((mcl::msm::G1A*)&P[i*8], isProj);
+			PP[i].setG1A((G1A*)&P[i*8], isProj);
 		}
 		normalizeJacobiVec<EcM>(PP, n/8);
 		for (size_t i = 0; i < n/8; i++) {
-			PP[i].getG1A((mcl::msm::G1A*)&R[i*8], isProj);
+			PP[i].getG1A((G1A*)&R[i*8], isProj);
 		}
 		CYBOZU_TEST_EQUAL_ARRAY(P, R, n);
 	}
 	const int C = 10000;
-	CYBOZU_BENCH_C("EcM::setG1A:proj", C, PP[0].setG1A, (mcl::msm::G1A*)P, true);
-	CYBOZU_BENCH_C("EcM::setG1A:jacobi", C, PP[0].setG1A, (mcl::msm::G1A*)P, false);
-	CYBOZU_BENCH_C("EcM::getG1A:proj", C, PP[0].getG1A, (mcl::msm::G1A*)P, true);
-	CYBOZU_BENCH_C("EcM::getG1A:jacobi", C, PP[0].getG1A, (mcl::msm::G1A*)P, false);
+	CYBOZU_BENCH_C("EcM::setG1A:proj", C, PP[0].setG1A, (G1A*)P, true);
+	CYBOZU_BENCH_C("EcM::setG1A:jacobi", C, PP[0].setG1A, (G1A*)P, false);
+	CYBOZU_BENCH_C("EcM::getG1A:proj", C, PP[0].getG1A, (G1A*)P, true);
+	CYBOZU_BENCH_C("EcM::getG1A:jacobi", C, PP[0].getG1A, (G1A*)P, false);
 }
 
 CYBOZU_TEST_AUTO(mulEach_special)
@@ -2468,7 +2483,7 @@ void copyMulVec(G1& R, const G1 *_P, const Fr *x, size_t n)
 {
 	G1 *P = (G1*)CYBOZU_ALLOCA(sizeof(G1) * n);
 	mcl::bint::copyN(P, _P, n);
-	mcl::msm::mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
 }
 
 CYBOZU_TEST_AUTO(mulVec)
@@ -2488,13 +2503,13 @@ CYBOZU_TEST_AUTO(mulVec)
 	}
 	G1 P2[n];
 	mcl::bint::copyN(P2, P, n);
-	mcl::msm::mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
 //	G1::mulVec(R, P, x, n);
 	CYBOZU_TEST_EQUAL(Q, R);
 #ifdef NDEBUG
 	G1 R2;
 	CYBOZU_BENCH_C("mulVec(copy)", 30, copyMulVec, R2, P2, x, n);
-	CYBOZU_BENCH_C("mulVec", 30, mcl::msm::mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	CYBOZU_BENCH_C("mulVec", 30, mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
 	CYBOZU_TEST_EQUAL(R, R2);
 	CYBOZU_BENCH_C("mulVecOrg", 3, mulVecOrg, R2, P2, x, n);
 #endif
@@ -2517,10 +2532,10 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 		size_t n = size_t(1) << d;
 		size_t b1 = glvGetBucketSizeAVX512(n/4);
 		printf("% 8zd % 2zd", n, b1);
-		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b1);
+		CYBOZU_BENCH_C(" ", C, mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b1);
 		size_t b2 = b ? b : mcl::ec::glvGetTheoreticBucketSize(n/4);
 		printf("% 8zd % 2zd", n, size_t(b2));
-		CYBOZU_BENCH_C(" ", C, mcl::msm::mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b2);
+		CYBOZU_BENCH_C(" ", C, mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b2);
 	}
 }
 
