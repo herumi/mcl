@@ -1626,6 +1626,8 @@ bool initMsm(const mcl::CurveParam& cp)
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <cybozu/option.hpp>
+#define MCL_GLV_ONLY_FUNC
+#include "glv.hpp"
 
 using namespace mcl::bn;
 

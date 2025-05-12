@@ -16,6 +16,7 @@
 #endif
 
 #include "compress.hpp"
+#include "glv.hpp"
 #include "msm.hpp"
 
 namespace mcl {
@@ -65,7 +66,6 @@ inline void updateLine(Fp6& l, const G1& P)
 	l.c.b *= P.x;
 }
 
-#include "glv.hpp"
 
 struct Param {
 	CurveParam cp;

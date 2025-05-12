@@ -188,7 +188,7 @@ public:
 	static const Fp2 *get_gTbl() { return &g[0]; }
 	static const Fp2 *get_g2Tbl() { return &g2[0]; }
 	static const Fp2 *get_g3Tbl() { return &g3[0]; }
-	typedef typename Fp::BaseFp BaseFp;
+	typedef Fp::BaseFp BaseFp;
 	static const size_t maxSize = Fp::maxSize * 2;
 	static inline size_t getByteSize() { return Fp::getByteSize() * 2; }
 	void dump() const

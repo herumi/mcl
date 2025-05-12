@@ -594,3 +594,14 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 #include "pairing_impl.hpp"
 #include "mapto_wb19.hpp"
 #include "map_impl.hpp"
+
+namespace mcl {
+
+void initForSecp256k1()
+{
+	typedef GLV1T<G1> GLV1;
+	GLV1::initForSecp256k1();
+	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
+}
+
+} // mcl

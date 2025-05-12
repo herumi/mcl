@@ -1,10 +1,394 @@
 #pragma once
 
+namespace mcl {
+
+namespace ec {
+
+// The number of ADD for n-elements with bucket size b
+inline size_t glvCost(size_t n, size_t b)
+{
+	return (n + (size_t(1)<<(b+1))-1)/b;
+}
+// approximate value such that argmin { b : glvCost(n, b) }
+inline size_t estimateBucketSize(size_t n)
+{
+	if (n <= 16) return 2;
+	size_t log2n = ilog2(n);
+	return log2n - ilog2(log2n);
+}
+
+//	return heuristic backet size which is faster than glvGetTheoreticBucketSize
+inline size_t glvGetBucketSize(size_t n)
+{
+	if (n <= 2) return 2;
+	size_t log2n = mcl::ec::ilog2(n);
+	const size_t tblMin = 8;
+	if (log2n < tblMin) return 3;
+	// n >= 2^tblMin
+	static const size_t tbl[] = {
+		3, 4, 5, 5, 8, 8, 9, 10, 11, 12, 13, 13, 13, 16, 16, 16, 18, 19, 19, 19, 19, 19
+	};
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 19;
+	size_t ret = tbl[log2n - tblMin];
+	return ret;
+}
+
+/*
+	First, get approximate value x and compute glvCost of x-1 and x+1,
+	and return the minimum value.
+*/
+inline size_t glvGetTheoreticBucketSize(size_t n)
+{
+	size_t x = estimateBucketSize(n);
+	size_t vm1 = x > 1 ? glvCost(n, x-1) : n;
+	size_t v0 = glvCost(n, x);
+	size_t vp1 = glvCost(n, x+1);
+	if (vm1 <= v0) return x-1;
+	if (vp1 < v0) return x+1;
+	return x;
+}
+
+#ifndef MCL_GLV_ONLY_FUNC
+
+#ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
+	// use (1 << glvGetBucketSize(n)) * sizeof(G) bytes stack + alpha
+	// about 18KiB (G1) or 36KiB (G2) for n = 1024
+	// you can decrease this value but this algorithm is slow if n < 256
+	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
+#endif
+
+/*
+	Extract w bits from yVec[i] starting at the pos-th bit, assign this value to v.
+	tbl[v-1] += xVec[i]
+	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
+*/
+template<class G>
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first)
+{
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t i = 0; i < n; i++) {
+		Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, pos) & tblN;
+		if (v) {
+			tbl[v - 1] += xVec[i];
+		}
+	}
+	G sum = tbl[tblN - 1];
+	if (first) {
+		win = sum;
+	} else {
+		win += sum;
+	}
+	for (size_t i = 1; i < tblN; i++) {
+		sum += tbl[tblN - 1 - i];
+		win += sum;
+	}
+}
+/*
+	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
+	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
+	return numbers of done, which may be smaller than n if malloc fails
+	@note xVec may be normlized
+	fast for n >= 256
+*/
+template<class G>
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
+{
+	if (n == 0) {
+		z.clear();
+		return 0;
+	}
+	if (n == 1) {
+		G::mulArray(z, xVec[0], yVec, yUnitSize);
+		return 1;
+	}
+
+	size_t tblN;
+	G *tbl = 0;
+
+#ifndef MCL_DONT_USE_MALLOC
+	G *tbl_ = 0; // malloc is used if tbl_ != 0
+	// if n is large then try to use malloc
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
+		if (b == 0) b = glvGetBucketSize(n);
+		tblN = (1 << b) - 1;
+		tbl_ = (G*)malloc(sizeof(G) * tblN);
+		if (tbl_) {
+			tbl = tbl_;
+			goto main;
+		}
+	}
+#endif
+	// n is small or malloc fails so use stack
+	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
+	if (b == 0) b = glvGetBucketSize(n);
+	tblN = (1 << b) - 1;
+	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
+	// keep tbl_ = 0
+#ifndef MCL_DONT_USE_MALLOC
+main:
+#endif
+	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
+	const size_t winN = (maxBitSize + b-1) / b;
+
+	// about 10% faster
+	if (doNormalize) G::normalizeVec(xVec, xVec, n);
+
+	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1), n, true);
+	for (size_t w = 1; w < winN; w++) {
+		for (size_t i = 0; i < b; i++) {
+			G::dbl(z, z);
+		}
+		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false);
+	}
+#ifndef MCL_DONT_USE_MALLOC
+	if (tbl_) free(tbl_);
+#endif
+	return n;
+}
+template<class G>
+void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
+{
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize);
+	if (done == n) return;
+	do {
+		xVec += done;
+		yVec += next * done;
+		n -= done;
+		G t;
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize);
+		z += t;
+	} while (done < n);
+}
+
+// for n >= 128
+template<class GLV, class G>
+bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t bucket)
+{
+	const int splitN = GLV::splitN;
+	assert(n > 0);
+	typedef Fr F;
+	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+	typedef mcl::Unit Unit;
+	const size_t next = F::getUnitSize();
+	mpz_class u[splitN], y;
+
+	const size_t tblByteSize = sizeof(G) * splitN * n;
+	const size_t ypByteSize = sizeof(Unit) * next * splitN * n;
+	G *tbl = (G*)malloc(tblByteSize + ypByteSize);
+	if (tbl == 0) return false;
+
+	Unit *yp = (Unit *)(tbl + splitN * n);
+
+	G::normalizeVec(tbl, xVec, n);
+	for (int i = 1; i < splitN; i++) {
+		for (size_t j = 0; j < n; j++) {
+			GLV::mulLambda(tbl[i * n + j], tbl[(i - 1) * n + j]);
+		}
+	}
+	for (size_t i = 0; i < n; i++) {
+		getMpzAt(y, yVec, i);
+		GLV::split(u, y);
+		for (size_t j = 0; j < splitN; j++) {
+			size_t idx = j * n + i;
+			if (u[j] < 0) {
+				u[j] = -u[j];
+				G::neg(tbl[idx], tbl[idx]);
+			}
+			bool b;
+			mcl::gmp::getArray(&b, &yp[idx * next], next, u[j]);
+			assert(b); (void)b;
+		}
+	}
+	mulVecLong(z, tbl, yp, next, next, n * splitN, false, bucket);
+	free(tbl);
+	return true;
+}
+
+/*
+	z += xVec[i] * yVec[i] for i = 0, ..., min(N, n)
+	splitN = 2(G1) or 4(G2)
+	w : window size
+	for n <= 16
+*/
+template<class GLV, class G, int w>
+static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
+{
+	assert(n <= mcl::fp::maxMulVecNGLV);
+	const int splitN = GLV::splitN;
+	const size_t tblSize = 1 << (w - 2);
+	typedef Fr F;
+	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / splitN + splitN> NafArray;
+	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
+	// layout tbl[splitN][n][tblSize];
+	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
+	mpz_class u[splitN], y;
+	size_t maxBit = 0;
+
+	for (size_t i = 0; i < n; i++) {
+		getMpzAt(y, yVec, i);
+		if (n == 1) {
+			const Unit *y0 = mcl::gmp::getUnit(y);
+			size_t yn = mcl::gmp::getUnitSize(y);
+			yn = bint::getRealSize(y0, yn);
+			if (yn <= 1 && mulSmallInt(z, xVec[0], *y0, false)) return;
+		}
+		GLV::split(u, y);
+
+		for (int j = 0; j < splitN; j++) {
+			bool b;
+			gmp::getNAFwidth(&b, naf[i][j], u[j], w);
+			assert(b); (void)b;
+			if (naf[i][j].size() > maxBit) maxBit = naf[i][j].size();
+		}
+
+		G P2;
+		G::dbl(P2, xVec[i]);
+		tbl[0 * n + i][0] = xVec[i];
+		for (size_t j = 1; j < tblSize; j++) {
+			G::add(tbl[0 * n + i][j], tbl[0 * n + i][j - 1], P2);
+		}
+	}
+	G::normalizeVec(&tbl[0][0], &tbl[0][0], n * tblSize);
+	for (size_t i = 0; i < n; i++) {
+		for (int k = 1; k < splitN; k++) {
+			GLV::mulLambda(tbl[k * n + i][0], tbl[(k - 1) * n + i][0]);
+		}
+		for (size_t j = 1; j < tblSize; j++) {
+			for (int k = 1; k < splitN; k++) {
+				GLV::mulLambda(tbl[k * n + i][j], tbl[(k - 1) * n + i][j]);
+			}
+		}
+	}
+	z.clear();
+	for (size_t i = 0; i < maxBit; i++) {
+		const size_t bit = maxBit - 1 - i;
+		G::dbl(z, z);
+		for (size_t j = 0; j < n; j++) {
+			for (int k = 0; k < splitN; k++) {
+				local::addTbl(z, tbl[k * n + j], naf[j][k], bit);
+			}
+		}
+	}
+}
+
+// return false if malloc fails or n is not in a target range
+template<class GLV, class G>
+bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime = false, size_t b = 0)
+{
+	if (n == 1 && constTime) {
+		local::mulGLV_CT<GLV, G>(z, xVec[0], yVec);
+		return true;
+	}
+	if (n <= mcl::fp::maxMulVecNGLV) {
+		mulVecGLVsmall<GLV, G, 5>(z, xVec, yVec, n);
+		return true;
+	}
+	if (n >= 128) {
+		return mulVecGLVlarge<GLV, G>(z, xVec, yVec, n, b);
+	}
+	return false;
+}
+
+#endif
+
+} // mcl::ec
+
+#ifndef MCL_GLV_ONLY_FUNC
+
+// r = the order of Ec
+template<class Ec>
+struct GLV1T {
+	typedef GLV1T<Ec> GLV1;
+	typedef typename Ec::Fp Fp;
+	static const int splitN = 2;
+	static Fp rw; // rw = 1 / w = (-1 - sqrt(-3)) / 2
+	static size_t rBitSize;
+	static mpz_class v0, v1;
+	static mpz_class B[2][2];
+	static void (*optimizedSplit)(mpz_class u[2], const mpz_class& x);
+public:
+#ifndef CYBOZU_DONT_USE_STRING
+	static void dump(const mpz_class& x)
+	{
+		printf("\"%s\",\n", mcl::gmp::getStr(x, 16).c_str());
+	}
+	static void dump()
+	{
+		printf("\"%s\",\n", rw.getStr(16).c_str());
+		printf("%d,\n", (int)rBitSize);
+		dump(v0);
+		dump(v1);
+		dump(B[0][0]); dump(B[0][1]); dump(B[1][0]); dump(B[1][1]);
+	}
+#endif
+	/*
+		L (x, y) = (rw x, y)
+	*/
+	static void mulLambda(Ec& Q, const Ec& P)
+	{
+		Fp::mul(Q.x, P.x, rw);
+		Q.y = P.y;
+		Q.z = P.z;
+	}
+	/*
+		x = u[0] + u[1] * lambda mod r
+	*/
+	static void split(mpz_class u[2], mpz_class& x)
+	{
+		Fr::getOp().modp.modp(x, x);
+		if (optimizedSplit) {
+			optimizedSplit(u, x);
+			return;
+		}
+		mpz_class& a = u[0];
+		mpz_class& b = u[1];
+		mpz_class t;
+		t = (x * v0) >> rBitSize;
+		b = (x * v1) >> rBitSize;
+		a = x - (t * B[0][0] + b * B[1][0]);
+		b = - (t * B[0][1] + b * B[1][1]);
+	}
+	/*
+		init() is defined in bn.hpp
+	*/
+	static void initForSecp256k1()
+	{
+		bool b = Fp::squareRoot(rw, -3);
+		assert(b);
+		(void)b;
+		rw = -(rw + 1) / 2;
+		rBitSize = Fr::getOp().bitSize;
+		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
+		gmp::setStr(&b, B[0][0], "0x3086d221a7d46bcde86c90e49284eb15");
+		assert(b); (void)b;
+		gmp::setStr(&b, B[0][1], "-0xe4437ed6010e88286f547fa90abfe4c3");
+		assert(b); (void)b;
+		gmp::setStr(&b, B[1][0], "0x114ca50f7a8e2f3f657c1108d9d44cfd8");
+		assert(b); (void)b;
+		B[1][1] = B[0][0];
+		const mpz_class& r = Fr::getOp().mp;
+		v0 = ((B[1][1]) << rBitSize) / r;
+		v1 = ((-B[0][1]) << rBitSize) / r;
+		optimizedSplit = 0;
+	}
+};
+
+// rw = 1 / w = (-1 - sqrt(-3)) / 2
+template<class Ec> typename Ec::Fp GLV1T<Ec>::rw;
+template<class Ec> size_t GLV1T<Ec>::rBitSize;
+template<class Ec> mpz_class GLV1T<Ec>::v0;
+template<class Ec> mpz_class GLV1T<Ec>::v1;
+template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
+template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(mpz_class u[2], const mpz_class& x);
+
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
 	GLV for G1 on BN/BLS12
 */
-struct GLV1 : mcl::GLV1T<G1> {
+struct GLV1 : GLV1T<G1> {
 	static bool usePrecomputedTable(int curveType)
 	{
 		if (curveType < 0) return false;
@@ -249,3 +633,6 @@ mpz_class GLV2::z;
 mpz_class GLV2::abs_z;
 bool GLV2::isBLS12 = false;
 
+#endif
+
+} // mcl
