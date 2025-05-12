@@ -644,13 +644,13 @@ void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 			if (!*pb) return;
 		}
 		assert(!isZero(x));
-#if (defined(__GNUC__) || defined(__clang__))  && !defined(__EMSCRIPTEN__)
+#if (defined(__GNUC__) && !defined(__clang__))  && !defined(__EMSCRIPTEN__)
 	// avoid gcc wrong detection
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 		int v = getUnit(x)[0] & maskW;
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(__EMSCRIPTEN__)
+#if (defined(__GNUC__) && !defined(__clang__)) && !defined(__EMSCRIPTEN__)
 	#pragma GCC diagnostic pop
 #endif
 		x >>= w;
