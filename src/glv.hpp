@@ -4,6 +4,12 @@ namespace mcl {
 
 namespace ec {
 
+inline size_t ilog2(size_t n)
+{
+	if (n == 0) return 0;
+	return cybozu::bsr(n) + 1;
+}
+
 // The number of ADD for n-elements with bucket size b
 inline size_t glvCost(size_t n, size_t b)
 {
@@ -21,7 +27,7 @@ inline size_t estimateBucketSize(size_t n)
 inline size_t glvGetBucketSize(size_t n)
 {
 	if (n <= 2) return 2;
-	size_t log2n = mcl::ec::ilog2(n);
+	size_t log2n = ilog2(n);
 	const size_t tblMin = 8;
 	if (log2n < tblMin) return 3;
 	// n >= 2^tblMin
@@ -46,6 +52,68 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	if (vm1 <= v0) return x-1;
 	if (vp1 < v0) return x+1;
 	return x;
+}
+
+/*
+	split x in [0, r-1] to (a, b) such that x = a + b L, 0 <= a < L, 0 <= b <= L+1
+	a[] : 128 bit
+	b[] : 128 bit
+	x[] : 256 bit
+*/
+inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
+{
+	/*
+		z = -0xd201000000010000
+		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
+		s=255
+		q = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
+		H = 1<<128
+	*/
+	static const Unit L[] = { MCL_U64_TO_UNIT(0x00000000ffffffff), MCL_U64_TO_UNIT(0xac45a4010001a402) };
+	static const Unit q[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
+	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
+	static const size_t n = 128 / mcl::UnitBitSize;
+	Unit xH[n+1]; // x = xH * (H/2) + xL
+	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-1); // >>127
+	Unit t[n*2];
+	mcl::bint::mulT<n>(t, xH, q);
+	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
+	mcl::bint::mulT<n>(t, b, L); // bL
+	mcl::bint::subT<n*2>(t, x, t); // x - bL
+	Unit d = mcl::bint::subT<n>(a, t, L);
+	if (t[n] - d == 0) {
+		mcl::bint::addT<n>(b, b, one);
+	} else {
+		mcl::bint::copyT<n>(a, t);
+	}
+}
+
+inline void optimizedSplitRawForBLS12_377(Unit *a, Unit *b, const Unit *x)
+{
+	/*
+		z = -0xd201000000010000
+		L = z^2-1 = 0x452217cc900000010a11800000000000
+		s=254
+		q = (1<<s)//L = 0xecfdeaa5a7f4dc581fdcbb4cabe4060b
+		H = 1<<128
+	*/
+	static const Unit L[] = { MCL_U64_TO_UNIT(0x0a11800000000000), MCL_U64_TO_UNIT(0x452217cc90000001) };
+	static const Unit q[] = { MCL_U64_TO_UNIT(0x1fdcbb4cabe4060b), MCL_U64_TO_UNIT(0xecfdeaa5a7f4dc58) };
+	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
+	static const size_t n = 128 / mcl::UnitBitSize;
+	Unit xH[n+1]; // x = xH * (H/4) + xL
+	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-2); // >>126
+	Unit t[n*2];
+	mcl::bint::mulT<n>(t, xH, q);
+	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
+	mcl::bint::mulT<n>(t, b, L); // bL
+	mcl::bint::subT<n*2>(t, x, t); // x - bL
+	Unit d = mcl::bint::subT<n>(a, t, L);
+	if (d == 0) {
+		mcl::bint::addT<n>(b, b, one);
+	} else {
+		mcl::bint::copyT<n>(a, t);
+	}
 }
 
 #ifndef MCL_GLV_ONLY_FUNC
@@ -274,12 +342,87 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 	}
 }
 
+/*
+	Q = x P
+	splitN = 2(G1) or 4(G2)
+	w : window size
+*/
+template<class GLV, class G>
+void mulGLV_CT(G& Q, const G& P, const void *yVec)
+{
+	const size_t w = 4;
+	typedef Fr F;
+	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+	const int splitN = GLV::splitN;
+	const size_t tblSize = 1 << w;
+	G tbl[splitN][tblSize];
+	bool negTbl[splitN];
+	mpz_class u[splitN], y;
+	getMpzAt(y, yVec, 0);
+	GLV::split(u, y);
+	for (int i = 0; i < splitN; i++) {
+		if (u[i] < 0) {
+			gmp::neg(u[i], u[i]);
+			negTbl[i] = true;
+		} else {
+			negTbl[i] = false;
+		}
+		tbl[i][0].clear();
+	}
+	tbl[0][1] = P;
+	for (size_t j = 2; j < tblSize; j++) {
+		G::add(tbl[0][j], tbl[0][j - 1], P);
+	}
+	for (int i = 1; i < splitN; i++) {
+		for (size_t j = 1; j < tblSize; j++) {
+			GLV::mulLambda(tbl[i][j], tbl[i - 1][j]);
+		}
+	}
+	for (int i = 0; i < splitN; i++) {
+		if (negTbl[i]) {
+			for (size_t j = 0; j < tblSize; j++) {
+				G::neg(tbl[i][j], tbl[i][j]);
+			}
+		}
+	}
+	mcl::FixedArray<uint8_t, sizeof(F) * 8 / w + 1> vTbl[splitN];
+	size_t loopN = 0;
+	{
+		size_t maxBitSize = 0;
+		fp::BitIterator<Unit> itr[splitN];
+		for (int i = 0; i < splitN; i++) {
+			itr[i].init(gmp::getUnit(u[i]), gmp::getUnitSize(u[i]));
+			size_t bitSize = itr[i].getBitSize();
+			if (bitSize > maxBitSize) maxBitSize = bitSize;
+		}
+		loopN = (maxBitSize + w - 1) / w;
+		for (int i = 0; i < splitN; i++) {
+			bool b = vTbl[i].resize(loopN);
+			assert(b);
+			(void)b;
+			for (size_t j = 0; j < loopN; j++) {
+				vTbl[i][loopN - 1 - j] = (uint8_t)itr[i].getNext(w);
+			}
+		}
+	}
+	Q.clear();
+	for (size_t k = 0; k < loopN; k++) {
+		for (size_t i = 0; i < w; i++) {
+			G::dbl(Q, Q);
+		}
+		for (size_t i = 0; i < splitN; i++) {
+			uint8_t v = vTbl[i][k];
+			G::add(Q, Q, tbl[i][v]);
+		}
+	}
+}
+
 // return false if malloc fails or n is not in a target range
 template<class GLV, class G>
 bool mulVecGLVT(G& z, const G *xVec, const void *yVec, size_t n, bool constTime = false, size_t b = 0)
 {
 	if (n == 1 && constTime) {
-		local::mulGLV_CT<GLV, G>(z, xVec[0], yVec);
+		mulGLV_CT<GLV, G>(z, xVec[0], yVec);
 		return true;
 	}
 	if (n <= mcl::fp::maxMulVecNGLV) {
@@ -496,7 +639,7 @@ struct GLV1 : GLV1T<G1> {
 		bool dummy;
 		mcl::gmp::getArray(&dummy, xa, n*2, x);
 		assert(dummy);
-		ec::local::optimizedSplitRawForBLS12_381(a, b, xa);
+		ec::optimizedSplitRawForBLS12_381(a, b, xa);
 		gmp::setArray(&dummy, u[0], a, n);
 		gmp::setArray(&dummy, u[1], b, n);
 		assert(dummy);
@@ -509,7 +652,7 @@ struct GLV1 : GLV1T<G1> {
 		bool dummy;
 		mcl::gmp::getArray(&dummy, xa, n*2, x);
 		assert(dummy);
-		ec::local::optimizedSplitRawForBLS12_377(a, b, xa);
+		ec::optimizedSplitRawForBLS12_377(a, b, xa);
 		gmp::setArray(&dummy, u[0], a, n);
 		gmp::setArray(&dummy, u[1], b, n);
 		assert(dummy);

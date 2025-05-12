@@ -99,81 +99,6 @@ void mul12(F& x)
 	mul4(x);
 }
 
-/*
-	Q = x P
-	splitN = 2(G1) or 4(G2)
-	w : window size
-*/
-template<class GLV, class G>
-void mulGLV_CT(G& Q, const G& P, const void *yVec)
-{
-	const size_t w = 4;
-	typedef Fr F;
-	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
-	const int splitN = GLV::splitN;
-	const size_t tblSize = 1 << w;
-	G tbl[splitN][tblSize];
-	bool negTbl[splitN];
-	mpz_class u[splitN], y;
-	getMpzAt(y, yVec, 0);
-	GLV::split(u, y);
-	for (int i = 0; i < splitN; i++) {
-		if (u[i] < 0) {
-			gmp::neg(u[i], u[i]);
-			negTbl[i] = true;
-		} else {
-			negTbl[i] = false;
-		}
-		tbl[i][0].clear();
-	}
-	tbl[0][1] = P;
-	for (size_t j = 2; j < tblSize; j++) {
-		G::add(tbl[0][j], tbl[0][j - 1], P);
-	}
-	for (int i = 1; i < splitN; i++) {
-		for (size_t j = 1; j < tblSize; j++) {
-			GLV::mulLambda(tbl[i][j], tbl[i - 1][j]);
-		}
-	}
-	for (int i = 0; i < splitN; i++) {
-		if (negTbl[i]) {
-			for (size_t j = 0; j < tblSize; j++) {
-				G::neg(tbl[i][j], tbl[i][j]);
-			}
-		}
-	}
-	mcl::FixedArray<uint8_t, sizeof(F) * 8 / w + 1> vTbl[splitN];
-	size_t loopN = 0;
-	{
-		size_t maxBitSize = 0;
-		fp::BitIterator<Unit> itr[splitN];
-		for (int i = 0; i < splitN; i++) {
-			itr[i].init(gmp::getUnit(u[i]), gmp::getUnitSize(u[i]));
-			size_t bitSize = itr[i].getBitSize();
-			if (bitSize > maxBitSize) maxBitSize = bitSize;
-		}
-		loopN = (maxBitSize + w - 1) / w;
-		for (int i = 0; i < splitN; i++) {
-			bool b = vTbl[i].resize(loopN);
-			assert(b);
-			(void)b;
-			for (size_t j = 0; j < loopN; j++) {
-				vTbl[i][loopN - 1 - j] = (uint8_t)itr[i].getNext(w);
-			}
-		}
-	}
-	Q.clear();
-	for (size_t k = 0; k < loopN; k++) {
-		for (size_t i = 0; i < w; i++) {
-			G::dbl(Q, Q);
-		}
-		for (size_t i = 0; i < splitN; i++) {
-			uint8_t v = vTbl[i][k];
-			G::add(Q, Q, tbl[i][v]);
-		}
-	}
-}
-
 // AsArrayOfFp[i] gets P[i].z
 template<class E>
 struct AsArrayOfFp {
@@ -246,68 +171,6 @@ void normalizeVecT(Eout& Q, Ein& P, size_t n, size_t N = 256)
 		if (n == 0) return;
 		Q += doneN;
 		P += doneN;
-	}
-}
-
-/*
-	split x in [0, r-1] to (a, b) such that x = a + b L, 0 <= a < L, 0 <= b <= L+1
-	a[] : 128 bit
-	b[] : 128 bit
-	x[] : 256 bit
-*/
-inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
-{
-	/*
-		z = -0xd201000000010000
-		L = z^2-1 = 0xac45a4010001a40200000000ffffffff
-		s=255
-		q = (1<<s)//L = 0xbe35f678f00fd56eb1fb72917b67f718
-		H = 1<<128
-	*/
-	static const Unit L[] = { MCL_U64_TO_UNIT(0x00000000ffffffff), MCL_U64_TO_UNIT(0xac45a4010001a402) };
-	static const Unit q[] = { MCL_U64_TO_UNIT(0xb1fb72917b67f718), MCL_U64_TO_UNIT(0xbe35f678f00fd56e) };
-	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
-	static const size_t n = 128 / mcl::UnitBitSize;
-	Unit xH[n+1]; // x = xH * (H/2) + xL
-	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-1); // >>127
-	Unit t[n*2];
-	mcl::bint::mulT<n>(t, xH, q);
-	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
-	mcl::bint::mulT<n>(t, b, L); // bL
-	mcl::bint::subT<n*2>(t, x, t); // x - bL
-	Unit d = mcl::bint::subT<n>(a, t, L);
-	if (t[n] - d == 0) {
-		mcl::bint::addT<n>(b, b, one);
-	} else {
-		mcl::bint::copyT<n>(a, t);
-	}
-}
-
-inline void optimizedSplitRawForBLS12_377(Unit *a, Unit *b, const Unit *x)
-{
-	/*
-		z = -0xd201000000010000
-		L = z^2-1 = 0x452217cc900000010a11800000000000
-		s=254
-		q = (1<<s)//L = 0xecfdeaa5a7f4dc581fdcbb4cabe4060b
-		H = 1<<128
-	*/
-	static const Unit L[] = { MCL_U64_TO_UNIT(0x0a11800000000000), MCL_U64_TO_UNIT(0x452217cc90000001) };
-	static const Unit q[] = { MCL_U64_TO_UNIT(0x1fdcbb4cabe4060b), MCL_U64_TO_UNIT(0xecfdeaa5a7f4dc58) };
-	static const Unit one[] = { MCL_U64_TO_UNIT(1), MCL_U64_TO_UNIT(0) };
-	static const size_t n = 128 / mcl::UnitBitSize;
-	Unit xH[n+1]; // x = xH * (H/4) + xL
-	mcl::bint::shrT<n+1>(xH, x+n-1, mcl::UnitBitSize-2); // >>126
-	Unit t[n*2];
-	mcl::bint::mulT<n>(t, xH, q);
-	mcl::bint::copyT<n>(b, t+n); // (xH * q)/H
-	mcl::bint::mulT<n>(t, b, L); // bL
-	mcl::bint::subT<n*2>(t, x, t); // x - bL
-	Unit d = mcl::bint::subT<n>(a, t, L);
-	if (d == 0) {
-		mcl::bint::addT<n>(b, b, one);
-	} else {
-		mcl::bint::copyT<n>(a, t);
 	}
 }
 
@@ -1008,12 +871,6 @@ void tryAndIncMapTo(E& P, const typename E::Fp& t)
 	}
 }
 
-inline size_t ilog2(size_t n)
-{
-	if (n == 0) return 0;
-	return cybozu::bsr(n) + 1;
-}
-
 template<class G>
 bool mulSmallInt(G& z, const G& x, Unit y, bool isNegative)
 {
@@ -1165,8 +1022,8 @@ public:
 	static bool verifyOrder_;
 	static mpz_class order_;
 	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-	static void (*mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n, size_t b);
-	static void (*mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
+	static void (*mulVecOpti)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
+	static void (*mulEachOpti)(EcT *xVec, const Fr *yVec, size_t n);
 	static bool (*isValidOrderFast)(const EcT& x);
 	/* default constructor is undefined value */
 	EcT() {}
@@ -1264,11 +1121,11 @@ public:
 	{
 		mulVecGLV = f;
 	}
-	static void setMulVecOpti(void f(Unit* _z, Unit *_xVec, const Unit *_yVec, size_t yn, size_t b))
+	static void setMulVecOpti(void f(EcT& z, EcT *xVec, const Fr *yVec, size_t yn, size_t b))
 	{
 		mulVecOpti = f;
 	}
-	static void setMulEachOpti(void f(Unit *_xVec, const Unit *_yVec, size_t yn))
+	static void setMulEachOpti(void f(EcT *xVec, const Fr *yVec, size_t yn))
 	{
 		mulEachOpti = f;
 	}
@@ -1942,7 +1799,7 @@ public:
 			return;
 		}
 		if (mulVecOpti && n >= 128) {
-			mulVecOpti((Unit*)&z, (Unit*)xVec, yVec[0].getUnit(), n, b);
+			mulVecOpti(z, xVec, yVec, n, b);
 			return;
 		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b)) {
@@ -2000,7 +1857,7 @@ public:
 	{
 		if (mulEachOpti && n >= 16) {
 			size_t n16 = n & ~size_t(16-1);
-			mulEachOpti((Unit*)xVec, yVec[0].getUnit(), n16);
+			mulEachOpti(xVec, yVec, n16);
 			xVec += n16;
 			yVec += n16;
 			n -= n16;
@@ -2065,10 +1922,10 @@ template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
 template<class Fp> bool (*EcT<Fp>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-template<class Fp> void (*EcT<Fp>::mulVecOpti)(Unit *z, Unit *xVec, const Unit *yVec, size_t n, size_t b);
+template<class Fp> void (*EcT<Fp>::mulVecOpti)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
 template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
 template<class Fp> int EcT<Fp>::mode_;
-template<class Fp> void (*EcT<Fp>::mulEachOpti)(Unit *xVec, const Unit *yVec, size_t n);
+template<class Fp> void (*EcT<Fp>::mulEachOpti)(EcT<Fp> *xVec, const Fr *yVec, size_t n);
 
 void initForSecp256k1(); // implemented in fp.cpp
 /*

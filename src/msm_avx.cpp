@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include "avx512.hpp"
 #include "msm.hpp"
+#define MCL_GLV_ONLY_FUNC
+#include "glv.hpp"
 
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
@@ -45,7 +47,7 @@ void mcl_c5_vmulA(VecA *, const VecA *, const VecA *);
 
 namespace {
 
-typedef mcl::Unit Unit;
+using namespace mcl;
 
 // only for BLS12-381
 struct FrA {
@@ -1129,9 +1131,9 @@ struct EcMT {
 				fr.fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
 #ifdef MCL_MSM_BLS12_377
-				mcl::ec::local::optimizedSplitRawForBLS12_377(aa, bb, buf);
+				mcl::ec::optimizedSplitRawForBLS12_377(aa, bb, buf);
 #else
-				mcl::ec::local::optimizedSplitRawForBLS12_381(aa, bb, buf);
+				mcl::ec::optimizedSplitRawForBLS12_381(aa, bb, buf);
 #endif
 				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
 				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
@@ -1482,9 +1484,9 @@ const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 #define USE_GLV
 
 template<class G=EcM, class V=Vec>
-void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket = 0)
+void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 {
-	G1A& P = *(G1A*)_P;
+	G1A& P = *(G1A*)&_P;
 	G1A *x = (G1A*)_x;
 	const FrA *y = (const FrA*)_y;
 	const size_t m = sizeof(V)/8;
@@ -1519,9 +1521,9 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 			mcl::Fr::getOp().fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
 #ifdef MCL_MSM_BLS12_377
-			mcl::ec::local::optimizedSplitRawForBLS12_377(a, b, ya);
+			mcl::ec::optimizedSplitRawForBLS12_377(a, b, ya);
 #else
-			mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, ya);
+			mcl::ec::optimizedSplitRawForBLS12_381(a, b, ya);
 #endif
 			py[i*m*2+j+0] = a[0];
 			py[i*m*2+j+m] = a[1];
@@ -1558,13 +1560,13 @@ void mulVecAVX512T(Unit *_P, Unit *_x, const Unit *_y, size_t n, size_t bucket =
 
 namespace mcl { namespace msm {
 
-void mulVecAVX512(Unit *P, Unit *x, const Unit *y, size_t n, size_t b = 0)
+void mulVecAVX512(G1& P, G1 *x, const Fr *y, size_t n, size_t b = 0)
 {
 	mulVecAVX512T<EcM, Vec>(P, x, y, n, b);
 //	mulVecAVX512T<EcMA, VecA>(P, x, y, n, b); // slower
 }
 
-void mulEachAVX512(Unit *_x, const Unit *_y, size_t n)
+void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 {
 #if 1
 	typedef EcMA V;
@@ -2483,7 +2485,7 @@ void copyMulVec(G1& R, const G1 *_P, const Fr *x, size_t n)
 {
 	G1 *P = (G1*)CYBOZU_ALLOCA(sizeof(G1) * n);
 	mcl::bint::copyN(P, _P, n);
-	mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	mulVecAVX512(R, P, x, n);
 }
 
 CYBOZU_TEST_AUTO(mulVec)
@@ -2503,13 +2505,13 @@ CYBOZU_TEST_AUTO(mulVec)
 	}
 	G1 P2[n];
 	mcl::bint::copyN(P2, P, n);
-	mulVecAVX512((Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	mulVecAVX512(R, P, x, n);
 //	G1::mulVec(R, P, x, n);
 	CYBOZU_TEST_EQUAL(Q, R);
 #ifdef NDEBUG
 	G1 R2;
 	CYBOZU_BENCH_C("mulVec(copy)", 30, copyMulVec, R2, P2, x, n);
-	CYBOZU_BENCH_C("mulVec", 30, mulVecAVX512, (Unit*)&R, (Unit*)P, (const Unit*)x, n);
+	CYBOZU_BENCH_C("mulVec", 30, mulVecAVX512, R, P, x, n);
 	CYBOZU_TEST_EQUAL(R, R2);
 	CYBOZU_BENCH_C("mulVecOrg", 3, mulVecOrg, R2, P2, x, n);
 #endif
@@ -2532,10 +2534,10 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 		size_t n = size_t(1) << d;
 		size_t b1 = glvGetBucketSizeAVX512(n/4);
 		printf("% 8zd % 2zd", n, b1);
-		CYBOZU_BENCH_C(" ", C, mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b1);
+		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b1);
 		size_t b2 = b ? b : mcl::ec::glvGetTheoreticBucketSize(n/4);
 		printf("% 8zd % 2zd", n, size_t(b2));
-		CYBOZU_BENCH_C(" ", C, mulVecAVX512, (Unit*)&P1, (Unit*)Pvec.data(), (const Unit*)xVec.data(), n, b2);
+		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b2);
 	}
 }
 

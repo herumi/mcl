@@ -14,6 +14,8 @@ cybozu::CpuClock clk;
 using namespace mcl::bls12;
 
 #include "common_test.hpp"
+#define MCL_GLV_ONLY_FUNC
+#include "../src/glv.hpp"
 
 mcl::fp::Mode g_mode;
 
@@ -704,7 +706,7 @@ void splitTest(const mpz_class& mx, const mpz_class& L)
 {
 	mcl::Unit x[4], a[2], b[2];
 	mcl::gmp::getArray(x, 4, mx);
-	mcl::ec::local::optimizedSplitRawForBLS12_381(a, b, x);
+	mcl::ec::optimizedSplitRawForBLS12_381(a, b, x);
 	mpz_class ma, mb;
 	mcl::gmp::setArray(ma, a, 2);
 	mcl::gmp::setArray(mb, b, 2);
