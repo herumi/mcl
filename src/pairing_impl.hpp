@@ -1203,14 +1203,6 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
 #if MCL_MSM == 1
-#if (defined(__GNUC__) || defined(__clang__))  && !defined(__EMSCRIPTEN__)
-	// avoid gcc wrong detection
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wcast-function-type"
-#endif
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(__EMSCRIPTEN__)
-	#pragma GCC diagnostic pop
-#endif
 	if (sizeof(Unit) == 8 && sizeof(Fp) == sizeof(mcl::msm::FpA) && sizeof(Fr) == sizeof(mcl::msm::FrA)) {
 		if (mcl::msm::initMsm(cp)) {
 			G1::setMulVecOpti(mcl::msm::mulVecAVX512);
