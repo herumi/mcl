@@ -58,7 +58,6 @@ struct FpA {
 	uint64_t v[6];
 };
 
-
 struct G1A {
 	uint64_t v[6*3];
 };
@@ -789,7 +788,7 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	}
 	static void inv(FpM& z, const FpM& x)
 	{
-		FpA v[M];
+		CYBOZU_ALIGN(64) FpA v[M];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
 		mcl::invVec<mcl::Fp>(vv, vv, M, M);
@@ -810,9 +809,12 @@ inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 	typedef typename E::Fp F;
 	bool alocated = false;
 	F *tbl = 0;
+#if 0
 	if (sizeof(F) * n < 1024 * 1024) {
-		tbl = (F*)CYBOZU_ALLOCA(sizeof(F) * n);
-	} else {
+		tbl = (F*)CYBOZU_ALIGNED_ALLOCA(sizeof(F) * n, 64);
+	} else
+#endif
+	{
 		tbl = (F*)Xbyak::AlignedMalloc(sizeof(F) * n, 64);
 		alocated = true;
 	}
@@ -821,7 +823,7 @@ inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 		F t = F::select(P[i].z.isZero(), F::one(), P[i].z);
 		F::mul(tbl[i], tbl[i-1], t);
 	}
-	F r;
+	CYBOZU_ALIGN(64) F r;
 	F::inv(r, tbl[n-1]);
 	for (size_t i = 0; i < n; i++) {
 		size_t pos = n-1-i;
@@ -1103,14 +1105,18 @@ struct EcMT {
 		}
 	}
 	template<bool isProj=true, bool mixed=false>
-	static void mulGLV(T *Q, const T *P, const FrA *y, size_t n = 1)
+	static void mulGLV(T *Q, const T *P, const FrA *y, size_t n)
 	{
 		assert(n > 0);
 		const size_t m = sizeof(V)/8;
 		const size_t w = 5;
 		const size_t tblN = (1<<(w-1))+1; // [0, 2^(w-1)]
 
+#ifdef __GNUC__
+		CYBOZU_ALIGN(64) T tbl1s[tblN*n];
+#else
 		T *tbl1s = (T*)CYBOZU_ALIGNED_ALLOCA(sizeof(T)*tblN*n, 64);
+#endif
 		for (size_t k = 0; k < n; k++) {
 			makeTable<isProj, mixed>(tbl1s + tblN*k, tblN, P[k]);
 		}
@@ -1368,7 +1374,7 @@ struct FpMA : FpMT<FpMA, VmaskA, VecA> {
 	}
 	static void inv(FpMA& z, const FpMA& x)
 	{
-		FpA v[M*vN];
+		CYBOZU_ALIGN(64) FpA v[M*vN];
 		mcl::Fp* vv = (mcl::Fp*)v;
 		x.getFpA(v);
 		mcl::invVec<mcl::Fp>(vv, vv, M*vN, M*vN);
@@ -1737,7 +1743,7 @@ static Montgomery g_mont;
 
 void dump(const FpM& x, const char *msg = nullptr, size_t pos = size_t(-1))
 {
-	Fp T[8];
+	CYBOZU_ALIGN(64) Fp T[8];
 	x.getFpA((FpA*)T);
 	if (msg) printf("%s\n", msg);
 	for (size_t i = 0; i < 8; i++) {
@@ -1920,7 +1926,7 @@ CYBOZU_TEST_AUTO(conv)
 {
 	const int C = 16;
 	FpM x1;
-	mcl::Fp x2[8], x3[8];
+	CYBOZU_ALIGN(64) mcl::Fp x2[8], x3[8];
 	cybozu::XorShift rg;
 	for (int i = 0; i < C; i++) {
 		setRand(x1, rg, x2);
@@ -1955,7 +1961,7 @@ void forcedRead(const T& x)
 
 void asmTest(const mcl::Fp x[8], const mcl::Fp y[8])
 {
-	mcl::Fp z[8];
+	CYBOZU_ALIGN(64) mcl::Fp z[8];
 	FpM xm, ym, zm, wm;
 	xm.setFpA((const FpA*)x);
 	ym.setFpA((const FpA*)y);
@@ -2163,7 +2169,7 @@ CYBOZU_TEST_AUTO(vaddPre)
 	CYBOZU_BENCH_C("FpM::inv", C/100, FpM::inv, z[0], z[0]);
 	CYBOZU_BENCH_C("FpMA::inv", C/100, FpMA::inv, za, za);
 	{
-		mcl::Fp vv[8*vN];
+		CYBOZU_ALIGN(64) mcl::Fp vv[8*vN];
 		za.getFpA((FpA*)vv);
 		CYBOZU_BENCH_C("Fp::inv(8)", C/100, mcl::invVec<mcl::Fp>, vv, vv, 8*vN);
 	}
@@ -2372,7 +2378,7 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 {
 	const bool isProj = false;
 	const size_t N = 64;
-	G1 P[N], Q[N], R[N];
+	CYBOZU_ALIGN(64) G1 P[N], Q[N], R[N];
 	EcM PP[N/8];
 	for (size_t n = 8; n < N; n += 8) {
 		cybozu::XorShift rg;
@@ -2399,7 +2405,7 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 CYBOZU_TEST_AUTO(mulEach_special)
 {
 	const size_t n = 8;
-	G1 P[n], Q[n], R[n];
+	CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n];
 	Fr x[n];
 	mpz_class L;
 	for (size_t i = 0; i < n; i++) P[i].clear();
@@ -2455,7 +2461,7 @@ void mulVecOrg(G1& Q, G1 *P, const Fr *x, size_t n)
 CYBOZU_TEST_AUTO(mulEach)
 {
 	const size_t n = 1024;
-	G1 P[n], Q[n], R[n];
+	CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n];
 	Fr x[n];
 	cybozu::XorShift rg;
 	setParam(P, x, n, rg);
@@ -2491,7 +2497,7 @@ void copyMulVec(G1& R, const G1 *_P, const Fr *x, size_t n)
 CYBOZU_TEST_AUTO(mulVec)
 {
 	const size_t n = 8203;
-	G1 P[n], Q, R;
+	CYBOZU_ALIGN(64) G1 P[n], Q, R;
 	Fr x[n];
 	cybozu::XorShift rg;
 	setParam(P, x, n, rg);
