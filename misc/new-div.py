@@ -23,7 +23,7 @@ X = 2^s x - p xH u = 2^s(xH 2^(l-s) + xL) - xH (N - r0)
 x/p - (xH q)/2^s = X/(2^s p) = xL/p + r0/p (xH/2^s) < (xL + d r0)/p < (2^(l-s)+d r0)/p < 1.
 '''
 
-# Modified Barret reduction.
+# Modified Barrett reduction.
 class Mod():
   def __init__(self, p, M=2**512-1):
     '''
