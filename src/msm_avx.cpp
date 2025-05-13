@@ -1113,7 +1113,14 @@ struct EcMT {
 		const size_t tblN = (1<<(w-1))+1; // [0, 2^(w-1)]
 
 #ifdef __GNUC__
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvla-cxx-extension"
+#endif
 		CYBOZU_ALIGN(64) T tbl1s[tblN*n];
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
 #else
 		T *tbl1s = (T*)CYBOZU_ALIGNED_ALLOCA(sizeof(T)*tblN*n, 64);
 #endif
