@@ -1005,7 +1005,6 @@ template<class _Fp>
 class EcT : public fp::Serializable<EcT<_Fp> > {
 public:
 	typedef _Fp Fp; // definition field
-	typedef mcl::Fr Fr; // group order
 	typedef _Fp BaseFp;
 	Fp x, y, z;
 	static int mode_;
@@ -1957,13 +1956,7 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 		if (!*pb) return;
 	}
 	if (curveType == MCL_SECP256K1) {
-#if 1
 		initForSecp256k1();
-#else
-		typedef GLV1T<Ec> GLV1;
-		GLV1::initForSecp256k1();
-		Ec::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, Ec>);
-#endif
 	} else {
 		Ec::setMulVecGLV(0);
 	}

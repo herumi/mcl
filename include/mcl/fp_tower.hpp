@@ -24,18 +24,20 @@ public:
 	template<class OutputStream>
 	void save(bool *pb, OutputStream& os, int) const
 	{
-		char buf[1024];
-		size_t n = mcl::fp::arrayToHex(buf, sizeof(buf), v_, getUnitSize());
+		const size_t vN = getUnitSize();
+		const size_t bufN = vN * 2;
+		char *buf = (char*)CYBOZU_ALLOCA(bufN);
+		size_t n = mcl::fp::arrayToHex(buf, bufN, v_, vN);
 		if (n == 0) {
 			*pb = false;
 			return;
 		}
-		cybozu::write(pb, os, buf + sizeof(buf) - n, sizeof(buf));
+		cybozu::write(pb, os, buf + bufN - n, bufN);
 	}
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int)
 	{
-		char buf[1024];
+		char buf[sizeof(v_) * 2];
 		*pb = false;
 		size_t n = fp::local::loadWord(buf, sizeof(buf), is);
 		if (n == 0) return;
