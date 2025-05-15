@@ -17,19 +17,11 @@
 
 namespace mcl {
 
-/*
-	y = x^((p^12 - 1) / r)
-	(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
-	(a + bw)^(p^6) = a - bw in Fp12
-	(p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
-*/
 void finalExp(Fp12& y, const Fp12& x);
 void millerLoop(Fp12& f, const G1& P_, const G2& Q_);
 void pairing(Fp12& f, const G1& P, const G2& Q);
 
-/*
-	allocate param.precomputedQcoeffSize elements of Fp6 for Qcoeff
-*/
+//	allocate param.precomputedQcoeffSize elements of Fp6 for Qcoeff
 void precomputeG2(Fp6 *Qcoeff, const G2& Q_);
 
 // get the size of precomputed Qcoeff
@@ -91,14 +83,10 @@ bool setDstG1(const char *dst, size_t dstSize);
 // return 0 if success else -1
 bool setDstG2(const char *dst, size_t dstSize);
 
+// check the order of the element when setStr/serialize is called.
 void verifyOrderG1(bool doVerify);
 void verifyOrderG2(bool doVerify);
 
-/*
-	Faster Subgroup Checks for BLS12-381
-	Sean Bowe, https://eprint.iacr.org/2019/814
-	Frob^2(P) - z Frob^3(P) == P
-*/
 bool isValidOrderBLS12(const G2& P);
 bool isValidOrderBLS12(const G1& P);
 
@@ -110,6 +98,7 @@ static const CurveParam& CurveFp382_2 = BN381_2;
 static const CurveParam& CurveFp462 = BN462;
 static const CurveParam& CurveSNARK1 = BN_SNARK1;
 
+// get the current parameter
 const CurveParam& getCurveParam();
 int getCurveType();
 

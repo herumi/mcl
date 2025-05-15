@@ -688,6 +688,12 @@ inline void makeAdjP(G1& adjP, const G1& P)
 	adjP.z = P.z;
 }
 
+/*
+	y = x^((p^12 - 1) / r)
+	(p^12 - 1) / r = (p^2 + 1) (p^6 - 1) (p^4 - p^2 + 1)/r
+	(a + bw)^(p^6) = a - bw in Fp12
+	(p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
+*/
 void finalExp(Fp12& y, const Fp12& x)
 {
 	using namespace local;
@@ -1156,6 +1162,11 @@ void verifyOrderG2(bool doVerify)
 	G2::setOrder(doVerify ? Fr::getOp().mp : 0);
 }
 
+/*
+	Faster Subgroup Checks for BLS12-381
+	Sean Bowe, https://eprint.iacr.org/2019/814
+	Frob^2(P) - z Frob^3(P) == P
+*/
 bool isValidOrderBLS12(const G2& P)
 {
 	G2 T2, T3;
@@ -1165,16 +1176,6 @@ bool isValidOrderBLS12(const G2& P)
 	T2 -= T3;
 	return T2 == P;
 }
-bool isValidOrderBLS12(const G1& P);
-
-#if 0
-// backward compatibility
-static const CurveParam& CurveFp254BNb = BN254;
-static const CurveParam& CurveFp382_1 = BN381_1;
-static const CurveParam& CurveFp382_2 = BN381_2;
-static const CurveParam& CurveFp462 = BN462;
-static const CurveParam& CurveSNARK1 = BN_SNARK1;
-#endif
 
 void Frobenius(G2& D, const G2& S)
 {
