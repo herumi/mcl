@@ -21,7 +21,7 @@ if 1 == 1 (
 
 
 if "%1"=="dll" (
-  set CFLAGS=%CFLAGS% /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK
+  set CFLAGS=%CFLAGS%
 )
 echo CFLAGS=%CFLAGS%
 
@@ -35,7 +35,7 @@ if "%1"=="dll" (
      cl /c %CFLAGS% src\bn_c384_256.cpp /Foobj\bn_c384_256.obj
      link /nologo /DLL /OUT:bin\mclbn384_256.dll obj\bn_c384_256.obj %OBJ% %LDFLAGS% /implib:lib\mclbn384_256.lib
 
-     cl /c %CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj /DMCL_NO_AUTOLINK
+     cl /c %CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj
      link /nologo /DLL /OUT:bin\mclshe384_256.dll obj\she_c384_256.obj %OBJ% %LDFLAGS% /implib:lib\mclshe_c384_256.lib
 ) else (
      cl /c %CFLAGS% src\bn_c384_256.cpp /Foobj\bn_c384_256.obj
