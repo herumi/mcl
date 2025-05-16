@@ -5354,11 +5354,11 @@ SIZE(mclb_mulUnitAdd_slow9)
 PRE(mclb_mul_fast1):
 TYPE(mclb_mul_fast1)
 mov %rdx, %r11
-mov (%r11), %rdx
-mulx (%r8), %rax, %r9
+mov (%r11), %rax
+mov (%r8), %rdx
+mul %rdx
 mov %rax, (%rcx)
-adc $0, %r9
-mov %r9, 8(%rcx)
+mov %rdx, 8(%rcx)
 ret
 SIZE(mclb_mul_fast1)
 .balign 16

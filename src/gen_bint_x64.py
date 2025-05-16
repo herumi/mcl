@@ -980,6 +980,13 @@ def gen_mulPreN(pz, px, py, pk, t, N):
 def gen_mul_fast(N):
   align(16)
   with FuncProc(f'mclb_mul_fast{N}'):
+    if N == 1:
+      with StackFrame(3, 0, useRDX=True) as sf:
+        mov(rax, ptr(sf.p[1]))
+        mov(rdx, ptr(sf.p[2]))
+        mul(rdx)
+        store_mp(sf.p[0], Pack(rdx, rax))
+        return
     if N <= 9:
       with StackFrame(3, N+1, useRDX=True) as sf:
         pz = sf.p[0]

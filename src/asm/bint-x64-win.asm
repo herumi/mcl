@@ -5117,11 +5117,11 @@ mclb_mulUnitAdd_slow9 endp
 align 16
 mclb_mul_fast1 proc export
 mov r11, rdx
-mov rdx, [r11]
-mulx r9, rax, [r8]
+mov rax, [r11]
+mov rdx, [r8]
+mul rdx
 mov [rcx], rax
-adc r9, 0
-mov [rcx+8], r9
+mov [rcx+8], rdx
 ret
 mclb_mul_fast1 endp
 align 16
