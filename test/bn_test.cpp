@@ -15,8 +15,6 @@ using namespace mcl::bn;
 
 #include "common_test.hpp"
 
-mcl::fp::Mode g_mode;
-
 const struct TestSet {
 	mcl::CurveParam cp;
 	const char *name;
@@ -433,7 +431,7 @@ CYBOZU_TEST_AUTO(naive)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
-		initPairing(ts.cp, g_mode);
+		initPairing(ts.cp);
 		const G1 P(ts.g1.a, ts.g1.b);
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
@@ -470,14 +468,6 @@ CYBOZU_TEST_AUTO(naive)
 int main(int argc, char *argv[])
 	try
 {
-	cybozu::Option opt;
-	std::string mode;
-	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/gmp_mont/llvm/llvm_mont/xbyak)");
-	if (!opt.parse(argc, argv)) {
-		opt.usage();
-		return 1;
-	}
-	g_mode = mcl::fp::StrToMode(mode);
 	printf("JIT %d\n", mcl::fp::isEnableJIT());
 	return cybozu::test::autoRun.run(argc, argv);
 } catch (std::exception& e) {

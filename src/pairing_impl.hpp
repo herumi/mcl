@@ -98,7 +98,7 @@ struct Param {
 	// for initG1only
 	G1 basePoint;
 
-	void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
+	void init(bool *pb, const mcl::CurveParam& cp)
 	{
 		this->cp = cp;
 		isBLS12 = (cp.curveType == MCL_BLS12_381 || cp.curveType == MCL_BLS12_377 || cp.curveType == MCL_BLS12_461);
@@ -129,9 +129,9 @@ struct Param {
 			assert((p % 6) == 1);
 			r = evalPoly(z, rCoff);
 		}
-		Fr::init(pb, r, mode);
+		Fr::init(pb, r);
 		if (!*pb) return;
-		Fp::init(pb, cp.xi_a, p, mode, cp.u);
+		Fp::init(pb, p, cp.u, cp.xi_a);
 		if (!*pb) return;
 #ifdef MCL_DUMP_JIT
 		*pb = true;
@@ -1197,9 +1197,9 @@ void Frobenius3(G2& D, const G2& S)
 	Frobenius(D, D);
 }
 
-void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
+void init(bool *pb, const mcl::CurveParam& cp)
 {
-	s_nonConstParam.init(pb, cp, mode);
+	s_nonConstParam.init(pb, cp);
 	if (!*pb) return;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
@@ -1221,9 +1221,9 @@ void init(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
 	*pb = true;
 }
 
-void initPairing(bool *pb, const mcl::CurveParam& cp, fp::Mode mode)
+void initPairing(bool *pb, const mcl::CurveParam& cp)
 {
-	init(pb, cp, mode);
+	init(pb, cp);
 }
 
 void initG1only(bool *pb, const mcl::EcParam& para)

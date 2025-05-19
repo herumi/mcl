@@ -392,15 +392,15 @@ void benchFp2()
 	printf("add %8.2f|sub %8.2f|mul %8.2f|sqr %8.2f|inv %8.2f|mul_xi %8.2f\n", addT, subT, mulT, sqrT, invT, mul_xiT);
 }
 
-void test(const char *p, mcl::fp::Mode mode)
+void test(const char *p)
 {
+	const int u = 1;
 	const int xi_a = 1;
-	Fp::init(xi_a, p, mode);
+	Fp::init(p, u, xi_a);
 	if (Fp::getOp().isFullBit) return;
 	bool b;
 	Fp2::init(&b);
 	if (!b) return;
-	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	printf("bitSize=%d\n", (int)Fp::getBitSize());
 #if 0
 	if (Fp::getBitSize() > 256) {
@@ -454,14 +454,7 @@ void testAll()
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
 		printf("prime=%s\n", p);
-		test(p, mcl::fp::FP_GMP);
-#ifdef MCL_USE_LLVM
-		test(p, mcl::fp::FP_LLVM);
-		test(p, mcl::fp::FP_LLVM_MONT);
-#endif
-#ifdef MCL_X64_ASM
-		test(p, mcl::fp::FP_XBYAK);
-#endif
+		test(p);
 	}
 }
 

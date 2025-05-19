@@ -1933,16 +1933,16 @@ void initForSecp256k1(); // implemented in fp.cpp
 	set P the generator of Ec if P != 0
 */
 template<class Ec>
-void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
+void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	typedef typename Ec::Fp Fp;
 	*pb = false;
 	const EcParam *ecParam = getEcParam(curveType);
 	if (ecParam == 0) return;
 
-	Fr::init(pb, ecParam->n, mode);
+	Fr::init(pb, ecParam->n);
 	if (!*pb) return;
-	Fp::init(pb, ecParam->p, mode);
+	Fp::init(pb, ecParam->p);
 	if (!*pb) return;
 	Ec::init(pb, ecParam->a, ecParam->b, ecMode);
 	if (!*pb) return;
@@ -1964,11 +1964,11 @@ void initCurve(bool *pb, int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_A
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 template<class Ec>
-void initCurve(int curveType, Ec *P = 0, mcl::fp::Mode mode = fp::FP_AUTO, mcl::ec::Mode ecMode = ec::Jacobi)
+void initCurve(int curveType, Ec *P = 0, mcl::ec::Mode ecMode = ec::Jacobi)
 {
 	bool b;
-	initCurve<Ec>(&b, curveType, P, mode, ecMode);
-	if (!b) throw cybozu::Exception("mcl:initCurve") << curveType << mode << ecMode;
+	initCurve<Ec>(&b, curveType, P, ecMode);
+	if (!b) throw cybozu::Exception("mcl:initCurve") << curveType << ecMode;
 }
 #endif
 

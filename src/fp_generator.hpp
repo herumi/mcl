@@ -347,7 +347,7 @@ struct FpGenerator : Xbyak::CodeGenerator {
 private:
 	void init_inner(Op& op)
 	{
-		const char *suf = op.xi_a ? "Fp" : "Fr";
+		const char *suf = op.u ? "Fp" : "Fr";
 		op_ = &op;
 		L(pL_);
 		p_ = reinterpret_cast<const uint64_t*>(getCurr());

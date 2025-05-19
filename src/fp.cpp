@@ -376,11 +376,18 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #endif // MCL_X64_ASM
 	return true;
 }
-
-bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize, int _u)
+static const size_t sizeofFp = (MCL_FP_BIT+7)/8;
+static const size_t sizeofFr = (MCL_FR_BIT+7)/8;
+bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 {
-	if (mclMaxBitSize != MCL_FP_BIT) return false;
-	if (maxBitSize > MCL_FP_BIT) return false;
+	// The following check is performed to verify that there is no inconsistency
+	// between the values of MCL_FP_BIT and MCL_FR_BIT at library compilation time and usage time.
+	switch (tag) {
+	case FpTag: if (sizeofF != sizeofFp) return false; break;
+	case FrTag: if (sizeofF != sizeofFr) return false; break;
+	default: break;
+	}
+	size_t maxBitSize = sizeofF * 8;
 	if (_p <= 0) return false;
 	clear();
 	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
@@ -400,6 +407,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
 */
+	fp::Mode mode = FP_AUTO; // will be removed later
 #ifdef MCL_X64_ASM
 	if (mode == FP_AUTO) mode = FP_XBYAK;
 	if (mode == FP_XBYAK && bitSize > 512) {

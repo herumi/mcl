@@ -102,7 +102,7 @@ static const CurveParam& CurveSNARK1 = BN_SNARK1;
 const CurveParam& getCurveParam();
 int getCurveType();
 
-void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO);
+void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254);
 
 void initG1only(bool *pb, const mcl::EcParam& para);
 
@@ -146,10 +146,10 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
 }
 
-inline void initPairing(const mcl::CurveParam& cp = mcl::BN254, fp::Mode mode = fp::FP_AUTO)
+inline void initPairing(const mcl::CurveParam& cp = mcl::BN254)
 {
 	bool b;
-	initPairing(&b, cp, mode);
+	initPairing(&b, cp);
 	if (!b) throw cybozu::Exception("bn:initPairing");
 }
 

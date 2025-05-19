@@ -17,8 +17,6 @@ using namespace mcl::bls12;
 #define MCL_GLV_ONLY_FUNC
 #include "../src/glv.hpp"
 
-mcl::fp::Mode g_mode;
-
 const struct TestSet {
 	mcl::CurveParam cp;
 	const char *name;
@@ -396,7 +394,7 @@ CYBOZU_TEST_AUTO(naive)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
-		initPairing(ts.cp, g_mode);
+		initPairing(ts.cp);
 		const G1 P(Fp(ts.g1.a), Fp(ts.g1.b));
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
@@ -513,7 +511,7 @@ const char *eStr =
 
 void testCurve(const mcl::CurveParam& cp)
 {
-	initPairing(cp, g_mode);
+	initPairing(cp);
 	G1 P;
 	G2 Q;
 	mapToG1(P, 1);
@@ -745,14 +743,6 @@ void f(FpVec& zv, const FpVec& xv, const FpVec& yv)
 int main(int argc, char *argv[])
 	try
 {
-	cybozu::Option opt;
-	std::string mode;
-	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/gmp_mont/llvm/llvm_mont/xbyak)");
-	if (!opt.parse(argc, argv)) {
-		opt.usage();
-		return 1;
-	}
-	g_mode = mcl::fp::StrToMode(mode);
 #ifdef MCL_STATIC_CODE
 	printf("static code for BLS12-381\n");
 #else

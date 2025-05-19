@@ -247,7 +247,7 @@ struct Operator : public E {
 		pow is for GT (use GLV method and unitaryInv)
 		powGeneric is for Fp12
 	*/
-	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
+	template<int tag2, size_t maxBitSize2, template<int _tag, size_t _maxBitSize> class FpT>
 	static void pow(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		if (powVecGLV) {
@@ -274,7 +274,7 @@ struct Operator : public E {
 	{
 		powArray(z, x, gmp::getUnit(y), gmp::getUnitSize(y), y < 0);
 	}
-	template<class tag2, size_t maxBitSize2, template<class _tag, size_t _maxBitSize> class FpT>
+	template<int tag2, size_t maxBitSize2, template<int _tag, size_t _maxBitSize> class FpT>
 	static void powGeneric(T& z, const T& x, const FpT<tag2, maxBitSize2>& y)
 	{
 		fp::Block b;

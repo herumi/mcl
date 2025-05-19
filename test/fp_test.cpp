@@ -6,7 +6,6 @@
 #include "../src/llvm_proto.hpp"
 #include <time.h>
 #include <cybozu/benchmark.hpp>
-#include <cybozu/option.hpp>
 #include <cybozu/sha2.hpp>
 #include <cybozu/xorshift.hpp>
 
@@ -979,9 +978,8 @@ CYBOZU_TEST_AUTO(getBinWidth)
 	}
 }
 
-void sub(mcl::fp::Mode mode)
+void mainTest()
 {
-	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	printf("MCL_FP_BIT=%d\n", MCL_FP_BIT);
 	const char *tbl[] = {
 		// N = 3
@@ -1018,7 +1016,7 @@ void sub(mcl::fp::Mode mode)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *pStr = tbl[i];
 		printf("prime=%s\n", pStr);
-		Fp::init(pStr, mode);
+		Fp::init(pStr);
 		getMontgomeryCoeffTest();
 		invVecTest();
 		mul2Test();
@@ -1057,30 +1055,7 @@ std::string g_mode;
 
 CYBOZU_TEST_AUTO(main)
 {
-	if (g_mode.empty() || g_mode == "auto") {
-		sub(mcl::fp::FP_AUTO);
-	}
-#if 0 // GMP no longer in use.
-	if (g_mode.empty() || g_mode == "gmp") {
-		sub(mcl::fp::FP_GMP);
-	}
-	if (g_mode.empty() || g_mode == "gmp_mont") {
-		sub(mcl::fp::FP_GMP_MONT);
-	}
-#endif
-#ifdef MCL_USE_LLVM
-	if (g_mode.empty() || g_mode == "llvm") {
-		sub(mcl::fp::FP_LLVM);
-	}
-	if (g_mode.empty() || g_mode == "llvm_mont") {
-		sub(mcl::fp::FP_LLVM_MONT);
-	}
-#endif
-#ifdef MCL_X64_ASM
-	if (g_mode.empty() || g_mode == "xbyak") {
-		sub(mcl::fp::FP_XBYAK);
-	}
-#endif
+	mainTest();
 }
 
 CYBOZU_TEST_AUTO(convertArrayAsLE)
@@ -1121,13 +1096,6 @@ CYBOZU_TEST_AUTO(convertArrayAsLE)
 int main(int argc, char *argv[])
 	try
 {
-	cybozu::Option opt;
-	opt.appendOpt(&g_mode, "", "m", ": mode(auto/gmp/gmp_mont/llvm/llvm_mont/xbyak)");
-	opt.appendHelp("h", ": show this message");
-	if (!opt.parse(argc, argv)) {
-		opt.usage();
-		return 1;
-	}
 	return cybozu::test::autoRun.run(argc, argv);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());

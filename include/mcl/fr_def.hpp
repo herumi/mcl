@@ -11,7 +11,7 @@
 
 namespace mcl {
 
-struct FrTag;
+static const int FrTag = 1;
 typedef FpT<FrTag, MCL_FR_BIT> Fr;
 
 } // mcl

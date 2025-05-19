@@ -66,7 +66,7 @@ public:
 		@param z [out] x multiplied by y
 		@param y [in] exponent
 	*/
-	template<class tag2, size_t maxBitSize2, template<class tag2_, size_t maxBitSize2_> class FpT>
+	template<int tag2, size_t maxBitSize2, template<int tag2_, size_t maxBitSize2_> class FpT>
 	void mul(Ec& z, const FpT<tag2, maxBitSize2>& y) const
 	{
 		fp::Block b;
