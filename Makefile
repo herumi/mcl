@@ -5,6 +5,16 @@ EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 MCL_FP_BIT?=384
 MCL_FR_BIT?=256
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
+  MCL_BIT=256
+endif
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_256)
+  MCL_BIT=384_256
+endif
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_384)
+  MCL_BIT=384
+endif
+
 
 ifneq ($(MCL_FP_BIT),)
   CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
@@ -23,19 +33,19 @@ TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
 TEST_SRC+=smallmodp_test.cpp
 
-ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
+ifeq ($(MCL_BIT),256_256)
   SRC_SRC+=bn_c256.cpp she_c256.cpp
   TEST_SRC+=bn_c256_test.cpp
   TEST_SRC+=she_c256_test.cpp
   TEST_SRC+=ecdsa_c_test.cpp
 endif
-ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_256)
+ifeq ($(MCL_BIT),384_256)
   SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
   TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
   TEST_SRC+=bls12_test.cpp
   TEST_SRC+=mapto_wb19_test.cpp
 endif
-ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_384)
+ifeq ($(MCL_BIT),384_384)
   SRC_SRC+=bn_c384.cpp
   TEST_SRC+=bn_c384_test.cpp she_c384_test.cpp
 endif
@@ -435,7 +445,7 @@ EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
 SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/she.h Makefile
-MCL_C_DEP=src/fp.cpp include/mcl/impl/bn_c_impl.hpp include/mcl/bn.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/bn.h Makefile
+MCL_C_DEP=src/fp.cpp include/mcl/bn.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/bn.h Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   SHE_C_DEP+=src/base64m.ll

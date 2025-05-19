@@ -1102,7 +1102,7 @@ EXIT:
 	if (!initF) _f *= f;
 }
 
-void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF = true)
+void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
 {
 	const size_t N = 16;
 	size_t remain = fp::min_(N, n);
@@ -1147,7 +1147,7 @@ void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t c
 	}
 #else
 	(void)cpuN;
-	millerLoopVec(f, Pvec, Qvec, n);
+	millerLoopVec(f, Pvec, Qvec, n, true);
 #endif
 }
 
