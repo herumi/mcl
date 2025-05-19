@@ -291,29 +291,7 @@ if(MCL_TEST_WITH_GMP)
 	endif()
 endif()
 
-# mclbnXXX
-foreach(bit IN ITEMS 384_256) # 256 384
-	if (MCL_STATIC_LIB)
-		add_library(mclbn${bit} STATIC src/bn_c${bit}.cpp)
-		target_link_libraries(mclbn${bit} PUBLIC mcl::mcl_st)
-	else()
-		add_library(mclbn${bit} SHARED src/bn_c${bit}.cpp)
-		target_link_libraries(mclbn${bit} PUBLIC mcl::mcl)
-	endif()
-	add_library(mcl::mclbn${bit} ALIAS mclbn${bit})
-	set_target_properties(mclbn${bit} PROPERTIES
-		CXX_STANDARD 11
-		CXX_STANDARD_REQUIRED YES
-		CXX_EXTENSIONS NO)
-	target_compile_options(mclbn${bit} PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-	target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-	set_target_properties(mclbn${bit} PROPERTIES
-		VERSION ${mcl_VERSION}
-		SOVERSION ${mcl_VERSION_MAJOR})
-endforeach()
-
-install(TARGETS mcl mcl_st mclbn384_256 # mclbn256 mclbn384
+install(TARGETS mcl mcl_st
 	EXPORT mclTargets
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
@@ -342,7 +320,6 @@ export(EXPORT mclTargets
 	NAMESPACE mcl::)
 set(CMAKE_EXPORT_PACKAGE_REGISTRY ON)
 export(PACKAGE mcl)
-
 
 # Tests
 if(MCL_BUILD_TESTING)

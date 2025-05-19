@@ -16,7 +16,7 @@ endforeach()
 # Tests for mclbnXXX
 foreach(bit IN ITEMS 384_256) # 256 384
 	add_executable(bn_c${bit}_test bn_c${bit}_test.cpp)
-	target_link_libraries(bn_c${bit}_test PRIVATE mcl::mclbn${bit})
+	target_link_libraries(bn_c${bit}_test PRIVATE mcl::mcl_st)
 	set_target_properties(bn_c${bit}_test PROPERTIES
 		CXX_STANDARD 11
 		CXX_STANDARD_REQUIRED YES

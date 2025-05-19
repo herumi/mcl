@@ -1,7 +1,7 @@
 package mcl
 
 /*
-#cgo LDFLAGS:-lmclbn384_256 -lmcl
+#cgo LDFLAGS:-lmcl
 #include <mcl/bn_c384_256.h>
 */
 import "C"
