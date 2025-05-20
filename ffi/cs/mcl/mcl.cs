@@ -9,13 +9,13 @@ namespace mcl {
         public const int BLS12_381 = 5;
         public const int MCL_MAP_TO_MODE_HASH_TO_CURVE = 5;
         public const int FR_UNIT_SIZE = 4;
-        public const int FP_UNIT_SIZE = 6; // 4 if mclbn256.dll is used
+        public const int FP_UNIT_SIZE = 6;
 
         public const int G1_UNIT_SIZE = FP_UNIT_SIZE * 3;
         public const int G2_UNIT_SIZE = FP_UNIT_SIZE * 2 * 3;
         public const int GT_UNIT_SIZE = FP_UNIT_SIZE * 12;
 
-        public const string dllName = "mclbn384_256";
+        public const string dllName = "mcl";
         [DllImport(dllName)] public static extern int mclBn_init(int curve, int compiledTimeVar);
         [DllImport(dllName)] public static extern void mclBn_setETHserialization(int enable);
         [DllImport(dllName)] public static extern int mclBn_setMapToMode(int mode);
