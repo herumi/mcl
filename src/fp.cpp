@@ -2,6 +2,7 @@
 	#define MCL_BINT_ASM 0
 #endif
 #define MCL_DLL_EXPORT
+#include <mcl/bn.h>
 #include <mcl/bint.hpp>
 #include "bint_impl.hpp"
 #include <mcl/op.hpp>
@@ -37,11 +38,11 @@ namespace mcl {
 namespace fp {
 
 #ifdef MCL_USE_XBYAK
-FpGenerator *Op::createFpGenerator()
+FpGenerator *createFpGenerator()
 {
 	return new FpGenerator();
 }
-void Op::destroyFpGenerator(FpGenerator *fg)
+void destroyFpGenerator(FpGenerator *fg)
 {
 	delete fg;
 }
@@ -358,7 +359,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #ifndef MCL_DUMP_JIT
 	if (mode != FP_XBYAK) return true;
 #endif
-	if (op.fg == 0) op.fg = Op::createFpGenerator();
+	if (op.fg == 0) op.fg = fp::createFpGenerator();
 	op.fg->init(op);
 #ifdef MCL_DUMP_JIT
 	return true;
@@ -376,15 +377,15 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #endif // MCL_X64_ASM
 	return true;
 }
-static const size_t sizeofFp = (MCL_FP_BIT+7)/8;
-static const size_t sizeofFr = (MCL_FR_BIT+7)/8;
+
 bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 {
 	// The following check is performed to verify that there is no inconsistency
 	// between the values of MCL_FP_BIT and MCL_FR_BIT at library compilation time and usage time.
+	printf("tag=%d sizeofF=%zd sizeof(Fp)=%zd sizeof(Fr)=%zd\n", tag, sizeofF, sizeof(Fp), sizeof(Fr));
 	switch (tag) {
-	case FpTag: if (sizeofF != sizeofFp) return false; break;
-	case FrTag: if (sizeofF != sizeofFr) return false; break;
+	case FpTag: if (sizeofF != sizeof(Fp)) return false; break;
+	case FrTag: if (sizeofF != sizeof(Fr)) return false; break;
 	default: break;
 	}
 	size_t maxBitSize = sizeofF * 8;

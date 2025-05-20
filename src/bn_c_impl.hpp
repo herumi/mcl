@@ -2,7 +2,6 @@
 	This is an internal header
 	Do not include this
 */
-#define MCLBN_DLL_EXPORT
 #include <mcl/bn.h>
 #include <mcl/bn.hpp>
 #include <mcl/lagrange.hpp>
@@ -39,11 +38,11 @@ int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
 
 #ifdef __EMSCRIPTEN__
 // use these functions forcibly
-extern "C" MCLBN_DLL_API void *mclBnMalloc(size_t n)
+extern "C" MCL_DLL_API void *mclBnMalloc(size_t n)
 {
 	return malloc(n);
 }
-extern "C" MCLBN_DLL_API void mclBnFree(void *p)
+extern "C" MCL_DLL_API void mclBnFree(void *p)
 {
 	free(p);
 }

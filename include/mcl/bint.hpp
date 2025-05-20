@@ -133,14 +133,14 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 #endif // MCL_SIZEOF_UNIT == 8
 
 // get function pointers
-u_ppp get_add(size_t n);
-u_ppp get_sub(size_t n);
-u_ppp get_subNF(size_t n);
-void_ppp get_addNF(size_t n);
-u_ppu get_mulUnit(size_t n);
-u_ppu get_mulUnitAdd(size_t n);
-void_ppp get_mul(size_t n);
-void_pp get_sqr(size_t n);
+MCL_DLL_API u_ppp get_add(size_t n);
+MCL_DLL_API u_ppp get_sub(size_t n);
+MCL_DLL_API u_ppp get_subNF(size_t n);
+MCL_DLL_API void_ppp get_addNF(size_t n);
+MCL_DLL_API u_ppu get_mulUnit(size_t n);
+MCL_DLL_API u_ppu get_mulUnitAdd(size_t n);
+MCL_DLL_API void_ppp get_mul(size_t n);
+MCL_DLL_API void_pp get_sqr(size_t n);
 
 inline Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_add(n)(z, x, y); }
 inline Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_sub(n)(z, x, y); }
@@ -148,7 +148,9 @@ inline void addNFN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get
 inline Unit subNFN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_subNF(n)(z, x, y); }
 inline Unit mulUnitN(Unit *z, const Unit *x, Unit y, size_t n) { return get_mulUnit(n)(z, x, y); }
 inline Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n) { return get_mulUnitAdd(n)(z, x, y); }
+// z[n * 2] = x[n] * y[n]
 inline void mulN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_mul(n)(z, x, y); }
+// y[n * 2] = x[n] * x[n]
 inline void sqrN(Unit *y, const Unit *x, size_t n) { return get_sqr(n)(y, x); }
 
 // z[N] = x[N] + y[N] and return CF(0 or 1)
@@ -194,13 +196,8 @@ inline Unit mulUnitNany(Unit *z, const Unit *x, Unit y, size_t xn)
 	return H;
 }
 
-Unit mulUnitAddN(Unit *z, const Unit *x, Unit y, size_t n);
-// z[n * 2] = x[n] * y[n]
-void mulN(Unit *z, const Unit *x, const Unit *y, size_t n);
-// y[n * 2] = x[n] * x[n]
-void sqrN(Unit *y, const Unit *x, size_t xn);
 // z[xn * yn] = x[xn] * y[ym]
-void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
 // explicit specialization of template functions and external asm functions
 //#include "bint_proto.hpp"

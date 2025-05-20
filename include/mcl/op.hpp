@@ -126,7 +126,6 @@ const size_t maxMulVecN = 32; // inner loop of mulVec
 #endif
 const size_t maxMulVecNGLV = MCL_MAX_MUL_VEC_NGLV; // inner loop of mulVec with GLV
 
-struct FpGenerator;
 struct Op;
 
 typedef void (*void1u)(Unit*);
@@ -172,6 +171,12 @@ enum PrimeMode {
 	PM_SECP256K1,
 	PM_NIST_P521
 };
+
+#ifdef MCL_USE_XBYAK
+struct FpGenerator;
+MCL_DLL_API FpGenerator* createFpGenerator();
+MCL_DLL_API void destroyFpGenerator(FpGenerator *fg);
+#endif
 
 struct Op {
 	/*
@@ -374,10 +379,6 @@ struct Op {
 		fp_mul(y, x, R2, p);
 	}
 	bool init(const mpz_class& p, int u, int xi_a, int tag, size_t sizeofF);
-#ifdef MCL_USE_XBYAK
-	static FpGenerator* createFpGenerator();
-	static void destroyFpGenerator(FpGenerator *fg);
-#endif
 private:
 	Op(const Op&);
 	void operator=(const Op&);

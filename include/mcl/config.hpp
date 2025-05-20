@@ -64,14 +64,25 @@
 
 #define MCL_MAX_UNIT_SIZE MCL_ROUNDUP(MCL_FP_BIT, MCL_UNIT_BIT_SIZE)
 
-#ifdef _MSC_VER
-	#ifdef MCL_DLL_EXPORT
-		#define MCL_DLL_API __declspec(dllexport)
+// define same macro in bn.h
+#ifndef MCL_DLL_API
+	#ifdef _WIN32
+		#ifdef MCL_DONT_EXPORT
+			#define MCL_DLL_API
+		#else
+			#ifdef MCL_DLL_EXPORT
+				#define MCL_DLL_API __declspec(dllexport)
+			#else
+				#define MCL_DLL_API __declspec(dllimport)
+			#endif
+		#endif
+	#elif defined(__EMSCRIPTEN__) && !defined(MCL_DONT_EXPORT)
+		#define MCL_DLL_API __attribute__((used))
+	#elif defined(__wasm__) && !defined(MCL_DONT_EXPORT)
+		#define MCL_DLL_API __attribute__((visibility("default")))
 	#else
 		#define MCL_DLL_API
 	#endif
-#else
-	#define MCL_DLL_API
 #endif
 
 #ifdef __cplusplus

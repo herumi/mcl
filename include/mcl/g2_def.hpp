@@ -29,8 +29,8 @@ typedef EcT<Fp2> G2;
 	FrobeniusOnTwist for Mtype(BLS12-381)
 	use (1/g) instead of g
 */
-void Frobenius(G2& D, const G2& S);
-void Frobenius2(G2& D, const G2& S);
-void Frobenius3(G2& D, const G2& S);
+MCL_DLL_API void Frobenius(G2& D, const G2& S);
+MCL_DLL_API void Frobenius2(G2& D, const G2& S);
+MCL_DLL_API void Frobenius3(G2& D, const G2& S);
 
 } // mcl

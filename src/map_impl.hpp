@@ -302,20 +302,20 @@ void mapToInit(const mpz_class& cofactor, const mpz_class &z, int curveType)
 	mapTo.init(cofactor, z, curveType);
 }
 
-bool setMapToMode(int mode)
+MCL_DLL_API bool setMapToMode(int mode)
 {
 	return mapTo.setMapToMode(mode);
 }
 
-int getMapToMode()
+MCL_DLL_API int getMapToMode()
 {
 	return mapTo.mapToMode_;
 }
 
-void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = mapTo.calc(P, x); }
-void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = mapTo.calc(P, x); }
+MCL_DLL_API void mapToG1(bool *pb, G1& P, const Fp& x) { *pb = mapTo.calc(P, x); }
+MCL_DLL_API void mapToG2(bool *pb, G2& P, const Fp2& x) { *pb = mapTo.calc(P, x); }
 
-void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
+MCL_DLL_API void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 {
 	int mode = getMapToMode();
 	if (mode == MCL_MAP_TO_MODE_HASH_TO_CURVE_07) {
@@ -330,7 +330,7 @@ void hashAndMapToG1(G1& P, const void *buf, size_t bufSize)
 	assert(b);
 	(void)b;
 }
-void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
+MCL_DLL_API void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 {
 	int mode = getMapToMode();
 	if (mode == MCL_MAP_TO_MODE_WB19 || mode >= MCL_MAP_TO_MODE_HASH_TO_CURVE_06) {
@@ -346,23 +346,23 @@ void hashAndMapToG2(G2& P, const void *buf, size_t bufSize)
 	assert(b);
 	(void)b;
 }
-void hashAndMapToG1(G1& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
+MCL_DLL_API void hashAndMapToG1(G1& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
 {
 	mapTo.mapTo_WB19_.msgToG1(P, buf, bufSize, dst, dstSize);
 }
-void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
+MCL_DLL_API void hashAndMapToG2(G2& P, const void *buf, size_t bufSize, const char *dst, size_t dstSize)
 {
 	mapTo.mapTo_WB19_.msgToG2(P, buf, bufSize, dst, dstSize);
 }
 // set the default dst for G1
 // return 0 if success else -1
-bool setDstG1(const char *dst, size_t dstSize)
+MCL_DLL_API bool setDstG1(const char *dst, size_t dstSize)
 {
 	return mapTo.mapTo_WB19_.dstG1.set(dst, dstSize);
 }
 // set the default dst for G2
 // return 0 if success else -1
-bool setDstG2(const char *dst, size_t dstSize)
+MCL_DLL_API bool setDstG2(const char *dst, size_t dstSize)
 {
 	return mapTo.mapTo_WB19_.dstG2.set(dst, dstSize);
 }
@@ -372,7 +372,7 @@ bool setDstG2(const char *dst, size_t dstSize)
 	P = (x, y), T1 = (c2 x, y), T0 = (c2^2 x, y)
 	z2(2 T0 - P - T1) == T1
 */
-bool isValidOrderBLS12(const G1& P)
+MCL_DLL_API bool isValidOrderBLS12(const G1& P)
 {
 	G1 T0, T1;
 	T1 = P;

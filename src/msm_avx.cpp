@@ -5,6 +5,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#define MCL_DLL_EXPORT
 #include <mcl/bls12_381.hpp>
 #include <stdint.h>
 #include "avx512.hpp"

@@ -22,7 +22,7 @@ foreach(bit IN ITEMS 384_256) # 256 384
 		CXX_STANDARD_REQUIRED YES
 		CXX_EXTENSIONS NO)
 	target_compile_options(bn_c${bit}_test PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_definitions(bn_c${bit}_test PRIVATE MCLBN_DONT_EXPORT)
+	target_compile_definitions(bn_c${bit}_test PRIVATE MCL_DONT_EXPORT)
 	add_test(NAME bn_c${bit}_test COMMAND bn_c${bit}_test)
 endforeach()
 

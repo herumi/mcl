@@ -78,7 +78,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_library(mcl SHARED src/fp.cpp)
 add_library(mcl::mcl ALIAS mcl)
-target_compile_definitions(mcl PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK)
 target_include_directories(mcl PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
