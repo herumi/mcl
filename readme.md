@@ -9,34 +9,12 @@ A portable and fast pairing-based cryptography library.
 mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
-# News
-- support BLS12_377 pairing
-- mulVec (resp. mulEach) with AVX-512 IFMA is 1.52 (resp. 3.26) times faster than without it.
-- Add {Fp,Fr,Fp2}::squareRoot.
-- Improve the performance of squareRoot.
-- Add batch inversion for Fr and Fp elements, and batch normalization for G1 and G2 points.
-- mulVec is a little improved.
-- mulEach with AVX-512 IFMA is improved slightly and 2.8 times faster than G1::mul on BLS12-381.
-- mulVec (multi scalar multiplication) with AVX-512 IFMA is 1.4 times faster on Xeon w9-3495X
-- a little performance improvement of G1::mulVec of BLS12-381
-- improve performance of Fr::inv on M1 mac
-- add mcl::bn::isValidGT(x) and mclBnGT_isValid(x) to check x in GT for x in Fp12.
-- support BN\_P256 (hash-to-curve is not yet standard way.)
-- the performance of `{G1,G2}::mulVec(z, xVec, yVec, n)` has improved for n >= 256. (about 2x speed up for n = 512).
-  - But it changes the type of xVec from `const G*` to `G*` because xVec may be normalized when computing.
-  - fix mul(G, G, F) for F = Fp at v1.61
-- add set DST functions for hashMapToGi
-- add F::invVec, G::normalizeVec
-- improve SECP256K1 for x64
-- add G1::mulVecMT, G2::mulVecMT (enabled by MCL_USE_OMP=1)
-- improve mulMod of SECP256K1 for wasm
-- fix FpToG1(P, u, v) and Fp2ToG2(P, u, v) when u == v (This bug does not affect mapToG1 and mapToG2).
-- add millerLoopVecMT (enabled if built with MCL_USE_OMP=1)
-- support s390x(systemz)
-- improve M1 mac performance
-- set default `MCL_FP_BIT=512` so disable to support `NICT_P521`.
-- improve performance
-- support M1 mac
+# Version v3 includes breaking changes to lib/dll specifications.
+* The default mcl.lib has a maximum size of 384bit for the definition field Fp of the elliptic curve,
+and 256bit for the order field Fr of the elliptic curve.
+* The arguments of the Fp/Fr initialization function have been changed.
+* mclbn384\_256.lib has been merged into mcl.lib.
+* The Windows version of mclbn384\_256.dll has been renamed to mcldn.dll.
 
 # Support architecture
 
@@ -258,102 +236,6 @@ The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4
 * [mcl-wasm](https://www.npmjs.com/package/mcl-wasm) pairing library
 * [bls-wasm](https://www.npmjs.com/package/bls-wasm) BLS signature library
 * [she-wasm](https://www.npmjs.com/package/she-wasm) 2 Level Homomorphic Encryption library
-
-# Benchmark
-
-## The latest benchmark(2018/11/7)
-
-### Intel Core i7-6700 3.4GHz(Skylake), Ubuntu 18.04.1 LTS
-
-curveType |              binary|clang-6.0.0|gcc-7.3.0|
-----------|--------------------|-----------|---------|
-BN254     |    bin/bn\_test.exe|    882Kclk|  933Kclk|
-BLS12-381 | bin/bls12\_test.exe|   2290Kclk| 2630Kclk|
-
-### Intel Core i7-7700 3.6GHz(Kaby Lake), Ubuntu 18.04.1 LTS on Windows 10 Vmware
-
-curveType |              binary|clang-6.0.0|gcc-7.3.0|
-----------|--------------------|-----------|---------|
-BN254     |    bin/bn\_test.exe|    900Kclk|  954Kclk|
-BLS12-381 | bin/bls12\_test.exe|   2340Kclk| 2680Kclk|
-
-* now investigating the reason why gcc is slower than clang.
-
-## Higher-bit BN curve benchmark
-
-For JavaScript(WebAssembly), see [ID based encryption demo](https://herumi.github.io/mcl-wasm/ibe-demo.html).
-
-paramter   |  x64| Firefox on x64|Safari on iPhone7|
------------|-----|---------------|-----------------|
-BN254      | 0.25|           2.48|             4.78|
-BN381\_1   | 0.95|           7.91|            11.74|
-BN462      | 2.16|          14.73|            22.77|
-
-* x64 : 'Kaby Lake Core i7-7700(3.6GHz)'.
-* Firefox : 64-bit version 58.
-* iPhone7 : iOS 11.2.1.
-* BN254 is by `test/bn_test.cpp`.
-* BN381\_1 and BN462 are  by `test/bn512_test.cpp`.
-* All the timings  are given in ms(milliseconds).
-
-The other benchmark results are [bench.txt](bench.txt).
-
-## An old benchmark of a BN curve BN254(2016/12/25).
-
-* x64, x86 ; Inte Core i7-6700 3.4GHz(Skylake) upto 4GHz on Ubuntu 16.04.
-    * `sudo cpufreq-set -g performance`
-* arm ; 900MHz quad-core ARM Cortex-A7 on Raspberry Pi2, Linux 4.4.11-v7+
-* arm64 ; 1.2GHz ARM Cortex-A53 [HiKey](http://www.96boards.org/product/hikey/)
-
-software                                                 |   x64|  x86| arm|arm64(msec)
----------------------------------------------------------|------|-----|----|-----
-[ate-pairing](https://github.com/herumi/ate-pairing)     | 0.21 |   - |  - |    -
-mcl                                                      | 0.31 | 1.6 |22.6|  3.9
-[TEPLA](http://www.cipher.risk.tsukuba.ac.jp/tepla/)     | 1.76 | 3.7 | 37 | 17.9
-[RELIC](https://github.com/relic-toolkit/relic) PRIME=254| 0.30 | 3.5 | 36 |    -
-[MIRACL](https://github.com/miracl/MIRACL) ake12bnx      | 4.2  |   - | 78 |    -
-[NEONabe](http://sandia.cs.cinvestav.mx/Site/NEONabe)    |   -  |   - | 16 |    -
-
-* compile option for RELIC
-```
-cmake -DARITH=x64-asm-254 -DFP_PRIME=254 -DFPX_METHD="INTEG;INTEG;LAZYR" -DPP_METHD="LAZYR;OATEP"
-```
-
-# SELinux
-mcl uses Xbyak JIT engine if it is available on x64 architecture,
-otherwise mcl uses a little slower functions generated by LLVM.
-The default mode enables SELinux security policy on CentOS, then JIT is disabled.
-```
-% sudo setenforce 1
-% getenforce
-Enforcing
-% bin/bn_test.exe
-JIT 0
-pairing   1.496Mclk
-finalExp 581.081Kclk
-
-% sudo setenforce 0
-% getenforce
-Permissive
-% bin/bn_test.exe
-JIT 1
-pairing   1.394Mclk
-finalExp 546.259Kclk
-```
-
-# How to make asm files (optional)
-The asm files generated by this way are already put in `src/asm`, then it is not necessary to do this.
-
-Install [LLVM](http://llvm.org/).
-```
-make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1
-```
-For example, specify `-3.8` for `<llvm-version>` if `opt-3.8` and `llc-3.8` are installed.
-
-If you want to use Fp with 1024-bit prime on x86-64, then
-```
-make MCL_USE_LLVM=1 LLVM_VER=<llvm-version> UPDATE_ASM=1 MCL_FP_BIT=1024
-```
 
 # API for Two level homomorphic encryption
 * [_Efficient Two-level Homomorphic Encryption in Prime-order Bilinear Groups and A Fast Implementation in WebAssembly_](https://dl.acm.org/citation.cfm?doid=3196494.3196552), N. Attrapadung, G. Hanaoka, S. Mitsunari, Y. Sakai,
