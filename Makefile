@@ -29,22 +29,20 @@ TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
 TEST_SRC+=smallmodp_test.cpp
 
+MCL_SNAME=mcl
 ifeq ($(MCL_SUF),256)
-  MCL_SNAME=mcl256
   SRC_SRC+=bn_c256.cpp she_c256.cpp
   TEST_SRC+=bn_c256_test.cpp
   TEST_SRC+=she_c256_test.cpp
   TEST_SRC+=ecdsa_c_test.cpp
 endif
 ifeq ($(MCL_SUF),384_256)
-  MCL_SNAME=mcl
   SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
   TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
   TEST_SRC+=bls12_test.cpp
   TEST_SRC+=mapto_wb19_test.cpp
 endif
 ifeq ($(MCL_SUF),384)
-  MCL_SNAME=mcl384
   SRC_SRC+=bn_c384.cpp
   TEST_SRC+=bn_c384_test.cpp she_c384_test.cpp
 endif
