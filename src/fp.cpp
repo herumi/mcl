@@ -382,7 +382,7 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 {
 	// The following check is performed to verify that there is no inconsistency
 	// between the values of MCL_FP_BIT and MCL_FR_BIT at library compilation time and usage time.
-	printf("tag=%d sizeofF=%zd sizeof(Fp)=%zd sizeof(Fr)=%zd\n", tag, sizeofF, sizeof(Fp), sizeof(Fr));
+//	printf("tag=%d sizeofF=%zd sizeof(Fp)=%zd sizeof(Fr)=%zd\n", tag, sizeofF, sizeof(Fp), sizeof(Fr));
 	switch (tag) {
 	case FpTag: if (sizeofF != sizeof(Fp)) return false; break;
 	case FrTag: if (sizeofF != sizeof(Fr)) return false; break;

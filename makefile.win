@@ -11,7 +11,6 @@ CFLAGS+=-DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
 DLL?=0
 
 ifeq ($(DLL),0) # lib
-CFLAGS+=-DMCL_DONT_EXPORT
 TARGET+=lib/mcl.lib
 LIB_OBJ=obj/fp.obj obj/msm_avx.obj obj/bint-x64.obj
 else

@@ -42,7 +42,11 @@
 			#ifdef MCL_DLL_EXPORT
 				#define MCL_DLL_API __declspec(dllexport)
 			#else
-				#define MCL_DLL_API __declspec(dllimport)
+				#ifdef MCL_DLL // better
+					#define MCL_DLL_API __declspec(dllimport)
+				#else
+					#define MCL_DLL_API
+				#endif
 			#endif
 		#endif
 	#elif defined(__EMSCRIPTEN__) && !defined(MCL_DONT_EXPORT)
