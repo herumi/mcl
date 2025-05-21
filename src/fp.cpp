@@ -2,6 +2,7 @@
 	#define MCL_BINT_ASM 0
 #endif
 #define MCL_DLL_EXPORT
+#include <mcl/config.hpp>
 #include <mcl/bn.h>
 #include <mcl/bint.hpp>
 #include "bint_impl.hpp"
