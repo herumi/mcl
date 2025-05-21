@@ -4,7 +4,7 @@
 */
 #define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 #include <stdio.h>
 
 using namespace mcl::bn;

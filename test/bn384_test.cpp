@@ -1,14 +1,9 @@
-#define CYBOZU_TEST_DISABLE_AUTO_RUN
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
-#include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
-#include <mcl/bn384.hpp>
 #include <mcl/bn.hpp>
 
-using namespace mcl::bn384;
-
-mcl::fp::Mode g_mode;
+using namespace mcl;
 
 #include "bench.hpp"
 
@@ -174,7 +169,7 @@ void testBLS12_377()
 
 void testCurve(const mcl::CurveParam& cp)
 {
-	initPairing(cp, g_mode);
+	initPairing(cp);
 	if (cp == mcl::BLS12_377) {
 		testBLS12_377();
 	}
@@ -224,41 +219,29 @@ void testCurve(const mcl::CurveParam& cp)
 
 CYBOZU_TEST_AUTO(pairing)
 {
-//	puts("BN160");
-//	testCurve(mcl::BN160);
-	puts("BLS12_377");
-	testCurve(mcl::BLS12_377);
-	puts("BN_P256");
-	testCurve(mcl::BN_P256);
-	puts("BN254");
-	testCurve(mcl::BN254);
-	puts("BN381_1");
-	testCurve(mcl::BN381_1);
-	puts("BN381_2");
-	testCurve(mcl::BN381_2);
-	puts("BLS12_381");
-	testCurve(mcl::BLS12_381);
+	const struct {
+		const char *name;
+		CurveParam cp;
+	} tbl[] = {
+		{ "BN_P256", BN_P256 },
+		{ "BN254", BN254 },
+#if MCL_FP_BIT >= 384
+		{ "BLS12_377", BLS12_377 },
+		{ "BLS12_381", BLS12_381 },
+#endif
+#if MCL_FR_BIT >= 384
+		{ "BN381_1", BN381_1 },
+		{ "BN381_2", BN381_2 },
+#endif
+	};
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+		puts(tbl[i].name);
+		testCurve(tbl[i].cp);
+	}
 	// Q is not on EcT, but bad order
 	{
 		const char *s = "1 18d3d8c085a5a5e7553c3a4eb628e88b8465bf4de2612e35a0a4eb018fb0c82e9698896031e62fd7633ffd824a859474 1dc6edfcf33e29575d4791faed8e7203832217423bf7f7fbf1f6b36625b12e7132c15fbc15562ce93362a322fb83dd0d 65836963b1f7b6959030ddfa15ab38ce056097e91dedffd996c1808624fa7e2644a77be606290aa555cda8481cfb3cb 1b77b708d3d4f65aeedf54b58393463a42f0dc5856baadb5ce608036baeca398c5d9e6b169473a8838098fd72fd28b50";
 		G2 Q;
 		CYBOZU_TEST_EXCEPTION(Q.setStr(s, 16), std::exception);
 	}
-}
-
-int main(int argc, char *argv[])
-	try
-{
-	cybozu::Option opt;
-	std::string mode;
-	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/gmp_mont/llvm/llvm_mont/xbyak)");
-	if (!opt.parse(argc, argv)) {
-		opt.usage();
-		return 1;
-	}
-	g_mode = mcl::fp::StrToMode(mode);
-	return cybozu::test::autoRun.run(argc, argv);
-} catch (std::exception& e) {
-	printf("ERR %s\n", e.what());
-	return 1;
 }

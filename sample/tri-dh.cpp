@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <cybozu/random_generator.hpp>
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 #include <cybozu/option.hpp>
 
 static cybozu::RandomGenerator rg;
@@ -12,7 +12,7 @@ static cybozu::RandomGenerator rg;
 const std::string skSuf = ".sk.txt";
 const std::string pkSuf = ".pk.txt";
 
-using namespace mcl::bn256;
+using namespace mcl;
 
 void keygen(const std::string& user)
 {

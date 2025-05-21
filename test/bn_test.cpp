@@ -3,7 +3,7 @@
 #include <cybozu/benchmark.hpp>
 cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 

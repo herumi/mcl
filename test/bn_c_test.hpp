@@ -1,12 +1,11 @@
 /*
-	include from bn_if256_test.cpp and bn_if384_test.cpp
+	include from bn_c256_test.cpp and bn_c384_test.cpp
 */
-#include <mcl/bn.h>
-#include <mcl/ecparam.hpp>
+#include <mcl/bn.hpp>
+using namespace mcl;
 #include <cybozu/test.hpp>
 #include <iostream>
 #include <vector>
-#include <mcl/gmp_util.hpp>
 
 void FrTest()
 {
