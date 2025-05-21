@@ -44,7 +44,7 @@ ifeq ($(MCL_SUF),384_256)
   TEST_SRC+=mapto_wb19_test.cpp
 endif
 ifeq ($(MCL_SUF),384)
-  MCL_SNAME=mcl256
+  MCL_SNAME=mcl384
   SRC_SRC+=bn_c384.cpp
   TEST_SRC+=bn_c384_test.cpp she_c384_test.cpp
 endif
