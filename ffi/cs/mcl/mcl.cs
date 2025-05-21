@@ -15,7 +15,7 @@ namespace mcl {
         public const int G2_UNIT_SIZE = FP_UNIT_SIZE * 2 * 3;
         public const int GT_UNIT_SIZE = FP_UNIT_SIZE * 12;
 
-        public const string dllName = "mcl";
+        public const string dllName = "mclbn";
         [DllImport(dllName)] public static extern int mclBn_init(int curve, int compiledTimeVar);
         [DllImport(dllName)] public static extern void mclBn_setETHserialization(int enable);
         [DllImport(dllName)] public static extern int mclBn_setMapToMode(int mode);

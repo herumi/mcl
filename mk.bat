@@ -2,10 +2,10 @@
 call setvar.bat
 if "%1"=="-s" (
   echo use static lib
-  set LOCAL_CFLAGS=%CFLAGS% /DMCL_DONT_EXPORT
+  set LOCAL_CFLAGS=%CFLAGS% /DMCL_DONT_EXPORT lib/mcl.lib
 ) else if "%1"=="-d" (
   echo use dynamic lib
-  set LOCAL_CFLAGS=%CFLAGS%
+  set LOCAL_CFLAGS=%CFLAGS% lib/mclbn.lib
 ) else (
   echo "mk (-s|-d) <source file>"
   goto exit
@@ -15,7 +15,7 @@ set EXE=%SRC:.cpp=.exe%
 set EXE=%EXE:.c=.exe%
 set EXE=%EXE:test\=bin\%
 set EXE=%EXE:sample\=bin\%
-echo cl %LOCAL_CFLAGS% %2 /Fe:%EXE% lib/mcl.lib /link %LDFLAGS%
-         cl %LOCAL_CFLAGS% %2 /Fe:%EXE% lib/mcl.lib /link %LDFLAGS%
+echo cl %LOCAL_CFLAGS% %2 /Fe:%EXE% /link %LDFLAGS%
+         cl %LOCAL_CFLAGS% %2 /Fe:%EXE% /link %LDFLAGS%
 
 :exit

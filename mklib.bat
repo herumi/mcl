@@ -30,7 +30,7 @@ cl /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj /arch:AVX512
 lib /nologo /OUT:lib\mcl.lib /nodefaultlib %OBJ%
 
 if "%1"=="dll" (
-     link /nologo /DLL /OUT:bin\mcl.dll %OBJ% %LDFLAGS% /implib:lib\mcl.lib
+     link /nologo /DLL /OUT:bin\mclbn.dll %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
 
 rem     cl /c %LOCAL_CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj
 rem     link /nologo /DLL /OUT:bin\mclshe384_256.dll obj\she_c384_256.obj %OBJ% %LDFLAGS% /implib:lib\mclshe_c384_256.lib
