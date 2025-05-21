@@ -143,9 +143,10 @@ MCL_DLL_API int mclBn_getVersion(void);
 	which macro is used to make sure that the values
 	are the same when the library is built and used
 	@return 0 if success
-	curve = BN254/BN_SNARK1 is allowed if maxUnitSize = 4
-	curve = BN381_1/BN381_2/BLS12_381 are allowed if maxUnitSize = 6
-	This parameter is used to detect a library compiled with different MCLBN_FP_UNIT_SIZE for safety.
+	curve = BN254/BN_SNARK1 is allowed if MCL_FP_BIT >= 256
+	curve = BLS12_381/BLS12_377 are allowed if MCL_FP_BIT >= 384 and MCL_FR_BIT >= 256
+	curve = BN381_1/BN381_2 are allowed if MCL_FP_BIT >= 384 and MCL_FR_BIT >= 387
+	This parameter is used to detect a library compiled with different MCL_FP_BIT for safety.
 	@note not threadsafe
 	@note BN_init is used in libeay32
 */
