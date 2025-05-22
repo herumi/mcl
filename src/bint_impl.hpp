@@ -1,49 +1,73 @@
 #pragma once
 /*
-	This file is supposed to be only once included.
+	This file is intended to be included only once and exclusively from src/fp.cpp
 */
 
 #include <mcl/bint.hpp>
 
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+
+#include <string.h>
+
+#define XBYAK_DISABLE_AVX512
+#ifndef XBYAK_NO_EXCEPTION
+	#define XBYAK_NO_EXCEPTION
+#endif
+
+#include "xbyak/xbyak_util.h"
+
+extern "C" void mclb_enable_fast();
+#endif
+
 namespace mcl { namespace bint {
 
-MCL_DLL_API void initBint()
+
+uint32_t initBint()
 {
-#if MCL_BINT_ASM_X64 == 1
-	static bool init = false;
-	if (init) return;
+	uint32_t type = 0;
+
+#if CYBOZU_HOST == CYBOZU_HOST_INTEL
+
 	using namespace Xbyak::util;
 	Cpu cpu;
-	if (!cpu.has(Cpu::tBMI2 | Cpu::tADX)) {
-		mclb_disable_fast();
+	if (cpu.has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX)) {
+		type |= tAVX_BMI2_ADX;
 	}
-	init = true;
+	if (cpu.has(Cpu::tAVX512_IFMA)) {
+		type |= tAVX512_IFMA;
+	}
+	const char *env = 0;
+	const char *key = "MCL_CPU";
+#ifdef _WIN32
+	char envBuf[128];
+	size_t size;
+	if (getenv_s(&size, envBuf, key) == 0) {
+		if (size > 0) {
+			env = envBuf;
+		}
+	}
+#else
+	env = getenv(key);
 #endif
+	if (env) {
+		if (strcmp(env, "noadx") == 0) {
+			type = 0;
+		} else if (strcmp(env, "noifma") == 0) {
+			type &= tAVX512_IFMA;
+		}
+	}
+#if MCL_BINT_ASM_X64 == 1
+	if (type & tAVX_BMI2_ADX) {
+		mclb_enable_fast();
+	}
+#endif
+#endif
+	return type;
 }
 
-namespace impl {
+const uint32_t g_cpuType = initBint();
 
-template<size_t N, size_t I = 1>
-struct UnrollMulLowT {
-	static inline void call(Unit *pz, const Unit *px, const Unit *py) {
-		mulUnitAddT<N - I>(&pz[I], px, py[I]);
-		UnrollMulLowT<N, I - 1>::call(pz, px, py);
-	}
-};
-
-template<size_t N>
-struct UnrollMulLowT<N, 0> {
-	static inline void call(Unit *, const Unit *, const Unit *) {
-	}
-};
-
-template<>
-struct UnrollMulLowT<1, 1> {
-	static inline void call(Unit *, const Unit *, const Unit *) {
-	}
-};
-
-} // impl
+#include "bint_switch.hpp"
 
 #if MCL_BINT_ASM != 1
 template<size_t N>
@@ -185,14 +209,6 @@ void sqrT(Unit *py, const Unit *px)
 	mulT<N>(py, px, px);
 }
 
-// z[N] = the bottom half of x[N] * y[N]
-//template<size_t N>
-//void mulLowT(Unit *pz, const Unit *px, const Unit *py)
-//{
-//	mulUnitT<N>(pz, px, py[0]);
-//	impl::UnrollMulLowT<N>::call(pz, px, py);
-//}
-
 #endif // MCL_BINT_ASM != 1
 
 // [return:z[N]] = x[N] << y
@@ -236,7 +252,7 @@ MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n)
 */
 MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 {
-	assert(bit <= MCL_MAX_BIT_SIZE * 2); // many be too big
+	assert(bit <= MCL_FP_BIT * 2); // many be too big
 	assert(xn > 0);
 	size_t q = bit / UnitBitSize;
 	size_t r = bit % UnitBitSize;
@@ -481,9 +497,8 @@ MCL_DLL_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, si
 	}
 }
 
-#include "bint_switch.hpp"
 
-MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
+void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	if (xn == 0 || yn == 0) return;
 	if (yn > xn) {

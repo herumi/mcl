@@ -7,10 +7,10 @@
 	http://opensource.org/licenses/BSD-3-Clause
 
 */
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 #include <iostream>
 
-using namespace mcl::bn256;
+using namespace mcl;
 
 void Hash(G1& P, const std::string& m)
 {

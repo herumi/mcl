@@ -6,47 +6,64 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+// for backward compatibility
+#ifdef MCLBN_FP_UNIT_SIZE
+	#define MCL_FP_BIT ((MCLBN_FP_UNIT_SIZE)*64)
+	#ifndef MCLBN_FR_UNIT_SIZE
+		#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
+	#endif
+	#define MCL_FR_BIT ((MCLBN_FR_UNIT_SIZE)*64)
+#endif
 /*
 	the order of an elliptic curve over Fp is Fr
 */
+#if !defined(MCL_FP_BIT) || !defined(MCL_FR_BIT)
+	#error "define MCL_FP_BIT and MCL_FR_BIT"
+#endif
+
 #ifndef MCLBN_FP_UNIT_SIZE
-	#error "define MCLBN_FP_UNIT_SIZE 4(, 6 or 8)"
+	#define MCLBN_FP_UNIT_SIZE ((MCL_FP_BIT)/64)
 #endif
 #ifndef MCLBN_FR_UNIT_SIZE
-	#define MCLBN_FR_UNIT_SIZE MCLBN_FP_UNIT_SIZE
+	#define MCLBN_FR_UNIT_SIZE ((MCL_FR_BIT)/64)
 #endif
+
+// DON'T CHANGE this value because it is used from other languages such as C# and WASM.
 #define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
 #include <stdint.h> // for uint64_t, uint8_t
 #include <stddef.h> // for size_t
 
-#if defined(_WIN32)
-	#ifdef MCLBN_DONT_EXPORT
-		#define MCLBN_DLL_API
-	#else
-		#ifdef MCLBN_DLL_EXPORT
-			#define MCLBN_DLL_API __declspec(dllexport)
+// define same macro in config.hpp
+#ifndef MCL_DLL_API
+	#ifdef _WIN32
+		#ifdef MCL_DONT_EXPORT
+			#define MCL_DLL_API
+			#define MCL_DLL_VAR
 		#else
-			#define MCLBN_DLL_API //__declspec(dllimport)
+			#ifdef MCL_DLL_EXPORT
+				#define MCL_DLL_API __declspec(dllexport)
+				#define MCL_DLL_VAR __declspec(dllexport)
+			#else
+				#ifdef MCL_DLL // better
+					#define MCL_DLL_API __declspec(dllimport)
+					#define MCL_DLL_VAR __declspec(dllimport)
+				#else
+					#define MCL_DLL_API
+					#define MCL_DLL_VAR
+				#endif
+			#endif
 		#endif
+	#elif defined(__EMSCRIPTEN__) && !defined(MCL_DONT_EXPORT)
+		#define MCL_DLL_API __attribute__((used))
+		#define MCL_DLL_VAR // can't use the attribute
+	#elif defined(__wasm__) && !defined(MCL_DONT_EXPORT)
+		#define MCL_DLL_API __attribute__((visibility("default")))
+		#define MCL_DLL_VAR __attribute__((visibility("default")))
+	#else
+		#define MCL_DLL_API
+		#define MCL_DLL_VAR
 	#endif
-	#if defined(_MSC_VER) && !defined(MCLBN_NO_AUTOLINK)
-		#if MCLBN_FP_UNIT_SIZE == 4
-			#pragma comment(lib, "mclbn256.lib")
-		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 4)
-			#pragma comment(lib, "mclbn384_256.lib")
-		#elif (MCLBN_FP_UNIT_SIZE == 6) && (MCLBN_FR_UNIT_SIZE == 6)
-			#pragma comment(lib, "mclbn384.lib")
-		#elif MCLBN_FP_UNIT_SIZE == 8
-			#pragma comment(lib, "mclbn512.lib")
-		#endif
-	#endif
-#elif defined(__EMSCRIPTEN__) && !defined(MCLBN_DONT_EXPORT)
-	#define MCLBN_DLL_API __attribute__((used))
-#elif defined(__wasm__) && !defined(MCLBN_DONT_EXPORT)
-	#define MCLBN_DLL_API __attribute__((visibility("default")))
-#else
-	#define MCLBN_DLL_API
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -126,7 +143,7 @@ enum {
 };
 
 // return 0xABC which means A.BC
-MCLBN_DLL_API int mclBn_getVersion(void);
+MCL_DLL_API int mclBn_getVersion(void);
 /*
 	init library
 	@param curve [in] type of bn curve
@@ -134,15 +151,16 @@ MCLBN_DLL_API int mclBn_getVersion(void);
 	which macro is used to make sure that the values
 	are the same when the library is built and used
 	@return 0 if success
-	curve = BN254/BN_SNARK1 is allowed if maxUnitSize = 4
-	curve = BN381_1/BN381_2/BLS12_381 are allowed if maxUnitSize = 6
-	This parameter is used to detect a library compiled with different MCLBN_FP_UNIT_SIZE for safety.
+	curve = BN254/BN_SNARK1 is allowed if MCL_FP_BIT >= 256
+	curve = BLS12_381/BLS12_377 are allowed if MCL_FP_BIT >= 384 and MCL_FR_BIT >= 256
+	curve = BN381_1/BN381_2 are allowed if MCL_FP_BIT >= 384 and MCL_FR_BIT >= 387
+	This parameter is used to detect a library compiled with different MCL_FP_BIT for safety.
 	@note not threadsafe
 	@note BN_init is used in libeay32
 */
-MCLBN_DLL_API int mclBn_init(int curve, int compiledTimeVar);
+MCL_DLL_API int mclBn_init(int curve, int compiledTimeVar);
 
-MCLBN_DLL_API int mclBn_getCurveType(void);
+MCL_DLL_API int mclBn_getCurveType(void);
 
 /*
 	pairing : G1 x G2 -> GT
@@ -162,77 +180,77 @@ MCLBN_DLL_API int mclBn_getCurveType(void);
 /*
 	return the num of Unit(=uint64_t) to store Fr
 */
-MCLBN_DLL_API int mclBn_getOpUnitSize(void);
+MCL_DLL_API int mclBn_getOpUnitSize(void);
 
 /*
 	return bytes for serialized G1(=size of Fp) + adj
 	adj = 1 if p is full bit else 0
 */
-MCLBN_DLL_API int mclBn_getG1ByteSize(void);
+MCL_DLL_API int mclBn_getG1ByteSize(void);
 /*
 	return bytes for serialized G2(=size of Fp2) + adj
 	adj = 1 if p is full bit else 0
 */
-MCLBN_DLL_API int mclBn_getG2ByteSize(void);
+MCL_DLL_API int mclBn_getG2ByteSize(void);
 /*
 	return bytes for serialized Fr
 */
-MCLBN_DLL_API int mclBn_getFrByteSize(void);
+MCL_DLL_API int mclBn_getFrByteSize(void);
 /*
 	return bytes for serialized Fp
 */
-MCLBN_DLL_API int mclBn_getFpByteSize(void);
+MCL_DLL_API int mclBn_getFpByteSize(void);
 
 /*
 	return decimal string of the order of the curve(=the characteristic of Fr)
 	return str(buf) if success
 */
-MCLBN_DLL_API mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize);
+MCL_DLL_API mclSize mclBn_getCurveOrder(char *buf, mclSize maxBufSize);
 
 /*
 	return decimal string of the characteristic of Fp
 	return str(buf) if success
 */
-MCLBN_DLL_API mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize);
+MCL_DLL_API mclSize mclBn_getFieldOrder(char *buf, mclSize maxBufSize);
 
 /*
 	set ETH serialization mode for BLS12-381
 	@param enable [in] 1:enable,  0:disable
 	@note ignore the flag if curve is not BLS12-381
 */
-MCLBN_DLL_API void mclBn_setETHserialization(int enable);
+MCL_DLL_API void mclBn_setETHserialization(int enable);
 
 // return 1 if ETH serialization mode else 0
-MCLBN_DLL_API int mclBn_getETHserialization(void);
+MCL_DLL_API int mclBn_getETHserialization(void);
 
 /*
 	set map-to-function to mode (only support MCL_MAP_TO_MODE_HASH_TO_CURVE_07)
 	return 0 if success else -1
 */
-MCLBN_DLL_API int mclBn_setMapToMode(int mode);
+MCL_DLL_API int mclBn_setMapToMode(int mode);
 
 ////////////////////////////////////////////////
 /*
 	deserialize
 	return read size if success else 0
 */
-MCLBN_DLL_API mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API mclSize mclBnFp2_deserialize(mclBnFp2 *x, const void *buf, mclSize bufSize);
+MCL_DLL_API mclSize mclBnFr_deserialize(mclBnFr *x, const void *buf, mclSize bufSize);
+MCL_DLL_API mclSize mclBnG1_deserialize(mclBnG1 *x, const void *buf, mclSize bufSize);
+MCL_DLL_API mclSize mclBnG2_deserialize(mclBnG2 *x, const void *buf, mclSize bufSize);
+MCL_DLL_API mclSize mclBnGT_deserialize(mclBnGT *x, const void *buf, mclSize bufSize);
+MCL_DLL_API mclSize mclBnFp_deserialize(mclBnFp *x, const void *buf, mclSize bufSize);
+MCL_DLL_API mclSize mclBnFp2_deserialize(mclBnFp2 *x, const void *buf, mclSize bufSize);
 
 /*
 	serialize
 	return written byte if sucess else 0
 */
-MCLBN_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x);
-MCLBN_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
-MCLBN_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
-MCLBN_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
-MCLBN_DLL_API mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
-MCLBN_DLL_API mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x);
+MCL_DLL_API mclSize mclBnFr_serialize(void *buf, mclSize maxBufSize, const mclBnFr *x);
+MCL_DLL_API mclSize mclBnG1_serialize(void *buf, mclSize maxBufSize, const mclBnG1 *x);
+MCL_DLL_API mclSize mclBnG2_serialize(void *buf, mclSize maxBufSize, const mclBnG2 *x);
+MCL_DLL_API mclSize mclBnGT_serialize(void *buf, mclSize maxBufSize, const mclBnGT *x);
+MCL_DLL_API mclSize mclBnFp_serialize(void *buf, mclSize maxBufSize, const mclBnFp *x);
+MCL_DLL_API mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mclBnFp2 *x);
 
 /*
 	set string
@@ -242,90 +260,90 @@ MCLBN_DLL_API mclSize mclBnFp2_serialize(void *buf, mclSize maxBufSize, const mc
 	MCLBN_IO_SERIALIZE_HEX_STR : hex string of serialized data
 	return 0 if success else -1
 */
-MCLBN_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
-MCLBN_DLL_API int mclBnFp_setStr(mclBnFp *x, const char *buf, mclSize bufSize, int ioMode);
+MCL_DLL_API int mclBnFr_setStr(mclBnFr *x, const char *buf, mclSize bufSize, int ioMode);
+MCL_DLL_API int mclBnG1_setStr(mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode);
+MCL_DLL_API int mclBnG2_setStr(mclBnG2 *x, const char *buf, mclSize bufSize, int ioMode);
+MCL_DLL_API int mclBnGT_setStr(mclBnGT *x, const char *buf, mclSize bufSize, int ioMode);
+MCL_DLL_API int mclBnFp_setStr(mclBnFp *x, const char *buf, mclSize bufSize, int ioMode);
 
 /*
 	buf is terminated by '\0'
 	return strlen(buf) if sucess else 0
 */
-MCLBN_DLL_API mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode);
-MCLBN_DLL_API mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode);
-MCLBN_DLL_API mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode);
-MCLBN_DLL_API mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode);
-MCLBN_DLL_API mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMode);
+MCL_DLL_API mclSize mclBnFr_getStr(char *buf, mclSize maxBufSize, const mclBnFr *x, int ioMode);
+MCL_DLL_API mclSize mclBnG1_getStr(char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode);
+MCL_DLL_API mclSize mclBnG2_getStr(char *buf, mclSize maxBufSize, const mclBnG2 *x, int ioMode);
+MCL_DLL_API mclSize mclBnGT_getStr(char *buf, mclSize maxBufSize, const mclBnGT *x, int ioMode);
+MCL_DLL_API mclSize mclBnFp_getStr(char *buf, mclSize maxBufSize, const mclBnFp *x, int ioMode);
 
 // set zero
-MCLBN_DLL_API void mclBnFr_clear(mclBnFr *x);
-MCLBN_DLL_API void mclBnFp_clear(mclBnFp *x);
-MCLBN_DLL_API void mclBnFp2_clear(mclBnFp2 *x);
+MCL_DLL_API void mclBnFr_clear(mclBnFr *x);
+MCL_DLL_API void mclBnFp_clear(mclBnFp *x);
+MCL_DLL_API void mclBnFp2_clear(mclBnFp2 *x);
 
 // set x to y
-MCLBN_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
-MCLBN_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
-MCLBN_DLL_API void mclBnFp_setInt(mclBnFp *y, mclInt x);
-MCLBN_DLL_API void mclBnFp_setInt32(mclBnFp *y, int x);
+MCL_DLL_API void mclBnFr_setInt(mclBnFr *y, mclInt x);
+MCL_DLL_API void mclBnFr_setInt32(mclBnFr *y, int x);
+MCL_DLL_API void mclBnFp_setInt(mclBnFp *y, mclInt x);
+MCL_DLL_API void mclBnFp_setInt32(mclBnFp *y, int x);
 
 // x = buf & (1 << bitLen(r)) - 1
 // if (x >= r) x &= (1 << (bitLen(r) - 1)) - 1
 // always return 0
-MCLBN_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 
 /*
 	write a value as little endian
 	return written size if success else 0
 	@note buf[0] = 0 and return 1 if the value is zero
 */
-MCLBN_DLL_API mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
-MCLBN_DLL_API mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
+MCL_DLL_API mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
+MCL_DLL_API mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
 
 // set (buf mod r) to x
 // return 0 if bufSize <= (byte size of Fr * 2) else -1
-MCLBN_DLL_API int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API int mclBnFr_setBigEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFr_setBigEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 // set (buf mod p) to x
 // return 0 if bufSize <= (byte size of Fp * 2) else -1
-MCLBN_DLL_API int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 
 // return 1 if true and 0 otherwise
-MCLBN_DLL_API int mclBnFr_isValid(const mclBnFr *x);
-MCLBN_DLL_API int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y);
-MCLBN_DLL_API int mclBnFr_isZero(const mclBnFr *x);
-MCLBN_DLL_API int mclBnFr_isOne(const mclBnFr *x);
-MCLBN_DLL_API int mclBnFr_isOdd(const mclBnFr *x);
+MCL_DLL_API int mclBnFr_isValid(const mclBnFr *x);
+MCL_DLL_API int mclBnFr_isEqual(const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API int mclBnFr_isZero(const mclBnFr *x);
+MCL_DLL_API int mclBnFr_isOne(const mclBnFr *x);
+MCL_DLL_API int mclBnFr_isOdd(const mclBnFr *x);
 // return 1 if half <= x < r, where half = (r + 1) / 2 else 0
-MCLBN_DLL_API int mclBnFr_isNegative(const mclBnFr *x);
+MCL_DLL_API int mclBnFr_isNegative(const mclBnFr *x);
 // compare x and y as unsigned
 // return x < y ? -1 : x == y ? 0 : 1;
 // @note two Montgomery conversions may be required
-MCLBN_DLL_API int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y);
 
-MCLBN_DLL_API int mclBnFp_isValid(const mclBnFp *x);
-MCLBN_DLL_API int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y);
-MCLBN_DLL_API int mclBnFp_isZero(const mclBnFp *x);
-MCLBN_DLL_API int mclBnFp_isOne(const mclBnFp *x);
-MCLBN_DLL_API int mclBnFp_isOdd(const mclBnFp *x);
+MCL_DLL_API int mclBnFp_isValid(const mclBnFp *x);
+MCL_DLL_API int mclBnFp_isEqual(const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API int mclBnFp_isZero(const mclBnFp *x);
+MCL_DLL_API int mclBnFp_isOne(const mclBnFp *x);
+MCL_DLL_API int mclBnFp_isOdd(const mclBnFp *x);
 // return 1 if half <= x < p, where half = (p + 1) / 2 else 0
-MCLBN_DLL_API int mclBnFp_isNegative(const mclBnFp *x);
+MCL_DLL_API int mclBnFp_isNegative(const mclBnFp *x);
 // compare x and y as unsigned
 // return x < y ? -1 : x == y ? 0 : 1;
 // @note two Montgomery conversions may be required
-MCLBN_DLL_API int mclBnFp_cmp(const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API int mclBnFp_cmp(const mclBnFp *x, const mclBnFp *y);
 
-MCLBN_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
-MCLBN_DLL_API int mclBnFp2_isZero(const mclBnFp2 *x);
-MCLBN_DLL_API int mclBnFp2_isOne(const mclBnFp2 *x);
+MCL_DLL_API int mclBnFp2_isEqual(const mclBnFp2 *x, const mclBnFp2 *y);
+MCL_DLL_API int mclBnFp2_isZero(const mclBnFp2 *x);
+MCL_DLL_API int mclBnFp2_isOne(const mclBnFp2 *x);
 
 
 #ifndef MCL_DONT_USE_CSRPNG
 // return 0 if success
-MCLBN_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
-MCLBN_DLL_API int mclBnFp_setByCSPRNG(mclBnFp *x);
+MCL_DLL_API int mclBnFr_setByCSPRNG(mclBnFr *x);
+MCL_DLL_API int mclBnFp_setByCSPRNG(mclBnFp *x);
 
 /*
 	set user-defined random function for setByCSPRNG
@@ -335,197 +353,197 @@ MCLBN_DLL_API int mclBnFp_setByCSPRNG(mclBnFp *x);
 	@note if self == 0 and readFunc == 0 then set default random function
 	@note not threadsafe
 */
-MCLBN_DLL_API void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize));
+MCL_DLL_API void mclBn_setRandFunc(void *self, unsigned int (*readFunc)(void *self, void *buf, unsigned int bufSize));
 #endif
 
 // hash(s) and set x
 // return 0 if success
-MCLBN_DLL_API int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
-MCLBN_DLL_API int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFr_setHashOf(mclBnFr *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnFp_setHashOf(mclBnFp *x, const void *buf, mclSize bufSize);
 
 // map x to y
 // return 0 if success else -1
-MCLBN_DLL_API int mclBnFp_mapToG1(mclBnG1 *y, const mclBnFp *x);
-MCLBN_DLL_API int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x);
+MCL_DLL_API int mclBnFp_mapToG1(mclBnG1 *y, const mclBnFp *x);
+MCL_DLL_API int mclBnFp2_mapToG2(mclBnG2 *y, const mclBnFp2 *x);
 
-MCLBN_DLL_API void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
-MCLBN_DLL_API void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
-MCLBN_DLL_API void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x);
-MCLBN_DLL_API void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
-MCLBN_DLL_API void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
-MCLBN_DLL_API void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
-MCLBN_DLL_API void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API void mclBnFr_neg(mclBnFr *y, const mclBnFr *x);
+MCL_DLL_API void mclBnFr_inv(mclBnFr *y, const mclBnFr *x);
+MCL_DLL_API void mclBnFr_sqr(mclBnFr *y, const mclBnFr *x);
+MCL_DLL_API void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 
-MCLBN_DLL_API void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
-MCLBN_DLL_API void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
-MCLBN_DLL_API void mclBnFp_sqr(mclBnFp *y, const mclBnFp *x);
-MCLBN_DLL_API void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
-MCLBN_DLL_API void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
-MCLBN_DLL_API void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
-MCLBN_DLL_API void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
+MCL_DLL_API void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
+MCL_DLL_API void mclBnFp_sqr(mclBnFp *y, const mclBnFp *x);
+MCL_DLL_API void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 
-MCLBN_DLL_API void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x);
-MCLBN_DLL_API void mclBnFp2_inv(mclBnFp2 *y, const mclBnFp2 *x);
-MCLBN_DLL_API void mclBnFp2_sqr(mclBnFp2 *y, const mclBnFp2 *x);
-MCLBN_DLL_API void mclBnFp2_add(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
-MCLBN_DLL_API void mclBnFp2_sub(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
-MCLBN_DLL_API void mclBnFp2_mul(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
-MCLBN_DLL_API void mclBnFp2_div(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCL_DLL_API void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x);
+MCL_DLL_API void mclBnFp2_inv(mclBnFp2 *y, const mclBnFp2 *x);
+MCL_DLL_API void mclBnFp2_sqr(mclBnFp2 *y, const mclBnFp2 *x);
+MCL_DLL_API void mclBnFp2_add(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCL_DLL_API void mclBnFp2_sub(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCL_DLL_API void mclBnFp2_mul(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
+MCL_DLL_API void mclBnFp2_div(mclBnFp2 *z, const mclBnFp2 *x, const mclBnFp2 *y);
 
 // y is one of square root of x
 // return 0 if success else -1
-MCLBN_DLL_API int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
-MCLBN_DLL_API int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
-MCLBN_DLL_API int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
+MCL_DLL_API int mclBnFr_squareRoot(mclBnFr *y, const mclBnFr *x);
+MCL_DLL_API int mclBnFp_squareRoot(mclBnFp *y, const mclBnFp *x);
+MCL_DLL_API int mclBnFp2_squareRoot(mclBnFp2 *y, const mclBnFp2 *x);
 
 // z = x^y[0:ySize] : y[] is little endian
-MCLBN_DLL_API void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
-MCLBN_DLL_API void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API void mclBnFr_pow(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+MCL_DLL_API void mclBnFp_pow(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 
 // return 0 if ySize <= mclBn_getFrByteSize() else -1
-MCLBN_DLL_API int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize);
+MCL_DLL_API int mclBnFr_powArray(mclBnFr *z, const mclBnFr *x, const uint8_t *y, mclSize ySize);
 // return 0 if ySize <= mclBn_getFpByteSize() else -1
-MCLBN_DLL_API int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize);
+MCL_DLL_API int mclBnFp_powArray(mclBnFp *z, const mclBnFp *x, const uint8_t *y, mclSize ySize);
 ////////////////////////////////////////////////
 // set zero
-MCLBN_DLL_API void mclBnG1_clear(mclBnG1 *x);
+MCL_DLL_API void mclBnG1_clear(mclBnG1 *x);
 
 
 // return 1 if true and 0 otherwise
-MCLBN_DLL_API int mclBnG1_isValid(const mclBnG1 *x);
-MCLBN_DLL_API int mclBnG1_isEqual(const mclBnG1 *x, const mclBnG1 *y);
-MCLBN_DLL_API int mclBnG1_isZero(const mclBnG1 *x);
+MCL_DLL_API int mclBnG1_isValid(const mclBnG1 *x);
+MCL_DLL_API int mclBnG1_isEqual(const mclBnG1 *x, const mclBnG1 *y);
+MCL_DLL_API int mclBnG1_isZero(const mclBnG1 *x);
 /*
 	return 1 if x has a correct order
 	x is valid point of G1 if and only if
 	mclBnG1_isValid() is true, which contains mclBnG1_isValidOrder() if mclBn_verifyOrderG1(true)
 	mclBnG1_isValid() && mclBnG1_isValidOrder() is true if mclBn_verifyOrderG1(false)
 */
-MCLBN_DLL_API int mclBnG1_isValidOrder(const mclBnG1 *x);
+MCL_DLL_API int mclBnG1_isValidOrder(const mclBnG1 *x);
 
-MCLBN_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnG1_hashAndMapTo(mclBnG1 *x, const void *buf, mclSize bufSize);
 // user-defined dst
-MCLBN_DLL_API int mclBnG1_hashAndMapToWithDst(mclBnG1 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize);
+MCL_DLL_API int mclBnG1_hashAndMapToWithDst(mclBnG1 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize);
 // set default dst
-MCLBN_DLL_API int mclBnG1_setDst(const char *dst, mclSize dstSize);
+MCL_DLL_API int mclBnG1_setDst(const char *dst, mclSize dstSize);
 
 
-MCLBN_DLL_API void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
-MCLBN_DLL_API void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x);
-MCLBN_DLL_API void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
-MCLBN_DLL_API void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
-MCLBN_DLL_API void mclBnG1_sub(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
-MCLBN_DLL_API void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
+MCL_DLL_API void mclBnG1_neg(mclBnG1 *y, const mclBnG1 *x);
+MCL_DLL_API void mclBnG1_dbl(mclBnG1 *y, const mclBnG1 *x);
+MCL_DLL_API void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
+MCL_DLL_API void mclBnG1_add(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
+MCL_DLL_API void mclBnG1_sub(mclBnG1 *z, const mclBnG1 *x, const mclBnG1 *y);
+MCL_DLL_API void mclBnG1_mul(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
 
 /*
 	constant time mul
 */
-MCLBN_DLL_API void mclBnG1_mulCT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
+MCL_DLL_API void mclBnG1_mulCT(mclBnG1 *z, const mclBnG1 *x, const mclBnFr *y);
 
 ////////////////////////////////////////////////
 // set zero
-MCLBN_DLL_API void mclBnG2_clear(mclBnG2 *x);
+MCL_DLL_API void mclBnG2_clear(mclBnG2 *x);
 
 // return 1 if true and 0 otherwise
-MCLBN_DLL_API int mclBnG2_isValid(const mclBnG2 *x);
-MCLBN_DLL_API int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y);
-MCLBN_DLL_API int mclBnG2_isZero(const mclBnG2 *x);
+MCL_DLL_API int mclBnG2_isValid(const mclBnG2 *x);
+MCL_DLL_API int mclBnG2_isEqual(const mclBnG2 *x, const mclBnG2 *y);
+MCL_DLL_API int mclBnG2_isZero(const mclBnG2 *x);
 // return 1 if x has a correct order
-MCLBN_DLL_API int mclBnG2_isValidOrder(const mclBnG2 *x);
+MCL_DLL_API int mclBnG2_isValidOrder(const mclBnG2 *x);
 
-MCLBN_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
+MCL_DLL_API int mclBnG2_hashAndMapTo(mclBnG2 *x, const void *buf, mclSize bufSize);
 // user-defined dst
-MCLBN_DLL_API int mclBnG2_hashAndMapToWithDst(mclBnG2 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize);
+MCL_DLL_API int mclBnG2_hashAndMapToWithDst(mclBnG2 *x, const void *buf, mclSize bufSize, const char *dst, mclSize dstSize);
 // set default dst
-MCLBN_DLL_API int mclBnG2_setDst(const char *dst, mclSize dstSize);
+MCL_DLL_API int mclBnG2_setDst(const char *dst, mclSize dstSize);
 
 // return written size if sucess else 0
 
-MCLBN_DLL_API void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x);
-MCLBN_DLL_API void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x);
-MCLBN_DLL_API void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
-MCLBN_DLL_API void mclBnG2_add(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
-MCLBN_DLL_API void mclBnG2_sub(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
-MCLBN_DLL_API void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
+MCL_DLL_API void mclBnG2_neg(mclBnG2 *y, const mclBnG2 *x);
+MCL_DLL_API void mclBnG2_dbl(mclBnG2 *y, const mclBnG2 *x);
+MCL_DLL_API void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
+MCL_DLL_API void mclBnG2_add(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
+MCL_DLL_API void mclBnG2_sub(mclBnG2 *z, const mclBnG2 *x, const mclBnG2 *y);
+MCL_DLL_API void mclBnG2_mul(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
 /*
 	constant time mul
 */
-MCLBN_DLL_API void mclBnG2_mulCT(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
+MCL_DLL_API void mclBnG2_mulCT(mclBnG2 *z, const mclBnG2 *x, const mclBnFr *y);
 
 ////////////////////////////////////////////////
 // set zero
-MCLBN_DLL_API void mclBnGT_clear(mclBnGT *x);
+MCL_DLL_API void mclBnGT_clear(mclBnGT *x);
 // set x to y
-MCLBN_DLL_API void mclBnGT_setInt(mclBnGT *y, mclInt x);
-MCLBN_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
+MCL_DLL_API void mclBnGT_setInt(mclBnGT *y, mclInt x);
+MCL_DLL_API void mclBnGT_setInt32(mclBnGT *y, int x);
 
 // return 1 if true and 0 otherwise
-MCLBN_DLL_API int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
-MCLBN_DLL_API int mclBnGT_isZero(const mclBnGT *x);
-MCLBN_DLL_API int mclBnGT_isOne(const mclBnGT *x);
-MCLBN_DLL_API int mclBnGT_isValid(const mclBnGT *x);
+MCL_DLL_API int mclBnGT_isEqual(const mclBnGT *x, const mclBnGT *y);
+MCL_DLL_API int mclBnGT_isZero(const mclBnGT *x);
+MCL_DLL_API int mclBnGT_isOne(const mclBnGT *x);
+MCL_DLL_API int mclBnGT_isValid(const mclBnGT *x);
 
-MCLBN_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
-MCLBN_DLL_API void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x);
-MCLBN_DLL_API void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
-MCLBN_DLL_API void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
-MCLBN_DLL_API void mclBnGT_mul(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
-MCLBN_DLL_API void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
+MCL_DLL_API void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
+MCL_DLL_API void mclBnGT_sqr(mclBnGT *y, const mclBnGT *x);
+MCL_DLL_API void mclBnGT_add(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
+MCL_DLL_API void mclBnGT_sub(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
+MCL_DLL_API void mclBnGT_mul(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
+MCL_DLL_API void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 
 // y = conjugate of x in Fp12, which is equal to the inverse of x if |x|^r = 1
-MCLBN_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);
+MCL_DLL_API void mclBnGT_inv(mclBnGT *y, const mclBnGT *x);
 // use invGeneric when x in Fp12 is not in GT
-MCLBN_DLL_API void mclBnGT_invGeneric(mclBnGT *y, const mclBnGT *x);
+MCL_DLL_API void mclBnGT_invGeneric(mclBnGT *y, const mclBnGT *x);
 
 /*
 	pow for all elements of Fp12
 */
-MCLBN_DLL_API void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
+MCL_DLL_API void mclBnGT_powGeneric(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 /*
 	pow for only {x|x^r = 1} in GT by GLV method
 	the value generated by pairing satisfies the condition
 */
-MCLBN_DLL_API void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
+MCL_DLL_API void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 
 // z = sum_{i=0}^{n-1} x[i] y[i]
 // x[] may be normalized (the values are not changed) when computing z
-MCLBN_DLL_API void mclBnG1_mulVec(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n);
-MCLBN_DLL_API void mclBnG2_mulVec(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n);
-MCLBN_DLL_API void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
+MCL_DLL_API void mclBnG1_mulVec(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n);
+MCL_DLL_API void mclBnG2_mulVec(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n);
+MCL_DLL_API void mclBnGT_powVec(mclBnGT *z, const mclBnGT *x, const mclBnFr *y, mclSize n);
 
 // x[i] *= y[i]
-MCLBN_DLL_API void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
+MCL_DLL_API void mclBnG1_mulEach(mclBnG1 *x, const mclBnFr *y, mclSize n);
 
 // y[i] = 1/x[i] for x[i] != 0 else 0
 // return # of x[i] not in {0, 1}
-MCLBN_DLL_API mclSize mclBnFr_invVec(mclBnFr *y, const mclBnFr *x, mclSize n);
-MCLBN_DLL_API mclSize mclBnFp_invVec(mclBnFp *y, const mclBnFp *x, mclSize n);
+MCL_DLL_API mclSize mclBnFr_invVec(mclBnFr *y, const mclBnFr *x, mclSize n);
+MCL_DLL_API mclSize mclBnFp_invVec(mclBnFp *y, const mclBnFp *x, mclSize n);
 
 // y[i] = normalize(x[i]) : [X:Y:Z] -> [x:y:1] or 0 where (x, y) is Affine coordinate
-MCLBN_DLL_API void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n);
-MCLBN_DLL_API void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n);
+MCL_DLL_API void mclBnG1_normalizeVec(mclBnG1 *y, const mclBnG1 *x, mclSize n);
+MCL_DLL_API void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n);
 
-MCLBN_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
-MCLBN_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
-MCLBN_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
+MCL_DLL_API void mclBn_pairing(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
+MCL_DLL_API void mclBn_finalExp(mclBnGT *y, const mclBnGT *x);
+MCL_DLL_API void mclBn_millerLoop(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y);
 // z = prod_{i=0}^{n-1} millerLoop(x[i], y[i])
-MCLBN_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
+MCL_DLL_API void mclBn_millerLoopVec(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n);
 // multi thread version of millerLoopVec/mclBnG1_mulVec/mclBnG2_mulVec (enabled if the library built with MCL_USE_OMP=1)
 // the num of thread is automatically detected if cpuN = 0
 // x[] may be normalized (the values are not changed) when computing z
-MCLBN_DLL_API void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
-MCLBN_DLL_API void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
-MCLBN_DLL_API void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+MCL_DLL_API void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
+MCL_DLL_API void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+MCL_DLL_API void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
 
 // return precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t)
-MCLBN_DLL_API int mclBn_getUint64NumToPrecompute(void);
+MCL_DLL_API int mclBn_getUint64NumToPrecompute(void);
 
 // allocate Qbuf[MCLBN_getUint64NumToPrecompute()] before calling this
-MCLBN_DLL_API void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q);
+MCL_DLL_API void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q);
 
-MCLBN_DLL_API void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf);
-MCLBN_DLL_API void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t *Q1buf, const mclBnG1 *P2, const uint64_t *Q2buf);
-MCLBN_DLL_API void mclBn_precomputedMillerLoop2mixed(mclBnGT *f, const mclBnG1 *P1, const mclBnG2 *Q1, const mclBnG1 *P2, const uint64_t *Q2buf);
+MCL_DLL_API void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf);
+MCL_DLL_API void mclBn_precomputedMillerLoop2(mclBnGT *f, const mclBnG1 *P1, const uint64_t *Q1buf, const mclBnG1 *P2, const uint64_t *Q2buf);
+MCL_DLL_API void mclBn_precomputedMillerLoop2mixed(mclBnGT *f, const mclBnG1 *P1, const mclBnG2 *Q1, const mclBnG1 *P2, const uint64_t *Q2buf);
 
 /*
 	Lagrange interpolation
@@ -534,9 +552,9 @@ MCLBN_DLL_API void mclBn_precomputedMillerLoop2mixed(mclBnGT *f, const mclBnG1 *
 	@note *out = yVec[0] if k = 1
 	@note k >= 2, xVec[i] != 0, xVec[i] != xVec[j] for i != j
 */
-MCLBN_DLL_API int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k);
-MCLBN_DLL_API int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k);
-MCLBN_DLL_API int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k);
+MCL_DLL_API int mclBn_FrLagrangeInterpolation(mclBnFr *out, const mclBnFr *xVec, const mclBnFr *yVec, mclSize k);
+MCL_DLL_API int mclBn_G1LagrangeInterpolation(mclBnG1 *out, const mclBnFr *xVec, const mclBnG1 *yVec, mclSize k);
+MCL_DLL_API int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBnG2 *yVec, mclSize k);
 
 /*
 	evaluate polynomial
@@ -544,24 +562,24 @@ MCLBN_DLL_API int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVe
 	return 0 if success else -1
 	@note cSize >= 1
 */
-MCLBN_DLL_API int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x);
-MCLBN_DLL_API int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x);
-MCLBN_DLL_API int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x);
+MCL_DLL_API int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x);
+MCL_DLL_API int mclBn_G1EvaluatePolynomial(mclBnG1 *out, const mclBnG1 *cVec, mclSize cSize, const mclBnFr *x);
+MCL_DLL_API int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize, const mclBnFr *x);
 
 /*
 	verify whether a point of an elliptic curve has order r
 	This api affetcs setStr(), deserialize() for G2 on BN or G1/G2 on BLS12
 	@param doVerify [in] does not verify if zero(default 1)
 */
-MCLBN_DLL_API void mclBn_verifyOrderG1(int doVerify);
-MCLBN_DLL_API void mclBn_verifyOrderG2(int doVerify);
+MCL_DLL_API void mclBn_verifyOrderG1(int doVerify);
+MCL_DLL_API void mclBn_verifyOrderG2(int doVerify);
 
 /*
 	EXPERIMENTAL
 	only for curve = MCL_SECP* or MCL_NIST*
 	return standard base point of the current elliptic curve
 */
-MCLBN_DLL_API int mclBnG1_getBasePoint(mclBnG1 *x);
+MCL_DLL_API int mclBnG1_getBasePoint(mclBnG1 *x);
 
 #ifdef __cplusplus
 }

@@ -1,14 +1,13 @@
 #include <cybozu/test.hpp>
 #include <mcl/window_method.hpp>
-#include <mcl/ec.hpp>
-#include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
+#include <mcl/g1_def.hpp>
+
+using namespace mcl;
+typedef G1 Ec;
 
 CYBOZU_TEST_AUTO(int)
 {
-	typedef mcl::FpT<> Fp;
-	typedef mcl::FpT<mcl::ZnTag> Fr;
-	typedef mcl::EcT<Fp, Fr> Ec;
 	const struct mcl::EcParam& para = mcl::ecparam::secp192k1;
 	Fp::init(para.p);
 	Fr::init(para.n);

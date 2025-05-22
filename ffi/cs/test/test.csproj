@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\mcl\mcl.csproj" />
+    <ProjectReference Include="..\mcl\mclcs.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

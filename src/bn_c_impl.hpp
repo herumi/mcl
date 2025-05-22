@@ -2,44 +2,10 @@
 	This is an internal header
 	Do not include this
 */
-#define MCLBN_DLL_EXPORT
-#include <mcl/bn.h>
-
-#if MCLBN_FP_UNIT_SIZE == 4 && MCLBN_FR_UNIT_SIZE == 4
-#include <mcl/bn256.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 6
-#include <mcl/bn384.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6 && MCLBN_FR_UNIT_SIZE == 4
-#include <mcl/bls12_381.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 8 && MCLBN_FR_UNIT_SIZE == 8
-#include <mcl/bn512.hpp>
-#else
-	#error "not supported size"
-#endif
+#include "cast.hpp"
 #include <mcl/lagrange.hpp>
 #include <mcl/ecparam.hpp>
-using namespace mcl::bn;
-
-static Fr *cast(mclBnFr *p) { return reinterpret_cast<Fr*>(p); }
-static const Fr *cast(const mclBnFr *p) { return reinterpret_cast<const Fr*>(p); }
-
-static G1 *cast(mclBnG1 *p) { return reinterpret_cast<G1*>(p); }
-static const G1 *cast(const mclBnG1 *p) { return reinterpret_cast<const G1*>(p); }
-
-static G2 *cast(mclBnG2 *p) { return reinterpret_cast<G2*>(p); }
-static const G2 *cast(const mclBnG2 *p) { return reinterpret_cast<const G2*>(p); }
-
-static Fp12 *cast(mclBnGT *p) { return reinterpret_cast<Fp12*>(p); }
-static const Fp12 *cast(const mclBnGT *p) { return reinterpret_cast<const Fp12*>(p); }
-
-static Fp6 *cast(uint64_t *p) { return reinterpret_cast<Fp6*>(p); }
-static const Fp6 *cast(const uint64_t *p) { return reinterpret_cast<const Fp6*>(p); }
-
-static Fp2 *cast(mclBnFp2 *p) { return reinterpret_cast<Fp2*>(p); }
-static const Fp2 *cast(const mclBnFp2 *p) { return reinterpret_cast<const Fp2*>(p); }
-
-static Fp *cast(mclBnFp *p) { return reinterpret_cast<Fp*>(p); }
-static const Fp *cast(const mclBnFp *p) { return reinterpret_cast<const Fp*>(p); }
+using namespace mcl;
 
 template<class T>
 int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
@@ -50,11 +16,11 @@ int setStr(T *x, const char *buf, mclSize bufSize, int ioMode)
 
 #ifdef __EMSCRIPTEN__
 // use these functions forcibly
-extern "C" MCLBN_DLL_API void *mclBnMalloc(size_t n)
+extern "C" MCL_DLL_API void *mclBnMalloc(size_t n)
 {
 	return malloc(n);
 }
-extern "C" MCLBN_DLL_API void mclBnFree(void *p)
+extern "C" MCL_DLL_API void mclBnFree(void *p)
 {
 	free(p);
 }
@@ -86,7 +52,7 @@ int mclBn_init(int curve, int compiledTimeVar)
 
 int mclBn_getCurveType()
 {
-	return mcl::bn::BN::param.cp.curveType;
+	return mcl::bn::getCurveType();
 }
 
 int mclBn_getOpUnitSize()
@@ -674,7 +640,7 @@ void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSi
 }
 int mclBn_getUint64NumToPrecompute(void)
 {
-	return int(BN::param.precomputedQcoeffSize * sizeof(Fp6) / sizeof(uint64_t));
+	return int(getPrecomputedQcoeffSize() * sizeof(Fp6) / sizeof(uint64_t));
 }
 
 void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q)

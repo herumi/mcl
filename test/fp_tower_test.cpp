@@ -4,22 +4,14 @@
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
 #include <time.h>
-#include <mcl/fp.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/fp_tower.hpp>
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4456)
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 768
-typedef mcl::FpT<mcl::FpTag, MCL_MAX_BIT_SIZE> Fp;
-#else
-typedef mcl::FpT<mcl::FpTag, 384> Fp;
-#endif
-typedef mcl::Fp2T<Fp> Fp2;
-typedef mcl::FpDblT<Fp> FpDbl;
-typedef mcl::Fp6T<Fp> Fp6;
-typedef mcl::Fp12T<Fp, Fp/*dummy*/> Fp12;
+using namespace mcl;
 
 bool g_benchOnly = false;
 
@@ -27,7 +19,7 @@ void testFp2()
 {
 	using namespace mcl;
 	puts(__FUNCTION__);
-#if MCL_MAX_BIT_SIZE < 768
+#if MCL_FP_BIT < 768
 	const size_t FpSize = 48;
 	CYBOZU_TEST_EQUAL(sizeof(Fp), FpSize);
 	CYBOZU_TEST_EQUAL(sizeof(Fp2), FpSize * 2);
@@ -400,15 +392,15 @@ void benchFp2()
 	printf("add %8.2f|sub %8.2f|mul %8.2f|sqr %8.2f|inv %8.2f|mul_xi %8.2f\n", addT, subT, mulT, sqrT, invT, mul_xiT);
 }
 
-void test(const char *p, mcl::fp::Mode mode)
+void test(const char *p)
 {
+	const int u = 1;
 	const int xi_a = 1;
-	Fp::init(xi_a, p, mode);
+	Fp::init(p, u, xi_a);
 	if (Fp::getOp().isFullBit) return;
 	bool b;
 	Fp2::init(&b);
 	if (!b) return;
-	printf("mode=%s\n", mcl::fp::ModeToStr(mode));
 	printf("bitSize=%d\n", (int)Fp::getBitSize());
 #if 0
 	if (Fp::getBitSize() > 256) {
@@ -448,28 +440,21 @@ void testAll()
 		"0xfffffffffffcf0cd46e5f25eee71a49f0cdc65fb12980a82d3292ddbaed33013", // BN_P256 p
 		"0xfffffffffffcf0cd46e5f25eee71a49e0cdc65fb1299921af62d536cd10b500d", // BN_P256 r
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43", // max prime
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 		// N = 6
 		"0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab",
 		// max prime less than 2**384/4
 		"0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff97",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 #endif
-#if MCL_MAX_BIT_SIZE >= 768
+#if MCL_FP_BIT >= 768
 		"776259046150354467574489744231251277628443008558348305569526019013025476343188443165439204414323238975243865348565536603085790022057407195722143637520590569602227488010424952775132642815799222412631499596858234375446423426908029627",
 #endif
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const char *p = tbl[i];
 		printf("prime=%s\n", p);
-		test(p, mcl::fp::FP_GMP);
-#ifdef MCL_USE_LLVM
-		test(p, mcl::fp::FP_LLVM);
-		test(p, mcl::fp::FP_LLVM_MONT);
-#endif
-#ifdef MCL_X64_ASM
-		test(p, mcl::fp::FP_XBYAK);
-#endif
+		test(p);
 	}
 }
 

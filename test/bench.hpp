@@ -134,7 +134,6 @@ void testBench(const G1& P, const G2& Q)
 		CYBOZU_BENCH_C("G2::dbl       ", C, G2::dbl, Qa, Qa);
 		CYBOZU_BENCH_C("GT::pow       ", C, GT::pow, e1, e1, a);
 	}
-//	CYBOZU_BENCH_C("GT::powGLV    ", C, BN::param.glv2.pow, e1, e1, a);
 	G1 PP;
 	G2 QQ;
 	std::string s;
@@ -264,9 +263,9 @@ inline void SquareRootPrecomputeTest(const mpz_class& p)
 
 void testSquareRoot()
 {
-	if (BN::param.cp == mcl::BN254 || BN::param.cp == mcl::BLS12_381) {
-		SquareRootPrecomputeTest(BN::param.p);
-		SquareRootPrecomputeTest(BN::param.r);
+	if (getCurveParam() == mcl::BN254 || getCurveParam() == mcl::BLS12_381) {
+		SquareRootPrecomputeTest(Fp::getOp().mp);
+		SquareRootPrecomputeTest(Fr::getOp().mp);
 	}
 }
 

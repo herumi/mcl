@@ -4,7 +4,7 @@ VisualStudioVersion = 16.0.30309.148
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test", "test\test.csproj", "{31ABF32C-3DAC-47EF-8B99-B531F88B6FDC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "mcl", "mcl\mcl.csproj", "{73288FB5-7173-4AE9-86C6-F76DF219C37B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "mclcs", "mcl\mclcs.csproj", "{73288FB5-7173-4AE9-86C6-F76DF219C37B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

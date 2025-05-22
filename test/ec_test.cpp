@@ -5,16 +5,14 @@
 #include <cybozu/xorshift.hpp>
 #include <mcl/gmp_util.hpp>
 
-#include <mcl/fp.hpp>
-#include <mcl/ec.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <time.h>
 #include <math.h>
 
-typedef mcl::FpT<> Fp;
-struct tagZn;
-typedef mcl::FpT<tagZn> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
+using namespace mcl;
+typedef Fr Zn;
+typedef G1 Ec;
 
 CYBOZU_TEST_AUTO(sizeof)
 {
@@ -75,12 +73,11 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 struct Test {
 	const mcl::EcParam& para;
 	mcl::ec::Mode ecMode;
-	Test(const mcl::EcParam& para, mcl::fp::Mode fpMode, mcl::ec::Mode ecMode)
+	Test(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		: para(para)
 		, ecMode(ecMode)
 	{
-		printf("fpMode=%s\n", mcl::fp::ModeToStr(fpMode));
-		mcl::initCurve<Ec>(para.curveType, 0, fpMode, ecMode);
+		mcl::initCurve<Ec>(para.curveType, 0, ecMode);
 	}
 	void cstr() const
 	{
@@ -733,28 +730,21 @@ private:
 	void operator=(const Test&);
 };
 
-void test_sub_sub(const mcl::EcParam& para, mcl::fp::Mode fpMode)
+void test_sub_sub(const mcl::EcParam& para)
 {
 	puts("Proj");
-	Test(para, fpMode, mcl::ec::Proj).run();
+	Test(para, mcl::ec::Proj).run();
 	puts("Jacobi");
-	Test(para, fpMode, mcl::ec::Jacobi).run();
+	Test(para, mcl::ec::Jacobi).run();
 	puts("Affine");
-	Test(para, fpMode, mcl::ec::Affine).run();
+	Test(para, mcl::ec::Affine).run();
 }
 
 void test_sub(const mcl::EcParam *para, size_t paraNum)
 {
 	for (size_t i = 0; i < paraNum; i++) {
 		puts(para[i].name);
-		test_sub_sub(para[i], mcl::fp::FP_GMP);
-#ifdef MCL_USE_LLVM
-		test_sub_sub(para[i], mcl::fp::FP_LLVM);
-		test_sub_sub(para[i], mcl::fp::FP_LLVM_MONT);
-#endif
-#ifdef MCL_X64_ASM
-		test_sub_sub(para[i], mcl::fp::FP_XBYAK);
-#endif
+		test_sub_sub(para[i]);
 	}
 }
 
@@ -782,7 +772,7 @@ CYBOZU_TEST_AUTO(all)
 		test_sub(para4, CYBOZU_NUM_OF_ARRAY(para4));
 	}
 
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FR_BIT >= 384
 	if (g_partial & (1 << 6)) {
 		const struct mcl::EcParam para6[] = {
 //			mcl::ecparam::secp384r1,
@@ -792,7 +782,7 @@ CYBOZU_TEST_AUTO(all)
 	}
 #endif
 
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 	if (g_partial & (1 << 9)) {
 		const struct mcl::EcParam para9[] = {
 	//		mcl::ecparam::secp521r1,

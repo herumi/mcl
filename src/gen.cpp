@@ -1076,7 +1076,7 @@ int main(int argc, char *argv[])
 	c.setLlvmVer(llvmVer);
 	c.wasm = wasm;
 	c.setUnit(unit);
-	uint32_t maxBitSize = MCL_MAX_BIT_SIZE;
+	uint32_t maxBitSize = MCL_FP_BIT;
 	c.gen(privateFuncList, maxBitSize, suf);
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());

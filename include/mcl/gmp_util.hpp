@@ -644,7 +644,15 @@ void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 			if (!*pb) return;
 		}
 		assert(!isZero(x));
+#if (defined(__GNUC__) && !defined(__clang__))  && !defined(__EMSCRIPTEN__)
+	// avoid gcc wrong detection
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 		int v = getUnit(x)[0] & maskW;
+#if (defined(__GNUC__) && !defined(__clang__)) && !defined(__EMSCRIPTEN__)
+	#pragma GCC diagnostic pop
+#endif
 		x >>= w;
 		if (v & signedMaxW) {
 			x++;
@@ -986,7 +994,7 @@ struct Modp {
 		assert(p_ > 0);
 		const size_t tBitSize = gmp::getBitSize(t);
 		// use gmp::mod if init() fails or t is too large
-		if (tBitSize > unitBitSize * 2 * N_ || !initU_) {
+		if (tBitSize > pBitSize_ + unitBitSize * N_ - 1 || !initU_) {
 			gmp::mod(r, t, p_);
 			return;
 		}

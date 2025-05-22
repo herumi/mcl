@@ -3,7 +3,7 @@
 #include <cybozu/benchmark.hpp>
 cybozu::CpuClock clk;
 #include <cybozu/test.hpp>
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/xorshift.hpp>
 
@@ -11,12 +11,9 @@ cybozu::CpuClock clk;
 	#define MCL_AVOID_EXCEPTION_TEST
 #endif
 
-typedef mcl::bn::local::Compress Compress;
 using namespace mcl::bn;
 
 #include "common_test.hpp"
-
-mcl::fp::Mode g_mode;
 
 const struct TestSet {
 	mcl::CurveParam cp;
@@ -101,7 +98,8 @@ const struct TestSet {
 
 CYBOZU_TEST_AUTO(size)
 {
-	CYBOZU_TEST_EQUAL(sizeof(Fp), 32u);
+	CYBOZU_TEST_EQUAL(sizeof(Fp), (MCL_FP_BIT / 8));
+	CYBOZU_TEST_EQUAL(sizeof(Fr), MCL_FR_BIT / 8);
 	CYBOZU_TEST_EQUAL(sizeof(Fp2), sizeof(Fp) * 2);
 	CYBOZU_TEST_EQUAL(sizeof(Fp6), sizeof(Fp) * 6);
 	CYBOZU_TEST_EQUAL(sizeof(Fp12), sizeof(Fp) * 12);
@@ -129,11 +127,11 @@ void testMapToG1()
 		mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
-		G1::mulGeneric(gr, g, BN::param.r);
+		G1::mulGeneric(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.cp.b == 2) {
+	if (getCurveParam().b == 2) {
 		Fp c1;
 		bool b = Fp::squareRoot(c1, -3);
 		CYBOZU_TEST_ASSERT(b);
@@ -151,11 +149,11 @@ void testMapToG2()
 		mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
-		G2::mulGeneric(gr, g, BN::param.r);
+		G2::mulGeneric(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (BN::param.cp.b == 2) {
+	if (getCurveParam().b == 2) {
 		CYBOZU_TEST_EXCEPTION(mapToG2(g, 0), cybozu::Exception);
 	}
 #endif
@@ -165,6 +163,7 @@ void testMapToG2()
 	CYBOZU_TEST_ASSERT(g.isValid());
 }
 
+#if 0
 void testCyclotomic()
 {
 	Fp12 a;
@@ -187,7 +186,7 @@ void testCyclotomic()
 
 void testCompress(const G1& P, const G2& Q)
 {
-	if (BN::param.cp.curveType != MCL_BN254) return;
+	if (getCurveParam().curveType != MCL_BN254) return;
 	Fp12 a;
 	pairing(a, P, Q);
 	local::mapToCyclotomic(a, a);
@@ -197,6 +196,7 @@ void testCompress(const G1& P, const G2& Q)
 	Fp12::pow(c, a, BN::param.abs_z);
 	CYBOZU_TEST_EQUAL(b, c);
 }
+#endif
 
 void testPrecomputed(const G1& P, const G2& Q)
 {
@@ -431,7 +431,7 @@ CYBOZU_TEST_AUTO(naive)
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(g_testSetTbl); i++) {
 		const TestSet& ts = g_testSetTbl[i];
 		printf("i=%d curve=%s\n", int(i), ts.name);
-		initPairing(ts.cp, g_mode);
+		initPairing(ts.cp);
 		const G1 P(ts.g1.a, ts.g1.b);
 		const G2 Q(Fp2(ts.g2.aa, ts.g2.ab), Fp2(ts.g2.ba, ts.g2.bb));
 #ifdef ONLY_BENCH
@@ -448,8 +448,6 @@ CYBOZU_TEST_AUTO(naive)
 		testSetStr(Q);
 		testMapToG1();
 		testMapToG2();
-		testCyclotomic();
-		testCompress(P, Q);
 		testPairing(P, Q, ts.e);
 		testPrecomputed(P, Q);
 		testMillerLoop2(P, Q);
@@ -470,14 +468,6 @@ CYBOZU_TEST_AUTO(naive)
 int main(int argc, char *argv[])
 	try
 {
-	cybozu::Option opt;
-	std::string mode;
-	opt.appendOpt(&mode, "auto", "m", ": mode(gmp/gmp_mont/llvm/llvm_mont/xbyak)");
-	if (!opt.parse(argc, argv)) {
-		opt.usage();
-		return 1;
-	}
-	g_mode = mcl::fp::StrToMode(mode);
 	printf("JIT %d\n", mcl::fp::isEnableJIT());
 	return cybozu::test::autoRun.run(argc, argv);
 } catch (std::exception& e) {

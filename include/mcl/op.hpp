@@ -29,7 +29,7 @@
 
 namespace mcl {
 
-static const int version = 0x214; /* 0xABC = A.BC */
+static const int version = 0x300; /* 0xABC = A.BC */
 
 /*
 	specifies available string format mode for X::setIoMode()
@@ -126,7 +126,6 @@ const size_t maxMulVecN = 32; // inner loop of mulVec
 #endif
 const size_t maxMulVecNGLV = MCL_MAX_MUL_VEC_NGLV; // inner loop of mulVec with GLV
 
-struct FpGenerator;
 struct Op;
 
 typedef void (*void1u)(Unit*);
@@ -172,6 +171,12 @@ enum PrimeMode {
 	PM_SECP256K1,
 	PM_NIST_P521
 };
+
+#ifdef MCL_USE_XBYAK
+struct FpGenerator;
+MCL_DLL_API FpGenerator* createFpGenerator();
+MCL_DLL_API void destroyFpGenerator(FpGenerator *fg);
+#endif
 
 struct Op {
 	/*
@@ -373,11 +378,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	bool init(const mpz_class& p, size_t maxBitSize, int xi_a, Mode mode, size_t mclMaxBitSize = MCL_MAX_BIT_SIZE, int u = 1);
-#ifdef MCL_USE_XBYAK
-	static FpGenerator* createFpGenerator();
-	static void destroyFpGenerator(FpGenerator *fg);
-#endif
+	MCL_DLL_API bool init(const mpz_class& p, int u, int xi_a, int tag, size_t sizeofF);
 private:
 	Op(const Op&);
 	void operator=(const Op&);
@@ -388,74 +389,21 @@ inline const char* getIoSeparator(int ioMode)
 	return (ioMode & (IoArray | IoArrayRaw | IoSerialize | IoSerializeHexStr | IoEcAffineSerialize)) ? "" : " ";
 }
 
-inline void dump(const void *buf, size_t n)
-{
-#ifdef MCL_STANDALONE
-	(void)buf;
-	(void)n;
-#else
-	const uint8_t *s = (const uint8_t *)buf;
-	for (size_t i = 0; i < n; i++) {
-		printf("%02x ", s[i]);
-	}
-	printf("\n");
-#endif
-}
-
 #ifndef CYBOZU_DONT_USE_STRING
-int detectIoMode(int ioMode, const std::ios_base& ios);
-
-inline void dump(const std::string& s)
+inline int detectIoMode(int ioMode, const std::ios_base& ios)
 {
-	dump(s.c_str(), s.size());
+	if (ioMode & ~IoPrefix) return ioMode;
+	// IoAuto or IoPrefix
+	const std::ios_base::fmtflags f = ios.flags();
+	assert(!(f & std::ios_base::oct));
+	ioMode |= (f & std::ios_base::hex) ? IoHex : 0;
+	if (f & std::ios_base::showbase) {
+		ioMode |= IoPrefix;
+	}
+	return ioMode;
 }
+
 #endif
 
 } } // mcl::fp
 
-#ifndef MCL_MSM
-  #if (/*defined(_WIN64) ||*/ defined(__x86_64__)) && !defined(__APPLE__) && (MCL_SIZEOF_UNIT == 8)
-    #define MCL_MSM 1
-  #else
-    #define MCL_MSM 0
-  #endif
-#endif
-
-#if MCL_MSM == 1
-namespace mcl { namespace msm {
-
-// only for BLS12-381
-struct FrA {
-	uint64_t v[4];
-};
-
-struct FpA {
-	uint64_t v[6];
-};
-
-struct G1A {
-	uint64_t v[6*3];
-};
-
-typedef size_t (*invVecFpFunc)(FpA *y, const FpA *x, size_t n, size_t _N);
-typedef void (*normalizeVecG1Func)(G1A *y, const G1A *x, size_t n);
-typedef void (*addG1Func)(G1A& z, const G1A& x, const G1A& y);
-typedef void (*dblG1Func)(G1A& z, const G1A& x);
-typedef void (*mulG1Func)(G1A& z, const G1A& x, const FrA& y, bool constTime);
-typedef void (*clearG1Func)(G1A& z);
-
-// functions called in src/msm_avx.cpp
-struct Func {
-	const mcl::fp::Op *fp;
-	const mcl::fp::Op *fr;
-	invVecFpFunc invVecFp;
-	normalizeVecG1Func normalizeVecG1;
-	addG1Func addG1;
-	dblG1Func dblG1;
-	mulG1Func mulG1;
-	clearG1Func clearG1;
-};
-
-} } // mcl::msm
-
-#endif

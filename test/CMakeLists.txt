@@ -14,15 +14,15 @@ foreach(base IN ITEMS ${MCL_TEST_BASE})
 endforeach()
 
 # Tests for mclbnXXX
-foreach(bit IN ITEMS 256 384 384_256)
+foreach(bit IN ITEMS 384_256) # 256 384
 	add_executable(bn_c${bit}_test bn_c${bit}_test.cpp)
-	target_link_libraries(bn_c${bit}_test PRIVATE mcl::mclbn${bit})
+	target_link_libraries(bn_c${bit}_test PRIVATE mcl::mcl_st)
 	set_target_properties(bn_c${bit}_test PROPERTIES
 		CXX_STANDARD 11
 		CXX_STANDARD_REQUIRED YES
 		CXX_EXTENSIONS NO)
 	target_compile_options(bn_c${bit}_test PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_definitions(bn_c${bit}_test PRIVATE MCLBN_DONT_EXPORT)
+	target_compile_definitions(bn_c${bit}_test PRIVATE MCL_DONT_EXPORT)
 	add_test(NAME bn_c${bit}_test COMMAND bn_c${bit}_test)
 endforeach()
 

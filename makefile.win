@@ -4,17 +4,23 @@ PRE=x86_64-w64-mingw32-
 CFLAGS=-std=c++03 -O2 -DNDEBUG -fPIC # -fno-stack-protector -fno-threadsafe-statics
 CFLAGS+=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -Wundef
 CFLAGS+=-I ./include -I ./src
-CFLAGS+=-DMCL_MAX_BIT_SIZE=384
+CFLAGS+=-DMCL_FP_BIT=384 -DMCL_FR_BIT=256
 CFLAGS+=-DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
 # for dll
-CFLAGS+=-DMCL_NO_AUTOLINK -DMCLBN_NO_AUTOLINK -DMCL_DLL_EXPORT
+#CFLAGS+=-DMCL_DLL_EXPORT
+DLL?=0
+
+ifeq ($(DLL),0) # lib
+TARGET+=lib/mcl.lib
+LIB_OBJ=obj/fp.obj obj/msm_avx.obj obj/bint-x64.obj
+else
+TARGET+=bin/mclbn.dll
+LIB_OBJ=obj/fpbn.obj obj/msm_avxbn.obj obj/bint-x64.obj
+endif
 VPATH=src test
 .SUFFIXES: .cpp .exe .o
 
-DLL_NAME=mclbn384_256
-all: bin/$(DLL_NAME).dll lib/mcl.lib bin/bn_c384_256_test.exe
-
-DLL_OBJS=obj/bn_c384_256.obj
+all: $(TARGET) bin/bn_c384_256_test.exe
 
 src/bint-x64.asm: src/gen_bint_x64.py
 	python3 src/gen_bint_x64.py -win -m nasm > $@
@@ -25,20 +31,32 @@ obj/bint-x64.obj: src/bint-x64.asm
 obj/%.obj: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
 
-lib/mcl.lib: obj/fp.obj obj/bint-x64.obj
-	$(PRE)$(AR) $(ARFLAGS) $@ obj/fp.obj obj/bint-x64.obj
+# lib
 
-lib/$(DLL_NAME).lib: $(DLL_OBJS)
-	$(PRE)dlltool -l $@ -D $(DLL_NAME).dll $(DLL_OBJS)
+obj/msm_avx.obj: msm_avx.cpp
+	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -mavx512f -mavx512ifma -std=c++11
 
-bin/$(DLL_NAME).dll: lib/$(DLL_NAME).lib lib/mcl.lib
-	$(PRE)$(CXX) -shared -o $@ $(DLL_OBJS) lib/mcl.lib
+lib/mcl.lib: $(LIB_OBJ)
+	$(PRE)$(AR) $(ARFLAGS) $@ $(LIB_OBJ)
 
-bin/bn_c384_256_test_single.exe: obj/bn_c384_256_test.obj $(DLL_OBJS) lib/mcl.lib
-	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj $(DLL_OBJS) -static -lstdc++
+bin/bn_c384_256_test.exe: obj/bn_c384_256_test.obj lib/mcl.lib
+	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj lib/mcl.lib -static -static-libgcc -static-libstdc++ #-Wl,-Bstatic
 
-bin/bn_c384_256_test.exe: obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib lib/mcl.lib
-	$(PRE)$(CXX) -o $@ obj/bn_c384_256_test.obj lib/$(DLL_NAME).lib lib/mcl.lib
+# dll
+obj/fpbn.obj: fp.cpp
+	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@
+
+obj/msm_avxbn.obj: msm_avx.cpp
+	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -mavx512f -mavx512ifma -std=c++11
+
+lib/mclbn.lib: $(LIB_OBJ)
+	$(PRE)dlltool -l $@ -D mclbn.dll $(LIB_OBJ)
+
+bin/mclbn.dll: lib/mclbn.lib
+	$(PRE)$(CXX) -shared -o $@ $(LIB_OBJ)
+
+#bin/bn_c384_256_test.exe: obj/bn_c384_256_test.obj lib/mclbn.lib
+#	$(PRE)$(CXX) -static -static-libgcc -static-libstdc++ -o $@ obj/bn_c384_256_test.obj lib/mclbn.lib
 
 #test: bin/bn_c384_256_test.exe bin/$(DLL_NAME).dll
 #	wine $<

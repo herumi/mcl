@@ -1,14 +1,12 @@
 #include <cybozu/test.hpp>
 #include <cybozu/random_generator.hpp>
-#include <mcl/fp.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/elgamal.hpp>
 
-struct TagZn;
-typedef mcl::FpT<> Fp;
-typedef mcl::FpT<TagZn> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
-typedef mcl::ElgamalT<Ec> ElgamalEc;
+using namespace mcl;
+typedef Fr Zn;
+typedef G1 Ec;
 
 const mcl::EcParam& para = mcl::ecparam::secp192k1;
 cybozu::RandomGenerator g_rg;

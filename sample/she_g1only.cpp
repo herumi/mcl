@@ -2,19 +2,17 @@
 #include <mcl/elgamal.hpp>
 #include <cybozu/benchmark.hpp>
 
+using namespace mcl;
+typedef Fr Zn;
+typedef G1 Ec;
+
 using namespace mcl::she;
 
 const mcl::EcParam& g_para = mcl::ecparam::secp256k1;
-//const mcl::EcParam& g_para = mcl::ecparam::secp160k1;
 
 void elgamal()
 {
 	puts("elgamal");
-	struct TagZn;
-	typedef mcl::FpT<> Fp;
-	typedef mcl::FpT<TagZn> Zn;
-	typedef mcl::EcT<Fp, Zn> Ec;
-	typedef mcl::ElgamalT<Ec> ElgamalEc;
 	Ec P;
 	mcl::initCurve<Ec>(g_para.curveType, &P);
 	const size_t bitSize = Zn::getBitSize();

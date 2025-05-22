@@ -1,13 +1,13 @@
 /*
 	large prime sample for 64-bit arch
-	make MCL_USE_LLVM=1 MCL_MAX_BIT_SIZE=768
+	make MCL_USE_LLVM=1 MCL_FP_BIT=768
 */
-#include <mcl/fp.hpp>
 #include <cybozu/benchmark.hpp>
 #include <iostream>
+#include <mcl/fp_def.hpp>
 #include "../src/low_func.hpp"
 
-typedef mcl::FpT<> Fp;
+using namespace mcl;
 
 using namespace mcl::fp;
 const size_t N = 12;
@@ -99,7 +99,7 @@ int main()
 } catch (std::exception& e) {
 	printf("err %s\n", e.what());
 	puts("make clean");
-	puts("make -DMCL_MAX_BIT_SIZE=768");
+	puts("make -DMCL_FP_BIT=768");
 	return 1;
 }
 

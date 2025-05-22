@@ -2,30 +2,16 @@
 	#define MCL_BINT_ASM 0
 #endif
 #define MCL_DLL_EXPORT
+#include <mcl/config.hpp>
+#include <mcl/bn.h>
+#include <mcl/bint.hpp>
+#include "bint_impl.hpp"
 #include <mcl/op.hpp>
-#include <mcl/util.hpp>
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
 #include <mcl/conversion.hpp>
+#include "conversion_impl.hpp"
 #include <mcl/invmod.hpp>
-
-#if defined(MCL_STATIC_CODE) || defined(MCL_USE_XBYAK) || (defined(MCL_USE_LLVM) && (CYBOZU_HOST == CYBOZU_HOST_INTEL)) || (MCL_BINT_ASM_X64 == 1)
-
-#ifdef MCL_USE_XBYAK
-	#define XBYAK_DISABLE_AVX512
-	#define XBYAK_NO_EXCEPTION
-#else
-	#define XBYAK_ONLY_CLASS_CPU
-#endif
-
-#include "xbyak/xbyak_util.h"
-#if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
-static const Xbyak::util::Cpu& getCpu()
-{
-	static Xbyak::util::Cpu cpu;
-	return cpu;
-}
-#endif
 
 #ifdef MCL_STATIC_CODE
 #include "fp_static_code.hpp"
@@ -34,9 +20,6 @@ static const Xbyak::util::Cpu& getCpu()
 #include "fp_generator.hpp"
 #endif
 
-#endif // MCL_STATIC_CODE
-
-#include "bint_impl.hpp"
 #include "low_func.hpp"
 #include <cybozu/itoa.hpp>
 #include <mcl/randgen.hpp>
@@ -47,16 +30,20 @@ static const Xbyak::util::Cpu& getCpu()
 	#pragma warning(disable : 4127)
 #endif
 
+// define Fp, Fr, G1
+#include <mcl/g1_def.hpp>
+#include "fp_tower_impl.hpp"
+
 namespace mcl {
 
 namespace fp {
 
 #ifdef MCL_USE_XBYAK
-FpGenerator *Op::createFpGenerator()
+FpGenerator *createFpGenerator()
 {
 	return new FpGenerator();
 }
-void Op::destroyFpGenerator(FpGenerator *fg)
+void destroyFpGenerator(FpGenerator *fg)
 {
 	delete fg;
 }
@@ -204,56 +191,6 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 		h.digest(out + mdSize * i, mdSize, &dstSizeBuf, 1);
 	}
 }
-
-#if 0
-
-#ifndef MCL_USE_VINT
-static inline void set_mpz_t(mpz_t& z, const Unit* p, int n)
-{
-	int s = n;
-	while (s > 0) {
-		if (p[s - 1]) break;
-		s--;
-	}
-	z->_mp_alloc = n;
-	z->_mp_size = s;
-	z->_mp_d = (mp_limb_t*)const_cast<Unit*>(p);
-}
-#endif
-
-/*
-	y = (1/x) mod op.p
-*/
-static inline void fp_invC(Unit *y, const Unit *x, const Op& op)
-{
-	const int N = (int)op.N;
-	bool b = false;
-#ifdef MCL_USE_VINT
-	Vint vx, vy, vp;
-	vx.setArray(&b, x, N);
-	assert(b); (void)b;
-	vp.setArray(&b, op.p, N);
-	assert(b); (void)b;
-	Vint::invMod(vy, vx, vp);
-	vy.getArray(&b, y, N);
-	assert(b); (void)b;
-#else
-	mpz_class my;
-	mpz_t mx, mp;
-	set_mpz_t(mx, x, N);
-	set_mpz_t(mp, op.p, N);
-	mpz_invert(my.get_mpz_t(), mx, mp);
-	gmp::getArray(&b, y, N, my);
-	assert(b);
-#endif
-}
-
-static void fp_invOpC(Unit *y, const Unit *x, const Op& op)
-{
-	fp_invC(y, x, op);
-	if (op.isMont) op.fp_mul(y, y, op.R3, op.p);
-}
-#endif
 
 /*
 	inv(xR) = (1/x)R^-1 -toMont-> 1/x -toMont-> (1/x)R
@@ -423,8 +360,8 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 #ifndef MCL_DUMP_JIT
 	if (mode != FP_XBYAK) return true;
 #endif
-	if (op.fg == 0) op.fg = Op::createFpGenerator();
-	op.fg->init(op, getCpu());
+	if (op.fg == 0) op.fg = fp::createFpGenerator();
+	op.fg->init(op);
 #ifdef MCL_DUMP_JIT
 	return true;
 #endif
@@ -442,10 +379,17 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	return true;
 }
 
-bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size_t mclMaxBitSize, int _u)
+bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 {
-	if (mclMaxBitSize != MCL_MAX_BIT_SIZE) return false;
-	if (maxBitSize > MCL_MAX_BIT_SIZE) return false;
+	// The following check is performed to verify that there is no inconsistency
+	// between the values of MCL_FP_BIT and MCL_FR_BIT at library compilation time and usage time.
+//	printf("tag=%d sizeofF=%zd sizeof(Fp)=%zd sizeof(Fr)=%zd\n", tag, sizeofF, sizeof(Fp), sizeof(Fr));
+	switch (tag) {
+	case FpTag: if (sizeofF != sizeof(Fp)) return false; break;
+	case FrTag: if (sizeofF != sizeof(Fr)) return false; break;
+	default: break;
+	}
+	size_t maxBitSize = sizeofF * 8;
 	if (_p <= 0) return false;
 	clear();
 	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
@@ -465,6 +409,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	priority : MCL_USE_XBYAK > MCL_USE_LLVM > none
 	Xbyak > llvm_mont > llvm > gmp_mont > gmp
 */
+	fp::Mode mode = FP_AUTO; // will be removed later
 #ifdef MCL_X64_ASM
 	if (mode == FP_AUTO) mode = FP_XBYAK;
 	if (mode == FP_XBYAK && bitSize > 512) {
@@ -478,7 +423,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	{
 		// static jit code uses avx, mulx, adox, adcx
 		using namespace Xbyak::util;
-		if (!(getCpu().has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX))) {
+		if ((mcl::bint::g_cpuType & mcl::bint::tAVX_BMI2_ADX) == 0) {
 			mode = FP_AUTO;
 		}
 	}
@@ -503,7 +448,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 			const char *str;
 		} tbl[] = {
 			{ PM_NIST_P192, "0xfffffffffffffffffffffffffffffffeffffffffffffffff" },
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 			{ PM_NIST_P521, "0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
 #endif
 		};
@@ -539,19 +484,19 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	case 224/(MCL_SIZEOF_UNIT * 8):  setOp<224/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
 	case 256/(MCL_SIZEOF_UNIT * 8):  setOp<256/(MCL_SIZEOF_UNIT * 8)>(*this); break;
-#if MCL_MAX_BIT_SIZE >= 320
+#if MCL_FP_BIT >= 320
 	case 320/(MCL_SIZEOF_UNIT * 8):  setOp<320/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 384
+#if MCL_FP_BIT >= 384
 	case 384/(MCL_SIZEOF_UNIT * 8):  setOp<384/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 448
+#if MCL_FP_BIT >= 448
 	case 448/(MCL_SIZEOF_UNIT * 8):  setOp<448/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 512
+#if MCL_FP_BIT >= 512
 	case 512/(MCL_SIZEOF_UNIT * 8):  setOp<512/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
-#if MCL_MAX_BIT_SIZE >= 576
+#if MCL_FP_BIT >= 576
 	case 576/(MCL_SIZEOF_UNIT * 8):  setOp<576/(MCL_SIZEOF_UNIT * 8)>(*this); break;
 #endif
 	default:
@@ -563,7 +508,7 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 		fp_sqr = &mcl_fp_sqr_NIST_P192L;
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P192L;
 	}
-#if MCL_MAX_BIT_SIZE >= 521
+#if MCL_FP_BIT >= 521
 	if (primeMode == PM_NIST_P521) {
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521L;
 	}
@@ -589,21 +534,6 @@ bool Op::init(const mpz_class& _p, size_t maxBitSize, int _xi_a, Mode mode, size
 	smallModP.init(p, N);
 	return fp::initForMont(*this, p, mode);
 }
-
-#ifndef CYBOZU_DONT_USE_STRING
-int detectIoMode(int ioMode, const std::ios_base& ios)
-{
-	if (ioMode & ~IoPrefix) return ioMode;
-	// IoAuto or IoPrefix
-	const std::ios_base::fmtflags f = ios.flags();
-	assert(!(f & std::ios_base::oct));
-	ioMode |= (f & std::ios_base::hex) ? IoHex : 0;
-	if (f & std::ios_base::showbase) {
-		ioMode |= IoPrefix;
-	}
-	return ioMode;
-}
-#endif
 
 static bool isInUint64(uint64_t *pv, const fp::Block& b)
 {
@@ -669,29 +599,20 @@ int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op)
 	#pragma warning(pop)
 #endif
 
-#ifdef __GNUC__
-	#define MCL_ATTRIBUTE __attribute__((constructor))
-#else
-	#define MCL_ATTRIBUTE
-#endif
-
-static void MCL_ATTRIBUTE initMcl()
-{
-//	puts("initMcl");
-	mcl::bint::initBint();
-}
-
-#ifdef _MSC_VER
-#pragma warning(default:5247)
-#pragma warning(default:5248)
-// XCT is before XCU then, initMcl is called before C++ static/dynamic initializer.
-#pragma section(".CRT$XCT", read)
-__declspec(allocate(".CRT$XCT")) void(*ptr_initMcl)() = initMcl;
-#endif
-
-
 } } // mcl::fp
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+#include "mapto_wb19.hpp"
+#include "map_impl.hpp"
+#include "pairing_impl.hpp"
+#include "bn_c_impl.hpp"
+
+namespace mcl {
+
+void initForSecp256k1()
+{
+	typedef GLV1T<G1> GLV1;
+	GLV1::initForSecp256k1();
+	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
+}
+
+} // mcl

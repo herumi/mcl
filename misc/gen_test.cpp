@@ -12,10 +12,6 @@
 using namespace mcl;
 using namespace mcl::fp;
 
-typedef mcl::FpT<> Fp;
-typedef mcl::Fp2T<Fp> Fp2;
-typedef mcl::FpDblT<Fp> FpDbl;
-
 extern "C" {
 void mclb_fp_add4(Unit *z, const Unit *x, const Unit *y, const Unit *p);
 void mclb_fp_add6(Unit *z, const Unit *x, const Unit *y, const Unit *p);

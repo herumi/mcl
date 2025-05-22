@@ -17,13 +17,6 @@
 	#ifndef NOMINMAX
 		#define NOMINMAX
 	#endif
-	#ifndef MCL_NO_AUTOLINK
-		#ifdef NDEBUG
-			#pragma comment(lib, "mcl.lib")
-		#else
-			#pragma comment(lib, "mcl.lib")
-		#endif
-	#endif
 #endif
 #include <cybozu/hash.hpp>
 #include <cybozu/stream.hpp>
@@ -34,13 +27,10 @@
 
 namespace mcl {
 
-struct FpTag;
-struct ZnTag;
-
 namespace fp {
 
-uint64_t getUint64(bool *pb, const fp::Block& b);
-int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
+MCL_DLL_API uint64_t getUint64(bool *pb, const fp::Block& b);
+MCL_DLL_API int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
 const char *ModeToStr(Mode mode);
 
@@ -53,13 +43,13 @@ inline Mode StrToMode(const std::string& s)
 }
 #endif
 
-bool isEnableJIT(); // 1st call is not threadsafe
+MCL_DLL_API bool isEnableJIT(); // 1st call is not threadsafe
 
-uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
-uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
+MCL_DLL_API uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
+MCL_DLL_API uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 // draft-07 outSize = 128 or 256
-void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize);
+MCL_DLL_API void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize);
 
 namespace local {
 
@@ -74,7 +64,7 @@ inline void byteSwap(uint8_t *x, size_t n)
 
 } // mcl::fp
 
-template<class tag = FpTag, size_t maxBitSize = MCL_MAX_BIT_SIZE>
+template<int tag, size_t maxBitSize>
 class FpT : public fp::Serializable<FpT<tag, maxBitSize>,
 	fp::Operator<FpT<tag, maxBitSize> > > {
 	typedef fp::Operator<FpT<tag, maxBitSize> > Operator;
@@ -84,8 +74,8 @@ public:
 private:
 	Unit v_[maxSize];
 	static fp::Op op_;
-	template<class Fp> friend class FpDblT;
-	template<class Fp> friend class Fp2T;
+	friend class FpDbl;
+	friend class Fp2;
 	template<class Fp> friend struct Fp6T;
 #ifdef MCL_XBYAK_DIRECT_CALL
 	static inline void addA(Unit *z, const Unit *x, const Unit *y)
@@ -127,17 +117,15 @@ public:
 	static inline fp::Op& getOpNonConst() { return op_; }
 	void dump() const
 	{
-		const size_t N = op_.N;
-		bint::dump(v_, N);
+		bint::dump(v_, op_.N);
 	}
 	/*
-		xi_a is used for Fp2::mul_xi(), where xi = xi_a + i and i^2 = -1
-		if xi_a = 0 then asm functions for Fp2 are not generated.
+		xi_a is used for Fp2::mul_xi(), where xi = xi_a + i and i^2 = -u
+		if u = 0 then asm functions for Fp2 are not generated.
 	*/
-	static inline void init(bool *pb, int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO, int u = 1)
+	static inline void init(bool *pb, const mpz_class& p, int u = 0, int xi_a = 0)
 	{
-		assert(maxBitSize <= MCL_MAX_BIT_SIZE);
-		*pb = op_.init(p, maxBitSize, xi_a, mode, MCL_MAX_BIT_SIZE, u);
+		*pb = op_.init(p, u, xi_a, tag, sizeof(FpT));
 #ifdef MCL_DUMP_JIT
 		return;
 #endif
@@ -175,16 +163,12 @@ public:
 #endif
 		*pb = true;
 	}
-	static inline void init(bool *pb, const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(pb, 0, p, mode);
-	}
-	static inline void init(bool *pb, const char *mstr, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(bool *pb, const char *mstr, int u = 0, int xi_a = 0)
 	{
 		mpz_class p;
 		gmp::setStr(pb, p, mstr);
 		if (!*pb) return;
-		init(pb, p, mode);
+		init(pb, p, u, xi_a);
 	}
 	static inline size_t getModulo(char *buf, size_t bufSize)
 	{
@@ -718,11 +702,6 @@ public:
 	{
 		setHashOf(msg.data(), msg.size());
 	}
-	// backward compatibility
-	static inline void setModulo(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(mstr, mode);
-	}
 	friend inline std::ostream& operator<<(std::ostream& os, const FpT& self)
 	{
 		self.save(os, fp::detectIoMode(getIoMode(), os));
@@ -735,25 +714,17 @@ public:
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-	static inline void init(int xi_a, const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(const mpz_class& p, int u = 0, int xi_a = 0)
 	{
 		bool b;
-		init(&b, xi_a, p, mode);
+		init(&b, p, u, xi_a);
 		if (!b) throw cybozu::Exception("Fp:init");
 	}
-	static inline void init(int xi_a, const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
+	static inline void init(const char *pStr, int u = 0, int xi_a = 0)
 	{
-		mpz_class p;
-		gmp::setStr(p, mstr);
-		init(xi_a, p, mode);
-	}
-	static inline void init(const mpz_class& p, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(0, p, mode);
-	}
-	static inline void init(const std::string& mstr, fp::Mode mode = fp::FP_AUTO)
-	{
-		init(0, mstr, mode);
+		bool b;
+		init(&b, pStr, u, xi_a);
+		if (!b) throw cybozu::Exception("Fp:init");
 	}
 	template<class OutputStream>
 	void save(OutputStream& os, int ioMode = IoSerialize) const
@@ -820,8 +791,9 @@ public:
 #else
 	#define MCL_INIT_PRIORITY(x)
 #endif
-// Change the priority ad hoc so that initPairing() can be called in the static constructor before the main function
-template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
+// Declare op_ as an external variable
+template<int tag, size_t maxBitSize>
+fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
 
 } // mcl
 
@@ -829,7 +801,7 @@ template<class tag, size_t maxBitSize> fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT
 #ifdef CYBOZU_USE_BOOST
 namespace mcl {
 
-template<class tag, size_t maxBitSize>
+template<int tag, size_t maxBitSize>
 size_t hash_value(const mcl::FpT<tag, maxBitSize>& x, size_t v = 0)
 {
 	return static_cast<size_t>(cybozu::hash64(x.getUnit(), x.getUnitSize(), v));
@@ -839,7 +811,7 @@ size_t hash_value(const mcl::FpT<tag, maxBitSize>& x, size_t v = 0)
 #else
 namespace std { CYBOZU_NAMESPACE_TR1_BEGIN
 
-template<class tag, size_t maxBitSize>
+template<int tag, size_t maxBitSize>
 struct hash<mcl::FpT<tag, maxBitSize> > {
 	size_t operator()(const mcl::FpT<tag, maxBitSize>& x, uint64_t v = 0) const
 	{

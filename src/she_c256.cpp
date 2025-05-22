@@ -1,2 +1,2 @@
-#define MCLBN_FP_UNIT_SIZE 4
+#define MCL_FP_BIT 256
 #include "she_c_impl.hpp"

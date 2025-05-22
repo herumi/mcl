@@ -8,16 +8,9 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-option(
-	MCL_MAX_BIT_SIZE
-	"max bit size for Fp"
-	384
-)
-option(
-	MCL_STATIC_LIB
-	"build static library"
-	OFF
-)
+set(MCL_FP_BIT 384 CACHE STRING "max bit size for Fp")
+set(MCL_FR_BIT 256 CACHE STRING "max bit size for Fr")
+
 option(
 	MCL_STANDALONE
 	"build without standard library"
@@ -85,7 +78,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_library(mcl SHARED src/fp.cpp)
 add_library(mcl::mcl ALIAS mcl)
-target_compile_definitions(mcl PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK)
 target_include_directories(mcl PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
@@ -100,7 +92,6 @@ set_target_properties(mcl PROPERTIES
 
 add_library(mcl_st STATIC src/fp.cpp)
 add_library(mcl::mcl_st ALIAS mcl_st)
-target_compile_definitions(mcl_st PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK)
 target_include_directories(mcl_st PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
@@ -109,10 +100,8 @@ set_target_properties(mcl_st PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 #set_target_properties(mcl_st PROPERTIES PREFIX "lib")
 
-if(${MCL_MAX_BIT_SIZE} GREATER 0)
-	target_compile_definitions(mcl PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
-	target_compile_definitions(mcl_st PUBLIC MCL_MAX_BIT_SIZE=${MCL_MAX_BIT_SIZE})
-endif()
+target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
+target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
 
 if(MSVC)
 	if(MCL_MSVC_RUNTIME_DLL)
@@ -301,29 +290,7 @@ if(MCL_TEST_WITH_GMP)
 	endif()
 endif()
 
-# mclbnXXX
-foreach(bit IN ITEMS 256 384 384_256)
-	if (MCL_STATIC_LIB)
-		add_library(mclbn${bit} STATIC src/bn_c${bit}.cpp)
-		target_link_libraries(mclbn${bit} PUBLIC mcl::mcl_st)
-	else()
-		add_library(mclbn${bit} SHARED src/bn_c${bit}.cpp)
-		target_link_libraries(mclbn${bit} PUBLIC mcl::mcl)
-	endif()
-	add_library(mcl::mclbn${bit} ALIAS mclbn${bit})
-	set_target_properties(mclbn${bit} PROPERTIES
-		CXX_STANDARD 11
-		CXX_STANDARD_REQUIRED YES
-		CXX_EXTENSIONS NO)
-	target_compile_options(mclbn${bit} PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_definitions(mclbn${bit}
-		PUBLIC MCL_NO_AUTOLINK MCLBN_NO_AUTOLINK)
-	set_target_properties(mclbn${bit} PROPERTIES
-		VERSION ${mcl_VERSION}
-		SOVERSION ${mcl_VERSION_MAJOR})
-endforeach()
-
-install(TARGETS mcl mcl_st mclbn256 mclbn384 mclbn384_256
+install(TARGETS mcl mcl_st
 	EXPORT mclTargets
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
@@ -352,7 +319,6 @@ export(EXPORT mclTargets
 	NAMESPACE mcl::)
 set(CMAKE_EXPORT_PACKAGE_REGISTRY ON)
 export(PACKAGE mcl)
-
 
 # Tests
 if(MCL_BUILD_TESTING)

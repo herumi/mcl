@@ -399,13 +399,14 @@ public:
 	void save(bool *pb, OutputStream& os, int base = 10) const
 	{
 		if (isNeg_) cybozu::writeChar(pb, os, '-');
-		char buf[1024];
-		size_t n = mcl::fp::arrayToStr(buf, sizeof(buf), buf_, size_, base, false);
+		size_t bufN = size_ * MCL_SIZEOF_UNIT * 8; // bit (max)
+		char *buf = (char *)CYBOZU_ALLOCA(bufN);
+		size_t n = mcl::fp::arrayToStr(buf, bufN, buf_, size_, base, false);
 		if (n == 0) {
 			*pb = false;
 			return;
 		}
-		cybozu::write(pb, os, buf + sizeof(buf) - n, n);
+		cybozu::write(pb, os, buf + bufN - n, n);
 	}
 	/*
 		set buf with string terminated by '\0'
@@ -696,7 +697,7 @@ public:
 	// logical left shift (copy sign)
 	static void shl(Vint& y, const Vint& x, size_t shiftBit)
 	{
-		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
+		assert(shiftBit <= MCL_FP_BIT * 2); // many be too big
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
 		bint::shiftLeft(y.buf_, x.buf_, shiftBit, xn);
@@ -707,7 +708,7 @@ public:
 	// logical right shift (copy sign)
 	static void shr(Vint& y, const Vint& x, size_t shiftBit)
 	{
-		assert(shiftBit <= MCL_MAX_BIT_SIZE * 2); // many be too big
+		assert(shiftBit <= MCL_FP_BIT * 2); // many be too big
 		size_t xn = x.size();
 		if (xn * UnitBitSize <= shiftBit) {
 			y.clear();

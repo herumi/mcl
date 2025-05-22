@@ -6,7 +6,7 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#define MCLBN_FP_UNIT_SIZE 6
-#define MCLBN_FR_UNIT_SIZE 4
+#define MCL_FP_BIT 384
+#define MCL_FR_BIT 256
 #include <mcl/bn.h>
 

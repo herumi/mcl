@@ -14,9 +14,6 @@
 		#define ECDSA_DLL_API __declspec(dllexport)
 	#else
 		#define ECDSA_DLL_API __declspec(dllimport)
-		#ifndef ECDSA_NO_AUTOLINK
-			#pragma comment(lib, "mclecdsa.lib")
-		#endif
 	#endif
 #elif defined(__EMSCRIPTEN__)
 	#define ECDSA_DLL_API __attribute__((used))

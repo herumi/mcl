@@ -13,15 +13,16 @@ SecretKey g_sec;
 
 CYBOZU_TEST_AUTO(log)
 {
-#if MCLBN_FP_UNIT_SIZE == 4
+printf("MCL_FP_BIT=%d MCL_FR_BIT=%d\n", MCL_FP_BIT, MCL_FR_BIT);
+#if MCL_FP_BIT == 256
 	const mcl::CurveParam& cp = mcl::BN254;
 	puts("BN254");
-#elif MCLBN_FP_UNIT_SIZE == 6
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 256
+	const mcl::CurveParam& cp = mcl::BLS12_381;
+	puts("BLS12_381");
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 384
 	const mcl::CurveParam& cp = mcl::BN381_1;
 	puts("BN381_1");
-#elif MCLBN_FP_UNIT_SIZE == 8
-	const mcl::CurveParam& cp = mcl::BN462;
-	puts("BN462");
 #endif
 	init(cp);
 	G1 P;

@@ -1,17 +1,16 @@
 #pragma once
-//#define MCL_MAX_BIT_SIZE 521
+//#define MCL_FP_BIT 521
 #include <iostream>
 #include <fstream>
 #include <cybozu/random_generator.hpp>
 #include <cybozu/crypto.hpp>
-#include <mcl/fp.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/elgamal.hpp>
 
-typedef mcl::FpT<mcl::FpTag> Fp;
-typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
-typedef mcl::ElgamalT<Ec> Elgamal;
+typedef mcl::Fp Fp;
+typedef mcl::Fr Zn;
+typedef mcl::G1 Ec;
+typedef mcl::ElgamalEc Elgamal;
 
 #if defined(__GNUC__) && !defined(__EMSCRIPTEN__) && !defined(__clang__)
 #pragma GCC diagnostic push

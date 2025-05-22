@@ -2,7 +2,6 @@
 	For secp384r1
 	define this macro if using secp384r1
 */
-// #define MCLBN_FP_UNIT_SIZE 6
 
 #include <mcl/she.hpp>
 #include <cybozu/option.hpp>
@@ -283,25 +282,10 @@ int main(int argc, char *argv[])
 
 	// initialize system
 	const size_t hashSize = maxMsg;
-	printf("MCL_MAX_BIT_SIZE=%d\n", MCL_MAX_BIT_SIZE);
-#if 1
-#if MCLBN_FP_UNIT_SIZE == 4
+	printf("MCL_FP_BIT=%d\n", MCL_FP_BIT);
 	const mcl::EcParam& param = mcl::ecparam::secp256k1;
 	puts("secp256k1");
-#elif MCLBN_FP_UNIT_SIZE == 6
-	const mcl::EcParam& param = mcl::ecparam::secp384r1;
-	puts("secp384r1");
-#elif MCLBN_FP_UNIT_SIZE == 9
-	const mcl::EcParam& param = mcl::ecparam::secp521r1;
-	puts("secp521r1");
-#else
-	#error "bad MCLBN_FP_UNIT_SIZE"
-#endif
 	initG1only(param, hashSize);
-#else
-	init();
-	setRangeForDLP(hashSize);
-#endif
 
 	exec(mode, addN, vecN);
 } catch (std::exception& e) {

@@ -7,11 +7,12 @@
 #include <cybozu/atoi.hpp>
 #include <cybozu/file.hpp>
 #include <cybozu/benchmark.hpp>
+#include "../src/mapto_wb19.hpp"
 
 using namespace mcl;
 using namespace mcl::bn;
 
-typedef mcl::MapTo_WB19<Fp, G1, Fp2, G2> MapTo;
+typedef mcl::bn::MapTo_WB19 MapTo;
 typedef MapTo::E2 E2;
 
 void dump(const void *msg, size_t msgSize)
@@ -188,8 +189,7 @@ void addTest()
 	}
 }
 
-template<class T>
-void iso3Test(const T& mapto)
+void iso3Test(const MapTo& mapto)
 {
 	const PointStr Ps = {
 		{
@@ -233,19 +233,18 @@ void iso3Test(const T& mapto)
 			"0xb7b36b9b1bbcf801d21ca5164aa9a0e71df2b4710c67dc0cd275b786800935fc29defbdf9c7e23dc84e26af13ba761d",
 		}
 	};
-	typename T::E2 P;
+	MapTo::E2 P;
 	G2 Q1, Q2;
 	set(P, Ps);
 	set(Q1, Qs);
 	mapto.iso3(Q2, P);
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 	set(Q1, clearPs);
-	mcl::local::mulByCofactorBLS12fast(Q2, Q2);
+	mulByCofactorBLS12fast(Q2, Q2);
 	CYBOZU_TEST_EQUAL(Q1, Q2);
 }
 
-template<class T>
-void testHashToFp2v7(const T& mapto)
+void testHashToFp2v7(const MapTo& mapto)
 {
 	{
 		const char *msg = "asdf";
@@ -640,8 +639,7 @@ void testEth2phase0()
 	}
 }
 
-template<class T>
-void testSswuG1(const T& mapto)
+void testSswuG1(const MapTo& mapto)
 {
 	const struct {
 		const char *u;
@@ -679,8 +677,7 @@ void testSswuG1(const T& mapto)
 	}
 }
 
-template<class T>
-void testMsgToG1(const T& mapto)
+void testMsgToG1(const MapTo& mapto)
 {
 	const struct {
 		const char *msg;
@@ -754,8 +751,7 @@ std::string appendZeroToRight(const std::string& s, size_t n)
 	return std::string(n - s.size(), '0') + s;
 }
 
-template<class T>
-void testFpToG1(const T& mapto)
+void testFpToG1(const MapTo& mapto)
 {
 	const struct {
 		const char *in;
@@ -801,8 +797,7 @@ void testFpToG1(const T& mapto)
 	}
 }
 
-template<class T>
-void testSameUV(const T& mapto)
+void testSameUV(const MapTo& mapto)
 {
 	// u is equal to v
 	const struct {
@@ -853,22 +848,21 @@ void testSameUV(const T& mapto)
 	}
 }
 
-template<class T>
-void testSetDst(const T& mapto)
+void testSetDst(MapTo& mapto)
 {
 	const char *dst = "abc";
 	bool ret;
-	ret = setDstG1(dst, strlen(dst));
+	ret = mapto.dstG1.set(dst, strlen(dst));
 	CYBOZU_TEST_ASSERT(ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG1.dst, dst);
-	ret = setDstG1("def", 1000);
+	ret = mapto.dstG1.set("def", 1000);
 	CYBOZU_TEST_ASSERT(!ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG1.dst, dst);
 
-	ret = setDstG2(dst, strlen(dst));
+	ret = mapto.dstG2.set(dst, strlen(dst));
 	CYBOZU_TEST_ASSERT(ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG2.dst, dst);
-	ret = setDstG2("def", 1000);
+	ret = mapto.dstG2.set("def", 1000);
 	CYBOZU_TEST_ASSERT(!ret);
 	CYBOZU_TEST_EQUAL(mapto.dstG2.dst, dst);
 }
@@ -878,7 +872,8 @@ CYBOZU_TEST_AUTO(test)
 	initPairing(mcl::BLS12_381);
 	Fp::setETHserialization(true);
 	bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
-	const MapTo& mapto = BN::param.mapTo.mapTo_WB19_;
+	MapTo mapto;
+	mapto.init();
 	addTest();
 	iso3Test(mapto);
 	testHMAC();

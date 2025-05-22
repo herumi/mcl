@@ -3,20 +3,51 @@ LIB_DIR?=lib
 OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
+MCL_FP_BIT?=384
+MCL_FR_BIT?=256
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
+  MCL_SUF=256
+endif
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_256)
+  MCL_SUF=384_256
+endif
+ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),384_384)
+  MCL_SUF=384
+endif
+
+CFLAGS+=-DMCL_FP_BIT=$(MCL_FP_BIT)
+CFLAGS+=-DMCL_FR_BIT=$(MCL_FR_BIT)
+
 CLANG?=clang++$(LLVM_VER)
-SRC_SRC=fp.cpp bn_c256.cpp bn_c384.cpp bn_c384_256.cpp bn_c512.cpp she_c256.cpp
-TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp bn384_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp bn512_test.cpp conversion_test.cpp
-TEST_SRC+=bn_c256_test.cpp bn_c384_test.cpp bn_c384_256_test.cpp bn_c512_test.cpp
-TEST_SRC+=she_c256_test.cpp she_c384_test.cpp she_c384_256_test.cpp
+SRC_SRC=fp.cpp
+TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
 TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
-TEST_SRC+=bls12_test.cpp
-TEST_SRC+=mapto_wb19_test.cpp
 TEST_SRC+=modp_test.cpp
-TEST_SRC+=ecdsa_test.cpp ecdsa_c_test.cpp
+TEST_SRC+=ecdsa_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
 TEST_SRC+=smallmodp_test.cpp
+
+MCL_SNAME=mcl
+ifeq ($(MCL_SUF),256)
+  SRC_SRC+=bn_c256.cpp she_c256.cpp
+  TEST_SRC+=bn_c256_test.cpp
+  TEST_SRC+=she_c256_test.cpp
+  TEST_SRC+=ecdsa_c_test.cpp
+endif
+ifeq ($(MCL_SUF),384_256)
+  SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
+  TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
+  TEST_SRC+=bls12_test.cpp
+  TEST_SRC+=mapto_wb19_test.cpp
+endif
+ifeq ($(MCL_SUF),384)
+  SRC_SRC+=bn_c384.cpp
+  TEST_SRC+=bn_c384_test.cpp she_c384_test.cpp
+endif
+
+#TEST_SRC+=bn_c384.cpp bn384_test.cpp bn_c384_test.cpp she_c384_test.cpp
 ifneq ($(MCL_USE_GMP),1)
   TEST_SRC+=static_init_test.cpp
 endif
@@ -36,9 +67,6 @@ endif
 SAMPLE_SRC=bench.cpp ecdh.cpp random.cpp rawbench.cpp vote.cpp pairing.cpp tri-dh.cpp bls_sig.cpp pairing_c.c she_smpl.cpp mt_test.cpp
 #SAMPLE_SRC+=large.cpp # rebuild of bint is necessary
 
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  CFLAGS+=-DMCL_MAX_BIT_SIZE=$(MCL_MAX_BIT_SIZE)
-endif
 ifeq ($(MCL_USE_XBYAK),0)
   CFLAGS+=-DMCL_DONT_USE_XBYAK
 endif
@@ -50,32 +78,12 @@ ifeq ($(MCL_USE_PROF),2)
   LDFLAGS+=-L /opt/intel/vtune_amplifier/lib64 -ljitprofiling -ldl
 endif
 ##################################################################
-MCL_LIB=$(LIB_DIR)/libmcl.a
-MCL_SNAME=mcl
-BN256_SNAME=mclbn256
-BN384_SNAME=mclbn384
-BN384_256_SNAME=mclbn384_256
-BN512_SNAME=mclbn512
-SHE256_SNAME=mclshe256
-SHE384_SNAME=mclshe384
-SHE384_256_SNAME=mclshe384_256
+MCL_LIB=$(LIB_DIR)/lib$(MCL_SNAME).a
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
-BN256_LIB=$(LIB_DIR)/libmclbn256.a
-BN256_SLIB=$(LIB_DIR)/lib$(BN256_SNAME).$(LIB_SUF)
-BN384_LIB=$(LIB_DIR)/libmclbn384.a
-BN384_SLIB=$(LIB_DIR)/lib$(BN384_SNAME).$(LIB_SUF)
-BN384_256_LIB=$(LIB_DIR)/libmclbn384_256.a
-BN384_256_SLIB=$(LIB_DIR)/lib$(BN384_256_SNAME).$(LIB_SUF)
-BN512_LIB=$(LIB_DIR)/libmclbn512.a
-BN512_SLIB=$(LIB_DIR)/lib$(BN512_SNAME).$(LIB_SUF)
-SHE256_LIB=$(LIB_DIR)/libmclshe256.a
-SHE256_SLIB=$(LIB_DIR)/lib$(SHE256_SNAME).$(LIB_SUF)
-SHE384_LIB=$(LIB_DIR)/libmclshe384.a
-SHE384_SLIB=$(LIB_DIR)/lib$(SHE384_SNAME).$(LIB_SUF)
-SHE384_256_LIB=$(LIB_DIR)/libmclshe384_256.a
-SHE384_256_SLIB=$(LIB_DIR)/lib$(SHE384_256_SNAME).$(LIB_SUF)
-SHE_LIB_ALL=$(SHE256_LIB) $(SHE256_SLIB) $(SHE384_LIB) $(SHE384_SLIB) $(SHE384_256_LIB) $(SHE384_256_SLIB)
-all: $(MCL_LIB) $(MCL_SLIB) $(BN256_LIB) $(BN256_SLIB) $(BN384_LIB) $(BN384_SLIB) $(BN384_256_LIB) $(BN384_256_SLIB) $(BN512_LIB) $(BN512_SLIB) $(SHE_LIB_ALL)
+SHE_LIB=$(LIB_DIR)/lishe$(MCL_SUF).a
+SHE_SLIB=$(LIB_DIR)/lishe$(MCL_SUF).$(LIB_SUF)
+
+all: $(MCL_LIB) $(MCL_SLIB) $(SHE_LIB) $(SHE_SLIB)
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
 #LLVM_VER=-3.8
@@ -148,7 +156,6 @@ ifeq ($(OS),mingw64)
 endif
 src/fp.cpp: src/bint_switch.hpp
 ifeq ($(MCL_BINT_ASM),1)
-src/fp.cpp: include/mcl/bint_proto.hpp
   CFLAGS+=-DMCL_BINT_ASM=1
   BINT_LL=src/bint$(BIT).ll
   BINT_OBJ=$(OBJ_DIR)/bint$(BIT).o
@@ -176,9 +183,9 @@ $(BINT_OBJ): $(BINT_LL)
 else
   CFLAGS+=-DMCL_BINT_ASM=0
 endif
-ifneq ($(MCL_MAX_BIT_SIZE),)
-  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_MAX_BIT_SIZE)
-endif
+#ifneq ($(MCL_FP_BIT),)
+#  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
+#endif
 ifeq ($(UPDATE_LL),1)
 src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
@@ -209,8 +216,6 @@ src/$(MSM)_bls12_381.h: src/gen_msm_para.py
 else
   CFLAGS+=-DMCL_MSM=0
 endif
-include/mcl/bint_proto.hpp: src/gen_bint_header.py
-	python3 $< > $@ proto $(GEN_BINT_HEADER_PY_OPT)
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
@@ -231,7 +236,6 @@ $(BINT_SRC): src/bint$(BIT).ll
 #$(BINT_OBJ): $(BINT_SRC)
 #	$(AS) $< -o $@
 header:
-	$(MAKE) include/mcl/bint_proto.hpp
 	$(MAKE) src/bint_switch.hpp
 	$(MAKE) src/llvm_proto.hpp
 
@@ -243,13 +247,8 @@ update_gen:
 #	$(MAKE) $(BINT_SRC)
 #$(BINT_LL_SRC): src/bint.cpp src/bint.hpp
 #	$(CLANG) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
-BN256_OBJ=$(OBJ_DIR)/bn_c256.o
-BN384_OBJ=$(OBJ_DIR)/bn_c384.o
-BN384_256_OBJ=$(OBJ_DIR)/bn_c384_256.o
-BN512_OBJ=$(OBJ_DIR)/bn_c512.o
-SHE256_OBJ=$(OBJ_DIR)/she_c256.o
-SHE384_OBJ=$(OBJ_DIR)/she_c384.o
-SHE384_256_OBJ=$(OBJ_DIR)/she_c384_256.o
+BN_OBJ=$(OBJ_DIR)/bn_c$(MCL_SUF).o
+SHE_OBJ=$(OBJ_DIR)/she_c$(MCL_SUF).o
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
@@ -257,23 +256,12 @@ LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=-sse
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
-  BN256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  BN384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  BN384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  BN512_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  SHE256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  SHE384_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
-  SHE384_256_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  BN_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  SHE_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
 endif
 ifeq ($(OS),mingw64)
-  MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(MCL_SNAME).a
-  BN256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN256_SNAME).a
-  BN384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_SNAME).a
-  BN384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN384_256_SNAME).a
-  BN512_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(BN512_SNAME).a
-  SHE256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE256_SNAME).a
-  SHE384_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_SNAME).a
-  SHE384_256_SLIB_LDFLAGS+=-Wl,--out-implib,$(LIB_DIR)/lib$(SHE384_256_SNAME).a
+  MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(MCL_LIB)
+  SHE_SLIB_LDFLAGS+=-Wl,--out-implib,$(SHE_SLIB)
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
@@ -282,47 +270,17 @@ $(MCL_LIB): $(LIB_OBJ)
 $(MCL_SLIB): $(LIB_OBJ)
 	$(PRE)$(CXX) -o $@ $(LIB_OBJ) -shared $(CFLAGS) $(MCL_SLIB_LDFLAGS)
 
-$(BN256_LIB): $(BN256_OBJ)
-	$(AR) $(ARFLAGS) $@ $(BN256_OBJ)
+$(BN_LIB): $(BN_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BN_OBJ)
 
-$(SHE256_LIB): $(SHE256_OBJ)
-	$(AR) $(ARFLAGS) $@ $(SHE256_OBJ)
+$(BN_SLIB): $(BN_OBJ) $(MCL_SLIB)
+	$(PRE)$(CXX) -o $@ $(BN_OBJ) -shared $(CFLAGS) $(BN_SLIB_LDFLAGS)
 
-$(SHE384_LIB): $(SHE384_OBJ)
-	$(AR) $(ARFLAGS) $@ $(SHE384_OBJ)
+$(SHE_LIB): $(SHE_OBJ)
+	$(AR) $(ARFLAGS) $@ $(SHE_OBJ)
 
-$(SHE384_256_LIB): $(SHE384_256_OBJ)
-	$(AR) $(ARFLAGS) $@ $(SHE384_256_OBJ)
-
-$(SHE256_SLIB): $(SHE256_OBJ) $(MCL_LIB)
-	$(PRE)$(CXX) -o $@ $(SHE256_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE256_SLIB_LDFLAGS)
-
-$(SHE384_SLIB): $(SHE384_OBJ) $(MCL_LIB)
-	$(PRE)$(CXX) -o $@ $(SHE384_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE384_SLIB_LDFLAGS)
-
-$(SHE384_256_SLIB): $(SHE384_256_OBJ) $(MCL_LIB)
-	$(PRE)$(CXX) -o $@ $(SHE384_256_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE384_256_SLIB_LDFLAGS)
-
-$(BN256_SLIB): $(BN256_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN256_OBJ) -shared $(CFLAGS) $(BN256_SLIB_LDFLAGS)
-
-$(BN384_LIB): $(BN384_OBJ)
-	$(AR) $(ARFLAGS) $@ $(BN384_OBJ)
-
-$(BN384_256_LIB): $(BN384_256_OBJ)
-	$(AR) $(ARFLAGS) $@ $(BN384_256_OBJ)
-
-$(BN512_LIB): $(BN512_OBJ)
-	$(AR) $(ARFLAGS) $@ $(BN512_OBJ)
-
-$(BN384_SLIB): $(BN384_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN384_OBJ) -shared $(CFLAGS) $(BN384_SLIB_LDFLAGS)
-
-$(BN384_256_SLIB): $(BN384_256_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN384_256_OBJ) -shared $(CFLAGS) $(BN384_256_SLIB_LDFLAGS)
-
-$(BN512_SLIB): $(BN512_OBJ) $(MCL_SLIB)
-	$(PRE)$(CXX) -o $@ $(BN512_OBJ) -shared $(CFLAGS) $(BN512_SLIB_LDFLAGS)
+$(SHE_SLIB): $(SHE_OBJ) $(MCL_LIB)
+	$(PRE)$(CXX) -o $@ $(SHE_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE_SLIB_LDFLAGS)
 
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
@@ -332,7 +290,7 @@ src/base64m.ll: $(GEN_EXE)
 	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
-	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -DNDEBUG -DMCL_MSM=0
+	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_SIZEOF_UNIT=8 -DNDEBUG -DMCL_MSM=0
 
 src/static_code.asm: src/dump_code
 	$< > $@
@@ -341,27 +299,15 @@ obj/static_code.o: src/static_code.asm
 	nasm $(NASM_ELF_OPT) -o $@ $<
 
 bin/static_code_test.exe: test/static_code_test.cpp src/fp.cpp obj/static_code.o $(BINT_OBJ)
-	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_MAX_BIT_SIZE=384 -DMCL_SIZEOF_UNIT=8 -DMCL_MSM=0 -I include -Wall -Wextra
+	$(CXX) -o $@ -O3 $^ -g -DMCL_DONT_USE_XBYAK -DMCL_STATIC_CODE -DMCL_SIZEOF_UNIT=8 -DMCL_MSM=0 -I include -Wall -Wextra
 
 # set PATH for mingw, set LD_LIBRARY_PATH is for other env
 COMMON_LIB_PATH="../../../lib"
 PATH_VAL=$$PATH:$(COMMON_LIB_PATH) LD_LIBRARY_PATH=$(COMMON_LIB_PATH) DYLD_LIBRARY_PATH=$(COMMON_LIB_PATH) CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L../../../lib"
-test_go256: $(MCL_LIB) $(BN256_LIB)
-	$(RM) $(BLS256_SLIB) $(MCL_SLIB)
-	cd ffi/go/mcl && go test -tags bn256 .
 
-test_go384: $(MCL_LIB) $(BN384_LIB)
-	$(RM) $(BLS384_SLIB) $(MCL_SLIB)
-	cd ffi/go/mcl && go test -tags bn384 .
-
-test_go384_256: $(MCL_LIB) $(BN384_256_LIB)
+test_go: $(MCL_LIB) $(BN384_256_LIB)
 	$(RM) $(BLS384_256_SLIB) $(MCL_SLIB)
-	cd ffi/go/mcl && go test -tags bn384_256 .
-
-test_go: # Use static libraries, not shared libraries.
-	$(MAKE) test_go256
-	$(MAKE) test_go384
-	$(MAKE) test_go384_256
+	cd ffi/go/mcl && go test -v -count=1 .
 
 test_python_she: $(SHE256_SLIB)
 	cd ffi/python && env LD_LIBRARY_PATH="../../lib" DYLD_LIBRARY_PATH="../../lib" PATH=$$PATH:"../../lib" python3 she.py
@@ -380,6 +326,9 @@ VPATH=test sample src
 $(OBJ_DIR)/%.o: %.cpp
 	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
+$(OBJ_DIR)/fp$(MCL_SUF).o: fp.cpp
+	$(PRE)$(CXX) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
+
 $(OBJ_DIR)/%.o: %.c
 	$(PRE)$(CC) $(CFLAGS) -c $< -o $@ -MMD -MP -MF $(@:.o=.d)
 
@@ -395,30 +344,16 @@ endif
 $(EXE_DIR)/%.exe: $(OBJ_DIR)/%.o $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn_c256_test.exe: $(OBJ_DIR)/bn_c256_test.o $(BN256_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN256_LIB) $(MCL_LIB) $(LDFLAGS)
+$(EXE_DIR)/bn_c$(MCL_SUF)_test.exe: $(OBJ_DIR)/bn_c$(MCL_SUF)_test.o $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn_c384_test.exe: $(OBJ_DIR)/bn_c384_test.o $(BN384_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN384_LIB) $(MCL_LIB) $(LDFLAGS)
+$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(MCL_LIB)
+	$(PRE)$(CC) $< -o $@ $(MCL_LIB) $(LDFLAGS) -lstdc++
 
-$(EXE_DIR)/bn_c384_256_test.exe: $(OBJ_DIR)/bn_c384_256_test.o $(BN384_256_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS)
+$(EXE_DIR)/she_c$(MCL_SUF)_test.exe: $(OBJ_DIR)/she_c$(MCL_SUF)_test.o $(SHE_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(SHE_LIB) $(MCL_LIB) $(LDFLAGS)
 
-$(EXE_DIR)/bn_c512_test.exe: $(OBJ_DIR)/bn_c512_test.o $(BN512_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(BN512_LIB) $(MCL_LIB) $(LDFLAGS)
-
-$(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(BN384_256_LIB) $(MCL_LIB)
-	$(PRE)$(CC) $< -o $@ $(BN384_256_LIB) $(MCL_LIB) $(LDFLAGS) -lstdc++
-
-$(EXE_DIR)/she_c256_test.exe: $(OBJ_DIR)/she_c256_test.o $(SHE256_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(SHE256_LIB) $(MCL_LIB) $(LDFLAGS)
-
-$(EXE_DIR)/she_c384_test.exe: $(OBJ_DIR)/she_c384_test.o $(SHE384_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(SHE384_LIB) $(MCL_LIB) $(LDFLAGS)
-
-$(EXE_DIR)/she_c384_256_test.exe: $(OBJ_DIR)/she_c384_256_test.o $(SHE384_256_LIB) $(MCL_LIB)
-	$(PRE)$(CXX) $< -o $@ $(SHE384_256_LIB) $(MCL_LIB) $(LDFLAGS)
-
+# assume MCL_FP_BIT=256
 $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
 	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
 
@@ -445,7 +380,7 @@ EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
 SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/she.h Makefile
-MCL_C_DEP=src/fp.cpp include/mcl/impl/bn_c_impl.hpp include/mcl/bn.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/bn.h Makefile
+MCL_C_DEP=src/fp.cpp include/mcl/bn.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/bn.h Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM
   SHE_C_DEP+=src/base64m.ll
@@ -453,13 +388,13 @@ endif
 
 # test
 bin/emu:
-	$(CXX) -g -o $@ src/fp.cpp src/bn_c384_256.cpp test/bn_c384_256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 $(CFLAGS_USER)
+	$(CXX) -g -o $@ src/fp.cpp test/bn_c384_256_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 $(CFLAGS_USER)
 bin/pairing_c_min.exe: sample/pairing_c.c include/mcl/vint.hpp src/fp.cpp include/mcl/bn.hpp
-	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp src/bn_c384_256.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_BINT_ASM=0 -DMCL_MSM=0 # -DMCL_DONT_USE_CSPRNG
+	$(CXX) -std=c++03 -O3 -g -fno-threadsafe-statics -fno-exceptions -fno-rtti -o $@ sample/pairing_c.c src/fp.cpp -I./include -DXBYAK_NO_EXCEPTION -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_FP_BIT=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG -DMCL_BINT_ASM=0 -DMCL_MSM=0 # -DMCL_DONT_USE_CSPRNG
 bin/ecdsa-emu:
-	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_MAX_BIT_SIZE=256 -I./include
+	$(CXX) -g -o $@ src/fp.cpp test/ecdsa_test.cpp -DMCL_SIZEOF_UNIT=4 -D__EMSCRIPTEN__ -DMCL_FP_BIT=256 -I./include
 bin/ecdsa-c-emu:
-	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_MAX_BIT_SIZE=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
+	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_FP_BIT=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
@@ -467,10 +402,27 @@ bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
 	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
+test_emu_32bit:
+	$(MAKE) MCL_SIZEOF_UNIT=4 bin/emu && bin/emu
+
+test_fp_util_32bit:
+	$(CXX) -m32 src/fp.cpp test/fp_util_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/fp_util_test.exe && bin/fp_util_test.exe
+test_conversion_32bit:
+	$(CXX) -m32 src/fp.cpp test/conversion_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/conversion_test.exe && bin/conversion_test.exe
+
+test_bls12_32bit:
+	$(CXX) -m32 src/fp.cpp test/bls12_test.cpp -DMCL_DONT_USE_XBYAK -DMCL_FP_BIT=384 -I./include -DMCL_BINT_ASM=0 -DMCL_MSM=0 -o bin/bls12_test.exe && bin/bls12_test.exe
+
+test_32bit:
+	$(MAKE) test_bls12_32bit
+	$(MAKE) test_fp_util_32bit
+	$(MAKE) test_conversion_32bit
+	$(MAKE) test_emu_32bit
+
 # clear before testing
 test_static:
 	$(MAKE) lib/libmcl.a MCL_STATIC_CODE=1 -j
-	$(CXX) -O2 -DNDEBUG -g -o bin/pairing_static.exe sample/pairing.cpp -I ./include lib/libmcl.a -DMCL_MAX_BIT_SIZE=384 -DMCL_STATIC_CODE
+	$(CXX) -O2 -DNDEBUG -g -o bin/pairing_static.exe sample/pairing.cpp -I ./include lib/libmcl.a -DMCL_FP_BIT=384 -DMCL_STATIC_CODE
 	bin/pairing_static.exe
 
 $(OBJ_DIR)/$(MSM)_test.o: src/$(MSM).cpp
@@ -487,13 +439,11 @@ make_tbl:
 	$(CXX) -o misc/precompute misc/precompute.cpp $(CFLAGS) $(MCL_LIB) $(LDFLAGS)
 	./misc/precompute > ../bls/src/qcoeff-bn254.hpp
 
-MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_STANDALONE -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_MAX_BIT_SIZE=384 -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 $(CFLAGS_EXTRA)
+MCL_STANDALONE?=-std=c++03 -O3 -fpic -fno-exceptions -fno-threadsafe-statics -fno-rtti -fno-stack-protector -fpic -I ./include -DNDEBUG -DMCL_STANDALONE -DMCL_SIZEOF_UNIT=$(MCL_SIZEOF_UNIT) -DMCL_FP_BIT=384 -D_FORTIFY_SOURCE=0 -DMCL_USE_LLVM=1 $(CFLAGS_EXTRA)
 ifneq ($(CLANG_TARGET),)
   MCL_STANDALONE+=-target $(CLANG_TARGET)
 endif
 fp.o: src/fp.cpp
-	$(CLANG) -c $< $(MCL_STANDALONE)
-bn_c384_256.o: src/bn_c384_256.cpp
 	$(CLANG) -c $< $(MCL_STANDALONE)
 base$(BIT).o: src/base$(BIT).ll
 	$(CLANG) -c $< $(MCL_STANDALONE)
@@ -501,12 +451,10 @@ bint$(BIT).o: src/bint$(BIT).ll
 	$(CLANG) -c $< $(MCL_STANDALONE)
 libmcl.a: fp.o base$(BIT).o bint$(BIT).o
 	$(AR) $(ARFLAGS) $@ fp.o base$(BIT).o bint$(BIT).o
-libmclbn384_256.a: bn_c384_256.o
-	$(AR) $(ARFLAGS) $@ $<
 # e.g. make CLANG=clang++-12 CLANG_TARGET=aarch64 standalone
-standalone: libmcl.a libmclbn384_256.a
+standalone: libmcl.a
 clean_standalone:
-	$(RM) libmcl.a libmcl384_256.a *.o
+	$(RM) libmcl.a
 
 update_xbyak:
 	cp -a ../xbyak/xbyak/xbyak.h ../xbyak/xbyak/xbyak_util.h ../xbyak/xbyak/xbyak_mnemonic.h src/xbyak/
@@ -523,16 +471,16 @@ android: $(BASE_LL)
 	@$(NDK_BUILD) -C android/jni NDK_DEBUG=0 MCL_LIB_SHARED=$(MCL_LIB_SHARED)
 	@for target in $(ANDROID_TARGET); do \
 		mkdir -p lib/android/$$target; \
-		cp android/obj/local/$$target/libmclbn384_256.a lib/android/$$target/; \
+		cp android/obj/local/$$target/libmcl.a lib/android/$$target/; \
 	done
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) $(BASE_OBJ) $(LIB_OBJ) $(BN256_OBJ) $(BN384_OBJ) $(BN512_OBJ) lib/*.a src/static_code.asm src/dump_code lib/android
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) src/static_code.asm src/dump_code lib/android
 	$(RM) src/gen_bint.exe
 	$(MAKE) clean_standalone
 
 clean_gen:
-	$(RM) include/mcl/bint_proto.hpp src/asm/bint* src/bint_switch.hpp
+	$(RM) src/asm/bint* src/bint_switch.hpp
 
 MCL_VER=$(shell awk '/static const int version/ { printf("%.2f\n", substr($$6,3,3)/100)}' include/mcl/op.hpp)
 CMakeLists.txt: include/mcl/op.hpp

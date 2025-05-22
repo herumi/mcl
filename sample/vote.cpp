@@ -11,15 +11,14 @@
 #include <cybozu/random_generator.hpp>
 #include <cybozu/option.hpp>
 #include <cybozu/itoa.hpp>
-#include <mcl/fp.hpp>
-#include <mcl/ec.hpp>
+#include <mcl/g1_def.hpp>
 #include <mcl/elgamal.hpp>
 #include <mcl/ecparam.hpp>
 
-typedef mcl::FpT<mcl::FpTag> Fp;
-typedef mcl::FpT<mcl::ZnTag> Zn;
-typedef mcl::EcT<Fp, Zn> Ec;
-typedef mcl::ElgamalT<Ec> Elgamal;
+using namespace mcl;
+typedef Fr Zn;
+typedef G1 Ec;
+typedef ElgamalEc Elgamal;
 
 cybozu::RandomGenerator rg;
 

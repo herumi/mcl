@@ -9,7 +9,7 @@ MCL_LIB=$(LIB_DIR)/libmclbn384_256.a
 LIB_OBJ=$(addprefix $(OBJ_DIR)/,$(SRC_SRC:.cpp=.o) bint.o base.o)
 
 CFLAGS=-std=c++03 -I ./include -I ./src
-CFLAGS+=-fno-threadsafe-statics -fno-exceptions -fno-rtti -DMCL_MAX_BIT_SIZE=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
+CFLAGS+=-fno-threadsafe-statics -fno-exceptions -fno-rtti -DMCL_FP_BIT=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
 CFLAGS+=-target $(TARGET) $(TARGET_OPT)
 
 CXX=$(PRE)clang++$(LLVM_VER)

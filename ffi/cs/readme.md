@@ -1,6 +1,6 @@
 # C# binding of mcl library
 
-# How to build `bin/mclbn384_256.dll`.
+# How to build `bin/mclbn.dll`.
 
 ```
 git clone https://github.com/herumi/mcl
@@ -9,9 +9,7 @@ mklib dll
 ```
 
 Open `mcl/ffi/cs/mcl.sln` and Set the directory of `mcl/bin` to `workingDirectory` at `Debug` of test project.
-
-# Remark
-- `mcl/mcl.cs` is a new version. It support `BN254`, `BN_SNARK` and `BLS12_381` curve, which requires `mclbn384_256.dll`.
+`mcl/mcl.cs` supports `BN254`, `BN_SNARK` and `BLS12_381` curve, which requires `mclbn.dll`.
 
 # `ETHmode` with `BLS12_381`
 

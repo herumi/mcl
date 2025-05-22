@@ -11,27 +11,7 @@
 #include <vector>
 #include <iosfwd>
 
-#if defined(MCL_MAX_FP_BIT_SIZE) && MCL_MAX_FP_BIT_SIZE == 384 && defined(MCL_MAX_FR_BIT_SIZE) && MCL_MAX_FR_BIT_SIZE == 256
-
-// already include bls12_381.hpp
-
-#else
-
-#ifndef MCLBN_FP_UNIT_SIZE
-	#define MCLBN_FP_UNIT_SIZE 4
-#endif
-#if MCLBN_FP_UNIT_SIZE == 4
-#include <mcl/bn256.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 6
-#include <mcl/bn384.hpp>
-#elif MCLBN_FP_UNIT_SIZE == 8
-#include <mcl/bn512.hpp>
-#else
-#define MCL_MAX_FP_BIT_SIZE (MCLBN_FP_UNIT_SIZE * 64)
 #include <mcl/bn.hpp>
-#endif
-
-#endif
 
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>
@@ -277,7 +257,7 @@ public:
 	template<class OutputStream>
 	void save(OutputStream& os) const
 	{
-		cybozu::save(os, BN::param.cp.curveType);
+		cybozu::save(os, getCurveParam().curveType);
 		cybozu::writeChar(os, GtoChar<G>());
 		cybozu::save(os, kcv_.size());
 		cybozu::write(os, &kcv_[0], sizeof(kcv_[0]) * kcv_.size());
@@ -298,7 +278,7 @@ public:
 	{
 		int curveType;
 		cybozu::load(curveType, is);
-		if (curveType != BN::param.cp.curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
+		if (curveType != getCurveParam().curveType) throw cybozu::Exception("HashTable:bad curveType") << curveType;
 		char c = 0;
 		if (!cybozu::readChar(&c, is) || c != GtoChar<G>()) throw cybozu::Exception("HashTable:bad c") << (int)c;
 		size_t kcvSize;

@@ -1,4 +1,4 @@
-#include <mcl/bn256.hpp>
+#include <mcl/bn.hpp>
 #include <iostream>
 
 using namespace mcl::bn;

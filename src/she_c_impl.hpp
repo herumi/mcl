@@ -5,7 +5,6 @@
 #include <iosfwd>
 #include <stdint.h>
 #include <memory.h>
-#include "mcl/impl/bn_c_impl.hpp"
 #define MCLSHE_DLL_EXPORT
 
 #include <mcl/she.h>
@@ -50,8 +49,8 @@ static const AuxiliaryForZkpDecGT *cast(const sheAuxiliaryForZkpDecGT *p) { retu
 static ZkpDecGT *cast(sheZkpDecGT *p) { return reinterpret_cast<ZkpDecGT*>(p); }
 static const ZkpDecGT *cast(const sheZkpDecGT *p) { return reinterpret_cast<const ZkpDecGT*>(p); }
 
-static mcl::bn::Fr *cast2(mclBnFr *p) { return reinterpret_cast<mcl::bn::Fr*>(p); }
-static const mcl::bn::Fr *cast2(const mclBnFr *p) { return reinterpret_cast<const mcl::bn::Fr*>(p); }
+static mcl::Fr *cast2(mclBnFr *p) { return reinterpret_cast<mcl::Fr*>(p); }
+static const mcl::Fr *cast2(const mclBnFr *p) { return reinterpret_cast<const mcl::Fr*>(p); }
 
 int sheInit(int curve, int compiledTimeVar)
 	try
