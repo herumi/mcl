@@ -378,7 +378,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	bool init(const mpz_class& p, int u, int xi_a, int tag, size_t sizeofF);
+	MCL_DLL_API bool init(const mpz_class& p, int u, int xi_a, int tag, size_t sizeofF);
 private:
 	Op(const Op&);
 	void operator=(const Op&);

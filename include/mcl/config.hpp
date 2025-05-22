@@ -69,23 +69,30 @@
 	#ifdef _WIN32
 		#ifdef MCL_DONT_EXPORT
 			#define MCL_DLL_API
+			#define MCL_DLL_VAR
 		#else
 			#ifdef MCL_DLL_EXPORT
 				#define MCL_DLL_API __declspec(dllexport)
+				#define MCL_DLL_VAR __declspec(dllexport)
 			#else
 				#ifdef MCL_DLL // better
 					#define MCL_DLL_API __declspec(dllimport)
+					#define MCL_DLL_VAR __declspec(dllimport)
 				#else
 					#define MCL_DLL_API
+					#define MCL_DLL_VAR
 				#endif
 			#endif
 		#endif
 	#elif defined(__EMSCRIPTEN__) && !defined(MCL_DONT_EXPORT)
 		#define MCL_DLL_API __attribute__((used))
+		#define MCL_DLL_VAR // can't use the attribute
 	#elif defined(__wasm__) && !defined(MCL_DONT_EXPORT)
 		#define MCL_DLL_API __attribute__((visibility("default")))
+		#define MCL_DLL_VAR __attribute__((visibility("default")))
 	#else
 		#define MCL_DLL_API
+		#define MCL_DLL_VAR
 	#endif
 #endif
 

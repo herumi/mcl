@@ -29,8 +29,8 @@ namespace mcl {
 
 namespace fp {
 
-uint64_t getUint64(bool *pb, const fp::Block& b);
-int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
+MCL_DLL_API uint64_t getUint64(bool *pb, const fp::Block& b);
+MCL_DLL_API int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
 const char *ModeToStr(Mode mode);
 

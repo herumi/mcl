@@ -1011,7 +1011,7 @@ struct Fp6Dbl {
 		Fp2Dbl::sub(z.b, x.b, y.b);
 		Fp2Dbl::sub(z.c, x.c, y.c);
 	}
-	MCL_DLL_API static void (*mulPre)(Fp6Dbl& z, const Fp6& x, const Fp6& y);
+	MCL_DLL_VAR static void (*mulPre)(Fp6Dbl& z, const Fp6& x, const Fp6& y);
 	/*
 		x = a + bv + cv^2, y = d + ev + fv^2, v^3 = xi
 		xy = (ad + (bf + ce)xi) + ((ae + bd) + cf xi)v + ((af + cd) + be)v^2
