@@ -28,6 +28,7 @@
 	#define MCLBN_FR_UNIT_SIZE ((MCL_FR_BIT)/64)
 #endif
 
+// DON'T CHANGE this value because it is used from other languages such as C# and WASM.
 #define MCLBN_COMPILED_TIME_VAR ((MCLBN_FR_UNIT_SIZE) * 10 + (MCLBN_FP_UNIT_SIZE))
 
 #include <stdint.h> // for uint64_t, uint8_t
