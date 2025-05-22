@@ -10,11 +10,11 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # Version v3 includes breaking changes to lib/dll specifications.
-* The default mcl.lib has a maximum size of 384bit for the definition field Fp of the elliptic curve,
-and 256bit for the order field Fr of the elliptic curve.
+* The default `mcl.{a,lib}` has a maximum size of 384bit for the definition field Fp of the elliptic curve,
+and 256bit for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
 * The arguments of the Fp/Fr initialization function have been changed.
-* mclbn384\_256.lib has been merged into mcl.lib.
-* The Windows version of mclbn384\_256.dll has been renamed to mcldn.dll.
+* `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
+* The Windows DLL mcl.dll has been renamed to mclbn.dll.
 
 # Support architecture
 
@@ -31,12 +31,13 @@ and 256bit for the order field Fr of the elliptic curve.
 
 # Support curves
 
-- BN curve ; p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
-  - BN254 ; a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
-  - BN\_SNARK1 ; a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
-  - BN381\_1 ; a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
-  - BN462 ; a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
-- BLS12\_381 ; [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+- BN curve : p(z) = 36z^4 + 36z^3 + 24z^2 + 6z + 1.
+  - BN254 : a BN curve over the 254-bit prime p(z) where z = -(2^62 + 2^55 + 1).
+  - BN\_SNARK1 : a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
+  - BN381\_1 : a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
+  - BN462 : a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
+- BLS12\_381 : [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+- BLS12\_377
 
 # BLS signature
 See [bls](https://github.com/herumi/bls) if you want mcl for BLS-signature.

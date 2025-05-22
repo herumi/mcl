@@ -2,7 +2,7 @@
 
 ## Minimum sample
 
-A sample of how to use BLS12-381:
+A sample demonstrating BLS12-381 usage:
 
 ### C
 [sample/pairing_c.c](sample/pairing_c.c)
@@ -25,37 +25,34 @@ make bin/pairing.exe && bin/pairing.exe
 ## Header and libraries
 
 ### C
-To use BLS12-381, include `<mcl/bn_c384_256.h>` and link
-- libmclbn384_256.{a,so}
-- libmcl.{a,so} ; core library
+To use BLS12-381, include `<mcl/bn_c384_256.h>` and link `libmcl.{a,so}`.
 
-`384_256` means the max bit size of `Fp` is 384, and that size of `Fr` is 256.
+`384_256` indicates that the maximum bit size of `Fp` is 384, and the size of `Fr` is 256.
 
 ### C++
-include `<mcl/bls12_381.hpp>` and link
-- libmcl.{a,so} ; core library
+Include `<mcl/bls12_381.hpp>` and link `libmcl.{a,so}`.
 
 ## Notation
 
-The elliptic equation of a curve E is `E: y^2 = x^3 + b`.
+The elliptic curve equation is `E: y^2 = x^3 + b`.
 
-- `Fp` ; a finite field of a prime order `p`, where a curve is defined over.
-- `Fr` ; a finite field of a prime order `r`.
-- `Fp2` ; the field extension over Fp with degree 2. Fp[i] / (i^2 + u).
-- `Fp6` ; the field extension over Fp2 with degree 3. Fp2[v] / (v^3 - Xi) where Xi = i + xi_a.
-- `Fp12` ; the field extension over Fp6 with degree 2. Fp6[w] / (w^2 - v).
-- `G1` ; the cyclic subgroup of E(Fp).
-- `G2` ; the cyclic subgroup of the inverse image of E'(Fp^2) under a twisting isomorphism from E' to E.
-- `GT` ; the cyclic subgroup of Fp12.
+- `Fp` : a finite field of prime order `p`, over which the curve is defined.
+- `Fr` : a finite field of prime order `r`.
+- `Fp2` : field extension over Fp of degree 2. Fp[i] / (i^2 + u).
+- `Fp6` : field extension over Fp2 of degree 3. Fp2[v] / (v^3 - Xi) where Xi = i + xi_a.
+- `Fp12` : field extension over Fp6 of degree 2. Fp6[w] / (w^2 - v).
+- `G1` : the cyclic subgroup of E(Fp).
+- `G2` : the cyclic subgroup of the inverse image of E'(Fp^2) under a twisting isomorphism from E' to E.
+- `GT` : the cyclic subgroup of Fp12.
   - `G1`, `G2`, and `GT` have the order `r`.
 
 The pairing e: G1 x G2 -> GT is the optimal ate pairing.
 
-mcl treats `G1` and `G2` as an additive group and `GT` as a multiplicative group.
+mcl treats `G1` and `G2` as additive groups and `GT` as a multiplicative group.
 
-- `mclSize` ; `unsigned int` if WebAssembly else `size_t`
+- `mclSize` ; `unsigned int` if WebAssembly, otherwise `size_t`
 
-### Curve Parameter
+### Curve Parameters
 r = |G1| = |G2| = |GT|
 
 curveType   | b|u|xi_a| r and p |
@@ -69,99 +66,97 @@ BN381       | 2|1|1|r = 0x240026400f3d82b2e42de125b00158405b710818ac000007e0042f
 ## C Structures
 
 ### `mclBnFp`
-This is a struct of `Fp`. The value is stored as a Montgomery representation.
+This is a struct for `Fp`. The value is stored in Montgomery representation.
 
 ### `mclBnFr`
-This is a struct of `Fr`. The value is stored as a Montgomery representation.
+This is a struct for `Fr`. The value is stored in Montgomery representation.
 
 ### `mclBnFp2`
-This is a struct of `Fp2` with a member `mclBnFp d[2]`.
+This is a struct for `Fp2` with a member `mclBnFp d[2]`.
 
 An element `x` of `Fp2` is represented as `x = d[0] + d[1] i` where `i^2 = -1`.
 
 ### `mclBnG1`
-This is a struct of `G1` with three members `x`, `y`, `z` of type `mclBnFp`.
+This is a struct for `G1` with three members `x`, `y`, `z` of type `mclBnFp`.
 
-An element `P` of `G1` is represented as `P = [x:y:z]` of a Jacobi coordinate.
+An element `P` of `G1` is represented as `P = [x:y:z]` in Jacobian coordinates.
 
 ### `mclBnG2`
-This is a struct of `G2` with three members `x`, `y`, `z` of type `mclBnFp2`.
+This is a struct for `G2` with three members `x`, `y`, `z` of type `mclBnFp2`.
 
-An element `Q` of `G2` is represented as `Q = [x:y:z]` of a Jacobi coordinate.
+An element `Q` of `G2` is represented as `Q = [x:y:z]` in Jacobian coordinates.
 
 ### `mclBnGT`
 
-This is a struct of `GT` with a member `mclBnFp d[12]`.
+This is a struct for `GT` with a member `mclBnFp d[12]`.
 
 ## C++ Structures
 
-The namespace is `mcl::bn`.
+The namespace is `mcl`.
 
 ### `Fp`
-This is a class of `Fp`.
+This is a class for `Fp`.
 
 ### `Fr`
-This is a class of `Fr`.
+This is a class for `Fr`.
 
 ### `Fp2`
-This is a struct of `Fp2` with a member `a` and `b` of type `Fp`.
+This is a struct for `Fp2` with members `a` and `b` of type `Fp`.
 
 An element `x` of `Fp2` is represented as `x = a + b i` where `i^2 = -1`.
 
 ### `Fp6`
-This is a struct of `Fp6` with a member `a`, `b`, and `c` of type `Fp2`.
+This is a struct for `Fp6` with members `a`, `b`, and `c` of type `Fp2`.
 
 An element `x` of `Fp6` is represented as `x = a + b v + c v^2` where `v^3 = xi := 1 + i`.
 
 ### `Fp12`
-This is a struct of `Fp12` with a member `a` and `b` of type `Fp6`.
+This is a struct for `Fp12` with members `a` and `b` of type `Fp6`.
 
 An element `x` of `Fp12` is represented as `x = a + b w` where `w^2 = v`.
 
 ### `G1`
-This is a struct of `G1` with three members `x`, `y`, `z` of type `Fp`.
+This is a struct for `G1` with three members `x`, `y`, `z` of type `Fp`.
 
-An element `P` of `G1` is represented as `P = [x:y:z]` of a Jacobi coordinate.
+An element `P` of `G1` is represented as `P = [x:y:z]` in Jacobian coordinates.
 
 ### `G2`
-This is a struct of `G2` with three members `x`, `y`, `z` of type `Fp2`.
+This is a struct for `G2` with three members `x`, `y`, `z` of type `Fp2`.
 
-An element `Q` of `G2` is represented as `Q = [x:y:z]` of a Jacobi coordinate.
+An element `Q` of `G2` is represented as `Q = [x:y:z]` in Jacobian coordinates.
 
 ### `GT`
 
-`GT` is an alias of `Fp12`.
-But it means a set `{ x in Fp12 | x^r = 1}`.
+`GT` is an alias for `Fp12`.
+However, it represents the set `{ x in Fp12 | x^r = 1}`.
 
-### sizeof
+### Parameter Settings and Supported Curves
+By default, `MCL_FP_BIT=384` and `MCL_FR_BIT=256` are set.
+If you want to change these values, use commands such as `make MCL_FP_BIT=256 MCL_FR_BIT=256`.
 
-library           |MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|
-------------------|------------------|------------------|---------|---------|
-libmclbn256.a     |          256     |         256      |   32    |   32    |
-libmclbn384_256.a |          384     |         256      |   32    |   48    |
-libmclbn384.a     |          384     |         384      |   48    |   48    |
+MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|supported curves
+-|-|-|-|-
+256|256|32|32|MCL_BN254, MCL_BN_SNARK1
+384|256|48|32|+MCL_BLS12_381, MCL_BLS12_377
+384|384|48|48|+MCL_BN381_1
 
 ## Thread safety
-All functions except for initialization and changing global settings are thread-safe.
+All functions except initialization and global setting changes are thread-safe.
 
 ## Initialization
 
 ### C
 
-Initialize mcl library. Call this function at first before calling the other functions.
+Initialize the mcl library. Call this function first before calling other functions.
 
 ```c
 int mclBn_init(int curve, int compiledTimeVar);
 ```
 
 - `curve` ; specify the curve type
-  - MCL_BN254 ; BN254 (a little faster if including `mcl/bn_c256.h` and linking `libmclbn256.{a,so}`)
-  - MCL_BN_SNARK1 ; the same parameter used in libsnark
-  - MCL_BLS12_381 ; BLS12-381
-  - MCL_BN381_1 ; BN381 (include `mcl/bn_c384.h` and link `libmclbn384.{a,so}`)
-- `compiledTimeVar` ; set `MCLBN_COMPILED_TIME_VAR`, which macro is used to make sure that
-the values are the same when the library is built and used.
-- return 0 if success.
+- `compiledTimeVar` ; set `MCLBN_COMPILED_TIME_VAR`, a macro used to ensure that
+the values are consistent between library build time and usage.
+- return 0 on success.
 - This is not thread safe.
 
 ### C++
@@ -172,8 +167,9 @@ void initPairing(<curve type>);
 curve type is defined in `mcl/curve_type.h`.
 - BN254
 - BN_SNARK1
-- BN381_1
 - BLS12_381
+- BLS12_377
+- BN381_1
 
 ## Global setting
 
@@ -199,7 +195,7 @@ verifyOrderG1(bool doVerify);
 verifyOrderG2(bool doVerify);
 ```
 
-- verify if `doVerify` is 1 or does not. The default parameter is 0 because the cost of verification is not small.
+- verify if `doVerify` is 1, otherwise do not verify. The default parameter is 0 because verification has significant computational cost.
 - Set `doVerify = 1` if considering subgroup attack is necessary.
 - This is not thread-safe.
 
@@ -227,7 +223,7 @@ return true if success else false
 ## Setter / Getter
 
 ### Clear
-Set `x` is zero.
+Set `x` to zero.
 ```cpp
 void mclBnFr_clear(mclBnFr *x);
 void mclBnFp_clear(mclBnFp *x);
@@ -254,7 +250,7 @@ C++
 T x = <integer literal>;
 ```
 
-### Set `bufSize` bytes `buf` to `x` with masking according to the following way.
+### Set `bufSize` bytes from `buf` to `x` with masking according to the following method.
 ```c
 int mclBnFp_setLittleEndian(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndian(mclBnFr *x, const void *buf, mclSize bufSize);
@@ -267,11 +263,11 @@ T::setArrayMask(const uint8_t *buf, size_t n);
 
 1. set x = buf[0..bufSize-1] as little endian
 2. x &= (1 << bitLen(r)) - 1
-3. if (x >= r) x &= (1 << (bitLen(r) - 1)) - 1
+3. if (x >= r), then x &= (1 << (bitLen(r) - 1)) - 1
 
-- always return 0
+- always returns 0
 
-### Set `bufSize` bytes `buf` of mod `p` or `r` to `x`.
+### Set `bufSize` bytes from `buf` modulo `p` or `r` to `x`.
 ```c
 int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
@@ -282,9 +278,9 @@ C++
 T::setLittleEndianMod(const uint8_t *buf, mclSize bufSize);
 ```
 
-- return 0 if bufSize <= (sizeof(T) * 2) else -1
+- return 0 if bufSize <= (sizeof(T) * 2), otherwise -1
 
-### Get little-endian byte sequence `buf` corresponding to `x`
+### Get little-endian byte sequence in `buf` corresponding to `x`
 ```c
 mclSize mclBnFr_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFr *x);
 mclSize mclBnFp_getLittleEndian(void *buf, mclSize maxBufSize, const mclBnFp *x);
@@ -295,8 +291,8 @@ C++
 size_t T::getLittleEndian(uint8_t *buf, size_t maxBufSize) const
 ```
 
-- write `x` to `buf` as little endian
-- return the written size if sucess else 0
+- write `x` to `buf` in little-endian format
+- return the written size on success, otherwise 0
 - NOTE: `buf[0] = 0` and return 1 if `x` is zero.
 
 ### Serialization
@@ -316,14 +312,14 @@ mclSize T::serialize(void *buf, mclSize maxBufSize) const;
 ```
 
 - serialize `x` into `buf[0..maxBufSize-1]`
-- return written byte size if success else 0
+- return written byte size on success, otherwise 0
 
-### Serialization format
-- `Fp`(resp.  `Fr`) ; a little endian byte sequence with a fixed size
-  - the size is the return value of `mclBn_getFpByteSize()` (resp. `mclBn_getFpByteSize()`).
-- `G1` ; a compressed fixed size
+### Serialization Format
+- `Fp` (resp. `Fr`) ; a little-endian byte sequence with a fixed size
+  - the size is the return value of `mclBn_getFpByteSize()` (resp. `mclBn_getFrByteSize()`).
+- `G1` ; compressed with a fixed size
   - the size is equal to `mclBn_getG1ByteSize()` (=`mclBn_getFpByteSize()`).
-- `G2` ; a compressed fixed size
+- `G2` ; compressed with a fixed size
   - the size is equal to `mclBn_getG2ByteSize()`.
 
 A pseudo-code to serialize `P` of `G1` (resp. `G2`):
@@ -365,7 +361,7 @@ mclSize T::deserialize(const void *buf, mclSize bufSize);
 ```
 
 - deserialize `x` from `buf[0..bufSize-1]`
-- return read size if success else 0
+- return read size on success, otherwise 0
   - mclBnG1_deserialize and mclBnG2_deserialize check whether the point has the correct order of G1/G2.
   - mclBnGT_deserialize does not check it. Call mclBnGT_isValid if necessary.
 
@@ -390,7 +386,7 @@ size_t T::getStr(char *buf, size_t maxBufSize, int iMode = 0) const
   - 10 ; decimal number
   - 16 ; hexadecimal number
   - `MCLBN_IO_EC_PROJ` ; output as Jacobi coordinate
-- return `strlen(buf)` if success else 0.
+- return `strlen(buf)` on success, otherwise 0.
 
 The meaning of the output of `G1`:
 - `0` ; infinity
