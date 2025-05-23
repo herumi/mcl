@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_CPP_EXTENSION := .cpp .ll
-LOCAL_MODULE := mclbn384_256
+LOCAL_MODULE := mcl
 
 ifeq ($(TARGET_ARCH_ABI),x86_64)
   MY_BIT := 64
