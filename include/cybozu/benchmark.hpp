@@ -11,11 +11,15 @@
 #endif
 #include <stdio.h>
 
+//#define CYBOZU_BENCH_CHRONO
+
 #ifdef __EMSCRIPTEN__
 	#define CYBOZU_BENCH_USE_GETTIMEOFDAY
 #endif
 
-#ifdef CYBOZU_BENCH_USE_GETTIMEOFDAY
+#ifdef CYBOZU_BENCH_CHRONO
+#include <chrono>
+#elif defined(CYBOZU_BENCH_USE_GETTIMEOFDAY)
 	#include <sys/time.h>
 #elif !defined(CYBOZU_BENCH_DONT_USE_RDTSC)
 	#if defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
@@ -59,10 +63,17 @@ static inline void setPutCallback(void (*f)(double))
 } // cybozu::bench
 
 class CpuClock {
+#ifdef CYBOZU_BENCH_CHRONO
+	typedef std::chrono::high_resolution_clock::time_point Time;
+#else
+	typedef uint64_t Time;
+#endif
 public:
-	static inline uint64_t getCpuClk()
+	static inline Time getCpuClk()
 	{
-#ifdef CYBOZU_BENCH_USE_RDTSC
+#ifdef CYBOZU_BENCH_CHRONO
+		return std::chrono::high_resolution_clock::now();
+#elif defined(CYBOZU_BENCH_USE_RDTSC)
 #ifdef _MSC_VER
 		return __rdtsc();
 #else
@@ -93,17 +104,25 @@ public:
 #endif
 	}
 	CpuClock()
-		: clock_(0)
+		: begin_()
+		, end_()
+		, clock_(0)
 		, count_(0)
 	{
 	}
 	void begin()
 	{
-		clock_ -= getCpuClk();
+		begin_ = getCpuClk();
 	}
 	void end()
 	{
-		clock_ += getCpuClk();
+		end_ = getCpuClk();
+#ifdef CYBOZU_BENCH_CHRONO
+		clock_ += std::chrono::duration_cast<std::chrono::nanoseconds>(end_ - begin_).count();
+#else
+		clock_ += end_ - begin_;
+#endif
+		begin_ = end_;
 		count_++;
 	}
 	int getCount() const { return count_; }
@@ -147,6 +166,8 @@ public:
 	static const uint64_t maxClk = (uint64_t)1e8;
 #endif
 private:
+	Time begin_;
+	Time end_;
 	uint64_t clock_;
 	int count_;
 };

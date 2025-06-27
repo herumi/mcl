@@ -98,10 +98,6 @@ inline bool parsePrefix(size_t *readSize, bool *isMinus, int *base, const char *
 	return true;
 }
 
-/*
-	x[0, xn) += y
-	return 1 if overflow else 0
-*/
 bool hexCharToUint8(uint8_t *v, char _c)
 {
 	uint32_t c = uint8_t(_c); // cast is necessary

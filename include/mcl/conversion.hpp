@@ -104,8 +104,8 @@ size_t loadWord(char *buf, size_t bufSize, InputStream& is)
 
 
 /*
-	x[0, xn) += y
-	return 1 if overflow else 0
+	convert [0-9a-fA-F] to integer in [0, 15]
+	return true if success
 */
 MCL_DLL_API bool hexCharToUint8(uint8_t *v, char _c);
 

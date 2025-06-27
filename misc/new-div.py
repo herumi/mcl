@@ -155,5 +155,11 @@ def main():
     for x in [L-1, L, L+1, L*2-1, L*2, L*2+1, L*100-1, L*L-1, L*L, L*L+L-1, p-1]:
       modp.check(x)
 
+  modp = Mod(3, 2**33-1)
+  modp.put('3')
+  modp = Mod(3, 2**33-1)
+  modp.put('7')
+  modp = Mod(1234567, 2**64-1)
+  modp.put('1234567')
 if __name__ == '__main__':
   main()
