@@ -154,7 +154,7 @@ ifeq ($(MCL_USE_OMP),1)
   CFLAGS+=-DMCL_USE_OMP
   ifneq ($(findstring $(OS),mac/mac-m1),)
     CFLAGS+=-Xpreprocessor -fopenmp
-    LDFLAGS+=-lomp
+    LDFLAGS+=-lomp -L/opt/homebrew/opt/libomp/lib
   else
     CFLAGS+=-fopenmp
     LDFLAGS+=-fopenmp
