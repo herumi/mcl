@@ -129,7 +129,9 @@ typedef struct {
 #endif
 
 #define MCLBN_IO_EC_AFFINE 0
+#define MCLBN_IO_SERIALIZE 512
 #define MCLBN_IO_EC_PROJ 1024
+#define MCLBN_IO_BIG_ENDIAN 8192
 #define MCLBN_IO_SERIALIZE_HEX_STR 2048
 
 // for backword compatibility
