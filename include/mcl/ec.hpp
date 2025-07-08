@@ -1149,17 +1149,15 @@ public:
 	}
 	bool isValid() const
 	{
-		switch (mode_) {
-		case ec::Jacobi:
-			if (!ec::isValidJacobi(*this)) return false;
-			break;
-		case ec::Proj:
-			if (!ec::isValidProj(*this)) return false;
-			break;
-		case ec::Affine:
-			if (z.isZero()) return true;
+		if (z.isZero()) return true;
+		if (z.isOne()) {
 			if (!isValidAffine()) return false;
-			break;
+		} else if (mode_ == ec::Jacobi) {
+			if (!ec::isValidJacobi(*this)) return false;
+		} else if (mode_ == ec::Proj) {
+			if (!ec::isValidProj(*this)) return false;
+		} else if (mode_ == ec::Affine) {
+			return false;
 		}
 		if (verifyOrder_) return isValidOrder();
 		return true;

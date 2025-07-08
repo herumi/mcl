@@ -148,6 +148,18 @@ struct Test {
 			CYBOZU_TEST_ASSERT(R != O);
 			CYBOZU_TEST_ASSERT(O != R);
 			CYBOZU_TEST_ASSERT(R.isValid());
+			{
+				Ec T = R;
+				T.x += 1;
+				CYBOZU_TEST_ASSERT(!T.isValid());
+				T = R;
+				if (T.z.isOne()) {
+					T.z = 2;
+				} else {
+					T.z = 1;
+				}
+				CYBOZU_TEST_ASSERT(!T.isValid());
+			}
 			Ec R2 = P + P;
 			CYBOZU_TEST_EQUAL(R, R2);
 			{
