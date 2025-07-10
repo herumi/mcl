@@ -1153,9 +1153,7 @@ MCL_DLL_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t
 
 MCL_DLL_API void verifyOrderG1(bool doVerify)
 {
-	if (s_param.isBLS12) {
-		G1::setOrder(doVerify ? Fr::getOp().mp : 0);
-	}
+	G1::setOrder(doVerify ? Fr::getOp().mp : 0);
 }
 MCL_DLL_API void verifyOrderG2(bool doVerify)
 {
@@ -1212,12 +1210,14 @@ MCL_DLL_API void init(bool *pb, const mcl::CurveParam& cp)
 	Fp12::setPowVecGLV(powVecGLV);
 	G1::setCompressedExpression();
 	G2::setCompressedExpression();
-	verifyOrderG1(false);
-	verifyOrderG2(false);
 	if (s_param.isBLS12) {
 		G1::setVerifyOrderFunc(isValidOrderBLS12);
 		G2::setVerifyOrderFunc(isValidOrderBLS12);
+		verifyOrderG1(true);
+	} else {
+		verifyOrderG1(false); // BN curve
 	}
+	verifyOrderG2(true);
 	*pb = true;
 }
 
