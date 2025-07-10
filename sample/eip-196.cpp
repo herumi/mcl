@@ -121,9 +121,6 @@ int main()
 		printf("err ret=%d\n", ret);
 		return 1;
 	}
-	// verify the order of G1 and G2 when isValid() is called.
-	mclBn_verifyOrderG1(1);
-	mclBn_verifyOrderG2(1);
 
 	// G1 is defined over Fp
 	n = mclBn_getFieldOrder(buf, sizeof(buf));
