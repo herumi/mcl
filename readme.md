@@ -9,6 +9,9 @@ A portable and fast pairing-based cryptography library.
 mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
+# News
+- Remove unintended G1::isValidOrder on BN curve. It improves the performance of deserialization of a point of G1.
+
 # Version v3 includes breaking changes to lib/dll specifications.
 * The default `mcl.{a,lib}` has a maximum size of 384bit for the definition field Fp of the elliptic curve,
 and 256bit for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
