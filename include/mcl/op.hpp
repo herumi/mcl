@@ -13,20 +13,6 @@
 #include <stdio.h>
 #endif
 
-#if defined(__EMSCRIPTEN__) || defined(__wasm__)
-	#define MCL_DONT_USE_XBYAK
-#endif
-#if !defined(MCL_DONT_USE_XBYAK) && (defined(_WIN64) || defined(__x86_64__)) && (MCL_SIZEOF_UNIT == 8) && !defined(MCL_STATIC_CODE)
-	#define MCL_USE_XBYAK
-#endif
-#if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
-	#define MCL_X64_ASM
-	#define MCL_XBYAK_DIRECT_CALL
-#endif
-
-#define MCL_MAX_HASH_BIT_SIZE 512
-
-
 namespace mcl {
 
 static const int version = 0x301; /* 0xABC = A.BC */
