@@ -110,10 +110,35 @@ inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 	uint128_t t = uint128_t(x) * y;
 	*pH = uint64_t(t >> 64);
 	return uint64_t(t);
+#elif defined(_M_ARM64)
+	*pH = __umulh(x, y);
+	return x * y;
 #else
 	return _umul128(x, y, pH);
 #endif
 }
+
+#ifdef _M_ARM64
+
+inline uint64_t divUnit1(uint64_t*pr, uint64_t H, uint64_t L, uint64_t y)
+{
+	assert(y);
+	assert(H < y);
+	uint64_t q = 0;
+	for (int i = 0; i < 64; i++) {
+		q <<= 1;
+		H = (H << 1) | (L >> 63);
+		L <<= 1;
+		if (H >= y) {
+			H -= y;
+			q |= 1;
+		}
+	}
+	*pr = H;
+	return q;
+}
+
+#else
 
 inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 {
@@ -129,6 +154,8 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 	return _udiv128(H, L, y, pr);
 #endif
 }
+
+#endif
 
 #endif // MCL_SIZEOF_UNIT == 8
 
