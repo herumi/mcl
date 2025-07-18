@@ -9,9 +9,13 @@
 
 #include <string.h>
 
+#ifdef MCL_USE_XBYAK
 #define XBYAK_DISABLE_AVX512
 #ifndef XBYAK_NO_EXCEPTION
 	#define XBYAK_NO_EXCEPTION
+#endif
+#else
+	#define XBYAK_ONLY_CLASS_CPU
 #endif
 
 #include "xbyak/xbyak_util.h"

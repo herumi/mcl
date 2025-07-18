@@ -470,7 +470,7 @@ namespace mcl {
             public void Deserialize(byte[] buf)
             {
                 ulong n = mclBnFr_deserialize(ref this, buf, (ulong)buf.Length);
-                if (n == 0) {
+                if (n == 0 || n != (ulong)buf.Length) {
                     throw new ArithmeticException("mclBnFr_deserialize");
                 }
             }
@@ -613,7 +613,7 @@ namespace mcl {
             public void Deserialize(byte[] buf)
             {
                 ulong n = mclBnFp_deserialize(ref this, buf, (ulong)buf.Length);
-                if (n == 0) {
+                if (n == 0 || n != (ulong)buf.Length) {
                     throw new ArithmeticException("mclBnFp_deserialize");
                 }
             }
@@ -763,7 +763,7 @@ namespace mcl {
             public void Deserialize(byte[] buf)
             {
                 ulong n = mclBnG1_deserialize(ref this, buf, (ulong)buf.Length);
-                if (n == 0) {
+                if (n == 0 || n != (ulong)buf.Length) {
                     throw new ArithmeticException("mclBnG1_deserialize");
                 }
             }
@@ -885,7 +885,7 @@ namespace mcl {
             public void Deserialize(byte[] buf)
             {
                 ulong n = mclBnG2_deserialize(ref this, buf, (ulong)buf.Length);
-                if (n == 0) {
+                if (n == 0 || n != (ulong)buf.Length) {
                     throw new ArithmeticException("mclBnG2_deserialize");
                 }
             }
@@ -988,7 +988,7 @@ namespace mcl {
             public void Deserialize(byte[] buf)
             {
                 ulong n = mclBnGT_deserialize(ref this, buf, (ulong)buf.Length);
-                if (n == 0) {
+                if (n == 0 || n != (ulong)buf.Length) {
                     throw new ArithmeticException("mclBnGT_deserialize");
                 }
             }
