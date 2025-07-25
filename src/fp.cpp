@@ -361,7 +361,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return true;
 #endif
 	if (op.fg == 0) op.fg = fp::createFpGenerator();
-	op.fg->init(op);
+	if (!op.fg->init(op)) return false;
 #ifdef MCL_DUMP_JIT
 	return true;
 #endif
