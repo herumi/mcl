@@ -2091,7 +2091,7 @@ private:
 		mulx(rdx, rax, rdx);
 		adc(t3, rax);
 		mov(ptr[py + 8 * 4], t3);
-		adc(t4, edx);
+		adc(t4, rdx);
 		mov(ptr[py + 8 * 5], t4);
 
 		mov(rdx, ptr[px + 8 * 3]);
