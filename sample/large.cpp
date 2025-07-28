@@ -18,7 +18,7 @@ void mulGmp(mpz_class& z, const mpz_class& x, const mpz_class& y, const mpz_clas
 }
 void compareGmp(const std::string& pStr)
 {
-	Fp::init(pStr);
+	Fp::init(pStr.c_str());
 	std::string xStr = "2104871209348712947120947102843728";
 	std::string s1, s2;
 	{
@@ -41,10 +41,10 @@ void compareGmp(const std::string& pStr)
 	}
 }
 
-void test(const std::string& pStr, mcl::fp::Mode mode)
+void test(const std::string& pStr)
 {
-	printf("test %s\n", mcl::fp::ModeToStr(mode));
-	Fp::init(pStr, mode);
+	puts("test");
+	Fp::init(pStr.c_str());
 	const mcl::fp::Op& op = Fp::getOp();
 	printf("bitSize=%d\n", (int)Fp::getBitSize());
 	mpz_class p(pStr);
@@ -77,12 +77,7 @@ void test(const std::string& pStr, mcl::fp::Mode mode)
 
 void testAll(const std::string& pStr)
 {
-	test(pStr, mcl::fp::FP_GMP);
-	test(pStr, mcl::fp::FP_GMP_MONT);
-#ifdef MCL_USE_LLVM
-	test(pStr, mcl::fp::FP_LLVM);
-	test(pStr, mcl::fp::FP_LLVM_MONT);
-#endif
+	test(pStr);
 	compareGmp(pStr);
 }
 int main()

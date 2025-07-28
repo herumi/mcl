@@ -17,9 +17,9 @@ void mul9(const mcl::fp::Op& op, Unit *y, const Unit *x, const Unit *p)
 	op.fp_add(y, tmp, x, p); // 9x
 }
 
-void benchRaw(const char *p, mcl::fp::Mode mode)
+void benchRaw(const char *p)
 {
-	Fp::init(1, p, mode);
+	Fp::init(p, 1);
 	Fp2::init();
 	const size_t maxN = sizeof(Fp) / sizeof(Unit);
 	const mcl::fp::Op& op = Fp::getOp();
@@ -63,7 +63,6 @@ void benchRaw(const char *p, mcl::fp::Mode mode)
 	f2y = f2x;
 	CYBOZU_BENCH_T(fp2_sqrT, Fp2::sqr, f2x, f2x);
 	CYBOZU_BENCH_T(fp2_mulT, Fp2::mul, f2x, f2x, f2y);
-	printf("%s\n", mcl::fp::ModeToStr(mode));
 	const char *tStrTbl[] = {
 		"fp_add", "fp_sub",
 		"addPre", "subPre",
@@ -158,17 +157,7 @@ int main(int argc, char *argv[])
 			continue;
 		}
 		printf("prime=%s\n", p);
-		benchRaw(tbl[i], mcl::fp::FP_GMP);
-		benchRaw(tbl[i], mcl::fp::FP_GMP_MONT);
-#ifdef MCL_USE_LLVM
-		benchRaw(tbl[i], mcl::fp::FP_LLVM);
-		benchRaw(tbl[i], mcl::fp::FP_LLVM_MONT);
-#endif
-#ifdef MCL_X64_ASM
-		if (bitSize <= 384) {
-			benchRaw(tbl[i], mcl::fp::FP_XBYAK);
-		}
-#endif
+		benchRaw(tbl[i]);
 	}
 } catch (std::exception& e) {
 	printf("ERR %s\n", e.what());

@@ -322,7 +322,12 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	bool init(Op& op)
 	{
 #ifndef MCL_DUMP_JIT
-		if ((mcl::bint::g_cpuType & mcl::bint::tAVX_BMI2_ADX) == 0) return false;
+		uint32_t cpuType = mcl::bint::g_cpuType;
+		if (cpuType == 0) cpuType = mcl::bint::getCpuType(); // use getCpuType() if cpuType is not set yet.
+		// don't generate JIT code unless BMI2/ADX is supported.
+		if ((cpuType & mcl::bint::tAVX_BMI2_ADX) == 0) {
+			return true;
+		}
 #endif
 		reset(); // reset jit code for reuse
 #ifndef MCL_DUMP_JIT
@@ -339,6 +344,13 @@ struct FpGenerator : Xbyak::CodeGenerator {
 		}
 #endif
 //		printf("code size=%d\n", (int)getSize());
+#if 0
+		FILE *fp = fopen("bin1", "wb");
+		if (fp) {
+			fwrite(getCode(), 1, getSize(), fp);
+			fclose(fp);
+		}
+#endif
 #ifndef MCL_DUMP_JIT
 		setProtectModeRE(); // set read/exec memory
 #endif
@@ -2091,7 +2103,7 @@ private:
 		mulx(rdx, rax, rdx);
 		adc(t3, rax);
 		mov(ptr[py + 8 * 4], t3);
-		adc(t4, edx);
+		adc(t4, rdx);
 		mov(ptr[py + 8 * 5], t4);
 
 		mov(rdx, ptr[px + 8 * 3]);

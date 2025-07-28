@@ -50,6 +50,7 @@ enum CpuType {
 	tAVX512_IFMA = 1<<1
 };
 extern const uint32_t g_cpuType;
+extern uint32_t getCpuType();
 extern uint32_t initBint();
 
 // show integer as little endian

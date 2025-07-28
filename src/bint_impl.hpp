@@ -25,8 +25,7 @@ extern "C" void mclb_enable_fast();
 
 namespace mcl { namespace bint {
 
-
-uint32_t initBint()
+uint32_t getCpuType()
 {
 	uint32_t type = 0;
 
@@ -60,11 +59,17 @@ uint32_t initBint()
 			type &= tAVX512_IFMA;
 		}
 	}
+#endif
+	return type;
+}
+
+uint32_t initBint()
+{
+	uint32_t type = getCpuType();
 #if MCL_BINT_ASM_X64 == 1
 	if (type & tAVX_BMI2_ADX) {
 		mclb_enable_fast();
 	}
-#endif
 #endif
 	return type;
 }
