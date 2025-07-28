@@ -104,20 +104,6 @@ cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
 
-# For ARM64 Windows (under construction)
-Open command prompt and run
-```
-"\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
-```
-- Change the path according your system.
-
-Install clang-cl.exe.
-
-```
-clang++ --target=arm64-pc-windows-msvc src/fp.cpp src/base64.ll src/bint64.ll test/bls12_test.cpp -I include -I src -DMCL_MSM=0 -o bls12_test.exe
-./bls12_test.exe
-```
-
 # The following command does not run well yet.
 ```
 mkdir build
@@ -223,18 +209,35 @@ Open a console window, and
 git clone https://github.com/herumi/mcl
 cd mcl
 
-# static library
+# static library (support both C/C++ API)
 mklib
 mk -s test\bls12_test.cpp && bin\bls12_test.exe
 
-# dynamic library
+# dynamic library (support only C API: bn.h)
 mklib dll
-mk -d test\bls12_test.cpp && bin\bls12_test.exe
+mk -d test\bn_c384_256_test.cpp && bin\bn_c384_256_test.exe
 ```
 (not maintenanced)
 Open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
+```
+
+# How to build ARM64 Windows binaries on X64 Windows using Visual Studio
+Install Clang for Visual Studio.
+
+Open command prompt and run
+```
+"\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
+cd mcl
+
+# static library
+mklib_arm64
+mk_arm64 -s test\bls12_test.cpp
+
+# dynamic library
+mklib_arm64 dll
+mk_arm64 -d test\bn_c384_256_test.cpp
 ```
 
 # C# test
