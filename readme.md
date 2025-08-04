@@ -228,8 +228,9 @@ Install Clang for Visual Studio.
 
 Open command prompt and run
 ```
-"\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
 cd mcl
+setvar_arm64.bat
+"%VS_PATH%"\vc\auxiliary\build\vcvarsamd64_arm64.bat
 
 # static library
 mklib_arm64
