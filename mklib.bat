@@ -27,12 +27,11 @@ set OBJ=obj\fp.obj obj\msm_avx.obj bint-x64-win.obj
 
 cl /c %LOCAL_CFLAGS% src\fp.cpp /Foobj\fp.obj
 cl /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj /arch:AVX512
-lib /nologo /OUT:lib\mcl.lib /nodefaultlib %OBJ%
 
 if "%1"=="dll" (
-     echo link /nologo /DLL /OUT:bin\mclbn.dll %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
-     link /nologo /DLL /OUT:bin\mclbn.dll %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
-
-rem     cl /c %LOCAL_CFLAGS% src\she_c384_256.cpp /Foobj\she_c384_256.obj
-rem     link /nologo /DLL /OUT:bin\mclshe384_256.dll obj\she_c384_256.obj %OBJ% %LDFLAGS% /implib:lib\mclshe_c384_256.lib
+     echo link /nologo /DLL /OUT:bin\mclbn.dll /Brepro %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
+     link /nologo /DLL /OUT:bin\mclbn.dll /Brepro %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
+) else (
+  echo lib /nologo /OUT:lib\mcl.lib /Brepro /nodefaultlib %OBJ%
+  lib /nologo /OUT:lib\mcl.lib /Brepro /nodefaultlib %OBJ%
 )
