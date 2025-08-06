@@ -17,7 +17,6 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 and 256bit for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
 * The arguments of the Fp/Fr initialization function have been changed.
 * `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
-* The Windows DLL mcl.dll has been renamed to mclbn.dll.
 
 # Support architecture
 
@@ -74,8 +73,8 @@ clang++ is required except for x86-64 on Linux and Windows.
 make -j4 CXX=clang++
 ```
 
-- `lib/libmcl.*` ; core library
-- `lib/libmclbn384_256.*` ; library to use C-API of BLS12-381 pairing
+- `lib/libmcl.a`: static library
+- `lib/libmcl.so`: shared library
 
 # How to build with CMake
 
@@ -195,7 +194,7 @@ make ARCH=x86 LLVM_VER=-14 GMP_DIR=<install dir>
 ```
 make -f Makefile.cross BIT=32 TARGET=armv7l
 sudo apt install g++-arm-linux-gnueabi
-arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn384_256.a -DMCL_FP_BIT=384
+arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmcl.a -DMCL_FP_BIT=384
 env QEMU_LD_PREFIX=/usr/arm-linux-gnueabi/ qemu-arm ./a.out
 ```
 
