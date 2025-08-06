@@ -5,7 +5,7 @@ if "%1"=="-s" (
   set LOCAL_CFLAGS=%CFLAGS% /DMCL_DONT_EXPORT lib/mcl.lib
 ) else if "%1"=="-d" (
   echo use dynamic lib
-  set LOCAL_CFLAGS=%CFLAGS% lib/mclbn.lib /DMCL_DLL
+  set LOCAL_CFLAGS=%CFLAGS% bin/mcl.lib /DMCL_DLL
 ) else (
   echo "mk (-s|-d) <source file>"
   goto exit

@@ -29,8 +29,8 @@ cl /c %LOCAL_CFLAGS% src\fp.cpp /Foobj\fp.obj
 cl /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj /arch:AVX512
 
 if "%1"=="dll" (
-     echo link /nologo /DLL /OUT:bin\mclbn.dll /Brepro %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
-     link /nologo /DLL /OUT:bin\mclbn.dll /Brepro %OBJ% %LDFLAGS% /implib:lib\mclbn.lib
+     echo link /nologo /DLL /OUT:bin\mcl.dll /Brepro %OBJ% %LDFLAGS% /implib:bin\mcl.lib
+     link /nologo /DLL /OUT:bin\mcl.dll /Brepro %OBJ% %LDFLAGS% /implib:bin\mcl.lib
 ) else (
   echo lib /nologo /OUT:lib\mcl.lib /Brepro /nodefaultlib %OBJ%
   lib /nologo /OUT:lib\mcl.lib /Brepro /nodefaultlib %OBJ%
