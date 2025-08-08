@@ -222,9 +222,10 @@ Open mcl.sln and build or if you have msbuild.exe
 msbuild /p:Configuration=Release
 ```
 
-# How to build ARM64 Windows binaries on X64 Windows using Visual Studio
+# How to build ARM64 Windows binaries on x64 Windows using Visual Studio
 Install Clang for Visual Studio.
 
+## Use batch files
 Open command prompt and run
 ```
 cd mcl
@@ -239,6 +240,19 @@ mk_arm64 -s test\bls12_test.cpp
 mklib_arm64 dll
 mk_arm64 -d test\bn_c384_256_test.cpp
 ```
+- `lib/mcl.lib`: static library
+- `bin/{mcl.lib,mcl.dll}`: dynamic library
+
+## Use cmake
+
+```
+cd mcl
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-toolchain.cmake -DARM64_CROSS=ON
+cmake --build build --config Release
+```
+- `build/lib/mcl.lib`: static library
+- `build/bin/{mcl.lib,mcl.dll}`: dynamic library
+
 
 # C# test
 
