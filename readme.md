@@ -103,14 +103,6 @@ cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
 
-# The following command does not run well yet.
-```
-mkdir build
-cd build
-cmake -DCMAKE_CXX_COMPILER=clang-cl -A ARM64 ..
-msbuild mcl.sln /p:Configuration=Release /m /p:Platform=ARM64
-```
-
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.
 `src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib` which is defined `MCL_FP_BIT=384`.
@@ -222,7 +214,7 @@ Open mcl.sln and build or if you have msbuild.exe
 msbuild /p:Configuration=Release
 ```
 
-# How to build ARM64 Windows binaries on x64 Windows using Visual Studio
+# How to build ARM64 Windows binaries on x64 Windows
 Install Clang for Visual Studio.
 
 ## Use batch files
@@ -253,6 +245,13 @@ cmake --build build --config Release
 - `build/lib/mcl.lib`: static library
 - `build/bin/{mcl.lib,mcl.dll}`: dynamic library
 
+# How to build on ARM64 Windows
+
+```
+cd mcl
+cmake -S . -B build -A arm64
+cmake --build build --config Release
+```
 
 # C# test
 
