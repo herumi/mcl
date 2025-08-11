@@ -111,6 +111,9 @@ inline uint64_t mulUnit1(uint64_t *pH, uint64_t x, uint64_t y)
 	uint128_t t = uint128_t(x) * y;
 	*pH = uint64_t(t >> 64);
 	return uint64_t(t);
+#elif defined(_M_ARM64)
+	*pH = __umulh(x, y);
+	return x * y;
 #else
 	return _umul128(x, y, pH);
 #endif

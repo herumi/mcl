@@ -17,7 +17,6 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 and 256bit for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
 * The arguments of the Fp/Fr initialization function have been changed.
 * `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
-* The Windows DLL mcl.dll has been renamed to mclbn.dll.
 
 # Support architecture
 
@@ -74,8 +73,8 @@ clang++ is required except for x86-64 on Linux and Windows.
 make -j4 CXX=clang++
 ```
 
-- `lib/libmcl.*` ; core library
-- `lib/libmclbn384_256.*` ; library to use C-API of BLS12-381 pairing
+- `lib/libmcl.a`: static library
+- `lib/libmcl.so`: shared library
 
 # How to build with CMake
 
@@ -102,16 +101,6 @@ mkdir build
 cd build
 cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
-```
-
-# For ARM64 Windows
-
-Install clang-cl.exe.
-```
-mkdir build
-cd build
-cmake -DCMAKE_CXX_COMPILER=clang-cl -A ARM64 ..
-msbuild mcl.sln /p:Configuration=Release /m /p:Platform=ARM64
 ```
 
 ## How to build a static library with Visual Studio
@@ -197,7 +186,7 @@ make ARCH=x86 LLVM_VER=-14 GMP_DIR=<install dir>
 ```
 make -f Makefile.cross BIT=32 TARGET=armv7l
 sudo apt install g++-arm-linux-gnueabi
-arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmclbn384_256.a -DMCL_FP_BIT=384
+arm-linux-gnueabi-g++ sample/pairing.cpp -O3 -DNDEBUG -I ./include/ lib/libmcl.a -DMCL_FP_BIT=384
 env QEMU_LD_PREFIX=/usr/arm-linux-gnueabi/ qemu-arm ./a.out
 ```
 
@@ -205,25 +194,66 @@ The static library `libbls384_256.a` built by `bls/Makefile.onelib` in [bls](htt
 
 # How to build on 64-bit Windows with Visual Studio
 
-Python3 is necessary.
 Open a console window, and
 ```
 git clone https://github.com/herumi/mcl
 cd mcl
 
-# static library
+# static library (support both C/C++ API)
 mklib
 mk -s test\bls12_test.cpp && bin\bls12_test.exe
 
-# dynamic library
+# dynamic library (support only C API: bn.h)
 mklib dll
-mk -d test\bls12_test.cpp && bin\bls12_test.exe
+mk -d test\bn_c384_256_test.cpp && bin\bn_c384_256_test.exe
 ```
 (not maintenanced)
 Open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
 ```
+
+# How to build ARM64 Windows binaries on x64 Windows
+Install Clang for Visual Studio.
+
+## Use batch files
+Open command prompt and run
+```
+cd mcl
+setvar_arm64.bat
+"%VS_PATH%"\vc\auxiliary\build\vcvarsamd64_arm64.bat
+
+# static library
+mklib_arm64
+mk_arm64 -s test\bls12_test.cpp
+
+# dynamic library
+mklib_arm64 dll
+mk_arm64 -d test\bn_c384_256_test.cpp
+```
+- `lib/mcl.lib`: static library
+- `bin/{mcl.lib,mcl.dll}`: dynamic library
+
+## Use cmake
+
+```
+cd mcl
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-toolchain.cmake -DARM64_CROSS=ON
+cmake --build build --config Release
+```
+- `build/lib/mcl.lib`: static library
+- `build/bin/{mcl.lib,mcl.dll}`: dynamic library
+
+# How to build on ARM64 Windows
+
+```
+cd mcl
+cmake -S . -B build -A arm64 -DON_ARM64_WINDOWS=ON
+cmake --build build --config Release
+```
+- Remark: Since I'm not familiar with cmake and don't have an ARM64 Windows environment,
+the CMakeLists-arm64.txt for ARM64 is currently a separate file.
+I would like to merge it with CMakeLists.txt in the future.
 
 # C# test
 

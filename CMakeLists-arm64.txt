@@ -1,15 +1,3 @@
-# CMakeLists.txt
-option(ON_ARM64_WINDOWS "Build on ARM64 Windows" OFF)
-
-if(ON_ARM64_WINDOWS)
-
-message(STATUS "Loading ARM64 specific configuration")
-include(CMakeLists-arm64.txt)
-
-else()
-
-message(STATUS "Loading default configuration")
-
 cmake_minimum_required(VERSION 3.10)
 
 # ARM64 cross-compilation support
@@ -559,5 +547,3 @@ if(MCL_BUILD_SAMPLE)
 	# sample code
 	add_subdirectory(sample)
 endif()
-
-endif() # ON_ARM64_WINDOWS
