@@ -194,7 +194,6 @@ The static library `libbls384_256.a` built by `bls/Makefile.onelib` in [bls](htt
 
 # How to build on 64-bit Windows with Visual Studio
 
-Python3 is necessary.
 Open a console window, and
 ```
 git clone https://github.com/herumi/mcl
@@ -249,9 +248,12 @@ cmake --build build --config Release
 
 ```
 cd mcl
-cmake -S . -B build -A arm64
+cmake -S . -B build -A arm64 -DON_ARM64_WINDOWS=ON
 cmake --build build --config Release
 ```
+- Remark: Since I'm not familiar with cmake and don't have an ARM64 Windows environment,
+the CMakeLists-arm64.txt for ARM64 is currently a separate file.
+I would like to merge it with CMakeLists.txt in the future.
 
 # C# test
 
