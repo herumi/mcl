@@ -5,33 +5,8 @@ set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR ARM64)
 set(CMAKE_CROSSCOMPILING TRUE)
 
-# Find Visual Studio installation path
-execute_process(
-    COMMAND cmd /c "for /f \"usebackq tokens=*\" %i in (`\"%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe\" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do @echo %i"
-    OUTPUT_VARIABLE VS_PATH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    RESULT_VARIABLE VS_RESULT
-    ERROR_QUIET
-)
-
-if(NOT VS_RESULT EQUAL 0 OR NOT VS_PATH)
-    # Fallback: try common paths
-    set(VS_COMMON_PATHS
-        "C:/Program Files/Microsoft Visual Studio/2022/Professional"
-        "C:/Program Files/Microsoft Visual Studio/2022/Community"
-        "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
-        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional"
-        "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community"
-    )
-
-    foreach(VS_TEST_PATH ${VS_COMMON_PATHS})
-        if(EXISTS "${VS_TEST_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
-            set(VS_PATH "${VS_TEST_PATH}")
-            break()
-        endif()
-    endforeach()
-endif()
-
+# Find Visual Studio installation path via shared helper
+include("${CMAKE_CURRENT_LIST_DIR}/FindVisualStudio.cmake")
 if(NOT VS_PATH OR NOT EXISTS "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
     message(FATAL_ERROR "Visual Studio with LLVM x64 tools not found. Please install Visual Studio with C++ LLVM tools.")
 endif()

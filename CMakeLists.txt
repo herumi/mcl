@@ -114,18 +114,26 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Check if we need special Windows ARM64 handling first
 set(ARM64_WINDOWS_CLANG FALSE)
 if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS OR ARM64_CROSS)
-	# Find Visual Studio installation dynamically
-	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
-	find_program(VS_CLANG clang++.exe 
-		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin")
-	if(VS_CLANG)
+	# Use shared helper to find VS path and ARM64 LLVM clang
+	include(FindVisualStudio)
+	if(VS_PATH AND EXISTS "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
+		set(VS_CLANG "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
 		set(ARM64_WINDOWS_CLANG TRUE)
-		message("Found VS Clang for ARM64: ${VS_CLANG}")
+		message(STATUS "Found VS Clang for ARM64: ${VS_CLANG}")
+	else()
+		# Fallback: try to locate via environment if helper couldn't find it
+		set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
+		find_program(VS_CLANG clang++.exe 
+			PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
+			      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
+			      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin"
+			      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
+			      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
+			      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin")
+		if(VS_CLANG)
+			set(ARM64_WINDOWS_CLANG TRUE)
+			message(STATUS "Found VS Clang for ARM64: ${VS_CLANG}")
+		endif()
 	endif()
 endif()
 
@@ -253,8 +261,8 @@ if(ARM64_CROSS)
 	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 
-	add_custom_command(OUTPUT ${BINT_OBJ}
-		COMMAND "${VS_PATH_CACHE}/VC/Tools/Llvm/x64/bin/clang++.exe" --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -fno-ident -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll
+    add_custom_command(OUTPUT ${BINT_OBJ}
+		COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang++.exe" --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -fno-ident -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling bint${BIT}.ll for ARM64")
 	add_custom_target(gen_bint.o
@@ -419,8 +427,8 @@ elseif(ARM64_CROSS)
 		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
-		add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND "${VS_PATH_CACHE}/VC/Tools/Llvm/x64/bin/clang++.exe" --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -fno-ident -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
+        add_custom_command(OUTPUT ${BASE_OBJ}
+			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang++.exe" --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -fno-ident -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			COMMENT "Compiling base${BIT}.ll for ARM64")
 		add_custom_target(gen_base.o
@@ -431,8 +439,8 @@ elseif(ARM64_CROSS)
 
 		# Compile fp.cpp to object for static library (with /MT)
 		set(FP_OBJ_STATIC "${CMAKE_CURRENT_BINARY_DIR}/fp_static.o")
-		add_custom_command(OUTPUT ${FP_OBJ_STATIC}
-			COMMAND "${VS_PATH_CACHE}/VC/Tools/Llvm/x64/bin/clang-cl.exe" --target=arm64-pc-windows-msvc /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8 /DMCL_FP_BIT=384 /DMCL_FR_BIT=256 /DMCL_MSM=0 /DNOMINMAX /MT /Brepro -DMCL_DONT_EXPORT -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+        add_custom_command(OUTPUT ${FP_OBJ_STATIC}
+			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe" --target=arm64-pc-windows-msvc /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8 /DMCL_FP_BIT=384 /DMCL_FR_BIT=256 /DMCL_MSM=0 /DNOMINMAX /MT /Brepro -DMCL_DONT_EXPORT -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			COMMENT "Compiling fp.cpp for ARM64 static library")
 		add_custom_target(gen_fp_static.o
@@ -440,8 +448,8 @@ elseif(ARM64_CROSS)
 
 		# Compile fp.cpp to object for DLL (with /MD)
 		set(FP_OBJ_DLL "${CMAKE_CURRENT_BINARY_DIR}/fp_dll.o")
-		add_custom_command(OUTPUT ${FP_OBJ_DLL}
-			COMMAND "${VS_PATH_CACHE}/VC/Tools/Llvm/x64/bin/clang-cl.exe" --target=arm64-pc-windows-msvc /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8 /DMCL_FP_BIT=384 /DMCL_FR_BIT=256 /DMCL_MSM=0 /DNOMINMAX /MD /Brepro -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+        add_custom_command(OUTPUT ${FP_OBJ_DLL}
+			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe" --target=arm64-pc-windows-msvc /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8 /DMCL_FP_BIT=384 /DMCL_FR_BIT=256 /DMCL_MSM=0 /DNOMINMAX /MD /Brepro -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			COMMENT "Compiling fp.cpp for ARM64 DLL")
 		add_custom_target(gen_fp_dll.o
@@ -458,14 +466,14 @@ elseif(ARM64_CROSS)
 
 		# Custom DLL creation command using clang-cl
 		set(MCL_DLL "${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll")
-		add_custom_command(OUTPUT ${MCL_DLL}
-			COMMAND "${VS_PATH_CACHE}/VC/Tools/Llvm/x64/bin/clang-cl.exe"
+        add_custom_command(OUTPUT ${MCL_DLL}
+			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe"
 				--target=arm64-pc-windows-msvc /LD
 				${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ}
 				/Fe:${MCL_DLL} /link /Brepro
 				"${CLANG_RT_PATH_CACHE}/clang_rt.builtins-aarch64.lib"
 				msvcrt.lib kernel32.lib
-				/LIBPATH:"${VS_PATH_CACHE}/VC/Tools/MSVC/${MSVC_VERSION_CACHE}/lib/arm64"
+				/LIBPATH:"${VS_PATH}/VC/Tools/MSVC/${MSVC_VERSION_CACHE}/lib/arm64"
 				/LIBPATH:"${WindowsSdkDir_CACHE}Lib/${WindowsSDKVersion_CACHE}/um/arm64"
 				/LIBPATH:"${WindowsSdkDir_CACHE}Lib/${WindowsSDKVersion_CACHE}/ucrt/arm64"
 			DEPENDS gen_fp_dll.o gen_base.o gen_bint.o
