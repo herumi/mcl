@@ -9,7 +9,7 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 endif()
 
 # ARM64 cross-compilation support
-option(ARM64_CROSS "Enable ARM64 Windows cross-compilation" OFF)
+option(ARM64_CROSS "Enable Windows ARM64 cross-compilation" OFF)
 
 if(ARM64_CROSS AND NOT CMAKE_TOOLCHAIN_FILE)
 	message(FATAL_ERROR "ARM64_CROSS requires CMAKE_TOOLCHAIN_FILE. Use: cmake -DCMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-toolchain.cmake -DARM64_CROSS=ON")
@@ -103,6 +103,11 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Always load Visual Studio finder on Windows; it is the single source of truth for VS paths
+if(WIN32)
+	include(FindVisualStudio)
+endif()
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -112,28 +117,15 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Check if we need special Windows ARM64 handling first
-set(ARM64_WINDOWS_CLANG FALSE)
+set(CLANG_WINDOWS_ARM64 FALSE)
 if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS OR ARM64_CROSS)
 	# Use shared helper to find VS path and ARM64 LLVM clang
-	include(FindVisualStudio)
 	if(VS_PATH AND EXISTS "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
 		set(VS_CLANG "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
-		set(ARM64_WINDOWS_CLANG TRUE)
+		set(CLANG_WINDOWS_ARM64 TRUE)
 		message(STATUS "Found VS Clang for ARM64: ${VS_CLANG}")
 	else()
-		# Fallback: try to locate via environment if helper couldn't find it
-		set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
-		find_program(VS_CLANG clang++.exe 
-			PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
-			      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
-			      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin"
-			      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/bin"
-			      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/bin"
-			      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/bin")
-		if(VS_CLANG)
-			set(ARM64_WINDOWS_CLANG TRUE)
-			message(STATUS "Found VS Clang for ARM64: ${VS_CLANG}")
-		endif()
+	message(FATAL_ERROR "Visual Studio with LLVM ARM64 tools not found. Install VS with C++ workload and LLVM tools. VS_PATH='${VS_PATH}'")
 	endif()
 endif()
 
@@ -143,7 +135,7 @@ if(ARM64_CROSS)
 	add_library(mcl SHARED src/fp.cpp)
 	add_library(mcl_st STATIC src/fp.cpp)
 	# These will be excluded from the build later and replaced with custom commands
-elseif(ARM64_WINDOWS_CLANG)
+elseif(CLANG_WINDOWS_ARM64)
 	# For Windows ARM64 with Clang, create empty targets and add objects later
 	add_library(mcl SHARED)
 	add_library(mcl_st STATIC)
@@ -269,22 +261,19 @@ if(ARM64_CROSS)
 		SOURCES ${BINT_OBJ})
 
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
-	# Find ML64 assembler dynamically without hardcoded paths
-	set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
-	find_program(ML64 ml64.exe 
-		PATHS "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/MSVC/*/bin/Hostx64/x64"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/MSVC/*/bin/Hostx64/x64"
-		      "$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/MSVC/*/bin/Hostx64/x64"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/MSVC/*/bin/Hostx64/x64"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/MSVC/*/bin/Hostx64/x64"
-		      "$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/MSVC/*/bin/Hostx64/x64"
-		DOC "path to assembler")
-	
-	if(NOT ML64)
-		message(FATAL_ERROR "ML64 assembler not found. Please ensure Visual Studio with MSVC tools is installed.")
+	# Locate ML64 assembler under VS_PATH discovered by FindVisualStudio
+	if(NOT VS_PATH)
+		message(FATAL_ERROR "VS_PATH is not set. FindVisualStudio must locate Visual Studio on Windows builds.")
 	endif()
-	
-	message("Found ML64 assembler: ${ML64}")
+	file(GLOB ML64_CAND "${VS_PATH}/VC/Tools/MSVC/*/bin/Hostx64/x64/ml64.exe")
+	list(LENGTH ML64_CAND _ml64_len)
+	if(_ml64_len GREATER 0)
+		list(GET ML64_CAND 0 ML64)
+	endif()
+	if(NOT ML64 OR NOT EXISTS "${ML64}")
+		message(FATAL_ERROR "ML64 assembler not found under VS_PATH='${VS_PATH}'. Ensure Visual Studio with MSVC tools is installed.")
+	endif()
+	message(STATUS "Found ML64 assembler: ${ML64}")
 	set(BINT_X64_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint-x64-win.obj")
 	add_custom_command(OUTPUT ${BINT_X64_OBJ}
 		COMMAND ${ML64} /c /Fo ${BINT_X64_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/asm/bint-x64-win.asm
@@ -305,7 +294,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	endif()
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 	# Windows ARM64 - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
-	if(ARM64_WINDOWS_CLANG)
+	if(CLANG_WINDOWS_ARM64)
 		# Determine which compiler to use based on build type
 		if(WINDOWS_ARM64_CROSS)
 			# For cross-compilation, use the toolchain's compiler
@@ -349,15 +338,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		add_dependencies(mcl_st gen_bint.o gen_base.o gen_fp.o)
 		
-		# Find and link Clang runtime library for ARM64 - search dynamically for any VS version
-		set(PROGRAM_FILES_X86 "ProgramFiles(x86)")
-		file(GLOB VS_CLANG_RT_DIRS 
-			"$ENV{ProgramFiles}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
-			"$ENV{ProgramFiles}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
-			"$ENV{ProgramFiles}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
-			"$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Enterprise/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
-			"$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Professional/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows"
-			"$ENV{${PROGRAM_FILES_X86}}/Microsoft Visual Studio/*/Community/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
+	# Find and link Clang runtime library for ARM64 strictly under VS_PATH
+	file(GLOB VS_CLANG_RT_DIRS "${VS_PATH}/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
 		
 		if(VS_CLANG_RT_DIRS)
 			list(GET VS_CLANG_RT_DIRS 0 CLANG_RT_PATH)
@@ -382,11 +364,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 			libvcruntime.lib
 			libucrt.lib)
 	else()
-		message(WARNING "Visual Studio Clang for ARM64 not found, falling back to pure C++ implementation")
-		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM=0)
-		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM=0)
-		target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-		target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
+		message(FATAL_ERROR "Visual Studio Clang for ARM64 is required on Windows ARM64 builds and was not found.")
 	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
