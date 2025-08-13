@@ -195,10 +195,10 @@ elseif(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
 
 	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /O2 /EHsc /GS- /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
 	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /O2 /EHsc /GS- /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
 
@@ -210,10 +210,10 @@ elseif(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 
 elseif(MSVC)
 	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /Ox /EHsc /GS- /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /O2 /EHsc /GS- /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
 	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /DNDEBUG")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /O2 /EHsc /GS- /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
 
@@ -221,9 +221,21 @@ elseif(MSVC)
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Brepro")
 	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /Brepro")
 
-	target_compile_definitions(mcl PUBLIC NOMINMAX)
-	target_compile_definitions(mcl_st PUBLIC NOMINMAX)
-	set(MCL_COMPILE_OPTIONS /W4)
+	# Set mklib.bat compatible static linker flags for x64 Windows
+	if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+		set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /nodefaultlib")
+	endif()
+
+	# Set mklib.bat compatible flags for x64 Windows
+	if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
+		target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=1 MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
+		target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=1 MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT} MCL_DONT_EXPORT)
+		set(MCL_COMPILE_OPTIONS /W4 /openmp)
+	else()
+		target_compile_definitions(mcl PUBLIC NOMINMAX)
+		target_compile_definitions(mcl_st PUBLIC NOMINMAX)
+		set(MCL_COMPILE_OPTIONS /W4)
+	endif()
 else()
 	# Set compiler flags for warnings
 	set(MCL_COMPILE_OPTIONS -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align
@@ -280,10 +292,10 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint-x64-win.obj
 		SOURCES ${BINT_X64_OBJ})
-	target_link_libraries(mcl PUBLIC ${BINT_X64_OBJ})
 	add_dependencies(mcl gen_bint-x64-win.obj)
-	target_link_libraries(mcl_st PUBLIC ${BINT_X64_OBJ})
+	target_sources(mcl PRIVATE ${BINT_X64_OBJ})
 	add_dependencies(mcl_st gen_bint-x64-win.obj)
+	target_sources(mcl_st PRIVATE ${BINT_X64_OBJ})
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	if (CMAKE_SYSTEM_NAME STREQUAL "MSYS")
 		target_sources(mcl PRIVATE src/asm/bint-x64-mingw.S)
@@ -487,18 +499,18 @@ endif()
 
 # use src/msm_avx.cpp on x64
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
-#	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
+	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
 
-#	add_custom_command(OUTPUT ${MSM_OBJ}
-#		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /Ox /Oy /Gm- /EHsc /MT /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
-#		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-#	add_custom_target(msm_avx.o
-#		SOURCES ${MSM_OBJ})
-#	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
-#	add_dependencies(mcl msm_avx.o)
-#	target_link_libraries(mcl_st PUBLIC ${MSM_OBJ})
-#	add_dependencies(mcl_st msm_avx.o)
-#	target_sources(mcl_st PRIVATE ${MSM_OBJ})
+	add_custom_command(OUTPUT ${MSM_OBJ}
+		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc /MT /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	add_custom_target(msm_avx.o
+		SOURCES ${MSM_OBJ})
+	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
+	add_dependencies(mcl msm_avx.o)
+	target_link_libraries(mcl_st PUBLIC ${MSM_OBJ})
+	add_dependencies(mcl_st msm_avx.o)
+	target_sources(mcl_st PRIVATE ${MSM_OBJ})
 
 elseif(ARM64_CROSS)
 	# ARM64 doesn't use AVX instructions, so skip MSM optimization
