@@ -201,7 +201,7 @@ elseif(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
-	
+
 	# Set /Brepro for reproducible builds in linker flags
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Brepro")
 	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /Brepro")
@@ -216,7 +216,7 @@ elseif(MSVC)
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /Ox /EHsc /GS- /DNDEBUG")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
 	endif()
-	
+
 	# Set /Brepro for reproducible builds in linker flags
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Brepro")
 	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /Brepro")
@@ -305,42 +305,42 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 			set(ARM64_COMPILER ${VS_CLANG})
 			message(STATUS "Using native ARM64 compiler: ${ARM64_COMPILER}")
 		endif()
-		
+
 		# Compile LLVM files with appropriate Clang
 		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
-		
+
 		add_custom_command(OUTPUT ${BINT_OBJ}
 			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-		
+
 		add_custom_command(OUTPUT ${BASE_OBJ}
 			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-		
+
 		# Compile fp.cpp with Clang (like mklib_arm64.bat)
 		add_custom_command(OUTPUT ${FP_OBJ}
 			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX -DMCL_BINT_ASM_X64=0
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp)
-		
+
 		add_custom_target(gen_bint.o SOURCES ${BINT_OBJ})
 		add_custom_target(gen_base.o SOURCES ${BASE_OBJ})
 		add_custom_target(gen_fp.o SOURCES ${FP_OBJ})
-		
+
 		# Add the compiled objects as sources to the targets
 		target_sources(mcl PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
-		
+
 		target_link_libraries(mcl PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		add_dependencies(mcl gen_bint.o gen_base.o gen_fp.o)
 		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
 		add_dependencies(mcl_st gen_bint.o gen_base.o gen_fp.o)
-		
+
 	# Find and link Clang runtime library for ARM64 strictly under VS_PATH
 	file(GLOB VS_CLANG_RT_DIRS "${VS_PATH}/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
-		
+
 		if(VS_CLANG_RT_DIRS)
 			list(GET VS_CLANG_RT_DIRS 0 CLANG_RT_PATH)
 			message("Found Clang RT path: ${CLANG_RT_PATH}")
@@ -351,15 +351,15 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
 				target_link_libraries(mcl_st PUBLIC ${CLANG_RT_LIB})
 			endif()
 		endif()
-		
+
 		# Add necessary Windows system libraries for Clang ARM64 builds
-		target_link_libraries(mcl PUBLIC 
-			kernel32.lib 
+		target_link_libraries(mcl PUBLIC
+			kernel32.lib
 			msvcrt.lib
 			vcruntime.lib
 			ucrt.lib)
-		target_link_libraries(mcl_st PUBLIC 
-			kernel32.lib 
+		target_link_libraries(mcl_st PUBLIC
+			kernel32.lib
 			libcmt.lib
 			libvcruntime.lib
 			libucrt.lib)
