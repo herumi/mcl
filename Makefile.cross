@@ -1,12 +1,17 @@
 include common.mk
 
+# RISC-V
+# make -f Makefile.cross test TARGET=riscv64-linux-gnu LD_PREFIX=riscv64-linux-gnu
+
 LIB_DIR=lib
 OBJ_DIR=obj
 EXE_DIR=bin
 SRC_SRC=fp.cpp bn_c384_256.cpp
-VPATH=src
-MCL_LIB=$(LIB_DIR)/libmclbn384_256.a
+VPATH=src sample
+MCL_LIB=$(LIB_DIR)/libmcl.a
 LIB_OBJ=$(addprefix $(OBJ_DIR)/,$(SRC_SRC:.cpp=.o) bint.o base.o)
+TEST_SRC=pairing_c.c
+TEST_EXE=$(addprefix $(EXE_DIR)/,$(TEST_SRC:.c=.exe))
 
 CFLAGS=-std=c++03 -I ./include -I ./src
 CFLAGS+=-fno-threadsafe-statics -fno-exceptions -fno-rtti -DMCL_FP_BIT=384 -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
@@ -20,8 +25,19 @@ $(MCL_LIB): $(LIB_OBJ)
 $(OBJ_DIR)/%.o: %.cpp
 	$(CXX) -c $< -o $@ $(CFLAGS)
 
+$(OBJ_DIR)/%.o: %.c
+	$(CXX) -c $< -o $@ $(CFLAGS)
+
 $(OBJ_DIR)/bint.o: src/bint$(BIT).ll
 	$(CXX) -c $< -o $@ $(CFLAGS)
 
 $(OBJ_DIR)/base.o: src/base$(BIT).ll
 	$(CXX) -c $< -o $@ $(CFLAGS)
+
+$(TEST_EXE): $(OBJ_DIR)/$(TEST_SRC:.c=.o) $(MCL_LIB)
+	$(CXX) $< -o $@ $(CFLAGS) $(MCL_LIB)
+
+test: $(TEST_EXE)
+	env QEMU_LD_PREFIX=/usr/$(TARGET) $(TEST_EXE)
+
+.PHONY: test
