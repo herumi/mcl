@@ -20,13 +20,15 @@ namespace mcl {
                 TestCurve(BN254);
                 Console.WriteLine("BN_SNARK");
                 TestCurve(BN_SNARK);
-                Console.WriteLine("BLS12_381");
-                TestCurve(BLS12_381);
-                Console.WriteLine("BLS12_381 eth");
-                ETHmode();
-                TestETH();
-                TestDFINITY();
-                TestDRAND();
+                if (FP_UNIT_SIZE == 6) {
+                    Console.WriteLine("BLS12_381");
+                    TestCurve(BLS12_381);
+                    Console.WriteLine("BLS12_381 eth");
+                    ETHmode();
+                    TestETH();
+                    TestDFINITY();
+                    TestDRAND();
+                }
                 if (err == 0) {
                     Console.WriteLine("all tests succeed");
                 } else {

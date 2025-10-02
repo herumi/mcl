@@ -3,7 +3,7 @@
 namespace mcl {
 
 #ifndef MCL_MSM
-	#if (/*defined(_WIN64) ||*/ defined(__x86_64__)) && !defined(__APPLE__) && MCL_SIZEOF_UNIT == 8 && MCL_FP_BIT == 384 && MCL_FR_BIT == 256
+	#if (defined(_WIN64) || defined(__x86_64__)) && !defined(__APPLE__) && MCL_SIZEOF_UNIT == 8 && MCL_FP_BIT == 384 && MCL_FR_BIT == 256
 		#define MCL_MSM 1
 	#else
 		#define MCL_MSM 0

@@ -228,8 +228,8 @@ elseif(MSVC)
 
 	# Set mklib.bat compatible flags for x64 Windows
 	if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-		target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=1 MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-		target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=1 MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT} MCL_DONT_EXPORT)
+		target_compile_definitions(mcl PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
+		target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT} MCL_DONT_EXPORT)
 		set(MCL_COMPILE_OPTIONS /W4 /openmp)
 	else()
 		target_compile_definitions(mcl PUBLIC NOMINMAX)
