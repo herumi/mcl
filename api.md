@@ -133,6 +133,7 @@ However, it represents the set `{ x in Fp12 | x^r = 1}`.
 ### Parameter Settings and Supported Curves
 By default, `MCL_FP_BIT=384` and `MCL_FR_BIT=256` are set.
 If you want to change these values, use commands such as `make MCL_FP_BIT=256 MCL_FR_BIT=256`.
+You must set the same macro and value to compile your application program.
 
 MCL_FP_BIT|MCL_FR_BIT|sizeof Fr|sizeof Fp|supported curves
 -|-|-|-|-

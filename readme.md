@@ -11,7 +11,7 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
 - Fix memory leak of some operations on Windows
-- Remove unintended G1::isValidOrder on BN curve. It improves the performance of deserialization of a point of G1.
+- Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 
 # Version v3 includes breaking changes to lib/dll specifications.
 * The default `mcl.{a,lib}` has a maximum size of 384bit for the definition field Fp of the elliptic curve,
@@ -162,7 +162,7 @@ env MCL_PROF=1 bin/bls12_test.exe
 ```
 
 ### Use Intel VTune profiler
-Supporse VTune is installed in `/opt/intel/vtune_amplifier/`.
+Suppose VTune is installed in `/opt/intel/vtune_amplifier/`.
 ```
 make MCL_USE_PROF=2 bin/bls12_test.exe
 env MCL_PROF=2 bin/bls12_test.exe
@@ -280,7 +280,7 @@ mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Fi
 
 * [IBE on browser](https://herumi.github.io/mcl-wasm/ibe-demo.html)
 * [SHE on browser](https://herumi.github.io/she-wasm/she-demo.html)
-* [BLS signature on brower](https://herumi.github.io/bls-wasm/bls-demo.html)
+* [BLS signature on browser](https://herumi.github.io/bls-wasm/bls-demo.html)
 
 The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
 
@@ -322,11 +322,11 @@ This library contains some part of the followings software licensed by BSD-3-Cla
 * [_Skew Frobenius Map and Efficient Scalar Multiplication for Pairing–Based Cryptography_](https://www.researchgate.net/publication/221282560_Skew_Frobenius_Map_and_Efficient_Scalar_Multiplication_for_Pairing-Based_Cryptography),
 Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
-# compatilibity
+# compatibility
 
 - mclBnGT_inv returns a - b w, a conjugate of x for x = a + b w in Fp12 = Fp6[w]
   - use mclBnGT_invGeneric if x is not in GT
-- mclBn_setETHserialization(true) (de)serialize acoording to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
+- mclBn_setETHserialization(true) (de)serializes according to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
 - (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
   - The option SHARE_BASENAME_SUF is removed
 - 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
