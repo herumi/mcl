@@ -39,7 +39,7 @@ and 256bit for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_
   - BN\_SNARK1 : a BN curve over a 254-bit prime p such that n := p + 1 - t has high 2-adicity.
   - BN381\_1 : a BN curve over the 381-bit prime p(z) where z = -(2^94 + 2^76 + 2^72 + 1).
   - BN462 : a BN curve over the 462-bit prime p(z) where z = 2^114 + 2^101 - 2^14 - 1.
-- BLS12\_381 : [a BLS12-381 curve](https://blog.z.cash/new-snark-curve/)
+- BLS12\_381
 - BLS12\_377
 
 # BLS signature
@@ -397,3 +397,4 @@ MITSUNARI Shigeo(herumi@nifty.com)
 
 # Sponsors welcome
 [GitHub Sponsor](https://github.com/sponsors/herumi)
+
