@@ -131,13 +131,17 @@ void testMapToG1()
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (getCurveParam().b == 2) {
-		Fp c1;
-		bool b = Fp::squareRoot(c1, -3);
-		CYBOZU_TEST_ASSERT(b);
+	Fp c1;
+	bool b = Fp::squareRoot(c1, -3);
+	CYBOZU_TEST_ASSERT(b);
+	if (getCurveParam() == BN254) {
 		CYBOZU_TEST_EXCEPTION(mapToG1(g, 0), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(mapToG1(g, c1), cybozu::Exception);
 		CYBOZU_TEST_EXCEPTION(mapToG1(g, -c1), cybozu::Exception);
+	} else {
+		CYBOZU_TEST_NO_EXCEPTION(mapToG1(g, 0));
+		CYBOZU_TEST_NO_EXCEPTION(mapToG1(g, c1));
+		CYBOZU_TEST_NO_EXCEPTION(mapToG1(g, -c1));
 	}
 #endif
 }
@@ -153,8 +157,13 @@ void testMapToG2()
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
 #ifndef MCL_AVOID_EXCEPTION_TEST
-	if (getCurveParam().b == 2) {
+	{
+		Fp2 c1 = 0;
+		bool b = Fp::squareRoot(c1.a, -3);
+		CYBOZU_TEST_ASSERT(b);
 		CYBOZU_TEST_EXCEPTION(mapToG2(g, 0), cybozu::Exception);
+		CYBOZU_TEST_NO_EXCEPTION(mapToG2(g, c1));
+		CYBOZU_TEST_NO_EXCEPTION(mapToG2(g, -c1));
 	}
 #endif
 	Fp x;

@@ -59,9 +59,18 @@ struct MapTo {
 	{
 		F x, y, w;
 		bool b;
+		if (t.isZero()) {
+			x.clear();
+			*x.getFp0() = c2_;
+			y = G::b_;
+			*y.getFp0() += Fp::one();
+
+			if (!F::squareRoot(y, y)) return false;
+			P.set(&b, x, y);
+			return b;
+		}
 		bool negative = legendre(&b, t) < 0;
 		if (!b) return false;
-		if (t.isZero()) return false;
 		F::sqr(w, t);
 		w += G::b_;
 		*w.getFp0() += Fp::one();
