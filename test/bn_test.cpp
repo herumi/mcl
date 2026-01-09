@@ -123,40 +123,33 @@ void testSetStr(const G2& Q0)
 void testMapToG1()
 {
 	G1 g;
-	for (int i = 1; i < 10; i++) {
+	for (int i = 0; i < 10; i++) {
 		mapToG1(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G1 gr;
 		G1::mulGeneric(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
-#ifndef MCL_AVOID_EXCEPTION_TEST
-	if (getCurveParam().b == 2) {
-		Fp c1;
-		bool b = Fp::squareRoot(c1, -3);
-		CYBOZU_TEST_ASSERT(b);
-		CYBOZU_TEST_EXCEPTION(mapToG1(g, 0), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(mapToG1(g, c1), cybozu::Exception);
-		CYBOZU_TEST_EXCEPTION(mapToG1(g, -c1), cybozu::Exception);
+	Fp c1;
+	bool b = Fp::squareRoot(c1, -3);
+	if (b) {
+		mapToG1(g, c1);
+		CYBOZU_TEST_ASSERT(!g.isZero());
+		mapToG1(g, -c1);
+		CYBOZU_TEST_ASSERT(!g.isZero());
 	}
-#endif
 }
 
 void testMapToG2()
 {
 	G2 g;
-	for (int i = 1; i < 10; i++) {
+	for (int i = 0; i < 10; i++) {
 		mapToG2(g, i);
 		CYBOZU_TEST_ASSERT(!g.isZero());
 		G2 gr;
 		G2::mulGeneric(gr, g, Fr::getOp().mp);
 		CYBOZU_TEST_ASSERT(gr.isZero());
 	}
-#ifndef MCL_AVOID_EXCEPTION_TEST
-	if (getCurveParam().b == 2) {
-		CYBOZU_TEST_EXCEPTION(mapToG2(g, 0), cybozu::Exception);
-	}
-#endif
 	Fp x;
 	x.setHashOf("abc");
 	mapToG2(g, Fp2(x, 0));
