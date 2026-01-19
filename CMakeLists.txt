@@ -24,14 +24,6 @@ set(MCL_FP_BIT 384 CACHE STRING "max bit size for Fp")
 set(MCL_FR_BIT 256 CACHE STRING "max bit size for Fr")
 
 option(
-	MCL_STANDALONE
-	"build without standard library"
-	OFF
-)
-
-set(MCL_CFLAGS_STANDALONE -fno-threadsafe-statics -fno-exceptions -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION CACHE STRING "add user defined CFLAGS")
-
-option(
 	MCL_USE_GMP
 	"Use GMP for the main library"
 	OFF
@@ -246,10 +238,6 @@ if (${MCL_USE_GMP})
 	list(APPEND MCL_COMPILE_OPTIONS -DMCL_USE_GMP=1)
 	target_link_libraries(mcl PRIVATE GMP::GMP)
 	target_link_libraries(mcl_st PRIVATE GMP::GMP)
-endif()
-
-if (${MCL_STANDALONE})
-	list(APPEND MCL_COMPILE_OPTIONS ${MCL_CFLAGS_STANDALONE})
 endif()
 
 if(MCL_COMPILE_OPTIONS)
