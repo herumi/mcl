@@ -1,0 +1,13 @@
+[package]
+name = "mcl-bn254"
+version = "0.1.0"
+edition = "2021"
+description = "Rust FFI bindings for herumi/mcl BN254 curve operations"
+license = "BSD-3-Clause"
+repository = "https://github.com/herumi/mcl"
+keywords = ["bn254", "pairing", "cryptography", "ecc", "mcl"]
+categories = ["cryptography"]
+build = "build.rs"
+
+[build-dependencies]
+cmake = "0.1"
