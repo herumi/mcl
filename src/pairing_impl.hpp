@@ -1128,7 +1128,7 @@ MCL_DLL_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t
 		}
 	}
 	if (cpuN <= 1 || n <= cpuN) {
-		millerLoopVec(f, Pvec, Qvec, n);
+		millerLoopVec(f, Pvec, Qvec, n, true);
 		return;
 	}
 	Fp12 *fs = (Fp12*)CYBOZU_ALLOCA(sizeof(Fp12) * cpuN);
@@ -1137,7 +1137,7 @@ MCL_DLL_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t
 	#pragma omp parallel for
 	for (size_t i = 0; i < cpuN; i++) {
 		size_t adj = q * i + fp::min_(i, r);
-		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r));
+		millerLoopVec(fs[i], Pvec + adj, Qvec + adj, q + (i < r), true);
 	}
 	f = 1;
 //	#pragma omp declare reduction(red:Fp12:omp_out *= omp_in) initializer(omp_priv = omp_orig)
