@@ -66,7 +66,7 @@
 	#endif
 #endif
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__wasm__)
 	// avoid 64-bit integer
 	#define mclSize unsigned int
 	#define mclInt int
