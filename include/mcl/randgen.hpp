@@ -11,7 +11,12 @@
 // nothing
 
 #elif defined(MCL_USE_WEB_CRYPTO_API)
+
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#else
+extern "C" void cryptoGetRandomValues(void *buf, int n);
+#endif
 
 namespace mcl {
 struct RandomGeneratorJS {
@@ -22,8 +27,12 @@ struct RandomGeneratorJS {
 			*pb = false;
 			return;
 		}
+#ifdef __EMSCRIPTEN__
 		// use crypto.getRandomValues
 		EM_ASM({Module.cryptoGetRandomValues($0, $1)}, buf, byteSize);
+#else
+		cryptoGetRandomValues(buf, (int)byteSize);
+#endif
 		*pb = true;
 	}
 };
@@ -79,18 +88,18 @@ public:
 		uint32_t size = readFunc_(self_, out, static_cast<uint32_t>(byteSize));
 		*pb = size == byteSize;
 	}
-#ifdef MCL_DONT_USE_CSPRNG
-	bool isZero() const { return false; } /* return false to avoid copying default rg */
-#else
+#if defined(MCL_USE_WEB_CRYPTO_API) || !defined(MCL_DONT_USE_CSPRNG)
 	bool isZero() const { return self_ == 0 && readFunc_ == 0; }
+#else
+	bool isZero() const { return false; } /* return false to avoid copying default rg */
 #endif
 	static RandGen& getDefaultRandGen()
 	{
-#ifdef MCL_DONT_USE_CSPRNG
-		static RandGen wrg;
-#elif defined(MCL_USE_WEB_CRYPTO_API)
+#if defined(MCL_USE_WEB_CRYPTO_API)
 		static mcl::RandomGeneratorJS rg;
 		static RandGen wrg(rg);
+#elif defined(MCL_DONT_USE_CSPRNG)
+		static RandGen wrg;
 #else
 		static cybozu::RandomGenerator rg;
 		static RandGen wrg(rg);
