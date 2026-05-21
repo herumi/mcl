@@ -194,7 +194,7 @@ int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y)
 	return Fr::compare(*cast(x), *cast(y));
 }
 
-#ifndef MCL_DONT_USE_CSRPNG
+#ifndef MCL_DONT_USE_CSPRNG
 int mclBnFr_setByCSPRNG(mclBnFr *x)
 {
 	bool b;
