@@ -137,14 +137,14 @@ inline uint64_t divUnit1(uint64_t *pr, uint64_t H, uint64_t L, uint64_t y)
 #endif // MCL_SIZEOF_UNIT == 8
 
 // get function pointers
-MCL_DLL_API u_ppp get_add(size_t n);
-MCL_DLL_API u_ppp get_sub(size_t n);
-MCL_DLL_API u_ppp get_subNF(size_t n);
-MCL_DLL_API void_ppp get_addNF(size_t n);
-MCL_DLL_API u_ppu get_mulUnit(size_t n);
-MCL_DLL_API u_ppu get_mulUnitAdd(size_t n);
-MCL_DLL_API void_ppp get_mul(size_t n);
-MCL_DLL_API void_pp get_sqr(size_t n);
+MCL_CXX_API u_ppp get_add(size_t n);
+MCL_CXX_API u_ppp get_sub(size_t n);
+MCL_CXX_API u_ppp get_subNF(size_t n);
+MCL_CXX_API void_ppp get_addNF(size_t n);
+MCL_CXX_API u_ppu get_mulUnit(size_t n);
+MCL_CXX_API u_ppu get_mulUnitAdd(size_t n);
+MCL_CXX_API void_ppp get_mul(size_t n);
+MCL_CXX_API void_pp get_sqr(size_t n);
 
 inline Unit addN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_add(n)(z, x, y); }
 inline Unit subN(Unit *z, const Unit *x, const Unit *y, size_t n) { return get_sub(n)(z, x, y); }
@@ -201,7 +201,7 @@ inline Unit mulUnitNany(Unit *z, const Unit *x, Unit y, size_t xn)
 }
 
 // z[xn * yn] = x[xn] * y[ym]
-MCL_DLL_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_CXX_API void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn);
 
 // explicit specialization of template functions and external asm functions
 //#include "bint_proto.hpp"
@@ -417,11 +417,11 @@ void shrT(Unit *pz, const Unit *px, size_t bit)
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-MCL_DLL_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n);
+MCL_CXX_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n);
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n);
+MCL_CXX_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n);
 
 /*
 	generic version
@@ -430,7 +430,7 @@ MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n);
 	accept y == x
 	return yn
 */
-MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn);
+MCL_CXX_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn);
 
 /*
 	generic version
@@ -438,26 +438,26 @@ MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn);
 	yn = xn - bit / UnitBitSize
 	return yn
 */
-MCL_DLL_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn);
+MCL_CXX_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn);
 
 // [return:y[n]] += x
-MCL_DLL_API Unit addUnit(Unit *y, size_t n, Unit x);
+MCL_CXX_API Unit addUnit(Unit *y, size_t n, Unit x);
 
 // y[n] -= x, return CF
-MCL_DLL_API Unit subUnit(Unit *y, size_t n, Unit x);
+MCL_CXX_API Unit subUnit(Unit *y, size_t n, Unit x);
 
 /*
 	q[] = x[] / y
 	@retval r = x[] % y
 	accept q == x
 */
-MCL_DLL_API Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y);
+MCL_CXX_API Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y);
 
 /*
 	q[] = x[] / y
 	@retval r = x[] % y
 */
-MCL_DLL_API Unit modUnit(const Unit *x, size_t n, Unit y);
+MCL_CXX_API Unit modUnit(const Unit *x, size_t n, Unit y);
 
 /*
 	y must be UnitBitSize * N bit
@@ -465,7 +465,7 @@ MCL_DLL_API Unit modUnit(const Unit *x, size_t n, Unit y);
 	q[qn] = x[xn] / y[yn] if q != NULL
 	return new xn
 */
-MCL_DLL_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_CXX_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
 /*
 	assume xn <= yn
@@ -474,7 +474,7 @@ MCL_DLL_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit
 	assume(n >= 2);
 	return new xn (1 if modulo is zero) if computed else 0
 */
-MCL_DLL_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_CXX_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
 /*
 	x[xn] %= y[yn]
@@ -483,14 +483,14 @@ MCL_DLL_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y,
 	return new xn
 	@note x[new xn:xn] may not be cleared
 */
-MCL_DLL_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
+MCL_CXX_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn);
 
-MCL_DLL_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
-MCL_DLL_API void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
-MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
+MCL_CXX_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p);
+MCL_CXX_API void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p);
+MCL_CXX_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p);
 
 // x &= (1 << bitSize) - 1
-MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize);
+MCL_CXX_API void maskN(Unit *x, size_t n, size_t bitSize);
 
 // ppLow = Unit(p)
 inline Unit getMontgomeryCoeff(Unit pLow, size_t bitSize = sizeof(Unit) * 8)

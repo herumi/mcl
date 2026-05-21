@@ -191,12 +191,12 @@ struct Param {
 static Param s_nonConstParam;
 static const Param& s_param = s_nonConstParam;
 
-MCL_DLL_API const CurveParam& getCurveParam()
+MCL_CXX_API const CurveParam& getCurveParam()
 {
 	return s_param.cp;
 }
 
-MCL_DLL_API int getCurveType()
+MCL_CXX_API int getCurveType()
 {
 	return getCurveParam().curveType;
 }
@@ -694,7 +694,7 @@ inline void makeAdjP(G1& adjP, const G1& P)
 	(a + bw)^(p^6) = a - bw in Fp12
 	(p^4 - p^2 + 1)/r = c0 + c1 p + c2 p^2 + p^3
 */
-MCL_DLL_API void finalExp(Fp12& y, const Fp12& x)
+MCL_CXX_API void finalExp(Fp12& y, const Fp12& x)
 {
 	using namespace local;
 	if (x.isZero()) {
@@ -709,7 +709,7 @@ MCL_DLL_API void finalExp(Fp12& y, const Fp12& x)
 	}
 }
 
-MCL_DLL_API void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
+MCL_CXX_API void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 {
 	using namespace local;
 	if (P_.isZero() || Q_.isZero()) {
@@ -769,18 +769,18 @@ MCL_DLL_API void millerLoop(Fp12& f, const G1& P_, const G2& Q_)
 	f *= ft;
 }
 
-MCL_DLL_API void pairing(Fp12& f, const G1& P, const G2& Q)
+MCL_CXX_API void pairing(Fp12& f, const G1& P, const G2& Q)
 {
 	millerLoop(f, P, Q);
 	finalExp(f, f);
 }
 
-MCL_DLL_API size_t getPrecomputedQcoeffSize()
+MCL_CXX_API size_t getPrecomputedQcoeffSize()
 {
 	return s_param.precomputedQcoeffSize;
 }
 
-MCL_DLL_API void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
+MCL_CXX_API void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 {
 	using namespace local;
 	size_t idx = 0;
@@ -823,7 +823,7 @@ MCL_DLL_API void precomputeG2(Fp6 *Qcoeff, const G2& Q_)
 	assert(idx == getPrecomputedQcoeffSize());
 }
 
-MCL_DLL_API void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
+MCL_CXX_API void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 {
 	using namespace local;
 	if (P_.isZero()) {
@@ -870,7 +870,7 @@ MCL_DLL_API void precomputedMillerLoop(Fp12& f, const G1& P_, const Fp6* Qcoeff)
 	f *= ft;
 }
 
-MCL_DLL_API void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff)
+MCL_CXX_API void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q1_, const G1& P2_, const Fp6* Q2coeff)
 {
 	using namespace local;
 	G1 P1(P1_), P2(P2_);
@@ -947,7 +947,7 @@ MCL_DLL_API void precomputedMillerLoop2mixed(Fp12& f, const G1& P1_, const G2& Q
 	f *= f2;
 }
 
-MCL_DLL_API void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1& P2_, const Fp6* Q2coeff)
+MCL_CXX_API void precomputedMillerLoop2(Fp12& f, const G1& P1_, const Fp6* Q1coeff, const G1& P2_, const Fp6* Q2coeff)
 {
 	using namespace local;
 	G1 P1(P1_), P2(P2_);
@@ -1102,7 +1102,7 @@ EXIT:
 	if (!initF) _f *= f;
 }
 
-MCL_DLL_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
+MCL_CXX_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, bool initF)
 {
 	const size_t N = 16;
 	size_t remain = fp::min_(N, n);
@@ -1113,7 +1113,7 @@ MCL_DLL_API void millerLoopVec(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n
 	}
 }
 
-MCL_DLL_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN)
+MCL_CXX_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t n, size_t cpuN)
 {
 	if (n == 0) {
 		f = 1;
@@ -1151,11 +1151,11 @@ MCL_DLL_API void millerLoopVecMT(Fp12& f, const G1* Pvec, const G2* Qvec, size_t
 #endif
 }
 
-MCL_DLL_API void verifyOrderG1(bool doVerify)
+MCL_CXX_API void verifyOrderG1(bool doVerify)
 {
 	G1::setOrder(doVerify ? Fr::getOp().mp : 0);
 }
-MCL_DLL_API void verifyOrderG2(bool doVerify)
+MCL_CXX_API void verifyOrderG2(bool doVerify)
 {
 	G2::setOrder(doVerify ? Fr::getOp().mp : 0);
 }
@@ -1165,7 +1165,7 @@ MCL_DLL_API void verifyOrderG2(bool doVerify)
 	Sean Bowe, https://eprint.iacr.org/2019/814
 	Frob^2(P) - z Frob^3(P) == P
 */
-MCL_DLL_API bool isValidOrderBLS12(const G2& P)
+MCL_CXX_API bool isValidOrderBLS12(const G2& P)
 {
 	G2 T2, T3;
 	Frobenius2(T2, P);
@@ -1175,7 +1175,7 @@ MCL_DLL_API bool isValidOrderBLS12(const G2& P)
 	return T2 == P;
 }
 
-MCL_DLL_API void Frobenius(G2& D, const G2& S)
+MCL_CXX_API void Frobenius(G2& D, const G2& S)
 {
 	Fp2::Frobenius(D.x, S.x);
 	Fp2::Frobenius(D.y, S.y);
@@ -1183,19 +1183,19 @@ MCL_DLL_API void Frobenius(G2& D, const G2& S)
 	D.x *= s_param.g2;
 	D.y *= s_param.g3;
 }
-MCL_DLL_API void Frobenius2(G2& D, const G2& S)
+MCL_CXX_API void Frobenius2(G2& D, const G2& S)
 {
 	Frobenius(D, S);
 	Frobenius(D, D);
 }
-MCL_DLL_API void Frobenius3(G2& D, const G2& S)
+MCL_CXX_API void Frobenius3(G2& D, const G2& S)
 {
 	Frobenius(D, S);
 	Frobenius(D, D);
 	Frobenius(D, D);
 }
 
-MCL_DLL_API void init(bool *pb, const mcl::CurveParam& cp)
+MCL_CXX_API void init(bool *pb, const mcl::CurveParam& cp)
 {
 	s_nonConstParam.init(pb, cp);
 	if (!*pb) return;
@@ -1221,12 +1221,12 @@ MCL_DLL_API void init(bool *pb, const mcl::CurveParam& cp)
 	*pb = true;
 }
 
-MCL_DLL_API void initPairing(bool *pb, const mcl::CurveParam& cp)
+MCL_CXX_API void initPairing(bool *pb, const mcl::CurveParam& cp)
 {
 	init(pb, cp);
 }
 
-MCL_DLL_API void initG1only(bool *pb, const mcl::EcParam& para)
+MCL_CXX_API void initG1only(bool *pb, const mcl::EcParam& para)
 {
 	G1::setMulVecGLV(0);
 	G2::setMulVecGLV(0);
@@ -1237,12 +1237,12 @@ MCL_DLL_API void initG1only(bool *pb, const mcl::EcParam& para)
 	G2::setCompressedExpression();
 }
 
-MCL_DLL_API const G1& getG1basePoint()
+MCL_CXX_API const G1& getG1basePoint()
 {
 	return s_param.basePoint;
 }
 
-MCL_DLL_API bool isValidGT(const GT& x)
+MCL_CXX_API bool isValidGT(const GT& x)
 {
 	GT y;
 	GT::powGeneric(y, x, Fr::getOp().mp);

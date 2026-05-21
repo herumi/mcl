@@ -439,7 +439,7 @@ public:
 	}
 
 	static uint32_t get_xi_a() { return Fp::getOp().xi_a; }
-	MCL_DLL_API static void init(bool *pb);
+	MCL_CXX_API static void init(bool *pb);
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	static void init()
 	{
@@ -512,7 +512,7 @@ private:
 		Fp::neg(y.a, x.a);
 		Fp::neg(y.b, x.b);
 	}
-	MCL_DLL_API static void mulA(Unit *pz, const Unit *px, const Unit *py);
+	MCL_CXX_API static void mulA(Unit *pz, const Unit *px, const Unit *py);
 	static void mul2A(Unit *py, const Unit *px)
 	{
 		Fp2& y = cast(py);
@@ -992,9 +992,9 @@ struct Fp6 : public fp::Serializable<Fp6, fp::Operator<Fp6> > {
 		Fp2::mul2(y.b, x.b);
 		Fp2::mul2(y.c, x.c);
 	}
-	MCL_DLL_API static void sqr(Fp6& y, const Fp6& x);
-	MCL_DLL_API static void mul(Fp6& z, const Fp6& x, const Fp6& y);
-	MCL_DLL_API static void inv(Fp6& y, const Fp6& x);
+	MCL_CXX_API static void sqr(Fp6& y, const Fp6& x);
+	MCL_CXX_API static void mul(Fp6& z, const Fp6& x, const Fp6& y);
+	MCL_CXX_API static void inv(Fp6& y, const Fp6& x);
 };
 
 struct Fp6Dbl {

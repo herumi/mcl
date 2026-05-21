@@ -107,7 +107,7 @@ size_t loadWord(char *buf, size_t bufSize, InputStream& is)
 	convert [0-9a-fA-F] to integer in [0, 15]
 	return true if success
 */
-MCL_DLL_API bool hexCharToUint8(uint8_t *v, char _c);
+MCL_CXX_API bool hexCharToUint8(uint8_t *v, char _c);
 
 } // mcl::fp::local
 
@@ -117,7 +117,7 @@ MCL_DLL_API bool hexCharToUint8(uint8_t *v, char _c);
 	data is buf[bufSize - retval, bufSize)
 	start "0x" if withPrefix
 */
-MCL_DLL_API size_t arrayToHex(char *buf, size_t bufSize, const Unit *x, size_t n, bool withPrefix = false);
+MCL_CXX_API size_t arrayToHex(char *buf, size_t bufSize, const Unit *x, size_t n, bool withPrefix = false);
 
 /*
 	convert little endian x[0, xn) to buf
@@ -125,39 +125,39 @@ MCL_DLL_API size_t arrayToHex(char *buf, size_t bufSize, const Unit *x, size_t n
 	buf[bufSize - return value, bufSize) is output data
 	start "0b" if withPrefix
 */
-MCL_DLL_API size_t arrayToBin(char *buf, size_t bufSize, const Unit *x, size_t n, bool withPrefix);
+MCL_CXX_API size_t arrayToBin(char *buf, size_t bufSize, const Unit *x, size_t n, bool withPrefix);
 
 /*
 	convert hex string to x[0..xn)
 	hex string = [0-9a-fA-F]+
 */
-MCL_DLL_API size_t hexToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
+MCL_CXX_API size_t hexToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
 /*
 	convert bin string to x[0..xn)
 	bin string = [01]+
 */
-MCL_DLL_API size_t binToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
+MCL_CXX_API size_t binToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
 
 /*
 	little endian t[0, tn) to buf
 	return written size if success else 0
 	data is buf[bufSize - retval, bufSize)
 */
-MCL_DLL_API size_t arrayToDec(char *buf, size_t bufSize, const Unit *x, size_t xn);
+MCL_CXX_API size_t arrayToDec(char *buf, size_t bufSize, const Unit *x, size_t xn);
 
 /*
 	convert buf[0, bufSize) to x[0, num)
 	return written num if success else 0
 */
-MCL_DLL_API size_t decToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
+MCL_CXX_API size_t decToArray(Unit *x, size_t maxN, const char *buf, size_t bufSize);
 
 /*
 	return retavl is written size if success else 0
 	REMARK : the top of string is buf + bufSize - retval
 */
-MCL_DLL_API size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int base, bool withPrefix);
+MCL_CXX_API size_t arrayToStr(char *buf, size_t bufSize, const Unit *x, size_t n, int base, bool withPrefix);
 
-MCL_DLL_API size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode);
+MCL_CXX_API size_t strToArray(bool *pIsMinus, Unit *x, size_t xN, const char *buf, size_t bufSize, int ioMode);
 
 /*
 	convert src[0, n) to (n * 2) byte hex string and write it to os

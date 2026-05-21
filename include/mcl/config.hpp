@@ -108,6 +108,13 @@
 		#define MCL_DLL_VAR
 	#endif
 #endif
+#ifndef MCL_CXX_API
+	#if defined(__wasm__) || defined(__EMSCRIPTEN__)
+		#define MCL_CXX_API
+	#else
+		#define MCL_CXX_API MCL_DLL_API
+	#endif
+#endif
 
 #ifdef __cplusplus
 namespace mcl {

@@ -160,8 +160,8 @@ enum PrimeMode {
 
 #ifdef MCL_USE_XBYAK
 struct FpGenerator;
-MCL_DLL_API FpGenerator* createFpGenerator();
-MCL_DLL_API void destroyFpGenerator(FpGenerator *fg);
+MCL_CXX_API FpGenerator* createFpGenerator();
+MCL_CXX_API void destroyFpGenerator(FpGenerator *fg);
 #endif
 
 struct Op {
@@ -364,7 +364,7 @@ struct Op {
 		*/
 		fp_mul(y, x, R2, p);
 	}
-	MCL_DLL_API bool init(const mpz_class& p, int u, int xi_a, int tag, size_t sizeofF);
+	MCL_CXX_API bool init(const mpz_class& p, int u, int xi_a, int tag, size_t sizeofF);
 private:
 	Op(const Op&);
 	void operator=(const Op&);
