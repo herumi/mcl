@@ -41,7 +41,7 @@ MCL_JS=$(LIB_DIR)/mcl_c.js
 all: $(MCL_JS)
 
 $(MCL_JS): $(WASM) $(WASM_DIR)/glue.js
-	perl -pe 'BEGIN{open F,"-|","base64 -w0 $(WASM)";$$b=<F>;chomp $$b}s/\@\@WASM_BASE64\@\@/$$b/' $(WASM_DIR)/glue.js > $@
+	python3 -c "import base64;w=base64.b64encode(open('$(WASM)','rb').read()).decode();print(open('$(WASM_DIR)/glue.js').read().replace('@@WASM_BASE64@@',w),end='')" > $@
 
 $(WASM): $(OBJS)
 	$(LD) -o $@.pre $(OBJS) $(LDFLAGS)
