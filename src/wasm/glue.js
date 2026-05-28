@@ -24,10 +24,10 @@ function createModule (opts) {
     mod.HEAP8 = new Int8Array(memory.buffer)
     mod.HEAP32 = new Int32Array(memory.buffer)
 
-    // Export mclBn* wasm functions with _ prefix
+    // Export mclBn* wasm and bls* functions with _ prefix
     const exports = instance.exports
     for (const name in exports) {
-      if (name.startsWith('mclBn') && typeof exports[name] === 'function') {
+      if ((name.startsWith('mclBn') || name.startsWith('bls')) && typeof exports[name] === 'function') {
         mod['_' + name] = exports[name]
       }
     }
