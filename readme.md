@@ -284,6 +284,26 @@ mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Fi
 
 The timing of a pairing on `BN254` is 2.8msec on 64-bit Firefox with Skylake 3.4GHz.
 
+## Standalone wasm build with Makefile.wasm
+
+Build `mcl.wasm` without Emscripten using clang's wasm target directly.
+
+### Prerequisites
+
+- clang/clang++, wasm-ld (LLVM 18 or later)
+- wasm-opt (from [binaryen](https://github.com/WebAssembly/binaryen))
+- python3
+
+### Build
+
+```bash
+make -f Makefile.wasm LLVM_VER=-18
+```
+
+This generates `lib/mcl.wasm` and `lib/mcl_c.js` (wasm binary embedded as base64 in JS).
+
+Set `LLVM_VER` to match your installed LLVM version suffix (e.g., `-18` for `clang-18`).
+
 # Node.js
 
 * [mcl-wasm](https://www.npmjs.com/package/mcl-wasm) pairing library

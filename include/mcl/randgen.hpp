@@ -95,11 +95,11 @@ public:
 #endif
 	static RandGen& getDefaultRandGen()
 	{
-#if defined(MCL_USE_WEB_CRYPTO_API)
+#if defined(MCL_DONT_USE_CSPRNG)
+		static RandGen wrg;
+#elif defined(MCL_USE_WEB_CRYPTO_API)
 		static mcl::RandomGeneratorJS rg;
 		static RandGen wrg(rg);
-#elif defined(MCL_DONT_USE_CSPRNG)
-		static RandGen wrg;
 #else
 		static cybozu::RandomGenerator rg;
 		static RandGen wrg(rg);

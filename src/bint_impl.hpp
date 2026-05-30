@@ -222,7 +222,7 @@ void sqrT(Unit *py, const Unit *px)
 
 // [return:z[N]] = x[N] << y
 // 0 < y < UnitBitSize
-MCL_DLL_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n)
+MCL_CXX_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n)
 {
 	assert(0 < bit && bit < UnitBitSize);
 	size_t bitRev = UnitBitSize - bit;
@@ -239,7 +239,7 @@ MCL_DLL_API Unit shlN(Unit *pz, const Unit *px, Unit bit, size_t n)
 
 // z[n] = x[n] >> bit
 // 0 < bit < UnitBitSize
-MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n)
+MCL_CXX_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n)
 {
 	assert(0 < bit && bit < UnitBitSize);
 	size_t bitRev = UnitBitSize - bit;
@@ -259,7 +259,7 @@ MCL_DLL_API void shrN(Unit *pz, const Unit *px, size_t bit, size_t n)
 	accept y == x
 	return yn
 */
-MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
+MCL_CXX_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 {
 	assert(bit <= MCL_FP_BIT * 2); // many be too big
 	assert(xn > 0);
@@ -285,7 +285,7 @@ MCL_DLL_API size_t shiftLeft(Unit *y, const Unit *x, size_t bit, size_t xn)
 	yn = xn - bit / UnitBitSize
 	return yn
 */
-MCL_DLL_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn)
+MCL_CXX_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn)
 {
 	assert(bit <= MCL_SIZEOF_UNIT * 8 * xn);
 	assert(xn > 0);
@@ -301,7 +301,7 @@ MCL_DLL_API size_t shiftRight(Unit *y, const Unit *x, size_t bit, size_t xn)
 }
 
 // [return:y[n]] += x
-MCL_DLL_API Unit addUnit(Unit *y, size_t n, Unit x)
+MCL_CXX_API Unit addUnit(Unit *y, size_t n, Unit x)
 {
 	if (n == 0) return 0;
 	Unit t = y[0] + x;
@@ -316,7 +316,7 @@ MCL_DLL_API Unit addUnit(Unit *y, size_t n, Unit x)
 }
 
 // y[n] -= x, return CF
-MCL_DLL_API Unit subUnit(Unit *y, size_t n, Unit x)
+MCL_CXX_API Unit subUnit(Unit *y, size_t n, Unit x)
 {
 	if (n == 0) return 0;
 	Unit t = y[0];
@@ -335,7 +335,7 @@ MCL_DLL_API Unit subUnit(Unit *y, size_t n, Unit x)
 	@retval r = x[] % y
 	accept q == x
 */
-MCL_DLL_API Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y)
+MCL_CXX_API Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y)
 {
 	assert(y);
 	if (n == 0) return 0;
@@ -349,7 +349,7 @@ MCL_DLL_API Unit divUnit(Unit *q, const Unit *x, size_t n, Unit y)
 	q[] = x[] / y
 	@retval r = x[] % y
 */
-MCL_DLL_API Unit modUnit(const Unit *x, size_t n, Unit y)
+MCL_CXX_API Unit modUnit(const Unit *x, size_t n, Unit y)
 {
 	assert(y);
 	if (n == 0) return 0;
@@ -360,7 +360,7 @@ MCL_DLL_API Unit modUnit(const Unit *x, size_t n, Unit y)
 	return r;
 }
 
-MCL_DLL_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+MCL_CXX_API Unit divSmall(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	if (xn > yn) return 0;
 	assert(yn > 0);
@@ -404,7 +404,7 @@ EXIT:
 	return getRealSize(x, xn);
 }
 
-MCL_DLL_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+MCL_CXX_API size_t divFullBit(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	assert(xn > 0);
 	assert(q != x && q != y && x != y);
@@ -474,7 +474,7 @@ inline size_t div1(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y)
 	return 1;
 }
 
-MCL_DLL_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
+MCL_CXX_API size_t div(Unit *q, size_t qn, Unit *x, size_t xn, const Unit *y, size_t yn)
 {
 	if (yn == 1) return div1(q, qn, x, xn, y);
 	assert(xn > 0 && yn > 1);
@@ -547,7 +547,7 @@ void mulNM(Unit *z, const Unit *x, size_t xn, const Unit *y, size_t yn)
 	H3=0, L3=M-1
 	x3=H3 a + L1 <= M-1
 */
-MCL_DLL_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
+MCL_CXX_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
 #if MCL_SIZEOF_UNIT == 8
@@ -596,7 +596,7 @@ MCL_DLL_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 	}
 }
 
-MCL_DLL_API void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p)
+MCL_CXX_API void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit *p)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
 	Unit xy[N * 2];
@@ -604,7 +604,7 @@ MCL_DLL_API void mul_SECP256K1(Unit *z, const Unit *x, const Unit *y, const Unit
 	mod_SECP256K1(z, xy, p);
 }
 
-MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
+MCL_CXX_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
 	Unit xx[N * 2];
@@ -613,7 +613,7 @@ MCL_DLL_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
 }
 
 // x &= (1 << bitSize) - 1
-MCL_DLL_API void maskN(Unit *x, size_t n, size_t bitSize)
+MCL_CXX_API void maskN(Unit *x, size_t n, size_t bitSize)
 {
 	assert(bitSize <= UnitBitSize * n);
 	const size_t q = bitSize / UnitBitSize;

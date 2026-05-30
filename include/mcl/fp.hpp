@@ -29,8 +29,8 @@ namespace mcl {
 
 namespace fp {
 
-MCL_DLL_API uint64_t getUint64(bool *pb, const fp::Block& b);
-MCL_DLL_API int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
+MCL_CXX_API uint64_t getUint64(bool *pb, const fp::Block& b);
+MCL_CXX_API int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
 
 const char *ModeToStr(Mode mode);
 
@@ -43,13 +43,13 @@ inline Mode StrToMode(const std::string& s)
 }
 #endif
 
-MCL_DLL_API bool isEnableJIT(); // 1st call is not threadsafe
+MCL_CXX_API bool isEnableJIT(); // 1st call is not threadsafe
 
-MCL_DLL_API uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
-MCL_DLL_API uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
+MCL_CXX_API uint32_t sha256(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
+MCL_CXX_API uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 // draft-07 outSize = 128 or 256
-MCL_DLL_API void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize);
+MCL_CXX_API void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize);
 
 namespace local {
 
