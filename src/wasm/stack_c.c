@@ -1,5 +1,5 @@
 // equivalent to stack.s
-// compile with -flto
+// compile without -flto
 
 #include <stdint.h>
 #include <stddef.h>
