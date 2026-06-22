@@ -1,7 +1,8 @@
-# Shared helper to locate Visual Studio installation path with LLVM tools
-# Sets the following variables when found:
-#   VS_PATH           - Visual Studio installation root (string)
-#   VS_PATH_CACHE     - Same as VS_PATH, cached (INTERNAL)
+# Shared helper to locate a Visual Studio installation that ships the LLVM
+# (clang-cl) tools. Sets:
+#   VS_PATH         - Visual Studio installation root (string)
+#   VS_PATH_CACHE   - Same as VS_PATH, cached (INTERNAL)
+# VS_PATH is left empty when nothing suitable is found.
 
 include_guard(GLOBAL)
 
@@ -10,52 +11,54 @@ if(NOT WIN32)
   return()
 endif()
 
-# If already cached and looks valid, reuse
-if(DEFINED VS_PATH_CACHE AND EXISTS "${VS_PATH_CACHE}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
+# The marker we require under a VS root (host x64 clang-cl).
+set(_vs_marker "VC/Tools/Llvm/x64/bin/clang-cl.exe")
+
+# Reuse a valid cached result.
+if(DEFINED VS_PATH_CACHE AND EXISTS "${VS_PATH_CACHE}/${_vs_marker}")
   set(VS_PATH "${VS_PATH_CACHE}")
   return()
 endif()
 
-# Try vswhere first
-set(_vswhere_cmd "for /f \"usebackq tokens=*\" %i in (`\"%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe\" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do @echo %i")
-execute_process(
-  COMMAND cmd /c ${_vswhere_cmd}
-  OUTPUT_VARIABLE _VS_PATH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  RESULT_VARIABLE _VS_RESULT
-  ERROR_QUIET
-)
+set(VS_PATH "")
 
-# Validate vswhere result
-set(_VS_FOUND FALSE)
-if(_VS_RESULT EQUAL 0 AND _VS_PATH)
-  if(EXISTS "${_VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
-    set(VS_PATH "${_VS_PATH}")
-    set(_VS_FOUND TRUE)
+# 1) Ask vswhere directly (most reliable, version independent).
+# Note: do not reference $ENV{ProgramFiles(x86)} -- the parentheses are an
+# invalid variable name under policy CMP0053. vswhere always lives under the
+# x86 Program Files installer directory, so use the literal path.
+find_program(_vswhere NAMES vswhere.exe
+  PATHS
+    "C:/Program Files (x86)/Microsoft Visual Studio/Installer"
+    "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
+  NO_DEFAULT_PATH)
+
+if(_vswhere)
+  execute_process(
+    COMMAND "${_vswhere}" -latest -products * -property installationPath
+    OUTPUT_VARIABLE _vs_install
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE _vs_rc)
+  if(_vs_rc EQUAL 0 AND _vs_install AND EXISTS "${_vs_install}/${_vs_marker}")
+    set(VS_PATH "${_vs_install}")
   endif()
 endif()
 
-if(NOT _VS_FOUND)
-  # Fallback: check common install locations (VS 2019/2022)
-  set(_VS_COMMON_PATHS
-    "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
-    "C:/Program Files/Microsoft Visual Studio/2022/Professional"
-    "C:/Program Files/Microsoft Visual Studio/2022/Community"
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise"
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional"
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community"
-  )
-  foreach(_VS_TEST_PATH ${_VS_COMMON_PATHS})
-    if(EXISTS "${_VS_TEST_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
-      set(VS_PATH "${_VS_TEST_PATH}")
-      set(_VS_FOUND TRUE)
-      break()
-    endif()
-  endforeach()
+# 2) Fallback: glob any installed version/edition (e.g. 2019, 2022, 18, ...).
+if(NOT VS_PATH)
+  file(GLOB _vs_cands
+    "C:/Program Files/Microsoft Visual Studio/*/*/${_vs_marker}"
+    "C:/Program Files (x86)/Microsoft Visual Studio/*/*/${_vs_marker}")
+  if(_vs_cands)
+    # Prefer the lexicographically greatest path (newest numbered dir).
+    list(SORT _vs_cands)
+    list(REVERSE _vs_cands)
+    list(GET _vs_cands 0 _vs_clangcl)
+    string(REGEX REPLACE "/${_vs_marker}$" "" VS_PATH "${_vs_clangcl}")
+  endif()
 endif()
 
-if(_VS_FOUND)
+if(VS_PATH)
   set(VS_PATH_CACHE "${VS_PATH}" CACHE INTERNAL "Visual Studio Installation Path")
-else()
-  set(VS_PATH "")
+  message(STATUS "Found Visual Studio with clang-cl: ${VS_PATH}")
 endif()
