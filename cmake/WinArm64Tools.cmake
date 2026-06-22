@@ -6,7 +6,7 @@
 #   MCL_CLANG_CL       - clang-cl.exe  (used to compile fp.cpp and link the DLL)
 #   MCL_LLVM_LIB       - llvm-lib.exe  (used to create the static library)
 #   MCL_CLANG_RT       - full path to clang_rt.builtins-aarch64.lib
-#   MCL_WINSDK_LIBDIRS - list of Windows SDK ARM64 lib dirs (um/arm64, ucrt/arm64)
+#   MCL_ARM64_LIBDIRS  - ARM64 import-library search dirs (MSVC arm64, SDK um/arm64, SDK ucrt/arm64)
 #
 # The same '--target=arm64-pc-windows-msvc' command works on either host, so the
 # only host-dependent part is which LLVM bin directory holds runnable binaries.
@@ -46,9 +46,22 @@ else()
   message(FATAL_ERROR "clang_rt.builtins-aarch64.lib not found under ${VS_PATH}/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
 endif()
 
-# Locate the Windows SDK (root + version) via the registry, then derive the
-# ARM64 import-library directories. kernel32.lib/msvcrt.lib/ucrt.lib live here;
-# the MSVC toolset lib dir is not needed (matching mklib_arm64.bat).
+# ARM64 import-library directories for the link step, as a search list:
+#   1. MSVC toolset arm64 libs (msvcrt.lib / vcruntime.lib) -- listed first so
+#      they win over any x64 %LIB% inherited from the build environment, since
+#      the linker searches /LIBPATH before %LIB%.
+#   2. Windows SDK um/arm64    (kernel32.lib, ...)
+#   3. Windows SDK ucrt/arm64  (ucrt.lib)
+file(GLOB _msvc_lib_dirs "${VS_PATH}/VC/Tools/MSVC/*/lib/arm64")
+if(_msvc_lib_dirs)
+  list(SORT _msvc_lib_dirs)
+  list(REVERSE _msvc_lib_dirs)
+  list(GET _msvc_lib_dirs 0 _msvc_arm64_lib)
+else()
+  message(FATAL_ERROR "MSVC ARM64 lib dir not found under ${VS_PATH}/VC/Tools/MSVC/*/lib/arm64")
+endif()
+
+# Locate the Windows SDK (root + version) via the registry.
 execute_process(
   COMMAND reg query "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Microsoft SDKs\\Windows\\v10.0" /v InstallationFolder
   OUTPUT_VARIABLE _sdk_root_raw ERROR_QUIET)
@@ -67,12 +80,13 @@ if(NOT _winsdk_dir OR NOT _winsdk_ver)
   message(FATAL_ERROR "Windows SDK (v10) not found in the registry; cannot locate ARM64 import libraries.")
 endif()
 
-set(MCL_WINSDK_LIBDIRS
+set(MCL_ARM64_LIBDIRS
+  "${_msvc_arm64_lib}"
   "${_winsdk_dir}Lib/${_winsdk_ver}/um/arm64"
   "${_winsdk_dir}Lib/${_winsdk_ver}/ucrt/arm64")
-foreach(_d ${MCL_WINSDK_LIBDIRS})
+foreach(_d ${MCL_ARM64_LIBDIRS})
   if(NOT EXISTS "${_d}")
-    message(WARNING "Windows SDK ARM64 lib dir not found: ${_d}")
+    message(WARNING "ARM64 lib dir not found: ${_d}")
   endif()
 endforeach()
 
@@ -80,4 +94,4 @@ message(STATUS "Win ARM64 tools: clang++=${MCL_CLANG}")
 message(STATUS "Win ARM64 tools: clang-cl=${MCL_CLANG_CL}")
 message(STATUS "Win ARM64 tools: llvm-lib=${MCL_LLVM_LIB}")
 message(STATUS "Win ARM64 tools: clang_rt=${MCL_CLANG_RT}")
-message(STATUS "Win ARM64 tools: SDK lib dirs=${MCL_WINSDK_LIBDIRS}")
+message(STATUS "Win ARM64 tools: lib dirs=${MCL_ARM64_LIBDIRS}")

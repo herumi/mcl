@@ -233,17 +233,18 @@ if(MCL_WIN_ARM64)
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling fp.cpp for ARM64 DLL")
 
-	# static library (llvm-lib)
+	# static library (llvm-lib; it does not accept /Brepro or /nodefaultlib)
 	add_custom_command(OUTPUT ${MCL_STATIC_LIB}
-		COMMAND "${MCL_LLVM_LIB}" /nologo /OUT:${MCL_STATIC_LIB} /Brepro /nodefaultlib ${FP_OBJ_STATIC} ${BASE_OBJ} ${BINT_OBJ}
+		COMMAND "${MCL_LLVM_LIB}" /nologo /machine:arm64 /OUT:${MCL_STATIC_LIB} ${FP_OBJ_STATIC} ${BASE_OBJ} ${BINT_OBJ}
 		DEPENDS ${FP_OBJ_STATIC} ${BASE_OBJ} ${BINT_OBJ}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Creating ARM64 static library mcl.lib")
 	add_custom_target(mcl_static_lib ALL DEPENDS ${MCL_STATIC_LIB})
 
-	# DLL (clang-cl drives the link)
+	# DLL (clang-cl drives the link). The arm64 lib dirs are passed as /LIBPATH
+	# so they are searched before any x64 %LIB% inherited from the environment.
 	set(_arm64_libpath_args "")
-	foreach(_d ${MCL_WINSDK_LIBDIRS})
+	foreach(_d ${MCL_ARM64_LIBDIRS})
 		list(APPEND _arm64_libpath_args /LIBPATH:${_d})
 	endforeach()
 	add_custom_command(OUTPUT ${MCL_DLL}
