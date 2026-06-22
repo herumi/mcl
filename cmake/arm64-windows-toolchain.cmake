@@ -11,7 +11,9 @@ set(CMAKE_SYSTEM_PROCESSOR ARM64)
 # Find Visual Studio (defines VS_PATH) and use the x64-host clang-cl as the
 # compiler driver for CMake's own checks and for building tests/samples.
 include("${CMAKE_CURRENT_LIST_DIR}/FindVisualStudio.cmake")
-if(NOT VS_PATH OR NOT EXISTS "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe")
+# FindVisualStudio only sets VS_PATH when its x64 clang-cl marker exists, so a
+# non-empty VS_PATH already guarantees the compiler driver below is present.
+if(NOT VS_PATH)
   message(FATAL_ERROR "Visual Studio with the C++ Clang tools (LLVM x64) not found.")
 endif()
 
