@@ -8,16 +8,21 @@ if(NOT DEFINED CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-# ARM64 cross-compilation support
-option(ARM64_CROSS "Enable Windows ARM64 cross-compilation" OFF)
-
-if(ARM64_CROSS AND NOT CMAKE_TOOLCHAIN_FILE)
-	message(FATAL_ERROR "ARM64_CROSS requires CMAKE_TOOLCHAIN_FILE. Use: cmake -DCMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-toolchain.cmake -DARM64_CROSS=ON")
-endif()
-
-# Mark ARM64_CROSS as used to avoid warning
-if(ARM64_CROSS)
-	message(STATUS "ARM64 cross-compilation enabled via ARM64_CROSS=${ARM64_CROSS}")
+# Windows ARM64 target (x64-host cross build via the toolchain file, or ARM64
+# native build). Both reach the same code path below. The architecture may come
+# from CMAKE_SYSTEM_PROCESSOR (toolchain / Ninja) or from CMAKE_GENERATOR_PLATFORM
+# (the Visual Studio generator with -A ARM64), in any letter case.
+set(MCL_WIN_ARM64 FALSE)
+if(WIN32)
+	set(_mcl_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+	if(CMAKE_GENERATOR_PLATFORM)
+		set(_mcl_target_arch "${CMAKE_GENERATOR_PLATFORM}")
+	endif()
+	string(TOUPPER "${_mcl_target_arch}" _mcl_target_arch)
+	if(_mcl_target_arch MATCHES "ARM64")
+		set(MCL_WIN_ARM64 TRUE)
+		message(STATUS "Windows ARM64 build detected")
+	endif()
 endif()
 
 set(MCL_FP_BIT 384 CACHE STRING "max bit size for Fp")
@@ -34,22 +39,8 @@ else()
 	set(MCL_TEST_WITH_GMP_DEFAULT ON)
 endif()
 
-# Windows ARM64 build detection (native or cross-compilation)
-if(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
-    # Check if this is truly a native build or cross-compilation
-    if(CMAKE_CROSSCOMPILING)
-        set(WINDOWS_ARM64_CROSS TRUE)
-        message(STATUS "Windows ARM64 cross-compilation build detected")
-    else()
-        set(WINDOWS_ARM64_NATIVE TRUE)
-        message(STATUS "Windows ARM64 native build detected")
-    endif()
-    # Disable GMP for ARM64 builds
-    set(MCL_TEST_WITH_GMP_DEFAULT OFF)
-endif()
-
-# Disable GMP as well when explicit cross flag is used
-if(ARM64_CROSS)
+# GMP is not supported on Windows ARM64
+if(MCL_WIN_ARM64)
 	set(MCL_TEST_WITH_GMP_DEFAULT OFF)
 endif()
 
@@ -87,10 +78,10 @@ else()
 	set(BIT "32")
 endif()
 
-# Override BIT for explicit ARM64 cross-compilation
-if(ARM64_CROSS)
+# When cross-building for ARM64 the compiler checks are skipped, so
+# CMAKE_SIZEOF_VOID_P may be unset; force 64-bit.
+if(MCL_WIN_ARM64)
 	set(BIT "64")
-	message(STATUS "ARM64_CROSS build detected, setting BIT=64")
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -98,6 +89,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Always load Visual Studio finder on Windows; it is the single source of truth for VS paths
 if(WIN32)
 	include(FindVisualStudio)
+endif()
+
+# Resolve the clang/llvm tools and library paths for Windows ARM64 (shared by
+# the cross and native builds).
+if(MCL_WIN_ARM64)
+	include(WinArm64Tools)
 endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -108,32 +105,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Check if we need special Windows ARM64 handling first
-set(CLANG_WINDOWS_ARM64 FALSE)
-if(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS OR ARM64_CROSS)
-	# Use shared helper to find VS path and ARM64 LLVM clang
-	if(VS_PATH AND EXISTS "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
-		set(VS_CLANG "${VS_PATH}/VC/Tools/Llvm/ARM64/bin/clang++.exe")
-		set(CLANG_WINDOWS_ARM64 TRUE)
-		message(STATUS "Found VS Clang for ARM64: ${VS_CLANG}")
-	else()
-	message(FATAL_ERROR "Visual Studio with LLVM ARM64 tools not found. Install VS with C++ workload and LLVM tools. VS_PATH='${VS_PATH}'")
-	endif()
-endif()
-
-if(ARM64_CROSS)
-	# For ARM64 cross-compilation, we'll create custom targets instead of standard CMake targets
-	# Create dummy targets that will be excluded from ALL but provide the interface
+if(MCL_WIN_ARM64)
+	# On Windows ARM64 the library is produced by the custom commands below
+	# (clang-cl / llvm-lib). Create placeholder targets excluded from ALL so
+	# the rest of the file can still reference mcl/mcl_st uniformly.
 	add_library(mcl SHARED src/fp.cpp)
 	add_library(mcl_st STATIC src/fp.cpp)
-	# These will be excluded from the build later and replaced with custom commands
-elseif(CLANG_WINDOWS_ARM64)
-	# For Windows ARM64 with Clang, create empty targets and add objects later
-	add_library(mcl SHARED)
-	add_library(mcl_st STATIC)
-	# Set the linker language explicitly since we have no initial sources
-	set_target_properties(mcl PROPERTIES LINKER_LANGUAGE CXX)
-	set_target_properties(mcl_st PROPERTIES LINKER_LANGUAGE CXX)
+	set_target_properties(mcl mcl_st PROPERTIES EXCLUDE_FROM_ALL TRUE)
 else()
 	# For other platforms, create targets with normal sources
 	add_library(mcl SHARED src/fp.cpp)
@@ -162,43 +140,12 @@ target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_
 target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
 
 # Compiler and linker settings
-if(ARM64_CROSS)
-	# For explicit cross builds, use minimal target flags and exclude default targets
-	message(STATUS "Configuring ARM64 cross-compilation build (explicit ARM64_CROSS)")
+if(MCL_WIN_ARM64)
+	# The library objects are built by the custom commands below with explicit
+	# flags, so only the public compile definitions matter here.
 	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
 	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
-
-	# MCL compile options are set by the toolchain; avoid adding conflicting options
 	set(MCL_COMPILE_OPTIONS "")
-
-	# Exclude default targets because we produce libs via custom commands
-	set_target_properties(mcl PROPERTIES EXCLUDE_FROM_ALL TRUE)
-	set_target_properties(mcl_st PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
-elseif(WINDOWS_ARM64_NATIVE OR WINDOWS_ARM64_CROSS)
-	# Windows ARM64 build settings (native or cross-compilation)
-	if(WINDOWS_ARM64_NATIVE)
-		message(STATUS "Configuring Windows ARM64 native build")
-	else()
-		message(STATUS "Configuring Windows ARM64 cross-compilation build")
-	endif()
-
-	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
-	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
-
-	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /O2 /EHsc /GS- /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
-	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /O2 /EHsc /GS- /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
-	endif()
-
-	# Set /Brepro for reproducible builds in linker flags
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Brepro")
-	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /Brepro")
-
-	set(MCL_COMPILE_OPTIONS /W4)
 
 elseif(MSVC)
 	if(MCL_MSVC_RUNTIME_DLL)
@@ -246,19 +193,66 @@ if(MCL_COMPILE_OPTIONS)
 endif()
 
 # use bint-x64 on x64, bint${BIT}.ll on the other CPU
-if(ARM64_CROSS)
-	# ARM64 cross-compilation LLVM compilation (matching mklib_arm64.bat)
+if(MCL_WIN_ARM64)
+	# Build the whole library for Windows ARM64 here, following mklib_arm64.bat:
+	# compile *.ll with clang++ (cl driver cannot consume LLVM IR), fp.cpp with
+	# clang-cl, archive with llvm-lib, and link the DLL with clang-cl. The
+	# placeholder mcl/mcl_st targets are replaced by these custom outputs.
 	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
-	message(STATUS "ARM64 bint object: ${BINT_OBJ}")
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
+	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
+	set(FP_OBJ_STATIC "${CMAKE_CURRENT_BINARY_DIR}/fp_static.o")
+	set(FP_OBJ_DLL "${CMAKE_CURRENT_BINARY_DIR}/fp_dll.o")
+	set(MCL_STATIC_LIB "${CMAKE_CURRENT_BINARY_DIR}/lib/mcl.lib")
+	set(MCL_DLL "${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll")
 
-    add_custom_command(OUTPUT ${BINT_OBJ}
-		COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang++.exe" --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -fno-ident -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll
+	set(ARM64_TARGET --target=arm64-pc-windows-msvc)
+	set(ARM64_LL_FLAGS -O2 -DNDEBUG -fno-ident)
+	set(ARM64_CL_FLAGS ${ARM64_TARGET} /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8
+		/DMCL_FP_BIT=${MCL_FP_BIT} /DMCL_FR_BIT=${MCL_FR_BIT} /DMCL_MSM=0
+		/DMCL_BINT_ASM_X64=0 /DNOMINMAX /Brepro
+		-DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
+		-I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+	# *.ll -> *.o (clang++)
+	add_custom_command(OUTPUT ${BINT_OBJ}
+		COMMAND "${MCL_CLANG}" ${ARM64_TARGET} ${ARM64_LL_FLAGS} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling bint${BIT}.ll for ARM64")
-	add_custom_target(gen_bint.o
-		SOURCES ${BINT_OBJ})
+	add_custom_command(OUTPUT ${BASE_OBJ}
+		COMMAND "${MCL_CLANG}" ${ARM64_TARGET} ${ARM64_LL_FLAGS} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Compiling base${BIT}.ll for ARM64")
+
+	# fp.cpp -> *.o (clang-cl); static uses /MT + MCL_DONT_EXPORT, DLL uses /MD
+	add_custom_command(OUTPUT ${FP_OBJ_STATIC}
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} /MT -DMCL_DONT_EXPORT /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Compiling fp.cpp for ARM64 static library")
+	add_custom_command(OUTPUT ${FP_OBJ_DLL}
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} /MD /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Compiling fp.cpp for ARM64 DLL")
+
+	# static library (llvm-lib; it does not accept /Brepro or /nodefaultlib)
+	add_custom_command(OUTPUT ${MCL_STATIC_LIB}
+		COMMAND "${MCL_LLVM_LIB}" /nologo /machine:arm64 /OUT:${MCL_STATIC_LIB} ${FP_OBJ_STATIC} ${BASE_OBJ} ${BINT_OBJ}
+		DEPENDS ${FP_OBJ_STATIC} ${BASE_OBJ} ${BINT_OBJ}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Creating ARM64 static library mcl.lib")
+	add_custom_target(mcl_static_lib ALL DEPENDS ${MCL_STATIC_LIB})
+
+	# DLL (clang-cl drives the link). The arm64 lib dirs are passed as /LIBPATH
+	# so they are searched before any x64 %LIB% inherited from the environment.
+	set(_arm64_libpath_args "")
+	foreach(_d ${MCL_ARM64_LIBDIRS})
+		list(APPEND _arm64_libpath_args /LIBPATH:${_d})
+	endforeach()
+	add_custom_command(OUTPUT ${MCL_DLL}
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_TARGET} /LD ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ} /Fe:${MCL_DLL} /link /Brepro "${MCL_CLANG_RT}" msvcrt.lib kernel32.lib ${_arm64_libpath_args}
+		DEPENDS ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Creating ARM64 DLL mcl.dll")
+	add_custom_target(mcl_dll ALL DEPENDS ${MCL_DLL})
 
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# Locate ML64 assembler under VS_PATH discovered by FindVisualStudio
@@ -292,80 +286,6 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 		target_sources(mcl PRIVATE src/asm/bint-x64-amd64.S)
 		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# Windows ARM64 - use Clang from Visual Studio for all compilation (following mklib_arm64.bat)
-	if(CLANG_WINDOWS_ARM64)
-		# Determine which compiler to use based on build type
-		if(WINDOWS_ARM64_CROSS)
-			# For cross-compilation, use the toolchain's compiler
-			set(ARM64_COMPILER ${CMAKE_CXX_COMPILER})
-			message(STATUS "Using cross-compilation compiler: ${ARM64_COMPILER}")
-		else()
-			# For native builds, use the found VS Clang
-			set(ARM64_COMPILER ${VS_CLANG})
-			message(STATUS "Using native ARM64 compiler: ${ARM64_COMPILER}")
-		endif()
-
-		# Compile LLVM files with appropriate Clang
-		set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
-		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
-		set(FP_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fp.o")
-
-		add_custom_command(OUTPUT ${BINT_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O2 -DNDEBUG -fno-ident
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-		add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O2 -DNDEBUG -fno-ident
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-
-		# Compile fp.cpp with Clang (like mklib_arm64.bat)
-		add_custom_command(OUTPUT ${FP_OBJ}
-			COMMAND ${ARM64_COMPILER} --target=arm64-pc-windows-msvc -c -o ${FP_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp -O2 -DNDEBUG -fno-ident -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=${MCL_FP_BIT} -DMCL_FR_BIT=${MCL_FR_BIT} -DNOMINMAX -DMCL_BINT_ASM_X64=0
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp)
-
-		add_custom_target(gen_bint.o SOURCES ${BINT_OBJ})
-		add_custom_target(gen_base.o SOURCES ${BASE_OBJ})
-		add_custom_target(gen_fp.o SOURCES ${FP_OBJ})
-
-		# Add the compiled objects as sources to the targets
-		target_sources(mcl PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
-		target_sources(mcl_st PRIVATE ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
-
-		target_link_libraries(mcl PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
-		add_dependencies(mcl gen_bint.o gen_base.o gen_fp.o)
-		target_link_libraries(mcl_st PUBLIC ${BINT_OBJ} ${BASE_OBJ} ${FP_OBJ})
-		add_dependencies(mcl_st gen_bint.o gen_base.o gen_fp.o)
-
-	# Find and link Clang runtime library for ARM64 strictly under VS_PATH
-	file(GLOB VS_CLANG_RT_DIRS "${VS_PATH}/VC/Tools/Llvm/ARM64/lib/clang/*/lib/windows")
-
-		if(VS_CLANG_RT_DIRS)
-			list(GET VS_CLANG_RT_DIRS 0 CLANG_RT_PATH)
-			message("Found Clang RT path: ${CLANG_RT_PATH}")
-			find_library(CLANG_RT_LIB clang_rt.builtins-aarch64 PATHS ${CLANG_RT_PATH} NO_DEFAULT_PATH)
-			if(CLANG_RT_LIB)
-				message("Found Clang RT library: ${CLANG_RT_LIB}")
-				target_link_libraries(mcl PUBLIC ${CLANG_RT_LIB})
-				target_link_libraries(mcl_st PUBLIC ${CLANG_RT_LIB})
-			endif()
-		endif()
-
-		# Add necessary Windows system libraries for Clang ARM64 builds
-		target_link_libraries(mcl PUBLIC
-			kernel32.lib
-			msvcrt.lib
-			vcruntime.lib
-			ucrt.lib)
-		target_link_libraries(mcl_st PUBLIC
-			kernel32.lib
-			libcmt.lib
-			libvcruntime.lib
-			libucrt.lib)
-	else()
-		message(FATAL_ERROR "Visual Studio Clang for ARM64 is required on Windows ARM64 builds and was not found.")
-	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(FATAL_ERROR "requiring clang++. cmake -DCMAKE_CXX_COMPILER=clang++ ..")
@@ -397,71 +317,8 @@ endif()
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	# skip
-elseif(ARM64_CROSS)
-	# ARM64 cross-compilation base + fp objects and libraries
-	if(${MCL_USE_LLVM})
-		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
-		message(STATUS "ARM64 base object: ${BASE_OBJ}")
-		target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-
-        add_custom_command(OUTPUT ${BASE_OBJ}
-			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang++.exe" --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -fno-ident -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			COMMENT "Compiling base${BIT}.ll for ARM64")
-		add_custom_target(gen_base.o
-			SOURCES ${BASE_OBJ})
-
-		# Collect all objects for custom DLL/static creation
-		set(ARM64_OBJECTS ${BINT_OBJ} ${BASE_OBJ})
-
-		# Compile fp.cpp to object for static library (with /MT)
-		set(FP_OBJ_STATIC "${CMAKE_CURRENT_BINARY_DIR}/fp_static.o")
-        add_custom_command(OUTPUT ${FP_OBJ_STATIC}
-			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe" --target=arm64-pc-windows-msvc /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8 /DMCL_FP_BIT=384 /DMCL_FR_BIT=256 /DMCL_MSM=0 /DNOMINMAX /MT /Brepro -DMCL_DONT_EXPORT -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			COMMENT "Compiling fp.cpp for ARM64 static library")
-		add_custom_target(gen_fp_static.o
-			SOURCES ${FP_OBJ_STATIC})
-
-		# Compile fp.cpp to object for DLL (with /MD)
-		set(FP_OBJ_DLL "${CMAKE_CURRENT_BINARY_DIR}/fp_dll.o")
-        add_custom_command(OUTPUT ${FP_OBJ_DLL}
-			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe" --target=arm64-pc-windows-msvc /O2 /DNDEBUG /DMCL_SIZEOF_UNIT=8 /DMCL_FP_BIT=384 /DMCL_FR_BIT=256 /DMCL_MSM=0 /DNOMINMAX /MD /Brepro -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/src /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			COMMENT "Compiling fp.cpp for ARM64 DLL")
-		add_custom_target(gen_fp_dll.o
-			SOURCES ${FP_OBJ_DLL})
-
-		# Create static library using lib.exe
-		set(MCL_STATIC_LIB "${CMAKE_CURRENT_BINARY_DIR}/lib/mcl.lib")
-		add_custom_command(OUTPUT ${MCL_STATIC_LIB}
-			COMMAND "${CMAKE_AR}" /nologo /OUT:${MCL_STATIC_LIB} /Brepro /nodefaultlib ${FP_OBJ_STATIC} ${BASE_OBJ} ${BINT_OBJ}
-			DEPENDS gen_fp_static.o gen_base.o gen_bint.o
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			COMMENT "Creating ARM64 static library with lib.exe")
-		add_custom_target(mcl_static_lib ALL DEPENDS ${MCL_STATIC_LIB})
-
-		# Custom DLL creation command using clang-cl
-		set(MCL_DLL "${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll")
-        add_custom_command(OUTPUT ${MCL_DLL}
-			COMMAND "${VS_PATH}/VC/Tools/Llvm/x64/bin/clang-cl.exe"
-				--target=arm64-pc-windows-msvc /LD
-				${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ}
-				/Fe:${MCL_DLL} /link /Brepro
-				"${CLANG_RT_PATH_CACHE}/clang_rt.builtins-aarch64.lib"
-				msvcrt.lib kernel32.lib
-				/LIBPATH:"${VS_PATH}/VC/Tools/MSVC/${MSVC_VERSION_CACHE}/lib/arm64"
-				/LIBPATH:"${WindowsSdkDir_CACHE}Lib/${WindowsSDKVersion_CACHE}/um/arm64"
-				/LIBPATH:"${WindowsSdkDir_CACHE}Lib/${WindowsSDKVersion_CACHE}/ucrt/arm64"
-			DEPENDS gen_fp_dll.o gen_base.o gen_bint.o
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-			COMMENT "Creating ARM64 DLL with clang-cl (matching mklib_arm64.bat)")
-		add_custom_target(mcl_dll ALL DEPENDS ${MCL_DLL})
-	endif()
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
-	# Windows ARM64 base compilation is handled above with bint compilation
-	message("Windows ARM64 base compilation handled with bint compilation")
+elseif(MCL_WIN_ARM64)
+	# base/fp objects and the lib/dll are built in the MCL_WIN_ARM64 block above
 elseif(X86_64_LINUX)
 	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
@@ -500,10 +357,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	add_dependencies(mcl_st msm_avx.o)
 	target_sources(mcl_st PRIVATE ${MSM_OBJ})
 
-elseif(ARM64_CROSS)
-	# ARM64 doesn't use AVX instructions, so skip MSM optimization
-	message(STATUS "Skipping MSM AVX optimization for ARM64 (cross)")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64" AND WIN32)
+elseif(MCL_WIN_ARM64)
 	# ARM64 doesn't use AVX instructions, so skip MSM optimization
 	message(STATUS "Skipping MSM AVX optimization for ARM64")
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
@@ -520,7 +374,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 endif()
 
 if(MCL_TEST_WITH_GMP)
-	if(NOT MSVC AND NOT WINDOWS_ARM64_NATIVE AND NOT WINDOWS_ARM64_CROSS AND NOT ARM64_CROSS)
+	if(NOT MSVC AND NOT MCL_WIN_ARM64)
 		find_package(GMP REQUIRED)
 	else()
 		set(CYBOZULIB_EXT_DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/cybozulib_ext)
@@ -558,7 +412,7 @@ if(MCL_TEST_WITH_GMP)
 	endif()
 endif()
 
-if(ARM64_CROSS)
+if(MCL_WIN_ARM64)
 	# Install custom ARM64 outputs (not the default CMake targets)
 	if(TARGET mcl_static_lib)
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/mcl.lib DESTINATION lib)
@@ -590,7 +444,7 @@ install(DIRECTORY include/cybozu
 	DESTINATION include
 	FILES_MATCHING PATTERN "*.hpp")
 
-if(NOT ARM64_CROSS)
+if(NOT MCL_WIN_ARM64)
 	install(EXPORT mclTargets
 		FILE mclTargets.cmake
 		NAMESPACE mcl::

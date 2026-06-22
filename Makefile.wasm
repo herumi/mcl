@@ -17,10 +17,14 @@ CFLAGS+=-I $(WASM_DIR) -I $(MCL_DIR)/include -I $(MCL_DIR)/src
 CFLAGS+=-Wall -Wextra -MMD -MP
 CXXFLAGS=$(CFLAGS) -std=c++03
 
+STACK_MODE?=0
+
 LDFLAGS=--no-entry --export-dynamic -z stack-size=1048576
 LDFLAGS+=--export=__stack_pointer --export=__wasm_call_ctors
 LDFLAGS+=--export=malloc --export=free
+ifneq ($(STACK_MODE),2)
 LDFLAGS+=--export=stackSave --export=stackAlloc --export=stackRestore
+endif
 LDFLAGS+=--import-memory --allow-undefined
 LDFLAGS+=--lto-O3
 
@@ -32,8 +36,17 @@ DLMALLOC_FLAGS+=-DMORECORE_CONTIGUOUS=0
 DLMALLOC_FLAGS+=-Dsize_t=unsigned\ long -Dptrdiff_t=long
 DLMALLOC_FLAGS+=-DMALLOC_ALIGNMENT=16
 
+ifeq ($(STACK_MODE),1)
+STACK_OBJ=$(OBJ_DIR)/stack_c.o
+else ifeq ($(STACK_MODE),2)
+STACK_OBJ=
+else
+STACK_OBJ=$(OBJ_DIR)/stack.o
+endif
+
 OBJS=$(OBJ_DIR)/fp.o
-OBJS+=$(OBJ_DIR)/dlmalloc.o $(OBJ_DIR)/libc.o $(OBJ_DIR)/stack.o
+OBJS+=$(OBJ_DIR)/dlmalloc.o $(OBJ_DIR)/libc.o $(STACK_OBJ)
+CLEAN_OBJS=$(OBJ_DIR)/stack.o $(OBJ_DIR)/stack_c.o
 
 WASM=$(LIB_DIR)/mcl.wasm
 MCL_JS=$(LIB_DIR)/mcl_c.js
@@ -41,6 +54,7 @@ MCL_JS=$(LIB_DIR)/mcl_c.js
 all: $(MCL_JS)
 
 $(MCL_JS): $(WASM) $(WASM_DIR)/glue.js
+	@echo STACK_MODE=$(STACK_MODE)
 	python3 -c "import base64;w=base64.b64encode(open('$(WASM)','rb').read()).decode();print(open('$(WASM_DIR)/glue.js').read().replace('@@WASM_BASE64@@',w),end='')" > $@
 
 $(WASM): $(OBJS)
@@ -57,6 +71,9 @@ $(OBJ_DIR)/dlmalloc.o: $(WASM_DIR)/dlmalloc.c
 $(OBJ_DIR)/libc.o: $(WASM_DIR)/libc.c
 	$(CC) $(TARGET) -O3 -DNDEBUG -flto -I $(WASM_DIR) -c -o $@ $<
 
+$(OBJ_DIR)/stack_c.o: $(WASM_DIR)/stack_c.c
+	$(CC) $(TARGET) -O3 -DNDEBUG -I $(WASM_DIR) -c -o $@ $<
+
 $(OBJ_DIR)/stack.o: $(WASM_DIR)/stack.s
 	$(CC) $(TARGET) -c -o $@ $<
 
@@ -64,6 +81,6 @@ DEPS=$(OBJS:.o=.d)
 -include $(DEPS)
 
 clean:
-	rm -f $(OBJS) $(DEPS) $(WASM) $(WASM).pre $(MCL_JS)
+	rm -f $(OBJS) $(CLEAN_OBJS) $(DEPS) $(WASM) $(WASM).pre $(MCL_JS)
 
 .PHONY: clean all

@@ -247,7 +247,7 @@ mk_arm64 -d test\bn_c384_256_test.cpp
 
 ```
 cd mcl
-cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-toolchain.cmake -DARM64_CROSS=ON
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/arm64-windows-toolchain.cmake
 cmake --build build --config Release
 ```
 - `build/lib/mcl.lib`: static library
@@ -257,12 +257,11 @@ cmake --build build --config Release
 
 ```
 cd mcl
-cmake -S . -B build -A arm64 -DON_ARM64_WINDOWS=ON
+cmake -S . -B build -A arm64
 cmake --build build --config Release
 ```
-- Remark: Since I'm not familiar with cmake and don't have an ARM64 Windows environment,
-the CMakeLists-arm64.txt for ARM64 is currently a separate file.
-I would like to merge it with CMakeLists.txt in the future.
+- The toolchain file is only needed for the x64-host cross build. On ARM64
+Windows the build is detected automatically and uses the same code path.
 
 # C# test
 

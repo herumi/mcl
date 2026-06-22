@@ -1,0 +1,72 @@
+name: arm64-windows
+
+permissions:
+  contents: read
+
+# Manual trigger only: this checks that mcl builds natively on ARM64 Windows.
+# It does not run on every push.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build on ARM64 Windows
+    runs-on: windows-11-arm
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Show environment
+      shell: pwsh
+      run: |
+        cmake --version
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        & $vswhere -latest -property installationPath
+
+    - name: Ensure Visual Studio Clang tools are installed
+      shell: pwsh
+      run: |
+        $installerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+        $vsPath = & "$installerDir\vswhere.exe" -latest -property installationPath
+        if (Test-Path "$vsPath\VC\Tools\Llvm\ARM64\bin\clang-cl.exe") {
+          Write-Host "Clang tools already present."
+        } else {
+          Write-Host "Installing C++ Clang tools component..."
+          $args = @('modify', '--installPath', "$vsPath",
+            '--add', 'Microsoft.VisualStudio.Component.VC.Llvm.Clang',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset',
+            '--quiet', '--norestart', '--norebootrestart')
+          $p = Start-Process -FilePath "$installerDir\setup.exe" -ArgumentList $args -Wait -PassThru
+          Write-Host "Installer exit code: $($p.ExitCode)"
+        }
+
+    - name: Configure (native ARM64)
+      shell: pwsh
+      run: cmake -S . -B build -A ARM64
+
+    - name: Build
+      shell: pwsh
+      run: cmake --build build --config Release
+
+    - name: Check outputs
+      shell: pwsh
+      run: |
+        $lib = "build/lib/mcl.lib"
+        $dll = "build/bin/mcl.dll"
+        foreach ($f in @($lib, $dll)) {
+          if (-not (Test-Path $f)) {
+            Write-Error "missing expected output: $f"
+            exit 1
+          }
+          Write-Host "found: $f"
+        }
+        # Confirm the DLL is an ARM64 (AA64) image.
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $vsPath = & $vswhere -latest -property installationPath
+        $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe |
+          Where-Object { $_.FullName -match 'HostARM64\\ARM64' } | Select-Object -First 1
+        if (-not $dumpbin) {
+          $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Select-Object -First 1
+        }
+        if ($dumpbin) {
+          & $dumpbin.FullName /headers $dll | Select-String -Pattern 'machine'
+        }
