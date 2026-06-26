@@ -3,7 +3,7 @@
 # Author : MITSUNARI Shigeo(@herumi)
 # License : modified new BSD license (http://opensource.org/licenses/BSD-3-Clause)
 
-VERSION="0.9.0"
+VERSION="0.9.1"
 
 VOID_TYPE = 0
 INT_TYPE = 1
