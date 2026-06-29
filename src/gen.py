@@ -10,7 +10,6 @@ bit = 0
 N = 0
 
 g_wasm = False
-g_suf = ''
 g_privateList = set()
 
 # function handles referenced across generators
@@ -203,8 +202,7 @@ def gen_makeNIST_P192():
   _0 = Imm(0, 64)
   _1 = Imm(1, 64)
   _2 = Imm(2, 64)
-  name = f'makeNIST_P192L{g_suf}'
-  with Function(name, p, private=isPriv(name, False)) as f:
+  with Function('makeNIST_P192L', p, private=isPriv(name, False)) as f:
     p0 = sub(_0, _1)
     p1 = sub(_0, _2)
     p2 = sub(_0, _1)
@@ -225,8 +223,7 @@ def gen_mcl_fpDbl_mod_NIST_P192():
   out = IntPtr(unit)
   px = IntPtr(unit)
   dummy = IntPtr(unit)
-  name = f'mcl_fpDbl_mod_NIST_P192L{g_suf}'
-  with Function(name, Void, out, px, dummy, private=isPriv(name, False)) as f:
+  with Function('mcl_fpDbl_mod_NIST_P192L', Void, out, px, dummy, private=isPriv(name, False)) as f:
     n = 192 // unit
     L = loadN(px, n)
     L = zext(L, 256)
@@ -269,8 +266,7 @@ def gen_mcl_fpDbl_mod_NIST_P521():
   py = IntPtr(unit)
   px = IntPtr(unit)
   dummy = IntPtr(unit)
-  name = f'mcl_fpDbl_mod_NIST_P521L{g_suf}'
-  with Function(name, Void, py, px, dummy, private=isPriv(name, False)):
+  with Function('mcl_fpDbl_mod_NIST_P521L', Void, py, px, dummy, private=isPriv(name, False)):
     x = loadN(px, n * 2 + 1)
     L = trunc(x, length)
     L = zext(L, rnd)
@@ -303,10 +299,9 @@ def gen_mcl_fp_sqr_NIST_P192():
   py = IntPtr(unit)
   px = IntPtr(unit)
   dummy = IntPtr(unit)
-  name = f'mcl_fp_sqr_NIST_P192L{g_suf}'
-  with Function(name, Void, py, px, dummy, private=isPriv(name, False)):
+  with Function('mcl_fp_sqr_NIST_P192L', Void, py, px, dummy, private=isPriv(name, False)):
     buf = alloca_(unit, 192 * 2 // unit)
-    sqrPre = FuncRef(f'mcl_fpDbl_sqrPre{192 // unit}L{g_suf}', Void)
+    sqrPre = FuncRef(f'mcl_fpDbl_sqrPre{192 // unit}L', Void)
     call(sqrPre, buf, px)
     call(g_mod_NIST_P192, py, buf, buf)
     ret(Void)
@@ -318,10 +313,9 @@ def gen_mcl_fp_mulNIST_P192():
   px = IntPtr(unit)
   py = IntPtr(unit)
   dummy = IntPtr(unit)
-  name = f'mcl_fp_mulNIST_P192L{g_suf}'
-  with Function(name, Void, pz, px, py, dummy, private=isPriv(name, False)):
+  with Function('mcl_fp_mulNIST_P192L', Void, pz, px, py, dummy, private=isPriv(name, False)):
     buf = alloca_(unit, 192 * 2 // unit)
-    mulPre = FuncRef(f'mcl_fpDbl_mulPre{192 // unit}L{g_suf}', Void)
+    mulPre = FuncRef(f'mcl_fpDbl_mulPre{192 // unit}L', Void)
     call(mulPre, buf, px, py)
     call(g_mod_NIST_P192, pz, buf, buf)
     ret(Void)
@@ -345,9 +339,9 @@ def gen_mcl_fp_addsubPre(isAdd):
   px = IntPtr(unit)
   py = IntPtr(unit)
   if isAdd:
-    name = f'mcl_fp_addPre{N}L{g_suf}'
+    name = f'mcl_fp_addPre{N}L'
   else:
-    name = f'mcl_fp_subPre{N}L{g_suf}'
+    name = f'mcl_fp_subPre{N}L'
   with Function(name, r, pz, px, py, private=isPriv(name, False)):
     x = zext(loadN(px, N), bit + unit)
     y = zext(loadN(py, N), bit + unit)
@@ -367,7 +361,7 @@ def gen_mcl_fp_shr1():
   resetGlobalIdx()
   py = IntPtr(unit)
   px = IntPtr(unit)
-  name = f'mcl_fp_shr1_{N}L{g_suf}'
+  name = f'mcl_fp_shr1_{N}L'
   with Function(name, Void, py, px, private=isPriv(name, False)):
     x = loadN(px, N)
     x = lshr(x, 1)
@@ -384,7 +378,7 @@ def gen_mcl_fp_add(isFullBit=True):
   name = 'mcl_fp_add'
   if not isFullBit:
     name += 'NF'
-  name += f'{N}L{g_suf}'
+  name += f'{N}L'
   with Function(name, Void, pz, px, py, pp, private=isPriv(name, False)):
     x = loadN(px, N)
     y = loadN(py, N)
@@ -418,7 +412,7 @@ def gen_mcl_fp_sub(isFullBit=True):
   name = 'mcl_fp_sub'
   if not isFullBit:
     name += 'NF'
-  name += f'{N}L{g_suf}'
+  name += f'{N}L'
   with Function(name, Void, pz, px, py, pp, private=isPriv(name, False)):
     x = loadN(px, N)
     y = loadN(py, N)
@@ -447,7 +441,7 @@ def gen_mcl_fpDbl_add():
   px = IntPtr(unit)
   py = IntPtr(unit)
   pp = IntPtr(unit)
-  name = f'mcl_fpDbl_add{N}L{g_suf}'
+  name = f'mcl_fpDbl_add{N}L'
   with Function(name, Void, pz, px, py, pp, private=isPriv(name, False)):
     x = loadN(px, N * 2)
     y = loadN(py, N * 2)
@@ -477,7 +471,7 @@ def gen_mcl_fpDbl_sub():
   px = IntPtr(unit)
   py = IntPtr(unit)
   pp = IntPtr(unit)
-  name = f'mcl_fpDbl_sub{N}L{g_suf}'
+  name = f'mcl_fpDbl_sub{N}L'
   with Function(name, Void, pz, px, py, pp, private=isPriv(name, False)):
     x = loadN(px, N * 2)
     y = loadN(py, N * 2)
@@ -503,7 +497,7 @@ def gen_mulPv():
   z = Int(bu)
   px = IntPtr(unit)
   y = Int(unit)
-  name = f'mulPv{bit}x{unit}{g_suf}'
+  name = f'mulPv{bit}x{unit}'
   with Function(name, z, px, y, private=isPriv(name, False)) as f:
     L = []
     H = []
@@ -553,7 +547,7 @@ def gen_mcl_fpDbl_mulPre():
   pz = IntPtr(unit)
   px = IntPtr(unit)
   py = IntPtr(unit)
-  name = f'mcl_fpDbl_mulPre{N}L{g_suf}'
+  name = f'mcl_fpDbl_mulPre{N}L'
   with Function(name, Void, pz, px, py, private=isPriv(name, False)):
     generic_fpDbl_mul(pz, px, py)
 
@@ -562,7 +556,7 @@ def gen_mcl_fpDbl_sqrPre():
   resetGlobalIdx()
   py = IntPtr(unit)
   px = IntPtr(unit)
-  name = f'mcl_fpDbl_sqrPre{N}L{g_suf}'
+  name = f'mcl_fpDbl_sqrPre{N}L'
   with Function(name, Void, py, px, private=isPriv(name, False)):
     generic_fpDbl_mul(py, px, px)
 
@@ -578,7 +572,7 @@ def gen_mcl_fp_mont(isFullBit=True):
   name = 'mcl_fp_mont'
   if not isFullBit:
     name += 'NF'
-  name += f'{N}L{g_suf}'
+  name += f'{N}L'
   # setAlias() in gen.cpp -> emit pointer args without 'noalias'
   with Function(name, Void, pz, px, py, pp, private=isPriv(name, False), noalias=False):
     rp = load(getelementptr(pp, -1))
@@ -639,7 +633,7 @@ def gen_mcl_fp_montRed(isFullBit=True):
   name = 'mcl_fp_montRed'
   if not isFullBit:
     name += 'NF'
-  name += f'{N}L{g_suf}'
+  name += f'{N}L'
   with Function(name, Void, pz, pxy, pp, private=isPriv(name, False)):
     rp = load(getelementptr(pp, -1))
     p = loadN(pp, N)
@@ -718,9 +712,8 @@ def setUnit(u):
   unit2 = u * 2
 
 
-def gen(privateList, maxBitSize, suf):
-  global g_suf, g_privateList
-  g_suf = suf
+def gen(privateList, maxBitSize):
+  global g_privateList
   g_privateList = privateList
   gen_once()
   bitTbl = [192, 224, 256, 384, 512]
@@ -744,7 +737,6 @@ def main():
   parser = argparse.ArgumentParser(description='generate base{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
   parser.add_argument('-wasm', action='store_true', default=False, help='generate for wasm')
-  parser.add_argument('-s', type=str, default='', help='suffix of function name')
   parser.add_argument('-f', type=str, default='', help='private function list file')
   opt = parser.parse_args()
 
@@ -762,7 +754,7 @@ def main():
   # MCL_FP_BIT default (see include/mcl/config.hpp). Only affects the
   # (currently unused) 768-bit add/sub extension.
   maxBitSize = 384
-  gen(privateList, maxBitSize, opt.s)
+  gen(privateList, maxBitSize)
   term()
 
 
