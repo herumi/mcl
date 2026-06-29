@@ -743,7 +743,6 @@ def main():
   global g_wasm
   parser = argparse.ArgumentParser(description='generate base{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
-  parser.add_argument('-ver', type=str, default='', help='llvm version (accepted, ignored)')
   parser.add_argument('-wasm', action='store_true', default=False, help='generate for wasm')
   parser.add_argument('-s', type=str, default='', help='suffix of function name')
   parser.add_argument('-f', type=str, default='', help='private function list file')

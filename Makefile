@@ -86,19 +86,11 @@ SHE_SLIB=$(LIB_DIR)/lishe$(MCL_SUF).$(LIB_SUF)
 all: $(MCL_LIB) $(MCL_SLIB) $(SHE_LIB) $(SHE_SLIB)
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
-#LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
-LLVM_OPT_VERSION=$(shell $(LLVM_OPT) --version 2>/dev/null | awk '/version/ { split($$3,a,"."); print a[1]}')
 GEN_EXE=src/gen
 GEN=python3 src/gen.py
 GEN_EXE_OPT=-u $(BIT)
-# incompatibility between llvm 3.4 and the later version
-ifneq ($(LLVM_OPT_VERSION),)
-ifeq ($(shell expr $(LLVM_OPT_VERSION) \>= 9),1)
-  GEN_EXE_OPT+=-ver 0x90
-endif
-endif
 
 # build base$(BIT).ll
 BASE_LL=src/base$(BIT).ll
