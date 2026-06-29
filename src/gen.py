@@ -737,8 +737,7 @@ def main():
 
   # MCL_FP_BIT default (see include/mcl/config.hpp). Only affects the
   # (currently unused) 768-bit add/sub extension.
-  maxBitSize = 384
-  gen(maxBitSize)
+  gen(384)
   term()
 
 

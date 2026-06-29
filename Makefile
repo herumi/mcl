@@ -180,12 +180,10 @@ endif
 #  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
 #endif
 ifeq ($(UPDATE_LL),1)
-src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
-src/bint64.ll: src/gen_bint.exe
-	$< -u 64 -ver 0x90 > $@
-src/bint32.ll: src/gen_bint.exe
-	$< -u 32 -ver 0x90 > $@
+src/bint64.ll: src/gen_bint.py src/s_xbyak_llvm.py
+	python3 src/gen_bint.py -u 64 > $@
+src/bint32.ll: src/gen_bint.py src/s_xbyak_llvm.py
+	python3 src/gen_bint.py -u 32 > $@
 endif
 ifeq ($(ARCH),x86_64)
   ifneq ($(UNAME_S),Darwin)
