@@ -31,45 +31,6 @@ class FuncRef:
     return f'{self.ret.getType()} @{self.name}'
 
 
-def loadN(p, n, offset=0):
-  if offset != 0:
-    p = getelementptr(p, offset)
-  if n > 1:
-    p = bitcast(p, p.bit * n)
-  return load(p)
-
-
-def storeN(r, p, offset=0):
-  if offset != 0:
-    p = getelementptr(p, offset)
-  if r.bit > p.bit:
-    p = bitcast(p, r.bit)
-  store(r, p)
-
-
-# return [xs[n-1]:...:xs[0]]
-def pack(xs):
-  x = xs[0]
-  for y in xs[1:]:
-    shift = x.bit
-    size = x.bit + y.bit
-    x = zext(x, size)
-    y = zext(y, size)
-    y = shl(y, shift)
-    x = or_(x, y)
-  return x
-
-
-# return [H:L]
-def pack2(H, L):
-  size = H.bit + L.bit
-  H = zext(H, size)
-  H = shl(H, L.bit)
-  L = zext(L, size)
-  H = or_(H, L)
-  return H
-
-
 # split x into (high, low) with low being sizeL bits
 def split(x, sizeL):
   hi = lshr(x, sizeL)
@@ -647,7 +608,7 @@ def gen_mcl_fp_montRed(isFullBit=True):
         H = shl(H, bit)
         pq = add(pq, H)
       nxt = load(getelementptr(pxy, N + i))
-      t = pack2(nxt, t)
+      t = pack([t, nxt])
       t = zext(t, bu2)
       pq = zext(pq, bu2)
       t = add(t, pq)
@@ -656,7 +617,7 @@ def gen_mcl_fp_montRed(isFullBit=True):
       H, t = split(t, bit)
     if isFullBit:
       p = zext(p, bu)
-      t = pack2(H, t)
+      t = pack([t, H])
       vc = sub(t, p)
       c = trunc(lshr(vc, bit), 1)
       z = select(c, t, vc)

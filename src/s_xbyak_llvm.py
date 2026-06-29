@@ -3,7 +3,7 @@
 # Author : MITSUNARI Shigeo(@herumi)
 # License : modified new BSD license (http://opensource.org/licenses/BSD-3-Clause)
 
-VERSION="0.9.1"
+VERSION="0.9.2"
 
 VOID_TYPE = 0
 INT_TYPE = 1
@@ -174,7 +174,7 @@ class Operand:
       self.bit = len(self.imm) + 1
 
   def getFullName(self, noalias=False):
-    return f'{self.getType(noalias)} {self.getName()}'
+    return f'{self.getType(noalias)} {self.getName()}'.strip()
 
   def getType(self, noalias=False):
     if self.t == INT_TYPE or self.t == IMM_TYPE:
@@ -452,3 +452,15 @@ def storeN(r, p, offset=0):
   if r.bit > p.bit:
     p = bitcast(p, r.bit)
   store(r, p)
+
+# return [xs[n-1]:...:xs[0]]
+def pack(xs):
+  x = xs[0]
+  for y in xs[1:]:
+    shift = x.bit
+    size = x.bit + y.bit
+    x = zext(x, size)
+    y = zext(y, size)
+    y = shl(y, shift)
+    x = or_(x, y)
+  return x

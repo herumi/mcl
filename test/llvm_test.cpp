@@ -71,10 +71,10 @@ MCL_FP_DEF_FUNC_SUB(5, L)
 #endif
 MCL_FP_DEF_FUNC_SUB(6, L)
 //MCL_FP_DEF_FUNC_SUB(7, L)
-MCL_FP_DEF_FUNC_SUB(8, L)
+//MCL_FP_DEF_FUNC_SUB(8, L)
 #if MCL_SIZEOF_UNIT == 4
 MCL_FP_DEF_FUNC_SUB(12, L)
-MCL_FP_DEF_FUNC_SUB(16, L)
+//MCL_FP_DEF_FUNC_SUB(16, L)
 #endif
 
 
@@ -121,10 +121,10 @@ int main()
 #endif
 	bench<6>(x, y, p + 1);
 //	bench<7>(x, y, p + 1);
-	bench<8>(x, y, p + 1);
+//	bench<8>(x, y, p + 1);
 #if MCL_SIZEOF_UNIT == 4
 	bench<12>(x, y, p + 1);
-	bench<16>(x, y, p + 1);
+//	bench<16>(x, y, p + 1);
 #endif
 }
 

@@ -388,10 +388,10 @@ bin/ecdsa-c-emu:
 	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_FP_BIT=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
-	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
+	$(CLANG) -o $@ -O3 -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
 
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
-	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
+	$(CLANG) -o $@ -O3 -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
 test_emu_32bit:
 	$(MAKE) MCL_SIZEOF_UNIT=4 bin/emu && bin/emu

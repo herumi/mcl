@@ -18,43 +18,6 @@ g_mclb_mul = {}       # N -> Function
 g_mclb_sqr = {}       # N -> Function
 
 
-# return [xs[n-1]:...:xs[0]]
-def pack(xs):
-  x = xs[0]
-  for y in xs[1:]:
-    shift = x.bit
-    size = x.bit + y.bit
-    x = zext(x, size)
-    y = zext(y, size)
-    y = shl(y, shift)
-    x = or_(x, y)
-  return x
-
-
-# return [H:L]
-def pack2(H, L):
-  size = H.bit + L.bit
-  H = zext(H, size)
-  H = shl(H, L.bit)
-  L = zext(L, size)
-  H = or_(H, L)
-  return H
-
-
-# split x into (high, low) with low being sizeL bits
-def split(x, sizeL):
-  hi = lshr(x, sizeL)
-  hi = trunc(hi, hi.bit - sizeL)
-  lo = trunc(x, sizeL)
-  return hi, lo
-
-
-def extract(x, shift):
-  t = lshr(x, shift)
-  t = trunc(t, unit)
-  return t
-
-
 def gen_mulUU():
   global g_mulUU
   resetGlobalIdx()
