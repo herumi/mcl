@@ -1,14 +1,6 @@
 # Generate src/base{32,64}.ll (and base64m.ll for wasm) in LLVM-IR.
-# Python port of src/gen.cpp using the Xbyak-like DSL in s_xbyak_llvm.py.
 # Author : MITSUNARI Shigeo(@herumi)
 # License : modified new BSD license http://opensource.org/licenses/BSD-3-Clause
-#
-# The register numbering (%rN) matches gen.cpp byte for byte except whitespace.
-# To reproduce gen.cpp's global-index accounting we wrap a few primitives:
-#   makeImm  : an immediate operand consumes one global index (C++ Operand(Imm,bit))
-#   gep      : getelementptr with an int offset also builds an i32 immediate
-#   bitcastC : bitcast builds a temporary type operand, so it burns 2 indices
-#   allocaC  : alloca likewise builds a temporary pointer operand (2 indices)
 import argparse
 from s_xbyak_llvm import *
 
@@ -45,45 +37,19 @@ def isPriv(name, explicit=False):
   return explicit or (name in g_privateList)
 
 
-# an immediate; in gen.cpp Operand(Imm,bit) consumes one global index
-def makeImm(b, v):
-  r = Imm(v, b)
-  getGlobalIdx()
-  return r
-
-
-# getelementptr; an int offset is materialized as an i32 immediate (extra index)
-def gep(p, off):
-  if isinstance(off, int):
-    off = makeImm(32, off)
-  return getelementptr(p, off)
-
-
-# bitcast x to i{bit}* ; the C++ type operand consumes an extra index
-def bitcastC(x, b):
-  getGlobalIdx()
-  return bitcast(x, b)
-
-
-# alloca i{bit}, i32 n ; the C++ result operand consumes an extra index
-def allocaC(b, n):
-  getGlobalIdx()
-  return alloca_(b, n)
-
-
 def loadN(p, n, offset=0):
   if offset != 0:
-    p = gep(p, offset)
+    p = getelementptr(p, offset)
   if n > 1:
-    p = bitcastC(p, p.bit * n)
+    p = bitcast(p, p.bit * n)
   return load(p)
 
 
 def storeN(r, p, offset=0):
   if offset != 0:
-    p = gep(p, offset)
+    p = getelementptr(p, offset)
   if r.bit > p.bit:
-    p = bitcastC(p, r.bit)
+    p = bitcast(p, r.bit)
   store(r, p)
 
 
@@ -221,7 +187,7 @@ def gen_mulPos():
   i = Int(unit)
   name = f'mulPos{unit}x{unit}'
   with Function(name, xy, px, y, i, private=isPriv(name, True)) as f:
-    x = load(gep(px, i))
+    x = load(getelementptr(px, i))
     xy = call(g_mulUU, x, y)
     ret(xy)
   g_mulPos = f
@@ -234,9 +200,9 @@ def gen_makeNIST_P192():
   p0 = Int(64)
   p1 = Int(64)
   p2 = Int(64)
-  _0 = makeImm(64, 0)
-  _1 = makeImm(64, 1)
-  _2 = makeImm(64, 2)
+  _0 = Imm(0, 64)
+  _1 = Imm(1, 64)
+  _2 = Imm(2, 64)
   name = f'makeNIST_P192L{g_suf}'
   with Function(name, p, private=isPriv(name, False)) as f:
     p0 = sub(_0, _1)
@@ -312,20 +278,20 @@ def gen_mcl_fpDbl_mod_NIST_P521():
     H = trunc(H, rnd)
     t = add(L, H)
     t0 = lshr(t, length)
-    t0 = and_(t0, makeImm(rnd, 1))
+    t0 = and_(t0, Imm(1, rnd))
     t = add(t, t0)
     t = trunc(t, length)
     z0 = zext(t, rnd)
     t = extract(z0, n * unit)
-    m = or_(t, makeImm(unit, mask))
+    m = or_(t, Imm(mask, unit))
     for i in range(n):
       s = extract(z0, unit * i)
       m = and_(m, s)
-    c = icmp(eq, m, makeImm(unit, -1))
+    c = icmp(eq, m, Imm(-1, unit))
     br(c, 'zero', 'nonzero')
     putLabel('zero')
     for i in range(n + 1):
-      storeN(makeImm(unit, 0), py, i)
+      storeN(Imm(0, unit), py, i)
     ret(Void)
     putLabel('nonzero')
     storeN(z0, py)
@@ -339,7 +305,7 @@ def gen_mcl_fp_sqr_NIST_P192():
   dummy = IntPtr(unit)
   name = f'mcl_fp_sqr_NIST_P192L{g_suf}'
   with Function(name, Void, py, px, dummy, private=isPriv(name, False)):
-    buf = allocaC(unit, 192 * 2 // unit)
+    buf = alloca_(unit, 192 * 2 // unit)
     sqrPre = FuncRef(f'mcl_fpDbl_sqrPre{192 // unit}L{g_suf}', Void)
     call(sqrPre, buf, px)
     call(g_mod_NIST_P192, py, buf, buf)
@@ -354,7 +320,7 @@ def gen_mcl_fp_mulNIST_P192():
   dummy = IntPtr(unit)
   name = f'mcl_fp_mulNIST_P192L{g_suf}'
   with Function(name, Void, pz, px, py, dummy, private=isPriv(name, False)):
-    buf = allocaC(unit, 192 * 2 // unit)
+    buf = alloca_(unit, 192 * 2 // unit)
     mulPre = FuncRef(f'mcl_fpDbl_mulPre{192 // unit}L{g_suf}', Void)
     call(mulPre, buf, px, py)
     call(g_mod_NIST_P192, pz, buf, buf)
@@ -392,7 +358,7 @@ def gen_mcl_fp_addsubPre(isAdd):
     else:
       z = sub(x, y)
       storeN(trunc(z, bit), pz)
-      one = makeImm(unit, 1)
+      one = Imm(1, unit)
       r = and_(trunc(lshr(z, bit), unit), one)
     ret(r)
 
@@ -466,7 +432,7 @@ def gen_mcl_fp_sub(isFullBit=True):
     else:
       c = trunc(lshr(v, bit - 1), 1)
     p = loadN(pp, N)
-    c = select(c, p, makeImm(bit, 0))
+    c = select(c, p, Imm(0, bit))
     v = add(v, c)
     storeN(v, pz)
     ret(Void)
@@ -525,7 +491,7 @@ def gen_mcl_fpDbl_sub():
     c = lshr(vc, b2)
     c = trunc(c, 1)
     p = loadN(pp, N)
-    c = select(c, p, makeImm(bit, 0))
+    c = select(c, p, Imm(0, bit))
     t = add(H, c)
     storeN(t, pz, N)
     ret(Void)
@@ -542,7 +508,7 @@ def gen_mulPv():
     L = []
     H = []
     for i in range(N):
-      xy = call(g_mulPos, px, y, makeImm(unit, i))
+      xy = call(g_mulPos, px, y, Imm(i, unit))
       L.append(trunc(xy, unit))
       H.append(call(g_extractHigh, xy))
     LL = pack(L)
@@ -615,11 +581,11 @@ def gen_mcl_fp_mont(isFullBit=True):
   name += f'{N}L{g_suf}'
   # setAlias() in gen.cpp -> emit pointer args without 'noalias'
   with Function(name, Void, pz, px, py, pp, private=isPriv(name, False), noalias=False):
-    rp = load(gep(pp, -1))
+    rp = load(getelementptr(pp, -1))
     if isFullBit:
       s = None
       for i in range(N):
-        y = load(gep(py, i))
+        y = load(getelementptr(py, i))
         xy = call(g_mulPv[bit], px, y)
         if i == 0:
           a = zext(xy, bu2)
@@ -649,7 +615,7 @@ def gen_mcl_fp_mont(isFullBit=True):
       t = add(xy, pq)
       t = lshr(t, unit)
       for i in range(1, N):
-        y = load(gep(py, i))
+        y = load(getelementptr(py, i))
         xy = call(g_mulPv[bit], px, y)
         t = add(t, xy)
         c0 = trunc(t, unit)
@@ -675,7 +641,7 @@ def gen_mcl_fp_montRed(isFullBit=True):
     name += 'NF'
   name += f'{N}L{g_suf}'
   with Function(name, Void, pz, pxy, pp, private=isPriv(name, False)):
-    rp = load(gep(pp, -1))
+    rp = load(getelementptr(pp, -1))
     p = loadN(pp, N)
     bu = bit + unit
     bu2 = bit + unit * 2
@@ -691,7 +657,7 @@ def gen_mcl_fp_montRed(isFullBit=True):
         H = zext(H, bu)
         H = shl(H, bit)
         pq = add(pq, H)
-      nxt = load(gep(pxy, N + i))
+      nxt = load(getelementptr(pxy, N + i))
       t = pack2(nxt, t)
       t = zext(t, bu2)
       pq = zext(pq, bu2)
