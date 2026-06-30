@@ -3,7 +3,7 @@
 # Author : MITSUNARI Shigeo(@herumi)
 # License : modified new BSD license (http://opensource.org/licenses/BSD-3-Clause)
 
-VERSION="0.9.2"
+VERSION="0.9.3"
 
 VOID_TYPE = 0
 INT_TYPE = 1
@@ -328,11 +328,6 @@ def alloca_(bit, n):
   r = IntPtr(bit)
   output(f'{r.getName()} = alloca i{bit}, i32 {n}')
   return r
-
-# emit a named basic-block label, e.g. putLabel('zero') -> 'zero:'
-# (br can target the same name via 'label %zero')
-def putLabel(name):
-  output(f'{name}:')
 
 # op x
 def ret(x):
