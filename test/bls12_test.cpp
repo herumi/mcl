@@ -702,12 +702,13 @@ CYBOZU_TEST_AUTO(verifyG2)
 
 void splitTest(const mpz_class& mx, const mpz_class& L)
 {
-	mcl::Unit x[4], a[2], b[2];
-	mcl::gmp::getArray(x, 4, mx);
+	const size_t n = 32 / sizeof(mcl::Unit);
+	mcl::Unit x[n], a[n/2], b[n/2];
+	mcl::gmp::getArray(x, n, mx);
 	mcl::ec::optimizedSplitRawForBLS12_381(a, b, x);
 	mpz_class ma, mb;
-	mcl::gmp::setArray(ma, a, 2);
-	mcl::gmp::setArray(mb, b, 2);
+	mcl::gmp::setArray(ma, a, n/2);
+	mcl::gmp::setArray(mb, b, n/2);
 	CYBOZU_TEST_EQUAL(mb, mx / L);
 	CYBOZU_TEST_EQUAL(ma, mx % L);
 }

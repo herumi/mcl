@@ -9,7 +9,7 @@ CYBOZU_TEST_AUTO(arrayToHex)
 {
 	const bool bit64 = MCL_UNIT_BIT_SIZE == 64;
 	const struct {
-		uint64_t x[128 / MCL_UNIT_BIT_SIZE];
+		mcl::Unit x[128 / MCL_UNIT_BIT_SIZE];
 		size_t n;
 		const char *str;
 	} tbl[] = {

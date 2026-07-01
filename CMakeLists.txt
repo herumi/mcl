@@ -192,6 +192,16 @@ if(MCL_COMPILE_OPTIONS)
 	target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
 endif()
 
+# Build compiler command list respecting CMAKE_CXX_COMPILER_LAUNCHER and CMAKE_CXX_COMPILER_ARG1
+# so that wrappers like sccache work correctly in add_custom_command.
+set(_cxx_cmd ${CMAKE_CXX_COMPILER})
+if(CMAKE_CXX_COMPILER_LAUNCHER)
+	set(_cxx_cmd ${CMAKE_CXX_COMPILER_LAUNCHER} ${CMAKE_CXX_COMPILER})
+endif()
+if(CMAKE_CXX_COMPILER_ARG1)
+	list(APPEND _cxx_cmd ${CMAKE_CXX_COMPILER_ARG1})
+endif()
+
 # use bint-x64 on x64, bint${BIT}.ll on the other CPU
 if(MCL_WIN_ARM64)
 	# Build the whole library for Windows ARM64 here, following mklib_arm64.bat:
@@ -296,7 +306,7 @@ else()
 	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
 
 	add_custom_command(OUTPUT ${BINT_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC -fno-ident
+		COMMAND ${_cxx_cmd} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
@@ -331,7 +341,7 @@ elseif(${MCL_USE_LLVM})
 	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
 
 	add_custom_command(OUTPUT ${BASE_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC -fno-ident
+		COMMAND ${_cxx_cmd} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
@@ -364,7 +374,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.o")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -mavx512f -mavx512ifma -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
+		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -mavx512f -mavx512ifma -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(msm_avx.o
 		SOURCES ${MSM_OBJ})
