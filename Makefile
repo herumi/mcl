@@ -101,7 +101,7 @@ ifeq ($(UPDATE_ASM),1)
 $(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
 	$(CXX) -o $@ $< $(CFLAGS)
 
-$(BASE_LL): src/gen.py src/s_xbyak_llvm.py
+$(BASE_LL): src/gen.py src/common.py src/s_xbyak_llvm.py
 	$(GEN) $(GEN_EXE_OPT) > $@
 
 $(BASE_ASM): $(BASE_LL)
@@ -180,9 +180,9 @@ endif
 #  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
 #endif
 ifeq ($(UPDATE_LL),1)
-src/bint64.ll: src/gen_bint.py src/s_xbyak_llvm.py
+src/bint64.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
 	python3 src/gen_bint.py -u 64 > $@
-src/bint32.ll: src/gen_bint.py src/s_xbyak_llvm.py
+src/bint32.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
 	python3 src/gen_bint.py -u 32 > $@
 endif
 ifeq ($(ARCH),x86_64)
@@ -277,7 +277,7 @@ ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
 	$(AR) $(ARFLAGS) $@ $(ECDSA_OBJ)
 
-src/base64m.ll: src/gen.py src/s_xbyak_llvm.py
+src/base64m.ll: src/gen.py src/common.py src/s_xbyak_llvm.py
 	$(GEN) $(GEN_EXE_OPT) -wasm > $@
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp

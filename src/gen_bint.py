@@ -3,6 +3,7 @@
 # License : modified new BSD license http://opensource.org/licenses/BSD-3-Clause
 import argparse
 from s_xbyak_llvm import *
+import common
 
 unit = 0
 unit2 = 0
@@ -18,53 +19,11 @@ g_mclb_mul = {}       # N -> Function
 g_mclb_sqr = {}       # N -> Function
 
 
-def gen_mulUU():
-  global g_mulUU
-  resetGlobalIdx()
-  z = Int(unit2)
-  x = Int(unit)
-  y = Int(unit)
-  name = f'mul{unit}x{unit}L'
-  with Function(name, z, x, y, private=True) as f:
-    x = zext(x, unit2)
-    y = zext(y, unit2)
-    z = mul(x, y)
-    ret(z)
-  g_mulUU = f
-
-
-def gen_extractHigh():
-  global g_extractHigh
-  resetGlobalIdx()
-  z = Int(unit)
-  x = Int(unit2)
-  name = f'extractHigh{unit}'
-  with Function(name, z, x, private=True) as f:
-    x = lshr(x, unit)
-    z = trunc(x, unit)
-    ret(z)
-  g_extractHigh = f
-
-
-def gen_mulPos():
-  global g_mulPos
-  resetGlobalIdx()
-  xy = Int(unit2)
-  px = IntPtr(unit)
-  y = Int(unit)
-  i = Int(unit)
-  name = f'mulPos{unit}x{unit}'
-  with Function(name, xy, px, y, i, private=True) as f:
-    x = load(getelementptr(px, i))
-    xy = call(g_mulUU, x, y)
-    ret(xy)
-  g_mulPos = f
-
-
 def gen_once():
-  gen_mulUU()
-  gen_extractHigh()
-  gen_mulPos()
+  global g_mulUU, g_extractHigh, g_mulPos
+  g_mulUU = common.gen_mulUU(unit)
+  g_extractHigh = common.gen_extractHigh(unit)
+  g_mulPos = common.gen_mulPos(unit, g_mulUU)
 
 
 def gen_mclb_addsub(isAdd):
