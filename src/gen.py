@@ -39,16 +39,13 @@ def split(x, sizeL):
   return hi, lo
 
 
-def extract(x, shift):
+# return (x>>shift) % (2**size)
+def extract(x, shift, size=0):
+  if size == 0:
+    size = unit
   t = lshr(x, shift)
-  t = trunc(t, unit)
+  t = trunc(t, size)
   return t
-
-
-def extract192to64(x, shift):
-  y = lshr(x, shift)
-  y = trunc(y, 64)
-  return y
 
 
 def gen_makeNIST_P192():
@@ -90,7 +87,7 @@ def gen_mcl_fpDbl_mod_NIST_P192():
     H = zext(H192, 256)
     H10 = shl(H192, 64)
     H10 = zext(H10, 256)
-    H2 = extract192to64(H192, 128)
+    H2 = extract(H192, 128, 64)
     H2 = zext(H2, 256)
     H102 = or_(H10, H2)
     H2 = shl(H2, 64)
