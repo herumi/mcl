@@ -86,6 +86,58 @@ def gen_extractHigh(unit):
   return f
 
 
+# emit z = px[0..N] * y and return z (i{N*unit+unit})
+def emit_mulUnit(unit, N, mulPos, extractHigh, px, y):
+  bu = N * unit + unit
+  L = []
+  H = []
+  for i in range(N):
+    xy = call(mulPos, px, y, Imm(i, unit))
+    L.append(trunc(xy, unit))
+    H.append(call(extractHigh, xy))
+  LL = pack(L)
+  HH = pack(H)
+  LL = zext(LL, bu)
+  HH = zext(HH, bu)
+  HH = shl(HH, unit)
+  return add(LL, HH)
+
+
+# z = px[0..N] * y, returns i{N*unit+unit}
+def gen_mulPv(name, unit, N, mulPos, extractHigh):
+  bu = N * unit + unit
+  resetGlobalIdx()
+  z = Int(bu)
+  px = IntPtr(unit)
+  y = Int(unit)
+  with Function(name, z, px, y, private=False) as f:
+    z = emit_mulUnit(unit, N, mulPos, extractHigh, px, y)
+    ret(z)
+  return f
+
+
+# [r:z[]] = x[] + y[] (isAdd) or x[] - y[]
+def gen_addsub(name, unit, N, isAdd):
+  bit = N * unit
+  resetGlobalIdx()
+  pz = IntPtr(unit)
+  px = IntPtr(unit)
+  py = IntPtr(unit)
+  with Function(name, Int(unit), pz, px, py, private=False):
+    x = zext(loadN(px, N), bit + unit)
+    y = zext(loadN(py, N), bit + unit)
+    if isAdd:
+      z = add(x, y)
+      storeN(trunc(z, bit), pz)
+      r = trunc(lshr(z, bit), unit)
+    else:
+      z = sub(x, y)
+      storeN(trunc(z, bit), pz)
+      z = trunc(lshr(z, bit), unit)
+      r = and_(z, Imm(1, unit))
+    ret(r)
+
+
 def gen_mulPos(unit, mulUU):
   resetGlobalIdx()
   xy = Int(unit * 2)

@@ -27,27 +27,11 @@ def gen_once():
 
 
 def gen_mclb_addsub(isAdd):
-  resetGlobalIdx()
-  pz = IntPtr(unit)
-  px = IntPtr(unit)
-  py = IntPtr(unit)
   if isAdd:
     name = f'mclb_add{N}'
   else:
     name = f'mclb_sub{N}'
-  with Function(name, Int(unit), pz, px, py, private=False):
-    x = zext(loadN(px, N), bit + unit)
-    y = zext(loadN(py, N), bit + unit)
-    if isAdd:
-      z = add(x, y)
-      storeN(trunc(z, bit), pz)
-      r = trunc(lshr(z, bit), unit)
-    else:
-      z = sub(x, y)
-      storeN(trunc(z, bit), pz)
-      z = trunc(lshr(z, bit), unit)
-      r = and_(z, Imm(1, unit))
-    ret(r)
+  common.gen_addsub(name, unit, N, isAdd)
 
 
 def gen_mclb_addNF():
@@ -84,28 +68,8 @@ def gen_mclb_subNF():
 
 # z = px[0..N] * y, returns i{bit+unit}
 def gen_mulUnit_inner():
-  global g_mulUnit_inner
-  bu = bit + unit
-  resetGlobalIdx()
-  z = Int(bu)
-  px = IntPtr(unit)
-  y = Int(unit)
   name = f'mulUnit_inner{bit}'
-  with Function(name, z, px, y, private=False) as f:
-    L = []
-    H = []
-    for i in range(N):
-      xy = call(g_mulPos, px, y, Imm(i, unit))
-      L.append(trunc(xy, unit))
-      H.append(call(g_extractHigh, xy))
-    LL = pack(L)
-    HH = pack(H)
-    LL = zext(LL, bu)
-    HH = zext(HH, bu)
-    HH = shl(HH, unit)
-    z = add(LL, HH)
-    ret(z)
-  g_mulUnit_inner[bit] = f
+  g_mulUnit_inner[bit] = common.gen_mulPv(name, unit, N, g_mulPos, g_extractHigh)
 
 
 # [r:z[]] = x[] * y
@@ -130,18 +94,7 @@ def gen_mclb_mulUnitAdd():
   y = Int(unit)
   name = f'mclb_mulUnitAdd{N}'
   with Function(name, Int(unit), pz, px, y, private=False):
-    L = []
-    H = []
-    for i in range(N):
-      xy = call(g_mulPos, px, y, Imm(i, unit))
-      L.append(trunc(xy, unit))
-      H.append(call(g_extractHigh, xy))
-    LL = pack(L)
-    HH = pack(H)
-    LL = zext(LL, bit + unit)
-    HH = zext(HH, bit + unit)
-    HH = shl(HH, unit)
-    z = add(LL, HH)
+    z = common.emit_mulUnit(unit, N, g_mulPos, g_extractHigh, px, y)
     z = add(z, zext(loadN(pz, N), bit + unit))
     storeN(trunc(z, bit), pz)
     r = trunc(lshr(z, bit), unit)
