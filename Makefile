@@ -88,7 +88,6 @@ ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
-GEN_EXE=src/gen
 GEN=python3 src/gen.py
 GEN_EXE_OPT=-u $(BIT)
 
@@ -98,8 +97,6 @@ BASE_ASM=src/asm/$(CPU).S
 BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
 
 ifeq ($(UPDATE_ASM),1)
-$(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS)
 
 $(BASE_LL): src/gen.py src/common.py src/s_xbyak_llvm.py
 	$(GEN) $(GEN_EXE_OPT) > $@
@@ -466,8 +463,7 @@ android: $(BASE_LL)
 	done
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) src/static_code.asm src/dump_code lib/android
-	$(RM) src/gen_bint.exe
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe src/static_code.asm src/dump_code lib/android
 	$(MAKE) clean_standalone
 
 clean_gen:
