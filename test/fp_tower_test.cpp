@@ -277,6 +277,9 @@ void testFpDbl()
 				mcl::gmp::addMod(mo, mx, my, mp);
 				z.getMpz(mz);
 				CYBOZU_TEST_EQUAL(mz, mo);
+				FpDbl z0;
+				z0.setMpz(mo);
+				CYBOZU_TEST_ASSERT(z == z0);
 				mcl::gmp::subMod(mo, mx, my, mp);
 				FpDbl::sub(z, x, y);
 				z.getMpz(mz);

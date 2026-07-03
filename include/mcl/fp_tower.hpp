@@ -170,6 +170,12 @@ public:
 	}
 	void operator+=(const FpDbl& x) { add(*this, *this, x); }
 	void operator-=(const FpDbl& x) { sub(*this, *this, x); }
+	bool operator==(const FpDbl& rhs) const
+	{
+		const size_t n = getUnitSize();
+		return bint::cmpEqN(v_, rhs.v_, n);
+	}
+	bool operator!=(const FpDbl& rhs) const { return !operator==(rhs); }
 };
 
 /*
@@ -729,6 +735,8 @@ struct Fp2Dbl {
 			}
 		}
 	}
+	bool operator==(const Fp2Dbl& rhs) const { return a == rhs.a && b == rhs.b; }
+	bool operator!=(const Fp2Dbl& rhs) const { return !operator==(rhs); }
 private:
 	static Fp2 cast(Unit *x) { return *reinterpret_cast<Fp2*>(x); }
 	static const Fp2 cast(const Unit *x) { return *reinterpret_cast<const Fp2*>(x); }
