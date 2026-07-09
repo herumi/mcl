@@ -86,18 +86,10 @@ SHE_SLIB=$(LIB_DIR)/lishe$(MCL_SUF).$(LIB_SUF)
 all: $(MCL_LIB) $(MCL_SLIB) $(SHE_LIB) $(SHE_SLIB)
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
-#LLVM_VER=-3.8
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
-LLVM_OPT_VERSION=$(shell $(LLVM_OPT) --version 2>/dev/null | awk '/version/ { split($$3,a,"."); print a[1]}')
-GEN_EXE=src/gen
+GEN=python3 src/gen.py
 GEN_EXE_OPT=-u $(BIT)
-# incompatibility between llvm 3.4 and the later version
-ifneq ($(LLVM_OPT_VERSION),)
-ifeq ($(shell expr $(LLVM_OPT_VERSION) \>= 9),1)
-  GEN_EXE_OPT+=-ver 0x90
-endif
-endif
 
 # build base$(BIT).ll
 BASE_LL=src/base$(BIT).ll
@@ -105,11 +97,9 @@ BASE_ASM=src/asm/$(CPU).S
 BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
 
 ifeq ($(UPDATE_ASM),1)
-$(GEN_EXE): src/gen.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< $(CFLAGS)
 
-$(BASE_LL): $(GEN_EXE)
-	$(GEN_EXE) $(GEN_EXE_OPT) > $@
+$(BASE_LL): src/gen.py src/common.py src/s_xbyak_llvm.py
+	$(GEN) $(GEN_EXE_OPT) > $@
 
 $(BASE_ASM): $(BASE_LL)
 	$(LLVM_OPT) -O3 -o - $< -march=$(CPU) | $(LLVM_LLC) -O3 -o $@ $(LLVM_FLAGS)
@@ -187,12 +177,10 @@ endif
 #  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
 #endif
 ifeq ($(UPDATE_LL),1)
-src/gen_bint.exe: src/gen_bint.cpp src/llvm_gen.hpp
-	$(CXX) -o $@ $< -I ./src -I ./include -Wall -Wextra $(CFLAGS)
-src/bint64.ll: src/gen_bint.exe
-	$< -u 64 -ver 0x90 > $@
-src/bint32.ll: src/gen_bint.exe
-	$< -u 32 -ver 0x90 > $@
+src/bint64.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
+	python3 src/gen_bint.py -u 64 > $@
+src/bint32.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
+	python3 src/gen_bint.py -u 32 > $@
 endif
 ifeq ($(ARCH),x86_64)
   ifneq ($(UNAME_S),Darwin)
@@ -286,8 +274,8 @@ ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
 	$(AR) $(ARFLAGS) $@ $(ECDSA_OBJ)
 
-src/base64m.ll: $(GEN_EXE)
-	$(GEN_EXE) $(GEN_EXE_OPT) -wasm > $@
+src/base64m.ll: src/gen.py src/common.py src/s_xbyak_llvm.py
+	$(GEN) $(GEN_EXE_OPT) -wasm > $@
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
 	$(CXX) -o $@ src/dump_code.cpp src/fp.cpp -g -I include -DMCL_DUMP_JIT -DMCL_SIZEOF_UNIT=8 -DNDEBUG -DMCL_MSM=0
@@ -397,10 +385,10 @@ bin/ecdsa-c-emu:
 	$(CXX) -g -o $@ src/fp.cpp src/ecdsa_c.cpp test/ecdsa_c_test.cpp -DMCL_FP_BIT=256 -DMCL_SIZEOF_UNIT=4 -DMCL_BINT_ASM=0 -I ./include -DMCL_WASM32
 
 bin/llvm_test64.exe: test/llvm_test.cpp src/base64.ll
-	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
+	$(CLANG) -o $@ -O3 -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base64.ll
 
 bin/llvm_test32.exe: test/llvm_test.cpp src/base32.ll
-	$(CLANG) -o $@ -Ofast -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
+	$(CLANG) -o $@ -O3 -DNDEBUG -Wall -Wextra -I ./include test/llvm_test.cpp src/base32.ll -m32
 
 test_emu_32bit:
 	$(MAKE) MCL_SIZEOF_UNIT=4 bin/emu && bin/emu
@@ -475,8 +463,7 @@ android: $(BASE_LL)
 	done
 
 clean:
-	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe $(GEN_EXE) src/static_code.asm src/dump_code lib/android
-	$(RM) src/gen_bint.exe
+	$(RM) $(LIB_DIR)/*.a $(LIB_DIR)/*.$(LIB_SUF) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.obj $(OBJ_DIR)/*.d $(EXE_DIR)/*.exe src/static_code.asm src/dump_code lib/android
 	$(MAKE) clean_standalone
 
 clean_gen:

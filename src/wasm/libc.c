@@ -9,11 +9,11 @@ void *sbrk(long incr) {
   unsigned char *old = brk;
   if (incr > 0) {
     // Each wasm page is 64KB
-    size_t current_size = (size_t)__builtin_wasm_memory_size(0) * 65536;
+    size_t current_size = (size_t)__builtin_wasm_memory_size(0) * 65536; // lgtm[cpp/implicit-function-declaration]
     size_t needed = (size_t)(brk + incr);
     if (needed > current_size) {
       size_t pages = (needed - current_size + 65535) / 65536;
-      if (__builtin_wasm_memory_grow(0, pages) == (size_t)-1) {
+      if (__builtin_wasm_memory_grow(0, pages) == (size_t)-1) { // lgtm[cpp/implicit-function-declaration]
         return (void *)-1;
       }
     }
