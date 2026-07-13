@@ -934,12 +934,22 @@ private:
 		}
 		if (pn_ == 4) {
 			func = getCurr<void3u>();
+#if 1
+			// mulx w/o adx is faster than adx version
+			if (!isFullBit_) {
+				gen_montMulWoAdx();
+				return true;
+			}
+#endif
 			gen_montMul4();
 			return true;
 		}
 		if (pn_ == 6 && !isFullBit_) {
 			func = getCurr<void3u>();
 #if 1
+			// mulx w/o adx is faster than adx version
+			gen_montMulWoAdx();
+#elif 1
 			// a little faster
 			gen_montMul6();
 #else
@@ -1562,6 +1572,174 @@ private:
 		sub_rm(z, pp);
 		cmovc_rr(z, keep);
 		store_mr(pz, z);
+		ret();
+	}
+	// LIFO pool of free registers for gen_montMulWoAdx
+	struct RegPool {
+		const Reg64 *tbl[16];
+		int n;
+		RegPool() : n(0) {}
+		void release(const Reg64& r) { assert(n < 16); tbl[n++] = &r; }
+		const Reg64& alloc() { assert(n > 0); return *tbl[--n]; }
+	};
+	/*
+		One row of schoolbook multiplication with mulx and w/o adx (rdx = y[i]):
+		  A: row = x * y[i]; one add/adc chain combines row[j] = lo[j] + hi[j-1].
+		  B: d = c + row (one chain; d has n+1 limbs, all in registers).
+		x[j] is ptr [xBase + j * 8]. c is null on the first row (B is skipped).
+		c[j] is null for a limb spilled to S_ct (folded into the chain as adc;
+		such j must be >= 1). All registers of c are released. d gets n+1 registers.
+	*/
+	void mulRowWoAdx(const Reg64 *d[], int n, const RegExp& xBase, const Reg64 *const c[], const Xbyak::Address& S_ct, RegPool& pool)
+	{
+		// A: row = x * y[i]
+		const Reg64 *hi = 0;
+		for (int j = 0; j < n; j++) {
+			const Reg64 *prev = hi;
+			hi = &pool.alloc();
+			d[j] = &pool.alloc();
+			mulx(*hi, *d[j], ptr [xBase + j * 8]);
+			if (j > 0) {
+				add_ex(*d[j], *prev, j == 1);
+				pool.release(*prev);
+			}
+		}
+		adc(*hi, 0); // row[n]
+		// B: d = c + row
+		if (c) {
+			for (int j = 0; j < n; j++) {
+				if (c[j] == 0) {
+					adc(*d[j], S_ct); // the spilled limb of c
+				} else {
+					add_ex(*d[j], *c[j], j == 0);
+					pool.release(*c[j]);
+				}
+			}
+			adc(*hi, 0);
+		}
+		d[n] = hi;
+	}
+	/*
+		input (z, x, y) = (p0, p1, p2)
+		z[N-1..0] <- montgomery(x[N-1..0], y[N-1..0]) for N = 4, 6
+		destroy t0, ..., t9, rax, rdx
+
+		Montgomery mul with mulx and w/o adx(adcx/adox) is faster than w/adx.
+		Loop invariant: the accumulator c (< 2p, N limbs) is in registers except
+		possibly c[N-1] (see below). One iteration (rdx = y[i]):
+		  A: row = x * y[i]; one chain combines row[j] = lo[j] + hi[j-1].
+		  B: d = c + row (one chain; d has N+1 limbs, all in registers).
+		  C: q = d[0] * rp; chain1 t[j] = lo(p[j]*q) + d[j] (t[0] = 0, dropped;
+		     its carry is (d[0] != 0), computed by neg without waiting for mulx),
+		     chain2 c'[j] = t[j+1] + hi(p[j]*q), which doubles as the /2^64 shift.
+	*/
+	void gen_montMulWoAdx()
+	{
+		const int N = pn_;
+		assert(N == 4 || N == 6);
+		assert(!isFullBit_);
+		// With N=6, registers are insufficient, so part of c is spilled to the stack.
+		const bool allInRegs = 2 * N + 5 <= 13;
+		const int stackSize = allInRegs ? 0 : (N + 3) * 8;
+		StackFrame sf(this, 3, 10 | UseRDX, 0, false);
+		call(fp_mulL);
+		sf.close();
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+	L(fp_mulL);
+		// fp_mulL is a subroutine, so the stack is allocated here (not by StackFrame).
+		if (stackSize > 0) sub(rsp, stackSize);
+		const Xbyak::Address S_pz = ptr [rsp + 0]; // pz between iterations
+		const Xbyak::Address S_py = ptr [rsp + 8]; // py between iterations
+		const int cSpill = allInRegs ? -1 : N - 1; // which limb of c to spill; must be >= 1
+		const Xbyak::Address S_ct = ptr [rsp + 16]; // c[cSpill] between iterations
+		const RegExp S_x = rsp + 24; // copy of x[N-1..0]
+		RegPool pool;
+		if (!allInRegs) {
+			mov(S_pz, pz);
+			mov(S_py, py);
+			pool.release(pz);
+		}
+		for (int j = 0; j < 10; j++) pool.release(sf.t[j]);
+		const Reg64 *c[8];
+		const Reg64 *d[8];
+		for (int i = 0; i < N; i++) {
+			const bool isFirst = i == 0;
+			const bool isLast = i == N - 1;
+			if (allInRegs || isFirst) {
+				mov(rdx, ptr [py + i * 8]); // rdx = y[i]
+			} else {
+				mov(rdx, S_py);
+				mov(rdx, ptr [rdx + i * 8]); // rdx = y[i]
+			}
+			// A, B: d = c + x * y[i]
+			mulRowWoAdx(d, N, (allInRegs || isFirst) ? RegExp(px) : S_x, isFirst ? 0 : c, S_ct, pool);
+			if (isFirst && !allInRegs) {
+				for (int j = 0; j < N; j++) {
+					mov(rax, ptr [px + j * 8]);
+					mov(ptr [S_x + j * 8], rax);
+				}
+				pool.release(px);
+				pool.release(py);
+			}
+			// C: q = d[0] * rp ; c' = (d + q*p)/2^64
+			mov(rdx, rp_);
+			imul(rdx, *d[0]); // rdx = q
+			// t[0] = lo(p[0]*q) + d[0] = 0 by the choice of q; only its carry
+			// matters and lo(p[0]*q) = -d[0] mod 2^64, so CF = (d[0] != 0), which
+			// is what neg computes. This starts chain1 without waiting for mulx.
+			neg(*d[0]);
+			pool.release(*d[0]);
+			const Reg64 *ph[8];
+			const Reg64 *t[8];
+			for (int j = 0; j < N; j++) {
+				ph[j] = &pool.alloc();
+				const Reg64& lo = pool.alloc();
+				mulx(*ph[j], lo, ptr [rip + pL_ + j * 8]);
+				if (j == 0) {
+					pool.release(lo); // lo(p[0]*q) is not needed, see above
+				} else {
+					adc(lo, *d[j]);
+					pool.release(*d[j]);
+					t[j] = &lo;
+				}
+			}
+			adc(*d[N], 0);
+			t[N] = d[N];
+			for (int j = 0; j < N; j++) {
+				c[j] = t[j + 1];
+				add_ex(*c[j], *ph[j], j == 0);
+				pool.release(*ph[j]);
+				if (j == cSpill && !isLast) {
+					// spill right after it is produced: maximum store-to-load slack
+					mov(S_ct, *c[j]);
+					pool.release(*c[j]);
+					c[j] = 0;
+				}
+			}
+		}
+		// c < 2p; output c - p if c >= p
+		const Reg64 *keep[8];
+		for (int j = 0; j < N; j++) {
+			keep[j] = &pool.alloc();
+			mov(*keep[j], *c[j]);
+		}
+		for (int j = 0; j < N; j++) {
+			sub_ex(*c[j], ptr [rip + pL_ + j * 8], j == 0);
+		}
+		for (int j = 0; j < N; j++) {
+			cmovc(*c[j], *keep[j]);
+		}
+		const Reg64 *outz = &pz;
+		if (!allInRegs) {
+			mov(rax, S_pz);
+			outz = &rax;
+		}
+		for (int j = 0; j < N; j++) {
+			mov(ptr [*outz + j * 8], *c[j]);
+		}
+		if (stackSize > 0) add(rsp, stackSize);
 		ret();
 	}
 	/*
