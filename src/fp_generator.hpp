@@ -932,41 +932,27 @@ private:
 			gen_montMul3();
 			return true;
 		}
+		bool withAdx = false;
+		{
+			const char *s = getenv("MCL_ADX");
+			if (s && s[0] && s[1] == '\0') withAdx = s[0] - '0';
+		}
 		if (pn_ == 4) {
 			func = getCurr<void3u>();
-#if 1
-			// mulx w/o adx is faster than adx version
-			if (!isFullBit_) {
+			if (!withAdx && !isFullBit_) {
 				gen_montMulWoAdx();
 				return true;
 			}
-#endif
 			gen_montMul4();
 			return true;
 		}
 		if (pn_ == 6 && !isFullBit_) {
 			func = getCurr<void3u>();
-#if 1
-			// mulx w/o adx is faster than adx version
-			gen_montMulWoAdx();
-#elif 1
-			// a little faster
-			gen_montMul6();
-#else
-			if (fp_mulPreL.getAddress() == 0 || fpDbl_modL.getAddress() == 0) return 0;
-			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
-			/*
-				use xm3
-				rsp
-				[0, ..12 * 8) ; mul(x, y)
-			*/
-			vmovq(xm3, gp0);
-			mov(gp0, rsp);
-			call(fp_mulPreL); // gp0, x, y
-			vmovq(gp0, xm3);
-			mov(gp1, rsp);
-			call(fpDbl_modL);
-#endif
+			if (withAdx) {
+				gen_montMul6();
+			} else {
+				gen_montMulWoAdx();
+			}
 			return true;
 		}
 		return false;
