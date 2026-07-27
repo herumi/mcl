@@ -87,7 +87,11 @@ ifeq ($(DEBUG),1)
 endif
 ifeq ($(DEBUG),2)
   ifeq ($(GCC_EXT),1)
-    SANITIZE_OPT?=-fsanitize=memory -fsanitize-memory-track-origins=2
+    # with MCL_BINT_ASM=0 MCL_USE_LLVM=0 MCL_USE_XBYAK=0 MCL_MSM=0
+    MSAN_DIR?=../llvm-20-src/build-msan
+    SANITIZE_OPT?=-fsanitize=memory -fsanitize-memory-track-origins -nostdinc++ -isystem $(MSAN_DIR)/include/c++/v1 -g -fno-omit-frame-pointer
+    SANITIZE_LDFLAGS=-stdlib=libc++ -L $(MSAN_DIR)/lib -Wl,-rpath,$(MSAN_DIR)/lib
+    # asm is not available
   endif
 endif
 ifeq ($(DEBUG),3)
@@ -95,11 +99,11 @@ ifeq ($(DEBUG),3)
 endif
 ifeq ($(DEBUG),4)
   ifeq ($(GCC_EXT),1)
-    SANITIZE_OPT?=-fsanitize=undefined -fno-sanitize-recover
+    SANITIZE_OPT?=-fsanitize=address,undefined -fno-sanitize-recover
   endif
 endif
 CFLAGS+=$(SANITIZE_OPT)
-LDFLAGS+=$(SANITIZE_OPT)
+LDFLAGS+=$(SANITIZE_OPT) $(SANITIZE_LDFLAGS)
 ifeq ($(DEBUG),0)
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
   ifeq ($(CXX),clang++)
