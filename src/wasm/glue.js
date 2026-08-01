@@ -21,8 +21,21 @@ function createModule (opts) {
     const mod = {}
 
     mod.wasmMemory = memory
-    mod.HEAP8 = new Int8Array(memory.buffer)
-    mod.HEAP32 = new Int32Array(memory.buffer)
+    // memory.grow() detaches the old ArrayBuffer, so recreate the views on demand
+    let HEAP8 = new Int8Array(memory.buffer)
+    let HEAP32 = new Int32Array(memory.buffer)
+    Object.defineProperty(mod, 'HEAP8', {
+      get: function () {
+        if (HEAP8.buffer !== memory.buffer) HEAP8 = new Int8Array(memory.buffer)
+        return HEAP8
+      }
+    })
+    Object.defineProperty(mod, 'HEAP32', {
+      get: function () {
+        if (HEAP32.buffer !== memory.buffer) HEAP32 = new Int32Array(memory.buffer)
+        return HEAP32
+      }
+    })
 
     // Export mclBn* and bls* wasm functions with _ prefix
     const exports = instance.exports
