@@ -7,11 +7,12 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
-#include <cmath>
-#include <vector>
-#include <iosfwd>
-
 #include <mcl/bn.hpp>
+#include <mcl/array.hpp>
+#include <cybozu/exception.hpp>
+#ifndef CYBOZU_DONT_USE_STRING
+#include <iosfwd>
+#endif
 
 #include <mcl/window_method.hpp>
 #include <cybozu/endian.hpp>
@@ -44,6 +45,55 @@ struct KeyCount {
 		return key == rhs.key && count == rhs.count;
 	}
 };
+
+inline bool lessKeyCount(const KeyCount& a, const KeyCount& b)
+{
+	if (a.key != b.key) return a.key < b.key;
+	return a.count < b.count;
+}
+
+inline void downHeapKeyCount(KeyCount *v, size_t i, size_t n)
+{
+	KeyCount x = v[i];
+	for (;;) {
+		size_t c = i * 2 + 1;
+		if (c >= n) break;
+		if (c + 1 < n && lessKeyCount(v[c], v[c + 1])) c++;
+		if (!lessKeyCount(x, v[c])) break;
+		v[i] = v[c];
+		i = c;
+	}
+	v[i] = x;
+}
+
+// heap sort by (key, count) ; counts are positive and distinct at init time,
+// so the result is the same as stable_sort by key
+inline void sortKeyCount(KeyCount *v, size_t n)
+{
+	if (n < 2) return;
+	for (size_t i = n / 2; i > 0; i--) {
+		downHeapKeyCount(v, i - 1, n);
+	}
+	for (size_t i = n - 1; i > 0; i--) {
+		KeyCount t = v[0]; v[0] = v[i]; v[i] = t;
+		downHeapKeyCount(v, 0, i);
+	}
+}
+
+inline const KeyCount* lowerBoundKeyCount(const KeyCount *begin, const KeyCount *end, uint32_t key)
+{
+	size_t n = end - begin;
+	while (n > 0) {
+		size_t h = n / 2;
+		if (begin[h].key < key) {
+			begin += h + 1;
+			n -= h + 1;
+		} else {
+			n = h;
+		}
+	}
+	return begin;
+}
 
 template<class G, bool = true>
 struct InterfaceForHashTable : G {
@@ -106,7 +156,7 @@ template<>char GtoChar<bn::GT>() { return 'T'; }
 template<class G, bool isEC = true>
 class HashTable {
 	typedef InterfaceForHashTable<G, isEC> I;
-	typedef std::vector<KeyCount> KeyCountVec;
+	typedef mcl::Array<KeyCount> KeyCountVec;
 	KeyCountVec kcv_;
 	G P_;
 	mcl::fp::WindowMethod<I> wm_;
@@ -140,7 +190,7 @@ public:
 		}
 		if (hashSize >= 0x80000000u) throw cybozu::Exception("HashTable:init:hashSize is too large");
 		P_ = P;
-		kcv_.resize(hashSize);
+		if (!kcv_.resize(hashSize)) throw cybozu::Exception("HashTable:init:kcv_:resize") << hashSize;
 		G xP;
 		I::clear(xP);
 		for (int i = 1; i <= (int)kcv_.size(); i++) {
@@ -156,7 +206,7 @@ public:
 		/*
 			ascending order of abs(count) for same key
 		*/
-		std::stable_sort(kcv_.begin(), kcv_.end());
+		local::sortKeyCount(kcv_.data(), kcv_.size());
 		setWindowMethod();
 	}
 	void init(const G& P, size_t hashSize, size_t tryNum)
@@ -177,21 +227,20 @@ public:
 	{
 		if (pok) *pok = true;
 		if (I::isZero(xP)) return 0;
-		typedef KeyCountVec::const_iterator Iter;
-		KeyCount kc;
 		I::normalize(xP);
-		kc.key = I::getHash(xP);
-		kc.count = 0;
-		std::pair<Iter, Iter> p = std::equal_range(kcv_.begin(), kcv_.end(), kc);
+		const uint32_t key = I::getHash(xP);
+		const KeyCount *begin = kcv_.data();
+		const KeyCount *end = begin + kcv_.size();
+		const KeyCount *p = local::lowerBoundKeyCount(begin, end, key);
 		G Q;
 		I::clear(Q);
 		int prev = 0;
 		/*
 			check range which has same hash
 		*/
-		while (p.first != p.second) {
-			int count = p.first->count;
-			int abs_c = std::abs(count);
+		while (p != end && p->key == key) {
+			int count = p->count;
+			int abs_c = count < 0 ? -count : count;
 			assert(abs_c >= prev); // assume ascending order
 			bool neg = count < 0;
 			G T;
@@ -204,7 +253,7 @@ public:
 				return count;
 			}
 			prev = abs_c;
-			++p.first;
+			p++;
 		}
 		if (pok) {
 			*pok = false;
@@ -283,7 +332,7 @@ public:
 		if (!cybozu::readChar(&c, is) || c != GtoChar<G>()) throw cybozu::Exception("HashTable:bad c") << (int)c;
 		size_t kcvSize;
 		cybozu::load(kcvSize, is);
-		kcv_.resize(kcvSize);
+		if (!kcv_.resize(kcvSize)) throw cybozu::Exception("HashTable:load:kcv_:resize") << kcvSize;
 		cybozu::read(&kcv_[0], sizeof(kcv_[0]) * kcvSize, is);
 		P_.load(is);
 		I::mul(nextP_, P_, (kcvSize * 2) + 1);
@@ -392,7 +441,7 @@ struct SHET {
 	static G1 P_;
 	static G2 Q_;
 	static GT ePQ_; // e(P, Q)
-	static std::vector<Fp6> Qcoeff_;
+	static mcl::Array<Fp6> Qcoeff_;
 	static local::HashTable<G1> PhashTbl_;
 	static local::HashTable<G2> QhashTbl_;
 	static mcl::fp::WindowMethod<G2> Qwm_;
@@ -498,6 +547,7 @@ struct SHET {
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:CipherTextA:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, CipherTextAT& self)
 		{
 			self.load(is, fp::detectIoMode(G::getIoMode(), is));
@@ -508,6 +558,7 @@ struct SHET {
 			self.save(os, fp::detectIoMode(G::getIoMode(), os));
 			return os;
 		}
+#endif
 		bool operator==(const CipherTextAT& rhs) const
 		{
 			return S_ == rhs.S_ && T_ == rhs.T_;
@@ -522,10 +573,12 @@ private:
 	static void doubleMillerLoop(GT& g1, GT& g2, const G1& P1, const G1& P2, const G2& Q)
 	{
 #if 1
-		std::vector<Fp6> Qcoeff;
-		precomputeG2(Qcoeff, Q);
-		precomputedMillerLoop(g1, P1, Qcoeff);
-		precomputedMillerLoop(g2, P2, Qcoeff);
+		mcl::Array<Fp6> Qcoeff;
+		bool b;
+		precomputeG2(&b, Qcoeff, Q);
+		if (!b) throw cybozu::Exception("she:doubleMillerLoop:precomputeG2");
+		precomputedMillerLoop(g1, P1, Qcoeff.data());
+		precomputedMillerLoop(g2, P2, Qcoeff.data());
 #else
 		millerLoop(g1, P1, Q);
 		millerLoop(g2, P2, Q);
@@ -590,6 +643,7 @@ private:
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:ZkpT:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, ZkpT& self)
 		{
 			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
@@ -600,6 +654,7 @@ private:
 			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
 			return os;
 		}
+#endif
 	};
 	struct ZkpBinTag;
 	struct ZkpEqTag; // d_[] = { c, sp, ss, sm }
@@ -682,11 +737,19 @@ public:
 
 	static void init(const mcl::CurveParam& cp = mcl::BN254, size_t hashSize = local::defaultHashSize, size_t tryNum = local::defaultTryNum)
 	{
-		initPairing(cp);
-		hashAndMapToG1(P_, "0");
-		hashAndMapToG2(Q_, "0");
+		{
+			bool b;
+			mcl::initPairing(&b, cp);
+			if (!b) throw cybozu::Exception("she:init:initPairing");
+		}
+		hashAndMapToG1(P_, "0", 1);
+		hashAndMapToG2(Q_, "0", 1);
 		pairing(ePQ_, P_, Q_);
-		precomputeG2(Qcoeff_, Q_);
+		{
+			bool b;
+			precomputeG2(&b, Qcoeff_, Q_);
+			if (!b) throw cybozu::Exception("she:init:precomputeG2");
+		}
 		setRangeForDLP(hashSize);
 		useDecG1ViaGT_ = false;
 		useDecG2ViaGT_ = false;
@@ -1008,6 +1071,7 @@ public:
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:SecretKey:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, SecretKey& self)
 		{
 			self.load(is, fp::detectIoMode(Fr::getIoMode(), is));
@@ -1018,6 +1082,7 @@ public:
 			self.save(os, fp::detectIoMode(Fr::getIoMode(), os));
 			return os;
 		}
+#endif
 		bool operator==(const SecretKey& rhs) const
 		{
 			return x_ == rhs.x_ && (isG1only_ || y_ == rhs.y_);
@@ -1451,9 +1516,9 @@ private:
 				Enc(1) = (S, T) = (Q + r yQ, rQ) = (Q, 0) if r = 0
 				cm = c1 * (Q, 0) = (S, T) * (Q, 0) = (e(S, Q), 1, e(T, Q), 1)
 			*/
-			precomputedMillerLoop(cm.g_[0], c1.getS(), Qcoeff_);
+			precomputedMillerLoop(cm.g_[0], c1.getS(), Qcoeff_.data());
 			finalExp(cm.g_[0], cm.g_[0]);
-			precomputedMillerLoop(cm.g_[2], c1.getT(), Qcoeff_);
+			precomputedMillerLoop(cm.g_[2], c1.getT(), Qcoeff_.data());
 			finalExp(cm.g_[2], cm.g_[2]);
 
 			cm.g_[1] = cm.g_[3] = 1;
@@ -1670,7 +1735,7 @@ public:
 				P1 += P2;
 			}
 //			millerLoop(c.g[0], P1, Q);
-			precomputedMillerLoop(c.g_[0], P1, Qcoeff_);
+			precomputedMillerLoop(c.g_[0], P1, Qcoeff_.data());
 //			G1::mul(P1, P, rb);
 			PhashTbl_.mulByWindowMethod(P1, rb);
 			G1::mul(P2, xP_, rc);
@@ -1721,6 +1786,7 @@ public:
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:PublicKey:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, PublicKey& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -1731,6 +1797,7 @@ public:
 			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
 			return os;
 		}
+#endif
 		bool operator==(const PublicKey& rhs) const
 		{
 			return xP_ == rhs.xP_ && (isG1only_ || yQ_ == rhs.yQ_);
@@ -1951,6 +2018,7 @@ public:
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:CipherTextA:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, CipherTextA& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -1961,6 +2029,7 @@ public:
 			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
 			return os;
 		}
+#endif
 		bool operator==(const CipherTextA& rhs) const
 		{
 			return c1_ == rhs.c1_ && c2_ == rhs.c2_;
@@ -2082,6 +2151,7 @@ public:
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:CipherTextGT:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, CipherTextGT& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -2092,6 +2162,7 @@ public:
 			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
 			return os;
 		}
+#endif
 		bool operator==(const CipherTextGT& rhs) const
 		{
 			for (int i = 0; i < 4; i++) {
@@ -2223,6 +2294,7 @@ public:
 			save(&b, os, ioMode);
 			if (!b) throw cybozu::Exception("she:CipherText:save");
 		}
+#ifndef CYBOZU_DONT_USE_STRING
 		friend std::istream& operator>>(std::istream& is, CipherText& self)
 		{
 			self.load(is, fp::detectIoMode(G1::getIoMode(), is));
@@ -2233,6 +2305,7 @@ public:
 			self.save(os, fp::detectIoMode(G1::getIoMode(), os));
 			return os;
 		}
+#endif
 		bool operator==(const CipherTextGT& rhs) const
 		{
 			if (isMultiplied() != rhs.isMultiplied()) return false;
@@ -2251,7 +2324,7 @@ typedef local::HashTable<Fp12, false> HashTableGT;
 template<size_t dummyInpl> G1 SHET<dummyInpl>::P_;
 template<size_t dummyInpl> G2 SHET<dummyInpl>::Q_;
 template<size_t dummyInpl> Fp12 SHET<dummyInpl>::ePQ_;
-template<size_t dummyInpl> std::vector<Fp6> SHET<dummyInpl>::Qcoeff_;
+template<size_t dummyInpl> mcl::Array<Fp6> SHET<dummyInpl>::Qcoeff_;
 template<size_t dummyInpl> HashTableG1 SHET<dummyInpl>::PhashTbl_;
 template<size_t dummyInpl> HashTableG2 SHET<dummyInpl>::QhashTbl_;
 template<size_t dummyInpl> HashTableGT SHET<dummyInpl>::ePQhashTbl_;

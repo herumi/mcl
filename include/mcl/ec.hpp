@@ -1864,12 +1864,14 @@ public:
 		}
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+#ifndef CYBOZU_DONT_USE_STRING
 	static inline void init(const std::string& astr, const std::string& bstr, int mode = ec::Jacobi)
 	{
 		bool b;
 		init(&b, astr.c_str(), bstr.c_str(), mode);
 		if (!b) throw cybozu::Exception("mcl:EcT:init");
 	}
+#endif
 	void set(const Fp& _x, const Fp& _y, bool verify = true)
 	{
 		bool b;

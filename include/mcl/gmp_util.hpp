@@ -670,12 +670,14 @@ void getNAFwidth(bool *pb, Vec& naf, mpz_class x, size_t w)
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+#ifndef CYBOZU_DONT_USE_STRING
 inline void setStr(mpz_class& z, const std::string& str, int base = 0)
 {
 	bool b;
 	setStr(&b, z, str.c_str(), base);
 	if (!b) throw cybozu::Exception("gmp:setStr");
 }
+#endif
 template<class T>
 void setArray(mpz_class& z, const T *buf, size_t n)
 {
@@ -861,7 +863,7 @@ public:
 		s = 0;
 		q_add_1_div_2 = 0;
 	}
-#if !defined(CYBOZU_DONT_USE_USE_STRING) && !defined(CYBOZU_DONT_USE_EXCEPTION)
+#if !defined(CYBOZU_DONT_USE_STRING) && !defined(CYBOZU_DONT_USE_EXCEPTION)
 	void dump() const
 	{
 		printf("\"%s\",\n", mcl::gmp::getStr(p, 16).c_str());
