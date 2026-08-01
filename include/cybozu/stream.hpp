@@ -61,7 +61,7 @@ size_t readSome_inner(void *buf, size_t size, InputStream& is)
 }
 #endif
 
-#ifndef CYBOZU_DONT_USE_EXCEPTION
+#if !defined(CYBOZU_DONT_USE_EXCEPTION) && !defined(CYBOZU_DONT_USE_STRING)
 /* specialization for ostream */
 template<class OutputStream>
 void writeSub(OutputStream& os, const void *buf, size_t size, typename enable_if<is_convertible<OutputStream, std::ostream>::value>::type* = 0)
@@ -91,6 +91,13 @@ void writeSub(bool *pb, OutputStream& os, const void *buf, size_t size, typename
 	os.write(pb, buf, size);
 }
 #else
+/* generic version for void write(const void*, size_t), which writes all data */
+template<class OutputStream>
+void writeSub(OutputStream& os, const void *buf, size_t size)
+{
+	os.write(buf, size);
+}
+
 template<class OutputStream>
 void writeSub(bool *pb, OutputStream& os, const void *buf, size_t size)
 {
