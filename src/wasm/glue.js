@@ -27,7 +27,8 @@ function createModule (opts) {
     // Export mclBn* and bls* wasm functions with _ prefix
     const exports = instance.exports
     for (const name in exports) {
-      if ((name.startsWith('mclBn') || name.startsWith('bls')) && typeof exports[name] === 'function') {
+      const matched = name.startsWith('mclBn') || (opts.prefix ? name.startsWith(opts.prefix) : name.startsWith('bls'))
+      if (matched && typeof exports[name] === 'function') {
         mod['_' + name] = exports[name]
       }
     }
