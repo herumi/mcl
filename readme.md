@@ -14,8 +14,8 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 
 # Version v3 includes breaking changes to lib/dll specifications.
-* The default `mcl.{a,lib}` has a maximum size of 384bit for the definition field Fp of the elliptic curve,
-and 256bit for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
+* The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
+and up to 256 bits for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
 * The arguments of the Fp/Fr initialization function have been changed.
 * `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
 
@@ -87,7 +87,7 @@ cmake ..
 make
 ```
 
-For the other platform (including mingw), clang++ is required.
+For other platforms (including MinGW), clang++ is required.
 ```
 mkdir build
 cd build
@@ -106,34 +106,34 @@ msbuild mcl.sln /p:Configuration=Release /m
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.
-`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib` which is defined `MCL_FP_BIT=384`.
+`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib`, which is built with `MCL_FP_BIT=384`.
 
 ## options
 
 see `cmake .. -LA`.
 
 ## tests
-make test binaries in `./bin`.
+Build test binaries in `./bin`.
 ```
-cmake .. -DBUILD_TESTING=ON
+cmake .. -DMCL_BUILD_TESTING=ON
 make -j4
 ```
 
 
 ## How to make from src/{base,bint}{32,64}.ll
 
-clang (clang-cl on Windows) is necessary to build files with a suffix ll.
+clang (clang-cl on Windows) is necessary to build files with the suffix `.ll`.
 
 - BIT = 64 (if 64-bit CPU) else 32
 - `src/base${BIT}.ll` is necessary if `MCL_USE_LLVM` is defined.
   - This code is used if xbyak is not used.
 - `src/bint${BIT}.ll` is necessary if `MCL_BINT_ASM=1`.
-  - `src/bint-x64-{amd64,win}.asm` is used instead if `MCL_BINT_ASM_X64=1`.
+  - `src/asm/bint-x64-amd64.S` (`src/asm/bint-x64-mingw.S` on MinGW, `src/asm/bint-x64-win.asm` on Windows) is used instead if `MCL_BINT_ASM_X64=1`.
   - It is faster than `src/bint64.ll` because it uses mulx/adox/adcx.
 
-These files may be going to be unified in the future.
+These files may be unified in the future.
 
-## How to test of BLS12-381 pairing
+## How to test the BLS12-381 pairing
 
 ```
 # C
@@ -144,7 +144,7 @@ make bin/bls12_test.exe && bin/bls12_test.exe
 ```
 
 ### How to make a library for BLS12-381 without Xbyak
-On x64 environment, mcl uses JIT code, but if you want to avoid them,
+On x64 environments, mcl uses JIT code, but if you want to avoid it,
 
 ```
 make lib/libmcl.a MCL_STATIC_CODE=1 -j
@@ -174,12 +174,12 @@ Build GMP for 32-bit mode.
 
 ```
 sudo apt install g++-multilib
-sudo apt install clang-14
+sudo apt install clang-18
 cd <GMP dir>
 env ABI=32 ./configure --enable-cxx --prefix=<install dir>
 make -j install
 cd <mcl dir>
-make ARCH=x86 LLVM_VER=-14 GMP_DIR=<install dir>
+make ARCH=x86 LLVM_VER=-18 GMP_DIR=<install dir>
 ```
 
 # How to build a library for arm with clang++ on Linux
@@ -216,7 +216,7 @@ mk -s test\bls12_test.cpp && bin\bls12_test.exe
 mklib dll
 mk -d test\bn_c384_256_test.cpp && bin\bn_c384_256_test.exe
 ```
-(not maintenanced)
+(not maintained)
 Open mcl.sln and build or if you have msbuild.exe
 ```
 msbuild /p:Configuration=Release
@@ -271,11 +271,11 @@ mklib dll
 cd ffi/cs
 dotnet build mcl.sln
 cd ../../bin
-../ffi/cs/test/bin/Debug/netcoreapp3.1/test.exe
+../ffi/cs/test/bin/Debug/net8.0/test.exe
 ```
 
 # How to build for wasm(WebAssembly)
-mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browers such as Firefox, Chrome and Edge.
+mcl supports emcc (Emscripten) and `test/bn_test.cpp` runs on browsers such as Firefox, Chrome and Edge.
 
 * [IBE on browser](https://herumi.github.io/mcl-wasm/ibe-demo.html)
 * [SHE on browser](https://herumi.github.io/she-wasm/she-demo.html)
@@ -323,7 +323,7 @@ See [java.md](https://github.com/herumi/mcl/blob/master/ffi/java/java.md)
 modified new BSD License
 http://opensource.org/licenses/BSD-3-Clause
 
-This library contains some part of the followings software licensed by BSD-3-Clause.
+This library contains parts of the following software, licensed under the BSD-3-Clause license.
 * [xbyak](https://github.com/herumi/xbyak)
 * [cybozulib](https://github.com/herumi/cybozulib)
 * [Lifted-ElGamal](https://github.com/aistcrypt/Lifted-ElGamal)
@@ -332,7 +332,7 @@ This library contains some part of the followings software licensed by BSD-3-Cla
 * [ate-pairing](https://github.com/herumi/ate-pairing/)
 * [_Faster Explicit Formulas for Computing Pairings over Ordinary Curves_](http://dx.doi.org/10.1007/978-3-642-20465-4_5),
  D.F. Aranha, K. Karabina, P. Longa, C.H. Gebotys, J. Lopez,
- EUROCRYPTO 2011, ([preprint](http://eprint.iacr.org/2010/526))
+ EUROCRYPT 2011, ([preprint](http://eprint.iacr.org/2010/526))
 * [_High-Speed Software Implementation of the Optimal Ate Pairing over Barreto-Naehrig Curves_](http://dx.doi.org/10.1007/978-3-642-17455-1_2),
    Jean-Luc Beuchat, Jorge Enrique González Díaz, Shigeo Mitsunari, Eiji Okamoto, Francisco Rodríguez-Henríquez, Tadanori Teruya,
   Pairing 2010, ([preprint](http://eprint.iacr.org/2010/354))
@@ -345,19 +345,19 @@ Y. Sakemi, Y. Nogami, K. Okeya, Y. Morikawa, CANS 2008.
 
 - mclBnGT_inv returns a - b w, a conjugate of x for x = a + b w in Fp12 = Fp6[w]
   - use mclBnGT_invGeneric if x is not in GT
-- mclBn_setETHserialization(true) (de)serializes according to [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations) when BLS12-381 is used.
+- mclBn_setETHserialization(true) (de)serializes according to [ETH2.0 serialization of BLS12-381](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-11.html#name-point-serialization-procedu) when BLS12-381 is used.
 - (Break backward compatibility) libmcl_dy.a is renamed to libmcl.a
   - The option SHARE_BASENAME_SUF is removed
 - 2nd argument of `mclBn_init` is changed from `maxUnitSize` to `compiledTimeVar`, which must be `MCLBN_COMPILED_TIME_VAR`.
 - break backward compatibility of mapToGi for BLS12. A map-to-function for BN is used.
-If `MCL_USE_OLD_MAPTO_FOR_BLS12` is defined, then the old function is used, but this will be removed in the future.
+(The old function, which used to be enabled by defining `MCL_USE_OLD_MAPTO_FOR_BLS12`, has been removed.)
 
 # FAQ
 
 ## How do I set the hash value to Fr?
-The behavior of `setHashOf` function may be a little different from what you want.
-  - https://github.com/herumi/mcl/blob/master/api.md#hash-and-mapto-functions
-  - https://github.com/herumi/mcl/blob/master/api.md#set-buf0bufsize-1-to-x-with-masking-according-to-the-following-way
+The behavior of the `setHashOf` function may be a little different from what you want.
+  - https://github.com/herumi/mcl/blob/master/api.md#hash-to-curve-function
+  - https://github.com/herumi/mcl/blob/master/api.md#set-bufsize-bytes-from-buf-to-x-with-masking-according-to-the-following-method
 
 Please use the following code:
 ```
@@ -399,7 +399,7 @@ void setHash(F& x, const void *msg, size_t msgSize)
 - 2019/Aug/14 v0.97 add some C api functions
 - 2019/Jul/26 v0.96 improved scalar multiplication
 - 2019/Jun/03 v0.95 fix a parser of 0b10 with base = 16
-- 2019/Apr/29 v0.94 mclBn_setETHserialization supports [ETH2.0 serialization of BLS12-381](https://github.com/ethereum/eth2.0-specs/blob/dev/specs/bls_signature.md#point-representations)
+- 2019/Apr/29 v0.94 mclBn_setETHserialization supports [ETH2.0 serialization of BLS12-381](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-11.html#name-point-serialization-procedu)
 - 2019/Apr/24 v0.93 support ios
 - 2019/Mar/22 v0.92 shortcut for Ec::mul(Px, P, x) if P = 0
 - 2019/Mar/21 python binding of she256 for Linux/Mac/Windows

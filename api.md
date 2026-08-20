@@ -42,7 +42,7 @@ The elliptic curve equation is `E: y^2 = x^3 + b`.
 - `Fp6` : field extension over Fp2 of degree 3. Fp2[v] / (v^3 - Xi) where Xi = i + xi_a.
 - `Fp12` : field extension over Fp6 of degree 2. Fp6[w] / (w^2 - v).
 - `G1` : the cyclic subgroup of E(Fp).
-- `G2` : the cyclic subgroup of the inverse image of E'(Fp^2) under a twisting isomorphism from E' to E.
+- `G2` : the cyclic subgroup of E'(Fp^2), where E' is a twist of E.
 - `GT` : the cyclic subgroup of Fp12.
   - `G1`, `G2`, and `GT` have the order `r`.
 
@@ -51,6 +51,7 @@ The pairing e: G1 x G2 -> GT is the optimal ate pairing.
 mcl treats `G1` and `G2` as additive groups and `GT` as a multiplicative group.
 
 - `mclSize` ; `unsigned int` if WebAssembly, otherwise `size_t`
+- `mclInt` ; `int` if WebAssembly, otherwise `int64_t`
 
 ### Curve Parameters
 r = |G1| = |G2| = |GT|
@@ -92,7 +93,7 @@ This is a struct for `GT` with a member `mclBnFp d[12]`.
 
 ## C++ Structures
 
-The namespace is `mcl`.
+The namespace is `mcl::bn`. `<mcl/bls12_381.hpp>` also provides the namespace `mcl::bls12`, which imports `mcl::bn`.
 
 ### `Fp`
 This is a class for `Fp`.
@@ -162,15 +163,16 @@ the values are consistent between library build time and usage.
 
 ### C++
 
-```c
-void initPairing(<curve type>);
+```cpp
+void initPairing(bool *pb, const mcl::CurveParam& cp = mcl::BN254);
+void initPairing(const mcl::CurveParam& cp = mcl::BN254); // throws an exception on error
 ```
-curve type is defined in `mcl/curve_type.h`.
-- BN254
-- BN_SNARK1
-- BLS12_381
-- BLS12_377
-- BN381_1
+The curve parameters are defined in `mcl/curve_type.hpp`.
+- mcl::BN254
+- mcl::BN_SNARK1
+- mcl::BLS12_381
+- mcl::BLS12_377
+- mcl::BN381_1
 
 ## Global setting
 
@@ -178,7 +180,7 @@ curve type is defined in `mcl/curve_type.h`.
 int mclBn_setMapToMode(int mode);
 ```
 - `mode = MCL_MAP_TO_MODE_ORIGINAL` : the old hash-to-curve (for backward compatibility)
-- `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE` : the hash-to-curve defined in [Hashing to Elliptic Curves](https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/)
+- `mode = MCL_MAP_TO_MODE_HASH_TO_CURVE` : the hash-to-curve defined in [RFC 9380 (Hashing to Elliptic Curves)](https://www.rfc-editor.org/rfc/rfc9380)
 
 ### Control to verify that a point of the elliptic curve has the order `r`.
 
@@ -196,8 +198,9 @@ verifyOrderG1(bool doVerify);
 verifyOrderG2(bool doVerify);
 ```
 
-- verify if `doVerify` is 1, otherwise do not verify. The default parameter is 0 because verification has significant computational cost.
-- Set `doVerify = 1` if considering subgroup attack is necessary.
+- verify if `doVerify` is 1, otherwise do not verify.
+- The default values set by initialization are as follows: for BLS12 curves, both G1 and G2 are verified (a fast subgroup check is used). For BN curves, G1 is not verified (the cofactor is 1, so the check is unnecessary) and G2 is verified.
+- Set `doVerify = 1` if protection against subgroup attacks is necessary.
 - This is not thread-safe.
 
 ### Set DST for hash functions
@@ -239,7 +242,7 @@ C++
 T::clear();
 ```
 
-### Set `x` to `y`.
+### Set an integer `x` to `y`.
 ```c
 void mclBnFp_setInt(mclBnFp *y, mclInt x);
 void mclBnFr_setInt(mclBnFr *y, mclInt x);
@@ -272,11 +275,14 @@ T::setArrayMask(const uint8_t *buf, size_t n);
 ```c
 int mclBnFp_setLittleEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
 int mclBnFr_setLittleEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
+int mclBnFp_setBigEndianMod(mclBnFp *x, const void *buf, mclSize bufSize);
+int mclBnFr_setBigEndianMod(mclBnFr *x, const void *buf, mclSize bufSize);
 ```
 
 C++
 ```cpp
-T::setLittleEndianMod(const uint8_t *buf, mclSize bufSize);
+void T::setLittleEndianMod(const uint8_t *buf, size_t bufSize);
+void T::setBigEndianMod(const uint8_t *buf, size_t bufSize);
 ```
 
 - return 0 if bufSize <= (sizeof(T) * 2), otherwise -1
@@ -294,7 +300,7 @@ size_t T::getLittleEndian(uint8_t *buf, size_t maxBufSize) const
 
 - write `x` to `buf` in little-endian format
 - return the written size on success, otherwise 0
-- NOTE: `buf[0] = 0` and return 1 if `x` is zero.
+- NOTE: if `x` is zero, then `buf[0] = 0` and the function returns 1.
 
 ### Serialization
 ### Serialize
@@ -333,7 +339,7 @@ else:
   s = P.x.serialize()
   # x in Fp2 is odd <=> x.a is odd
   if Fp is fullBit:
-    s[byte-length(s)] = P.y is odd ? 3 : 2
+    s = [P.y is odd ? 3 : 2] + s # prepend one byte
   elif P.y is odd: # resp. P.y.d[0] is odd
     s[byte-length(s) - 1] |= 0x80
   return s
@@ -386,13 +392,13 @@ size_t T::getStr(char *buf, size_t maxBufSize, int iMode = 0) const
   - 2 ; binary number
   - 10 ; decimal number
   - 16 ; hexadecimal number
-  - `MCLBN_IO_EC_PROJ` ; output as Jacobi coordinate
+  - `MCLBN_IO_EC_PROJ` ; output in Jacobian coordinates
 - return `strlen(buf)` on success, otherwise 0.
 
 The meaning of the output of `G1`:
 - `0` ; infinity
 - `1 <x> <y>` ; affine coordinate
-- `4 <x> <y> <z>` ; Jacobi coordinate
+- `4 <x> <y> <z>` ; Jacobian coordinates
 - the element `<x>` of `G2` outputs `d[0] d[1]`.
 
 ### Set string
@@ -410,13 +416,13 @@ void T::setStr(bool *pb, const char *str, int iMode = 0)
 void T::setStr(const char *str, int iMode = 0)
 ```
 
-- set `buf[0..bufSize-1]` to `x` accoring to `ioMode`
+- set `buf[0..bufSize-1]` to `x` according to `ioMode`
   - mask and truncate the value if it is greater than (r or p).
-  - See [masking](api.md#set-buf0bufsize-1-to-x-with-masking-according-to-the-following-way)
-- deny too large bufSize. The maximum length depends on compile options, but at least the bit length of the type of x.
-- The set string of G1/G2 fails if the point is not on the elliptic curve.
-  - And check whether the point has the valid order of G1/G2(default).
-  - You can disable this check by `mclBn_verifyOrderG1/G2`(0).
+  - See [masking](api.md#set-bufsize-bytes-from-buf-to-x-with-masking-according-to-the-following-method)
+- A `bufSize` that is too large is rejected. The maximum length depends on compile options, but it is at least the bit length of the type of `x`.
+- Setting a string for G1/G2 fails if the point is not on the elliptic curve.
+  - By default, it also checks that the point has the correct order of G1/G2.
+  - You can disable this check with `mclBn_verifyOrderG1(0)` / `mclBn_verifyOrderG2(0)`.
 - return 0 if success else -1
   - *pb = result of setStr or throw exception if error (C++)
   - mclBnG1_setStr and mclBnG2_setStr check whether the point has the correct order of G1/G2.
@@ -497,7 +503,7 @@ void mclBnGT_div(mclBnGT *z, const mclBnGT *x, const mclBnGT *y);
 ```
 - use `mclBnGT_invGeneric` for an element in Fp12 - GT.
 
-- NOTE: The following functions do NOT return a GT element because GT is a multiplicative group.
+- NOTE: The result of the following functions is not an element of GT because GT is a multiplicative group.
 
 ```c
 void mclBnGT_neg(mclBnGT *y, const mclBnGT *x);
@@ -544,7 +550,7 @@ C++
 bool T::squareRoot(T& y, const T& x);
 ```
 
-- `y` is one of a square root of `x` if `y` exists.
+- `y` is one of the square roots of `x` if it exists.
 - return 0 if success else -1
 
 ### add / sub / dbl / neg for `G1` and `G2`.
@@ -565,7 +571,7 @@ C++
   - T::sub(T& z, const T& x, const T& y);
   - T::neg(T& y, const T& x);
 
-### Convert a point from Jacobi/Projective coordinate to affine.
+### Convert a point from Jacobian/projective coordinates to affine.
 ```c
 void mclBnG1_normalize(mclBnG1 *y, const mclBnG1 *x);
 void mclBnG2_normalize(mclBnG2 *y, const mclBnG2 *x);
@@ -579,7 +585,7 @@ void mclBnG2_normalizeVec(mclBnG2 *y, const mclBnG2 *x, mclSize n);
 C++
 ```cpp
 T::normalize(T& y, const T& x);
-T::normalizeVec(T& y[n], const T& x[n], size_t n);
+T::normalizeVec(T *y, const T *x, size_t n);
 ```
 
 - convert `[x:y:z]` to `[x:y:1]` if `z != 0` else `[*:*:0]`
@@ -592,7 +598,7 @@ void mclBnGT_pow(mclBnGT *z, const mclBnGT *x, const mclBnFr *y);
 ```
 C++
 ```cpp
-T::mul(const T& z, const T& x, const Fr& y);
+T::mul(T& z, const T& x, const Fr& y);
 ```
 
 - z = x * y for G1 / G2
@@ -613,7 +619,16 @@ T::mulVec(T& z, T* x, const Fr *y, size_t n);
 
 - z = sum_{i=0}^{n-1} mul(x[i], y[i]) for G1 / G2.
 - z = prod_{i=0}^{n-1} pow(x[i], y[i]) for GT.
-- `x[]` does not const because they may be normailzed (The value does not change).
+- `x[]` is not const because the points may be normalized (the values they represent do not change).
+
+### multi-threaded multi-scalar multiplication
+```c
+void mclBnG1_mulVecMT(mclBnG1 *z, mclBnG1 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+void mclBnG2_mulVecMT(mclBnG2 *z, mclBnG2 *x, const mclBnFr *y, mclSize n, mclSize cpuN);
+```
+
+- multi-threaded version of `mulVec` with `cpuN` threads
+- enabled if the library is built with `MCL_USE_OMP=1`
 
 ### scalar multiplication of each point
 ```c
@@ -638,10 +653,10 @@ C++
 T::setHashOf(const void *msg, size_t msgSize);
 ```
 
-- always return 0
-- use SHA-256 if sizeof(*x) <= 256 else SHA-512
-- set according to the same way as `setLittleEndian`.
-- This is a function for backward compatibility only. DO'NT use it. Instead of this, use setLittleEndianMod to the hashed value.
+- always returns 0
+- uses SHA-256 if the bit size of the field is not greater than 256, otherwise SHA-512
+- sets the value in the same way as `setLittleEndian`.
+- This function is for backward compatibility only. DON'T use it. Instead, apply `setLittleEndianMod` to the hashed value.
 
 ### map `x` to G1 / G2.
 ```c
@@ -655,10 +670,10 @@ void mapToG1(G1& P, const Fp& x);
 void mapToG2(G2& P, const Fp2& x);
 ```
 
-- See `struct MapTo` in `mcl/bn.hpp` for the detail of the algorithm.
+- See `struct MapTo` in `src/map_impl.hpp` for details of the algorithm.
 - return 0 if success else -1
 
-If you want to use the MapTo function defined in [Hashing to Elliptic Curves](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-hash-to-curve), then use `mclBn_seMapToMode`.
+If you want to use the MapTo function defined in [RFC 9380 (Hashing to Elliptic Curves)](https://www.rfc-editor.org/rfc/rfc9380), then use `mclBn_setMapToMode`.
 
 ```c
 mclBn_setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE);
@@ -681,10 +696,10 @@ C++
 void hashAndMapToG1(G1& P, const void *buf, size_t bufSize);
 void hashAndMapToG2(G2& P, const void *buf, size_t bufSize);
 ```
-- Combine `setHashOf` and `mapTo` functions
+- Combines the `setHashOf` and `mapTo` functions
 
 ## Pairing operations
-The pairing function `e(P, Q)` is consist of two parts:
+The pairing function `e(P, Q)` consists of two parts:
   - `MillerLoop(P, Q)`
   - `finalExp(x)`
 
@@ -731,18 +746,24 @@ void millerLoopVec(GT& z, const G1 *x, const G2 *y, size_t n);
   - computes prod_{i=0}^{n-1} MillerLoop(x[i], y[i])
   - prod_{i=0}^{n-1} e(x[i], y[i]) = finalExp(prod_{i=0}^{n-1} MillerLoop(x[i], y[i]))
 
+```c
+void mclBn_millerLoopVecMT(mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y, mclSize n, mclSize cpuN);
+```
+- multi-threaded version of `mclBn_millerLoopVec` with `cpuN` threads
+- enabled if the library is built with `MCL_USE_OMP=1`
+
 ### pairing for a fixed point of G2
 ```c
 int mclBn_getUint64NumToPrecompute(void);
 void mclBn_precomputeG2(uint64_t *Qbuf, const mclBnG2 *Q);
 void mclBn_precomputedMillerLoop(mclBnGT *f, const mclBnG1 *P, const uint64_t *Qbuf);
 ```
-These functions is the same computation of `pairing(P, Q);` as the followings:
+These functions compute the same value as `pairing(P, Q)` as follows:
 ```c
 uint64_t *Qbuf = (uint64_t*)malloc(mclBn_getUint64NumToPrecompute() * sizeof(uint64_t));
 mclBn_precomputeG2(Qbuf, Q); // precomputing of Q
 mclBn_precomputedMillerLoop(f, P, Qbuf); // pairing of any P of G1 and the fixed Q
-free(p);
+free(Qbuf);
 ```
 
 ```c
@@ -762,10 +783,10 @@ void mclBn_precomputedMillerLoop2mixed(
   const mclBnG1 *P2, const uint64_t *Q2buf
 );
 ```
-- compute `MillerLoop(P1, Q2) * MillerLoop(P2, Q2buf)`
+- compute `MillerLoop(P1, Q1) * MillerLoop(P2, Q2buf)`
 
 ## Check value
-### Check validness
+### Check validity
 ```c
 int mclBnFr_isValid(const mclBnFr *x);
 int mclBnFp_isValid(const mclBnFp *x);
@@ -790,7 +811,7 @@ bool T::isValidOrder() const;
 
 - Check whether the order of `x` is valid or not
 - return 1 if true else 0
-- This function always checks according to `mclBn_verifyOrderG1` and `mclBn_verifyOrderG2`.
+- This function always performs the check regardless of the settings of `mclBn_verifyOrderG1` and `mclBn_verifyOrderG2`.
 
 ### Is equal / zero / one / isOdd
 ```c
@@ -830,9 +851,18 @@ bool T::isOne() const;
 ### isNegative
 ```c
 int mclBnFr_isNegative(const mclBnFr *x);
-int mclBnFp_isNegative(const mclBnFr *x);
+int mclBnFp_isNegative(const mclBnFp *x);
 ```
 return 1 if x >= half where half = (r + 1) / 2 (resp. (p + 1) / 2).
+
+### Compare
+```c
+int mclBnFr_cmp(const mclBnFr *x, const mclBnFr *y);
+int mclBnFp_cmp(const mclBnFp *x, const mclBnFp *y);
+```
+- compare `x` and `y` as unsigned integers
+- return -1 if x < y, 0 if x == y, 1 if x > y
+- NOTE: two Montgomery conversions may be required
 
 ## Lagrange interpolation
 
@@ -844,7 +874,7 @@ int mclBn_G2LagrangeInterpolation(mclBnG2 *out, const mclBnFr *xVec, const mclBn
 - Lagrange interpolation
 - recover out = y(0) from {(xVec[i], yVec[i])} for {i=0..k-1}
 - return 0 if success else -1
-  - satisfy that xVec[i] != 0, xVec[i] != xVec[j] for i != j
+  - requires that xVec[i] != 0 and xVec[i] != xVec[j] for i != j
 
 ```c
 int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x);
@@ -854,16 +884,16 @@ int mclBn_G2EvaluatePolynomial(mclBnG2 *out, const mclBnG2 *cVec, mclSize cSize,
 - Evaluate polynomial
 - out = f(x) = c[0] + c[1] * x + ... + c[cSize - 1] * x^{cSize - 1}
 - return 0 if success else -1
-  - satisfy cSize >= 1
+  - requires cSize >= 1
 
 ## FAQ
-### Why the value set by Fp::setStr is different?
+### Why is the value set by Fp::setStr different?
 The value set by Fp::setStr is masked and truncated if it is greater than p (resp. r).
 See [Set string](api.md#set-string)
 
 ### What parameters of configuration are for Ethereum?
-mcl supports various mode of hash-to-curve function, serialize/deserialize and getStr/setStr
-for historical reasons and backwards compatibility.
+mcl supports various modes of the hash-to-curve function, serialize/deserialize, and getStr/setStr
+for historical reasons and backward compatibility.
 
 If using BLS12-381 and Ethereum compatibility mode, set
 ```cpp
@@ -900,9 +930,9 @@ Serialization of Fp/Fr
   - 32 bytes data in big-endian format
 - G1
   - zero : `[0xc0 : (47 bytes zero)]`
-  - (x, y) : `d = [48 bytes x]` and `d[0] |= 0x20` if `y < (p+1)/2`.
+  - (x, y) : `d = [48 bytes x]`, then `d[0] |= 0x80`, and `d[0] |= 0x20` if `y >= (p+1)/2`.
 - G2
   - zero : `[0xc0 : (95 bytes zero)]`
-  - (x, y) : `d = [96 bytes x]` and `d[0] |= 0x20` if `b < (p+1)/2` where `y=a+bi`.
+  - (x, y) : `d = [96 bytes x]`, then `d[0] |= 0x80`, and `d[0] |= 0x20` if `b >= (p+1)/2` where `y = a + bi`.
 
-See [Point Serialization Procedure](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-08.html#name-point-serialization-procedu) for details.
+See [Point Serialization Procedure](https://www.ietf.org/archive/id/draft-irtf-cfrg-pairing-friendly-curves-11.html#name-point-serialization-procedu) for details.
