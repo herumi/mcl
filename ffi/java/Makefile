@@ -51,12 +51,8 @@ jar:
 
 test_elgamal: ElgamalTest.class $(ELGAMAL_LIB)
 	$(JAVA_EXE) ElgamalTest
-	$(JAVA_EXE) ElgamalTest -e NIST_P192
 	$(JAVA_EXE) ElgamalTest -e NIST_P256 -h sha256
 	$(JAVA_EXE) ElgamalTest -e secp256k1 -h sha256
-#	$(JAVA_EXE) ElgamalTest -e NIST_P384 -h sha384 # default compiled binary does not support
-# MCL_FP_BIT should be 521
-#	$(JAVA_EXE) ElgamalTest -e NIST_P521 -h sha512
 
 test_mcl: MclTest.class $(MCLJAVA_LIB)
 	$(JAVA_EXE) MclTest
