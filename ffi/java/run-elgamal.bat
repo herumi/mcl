@@ -5,5 +5,5 @@ echo [[compile ElgamalTest.java]]
 echo [[run ElgamalTest]]
 set TOP_DIR=..\..
 pushd %TOP_DIR%\bin
-%JAVA_DIR%\bin\java -classpath ../ffi/java ElgamalTest %1 %2 %3 %4 %5 %6
+%JAVA_DIR%\bin\java -classpath ../ffi/java  --enable-native-access=ALL-UNNAMED ElgamalTest %1 %2 %3 %4 %5 %6
 popd
