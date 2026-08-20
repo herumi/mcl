@@ -169,6 +169,26 @@ public:
 		return operator<<(cybozu::exception::wstr2str(s));
 	}
 #endif
+#if CYBOZU_CPLUSPLUS >= 202002L
+	Exception& operator<<(char16_t x)
+	{
+		std::ostringstream os;
+		os << static_cast<unsigned int>(x);
+		return operator<<(os.str());
+	}
+	Exception& operator<<(char32_t x)
+	{
+		std::ostringstream os;
+		os << static_cast<unsigned int>(x);
+		return operator<<(os.str());
+	}
+	Exception& operator<<(wchar_t x)
+	{
+		std::ostringstream os;
+		os << static_cast<unsigned int>(x);
+		return operator<<(os.str());
+	}
+#endif
 	template<class T>
 	Exception& operator<<(const T& x)
 	{

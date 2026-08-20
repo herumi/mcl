@@ -9,6 +9,10 @@
 #include <cybozu/inttype.hpp>
 #include <string.h>
 
+#ifdef _MSC_VER
+#include <stdlib.h>
+#endif
+
 namespace cybozu {
 
 #ifdef _MSC_VER

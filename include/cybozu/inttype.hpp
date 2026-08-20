@@ -99,11 +99,18 @@
 	#define CYBOZU_GNUC_PREREQ(major, minor) 0
 #endif
 
-#if (__cplusplus >= 201703)
+// MSVC reports __cplusplus=199711 unless /Zc:__cplusplus is specified
+#ifdef _MSC_VER
+	#define CYBOZU_CPLUSPLUS _MSVC_LANG
+#else
+	#define CYBOZU_CPLUSPLUS __cplusplus
+#endif
+
+#if (CYBOZU_CPLUSPLUS >= 201703)
 	#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_CPP17
-#elif (__cplusplus >= 201402)
+#elif (CYBOZU_CPLUSPLUS >= 201402)
 	#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_CPP14
-#elif (__cplusplus >= 201103) || (defined(_MSC_VER) && _MSC_VER >= 1500) || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#elif (CYBOZU_CPLUSPLUS >= 201103) || (defined(_MSC_VER) && _MSC_VER >= 1500) || defined(__GXX_EXPERIMENTAL_CXX0X__)
 	#if defined(_MSC_VER) && (_MSC_VER <= 1600)
 		#define CYBOZU_CPP_VERSION CYBOZU_CPP_VERSION_TR1
 	#else
