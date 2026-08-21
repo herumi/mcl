@@ -122,6 +122,7 @@ using namespace mcl;
 } // mcl
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+#ifndef CYBOZU_DONT_USE_STRING
 #include <vector>
 namespace mcl {
 
@@ -145,6 +146,11 @@ inline void precomputedMillerLoop2mixed(Fp12& f, const G1& P1, const G2& Q1, con
 {
 	precomputedMillerLoop2mixed(f, P1, Q1, P2, Q2coeff.data());
 }
+
+} // mcl
+#endif // CYBOZU_DONT_USE_STRING
+
+namespace mcl {
 
 inline void initPairing(const mcl::CurveParam& cp = mcl::BN254)
 {

@@ -1,5 +1,5 @@
 MCL_DIR?=./
-OBJ_DIR?=$(MCL_DIR)/obj
+OBJ_DIR?=$(MCL_DIR)/obj/wasm
 LIB_DIR?=$(MCL_DIR)/lib
 WASM_DIR=$(MCL_DIR)/src/wasm
 
@@ -62,20 +62,23 @@ $(WASM): $(OBJS)
 	$(WASM_OPT) -O3 --strip-debug $@.pre -o $@
 	rm $@.pre
 
-$(OBJ_DIR)/fp.o: $(MCL_DIR)/src/fp.cpp
+$(OBJ_DIR)/fp.o: $(MCL_DIR)/src/fp.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-$(OBJ_DIR)/dlmalloc.o: $(WASM_DIR)/dlmalloc.c
+$(OBJ_DIR)/dlmalloc.o: $(WASM_DIR)/dlmalloc.c | $(OBJ_DIR)
 	$(CC) $(TARGET) -O3 -DNDEBUG -flto -I $(WASM_DIR) $(DLMALLOC_FLAGS) -c -o $@ $< -DUSE_LOCKS=0
 
-$(OBJ_DIR)/libc.o: $(WASM_DIR)/libc.c
+$(OBJ_DIR)/libc.o: $(WASM_DIR)/libc.c | $(OBJ_DIR)
 	$(CC) $(TARGET) -O3 -DNDEBUG -flto -I $(WASM_DIR) -c -o $@ $<
 
-$(OBJ_DIR)/stack_c.o: $(WASM_DIR)/stack_c.c
+$(OBJ_DIR)/stack_c.o: $(WASM_DIR)/stack_c.c | $(OBJ_DIR)
 	$(CC) $(TARGET) -O3 -DNDEBUG -I $(WASM_DIR) -c -o $@ $<
 
-$(OBJ_DIR)/stack.o: $(WASM_DIR)/stack.s
+$(OBJ_DIR)/stack.o: $(WASM_DIR)/stack.s | $(OBJ_DIR)
 	$(CC) $(TARGET) -c -o $@ $<
+
+$(OBJ_DIR):
+	mkdir -p $@
 
 DEPS=$(OBJS:.o=.d)
 -include $(DEPS)

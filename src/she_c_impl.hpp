@@ -1,8 +1,3 @@
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <iosfwd>
 #include <stdint.h>
 #include <memory.h>
 #define MCLSHE_DLL_EXPORT
@@ -62,7 +57,7 @@ int sheInit(int curve, int compiledTimeVar)
 	if (cp == 0) return -3;
 	SHE::init(*cp);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -74,7 +69,7 @@ int sheInitG1only(int curve, int compiledTimeVar)
 	}
 	SHE::initG1only(curve);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -199,7 +194,7 @@ static int wrapSetRangeForDLP(void f(size_t), mclSize hashSize)
 {
 	f(hashSize);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -238,7 +233,7 @@ mclSize loadTable(HashTable& table, const void *buf, mclSize bufSize)
 	try
 {
 	return table.load(buf, bufSize);
-} catch (std::exception&) {
+} catch (...) {
 	return 0;
 }
 
@@ -260,7 +255,7 @@ mclSize saveTable(void *buf, mclSize maxBufSize, const HashTable& table)
 	try
 {
 	return table.save(buf, maxBufSize);
-} catch (std::exception&) {
+} catch (...) {
 	return 0;
 }
 mclSize sheSaveTableForG1DLP(void *buf, mclSize maxBufSize)
@@ -318,7 +313,7 @@ int encIntVecT(CT *c, const shePublicKey *pub, const void *buf, mclSize bufSize)
 	if (!setArray(m, buf, bufSize)) return -1;
 	cast(pub)->enc(*cast(c), m);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -388,7 +383,7 @@ int verifyT(const PK& pub, const CT& c, const Fr *zkp, const int *mVec, mclSize 
 	try
 {
 	return pub.verify(c, zkp, mVec, mSize);
-} catch (std::exception&) {
+} catch (...) {
 	return 0;
 }
 
@@ -466,7 +461,7 @@ int decViaGTT(mclInt *m, const sheSecretKey *sec, const CT *c)
 {
 	*m = (cast(sec)->decViaGT)(*cast(c));
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -486,7 +481,7 @@ int isZeroT(const sheSecretKey *sec, const CT *c)
 	try
 {
 	return cast(sec)->isZero(*cast(c));
-} catch (std::exception&) {
+} catch (...) {
 	return 0;
 }
 
@@ -599,7 +594,7 @@ int mulIntVecT(CT& z, const CT& x, const void *buf, mclSize bufSize)
 	if (!setArray(m, buf, bufSize)) return -1;
 	CT::mul(z, x, m);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -702,7 +697,7 @@ int pEncT(CT *c, const shePrecomputedPublicKey *pub, mclInt m)
 {
 	cast(pub)->enc(*cast(c), m);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -729,7 +724,7 @@ int pEncIntVecT(CT *c, const shePrecomputedPublicKey *pub, const void *buf, mclS
 	if (!setArray(m, buf, bufSize)) return -1;
 	cast(pub)->enc(*cast(c), m);
 	return 0;
-} catch (std::exception&) {
+} catch (...) {
 	return -1;
 }
 
@@ -753,7 +748,7 @@ int verifyT(const PK& pub, const CT& c, const ZkpBin& zkp)
 	try
 {
 	return pub.verify(c, zkp);
-} catch (std::exception&) {
+} catch (...) {
 	return 0;
 }
 
@@ -779,7 +774,7 @@ int verifyT(const PK& pub, const CipherTextG1& c1, const CipherTextG2& c2, const
 	try
 {
 	return pub.verify(c1, c2, zkp);
-} catch (std::exception&) {
+} catch (...) {
 	return 0;
 }
 

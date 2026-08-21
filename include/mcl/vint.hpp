@@ -1031,12 +1031,14 @@ public:
 	}
 #endif
 #ifndef CYBOZU_DONT_USE_EXCEPTION
+#ifndef CYBOZU_DONT_USE_STRING
 	void setStr(const std::string& str, int base = 0)
 	{
 		bool b;
 		setStr(&b, str.c_str(), base);
 		if (!b) throw cybozu::Exception("Vint:setStr") << str;
 	}
+#endif
 	void setRand(const Vint& max, fp::RandGen rg = fp::RandGen())
 	{
 		bool b;

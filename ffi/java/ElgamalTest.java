@@ -29,8 +29,8 @@ public class ElgamalTest {
 	}
 	public static void main(String argv[]) {
 		try {
-			String ecStr = "secp192k1";
-			String hashStr = "sha224";
+			String ecStr = "secp256k1";
+			String hashStr = "sha256";
 			for (int i = 0; i < argv.length; i++) {
 				if (argv[i].equals("-e") && i < argv.length - 1) {
 					ecStr = argv[i + 1];

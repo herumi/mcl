@@ -6,16 +6,318 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+/*
+	use Apple CommonCrypto on macOS so that OpenSSL is not necessary
+	define CYBOZU_USE_APPLE_COMMONCRYPTO=0 to disable it
+*/
+#include <cybozu/inttype.hpp>
+
+#ifdef __APPLE__
+	#ifndef CYBOZU_USE_APPLE_COMMONCRYPTO
+		#define CYBOZU_USE_APPLE_COMMONCRYPTO 1
+	#endif
+#else
+	#define CYBOZU_USE_APPLE_COMMONCRYPTO 0
+#endif
+
+/*
+	use Windows CNG(bcrypt) instead of OpenSSL on Windows so that OpenSSL is not necessary
+	define CYBOZU_USE_WIN_BCRYPT=0 to use OpenSSL as before
+	define CYBOZU_USE_WIN_BCRYPT=1 to use bcrypt even if CYBOZU_DONT_USE_OPENSSL is defined
+	@note this macro is shared with cybozu/aes.hpp
+*/
+#if CYBOZU_USE_APPLE_COMMONCRYPTO != 1 && defined(_WIN32)
+	#if CYBOZU_USE_WIN_BCRYPT == 1
+		#define CYBOZU_USE_BCRYPT_SHA
+	#elif !defined(CYBOZU_USE_WIN_BCRYPT) && !defined(CYBOZU_DONT_USE_OPENSSL) && !defined(MCL_DONT_USE_OPENSSL)
+		// bcrypt is used instead of OpenSSL ; CYBOZU_DONT_USE_OPENSSL selects the built-in code as before
+		#define CYBOZU_USE_BCRYPT_SHA
+	#endif
+#endif
+
+#if CYBOZU_USE_APPLE_COMMONCRYPTO != 1 && !defined(CYBOZU_USE_BCRYPT_SHA)
 #if !defined(CYBOZU_DONT_USE_OPENSSL) && !defined(MCL_DONT_USE_OPENSSL)
 	#define CYBOZU_USE_OPENSSL_SHA
 #endif
-
-#ifndef CYBOZU_DONT_USE_STRING
-#include <string>
 #endif
+
 #include <memory.h>
 
-#ifdef CYBOZU_USE_OPENSSL_SHA
+#if CYBOZU_USE_APPLE_COMMONCRYPTO == 1
+
+#ifdef __APPLE__
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#include <CommonCrypto/CommonDigest.h>
+
+namespace cybozu {
+
+class Sha256 {
+	CC_SHA256_CTX ctx_;
+	/*
+		CC_SHA256_Update takes CC_LONG(=uint32_t) as a size,
+		so a larger buffer is split.
+	*/
+	static const size_t maxUpdateSize_ = size_t(1) << 30;
+public:
+	Sha256()
+	{
+		clear();
+	}
+	void clear()
+	{
+		CC_SHA256_Init(&ctx_);
+	}
+	void update(const void *buf, size_t bufSize)
+	{
+		const char *p = reinterpret_cast<const char*>(buf);
+		while (bufSize > maxUpdateSize_) {
+			CC_SHA256_Update(&ctx_, p, CC_LONG(maxUpdateSize_));
+			p += maxUpdateSize_;
+			bufSize -= maxUpdateSize_;
+		}
+		CC_SHA256_Update(&ctx_, p, CC_LONG(bufSize));
+	}
+	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
+	{
+		if (mdSize < CC_SHA256_DIGEST_LENGTH) return 0;
+		update(buf, bufSize);
+		CC_SHA256_Final(reinterpret_cast<unsigned char*>(md), &ctx_);
+		return CC_SHA256_DIGEST_LENGTH;
+	}
+};
+
+class Sha512 {
+	CC_SHA512_CTX ctx_;
+	static const size_t maxUpdateSize_ = size_t(1) << 30;
+public:
+	Sha512()
+	{
+		clear();
+	}
+	void clear()
+	{
+		CC_SHA512_Init(&ctx_);
+	}
+	void update(const void *buf, size_t bufSize)
+	{
+		const char *p = reinterpret_cast<const char*>(buf);
+		while (bufSize > maxUpdateSize_) {
+			CC_SHA512_Update(&ctx_, p, CC_LONG(maxUpdateSize_));
+			p += maxUpdateSize_;
+			bufSize -= maxUpdateSize_;
+		}
+		CC_SHA512_Update(&ctx_, p, CC_LONG(bufSize));
+	}
+	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
+	{
+		if (mdSize < CC_SHA512_DIGEST_LENGTH) return 0;
+		update(buf, bufSize);
+		CC_SHA512_Final(reinterpret_cast<unsigned char*>(md), &ctx_);
+		return CC_SHA512_DIGEST_LENGTH;
+	}
+};
+
+} // cybozu
+
+#ifdef __APPLE__
+	#pragma GCC diagnostic pop
+#endif
+
+#elif defined(CYBOZU_USE_BCRYPT_SHA)
+
+#ifndef WIN32_LEAN_AND_MEAN
+	#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <bcrypt.h>
+#include <vector>
+#include <cybozu/exception.hpp>
+#include <cybozu/inttype.hpp>
+#ifdef _MSC_VER
+	#pragma comment(lib, "bcrypt.lib")
+#endif
+
+namespace cybozu {
+
+namespace sha2_local {
+
+/*
+	algorithm provider of bcrypt shared by all the instances of BCryptHash<MD_SIZE>
+	because BCryptOpenAlgorithmProvider is slow (about 1500 clk) and
+	an algorithm handle is thread safe.
+*/
+template<size_t MD_SIZE_>
+struct BCryptAlg {
+	PVOID volatile hAlg_; // BCRYPT_ALG_HANDLE ; PVOID for InterlockedCompareExchangePointer
+	DWORD objSize_; // size of the work area of a hash object
+	BCryptAlg()
+		: hAlg_(0)
+		, objSize_(0)
+	{
+	}
+	~BCryptAlg()
+	{
+		if (hAlg_) BCryptCloseAlgorithmProvider((BCRYPT_ALG_HANDLE)hAlg_, 0);
+	}
+	void open(LPCWSTR algName)
+	{
+		if (hAlg_) return;
+		BCRYPT_ALG_HANDLE hAlg = 0;
+		NTSTATUS status = BCryptOpenAlgorithmProvider(&hAlg, algName, NULL, 0);
+		if (!BCRYPT_SUCCESS(status)) {
+			throw cybozu::Exception("sha2:BCryptAlg:BCryptOpenAlgorithmProvider") << (int)status;
+		}
+		DWORD objSize = 0;
+		DWORD writeSize = 0;
+		status = BCryptGetProperty(hAlg, BCRYPT_OBJECT_LENGTH, (PUCHAR)&objSize, sizeof(objSize), &writeSize, 0);
+		if (!BCRYPT_SUCCESS(status)) {
+			BCryptCloseAlgorithmProvider(hAlg, 0);
+			throw cybozu::Exception("sha2:BCryptAlg:BCryptGetProperty:objectLength") << (int)status;
+		}
+		objSize_ = objSize;
+		// another thread may open it at the same time, then close the loser
+		if (InterlockedCompareExchangePointer(&hAlg_, hAlg, 0) != 0) {
+			BCryptCloseAlgorithmProvider(hAlg, 0);
+		}
+	}
+	static BCryptAlg alg_;
+};
+
+template<size_t MD_SIZE_>
+BCryptAlg<MD_SIZE_> BCryptAlg<MD_SIZE_>::alg_;
+
+/*
+	SHA-256/SHA-512 by Windows CNG(bcrypt)
+	the hash object is created on demand, so an instance which is not used costs nothing
+*/
+template<size_t MD_SIZE_>
+class BCryptHash {
+	static const size_t MD_SIZE = MD_SIZE_;
+	/*
+		BCryptHashData takes ULONG as a size, so a larger buffer is split.
+	*/
+	static const size_t maxUpdateSize_ = size_t(1) << 30;
+	typedef BCryptAlg<MD_SIZE_> Alg;
+	LPCWSTR algName_;
+	BCRYPT_HASH_HANDLE hHash_;
+	std::vector<uint8_t> hashObj_; // work area of hHash_ ; must be alive while hHash_ is used
+	void destroyHash()
+	{
+		if (hHash_) {
+			BCryptDestroyHash(hHash_);
+			hHash_ = 0;
+		}
+	}
+	void createHash()
+	{
+		if (hHash_) return;
+		Alg::alg_.open(algName_);
+		hashObj_.resize(Alg::alg_.objSize_);
+		// CNG allocates the hash object if hashObj_ is empty
+		const NTSTATUS status = BCryptCreateHash((BCRYPT_ALG_HANDLE)Alg::alg_.hAlg_, &hHash_, hashObj_.empty() ? 0 : &hashObj_[0], (ULONG)hashObj_.size(), NULL, 0, 0);
+		if (!BCRYPT_SUCCESS(status)) {
+			hHash_ = 0;
+			throw cybozu::Exception("sha2:BCryptHash:BCryptCreateHash") << (int)status;
+		}
+	}
+	// copy the state of rhs ; hHash_ must be zero
+	void copyState(const BCryptHash& rhs)
+	{
+		algName_ = rhs.algName_;
+		if (rhs.hHash_ == 0) return;
+		hashObj_.resize(rhs.hashObj_.size());
+		const NTSTATUS status = BCryptDuplicateHash(rhs.hHash_, &hHash_, hashObj_.empty() ? 0 : &hashObj_[0], (ULONG)hashObj_.size(), 0);
+		if (!BCRYPT_SUCCESS(status)) {
+			hHash_ = 0;
+			throw cybozu::Exception("sha2:BCryptHash:BCryptDuplicateHash") << (int)status;
+		}
+	}
+public:
+	explicit BCryptHash(LPCWSTR algName)
+		: algName_(algName)
+		, hHash_(0)
+	{
+	}
+	BCryptHash(const BCryptHash& rhs)
+		: algName_(rhs.algName_)
+		, hHash_(0)
+	{
+		copyState(rhs);
+	}
+	BCryptHash& operator=(const BCryptHash& rhs)
+	{
+		if (this != &rhs) {
+			destroyHash();
+			copyState(rhs);
+		}
+		return *this;
+	}
+	~BCryptHash()
+	{
+		destroyHash();
+	}
+	void clear()
+	{
+		destroyHash(); // a new hash object is created by the next update/digest
+	}
+	void update(const void *buf, size_t bufSize)
+	{
+		createHash();
+		const uint8_t *p = reinterpret_cast<const uint8_t*>(buf);
+		while (bufSize > 0) {
+			const size_t n = bufSize > maxUpdateSize_ ? maxUpdateSize_ : bufSize;
+			const NTSTATUS status = BCryptHashData(hHash_, (PUCHAR)p, (ULONG)n, 0);
+			if (!BCRYPT_SUCCESS(status)) {
+				throw cybozu::Exception("sha2:BCryptHash:BCryptHashData") << (int)status;
+			}
+			p += n;
+			bufSize -= n;
+		}
+	}
+	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
+	{
+		if (mdSize < MD_SIZE) return 0;
+		update(buf, bufSize);
+		const NTSTATUS status = BCryptFinishHash(hHash_, (PUCHAR)md, (ULONG)MD_SIZE, 0);
+		destroyHash(); // the hash object can not be reused after BCryptFinishHash
+		if (!BCRYPT_SUCCESS(status)) {
+			throw cybozu::Exception("sha2:BCryptHash:BCryptFinishHash") << (int)status;
+		}
+		return MD_SIZE;
+	}
+};
+
+} // cybozu::sha2_local
+
+class Sha256 {
+	sha2_local::BCryptHash<32> ctx_;
+public:
+	Sha256() : ctx_(BCRYPT_SHA256_ALGORITHM) {}
+	void clear() { ctx_.clear(); }
+	void update(const void *buf, size_t bufSize) { ctx_.update(buf, bufSize); }
+	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
+	{
+		return ctx_.digest(md, mdSize, buf, bufSize);
+	}
+};
+
+class Sha512 {
+	sha2_local::BCryptHash<64> ctx_;
+public:
+	Sha512() : ctx_(BCRYPT_SHA512_ALGORITHM) {}
+	void clear() { ctx_.clear(); }
+	void update(const void *buf, size_t bufSize) { ctx_.update(buf, bufSize); }
+	size_t digest(void *md, size_t mdSize, const void *buf, size_t bufSize)
+	{
+		return ctx_.digest(md, mdSize, buf, bufSize);
+	}
+};
+
+} // cybozu
+
+#elif defined(CYBOZU_USE_OPENSSL_SHA)
 
 #ifndef CYBOZU_USE_OPENSSL_NEW_HASH
 #ifndef _MSC_VER
@@ -128,26 +430,6 @@ public:
 		return SHA256_DIGEST_LENGTH;
 #endif
 	}
-#ifndef CYBOZU_DONT_USE_STRING
-	void update(const std::string& buf)
-	{
-		update(buf.c_str(), buf.size());
-	}
-	std::string digest(const std::string& buf)
-	{
-		return digest(buf.c_str(), buf.size());
-	}
-	std::string digest(const void *buf, size_t bufSize)
-	{
-#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
-		std::string md(ctx_.MD_SIZE, 0);
-#else
-		std::string md(SHA256_DIGEST_LENGTH, 0);
-#endif
-		digest(&md[0], md.size(), buf, bufSize);
-		return md;
-	}
-#endif
 };
 
 class Sha512 {
@@ -191,26 +473,6 @@ public:
 		return SHA512_DIGEST_LENGTH;
 #endif
 	}
-#ifndef CYBOZU_DONT_USE_STRING
-	void update(const std::string& buf)
-	{
-		update(buf.c_str(), buf.size());
-	}
-	std::string digest(const std::string& buf)
-	{
-		return digest(buf.c_str(), buf.size());
-	}
-	std::string digest(const void *buf, size_t bufSize)
-	{
-#if CYBOZU_USE_OPENSSL_NEW_HASH == 1
-		std::string md(ctx_.MD_SIZE, 0);
-#else
-		std::string md(SHA512_DIGEST_LENGTH, 0);
-#endif
-		digest(&md[0], md.size(), buf, bufSize);
-		return md;
-	}
-#endif
 };
 
 } // cybozu
@@ -409,22 +671,6 @@ public:
 		}
 		return outByteSize_;
 	}
-#ifndef CYBOZU_DONT_USE_STRING
-	void update(const std::string& buf)
-	{
-		update(buf.c_str(), buf.size());
-	}
-	std::string digest(const std::string& buf)
-	{
-		return digest(buf.c_str(), buf.size());
-	}
-	std::string digest(const void *buf, size_t bufSize)
-	{
-		std::string md(outByteSize_, 0);
-		digest(&md[0], md.size(), buf, bufSize);
-		return md;
-	}
-#endif
 };
 
 class Sha512 : public sha2_local::Common<Sha512> {
@@ -550,22 +796,6 @@ public:
 		}
 		return outByteSize_;
 	}
-#ifndef CYBOZU_DONT_USE_STRING
-	void update(const std::string& buf)
-	{
-		update(buf.c_str(), buf.size());
-	}
-	std::string digest(const std::string& buf)
-	{
-		return digest(buf.c_str(), buf.size());
-	}
-	std::string digest(const void *buf, size_t bufSize)
-	{
-		std::string md(outByteSize_, 0);
-		digest(&md[0], md.size(), buf, bufSize);
-		return md;
-	}
-#endif
 };
 
 } // cybozu
@@ -574,35 +804,59 @@ public:
 
 namespace cybozu {
 
+namespace sha2_local {
+
 /*
-	HMAC-SHA-256
-	hmac must have 32 bytes buffer
+	HMAC (RFC 2104)
+	@param out [out] must have hashSize bytes
+	@param T [in] Sha256 or Sha512
 */
-inline void hmac256(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize)
+template<class T, size_t hashSize, size_t blockSize>
+void hmac(void *out, const void *key, size_t keySize, const void *msg, size_t msgSize)
 {
 	const uint8_t ipad = 0x36;
 	const uint8_t opad = 0x5c;
-	uint8_t k[64];
-	Sha256 hash;
-	if (keySize > 64) {
-		hash.digest(k, 32, key, keySize);
+	uint8_t k[blockSize];
+	T hash;
+	if (keySize > blockSize) {
+		hash.digest(k, hashSize, key, keySize);
 		hash.clear();
-		keySize = 32;
+		keySize = hashSize;
 	} else {
 		memcpy(k, key, keySize);
 	}
 	for (size_t i = 0; i < keySize; i++) {
 		k[i] = k[i] ^ ipad;
 	}
-	memset(k + keySize, ipad, 64 - keySize);
-	hash.update(k, 64);
-	hash.digest(hmac, 32, msg, msgSize);
+	memset(k + keySize, ipad, blockSize - keySize);
+	hash.update(k, blockSize);
+	hash.digest(out, hashSize, msg, msgSize);
 	hash.clear();
-	for (size_t i = 0; i < 64; i++) {
+	for (size_t i = 0; i < blockSize; i++) {
 		k[i] = k[i] ^ (ipad ^ opad);
 	}
-	hash.update(k, 64);
-	hash.digest(hmac, 32, hmac, 32);
+	hash.update(k, blockSize);
+	hash.digest(out, hashSize, out, hashSize);
+}
+
+} // cybozu::sha2_local
+
+/*
+	HMAC-SHA-256
+	hmac must have 32 bytes buffer
+*/
+inline void hmac256(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize)
+{
+	sha2_local::hmac<Sha256, 32, 64>(hmac, key, keySize, msg, msgSize);
+}
+
+/*
+	HMAC-SHA-512
+	hmac must have 64 bytes buffer
+*/
+inline void hmac512(void *hmac, const void *key, size_t keySize, const void *msg, size_t msgSize)
+{
+	sha2_local::hmac<Sha512, 64, 128>(hmac, key, keySize, msg, msgSize);
 }
 
 } // cybozu

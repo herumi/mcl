@@ -31,8 +31,14 @@
 #ifdef MCL_STANDALONE
 	#define MCL_DONT_USE_OPENSSL
 	#define CYBOZU_DONT_USE_STRING
+	// MCL_STANDALONE_WITH_EXCEPTION : use exception (with -fwasm-exceptions and src/wasm/eh.cpp) for she
+	#ifndef MCL_STANDALONE_WITH_EXCEPTION
 	#define CYBOZU_DONT_USE_EXCEPTION
+	#endif
+	// MCL_USE_WEB_CRYPTO_API : use env.cryptoGetRandomValues imported by glue.js
+	#ifndef MCL_USE_WEB_CRYPTO_API
 	#define MCL_DONT_USE_CSPRNG
+	#endif
 	#define MCL_DONT_USE_MALLOC
 #endif
 

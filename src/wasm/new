@@ -1,0 +1,16 @@
+#pragma once
+// minimal <new> for standalone wasm build
+namespace std {
+
+class bad_alloc {
+public:
+	const char *what() const { return "bad_alloc"; }
+};
+
+} // std
+
+// placement new/delete
+inline void* operator new(__SIZE_TYPE__, void* p) throw() { return p; }
+inline void* operator new[](__SIZE_TYPE__, void* p) throw() { return p; }
+inline void operator delete(void*, void*) throw() {}
+inline void operator delete[](void*, void*) throw() {}

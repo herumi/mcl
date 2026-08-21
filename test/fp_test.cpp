@@ -728,19 +728,23 @@ void getStrTest()
 
 void setHashOfTest()
 {
-	const std::string msgTbl[] = {
+	const char msgTbl[][64] = {
 		"", "abc", "111111111111111111111111111111111111",
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(msgTbl); i++) {
 		size_t bitSize = Fp::getBitSize();
+		const char *msg = msgTbl[i];
+		size_t msgSize = strlen(msg);
 		std::string digest;
 		if (bitSize <= 256) {
-			digest = cybozu::Sha256().digest(msgTbl[i]);
+			digest.resize(256/8);
+			cybozu::Sha256().digest(digest.data(), digest.size(), msg, msgSize);
 		} else {
-			digest = cybozu::Sha512().digest(msgTbl[i]);
+			digest.resize(512/8);
+			cybozu::Sha512().digest(digest.data(), digest.size(), msg, msgSize);
 		}
 		Fp x, y;
-		x.setArrayMask((const uint8_t*)digest.c_str(), digest.size());
+		x.setArrayMask((const uint8_t*)digest.data(), digest.size());
 		y.setHashOf(msgTbl[i]);
 		CYBOZU_TEST_EQUAL(x, y);
 	}

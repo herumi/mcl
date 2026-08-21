@@ -20,9 +20,9 @@
 #pragma comment (lib, "advapi32.lib")
 #endif
 #else
+#include <stdio.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <unistd.h>
 #endif
 
 namespace cybozu {
@@ -70,15 +70,15 @@ private:
 	HCRYPTPROV prov_;
 #else
 	RandomGenerator()
-		: fd_(::open("/dev/urandom", O_RDONLY))
+		: fp_(::fopen("/dev/urandom", "rb"))
 	{
 #ifndef CYBOZU_DONT_USE_EXCEPTION
-		if (fd_ < 0) throw cybozu::Exception("randomgenerator");
+		if (!fp_) throw cybozu::Exception("randomgenerator");
 #endif
 	}
 	~RandomGenerator()
 	{
-		if (fd_ >= 0) ::close(fd_);
+		if (fp_) ::fclose(fp_);
 	}
 	/*
 		fill buf[0..bufNum-1] with random data
@@ -87,15 +87,15 @@ private:
 	template<class T>
 	void read(bool *pb, T *buf, size_t bufNum)
 	{
-		if (fd_ < 0) {
+		if (fp_ == 0) {
 			*pb = false;
 			return;
 		}
 		const size_t byteSize = sizeof(T) * bufNum;
-		*pb = ::read(fd_, buf, byteSize) == (ssize_t)byteSize;
+		*pb = ::fread(buf, 1, (int)byteSize, fp_) == byteSize;
 	}
 private:
-	int fd_;
+	FILE *fp_;
 #endif
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 public:

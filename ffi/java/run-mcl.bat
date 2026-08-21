@@ -5,5 +5,5 @@ echo [[compile MclTest.java]]
 echo [[run MclTest]]
 set TOP_DIR=..\..
 pushd %TOP_DIR%\bin
-%JAVA_DIR%\bin\java -classpath ../ffi/java MclTest %1 %2 %3 %4 %5 %6
+%JAVA_DIR%\bin\java -classpath ../ffi/java --enable-native-access=ALL-UNNAMED MclTest %1 %2 %3 %4 %5 %6
 popd

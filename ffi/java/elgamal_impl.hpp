@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <cybozu/random_generator.hpp>
-#include <cybozu/crypto.hpp>
 #include <mcl/ecparam.hpp>
 #include <mcl/elgamal.hpp>
 
@@ -28,8 +27,7 @@ typedef mcl::ElgamalEc Elgamal;
 	@param param [in] string such as "ecParamName hashName"
 	@note NOT thread safe because setting global parameters of elliptic curve
 	ex1) "secp192k1 sha256" // 192bit security + sha256
-	ex2) "secp160k1 sha1" // 160bit security + sha1
-	hashName : sha1 sha224 sha256 sha384 sha512
+	hashName : sha256 only
 */
 void SystemInit(const std::string& param) _MCL_THROW
 {
@@ -41,7 +39,7 @@ void SystemInit(const std::string& param) _MCL_THROW
 		p.ecParam = mcl::getEcParam(ecParamStr);
 		if (p.ecParam) {
 			mcl::initCurve<Ec>(p.ecParam->curveType);
-			p.hashName = cybozu::crypto::Hash::getName(hashNameStr);
+			if (hashNameStr != "sha256") throw cybozu::Exception("SystemInit:not supported hash");
 			return;
 		}
 	}
