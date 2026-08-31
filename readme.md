@@ -13,11 +13,14 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - Fix memory leak of some operations on Windows
 - Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 
+# Version v4 includes breaking changes.
+- Require BMI2 (mulx) and ADX (adox, adcx) instruction sets
+
 # Version v3 includes breaking changes to lib/dll specifications.
-* The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
+- The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
 and up to 256 bits for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
-* The arguments of the Fp/Fr initialization function have been changed.
-* `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
+- The arguments of the Fp/Fr initialization function have been changed.
+- `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
 
 # Support architecture
 
