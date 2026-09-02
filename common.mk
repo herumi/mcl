@@ -106,15 +106,11 @@ CFLAGS+=$(SANITIZE_OPT)
 LDFLAGS+=$(SANITIZE_OPT) $(SANITIZE_LDFLAGS)
 ifeq ($(DEBUG),0)
   CFLAGS_OPT+=-fomit-frame-pointer -DNDEBUG -fno-stack-protector
-  ifeq ($(CXX),clang++)
-    CFLAGS_OPT+=-O3
-  else
-    CFLAGS_OPT+=-O3
+  CFLAGS_OPT+=-O3
+  ifeq ($(INTEL),1)
+    CFLAGS_OPT+=-mbmi2 -madx
   endif
   ifeq ($(MARCH),)
-    ifeq ($(INTEL),1)
-#      CFLAGS_OPT+=-march=native
-    endif
   else
     CFLAGS_OPT+=$(MARCH)
   endif
