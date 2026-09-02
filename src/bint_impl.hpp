@@ -5,63 +5,7 @@
 
 #include <mcl/bint.hpp>
 
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL
-
-#include <string.h>
-
-#ifdef MCL_USE_XBYAK
-#define XBYAK_DISABLE_AVX512
-#ifndef XBYAK_NO_EXCEPTION
-	#define XBYAK_NO_EXCEPTION
-#endif
-#else
-	#define XBYAK_ONLY_CLASS_CPU
-#endif
-
-#include "xbyak/xbyak_util.h"
-#endif
-
 namespace mcl { namespace bint {
-
-uint32_t getCpuType()
-{
-	uint32_t type = 0;
-
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL
-
-	using namespace Xbyak::util;
-	Cpu cpu;
-	if (cpu.has(Cpu::tAVX | Cpu::tBMI2 | Cpu::tADX)) {
-		type |= tAVX_BMI2_ADX;
-	}
-	if (cpu.has(Cpu::tAVX512_IFMA)) {
-		type |= tAVX512_IFMA;
-	}
-	const char *env = 0;
-	const char *key = "MCL_CPU";
-#ifdef _WIN32
-	char envBuf[128];
-	size_t size;
-	if (getenv_s(&size, envBuf, key) == 0) {
-		if (size > 0) {
-			env = envBuf;
-		}
-	}
-#else
-	env = getenv(key);
-#endif
-	if (env) {
-		if (strcmp(env, "noadx") == 0) {
-			type = 0;
-		} else if (strcmp(env, "noifma") == 0) {
-			type &= tAVX512_IFMA;
-		}
-	}
-#endif
-	return type;
-}
-
-const uint32_t g_cpuType = getCpuType();
 
 #include "bint_switch.hpp"
 

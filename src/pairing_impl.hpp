@@ -1202,7 +1202,7 @@ MCL_CXX_API void init(bool *pb, const mcl::CurveParam& cp)
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 	G2::setMulVecGLV(mcl::ec::mulVecGLVT<GLV2, G2>);
 #if MCL_MSM == 1
-	if (mcl::msm::initMsm(cp)) {
+	if ((fp::getCpuType() & fp::tAVX512_IFMA) && mcl::msm::initMsm(cp)) {
 		G1::setMulVecOpti(mcl::msm::mulVecAVX512);
 		G1::setMulEachOpti(mcl::msm::mulEachAVX512);
 	}

@@ -322,14 +322,6 @@ struct FpGenerator : Xbyak::CodeGenerator {
 	}
 	bool init(Op& op)
 	{
-#ifndef MCL_DUMP_JIT
-		uint32_t cpuType = mcl::bint::g_cpuType;
-		if (cpuType == 0) cpuType = mcl::bint::getCpuType(); // use getCpuType() if cpuType is not set yet.
-		// don't generate JIT code unless BMI2/ADX is supported.
-		if ((cpuType & mcl::bint::tAVX_BMI2_ADX) == 0) {
-			return true;
-		}
-#endif
 		reset(); // reset jit code for reuse
 #ifndef MCL_DUMP_JIT
 		setProtectModeRW(); // read/write memory
