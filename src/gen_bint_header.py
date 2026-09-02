@@ -20,8 +20,6 @@ FuncType = collections.namedtuple('FuncType', 'name, ret, args, cname, prams, N,
 # print 'Unit mclb_add1(Unit *z, const Unit *x, const Unit *y);'
 FuncType.printProto = lambda self, i: print(f'{self.ret} {self.cname}{i}({self.args});')
 
-FuncType.printProtoSF = lambda self, i, suf: print(f'{self.ret} {self.cname}_{suf}{i}({self.args});')
-
 FuncType.getProtoType = lambda self: protoType[(self.ret, self.args)]
 
 def gen_func(name, ret, args, cname, params, i):
@@ -51,60 +49,6 @@ def gen_prototype(out, e):
 
 def roundup(x, n):
   return (x + n - 1) // n
-
-def gen_disable(N, tbl):
-  name1 = 'mulUnit'
-  name2 = 'mulUnitAdd'
-  print('#if MCL_BINT_ASM_X64 == 1')
-
-  print('extern "C" {')
-  for i in range(1, N+1):
-    for e in tbl:
-      e.printProtoSF(i, 'slow')
-      e.printProtoSF(i, 'fast')
-  print('}')
-
-  print('#ifdef _WIN32')
-  print('static const bool g_adx = g_cpuType & tAVX_BMI2_ADX;')
-  for i in range(1, N+1):
-    for e in tbl:
-      print(f'const {e.getProtoType()} {e.cname}{i} = g_adx ? {e.cname}_fast{i} : {e.cname}_slow{i};')
-  print('extern "C" void mclb_enable_fast() {')
-  print('}')
-  print('#else')
-  for i in range(1, N+1):
-    for e in tbl:
-      print(f'{e.getProtoType()} {e.cname}{i} = {e.cname}_slow{i};')
-  print('extern "C" void mclb_enable_fast() {')
-  for i in range(1, N+1):
-    for e in tbl:
-      print(f'\t{e.cname}{i} = {e.cname}_fast{i};')
-  print('}')
-  print('#endif')
-
-  print('#endif // MCL_BINT_ASM_X64 == 1')
-
-def gen_mul_slow(N):
-  print('#if MCL_BINT_ASM_X64 == 1')
-  for n in range(1,N+1):
-    print(f'''extern "C" void mclb_mul_slow{n}(Unit *z, const Unit *x, const Unit *y)
-{{
-	z[{n}] = mulUnitT<{n}>(z, x, y[0]);
-	u_ppu f = get_mulUnitAdd({n});
-	for (size_t i = 1; i < {n}; i++) {{
-		z[{n} + i] = f(&z[i], x, y[i]);
-	}}
-}}''')
-  print('#endif // MCL_BINT_ASM_X64 == 1')
-
-def gen_sqr_slow(N):
-  print('#if MCL_BINT_ASM_X64 == 1')
-  for n in range(1,N+1):
-    print(f'''extern "C" void mclb_sqr_slow{n}(Unit *y, const Unit *x)
-{{
-	mclb_mul_slow{n}(y, x, x);
-}}''')
-  print('#endif // MCL_BINT_ASM_X64 == 1')
 
 def main():
   parser = argparse.ArgumentParser(description='gen header')
@@ -142,20 +86,14 @@ def main():
     for e in addTbl:
       e.printProto(i)
   print('#endif // #if MCL_SIZEOF_UNIT == 4')
-  print('#if MCL_BINT_ASM_X64 != 1')
   for i in range(1, N+1):
     if i == N64 + 1:
       print('#if MCL_SIZEOF_UNIT == 4')
     for e in mulTbl:
       e.printProto(i)
   print('#endif // #if MCL_SIZEOF_UNIT == 4')
-  print('#endif')
   print('}')
   print('#endif // #if MCL_BINT_ASM == 1')
-
-  gen_disable(N64, mulTbl)
-  gen_mul_slow(N64)
-  gen_sqr_slow(N64)
 
   for ft in addTbl + mulTbl:
     gen_prototype(opt.out, ft)
