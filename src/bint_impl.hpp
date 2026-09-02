@@ -19,8 +19,6 @@
 #endif
 
 #include "xbyak/xbyak_util.h"
-
-extern "C" void mclb_enable_fast();
 #endif
 
 namespace mcl { namespace bint {
@@ -63,18 +61,7 @@ uint32_t getCpuType()
 	return type;
 }
 
-uint32_t initBint()
-{
-	uint32_t type = getCpuType();
-#if MCL_BINT_ASM_X64 == 1
-	if (type & tAVX_BMI2_ADX) {
-		mclb_enable_fast();
-	}
-#endif
-	return type;
-}
-
-const uint32_t g_cpuType = initBint();
+const uint32_t g_cpuType = getCpuType();
 
 #include "bint_switch.hpp"
 
