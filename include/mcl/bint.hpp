@@ -45,14 +45,6 @@ typedef Unit (*u_ppu)(Unit*, const Unit*, Unit);
 typedef void (*void_pppp)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef void (*void_ppp)(Unit*, const Unit*, const Unit*);
 typedef void (*void_pp)(Unit*, const Unit*);
-enum CpuType {
-	tAVX_BMI2_ADX = 1<<0,
-	tAVX512_IFMA = 1<<1
-};
-extern const uint32_t g_cpuType;
-extern uint32_t getCpuType();
-extern uint32_t initBint();
-
 // show integer as little endian
 template<class T>
 inline void dump(const T *x, size_t n, const char *msg = "")

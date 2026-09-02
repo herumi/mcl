@@ -1620,6 +1620,7 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 	}
 }
 
+// AVX-512 IFMA is required
 bool initMsm(const mcl::CurveParam& cp)
 {
 	assert(EcM::a_ == 0);
@@ -1643,7 +1644,6 @@ bool initMsm(const mcl::CurveParam& cp)
 #else
 	if (cp != mcl::BLS12_381) return false;
 #endif
-	if ((mcl::bint::g_cpuType & mcl::bint::tAVX512_IFMA) == 0) return false;
 	return true;
 }
 
