@@ -23,14 +23,6 @@ g_mclb_mul3 = None  # mclb_mul{N}
 g_mclb_sqr3 = None  # mclb_sqr{N}
 
 
-# split x into (high, low) with low being sizeL bits
-def split(x, sizeL):
-  hi = lshr(x, sizeL)
-  hi = trunc(hi, hi.bit - sizeL)
-  lo = trunc(x, sizeL)
-  return hi, lo
-
-
 # return (x>>shift) % (2**size)
 def extract(x, shift, size=0):
   if size == 0:
@@ -437,7 +429,7 @@ def gen_mcl_fp_montRed(isFullBit=True):
       t = add(t, pq)
       t = lshr(t, unit)
       t = trunc(t, bu)
-      H, t = split(t, bit)
+      H, t = common.split(t, bit)
     if isFullBit:
       p = zext(p, bu)
       t = pack([t, H])
