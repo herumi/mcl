@@ -62,6 +62,8 @@ static uint32_t detectCpuType()
 			type = 0;
 		} else if (strcmp(env, "noifma") == 0) {
 			type &= ~tAVX512_IFMA;
+		} else if (strcmp(env, "adx") == 0) {
+			type |= tAVX_BMI2_ADX;
 		}
 	}
 #endif
