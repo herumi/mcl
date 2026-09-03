@@ -426,7 +426,7 @@ uint{bit}_t name = v; v is imm or array of imm
 static variable if static=True
 const variable if const=True
 """
-def makeVar(name, bit, v, static=False, const=False):
+def makeVar(name, bit, v, static=False, const=False, align=0):
   r = Var(name, bit, v)
   if static:
     attr = 'internal unnamed_addr'
@@ -436,7 +436,10 @@ def makeVar(name, bit, v, static=False, const=False):
     attr += ' constant'
   else:
     attr += ' global'
-  output(f'@{name} = {attr} {r.getType()} {r.getVarStr()}')
+  s = f'@{name} = {attr} {r.getType()} {r.getVarStr()}'
+  if align:
+    s += f', align {align}'
+  output(s)
   return r
 
 def makeStrVar(name, v):
