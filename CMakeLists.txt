@@ -179,6 +179,10 @@ else()
 	# Set compiler flags for warnings
 	set(MCL_COMPILE_OPTIONS -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align
 		-Wwrite-strings -Wfloat-equal -Wpointer-arith -DNDEBUG -O3 -fPIC)
+	# bmi2 (mulx) and adx (adcx/adox) are required on x86/x64 (same as common.mk)
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64|i[3-6]86|x86)$")
+		list(APPEND MCL_COMPILE_OPTIONS -mbmi2 -madx)
+	endif()
 endif()
 
 if (${MCL_USE_GMP})
