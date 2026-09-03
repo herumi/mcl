@@ -19,16 +19,8 @@ g_mulPos = None
 g_makeNIST_P192 = None
 g_mod_NIST_P192 = None
 g_mulPv = {}  # bit -> Function
-
-
-# forward reference to a function defined later (call by name only)
-class FuncRef:
-  def __init__(self, name, ret):
-    self.name = name
-    self.ret = ret
-
-  def getName(self):
-    return f'{self.ret.getType()} @{self.name}'
+g_mclb_mul3 = None  # mclb_mul{N}
+g_mclb_sqr3 = None  # mclb_sqr{N}
 
 
 # split x into (high, low) with low being sizeL bits
@@ -159,8 +151,7 @@ def gen_mcl_fp_sqr_NIST_P192():
   dummy = IntPtr(unit)
   with Function('mcl_fp_sqr_NIST_P192L', Void, py, px, dummy, private=False):
     buf = alloca_(unit, 192 * 2 // unit)
-    sqrPre = FuncRef(f'mcl_fpDbl_sqrPre{192 // unit}L', Void)
-    call(sqrPre, buf, px)
+    call(g_mclb_sqr3, buf, px)
     call(g_mod_NIST_P192, py, buf, buf)
     ret(Void)
 
@@ -173,10 +164,20 @@ def gen_mcl_fp_mulNIST_P192():
   dummy = IntPtr(unit)
   with Function('mcl_fp_mulNIST_P192L', Void, pz, px, py, dummy, private=False):
     buf = alloca_(unit, 192 * 2 // unit)
-    mulPre = FuncRef(f'mcl_fpDbl_mulPre{192 // unit}L', Void)
-    call(mulPre, buf, px, py)
+    call(g_mclb_mul3, buf, px, py)
     call(g_mod_NIST_P192, pz, buf, buf)
     ret(Void)
+
+
+# declare mclb_mul{N}/mclb_sqr{N} (N = 192/unit) provided by bint{unit}.ll (or bint-x64 asm)
+def declare_mclb_mul3():
+  global g_mclb_mul3, g_mclb_sqr3
+  N = 192 // unit
+  p = IntPtr(unit)
+  g_mclb_mul3 = Function(f'mclb_mul{N}', Void, p, p, p)
+  declare(g_mclb_mul3)
+  g_mclb_sqr3 = Function(f'mclb_sqr{N}', Void, p, p)
+  declare(g_mclb_sqr3)
 
 
 def gen_once():
@@ -184,6 +185,7 @@ def gen_once():
   g_mulUU = common.gen_mulUU(unit, g_wasm)
   g_extractHigh = common.gen_extractHigh(unit)
   g_mulPos = common.gen_mulPos(unit, g_mulUU)
+  declare_mclb_mul3()
   gen_makeNIST_P192()
   gen_mcl_fpDbl_mod_NIST_P192()
   gen_mcl_fp_sqr_NIST_P192()
@@ -338,52 +340,6 @@ def gen_mulPv():
   g_mulPv[bit] = common.gen_mulPv(name, unit, N, g_mulPos, g_extractHigh)
 
 
-def generic_fpDbl_mul(pz, px, py):
-  if N == 1:
-    x = load(px)
-    y = load(py)
-    x = zext(x, unit * 2)
-    y = zext(y, unit * 2)
-    z = mul(x, y)
-    storeN(z, pz)
-    ret(Void)
-  else:
-    # Karatsuba (N > 8 and even) is intentionally omitted: it is slower and is
-    # never reached here (mulPre/sqrPre are generated only for bit==192).
-    y = load(py)
-    xy = call(g_mulPv[bit], px, y)
-    store(trunc(xy, unit), pz)
-    t = lshr(xy, unit)
-    for i in range(1, N):
-      y = loadN(py, 1, i)
-      xy = call(g_mulPv[bit], px, y)
-      t = add(t, xy)
-      if i < N - 1:
-        storeN(trunc(t, unit), pz, i)
-        t = lshr(t, unit)
-    storeN(t, pz, N - 1)
-    ret(Void)
-
-
-def gen_mcl_fpDbl_mulPre():
-  resetGlobalIdx()
-  pz = IntPtr(unit)
-  px = IntPtr(unit)
-  py = IntPtr(unit)
-  name = f'mcl_fpDbl_mulPre{N}L'
-  with Function(name, Void, pz, px, py, private=False):
-    generic_fpDbl_mul(pz, px, py)
-
-
-def gen_mcl_fpDbl_sqrPre():
-  resetGlobalIdx()
-  py = IntPtr(unit)
-  px = IntPtr(unit)
-  name = f'mcl_fpDbl_sqrPre{N}L'
-  with Function(name, Void, py, px, private=False):
-    generic_fpDbl_mul(py, px, px)
-
-
 def gen_mcl_fp_mont(isFullBit=True):
   bu = bit + unit
   bu2 = bit + unit * 2
@@ -514,9 +470,6 @@ def gen_addsub():
 
 def gen_mul():
   gen_mulPv()
-  if bit == 192:
-    gen_mcl_fpDbl_mulPre()
-    gen_mcl_fpDbl_sqrPre()
   gen_mcl_fp_mont(True)
   gen_mcl_fp_mont(False)
   gen_mcl_fp_montRed(True)
