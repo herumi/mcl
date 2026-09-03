@@ -6,6 +6,14 @@ from s_xbyak_llvm import *
 g_mul32x32 = None
 
 
+# split x into (high, low) with low being sizeL bits
+def split(x, sizeL):
+  hi = lshr(x, sizeL)
+  hi = trunc(hi, hi.bit - sizeL)
+  lo = trunc(x, sizeL)
+  return hi, lo
+
+
 def gen_mul32x32():
   global g_mul32x32
   u = 32
@@ -104,16 +112,43 @@ def emit_mulUnit(unit, N, mulPos, extractHigh, px, y):
 
 
 # z = px[0..N] * y, returns i{N*unit+unit}
-def gen_mulPv(name, unit, N, mulPos, extractHigh):
+def gen_mulPv(name, unit, N, mulPos, extractHigh, private=False, alwaysinline=False):
   bu = N * unit + unit
   resetGlobalIdx()
   z = Int(bu)
   px = IntPtr(unit)
   y = Int(unit)
-  with Function(name, z, px, y, private=False) as f:
+  with Function(name, z, px, y, private=private, alwaysinline=alwaysinline) as f:
     z = emit_mulUnit(unit, N, mulPos, extractHigh, px, y)
     ret(z)
   return f
+
+
+# emit pz[2N] = px[N] * py[N] (no reduction) into the current function.
+# mulUnit(px, y) returns i{N*unit+unit} = px[0..N] * y.
+# Schoolbook: the rows x * y[i] are accumulated in the N+1 unit accumulator t,
+# whose bottom unit is final after each row and is stored immediately.
+def emit_mulPre(unit, N, pz, px, py, mulUnit):
+  if N == 1:
+    x = load(px)
+    y = load(py)
+    x = zext(x, unit * 2)
+    y = zext(y, unit * 2)
+    z = mul(x, y)
+    storeN(z, pz)
+    return
+  y = load(py)
+  xy = call(mulUnit, px, y)
+  store(trunc(xy, unit), pz)
+  t = lshr(xy, unit)
+  for i in range(1, N):
+    y = load(getelementptr(py, i))
+    xy = call(mulUnit, px, y)
+    t = add(t, xy)
+    if i < N - 1:
+      storeN(trunc(t, unit), pz, i)
+      t = lshr(t, unit)
+  storeN(t, pz, N - 1)
 
 
 # [r:z[]] = x[] + y[] (isAdd) or x[] - y[]

@@ -102,15 +102,7 @@ def gen_mclb_mulUnitAdd():
 
 
 def gen_mul_inner(pz, px, py):
-  if N == 1:
-    x = load(px)
-    y = load(py)
-    x = zext(x, unit * 2)
-    y = zext(y, unit * 2)
-    z = mul(x, y)
-    storeN(z, pz)
-    ret(Void)
-  elif N > 8 and (N % 2) == 0:
+  if N > 8 and (N % 2) == 0:
     # W = 1 << half
     # (aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
     # ad + bc = (a + b)(c + d) - ac - bd
@@ -160,18 +152,7 @@ def gen_mul_inner(pz, px, py):
     storeN(t, pz, H)
     ret(Void)
   else:
-    y = load(py)
-    xy = call(g_mulUnit_inner[bit], px, y)
-    store(trunc(xy, unit), pz)
-    t = lshr(xy, unit)
-    for i in range(1, N):
-      y = loadN(py, 1, i)
-      xy = call(g_mulUnit_inner[bit], px, y)
-      t = add(t, xy)
-      if i < N - 1:
-        storeN(trunc(t, unit), pz, i)
-        t = lshr(t, unit)
-    storeN(t, pz, N - 1)
+    common.emit_mulPre(unit, N, pz, px, py, g_mulUnit_inner[bit])
     ret(Void)
 
 
