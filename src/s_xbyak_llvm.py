@@ -3,7 +3,7 @@
 # Author : MITSUNARI Shigeo(@herumi)
 # License : modified new BSD license (http://opensource.org/licenses/BSD-3-Clause)
 
-VERSION="0.9.4"
+VERSION="0.9.6"
 
 VOID_TYPE = 0
 INT_TYPE = 1
@@ -95,45 +95,67 @@ def L(label):
   output(f'{getDefLabel(label.n)}:')
 
 class Function:
-  def __init__(self, name, ret, *args, private=False, noalias=True):
+  # `with Function(...) as f:` emits the definition (define ... { ... }).
+  # declare(f) emits an external declaration.
+  def __init__(self, name, ret, *args, private=False, noalias=True, alwaysinline=False):
     self.name = name
     self.ret = ret
     self.args = args
     self.private = private
     self.noalias = noalias
-    if g_showPrototype and not private:
-      s = f'{ret.getCtype()} {name}('
-      for i in range(len(args)):
-        if i > 0:
-          s += ', '
-        s += args[i].getCtype(addConst=i > 0)
-      s += ');'
-      print(s)
-      return
-
-    s = 'define '
-    if private:
-      s += 'private '
-    s += f'{ret.getType()} @{name}('
-    for i in range(len(args)):
-      if i > 0:
-        s += ', '
-      s += args[i].getFullName(noalias, isArg=True)
-    s += ')'
-    output(s)
-    output('{')
+    self.alwaysinline = alwaysinline
+    self.defined = False
 
   def getName(self):
     return f'{self.ret.getType()} @{self.name}'
 
+  # emit the C prototype (prototype mode) or the head of the definition
+  def __enter__(self):
+    assert not self.defined, f'{self.name} is defined twice'
+    self.defined = True
+    if g_showPrototype:
+      if not self.private:
+        s = f'{self.ret.getCtype()} {self.name}('
+        for i in range(len(self.args)):
+          if i > 0:
+            s += ', '
+          s += self.args[i].getCtype(addConst=i > 0)
+        s += ');'
+        print(s)
+      return self
+
+    s = 'define '
+    if self.private:
+      s += 'private '
+    s += f'{self.ret.getType()} @{self.name}('
+    for i in range(len(self.args)):
+      if i > 0:
+        s += ', '
+      s += self.args[i].getFullName(self.noalias, isArg=True)
+    s += ')'
+    if self.alwaysinline:
+      s += ' alwaysinline'
+    output(s)
+    output('{')
+    return self
+
   def close(self):
     output('}')
 
-  def __enter__(self):
-    return self
-
   def __exit__(self, ex_type, ex_value, trace):
     self.close()
+
+# declare func (a Function defined in another module) so that it can be called.
+def declare(func):
+  if g_showPrototype:
+    return
+  s = f'declare {func.ret.getType()} @{func.name}('
+  for i in range(len(func.args)):
+    if i > 0:
+      s += ', '
+    s += func.args[i].getType()
+  s += ')'
+  output(s)
 
 def genFunc(name):
   def f(*args):
