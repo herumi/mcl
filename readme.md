@@ -15,6 +15,7 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # Version v4 includes breaking changes.
 - Require BMI2 (mulx) and ADX (adox, adcx) instruction sets
+  - Broadwell (2014) or later
 
 # Version v3 includes breaking changes to lib/dll specifications.
 - The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
