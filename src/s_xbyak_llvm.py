@@ -320,6 +320,11 @@ def zext(x, bit):
   output(f'{r.getName()} = zext {x.getFullName()} to {r.getType()}')
   return r
 
+def sext(x, bit):
+  r = Int(bit)
+  output(f'{r.getName()} = sext {x.getFullName()} to {r.getType()}')
+  return r
+
 def trunc(x, bit):
   r = Int(bit)
   output(f'{r.getName()} = trunc {x.getFullName()} to {r.getType()}')
