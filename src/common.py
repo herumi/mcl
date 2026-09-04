@@ -185,3 +185,139 @@ def gen_mulPos(unit, mulUU):
     xy = call(mulUU, x, y)
     ret(xy)
   return f
+
+
+# z = (x + y) mod p; x, y, p are i{bit} values and z is i{bit}.
+# isFullBit: p may use the top bit of the top unit, so x + y is computed in
+# bit + unit bits and the borrow of the following - p decides the result.
+def emit_fp_add(unit, x, y, p, isFullBit):
+  bit = x.bit
+  if isFullBit:
+    x = zext(x, bit + unit)
+    y = zext(y, bit + unit)
+    x = add(x, y)
+    p = zext(p, bit + unit)
+    y = sub(x, p)
+    c = trunc(lshr(y, bit), 1)
+    x = select(c, x, y)
+    x = trunc(x, bit)
+  else:
+    x = add(x, y)
+    y = sub(x, p)
+    c = trunc(lshr(y, bit - 1), 1)
+    x = select(c, x, y)
+  return x
+
+
+# returns (v, c) with v = (x - y) mod 2^bit (i{bit}) and c = borrow (i1).
+# The caller adds p back when c is set (select / and-mask / table lookup).
+def emit_fp_sub_raw(unit, x, y, isFullBit):
+  bit = x.bit
+  if isFullBit:
+    x = zext(x, bit + unit)
+    y = zext(y, bit + unit)
+    v = sub(x, y)
+    c = trunc(lshr(v, bit), 1)
+    v = trunc(v, bit)
+  else:
+    v = sub(x, y)
+    c = trunc(lshr(v, bit - 1), 1)
+  return v, c
+
+
+# emit pz[N] = px[N] * py[N] R^-1 mod p (fused Montgomery multiplication)
+# into the current function. rp = -p^-1 mod 2^unit is an i{unit} value or a
+# Python int. mulPv(px, y) returns i{N*unit+unit} = px[0..N] * y.
+def emit_mont(unit, N, pz, px, py, pp, rp, mulPv, isFullBit):
+  bit = N * unit
+  bu = bit + unit
+  bu2 = bit + unit * 2
+  if isFullBit:
+    s = None
+    for i in range(N):
+      y = load(getelementptr(py, i))
+      xy = call(mulPv, px, y)
+      if i == 0:
+        a = zext(xy, bu2)
+        at = trunc(xy, unit)
+      else:
+        xy = zext(xy, bu2)
+        a = add(s, xy)
+        at = trunc(a, unit)
+      q = mul(at, rp)
+      pq = call(mulPv, pp, q)
+      pq = zext(pq, bu2)
+      t = add(a, pq)
+      s = lshr(t, unit)
+    s = trunc(s, bu)
+    p = zext(loadN(pp, N), bu)
+    vc = sub(s, p)
+    c = trunc(lshr(vc, bit), 1)
+    z = select(c, s, vc)
+    z = trunc(z, bit)
+    storeN(z, pz)
+  else:
+    y = load(py)
+    xy = call(mulPv, px, y)
+    c0 = trunc(xy, unit)
+    q = mul(c0, rp)
+    pq = call(mulPv, pp, q)
+    t = add(xy, pq)
+    t = lshr(t, unit)
+    for i in range(1, N):
+      y = load(getelementptr(py, i))
+      xy = call(mulPv, px, y)
+      t = add(t, xy)
+      c0 = trunc(t, unit)
+      q = mul(c0, rp)
+      pq = call(mulPv, pp, q)
+      t = add(t, pq)
+      t = lshr(t, unit)
+    t = trunc(t, bit)
+    vc = sub(t, loadN(pp, N))
+    c = trunc(lshr(vc, bit - 1), 1)
+    z = select(c, t, vc)
+    storeN(z, pz)
+
+
+# Montgomery reduction core: reduce a 2N-unit value xy to z = xy R^-1 mod p
+# and return it (i{bit}). The low N units come packed in lo; the high units
+# are fetched one per iteration via getHi(i) -> i{unit} = unit N+i, so the
+# caller chooses the source (memory, or an SSA value). p is the loaded
+# modulus (i{bit}), rp = -p^-1 mod 2^unit (i{unit} value or Python int).
+def emit_montRed(unit, N, lo, getHi, pp, p, rp, mulPv, isFullBit):
+  bit = N * unit
+  bu = bit + unit
+  bu2 = bit + unit * 2
+  t = lo
+  H = None
+  for i in range(N):
+    if N == 1:
+      q = mul(t, rp)
+    else:
+      q = mul(trunc(t, unit), rp)
+    pq = call(mulPv, pp, q)
+    if i > 0:
+      H = zext(H, bu)
+      H = shl(H, bit)
+      pq = add(pq, H)
+    nxt = getHi(i)
+    t = pack([t, nxt])
+    t = zext(t, bu2)
+    pq = zext(pq, bu2)
+    t = add(t, pq)
+    t = lshr(t, unit)
+    t = trunc(t, bu)
+    H, t = split(t, bit)
+  if isFullBit:
+    p = zext(p, bu)
+    t = pack([t, H])
+    vc = sub(t, p)
+    c = trunc(lshr(vc, bit), 1)
+    z = select(c, t, vc)
+    z = trunc(z, bit)
+  else:
+    vc = sub(t, p)
+    c = trunc(lshr(vc, bit - 1), 1)
+    z = select(c, t, vc)
+  return z
