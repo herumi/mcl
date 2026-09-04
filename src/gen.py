@@ -218,24 +218,9 @@ def gen_mcl_fp_add(isFullBit=True):
   with Function(name, Void, pz, px, py, pp, private=False):
     x = loadN(px, N)
     y = loadN(py, N)
-    if isFullBit:
-      x = zext(x, bit + unit)
-      y = zext(y, bit + unit)
-      x = add(x, y)
-      p = loadN(pp, N)
-      p = zext(p, bit + unit)
-      y = sub(x, p)
-      c = trunc(lshr(y, bit), 1)
-      x = select(c, x, y)
-      x = trunc(x, bit)
-      storeN(x, pz)
-    else:
-      x = add(x, y)
-      p = loadN(pp, N)
-      y = sub(x, p)
-      c = trunc(lshr(y, bit - 1), 1)
-      x = select(c, x, y)
-      storeN(x, pz)
+    p = loadN(pp, N)
+    z = common.emit_fp_add(unit, x, y, p, isFullBit)
+    storeN(z, pz)
     ret(Void)
 
 
@@ -252,15 +237,7 @@ def gen_mcl_fp_sub(isFullBit=True):
   with Function(name, Void, pz, px, py, pp, private=False):
     x = loadN(px, N)
     y = loadN(py, N)
-    if isFullBit:
-      x = zext(x, bit + 1)
-      y = zext(y, bit + 1)
-    v = sub(x, y)
-    if isFullBit:
-      c = trunc(lshr(v, bit), 1)
-      v = trunc(v, bit)
-    else:
-      c = trunc(lshr(v, bit - 1), 1)
+    v, c = common.emit_fp_sub_raw(unit, x, y, isFullBit)
     p = loadN(pp, N)
     c = select(c, p, Imm(0, bit))
     v = add(v, c)
@@ -333,8 +310,6 @@ def gen_mulPv():
 
 
 def gen_mcl_fp_mont(isFullBit=True):
-  bu = bit + unit
-  bu2 = bit + unit * 2
   resetGlobalIdx()
   pz = IntPtr(unit)
   px = IntPtr(unit)
@@ -347,52 +322,7 @@ def gen_mcl_fp_mont(isFullBit=True):
   # setAlias() in gen.cpp -> emit pointer args without 'noalias'
   with Function(name, Void, pz, px, py, pp, private=False, noalias=False):
     rp = load(getelementptr(pp, -1))
-    if isFullBit:
-      s = None
-      for i in range(N):
-        y = load(getelementptr(py, i))
-        xy = call(g_mulPv[bit], px, y)
-        if i == 0:
-          a = zext(xy, bu2)
-          at = trunc(xy, unit)
-        else:
-          xy = zext(xy, bu2)
-          a = add(s, xy)
-          at = trunc(a, unit)
-        q = mul(at, rp)
-        pq = call(g_mulPv[bit], pp, q)
-        pq = zext(pq, bu2)
-        t = add(a, pq)
-        s = lshr(t, unit)
-      s = trunc(s, bu)
-      p = zext(loadN(pp, N), bu)
-      vc = sub(s, p)
-      c = trunc(lshr(vc, bit), 1)
-      z = select(c, s, vc)
-      z = trunc(z, bit)
-      storeN(z, pz)
-    else:
-      y = load(py)
-      xy = call(g_mulPv[bit], px, y)
-      c0 = trunc(xy, unit)
-      q = mul(c0, rp)
-      pq = call(g_mulPv[bit], pp, q)
-      t = add(xy, pq)
-      t = lshr(t, unit)
-      for i in range(1, N):
-        y = load(getelementptr(py, i))
-        xy = call(g_mulPv[bit], px, y)
-        t = add(t, xy)
-        c0 = trunc(t, unit)
-        q = mul(c0, rp)
-        pq = call(g_mulPv[bit], pp, q)
-        t = add(t, pq)
-        t = lshr(t, unit)
-      t = trunc(t, bit)
-      vc = sub(t, loadN(pp, N))
-      c = trunc(lshr(vc, bit - 1), 1)
-      z = select(c, t, vc)
-      storeN(z, pz)
+    common.emit_mont(unit, N, pz, px, py, pp, rp, g_mulPv[bit], isFullBit)
     ret(Void)
 
 
@@ -408,39 +338,8 @@ def gen_mcl_fp_montRed(isFullBit=True):
   with Function(name, Void, pz, pxy, pp, private=False):
     rp = load(getelementptr(pp, -1))
     p = loadN(pp, N)
-    bu = bit + unit
-    bu2 = bit + unit * 2
-    t = loadN(pxy, N)
-    H = None
-    for i in range(N):
-      if N == 1:
-        q = mul(t, rp)
-      else:
-        q = mul(trunc(t, unit), rp)
-      pq = call(g_mulPv[bit], pp, q)
-      if i > 0:
-        H = zext(H, bu)
-        H = shl(H, bit)
-        pq = add(pq, H)
-      nxt = load(getelementptr(pxy, N + i))
-      t = pack([t, nxt])
-      t = zext(t, bu2)
-      pq = zext(pq, bu2)
-      t = add(t, pq)
-      t = lshr(t, unit)
-      t = trunc(t, bu)
-      H, t = common.split(t, bit)
-    if isFullBit:
-      p = zext(p, bu)
-      t = pack([t, H])
-      vc = sub(t, p)
-      c = trunc(lshr(vc, bit), 1)
-      z = select(c, t, vc)
-      z = trunc(z, bit)
-    else:
-      vc = sub(t, p)
-      c = trunc(lshr(vc, bit - 1), 1)
-      z = select(c, t, vc)
+    lo = loadN(pxy, N)
+    z = common.emit_montRed(unit, N, lo, lambda i: load(getelementptr(pxy, N + i)), pp, p, rp, g_mulPv[bit], isFullBit)
     storeN(z, pz)
     ret(Void)
 
