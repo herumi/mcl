@@ -55,7 +55,7 @@ CYBOZU_TEST_AUTO(modpOld)
 	}
 }
 
-CYBOZU_TEST_AUTO(modp2)
+CYBOZU_TEST_AUTO(modp)
 {
 	const int C = 1000000;
 	const char *pTbl[] = {
@@ -80,12 +80,14 @@ CYBOZU_TEST_AUTO(modp2)
 	};
 	const size_t maxXN = 64 / sizeof(mcl::Unit);
 	cybozu::XorShift rg;
-	mcl::Modp2 modp2;
+	mcl::Modp modp;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(pTbl); i++) {
 		const mpz_class p(pTbl[i]);
 		std::cout << std::hex << "p=" << p << std::endl;
-		CYBOZU_TEST_ASSERT(modp2.init(p));
-		const size_t N = modp2.N;
+		CYBOZU_TEST_ASSERT(modp.init(p));
+		const size_t N = modp.N;
+		// modp() calls the generated function (mclb_modp*) if modp_asm is set
+		std::cout << "modp_asm=" << (modp.modp_asm ? "yes" : "no") << std::endl;
 		for (size_t xN = 0; xN <= maxXN; xN++) {
 			for (int j = 0; j < 100; j++) {
 				mcl::Unit x[maxXN + 1] = {};
@@ -113,16 +115,23 @@ CYBOZU_TEST_AUTO(modp2)
 				mpz_class mx, r1, r2;
 				mcl::gmp::setArray(mx, x, xN);
 				r1 = mx % p;
-				CYBOZU_TEST_ASSERT(modp2.modp(y, x, xN));
+				CYBOZU_TEST_ASSERT(modp.modp_generic(y, x, xN));
 				mcl::gmp::setArray(r2, y, N);
 				CYBOZU_TEST_EQUAL(r1, r2);
+				if (modp.modp_asm) {
+					mcl::Unit y2[mcl::maxUnitSize] = {};
+					CYBOZU_TEST_ASSERT(modp.modp(y2, x, xN));
+					CYBOZU_TEST_EQUAL_ARRAY(y, y2, N);
+				}
 			}
 		}
-		CYBOZU_TEST_ASSERT(!modp2.modp(0, 0, maxXN + 1));
+		CYBOZU_TEST_ASSERT(!modp.modp_generic(0, 0, maxXN + 1));
+		if (modp.modp_asm) CYBOZU_TEST_ASSERT(!modp.modp(0, 0, maxXN + 1));
 		{
 			mcl::Unit x[maxXN], y[mcl::maxUnitSize];
 			for (size_t k = 0; k < maxXN; k++) x[k] = rg.get64();
-			CYBOZU_BENCH_C("modp2", C, modp2.modp, y, x, maxXN);
+			CYBOZU_BENCH_C("modp_generic", C, modp.modp_generic, y, x, maxXN);
+			if (modp.modp_asm) CYBOZU_BENCH_C("modp_asm    ", C, modp.modp, y, x, maxXN);
 		}
 	}
 }

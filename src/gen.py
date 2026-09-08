@@ -395,6 +395,13 @@ def gen(maxBitSize):
       setBit(b)
       gen_all()
       b += unit * 2
+  # mclb_modp{256,384}(Unit *dst, const Unit *src, size_t srcN, const Unit *para):
+  # dst[N] = src[srcN] mod p for srcN <= 512/unit with the parameter block
+  # para of struct mcl::Modp (see common.modp_param); one function per bit
+  # size (the same name for unit = 32 and 64), used by Modp::init.
+  for b in (256, 384):
+    setBit(b)
+    common.gen_modp(f'mclb_modp{b}', unit, N, 512 // unit, g_mulPv[b])
 
 
 def main():

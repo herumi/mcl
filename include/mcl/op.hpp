@@ -176,7 +176,7 @@ struct Op {
 	size_t bitSize;
 	uint32_t pmod4;
 	mpz_class mp;
-	mcl::Modp2 modp2;
+	mcl::Modp modp;
 	mcl::SquareRoot sq;
 	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
 	mcl::ModpOld modpOld;

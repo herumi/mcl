@@ -324,7 +324,7 @@ def emit_montRed(unit, N, lo, getHi, pp, p, rp, mulPv, isFullBit):
 
 
 # ---------------------------------------------------------------------------
-# modp2: y = x mod p for a fixed prime p by word-serial Barrett reduction with
+# modp: y = x mod p for a fixed prime p by word-serial Barrett reduction with
 # a two-unit reciprocal and a single conditional subtraction per step.
 #
 # Let L = bitlen(p), N = number of units of p, u = unit and s = N u - L (the
@@ -352,18 +352,18 @@ def emit_montRed(unit, N, lo, getHi, pp, p, rp, mulPv, isFullBit):
 # r - p >= 0 test is the carry of r + np into bit `bit`.
 #
 # The p-dependent values are passed as a parameter block of units (struct
-# Modp2 on the C side), laid out as
-#   param[MODP2_Q0]    = Qt mod 2^u
-#   param[MODP2_Q1]    = Qt >> u
-#   param[MODP2_NP + i] = np[i]  (i < N), np = 2^(N unit) - p
+# Modp on the C side), laid out as
+#   param[MODP_Q0]    = Qt mod 2^u
+#   param[MODP_Q1]    = Qt >> u
+#   param[MODP_NP + i] = np[i]  (i < N), np = 2^(N unit) - p
 # so that one function per N (not per p) suffices.
-MODP2_Q0 = 0
-MODP2_Q1 = 1
-MODP2_NP = 2
+MODP_Q0 = 0
+MODP_Q1 = 1
+MODP_NP = 2
 
 
-# returns the parameter block (list of ints) of modp2 for p
-def modp2_param(p, unit, N):
+# returns the parameter block (list of ints) of modp for p
+def modp_param(p, unit, N):
   L = p.bit_length()
   assert (N - 1) * unit + 2 <= L <= N * unit
   s = N * unit - L
@@ -378,24 +378,24 @@ def modp2_param(p, unit, N):
   return param
 
 
-# load the constants of modp2 from the parameter block pparam (see
-# modp2_param) and return (Qt, np, pnp) as used by modp2_step:
+# load the constants of modp from the parameter block pparam (see
+# modp_param) and return (Qt, np, pnp) as used by modp_step:
 #   Qt    : Q 2^s in i{2 unit}
 #   np    : 2^bit - p zero-extended to i{bit+unit}
 #   pnp   : pointer to np in the parameter block (for mulPv)
-def modp2_consts(unit, N, pparam):
+def modp_consts(unit, N, pparam):
   bit = N * unit
   bu = bit + unit
-  Qt = loadN(pparam, 2, MODP2_Q0)
-  pnp = getelementptr(pparam, MODP2_NP)
+  Qt = loadN(pparam, 2, MODP_Q0)
+  pnp = getelementptr(pparam, MODP_NP)
   np = zext(loadN(pnp, N), bu)
   return (Qt, np, pnp)
 
 
-# one step of modp2: returns r = xx mod p (i{bit}) for xx = r 2^unit + w
-# (i{bit+unit}, < p 2^unit). consts is the tuple of modp2_consts.
+# one step of modp: returns r = xx mod p (i{bit}) for xx = r 2^unit + w
+# (i{bit+unit}, < p 2^unit). consts is the tuple of modp_consts.
 # mulPv(pnp, y) returns i{N*unit+unit} = pnp[0..N] * y.
-def modp2_step(unit, N, xx, consts, mulPv):
+def modp_step(unit, N, xx, consts, mulPv):
   bit = N * unit
   bu = bit + unit
   (Qt, np, pnp) = consts
@@ -413,37 +413,87 @@ def modp2_step(unit, N, xx, consts, mulPv):
   return select(c, trunc(v, bit), trunc(r, bit))
 
 
-# emit py[N] = px[xN] mod p into the current function.
-# pparam points to the parameter block of p (see modp2_param).
-# mulPv(pnp, y) returns i{N*unit+unit} = pnp[0..N] * y.
-def emit_modp2(unit, N, xN, py, px, pparam, mulPv):
-  assert xN >= N
+
+
+# int name(Unit *dst, const Unit *src, size_t srcN, const Unit *para) (para is
+# struct Modp on the C side, the layout of modp_param):
+# returns 0 if srcN * sizeof(Unit) > 64 (src wider than 512 bits); otherwise
+# dst[N] = src[srcN] mod p and returns 1 (the units of dst above src are
+# zero when srcN < N). xN is the maximum srcN (512/unit for mcl).
+# The xN - N + 1 steps of modp_step are unrolled (as in the fixed-length
+# emit_modp2 of mcl-ff/src/gen_ff.py, from which this is derived), each
+# followed by an exit test (srcN == N + j), so srcN - N + 1 steps run and
+# the results of the exits meet in a phi; the input pointer is the same
+# run-time src + (srcN - N - j) instead of constant offsets.
+# srcN < N means src < p (since (N-1) unit + 2 <= L), so dst is src zero-extended:
+# a compare/store chain copies src[i] for i < srcN, then zero-fills the rest.
+# srcN is i{unit} (size_t of the target where the unit is used).
+def emit_modp(unit, N, xN, pz, px, srcN, pparam, mulPv):
   bu = N * unit + unit
-  consts = modp2_consts(unit, N, pparam)
-  # r = top N-1 units of x (< p)
+  ret0L = Label()
+  okL = Label()
+  bigL = Label()
+  smallL = Label()
+  doneL = Label()
+  br(icmp(ugt, srcN, xN), ret0L, okL)
+  L(ret0L)
+  ret(Imm(0, 32))
+  L(okL)
+  br(icmp(ult, srcN, N), smallL, bigL)
+  L(bigL)
+  consts = modp_consts(unit, N, pparam)
+  # r = top N-1 units of src (< p), k = srcN - N = index of the next unit
   if N == 1:
     r = None
   else:
-    r = loadN(px, N - 1, xN - (N - 1))
-  for k in range(xN - N, -1, -1):
-    w = load(getelementptr(px, k))
+    r = loadN(getelementptr(px, sub(srcN, N - 1)), N - 1)
+  pk = getelementptr(px, sub(srcN, N))
+  curL = bigL
+  exits = []
+  for j in range(xN - N + 1):
+    w = load(pk)
     if r is None:
       xx = zext(w, bu)
     else:
       xx = pack([w, r])
       if xx.bit < bu:  # first step: r has N-1 units
         xx = zext(xx, bu)
-    r = modp2_step(unit, N, xx, consts, mulPv)
-  storeN(r, py)
+    r = modp_step(unit, N, xx, consts, mulPv)
+    exits.append((r, curL))
+    if j < xN - N:
+      nextL = Label()
+      br(icmp(eq, srcN, N + j), doneL, nextL)
+      L(nextL)
+      curL = nextL
+      pk = getelementptr(pk, Imm(-1, unit))
+  br(doneL)
+  L(doneL)
+  storeN(phi(*exits), pz)
+  ret(Imm(1, 32))
+  # dst = src zero-extended
+  L(smallL)
+  zeroL = [Label() for i in range(N)]
+  for i in range(N - 1):
+    nextL = Label()
+    br(icmp(eq, srcN, i), zeroL[i], nextL)
+    L(nextL)
+    store(load(getelementptr(px, i)), getelementptr(pz, i))
+  br(zeroL[N - 1])
+  for i in range(N):
+    L(zeroL[i])
+    store(Imm(0, unit), getelementptr(pz, i))
+    if i < N - 1:
+      br(zeroL[i + 1])
+  ret(Imm(1, 32))
 
 
-# void name(Unit *py, const Unit *px, const Unit *pparam) : py[N] = px[xN] mod p
-def gen_modp2(name, unit, N, xN, mulPv, private=False):
+# int name(Unit *dst, const Unit *src, size_t srcN, const Unit *para) : see emit_modp
+def gen_modp(name, unit, N, xN, mulPv, private=False):
   resetGlobalIdx()
-  py = IntPtr(unit)
+  pz = IntPtr(unit)
   px = IntPtr(unit)
-  pparam = IntPtr(unit)
-  with Function(name, Void, py, px, pparam, private=private) as f:
-    emit_modp2(unit, N, xN, py, px, pparam, mulPv)
-    ret(Void)
+  srcN = Int(unit)
+  pparam = IntPtr(unit, const=True)
+  with Function(name, Int(32), pz, px, srcN, pparam, private=private) as f:
+    emit_modp(unit, N, xN, pz, px, srcN, pparam, mulPv)
   return f
