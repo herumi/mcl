@@ -598,7 +598,6 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 		sq.set(&b, mp);
 		if (!b) return false;
 	}
-	modpOld.init(mp);
 //	smallModp.init(mp);
 	smallModP.init(p, N);
 	return fp::initForMont(*this, p, mode);
