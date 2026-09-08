@@ -73,125 +73,16 @@ mcl_fpDbl_mod_NIST_P192L:               # @mcl_fpDbl_mod_NIST_P192L
 	.p2align	4
 	.type	mcl_fp_sqr_NIST_P192L,@function
 mcl_fp_sqr_NIST_P192L:                  # @mcl_fp_sqr_NIST_P192L
-# %bb.0:
-	pushq	%rbp
-	pushq	%r15
-	pushq	%r14
-	pushq	%r13
-	pushq	%r12
-	pushq	%rbx
-	movq	16(%rsi), %r11
-	movq	(%rsi), %r12
-	movq	8(%rsi), %r13
-	movq	%r11, %rax
-	mulq	%r12
-	movq	%rdx, %rcx
-	movq	%rax, %r10
-	movq	%r11, %rax
-	mulq	%r13
-	movq	%rdx, %rbx
-	movq	%rax, %r14
-	movq	%r13, %rax
-	mulq	%r13
-	movq	%rdx, %r15
-	movq	%rax, %rsi
-	movq	%r12, %rax
-	mulq	%r12
-	movq	%rdx, %r8
-	movq	%rax, %r9
-	movq	%r13, %rax
-	mulq	%r12
-	addq	%rax, %r8
-	adcq	%rdx, %rsi
-	movq	%r14, %r12
-	adcq	%rcx, %r12
-	setb	%bpl
-	movzbl	%bpl, %r13d
-	addq	%rax, %r8
-	adcq	%r10, %rsi
-	adcq	$0, %r12
-	adcq	$0, %r13
-	addq	%rdx, %rsi
-	adcq	%r15, %r12
-	adcq	%rbx, %r13
-	movq	%r11, %rax
-	mulq	%r11
-	addq	%r14, %rcx
-	adcq	%rbx, %rax
-	adcq	$0, %rdx
-	addq	%r10, %rsi
-	adcq	%r12, %rcx
-	adcq	%r13, %rax
-	adcq	$0, %rdx
-	movq	%rcx, %r15
-	addq	%r9, %r15
-	movq	%rax, %r11
-	adcq	%r8, %r11
-	movq	%rdx, %r10
-	adcq	%rsi, %r10
-	setb	%bl
-	movzbl	%bl, %r14d
-	movq	%rdx, %r12
-	shlq	$63, %r12
-	movq	%rdx, %rbx
-	shrq	%rbx
-	shldq	$1, %r12, %rbx
-	addq	%r15, %rbx
-	adcq	%rcx, %r11
-	adcq	%rax, %r10
-	adcq	$0, %r14
-	addq	%rdx, %r11
-	adcq	$0, %r10
-	setb	%bpl
-	adcq	%r14, %rbx
-	adcq	$0, %r11
-	adcq	$0, %r10
-	setb	%r15b
-	movq	%r9, -48(%rsp)
-	movq	%r8, -40(%rsp)
-	movq	%rsi, -32(%rsp)
-	movq	%rcx, -24(%rsp)
-	movq	%rax, -16(%rsp)
-	movq	%rdx, -8(%rsp)
-	movzbl	%r15b, %eax
-	addb	$255, %bpl
-	adcq	%r14, %r11
-	adcq	$0, %r10
-	adcq	$0, %rax
-	movq	%rbx, %rcx
-	addq	$1, %rcx
-	movq	%r11, %rdx
-	adcq	$1, %rdx
-	movq	%r10, %rsi
-	adcq	$0, %rsi
-	adcq	$-1, %rax
-	testb	$1, %al
-	cmovneq	%r11, %rdx
-	movq	%rdx, 8(%rdi)
-	cmovneq	%rbx, %rcx
-	movq	%rcx, (%rdi)
-	cmovneq	%r10, %rsi
-	movq	%rsi, 16(%rdi)
-	popq	%rbx
-	popq	%r12
-	popq	%r13
-	popq	%r14
-	popq	%r15
-	popq	%rbp
-	retq
-.Lfunc_end2:
-	.size	mcl_fp_sqr_NIST_P192L, .Lfunc_end2-mcl_fp_sqr_NIST_P192L
-                                        # -- End function
-	.globl	mcl_fp_mulNIST_P192L            # -- Begin function mcl_fp_mulNIST_P192L
-	.p2align	4
-	.type	mcl_fp_mulNIST_P192L,@function
-mcl_fp_mulNIST_P192L:                   # @mcl_fp_mulNIST_P192L
+	.cfi_startproc
 # %bb.0:
 	pushq	%rbx
+	.cfi_def_cfa_offset 16
 	subq	$48, %rsp
+	.cfi_def_cfa_offset 64
+	.cfi_offset %rbx, -16
 	movq	%rdi, %rbx
 	movq	%rsp, %rdi
-	callq	mcl_fpDbl_mulPre3L@PLT
+	callq	mclb_sqr3@PLT
 	movq	40(%rsp), %rdi
 	movq	24(%rsp), %r8
 	movq	32(%rsp), %r9
@@ -239,10 +130,82 @@ mcl_fp_mulNIST_P192L:                   # @mcl_fp_mulNIST_P192L
 	cmovneq	%rax, %rdi
 	movq	%rdi, 8(%rbx)
 	addq	$48, %rsp
+	.cfi_def_cfa_offset 16
 	popq	%rbx
+	.cfi_def_cfa_offset 8
+	retq
+.Lfunc_end2:
+	.size	mcl_fp_sqr_NIST_P192L, .Lfunc_end2-mcl_fp_sqr_NIST_P192L
+	.cfi_endproc
+                                        # -- End function
+	.globl	mcl_fp_mulNIST_P192L            # -- Begin function mcl_fp_mulNIST_P192L
+	.p2align	4
+	.type	mcl_fp_mulNIST_P192L,@function
+mcl_fp_mulNIST_P192L:                   # @mcl_fp_mulNIST_P192L
+	.cfi_startproc
+# %bb.0:
+	pushq	%rbx
+	.cfi_def_cfa_offset 16
+	subq	$48, %rsp
+	.cfi_def_cfa_offset 64
+	.cfi_offset %rbx, -16
+	movq	%rdi, %rbx
+	movq	%rsp, %rdi
+	callq	mclb_mul3@PLT
+	movq	40(%rsp), %rdi
+	movq	24(%rsp), %r8
+	movq	32(%rsp), %r9
+	movq	(%rsp), %r10
+	addq	%r8, %r10
+	movq	8(%rsp), %rax
+	adcq	%r9, %rax
+	movq	16(%rsp), %rcx
+	adcq	%rdi, %rcx
+	setb	%dl
+	movzbl	%dl, %esi
+	movq	%rdi, %r11
+	shlq	$63, %r11
+	movq	%rdi, %rdx
+	shrq	%rdx
+	shldq	$1, %r11, %rdx
+	addq	%r10, %rdx
+	adcq	%r8, %rax
+	adcq	%r9, %rcx
+	adcq	$0, %rsi
+	addq	%rdi, %rax
+	adcq	$0, %rcx
+	setb	%dil
+	adcq	%rsi, %rdx
+	adcq	$0, %rax
+	adcq	$0, %rcx
+	setb	%r8b
+	movzbl	%r8b, %r8d
+	addb	$255, %dil
+	adcq	%rsi, %rax
+	adcq	$0, %rcx
+	adcq	$0, %r8
+	movq	%rdx, %rsi
+	addq	$1, %rsi
+	movq	%rax, %rdi
+	adcq	$1, %rdi
+	movq	%rcx, %r9
+	adcq	$0, %r9
+	adcq	$-1, %r8
+	testb	$1, %r8b
+	cmovneq	%rcx, %r9
+	movq	%r9, 16(%rbx)
+	cmovneq	%rdx, %rsi
+	movq	%rsi, (%rbx)
+	cmovneq	%rax, %rdi
+	movq	%rdi, 8(%rbx)
+	addq	$48, %rsp
+	.cfi_def_cfa_offset 16
+	popq	%rbx
+	.cfi_def_cfa_offset 8
 	retq
 .Lfunc_end3:
 	.size	mcl_fp_mulNIST_P192L, .Lfunc_end3-mcl_fp_mulNIST_P192L
+	.cfi_endproc
                                         # -- End function
 	.globl	mcl_fpDbl_mod_NIST_P521L        # -- Begin function mcl_fpDbl_mod_NIST_P521L
 	.p2align	4
@@ -309,7 +272,7 @@ mcl_fpDbl_mod_NIST_P521L:               # @mcl_fpDbl_mod_NIST_P521L
 	andq	%r15, %r14
 	cmpq	$-1, %r14
 	je	.LBB4_1
-# %bb.3:                                # %nonzero
+# %bb.3:                                # %L2
 	movq	%rsi, (%rdi)
 	movq	%r11, 8(%rdi)
 	movq	%r10, 16(%rdi)
@@ -324,7 +287,7 @@ mcl_fpDbl_mod_NIST_P521L:               # @mcl_fpDbl_mod_NIST_P521L
 	popq	%r14
 	popq	%r15
 	retq
-.LBB4_1:                                # %zero
+.LBB4_1:                                # %L1
 	movq	$0, 64(%rdi)
 	movq	$0, 56(%rdi)
 	movq	$0, 48(%rdi)
@@ -367,158 +330,6 @@ mulPv192x64:                            # @mulPv192x64
 	retq
 .Lfunc_end5:
 	.size	mulPv192x64, .Lfunc_end5-mulPv192x64
-                                        # -- End function
-	.globl	mcl_fpDbl_mulPre3L              # -- Begin function mcl_fpDbl_mulPre3L
-	.p2align	4
-	.type	mcl_fpDbl_mulPre3L,@function
-mcl_fpDbl_mulPre3L:                     # @mcl_fpDbl_mulPre3L
-# %bb.0:
-	pushq	%rbp
-	pushq	%r15
-	pushq	%r14
-	pushq	%r13
-	pushq	%r12
-	pushq	%rbx
-	movq	%rdx, %r8
-	movq	(%rsi), %rcx
-	movq	8(%rsi), %rbx
-	movq	(%rdx), %r11
-	movq	%rcx, %rax
-	mulq	%r11
-	movq	%rdx, %r12
-	movq	16(%rsi), %r10
-	movq	%rax, (%rdi)
-	movq	8(%r8), %r9
-	movq	%r9, %rax
-	mulq	%r10
-	movq	%rdx, -8(%rsp)                  # 8-byte Spill
-	movq	%rax, %r15
-	movq	%r9, %rax
-	mulq	%rbx
-	movq	%rdx, -16(%rsp)                 # 8-byte Spill
-	movq	%rax, %rbp
-	movq	%r9, %rax
-	mulq	%rcx
-	movq	%rdx, %r13
-	movq	%rax, %rsi
-	movq	%r10, %rax
-	mulq	%r11
-	movq	%rdx, %r9
-	movq	%rax, %r14
-	movq	%rbx, %rax
-	mulq	%r11
-	movq	%rdx, %r11
-	addq	%r12, %rax
-	adcq	%r14, %r11
-	adcq	$0, %r9
-	setb	%dl
-	addq	%rsi, %rax
-	movq	%rax, 8(%rdi)
-	adcq	%rbp, %r11
-	adcq	%r15, %r9
-	movzbl	%dl, %r15d
-	adcq	$0, %r15
-	addq	%r13, %r11
-	adcq	-16(%rsp), %r9                  # 8-byte Folded Reload
-	adcq	-8(%rsp), %r15                  # 8-byte Folded Reload
-	movq	16(%r8), %rsi
-	movq	%rsi, %rax
-	mulq	%r10
-	movq	%rdx, %r8
-	movq	%rax, %r10
-	movq	%rsi, %rax
-	mulq	%rbx
-	movq	%rdx, %rbx
-	movq	%rax, %r14
-	movq	%rsi, %rax
-	mulq	%rcx
-	addq	%r14, %rdx
-	adcq	%r10, %rbx
-	adcq	$0, %r8
-	addq	%r11, %rax
-	movq	%rax, 16(%rdi)
-	adcq	%r9, %rdx
-	movq	%rdx, 24(%rdi)
-	adcq	%r15, %rbx
-	movq	%rbx, 32(%rdi)
-	adcq	$0, %r8
-	movq	%r8, 40(%rdi)
-	popq	%rbx
-	popq	%r12
-	popq	%r13
-	popq	%r14
-	popq	%r15
-	popq	%rbp
-	retq
-.Lfunc_end6:
-	.size	mcl_fpDbl_mulPre3L, .Lfunc_end6-mcl_fpDbl_mulPre3L
-                                        # -- End function
-	.globl	mcl_fpDbl_sqrPre3L              # -- Begin function mcl_fpDbl_sqrPre3L
-	.p2align	4
-	.type	mcl_fpDbl_sqrPre3L,@function
-mcl_fpDbl_sqrPre3L:                     # @mcl_fpDbl_sqrPre3L
-# %bb.0:
-	pushq	%rbp
-	pushq	%r15
-	pushq	%r14
-	pushq	%r12
-	pushq	%rbx
-	movq	16(%rsi), %r15
-	movq	(%rsi), %r12
-	movq	8(%rsi), %rsi
-	movq	%r12, %rax
-	mulq	%r12
-	movq	%rdx, %rbx
-	movq	%rax, (%rdi)
-	movq	%r15, %rax
-	mulq	%r12
-	movq	%rdx, %rcx
-	movq	%rax, %r8
-	movq	%r15, %rax
-	mulq	%rsi
-	movq	%rdx, %r9
-	movq	%rax, %r11
-	movq	%rsi, %rax
-	mulq	%rsi
-	movq	%rdx, %r14
-	movq	%rax, %r10
-	movq	%rsi, %rax
-	mulq	%r12
-	addq	%rax, %rbx
-	adcq	%rdx, %r10
-	movq	%r11, %rsi
-	adcq	%rcx, %rsi
-	setb	%bpl
-	addq	%rax, %rbx
-	movq	%rbx, 8(%rdi)
-	movzbl	%bpl, %ebx
-	adcq	%r8, %r10
-	adcq	$0, %rsi
-	adcq	$0, %rbx
-	addq	%rdx, %r10
-	adcq	%r14, %rsi
-	adcq	%r9, %rbx
-	movq	%r15, %rax
-	mulq	%r15
-	addq	%r11, %rcx
-	adcq	%r9, %rax
-	adcq	$0, %rdx
-	addq	%r8, %r10
-	movq	%r10, 16(%rdi)
-	adcq	%rsi, %rcx
-	movq	%rcx, 24(%rdi)
-	adcq	%rbx, %rax
-	movq	%rax, 32(%rdi)
-	adcq	$0, %rdx
-	movq	%rdx, 40(%rdi)
-	popq	%rbx
-	popq	%r12
-	popq	%r14
-	popq	%r15
-	popq	%rbp
-	retq
-.Lfunc_end7:
-	.size	mcl_fpDbl_sqrPre3L, .Lfunc_end7-mcl_fpDbl_sqrPre3L
                                         # -- End function
 	.globl	mcl_fp_mont3L                   # -- Begin function mcl_fp_mont3L
 	.p2align	4
@@ -695,8 +506,8 @@ mcl_fp_mont3L:                          # @mcl_fp_mont3L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end8:
-	.size	mcl_fp_mont3L, .Lfunc_end8-mcl_fp_mont3L
+.Lfunc_end6:
+	.size	mcl_fp_mont3L, .Lfunc_end6-mcl_fp_mont3L
                                         # -- End function
 	.globl	mcl_fp_montNF3L                 # -- Begin function mcl_fp_montNF3L
 	.p2align	4
@@ -862,8 +673,8 @@ mcl_fp_montNF3L:                        # @mcl_fp_montNF3L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end9:
-	.size	mcl_fp_montNF3L, .Lfunc_end9-mcl_fp_montNF3L
+.Lfunc_end7:
+	.size	mcl_fp_montNF3L, .Lfunc_end7-mcl_fp_montNF3L
                                         # -- End function
 	.globl	mcl_fp_montRed3L                # -- Begin function mcl_fp_montRed3L
 	.p2align	4
@@ -876,97 +687,104 @@ mcl_fp_montRed3L:                       # @mcl_fp_montRed3L
 	pushq	%r13
 	pushq	%r12
 	pushq	%rbx
-	movq	%rdx, %r9
+	movq	%rdx, %r8
 	movq	%rdi, -8(%rsp)                  # 8-byte Spill
 	movq	(%rsi), %rcx
-	movq	-8(%rdx), %r10
-	movq	(%rdx), %r8
-	movq	%r10, %rdi
+	movq	-8(%rdx), %r9
+	movq	(%rdx), %r12
+	movq	%r9, %rdi
 	imulq	%rcx, %rdi
 	movq	16(%rdx), %rax
-	movq	%rax, %r13
-	movq	%rax, -24(%rsp)                 # 8-byte Spill
-	mulq	%rdi
-	movq	%rax, %r14
-	movq	%rdx, %r11
-	movq	8(%r9), %rax
+	movq	%rax, %rbp
 	movq	%rax, -16(%rsp)                 # 8-byte Spill
 	mulq	%rdi
+	movq	%rax, %r11
 	movq	%rdx, %rbx
-	movq	%rax, %r15
-	movq	%r8, %rax
-	movq	%r8, -32(%rsp)                  # 8-byte Spill
+	movq	8(%r8), %r10
+	movq	%r10, %rax
 	mulq	%rdi
-	movq	%rdx, %r12
-	addq	%r15, %r12
-	adcq	%r14, %rbx
-	adcq	$0, %r11
+	movq	%rdx, %r15
+	movq	%rax, %r14
+	movq	%r12, %rax
+	movq	%r12, -24(%rsp)                 # 8-byte Spill
+	mulq	%rdi
+	movq	%rdx, %r13
+	addq	%r14, %r13
+	adcq	%r11, %r15
+	adcq	$0, %rbx
 	addq	%rcx, %rax
-	adcq	8(%rsi), %r12
-	adcq	16(%rsi), %rbx
-	adcq	24(%rsi), %r11
-	setb	%r9b
-	movq	%r10, %r14
-	imulq	%r12, %r14
+	adcq	8(%rsi), %r13
+	adcq	16(%rsi), %r15
+	adcq	24(%rsi), %rbx
+	setb	%r8b
+	movq	%r9, %r14
+	imulq	%r13, %r14
 	movq	%r14, %rax
-	mulq	%r13
-	movq	%rdx, %rdi
+	mulq	%rbp
+	movq	%rdx, %r11
 	movq	%rax, %rbp
-	movq	%r8, %rax
+	movq	%r12, %rax
 	mulq	%r14
 	movq	%rdx, %rcx
-	movq	%rax, %r13
-	movq	-16(%rsp), %r8                  # 8-byte Reload
-	movq	%r8, %rax
+	movq	%rax, %rdi
+	movq	%r10, %rax
 	mulq	%r14
 	movq	%rdx, %r14
-	movq	%rax, %r15
-	addq	%rcx, %r15
+	movq	%rax, %r12
+	addq	%rcx, %r12
 	adcq	%rbp, %r14
-	movzbl	%r9b, %ebp
-	adcq	%rdi, %rbp
-	addq	%r12, %r13
-	adcq	%rbx, %r15
-	adcq	%r11, %r14
-	adcq	32(%rsi), %rbp
-	setb	%r9b
-	imulq	%r15, %r10
-	movq	%r10, %rax
-	movq	-24(%rsp), %r13                 # 8-byte Reload
-	mulq	%r13
-	movq	%rdx, %r11
-	movq	%rax, %rcx
-	movq	-32(%rsp), %r12                 # 8-byte Reload
-	movq	%r12, %rax
-	mulq	%r10
-	movq	%rdx, %rdi
-	movq	%rax, %rbx
-	movq	%r8, %rax
-	mulq	%r10
-	addq	%rdi, %rax
-	adcq	%rcx, %rdx
-	movzbl	%r9b, %ecx
-	adcq	%rcx, %r11
-	addq	%r15, %rbx
-	adcq	%r14, %rax
-	adcq	%rbp, %rdx
-	adcq	40(%rsi), %r11
-	setb	%cl
+	movq	40(%rsi), %rbp
+	movzbl	%r8b, %eax
+	adcq	%rax, %r11
+	addq	%r13, %rdi
+	adcq	%r15, %r12
+	adcq	%rbx, %r14
+	adcq	32(%rsi), %r11
+	setb	%r8b
+	imulq	%r12, %r9
+	movq	%r9, %rax
+	movq	-16(%rsp), %r15                 # 8-byte Reload
+	mulq	%r15
+	movq	%rdx, %rbx
 	movq	%rax, %rsi
-	subq	%r12, %rsi
-	movq	%rdx, %rdi
-	sbbq	%r8, %rdi
-	movq	%r11, %r8
-	sbbq	%r13, %r8
+	movq	-24(%rsp), %r13                 # 8-byte Reload
+	movq	%r13, %rax
+	mulq	%r9
+	movq	%rdx, %rcx
+	movq	%rax, %rdi
+	movq	%r10, %rax
+	mulq	%r9
+	movzbl	%r8b, %r9d
+	addq	%r12, %rdi
+	adcq	%r14, %rax
+	adcq	%r11, %rsi
+	adcq	%rbp, %r9
+	addq	%rcx, %rax
+	adcq	%rdx, %rsi
+	adcq	%rbx, %r9
+	cmpq	%r12, %rdi
+	movq	%rax, %rcx
+	sbbq	%r14, %rcx
+	movq	%rsi, %rcx
+	sbbq	%r11, %rcx
+	movq	%r9, %rcx
+	sbbq	%rbp, %rcx
+	setb	%cl
+	movq	%rax, %rdx
+	subq	%r13, %rdx
+	movq	%rsi, %rdi
+	sbbq	%r10, %rdi
+	movq	%r9, %r8
+	sbbq	%r15, %r8
 	movzbl	%cl, %ecx
 	sbbq	$0, %rcx
 	testb	$1, %cl
-	cmovneq	%r11, %r8
+	cmovneq	%r9, %r8
 	movq	-8(%rsp), %rcx                  # 8-byte Reload
 	movq	%r8, 16(%rcx)
-	cmovneq	%rax, %rsi
-	movq	%rsi, (%rcx)
-	cmovneq	%rdx, %rdi
+	cmovneq	%rax, %rdx
+	movq	%rdx, (%rcx)
+	cmovneq	%rsi, %rdi
 	movq	%rdi, 8(%rcx)
 	popq	%rbx
 	popq	%r12
@@ -975,8 +793,8 @@ mcl_fp_montRed3L:                       # @mcl_fp_montRed3L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end10:
-	.size	mcl_fp_montRed3L, .Lfunc_end10-mcl_fp_montRed3L
+.Lfunc_end8:
+	.size	mcl_fp_montRed3L, .Lfunc_end8-mcl_fp_montRed3L
                                         # -- End function
 	.globl	mcl_fp_montRedNF3L              # -- Begin function mcl_fp_montRedNF3L
 	.p2align	4
@@ -1086,8 +904,8 @@ mcl_fp_montRedNF3L:                     # @mcl_fp_montRedNF3L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end11:
-	.size	mcl_fp_montRedNF3L, .Lfunc_end11-mcl_fp_montRedNF3L
+.Lfunc_end9:
+	.size	mcl_fp_montRedNF3L, .Lfunc_end9-mcl_fp_montRedNF3L
                                         # -- End function
 	.globl	mcl_fp_addPre3L                 # -- Begin function mcl_fp_addPre3L
 	.p2align	4
@@ -1114,8 +932,8 @@ mcl_fp_addPre3L:                        # @mcl_fp_addPre3L
 	setb	%al
 	movzbl	%al, %eax
 	retq
-.Lfunc_end12:
-	.size	mcl_fp_addPre3L, .Lfunc_end12-mcl_fp_addPre3L
+.Lfunc_end10:
+	.size	mcl_fp_addPre3L, .Lfunc_end10-mcl_fp_addPre3L
                                         # -- End function
 	.globl	mcl_fp_subPre3L                 # -- Begin function mcl_fp_subPre3L
 	.p2align	4
@@ -1135,8 +953,8 @@ mcl_fp_subPre3L:                        # @mcl_fp_subPre3L
 	sbbq	%rax, %rax
 	andl	$1, %eax
 	retq
-.Lfunc_end13:
-	.size	mcl_fp_subPre3L, .Lfunc_end13-mcl_fp_subPre3L
+.Lfunc_end11:
+	.size	mcl_fp_subPre3L, .Lfunc_end11-mcl_fp_subPre3L
                                         # -- End function
 	.globl	mcl_fp_shr1_3L                  # -- Begin function mcl_fp_shr1_3L
 	.p2align	4
@@ -1154,8 +972,8 @@ mcl_fp_shr1_3L:                         # @mcl_fp_shr1_3L
 	shldq	$63, %rcx, %rdx
 	movq	%rdx, 8(%rdi)
 	retq
-.Lfunc_end14:
-	.size	mcl_fp_shr1_3L, .Lfunc_end14-mcl_fp_shr1_3L
+.Lfunc_end12:
+	.size	mcl_fp_shr1_3L, .Lfunc_end12-mcl_fp_shr1_3L
                                         # -- End function
 	.globl	mcl_fp_add3L                    # -- Begin function mcl_fp_add3L
 	.p2align	4
@@ -1185,8 +1003,8 @@ mcl_fp_add3L:                           # @mcl_fp_add3L
 	cmovneq	%rdx, %r10
 	movq	%r10, 8(%rdi)
 	retq
-.Lfunc_end15:
-	.size	mcl_fp_add3L, .Lfunc_end15-mcl_fp_add3L
+.Lfunc_end13:
+	.size	mcl_fp_add3L, .Lfunc_end13-mcl_fp_add3L
                                         # -- End function
 	.globl	mcl_fp_addNF3L                  # -- Begin function mcl_fp_addNF3L
 	.p2align	4
@@ -1214,8 +1032,8 @@ mcl_fp_addNF3L:                         # @mcl_fp_addNF3L
 	cmovsq	%rdx, %r9
 	movq	%r9, 8(%rdi)
 	retq
-.Lfunc_end16:
-	.size	mcl_fp_addNF3L, .Lfunc_end16-mcl_fp_addNF3L
+.Lfunc_end14:
+	.size	mcl_fp_addNF3L, .Lfunc_end14-mcl_fp_addNF3L
                                         # -- End function
 	.globl	mcl_fp_sub3L                    # -- Begin function mcl_fp_sub3L
 	.p2align	4
@@ -1242,8 +1060,8 @@ mcl_fp_sub3L:                           # @mcl_fp_sub3L
 	adcq	%r8, %rdx
 	movq	%rdx, 16(%rdi)
 	retq
-.Lfunc_end17:
-	.size	mcl_fp_sub3L, .Lfunc_end17-mcl_fp_sub3L
+.Lfunc_end15:
+	.size	mcl_fp_sub3L, .Lfunc_end15-mcl_fp_sub3L
                                         # -- End function
 	.globl	mcl_fp_subNF3L                  # -- Begin function mcl_fp_subNF3L
 	.p2align	4
@@ -1271,8 +1089,8 @@ mcl_fp_subNF3L:                         # @mcl_fp_subNF3L
 	adcq	%rax, %r10
 	movq	%r10, 16(%rdi)
 	retq
-.Lfunc_end18:
-	.size	mcl_fp_subNF3L, .Lfunc_end18-mcl_fp_subNF3L
+.Lfunc_end16:
+	.size	mcl_fp_subNF3L, .Lfunc_end16-mcl_fp_subNF3L
                                         # -- End function
 	.globl	mcl_fpDbl_add3L                 # -- Begin function mcl_fpDbl_add3L
 	.p2align	4
@@ -1311,8 +1129,8 @@ mcl_fpDbl_add3L:                        # @mcl_fpDbl_add3L
 	cmovneq	%rax, %r10
 	movq	%r10, 32(%rdi)
 	retq
-.Lfunc_end19:
-	.size	mcl_fpDbl_add3L, .Lfunc_end19-mcl_fpDbl_add3L
+.Lfunc_end17:
+	.size	mcl_fpDbl_add3L, .Lfunc_end17-mcl_fpDbl_add3L
                                         # -- End function
 	.globl	mcl_fpDbl_sub3L                 # -- Begin function mcl_fpDbl_sub3L
 	.p2align	4
@@ -1350,8 +1168,8 @@ mcl_fpDbl_sub3L:                        # @mcl_fpDbl_sub3L
 	movq	%rdx, 40(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end20:
-	.size	mcl_fpDbl_sub3L, .Lfunc_end20-mcl_fpDbl_sub3L
+.Lfunc_end18:
+	.size	mcl_fpDbl_sub3L, .Lfunc_end18-mcl_fpDbl_sub3L
                                         # -- End function
 	.globl	mulPv256x64                     # -- Begin function mulPv256x64
 	.p2align	4
@@ -1385,8 +1203,8 @@ mulPv256x64:                            # @mulPv256x64
 	movq	%rdi, %rax
 	popq	%rbx
 	retq
-.Lfunc_end21:
-	.size	mulPv256x64, .Lfunc_end21-mulPv256x64
+.Lfunc_end19:
+	.size	mulPv256x64, .Lfunc_end19-mulPv256x64
                                         # -- End function
 	.globl	mcl_fp_mont4L                   # -- Begin function mcl_fp_mont4L
 	.p2align	4
@@ -1657,8 +1475,8 @@ mcl_fp_mont4L:                          # @mcl_fp_mont4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end22:
-	.size	mcl_fp_mont4L, .Lfunc_end22-mcl_fp_mont4L
+.Lfunc_end20:
+	.size	mcl_fp_mont4L, .Lfunc_end20-mcl_fp_mont4L
                                         # -- End function
 	.globl	mcl_fp_montNF4L                 # -- Begin function mcl_fp_montNF4L
 	.p2align	4
@@ -1916,8 +1734,8 @@ mcl_fp_montNF4L:                        # @mcl_fp_montNF4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end23:
-	.size	mcl_fp_montNF4L, .Lfunc_end23-mcl_fp_montNF4L
+.Lfunc_end21:
+	.size	mcl_fp_montNF4L, .Lfunc_end21-mcl_fp_montNF4L
                                         # -- End function
 	.globl	mcl_fp_montRed4L                # -- Begin function mcl_fp_montRed4L
 	.p2align	4
@@ -1930,154 +1748,175 @@ mcl_fp_montRed4L:                       # @mcl_fp_montRed4L
 	pushq	%r13
 	pushq	%r12
 	pushq	%rbx
-	movq	%rdx, %r10
+	movq	%rdx, %r9
 	movq	%rdi, -8(%rsp)                  # 8-byte Spill
 	movq	(%rsi), %r8
 	movq	-8(%rdx), %r11
+	movq	%r11, -48(%rsp)                 # 8-byte Spill
 	movq	(%rdx), %rbp
-	movq	%r11, %rdi
-	imulq	%r8, %rdi
+	imulq	%r8, %r11
 	movq	24(%rdx), %rax
-	movq	%rax, -56(%rsp)                 # 8-byte Spill
-	mulq	%rdi
+	movq	%rax, %r12
+	movq	%rax, -32(%rsp)                 # 8-byte Spill
+	mulq	%r11
 	movq	%rax, %rcx
 	movq	%rdx, %rbx
-	movq	16(%r10), %r9
-	movq	%r9, %rax
-	movq	%r9, -48(%rsp)                  # 8-byte Spill
-	mulq	%rdi
-	movq	%rax, %r14
-	movq	%rdx, %r15
-	movq	8(%r10), %rax
-	movq	%rax, -40(%rsp)                 # 8-byte Spill
-	mulq	%rdi
+	movq	16(%r9), %r10
+	movq	%r10, %rax
+	movq	%r10, -24(%rsp)                 # 8-byte Spill
+	mulq	%r11
+	movq	%rax, %rdi
+	movq	%rdx, %r14
+	movq	8(%r9), %rax
+	movq	%rax, -56(%rsp)                 # 8-byte Spill
+	mulq	%r11
 	movq	%rdx, %r13
-	movq	%rax, %r12
-	movq	%rbp, -32(%rsp)                 # 8-byte Spill
+	movq	%rax, %r15
+	movq	%rbp, %r9
+	movq	%rbp, -40(%rsp)                 # 8-byte Spill
 	movq	%rbp, %rax
-	mulq	%rdi
-	movq	%rdx, %rdi
-	addq	%r12, %rdi
-	adcq	%r14, %r13
-	adcq	%rcx, %r15
+	mulq	%r11
+	movq	%rdx, %rbp
+	addq	%r15, %rbp
+	adcq	%rdi, %r13
+	adcq	%rcx, %r14
 	adcq	$0, %rbx
 	addq	%r8, %rax
-	movq	%rsi, -24(%rsp)                 # 8-byte Spill
-	adcq	8(%rsi), %rdi
+	movq	%rsi, -72(%rsp)                 # 8-byte Spill
+	adcq	8(%rsi), %rbp
 	adcq	16(%rsi), %r13
-	adcq	24(%rsi), %r15
+	adcq	24(%rsi), %r14
 	adcq	32(%rsi), %rbx
-	setb	-65(%rsp)                       # 1-byte Folded Spill
-	movq	%r11, %rcx
-	imulq	%rdi, %rcx
+	setb	-73(%rsp)                       # 1-byte Folded Spill
+	movq	-48(%rsp), %r15                 # 8-byte Reload
+	movq	%r15, %rcx
+	imulq	%rbp, %rcx
 	movq	%rcx, %rax
-	mulq	-56(%rsp)                       # 8-byte Folded Reload
-	movq	%rdx, %r14
+	mulq	%r12
+	movq	%rdx, %rsi
 	movq	%rax, -64(%rsp)                 # 8-byte Spill
-	movq	%r9, %rax
+	movq	%r10, %rax
 	mulq	%rcx
 	movq	%rdx, %r12
 	movq	%rax, %r8
-	movq	%rbp, %rax
+	movq	%r9, %rax
 	mulq	%rcx
 	movq	%rdx, %r9
-	movq	%rax, %r10
-	movq	-40(%rsp), %rsi                 # 8-byte Reload
-	movq	%rsi, %rax
+	movq	%rax, %r11
+	movq	-56(%rsp), %rax                 # 8-byte Reload
 	mulq	%rcx
-	movq	%rdx, %rbp
-	movq	%rax, %rcx
-	addq	%r9, %rcx
-	adcq	%r8, %rbp
+	movq	%rdx, %rcx
+	movq	%rax, %rdi
+	addq	%r9, %rdi
+	adcq	%r8, %rcx
 	adcq	-64(%rsp), %r12                 # 8-byte Folded Reload
-	movzbl	-65(%rsp), %eax                 # 1-byte Folded Reload
-	adcq	%rax, %r14
-	addq	%rdi, %r10
-	adcq	%r13, %rcx
-	adcq	%r15, %rbp
+	movzbl	-73(%rsp), %eax                 # 1-byte Folded Reload
+	adcq	%rax, %rsi
+	addq	%rbp, %r11
+	adcq	%r13, %rdi
+	adcq	%r14, %rcx
 	adcq	%rbx, %r12
-	movq	-24(%rsp), %rax                 # 8-byte Reload
-	adcq	40(%rax), %r14
-	setb	-65(%rsp)                       # 1-byte Folded Spill
-	movq	%r11, %rdi
-	imulq	%rcx, %rdi
-	movq	%rdi, %rax
-	mulq	-56(%rsp)                       # 8-byte Folded Reload
+	movq	-72(%rsp), %rax                 # 8-byte Reload
+	adcq	40(%rax), %rsi
+	setb	-73(%rsp)                       # 1-byte Folded Spill
+	movq	%r15, %r8
+	imulq	%rdi, %r8
+	movq	%r8, %rax
+	movq	-32(%rsp), %r10                 # 8-byte Reload
+	mulq	%r10
 	movq	%rdx, %rbx
 	movq	%rax, -64(%rsp)                 # 8-byte Spill
-	movq	-48(%rsp), %r9                  # 8-byte Reload
-	movq	%r9, %rax
-	mulq	%rdi
-	movq	%rdx, %r15
+	movq	-24(%rsp), %rax                 # 8-byte Reload
+	mulq	%r8
+	movq	%rdx, %r14
 	movq	%rax, -16(%rsp)                 # 8-byte Spill
-	movq	-32(%rsp), %rax                 # 8-byte Reload
-	mulq	%rdi
-	movq	%rdx, %r10
-	movq	%rax, %r8
-	movq	%rsi, %rax
-	mulq	%rdi
-	movq	%rdx, %r13
-	movq	%rax, %rdi
-	addq	%r10, %rdi
-	adcq	-16(%rsp), %r13                 # 8-byte Folded Reload
-	adcq	-64(%rsp), %r15                 # 8-byte Folded Reload
-	movzbl	-65(%rsp), %eax                 # 1-byte Folded Reload
-	adcq	%rax, %rbx
-	addq	%rcx, %r8
-	adcq	%rbp, %rdi
-	adcq	%r12, %r13
-	adcq	%r14, %r15
-	movq	-24(%rsp), %r14                 # 8-byte Reload
-	adcq	48(%r14), %rbx
-	setb	-65(%rsp)                       # 1-byte Folded Spill
-	imulq	%rdi, %r11
-	movq	%r11, %rax
-	mulq	-56(%rsp)                       # 8-byte Folded Reload
-	movq	%rdx, -64(%rsp)                 # 8-byte Spill
-	movq	%rax, %r8
-	movq	%r9, %rax
-	mulq	%r11
-	movq	%rdx, %rcx
-	movq	%rax, %rsi
-	movq	-32(%rsp), %r9                  # 8-byte Reload
-	movq	%r9, %rax
-	mulq	%r11
-	movq	%rdx, %r10
-	movq	%rax, %r12
-	movq	-40(%rsp), %rbp                 # 8-byte Reload
-	movq	%rbp, %rax
-	mulq	%r11
-	addq	%r10, %rax
-	adcq	%rsi, %rdx
-	adcq	%r8, %rcx
-	movzbl	-65(%rsp), %r8d                 # 1-byte Folded Reload
-	adcq	-64(%rsp), %r8                  # 8-byte Folded Reload
-	addq	%rdi, %r12
-	adcq	%r13, %rax
-	adcq	%r15, %rdx
-	adcq	%rbx, %rcx
-	adcq	56(%r14), %r8
-	setb	%sil
-	movq	%rax, %rdi
-	subq	%r9, %rdi
+	movq	-40(%rsp), %r15                 # 8-byte Reload
+	movq	%r15, %rax
+	mulq	%r8
 	movq	%rdx, %r9
-	sbbq	%rbp, %r9
+	movq	%rax, %r11
+	movq	-56(%rsp), %rax                 # 8-byte Reload
+	mulq	%r8
+	movq	%rdx, %r13
+	movq	%rax, %rbp
+	addq	%r9, %rbp
+	adcq	-16(%rsp), %r13                 # 8-byte Folded Reload
+	adcq	-64(%rsp), %r14                 # 8-byte Folded Reload
+	movzbl	-73(%rsp), %eax                 # 1-byte Folded Reload
+	adcq	%rax, %rbx
+	addq	%rdi, %r11
+	movq	-72(%rsp), %rax                 # 8-byte Reload
+	movq	56(%rax), %r11
+	adcq	%rcx, %rbp
+	adcq	%r12, %r13
+	adcq	%rsi, %r14
+	adcq	48(%rax), %rbx
+	setb	-73(%rsp)                       # 1-byte Folded Spill
+	movq	-48(%rsp), %rcx                 # 8-byte Reload
+	imulq	%rbp, %rcx
+	movq	%rcx, %rax
+	mulq	%r10
+	movq	%rdx, -72(%rsp)                 # 8-byte Spill
+	movq	%rax, %rsi
+	movq	%r15, %rax
+	mulq	%rcx
+	movq	%rdx, %r12
+	movq	%rax, %rdi
+	movq	-24(%rsp), %r9                  # 8-byte Reload
+	movq	%r9, %rax
+	mulq	%rcx
 	movq	%rcx, %r10
-	sbbq	-48(%rsp), %r10                 # 8-byte Folded Reload
-	movq	%r8, %r11
-	sbbq	-56(%rsp), %r11                 # 8-byte Folded Reload
-	movzbl	%sil, %esi
-	sbbq	$0, %rsi
-	testb	$1, %sil
-	cmovneq	%rcx, %r10
+	movq	%rdx, %rcx
+	movq	%rax, %r15
+	movq	-56(%rsp), %r8                  # 8-byte Reload
+	movq	%r8, %rax
+	mulq	%r10
+	addq	%rbp, %rdi
+	adcq	%r13, %rax
+	adcq	%r14, %r15
+	adcq	%rbx, %rsi
+	movzbl	-73(%rsp), %r10d                # 1-byte Folded Reload
+	adcq	%r11, %r10
+	addq	%r12, %rax
+	adcq	%rdx, %r15
+	adcq	%rcx, %rsi
+	adcq	-72(%rsp), %r10                 # 8-byte Folded Reload
+	xorl	%ecx, %ecx
+	cmpq	%rbp, %rdi
+	movq	%rax, %rdx
+	sbbq	%r13, %rdx
+	movq	%r15, %rdx
+	sbbq	%r14, %rdx
+	movq	%rsi, %rdx
+	sbbq	%rbx, %rdx
+	movq	%r10, %rdx
+	sbbq	%r11, %rdx
+	movl	$0, %edx
+	sbbq	%rdx, %rdx
+	movl	$0, %edx
+	sbbq	%rdx, %rdx
+	sbbq	%rcx, %rcx
+	setb	%cl
+	movq	%rax, %rdx
+	subq	-40(%rsp), %rdx                 # 8-byte Folded Reload
+	movq	%r15, %rdi
+	sbbq	%r8, %rdi
+	movq	%rsi, %r8
+	sbbq	%r9, %r8
+	movq	%r10, %r9
+	sbbq	-32(%rsp), %r9                  # 8-byte Folded Reload
+	movzbl	%cl, %ecx
+	sbbq	$0, %rcx
+	testb	$1, %cl
+	cmovneq	%rsi, %r8
 	movq	-8(%rsp), %rcx                  # 8-byte Reload
-	movq	%r10, 16(%rcx)
-	cmovneq	%r8, %r11
-	movq	%r11, 24(%rcx)
-	cmovneq	%rax, %rdi
-	movq	%rdi, (%rcx)
-	cmovneq	%rdx, %r9
-	movq	%r9, 8(%rcx)
+	movq	%r8, 16(%rcx)
+	cmovneq	%r10, %r9
+	movq	%r9, 24(%rcx)
+	cmovneq	%rax, %rdx
+	movq	%rdx, (%rcx)
+	cmovneq	%r15, %rdi
+	movq	%rdi, 8(%rcx)
 	popq	%rbx
 	popq	%r12
 	popq	%r13
@@ -2085,8 +1924,8 @@ mcl_fp_montRed4L:                       # @mcl_fp_montRed4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end24:
-	.size	mcl_fp_montRed4L, .Lfunc_end24-mcl_fp_montRed4L
+.Lfunc_end22:
+	.size	mcl_fp_montRed4L, .Lfunc_end22-mcl_fp_montRed4L
                                         # -- End function
 	.globl	mcl_fp_montRedNF4L              # -- Begin function mcl_fp_montRedNF4L
 	.p2align	4
@@ -2250,8 +2089,8 @@ mcl_fp_montRedNF4L:                     # @mcl_fp_montRedNF4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end25:
-	.size	mcl_fp_montRedNF4L, .Lfunc_end25-mcl_fp_montRedNF4L
+.Lfunc_end23:
+	.size	mcl_fp_montRedNF4L, .Lfunc_end23-mcl_fp_montRedNF4L
                                         # -- End function
 	.globl	mcl_fp_addPre4L                 # -- Begin function mcl_fp_addPre4L
 	.p2align	4
@@ -2281,8 +2120,8 @@ mcl_fp_addPre4L:                        # @mcl_fp_addPre4L
 	setb	%al
 	movzbl	%al, %eax
 	retq
-.Lfunc_end26:
-	.size	mcl_fp_addPre4L, .Lfunc_end26-mcl_fp_addPre4L
+.Lfunc_end24:
+	.size	mcl_fp_addPre4L, .Lfunc_end24-mcl_fp_addPre4L
                                         # -- End function
 	.globl	mcl_fp_subPre4L                 # -- Begin function mcl_fp_subPre4L
 	.p2align	4
@@ -2305,8 +2144,8 @@ mcl_fp_subPre4L:                        # @mcl_fp_subPre4L
 	sbbq	%rax, %rax
 	andl	$1, %eax
 	retq
-.Lfunc_end27:
-	.size	mcl_fp_subPre4L, .Lfunc_end27-mcl_fp_subPre4L
+.Lfunc_end25:
+	.size	mcl_fp_subPre4L, .Lfunc_end25-mcl_fp_subPre4L
                                         # -- End function
 	.globl	mcl_fp_shr1_4L                  # -- Begin function mcl_fp_shr1_4L
 	.p2align	4
@@ -2327,8 +2166,8 @@ mcl_fp_shr1_4L:                         # @mcl_fp_shr1_4L
 	shldq	$63, %rsi, %rax
 	movq	%rax, 8(%rdi)
 	retq
-.Lfunc_end28:
-	.size	mcl_fp_shr1_4L, .Lfunc_end28-mcl_fp_shr1_4L
+.Lfunc_end26:
+	.size	mcl_fp_shr1_4L, .Lfunc_end26-mcl_fp_shr1_4L
                                         # -- End function
 	.globl	mcl_fp_add4L                    # -- Begin function mcl_fp_add4L
 	.p2align	4
@@ -2368,8 +2207,8 @@ mcl_fp_add4L:                           # @mcl_fp_add4L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end29:
-	.size	mcl_fp_add4L, .Lfunc_end29-mcl_fp_add4L
+.Lfunc_end27:
+	.size	mcl_fp_add4L, .Lfunc_end27-mcl_fp_add4L
                                         # -- End function
 	.globl	mcl_fp_addNF4L                  # -- Begin function mcl_fp_addNF4L
 	.p2align	4
@@ -2403,8 +2242,8 @@ mcl_fp_addNF4L:                         # @mcl_fp_addNF4L
 	movq	%r10, 8(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end30:
-	.size	mcl_fp_addNF4L, .Lfunc_end30-mcl_fp_addNF4L
+.Lfunc_end28:
+	.size	mcl_fp_addNF4L, .Lfunc_end28-mcl_fp_addNF4L
                                         # -- End function
 	.globl	mcl_fp_sub4L                    # -- Begin function mcl_fp_sub4L
 	.p2align	4
@@ -2439,8 +2278,8 @@ mcl_fp_sub4L:                           # @mcl_fp_sub4L
 	movq	%rdx, 24(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end31:
-	.size	mcl_fp_sub4L, .Lfunc_end31-mcl_fp_sub4L
+.Lfunc_end29:
+	.size	mcl_fp_sub4L, .Lfunc_end29-mcl_fp_sub4L
                                         # -- End function
 	.globl	mcl_fp_subNF4L                  # -- Begin function mcl_fp_subNF4L
 	.p2align	4
@@ -2475,8 +2314,8 @@ mcl_fp_subNF4L:                         # @mcl_fp_subNF4L
 	movq	%r10, 24(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end32:
-	.size	mcl_fp_subNF4L, .Lfunc_end32-mcl_fp_subNF4L
+.Lfunc_end30:
+	.size	mcl_fp_subNF4L, .Lfunc_end30-mcl_fp_subNF4L
                                         # -- End function
 	.globl	mcl_fpDbl_add4L                 # -- Begin function mcl_fpDbl_add4L
 	.p2align	4
@@ -2528,8 +2367,8 @@ mcl_fpDbl_add4L:                        # @mcl_fpDbl_add4L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end33:
-	.size	mcl_fpDbl_add4L, .Lfunc_end33-mcl_fpDbl_add4L
+.Lfunc_end31:
+	.size	mcl_fpDbl_add4L, .Lfunc_end31-mcl_fpDbl_add4L
                                         # -- End function
 	.globl	mcl_fpDbl_sub4L                 # -- Begin function mcl_fpDbl_sub4L
 	.p2align	4
@@ -2580,8 +2419,8 @@ mcl_fpDbl_sub4L:                        # @mcl_fpDbl_sub4L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end34:
-	.size	mcl_fpDbl_sub4L, .Lfunc_end34-mcl_fpDbl_sub4L
+.Lfunc_end32:
+	.size	mcl_fpDbl_sub4L, .Lfunc_end32-mcl_fpDbl_sub4L
                                         # -- End function
 	.globl	mulPv384x64                     # -- Begin function mulPv384x64
 	.p2align	4
@@ -2635,8 +2474,8 @@ mulPv384x64:                            # @mulPv384x64
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end35:
-	.size	mulPv384x64, .Lfunc_end35-mulPv384x64
+.Lfunc_end33:
+	.size	mulPv384x64, .Lfunc_end33-mulPv384x64
                                         # -- End function
 	.globl	mcl_fp_mont6L                   # -- Begin function mcl_fp_mont6L
 	.p2align	4
@@ -3202,8 +3041,8 @@ mcl_fp_mont6L:                          # @mcl_fp_mont6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end36:
-	.size	mcl_fp_mont6L, .Lfunc_end36-mcl_fp_mont6L
+.Lfunc_end34:
+	.size	mcl_fp_mont6L, .Lfunc_end34-mcl_fp_mont6L
                                         # -- End function
 	.globl	mcl_fp_montNF6L                 # -- Begin function mcl_fp_montNF6L
 	.p2align	4
@@ -3736,8 +3575,8 @@ mcl_fp_montNF6L:                        # @mcl_fp_montNF6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end37:
-	.size	mcl_fp_montNF6L, .Lfunc_end37-mcl_fp_montNF6L
+.Lfunc_end35:
+	.size	mcl_fp_montNF6L, .Lfunc_end35-mcl_fp_montNF6L
                                         # -- End function
 	.globl	mcl_fp_montRed6L                # -- Begin function mcl_fp_montRed6L
 	.p2align	4
@@ -3750,317 +3589,330 @@ mcl_fp_montRed6L:                       # @mcl_fp_montRed6L
 	pushq	%r13
 	pushq	%r12
 	pushq	%rbx
-	pushq	%rax
 	movq	%rdx, %r10
-	movq	%rdi, (%rsp)                    # 8-byte Spill
-	movq	(%rsi), %r15
-	movq	-8(%rdx), %r13
-	movq	%r13, -80(%rsp)                 # 8-byte Spill
-	imulq	%r15, %r13
+	movq	%rsi, %r9
+	movq	%rdi, -8(%rsp)                  # 8-byte Spill
+	movq	(%rsi), %rbx
+	movq	-8(%rdx), %rsi
+	movq	%rsi, -80(%rsp)                 # 8-byte Spill
+	imulq	%rbx, %rsi
 	movq	40(%rdx), %rax
-	movq	%rax, -72(%rsp)                 # 8-byte Spill
-	mulq	%r13
-	movq	%rax, -112(%rsp)                # 8-byte Spill
-	movq	%rdx, -104(%rsp)                # 8-byte Spill
+	movq	%rax, -64(%rsp)                 # 8-byte Spill
+	mulq	%rsi
+	movq	%rax, -128(%rsp)                # 8-byte Spill
+	movq	%rdx, -112(%rsp)                # 8-byte Spill
 	movq	32(%r10), %rbp
 	movq	%rbp, %rax
-	movq	%rbp, -48(%rsp)                 # 8-byte Spill
-	mulq	%r13
-	movq	%rax, -128(%rsp)                # 8-byte Spill
+	movq	%rbp, -24(%rsp)                 # 8-byte Spill
+	mulq	%rsi
+	movq	%rax, %rdi
 	movq	%rdx, -120(%rsp)                # 8-byte Spill
 	movq	24(%r10), %rax
-	movq	%rax, -56(%rsp)                 # 8-byte Spill
-	mulq	%r13
+	movq	%rax, -32(%rsp)                 # 8-byte Spill
+	mulq	%rsi
 	movq	%rax, %r11
 	movq	%rdx, %rcx
-	movq	16(%r10), %r9
-	movq	%r9, %rax
-	movq	%r9, -16(%rsp)                  # 8-byte Spill
-	mulq	%r13
-	movq	%rax, %rbx
+	movq	16(%r10), %rax
+	movq	%rax, -40(%rsp)                 # 8-byte Spill
+	mulq	%rsi
+	movq	%rax, %r14
 	movq	%rdx, %r8
 	movq	(%r10), %r12
 	movq	8(%r10), %rax
-	movq	%rax, -40(%rsp)                 # 8-byte Spill
-	mulq	%r13
+	movq	%rax, -56(%rsp)                 # 8-byte Spill
+	mulq	%rsi
 	movq	%rdx, %r10
-	movq	%rax, %r14
+	movq	%rax, %r15
 	movq	%r12, %rax
-	movq	%r12, -32(%rsp)                 # 8-byte Spill
-	mulq	%r13
-	movq	%rdx, %r13
-	addq	%r14, %r13
-	adcq	%rbx, %r10
+	movq	%r12, -16(%rsp)                 # 8-byte Spill
+	mulq	%rsi
+	movq	%rdx, %rsi
+	addq	%r15, %rsi
+	adcq	%r14, %r10
 	adcq	%r11, %r8
-	adcq	-128(%rsp), %rcx                # 8-byte Folded Reload
+	adcq	%rdi, %rcx
 	movq	-120(%rsp), %rdi                # 8-byte Reload
-	adcq	-112(%rsp), %rdi                # 8-byte Folded Reload
-	movq	-104(%rsp), %rdx                # 8-byte Reload
+	adcq	-128(%rsp), %rdi                # 8-byte Folded Reload
+	movq	-112(%rsp), %rdx                # 8-byte Reload
 	adcq	$0, %rdx
-	addq	%r15, %rax
-	adcq	8(%rsi), %r13
-	adcq	16(%rsi), %r10
-	adcq	24(%rsi), %r8
-	adcq	32(%rsi), %rcx
-	adcq	40(%rsi), %rdi
+	addq	%rbx, %rax
+	movq	%r9, -72(%rsp)                  # 8-byte Spill
+	adcq	8(%r9), %rsi
+	adcq	16(%r9), %r10
+	adcq	24(%r9), %r8
+	adcq	32(%r9), %rcx
+	adcq	40(%r9), %rdi
 	movq	%rdi, -120(%rsp)                # 8-byte Spill
-	adcq	48(%rsi), %rdx
-	movq	%rdx, -104(%rsp)                # 8-byte Spill
-	movq	%rsi, -24(%rsp)                 # 8-byte Spill
-	setb	-128(%rsp)                      # 1-byte Folded Spill
-	movq	-80(%rsp), %r11                 # 8-byte Reload
-	imulq	%r13, %r11
-	movq	%r11, %rax
-	mulq	-72(%rsp)                       # 8-byte Folded Reload
+	adcq	48(%r9), %rdx
 	movq	%rdx, -112(%rsp)                # 8-byte Spill
-	movq	%rax, -88(%rsp)                 # 8-byte Spill
+	setb	-96(%rsp)                       # 1-byte Folded Spill
+	movq	-80(%rsp), %r11                 # 8-byte Reload
+	imulq	%rsi, %r11
+	movq	%r11, %rax
+	mulq	-64(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, -128(%rsp)                # 8-byte Spill
+	movq	%rax, -104(%rsp)                # 8-byte Spill
 	movq	%rbp, %rax
 	mulq	%r11
 	movq	%rdx, %rbp
-	movq	%rax, -96(%rsp)                 # 8-byte Spill
-	movq	-56(%rsp), %rax                 # 8-byte Reload
+	movq	%rax, -88(%rsp)                 # 8-byte Spill
+	movq	-32(%rsp), %r13                 # 8-byte Reload
+	movq	%r13, %rax
 	mulq	%r11
 	movq	%rdx, %rdi
-	movq	%rax, -64(%rsp)                 # 8-byte Spill
-	movq	%r9, %rax
+	movq	%rax, -48(%rsp)                 # 8-byte Spill
+	movq	-40(%rsp), %rax                 # 8-byte Reload
 	mulq	%r11
 	movq	%rdx, %r9
-	movq	%rax, %r15
+	movq	%rax, %rbx
 	movq	%r12, %rax
 	mulq	%r11
-	movq	%rdx, %rbx
+	movq	%rdx, %r14
 	movq	%rax, %r12
-	movq	-40(%rsp), %rax                 # 8-byte Reload
+	movq	-56(%rsp), %rax                 # 8-byte Reload
 	mulq	%r11
 	movq	%rdx, %r11
-	movq	%rax, %r14
-	addq	%rbx, %r14
-	adcq	%r15, %r11
-	adcq	-64(%rsp), %r9                  # 8-byte Folded Reload
-	adcq	-96(%rsp), %rdi                 # 8-byte Folded Reload
-	adcq	-88(%rsp), %rbp                 # 8-byte Folded Reload
-	movzbl	-128(%rsp), %eax                # 1-byte Folded Reload
-	movq	-112(%rsp), %rdx                # 8-byte Reload
-	adcq	%rax, %rdx
-	addq	%r13, %r12
-	adcq	%r10, %r14
-	adcq	%r8, %r11
-	adcq	%rcx, %r9
-	adcq	-120(%rsp), %rdi                # 8-byte Folded Reload
+	movq	%rax, %r15
+	addq	%r14, %r15
+	adcq	%rbx, %r11
+	adcq	-48(%rsp), %r9                  # 8-byte Folded Reload
+	adcq	-88(%rsp), %rdi                 # 8-byte Folded Reload
 	adcq	-104(%rsp), %rbp                # 8-byte Folded Reload
-	adcq	56(%rsi), %rdx
-	movq	%rdx, -112(%rsp)                # 8-byte Spill
-	setb	-104(%rsp)                      # 1-byte Folded Spill
-	movq	-80(%rsp), %rsi                 # 8-byte Reload
-	imulq	%r14, %rsi
-	movq	%rsi, %rax
-	mulq	-72(%rsp)                       # 8-byte Folded Reload
-	movq	%rdx, -120(%rsp)                # 8-byte Spill
-	movq	%rax, -128(%rsp)                # 8-byte Spill
-	movq	-48(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, %rcx
-	movq	%rax, -88(%rsp)                 # 8-byte Spill
-	movq	-56(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, %r8
-	movq	%rax, -96(%rsp)                 # 8-byte Spill
-	movq	-16(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, %r10
-	movq	%rax, %r12
-	movq	-32(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, %r15
-	movq	%rax, %r13
-	movq	-40(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, %rbx
-	movq	%rax, %rsi
-	addq	%r15, %rsi
-	adcq	%r12, %rbx
-	adcq	-96(%rsp), %r10                 # 8-byte Folded Reload
-	adcq	-88(%rsp), %r8                  # 8-byte Folded Reload
-	adcq	-128(%rsp), %rcx                # 8-byte Folded Reload
-	movzbl	-104(%rsp), %eax                # 1-byte Folded Reload
-	movq	-120(%rsp), %rdx                # 8-byte Reload
-	adcq	%rax, %rdx
-	addq	%r14, %r13
-	adcq	%r11, %rsi
-	adcq	%r9, %rbx
-	adcq	%rdi, %r10
-	adcq	%rbp, %r8
-	adcq	-112(%rsp), %rcx                # 8-byte Folded Reload
-	movq	-24(%rsp), %rax                 # 8-byte Reload
-	adcq	64(%rax), %rdx
-	movq	%rdx, -120(%rsp)                # 8-byte Spill
-	setb	-112(%rsp)                      # 1-byte Folded Spill
-	movq	-80(%rsp), %r13                 # 8-byte Reload
-	movq	%r13, %r11
-	imulq	%rsi, %r11
-	movq	%r11, %rax
-	mulq	-72(%rsp)                       # 8-byte Folded Reload
-	movq	%rdx, -128(%rsp)                # 8-byte Spill
-	movq	%rax, -88(%rsp)                 # 8-byte Spill
-	movq	-48(%rsp), %rax                 # 8-byte Reload
-	mulq	%r11
-	movq	%rdx, -104(%rsp)                # 8-byte Spill
-	movq	%rax, -96(%rsp)                 # 8-byte Spill
-	movq	-56(%rsp), %rax                 # 8-byte Reload
-	mulq	%r11
-	movq	%rdx, %rdi
-	movq	%rax, -64(%rsp)                 # 8-byte Spill
-	movq	-16(%rsp), %rax                 # 8-byte Reload
-	mulq	%r11
-	movq	%rdx, %r9
-	movq	%rax, %rbp
-	movq	-32(%rsp), %rax                 # 8-byte Reload
-	mulq	%r11
-	movq	%rdx, %r15
-	movq	%rax, %r12
-	movq	-40(%rsp), %rax                 # 8-byte Reload
-	mulq	%r11
-	movq	%rdx, %r11
-	movq	%rax, %r14
-	addq	%r15, %r14
-	adcq	%rbp, %r11
-	adcq	-64(%rsp), %r9                  # 8-byte Folded Reload
-	adcq	-96(%rsp), %rdi                 # 8-byte Folded Reload
-	movq	-104(%rsp), %r15                # 8-byte Reload
-	adcq	-88(%rsp), %r15                 # 8-byte Folded Reload
-	movzbl	-112(%rsp), %eax                # 1-byte Folded Reload
+	movzbl	-96(%rsp), %eax                 # 1-byte Folded Reload
 	movq	-128(%rsp), %rdx                # 8-byte Reload
 	adcq	%rax, %rdx
 	addq	%rsi, %r12
-	adcq	%rbx, %r14
-	adcq	%r10, %r11
-	adcq	%r8, %r9
-	adcq	%rcx, %rdi
-	adcq	-120(%rsp), %r15                # 8-byte Folded Reload
-	movq	%r15, -104(%rsp)                # 8-byte Spill
-	movq	-24(%rsp), %rax                 # 8-byte Reload
-	adcq	72(%rax), %rdx
+	adcq	%r10, %r15
+	adcq	%r8, %r11
+	adcq	%rcx, %r9
+	adcq	-120(%rsp), %rdi                # 8-byte Folded Reload
+	adcq	-112(%rsp), %rbp                # 8-byte Folded Reload
+	movq	-72(%rsp), %rax                 # 8-byte Reload
+	adcq	56(%rax), %rdx
 	movq	%rdx, -128(%rsp)                # 8-byte Spill
-	setb	-88(%rsp)                       # 1-byte Folded Spill
-	movq	%r13, %rsi
-	imulq	%r14, %rsi
+	setb	-112(%rsp)                      # 1-byte Folded Spill
+	movq	-80(%rsp), %rsi                 # 8-byte Reload
+	imulq	%r15, %rsi
 	movq	%rsi, %rax
-	mulq	-72(%rsp)                       # 8-byte Folded Reload
+	mulq	-64(%rsp)                       # 8-byte Folded Reload
 	movq	%rdx, -120(%rsp)                # 8-byte Spill
 	movq	%rax, -96(%rsp)                 # 8-byte Spill
-	movq	-48(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, -112(%rsp)                # 8-byte Spill
-	movq	%rax, -64(%rsp)                 # 8-byte Spill
-	movq	-56(%rsp), %r8                  # 8-byte Reload
-	movq	%r8, %rax
-	mulq	%rsi
-	movq	%rdx, %r13
-	movq	%rax, -8(%rsp)                  # 8-byte Spill
-	movq	-16(%rsp), %rax                 # 8-byte Reload
-	mulq	%rsi
-	movq	%rdx, %r10
-	movq	%rax, %rbp
-	movq	-32(%rsp), %r15                 # 8-byte Reload
-	movq	%r15, %rax
+	movq	-24(%rsp), %rax                 # 8-byte Reload
 	mulq	%rsi
 	movq	%rdx, %r12
-	movq	%rax, %rcx
+	movq	%rax, -104(%rsp)                # 8-byte Spill
+	movq	%r13, %rax
+	mulq	%rsi
+	movq	%rdx, %r14
+	movq	%rax, -88(%rsp)                 # 8-byte Spill
 	movq	-40(%rsp), %rax                 # 8-byte Reload
+	mulq	%rsi
+	movq	%rdx, %r10
+	movq	%rax, %r8
+	movq	-16(%rsp), %rax                 # 8-byte Reload
+	mulq	%rsi
+	movq	%rdx, %rcx
+	movq	%rax, %r13
+	movq	-56(%rsp), %rax                 # 8-byte Reload
 	mulq	%rsi
 	movq	%rdx, %rbx
 	movq	%rax, %rsi
-	addq	%r12, %rsi
-	adcq	%rbp, %rbx
-	adcq	-8(%rsp), %r10                  # 8-byte Folded Reload
-	adcq	-64(%rsp), %r13                 # 8-byte Folded Reload
-	movq	-112(%rsp), %r12                # 8-byte Reload
+	addq	%rcx, %rsi
+	adcq	%r8, %rbx
+	adcq	-88(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	-104(%rsp), %r14                # 8-byte Folded Reload
 	adcq	-96(%rsp), %r12                 # 8-byte Folded Reload
-	movzbl	-88(%rsp), %eax                 # 1-byte Folded Reload
-	movq	-120(%rsp), %rdx                # 8-byte Reload
-	adcq	%rax, %rdx
-	addq	%r14, %rcx
+	movzbl	-112(%rsp), %eax                # 1-byte Folded Reload
+	movq	-120(%rsp), %rcx                # 8-byte Reload
+	adcq	%rax, %rcx
+	addq	%r15, %r13
 	adcq	%r11, %rsi
 	adcq	%r9, %rbx
 	adcq	%rdi, %r10
-	adcq	-104(%rsp), %r13                # 8-byte Folded Reload
+	adcq	%rbp, %r14
 	adcq	-128(%rsp), %r12                # 8-byte Folded Reload
-	movq	%r12, -112(%rsp)                # 8-byte Spill
+	movq	-72(%rsp), %rax                 # 8-byte Reload
+	adcq	64(%rax), %rcx
+	movq	%rcx, -120(%rsp)                # 8-byte Spill
+	setb	-96(%rsp)                       # 1-byte Folded Spill
+	movq	-80(%rsp), %r11                 # 8-byte Reload
+	imulq	%rsi, %r11
+	movq	%r11, %rax
+	mulq	-64(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, -128(%rsp)                # 8-byte Spill
+	movq	%rax, -104(%rsp)                # 8-byte Spill
 	movq	-24(%rsp), %rax                 # 8-byte Reload
-	adcq	80(%rax), %rdx
-	movq	%rdx, -120(%rsp)                # 8-byte Spill
-	setb	-104(%rsp)                      # 1-byte Folded Spill
-	movq	-80(%rsp), %rcx                 # 8-byte Reload
-	imulq	%rsi, %rcx
-	movq	%rcx, %rax
-	mulq	-72(%rsp)                       # 8-byte Folded Reload
-	movq	%rdx, -80(%rsp)                 # 8-byte Spill
-	movq	%rax, -128(%rsp)                # 8-byte Spill
-	movq	-48(%rsp), %rax                 # 8-byte Reload
-	mulq	%rcx
-	movq	%rdx, %r9
+	mulq	%r11
+	movq	%rdx, -112(%rsp)                # 8-byte Spill
 	movq	%rax, -88(%rsp)                 # 8-byte Spill
-	movq	%r8, %rax
-	mulq	%rcx
-	movq	%rdx, %rdi
-	movq	%rax, -96(%rsp)                 # 8-byte Spill
-	movq	%r15, %rax
-	mulq	%rcx
-	movq	%rdx, %r14
-	movq	%rax, %rbp
-	movq	-16(%rsp), %r12                 # 8-byte Reload
-	movq	%r12, %rax
-	mulq	%rcx
-	movq	%rdx, %r11
-	movq	%rax, %r8
-	movq	-40(%rsp), %r15                 # 8-byte Reload
-	movq	%r15, %rax
-	mulq	%rcx
-	addq	%r14, %rax
-	adcq	%r8, %rdx
-	adcq	-96(%rsp), %r11                 # 8-byte Folded Reload
-	adcq	-88(%rsp), %rdi                 # 8-byte Folded Reload
-	adcq	-128(%rsp), %r9                 # 8-byte Folded Reload
-	movzbl	-104(%rsp), %ecx                # 1-byte Folded Reload
-	adcq	-80(%rsp), %rcx                 # 8-byte Folded Reload
-	addq	%rsi, %rbp
-	adcq	%rbx, %rax
-	adcq	%r10, %rdx
-	adcq	%r13, %r11
-	adcq	-112(%rsp), %rdi                # 8-byte Folded Reload
-	adcq	-120(%rsp), %r9                 # 8-byte Folded Reload
-	movq	-24(%rsp), %rsi                 # 8-byte Reload
-	adcq	88(%rsi), %rcx
-	setb	%r10b
-	movq	%rax, %rsi
-	subq	-32(%rsp), %rsi                 # 8-byte Folded Reload
+	movq	-32(%rsp), %rax                 # 8-byte Reload
+	mulq	%r11
 	movq	%rdx, %r8
-	sbbq	%r15, %r8
-	movq	%r11, %rbx
-	sbbq	%r12, %rbx
+	movq	%rax, -48(%rsp)                 # 8-byte Spill
+	movq	-40(%rsp), %rcx                 # 8-byte Reload
+	movq	%rcx, %rax
+	mulq	%r11
+	movq	%rdx, %r9
+	movq	%rax, %rdi
+	movq	-16(%rsp), %rax                 # 8-byte Reload
+	mulq	%r11
+	movq	%rdx, %r15
+	movq	%rax, %rbp
+	movq	-56(%rsp), %rax                 # 8-byte Reload
+	mulq	%r11
+	movq	%rdx, %r11
+	movq	%rax, %r13
+	addq	%r15, %r13
+	adcq	%rdi, %r11
+	adcq	-48(%rsp), %r9                  # 8-byte Folded Reload
+	adcq	-88(%rsp), %r8                  # 8-byte Folded Reload
+	movq	-112(%rsp), %rdi                # 8-byte Reload
+	adcq	-104(%rsp), %rdi                # 8-byte Folded Reload
+	movzbl	-96(%rsp), %eax                 # 1-byte Folded Reload
+	movq	-128(%rsp), %rdx                # 8-byte Reload
+	adcq	%rax, %rdx
+	addq	%rsi, %rbp
+	adcq	%rbx, %r13
+	adcq	%r10, %r11
+	adcq	%r14, %r9
+	adcq	%r12, %r8
+	adcq	-120(%rsp), %rdi                # 8-byte Folded Reload
+	movq	%rdi, -112(%rsp)                # 8-byte Spill
+	movq	-72(%rsp), %rax                 # 8-byte Reload
+	adcq	72(%rax), %rdx
+	movq	%rdx, -128(%rsp)                # 8-byte Spill
+	setb	-120(%rsp)                      # 1-byte Folded Spill
+	movq	-80(%rsp), %r10                 # 8-byte Reload
+	imulq	%r13, %r10
+	movq	%r10, %rax
+	mulq	-64(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, -96(%rsp)                 # 8-byte Spill
+	movq	%rax, -104(%rsp)                # 8-byte Spill
+	movq	-24(%rsp), %rax                 # 8-byte Reload
+	mulq	%r10
+	movq	%rdx, %r12
+	movq	%rax, -88(%rsp)                 # 8-byte Spill
+	movq	-32(%rsp), %rax                 # 8-byte Reload
+	mulq	%r10
+	movq	%rdx, %rbp
+	movq	%rax, -48(%rsp)                 # 8-byte Spill
+	movq	%rcx, %rax
+	mulq	%r10
+	movq	%rdx, %r15
+	movq	%rax, %rdi
+	movq	-16(%rsp), %rbx                 # 8-byte Reload
+	movq	%rbx, %rax
+	mulq	%r10
+	movq	%rdx, %rsi
+	movq	%rax, %rcx
+	movq	-56(%rsp), %rax                 # 8-byte Reload
+	mulq	%r10
+	movq	%rdx, %r14
+	movq	%rax, %r10
+	addq	%rsi, %r10
+	adcq	%rdi, %r14
+	adcq	-48(%rsp), %r15                 # 8-byte Folded Reload
+	adcq	-88(%rsp), %rbp                 # 8-byte Folded Reload
+	adcq	-104(%rsp), %r12                # 8-byte Folded Reload
+	movzbl	-120(%rsp), %eax                # 1-byte Folded Reload
+	movq	-96(%rsp), %rdx                 # 8-byte Reload
+	adcq	%rax, %rdx
+	addq	%r13, %rcx
+	adcq	%r11, %r10
+	adcq	%r9, %r14
+	adcq	%r8, %r15
+	adcq	-112(%rsp), %rbp                # 8-byte Folded Reload
+	adcq	-128(%rsp), %r12                # 8-byte Folded Reload
+	movq	-72(%rsp), %rax                 # 8-byte Reload
+	adcq	80(%rax), %rdx
+	movq	%rdx, %r13
+	movq	88(%rax), %rax
+	movq	%rax, -72(%rsp)                 # 8-byte Spill
+	setb	-120(%rsp)                      # 1-byte Folded Spill
+	movq	-80(%rsp), %rcx                 # 8-byte Reload
+	imulq	%r10, %rcx
+	movq	%rcx, %rax
+	mulq	-64(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, -80(%rsp)                 # 8-byte Spill
+	movq	%rax, %rsi
+	movq	-24(%rsp), %rax                 # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, -112(%rsp)                # 8-byte Spill
+	movq	%rax, %rdi
+	movq	-32(%rsp), %rax                 # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, -128(%rsp)                # 8-byte Spill
+	movq	%rax, %r8
+	movq	%rbx, %rax
+	mulq	%rcx
+	movq	%rdx, -96(%rsp)                 # 8-byte Spill
+	movq	%rax, %rbx
+	movq	-40(%rsp), %rax                 # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, -104(%rsp)                # 8-byte Spill
+	movq	%rax, %r9
+	movq	-56(%rsp), %rax                 # 8-byte Reload
+	mulq	%rcx
+	movq	%rax, %rcx
+	addq	%r10, %rbx
+	adcq	%r14, %rcx
+	adcq	%r15, %r9
+	adcq	%rbp, %r8
+	adcq	%r12, %rdi
+	adcq	%r13, %rsi
+	movzbl	-120(%rsp), %eax                # 1-byte Folded Reload
+	movq	-72(%rsp), %r11                 # 8-byte Reload
+	adcq	%r11, %rax
+	addq	-96(%rsp), %rcx                 # 8-byte Folded Reload
+	adcq	%rdx, %r9
+	adcq	-104(%rsp), %r8                 # 8-byte Folded Reload
+	adcq	-128(%rsp), %rdi                # 8-byte Folded Reload
+	adcq	-112(%rsp), %rsi                # 8-byte Folded Reload
+	adcq	-80(%rsp), %rax                 # 8-byte Folded Reload
+	xorl	%edx, %edx
+	cmpq	%r10, %rbx
+	movq	%rcx, %r10
+	sbbq	%r14, %r10
+	movq	%r9, %r10
+	sbbq	%r15, %r10
+	movq	%r8, %r10
+	sbbq	%rbp, %r10
+	movq	%rdi, %r10
+	sbbq	%r12, %r10
+	movq	%rsi, %r10
+	sbbq	%r13, %r10
+	movq	%rax, %r10
+	sbbq	%r11, %r10
+	sbbq	%rdx, %rdx
+	setb	%r11b
+	movq	%rcx, %rdx
+	subq	-16(%rsp), %rdx                 # 8-byte Folded Reload
+	movq	%r9, %r10
+	sbbq	-56(%rsp), %r10                 # 8-byte Folded Reload
+	movq	%r8, %rbx
+	sbbq	-40(%rsp), %rbx                 # 8-byte Folded Reload
 	movq	%rdi, %r14
-	sbbq	-56(%rsp), %r14                 # 8-byte Folded Reload
-	movq	%r9, %r15
-	sbbq	-48(%rsp), %r15                 # 8-byte Folded Reload
-	movq	%rcx, %r12
-	sbbq	-72(%rsp), %r12                 # 8-byte Folded Reload
-	movzbl	%r10b, %r10d
-	sbbq	$0, %r10
-	testb	$1, %r10b
-	cmovneq	%r9, %r15
-	movq	(%rsp), %r9                     # 8-byte Reload
-	movq	%r15, 32(%r9)
-	cmovneq	%rcx, %r12
-	movq	%r12, 40(%r9)
-	cmovneq	%r11, %rbx
-	movq	%rbx, 16(%r9)
+	sbbq	-32(%rsp), %r14                 # 8-byte Folded Reload
+	movq	%rsi, %r15
+	sbbq	-24(%rsp), %r15                 # 8-byte Folded Reload
+	movq	%rax, %r12
+	sbbq	-64(%rsp), %r12                 # 8-byte Folded Reload
+	movzbl	%r11b, %r11d
+	sbbq	$0, %r11
+	testb	$1, %r11b
+	cmovneq	%rsi, %r15
+	movq	-8(%rsp), %rsi                  # 8-byte Reload
+	movq	%r15, 32(%rsi)
+	cmovneq	%rax, %r12
+	movq	%r12, 40(%rsi)
+	cmovneq	%r8, %rbx
+	movq	%rbx, 16(%rsi)
 	cmovneq	%rdi, %r14
-	movq	%r14, 24(%r9)
-	cmovneq	%rax, %rsi
-	movq	%rsi, (%r9)
-	cmovneq	%rdx, %r8
-	movq	%r8, 8(%r9)
-	addq	$8, %rsp
+	movq	%r14, 24(%rsi)
+	cmovneq	%rcx, %rdx
+	movq	%rdx, (%rsi)
+	cmovneq	%r9, %r10
+	movq	%r10, 8(%rsi)
 	popq	%rbx
 	popq	%r12
 	popq	%r13
@@ -4068,8 +3920,8 @@ mcl_fp_montRed6L:                       # @mcl_fp_montRed6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end38:
-	.size	mcl_fp_montRed6L, .Lfunc_end38-mcl_fp_montRed6L
+.Lfunc_end36:
+	.size	mcl_fp_montRed6L, .Lfunc_end36-mcl_fp_montRed6L
                                         # -- End function
 	.globl	mcl_fp_montRedNF6L              # -- Begin function mcl_fp_montRedNF6L
 	.p2align	4
@@ -4398,8 +4250,8 @@ mcl_fp_montRedNF6L:                     # @mcl_fp_montRedNF6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end39:
-	.size	mcl_fp_montRedNF6L, .Lfunc_end39-mcl_fp_montRedNF6L
+.Lfunc_end37:
+	.size	mcl_fp_montRedNF6L, .Lfunc_end37-mcl_fp_montRedNF6L
                                         # -- End function
 	.globl	mcl_fp_addPre6L                 # -- Begin function mcl_fp_addPre6L
 	.p2align	4
@@ -4451,8 +4303,8 @@ mcl_fp_addPre6L:                        # @mcl_fp_addPre6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end40:
-	.size	mcl_fp_addPre6L, .Lfunc_end40-mcl_fp_addPre6L
+.Lfunc_end38:
+	.size	mcl_fp_addPre6L, .Lfunc_end38-mcl_fp_addPre6L
                                         # -- End function
 	.globl	mcl_fp_subPre6L                 # -- Begin function mcl_fp_subPre6L
 	.p2align	4
@@ -4481,8 +4333,8 @@ mcl_fp_subPre6L:                        # @mcl_fp_subPre6L
 	sbbq	%rax, %rax
 	andl	$1, %eax
 	retq
-.Lfunc_end41:
-	.size	mcl_fp_subPre6L, .Lfunc_end41-mcl_fp_subPre6L
+.Lfunc_end39:
+	.size	mcl_fp_subPre6L, .Lfunc_end39-mcl_fp_subPre6L
                                         # -- End function
 	.globl	mcl_fp_shr1_6L                  # -- Begin function mcl_fp_shr1_6L
 	.p2align	4
@@ -4509,8 +4361,8 @@ mcl_fp_shr1_6L:                         # @mcl_fp_shr1_6L
 	shldq	$63, %r9, %rsi
 	movq	%rsi, 8(%rdi)
 	retq
-.Lfunc_end42:
-	.size	mcl_fp_shr1_6L, .Lfunc_end42-mcl_fp_shr1_6L
+.Lfunc_end40:
+	.size	mcl_fp_shr1_6L, .Lfunc_end40-mcl_fp_shr1_6L
                                         # -- End function
 	.globl	mcl_fp_add6L                    # -- Begin function mcl_fp_add6L
 	.p2align	4
@@ -4570,8 +4422,8 @@ mcl_fp_add6L:                           # @mcl_fp_add6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end43:
-	.size	mcl_fp_add6L, .Lfunc_end43-mcl_fp_add6L
+.Lfunc_end41:
+	.size	mcl_fp_add6L, .Lfunc_end41-mcl_fp_add6L
                                         # -- End function
 	.globl	mcl_fp_addNF6L                  # -- Begin function mcl_fp_addNF6L
 	.p2align	4
@@ -4627,8 +4479,8 @@ mcl_fp_addNF6L:                         # @mcl_fp_addNF6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end44:
-	.size	mcl_fp_addNF6L, .Lfunc_end44-mcl_fp_addNF6L
+.Lfunc_end42:
+	.size	mcl_fp_addNF6L, .Lfunc_end42-mcl_fp_addNF6L
                                         # -- End function
 	.globl	mcl_fp_sub6L                    # -- Begin function mcl_fp_sub6L
 	.p2align	4
@@ -4683,8 +4535,8 @@ mcl_fp_sub6L:                           # @mcl_fp_sub6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end45:
-	.size	mcl_fp_sub6L, .Lfunc_end45-mcl_fp_sub6L
+.Lfunc_end43:
+	.size	mcl_fp_sub6L, .Lfunc_end43-mcl_fp_sub6L
                                         # -- End function
 	.globl	mcl_fp_subNF6L                  # -- Begin function mcl_fp_subNF6L
 	.p2align	4
@@ -4740,8 +4592,8 @@ mcl_fp_subNF6L:                         # @mcl_fp_subNF6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end46:
-	.size	mcl_fp_subNF6L, .Lfunc_end46-mcl_fp_subNF6L
+.Lfunc_end44:
+	.size	mcl_fp_subNF6L, .Lfunc_end44-mcl_fp_subNF6L
                                         # -- End function
 	.globl	mcl_fpDbl_add6L                 # -- Begin function mcl_fpDbl_add6L
 	.p2align	4
@@ -4819,8 +4671,8 @@ mcl_fpDbl_add6L:                        # @mcl_fpDbl_add6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end47:
-	.size	mcl_fpDbl_add6L, .Lfunc_end47-mcl_fpDbl_add6L
+.Lfunc_end45:
+	.size	mcl_fpDbl_add6L, .Lfunc_end45-mcl_fpDbl_add6L
                                         # -- End function
 	.globl	mcl_fpDbl_sub6L                 # -- Begin function mcl_fpDbl_sub6L
 	.p2align	4
@@ -4901,8 +4753,8 @@ mcl_fpDbl_sub6L:                        # @mcl_fpDbl_sub6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end48:
-	.size	mcl_fpDbl_sub6L, .Lfunc_end48-mcl_fpDbl_sub6L
+.Lfunc_end46:
+	.size	mcl_fpDbl_sub6L, .Lfunc_end46-mcl_fpDbl_sub6L
                                         # -- End function
 	.globl	mulPv512x64                     # -- Begin function mulPv512x64
 	.p2align	4
@@ -4970,8 +4822,8 @@ mulPv512x64:                            # @mulPv512x64
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end49:
-	.size	mulPv512x64, .Lfunc_end49-mulPv512x64
+.Lfunc_end47:
+	.size	mulPv512x64, .Lfunc_end47-mulPv512x64
                                         # -- End function
 	.globl	mcl_fp_mont8L                   # -- Begin function mcl_fp_mont8L
 	.p2align	4
@@ -5414,8 +5266,8 @@ mcl_fp_mont8L:                          # @mcl_fp_mont8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end50:
-	.size	mcl_fp_mont8L, .Lfunc_end50-mcl_fp_mont8L
+.Lfunc_end48:
+	.size	mcl_fp_mont8L, .Lfunc_end48-mcl_fp_mont8L
                                         # -- End function
 	.globl	mcl_fp_montNF8L                 # -- Begin function mcl_fp_montNF8L
 	.p2align	4
@@ -5808,8 +5660,8 @@ mcl_fp_montNF8L:                        # @mcl_fp_montNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end51:
-	.size	mcl_fp_montNF8L, .Lfunc_end51-mcl_fp_montNF8L
+.Lfunc_end49:
+	.size	mcl_fp_montNF8L, .Lfunc_end49-mcl_fp_montNF8L
                                         # -- End function
 	.globl	mcl_fp_montRed8L                # -- Begin function mcl_fp_montRed8L
 	.p2align	4
@@ -5822,297 +5674,350 @@ mcl_fp_montRed8L:                       # @mcl_fp_montRed8L
 	pushq	%r13
 	pushq	%r12
 	pushq	%rbx
-	subq	$792, %rsp                      # imm = 0x318
-	movq	%rdi, 136(%rsp)                 # 8-byte Spill
+	subq	$808, %rsp                      # imm = 0x328
+	movq	%rdi, 152(%rsp)                 # 8-byte Spill
 	movq	56(%rdx), %rax
-	movq	%rax, 128(%rsp)                 # 8-byte Spill
+	movq	%rax, 144(%rsp)                 # 8-byte Spill
 	movq	48(%rdx), %rax
-	movq	%rax, 120(%rsp)                 # 8-byte Spill
+	movq	%rax, 136(%rsp)                 # 8-byte Spill
 	movq	40(%rdx), %rax
-	movq	%rax, 112(%rsp)                 # 8-byte Spill
+	movq	%rax, 128(%rsp)                 # 8-byte Spill
 	movq	32(%rdx), %rax
-	movq	%rax, 104(%rsp)                 # 8-byte Spill
+	movq	%rax, 120(%rsp)                 # 8-byte Spill
 	movq	24(%rdx), %rax
-	movq	%rax, 96(%rsp)                  # 8-byte Spill
+	movq	%rax, 112(%rsp)                 # 8-byte Spill
 	movq	16(%rdx), %rax
-	movq	%rax, 88(%rsp)                  # 8-byte Spill
+	movq	%rax, 104(%rsp)                 # 8-byte Spill
 	movq	8(%rdx), %rax
-	movq	%rax, 80(%rsp)                  # 8-byte Spill
-	movq	%rsi, 32(%rsp)                  # 8-byte Spill
-	movq	56(%rsi), %rbx
+	movq	%rax, 96(%rsp)                  # 8-byte Spill
+	movq	%rsi, 48(%rsp)                  # 8-byte Spill
+	movq	56(%rsi), %rax
+	movq	%rax, 8(%rsp)                   # 8-byte Spill
 	movq	48(%rsi), %rax
 	movq	%rax, 24(%rsp)                  # 8-byte Spill
 	movq	40(%rsi), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	movq	32(%rsi), %r15
-	movq	24(%rsi), %rbp
-	movq	16(%rsi), %r13
-	movq	(%rsi), %r14
-	movq	8(%rsi), %r12
+	movq	%rax, 16(%rsp)                  # 8-byte Spill
+	movq	32(%rsi), %rbx
+	movq	24(%rsi), %r13
+	movq	16(%rsi), %rbp
+	movq	(%rsi), %r12
+	movq	8(%rsi), %r15
 	movq	-8(%rdx), %rcx
-	movq	%rcx, 48(%rsp)                  # 8-byte Spill
 	movq	(%rdx), %rax
 	movq	%rdx, %rsi
 	movq	%rdx, 56(%rsp)                  # 8-byte Spill
-	movq	%rax, 72(%rsp)                  # 8-byte Spill
+	movq	%rax, 88(%rsp)                  # 8-byte Spill
 	movq	%rcx, %rdx
-	imulq	%r14, %rdx
-	leaq	704(%rsp), %rdi
-	callq	mulPv512x64@PLT
-	addq	704(%rsp), %r14
-	adcq	712(%rsp), %r12
-	adcq	720(%rsp), %r13
-	adcq	728(%rsp), %rbp
-	adcq	736(%rsp), %r15
-	movq	(%rsp), %rax                    # 8-byte Reload
-	adcq	744(%rsp), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	movq	24(%rsp), %rax                  # 8-byte Reload
-	adcq	752(%rsp), %rax
-	movq	%rax, 24(%rsp)                  # 8-byte Spill
-	adcq	760(%rsp), %rbx
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	movq	64(%rax), %rax
-	adcq	768(%rsp), %rax
-	movq	%rax, 8(%rsp)                   # 8-byte Spill
-	setb	%r14b
-	movq	48(%rsp), %rdx                  # 8-byte Reload
+	movq	%rcx, %r14
+	movq	%rcx, 64(%rsp)                  # 8-byte Spill
 	imulq	%r12, %rdx
-	leaq	624(%rsp), %rdi
-	movq	56(%rsp), %rsi                  # 8-byte Reload
+	leaq	720(%rsp), %rdi
 	callq	mulPv512x64@PLT
-	movq	688(%rsp), %rax
-	addb	$255, %r14b
-	adcq	$0, %rax
-	movq	%rax, %rcx
-	addq	624(%rsp), %r12
-	adcq	632(%rsp), %r13
-	adcq	640(%rsp), %rbp
-	adcq	648(%rsp), %r15
-	movq	(%rsp), %rax                    # 8-byte Reload
-	adcq	656(%rsp), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	movq	24(%rsp), %rax                  # 8-byte Reload
-	adcq	664(%rsp), %rax
-	movq	%rax, 24(%rsp)                  # 8-byte Spill
-	adcq	672(%rsp), %rbx
-	movq	%rbx, 40(%rsp)                  # 8-byte Spill
-	movq	8(%rsp), %rax                   # 8-byte Reload
-	adcq	680(%rsp), %rax
-	movq	%rax, 8(%rsp)                   # 8-byte Spill
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	adcq	72(%rax), %rcx
-	movq	%rcx, %rbx
-	setb	%r14b
-	movq	48(%rsp), %rdx                  # 8-byte Reload
-	imulq	%r13, %rdx
-	leaq	544(%rsp), %rdi
-	movq	56(%rsp), %r12                  # 8-byte Reload
-	movq	%r12, %rsi
-	callq	mulPv512x64@PLT
-	movq	608(%rsp), %rax
-	addb	$255, %r14b
-	adcq	$0, %rax
-	movq	%rax, %rcx
-	addq	544(%rsp), %r13
-	adcq	552(%rsp), %rbp
-	adcq	560(%rsp), %r15
-	movq	(%rsp), %rax                    # 8-byte Reload
-	adcq	568(%rsp), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	movq	24(%rsp), %rax                  # 8-byte Reload
-	adcq	576(%rsp), %rax
-	movq	%rax, 24(%rsp)                  # 8-byte Spill
-	movq	40(%rsp), %rax                  # 8-byte Reload
-	adcq	584(%rsp), %rax
-	movq	%rax, 40(%rsp)                  # 8-byte Spill
-	movq	8(%rsp), %rax                   # 8-byte Reload
-	adcq	592(%rsp), %rax
-	movq	%rax, 8(%rsp)                   # 8-byte Spill
-	adcq	600(%rsp), %rbx
-	movq	%rbx, 16(%rsp)                  # 8-byte Spill
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	movq	%rcx, %r13
-	adcq	80(%rax), %r13
-	setb	%r14b
-	movq	48(%rsp), %rdx                  # 8-byte Reload
-	imulq	%rbp, %rdx
-	leaq	464(%rsp), %rdi
-	movq	%r12, %rsi
-	callq	mulPv512x64@PLT
-	movq	528(%rsp), %rax
-	addb	$255, %r14b
-	adcq	$0, %rax
-	movq	%rax, %rcx
-	addq	464(%rsp), %rbp
-	adcq	472(%rsp), %r15
-	movq	(%rsp), %rax                    # 8-byte Reload
-	adcq	480(%rsp), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	movq	24(%rsp), %rbx                  # 8-byte Reload
-	adcq	488(%rsp), %rbx
-	movq	40(%rsp), %rax                  # 8-byte Reload
-	adcq	496(%rsp), %rax
-	movq	%rax, 40(%rsp)                  # 8-byte Spill
-	movq	8(%rsp), %rax                   # 8-byte Reload
-	adcq	504(%rsp), %rax
-	movq	%rax, 8(%rsp)                   # 8-byte Spill
+	addq	720(%rsp), %r12
+	adcq	728(%rsp), %r15
+	adcq	736(%rsp), %rbp
+	adcq	744(%rsp), %r13
+	adcq	752(%rsp), %rbx
 	movq	16(%rsp), %rax                  # 8-byte Reload
-	adcq	512(%rsp), %rax
+	adcq	760(%rsp), %rax
 	movq	%rax, 16(%rsp)                  # 8-byte Spill
-	adcq	520(%rsp), %r13
-	movq	%r13, 64(%rsp)                  # 8-byte Spill
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	movq	%rcx, %r13
-	adcq	88(%rax), %r13
-	setb	%r14b
-	movq	48(%rsp), %r12                  # 8-byte Reload
-	movq	%r12, %rdx
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	adcq	768(%rsp), %rax
+	movq	%rax, 24(%rsp)                  # 8-byte Spill
+	movq	8(%rsp), %rax                   # 8-byte Reload
+	adcq	776(%rsp), %rax
+	movq	%rax, 8(%rsp)                   # 8-byte Spill
+	movq	48(%rsp), %rax                  # 8-byte Reload
+	movq	64(%rax), %rax
+	adcq	784(%rsp), %rax
+	movq	%rax, 32(%rsp)                  # 8-byte Spill
+	setb	%r12b
+	movq	%r14, %rdx
 	imulq	%r15, %rdx
-	leaq	384(%rsp), %rdi
+	leaq	640(%rsp), %rdi
 	movq	56(%rsp), %rsi                  # 8-byte Reload
 	callq	mulPv512x64@PLT
-	movq	448(%rsp), %rbp
-	addb	$255, %r14b
-	adcq	$0, %rbp
-	addq	384(%rsp), %r15
-	movq	(%rsp), %rcx                    # 8-byte Reload
-	adcq	392(%rsp), %rcx
-	adcq	400(%rsp), %rbx
-	movq	%rbx, 24(%rsp)                  # 8-byte Spill
-	movq	40(%rsp), %r15                  # 8-byte Reload
-	adcq	408(%rsp), %r15
-	movq	8(%rsp), %rbx                   # 8-byte Reload
-	adcq	416(%rsp), %rbx
-	movq	16(%rsp), %rax                  # 8-byte Reload
-	adcq	424(%rsp), %rax
-	movq	%rax, 16(%rsp)                  # 8-byte Spill
-	movq	64(%rsp), %rax                  # 8-byte Reload
-	adcq	432(%rsp), %rax
-	movq	%rax, 64(%rsp)                  # 8-byte Spill
-	adcq	440(%rsp), %r13
-	movq	%r13, (%rsp)                    # 8-byte Spill
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	adcq	96(%rax), %rbp
-	setb	%r14b
-	movq	%r12, %rdx
-	imulq	%rcx, %rdx
-	movq	%rcx, %r12
-	leaq	304(%rsp), %rdi
-	movq	56(%rsp), %rsi                  # 8-byte Reload
-	callq	mulPv512x64@PLT
-	movq	368(%rsp), %r13
-	addb	$255, %r14b
-	adcq	$0, %r13
-	addq	304(%rsp), %r12
+	movq	704(%rsp), %rax
+	addb	$255, %r12b
+	adcq	$0, %rax
+	addq	640(%rsp), %r15
+	adcq	648(%rsp), %rbp
+	adcq	656(%rsp), %r13
+	adcq	664(%rsp), %rbx
+	movq	16(%rsp), %r14                  # 8-byte Reload
+	adcq	672(%rsp), %r14
 	movq	24(%rsp), %rcx                  # 8-byte Reload
-	adcq	312(%rsp), %rcx
-	adcq	320(%rsp), %r15
-	movq	%r15, 40(%rsp)                  # 8-byte Spill
-	adcq	328(%rsp), %rbx
-	movq	%rbx, 8(%rsp)                   # 8-byte Spill
-	movq	16(%rsp), %r12                  # 8-byte Reload
-	adcq	336(%rsp), %r12
-	movq	64(%rsp), %rax                  # 8-byte Reload
-	adcq	344(%rsp), %rax
-	movq	%rax, 64(%rsp)                  # 8-byte Spill
-	movq	(%rsp), %rax                    # 8-byte Reload
-	adcq	352(%rsp), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	adcq	360(%rsp), %rbp
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	adcq	104(%rax), %r13
-	setb	%r14b
-	movq	48(%rsp), %rdx                  # 8-byte Reload
-	imulq	%rcx, %rdx
-	movq	%rcx, %r15
-	leaq	224(%rsp), %rdi
-	movq	56(%rsp), %rsi                  # 8-byte Reload
-	callq	mulPv512x64@PLT
-	movq	288(%rsp), %rbx
-	addb	$255, %r14b
-	adcq	$0, %rbx
-	addq	224(%rsp), %r15
-	movq	40(%rsp), %r15                  # 8-byte Reload
-	adcq	232(%rsp), %r15
-	movq	8(%rsp), %rax                   # 8-byte Reload
-	adcq	240(%rsp), %rax
-	movq	%rax, 8(%rsp)                   # 8-byte Spill
-	adcq	248(%rsp), %r12
-	movq	%r12, 16(%rsp)                  # 8-byte Spill
-	movq	64(%rsp), %r12                  # 8-byte Reload
-	adcq	256(%rsp), %r12
-	movq	(%rsp), %rax                    # 8-byte Reload
-	adcq	264(%rsp), %rax
-	movq	%rax, (%rsp)                    # 8-byte Spill
-	adcq	272(%rsp), %rbp
-	adcq	280(%rsp), %r13
-	movq	32(%rsp), %rax                  # 8-byte Reload
-	adcq	112(%rax), %rbx
-	setb	%r14b
-	movq	48(%rsp), %rdx                  # 8-byte Reload
-	imulq	%r15, %rdx
-	leaq	144(%rsp), %rdi
-	movq	56(%rsp), %rsi                  # 8-byte Reload
-	callq	mulPv512x64@PLT
-	addb	$255, %r14b
-	movq	208(%rsp), %rax
-	adcq	$0, %rax
-	addq	144(%rsp), %r15
-	movq	8(%rsp), %rdx                   # 8-byte Reload
-	adcq	152(%rsp), %rdx
-	movq	%rdx, 8(%rsp)                   # 8-byte Spill
-	movq	16(%rsp), %rsi                  # 8-byte Reload
-	adcq	160(%rsp), %rsi
-	movq	%rsi, 16(%rsp)                  # 8-byte Spill
-	adcq	168(%rsp), %r12
-	movq	(%rsp), %r10                    # 8-byte Reload
-	adcq	176(%rsp), %r10
-	adcq	184(%rsp), %rbp
-	adcq	192(%rsp), %r13
-	adcq	200(%rsp), %rbx
+	adcq	680(%rsp), %rcx
+	movq	%rcx, 24(%rsp)                  # 8-byte Spill
+	movq	8(%rsp), %rcx                   # 8-byte Reload
+	adcq	688(%rsp), %rcx
+	movq	%rcx, 8(%rsp)                   # 8-byte Spill
 	movq	32(%rsp), %rcx                  # 8-byte Reload
-	adcq	120(%rcx), %rax
-	setb	%r8b
-	movq	%rdx, %rcx
-	subq	72(%rsp), %rcx                  # 8-byte Folded Reload
-	movq	%rsi, %rdx
-	sbbq	80(%rsp), %rdx                  # 8-byte Folded Reload
-	movq	%r12, %rdi
-	movq	%r12, %r15
-	sbbq	88(%rsp), %rdi                  # 8-byte Folded Reload
-	movq	%r10, %rsi
-	movq	%r10, %r12
-	sbbq	96(%rsp), %rsi                  # 8-byte Folded Reload
-	movq	%rbp, %r9
-	sbbq	104(%rsp), %r9                  # 8-byte Folded Reload
-	movq	%r13, %r10
-	sbbq	112(%rsp), %r10                 # 8-byte Folded Reload
-	movq	%rbx, %r11
-	sbbq	120(%rsp), %r11                 # 8-byte Folded Reload
+	adcq	696(%rsp), %rcx
+	movq	%rcx, 32(%rsp)                  # 8-byte Spill
+	movq	48(%rsp), %r12                  # 8-byte Reload
+	adcq	72(%r12), %rax
+	movq	%rax, 40(%rsp)                  # 8-byte Spill
+	setb	%r15b
+	movq	64(%rsp), %rdx                  # 8-byte Reload
+	imulq	%rbp, %rdx
+	leaq	560(%rsp), %rdi
+	movq	56(%rsp), %rsi                  # 8-byte Reload
+	callq	mulPv512x64@PLT
+	movq	624(%rsp), %rax
+	addb	$255, %r15b
+	adcq	$0, %rax
+	addq	560(%rsp), %rbp
+	adcq	568(%rsp), %r13
+	adcq	576(%rsp), %rbx
+	adcq	584(%rsp), %r14
+	movq	%r14, 16(%rsp)                  # 8-byte Spill
+	movq	24(%rsp), %r14                  # 8-byte Reload
+	adcq	592(%rsp), %r14
+	movq	8(%rsp), %rcx                   # 8-byte Reload
+	adcq	600(%rsp), %rcx
+	movq	%rcx, 8(%rsp)                   # 8-byte Spill
+	movq	32(%rsp), %rcx                  # 8-byte Reload
+	adcq	608(%rsp), %rcx
+	movq	%rcx, 32(%rsp)                  # 8-byte Spill
+	movq	40(%rsp), %rcx                  # 8-byte Reload
+	adcq	616(%rsp), %rcx
+	movq	%rcx, 40(%rsp)                  # 8-byte Spill
+	adcq	80(%r12), %rax
+	movq	%rax, 72(%rsp)                  # 8-byte Spill
+	setb	%r15b
+	movq	64(%rsp), %rdx                  # 8-byte Reload
+	imulq	%r13, %rdx
+	leaq	480(%rsp), %rdi
+	movq	56(%rsp), %rbp                  # 8-byte Reload
+	movq	%rbp, %rsi
+	callq	mulPv512x64@PLT
+	movq	544(%rsp), %rax
+	addb	$255, %r15b
+	adcq	$0, %rax
+	addq	480(%rsp), %r13
+	adcq	488(%rsp), %rbx
+	movq	16(%rsp), %rcx                  # 8-byte Reload
+	adcq	496(%rsp), %rcx
+	movq	%rcx, 16(%rsp)                  # 8-byte Spill
+	adcq	504(%rsp), %r14
+	movq	8(%rsp), %r12                   # 8-byte Reload
+	adcq	512(%rsp), %r12
+	movq	32(%rsp), %rcx                  # 8-byte Reload
+	adcq	520(%rsp), %rcx
+	movq	%rcx, 32(%rsp)                  # 8-byte Spill
+	movq	40(%rsp), %r13                  # 8-byte Reload
+	adcq	528(%rsp), %r13
+	movq	72(%rsp), %rcx                  # 8-byte Reload
+	adcq	536(%rsp), %rcx
+	movq	%rcx, 72(%rsp)                  # 8-byte Spill
+	movq	48(%rsp), %rcx                  # 8-byte Reload
+	adcq	88(%rcx), %rax
+	movq	%rax, 80(%rsp)                  # 8-byte Spill
+	setb	%r15b
+	movq	64(%rsp), %rdx                  # 8-byte Reload
+	imulq	%rbx, %rdx
+	leaq	400(%rsp), %rdi
+	movq	%rbp, %rsi
+	callq	mulPv512x64@PLT
+	movq	464(%rsp), %rax
+	addb	$255, %r15b
+	adcq	$0, %rax
+	movq	%rax, %rcx
+	addq	400(%rsp), %rbx
+	movq	16(%rsp), %rax                  # 8-byte Reload
+	adcq	408(%rsp), %rax
+	adcq	416(%rsp), %r14
+	movq	%r14, 24(%rsp)                  # 8-byte Spill
+	adcq	424(%rsp), %r12
+	movq	%r12, 8(%rsp)                   # 8-byte Spill
+	movq	32(%rsp), %r12                  # 8-byte Reload
+	adcq	432(%rsp), %r12
+	adcq	440(%rsp), %r13
+	movq	%r13, 40(%rsp)                  # 8-byte Spill
+	movq	72(%rsp), %rbx                  # 8-byte Reload
+	adcq	448(%rsp), %rbx
+	movq	80(%rsp), %rdx                  # 8-byte Reload
+	adcq	456(%rsp), %rdx
+	movq	%rdx, 80(%rsp)                  # 8-byte Spill
+	movq	48(%rsp), %rdx                  # 8-byte Reload
+	adcq	96(%rdx), %rcx
+	movq	%rcx, 16(%rsp)                  # 8-byte Spill
+	setb	%r15b
+	movq	64(%rsp), %rbp                  # 8-byte Reload
+	movq	%rbp, %rdx
+	imulq	%rax, %rdx
 	movq	%rax, %r14
-	sbbq	128(%rsp), %r14                 # 8-byte Folded Reload
-	movzbl	%r8b, %r8d
-	sbbq	$0, %r8
-	testb	$1, %r8b
-	cmovneq	%rbx, %r11
-	movq	136(%rsp), %r8                  # 8-byte Reload
-	movq	%r11, 48(%r8)
-	cmovneq	%rax, %r14
-	movq	%r14, 56(%r8)
-	cmovneq	%rbp, %r9
-	movq	%r9, 32(%r8)
-	cmovneq	%r13, %r10
-	movq	%r10, 40(%r8)
-	cmovneq	%r15, %rdi
-	movq	%rdi, 16(%r8)
-	cmovneq	%r12, %rsi
-	movq	%rsi, 24(%r8)
-	cmovneq	8(%rsp), %rcx                   # 8-byte Folded Reload
-	movq	%rcx, (%r8)
-	cmovneq	16(%rsp), %rdx                  # 8-byte Folded Reload
-	movq	%rdx, 8(%r8)
-	addq	$792, %rsp                      # imm = 0x318
+	leaq	320(%rsp), %rdi
+	movq	56(%rsp), %r13                  # 8-byte Reload
+	movq	%r13, %rsi
+	callq	mulPv512x64@PLT
+	movq	384(%rsp), %rax
+	addb	$255, %r15b
+	adcq	$0, %rax
+	movq	%rax, %rdx
+	addq	320(%rsp), %r14
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	adcq	328(%rsp), %rax
+	movq	8(%rsp), %rcx                   # 8-byte Reload
+	adcq	336(%rsp), %rcx
+	movq	%rcx, 8(%rsp)                   # 8-byte Spill
+	adcq	344(%rsp), %r12
+	movq	%r12, 32(%rsp)                  # 8-byte Spill
+	movq	40(%rsp), %rcx                  # 8-byte Reload
+	adcq	352(%rsp), %rcx
+	movq	%rcx, 40(%rsp)                  # 8-byte Spill
+	adcq	360(%rsp), %rbx
+	movq	80(%rsp), %rcx                  # 8-byte Reload
+	adcq	368(%rsp), %rcx
+	movq	%rcx, 80(%rsp)                  # 8-byte Spill
+	movq	16(%rsp), %r14                  # 8-byte Reload
+	adcq	376(%rsp), %r14
+	movq	48(%rsp), %rcx                  # 8-byte Reload
+	adcq	104(%rcx), %rdx
+	movq	%rdx, 24(%rsp)                  # 8-byte Spill
+	setb	%r15b
+	movq	%rbp, %rdx
+	imulq	%rax, %rdx
+	movq	%rax, %r12
+	leaq	240(%rsp), %rdi
+	movq	%r13, %rsi
+	callq	mulPv512x64@PLT
+	movq	304(%rsp), %r13
+	addb	$255, %r15b
+	adcq	$0, %r13
+	addq	240(%rsp), %r12
+	movq	8(%rsp), %rax                   # 8-byte Reload
+	adcq	248(%rsp), %rax
+	movq	32(%rsp), %rcx                  # 8-byte Reload
+	adcq	256(%rsp), %rcx
+	movq	%rcx, 32(%rsp)                  # 8-byte Spill
+	movq	40(%rsp), %rbp                  # 8-byte Reload
+	adcq	264(%rsp), %rbp
+	adcq	272(%rsp), %rbx
+	movq	%rbx, 72(%rsp)                  # 8-byte Spill
+	movq	80(%rsp), %rbx                  # 8-byte Reload
+	adcq	280(%rsp), %rbx
+	adcq	288(%rsp), %r14
+	movq	%r14, 16(%rsp)                  # 8-byte Spill
+	movq	24(%rsp), %rcx                  # 8-byte Reload
+	adcq	296(%rsp), %rcx
+	movq	%rcx, 24(%rsp)                  # 8-byte Spill
+	movq	48(%rsp), %r12                  # 8-byte Reload
+	adcq	112(%r12), %r13
+	setb	%r15b
+	movq	64(%rsp), %rdx                  # 8-byte Reload
+	imulq	%rax, %rdx
+	movq	%rax, %r14
+	movq	%rax, 8(%rsp)                   # 8-byte Spill
+	leaq	160(%rsp), %rdi
+	movq	56(%rsp), %rsi                  # 8-byte Reload
+	callq	mulPv512x64@PLT
+	addb	$255, %r15b
+	movq	224(%rsp), %rax
+	adcq	$0, %rax
+	movq	120(%r12), %r11
+	movq	160(%rsp), %r12
+	addq	%r14, %r12
+	movq	168(%rsp), %rcx
+	movq	32(%rsp), %rsi                  # 8-byte Reload
+	adcq	%rsi, %rcx
+	movq	%rcx, %r14
+	movq	%rcx, 64(%rsp)                  # 8-byte Spill
+	movq	176(%rsp), %rcx
+	movq	%rbp, %r10
+	adcq	%rbp, %rcx
+	movq	%rcx, 40(%rsp)                  # 8-byte Spill
+	movq	184(%rsp), %rcx
+	movq	72(%rsp), %rbp                  # 8-byte Reload
+	adcq	%rbp, %rcx
+	movq	%rcx, 56(%rsp)                  # 8-byte Spill
+	movq	192(%rsp), %rcx
+	adcq	%rbx, %rcx
+	movq	%rcx, 48(%rsp)                  # 8-byte Spill
+	movq	200(%rsp), %r8
+	movq	16(%rsp), %rdi                  # 8-byte Reload
+	adcq	%rdi, %r8
+	movq	208(%rsp), %r9
+	movq	24(%rsp), %rdx                  # 8-byte Reload
+	adcq	%rdx, %r9
+	movq	216(%rsp), %rcx
+	adcq	%r13, %rcx
+	adcq	%r11, %rax
+	xorl	%r15d, %r15d
+	cmpq	8(%rsp), %r12                   # 8-byte Folded Reload
+	movq	%r14, %r12
+	sbbq	%rsi, %r12
+	movq	40(%rsp), %rsi                  # 8-byte Reload
+	movq	%rsi, %r12
+	sbbq	%r10, %r12
+	movq	56(%rsp), %r14                  # 8-byte Reload
+	movq	%r14, %r12
+	sbbq	%rbp, %r12
+	movq	48(%rsp), %r10                  # 8-byte Reload
+	movq	%r10, %r12
+	sbbq	%rbx, %r12
+	movq	%r8, %r12
+	sbbq	%rdi, %r12
+	movq	%r9, %r12
+	sbbq	%rdx, %r12
+	movq	%rcx, %rbx
+	sbbq	%r13, %rbx
+	movq	%rax, %rbx
+	sbbq	%r11, %rbx
+	movl	$0, %r11d
+	sbbq	%r11, %r11
+	movl	$0, %r11d
+	sbbq	%r11, %r11
+	movl	$0, %r11d
+	sbbq	%r11, %r11
+	movl	$0, %r11d
+	sbbq	%r11, %r11
+	movl	$0, %r11d
+	sbbq	%r11, %r11
+	movl	$0, %r11d
+	sbbq	%r11, %r11
+	sbbq	%r15, %r15
+	setb	%bpl
+	movq	64(%rsp), %rdi                  # 8-byte Reload
+	movq	%rdi, %r11
+	subq	88(%rsp), %r11                  # 8-byte Folded Reload
+	movq	%rsi, %rbx
+	sbbq	96(%rsp), %rbx                  # 8-byte Folded Reload
+	movq	%r14, %r15
+	movq	%r14, %rsi
+	sbbq	104(%rsp), %r15                 # 8-byte Folded Reload
+	movq	%r10, %r14
+	sbbq	112(%rsp), %r14                 # 8-byte Folded Reload
+	movq	%r8, %r12
+	sbbq	120(%rsp), %r12                 # 8-byte Folded Reload
+	movq	%r9, %r13
+	sbbq	128(%rsp), %r13                 # 8-byte Folded Reload
+	movq	%rcx, %r10
+	sbbq	136(%rsp), %r10                 # 8-byte Folded Reload
+	movq	%rax, %rdx
+	sbbq	144(%rsp), %rdx                 # 8-byte Folded Reload
+	movzbl	%bpl, %ebp
+	sbbq	$0, %rbp
+	testb	$1, %bpl
+	cmovneq	%rcx, %r10
+	movq	152(%rsp), %rcx                 # 8-byte Reload
+	movq	%r10, 48(%rcx)
+	cmovneq	%rax, %rdx
+	movq	%rdx, 56(%rcx)
+	cmovneq	%r8, %r12
+	movq	%r12, 32(%rcx)
+	cmovneq	%r9, %r13
+	movq	%r13, 40(%rcx)
+	cmovneq	%rsi, %r15
+	movq	%r15, 16(%rcx)
+	cmovneq	48(%rsp), %r14                  # 8-byte Folded Reload
+	movq	%r14, 24(%rcx)
+	cmovneq	%rdi, %r11
+	movq	%r11, (%rcx)
+	cmovneq	40(%rsp), %rbx                  # 8-byte Folded Reload
+	movq	%rbx, 8(%rcx)
+	addq	$808, %rsp                      # imm = 0x328
 	popq	%rbx
 	popq	%r12
 	popq	%r13
@@ -6120,8 +6025,8 @@ mcl_fp_montRed8L:                       # @mcl_fp_montRed8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end52:
-	.size	mcl_fp_montRed8L, .Lfunc_end52-mcl_fp_montRed8L
+.Lfunc_end50:
+	.size	mcl_fp_montRed8L, .Lfunc_end50-mcl_fp_montRed8L
                                         # -- End function
 	.globl	mcl_fp_montRedNF8L              # -- Begin function mcl_fp_montRedNF8L
 	.p2align	4
@@ -6420,8 +6325,8 @@ mcl_fp_montRedNF8L:                     # @mcl_fp_montRedNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end53:
-	.size	mcl_fp_montRedNF8L, .Lfunc_end53-mcl_fp_montRedNF8L
+.Lfunc_end51:
+	.size	mcl_fp_montRedNF8L, .Lfunc_end51-mcl_fp_montRedNF8L
                                         # -- End function
 	.globl	mcl_fp_addPre8L                 # -- Begin function mcl_fp_addPre8L
 	.p2align	4
@@ -6485,8 +6390,8 @@ mcl_fp_addPre8L:                        # @mcl_fp_addPre8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end54:
-	.size	mcl_fp_addPre8L, .Lfunc_end54-mcl_fp_addPre8L
+.Lfunc_end52:
+	.size	mcl_fp_addPre8L, .Lfunc_end52-mcl_fp_addPre8L
                                         # -- End function
 	.globl	mcl_fp_subPre8L                 # -- Begin function mcl_fp_subPre8L
 	.p2align	4
@@ -6525,8 +6430,8 @@ mcl_fp_subPre8L:                        # @mcl_fp_subPre8L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end55:
-	.size	mcl_fp_subPre8L, .Lfunc_end55-mcl_fp_subPre8L
+.Lfunc_end53:
+	.size	mcl_fp_subPre8L, .Lfunc_end53-mcl_fp_subPre8L
                                         # -- End function
 	.globl	mcl_fp_shr1_8L                  # -- Begin function mcl_fp_shr1_8L
 	.p2align	4
@@ -6561,8 +6466,8 @@ mcl_fp_shr1_8L:                         # @mcl_fp_shr1_8L
 	movq	%r11, 8(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end56:
-	.size	mcl_fp_shr1_8L, .Lfunc_end56-mcl_fp_shr1_8L
+.Lfunc_end54:
+	.size	mcl_fp_shr1_8L, .Lfunc_end54-mcl_fp_shr1_8L
                                         # -- End function
 	.globl	mcl_fp_add8L                    # -- Begin function mcl_fp_add8L
 	.p2align	4
@@ -6636,8 +6541,8 @@ mcl_fp_add8L:                           # @mcl_fp_add8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end57:
-	.size	mcl_fp_add8L, .Lfunc_end57-mcl_fp_add8L
+.Lfunc_end55:
+	.size	mcl_fp_add8L, .Lfunc_end55-mcl_fp_add8L
                                         # -- End function
 	.globl	mcl_fp_addNF8L                  # -- Begin function mcl_fp_addNF8L
 	.p2align	4
@@ -6707,8 +6612,8 @@ mcl_fp_addNF8L:                         # @mcl_fp_addNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end58:
-	.size	mcl_fp_addNF8L, .Lfunc_end58-mcl_fp_addNF8L
+.Lfunc_end56:
+	.size	mcl_fp_addNF8L, .Lfunc_end56-mcl_fp_addNF8L
                                         # -- End function
 	.globl	mcl_fp_sub8L                    # -- Begin function mcl_fp_sub8L
 	.p2align	4
@@ -6781,8 +6686,8 @@ mcl_fp_sub8L:                           # @mcl_fp_sub8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end59:
-	.size	mcl_fp_sub8L, .Lfunc_end59-mcl_fp_sub8L
+.Lfunc_end57:
+	.size	mcl_fp_sub8L, .Lfunc_end57-mcl_fp_sub8L
                                         # -- End function
 	.globl	mcl_fp_subNF8L                  # -- Begin function mcl_fp_subNF8L
 	.p2align	4
@@ -6855,8 +6760,8 @@ mcl_fp_subNF8L:                         # @mcl_fp_subNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end60:
-	.size	mcl_fp_subNF8L, .Lfunc_end60-mcl_fp_subNF8L
+.Lfunc_end58:
+	.size	mcl_fp_subNF8L, .Lfunc_end58-mcl_fp_subNF8L
                                         # -- End function
 	.globl	mcl_fpDbl_add8L                 # -- Begin function mcl_fpDbl_add8L
 	.p2align	4
@@ -6977,8 +6882,8 @@ mcl_fpDbl_add8L:                        # @mcl_fpDbl_add8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end61:
-	.size	mcl_fpDbl_add8L, .Lfunc_end61-mcl_fpDbl_add8L
+.Lfunc_end59:
+	.size	mcl_fpDbl_add8L, .Lfunc_end59-mcl_fpDbl_add8L
                                         # -- End function
 	.globl	mcl_fpDbl_sub8L                 # -- Begin function mcl_fpDbl_sub8L
 	.p2align	4
@@ -7087,7 +6992,774 @@ mcl_fpDbl_sub8L:                        # @mcl_fpDbl_sub8L
 	popq	%r15
 	popq	%rbp
 	retq
+.Lfunc_end60:
+	.size	mcl_fpDbl_sub8L, .Lfunc_end60-mcl_fpDbl_sub8L
+                                        # -- End function
+	.globl	mclb_modp256                    # -- Begin function mclb_modp256
+	.p2align	4
+	.type	mclb_modp256,@function
+mclb_modp256:                           # @mclb_modp256
+# %bb.0:
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	subq	$152, %rsp
+	movq	%rdi, 24(%rsp)                  # 8-byte Spill
+	xorl	%eax, %eax
+	cmpq	$9, %rdx
+	jae	.LBB61_17
+# %bb.1:                                # %L4
+	movq	%rdx, %r15
+	cmpq	$4, %rdx
+	jae	.LBB61_2
+# %bb.8:                                # %L11
+	testq	%r15, %r15
+	je	.LBB61_12
+# %bb.9:                                # %L12
+	movq	(%rsi), %rcx
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	movq	%rcx, (%rax)
+	cmpq	$1, %r15
+	je	.LBB61_13
+# %bb.10:                               # %L13
+	movq	8(%rsi), %rcx
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	movq	%rcx, 8(%rax)
+	cmpq	$2, %r15
+	je	.LBB61_14
+# %bb.11:                               # %L14
+	movq	16(%rsi), %rax
+	jmp	.LBB61_15
+.LBB61_2:                               # %L5
+	movq	-8(%rsi,%r15,8), %r10
+	movq	(%rcx), %rdx
+	movq	8(%rcx), %rdi
+	movq	%r10, %rax
+	movq	%rdx, 48(%rsp)                  # 8-byte Spill
+	mulq	%rdx
+	movq	%rdx, %r9
+	movq	%r10, %rax
+	movq	%rdi, 16(%rsp)                  # 8-byte Spill
+	mulq	%rdi
+	addq	%r9, %rax
+	adcq	$0, %rdx
+	setb	%al
+	movzbl	%al, %ebx
+	shldq	$63, %rdx, %rbx
+	movq	24(%rcx), %r8
+	movq	%r8, %rax
+	mulq	%rbx
+	movq	%rax, %r9
+	movabsq	$9223372036854775807, %rdi      # imm = 0x7FFFFFFFFFFFFFFF
+	andq	%rdx, %rdi
+	movq	40(%rcx), %r14
+	movq	%r14, %rax
+	mulq	%rbx
+	movq	%rax, %r11
+	movq	%rdx, 8(%rsp)                   # 8-byte Spill
+	movq	32(%rcx), %r12
+	movq	%r12, %rax
+	mulq	%rbx
+	movq	%rax, %r13
+	movq	%rdx, %rbp
+	movq	%rcx, 88(%rsp)                  # 8-byte Spill
+	movq	16(%rcx), %rcx
+	movq	%rcx, %rax
+	mulq	%rbx
+	addq	-32(%rsi,%r15,8), %rax
+	adcq	-24(%rsi,%r15,8), %r9
+	adcq	-16(%rsi,%r15,8), %r13
+	adcq	%r10, %r11
+	setb	%r10b
+	addq	%rdx, %r9
+	adcq	%rdi, %r13
+	adcq	%rbp, %r11
+	movzbl	%r10b, %edx
+	adcq	8(%rsp), %rdx                   # 8-byte Folded Reload
+	subq	%rbx, %rdx
+	movq	%rax, %rdi
+	movq	%rcx, 56(%rsp)                  # 8-byte Spill
+	addq	%rcx, %rdi
+	movq	%r9, %rcx
+	movq	%r8, 72(%rsp)                   # 8-byte Spill
+	adcq	%r8, %rcx
+	movq	%rcx, %r8
+	movq	%r13, %rbx
+	movq	%r12, 64(%rsp)                  # 8-byte Spill
+	adcq	%r12, %rbx
+	movq	%r11, %rbp
+	movq	%r14, 8(%rsp)                   # 8-byte Spill
+	adcq	%r14, %rbp
+	adcq	$0, %rdx
+	testb	$1, %dl
+	cmoveq	%r11, %rbp
+	cmoveq	%r13, %rbx
+	cmoveq	%r9, %r8
+	cmoveq	%rax, %rdi
+	cmpq	$4, %r15
+	je	.LBB61_7
+# %bb.3:                                # %L6
+	movq	%rbx, %rax
+	movq	48(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %r9
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r10
+	movq	%rax, %r11
+	addq	%r9, %r11
+	adcq	$0, %r10
+	movq	%rbx, %rax
+	movq	%rdi, 32(%rsp)                  # 8-byte Spill
+	movq	16(%rsp), %rdi                  # 8-byte Reload
+	mulq	%rdi
+	movq	%rdx, %r13
+	addq	%r11, %rax
+	adcq	%r10, %r13
+	setb	%al
+	movzbl	%al, %ecx
+	movq	%rbp, %rax
+	mulq	%rdi
+	movq	%rdx, %r9
+	addq	%r13, %rax
+	adcl	%ecx, %r9d
+	shldq	$63, %rax, %r9
+	movq	%r9, %rax
+	mulq	8(%rsp)                         # 8-byte Folded Reload
+	movq	%rdx, %r10
+	movq	%rax, %rcx
+	movq	%r9, %rax
+	movq	64(%rsp), %r14                  # 8-byte Reload
+	mulq	%r14
+	movq	%rdx, %r11
+	movq	%rax, %rdi
+	movq	%r9, %rax
+	mulq	72(%rsp)                        # 8-byte Folded Reload
+	movq	%rdx, %r13
+	movq	%rsi, 40(%rsp)                  # 8-byte Spill
+	movq	%rax, %r12
+	movq	%r9, %rax
+	movq	56(%rsp), %rsi                  # 8-byte Reload
+	mulq	%rsi
+	addq	%r12, %rdx
+	movq	72(%rsp), %r12                  # 8-byte Reload
+	adcq	%rdi, %r13
+	adcq	%rcx, %r11
+	adcq	$0, %r10
+	movq	40(%rsp), %rcx                  # 8-byte Reload
+	addq	-40(%rcx,%r15,8), %rax
+	adcq	32(%rsp), %rdx                  # 8-byte Folded Reload
+	adcq	%r8, %r13
+	adcq	%rbx, %r11
+	adcq	%rbp, %r10
+	subq	%r9, %r10
+	movq	%rax, %rdi
+	addq	%rsi, %rdi
+	movq	%rdx, %r8
+	adcq	%r12, %r8
+	movq	%r13, %rbx
+	adcq	%r14, %rbx
+	movq	%r11, %rbp
+	adcq	8(%rsp), %rbp                   # 8-byte Folded Reload
+	adcq	$0, %r10
+	testb	$1, %r10b
+	cmoveq	%r11, %rbp
+	cmoveq	%r13, %rbx
+	cmoveq	%rdx, %r8
+	cmoveq	%rax, %rdi
+	cmpq	$5, %r15
+	je	.LBB61_7
+# %bb.4:                                # %L7
+	movq	%rbx, %rax
+	movq	48(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %r9
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r10
+	movq	%rax, %r11
+	addq	%r9, %r11
+	adcq	$0, %r10
+	movq	%rbx, %rax
+	movq	16(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %rsi
+	addq	%r11, %rax
+	adcq	%r10, %rsi
+	setb	%al
+	movq	%rdi, 32(%rsp)                  # 8-byte Spill
+	movzbl	%al, %edi
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r9
+	addq	%rsi, %rax
+	adcl	%edi, %r9d
+	shldq	$63, %rax, %r9
+	movq	%r9, %rax
+	movq	8(%rsp), %r14                   # 8-byte Reload
+	mulq	%r14
+	movq	%rdx, %r10
+	movq	%rax, 80(%rsp)                  # 8-byte Spill
+	movq	%r9, %rax
+	movq	64(%rsp), %rdi                  # 8-byte Reload
+	mulq	%rdi
+	movq	%rdx, %r11
+	movq	%rax, %rcx
+	movq	%r9, %rax
+	mulq	%r12
+	movq	%rdx, %r13
+	movq	%rax, %r12
+	movq	%r9, %rax
+	movq	56(%rsp), %rsi                  # 8-byte Reload
+	mulq	%rsi
+	addq	%r12, %rdx
+	movq	72(%rsp), %r12                  # 8-byte Reload
+	adcq	%rcx, %r13
+	adcq	80(%rsp), %r11                  # 8-byte Folded Reload
+	adcq	$0, %r10
+	movq	40(%rsp), %rcx                  # 8-byte Reload
+	addq	-48(%rcx,%r15,8), %rax
+	adcq	32(%rsp), %rdx                  # 8-byte Folded Reload
+	adcq	%r8, %r13
+	adcq	%rbx, %r11
+	adcq	%rbp, %r10
+	subq	%r9, %r10
+	movq	%rax, %rcx
+	addq	%rsi, %rcx
+	movq	%rdx, %r8
+	adcq	%r12, %r8
+	movq	%r13, %rbx
+	adcq	%rdi, %rbx
+	movq	%rcx, %rdi
+	movq	%r11, %rbp
+	adcq	%r14, %rbp
+	adcq	$0, %r10
+	testb	$1, %r10b
+	cmoveq	%r11, %rbp
+	cmoveq	%r13, %rbx
+	cmoveq	%rdx, %r8
+	cmoveq	%rax, %rdi
+	cmpq	$6, %r15
+	je	.LBB61_7
+# %bb.5:                                # %L8
+	movq	%rbx, %rax
+	movq	48(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %r9
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r10
+	movq	%rax, %r11
+	addq	%r9, %r11
+	adcq	$0, %r10
+	movq	%rbx, %rax
+	movq	16(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %rsi
+	addq	%r11, %rax
+	adcq	%r10, %rsi
+	setb	%al
+	movq	%rdi, 32(%rsp)                  # 8-byte Spill
+	movzbl	%al, %edi
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r9
+	addq	%rsi, %rax
+	adcl	%edi, %r9d
+	shldq	$63, %rax, %r9
+	movq	%r9, %rax
+	movq	8(%rsp), %r14                   # 8-byte Reload
+	mulq	%r14
+	movq	%rdx, %r10
+	movq	%rax, 80(%rsp)                  # 8-byte Spill
+	movq	%r9, %rax
+	movq	64(%rsp), %rdi                  # 8-byte Reload
+	mulq	%rdi
+	movq	%rdx, %r11
+	movq	%rax, %rsi
+	movq	%r9, %rax
+	mulq	%r12
+	movq	%rdx, %r13
+	movq	%rax, %r12
+	movq	%r9, %rax
+	movq	56(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	addq	%r12, %rdx
+	movq	72(%rsp), %r12                  # 8-byte Reload
+	adcq	%rsi, %r13
+	adcq	80(%rsp), %r11                  # 8-byte Folded Reload
+	adcq	$0, %r10
+	movq	40(%rsp), %rsi                  # 8-byte Reload
+	addq	-56(%rsi,%r15,8), %rax
+	adcq	32(%rsp), %rdx                  # 8-byte Folded Reload
+	adcq	%r8, %r13
+	adcq	%rbx, %r11
+	adcq	%rbp, %r10
+	subq	%r9, %r10
+	movq	%rax, %rsi
+	addq	%rcx, %rsi
+	movq	%rdx, %r8
+	adcq	%r12, %r8
+	movq	%r13, %rbx
+	adcq	%rdi, %rbx
+	movq	%rsi, %rdi
+	movq	%r11, %rbp
+	adcq	%r14, %rbp
+	adcq	$0, %r10
+	testb	$1, %r10b
+	cmoveq	%r11, %rbp
+	cmoveq	%r13, %rbx
+	cmoveq	%rdx, %r8
+	cmoveq	%rax, %rdi
+	cmpq	$7, %r15
+	je	.LBB61_7
+# %bb.6:                                # %L9
+	movq	88(%rsp), %rsi                  # 8-byte Reload
+	addq	$16, %rsi
+	movq	%rbx, %rax
+	movq	48(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %r9
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r10
+	movq	%rax, %r11
+	addq	%r9, %r11
+	adcq	$0, %r10
+	movq	%rbx, %rax
+	movq	16(%rsp), %rcx                  # 8-byte Reload
+	mulq	%rcx
+	movq	%rdx, %r9
+	addq	%r11, %rax
+	adcq	%r10, %r9
+	setb	%al
+	movq	%rdi, %r14
+	movzbl	%al, %edi
+	movq	%rbp, %rax
+	mulq	%rcx
+	movq	%rdx, %r13
+	addq	%r9, %rax
+	adcl	%edi, %r13d
+	shldq	$63, %rax, %r13
+	movq	40(%rsp), %rax                  # 8-byte Reload
+	movq	-64(%rax,%r15,8), %rax
+	movq	%rax, 16(%rsp)                  # 8-byte Spill
+	leaq	96(%rsp), %rdi
+	movq	%r13, %rdx
+	movq	%r8, %r15
+	callq	mulPv256x64@PLT
+	movq	16(%rsp), %rax                  # 8-byte Reload
+	addq	96(%rsp), %rax
+	adcq	104(%rsp), %r14
+	adcq	112(%rsp), %r15
+	adcq	120(%rsp), %rbx
+	adcq	128(%rsp), %rbp
+	subq	%r13, %rbp
+	movq	56(%rsp), %rdx                  # 8-byte Reload
+	addq	%rax, %rdx
+	movq	%rax, %rsi
+	adcq	%r14, %r12
+	movq	64(%rsp), %rcx                  # 8-byte Reload
+	adcq	%r15, %rcx
+	movq	8(%rsp), %rax                   # 8-byte Reload
+	adcq	%rbx, %rax
+	adcq	$0, %rbp
+	testb	$1, %bpl
+	cmoveq	%rbx, %rax
+	cmoveq	%r15, %rcx
+	cmoveq	%r14, %r12
+	cmoveq	%rsi, %rdx
+	movq	%rdx, %rdi
+	movq	%r12, %r8
+	movq	%rcx, %rbx
+	movq	%rax, %rbp
+.LBB61_7:                               # %L10
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	movq	%rdi, (%rax)
+	movq	%r8, 8(%rax)
+	movq	%rbx, 16(%rax)
+	movq	%rbp, 24(%rax)
+	jmp	.LBB61_16
+.LBB61_12:                              # %L15
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	movq	$0, (%rax)
+.LBB61_13:                              # %L16
+	movq	24(%rsp), %rax                  # 8-byte Reload
+	movq	$0, 8(%rax)
+.LBB61_14:                              # %L18
+	xorl	%eax, %eax
+.LBB61_15:                              # %L18
+	movq	24(%rsp), %rcx                  # 8-byte Reload
+	movq	%rax, 16(%rcx)
+	movq	$0, 24(%rcx)
+.LBB61_16:                              # %common.ret
+	movl	$1, %eax
+.LBB61_17:                              # %common.ret
+	addq	$152, %rsp
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
+.Lfunc_end61:
+	.size	mclb_modp256, .Lfunc_end61-mclb_modp256
+                                        # -- End function
+	.globl	mclb_modp384                    # -- Begin function mclb_modp384
+	.p2align	4
+	.type	mclb_modp384,@function
+mclb_modp384:                           # @mclb_modp384
+# %bb.0:
+	xorl	%eax, %eax
+	cmpq	$9, %rdx
+	jae	.LBB62_18
+# %bb.1:                                # %L20
+	cmpq	$6, %rdx
+	jae	.LBB62_2
+# %bb.6:                                # %L25
+	testq	%rdx, %rdx
+	je	.LBB62_12
+# %bb.7:                                # %L26
+	movq	(%rsi), %rax
+	movq	%rax, (%rdi)
+	cmpq	$1, %rdx
+	je	.LBB62_13
+# %bb.8:                                # %L27
+	movq	8(%rsi), %rax
+	movq	%rax, 8(%rdi)
+	cmpq	$2, %rdx
+	je	.LBB62_14
+# %bb.9:                                # %L28
+	movq	16(%rsi), %rax
+	movq	%rax, 16(%rdi)
+	cmpq	$3, %rdx
+	je	.LBB62_15
+# %bb.10:                               # %L29
+	movq	24(%rsi), %rax
+	movq	%rax, 24(%rdi)
+	cmpq	$4, %rdx
+	je	.LBB62_16
+# %bb.11:                               # %L30
+	movq	32(%rsi), %rax
+	jmp	.LBB62_17
+.LBB62_2:                               # %L21
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	movq	%rdi, -8(%rsp)                  # 8-byte Spill
+	movq	-8(%rsi,%rdx,8), %r10
+	movq	%r10, -120(%rsp)                # 8-byte Spill
+	movq	(%rcx), %r9
+	movq	8(%rcx), %rdi
+	movq	%r10, %rax
+	movq	%rdx, %r8
+	movq	%r9, -80(%rsp)                  # 8-byte Spill
+	mulq	%r9
+	movq	%rdx, %r9
+	movq	%r10, %rax
+	movq	%rdi, -72(%rsp)                 # 8-byte Spill
+	mulq	%rdi
+	addq	%r9, %rax
+	adcq	$0, %rdx
+	setb	%al
+	movzbl	%al, %r15d
+	shldq	$63, %rdx, %r15
+	movq	24(%rcx), %rax
+	movq	%rax, -56(%rsp)                 # 8-byte Spill
+	mulq	%r15
+	movq	%rax, %r12
+	movq	%r8, %rdi
+	movabsq	$9223372036854775807, %r8       # imm = 0x7FFFFFFFFFFFFFFF
+	andq	%rdx, %r8
+	movq	56(%rcx), %rdx
+	movq	%rdx, -88(%rsp)                 # 8-byte Spill
+	movq	%r15, %rax
+	mulq	%rdx
+	movq	%rsi, %r11
+	movq	%rax, %r13
+	movq	%rdx, -128(%rsp)                # 8-byte Spill
+	movq	48(%rcx), %rax
+	movq	%rax, -96(%rsp)                 # 8-byte Spill
+	mulq	%r15
+	movq	%rax, %r14
+	movq	%rdx, -64(%rsp)                 # 8-byte Spill
+	movq	40(%rcx), %r10
+	movq	%r10, %rax
+	mulq	%r15
+	movq	%rax, %r9
+	movq	%rdx, -104(%rsp)                # 8-byte Spill
+	movq	32(%rcx), %rsi
+	movq	%rsi, %rax
+	mulq	%r15
+	movq	%rax, %rbx
+	movq	%rdx, -112(%rsp)                # 8-byte Spill
+	movq	16(%rcx), %rbp
+	movq	%rbp, %rax
+	mulq	%r15
+	addq	-48(%r11,%rdi,8), %rax
+	adcq	-40(%r11,%rdi,8), %r12
+	adcq	-32(%r11,%rdi,8), %rbx
+	adcq	-24(%r11,%rdi,8), %r9
+	movq	%r11, -32(%rsp)                 # 8-byte Spill
+	adcq	-16(%r11,%rdi,8), %r14
+	adcq	-120(%rsp), %r13                # 8-byte Folded Reload
+	setb	%cl
+	addq	%rdx, %r12
+	adcq	%r8, %rbx
+	adcq	-112(%rsp), %r9                 # 8-byte Folded Reload
+	adcq	-104(%rsp), %r14                # 8-byte Folded Reload
+	adcq	-64(%rsp), %r13                 # 8-byte Folded Reload
+	movzbl	%cl, %edx
+	adcq	-128(%rsp), %rdx                # 8-byte Folded Reload
+	subq	%r15, %rdx
+	movq	%rax, %r8
+	movq	%rbp, -24(%rsp)                 # 8-byte Spill
+	addq	%rbp, %r8
+	movq	%r12, %rbp
+	adcq	-56(%rsp), %rbp                 # 8-byte Folded Reload
+	movq	%rbx, %r11
+	movq	%rsi, -128(%rsp)                # 8-byte Spill
+	adcq	%rsi, %r11
+	movq	%r9, %rsi
+	movq	%r10, -120(%rsp)                # 8-byte Spill
+	adcq	%r10, %rsi
+	movq	%r14, %rcx
+	adcq	-96(%rsp), %rcx                 # 8-byte Folded Reload
+	movq	%r13, %r15
+	adcq	-88(%rsp), %r15                 # 8-byte Folded Reload
+	adcq	$0, %rdx
+	testb	$1, %dl
+	cmoveq	%r13, %r15
+	movq	%r11, %r13
+	cmoveq	%r14, %rcx
+	cmoveq	%r9, %rsi
+	cmoveq	%rbx, %r13
+	cmoveq	%r12, %rbp
+	cmoveq	%rax, %r8
+	movq	%rdi, -64(%rsp)                 # 8-byte Spill
+	cmpq	$6, %rdi
+	je	.LBB62_5
+# %bb.3:                                # %L22
+	movq	%rcx, %rax
+	movq	-80(%rsp), %rdi                 # 8-byte Reload
+	mulq	%rdi
+	movq	%r8, -112(%rsp)                 # 8-byte Spill
+	movq	%rdx, %r8
+	movq	%r15, %rax
+	mulq	%rdi
+	movq	%rdx, %r9
+	movq	%rax, %r10
+	addq	%r8, %r10
+	adcq	$0, %r9
+	movq	%rcx, %rax
+	movq	%rsi, -104(%rsp)                # 8-byte Spill
+	movq	-72(%rsp), %rsi                 # 8-byte Reload
+	mulq	%rsi
+	movq	%rdx, %r8
+	addq	%r10, %rax
+	adcq	%r9, %r8
+	setb	%al
+	movzbl	%al, %r9d
+	movq	%r15, %rax
+	mulq	%rsi
+	movq	%rdx, %r14
+	addq	%r8, %rax
+	adcl	%r9d, %r14d
+	shldq	$63, %rax, %r14
+	movq	%r14, %rax
+	mulq	-88(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, %r8
+	movq	%rax, %rdi
+	movq	%r14, %rax
+	mulq	-96(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, %r12
+	movq	%rax, %rbx
+	movq	%r14, %rax
+	mulq	-120(%rsp)                      # 8-byte Folded Reload
+	movq	%rdx, %r9
+	movq	%rax, -48(%rsp)                 # 8-byte Spill
+	movq	%r14, %rax
+	mulq	-128(%rsp)                      # 8-byte Folded Reload
+	movq	%rdx, %r10
+	movq	%rax, -16(%rsp)                 # 8-byte Spill
+	movq	%r14, %rax
+	mulq	-56(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, %r11
+	movq	%r13, -40(%rsp)                 # 8-byte Spill
+	movq	%rax, %r13
+	movq	%r14, %rax
+	movq	-24(%rsp), %rsi                 # 8-byte Reload
+	mulq	%rsi
+	addq	%r13, %rdx
+	adcq	-16(%rsp), %r11                 # 8-byte Folded Reload
+	adcq	-48(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	%rbx, %r9
+	adcq	%rdi, %r12
+	adcq	$0, %r8
+	movq	-64(%rsp), %rdi                 # 8-byte Reload
+	movq	-32(%rsp), %rbx                 # 8-byte Reload
+	addq	-56(%rbx,%rdi,8), %rax
+	adcq	-112(%rsp), %rdx                # 8-byte Folded Reload
+	adcq	%rbp, %r11
+	adcq	-40(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	-104(%rsp), %r9                 # 8-byte Folded Reload
+	adcq	%rcx, %r12
+	adcq	%r15, %r8
+	subq	%r14, %r8
+	movq	%rax, %r14
+	addq	%rsi, %r14
+	movq	%rdx, %rbp
+	adcq	-56(%rsp), %rbp                 # 8-byte Folded Reload
+	movq	%r11, %r13
+	adcq	-128(%rsp), %r13                # 8-byte Folded Reload
+	movq	%r10, %rsi
+	adcq	-120(%rsp), %rsi                # 8-byte Folded Reload
+	movq	%r9, %rcx
+	adcq	-96(%rsp), %rcx                 # 8-byte Folded Reload
+	movq	%r12, %r15
+	adcq	-88(%rsp), %r15                 # 8-byte Folded Reload
+	adcq	$0, %r8
+	testb	$1, %r8b
+	movq	%r14, %r8
+	cmoveq	%r12, %r15
+	cmoveq	%r9, %rcx
+	cmoveq	%r10, %rsi
+	cmoveq	%r11, %r13
+	cmoveq	%rdx, %rbp
+	cmoveq	%rax, %r8
+	cmpq	$7, %rdi
+	je	.LBB62_5
+# %bb.4:                                # %L23
+	movq	%rcx, %rax
+	movq	%rsi, -104(%rsp)                # 8-byte Spill
+	movq	-80(%rsp), %rsi                 # 8-byte Reload
+	mulq	%rsi
+	movq	%rdx, %r10
+	movq	%r15, %rax
+	mulq	%rsi
+	movq	%r8, -112(%rsp)                 # 8-byte Spill
+	movq	%rdx, %r8
+	movq	%rax, %r9
+	addq	%r10, %r9
+	adcq	$0, %r8
+	movq	%rcx, %rax
+	movq	-72(%rsp), %rsi                 # 8-byte Reload
+	mulq	%rsi
+	movq	%rdx, %r10
+	addq	%r9, %rax
+	adcq	%r8, %r10
+	setb	%r9b
+	movq	%r15, %rax
+	mulq	%rsi
+	movq	%rdx, %r8
+	addq	%r10, %rax
+	movzbl	%r9b, %edx
+	adcl	%edx, %r8d
+	shldq	$63, %rax, %r8
+	movq	%r8, %rax
+	mulq	-88(%rsp)                       # 8-byte Folded Reload
+	movq	%rdx, %r14
+	movq	%rax, %rbx
+	movq	%r8, %rax
+	mulq	-96(%rsp)                       # 8-byte Folded Reload
+	movq	%r13, -40(%rsp)                 # 8-byte Spill
+	movq	%rdx, %r13
+	movq	%rax, -72(%rsp)                 # 8-byte Spill
+	movq	%r8, %rax
+	mulq	-120(%rsp)                      # 8-byte Folded Reload
+	movq	%rdx, %r12
+	movq	%rax, -80(%rsp)                 # 8-byte Spill
+	movq	%r8, %rax
+	mulq	-128(%rsp)                      # 8-byte Folded Reload
+	movq	%rdx, %r10
+	movq	%rax, %rsi
+	movq	%r8, %rax
+	movq	-56(%rsp), %r9                  # 8-byte Reload
+	mulq	%r9
+	movq	%rdx, %r11
+	movq	%rax, -48(%rsp)                 # 8-byte Spill
+	movq	%r8, %rax
+	movq	-24(%rsp), %rdi                 # 8-byte Reload
+	mulq	%rdi
+	addq	-48(%rsp), %rdx                 # 8-byte Folded Reload
+	adcq	%rsi, %r11
+	adcq	-80(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	-72(%rsp), %r12                 # 8-byte Folded Reload
+	adcq	%rbx, %r13
+	adcq	$0, %r14
+	movq	-64(%rsp), %rbx                 # 8-byte Reload
+	movq	-32(%rsp), %rsi                 # 8-byte Reload
+	addq	-64(%rsi,%rbx,8), %rax
+	adcq	-112(%rsp), %rdx                # 8-byte Folded Reload
+	adcq	%rbp, %r11
+	adcq	-40(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	-104(%rsp), %r12                # 8-byte Folded Reload
+	adcq	%rcx, %r13
+	adcq	%r15, %r14
+	subq	%r8, %r14
+	addq	%rax, %rdi
+	adcq	%rdx, %r9
+	movq	-128(%rsp), %rsi                # 8-byte Reload
+	adcq	%r11, %rsi
+	movq	-120(%rsp), %r8                 # 8-byte Reload
+	adcq	%r10, %r8
+	movq	-96(%rsp), %rcx                 # 8-byte Reload
+	adcq	%r12, %rcx
+	movq	-88(%rsp), %r15                 # 8-byte Reload
+	adcq	%r13, %r15
+	adcq	$0, %r14
+	testb	$1, %r14b
+	cmoveq	%r13, %r15
+	cmoveq	%r12, %rcx
+	cmoveq	%r10, %r8
+	movq	%r8, %r10
+	movq	%rsi, %r13
+	cmoveq	%r11, %r13
+	cmoveq	%rdx, %r9
+	cmoveq	%rax, %rdi
+	movq	%rdi, %r8
+	movq	%r9, %rbp
+	movq	%r10, %rsi
+.LBB62_5:                               # %L24
+	movq	-8(%rsp), %rax                  # 8-byte Reload
+	movq	%r8, (%rax)
+	movq	%rbp, 8(%rax)
+	movq	%r13, 16(%rax)
+	movq	%rsi, 24(%rax)
+	movq	%rcx, 32(%rax)
+	movq	%r15, 40(%rax)
+	movl	$1, %eax
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
+.LBB62_12:                              # %L31
+	movq	$0, (%rdi)
+.LBB62_13:                              # %L32
+	movq	$0, 8(%rdi)
+.LBB62_14:                              # %L33
+	movq	$0, 16(%rdi)
+.LBB62_15:                              # %L34
+	movq	$0, 24(%rdi)
+.LBB62_16:                              # %L36
+	xorl	%eax, %eax
+.LBB62_17:                              # %L36
+	movq	%rax, 32(%rdi)
+	movq	$0, 40(%rdi)
+	movl	$1, %eax
+.LBB62_18:                              # %common.ret
+	retq
 .Lfunc_end62:
-	.size	mcl_fpDbl_sub8L, .Lfunc_end62-mcl_fpDbl_sub8L
+	.size	mclb_modp384, .Lfunc_end62-mclb_modp384
                                         # -- End function
 	.section	".note.GNU-stack","",@progbits
