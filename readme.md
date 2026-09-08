@@ -178,12 +178,12 @@ Build GMP for 32-bit mode.
 
 ```
 sudo apt install g++-multilib
-sudo apt install clang-18
+sudo apt install clang-21
 cd <GMP dir>
 env ABI=32 ./configure --enable-cxx --prefix=<install dir>
 make -j install
 cd <mcl dir>
-make ARCH=x86 LLVM_VER=-18 GMP_DIR=<install dir>
+make ARCH=x86 LLVM_VER=-21 GMP_DIR=<install dir>
 ```
 
 # How to build a library for arm with clang++ on Linux
@@ -293,19 +293,19 @@ Build `mcl.wasm` without Emscripten using clang's wasm target directly.
 
 ### Prerequisites
 
-- clang/clang++, wasm-ld (LLVM 18 or later)
+- clang/clang++, wasm-ld (LLVM 21 or later)
 - wasm-opt (from [binaryen](https://github.com/WebAssembly/binaryen))
 - python3
 
 ### Build
 
 ```bash
-make -f Makefile.wasm LLVM_VER=-18
+make -f Makefile.wasm LLVM_VER=-21
 ```
 
 This generates `lib/mcl.wasm` and `lib/mcl_c.js` (wasm binary embedded as base64 in JS).
 
-Set `LLVM_VER` to match your installed LLVM version suffix (e.g., `-18` for `clang-18`).
+Set `LLVM_VER` to match your installed LLVM version suffix (e.g., `-21` for `clang-21`).
 
 # Node.js
 
