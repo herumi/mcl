@@ -166,20 +166,20 @@ MCL_CXX_API void destroyFpGenerator(FpGenerator *fg);
 
 struct Op {
 	/*
-		don't change the layout of rp, p, q0, q1
+		don't change the layout of rp and p
 		asm code assumes &rp + 1 == p
-		pLen = bitLen(p)
-		BIT = sizeof(Unit) * 8
-		Qt = floor(2^(BIT+1+pLen)/p) << s where s is leading zero bits of p in N words
 	*/
 	Unit rp;
 	Unit p[maxUnitSize];
-	mpz_class mp;
+	size_t maxN;
+	size_t N;
+	size_t bitSize;
 	uint32_t pmod4;
+	mpz_class mp;
+	mcl::Modp2 modp2;
 	mcl::SquareRoot sq;
 	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
 	mcl::Modp modp;
-//	mcl::SmallModp smallModp;
 	mcl::bint::SmallModP smallModP;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
@@ -217,9 +217,6 @@ struct Op {
 	void3u fp2Dbl_mulPreA_;
 	void2u fp2Dbl_sqrPreA_;
 	void2u fp2Dbl_mul_xiA_;
-	size_t maxN;
-	size_t N;
-	size_t bitSize;
 	bool (*fp_isZero)(const Unit*);
 	void1u fp_clear;
 	void2u fp_copy;
@@ -278,8 +275,11 @@ struct Op {
 	{
 		rp = 0;
 		memset(p, 0, sizeof(p));
-		mp = 0;
+		maxN = 0;
+		N = 0;
+		bitSize = 0;
 		pmod4 = 0;
+		mp = 0;
 		sq.clear();
 		// fg is not set
 		memset(half, 0, sizeof(half));
@@ -308,9 +308,6 @@ struct Op {
 		fp2Dbl_mulPreA_ = 0;
 		fp2Dbl_sqrPreA_ = 0;
 		fp2Dbl_mul_xiA_ = 0;
-		maxN = 0;
-		N = 0;
-		bitSize = 0;
 		fp_isZero = 0;
 		fp_clear = 0;
 		fp_copy = 0;

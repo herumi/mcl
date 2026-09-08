@@ -465,11 +465,12 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 	// x64 requires BMI2 (mulx) and ADX (adox, adcx)
 	if ((getCpuType() & tAVX_BMI2_ADX) == 0) return false;
 #endif
-	size_t maxBitSize = sizeofF * 8;
 	if (_p <= 0) return false;
 	clear();
-	maxN = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
-	N = gmp::getUnitSize(_p);
+	const size_t maxBitSize = sizeofF * 8;
+	maxN = roundUp(maxBitSize, UnitBitSize);
+	bitSize = gmp::getBitSize(_p);
+	N = roundUp(bitSize, UnitBitSize);
 	if (N > maxN) return false;
 	{
 		bool b;
@@ -477,7 +478,7 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 		if (!b) return false;
 	}
 	mp = _p;
-	bitSize = gmp::getBitSize(mp);
+	modp2.init(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
 	this->u = _u;
 	this->xi_a = _xi_a;
