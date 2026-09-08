@@ -5,7 +5,7 @@
 
 #define PUT(x) std::cout << #x << "=" << x << std::endl;
 
-CYBOZU_TEST_AUTO(modp)
+CYBOZU_TEST_AUTO(modpOld)
 {
 	const int C = 1000000;
 	const char *pTbl[] = {
@@ -37,7 +37,7 @@ CYBOZU_TEST_AUTO(modp)
 		"0x10000000000000000000000000000000000000000000000000000000000000000",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
-	mcl::Modp modp;
+	mcl::ModpOld modp;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(pTbl); i++) {
 		const mpz_class p(pTbl[i]);
 		std::cout << std::hex << "p=" << p << std::endl;

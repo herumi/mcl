@@ -374,7 +374,7 @@ public:
 		gmp::setArray(pb, mx, x, n);
 		if (!*pb) return;
 #ifdef MCL_USE_VINT
-		op_.modp.modp(mx, mx);
+		op_.modpOld.modp(mx, mx);
 #else
 		mx %= op_.mp;
 #endif
