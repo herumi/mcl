@@ -1028,4 +1028,29 @@ struct Modp {
 	}
 };
 
+struct Modp2 {
+	Unit q0;
+	Unit q1;
+	Unit np[maxUnitSize];
+	Modp2() : q0(0), q1(0), np() {}
+	bool init(const mpz_class& p) {
+		const size_t BIT = sizeof(Unit) * 8;
+		const size_t L = gmp::getBitSize(p);
+		const size_t N = roundUp(L, BIT);
+		if (!((N - 1) * BIT + 2 <= L && L <= N * BIT)) return false;
+		// leading zero bits of p in N words
+		const size_t s = N * BIT - L;
+		// Q = floor(2^(BIT+1+L)/p), BIT+2 bits
+		mpz_class Q = (mpz_class(1) << (BIT + 1 + L)) / p;
+		mpz_class Qt = Q << s; // Qt = Q 2^s < 2^(2 * BIT)
+		mpz_class notp = (mpz_class(1) << (N * BIT)) - p; // notp = 2^(N * BIT) - p
+		q0 = gmp::getUnit(Qt, 0);
+		q1 = gmp::getUnit(Qt, 1);
+		for (size_t i = 0; i < N; i++) {
+			np[i] = gmp::getUnit(notp, i);
+		}
+		return true;
+	}
+};
+
 } // mcl
