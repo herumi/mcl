@@ -198,7 +198,8 @@ ifeq ($(MCL_MSM),1)
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h src/avx512.hpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER)
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
+-include $(OBJ_DIR)/$(MSM).d
 src/$(MSM)_bls12_381.h: src/gen_msm_para.py
 	python3 src/gen_msm_para.py $(MCL_MSM_CURVE_BIT) > $@
 else
