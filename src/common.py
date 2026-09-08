@@ -321,3 +321,129 @@ def emit_montRed(unit, N, lo, getHi, pp, p, rp, mulPv, isFullBit):
     c = trunc(lshr(vc, bit - 1), 1)
     z = select(c, t, vc)
   return z
+
+
+# ---------------------------------------------------------------------------
+# modp2: y = x mod p for a fixed prime p by word-serial Barrett reduction with
+# a two-unit reciprocal and a single conditional subtraction per step.
+#
+# Let L = bitlen(p), N = number of units of p, u = unit and s = N u - L (the
+# leading zero bits of p in N units). The invariant is r < p. One step folds
+# the next unit w of x into xx = r * 2^u + w < p 2^u, estimates the quotient
+# from the top two units of xx,
+#   W  = xx >> ((N-1) u)  (< 2^(2u)),
+#   Q  = floor(2^(u+1+L) / p) (< 2^(u+2)),  Qt = Q 2^s (< 2^(2u)),
+#   y  = floor(W * Qt / 2^(2u+1)),
+# and sets r = xx - y p, then r -= p once if r >= p. The estimate never
+# exceeds the true quotient q = floor(xx / p): W Qt / 2^(2u+1) = (xx - xl) Q /
+# 2^(L+u+1) <= xx / p with xl = xx mod 2^((N-1) u). Its error is less than
+# xl / p + xx / 2^(L+u+1) < 2^((N-1) u) / 2^(L-1) + p / 2^(L+1) < 1/2 + 1/2
+# (the first term is <= 2^(-1-t) with t = L - 2 - (N-1) u >= 0), so it is at
+# most 1 and one conditional subtraction suffices. Using the top two units
+# as they are (instead of xx >> (L-2), which needs a variable shift by t per
+# step) makes the code independent of L; the shift is folded into Qt.
+# Qt < 2^(2u) requires s <= u - 2, i.e. L >= (N-1) u + 2, which also makes the
+# initial r = top N-1 units of x < p.
+#
+# The subtraction r = xx - y p is done with additions only (LLVM turns a
+# wide sub of a product into a negation and an add chain otherwise):
+# with np = 2^bit - p (N units), y (2^(bit+unit) - p) = y np - y 2^bit
+# (mod 2^(bit+unit)), so r = xx + y np - (y << bit). Likewise the final
+# r - p >= 0 test is the carry of r + np into bit `bit`.
+#
+# The p-dependent values are passed as a parameter block of units (struct
+# Modp2 on the C side), laid out as
+#   param[MODP2_Q0]    = Qt mod 2^u
+#   param[MODP2_Q1]    = Qt >> u
+#   param[MODP2_NP + i] = np[i]  (i < N), np = 2^(N unit) - p
+# so that one function per N (not per p) suffices.
+MODP2_Q0 = 0
+MODP2_Q1 = 1
+MODP2_NP = 2
+
+
+# returns the parameter block (list of ints) of modp2 for p
+def modp2_param(p, unit, N):
+  L = p.bit_length()
+  assert (N - 1) * unit + 2 <= L <= N * unit
+  s = N * unit - L
+  Q = (1 << (unit + 1 + L)) // p
+  Qt = Q << s
+  mask = (1 << unit) - 1
+  assert Qt < (1 << (2 * unit))
+  param = [Qt & mask, Qt >> unit]
+  np = (1 << (N * unit)) - p
+  for i in range(N):
+    param.append((np >> (unit * i)) & mask)
+  return param
+
+
+# load the constants of modp2 from the parameter block pparam (see
+# modp2_param) and return (Qt, np, pnp) as used by modp2_step:
+#   Qt    : Q 2^s in i{2 unit}
+#   np    : 2^bit - p zero-extended to i{bit+unit}
+#   pnp   : pointer to np in the parameter block (for mulPv)
+def modp2_consts(unit, N, pparam):
+  bit = N * unit
+  bu = bit + unit
+  Qt = loadN(pparam, 2, MODP2_Q0)
+  pnp = getelementptr(pparam, MODP2_NP)
+  np = zext(loadN(pnp, N), bu)
+  return (Qt, np, pnp)
+
+
+# one step of modp2: returns r = xx mod p (i{bit}) for xx = r 2^unit + w
+# (i{bit+unit}, < p 2^unit). consts is the tuple of modp2_consts.
+# mulPv(pnp, y) returns i{N*unit+unit} = pnp[0..N] * y.
+def modp2_step(unit, N, xx, consts, mulPv):
+  bit = N * unit
+  bu = bit + unit
+  (Qt, np, pnp) = consts
+  # y = floor(W Qt / 2^(2 unit + 1)) with W = the top two units of xx
+  W = trunc(lshr(xx, (N - 1) * unit), unit * 2)
+  P = mul(zext(W, unit * 4), zext(Qt, unit * 4))
+  y = trunc(lshr(P, unit * 2 + 1), unit)
+  # r = xx - y p = xx + y np - (y << bit)  (mod 2^bu)
+  ynp = call(mulPv, pnp, y)
+  r = add(xx, ynp)
+  r = sub(r, shl(zext(y, bu), bit))
+  # r -= p if r >= p : r + np >= 2^bit
+  v = add(r, np)
+  c = trunc(lshr(v, bit), 1)
+  return select(c, trunc(v, bit), trunc(r, bit))
+
+
+# emit py[N] = px[xN] mod p into the current function.
+# pparam points to the parameter block of p (see modp2_param).
+# mulPv(pnp, y) returns i{N*unit+unit} = pnp[0..N] * y.
+def emit_modp2(unit, N, xN, py, px, pparam, mulPv):
+  assert xN >= N
+  bu = N * unit + unit
+  consts = modp2_consts(unit, N, pparam)
+  # r = top N-1 units of x (< p)
+  if N == 1:
+    r = None
+  else:
+    r = loadN(px, N - 1, xN - (N - 1))
+  for k in range(xN - N, -1, -1):
+    w = load(getelementptr(px, k))
+    if r is None:
+      xx = zext(w, bu)
+    else:
+      xx = pack([w, r])
+      if xx.bit < bu:  # first step: r has N-1 units
+        xx = zext(xx, bu)
+    r = modp2_step(unit, N, xx, consts, mulPv)
+  storeN(r, py)
+
+
+# void name(Unit *py, const Unit *px, const Unit *pparam) : py[N] = px[xN] mod p
+def gen_modp2(name, unit, N, xN, mulPv, private=False):
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  pparam = IntPtr(unit)
+  with Function(name, Void, py, px, pparam, private=private) as f:
+    emit_modp2(unit, N, xN, py, px, pparam, mulPv)
+    ret(Void)
+  return f
