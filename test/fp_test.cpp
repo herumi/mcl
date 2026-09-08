@@ -842,7 +842,7 @@ void modpTest()
 	};
 	std::string maxStr(mcl::gmp::getBitSize(p) * 2, '1');
 	mcl::gmp::setStr(tbl[0], maxStr, 2);
-	mcl::Modp modp;
+	mcl::ModpOld modp;
 	modp.init(p);
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];

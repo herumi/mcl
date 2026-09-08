@@ -179,7 +179,7 @@ struct Op {
 	mcl::Modp2 modp2;
 	mcl::SquareRoot sq;
 	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
-	mcl::Modp modp;
+	mcl::ModpOld modpOld;
 	mcl::bint::SmallModP smallModP;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)

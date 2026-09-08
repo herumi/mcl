@@ -935,9 +935,9 @@ public:
 /*
 	Barrett Reduction
 	for non GMP version
-	mod of GMP is faster than Modp
+	mod of GMP is faster than ModpOld
 */
-struct Modp {
+struct ModpOld {
 	static const size_t unitBitSize = sizeof(mcl::Unit) * 8;
 	mpz_class p_;
 	mpz_class u_;
@@ -945,7 +945,7 @@ struct Modp {
 	size_t pBitSize_;
 	size_t N_;
 	bool initU_; // Is u_ initialized?
-	Modp()
+	ModpOld()
 		: pBitSize_(0)
 		, N_(0)
 		, initU_(false)
