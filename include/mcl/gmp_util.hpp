@@ -427,10 +427,6 @@ inline const Unit *getUnit(const mpz_class& x)
 	return reinterpret_cast<const Unit*>(x.get_mpz_t()->_mp_d);
 #endif
 }
-inline Unit getUnit(const mpz_class& x, size_t i)
-{
-	return getUnit(x)[i];
-}
 inline size_t getUnitSize(const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
@@ -438,6 +434,10 @@ inline size_t getUnitSize(const mpz_class& x)
 #else
 	return std::abs(x.get_mpz_t()->_mp_size);
 #endif
+}
+inline Unit getUnit(const mpz_class& x, size_t i)
+{
+	return i < getUnitSize(x) ? getUnit(x)[i] : 0;
 }
 
 /*
