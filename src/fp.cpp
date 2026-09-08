@@ -478,7 +478,7 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 		if (!b) return false;
 	}
 	mp = _p;
-	modp2.init(mp);
+	modp.init(mp);
 	pmod4 = gmp::getUnit(mp, 0) % 4;
 	this->u = _u;
 	this->xi_a = _xi_a;

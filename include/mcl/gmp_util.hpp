@@ -1028,19 +1028,34 @@ struct ModpOld {
 	}
 };
 
-struct Modp2 {
+// generated modp functions (dst[N] = src[srcN] mod p, para = &Modp::q0)
+#if MCL_BINT_ASM_X64 == 1
+extern "C" int mclb_modp256_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+extern "C" int mclb_modp384_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+#elif defined(MCL_USE_LLVM)
+extern "C" int mclb_modp256(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+extern "C" int mclb_modp384(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+#endif
+
+/*
+	x mod p for x of up to 64 bytes (word-serial Barrett reduction with a
+	two-unit reciprocal, see src/common.py); the layout q0, q1, np[] is the
+	parameter block read by the generated modp functions, so keep it first.
+*/
+struct Modp {
 	Unit q0;
 	Unit q1;
 	Unit np[maxUnitSize];
 	int (*modp_asm)(Unit *, const Unit *, size_t, const Unit*);
 	size_t N; // number of units of p
-	Modp2() : q0(0), q1(0), np(), modp_asm(0), N(0) {}
+	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0) {}
 	bool init(const mpz_class& p) {
 		const size_t BIT = sizeof(Unit) * 8;
 		const size_t L = gmp::getBitSize(p);
+		modp_asm = 0;
 		N = roundUp(L, BIT);
-		if (N > maxUnitSize) return false;
-		if (!((N - 1) * BIT + 2 <= L && L <= N * BIT)) return false;
+		if (N == 0 || N > maxUnitSize) return false;
+		if (L < (N - 1) * BIT + 2) return false;
 		// leading zero bits of p in N words
 		const size_t s = N * BIT - L;
 		// Q = floor(2^(BIT+1+L)/p), BIT+2 bits
@@ -1052,12 +1067,19 @@ struct Modp2 {
 		for (size_t i = 0; i < N; i++) {
 			np[i] = gmp::getUnit(notp, i);
 		}
-#if 0 // #ifdef MCL_USE_LLVM
-		extern "C" int mclb_modp256(Unit *, const Unit *, size_t, const Unit*);
-		extern "C" int mclb_modp384(Unit *, const Unit *, size_t, const Unit*);
-		switch (N) {
-		case 4: modp_asm = mclb_modp256; break;
-		case 6: modp_asm = mclb_modp384; break;
+#if MCL_BINT_ASM_X64 == 1
+		// src/gen_bint_x64.py requires p < 2^(N * BIT - 1) (r < 2p in N units)
+		if (s >= 1) {
+			switch (N * BIT) {
+			case 256: modp_asm = mclb_modp256_x64; break;
+			case 384: modp_asm = mclb_modp384_x64; break;
+			}
+		}
+#elif defined(MCL_USE_LLVM)
+		// src/gen.py (base{32,64}.ll)
+		switch (N * BIT) {
+		case 256: modp_asm = mclb_modp256; break;
+		case 384: modp_asm = mclb_modp384; break;
 		}
 #endif
 		return true;
@@ -1084,7 +1106,7 @@ struct Modp2 {
 		if (xN * sizeof(Unit) > 64) return false;
 		const size_t BIT = sizeof(Unit) * 8;
 		if (xN < N) {
-//			// init() guarantees N <= maxUnitSize; the check lets gcc see xN < maxUnitSize (avoid -Warray-bounds)
+			// init() guarantees N <= maxUnitSize; the check lets gcc see xN < maxUnitSize (avoid -Warray-bounds)
 			if (N > maxUnitSize) return false;
 			// x < 2^((N-1) BIT) < p because (N-1) BIT + 2 <= bitLen(p)
 			bint::copyN(y, x, xN);

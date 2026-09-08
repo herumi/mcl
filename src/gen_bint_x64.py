@@ -737,6 +737,9 @@ def mov_pp(x, y):
 def cmovc_pp(x, y):
   vec_pp(cmovc, x, y)
 
+def cmovnc_pp(x, y):
+  vec_pp(cmovnc, x, y)
+
 def load_pm(x, m):
   vec_pm(mov, x, m)
 
@@ -976,6 +979,136 @@ def gen_udiv128():
     mov(ptr(r9), rdx)
     ret()
 
+# one step of modp (x64 version of common.modp_step): the constants come
+# from the parameter block para (the layout of common.modp_param: Qt = Q 2^s
+# as two limbs q0, q1, then np[N]), so the code depends only on N.
+# The quotient estimate is y = (W Qt) >> 129 with W = [X_{N-1}, X_N], the top
+# two limbs of xx as they are (see the comment in common.py): a
+# 2x2-limb product (4 mulx) of which only the limbs 2, 3 are kept, and the
+# shift is an immediate shrd. The extraction of xx >> (L-2) with a variable
+# shift (shrd/shr by cl or shrx/shlx) costs about 2 cycles per step on
+# Sapphire Rapids, which is why the shift is folded into Qt instead.
+# The conditional subtraction is done as r + np: the carry out means r >= p
+# and the sum is r - p mod 2^(64N), so cmovnc restores the kept r (no p
+# constant); np is addressed from para. rdx (y, dead after the row) and rcx
+# are the last keep registers, so no register is needed beyond
+# tmp = [T0, T1, T2, T3] (T3 may be rax); rcx and rdx are clobbered.
+def modp_step_x64(pk, pw, para, tmp):
+  N = len(pk)
+  T0, T1, T2, T3 = tmp
+  a0 = pk[N - 2]
+  a1 = pk[N - 1]
+  # [T1, T3, T2] = limbs 1, 2, 3 of [a0, a1] * [q0, q1] (limb 0 is not needed)
+  mov(rdx, ptr(para))  # q0
+  mulx(T2, T3, a0)   # T2 = hi(a0 q0)
+  mulx(T3, T1, a1)   # [T1, T3] = a1 q0
+  add(T1, T2)
+  adc(T3, 0)
+  mov(rdx, ptr(para + 8))  # q1
+  mulx(T2, T0, a0)   # [T0, T2] = a0 q1
+  add(T1, T0)
+  adc(T3, T2)
+  mulx(T2, T0, a1)   # [T0, T2] = a1 q1
+  adc(T2, 0)
+  add(T3, T0)
+  adc(T2, 0)
+  # X_N is consumed; its register takes w
+  mov(pk[N - 1], pw)
+  shrd(T3, T2, 1)    # y = [limb 2, limb 3] >> 1
+  mov(rdx, T3)
+  # xx = [w, r] in registers: rotate so that pk[0] = w
+  pk = [pk[N - 1]] + pk[0:N - 1]
+  # r = (xx + y np) mod 2^(64N)
+  pnp = para + 8 * 2
+  xor_(T0, T0)  # clear CF and OF
+  for i in range(N):
+    mulx(T0, T1, ptr(pnp + i * 8))
+    adox(pk[i], T1)
+    if i < N - 1:
+      adcx(pk[i + 1], T0)
+  # r -= p if r >= p : r + np carries out
+  keep = [T0, T1, T2, T3, rcx, rdx][0:N]
+  mov_pp(keep, pk)
+  add_pm(pk, pnp)
+  cmovnc_pp(pk, keep)
+  return pk
+
+# int name(Unit *dst, const Unit *src, size_t srcN, const Unit *para):
+# x64 version of common.emit_modp (para is struct mcl::Modp): returns 0 if
+# srcN > xN, otherwise dst[N] = src[srcN] mod p and returns 1 (dst is src
+# zero-extended when srcN < N). The constants are read from para (see
+# modp_step_x64), so the code depends only on N (one function per N as in
+# the LLVM version); p must not be full bit (r < 2p has to fit in N limbs,
+# i.e. p < 2^(64N-1)) and L >= 64(N-1) + 2. The xN - N + 1 steps are
+# unrolled with an exit test (sub/jc on the step count) after each, so
+# srcN - N + 1 steps run; each exit stores its own rotation of pk.
+# Registers (N = 6 uses all 15): src, count, para, pk[N], T0, T1 in the
+# frame, T2 = the register of dst (spilled to the stack until the exits),
+# T3 = rax, rcx and rdx for the keep list and mulx.
+def gen_modp_x64(name, xN, N):
+  assert N <= 6
+  align(16)
+  with FuncProc(name):
+    ret0L = Label()
+    # srcN > xN: return 0 before the prologue (3rd argument register)
+    cmp(getReg(2), xN)
+    ja(ret0L)
+    with StackFrame(4, N + 2, useRDX=True, useRCX=True, stackSizeByte=8) as sf:
+      pz = sf.p[0]
+      px = sf.p[1]
+      n = sf.p[2]
+      para = sf.p[3]
+      pk = sf.t[0:N]
+      mov(ptr(rsp), pz)
+      tmp = sf.t[N:N + 2] + [pz, rax]
+      smallL = Label()
+      exitL = Label()
+      cmp(n, N)
+      jb(smallL)
+      # r = top N-1 limbs of src = src[n - (N-1) .. n), X_N = 0
+      lea(rax, ptr(px + n * 8))
+      for i in range(N - 1):
+        mov(pk[i], ptr(rax - (N - 1 - i) * 8))
+      xor_(pk[N - 1], pk[N - 1])
+      lea(px, ptr(rax - N * 8))  # &src[n - N]
+      sub(n, N)                  # remaining steps - 1
+      exits = []
+      for j in range(xN - N + 1):
+        pk = modp_step_x64(pk, ptr(px), para, tmp)
+        if j < xN - N:
+          doneL = Label()
+          sub(n, 1)
+          jc(doneL)
+          exits.append((doneL, pk))
+          sub(px, 8)
+      # the last step: n == 0 here
+      mov(rdx, ptr(rsp))
+      store_mp(rdx, pk)
+      jmp(exitL)
+      for (doneL, pk) in exits:
+        L(doneL)
+        mov(rdx, ptr(rsp))
+        store_mp(rdx, pk)
+        jmp(exitL)
+      # srcN < N (src < p): dst = src zero-extended
+      L(smallL)
+      mov(rdx, ptr(rsp))
+      zeroL = [Label() for i in range(N)]
+      for i in range(N - 1):
+        cmp(n, i)
+        je(zeroL[i])
+        mov(rax, ptr(px + i * 8))
+        mov(ptr(rdx + i * 8), rax)
+      jmp(zeroL[N - 1])
+      for i in range(N):
+        L(zeroL[i])
+        mov(qword(rdx + i * 8), 0)
+      L(exitL)
+      mov(eax, 1)
+    L(ret0L)
+    xor_(eax, eax)
+    ret()
+
 def main():
   parser = getDefaultParser()
   parser.add_argument('-n', '--num', help='max size of Unit', type=int, default=9)
@@ -1018,6 +1151,11 @@ def main():
 
   for i in range(1,N+1):
     gen_sqr(i)
+
+  # dst[N] = src[srcN] mod p with the parameter block of struct mcl::Modp
+  # (see common.modp_param), N = 4, 6 (256, 384 bit); selected by Modp::init
+  gen_modp_x64('mclb_modp256_x64', 8, 4)
+  gen_modp_x64('mclb_modp384_x64', 8, 6)
 
   if param.win:
     gen_udiv128()
