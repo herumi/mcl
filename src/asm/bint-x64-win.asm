@@ -331,18 +331,17 @@ vzeroupper
 ret
 mcl_c5_vsubPreA endp
 mcl_c5_vadd proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
@@ -425,34 +424,32 @@ vmovdqa64 zmmword ptr [r10+256], zmm4
 vmovdqa64 zmmword ptr [r10+320], zmm5
 vmovdqa64 zmmword ptr [r10+384], zmm6
 vmovdqa64 zmmword ptr [r10+448], zmm7
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vadd endp
 mcl_c5_vsub proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
 lea rax, p
@@ -535,34 +532,32 @@ vmovdqa64 zmmword ptr [rcx+256], zmm4
 vmovdqa64 zmmword ptr [rcx+320], zmm5
 vmovdqa64 zmmword ptr [rcx+384], zmm6
 vmovdqa64 zmmword ptr [rcx+448], zmm7
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vsub endp
 mcl_c5_vmul proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 mov r10, rcx
 lea rax, ap
 vmovdqa64 zmm20, zmmword ptr [rax]
@@ -747,34 +742,32 @@ vmovdqa64 zmmword ptr [r10+256], zmm5
 vmovdqa64 zmmword ptr [r10+320], zmm6
 vmovdqa64 zmmword ptr [r10+384], zmm7
 vmovdqa64 zmmword ptr [r10+448], zmm8
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vmul endp
 mcl_c5_vsqr proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 mov r10, rcx
 vmovdqa64 zmm19, zmmword ptr [rdx]
 vmovdqa64 zmm20, zmmword ptr [rdx+64]
@@ -1121,34 +1114,32 @@ vmovdqa64 zmmword ptr [r10+256], zmm12
 vmovdqa64 zmmword ptr [r10+320], zmm13
 vmovdqa64 zmmword ptr [r10+384], zmm14
 vmovdqa64 zmmword ptr [r10+448], zmm15
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vsqr endp
 mcl_c5_vaddA proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 mov r10, rcx
 mov rax, 4503599627370495
 vpbroadcastq zmm16, rax
@@ -1238,34 +1229,32 @@ add r8, 64
 add r10, 64
 sub r9, 1
 jnz @L2
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vaddA endp
 mcl_c5_vsubA proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 mov rax, 4503599627370495
 vpbroadcastq zmm24, rax
 lea rax, p
@@ -1426,34 +1415,32 @@ vmovdqa64 zmmword ptr [rcx+768], zmm12
 vmovdqa64 zmmword ptr [rcx+832], zmm13
 vmovdqa64 zmmword ptr [rcx+896], zmm14
 vmovdqa64 zmmword ptr [rcx+960], zmm15
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vsubA endp
 mcl_c5_vmulA proc export
-sub rsp, 184
-vmovups xmmword ptr [rsp], xmm5
-vmovups xmmword ptr [rsp+16], xmm6
-vmovups xmmword ptr [rsp+32], xmm7
-vmovups xmmword ptr [rsp+48], xmm8
-vmovups xmmword ptr [rsp+64], xmm9
-vmovups xmmword ptr [rsp+80], xmm10
-vmovups xmmword ptr [rsp+96], xmm11
-vmovups xmmword ptr [rsp+112], xmm12
-vmovups xmmword ptr [rsp+128], xmm13
-vmovups xmmword ptr [rsp+144], xmm14
-vmovups xmmword ptr [rsp+160], xmm15
+sub rsp, 168
+movaps xmmword ptr [rsp], xmm6
+movaps xmmword ptr [rsp+16], xmm7
+movaps xmmword ptr [rsp+32], xmm8
+movaps xmmword ptr [rsp+48], xmm9
+movaps xmmword ptr [rsp+64], xmm10
+movaps xmmword ptr [rsp+80], xmm11
+movaps xmmword ptr [rsp+96], xmm12
+movaps xmmword ptr [rsp+112], xmm13
+movaps xmmword ptr [rsp+128], xmm14
+movaps xmmword ptr [rsp+144], xmm15
 lea rax, ap
 vmovdqa64 zmm23, zmmword ptr [rax]
 vmovdqa64 zmm24, zmmword ptr [rax+64]
@@ -1808,19 +1795,18 @@ vmovdqa64 zmmword ptr [rcx+768], zmm14
 vmovdqa64 zmmword ptr [rcx+832], zmm15
 vmovdqa64 zmmword ptr [rcx+896], zmm16
 vmovdqa64 zmmword ptr [rcx+960], zmm17
-vmovups xmm5, xmmword ptr [rsp]
-vmovups xmm6, xmmword ptr [rsp+16]
-vmovups xmm7, xmmword ptr [rsp+32]
-vmovups xmm8, xmmword ptr [rsp+48]
-vmovups xmm9, xmmword ptr [rsp+64]
-vmovups xmm10, xmmword ptr [rsp+80]
-vmovups xmm11, xmmword ptr [rsp+96]
-vmovups xmm12, xmmword ptr [rsp+112]
-vmovups xmm13, xmmword ptr [rsp+128]
-vmovups xmm14, xmmword ptr [rsp+144]
-vmovups xmm15, xmmword ptr [rsp+160]
 vzeroupper
-add rsp, 184
+movaps xmm6, xmmword ptr [rsp]
+movaps xmm7, xmmword ptr [rsp+16]
+movaps xmm8, xmmword ptr [rsp+32]
+movaps xmm9, xmmword ptr [rsp+48]
+movaps xmm10, xmmword ptr [rsp+64]
+movaps xmm11, xmmword ptr [rsp+80]
+movaps xmm12, xmmword ptr [rsp+96]
+movaps xmm13, xmmword ptr [rsp+112]
+movaps xmm14, xmmword ptr [rsp+128]
+movaps xmm15, xmmword ptr [rsp+144]
+add rsp, 168
 ret
 mcl_c5_vmulA endp
 align 16
@@ -5523,6 +5509,578 @@ mclb_sqr9 proc export
 mov r8, rdx
 jmp mclb_mul9
 mclb_sqr9 endp
+align 16
+mclb_modp256_x64 proc export
+cmp r8, 8
+ja @L14
+push rdi
+push rsi
+push rbx
+push rbp
+push r12
+push r13
+sub rsp, 8
+mov r10, rcx
+mov r11, rdx
+mov [rsp], r10
+cmp r8, 4
+jb @L8
+lea rax, [r11+r8*8]
+mov rdi, [rax-24]
+mov rsi, [rax-16]
+mov rbx, [rax-8]
+xor rbp, rbp
+lea r11, [rax-32]
+sub r8, 4
+mov rdx, [r9]
+mulx r10, rax, rbx
+mulx rax, r13, rbp
+add r13, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r12, rbx
+add r13, r12
+adc rax, r10
+mulx r10, r12, rbp
+adc r10, 0
+add rax, r12
+adc r10, 0
+mov rbp, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r12, r12
+mulx r12, r13, [r9+16]
+adox rbp, r13
+adcx rdi, r12
+mulx r12, r13, [r9+24]
+adox rdi, r13
+adcx rsi, r12
+mulx r12, r13, [r9+32]
+adox rsi, r13
+adcx rbx, r12
+mulx r12, r13, [r9+40]
+adox rbx, r13
+mov r12, rbp
+mov r13, rdi
+mov r10, rsi
+mov rax, rbx
+add rbp, [r9+16]
+adc rdi, [r9+24]
+adc rsi, [r9+32]
+adc rbx, [r9+40]
+cmovnc rbp, r12
+cmovnc rdi, r13
+cmovnc rsi, r10
+cmovnc rbx, rax
+sub r8, 1
+jc @L4
+sub r11, 8
+mov rdx, [r9]
+mulx r10, rax, rsi
+mulx rax, r13, rbx
+add r13, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r12, rsi
+add r13, r12
+adc rax, r10
+mulx r10, r12, rbx
+adc r10, 0
+add rax, r12
+adc r10, 0
+mov rbx, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r12, r12
+mulx r12, r13, [r9+16]
+adox rbx, r13
+adcx rbp, r12
+mulx r12, r13, [r9+24]
+adox rbp, r13
+adcx rdi, r12
+mulx r12, r13, [r9+32]
+adox rdi, r13
+adcx rsi, r12
+mulx r12, r13, [r9+40]
+adox rsi, r13
+mov r12, rbx
+mov r13, rbp
+mov r10, rdi
+mov rax, rsi
+add rbx, [r9+16]
+adc rbp, [r9+24]
+adc rdi, [r9+32]
+adc rsi, [r9+40]
+cmovnc rbx, r12
+cmovnc rbp, r13
+cmovnc rdi, r10
+cmovnc rsi, rax
+sub r8, 1
+jc @L5
+sub r11, 8
+mov rdx, [r9]
+mulx r10, rax, rdi
+mulx rax, r13, rsi
+add r13, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r12, rdi
+add r13, r12
+adc rax, r10
+mulx r10, r12, rsi
+adc r10, 0
+add rax, r12
+adc r10, 0
+mov rsi, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r12, r12
+mulx r12, r13, [r9+16]
+adox rsi, r13
+adcx rbx, r12
+mulx r12, r13, [r9+24]
+adox rbx, r13
+adcx rbp, r12
+mulx r12, r13, [r9+32]
+adox rbp, r13
+adcx rdi, r12
+mulx r12, r13, [r9+40]
+adox rdi, r13
+mov r12, rsi
+mov r13, rbx
+mov r10, rbp
+mov rax, rdi
+add rsi, [r9+16]
+adc rbx, [r9+24]
+adc rbp, [r9+32]
+adc rdi, [r9+40]
+cmovnc rsi, r12
+cmovnc rbx, r13
+cmovnc rbp, r10
+cmovnc rdi, rax
+sub r8, 1
+jc @L6
+sub r11, 8
+mov rdx, [r9]
+mulx r10, rax, rbp
+mulx rax, r13, rdi
+add r13, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r12, rbp
+add r13, r12
+adc rax, r10
+mulx r10, r12, rdi
+adc r10, 0
+add rax, r12
+adc r10, 0
+mov rdi, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r12, r12
+mulx r12, r13, [r9+16]
+adox rdi, r13
+adcx rsi, r12
+mulx r12, r13, [r9+24]
+adox rsi, r13
+adcx rbx, r12
+mulx r12, r13, [r9+32]
+adox rbx, r13
+adcx rbp, r12
+mulx r12, r13, [r9+40]
+adox rbp, r13
+mov r12, rdi
+mov r13, rsi
+mov r10, rbx
+mov rax, rbp
+add rdi, [r9+16]
+adc rsi, [r9+24]
+adc rbx, [r9+32]
+adc rbp, [r9+40]
+cmovnc rdi, r12
+cmovnc rsi, r13
+cmovnc rbx, r10
+cmovnc rbp, rax
+sub r8, 1
+jc @L7
+sub r11, 8
+mov rdx, [r9]
+mulx r10, rax, rbx
+mulx rax, r13, rbp
+add r13, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r12, rbx
+add r13, r12
+adc rax, r10
+mulx r10, r12, rbp
+adc r10, 0
+add rax, r12
+adc r10, 0
+mov rbp, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r12, r12
+mulx r12, r13, [r9+16]
+adox rbp, r13
+adcx rdi, r12
+mulx r12, r13, [r9+24]
+adox rdi, r13
+adcx rsi, r12
+mulx r12, r13, [r9+32]
+adox rsi, r13
+adcx rbx, r12
+mulx r12, r13, [r9+40]
+adox rbx, r13
+mov r12, rbp
+mov r13, rdi
+mov r10, rsi
+mov rax, rbx
+add rbp, [r9+16]
+adc rdi, [r9+24]
+adc rsi, [r9+32]
+adc rbx, [r9+40]
+cmovnc rbp, r12
+cmovnc rdi, r13
+cmovnc rsi, r10
+cmovnc rbx, rax
+mov rdx, [rsp]
+mov [rdx], rbp
+mov [rdx+8], rdi
+mov [rdx+16], rsi
+mov [rdx+24], rbx
+jmp @L13
+@L4:
+mov rdx, [rsp]
+mov [rdx], rbp
+mov [rdx+8], rdi
+mov [rdx+16], rsi
+mov [rdx+24], rbx
+jmp @L13
+@L5:
+mov rdx, [rsp]
+mov [rdx], rbx
+mov [rdx+8], rbp
+mov [rdx+16], rdi
+mov [rdx+24], rsi
+jmp @L13
+@L6:
+mov rdx, [rsp]
+mov [rdx], rsi
+mov [rdx+8], rbx
+mov [rdx+16], rbp
+mov [rdx+24], rdi
+jmp @L13
+@L7:
+mov rdx, [rsp]
+mov [rdx], rdi
+mov [rdx+8], rsi
+mov [rdx+16], rbx
+mov [rdx+24], rbp
+jmp @L13
+@L8:
+mov rdx, [rsp]
+cmp r8, 0
+je @L9
+mov rax, [r11]
+mov [rdx], rax
+cmp r8, 1
+je @L10
+mov rax, [r11+8]
+mov [rdx+8], rax
+cmp r8, 2
+je @L11
+mov rax, [r11+16]
+mov [rdx+16], rax
+jmp @L12
+@L9:
+mov qword ptr [rdx], 0
+@L10:
+mov qword ptr [rdx+8], 0
+@L11:
+mov qword ptr [rdx+16], 0
+@L12:
+mov qword ptr [rdx+24], 0
+@L13:
+mov eax, 1
+add rsp, 8
+pop r13
+pop r12
+pop rbp
+pop rbx
+pop rsi
+pop rdi
+ret
+@L14:
+xor eax, eax
+ret
+mclb_modp256_x64 endp
+align 16
+mclb_modp384_x64 proc export
+cmp r8, 8
+ja @L25
+push rdi
+push rsi
+push rbx
+push rbp
+push r12
+push r13
+push r14
+push r15
+sub rsp, 8
+mov r10, rcx
+mov r11, rdx
+mov [rsp], r10
+cmp r8, 6
+jb @L17
+lea rax, [r11+r8*8]
+mov rdi, [rax-40]
+mov rsi, [rax-32]
+mov rbx, [rax-24]
+mov rbp, [rax-16]
+mov r12, [rax-8]
+xor r13, r13
+lea r11, [rax-48]
+sub r8, 6
+mov rdx, [r9]
+mulx r10, rax, r12
+mulx rax, r15, r13
+add r15, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r14, r12
+add r15, r14
+adc rax, r10
+mulx r10, r14, r13
+adc r10, 0
+add rax, r14
+adc r10, 0
+mov r13, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r14, r14
+mulx r14, r15, [r9+16]
+adox r13, r15
+adcx rdi, r14
+mulx r14, r15, [r9+24]
+adox rdi, r15
+adcx rsi, r14
+mulx r14, r15, [r9+32]
+adox rsi, r15
+adcx rbx, r14
+mulx r14, r15, [r9+40]
+adox rbx, r15
+adcx rbp, r14
+mulx r14, r15, [r9+48]
+adox rbp, r15
+adcx r12, r14
+mulx r14, r15, [r9+56]
+adox r12, r15
+mov r14, r13
+mov r15, rdi
+mov r10, rsi
+mov rax, rbx
+mov rcx, rbp
+mov rdx, r12
+add r13, [r9+16]
+adc rdi, [r9+24]
+adc rsi, [r9+32]
+adc rbx, [r9+40]
+adc rbp, [r9+48]
+adc r12, [r9+56]
+cmovnc r13, r14
+cmovnc rdi, r15
+cmovnc rsi, r10
+cmovnc rbx, rax
+cmovnc rbp, rcx
+cmovnc r12, rdx
+sub r8, 1
+jc @L15
+sub r11, 8
+mov rdx, [r9]
+mulx r10, rax, rbp
+mulx rax, r15, r12
+add r15, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r14, rbp
+add r15, r14
+adc rax, r10
+mulx r10, r14, r12
+adc r10, 0
+add rax, r14
+adc r10, 0
+mov r12, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r14, r14
+mulx r14, r15, [r9+16]
+adox r12, r15
+adcx r13, r14
+mulx r14, r15, [r9+24]
+adox r13, r15
+adcx rdi, r14
+mulx r14, r15, [r9+32]
+adox rdi, r15
+adcx rsi, r14
+mulx r14, r15, [r9+40]
+adox rsi, r15
+adcx rbx, r14
+mulx r14, r15, [r9+48]
+adox rbx, r15
+adcx rbp, r14
+mulx r14, r15, [r9+56]
+adox rbp, r15
+mov r14, r12
+mov r15, r13
+mov r10, rdi
+mov rax, rsi
+mov rcx, rbx
+mov rdx, rbp
+add r12, [r9+16]
+adc r13, [r9+24]
+adc rdi, [r9+32]
+adc rsi, [r9+40]
+adc rbx, [r9+48]
+adc rbp, [r9+56]
+cmovnc r12, r14
+cmovnc r13, r15
+cmovnc rdi, r10
+cmovnc rsi, rax
+cmovnc rbx, rcx
+cmovnc rbp, rdx
+sub r8, 1
+jc @L16
+sub r11, 8
+mov rdx, [r9]
+mulx r10, rax, rbx
+mulx rax, r15, rbp
+add r15, r10
+adc rax, 0
+mov rdx, [r9+8]
+mulx r10, r14, rbx
+add r15, r14
+adc rax, r10
+mulx r10, r14, rbp
+adc r10, 0
+add rax, r14
+adc r10, 0
+mov rbp, [r11]
+shrd rax, r10, 1
+mov rdx, rax
+xor r14, r14
+mulx r14, r15, [r9+16]
+adox rbp, r15
+adcx r12, r14
+mulx r14, r15, [r9+24]
+adox r12, r15
+adcx r13, r14
+mulx r14, r15, [r9+32]
+adox r13, r15
+adcx rdi, r14
+mulx r14, r15, [r9+40]
+adox rdi, r15
+adcx rsi, r14
+mulx r14, r15, [r9+48]
+adox rsi, r15
+adcx rbx, r14
+mulx r14, r15, [r9+56]
+adox rbx, r15
+mov r14, rbp
+mov r15, r12
+mov r10, r13
+mov rax, rdi
+mov rcx, rsi
+mov rdx, rbx
+add rbp, [r9+16]
+adc r12, [r9+24]
+adc r13, [r9+32]
+adc rdi, [r9+40]
+adc rsi, [r9+48]
+adc rbx, [r9+56]
+cmovnc rbp, r14
+cmovnc r12, r15
+cmovnc r13, r10
+cmovnc rdi, rax
+cmovnc rsi, rcx
+cmovnc rbx, rdx
+mov rdx, [rsp]
+mov [rdx], rbp
+mov [rdx+8], r12
+mov [rdx+16], r13
+mov [rdx+24], rdi
+mov [rdx+32], rsi
+mov [rdx+40], rbx
+jmp @L24
+@L15:
+mov rdx, [rsp]
+mov [rdx], r13
+mov [rdx+8], rdi
+mov [rdx+16], rsi
+mov [rdx+24], rbx
+mov [rdx+32], rbp
+mov [rdx+40], r12
+jmp @L24
+@L16:
+mov rdx, [rsp]
+mov [rdx], r12
+mov [rdx+8], r13
+mov [rdx+16], rdi
+mov [rdx+24], rsi
+mov [rdx+32], rbx
+mov [rdx+40], rbp
+jmp @L24
+@L17:
+mov rdx, [rsp]
+cmp r8, 0
+je @L18
+mov rax, [r11]
+mov [rdx], rax
+cmp r8, 1
+je @L19
+mov rax, [r11+8]
+mov [rdx+8], rax
+cmp r8, 2
+je @L20
+mov rax, [r11+16]
+mov [rdx+16], rax
+cmp r8, 3
+je @L21
+mov rax, [r11+24]
+mov [rdx+24], rax
+cmp r8, 4
+je @L22
+mov rax, [r11+32]
+mov [rdx+32], rax
+jmp @L23
+@L18:
+mov qword ptr [rdx], 0
+@L19:
+mov qword ptr [rdx+8], 0
+@L20:
+mov qword ptr [rdx+16], 0
+@L21:
+mov qword ptr [rdx+24], 0
+@L22:
+mov qword ptr [rdx+32], 0
+@L23:
+mov qword ptr [rdx+40], 0
+@L24:
+mov eax, 1
+add rsp, 8
+pop r15
+pop r14
+pop r13
+pop r12
+pop rbp
+pop rbx
+pop rsi
+pop rdi
+ret
+@L25:
+xor eax, eax
+ret
+mclb_modp384_x64 endp
 align 16
 mclb_udiv128 proc export
 mov rax, rdx
