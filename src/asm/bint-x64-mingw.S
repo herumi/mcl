@@ -354,18 +354,17 @@ SIZE(mcl_c5_vsubPreA)
 .global PRE(mcl_c5_vadd)
 PRE(mcl_c5_vadd):
 TYPE(mcl_c5_vadd)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 mov %rcx, %r10
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm16
@@ -448,36 +447,34 @@ vmovdqa64 %zmm4, 256(%r10)
 vmovdqa64 %zmm5, 320(%r10)
 vmovdqa64 %zmm6, 384(%r10)
 vmovdqa64 %zmm7, 448(%r10)
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vadd)
 .global PRE(mcl_c5_vsub)
 PRE(mcl_c5_vsub):
 TYPE(mcl_c5_vsub)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm16
 lea PRE(p)(%rip), %rax
@@ -560,36 +557,34 @@ vmovdqa64 %zmm4, 256(%rcx)
 vmovdqa64 %zmm5, 320(%rcx)
 vmovdqa64 %zmm6, 384(%rcx)
 vmovdqa64 %zmm7, 448(%rcx)
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vsub)
 .global PRE(mcl_c5_vmul)
 PRE(mcl_c5_vmul):
 TYPE(mcl_c5_vmul)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 mov %rcx, %r10
 lea PRE(ap)(%rip), %rax
 vmovdqa64 (%rax), %zmm20
@@ -774,36 +769,34 @@ vmovdqa64 %zmm5, 256(%r10)
 vmovdqa64 %zmm6, 320(%r10)
 vmovdqa64 %zmm7, 384(%r10)
 vmovdqa64 %zmm8, 448(%r10)
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vmul)
 .global PRE(mcl_c5_vsqr)
 PRE(mcl_c5_vsqr):
 TYPE(mcl_c5_vsqr)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 mov %rcx, %r10
 vmovdqa64 (%rdx), %zmm19
 vmovdqa64 64(%rdx), %zmm20
@@ -1150,36 +1143,34 @@ vmovdqa64 %zmm12, 256(%r10)
 vmovdqa64 %zmm13, 320(%r10)
 vmovdqa64 %zmm14, 384(%r10)
 vmovdqa64 %zmm15, 448(%r10)
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vsqr)
 .global PRE(mcl_c5_vaddA)
 PRE(mcl_c5_vaddA):
 TYPE(mcl_c5_vaddA)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 mov %rcx, %r10
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm16
@@ -1269,36 +1260,34 @@ add $64, %r8
 add $64, %r10
 sub $1, %r9
 jnz .L2
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vaddA)
 .global PRE(mcl_c5_vsubA)
 PRE(mcl_c5_vsubA):
 TYPE(mcl_c5_vsubA)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 mov $4503599627370495, %rax
 vpbroadcastq %rax, %zmm24
 lea PRE(p)(%rip), %rax
@@ -1459,36 +1448,34 @@ vmovdqa64 %zmm12, 768(%rcx)
 vmovdqa64 %zmm13, 832(%rcx)
 vmovdqa64 %zmm14, 896(%rcx)
 vmovdqa64 %zmm15, 960(%rcx)
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vsubA)
 .global PRE(mcl_c5_vmulA)
 PRE(mcl_c5_vmulA):
 TYPE(mcl_c5_vmulA)
-sub $184, %rsp
-vmovups %xmm5, (%rsp)
-vmovups %xmm6, 16(%rsp)
-vmovups %xmm7, 32(%rsp)
-vmovups %xmm8, 48(%rsp)
-vmovups %xmm9, 64(%rsp)
-vmovups %xmm10, 80(%rsp)
-vmovups %xmm11, 96(%rsp)
-vmovups %xmm12, 112(%rsp)
-vmovups %xmm13, 128(%rsp)
-vmovups %xmm14, 144(%rsp)
-vmovups %xmm15, 160(%rsp)
+sub $168, %rsp
+movaps %xmm6, (%rsp)
+movaps %xmm7, 16(%rsp)
+movaps %xmm8, 32(%rsp)
+movaps %xmm9, 48(%rsp)
+movaps %xmm10, 64(%rsp)
+movaps %xmm11, 80(%rsp)
+movaps %xmm12, 96(%rsp)
+movaps %xmm13, 112(%rsp)
+movaps %xmm14, 128(%rsp)
+movaps %xmm15, 144(%rsp)
 lea PRE(ap)(%rip), %rax
 vmovdqa64 (%rax), %zmm23
 vmovdqa64 64(%rax), %zmm24
@@ -1843,19 +1830,18 @@ vmovdqa64 %zmm14, 768(%rcx)
 vmovdqa64 %zmm15, 832(%rcx)
 vmovdqa64 %zmm16, 896(%rcx)
 vmovdqa64 %zmm17, 960(%rcx)
-vmovups (%rsp), %xmm5
-vmovups 16(%rsp), %xmm6
-vmovups 32(%rsp), %xmm7
-vmovups 48(%rsp), %xmm8
-vmovups 64(%rsp), %xmm9
-vmovups 80(%rsp), %xmm10
-vmovups 96(%rsp), %xmm11
-vmovups 112(%rsp), %xmm12
-vmovups 128(%rsp), %xmm13
-vmovups 144(%rsp), %xmm14
-vmovups 160(%rsp), %xmm15
 vzeroupper
-add $184, %rsp
+movaps (%rsp), %xmm6
+movaps 16(%rsp), %xmm7
+movaps 32(%rsp), %xmm8
+movaps 48(%rsp), %xmm9
+movaps 64(%rsp), %xmm10
+movaps 80(%rsp), %xmm11
+movaps 96(%rsp), %xmm12
+movaps 112(%rsp), %xmm13
+movaps 128(%rsp), %xmm14
+movaps 144(%rsp), %xmm15
+add $168, %rsp
 ret
 SIZE(mcl_c5_vmulA)
 .balign 16
@@ -5758,6 +5744,582 @@ TYPE(mclb_sqr9)
 mov %rdx, %r8
 jmp PRE(mclb_mul9)
 SIZE(mclb_sqr9)
+.balign 16
+.global PRE(mclb_modp256_x64)
+PRE(mclb_modp256_x64):
+TYPE(mclb_modp256_x64)
+cmp $8, %r8
+ja .L14
+push %rdi
+push %rsi
+push %rbx
+push %rbp
+push %r12
+push %r13
+sub $8, %rsp
+mov %rcx, %r10
+mov %rdx, %r11
+mov %r10, (%rsp)
+cmp $4, %r8
+jb .L8
+lea (%r11,%r8,8), %rax
+mov -24(%rax), %rdi
+mov -16(%rax), %rsi
+mov -8(%rax), %rbx
+xor %rbp, %rbp
+lea -32(%rax), %r11
+sub $4, %r8
+mov (%r9), %rdx
+mulx %rbx, %rax, %r10
+mulx %rbp, %r13, %rax
+add %r10, %r13
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rbx, %r12, %r10
+add %r12, %r13
+adc %r10, %rax
+mulx %rbp, %r12, %r10
+adc $0, %r10
+add %r12, %rax
+adc $0, %r10
+mov (%r11), %rbp
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r12, %r12
+mulx 16(%r9), %r13, %r12
+adox %r13, %rbp
+adcx %r12, %rdi
+mulx 24(%r9), %r13, %r12
+adox %r13, %rdi
+adcx %r12, %rsi
+mulx 32(%r9), %r13, %r12
+adox %r13, %rsi
+adcx %r12, %rbx
+mulx 40(%r9), %r13, %r12
+adox %r13, %rbx
+mov %rbp, %r12
+mov %rdi, %r13
+mov %rsi, %r10
+mov %rbx, %rax
+add 16(%r9), %rbp
+adc 24(%r9), %rdi
+adc 32(%r9), %rsi
+adc 40(%r9), %rbx
+cmovnc %r12, %rbp
+cmovnc %r13, %rdi
+cmovnc %r10, %rsi
+cmovnc %rax, %rbx
+sub $1, %r8
+jc .L4
+sub $8, %r11
+mov (%r9), %rdx
+mulx %rsi, %rax, %r10
+mulx %rbx, %r13, %rax
+add %r10, %r13
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rsi, %r12, %r10
+add %r12, %r13
+adc %r10, %rax
+mulx %rbx, %r12, %r10
+adc $0, %r10
+add %r12, %rax
+adc $0, %r10
+mov (%r11), %rbx
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r12, %r12
+mulx 16(%r9), %r13, %r12
+adox %r13, %rbx
+adcx %r12, %rbp
+mulx 24(%r9), %r13, %r12
+adox %r13, %rbp
+adcx %r12, %rdi
+mulx 32(%r9), %r13, %r12
+adox %r13, %rdi
+adcx %r12, %rsi
+mulx 40(%r9), %r13, %r12
+adox %r13, %rsi
+mov %rbx, %r12
+mov %rbp, %r13
+mov %rdi, %r10
+mov %rsi, %rax
+add 16(%r9), %rbx
+adc 24(%r9), %rbp
+adc 32(%r9), %rdi
+adc 40(%r9), %rsi
+cmovnc %r12, %rbx
+cmovnc %r13, %rbp
+cmovnc %r10, %rdi
+cmovnc %rax, %rsi
+sub $1, %r8
+jc .L5
+sub $8, %r11
+mov (%r9), %rdx
+mulx %rdi, %rax, %r10
+mulx %rsi, %r13, %rax
+add %r10, %r13
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rdi, %r12, %r10
+add %r12, %r13
+adc %r10, %rax
+mulx %rsi, %r12, %r10
+adc $0, %r10
+add %r12, %rax
+adc $0, %r10
+mov (%r11), %rsi
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r12, %r12
+mulx 16(%r9), %r13, %r12
+adox %r13, %rsi
+adcx %r12, %rbx
+mulx 24(%r9), %r13, %r12
+adox %r13, %rbx
+adcx %r12, %rbp
+mulx 32(%r9), %r13, %r12
+adox %r13, %rbp
+adcx %r12, %rdi
+mulx 40(%r9), %r13, %r12
+adox %r13, %rdi
+mov %rsi, %r12
+mov %rbx, %r13
+mov %rbp, %r10
+mov %rdi, %rax
+add 16(%r9), %rsi
+adc 24(%r9), %rbx
+adc 32(%r9), %rbp
+adc 40(%r9), %rdi
+cmovnc %r12, %rsi
+cmovnc %r13, %rbx
+cmovnc %r10, %rbp
+cmovnc %rax, %rdi
+sub $1, %r8
+jc .L6
+sub $8, %r11
+mov (%r9), %rdx
+mulx %rbp, %rax, %r10
+mulx %rdi, %r13, %rax
+add %r10, %r13
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rbp, %r12, %r10
+add %r12, %r13
+adc %r10, %rax
+mulx %rdi, %r12, %r10
+adc $0, %r10
+add %r12, %rax
+adc $0, %r10
+mov (%r11), %rdi
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r12, %r12
+mulx 16(%r9), %r13, %r12
+adox %r13, %rdi
+adcx %r12, %rsi
+mulx 24(%r9), %r13, %r12
+adox %r13, %rsi
+adcx %r12, %rbx
+mulx 32(%r9), %r13, %r12
+adox %r13, %rbx
+adcx %r12, %rbp
+mulx 40(%r9), %r13, %r12
+adox %r13, %rbp
+mov %rdi, %r12
+mov %rsi, %r13
+mov %rbx, %r10
+mov %rbp, %rax
+add 16(%r9), %rdi
+adc 24(%r9), %rsi
+adc 32(%r9), %rbx
+adc 40(%r9), %rbp
+cmovnc %r12, %rdi
+cmovnc %r13, %rsi
+cmovnc %r10, %rbx
+cmovnc %rax, %rbp
+sub $1, %r8
+jc .L7
+sub $8, %r11
+mov (%r9), %rdx
+mulx %rbx, %rax, %r10
+mulx %rbp, %r13, %rax
+add %r10, %r13
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rbx, %r12, %r10
+add %r12, %r13
+adc %r10, %rax
+mulx %rbp, %r12, %r10
+adc $0, %r10
+add %r12, %rax
+adc $0, %r10
+mov (%r11), %rbp
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r12, %r12
+mulx 16(%r9), %r13, %r12
+adox %r13, %rbp
+adcx %r12, %rdi
+mulx 24(%r9), %r13, %r12
+adox %r13, %rdi
+adcx %r12, %rsi
+mulx 32(%r9), %r13, %r12
+adox %r13, %rsi
+adcx %r12, %rbx
+mulx 40(%r9), %r13, %r12
+adox %r13, %rbx
+mov %rbp, %r12
+mov %rdi, %r13
+mov %rsi, %r10
+mov %rbx, %rax
+add 16(%r9), %rbp
+adc 24(%r9), %rdi
+adc 32(%r9), %rsi
+adc 40(%r9), %rbx
+cmovnc %r12, %rbp
+cmovnc %r13, %rdi
+cmovnc %r10, %rsi
+cmovnc %rax, %rbx
+mov (%rsp), %rdx
+mov %rbp, (%rdx)
+mov %rdi, 8(%rdx)
+mov %rsi, 16(%rdx)
+mov %rbx, 24(%rdx)
+jmp .L13
+.L4:
+mov (%rsp), %rdx
+mov %rbp, (%rdx)
+mov %rdi, 8(%rdx)
+mov %rsi, 16(%rdx)
+mov %rbx, 24(%rdx)
+jmp .L13
+.L5:
+mov (%rsp), %rdx
+mov %rbx, (%rdx)
+mov %rbp, 8(%rdx)
+mov %rdi, 16(%rdx)
+mov %rsi, 24(%rdx)
+jmp .L13
+.L6:
+mov (%rsp), %rdx
+mov %rsi, (%rdx)
+mov %rbx, 8(%rdx)
+mov %rbp, 16(%rdx)
+mov %rdi, 24(%rdx)
+jmp .L13
+.L7:
+mov (%rsp), %rdx
+mov %rdi, (%rdx)
+mov %rsi, 8(%rdx)
+mov %rbx, 16(%rdx)
+mov %rbp, 24(%rdx)
+jmp .L13
+.L8:
+mov (%rsp), %rdx
+cmp $0, %r8
+je .L9
+mov (%r11), %rax
+mov %rax, (%rdx)
+cmp $1, %r8
+je .L10
+mov 8(%r11), %rax
+mov %rax, 8(%rdx)
+cmp $2, %r8
+je .L11
+mov 16(%r11), %rax
+mov %rax, 16(%rdx)
+jmp .L12
+.L9:
+movq $0, (%rdx)
+.L10:
+movq $0, 8(%rdx)
+.L11:
+movq $0, 16(%rdx)
+.L12:
+movq $0, 24(%rdx)
+.L13:
+mov $1, %eax
+add $8, %rsp
+pop %r13
+pop %r12
+pop %rbp
+pop %rbx
+pop %rsi
+pop %rdi
+ret
+.L14:
+xor %eax, %eax
+ret
+SIZE(mclb_modp256_x64)
+.balign 16
+.global PRE(mclb_modp384_x64)
+PRE(mclb_modp384_x64):
+TYPE(mclb_modp384_x64)
+cmp $8, %r8
+ja .L25
+push %rdi
+push %rsi
+push %rbx
+push %rbp
+push %r12
+push %r13
+push %r14
+push %r15
+sub $8, %rsp
+mov %rcx, %r10
+mov %rdx, %r11
+mov %r10, (%rsp)
+cmp $6, %r8
+jb .L17
+lea (%r11,%r8,8), %rax
+mov -40(%rax), %rdi
+mov -32(%rax), %rsi
+mov -24(%rax), %rbx
+mov -16(%rax), %rbp
+mov -8(%rax), %r12
+xor %r13, %r13
+lea -48(%rax), %r11
+sub $6, %r8
+mov (%r9), %rdx
+mulx %r12, %rax, %r10
+mulx %r13, %r15, %rax
+add %r10, %r15
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %r12, %r14, %r10
+add %r14, %r15
+adc %r10, %rax
+mulx %r13, %r14, %r10
+adc $0, %r10
+add %r14, %rax
+adc $0, %r10
+mov (%r11), %r13
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r14, %r14
+mulx 16(%r9), %r15, %r14
+adox %r15, %r13
+adcx %r14, %rdi
+mulx 24(%r9), %r15, %r14
+adox %r15, %rdi
+adcx %r14, %rsi
+mulx 32(%r9), %r15, %r14
+adox %r15, %rsi
+adcx %r14, %rbx
+mulx 40(%r9), %r15, %r14
+adox %r15, %rbx
+adcx %r14, %rbp
+mulx 48(%r9), %r15, %r14
+adox %r15, %rbp
+adcx %r14, %r12
+mulx 56(%r9), %r15, %r14
+adox %r15, %r12
+mov %r13, %r14
+mov %rdi, %r15
+mov %rsi, %r10
+mov %rbx, %rax
+mov %rbp, %rcx
+mov %r12, %rdx
+add 16(%r9), %r13
+adc 24(%r9), %rdi
+adc 32(%r9), %rsi
+adc 40(%r9), %rbx
+adc 48(%r9), %rbp
+adc 56(%r9), %r12
+cmovnc %r14, %r13
+cmovnc %r15, %rdi
+cmovnc %r10, %rsi
+cmovnc %rax, %rbx
+cmovnc %rcx, %rbp
+cmovnc %rdx, %r12
+sub $1, %r8
+jc .L15
+sub $8, %r11
+mov (%r9), %rdx
+mulx %rbp, %rax, %r10
+mulx %r12, %r15, %rax
+add %r10, %r15
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rbp, %r14, %r10
+add %r14, %r15
+adc %r10, %rax
+mulx %r12, %r14, %r10
+adc $0, %r10
+add %r14, %rax
+adc $0, %r10
+mov (%r11), %r12
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r14, %r14
+mulx 16(%r9), %r15, %r14
+adox %r15, %r12
+adcx %r14, %r13
+mulx 24(%r9), %r15, %r14
+adox %r15, %r13
+adcx %r14, %rdi
+mulx 32(%r9), %r15, %r14
+adox %r15, %rdi
+adcx %r14, %rsi
+mulx 40(%r9), %r15, %r14
+adox %r15, %rsi
+adcx %r14, %rbx
+mulx 48(%r9), %r15, %r14
+adox %r15, %rbx
+adcx %r14, %rbp
+mulx 56(%r9), %r15, %r14
+adox %r15, %rbp
+mov %r12, %r14
+mov %r13, %r15
+mov %rdi, %r10
+mov %rsi, %rax
+mov %rbx, %rcx
+mov %rbp, %rdx
+add 16(%r9), %r12
+adc 24(%r9), %r13
+adc 32(%r9), %rdi
+adc 40(%r9), %rsi
+adc 48(%r9), %rbx
+adc 56(%r9), %rbp
+cmovnc %r14, %r12
+cmovnc %r15, %r13
+cmovnc %r10, %rdi
+cmovnc %rax, %rsi
+cmovnc %rcx, %rbx
+cmovnc %rdx, %rbp
+sub $1, %r8
+jc .L16
+sub $8, %r11
+mov (%r9), %rdx
+mulx %rbx, %rax, %r10
+mulx %rbp, %r15, %rax
+add %r10, %r15
+adc $0, %rax
+mov 8(%r9), %rdx
+mulx %rbx, %r14, %r10
+add %r14, %r15
+adc %r10, %rax
+mulx %rbp, %r14, %r10
+adc $0, %r10
+add %r14, %rax
+adc $0, %r10
+mov (%r11), %rbp
+shrd $1, %r10, %rax
+mov %rax, %rdx
+xor %r14, %r14
+mulx 16(%r9), %r15, %r14
+adox %r15, %rbp
+adcx %r14, %r12
+mulx 24(%r9), %r15, %r14
+adox %r15, %r12
+adcx %r14, %r13
+mulx 32(%r9), %r15, %r14
+adox %r15, %r13
+adcx %r14, %rdi
+mulx 40(%r9), %r15, %r14
+adox %r15, %rdi
+adcx %r14, %rsi
+mulx 48(%r9), %r15, %r14
+adox %r15, %rsi
+adcx %r14, %rbx
+mulx 56(%r9), %r15, %r14
+adox %r15, %rbx
+mov %rbp, %r14
+mov %r12, %r15
+mov %r13, %r10
+mov %rdi, %rax
+mov %rsi, %rcx
+mov %rbx, %rdx
+add 16(%r9), %rbp
+adc 24(%r9), %r12
+adc 32(%r9), %r13
+adc 40(%r9), %rdi
+adc 48(%r9), %rsi
+adc 56(%r9), %rbx
+cmovnc %r14, %rbp
+cmovnc %r15, %r12
+cmovnc %r10, %r13
+cmovnc %rax, %rdi
+cmovnc %rcx, %rsi
+cmovnc %rdx, %rbx
+mov (%rsp), %rdx
+mov %rbp, (%rdx)
+mov %r12, 8(%rdx)
+mov %r13, 16(%rdx)
+mov %rdi, 24(%rdx)
+mov %rsi, 32(%rdx)
+mov %rbx, 40(%rdx)
+jmp .L24
+.L15:
+mov (%rsp), %rdx
+mov %r13, (%rdx)
+mov %rdi, 8(%rdx)
+mov %rsi, 16(%rdx)
+mov %rbx, 24(%rdx)
+mov %rbp, 32(%rdx)
+mov %r12, 40(%rdx)
+jmp .L24
+.L16:
+mov (%rsp), %rdx
+mov %r12, (%rdx)
+mov %r13, 8(%rdx)
+mov %rdi, 16(%rdx)
+mov %rsi, 24(%rdx)
+mov %rbx, 32(%rdx)
+mov %rbp, 40(%rdx)
+jmp .L24
+.L17:
+mov (%rsp), %rdx
+cmp $0, %r8
+je .L18
+mov (%r11), %rax
+mov %rax, (%rdx)
+cmp $1, %r8
+je .L19
+mov 8(%r11), %rax
+mov %rax, 8(%rdx)
+cmp $2, %r8
+je .L20
+mov 16(%r11), %rax
+mov %rax, 16(%rdx)
+cmp $3, %r8
+je .L21
+mov 24(%r11), %rax
+mov %rax, 24(%rdx)
+cmp $4, %r8
+je .L22
+mov 32(%r11), %rax
+mov %rax, 32(%rdx)
+jmp .L23
+.L18:
+movq $0, (%rdx)
+.L19:
+movq $0, 8(%rdx)
+.L20:
+movq $0, 16(%rdx)
+.L21:
+movq $0, 24(%rdx)
+.L22:
+movq $0, 32(%rdx)
+.L23:
+movq $0, 40(%rdx)
+.L24:
+mov $1, %eax
+add $8, %rsp
+pop %r15
+pop %r14
+pop %r13
+pop %r12
+pop %rbp
+pop %rbx
+pop %rsi
+pop %rdi
+ret
+.L25:
+xor %eax, %eax
+ret
+SIZE(mclb_modp384_x64)
 .balign 16
 .global PRE(mclb_udiv128)
 PRE(mclb_udiv128):
