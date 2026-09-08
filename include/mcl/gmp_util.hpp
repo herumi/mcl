@@ -1032,11 +1032,14 @@ struct Modp2 {
 	Unit q0;
 	Unit q1;
 	Unit np[maxUnitSize];
-	Modp2() : q0(0), q1(0), np() {}
+	int (*modp_asm)(Unit *, const Unit *, size_t, const Unit*);
+	size_t N; // number of units of p
+	Modp2() : q0(0), q1(0), np(), modp_asm(0), N(0) {}
 	bool init(const mpz_class& p) {
 		const size_t BIT = sizeof(Unit) * 8;
 		const size_t L = gmp::getBitSize(p);
-		const size_t N = roundUp(L, BIT);
+		N = roundUp(L, BIT);
+		if (N > maxUnitSize) return false;
 		if (!((N - 1) * BIT + 2 <= L && L <= N * BIT)) return false;
 		// leading zero bits of p in N words
 		const size_t s = N * BIT - L;
@@ -1049,6 +1052,67 @@ struct Modp2 {
 		for (size_t i = 0; i < N; i++) {
 			np[i] = gmp::getUnit(notp, i);
 		}
+#if 0 // #ifdef MCL_USE_LLVM
+		extern "C" int mclb_modp256(Unit *, const Unit *, size_t, const Unit*);
+		extern "C" int mclb_modp384(Unit *, const Unit *, size_t, const Unit*);
+		switch (N) {
+		case 4: modp_asm = mclb_modp256; break;
+		case 6: modp_asm = mclb_modp384; break;
+		}
+#endif
+		return true;
+	}
+	// y[] = x[] % p
+	// assume xN * sizeof(Unit) <= 64
+	bool modp(Unit *y, const Unit *x, size_t xN) const
+	{
+		if (modp_asm) return modp_asm(y, x, xN, &q0);
+		return modp_generic(y, x, xN);
+	}
+	/*
+		word-serial Barrett reduction with the two-unit reciprocal Qt = [q1:q0]
+		Keep r < p and fold the units of x from the top one by one:
+		  xx = r 2^BIT + w (< p 2^BIT),
+		  q = floor(W Qt / 2^(2 BIT + 1)) where W = the top two units of xx,
+		  r = xx - q p, then r -= p once if r >= p.
+		q is at most 1 less than floor(xx / p), so one conditional subtraction suffices.
+		xx - q p is computed as xx + q np - q 2^(N BIT) (mod 2^((N+1) BIT)) with
+		np = 2^(N BIT) - p, and r >= p is the carry of r + np into bit N BIT.
+	*/
+	bool modp_generic(Unit *y, const Unit *x, size_t xN) const
+	{
+		if (xN * sizeof(Unit) > 64) return false;
+		const size_t BIT = sizeof(Unit) * 8;
+		if (xN < N) {
+//			// init() guarantees N <= maxUnitSize; the check lets gcc see xN < maxUnitSize (avoid -Warray-bounds)
+			if (N > maxUnitSize) return false;
+			// x < 2^((N-1) BIT) < p because (N-1) BIT + 2 <= bitLen(p)
+			bint::copyN(y, x, xN);
+			bint::clearN(y + xN, N - xN);
+			return true;
+		}
+		const Unit Qt[2] = { q0, q1 };
+		// xx[N+1] = r 2^BIT + w ; r is kept in xx[1..N]
+		Unit xx[maxUnitSize + 1];
+		Unit t[maxUnitSize + 1];
+		Unit v[maxUnitSize];
+		// r = the top N-1 units of x (< p)
+		bint::copyN(xx + 1, x + xN - (N - 1), N - 1);
+		xx[N] = 0;
+		for (size_t k = xN - N + 1; k > 0; k--) {
+			xx[0] = x[k - 1];
+			// q = floor(W Qt / 2^(2 BIT + 1)), W = [xx[N]:xx[N-1]]
+			Unit P[4];
+			bint::mulT<2>(P, xx + N - 1, Qt);
+			const Unit q = (P[2] >> 1) | (P[3] << (BIT - 1));
+			// t = xx + q np - (q << (N BIT)) (mod 2^((N+1) BIT)) = xx - q p
+			t[N] = bint::mulUnitN(t, np, q, N);
+			t[N] += bint::addN(t, t, xx, N) + xx[N] - q;
+			// t -= p if t >= p, i.e. t + np >= 2^(N BIT)
+			const Unit c = bint::addN(v, t, np, N) + t[N];
+			bint::copyN(xx + 1, c ? v : t, N);
+		}
+		bint::copyN(y, xx + 1, N);
 		return true;
 	}
 };
