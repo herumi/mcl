@@ -220,6 +220,16 @@ update_bint_x64_asm:
 	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas > src/asm/bint-x64-amd64.S
 	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas -win > src/asm/bint-x64-mingw.S
 
+# regenerate all generated files (ll first, then asm) on x86-64 host
+# e.g. make update_all_asm LLVM_VER=-21
+update_all_asm:
+	python3 src/gen_bint.py -u 64 > src/bint64.ll
+	python3 src/gen_bint.py -u 32 > src/bint32.ll
+	$(GEN) -u 64 > src/base64.ll
+	$(GEN) -u 32 > src/base32.ll
+	$(LLVM_OPT) -O3 -o - src/base64.ll -march=$(CPU) | $(LLVM_LLC) -O3 -o src/asm/x86-64.S $(LLVM_FLAGS)
+	$(MAKE) update_bint_x64_asm
+
 $(BINT_SRC): src/bint$(BIT).ll
 	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CFLAGS) $(CFLAGS_USER)
 #$(BINT_OBJ): $(BINT_SRC)
@@ -488,7 +498,7 @@ install: lib/libmcl.a lib/libmcl.$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl.$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test she-wasm bin/emu android update_bint_x64_asm
+.PHONY: test she-wasm bin/emu android update_bint_x64_asm update_all_asm
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))
