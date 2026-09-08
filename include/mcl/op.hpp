@@ -166,8 +166,11 @@ MCL_CXX_API void destroyFpGenerator(FpGenerator *fg);
 
 struct Op {
 	/*
-		don't change the layout of rp and p
+		don't change the layout of rp, p, q0, q1
 		asm code assumes &rp + 1 == p
+		pLen = bitLen(p)
+		BIT = sizeof(Unit) * 8
+		Qt = floor(2^(BIT+1+pLen)/p) << s where s is leading zero bits of p in N words
 	*/
 	Unit rp;
 	Unit p[maxUnitSize];
