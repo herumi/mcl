@@ -481,7 +481,7 @@ public:
 	*/
 	static void split(mpz_class u[2], mpz_class& x)
 	{
-		Fr::getOp().modpOld.modp(x, x);
+		Fr::getOp().modp.modp(x, x);
 		if (optimizedSplit) {
 			optimizedSplit(u, x);
 			return;
@@ -729,7 +729,7 @@ struct GLV2 {
 	*/
 	static void split(mpz_class u[4], mpz_class& x)
 	{
-		Fr::getOp().modpOld.modp(x, x);
+		Fr::getOp().modp.modp(x, x);
 		if (isBLS12) {
 			/*
 				Frob(P) = zP

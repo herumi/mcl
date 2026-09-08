@@ -5,7 +5,8 @@
 
 #define PUT(x) std::cout << #x << "=" << x << std::endl;
 
-CYBOZU_TEST_AUTO(modpOld)
+// mpz version of Modp::modp ; init() may fail (e.g. min prime), then modp() returns false
+CYBOZU_TEST_AUTO(modp_mpz)
 {
 	const int C = 1000000;
 	const char *pTbl[] = {
@@ -37,11 +38,12 @@ CYBOZU_TEST_AUTO(modpOld)
 		"0x10000000000000000000000000000000000000000000000000000000000000000",
 		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	};
-	mcl::ModpOld modp;
+	mcl::Modp modp;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(pTbl); i++) {
 		const mpz_class p(pTbl[i]);
 		std::cout << std::hex << "p=" << p << std::endl;
-		modp.init(p);
+		const bool ok = modp.init(p);
+		std::cout << "init=" << (ok ? "ok" : "fail (use x % p)") << std::endl;
 		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(xTbl); j++) {
 			const mpz_class x(xTbl[j]);
 			std::cout << std::hex << "x=" << x << std::endl;
@@ -78,7 +80,9 @@ CYBOZU_TEST_AUTO(modp)
 		"0x240026400f3d82b2e42de125b00158405b710818ac00000840046200950400000000001380052e000000000000000013",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff",
 	};
-	const size_t maxXN = 64 / sizeof(mcl::Unit);
+	const size_t maxXN = 64 / sizeof(mcl::Unit); // the generated function accepts xN <= maxXN
+	// modp_generic accepts any xN ; 2 maxUnitSize is the largest size mpz_class (Vint) can hold
+	const size_t maxGenericXN = mcl::maxUnitSize * 2;
 	cybozu::XorShift rg;
 	mcl::Modp modp;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(pTbl); i++) {
@@ -88,9 +92,9 @@ CYBOZU_TEST_AUTO(modp)
 		const size_t N = modp.N;
 		// modp() calls the generated function (mclb_modp*) if modp_asm is set
 		std::cout << "modp_asm=" << (modp.modp_asm ? "yes" : "no") << std::endl;
-		for (size_t xN = 0; xN <= maxXN; xN++) {
+		for (size_t xN = 0; xN <= maxGenericXN; xN++) {
 			for (int j = 0; j < 100; j++) {
-				mcl::Unit x[maxXN + 1] = {};
+				mcl::Unit x[maxGenericXN > maxXN ? maxGenericXN : maxXN] = {};
 				mcl::Unit y[mcl::maxUnitSize] = {};
 				for (size_t k = 0; k < xN; k++) {
 					x[k] = rg.get64();
@@ -118,15 +122,12 @@ CYBOZU_TEST_AUTO(modp)
 				CYBOZU_TEST_ASSERT(modp.modp_generic(y, x, xN));
 				mcl::gmp::setArray(r2, y, N);
 				CYBOZU_TEST_EQUAL(r1, r2);
-				if (modp.modp_asm) {
-					mcl::Unit y2[mcl::maxUnitSize] = {};
-					CYBOZU_TEST_ASSERT(modp.modp(y2, x, xN));
-					CYBOZU_TEST_EQUAL_ARRAY(y, y2, N);
-				}
+				// modp() uses modp_asm if xN <= maxXN, otherwise modp_generic()
+				mcl::Unit y2[mcl::maxUnitSize] = {};
+				CYBOZU_TEST_ASSERT(modp.modp(y2, x, xN));
+				CYBOZU_TEST_EQUAL_ARRAY(y, y2, N);
 			}
 		}
-		CYBOZU_TEST_ASSERT(!modp.modp_generic(0, 0, maxXN + 1));
-		if (modp.modp_asm) CYBOZU_TEST_ASSERT(!modp.modp(0, 0, maxXN + 1));
 		{
 			mcl::Unit x[maxXN], y[mcl::maxUnitSize];
 			for (size_t k = 0; k < maxXN; k++) x[k] = rg.get64();

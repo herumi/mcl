@@ -932,102 +932,6 @@ public:
 #endif
 };
 
-/*
-	Barrett Reduction
-	for non GMP version
-	mod of GMP is faster than ModpOld
-*/
-struct ModpOld {
-	static const size_t unitBitSize = sizeof(mcl::Unit) * 8;
-	mpz_class p_;
-	mpz_class u_;
-	mpz_class a_;
-	size_t pBitSize_;
-	size_t N_;
-	bool initU_; // Is u_ initialized?
-	ModpOld()
-		: pBitSize_(0)
-		, N_(0)
-		, initU_(false)
-	{
-	}
-	// x &= 1 << (unitBitSize * unitSize)
-	void shrinkSize(mpz_class &x, size_t unitSize) const
-	{
-		size_t u = gmp::getUnitSize(x);
-		if (u < unitSize) return;
-		bool b;
-		gmp::setArray(&b, x, gmp::getUnit(x), unitSize);
-		(void)b;
-		assert(b);
-	}
-	// p_ is set by p and compute (u_, a_) if possible
-	void init(const mpz_class& p)
-	{
-		p_ = p;
-		pBitSize_ = gmp::getBitSize(p);
-		N_ = (pBitSize_ + unitBitSize - 1) / unitBitSize;
-		initU_ = false;
-#if 0
-		u_ = (mpz_class(1) << (unitBitSize * 2 * N_)) / p_;
-#else
-		/*
-			1 << (unitBitSize * 2 * N_) may be overflow,
-			so use (1 << (unitBitSize * 2 * N_)) - 1 because u_ is same.
-		*/
-		uint8_t buf[48 * 2];
-		const size_t byteSize = unitBitSize / 8 * 2 * N_;
-		if (byteSize > sizeof(buf)) return;
-		memset(buf, 0xff, byteSize);
-		bool b;
-		gmp::setArray(&b, u_, buf, byteSize);
-		if (!b) return;
-#endif
-		u_ /= p_;
-		a_ = mpz_class(1) << (unitBitSize * (N_ + 1));
-		initU_ = true;
-	}
-	void modp(mpz_class& r, const mpz_class& t) const
-	{
-		if (t < p_) {
-			r = t;
-			return;
-		}
-		assert(p_ > 0);
-		const size_t tBitSize = gmp::getBitSize(t);
-		// use gmp::mod if init() fails or t is too large
-		if (tBitSize > pBitSize_ + unitBitSize * N_ - 1 || !initU_) {
-			gmp::mod(r, t, p_);
-			return;
-		}
-		if (tBitSize < pBitSize_) {
-			r = t;
-			return;
-		}
-		// mod is faster than modp if t is small
-		if (tBitSize <= unitBitSize * N_) {
-			gmp::mod(r, t, p_);
-			return;
-		}
-		mpz_class q;
-		q = t;
-		q >>= unitBitSize * (N_ - 1);
-		q *= u_;
-		q >>= unitBitSize * (N_ + 1);
-		q *= p_;
-		shrinkSize(q, N_ + 1);
-		r = t;
-		shrinkSize(r, N_ + 1);
-		r -= q;
-		if (r < 0) {
-			r += a_;
-		}
-		if (r >= p_) {
-			r -= p_;
-		}
-	}
-};
-
 // generated modp functions (dst[N] = src[srcN] mod p, para = &Modp::q0)
 #if MCL_BINT_ASM_X64 == 1
 extern "C" int mclb_modp256_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
@@ -1038,9 +942,10 @@ extern "C" int mclb_modp384(Unit *dst, const Unit *src, size_t srcN, const Unit 
 #endif
 
 /*
-	x mod p for x of up to 64 bytes (word-serial Barrett reduction with a
-	two-unit reciprocal, see src/common.py); the layout q0, q1, np[] is the
-	parameter block read by the generated modp functions, so keep it first.
+	x mod p (word-serial Barrett reduction with a two-unit reciprocal, see
+	src/common.py); the generated modp functions handle x of up to 64 bytes and
+	modp_generic() handles any length. The layout q0, q1, np[] is the parameter
+	block read by the generated functions, so keep it first.
 */
 struct Modp {
 	Unit q0;
@@ -1048,14 +953,19 @@ struct Modp {
 	Unit np[maxUnitSize];
 	int (*modp_asm)(Unit *, const Unit *, size_t, const Unit*);
 	size_t N; // number of units of p
-	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0) {}
+	const mpz_class *pp; // p (for the fallback of modp(mpz_class&, const mpz_class&))
+	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0), pp(0) {}
+	// p must outlive this object (Op::mp)
 	bool init(const mpz_class& p) {
 		const size_t BIT = sizeof(Unit) * 8;
 		const size_t L = gmp::getBitSize(p);
+		pp = &p;
 		modp_asm = 0;
 		N = roundUp(L, BIT);
-		if (N == 0 || N > maxUnitSize) return false;
-		if (L < (N - 1) * BIT + 2) return false;
+		if (N == 0 || N > maxUnitSize || L < (N - 1) * BIT + 2) {
+			N = 0; // not initialized
+			return false;
+		}
 		// leading zero bits of p in N words
 		const size_t s = N * BIT - L;
 		// Q = floor(2^(BIT+1+L)/p), BIT+2 bits
@@ -1084,12 +994,25 @@ struct Modp {
 #endif
 		return true;
 	}
-	// y[] = x[] % p
-	// assume xN * sizeof(Unit) <= 64
+	// y[N] = x[xN] % p ; the generated function accepts xN * sizeof(Unit) <= 64
 	bool modp(Unit *y, const Unit *x, size_t xN) const
 	{
-		if (modp_asm) return modp_asm(y, x, xN, &q0);
+		if (modp_asm && xN * sizeof(Unit) <= 64) return modp_asm(y, x, xN, &q0);
 		return modp_generic(y, x, xN);
+	}
+	// r = t % p for t >= 0 ; use t % p if init() failed
+	void modp(mpz_class& r, const mpz_class& t) const
+	{
+		assert(t >= 0);
+		if (N > 0) {
+			Unit y[maxUnitSize];
+			if (modp(y, gmp::getUnit(t), gmp::getUnitSize(t))) {
+				bool b;
+				gmp::setArray(&b, r, y, N);
+				if (b) return;
+			}
+		}
+		gmp::mod(r, t, *pp);
 	}
 	/*
 		word-serial Barrett reduction with the two-unit reciprocal Qt = [q1:q0]
@@ -1103,7 +1026,6 @@ struct Modp {
 	*/
 	bool modp_generic(Unit *y, const Unit *x, size_t xN) const
 	{
-		if (xN * sizeof(Unit) > 64) return false;
 		const size_t BIT = sizeof(Unit) * 8;
 		if (xN < N) {
 			// init() guarantees N <= maxUnitSize; the check lets gcc see xN < maxUnitSize (avoid -Warray-bounds)
