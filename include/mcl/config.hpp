@@ -81,6 +81,7 @@
 	#define MCL_XBYAK_DIRECT_CALL
 #endif
 
+#define MCL_MAX_BUF_BYTE_SIZE 64
 #define MCL_MAX_HASH_BIT_SIZE 512
 
 // define same macro in bn.h

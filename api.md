@@ -285,7 +285,7 @@ void T::setLittleEndianMod(const uint8_t *buf, size_t bufSize);
 void T::setBigEndianMod(const uint8_t *buf, size_t bufSize);
 ```
 
-- return 0 if bufSize <= (sizeof(T) * 2), otherwise -1
+- return 0 if bufSize <= 64 (MCL_MAX_BUF_BYTE_SIZE), otherwise -1
 
 ### Get little-endian byte sequence in `buf` corresponding to `x`
 ```c

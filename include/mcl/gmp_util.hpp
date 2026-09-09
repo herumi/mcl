@@ -994,9 +994,11 @@ struct Modp {
 #endif
 		return true;
 	}
-	// y[N] = x[xN] % p ; the generated function accepts xN * sizeof(Unit) <= 64
+	// y[N] = x[xN] % p ; return false if init() failed
+	// the generated function accepts xN * sizeof(Unit) <= 64
 	bool modp(Unit *y, const Unit *x, size_t xN) const
 	{
+		if (N == 0) return false;
 		if (modp_asm && xN * sizeof(Unit) <= 64) return modp_asm(y, x, xN, &q0);
 		return modp_generic(y, x, xN);
 	}

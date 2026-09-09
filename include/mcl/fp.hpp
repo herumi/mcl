@@ -361,25 +361,34 @@ public:
 	}
 	/*
 		set (x as little endian) % p
-		error if size of x >= sizeof(Fp) * 2
+		error if size of x > MCL_MAX_BUF_BYTE_SIZE
 	*/
-	template<class S>
-	void setArrayMod(bool *pb, const S *x, size_t n)
+	void setArrayMod(bool *pb, const uint8_t *x, size_t n)
 	{
-		if (sizeof(S) * n > sizeof(Unit) * op_.N * 2) {
+		if (n > MCL_MAX_BUF_BYTE_SIZE) {
 			*pb = false;
 			return;
 		}
-		mpz_class mx;
-		gmp::setArray(pb, mx, x, n);
-		if (!*pb) return;
-#ifdef MCL_USE_VINT
-		op_.modp.modp(mx, mx);
-#else
-		mx %= op_.mp;
-#endif
-		gmp::getArray(pb, v_, op_.N, mx);
-		if (!*pb) return;
+		const size_t tN = MCL_MAX_BUF_BYTE_SIZE / sizeof(Unit);
+		Unit t[tN];
+		fp::convertArrayAsLE(t, tN, x, n); // the rest is filled with zero
+		setArrayMod(pb, t, (n + sizeof(Unit) - 1) / sizeof(Unit));
+	}
+	void setArrayMod(bool *pb, const Unit *x, size_t n)
+	{
+		if (sizeof(Unit) * n > MCL_MAX_BUF_BYTE_SIZE) {
+			*pb = false;
+			return;
+		}
+		if (!op_.modp.modp(v_, x, n)) {
+			mpz_class mx;
+			gmp::setArray(pb, mx, x, n);
+			if (!*pb) return;
+			mx %= op_.mp;
+			gmp::getArray(pb, v_, op_.N, mx);
+			if (!*pb) return;
+		}
+		*pb = true;
 		toMont();
 	}
 	void getBlock(fp::Block& b) const
