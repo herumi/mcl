@@ -23,15 +23,6 @@ inline size_t estimateBucketSize(size_t n)
 	return log2n - ilog2(log2n);
 }
 
-// y[op.N] = x[xN] mod op.mp
-inline void modByOp(Unit *y, const Unit *x, size_t xN, const fp::Op& op)
-{
-	assert(op.modp.N != 0);
-	bool b = op.modp.modp(y, x, xN);
-	assert(b);
-	(void)b;
-}
-
 //	return heuristic backet size which is faster than glvGetTheoreticBucketSize
 inline size_t glvGetBucketSize(size_t n)
 {
@@ -489,18 +480,17 @@ public:
 	}
 	/*
 		x = u[0] + u[1] * lambda mod r
-		x[Fr::getUnitSize()]
+		x[Fr::getUnitSize()] < r
 	*/
 	static void split(mpz_class u[2], const Unit *_x)
 	{
 		const fp::Op& op = Fr::getOp();
-		Unit y[maxUnitSize];
-		ec::modByOp(y, _x, op.N, op);
+		assert(bint::cmpLtN(_x, op.p, op.N)); // _x < r
 		bool ok;
 		if (optimizedSplit) {
 			static const size_t n = 128 / mcl::UnitBitSize;
 			Unit a[n], b[n];
-			optimizedSplit(a, b, y);
+			optimizedSplit(a, b, _x);
 			gmp::setArray(&ok, u[0], a, n);
 			assert(ok);
 			gmp::setArray(&ok, u[1], b, n);
@@ -509,7 +499,7 @@ public:
 			return;
 		}
 		mpz_class x;
-		gmp::setArray(&ok, x, y, op.N);
+		gmp::setArray(&ok, x, _x, op.N);
 		assert(ok);
 		(void)ok;
 		mpz_class& a = u[0];
@@ -721,15 +711,14 @@ struct GLV2 {
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
 	*/
-	// x[Fr::getUnitSize()]
+	// x[Fr::getUnitSize()] < r
 	static void split(mpz_class u[4], const Unit *_x)
 	{
 		const fp::Op& op = Fr::getOp();
-		Unit y[maxUnitSize];
-		ec::modByOp(y, _x, op.N, op);
+		assert(bint::cmpLtN(_x, op.p, op.N)); // _x < r
 		mpz_class x;
 		bool ok;
-		gmp::setArray(&ok, x, y, op.N);
+		gmp::setArray(&ok, x, _x, op.N);
 		assert(ok);
 		(void)ok;
 		if (isBLS12) {
