@@ -5,6 +5,104 @@
 
 #define PUT(x) std::cout << #x << "=" << x << std::endl;
 
+using namespace mcl;
+/*
+	Barrett Reduction
+	for non GMP version
+	mod of GMP is faster than ModpOld
+*/
+struct ModpOld {
+	static const size_t unitBitSize = sizeof(mcl::Unit) * 8;
+	mpz_class p_;
+	mpz_class u_;
+	mpz_class a_;
+	size_t pBitSize_;
+	size_t N_;
+	bool initU_; // Is u_ initialized?
+	ModpOld()
+		: pBitSize_(0)
+		, N_(0)
+		, initU_(false)
+	{
+	}
+	// x &= 1 << (unitBitSize * unitSize)
+	void shrinkSize(mpz_class &x, size_t unitSize) const
+	{
+		size_t u = gmp::getUnitSize(x);
+		if (u < unitSize) return;
+		bool b;
+		gmp::setArray(&b, x, gmp::getUnit(x), unitSize);
+		(void)b;
+		assert(b);
+	}
+	// p_ is set by p and compute (u_, a_) if possible
+	void init(const mpz_class& p)
+	{
+		p_ = p;
+		pBitSize_ = gmp::getBitSize(p);
+		N_ = (pBitSize_ + unitBitSize - 1) / unitBitSize;
+		initU_ = false;
+#if 0
+		u_ = (mpz_class(1) << (unitBitSize * 2 * N_)) / p_;
+#else
+		/*
+			1 << (unitBitSize * 2 * N_) may be overflow,
+			so use (1 << (unitBitSize * 2 * N_)) - 1 because u_ is same.
+		*/
+		uint8_t buf[48 * 2];
+		const size_t byteSize = unitBitSize / 8 * 2 * N_;
+		if (byteSize > sizeof(buf)) return;
+		memset(buf, 0xff, byteSize);
+		bool b;
+		gmp::setArray(&b, u_, buf, byteSize);
+		if (!b) return;
+#endif
+		u_ /= p_;
+		a_ = mpz_class(1) << (unitBitSize * (N_ + 1));
+		initU_ = true;
+	}
+	void modp(mpz_class& r, const mpz_class& t) const
+	{
+		if (t < p_) {
+			r = t;
+			return;
+		}
+		assert(p_ > 0);
+		const size_t tBitSize = gmp::getBitSize(t);
+		// use gmp::mod if init() fails or t is too large
+		if (tBitSize > pBitSize_ + unitBitSize * N_ - 1 || !initU_) {
+			gmp::mod(r, t, p_);
+			return;
+		}
+		if (tBitSize < pBitSize_) {
+			r = t;
+			return;
+		}
+		// mod is faster than modp if t is small
+		if (tBitSize <= unitBitSize * N_) {
+			gmp::mod(r, t, p_);
+			return;
+		}
+		mpz_class q;
+		q = t;
+		q >>= unitBitSize * (N_ - 1);
+		q *= u_;
+		q >>= unitBitSize * (N_ + 1);
+		q *= p_;
+		shrinkSize(q, N_ + 1);
+		r = t;
+		shrinkSize(r, N_ + 1);
+		r -= q;
+		if (r < 0) {
+			r += a_;
+		}
+		if (r >= p_) {
+			r -= p_;
+		}
+	}
+};
+
+
 // mpz version of Modp::modp ; init() may fail (e.g. min prime), then modp() returns false
 CYBOZU_TEST_AUTO(modp_mpz)
 {
