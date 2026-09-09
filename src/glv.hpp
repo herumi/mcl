@@ -69,7 +69,7 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 	b[] : 128 bit
 	x[] : 256 bit
 */
-inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
+inline void optimizedSplitForBLS12_381(Unit *a, Unit *b, const Unit *x)
 {
 	/*
 		z = -0xd201000000010000
@@ -97,7 +97,7 @@ inline void optimizedSplitRawForBLS12_381(Unit *a, Unit *b, const Unit *x)
 	}
 }
 
-inline void optimizedSplitRawForBLS12_377(Unit *a, Unit *b, const Unit *x)
+inline void optimizedSplitForBLS12_377(Unit *a, Unit *b, const Unit *x)
 {
 	/*
 		z = -0xd201000000010000
@@ -461,7 +461,8 @@ struct GLV1T {
 	static size_t rBitSize;
 	static mpz_class v0, v1;
 	static mpz_class B[2][2];
-	static void (*optimizedSplit)(mpz_class u[2], const Unit *x);
+	static bool isBLS12;
+	static void (*optimizedSplit)(Unit *a, Unit *b, const Unit *x); // for BLS12-381/377
 public:
 #ifndef CYBOZU_DONT_USE_STRING
 	static void dump(const mpz_class& x)
@@ -495,17 +496,30 @@ public:
 		const fp::Op& op = Fr::getOp();
 		Unit y[maxUnitSize];
 		ec::modByOp(y, _x, op.N, op);
+		bool ok;
 		if (optimizedSplit) {
-			optimizedSplit(u, y);
+			static const size_t n = 128 / mcl::UnitBitSize;
+			Unit a[n], b[n];
+			optimizedSplit(a, b, y);
+			gmp::setArray(&ok, u[0], a, n);
+			assert(ok);
+			gmp::setArray(&ok, u[1], b, n);
+			assert(ok);
+			(void)ok;
 			return;
 		}
 		mpz_class x;
-		bool ok;
 		gmp::setArray(&ok, x, y, op.N);
 		assert(ok);
 		(void)ok;
 		mpz_class& a = u[0];
 		mpz_class& b = u[1];
+		if (isBLS12) {
+			// x = (a + b L) mod r
+			b = (x * v0) >> rBitSize;
+			a = x - b * B[0][0];
+			return;
+		}
 		mpz_class t;
 		t = (x * v0) >> rBitSize;
 		b = (x * v1) >> rBitSize;
@@ -533,6 +547,7 @@ public:
 		const mpz_class& r = Fr::getOp().mp;
 		v0 = ((B[1][1]) << rBitSize) / r;
 		v1 = ((-B[0][1]) << rBitSize) / r;
+		isBLS12 = false;
 		optimizedSplit = 0;
 	}
 };
@@ -543,7 +558,8 @@ template<class Ec> size_t GLV1T<Ec>::rBitSize;
 template<class Ec> mpz_class GLV1T<Ec>::v0;
 template<class Ec> mpz_class GLV1T<Ec>::v1;
 template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
-template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(mpz_class u[2], const Unit *x);
+template<class Ec> bool GLV1T<Ec>::isBLS12;
+template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(Unit *a, Unit *b, const Unit *x);
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
@@ -595,6 +611,7 @@ struct GLV1 : GLV1T<G1> {
 	}
 	static void init(const mpz_class& z, bool isBLS12, int curveType)
 	{
+		GLV1::isBLS12 = isBLS12;
 		optimizedSplit = 0;
 		if (usePrecomputedTable(curveType)) return;
 		bool b = Fp::squareRoot(rw, -3);
@@ -614,15 +631,9 @@ struct GLV1 : GLV1T<G1> {
 			B[0][0] = z * z - 1; // L
 			v0 = (B[0][0] << rBitSize) / r;
 			if (curveType == BLS12_381.curveType) {
-				optimizedSplit = optimizedSplitForBLS12_381;
-			} else
-#if 1
-			if (curveType == BLS12_377.curveType) {
-				optimizedSplit = optimizedSplitForBLS12_377;
-			} else
-#endif
-			{
-				optimizedSplit = splitForBLS12;
+				optimizedSplit = ec::optimizedSplitForBLS12_381;
+			} else if (curveType == BLS12_377.curveType) {
+				optimizedSplit = ec::optimizedSplitForBLS12_377;
 			}
 		} else {
 			/*
@@ -640,45 +651,6 @@ struct GLV1 : GLV1T<G1> {
 			v0 = ((-B[1][1]) << rBitSize) / r;
 			v1 = ((B[1][0]) << rBitSize) / r;
 		}
-	}
-	// x = (a + b L) mod r
-	// x[Fr::getUnitSize()]
-	static inline void splitForBLS12(mpz_class u[2], const Unit *_x)
-	{
-		mpz_class x;
-		bool ok;
-		gmp::setArray(&ok, x, _x, Fr::getOp().N);
-		assert(ok);
-		(void)ok;
-		mpz_class& a = u[0];
-		mpz_class& b = u[1];
-		mpz_class t;
-		b = (x * v0) >> rBitSize;
-		a = x - b * B[0][0];
-	}
-	// x[n*2]
-	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const Unit *x)
-	{
-		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit a[n], b[n];
-		bool dummy;
-		ec::optimizedSplitRawForBLS12_381(a, b, x);
-		gmp::setArray(&dummy, u[0], a, n);
-		gmp::setArray(&dummy, u[1], b, n);
-		assert(dummy);
-		(void)dummy;
-	}
-	// x[n*2]
-	static inline void optimizedSplitForBLS12_377(mpz_class u[2], const Unit *x)
-	{
-		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit a[n], b[n];
-		bool dummy;
-		ec::optimizedSplitRawForBLS12_377(a, b, x);
-		gmp::setArray(&dummy, u[0], a, n);
-		gmp::setArray(&dummy, u[1], b, n);
-		assert(dummy);
-		(void)dummy;
 	}
 };
 

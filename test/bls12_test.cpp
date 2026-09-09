@@ -705,7 +705,7 @@ void splitTest(const mpz_class& mx, const mpz_class& L)
 	const size_t n = 32 / sizeof(mcl::Unit);
 	mcl::Unit x[n], a[n/2], b[n/2];
 	mcl::gmp::getArray(x, n, mx);
-	mcl::ec::optimizedSplitRawForBLS12_381(a, b, x);
+	mcl::ec::optimizedSplitForBLS12_381(a, b, x);
 	mpz_class ma, mb;
 	mcl::gmp::setArray(ma, a, n/2);
 	mcl::gmp::setArray(mb, b, n/2);
