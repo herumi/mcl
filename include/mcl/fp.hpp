@@ -271,7 +271,7 @@ public:
 			if (n == 0) return;
 			n = fp::strToArray(&isMinus, v_, op_.N, buf, n, ioMode);
 			if (n == 0) return;
-			for (size_t i = n; i < op_.N; i++) v_[i] = 0;
+			bint::clearN(v_ + n, op_.N - n);
 		}
 		if (bint::cmpGeN(v_, op_.p, op_.N)) {
 			return;
@@ -398,7 +398,7 @@ public:
 		if (isMont()) {
 			op_.fromMont(u, v_);
 		} else {
-			for (size_t i = 0, n = op_.N; i < n; i++) u[i] = v_[i];
+			bint::copyN(u, v_, op_.N);
 		}
 	}
 	// u must be the array of the length getUnitSize() (= op_.N)
@@ -408,7 +408,7 @@ public:
 		if (isMont()) {
 			op_.toMont(v_, u);
 		} else {
-			for (size_t i = 0, n = op_.N; i < n; i++) v_[i] = u[i];
+			bint::copyN(v_, u, op_.N);
 		}
 	}
 	/*
@@ -431,9 +431,7 @@ public:
 		}
 		if (n == 0) n = 1; // zero
 		if (maxN < n) return 0;
-		for (size_t i = 0; i < n; i++) {
-			buf[i] = t[i];
-		}
+		bint::copyN(buf, t, n);
 		return n;
 	}
 	/*
