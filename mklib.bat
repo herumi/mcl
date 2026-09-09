@@ -41,6 +41,7 @@ if "%USE_CLANG%"=="1" (
 cl /c %LOCAL_CFLAGS% src\fp.cpp /Foobj\fp.obj
 cl /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj /arch:AVX512
 
+del /q lib\mcl.*
 if "%USE_DLL%"=="1" (
      echo link /nologo /DLL /OUT:bin\mcl.dll /Brepro %OBJ% %LDFLAGS% /implib:bin\mcl.lib
      link /nologo /DLL /OUT:bin\mcl.dll /Brepro %OBJ% %LDFLAGS% /implib:bin\mcl.lib

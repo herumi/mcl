@@ -1,4 +1,5 @@
 #pragma once
+#include <mcl/config.hpp>
 /**
 	@file
 	@brief definition of Op
@@ -59,6 +60,11 @@ uint32_t readWrapper(void *self, void *buf, uint32_t byteSize)
 }
 
 } // local
+
+class RandGen;
+// return RandGen::get() in the library (for MCL_DLL_IMPORT_STATIC)
+MCL_CXX_API RandGen& getRandGen();
+
 /*
 	wrapper of cryptographically secure pseudo random number generator
 */
@@ -108,8 +114,12 @@ public:
 	}
 	static RandGen& get()
 	{
+#ifdef MCL_DLL_IMPORT_STATIC
+		return getRandGen();
+#else
 		static RandGen wrg(getDefaultRandGen());
 		return wrg;
+#endif
 	}
 	/*
 		rg must be thread safe

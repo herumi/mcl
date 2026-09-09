@@ -48,6 +48,8 @@
 				#ifdef MCL_DLL // better
 					#define MCL_DLL_API __declspec(dllimport)
 					#define MCL_DLL_VAR __declspec(dllimport)
+					// static data members of class templates refer to the instances in mcl.dll
+					#define MCL_DLL_IMPORT_STATIC
 				#else
 					#define MCL_DLL_API
 					#define MCL_DLL_VAR

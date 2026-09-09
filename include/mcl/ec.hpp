@@ -994,6 +994,34 @@ bool mulSmallInt(G& z, const G& x, Unit y, bool isNegative)
 	return true;
 }
 
+/*
+	pointers to the static data members of EcT<Fp> in the library
+	(for MCL_DLL_IMPORT_STATIC, see config.hpp)
+*/
+struct StaticMember {
+	void *mode;
+	void *a;
+	void *b;
+	void *b3;
+	void *specialA;
+	void *specialB;
+	void *ioMode;
+	void *verifyOrder;
+	void *order;
+	void *mulVecGLV;
+	void *mulVecOpti;
+	void *mulEachOpti;
+	void *isValidOrderFast;
+};
+enum StaticIdType {
+	StaticIdG1 = 0,
+	StaticIdG2 = 1
+};
+// return the pointers to the static data members of G1 (id = StaticIdG1) or G2 (id = StaticIdG2)
+MCL_CXX_API const StaticMember* getStaticMember(int id);
+// StaticId<Fp>::id is defined in g1_def.hpp (Fp) and g2_def.hpp (Fp2)
+template<class Fp> struct StaticId;
+
 } // mcl::ec
 
 /*
@@ -1007,23 +1035,44 @@ public:
 	typedef _Fp Fp; // definition field
 	typedef _Fp BaseFp;
 	Fp x, y, z;
-	static int mode_;
-	static Fp a_;
-	static Fp b_;
-	static Fp b3_;
-	static int specialA_;
-	static int specialB_;
-	static int ioMode_;
+	typedef bool (*MulVecGLVFunc)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
+	typedef void (*MulVecOptiFunc)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
+	typedef void (*MulEachOptiFunc)(EcT *xVec, const Fr *yVec, size_t n);
+	typedef bool (*IsValidOrderFastFunc)(const EcT& x);
+	MCL_DLL_STATIC(int) mode_;
+	MCL_DLL_STATIC(Fp) a_;
+	MCL_DLL_STATIC(Fp) b_;
+	MCL_DLL_STATIC(Fp) b3_;
+	MCL_DLL_STATIC(int) specialA_;
+	MCL_DLL_STATIC(int) specialB_;
+	MCL_DLL_STATIC(int) ioMode_;
 	/*
 		order_ is the order of G2 which is the subgroup of EcT<Fp2>.
 		check the order of the elements if verifyOrder_ is true
 	*/
-	static bool verifyOrder_;
-	static mpz_class order_;
-	static bool (*mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-	static void (*mulVecOpti)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
-	static void (*mulEachOpti)(EcT *xVec, const Fr *yVec, size_t n);
-	static bool (*isValidOrderFast)(const EcT& x);
+	MCL_DLL_STATIC(bool) verifyOrder_;
+	MCL_DLL_STATIC(mpz_class) order_;
+	MCL_DLL_STATIC(MulVecGLVFunc) mulVecGLV;
+	MCL_DLL_STATIC(MulVecOptiFunc) mulVecOpti;
+	MCL_DLL_STATIC(MulEachOptiFunc) mulEachOpti;
+	MCL_DLL_STATIC(IsValidOrderFastFunc) isValidOrderFast;
+	// set the pointers to the static data members (used by getStaticMember in the library)
+	static void setStaticMember(ec::StaticMember& sm)
+	{
+		sm.mode = &mode_;
+		sm.a = &a_;
+		sm.b = &b_;
+		sm.b3 = &b3_;
+		sm.specialA = &specialA_;
+		sm.specialB = &specialB_;
+		sm.ioMode = &ioMode_;
+		sm.verifyOrder = &verifyOrder_;
+		sm.order = &order_;
+		sm.mulVecGLV = &mulVecGLV;
+		sm.mulVecOpti = &mulVecOpti;
+		sm.mulEachOpti = &mulEachOpti;
+		sm.isValidOrderFast = &isValidOrderFast;
+	}
 	/* default constructor is undefined value */
 	EcT() {}
 	EcT(const Fp& _x, const Fp& _y)
@@ -1912,6 +1961,25 @@ public:
 #endif
 };
 
+#ifdef MCL_DLL_IMPORT_STATIC
+// the static data members refer to the instances in mcl.dll
+#define MCL_EC_STATIC_REF(type, name, member) \
+	template<class Fp> type& EcT<Fp>::name = *static_cast<type*>(ec::getStaticMember(ec::StaticId<Fp>::id)->member);
+MCL_EC_STATIC_REF(Fp, a_, a)
+MCL_EC_STATIC_REF(Fp, b_, b)
+MCL_EC_STATIC_REF(Fp, b3_, b3)
+MCL_EC_STATIC_REF(int, specialA_, specialA)
+MCL_EC_STATIC_REF(int, specialB_, specialB)
+MCL_EC_STATIC_REF(int, ioMode_, ioMode)
+MCL_EC_STATIC_REF(bool, verifyOrder_, verifyOrder)
+MCL_EC_STATIC_REF(mpz_class, order_, order)
+MCL_EC_STATIC_REF(typename EcT<Fp>::MulVecGLVFunc, mulVecGLV, mulVecGLV)
+MCL_EC_STATIC_REF(typename EcT<Fp>::MulVecOptiFunc, mulVecOpti, mulVecOpti)
+MCL_EC_STATIC_REF(typename EcT<Fp>::IsValidOrderFastFunc, isValidOrderFast, isValidOrderFast)
+MCL_EC_STATIC_REF(int, mode_, mode)
+MCL_EC_STATIC_REF(typename EcT<Fp>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
+#undef MCL_EC_STATIC_REF
+#else
 template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
 template<class Fp> Fp EcT<Fp>::b3_;
@@ -1920,13 +1988,14 @@ template<class Fp> int EcT<Fp>::specialB_;
 template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
 template<class Fp> mpz_class EcT<Fp>::order_;
-template<class Fp> bool (*EcT<Fp>::mulVecGLV)(EcT& z, const EcT *xVec, const void *yVec, size_t n, bool constTime, size_t b);
-template<class Fp> void (*EcT<Fp>::mulVecOpti)(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b);
-template<class Fp> bool (*EcT<Fp>::isValidOrderFast)(const EcT& x);
+template<class Fp> typename EcT<Fp>::MulVecGLVFunc EcT<Fp>::mulVecGLV;
+template<class Fp> typename EcT<Fp>::MulVecOptiFunc EcT<Fp>::mulVecOpti;
+template<class Fp> typename EcT<Fp>::IsValidOrderFastFunc EcT<Fp>::isValidOrderFast;
 template<class Fp> int EcT<Fp>::mode_;
-template<class Fp> void (*EcT<Fp>::mulEachOpti)(EcT<Fp> *xVec, const Fr *yVec, size_t n);
+template<class Fp> typename EcT<Fp>::MulEachOptiFunc EcT<Fp>::mulEachOpti;
+#endif
 
-void initForSecp256k1(); // implemented in fp.cpp
+MCL_CXX_API void initForSecp256k1(); // implemented in fp.cpp
 /*
 	Ec : elliptic curve
 	Zn : cyclic group of the order |Ec|

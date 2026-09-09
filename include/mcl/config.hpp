@@ -98,6 +98,8 @@
 				#ifdef MCL_DLL // better
 					#define MCL_DLL_API __declspec(dllimport)
 					#define MCL_DLL_VAR __declspec(dllimport)
+					// static data members of class templates refer to the instances in mcl.dll
+					#define MCL_DLL_IMPORT_STATIC
 				#else
 					#define MCL_DLL_API
 					#define MCL_DLL_VAR
@@ -114,6 +116,16 @@
 		#define MCL_DLL_API
 		#define MCL_DLL_VAR
 	#endif
+#endif
+/*
+	MSVC can not apply dllimport to a static data member of a class template,
+	so a client of mcl.dll declares it as a reference to the instance in the DLL
+	(the DLL itself and the static library declare it as an ordinary object).
+*/
+#ifdef MCL_DLL_IMPORT_STATIC
+	#define MCL_DLL_STATIC(type) static type&
+#else
+	#define MCL_DLL_STATIC(type) static type
 #endif
 #ifndef MCL_CXX_API
 	#if defined(__wasm__) || defined(__EMSCRIPTEN__)

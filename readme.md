@@ -219,10 +219,12 @@ cd mcl
 mklib
 mk -s test\bls12_test.cpp && bin\bls12_test.exe
 
-# dynamic library (support only C API: bn.h)
+# dynamic library (support both C/C++ API)
 mklib dll
 mk -d test\bn_c384_256_test.cpp && bin\bn_c384_256_test.exe
+mk -d test\bls12_test.cpp && bin\bls12_test.exe
 ```
+A C++ client of `mcl.dll` must be compiled with `/DMCL_DLL` (`mk -d` does it); the static data of Fp, Fr, G1, and G2 then refers to the instances in the DLL.
 (not maintained)
 Open mcl.sln and build or if you have msbuild.exe
 ```

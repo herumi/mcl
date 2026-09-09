@@ -31,6 +31,8 @@ namespace fp {
 
 MCL_CXX_API uint64_t getUint64(bool *pb, const fp::Block& b);
 MCL_CXX_API int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
+// return the pointer to FpT<tag, maxBitSize>::op_ in the library (for MCL_DLL_IMPORT_STATIC)
+MCL_CXX_API Op* getOpPtr(int tag, size_t maxBitSize);
 
 const char *ModeToStr(Mode mode);
 
@@ -73,7 +75,7 @@ public:
 	static const size_t maxSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 private:
 	Unit v_[maxSize];
-	static fp::Op op_;
+	MCL_DLL_STATIC(fp::Op) op_;
 	friend class FpDbl;
 	friend class Fp2;
 	template<class Fp> friend struct Fp6T;
@@ -798,9 +800,15 @@ public:
 #else
 	#define MCL_INIT_PRIORITY(x)
 #endif
+#ifdef MCL_DLL_IMPORT_STATIC
+// op_ refers to the instance in mcl.dll
+template<int tag, size_t maxBitSize>
+fp::Op& FpT<tag, maxBitSize>::op_ = *fp::getOpPtr(tag, maxBitSize);
+#else
 // Declare op_ as an external variable
 template<int tag, size_t maxBitSize>
 fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
+#endif
 
 } // mcl
 
