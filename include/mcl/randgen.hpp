@@ -60,11 +60,6 @@ uint32_t readWrapper(void *self, void *buf, uint32_t byteSize)
 }
 
 } // local
-
-class RandGen;
-// return RandGen::get() in the library (for MCL_DLL_IMPORT_STATIC)
-MCL_CXX_API RandGen& getRandGen();
-
 /*
 	wrapper of cryptographically secure pseudo random number generator
 */
@@ -112,15 +107,8 @@ public:
 #endif
 		return wrg;
 	}
-	static RandGen& get()
-	{
-#ifdef MCL_DLL_IMPORT_STATIC
-		return getRandGen();
-#else
-		static RandGen wrg(getDefaultRandGen());
-		return wrg;
-#endif
-	}
+	// defined in fp.cpp so that a client of mcl.dll shares the instance in the DLL
+	MCL_CXX_API static RandGen& get();
 	/*
 		rg must be thread safe
 		rg.read(void *buf, size_t byteSize);
