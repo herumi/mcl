@@ -1,5 +1,5 @@
 @echo off
-call setvar_arm64.bat
+call "%~dp0setvar_arm64.bat"
 
 if "%1"=="dll" (
   echo make dynamic library DLL

@@ -25,7 +25,7 @@ and up to 256 bits for the order field Fr of the elliptic curve (`MCL_FP_BIT=384
 
 # Support architecture
 
-- x86-64 Windows + Visual Studio 2015 (or later)
+- x86-64 Windows + Visual Studio 2022 (or later)
 - x86, x86-64 Linux + gcc/clang
 - x86-64, M1 macOS
 - ARM / ARM64 Linux
@@ -72,7 +72,7 @@ git clone https://github.com/herumi/mcl
 cd mcl
 make -j4
 ```
-clang++ is required except for x86-64 on Linux and Windows.
+clang++ is required except for x86-64 on Linux and Windows (MinGW).
 
 ```
 make -j4 CXX=clang++
@@ -110,7 +110,7 @@ msbuild mcl.sln /p:Configuration=Release /m
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.
-`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib`, which is built with `MCL_FP_BIT=384`.
+`src/proj/mcllib/mcllib.vcxproj` is to build a static library `lib/mcl.lib`, which is built with `MCL_FP_BIT=384`.
 
 ## options
 
@@ -206,6 +206,9 @@ make -f Makefile.cross test TARGET=riscv64-linux-gnu LD_PREFIX=riscv64-linux-gnu
 ```
 
 # How to build on 64-bit Windows with Visual Studio
+
+clang++ is also required because `mklib.bat` builds `src/base64.ll` with it.
+If you do not have clang++, use `mklib clang=0` (or `mklib dll clang=0`) to build without `src/base64.ll`.
 
 Open a console window, and
 ```
