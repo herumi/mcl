@@ -117,9 +117,10 @@ Op* getOpPtr(int tag, size_t maxBitSize)
 	return 0; // FpT<tag, maxBitSize> other than Fp and Fr is not supported by the DLL
 }
 
-RandGen& getRandGen()
+RandGen& RandGen::get()
 {
-	return RandGen::get();
+	static RandGen wrg(getDefaultRandGen());
+	return wrg;
 }
 
 #ifdef MCL_USE_XBYAK
