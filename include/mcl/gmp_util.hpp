@@ -953,13 +953,10 @@ struct Modp {
 	Unit np[maxUnitSize];
 	int (*modp_asm)(Unit *, const Unit *, size_t, const Unit*);
 	size_t N; // number of units of p
-	const mpz_class *pp; // p (for the fallback of modp(mpz_class&, const mpz_class&))
-	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0), pp(0) {}
-	// p must outlive this object (Op::mp)
+	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0) {}
 	bool init(const mpz_class& p) {
 		const size_t BIT = sizeof(Unit) * 8;
 		const size_t L = gmp::getBitSize(p);
-		pp = &p;
 		modp_asm = 0;
 		N = roundUp(L, BIT);
 		if (N == 0 || N > maxUnitSize || L < (N - 1) * BIT + 2) {
@@ -1001,20 +998,6 @@ struct Modp {
 		if (N == 0) return false;
 		if (modp_asm && xN * sizeof(Unit) <= 64) return modp_asm(y, x, xN, &q0);
 		return modp_generic(y, x, xN);
-	}
-	// r = t % p for t >= 0 ; use t % p if init() failed
-	void modp(mpz_class& r, const mpz_class& t) const
-	{
-		assert(t >= 0);
-		if (N > 0) {
-			Unit y[maxUnitSize];
-			if (modp(y, gmp::getUnit(t), gmp::getUnitSize(t))) {
-				bool b;
-				gmp::setArray(&b, r, y, N);
-				if (b) return;
-			}
-		}
-		gmp::mod(r, t, *pp);
 	}
 	/*
 		word-serial Barrett reduction with the two-unit reciprocal Qt = [q1:q0]
