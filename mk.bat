@@ -1,5 +1,5 @@
 @echo off
-call setvar.bat
+call "%~dp0setvar.bat"
 if "%1"=="-s" (
   echo use static lib
   set LOCAL_CFLAGS=%CFLAGS% /DMCL_DONT_EXPORT lib/mcl.lib

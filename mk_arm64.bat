@@ -1,5 +1,5 @@
 @echo off
-call setvar_arm64.bat
+call "%~dp0setvar_arm64.bat"
 
 set SRC=%2
 set EXE=%SRC:.cpp=.exe%
