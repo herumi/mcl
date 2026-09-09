@@ -184,14 +184,14 @@ public:
 */
 class Fp2 : public fp::Serializable<Fp2, fp::Operator<Fp2> > {
 	static const size_t gN = 5;
-	static Fp u_pm1o2; // u^((p-1)/2)
+	MCL_DLL_VAR static Fp u_pm1o2; // u^((p-1)/2)
 	/*
 		g = xi^((p - 1) / 6)
 		g[] = { g^2, g^4, g^1, g^3, g^5 }
 	*/
-	static Fp2 g[gN];
-	static Fp2 g2[gN];
-	static Fp2 g3[gN];
+	MCL_DLL_VAR static Fp2 g[gN];
+	MCL_DLL_VAR static Fp2 g2[gN];
+	MCL_DLL_VAR static Fp2 g3[gN];
 public:
 	static const Fp2 *get_gTbl() { return &g[0]; }
 	static const Fp2 *get_g2Tbl() { return &g2[0]; }

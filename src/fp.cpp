@@ -110,6 +110,18 @@ namespace mcl {
 
 namespace fp {
 
+Op* getOpPtr(int tag, size_t maxBitSize)
+{
+	if (tag == FpTag && maxBitSize == MCL_FP_BIT) return &Fp::getOpNonConst();
+	if (tag == FrTag && maxBitSize == MCL_FR_BIT) return &Fr::getOpNonConst();
+	return 0; // FpT<tag, maxBitSize> other than Fp and Fr is not supported by the DLL
+}
+
+RandGen& getRandGen()
+{
+	return RandGen::get();
+}
+
 #ifdef MCL_USE_XBYAK
 FpGenerator *createFpGenerator()
 {
@@ -682,5 +694,28 @@ void initForSecp256k1()
 	GLV1::initForSecp256k1();
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 }
+
+namespace ec {
+
+const StaticMember* getStaticMember(int id)
+{
+	struct Table {
+		StaticMember g1;
+		StaticMember g2;
+		Table()
+		{
+			G1::setStaticMember(g1);
+			G2::setStaticMember(g2);
+		}
+	};
+	static const Table tbl;
+	switch (id) {
+	case StaticIdG1: return &tbl.g1;
+	case StaticIdG2: return &tbl.g2;
+	default: return 0;
+	}
+}
+
+} // mcl::ec
 
 } // mcl

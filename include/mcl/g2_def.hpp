@@ -15,6 +15,10 @@ namespace mcl {
 typedef Fp12 GT;
 typedef EcT<Fp2> G2;
 
+namespace ec {
+template<> struct StaticId<Fp2> { static const int id = StaticIdG2; };
+} // mcl::ec
+
 /*
 	twisted Frobenius for G2
 
