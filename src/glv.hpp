@@ -23,15 +23,11 @@ inline size_t estimateBucketSize(size_t n)
 	return log2n - ilog2(log2n);
 }
 
-// x = x mod op.mp (x >= 0)
-inline void modByOp(mpz_class& x, const fp::Op& op)
+// y[op.N] = x[xN] mod op.mp
+inline void modByOp(Unit *y, const Unit *x, size_t xN, const fp::Op& op)
 {
-	assert(x >= 0);
 	assert(op.modp.N != 0);
-	Unit y[maxUnitSize];
-	bool b = op.modp.modp(y, gmp::getUnit(x), gmp::getUnitSize(x));
-	assert(b);
-	gmp::setArray(&b, x, y, op.N);
+	bool b = op.modp.modp(y, x, xN);
 	assert(b);
 	(void)b;
 }
@@ -250,10 +246,11 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 	const int splitN = GLV::splitN;
 	assert(n > 0);
 	typedef Fr F;
-	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	typedef mcl::Unit Unit;
 	const size_t next = F::getUnitSize();
-	mpz_class u[splitN], y;
+	mpz_class u[splitN];
+	Unit y[F::maxSize];
 
 	const size_t tblByteSize = sizeof(G) * splitN * n;
 	const size_t ypByteSize = sizeof(Unit) * next * splitN * n;
@@ -269,7 +266,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 		}
 	}
 	for (size_t i = 0; i < n; i++) {
-		getMpzAt(y, yVec, i);
+		getUnitAt(y, yVec, i);
 		GLV::split(u, y);
 		for (size_t j = 0; j < splitN; j++) {
 			size_t idx = j * n + i;
@@ -300,21 +297,20 @@ static void mulVecGLVsmall(G& z, const G *xVec, const void* yVec, size_t n)
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << (w - 2);
 	typedef Fr F;
-	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	typedef mcl::FixedArray<int8_t, sizeof(Fr) * 8 / splitN + splitN> NafArray;
 	NafArray (*naf)[splitN] = (NafArray (*)[splitN])CYBOZU_ALLOCA(sizeof(NafArray) * n * splitN);
 	// layout tbl[splitN][n][tblSize];
 	G (*tbl)[tblSize] = (G (*)[tblSize])CYBOZU_ALLOCA(sizeof(G) * splitN * n * tblSize);
-	mpz_class u[splitN], y;
+	mpz_class u[splitN];
+	Unit y[F::maxSize];
 	size_t maxBit = 0;
 
 	for (size_t i = 0; i < n; i++) {
-		getMpzAt(y, yVec, i);
+		getUnitAt(y, yVec, i);
 		if (n == 1) {
-			const Unit *y0 = mcl::gmp::getUnit(y);
-			size_t yn = mcl::gmp::getUnitSize(y);
-			yn = bint::getRealSize(y0, yn);
-			if (yn <= 1 && mulSmallInt(z, xVec[0], *y0, false)) return;
+			const size_t yn = bint::getRealSize(y, F::getUnitSize());
+			if (yn <= 1 && mulSmallInt(z, xVec[0], y[0], false)) return;
 		}
 		GLV::split(u, y);
 
@@ -365,13 +361,14 @@ void mulGLV_CT(G& Q, const G& P, const void *yVec)
 {
 	const size_t w = 4;
 	typedef Fr F;
-	fp::getMpzAtType getMpzAt = fp::getMpzAtT<F>;
+	fp::getUnitAtType getUnitAt = fp::getUnitAtT<F>;
 	const int splitN = GLV::splitN;
 	const size_t tblSize = 1 << w;
 	G tbl[splitN][tblSize];
 	bool negTbl[splitN];
-	mpz_class u[splitN], y;
-	getMpzAt(y, yVec, 0);
+	mpz_class u[splitN];
+	Unit y[F::maxSize];
+	getUnitAt(y, yVec, 0);
 	GLV::split(u, y);
 	for (int i = 0; i < splitN; i++) {
 		if (u[i] < 0) {
@@ -464,7 +461,7 @@ struct GLV1T {
 	static size_t rBitSize;
 	static mpz_class v0, v1;
 	static mpz_class B[2][2];
-	static void (*optimizedSplit)(mpz_class u[2], const mpz_class& x);
+	static void (*optimizedSplit)(mpz_class u[2], const Unit *x);
 public:
 #ifndef CYBOZU_DONT_USE_STRING
 	static void dump(const mpz_class& x)
@@ -491,14 +488,22 @@ public:
 	}
 	/*
 		x = u[0] + u[1] * lambda mod r
+		x[Fr::getUnitSize()]
 	*/
-	static void split(mpz_class u[2], mpz_class& x)
+	static void split(mpz_class u[2], const Unit *_x)
 	{
-		ec::modByOp(x, Fr::getOp());
+		const fp::Op& op = Fr::getOp();
+		Unit y[maxUnitSize];
+		ec::modByOp(y, _x, op.N, op);
 		if (optimizedSplit) {
-			optimizedSplit(u, x);
+			optimizedSplit(u, y);
 			return;
 		}
+		mpz_class x;
+		bool ok;
+		gmp::setArray(&ok, x, y, op.N);
+		assert(ok);
+		(void)ok;
 		mpz_class& a = u[0];
 		mpz_class& b = u[1];
 		mpz_class t;
@@ -538,7 +543,7 @@ template<class Ec> size_t GLV1T<Ec>::rBitSize;
 template<class Ec> mpz_class GLV1T<Ec>::v0;
 template<class Ec> mpz_class GLV1T<Ec>::v1;
 template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
-template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(mpz_class u[2], const mpz_class& x);
+template<class Ec> void (*GLV1T<Ec>::optimizedSplit)(mpz_class u[2], const Unit *x);
 
 /*
 	Software implementation of Attribute-Based Encryption: Appendixes
@@ -637,35 +642,39 @@ struct GLV1 : GLV1T<G1> {
 		}
 	}
 	// x = (a + b L) mod r
-	static inline void splitForBLS12(mpz_class u[2], const mpz_class& x)
+	// x[Fr::getUnitSize()]
+	static inline void splitForBLS12(mpz_class u[2], const Unit *_x)
 	{
+		mpz_class x;
+		bool ok;
+		gmp::setArray(&ok, x, _x, Fr::getOp().N);
+		assert(ok);
+		(void)ok;
 		mpz_class& a = u[0];
 		mpz_class& b = u[1];
 		mpz_class t;
 		b = (x * v0) >> rBitSize;
 		a = x - b * B[0][0];
 	}
-	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const mpz_class& x)
+	// x[n*2]
+	static inline void optimizedSplitForBLS12_381(mpz_class u[2], const Unit *x)
 	{
 		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit xa[n*2], a[n], b[n];
+		Unit a[n], b[n];
 		bool dummy;
-		mcl::gmp::getArray(&dummy, xa, n*2, x);
-		assert(dummy);
-		ec::optimizedSplitRawForBLS12_381(a, b, xa);
+		ec::optimizedSplitRawForBLS12_381(a, b, x);
 		gmp::setArray(&dummy, u[0], a, n);
 		gmp::setArray(&dummy, u[1], b, n);
 		assert(dummy);
 		(void)dummy;
 	}
-	static inline void optimizedSplitForBLS12_377(mpz_class u[2], const mpz_class& x)
+	// x[n*2]
+	static inline void optimizedSplitForBLS12_377(mpz_class u[2], const Unit *x)
 	{
 		static const size_t n = 128 / mcl::UnitBitSize;
-		Unit xa[n*2], a[n], b[n];
+		Unit a[n], b[n];
 		bool dummy;
-		mcl::gmp::getArray(&dummy, xa, n*2, x);
-		assert(dummy);
-		ec::optimizedSplitRawForBLS12_377(a, b, xa);
+		ec::optimizedSplitRawForBLS12_377(a, b, x);
 		gmp::setArray(&dummy, u[0], a, n);
 		gmp::setArray(&dummy, u[1], b, n);
 		assert(dummy);
@@ -740,9 +749,17 @@ struct GLV2 {
 	/*
 		u[] = [x, 0, 0, 0] - v[] * x * B
 	*/
-	static void split(mpz_class u[4], mpz_class& x)
+	// x[Fr::getUnitSize()]
+	static void split(mpz_class u[4], const Unit *_x)
 	{
-		ec::modByOp(x, Fr::getOp());
+		const fp::Op& op = Fr::getOp();
+		Unit y[maxUnitSize];
+		ec::modByOp(y, _x, op.N, op);
+		mpz_class x;
+		bool ok;
+		gmp::setArray(&ok, x, y, op.N);
+		assert(ok);
+		(void)ok;
 		if (isBLS12) {
 			/*
 				Frob(P) = zP
