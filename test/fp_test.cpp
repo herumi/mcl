@@ -535,11 +535,10 @@ void setArrayModTest()
 		const mcl::Unit *px = mcl::gmp::getUnit(x);
 		const size_t xn = mcl::gmp::getUnitSize(x);
 		const size_t xByteSize = xn * unitByteSize;
-		const size_t fpByteSize = unitByteSize * Fp::getOp().N;
 		Fp y;
 		bool b;
 		y.setArrayMod(&b, px, xn);
-		bool expected = xByteSize <= fpByteSize * 2;
+		bool expected = xByteSize <= MCL_MAX_BUF_BYTE_SIZE;
 		CYBOZU_TEST_EQUAL(b, expected);
 		if (!b) continue;
 		CYBOZU_TEST_EQUAL(y.getMpz(), x % p);
