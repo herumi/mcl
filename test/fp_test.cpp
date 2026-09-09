@@ -842,14 +842,21 @@ void modpTest()
 	std::string maxStr(mcl::gmp::getBitSize(p) * 2, '1');
 	mcl::gmp::setStr(tbl[0], maxStr, 2);
 	mcl::Modp modp;
-	if (!modp.init(p)) {
+	const bool ok = modp.init(p);
+	if (!ok) {
 		std::cout << "modp.init fail for p=" << p << std::endl;
 	}
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];
+		mcl::Unit y[mcl::maxUnitSize];
+		const bool b = modp.modp(y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x));
+		CYBOZU_TEST_EQUAL(b, ok);
+		if (!b) continue;
 		mpz_class r1, r2;
 		r1 = x % p;
-		modp.modp(r2, x);
+		bool b2;
+		mcl::gmp::setArray(&b2, r2, y, modp.N);
+		CYBOZU_TEST_ASSERT(b2);
 		CYBOZU_TEST_EQUAL(r1, r2);
 	}
 }

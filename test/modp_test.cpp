@@ -103,8 +103,8 @@ struct ModpOld {
 };
 
 
-// mpz version of Modp::modp ; init() may fail (e.g. min prime), then modp() returns false
-CYBOZU_TEST_AUTO(modp_mpz)
+// Modp::init() may fail (e.g. min prime), then modp() returns false
+CYBOZU_TEST_AUTO(modp_init)
 {
 	const int C = 1000000;
 	const char *pTbl[] = {
@@ -141,16 +141,24 @@ CYBOZU_TEST_AUTO(modp_mpz)
 		const mpz_class p(pTbl[i]);
 		std::cout << std::hex << "p=" << p << std::endl;
 		const bool ok = modp.init(p);
-		std::cout << "init=" << (ok ? "ok" : "fail (use x % p)") << std::endl;
+		std::cout << "init=" << (ok ? "ok" : "fail") << std::endl;
 		for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(xTbl); j++) {
 			const mpz_class x(xTbl[j]);
 			std::cout << std::hex << "x=" << x << std::endl;
+			const mcl::Unit *px = mcl::gmp::getUnit(x);
+			const size_t xn = mcl::gmp::getUnitSize(x);
+			mcl::Unit y[mcl::maxUnitSize];
+			const bool b = modp.modp(y, px, xn);
+			CYBOZU_TEST_EQUAL(b, ok);
 			mpz_class r1, r2;
 			r1 = x % p;
-			modp.modp(r2, x);
-			CYBOZU_TEST_EQUAL(r1, r2);
 			CYBOZU_BENCH_C("x % p", C, mcl::gmp::mod, r1, x, p);
-			CYBOZU_BENCH_C("modp ", C, modp.modp, r2, x);
+			if (!b) continue;
+			bool b2;
+			mcl::gmp::setArray(&b2, r2, y, modp.N);
+			CYBOZU_TEST_ASSERT(b2);
+			CYBOZU_TEST_EQUAL(r1, r2);
+			CYBOZU_BENCH_C("modp ", C, modp.modp, y, px, xn);
 		}
 	}
 }

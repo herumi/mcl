@@ -23,6 +23,19 @@ inline size_t estimateBucketSize(size_t n)
 	return log2n - ilog2(log2n);
 }
 
+// x = x mod op.mp (x >= 0)
+inline void modByOp(mpz_class& x, const fp::Op& op)
+{
+	assert(x >= 0);
+	assert(op.modp.N != 0);
+	Unit y[maxUnitSize];
+	bool b = op.modp.modp(y, gmp::getUnit(x), gmp::getUnitSize(x));
+	assert(b);
+	gmp::setArray(&b, x, y, op.N);
+	assert(b);
+	(void)b;
+}
+
 //	return heuristic backet size which is faster than glvGetTheoreticBucketSize
 inline size_t glvGetBucketSize(size_t n)
 {
@@ -481,7 +494,7 @@ public:
 	*/
 	static void split(mpz_class u[2], mpz_class& x)
 	{
-		Fr::getOp().modp.modp(x, x);
+		ec::modByOp(x, Fr::getOp());
 		if (optimizedSplit) {
 			optimizedSplit(u, x);
 			return;
@@ -729,7 +742,7 @@ struct GLV2 {
 	*/
 	static void split(mpz_class u[4], mpz_class& x)
 	{
-		Fr::getOp().modp.modp(x, x);
+		ec::modByOp(x, Fr::getOp());
 		if (isBLS12) {
 			/*
 				Frob(P) = zP
