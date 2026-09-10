@@ -257,6 +257,10 @@ void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y)
 {
 	Fr::div(*cast(z),*cast(x), *cast(y));
 }
+void mclBnFr_mulUnit(mclBnFr *z, const mclBnFr *x, uint32_t y)
+{
+	Fr::mulUnit(*cast(z), *cast(x), y);
+}
 
 void mclBnFp_neg(mclBnFp *y, const mclBnFp *x)
 {
@@ -285,6 +289,10 @@ void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
 void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y)
 {
 	Fp::div(*cast(z),*cast(x), *cast(y));
+}
+void mclBnFp_mulUnit(mclBnFp *z, const mclBnFp *x, uint32_t y)
+{
+	Fp::mulUnit(*cast(z), *cast(x), y);
 }
 
 void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x)
