@@ -71,3 +71,27 @@ int strcmp(const char *s1, const char *s2) {
 void abort(void) {
   __builtin_trap();
 }
+
+/*
+  128-bit multiplication for wasm32 (replacement of compiler-rt __multi3).
+  clang lowers `mul i128` (used in mclb_modp256/384 of base32.ll) to a call to this function.
+  Written with 64-bit arithmetic only so that it does not call itself.
+*/
+typedef unsigned long long u64;
+typedef unsigned __int128 u128;
+
+static inline u128 mul64x64(u64 x, u64 y) {
+  u64 a = x >> 32, b = (unsigned)x, c = y >> 32, d = (unsigned)y;
+  u64 bd = b * d, ad = a * d, bc = b * c, ac = a * c;
+  u64 mid = (bd >> 32) + (unsigned)ad + (unsigned)bc;
+  u64 lo = (bd & 0xffffffffULL) | (mid << 32);
+  u64 hi = ac + (ad >> 32) + (bc >> 32) + (mid >> 32);
+  return ((u128)hi << 64) | lo;
+}
+
+u128 __multi3(u128 x, u128 y) {
+  u64 xl = (u64)x, xh = (u64)(x >> 64), yl = (u64)y, yh = (u64)(y >> 64);
+  u128 r = mul64x64(xl, yl);
+  u64 hi = (u64)(r >> 64) + xl * yh + xh * yl;
+  return ((u128)hi << 64) | (u64)r;
+}
