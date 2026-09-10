@@ -33,6 +33,7 @@ typedef mcl::Vint mpz_class;
 #else
 #include <gmpxx.h>
 #include <mcl/bint.hpp>
+#include <mcl/util.hpp>
 #ifdef _MSC_VER
 	#pragma warning(pop)
 	#include <cybozu/link_mpir.hpp>
@@ -934,11 +935,15 @@ public:
 
 // generated modp functions (dst[N] = src[srcN] mod p, para = &Modp::q0)
 #if MCL_BINT_ASM_X64 == 1
+#define MCL_MODP_ASM 1
 extern "C" int mclb_modp256_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
 extern "C" int mclb_modp384_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
 #elif defined(MCL_USE_LLVM)
+#define MCL_MODP_ASM 1
 extern "C" int mclb_modp256(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
 extern "C" int mclb_modp384(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+#else
+#define MCL_MODP_ASM 0
 #endif
 
 /*
@@ -953,10 +958,15 @@ struct Modp {
 	Unit np[maxUnitSize];
 	int (*modp_asm)(Unit *, const Unit *, size_t, const Unit*);
 	size_t N; // number of units of p
-	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0) {}
+	size_t L; // bit length of p
+	Unit p[maxUnitSize];
+	static const size_t smallD = 16; // bit length of the approximate reciprocal p0
+	static const size_t smallMaxE = smallD - 2; // modpSmall accepts xx < p 2^smallMaxE
+	uint32_t p0; // floor(2^(smallD + L - 1) / p) < 2^smallD
+	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0), L(0), p(), p0(0) {}
 	bool init(const mpz_class& p) {
 		const size_t BIT = sizeof(Unit) * 8;
-		const size_t L = gmp::getBitSize(p);
+		L = gmp::getBitSize(p);
 		modp_asm = 0;
 		N = roundUp(L, BIT);
 		if (N == 0 || N > maxUnitSize || L < (N - 1) * BIT + 2) {
@@ -973,7 +983,9 @@ struct Modp {
 		q1 = gmp::getUnit(Qt, 1);
 		for (size_t i = 0; i < N; i++) {
 			np[i] = gmp::getUnit(notp, i);
+			this->p[i] = gmp::getUnit(p, i);
 		}
+		p0 = uint32_t(gmp::getUnit((mpz_class(1) << (smallD + L - 1)) / p, 0));
 #if MCL_BINT_ASM_X64 == 1
 		// src/gen_bint_x64.py requires p < 2^(N * BIT - 1) (r < 2p in N units)
 		if (s >= 1) {
@@ -996,7 +1008,9 @@ struct Modp {
 	bool modp(Unit *y, const Unit *x, size_t xN) const
 	{
 		if (N == 0) return false;
+#if MCL_MODP_ASM == 1
 		if (modp_asm && xN * sizeof(Unit) <= 64) return modp_asm(y, x, xN, &q0);
+#endif
 		return modp_generic(y, x, xN);
 	}
 	/*
@@ -1019,51 +1033,119 @@ struct Modp {
 			bint::clearN(y + xN, N - xN);
 			return true;
 		}
-		// xx[N+1] = r 2^BIT + w ; r is kept in xx[1..N]
-		Unit xx[maxUnitSize + 1];
+		// xx[N+1] = r 2^BIT + w ; r is kept in xx[1..N] ; two buffers because modp1 does not accept overlap
+		Unit buf[2][maxUnitSize + 1];
+		Unit *xx = buf[0];
+		Unit *r = buf[1];
 		// r = the top N-1 units of x (< p)
 		bint::copyN(xx + 1, x + xN - (N - 1), N - 1);
 		xx[N] = 0;
 		for (size_t k = xN - N + 1; k > 0; k--) {
 			xx[0] = x[k - 1];
-			modp1(xx + 1, xx);
+			modp1(r + 1, xx); // r[1..N] = xx mod p
+			fp::swap_(xx, r);
 		}
 		bint::copyN(y, xx + 1, N);
 		return true;
 	}
 	/*
-		one step of modp_generic
-		y[N] = xx[N+1] % p ; requires xx < p 2^BIT (i.e. the top N units of xx are < p)
-		y may overlap xx + 1
+		The following functions have a template parameter NT for the number of units of p.
+		NT = 0 means the runtime N (modp_generic, tests), NT = N gives faster code
+		(the loops are unrolled) and is used by fp_mulUnit set in setOp<N>.
 	*/
-	void modp1(Unit *y, const Unit *xx) const
+	template<size_t NT>
+	void modp1T(Unit *y, const Unit *xx) const
 	{
+		const size_t n = NT ? NT : N;
 		const size_t BIT = sizeof(Unit) * 8;
 		const Unit Qt[2] = { q0, q1 };
-		Unit t[maxUnitSize + 1];
-		Unit v[maxUnitSize];
-		// q = floor(W Qt / 2^(2 BIT + 1)), W = [xx[N]:xx[N-1]]
+		// q = floor(W Qt / 2^(2 BIT + 1)), W = [xx[n]:xx[n-1]]
 		Unit P[4];
-		bint::mulT<2>(P, xx + N - 1, Qt);
+		bint::mulT<2>(P, xx + n - 1, Qt);
 		const Unit q = (P[2] >> 1) | (P[3] << (BIT - 1));
-		// t = xx + q np - (q << (N BIT)) (mod 2^((N+1) BIT)) = xx - q p
-		t[N] = bint::mulUnitN(t, np, q, N);
-		t[N] += bint::addN(t, t, xx, N) + xx[N] - q;
-		// t -= p if t >= p, i.e. t + np >= 2^(N BIT)
-		const Unit c = bint::addN(v, t, np, N) + t[N];
-		bint::copyN(y, c ? v : t, N);
+		subQpT<NT>(y, xx, q);
+	}
+	void modp1(Unit *y, const Unit *xx) const { modp1T<0>(y, xx); }
+	/*
+		y[N] = xx[N+1] - q p, then y -= p once if y >= p
+		requires 0 <= xx - q p < 2p (i.e. q is floor(xx / p) or floor(xx / p) - 1)
+		y must not overlap xx
+		remark : write y directly by the asm functions (no copy of a buffer written by asm,
+		which causes a store-forwarding stall when the copy is vectorized)
+	*/
+	template<size_t NT>
+	void subQpT(Unit *y, const Unit *xx, Unit q) const
+	{
+		const size_t n = NT ? NT : N;
+		Unit u[(NT ? NT : maxUnitSize) + 1];
+		u[n] = bint::mulUnitN(u, p, q, n); // u = q p
+		const Unit b = bint::subN(y, xx, u, n); // y = xx - u (low n units)
+		const Unit top = xx[n] - u[n] - b; // 0 or 1 because 0 <= xx - q p < 2p < 2^(n BIT + 1)
+		if (top || bint::cmpGeN(y, p, n)) {
+			bint::subN(y, y, p, n);
+		}
 	}
 	/*
-		z[N] = (x[N] * y) % p ; requires x < p (then x y < p 2^BIT and one step suffices)
-		return false if init() failed
+		y[N] = xx[N+1] % p for xx < p 2^smallMaxE (e.g. xx = x y with x < p and y < 2^(smallMaxE - 1))
+		The quotient is estimated by one 32-bit multiplication of the top smallD bits of xx and p0,
+		which is cheaper than the two-unit multiplication in modp1.
+		return false if xx is too large (then use modp1)
+		Let a = bitLen(xx), x0 = floor(xx / 2^(a - smallD)) < 2^smallD, s = 2 smallD + L - 1 - a.
+		q = floor(x0 p0 / 2^s) <= floor(xx / p) and > xx / p - 2 2^(e - smallD) - 1 >= xx / p - 3/2 (e = a - L + 1 <= smallMaxE),
+		so q >= floor(xx / p) - 1 and one conditional subtraction suffices.
+		y must not overlap xx
 	*/
+	template<size_t NT>
+	bool modpSmallT(Unit *y, const Unit *xx) const
+	{
+		const size_t n = NT ? NT : N;
+		const size_t a = fp::getBitSize(xx, n + 1);
+		if (a < L) {
+			bint::copyN(y, xx, n); // xx < 2^(L-1) <= p
+			return true;
+		}
+		const size_t e = a - L + 1;
+		if (e > smallMaxE) return false;
+		const Unit x0 = fp::getUnitAt(xx, n + 1, a - smallD);
+		const uint32_t t = uint32_t(x0) * p0;
+		const Unit q = t >> (2 * smallD + L - 1 - a); // the shift is in [smallD + 2, 2 smallD - 1]
+		if (q == 0) {
+			/*
+				q == 0 implies a == L : if a > L then x0 >= 2^(smallD-1), p0 >= 2^(smallD-1) and
+				the shift 31 + L - a <= 30 give q >= 1. So xx < 2^L (xx[n] == 0) and xx < 2p.
+			*/
+			if (bint::cmpGeN(xx, p, n)) { // fast because the branch is usually determined at xx[n-1] (xx and p have L bits)
+				bint::subN(y, xx, p, n);
+			} else {
+				bint::copyN(y, xx, n);
+			}
+			return true;
+		}
+		subQpT<NT>(y, xx, q);
+		return true;
+	}
+	bool modpSmall(Unit *y, const Unit *xx) const { return modpSmallT<0>(y, xx); }
+	/*
+		z[N] = (x[N] * y) % p ; requires x < p (then x y < p 2^BIT and one step suffices) and init() succeeded
+		modpSmall for a small y, otherwise modp1
+		remark : the generated modp_asm is not used here because it is not faster than modp1T<N> for one step
+		(Fr : 3 clk faster, Fp : 6 clk slower on x64)
+	*/
+	template<size_t NT>
+	void mulUnitModT(Unit *z, const Unit *x, Unit y) const
+	{
+		assert(N > 0);
+		const size_t n = NT ? NT : N;
+		Unit xy[(NT ? NT : maxUnitSize) + 1];
+		xy[n] = bint::mulUnitN(xy, x, y, n);
+		if (modpSmallT<NT>(z, xy)) return;
+		modp1T<NT>(z, xy);
+	}
+	// return false if init() failed
 	bool mulUnitMod(Unit *z, const Unit *x, Unit y) const
 	{
 		if (N == 0) return false;
-		Unit xy[maxUnitSize + 1];
-		xy[N] = bint::mulUnitN(xy, x, y, N);
-		if (modp_asm && (N + 1) * sizeof(Unit) <= 64) return modp_asm(z, xy, N + 1, &q0);
-		modp1(z, xy);
+		mulUnitModT<0>(z, x, y);
 		return true;
 	}
 };

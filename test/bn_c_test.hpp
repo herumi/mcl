@@ -71,6 +71,27 @@ void FrTest()
 	mclBnFr_sqr(&y, &y);
 	CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&x, &y));
 
+	// mulUnit
+	{
+		const uint32_t tbl[] = { 0, 1, 2, 7, 9, 10, 100, 255, 12345, 0x7fffffff, 0xffffffff };
+		mclBnFr fx, fy, z1, z2;
+		mclBnFp px, py, w1, w2;
+		mclBnFr_setInt(&fx, -1); // r - 1
+		mclBnFp_setInt(&px, -1); // p - 1
+		for (size_t i = 0; i < sizeof(tbl) / sizeof(tbl[0]); i++) {
+			char ystr[16];
+			int n = snprintf(ystr, sizeof(ystr), "%u", tbl[i]);
+			CYBOZU_TEST_ASSERT(mclBnFr_setStr(&fy, ystr, n, 10) == 0);
+			mclBnFr_mul(&z1, &fx, &fy);
+			mclBnFr_mulUnit(&z2, &fx, tbl[i]);
+			CYBOZU_TEST_ASSERT(mclBnFr_isEqual(&z1, &z2));
+			CYBOZU_TEST_ASSERT(mclBnFp_setStr(&py, ystr, n, 10) == 0);
+			mclBnFp_mul(&w1, &px, &py);
+			mclBnFp_mulUnit(&w2, &px, tbl[i]);
+			CYBOZU_TEST_ASSERT(mclBnFp_isEqual(&w1, &w2));
+		}
+	}
+
 	const char *s = "12345678901234567";
 	CYBOZU_TEST_ASSERT(!mclBnFr_setStr(&x, s, strlen(s), 10));
 	s = "20000000000000000";

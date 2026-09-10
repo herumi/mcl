@@ -84,13 +84,20 @@ static void mulUnitPreT(Unit *z, const Unit *x, Unit y)
 	z[N] = bint::mulUnitT<N>(z, x, y);
 }
 
-// z[N] <- (x[N] * y) % p[N]
+// z[N] <- (x[N] * y) % p[N] ; requires Modp::init() succeeded
 template<size_t N>
-static void mulUnitModT(Unit *z, const Unit *x, Unit y, const Unit *p)
+static void mulUnitModT(Unit *z, const Unit *x, Unit y, const Op& op)
+{
+	op.modp.mulUnitModT<N>(z, x, y);
+}
+
+// z[N] <- (x[N] * y) % p[N] by bint::div ; used if Modp::init() failed (e.g. the top unit of p is 1)
+template<size_t N>
+static void mulUnitModDivT(Unit *z, const Unit *x, Unit y, const Op& op)
 {
 	Unit xy[N + 1];
 	mulUnitPreT<N>(xy, x, y);
-	size_t n = bint::div(0, 0, xy, N + 1, p, N);
+	size_t n = bint::div(0, 0, xy, N + 1, op.p, N);
 	bint::copyN(z, xy, n);
 	bint::clearN(z + n, N - n);
 }
