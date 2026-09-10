@@ -1011,7 +1011,6 @@ struct Modp {
 	*/
 	bool modp_generic(Unit *y, const Unit *x, size_t xN) const
 	{
-		const size_t BIT = sizeof(Unit) * 8;
 		if (xN < N) {
 			// init() guarantees N <= maxUnitSize; the check lets gcc see xN < maxUnitSize (avoid -Warray-bounds)
 			if (N > maxUnitSize) return false;
@@ -1020,28 +1019,51 @@ struct Modp {
 			bint::clearN(y + xN, N - xN);
 			return true;
 		}
-		const Unit Qt[2] = { q0, q1 };
 		// xx[N+1] = r 2^BIT + w ; r is kept in xx[1..N]
 		Unit xx[maxUnitSize + 1];
-		Unit t[maxUnitSize + 1];
-		Unit v[maxUnitSize];
 		// r = the top N-1 units of x (< p)
 		bint::copyN(xx + 1, x + xN - (N - 1), N - 1);
 		xx[N] = 0;
 		for (size_t k = xN - N + 1; k > 0; k--) {
 			xx[0] = x[k - 1];
-			// q = floor(W Qt / 2^(2 BIT + 1)), W = [xx[N]:xx[N-1]]
-			Unit P[4];
-			bint::mulT<2>(P, xx + N - 1, Qt);
-			const Unit q = (P[2] >> 1) | (P[3] << (BIT - 1));
-			// t = xx + q np - (q << (N BIT)) (mod 2^((N+1) BIT)) = xx - q p
-			t[N] = bint::mulUnitN(t, np, q, N);
-			t[N] += bint::addN(t, t, xx, N) + xx[N] - q;
-			// t -= p if t >= p, i.e. t + np >= 2^(N BIT)
-			const Unit c = bint::addN(v, t, np, N) + t[N];
-			bint::copyN(xx + 1, c ? v : t, N);
+			modp1(xx + 1, xx);
 		}
 		bint::copyN(y, xx + 1, N);
+		return true;
+	}
+	/*
+		one step of modp_generic
+		y[N] = xx[N+1] % p ; requires xx < p 2^BIT (i.e. the top N units of xx are < p)
+		y may overlap xx + 1
+	*/
+	void modp1(Unit *y, const Unit *xx) const
+	{
+		const size_t BIT = sizeof(Unit) * 8;
+		const Unit Qt[2] = { q0, q1 };
+		Unit t[maxUnitSize + 1];
+		Unit v[maxUnitSize];
+		// q = floor(W Qt / 2^(2 BIT + 1)), W = [xx[N]:xx[N-1]]
+		Unit P[4];
+		bint::mulT<2>(P, xx + N - 1, Qt);
+		const Unit q = (P[2] >> 1) | (P[3] << (BIT - 1));
+		// t = xx + q np - (q << (N BIT)) (mod 2^((N+1) BIT)) = xx - q p
+		t[N] = bint::mulUnitN(t, np, q, N);
+		t[N] += bint::addN(t, t, xx, N) + xx[N] - q;
+		// t -= p if t >= p, i.e. t + np >= 2^(N BIT)
+		const Unit c = bint::addN(v, t, np, N) + t[N];
+		bint::copyN(y, c ? v : t, N);
+	}
+	/*
+		z[N] = (x[N] * y) % p ; requires x < p (then x y < p 2^BIT and one step suffices)
+		return false if init() failed
+	*/
+	bool mulUnitMod(Unit *z, const Unit *x, Unit y) const
+	{
+		if (N == 0) return false;
+		Unit xy[maxUnitSize + 1];
+		xy[N] = bint::mulUnitN(xy, x, y, N);
+		if (modp_asm && (N + 1) * sizeof(Unit) <= 64) return modp_asm(z, xy, N + 1, &q0);
+		modp1(z, xy);
 		return true;
 	}
 };

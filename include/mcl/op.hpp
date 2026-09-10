@@ -179,7 +179,6 @@ struct Op {
 	mcl::Modp modp;
 	mcl::SquareRoot sq;
 	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
-	mcl::bint::SmallModP smallModP;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
 	/*
@@ -228,7 +227,6 @@ struct Op {
 	void3u fp_mul2;
 	void2uOp fp_invOp;
 	void2uIu fp_mulUnit; // fp_mulUnitPre
-	bool (*mulSmallUnit)(const mcl::bint::SmallModP&, Unit *z, const Unit *x, Unit y);
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;
@@ -319,7 +317,6 @@ struct Op {
 		fp_mul2 = 0;
 		fp_invOp = 0;
 		fp_mulUnit = 0;
-		mulSmallUnit = 0;
 
 		fpDbl_mulPre = 0;
 		fpDbl_sqrPre = 0;

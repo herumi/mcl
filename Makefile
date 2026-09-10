@@ -27,7 +27,7 @@ TEST_SRC+=ecdsa_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
-TEST_SRC+=smallmodp_test.cpp
+TEST_SRC+=mulunit_test.cpp
 
 MCL_SNAME=mcl
 ifeq ($(MCL_SUF),256)

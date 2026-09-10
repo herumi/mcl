@@ -582,8 +582,8 @@ public:
 	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
 		if (mcl::fp::mulSmallUnit(z, x, y)) return;
-		if (op_.mulSmallUnit(op_.smallModP, z.v_, x.v_, y)) return;
-		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
+		if (op_.modp.mulUnitMod(z.v_, x.v_, y)) return;
+		op_.fp_mulUnit(z.v_, x.v_, y, op_.p); // Modp::init() failed (e.g. the top unit of p is 1)
 	}
 	// alias of mulUnit
 	static inline void mulSmall(FpT& z, const FpT& x, const uint32_t y) { mulUnit(z, x, y); }
