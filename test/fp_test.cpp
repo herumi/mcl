@@ -737,10 +737,10 @@ void setHashOfTest()
 		std::string digest;
 		if (bitSize <= 256) {
 			digest.resize(256/8);
-			cybozu::Sha256().digest(digest.data(), digest.size(), msg, msgSize);
+			cybozu::Sha256().digest(&digest[0], digest.size(), msg, msgSize);
 		} else {
 			digest.resize(512/8);
-			cybozu::Sha512().digest(digest.data(), digest.size(), msg, msgSize);
+			cybozu::Sha512().digest(&digest[0], digest.size(), msg, msgSize);
 		}
 		Fp x, y;
 		x.setArrayMask((const uint8_t*)digest.data(), digest.size());
