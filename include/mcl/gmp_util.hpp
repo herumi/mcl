@@ -964,9 +964,9 @@ struct Modp {
 	static const size_t smallMaxE = smallD - 2; // modpSmall accepts xx < p 2^smallMaxE
 	uint32_t p0; // floor(2^(smallD + L - 1) / p) < 2^smallD
 	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0), L(0), p(), p0(0) {}
-	bool init(const mpz_class& p) {
+	bool init(const mpz_class& _p) {
 		const size_t BIT = sizeof(Unit) * 8;
-		L = gmp::getBitSize(p);
+		L = gmp::getBitSize(_p);
 		modp_asm = 0;
 		N = roundUp(L, BIT);
 		if (N == 0 || N > maxUnitSize || L < (N - 1) * BIT + 2) {
@@ -976,16 +976,16 @@ struct Modp {
 		// leading zero bits of p in N words
 		const size_t s = N * BIT - L;
 		// Q = floor(2^(BIT+1+L)/p), BIT+2 bits
-		mpz_class Q = (mpz_class(1) << (BIT + 1 + L)) / p;
+		mpz_class Q = (mpz_class(1) << (BIT + 1 + L)) / _p;
 		mpz_class Qt = Q << s; // Qt = Q 2^s < 2^(2 * BIT)
-		mpz_class notp = (mpz_class(1) << (N * BIT)) - p; // notp = 2^(N * BIT) - p
+		mpz_class notp = (mpz_class(1) << (N * BIT)) - _p; // notp = 2^(N * BIT) - p
 		q0 = gmp::getUnit(Qt, 0);
 		q1 = gmp::getUnit(Qt, 1);
 		for (size_t i = 0; i < N; i++) {
 			np[i] = gmp::getUnit(notp, i);
-			this->p[i] = gmp::getUnit(p, i);
+			p[i] = gmp::getUnit(_p, i);
 		}
-		p0 = uint32_t(gmp::getUnit((mpz_class(1) << (smallD + L - 1)) / p, 0));
+		p0 = uint32_t(gmp::getUnit((mpz_class(1) << (smallD + L - 1)) / _p, 0));
 #if MCL_BINT_ASM_X64 == 1
 		// src/gen_bint_x64.py requires p < 2^(N * BIT - 1) (r < 2p in N units)
 		if (s >= 1) {
