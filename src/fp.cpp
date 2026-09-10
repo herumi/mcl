@@ -321,7 +321,7 @@ void setOp(Op& op)
 #else
 	op.fp_invOp = fp_invOpC;
 #endif
-	op.fp_mulUnit = mulUnitModT<N>;
+	op.fp_mulUnit = op.modp.N > 0 ? mulUnitModT<N> : mulUnitModDivT<N>; // modp.init() is called before setOp()
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
 	op.fp_mulUnitPre = mulUnitPreT<N>;

@@ -119,6 +119,7 @@ typedef void (*void2u)(Unit*, const Unit*);
 typedef void (*void2uI)(Unit*, const Unit*, Unit);
 typedef void (*void2uIu)(Unit*, const Unit*, Unit, const Unit*);
 typedef void (*void2uOp)(Unit*, const Unit*, const Op&);
+typedef void (*void2uIOp)(Unit*, const Unit*, Unit, const Op&);
 typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
 typedef int (*int2u)(Unit*, const Unit*);
@@ -226,7 +227,7 @@ struct Op {
 	void3u fp_sqr;
 	void3u fp_mul2;
 	void2uOp fp_invOp;
-	void2uIu fp_mulUnit; // fp_mulUnitPre
+	void2uIOp fp_mulUnit; // z = x * y (Unit) ; Modp::mulUnitModT<N> or bint::div
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;

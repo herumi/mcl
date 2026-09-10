@@ -337,7 +337,9 @@ CYBOZU_TEST_AUTO(SmallModP)
 // Modp::init() may fail (e.g. min prime), then modp() returns false
 CYBOZU_TEST_AUTO(modp_init)
 {
+#ifdef NDEBUG
 	const int C = 1000000;
+#endif
 	const char *pTbl[] = {
 		"0x30000000000000000000000000000000000000000000002b",
 		"0x70000000000000000000000000000000000000000000001f",
@@ -383,20 +385,26 @@ CYBOZU_TEST_AUTO(modp_init)
 			CYBOZU_TEST_EQUAL(b, ok);
 			mpz_class r1, r2;
 			r1 = x % p;
+#ifdef NDEBUG
 			CYBOZU_BENCH_C("x % p", C, mcl::gmp::mod, r1, x, p);
+#endif
 			if (!b) continue;
 			bool b2;
 			mcl::gmp::setArray(&b2, r2, y, modp.N);
 			CYBOZU_TEST_ASSERT(b2);
 			CYBOZU_TEST_EQUAL(r1, r2);
+#ifdef NDEBUG
 			CYBOZU_BENCH_C("modp ", C, modp.modp, y, px, xn);
+#endif
 		}
 	}
 }
 
 CYBOZU_TEST_AUTO(modp)
 {
+#ifdef NDEBUG
 	const int C = 1000000;
+#endif
 	const char *pTbl[] = {
 		"0x30000000000000000000000000000000000000000000002b",
 		"0x70000000000000000000000000000000000000000000001f",
@@ -465,19 +473,23 @@ CYBOZU_TEST_AUTO(modp)
 				CYBOZU_TEST_EQUAL_ARRAY(y, y2, N);
 			}
 		}
+#ifdef NDEBUG
 		{
 			mcl::Unit x[maxXN], y[mcl::maxUnitSize];
 			for (size_t k = 0; k < maxXN; k++) x[k] = rg.get64();
 			CYBOZU_BENCH_C("modp_generic", C, modp.modp_generic, y, x, maxXN);
 			if (modp.modp_asm) CYBOZU_BENCH_C("modp_asm    ", C, modp.modp, y, x, maxXN);
 		}
+#endif
 	}
 }
 
 // mulUnitMod (x < p, any y) and modp1 (xx < p 2^BIT)
 CYBOZU_TEST_AUTO(mulUnitMod)
 {
+#ifdef NDEBUG
 	const int C = 1000000;
+#endif
 	const char *pTbl[] = {
 		"0x30000000000000000000000000000000000000000000002b",
 		"0x800000000000000000000000000000000000000000000005",
@@ -532,10 +544,50 @@ CYBOZU_TEST_AUTO(mulUnitMod)
 			mcl::Unit z2[mcl::maxUnitSize] = {};
 			modp.modp1(z2, xy);
 			CYBOZU_TEST_EQUAL_ARRAY(z, z2, N);
-			// in-place (y overlaps xx + 1)
-			modp.modp1(xy + 1, xy);
-			CYBOZU_TEST_EQUAL_ARRAY(z, xy + 1, N);
+			// modpSmall accepts xy if y < 2^(smallMaxE - 1) (it may accept a larger y)
+			mcl::Unit z3[mcl::maxUnitSize] = {};
+			const bool small = modp.modpSmall(z3, xy);
+			if (y < (mcl::Unit(1) << (mcl::Modp::smallMaxE - 1))) CYBOZU_TEST_ASSERT(small);
+			if (small) CYBOZU_TEST_EQUAL_ARRAY(z, z3, N);
 		}
+		// x y in [2^(N BIT), 2^(N BIT) + y) for a full-bit p (p > 2^(N BIT - 1)) : xy[N] = 1 must not take the q == 0 path
+		if (mcl::gmp::getBitSize(p) == N * mcl::UnitBitSize) {
+			for (mcl::Unit y = 2; y <= 100; y++) {
+				mpz_class mx = ((mpz_class(1) << (N * mcl::UnitBitSize)) + y - 1) / y; // ceil(2^(N BIT) / y) < p
+				CYBOZU_TEST_ASSERT(mx < p);
+				mcl::Unit x[mcl::maxUnitSize] = {};
+				bool b;
+				mcl::gmp::getArray(&b, x, N, mx);
+				CYBOZU_TEST_ASSERT(b);
+				mcl::Unit xy[mcl::maxUnitSize + 1];
+				xy[N] = mcl::bint::mulUnitN(xy, x, y, N);
+				CYBOZU_TEST_EQUAL(xy[N], 1u);
+				mcl::Unit z[mcl::maxUnitSize] = {};
+				CYBOZU_TEST_ASSERT(modp.modpSmall(z, xy));
+				mpz_class r1, r2;
+				r1 = (mx * mpz_class(y)) % p;
+				mcl::gmp::setArray(r2, z, N);
+				CYBOZU_TEST_EQUAL(r1, r2);
+			}
+		}
+		{
+			mcl::Unit x[mcl::maxUnitSize];
+			bool b;
+			mcl::gmp::getArray(&b, x, N, p - 1);
+			CYBOZU_TEST_ASSERT(b);
+			const mpz_class mx = p - 1;
+			for (mcl::Unit y = 0; y < (mcl::Unit(1) << (mcl::Modp::smallMaxE - 1)); y++) {
+				mcl::Unit xy[mcl::maxUnitSize + 1];
+				xy[N] = mcl::bint::mulUnitN(xy, x, y, N);
+				mcl::Unit z[mcl::maxUnitSize] = {};
+				CYBOZU_TEST_ASSERT(modp.modpSmall(z, xy));
+				mpz_class r1, r2;
+				r1 = (mx * mpz_class(y)) % p;
+				mcl::gmp::setArray(r2, z, N);
+				CYBOZU_TEST_EQUAL(r1, r2);
+			}
+		}
+#ifdef NDEBUG
 		{
 			mcl::Unit x[mcl::maxUnitSize], z[mcl::maxUnitSize];
 			bool b;
@@ -546,7 +598,10 @@ CYBOZU_TEST_AUTO(mulUnitMod)
 			mcl::Unit xy[mcl::maxUnitSize + 1];
 			xy[N] = mcl::bint::mulUnitN(xy, x, y, N);
 			CYBOZU_BENCH_C("modp1     ", C, modp.modp1, z, xy);
+			xy[N] = mcl::bint::mulUnitN(xy, x, 100, N);
+			CYBOZU_BENCH_C("modpSmall ", C, modp.modpSmall, z, xy);
 		}
+#endif
 	}
 	// init fails for min prime, then mulUnitMod returns false
 	{
@@ -611,7 +666,14 @@ void testMulUnit(const char *s)
 #endif
 }
 
-// compare the removed SmallModP with Modp::mulUnitMod / modp1 for z = x y mod p (x < p)
+template<size_t N>
+void mulUnitSmallT(const mcl::Modp& modp, Unit *z, const Unit *x, Unit y, Unit *xy)
+{
+	xy[N] = mcl::bint::mulUnitT<N>(xy, x, y);
+	if (!modp.modpSmall(z, xy)) modp.modp1(z, xy);
+}
+
+// compare the removed SmallModP with Modp::mulUnitMod / modp1 / modpSmall for z = x y mod p (x < p)
 template<class F, size_t N>
 void benchSmallModP(const char *name)
 {
@@ -624,7 +686,6 @@ void benchSmallModP(const char *name)
 	F x, z;
 	x.setByCSPRNG(rg);
 	const Unit *px = x.getUnit();
-	Unit *pz = const_cast<Unit*>(z.getUnit());
 	for (int i = 0; i < 1000; i++) {
 		const Unit y = rg.get32() % 10000; // SmallModP requires x y < p 2^14
 		Unit z1[N], z2[N], z3[N];
@@ -635,9 +696,14 @@ void benchSmallModP(const char *name)
 		op.modp.modp1(z3, xy);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z2, N);
 		CYBOZU_TEST_EQUAL_ARRAY(z1, z3, N);
+		CYBOZU_TEST_ASSERT(op.modp.modpSmall(z3, xy));
+		CYBOZU_TEST_EQUAL_ARRAY(z1, z3, N);
+		op.modp.template mulUnitModT<N>(z3, px, y);
+		CYBOZU_TEST_EQUAL_ARRAY(z1, z3, N);
 	}
 #ifdef NDEBUG
 	const int C = 1000000;
+	Unit *pz = const_cast<Unit*>(z.getUnit());
 	const size_t YN = 1024;
 	static Unit ys[YN];
 	for (size_t i = 0; i < YN; i++) ys[i] = 10 + rg.get32() % 246;
@@ -649,6 +715,19 @@ void benchSmallModP(const char *name)
 		Unit xy[N + 1];
 		xy[N] = mcl::bint::mulUnitT<N>(xy, px, ys[0]);
 		CYBOZU_BENCH_C("Modp::modp1       ", C, op.modp.modp1, pz, xy);
+		CYBOZU_BENCH_C("Modp::modpSmall   ", C, op.modp.modpSmall, pz, xy);
+	}
+	{
+		// mulUnitPre + modpSmall (the path of mulUnitMod without modp_asm)
+		Unit xy[N + 1];
+		idx = 0;
+		CYBOZU_BENCH_C("mulUnitT+modpSmall", C, mulUnitSmallT<N>, op.modp, pz, px, ys[idx = (idx + 1) & (YN - 1)], xy);
+		idx = 0;
+		CYBOZU_BENCH_C("mulUnitModT<N>    ", C, op.modp.template mulUnitModT<N>, pz, px, ys[idx = (idx + 1) & (YN - 1)]);
+		idx = 0;
+		CYBOZU_BENCH_C("mulUnitModT<0>    ", C, op.modp.template mulUnitModT<0>, pz, px, ys[idx = (idx + 1) & (YN - 1)]);
+		idx = 0;
+		CYBOZU_BENCH_C("F::mulUnit        ", C, F::mulUnit, z, x, ys[idx = (idx + 1) & (YN - 1)]);
 	}
 	CYBOZU_TEST_ASSERT(z != 0 || z == 0);
 #endif
