@@ -280,7 +280,7 @@ void testSmallModP(const char *pStr)
 	for (size_t i = 0; i < 10; i++) {
 		uint32_t a = rg.get32() % FACTOR;
 		x[N-1] = mcl::bint::mulUnit1(&x[N], x[N-1], a);
-		size_t xn = x[N] == 0 ? N : N+1;
+		xn = x[N] == 0 ? N : N+1;
 		Unit q[2], r[N+1];
 		mcl::bint::copyN(r, x, xn);
 		mcl::bint::div(q, 2, r, xn, p, N);
