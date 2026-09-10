@@ -581,7 +581,8 @@ public:
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
 	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
-		if (mcl::fp::mulSmallUnit(z, x, y)) return;
+		// the add chain of mulSmallUnit beats fp_mulUnit (Modp::mulUnitModT) only for y <= 4
+		if (y <= 4 && mcl::fp::mulSmallUnit(z, x, y)) return;
 		op_.fp_mulUnit(z.v_, x.v_, y, op_);
 	}
 	// alias of mulUnit
