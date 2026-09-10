@@ -384,6 +384,8 @@ MCL_DLL_API void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCL_DLL_API void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCL_DLL_API void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 MCL_DLL_API void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+// z = x * y for a small integer y (faster than mclBnFr_mul with the converted y)
+MCL_DLL_API void mclBnFr_mulUnit(mclBnFr *z, const mclBnFr *x, uint32_t y);
 
 MCL_DLL_API void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
 MCL_DLL_API void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
@@ -392,6 +394,7 @@ MCL_DLL_API void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCL_DLL_API void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCL_DLL_API void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 MCL_DLL_API void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+MCL_DLL_API void mclBnFp_mulUnit(mclBnFp *z, const mclBnFp *x, uint32_t y);
 
 MCL_DLL_API void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x);
 MCL_DLL_API void mclBnFp2_inv(mclBnFp2 *y, const mclBnFp2 *x);
