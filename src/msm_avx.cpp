@@ -16,7 +16,7 @@
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #ifndef __clang__
