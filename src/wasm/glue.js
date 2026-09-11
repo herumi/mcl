@@ -66,6 +66,20 @@ function createModule (opts) {
       }
     }
 
+    // Harden stackAlloc so an oversize request cannot corrupt __stack_pointer.
+    // The default stack size comes from the linker -z stack-size, injected at
+    // build time in Makefile.wasm; opts.stackSize can override it at runtime.
+    const STACK_SIZE = opts.stackSize || @@STACK_SIZE@@
+    const stackLow = mod.stackSave() - STACK_SIZE
+    const rawStackAlloc = mod.stackAlloc
+    mod.stackAlloc = function (n) {
+      const sp = mod.stackSave()
+      if (!(n >= 0 && n <= sp - stackLow)) {
+        throw new Error('stackAlloc: bad size ' + n)
+      }
+      return rawStackAlloc(n)
+    }
+
     // Call global constructors if present
     if (exports.__wasm_call_ctors) exports.__wasm_call_ctors()
 
