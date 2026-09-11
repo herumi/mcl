@@ -831,7 +831,7 @@ template<class F>
 void testDot(const char *name)
 {
 	const size_t n = 1024;
-	static F x[n], z[n];
+	static F x[n];
 	static Unit ys[4][n];
 	cybozu::XorShift rg;
 	for (size_t i = 0; i < n; i++) {
@@ -855,6 +855,7 @@ void testDot(const char *name)
 	const int C = 2000;
 	printf("=== %s dot (clk per element, n=%d) ===\n", name, (int)n);
 	// warm up
+	static F z[n];
 	benchThr(ConstModp<F, 2>(), z, x, n, C); benchLat(ConstModp<F, 2>(), z[0], C * (int)n);
 	for (int r = 0; r < 4; r++) {
 		const Unit *y = ys[r];
