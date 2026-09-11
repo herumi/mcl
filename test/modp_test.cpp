@@ -11,6 +11,7 @@ using namespace mcl;
 	Barrett Reduction
 	for non GMP version
 	mod of GMP is faster than ModpOld
+	unused (kept for reference). u_ = 2^(2 N unitBitSize) does not fit in Vint (2 maxUnitSize units), so it requires MCL_USE_GMP.
 */
 struct ModpOld {
 	static const size_t unitBitSize = sizeof(mcl::Unit) * 8;

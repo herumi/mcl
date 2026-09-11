@@ -1111,14 +1111,16 @@ def gen_modp_x64(name, xN, N):
 
 def main():
   parser = getDefaultParser()
-  parser.add_argument('-n', '--num', help='max size of Unit', type=int, default=9)
-  parser.add_argument('-addn', '--addn', help='max size of add/sub', type=int, default=16)
+  parser.add_argument('-n', '--num', help='max size of Unit for mul/sqr (see MCL_BINT_MUL_N in include/mcl/config.hpp)', type=int, default=6)
+  parser.add_argument('-addn', '--addn', help='max size of Unit for mulUnit/add/sub (default 2n)', type=int, default=0)
   parser.add_argument('-curveBit', '--curveBit', help='BLS12 bit size', type=int, default=381)
   global param
   param = parser.parse_args()
 
   N = param.num
   addN = param.addn
+  if addN == 0:
+    addN = N * 2
 
   init(param)
   curve = BLS12(param.curveBit)
@@ -1140,10 +1142,10 @@ def main():
   for i in range(1,addN+1):
     gen_sub(i, True)
 
-  for i in range(1,N+1):
+  for i in range(1,addN+1):
     gen_mulUnit(i)
 
-  for i in range(1,N+1):
+  for i in range(1,addN+1):
     gen_mulUnitAdd(i)
 
   for i in range(1,N+1):

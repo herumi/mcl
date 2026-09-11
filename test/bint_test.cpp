@@ -587,6 +587,10 @@ CYBOZU_TEST_AUTO(add)
 	testAdd<6>();
 	testAdd<7>();
 	testAdd<8>();
+	testAdd<9>();
+	testAdd<10>();
+	testAdd<11>();
+	testAdd<12>();
 }
 
 template<size_t N>
@@ -618,6 +622,10 @@ CYBOZU_TEST_AUTO(addNF)
 	testAddNF<6>();
 	testAddNF<7>();
 	testAddNF<8>();
+	testAddNF<9>();
+	testAddNF<10>();
+	testAddNF<11>();
+	testAddNF<12>();
 }
 
 template<size_t N>
@@ -654,6 +662,10 @@ CYBOZU_TEST_AUTO(sub)
 	testSub<6>();
 	testSub<7>();
 	testSub<8>();
+	testSub<9>();
+	testSub<10>();
+	testSub<11>();
+	testSub<12>();
 }
 
 template<size_t N>
@@ -690,6 +702,10 @@ CYBOZU_TEST_AUTO(subNF)
 	testSubNF<6>();
 	testSubNF<7>();
 	testSubNF<8>();
+	testSubNF<9>();
+	testSubNF<10>();
+	testSubNF<11>();
+	testSubNF<12>();
 }
 
 template<size_t N>
@@ -720,6 +736,10 @@ CYBOZU_TEST_AUTO(mulUnit)
 	testMulUnit<6>();
 	testMulUnit<7>();
 	testMulUnit<8>();
+	testMulUnit<9>();
+	testMulUnit<10>();
+	testMulUnit<11>();
+	testMulUnit<12>();
 }
 
 template<size_t N>
@@ -752,6 +772,10 @@ CYBOZU_TEST_AUTO(mulUnitAdd)
 	testMulUnitAdd<6>();
 	testMulUnitAdd<7>();
 	testMulUnitAdd<8>();
+	testMulUnitAdd<9>();
+	testMulUnitAdd<10>();
+	testMulUnitAdd<11>();
+	testMulUnitAdd<12>();
 }
 
 static Unit g_zero[32];
@@ -839,9 +863,6 @@ CYBOZU_TEST_AUTO(mul)
 	testMul<4>();
 	testMul<5>();
 	testMul<6>();
-	testMul<7>();
-	testMul<8>();
-	testMul<9>();
 }
 
 // z[N * 2] = x[N] * x[N] by Kar
@@ -916,8 +937,5 @@ CYBOZU_TEST_AUTO(sqr)
 	testSqr<4>();
 	testSqr<5>();
 	testSqr<6>();
-	testSqr<7>();
-	testSqr<8>();
-	testSqr<9>();
 }
 
