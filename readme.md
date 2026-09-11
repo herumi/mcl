@@ -207,8 +207,18 @@ make -f Makefile.cross test TARGET=riscv64-linux-gnu LD_PREFIX=riscv64-linux-gnu
 
 # How to build on 64-bit Windows with Visual Studio
 
-clang++ is also required because `mklib.bat` builds `src/base64.ll` with it.
-If you do not have clang++, use `mklib clang=0` (or `mklib dll clang=0`) to build without `src/base64.ll`.
+`mklib.bat` builds the library and `mk.bat` builds a test or sample with it.
+```
+mklib [dll] [clang=(0|1|2)]
+mk (-s|-d) <source file>
+```
+- `dll`: build `bin\mcl.dll` (and `bin\mcl.lib` for import) instead of the static library `lib\mcl.lib`.
+- `clang=1` (default): build `src\base64.ll` with clang++ (`MCL_USE_LLVM=1`). clang++ (installed by the LLVM component of Visual Studio) is required.
+- `clang=0`: build without clang++ (`src\base64.ll` is not used).
+- `clang=2`: also build `src\fp.cpp` and `src\msm_avx.cpp` with clang-cl instead of cl, with the same optimization options as Makefile on x64 (`CLANG_CFLAGS` in `setvar.bat`). Some functions such as `Fr::mulUnit` become faster.
+  `mklib` leaves `USE_CLANG=2` in the environment, and then `mk` also uses clang-cl.
+  A program that links the library built with `clang=2` requires `clang_rt.builtins-x86_64.lib` (`CLANG_RT_LIB` in `setvar.bat`, found via `clang -print-resource-dir`); `mk` adds it if `USE_CLANG=2`.
+- `mk -s` links `lib\mcl.lib` and `mk -d` links `bin\mcl.lib` with `/DMCL_DLL`. The executable is put in `bin\`.
 
 Open a console window, and
 ```
