@@ -1054,7 +1054,7 @@ struct Modp {
 		(the loops are unrolled) and is used by fp_mulUnit set in setOp<N>.
 	*/
 	template<size_t NT>
-	void modp1T(Unit *y, const Unit *xx) const
+	CYBOZU_FORCE_INLINE void modp1T(Unit *y, const Unit *xx) const
 	{
 		const size_t n = NT ? NT : N;
 		const size_t BIT = sizeof(Unit) * 8;
@@ -1074,7 +1074,7 @@ struct Modp {
 		which causes a store-forwarding stall when the copy is vectorized)
 	*/
 	template<size_t NT>
-	void subQpT(Unit *y, const Unit *xx, Unit q) const
+	CYBOZU_FORCE_INLINE void subQpT(Unit *y, const Unit *xx, Unit q) const
 	{
 		const size_t n = NT ? NT : N;
 		Unit u[(NT ? NT : maxUnitSize) + 1];
@@ -1096,7 +1096,7 @@ struct Modp {
 		y must not overlap xx
 	*/
 	template<size_t NT>
-	bool modpSmallT(Unit *y, const Unit *xx) const
+	CYBOZU_FORCE_INLINE bool modpSmallT(Unit *y, const Unit *xx) const
 	{
 		const size_t n = NT ? NT : N;
 		const size_t a = fp::getBitSize(xx, n + 1);
