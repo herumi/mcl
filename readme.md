@@ -20,6 +20,10 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 # Version v3 includes breaking changes to lib/dll specifications.
 - The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
 and up to 256 bits for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
+`MCL_FP_BIT` and `MCL_FR_BIT` must be at most 384 (`MCL_BINT_MAX_BIT` in `include/mcl/config.hpp`; the generated low-level functions support up to 384-bit multiplication),
+so the initialization of a curve over a larger prime such as BN462 fails.
+To enlarge the limit (up to 576 for the x64 assembly), set `MCL_BINT_MAX_BIT` in `include/mcl/config.hpp` and `BINT_MUL_N` (= `MCL_BINT_MAX_BIT` / 64) in `Makefile` to the same size,
+and regenerate the low-level functions by `make update_all_asm` (requires LLVM) and `make header`.
 - The arguments of the Fp/Fr initialization function have been changed.
 - `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
 
