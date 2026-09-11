@@ -733,6 +733,147 @@ void benchSmallModP(const char *name)
 #endif
 }
 
+// z = x y by op.fp_mulUnit (Modp::mulUnitModT<N>) without the add chain of mulSmallUnit
+template<class F>
+inline void modpMul(F& z, const F& x, Unit y)
+{
+	const fp::Op& op = F::getOp();
+	op.fp_mulUnit(const_cast<Unit*>(z.getUnit()), x.getUnit(), y, op);
+}
+
+// mulUnit with the add chain only for y <= TH (TH = -1 : never, TH = 4 : F::mulUnit)
+template<class F, int TH>
+inline void mulUnitTH(F& z, const F& x, Unit y)
+{
+	if (TH >= 0 && y <= Unit(TH)) {
+		if (fp::mulSmallUnit(z, x, y)) return;
+	}
+	modpMul(z, x, y);
+}
+
+// issue #199 style : s += x[i] y[i] for small integers y[i]
+template<class F, int TH>
+void dotTH(F& s, const F *x, const Unit *y, size_t n)
+{
+	F t;
+	s.clear();
+	for (size_t i = 0; i < n; i++) {
+		mulUnitTH<F, TH>(t, x[i], y[i]);
+		F::add(s, s, t);
+	}
+}
+template<class F>
+void dot(F& s, const F *x, const Unit *y, size_t n)
+{
+	F t;
+	s.clear();
+	for (size_t i = 0; i < n; i++) {
+		F::mulUnit(t, x[i], y[i]);
+		F::add(s, s, t);
+	}
+}
+template<class F>
+void dotRef(F& s, const F *x, const Unit *y, size_t n)
+{
+	F t;
+	s.clear();
+	for (size_t i = 0; i < n; i++) {
+		t = int64_t(y[i]);
+		F::mul(t, t, x[i]);
+		F::add(s, s, t);
+	}
+}
+template<class F, class Dot>
+double benchDot(Dot dotF, const F *x, const Unit *y, size_t n, int C)
+{
+	F s;
+	cybozu::CpuClock clk;
+	clk.begin(); for (int i = 0; i < C; i++) dotF(s, x, y, n); clk.end();
+	return clk.getClock() / double(C) / n;
+}
+// throughput : z[i] = x[i] y (independent)
+template<class F, class Mul>
+double benchThr(Mul mul, F *z, const F *x, size_t n, int C)
+{
+	cybozu::CpuClock clk;
+	clk.begin(); for (int i = 0; i < C; i++) for (size_t j = 0; j < n; j++) mul(z[j], x[j]); clk.end();
+	return clk.getClock() / double(C) / n;
+}
+// latency : x = x y (dependent chain)
+template<class F, class Mul>
+double benchLat(Mul mul, F& x, int C)
+{
+	cybozu::CpuClock clk;
+	clk.begin(); for (int i = 0; i < C; i++) mul(x, x); clk.end();
+	return clk.getClock() / double(C);
+}
+template<class F, Unit Y>
+struct ConstSmall { void operator()(F& z, const F& x) const { fp::mulSmallUnit(z, x, Y); } };
+template<class F, Unit Y>
+struct ConstModp { void operator()(F& z, const F& x) const { modpMul(z, x, Y); } };
+template<class F, Unit Y>
+void benchConstY(F *z, const F *x, size_t n, int C)
+{
+	F a = x[0], b = x[0];
+	printf("y=%d  thr: add %5.1f modp %5.1f  lat: add %5.1f modp %5.1f\n", (int)Y,
+		benchThr(ConstSmall<F, Y>(), z, x, n, C), benchThr(ConstModp<F, Y>(), z, x, n, C),
+		benchLat(ConstSmall<F, Y>(), a, C * (int)n), benchLat(ConstModp<F, Y>(), b, C * (int)n));
+}
+
+/*
+	the dot product (s += x[i] y[i]) is the criterion to compare mulUnit implementations
+	because a micro benchmark of mulUnit alone varies with how it is inlined.
+	the add chain of mulSmallUnit is used in F::mulUnit only for y <= 4 (see the constant y bench).
+	CpuClock is clock_gettime on macOS arm64, so "clk" means nsec there.
+*/
+template<class F>
+void testDot(const char *name)
+{
+	const size_t n = 1024;
+	static F x[n], z[n];
+	static Unit ys[4][n];
+	cybozu::XorShift rg;
+	for (size_t i = 0; i < n; i++) {
+		x[i].setByCSPRNG(rg);
+		ys[0][i] = rg.get32() % 10;
+		ys[1][i] = rg.get32() % 256;
+		ys[2][i] = 1000 + rg.get32() % 256;
+		ys[3][i] = rg.get32();
+	}
+	for (int r = 0; r < 4; r++) {
+		F s1, s2, s3;
+		dot(s1, x, ys[r], n);
+		dotRef(s2, x, ys[r], n);
+		dotTH<F, -1>(s3, x, ys[r], n);
+		CYBOZU_TEST_EQUAL(s1, s2);
+		CYBOZU_TEST_EQUAL(s1, s3);
+	}
+	(void)name; // used only in the NDEBUG part
+#ifdef NDEBUG
+	const char *rn[4] = { "[0,9]", "[0,255]", "[1000,1255]", "[0,2^32)" };
+	const int C = 2000;
+	printf("=== %s dot (clk per element, n=%d) ===\n", name, (int)n);
+	// warm up
+	benchThr(ConstModp<F, 2>(), z, x, n, C); benchLat(ConstModp<F, 2>(), z[0], C * (int)n);
+	for (int r = 0; r < 4; r++) {
+		const Unit *y = ys[r];
+		printf("y in %-12s mulUnit+add %5.1f  F(y)*x+add %5.1f  add chain: none %5.1f y<=2 %5.1f y<=4 %5.1f y<=9 %5.1f\n", rn[r],
+			benchDot(dot<F>, x, y, n, C), benchDot(dotRef<F>, x, y, n, C),
+			benchDot(dotTH<F, -1>, x, y, n, C), benchDot(dotTH<F, 2>, x, y, n, C),
+			benchDot(dotTH<F, 4>, x, y, n, C), benchDot(dotTH<F, 9>, x, y, n, C));
+	}
+	printf("--- constant y : add chain (mulSmallUnit) vs modp (fp_mulUnit)\n");
+	benchConstY<F, 2>(z, x, n, C);
+	benchConstY<F, 3>(z, x, n, C);
+	benchConstY<F, 4>(z, x, n, C);
+	benchConstY<F, 5>(z, x, n, C);
+	benchConstY<F, 6>(z, x, n, C);
+	benchConstY<F, 7>(z, x, n, C);
+	benchConstY<F, 8>(z, x, n, C);
+	benchConstY<F, 9>(z, x, n, C);
+#endif
+}
+
 CYBOZU_TEST_AUTO(mulUnit)
 {
 	mcl::bn::initPairing(mcl::BLS12_381);
@@ -741,4 +882,6 @@ CYBOZU_TEST_AUTO(mulUnit)
 	const size_t adj = 8 / sizeof(Unit);
 	benchSmallModP<mcl::bn::Fr, 4 * adj>("Fr");
 	benchSmallModP<mcl::bn::Fp, 6 * adj>("Fp");
+	testDot<mcl::bn::Fr>("Fr");
+	testDot<mcl::bn::Fp>("Fp");
 }
