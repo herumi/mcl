@@ -2116,204 +2116,6 @@ movzx eax, al
 ret
 mclb_add12 endp
 align 16
-mclb_add13 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-setc al
-movzx eax, al
-ret
-mclb_add13 endp
-align 16
-mclb_add14 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-adc rax, [r8+104]
-mov [rcx+104], rax
-setc al
-movzx eax, al
-ret
-mclb_add14 endp
-align 16
-mclb_add15 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-adc rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-adc rax, [r8+112]
-mov [rcx+112], rax
-setc al
-movzx eax, al
-ret
-mclb_add15 endp
-align 16
-mclb_add16 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-adc rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-adc rax, [r8+112]
-mov [rcx+112], rax
-mov rax, [rdx+120]
-adc rax, [r8+120]
-mov [rcx+120], rax
-setc al
-movzx eax, al
-ret
-mclb_add16 endp
-align 16
 mclb_sub1 proc export
 mov rax, [rdx]
 sub rax, [r8]
@@ -2620,204 +2422,6 @@ movzx eax, al
 ret
 mclb_sub12 endp
 align 16
-mclb_sub13 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-setc al
-movzx eax, al
-ret
-mclb_sub13 endp
-align 16
-mclb_sub14 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-sbb rax, [r8+104]
-mov [rcx+104], rax
-setc al
-movzx eax, al
-ret
-mclb_sub14 endp
-align 16
-mclb_sub15 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-sbb rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-sbb rax, [r8+112]
-mov [rcx+112], rax
-setc al
-movzx eax, al
-ret
-mclb_sub15 endp
-align 16
-mclb_sub16 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-sbb rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-sbb rax, [r8+112]
-mov [rcx+112], rax
-mov rax, [rdx+120]
-sbb rax, [r8+120]
-mov [rcx+120], rax
-setc al
-movzx eax, al
-ret
-mclb_sub16 endp
-align 16
 mclb_addNF1 proc export
 mov rax, [rdx]
 add rax, [r8]
@@ -3099,196 +2703,6 @@ adc rax, [r8+88]
 mov [rcx+88], rax
 ret
 mclb_addNF12 endp
-align 16
-mclb_addNF13 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-ret
-mclb_addNF13 endp
-align 16
-mclb_addNF14 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-adc rax, [r8+104]
-mov [rcx+104], rax
-ret
-mclb_addNF14 endp
-align 16
-mclb_addNF15 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-adc rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-adc rax, [r8+112]
-mov [rcx+112], rax
-ret
-mclb_addNF15 endp
-align 16
-mclb_addNF16 proc export
-mov rax, [rdx]
-add rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-adc rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-adc rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-adc rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-adc rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-adc rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-adc rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-adc rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-adc rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-adc rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-adc rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-adc rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-adc rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-adc rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-adc rax, [r8+112]
-mov [rcx+112], rax
-mov rax, [rdx+120]
-adc rax, [r8+120]
-mov [rcx+120], rax
-ret
-mclb_addNF16 endp
 align 16
 mclb_subNF1 proc export
 mov rax, [rdx]
@@ -3596,204 +3010,6 @@ movzx eax, al
 ret
 mclb_subNF12 endp
 align 16
-mclb_subNF13 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-setc al
-movzx eax, al
-ret
-mclb_subNF13 endp
-align 16
-mclb_subNF14 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-sbb rax, [r8+104]
-mov [rcx+104], rax
-setc al
-movzx eax, al
-ret
-mclb_subNF14 endp
-align 16
-mclb_subNF15 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-sbb rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-sbb rax, [r8+112]
-mov [rcx+112], rax
-setc al
-movzx eax, al
-ret
-mclb_subNF15 endp
-align 16
-mclb_subNF16 proc export
-mov rax, [rdx]
-sub rax, [r8]
-mov [rcx], rax
-mov rax, [rdx+8]
-sbb rax, [r8+8]
-mov [rcx+8], rax
-mov rax, [rdx+16]
-sbb rax, [r8+16]
-mov [rcx+16], rax
-mov rax, [rdx+24]
-sbb rax, [r8+24]
-mov [rcx+24], rax
-mov rax, [rdx+32]
-sbb rax, [r8+32]
-mov [rcx+32], rax
-mov rax, [rdx+40]
-sbb rax, [r8+40]
-mov [rcx+40], rax
-mov rax, [rdx+48]
-sbb rax, [r8+48]
-mov [rcx+48], rax
-mov rax, [rdx+56]
-sbb rax, [r8+56]
-mov [rcx+56], rax
-mov rax, [rdx+64]
-sbb rax, [r8+64]
-mov [rcx+64], rax
-mov rax, [rdx+72]
-sbb rax, [r8+72]
-mov [rcx+72], rax
-mov rax, [rdx+80]
-sbb rax, [r8+80]
-mov [rcx+80], rax
-mov rax, [rdx+88]
-sbb rax, [r8+88]
-mov [rcx+88], rax
-mov rax, [rdx+96]
-sbb rax, [r8+96]
-mov [rcx+96], rax
-mov rax, [rdx+104]
-sbb rax, [r8+104]
-mov [rcx+104], rax
-mov rax, [rdx+112]
-sbb rax, [r8+112]
-mov [rcx+112], rax
-mov rax, [rdx+120]
-sbb rax, [r8+120]
-mov [rcx+120], rax
-setc al
-movzx eax, al
-ret
-mclb_subNF16 endp
-align 16
 mclb_mulUnit1 proc export
 mov rax, [rdx]
 mul r8
@@ -3984,6 +3200,123 @@ mov [rcx+64], rdx
 adc rax, 0
 ret
 mclb_mulUnit9 endp
+align 16
+mclb_mulUnit10 proc export
+mov r11, rdx
+mov rdx, r8
+mulx r10, rax, [r11]
+mov [rcx], rax
+mulx r9, rax, [r11+8]
+add rax, r10
+mov [rcx+8], rax
+mulx r10, rax, [r11+16]
+adc rax, r9
+mov [rcx+16], rax
+mulx r9, rax, [r11+24]
+adc rax, r10
+mov [rcx+24], rax
+mulx r10, rax, [r11+32]
+adc rax, r9
+mov [rcx+32], rax
+mulx r9, rax, [r11+40]
+adc rax, r10
+mov [rcx+40], rax
+mulx r10, rax, [r11+48]
+adc rax, r9
+mov [rcx+48], rax
+mulx r9, rax, [r11+56]
+adc rax, r10
+mov [rcx+56], rax
+mulx r10, rax, [r11+64]
+adc rax, r9
+mov [rcx+64], rax
+mulx rax, rdx, [r11+72]
+adc rdx, r10
+mov [rcx+72], rdx
+adc rax, 0
+ret
+mclb_mulUnit10 endp
+align 16
+mclb_mulUnit11 proc export
+mov r11, rdx
+mov rdx, r8
+mulx r10, rax, [r11]
+mov [rcx], rax
+mulx r9, rax, [r11+8]
+add rax, r10
+mov [rcx+8], rax
+mulx r10, rax, [r11+16]
+adc rax, r9
+mov [rcx+16], rax
+mulx r9, rax, [r11+24]
+adc rax, r10
+mov [rcx+24], rax
+mulx r10, rax, [r11+32]
+adc rax, r9
+mov [rcx+32], rax
+mulx r9, rax, [r11+40]
+adc rax, r10
+mov [rcx+40], rax
+mulx r10, rax, [r11+48]
+adc rax, r9
+mov [rcx+48], rax
+mulx r9, rax, [r11+56]
+adc rax, r10
+mov [rcx+56], rax
+mulx r10, rax, [r11+64]
+adc rax, r9
+mov [rcx+64], rax
+mulx r9, rax, [r11+72]
+adc rax, r10
+mov [rcx+72], rax
+mulx rax, rdx, [r11+80]
+adc rdx, r9
+mov [rcx+80], rdx
+adc rax, 0
+ret
+mclb_mulUnit11 endp
+align 16
+mclb_mulUnit12 proc export
+mov r11, rdx
+mov rdx, r8
+mulx r10, rax, [r11]
+mov [rcx], rax
+mulx r9, rax, [r11+8]
+add rax, r10
+mov [rcx+8], rax
+mulx r10, rax, [r11+16]
+adc rax, r9
+mov [rcx+16], rax
+mulx r9, rax, [r11+24]
+adc rax, r10
+mov [rcx+24], rax
+mulx r10, rax, [r11+32]
+adc rax, r9
+mov [rcx+32], rax
+mulx r9, rax, [r11+40]
+adc rax, r10
+mov [rcx+40], rax
+mulx r10, rax, [r11+48]
+adc rax, r9
+mov [rcx+48], rax
+mulx r9, rax, [r11+56]
+adc rax, r10
+mov [rcx+56], rax
+mulx r10, rax, [r11+64]
+adc rax, r9
+mov [rcx+64], rax
+mulx r9, rax, [r11+72]
+adc rax, r10
+mov [rcx+72], rax
+mulx r10, rax, [r11+80]
+adc rax, r9
+mov [rcx+80], rax
+mulx rax, rdx, [r11+88]
+adc rdx, r10
+mov [rcx+88], rdx
+adc rax, 0
+ret
+mclb_mulUnit12 endp
 align 16
 mclb_mulUnitAdd1 proc export
 mov r11, rdx
@@ -4290,6 +3623,198 @@ adcx rax, r9
 adox rax, r9
 ret
 mclb_mulUnitAdd9 endp
+align 16
+mclb_mulUnitAdd10 proc export
+mov r11, rdx
+mov rdx, r8
+xor eax, eax
+mov r9, [rcx]
+mulx rax, r10, [r11]
+adox r9, r10
+mov [rcx], r9
+mov r9, [rcx+8]
+adcx r9, rax
+mulx rax, r10, [r11+8]
+adox r9, r10
+mov [rcx+8], r9
+mov r9, [rcx+16]
+adcx r9, rax
+mulx rax, r10, [r11+16]
+adox r9, r10
+mov [rcx+16], r9
+mov r9, [rcx+24]
+adcx r9, rax
+mulx rax, r10, [r11+24]
+adox r9, r10
+mov [rcx+24], r9
+mov r9, [rcx+32]
+adcx r9, rax
+mulx rax, r10, [r11+32]
+adox r9, r10
+mov [rcx+32], r9
+mov r9, [rcx+40]
+adcx r9, rax
+mulx rax, r10, [r11+40]
+adox r9, r10
+mov [rcx+40], r9
+mov r9, [rcx+48]
+adcx r9, rax
+mulx rax, r10, [r11+48]
+adox r9, r10
+mov [rcx+48], r9
+mov r9, [rcx+56]
+adcx r9, rax
+mulx rax, r10, [r11+56]
+adox r9, r10
+mov [rcx+56], r9
+mov r9, [rcx+64]
+adcx r9, rax
+mulx rax, r10, [r11+64]
+adox r9, r10
+mov [rcx+64], r9
+mov r9, [rcx+72]
+adcx r9, rax
+mulx rax, r10, [r11+72]
+adox r9, r10
+mov [rcx+72], r9
+mov r9, 0
+adcx rax, r9
+adox rax, r9
+ret
+mclb_mulUnitAdd10 endp
+align 16
+mclb_mulUnitAdd11 proc export
+mov r11, rdx
+mov rdx, r8
+xor eax, eax
+mov r9, [rcx]
+mulx rax, r10, [r11]
+adox r9, r10
+mov [rcx], r9
+mov r9, [rcx+8]
+adcx r9, rax
+mulx rax, r10, [r11+8]
+adox r9, r10
+mov [rcx+8], r9
+mov r9, [rcx+16]
+adcx r9, rax
+mulx rax, r10, [r11+16]
+adox r9, r10
+mov [rcx+16], r9
+mov r9, [rcx+24]
+adcx r9, rax
+mulx rax, r10, [r11+24]
+adox r9, r10
+mov [rcx+24], r9
+mov r9, [rcx+32]
+adcx r9, rax
+mulx rax, r10, [r11+32]
+adox r9, r10
+mov [rcx+32], r9
+mov r9, [rcx+40]
+adcx r9, rax
+mulx rax, r10, [r11+40]
+adox r9, r10
+mov [rcx+40], r9
+mov r9, [rcx+48]
+adcx r9, rax
+mulx rax, r10, [r11+48]
+adox r9, r10
+mov [rcx+48], r9
+mov r9, [rcx+56]
+adcx r9, rax
+mulx rax, r10, [r11+56]
+adox r9, r10
+mov [rcx+56], r9
+mov r9, [rcx+64]
+adcx r9, rax
+mulx rax, r10, [r11+64]
+adox r9, r10
+mov [rcx+64], r9
+mov r9, [rcx+72]
+adcx r9, rax
+mulx rax, r10, [r11+72]
+adox r9, r10
+mov [rcx+72], r9
+mov r9, [rcx+80]
+adcx r9, rax
+mulx rax, r10, [r11+80]
+adox r9, r10
+mov [rcx+80], r9
+mov r9, 0
+adcx rax, r9
+adox rax, r9
+ret
+mclb_mulUnitAdd11 endp
+align 16
+mclb_mulUnitAdd12 proc export
+mov r11, rdx
+mov rdx, r8
+xor eax, eax
+mov r9, [rcx]
+mulx rax, r10, [r11]
+adox r9, r10
+mov [rcx], r9
+mov r9, [rcx+8]
+adcx r9, rax
+mulx rax, r10, [r11+8]
+adox r9, r10
+mov [rcx+8], r9
+mov r9, [rcx+16]
+adcx r9, rax
+mulx rax, r10, [r11+16]
+adox r9, r10
+mov [rcx+16], r9
+mov r9, [rcx+24]
+adcx r9, rax
+mulx rax, r10, [r11+24]
+adox r9, r10
+mov [rcx+24], r9
+mov r9, [rcx+32]
+adcx r9, rax
+mulx rax, r10, [r11+32]
+adox r9, r10
+mov [rcx+32], r9
+mov r9, [rcx+40]
+adcx r9, rax
+mulx rax, r10, [r11+40]
+adox r9, r10
+mov [rcx+40], r9
+mov r9, [rcx+48]
+adcx r9, rax
+mulx rax, r10, [r11+48]
+adox r9, r10
+mov [rcx+48], r9
+mov r9, [rcx+56]
+adcx r9, rax
+mulx rax, r10, [r11+56]
+adox r9, r10
+mov [rcx+56], r9
+mov r9, [rcx+64]
+adcx r9, rax
+mulx rax, r10, [r11+64]
+adox r9, r10
+mov [rcx+64], r9
+mov r9, [rcx+72]
+adcx r9, rax
+mulx rax, r10, [r11+72]
+adox r9, r10
+mov [rcx+72], r9
+mov r9, [rcx+80]
+adcx r9, rax
+mulx rax, r10, [r11+80]
+adox r9, r10
+mov [rcx+80], r9
+mov r9, [rcx+88]
+adcx r9, rax
+mulx rax, r10, [r11+88]
+adox r9, r10
+mov [rcx+88], r9
+mov r9, 0
+adcx rax, r9
+adox rax, r9
+ret
+mclb_mulUnitAdd12 endp
 align 16
 mclb_mul1 proc export
 mov r11, rdx
@@ -4711,756 +4236,6 @@ pop rdi
 ret
 mclb_mul6 endp
 align 16
-mclb_mul7 proc export
-push rdi
-push rsi
-push rbx
-push rbp
-push r12
-push r13
-mov r11, rdx
-mov rdx, [r11]
-mulx r9, rax, [r8]
-mov [rcx], rax
-mulx r10, rax, [r8+8]
-add r9, rax
-mulx rdi, rax, [r8+16]
-adc r10, rax
-mulx rsi, rax, [r8+24]
-adc rdi, rax
-mulx rbx, rax, [r8+32]
-adc rsi, rax
-mulx rbp, rax, [r8+40]
-adc rbx, rax
-mulx r12, rax, [r8+48]
-adc rbp, rax
-adc r12, 0
-mov rdx, [r11+8]
-xor rax, rax
-mulx r13, rax, [r8]
-adox r9, rax
-mov [rcx+8], r9
-adcx r10, r13
-mulx r13, rax, [r8+8]
-adox r10, rax
-adcx rdi, r13
-mulx r13, rax, [r8+16]
-adox rdi, rax
-adcx rsi, r13
-mulx r13, rax, [r8+24]
-adox rsi, rax
-adcx rbx, r13
-mulx r13, rax, [r8+32]
-adox rbx, rax
-adcx rbp, r13
-mulx r13, rax, [r8+40]
-adox rbp, rax
-adcx r12, r13
-mulx r13, rax, [r8+48]
-adox r12, rax
-mov rax, 0
-adox r13, rax
-adc r13, rax
-mov rdx, [r11+16]
-xor rax, rax
-mulx r9, rax, [r8]
-adox r10, rax
-mov [rcx+16], r10
-adcx rdi, r9
-mulx r9, rax, [r8+8]
-adox rdi, rax
-adcx rsi, r9
-mulx r9, rax, [r8+16]
-adox rsi, rax
-adcx rbx, r9
-mulx r9, rax, [r8+24]
-adox rbx, rax
-adcx rbp, r9
-mulx r9, rax, [r8+32]
-adox rbp, rax
-adcx r12, r9
-mulx r9, rax, [r8+40]
-adox r12, rax
-adcx r13, r9
-mulx r9, rax, [r8+48]
-adox r13, rax
-mov rax, 0
-adox r9, rax
-adc r9, rax
-mov rdx, [r11+24]
-xor rax, rax
-mulx r10, rax, [r8]
-adox rdi, rax
-mov [rcx+24], rdi
-adcx rsi, r10
-mulx r10, rax, [r8+8]
-adox rsi, rax
-adcx rbx, r10
-mulx r10, rax, [r8+16]
-adox rbx, rax
-adcx rbp, r10
-mulx r10, rax, [r8+24]
-adox rbp, rax
-adcx r12, r10
-mulx r10, rax, [r8+32]
-adox r12, rax
-adcx r13, r10
-mulx r10, rax, [r8+40]
-adox r13, rax
-adcx r9, r10
-mulx r10, rax, [r8+48]
-adox r9, rax
-mov rax, 0
-adox r10, rax
-adc r10, rax
-mov rdx, [r11+32]
-xor rax, rax
-mulx rdi, rax, [r8]
-adox rsi, rax
-mov [rcx+32], rsi
-adcx rbx, rdi
-mulx rdi, rax, [r8+8]
-adox rbx, rax
-adcx rbp, rdi
-mulx rdi, rax, [r8+16]
-adox rbp, rax
-adcx r12, rdi
-mulx rdi, rax, [r8+24]
-adox r12, rax
-adcx r13, rdi
-mulx rdi, rax, [r8+32]
-adox r13, rax
-adcx r9, rdi
-mulx rdi, rax, [r8+40]
-adox r9, rax
-adcx r10, rdi
-mulx rdi, rax, [r8+48]
-adox r10, rax
-mov rax, 0
-adox rdi, rax
-adc rdi, rax
-mov rdx, [r11+40]
-xor rax, rax
-mulx rsi, rax, [r8]
-adox rbx, rax
-mov [rcx+40], rbx
-adcx rbp, rsi
-mulx rsi, rax, [r8+8]
-adox rbp, rax
-adcx r12, rsi
-mulx rsi, rax, [r8+16]
-adox r12, rax
-adcx r13, rsi
-mulx rsi, rax, [r8+24]
-adox r13, rax
-adcx r9, rsi
-mulx rsi, rax, [r8+32]
-adox r9, rax
-adcx r10, rsi
-mulx rsi, rax, [r8+40]
-adox r10, rax
-adcx rdi, rsi
-mulx rsi, rax, [r8+48]
-adox rdi, rax
-mov rax, 0
-adox rsi, rax
-adc rsi, rax
-mov rdx, [r11+48]
-xor rax, rax
-mulx rbx, rax, [r8]
-adox rbp, rax
-mov [rcx+48], rbp
-adcx r12, rbx
-mulx rbx, rax, [r8+8]
-adox r12, rax
-adcx r13, rbx
-mulx rbx, rax, [r8+16]
-adox r13, rax
-adcx r9, rbx
-mulx rbx, rax, [r8+24]
-adox r9, rax
-adcx r10, rbx
-mulx rbx, rax, [r8+32]
-adox r10, rax
-adcx rdi, rbx
-mulx rbx, rax, [r8+40]
-adox rdi, rax
-adcx rsi, rbx
-mulx rbx, rax, [r8+48]
-adox rsi, rax
-mov rax, 0
-adox rbx, rax
-adc rbx, rax
-mov [rcx+56], r12
-mov [rcx+64], r13
-mov [rcx+72], r9
-mov [rcx+80], r10
-mov [rcx+88], rdi
-mov [rcx+96], rsi
-mov [rcx+104], rbx
-pop r13
-pop r12
-pop rbp
-pop rbx
-pop rsi
-pop rdi
-ret
-mclb_mul7 endp
-align 16
-mclb_mul8 proc export
-push rdi
-push rsi
-push rbx
-push rbp
-push r12
-push r13
-push r14
-mov r11, rdx
-mov rdx, [r11]
-mulx r9, rax, [r8]
-mov [rcx], rax
-mulx r10, rax, [r8+8]
-add r9, rax
-mulx rdi, rax, [r8+16]
-adc r10, rax
-mulx rsi, rax, [r8+24]
-adc rdi, rax
-mulx rbx, rax, [r8+32]
-adc rsi, rax
-mulx rbp, rax, [r8+40]
-adc rbx, rax
-mulx r12, rax, [r8+48]
-adc rbp, rax
-mulx r13, rax, [r8+56]
-adc r12, rax
-adc r13, 0
-mov rdx, [r11+8]
-xor rax, rax
-mulx r14, rax, [r8]
-adox r9, rax
-mov [rcx+8], r9
-adcx r10, r14
-mulx r14, rax, [r8+8]
-adox r10, rax
-adcx rdi, r14
-mulx r14, rax, [r8+16]
-adox rdi, rax
-adcx rsi, r14
-mulx r14, rax, [r8+24]
-adox rsi, rax
-adcx rbx, r14
-mulx r14, rax, [r8+32]
-adox rbx, rax
-adcx rbp, r14
-mulx r14, rax, [r8+40]
-adox rbp, rax
-adcx r12, r14
-mulx r14, rax, [r8+48]
-adox r12, rax
-adcx r13, r14
-mulx r14, rax, [r8+56]
-adox r13, rax
-mov rax, 0
-adox r14, rax
-adc r14, rax
-mov rdx, [r11+16]
-xor rax, rax
-mulx r9, rax, [r8]
-adox r10, rax
-mov [rcx+16], r10
-adcx rdi, r9
-mulx r9, rax, [r8+8]
-adox rdi, rax
-adcx rsi, r9
-mulx r9, rax, [r8+16]
-adox rsi, rax
-adcx rbx, r9
-mulx r9, rax, [r8+24]
-adox rbx, rax
-adcx rbp, r9
-mulx r9, rax, [r8+32]
-adox rbp, rax
-adcx r12, r9
-mulx r9, rax, [r8+40]
-adox r12, rax
-adcx r13, r9
-mulx r9, rax, [r8+48]
-adox r13, rax
-adcx r14, r9
-mulx r9, rax, [r8+56]
-adox r14, rax
-mov rax, 0
-adox r9, rax
-adc r9, rax
-mov rdx, [r11+24]
-xor rax, rax
-mulx r10, rax, [r8]
-adox rdi, rax
-mov [rcx+24], rdi
-adcx rsi, r10
-mulx r10, rax, [r8+8]
-adox rsi, rax
-adcx rbx, r10
-mulx r10, rax, [r8+16]
-adox rbx, rax
-adcx rbp, r10
-mulx r10, rax, [r8+24]
-adox rbp, rax
-adcx r12, r10
-mulx r10, rax, [r8+32]
-adox r12, rax
-adcx r13, r10
-mulx r10, rax, [r8+40]
-adox r13, rax
-adcx r14, r10
-mulx r10, rax, [r8+48]
-adox r14, rax
-adcx r9, r10
-mulx r10, rax, [r8+56]
-adox r9, rax
-mov rax, 0
-adox r10, rax
-adc r10, rax
-mov rdx, [r11+32]
-xor rax, rax
-mulx rdi, rax, [r8]
-adox rsi, rax
-mov [rcx+32], rsi
-adcx rbx, rdi
-mulx rdi, rax, [r8+8]
-adox rbx, rax
-adcx rbp, rdi
-mulx rdi, rax, [r8+16]
-adox rbp, rax
-adcx r12, rdi
-mulx rdi, rax, [r8+24]
-adox r12, rax
-adcx r13, rdi
-mulx rdi, rax, [r8+32]
-adox r13, rax
-adcx r14, rdi
-mulx rdi, rax, [r8+40]
-adox r14, rax
-adcx r9, rdi
-mulx rdi, rax, [r8+48]
-adox r9, rax
-adcx r10, rdi
-mulx rdi, rax, [r8+56]
-adox r10, rax
-mov rax, 0
-adox rdi, rax
-adc rdi, rax
-mov rdx, [r11+40]
-xor rax, rax
-mulx rsi, rax, [r8]
-adox rbx, rax
-mov [rcx+40], rbx
-adcx rbp, rsi
-mulx rsi, rax, [r8+8]
-adox rbp, rax
-adcx r12, rsi
-mulx rsi, rax, [r8+16]
-adox r12, rax
-adcx r13, rsi
-mulx rsi, rax, [r8+24]
-adox r13, rax
-adcx r14, rsi
-mulx rsi, rax, [r8+32]
-adox r14, rax
-adcx r9, rsi
-mulx rsi, rax, [r8+40]
-adox r9, rax
-adcx r10, rsi
-mulx rsi, rax, [r8+48]
-adox r10, rax
-adcx rdi, rsi
-mulx rsi, rax, [r8+56]
-adox rdi, rax
-mov rax, 0
-adox rsi, rax
-adc rsi, rax
-mov rdx, [r11+48]
-xor rax, rax
-mulx rbx, rax, [r8]
-adox rbp, rax
-mov [rcx+48], rbp
-adcx r12, rbx
-mulx rbx, rax, [r8+8]
-adox r12, rax
-adcx r13, rbx
-mulx rbx, rax, [r8+16]
-adox r13, rax
-adcx r14, rbx
-mulx rbx, rax, [r8+24]
-adox r14, rax
-adcx r9, rbx
-mulx rbx, rax, [r8+32]
-adox r9, rax
-adcx r10, rbx
-mulx rbx, rax, [r8+40]
-adox r10, rax
-adcx rdi, rbx
-mulx rbx, rax, [r8+48]
-adox rdi, rax
-adcx rsi, rbx
-mulx rbx, rax, [r8+56]
-adox rsi, rax
-mov rax, 0
-adox rbx, rax
-adc rbx, rax
-mov rdx, [r11+56]
-xor rax, rax
-mulx rbp, rax, [r8]
-adox r12, rax
-mov [rcx+56], r12
-adcx r13, rbp
-mulx rbp, rax, [r8+8]
-adox r13, rax
-adcx r14, rbp
-mulx rbp, rax, [r8+16]
-adox r14, rax
-adcx r9, rbp
-mulx rbp, rax, [r8+24]
-adox r9, rax
-adcx r10, rbp
-mulx rbp, rax, [r8+32]
-adox r10, rax
-adcx rdi, rbp
-mulx rbp, rax, [r8+40]
-adox rdi, rax
-adcx rsi, rbp
-mulx rbp, rax, [r8+48]
-adox rsi, rax
-adcx rbx, rbp
-mulx rbp, rax, [r8+56]
-adox rbx, rax
-mov rax, 0
-adox rbp, rax
-adc rbp, rax
-mov [rcx+64], r13
-mov [rcx+72], r14
-mov [rcx+80], r9
-mov [rcx+88], r10
-mov [rcx+96], rdi
-mov [rcx+104], rsi
-mov [rcx+112], rbx
-mov [rcx+120], rbp
-pop r14
-pop r13
-pop r12
-pop rbp
-pop rbx
-pop rsi
-pop rdi
-ret
-mclb_mul8 endp
-align 16
-mclb_mul9 proc export
-push rdi
-push rsi
-push rbx
-push rbp
-push r12
-push r13
-push r14
-push r15
-mov r11, rdx
-mov rdx, [r11]
-mulx r9, rax, [r8]
-mov [rcx], rax
-mulx r10, rax, [r8+8]
-add r9, rax
-mulx rdi, rax, [r8+16]
-adc r10, rax
-mulx rsi, rax, [r8+24]
-adc rdi, rax
-mulx rbx, rax, [r8+32]
-adc rsi, rax
-mulx rbp, rax, [r8+40]
-adc rbx, rax
-mulx r12, rax, [r8+48]
-adc rbp, rax
-mulx r13, rax, [r8+56]
-adc r12, rax
-mulx r14, rax, [r8+64]
-adc r13, rax
-adc r14, 0
-mov rdx, [r11+8]
-xor rax, rax
-mulx r15, rax, [r8]
-adox r9, rax
-mov [rcx+8], r9
-adcx r10, r15
-mulx r15, rax, [r8+8]
-adox r10, rax
-adcx rdi, r15
-mulx r15, rax, [r8+16]
-adox rdi, rax
-adcx rsi, r15
-mulx r15, rax, [r8+24]
-adox rsi, rax
-adcx rbx, r15
-mulx r15, rax, [r8+32]
-adox rbx, rax
-adcx rbp, r15
-mulx r15, rax, [r8+40]
-adox rbp, rax
-adcx r12, r15
-mulx r15, rax, [r8+48]
-adox r12, rax
-adcx r13, r15
-mulx r15, rax, [r8+56]
-adox r13, rax
-adcx r14, r15
-mulx r15, rax, [r8+64]
-adox r14, rax
-mov rax, 0
-adox r15, rax
-adc r15, rax
-mov rdx, [r11+16]
-xor rax, rax
-mulx r9, rax, [r8]
-adox r10, rax
-mov [rcx+16], r10
-adcx rdi, r9
-mulx r9, rax, [r8+8]
-adox rdi, rax
-adcx rsi, r9
-mulx r9, rax, [r8+16]
-adox rsi, rax
-adcx rbx, r9
-mulx r9, rax, [r8+24]
-adox rbx, rax
-adcx rbp, r9
-mulx r9, rax, [r8+32]
-adox rbp, rax
-adcx r12, r9
-mulx r9, rax, [r8+40]
-adox r12, rax
-adcx r13, r9
-mulx r9, rax, [r8+48]
-adox r13, rax
-adcx r14, r9
-mulx r9, rax, [r8+56]
-adox r14, rax
-adcx r15, r9
-mulx r9, rax, [r8+64]
-adox r15, rax
-mov rax, 0
-adox r9, rax
-adc r9, rax
-mov rdx, [r11+24]
-xor rax, rax
-mulx r10, rax, [r8]
-adox rdi, rax
-mov [rcx+24], rdi
-adcx rsi, r10
-mulx r10, rax, [r8+8]
-adox rsi, rax
-adcx rbx, r10
-mulx r10, rax, [r8+16]
-adox rbx, rax
-adcx rbp, r10
-mulx r10, rax, [r8+24]
-adox rbp, rax
-adcx r12, r10
-mulx r10, rax, [r8+32]
-adox r12, rax
-adcx r13, r10
-mulx r10, rax, [r8+40]
-adox r13, rax
-adcx r14, r10
-mulx r10, rax, [r8+48]
-adox r14, rax
-adcx r15, r10
-mulx r10, rax, [r8+56]
-adox r15, rax
-adcx r9, r10
-mulx r10, rax, [r8+64]
-adox r9, rax
-mov rax, 0
-adox r10, rax
-adc r10, rax
-mov rdx, [r11+32]
-xor rax, rax
-mulx rdi, rax, [r8]
-adox rsi, rax
-mov [rcx+32], rsi
-adcx rbx, rdi
-mulx rdi, rax, [r8+8]
-adox rbx, rax
-adcx rbp, rdi
-mulx rdi, rax, [r8+16]
-adox rbp, rax
-adcx r12, rdi
-mulx rdi, rax, [r8+24]
-adox r12, rax
-adcx r13, rdi
-mulx rdi, rax, [r8+32]
-adox r13, rax
-adcx r14, rdi
-mulx rdi, rax, [r8+40]
-adox r14, rax
-adcx r15, rdi
-mulx rdi, rax, [r8+48]
-adox r15, rax
-adcx r9, rdi
-mulx rdi, rax, [r8+56]
-adox r9, rax
-adcx r10, rdi
-mulx rdi, rax, [r8+64]
-adox r10, rax
-mov rax, 0
-adox rdi, rax
-adc rdi, rax
-mov rdx, [r11+40]
-xor rax, rax
-mulx rsi, rax, [r8]
-adox rbx, rax
-mov [rcx+40], rbx
-adcx rbp, rsi
-mulx rsi, rax, [r8+8]
-adox rbp, rax
-adcx r12, rsi
-mulx rsi, rax, [r8+16]
-adox r12, rax
-adcx r13, rsi
-mulx rsi, rax, [r8+24]
-adox r13, rax
-adcx r14, rsi
-mulx rsi, rax, [r8+32]
-adox r14, rax
-adcx r15, rsi
-mulx rsi, rax, [r8+40]
-adox r15, rax
-adcx r9, rsi
-mulx rsi, rax, [r8+48]
-adox r9, rax
-adcx r10, rsi
-mulx rsi, rax, [r8+56]
-adox r10, rax
-adcx rdi, rsi
-mulx rsi, rax, [r8+64]
-adox rdi, rax
-mov rax, 0
-adox rsi, rax
-adc rsi, rax
-mov rdx, [r11+48]
-xor rax, rax
-mulx rbx, rax, [r8]
-adox rbp, rax
-mov [rcx+48], rbp
-adcx r12, rbx
-mulx rbx, rax, [r8+8]
-adox r12, rax
-adcx r13, rbx
-mulx rbx, rax, [r8+16]
-adox r13, rax
-adcx r14, rbx
-mulx rbx, rax, [r8+24]
-adox r14, rax
-adcx r15, rbx
-mulx rbx, rax, [r8+32]
-adox r15, rax
-adcx r9, rbx
-mulx rbx, rax, [r8+40]
-adox r9, rax
-adcx r10, rbx
-mulx rbx, rax, [r8+48]
-adox r10, rax
-adcx rdi, rbx
-mulx rbx, rax, [r8+56]
-adox rdi, rax
-adcx rsi, rbx
-mulx rbx, rax, [r8+64]
-adox rsi, rax
-mov rax, 0
-adox rbx, rax
-adc rbx, rax
-mov rdx, [r11+56]
-xor rax, rax
-mulx rbp, rax, [r8]
-adox r12, rax
-mov [rcx+56], r12
-adcx r13, rbp
-mulx rbp, rax, [r8+8]
-adox r13, rax
-adcx r14, rbp
-mulx rbp, rax, [r8+16]
-adox r14, rax
-adcx r15, rbp
-mulx rbp, rax, [r8+24]
-adox r15, rax
-adcx r9, rbp
-mulx rbp, rax, [r8+32]
-adox r9, rax
-adcx r10, rbp
-mulx rbp, rax, [r8+40]
-adox r10, rax
-adcx rdi, rbp
-mulx rbp, rax, [r8+48]
-adox rdi, rax
-adcx rsi, rbp
-mulx rbp, rax, [r8+56]
-adox rsi, rax
-adcx rbx, rbp
-mulx rbp, rax, [r8+64]
-adox rbx, rax
-mov rax, 0
-adox rbp, rax
-adc rbp, rax
-mov rdx, [r11+64]
-xor rax, rax
-mulx r12, rax, [r8]
-adox r13, rax
-mov [rcx+64], r13
-adcx r14, r12
-mulx r12, rax, [r8+8]
-adox r14, rax
-adcx r15, r12
-mulx r12, rax, [r8+16]
-adox r15, rax
-adcx r9, r12
-mulx r12, rax, [r8+24]
-adox r9, rax
-adcx r10, r12
-mulx r12, rax, [r8+32]
-adox r10, rax
-adcx rdi, r12
-mulx r12, rax, [r8+40]
-adox rdi, rax
-adcx rsi, r12
-mulx r12, rax, [r8+48]
-adox rsi, rax
-adcx rbx, r12
-mulx r12, rax, [r8+56]
-adox rbx, rax
-adcx rbp, r12
-mulx r12, rax, [r8+64]
-adox rbp, rax
-mov rax, 0
-adox r12, rax
-adc r12, rax
-mov [rcx+72], r14
-mov [rcx+80], r15
-mov [rcx+88], r9
-mov [rcx+96], r10
-mov [rcx+104], rdi
-mov [rcx+112], rsi
-mov [rcx+120], rbx
-mov [rcx+128], rbp
-mov [rcx+136], r12
-pop r15
-pop r14
-pop r13
-pop r12
-pop rbp
-pop rbx
-pop rsi
-pop rdi
-ret
-mclb_mul9 endp
-align 16
 mclb_sqr1 proc export
 mov r11, rdx
 mov rax, [r11]
@@ -5494,21 +4269,6 @@ mclb_sqr6 proc export
 mov r8, rdx
 jmp mclb_mul6
 mclb_sqr6 endp
-align 16
-mclb_sqr7 proc export
-mov r8, rdx
-jmp mclb_mul7
-mclb_sqr7 endp
-align 16
-mclb_sqr8 proc export
-mov r8, rdx
-jmp mclb_mul8
-mclb_sqr8 endp
-align 16
-mclb_sqr9 proc export
-mov r8, rdx
-jmp mclb_mul9
-mclb_sqr9 endp
 align 16
 mclb_modp256_x64 proc export
 cmp r8, 8
