@@ -4,7 +4,7 @@ OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 MCL_FP_BIT?=384
-# max unit size of the generated bint functions for 64-bit unit (see MCL_BINT_MUL_N in include/mcl/config.hpp)
+# max unit size of the generated bint functions for 64-bit unit = MCL_BINT_MAX_BIT / 64 (see include/mcl/config.hpp)
 BINT_MUL_N?=6
 BINT_MUL_N32=$(shell expr $(BINT_MUL_N) \* 2)
 MCL_FR_BIT?=256
