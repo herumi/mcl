@@ -56,6 +56,9 @@
 #ifndef MCL_FR_BIT
 	#define MCL_FR_BIT 256
 #endif
+#if MCL_FP_BIT > 384 || MCL_FR_BIT > 384
+	#error "MCL_FP_BIT and MCL_FR_BIT must be <= 384 (the generated bint functions support up to MCL_BINT_MUL_N units)"
+#endif
 
 #if !defined(MCL_USE_OPENSSL) && !defined(MCL_DONT_USE_OPENSSL)
 	#define MCL_DONT_USE_OPENSSL
@@ -69,6 +72,16 @@
 #define MCL_ROUNDUP(x, n) (((x) + (n) - 1) / (n))
 
 #define MCL_MAX_UNIT_SIZE MCL_ROUNDUP(MCL_FP_BIT, MCL_UNIT_BIT_SIZE)
+/*
+	the max unit size N of the generated fixed-size bint functions
+	(src/bint{32,64}.ll, src/asm/bint-x64-*, src/bint_switch.hpp)
+	mclb_mul{N}, mclb_sqr{N} : N <= MCL_BINT_MUL_N (384 bit)
+	mclb_mulUnit{N}, mclb_mulUnitAdd{N}, mclb_add{N}, mclb_sub{N}, mclb_addNF{N}, mclb_subNF{N} : N <= MCL_BINT_MUL_N2 (768 bit)
+	Vint (include/mcl/vint.hpp) uses them with N <= MCL_MAX_UNIT_SIZE * 2 <= MCL_BINT_MUL_N2.
+	If these values are changed, regenerate them by `make update_all_asm` and `make header` (see BINT_MUL_N in Makefile).
+*/
+#define MCL_BINT_MUL_N (384 / MCL_UNIT_BIT_SIZE)
+#define MCL_BINT_MUL_N2 (MCL_BINT_MUL_N * 2)
 
 #if defined(__EMSCRIPTEN__) || defined(__wasm__) || defined(_M_ARM64)
 	#define MCL_DONT_USE_XBYAK

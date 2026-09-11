@@ -1533,6 +1533,83 @@ void compareMod(const T *x, const T (&p)[N])
 	CYBOZU_TEST_EQUAL_ARRAY(y1, y2, N);
 }
 
+// x = random n units (the top unit is masked by topMask and non-zero)
+static void setRandUnit(Vint& x, size_t n, cybozu::XorShift& rg, Unit topMask = Unit(-1))
+{
+	Unit buf[Vint::N];
+	assert(0 < n && n <= Vint::N);
+	for (size_t i = 0; i < n; i++) {
+		buf[i] = Unit(rg.get64());
+	}
+	buf[n - 1] &= topMask;
+	if (buf[n - 1] == 0) buf[n - 1] = 1;
+	x.setArray(buf, n);
+}
+
+/*
+	the operations near the buffer size N = Vint::N (= 2 maxUnitSize)
+	they use mclb_mulUnit{n}, mclb_mulUnitAdd{n}, mclb_add{n}, mclb_sub{n} with n up to N
+*/
+CYBOZU_TEST_AUTO(largeUnit)
+{
+	const size_t N = Vint::N;
+	const size_t W = Vint::UnitBitSize;
+	const Unit half = Unit(1) << (W - 1);
+	cybozu::XorShift rg;
+	Vint x, y, z, q, r;
+	for (size_t i = 0; i < 20; i++) {
+		// mulu1 : (N - 1) units * Unit
+		setRandUnit(x, N - 1, rg);
+		Unit u = Unit(rg.get64());
+		if (u == 0) u = 1;
+		Vint::mulu1(z, x, u);
+		CYBOZU_TEST_EQUAL(z, x * Vint(u));
+		Vint::divMod(&q, r, z, Vint(u));
+		CYBOZU_TEST_EQUAL(q, x);
+		CYBOZU_TEST_ASSERT(r.isZero());
+		// mulNM : (N - 3) units * 3 units, z has N units
+		setRandUnit(x, N - 3, rg);
+		setRandUnit(y, 3, rg);
+		z = x * y;
+		CYBOZU_TEST_EQUAL(z.getUnitSize(), N);
+		Vint::divMod(&q, r, z, y);
+		CYBOZU_TEST_EQUAL(q, x);
+		CYBOZU_TEST_ASSERT(r.isZero());
+		CYBOZU_TEST_EQUAL((x + 1) * y, z + y);
+		// add/sub/compare of N units (no carry because the top bits are 0)
+		setRandUnit(x, N, rg, half - 1);
+		setRandUnit(y, N, rg, half - 1);
+		z = x + y;
+		CYBOZU_TEST_EQUAL(z.getUnitSize(), N);
+		CYBOZU_TEST_EQUAL(z - y, x);
+		CYBOZU_TEST_EQUAL(z - x, y);
+		CYBOZU_TEST_ASSERT(x < z);
+		CYBOZU_TEST_ASSERT(y < z);
+		CYBOZU_TEST_EQUAL(z + 1 - 1, z);
+		// divMod of N units by (N - 2) units ; q * y has (N + 1) units as xn + yn but fits in N units
+		setRandUnit(x, N, rg);
+		setRandUnit(y, N - 2, rg);
+		Vint::divMod(&q, r, x, y);
+		CYBOZU_TEST_ASSERT(r < y);
+		CYBOZU_TEST_EQUAL(q * y + r, x);
+		// shl to exactly N units
+		setRandUnit(x, N - 1, rg);
+		z = x << W;
+		CYBOZU_TEST_EQUAL(z.getUnitSize(), N);
+		CYBOZU_TEST_EQUAL(z.getUnit()[0], Unit(0));
+		CYBOZU_TEST_EQUAL(z >> W, x);
+		CYBOZU_TEST_EQUAL(x << (W / 2), x * Vint(Unit(1) << (W / 2)));
+		// mul with xn + yn > N whose result fits in N units
+		setRandUnit(x, N - 1, rg, 0xff);
+		setRandUnit(y, 2, rg, 0xff);
+		z = x * y;
+		CYBOZU_TEST_ASSERT(z.getUnitSize() <= N);
+		Vint::divMod(&q, r, z, y);
+		CYBOZU_TEST_EQUAL(q, x);
+		CYBOZU_TEST_ASSERT(r.isZero());
+	}
+}
+
 CYBOZU_TEST_AUTO(SECP256k1)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;

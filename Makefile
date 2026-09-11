@@ -4,6 +4,9 @@ OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 MCL_FP_BIT?=384
+# max unit size of the generated bint functions for 64-bit unit (see MCL_BINT_MUL_N in include/mcl/config.hpp)
+BINT_MUL_N?=6
+BINT_MUL_N32=$(shell expr $(BINT_MUL_N) \* 2)
 MCL_FR_BIT?=256
 ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
   MCL_SUF=256
@@ -172,14 +175,11 @@ $(BINT_OBJ): $(BINT_LL)
 else
   CFLAGS+=-DMCL_BINT_ASM=0
 endif
-#ifneq ($(MCL_FP_BIT),)
-#  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
-#endif
 ifeq ($(UPDATE_LL),1)
 src/bint64.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
-	python3 src/gen_bint.py -u 64 > $@
+	python3 src/gen_bint.py -u 64 -n $(BINT_MUL_N) > $@
 src/bint32.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
-	python3 src/gen_bint.py -u 32 > $@
+	python3 src/gen_bint.py -u 32 -n $(BINT_MUL_N32) > $@
 endif
 ifeq ($(ARCH),x86_64)
   ifneq ($(UNAME_S),Darwin)
@@ -205,25 +205,26 @@ else
   CFLAGS+=-DMCL_MSM=0
 endif
 src/bint_switch.hpp: src/gen_bint_header.py
-	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
+	python3 $< > $@ switch -n $(BINT_MUL_N)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
+GEN_BINT_X64_OPT=-curveBit=$(MCL_MSM_CURVE_BIT) -n $(BINT_MUL_N)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_SUF),S)
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas $(WIN_API) > $@
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas $(WIN_API) > $@
 else
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -win > $@
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -win > $@
 endif
 update_bint_x64_asm:
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -win -m masm > src/asm/bint-x64-win.asm
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas > src/asm/bint-x64-amd64.S
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas -win > src/asm/bint-x64-mingw.S
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -win -m masm > src/asm/bint-x64-win.asm
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas > src/asm/bint-x64-amd64.S
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas -win > src/asm/bint-x64-mingw.S
 
 # regenerate all generated files (ll first, then asm) on x86-64 host
 # e.g. make update_all_asm LLVM_VER=-21
 update_all_asm:
-	python3 src/gen_bint.py -u 64 > src/bint64.ll
-	python3 src/gen_bint.py -u 32 > src/bint32.ll
+	python3 src/gen_bint.py -u 64 -n $(BINT_MUL_N) > src/bint64.ll
+	python3 src/gen_bint.py -u 32 -n $(BINT_MUL_N32) > src/bint32.ll
 	$(GEN) -u 64 > src/base64.ll
 	$(GEN) -u 32 > src/base32.ll
 	$(LLVM_OPT) -O3 -o - src/base64.ll -march=$(CPU) | $(LLVM_LLC) -O3 -o src/asm/x86-64.S $(LLVM_FLAGS)

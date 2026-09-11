@@ -263,6 +263,7 @@ def setUnit(u):
   unit2 = u * 2
 
 
+# mul/sqr : N <= maxN, mulUnit/mulUnitAdd/add/sub/addNF/subNF : N <= addN
 def gen(maxN, addN):
   gen_once()
   for n in range(1, addN + 1):
@@ -271,11 +272,13 @@ def gen(maxN, addN):
     gen_mclb_addsub(False)
     gen_mclb_addNF()
     gen_mclb_subNF()
-  for n in range(1, maxN + 1):
+  for n in range(1, addN + 1):
     setBit(n * unit)
     gen_mulUnit_inner()
     gen_mclb_mulUnit()
     gen_mclb_mulUnitAdd()
+  for n in range(1, maxN + 1):
+    setBit(n * unit)
     gen_mclb_mul()
     gen_mclb_sqr()
 
@@ -283,16 +286,17 @@ def gen(maxN, addN):
 def main():
   parser = argparse.ArgumentParser(description='generate bint{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
-  parser.add_argument('-n', type=int, default=0, help='max size of Unit')
-  parser.add_argument('-addn', type=int, default=0, help='max size of add/sub')
+  parser.add_argument('-n', type=int, default=0, help='max size of Unit for mul/sqr (see MCL_BINT_MUL_N in include/mcl/config.hpp)')
+  parser.add_argument('-addn', type=int, default=0, help='max size of Unit for mulUnit/add/sub (default 2n)')
   opt = parser.parse_args()
 
   setUnit(opt.u)
   maxN = opt.n
   addN = opt.addn
   if maxN == 0:
-    maxN = 9 if unit == 64 else 17
-    addN = 16 if unit == 64 else 32
+    maxN = 384 // unit
+  if addN == 0:
+    addN = maxN * 2
   import sys
   print(f'unit={unit} N={maxN} addN={addN}', file=sys.stderr)
   gen(maxN, addN)
