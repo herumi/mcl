@@ -436,7 +436,8 @@ template<class CT>
 int decT(mclInt *m, const sheSecretKey *sec, const CT *c)
 {
 	bool b;
-	*m = (cast(sec)->dec)(*cast(c), &b);
+	const int64_t v = (cast(sec)->dec)(*cast(c), &b);
+	memcpy(m, &v, sizeof(v));
 	return b ? 0 : -1;
 }
 
@@ -459,7 +460,8 @@ template<class CT>
 int decViaGTT(mclInt *m, const sheSecretKey *sec, const CT *c)
 	try
 {
-	*m = (cast(sec)->decViaGT)(*cast(c));
+	const int64_t v = (cast(sec)->decViaGT)(*cast(c));
+	memcpy(m, &v, sizeof(v));
 	return 0;
 } catch (...) {
 	return -1;
@@ -798,14 +800,16 @@ int shePrecomputedPublicKeyVerifyZkpBinEq(const shePrecomputedPublicKey *ppub, c
 int sheDecWithZkpDecG1(mclInt *m, sheZkpDec *zkp, const sheSecretKey *sec, const sheCipherTextG1 *c, const shePublicKey *pub)
 {
 	bool b;
-	*m = cast(sec)->decWithZkpDec(&b, *cast(zkp), *cast(c), *cast(pub));
+	const int64_t v = cast(sec)->decWithZkpDec(&b, *cast(zkp), *cast(c), *cast(pub));
+	memcpy(m, &v, sizeof(v));
 	return b ? 0 : -1;
 }
 
 int sheDecWithZkpDecGT(mclInt *m, sheZkpDecGT *zkp, const sheSecretKey *sec, const sheCipherTextGT *c, const sheAuxiliaryForZkpDecGT *aux)
 {
 	bool b;
-	*m = cast(sec)->decWithZkpDec(&b, *cast(zkp), *cast(c), *cast(aux));
+	const int64_t v = cast(sec)->decWithZkpDec(&b, *cast(zkp), *cast(c), *cast(aux));
+	memcpy(m, &v, sizeof(v));
 	return b ? 0 : -1;
 }
 
