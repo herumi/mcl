@@ -242,6 +242,7 @@ void savePodVec(OutputStream& os, const V& v)
 	if (!v.empty()) saveRange(os, &v[0], v.size());
 }
 
+#ifndef CYBOZU_DONT_USE_STRING
 template<class InputStream>
 void load(std::string& str, InputStream& is)
 {
@@ -253,6 +254,7 @@ void save(OutputStream& os, const std::string& str)
 {
 	savePodVec(os, str);
 }
+#endif
 
 template<class OutputStream>
 void save(OutputStream& os, const char *x)
@@ -311,6 +313,7 @@ void save(OutputStream& os, const Container<K, Pred, Alloc>& x, typename stream_
 	}
 }
 
+#ifndef CYBOZU_DONT_USE_STRING
 // for map
 template<class InputStream, class K, class V, class Pred, class Alloc, template<class K_, class V_, class Pred_, class Alloc_>class Container>
 void load(Container<K, V, Pred, Alloc>& x, InputStream& is, typename stream_local::enable_if<serializer_local::has_iterator<Container<K, V, Pred, Alloc> >::value>::type* = 0)
@@ -364,6 +367,7 @@ void save(OutputStream& os, const Container<K, V, Hash, Pred, Alloc>& x, typenam
 		save(os, i->second);
 	}
 }
+#endif
 
 } // cybozu
 
