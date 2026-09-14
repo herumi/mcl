@@ -79,10 +79,4 @@ void __cxa_rethrow()
 	__builtin_trap();
 }
 
-// registration of global dtors ; never called because the instance has no exit
-int __cxa_atexit(void (*)(void*), void*, void*)
-{
-	return 0;
-}
-
 }

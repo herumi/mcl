@@ -95,3 +95,10 @@ u128 __multi3(u128 x, u128 y) {
   u64 hi = (u64)(r >> 64) + xl * yh + xh * yl;
   return ((u128)hi << 64) | (u64)r;
 }
+
+// registration of global dtors by C++ static initializers
+// never called because the instance has no exit
+int __cxa_atexit(void (*f)(void *), void *arg, void *dso) {
+  (void)f; (void)arg; (void)dso;
+  return 0;
+}
