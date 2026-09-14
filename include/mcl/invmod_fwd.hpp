@@ -13,15 +13,15 @@ namespace mcl {
 namespace inv {
 
 #if MCL_SIZEOF_UNIT == 4
-typedef int32_t INT;
+typedef int32_t Sint;
 static const int modL = 30;
 #else
-typedef int64_t INT;
+typedef int64_t Sint;
 static const int modL = 62;
 #endif
-static const INT modN = INT(1) << modL;
-static const INT half = modN / 2;
-static const INT MASK = modN - 1;
+static const Sint modN = Sint(1) << modL;
+static const Sint half = modN / 2;
+static const Sint MASK = modN - 1;
 
 template<int N>
 struct InvModT {

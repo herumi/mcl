@@ -276,7 +276,7 @@ void exec(const Inv62<N>& im, uint64_t *y, const uint64_t *x)
 {
 	using namespace mcl::inv;
 	const int L = Inv62<N>::L;
-	INT eta = -1;
+	Sint eta = -1;
 	S62<L> f = im.M, g, d, e;
 	toS62<N, L>(g, x);
 	memset(&d, 0, sizeof(d));

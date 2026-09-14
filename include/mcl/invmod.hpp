@@ -29,7 +29,7 @@ struct Quad {
 	w f (w = g (-f^-1 mod 256) mod 2^limit), so it takes fewer iterations than
 	the 4-bit table version.
 */
-static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
+static inline Sint divsteps_n_matrix(Quad& t, Sint eta, Unit f, Unit g)
 {
 	// negInv256[(f & 255) >> 1] = -f^-1 mod 256 for odd f
 	static const uint8_t negInv256[128] = {
@@ -46,7 +46,7 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 	int i = modL;
 	for (;;) {
 		// zeros = min(i, bsf(g)) (i if g == 0); bit i of the argument is set, so bsf is defined
-		INT zeros = cybozu::bsf(g | (~Unit(0) << i));
+		Sint zeros = cybozu::bsf(g | (~Unit(0) << i));
 		eta -= zeros;
 		i -= zeros;
 		g >>= zeros;
@@ -66,7 +66,7 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 			r = -v0;
 		}
 		// 1 <= limit <= modL ; the mask is the low min(limit, 8) bits
-		int limit = mcl::fp::min_<INT>(eta + 1, i);
+		int limit = mcl::fp::min_<Sint>(eta + 1, i);
 		Unit w = (g * negInv256[(f & 255) >> 1]) & ((Unit(-1) >> (UnitBitSize - limit)) & 255);
 		g += w * f;
 		q += w * u;
@@ -204,7 +204,7 @@ void normalize(const Unit *M, Unit *v, bool minus)
 template<int N, int W>
 void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 {
-	INT eta = -1;
+	Sint eta = -1;
 	Unit f[W], g[W], d[W], e[W];
 	mcl::bint::copyT<W>(f, im.M);
 	mcl::bint::copyT<N>(g, px);
