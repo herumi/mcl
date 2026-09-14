@@ -316,7 +316,11 @@ void setOp(Op& op)
 	op.fp_clear = bint::clearT<N>;
 	op.fp_copy = bint::copyT<N>;
 #if 1
-	mcl::inv::init(*reinterpret_cast<mcl::inv::InvModT<N>*>(op.im), op.mp);
+	{
+		// op.mp fits in N units by construction
+		bool b = mcl::inv::init(*reinterpret_cast<mcl::inv::InvModT<N>*>(op.im), op.mp);
+		assert(b); (void)b;
+	}
 	op.fp_invOp = fp_invMod<N>;
 #else
 	op.fp_invOp = fp_invOpC;

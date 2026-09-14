@@ -235,26 +235,34 @@ void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 	}
 }
 
+// returns false if x does not fit in N units
 template<int N>
-void exec(const InvModT<N>& im, mpz_class& y, const mpz_class& x)
+bool exec(const InvModT<N>& im, mpz_class& y, const mpz_class& x)
 {
 	Unit ux[N], uy[N];
-	mcl::gmp::getArray(ux, N, x);
+	bool b;
+	mcl::gmp::getArray(&b, ux, N, x);
+	if (!b) return false;
 	exec<N>(im, uy, ux);
-	mcl::gmp::setArray(y, uy, N);
+	mcl::gmp::setArray(&b, y, uy, N);
+	return b;
 }
 
+// returns false if M does not fit in N units
 template<int N>
-void init(InvModT<N>& invMod, const mpz_class& mM)
+bool init(InvModT<N>& invMod, const mpz_class& mM)
 {
-	mcl::gmp::getArray(invMod.M, N, mM);
+	bool b;
+	mcl::gmp::getArray(&b, invMod.M, N, mM);
+	if (!b) return false;
 	invMod.M[N] = 0;
 	invMod.lowM = invMod.M[0];
 	mpz_class inv;
 	mpz_class mod = mpz_class(1) << modL;
 	mcl::gmp::invMod(inv, mM, mod);
-	invMod.Mi = mcl::gmp::getUnit(inv)[0] & MASK;
+	invMod.Mi = mcl::gmp::getUnit(inv, 0) & MASK;
 	invMod.wide = mcl::gmp::getBitSize(mM) > UnitBitSize * N - 2;
+	return true;
 }
 
 } // mcl::inv

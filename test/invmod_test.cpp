@@ -10,7 +10,7 @@ void testSub(const mpz_class& M, bool wide)
 {
 	printf("wide=%d\n", wide);
 	mcl::inv::InvModT<N> im;
-	mcl::inv::init(im, M);
+	CYBOZU_TEST_ASSERT(mcl::inv::init(im, M));
 	CYBOZU_TEST_ASSERT(wide || !im.wide);
 	im.wide = wide;
 	mpz_class x, y, z;
@@ -333,7 +333,7 @@ template<int N>
 void testSL(const mpz_class& M)
 {
 	mcl::inv::InvModT<N> im;
-	mcl::inv::init(im, M);
+	CYBOZU_TEST_ASSERT(mcl::inv::init(im, M));
 	sl::Inv<N> im2;
 	sl::init(im2, im);
 	mpz_class x, y, z, w;
@@ -378,7 +378,7 @@ void test(const char *Mstr)
 	mpz_class M;
 	mcl::gmp::setStr(M, Mstr, 16);
 	mcl::inv::InvModT<N> im;
-	mcl::inv::init(im, M);
+	CYBOZU_TEST_ASSERT(mcl::inv::init(im, M));
 	if (!im.wide) testSub<N>(M, false);
 	testSub<N>(M, true);
 #ifdef MCL_INVMOD_TEST_SL
