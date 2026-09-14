@@ -71,3 +71,10 @@ int strcmp(const char *s1, const char *s2) {
 void abort(void) {
   __builtin_trap();
 }
+
+// registration of global dtors by C++ static initializers
+// never called because the instance has no exit
+int __cxa_atexit(void (*f)(void *), void *arg, void *dso) {
+  (void)f; (void)arg; (void)dso;
+  return 0;
+}
