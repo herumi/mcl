@@ -379,4 +379,78 @@ static inline bint::void_ppp get_llvm_fp_sqrMontNF(size_t n)
 	return 0;
 #endif
 }
+#if defined(MCL_USE_LLVM) && !defined(MCL_WASM32)
+// p-fixed functions of BLS12-381 (see common.gen_fixed in src/gen.py); the Xbyak ABI (no p argument)
+extern "C" {
+extern Unit mcl_c5_fp_p[];
+void mcl_c5_fp_add(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp_sub(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp_neg(Unit*, const Unit*);
+void mcl_c5_fp_mul2(Unit*, const Unit*);
+void mcl_c5_fp_mul(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp_sqr(Unit*, const Unit*);
+void mcl_c5_fpDbl_mod(Unit*, const Unit*);
+void mcl_c5_fpDbl_mulPre(Unit*, const Unit*, const Unit*);
+void mcl_c5_fpDbl_sqrPre(Unit*, const Unit*);
+void mcl_c5_fpDbl_add(Unit*, const Unit*, const Unit*);
+void mcl_c5_fpDbl_sub(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp2_add(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp2_sub(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp2_neg(Unit*, const Unit*);
+void mcl_c5_fp2_mul2(Unit*, const Unit*);
+void mcl_c5_fp2_mul(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp2_sqr(Unit*, const Unit*);
+void mcl_c5_fp2_mul_xi(Unit*, const Unit*);
+extern Unit mcl_c5_fr_p[];
+void mcl_c5_fr_add(Unit*, const Unit*, const Unit*);
+void mcl_c5_fr_sub(Unit*, const Unit*, const Unit*);
+void mcl_c5_fr_neg(Unit*, const Unit*);
+void mcl_c5_fr_mul2(Unit*, const Unit*);
+void mcl_c5_fr_mul(Unit*, const Unit*, const Unit*);
+void mcl_c5_fr_sqr(Unit*, const Unit*);
+void mcl_c5_frDbl_mod(Unit*, const Unit*);
+void mcl_c5_frDbl_mulPre(Unit*, const Unit*, const Unit*);
+void mcl_c5_frDbl_sqrPre(Unit*, const Unit*);
+}
+// register them to op (the caller checks that op.p is the prime of the functions)
+static inline void set_llvm_c5_fp(Op& op)
+{
+	op.fp_addA_ = mcl_c5_fp_add;
+	op.fp_subA_ = mcl_c5_fp_sub;
+	op.fp_negA_ = mcl_c5_fp_neg;
+	op.fp_mul2A_ = mcl_c5_fp_mul2;
+	op.fp_mulA_ = mcl_c5_fp_mul;
+	op.fp_sqrA_ = mcl_c5_fp_sqr;
+	op.fpDbl_modA_ = mcl_c5_fpDbl_mod;
+	op.fpDbl_mulPre = mcl_c5_fpDbl_mulPre;
+	op.fpDbl_sqrPre = mcl_c5_fpDbl_sqrPre;
+	op.fpDbl_addA_ = mcl_c5_fpDbl_add;
+	op.fpDbl_subA_ = mcl_c5_fpDbl_sub;
+	op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
+}
+// Fp2 of BLS12-381 : xi_a == 1, u == 1 and sizeof(Fp) == 48 (the offset of the second component is fixed)
+static inline void set_llvm_c5_fp2(Op& op)
+{
+	op.fp2_addA_ = mcl_c5_fp2_add;
+	op.fp2_subA_ = mcl_c5_fp2_sub;
+	op.fp2_negA_ = mcl_c5_fp2_neg;
+	op.fp2_mul2A_ = mcl_c5_fp2_mul2;
+	op.fp2_mulA_ = mcl_c5_fp2_mul;
+	op.fp2_sqrA_ = mcl_c5_fp2_sqr;
+	op.fp2_mul_xiA_ = mcl_c5_fp2_mul_xi;
+}
+static inline void set_llvm_c5_fr(Op& op)
+{
+	op.fp_addA_ = mcl_c5_fr_add;
+	op.fp_subA_ = mcl_c5_fr_sub;
+	op.fp_negA_ = mcl_c5_fr_neg;
+	op.fp_mul2A_ = mcl_c5_fr_mul2;
+	op.fp_mulA_ = mcl_c5_fr_mul;
+	op.fp_sqrA_ = mcl_c5_fr_sqr;
+	op.fpDbl_modA_ = mcl_c5_frDbl_mod;
+	op.fpDbl_mulPre = mcl_c5_frDbl_mulPre;
+	op.fpDbl_sqrPre = mcl_c5_frDbl_sqrPre;
+	op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
+}
+#endif
 }}

@@ -22,6 +22,10 @@ g_mulPv = {}  # bit -> Function
 g_mclb_mul3 = None  # mclb_mul{N}
 g_mclb_sqr3 = None  # mclb_sqr{N}
 
+# BLS12-381 (curve type MCL_BLS12_381 = 5, so the prefix is mcl_c5_)
+C5_P = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
+C5_R = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+
 
 # return (x>>shift) % (2**size)
 def extract(x, shift, size=0):
@@ -246,9 +250,6 @@ def gen_mcl_fp_sub(isFullBit=True):
 
 
 def gen_mcl_fpDbl_add():
-  bu = bit + unit
-  b2 = bit * 2
-  b2u = b2 + unit
   resetGlobalIdx()
   pz = IntPtr(unit)
   px = IntPtr(unit)
@@ -256,29 +257,11 @@ def gen_mcl_fpDbl_add():
   pp = IntPtr(unit)
   name = f'mcl_fpDbl_add{N}L'
   with Function(name, Void, pz, px, py, pp, private=False):
-    x = loadN(px, N * 2)
-    y = loadN(py, N * 2)
-    x = zext(x, b2u)
-    y = zext(y, b2u)
-    t = add(x, y)
-    L = trunc(t, bit)
-    storeN(L, pz)
-    H = lshr(t, bit)
-    H = trunc(H, bu)
-    p = loadN(pp, N)
-    p = zext(p, bu)
-    Hp = sub(H, p)
-    t = lshr(Hp, bit)
-    t = trunc(t, 1)
-    t = select(t, H, Hp)
-    t = trunc(t, bit)
-    storeN(t, pz, N)
+    common.emit_fpDbl_add(unit, N, pz, px, py, pp)
     ret(Void)
 
 
 def gen_mcl_fpDbl_sub():
-  b2 = bit * 2
-  b2u = b2 + unit
   resetGlobalIdx()
   pz = IntPtr(unit)
   px = IntPtr(unit)
@@ -286,21 +269,7 @@ def gen_mcl_fpDbl_sub():
   pp = IntPtr(unit)
   name = f'mcl_fpDbl_sub{N}L'
   with Function(name, Void, pz, px, py, pp, private=False):
-    x = loadN(px, N * 2)
-    y = loadN(py, N * 2)
-    x = zext(x, b2u)
-    y = zext(y, b2u)
-    vc = sub(x, y)
-    L = trunc(vc, bit)
-    storeN(L, pz)
-    H = lshr(vc, bit)
-    H = trunc(H, bit)
-    c = lshr(vc, b2)
-    c = trunc(c, 1)
-    p = loadN(pp, N)
-    c = select(c, p, Imm(0, bit))
-    t = add(H, c)
-    storeN(t, pz, N)
+    common.emit_fpDbl_sub(unit, N, pz, px, py, pp)
     ret(Void)
 
 
@@ -402,6 +371,17 @@ def gen(maxBitSize):
   for b in (256, 384):
     setBit(b)
     common.gen_modp(f'mclb_modp{b}', unit, N, 512 // unit, g_mulPv[b])
+  if not g_wasm:
+    # p-fixed functions of BLS12-381 (mcl_c5_fp_*, mcl_c5_fp2_*, mcl_c5_fpDbl_*,
+    # mcl_c5_fr_*, mcl_c5_frDbl_*) with the ABI of the Xbyak functions (no p
+    # argument); fp.cpp registers them to the A_ slots of Op when p matches
+    # (setLLVMFixedCode, prototypes in llvm_proto.hpp by gen_llvm_proto.py).
+    # offset = sizeof(Fp) / sizeof(Unit) = MCL_FP_BIT / unit (the position of
+    # the second component of Fp2), so Fp2 is supported only if MCL_FP_BIT = 384.
+    # Not for wasm: base64m.ll is linked with 4-argument function pointers
+    # and call_indirect traps on the signature mismatch of func_ptr_cast.
+    common.gen_fixed('mcl_c5_fp_', unit, C5_P, 384 // unit, True, g_mulPos, g_extractHigh)
+    common.gen_fixed('mcl_c5_fr_', unit, C5_R, 384 // unit, False, g_mulPos, g_extractHigh)
 
 
 def main():

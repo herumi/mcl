@@ -96,7 +96,6 @@
 #endif
 #if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
 	#define MCL_X64_ASM
-	#define MCL_XBYAK_DIRECT_CALL
 #endif
 
 #define MCL_MAX_BUF_BYTE_SIZE 64
