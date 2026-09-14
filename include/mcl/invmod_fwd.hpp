@@ -24,18 +24,13 @@ static const INT half = modN / 2;
 static const INT MASK = modN - 1;
 
 template<int N>
-struct SintT {
-	Unit v[N];
-	bool sign;
-};
-
-template<int N>
 struct InvModT {
-	Unit lowM;
-	Unit Mi;
-	SintT<N> M;
-	// use the two's complement version (inv::twos) : M < 2^(UnitBitSize * N - 2)
-	bool useTwos;
+	Unit lowM; // M mod 2^UnitBitSize
+	Unit Mi; // M^-1 mod 2^modL
+	Unit M[N + 1]; // zero-extended to N + 1 units
+	// f, g, d, e of exec are (N + 1)-unit two's complement values if wide
+	// (M >= 2^(UnitBitSize N - 2)) and N-unit values otherwise (see init)
+	bool wide;
 };
 
 } } // mcl::inv

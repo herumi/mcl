@@ -4,15 +4,15 @@
 
 #include <cybozu/xorshift.hpp>
 
-// useTwos : the two's complement version (inv::twos) or the sign-magnitude one
+// wide : f, g, d, e in N + 1 units (always valid) or N units (M < 2^(UnitBitSize N - 2) only)
 template<int N>
-void testSub(const mpz_class& M, bool useTwos)
+void testSub(const mpz_class& M, bool wide)
 {
-	printf("useTwos=%d\n", useTwos);
+	printf("wide=%d\n", wide);
 	mcl::inv::InvModT<N> im;
 	mcl::inv::init(im, M);
-	CYBOZU_TEST_ASSERT(!useTwos || im.useTwos);
-	im.useTwos = useTwos;
+	CYBOZU_TEST_ASSERT(wide || !im.wide);
+	im.wide = wide;
 	mpz_class x, y, z;
 	x = 0;
 	mcl::inv::exec(im, z, x);
@@ -66,7 +66,7 @@ void testSub(const mpz_class& M, bool useTwos)
 		}
 	}
 #ifdef NDEBUG
-	const char *msg = useTwos ? "invMod(twos)" : "invMod(sm)  ";
+	const char *msg = wide ? "invMod(N+1)" : "invMod(N)  ";
 	CYBOZU_BENCH_C(msg, 1000, x++;mcl::inv::exec, im, x, x);
 #endif
 }
@@ -79,8 +79,8 @@ void test(const char *Mstr)
 	mcl::gmp::setStr(M, Mstr, 16);
 	mcl::inv::InvModT<N> im;
 	mcl::inv::init(im, M);
-	if (im.useTwos) testSub<N>(M, true);
-	testSub<N>(M, false);
+	if (!im.wide) testSub<N>(M, false);
+	testSub<N>(M, true);
 }
 
 CYBOZU_TEST_AUTO(modinv)
