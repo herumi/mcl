@@ -17,12 +17,14 @@
 	#endif
 #elif defined(__EMSCRIPTEN__)
 	#define ECDSA_DLL_API __attribute__((used))
+#elif defined(__wasm__)
+	#define ECDSA_DLL_API __attribute__((visibility("default")))
 #else
 	#define ECDSA_DLL_API
 #endif
 
 #ifndef mclSize
-	#ifdef __EMSCRIPTEN__
+	#if defined(__EMSCRIPTEN__) || defined(__wasm__)
 		// avoid 64-bit integer
 		#define mclSize unsigned int
 		#define mclInt int
