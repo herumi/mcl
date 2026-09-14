@@ -9,11 +9,14 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 
+#include <string.h>
 #include <mcl/gmp_util.hpp>
-#include <mcl/bint.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <mcl/invmod_fwd.hpp>
 #include <mcl/util.hpp>
+#if defined(_MSC_VER) && MCL_SIZEOF_UNIT == 8
+	#include <intrin.h>
+#endif
 
 namespace mcl {
 
@@ -80,159 +83,215 @@ static inline Sint divsteps_n_matrix(Quad& t, Sint eta, Unit f, Unit g)
 }
 
 /*
-	f, g, d, e are W-unit two's complement values (W = N or N + 1, see InvModT::wide),
-	so add/sub are plain addT/subT without sign compare and branch.
-	The safegcd invariants |f|, |g| <= M and -2M < d, e < M
-	(cf. safegcd_implementation.md "Avoiding modulus operations") must fit in
-	a signed W-unit value: M < 2^(UnitBitSize W - 2).
+	f, g, d, e are L signed limbs of modL bits (int64_t limbs of 62 bits for
+	64-bit units as secp256k1_modinv64_signed62, int32_t limbs of 30 bits for
+	32-bit units as secp256k1_modinv32_signed30): the low limbs are in
+	[0, 2^modL) and the top limb is signed. L = ceil((UnitBitSize N + 2) / modL)
+	(InvModT::L), so |f|, |g| <= M and -2M < d, e < M (the safegcd invariants,
+	cf. safegcd_implementation.md "Avoiding modulus operations") always fit.
+	The limb products are accumulated in Acc (2 units wide): the 2-bit headroom
+	of the limbs means no carry chain and no sign correction
+	(cf. secp256k1_modinv{64,32}_update_{fg,de}_{62,30}).
 */
-namespace twos {
-
-inline Unit signMask(Unit x)
+#if MCL_SIZEOF_UNIT == 8
+#if defined(__SIZEOF_INT128__) && !defined(MCL_INVMOD_STRUCT_ACC)
+typedef __int128 Acc;
+inline Acc mulAcc(Limb a, Limb b) { return (Acc)a * b; }
+inline void accumMul(Acc& c, Limb a, Limb b) { c += (Acc)a * b; }
+inline void shrAcc(Acc& c) { c >>= modL; }
+inline Limb lowAcc(const Acc& c) { return (Limb)c; }
+#else
+/*
+	128-bit signed accumulator without __int128 (MSVC) as libsecp256k1's
+	int128_struct_impl.h. MCL_INVMOD_STRUCT_ACC forces it (to test it with gcc/clang).
+*/
+struct Acc {
+	uint64_t lo;
+	int64_t hi;
+};
+// [*hi:return] = a * b (signed)
+inline uint64_t mulLoHi(int64_t a, int64_t b, int64_t *hi)
 {
-	return Unit(0) - (x >> (UnitBitSize - 1));
+#if defined(_MSC_VER) && defined(_M_X64)
+	return (uint64_t)_mul128(a, b, hi);
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+	*hi = __mulh(a, b);
+	return (uint64_t)a * (uint64_t)b;
+#elif defined(__SIZEOF_INT128__)
+	__int128 t = (__int128)a * b;
+	*hi = (int64_t)(t >> 64);
+	return (uint64_t)t;
+#else
+	#error "no 64x64 -> 128 multiply"
+#endif
+}
+inline Acc mulAcc(Limb a, Limb b)
+{
+	Acc c;
+	c.lo = mulLoHi(a, b, &c.hi);
+	return c;
+}
+inline void accumMul(Acc& c, Limb a, Limb b)
+{
+	int64_t hi;
+	uint64_t lo = mulLoHi(a, b, &hi);
+	c.lo += lo;
+	c.hi = (int64_t)((uint64_t)c.hi + (uint64_t)hi + (c.lo < lo));
+}
+// arithmetic shift
+inline void shrAcc(Acc& c)
+{
+	c.lo = (c.lo >> modL) | ((uint64_t)c.hi << (64 - modL));
+	c.hi >>= modL;
+}
+inline Limb lowAcc(const Acc& c) { return (Limb)c.lo; }
+#endif
+#else // MCL_SIZEOF_UNIT == 4
+// |a| <= 2^30 and |b| < 2^31, so three products and a carry fit in int64_t
+typedef int64_t Acc;
+inline Acc mulAcc(Limb a, Limb b) { return (Acc)a * b; }
+inline void accumMul(Acc& c, Limb a, Limb b) { c += (Acc)a * b; }
+inline void shrAcc(Acc& c) { c >>= modL; }
+inline Limb lowAcc(const Acc& c) { return (Limb)c; }
+#endif
+
+static const int limbBits = sizeof(Limb) * 8;
+static const Limb limbMask = (Limb)MASK;
+
+// y[L] = x[N] (nonnegative units) in signed limbs
+template<int N>
+void toLimb(Limb *y, const Unit *x)
+{
+	const int L = InvModT<N>::L;
+	for (int i = 0; i < L; i++) {
+		int bit = modL * i;
+		int idx = bit / MCL_UNIT_BIT_SIZE, off = bit % MCL_UNIT_BIT_SIZE;
+		Unit lo = idx < N ? x[idx] >> off : 0;
+		Unit hi = (off > MCL_UNIT_BIT_SIZE - modL && idx + 1 < N) ? x[idx + 1] << (MCL_UNIT_BIT_SIZE - off) : 0;
+		y[i] = (Limb)((lo | hi) & (Unit)limbMask);
+	}
+}
+
+// x[N] = y[L] (normalized nonnegative limbs, < 2^(UnitBitSize N))
+template<int N>
+void fromLimb(Unit *x, const Limb *y)
+{
+	const int L = InvModT<N>::L;
+	for (int i = 0; i < N; i++) x[i] = 0;
+	for (int i = 0; i < L; i++) {
+		int bit = modL * i;
+		int idx = bit / MCL_UNIT_BIT_SIZE, off = bit % MCL_UNIT_BIT_SIZE;
+		Unit v = (Unit)y[i];
+		if (idx < N) x[idx] |= v << off;
+		if (off > MCL_UNIT_BIT_SIZE - modL && idx + 1 < N) x[idx + 1] |= v >> (MCL_UNIT_BIT_SIZE - off);
+	}
+}
+
+template<int L>
+bool isZero(const Limb *x)
+{
+	Limb r = 0;
+	for (int i = 0; i < L; i++) r |= x[i];
+	return r == 0;
+}
+
+// (f, g) = ((u f + v g) >> modL, (q f + r g) >> modL)
+template<int L>
+void update_fg(Limb *f, Limb *g, const Quad& t)
+{
+	const Limb u = (Limb)t.u, v = (Limb)t.v, q = (Limb)t.q, r = (Limb)t.r;
+	Limb fi = f[0], gi = g[0];
+	Acc cf = mulAcc(u, fi); accumMul(cf, v, gi);
+	Acc cg = mulAcc(q, fi); accumMul(cg, r, gi);
+	// the low modL bits are zero
+	shrAcc(cf);
+	shrAcc(cg);
+	for (int i = 1; i < L; i++) {
+		fi = f[i];
+		gi = g[i];
+		accumMul(cf, u, fi); accumMul(cf, v, gi);
+		accumMul(cg, q, fi); accumMul(cg, r, gi);
+		f[i - 1] = lowAcc(cf) & limbMask; shrAcc(cf);
+		g[i - 1] = lowAcc(cg) & limbMask; shrAcc(cg);
+	}
+	f[L - 1] = lowAcc(cf);
+	g[L - 1] = lowAcc(cg);
 }
 
 /*
-	z[W+1] = x[W] * a + y[W] * b (x, y : two's complement, a, b : signed units)
-	The result fits in W+1 units, so the low W+1 units of the unsigned
-	products are corrected as
-	x a = x_u a_u - [x < 0] (a_u << (W UnitBitSize)) - [a < 0] (x_u << UnitBitSize)
-	mod 2^((W+1) UnitBitSize) (the same for y b). The two (x_u << UnitBitSize)
-	corrections are summed before the subtraction (mod 2^(W UnitBitSize) suffices).
+	d = (u d + v e + md M) >> modL, e = (q d + r e + me M) >> modL
+	md = ud - ((Mi (u d + v e) + ud) mod 2^modL) (in (ud - 2^modL, ud], ud = u [d < 0] + v [e < 0]),
+	so u d + v e + md M = 0 mod 2^modL and -2M < d, e < M is kept.
 */
-template<int W>
-void mulAdd2(Unit *z, const Unit *x, Unit a, const Unit *y, Unit b)
+template<int L>
+void update_de(const Limb *M, Unit Mi, Limb *d, Limb *e, const Quad& t)
 {
-	z[W] = mcl::bint::mulUnitT<W>(z, x, a);
-	z[W] += mcl::bint::mulUnitAddT<W>(z, y, b);
-	z[W] -= (a & signMask(x[W - 1])) + (b & signMask(y[W - 1]));
-	const Unit ma = signMask(a);
-	const Unit mb = signMask(b);
-	Unit s[W], t[W];
-	for (int i = 0; i < W; i++) {
-		s[i] = x[i] & ma;
-		t[i] = y[i] & mb;
+	const Limb u = (Limb)t.u, v = (Limb)t.v, q = (Limb)t.q, r = (Limb)t.r;
+	const Limb d0 = d[0], e0 = e[0];
+	const Limb sd = d[L - 1] >> (limbBits - 1);
+	const Limb se = e[L - 1] >> (limbBits - 1);
+	Limb md = (u & sd) + (v & se);
+	Limb me = (q & sd) + (r & se);
+	Acc cd = mulAcc(u, d0); accumMul(cd, v, e0);
+	Acc ce = mulAcc(q, d0); accumMul(ce, r, e0);
+	md -= (Limb)((Mi * (Unit)lowAcc(cd) + (Unit)md) & (Unit)limbMask);
+	me -= (Limb)((Mi * (Unit)lowAcc(ce) + (Unit)me) & (Unit)limbMask);
+	accumMul(cd, M[0], md);
+	accumMul(ce, M[0], me);
+	// the low modL bits are zero
+	shrAcc(cd);
+	shrAcc(ce);
+	for (int i = 1; i < L; i++) {
+		accumMul(cd, u, d[i]); accumMul(cd, v, e[i]); accumMul(cd, M[i], md);
+		accumMul(ce, q, d[i]); accumMul(ce, r, e[i]); accumMul(ce, M[i], me);
+		d[i - 1] = lowAcc(cd) & limbMask; shrAcc(cd);
+		e[i - 1] = lowAcc(ce) & limbMask; shrAcc(ce);
 	}
-	mcl::bint::addT<W>(s, s, t);
-	mcl::bint::subT<W>(z + 1, z + 1, s);
+	d[L - 1] = lowAcc(cd);
+	e[L - 1] = lowAcc(ce);
 }
 
-// z[W+1] += x[W] * y (x >= 0 (M), y : signed unit)
-template<int W>
-void mulAddNonNeg(Unit *z, const Unit *x, Unit y)
+// r in (-2M, M) -> [0, M) (negated if sign < 0), cf. secp256k1_modinv64_normalize_62
+template<int L>
+void normalize(Limb *r, Limb sign, const Limb *M)
 {
-	z[W] += mcl::bint::mulUnitAddT<W>(z, x, y);
-	const Unit m = signMask(y);
-	Unit t[W];
-	for (int i = 0; i < W; i++) t[i] = x[i] & m;
-	mcl::bint::subT<W>(z + 1, z + 1, t);
-}
-
-// y[W] = x[W+1] >> modL (arithmetic shift ; the result fits in W units)
-template<int W>
-void shr(Unit *y, const Unit *x)
-{
-	// the top 3 bits of x[W] must be equal so that the result fits in W units
-	assert((x[W] >> (UnitBitSize - 3)) == 0 || (x[W] >> (UnitBitSize - 3)) == 7);
-	for (int i = 0; i < W; i++) {
-		y[i] = (x[i] >> modL) | (x[i + 1] << (UnitBitSize - modL));
+	Limb cond = r[L - 1] >> (limbBits - 1);
+	for (int i = 0; i < L; i++) r[i] += M[i] & cond;
+	cond = sign >> (limbBits - 1);
+	for (int i = 0; i < L; i++) r[i] = (r[i] ^ cond) - cond;
+	for (int i = 0; i < L - 1; i++) {
+		r[i + 1] += r[i] >> modL;
+		r[i] &= limbMask;
+	}
+	cond = r[L - 1] >> (limbBits - 1);
+	for (int i = 0; i < L; i++) r[i] += M[i] & cond;
+	for (int i = 0; i < L - 1; i++) {
+		r[i + 1] += r[i] >> modL;
+		r[i] &= limbMask;
 	}
 }
 
-template<int W>
-void update_fg(Unit *f, Unit *g, const Quad& t)
-{
-	Unit f1[W + 1], g1[W + 1];
-	mulAdd2<W>(f1, f, t.u, g, t.v);
-	mulAdd2<W>(g1, f, t.q, g, t.r);
-	shr<W>(f, f1);
-	shr<W>(g, g1);
-}
-
-/*
-	d = (d u + e v + sd M) >> modL, e = (d q + e r + se M) >> modL
-	sd = ud - ((Mi cd) mod 2^modL) (in (ud - 2^modL, ud], ud = u [d < 0] + v [e < 0],
-	cd = the low unit of d u + e v + M ud), so d u + e v + sd M = 0 mod 2^modL and
-	-2M < d, e < M is kept (cf. secp256k1_modinv64_update_de_62).
-*/
-template<int N, int W>
-void update_de(const InvModT<N>& im, Unit *d, Unit *e, const Quad& t)
-{
-	const Unit *M = im.M;
-	const Unit md = signMask(d[W - 1]);
-	const Unit me = signMask(e[W - 1]);
-	Unit ud = (t.u & md) + (t.v & me);
-	Unit ue = (t.q & md) + (t.r & me);
-	Unit d1[W + 1], e1[W + 1];
-	mulAdd2<W>(d1, d, t.u, e, t.v);
-	mulAdd2<W>(e1, d, t.q, e, t.r);
-	// the low unit of a two's complement value is its value mod 2^UnitBitSize
-	Unit di = d1[0] + im.lowM * ud;
-	Unit ei = e1[0] + im.lowM * ue;
-	Unit sd = ud - ((im.Mi * di) & Unit(MASK));
-	Unit se = ue - ((im.Mi * ei) & Unit(MASK));
-	mulAddNonNeg<W>(d1, M, sd);
-	mulAddNonNeg<W>(e1, M, se);
-	shr<W>(d, d1);
-	shr<W>(e, e1);
-}
-
-// v += M if v < 0
-template<int W>
-void addMifNeg(Unit *v, const Unit *M)
-{
-	const Unit m = signMask(v[W - 1]);
-	Unit t[W];
-	for (int i = 0; i < W; i++) t[i] = M[i] & m;
-	mcl::bint::addT<W>(v, v, t);
-}
-
-// v in (-2M, M) -> [0, M) (negated if minus)
-template<int W>
-void normalize(const Unit *M, Unit *v, bool minus)
-{
-	addMifNeg<W>(v, M);
-	if (minus) {
-		Unit zero[W];
-		mcl::bint::clearT<W>(zero);
-		mcl::bint::subT<W>(v, zero, v);
-	}
-	addMifNeg<W>(v, M);
-}
-
-template<int N, int W>
-void exec(const InvModT<N>& im, Unit *py, const Unit *px)
-{
-	Sint eta = -1;
-	Unit f[W], g[W], d[W], e[W];
-	mcl::bint::copyT<W>(f, im.M);
-	mcl::bint::copyT<N>(g, px);
-	for (int i = N; i < W; i++) g[i] = 0;
-	mcl::bint::clearT<W>(d);
-	mcl::bint::clearT<W>(e); e[0] = 1;
-	Quad t;
-	while (!mcl::bint::isZeroT<W>(g)) {
-		Unit fLow = f[0] & Unit(MASK);
-		Unit gLow = g[0] & Unit(MASK);
-		eta = divsteps_n_matrix(t, eta, fLow, gLow);
-		update_fg<W>(f, g, t);
-		update_de<N, W>(im, d, e, t);
-	}
-	normalize<W>(im.M, d, (f[W - 1] >> (UnitBitSize - 1)) != 0);
-	mcl::bint::copyT<N>(py, d);
-}
-
-} // mcl::inv::twos
-
+// y[N] = x[N]^-1 mod M (0 if x = 0) ; y = x is allowed
 template<int N>
 void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 {
-	if (im.wide) {
-		twos::exec<N, N + 1>(im, py, px);
-	} else {
-		twos::exec<N, N>(im, py, px);
+	const int L = InvModT<N>::L;
+	Sint eta = -1;
+	Limb f[L], g[L], d[L], e[L];
+	memcpy(f, im.M, sizeof(f));
+	toLimb<N>(g, px);
+	memset(d, 0, sizeof(d));
+	memset(e, 0, sizeof(e));
+	e[0] = 1;
+	Quad t;
+	while (!isZero<L>(g)) {
+		// the low modL bits of f and g are the low limbs
+		eta = divsteps_n_matrix(t, eta, (Unit)f[0], (Unit)g[0]);
+		update_fg<L>(f, g, t);
+		update_de<L>(im.M, im.Mi, d, e, t);
 	}
+	normalize<L>(d, f[L - 1], im.M);
+	fromLimb<N>(py, d);
 }
 
 // returns false if x does not fit in N units
@@ -252,16 +311,15 @@ bool exec(const InvModT<N>& im, mpz_class& y, const mpz_class& x)
 template<int N>
 bool init(InvModT<N>& invMod, const mpz_class& mM)
 {
+	Unit M[N];
 	bool b;
-	mcl::gmp::getArray(&b, invMod.M, N, mM);
+	mcl::gmp::getArray(&b, M, N, mM);
 	if (!b) return false;
-	invMod.M[N] = 0;
-	invMod.lowM = invMod.M[0];
+	toLimb<N>(invMod.M, M);
 	mpz_class inv;
 	mpz_class mod = mpz_class(1) << modL;
 	mcl::gmp::invMod(inv, mM, mod);
 	invMod.Mi = mcl::gmp::getUnit(inv, 0) & MASK;
-	invMod.wide = mcl::gmp::getBitSize(mM) > UnitBitSize * N - 2;
 	return true;
 }
 

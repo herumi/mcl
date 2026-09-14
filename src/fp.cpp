@@ -315,16 +315,12 @@ void setOp(Op& op)
 	op.fp_isZero = bint::isZeroT<N, Unit>;
 	op.fp_clear = bint::clearT<N>;
 	op.fp_copy = bint::copyT<N>;
-#if 1
 	{
 		// op.mp fits in N units by construction
 		bool b = mcl::inv::init(*reinterpret_cast<mcl::inv::InvModT<N>*>(op.im), op.mp);
 		assert(b); (void)b;
 	}
 	op.fp_invOp = fp_invMod<N>;
-#else
-	op.fp_invOp = fp_invOpC;
-#endif
 	op.fp_mulUnit = op.modp.N > 0 ? mulUnitModT<N> : mulUnitModDivT<N>; // modp.init() is called before setOp()
 	op.fp_shr1 = shr1T<N>;
 	op.fp_neg = negT<N>;
