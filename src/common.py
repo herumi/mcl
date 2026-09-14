@@ -583,7 +583,7 @@ def gen_fixed_fp_add(name, mont, dataVar):
   pz = IntPtr(unit)
   px = IntPtr(unit)
   py = IntPtr(unit)
-  with Function(name, Void, pz, px, py, private=False):
+  with Function(name, Void, pz, px, py, private=False) as f:
     pp = bitcast(dataVar, unit)
     # volatile: keep the operand loads unfused so store-forwarded inputs
     # (common in dependency chains) do not pay the folded-load latency.
@@ -593,6 +593,7 @@ def gen_fixed_fp_add(name, mont, dataVar):
     x = emit_fp_add(unit, x, y, p, mont.isFullBit)
     storeN(x, pz)
     ret(Void)
+  return f
 
 
 # Fp2 add: both components (the second at offset units) with one load of p
@@ -603,7 +604,7 @@ def gen_fixed_fp2_add(name, mont, dataVar, offset):
   pz = IntPtr(unit)
   px = IntPtr(unit)
   py = IntPtr(unit)
-  with Function(name, Void, pz, px, py, private=False):
+  with Function(name, Void, pz, px, py, private=False) as f:
     pp = bitcast(dataVar, unit)
     p = loadN(pp, N)
     for i in range(2):
@@ -612,6 +613,7 @@ def gen_fixed_fp2_add(name, mont, dataVar, offset):
       x = emit_fp_add(unit, x, y, p, mont.isFullBit)
       storeN(x, pz, offset=i*offset)
     ret(Void)
+  return f
 
 
 # Writable {zero, p} table for the sub reduction. Layout is
@@ -743,34 +745,18 @@ def gen_fixed_fp2_neg(name, mont, dataVar, offset):
     ret(Void)
 
 
-# y = 2x mod p (= add(x, x)); the components at offset i*offset
-def emit_fixed_mul2(mont, py, px, p, offset, n):
-  N = mont.N
-  for i in range(n):
-    x = loadN(px, N, offset=i*offset)
-    v = emit_fp_add(mont.unit, x, x, p, mont.isFullBit)
-    storeN(v, py, offset=i*offset)
-
-
-def gen_fixed_fp_mul2(name, mont, dataVar):
+# y = 2x mod p as a call to add(y, x, x) (a tail call after clang), like
+# gen_fixed_sqr. An inline `add x, x` is canonicalized by LLVM to `shl 1`
+# and lowered on aarch64 to extr/lsl instead of the adds chain of add, and
+# that was 13% (Fp) / 30% (Fp2) slower on Apple M4 (mcl-ff memo.md 2026-09-14).
+# addF is the fixed add of Fp (gen_fixed_fp_add) or Fp2 (gen_fixed_fp2_add).
+def gen_fixed_mul2(name, mont, addF):
   unit = mont.unit
   resetGlobalIdx()
   py = IntPtr(unit)
   px = IntPtr(unit)
   with Function(name, Void, py, px, private=False):
-    p = loadN(bitcast(dataVar, unit), mont.N)
-    emit_fixed_mul2(mont, py, px, p, 0, 1)
-    ret(Void)
-
-
-def gen_fixed_fp2_mul2(name, mont, dataVar, offset):
-  unit = mont.unit
-  resetGlobalIdx()
-  py = IntPtr(unit)
-  px = IntPtr(unit)
-  with Function(name, Void, py, px, private=False):
-    p = loadN(bitcast(dataVar, unit), mont.N)
-    emit_fixed_mul2(mont, py, px, p, offset, 2)
+    call(addF, py, px, px)
     ret(Void)
 
 
@@ -857,14 +843,17 @@ def gen_fixed_mod(name, mont, dataVar, rpVar, mulUnit):
 
 
 # mulPre: pz[2N] = px[N] * py[N] (no reduction); the schoolbook body is
-# emit_mulPre (shared with mclb_mul of gen_bint.py).
+# emit_mulPre (shared with mclb_mul of gen_bint.py), so the generated code is
+# the same as mclb_mul{N} of bint{unit}.ll. It is private: Op keeps
+# fpDbl_mulPre = bint::get_mul(N) (mclb_mul{N}, or the mulx asm on x64) and
+# this one is only called from the fixed fp2_mul.
 def gen_fixed_mulPre(name, mont, mulUnit):
   unit = mont.unit
   resetGlobalIdx()
   pz = IntPtr(unit)
   px = IntPtr(unit)
   py = IntPtr(unit)
-  with Function(name, Void, pz, px, py, private=False) as f:
+  with Function(name, Void, pz, px, py, private=True) as f:
     emit_mulPre(unit, mont.N, pz, px, py, mulUnit)
     ret(Void)
   return f
@@ -882,6 +871,7 @@ def gen_fixed_mulPre(name, mont, mulUnit):
 # full-width adds clang keeps 2N-limb values live and spills heavily.
 # Finally double the accumulator (each cross term appears twice by symmetry)
 # and add the diagonal squares x[i]^2, which tile the full 2N limbs exactly.
+# Used by mclb_sqr{N} (gen_bint.py, N <= 6) and the fixed sqr experiments of mcl-ff.
 def sqrPre_raw(unit, x, N):
   unit2 = unit * 2
   bit2 = unit * N * 2
@@ -902,19 +892,6 @@ def sqrPre_raw(unit, x, N):
   diag = pack([mul(zext(x[i], unit2), zext(x[i], unit2)) for i in range(N)])
   z = add(z, diag)
   return z
-
-
-def gen_fixed_sqrPre(name, mont):
-  unit = mont.unit
-  N = mont.N
-  resetGlobalIdx()
-  pz = IntPtr(unit)
-  px = IntPtr(unit)
-  with Function(name, Void, pz, px, private=False) as f:
-    x = [load(getelementptr(px, i)) for i in range(N)]
-    storeN(sqrPre_raw(unit, x, N), pz)
-    ret(Void)
-  return f
 
 
 # sqr: z = x^2 R^-1 mod p as a call to mul(z, x, x). The fused variant
@@ -1031,10 +1008,11 @@ def gen_fixed_fp2_sqr(name, mont, mulF, dataVar, offset):
 # (e.g. 'mcl_c5_fp_'): the globals {pre}p and {pre}rp (= -p^-1 mod 2^unit),
 # {pre}mulUnit (private) and
 #   {pre}add, {pre}sub, {pre}neg, {pre}mul2, {pre}mul, {pre}sqr,
-#   {preDbl}mod, {preDbl}mulPre, {preDbl}sqrPre
+#   {preDbl}mod
+# (no mulPre / sqrPre: they do not depend on p, Op uses mclb_mul{N} / mclb_sqr{N})
 # and if hasFp2 (the Fp of a pairing curve with Fp2 = Fp[i]/(i^2 + 1) and
 # xi = 1 + i, sizeof(Fp) = offset units):
-#   {pre}sub_tbl, {preDbl}add, {preDbl}sub,
+#   {pre}sub_tbl, {preDbl}mulPre (private, used by {pre2}mul), {preDbl}add, {preDbl}sub,
 #   {pre2}add, {pre2}sub, {pre2}neg, {pre2}mul2, {pre2}mul, {pre2}sqr, {pre2}mul_xi
 # where preDbl = pre[:-1] + 'Dbl_' and pre2 = pre[:-1] + '2_'
 # (mcl_c5_fpDbl_mod, mcl_c5_fp2_mul, ... : the names of the Op slots).
@@ -1055,25 +1033,24 @@ def gen_fixed(pre, unit, p, offset, hasFp2, mulPos, extractHigh):
   # alwaysinline: for N >= 8 clang stops inlining mulUnit into mulPre and the
   # 2N call round-trips cost ~1.7x in throughput (mcl-ff memo.md 2026-08-31)
   mulUnit = gen_mulPv(f'{pre}mulUnit', unit, N, mulPos, extractHigh, private=True, alwaysinline=True)
-  gen_fixed_fp_add(f'{pre}add', mont, dataVar)
+  addF = gen_fixed_fp_add(f'{pre}add', mont, dataVar)
   gen_fixed_fp_sub(f'{pre}sub', mont, dataVar)
   gen_fixed_fp_neg(f'{pre}neg', mont, dataVar)
-  gen_fixed_fp_mul2(f'{pre}mul2', mont, dataVar)
+  gen_fixed_mul2(f'{pre}mul2', mont, addF)
   mulF = gen_fixed_mul(f'{pre}mul', mont, dataVar, rpVar, mulUnit)
   gen_fixed_sqr(f'{pre}sqr', mont, mulF)
   modF = gen_fixed_mod(f'{preDbl}mod', mont, dataVar, rpVar, mulUnit)
-  mulPreF = gen_fixed_mulPre(f'{preDbl}mulPre', mont, mulUnit)
-  gen_fixed_sqrPre(f'{preDbl}sqrPre', mont)
   if not hasFp2:
     return
   assert not mont.isFullBit and mont.nocarry
   subTbl = makeSubTbl(f'{pre}sub_tbl', mont)
+  mulPreF = gen_fixed_mulPre(f'{preDbl}mulPre', mont, mulUnit)
   gen_fixed_fpDbl_add(f'{preDbl}add', mont, dataVar)
   gen_fixed_fpDbl_sub(f'{preDbl}sub', mont, dataVar)
-  gen_fixed_fp2_add(f'{pre2}add', mont, dataVar, offset)
+  add2F = gen_fixed_fp2_add(f'{pre2}add', mont, dataVar, offset)
   gen_fixed_fp2_sub(f'{pre2}sub', mont, dataVar, offset)
   gen_fixed_fp2_neg(f'{pre2}neg', mont, dataVar, offset)
-  gen_fixed_fp2_mul2(f'{pre2}mul2', mont, dataVar, offset)
+  gen_fixed_mul2(f'{pre2}mul2', mont, add2F)
   gen_fixed_fp2_mul(f'{pre2}mul', mont, mulPreF, modF, subTbl, offset)
   gen_fixed_fp2_sqr(f'{pre2}sqr', mont, mulF, dataVar, offset)
   gen_fixed_fp2_mul_xi(f'{pre2}mul_xi', mont, dataVar, offset)

@@ -448,13 +448,10 @@ static void setLLVMFixedCode(Op& op)
 		}
 	} else if (isSamePrime(op, mcl_c5_fr_p, 256)) {
 		set_llvm_c5_fr(op);
-	} else {
-		return;
 	}
-#if MCL_BINT_ASM_X64 == 1
-	// the hand-written mulx asm mclb_mul{N} is faster than the LLVM mulPre on x64 (18.6 vs 26.0 clk for N = 6)
-	op.fpDbl_mulPre = bint::get_mul(op.N);
-#endif
+	// fpDbl_mulPre / fpDbl_sqrPre stay bint::get_mul(N) / get_sqr(N): they do
+	// not depend on p (mclb_sqr{N} has the same anti-diagonal schedule as the
+	// mcl-ff sqrPre), and the mulx asm is faster on x64 (18.6 vs 26.0 clk for N = 6)
 }
 #endif
 

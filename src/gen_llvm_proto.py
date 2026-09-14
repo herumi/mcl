@@ -100,8 +100,6 @@ c5_fp_tbl = [
 	('fp_mulA_', '_mul', void3u),
 	('fp_sqrA_', '_sqr', void2u),
 	('fpDbl_modA_', 'Dbl_mod', void2u),
-	('fpDbl_mulPre', 'Dbl_mulPre', void3u),
-	('fpDbl_sqrPre', 'Dbl_sqrPre', void2u),
 ]
 # only for Fp (hasFp2 of gen_fixed)
 c5_fpDbl_tbl = [

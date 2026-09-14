@@ -390,8 +390,6 @@ void mcl_c5_fp_mul2(Unit*, const Unit*);
 void mcl_c5_fp_mul(Unit*, const Unit*, const Unit*);
 void mcl_c5_fp_sqr(Unit*, const Unit*);
 void mcl_c5_fpDbl_mod(Unit*, const Unit*);
-void mcl_c5_fpDbl_mulPre(Unit*, const Unit*, const Unit*);
-void mcl_c5_fpDbl_sqrPre(Unit*, const Unit*);
 void mcl_c5_fpDbl_add(Unit*, const Unit*, const Unit*);
 void mcl_c5_fpDbl_sub(Unit*, const Unit*, const Unit*);
 void mcl_c5_fp2_add(Unit*, const Unit*, const Unit*);
@@ -409,8 +407,6 @@ void mcl_c5_fr_mul2(Unit*, const Unit*);
 void mcl_c5_fr_mul(Unit*, const Unit*, const Unit*);
 void mcl_c5_fr_sqr(Unit*, const Unit*);
 void mcl_c5_frDbl_mod(Unit*, const Unit*);
-void mcl_c5_frDbl_mulPre(Unit*, const Unit*, const Unit*);
-void mcl_c5_frDbl_sqrPre(Unit*, const Unit*);
 }
 // register them to op (the caller checks that op.p is the prime of the functions)
 static inline void set_llvm_c5_fp(Op& op)
@@ -422,8 +418,6 @@ static inline void set_llvm_c5_fp(Op& op)
 	op.fp_mulA_ = mcl_c5_fp_mul;
 	op.fp_sqrA_ = mcl_c5_fp_sqr;
 	op.fpDbl_modA_ = mcl_c5_fpDbl_mod;
-	op.fpDbl_mulPre = mcl_c5_fpDbl_mulPre;
-	op.fpDbl_sqrPre = mcl_c5_fpDbl_sqrPre;
 	op.fpDbl_addA_ = mcl_c5_fpDbl_add;
 	op.fpDbl_subA_ = mcl_c5_fpDbl_sub;
 	op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
@@ -448,8 +442,6 @@ static inline void set_llvm_c5_fr(Op& op)
 	op.fp_mulA_ = mcl_c5_fr_mul;
 	op.fp_sqrA_ = mcl_c5_fr_sqr;
 	op.fpDbl_modA_ = mcl_c5_frDbl_mod;
-	op.fpDbl_mulPre = mcl_c5_frDbl_mulPre;
-	op.fpDbl_sqrPre = mcl_c5_frDbl_sqrPre;
 	op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_); // used in toMont/fromMont
 }
 #endif
