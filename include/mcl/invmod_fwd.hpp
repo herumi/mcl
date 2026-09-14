@@ -25,8 +25,8 @@ static const INT MASK = modN - 1;
 
 template<int N>
 struct SintT {
-	bool sign;
 	Unit v[N];
+	bool sign;
 };
 
 template<int N>
