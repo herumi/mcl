@@ -710,17 +710,30 @@ def gen_fixed_fp2_sub(name, mont, dataVar, offset, useMask=True, subTbl=None):
     ret(Void)
 
 
-# y = -x mod p = (x == 0) ? 0 : p - x (the same as negT of fp.cpp and
-# gen_fp_neg of fp_generator.hpp); the components at offset i*offset
-def emit_fixed_neg(mont, py, px, p, offset, n):
+# y = -x mod p = (x == 0) ? 0 : p - x (the same as negT of low_func.hpp and
+# gen_fp_neg of fp_generator.hpp); the components at offset i*offset.
+# A branch, not a select: the select version always ran the sub chain and
+# 6 csel and was 1.56x slower than negT on Apple M4 (the operand is almost
+# never zero, so the branch is predicted). p is loaded inside the nonzero
+# block so that LLVM does not speculate the block back into a select.
+def emit_fixed_neg(mont, py, px, pp, offset, n):
   unit = mont.unit
   N = mont.N
   for i in range(n):
+    zeroL = Label()
+    negL = Label()
+    doneL = Label()
     x = loadN(px, N, offset=i*offset)
     c = icmp(eq, x, Imm(0, mont.bit))
-    v = sub(p, x)
-    v = select(c, x, v)
-    storeN(v, py, offset=i*offset)
+    br(c, zeroL, negL)
+    L(negL)
+    p = loadN(pp, N)
+    storeN(sub(p, x), py, offset=i*offset)
+    br(doneL)
+    L(zeroL)
+    storeN(x, py, offset=i*offset)
+    br(doneL)
+    L(doneL)
 
 
 def gen_fixed_fp_neg(name, mont, dataVar):
@@ -729,8 +742,7 @@ def gen_fixed_fp_neg(name, mont, dataVar):
   py = IntPtr(unit)
   px = IntPtr(unit)
   with Function(name, Void, py, px, private=False):
-    p = loadN(bitcast(dataVar, unit), mont.N)
-    emit_fixed_neg(mont, py, px, p, 0, 1)
+    emit_fixed_neg(mont, py, px, bitcast(dataVar, unit), 0, 1)
     ret(Void)
 
 
@@ -740,8 +752,7 @@ def gen_fixed_fp2_neg(name, mont, dataVar, offset):
   py = IntPtr(unit)
   px = IntPtr(unit)
   with Function(name, Void, py, px, private=False):
-    p = loadN(bitcast(dataVar, unit), mont.N)
-    emit_fixed_neg(mont, py, px, p, offset, 2)
+    emit_fixed_neg(mont, py, px, bitcast(dataVar, unit), offset, 2)
     ret(Void)
 
 

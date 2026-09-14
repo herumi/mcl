@@ -3040,15 +3040,22 @@ ret void
 define void @mcl_c5_fp_neg(i64* noalias %r1, i64* noalias %r2)
 {
 %r3 = bitcast i384 *@mcl_c5_fp_p to i64*
-%r4 = bitcast i64* %r3 to i384*
+%r4 = bitcast i64* %r2 to i384*
 %r5 = load i384, i384* %r4
-%r6 = bitcast i64* %r2 to i384*
-%r7 = load i384, i384* %r6
-%r8 = icmp eq i384 %r7, 0
-%r9 = sub i384 %r5, %r7
-%r10 = select i1 %r8, i384 %r7, i384 %r9
+%r6 = icmp eq i384 %r5, 0
+br i1 %r6, label %L38, label %L37
+L37:
+%r7 = bitcast i64* %r3 to i384*
+%r8 = load i384, i384* %r7
+%r9 = sub i384 %r8, %r5
+%r10 = bitcast i64* %r1 to i384*
+store i384 %r9, i384* %r10
+br label %L39
+L38:
 %r11 = bitcast i64* %r1 to i384*
-store i384 %r10, i384* %r11
+store i384 %r5, i384* %r11
+br label %L39
+L39:
 ret void
 }
 define void @mcl_c5_fp_mul2(i64* noalias %r1, i64* noalias %r2)
@@ -3435,24 +3442,41 @@ ret void
 define void @mcl_c5_fp2_neg(i64* noalias %r1, i64* noalias %r2)
 {
 %r3 = bitcast i384 *@mcl_c5_fp_p to i64*
-%r4 = bitcast i64* %r3 to i384*
+%r4 = bitcast i64* %r2 to i384*
 %r5 = load i384, i384* %r4
-%r6 = bitcast i64* %r2 to i384*
-%r7 = load i384, i384* %r6
-%r8 = icmp eq i384 %r7, 0
-%r9 = sub i384 %r5, %r7
-%r10 = select i1 %r8, i384 %r7, i384 %r9
+%r6 = icmp eq i384 %r5, 0
+br i1 %r6, label %L41, label %L40
+L40:
+%r7 = bitcast i64* %r3 to i384*
+%r8 = load i384, i384* %r7
+%r9 = sub i384 %r8, %r5
+%r10 = bitcast i64* %r1 to i384*
+store i384 %r9, i384* %r10
+br label %L42
+L41:
 %r11 = bitcast i64* %r1 to i384*
-store i384 %r10, i384* %r11
+store i384 %r5, i384* %r11
+br label %L42
+L42:
 %r12 = getelementptr i64, i64* %r2, i32 6
 %r13 = bitcast i64* %r12 to i384*
 %r14 = load i384, i384* %r13
 %r15 = icmp eq i384 %r14, 0
-%r16 = sub i384 %r5, %r14
-%r17 = select i1 %r15, i384 %r14, i384 %r16
-%r18 = getelementptr i64, i64* %r1, i32 6
-%r19 = bitcast i64* %r18 to i384*
-store i384 %r17, i384* %r19
+br i1 %r15, label %L44, label %L43
+L43:
+%r16 = bitcast i64* %r3 to i384*
+%r17 = load i384, i384* %r16
+%r18 = sub i384 %r17, %r14
+%r19 = getelementptr i64, i64* %r1, i32 6
+%r20 = bitcast i64* %r19 to i384*
+store i384 %r18, i384* %r20
+br label %L45
+L44:
+%r21 = getelementptr i64, i64* %r1, i32 6
+%r22 = bitcast i64* %r21 to i384*
+store i384 %r14, i384* %r22
+br label %L45
+L45:
 ret void
 }
 define void @mcl_c5_fp2_mul2(i64* noalias %r1, i64* noalias %r2)
@@ -3794,15 +3818,22 @@ ret void
 define void @mcl_c5_fr_neg(i64* noalias %r1, i64* noalias %r2)
 {
 %r3 = bitcast i256 *@mcl_c5_fr_p to i64*
-%r4 = bitcast i64* %r3 to i256*
+%r4 = bitcast i64* %r2 to i256*
 %r5 = load i256, i256* %r4
-%r6 = bitcast i64* %r2 to i256*
-%r7 = load i256, i256* %r6
-%r8 = icmp eq i256 %r7, 0
-%r9 = sub i256 %r5, %r7
-%r10 = select i1 %r8, i256 %r7, i256 %r9
+%r6 = icmp eq i256 %r5, 0
+br i1 %r6, label %L47, label %L46
+L46:
+%r7 = bitcast i64* %r3 to i256*
+%r8 = load i256, i256* %r7
+%r9 = sub i256 %r8, %r5
+%r10 = bitcast i64* %r1 to i256*
+store i256 %r9, i256* %r10
+br label %L48
+L47:
 %r11 = bitcast i64* %r1 to i256*
-store i256 %r10, i256* %r11
+store i256 %r5, i256* %r11
+br label %L48
+L48:
 ret void
 }
 define void @mcl_c5_fr_mul2(i64* noalias %r1, i64* noalias %r2)
