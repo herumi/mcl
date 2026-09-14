@@ -124,14 +124,30 @@ void toMpz(mpz_class& y, const SintT<N2>& x)
 	if (x.sign) y = -y;
 }
 
+/*
+	modL divsteps on the low bits (f, g) as a matrix t (cf. secp256k1_modinv64_divsteps_62_var).
+	Each inner iteration cancels the low min(limit, 8) bits of g by adding
+	w f (w = g (-f^-1 mod 256) mod 2^limit), so it takes fewer iterations than
+	the 4-bit table version.
+*/
 static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 {
-	static const uint32_t tbl[] = { 15, 5, 3, 9, 7, 13, 11, 1 };
+	// negInv256[(f & 255) >> 1] = -f^-1 mod 256 for odd f
+	static const uint8_t negInv256[128] = {
+		255, 85, 51, 73, 199, 93, 59, 17, 15, 229, 195, 89, 215, 237, 203, 33,
+		31, 117, 83, 105, 231, 125, 91, 49, 47, 5, 227, 121, 247, 13, 235, 65,
+		63, 149, 115, 137, 7, 157, 123, 81, 79, 37, 3, 153, 23, 45, 11, 97,
+		95, 181, 147, 169, 39, 189, 155, 113, 111, 69, 35, 185, 55, 77, 43, 129,
+		127, 213, 179, 201, 71, 221, 187, 145, 143, 101, 67, 217, 87, 109, 75, 161,
+		159, 245, 211, 233, 103, 253, 219, 177, 175, 133, 99, 249, 119, 141, 107, 193,
+		191, 21, 243, 9, 135, 29, 251, 209, 207, 165, 131, 25, 151, 173, 139, 225,
+		223, 53, 19, 41, 167, 61, 27, 241, 239, 197, 163, 57, 183, 205, 171, 1,
+	};
 	Unit u = 1, v = 0, q = 0, r = 1;
 	int i = modL;
 	for (;;) {
-		INT zeros = g == 0 ? i : cybozu::bsf(g);
-		if (i < zeros) zeros = i;
+		// zeros = min(i, bsf(g)) (i if g == 0); bit i of the argument is set, so bsf is defined
+		INT zeros = cybozu::bsf(g | (~Unit(0) << i));
 		eta -= zeros;
 		i -= zeros;
 		g >>= zeros;
@@ -150,8 +166,9 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 			q = -u0;
 			r = -v0;
 		}
-		int limit = mcl::fp::min_<INT>(mcl::fp::min_<INT>(eta + 1, i), 4);
-		Unit w = (g * tbl[(f & 15)>>1]) & ((1u<<limit)-1);
+		// 1 <= limit <= modL ; the mask is the low min(limit, 8) bits
+		int limit = mcl::fp::min_<INT>(eta + 1, i);
+		Unit w = (g * negInv256[(f & 255) >> 1]) & ((Unit(-1) >> (UnitBitSize - limit)) & 255);
 		g += w * f;
 		q += w * u;
 		r += w * v;
@@ -242,8 +259,9 @@ void normalize(const InvModT<N>& im, SintT<N>& v, bool minus)
 	}
 }
 
+// sign-magnitude version (any M < 2^(UnitBitSize * N))
 template<int N>
-void exec(const InvModT<N>& im, Unit *py, const Unit *px)
+void execSM(const InvModT<N>& im, Unit *py, const Unit *px)
 {
 	INT eta = -1;
 	SintT<N> f = im.M, g, d, e;
@@ -261,6 +279,163 @@ void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 	}
 	normalize(im, d, f.sign);
 	mcl::bint::copyT<N>(py, d.v);
+}
+
+
+/*
+	two's complement version
+	f, g, d, e are N-unit two's complement values instead of SintT<N>, so
+	add/sub are plain addT/subT (no sign compare and branch as in _add).
+	It requires |d|, |e| < 2M (the safegcd invariant) to fit in a signed
+	N-unit value, i.e. M < 2^(UnitBitSize * N - 2) (see init).
+*/
+namespace twos {
+
+inline Unit signMask(Unit x)
+{
+	return Unit(0) - (x >> (UnitBitSize - 1));
+}
+
+/*
+	z[N+1] = x[N] * a + y[N] * b (x, y : two's complement, a, b : signed units)
+	The result fits in N+1 units, so the low N+1 units of the unsigned
+	products are corrected as
+	x a = x_u a_u - [x < 0] (a_u << (N UnitBitSize)) - [a < 0] (x_u << UnitBitSize)
+	mod 2^((N+1) UnitBitSize) (the same for y b). The two (x_u << UnitBitSize)
+	corrections are summed before the subtraction (mod 2^(N UnitBitSize) suffices).
+*/
+template<int N>
+void mulAdd2(Unit *z, const Unit *x, Unit a, const Unit *y, Unit b)
+{
+	z[N] = mcl::bint::mulUnitT<N>(z, x, a);
+	z[N] += mcl::bint::mulUnitAddT<N>(z, y, b);
+	z[N] -= (a & signMask(x[N - 1])) + (b & signMask(y[N - 1]));
+	const Unit ma = signMask(a);
+	const Unit mb = signMask(b);
+	Unit s[N], t[N];
+	for (int i = 0; i < N; i++) {
+		s[i] = x[i] & ma;
+		t[i] = y[i] & mb;
+	}
+	mcl::bint::addT<N>(s, s, t);
+	mcl::bint::subT<N>(z + 1, z + 1, s);
+}
+
+// z[N+1] += x[N] * y (x >= 0 (M), y : signed unit)
+template<int N>
+void mulAddNonNeg(Unit *z, const Unit *x, Unit y)
+{
+	z[N] += mcl::bint::mulUnitAddT<N>(z, x, y);
+	const Unit m = signMask(y);
+	Unit t[N];
+	for (int i = 0; i < N; i++) t[i] = x[i] & m;
+	mcl::bint::subT<N>(z + 1, z + 1, t);
+}
+
+// y[N] = x[N+1] >> modL (arithmetic shift ; the result fits in N units)
+template<int N>
+void shr(Unit *y, const Unit *x)
+{
+	// the top 3 bits of x[N] must be equal so that the result fits in N units
+	assert((x[N] >> (UnitBitSize - 3)) == 0 || (x[N] >> (UnitBitSize - 3)) == 7);
+	for (int i = 0; i < N; i++) {
+		y[i] = (x[i] >> modL) | (x[i + 1] << (UnitBitSize - modL));
+	}
+}
+
+template<int N>
+void update_fg(Unit *f, Unit *g, const Quad& t)
+{
+	Unit f1[N + 1], g1[N + 1];
+	mulAdd2<N>(f1, f, t.u, g, t.v);
+	mulAdd2<N>(g1, f, t.q, g, t.r);
+	shr<N>(f, f1);
+	shr<N>(g, g1);
+}
+
+template<int N>
+void update_de(const InvModT<N>& im, Unit *d, Unit *e, const Quad& t)
+{
+	const Unit *M = im.M.v;
+	const Unit md = signMask(d[N - 1]);
+	const Unit me = signMask(e[N - 1]);
+	Unit ud = (t.u & md) + (t.v & me);
+	Unit ue = (t.q & md) + (t.r & me);
+	Unit d1[N + 1], e1[N + 1];
+	// d = d * u + e * v
+	// e = d * q + e * r
+	mulAdd2<N>(d1, d, t.u, e, t.v);
+	mulAdd2<N>(e1, d, t.q, e, t.r);
+	// the low unit of a two's complement value is getLow
+	Unit di = d1[0] + im.lowM * ud;
+	Unit ei = e1[0] + im.lowM * ue;
+	ud -= im.Mi * di;
+	ue -= im.Mi * ei;
+	// sd = (ud mod 2^modL) in [-half, half) as a two's complement unit
+	Unit sd = ud & Unit(MASK);
+	Unit se = ue & Unit(MASK);
+	sd -= (sd & Unit(half)) << 1;
+	se -= (se & Unit(half)) << 1;
+	// d = (d + M * sd) >> modL
+	// e = (e + M * se) >> modL
+	mulAddNonNeg<N>(d1, M, sd);
+	mulAddNonNeg<N>(e1, M, se);
+	shr<N>(d, d1);
+	shr<N>(e, e1);
+}
+
+// v += M if v < 0
+template<int N>
+void addMifNeg(Unit *v, const Unit *M)
+{
+	const Unit m = signMask(v[N - 1]);
+	Unit t[N];
+	for (int i = 0; i < N; i++) t[i] = M[i] & m;
+	mcl::bint::addT<N>(v, v, t);
+}
+
+template<int N>
+void normalize(const InvModT<N>& im, Unit *v, bool minus)
+{
+	const Unit *M = im.M.v;
+	addMifNeg<N>(v, M);
+	if (minus) {
+		mcl::bint::subT<N>(v, M, v);
+	}
+	addMifNeg<N>(v, M);
+}
+
+template<int N>
+void exec(const InvModT<N>& im, Unit *py, const Unit *px)
+{
+	INT eta = -1;
+	Unit f[N], g[N], d[N], e[N];
+	mcl::bint::copyT<N>(f, im.M.v);
+	mcl::bint::copyT<N>(g, px);
+	mcl::bint::clearT<N>(d);
+	mcl::bint::clearT<N>(e); e[0] = 1;
+	Quad t;
+	while (!mcl::bint::isZeroT<N>(g)) {
+		Unit fLow = f[0] & Unit(MASK);
+		Unit gLow = g[0] & Unit(MASK);
+		eta = divsteps_n_matrix(t, eta, fLow, gLow);
+		update_fg<N>(f, g, t);
+		update_de<N>(im, d, e, t);
+	}
+	normalize<N>(im, d, (f[N - 1] >> (UnitBitSize - 1)) != 0);
+	mcl::bint::copyT<N>(py, d);
+}
+
+} // mcl::inv::twos
+
+template<int N>
+void exec(const InvModT<N>& im, Unit *py, const Unit *px)
+{
+	if (im.useTwos) {
+		twos::exec<N>(im, py, px);
+	} else {
+		execSM<N>(im, py, px);
+	}
 }
 
 template<int N>
@@ -281,6 +456,7 @@ void init(InvModT<N>& invMod, const mpz_class& mM)
 	mpz_class mod = mpz_class(1) << modL;
 	mcl::gmp::invMod(inv, mM, mod);
 	invMod.Mi = mcl::gmp::getUnit(inv)[0] & MASK;
+	invMod.useTwos = mcl::gmp::getBitSize(mM) <= UnitBitSize * N - 2;
 }
 
 } // mcl::inv

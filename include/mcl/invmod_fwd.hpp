@@ -34,6 +34,8 @@ struct InvModT {
 	Unit lowM;
 	Unit Mi;
 	SintT<N> M;
+	// use the two's complement version (inv::twos) : M < 2^(UnitBitSize * N - 2)
+	bool useTwos;
 };
 
 } } // mcl::inv

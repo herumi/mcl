@@ -2,15 +2,21 @@
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 
+#include <cybozu/xorshift.hpp>
+
+// useTwos : the two's complement version (inv::twos) or the sign-magnitude one
 template<int N>
-void test(const char *Mstr)
+void testSub(const mpz_class& M, bool useTwos)
 {
-	printf("p=%s\n", Mstr);
-	mpz_class M;
-	mcl::gmp::setStr(M, Mstr, 16);
+	printf("useTwos=%d\n", useTwos);
 	mcl::inv::InvModT<N> im;
 	mcl::inv::init(im, M);
+	CYBOZU_TEST_ASSERT(!useTwos || im.useTwos);
+	im.useTwos = useTwos;
 	mpz_class x, y, z;
+	x = 0;
+	mcl::inv::exec(im, z, x);
+	CYBOZU_TEST_EQUAL(z, 0);
 	x = 1;
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
@@ -31,6 +37,18 @@ void test(const char *Mstr)
 		CYBOZU_TEST_EQUAL(y, z);
 		x = y + 1;
 	}
+	// random x in [0, M)
+	cybozu::XorShift rg;
+	for (int i = 0; i < 10000; i++) {
+		mcl::Unit v[N];
+		for (int j = 0; j < N; j++) v[j] = (mcl::Unit)rg.get64();
+		mcl::gmp::setArray(x, v, N);
+		x %= M;
+		if (x == 0) continue;
+		mcl::gmp::invMod(y, x, M);
+		mcl::inv::exec(im, z, x);
+		CYBOZU_TEST_EQUAL(y, z);
+	}
 	typedef mcl::Unit Unit;
 	const Unit ff = Unit(-1);
 	const Unit _80 = Unit(1) << (MCL_UNIT_BIT_SIZE-1);
@@ -48,8 +66,21 @@ void test(const char *Mstr)
 		}
 	}
 #ifdef NDEBUG
-	CYBOZU_BENCH_C("invMod", 1000, x++;mcl::inv::exec, im, x, x);
+	const char *msg = useTwos ? "invMod(twos)" : "invMod(sm)  ";
+	CYBOZU_BENCH_C(msg, 1000, x++;mcl::inv::exec, im, x, x);
 #endif
+}
+
+template<int N>
+void test(const char *Mstr)
+{
+	printf("p=%s\n", Mstr);
+	mpz_class M;
+	mcl::gmp::setStr(M, Mstr, 16);
+	mcl::inv::InvModT<N> im;
+	mcl::inv::init(im, M);
+	if (im.useTwos) testSub<N>(M, true);
+	testSub<N>(M, false);
 }
 
 CYBOZU_TEST_AUTO(modinv)
