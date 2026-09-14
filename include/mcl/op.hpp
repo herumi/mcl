@@ -122,7 +122,6 @@ typedef void (*void2uOp)(Unit*, const Unit*, const Op&);
 typedef void (*void2uIOp)(Unit*, const Unit*, Unit, const Op&);
 typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
-typedef int (*int2u)(Unit*, const Unit*);
 
 typedef Unit (*u1uII)(Unit*, Unit, Unit);
 typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
@@ -195,9 +194,6 @@ struct Op {
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg;
 #endif
-#ifdef MCL_X64_ASM
-	mcl::Array<Unit> invTbl;
-#endif
 	void3u fp_addA_;
 	void3u fp_subA_;
 	void2u fp_negA_;
@@ -231,7 +227,6 @@ struct Op {
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;
-	int2u fp_preInv;
 	void2uI fp_mulUnitPre; // z[N + 1] = x[N] * y
 
 	void4u fpDbl_add;
@@ -285,9 +280,6 @@ struct Op {
 		memset(one, 0, sizeof(one));
 		memset(R2, 0, sizeof(R2));
 		memset(R3, 0, sizeof(R3));
-#ifdef MCL_X64_ASM
-		invTbl.clear();
-#endif
 		fp_addA_ = 0;
 		fp_subA_ = 0;
 		fp_negA_ = 0;
@@ -321,7 +313,6 @@ struct Op {
 
 		fpDbl_mulPre = 0;
 		fpDbl_sqrPre = 0;
-		fp_preInv = 0;
 		fp_mulUnitPre = 0;
 
 		fpDbl_add = 0;
