@@ -399,6 +399,9 @@ void mcl_c5_fp2_mul2(Unit*, const Unit*);
 void mcl_c5_fp2_mul(Unit*, const Unit*, const Unit*);
 void mcl_c5_fp2_sqr(Unit*, const Unit*);
 void mcl_c5_fp2_mul_xi(Unit*, const Unit*);
+void mcl_c5_fp2Dbl_mulPre(Unit*, const Unit*, const Unit*);
+void mcl_c5_fp2Dbl_sqrPre(Unit*, const Unit*);
+void mcl_c5_fp2Dbl_mul_xi(Unit*, const Unit*);
 extern Unit mcl_c5_fr_p[];
 void mcl_c5_fr_add(Unit*, const Unit*, const Unit*);
 void mcl_c5_fr_sub(Unit*, const Unit*, const Unit*);
@@ -432,6 +435,9 @@ static inline void set_llvm_c5_fp2(Op& op)
 	op.fp2_mulA_ = mcl_c5_fp2_mul;
 	op.fp2_sqrA_ = mcl_c5_fp2_sqr;
 	op.fp2_mul_xiA_ = mcl_c5_fp2_mul_xi;
+	op.fp2Dbl_mulPreA_ = mcl_c5_fp2Dbl_mulPre;
+	op.fp2Dbl_sqrPreA_ = mcl_c5_fp2Dbl_sqrPre;
+	op.fp2Dbl_mul_xiA_ = mcl_c5_fp2Dbl_mul_xi;
 }
 static inline void set_llvm_c5_fr(Op& op)
 {

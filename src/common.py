@@ -1004,6 +1004,115 @@ def gen_fixed_fp2_sqr(name, mont, mulF, dataVar, offset):
     ret(Void)
 
 
+# Fp2Dbl (lazy reduction, used by Fp6/Fp12 mul and sqr): each component is
+# 2N limbs, b at offsetDbl (= 2 offset) limbs from a. The inputs (Fp2) have
+# b at offset limbs. Same as mulPreA / sqrPreA / mul_xi_1_iA of
+# Fp2DblT (fp_tower.hpp) and gen_fp2Dbl_* of fp_generator.hpp.
+
+# Fp2Dbl mulPre: (z.a, z.b) = (a c - b d, a d + b c) (no reduction), i.e.
+# gen_fixed_fp2_mul without the two mods. d1 = (a + b)(c + d) - a c - b d
+# has no borrow; d0 = a c - b d adds p to the high half on borrow (the
+# {zero, p} table like gen_fixed_fp2_mul). z never aliases x or y (Fp2Dbl vs
+# Fp2), so d1 and d0 are computed in place.
+def gen_fixed_fp2Dbl_mulPre(name, mont, mulPreF, subTbl, offset, offsetDbl):
+  unit = mont.unit
+  N = mont.N
+  bit = unit * N
+  bit2 = bit * 2
+  assert not mont.isFullBit
+  resetGlobalIdx()
+  pz = IntPtr(unit)
+  px = IntPtr(unit)
+  py = IntPtr(unit)
+  with Function(name, Void, pz, px, py, private=False):
+    tbl, Npad = subTbl
+    ptbl = bitcast(tbl, unit)
+    ps = alloca_(unit, N)
+    pt = alloca_(unit, N)
+    pd2 = alloca_(unit, 2*N)
+    pd1 = getelementptr(pz, offsetDbl)
+    a = loadN(px, N)
+    b = loadN(px, N, offset=offset)
+    c = loadN(py, N)
+    d = loadN(py, N, offset=offset)
+    storeN(add(a, b), ps)
+    storeN(add(c, d), pt)
+    call(mulPreF, pd1, ps, pt)
+    call(mulPreF, pz, px, py)
+    call(mulPreF, pd2, getelementptr(px, offset), getelementptr(py, offset))
+    d0 = loadN(pz, 2*N)
+    d1 = loadN(pd1, 2*N)
+    d2 = loadN(pd2, 2*N)
+    d1 = sub(sub(d1, d0), d2)
+    storeN(d1, pd1)
+    v = sub(d0, d2)
+    c = trunc(lshr(v, bit2 - 1), 1)
+    off = shl(zext(c, unit), Npad.bit_length() - 1)
+    addr = getelementptr(ptbl, off)
+    pc = load(bitcast(addr, bit)) # p if borrow else 0
+    hi = add(trunc(lshr(v, bit), bit), pc)
+    storeN(trunc(v, bit), pz)
+    storeN(hi, pz, offset=N)
+    ret(Void)
+
+
+# Fp2Dbl sqrPre: (y.a, y.b) = ((a + b)(a - b), 2 a b) (no reduction).
+# t1 = 2b and t2 = a + b are < 2p (no carry since p is not full bit),
+# a - b is reduced mod p; the products are < 2p^2 < p R.
+def gen_fixed_fp2Dbl_sqrPre(name, mont, mulPreF, dataVar, offset, offsetDbl):
+  unit = mont.unit
+  N = mont.N
+  assert not mont.isFullBit
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  with Function(name, Void, py, px, private=False):
+    pt1 = alloca_(unit, N)
+    pt2 = alloca_(unit, N)
+    p = loadN(bitcast(dataVar, unit), N)
+    a = loadN(px, N)
+    b = loadN(px, N, offset=offset)
+    storeN(add(b, b), pt1)
+    storeN(add(a, b), pt2)
+    call(mulPreF, getelementptr(py, offsetDbl), pt1, px) # 2 a b
+    storeN(gen_sub_raw_mask(unit, a, b, p, False), pt1) # a - b mod p
+    call(mulPreF, py, pt1, pt2) # (a + b)(a - b)
+    ret(Void)
+
+
+# Fp2Dbl mul_xi for xi = 1 + i: y = (x.a - x.b, x.a + x.b) on 2N-limb values
+# with the FpDbl add/sub reduction of the high half (emit_fpDbl_add / sub).
+# Both inputs are loaded before the stores, so y may be x.
+def gen_fixed_fp2Dbl_mul_xi(name, mont, dataVar, offsetDbl):
+  unit = mont.unit
+  N = mont.N
+  bit = N * unit
+  b2 = bit * 2
+  bu = bit + unit
+  b2u = b2 + unit
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  with Function(name, Void, py, px, private=False):
+    p = loadN(bitcast(dataVar, unit), N)
+    xa = zext(loadN(px, 2*N), b2u)
+    xb = zext(loadN(px, 2*N, offset=offsetDbl), b2u)
+    # y.a = x.a - x.b, +p on the high half on borrow
+    vc = sub(xa, xb)
+    c = trunc(lshr(vc, b2), 1)
+    ya_hi = add(trunc(lshr(vc, bit), bit), select(c, p, Imm(0, bit)))
+    # y.b = x.a + x.b, the high half mod p
+    t = add(xa, xb)
+    H = trunc(lshr(t, bit), bu)
+    Hp = sub(H, zext(p, bu))
+    yb_hi = trunc(select(trunc(lshr(Hp, bit), 1), H, Hp), bit)
+    storeN(trunc(vc, bit), py)
+    storeN(ya_hi, py, offset=N)
+    storeN(trunc(t, bit), py, offset=offsetDbl)
+    storeN(yb_hi, py, offset=offsetDbl + N)
+    ret(Void)
+
+
 # Generate all the p-fixed functions of a prime p with the prefix pre
 # (e.g. 'mcl_c5_fp_'): the globals {pre}p and {pre}rp (= -p^-1 mod 2^unit),
 # {pre}mulUnit (private) and
@@ -1013,8 +1122,9 @@ def gen_fixed_fp2_sqr(name, mont, mulF, dataVar, offset):
 # and if hasFp2 (the Fp of a pairing curve with Fp2 = Fp[i]/(i^2 + 1) and
 # xi = 1 + i, sizeof(Fp) = offset units):
 #   {pre}sub_tbl, {preDbl}mulPre (private, used by {pre2}mul), {preDbl}add, {preDbl}sub,
-#   {pre2}add, {pre2}sub, {pre2}neg, {pre2}mul2, {pre2}mul, {pre2}sqr, {pre2}mul_xi
-# where preDbl = pre[:-1] + 'Dbl_' and pre2 = pre[:-1] + '2_'
+#   {pre2}add, {pre2}sub, {pre2}neg, {pre2}mul2, {pre2}mul, {pre2}sqr, {pre2}mul_xi,
+#   {pre2Dbl}mulPre, {pre2Dbl}sqrPre, {pre2Dbl}mul_xi (Fp2Dbl, b at 2 offset limbs)
+# where preDbl = pre[:-1] + 'Dbl_', pre2 = pre[:-1] + '2_' and pre2Dbl = pre[:-1] + '2Dbl_'
 # (mcl_c5_fpDbl_mod, mcl_c5_fp2_mul, ... : the names of the Op slots).
 # mulPos / extractHigh are the module-wide helpers of gen.py (gen_once).
 # The list of the functions is also in src/gen_llvm_proto.py (prototypes and
@@ -1024,6 +1134,7 @@ def gen_fixed(pre, unit, p, offset, hasFp2, mulPos, extractHigh):
   N = mont.N
   preDbl = pre[:-1] + 'Dbl_'
   pre2 = pre[:-1] + '2_'
+  pre2Dbl = pre[:-1] + '2Dbl_'
   dataVar = makeVar(f'{pre}p', mont.bit, p, const=False, static=False)
   # rp is also a non-const global, not an immediate of mul/mod: LLVM
   # strength-reduces t * rp for rp = 0xfffffffeffffffff (BLS12-381 r) into
@@ -1054,3 +1165,7 @@ def gen_fixed(pre, unit, p, offset, hasFp2, mulPos, extractHigh):
   gen_fixed_fp2_mul(f'{pre2}mul', mont, mulPreF, modF, subTbl, offset)
   gen_fixed_fp2_sqr(f'{pre2}sqr', mont, mulF, dataVar, offset)
   gen_fixed_fp2_mul_xi(f'{pre2}mul_xi', mont, dataVar, offset)
+  offsetDbl = offset * 2 # sizeof(FpDbl) = 2 sizeof(Fp)
+  gen_fixed_fp2Dbl_mulPre(f'{pre2Dbl}mulPre', mont, mulPreF, subTbl, offset, offsetDbl)
+  gen_fixed_fp2Dbl_sqrPre(f'{pre2Dbl}sqrPre', mont, mulPreF, dataVar, offset, offsetDbl)
+  gen_fixed_fp2Dbl_mul_xi(f'{pre2Dbl}mul_xi', mont, dataVar, offsetDbl)

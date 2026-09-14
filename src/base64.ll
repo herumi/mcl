@@ -3577,6 +3577,137 @@ store i384 %r16, i384* %r22
 store i384 %r21, i384* %r24
 ret void
 }
+define void @mcl_c5_fp2Dbl_mulPre(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
+{
+%r4 = bitcast [16 x i64] *@mcl_c5_fp_sub_tbl to i64*
+%r5 = alloca i64, i32 6
+%r6 = alloca i64, i32 6
+%r7 = alloca i64, i32 12
+%r8 = getelementptr i64, i64* %r1, i32 12
+%r9 = bitcast i64* %r2 to i384*
+%r10 = load i384, i384* %r9
+%r11 = getelementptr i64, i64* %r2, i32 6
+%r12 = bitcast i64* %r11 to i384*
+%r13 = load i384, i384* %r12
+%r14 = bitcast i64* %r3 to i384*
+%r15 = load i384, i384* %r14
+%r16 = getelementptr i64, i64* %r3, i32 6
+%r17 = bitcast i64* %r16 to i384*
+%r18 = load i384, i384* %r17
+%r19 = add i384 %r10, %r13
+%r20 = bitcast i64* %r5 to i384*
+store i384 %r19, i384* %r20
+%r21 = add i384 %r15, %r18
+%r22 = bitcast i64* %r6 to i384*
+store i384 %r21, i384* %r22
+call void @mcl_c5_fpDbl_mulPre(i64* %r8, i64* %r5, i64* %r6)
+call void @mcl_c5_fpDbl_mulPre(i64* %r1, i64* %r2, i64* %r3)
+%r23 = getelementptr i64, i64* %r2, i32 6
+%r24 = getelementptr i64, i64* %r3, i32 6
+call void @mcl_c5_fpDbl_mulPre(i64* %r7, i64* %r23, i64* %r24)
+%r25 = bitcast i64* %r1 to i768*
+%r26 = load i768, i768* %r25
+%r27 = bitcast i64* %r8 to i768*
+%r28 = load i768, i768* %r27
+%r29 = bitcast i64* %r7 to i768*
+%r30 = load i768, i768* %r29
+%r31 = sub i768 %r28, %r26
+%r32 = sub i768 %r31, %r30
+%r33 = bitcast i64* %r8 to i768*
+store i768 %r32, i768* %r33
+%r34 = sub i768 %r26, %r30
+%r35 = lshr i768 %r34, 767
+%r36 = trunc i768 %r35 to i1
+%r37 = zext i1 %r36 to i64
+%r38 = shl i64 %r37, 3
+%r39 = getelementptr i64, i64* %r4, i64 %r38
+%r40 = bitcast i64* %r39 to i384*
+%r41 = load i384, i384* %r40
+%r42 = lshr i768 %r34, 384
+%r43 = trunc i768 %r42 to i384
+%r44 = add i384 %r43, %r41
+%r45 = trunc i768 %r34 to i384
+%r46 = bitcast i64* %r1 to i384*
+store i384 %r45, i384* %r46
+%r47 = getelementptr i64, i64* %r1, i32 6
+%r48 = bitcast i64* %r47 to i384*
+store i384 %r44, i384* %r48
+ret void
+}
+define void @mcl_c5_fp2Dbl_sqrPre(i64* noalias %r1, i64* noalias %r2)
+{
+%r3 = alloca i64, i32 6
+%r4 = alloca i64, i32 6
+%r5 = bitcast i384 *@mcl_c5_fp_p to i64*
+%r6 = bitcast i64* %r5 to i384*
+%r7 = load i384, i384* %r6
+%r8 = bitcast i64* %r2 to i384*
+%r9 = load i384, i384* %r8
+%r10 = getelementptr i64, i64* %r2, i32 6
+%r11 = bitcast i64* %r10 to i384*
+%r12 = load i384, i384* %r11
+%r13 = add i384 %r12, %r12
+%r14 = bitcast i64* %r3 to i384*
+store i384 %r13, i384* %r14
+%r15 = add i384 %r9, %r12
+%r16 = bitcast i64* %r4 to i384*
+store i384 %r15, i384* %r16
+%r17 = getelementptr i64, i64* %r1, i32 12
+call void @mcl_c5_fpDbl_mulPre(i64* %r17, i64* %r3, i64* %r2)
+%r18 = sub i384 %r9, %r12
+%r19 = lshr i384 %r18, 383
+%r20 = trunc i384 %r19 to i1
+%r21 = sext i1 %r20 to i384
+%r22 = and i384 %r7, %r21
+%r23 = add i384 %r18, %r22
+%r24 = bitcast i64* %r3 to i384*
+store i384 %r23, i384* %r24
+call void @mcl_c5_fpDbl_mulPre(i64* %r1, i64* %r3, i64* %r4)
+ret void
+}
+define void @mcl_c5_fp2Dbl_mul_xi(i64* noalias %r1, i64* noalias %r2)
+{
+%r3 = bitcast i384 *@mcl_c5_fp_p to i64*
+%r4 = bitcast i64* %r3 to i384*
+%r5 = load i384, i384* %r4
+%r6 = bitcast i64* %r2 to i768*
+%r7 = load i768, i768* %r6
+%r8 = zext i768 %r7 to i832
+%r9 = getelementptr i64, i64* %r2, i32 12
+%r10 = bitcast i64* %r9 to i768*
+%r11 = load i768, i768* %r10
+%r12 = zext i768 %r11 to i832
+%r13 = sub i832 %r8, %r12
+%r14 = lshr i832 %r13, 768
+%r15 = trunc i832 %r14 to i1
+%r16 = lshr i832 %r13, 384
+%r17 = trunc i832 %r16 to i384
+%r18 = select i1 %r15, i384 %r5, i384 0
+%r19 = add i384 %r17, %r18
+%r20 = add i832 %r8, %r12
+%r21 = lshr i832 %r20, 384
+%r22 = trunc i832 %r21 to i448
+%r23 = zext i384 %r5 to i448
+%r24 = sub i448 %r22, %r23
+%r25 = lshr i448 %r24, 384
+%r26 = trunc i448 %r25 to i1
+%r27 = select i1 %r26, i448 %r22, i448 %r24
+%r28 = trunc i448 %r27 to i384
+%r29 = trunc i832 %r13 to i384
+%r30 = bitcast i64* %r1 to i384*
+store i384 %r29, i384* %r30
+%r31 = getelementptr i64, i64* %r1, i32 6
+%r32 = bitcast i64* %r31 to i384*
+store i384 %r19, i384* %r32
+%r33 = trunc i832 %r20 to i384
+%r34 = getelementptr i64, i64* %r1, i32 12
+%r35 = bitcast i64* %r34 to i384*
+store i384 %r33, i384* %r35
+%r36 = getelementptr i64, i64* %r1, i32 18
+%r37 = bitcast i64* %r36 to i384*
+store i384 %r28, i384* %r37
+ret void
+}
 @mcl_c5_fr_p = dso_local local_unnamed_addr global i256 52435875175126190479447740508185965837690552500527637822603658699938581184513
 @mcl_c5_fr_rp = dso_local local_unnamed_addr global i64 18446744069414584319
 define private i320 @mcl_c5_fr_mulUnit(i64* noalias %r2, i64 %r3) alwaysinline
