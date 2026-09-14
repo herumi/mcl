@@ -242,10 +242,15 @@ def gen_mclb_sqr():
   px = IntPtr(unit)
   name = f'mclb_sqr{N}'
   with Function(name, Void, py, px, private=False) as f:
-    # on M1, mul is faster than sqr for N <= 6
-    # on A64FX, mul is faster than sqr for N <= 4
+    # N <= 6: the anti-diagonal schedule of common.sqrPre_raw (N(N+1)/2 muls).
+    # It replaced mul(x, x) (faster than the old sqr on M1 for N <= 6): on
+    # Apple M4 N = 6 is 4.35 vs 5.27 ns (mcl memo.md 2026-09-14). Only the
+    # LLVM path is affected; x64 uses the mulx asm of gen_bint_x64.py.
+    # N > 6 (unit = 32 only) keeps the recursive split; not measured.
     if N <= 6:
-      gen_mul_inner(py, px, px)
+      x = [load(getelementptr(px, i)) for i in range(N)]
+      storeN(common.sqrPre_raw(unit, x, N), py)
+      ret(Void)
     else:
       gen_sqr_inner(py, px)
   g_mclb_sqr[N] = f

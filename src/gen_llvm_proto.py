@@ -100,8 +100,6 @@ c5_fp_tbl = [
 	('fp_mulA_', '_mul', void3u),
 	('fp_sqrA_', '_sqr', void2u),
 	('fpDbl_modA_', 'Dbl_mod', void2u),
-	('fpDbl_mulPre', 'Dbl_mulPre', void3u),
-	('fpDbl_sqrPre', 'Dbl_sqrPre', void2u),
 ]
 # only for Fp (hasFp2 of gen_fixed)
 c5_fpDbl_tbl = [
@@ -117,6 +115,10 @@ c5_fp2_tbl = [
 	('fp2_mulA_', '2_mul', void3u),
 	('fp2_sqrA_', '2_sqr', void2u),
 	('fp2_mul_xiA_', '2_mul_xi', void2u),
+	# Fp2Dbl (lazy reduction of Fp6/Fp12): b of Fp2Dbl at 2 sizeof(Fp)
+	('fp2Dbl_mulPreA_', '2Dbl_mulPre', void3u),
+	('fp2Dbl_sqrPreA_', '2Dbl_sqrPre', void2u),
+	('fp2Dbl_mul_xiA_', '2Dbl_mul_xi', void2u),
 ]
 
 def c5_name(pre, suf):

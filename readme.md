@@ -10,6 +10,7 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- Improve the performance of pairing on Apple M4 (aarch64) by about 14%.
 - Fix memory leak of some operations on Windows
 - Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 

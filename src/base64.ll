@@ -3040,31 +3040,27 @@ ret void
 define void @mcl_c5_fp_neg(i64* noalias %r1, i64* noalias %r2)
 {
 %r3 = bitcast i384 *@mcl_c5_fp_p to i64*
-%r4 = bitcast i64* %r3 to i384*
+%r4 = bitcast i64* %r2 to i384*
 %r5 = load i384, i384* %r4
-%r6 = bitcast i64* %r2 to i384*
-%r7 = load i384, i384* %r6
-%r8 = icmp eq i384 %r7, 0
-%r9 = sub i384 %r5, %r7
-%r10 = select i1 %r8, i384 %r7, i384 %r9
+%r6 = icmp eq i384 %r5, 0
+br i1 %r6, label %L38, label %L37
+L37:
+%r7 = bitcast i64* %r3 to i384*
+%r8 = load i384, i384* %r7
+%r9 = sub i384 %r8, %r5
+%r10 = bitcast i64* %r1 to i384*
+store i384 %r9, i384* %r10
+br label %L39
+L38:
 %r11 = bitcast i64* %r1 to i384*
-store i384 %r10, i384* %r11
+store i384 %r5, i384* %r11
+br label %L39
+L39:
 ret void
 }
 define void @mcl_c5_fp_mul2(i64* noalias %r1, i64* noalias %r2)
 {
-%r3 = bitcast i384 *@mcl_c5_fp_p to i64*
-%r4 = bitcast i64* %r3 to i384*
-%r5 = load i384, i384* %r4
-%r6 = bitcast i64* %r2 to i384*
-%r7 = load i384, i384* %r6
-%r8 = add i384 %r7, %r7
-%r9 = sub i384 %r8, %r5
-%r10 = lshr i384 %r9, 383
-%r11 = trunc i384 %r10 to i1
-%r12 = select i1 %r11, i384 %r8, i384 %r9
-%r13 = bitcast i64* %r1 to i384*
-store i384 %r12, i384* %r13
+call void @mcl_c5_fp_add(i64* %r1, i64* %r2, i64* %r2)
 ret void
 }
 define void @mcl_c5_fp_mul(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
@@ -3274,7 +3270,8 @@ define void @mcl_c5_fpDbl_mod(i64* noalias %r1, i64* noalias %r2)
 store i384 %r130, i384* %r131
 ret void
 }
-define void @mcl_c5_fpDbl_mulPre(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
+@mcl_c5_fp_sub_tbl = dso_local local_unnamed_addr global [16 x i64] [i64 0, i64 0, i64 0, i64 0, i64 0, i64 0, i64 0, i64 0, i64 13402431016077863595, i64 2210141511517208575, i64 7435674573564081700, i64 7239337960414712511, i64 5412103778470702295, i64 1873798617647539866, i64 0, i64 0], align 64
+define private void @mcl_c5_fpDbl_mulPre(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
 {
 %r4 = load i64, i64* %r3
 %r5 = call i448 @mcl_c5_fp_mulUnit(i64* %r2, i64 %r4)
@@ -3322,165 +3319,6 @@ store i64 %r33, i64* %r34
 store i448 %r39, i448* %r41
 ret void
 }
-define void @mcl_c5_fpDbl_sqrPre(i64* noalias %r1, i64* noalias %r2)
-{
-%r3 = getelementptr i64, i64* %r2, i32 0
-%r4 = load i64, i64* %r3
-%r5 = getelementptr i64, i64* %r2, i32 1
-%r6 = load i64, i64* %r5
-%r7 = getelementptr i64, i64* %r2, i32 2
-%r8 = load i64, i64* %r7
-%r9 = getelementptr i64, i64* %r2, i32 3
-%r10 = load i64, i64* %r9
-%r11 = getelementptr i64, i64* %r2, i32 4
-%r12 = load i64, i64* %r11
-%r13 = getelementptr i64, i64* %r2, i32 5
-%r14 = load i64, i64* %r13
-%r15 = zext i64 %r4 to i128
-%r16 = zext i64 %r14 to i128
-%r17 = mul i128 %r15, %r16
-%r18 = zext i64 %r4 to i128
-%r19 = zext i64 %r12 to i128
-%r20 = mul i128 %r18, %r19
-%r21 = zext i64 %r6 to i128
-%r22 = zext i64 %r14 to i128
-%r23 = mul i128 %r21, %r22
-%r24 = zext i128 %r20 to i256
-%r25 = zext i128 %r23 to i256
-%r26 = shl i256 %r25, 128
-%r27 = or i256 %r24, %r26
-%r28 = zext i128 %r17 to i256
-%r29 = shl i256 %r28, 64
-%r30 = add i256 %r29, %r27
-%r31 = zext i64 %r4 to i128
-%r32 = zext i64 %r10 to i128
-%r33 = mul i128 %r31, %r32
-%r34 = zext i64 %r6 to i128
-%r35 = zext i64 %r12 to i128
-%r36 = mul i128 %r34, %r35
-%r37 = zext i64 %r8 to i128
-%r38 = zext i64 %r14 to i128
-%r39 = mul i128 %r37, %r38
-%r40 = zext i128 %r33 to i256
-%r41 = zext i128 %r36 to i256
-%r42 = shl i256 %r41, 128
-%r43 = or i256 %r40, %r42
-%r44 = zext i256 %r43 to i384
-%r45 = zext i128 %r39 to i384
-%r46 = shl i384 %r45, 256
-%r47 = or i384 %r44, %r46
-%r48 = zext i256 %r30 to i384
-%r49 = shl i384 %r48, 64
-%r50 = add i384 %r49, %r47
-%r51 = zext i64 %r4 to i128
-%r52 = zext i64 %r8 to i128
-%r53 = mul i128 %r51, %r52
-%r54 = zext i64 %r6 to i128
-%r55 = zext i64 %r10 to i128
-%r56 = mul i128 %r54, %r55
-%r57 = zext i64 %r8 to i128
-%r58 = zext i64 %r12 to i128
-%r59 = mul i128 %r57, %r58
-%r60 = zext i64 %r10 to i128
-%r61 = zext i64 %r14 to i128
-%r62 = mul i128 %r60, %r61
-%r63 = zext i128 %r53 to i256
-%r64 = zext i128 %r56 to i256
-%r65 = shl i256 %r64, 128
-%r66 = or i256 %r63, %r65
-%r67 = zext i256 %r66 to i384
-%r68 = zext i128 %r59 to i384
-%r69 = shl i384 %r68, 256
-%r70 = or i384 %r67, %r69
-%r71 = zext i384 %r70 to i512
-%r72 = zext i128 %r62 to i512
-%r73 = shl i512 %r72, 384
-%r74 = or i512 %r71, %r73
-%r75 = zext i384 %r50 to i512
-%r76 = shl i512 %r75, 64
-%r77 = add i512 %r76, %r74
-%r78 = zext i64 %r4 to i128
-%r79 = zext i64 %r6 to i128
-%r80 = mul i128 %r78, %r79
-%r81 = zext i64 %r6 to i128
-%r82 = zext i64 %r8 to i128
-%r83 = mul i128 %r81, %r82
-%r84 = zext i64 %r8 to i128
-%r85 = zext i64 %r10 to i128
-%r86 = mul i128 %r84, %r85
-%r87 = zext i64 %r10 to i128
-%r88 = zext i64 %r12 to i128
-%r89 = mul i128 %r87, %r88
-%r90 = zext i64 %r12 to i128
-%r91 = zext i64 %r14 to i128
-%r92 = mul i128 %r90, %r91
-%r93 = zext i128 %r80 to i256
-%r94 = zext i128 %r83 to i256
-%r95 = shl i256 %r94, 128
-%r96 = or i256 %r93, %r95
-%r97 = zext i256 %r96 to i384
-%r98 = zext i128 %r86 to i384
-%r99 = shl i384 %r98, 256
-%r100 = or i384 %r97, %r99
-%r101 = zext i384 %r100 to i512
-%r102 = zext i128 %r89 to i512
-%r103 = shl i512 %r102, 384
-%r104 = or i512 %r101, %r103
-%r105 = zext i512 %r104 to i640
-%r106 = zext i128 %r92 to i640
-%r107 = shl i640 %r106, 512
-%r108 = or i640 %r105, %r107
-%r109 = zext i512 %r77 to i640
-%r110 = shl i640 %r109, 64
-%r111 = add i640 %r110, %r108
-%r112 = zext i640 %r111 to i704
-%r113 = add i704 %r112, %r112
-%r114 = zext i704 %r113 to i768
-%r115 = shl i768 %r114, 64
-%r116 = zext i64 %r4 to i128
-%r117 = zext i64 %r4 to i128
-%r118 = mul i128 %r116, %r117
-%r119 = zext i64 %r6 to i128
-%r120 = zext i64 %r6 to i128
-%r121 = mul i128 %r119, %r120
-%r122 = zext i64 %r8 to i128
-%r123 = zext i64 %r8 to i128
-%r124 = mul i128 %r122, %r123
-%r125 = zext i64 %r10 to i128
-%r126 = zext i64 %r10 to i128
-%r127 = mul i128 %r125, %r126
-%r128 = zext i64 %r12 to i128
-%r129 = zext i64 %r12 to i128
-%r130 = mul i128 %r128, %r129
-%r131 = zext i64 %r14 to i128
-%r132 = zext i64 %r14 to i128
-%r133 = mul i128 %r131, %r132
-%r134 = zext i128 %r118 to i256
-%r135 = zext i128 %r121 to i256
-%r136 = shl i256 %r135, 128
-%r137 = or i256 %r134, %r136
-%r138 = zext i256 %r137 to i384
-%r139 = zext i128 %r124 to i384
-%r140 = shl i384 %r139, 256
-%r141 = or i384 %r138, %r140
-%r142 = zext i384 %r141 to i512
-%r143 = zext i128 %r127 to i512
-%r144 = shl i512 %r143, 384
-%r145 = or i512 %r142, %r144
-%r146 = zext i512 %r145 to i640
-%r147 = zext i128 %r130 to i640
-%r148 = shl i640 %r147, 512
-%r149 = or i640 %r146, %r148
-%r150 = zext i640 %r149 to i768
-%r151 = zext i128 %r133 to i768
-%r152 = shl i768 %r151, 640
-%r153 = or i768 %r150, %r152
-%r154 = add i768 %r115, %r153
-%r155 = bitcast i64* %r1 to i768*
-store i768 %r154, i768* %r155
-ret void
-}
-@mcl_c5_fp_sub_tbl = dso_local local_unnamed_addr global [16 x i64] [i64 0, i64 0, i64 0, i64 0, i64 0, i64 0, i64 0, i64 0, i64 13402431016077863595, i64 2210141511517208575, i64 7435674573564081700, i64 7239337960414712511, i64 5412103778470702295, i64 1873798617647539866, i64 0, i64 0], align 64
 define void @mcl_c5_fpDbl_add(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
 {
 %r4 = bitcast i384 *@mcl_c5_fp_p to i64*
@@ -3604,51 +3442,46 @@ ret void
 define void @mcl_c5_fp2_neg(i64* noalias %r1, i64* noalias %r2)
 {
 %r3 = bitcast i384 *@mcl_c5_fp_p to i64*
-%r4 = bitcast i64* %r3 to i384*
+%r4 = bitcast i64* %r2 to i384*
 %r5 = load i384, i384* %r4
-%r6 = bitcast i64* %r2 to i384*
-%r7 = load i384, i384* %r6
-%r8 = icmp eq i384 %r7, 0
-%r9 = sub i384 %r5, %r7
-%r10 = select i1 %r8, i384 %r7, i384 %r9
+%r6 = icmp eq i384 %r5, 0
+br i1 %r6, label %L41, label %L40
+L40:
+%r7 = bitcast i64* %r3 to i384*
+%r8 = load i384, i384* %r7
+%r9 = sub i384 %r8, %r5
+%r10 = bitcast i64* %r1 to i384*
+store i384 %r9, i384* %r10
+br label %L42
+L41:
 %r11 = bitcast i64* %r1 to i384*
-store i384 %r10, i384* %r11
+store i384 %r5, i384* %r11
+br label %L42
+L42:
 %r12 = getelementptr i64, i64* %r2, i32 6
 %r13 = bitcast i64* %r12 to i384*
 %r14 = load i384, i384* %r13
 %r15 = icmp eq i384 %r14, 0
-%r16 = sub i384 %r5, %r14
-%r17 = select i1 %r15, i384 %r14, i384 %r16
-%r18 = getelementptr i64, i64* %r1, i32 6
-%r19 = bitcast i64* %r18 to i384*
-store i384 %r17, i384* %r19
+br i1 %r15, label %L44, label %L43
+L43:
+%r16 = bitcast i64* %r3 to i384*
+%r17 = load i384, i384* %r16
+%r18 = sub i384 %r17, %r14
+%r19 = getelementptr i64, i64* %r1, i32 6
+%r20 = bitcast i64* %r19 to i384*
+store i384 %r18, i384* %r20
+br label %L45
+L44:
+%r21 = getelementptr i64, i64* %r1, i32 6
+%r22 = bitcast i64* %r21 to i384*
+store i384 %r14, i384* %r22
+br label %L45
+L45:
 ret void
 }
 define void @mcl_c5_fp2_mul2(i64* noalias %r1, i64* noalias %r2)
 {
-%r3 = bitcast i384 *@mcl_c5_fp_p to i64*
-%r4 = bitcast i64* %r3 to i384*
-%r5 = load i384, i384* %r4
-%r6 = bitcast i64* %r2 to i384*
-%r7 = load i384, i384* %r6
-%r8 = add i384 %r7, %r7
-%r9 = sub i384 %r8, %r5
-%r10 = lshr i384 %r9, 383
-%r11 = trunc i384 %r10 to i1
-%r12 = select i1 %r11, i384 %r8, i384 %r9
-%r13 = bitcast i64* %r1 to i384*
-store i384 %r12, i384* %r13
-%r14 = getelementptr i64, i64* %r2, i32 6
-%r15 = bitcast i64* %r14 to i384*
-%r16 = load i384, i384* %r15
-%r17 = add i384 %r16, %r16
-%r18 = sub i384 %r17, %r5
-%r19 = lshr i384 %r18, 383
-%r20 = trunc i384 %r19 to i1
-%r21 = select i1 %r20, i384 %r17, i384 %r18
-%r22 = getelementptr i64, i64* %r1, i32 6
-%r23 = bitcast i64* %r22 to i384*
-store i384 %r21, i384* %r23
+call void @mcl_c5_fp2_add(i64* %r1, i64* %r2, i64* %r2)
 ret void
 }
 define void @mcl_c5_fp2_mul(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
@@ -3768,6 +3601,137 @@ store i384 %r16, i384* %r22
 store i384 %r21, i384* %r24
 ret void
 }
+define void @mcl_c5_fp2Dbl_mulPre(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
+{
+%r4 = bitcast [16 x i64] *@mcl_c5_fp_sub_tbl to i64*
+%r5 = alloca i64, i32 6
+%r6 = alloca i64, i32 6
+%r7 = alloca i64, i32 12
+%r8 = getelementptr i64, i64* %r1, i32 12
+%r9 = bitcast i64* %r2 to i384*
+%r10 = load i384, i384* %r9
+%r11 = getelementptr i64, i64* %r2, i32 6
+%r12 = bitcast i64* %r11 to i384*
+%r13 = load i384, i384* %r12
+%r14 = bitcast i64* %r3 to i384*
+%r15 = load i384, i384* %r14
+%r16 = getelementptr i64, i64* %r3, i32 6
+%r17 = bitcast i64* %r16 to i384*
+%r18 = load i384, i384* %r17
+%r19 = add i384 %r10, %r13
+%r20 = bitcast i64* %r5 to i384*
+store i384 %r19, i384* %r20
+%r21 = add i384 %r15, %r18
+%r22 = bitcast i64* %r6 to i384*
+store i384 %r21, i384* %r22
+call void @mcl_c5_fpDbl_mulPre(i64* %r8, i64* %r5, i64* %r6)
+call void @mcl_c5_fpDbl_mulPre(i64* %r1, i64* %r2, i64* %r3)
+%r23 = getelementptr i64, i64* %r2, i32 6
+%r24 = getelementptr i64, i64* %r3, i32 6
+call void @mcl_c5_fpDbl_mulPre(i64* %r7, i64* %r23, i64* %r24)
+%r25 = bitcast i64* %r1 to i768*
+%r26 = load i768, i768* %r25
+%r27 = bitcast i64* %r8 to i768*
+%r28 = load i768, i768* %r27
+%r29 = bitcast i64* %r7 to i768*
+%r30 = load i768, i768* %r29
+%r31 = sub i768 %r28, %r26
+%r32 = sub i768 %r31, %r30
+%r33 = bitcast i64* %r8 to i768*
+store i768 %r32, i768* %r33
+%r34 = sub i768 %r26, %r30
+%r35 = lshr i768 %r34, 767
+%r36 = trunc i768 %r35 to i1
+%r37 = zext i1 %r36 to i64
+%r38 = shl i64 %r37, 3
+%r39 = getelementptr i64, i64* %r4, i64 %r38
+%r40 = bitcast i64* %r39 to i384*
+%r41 = load i384, i384* %r40
+%r42 = lshr i768 %r34, 384
+%r43 = trunc i768 %r42 to i384
+%r44 = add i384 %r43, %r41
+%r45 = trunc i768 %r34 to i384
+%r46 = bitcast i64* %r1 to i384*
+store i384 %r45, i384* %r46
+%r47 = getelementptr i64, i64* %r1, i32 6
+%r48 = bitcast i64* %r47 to i384*
+store i384 %r44, i384* %r48
+ret void
+}
+define void @mcl_c5_fp2Dbl_sqrPre(i64* noalias %r1, i64* noalias %r2)
+{
+%r3 = alloca i64, i32 6
+%r4 = alloca i64, i32 6
+%r5 = bitcast i384 *@mcl_c5_fp_p to i64*
+%r6 = bitcast i64* %r5 to i384*
+%r7 = load i384, i384* %r6
+%r8 = bitcast i64* %r2 to i384*
+%r9 = load i384, i384* %r8
+%r10 = getelementptr i64, i64* %r2, i32 6
+%r11 = bitcast i64* %r10 to i384*
+%r12 = load i384, i384* %r11
+%r13 = add i384 %r12, %r12
+%r14 = bitcast i64* %r3 to i384*
+store i384 %r13, i384* %r14
+%r15 = add i384 %r9, %r12
+%r16 = bitcast i64* %r4 to i384*
+store i384 %r15, i384* %r16
+%r17 = getelementptr i64, i64* %r1, i32 12
+call void @mcl_c5_fpDbl_mulPre(i64* %r17, i64* %r3, i64* %r2)
+%r18 = sub i384 %r9, %r12
+%r19 = lshr i384 %r18, 383
+%r20 = trunc i384 %r19 to i1
+%r21 = sext i1 %r20 to i384
+%r22 = and i384 %r7, %r21
+%r23 = add i384 %r18, %r22
+%r24 = bitcast i64* %r3 to i384*
+store i384 %r23, i384* %r24
+call void @mcl_c5_fpDbl_mulPre(i64* %r1, i64* %r3, i64* %r4)
+ret void
+}
+define void @mcl_c5_fp2Dbl_mul_xi(i64* noalias %r1, i64* noalias %r2)
+{
+%r3 = bitcast i384 *@mcl_c5_fp_p to i64*
+%r4 = bitcast i64* %r3 to i384*
+%r5 = load i384, i384* %r4
+%r6 = bitcast i64* %r2 to i768*
+%r7 = load i768, i768* %r6
+%r8 = zext i768 %r7 to i832
+%r9 = getelementptr i64, i64* %r2, i32 12
+%r10 = bitcast i64* %r9 to i768*
+%r11 = load i768, i768* %r10
+%r12 = zext i768 %r11 to i832
+%r13 = sub i832 %r8, %r12
+%r14 = lshr i832 %r13, 768
+%r15 = trunc i832 %r14 to i1
+%r16 = lshr i832 %r13, 384
+%r17 = trunc i832 %r16 to i384
+%r18 = select i1 %r15, i384 %r5, i384 0
+%r19 = add i384 %r17, %r18
+%r20 = add i832 %r8, %r12
+%r21 = lshr i832 %r20, 384
+%r22 = trunc i832 %r21 to i448
+%r23 = zext i384 %r5 to i448
+%r24 = sub i448 %r22, %r23
+%r25 = lshr i448 %r24, 384
+%r26 = trunc i448 %r25 to i1
+%r27 = select i1 %r26, i448 %r22, i448 %r24
+%r28 = trunc i448 %r27 to i384
+%r29 = trunc i832 %r13 to i384
+%r30 = bitcast i64* %r1 to i384*
+store i384 %r29, i384* %r30
+%r31 = getelementptr i64, i64* %r1, i32 6
+%r32 = bitcast i64* %r31 to i384*
+store i384 %r19, i384* %r32
+%r33 = trunc i832 %r20 to i384
+%r34 = getelementptr i64, i64* %r1, i32 12
+%r35 = bitcast i64* %r34 to i384*
+store i384 %r33, i384* %r35
+%r36 = getelementptr i64, i64* %r1, i32 18
+%r37 = bitcast i64* %r36 to i384*
+store i384 %r28, i384* %r37
+ret void
+}
 @mcl_c5_fr_p = dso_local local_unnamed_addr global i256 52435875175126190479447740508185965837690552500527637822603658699938581184513
 @mcl_c5_fr_rp = dso_local local_unnamed_addr global i64 18446744069414584319
 define private i320 @mcl_c5_fr_mulUnit(i64* noalias %r2, i64 %r3) alwaysinline
@@ -3854,31 +3818,27 @@ ret void
 define void @mcl_c5_fr_neg(i64* noalias %r1, i64* noalias %r2)
 {
 %r3 = bitcast i256 *@mcl_c5_fr_p to i64*
-%r4 = bitcast i64* %r3 to i256*
+%r4 = bitcast i64* %r2 to i256*
 %r5 = load i256, i256* %r4
-%r6 = bitcast i64* %r2 to i256*
-%r7 = load i256, i256* %r6
-%r8 = icmp eq i256 %r7, 0
-%r9 = sub i256 %r5, %r7
-%r10 = select i1 %r8, i256 %r7, i256 %r9
+%r6 = icmp eq i256 %r5, 0
+br i1 %r6, label %L47, label %L46
+L46:
+%r7 = bitcast i64* %r3 to i256*
+%r8 = load i256, i256* %r7
+%r9 = sub i256 %r8, %r5
+%r10 = bitcast i64* %r1 to i256*
+store i256 %r9, i256* %r10
+br label %L48
+L47:
 %r11 = bitcast i64* %r1 to i256*
-store i256 %r10, i256* %r11
+store i256 %r5, i256* %r11
+br label %L48
+L48:
 ret void
 }
 define void @mcl_c5_fr_mul2(i64* noalias %r1, i64* noalias %r2)
 {
-%r3 = bitcast i256 *@mcl_c5_fr_p to i64*
-%r4 = bitcast i64* %r3 to i256*
-%r5 = load i256, i256* %r4
-%r6 = bitcast i64* %r2 to i256*
-%r7 = load i256, i256* %r6
-%r8 = add i256 %r7, %r7
-%r9 = sub i256 %r8, %r5
-%r10 = lshr i256 %r9, 255
-%r11 = trunc i256 %r10 to i1
-%r12 = select i1 %r11, i256 %r8, i256 %r9
-%r13 = bitcast i64* %r1 to i256*
-store i256 %r12, i256* %r13
+call void @mcl_c5_fr_add(i64* %r1, i64* %r2, i64* %r2)
 ret void
 }
 define void @mcl_c5_fr_mul(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
@@ -4028,116 +3988,5 @@ define void @mcl_c5_frDbl_mod(i64* noalias %r1, i64* noalias %r2)
 %r90 = select i1 %r89, i256 %r86, i256 %r87
 %r91 = bitcast i64* %r1 to i256*
 store i256 %r90, i256* %r91
-ret void
-}
-define void @mcl_c5_frDbl_mulPre(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
-{
-%r4 = load i64, i64* %r3
-%r5 = call i320 @mcl_c5_fr_mulUnit(i64* %r2, i64 %r4)
-%r6 = trunc i320 %r5 to i64
-store i64 %r6, i64* %r1
-%r7 = lshr i320 %r5, 64
-%r8 = getelementptr i64, i64* %r3, i32 1
-%r9 = load i64, i64* %r8
-%r10 = call i320 @mcl_c5_fr_mulUnit(i64* %r2, i64 %r9)
-%r11 = add i320 %r7, %r10
-%r12 = trunc i320 %r11 to i64
-%r13 = getelementptr i64, i64* %r1, i32 1
-store i64 %r12, i64* %r13
-%r14 = lshr i320 %r11, 64
-%r15 = getelementptr i64, i64* %r3, i32 2
-%r16 = load i64, i64* %r15
-%r17 = call i320 @mcl_c5_fr_mulUnit(i64* %r2, i64 %r16)
-%r18 = add i320 %r14, %r17
-%r19 = trunc i320 %r18 to i64
-%r20 = getelementptr i64, i64* %r1, i32 2
-store i64 %r19, i64* %r20
-%r21 = lshr i320 %r18, 64
-%r22 = getelementptr i64, i64* %r3, i32 3
-%r23 = load i64, i64* %r22
-%r24 = call i320 @mcl_c5_fr_mulUnit(i64* %r2, i64 %r23)
-%r25 = add i320 %r21, %r24
-%r26 = getelementptr i64, i64* %r1, i32 3
-%r27 = bitcast i64* %r26 to i320*
-store i320 %r25, i320* %r27
-ret void
-}
-define void @mcl_c5_frDbl_sqrPre(i64* noalias %r1, i64* noalias %r2)
-{
-%r3 = getelementptr i64, i64* %r2, i32 0
-%r4 = load i64, i64* %r3
-%r5 = getelementptr i64, i64* %r2, i32 1
-%r6 = load i64, i64* %r5
-%r7 = getelementptr i64, i64* %r2, i32 2
-%r8 = load i64, i64* %r7
-%r9 = getelementptr i64, i64* %r2, i32 3
-%r10 = load i64, i64* %r9
-%r11 = zext i64 %r4 to i128
-%r12 = zext i64 %r10 to i128
-%r13 = mul i128 %r11, %r12
-%r14 = zext i64 %r4 to i128
-%r15 = zext i64 %r8 to i128
-%r16 = mul i128 %r14, %r15
-%r17 = zext i64 %r6 to i128
-%r18 = zext i64 %r10 to i128
-%r19 = mul i128 %r17, %r18
-%r20 = zext i128 %r16 to i256
-%r21 = zext i128 %r19 to i256
-%r22 = shl i256 %r21, 128
-%r23 = or i256 %r20, %r22
-%r24 = zext i128 %r13 to i256
-%r25 = shl i256 %r24, 64
-%r26 = add i256 %r25, %r23
-%r27 = zext i64 %r4 to i128
-%r28 = zext i64 %r6 to i128
-%r29 = mul i128 %r27, %r28
-%r30 = zext i64 %r6 to i128
-%r31 = zext i64 %r8 to i128
-%r32 = mul i128 %r30, %r31
-%r33 = zext i64 %r8 to i128
-%r34 = zext i64 %r10 to i128
-%r35 = mul i128 %r33, %r34
-%r36 = zext i128 %r29 to i256
-%r37 = zext i128 %r32 to i256
-%r38 = shl i256 %r37, 128
-%r39 = or i256 %r36, %r38
-%r40 = zext i256 %r39 to i384
-%r41 = zext i128 %r35 to i384
-%r42 = shl i384 %r41, 256
-%r43 = or i384 %r40, %r42
-%r44 = zext i256 %r26 to i384
-%r45 = shl i384 %r44, 64
-%r46 = add i384 %r45, %r43
-%r47 = zext i384 %r46 to i448
-%r48 = add i448 %r47, %r47
-%r49 = zext i448 %r48 to i512
-%r50 = shl i512 %r49, 64
-%r51 = zext i64 %r4 to i128
-%r52 = zext i64 %r4 to i128
-%r53 = mul i128 %r51, %r52
-%r54 = zext i64 %r6 to i128
-%r55 = zext i64 %r6 to i128
-%r56 = mul i128 %r54, %r55
-%r57 = zext i64 %r8 to i128
-%r58 = zext i64 %r8 to i128
-%r59 = mul i128 %r57, %r58
-%r60 = zext i64 %r10 to i128
-%r61 = zext i64 %r10 to i128
-%r62 = mul i128 %r60, %r61
-%r63 = zext i128 %r53 to i256
-%r64 = zext i128 %r56 to i256
-%r65 = shl i256 %r64, 128
-%r66 = or i256 %r63, %r65
-%r67 = zext i256 %r66 to i384
-%r68 = zext i128 %r59 to i384
-%r69 = shl i384 %r68, 256
-%r70 = or i384 %r67, %r69
-%r71 = zext i384 %r70 to i512
-%r72 = zext i128 %r62 to i512
-%r73 = shl i512 %r72, 384
-%r74 = or i512 %r71, %r73
-%r75 = add i512 %r50, %r74
-%r76 = bitcast i64* %r1 to i512*
-store i512 %r75, i512* %r76
 ret void
 }
