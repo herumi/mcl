@@ -91,7 +91,7 @@ ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 LLVM_LLC=llc$(LLVM_VER)
 LLVM_OPT=opt$(LLVM_VER)
 GEN=python3 src/gen.py
-GEN_EXE_OPT=-u $(BIT)
+GEN_EXE_OPT=-u $(BIT) -fpbit $(MCL_FP_BIT)
 
 # build base$(BIT).ll
 BASE_LL=src/base$(BIT).ll
@@ -100,7 +100,7 @@ BASE_OBJ=$(OBJ_DIR)/base$(BIT).o
 
 ifeq ($(UPDATE_ASM),1)
 
-$(BASE_LL): src/gen.py src/common.py src/s_xbyak_llvm.py
+$(BASE_LL): src/gen.py src/common.py src/primetbl.py src/s_xbyak_llvm.py
 	$(GEN) $(GEN_EXE_OPT) > $@
 
 $(BASE_ASM): $(BASE_LL)
@@ -206,8 +206,8 @@ else
 endif
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch -n $(BINT_MUL_N)
-src/llvm_proto.hpp: src/gen_llvm_proto.py
-	python3 $< > $@
+src/llvm_proto.hpp: src/gen_llvm_proto.py src/primetbl.py
+	python3 $< -fpbit $(MCL_FP_BIT) > $@
 GEN_BINT_X64_OPT=-curveBit=$(MCL_MSM_CURVE_BIT) -n $(BINT_MUL_N)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_SUF),S)
@@ -222,11 +222,12 @@ update_bint_x64_asm:
 
 # regenerate all generated files (ll first, then asm) on x86-64 host
 # e.g. make update_all_asm LLVM_VER=-21
+# (the p-fixed Fp2 functions of base{64,32}.ll depend on MCL_FP_BIT; make header too)
 update_all_asm:
 	python3 src/gen_bint.py -u 64 -n $(BINT_MUL_N) > src/bint64.ll
 	python3 src/gen_bint.py -u 32 -n $(BINT_MUL_N32) > src/bint32.ll
-	$(GEN) -u 64 > src/base64.ll
-	$(GEN) -u 32 > src/base32.ll
+	$(GEN) -u 64 -fpbit $(MCL_FP_BIT) > src/base64.ll
+	$(GEN) -u 32 -fpbit $(MCL_FP_BIT) > src/base32.ll
 	$(LLVM_OPT) -O3 -o - src/base64.ll -march=$(CPU) | $(LLVM_LLC) -O3 -o src/asm/x86-64.S $(LLVM_FLAGS)
 	$(MAKE) update_bint_x64_asm
 
@@ -285,7 +286,7 @@ ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
 	$(AR) $(ARFLAGS) $@ $(ECDSA_OBJ)
 
-src/base64m.ll: src/gen.py src/common.py src/s_xbyak_llvm.py
+src/base64m.ll: src/gen.py src/common.py src/primetbl.py src/s_xbyak_llvm.py
 	$(GEN) $(GEN_EXE_OPT) -wasm > $@
 
 src/dump_code: src/dump_code.cpp src/fp.cpp src/fp_generator.hpp
