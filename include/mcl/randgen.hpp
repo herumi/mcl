@@ -1,4 +1,5 @@
 #pragma once
+#include <mcl/config.hpp>
 /**
 	@file
 	@brief definition of Op
@@ -106,11 +107,8 @@ public:
 #endif
 		return wrg;
 	}
-	static RandGen& get()
-	{
-		static RandGen wrg(getDefaultRandGen());
-		return wrg;
-	}
+	// defined in fp.cpp so that a client of mcl.dll shares the instance in the DLL
+	MCL_CXX_API static RandGen& get();
 	/*
 		rg must be thread safe
 		rg.read(void *buf, size_t byteSize);

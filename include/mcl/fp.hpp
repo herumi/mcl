@@ -31,6 +31,8 @@ namespace fp {
 
 MCL_CXX_API uint64_t getUint64(bool *pb, const fp::Block& b);
 MCL_CXX_API int64_t getInt64(bool *pb, fp::Block& b, const fp::Op& op);
+// return the pointer to FpT<tag, maxBitSize>::op_ in the library (for MCL_DLL_IMPORT_STATIC)
+MCL_CXX_API Op* getOpPtr(int tag, size_t maxBitSize);
 
 const char *ModeToStr(Mode mode);
 
@@ -73,11 +75,10 @@ public:
 	static const size_t maxSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
 private:
 	Unit v_[maxSize];
-	static fp::Op op_;
+	MCL_DLL_STATIC(fp::Op) op_;
 	friend class FpDbl;
 	friend class Fp2;
 	template<class Fp> friend struct Fp6T;
-#ifdef MCL_XBYAK_DIRECT_CALL
 	static inline void addA(Unit *z, const Unit *x, const Unit *y)
 	{
 		op_.fp_add(z, x, y, op_.p);
@@ -103,7 +104,6 @@ private:
 //		op_.fp_mul2(y, x, op_.p);
 		op_.fp_add(y, x, x, op_.p);
 	}
-#endif
 public:
 	typedef FpT<tag, maxBitSize> BaseFp;
 	// return pointer to array v_[]
@@ -141,7 +141,6 @@ public:
 			gmp::getArray(pb, op_.half, op_.N, half);
 			if (!*pb) return;
 		}
-#ifdef MCL_XBYAK_DIRECT_CALL
 		if (op_.fp_addA_ == 0) {
 			op_.fp_addA_ = addA;
 		}
@@ -160,7 +159,6 @@ public:
 		if (op_.fp_mul2A_ == 0) {
 			op_.fp_mul2A_ = mul2A;
 		}
-#endif
 		*pb = true;
 	}
 	static inline void init(bool *pb, const char *mstr, int u = 0, int xi_a = 0)
@@ -271,7 +269,7 @@ public:
 			if (n == 0) return;
 			n = fp::strToArray(&isMinus, v_, op_.N, buf, n, ioMode);
 			if (n == 0) return;
-			for (size_t i = n; i < op_.N; i++) v_[i] = 0;
+			bint::clearN(v_ + n, op_.N - n);
 		}
 		if (bint::cmpGeN(v_, op_.p, op_.N)) {
 			return;
@@ -361,25 +359,34 @@ public:
 	}
 	/*
 		set (x as little endian) % p
-		error if size of x >= sizeof(Fp) * 2
+		error if size of x > MCL_MAX_BUF_BYTE_SIZE
 	*/
-	template<class S>
-	void setArrayMod(bool *pb, const S *x, size_t n)
+	void setArrayMod(bool *pb, const uint8_t *x, size_t n)
 	{
-		if (sizeof(S) * n > sizeof(Unit) * op_.N * 2) {
+		if (n > MCL_MAX_BUF_BYTE_SIZE) {
 			*pb = false;
 			return;
 		}
-		mpz_class mx;
-		gmp::setArray(pb, mx, x, n);
-		if (!*pb) return;
-#ifdef MCL_USE_VINT
-		op_.modp.modp(mx, mx);
-#else
-		mx %= op_.mp;
-#endif
-		gmp::getArray(pb, v_, op_.N, mx);
-		if (!*pb) return;
+		const size_t tN = MCL_MAX_BUF_BYTE_SIZE / sizeof(Unit);
+		Unit t[tN];
+		fp::convertArrayAsLE(t, tN, x, n); // the rest is filled with zero
+		setArrayMod(pb, t, (n + sizeof(Unit) - 1) / sizeof(Unit));
+	}
+	void setArrayMod(bool *pb, const Unit *x, size_t n)
+	{
+		if (sizeof(Unit) * n > MCL_MAX_BUF_BYTE_SIZE) {
+			*pb = false;
+			return;
+		}
+		if (!op_.modp.modp(v_, x, n)) {
+			mpz_class mx;
+			gmp::setArray(pb, mx, x, n);
+			if (!*pb) return;
+			mx %= op_.mp;
+			gmp::getArray(pb, v_, op_.N, mx);
+			if (!*pb) return;
+		}
+		*pb = true;
 		toMont();
 	}
 	void getBlock(fp::Block& b) const
@@ -398,7 +405,7 @@ public:
 		if (isMont()) {
 			op_.fromMont(u, v_);
 		} else {
-			for (size_t i = 0, n = op_.N; i < n; i++) u[i] = v_[i];
+			bint::copyN(u, v_, op_.N);
 		}
 	}
 	// u must be the array of the length getUnitSize() (= op_.N)
@@ -408,7 +415,7 @@ public:
 		if (isMont()) {
 			op_.toMont(v_, u);
 		} else {
-			for (size_t i = 0, n = op_.N; i < n; i++) v_[i] = u[i];
+			bint::copyN(v_, u, op_.N);
 		}
 	}
 	/*
@@ -431,9 +438,7 @@ public:
 		}
 		if (n == 0) n = 1; // zero
 		if (maxN < n) return 0;
-		for (size_t i = 0; i < n; i++) {
-			buf[i] = t[i];
-		}
+		bint::copyN(buf, t, n);
 		return n;
 	}
 	/*
@@ -517,52 +522,27 @@ public:
 	}
 	static void add(FpT& z, const FpT& x, const FpT& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_addA_(z.v_, x.v_, y.v_);
-#else
-		op_.fp_add(z.v_, x.v_, y.v_, op_.p);
-#endif
 	}
 	static void sub(FpT& z, const FpT& x, const FpT& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_subA_(z.v_, x.v_, y.v_);
-#else
-		op_.fp_sub(z.v_, x.v_, y.v_, op_.p);
-#endif
 	}
 	static void neg(FpT& y, const FpT& x)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_negA_(y.v_, x.v_);
-#else
-		op_.fp_neg(y.v_, x.v_, op_.p);
-#endif
 	}
 	static void mul(FpT& z, const FpT& x, const FpT& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_mulA_(z.v_, x.v_, y.v_);
-#else
-		op_.fp_mul(z.v_, x.v_, y.v_, op_.p);
-#endif
 	}
 	static void sqr(FpT& y, const FpT& x)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_sqrA_(y.v_, x.v_);
-#else
-		op_.fp_sqr(y.v_, x.v_, op_.p);
-#endif
 	}
 	static void mul2(FpT& y, const FpT& x)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		op_.fp_mul2A_(y.v_, x.v_);
-#else
-		add(y, x, x);
-//		op_.fp_mul2(y.v_, x.v_, op_.p);
-#endif
 	}
 	static void mul9(FpT& y, const FpT& x)
 	{
@@ -572,9 +552,9 @@ public:
 	static inline void subPre(FpT& z, const FpT& x, const FpT& y) { op_.fp_subPre(z.v_, x.v_, y.v_); }
 	static inline void mulUnit(FpT& z, const FpT& x, const Unit y)
 	{
-		if (mcl::fp::mulSmallUnit(z, x, y)) return;
-		if (op_.mulSmallUnit(op_.smallModP, z.v_, x.v_, y)) return;
-		op_.fp_mulUnit(z.v_, x.v_, y, op_.p);
+		// the add chain of mulSmallUnit beats fp_mulUnit (Modp::mulUnitModT) only for y <= 4
+		if (y <= 4 && mcl::fp::mulSmallUnit(z, x, y)) return;
+		op_.fp_mulUnit(z.v_, x.v_, y, op_);
 	}
 	// alias of mulUnit
 	static inline void mulSmall(FpT& z, const FpT& x, const uint32_t y) { mulUnit(z, x, y); }
@@ -791,9 +771,15 @@ public:
 #else
 	#define MCL_INIT_PRIORITY(x)
 #endif
+#ifdef MCL_DLL_IMPORT_STATIC
+// op_ refers to the instance in mcl.dll
+template<int tag, size_t maxBitSize>
+fp::Op& FpT<tag, maxBitSize>::op_ = *fp::getOpPtr(tag, maxBitSize);
+#else
 // Declare op_ as an external variable
 template<int tag, size_t maxBitSize>
 fp::Op FpT<tag, maxBitSize>::op_ MCL_INIT_PRIORITY(200);
+#endif
 
 } // mcl
 

@@ -535,11 +535,10 @@ void setArrayModTest()
 		const mcl::Unit *px = mcl::gmp::getUnit(x);
 		const size_t xn = mcl::gmp::getUnitSize(x);
 		const size_t xByteSize = xn * unitByteSize;
-		const size_t fpByteSize = unitByteSize * Fp::getOp().N;
 		Fp y;
 		bool b;
 		y.setArrayMod(&b, px, xn);
-		bool expected = xByteSize <= fpByteSize * 2;
+		bool expected = xByteSize <= MCL_MAX_BUF_BYTE_SIZE;
 		CYBOZU_TEST_EQUAL(b, expected);
 		if (!b) continue;
 		CYBOZU_TEST_EQUAL(y.getMpz(), x % p);
@@ -738,10 +737,10 @@ void setHashOfTest()
 		std::string digest;
 		if (bitSize <= 256) {
 			digest.resize(256/8);
-			cybozu::Sha256().digest(digest.data(), digest.size(), msg, msgSize);
+			cybozu::Sha256().digest(&digest[0], digest.size(), msg, msgSize);
 		} else {
 			digest.resize(512/8);
-			cybozu::Sha512().digest(digest.data(), digest.size(), msg, msgSize);
+			cybozu::Sha512().digest(&digest[0], digest.size(), msg, msgSize);
 		}
 		Fp x, y;
 		x.setArrayMask((const uint8_t*)digest.data(), digest.size());
@@ -843,12 +842,21 @@ void modpTest()
 	std::string maxStr(mcl::gmp::getBitSize(p) * 2, '1');
 	mcl::gmp::setStr(tbl[0], maxStr, 2);
 	mcl::Modp modp;
-	modp.init(p);
+	const bool ok = modp.init(p);
+	if (!ok) {
+		std::cout << "modp.init fail for p=" << p << std::endl;
+	}
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		const mpz_class& x = tbl[i];
+		mcl::Unit y[mcl::maxUnitSize];
+		const bool b = modp.modp(y, mcl::gmp::getUnit(x), mcl::gmp::getUnitSize(x));
+		CYBOZU_TEST_EQUAL(b, ok);
+		if (!b) continue;
 		mpz_class r1, r2;
 		r1 = x % p;
-		modp.modp(r2, x);
+		bool b2;
+		mcl::gmp::setArray(&b2, r2, y, modp.N);
+		CYBOZU_TEST_ASSERT(b2);
 		CYBOZU_TEST_EQUAL(r1, r2);
 	}
 }

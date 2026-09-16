@@ -285,7 +285,7 @@ void T::setLittleEndianMod(const uint8_t *buf, size_t bufSize);
 void T::setBigEndianMod(const uint8_t *buf, size_t bufSize);
 ```
 
-- return 0 if bufSize <= (sizeof(T) * 2), otherwise -1
+- return 0 if bufSize <= 64 (MCL_MAX_BUF_BYTE_SIZE), otherwise -1
 
 ### Get little-endian byte sequence in `buf` corresponding to `x`
 ```c
@@ -478,6 +478,8 @@ void mclBnFr_add(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 void mclBnFr_sub(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 void mclBnFr_mul(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
 void mclBnFr_div(mclBnFr *z, const mclBnFr *x, const mclBnFr *y);
+// z = x * y for a small integer y (faster than mclBnFr_mul with the converted y)
+void mclBnFr_mulUnit(mclBnFr *z, const mclBnFr *x, uint32_t y);
 
 void mclBnFp_neg(mclBnFp *y, const mclBnFp *x);
 void mclBnFp_inv(mclBnFp *y, const mclBnFp *x);
@@ -487,6 +489,7 @@ void mclBnFp_add(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 void mclBnFp_sub(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 void mclBnFp_mul(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
 void mclBnFp_div(mclBnFp *z, const mclBnFp *x, const mclBnFp *y);
+void mclBnFp_mulUnit(mclBnFp *z, const mclBnFp *x, uint32_t y);
 
 void mclBnFp2_neg(mclBnFp2 *y, const mclBnFp2 *x);
 void mclBnFp2_inv(mclBnFp2 *y, const mclBnFp2 *x);

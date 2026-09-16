@@ -9,33 +9,33 @@
 
 enum {
 	MCL_BN254 = 0,
-	MCL_BN381_1 = 1,
-	MCL_BN381_2 = 2,
+	MCL_BN381_1 = 1, // deprecated
+	MCL_BN381_2 = 2, // deprecated
 	MCL_BN462 = 3, // deprecated
 	MCL_BN_SNARK1 = 4,
 	MCL_BLS12_381 = 5,
-	MCL_BN160 = 6,
+	MCL_BN160 = 6, // deprecated
 	MCL_BLS12_461 = 7, // deprecated
 	MCL_BLS12_377 = 8,
-	MCL_BN_P256 = 9,
+	MCL_BN_P256 = 9, // deprecated
 
 	/*
 		for only G1
 		the size of curve must be <= MCL_FP_BIT
 	*/
 	MCL_EC_BEGIN = 100,
-	MCL_SECP192K1 = MCL_EC_BEGIN,
-	MCL_SECP224K1 = 101,
+	MCL_SECP192K1 = MCL_EC_BEGIN, // deprecated
+	MCL_SECP224K1 = 101, // deprecated
 	MCL_SECP256K1 = 102,
-	MCL_SECP384R1 = 103,
+	MCL_SECP384R1 = 103, // deprecated
 	MCL_SECP521R1 = 104, // deprecated
-	MCL_NIST_P192 = 105,
-	MCL_NIST_P224 = 106,
-	MCL_NIST_P256 = 107,
-	MCL_SECP160K1 = 108,
-	MCL_P160_1 = 109,
+	MCL_NIST_P192 = 105, // deprecated
+	MCL_NIST_P224 = 106, // deprecated
+	MCL_NIST_P256 = 107, // deprecated
+	MCL_SECP160K1 = 108, // deprecated
+	MCL_P160_1 = 109, // deprecated
 	MCL_EC_END = MCL_P160_1 + 1,
-	MCL_NIST_P384 = MCL_SECP384R1,
+	MCL_NIST_P384 = MCL_SECP384R1,// deprecated
 	MCL_NIST_P521 = MCL_SECP521R1 // deprecated
 };
 

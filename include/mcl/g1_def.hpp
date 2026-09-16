@@ -13,4 +13,8 @@ namespace mcl {
 
 typedef EcT<Fp> G1;
 
+namespace ec {
+template<> struct StaticId<Fp> { static const int id = StaticIdG1; };
+} // mcl::ec
+
 } // mcl

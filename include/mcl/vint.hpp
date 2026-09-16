@@ -22,14 +22,22 @@
 
 namespace mcl {
 
+#if MCL_MAX_UNIT_SIZE * 2 > MCL_BINT_MUL_N2
+	#error "Vint requires the generated bint functions up to MCL_MAX_UNIT_SIZE * 2 units (see MCL_BINT_MUL_N in config.hpp)"
+#endif
+
 /**
 	signed integer with variable length
+	The buffer holds N = 2 maxUnitSize units (2 MCL_FP_BIT bits), i.e., x * y for x, y < 2^MCL_FP_BIT.
+	If the result of add/mul/shl exceeds N units, it is truncated to the lower N units (mod 2^(N UnitBitSize))
+	and assert() fails in a debug build.
+	The fixed-size bint functions (addN, subN, mulUnitN, mulUnitAddN) are called with n <= N <= MCL_BINT_MUL_N2.
 */
 class Vint {
 public:
 	static const size_t UnitBitSize = sizeof(Unit) * 8;
 	static const int invalidVar = -2147483647 - 1; // abs(invalidVar) is not defined
-	static const size_t N = maxUnitSize * 2 + 1;
+	static const size_t N = maxUnitSize * 2;
 private:
 	Unit buf_[N]; // assume buf_[size_ - 1] != 0 unless the value is zero
 	size_t size_;
@@ -62,10 +70,8 @@ private:
 		}
 		assert(xn >= yn);
 		// &x[0] and &y[0] will not change if z == x or z == y because they are FixedBuffer
-		if (!z.setSize(xn + 1)) {
-			z.clear();
-			return;
-		}
+		assert(xn <= N);
+		z.size_ = xn;
 		Unit *dst = z.buf_;
 		Unit c = bint::addN(dst, px, py, yn);
 		if (xn > yn) {
@@ -73,18 +79,36 @@ private:
 			if (dst != px) bint::copyN(dst + yn, px + yn, n);
 			c = bint::addUnit(dst + yn, n, c);
 		}
-		dst[xn] = c;
+		z.setCarry(c);
 		z.trim();
+	}
+	// set the carry c of the n-th unit (n = size_) if it exists
+	void setCarry(Unit c)
+	{
+		if (c == 0) return;
+		if (size_ < N) {
+			buf_[size_] = c;
+			size_++;
+		} else {
+			assert(0); // overflow, the carry is discarded (mod 2^(N UnitBitSize))
+		}
+	}
+	// copy the lower N units of t[tn] if tn > N (mod 2^(N UnitBitSize))
+	void copyTrunc(const Unit *t, size_t tn)
+	{
+		size_t n = bint::getRealSize(t, tn);
+		assert(n <= N); // overflow
+		if (n > N) n = N;
+		bint::copyN(buf_, t, n);
+		size_ = n;
 	}
 	static void uadd1(Vint& z, const Unit *x, size_t xn, Unit y)
 	{
-		size_t zn = xn + 1;
-		if (!z.setSize(zn)) {
-			z.clear();
-			return;
-		}
+		assert(xn <= N);
 		if (z.buf_ != x) bint::copyN(z.buf_, x, xn);
-		z.buf_[zn - 1] = bint::addUnit(z.buf_, xn, y);
+		z.size_ = xn;
+		Unit c = bint::addUnit(z.buf_, xn, y);
+		z.setCarry(c);
 		z.trim();
 	}
 	static void usub1(Vint& z, const Unit *x, size_t xn, Unit y)
@@ -535,8 +559,15 @@ public:
 		const size_t xn = x.size();
 		const size_t yn = y.size();
 		size_t zn = xn + yn;
-		if (!z.setSize(zn)) return;
-		bint::mulNM(z.buf_, x.buf_, xn, y.buf_, yn);
+		if (zn <= N) {
+			z.size_ = zn;
+			bint::mulNM(z.buf_, x.buf_, xn, y.buf_, yn);
+		} else {
+			// the result may fit in N units even if xn + yn > N
+			Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * zn);
+			bint::mulNM(t, x.buf_, xn, y.buf_, yn);
+			z.copyTrunc(t, zn);
+		}
 		z.trim();
 		z.isNeg_ = x.isNeg_ ^ y.isNeg_;
 	}
@@ -555,9 +586,10 @@ public:
 	static void mulu1(Vint& z, const Vint& x, Unit y)
 	{
 		size_t xn = x.size();
-		size_t zn = xn + 1;
-		if (!z.setSize(zn)) return;
-		z.buf_[zn - 1] = bint::mulUnitN(z.buf_, x.buf_, y, xn);
+		assert(xn <= N);
+		z.size_ = xn;
+		Unit c = bint::mulUnitN(z.buf_, x.buf_, y, xn);
+		z.setCarry(c);
 		z.isNeg_ = x.isNeg_;
 		z.trim();
 	}
@@ -700,9 +732,16 @@ public:
 		assert(shiftBit <= MCL_FP_BIT * 2); // many be too big
 		size_t xn = x.size();
 		size_t yn = xn + (shiftBit + UnitBitSize - 1) / UnitBitSize;
-		bint::shiftLeft(y.buf_, x.buf_, shiftBit, xn);
+		if (yn <= N) {
+			bint::shiftLeft(y.buf_, x.buf_, shiftBit, xn);
+			y.size_ = yn;
+		} else {
+			// the result may fit in N units even if yn > N
+			Unit *t = (Unit*)CYBOZU_ALLOCA(sizeof(Unit) * yn);
+			bint::shiftLeft(t, x.buf_, shiftBit, xn);
+			y.copyTrunc(t, yn);
+		}
 		y.isNeg_ = x.isNeg_;
-		y.size_ = yn;
 		y.trim();
 	}
 	// logical right shift (copy sign)

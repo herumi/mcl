@@ -108,19 +108,11 @@ public:
 	}
 	static inline void add(FpDbl& z, const FpDbl& x, const FpDbl& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fpDbl_addA_(z.v_, x.v_, y.v_);
-#else
-		Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p);
-#endif
 	}
 	static inline void sub(FpDbl& z, const FpDbl& x, const FpDbl& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fpDbl_subA_(z.v_, x.v_, y.v_);
-#else
-		Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p);
-#endif
 	}
 	static inline void neg(FpDbl& z, const FpDbl& x)
 	{
@@ -130,17 +122,11 @@ public:
 	}
 	static inline void mod(Fp& z, const FpDbl& xy)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fpDbl_modA_(z.v_, xy.v_);
-#else
-		Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p);
-#endif
 	}
-#ifdef MCL_XBYAK_DIRECT_CALL
 	static void addA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_add(z, x, y, Fp::op_.p); }
 	static void subA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_sub(z, x, y, Fp::op_.p); }
 	static void modA(Unit *z, const Unit *xy) { Fp::op_.fpDbl_mod(z, xy, Fp::op_.p); }
-#endif
 	static void addPre(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_addPre(z.v_, x.v_, y.v_); }
 	static void subPre(FpDbl& z, const FpDbl& x, const FpDbl& y) { Fp::op_.fpDbl_subPre(z.v_, x.v_, y.v_); }
 	/*
@@ -155,7 +141,6 @@ public:
 	}
 	static void init()
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		mcl::fp::Op& op = Fp::op_;
 		if (op.fpDbl_addA_ == 0) {
 			op.fpDbl_addA_ = addA;
@@ -166,7 +151,6 @@ public:
 		if (op.fpDbl_modA_ == 0) {
 			op.fpDbl_modA_ = modA;
 		}
-#endif
 	}
 	void operator+=(const FpDbl& x) { add(*this, *this, x); }
 	void operator-=(const FpDbl& x) { sub(*this, *this, x); }
@@ -184,14 +168,14 @@ public:
 */
 class Fp2 : public fp::Serializable<Fp2, fp::Operator<Fp2> > {
 	static const size_t gN = 5;
-	static Fp u_pm1o2; // u^((p-1)/2)
+	MCL_DLL_VAR static Fp u_pm1o2; // u^((p-1)/2)
 	/*
 		g = xi^((p - 1) / 6)
 		g[] = { g^2, g^4, g^1, g^3, g^5 }
 	*/
-	static Fp2 g[gN];
-	static Fp2 g2[gN];
-	static Fp2 g3[gN];
+	MCL_DLL_VAR static Fp2 g[gN];
+	MCL_DLL_VAR static Fp2 g2[gN];
+	MCL_DLL_VAR static Fp2 g3[gN];
 public:
 	static const Fp2 *get_gTbl() { return &g[0]; }
 	static const Fp2 *get_g2Tbl() { return &g2[0]; }
@@ -224,56 +208,27 @@ public:
 	}
 	static void add(Fp2& z, const Fp2& x, const Fp2& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_addA_(z.a.v_, x.a.v_, y.a.v_);
-#else
-		addA(z.a.v_, x.a.v_, y.a.v_);
-#endif
 	}
 	static void sub(Fp2& z, const Fp2& x, const Fp2& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_subA_(z.a.v_, x.a.v_, y.a.v_);
-#else
-		subA(z.a.v_, x.a.v_, y.a.v_);
-#endif
 	}
 	static void neg(Fp2& y, const Fp2& x)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_negA_(y.a.v_, x.a.v_);
-#else
-		negA(y.a.v_, x.a.v_);
-#endif
 	}
 	static void mul(Fp2& z, const Fp2& x, const Fp2& y)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_mulA_(z.a.v_, x.a.v_, y.a.v_);
-#else
-		mulA(z.a.v_, x.a.v_, y.a.v_);
-#endif
 	}
 	static void sqr(Fp2& y, const Fp2& x)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_sqrA_(y.a.v_, x.a.v_);
-#else
-		if (Fp::op_.u == 1) {
-			sqrA(y.a.v_, x.a.v_);
-		} else {
-			assert(Fp::op_.u == 5);
-			sqrAu5(y.a.v_, x.a.v_);
-		}
-#endif
 	}
 	static void mul2(Fp2& y, const Fp2& x)
 	{
-#ifdef MCL_XBYAK_DIRECT_CALL
 		Fp::op_.fp2_mul2A_(y.a.v_, x.a.v_);
-#else
-		mul2A(y.a.v_, x.a.v_);
-#endif
 	}
 	static void mul_xi(Fp2& y, const Fp2& x)
 	{

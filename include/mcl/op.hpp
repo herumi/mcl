@@ -119,9 +119,9 @@ typedef void (*void2u)(Unit*, const Unit*);
 typedef void (*void2uI)(Unit*, const Unit*, Unit);
 typedef void (*void2uIu)(Unit*, const Unit*, Unit, const Unit*);
 typedef void (*void2uOp)(Unit*, const Unit*, const Op&);
+typedef void (*void2uIOp)(Unit*, const Unit*, Unit, const Op&);
 typedef void (*void3u)(Unit*, const Unit*, const Unit*);
 typedef void (*void4u)(Unit*, const Unit*, const Unit*, const Unit*);
-typedef int (*int2u)(Unit*, const Unit*);
 
 typedef Unit (*u1uII)(Unit*, Unit, Unit);
 typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
@@ -171,13 +171,14 @@ struct Op {
 	*/
 	Unit rp;
 	Unit p[maxUnitSize];
-	mpz_class mp;
+	size_t maxN;
+	size_t N;
+	size_t bitSize;
 	uint32_t pmod4;
+	mpz_class mp;
+	mcl::Modp modp;
 	mcl::SquareRoot sq;
 	CYBOZU_ALIGN(8) char im[sizeof(mcl::inv::InvModT<maxUnitSize>)];
-	mcl::Modp modp;
-//	mcl::SmallModp smallModp;
-	mcl::bint::SmallModP smallModP;
 	Unit half[maxUnitSize]; // (p + 1) / 2
 	Unit oneRep[maxUnitSize]; // 1(=inv R if Montgomery)
 	/*
@@ -192,9 +193,6 @@ struct Op {
 	Unit R3[maxUnitSize];
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg;
-#endif
-#ifdef MCL_X64_ASM
-	mcl::Array<Unit> invTbl;
 #endif
 	void3u fp_addA_;
 	void3u fp_subA_;
@@ -214,9 +212,6 @@ struct Op {
 	void3u fp2Dbl_mulPreA_;
 	void2u fp2Dbl_sqrPreA_;
 	void2u fp2Dbl_mul_xiA_;
-	size_t maxN;
-	size_t N;
-	size_t bitSize;
 	bool (*fp_isZero)(const Unit*);
 	void1u fp_clear;
 	void2u fp_copy;
@@ -228,12 +223,10 @@ struct Op {
 	void3u fp_sqr;
 	void3u fp_mul2;
 	void2uOp fp_invOp;
-	void2uIu fp_mulUnit; // fp_mulUnitPre
-	bool (*mulSmallUnit)(const mcl::bint::SmallModP&, Unit *z, const Unit *x, Unit y);
+	void2uIOp fp_mulUnit; // z = x * y (Unit) ; Modp::mulUnitModT<N> or bint::div
 
 	void3u fpDbl_mulPre;
 	void2u fpDbl_sqrPre;
-	int2u fp_preInv;
 	void2uI fp_mulUnitPre; // z[N + 1] = x[N] * y
 
 	void4u fpDbl_add;
@@ -275,8 +268,11 @@ struct Op {
 	{
 		rp = 0;
 		memset(p, 0, sizeof(p));
-		mp = 0;
+		maxN = 0;
+		N = 0;
+		bitSize = 0;
 		pmod4 = 0;
+		mp = 0;
 		sq.clear();
 		// fg is not set
 		memset(half, 0, sizeof(half));
@@ -284,9 +280,6 @@ struct Op {
 		memset(one, 0, sizeof(one));
 		memset(R2, 0, sizeof(R2));
 		memset(R3, 0, sizeof(R3));
-#ifdef MCL_X64_ASM
-		invTbl.clear();
-#endif
 		fp_addA_ = 0;
 		fp_subA_ = 0;
 		fp_negA_ = 0;
@@ -305,9 +298,6 @@ struct Op {
 		fp2Dbl_mulPreA_ = 0;
 		fp2Dbl_sqrPreA_ = 0;
 		fp2Dbl_mul_xiA_ = 0;
-		maxN = 0;
-		N = 0;
-		bitSize = 0;
 		fp_isZero = 0;
 		fp_clear = 0;
 		fp_copy = 0;
@@ -320,11 +310,9 @@ struct Op {
 		fp_mul2 = 0;
 		fp_invOp = 0;
 		fp_mulUnit = 0;
-		mulSmallUnit = 0;
 
 		fpDbl_mulPre = 0;
 		fpDbl_sqrPre = 0;
-		fp_preInv = 0;
 		fp_mulUnitPre = 0;
 
 		fpDbl_add = 0;

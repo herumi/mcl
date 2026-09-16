@@ -9,11 +9,14 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 
+#include <string.h>
 #include <mcl/gmp_util.hpp>
-#include <mcl/bint.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <mcl/invmod_fwd.hpp>
 #include <mcl/util.hpp>
+#if defined(_MSC_VER) && MCL_SIZEOF_UNIT == 8
+	#include <intrin.h>
+#endif
 
 namespace mcl {
 
@@ -23,115 +26,30 @@ struct Quad {
 	Unit u, v, q, r;
 };
 
-template<int N>
-void _add(SintT<N>& z, const SintT<N>& x, const Unit *y, bool ySign)
+/*
+	modL divsteps on the low bits (f, g) as a matrix t (cf. secp256k1_modinv64_divsteps_62_var).
+	Each inner iteration cancels the low min(limit, 8) bits of g by adding
+	w f (w = g (-f^-1 mod 256) mod 2^limit), so it takes fewer iterations than
+	the 4-bit table version.
+*/
+static inline Sint divsteps_n_matrix(Quad& t, Sint eta, Unit f, Unit g)
 {
-	if (x.sign == ySign) {
-		Unit ret = mcl::bint::addT<N>(z.v, x.v, y);
-		(void)ret;
-		assert(ret == 0);
-		z.sign = x.sign;
-		return;
-	}
-	int r = mcl::bint::cmpT<N>(x.v, y);
-	if (r >= 0) {
-		mcl::bint::subT<N>(z.v, x.v, y);
-		z.sign = x.sign;
-		return;
-	}
-	mcl::bint::subT<N>(z.v, y, x.v);
-	z.sign = ySign;
-}
-
-template<int N>
-void set(SintT<N>& y, const Unit *x, bool sign)
-{
-	mcl::bint::copyT<N>(y.v, x);
-	y.sign = sign;
-}
-
-template<int N>
-void clear(SintT<N>& x)
-{
-	x.sign = false;
-	mcl::bint::clearT<N>(x.v);
-}
-
-template<int N>
-bool isZero(const SintT<N>& x)
-{
-	Unit r = x.v[0];
-	for (int i = 1; i < N; i++) r |= x.v[i];
-	return r == 0;
-}
-
-template<int N>
-void add(SintT<N>& z, const SintT<N>& x, const SintT<N>& y)
-{
-	_add(z, x, y.v, y.sign);
-}
-
-template<int N>
-void sub(SintT<N>& z, const SintT<N>& x, const SintT<N>& y)
-{
-	_add(z, x, y.v, !y.sign);
-}
-
-template<int N>
-void mulUnit(SintT<N+1>&z, const SintT<N>& x, INT y)
-{
-	Unit abs_y = y < 0 ? -y : y;
-	z.v[N] = mcl::bint::mulUnitT<N>(z.v, x.v, abs_y);
-	z.sign = x.sign ^ (y < 0);
-}
-
-template<int N>
-void shr(SintT<N>& y, int x)
-{
-	mcl::bint::shrT<N>(y.v, y.v, x);
-}
-
-template<int N>
-Unit getLow(const SintT<N>& x)
-{
-	Unit r = x.v[0];
-	if (x.sign) r = -r;
-	return r;
-}
-
-template<int N>
-Unit getLowMask(const SintT<N>& x)
-{
-	Unit r = getLow(x);
-	return r & MASK;
-}
-
-template<int N2>
-void toSint(SintT<N2>& y, const mpz_class& x)
-{
-	const size_t n = mcl::gmp::getUnitSize(x);
-	const Unit *p = mcl::gmp::getUnit(x);
-	for (size_t i = 0; i < n; i++) {
-		y.v[i] = p[i];
-	}
-	for (size_t i = n; i < N2; i++) y.v[i] = 0;
-	y.sign = x < 0;
-}
-template<int N2>
-void toMpz(mpz_class& y, const SintT<N2>& x)
-{
-	mcl::gmp::setArray(y, x.v, N2);
-	if (x.sign) y = -y;
-}
-
-static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
-{
-	static const uint32_t tbl[] = { 15, 5, 3, 9, 7, 13, 11, 1 };
+	// negInv256[(f & 255) >> 1] = -f^-1 mod 256 for odd f
+	static const uint8_t negInv256[128] = {
+		255, 85, 51, 73, 199, 93, 59, 17, 15, 229, 195, 89, 215, 237, 203, 33,
+		31, 117, 83, 105, 231, 125, 91, 49, 47, 5, 227, 121, 247, 13, 235, 65,
+		63, 149, 115, 137, 7, 157, 123, 81, 79, 37, 3, 153, 23, 45, 11, 97,
+		95, 181, 147, 169, 39, 189, 155, 113, 111, 69, 35, 185, 55, 77, 43, 129,
+		127, 213, 179, 201, 71, 221, 187, 145, 143, 101, 67, 217, 87, 109, 75, 161,
+		159, 245, 211, 233, 103, 253, 219, 177, 175, 133, 99, 249, 119, 141, 107, 193,
+		191, 21, 243, 9, 135, 29, 251, 209, 207, 165, 131, 25, 151, 173, 139, 225,
+		223, 53, 19, 41, 167, 61, 27, 241, 239, 197, 163, 57, 183, 205, 171, 1,
+	};
 	Unit u = 1, v = 0, q = 0, r = 1;
 	int i = modL;
 	for (;;) {
-		INT zeros = g == 0 ? i : cybozu::bsf(g);
-		if (i < zeros) zeros = i;
+		// zeros = min(i, bsf(g)) (i if g == 0); bit i of the argument is set, so bsf is defined
+		Sint zeros = cybozu::bsf(g | (~Unit(0) << i));
 		eta -= zeros;
 		i -= zeros;
 		g >>= zeros;
@@ -150,8 +68,9 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 			q = -u0;
 			r = -v0;
 		}
-		int limit = mcl::fp::min_<INT>(mcl::fp::min_<INT>(eta + 1, i), 4);
-		Unit w = (g * tbl[(f & 15)>>1]) & ((1u<<limit)-1);
+		// 1 <= limit <= modL ; the mask is the low min(limit, 8) bits
+		int limit = mcl::fp::min_<Sint>(eta + 1, i);
+		Unit w = (g * negInv256[(f & 255) >> 1]) & ((Unit(-1) >> (UnitBitSize - limit)) & 255);
 		g += w * f;
 		q += w * u;
 		r += w * v;
@@ -163,124 +82,245 @@ static inline INT divsteps_n_matrix(Quad& t, INT eta, Unit f, Unit g)
 	return eta;
 }
 
-template<int N>
-void update_fg(SintT<N>& f, SintT<N>& g, const Quad& t)
+/*
+	f, g, d, e are L signed limbs of modL bits (int64_t limbs of 62 bits for
+	64-bit units as secp256k1_modinv64_signed62, int32_t limbs of 30 bits for
+	32-bit units as secp256k1_modinv32_signed30): the low limbs are in
+	[0, 2^modL) and the top limb is signed. L = ceil((UnitBitSize N + 2) / modL)
+	(InvModT::L), so |f|, |g| <= M and -2M < d, e < M (the safegcd invariants,
+	cf. safegcd_implementation.md "Avoiding modulus operations") always fit.
+	The limb products are accumulated in Acc (2 units wide): the 2-bit headroom
+	of the limbs means no carry chain and no sign correction
+	(cf. secp256k1_modinv{64,32}_update_{fg,de}_{62,30}).
+*/
+#if MCL_SIZEOF_UNIT == 8
+#if defined(__SIZEOF_INT128__) && !defined(MCL_INVMOD_STRUCT_ACC)
+typedef __int128 Acc;
+inline Acc mulAcc(Limb a, Limb b) { return (Acc)a * b; }
+inline void accumMul(Acc& c, Limb a, Limb b) { c += (Acc)a * b; }
+inline void shrAcc(Acc& c) { c >>= modL; }
+inline Limb lowAcc(const Acc& c) { return (Limb)c; }
+#else
+/*
+	128-bit signed accumulator without __int128 (MSVC) as libsecp256k1's
+	int128_struct_impl.h. MCL_INVMOD_STRUCT_ACC forces it (to test it with gcc/clang).
+*/
+struct Acc {
+	uint64_t lo;
+	int64_t hi;
+};
+// [*hi:return] = a * b (signed)
+inline uint64_t mulLoHi(int64_t a, int64_t b, int64_t *hi)
 {
-	SintT<N+1> f1, f2, g1, g2;
-	mulUnit(f1, f, t.u);
-	mulUnit(f2, f, t.q);
-	mulUnit(g1, g, t.v);
-	mulUnit(g2, g, t.r);
-	add(f1, f1, g1);
-	add(g1, f2, g2);
-	shr(f1, modL);
-	shr(g1, modL);
-	assert(f1.v[N] == 0);
-	assert(g1.v[N] == 0);
-	set(f, f1.v, f1.sign);
-	set(g, g1.v, g1.sign);
+#if defined(_MSC_VER) && defined(_M_X64)
+	return (uint64_t)_mul128(a, b, hi);
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+	*hi = __mulh(a, b);
+	return (uint64_t)a * (uint64_t)b;
+#elif defined(__SIZEOF_INT128__)
+	__int128 t = (__int128)a * b;
+	*hi = (int64_t)(t >> 64);
+	return (uint64_t)t;
+#else
+	#error "no 64x64 -> 128 multiply"
+#endif
+}
+inline Acc mulAcc(Limb a, Limb b)
+{
+	Acc c;
+	c.lo = mulLoHi(a, b, &c.hi);
+	return c;
+}
+inline void accumMul(Acc& c, Limb a, Limb b)
+{
+	int64_t hi;
+	uint64_t lo = mulLoHi(a, b, &hi);
+	c.lo += lo;
+	c.hi = (int64_t)((uint64_t)c.hi + (uint64_t)hi + (c.lo < lo));
+}
+// arithmetic shift
+inline void shrAcc(Acc& c)
+{
+	c.lo = (c.lo >> modL) | ((uint64_t)c.hi << (64 - modL));
+	c.hi >>= modL;
+}
+inline Limb lowAcc(const Acc& c) { return (Limb)c.lo; }
+#endif
+#else // MCL_SIZEOF_UNIT == 4
+// |a| <= 2^30 and |b| < 2^31, so three products and a carry fit in int64_t
+typedef int64_t Acc;
+inline Acc mulAcc(Limb a, Limb b) { return (Acc)a * b; }
+inline void accumMul(Acc& c, Limb a, Limb b) { c += (Acc)a * b; }
+inline void shrAcc(Acc& c) { c >>= modL; }
+inline Limb lowAcc(const Acc& c) { return (Limb)c; }
+#endif
+
+static const int limbBits = sizeof(Limb) * 8;
+static const Limb limbMask = (Limb)MASK;
+
+// y[L] = x[N] (nonnegative units) in signed limbs
+template<int N>
+void toLimb(Limb *y, const Unit *x)
+{
+	const int L = InvModT<N>::L;
+	for (int i = 0; i < L; i++) {
+		int bit = modL * i;
+		int idx = bit / MCL_UNIT_BIT_SIZE, off = bit % MCL_UNIT_BIT_SIZE;
+		Unit lo = idx < N ? x[idx] >> off : 0;
+		Unit hi = (off > MCL_UNIT_BIT_SIZE - modL && idx + 1 < N) ? x[idx + 1] << (MCL_UNIT_BIT_SIZE - off) : 0;
+		y[i] = (Limb)((lo | hi) & (Unit)limbMask);
+	}
 }
 
+// x[N] = y[L] (normalized nonnegative limbs, < 2^(UnitBitSize N))
 template<int N>
-void update_de(const InvModT<N>& im, SintT<N>& d, SintT<N>& e, const Quad& t)
+void fromLimb(Unit *x, const Limb *y)
 {
-	const SintT<N>& M = im.M;
-	const INT Mi = im.Mi;
-	Unit ud = 0;
-	Unit ue = 0;
-	if (d.sign) {
-		ud = t.u;
-		ue = t.q;
-	}
-	if (e.sign) {
-		ud += t.v;
-		ue += t.r;
-	}
-	SintT<N+1> d1, d2, e1, e2;
-	// d = d * u + e * v
-	// e = d * q + e * r
-	mulUnit(d1, d, t.u);
-	mulUnit(d2, d, t.q);
-	mulUnit(e1, e, t.v);
-	mulUnit(e2, e, t.r);
-	add(d1, d1, e1);
-	add(e1, d2, e2);
-	Unit di = getLow(d1) + im.lowM * ud;
-	Unit ei = getLow(e1) + im.lowM * ue;
-	ud -= Mi * di;
-	ue -= Mi * ei;
-	INT sd = ud & MASK;
-	INT se = ue & MASK;
-	if (sd >= half) sd -= modN;
-	if (se >= half) se -= modN;
-	// d = (d + M * sd) >> modL
-	// e = (e + M * se) >> modL
-	mulUnit(d2, M, sd);
-	mulUnit(e2, M, se);
-	add(d1, d1, d2);
-	add(e1, e1, e2);
-	shr(d1, modL);
-	shr(e1, modL);
-	assert(d1.v[N] == 0);
-	assert(e1.v[N] == 0);
-	set(d, d1.v, d1.sign);
-	set(e, e1.v, e1.sign);
-}
-
-template<int N>
-void normalize(const InvModT<N>& im, SintT<N>& v, bool minus)
-{
-	const SintT<N>& M = im.M;
-	if (v.sign) {
-		add(v, v, M);
-	}
-	if (minus) {
-		sub(v, M, v);
-	}
-	if (v.sign) {
-		add(v, v, M);
+	const int L = InvModT<N>::L;
+	for (int i = 0; i < N; i++) x[i] = 0;
+	for (int i = 0; i < L; i++) {
+		int bit = modL * i;
+		int idx = bit / MCL_UNIT_BIT_SIZE, off = bit % MCL_UNIT_BIT_SIZE;
+		Unit v = (Unit)y[i];
+		if (idx < N) x[idx] |= v << off;
+		if (off > MCL_UNIT_BIT_SIZE - modL && idx + 1 < N) x[idx + 1] |= v >> (MCL_UNIT_BIT_SIZE - off);
 	}
 }
 
+template<int L>
+bool isZero(const Limb *x)
+{
+	Limb r = 0;
+	for (int i = 0; i < L; i++) r |= x[i];
+	return r == 0;
+}
+
+// (f, g) = ((u f + v g) >> modL, (q f + r g) >> modL)
+template<int L>
+void update_fg(Limb *f, Limb *g, const Quad& t)
+{
+	const Limb u = (Limb)t.u, v = (Limb)t.v, q = (Limb)t.q, r = (Limb)t.r;
+	Limb fi = f[0], gi = g[0];
+	Acc cf = mulAcc(u, fi); accumMul(cf, v, gi);
+	Acc cg = mulAcc(q, fi); accumMul(cg, r, gi);
+	// the low modL bits are zero
+	shrAcc(cf);
+	shrAcc(cg);
+	for (int i = 1; i < L; i++) {
+		fi = f[i];
+		gi = g[i];
+		accumMul(cf, u, fi); accumMul(cf, v, gi);
+		accumMul(cg, q, fi); accumMul(cg, r, gi);
+		f[i - 1] = lowAcc(cf) & limbMask; shrAcc(cf);
+		g[i - 1] = lowAcc(cg) & limbMask; shrAcc(cg);
+	}
+	f[L - 1] = lowAcc(cf);
+	g[L - 1] = lowAcc(cg);
+}
+
+/*
+	d = (u d + v e + md M) >> modL, e = (q d + r e + me M) >> modL
+	md = ud - ((Mi (u d + v e) + ud) mod 2^modL) (in (ud - 2^modL, ud], ud = u [d < 0] + v [e < 0]),
+	so u d + v e + md M = 0 mod 2^modL and -2M < d, e < M is kept.
+*/
+template<int L>
+void update_de(const Limb *M, Unit Mi, Limb *d, Limb *e, const Quad& t)
+{
+	const Limb u = (Limb)t.u, v = (Limb)t.v, q = (Limb)t.q, r = (Limb)t.r;
+	const Limb d0 = d[0], e0 = e[0];
+	const Limb sd = d[L - 1] >> (limbBits - 1);
+	const Limb se = e[L - 1] >> (limbBits - 1);
+	Limb md = (u & sd) + (v & se);
+	Limb me = (q & sd) + (r & se);
+	Acc cd = mulAcc(u, d0); accumMul(cd, v, e0);
+	Acc ce = mulAcc(q, d0); accumMul(ce, r, e0);
+	md -= (Limb)((Mi * (Unit)lowAcc(cd) + (Unit)md) & (Unit)limbMask);
+	me -= (Limb)((Mi * (Unit)lowAcc(ce) + (Unit)me) & (Unit)limbMask);
+	accumMul(cd, M[0], md);
+	accumMul(ce, M[0], me);
+	// the low modL bits are zero
+	shrAcc(cd);
+	shrAcc(ce);
+	for (int i = 1; i < L; i++) {
+		accumMul(cd, u, d[i]); accumMul(cd, v, e[i]); accumMul(cd, M[i], md);
+		accumMul(ce, q, d[i]); accumMul(ce, r, e[i]); accumMul(ce, M[i], me);
+		d[i - 1] = lowAcc(cd) & limbMask; shrAcc(cd);
+		e[i - 1] = lowAcc(ce) & limbMask; shrAcc(ce);
+	}
+	d[L - 1] = lowAcc(cd);
+	e[L - 1] = lowAcc(ce);
+}
+
+// r in (-2M, M) -> [0, M) (negated if sign < 0), cf. secp256k1_modinv64_normalize_62
+template<int L>
+void normalize(Limb *r, Limb sign, const Limb *M)
+{
+	Limb cond = r[L - 1] >> (limbBits - 1);
+	for (int i = 0; i < L; i++) r[i] += M[i] & cond;
+	cond = sign >> (limbBits - 1);
+	for (int i = 0; i < L; i++) r[i] = (r[i] ^ cond) - cond;
+	for (int i = 0; i < L - 1; i++) {
+		r[i + 1] += r[i] >> modL;
+		r[i] &= limbMask;
+	}
+	cond = r[L - 1] >> (limbBits - 1);
+	for (int i = 0; i < L; i++) r[i] += M[i] & cond;
+	for (int i = 0; i < L - 1; i++) {
+		r[i + 1] += r[i] >> modL;
+		r[i] &= limbMask;
+	}
+}
+
+// y[N] = x[N]^-1 mod M (0 if x = 0) ; y = x is allowed
 template<int N>
 void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 {
-	INT eta = -1;
-	SintT<N> f = im.M, g, d, e;
-	set(g, px, false);
-
-	clear(d);
-	clear(e); e.v[0] = 1;
+	const int L = InvModT<N>::L;
+	Sint eta = -1;
+	Limb f[L], g[L], d[L], e[L];
+	memcpy(f, im.M, sizeof(f));
+	toLimb<N>(g, px);
+	memset(d, 0, sizeof(d));
+	memset(e, 0, sizeof(e));
+	e[0] = 1;
 	Quad t;
-	while (!isZero(g)) {
-		Unit fLow = getLowMask(f);
-		Unit gLow = getLowMask(g);
-		eta = divsteps_n_matrix(t, eta, fLow, gLow);
-		update_fg(f, g, t);
-		update_de(im, d, e, t);
+	while (!isZero<L>(g)) {
+		// the low modL bits of f and g are the low limbs
+		eta = divsteps_n_matrix(t, eta, (Unit)f[0], (Unit)g[0]);
+		update_fg<L>(f, g, t);
+		update_de<L>(im.M, im.Mi, d, e, t);
 	}
-	normalize(im, d, f.sign);
-	mcl::bint::copyT<N>(py, d.v);
+	normalize<L>(d, f[L - 1], im.M);
+	fromLimb<N>(py, d);
 }
 
+// returns false if x does not fit in N units
 template<int N>
-void exec(const InvModT<N>& im, mpz_class& y, const mpz_class& x)
+bool exec(const InvModT<N>& im, mpz_class& y, const mpz_class& x)
 {
 	Unit ux[N], uy[N];
-	mcl::gmp::getArray(ux, N, x);
+	bool b;
+	mcl::gmp::getArray(&b, ux, N, x);
+	if (!b) return false;
 	exec<N>(im, uy, ux);
-	mcl::gmp::setArray(y, uy, N);
+	mcl::gmp::setArray(&b, y, uy, N);
+	return b;
 }
 
+// returns false if M does not fit in N units
 template<int N>
-void init(InvModT<N>& invMod, const mpz_class& mM)
+bool init(InvModT<N>& invMod, const mpz_class& mM)
 {
-	toSint(invMod.M, mM);
-	invMod.lowM = getLow(invMod.M);
+	Unit M[N];
+	bool b;
+	mcl::gmp::getArray(&b, M, N, mM);
+	if (!b) return false;
+	toLimb<N>(invMod.M, M);
 	mpz_class inv;
 	mpz_class mod = mpz_class(1) << modL;
 	mcl::gmp::invMod(inv, mM, mod);
-	invMod.Mi = mcl::gmp::getUnit(inv)[0] & MASK;
+	invMod.Mi = mcl::gmp::getUnit(inv, 0) & MASK;
+	return true;
 }
 
 } // mcl::inv

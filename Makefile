@@ -4,6 +4,9 @@ OBJ_DIR?=obj
 EXE_DIR?=bin
 MCL_SIZEOF_UNIT?=$(shell expr $(BIT) / 8)
 MCL_FP_BIT?=384
+# max unit size of the generated bint functions for 64-bit unit = MCL_BINT_MAX_BIT / 64 (see include/mcl/config.hpp)
+BINT_MUL_N?=6
+BINT_MUL_N32=$(shell expr $(BINT_MUL_N) \* 2)
 MCL_FR_BIT?=256
 ifeq ($(MCL_FP_BIT)_$(MCL_FR_BIT),256_256)
   MCL_SUF=256
@@ -27,7 +30,6 @@ TEST_SRC+=ecdsa_test.cpp
 TEST_SRC+=mul_test.cpp
 TEST_SRC+=bint_test.cpp
 TEST_SRC+=low_func_test.cpp
-TEST_SRC+=smallmodp_test.cpp
 
 MCL_SNAME=mcl
 ifeq ($(MCL_SUF),256)
@@ -173,14 +175,11 @@ $(BINT_OBJ): $(BINT_LL)
 else
   CFLAGS+=-DMCL_BINT_ASM=0
 endif
-#ifneq ($(MCL_FP_BIT),)
-#  GEN_BINT_HEADER_PY_OPT+=-max_bit $(MCL_FP_BIT)
-#endif
 ifeq ($(UPDATE_LL),1)
 src/bint64.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
-	python3 src/gen_bint.py -u 64 > $@
+	python3 src/gen_bint.py -u 64 -n $(BINT_MUL_N) > $@
 src/bint32.ll: src/gen_bint.py src/common.py src/s_xbyak_llvm.py
-	python3 src/gen_bint.py -u 32 > $@
+	python3 src/gen_bint.py -u 32 -n $(BINT_MUL_N32) > $@
 endif
 ifeq ($(ARCH),x86_64)
   ifneq ($(UNAME_S),Darwin)
@@ -198,26 +197,38 @@ ifeq ($(MCL_MSM),1)
   CFLAGS+=-DMCL_MSM=1
   LIB_OBJ+=$(OBJ_DIR)/$(MSM).o
 $(OBJ_DIR)/$(MSM).o: src/$(MSM).cpp src/$(MSM)_bls12_381.h src/avx512.hpp
-	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER)
+	$(PRE)$(CXX) -c $< -o $@ $(CFLAGS) -mavx512f -mavx512ifma -std=c++11 $(CFLAGS_USER) -MMD -MP -MF $(@:.o=.d)
+-include $(OBJ_DIR)/$(MSM).d
 src/$(MSM)_bls12_381.h: src/gen_msm_para.py
 	python3 src/gen_msm_para.py $(MCL_MSM_CURVE_BIT) > $@
 else
   CFLAGS+=-DMCL_MSM=0
 endif
 src/bint_switch.hpp: src/gen_bint_header.py
-	python3 $< > $@ switch $(GEN_BINT_HEADER_PY_OPT)
+	python3 $< > $@ switch -n $(BINT_MUL_N)
 src/llvm_proto.hpp: src/gen_llvm_proto.py
 	python3 $< > $@
+GEN_BINT_X64_OPT=-curveBit=$(MCL_MSM_CURVE_BIT) -n $(BINT_MUL_N)
 src/asm/$(BINT_ASM_X64_BASENAME).$(ASM_SUF): src/s_xbyak.py src/gen_bint_x64.py
 ifeq ($(ASM_SUF),S)
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas $(WIN_API) > $@
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas $(WIN_API) > $@
 else
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -win > $@
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -win > $@
 endif
 update_bint_x64_asm:
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -win -m masm > src/asm/bint-x64-win.asm
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas > src/asm/bint-x64-amd64.S
-	python3 src/gen_bint_x64.py -curveBit=$(MCL_MSM_CURVE_BIT) -m gas -win > src/asm/bint-x64-mingw.S
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -win -m masm > src/asm/bint-x64-win.asm
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas > src/asm/bint-x64-amd64.S
+	python3 src/gen_bint_x64.py $(GEN_BINT_X64_OPT) -m gas -win > src/asm/bint-x64-mingw.S
+
+# regenerate all generated files (ll first, then asm) on x86-64 host
+# e.g. make update_all_asm LLVM_VER=-21
+update_all_asm:
+	python3 src/gen_bint.py -u 64 -n $(BINT_MUL_N) > src/bint64.ll
+	python3 src/gen_bint.py -u 32 -n $(BINT_MUL_N32) > src/bint32.ll
+	$(GEN) -u 64 > src/base64.ll
+	$(GEN) -u 32 > src/base32.ll
+	$(LLVM_OPT) -O3 -o - src/base64.ll -march=$(CPU) | $(LLVM_LLC) -O3 -o src/asm/x86-64.S $(LLVM_FLAGS)
+	$(MAKE) update_bint_x64_asm
 
 $(BINT_SRC): src/bint$(BIT).ll
 	$(CLANG) -S $< -o $@ -no-integrated-as -fpic -O2 -DNDEBUG -Wall -Wextra $(CFLAGS) $(CFLAGS_USER)
@@ -448,7 +459,7 @@ update_xbyak:
 	cp -a ../xbyak/xbyak/xbyak.h ../xbyak/xbyak/xbyak_util.h ../xbyak/xbyak/xbyak_mnemonic.h src/xbyak/
 
 update_s_xbyak:
-	cp -a ../s_xbyak/s_xbyak.py src/
+	cp -a ../s_xbyak/s_xbyak.py ../s_xbyak/s_xbyak_llvm.py src/
 
 update_cybozulib:
 	cp -a $(addprefix ../cybozulib/,$(wildcard include/cybozu/*.hpp)) include/cybozu/
@@ -487,7 +498,7 @@ install: lib/libmcl.a lib/libmcl.$(LIB_SUF)
 	$(MKDIR) $(PREFIX)/lib
 	cp -a lib/libmcl.a lib/libmcl.$(LIB_SUF) $(PREFIX)/lib/
 
-.PHONY: test she-wasm bin/emu android update_bint_x64_asm
+.PHONY: test she-wasm bin/emu android update_bint_x64_asm update_all_asm
 
 # don't remove these files automatically
 .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))

@@ -24,7 +24,6 @@ void Fp2::init(bool *pb)
 {
 	mcl::fp::Op& op = Fp::op_;
 	uint32_t u = Fp::getOp().u;
-#ifdef MCL_XBYAK_DIRECT_CALL
 	if (op.fp2_addA_ == 0) {
 		op.fp2_addA_ = addA;
 	}
@@ -49,7 +48,6 @@ void Fp2::init(bool *pb)
 			assert(0);
 		}
 	}
-#endif
 	if (op.fp2_mul_xiA_ == 0) {
 		if (u == 1) {
 			if (op.xi_a == 1) {

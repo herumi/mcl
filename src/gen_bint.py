@@ -102,15 +102,7 @@ def gen_mclb_mulUnitAdd():
 
 
 def gen_mul_inner(pz, px, py):
-  if N == 1:
-    x = load(px)
-    y = load(py)
-    x = zext(x, unit * 2)
-    y = zext(y, unit * 2)
-    z = mul(x, y)
-    storeN(z, pz)
-    ret(Void)
-  elif N > 8 and (N % 2) == 0:
+  if N > 8 and (N % 2) == 0:
     # W = 1 << half
     # (aW + b)(cW + d) = acW^2 + (ad + bc)W + bd
     # ad + bc = (a + b)(c + d) - ac - bd
@@ -160,18 +152,7 @@ def gen_mul_inner(pz, px, py):
     storeN(t, pz, H)
     ret(Void)
   else:
-    y = load(py)
-    xy = call(g_mulUnit_inner[bit], px, y)
-    store(trunc(xy, unit), pz)
-    t = lshr(xy, unit)
-    for i in range(1, N):
-      y = loadN(py, 1, i)
-      xy = call(g_mulUnit_inner[bit], px, y)
-      t = add(t, xy)
-      if i < N - 1:
-        storeN(trunc(t, unit), pz, i)
-        t = lshr(t, unit)
-    storeN(t, pz, N - 1)
+    common.emit_mulPre(unit, N, pz, px, py, g_mulUnit_inner[bit])
     ret(Void)
 
 
@@ -261,10 +242,15 @@ def gen_mclb_sqr():
   px = IntPtr(unit)
   name = f'mclb_sqr{N}'
   with Function(name, Void, py, px, private=False) as f:
-    # on M1, mul is faster than sqr for N <= 6
-    # on A64FX, mul is faster than sqr for N <= 4
+    # N <= 6: the anti-diagonal schedule of common.sqrPre_raw (N(N+1)/2 muls).
+    # It replaced mul(x, x) (faster than the old sqr on M1 for N <= 6): on
+    # Apple M4 N = 6 is 4.35 vs 5.27 ns (mcl memo.md 2026-09-14). Only the
+    # LLVM path is affected; x64 uses the mulx asm of gen_bint_x64.py.
+    # N > 6 (unit = 32 only) keeps the recursive split; not measured.
     if N <= 6:
-      gen_mul_inner(py, px, px)
+      x = [load(getelementptr(px, i)) for i in range(N)]
+      storeN(common.sqrPre_raw(unit, x, N), py)
+      ret(Void)
     else:
       gen_sqr_inner(py, px)
   g_mclb_sqr[N] = f
@@ -282,6 +268,7 @@ def setUnit(u):
   unit2 = u * 2
 
 
+# mul/sqr : N <= maxN, mulUnit/mulUnitAdd/add/sub/addNF/subNF : N <= addN
 def gen(maxN, addN):
   gen_once()
   for n in range(1, addN + 1):
@@ -290,11 +277,13 @@ def gen(maxN, addN):
     gen_mclb_addsub(False)
     gen_mclb_addNF()
     gen_mclb_subNF()
-  for n in range(1, maxN + 1):
+  for n in range(1, addN + 1):
     setBit(n * unit)
     gen_mulUnit_inner()
     gen_mclb_mulUnit()
     gen_mclb_mulUnitAdd()
+  for n in range(1, maxN + 1):
+    setBit(n * unit)
     gen_mclb_mul()
     gen_mclb_sqr()
 
@@ -302,16 +291,17 @@ def gen(maxN, addN):
 def main():
   parser = argparse.ArgumentParser(description='generate bint{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
-  parser.add_argument('-n', type=int, default=0, help='max size of Unit')
-  parser.add_argument('-addn', type=int, default=0, help='max size of add/sub')
+  parser.add_argument('-n', type=int, default=0, help='max size of Unit for mul/sqr (see MCL_BINT_MUL_N in include/mcl/config.hpp)')
+  parser.add_argument('-addn', type=int, default=0, help='max size of Unit for mulUnit/add/sub (default 2n)')
   opt = parser.parse_args()
 
   setUnit(opt.u)
   maxN = opt.n
   addN = opt.addn
   if maxN == 0:
-    maxN = 9 if unit == 64 else 17
-    addN = 16 if unit == 64 else 32
+    maxN = 384 // unit
+  if addN == 0:
+    addN = maxN * 2
   import sys
   print(f'unit={unit} N={maxN} addN={addN}', file=sys.stderr)
   gen(maxN, addN)

@@ -710,7 +710,6 @@ def msm_code(mont):
 
   gen_vmulA(mont)
 
-SUF='_fast'
 param=None
 
 # p : pack of registers
@@ -737,6 +736,9 @@ def mov_pp(x, y):
 
 def cmovc_pp(x, y):
   vec_pp(cmovc, x, y)
+
+def cmovnc_pp(x, y):
+  vec_pp(cmovnc, x, y)
 
 def load_pm(x, m):
   vec_pm(mov, x, m)
@@ -812,9 +814,9 @@ def gen_sub(N, NF=False):
       setc(al)
       movzx(eax, al)
 
-def gen_mulUnit(N, mode='fast'):
+def gen_mulUnit(N):
   align(16)
-  with FuncProc(f'mclb_mulUnit_{mode}{N}'):
+  with FuncProc(f'mclb_mulUnit{N}'):
     if N == 0:
       raise Exception('N = 0')
     if N == 1:
@@ -845,97 +847,51 @@ def gen_mulUnit(N, mode='fast'):
         mov(rax, rdx)
         return
     else:
-      if mode == 'fast':
-        with StackFrame(3, 2, useRDX=True) as sf:
-          z = sf.p[0]
-          x = sf.p[1]
-          y = sf.p[2]
-          t0 = sf.t[0]
-          t1 = sf.t[1]
-          mov(rdx, y)
-          mulx(t1, rax, ptr(x)) # [y:rax] = x * y
-          mov(ptr(z), rax)
-          for i in range(1, N-1):
-            mulx(t0, rax, ptr(x + i * 8))
-            add_ex(rax, t1, i == 1)
-            mov(ptr(z + i * 8), rax)
-            t0, t1 = t1, t0
-          mulx(rax, rdx, ptr(x + (N - 1) * 8))
-          adc(rdx, t1)
-          mov(ptr(z + (N - 1) * 8), rdx)
-          adc(rax, 0)
-      else:
-        with StackFrame(3, 0, useRDX=True, stackSizeByte=(N - 1) * 2 * 8) as sf:
-          z = sf.p[0]
-          x = sf.p[1]
-          y = sf.p[2]
-          posH = (N - 1) * 8
-          for i in range(N):
-            mov(rax, ptr(x + i * 8))
-            mul(y)
-            if i == 0: # bypass
-              mov(ptr(z), rax)
-            else:
-              mov(ptr(rsp + (i - 1) * 8), rax)
-            if i < N-1:
-              mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
-          for i in range(N - 1):
-            mov(rax, ptr(rsp + posH + i * 8))
-            add_ex(rax, ptr(rsp + i * 8), i == 0)
-            mov(ptr(z + (i + 1) * 8), rax)
-          adc(rdx, 0)
-          mov(rax, rdx)
-
-# [ret:z[N]] = z[N] + x[N] * y
-def gen_mulUnitAdd(N, mode='fast'):
-  align(16)
-  with FuncProc(f'mclb_mulUnitAdd_{mode}{N}'):
-    if N == 0:
-      raise Exception('N = 0')
-    if mode == 'fast':
       with StackFrame(3, 2, useRDX=True) as sf:
         z = sf.p[0]
         x = sf.p[1]
         y = sf.p[2]
-        t = sf.t[0]
-        L = sf.t[1]
+        t0 = sf.t[0]
+        t1 = sf.t[1]
         mov(rdx, y)
-        xor_(eax, eax)
-        mov(t, ptr(z))
-        for i in range(N):
-          mulx(rax, L, ptr(x + i * 8))
-          adox(t, L)
-          mov(ptr(z + i * 8), t)
-          if i == N-1:
-            break
-          mov(t, ptr(z + (i+1) * 8))
-          adcx(t, rax)
-        mov(t, 0)
-        adcx(rax, t)
-        adox(rax, t)
-    else:
-      with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
-        z = sf.p[0]
-        x = sf.p[1]
-        y = sf.p[2]
-        posH = N * 8
-        for i in range(N):
-          mov(rax, ptr(x + i * 8))
-          mul(y)
-          mov(ptr(rsp + i * 8), rax)
-          if i < N-1:
-            mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
-        for i in range(N - 1):
-          mov(rax, ptr(rsp + (i + 1) * 8))
-          add_ex(rax, ptr(rsp + posH + i * 8), i == 0)
-          mov(ptr(rsp + (i + 1) * 8), rax)
-        if N > 1:
-          adc(rdx, 0)
-        for i in range(N):
-          mov(rax, ptr(rsp + i * 8))
-          add_ex(ptr(z + i * 8), rax, i == 0)
-        adc(rdx, 0)
-        mov(rax, rdx)
+        mulx(t1, rax, ptr(x)) # [y:rax] = x * y
+        mov(ptr(z), rax)
+        for i in range(1, N-1):
+          mulx(t0, rax, ptr(x + i * 8))
+          add_ex(rax, t1, i == 1)
+          mov(ptr(z + i * 8), rax)
+          t0, t1 = t1, t0
+        mulx(rax, rdx, ptr(x + (N - 1) * 8))
+        adc(rdx, t1)
+        mov(ptr(z + (N - 1) * 8), rdx)
+        adc(rax, 0)
+
+# [ret:z[N]] = z[N] + x[N] * y
+def gen_mulUnitAdd(N):
+  align(16)
+  with FuncProc(f'mclb_mulUnitAdd{N}'):
+    if N == 0:
+      raise Exception('N = 0')
+    with StackFrame(3, 2, useRDX=True) as sf:
+      z = sf.p[0]
+      x = sf.p[1]
+      y = sf.p[2]
+      t = sf.t[0]
+      L = sf.t[1]
+      mov(rdx, y)
+      xor_(eax, eax)
+      mov(t, ptr(z))
+      for i in range(N):
+        mulx(rax, L, ptr(x + i * 8))
+        adox(t, L)
+        mov(ptr(z + i * 8), t)
+        if i == N-1:
+          break
+        mov(t, ptr(z + (i+1) * 8))
+        adcx(t, rax)
+      mov(t, 0)
+      adcx(rax, t)
+      adox(rax, t)
 
 def mulPack(pz, offset, py, pd):
   a = rax
@@ -977,9 +933,9 @@ def gen_mulPreN(pz, px, py, pk, t, N):
   store_mp(pz + 8 * N, pk)
 
 # optimize this later
-def gen_mul_fast(N):
+def gen_mul(N):
   align(16)
-  with FuncProc(f'mclb_mul_fast{N}'):
+  with FuncProc(f'mclb_mul{N}'):
     if N == 1:
       with StackFrame(3, 0, useRDX=True) as sf:
         mov(rax, ptr(sf.p[1]))
@@ -987,20 +943,19 @@ def gen_mul_fast(N):
         mul(rdx)
         store_mp(sf.p[0], Pack(rdx, rax))
         return
-    if N <= 9:
-      with StackFrame(3, N+1, useRDX=True) as sf:
-        pz = sf.p[0]
-        px = sf.p[1]
-        py = sf.p[2]
-        pk = sf.t[0:N]
-        gen_mulPreN(pz, px, py, pk, sf.t[N], N)
-    else:
-      jmp(addPRE(f'mclb_mul_slow{N}'))
+    if N > 9:
+      raise Exception(f'N = {N} is too large')
+    with StackFrame(3, N+1, useRDX=True) as sf:
+      pz = sf.p[0]
+      px = sf.p[1]
+      py = sf.p[2]
+      pk = sf.t[0:N]
+      gen_mulPreN(pz, px, py, pk, sf.t[N], N)
 
 # optimize this later
-def gen_sqr_fast(N):
+def gen_sqr(N):
   align(16)
-  with FuncProc(f'mclb_sqr_fast{N}'):
+  with FuncProc(f'mclb_sqr{N}'):
     if N == 1:
       with StackFrame(2, 0, useRDX=True) as sf:
         py = sf.p[0]
@@ -1013,22 +968,7 @@ def gen_sqr_fast(N):
       mov(r8, rdx)
     else:
       mov(rdx, rsi)
-    jmp(addPRE(f'mclb_mul_fast{N}'))
-
-"""
-def gen_enable_fast(N):
-  align(16)
-  with FuncProc('mclb_disable_fast'):
-    for i in range(1, N):
-      lea(rdx, ptr(rip+f'mclb_mulUnit{i}'))
-      lea(rax, ptr(rip+f'mclb_mulUnit_slow{i}'))
-      mov(ptr(rdx), rax)
-    for i in range(1, N):
-      lea(rdx, ptr(rip+f'mclb_mulUnitAdd{i}'))
-      lea(rax, ptr(rip+f'mclb_mulUnitAdd_slow{i}'))
-      mov(ptr(rdx), rax)
-    ret()
-"""
+    jmp(addPRE(f'mclb_mul{N}'))
 
 def gen_udiv128():
   align(16)
@@ -1039,16 +979,148 @@ def gen_udiv128():
     mov(ptr(r9), rdx)
     ret()
 
+# one step of modp (x64 version of common.modp_step): the constants come
+# from the parameter block para (the layout of common.modp_param: Qt = Q 2^s
+# as two limbs q0, q1, then np[N]), so the code depends only on N.
+# The quotient estimate is y = (W Qt) >> 129 with W = [X_{N-1}, X_N], the top
+# two limbs of xx as they are (see the comment in common.py): a
+# 2x2-limb product (4 mulx) of which only the limbs 2, 3 are kept, and the
+# shift is an immediate shrd. The extraction of xx >> (L-2) with a variable
+# shift (shrd/shr by cl or shrx/shlx) costs about 2 cycles per step on
+# Sapphire Rapids, which is why the shift is folded into Qt instead.
+# The conditional subtraction is done as r + np: the carry out means r >= p
+# and the sum is r - p mod 2^(64N), so cmovnc restores the kept r (no p
+# constant); np is addressed from para. rdx (y, dead after the row) and rcx
+# are the last keep registers, so no register is needed beyond
+# tmp = [T0, T1, T2, T3] (T3 may be rax); rcx and rdx are clobbered.
+def modp_step_x64(pk, pw, para, tmp):
+  N = len(pk)
+  T0, T1, T2, T3 = tmp
+  a0 = pk[N - 2]
+  a1 = pk[N - 1]
+  # [T1, T3, T2] = limbs 1, 2, 3 of [a0, a1] * [q0, q1] (limb 0 is not needed)
+  mov(rdx, ptr(para))  # q0
+  mulx(T2, T3, a0)   # T2 = hi(a0 q0)
+  mulx(T3, T1, a1)   # [T1, T3] = a1 q0
+  add(T1, T2)
+  adc(T3, 0)
+  mov(rdx, ptr(para + 8))  # q1
+  mulx(T2, T0, a0)   # [T0, T2] = a0 q1
+  add(T1, T0)
+  adc(T3, T2)
+  mulx(T2, T0, a1)   # [T0, T2] = a1 q1
+  adc(T2, 0)
+  add(T3, T0)
+  adc(T2, 0)
+  # X_N is consumed; its register takes w
+  mov(pk[N - 1], pw)
+  shrd(T3, T2, 1)    # y = [limb 2, limb 3] >> 1
+  mov(rdx, T3)
+  # xx = [w, r] in registers: rotate so that pk[0] = w
+  pk = [pk[N - 1]] + pk[0:N - 1]
+  # r = (xx + y np) mod 2^(64N)
+  pnp = para + 8 * 2
+  xor_(T0, T0)  # clear CF and OF
+  for i in range(N):
+    mulx(T0, T1, ptr(pnp + i * 8))
+    adox(pk[i], T1)
+    if i < N - 1:
+      adcx(pk[i + 1], T0)
+  # r -= p if r >= p : r + np carries out
+  keep = [T0, T1, T2, T3, rcx, rdx][0:N]
+  mov_pp(keep, pk)
+  add_pm(pk, pnp)
+  cmovnc_pp(pk, keep)
+  return pk
+
+# int name(Unit *dst, const Unit *src, size_t srcN, const Unit *para):
+# x64 version of common.emit_modp (para is struct mcl::Modp): returns 0 if
+# srcN > xN, otherwise dst[N] = src[srcN] mod p and returns 1 (dst is src
+# zero-extended when srcN < N). The constants are read from para (see
+# modp_step_x64), so the code depends only on N (one function per N as in
+# the LLVM version); p must not be full bit (r < 2p has to fit in N limbs,
+# i.e. p < 2^(64N-1)) and L >= 64(N-1) + 2. The xN - N + 1 steps are
+# unrolled with an exit test (sub/jc on the step count) after each, so
+# srcN - N + 1 steps run; each exit stores its own rotation of pk.
+# Registers (N = 6 uses all 15): src, count, para, pk[N], T0, T1 in the
+# frame, T2 = the register of dst (spilled to the stack until the exits),
+# T3 = rax, rcx and rdx for the keep list and mulx.
+def gen_modp_x64(name, xN, N):
+  assert N <= 6
+  align(16)
+  with FuncProc(name):
+    ret0L = Label()
+    # srcN > xN: return 0 before the prologue (3rd argument register)
+    cmp(getReg(2), xN)
+    ja(ret0L)
+    with StackFrame(4, N + 2, useRDX=True, useRCX=True, stackSizeByte=8) as sf:
+      pz = sf.p[0]
+      px = sf.p[1]
+      n = sf.p[2]
+      para = sf.p[3]
+      pk = sf.t[0:N]
+      mov(ptr(rsp), pz)
+      tmp = sf.t[N:N + 2] + [pz, rax]
+      smallL = Label()
+      exitL = Label()
+      cmp(n, N)
+      jb(smallL)
+      # r = top N-1 limbs of src = src[n - (N-1) .. n), X_N = 0
+      lea(rax, ptr(px + n * 8))
+      for i in range(N - 1):
+        mov(pk[i], ptr(rax - (N - 1 - i) * 8))
+      xor_(pk[N - 1], pk[N - 1])
+      lea(px, ptr(rax - N * 8))  # &src[n - N]
+      sub(n, N)                  # remaining steps - 1
+      exits = []
+      for j in range(xN - N + 1):
+        pk = modp_step_x64(pk, ptr(px), para, tmp)
+        if j < xN - N:
+          doneL = Label()
+          sub(n, 1)
+          jc(doneL)
+          exits.append((doneL, pk))
+          sub(px, 8)
+      # the last step: n == 0 here
+      mov(rdx, ptr(rsp))
+      store_mp(rdx, pk)
+      jmp(exitL)
+      for (doneL, pk) in exits:
+        L(doneL)
+        mov(rdx, ptr(rsp))
+        store_mp(rdx, pk)
+        jmp(exitL)
+      # srcN < N (src < p): dst = src zero-extended
+      L(smallL)
+      mov(rdx, ptr(rsp))
+      zeroL = [Label() for i in range(N)]
+      for i in range(N - 1):
+        cmp(n, i)
+        je(zeroL[i])
+        mov(rax, ptr(px + i * 8))
+        mov(ptr(rdx + i * 8), rax)
+      jmp(zeroL[N - 1])
+      for i in range(N):
+        L(zeroL[i])
+        mov(qword(rdx + i * 8), 0)
+      L(exitL)
+      mov(eax, 1)
+    L(ret0L)
+    xor_(eax, eax)
+    ret()
+
 def main():
   parser = getDefaultParser()
-  parser.add_argument('-n', '--num', help='max size of Unit', type=int, default=9)
-  parser.add_argument('-addn', '--addn', help='max size of add/sub', type=int, default=16)
+  parser.add_argument('-n', '--num', help='max size of Unit for mul/sqr (see MCL_BINT_MUL_N in include/mcl/config.hpp)', type=int, default=6)
+  parser.add_argument('-addn', '--addn', help='max size of Unit for mulUnit/add/sub (default 2n)', type=int, default=0)
   parser.add_argument('-curveBit', '--curveBit', help='BLS12 bit size', type=int, default=381)
   global param
   param = parser.parse_args()
 
   N = param.num
   addN = param.addn
+  if addN == 0:
+    addN = N * 2
 
   init(param)
   curve = BLS12(param.curveBit)
@@ -1070,23 +1142,22 @@ def main():
   for i in range(1,addN+1):
     gen_sub(i, True)
 
-  for i in range(1,N+1):
-    gen_mulUnit(i, 'fast')
+  for i in range(1,addN+1):
+    gen_mulUnit(i)
+
+  for i in range(1,addN+1):
+    gen_mulUnitAdd(i)
 
   for i in range(1,N+1):
-    gen_mulUnitAdd(i, 'fast')
+    gen_mul(i)
 
   for i in range(1,N+1):
-    gen_mulUnit(i, 'slow')
+    gen_sqr(i)
 
-  for i in range(1,N+1):
-    gen_mulUnitAdd(i, 'slow')
-
-  for i in range(1,N+1):
-    gen_mul_fast(i)
-
-  for i in range(1,N+1):
-    gen_sqr_fast(i)
+  # dst[N] = src[srcN] mod p with the parameter block of struct mcl::Modp
+  # (see common.modp_param), N = 4, 6 (256, 384 bit); selected by Modp::init
+  gen_modp_x64('mclb_modp256_x64', 8, 4)
+  gen_modp_x64('mclb_modp384_x64', 8, 6)
 
   if param.win:
     gen_udiv128()

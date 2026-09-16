@@ -33,6 +33,7 @@ typedef mcl::Vint mpz_class;
 #else
 #include <gmpxx.h>
 #include <mcl/bint.hpp>
+#include <mcl/util.hpp>
 #ifdef _MSC_VER
 	#pragma warning(pop)
 	#include <cybozu/link_mpir.hpp>
@@ -427,10 +428,6 @@ inline const Unit *getUnit(const mpz_class& x)
 	return reinterpret_cast<const Unit*>(x.get_mpz_t()->_mp_d);
 #endif
 }
-inline Unit getUnit(const mpz_class& x, size_t i)
-{
-	return getUnit(x)[i];
-}
 inline size_t getUnitSize(const mpz_class& x)
 {
 #ifdef MCL_USE_VINT
@@ -438,6 +435,10 @@ inline size_t getUnitSize(const mpz_class& x)
 #else
 	return std::abs(x.get_mpz_t()->_mp_size);
 #endif
+}
+inline Unit getUnit(const mpz_class& x, size_t i)
+{
+	return i < getUnitSize(x) ? getUnit(x)[i] : 0;
 }
 
 /*
@@ -932,99 +933,220 @@ public:
 #endif
 };
 
+// generated modp functions (dst[N] = src[srcN] mod p, para = &Modp::q0)
+#if MCL_BINT_ASM_X64 == 1
+#define MCL_MODP_ASM 1
+extern "C" int mclb_modp256_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+extern "C" int mclb_modp384_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+#elif defined(MCL_USE_LLVM)
+#define MCL_MODP_ASM 1
+extern "C" int mclb_modp256(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+extern "C" int mclb_modp384(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
+#else
+#define MCL_MODP_ASM 0
+#endif
+
 /*
-	Barrett Reduction
-	for non GMP version
-	mod of GMP is faster than Modp
+	x mod p (word-serial Barrett reduction with a two-unit reciprocal, see
+	src/common.py); the generated modp functions handle x of up to 64 bytes and
+	modp_generic() handles any length. The layout q0, q1, np[] is the parameter
+	block read by the generated functions, so keep it first.
 */
 struct Modp {
-	static const size_t unitBitSize = sizeof(mcl::Unit) * 8;
-	mpz_class p_;
-	mpz_class u_;
-	mpz_class a_;
-	size_t pBitSize_;
-	size_t N_;
-	bool initU_; // Is u_ initialized?
-	Modp()
-		: pBitSize_(0)
-		, N_(0)
-		, initU_(false)
-	{
-	}
-	// x &= 1 << (unitBitSize * unitSize)
-	void shrinkSize(mpz_class &x, size_t unitSize) const
-	{
-		size_t u = gmp::getUnitSize(x);
-		if (u < unitSize) return;
-		bool b;
-		gmp::setArray(&b, x, gmp::getUnit(x), unitSize);
-		(void)b;
-		assert(b);
-	}
-	// p_ is set by p and compute (u_, a_) if possible
-	void init(const mpz_class& p)
-	{
-		p_ = p;
-		pBitSize_ = gmp::getBitSize(p);
-		N_ = (pBitSize_ + unitBitSize - 1) / unitBitSize;
-		initU_ = false;
-#if 0
-		u_ = (mpz_class(1) << (unitBitSize * 2 * N_)) / p_;
-#else
-		/*
-			1 << (unitBitSize * 2 * N_) may be overflow,
-			so use (1 << (unitBitSize * 2 * N_)) - 1 because u_ is same.
-		*/
-		uint8_t buf[48 * 2];
-		const size_t byteSize = unitBitSize / 8 * 2 * N_;
-		if (byteSize > sizeof(buf)) return;
-		memset(buf, 0xff, byteSize);
-		bool b;
-		gmp::setArray(&b, u_, buf, byteSize);
-		if (!b) return;
+	Unit q0;
+	Unit q1;
+	Unit np[maxUnitSize];
+	int (*modp_asm)(Unit *, const Unit *, size_t, const Unit*);
+	size_t N; // number of units of p
+	size_t L; // bit length of p
+	Unit p[maxUnitSize];
+	static const size_t smallD = 16; // bit length of the approximate reciprocal p0
+	static const size_t smallMaxE = smallD - 2; // modpSmall accepts xx < p 2^smallMaxE
+	uint32_t p0; // floor(2^(smallD + L - 1) / p) < 2^smallD
+	Modp() : q0(0), q1(0), np(), modp_asm(0), N(0), L(0), p(), p0(0) {}
+	bool init(const mpz_class& _p) {
+		const size_t BIT = sizeof(Unit) * 8;
+		L = gmp::getBitSize(_p);
+		modp_asm = 0;
+		N = roundUp(L, BIT);
+		if (N == 0 || N > maxUnitSize || L < (N - 1) * BIT + 2) {
+			N = 0; // not initialized
+			return false;
+		}
+		// leading zero bits of p in N words
+		const size_t s = N * BIT - L;
+		// Q = floor(2^(BIT+1+L)/p), BIT+2 bits
+		mpz_class Q = (mpz_class(1) << (BIT + 1 + L)) / _p;
+		mpz_class Qt = Q << s; // Qt = Q 2^s < 2^(2 * BIT)
+		mpz_class notp = (mpz_class(1) << (N * BIT)) - _p; // notp = 2^(N * BIT) - p
+		q0 = gmp::getUnit(Qt, 0);
+		q1 = gmp::getUnit(Qt, 1);
+		for (size_t i = 0; i < N; i++) {
+			np[i] = gmp::getUnit(notp, i);
+			p[i] = gmp::getUnit(_p, i);
+		}
+		p0 = uint32_t(gmp::getUnit((mpz_class(1) << (smallD + L - 1)) / _p, 0));
+#if MCL_BINT_ASM_X64 == 1
+		// src/gen_bint_x64.py requires p < 2^(N * BIT - 1) (r < 2p in N units)
+		if (s >= 1) {
+			switch (N * BIT) {
+			case 256: modp_asm = mclb_modp256_x64; break;
+			case 384: modp_asm = mclb_modp384_x64; break;
+			}
+		}
+#elif defined(MCL_USE_LLVM)
+		// src/gen.py (base{32,64}.ll)
+		switch (N * BIT) {
+		case 256: modp_asm = mclb_modp256; break;
+		case 384: modp_asm = mclb_modp384; break;
+		}
 #endif
-		u_ /= p_;
-		a_ = mpz_class(1) << (unitBitSize * (N_ + 1));
-		initU_ = true;
+		return true;
 	}
-	void modp(mpz_class& r, const mpz_class& t) const
+	// y[N] = x[xN] % p ; return false if init() failed
+	// the generated function accepts xN * sizeof(Unit) <= 64
+	bool modp(Unit *y, const Unit *x, size_t xN) const
 	{
-		if (t < p_) {
-			r = t;
-			return;
+		if (N == 0) return false;
+#if MCL_MODP_ASM == 1
+		if (modp_asm && xN * sizeof(Unit) <= 64) return modp_asm(y, x, xN, &q0);
+#endif
+		return modp_generic(y, x, xN);
+	}
+	/*
+		word-serial Barrett reduction with the two-unit reciprocal Qt = [q1:q0]
+		Keep r < p and fold the units of x from the top one by one:
+		  xx = r 2^BIT + w (< p 2^BIT),
+		  q = floor(W Qt / 2^(2 BIT + 1)) where W = the top two units of xx,
+		  r = xx - q p, then r -= p once if r >= p.
+		q is at most 1 less than floor(xx / p), so one conditional subtraction suffices.
+		xx - q p is computed as xx + q np - q 2^(N BIT) (mod 2^((N+1) BIT)) with
+		np = 2^(N BIT) - p, and r >= p is the carry of r + np into bit N BIT.
+	*/
+	bool modp_generic(Unit *y, const Unit *x, size_t xN) const
+	{
+		if (xN < N) {
+			// init() guarantees N <= maxUnitSize; the check lets gcc see xN < maxUnitSize (avoid -Warray-bounds)
+			if (N > maxUnitSize) return false;
+			// x < 2^((N-1) BIT) < p because (N-1) BIT + 2 <= bitLen(p)
+			bint::copyN(y, x, xN);
+			bint::clearN(y + xN, N - xN);
+			return true;
 		}
-		assert(p_ > 0);
-		const size_t tBitSize = gmp::getBitSize(t);
-		// use gmp::mod if init() fails or t is too large
-		if (tBitSize > pBitSize_ + unitBitSize * N_ - 1 || !initU_) {
-			gmp::mod(r, t, p_);
-			return;
+		// xx[N+1] = r 2^BIT + w ; r is kept in xx[1..N] ; two buffers because modp1 does not accept overlap
+		Unit buf[2][maxUnitSize + 1];
+		Unit *xx = buf[0];
+		Unit *r = buf[1];
+		// r = the top N-1 units of x (< p)
+		bint::copyN(xx + 1, x + xN - (N - 1), N - 1);
+		xx[N] = 0;
+		for (size_t k = xN - N + 1; k > 0; k--) {
+			xx[0] = x[k - 1];
+			modp1(r + 1, xx); // r[1..N] = xx mod p
+			fp::swap_(xx, r);
 		}
-		if (tBitSize < pBitSize_) {
-			r = t;
-			return;
+		bint::copyN(y, xx + 1, N);
+		return true;
+	}
+	/*
+		The following functions have a template parameter NT for the number of units of p.
+		NT = 0 means the runtime N (modp_generic, tests), NT = N gives faster code
+		(the loops are unrolled) and is used by fp_mulUnit set in setOp<N>.
+	*/
+	template<size_t NT>
+	CYBOZU_FORCE_INLINE void modp1T(Unit *y, const Unit *xx) const
+	{
+		const size_t n = NT ? NT : N;
+		const size_t BIT = sizeof(Unit) * 8;
+		const Unit Qt[2] = { q0, q1 };
+		// q = floor(W Qt / 2^(2 BIT + 1)), W = [xx[n]:xx[n-1]]
+		Unit P[4];
+		bint::mulT<2>(P, xx + n - 1, Qt);
+		const Unit q = (P[2] >> 1) | (P[3] << (BIT - 1));
+		subQpT<NT>(y, xx, q);
+	}
+	void modp1(Unit *y, const Unit *xx) const { modp1T<0>(y, xx); }
+	/*
+		y[N] = xx[N+1] - q p, then y -= p once if y >= p
+		requires 0 <= xx - q p < 2p (i.e. q is floor(xx / p) or floor(xx / p) - 1)
+		y must not overlap xx
+		remark : write y directly by the asm functions (no copy of a buffer written by asm,
+		which causes a store-forwarding stall when the copy is vectorized)
+	*/
+	template<size_t NT>
+	CYBOZU_FORCE_INLINE void subQpT(Unit *y, const Unit *xx, Unit q) const
+	{
+		const size_t n = NT ? NT : N;
+		Unit u[(NT ? NT : maxUnitSize) + 1];
+		u[n] = bint::mulUnitN(u, p, q, n); // u = q p
+		const Unit b = bint::subN(y, xx, u, n); // y = xx - u (low n units)
+		const Unit top = xx[n] - u[n] - b; // 0 or 1 because 0 <= xx - q p < 2p < 2^(n BIT + 1)
+		if (top || bint::cmpGeN(y, p, n)) {
+			bint::subN(y, y, p, n);
 		}
-		// mod is faster than modp if t is small
-		if (tBitSize <= unitBitSize * N_) {
-			gmp::mod(r, t, p_);
-			return;
+	}
+	/*
+		y[N] = xx[N+1] % p for xx < p 2^smallMaxE (e.g. xx = x y with x < p and y < 2^(smallMaxE - 1))
+		The quotient is estimated by one 32-bit multiplication of the top smallD bits of xx and p0,
+		which is cheaper than the two-unit multiplication in modp1.
+		return false if xx is too large (then use modp1)
+		Let a = bitLen(xx), x0 = floor(xx / 2^(a - smallD)) < 2^smallD, s = 2 smallD + L - 1 - a.
+		q = floor(x0 p0 / 2^s) <= floor(xx / p) and > xx / p - 2 2^(e - smallD) - 1 >= xx / p - 3/2 (e = a - L + 1 <= smallMaxE),
+		so q >= floor(xx / p) - 1 and one conditional subtraction suffices.
+		y must not overlap xx
+	*/
+	template<size_t NT>
+	CYBOZU_FORCE_INLINE bool modpSmallT(Unit *y, const Unit *xx) const
+	{
+		const size_t n = NT ? NT : N;
+		const size_t a = fp::getBitSize(xx, n + 1);
+		if (a < L) {
+			bint::copyN(y, xx, n); // xx < 2^(L-1) <= p
+			return true;
 		}
-		mpz_class q;
-		q = t;
-		q >>= unitBitSize * (N_ - 1);
-		q *= u_;
-		q >>= unitBitSize * (N_ + 1);
-		q *= p_;
-		shrinkSize(q, N_ + 1);
-		r = t;
-		shrinkSize(r, N_ + 1);
-		r -= q;
-		if (r < 0) {
-			r += a_;
+		const size_t e = a - L + 1;
+		if (e > smallMaxE) return false;
+		const Unit x0 = fp::getUnitAt(xx, n + 1, a - smallD);
+		const uint32_t t = uint32_t(x0) * p0;
+		const Unit q = t >> (2 * smallD + L - 1 - a); // the shift is in [smallD + 2, 2 smallD - 1]
+		if (q == 0) {
+			/*
+				q == 0 implies a == L : if a > L then x0 >= 2^(smallD-1), p0 >= 2^(smallD-1) and
+				the shift 31 + L - a <= 30 give q >= 1. So xx < 2^L (xx[n] == 0) and xx < 2p.
+			*/
+			if (bint::cmpGeN(xx, p, n)) { // fast because the branch is usually determined at xx[n-1] (xx and p have L bits)
+				bint::subN(y, xx, p, n);
+			} else {
+				bint::copyN(y, xx, n);
+			}
+			return true;
 		}
-		if (r >= p_) {
-			r -= p_;
-		}
+		subQpT<NT>(y, xx, q);
+		return true;
+	}
+	bool modpSmall(Unit *y, const Unit *xx) const { return modpSmallT<0>(y, xx); }
+	/*
+		z[N] = (x[N] * y) % p ; requires x < p (then x y < p 2^BIT and one step suffices) and init() succeeded
+		modpSmall for a small y, otherwise modp1
+		remark : the generated modp_asm is not used here because it is not faster than modp1T<N> for one step
+		(Fr : 3 clk faster, Fp : 6 clk slower on x64)
+	*/
+	template<size_t NT>
+	void mulUnitModT(Unit *z, const Unit *x, Unit y) const
+	{
+		assert(N > 0);
+		const size_t n = NT ? NT : N;
+		Unit xy[(NT ? NT : maxUnitSize) + 1];
+		xy[n] = bint::mulUnitN(xy, x, y, n);
+		if (modpSmallT<NT>(z, xy)) return;
+		modp1T<NT>(z, xy);
+	}
+	// return false if init() failed
+	bool mulUnitMod(Unit *z, const Unit *x, Unit y) const
+	{
+		if (N == 0) return false;
+		mulUnitModT<0>(z, x, y);
+		return true;
 	}
 };
 

@@ -16,7 +16,7 @@
 #define XBYAK_NO_EXCEPTION
 #include "xbyak/xbyak_util.h"
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic ignored "-Wunused-function"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #ifndef __clang__
@@ -1145,9 +1145,9 @@ struct EcMT {
 				fr.fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
 #ifdef MCL_MSM_BLS12_377
-				mcl::ec::optimizedSplitRawForBLS12_377(aa, bb, buf);
+				mcl::ec::optimizedSplitForBLS12_377(aa, bb, buf);
 #else
-				mcl::ec::optimizedSplitRawForBLS12_381(aa, bb, buf);
+				mcl::ec::optimizedSplitForBLS12_381(aa, bb, buf);
 #endif
 				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
 				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
@@ -1535,9 +1535,9 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 			mcl::Fr::getOp().fromMont(ya, y[i*m+j].v);
 			Unit a[2], b[2];
 #ifdef MCL_MSM_BLS12_377
-			mcl::ec::optimizedSplitRawForBLS12_377(a, b, ya);
+			mcl::ec::optimizedSplitForBLS12_377(a, b, ya);
 #else
-			mcl::ec::optimizedSplitRawForBLS12_381(a, b, ya);
+			mcl::ec::optimizedSplitForBLS12_381(a, b, ya);
 #endif
 			py[i*m*2+j+0] = a[0];
 			py[i*m*2+j+m] = a[1];
@@ -1620,6 +1620,7 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 	}
 }
 
+// AVX-512 IFMA is required
 bool initMsm(const mcl::CurveParam& cp)
 {
 	assert(EcM::a_ == 0);
@@ -1643,7 +1644,6 @@ bool initMsm(const mcl::CurveParam& cp)
 #else
 	if (cp != mcl::BLS12_381) return false;
 #endif
-	if ((mcl::bint::g_cpuType & mcl::bint::tAVX512_IFMA) == 0) return false;
 	return true;
 }
 

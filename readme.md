@@ -10,18 +10,27 @@ mcl is a library for pairing-based cryptography,
 which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 
 # News
+- Improve the performance of pairing on Apple M4 (aarch64) by about 14%.
 - Fix memory leak of some operations on Windows
 - Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 
+# Version v4 includes breaking changes.
+- Require BMI2 (mulx) and ADX (adox, adcx) instruction sets
+  - Broadwell (2014) or later
+
 # Version v3 includes breaking changes to lib/dll specifications.
-* The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
+- The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
 and up to 256 bits for the order field Fr of the elliptic curve (`MCL_FP_BIT=384`, `MCL_FR_BIT=256`).
-* The arguments of the Fp/Fr initialization function have been changed.
-* `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
+`MCL_FP_BIT` and `MCL_FR_BIT` must be at most 384 (`MCL_BINT_MAX_BIT` in `include/mcl/config.hpp`; the generated low-level functions support up to 384-bit multiplication),
+so the initialization of a curve over a larger prime such as BN462 fails.
+To enlarge the limit (up to 576 for the x64 assembly), set `MCL_BINT_MAX_BIT` in `include/mcl/config.hpp` and `BINT_MUL_N` (= `MCL_BINT_MAX_BIT` / 64) in `Makefile` to the same size,
+and regenerate the low-level functions by `make update_all_asm` (requires LLVM) and `make header`.
+- The arguments of the Fp/Fr initialization function have been changed.
+- `mclbn***.{a,lib}` has been merged into mcl.{a,lib} and removed.
 
 # Support architecture
 
-- x86-64 Windows + Visual Studio 2015 (or later)
+- x86-64 Windows + Visual Studio 2022 (or later)
 - x86, x86-64 Linux + gcc/clang
 - x86-64, M1 macOS
 - ARM / ARM64 Linux
@@ -68,7 +77,7 @@ git clone https://github.com/herumi/mcl
 cd mcl
 make -j4
 ```
-clang++ is required except for x86-64 on Linux and Windows.
+clang++ is required except for x86-64 on Linux and Windows (MinGW).
 
 ```
 make -j4 CXX=clang++
@@ -106,7 +115,7 @@ msbuild mcl.sln /p:Configuration=Release /m
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.
-`src/proj/lib/lib.vcxproj` is to build a static library `lib/mcl.lib`, which is built with `MCL_FP_BIT=384`.
+`src/proj/mcllib/mcllib.vcxproj` is to build a static library `lib/mcl.lib`, which is built with `MCL_FP_BIT=384`.
 
 ## options
 
@@ -174,12 +183,12 @@ Build GMP for 32-bit mode.
 
 ```
 sudo apt install g++-multilib
-sudo apt install clang-18
+sudo apt install clang-21
 cd <GMP dir>
 env ABI=32 ./configure --enable-cxx --prefix=<install dir>
 make -j install
 cd <mcl dir>
-make ARCH=x86 LLVM_VER=-18 GMP_DIR=<install dir>
+make ARCH=x86 LLVM_VER=-21 GMP_DIR=<install dir>
 ```
 
 # How to build a library for arm with clang++ on Linux
@@ -203,6 +212,19 @@ make -f Makefile.cross test TARGET=riscv64-linux-gnu LD_PREFIX=riscv64-linux-gnu
 
 # How to build on 64-bit Windows with Visual Studio
 
+`mklib.bat` builds the library and `mk.bat` builds a test or sample with it.
+```
+mklib [dll] [clang=(0|1|2)]
+mk (-s|-d) <source file>
+```
+- `dll`: build `bin\mcl.dll` (and `bin\mcl.lib` for import) instead of the static library `lib\mcl.lib`.
+- `clang=1` (default): build `src\base64.ll` with clang++ (`MCL_USE_LLVM=1`). clang++ (installed by the LLVM component of Visual Studio) is required.
+- `clang=0`: build without clang++ (`src\base64.ll` is not used).
+- `clang=2`: also build `src\fp.cpp` and `src\msm_avx.cpp` with clang-cl instead of cl, with the same optimization options as Makefile on x64 (`CLANG_CFLAGS` in `setvar.bat`). Some functions such as `Fr::mulUnit` become faster.
+  `mklib` leaves `USE_CLANG=2` in the environment, and then `mk` also uses clang-cl.
+  A program that links the library built with `clang=2` requires `clang_rt.builtins-x86_64.lib` (`CLANG_RT_LIB` in `setvar.bat`, found via `clang -print-resource-dir`); `mk` adds it if `USE_CLANG=2`.
+- `mk -s` links `lib\mcl.lib` and `mk -d` links `bin\mcl.lib` with `/DMCL_DLL`. The executable is put in `bin\`.
+
 Open a console window, and
 ```
 git clone https://github.com/herumi/mcl
@@ -212,10 +234,12 @@ cd mcl
 mklib
 mk -s test\bls12_test.cpp && bin\bls12_test.exe
 
-# dynamic library (support only C API: bn.h)
+# dynamic library (support both C/C++ API)
 mklib dll
 mk -d test\bn_c384_256_test.cpp && bin\bn_c384_256_test.exe
+mk -d test\bls12_test.cpp && bin\bls12_test.exe
 ```
+A C++ client of `mcl.dll` must be compiled with `/DMCL_DLL` (`mk -d` does it); the static data of Fp, Fr, G1, and G2 then refers to the instances in the DLL.
 (not maintained)
 Open mcl.sln and build or if you have msbuild.exe
 ```
@@ -289,19 +313,19 @@ Build `mcl.wasm` without Emscripten using clang's wasm target directly.
 
 ### Prerequisites
 
-- clang/clang++, wasm-ld (LLVM 18 or later)
+- clang/clang++, wasm-ld (LLVM 21 or later)
 - wasm-opt (from [binaryen](https://github.com/WebAssembly/binaryen))
 - python3
 
 ### Build
 
 ```bash
-make -f Makefile.wasm LLVM_VER=-18
+make -f Makefile.wasm LLVM_VER=-21
 ```
 
 This generates `lib/mcl.wasm` and `lib/mcl_c.js` (wasm binary embedded as base64 in JS).
 
-Set `LLVM_VER` to match your installed LLVM version suffix (e.g., `-18` for `clang-18`).
+Set `LLVM_VER` to match your installed LLVM version suffix (e.g., `-21` for `clang-21`).
 
 # Node.js
 

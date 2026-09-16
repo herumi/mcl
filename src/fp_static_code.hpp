@@ -26,7 +26,6 @@ void mclx_Fp_sqr(Unit*, const Unit*);
 void mclx_Fp_mul2(Unit*, const Unit*);
 void mclx_FpDbl_add(Unit*, const Unit*, const Unit*);
 void mclx_FpDbl_sub(Unit*, const Unit*, const Unit*);
-int mclx_Fp_preInv(Unit*, const Unit*);
 Unit mclx_FpDbl_addPre(Unit*, const Unit*, const Unit*);
 Unit mclx_FpDbl_subPre(Unit*, const Unit*, const Unit*);
 void mclx_FpDbl_mulPre(Unit*, const Unit*, const Unit*);
@@ -51,7 +50,6 @@ void mclx_Fr_neg(Unit*, const Unit*);
 void mclx_Fr_mul(Unit*, const Unit*, const Unit*);
 void mclx_Fr_sqr(Unit*, const Unit*);
 void mclx_Fr_mul2(Unit*, const Unit*);
-int mclx_Fr_preInv(Unit*, const Unit*);
 } // extern "C"
 
 void setStaticCode(mcl::fp::Op& op)
@@ -84,7 +82,6 @@ void setStaticCode(mcl::fp::Op& op)
 		op.fp2Dbl_mulPreA_ = mclx_Fp2Dbl_mulPre;
 		op.fp2Dbl_sqrPreA_ = mclx_Fp2Dbl_sqrPre;
 		op.fp2Dbl_mul_xiA_ = mclx_Fp2Dbl_mul_xi;
-		op.fp_preInv = mclx_Fp_preInv;
 	} else {
 		// Fr, sizeof(Fr) = 32
 		op.fp_addPre = mclx_Fr_addPre;
@@ -96,7 +93,6 @@ void setStaticCode(mcl::fp::Op& op)
 		op.fp_mulA_ = mclx_Fr_mul;
 		op.fp_sqrA_ = mclx_Fr_sqr;
 		op.fp_mul2A_ = mclx_Fr_mul2;
-		op.fp_preInv = mclx_Fr_preInv;
 	}
 	op.fp_mul = fp::func_ptr_cast<void4u>(op.fp_mulA_);
 }
