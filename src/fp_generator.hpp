@@ -589,9 +589,9 @@ private:
 		(rdx:pz[0..n-1]) = px[0..n-1] * y
 		use t, rax, rdx
 		if n > 2
-		use wk[0]
+		use t1
 	*/
-	void gen_raw_mulUnit(const RegExp& pz, const RegExp& px, const Reg64& y, const MixPack& wk, const Reg64& t, size_t n)
+	void gen_raw_mulUnit(const RegExp& pz, const RegExp& px, const Reg64& y, const Reg64& t, const Reg64& t1, size_t n)
 	{
 		if (n == 1) {
 			mov(rax, ptr [px]);
@@ -611,8 +611,6 @@ private:
 			mov(ptr [pz + 8], rax);
 			return;
 		}
-		assert(wk.size() > 0 && wk.isReg(0));
-		const Reg64& t1 = wk.getReg(0);
 		// mulx(H, L, x) = [H:L] = x * rdx
 		mov(rdx, y);
 		mulx(t1, rax, ptr [px]); // [y:rax] = px * y
@@ -633,16 +631,11 @@ private:
 	void gen_mulUnit()
 	{
 //		assert(pn_ >= 2);
-		const int regNum = 2;
-		const int stackSize = 0;
-		StackFrame sf(this, 3, regNum | UseRDX, stackSize);
+		StackFrame sf(this, 3, 2 | UseRDX);
 		const Reg64& pz = sf.p[0];
 		const Reg64& px = sf.p[1];
 		const Reg64& y = sf.p[2];
-		size_t rspPos = 0;
-		Pack remain = sf.t.sub(1);
-		MixPack wk(remain, rspPos, pn_ - 1);
-		gen_raw_mulUnit(pz, px, y, wk, sf.t[0], pn_);
+		gen_raw_mulUnit(pz, px, y, sf.t[0], sf.t[1], pn_);
 		mov(rax, rdx);
 	}
 	/*
@@ -3154,13 +3147,6 @@ private:
 			for (size_t i = 1; i < n; i++) {
 				g_or(t, z[i]);
 			}
-		}
-	}
-	// y[i] &= t
-	void and_pr(const Pack& y, const Reg64& t)
-	{
-		for (int i = 0; i < (int)y.size(); i++) {
-			and_(y[i], t);
 		}
 	}
 	/*
