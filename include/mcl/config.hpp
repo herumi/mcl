@@ -97,6 +97,15 @@
 #if defined(MCL_USE_XBYAK) || defined(MCL_STATIC_CODE)
 	#define MCL_X64_ASM
 #endif
+/*
+	MCL_DIRECT_CALL : Fp/FpDbl/Fp2 call the p-fixed function pointers op_.fp_addA_ etc.
+	target: Xbyak, the static code (MCL_X64_ASM), the p-fixed LLVM functions (mcl_c?_* in src/llvm_proto.hpp).
+	Without it (Wasm, plain C++) the pointers would only hold trampolines to op_.fp_add(..., p) etc.,
+	so the operations call those directly; one more indirect call per operation made G1/G2/pairing about 10% slower on Wasm.
+*/
+#if defined(MCL_X64_ASM) || (defined(MCL_USE_LLVM) && !defined(MCL_WASM32))
+	#define MCL_DIRECT_CALL
+#endif
 
 #define MCL_MAX_BUF_BYTE_SIZE 64
 #define MCL_MAX_HASH_BIT_SIZE 512

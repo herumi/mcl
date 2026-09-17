@@ -522,27 +522,51 @@ public:
 	}
 	static void add(FpT& z, const FpT& x, const FpT& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		op_.fp_addA_(z.v_, x.v_, y.v_);
+#else
+		op_.fp_add(z.v_, x.v_, y.v_, op_.p);
+#endif
 	}
 	static void sub(FpT& z, const FpT& x, const FpT& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		op_.fp_subA_(z.v_, x.v_, y.v_);
+#else
+		op_.fp_sub(z.v_, x.v_, y.v_, op_.p);
+#endif
 	}
 	static void neg(FpT& y, const FpT& x)
 	{
+#ifdef MCL_DIRECT_CALL
 		op_.fp_negA_(y.v_, x.v_);
+#else
+		op_.fp_neg(y.v_, x.v_, op_.p);
+#endif
 	}
 	static void mul(FpT& z, const FpT& x, const FpT& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		op_.fp_mulA_(z.v_, x.v_, y.v_);
+#else
+		op_.fp_mul(z.v_, x.v_, y.v_, op_.p);
+#endif
 	}
 	static void sqr(FpT& y, const FpT& x)
 	{
+#ifdef MCL_DIRECT_CALL
 		op_.fp_sqrA_(y.v_, x.v_);
+#else
+		op_.fp_sqr(y.v_, x.v_, op_.p);
+#endif
 	}
 	static void mul2(FpT& y, const FpT& x)
 	{
+#ifdef MCL_DIRECT_CALL
 		op_.fp_mul2A_(y.v_, x.v_);
+#else
+		op_.fp_add(y.v_, x.v_, x.v_, op_.p);
+#endif
 	}
 	static void mul9(FpT& y, const FpT& x)
 	{

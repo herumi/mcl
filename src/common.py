@@ -1131,7 +1131,8 @@ def gen_fixed_fp2Dbl_mul_xi(name, mont, dataVar, offsetDbl):
 #   {preDbl}mod
 # (no mulPre / sqrPre: they do not depend on p, Op uses mclb_mul{N} / mclb_sqr{N})
 # and if hasFp2 (the Fp of a pairing curve with Fp2 = Fp[i]/(i^2 + 1) and
-# xi = 1 + i, sizeof(Fp) = offset units):
+# xi = 1 + i, sizeof(Fp) = offset units = MCL_FP_BIT / unit at the generation,
+# the position of the second component of Fp2):
 #   {pre}sub_tbl, {preDbl}mulPre (private, used by {pre2}mul), {preDbl}add, {preDbl}sub,
 #   {pre2}add, {pre2}sub, {pre2}neg, {pre2}mul2, {pre2}mul, {pre2}sqr, {pre2}mul_xi,
 #   {pre2Dbl}mulPre, {pre2Dbl}sqrPre, {pre2Dbl}mul_xi (Fp2Dbl, b at 2 offset limbs)
@@ -1164,7 +1165,7 @@ def gen_fixed(pre, unit, p, offset, hasFp2, mulPos, extractHigh):
   modF = gen_fixed_mod(f'{preDbl}mod', mont, dataVar, rpVar, mulUnit)
   if not hasFp2:
     return
-  assert not mont.isFullBit and mont.nocarry
+  assert not mont.isFullBit and mont.nocarry and offset >= N
   subTbl = makeSubTbl(f'{pre}sub_tbl', mont)
   mulPreF = gen_fixed_mulPre(f'{preDbl}mulPre', mont, mulUnit)
   gen_fixed_fpDbl_add(f'{preDbl}add', mont, dataVar)

@@ -108,11 +108,19 @@ public:
 	}
 	static inline void add(FpDbl& z, const FpDbl& x, const FpDbl& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fpDbl_addA_(z.v_, x.v_, y.v_);
+#else
+		Fp::op_.fpDbl_add(z.v_, x.v_, y.v_, Fp::op_.p);
+#endif
 	}
 	static inline void sub(FpDbl& z, const FpDbl& x, const FpDbl& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fpDbl_subA_(z.v_, x.v_, y.v_);
+#else
+		Fp::op_.fpDbl_sub(z.v_, x.v_, y.v_, Fp::op_.p);
+#endif
 	}
 	static inline void neg(FpDbl& z, const FpDbl& x)
 	{
@@ -122,7 +130,11 @@ public:
 	}
 	static inline void mod(Fp& z, const FpDbl& xy)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fpDbl_modA_(z.v_, xy.v_);
+#else
+		Fp::op_.fpDbl_mod(z.v_, xy.v_, Fp::op_.p);
+#endif
 	}
 	static void addA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_add(z, x, y, Fp::op_.p); }
 	static void subA(Unit *z, const Unit *x, const Unit *y) { Fp::op_.fpDbl_sub(z, x, y, Fp::op_.p); }
@@ -208,27 +220,56 @@ public:
 	}
 	static void add(Fp2& z, const Fp2& x, const Fp2& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fp2_addA_(z.a.v_, x.a.v_, y.a.v_);
+#else
+		addA(z.a.v_, x.a.v_, y.a.v_);
+#endif
 	}
 	static void sub(Fp2& z, const Fp2& x, const Fp2& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fp2_subA_(z.a.v_, x.a.v_, y.a.v_);
+#else
+		subA(z.a.v_, x.a.v_, y.a.v_);
+#endif
 	}
 	static void neg(Fp2& y, const Fp2& x)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fp2_negA_(y.a.v_, x.a.v_);
+#else
+		negA(y.a.v_, x.a.v_);
+#endif
 	}
 	static void mul(Fp2& z, const Fp2& x, const Fp2& y)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fp2_mulA_(z.a.v_, x.a.v_, y.a.v_);
+#else
+		mulA(z.a.v_, x.a.v_, y.a.v_);
+#endif
 	}
 	static void sqr(Fp2& y, const Fp2& x)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fp2_sqrA_(y.a.v_, x.a.v_);
+#else
+		if (Fp::op_.u == 1) {
+			sqrA(y.a.v_, x.a.v_);
+		} else {
+			assert(Fp::op_.u == 5);
+			sqrAu5(y.a.v_, x.a.v_);
+		}
+#endif
 	}
 	static void mul2(Fp2& y, const Fp2& x)
 	{
+#ifdef MCL_DIRECT_CALL
 		Fp::op_.fp2_mul2A_(y.a.v_, x.a.v_);
+#else
+		mul2A(y.a.v_, x.a.v_);
+#endif
 	}
 	static void mul_xi(Fp2& y, const Fp2& x)
 	{

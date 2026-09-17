@@ -10,7 +10,7 @@
 */
 
 #include <string.h>
-#include <mcl/gmp_util.hpp>
+#include <mcl/bint.hpp>
 #include <cybozu/bit_operation.hpp>
 #include <mcl/invmod_fwd.hpp>
 #include <mcl/util.hpp>
@@ -294,33 +294,13 @@ void exec(const InvModT<N>& im, Unit *py, const Unit *px)
 	fromLimb<N>(py, d);
 }
 
-// returns false if x does not fit in N units
+// M[N] : odd modulus
 template<int N>
-bool exec(const InvModT<N>& im, mpz_class& y, const mpz_class& x)
+void init(InvModT<N>& invMod, const Unit *M)
 {
-	Unit ux[N], uy[N];
-	bool b;
-	mcl::gmp::getArray(&b, ux, N, x);
-	if (!b) return false;
-	exec<N>(im, uy, ux);
-	mcl::gmp::setArray(&b, y, uy, N);
-	return b;
-}
-
-// returns false if M does not fit in N units
-template<int N>
-bool init(InvModT<N>& invMod, const mpz_class& mM)
-{
-	Unit M[N];
-	bool b;
-	mcl::gmp::getArray(&b, M, N, mM);
-	if (!b) return false;
 	toLimb<N>(invMod.M, M);
-	mpz_class inv;
-	mpz_class mod = mpz_class(1) << modL;
-	mcl::gmp::invMod(inv, mM, mod);
-	invMod.Mi = mcl::gmp::getUnit(inv, 0) & MASK;
-	return true;
+	// getMontgomeryCoeff(M[0], modL) = -M^-1 mod 2^modL
+	invMod.Mi = (0 - bint::getMontgomeryCoeff(M[0], modL)) & (Unit)MASK;
 }
 
 } // mcl::inv

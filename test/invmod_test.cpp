@@ -1,4 +1,5 @@
 #include <mcl/invmod.hpp>
+#include <mcl/gmp_util.hpp>
 #include <cybozu/test.hpp>
 #include <cybozu/benchmark.hpp>
 #include <cybozu/xorshift.hpp>
@@ -8,6 +9,31 @@
 	#define INVMOD_BENCH_N 1000
 #endif
 
+// returns false if M does not fit in N units
+template<int N>
+bool invModInit(mcl::inv::InvModT<N>& im, const mpz_class& M)
+{
+	mcl::Unit uM[N];
+	bool b;
+	mcl::gmp::getArray(&b, uM, N, M);
+	if (!b) return false;
+	mcl::inv::init<N>(im, uM);
+	return true;
+}
+
+// returns false if x does not fit in N units
+template<int N>
+bool invModExec(const mcl::inv::InvModT<N>& im, mpz_class& y, const mpz_class& x)
+{
+	mcl::Unit ux[N], uy[N];
+	bool b;
+	mcl::gmp::getArray(&b, ux, N, x);
+	if (!b) return false;
+	mcl::inv::exec<N>(im, uy, ux);
+	mcl::gmp::setArray(&b, y, uy, N);
+	return b;
+}
+
 template<int N>
 void test(const char *Mstr)
 {
@@ -15,28 +41,28 @@ void test(const char *Mstr)
 	mpz_class M;
 	mcl::gmp::setStr(M, Mstr, 16);
 	mcl::inv::InvModT<N> im;
-	CYBOZU_TEST_ASSERT(mcl::inv::init(im, M));
+	CYBOZU_TEST_ASSERT(invModInit(im, M));
 	mpz_class x, y, z;
 	x = 0;
-	CYBOZU_TEST_ASSERT(mcl::inv::exec(im, z, x));
+	CYBOZU_TEST_ASSERT(invModExec(im, z, x));
 	CYBOZU_TEST_EQUAL(z, 0);
 	x = 1;
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
-		mcl::inv::exec(im, z, x);
+		invModExec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 		x++;
 	}
 	x = M - 1;
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
-		mcl::inv::exec(im, z, x);
+		invModExec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 		x--;
 	}
 	for (int i = 0; i < 10000; i++) {
 		mcl::gmp::invMod(y, x, M);
-		mcl::inv::exec(im, z, x);
+		invModExec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 		x = y + 1;
 	}
@@ -49,7 +75,7 @@ void test(const char *Mstr)
 		x %= M;
 		if (x == 0) continue;
 		mcl::gmp::invMod(y, x, M);
-		mcl::inv::exec(im, z, x);
+		invModExec(im, z, x);
 		CYBOZU_TEST_EQUAL(y, z);
 	}
 	typedef mcl::Unit Unit;
@@ -64,7 +90,7 @@ void test(const char *Mstr)
 			mcl::gmp::setArray(x, v, 2);
 			if (x == 0) continue;
 			mcl::gmp::invMod(y, x, M);
-			mcl::inv::exec(im, z, x);
+			invModExec(im, z, x);
 			CYBOZU_TEST_EQUAL(y, z);
 		}
 	}
@@ -76,13 +102,15 @@ void test(const char *Mstr)
 		mcl::inv::exec<N>(im, ux, ux);
 		CYBOZU_TEST_EQUAL_ARRAY(ux, uy, N);
 	}
-	// x does not fit in N units
+	// x (or M) does not fit in N units
 	{
 		mpz_class big = mpz_class(1) << (MCL_UNIT_BIT_SIZE * N);
-		CYBOZU_TEST_ASSERT(!mcl::inv::exec(im, z, big));
+		CYBOZU_TEST_ASSERT(!invModExec(im, z, big));
+		mcl::inv::InvModT<N> im2;
+		CYBOZU_TEST_ASSERT(!invModInit(im2, big + 1));
 	}
 #ifdef NDEBUG
-	CYBOZU_BENCH_C("invMod", INVMOD_BENCH_N, x++;mcl::inv::exec, im, x, x);
+	CYBOZU_BENCH_C("invMod", INVMOD_BENCH_N, x++;invModExec, im, x, x);
 #endif
 }
 

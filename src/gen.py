@@ -4,6 +4,7 @@
 import argparse
 from s_xbyak_llvm import *
 import common
+import primetbl
 
 unit = 0
 unit2 = 0
@@ -21,11 +22,6 @@ g_mod_NIST_P192 = None
 g_mulPv = {}  # bit -> Function
 g_mclb_mul3 = None  # mclb_mul{N}
 g_mclb_sqr3 = None  # mclb_sqr{N}
-
-# BLS12-381 (curve type MCL_BLS12_381 = 5, so the prefix is mcl_c5_)
-C5_P = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab
-C5_R = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
-
 
 # return (x>>shift) % (2**size)
 def extract(x, shift, size=0):
@@ -348,7 +344,8 @@ def setUnit(u):
   unit2 = u * 2
 
 
-def gen(maxBitSize):
+# fpBit : MCL_FP_BIT (the size of Fp of the p-fixed functions, see below)
+def gen(maxBitSize, fpBit):
   gen_once()
   bitTbl = [192, 224, 256, 384, 512]
   for b in bitTbl:
@@ -372,16 +369,22 @@ def gen(maxBitSize):
     setBit(b)
     common.gen_modp(f'mclb_modp{b}', unit, N, 512 // unit, g_mulPv[b])
   if not g_wasm:
-    # p-fixed functions of BLS12-381 (mcl_c5_fp_*, mcl_c5_fp2_*, mcl_c5_fpDbl_*,
-    # mcl_c5_fr_*, mcl_c5_frDbl_*) with the ABI of the Xbyak functions (no p
-    # argument); fp.cpp registers them to the A_ slots of Op when p matches
+    # p-fixed functions of the exported curves of src/primetbl.py (BN254:
+    # mcl_c0_fp_*, mcl_c0_fp2_*, mcl_c0_fpDbl_*, mcl_c0_fr_*, mcl_c0_frDbl_*,
+    # BLS12-381: mcl_c5_*) with the ABI of the Xbyak functions (no p argument);
+    # fp.cpp registers them to the A_ slots of Op when p matches
     # (setLLVMFixedCode, prototypes in llvm_proto.hpp by gen_llvm_proto.py).
-    # offset = sizeof(Fp) / sizeof(Unit) = MCL_FP_BIT / unit (the position of
-    # the second component of Fp2), so Fp2 is supported only if MCL_FP_BIT = 384.
+    # offset = sizeof(Fp) / sizeof(Unit) = fpBit / unit (the position of the
+    # second component of Fp2) fixes the Fp2 functions to MCL_FP_BIT = fpBit
+    # (-fpbit, the MCL_FP_BIT of the Makefile); llvm_proto.hpp records it as
+    # MCL_FP_BIT_LLVM and fp.cpp rejects a different MCL_FP_BIT by #error.
     # Not for wasm: base64m.ll is linked with 4-argument function pointers
     # and call_indirect traps on the signature mismatch of func_ptr_cast.
-    common.gen_fixed('mcl_c5_fp_', unit, C5_P, 384 // unit, True, g_mulPos, g_extractHigh)
-    common.gen_fixed('mcl_c5_fr_', unit, C5_R, 384 // unit, False, g_mulPos, g_extractHigh)
+    for cv in primetbl.exportedCurves():
+      hasFp2 = cv.u == 1 and cv.xi_a == 1 # Fp2 = Fp[i]/(i^2 + 1) and xi = 1 + i (gen_fixed)
+      common.gen_fixed(f'mcl_c{cv.c}_fp_', unit, cv.p, fpBit // unit, hasFp2, g_mulPos, g_extractHigh)
+      if cv.r:
+        common.gen_fixed(f'mcl_c{cv.c}_fr_', unit, cv.r, fpBit // unit, False, g_mulPos, g_extractHigh)
 
 
 def main():
@@ -389,6 +392,7 @@ def main():
   parser = argparse.ArgumentParser(description='generate base{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
   parser.add_argument('-wasm', action='store_true', default=False, help='generate for wasm')
+  parser.add_argument('-fpbit', type=int, default=384, help='MCL_FP_BIT (sizeof(Fp) of the Fp2 functions of the p-fixed code)')
   opt = parser.parse_args()
 
   setUnit(opt.u)
@@ -396,7 +400,7 @@ def main():
 
   # MCL_FP_BIT default (see include/mcl/config.hpp). Only affects the
   # (currently unused) 768-bit add/sub extension.
-  gen(384)
+  gen(384, opt.fpbit)
   term()
 
 
