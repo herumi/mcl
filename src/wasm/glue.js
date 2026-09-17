@@ -236,6 +236,22 @@ function createModule (opts) {
         stackRestore(stack)
       }
     }
+    // x = func(x, y) ; return the value of func (in-place add etc.)
+    mod.callUpdate = function (func, x, y) {
+      const stack = stackSave()
+      try {
+        const xPos = stackAlloc(sizeOf(x) + sizeOf(y))
+        const yPos = xPos + sizeOf(x)
+        const H = h32()
+        H.set(x, xPos >> 2)
+        H.set(y, yPos >> 2)
+        const r = func(xPos, yPos)
+        copyFromHeap32(x, xPos)
+        return r
+      } finally {
+        stackRestore(stack)
+      }
+    }
     // y = func(vec, n, id) ; secret sharing (evaluate polynomial)
     // vec = [Uint32Array, ...], id = Uint32Array
     mod.callShare = function (func, y, vec, id) {
@@ -296,6 +312,19 @@ function createModule (opts) {
     mod.asciiStrToPtr = asciiStrToPtr
 
     // --- string / byte-buffer calls on a value a (Uint32Array)
+    // buf must be a String, Uint8Array or Array ; return true if it is a String
+    const isStrInput = function (buf) {
+      if (typeof buf === 'string') return true
+      if (buf instanceof Uint8Array || Array.isArray(buf)) return false
+      throw new Error('err bad type:"' + Object.prototype.toString.apply(buf) + '". Use String or Uint8Array.')
+    }
+    const putInput = function (bufPos, buf, isStr) {
+      if (isStr) {
+        asciiStrToPtr(bufPos, buf)
+      } else {
+        h8().set(buf, bufPos)
+      }
+    }
     // func(buf, maxBufSize, x, ioMode) writes n bytes to buf and returns n (0 on error).
     // Return them as a string, or as a Uint8Array if returnAsStr === false.
     // buf has room for a.length * 32 bits (base-2 getStr of every word) plus a margin.
@@ -338,26 +367,55 @@ function createModule (opts) {
     // a = func(x, buf, bufSize, ioMode) with buf = String | Uint8Array | Array ;
     // throw if func returns non-zero (setStr, setLittleEndian, setHashOf, hashAndMapTo, ...)
     mod.callSetInput = function (func, a, buf, ioMode) {
-      const isStr = typeof buf === 'string'
-      if (!isStr && !(buf instanceof Uint8Array) && !Array.isArray(buf)) {
-        throw new Error('err bad type:"' + Object.prototype.toString.apply(buf) + '". Use String or Uint8Array.')
-      }
+      const isStr = isStrInput(buf)
       const stack = stackSave()
       let r
       try {
         const pos = stackAlloc(sizeOf(a) + buf.length)
         const bufPos = pos + sizeOf(a)
-        if (isStr) {
-          asciiStrToPtr(bufPos, buf)
-        } else {
-          h8().set(buf, bufPos)
-        }
+        putInput(bufPos, buf, isStr)
         r = func(pos, bufPos, buf.length, ioMode)
         copyFromHeap32(a, pos)
       } finally {
         stackRestore(stack)
       }
       if (r) throw new Error('err callSetInput')
+    }
+    // y = func(x, buf, bufSize) with buf = String | Uint8Array | Array ;
+    // e.g. sign(sig, sec, msg) ; return the value of func
+    mod.callOp1Input = function (func, y, x, buf) {
+      const isStr = isStrInput(buf)
+      const stack = stackSave()
+      try {
+        const xPos = stackAlloc(sizeOf(x) + sizeOf(y) + buf.length)
+        const yPos = xPos + sizeOf(x)
+        const bufPos = yPos + sizeOf(y)
+        h32().set(x, xPos >> 2)
+        putInput(bufPos, buf, isStr)
+        const r = func(yPos, xPos, bufPos, buf.length)
+        copyFromHeap32(y, yPos)
+        return r
+      } finally {
+        stackRestore(stack)
+      }
+    }
+    // return func(x, y, buf, bufSize) with buf = String | Uint8Array | Array ;
+    // e.g. verify(sig, pub, msg)
+    mod.callGetter2Input = function (func, x, y, buf) {
+      const isStr = isStrInput(buf)
+      const stack = stackSave()
+      try {
+        const xPos = stackAlloc(sizeOf(x) + sizeOf(y) + buf.length)
+        const yPos = xPos + sizeOf(x)
+        const bufPos = yPos + sizeOf(y)
+        const H = h32()
+        H.set(x, xPos >> 2)
+        H.set(y, yPos >> 2)
+        putInput(bufPos, buf, isStr)
+        return func(xPos, yPos, bufPos, buf.length)
+      } finally {
+        stackRestore(stack)
+      }
     }
 
     // --- string / byte-buffer wrappers
