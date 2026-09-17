@@ -365,12 +365,8 @@ void setOp(Op& op)
 	setSafe(op.fpDbl_sub, get_llvm_fpDbl_sub(N));
 }
 
-// use the p-fixed LLVM functions of BN254 / BLS12-381 (mcl_c0_* / mcl_c5_*) if Xbyak (or the static code) is not available
-#if defined(MCL_USE_LLVM) && !defined(MCL_WASM32) && !defined(MCL_X64_ASM)
-	#define MCL_USE_LLVM_FIXED_CODE
-#endif
-
-#ifdef MCL_USE_LLVM_FIXED_CODE
+// the p-fixed LLVM functions (mcl_c?_*) are used if MCL_DIRECT_CALL (see include/mcl/config.hpp) without Xbyak / the static code
+#if defined(MCL_DIRECT_CALL) && !defined(MCL_X64_ASM)
 #if MCL_FP_BIT != MCL_FP_BIT_LLVM
 	#error "MCL_FP_BIT differs from MCL_FP_BIT_LLVM of src/llvm_proto.hpp (the MCL_FP_BIT of the generation of src/base{32,64}.ll); regenerate them by make update_all_asm MCL_FP_BIT=... and make header"
 #endif
@@ -446,7 +442,7 @@ static bool initForMont(Op& op, const Unit *p, Mode mode)
 	if (mode != FP_XBYAK) return true;
 	fp::setStaticCode(op);
 #endif // MCL_USE_XBYAK
-#elif defined(MCL_USE_LLVM_FIXED_CODE)
+#elif defined(MCL_DIRECT_CALL)
 	setLLVMFixedCode(op);
 #endif // MCL_X64_ASM
 	return true;
