@@ -253,7 +253,13 @@ SHE_OBJ=$(OBJ_DIR)/she_c$(MCL_SUF).o
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
-LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=-sse
+ifeq ($(CPU),x86-64)
+  # mcl requires BMI2/ADX on x64 at runtime (Op::init), so let llc use mulx
+  LLVM_MATTR=-sse,+bmi2,+adx
+else
+  LLVM_MATTR=-sse
+endif
+LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=$(LLVM_MATTR)
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
   BN_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
