@@ -1233,7 +1233,10 @@ private:
 		}
 		if (pn_ == 6 && !isFullBit_) {
 			func = getCurr<void2u>();
-#if 1
+			if (op_->p[pn_ - 1] < (uint64_t(1) << 62)) { // required by gen_montSqrWoAdx
+				gen_montSqrWoAdx();
+				return true;
+			}
 			// sqr(y, x) = mul(y, x, x) : montMul is faster than sqrPre + mod
 #ifdef XBYAK64_WIN
 			mov(r8, rdx);
@@ -1241,29 +1244,7 @@ private:
 			mov(rdx, rsi);
 #endif
 			jmp((const void*)op_->fp_mulA_);
-#elif 0
-			StackFrame sf(this, 3, 10 | UseRDX);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			int stackSize = 12 * 8 + 8;
-			sub(rsp, stackSize);
-			mov(ptr[rsp], gp0);
-			lea(gp0, ptr[rsp + 8]);
-			call(fp_sqrPreL);
-			mov(gp0, ptr[rsp]);
-			lea(gp1, ptr[rsp + 8]);
-			call(fpDbl_modL);
-			add(rsp, stackSize);
 			return true;
-#else
-			StackFrame sf(this, 3, 10 | UseRDX, 12 * 8);
-			Pack t = sf.t;
-			t.append(sf.p[2]);
-			sqrPre6(rsp, sf.p[1], t);
-			lea(gp1, ptr[rsp]);
-			call(fpDbl_modL);
-			return func;
-#endif
 		}
 		return false;
 	}
@@ -1512,6 +1493,45 @@ private:
 		d[n] = hi;
 	}
 	/*
+		C: q = d[0] * rp ; c = (d + q*p)/2^64 (rdx = q is destroyed)
+		d[0..N] has N+1 limbs, all in registers.
+		chain1 t[j] = lo(p[j]*q) + d[j] (t[0] = 0, dropped; its carry is
+		(d[0] != 0), computed by neg without waiting for mulx),
+		chain2 c[j] = t[j+1] + hi(p[j]*q), which doubles as the /2^64 shift.
+		All registers of d are released; c gets N registers.
+	*/
+	void montRedRowWoAdx(const Reg64 *c[], const Reg64 *const d[], int N, RegPool& pool)
+	{
+		mov(rdx, rp_);
+		imul(rdx, *d[0]); // rdx = q
+		// t[0] = lo(p[0]*q) + d[0] = 0 by the choice of q; only its carry
+		// matters and lo(p[0]*q) = -d[0] mod 2^64, so CF = (d[0] != 0), which
+		// is what neg computes. This starts chain1 without waiting for mulx.
+		neg(*d[0]);
+		pool.release(*d[0]);
+		const Reg64 *ph[8];
+		const Reg64 *t[8];
+		for (int j = 0; j < N; j++) {
+			ph[j] = &pool.alloc();
+			const Reg64& lo = pool.alloc();
+			mulx(*ph[j], lo, ptr [rip + pL_ + j * 8]);
+			if (j == 0) {
+				pool.release(lo); // lo(p[0]*q) is not needed, see above
+			} else {
+				adc(lo, *d[j]);
+				pool.release(*d[j]);
+				t[j] = &lo;
+			}
+		}
+		adc(*d[N], 0);
+		t[N] = d[N];
+		for (int j = 0; j < N; j++) {
+			c[j] = t[j + 1];
+			add_ex(*c[j], *ph[j], j == 0);
+			pool.release(*ph[j]);
+		}
+	}
+	/*
 		input (z, x, y) = (p0, p1, p2)
 		z[N-1..0] <- montgomery(x[N-1..0], y[N-1..0]) for N = 4, 6
 		destroy t0, ..., t9, rax, rdx
@@ -1576,39 +1596,12 @@ private:
 				pool.release(py);
 			}
 			// C: q = d[0] * rp ; c' = (d + q*p)/2^64
-			mov(rdx, rp_);
-			imul(rdx, *d[0]); // rdx = q
-			// t[0] = lo(p[0]*q) + d[0] = 0 by the choice of q; only its carry
-			// matters and lo(p[0]*q) = -d[0] mod 2^64, so CF = (d[0] != 0), which
-			// is what neg computes. This starts chain1 without waiting for mulx.
-			neg(*d[0]);
-			pool.release(*d[0]);
-			const Reg64 *ph[8];
-			const Reg64 *t[8];
-			for (int j = 0; j < N; j++) {
-				ph[j] = &pool.alloc();
-				const Reg64& lo = pool.alloc();
-				mulx(*ph[j], lo, ptr [rip + pL_ + j * 8]);
-				if (j == 0) {
-					pool.release(lo); // lo(p[0]*q) is not needed, see above
-				} else {
-					adc(lo, *d[j]);
-					pool.release(*d[j]);
-					t[j] = &lo;
-				}
-			}
-			adc(*d[N], 0);
-			t[N] = d[N];
-			for (int j = 0; j < N; j++) {
-				c[j] = t[j + 1];
-				add_ex(*c[j], *ph[j], j == 0);
-				pool.release(*ph[j]);
-				if (j == cSpill && !isLast) {
-					// spill right after it is produced: maximum store-to-load slack
-					mov(S_ct, *c[j]);
-					pool.release(*c[j]);
-					c[j] = 0;
-				}
+			montRedRowWoAdx(c, d, N, pool);
+			if (cSpill >= 0 && !isLast) {
+				// spill right after it is produced: maximum store-to-load slack
+				mov(S_ct, *c[cSpill]);
+				pool.release(*c[cSpill]);
+				c[cSpill] = 0;
 			}
 		}
 		// c < 2p; output c - p if c >= p
@@ -1633,6 +1626,106 @@ private:
 		}
 		if (stackSize > 0) add(rsp, stackSize);
 		ret();
+	}
+	/*
+		input (z, x) = (p0, p1)
+		z[N-1..0] <- montgomery(x[N-1..0], x[N-1..0]) for N = 6
+		destroy t0, ..., t9, rax, rdx
+
+		Same loop as gen_montMulWoAdx, but row i = x[i] * Y_i where
+		Y_i = x[i] 2^(64i) + 2 sum_{j>i} x[j] 2^(64j) (zero below limb i), so
+		sum_i row_i 2^(64i) = x^2 and the rows need N(N+1)/2 mulx instead of N^2.
+		The rows depend only on x, so they overlap with the reduction chain
+		(unlike sqrPre6 + reduction, where T[1..] are ready only at the end).
+		Bounds (2x < 2^(64N) and p < 2^(64N-2) required):
+		  c < 3p + 2^(64(N-1)) < 2^(64N) (N limbs) since row_i < 2^64 * 2p,
+		  d = c + row_i < 2^(64(N+1)) (N+1 limbs),
+		  final c = (x^2 + Q p)/R < p^2/R + p < 1.5p (one conditional subtraction).
+	*/
+	void gen_montSqrWoAdx()
+	{
+		const int N = pn_;
+		assert(N == 6);
+		assert(!isFullBit_);
+		assert(op_->p[N - 1] < (uint64_t(1) << 62));
+		StackFrame sf(this, 3, 10 | UseRDX, (3 * N + 1) * 8, false);
+		const Reg64& pz = sf.p[0];
+		const Reg64& px = sf.p[1];
+		const Reg64& py = sf.p[2];
+		const Xbyak::Address S_pz = ptr [rsp + 0];
+		const RegExp S_x = rsp + 8; // x[N-1..0]
+		const RegExp S_2x = rsp + 8 + N * 8; // 2x[N-1..0] (2x < 2^(64N)), limb j = (x[j] << 1) | (x[j-1] >> 63)
+		const RegExp S_x2 = rsp + 8 + 2 * N * 8; // (x[j] << 1) mod 2^64 (no carry from x[j-1])
+		/*
+			2 sum_{j>i} x[j] 2^(64j) = ((x[i+1] << 1) mod 2^64) 2^(64(i+1)) + sum_{j>=i+2} (2x)[j] 2^(64j)
+			((2x)[i+1] would count the top bit of x[i] twice)
+		*/
+		mov(S_pz, pz);
+		for (int j = 0; j < N; j++) {
+			mov(rax, ptr [px + j * 8]);
+			mov(ptr [S_x + j * 8], rax);
+			lea(sf.t[0], ptr [rax + rax]); // no CF change
+			mov(ptr [S_x2 + j * 8], sf.t[0]);
+			add_ex(rax, rax, j == 0);
+			mov(ptr [S_2x + j * 8], rax);
+		}
+		RegPool pool;
+		for (int j = 0; j < 10; j++) pool.release(sf.t[j]);
+		pool.release(px);
+		pool.release(py);
+		pool.release(pz);
+		const Reg64 *c[8];
+		const Reg64 *d[8];
+		const Reg64 *r[8];
+		for (int i = 0; i < N; i++) {
+			// A: r[i..N] = x[i] * Y_i
+			mov(rdx, ptr [S_x + i * 8]);
+			const Reg64 *hi = 0;
+			for (int j = i; j < N; j++) {
+				const Reg64 *prev = hi;
+				hi = &pool.alloc();
+				r[j] = &pool.alloc();
+				mulx(*hi, *r[j], ptr [(j == i ? S_x : j == i + 1 ? S_x2 : S_2x) + j * 8]);
+				if (j > i) {
+					add_ex(*r[j], *prev, j == i + 1);
+					pool.release(*prev);
+				}
+			}
+			if (N - i > 1) adc(*hi, 0); // a 1-limb row (i = N-1) has no carry
+			r[N] = hi;
+			// B: d = c + row (row is zero below limb i)
+			if (i == 0) {
+				for (int j = 0; j <= N; j++) d[j] = r[j];
+			} else {
+				for (int j = 0; j < i; j++) d[j] = c[j];
+				for (int j = i; j < N; j++) {
+					add_ex(*c[j], *r[j], j == i);
+					pool.release(*r[j]);
+					d[j] = c[j];
+				}
+				adc(*r[N], 0);
+				d[N] = r[N];
+			}
+			// C: q = d[0] * rp ; c' = (d + q*p)/2^64
+			montRedRowWoAdx(c, d, N, pool);
+		}
+		// c < 2p; output c - p if c >= p
+		const Reg64 *keep[8];
+		for (int j = 0; j < N; j++) {
+			keep[j] = &pool.alloc();
+			mov(*keep[j], *c[j]);
+		}
+		for (int j = 0; j < N; j++) {
+			sub_ex(*c[j], ptr [rip + pL_ + j * 8], j == 0);
+		}
+		for (int j = 0; j < N; j++) {
+			cmovc(*c[j], *keep[j]);
+		}
+		mov(rax, S_pz);
+		for (int j = 0; j < N; j++) {
+			mov(ptr [rax + j * 8], *c[j]);
+		}
+		sf.close();
 	}
 	/*
 		input (z, x, y) = (p0, p1, p2)
