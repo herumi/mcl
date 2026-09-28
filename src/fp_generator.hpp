@@ -1234,6 +1234,14 @@ private:
 		if (pn_ == 6 && !isFullBit_) {
 			func = getCurr<void2u>();
 #if 1
+			// sqr(y, x) = mul(y, x, x) : montMul is faster than sqrPre + mod
+#ifdef XBYAK64_WIN
+			mov(r8, rdx);
+#else
+			mov(rdx, rsi);
+#endif
+			jmp((const void*)op_->fp_mulA_);
+#elif 0
 			StackFrame sf(this, 3, 10 | UseRDX);
 			Pack t = sf.t;
 			t.append(sf.p[2]);
