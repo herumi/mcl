@@ -20,6 +20,11 @@ g_mulPos = None
 g_makeNIST_P192 = None
 g_mod_NIST_P192 = None
 g_mulPv = {}  # bit -> Function
+# (bit, isFullBit) -> Function of mcl_fp_add{NF}, mcl_fp_mont{NF}, mcl_fp_montRed{NF}
+# (the callees of the generic functions of gen_generic)
+g_fpAdd = {}
+g_fpMont = {}
+g_fpMontRed = {}
 g_mclb_mul3 = None  # mclb_mul{N}
 g_mclb_sqr3 = None  # mclb_sqr{N}
 
@@ -215,13 +220,17 @@ def gen_mcl_fp_add(isFullBit=True):
   if not isFullBit:
     name += 'NF'
   name += f'{N}L'
-  with Function(name, Void, pz, px, py, pp, private=False):
-    x = loadN(px, N)
-    y = loadN(py, N)
+  with Function(name, Void, pz, px, py, pp, private=False) as f:
+    # volatile (not for wasm): keep the operand loads unfused so that a
+    # store-forwarded input (z = z + y) does not pay the folded-load latency;
+    # 8.4 -> 6.2 clk for N = 6 on Xeon w9-3495X (the same as gen_fixed_fp_add)
+    x = loadN(px, N, volatile=not g_wasm)
+    y = loadN(py, N, volatile=not g_wasm)
     p = loadN(pp, N)
     z = common.emit_fp_add(unit, x, y, p, isFullBit)
     storeN(z, pz)
     ret(Void)
+  g_fpAdd[(bit, isFullBit)] = f
 
 
 def gen_mcl_fp_sub(isFullBit=True):
@@ -285,10 +294,11 @@ def gen_mcl_fp_mont(isFullBit=True):
     name += 'NF'
   name += f'{N}L'
   # setAlias() in gen.cpp -> emit pointer args without 'noalias'
-  with Function(name, Void, pz, px, py, pp, private=False, noalias=False):
+  with Function(name, Void, pz, px, py, pp, private=False, noalias=False) as f:
     rp = load(getelementptr(pp, -1))
     common.emit_mont(unit, N, pz, px, py, pp, rp, g_mulPv[bit], isFullBit)
     ret(Void)
+  g_fpMont[(bit, isFullBit)] = f
 
 
 def gen_mcl_fp_montRed(isFullBit=True):
@@ -300,13 +310,14 @@ def gen_mcl_fp_montRed(isFullBit=True):
   if not isFullBit:
     name += 'NF'
   name += f'{N}L'
-  with Function(name, Void, pz, pxy, pp, private=False):
+  with Function(name, Void, pz, pxy, pp, private=False) as f:
     rp = load(getelementptr(pp, -1))
     p = loadN(pp, N)
     lo = loadN(pxy, N)
     z = common.emit_montRed(unit, N, lo, lambda i: load(getelementptr(pxy, N + i)), pp, p, rp, g_mulPv[bit], isFullBit)
     storeN(z, pz)
     ret(Void)
+  g_fpMontRed[(bit, isFullBit)] = f
 
 
 def gen_all():
@@ -344,6 +355,25 @@ def setUnit(u):
   unit2 = u * 2
 
 
+# p-generic functions (p as the last argument, rp = p[-1]) of the A_ slots of
+# Op for the LLVM configurations without x64 asm (fp.cpp setLLVMGenericCode;
+# prototypes and the registration in llvm_proto.hpp by gen_llvm_proto.py)
+# for bit = 256 and 384 (MCL_BINT_MAX_BIT): see common.gen_generic_fp (Fp:
+# neg, mul2, sqr; add / sub / mont / montRed / fpDbl_add / fpDbl_sub are the
+# functions above) and common.gen_generic_fp2 (Fp2 / Fp2Dbl). The Fp2
+# functions are fixed to sizeof(Fp) = fpBit / unit units (MCL_FP_BIT_LLVM,
+# the position of the second component) and to the (u, xi_a) of the pairing
+# curves of primetbl.py. Not for wasm (the C++ Fp2 is faster there).
+def gen_generic(fpBit):
+  params = sorted({(cv.u, cv.xi_a) for cv in primetbl.curveTbl.values() if cv.u != 0})
+  for b in (256, 384):
+    setBit(b)
+    addF = {fb: g_fpAdd[(b, fb)] for fb in (True, False)}
+    montF = {fb: g_fpMont[(b, fb)] for fb in (True, False)}
+    common.gen_generic_fp(unit, N, addF, montF)
+    common.gen_generic_fp2(unit, N, fpBit // unit, params, g_fpMont[(b, False)], g_fpMontRed[(b, False)], g_mulPos, g_extractHigh)
+
+
 # fpBit : MCL_FP_BIT (the size of Fp of the p-fixed functions, see below)
 def gen(maxBitSize, fpBit):
   gen_once()
@@ -369,6 +399,7 @@ def gen(maxBitSize, fpBit):
     setBit(b)
     common.gen_modp(f'mclb_modp{b}', unit, N, 512 // unit, g_mulPv[b])
   if not g_wasm:
+    gen_generic(fpBit)
     # p-fixed functions of the exported curves of src/primetbl.py (BN254:
     # mcl_c0_fp_*, mcl_c0_fp2_*, mcl_c0_fpDbl_*, mcl_c0_fr_*, mcl_c0_frDbl_*,
     # BLS12-381: mcl_c5_*) with the ABI of the Xbyak functions (no p argument);

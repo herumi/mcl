@@ -128,6 +128,26 @@ typedef Unit (*u3u)(Unit*, const Unit*, const Unit*);
 typedef Unit (*u2uI)(Unit*, const Unit *, Unit);
 
 /*
+	the types of the A_ slots (fp_addA_, fp2_mulA_, ...): the functions called
+	directly by Fp / FpDbl / Fp2 / Fp2Dbl with MCL_DIRECT_CALL (config.hpp)
+	MCL_X64_ASM : the ABI of the Xbyak / static code functions (no p argument)
+	otherwise   : the p-generic LLVM functions of base{32,64}.ll, which take
+	              p (= op.p, rp at p[-1]) as the last argument (the C++
+	              fallbacks take and ignore it)
+	MCL_A_PARAM is appended to the parameter list of such a function and
+	MCL_A_ARG(op) to the argument list of its call.
+*/
+#ifdef MCL_X64_ASM
+	#define MCL_A_PARAM
+	#define MCL_A_ARG(op)
+#else
+	#define MCL_A_PARAM , const Unit *
+	#define MCL_A_ARG(op) , (op).p
+#endif
+typedef void (*void2uA)(Unit*, const Unit* MCL_A_PARAM);
+typedef void (*void3uA)(Unit*, const Unit*, const Unit* MCL_A_PARAM);
+
+/*
 	disable -Wcast-function-type
 	the number of arguments of some JIT functions is smaller than that of T
 */
@@ -194,24 +214,24 @@ struct Op {
 #ifdef MCL_USE_XBYAK
 	FpGenerator *fg;
 #endif
-	void3u fp_addA_;
-	void3u fp_subA_;
-	void2u fp_negA_;
-	void3u fp_mulA_;
-	void2u fp_sqrA_;
-	void2u fp_mul2A_;
-	void3u fp2_addA_;
-	void3u fp2_subA_;
-	void2u fp2_negA_;
-	void3u fp2_mulA_;
-	void2u fp2_sqrA_;
-	void2u fp2_mul2A_;
-	void3u fpDbl_addA_;
-	void3u fpDbl_subA_;
-	void2u fpDbl_modA_;
-	void3u fp2Dbl_mulPreA_;
-	void2u fp2Dbl_sqrPreA_;
-	void2u fp2Dbl_mul_xiA_;
+	void3uA fp_addA_;
+	void3uA fp_subA_;
+	void2uA fp_negA_;
+	void3uA fp_mulA_;
+	void2uA fp_sqrA_;
+	void2uA fp_mul2A_;
+	void3uA fp2_addA_;
+	void3uA fp2_subA_;
+	void2uA fp2_negA_;
+	void3uA fp2_mulA_;
+	void2uA fp2_sqrA_;
+	void2uA fp2_mul2A_;
+	void3uA fpDbl_addA_;
+	void3uA fpDbl_subA_;
+	void2uA fpDbl_modA_;
+	void3uA fp2Dbl_mulPreA_;
+	void2uA fp2Dbl_sqrPreA_;
+	void2uA fp2Dbl_mul_xiA_;
 	bool (*fp_isZero)(const Unit*);
 	void1u fp_clear;
 	void2u fp_copy;
@@ -243,7 +263,7 @@ struct Op {
 	*/
 	int u;
 	int xi_a; // xi = xi_a + i
-	void2u fp2_mul_xiA_;
+	void2uA fp2_mul_xiA_;
 	uint32_t (*hash)(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSize);
 
 	PrimeMode primeMode;
