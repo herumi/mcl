@@ -222,7 +222,7 @@ update_bint_x64_asm:
 
 # regenerate all generated files (ll first, then asm) on x86-64 host
 # e.g. make update_all_asm LLVM_VER=-21
-# (the p-fixed Fp2 functions of base{64,32}.ll depend on MCL_FP_BIT; make header too)
+# (the Fp2 functions of base{64,32}.ll depend on MCL_FP_BIT; make header too)
 update_all_asm:
 	python3 src/gen_bint.py -u 64 -n $(BINT_MUL_N) > src/bint64.ll
 	python3 src/gen_bint.py -u 32 -n $(BINT_MUL_N32) > src/bint32.ll

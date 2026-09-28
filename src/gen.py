@@ -223,7 +223,7 @@ def gen_mcl_fp_add(isFullBit=True):
   with Function(name, Void, pz, px, py, pp, private=False) as f:
     # volatile (not for wasm): keep the operand loads unfused so that a
     # store-forwarded input (z = z + y) does not pay the folded-load latency;
-    # 8.4 -> 6.2 clk for N = 6 on Xeon w9-3495X (the same as gen_fixed_fp_add)
+    # 8.4 -> 6.2 clk for N = 6 on Xeon w9-3495X (the same as common.gen_fp_add)
     x = loadN(px, N, volatile=not g_wasm)
     y = loadN(py, N, volatile=not g_wasm)
     p = loadN(pp, N)
@@ -374,7 +374,7 @@ def gen_generic(fpBit):
     common.gen_generic_fp2(unit, N, fpBit // unit, params, g_fpMont[(b, False)], g_fpMontRed[(b, False)], g_mulPos, g_extractHigh)
 
 
-# fpBit : MCL_FP_BIT (the size of Fp of the p-fixed functions, see below)
+# fpBit : MCL_FP_BIT (sizeof(Fp) of the Fp2 functions of gen_generic)
 def gen(maxBitSize, fpBit):
   gen_once()
   bitTbl = [192, 224, 256, 384, 512]
@@ -400,22 +400,6 @@ def gen(maxBitSize, fpBit):
     common.gen_modp(f'mclb_modp{b}', unit, N, 512 // unit, g_mulPv[b])
   if not g_wasm:
     gen_generic(fpBit)
-    # p-fixed functions of the exported curves of src/primetbl.py (BN254:
-    # mcl_c0_fp_*, mcl_c0_fp2_*, mcl_c0_fpDbl_*, mcl_c0_fr_*, mcl_c0_frDbl_*,
-    # BLS12-381: mcl_c5_*) with the ABI of the Xbyak functions (no p argument);
-    # fp.cpp registers them to the A_ slots of Op when p matches
-    # (setLLVMFixedCode, prototypes in llvm_proto.hpp by gen_llvm_proto.py).
-    # offset = sizeof(Fp) / sizeof(Unit) = fpBit / unit (the position of the
-    # second component of Fp2) fixes the Fp2 functions to MCL_FP_BIT = fpBit
-    # (-fpbit, the MCL_FP_BIT of the Makefile); llvm_proto.hpp records it as
-    # MCL_FP_BIT_LLVM and fp.cpp rejects a different MCL_FP_BIT by #error.
-    # Not for wasm: base64m.ll is linked with 4-argument function pointers
-    # and call_indirect traps on the signature mismatch of func_ptr_cast.
-    for cv in primetbl.exportedCurves():
-      hasFp2 = cv.u == 1 and cv.xi_a == 1 # Fp2 = Fp[i]/(i^2 + 1) and xi = 1 + i (gen_fixed)
-      common.gen_fixed(f'mcl_c{cv.c}_fp_', unit, cv.p, fpBit // unit, hasFp2, g_mulPos, g_extractHigh)
-      if cv.r:
-        common.gen_fixed(f'mcl_c{cv.c}_fr_', unit, cv.r, fpBit // unit, False, g_mulPos, g_extractHigh)
 
 
 def main():
@@ -423,7 +407,7 @@ def main():
   parser = argparse.ArgumentParser(description='generate base{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
   parser.add_argument('-wasm', action='store_true', default=False, help='generate for wasm')
-  parser.add_argument('-fpbit', type=int, default=384, help='MCL_FP_BIT (sizeof(Fp) of the Fp2 functions of the p-fixed code)')
+  parser.add_argument('-fpbit', type=int, default=384, help='MCL_FP_BIT (sizeof(Fp) of the Fp2 functions for the A_ slots)')
   opt = parser.parse_args()
 
   setUnit(opt.u)

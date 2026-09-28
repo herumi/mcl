@@ -503,8 +503,7 @@ def gen_modp(name, unit, N, xN, mulPv, private=False):
 # fpDbl add/sub: z[2N] = x[2N] +- y[2N] mod (p 2^bit); the low N units are
 # added (subtracted) as they are and the carry (borrow) goes into the high
 # half, which is reduced mod p like emit_fp_add / emit_fp_sub_raw.
-# Used by mcl_fpDbl_add{N}L / mcl_fpDbl_sub{N}L of gen.py (pp is an argument)
-# and by the p-fixed functions of gen_fixed (pp points to the global p).
+# Used by mcl_fpDbl_add{N}L / mcl_fpDbl_sub{N}L of gen.py and gen_fpDbl_add / gen_fpDbl_sub.
 def emit_fpDbl_add(unit, N, pz, px, py, pp):
   bit = N * unit
   bu = bit + unit
@@ -550,23 +549,22 @@ def emit_fpDbl_sub(unit, N, pz, px, py, pp):
 
 
 # ---------------------------------------------------------------------------
-# Fp / Fp2 functions of a fixed shape for the A_ slots of struct Op (fp.hpp /
-# fp_tower.hpp; moved from mcl-ff/src/gen_ff.py on 2026-09-14 as p-fixed
-# functions). The shape (FieldShape) is the number of units N, isFullBit and
-# nocarry, and the source of p is one of:
-#   fixed   : p is a non-const global of the module ({pre}p, rp = -p^-1 mod
-#             2^unit in {pre}rp), so the functions have the ABI of the Xbyak
-#             functions (no p argument: mcl_c5_fp_add(z, x, y)). The globals
-#             are non-const and external so that LLVM does not fold p and rp
-#             into immediates (that made the code slower).
-#   generic : p is the last argument pp (rp = pp[-1]) like mcl_fp_montNF{N}L
-#             of gen.py (mcl_fp2_mul_u1_6L(z, x, y, p)); one function serves
-#             every p of the shape and fp.cpp registers it by N / isFullBit /
-#             u / xi_a (setLLVMGenericCode).
+# The p-generic Fp / Fp2 functions for the A_ slots of struct Op (fp.hpp /
+# fp_tower.hpp) in the LLVM configurations without the x64 asm: one function
+# per shape (the number of units N, isFullBit, nocarry: FieldShape) that
+# takes p as its last argument pp (rp = -p^-1 mod 2^unit at pp[-1]) like
+# mcl_fp_montNF{N}L of gen.py, e.g. mcl_fp2_mul_u1_6L(z, x, y, p); fp.cpp
+# registers them by N / isFullBit / u / xi_a (setLLVMCode).
+# History: they started as the p-fixed functions of mcl-ff/src/gen_ff.py
+# (2026-09-14, mcl_c0_* / mcl_c5_* with p in a non-const global and the Xbyak
+# ABI without p). Measured against them (memo.md 2026-09-28), the p argument
+# costs nothing on Apple M4 and a few % on x64 (one register for pp), so the
+# p-fixed variant was removed; the {0, p} table for the +p correction of sub
+# (gen_sub_raw_tbl of gen_ff.py) is not usable with a p argument.
 
 # The Montgomery parameters of a prime p for the given unit size:
 # N = the number of units, bit = N unit, ip = -p^-1 mod 2^unit,
-# isFullBit = p uses the top bit of the top unit.
+# isFullBit = p uses the top bit of the top unit. Used by mcl-ff.
 class Montgomery:
   def __init__(self, p, unit):
     self.p = p
@@ -582,52 +580,35 @@ class Montgomery:
     self.nocarry = (p >> (self.bit - 2)) == 0
 
 
-# The shape of the field of the generators below and the source of p (see
-# above): dataVar / rpVar are the globals of a p-fixed function, or None for
-# a generic function that takes pp as its last argument.
+# The shape of the field of the generators below: unit, N (units), isFullBit
+# (p may use the top bit of the top unit) and nocarry (p < R/4). p itself is
+# the last argument pp of every generated function (extraArgs / getPP).
 class FieldShape:
-  def __init__(self, unit, N, isFullBit, nocarry, dataVar=None, rpVar=None):
+  def __init__(self, unit, N, isFullBit, nocarry):
     self.unit = unit
     self.N = N
     self.bit = N * unit
     self.isFullBit = isFullBit
     self.nocarry = nocarry
-    self.dataVar = dataVar
-    self.rpVar = rpVar
 
-  @staticmethod
-  def fromMont(mont, dataVar, rpVar):
-    return FieldShape(mont.unit, mont.N, mont.isFullBit, mont.nocarry, dataVar, rpVar)
-
-  def isFixed(self):
-    return self.dataVar is not None
-
-  # the extra arguments of a Function: [pp] of a generic function
+  # the extra arguments of a Function: [pp]
   def extraArgs(self):
-    if self.isFixed():
-      return []
     return [IntPtr(self.unit)]
 
   # the pointer to p (i{unit}*) in a function with the arguments args
   def getPP(self, args):
-    if self.isFixed():
-      return bitcast(self.dataVar, self.unit)
     return args[-1]
 
   # rp = -p^-1 mod 2^unit as an i{unit} value
   def getRp(self, pp):
-    if self.isFixed():
-      return load(bitcast(self.rpVar, self.unit))
     return load(getelementptr(pp, -1))
 
   # the arguments that pass p to a callee of the same shape (mul2 -> add, sqr -> mul)
   def passArgs(self, args):
-    if self.isFixed():
-      return []
     return [args[-1]]
 
 
-def gen_fixed_fp_add(name, fs):
+def gen_fp_add(name, fs):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -649,7 +630,7 @@ def gen_fixed_fp_add(name, fs):
 
 
 # Fp2 add: both components (the second at offset units) with one load of p
-def gen_fixed_fp2_add(name, fs, offset):
+def gen_fp2_add(name, fs, offset):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -669,45 +650,13 @@ def gen_fixed_fp2_add(name, fs, offset):
   return f
 
 
-# Writable {zero, p} table for the sub reduction (p-fixed only). Layout is
-# [Npad x i64] zero, then p, padded to 2*Npad limbs (Npad = N rounded up to a
-# power of two so the borrow-scaled offset is a single shift and each entry is
-# cache-line aligned). It must be a non-constant global with external linkage:
-# if the optimizer can prove the contents (constant, or internal + never
-# stored), it folds the conditional +p back into an and-mask/cmov sequence.
-def makeSubTbl(name, mont):
-  unit = mont.unit
-  N = mont.N
-  Npad = 1 << (N - 1).bit_length()
-  mask = (1 << unit) - 1
-  limbs = [(mont.p >> (unit * i)) & mask for i in range(N)]
-  v = [0] * Npad + limbs + [0] * (Npad - N)
-  tbl = makeVar(name, unit, v, static=False, const=False, align=64)
-  return (tbl, Npad)
-
-
-# Reduction via the {zero, p} table indexed by the borrow. The variable-index
-# GEP cannot be rewritten into a select of the loaded values (the table is
-# writable memory), so the conditional +p lowers to an add/adc chain with
-# folded memory operands: the same idiom as the hand-written x64 asm.
-def gen_sub_raw_tbl(unit, x, y, ptbl, Npad, isFullBit):
-  bit = x.bit
-  v, c = emit_fp_sub_raw(unit, x, y, isFullBit)
-  off = shl(zext(c, unit), Npad.bit_length() - 1)
-  addr = getelementptr(ptbl, off)
-  p = load(bitcast(addr, bit))
-  v = add(v, p)
-  return v
-
-
-# Reduction via an and-mask: p is loaded from a fixed address known at
-# function entry, so the load runs in parallel with the subtraction and only
-# sext -> and -> add follow the borrow. The table variant instead derives the
-# load address from the borrow, which puts the L1 load-use latency (~4 cycles)
-# on the dependency chain when the borrow pattern defeats address prediction;
-# on aarch64 this made sub latency 1.23x of mcl. On x64 the table still wins
-# because it lowers to add/adc with folded memory operands. base{32,64}.ll
-# is architecture independent and x64 uses Xbyak, so mcl uses this variant.
+# The sub reduction via an and-mask: p is loaded from pp at function entry,
+# so the load runs in parallel with the subtraction and only
+# sext -> and -> add follow the borrow. The alternative (gen_sub_raw_tbl of
+# mcl-ff/src/gen_ff.py) indexes a writable {zero, p} table by the borrow: on
+# x64 that lowers to add/adc with folded memory operands and wins, but the
+# load address depends on the borrow and on aarch64 the L1 load-use latency
+# (~4 cycles) made sub 1.23x slower; it also needs p at a fixed address.
 def gen_sub_raw_mask(unit, x, y, p, isFullBit):
   bit = x.bit
   v, c = emit_fp_sub_raw(unit, x, y, isFullBit)
@@ -715,8 +664,7 @@ def gen_sub_raw_mask(unit, x, y, p, isFullBit):
   return v
 
 
-# subTbl = (tbl, Npad) of makeSubTbl is used when useMask is False
-def gen_fixed_fp_sub(name, fs, useMask=True, subTbl=None):
+def gen_fp_sub(name, fs):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -725,22 +673,15 @@ def gen_fixed_fp_sub(name, fs, useMask=True, subTbl=None):
   py = IntPtr(unit)
   args = [pz, px, py] + fs.extraArgs()
   with Function(name, Void, *args, private=False):
-    if useMask:
-      p = loadN(fs.getPP(args), N)
-    else:
-      tbl, Npad = subTbl
-      ptbl = bitcast(tbl, unit)
+    p = loadN(fs.getPP(args), N)
     x = loadN(px, N, volatile=True)
     y = loadN(py, N, volatile=True)
-    if useMask:
-      v = gen_sub_raw_mask(unit, x, y, p, fs.isFullBit)
-    else:
-      v = gen_sub_raw_tbl(unit, x, y, ptbl, Npad, fs.isFullBit)
+    v = gen_sub_raw_mask(unit, x, y, p, fs.isFullBit)
     storeN(v, pz)
     ret(Void)
 
 
-def gen_fixed_fp2_sub(name, fs, offset, useMask=True, subTbl=None):
+def gen_fp2_sub(name, fs, offset):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -749,18 +690,11 @@ def gen_fixed_fp2_sub(name, fs, offset, useMask=True, subTbl=None):
   py = IntPtr(unit)
   args = [pz, px, py] + fs.extraArgs()
   with Function(name, Void, *args, private=False):
-    if useMask:
-      p = loadN(fs.getPP(args), N)
-    else:
-      tbl, Npad = subTbl
-      ptbl = bitcast(tbl, unit)
+    p = loadN(fs.getPP(args), N)
     for i in range(2):
       x = loadN(px, N, offset=i*offset, volatile=True)
       y = loadN(py, N, offset=i*offset, volatile=True)
-      if useMask:
-        v = gen_sub_raw_mask(unit, x, y, p, fs.isFullBit)
-      else:
-        v = gen_sub_raw_tbl(unit, x, y, ptbl, Npad, fs.isFullBit)
+      v = gen_sub_raw_mask(unit, x, y, p, fs.isFullBit)
       storeN(v, pz, offset=i*offset)
     ret(Void)
 
@@ -771,7 +705,7 @@ def gen_fixed_fp2_sub(name, fs, offset, useMask=True, subTbl=None):
 # 6 csel and was 1.56x slower than negT on Apple M4 (the operand is almost
 # never zero, so the branch is predicted). p is loaded inside the nonzero
 # block so that LLVM does not speculate the block back into a select.
-def emit_fixed_neg(fs, py, px, pp, offset, n):
+def emit_neg(fs, py, px, pp, offset, n):
   N = fs.N
   for i in range(n):
     zeroL = Label()
@@ -790,35 +724,34 @@ def emit_fixed_neg(fs, py, px, pp, offset, n):
     L(doneL)
 
 
-def gen_fixed_fp_neg(name, fs):
+def gen_fp_neg(name, fs):
   unit = fs.unit
   resetGlobalIdx()
   py = IntPtr(unit)
   px = IntPtr(unit)
   args = [py, px] + fs.extraArgs()
   with Function(name, Void, *args, private=False):
-    emit_fixed_neg(fs, py, px, fs.getPP(args), 0, 1)
+    emit_neg(fs, py, px, fs.getPP(args), 0, 1)
     ret(Void)
 
 
-def gen_fixed_fp2_neg(name, fs, offset):
+def gen_fp2_neg(name, fs, offset):
   unit = fs.unit
   resetGlobalIdx()
   py = IntPtr(unit)
   px = IntPtr(unit)
   args = [py, px] + fs.extraArgs()
   with Function(name, Void, *args, private=False):
-    emit_fixed_neg(fs, py, px, fs.getPP(args), offset, 2)
+    emit_neg(fs, py, px, fs.getPP(args), offset, 2)
     ret(Void)
 
 
 # y = 2x mod p as a call to add(y, x, x) (a tail call after clang), like
-# gen_fixed_sqr. An inline `add x, x` is canonicalized by LLVM to `shl 1`
+# gen_fp_sqr. An inline `add x, x` is canonicalized by LLVM to `shl 1`
 # and lowered on aarch64 to extr/lsl instead of the adds chain of add, and
 # that was 13% (Fp) / 30% (Fp2) slower on Apple M4 (mcl-ff memo.md 2026-09-14).
-# addF is the add of Fp (gen_fixed_fp_add) or Fp2 (gen_fixed_fp2_add) of the
-# same shape (a generic one gets pp).
-def gen_fixed_mul2(name, fs, addF):
+# addF is the add of Fp (gen_fp_add) or Fp2 (gen_fp2_add) of the same shape.
+def gen_mul2(name, fs, addF):
   unit = fs.unit
   resetGlobalIdx()
   py = IntPtr(unit)
@@ -854,7 +787,7 @@ def emit_fp_mulSmall(unit, x, k, p, isFullBit):
 # component (y.b = a of (u, 0)) has no data dependence on the other stores
 # and LLVM sank the load of a below the store of y.a with noalias (in-place
 # mul_xi(x, x) then read the overwritten a).
-def gen_fixed_fp2_mul_xi(name, fs, offset, u=1, xi_a=1):
+def gen_fp2_mul_xi(name, fs, offset, u=1, xi_a=1):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -882,7 +815,7 @@ def gen_fixed_fp2_mul_xi(name, fs, offset, u=1, xi_a=1):
     ret(Void)
 
 
-def gen_fixed_fpDbl_add(name, fs):
+def gen_fpDbl_add(name, fs):
   unit = fs.unit
   resetGlobalIdx()
   pz = IntPtr(unit)
@@ -895,7 +828,7 @@ def gen_fixed_fpDbl_add(name, fs):
     ret(Void)
 
 
-def gen_fixed_fpDbl_sub(name, fs):
+def gen_fpDbl_sub(name, fs):
   unit = fs.unit
   resetGlobalIdx()
   pz = IntPtr(unit)
@@ -909,9 +842,11 @@ def gen_fixed_fpDbl_sub(name, fs):
 
 
 # Fused Montgomery mul: z = x y R^-1 mod p; the body is emit_mont (shared
-# with mcl_fp_mont of gen.py). rp = -p^-1 mod 2^unit is loaded from the
-# global rpVar (see gen_fixed) or pp[-1] instead of being an immediate.
-def gen_fixed_mul(name, fs, mulUnit):
+# with mcl_fp_mont of gen.py). rp = -p^-1 mod 2^unit is loaded from pp[-1]
+# instead of being an immediate: LLVM strength-reduces t * rp for
+# rp = 0xfffffffeffffffff (BLS12-381 r) into shl/add/neg, and that made the
+# mul 35% slower on x64 (Xeon w9-3495X); loaded from memory it is the same speed.
+def gen_fp_mul(name, fs, mulUnit):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -930,7 +865,7 @@ def gen_fixed_mul(name, fs, mulUnit):
 # Montgomery reduction: z = xy R^-1 mod p where xy has 2N units; the body is
 # emit_montRed (shared with mcl_fp_montRed of gen.py). The high units
 # are fetched from memory via the getHi callback.
-def gen_fixed_mod(name, fs, mulUnit):
+def gen_fpDbl_mod(name, fs, mulUnit):
   unit = fs.unit
   N = fs.N
   resetGlobalIdx()
@@ -952,8 +887,8 @@ def gen_fixed_mod(name, fs, mulUnit):
 # emit_mulPre (shared with mclb_mul of gen_bint.py), so the generated code is
 # the same as mclb_mul{N} of bint{unit}.ll. It is private: Op keeps
 # fpDbl_mulPre = bint::get_mul(N) (mclb_mul{N}, or the mulx asm on x64) and
-# this one is only called from the fixed fp2_mul.
-def gen_fixed_mulPre(name, fs, mulUnit):
+# this one is only called from the fp2 functions.
+def gen_fpDbl_mulPre(name, fs, mulUnit):
   unit = fs.unit
   resetGlobalIdx()
   pz = IntPtr(unit)
@@ -1006,8 +941,8 @@ def sqrPre_raw(unit, x, N):
 # on both Xeon w9-3495X and Apple M4 : sqrPre_raw keeps the whole 2N-limb
 # product live when the serial reduction starts, which the register file
 # cannot hold, and the saved muls are eaten by spills (mcl-ff memo.md 2026-07-27).
-# mulF is the mul of the same shape (a generic one gets pp).
-def gen_fixed_sqr(name, fs, mulF):
+# mulF is the mul of the same shape.
+def gen_fp_sqr(name, fs, mulF):
   unit = fs.unit
   resetGlobalIdx()
   pz = IntPtr(unit)
@@ -1087,13 +1022,12 @@ def emit_fpDbl_mulSmallP2(unit, N, x, k, p):
 #   d1 = s t, d0 = a c, d2 = b d (3 mulPre calls on alloca buffers)
 #   d1 -= d0; d1 -= d2 (= a d + b c; no borrow since s t >= a c + b d)
 #   d2 = u d2 mod p R if u != 1 (emit_fpDbl_mulSmallP2, u <= 8)
-#   d0 -= d2 (mod p R: on borrow, add p to the high half; +p comes from a
-#     select of p / 0 or, for a p-fixed function with subTbl, from the
-#     writable {zero, p} table like gen_sub_raw_tbl, so that x64 lowers it
-#     to an add chain with memory operands instead of a 2N-limb select)
+#   d0 -= d2 (mod p R: on borrow, add p to the high half by a select of p / 0;
+#     the Xbyak version uses a {zero, p} table so that x64 lowers it to an
+#     add chain with memory operands, which needs p at a fixed address)
 #   z.a = mod(d0), z.b = mod(d1)
 # Requires p not full bit and p < R/4 (nocarry).
-def gen_fixed_fp2_mul(name, fs, mulPreF, modF, offset, u=1, subTbl=None):
+def gen_fp2_mul(name, fs, mulPreF, modF, offset, u=1):
   unit = fs.unit
   N = fs.N
   bit = unit * N
@@ -1105,9 +1039,6 @@ def gen_fixed_fp2_mul(name, fs, mulPreF, modF, offset, u=1, subTbl=None):
   py = IntPtr(unit)
   args = [pz, px, py] + fs.extraArgs()
   with Function(name, Void, *args, private=False):
-    if subTbl:
-      tbl, Npad = subTbl
-      ptbl = bitcast(tbl, unit)
     ps = alloca_(unit, N)
     pt = alloca_(unit, N)
     pd0 = alloca_(unit, 2*N)
@@ -1127,20 +1058,14 @@ def gen_fixed_fp2_mul(name, fs, mulPreF, modF, offset, u=1, subTbl=None):
     d2 = loadN(pd2, 2*N)
     d1 = sub(sub(d1, d0), d2)
     storeN(d1, pd1)
-    if u != 1 or not subTbl:
-      p = loadN(fs.getPP(args), N)
+    p = loadN(fs.getPP(args), N)
     if u != 1:
       d2 = emit_fpDbl_mulSmallP2(unit, N, d2, u, p)
     v = sub(d0, d2)
     # borrow flag: d0, d2 < p R < 2^(bit2-2), so the top bit is set iff
     # the sub wrapped around
     c = trunc(lshr(v, bit2 - 1), 1)
-    if subTbl:
-      off = shl(zext(c, unit), Npad.bit_length() - 1)
-      addr = getelementptr(ptbl, off)
-      pc = load(bitcast(addr, bit)) # p if borrow else 0
-    else:
-      pc = select(c, p, Imm(0, bit))
+    pc = select(c, p, Imm(0, bit))
     hi = add(trunc(lshr(v, bit), bit), pc)
     storeN(trunc(v, bit), pd0)
     storeN(hi, pd0, offset=N)
@@ -1162,10 +1087,10 @@ def gen_fixed_fp2_mul(name, fs, mulPreF, modF, offset, u=1, subTbl=None):
 #   a^2 - u b^2 = (a - b)(a + u b) - (u - 1) a b = mul(t2, t3) - k z.b
 #   with t2 = a + (u b mod p) (an add chain), t3 = a + p - b and k = (u - 1) / 2.
 # The mul operands are < 2p, so the products are < 4p^2 < p R, which
-# requires p < R/4 (mont.nocarry). sqr(x, x) works in place: when the first
+# requires p < R/4 (nocarry). sqr(x, x) works in place: when the first
 # mul writes z.b it only reads x.a, which does not overlap x.b, and the
 # second mul reads only the t2/t3 copies.
-def gen_fixed_fp2_sqr(name, fs, mulF, offset, u=1):
+def gen_fp2_sqr(name, fs, mulF, offset, u=1):
   unit = fs.unit
   N = fs.N
   assert not fs.isFullBit and fs.nocarry
@@ -1204,11 +1129,11 @@ def gen_fixed_fp2_sqr(name, fs, mulF, offset, u=1):
 # Fp2DblT (fp_tower.hpp) and gen_fp2Dbl_* of fp_generator.hpp.
 
 # Fp2Dbl mulPre: (z.a, z.b) = (a c - u b d, a d + b c) (no reduction), i.e.
-# gen_fixed_fp2_mul without the two mods. d1 = (a + b)(c + d) - a c - b d
+# gen_fp2_mul without the two mods. d1 = (a + b)(c + d) - a c - b d
 # has no borrow; d0 = a c - u b d adds p to the high half on borrow (the
-# select of p / 0, or the {zero, p} table of a p-fixed function). z never
-# aliases x or y (Fp2Dbl vs Fp2), so d1 and d0 are computed in place.
-def gen_fixed_fp2Dbl_mulPre(name, fs, mulPreF, offset, offsetDbl, u=1, subTbl=None):
+# select of p / 0). z never aliases x or y (Fp2Dbl vs Fp2), so d1 and d0 are
+# computed in place.
+def gen_fp2Dbl_mulPre(name, fs, mulPreF, offset, offsetDbl, u=1):
   unit = fs.unit
   N = fs.N
   bit = unit * N
@@ -1220,9 +1145,6 @@ def gen_fixed_fp2Dbl_mulPre(name, fs, mulPreF, offset, offsetDbl, u=1, subTbl=No
   py = IntPtr(unit)
   args = [pz, px, py] + fs.extraArgs()
   with Function(name, Void, *args, private=False):
-    if subTbl:
-      tbl, Npad = subTbl
-      ptbl = bitcast(tbl, unit)
     ps = alloca_(unit, N)
     pt = alloca_(unit, N)
     pd2 = alloca_(unit, 2*N)
@@ -1241,18 +1163,12 @@ def gen_fixed_fp2Dbl_mulPre(name, fs, mulPreF, offset, offsetDbl, u=1, subTbl=No
     d2 = loadN(pd2, 2*N)
     d1 = sub(sub(d1, d0), d2)
     storeN(d1, pd1)
-    if u != 1 or not subTbl:
-      p = loadN(fs.getPP(args), N)
+    p = loadN(fs.getPP(args), N)
     if u != 1:
       d2 = emit_fpDbl_mulSmallP2(unit, N, d2, u, p)
     v = sub(d0, d2)
     c = trunc(lshr(v, bit2 - 1), 1)
-    if subTbl:
-      off = shl(zext(c, unit), Npad.bit_length() - 1)
-      addr = getelementptr(ptbl, off)
-      pc = load(bitcast(addr, bit)) # p if borrow else 0
-    else:
-      pc = select(c, p, Imm(0, bit))
+    pc = select(c, p, Imm(0, bit))
     hi = add(trunc(lshr(v, bit), bit), pc)
     storeN(trunc(v, bit), pz)
     storeN(hi, pz, offset=N)
@@ -1266,7 +1182,7 @@ def gen_fixed_fp2Dbl_mulPre(name, fs, mulPreF, offset, offsetDbl, u=1, subTbl=No
 #   y.a = a^2 - u b^2 = (a - b)(a + u b) - k (2 a b), k = (u - 1) / 2
 # with a + (u b mod p) < 2p; k (2 a b) < 4 p^2 < p R for k <= 2, so the
 # single FpDbl sub (+p R on borrow) gives y.a < p R.
-def gen_fixed_fp2Dbl_sqrPre(name, fs, mulPreF, offset, offsetDbl, u=1):
+def gen_fp2Dbl_sqrPre(name, fs, mulPreF, offset, offsetDbl, u=1):
   unit = fs.unit
   N = fs.N
   assert not fs.isFullBit and fs.nocarry
@@ -1305,11 +1221,11 @@ def gen_fixed_fp2Dbl_sqrPre(name, fs, mulPreF, offset, offsetDbl, u=1):
 
 # Fp2Dbl mul_xi: y = x xi on 2N-limb values (x.b at offsetDbl) with the
 # FpDbl add/sub reduction of the high half (fpDbl_add_val / fpDbl_sub_val)
-# for the same (u, xi_a) as gen_fixed_fp2_mul_xi (mul_xi_1_iA, mul_xi_a_iA,
+# for the same (u, xi_a) as gen_fp2_mul_xi (mul_xi_1_iA, mul_xi_a_iA,
 # mulu_xi_0_iA of Fp2Dbl); k x is an add chain (emit_fpDbl_mulSmall).
 # Both inputs are loaded before the stores, so y may be x (noalias=False,
-# see gen_fixed_fp2_mul_xi).
-def gen_fixed_fp2Dbl_mul_xi(name, fs, offsetDbl, u=1, xi_a=1):
+# see gen_fp2_mul_xi).
+def gen_fp2Dbl_mul_xi(name, fs, offsetDbl, u=1, xi_a=1):
   unit = fs.unit
   N = fs.N
   bit = N * unit
@@ -1345,87 +1261,28 @@ def gen_fixed_fp2Dbl_mul_xi(name, fs, offsetDbl, u=1, xi_a=1):
     ret(Void)
 
 
-# Generate all the p-fixed functions of a prime p with the prefix pre
-# (e.g. 'mcl_c5_fp_'): the globals {pre}p and {pre}rp (= -p^-1 mod 2^unit),
-# {pre}mulUnit (private) and
-#   {pre}add, {pre}sub, {pre}neg, {pre}mul2, {pre}mul, {pre}sqr,
-#   {preDbl}mod
-# (no mulPre / sqrPre: they do not depend on p, Op uses mclb_mul{N} / mclb_sqr{N})
-# and if hasFp2 (the Fp of a pairing curve with Fp2 = Fp[i]/(i^2 + 1) and
-# xi = 1 + i, sizeof(Fp) = offset units = MCL_FP_BIT / unit at the generation,
-# the position of the second component of Fp2):
-#   {pre}sub_tbl, {preDbl}mulPre (private, used by {pre2}mul), {preDbl}add, {preDbl}sub,
-#   {pre2}add, {pre2}sub, {pre2}neg, {pre2}mul2, {pre2}mul, {pre2}sqr, {pre2}mul_xi,
-#   {pre2Dbl}mulPre, {pre2Dbl}sqrPre, {pre2Dbl}mul_xi (Fp2Dbl, b at 2 offset limbs)
-# where preDbl = pre[:-1] + 'Dbl_', pre2 = pre[:-1] + '2_' and pre2Dbl = pre[:-1] + '2Dbl_'
-# (mcl_c5_fpDbl_mod, mcl_c5_fp2_mul, ... : the names of the Op slots).
-# mulPos / extractHigh are the module-wide helpers of gen.py (gen_once).
-# The list of the functions is also in src/gen_llvm_proto.py (prototypes and
-# the registration to Op); update both.
-def gen_fixed(pre, unit, p, offset, hasFp2, mulPos, extractHigh):
-  mont = Montgomery(p, unit)
-  N = mont.N
-  preDbl = pre[:-1] + 'Dbl_'
-  pre2 = pre[:-1] + '2_'
-  pre2Dbl = pre[:-1] + '2Dbl_'
-  dataVar = makeVar(f'{pre}p', mont.bit, p, const=False, static=False)
-  # rp is also a non-const global, not an immediate of mul/mod: LLVM
-  # strength-reduces t * rp for rp = 0xfffffffeffffffff (BLS12-381 r) into
-  # shl/add/neg, and that made the fixed mul 35% slower than mcl_fp_montNF4L
-  # on x64 (Xeon w9-3495X); loaded from memory it is the same speed.
-  rpVar = makeVar(f'{pre}rp', unit, mont.ip, const=False, static=False)
-  fs = FieldShape.fromMont(mont, dataVar, rpVar)
-  # alwaysinline: for N >= 8 clang stops inlining mulUnit into mulPre and the
-  # 2N call round-trips cost ~1.7x in throughput (mcl-ff memo.md 2026-08-31)
-  mulUnit = gen_mulPv(f'{pre}mulUnit', unit, N, mulPos, extractHigh, private=True, alwaysinline=True)
-  addF = gen_fixed_fp_add(f'{pre}add', fs)
-  gen_fixed_fp_sub(f'{pre}sub', fs)
-  gen_fixed_fp_neg(f'{pre}neg', fs)
-  gen_fixed_mul2(f'{pre}mul2', fs, addF)
-  mulF = gen_fixed_mul(f'{pre}mul', fs, mulUnit)
-  gen_fixed_sqr(f'{pre}sqr', fs, mulF)
-  modF = gen_fixed_mod(f'{preDbl}mod', fs, mulUnit)
-  if not hasFp2:
-    return
-  assert not fs.isFullBit and fs.nocarry and offset >= N
-  subTbl = makeSubTbl(f'{pre}sub_tbl', mont)
-  mulPreF = gen_fixed_mulPre(f'{preDbl}mulPre', fs, mulUnit)
-  gen_fixed_fpDbl_add(f'{preDbl}add', fs)
-  gen_fixed_fpDbl_sub(f'{preDbl}sub', fs)
-  add2F = gen_fixed_fp2_add(f'{pre2}add', fs, offset)
-  gen_fixed_fp2_sub(f'{pre2}sub', fs, offset)
-  gen_fixed_fp2_neg(f'{pre2}neg', fs, offset)
-  gen_fixed_mul2(f'{pre2}mul2', fs, add2F)
-  gen_fixed_fp2_mul(f'{pre2}mul', fs, mulPreF, modF, offset, subTbl=subTbl)
-  gen_fixed_fp2_sqr(f'{pre2}sqr', fs, mulF, offset)
-  gen_fixed_fp2_mul_xi(f'{pre2}mul_xi', fs, offset)
-  offsetDbl = offset * 2 # sizeof(FpDbl) = 2 sizeof(Fp)
-  gen_fixed_fp2Dbl_mulPre(f'{pre2Dbl}mulPre', fs, mulPreF, offset, offsetDbl, subTbl=subTbl)
-  gen_fixed_fp2Dbl_sqrPre(f'{pre2Dbl}sqrPre', fs, mulPreF, offset, offsetDbl)
-  gen_fixed_fp2Dbl_mul_xi(f'{pre2Dbl}mul_xi', fs, offsetDbl)
-
-
-# The generic Fp functions (p as the last argument) of N units for the A_
-# slots of Op that gen.py does not have yet (mcl_fp_add{NF}{N}L,
-# mcl_fp_mont{NF}{N}L, mcl_fp_montRed{NF}{N}L and mcl_fpDbl_{add,sub}{N}L
-# serve fp_addA_, fp_mulA_, fpDbl_modA_, ...):
+# The generic Fp functions of N units for the A_ slots that gen.py does not
+# have yet (mcl_fp_add{NF}{N}L, mcl_fp_mont{NF}{N}L, mcl_fp_montRed{NF}{N}L
+# and mcl_fpDbl_{add,sub}{N}L serve fp_addA_, fp_mulA_, fpDbl_modA_, ...):
 #   mcl_fp_neg{N}L(y, x, p) and, for isFullBit in (True, False) with the
 #   suffix '_' / 'NF' (mul2) or '' / 'NF' (sqr), mcl_fp_mul2_{N}L /
 #   mcl_fp_mul2NF{N}L(y, x, p) = add(y, x, x, p) and mcl_fp_sqr{N}L /
 #   mcl_fp_sqrNF{N}L(y, x, p) = mont(y, x, x, p).
 # addF[isFullBit] / montF[isFullBit] : the Functions of mcl_fp_add{NF}{N}L / mcl_fp_mont{NF}{N}L
+# The list of the functions is also in src/gen_llvm_proto.py (prototypes and
+# the registration to Op); update both.
 def gen_generic_fp(unit, N, addF, montF):
-  gen_fixed_fp_neg(f'mcl_fp_neg{N}L', FieldShape(unit, N, False, False))
+  gen_fp_neg(f'mcl_fp_neg{N}L', FieldShape(unit, N, False, False))
   for isFullBit in (True, False):
     fs = FieldShape(unit, N, isFullBit, False)
     nf = '' if isFullBit else 'NF'
-    gen_fixed_mul2(f'mcl_fp_mul2{"_" if isFullBit else "NF"}{N}L', fs, addF[isFullBit])
-    gen_fixed_sqr(f'mcl_fp_sqr{nf}{N}L', fs, montF[isFullBit])
+    gen_mul2(f'mcl_fp_mul2{"_" if isFullBit else "NF"}{N}L', fs, addF[isFullBit])
+    gen_fp_sqr(f'mcl_fp_sqr{nf}{N}L', fs, montF[isFullBit])
 
 
-# The generic Fp2 functions (p as the last argument) of an N-unit p that is
-# not full bit and p < R/4 (nocarry) for Fp2 = Fp[i]/(i^2 + u) with
-# xi = xi_a + i and sizeof(Fp) = offset units (MCL_FP_BIT / unit):
+# The generic Fp2 functions of an N-unit p that is not full bit and p < R/4
+# (nocarry) for Fp2 = Fp[i]/(i^2 + u) with xi = xi_a + i and sizeof(Fp) =
+# offset units (MCL_FP_BIT / unit, the position of the second component):
 #   mcl_fp2_mulUnit{N}L, mcl_fp2_mulPre{N}L (private; Op keeps fpDbl_mulPre = mclb_mul{N}),
 #   mcl_fp2_{add,sub,neg}{N}L, mcl_fp2_mul2_{N}L (independent of u / xi_a),
 #   mcl_fp2_{mul,sqr}_u{u}_{N}L, mcl_fp2Dbl_{mulPre,sqrPre}_u{u}_{N}L (per u),
@@ -1433,6 +1290,8 @@ def gen_generic_fp(unit, N, addF, montF):
 # for the (u, xi_a) of params (a list of pairs, e.g. those of primetbl.py).
 # montF / montRedF : the Functions of mcl_fp_montNF{N}L / mcl_fp_montRedNF{N}L.
 # mulPos / extractHigh are the module-wide helpers of gen.py (gen_once).
+# alwaysinline of mulUnit: for N >= 8 clang stops inlining it into mulPre and
+# the 2N call round-trips cost ~1.7x in throughput (mcl-ff memo.md 2026-08-31).
 # The list of the functions is also in src/gen_llvm_proto.py (prototypes and
 # the registration to Op); update both.
 def gen_generic_fp2(unit, N, offset, params, montF, montRedF, mulPos, extractHigh):
@@ -1440,17 +1299,17 @@ def gen_generic_fp2(unit, N, offset, params, montF, montRedF, mulPos, extractHig
   assert offset >= N
   suf = f'{N}L'
   mulUnit = gen_mulPv(f'mcl_fp2_mulUnit{suf}', unit, N, mulPos, extractHigh, private=True, alwaysinline=True)
-  mulPreF = gen_fixed_mulPre(f'mcl_fp2_mulPre{suf}', fs, mulUnit)
-  add2F = gen_fixed_fp2_add(f'mcl_fp2_add{suf}', fs, offset)
-  gen_fixed_fp2_sub(f'mcl_fp2_sub{suf}', fs, offset)
-  gen_fixed_fp2_neg(f'mcl_fp2_neg{suf}', fs, offset)
-  gen_fixed_mul2(f'mcl_fp2_mul2_{suf}', fs, add2F)
+  mulPreF = gen_fpDbl_mulPre(f'mcl_fp2_mulPre{suf}', fs, mulUnit)
+  add2F = gen_fp2_add(f'mcl_fp2_add{suf}', fs, offset)
+  gen_fp2_sub(f'mcl_fp2_sub{suf}', fs, offset)
+  gen_fp2_neg(f'mcl_fp2_neg{suf}', fs, offset)
+  gen_mul2(f'mcl_fp2_mul2_{suf}', fs, add2F)
   offsetDbl = offset * 2 # sizeof(FpDbl) = 2 sizeof(Fp)
   for u in sorted({u for (u, _) in params}):
-    gen_fixed_fp2_mul(f'mcl_fp2_mul_u{u}_{suf}', fs, mulPreF, montRedF, offset, u=u)
-    gen_fixed_fp2_sqr(f'mcl_fp2_sqr_u{u}_{suf}', fs, montF, offset, u=u)
-    gen_fixed_fp2Dbl_mulPre(f'mcl_fp2Dbl_mulPre_u{u}_{suf}', fs, mulPreF, offset, offsetDbl, u=u)
-    gen_fixed_fp2Dbl_sqrPre(f'mcl_fp2Dbl_sqrPre_u{u}_{suf}', fs, mulPreF, offset, offsetDbl, u=u)
+    gen_fp2_mul(f'mcl_fp2_mul_u{u}_{suf}', fs, mulPreF, montRedF, offset, u=u)
+    gen_fp2_sqr(f'mcl_fp2_sqr_u{u}_{suf}', fs, montF, offset, u=u)
+    gen_fp2Dbl_mulPre(f'mcl_fp2Dbl_mulPre_u{u}_{suf}', fs, mulPreF, offset, offsetDbl, u=u)
+    gen_fp2Dbl_sqrPre(f'mcl_fp2Dbl_sqrPre_u{u}_{suf}', fs, mulPreF, offset, offsetDbl, u=u)
   for (u, xi_a) in sorted(params):
-    gen_fixed_fp2_mul_xi(f'mcl_fp2_mul_xi_u{u}x{xi_a}_{suf}', fs, offset, u, xi_a)
-    gen_fixed_fp2Dbl_mul_xi(f'mcl_fp2Dbl_mul_xi_u{u}x{xi_a}_{suf}', fs, offsetDbl, u, xi_a)
+    gen_fp2_mul_xi(f'mcl_fp2_mul_xi_u{u}x{xi_a}_{suf}', fs, offset, u, xi_a)
+    gen_fp2Dbl_mul_xi(f'mcl_fp2Dbl_mul_xi_u{u}x{xi_a}_{suf}', fs, offsetDbl, u, xi_a)
