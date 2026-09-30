@@ -146,6 +146,12 @@ template<size_t N>
 void sqrT(Unit *py, const Unit *px)
 {
 #if MCL_SIZEOF_UNIT == 4
+	// the dedicated code is only for N = 8 (256-bit, e.g. secp256k1) to keep the code size small
+	// (get_sqr() instantiates sqrT<N> for all N; it has no effect on the Montgomery curves)
+	if (N != 8) {
+		mulT<N>(py, px, px);
+		return;
+	}
 	// off-diagonal products x[i] * x[j] (i < j) at the position i + j
 	py[0] = 0;
 	if (N > 1) {
