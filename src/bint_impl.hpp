@@ -145,8 +145,43 @@ void mulT(Unit *pz, const Unit *px, const Unit *py)
 template<size_t N>
 void sqrT(Unit *py, const Unit *px)
 {
+#if MCL_SIZEOF_UNIT == 4
+	// off-diagonal products x[i] * x[j] (i < j) at the position i + j
+	py[0] = 0;
+	if (N > 1) {
+		uint64_t xi = px[0];
+		uint64_t v = 0;
+		for (size_t j = 1; j < N; j++) {
+			v = xi * px[j] + (v >> 32);
+			py[j] = uint32_t(v);
+		}
+		py[N] = uint32_t(v >> 32);
+		for (size_t i = 1; i < N - 1; i++) {
+			xi = px[i];
+			v = 0;
+			for (size_t j = i + 1; j < N; j++) {
+				v = py[i + j] + xi * px[j] + (v >> 32);
+				py[i + j] = uint32_t(v);
+			}
+			py[i + N] = uint32_t(v >> 32);
+		}
+	}
+	py[N * 2 - 1] = 0;
+	// double them and add the diagonal x[i]^2
+	uint64_t c = 0;
+	for (size_t i = 0; i < N; i++) {
+		uint64_t xx = uint64_t(px[i]) * px[i];
+		c += uint64_t(py[i * 2]) * 2 + uint32_t(xx);
+		py[i * 2] = uint32_t(c);
+		c >>= 32;
+		c += uint64_t(py[i * 2 + 1]) * 2 + (xx >> 32);
+		py[i * 2 + 1] = uint32_t(c);
+		c >>= 32;
+	}
+#else
 	// QQQ : optimize this later
 	mulT<N>(py, px, px);
+#endif
 }
 
 #endif // MCL_BINT_ASM != 1
@@ -497,27 +532,41 @@ MCL_CXX_API void mod_SECP256K1(Unit *z, const Unit *x, const Unit *p)
 		}
 	}
 #else
-	Unit buf[N + 2];
-	// H * a = H * 0x3d1 + (H << 32)
-	buf[N] = mulUnitT<N>(buf, x + N, 0x3d1u); // H * 0x3d1
-	buf[N + 1] = addT<N>(buf + 1, buf + 1, x + N);
-	// t = H * a + L
-	Unit t = addT<N>(buf, buf, x);
-	addUnit(buf + N, 2, t);
-	Unit x2[4];
-	// x2 = buf[N:N+2] * a
-	x2[2] = mulUnitT<2>(x2, buf + N, 0x3d1u);
-	x2[3] = addT<2>(x2 + 1, x2 + 1, buf + N);
-	Unit x3 = addT<4>(buf, buf, x2);
-	if (x3) {
-		x3 = addUnit(buf + 4, N - 4, 1);
-		if (x3) {
-			Unit a[2] = { 0x3d1, 1 };
-			x3 = addT<2>(buf, buf, a);
-			if (x3) {
-				addUnit(buf + 2, N - 2, 1);
-			}
-		}
+	/*
+		a = 2^32 + c (c = 0x3d1), x = H 2^256 + L = H a + L (mod p)
+		t = L + H a : the i-th limb gets L[i] + H[i] c + H[i-1] (one pass with a 64-bit accumulator)
+	*/
+	const uint64_t c = 0x3d1;
+	const Unit *H = x + N;
+	Unit buf[N];
+	uint64_t v = x[0] + H[0] * c;
+	buf[0] = uint32_t(v);
+	for (size_t i = 1; i < N; i++) {
+		v = (v >> 32) + x[i] + H[i] * c + H[i - 1];
+		buf[i] = uint32_t(v);
+	}
+	v = (v >> 32) + H[N - 1]; // t = v 2^256 + buf, v < 2^34
+	// u = buf + v a : v a = v c + (v << 32), v c < 2^44
+	const uint64_t vc = v * c;
+	uint64_t w = uint64_t(buf[0]) + uint32_t(vc);
+	buf[0] = uint32_t(w);
+	w = (w >> 32) + buf[1] + (vc >> 32) + uint32_t(v);
+	buf[1] = uint32_t(w);
+	w = (w >> 32) + buf[2] + (v >> 32);
+	buf[2] = uint32_t(w);
+	for (size_t i = 3; i < N; i++) {
+		w = (w >> 32) + buf[i];
+		buf[i] = uint32_t(w);
+	}
+	if (w >> 32) {
+		// u = 2^256 + buf, buf < 2^67 : buf += a (no carry out)
+		w = uint64_t(buf[0]) + c;
+		buf[0] = uint32_t(w);
+		w = (w >> 32) + buf[1] + 1;
+		buf[1] = uint32_t(w);
+		w = (w >> 32) + buf[2];
+		buf[2] = uint32_t(w);
+		assert((w >> 32) == 0);
 	}
 #endif
 	if (cmpGeT<N>(buf, p)) {
@@ -539,7 +588,7 @@ MCL_CXX_API void sqr_SECP256K1(Unit *y, const Unit *x, const Unit *p)
 {
 	const size_t N = 32 / MCL_SIZEOF_UNIT;
 	Unit xx[N * 2];
-	mulT<N>(xx, x, x);
+	sqrT<N>(xx, x);
 	mod_SECP256K1(y, xx, p);
 }
 
