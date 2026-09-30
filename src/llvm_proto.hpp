@@ -75,6 +75,9 @@ void mcl_fp_mulNIST_P192L(Unit *, const Unit *, const Unit *, const Unit *);
 void mcl_fp_sqr_NIST_P192L(Unit *, const Unit *, const Unit *);
 void mcl_fpDbl_mod_NIST_P192L(Unit *, const Unit *, const Unit *);
 void mcl_fpDbl_mod_NIST_P521L(Unit *, const Unit *, const Unit *);
+void mcl_fp_mul_SECP256K1L(Unit *, const Unit *, const Unit *, const Unit *);
+void mcl_fp_sqr_SECP256K1L(Unit *, const Unit *, const Unit *);
+void mcl_fpDbl_mod_SECP256K1L(Unit *, const Unit *, const Unit *);
 }
 #ifdef MCL_USE_LLVM
 #if MCL_SIZEOF_UNIT == 4

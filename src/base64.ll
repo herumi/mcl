@@ -941,6 +941,203 @@ define void @mcl_fp_montRedNF4L(i64* noalias %r1, i64* noalias %r2, i64* noalias
 store i256 %r90, i256* %r91
 ret void
 }
+define void @mcl_fpDbl_mod_SECP256K1L(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
+{
+%r4 = bitcast i64* %r2 to i512*
+%r5 = load i512, i512* %r4
+%r6 = trunc i512 %r5 to i256
+%r7 = zext i256 %r6 to i320
+%r8 = lshr i512 %r5, 256
+%r9 = trunc i512 %r8 to i256
+%r10 = zext i256 %r9 to i320
+%r11 = mul i320 %r10, 4294968273
+%r12 = add i320 %r7, %r11
+%r13 = trunc i320 %r12 to i256
+%r14 = lshr i320 %r12, 256
+%r15 = trunc i320 %r14 to i64
+%r16 = zext i64 %r15 to i128
+%r17 = mul i128 %r16, 4294968273
+%r18 = zext i256 %r13 to i320
+%r19 = zext i128 %r17 to i320
+%r20 = add i320 %r18, %r19
+%r21 = trunc i320 %r20 to i256
+%r22 = lshr i320 %r20, 256
+%r23 = trunc i320 %r22 to i64
+%r24 = sub i64 0, %r23
+%r25 = and i64 %r24, 4294968273
+%r26 = zext i64 %r25 to i256
+%r27 = add i256 %r21, %r26
+%r28 = sub i256 %r27, 115792089237316195423570985008687907853269984665640564039457584007908834671663
+%r29 = icmp ult i256 %r27, 115792089237316195423570985008687907853269984665640564039457584007908834671663
+%r30 = select i1 %r29, i256 %r27, i256 %r28
+%r31 = bitcast i64* %r1 to i256*
+store i256 %r30, i256* %r31
+ret void
+}
+define void @mcl_fp_sqr_SECP256K1L(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
+{
+%r4 = load i64, i64* %r2
+%r5 = getelementptr i64, i64* %r2, i32 1
+%r6 = load i64, i64* %r5
+%r7 = getelementptr i64, i64* %r2, i32 2
+%r8 = load i64, i64* %r7
+%r9 = getelementptr i64, i64* %r2, i32 3
+%r10 = load i64, i64* %r9
+%r11 = zext i64 %r4 to i128
+%r12 = zext i64 %r10 to i128
+%r13 = mul i128 %r11, %r12
+%r14 = zext i64 %r4 to i128
+%r15 = zext i64 %r8 to i128
+%r16 = mul i128 %r14, %r15
+%r17 = zext i64 %r6 to i128
+%r18 = zext i64 %r10 to i128
+%r19 = mul i128 %r17, %r18
+%r20 = zext i128 %r16 to i256
+%r21 = zext i128 %r19 to i256
+%r22 = shl i256 %r21, 128
+%r23 = or i256 %r20, %r22
+%r24 = zext i128 %r13 to i256
+%r25 = shl i256 %r24, 64
+%r26 = add i256 %r25, %r23
+%r27 = zext i64 %r4 to i128
+%r28 = zext i64 %r6 to i128
+%r29 = mul i128 %r27, %r28
+%r30 = zext i64 %r6 to i128
+%r31 = zext i64 %r8 to i128
+%r32 = mul i128 %r30, %r31
+%r33 = zext i64 %r8 to i128
+%r34 = zext i64 %r10 to i128
+%r35 = mul i128 %r33, %r34
+%r36 = zext i128 %r29 to i256
+%r37 = zext i128 %r32 to i256
+%r38 = shl i256 %r37, 128
+%r39 = or i256 %r36, %r38
+%r40 = zext i256 %r39 to i384
+%r41 = zext i128 %r35 to i384
+%r42 = shl i384 %r41, 256
+%r43 = or i384 %r40, %r42
+%r44 = zext i256 %r26 to i384
+%r45 = shl i384 %r44, 64
+%r46 = add i384 %r45, %r43
+%r47 = zext i384 %r46 to i448
+%r48 = add i448 %r47, %r47
+%r49 = zext i448 %r48 to i512
+%r50 = shl i512 %r49, 64
+%r51 = zext i64 %r4 to i128
+%r52 = zext i64 %r4 to i128
+%r53 = mul i128 %r51, %r52
+%r54 = zext i64 %r6 to i128
+%r55 = zext i64 %r6 to i128
+%r56 = mul i128 %r54, %r55
+%r57 = zext i64 %r8 to i128
+%r58 = zext i64 %r8 to i128
+%r59 = mul i128 %r57, %r58
+%r60 = zext i64 %r10 to i128
+%r61 = zext i64 %r10 to i128
+%r62 = mul i128 %r60, %r61
+%r63 = zext i128 %r53 to i256
+%r64 = zext i128 %r56 to i256
+%r65 = shl i256 %r64, 128
+%r66 = or i256 %r63, %r65
+%r67 = zext i256 %r66 to i384
+%r68 = zext i128 %r59 to i384
+%r69 = shl i384 %r68, 256
+%r70 = or i384 %r67, %r69
+%r71 = zext i384 %r70 to i512
+%r72 = zext i128 %r62 to i512
+%r73 = shl i512 %r72, 384
+%r74 = or i512 %r71, %r73
+%r75 = add i512 %r50, %r74
+%r76 = trunc i512 %r75 to i256
+%r77 = zext i256 %r76 to i320
+%r78 = lshr i512 %r75, 256
+%r79 = trunc i512 %r78 to i256
+%r80 = zext i256 %r79 to i320
+%r81 = mul i320 %r80, 4294968273
+%r82 = add i320 %r77, %r81
+%r83 = trunc i320 %r82 to i256
+%r84 = lshr i320 %r82, 256
+%r85 = trunc i320 %r84 to i64
+%r86 = zext i64 %r85 to i128
+%r87 = mul i128 %r86, 4294968273
+%r88 = zext i256 %r83 to i320
+%r89 = zext i128 %r87 to i320
+%r90 = add i320 %r88, %r89
+%r91 = trunc i320 %r90 to i256
+%r92 = lshr i320 %r90, 256
+%r93 = trunc i320 %r92 to i64
+%r94 = sub i64 0, %r93
+%r95 = and i64 %r94, 4294968273
+%r96 = zext i64 %r95 to i256
+%r97 = add i256 %r91, %r96
+%r98 = sub i256 %r97, 115792089237316195423570985008687907853269984665640564039457584007908834671663
+%r99 = icmp ult i256 %r97, 115792089237316195423570985008687907853269984665640564039457584007908834671663
+%r100 = select i1 %r99, i256 %r97, i256 %r98
+%r101 = bitcast i64* %r1 to i256*
+store i256 %r100, i256* %r101
+ret void
+}
+define void @mcl_fp_mul_SECP256K1L(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3, i64* noalias %r4)
+{
+%r5 = load i64, i64* %r3
+%r6 = call i320 @mulPv256x64(i64* %r2, i64 %r5)
+%r7 = trunc i320 %r6 to i64
+%r8 = zext i64 %r7 to i512
+%r9 = lshr i320 %r6, 64
+%r10 = getelementptr i64, i64* %r3, i32 1
+%r11 = load i64, i64* %r10
+%r12 = call i320 @mulPv256x64(i64* %r2, i64 %r11)
+%r13 = add i320 %r9, %r12
+%r14 = trunc i320 %r13 to i64
+%r15 = zext i64 %r14 to i512
+%r16 = shl i512 %r15, 64
+%r17 = or i512 %r8, %r16
+%r18 = lshr i320 %r13, 64
+%r19 = getelementptr i64, i64* %r3, i32 2
+%r20 = load i64, i64* %r19
+%r21 = call i320 @mulPv256x64(i64* %r2, i64 %r20)
+%r22 = add i320 %r18, %r21
+%r23 = trunc i320 %r22 to i64
+%r24 = zext i64 %r23 to i512
+%r25 = shl i512 %r24, 128
+%r26 = or i512 %r17, %r25
+%r27 = lshr i320 %r22, 64
+%r28 = getelementptr i64, i64* %r3, i32 3
+%r29 = load i64, i64* %r28
+%r30 = call i320 @mulPv256x64(i64* %r2, i64 %r29)
+%r31 = add i320 %r27, %r30
+%r32 = zext i320 %r31 to i512
+%r33 = shl i512 %r32, 192
+%r34 = or i512 %r26, %r33
+%r35 = trunc i512 %r34 to i256
+%r36 = zext i256 %r35 to i320
+%r37 = lshr i512 %r34, 256
+%r38 = trunc i512 %r37 to i256
+%r39 = zext i256 %r38 to i320
+%r40 = mul i320 %r39, 4294968273
+%r41 = add i320 %r36, %r40
+%r42 = trunc i320 %r41 to i256
+%r43 = lshr i320 %r41, 256
+%r44 = trunc i320 %r43 to i64
+%r45 = zext i64 %r44 to i128
+%r46 = mul i128 %r45, 4294968273
+%r47 = zext i256 %r42 to i320
+%r48 = zext i128 %r46 to i320
+%r49 = add i320 %r47, %r48
+%r50 = trunc i320 %r49 to i256
+%r51 = lshr i320 %r49, 256
+%r52 = trunc i320 %r51 to i64
+%r53 = sub i64 0, %r52
+%r54 = and i64 %r53, 4294968273
+%r55 = zext i64 %r54 to i256
+%r56 = add i256 %r50, %r55
+%r57 = sub i256 %r56, 115792089237316195423570985008687907853269984665640564039457584007908834671663
+%r58 = icmp ult i256 %r56, 115792089237316195423570985008687907853269984665640564039457584007908834671663
+%r59 = select i1 %r58, i256 %r56, i256 %r57
+%r60 = bitcast i64* %r1 to i256*
+store i256 %r59, i256* %r60
+ret void
+}
 define i64 @mcl_fp_addPre4L(i64* noalias %r1, i64* noalias %r2, i64* noalias %r3)
 {
 %r5 = bitcast i64* %r2 to i256*

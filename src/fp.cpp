@@ -571,12 +571,18 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 		fpDbl_mod = &mcl_fpDbl_mod_NIST_P521L;
 	}
 #endif
-#endif
+	if (primeMode == PM_SECP256K1) {
+		fp_mul = &mcl_fp_mul_SECP256K1L;
+		fp_sqr = &mcl_fp_sqr_SECP256K1L;
+		fpDbl_mod = &mcl_fpDbl_mod_SECP256K1L;
+	}
+#else
 	if (mode != FP_XBYAK && primeMode == PM_SECP256K1) {
 		fp_mul = &bint::mul_SECP256K1;
 		fp_sqr = &bint::sqr_SECP256K1;
 		fpDbl_mod = &bint::mod_SECP256K1;
 	}
+#endif
 	if (N * UnitBitSize <= 256) {
 		hash = sha256;
 	} else {

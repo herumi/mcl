@@ -166,6 +166,98 @@ def gen_mcl_fp_mulNIST_P192():
     ret(Void)
 
 
+# secp256k1: p = 2^256 - a, a = 2^32 + 977 = 0x1000003d1, so 2^256 = a (mod p).
+# emit_mod_SECP256K1(x) : x (i512, x < p^2) -> x mod p (i256)
+#   t = L + H a           (< 2^290; x = H 2^256 + L)
+#   u = t0 + t1 a         (t = t1 2^256 + t0, t1 < 2^34, so u < 2^256 + 2^67)
+#   v = u0 + u1 a         (u = u1 2^256 + u0, u1 in {0, 1}; if u1 = 1 then u0 < 2^67, so v < 2^256)
+#   z = v < p ? v : v - p (v < 2^256 < 2p)
+# The p argument of the functions is unused (the same signature as the generic ones).
+# Generated at bit = 256 (after gen_mulPv) since mul/sqr use mulPv256x{unit}.
+SECP256K1_A = 0x1000003d1
+SECP256K1_P = (1 << 256) - SECP256K1_A
+
+def emit_mod_SECP256K1(x):
+  a = SECP256K1_A
+  L = zext(trunc(x, 256), 320)
+  H = zext(extract(x, 256, 256), 320)
+  t = add(L, mul(H, a))
+  t0 = trunc(t, 256)
+  t1 = extract(t, 256, 64)
+  t1a = mul(zext(t1, 128), a)
+  u = add(zext(t0, 320), zext(t1a, 320))
+  u0 = trunc(u, 256)
+  u1 = extract(u, 256, 64)             # 0 or 1
+  m = and_(sub(Imm(0, 64), u1), a)     # u1 ? a : 0
+  v = add(u0, zext(m, 256))
+  vp = sub(v, Imm(SECP256K1_P, 256))
+  c = icmp(ult, v, Imm(SECP256K1_P, 256))
+  return select(c, v, vp)
+
+
+# xy = px[N] * py[N] as i{2*bit} (no reduction) with mulPv: the rows are
+# accumulated in the (N+1)-unit accumulator t (as common.emit_mulPre) and the
+# finished bottom units are collected into the i{2*bit} result.
+def emit_mulPre_val(px, py):
+  mulPv = g_mulPv[bit]
+  y = load(py)
+  t = call(mulPv, px, y)
+  lo = zext(trunc(t, unit), bit * 2)
+  t = lshr(t, unit)
+  for i in range(1, N):
+    y = load(getelementptr(py, i))
+    t = add(t, call(mulPv, px, y))
+    if i < N - 1:
+      lo = or_(lo, shl(zext(trunc(t, unit), bit * 2), unit * i))
+      t = lshr(t, unit)
+  return or_(lo, shl(zext(t, bit * 2), unit * (N - 1)))
+
+
+def gen_mcl_fpDbl_mod_SECP256K1():
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  dummy = IntPtr(unit)
+  with Function('mcl_fpDbl_mod_SECP256K1L', Void, py, px, dummy, private=False):
+    x = loadN(px, N * 2)
+    z = emit_mod_SECP256K1(x)
+    storeN(z, py)
+    ret(Void)
+
+
+def gen_mcl_fp_sqr_SECP256K1():
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  dummy = IntPtr(unit)
+  with Function('mcl_fp_sqr_SECP256K1L', Void, py, px, dummy, private=False):
+    x = [load(px)] + [load(getelementptr(px, i)) for i in range(1, N)]
+    xx = common.sqrPre_raw(unit, x, N)
+    z = emit_mod_SECP256K1(xx)
+    storeN(z, py)
+    ret(Void)
+
+
+def gen_mcl_fp_mul_SECP256K1():
+  resetGlobalIdx()
+  pz = IntPtr(unit)
+  px = IntPtr(unit)
+  py = IntPtr(unit)
+  dummy = IntPtr(unit)
+  with Function('mcl_fp_mul_SECP256K1L', Void, pz, px, py, dummy, private=False):
+    xy = emit_mulPre_val(px, py)
+    z = emit_mod_SECP256K1(xy)
+    storeN(z, pz)
+    ret(Void)
+
+
+def gen_SECP256K1():
+  assert bit == 256
+  gen_mcl_fpDbl_mod_SECP256K1()
+  gen_mcl_fp_sqr_SECP256K1()
+  gen_mcl_fp_mul_SECP256K1()
+
+
 # declare mclb_mul{N}/mclb_sqr{N} (N = 192/unit) provided by bint{unit}.ll (or bint-x64 asm)
 def declare_mclb_mul3():
   global g_mclb_mul3, g_mclb_sqr3
@@ -383,6 +475,8 @@ def gen(maxBitSize, fpBit):
       continue
     setBit(b)
     gen_mul()
+    if b == 256:
+      gen_SECP256K1()
     gen_all()
     gen_addsub()
   if unit == 64 and maxBitSize == 768:

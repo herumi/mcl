@@ -87,6 +87,9 @@ print('void mcl_fp_mulNIST_P192L(Unit *, const Unit *, const Unit *, const Unit 
 print('void mcl_fp_sqr_NIST_P192L(Unit *, const Unit *, const Unit *);')
 print('void mcl_fpDbl_mod_NIST_P192L(Unit *, const Unit *, const Unit *);')
 print('void mcl_fpDbl_mod_NIST_P521L(Unit *, const Unit *, const Unit *);')
+print('void mcl_fp_mul_SECP256K1L(Unit *, const Unit *, const Unit *, const Unit *);')
+print('void mcl_fp_sqr_SECP256K1L(Unit *, const Unit *, const Unit *);')
+print('void mcl_fpDbl_mod_SECP256K1L(Unit *, const Unit *, const Unit *);')
 print('}')
 
 gen_sqr_mont('')

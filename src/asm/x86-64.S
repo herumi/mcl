@@ -1739,6 +1739,344 @@ mcl_fp_montRedNF4L:                     # @mcl_fp_montRedNF4L
 .Lfunc_end23:
 	.size	mcl_fp_montRedNF4L, .Lfunc_end23-mcl_fp_montRedNF4L
                                         # -- End function
+	.globl	mcl_fpDbl_mod_SECP256K1L        # -- Begin function mcl_fpDbl_mod_SECP256K1L
+	.p2align	4
+	.type	mcl_fpDbl_mod_SECP256K1L,@function
+mcl_fpDbl_mod_SECP256K1L:               # @mcl_fpDbl_mod_SECP256K1L
+# %bb.0:
+	pushq	%r14
+	pushq	%rbx
+	movabsq	$4294968273, %rax               # imm = 0x1000003D1
+	movq	%rax, %rdx
+	mulxq	48(%rsi), %r10, %r9
+	mulxq	56(%rsi), %r8, %rcx
+	addq	%r9, %r8
+	adcq	$0, %rcx
+	mulxq	32(%rsi), %rbx, %r11
+	mulxq	40(%rsi), %r14, %r9
+	addq	%r11, %r14
+	adcq	%r10, %r9
+	adcq	$0, %r8
+	adcq	$0, %rcx
+	addq	(%rsi), %rbx
+	adcq	8(%rsi), %r14
+	adcq	16(%rsi), %r9
+	adcq	24(%rsi), %r8
+	adcq	$0, %rcx
+	movq	%rcx, %rdx
+	mulxq	%rax, %rsi, %rcx
+	xorl	%edx, %edx
+	addq	%rbx, %rsi
+	adcq	%r14, %rcx
+	adcq	$0, %r9
+	adcq	$0, %r8
+	sbbq	%rdx, %rdx
+	andq	%rax, %rdx
+	addq	%rsi, %rdx
+	adcq	$0, %rcx
+	adcq	$0, %r9
+	adcq	$0, %r8
+	addq	%rdx, %rax
+	movq	%rcx, %rsi
+	adcq	$0, %rsi
+	movq	%r9, %r10
+	adcq	$0, %r10
+	movq	%r8, %r11
+	adcq	$0, %r11
+	movabsq	$-4294968273, %rbx              # imm = 0xFFFFFFFEFFFFFC2F
+	cmpq	%rbx, %rdx
+	movq	%rcx, %rbx
+	sbbq	$-1, %rbx
+	movq	%r9, %rbx
+	sbbq	$-1, %rbx
+	movq	%r8, %rbx
+	sbbq	$-1, %rbx
+	cmovbq	%r9, %r10
+	movq	%r10, 16(%rdi)
+	cmovbq	%r8, %r11
+	movq	%r11, 24(%rdi)
+	cmovbq	%rdx, %rax
+	movq	%rax, (%rdi)
+	cmovbq	%rcx, %rsi
+	movq	%rsi, 8(%rdi)
+	popq	%rbx
+	popq	%r14
+	retq
+.Lfunc_end24:
+	.size	mcl_fpDbl_mod_SECP256K1L, .Lfunc_end24-mcl_fpDbl_mod_SECP256K1L
+                                        # -- End function
+	.globl	mcl_fp_sqr_SECP256K1L           # -- Begin function mcl_fp_sqr_SECP256K1L
+	.p2align	4
+	.type	mcl_fp_sqr_SECP256K1L,@function
+mcl_fp_sqr_SECP256K1L:                  # @mcl_fp_sqr_SECP256K1L
+# %bb.0:
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	movq	%rdi, -8(%rsp)                  # 8-byte Spill
+	movq	24(%rsi), %rax
+	movq	(%rsi), %r8
+	movq	8(%rsi), %r9
+	movq	%rax, %rdx
+	mulxq	%r9, %rdi, %rbx
+	mulxq	%r8, %r10, %r14
+	movq	16(%rsi), %rcx
+	movq	%rcx, %rdx
+	mulxq	%r8, %r15, %r12
+	addq	%r10, %r12
+	adcq	%rdi, %r14
+	adcq	$0, %rbx
+	movq	%rax, %rdx
+	mulxq	%rcx, %r11, %r10
+	movq	%r9, %rdx
+	mulxq	%r8, %rdi, %rsi
+	addq	%r15, %rsi
+	movq	%rcx, %rdx
+	mulxq	%r9, %r15, %r13
+	adcq	%r12, %r15
+	adcq	%r14, %r13
+	adcq	%rbx, %r11
+	adcq	$0, %r10
+	movq	%r10, %rbp
+	shldq	$1, %r11, %rbp
+	shldq	$1, %r13, %r11
+	shrq	$63, %r10
+	shldq	$1, %r15, %r13
+	shldq	$1, %rsi, %r15
+	shldq	$1, %rdi, %rsi
+	addq	%rdi, %rdi
+	movq	%r8, %rdx
+	mulxq	%r8, %rdx, %rbx
+	movq	%rdx, -16(%rsp)                 # 8-byte Spill
+	addq	%rdi, %rbx
+	movq	%r9, %rdx
+	mulxq	%r9, %r12, %r14
+	adcq	%rsi, %r12
+	movq	%rax, %rdx
+	mulxq	%rax, %rax, %rsi
+	adcq	%r15, %r14
+	movq	%rcx, %rdx
+	mulxq	%rcx, %rcx, %r8
+	adcq	%r13, %rcx
+	movabsq	$4294968273, %r9                # imm = 0x1000003D1
+	adcq	%r11, %r8
+	adcq	%rbp, %rax
+	movq	%rax, %rdx
+	mulxq	%r9, %r11, %rdi
+	adcq	%r10, %rsi
+	movq	%rsi, %rdx
+	mulxq	%r9, %rsi, %rax
+	addq	%rdi, %rsi
+	adcq	$0, %rax
+	movq	%r8, %rdx
+	mulxq	%r9, %rdi, %r8
+	movq	%rcx, %rdx
+	mulxq	%r9, %r10, %r15
+	addq	%rdi, %r15
+	adcq	%r11, %r8
+	adcq	$0, %rsi
+	adcq	$0, %rax
+	addq	-16(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	%rbx, %r15
+	adcq	%r12, %r8
+	adcq	%r14, %rsi
+	adcq	$0, %rax
+	movq	%rax, %rdx
+	mulxq	%r9, %rdx, %rcx
+	xorl	%eax, %eax
+	addq	%r10, %rdx
+	adcq	%r15, %rcx
+	adcq	$0, %r8
+	adcq	$0, %rsi
+	sbbq	%rax, %rax
+	andq	%r9, %rax
+	addq	%rdx, %rax
+	adcq	$0, %rcx
+	adcq	$0, %r8
+	adcq	$0, %rsi
+	addq	%rax, %r9
+	movq	%rcx, %rdx
+	adcq	$0, %rdx
+	movq	%r8, %rdi
+	adcq	$0, %rdi
+	movq	%rsi, %r10
+	adcq	$0, %r10
+	movabsq	$-4294968273, %r11              # imm = 0xFFFFFFFEFFFFFC2F
+	cmpq	%r11, %rax
+	movq	%rcx, %r11
+	sbbq	$-1, %r11
+	movq	%r8, %r11
+	sbbq	$-1, %r11
+	movq	%rsi, %r11
+	sbbq	$-1, %r11
+	cmovbq	%rsi, %r10
+	movq	-8(%rsp), %rsi                  # 8-byte Reload
+	movq	%r10, 24(%rsi)
+	cmovbq	%r8, %rdi
+	movq	%rdi, 16(%rsi)
+	cmovbq	%rcx, %rdx
+	movq	%rdx, 8(%rsi)
+	cmovbq	%rax, %r9
+	movq	%r9, (%rsi)
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
+.Lfunc_end25:
+	.size	mcl_fp_sqr_SECP256K1L, .Lfunc_end25-mcl_fp_sqr_SECP256K1L
+                                        # -- End function
+	.globl	mcl_fp_mul_SECP256K1L           # -- Begin function mcl_fp_mul_SECP256K1L
+	.p2align	4
+	.type	mcl_fp_mul_SECP256K1L,@function
+mcl_fp_mul_SECP256K1L:                  # @mcl_fp_mul_SECP256K1L
+# %bb.0:
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	movq	%rdx, %r8
+	movq	%rdi, -8(%rsp)                  # 8-byte Spill
+	movq	(%rsi), %r15
+	movq	8(%rsi), %r11
+	movq	(%rdx), %rdi
+	movq	8(%rdx), %r10
+	movq	%r15, %rdx
+	mulxq	%rdi, %rax, %r9
+	movq	%rax, -16(%rsp)                 # 8-byte Spill
+	movq	%r11, %rdx
+	mulxq	%rdi, %r12, %rbx
+	movq	24(%rsi), %rcx
+	movq	16(%rsi), %rax
+	addq	%r9, %r12
+	movq	%rax, %rdx
+	mulxq	%rdi, %r9, %rsi
+	adcq	%rbx, %r9
+	movq	%rcx, %rdx
+	mulxq	%rdi, %rdi, %rbx
+	adcq	%rsi, %rdi
+	adcq	$0, %rbx
+	setb	%bpl
+	movq	%r10, %rdx
+	mulxq	%r15, %rdx, %rsi
+	movq	%rsi, -32(%rsp)                 # 8-byte Spill
+	addq	%r12, %rdx
+	movq	%rdx, -24(%rsp)                 # 8-byte Spill
+	movq	%r10, %rdx
+	mulxq	%r11, %rsi, %r14
+	adcq	%r9, %rsi
+	mulxq	%rax, %r12, %r9
+	adcq	%rdi, %r12
+	mulxq	%rcx, %r13, %rdx
+	adcq	%rbx, %r13
+	movzbl	%bpl, %ebp
+	adcq	$0, %rbp
+	addq	-32(%rsp), %rsi                 # 8-byte Folded Reload
+	adcq	%r14, %r12
+	adcq	%r9, %r13
+	adcq	%rdx, %rbp
+	movq	24(%r8), %rdx
+	mulxq	%r11, %r9, %rdi
+	mulxq	%r15, %r10, %rbx
+	movq	%r10, -32(%rsp)                 # 8-byte Spill
+	addq	%r9, %rbx
+	mulxq	%rax, %r9, %r14
+	adcq	%rdi, %r9
+	mulxq	%rcx, %rdi, %r10
+	adcq	%r14, %rdi
+	adcq	$0, %r10
+	movq	16(%r8), %rdx
+	mulxq	%r11, %r14, %r8
+	mulxq	%r15, %r15, %r11
+	addq	%r14, %r11
+	mulxq	%rax, %rax, %r14
+	adcq	%r8, %rax
+	mulxq	%rcx, %rcx, %rdx
+	adcq	%r14, %rcx
+	adcq	$0, %rdx
+	addq	%rsi, %r15
+	adcq	%r12, %r11
+	adcq	%r13, %rax
+	adcq	%rbp, %rcx
+	adcq	$0, %rdx
+	addq	-32(%rsp), %r11                 # 8-byte Folded Reload
+	movabsq	$4294968273, %r8                # imm = 0x1000003D1
+	adcq	%rbx, %rax
+	adcq	%r9, %rcx
+	adcq	%rdi, %rdx
+	mulxq	%r8, %rbx, %rdi
+	adcq	$0, %r10
+	movq	%r10, %rdx
+	mulxq	%r8, %r9, %rsi
+	addq	%rdi, %r9
+	adcq	$0, %rsi
+	movq	%rcx, %rdx
+	mulxq	%r8, %rdi, %rcx
+	movq	%rax, %rdx
+	mulxq	%r8, %r10, %r14
+	addq	%rdi, %r14
+	adcq	%rbx, %rcx
+	adcq	$0, %r9
+	adcq	$0, %rsi
+	addq	-16(%rsp), %r10                 # 8-byte Folded Reload
+	adcq	-24(%rsp), %r14                 # 8-byte Folded Reload
+	adcq	%r15, %rcx
+	adcq	%r11, %r9
+	adcq	$0, %rsi
+	movq	%rsi, %rdx
+	mulxq	%r8, %rsi, %rdx
+	xorl	%eax, %eax
+	addq	%r10, %rsi
+	adcq	%r14, %rdx
+	adcq	$0, %rcx
+	adcq	$0, %r9
+	sbbq	%rax, %rax
+	andq	%r8, %rax
+	addq	%rsi, %rax
+	adcq	$0, %rdx
+	adcq	$0, %rcx
+	adcq	$0, %r9
+	addq	%rax, %r8
+	movq	%rdx, %rsi
+	adcq	$0, %rsi
+	movq	%rcx, %rdi
+	adcq	$0, %rdi
+	movq	%r9, %r10
+	adcq	$0, %r10
+	movabsq	$-4294968273, %r11              # imm = 0xFFFFFFFEFFFFFC2F
+	cmpq	%r11, %rax
+	movq	%rdx, %r11
+	sbbq	$-1, %r11
+	movq	%rcx, %r11
+	sbbq	$-1, %r11
+	movq	%r9, %r11
+	sbbq	$-1, %r11
+	cmovbq	%r9, %r10
+	movq	-8(%rsp), %r9                   # 8-byte Reload
+	movq	%r10, 24(%r9)
+	cmovbq	%rcx, %rdi
+	movq	%rdi, 16(%r9)
+	cmovbq	%rdx, %rsi
+	movq	%rsi, 8(%r9)
+	cmovbq	%rax, %r8
+	movq	%r8, (%r9)
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
+.Lfunc_end26:
+	.size	mcl_fp_mul_SECP256K1L, .Lfunc_end26-mcl_fp_mul_SECP256K1L
+                                        # -- End function
 	.globl	mcl_fp_addPre4L                 # -- Begin function mcl_fp_addPre4L
 	.p2align	4
 	.type	mcl_fp_addPre4L,@function
@@ -1767,8 +2105,8 @@ mcl_fp_addPre4L:                        # @mcl_fp_addPre4L
 	setb	%al
 	movzbl	%al, %eax
 	retq
-.Lfunc_end24:
-	.size	mcl_fp_addPre4L, .Lfunc_end24-mcl_fp_addPre4L
+.Lfunc_end27:
+	.size	mcl_fp_addPre4L, .Lfunc_end27-mcl_fp_addPre4L
                                         # -- End function
 	.globl	mcl_fp_subPre4L                 # -- Begin function mcl_fp_subPre4L
 	.p2align	4
@@ -1791,8 +2129,8 @@ mcl_fp_subPre4L:                        # @mcl_fp_subPre4L
 	sbbq	%rax, %rax
 	andl	$1, %eax
 	retq
-.Lfunc_end25:
-	.size	mcl_fp_subPre4L, .Lfunc_end25-mcl_fp_subPre4L
+.Lfunc_end28:
+	.size	mcl_fp_subPre4L, .Lfunc_end28-mcl_fp_subPre4L
                                         # -- End function
 	.globl	mcl_fp_shr1_4L                  # -- Begin function mcl_fp_shr1_4L
 	.p2align	4
@@ -1813,8 +2151,8 @@ mcl_fp_shr1_4L:                         # @mcl_fp_shr1_4L
 	shldq	$63, %rsi, %rax
 	movq	%rax, 8(%rdi)
 	retq
-.Lfunc_end26:
-	.size	mcl_fp_shr1_4L, .Lfunc_end26-mcl_fp_shr1_4L
+.Lfunc_end29:
+	.size	mcl_fp_shr1_4L, .Lfunc_end29-mcl_fp_shr1_4L
                                         # -- End function
 	.globl	mcl_fp_add4L                    # -- Begin function mcl_fp_add4L
 	.p2align	4
@@ -1854,8 +2192,8 @@ mcl_fp_add4L:                           # @mcl_fp_add4L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end27:
-	.size	mcl_fp_add4L, .Lfunc_end27-mcl_fp_add4L
+.Lfunc_end30:
+	.size	mcl_fp_add4L, .Lfunc_end30-mcl_fp_add4L
                                         # -- End function
 	.globl	mcl_fp_addNF4L                  # -- Begin function mcl_fp_addNF4L
 	.p2align	4
@@ -1889,8 +2227,8 @@ mcl_fp_addNF4L:                         # @mcl_fp_addNF4L
 	movq	%r10, 8(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end28:
-	.size	mcl_fp_addNF4L, .Lfunc_end28-mcl_fp_addNF4L
+.Lfunc_end31:
+	.size	mcl_fp_addNF4L, .Lfunc_end31-mcl_fp_addNF4L
                                         # -- End function
 	.globl	mcl_fp_sub4L                    # -- Begin function mcl_fp_sub4L
 	.p2align	4
@@ -1925,8 +2263,8 @@ mcl_fp_sub4L:                           # @mcl_fp_sub4L
 	movq	%rdx, 24(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end29:
-	.size	mcl_fp_sub4L, .Lfunc_end29-mcl_fp_sub4L
+.Lfunc_end32:
+	.size	mcl_fp_sub4L, .Lfunc_end32-mcl_fp_sub4L
                                         # -- End function
 	.globl	mcl_fp_subNF4L                  # -- Begin function mcl_fp_subNF4L
 	.p2align	4
@@ -1961,8 +2299,8 @@ mcl_fp_subNF4L:                         # @mcl_fp_subNF4L
 	movq	%r10, 24(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end30:
-	.size	mcl_fp_subNF4L, .Lfunc_end30-mcl_fp_subNF4L
+.Lfunc_end33:
+	.size	mcl_fp_subNF4L, .Lfunc_end33-mcl_fp_subNF4L
                                         # -- End function
 	.globl	mcl_fpDbl_add4L                 # -- Begin function mcl_fpDbl_add4L
 	.p2align	4
@@ -2014,8 +2352,8 @@ mcl_fpDbl_add4L:                        # @mcl_fpDbl_add4L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end31:
-	.size	mcl_fpDbl_add4L, .Lfunc_end31-mcl_fpDbl_add4L
+.Lfunc_end34:
+	.size	mcl_fpDbl_add4L, .Lfunc_end34-mcl_fpDbl_add4L
                                         # -- End function
 	.globl	mcl_fpDbl_sub4L                 # -- Begin function mcl_fpDbl_sub4L
 	.p2align	4
@@ -2066,8 +2404,8 @@ mcl_fpDbl_sub4L:                        # @mcl_fpDbl_sub4L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end32:
-	.size	mcl_fpDbl_sub4L, .Lfunc_end32-mcl_fpDbl_sub4L
+.Lfunc_end35:
+	.size	mcl_fpDbl_sub4L, .Lfunc_end35-mcl_fpDbl_sub4L
                                         # -- End function
 	.globl	mulPv384x64                     # -- Begin function mulPv384x64
 	.p2align	4
@@ -2095,8 +2433,8 @@ mulPv384x64:                            # @mulPv384x64
 	adcq	$0, %rsi
 	movq	%rsi, 48(%rax)
 	retq
-.Lfunc_end33:
-	.size	mulPv384x64, .Lfunc_end33-mulPv384x64
+.Lfunc_end36:
+	.size	mulPv384x64, .Lfunc_end36-mulPv384x64
                                         # -- End function
 	.globl	mcl_fp_mont6L                   # -- Begin function mcl_fp_mont6L
 	.p2align	4
@@ -2480,8 +2818,8 @@ mcl_fp_mont6L:                          # @mcl_fp_mont6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end34:
-	.size	mcl_fp_mont6L, .Lfunc_end34-mcl_fp_mont6L
+.Lfunc_end37:
+	.size	mcl_fp_mont6L, .Lfunc_end37-mcl_fp_mont6L
                                         # -- End function
 	.globl	mcl_fp_montNF6L                 # -- Begin function mcl_fp_montNF6L
 	.p2align	4
@@ -2818,8 +3156,8 @@ mcl_fp_montNF6L:                        # @mcl_fp_montNF6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end35:
-	.size	mcl_fp_montNF6L, .Lfunc_end35-mcl_fp_montNF6L
+.Lfunc_end38:
+	.size	mcl_fp_montNF6L, .Lfunc_end38-mcl_fp_montNF6L
                                         # -- End function
 	.globl	mcl_fp_montRed6L                # -- Begin function mcl_fp_montRed6L
 	.p2align	4
@@ -3089,8 +3427,8 @@ mcl_fp_montRed6L:                       # @mcl_fp_montRed6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end36:
-	.size	mcl_fp_montRed6L, .Lfunc_end36-mcl_fp_montRed6L
+.Lfunc_end39:
+	.size	mcl_fp_montRed6L, .Lfunc_end39-mcl_fp_montRed6L
                                         # -- End function
 	.globl	mcl_fp_montRedNF6L              # -- Begin function mcl_fp_montRedNF6L
 	.p2align	4
@@ -3335,8 +3673,8 @@ mcl_fp_montRedNF6L:                     # @mcl_fp_montRedNF6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end37:
-	.size	mcl_fp_montRedNF6L, .Lfunc_end37-mcl_fp_montRedNF6L
+.Lfunc_end40:
+	.size	mcl_fp_montRedNF6L, .Lfunc_end40-mcl_fp_montRedNF6L
                                         # -- End function
 	.globl	mcl_fp_addPre6L                 # -- Begin function mcl_fp_addPre6L
 	.p2align	4
@@ -3388,8 +3726,8 @@ mcl_fp_addPre6L:                        # @mcl_fp_addPre6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end38:
-	.size	mcl_fp_addPre6L, .Lfunc_end38-mcl_fp_addPre6L
+.Lfunc_end41:
+	.size	mcl_fp_addPre6L, .Lfunc_end41-mcl_fp_addPre6L
                                         # -- End function
 	.globl	mcl_fp_subPre6L                 # -- Begin function mcl_fp_subPre6L
 	.p2align	4
@@ -3418,8 +3756,8 @@ mcl_fp_subPre6L:                        # @mcl_fp_subPre6L
 	sbbq	%rax, %rax
 	andl	$1, %eax
 	retq
-.Lfunc_end39:
-	.size	mcl_fp_subPre6L, .Lfunc_end39-mcl_fp_subPre6L
+.Lfunc_end42:
+	.size	mcl_fp_subPre6L, .Lfunc_end42-mcl_fp_subPre6L
                                         # -- End function
 	.globl	mcl_fp_shr1_6L                  # -- Begin function mcl_fp_shr1_6L
 	.p2align	4
@@ -3446,8 +3784,8 @@ mcl_fp_shr1_6L:                         # @mcl_fp_shr1_6L
 	shldq	$63, %r9, %rsi
 	movq	%rsi, 8(%rdi)
 	retq
-.Lfunc_end40:
-	.size	mcl_fp_shr1_6L, .Lfunc_end40-mcl_fp_shr1_6L
+.Lfunc_end43:
+	.size	mcl_fp_shr1_6L, .Lfunc_end43-mcl_fp_shr1_6L
                                         # -- End function
 	.globl	mcl_fp_add6L                    # -- Begin function mcl_fp_add6L
 	.p2align	4
@@ -3507,8 +3845,8 @@ mcl_fp_add6L:                           # @mcl_fp_add6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end41:
-	.size	mcl_fp_add6L, .Lfunc_end41-mcl_fp_add6L
+.Lfunc_end44:
+	.size	mcl_fp_add6L, .Lfunc_end44-mcl_fp_add6L
                                         # -- End function
 	.globl	mcl_fp_addNF6L                  # -- Begin function mcl_fp_addNF6L
 	.p2align	4
@@ -3564,8 +3902,8 @@ mcl_fp_addNF6L:                         # @mcl_fp_addNF6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end42:
-	.size	mcl_fp_addNF6L, .Lfunc_end42-mcl_fp_addNF6L
+.Lfunc_end45:
+	.size	mcl_fp_addNF6L, .Lfunc_end45-mcl_fp_addNF6L
                                         # -- End function
 	.globl	mcl_fp_sub6L                    # -- Begin function mcl_fp_sub6L
 	.p2align	4
@@ -3620,8 +3958,8 @@ mcl_fp_sub6L:                           # @mcl_fp_sub6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end43:
-	.size	mcl_fp_sub6L, .Lfunc_end43-mcl_fp_sub6L
+.Lfunc_end46:
+	.size	mcl_fp_sub6L, .Lfunc_end46-mcl_fp_sub6L
                                         # -- End function
 	.globl	mcl_fp_subNF6L                  # -- Begin function mcl_fp_subNF6L
 	.p2align	4
@@ -3677,8 +4015,8 @@ mcl_fp_subNF6L:                         # @mcl_fp_subNF6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end44:
-	.size	mcl_fp_subNF6L, .Lfunc_end44-mcl_fp_subNF6L
+.Lfunc_end47:
+	.size	mcl_fp_subNF6L, .Lfunc_end47-mcl_fp_subNF6L
                                         # -- End function
 	.globl	mcl_fpDbl_add6L                 # -- Begin function mcl_fpDbl_add6L
 	.p2align	4
@@ -3756,8 +4094,8 @@ mcl_fpDbl_add6L:                        # @mcl_fpDbl_add6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end45:
-	.size	mcl_fpDbl_add6L, .Lfunc_end45-mcl_fpDbl_add6L
+.Lfunc_end48:
+	.size	mcl_fpDbl_add6L, .Lfunc_end48-mcl_fpDbl_add6L
                                         # -- End function
 	.globl	mcl_fpDbl_sub6L                 # -- Begin function mcl_fpDbl_sub6L
 	.p2align	4
@@ -3838,8 +4176,8 @@ mcl_fpDbl_sub6L:                        # @mcl_fpDbl_sub6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end46:
-	.size	mcl_fpDbl_sub6L, .Lfunc_end46-mcl_fpDbl_sub6L
+.Lfunc_end49:
+	.size	mcl_fpDbl_sub6L, .Lfunc_end49-mcl_fpDbl_sub6L
                                         # -- End function
 	.globl	mulPv512x64                     # -- Begin function mulPv512x64
 	.p2align	4
@@ -3873,8 +4211,8 @@ mulPv512x64:                            # @mulPv512x64
 	adcq	$0, %rsi
 	movq	%rsi, 64(%rax)
 	retq
-.Lfunc_end47:
-	.size	mulPv512x64, .Lfunc_end47-mulPv512x64
+.Lfunc_end50:
+	.size	mulPv512x64, .Lfunc_end50-mulPv512x64
                                         # -- End function
 	.globl	mcl_fp_mont8L                   # -- Begin function mcl_fp_mont8L
 	.p2align	4
@@ -4317,8 +4655,8 @@ mcl_fp_mont8L:                          # @mcl_fp_mont8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end48:
-	.size	mcl_fp_mont8L, .Lfunc_end48-mcl_fp_mont8L
+.Lfunc_end51:
+	.size	mcl_fp_mont8L, .Lfunc_end51-mcl_fp_mont8L
                                         # -- End function
 	.globl	mcl_fp_montNF8L                 # -- Begin function mcl_fp_montNF8L
 	.p2align	4
@@ -4711,8 +5049,8 @@ mcl_fp_montNF8L:                        # @mcl_fp_montNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end49:
-	.size	mcl_fp_montNF8L, .Lfunc_end49-mcl_fp_montNF8L
+.Lfunc_end52:
+	.size	mcl_fp_montNF8L, .Lfunc_end52-mcl_fp_montNF8L
                                         # -- End function
 	.globl	mcl_fp_montRed8L                # -- Begin function mcl_fp_montRed8L
 	.p2align	4
@@ -5076,8 +5414,8 @@ mcl_fp_montRed8L:                       # @mcl_fp_montRed8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end50:
-	.size	mcl_fp_montRed8L, .Lfunc_end50-mcl_fp_montRed8L
+.Lfunc_end53:
+	.size	mcl_fp_montRed8L, .Lfunc_end53-mcl_fp_montRed8L
                                         # -- End function
 	.globl	mcl_fp_montRedNF8L              # -- Begin function mcl_fp_montRedNF8L
 	.p2align	4
@@ -5376,8 +5714,8 @@ mcl_fp_montRedNF8L:                     # @mcl_fp_montRedNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end51:
-	.size	mcl_fp_montRedNF8L, .Lfunc_end51-mcl_fp_montRedNF8L
+.Lfunc_end54:
+	.size	mcl_fp_montRedNF8L, .Lfunc_end54-mcl_fp_montRedNF8L
                                         # -- End function
 	.globl	mcl_fp_addPre8L                 # -- Begin function mcl_fp_addPre8L
 	.p2align	4
@@ -5441,8 +5779,8 @@ mcl_fp_addPre8L:                        # @mcl_fp_addPre8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end52:
-	.size	mcl_fp_addPre8L, .Lfunc_end52-mcl_fp_addPre8L
+.Lfunc_end55:
+	.size	mcl_fp_addPre8L, .Lfunc_end55-mcl_fp_addPre8L
                                         # -- End function
 	.globl	mcl_fp_subPre8L                 # -- Begin function mcl_fp_subPre8L
 	.p2align	4
@@ -5481,8 +5819,8 @@ mcl_fp_subPre8L:                        # @mcl_fp_subPre8L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end53:
-	.size	mcl_fp_subPre8L, .Lfunc_end53-mcl_fp_subPre8L
+.Lfunc_end56:
+	.size	mcl_fp_subPre8L, .Lfunc_end56-mcl_fp_subPre8L
                                         # -- End function
 	.globl	mcl_fp_shr1_8L                  # -- Begin function mcl_fp_shr1_8L
 	.p2align	4
@@ -5517,8 +5855,8 @@ mcl_fp_shr1_8L:                         # @mcl_fp_shr1_8L
 	movq	%r11, 8(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end54:
-	.size	mcl_fp_shr1_8L, .Lfunc_end54-mcl_fp_shr1_8L
+.Lfunc_end57:
+	.size	mcl_fp_shr1_8L, .Lfunc_end57-mcl_fp_shr1_8L
                                         # -- End function
 	.globl	mcl_fp_add8L                    # -- Begin function mcl_fp_add8L
 	.p2align	4
@@ -5593,8 +5931,8 @@ mcl_fp_add8L:                           # @mcl_fp_add8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end55:
-	.size	mcl_fp_add8L, .Lfunc_end55-mcl_fp_add8L
+.Lfunc_end58:
+	.size	mcl_fp_add8L, .Lfunc_end58-mcl_fp_add8L
                                         # -- End function
 	.globl	mcl_fp_addNF8L                  # -- Begin function mcl_fp_addNF8L
 	.p2align	4
@@ -5665,8 +6003,8 @@ mcl_fp_addNF8L:                         # @mcl_fp_addNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end56:
-	.size	mcl_fp_addNF8L, .Lfunc_end56-mcl_fp_addNF8L
+.Lfunc_end59:
+	.size	mcl_fp_addNF8L, .Lfunc_end59-mcl_fp_addNF8L
                                         # -- End function
 	.globl	mcl_fp_sub8L                    # -- Begin function mcl_fp_sub8L
 	.p2align	4
@@ -5739,8 +6077,8 @@ mcl_fp_sub8L:                           # @mcl_fp_sub8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end57:
-	.size	mcl_fp_sub8L, .Lfunc_end57-mcl_fp_sub8L
+.Lfunc_end60:
+	.size	mcl_fp_sub8L, .Lfunc_end60-mcl_fp_sub8L
                                         # -- End function
 	.globl	mcl_fp_subNF8L                  # -- Begin function mcl_fp_subNF8L
 	.p2align	4
@@ -5813,8 +6151,8 @@ mcl_fp_subNF8L:                         # @mcl_fp_subNF8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end58:
-	.size	mcl_fp_subNF8L, .Lfunc_end58-mcl_fp_subNF8L
+.Lfunc_end61:
+	.size	mcl_fp_subNF8L, .Lfunc_end61-mcl_fp_subNF8L
                                         # -- End function
 	.globl	mcl_fpDbl_add8L                 # -- Begin function mcl_fpDbl_add8L
 	.p2align	4
@@ -5935,8 +6273,8 @@ mcl_fpDbl_add8L:                        # @mcl_fpDbl_add8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end59:
-	.size	mcl_fpDbl_add8L, .Lfunc_end59-mcl_fpDbl_add8L
+.Lfunc_end62:
+	.size	mcl_fpDbl_add8L, .Lfunc_end62-mcl_fpDbl_add8L
                                         # -- End function
 	.globl	mcl_fpDbl_sub8L                 # -- Begin function mcl_fpDbl_sub8L
 	.p2align	4
@@ -6045,8 +6383,8 @@ mcl_fpDbl_sub8L:                        # @mcl_fpDbl_sub8L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end60:
-	.size	mcl_fpDbl_sub8L, .Lfunc_end60-mcl_fpDbl_sub8L
+.Lfunc_end63:
+	.size	mcl_fpDbl_sub8L, .Lfunc_end63-mcl_fpDbl_sub8L
                                         # -- End function
 	.globl	mclb_modp256                    # -- Begin function mclb_modp256
 	.p2align	4
@@ -6063,29 +6401,29 @@ mclb_modp256:                           # @mclb_modp256
 	movq	%rdi, 24(%rsp)                  # 8-byte Spill
 	xorl	%eax, %eax
 	cmpq	$9, %rdx
-	jae	.LBB61_17
+	jae	.LBB64_17
 # %bb.1:                                # %L4
 	cmpq	$4, %rdx
-	jae	.LBB61_2
+	jae	.LBB64_2
 # %bb.8:                                # %L11
 	testq	%rdx, %rdx
-	je	.LBB61_12
+	je	.LBB64_12
 # %bb.9:                                # %L12
 	movq	(%rsi), %rax
 	movq	24(%rsp), %rcx                  # 8-byte Reload
 	movq	%rax, (%rcx)
 	cmpq	$1, %rdx
-	je	.LBB61_13
+	je	.LBB64_13
 # %bb.10:                               # %L13
 	movq	8(%rsi), %rax
 	movq	24(%rsp), %rcx                  # 8-byte Reload
 	movq	%rax, 8(%rcx)
 	cmpq	$2, %rdx
-	je	.LBB61_14
+	je	.LBB64_14
 # %bb.11:                               # %L14
 	movq	16(%rsi), %rax
-	jmp	.LBB61_15
-.LBB61_2:                               # %L5
+	jmp	.LBB64_15
+.LBB64_2:                               # %L5
 	movq	-8(%rsi,%rdx,8), %r8
 	movq	(%rcx), %rdi
 	movq	8(%rcx), %rax
@@ -6147,7 +6485,7 @@ mclb_modp256:                           # @mclb_modp256
 	cmoveq	%r14, %r8
 	movq	%rcx, 48(%rsp)                  # 8-byte Spill
 	cmpq	$4, %rcx
-	je	.LBB61_7
+	je	.LBB64_7
 # %bb.3:                                # %L6
 	movq	%r8, 32(%rsp)                   # 8-byte Spill
 	movq	%r9, %rdx
@@ -6205,7 +6543,7 @@ mclb_modp256:                           # @mclb_modp256
 	cmoveq	%r11, %rdi
 	cmoveq	%rax, %r8
 	cmpq	$5, %r15
-	je	.LBB61_7
+	je	.LBB64_7
 # %bb.4:                                # %L7
 	movq	%r8, 32(%rsp)                   # 8-byte Spill
 	movq	%r9, %rdx
@@ -6265,7 +6603,7 @@ mclb_modp256:                           # @mclb_modp256
 	cmoveq	%r11, %rdi
 	cmoveq	%r12, %r8
 	cmpq	$6, %r15
-	je	.LBB61_7
+	je	.LBB64_7
 # %bb.5:                                # %L8
 	movq	%r8, 32(%rsp)                   # 8-byte Spill
 	movq	%r9, %rdx
@@ -6324,7 +6662,7 @@ mclb_modp256:                           # @mclb_modp256
 	cmoveq	%r11, %rdi
 	cmoveq	%r12, %r8
 	cmpq	$7, %rax
-	je	.LBB61_7
+	je	.LBB64_7
 # %bb.6:                                # %L9
 	movq	88(%rsp), %rsi                  # 8-byte Reload
 	addq	$16, %rsi
@@ -6380,28 +6718,28 @@ mclb_modp256:                           # @mclb_modp256
 	movq	%rax, %rdi
 	movq	%r12, %r9
 	movq	%rdx, %rbx
-.LBB61_7:                               # %L10
+.LBB64_7:                               # %L10
 	movq	24(%rsp), %rax                  # 8-byte Reload
 	movq	%r8, (%rax)
 	movq	%rdi, 8(%rax)
 	movq	%r9, 16(%rax)
 	movq	%rbx, 24(%rax)
-	jmp	.LBB61_16
-.LBB61_12:                              # %L15
+	jmp	.LBB64_16
+.LBB64_12:                              # %L15
 	movq	24(%rsp), %rax                  # 8-byte Reload
 	movq	$0, (%rax)
-.LBB61_13:                              # %L16
+.LBB64_13:                              # %L16
 	movq	24(%rsp), %rax                  # 8-byte Reload
 	movq	$0, 8(%rax)
-.LBB61_14:                              # %L18
+.LBB64_14:                              # %L18
 	xorl	%eax, %eax
-.LBB61_15:                              # %L18
+.LBB64_15:                              # %L18
 	movq	24(%rsp), %rcx                  # 8-byte Reload
 	movq	%rax, 16(%rcx)
 	movq	$0, 24(%rcx)
-.LBB61_16:                              # %common.ret
+.LBB64_16:                              # %common.ret
 	movl	$1, %eax
-.LBB61_17:                              # %common.ret
+.LBB64_17:                              # %common.ret
 	addq	$152, %rsp
 	popq	%rbx
 	popq	%r12
@@ -6410,8 +6748,8 @@ mclb_modp256:                           # @mclb_modp256
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end61:
-	.size	mclb_modp256, .Lfunc_end61-mclb_modp256
+.Lfunc_end64:
+	.size	mclb_modp256, .Lfunc_end64-mclb_modp256
                                         # -- End function
 	.globl	mclb_modp384                    # -- Begin function mclb_modp384
 	.p2align	4
@@ -6420,38 +6758,38 @@ mclb_modp384:                           # @mclb_modp384
 # %bb.0:
 	xorl	%eax, %eax
 	cmpq	$9, %rdx
-	jae	.LBB62_19
+	jae	.LBB65_19
 # %bb.1:                                # %L20
 	movq	%rdx, %r11
 	cmpq	$6, %rdx
-	jae	.LBB62_2
+	jae	.LBB65_2
 # %bb.7:                                # %L25
 	testq	%r11, %r11
-	je	.LBB62_13
+	je	.LBB65_13
 # %bb.8:                                # %L26
 	movq	(%rsi), %rax
 	movq	%rax, (%rdi)
 	cmpq	$1, %r11
-	je	.LBB62_14
+	je	.LBB65_14
 # %bb.9:                                # %L27
 	movq	8(%rsi), %rax
 	movq	%rax, 8(%rdi)
 	cmpq	$2, %r11
-	je	.LBB62_15
+	je	.LBB65_15
 # %bb.10:                               # %L28
 	movq	16(%rsi), %rax
 	movq	%rax, 16(%rdi)
 	cmpq	$3, %r11
-	je	.LBB62_16
+	je	.LBB65_16
 # %bb.11:                               # %L29
 	movq	24(%rsi), %rax
 	movq	%rax, 24(%rdi)
 	cmpq	$4, %r11
-	je	.LBB62_17
+	je	.LBB65_17
 # %bb.12:                               # %L30
 	movq	32(%rsi), %rax
-	jmp	.LBB62_18
-.LBB62_2:                               # %L21
+	jmp	.LBB65_18
+.LBB65_2:                               # %L21
 	pushq	%rbp
 	pushq	%r15
 	pushq	%r14
@@ -6545,13 +6883,13 @@ mclb_modp384:                           # @mclb_modp384
 	movq	%rbp, %r14
 	cmoveq	%rbx, %rdx
 	cmpq	$6, %r11
-	jne	.LBB62_4
+	jne	.LBB65_4
 # %bb.3:
 	movq	-56(%rsp), %r12                 # 8-byte Reload
 	movq	-112(%rsp), %rbx                # 8-byte Reload
 	movq	%r8, %r15
-	jmp	.LBB62_6
-.LBB62_4:                               # %L22
+	jmp	.LBB65_6
+.LBB65_4:                               # %L22
 	movq	%rdx, -88(%rsp)                 # 8-byte Spill
 	movq	%r8, %rdx
 	movq	-32(%rsp), %rcx                 # 8-byte Reload
@@ -6619,7 +6957,7 @@ mclb_modp384:                           # @mclb_modp384
 	movq	%r13, %r14
 	cmoveq	%r8, %rdx
 	cmpq	$7, %r11
-	je	.LBB62_6
+	je	.LBB65_6
 # %bb.5:                                # %L23
 	movq	%rdx, -88(%rsp)                 # 8-byte Spill
 	movq	%r15, %rdx
@@ -6693,7 +7031,7 @@ mclb_modp384:                           # @mclb_modp384
 	cmoveq	%rdi, %rdx
 	movq	%rcx, %r15
 	movq	%r8, %rdi
-.LBB62_6:                               # %L24
+.LBB65_6:                               # %L24
 	movq	-8(%rsp), %rax                  # 8-byte Reload
 	movq	%rdx, (%rax)
 	movq	%r14, 8(%rax)
@@ -6709,24 +7047,24 @@ mclb_modp384:                           # @mclb_modp384
 	popq	%r15
 	popq	%rbp
 	retq
-.LBB62_13:                              # %L31
+.LBB65_13:                              # %L31
 	movq	$0, (%rdi)
-.LBB62_14:                              # %L32
+.LBB65_14:                              # %L32
 	movq	$0, 8(%rdi)
-.LBB62_15:                              # %L33
+.LBB65_15:                              # %L33
 	movq	$0, 16(%rdi)
-.LBB62_16:                              # %L34
+.LBB65_16:                              # %L34
 	movq	$0, 24(%rdi)
-.LBB62_17:                              # %L36
+.LBB65_17:                              # %L36
 	xorl	%eax, %eax
-.LBB62_18:                              # %L36
+.LBB65_18:                              # %L36
 	movq	%rax, 32(%rdi)
 	movq	$0, 40(%rdi)
 	movl	$1, %eax
-.LBB62_19:                              # %common.ret
+.LBB65_19:                              # %common.ret
 	retq
-.Lfunc_end62:
-	.size	mclb_modp384, .Lfunc_end62-mclb_modp384
+.Lfunc_end65:
+	.size	mclb_modp384, .Lfunc_end65-mclb_modp384
                                         # -- End function
 	.globl	mcl_fp_neg4L                    # -- Begin function mcl_fp_neg4L
 	.p2align	4
@@ -6742,7 +7080,7 @@ mcl_fp_neg4L:                           # @mcl_fp_neg4L
 	movq	%r10, %rcx
 	orq	%r11, %rcx
 	orq	%rax, %rcx
-	je	.LBB63_1
+	je	.LBB66_1
 # %bb.2:                                # %L37
 	movq	24(%rdx), %rcx
 	movq	16(%rdx), %rsi
@@ -6752,20 +7090,20 @@ mcl_fp_neg4L:                           # @mcl_fp_neg4L
 	sbbq	%r9, %rdx
 	sbbq	%r11, %rsi
 	sbbq	%r8, %rcx
-	jmp	.LBB63_3
-.LBB63_1:
+	jmp	.LBB66_3
+.LBB66_1:
 	xorl	%eax, %eax
 	xorl	%edx, %edx
 	xorl	%esi, %esi
 	xorl	%ecx, %ecx
-.LBB63_3:                               # %L39
+.LBB66_3:                               # %L39
 	movq	%rax, (%rdi)
 	movq	%rdx, 8(%rdi)
 	movq	%rsi, 16(%rdi)
 	movq	%rcx, 24(%rdi)
 	retq
-.Lfunc_end63:
-	.size	mcl_fp_neg4L, .Lfunc_end63-mcl_fp_neg4L
+.Lfunc_end66:
+	.size	mcl_fp_neg4L, .Lfunc_end66-mcl_fp_neg4L
                                         # -- End function
 	.globl	mcl_fp_mul2_4L                  # -- Begin function mcl_fp_mul2_4L
 	.p2align	4
@@ -6805,8 +7143,8 @@ mcl_fp_mul2_4L:                         # @mcl_fp_mul2_4L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end64:
-	.size	mcl_fp_mul2_4L, .Lfunc_end64-mcl_fp_mul2_4L
+.Lfunc_end67:
+	.size	mcl_fp_mul2_4L, .Lfunc_end67-mcl_fp_mul2_4L
                                         # -- End function
 	.globl	mcl_fp_sqr4L                    # -- Begin function mcl_fp_sqr4L
 	.p2align	4
@@ -6816,8 +7154,8 @@ mcl_fp_sqr4L:                           # @mcl_fp_sqr4L
 	movq	%rdx, %rcx
 	movq	%rsi, %rdx
 	jmp	mcl_fp_mont4L@PLT               # TAILCALL
-.Lfunc_end65:
-	.size	mcl_fp_sqr4L, .Lfunc_end65-mcl_fp_sqr4L
+.Lfunc_end68:
+	.size	mcl_fp_sqr4L, .Lfunc_end68-mcl_fp_sqr4L
                                         # -- End function
 	.globl	mcl_fp_mul2NF4L                 # -- Begin function mcl_fp_mul2NF4L
 	.p2align	4
@@ -6851,8 +7189,8 @@ mcl_fp_mul2NF4L:                        # @mcl_fp_mul2NF4L
 	movq	%r10, 8(%rdi)
 	popq	%rbx
 	retq
-.Lfunc_end66:
-	.size	mcl_fp_mul2NF4L, .Lfunc_end66-mcl_fp_mul2NF4L
+.Lfunc_end69:
+	.size	mcl_fp_mul2NF4L, .Lfunc_end69-mcl_fp_mul2NF4L
                                         # -- End function
 	.globl	mcl_fp_sqrNF4L                  # -- Begin function mcl_fp_sqrNF4L
 	.p2align	4
@@ -6862,8 +7200,8 @@ mcl_fp_sqrNF4L:                         # @mcl_fp_sqrNF4L
 	movq	%rdx, %rcx
 	movq	%rsi, %rdx
 	jmp	mcl_fp_montNF4L@PLT             # TAILCALL
-.Lfunc_end67:
-	.size	mcl_fp_sqrNF4L, .Lfunc_end67-mcl_fp_sqrNF4L
+.Lfunc_end70:
+	.size	mcl_fp_sqrNF4L, .Lfunc_end70-mcl_fp_sqrNF4L
                                         # -- End function
 	.p2align	4                               # -- Begin function mcl_fp2_mulPre4L
 	.type	.Lmcl_fp2_mulPre4L,@function
@@ -6962,8 +7300,8 @@ mcl_fp_sqrNF4L:                         # @mcl_fp_sqrNF4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end68:
-	.size	.Lmcl_fp2_mulPre4L, .Lfunc_end68-.Lmcl_fp2_mulPre4L
+.Lfunc_end71:
+	.size	.Lmcl_fp2_mulPre4L, .Lfunc_end71-.Lmcl_fp2_mulPre4L
                                         # -- End function
 	.globl	mcl_fp2_add4L                   # -- Begin function mcl_fp2_add4L
 	.p2align	4
@@ -7035,8 +7373,8 @@ mcl_fp2_add4L:                          # @mcl_fp2_add4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end69:
-	.size	mcl_fp2_add4L, .Lfunc_end69-mcl_fp2_add4L
+.Lfunc_end72:
+	.size	mcl_fp2_add4L, .Lfunc_end72-mcl_fp2_add4L
                                         # -- End function
 	.globl	mcl_fp2_sub4L                   # -- Begin function mcl_fp2_sub4L
 	.p2align	4
@@ -7107,8 +7445,8 @@ mcl_fp2_sub4L:                          # @mcl_fp2_sub4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end70:
-	.size	mcl_fp2_sub4L, .Lfunc_end70-mcl_fp2_sub4L
+.Lfunc_end73:
+	.size	mcl_fp2_sub4L, .Lfunc_end73-mcl_fp2_sub4L
                                         # -- End function
 	.globl	mcl_fp2_neg4L                   # -- Begin function mcl_fp2_neg4L
 	.p2align	4
@@ -7126,7 +7464,7 @@ mcl_fp2_neg4L:                          # @mcl_fp2_neg4L
 	movq	%rbx, %rcx
 	orq	%r14, %rcx
 	orq	%rax, %rcx
-	je	.LBB71_1
+	je	.LBB74_1
 # %bb.2:                                # %L40
 	movq	24(%rdx), %rcx
 	movq	16(%rdx), %r8
@@ -7136,13 +7474,13 @@ mcl_fp2_neg4L:                          # @mcl_fp2_neg4L
 	sbbq	%r11, %r10
 	sbbq	%r14, %r8
 	sbbq	%r9, %rcx
-	jmp	.LBB71_3
-.LBB71_1:
+	jmp	.LBB74_3
+.LBB74_1:
 	xorl	%eax, %eax
 	xorl	%r10d, %r10d
 	xorl	%r8d, %r8d
 	xorl	%ecx, %ecx
-.LBB71_3:                               # %L42
+.LBB74_3:                               # %L42
 	movq	%rax, (%rdi)
 	movq	%r10, 8(%rdi)
 	movq	%r8, 16(%rdi)
@@ -7156,7 +7494,7 @@ mcl_fp2_neg4L:                          # @mcl_fp2_neg4L
 	movq	%r10, %rcx
 	orq	%r11, %rcx
 	orq	%rax, %rcx
-	je	.LBB71_4
+	je	.LBB74_4
 # %bb.5:                                # %L43
 	movq	24(%rdx), %rcx
 	movq	16(%rdx), %rsi
@@ -7166,13 +7504,13 @@ mcl_fp2_neg4L:                          # @mcl_fp2_neg4L
 	sbbq	%r9, %rdx
 	sbbq	%r11, %rsi
 	sbbq	%r8, %rcx
-	jmp	.LBB71_6
-.LBB71_4:
+	jmp	.LBB74_6
+.LBB74_4:
 	xorl	%eax, %eax
 	xorl	%edx, %edx
 	xorl	%esi, %esi
 	xorl	%ecx, %ecx
-.LBB71_6:                               # %L45
+.LBB74_6:                               # %L45
 	movq	%rax, 48(%rdi)
 	movq	%rdx, 56(%rdi)
 	movq	%rsi, 64(%rdi)
@@ -7180,8 +7518,8 @@ mcl_fp2_neg4L:                          # @mcl_fp2_neg4L
 	popq	%rbx
 	popq	%r14
 	retq
-.Lfunc_end71:
-	.size	mcl_fp2_neg4L, .Lfunc_end71-mcl_fp2_neg4L
+.Lfunc_end74:
+	.size	mcl_fp2_neg4L, .Lfunc_end74-mcl_fp2_neg4L
                                         # -- End function
 	.globl	mcl_fp2_mul2_4L                 # -- Begin function mcl_fp2_mul2_4L
 	.p2align	4
@@ -7251,8 +7589,8 @@ mcl_fp2_mul2_4L:                        # @mcl_fp2_mul2_4L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end72:
-	.size	mcl_fp2_mul2_4L, .Lfunc_end72-mcl_fp2_mul2_4L
+.Lfunc_end75:
+	.size	mcl_fp2_mul2_4L, .Lfunc_end75-mcl_fp2_mul2_4L
                                         # -- End function
 	.globl	mcl_fp2_mul_u1_4L               # -- Begin function mcl_fp2_mul_u1_4L
 	.p2align	4
@@ -7406,8 +7744,8 @@ mcl_fp2_mul_u1_4L:                      # @mcl_fp2_mul_u1_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end73:
-	.size	mcl_fp2_mul_u1_4L, .Lfunc_end73-mcl_fp2_mul_u1_4L
+.Lfunc_end76:
+	.size	mcl_fp2_mul_u1_4L, .Lfunc_end76-mcl_fp2_mul_u1_4L
                                         # -- End function
 	.globl	mcl_fp2_sqr_u1_4L               # -- Begin function mcl_fp2_sqr_u1_4L
 	.p2align	4
@@ -7481,8 +7819,8 @@ mcl_fp2_sqr_u1_4L:                      # @mcl_fp2_sqr_u1_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end74:
-	.size	mcl_fp2_sqr_u1_4L, .Lfunc_end74-mcl_fp2_sqr_u1_4L
+.Lfunc_end77:
+	.size	mcl_fp2_sqr_u1_4L, .Lfunc_end77-mcl_fp2_sqr_u1_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mulPre_u1_4L         # -- Begin function mcl_fp2Dbl_mulPre_u1_4L
 	.p2align	4
@@ -7630,8 +7968,8 @@ mcl_fp2Dbl_mulPre_u1_4L:                # @mcl_fp2Dbl_mulPre_u1_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end75:
-	.size	mcl_fp2Dbl_mulPre_u1_4L, .Lfunc_end75-mcl_fp2Dbl_mulPre_u1_4L
+.Lfunc_end78:
+	.size	mcl_fp2Dbl_mulPre_u1_4L, .Lfunc_end78-mcl_fp2Dbl_mulPre_u1_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_sqrPre_u1_4L         # -- Begin function mcl_fp2Dbl_sqrPre_u1_4L
 	.p2align	4
@@ -7716,8 +8054,8 @@ mcl_fp2Dbl_sqrPre_u1_4L:                # @mcl_fp2Dbl_sqrPre_u1_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end76:
-	.size	mcl_fp2Dbl_sqrPre_u1_4L, .Lfunc_end76-mcl_fp2Dbl_sqrPre_u1_4L
+.Lfunc_end79:
+	.size	mcl_fp2Dbl_sqrPre_u1_4L, .Lfunc_end79-mcl_fp2Dbl_sqrPre_u1_4L
                                         # -- End function
 	.globl	mcl_fp2_mul_u5_4L               # -- Begin function mcl_fp2_mul_u5_4L
 	.p2align	4
@@ -7936,8 +8274,8 @@ mcl_fp2_mul_u5_4L:                      # @mcl_fp2_mul_u5_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end77:
-	.size	mcl_fp2_mul_u5_4L, .Lfunc_end77-mcl_fp2_mul_u5_4L
+.Lfunc_end80:
+	.size	mcl_fp2_mul_u5_4L, .Lfunc_end80-mcl_fp2_mul_u5_4L
                                         # -- End function
 	.globl	mcl_fp2_sqr_u5_4L               # -- Begin function mcl_fp2_sqr_u5_4L
 	.p2align	4
@@ -8133,8 +8471,8 @@ mcl_fp2_sqr_u5_4L:                      # @mcl_fp2_sqr_u5_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end78:
-	.size	mcl_fp2_sqr_u5_4L, .Lfunc_end78-mcl_fp2_sqr_u5_4L
+.Lfunc_end81:
+	.size	mcl_fp2_sqr_u5_4L, .Lfunc_end81-mcl_fp2_sqr_u5_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mulPre_u5_4L         # -- Begin function mcl_fp2Dbl_mulPre_u5_4L
 	.p2align	4
@@ -8342,8 +8680,8 @@ mcl_fp2Dbl_mulPre_u5_4L:                # @mcl_fp2Dbl_mulPre_u5_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end79:
-	.size	mcl_fp2Dbl_mulPre_u5_4L, .Lfunc_end79-mcl_fp2Dbl_mulPre_u5_4L
+.Lfunc_end82:
+	.size	mcl_fp2Dbl_mulPre_u5_4L, .Lfunc_end82-mcl_fp2Dbl_mulPre_u5_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_sqrPre_u5_4L         # -- Begin function mcl_fp2Dbl_sqrPre_u5_4L
 	.p2align	4
@@ -8541,8 +8879,8 @@ mcl_fp2Dbl_sqrPre_u5_4L:                # @mcl_fp2Dbl_sqrPre_u5_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end80:
-	.size	mcl_fp2Dbl_sqrPre_u5_4L, .Lfunc_end80-mcl_fp2Dbl_sqrPre_u5_4L
+.Lfunc_end83:
+	.size	mcl_fp2Dbl_sqrPre_u5_4L, .Lfunc_end83-mcl_fp2Dbl_sqrPre_u5_4L
                                         # -- End function
 	.globl	mcl_fp2_mul_xi_u1x1_4L          # -- Begin function mcl_fp2_mul_xi_u1x1_4L
 	.p2align	4
@@ -8620,8 +8958,8 @@ mcl_fp2_mul_xi_u1x1_4L:                 # @mcl_fp2_mul_xi_u1x1_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end81:
-	.size	mcl_fp2_mul_xi_u1x1_4L, .Lfunc_end81-mcl_fp2_mul_xi_u1x1_4L
+.Lfunc_end84:
+	.size	mcl_fp2_mul_xi_u1x1_4L, .Lfunc_end84-mcl_fp2_mul_xi_u1x1_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mul_xi_u1x1_4L       # -- Begin function mcl_fp2Dbl_mul_xi_u1x1_4L
 	.p2align	4
@@ -8763,8 +9101,8 @@ mcl_fp2Dbl_mul_xi_u1x1_4L:              # @mcl_fp2Dbl_mul_xi_u1x1_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end82:
-	.size	mcl_fp2Dbl_mul_xi_u1x1_4L, .Lfunc_end82-mcl_fp2Dbl_mul_xi_u1x1_4L
+.Lfunc_end85:
+	.size	mcl_fp2Dbl_mul_xi_u1x1_4L, .Lfunc_end85-mcl_fp2Dbl_mul_xi_u1x1_4L
                                         # -- End function
 	.globl	mcl_fp2_mul_xi_u1x9_4L          # -- Begin function mcl_fp2_mul_xi_u1x9_4L
 	.p2align	4
@@ -8986,8 +9324,8 @@ mcl_fp2_mul_xi_u1x9_4L:                 # @mcl_fp2_mul_xi_u1x9_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end83:
-	.size	mcl_fp2_mul_xi_u1x9_4L, .Lfunc_end83-mcl_fp2_mul_xi_u1x9_4L
+.Lfunc_end86:
+	.size	mcl_fp2_mul_xi_u1x9_4L, .Lfunc_end86-mcl_fp2_mul_xi_u1x9_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mul_xi_u1x9_4L       # -- Begin function mcl_fp2Dbl_mul_xi_u1x9_4L
 	.p2align	4
@@ -9343,8 +9681,8 @@ mcl_fp2Dbl_mul_xi_u1x9_4L:              # @mcl_fp2Dbl_mul_xi_u1x9_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end84:
-	.size	mcl_fp2Dbl_mul_xi_u1x9_4L, .Lfunc_end84-mcl_fp2Dbl_mul_xi_u1x9_4L
+.Lfunc_end87:
+	.size	mcl_fp2Dbl_mul_xi_u1x9_4L, .Lfunc_end87-mcl_fp2Dbl_mul_xi_u1x9_4L
                                         # -- End function
 	.globl	mcl_fp2_mul_xi_u5x0_4L          # -- Begin function mcl_fp2_mul_xi_u5x0_4L
 	.p2align	4
@@ -9460,8 +9798,8 @@ mcl_fp2_mul_xi_u5x0_4L:                 # @mcl_fp2_mul_xi_u5x0_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end85:
-	.size	mcl_fp2_mul_xi_u5x0_4L, .Lfunc_end85-mcl_fp2_mul_xi_u5x0_4L
+.Lfunc_end88:
+	.size	mcl_fp2_mul_xi_u5x0_4L, .Lfunc_end88-mcl_fp2_mul_xi_u5x0_4L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mul_xi_u5x0_4L       # -- Begin function mcl_fp2Dbl_mul_xi_u5x0_4L
 	.p2align	4
@@ -9643,8 +9981,8 @@ mcl_fp2Dbl_mul_xi_u5x0_4L:              # @mcl_fp2Dbl_mul_xi_u5x0_4L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end86:
-	.size	mcl_fp2Dbl_mul_xi_u5x0_4L, .Lfunc_end86-mcl_fp2Dbl_mul_xi_u5x0_4L
+.Lfunc_end89:
+	.size	mcl_fp2Dbl_mul_xi_u5x0_4L, .Lfunc_end89-mcl_fp2Dbl_mul_xi_u5x0_4L
                                         # -- End function
 	.globl	mcl_fp_neg6L                    # -- Begin function mcl_fp_neg6L
 	.p2align	4
@@ -9668,7 +10006,7 @@ mcl_fp_neg6L:                           # @mcl_fp_neg6L
 	movq	16(%rsi), %r12
 	orq	%r12, %rcx
 	orq	%rax, %rcx
-	je	.LBB87_1
+	je	.LBB90_1
 # %bb.2:                                # %L46
 	movq	40(%rdx), %rax
 	movq	32(%rdx), %rsi
@@ -9682,15 +10020,15 @@ mcl_fp_neg6L:                           # @mcl_fp_neg6L
 	sbbq	%r11, %r8
 	sbbq	%r14, %rsi
 	sbbq	%r9, %rax
-	jmp	.LBB87_3
-.LBB87_1:
+	jmp	.LBB90_3
+.LBB90_1:
 	xorl	%ecx, %ecx
 	xorl	%edx, %edx
 	xorl	%r10d, %r10d
 	xorl	%r8d, %r8d
 	xorl	%esi, %esi
 	xorl	%eax, %eax
-.LBB87_3:                               # %L48
+.LBB90_3:                               # %L48
 	movq	%rcx, (%rdi)
 	movq	%rdx, 8(%rdi)
 	movq	%r10, 16(%rdi)
@@ -9702,8 +10040,8 @@ mcl_fp_neg6L:                           # @mcl_fp_neg6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end87:
-	.size	mcl_fp_neg6L, .Lfunc_end87-mcl_fp_neg6L
+.Lfunc_end90:
+	.size	mcl_fp_neg6L, .Lfunc_end90-mcl_fp_neg6L
                                         # -- End function
 	.globl	mcl_fp_mul2_6L                  # -- Begin function mcl_fp_mul2_6L
 	.p2align	4
@@ -9763,8 +10101,8 @@ mcl_fp_mul2_6L:                         # @mcl_fp_mul2_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end88:
-	.size	mcl_fp_mul2_6L, .Lfunc_end88-mcl_fp_mul2_6L
+.Lfunc_end91:
+	.size	mcl_fp_mul2_6L, .Lfunc_end91-mcl_fp_mul2_6L
                                         # -- End function
 	.globl	mcl_fp_sqr6L                    # -- Begin function mcl_fp_sqr6L
 	.p2align	4
@@ -9774,8 +10112,8 @@ mcl_fp_sqr6L:                           # @mcl_fp_sqr6L
 	movq	%rdx, %rcx
 	movq	%rsi, %rdx
 	jmp	mcl_fp_mont6L@PLT               # TAILCALL
-.Lfunc_end89:
-	.size	mcl_fp_sqr6L, .Lfunc_end89-mcl_fp_sqr6L
+.Lfunc_end92:
+	.size	mcl_fp_sqr6L, .Lfunc_end92-mcl_fp_sqr6L
                                         # -- End function
 	.globl	mcl_fp_mul2NF6L                 # -- Begin function mcl_fp_mul2NF6L
 	.p2align	4
@@ -9831,8 +10169,8 @@ mcl_fp_mul2NF6L:                        # @mcl_fp_mul2NF6L
 	popq	%r14
 	popq	%r15
 	retq
-.Lfunc_end90:
-	.size	mcl_fp_mul2NF6L, .Lfunc_end90-mcl_fp_mul2NF6L
+.Lfunc_end93:
+	.size	mcl_fp_mul2NF6L, .Lfunc_end93-mcl_fp_mul2NF6L
                                         # -- End function
 	.globl	mcl_fp_sqrNF6L                  # -- Begin function mcl_fp_sqrNF6L
 	.p2align	4
@@ -9842,8 +10180,8 @@ mcl_fp_sqrNF6L:                         # @mcl_fp_sqrNF6L
 	movq	%rdx, %rcx
 	movq	%rsi, %rdx
 	jmp	mcl_fp_montNF6L@PLT             # TAILCALL
-.Lfunc_end91:
-	.size	mcl_fp_sqrNF6L, .Lfunc_end91-mcl_fp_sqrNF6L
+.Lfunc_end94:
+	.size	mcl_fp_sqrNF6L, .Lfunc_end94-mcl_fp_sqrNF6L
                                         # -- End function
 	.p2align	4                               # -- Begin function mcl_fp2_mulPre6L
 	.type	.Lmcl_fp2_mulPre6L,@function
@@ -10044,8 +10382,8 @@ mcl_fp_sqrNF6L:                         # @mcl_fp_sqrNF6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end92:
-	.size	.Lmcl_fp2_mulPre6L, .Lfunc_end92-.Lmcl_fp2_mulPre6L
+.Lfunc_end95:
+	.size	.Lmcl_fp2_mulPre6L, .Lfunc_end95-.Lmcl_fp2_mulPre6L
                                         # -- End function
 	.globl	mcl_fp2_add6L                   # -- Begin function mcl_fp2_add6L
 	.p2align	4
@@ -10155,8 +10493,8 @@ mcl_fp2_add6L:                          # @mcl_fp2_add6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end93:
-	.size	mcl_fp2_add6L, .Lfunc_end93-mcl_fp2_add6L
+.Lfunc_end96:
+	.size	mcl_fp2_add6L, .Lfunc_end96-mcl_fp2_add6L
                                         # -- End function
 	.globl	mcl_fp2_sub6L                   # -- Begin function mcl_fp2_sub6L
 	.p2align	4
@@ -10268,8 +10606,8 @@ mcl_fp2_sub6L:                          # @mcl_fp2_sub6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end94:
-	.size	mcl_fp2_sub6L, .Lfunc_end94-mcl_fp2_sub6L
+.Lfunc_end97:
+	.size	mcl_fp2_sub6L, .Lfunc_end97-mcl_fp2_sub6L
                                         # -- End function
 	.globl	mcl_fp2_neg6L                   # -- Begin function mcl_fp2_neg6L
 	.p2align	4
@@ -10295,7 +10633,7 @@ mcl_fp2_neg6L:                          # @mcl_fp2_neg6L
 	movq	16(%rsi), %rbp
 	orq	%rbp, %rcx
 	orq	%rax, %rcx
-	je	.LBB95_1
+	je	.LBB98_1
 # %bb.2:                                # %L49
 	movq	40(%rdx), %rax
 	movq	32(%rdx), %r8
@@ -10309,15 +10647,15 @@ mcl_fp2_neg6L:                          # @mcl_fp2_neg6L
 	sbbq	%r14, %r9
 	sbbq	%r12, %r8
 	sbbq	%r10, %rax
-	jmp	.LBB95_3
-.LBB95_1:
+	jmp	.LBB98_3
+.LBB98_1:
 	xorl	%ecx, %ecx
 	xorl	%ebx, %ebx
 	xorl	%r11d, %r11d
 	xorl	%r9d, %r9d
 	xorl	%r8d, %r8d
 	xorl	%eax, %eax
-.LBB95_3:                               # %L51
+.LBB98_3:                               # %L51
 	movq	%rcx, (%rdi)
 	movq	%rbx, 8(%rdi)
 	movq	%r11, 16(%rdi)
@@ -10337,7 +10675,7 @@ mcl_fp2_neg6L:                          # @mcl_fp2_neg6L
 	movq	64(%rsi), %r12
 	orq	%r12, %rcx
 	orq	%rax, %rcx
-	je	.LBB95_4
+	je	.LBB98_4
 # %bb.5:                                # %L52
 	movq	40(%rdx), %rax
 	movq	32(%rdx), %rsi
@@ -10351,15 +10689,15 @@ mcl_fp2_neg6L:                          # @mcl_fp2_neg6L
 	sbbq	%r11, %r8
 	sbbq	%r14, %rsi
 	sbbq	%r9, %rax
-	jmp	.LBB95_6
-.LBB95_4:
+	jmp	.LBB98_6
+.LBB98_4:
 	xorl	%ecx, %ecx
 	xorl	%edx, %edx
 	xorl	%r10d, %r10d
 	xorl	%r8d, %r8d
 	xorl	%esi, %esi
 	xorl	%eax, %eax
-.LBB95_6:                               # %L54
+.LBB98_6:                               # %L54
 	movq	%rcx, 48(%rdi)
 	movq	%rdx, 56(%rdi)
 	movq	%r10, 64(%rdi)
@@ -10373,8 +10711,8 @@ mcl_fp2_neg6L:                          # @mcl_fp2_neg6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end95:
-	.size	mcl_fp2_neg6L, .Lfunc_end95-mcl_fp2_neg6L
+.Lfunc_end98:
+	.size	mcl_fp2_neg6L, .Lfunc_end98-mcl_fp2_neg6L
                                         # -- End function
 	.globl	mcl_fp2_mul2_6L                 # -- Begin function mcl_fp2_mul2_6L
 	.p2align	4
@@ -10482,8 +10820,8 @@ mcl_fp2_mul2_6L:                        # @mcl_fp2_mul2_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end96:
-	.size	mcl_fp2_mul2_6L, .Lfunc_end96-mcl_fp2_mul2_6L
+.Lfunc_end99:
+	.size	mcl_fp2_mul2_6L, .Lfunc_end99-mcl_fp2_mul2_6L
                                         # -- End function
 	.globl	mcl_fp2_mul_u1_6L               # -- Begin function mcl_fp2_mul_u1_6L
 	.p2align	4
@@ -10698,8 +11036,8 @@ mcl_fp2_mul_u1_6L:                      # @mcl_fp2_mul_u1_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end97:
-	.size	mcl_fp2_mul_u1_6L, .Lfunc_end97-mcl_fp2_mul_u1_6L
+.Lfunc_end100:
+	.size	mcl_fp2_mul_u1_6L, .Lfunc_end100-mcl_fp2_mul_u1_6L
                                         # -- End function
 	.globl	mcl_fp2_sqr_u1_6L               # -- Begin function mcl_fp2_sqr_u1_6L
 	.p2align	4
@@ -10816,8 +11154,8 @@ mcl_fp2_sqr_u1_6L:                      # @mcl_fp2_sqr_u1_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end98:
-	.size	mcl_fp2_sqr_u1_6L, .Lfunc_end98-mcl_fp2_sqr_u1_6L
+.Lfunc_end101:
+	.size	mcl_fp2_sqr_u1_6L, .Lfunc_end101-mcl_fp2_sqr_u1_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mulPre_u1_6L         # -- Begin function mcl_fp2Dbl_mulPre_u1_6L
 	.p2align	4
@@ -11024,8 +11362,8 @@ mcl_fp2Dbl_mulPre_u1_6L:                # @mcl_fp2Dbl_mulPre_u1_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end99:
-	.size	mcl_fp2Dbl_mulPre_u1_6L, .Lfunc_end99-mcl_fp2Dbl_mulPre_u1_6L
+.Lfunc_end102:
+	.size	mcl_fp2Dbl_mulPre_u1_6L, .Lfunc_end102-mcl_fp2Dbl_mulPre_u1_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_sqrPre_u1_6L         # -- Begin function mcl_fp2Dbl_sqrPre_u1_6L
 	.p2align	4
@@ -11154,8 +11492,8 @@ mcl_fp2Dbl_sqrPre_u1_6L:                # @mcl_fp2Dbl_sqrPre_u1_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end100:
-	.size	mcl_fp2Dbl_sqrPre_u1_6L, .Lfunc_end100-mcl_fp2Dbl_sqrPre_u1_6L
+.Lfunc_end103:
+	.size	mcl_fp2Dbl_sqrPre_u1_6L, .Lfunc_end103-mcl_fp2Dbl_sqrPre_u1_6L
                                         # -- End function
 	.globl	mcl_fp2_mul_u5_6L               # -- Begin function mcl_fp2_mul_u5_6L
 	.p2align	4
@@ -11507,8 +11845,8 @@ mcl_fp2_mul_u5_6L:                      # @mcl_fp2_mul_u5_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end101:
-	.size	mcl_fp2_mul_u5_6L, .Lfunc_end101-mcl_fp2_mul_u5_6L
+.Lfunc_end104:
+	.size	mcl_fp2_mul_u5_6L, .Lfunc_end104-mcl_fp2_mul_u5_6L
                                         # -- End function
 	.globl	mcl_fp2_sqr_u5_6L               # -- Begin function mcl_fp2_sqr_u5_6L
 	.p2align	4
@@ -11789,8 +12127,8 @@ mcl_fp2_sqr_u5_6L:                      # @mcl_fp2_sqr_u5_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end102:
-	.size	mcl_fp2_sqr_u5_6L, .Lfunc_end102-mcl_fp2_sqr_u5_6L
+.Lfunc_end105:
+	.size	mcl_fp2_sqr_u5_6L, .Lfunc_end105-mcl_fp2_sqr_u5_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mulPre_u5_6L         # -- Begin function mcl_fp2Dbl_mulPre_u5_6L
 	.p2align	4
@@ -12137,8 +12475,8 @@ mcl_fp2Dbl_mulPre_u5_6L:                # @mcl_fp2Dbl_mulPre_u5_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end103:
-	.size	mcl_fp2Dbl_mulPre_u5_6L, .Lfunc_end103-mcl_fp2Dbl_mulPre_u5_6L
+.Lfunc_end106:
+	.size	mcl_fp2Dbl_mulPre_u5_6L, .Lfunc_end106-mcl_fp2Dbl_mulPre_u5_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_sqrPre_u5_6L         # -- Begin function mcl_fp2Dbl_sqrPre_u5_6L
 	.p2align	4
@@ -12428,8 +12766,8 @@ mcl_fp2Dbl_sqrPre_u5_6L:                # @mcl_fp2Dbl_sqrPre_u5_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end104:
-	.size	mcl_fp2Dbl_sqrPre_u5_6L, .Lfunc_end104-mcl_fp2Dbl_sqrPre_u5_6L
+.Lfunc_end107:
+	.size	mcl_fp2Dbl_sqrPre_u5_6L, .Lfunc_end107-mcl_fp2Dbl_sqrPre_u5_6L
                                         # -- End function
 	.globl	mcl_fp2_mul_xi_u1x1_6L          # -- Begin function mcl_fp2_mul_xi_u1x1_6L
 	.p2align	4
@@ -12553,8 +12891,8 @@ mcl_fp2_mul_xi_u1x1_6L:                 # @mcl_fp2_mul_xi_u1x1_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end105:
-	.size	mcl_fp2_mul_xi_u1x1_6L, .Lfunc_end105-mcl_fp2_mul_xi_u1x1_6L
+.Lfunc_end108:
+	.size	mcl_fp2_mul_xi_u1x1_6L, .Lfunc_end108-mcl_fp2_mul_xi_u1x1_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mul_xi_u1x1_6L       # -- Begin function mcl_fp2Dbl_mul_xi_u1x1_6L
 	.p2align	4
@@ -12764,8 +13102,8 @@ mcl_fp2Dbl_mul_xi_u1x1_6L:              # @mcl_fp2Dbl_mul_xi_u1x1_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end106:
-	.size	mcl_fp2Dbl_mul_xi_u1x1_6L, .Lfunc_end106-mcl_fp2Dbl_mul_xi_u1x1_6L
+.Lfunc_end109:
+	.size	mcl_fp2Dbl_mul_xi_u1x1_6L, .Lfunc_end109-mcl_fp2Dbl_mul_xi_u1x1_6L
                                         # -- End function
 	.globl	mcl_fp2_mul_xi_u1x9_6L          # -- Begin function mcl_fp2_mul_xi_u1x9_6L
 	.p2align	4
@@ -13135,8 +13473,8 @@ mcl_fp2_mul_xi_u1x9_6L:                 # @mcl_fp2_mul_xi_u1x9_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end107:
-	.size	mcl_fp2_mul_xi_u1x9_6L, .Lfunc_end107-mcl_fp2_mul_xi_u1x9_6L
+.Lfunc_end110:
+	.size	mcl_fp2_mul_xi_u1x9_6L, .Lfunc_end110-mcl_fp2_mul_xi_u1x9_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mul_xi_u1x9_6L       # -- Begin function mcl_fp2Dbl_mul_xi_u1x9_6L
 	.p2align	4
@@ -13640,8 +13978,8 @@ mcl_fp2Dbl_mul_xi_u1x9_6L:              # @mcl_fp2Dbl_mul_xi_u1x9_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end108:
-	.size	mcl_fp2Dbl_mul_xi_u1x9_6L, .Lfunc_end108-mcl_fp2Dbl_mul_xi_u1x9_6L
+.Lfunc_end111:
+	.size	mcl_fp2Dbl_mul_xi_u1x9_6L, .Lfunc_end111-mcl_fp2Dbl_mul_xi_u1x9_6L
                                         # -- End function
 	.globl	mcl_fp2_mul_xi_u5x0_6L          # -- Begin function mcl_fp2_mul_xi_u5x0_6L
 	.p2align	4
@@ -13820,8 +14158,8 @@ mcl_fp2_mul_xi_u5x0_6L:                 # @mcl_fp2_mul_xi_u5x0_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end109:
-	.size	mcl_fp2_mul_xi_u5x0_6L, .Lfunc_end109-mcl_fp2_mul_xi_u5x0_6L
+.Lfunc_end112:
+	.size	mcl_fp2_mul_xi_u5x0_6L, .Lfunc_end112-mcl_fp2_mul_xi_u5x0_6L
                                         # -- End function
 	.globl	mcl_fp2Dbl_mul_xi_u5x0_6L       # -- Begin function mcl_fp2Dbl_mul_xi_u5x0_6L
 	.p2align	4
@@ -14087,7 +14425,7 @@ mcl_fp2Dbl_mul_xi_u5x0_6L:              # @mcl_fp2Dbl_mul_xi_u5x0_6L
 	popq	%r15
 	popq	%rbp
 	retq
-.Lfunc_end110:
-	.size	mcl_fp2Dbl_mul_xi_u5x0_6L, .Lfunc_end110-mcl_fp2Dbl_mul_xi_u5x0_6L
+.Lfunc_end113:
+	.size	mcl_fp2Dbl_mul_xi_u5x0_6L, .Lfunc_end113-mcl_fp2Dbl_mul_xi_u5x0_6L
                                         # -- End function
 	.section	".note.GNU-stack","",@progbits
