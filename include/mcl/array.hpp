@@ -14,7 +14,33 @@
 
 namespace mcl {
 
-template<class T>
+/*
+	clear memory with zero
+*/
+inline void secureZero(void *p, size_t n)
+{
+	volatile unsigned char *q = (volatile unsigned char*)p;
+	for (size_t i = 0; i < n; i++) q[i] = 0;
+}
+
+namespace local {
+
+template<bool secure>
+struct ArrayWipe {
+	static void exec(void *, size_t) {}
+};
+
+template<>
+struct ArrayWipe<true> {
+	static void exec(void *p, size_t n) { secureZero(p, n); }
+};
+
+} // mcl::local
+
+/*
+	secure = true : the memory is cleared with zero before it is released
+*/
+template<class T, bool secure = false>
 class Array {
 	T *p_;
 	size_t n_;
@@ -26,10 +52,16 @@ class Array {
 		x = y;
 		y = t;
 	}
+	// clear p[0..n) if secure
+	void wipe(T *p, size_t n) const
+	{
+		local::ArrayWipe<secure>::exec(p, sizeof(T) * n);
+	}
 public:
 	Array() : p_(0), n_(0) {}
 	~Array()
 	{
+		wipe(p_, n_);
 		free(p_);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
@@ -55,6 +87,8 @@ public:
 	bool resize(size_t n)
 	{
 		if (n <= n_) {
+			// the capacity is not kept, so clear the truncated part here
+			if (n < n_) wipe(p_ + n, n_ - n);
 			n_ = n;
 			if (n == 0) {
 				free(p_);
@@ -67,12 +101,13 @@ public:
 		for (size_t i = 0; i < n_; i++) {
 			q[i] = p_[i];
 		}
+		wipe(p_, n_);
 		free(p_);
 		p_ = q;
 		n_ = n;
 		return true;
 	}
-	bool copy(const Array<T>& rhs)
+	bool copy(const Array& rhs)
 	{
 		if (this == &rhs) return true;
 		if (n_ < rhs.n_) {
@@ -87,12 +122,13 @@ public:
 	}
 	void clear()
 	{
+		wipe(p_, n_);
 		free(p_);
 		p_ = 0;
 		n_ = 0;
 	}
 	size_t size() const { return n_; }
-	void swap(Array<T>& rhs)
+	void swap(Array& rhs)
 	{
 		swap_(p_, rhs.p_);
 		swap_(n_, rhs.n_);
