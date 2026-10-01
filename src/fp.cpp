@@ -230,9 +230,10 @@ uint32_t sha512(void *out, uint32_t maxOutSize, const void *msg, uint32_t msgSiz
 void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t msgSize, const void *dst, size_t dstSize)
 {
 	const size_t mdSize = 32;
-	assert((outSize % mdSize) == 0 && 0 < outSize && outSize <= 256);
+	// outSize does not need to be a multiple of mdSize (RFC 9380 5.3.1)
+	assert(0 < outSize && outSize <= 255 * mdSize);
 	const size_t r_in_bytes = 64;
-	const size_t n = outSize / mdSize;
+	const size_t n = (outSize + mdSize - 1) / mdSize;
 	static const uint8_t Z_pad[r_in_bytes] = {};
 	uint8_t largeDst[mdSize];
 	if (dstSize > 255) {
@@ -262,18 +263,27 @@ void expand_message_xmd(uint8_t out[], size_t outSize, const void *msg, size_t m
 	iBuf = 1;
 	h.update(&iBuf, 1);
 	h.update(dst, dstSize);
-	h.digest(out, mdSize, &dstSizeBuf, 1);
+	// buf holds the full block b_i because the last block of out may be truncated
+	uint8_t buf[mdSize];
+	h.digest(buf, mdSize, &dstSizeBuf, 1);
+	size_t remain = outSize;
+	size_t copySize = remain < mdSize ? remain : mdSize;
+	memcpy(out, buf, copySize);
+	remain -= copySize;
 	uint8_t mdXor[mdSize];
 	for (size_t i = 1; i < n; i++) {
 		h.clear();
 		for (size_t j = 0; j < mdSize; j++) {
-			mdXor[j] = md[j] ^ out[mdSize * (i - 1) + j];
+			mdXor[j] = md[j] ^ buf[j];
 		}
 		h.update(mdXor, mdSize);
 		iBuf = uint8_t(i + 1);
 		h.update(&iBuf, 1);
 		h.update(dst, dstSize);
-		h.digest(out + mdSize * i, mdSize, &dstSizeBuf, 1);
+		h.digest(buf, mdSize, &dstSizeBuf, 1);
+		copySize = remain < mdSize ? remain : mdSize;
+		memcpy(out + mdSize * i, buf, copySize);
+		remain -= copySize;
 	}
 }
 
