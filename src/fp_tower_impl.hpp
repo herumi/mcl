@@ -9,7 +9,7 @@ Fp2 Fp2::g3[Fp2::gN];
 
 void (*Fp6Dbl::mulPre)(Fp6Dbl&, const Fp6&, const Fp6&);// = 0;//mulPreT<false>;
 
-void Fp2::mulA(Unit *pz, const Unit *px, const Unit *py)
+void Fp2::mulA(Unit *pz, const Unit *px, const Unit *py MCL_A_PARAM)
 {
 	Fp2& z = cast(pz);
 	const Fp2& x = cast(px);

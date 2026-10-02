@@ -79,27 +79,27 @@ private:
 	friend class FpDbl;
 	friend class Fp2;
 	template<class Fp> friend struct Fp6T;
-	static inline void addA(Unit *z, const Unit *x, const Unit *y)
+	static inline void addA(Unit *z, const Unit *x, const Unit *y MCL_A_PARAM)
 	{
 		op_.fp_add(z, x, y, op_.p);
 	}
-	static inline void subA(Unit *z, const Unit *x, const Unit *y)
+	static inline void subA(Unit *z, const Unit *x, const Unit *y MCL_A_PARAM)
 	{
 		op_.fp_sub(z, x, y, op_.p);
 	}
-	static inline void negA(Unit *y, const Unit *x)
+	static inline void negA(Unit *y, const Unit *x MCL_A_PARAM)
 	{
 		op_.fp_neg(y, x, op_.p);
 	}
-	static inline void mulA(Unit *z, const Unit *x, const Unit *y)
+	static inline void mulA(Unit *z, const Unit *x, const Unit *y MCL_A_PARAM)
 	{
 		op_.fp_mul(z, x, y, op_.p);
 	}
-	static inline void sqrA(Unit *y, const Unit *x)
+	static inline void sqrA(Unit *y, const Unit *x MCL_A_PARAM)
 	{
 		op_.fp_sqr(y, x, op_.p);
 	}
-	static inline void mul2A(Unit *y, const Unit *x)
+	static inline void mul2A(Unit *y, const Unit *x MCL_A_PARAM)
 	{
 //		op_.fp_mul2(y, x, op_.p);
 		op_.fp_add(y, x, x, op_.p);
@@ -523,7 +523,7 @@ public:
 	static void add(FpT& z, const FpT& x, const FpT& y)
 	{
 #ifdef MCL_DIRECT_CALL
-		op_.fp_addA_(z.v_, x.v_, y.v_);
+		op_.fp_addA_(z.v_, x.v_, y.v_ MCL_A_ARG(op_));
 #else
 		op_.fp_add(z.v_, x.v_, y.v_, op_.p);
 #endif
@@ -531,7 +531,7 @@ public:
 	static void sub(FpT& z, const FpT& x, const FpT& y)
 	{
 #ifdef MCL_DIRECT_CALL
-		op_.fp_subA_(z.v_, x.v_, y.v_);
+		op_.fp_subA_(z.v_, x.v_, y.v_ MCL_A_ARG(op_));
 #else
 		op_.fp_sub(z.v_, x.v_, y.v_, op_.p);
 #endif
@@ -539,7 +539,7 @@ public:
 	static void neg(FpT& y, const FpT& x)
 	{
 #ifdef MCL_DIRECT_CALL
-		op_.fp_negA_(y.v_, x.v_);
+		op_.fp_negA_(y.v_, x.v_ MCL_A_ARG(op_));
 #else
 		op_.fp_neg(y.v_, x.v_, op_.p);
 #endif
@@ -547,7 +547,7 @@ public:
 	static void mul(FpT& z, const FpT& x, const FpT& y)
 	{
 #ifdef MCL_DIRECT_CALL
-		op_.fp_mulA_(z.v_, x.v_, y.v_);
+		op_.fp_mulA_(z.v_, x.v_, y.v_ MCL_A_ARG(op_));
 #else
 		op_.fp_mul(z.v_, x.v_, y.v_, op_.p);
 #endif
@@ -555,7 +555,7 @@ public:
 	static void sqr(FpT& y, const FpT& x)
 	{
 #ifdef MCL_DIRECT_CALL
-		op_.fp_sqrA_(y.v_, x.v_);
+		op_.fp_sqrA_(y.v_, x.v_ MCL_A_ARG(op_));
 #else
 		op_.fp_sqr(y.v_, x.v_, op_.p);
 #endif
@@ -563,7 +563,7 @@ public:
 	static void mul2(FpT& y, const FpT& x)
 	{
 #ifdef MCL_DIRECT_CALL
-		op_.fp_mul2A_(y.v_, x.v_);
+		op_.fp_mul2A_(y.v_, x.v_ MCL_A_ARG(op_));
 #else
 		op_.fp_add(y.v_, x.v_, x.v_, op_.p);
 #endif

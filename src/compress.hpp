@@ -36,6 +36,16 @@ struct Compress {
 		g4_ = c.g4_;
 		g5_ = c.g5_;
 	}
+	// z already has compressed values
+	explicit Compress(Fp12& z)
+		: z_(z)
+		, g1_(z.getFp2()[4])
+		, g2_(z.getFp2()[3])
+		, g3_(z.getFp2()[2])
+		, g4_(z.getFp2()[1])
+		, g5_(z.getFp2()[5])
+	{
+	}
 	void decompressBeforeInv(Fp2& nume, Fp2& denomi) const
 	{
 		assert(&nume != &denomi);
@@ -118,7 +128,13 @@ public:
 		Fp2::sub(z.g4_, t0, z.g4_);
 		Fp2::mul2(z.g4_, z.g4_);
 		z.g4_ += t0;
-		Fp2Dbl::addPre(T2, T2, T1);
+		if (Fp::getOp().u == 1) {
+			// the real part of sqrPre is (a+b)(a-b), which is small
+			Fp2Dbl::addPre(T2, T2, T1);
+		} else {
+			// the real part of sqrPre is reduced by FpDbl::sub, which may be near pR
+			Fp2Dbl::add(T2, T2, T1);
+		}
 		T3 -= T2;
 		Fp2Dbl::mod(t0, T3);
 		z.g5_ += t0;
@@ -131,37 +147,97 @@ public:
 			squareC(z);
 		}
 	}
+	// max number of decompression in fixed_power
+	static const size_t maxDecompressN = 8;
+	/*
+		the number of decompression in fixed_power
+		= the number of nonzero digits of tbl except for the digit of 2^0
+	*/
+	template<class Vec>
+	static size_t getDecompressNum(const Vec& tbl)
+	{
+		size_t n = 0;
+		for (size_t i = 0; i + 1 < tbl.size(); i++) {
+			if (tbl[i]) n++;
+		}
+		return n;
+	}
 	/*
 		Exponentiation over compression for:
-		z = x^Param::z.abs()
+		z = x^e where tbl is the binary/NAF repl of e and tbl[0] is the top digit
+		x is in the cyclotomic subgroup
+		require getDecompressNum(tbl) <= maxDecompressN
 	*/
-	static void fixed_power(Fp12& z, const Fp12& x)
+	template<class Vec>
+	static void fixed_power(Fp12& z, const Fp12& x, const Vec& tbl)
 	{
 		if (x.isOne()) {
 			z = 1;
 			return;
 		}
-		Fp12 x_org = x;
-		Fp12 d62;
-		Fp2 c55nume, c55denomi, c62nume, c62denomi;
-		Compress c55(z, x);
-		square_n(c55, 55);
-		c55.decompressBeforeInv(c55nume, c55denomi);
-		Compress c62(d62, c55);
-		square_n(c62, 62 - 55);
-		c62.decompressBeforeInv(c62nume, c62denomi);
-		Fp2 acc;
-		Fp2::mul(acc, c55denomi, c62denomi);
-		Fp2::inv(acc, acc);
-		Fp2 t;
-		Fp2::mul(t, acc, c62denomi);
-		Fp2::mul(c55.g1_, c55nume, t);
-		c55.decompressAfterInv();
-		Fp2::mul(t, acc, c55denomi);
-		Fp2::mul(c62.g1_, c62nume, t);
-		c62.decompressAfterInv();
-		z *= x_org;
-		z *= d62;
+		const size_t len = tbl.size();
+		Fp12 d[maxDecompressN]; // d[i] = x^(2^k) for the i-th nonzero digit at k
+		Fp2 nume[maxDecompressN], denomi[maxDecompressN];
+		bool isNeg[maxDecompressN];
+		size_t n = 0;
+		const Fp12 *src = &x;
+		size_t prev = 0;
+		for (size_t k = 1; k < len; k++) {
+			const int v = tbl[len - 1 - k];
+			if (v == 0) continue;
+			assert(n < maxDecompressN);
+			Compress c(d[n], *src);
+			square_n(c, int(k - prev));
+			c.decompressBeforeInv(nume[n], denomi[n]);
+			isNeg[n] = v < 0;
+			src = &d[n];
+			prev = k;
+			n++;
+		}
+		const int v0 = len > 0 ? tbl[len - 1] : 0;
+		if (n == 0) {
+			if (v0 > 0) {
+				z = x;
+			} else if (v0 < 0) {
+				Fp12::unitaryInv(z, x);
+			} else {
+				z = 1;
+			}
+			return;
+		}
+		// simultaneous inversion of denomi[]
+		Fp2 acc[maxDecompressN];
+		acc[0] = denomi[0];
+		for (size_t i = 1; i < n; i++) {
+			Fp2::mul(acc[i], acc[i - 1], denomi[i]);
+		}
+		Fp2 inv, t;
+		Fp2::inv(inv, acc[n - 1]);
+		for (size_t i = n - 1; ; i--) {
+			if (i > 0) {
+				Fp2::mul(t, inv, acc[i - 1]); // 1/denomi[i]
+				inv *= denomi[i];
+			} else {
+				t = inv;
+			}
+			Compress c(d[i]);
+			Fp2::mul(c.g1_, nume[i], t);
+			c.decompressAfterInv();
+			if (isNeg[i]) Fp6::neg(d[i].b, d[i].b); // unitaryInv
+			if (i == 0) break;
+		}
+		for (size_t i = 1; i < n; i++) {
+			d[0] *= d[i];
+		}
+		if (v0 > 0) {
+			Fp12::mul(z, d[0], x);
+		} else if (v0 < 0) {
+			Fp12 conj;
+			Fp12::unitaryInv(conj, x);
+			Fp12::mul(z, d[0], conj);
+		} else {
+			z = d[0];
+		}
 	}
 };
 

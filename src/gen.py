@@ -20,6 +20,11 @@ g_mulPos = None
 g_makeNIST_P192 = None
 g_mod_NIST_P192 = None
 g_mulPv = {}  # bit -> Function
+# (bit, isFullBit) -> Function of mcl_fp_add{NF}, mcl_fp_mont{NF}, mcl_fp_montRed{NF}
+# (the callees of the generic functions of gen_generic)
+g_fpAdd = {}
+g_fpMont = {}
+g_fpMontRed = {}
 g_mclb_mul3 = None  # mclb_mul{N}
 g_mclb_sqr3 = None  # mclb_sqr{N}
 
@@ -161,6 +166,98 @@ def gen_mcl_fp_mulNIST_P192():
     ret(Void)
 
 
+# secp256k1: p = 2^256 - a, a = 2^32 + 977 = 0x1000003d1, so 2^256 = a (mod p).
+# emit_mod_SECP256K1(x) : x (i512, x < p^2) -> x mod p (i256)
+#   t = L + H a           (< 2^290; x = H 2^256 + L)
+#   u = t0 + t1 a         (t = t1 2^256 + t0, t1 < 2^34, so u < 2^256 + 2^67)
+#   v = u0 + u1 a         (u = u1 2^256 + u0, u1 in {0, 1}; if u1 = 1 then u0 < 2^67, so v < 2^256)
+#   z = v < p ? v : v - p (v < 2^256 < 2p)
+# The p argument of the functions is unused (the same signature as the generic ones).
+# Generated at bit = 256 (after gen_mulPv) since mul/sqr use mulPv256x{unit}.
+SECP256K1_A = 0x1000003d1
+SECP256K1_P = (1 << 256) - SECP256K1_A
+
+def emit_mod_SECP256K1(x):
+  a = SECP256K1_A
+  L = zext(trunc(x, 256), 320)
+  H = zext(extract(x, 256, 256), 320)
+  t = add(L, mul(H, a))
+  t0 = trunc(t, 256)
+  t1 = extract(t, 256, 64)
+  t1a = mul(zext(t1, 128), a)
+  u = add(zext(t0, 320), zext(t1a, 320))
+  u0 = trunc(u, 256)
+  u1 = extract(u, 256, 64)             # 0 or 1
+  m = and_(sub(Imm(0, 64), u1), a)     # u1 ? a : 0
+  v = add(u0, zext(m, 256))
+  vp = sub(v, Imm(SECP256K1_P, 256))
+  c = icmp(ult, v, Imm(SECP256K1_P, 256))
+  return select(c, v, vp)
+
+
+# xy = px[N] * py[N] as i{2*bit} (no reduction) with mulPv: the rows are
+# accumulated in the (N+1)-unit accumulator t (as common.emit_mulPre) and the
+# finished bottom units are collected into the i{2*bit} result.
+def emit_mulPre_val(px, py):
+  mulPv = g_mulPv[bit]
+  y = load(py)
+  t = call(mulPv, px, y)
+  lo = zext(trunc(t, unit), bit * 2)
+  t = lshr(t, unit)
+  for i in range(1, N):
+    y = load(getelementptr(py, i))
+    t = add(t, call(mulPv, px, y))
+    if i < N - 1:
+      lo = or_(lo, shl(zext(trunc(t, unit), bit * 2), unit * i))
+      t = lshr(t, unit)
+  return or_(lo, shl(zext(t, bit * 2), unit * (N - 1)))
+
+
+def gen_mcl_fpDbl_mod_SECP256K1():
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  dummy = IntPtr(unit)
+  with Function('mcl_fpDbl_mod_SECP256K1L', Void, py, px, dummy, private=False):
+    x = loadN(px, N * 2)
+    z = emit_mod_SECP256K1(x)
+    storeN(z, py)
+    ret(Void)
+
+
+def gen_mcl_fp_sqr_SECP256K1():
+  resetGlobalIdx()
+  py = IntPtr(unit)
+  px = IntPtr(unit)
+  dummy = IntPtr(unit)
+  with Function('mcl_fp_sqr_SECP256K1L', Void, py, px, dummy, private=False):
+    x = [load(px)] + [load(getelementptr(px, i)) for i in range(1, N)]
+    xx = common.sqrPre_raw(unit, x, N)
+    z = emit_mod_SECP256K1(xx)
+    storeN(z, py)
+    ret(Void)
+
+
+def gen_mcl_fp_mul_SECP256K1():
+  resetGlobalIdx()
+  pz = IntPtr(unit)
+  px = IntPtr(unit)
+  py = IntPtr(unit)
+  dummy = IntPtr(unit)
+  with Function('mcl_fp_mul_SECP256K1L', Void, pz, px, py, dummy, private=False):
+    xy = emit_mulPre_val(px, py)
+    z = emit_mod_SECP256K1(xy)
+    storeN(z, pz)
+    ret(Void)
+
+
+def gen_SECP256K1():
+  assert bit == 256
+  gen_mcl_fpDbl_mod_SECP256K1()
+  gen_mcl_fp_sqr_SECP256K1()
+  gen_mcl_fp_mul_SECP256K1()
+
+
 # declare mclb_mul{N}/mclb_sqr{N} (N = 192/unit) provided by bint{unit}.ll (or bint-x64 asm)
 def declare_mclb_mul3():
   global g_mclb_mul3, g_mclb_sqr3
@@ -215,13 +312,17 @@ def gen_mcl_fp_add(isFullBit=True):
   if not isFullBit:
     name += 'NF'
   name += f'{N}L'
-  with Function(name, Void, pz, px, py, pp, private=False):
-    x = loadN(px, N)
-    y = loadN(py, N)
+  with Function(name, Void, pz, px, py, pp, private=False) as f:
+    # volatile (not for wasm): keep the operand loads unfused so that a
+    # store-forwarded input (z = z + y) does not pay the folded-load latency;
+    # 8.4 -> 6.2 clk for N = 6 on Xeon w9-3495X (the same as common.gen_fp_add)
+    x = loadN(px, N, volatile=not g_wasm)
+    y = loadN(py, N, volatile=not g_wasm)
     p = loadN(pp, N)
     z = common.emit_fp_add(unit, x, y, p, isFullBit)
     storeN(z, pz)
     ret(Void)
+  g_fpAdd[(bit, isFullBit)] = f
 
 
 def gen_mcl_fp_sub(isFullBit=True):
@@ -285,10 +386,11 @@ def gen_mcl_fp_mont(isFullBit=True):
     name += 'NF'
   name += f'{N}L'
   # setAlias() in gen.cpp -> emit pointer args without 'noalias'
-  with Function(name, Void, pz, px, py, pp, private=False, noalias=False):
+  with Function(name, Void, pz, px, py, pp, private=False, noalias=False) as f:
     rp = load(getelementptr(pp, -1))
     common.emit_mont(unit, N, pz, px, py, pp, rp, g_mulPv[bit], isFullBit)
     ret(Void)
+  g_fpMont[(bit, isFullBit)] = f
 
 
 def gen_mcl_fp_montRed(isFullBit=True):
@@ -300,13 +402,14 @@ def gen_mcl_fp_montRed(isFullBit=True):
   if not isFullBit:
     name += 'NF'
   name += f'{N}L'
-  with Function(name, Void, pz, pxy, pp, private=False):
+  with Function(name, Void, pz, pxy, pp, private=False) as f:
     rp = load(getelementptr(pp, -1))
     p = loadN(pp, N)
     lo = loadN(pxy, N)
     z = common.emit_montRed(unit, N, lo, lambda i: load(getelementptr(pxy, N + i)), pp, p, rp, g_mulPv[bit], isFullBit)
     storeN(z, pz)
     ret(Void)
+  g_fpMontRed[(bit, isFullBit)] = f
 
 
 def gen_all():
@@ -344,7 +447,26 @@ def setUnit(u):
   unit2 = u * 2
 
 
-# fpBit : MCL_FP_BIT (the size of Fp of the p-fixed functions, see below)
+# p-generic functions (p as the last argument, rp = p[-1]) of the A_ slots of
+# Op for the LLVM configurations without x64 asm (fp.cpp setLLVMGenericCode;
+# prototypes and the registration in llvm_proto.hpp by gen_llvm_proto.py)
+# for bit = 256 and 384 (MCL_BINT_MAX_BIT): see common.gen_generic_fp (Fp:
+# neg, mul2, sqr; add / sub / mont / montRed / fpDbl_add / fpDbl_sub are the
+# functions above) and common.gen_generic_fp2 (Fp2 / Fp2Dbl). The Fp2
+# functions are fixed to sizeof(Fp) = fpBit / unit units (MCL_FP_BIT_LLVM,
+# the position of the second component) and to the (u, xi_a) of the pairing
+# curves of primetbl.py. Not for wasm (the C++ Fp2 is faster there).
+def gen_generic(fpBit):
+  params = sorted({(cv.u, cv.xi_a) for cv in primetbl.curveTbl.values() if cv.u != 0})
+  for b in (256, 384):
+    setBit(b)
+    addF = {fb: g_fpAdd[(b, fb)] for fb in (True, False)}
+    montF = {fb: g_fpMont[(b, fb)] for fb in (True, False)}
+    common.gen_generic_fp(unit, N, addF, montF)
+    common.gen_generic_fp2(unit, N, fpBit // unit, params, g_fpMont[(b, False)], g_fpMontRed[(b, False)], g_mulPos, g_extractHigh)
+
+
+# fpBit : MCL_FP_BIT (sizeof(Fp) of the Fp2 functions of gen_generic)
 def gen(maxBitSize, fpBit):
   gen_once()
   bitTbl = [192, 224, 256, 384, 512]
@@ -353,6 +475,8 @@ def gen(maxBitSize, fpBit):
       continue
     setBit(b)
     gen_mul()
+    if b == 256:
+      gen_SECP256K1()
     gen_all()
     gen_addsub()
   if unit == 64 and maxBitSize == 768:
@@ -369,22 +493,7 @@ def gen(maxBitSize, fpBit):
     setBit(b)
     common.gen_modp(f'mclb_modp{b}', unit, N, 512 // unit, g_mulPv[b])
   if not g_wasm:
-    # p-fixed functions of the exported curves of src/primetbl.py (BN254:
-    # mcl_c0_fp_*, mcl_c0_fp2_*, mcl_c0_fpDbl_*, mcl_c0_fr_*, mcl_c0_frDbl_*,
-    # BLS12-381: mcl_c5_*) with the ABI of the Xbyak functions (no p argument);
-    # fp.cpp registers them to the A_ slots of Op when p matches
-    # (setLLVMFixedCode, prototypes in llvm_proto.hpp by gen_llvm_proto.py).
-    # offset = sizeof(Fp) / sizeof(Unit) = fpBit / unit (the position of the
-    # second component of Fp2) fixes the Fp2 functions to MCL_FP_BIT = fpBit
-    # (-fpbit, the MCL_FP_BIT of the Makefile); llvm_proto.hpp records it as
-    # MCL_FP_BIT_LLVM and fp.cpp rejects a different MCL_FP_BIT by #error.
-    # Not for wasm: base64m.ll is linked with 4-argument function pointers
-    # and call_indirect traps on the signature mismatch of func_ptr_cast.
-    for cv in primetbl.exportedCurves():
-      hasFp2 = cv.u == 1 and cv.xi_a == 1 # Fp2 = Fp[i]/(i^2 + 1) and xi = 1 + i (gen_fixed)
-      common.gen_fixed(f'mcl_c{cv.c}_fp_', unit, cv.p, fpBit // unit, hasFp2, g_mulPos, g_extractHigh)
-      if cv.r:
-        common.gen_fixed(f'mcl_c{cv.c}_fr_', unit, cv.r, fpBit // unit, False, g_mulPos, g_extractHigh)
+    gen_generic(fpBit)
 
 
 def main():
@@ -392,7 +501,7 @@ def main():
   parser = argparse.ArgumentParser(description='generate base{32,64}.ll')
   parser.add_argument('-u', type=int, default=64, help='unit bit size (32 or 64)')
   parser.add_argument('-wasm', action='store_true', default=False, help='generate for wasm')
-  parser.add_argument('-fpbit', type=int, default=384, help='MCL_FP_BIT (sizeof(Fp) of the Fp2 functions of the p-fixed code)')
+  parser.add_argument('-fpbit', type=int, default=384, help='MCL_FP_BIT (sizeof(Fp) of the Fp2 functions for the A_ slots)')
   opt = parser.parse_args()
 
   setUnit(opt.u)
