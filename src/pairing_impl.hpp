@@ -94,6 +94,7 @@ struct Param {
 	size_t precomputedQcoeffSize;
 	bool useNAF;
 	Int8Vec zReplTbl;
+	bool useCompress; // use Compress::fixed_power in pow_z
 
 	// for initG1only
 	G1 basePoint;
@@ -169,6 +170,7 @@ struct Param {
 		useNAF = gmp::getNAF(siTbl, largest_c);
 		precomputedQcoeffSize = getPrecomputeQcoeffSize(siTbl);
 		gmp::getNAF(zReplTbl, gmp::abs(z));
+		useCompress = Compress::getDecompressNum(zReplTbl) <= Compress::maxDecompressN;
 		if (isBLS12) {
 			mapToInit(0, z, cp.curveType);
 		} else {
@@ -291,8 +293,8 @@ inline void fasterSqr(Fp12& y, const Fp12& x)
 inline void pow_z(Fp12& y, const Fp12& x)
 {
 #if 1
-	if (mcl::getCurveType() == MCL_BN254) {
-		Compress::fixed_power(y, x);
+	if (s_param.useCompress) {
+		Compress::fixed_power(y, x, s_param.zReplTbl);
 	} else {
 		Fp12 orgX = x;
 		y = x;
