@@ -15,6 +15,7 @@
 #endif
 
 #include <mcl/window_method.hpp>
+#include <mcl/sigma_protocol.hpp>
 #include <cybozu/endian.hpp>
 #include <cybozu/serializer.hpp>
 #include <cybozu/sha2.hpp>
@@ -692,16 +693,22 @@ public:
 	struct AuxiliaryForZkpDecGT {
 		GT R_[4]; // [R = e(R, Q), xR, yR, xyR]
 
-		// dst = v[1] a[0] + v[0] a[1] - v[2] a[2]
-		void f(GT& dst, const GT *v, const Fr *a) const
+		/*
+			the witness is (w0, w1, w2) = (x, y, xy) and the statements are
+			R_[i+1] = w_i R_[0] (i = 0, 1, 2) and A[0] = w0 A[2] + w1 A[1] - w2 A[3]
+			where A = c - Enc(m; 0, 0, 0)
+		*/
+		typedef sigma::Additive<GT> AGT;
+		typedef sigma::MulG<AGT> MulAGT;
+		static void setA(GT A[4], const CipherTextGT& c, int64_t m, const GT& R0)
 		{
 			GT t;
-			GT::pow(dst, v[0], a[1]);
-			GT::pow(t, v[1], a[0]);
-			dst *= t;
-			GT::pow(t, v[2], a[2]);
+			GT::pow(t, R0, m); // m R
 			GT::unitaryInv(t, t);
-			dst *= t;
+			GT::mul(A[0], c.g_[0], t);
+			A[1] = c.g_[1];
+			A[2] = c.g_[2];
+			A[3] = c.g_[3];
 		}
 		bool verify(const CipherTextGT& c, int64_t m, const ZkpDecGT& zkp) const
 		{
@@ -709,24 +716,16 @@ public:
 			const Fr &h = zkp.d_[3];
 
 			GT A[4];
-			GT t;
-			GT::pow(t, R_[0], m); // m R
-			GT::unitaryInv(t, t);
-			GT::mul(A[0], c.g_[0], t);
-			A[1] = c.g_[1];
-			A[2] = c.g_[2];
-			A[3] = c.g_[3];
+			setA(A, c, m, R_[0]);
+			const AGT *a = AGT::cast(A);
+			const MulAGT R0(AGT::cast(R_[0]));
 			GT B[3], X;
 			for (int i = 0; i < 3; i++) {
-				GT::pow(B[i], R_[0], d[i]);
-				GT::pow(t, R_[i+1], h);
-				GT::unitaryInv(t, t);
-				B[i] *= t;
+				sigma::recompute1(AGT::cast(B[i]), R0, d[i], AGT::cast(R_[i+1]), h);
 			}
-			f(X, A + 1, zkp.d_);
-			GT::pow(t, A[0], h);
-			GT::unitaryInv(t, t);
-			X *= t;
+			AGT negA3;
+			AGT::neg(negA3, a[3]);
+			sigma::recompute3(AGT::cast(X), MulAGT(a[2]), d[0], MulAGT(a[1]), d[1], MulAGT(negA3), d[2], a[0], h);
 			local::Hash hash;
 			hash << R_[1] << R_[2] << R_[3] << A[0] << A[1] << A[2] << A[3] << B[0] << B[1] << B[2] << X;
 			Fr h2;
@@ -975,54 +974,54 @@ public:
 			const G1& A1 = pub.xP_;
 			G1 A2;
 			G1::sub(A2, c.S_, R); // rxP
+			// A1 = x P1, A2 = x P2
 			Fr b;
 			b.setRand();
 			G1 B1, B2;
-			G1::mul(B1, P1, b);
-			G1::mul(B2, P2, b);
+			sigma::commit1(B1, sigma::MulG<G1>(P1), b);
+			sigma::commit1(B2, sigma::MulG<G1>(P2), b);
 			Fr& d = zkp.d_[0];
 			Fr& h = zkp.d_[1];
 			local::Hash hash;
 			hash << P2 << A1 << A2 << B1 << B2;
 			hash.get(h);
-			Fr::mul(d, h, x_);
-			d += b;
+			sigma::response(d, b, h, x_);
 			return m;
 		}
 		// @note GT is multiplicative group though treating GT as additive group in comment
 		int64_t decWithZkpDec(bool *pok, ZkpDecGT& zkp, const CipherTextGT& c, const AuxiliaryForZkpDecGT& aux) const
 		{
+			typedef sigma::Additive<GT> AGT;
+			typedef sigma::MulG<AGT> MulAGT;
 			int64_t m = dec(c, pok);
 			if (!*pok) return 0;
 			// A = c - Enc(m; 0, 0, 0) = c - (m R, 0, 0, 0)
 			GT A[4];
-			GT t;
-			GT::pow(t, aux.R_[0], m); // m R
-			GT::unitaryInv(t, t);
-			GT::mul(A[0], c.g_[0], t);
-			A[1] = c.g_[1];
-			A[2] = c.g_[2];
-			A[3] = c.g_[3];
+			AuxiliaryForZkpDecGT::setA(A, c, m, aux.R_[0]);
 			// dec(A) = 0
+			const AGT *a = AGT::cast(A);
+			const MulAGT R0(AGT::cast(aux.R_[0]));
 
 			Fr b[3];
 			GT B[3], X;
 			for (int i = 0; i < 3; i++) {
 				b[i].setByCSPRNG();
-				GT::pow(B[i], aux.R_[0], b[i]);
+				sigma::commit1(AGT::cast(B[i]), R0, b[i]);
 			}
-			aux.f(X, A + 1, b);
+			AGT negA3;
+			AGT::neg(negA3, a[3]);
+			sigma::commit3(AGT::cast(X), MulAGT(a[2]), b[0], MulAGT(a[1]), b[1], MulAGT(negA3), b[2]);
 			local::Hash hash;
 			hash << aux.R_[1] << aux.R_[2] << aux.R_[3] << A[0] << A[1] << A[2] << A[3] << B[0] << B[1] << B[2] << X;
 			Fr *d = &zkp.d_[0];
 			Fr &h = zkp.d_[3];
 			hash.get(h);
-			Fr::mul(d[0], h, x_); // h x
-			Fr::mul(d[1], h, y_); // h y
-			Fr::mul(d[2], d[1], x_); // h xy
-			for (int i = 0; i < 3; i++) {
-				d[i] += b[i];
-			}
+			Fr xy;
+			Fr::mul(xy, x_, y_);
+			sigma::response(d[0], b[0], h, x_);
+			sigma::response(d[1], b[1], h, y_);
+			sigma::response(d[2], b[2], h, xy);
+			secureZero(&xy, sizeof(xy));
 			return m;
 		}
 		int64_t decWithZkpDec(ZkpDec& zkp, const CipherTextG1& c, const PublicKey& pub) const
@@ -1106,25 +1105,63 @@ private:
 		} else {
 			r.setRand();
 		}
-		Pmul.mul(static_cast<I&>(T), r);
-		xPmul.mul(S, r); // S = r xP
-		if (m == 0) return;
-		G C;
-		Pmul.mul(static_cast<I&>(C), m);
-		S += C;
+		const sigma::CastMul<I, mcl::fp::WindowMethod<I> > Pm(Pmul);
+		sigma::commit1(T, Pm, r); // T = r P
+		if (m == 0) {
+			sigma::commit1(S, xPmul, r); // S = r xP
+		} else {
+			sigma::commit2(S, Pm, m, xPmul, r); // S = m P + r xP
+		}
 	}
+	/*
+		the statement of the 2-way OR proof for (S, T) = Enc(m; r) with m = 0 or 1
+		  branch i : T = t P and S - i P = t xP (i = 0, 1)
+		i.e. X = (T, S), O = (0, P) and B = (P, xP) in the notation of sigma::BitOr
+		Pmul is the WindowMethod<I> of HashTable (I is derived from G), so it is wrapped by CastMul
+	*/
+	template<class G, class I, class MulG>
+	struct BinStatement {
+		typedef sigma::BitOr<G, Fr, 2> Or;
+		typedef sigma::CastMul<I, mcl::fp::WindowMethod<I> > PmulT;
+		const PmulT Pm;
+		const sigma::Bases2<G, PmulT, MulG> B;
+		const G *X[2];
+		const G *O[2];
+		BinStatement(const G& S, const G& T, const G& P, const mcl::fp::WindowMethod<I>& Pmul, const MulG& xPmul)
+			: Pm(Pmul), B(Pm, xPmul)
+		{
+			X[0] = &T;
+			X[1] = &S;
+			O[0] = 0;
+			O[1] = &P;
+		}
+		// R[j] = B_j s - d (X_j - i O_j) : the simulated branch i
+		void simulate(G R[2], int i, const Fr& d, const Fr& s) const { Or::simulate(R, B, X, O, i, d, s); }
+		// R[j] = B_j k : the real branch
+		void commit(G R[2], const Fr& k) const { Or::commit(R, B, k); }
+		// dReal = c - dSim, sReal = k + dReal t
+		static void finish(Fr& dReal, Fr& sReal, const Fr& c, const Fr& dSim, const Fr& k, const Fr& t) { Or::finish(dReal, sReal, c, dSim, k, t); }
+		// R[i][j] for both branches on the verifier side
+		void recompute(G R[2][2], const Fr d[2], const Fr s[2]) const { Or::recompute(R, B, X, O, d, s); }
+	private:
+		BinStatement(const BinStatement&); // B refers to Pm, so copying is not allowed
+		void operator=(const BinStatement&);
+	};
 	/*
 		https://github.com/herumi/mcl/blob/master/misc/she/nizkp.pdf
 
 		encRand is a random value used for ElGamalEnc()
+		2-way OR proof (sigma::BitOr) for the statements
+		  branch i : T = t P and S - i P = t xP (i = 0, 1)
+		R[i][j] is the commitment of the branch i for the j-th equation
 		d[1-m] ; rand
 		s[1-m] ; rand
-		R[0][1-m] = s[1-m] P - d[1-m] T
-		R[1][1-m] = s[1-m] xP - d[1-m] (S - (1-m) P)
+		R[1-m][0] = s[1-m] P - d[1-m] T
+		R[1-m][1] = s[1-m] xP - d[1-m] (S - (1-m) P)
 		r ; rand
-		R[0][m] = r P
-		R[1][m] = r xP
-		c = H(S, T, R[0][0], R[0][1], R[1][0], R[1][1])
+		R[m][0] = r P
+		R[m][1] = r xP
+		c = H(S, T, R[0][0], R[1][0], R[0][1], R[1][1])
 		d[m] = c - d[1-m]
 		s[m] = r + d[m] encRand
 	*/
@@ -1134,38 +1171,26 @@ private:
 		if (m != 0 && m != 1) return false;
 		Fr *s = &zkp.d_[0];
 		Fr *d = &zkp.d_[2];
-		G R[2][2];
+		const BinStatement<G, I, MulG> st(S, T, P, Pmul, xPmul);
+		G R[2][2]; // R[branch][eq]
 		d[1-m].setRand();
 		s[1-m].setRand();
-		G T1, T2;
-		Pmul.mul(static_cast<I&>(T1),  s[1-m]); // T1 = s[1-m] P
-		G::mul(T2, T, d[1-m]);
-		G::sub(R[0][1-m], T1, T2); // s[1-m] P - d[1-m]T
-		xPmul.mul(T1, s[1-m]); // T1 = s[1-m] xP
-		if (m == 0) {
-			G::sub(T2, S, P);
-			G::mul(T2, T2, d[1-m]);
-		} else {
-			G::mul(T2, S, d[1-m]);
-		}
-		G::sub(R[1][1-m], T1, T2); // s[1-m] xP - d[1-m](S - (1-m) P)
+		st.simulate(R[1-m], 1-m, d[1-m], s[1-m]);
 		Fr r;
 		r.setRand();
-		Pmul.mul(static_cast<I&>(R[0][m]), r); // R[0][m] = r P
-		xPmul.mul(R[1][m], r); // R[1][m] = r xP
+		st.commit(R[m], r);
 		Fr c;
 		local::Hash hash;
-		hash << S << T << R[0][0] << R[0][1] << R[1][0] << R[1][1];
+		hash << S << T << R[0][0] << R[1][0] << R[0][1] << R[1][1];
 		hash.get(c);
-		d[m] = c - d[1-m];
-		s[m] = r + d[m] * encRand;
+		st.finish(d[m], s[m], c, d[1-m], r, encRand);
 		return true;
 	}
 	/*
-		R[0][i] = s[i] P - d[i] T ; i = 0,1
-		R[1][0] = s[0] xP - d[0] S
+		R[i][0] = s[i] P - d[i] T ; i = 0,1
+		R[0][1] = s[0] xP - d[0] S
 		R[1][1] = s[1] xP - d[1](S - P)
-		c = H(S, T, R[0][0], R[0][1], R[1][0], R[1][1])
+		c = H(S, T, R[0][0], R[1][0], R[0][1], R[1][1])
 		c == d[0] + d[1]
 	*/
 	template<class G, class I, class MulG>
@@ -1173,23 +1198,12 @@ private:
 	{
 		const Fr *s = &zkp.d_[0];
 		const Fr *d = &zkp.d_[2];
-		G R[2][2];
-		G T1, T2;
-		for (int i = 0; i < 2; i++) {
-			Pmul.mul(static_cast<I&>(T1), s[i]); // T1 = s[i] P
-			G::mul(T2, T, d[i]);
-			G::sub(R[0][i], T1, T2);
-		}
-		xPmul.mul(T1, s[0]); // T1 = s[0] xP
-		G::mul(T2, S, d[0]);
-		G::sub(R[1][0], T1, T2);
-		xPmul.mul(T1, s[1]); // T1 = x[1] xP
-		G::sub(T2, S, P);
-		G::mul(T2, T2, d[1]);
-		G::sub(R[1][1], T1, T2);
+		const BinStatement<G, I, MulG> st(S, T, P, Pmul, xPmul);
+		G R[2][2]; // R[branch][eq]
+		st.recompute(R, d, s);
 		Fr c;
 		local::Hash hash;
-		hash << S << T << R[0][0] << R[0][1] << R[1][0] << R[1][1];
+		hash << S << T << R[0][0] << R[1][0] << R[0][1] << R[1][1];
 		hash.get(c);
 		return c == d[0] + d[1];
 	}
@@ -1291,7 +1305,7 @@ private:
 		return h == sum;
 	}
 	/*
-		encRand1, encRand2 are random values use for ElGamalEnc()
+		p, s are the random values used for ElGamalEnc() of (S1, T1) and (S2, T2)
 	*/
 	template<class G1, class G2, class INT, class I1, class I2, class MulG1, class MulG2>
 	static void makeZkpEq(ZkpEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, const INT& m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
@@ -1307,6 +1321,7 @@ private:
 		rm.setRand();
 		G1 R1, R2;
 		G2 R3, R4;
+		// commitments : ElGamalEnc(m; r) = (m P + r xP, r P) is the commitment to (m, r)
 		ElGamalEnc(R1, R2, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R3, R4, rm, Qmul, yQmul, &rs);
 		Fr& c = zkp.d_[0];
@@ -1316,10 +1331,8 @@ private:
 		local::Hash hash;
 		hash << S1 << T1 << S2 << T2 << R1 << R2 << R3 << R4;
 		hash.get(c);
-		Fr::mul(sp, c, p);
-		sp += rp;
-		Fr::mul(ss, c, s);
-		ss += rs;
+		sigma::response(sp, rp, c, p);
+		sigma::response(ss, rs, c, s);
 		Fr::mul(sm, c, m);
 		sm += rm;
 	}
@@ -1330,18 +1343,15 @@ private:
 		const Fr& sp = zkp.d_[1];
 		const Fr& ss = zkp.d_[2];
 		const Fr& sm = zkp.d_[3];
-		G1 R1, R2, X1;
-		G2 R3, R4, X2;
-		ElGamalEnc(R1, R2, sm, Pmul, xPmul, &sp);
-		G1::mul(X1, S1, c);
-		R1 -= X1;
-		G1::mul(X1, T1, c);
-		R2 -= X1;
-		ElGamalEnc(R3, R4, sm, Qmul, yQmul, &ss);
-		G2::mul(X2, S2, c);
-		R3 -= X2;
-		G2::mul(X2, T2, c);
-		R4 -= X2;
+		const sigma::CastMul<I1, mcl::fp::WindowMethod<I1> > Pm(Pmul);
+		const sigma::CastMul<I2, mcl::fp::WindowMethod<I2> > Qm(Qmul);
+		G1 R1, R2;
+		G2 R3, R4;
+		// (S1, T1) = (m P + p xP, p P), (S2, T2) = (m Q + s yQ, s Q)
+		sigma::recompute2(R1, Pm, sm, xPmul, sp, S1, c);
+		sigma::recompute1(R2, Pm, sp, T1, c);
+		sigma::recompute2(R3, Qm, sm, yQmul, ss, S2, c);
+		sigma::recompute1(R4, Qm, ss, T2, c);
 		Fr c2;
 		local::Hash hash;
 		hash << S1 << T1 << S2 << T2 << R1 << R2 << R3 << R4;
@@ -1349,7 +1359,7 @@ private:
 		return c == c2;
 	}
 	/*
-		encRand1, encRand2 are random values use for ElGamalEnc()
+		p, s are the random values used for ElGamalEnc() of (S1, T1) and (S2, T2)
 	*/
 	template<class G1, class G2, class I1, class I2, class MulG1, class MulG2>
 	static bool makeZkpBinEq(ZkpBinEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, int m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
@@ -1367,39 +1377,28 @@ private:
 		ElGamalEnc(S2, T2, m, Qmul, yQmul, &s);
 		d[1-m].setRand();
 		spm[1-m].setRand();
-		G1 R1[2], R2[2], X1;
-		Pmul.mul(static_cast<I1&>(R1[1-m]), spm[1-m]);
-		G1::mul(X1, T1, d[1-m]);
-		R1[1-m] -= X1;
-		if (m == 0) {
-			G1::sub(X1, S1, P_);
-			G1::mul(X1, X1, d[1-m]);
-		} else {
-			G1::mul(X1, S1, d[1-m]);
-		}
-		xPmul.mul(R2[1-m], spm[1-m]);
-		R2[1-m] -= X1;
+		// OR part : (S1, T1) = (m P + p xP, p P) with m = 0 or 1
+		const BinStatement<G1, I1, MulG1> st(S1, T1, P_, Pmul, xPmul);
+		G1 R[2][2]; // R[branch][eq]
+		st.simulate(R[1-m], 1-m, d[1-m], spm[1-m]);
 		Fr rpm, rp, rs, rm;
 		rpm.setRand();
 		rp.setRand();
 		rs.setRand();
 		rm.setRand();
-		ElGamalEnc(R2[m], R1[m], 0, Pmul, xPmul, &rpm);
+		st.commit(R[m], rpm);
+		// AND part : dec(S1, T1) = dec(S2, T2)
 		G1 R3, R4;
 		G2 R5, R6;
 		ElGamalEnc(R4, R3, rm, Pmul, xPmul, &rp);
 		ElGamalEnc(R6, R5, rm, Qmul, yQmul, &rs);
 		Fr c;
 		local::Hash hash;
-		hash << S1 << T1 << R1[0] << R1[1] << R2[0] << R2[1] << R3 << R4 << R5 << R6;
+		hash << S1 << T1 << R[0][0] << R[1][0] << R[0][1] << R[1][1] << R3 << R4 << R5 << R6;
 		hash.get(c);
-		Fr::sub(d[m], c, d[1-m]);
-		Fr::mul(spm[m], d[m], p);
-		spm[m] += rpm;
-		Fr::mul(sp, c, p);
-		sp += rp;
-		Fr::mul(ss, c, s);
-		ss += rs;
+		st.finish(d[m], spm[m], c, d[1-m], rpm, p);
+		sigma::response(sp, rp, c, p);
+		sigma::response(ss, rs, c, s);
 		Fr::mul(sm, c, m);
 		sm += rm;
 		return true;
@@ -1412,37 +1411,21 @@ private:
 		const Fr& ss = zkp.d_[4];
 		const Fr& sp = zkp.d_[5];
 		const Fr& sm = zkp.d_[6];
-		G1 R1[2], R2[2], X1;
-		for (int i = 0; i < 2; i++) {
-			Pmul.mul(static_cast<I1&>(R1[i]), spm[i]);
-			G1::mul(X1, T1, d[i]);
-			R1[i] -= X1;
-		}
-		xPmul.mul(R2[0], spm[0]);
-		G1::mul(X1, S1, d[0]);
-		R2[0] -= X1;
-		xPmul.mul(R2[1], spm[1]);
-		G1::sub(X1, S1, P_);
-		G1::mul(X1, X1, d[1]);
-		R2[1] -= X1;
+		const BinStatement<G1, I1, MulG1> st(S1, T1, P_, Pmul, xPmul);
+		const sigma::CastMul<I2, mcl::fp::WindowMethod<I2> > Qm(Qmul);
+		G1 R[2][2]; // R[branch][eq]
+		st.recompute(R, d, spm);
 		Fr c;
 		Fr::add(c, d[0], d[1]);
 		G1 R3, R4;
 		G2 R5, R6;
-		ElGamalEnc(R4, R3, sm, Pmul, xPmul, &sp);
-		G1::mul(X1, T1, c);
-		R3 -= X1;
-		G1::mul(X1, S1, c);
-		R4 -= X1;
-		ElGamalEnc(R6, R5, sm, Qmul, yQmul, &ss);
-		G2 X2;
-		G2::mul(X2, T2, c);
-		R5 -= X2;
-		G2::mul(X2, S2, c);
-		R6 -= X2;
+		sigma::recompute2(R4, st.Pm, sm, xPmul, sp, S1, c);
+		sigma::recompute1(R3, st.Pm, sp, T1, c);
+		sigma::recompute2(R6, Qm, sm, yQmul, ss, S2, c);
+		sigma::recompute1(R5, Qm, ss, T2, c);
 		Fr c2;
 		local::Hash hash;
-		hash << S1 << T1 << R1[0] << R1[1] << R2[0] << R2[1] << R3 << R4 << R5 << R6;
+		hash << S1 << T1 << R[0][0] << R[1][0] << R[0][1] << R[1][1] << R3 << R4 << R5 << R6;
 		hash.get(c2);
 		return c == c2;
 	}
@@ -1556,16 +1539,6 @@ public:
 		friend class PrecomputedPublicKey;
 		template<class T>
 		friend struct PublicKeyMethod;
-		template<class G>
-		struct MulG {
-			const G& base;
-			MulG(const G& base) : base(base) {}
-			template<class INT>
-			void mul(G& out, const INT& m) const
-			{
-				G::mul(out, base, m);
-			}
-		};
 		void set(const Fr& x, const Fr& y)
 		{
 			G1::mul(xP_, P_, x);
@@ -1574,13 +1547,13 @@ public:
 		template<class INT>
 		void encG1(CipherTextG1& c, const INT& m) const
 		{
-			const MulG<G1> xPmul(xP_);
+			const sigma::MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul);
 		}
 		template<class INT>
 		void encG2(CipherTextG2& c, const INT& m) const
 		{
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul);
 		}
 public:
@@ -1595,7 +1568,7 @@ public:
 		{
 			Fr encRand;
 			encRand.setRand();
-			const MulG<G1> xPmul(xP_);
+			const sigma::MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
 			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
 		}
@@ -1611,7 +1584,7 @@ public:
 		{
 			Fr encRand;
 			encRand.setRand();
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul, &encRand);
 			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
 		}
@@ -1627,7 +1600,7 @@ public:
 		{
 			Fr encRand;
 			encRand.setRand();
-			const MulG<G1> xPmul(xP_);
+			const sigma::MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
 			*pb = makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul);
 		}
@@ -1641,7 +1614,7 @@ public:
 		}
 		bool verify(const CipherTextG1& c, const ZkpBin& zkp) const
 		{
-			const MulG<G1> xPmul(xP_);
+			const sigma::MulG<G1> xPmul(xP_);
 			return verifyZkpBin(c.S_, c.T_, P_, zkp, PhashTbl_.getWM(), xPmul);
 		}
 		bool verify(const CipherTextG1& c, int64_t m, const ZkpDec& zkp) const
@@ -1658,13 +1631,9 @@ public:
 			G1::mul(A2, P_, m);
 //			PhashTbl_.getWM().mul(A2, m);
 			G1::sub(A2, c.S_, A2); // S - mP = xrP
-			G1 B1, B2, T;
-			G1::mul(B1, P1, d);
-			G1::mul(B2, P2, d);
-			G1::mul(T, A1, h);
-			B1 -= T;
-			G1::mul(T, A2, h);
-			B2 -= T;
+			G1 B1, B2;
+			sigma::recompute1(B1, sigma::MulG<G1>(P1), d, A1, h);
+			sigma::recompute1(B2, sigma::MulG<G1>(P2), d, A2, h);
 			Fr h2;
 			local::Hash hash;
 			hash << P2 << A1 << A2 << B1 << B2;
@@ -1673,31 +1642,31 @@ public:
 		}
 		bool verify(const CipherTextG2& c, const ZkpBin& zkp) const
 		{
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			return verifyZkpBin(c.S_, c.T_, Q_, zkp, QhashTbl_.getWM(), yQmul);
 		}
 		bool verify(const CipherTextG1& c, const Fr *zkp, const int *mVec, size_t mSize) const
 		{
-			const MulG<G1> xPmul(xP_);
+			const sigma::MulG<G1> xPmul(xP_);
 			return verifyZkpSet(P_, c.S_, c.T_, zkp, mVec, mSize, PhashTbl_.getWM(), xPmul);
 		}
 		template<class INT>
 		void encWithZkpEq(CipherTextG1& c1, CipherTextG2& c2, ZkpEq& zkp, const INT& m) const
 		{
-			const MulG<G1> xPmul(xP_);
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G1> xPmul(xP_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			makeZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
 		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpEq& zkp) const
 		{
-			const MulG<G1> xPmul(xP_);
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G1> xPmul(xP_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			return verifyZkpEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
 		void encWithZkpBinEq(bool *pb, CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
 		{
-			const MulG<G1> xPmul(xP_);
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G1> xPmul(xP_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			*pb = makeZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, m, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
 		void encWithZkpBinEq(CipherTextG1& c1, CipherTextG2& c2, ZkpBinEq& zkp, int m) const
@@ -1710,8 +1679,8 @@ public:
 		}
 		bool verify(const CipherTextG1& c1, const CipherTextG2& c2, const ZkpBinEq& zkp) const
 		{
-			const MulG<G1> xPmul(xP_);
-			const MulG<G2> yQmul(yQ_);
+			const sigma::MulG<G1> xPmul(xP_);
+			const sigma::MulG<G2> yQmul(yQ_);
 			return verifyZkpBinEq(zkp, c1.S_, c1.T_, c2.S_, c2.T_, PhashTbl_.getWM(), xPmul, QhashTbl_.getWM(), yQmul);
 		}
 		template<class INT>
