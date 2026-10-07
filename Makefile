@@ -39,8 +39,8 @@ ifeq ($(MCL_SUF),256)
   TEST_SRC+=ecdsa_c_test.cpp
 endif
 ifeq ($(MCL_SUF),384_256)
-  SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
-  TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
+  SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp bbs.cpp
+  TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp bbs_test.cpp
   TEST_SRC+=bls12_test.cpp
   TEST_SRC+=mapto_wb19_test.cpp
 endif
@@ -84,8 +84,14 @@ MCL_LIB=$(LIB_DIR)/lib$(MCL_SNAME).a
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
 SHE_LIB=$(LIB_DIR)/lishe$(MCL_SUF).a
 SHE_SLIB=$(LIB_DIR)/lishe$(MCL_SUF).$(LIB_SUF)
+# BBS signature is defined only for BLS12-381 (MCL_SUF=384_256)
+BBS_LIB=$(LIB_DIR)/libmclbbs$(MCL_SUF).a
+BBS_SLIB=$(LIB_DIR)/libmclbbs$(MCL_SUF).$(LIB_SUF)
 
 all: $(MCL_LIB) $(MCL_SLIB) $(SHE_LIB) $(SHE_SLIB)
+ifeq ($(MCL_SUF),384_256)
+all: $(BBS_LIB) $(BBS_SLIB)
+endif
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
 LLVM_LLC=llc$(LLVM_VER)
@@ -249,6 +255,7 @@ update_gen:
 #	$(CLANG) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN_OBJ=$(OBJ_DIR)/bn_c$(MCL_SUF).o
 SHE_OBJ=$(OBJ_DIR)/she_c$(MCL_SUF).o
+BBS_OBJ=$(OBJ_DIR)/bbs.o
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
@@ -264,10 +271,12 @@ LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=$(LLVM_MATTR)
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
   BN_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   SHE_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  BBS_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
 endif
 ifeq ($(OS),mingw64)
   MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(MCL_LIB)
   SHE_SLIB_LDFLAGS+=-Wl,--out-implib,$(SHE_SLIB)
+  BBS_SLIB_LDFLAGS+=-Wl,--out-implib,$(BBS_SLIB)
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
@@ -287,6 +296,12 @@ $(SHE_LIB): $(SHE_OBJ)
 
 $(SHE_SLIB): $(SHE_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(SHE_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE_SLIB_LDFLAGS)
+
+$(BBS_LIB): $(BBS_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BBS_OBJ)
+
+$(BBS_SLIB): $(BBS_OBJ) $(MCL_LIB)
+	$(PRE)$(CXX) -o $@ $(BBS_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(BBS_SLIB_LDFLAGS)
 
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
@@ -358,6 +373,9 @@ $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(MCL_LIB)
 
 $(EXE_DIR)/she_c$(MCL_SUF)_test.exe: $(OBJ_DIR)/she_c$(MCL_SUF)_test.o $(SHE_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE_LIB) $(MCL_LIB) $(LDFLAGS)
+
+$(EXE_DIR)/bbs_test.exe: $(OBJ_DIR)/bbs_test.o $(BBS_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BBS_LIB) $(MCL_LIB) $(LDFLAGS)
 
 # assume MCL_FP_BIT=256
 $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
