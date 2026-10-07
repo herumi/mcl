@@ -147,8 +147,13 @@ Bases2<G, M0, M1> makeBases2(const M0& m0, const M1& m1) { return Bases2<G, M0, 
 	response of the Schnorr protocol for X = sum of B_i w_i
 	z = k + c w (plus = true) or z = k - c w (plus = false)
 */
+// F is deduced from z only (the others may be a class derived from F)
 template<class F>
-void response(F& z, const F& k, const F& c, const F& w, bool plus = true)
+struct Identity {
+	typedef F type;
+};
+template<class F>
+void response(F& z, const typename Identity<F>::type& k, const typename Identity<F>::type& c, const typename Identity<F>::type& w, bool plus = true)
 {
 	F t;
 	F::mul(t, c, w);

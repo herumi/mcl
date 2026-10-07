@@ -34,6 +34,11 @@ static const size_t winSize = MCLSHE_WIN_SIZE;
 static const size_t defaultHashSize = 1024;
 static const size_t defaultTryNum = 1;
 
+// Fr initialized by a random value
+struct RandFr : Fr {
+	RandFr() { setRand(); }
+};
+
 struct KeyCount {
 	uint32_t key;
 	int32_t count; // power
@@ -975,8 +980,7 @@ public:
 			G1 A2;
 			G1::sub(A2, c.S_, R); // rxP
 			// A1 = x P1, A2 = x P2
-			Fr b;
-			b.setRand();
+			local::RandFr b;
 			G1 B1, B2;
 			sigma::commit1(B1, sigma::MulG<G1>(P1), b);
 			sigma::commit1(B2, sigma::MulG<G1>(P2), b);
@@ -1002,10 +1006,9 @@ public:
 			const AGT *a = AGT::cast(A);
 			const MulAGT R0(AGT::cast(aux.R_[0]));
 
-			Fr b[3];
+			local::RandFr b[3];
 			GT B[3], X;
 			for (int i = 0; i < 3; i++) {
-				b[i].setByCSPRNG();
 				sigma::commit1(AGT::cast(B[i]), R0, b[i]);
 			}
 			AGT negA3;
@@ -1176,8 +1179,7 @@ private:
 		d[1-m].setRand();
 		s[1-m].setRand();
 		st.simulate(R[1-m], 1-m, d[1-m], s[1-m]);
-		Fr r;
-		r.setRand();
+		local::RandFr r;
 		st.commit(R[m], r);
 		Fr c;
 		local::Hash hash;
@@ -1310,15 +1312,10 @@ private:
 	template<class G1, class G2, class INT, class I1, class I2, class MulG1, class MulG2>
 	static void makeZkpEq(ZkpEq& zkp, G1& S1, G1& T1, G2& S2, G2& T2, const INT& m, const mcl::fp::WindowMethod<I1>& Pmul, const MulG1& xPmul, const mcl::fp::WindowMethod<I2>& Qmul, const MulG2& yQmul)
 	{
-		Fr p, s;
-		p.setRand();
-		s.setRand();
+		local::RandFr p, s;
 		ElGamalEnc(S1, T1, m, Pmul, xPmul, &p);
 		ElGamalEnc(S2, T2, m, Qmul, yQmul, &s);
-		Fr rp, rs, rm;
-		rp.setRand();
-		rs.setRand();
-		rm.setRand();
+		local::RandFr rp, rs, rm;
 		G1 R1, R2;
 		G2 R3, R4;
 		// commitments : ElGamalEnc(m; r) = (m P + r xP, r P) is the commitment to (m, r)
@@ -1370,9 +1367,7 @@ private:
 		Fr& ss = zkp.d_[4];
 		Fr& sp = zkp.d_[5];
 		Fr& sm = zkp.d_[6];
-		Fr p, s;
-		p.setRand();
-		s.setRand();
+		local::RandFr p, s;
 		ElGamalEnc(S1, T1, m, Pmul, xPmul, &p);
 		ElGamalEnc(S2, T2, m, Qmul, yQmul, &s);
 		d[1-m].setRand();
@@ -1381,11 +1376,7 @@ private:
 		const BinStatement<G1, I1, MulG1> st(S1, T1, P_, Pmul, xPmul);
 		G1 R[2][2]; // R[branch][eq]
 		st.simulate(R[1-m], 1-m, d[1-m], spm[1-m]);
-		Fr rpm, rp, rs, rm;
-		rpm.setRand();
-		rp.setRand();
-		rs.setRand();
-		rm.setRand();
+		local::RandFr rpm, rp, rs, rm;
 		st.commit(R[m], rpm);
 		// AND part : dec(S1, T1) = dec(S2, T2)
 		G1 R3, R4;
@@ -1566,8 +1557,7 @@ public:
 		}
 		void encWithZkpBin(bool *pb, CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
-			Fr encRand;
-			encRand.setRand();
+			local::RandFr encRand;
 			const sigma::MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
 			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPmul);
@@ -1582,8 +1572,7 @@ public:
 		}
 		void encWithZkpBin(bool *pb, CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
-			Fr encRand;
-			encRand.setRand();
+			local::RandFr encRand;
 			const sigma::MulG<G2> yQmul(yQ_);
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQmul, &encRand);
 			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQmul);
@@ -1598,8 +1587,7 @@ public:
 		}
 		void encWithZkpSet(bool *pb, CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
 		{
-			Fr encRand;
-			encRand.setRand();
+			local::RandFr encRand;
 			const sigma::MulG<G1> xPmul(xP_);
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPmul, &encRand);
 			*pb = makeZkpSet(zkp, P_, c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPmul);
@@ -1690,10 +1678,7 @@ public:
 				(s, t, u, v) = ((e^x)^a (e^y)^b (e^-xy)^c e^m, e^b, e^a, e^c)
 				s = e(a xP + m P, Q)e(b P - c xP, yQ)
 			*/
-			Fr ra, rb, rc;
-			ra.setRand();
-			rb.setRand();
-			rc.setRand();
+			local::RandFr ra, rb, rc;
 			GT e;
 
 			G1 P1, P2;
@@ -1809,10 +1794,7 @@ public:
 			/*
 				(s, t, u, v) = (e^m e^(xya), (e^x)^b, (e^y)^c, e^(b + c - a))
 			*/
-			Fr ra, rb, rc;
-			ra.setRand();
-			rb.setRand();
-			rc.setRand();
+			local::RandFr ra, rb, rc;
 			GT t;
 			ePQhashTbl_.mulByWindowMethod(c.g_[0], m); // e^m
 			mulByWindowMethod(t, exyPQwm_, ra); // (e^xy)^a
@@ -1839,8 +1821,7 @@ public:
 		}
 		void encWithZkpBin(bool *pb, CipherTextG1& c, ZkpBin& zkp, int m) const
 		{
-			Fr encRand;
-			encRand.setRand();
+			local::RandFr encRand;
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
 			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, P_, m,  PhashTbl_.getWM(), xPwm_);
 		}
@@ -1854,8 +1835,7 @@ public:
 		}
 		void encWithZkpBin(bool *pb, CipherTextG2& c, ZkpBin& zkp, int m) const
 		{
-			Fr encRand;
-			encRand.setRand();
+			local::RandFr encRand;
 			ElGamalEnc(c.S_, c.T_, m, QhashTbl_.getWM(), yQwm_, &encRand);
 			*pb = makeZkpBin(zkp, c.S_, c.T_, encRand, Q_, m,  QhashTbl_.getWM(), yQwm_);
 		}
@@ -1869,8 +1849,7 @@ public:
 		}
 		void encWithZkpSet(bool *pb, CipherTextG1& c, Fr *zkp, int m, const int *mVec, size_t mSize) const
 		{
-			Fr encRand;
-			encRand.setRand();
+			local::RandFr encRand;
 			ElGamalEnc(c.S_, c.T_, m, PhashTbl_.getWM(), xPwm_, &encRand);
 			*pb = makeZkpSet(zkp, xPwm_.tbl_[1], c.S_, c.T_, encRand, m,  mVec, mSize, PhashTbl_.getWM(), xPwm_);
 		}
