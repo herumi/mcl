@@ -168,7 +168,15 @@ public:
 			*pb = false;
 			return;
 		}
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__EMSCRIPTEN__)
+	// avoid gcc false positive after vectorization of a caller's loop (gcc 14)
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
 		p_[n_++] = x;
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__EMSCRIPTEN__)
+	#pragma GCC diagnostic pop
+#endif
 		*pb = true;
 	}
 	bool copy(const FixedArray<T, maxSize>& rhs)
