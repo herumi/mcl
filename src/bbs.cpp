@@ -48,6 +48,7 @@ static const Str s_comDisApiId = BBS_STR("COM_DIS_" BBS_API_ID);
 static const Str s_extTag = BBS_STR("BBS_EXT_V1_");
 static const size_t MAX_PRED_BIT = 64;
 static const size_t MAX_PRED_N = 4096;
+static const size_t MAX_PRED_TERM = BBS_PRED_MAX_TERM;
 
 // P1 of BLS12-381-SHA-256
 static const char s_P1Hex[] = "a8ce256102840821a3e94ea9025e4662b205762f9776b3a766c872b948f1fd225e7c59698588e70d11406d161b4e28c9";
@@ -532,10 +533,26 @@ inline void setUint64(Fr& x, uint64_t v)
 }
 
 /*
+	compare the linear combinations of two predicates
+	in the lexicographic order of (termN, idx[0], coef[0], idx[1], coef[1], ...)
+	return 0 if they are the same (the predicates share the commitment)
+*/
+static int cmpLinComb(const bbsPredicate& a, const bbsPredicate& b)
+{
+	if (a.termN != b.termN) return a.termN < b.termN ? -1 : 1;
+	for (size_t k = 0; k < a.termN; k++) {
+		if (a.idx[k] != b.idx[k]) return a.idx[k] < b.idx[k] ? -1 : 1;
+		if (a.coef[k] != b.coef[k]) return a.coef[k] < b.coef[k] ? -1 : 1;
+	}
+	return 0;
+}
+
+/*
 	check the predicates
-	- sorted by idx in ascending order
+	- sorted by the linear combination in ascending order (see cmpLinComb)
+	- 1 <= termN <= MAX_PRED_TERM, coef[k] != 0 and idx[k] is strictly increasing for k < termN, coef[k] = idx[k] = 0 for k >= termN
 	- type is BBS_PRED_GE or BBS_PRED_LE, 1 <= bitN <= MAX_PRED_BIT and reserved is 0
-	*pK : the number of the distinct idx
+	*pK : the number of the distinct linear combinations
 	*pBitN : the sum of bitN
 */
 static bool checkPreds(size_t *pK, size_t *pBitN, const bbsPredicate *preds, size_t predN)
@@ -548,8 +565,17 @@ static bool checkPreds(size_t *pK, size_t *pBitN, const bbsPredicate *preds, siz
 		if (p.type != BBS_PRED_GE && p.type != BBS_PRED_LE) return false;
 		if (p.bitN == 0 || p.bitN > MAX_PRED_BIT) return false;
 		if (p.reserved != 0) return false;
-		if (i == 0 || preds[i - 1].idx != p.idx) {
-			if (i > 0 && preds[i - 1].idx > p.idx) return false;
+		if (p.termN == 0 || p.termN > MAX_PRED_TERM) return false;
+		for (size_t k = 0; k < MAX_PRED_TERM; k++) {
+			if (k < p.termN) {
+				if (p.coef[k] == 0) return false;
+				if (k > 0 && p.idx[k - 1] >= p.idx[k]) return false;
+			} else {
+				if (p.coef[k] != 0 || p.idx[k] != 0) return false;
+			}
+		}
+		if (i == 0 || cmpLinComb(preds[i - 1], p) != 0) {
+			if (i > 0 && cmpLinComb(preds[i - 1], p) > 0) return false;
 			K++;
 		}
 		bitN += p.bitN;
@@ -586,33 +612,56 @@ static size_t findIdx(const uint32_t *js, size_t n, uint32_t idx)
 }
 
 /*
+	rank[k] = the position of idx[k] of the linear combination in the sorted array js[0..U)
+	return false if some idx[k] is not an undisclosed message
+*/
+static bool getRanks(size_t *rank, const bbsPredicate& p, const uint32_t *js, size_t U)
+{
+	for (size_t k = 0; k < p.termN; k++) {
+		rank[k] = findIdx(js, U, p.idx[k]);
+		if (rank[k] == U) return false;
+	}
+	return true;
+}
+
+/*
 	public values and the first messages of the sigma protocols of the extension
 	They are bound to the challenge of the BBS proof through the presentation header.
 */
 struct ExtTranscript {
-	Array<uint32_t> cidx; // idx of the committed messages
-	Array<G1> C; // C = Y_0 * s + Y_1 * m
-	Array<G1> Ct; // C~ = Y_0 * s~ + Y_1 * m~
+	Array<uint32_t> cpi; // index of the first predicate of each committed linear combination
+	Array<G1> C; // C = Y_0 * s + Y_1 * x
+	Array<G1> Ct; // C~ = Y_0 * s~ + Y_1 * x~
 	// for all bits of all predicates
 	Array<G1> E; // E = Y_0 * t + Y_1 * bit
 	Array<G1> a0; // the first message of the OR-proof for bit = 0
 	Array<G1> a1; // the first message of the OR-proof for bit = 1
 	bool init(size_t K, size_t bitN)
 	{
-		return cidx.resize(K) && C.resize(K) && Ct.resize(K) && E.resize(bitN) && a0.resize(bitN) && a1.resize(bitN);
+		return cpi.resize(K) && C.resize(K) && Ct.resize(K) && E.resize(bitN) && a0.resize(bitN) && a1.resize(bitN);
+	}
+	// lincomb = termN || (idx, coef) * termN
+	static void putLinComb(Octets& os, const bbsPredicate& p)
+	{
+		os.putInt(p.termN);
+		for (size_t k = 0; k < p.termN; k++) {
+			os.putInt(p.idx[k]);
+			os.putInt(p.coef[k]);
+		}
 	}
 	/*
-		ph' = tag || K || (idx, C, C~) * K || predN || (idx, type, bound, bitN, E * bitN, (a0, a1) * bitN) * predN || I2OSP(phSize, 8) || ph
+		ph' = tag || K || (lincomb, C, C~) * K || predN || (lincomb, type, bound, bitN, E * bitN, (a0, a1) * bitN) * predN || I2OSP(phSize, 8) || ph
 	*/
 	bool makePh(Octets& os, const bbsPredicate *preds, size_t predN, const uint8_t *ph, size_t phSize) const
 	{
-		const size_t K = cidx.size();
+		const size_t K = cpi.size();
 		const size_t bitN = E.size();
-		if (!os.init(s_extTag.size + 8 + (8 + G1_SIZE * 2) * K + 8 + 8 * 4 * predN + G1_SIZE * 3 * bitN + 8 + phSize)) return false;
+		const size_t linCombSize = 8 + 8 * 2 * MAX_PRED_TERM; // upper bound of the size of lincomb
+		if (!os.init(s_extTag.size + 8 + (linCombSize + G1_SIZE * 2) * K + 8 + (linCombSize + 8 * 3) * predN + G1_SIZE * 3 * bitN + 8 + phSize)) return false;
 		os.put(s_extTag.p, s_extTag.size);
 		os.putInt(K);
 		for (size_t i = 0; i < K; i++) {
-			os.putInt(cidx[i]);
+			putLinComb(os, preds[cpi[i]]);
 			os.put(C[i]);
 			os.put(Ct[i]);
 		}
@@ -620,7 +669,7 @@ struct ExtTranscript {
 		size_t pos = 0;
 		for (size_t i = 0; i < predN; i++) {
 			const bbsPredicate& p = preds[i];
-			os.putInt(p.idx);
+			putLinComb(os, p);
 			os.putInt(p.type);
 			os.putInt(p.bound);
 			os.putInt(p.bitN);
@@ -640,7 +689,7 @@ struct ExtTranscript {
 };
 
 // Cw = C - Y_1 * bound if GE, Y_1 * bound - C if LE
-// Cw is a commitment to w = m - bound or bound - m
+// Cw is a commitment to w = x - bound or bound - x
 inline void calcCw(G1& Cw, const G1& C, const bbsPredicate& p)
 {
 	Fr bound;
@@ -925,33 +974,53 @@ size_t proofGenEx(uint8_t *proof, size_t maxProofSize, const PublicKey& pub, con
 
 	size_t k = 0;
 	size_t pos = 0;
+	Fr x; // the linear combination of the current commitment
+	x.clear();
 	for (size_t i = 0; i < predN; i++) {
 		const bbsPredicate& p = preds[i];
-		if (i == 0 || preds[i - 1].idx != p.idx) {
-			// a new commitment
+		if (i == 0 || cmpLinComb(preds[i - 1], p) != 0) {
+			// a new commitment to x = sum coef * m with x~ = sum coef * m~
 			if (i > 0) k++;
-			const size_t rank = findIdx(js.data(), U, p.idx);
-			if (rank == U) return 0; // not an undisclosed message
-			tr.cidx[k] = p.idx;
-			tr.C[k] = s_Y[0] * s[k] + s_Y[1] * msgs[p.idx];
-			tr.Ct[k] = s_Y[0] * s_tilde[k] + s_Y[1] * m_tilde[rank];
+			size_t rank[MAX_PRED_TERM];
+			if (!getRanks(rank, p, js.data(), U)) { // not an undisclosed message
+				secureZero(&x, sizeof(x));
+				return 0;
+			}
+			Fr xt;
+			x.clear();
+			xt.clear();
+			for (size_t j = 0; j < p.termN; j++) {
+				Fr coef;
+				setUint64(coef, p.coef[j]);
+				x += coef * msgs[p.idx[j]];
+				xt += coef * m_tilde[rank[j]];
+			}
+			tr.cpi[k] = uint32_t(i);
+			tr.C[k] = s_Y[0] * s[k] + s_Y[1] * x;
+			tr.Ct[k] = s_Y[0] * s_tilde[k] + s_Y[1] * xt;
 		}
-		// w = m - bound or bound - m must be in [0, 2^n). sw is the random value of Cw
+		// w = x - bound or bound - x must be in [0, 2^n). sw is the random value of Cw
 		const size_t n = p.bitN;
 		Fr bound, w, sw;
 		setUint64(bound, p.bound);
 		if (p.type == BBS_PRED_GE) {
-			w = msgs[p.idx] - bound;
+			w = x - bound;
 			sw = s[k];
 		} else {
-			w = bound - msgs[p.idx];
+			w = bound - x;
 			Fr::neg(sw, s[k]);
 		}
 		bool b;
 		const uint64_t wv = w.getUint64(&b);
 		secureZero(&w, sizeof(w));
-		if (!b) return 0;
-		if (n < 64 && (wv >> n) != 0) return 0;
+		if (!b) {
+			secureZero(&x, sizeof(x));
+			return 0;
+		}
+		if (n < 64 && (wv >> n) != 0) {
+			secureZero(&x, sizeof(x));
+			return 0;
+		}
 		// sw = sum_{j=0}^{n-1} 2^j bt[j]
 		{
 			Fr sum, pow2;
@@ -982,6 +1051,7 @@ size_t proofGenEx(uint8_t *proof, size_t maxProofSize, const PublicKey& pub, con
 		}
 		pos += n;
 	}
+	secureZero(&x, sizeof(x));
 
 	Octets phEx;
 	if (!tr.makePh(phEx, preds, predN, ph, phSize)) return 0;
@@ -1056,22 +1126,28 @@ bool proofVerifyEx(const PublicKey& pub, const uint8_t *proof, size_t proofSize,
 	ExtTranscript tr;
 	if (!tr.init(K, bitN)) return false;
 	const uint8_t *in = proof + baseSize;
-	// C~ = Y_0 * s^ + Y_1 * m^ - C * c
+	// C~ = Y_0 * s^ + Y_1 * x^ - C * c where x^ = sum coef * m^
 	{
 		size_t k = 0;
 		for (size_t i = 0; i < predN; i++) {
 			const bbsPredicate& p = preds[i];
-			if (i > 0 && preds[i - 1].idx == p.idx) continue;
-			const size_t rank = findIdx(js.data(), U, p.idx);
-			if (rank == U) return false; // not an undisclosed message
-			Fr s_hat, m_hat;
+			if (i > 0 && cmpLinComb(preds[i - 1], p) == 0) continue;
+			size_t rank[MAX_PRED_TERM];
+			if (!getRanks(rank, p, js.data(), U)) return false; // not an undisclosed message
+			Fr s_hat, x_hat;
 			if (!getG1(tr.C[k], in)) return false;
 			in += G1_SIZE;
 			if (s_hat.deserialize(in, FR_SIZE) != FR_SIZE) return false;
 			in += FR_SIZE;
-			if (!getFr(m_hat, m_hat_top + FR_SIZE * rank)) return false;
-			tr.cidx[k] = p.idx;
-			tr.Ct[k] = s_Y[0] * s_hat + s_Y[1] * m_hat - tr.C[k] * c;
+			x_hat.clear();
+			for (size_t j = 0; j < p.termN; j++) {
+				Fr m_hat, coef;
+				if (!getFr(m_hat, m_hat_top + FR_SIZE * rank[j])) return false;
+				setUint64(coef, p.coef[j]);
+				x_hat += coef * m_hat;
+			}
+			tr.cpi[k] = uint32_t(i);
+			tr.Ct[k] = s_Y[0] * s_hat + s_Y[1] * x_hat - tr.C[k] * c;
 			k++;
 		}
 	}
@@ -1080,7 +1156,7 @@ bool proofVerifyEx(const PublicKey& pub, const uint8_t *proof, size_t proofSize,
 		size_t pos = 0;
 		for (size_t i = 0; i < predN; i++) {
 			const bbsPredicate& p = preds[i];
-			if (i > 0 && preds[i - 1].idx != p.idx) k++;
+			if (i > 0 && cmpLinComb(preds[i - 1], p) != 0) k++;
 			const size_t n = p.bitN;
 			// E_0 = Cw - sum_{j=1}^{n-1} 2^j E_j
 			G1 acc;

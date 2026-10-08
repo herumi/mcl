@@ -1014,7 +1014,7 @@ CYBOZU_TEST_AUTO(fr_api)
 
 /*
 	tests of the extension (range predicates for undisclosed integer messages)
-	messages : [ "abc", m1, m2, "xyz" ] where m1 and m2 are integers
+	messages : [ "abc", v[0], ..., v[intN-1], "xyz" ] where v[i] are integers (the index of v[i] is i + 1)
 */
 struct PredTest {
 	bbsSecretKey sec;
@@ -1024,16 +1024,26 @@ struct PredTest {
 	Bytes header;
 	Bytes ph;
 	PredTest(uint64_t m1, uint64_t m2)
-		: ms(4)
 	{
+		const uint64_t v[] = { m1, m2 };
+		init(v, 2);
+	}
+	PredTest(const uint64_t *v, size_t intN)
+	{
+		init(v, intN);
+	}
+	void init(const uint64_t *v, size_t intN)
+	{
+		ms.resize(intN + 2);
 		CYBOZU_TEST_ASSERT(bbsInitSecretKey(&sec));
 		CYBOZU_TEST_ASSERT(bbsGetPublicKey(&pub, &sec));
 		const uint8_t abc[] = { 'a', 'b', 'c' };
 		const uint8_t xyz[] = { 'x', 'y', 'z' };
 		bbsMsgToFr(&ms[0], abc, sizeof(abc));
-		bbsUint64ToFr(&ms[1], m1);
-		bbsUint64ToFr(&ms[2], m2);
-		bbsMsgToFr(&ms[3], xyz, sizeof(xyz));
+		for (size_t i = 0; i < intN; i++) {
+			bbsUint64ToFr(&ms[i + 1], v[i]);
+		}
+		bbsMsgToFr(&ms[intN + 1], xyz, sizeof(xyz));
 		header = fromHex(g_headerHex);
 		ph = fromHex(g_phHex);
 		CYBOZU_TEST_ASSERT(bbsSignFr(&sig, &sec, &pub, header.data(), header.size(), ms.data(), n()));
@@ -1057,20 +1067,32 @@ struct PredTest {
 	}
 };
 
-bbsPredicate makePred(uint32_t idx, uint32_t type, uint64_t bound, uint32_t bitN)
+// predicate for the linear combination sum coefs[k] * msgs[idxs[k]]
+bbsPredicate makeLinPred(const uint32_t *idxs, const uint32_t *coefs, uint32_t termN, uint32_t type, uint64_t bound, uint32_t bitN)
 {
 	bbsPredicate p;
+	memset(&p, 0, sizeof(p));
 	p.bound = bound;
-	p.idx = idx;
+	for (uint32_t k = 0; k < termN; k++) {
+		p.idx[k] = idxs[k];
+		p.coef[k] = coefs[k];
+	}
+	p.termN = termN;
 	p.type = type;
 	p.bitN = bitN;
-	p.reserved = 0;
 	return p;
+}
+
+// predicate for a single message msgs[idx]
+bbsPredicate makePred(uint32_t idx, uint32_t type, uint64_t bound, uint32_t bitN)
+{
+	const uint32_t coef = 1;
+	return makeLinPred(&idx, &coef, 1, type, bound, bitN);
 }
 
 CYBOZU_TEST_AUTO(pred_range)
 {
-	CYBOZU_TEST_EQUAL(sizeof(bbsPredicate), 24u);
+	CYBOZU_TEST_EQUAL(sizeof(bbsPredicate), 88u);
 	const uint64_t M = uint64_t(-1);
 	const struct {
 		uint64_t m;
@@ -1131,7 +1153,7 @@ CYBOZU_TEST_AUTO(pred_range)
 		wrong.type = pred.type == BBS_PRED_GE ? BBS_PRED_LE : BBS_PRED_GE;
 		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, 1, &wrong, 1));
 		wrong = pred;
-		wrong.idx = 2;
+		wrong.idx[0] = 2;
 		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, 1, &wrong, 1));
 		wrong = pred;
 		wrong.bitN = pred.bitN == 64 ? 63 : pred.bitN + 1;
@@ -1283,6 +1305,172 @@ CYBOZU_TEST_AUTO(pred_invalid)
 	}
 }
 
+// predicates for linear combinations of undisclosed integer messages
+CYBOZU_TEST_AUTO(pred_lincomb)
+{
+	// year, month, day, age (idx 1, 2, 3, 4). "abc" is 0 and "xyz" is 5
+	const uint64_t v[] = { 1996, 3, 20, 30 };
+	const PredTest t(v, CYBOZU_NUM_OF_ARRAY(v));
+	const uint32_t discIdxs[] = { 0, 5 };
+	const uint32_t discN = 2;
+	const uint32_t undiscN = t.n() - discN;
+	// the birthday is x = 512 * year + 32 * month + day, which preserves the order of the dates
+	const uint32_t idxs[] = { 1, 2, 3 };
+	const uint32_t coefs[] = { 512, 32, 1 };
+	const uint64_t birth = 512 * 1996 + 32 * 3 + 20;
+	const uint64_t bound = 512 * 2008 + 32 * 10 + 1; // 2008/10/01
+	// birthday <= 2008/10/01 (18 years old or older on 2026/10/01)
+	{
+		bbsPredicate p = makeLinPred(idxs, coefs, 3, BBS_PRED_LE, bound, 17);
+		const Bytes proof = t.gen(discIdxs, discN, &p, 1);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		CYBOZU_TEST_EQUAL(proof.size(), bbsGetProofSize(undiscN) + 80 + 144 * 17 - 48);
+		CYBOZU_TEST_ASSERT(t.verify(proof, discIdxs, discN, &p, 1));
+		// a different linear combination
+		bbsPredicate w = p;
+		w.coef[1] = 33;
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, &w, 1));
+		w = p;
+		w.idx[2] = 4;
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, &w, 1));
+		w = p;
+		w.termN = 2;
+		w.idx[2] = 0;
+		w.coef[2] = 0;
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, &w, 1));
+		// the boundary
+		p.bound = birth;
+		CYBOZU_TEST_ASSERT(!t.gen(discIdxs, discN, &p, 1).empty());
+		p.bound = birth - 1;
+		CYBOZU_TEST_ASSERT(t.gen(discIdxs, discN, &p, 1).empty());
+	}
+	// birthday >= bound
+	{
+		bbsPredicate p = makeLinPred(idxs, coefs, 3, BBS_PRED_GE, birth, 17);
+		const Bytes proof = t.gen(discIdxs, discN, &p, 1);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		CYBOZU_TEST_ASSERT(t.verify(proof, discIdxs, discN, &p, 1));
+		p.bound = birth + 1;
+		CYBOZU_TEST_ASSERT(t.gen(discIdxs, discN, &p, 1).empty());
+	}
+	// two predicates on the same linear combination share the commitment
+	{
+		const bbsPredicate preds[] = {
+			makeLinPred(idxs, coefs, 3, BBS_PRED_GE, birth - 100, 17),
+			makeLinPred(idxs, coefs, 3, BBS_PRED_LE, bound, 17),
+		};
+		const Bytes proof = t.gen(discIdxs, discN, preds, 2);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		CYBOZU_TEST_EQUAL(proof.size(), bbsGetProofSize(undiscN) + 80 + (144 * 17 - 48) * 2);
+		CYBOZU_TEST_ASSERT(t.verify(proof, discIdxs, discN, preds, 2));
+		// the same linear combination may be in any order, but the proof depends on the order
+		const bbsPredicate swapped[] = { preds[1], preds[0] };
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, swapped, 2));
+		const Bytes proof2 = t.gen(discIdxs, discN, swapped, 2);
+		CYBOZU_TEST_ASSERT(!proof2.empty());
+		CYBOZU_TEST_ASSERT(t.verify(proof2, discIdxs, discN, swapped, 2));
+	}
+	// different linear combinations have their own commitments. 18 <= age and birthday <= bound
+	{
+		const bbsPredicate preds[] = {
+			makePred(4, BBS_PRED_GE, 18, 8), // termN = 1 comes first
+			makeLinPred(idxs, coefs, 3, BBS_PRED_LE, bound, 17),
+		};
+		const Bytes proof = t.gen(discIdxs, discN, preds, 2);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		CYBOZU_TEST_EQUAL(proof.size(), bbsGetProofSize(undiscN) + 80 * 2 + (144 * 8 - 48) + (144 * 17 - 48));
+		CYBOZU_TEST_ASSERT(t.verify(proof, discIdxs, discN, preds, 2));
+		// not sorted
+		const bbsPredicate notSorted[] = { preds[1], preds[0] };
+		CYBOZU_TEST_EQUAL(bbsGetProofExSize(undiscN, notSorted, 2), 0u);
+		CYBOZU_TEST_ASSERT(t.gen(discIdxs, discN, notSorted, 2).empty());
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, notSorted, 2));
+	}
+	// invalid predicates
+	{
+		const bbsPredicate p = makeLinPred(idxs, coefs, 3, BBS_PRED_LE, bound, 17);
+		const Bytes proof = t.gen(discIdxs, discN, &p, 1);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		bbsPredicate termN0 = p;
+		termN0.termN = 0;
+		bbsPredicate termN9 = p;
+		termN9.termN = BBS_PRED_MAX_TERM + 1;
+		bbsPredicate coef0 = p;
+		coef0.coef[0] = 0;
+		bbsPredicate sameIdx = p;
+		sameIdx.idx[1] = 1;
+		bbsPredicate notIncreasing = p;
+		notIncreasing.idx[0] = 2;
+		notIncreasing.idx[1] = 1;
+		bbsPredicate unusedCoef = p;
+		unusedCoef.coef[3] = 1;
+		bbsPredicate unusedIdx = p;
+		unusedIdx.idx[3] = 1;
+		const bbsPredicate *tbl[] = { &termN0, &termN9, &coef0, &sameIdx, &notIncreasing, &unusedCoef, &unusedIdx };
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			CYBOZU_TEST_EQUAL(bbsGetProofExSize(undiscN, tbl[i], 1), 0u);
+			CYBOZU_TEST_ASSERT(t.gen(discIdxs, discN, tbl[i], 1).empty());
+			CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, tbl[i], 1));
+		}
+		// a term of a disclosed message or an out-of-range index
+		const uint32_t disclosedIdxs[] = { 0, 1 };
+		const uint32_t outOfRangeIdxs[] = { 1, 6 };
+		const uint32_t coefs2[] = { 1, 1 };
+		const bbsPredicate disclosed = makeLinPred(disclosedIdxs, coefs2, 2, BBS_PRED_GE, 0, 8);
+		const bbsPredicate outOfRange = makeLinPred(outOfRangeIdxs, coefs2, 2, BBS_PRED_GE, 0, 8);
+		CYBOZU_TEST_ASSERT(t.gen(discIdxs, discN, &disclosed, 1).empty());
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, &disclosed, 1));
+		CYBOZU_TEST_ASSERT(t.gen(discIdxs, discN, &outOfRange, 1).empty());
+		CYBOZU_TEST_ASSERT(!t.verify(proof, discIdxs, discN, &outOfRange, 1));
+	}
+	// the linear combination may exceed 2^64
+	{
+		const uint64_t M = uint64_t(-1);
+		const uint64_t v2[] = { M, M };
+		const PredTest t2(v2, 2);
+		const uint32_t idxs2[] = { 1, 2 };
+		const uint32_t coefs2[] = { 1, 1 };
+		const uint32_t discIdxs2[] = { 0, 3 };
+		// x = 2^65 - 2, x - M = M < 2^64
+		bbsPredicate p = makeLinPred(idxs2, coefs2, 2, BBS_PRED_GE, M, 64);
+		const Bytes proof = t2.gen(discIdxs2, 2, &p, 1);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		CYBOZU_TEST_ASSERT(t2.verify(proof, discIdxs2, 2, &p, 1));
+		p.bitN = 63;
+		CYBOZU_TEST_ASSERT(t2.gen(discIdxs2, 2, &p, 1).empty());
+		// x - 0 >= 2^64 can not be proven
+		p.bound = 0;
+		p.bitN = 64;
+		CYBOZU_TEST_ASSERT(t2.gen(discIdxs2, 2, &p, 1).empty());
+	}
+	// the max number of terms with the max coefficients
+	{
+		uint64_t v8[BBS_PRED_MAX_TERM];
+		uint32_t idxs8[BBS_PRED_MAX_TERM];
+		uint32_t coefs8[BBS_PRED_MAX_TERM];
+		uint64_t x = 0;
+		for (size_t i = 0; i < BBS_PRED_MAX_TERM; i++) {
+			v8[i] = i + 1;
+			idxs8[i] = uint32_t(i + 1);
+			coefs8[i] = 0xffffffff;
+			x += coefs8[i] * v8[i];
+		}
+		const PredTest t8(v8, BBS_PRED_MAX_TERM);
+		const uint32_t discIdxs8[] = { 0, BBS_PRED_MAX_TERM + 1 };
+		const bbsPredicate preds[] = {
+			makeLinPred(idxs8, coefs8, BBS_PRED_MAX_TERM, BBS_PRED_GE, x, 1),
+			makeLinPred(idxs8, coefs8, BBS_PRED_MAX_TERM, BBS_PRED_LE, x, 1),
+		};
+		const Bytes proof = t8.gen(discIdxs8, 2, preds, 2);
+		CYBOZU_TEST_ASSERT(!proof.empty());
+		CYBOZU_TEST_EQUAL(proof.size(), bbsGetProofSize(BBS_PRED_MAX_TERM) + 80 + (144 * 1 - 48) * 2);
+		CYBOZU_TEST_ASSERT(t8.verify(proof, discIdxs8, 2, preds, 2));
+		bbsPredicate p = preds[0];
+		p.bound = x + 1;
+		CYBOZU_TEST_ASSERT(t8.gen(discIdxs8, 2, &p, 1).empty());
+	}
+}
+
 // the first part of a proof is a proof of the spec whose presentation header is ph'
 /*
 	regression test which fixes the byte sequence of the extended proof
@@ -1332,7 +1520,7 @@ CYBOZU_TEST_AUTO(pred_fixed)
 	uint8_t md[32];
 	cybozu::Sha256().digest(md, sizeof(md), proof.data(), proof.size());
 	CYBOZU_TEST_EQUAL(toHex(t.pub), "81469dc235325fad0a889de3d37731f7fd9b1f0bf5fe389e1b9a8ea8a68f0f18e15cef9c3b955fed50962fd6ac6e489416f11453ddec138c33cc53467c8c3eda043f7bafdaa6acf5943c3f53cde2d323050679184969928d612ea5247e48e4b3");
-	CYBOZU_TEST_EQUAL(toHex(md, sizeof(md)), "80af5b4d333388b4f365a021d7c717d15bbd4dc3d3d582a1d00f5f9457d15424");
+	CYBOZU_TEST_EQUAL(toHex(md, sizeof(md)), "491cb6e2520d4c017ce3a2bd024fe5bd80805ec9172b9dae88573d162fe149c2");
 }
 
 CYBOZU_TEST_AUTO(pred_none)

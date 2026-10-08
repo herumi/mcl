@@ -201,23 +201,34 @@ MCL_DLL_API bool bbsProofVerifyFr(const bbsPublicKey *pub, const uint8_t *proof,
 
 	A proof of bbsProofGenEx shows the predicates for the undisclosed messages in zero-knowledge
 	in addition to the statements of bbsProofGen.
-	The message of a predicate must be an integer set by bbsUint64ToFr.
+	A predicate is a range condition on a linear combination
+		x = sum_{k < termN} coef[k] * msgs[idx[k]]
+	of undisclosed integer messages with public coefficients.
+	The messages of a predicate must be integers set by bbsUint64ToFr.
+	e.g. a condition of the age by the signed year, month and day of the birthday : x = 512 * year + 32 * month + day
 
 	The proof consists of
 	- a proof of the spec whose presentation header binds the following values
-	- a Pedersen commitment C = Y_0 * s + Y_1 * m to each message m of the predicates
-	  and a proof that m is the signed message (the committed disclosure of draft-irtf-cfrg-bbs-blind-signatures-03)
-	- a proof that m - bound or bound - m is in [0, 2^bitN) by the commitments to the bits and OR-proofs
-	The size is bbsGetProofSize(undiscN) + 80 * (number of distinct idx) + sum of (144 * bitN - 48).
+	- a Pedersen commitment C = Y_0 * s + Y_1 * x to each distinct linear combination x of the predicates
+	  and a proof that x is the linear combination of the signed messages (the committed disclosure of draft-irtf-cfrg-bbs-blind-signatures-03)
+	- a proof that x - bound or bound - x is in [0, 2^bitN) by the commitments to the bits and OR-proofs
+	The size is bbsGetProofSize(undiscN) + 80 * (number of distinct linear combinations) + sum of (144 * bitN - 48).
+
+	The arithmetic is exact because x < termN * 2^32 * 2^64 <= 2^99 is less than the order of the group.
+	x may exceed 2^64, but bound is a uint64_t, so a predicate can only state that x is in [bound, bound + 2^bitN) or in (bound - 2^bitN, bound].
 */
 enum {
-	BBS_PRED_GE = 0, // 0 <= m - bound < 2^bitN
-	BBS_PRED_LE = 1 // 0 <= bound - m < 2^bitN
+	BBS_PRED_GE = 0, // 0 <= x - bound < 2^bitN
+	BBS_PRED_LE = 1 // 0 <= bound - x < 2^bitN
 };
+
+#define BBS_PRED_MAX_TERM 8
 
 typedef struct {
 	uint64_t bound;
-	uint32_t idx; // index of an undisclosed integer message
+	uint32_t coef[BBS_PRED_MAX_TERM]; // coefficients of the linear combination. 1 <= coef[k] for k < termN, 0 for k >= termN
+	uint32_t idx[BBS_PRED_MAX_TERM]; // indices of undisclosed integer messages. strictly increasing for k < termN, 0 for k >= termN
+	uint32_t termN; // 1 <= termN <= BBS_PRED_MAX_TERM
 	uint32_t type; // BBS_PRED_GE or BBS_PRED_LE
 	uint32_t bitN; // 1 <= bitN <= 64
 	uint32_t reserved; // must be 0
@@ -233,8 +244,9 @@ MCL_DLL_API mclSize bbsGetProofExSize(uint32_t undiscN, const bbsPredicate *pred
 	generate a proof with predicates
 	Input:
 		msgs: scalars of all messages
-		preds: predicates sorted by idx in ascending order. Several predicates may have the same idx.
-		       idx must be an index of an undisclosed message.
+		preds: predicates sorted by the linear combination (termN, idx[], coef[]) in lexicographic ascending order.
+		       Several predicates may have the same linear combination (they share the commitment).
+		       idx[k] must be an index of an undisclosed message.
 		the other parameters are the same as bbsProofGenFr
 	Return:
 		written size if success else 0

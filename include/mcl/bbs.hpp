@@ -98,7 +98,7 @@ bool proofVerify(const PublicKey& pub, const uint8_t *proof, size_t proofSize, c
 
 /*
 	extension which is not defined in the spec
-	proof with range predicates for undisclosed integer messages
+	proof with range predicates for linear combinations of undisclosed integer messages
 	see bbsProofGenEx and bbsProofVerifyEx
 */
 // size of a proof for undiscN undisclosed messages and the predicates. return 0 if preds is invalid
