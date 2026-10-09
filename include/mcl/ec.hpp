@@ -1828,6 +1828,7 @@ public:
 		L : bitsize (=256 for Fr)
 		w : withdow size (=5 for L=256)
 		S : splitSize (=2 for G1, =4 for G2)
+		b : bucket size
 		#DBL = L/S, #ADD = ((2^(w-2) + (L/(Sw)S)) * n
 		mulVecLong
 		c = 5 (for n <= 256), c = 6 for n = 512
@@ -1840,12 +1841,21 @@ public:
 	*/
 	static inline void mulVec(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
-		if (n == 0) {
-			z.clear();
-			return;
-		}
 		if (mulVecOpti && n >= 128) {
 			mulVecOpti(z, xVec, yVec, n, b);
+			return;
+		}
+		mulVecConstRef(z, xVec, yVec, n, b);
+	}
+	/*
+		z = sum_{i<n} xVec[i] yVec[i]
+		xVec is not modified (mulVec may normalize xVec in place by mulVecOpti)
+		mulVecOpti (AVX-512 MSM) is not used, so mulVec is faster for large n
+	*/
+	static inline void mulVecConstRef(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
+	{
+		if (n == 0) {
+			z.clear();
 			return;
 		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b)) {

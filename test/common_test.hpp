@@ -52,6 +52,16 @@ void testMulVec(const G& P)
 		G::mulVec(Q2, xVec.data(), yVec.data(), n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
+		{
+			// mulVecConstRef does not modify xVec
+			std::vector<G> xVec2 = x0Vec;
+			G::mulVecConstRef(Q2, xVec2.data(), yVec.data(), n);
+			CYBOZU_TEST_EQUAL(Q1, Q2);
+			for (size_t j = 0; j < n; j++) {
+				CYBOZU_TEST_ASSERT(xVec2[j].x == x0Vec[j].x && xVec2[j].y == x0Vec[j].y && xVec2[j].z == x0Vec[j].z);
+			}
+			Q2.clear();
+		}
 #if 0 // #ifdef NDEBUG
 		printf("n=%zd\n", n);
 		const int C = 10;

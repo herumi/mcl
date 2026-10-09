@@ -59,6 +59,17 @@ void mulVecTest(const mcl::EcParam& para, mcl::ec::Mode ecMode)
 		Ec::mulVec(Q2, xVec, yVec, n);
 		CYBOZU_TEST_EQUAL(Q1, Q2);
 		Q2.clear();
+		{
+			// mulVecConstRef does not modify xVec
+			Ec xVec2[N];
+			for (size_t j = 0; j < n; j++) xVec2[j] = xVec[j];
+			Ec::mulVecConstRef(Q2, xVec2, yVec, n);
+			CYBOZU_TEST_EQUAL(Q1, Q2);
+			for (size_t j = 0; j < n; j++) {
+				CYBOZU_TEST_ASSERT(xVec2[j].x == xVec[j].x && xVec2[j].y == xVec[j].y && xVec2[j].z == xVec[j].z);
+			}
+			Q2.clear();
+		}
 #ifdef NDEBUG
 		if (ecMode != mcl::ec::Jacobi) continue;
 		printf("n=%zd\n", n);
