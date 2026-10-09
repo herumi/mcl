@@ -18,12 +18,18 @@
 	The scalar of a commitment may be an integer type if the base accepts it (e.g. the message of ElGamalEnc in she).
 	Requirements for the group G:
 	- G::mul(G& z, const G& x, const INT& k)
-	- G& operator+=(const G&), G& operator-=(const G&)
+	- G::mulVecConstRef(G& z, const G *xVec, const Fr *yVec, size_t n) : z = sum of xVec[i] yVec[i]
+	- G::sub(G& z, const G& x, const G& y)
+	- G& operator+=(const G&)
 	A multiplicative group (e.g. GT) is wrapped by Additive<G>.
 	A base is an object which has `void mul(G& out, const INT& k) const` (out = base * k),
 	e.g. MulG<G> or fp::WindowMethod<G>.
+	The terms whose base is MulG<G> and whose scalar is Fr are summed by G::mulVecConstRef at once
+	because a multi-scalar multiplication is faster than the sum of scalar multiplications even for n = 2 or 3.
 */
 #include <stddef.h>
+#include <assert.h>
+#include <mcl/fr_def.hpp>
 #include <mcl/array.hpp> // secureZero
 
 namespace mcl { namespace sigma {
@@ -96,6 +102,12 @@ struct Additive {
 		G::unitaryInv(t, y.v);
 		G::mul(z.v, x.v, t);
 	}
+	// z = prod of xVec[i]^yVec[i] (the layout of Additive is the same as G)
+	static void mulVecConstRef(Additive& z, const Additive *xVec, const Fr *yVec, size_t n)
+	{
+		checkLayout();
+		G::powVec(z.v, &xVec[0].v, yVec, n);
+	}
 	bool operator==(const Additive& rhs) const { return v == rhs.v; }
 	bool operator!=(const Additive& rhs) const { return !operator==(rhs); }
 	// the layout must be the same as G for cast() (static assert for C++03)
@@ -111,8 +123,69 @@ struct Additive {
 };
 
 /*
+	sum of terms B_i k_i (at most N terms)
+	A term whose base is MulG<G> and whose scalar is Fr is deferred and all of them are
+	computed by one G::mulVecConstRef in get().
+	The other terms (e.g. fp::WindowMethod or an integer scalar) are computed when they are added.
+	The output of get() is written at the end, so it may alias an input.
+*/
+template<class G, size_t N>
+struct Terms {
+	G x[N];
+	Fr y[N];
+	size_t n;
+	G r; // sum of the terms computed immediately (valid if hasR)
+	bool hasR;
+	Terms() : n(0), hasR(false) {}
+	// deferred
+	void add(const MulG<G>& m, const Fr& k)
+	{
+		assert(n < N);
+		x[n] = m.base;
+		y[n] = k;
+		n++;
+	}
+	// computed now
+	template<class M, class K>
+	void add(const M& m, const K& k)
+	{
+		if (hasR) {
+			G t;
+			m.mul(t, k);
+			r += t;
+		} else {
+			m.mul(r, k);
+			hasR = true;
+		}
+	}
+	// add -X c (plus = true) or X c (plus = false)
+	template<class F>
+	void addChallenge(const G& X, const F& c, bool plus)
+	{
+		if (plus) {
+			F t;
+			F::neg(t, c);
+			add(MulG<G>(X), t);
+		} else {
+			add(MulG<G>(X), c);
+		}
+	}
+	void get(G& out)
+	{
+		if (n == 0) {
+			assert(hasR);
+			out = r;
+			return;
+		}
+		G::mulVecConstRef(out, x, y, n);
+		if (hasR) out += r;
+	}
+};
+
+/*
 	a tuple of N bases for BitOr
-	out[j] = B_j * k
+	mul : out[j] = B_j * k
+	add : add the term B_j * k to t
 */
 template<class G, class M0>
 struct Bases1 {
@@ -123,6 +196,12 @@ struct Bases1 {
 	void mul(G out[1], const INT& k) const
 	{
 		m0.mul(out[0], k);
+	}
+	template<class T, class INT>
+	void add(T& t, size_t j, const INT& k) const
+	{
+		assert(j == 0); (void)j;
+		t.add(m0, k);
 	}
 };
 template<class G, class M0, class M1>
@@ -136,6 +215,16 @@ struct Bases2 {
 	{
 		m0.mul(out[0], k);
 		m1.mul(out[1], k);
+	}
+	template<class T, class INT>
+	void add(T& t, size_t j, const INT& k) const
+	{
+		assert(j < 2);
+		if (j == 0) {
+			t.add(m0, k);
+		} else {
+			t.add(m1, k);
+		}
 	}
 };
 template<class G, class M0>
@@ -176,52 +265,51 @@ void commit1(G& R, const M0& m0, const F0& k0)
 template<class G, class M0, class F0, class M1, class F1>
 void commit2(G& R, const M0& m0, const F0& k0, const M1& m1, const F1& k1)
 {
-	commit1(R, m0, k0);
-	G t;
-	m1.mul(t, k1);
-	R += t;
+	Terms<G, 2> t;
+	t.add(m0, k0);
+	t.add(m1, k1);
+	t.get(R);
 }
 template<class G, class M0, class F0, class M1, class F1, class M2, class F2>
 void commit3(G& R, const M0& m0, const F0& k0, const M1& m1, const F1& k1, const M2& m2, const F2& k2)
 {
-	commit2(R, m0, k0, m1, k1);
-	G t;
-	m2.mul(t, k2);
-	R += t;
+	Terms<G, 3> t;
+	t.add(m0, k0);
+	t.add(m1, k1);
+	t.add(m2, k2);
+	t.get(R);
 }
 
 /*
 	recompute the commitment on the verifier side
 	R = sum of B_i z_i - c X (plus = true) or R = sum of B_i z_i + c X (plus = false)
 */
-template<class G, class F>
-void addChallengeTerm(G& R, const G& X, const F& c, bool plus)
-{
-	G t;
-	G::mul(t, X, c);
-	if (plus) {
-		R -= t;
-	} else {
-		R += t;
-	}
-}
 template<class G, class M0, class F0, class F>
 void recompute1(G& R, const M0& m0, const F0& z0, const G& X, const F& c, bool plus = true)
 {
-	commit1(R, m0, z0);
-	addChallengeTerm(R, X, c, plus);
+	Terms<G, 2> t;
+	t.add(m0, z0);
+	t.addChallenge(X, c, plus);
+	t.get(R);
 }
 template<class G, class M0, class F0, class M1, class F1, class F>
 void recompute2(G& R, const M0& m0, const F0& z0, const M1& m1, const F1& z1, const G& X, const F& c, bool plus = true)
 {
-	commit2(R, m0, z0, m1, z1);
-	addChallengeTerm(R, X, c, plus);
+	Terms<G, 3> t;
+	t.add(m0, z0);
+	t.add(m1, z1);
+	t.addChallenge(X, c, plus);
+	t.get(R);
 }
 template<class G, class M0, class F0, class M1, class F1, class M2, class F2, class F>
 void recompute3(G& R, const M0& m0, const F0& z0, const M1& m1, const F1& z1, const M2& m2, const F2& z2, const G& X, const F& c, bool plus = true)
 {
-	commit3(R, m0, z0, m1, z1, m2, z2);
-	addChallengeTerm(R, X, c, plus);
+	Terms<G, 4> t;
+	t.add(m0, z0);
+	t.add(m1, z1);
+	t.add(m2, z2);
+	t.addChallenge(X, c, plus);
+	t.get(R);
 }
 
 /*
@@ -249,17 +337,17 @@ struct BitOr {
 	template<class Bases>
 	static void simulate(G R[N], const Bases& B, const G *const X[N], const G *const O[N], int i, const F& d, const F& s)
 	{
-		B.mul(R, s);
 		for (size_t j = 0; j < N; j++) {
-			G t;
+			Terms<G, 2> t;
+			B.add(t, j, s);
 			if (i != 0 && O[j]) {
-				t = *X[j];
-				t -= *O[j];
-				G::mul(t, t, d);
+				G x;
+				G::sub(x, *X[j], *O[j]);
+				t.addChallenge(x, d, true);
 			} else {
-				G::mul(t, *X[j], d);
+				t.addChallenge(*X[j], d, true);
 			}
-			R[j] -= t;
+			t.get(R[j]);
 		}
 	}
 	/*
