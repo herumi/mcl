@@ -16,8 +16,8 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 
 # Version v4 includes breaking changes.
-- Require BMI2 (mulx) and ADX (adox, adcx) instruction sets
-  - Broadwell (2014) or later
+- BMI2 (mulx) and ADX (adox, adcx) are used if the CPU supports them (Broadwell (2014) or later)
+  - A CPU without them (e.g. x86-64-v2, Haswell) uses the portable code; `MCL_CPU=noadx` forces it
 
 # Version v3 includes breaking changes to lib/dll specifications.
 - The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
@@ -139,7 +139,7 @@ clang (clang-cl on Windows) is necessary to build files with the suffix `.ll`.
   - This code is used if xbyak is not used.
 - `src/bint${BIT}.ll` is necessary if `MCL_BINT_ASM=1`.
   - `src/asm/bint-x64-amd64.S` (`src/asm/bint-x64-mingw.S` on MinGW, `src/asm/bint-x64-win.asm` on Windows) is used instead if `MCL_BINT_ASM_X64=1`.
-  - It is faster than `src/bint64.ll` because it uses mulx/adox/adcx.
+  - It is faster than `src/bint64.ll` because it uses mulx/adox/adcx if the CPU supports them (selected at runtime by `mcl::bint::getCpuType()`).
 
 These files may be unified in the future.
 

@@ -202,6 +202,8 @@ void test(const char *pStr)
 CYBOZU_TEST_AUTO(all)
 {
 	if (!mcl::fp::isEnableJIT()) return;
+	// the JIT is not generated without BMI2/ADX (op.fg is null)
+	if ((mcl::bint::getCpuType() & mcl::bint::tAVX_BMI2_ADX) == 0) return;
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(primeTable); i++) {
 		test(primeTable[i]);
 	}

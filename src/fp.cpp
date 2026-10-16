@@ -23,12 +23,7 @@
 #include "xbyak/xbyak_util.h"
 #endif
 
-namespace mcl { namespace fp {
-
-enum CpuType {
-	tAVX_BMI2_ADX = 1<<0,
-	tAVX512_IFMA = 1<<1
-};
+namespace mcl { namespace bint {
 
 static uint32_t detectCpuType()
 {
@@ -67,17 +62,21 @@ static uint32_t detectCpuType()
 		}
 	}
 #endif
+#if MCL_BINT_ASM_X64 == 1
+	// after the MCL_CPU override, so that noadx keeps the slow asm
+	if (type & tAVX_BMI2_ADX) mclb_enable_fast();
+#endif
 	return type;
 }
 
-// lazily detected CPU type (bitwise OR of CpuType)
+// lazily detected CPU type (bitwise OR of CpuType, see include/mcl/bint.hpp)
 uint32_t getCpuType()
 {
 	static const uint32_t type = detectCpuType();
 	return type;
 }
 
-} } // mcl::fp
+} } // mcl::bint
 #include <mcl/op.hpp>
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
@@ -460,10 +459,6 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 	case FrTag: if (sizeofF != sizeof(Fr)) return false; break;
 	default: break;
 	}
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8
-	// x64 requires BMI2 (mulx) and ADX (adox, adcx)
-	if ((getCpuType() & tAVX_BMI2_ADX) == 0) return false;
-#endif
 	if (_p <= 0) return false;
 	clear();
 	const size_t maxBitSize = sizeofF * 8;
@@ -489,6 +484,10 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 #ifdef MCL_X64_ASM
 	if (mode == FP_AUTO) mode = FP_XBYAK;
 	if (mode == FP_XBYAK && bitSize > 512) {
+		mode = FP_AUTO;
+	}
+	// the JIT and the static code use AVX/mulx/adcx/adox: use the LLVM (or C++) functions and the slow bint asm otherwise
+	if ((bint::getCpuType() & bint::tAVX_BMI2_ADX) == 0) {
 		mode = FP_AUTO;
 	}
 #ifdef MCL_USE_XBYAK

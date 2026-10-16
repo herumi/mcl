@@ -174,6 +174,82 @@ void mclb_mul12(Unit *z, const Unit *x, const Unit *y);
 void mclb_sqr12(Unit *y, const Unit *x);
 #endif // #if MCL_SIZEOF_UNIT == 4
 }
+#if MCL_BINT_ASM_X64 == 1
+extern "C" {
+Unit mclb_mulUnit_fast1(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow1(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast1(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow1(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast2(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow2(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast2(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow2(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast3(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow3(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast3(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow3(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast4(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow4(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast4(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow4(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast5(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow5(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast5(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow5(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast6(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow6(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast6(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow6(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast7(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow7(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast7(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow7(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast8(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow8(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast8(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow8(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast9(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow9(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast9(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow9(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast10(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow10(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast10(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow10(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast11(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow11(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast11(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow11(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_fast12(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnit_slow12(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_fast12(Unit *z, const Unit *x, Unit y);
+Unit mclb_mulUnitAdd_slow12(Unit *z, const Unit *x, Unit y);
+void mclb_mul_fast1(Unit *z, const Unit *x, const Unit *y);
+void mclb_mul_slow1(Unit *z, const Unit *x, const Unit *y);
+void mclb_sqr_fast1(Unit *y, const Unit *x);
+void mclb_sqr_slow1(Unit *y, const Unit *x);
+void mclb_mul_fast2(Unit *z, const Unit *x, const Unit *y);
+void mclb_mul_slow2(Unit *z, const Unit *x, const Unit *y);
+void mclb_sqr_fast2(Unit *y, const Unit *x);
+void mclb_sqr_slow2(Unit *y, const Unit *x);
+void mclb_mul_fast3(Unit *z, const Unit *x, const Unit *y);
+void mclb_mul_slow3(Unit *z, const Unit *x, const Unit *y);
+void mclb_sqr_fast3(Unit *y, const Unit *x);
+void mclb_sqr_slow3(Unit *y, const Unit *x);
+void mclb_mul_fast4(Unit *z, const Unit *x, const Unit *y);
+void mclb_mul_slow4(Unit *z, const Unit *x, const Unit *y);
+void mclb_sqr_fast4(Unit *y, const Unit *x);
+void mclb_sqr_slow4(Unit *y, const Unit *x);
+void mclb_mul_fast5(Unit *z, const Unit *x, const Unit *y);
+void mclb_mul_slow5(Unit *z, const Unit *x, const Unit *y);
+void mclb_sqr_fast5(Unit *y, const Unit *x);
+void mclb_sqr_slow5(Unit *y, const Unit *x);
+void mclb_mul_fast6(Unit *z, const Unit *x, const Unit *y);
+void mclb_mul_slow6(Unit *z, const Unit *x, const Unit *y);
+void mclb_sqr_fast6(Unit *y, const Unit *x);
+void mclb_sqr_slow6(Unit *y, const Unit *x);
+}
+#endif // #if MCL_BINT_ASM_X64 == 1
 #endif // #if MCL_BINT_ASM == 1
 u_ppp get_add(size_t n)
 {
@@ -418,6 +494,21 @@ u_ppp get_subNF(size_t n)
 u_ppu get_mulUnit(size_t n)
 {
 #if MCL_BINT_ASM == 1
+#if MCL_BINT_ASM_X64 == 1
+	const bool fast = isFastCpu(); // select the body directly (not the mclb_* stub)
+	if (n == 1) return fast ? mclb_mulUnit_fast1 : mclb_mulUnit_slow1;
+	if (n == 2) return fast ? mclb_mulUnit_fast2 : mclb_mulUnit_slow2;
+	if (n == 3) return fast ? mclb_mulUnit_fast3 : mclb_mulUnit_slow3;
+	if (n == 4) return fast ? mclb_mulUnit_fast4 : mclb_mulUnit_slow4;
+	if (n == 5) return fast ? mclb_mulUnit_fast5 : mclb_mulUnit_slow5;
+	if (n == 6) return fast ? mclb_mulUnit_fast6 : mclb_mulUnit_slow6;
+	if (n == 7) return fast ? mclb_mulUnit_fast7 : mclb_mulUnit_slow7;
+	if (n == 8) return fast ? mclb_mulUnit_fast8 : mclb_mulUnit_slow8;
+	if (n == 9) return fast ? mclb_mulUnit_fast9 : mclb_mulUnit_slow9;
+	if (n == 10) return fast ? mclb_mulUnit_fast10 : mclb_mulUnit_slow10;
+	if (n == 11) return fast ? mclb_mulUnit_fast11 : mclb_mulUnit_slow11;
+	if (n == 12) return fast ? mclb_mulUnit_fast12 : mclb_mulUnit_slow12;
+#else // MCL_BINT_ASM_X64 == 1
 	if (n == 1) return mclb_mulUnit1;
 	if (n == 2) return mclb_mulUnit2;
 	if (n == 3) return mclb_mulUnit3;
@@ -444,6 +535,7 @@ u_ppu get_mulUnit(size_t n)
 	if (n == 23) return mclb_mulUnit23;
 	if (n == 24) return mclb_mulUnit24;
 #endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM_X64 == 1
 #else // MCL_BINT_ASM == 1
 	if (n == 1) return mulUnitT<1>;
 	if (n == 2) return mulUnitT<2>;
@@ -478,6 +570,21 @@ u_ppu get_mulUnit(size_t n)
 u_ppu get_mulUnitAdd(size_t n)
 {
 #if MCL_BINT_ASM == 1
+#if MCL_BINT_ASM_X64 == 1
+	const bool fast = isFastCpu(); // select the body directly (not the mclb_* stub)
+	if (n == 1) return fast ? mclb_mulUnitAdd_fast1 : mclb_mulUnitAdd_slow1;
+	if (n == 2) return fast ? mclb_mulUnitAdd_fast2 : mclb_mulUnitAdd_slow2;
+	if (n == 3) return fast ? mclb_mulUnitAdd_fast3 : mclb_mulUnitAdd_slow3;
+	if (n == 4) return fast ? mclb_mulUnitAdd_fast4 : mclb_mulUnitAdd_slow4;
+	if (n == 5) return fast ? mclb_mulUnitAdd_fast5 : mclb_mulUnitAdd_slow5;
+	if (n == 6) return fast ? mclb_mulUnitAdd_fast6 : mclb_mulUnitAdd_slow6;
+	if (n == 7) return fast ? mclb_mulUnitAdd_fast7 : mclb_mulUnitAdd_slow7;
+	if (n == 8) return fast ? mclb_mulUnitAdd_fast8 : mclb_mulUnitAdd_slow8;
+	if (n == 9) return fast ? mclb_mulUnitAdd_fast9 : mclb_mulUnitAdd_slow9;
+	if (n == 10) return fast ? mclb_mulUnitAdd_fast10 : mclb_mulUnitAdd_slow10;
+	if (n == 11) return fast ? mclb_mulUnitAdd_fast11 : mclb_mulUnitAdd_slow11;
+	if (n == 12) return fast ? mclb_mulUnitAdd_fast12 : mclb_mulUnitAdd_slow12;
+#else // MCL_BINT_ASM_X64 == 1
 	if (n == 1) return mclb_mulUnitAdd1;
 	if (n == 2) return mclb_mulUnitAdd2;
 	if (n == 3) return mclb_mulUnitAdd3;
@@ -504,6 +611,7 @@ u_ppu get_mulUnitAdd(size_t n)
 	if (n == 23) return mclb_mulUnitAdd23;
 	if (n == 24) return mclb_mulUnitAdd24;
 #endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM_X64 == 1
 #else // MCL_BINT_ASM == 1
 	if (n == 1) return mulUnitAddT<1>;
 	if (n == 2) return mulUnitAddT<2>;
@@ -538,6 +646,15 @@ u_ppu get_mulUnitAdd(size_t n)
 void_ppp get_mul(size_t n)
 {
 #if MCL_BINT_ASM == 1
+#if MCL_BINT_ASM_X64 == 1
+	const bool fast = isFastCpu(); // select the body directly (not the mclb_* stub)
+	if (n == 1) return fast ? mclb_mul_fast1 : mclb_mul_slow1;
+	if (n == 2) return fast ? mclb_mul_fast2 : mclb_mul_slow2;
+	if (n == 3) return fast ? mclb_mul_fast3 : mclb_mul_slow3;
+	if (n == 4) return fast ? mclb_mul_fast4 : mclb_mul_slow4;
+	if (n == 5) return fast ? mclb_mul_fast5 : mclb_mul_slow5;
+	if (n == 6) return fast ? mclb_mul_fast6 : mclb_mul_slow6;
+#else // MCL_BINT_ASM_X64 == 1
 	if (n == 1) return mclb_mul1;
 	if (n == 2) return mclb_mul2;
 	if (n == 3) return mclb_mul3;
@@ -552,6 +669,7 @@ void_ppp get_mul(size_t n)
 	if (n == 11) return mclb_mul11;
 	if (n == 12) return mclb_mul12;
 #endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM_X64 == 1
 #else // MCL_BINT_ASM == 1
 	if (n == 1) return mulT<1>;
 	if (n == 2) return mulT<2>;
@@ -574,6 +692,15 @@ void_ppp get_mul(size_t n)
 void_pp get_sqr(size_t n)
 {
 #if MCL_BINT_ASM == 1
+#if MCL_BINT_ASM_X64 == 1
+	const bool fast = isFastCpu(); // select the body directly (not the mclb_* stub)
+	if (n == 1) return fast ? mclb_sqr_fast1 : mclb_sqr_slow1;
+	if (n == 2) return fast ? mclb_sqr_fast2 : mclb_sqr_slow2;
+	if (n == 3) return fast ? mclb_sqr_fast3 : mclb_sqr_slow3;
+	if (n == 4) return fast ? mclb_sqr_fast4 : mclb_sqr_slow4;
+	if (n == 5) return fast ? mclb_sqr_fast5 : mclb_sqr_slow5;
+	if (n == 6) return fast ? mclb_sqr_fast6 : mclb_sqr_slow6;
+#else // MCL_BINT_ASM_X64 == 1
 	if (n == 1) return mclb_sqr1;
 	if (n == 2) return mclb_sqr2;
 	if (n == 3) return mclb_sqr3;
@@ -588,6 +715,7 @@ void_pp get_sqr(size_t n)
 	if (n == 11) return mclb_sqr11;
 	if (n == 12) return mclb_sqr12;
 #endif // MCL_SIZEOF_UNIT == 4
+#endif // MCL_BINT_ASM_X64 == 1
 #else // MCL_BINT_ASM == 1
 	if (n == 1) return sqrT<1>;
 	if (n == 2) return sqrT<2>;

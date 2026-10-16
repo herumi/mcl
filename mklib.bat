@@ -51,7 +51,7 @@ ml64 /c /Foobj\bint-x64-win.obj src\asm\bint-x64-win.asm
 rem nasm -f win64 -o obj\bint-x64-win.obj src\asm\bint-x64-win.asm
 if not "%USE_CLANG%"=="0" (
   echo build base64.ll
-  clang++ -c -O3 -mbmi2 -madx -fomit-frame-pointer -fno-stack-protector -Wno-override-module -o obj\base64.obj src\base64.ll
+  clang++ -c -O3 -fomit-frame-pointer -fno-stack-protector -Wno-override-module -o obj\base64.obj src\base64.ll
 )
 %CXX% /c %LOCAL_CFLAGS% src\fp.cpp /Foobj\fp.obj
 %CXX% /c %LOCAL_CFLAGS% src\msm_avx.cpp /Foobj\msm_avx.obj %MSM_ARCH%

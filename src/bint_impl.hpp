@@ -7,6 +7,17 @@
 
 namespace mcl { namespace bint {
 
+#if MCL_BINT_ASM_X64 == 1
+// true if the CPU has AVX/BMI2/ADX: get_mul(n) etc. return the mulx/adx bodies of the x64 asm.
+// getCpuType() (src/fp.cpp) also calls mclb_enable_fast() for the mclb_* stubs.
+// A function-local static, so that it is correct even if called from a static initializer of another TU.
+inline bool isFastCpu()
+{
+	static const bool fast = (getCpuType() & tAVX_BMI2_ADX) != 0;
+	return fast;
+}
+#endif
+
 #include "bint_switch.hpp"
 
 #if MCL_BINT_ASM != 1

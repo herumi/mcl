@@ -936,13 +936,16 @@ public:
 // generated modp functions (dst[N] = src[srcN] mod p, para = &Modp::q0)
 #if MCL_BINT_ASM_X64 == 1
 #define MCL_MODP_ASM 1
+// mulx/adx: used only if getCpuType() & tAVX_BMI2_ADX
 extern "C" int mclb_modp256_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
 extern "C" int mclb_modp384_x64(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
-#elif defined(MCL_USE_LLVM)
+#endif
+#if defined(MCL_USE_LLVM)
 #define MCL_MODP_ASM 1
 extern "C" int mclb_modp256(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
 extern "C" int mclb_modp384(Unit *dst, const Unit *src, size_t srcN, const Unit *para);
-#else
+#endif
+#ifndef MCL_MODP_ASM
 #define MCL_MODP_ASM 0
 #endif
 
@@ -987,18 +990,21 @@ struct Modp {
 		}
 		p0 = uint32_t(gmp::getUnit((mpz_class(1) << (smallD + L - 1)) / _p, 0));
 #if MCL_BINT_ASM_X64 == 1
-		// src/gen_bint_x64.py requires p < 2^(N * BIT - 1) (r < 2p in N units)
-		if (s >= 1) {
+		// src/gen_bint_x64.py requires p < 2^(N * BIT - 1) (r < 2p in N units) and BMI2/ADX
+		if (s >= 1 && (bint::getCpuType() & bint::tAVX_BMI2_ADX)) {
 			switch (N * BIT) {
 			case 256: modp_asm = mclb_modp256_x64; break;
 			case 384: modp_asm = mclb_modp384_x64; break;
 			}
 		}
-#elif defined(MCL_USE_LLVM)
-		// src/gen.py (base{32,64}.ll)
-		switch (N * BIT) {
-		case 256: modp_asm = mclb_modp256; break;
-		case 384: modp_asm = mclb_modp384; break;
+#endif
+#if defined(MCL_USE_LLVM)
+		if (modp_asm == 0) {
+			// src/gen.py (base{32,64}.ll)
+			switch (N * BIT) {
+			case 256: modp_asm = mclb_modp256; break;
+			case 384: modp_asm = mclb_modp384; break;
+			}
 		}
 #endif
 		return true;

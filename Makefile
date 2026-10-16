@@ -260,12 +260,8 @@ BBS_OBJ=$(OBJ_DIR)/bbs.o
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
-ifeq ($(CPU),x86-64)
-  # mcl requires BMI2/ADX on x64 at runtime (Op::init), so let llc use mulx
-  LLVM_MATTR=-sse,+bmi2,+adx
-else
-  LLVM_MATTR=-sse
-endif
+#LLVM_MATTR=-sse,+bmi2,+adx
+LLVM_MATTR=-sse
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=$(LLVM_MATTR)
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
