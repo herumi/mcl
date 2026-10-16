@@ -5654,822 +5654,557 @@ ret
 mclb_mul_slow1 endp
 align 16
 mclb_mul_slow2 proc export
-sub rsp, 24
+push rdi
 mov r11, rdx
-mov r9, [r8]
 mov rax, [r11]
-mul r9
-mov [rcx], rax
-mov [rsp+8], rdx
-mov rax, [r11+8]
-mul r9
-mov [rsp], rax
-mov rax, [rsp+8]
-add rax, [rsp]
-mov [rcx+8], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+16], rax
-mov r9, [r8+8]
+mul qword ptr [r8]
+mov r9, rax
+mov r10, rdx
+xor rdi, rdi
+mov [rcx], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+16], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov rax, [rsp+8]
-add rax, [rsp+16]
-mov [rsp+8], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+8], rax
-mov rax, [rsp+8]
-adc [rcx+16], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+24], rax
-add rsp, 24
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+8], r10
+xor r10, r10
+mov rax, [r11+8]
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+16], rdi
+mov [rcx+24], r9
+pop rdi
 ret
 mclb_mul_slow2 endp
 align 16
 mclb_mul_slow3 proc export
-sub rsp, 40
+push rdi
 mov r11, rdx
-mov r9, [r8]
 mov rax, [r11]
-mul r9
-mov [rcx], rax
-mov [rsp+16], rdx
-mov rax, [r11+8]
-mul r9
-mov [rsp], rax
-mov [rsp+24], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+8], rax
-mov rax, [rsp+16]
-add rax, [rsp]
-mov [rcx+8], rax
-mov rax, [rsp+24]
-adc rax, [rsp+8]
-mov [rcx+16], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+24], rax
-mov r9, [r8+8]
+mul qword ptr [r8]
+mov r9, rax
+mov r10, rdx
+xor rdi, rdi
+mov [rcx], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+24], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+32], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov rax, [rsp+8]
-add rax, [rsp+24]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+32]
-mov [rsp+16], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+8], rax
-mov rax, [rsp+8]
-adc [rcx+16], rax
-mov rax, [rsp+16]
-adc [rcx+24], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+32], rax
-mov r9, [r8+16]
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+8], r10
+xor r10, r10
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+24], rdx
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+32], rdx
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov rax, [rsp+8]
-add rax, [rsp+24]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+32]
-mov [rsp+16], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+16], rax
-mov rax, [rsp+8]
-adc [rcx+24], rax
-mov rax, [rsp+16]
-adc [rcx+32], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+40], rax
-add rsp, 40
+mul qword ptr [r8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+16], rdi
+xor rdi, rdi
+mov rax, [r11+8]
+mul qword ptr [r8+16]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+16]
+mul qword ptr [r8+8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+24], r9
+xor r9, r9
+mov rax, [r11+16]
+mul qword ptr [r8+16]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+32], r10
+mov [rcx+40], rdi
+pop rdi
 ret
 mclb_mul_slow3 endp
 align 16
 mclb_mul_slow4 proc export
-sub rsp, 56
+push rdi
 mov r11, rdx
-mov r9, [r8]
 mov rax, [r11]
-mul r9
-mov [rcx], rax
-mov [rsp+24], rdx
-mov rax, [r11+8]
-mul r9
-mov [rsp], rax
-mov [rsp+32], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+8], rax
-mov [rsp+40], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+16], rax
-mov rax, [rsp+24]
-add rax, [rsp]
-mov [rcx+8], rax
-mov rax, [rsp+32]
-adc rax, [rsp+8]
-mov [rcx+16], rax
-mov rax, [rsp+40]
-adc rax, [rsp+16]
-mov [rcx+24], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+32], rax
-mov r9, [r8+8]
+mul qword ptr [r8]
+mov r9, rax
+mov r10, rdx
+xor rdi, rdi
+mov [rcx], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+32], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+40], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+48], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov rax, [rsp+8]
-add rax, [rsp+32]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+40]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+48]
-mov [rsp+24], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+8], rax
-mov rax, [rsp+8]
-adc [rcx+16], rax
-mov rax, [rsp+16]
-adc [rcx+24], rax
-mov rax, [rsp+24]
-adc [rcx+32], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+40], rax
-mov r9, [r8+16]
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+8], r10
+xor r10, r10
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+32], rdx
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+40], rdx
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+48], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov rax, [rsp+8]
-add rax, [rsp+32]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+40]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+48]
-mov [rsp+24], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+16], rax
-mov rax, [rsp+8]
-adc [rcx+24], rax
-mov rax, [rsp+16]
-adc [rcx+32], rax
-mov rax, [rsp+24]
-adc [rcx+40], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+48], rax
-mov r9, [r8+24]
+mul qword ptr [r8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+16], rdi
+xor rdi, rdi
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+32], rdx
+mul qword ptr [r8+24]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+40], rdx
+mul qword ptr [r8+16]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov rax, [rsp+8]
-add rax, [rsp+32]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+40]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+48]
-mov [rsp+24], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+24], rax
-mov rax, [rsp+8]
-adc [rcx+32], rax
-mov rax, [rsp+16]
-adc [rcx+40], rax
-mov rax, [rsp+24]
-adc [rcx+48], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+56], rax
-add rsp, 56
+mul qword ptr [r8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+24], r9
+xor r9, r9
+mov rax, [r11+8]
+mul qword ptr [r8+24]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov rax, [r11+16]
+mul qword ptr [r8+16]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov rax, [r11+24]
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+32], r10
+xor r10, r10
+mov rax, [r11+16]
+mul qword ptr [r8+24]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov rax, [r11+24]
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+40], rdi
+xor rdi, rdi
+mov rax, [r11+24]
+mul qword ptr [r8+24]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+48], r9
+mov [rcx+56], r10
+pop rdi
 ret
 mclb_mul_slow4 endp
 align 16
 mclb_mul_slow5 proc export
-sub rsp, 72
+push rdi
 mov r11, rdx
-mov r9, [r8]
 mov rax, [r11]
-mul r9
-mov [rcx], rax
-mov [rsp+32], rdx
-mov rax, [r11+8]
-mul r9
-mov [rsp], rax
-mov [rsp+40], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+8], rax
-mov [rsp+48], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+16], rax
-mov [rsp+56], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+24], rax
-mov rax, [rsp+32]
-add rax, [rsp]
-mov [rcx+8], rax
-mov rax, [rsp+40]
-adc rax, [rsp+8]
-mov [rcx+16], rax
-mov rax, [rsp+48]
-adc rax, [rsp+16]
-mov [rcx+24], rax
-mov rax, [rsp+56]
-adc rax, [rsp+24]
-mov [rcx+32], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+40], rax
-mov r9, [r8+8]
+mul qword ptr [r8]
+mov r9, rax
+mov r10, rdx
+xor rdi, rdi
+mov [rcx], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+40], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+48], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+56], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+64], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov rax, [rsp+8]
-add rax, [rsp+40]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+48]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+56]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+64]
-mov [rsp+32], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+8], rax
-mov rax, [rsp+8]
-adc [rcx+16], rax
-mov rax, [rsp+16]
-adc [rcx+24], rax
-mov rax, [rsp+24]
-adc [rcx+32], rax
-mov rax, [rsp+32]
-adc [rcx+40], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+48], rax
-mov r9, [r8+16]
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+8], r10
+xor r10, r10
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+40], rdx
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+56], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+64], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov rax, [rsp+8]
-add rax, [rsp+40]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+48]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+56]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+64]
-mov [rsp+32], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+16], rax
-mov rax, [rsp+8]
-adc [rcx+24], rax
-mov rax, [rsp+16]
-adc [rcx+32], rax
-mov rax, [rsp+24]
-adc [rcx+40], rax
-mov rax, [rsp+32]
-adc [rcx+48], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+56], rax
-mov r9, [r8+24]
+mul qword ptr [r8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+16], rdi
+xor rdi, rdi
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+40], rdx
+mul qword ptr [r8+24]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+16]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+56], rdx
+mul qword ptr [r8+8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+64], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov rax, [rsp+8]
-add rax, [rsp+40]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+48]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+56]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+64]
-mov [rsp+32], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+24], rax
-mov rax, [rsp+8]
-adc [rcx+32], rax
-mov rax, [rsp+16]
-adc [rcx+40], rax
-mov rax, [rsp+24]
-adc [rcx+48], rax
-mov rax, [rsp+32]
-adc [rcx+56], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+64], rax
-mov r9, [r8+32]
+mul qword ptr [r8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+24], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+40], rdx
+mul qword ptr [r8+32]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+24]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+56], rdx
+mul qword ptr [r8+16]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+64], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov rax, [rsp+8]
-add rax, [rsp+40]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+48]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+56]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+64]
-mov [rsp+32], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+32], rax
-mov rax, [rsp+8]
-adc [rcx+40], rax
-mov rax, [rsp+16]
-adc [rcx+48], rax
-mov rax, [rsp+24]
-adc [rcx+56], rax
-mov rax, [rsp+32]
-adc [rcx+64], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+72], rax
-add rsp, 72
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+32], r10
+xor r10, r10
+mov rax, [r11+8]
+mul qword ptr [r8+32]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov rax, [r11+16]
+mul qword ptr [r8+24]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov rax, [r11+24]
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov rax, [r11+32]
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+40], rdi
+xor rdi, rdi
+mov rax, [r11+16]
+mul qword ptr [r8+32]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+24]
+mul qword ptr [r8+24]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+32]
+mul qword ptr [r8+16]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+48], r9
+xor r9, r9
+mov rax, [r11+24]
+mul qword ptr [r8+32]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov rax, [r11+32]
+mul qword ptr [r8+24]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+56], r10
+xor r10, r10
+mov rax, [r11+32]
+mul qword ptr [r8+32]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+64], rdi
+mov [rcx+72], r9
+pop rdi
 ret
 mclb_mul_slow5 endp
 align 16
 mclb_mul_slow6 proc export
-sub rsp, 88
+push rdi
 mov r11, rdx
-mov r9, [r8]
 mov rax, [r11]
-mul r9
-mov [rcx], rax
-mov [rsp+40], rdx
-mov rax, [r11+8]
-mul r9
-mov [rsp], rax
-mov [rsp+48], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+8], rax
-mov [rsp+56], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+16], rax
-mov [rsp+64], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+24], rax
-mov [rsp+72], rdx
-mov rax, [r11+40]
-mul r9
-mov [rsp+32], rax
-mov rax, [rsp+40]
-add rax, [rsp]
-mov [rcx+8], rax
-mov rax, [rsp+48]
-adc rax, [rsp+8]
-mov [rcx+16], rax
-mov rax, [rsp+56]
-adc rax, [rsp+16]
-mov [rcx+24], rax
-mov rax, [rsp+64]
-adc rax, [rsp+24]
-mov [rcx+32], rax
-mov rax, [rsp+72]
-adc rax, [rsp+32]
-mov [rcx+40], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+48], rax
-mov r9, [r8+8]
+mul qword ptr [r8]
+mov r9, rax
+mov r10, rdx
+xor rdi, rdi
+mov [rcx], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+56], rdx
-mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+64], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+72], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov [rsp+80], rdx
-mov rax, [r11+40]
-mul r9
-mov [rsp+40], rax
-mov rax, [rsp+8]
-add rax, [rsp+48]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+56]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+64]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+72]
-mov [rsp+32], rax
-mov rax, [rsp+40]
-adc rax, [rsp+80]
-mov [rsp+40], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+8], rax
-mov rax, [rsp+8]
-adc [rcx+16], rax
-mov rax, [rsp+16]
-adc [rcx+24], rax
-mov rax, [rsp+24]
-adc [rcx+32], rax
-mov rax, [rsp+32]
-adc [rcx+40], rax
-mov rax, [rsp+40]
-adc [rcx+48], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+56], rax
-mov r9, [r8+16]
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+8], r10
+xor r10, r10
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+56], rdx
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+64], rdx
-mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+72], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov [rsp+80], rdx
-mov rax, [r11+40]
-mul r9
-mov [rsp+40], rax
-mov rax, [rsp+8]
-add rax, [rsp+48]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+56]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+64]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+72]
-mov [rsp+32], rax
-mov rax, [rsp+40]
-adc rax, [rsp+80]
-mov [rsp+40], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+16], rax
-mov rax, [rsp+8]
-adc [rcx+24], rax
-mov rax, [rsp+16]
-adc [rcx+32], rax
-mov rax, [rsp+24]
-adc [rcx+40], rax
-mov rax, [rsp+32]
-adc [rcx+48], rax
-mov rax, [rsp+40]
-adc [rcx+56], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+64], rax
-mov r9, [r8+24]
+mul qword ptr [r8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+16], rdi
+xor rdi, rdi
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+24]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+56], rdx
+mul qword ptr [r8+16]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+64], rdx
+mul qword ptr [r8+8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
 mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+72], rdx
-mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov [rsp+80], rdx
-mov rax, [r11+40]
-mul r9
-mov [rsp+40], rax
-mov rax, [rsp+8]
-add rax, [rsp+48]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+56]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+64]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+72]
-mov [rsp+32], rax
-mov rax, [rsp+40]
-adc rax, [rsp+80]
-mov [rsp+40], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+24], rax
-mov rax, [rsp+8]
-adc [rcx+32], rax
-mov rax, [rsp+16]
-adc [rcx+40], rax
-mov rax, [rsp+24]
-adc [rcx+48], rax
-mov rax, [rsp+32]
-adc [rcx+56], rax
-mov rax, [rsp+40]
-adc [rcx+64], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+72], rax
-mov r9, [r8+32]
+mul qword ptr [r8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+24], r9
+xor r9, r9
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+32]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+56], rdx
+mul qword ptr [r8+24]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+64], rdx
+mul qword ptr [r8+16]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+72], rdx
+mul qword ptr [r8+8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
 mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov [rsp+80], rdx
-mov rax, [r11+40]
-mul r9
-mov [rsp+40], rax
-mov rax, [rsp+8]
-add rax, [rsp+48]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+56]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+64]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+72]
-mov [rsp+32], rax
-mov rax, [rsp+40]
-adc rax, [rsp+80]
-mov [rsp+40], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+32], rax
-mov rax, [rsp+8]
-adc [rcx+40], rax
-mov rax, [rsp+16]
-adc [rcx+48], rax
-mov rax, [rsp+24]
-adc [rcx+56], rax
-mov rax, [rsp+32]
-adc [rcx+64], rax
-mov rax, [rsp+40]
-adc [rcx+72], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+80], rax
-mov r9, [r8+40]
+mul qword ptr [r8]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+32], r10
+xor r10, r10
 mov rax, [r11]
-mul r9
-mov [rsp], rax
-mov [rsp+48], rdx
+mul qword ptr [r8+40]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+8]
-mul r9
-mov [rsp+8], rax
-mov [rsp+56], rdx
+mul qword ptr [r8+32]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+16]
-mul r9
-mov [rsp+16], rax
-mov [rsp+64], rdx
+mul qword ptr [r8+24]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+24]
-mul r9
-mov [rsp+24], rax
-mov [rsp+72], rdx
+mul qword ptr [r8+16]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+32]
-mul r9
-mov [rsp+32], rax
-mov [rsp+80], rdx
+mul qword ptr [r8+8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
 mov rax, [r11+40]
-mul r9
-mov [rsp+40], rax
-mov rax, [rsp+8]
-add rax, [rsp+48]
-mov [rsp+8], rax
-mov rax, [rsp+16]
-adc rax, [rsp+56]
-mov [rsp+16], rax
-mov rax, [rsp+24]
-adc rax, [rsp+64]
-mov [rsp+24], rax
-mov rax, [rsp+32]
-adc rax, [rsp+72]
-mov [rsp+32], rax
-mov rax, [rsp+40]
-adc rax, [rsp+80]
-mov [rsp+40], rax
-adc rdx, 0
-mov rax, [rsp]
-add [rcx+40], rax
-mov rax, [rsp+8]
-adc [rcx+48], rax
-mov rax, [rsp+16]
-adc [rcx+56], rax
-mov rax, [rsp+24]
-adc [rcx+64], rax
-mov rax, [rsp+32]
-adc [rcx+72], rax
-mov rax, [rsp+40]
-adc [rcx+80], rax
-adc rdx, 0
-mov rax, rdx
-mov [rcx+88], rax
-add rsp, 88
+mul qword ptr [r8]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+40], rdi
+xor rdi, rdi
+mov rax, [r11+8]
+mul qword ptr [r8+40]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+16]
+mul qword ptr [r8+32]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+24]
+mul qword ptr [r8+24]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+32]
+mul qword ptr [r8+16]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+40]
+mul qword ptr [r8+8]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+48], r9
+xor r9, r9
+mov rax, [r11+16]
+mul qword ptr [r8+40]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov rax, [r11+24]
+mul qword ptr [r8+32]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov rax, [r11+32]
+mul qword ptr [r8+24]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov rax, [r11+40]
+mul qword ptr [r8+16]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+56], r10
+xor r10, r10
+mov rax, [r11+24]
+mul qword ptr [r8+40]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov rax, [r11+32]
+mul qword ptr [r8+32]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov rax, [r11+40]
+mul qword ptr [r8+24]
+add rdi, rax
+adc r9, rdx
+adc r10, 0
+mov [rcx+64], rdi
+xor rdi, rdi
+mov rax, [r11+32]
+mul qword ptr [r8+40]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov rax, [r11+40]
+mul qword ptr [r8+32]
+add r9, rax
+adc r10, rdx
+adc rdi, 0
+mov [rcx+72], r9
+xor r9, r9
+mov rax, [r11+40]
+mul qword ptr [r8+40]
+add r10, rax
+adc rdi, rdx
+adc r9, 0
+mov [rcx+80], r10
+mov [rcx+88], rdi
+pop rdi
 ret
 mclb_mul_slow6 endp
 align 16

@@ -1004,19 +1004,36 @@ def gen_mul(N, mode):
         store_mp(sf.p[0], Pack(rdx, rax))
         return
     if mode == 'slow':
-      # N rows of plain mul (mulUnit_slow_body for the first row and mulUnitAdd_slow_body for the rest, inlined)
-      with StackFrame(3, 1, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
+      # column-wise (comba) with plain mul: z[k] = low 64 bits of sum_{i+j=k} x[i] y[j] + carry,
+      # accumulated in the 3-unit register [c2:c1:c0]; mul takes y[j] from memory, so no spill
+      with StackFrame(3, 3, useRDX=True) as sf:
         pz = sf.p[0]
         px = sf.p[1]
         py = sf.p[2]
-        t = sf.t[0] # y[i]
-        mov(t, ptr(py))
-        mulUnit_slow_body(pz, px, t, N)
-        mov(ptr(pz + N * 8), rax)
-        for i in range(1, N):
-          mov(t, ptr(py + i * 8))
-          mulUnitAdd_slow_body(pz + i * 8, px, t, N)
-          mov(ptr(pz + (N + i) * 8), rax)
+        c0 = sf.t[0]
+        c1 = sf.t[1]
+        c2 = sf.t[2]
+        first = True
+        for k in range(2 * N - 1):
+          for i in range(max(0, k - (N - 1)), min(k, N - 1) + 1):
+            j = k - i
+            mov(rax, ptr(px + i * 8))
+            mul(qword(py + j * 8)) # [rdx:rax] = x[i] * y[j]
+            if first:
+              mov(c0, rax)
+              mov(c1, rdx)
+              xor_(c2, c2)
+              first = False
+            else:
+              add(c0, rax)
+              adc(c1, rdx)
+              adc(c2, 0)
+          mov(ptr(pz + k * 8), c0)
+          # the next column starts from [0:c2:c1]
+          c0, c1, c2 = c1, c2, c0
+          if k < 2 * N - 2:
+            xor_(c2, c2)
+        mov(ptr(pz + (2 * N - 1) * 8), c0)
       return
     if N > 9:
       raise Exception(f'N = {N} is too large')
