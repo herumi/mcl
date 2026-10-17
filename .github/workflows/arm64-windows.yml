@@ -13,7 +13,7 @@ jobs:
     name: build on ARM64 Windows
     runs-on: windows-11-arm
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Show environment
       shell: pwsh
