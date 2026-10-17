@@ -1,6 +1,16 @@
 #ifdef MCL_DUMP_JIT
 	#define MCL_BINT_ASM 0
 #endif
+#ifdef _MSC_VER
+	/*
+		Construct the static objects of this file (Fp::op_, Fr::op_, ...) in the library
+		initialization area, which runs before the user's static objects regardless of
+		the link order (MSVC has no init_priority). See FpT::op_ in fp.hpp.
+		src/msm_avx.cpp has the same pragma.
+	*/
+	#pragma warning(disable : 4073) // initializers put in library initialization area
+	#pragma init_seg(lib)
+#endif
 #define MCL_DLL_EXPORT
 #include <mcl/config.hpp>
 #include <mcl/bn.h>

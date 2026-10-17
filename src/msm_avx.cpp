@@ -5,6 +5,11 @@
 	@license modified new BSD license
 	http://opensource.org/licenses/BSD-3-Clause
 */
+#ifdef _MSC_VER
+	// construct the static objects of this file (Fp::op_ etc.) before the user's ones (see src/fp.cpp)
+	#pragma warning(disable : 4073)
+	#pragma init_seg(lib)
+#endif
 #define MCL_DLL_EXPORT
 #include <mcl/bls12_381.hpp>
 #include <stdint.h>
