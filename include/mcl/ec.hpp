@@ -2005,7 +2005,7 @@ template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> int EcT<Fp>::specialB_;
 template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
-template<class Fp> mpz_class EcT<Fp>::order_;
+template<class Fp> mpz_class EcT<Fp>::order_ MCL_INIT_PRIORITY(200); // order_ has a dynamic initializer (see FpT::op_ in fp.hpp)
 template<class Fp> typename EcT<Fp>::MulVecGLVFunc EcT<Fp>::mulVecGLV;
 template<class Fp> typename EcT<Fp>::MulVecOptiFunc EcT<Fp>::mulVecOpti;
 template<class Fp> typename EcT<Fp>::IsValidOrderFastFunc EcT<Fp>::isValidOrderFast;
