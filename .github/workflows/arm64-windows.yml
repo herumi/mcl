@@ -47,6 +47,24 @@ jobs:
       shell: pwsh
       run: cmake --build build --config Release
 
+    - name: Build and run bls12_test (static library)
+      shell: pwsh
+      run: |
+        # Link the test against build/lib/mcl.lib with clang++ as mk_arm64.bat does
+        # (the CMake test targets are not available on ARM64, see CMakeLists.txt).
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $vsPath = & $vswhere -latest -property installationPath
+        $llvm = "$vsPath\VC\Tools\Llvm\ARM64"
+        $rt = (Get-ChildItem "$llvm\lib\clang\*\lib\windows\clang_rt.builtins-aarch64.lib" | Select-Object -First 1).FullName
+        if (-not $rt) { Write-Error "clang_rt.builtins-aarch64.lib not found under $llvm"; exit 1 }
+        # clang finds the ARM64 MSVC / SDK libraries itself only when LIB is not set
+        Remove-Item Env:LIB -ErrorAction SilentlyContinue
+        Remove-Item Env:LIBPATH -ErrorAction SilentlyContinue
+        & "$llvm\bin\clang++.exe" test\bls12_test.cpp -o build\bls12_test.exe --target=arm64-pc-windows-msvc -O2 -DNDEBUG -I include -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0 -DMCL_DONT_EXPORT build\lib\mcl.lib $rt
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & build\bls12_test.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
     - name: Check outputs
       shell: pwsh
       run: |
