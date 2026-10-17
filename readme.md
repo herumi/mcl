@@ -113,6 +113,10 @@ cd build
 cmake .. -A x64
 msbuild mcl.sln /p:Configuration=Release /m
 ```
+`clang++` (e.g. the Visual Studio C++ Clang tools) is used for `src/base64.ll` if it is found, as `mklib.bat` does.
+Without it, the library is slower on CPUs without BMI2/ADX.
+- `lib/Release/mcl.lib`: static library
+- `bin/Release/{mcl.lib,mcl.dll}`: dynamic library
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.

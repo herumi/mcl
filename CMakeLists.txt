@@ -51,7 +51,7 @@ option(
 )
 option(
 	MCL_USE_LLVM
-	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++"
+	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++ (Win64: clang++ found in PATH or Visual Studio)"
 	ON
 )
 option(
@@ -127,6 +127,12 @@ set_target_properties(mcl PROPERTIES
 	OUTPUT_NAME mcl
 	VERSION ${mcl_VERSION}
 	SOVERSION ${mcl_VERSION_MAJOR})
+if(MSVC)
+	# Put the import library of mcl.dll next to the DLL (bin/mcl.lib) as mklib.bat does;
+	# otherwise it and the static library mcl_st overwrite each other as lib/mcl.lib.
+	set_target_properties(mcl PROPERTIES
+		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif()
 
 add_library(mcl::mcl_st ALIAS mcl_st)
 target_include_directories(mcl_st PUBLIC
@@ -310,9 +316,8 @@ else()
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
-	target_link_libraries(mcl PUBLIC ${BINT_OBJ})
 	add_dependencies(mcl gen_bint.o)
-	target_link_libraries(mcl_st PUBLIC ${BINT_OBJ})
+	target_sources(mcl PRIVATE ${BINT_OBJ})
 	add_dependencies(mcl_st gen_bint.o)
 	target_sources(mcl_st PRIVATE ${BINT_OBJ})
 endif()
@@ -326,7 +331,32 @@ else()
 endif()
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
-	# skip
+	# base${BIT}.ll needs clang++ (cl cannot consume LLVM IR), as mklib.bat clang=1 does.
+	# Without it the library falls back to the C++ code on CPUs without BMI2/ADX
+	# (the fast path with mulx/adx is the same asm in both cases).
+	if(MCL_USE_LLVM)
+		find_program(MCL_CLANGXX NAMES clang++
+			HINTS "${VS_PATH}/VC/Tools/Llvm/x64/bin" "${VS_PATH}/VC/Tools/Llvm/bin")
+	endif()
+	if(MCL_USE_LLVM AND MCL_CLANGXX)
+		message(STATUS "Found clang++ for base${BIT}.ll: ${MCL_CLANGXX}")
+		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.obj")
+		# PRIVATE for the DLL: the functions of base${BIT}.obj are not exported from mcl.dll
+		target_compile_definitions(mcl PRIVATE MCL_USE_LLVM=1)
+		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+		add_custom_command(OUTPUT ${BASE_OBJ}
+			COMMAND "${MCL_CLANGXX}" --target=x86_64-pc-windows-msvc -c -O3 -fomit-frame-pointer -fno-stack-protector -Wno-override-module -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+		add_custom_target(gen_base.obj
+			SOURCES ${BASE_OBJ})
+		add_dependencies(mcl gen_base.obj)
+		target_sources(mcl PRIVATE ${BASE_OBJ})
+		add_dependencies(mcl_st gen_base.obj)
+		target_sources(mcl_st PRIVATE ${BASE_OBJ})
+	elseif(MCL_USE_LLVM)
+		message(WARNING "clang++ not found: base${BIT}.ll is not used (slower on CPUs without BMI2/ADX). Install the Visual Studio C++ Clang tools or set MCL_CLANGXX.")
+	endif()
 elseif(MCL_WIN_ARM64)
 	# base/fp objects and the lib/dll are built in the MCL_WIN_ARM64 block above
 elseif(X86_64_LINUX)
@@ -345,26 +375,28 @@ elseif(${MCL_USE_LLVM})
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
-	target_link_libraries(mcl PUBLIC ${BASE_OBJ})
 	add_dependencies(mcl gen_base.o)
-	target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
+	target_sources(mcl PRIVATE ${BASE_OBJ})
 	add_dependencies(mcl_st gen_base.o)
 	target_sources(mcl_st PRIVATE ${BASE_OBJ})
 endif()
 
 # use src/msm_avx.cpp on x64
+# The object is PRIVATE to mcl/mcl_st: it is compiled with AVX-512 enabled, so the
+# inline functions from the headers in it also contain AVX-512 code. If it were linked
+# into the executables (PUBLIC), those copies would take over the library's ones and
+# run on CPUs without AVX-512 before the CPU check in getCpuType().
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
 		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc /MT /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(msm_avx.o
+	add_custom_target(gen_msm_avx.obj
 		SOURCES ${MSM_OBJ})
-	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
-	add_dependencies(mcl msm_avx.o)
-	target_link_libraries(mcl_st PUBLIC ${MSM_OBJ})
-	add_dependencies(mcl_st msm_avx.o)
+	add_dependencies(mcl gen_msm_avx.obj)
+	target_sources(mcl PRIVATE ${MSM_OBJ})
+	add_dependencies(mcl_st gen_msm_avx.obj)
 	target_sources(mcl_st PRIVATE ${MSM_OBJ})
 
 elseif(MCL_WIN_ARM64)
@@ -376,10 +408,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	add_custom_command(OUTPUT ${MSM_OBJ}
 		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -mavx512f -mavx512ifma -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(msm_avx.o
+	# the target name must differ from the output file name for Ninja
+	add_custom_target(gen_msm_avx.o
 		SOURCES ${MSM_OBJ})
-	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
-	add_dependencies(mcl msm_avx.o)
+	add_dependencies(mcl gen_msm_avx.o)
+	target_sources(mcl PRIVATE ${MSM_OBJ})
+	add_dependencies(mcl_st gen_msm_avx.o)
 	target_sources(mcl_st PRIVATE ${MSM_OBJ})
 endif()
 
