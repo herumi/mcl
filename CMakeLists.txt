@@ -464,12 +464,19 @@ if(MCL_WIN_ARM64)
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/mcl.lib DESTINATION lib)
 	endif()
 	if(TARGET mcl_dll)
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll DESTINATION bin)
-		# Also install the import library if produced next to the DLL
-		if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.lib)
-			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.lib DESTINATION lib)
-		endif()
+		# the DLL and its import library (made by clang-cl /LD next to the DLL) go to bin/
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.lib DESTINATION bin)
 	endif()
+elseif(MSVC)
+	# static library: lib/mcl.lib, DLL and its import library: bin/{mcl.dll,mcl.lib} (as mklib.bat does);
+	# both ARCHIVE outputs are named mcl.lib, so they must not go to the same directory
+	install(TARGETS mcl
+		EXPORT mclTargets
+		RUNTIME DESTINATION bin
+		ARCHIVE DESTINATION bin)
+	install(TARGETS mcl_st
+		EXPORT mclTargets
+		ARCHIVE DESTINATION lib)
 else()
 	install(TARGETS mcl mcl_st
 		EXPORT mclTargets
