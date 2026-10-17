@@ -117,6 +117,27 @@ uint32_t getCpuType()
 
 namespace mcl {
 
+#if defined(_MSC_VER) && !defined(MCL_DLL_IMPORT_STATIC)
+// the static data members of G1 and G2 are defined only here (see EcT in ec.hpp)
+#define MCL_EC_STATIC_INST(Ec, F) \
+	template F Ec::a_; \
+	template F Ec::b_; \
+	template F Ec::b3_; \
+	template int Ec::specialA_; \
+	template int Ec::specialB_; \
+	template int Ec::ioMode_; \
+	template bool Ec::verifyOrder_; \
+	template mpz_class Ec::order_; \
+	template Ec::MulVecGLVFunc Ec::mulVecGLV; \
+	template Ec::MulVecOptiFunc Ec::mulVecOpti; \
+	template Ec::IsValidOrderFastFunc Ec::isValidOrderFast; \
+	template int Ec::mode_; \
+	template Ec::MulEachOptiFunc Ec::mulEachOpti;
+MCL_EC_STATIC_INST(EcT<Fp>, Fp)
+MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
+#undef MCL_EC_STATIC_INST
+#endif
+
 namespace fp {
 
 Op* getOpPtr(int tag, size_t maxBitSize)

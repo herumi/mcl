@@ -1989,6 +1989,14 @@ MCL_EC_STATIC_REF(typename EcT<Fp>::IsValidOrderFastFunc, isValidOrderFast, isVa
 MCL_EC_STATIC_REF(int, mode_, mode)
 MCL_EC_STATIC_REF(typename EcT<Fp>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
 #undef MCL_EC_STATIC_REF
+#elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
+/*
+	The static data members are defined only in the library (src/fp.cpp, MCL_EC_STATIC_INST)
+	under #pragma init_seg(lib) for the same reason as FpT::op_ (see fp.hpp):
+	order_ (mpz_class) has a dynamic initializer, which would run after the static objects
+	of the user that call initPairing() in their constructors and reset order_ to 0.
+	A TU that uses EcT<Fp> other than G1 and G2 must define the static data members itself.
+*/
 #else
 template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;

@@ -30,6 +30,16 @@ int main(int argc, char *argv[])
 	puts("main");
 	CYBOZU_TEST_ASSERT(Fr::getOp().N > 0);
 	CYBOZU_TEST_ASSERT(Fp::getOp().N > 0);
+	// the static data members of EcT must keep the values set by initPairing() (order_ has a dynamic initializer)
+	{
+		G1 P;
+		hashAndMapToG1(P, "abc", 3);
+		CYBOZU_TEST_ASSERT(P.isValidOrder()); // instantiates G1::order_ in this TU
+		const mpz_class *order = static_cast<const mpz_class*>(mcl::ec::getStaticMember(mcl::ec::StaticIdG1)->order);
+		CYBOZU_TEST_ASSERT(*order != 0);
+		order = static_cast<const mpz_class*>(mcl::ec::getStaticMember(mcl::ec::StaticIdG2)->order);
+		CYBOZU_TEST_ASSERT(*order != 0);
+	}
 	mcl::Unit x[2] = { 1, 2 }, z[4];
 	mcl::bint::mulT<2>(z, x, x);
 	CYBOZU_TEST_ASSERT(mcl::bint::get_mulUnit(1));
