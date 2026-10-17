@@ -23,12 +23,12 @@ clang++ -c -o obj\bint64.o src\bint64.ll %LOCAL_CFLAGS%
 echo clang++ -c -o obj\fp.o src\fp.cpp %LOCAL_CFLAGS% -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
 clang++ -c -o obj\fp.o src\fp.cpp %LOCAL_CFLAGS% -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION
 
-rem DLL: the CRT is the static one, /MT, as in the CMake build; see MCL_WIN_ARM64 in CMakeLists.txt.
-rem The objects carry /DEFAULTLIB:libcmt, so no CRT library is named on the link line.
-rem msvcrt.lib used to be listed there, which mixed libcmt and msvcrt.
+rem DLL: the CRT is the static one, libcmt.lib, as in the CMake build; see MCL_WIN_ARM64 in CMakeLists.txt.
+rem The objects made by clang++ carry no /DEFAULTLIB directive, so the CRT must be named on the link line.
+rem msvcrt.lib used to be listed there, which made the DLL depend on the dynamic CRT.
 if "%1"=="dll" (
-echo clang-cl -target aarch64-pc-windows-msvc /MT /LD %OBJ% /Fe:bin\mcl.dll /link /Brepro "%CLANG_RT_PATH%\clang_rt.builtins-aarch64.lib" kernel32.lib /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\um\arm64" /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\ucrt\arm64"
-clang-cl -target aarch64-pc-windows-msvc /MT /LD %OBJ% /Fe:bin\mcl.dll /link /Brepro "%CLANG_RT_PATH%\clang_rt.builtins-aarch64.lib" kernel32.lib /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\um\arm64" /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\ucrt\arm64"
+echo clang-cl -target aarch64-pc-windows-msvc /MT /LD %OBJ% /Fe:bin\mcl.dll /link /Brepro "%CLANG_RT_PATH%\clang_rt.builtins-aarch64.lib" libcmt.lib kernel32.lib /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\um\arm64" /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\ucrt\arm64"
+clang-cl -target aarch64-pc-windows-msvc /MT /LD %OBJ% /Fe:bin\mcl.dll /link /Brepro "%CLANG_RT_PATH%\clang_rt.builtins-aarch64.lib" libcmt.lib kernel32.lib /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\um\arm64" /LIBPATH:"%WindowsSdkDir%Lib\%WindowsSDKVersion%\ucrt\arm64"
 ) else (
 echo lib /nologo /OUT:lib\mcl.lib /Brepro /nodefaultlib %OBJ%
 lib /nologo /OUT:lib\mcl.lib /Brepro /nodefaultlib %OBJ%
