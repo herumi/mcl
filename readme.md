@@ -117,6 +117,7 @@ msbuild mcl.sln /p:Configuration=Release /m
 Without it, the library is slower on CPUs without BMI2/ADX.
 - `lib/Release/mcl.lib`: static library
 - `bin/Release/{mcl.lib,mcl.dll}`: dynamic library
+`cmake --install` puts them in `lib/` and `bin/` of the prefix in the same way.
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.

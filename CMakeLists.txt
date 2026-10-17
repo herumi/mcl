@@ -117,12 +117,47 @@ else()
 	add_library(mcl SHARED src/fp.cpp)
 	add_library(mcl_st STATIC src/fp.cpp)
 endif()
+# mcl (shared) and mcl_st (static) are built from the same sources with the same settings.
+# These helpers apply a command to both targets.
+set(MCL_TARGETS mcl mcl_st)
+function(mcl_compile_definitions)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_compile_definitions(${t} ${ARGN})
+	endforeach()
+endfunction()
+function(mcl_compile_options)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_compile_options(${t} ${ARGN})
+	endforeach()
+endfunction()
+function(mcl_link_libraries)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_link_libraries(${t} ${ARGN})
+	endforeach()
+endfunction()
+function(mcl_sources)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_sources(${t} ${ARGN})
+	endforeach()
+endfunction()
+# add objects made by a custom command, driven by the custom target gen_target
+# (so that the command runs once even if both libraries are built in parallel)
+function(mcl_add_object gen_target)
+	foreach(t IN LISTS MCL_TARGETS)
+		add_dependencies(${t} ${gen_target})
+		target_sources(${t} PRIVATE ${ARGN})
+	endforeach()
+endfunction()
+
 add_library(mcl::mcl ALIAS mcl)
-target_include_directories(mcl PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
-set_target_properties(mcl PROPERTIES
-	POSITION_INDEPENDENT_CODE ON)
+add_library(mcl::mcl_st ALIAS mcl_st)
+foreach(t IN LISTS MCL_TARGETS)
+	target_include_directories(${t} PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
+	set_target_properties(${t} PROPERTIES
+		POSITION_INDEPENDENT_CODE ON)
+endforeach()
 set_target_properties(mcl PROPERTIES
 	OUTPUT_NAME mcl
 	VERSION ${mcl_VERSION}
@@ -133,24 +168,16 @@ if(MSVC)
 	set_target_properties(mcl PROPERTIES
 		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endif()
-
-add_library(mcl::mcl_st ALIAS mcl_st)
-target_include_directories(mcl_st PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
 set_target_properties(mcl_st PROPERTIES
-	OUTPUT_NAME mcl
-	POSITION_INDEPENDENT_CODE ON)
+	OUTPUT_NAME mcl)
 
-target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
+mcl_compile_definitions(PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
 
 # Compiler and linker settings
 if(MCL_WIN_ARM64)
 	# The library objects are built by the custom commands below with explicit
 	# flags, so only the public compile definitions matter here.
-	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
-	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
+	mcl_compile_definitions(PUBLIC NOMINMAX MCL_MSM=0)
 	set(MCL_COMPILE_OPTIONS "")
 
 elseif(MSVC)
@@ -173,12 +200,11 @@ elseif(MSVC)
 
 	# Set mklib.bat compatible flags for x64 Windows
 	if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-		target_compile_definitions(mcl PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-		target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT} MCL_DONT_EXPORT)
+		mcl_compile_definitions(PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8)
+		target_compile_definitions(mcl_st PUBLIC MCL_DONT_EXPORT)
 		set(MCL_COMPILE_OPTIONS /W4 /openmp)
 	else()
-		target_compile_definitions(mcl PUBLIC NOMINMAX)
-		target_compile_definitions(mcl_st PUBLIC NOMINMAX)
+		mcl_compile_definitions(PUBLIC NOMINMAX)
 		set(MCL_COMPILE_OPTIONS /W4)
 	endif()
 else()
@@ -189,13 +215,11 @@ endif()
 
 if (${MCL_USE_GMP})
 	list(APPEND MCL_COMPILE_OPTIONS -DMCL_USE_GMP=1)
-	target_link_libraries(mcl PRIVATE GMP::GMP)
-	target_link_libraries(mcl_st PRIVATE GMP::GMP)
+	mcl_link_libraries(PRIVATE GMP::GMP)
 endif()
 
 if(MCL_COMPILE_OPTIONS)
-	target_compile_options(mcl PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
+	mcl_compile_options(PRIVATE ${MCL_COMPILE_OPTIONS})
 endif()
 
 # Build compiler command list respecting CMAKE_CXX_COMPILER_LAUNCHER and CMAKE_CXX_COMPILER_ARG1
@@ -290,17 +314,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint-x64-win.obj
 		SOURCES ${BINT_X64_OBJ})
-	add_dependencies(mcl gen_bint-x64-win.obj)
-	target_sources(mcl PRIVATE ${BINT_X64_OBJ})
-	add_dependencies(mcl_st gen_bint-x64-win.obj)
-	target_sources(mcl_st PRIVATE ${BINT_X64_OBJ})
+	mcl_add_object(gen_bint-x64-win.obj ${BINT_X64_OBJ})
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	if (CMAKE_SYSTEM_NAME STREQUAL "MSYS")
-		target_sources(mcl PRIVATE src/asm/bint-x64-mingw.S)
-		target_sources(mcl_st PRIVATE src/asm/bint-x64-mingw.S)
+		mcl_sources(PRIVATE src/asm/bint-x64-mingw.S)
 	else()
-		target_sources(mcl PRIVATE src/asm/bint-x64-amd64.S)
-		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
+		mcl_sources(PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -308,18 +327,14 @@ else()
 	endif()
 	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 	message("bint_obj=" ${BINT_OBJ})
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
+	mcl_compile_definitions(PUBLIC MCL_BINT_ASM_X64=0)
 
 	add_custom_command(OUTPUT ${BINT_OBJ}
 		COMMAND ${_cxx_cmd} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
-	add_dependencies(mcl gen_bint.o)
-	target_sources(mcl PRIVATE ${BINT_OBJ})
-	add_dependencies(mcl_st gen_bint.o)
-	target_sources(mcl_st PRIVATE ${BINT_OBJ})
+	mcl_add_object(gen_bint.o ${BINT_OBJ})
 endif()
 
 # use generated asm or compile base${BIT}.ll by clang
@@ -350,35 +365,26 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 		add_custom_target(gen_base.obj
 			SOURCES ${BASE_OBJ})
-		add_dependencies(mcl gen_base.obj)
-		target_sources(mcl PRIVATE ${BASE_OBJ})
-		add_dependencies(mcl_st gen_base.obj)
-		target_sources(mcl_st PRIVATE ${BASE_OBJ})
+		mcl_add_object(gen_base.obj ${BASE_OBJ})
 	elseif(MCL_USE_LLVM)
 		message(WARNING "clang++ not found: base${BIT}.ll is not used (slower on CPUs without BMI2/ADX). Install the Visual Studio C++ Clang tools or set MCL_CLANGXX.")
 	endif()
 elseif(MCL_WIN_ARM64)
 	# base/fp objects and the lib/dll are built in the MCL_WIN_ARM64 block above
 elseif(X86_64_LINUX)
-	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-	target_sources(mcl PRIVATE src/asm/x86-64.S)
-	target_sources(mcl_st PRIVATE src/asm/x86-64.S)
+	mcl_compile_definitions(PUBLIC MCL_USE_LLVM=1)
+	mcl_sources(PRIVATE src/asm/x86-64.S)
 elseif(${MCL_USE_LLVM})
 	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 	message("base_obj=" ${BASE_OBJ})
-	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+	mcl_compile_definitions(PUBLIC MCL_USE_LLVM=1)
 
 	add_custom_command(OUTPUT ${BASE_OBJ}
 		COMMAND ${_cxx_cmd} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
-	add_dependencies(mcl gen_base.o)
-	target_sources(mcl PRIVATE ${BASE_OBJ})
-	add_dependencies(mcl_st gen_base.o)
-	target_sources(mcl_st PRIVATE ${BASE_OBJ})
+	mcl_add_object(gen_base.o ${BASE_OBJ})
 endif()
 
 # use src/msm_avx.cpp on x64
@@ -395,10 +401,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_msm_avx.obj
 		SOURCES ${MSM_OBJ})
-	add_dependencies(mcl gen_msm_avx.obj)
-	target_sources(mcl PRIVATE ${MSM_OBJ})
-	add_dependencies(mcl_st gen_msm_avx.obj)
-	target_sources(mcl_st PRIVATE ${MSM_OBJ})
+	mcl_add_object(gen_msm_avx.obj ${MSM_OBJ})
 
 elseif(MCL_WIN_ARM64)
 	# ARM64 doesn't use AVX instructions, so skip MSM optimization
@@ -413,10 +416,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	# the target name must differ from the output file name for Ninja
 	add_custom_target(gen_msm_avx.o
 		SOURCES ${MSM_OBJ})
-	add_dependencies(mcl gen_msm_avx.o)
-	target_sources(mcl PRIVATE ${MSM_OBJ})
-	add_dependencies(mcl_st gen_msm_avx.o)
-	target_sources(mcl_st PRIVATE ${MSM_OBJ})
+	mcl_add_object(gen_msm_avx.o ${MSM_OBJ})
 endif()
 
 if(MCL_USE_GMP OR (MCL_BUILD_TESTING AND MCL_TEST_WITH_GMP))
