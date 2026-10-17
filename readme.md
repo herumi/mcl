@@ -118,6 +118,7 @@ Without it, the library is slower on CPUs without BMI2/ADX.
 - `lib/Release/mcl.lib`: static library
 - `bin/Release/{mcl.lib,mcl.dll}`: dynamic library
 `cmake --install` puts them in `lib/` and `bin/` of the prefix in the same way.
+They use the static CRT (`/MT`) as `mklib.bat` does; `-DMCL_MSVC_RUNTIME_DLL=ON` selects `/MD`.
 
 ## How to build a static library with Visual Studio
 Open `mcl.sln` and build it.

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.15)
 
 project(mcl
 	VERSION 3.03
@@ -70,6 +70,15 @@ if(MSVC)
 		"use dynamic runtime /MD in msvc builds"
 		OFF
 	)
+	# Static CRT (/MT, /MTd) by default as mklib.bat and cl do; MCL_MSVC_RUNTIME_DLL selects /MD, /MDd.
+	# This must be set before add_library(): it initializes the MSVC_RUNTIME_LIBRARY property of the targets.
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<BOOL:${MCL_MSVC_RUNTIME_DLL}>:DLL>")
+	# The same runtime for the objects made by custom commands, which invoke cl / clang-cl directly.
+	if(MCL_MSVC_RUNTIME_DLL)
+		set(MCL_MSVC_RUNTIME_FLAG /MD)
+	else()
+		set(MCL_MSVC_RUNTIME_FLAG /MT)
+	endif()
 endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -181,13 +190,8 @@ if(MCL_WIN_ARM64)
 	set(MCL_COMPILE_OPTIONS "")
 
 elseif(MSVC)
-	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /O2 /EHsc /GS- /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
-	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /O2 /EHsc /GS- /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
-	endif()
+	# the runtime library (/MT or /MD) is selected by CMAKE_MSVC_RUNTIME_LIBRARY above
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /Oy /O2 /EHsc /GS- /DNDEBUG")
 
 	# Set /Brepro for reproducible builds in linker flags
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Brepro")
@@ -263,13 +267,14 @@ if(MCL_WIN_ARM64)
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling base${BIT}.ll for ARM64")
 
-	# fp.cpp -> *.o (clang-cl); static uses /MT + MCL_DONT_EXPORT, DLL uses /MD
+	# fp.cpp -> *.o (clang-cl); the static library adds MCL_DONT_EXPORT.
+	# Both use the runtime selected by MCL_MSVC_RUNTIME_DLL (/MT by default) as the x64 build does.
 	add_custom_command(OUTPUT ${FP_OBJ_STATIC}
-		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} /MT -DMCL_DONT_EXPORT /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} ${MCL_MSVC_RUNTIME_FLAG} -DMCL_DONT_EXPORT /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling fp.cpp for ARM64 static library")
 	add_custom_command(OUTPUT ${FP_OBJ_DLL}
-		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} /MD /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} ${MCL_MSVC_RUNTIME_FLAG} /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling fp.cpp for ARM64 DLL")
 
@@ -283,12 +288,14 @@ if(MCL_WIN_ARM64)
 
 	# DLL (clang-cl drives the link). The arm64 lib dirs are passed as /LIBPATH
 	# so they are searched before any x64 %LIB% inherited from the environment.
+	# The CRT comes from the /DEFAULTLIB directives of the objects (and the clang-cl
+	# driver, which gets the same /MT or /MD), so no CRT library is named here.
 	set(_arm64_libpath_args "")
 	foreach(_d ${MCL_ARM64_LIBDIRS})
 		list(APPEND _arm64_libpath_args /LIBPATH:${_d})
 	endforeach()
 	add_custom_command(OUTPUT ${MCL_DLL}
-		COMMAND "${MCL_CLANG_CL}" ${ARM64_TARGET} /LD ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ} /Fe:${MCL_DLL} /link /Brepro "${MCL_CLANG_RT}" msvcrt.lib kernel32.lib ${_arm64_libpath_args}
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_TARGET} ${MCL_MSVC_RUNTIME_FLAG} /LD ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ} /Fe:${MCL_DLL} /link /Brepro "${MCL_CLANG_RT}" kernel32.lib ${_arm64_libpath_args}
 		DEPENDS ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Creating ARM64 DLL mcl.dll")
@@ -396,7 +403,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc /MT /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
+		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc ${MCL_MSVC_RUNTIME_FLAG} /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_msm_avx.obj
