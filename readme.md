@@ -16,8 +16,9 @@ which supports the optimal Ate pairing over BN curves and BLS12-381 curves.
 - Remove unintended G1::isValidOrder on BN curve. This improves the performance of deserialization of a point of G1.
 
 # Version v4 includes breaking changes.
-- BMI2 (mulx) and ADX (adox, adcx) are used if the CPU supports them (Broadwell (2014) or later)
-  - A CPU without them (e.g. x86-64-v2, Haswell) uses the portable code; `MCL_CPU=noadx` forces it
+- v4.30 re-adds support for Haswell or older CPUs, but this is likely to be removed again in roughly a year.
+  - BMI2 (mulx) and ADX (adox, adcx) are used if the CPU supports them (Broadwell (2014) or later); `MCL_CPU=noadx` forces the portable code.
+- v4.00 - v4.20 do not support Haswell or older CPUs.
 
 # Version v3 includes breaking changes to lib/dll specifications.
 - The default `mcl.{a,lib}` supports up to 384 bits for the field Fp over which the elliptic curve is defined,
