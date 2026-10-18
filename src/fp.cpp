@@ -1,6 +1,16 @@
 #ifdef MCL_DUMP_JIT
 	#define MCL_BINT_ASM 0
 #endif
+#ifdef _MSC_VER
+	/*
+		Construct the static objects of this file (Fp::op_, Fr::op_, ...) in the library
+		initialization area, which runs before the user's static objects regardless of
+		the link order (MSVC has no init_priority). See FpT::op_ in fp.hpp.
+		src/msm_avx.cpp has the same pragma.
+	*/
+	#pragma warning(disable : 4073) // initializers put in library initialization area
+	#pragma init_seg(lib)
+#endif
 #define MCL_DLL_EXPORT
 #include <mcl/config.hpp>
 #include <mcl/bn.h>
@@ -23,12 +33,7 @@
 #include "xbyak/xbyak_util.h"
 #endif
 
-namespace mcl { namespace fp {
-
-enum CpuType {
-	tAVX_BMI2_ADX = 1<<0,
-	tAVX512_IFMA = 1<<1
-};
+namespace mcl { namespace bint {
 
 static uint32_t detectCpuType()
 {
@@ -67,17 +72,21 @@ static uint32_t detectCpuType()
 		}
 	}
 #endif
+#if MCL_BINT_ASM_X64 == 1
+	// after the MCL_CPU override, so that noadx keeps the slow asm
+	if (type & tAVX_BMI2_ADX) mclb_enable_fast();
+#endif
 	return type;
 }
 
-// lazily detected CPU type (bitwise OR of CpuType)
+// lazily detected CPU type (bitwise OR of CpuType, see include/mcl/bint.hpp)
 uint32_t getCpuType()
 {
 	static const uint32_t type = detectCpuType();
 	return type;
 }
 
-} } // mcl::fp
+} } // mcl::bint
 #include <mcl/op.hpp>
 #include <cybozu/sha2.hpp>
 #include <cybozu/endian.hpp>
@@ -107,6 +116,27 @@ uint32_t getCpuType()
 #include "fp_tower_impl.hpp"
 
 namespace mcl {
+
+#if defined(_MSC_VER) && !defined(MCL_DLL_IMPORT_STATIC)
+// the static data members of G1 and G2 are defined only here (see EcT in ec.hpp)
+#define MCL_EC_STATIC_INST(Ec, F) \
+	template F Ec::a_; \
+	template F Ec::b_; \
+	template F Ec::b3_; \
+	template int Ec::specialA_; \
+	template int Ec::specialB_; \
+	template int Ec::ioMode_; \
+	template bool Ec::verifyOrder_; \
+	template mpz_class Ec::order_; \
+	template Ec::MulVecGLVFunc Ec::mulVecGLV; \
+	template Ec::MulVecOptiFunc Ec::mulVecOpti; \
+	template Ec::IsValidOrderFastFunc Ec::isValidOrderFast; \
+	template int Ec::mode_; \
+	template Ec::MulEachOptiFunc Ec::mulEachOpti;
+MCL_EC_STATIC_INST(EcT<Fp>, Fp)
+MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
+#undef MCL_EC_STATIC_INST
+#endif
 
 namespace fp {
 
@@ -460,10 +490,6 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 	case FrTag: if (sizeofF != sizeof(Fr)) return false; break;
 	default: break;
 	}
-#if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8
-	// x64 requires BMI2 (mulx) and ADX (adox, adcx)
-	if ((getCpuType() & tAVX_BMI2_ADX) == 0) return false;
-#endif
 	if (_p <= 0) return false;
 	clear();
 	const size_t maxBitSize = sizeofF * 8;
@@ -489,6 +515,10 @@ bool Op::init(const mpz_class& _p, int _u, int _xi_a, int tag, size_t sizeofF)
 #ifdef MCL_X64_ASM
 	if (mode == FP_AUTO) mode = FP_XBYAK;
 	if (mode == FP_XBYAK && bitSize > 512) {
+		mode = FP_AUTO;
+	}
+	// the JIT and the static code use AVX/mulx/adcx/adox: use the LLVM (or C++) functions and the slow bint asm otherwise
+	if ((bint::getCpuType() & bint::tAVX_BMI2_ADX) == 0) {
 		mode = FP_AUTO;
 	}
 #ifdef MCL_USE_XBYAK

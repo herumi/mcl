@@ -25,6 +25,9 @@
 #if CYBOZU_HOST == CYBOZU_HOST_INTEL && MCL_SIZEOF_UNIT == 8 && MCL_BINT_ASM == 1 && (!defined(MCL_BINT_ASM_X64) || MCL_BINT_ASM_X64 == 1)
 	#define MCL_BINT_ASM_X64 1
 
+// src/asm/bint-x64-*: select the mulx/adx bodies of mclb_mulUnit{N}, mclb_mulUnitAdd{N}, mclb_mul{N}, mclb_sqr{N} (called by getCpuType())
+extern "C" void mclb_enable_fast();
+
 #if defined(_MSC_VER) && (_MSC_VER < 1920)
 extern "C" unsigned __int64 mclb_udiv128(
    unsigned __int64 highDividend,
@@ -39,6 +42,17 @@ extern "C" unsigned __int64 mclb_udiv128(
 #endif
 
 namespace mcl { namespace bint {
+
+// CPU features detected at runtime (bitwise OR of CpuType); see getCpuType()
+enum CpuType {
+	tAVX_BMI2_ADX = 1 << 0, // AVX + BMI2 (mulx) + ADX (adcx/adox): the fast x64 asm, the JIT / the static code, mclb_modp*_x64
+	tAVX512_IFMA = 1 << 1   // AVX-512 IFMA: the MSM of src/msm_avx.cpp
+};
+/*
+	lazily detected CPU type (the first call runs cpuid and enables the fast x64 asm);
+	the environment variable MCL_CPU=noadx|noifma|adx overrides the detection (noadx: all the portable paths)
+*/
+MCL_CXX_API uint32_t getCpuType();
 
 typedef Unit (*u_ppp)(Unit*, const Unit*, const Unit*);
 typedef Unit (*u_ppu)(Unit*, const Unit*, Unit);

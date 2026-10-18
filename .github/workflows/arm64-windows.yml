@@ -8,12 +8,17 @@ permissions:
 on:
   workflow_dispatch:
 
+# The compile flags of the test programs follow setvar_arm64.bat / mk_arm64.bat
+# (the CMake test targets are not available on ARM64, see CMakeLists.txt).
+env:
+  MCL_TEST_CFLAGS: --target=arm64-pc-windows-msvc -O2 -DNDEBUG -DMCL_SIZEOF_UNIT=8 -DMCL_FP_BIT=384 -DMCL_FR_BIT=256 -DMCL_MSM=0
+
 jobs:
   build:
     name: build on ARM64 Windows
     runs-on: windows-11-arm
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Show environment
       shell: pwsh
@@ -39,6 +44,28 @@ jobs:
           Write-Host "Installer exit code: $($p.ExitCode)"
         }
 
+    - name: Locate the LLVM tools and dumpbin
+      shell: pwsh
+      run: |
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $vsPath = & $vswhere -latest -property installationPath
+        $llvm = "$vsPath\VC\Tools\Llvm\ARM64\bin"
+        $rt = (Get-ChildItem "$vsPath\VC\Tools\Llvm\ARM64\lib\clang\*\lib\windows\clang_rt.builtins-aarch64.lib" | Select-Object -First 1).FullName
+        if (-not $rt) { Write-Error "clang_rt.builtins-aarch64.lib not found under $vsPath\VC\Tools\Llvm\ARM64"; exit 1 }
+        $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe |
+          Where-Object { $_.FullName -match 'HostARM64\\ARM64' } | Select-Object -First 1
+        if (-not $dumpbin) {
+          $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Select-Object -First 1
+        }
+        if (-not $dumpbin) { Write-Error "dumpbin.exe not found under $vsPath\VC\Tools\MSVC"; exit 1 }
+        "MCL_VS_PATH=$vsPath" >> $env:GITHUB_ENV
+        "MCL_LLVM_BIN=$llvm" >> $env:GITHUB_ENV
+        "MCL_CLANG_RT=$rt" >> $env:GITHUB_ENV
+        "MCL_DUMPBIN=$($dumpbin.FullName)" >> $env:GITHUB_ENV
+        Write-Host "clang++  : $llvm\clang++.exe"
+        Write-Host "clang_rt : $rt"
+        Write-Host "dumpbin  : $($dumpbin.FullName)"
+
     - name: Configure (native ARM64)
       shell: pwsh
       run: cmake -S . -B build -A ARM64
@@ -50,9 +77,8 @@ jobs:
     - name: Check outputs
       shell: pwsh
       run: |
-        $lib = "build/lib/mcl.lib"
-        $dll = "build/bin/mcl.dll"
-        foreach ($f in @($lib, $dll)) {
+        # static library, DLL and its import library (the same layout as mklib.bat / mklib_arm64.bat)
+        foreach ($f in @('build/lib/mcl.lib', 'build/bin/mcl.dll', 'build/bin/mcl.lib')) {
           if (-not (Test-Path $f)) {
             Write-Error "missing expected output: $f"
             exit 1
@@ -60,13 +86,113 @@ jobs:
           Write-Host "found: $f"
         }
         # Confirm the DLL is an ARM64 (AA64) image.
-        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        $vsPath = & $vswhere -latest -property installationPath
-        $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe |
-          Where-Object { $_.FullName -match 'HostARM64\\ARM64' } | Select-Object -First 1
-        if (-not $dumpbin) {
-          $dumpbin = Get-ChildItem -Path "$vsPath\VC\Tools\MSVC" -Recurse -Filter dumpbin.exe | Select-Object -First 1
+        & $env:MCL_DUMPBIN /headers build/bin/mcl.dll | Select-String -Pattern 'machine'
+        # The DLL links the static CRT (/MT): it must depend only on the system DLLs.
+        $deps = & $env:MCL_DUMPBIN /dependents build/bin/mcl.dll
+        $deps
+        if ($deps -match 'VCRUNTIME|MSVCP|api-ms-win-crt|ucrtbase') {
+          Write-Error "mcl.dll depends on the dynamic CRT"
+          exit 1
         }
-        if ($dumpbin) {
-          & $dumpbin.FullName /headers $dll | Select-String -Pattern 'machine'
+
+    - name: Build and run bls12_test (static library)
+      shell: pwsh
+      run: |
+        # Link the test against build/lib/mcl.lib with clang++ as 'mk_arm64 -s' does.
+        # clang finds the ARM64 MSVC / SDK libraries itself only when LIB is not set.
+        Remove-Item Env:LIB -ErrorAction SilentlyContinue
+        Remove-Item Env:LIBPATH -ErrorAction SilentlyContinue
+        $flags = $env:MCL_TEST_CFLAGS -split ' '
+        & "$env:MCL_LLVM_BIN\clang++.exe" test\bls12_test.cpp -o build\bls12_test.exe @flags -I include -DMCL_DONT_EXPORT build\lib\mcl.lib $env:MCL_CLANG_RT
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & build\bls12_test.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Build and run bn_c384_256_test (DLL client)
+      shell: pwsh
+      run: |
+        # Link the C API test against the import library build/bin/mcl.lib with
+        # -DMCL_DLL as 'mk_arm64 -d' does; the exe goes next to mcl.dll.
+        Remove-Item Env:LIB -ErrorAction SilentlyContinue
+        Remove-Item Env:LIBPATH -ErrorAction SilentlyContinue
+        $flags = $env:MCL_TEST_CFLAGS -split ' '
+        & "$env:MCL_LLVM_BIN\clang++.exe" test\bn_c384_256_test.cpp -o build\bin\bn_c384_256_test.exe @flags -I include -DMCL_DLL build\bin\mcl.lib $env:MCL_CLANG_RT
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        # the test must use mcl.dll, not a static copy of the library
+        $deps = & $env:MCL_DUMPBIN /dependents build\bin\bn_c384_256_test.exe
+        $deps
+        if (-not ($deps -match 'mcl\.dll')) {
+          Write-Error "bn_c384_256_test.exe does not depend on mcl.dll"
+          exit 1
         }
+        & build\bin\bn_c384_256_test.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Install and check the layout
+      shell: pwsh
+      run: |
+        cmake --install build --config Release --prefix inst
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Get-ChildItem -Recurse inst | Where-Object { -not $_.PSIsContainer } | ForEach-Object { $_.FullName.Substring((Get-Location).Path.Length + 1) }
+        # lib/mcl.lib: static library, bin/mcl.lib: import library of bin/mcl.dll
+        foreach ($f in @('inst/lib/mcl.lib', 'inst/bin/mcl.dll', 'inst/bin/mcl.lib',
+                         'inst/include/mcl/bn.h', 'inst/include/mcl/bn_c384_256.h', 'inst/include/mcl/bn.hpp', 'inst/include/cybozu/test.hpp')) {
+          if (-not (Test-Path $f)) {
+            Write-Error "missing installed file: $f"
+            exit 1
+          }
+        }
+        $static = & "$env:MCL_LLVM_BIN\llvm-lib.exe" /list inst/lib/mcl.lib
+        Write-Host "members of inst/lib/mcl.lib: $static"
+        if (-not ($static -match 'fp_static\.o') -or ($static -match 'mcl\.dll')) {
+          Write-Error "inst/lib/mcl.lib is not the static library"
+          exit 1
+        }
+        $import = & "$env:MCL_LLVM_BIN\llvm-lib.exe" /list inst/bin/mcl.lib
+        Write-Host "members of inst/bin/mcl.lib: $($import | Select-Object -First 3) ..."
+        if (-not ($import -match 'mcl\.dll')) {
+          Write-Error "inst/bin/mcl.lib is not the import library of mcl.dll"
+          exit 1
+        }
+
+    - name: Build and run the tests against the installed tree
+      shell: pwsh
+      run: |
+        # a user of the installed tree: headers from inst/include, static library
+        # from inst/lib, DLL and import library from inst/bin
+        Remove-Item Env:LIB -ErrorAction SilentlyContinue
+        Remove-Item Env:LIBPATH -ErrorAction SilentlyContinue
+        $flags = $env:MCL_TEST_CFLAGS -split ' '
+        & "$env:MCL_LLVM_BIN\clang++.exe" test\bls12_test.cpp -o inst\bls12_test.exe @flags -I inst\include -DMCL_DONT_EXPORT inst\lib\mcl.lib $env:MCL_CLANG_RT
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & inst\bls12_test.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & "$env:MCL_LLVM_BIN\clang++.exe" test\bn_c384_256_test.cpp -o inst\bin\bn_c384_256_test.exe @flags -I inst\include -DMCL_DLL inst\bin\mcl.lib $env:MCL_CLANG_RT
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & inst\bin\bn_c384_256_test.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Build with mklib_arm64.bat and run the tests (batch files)
+      shell: cmd
+      run: |
+        if exist "%MCL_VS_PATH%\VC\Auxiliary\Build\vcvarsarm64.bat" (
+          call "%MCL_VS_PATH%\VC\Auxiliary\Build\vcvarsarm64.bat"
+        ) else (
+          call "%MCL_VS_PATH%\VC\Auxiliary\Build\vcvarsamd64_arm64.bat"
+        )
+        if errorlevel 1 exit /b 1
+        set PATH=%MCL_LLVM_BIN%;%PATH%
+        call mklib_arm64.bat
+        if errorlevel 1 exit /b 1
+        call mk_arm64.bat -s test\bls12_test.cpp
+        if errorlevel 1 exit /b 1
+        bin\bls12_test.exe
+        if errorlevel 1 exit /b 1
+        call mklib_arm64.bat dll
+        if errorlevel 1 exit /b 1
+        "%MCL_DUMPBIN%" /dependents bin\mcl.dll
+        "%MCL_DUMPBIN%" /dependents bin\mcl.dll | findstr /i "VCRUNTIME MSVCP api-ms-win-crt ucrtbase" && (echo bin\mcl.dll depends on the dynamic CRT & exit /b 1)
+        call mk_arm64.bat -d test\bn_c384_256_test.cpp
+        if errorlevel 1 exit /b 1
+        bin\bn_c384_256_test.exe
+        if errorlevel 1 exit /b 1

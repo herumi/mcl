@@ -1231,7 +1231,8 @@ private:
 #endif
 			return true;
 		}
-		if (pn_ == 6 && !isFullBit_) {
+		// add maxUnitSize >= 6 to avoid false positive of gcc when MCL_FP_BIT = 256
+		if (maxUnitSize >= 6 && pn_ == 6 && !isFullBit_) {
 			func = getCurr<void2u>();
 			if (op_->p[pn_ - 1] < (uint64_t(1) << 62)) { // required by gen_montSqrWoAdx
 				gen_montSqrWoAdx();

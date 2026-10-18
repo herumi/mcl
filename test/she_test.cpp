@@ -510,6 +510,221 @@ CYBOZU_TEST_AUTO(ZkpDecGT)
 	CYBOZU_TEST_ASSERT(!aux.verify(c, m, zkp));
 }
 
+/*
+	regression test which fixes the byte sequences of the ZKPs
+	A deterministic RNG is injected so that the ciphertexts and the proofs are reproducible.
+	The digests must not change by refactoring the prover/verifier.
+*/
+struct SplitMix64 {
+	uint64_t s_;
+	explicit SplitMix64(uint64_t seed) : s_(seed) {}
+	uint64_t next()
+	{
+		uint64_t z = (s_ += 0x9e3779b97f4a7c15ull);
+		z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+		z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+		return z ^ (z >> 31);
+	}
+	static uint32_t read(void *self, void *buf, uint32_t n)
+	{
+		SplitMix64& rg = *reinterpret_cast<SplitMix64*>(self);
+		uint8_t *p = reinterpret_cast<uint8_t*>(buf);
+		uint64_t v = 0;
+		for (uint32_t i = 0; i < n; i++) {
+			if ((i % 8) == 0) v = rg.next();
+			p[i] = uint8_t(v >> (8 * (i % 8)));
+		}
+		return n;
+	}
+};
+
+struct ZkpDigest {
+	cybozu::Sha256 h_;
+	template<class T>
+	ZkpDigest& operator<<(const T& x)
+	{
+		const std::string s = x.serializeToHexStr();
+		h_.update(s.c_str(), s.size());
+		return *this;
+	}
+	std::string get()
+	{
+		uint8_t md[32];
+		h_.digest(md, sizeof(md), 0, 0);
+		std::string s;
+		for (size_t i = 0; i < sizeof(md); i++) {
+			char buf[3];
+			snprintf(buf, sizeof(buf), "%02x", md[i]);
+			s += buf;
+		}
+		return s;
+	}
+};
+
+CYBOZU_TEST_AUTO(zkpVector)
+{
+#if MCL_FP_BIT == 256
+	const char *const expected[] = {
+		"c364b78b708a6ce4f922f68d8d48d3cb408ec11d715857e934ce8eb14059d7e1",
+		"9cd4171b01138dbb71f161b63e1f6ebbe90f3279eadc115f83b34d2c2fb254db",
+		"13741b959ac5f0d645b0b6416dcdd18481bb60e7af837c433a2ad889cb6a742e",
+		"ebb95ad0de4b72313aba74b0da38053c3f638618e5167814e4c61f620c40ebfa",
+		"b9f93c334e0d6ef57b0d9b31e7d4dea04147fc8e26b97bbaa870cf7559ac90e4",
+		"cdcbdf1b6ca732162ea79027cd961b4dd4a6ffcb4e12fed9be9776b2834b5768",
+		"e6adfed1120423933e3231bf337bd267a4d3c3e8c52e68afb95b63a8e7af36ae",
+		"6e9a8d36a3eba71323dfe63180cfd01c2604f3960d394ec4f14537037492c5c5",
+		"1fc0017e57a3a3b11dd201ab0e32c70a400a87e4bd42c6c588dcc03a2cc4e607",
+		"296326e3c1c4088753c1fc34617937741a1888f288c11a31953fee26740c89ba",
+		"466488da9d503e14f7003663ba08a97d1166f434c7286f4265535709a0886988",
+		"9f0c0cfc145ad49e17bb992e90c2debbfe4bebb006d61e422fe0b7c9703dd02b",
+		"0bc99e2bc91e730597a1c8e6fee837b6af8484a14d8c0b8317acc0f44882654b",
+		"2321f2702512cdc5485221162c3f4e022dc491fa17f0aa0f703e66b2d527de72",
+		"361109e1bf591c47f0e8cd5e8918522e91f4040861eedd3fd0f487ec12f6cc62",
+		"ce93559dea5f4c77efd948897ef1b7e3ac8d5338d999641c5a44df272f83f9ee",
+		"325af796070d145b286c92a651e8c95a3673b1bb920085a81cdb3d6599e41d17",
+	};
+#elif MCL_FP_BIT == 384 && MCL_FR_BIT == 256
+	const char *const expected[] = {
+		"44a292dc20d2fc656780acb1a3a0b969a9ed32cd474d2a4e2baf6463a948cf02",
+		"ecab89397e7f74c338b0fff9fec5d9e6dbe904a5a9cf6f21a009a5a14459294f",
+		"d37b8c42062a351dd801a595f6893561996cfd22908b73f72a2e0431deecbc0f",
+		"04318d9ab828cadbfcdd17a87310e811a229b33e1c0f307221e6b2e4a9495fbd",
+		"9f6336af915693623cb94b6f7d962557c45152782e98babd9e018501ab70b5b8",
+		"d3be3952d54b093ede1251392bf96f80282bf4ea6a4f575d71def996313e9512",
+		"83dd07cb437608ea80163054df3b27c21bcf2af99bec76777aeb061d7dbec835",
+		"5d6c1013f6947dd6f38daad8a12d707cff26778bc185072c064db617419ac594",
+		"34ab06584e5c3b2de0c92d1bfa31460801f267dccc6e4ba25921ffc300b3c6af",
+		"5567bc8b2b83314371e297d40f18405ade0b371e93f34605f86849f2fe3492a2",
+		"917b58bc067c1ee19b300ba1090e77ecb0639c8626c42cc2f76bb30d2adb273b",
+		"2ecd46772884d739103fbc6061489d2f6e454d8d0299d0fad154ceef7f99033a",
+		"b15198dc0b461a3902c66af07ca931369394f40081f229e5165ad7d99ae1f9bf",
+		"73c804fa9eff596c618b820bd7c0f083e318ddbe19d35c32303fb4b67787ba7c",
+		"05fffb39d5816d48aa2d306cd826f415ef55aa14994c65398177a267c509d096",
+		"a2901330e4e4954ec1252d33b0aa27335617a99b12635bc89957f8816f5561a2",
+		"32651a592cbbc61c80551a4f55dbe057dca5114c47288363868d7dd10e6402de",
+	};
+#else
+	const char *const expected[] = { 0 };
+#endif
+	const size_t expectedN = sizeof(expected) / sizeof(expected[0]);
+	std::vector<std::string> digests;
+
+	SplitMix64 rg(0);
+	mcl::fp::RandGen::setRandFunc(&rg, SplitMix64::read);
+	uint64_t seed = 1;
+	// reseed before each case so that the cases are independent of each other
+#define ZKP_VEC_RESEED() rg = SplitMix64(seed++)
+
+	ZKP_VEC_RESEED();
+	SecretKey sec;
+	sec.setByCSPRNG();
+	{
+		ZkpDigest dg;
+		dg << sec;
+		digests.push_back(dg.get());
+	}
+	PublicKey pub;
+	sec.getPublicKey(pub);
+	PrecomputedPublicKey ppub;
+	ppub.init(pub);
+	AuxiliaryForZkpDecGT aux;
+	pub.getAuxiliaryForZkpDecGT(aux);
+
+	for (int ppubFlag = 0; ppubFlag < 2; ppubFlag++) {
+		for (int m = 0; m < 2; m++) {
+			ZKP_VEC_RESEED();
+			CipherTextG1 c;
+			ZkpBin zkp;
+			if (ppubFlag) ppub.encWithZkpBin(c, zkp, m); else pub.encWithZkpBin(c, zkp, m);
+			CYBOZU_TEST_EQUAL(sec.dec(c), m);
+			CYBOZU_TEST_ASSERT(pub.verify(c, zkp));
+			CYBOZU_TEST_ASSERT(ppub.verify(c, zkp));
+			ZkpDigest dg;
+			dg << c << zkp;
+			digests.push_back(dg.get());
+		}
+		for (int m = 0; m < 2; m++) {
+			ZKP_VEC_RESEED();
+			CipherTextG2 c;
+			ZkpBin zkp;
+			if (ppubFlag) ppub.encWithZkpBin(c, zkp, m); else pub.encWithZkpBin(c, zkp, m);
+			CYBOZU_TEST_EQUAL(sec.dec(c), m);
+			CYBOZU_TEST_ASSERT(pub.verify(c, zkp));
+			CYBOZU_TEST_ASSERT(ppub.verify(c, zkp));
+			ZkpDigest dg;
+			dg << c << zkp;
+			digests.push_back(dg.get());
+		}
+		{
+			ZKP_VEC_RESEED();
+			CipherTextG1 c1;
+			CipherTextG2 c2;
+			ZkpEq zkp;
+			const int m = -37;
+			if (ppubFlag) ppub.encWithZkpEq(c1, c2, zkp, m); else pub.encWithZkpEq(c1, c2, zkp, m);
+			CYBOZU_TEST_EQUAL(sec.dec(c1), m);
+			CYBOZU_TEST_EQUAL(sec.dec(c2), m);
+			CYBOZU_TEST_ASSERT(pub.verify(c1, c2, zkp));
+			CYBOZU_TEST_ASSERT(ppub.verify(c1, c2, zkp));
+			ZkpDigest dg;
+			dg << c1 << c2 << zkp;
+			digests.push_back(dg.get());
+		}
+		for (int m = 0; m < 2; m++) {
+			ZKP_VEC_RESEED();
+			CipherTextG1 c1;
+			CipherTextG2 c2;
+			ZkpBinEq zkp;
+			if (ppubFlag) ppub.encWithZkpBinEq(c1, c2, zkp, m); else pub.encWithZkpBinEq(c1, c2, zkp, m);
+			CYBOZU_TEST_EQUAL(sec.dec(c1), m);
+			CYBOZU_TEST_EQUAL(sec.dec(c2), m);
+			CYBOZU_TEST_ASSERT(pub.verify(c1, c2, zkp));
+			CYBOZU_TEST_ASSERT(ppub.verify(c1, c2, zkp));
+			ZkpDigest dg;
+			dg << c1 << c2 << zkp;
+			digests.push_back(dg.get());
+		}
+	}
+	{
+		ZKP_VEC_RESEED();
+		CipherTextG1 c;
+		const int m = 123;
+		pub.enc(c, m);
+		ZkpDec zkp;
+		CYBOZU_TEST_EQUAL(sec.decWithZkpDec(zkp, c, pub), m);
+		CYBOZU_TEST_ASSERT(pub.verify(c, m, zkp));
+		ZkpDigest dg;
+		dg << c << zkp;
+		digests.push_back(dg.get());
+	}
+	{
+		ZKP_VEC_RESEED();
+		CipherTextGT c;
+		const int m = 123;
+		pub.enc(c, m);
+		ZkpDecGT zkp;
+		CYBOZU_TEST_EQUAL(sec.decWithZkpDec(zkp, c, aux), m);
+		CYBOZU_TEST_ASSERT(aux.verify(c, m, zkp));
+		ZkpDigest dg;
+		dg << c << zkp;
+		digests.push_back(dg.get());
+	}
+#undef ZKP_VEC_RESEED
+	mcl::fp::RandGen::setRandFunc(0, 0);
+
+	if (expectedN == 0 || expected[0] == 0) {
+		// no vectors for this curve: print them to be pasted
+		for (size_t i = 0; i < digests.size(); i++) {
+			printf("\t\t\"%s\",\n", digests[i].c_str());
+		}
+		return;
+	}
+	CYBOZU_TEST_EQUAL(digests.size(), expectedN);
+	for (size_t i = 0; i < digests.size() && i < expectedN; i++) {
+		CYBOZU_TEST_EQUAL(digests[i], expected[i]);
+	}
+}
+
 CYBOZU_TEST_AUTO(add_sub_mul)
 {
 	const SecretKey& sec = g_sec;

@@ -1,9 +1,16 @@
 # Tests
+if(MSVC)
+	# The tests are built with MCL_DONT_EXPORT and link the static library (as mk.bat -s does).
+	# A client of mcl.dll must be built with MCL_DLL instead.
+	set(MCL_TEST_LIB mcl::mcl_st)
+else()
+	set(MCL_TEST_LIB mcl::mcl)
+endif()
 set(MCL_TEST_BASE fp_test ec_test fp_util_test window_method_test elgamal_test bls12_test
 	fp_tower_test gmp_test bn_test glv_test static_init_test)
 foreach(base IN ITEMS ${MCL_TEST_BASE})
 	add_executable(${base} ${base}.cpp)
-	target_link_libraries(${base} PRIVATE mcl::mcl)
+	target_link_libraries(${base} PRIVATE ${MCL_TEST_LIB})
 	set_target_properties(${base} PROPERTIES
 		CXX_STANDARD 11
 		CXX_STANDARD_REQUIRED YES
@@ -30,7 +37,7 @@ if(MCL_TEST_WITH_GMP)
 	set(MCL_TEST_WITH_GMP bint_test vint_test)
 	foreach(base IN ITEMS ${MCL_TEST_WITH_GMP})
 		add_executable(${base} ${base}.cpp)
-		target_link_libraries(${base} PRIVATE mcl::mcl)
+		target_link_libraries(${base} PRIVATE ${MCL_TEST_LIB})
 		if(MSVC)
 			target_link_libraries(${base} PUBLIC mcl::windows_specific)
 		else()

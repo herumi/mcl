@@ -12,7 +12,7 @@ jobs:
     name: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - run: lscpu
     - run: sudo apt update
     - run: sudo apt install valgrind nasm
@@ -21,6 +21,8 @@ jobs:
 # valgrind 3.22 executes adcx/adox but hides the ADX flag
 # see https://bugs.kde.org/show_bug.cgi?id=494162
     - run: env MCL_CPU=adx valgrind bin/pairing.exe
+# without MCL_CPU=adx, valgrind takes the portable path (no mulx/adcx/adox)
+    - run: valgrind bin/pairing.exe
     - run: make clean
 #    - run: wget https://software.intel.com/content/dam/develop/external/us/en/documents/downloads/sde-external-8.63.0-2021-01-18-lin.tar.bz2
 #    - run: bzip2 -dc sde-external-8.63.0-2021-01-18-lin.tar.bz2 | tar xvf -

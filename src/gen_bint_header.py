@@ -21,7 +21,14 @@ FuncType = collections.namedtuple('FuncType', 'name, ret, args, cname, prams, N,
 # print 'Unit mclb_add1(Unit *z, const Unit *x, const Unit *y);'
 FuncType.printProto = lambda self, i: print(f'{self.ret} {self.cname}{i}({self.args});')
 
+# print 'Unit mclb_mulUnit_fast1(Unit *z, const Unit *x, Unit y);'
+FuncType.printProtoSF = lambda self, i, suf: print(f'{self.ret} {self.cname}_{suf}{i}({self.args});')
+
 FuncType.getProtoType = lambda self: protoType[(self.ret, self.args)]
+
+# the x64 asm (src/gen_bint_x64.py) has the mulx/adx (fast) and the mul (slow) bodies of these functions,
+# selected at runtime by the CPU type (the plain mclb_* names are the dispatch stubs)
+FAST_SLOW = ('mulUnit', 'mulUnitAdd', 'mul', 'sqr')
 
 def gen_func(name, ret, args, cname, params, i):
   print(f'{ret} {cname}{i}({args});')
@@ -32,11 +39,19 @@ def gen_prototype(out, e):
   print(f'''{e.getProtoType()} get_{name}(size_t n)
 {{
 #if MCL_BINT_ASM == 1''')
+  if name in FAST_SLOW:
+    print('#if MCL_BINT_ASM_X64 == 1')
+    print('\tconst bool fast = isFastCpu(); // select the body directly (not the mclb_* stub)')
+    for i in range(1, N64 + 1):
+      print(f'\tif (n == {i}) return fast ? mclb_{name}_fast{i} : mclb_{name}_slow{i};')
+    print('#else // MCL_BINT_ASM_X64 == 1')
   for i in range(1, N + 1):
     if i == N64 + 1:
       print('#if MCL_SIZEOF_UNIT == 4')
     print(f'\tif (n == {i}) return mclb_{name}{i};')
   print('#endif // MCL_SIZEOF_UNIT == 4')
+  if name in FAST_SLOW:
+    print('#endif // MCL_BINT_ASM_X64 == 1')
   print('#else // MCL_BINT_ASM == 1')
   for i in range(1, N + 1):
     if i == N64 + 1:
@@ -56,6 +71,14 @@ def gen_table(tbl, N, N64):
     for e in tbl:
       e.printProto(i)
   print('#endif // #if MCL_SIZEOF_UNIT == 4')
+
+# extern "C" prototypes of the fast/slow bodies of the x64 asm (64-bit unit only)
+def gen_table_fast_slow(tbl, N64):
+  for i in range(1, N64 + 1):
+    for e in tbl:
+      if e.name in FAST_SLOW:
+        e.printProtoSF(i, 'fast')
+        e.printProtoSF(i, 'slow')
 
 def main():
   parser = argparse.ArgumentParser(description='gen header')
@@ -92,6 +115,12 @@ def main():
   gen_table(addTbl, addN, addN64)
   gen_table(mulTbl, mulN, mulN64)
   print('}')
+  print('#if MCL_BINT_ASM_X64 == 1')
+  print('extern "C" {')
+  gen_table_fast_slow(addTbl, addN64)
+  gen_table_fast_slow(mulTbl, mulN64)
+  print('}')
+  print('#endif // #if MCL_BINT_ASM_X64 == 1')
   print('#endif // #if MCL_BINT_ASM == 1')
 
   for ft in addTbl + mulTbl:

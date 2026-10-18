@@ -24,7 +24,7 @@ CFLAGS+=-DMCL_FR_BIT=$(MCL_FR_BIT)
 CLANG?=clang++$(LLVM_VER)
 SRC_SRC=fp.cpp
 TEST_SRC=fp_test.cpp ec_test.cpp fp_util_test.cpp window_method_test.cpp elgamal_test.cpp fp_tower_test.cpp gmp_test.cpp bn_test.cpp glv_test.cpp paillier_test.cpp she_test.cpp vint_test.cpp conversion_test.cpp
-TEST_SRC+=aggregate_sig_test.cpp array_test.cpp
+TEST_SRC+=aggregate_sig_test.cpp array_test.cpp sigma_protocol_test.cpp
 TEST_SRC+=modp_test.cpp
 TEST_SRC+=ecdsa_test.cpp
 TEST_SRC+=mul_test.cpp
@@ -39,8 +39,8 @@ ifeq ($(MCL_SUF),256)
   TEST_SRC+=ecdsa_c_test.cpp
 endif
 ifeq ($(MCL_SUF),384_256)
-  SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp
-  TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp
+  SRC_SRC+=bn_c384_256.cpp she_c384_256.cpp bbs.cpp
+  TEST_SRC+=bn_c384_256_test.cpp she_c384_256_test.cpp bbs_test.cpp
   TEST_SRC+=bls12_test.cpp
   TEST_SRC+=mapto_wb19_test.cpp
 endif
@@ -84,8 +84,14 @@ MCL_LIB=$(LIB_DIR)/lib$(MCL_SNAME).a
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
 SHE_LIB=$(LIB_DIR)/lishe$(MCL_SUF).a
 SHE_SLIB=$(LIB_DIR)/lishe$(MCL_SUF).$(LIB_SUF)
+# BBS signature is defined only for BLS12-381 (MCL_SUF=384_256)
+BBS_LIB=$(LIB_DIR)/libmclbbs$(MCL_SUF).a
+BBS_SLIB=$(LIB_DIR)/libmclbbs$(MCL_SUF).$(LIB_SUF)
 
 all: $(MCL_LIB) $(MCL_SLIB) $(SHE_LIB) $(SHE_SLIB)
+ifeq ($(MCL_SUF),384_256)
+all: $(BBS_LIB) $(BBS_SLIB)
+endif
 ECDSA_LIB=$(LIB_DIR)/libmclecdsa.a
 
 LLVM_LLC=llc$(LLVM_VER)
@@ -249,25 +255,24 @@ update_gen:
 #	$(CLANG) -c $< -o - -emit-llvm -std=c++17 -fpic -O2 -DNDEBUG -Wall -Wextra -I ./include -I ./src | llvm-dis$(LLVM_VER) -o $@
 BN_OBJ=$(OBJ_DIR)/bn_c$(MCL_SUF).o
 SHE_OBJ=$(OBJ_DIR)/she_c$(MCL_SUF).o
+BBS_OBJ=$(OBJ_DIR)/bbs.o
 
 # CPU is used for llvm
 # see $(LLVM_LLC) --version
 LLVM_FLAGS=-march=$(CPU) -relocation-model=pic #-misched=ilpmax
-ifeq ($(CPU),x86-64)
-  # mcl requires BMI2/ADX on x64 at runtime (Op::init), so let llc use mulx
-  LLVM_MATTR=-sse,+bmi2,+adx
-else
-  LLVM_MATTR=-sse
-endif
+#LLVM_MATTR=-sse,+bmi2,+adx
+LLVM_MATTR=-sse
 LLVM_FLAGS+=-pre-RA-sched=list-ilp -max-sched-reorder=128 -mattr=$(LLVM_MATTR)
 
 ifneq ($(findstring $(OS),mac/mac-m1/mingw64),)
   BN_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
   SHE_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
+  BBS_SLIB_LDFLAGS+=-l$(MCL_SNAME) -L./lib
 endif
 ifeq ($(OS),mingw64)
   MCL_SLIB_LDFLAGS+=-Wl,--out-implib,$(MCL_LIB)
   SHE_SLIB_LDFLAGS+=-Wl,--out-implib,$(SHE_SLIB)
+  BBS_SLIB_LDFLAGS+=-Wl,--out-implib,$(BBS_SLIB)
 endif
 
 $(MCL_LIB): $(LIB_OBJ)
@@ -287,6 +292,12 @@ $(SHE_LIB): $(SHE_OBJ)
 
 $(SHE_SLIB): $(SHE_OBJ) $(MCL_LIB)
 	$(PRE)$(CXX) -o $@ $(SHE_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(SHE_SLIB_LDFLAGS)
+
+$(BBS_LIB): $(BBS_OBJ)
+	$(AR) $(ARFLAGS) $@ $(BBS_OBJ)
+
+$(BBS_SLIB): $(BBS_OBJ) $(MCL_LIB)
+	$(PRE)$(CXX) -o $@ $(BBS_OBJ) $(MCL_LIB) -shared $(CFLAGS) $(BBS_SLIB_LDFLAGS)
 
 ECDSA_OBJ=$(OBJ_DIR)/ecdsa_c.o
 $(ECDSA_LIB): $(ECDSA_OBJ)
@@ -359,6 +370,9 @@ $(EXE_DIR)/pairing_c.exe: $(OBJ_DIR)/pairing_c.o $(MCL_LIB)
 $(EXE_DIR)/she_c$(MCL_SUF)_test.exe: $(OBJ_DIR)/she_c$(MCL_SUF)_test.o $(SHE_LIB) $(MCL_LIB)
 	$(PRE)$(CXX) $< -o $@ $(SHE_LIB) $(MCL_LIB) $(LDFLAGS)
 
+$(EXE_DIR)/bbs_test.exe: $(OBJ_DIR)/bbs_test.o $(BBS_LIB) $(MCL_LIB)
+	$(PRE)$(CXX) $< -o $@ $(BBS_LIB) $(MCL_LIB) $(LDFLAGS)
+
 # assume MCL_FP_BIT=256
 $(EXE_DIR)/ecdsa_c_test.exe: $(OBJ_DIR)/ecdsa_c_test.o $(ECDSA_LIB) $(MCL_LIB) src/ecdsa_c.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h
 	$(PRE)$(CXX) $< -o $@ $(ECDSA_LIB) $(MCL_LIB) $(LDFLAGS)
@@ -385,7 +399,7 @@ EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8
 EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_REJECTION=0  -s MODULARIZE=1 #-s ASSERTIONS=1
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
-SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/she.h Makefile
+SHE_C_DEP=src/fp.cpp src/she_c_impl.hpp include/mcl/she.hpp include/mcl/sigma_protocol.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/she.h Makefile
 MCL_C_DEP=src/fp.cpp include/mcl/bn.hpp include/mcl/fp.hpp include/mcl/op.hpp include/mcl/bn.h Makefile
 ifeq ($(MCL_USE_LLVM),2)
   EMCC_OPT+=src/base64m.ll -DMCL_USE_LLVM

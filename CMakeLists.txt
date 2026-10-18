@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.15)
 
 project(mcl
 	VERSION 3.03
@@ -51,7 +51,7 @@ option(
 )
 option(
 	MCL_USE_LLVM
-	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++"
+	"use base64.ll with -DCMAKE_CXX_COMPILER=clang++ (Win64: clang++ found in PATH or Visual Studio)"
 	ON
 )
 option(
@@ -70,6 +70,15 @@ if(MSVC)
 		"use dynamic runtime /MD in msvc builds"
 		OFF
 	)
+	# Static CRT (/MT, /MTd) by default as mklib.bat and cl do; MCL_MSVC_RUNTIME_DLL selects /MD, /MDd.
+	# This must be set before add_library(): it initializes the MSVC_RUNTIME_LIBRARY property of the targets.
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<BOOL:${MCL_MSVC_RUNTIME_DLL}>:DLL>")
+	# The same runtime for the objects made by custom commands, which invoke cl / clang-cl directly.
+	if(MCL_MSVC_RUNTIME_DLL)
+		set(MCL_MSVC_RUNTIME_FLAG /MD)
+	else()
+		set(MCL_MSVC_RUNTIME_FLAG /MT)
+	endif()
 endif()
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -117,44 +126,72 @@ else()
 	add_library(mcl SHARED src/fp.cpp)
 	add_library(mcl_st STATIC src/fp.cpp)
 endif()
+# mcl (shared) and mcl_st (static) are built from the same sources with the same settings.
+# These helpers apply a command to both targets.
+set(MCL_TARGETS mcl mcl_st)
+function(mcl_compile_definitions)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_compile_definitions(${t} ${ARGN})
+	endforeach()
+endfunction()
+function(mcl_compile_options)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_compile_options(${t} ${ARGN})
+	endforeach()
+endfunction()
+function(mcl_link_libraries)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_link_libraries(${t} ${ARGN})
+	endforeach()
+endfunction()
+function(mcl_sources)
+	foreach(t IN LISTS MCL_TARGETS)
+		target_sources(${t} ${ARGN})
+	endforeach()
+endfunction()
+# add objects made by a custom command, driven by the custom target gen_target
+# (so that the command runs once even if both libraries are built in parallel)
+function(mcl_add_object gen_target)
+	foreach(t IN LISTS MCL_TARGETS)
+		add_dependencies(${t} ${gen_target})
+		target_sources(${t} PRIVATE ${ARGN})
+	endforeach()
+endfunction()
+
 add_library(mcl::mcl ALIAS mcl)
-target_include_directories(mcl PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
-set_target_properties(mcl PROPERTIES
-	POSITION_INDEPENDENT_CODE ON)
+add_library(mcl::mcl_st ALIAS mcl_st)
+foreach(t IN LISTS MCL_TARGETS)
+	target_include_directories(${t} PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
+	set_target_properties(${t} PROPERTIES
+		POSITION_INDEPENDENT_CODE ON)
+endforeach()
 set_target_properties(mcl PROPERTIES
 	OUTPUT_NAME mcl
 	VERSION ${mcl_VERSION}
 	SOVERSION ${mcl_VERSION_MAJOR})
-
-add_library(mcl::mcl_st ALIAS mcl_st)
-target_include_directories(mcl_st PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<INSTALL_INTERFACE:$CMAKE_INSTALL_DIR/include>)
+if(MSVC)
+	# Put the import library of mcl.dll next to the DLL (bin/mcl.lib) as mklib.bat does;
+	# otherwise it and the static library mcl_st overwrite each other as lib/mcl.lib.
+	set_target_properties(mcl PROPERTIES
+		ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif()
 set_target_properties(mcl_st PROPERTIES
-	OUTPUT_NAME mcl
-	POSITION_INDEPENDENT_CODE ON)
+	OUTPUT_NAME mcl)
 
-target_compile_definitions(mcl PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-target_compile_definitions(mcl_st PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
+mcl_compile_definitions(PUBLIC MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
 
 # Compiler and linker settings
 if(MCL_WIN_ARM64)
 	# The library objects are built by the custom commands below with explicit
 	# flags, so only the public compile definitions matter here.
-	target_compile_definitions(mcl PUBLIC NOMINMAX MCL_MSM=0)
-	target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_MSM=0)
+	mcl_compile_definitions(PUBLIC NOMINMAX MCL_MSM=0)
 	set(MCL_COMPILE_OPTIONS "")
 
 elseif(MSVC)
-	if(MCL_MSVC_RUNTIME_DLL)
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MD /Oy /O2 /EHsc /GS- /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MDd")
-	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /MT /Oy /O2 /EHsc /GS- /DNDEBUG")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MTd")
-	endif()
+	# the runtime library (/MT or /MD) is selected by CMAKE_MSVC_RUNTIME_LIBRARY above
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /Oy /O2 /EHsc /GS- /DNDEBUG")
 
 	# Set /Brepro for reproducible builds in linker flags
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /Brepro")
@@ -167,33 +204,26 @@ elseif(MSVC)
 
 	# Set mklib.bat compatible flags for x64 Windows
 	if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64")
-		target_compile_definitions(mcl PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT})
-		target_compile_definitions(mcl_st PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8 MCL_FP_BIT=${MCL_FP_BIT} MCL_FR_BIT=${MCL_FR_BIT} MCL_DONT_EXPORT)
+		mcl_compile_definitions(PUBLIC NOMINMAX MCL_SIZEOF_UNIT=8)
+		target_compile_definitions(mcl_st PUBLIC MCL_DONT_EXPORT)
 		set(MCL_COMPILE_OPTIONS /W4 /openmp)
 	else()
-		target_compile_definitions(mcl PUBLIC NOMINMAX)
-		target_compile_definitions(mcl_st PUBLIC NOMINMAX)
+		mcl_compile_definitions(PUBLIC NOMINMAX)
 		set(MCL_COMPILE_OPTIONS /W4)
 	endif()
 else()
 	# Set compiler flags for warnings
 	set(MCL_COMPILE_OPTIONS -Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align
 		-Wwrite-strings -Wfloat-equal -Wpointer-arith -DNDEBUG -O3 -fPIC)
-	# bmi2 (mulx) and adx (adcx/adox) are required on x86/x64 (same as common.mk)
-	if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64|i[3-6]86|x86)$")
-		list(APPEND MCL_COMPILE_OPTIONS -mbmi2 -madx)
-	endif()
 endif()
 
 if (${MCL_USE_GMP})
 	list(APPEND MCL_COMPILE_OPTIONS -DMCL_USE_GMP=1)
-	target_link_libraries(mcl PRIVATE GMP::GMP)
-	target_link_libraries(mcl_st PRIVATE GMP::GMP)
+	mcl_link_libraries(PRIVATE GMP::GMP)
 endif()
 
 if(MCL_COMPILE_OPTIONS)
-	target_compile_options(mcl PRIVATE ${MCL_COMPILE_OPTIONS})
-	target_compile_options(mcl_st PRIVATE ${MCL_COMPILE_OPTIONS})
+	mcl_compile_options(PRIVATE ${MCL_COMPILE_OPTIONS})
 endif()
 
 # Build compiler command list respecting CMAKE_CXX_COMPILER_LAUNCHER and CMAKE_CXX_COMPILER_ARG1
@@ -237,13 +267,14 @@ if(MCL_WIN_ARM64)
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling base${BIT}.ll for ARM64")
 
-	# fp.cpp -> *.o (clang-cl); static uses /MT + MCL_DONT_EXPORT, DLL uses /MD
+	# fp.cpp -> *.o (clang-cl); the static library adds MCL_DONT_EXPORT.
+	# Both use the runtime selected by MCL_MSVC_RUNTIME_DLL (/MT by default) as the x64 build does.
 	add_custom_command(OUTPUT ${FP_OBJ_STATIC}
-		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} /MT -DMCL_DONT_EXPORT /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} ${MCL_MSVC_RUNTIME_FLAG} -DMCL_DONT_EXPORT /c /Fo:${FP_OBJ_STATIC} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling fp.cpp for ARM64 static library")
 	add_custom_command(OUTPUT ${FP_OBJ_DLL}
-		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} /MD /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_CL_FLAGS} ${MCL_MSVC_RUNTIME_FLAG} /c /Fo:${FP_OBJ_DLL} ${CMAKE_CURRENT_SOURCE_DIR}/src/fp.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Compiling fp.cpp for ARM64 DLL")
 
@@ -257,12 +288,14 @@ if(MCL_WIN_ARM64)
 
 	# DLL (clang-cl drives the link). The arm64 lib dirs are passed as /LIBPATH
 	# so they are searched before any x64 %LIB% inherited from the environment.
+	# The CRT comes from the /DEFAULTLIB directives of the objects (and the clang-cl
+	# driver, which gets the same /MT or /MD), so no CRT library is named here.
 	set(_arm64_libpath_args "")
 	foreach(_d ${MCL_ARM64_LIBDIRS})
 		list(APPEND _arm64_libpath_args /LIBPATH:${_d})
 	endforeach()
 	add_custom_command(OUTPUT ${MCL_DLL}
-		COMMAND "${MCL_CLANG_CL}" ${ARM64_TARGET} /LD ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ} /Fe:${MCL_DLL} /link /Brepro "${MCL_CLANG_RT}" msvcrt.lib kernel32.lib ${_arm64_libpath_args}
+		COMMAND "${MCL_CLANG_CL}" ${ARM64_TARGET} ${MCL_MSVC_RUNTIME_FLAG} /LD ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ} /Fe:${MCL_DLL} /link /Brepro "${MCL_CLANG_RT}" kernel32.lib ${_arm64_libpath_args}
 		DEPENDS ${FP_OBJ_DLL} ${BASE_OBJ} ${BINT_OBJ}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Creating ARM64 DLL mcl.dll")
@@ -288,17 +321,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint-x64-win.obj
 		SOURCES ${BINT_X64_OBJ})
-	add_dependencies(mcl gen_bint-x64-win.obj)
-	target_sources(mcl PRIVATE ${BINT_X64_OBJ})
-	add_dependencies(mcl_st gen_bint-x64-win.obj)
-	target_sources(mcl_st PRIVATE ${BINT_X64_OBJ})
+	mcl_add_object(gen_bint-x64-win.obj ${BINT_X64_OBJ})
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 	if (CMAKE_SYSTEM_NAME STREQUAL "MSYS")
-		target_sources(mcl PRIVATE src/asm/bint-x64-mingw.S)
-		target_sources(mcl_st PRIVATE src/asm/bint-x64-mingw.S)
+		mcl_sources(PRIVATE src/asm/bint-x64-mingw.S)
 	else()
-		target_sources(mcl PRIVATE src/asm/bint-x64-amd64.S)
-		target_sources(mcl_st PRIVATE src/asm/bint-x64-amd64.S)
+		mcl_sources(PRIVATE src/asm/bint-x64-amd64.S)
 	endif()
 else()
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -306,19 +334,14 @@ else()
 	endif()
 	set(BINT_OBJ "${CMAKE_CURRENT_BINARY_DIR}/bint${BIT}.o")
 	message("bint_obj=" ${BINT_OBJ})
-	target_compile_definitions(mcl PUBLIC MCL_BINT_ASM_X64=0)
-	target_compile_definitions(mcl_st PUBLIC MCL_BINT_ASM_X64=0)
+	mcl_compile_definitions(PUBLIC MCL_BINT_ASM_X64=0)
 
 	add_custom_command(OUTPUT ${BINT_OBJ}
 		COMMAND ${_cxx_cmd} -c -o ${BINT_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/bint${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_bint.o
 		SOURCES ${BINT_OBJ})
-	target_link_libraries(mcl PUBLIC ${BINT_OBJ})
-	add_dependencies(mcl gen_bint.o)
-	target_link_libraries(mcl_st PUBLIC ${BINT_OBJ})
-	add_dependencies(mcl_st gen_bint.o)
-	target_sources(mcl_st PRIVATE ${BINT_OBJ})
+	mcl_add_object(gen_bint.o ${BINT_OBJ})
 endif()
 
 # use generated asm or compile base${BIT}.ll by clang
@@ -330,46 +353,62 @@ else()
 endif()
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
-	# skip
+	# base${BIT}.ll needs clang++ (cl cannot consume LLVM IR), as mklib.bat clang=1 does.
+	# Without it the library falls back to the C++ code on CPUs without BMI2/ADX
+	# (the fast path with mulx/adx is the same asm in both cases).
+	if(MCL_USE_LLVM)
+		find_program(MCL_CLANGXX NAMES clang++
+			HINTS "${VS_PATH}/VC/Tools/Llvm/x64/bin" "${VS_PATH}/VC/Tools/Llvm/bin")
+	endif()
+	if(MCL_USE_LLVM AND MCL_CLANGXX)
+		message(STATUS "Found clang++ for base${BIT}.ll: ${MCL_CLANGXX}")
+		set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.obj")
+		# PRIVATE for the DLL: the functions of base${BIT}.obj are not exported from mcl.dll
+		target_compile_definitions(mcl PRIVATE MCL_USE_LLVM=1)
+		target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+		add_custom_command(OUTPUT ${BASE_OBJ}
+			COMMAND "${MCL_CLANGXX}" --target=x86_64-pc-windows-msvc -c -O3 -fomit-frame-pointer -fno-stack-protector -Wno-override-module -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+		add_custom_target(gen_base.obj
+			SOURCES ${BASE_OBJ})
+		mcl_add_object(gen_base.obj ${BASE_OBJ})
+	elseif(MCL_USE_LLVM)
+		message(WARNING "clang++ not found: base${BIT}.ll is not used (slower on CPUs without BMI2/ADX). Install the Visual Studio C++ Clang tools or set MCL_CLANGXX.")
+	endif()
 elseif(MCL_WIN_ARM64)
 	# base/fp objects and the lib/dll are built in the MCL_WIN_ARM64 block above
 elseif(X86_64_LINUX)
-	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
-	target_sources(mcl PRIVATE src/asm/x86-64.S)
-	target_sources(mcl_st PRIVATE src/asm/x86-64.S)
+	mcl_compile_definitions(PUBLIC MCL_USE_LLVM=1)
+	mcl_sources(PRIVATE src/asm/x86-64.S)
 elseif(${MCL_USE_LLVM})
 	set(BASE_OBJ "${CMAKE_CURRENT_BINARY_DIR}/base${BIT}.o")
 	message("base_obj=" ${BASE_OBJ})
-	target_compile_definitions(mcl PUBLIC MCL_USE_LLVM=1)
-	target_compile_definitions(mcl_st PUBLIC MCL_USE_LLVM=1)
+	mcl_compile_definitions(PUBLIC MCL_USE_LLVM=1)
 
 	add_custom_command(OUTPUT ${BASE_OBJ}
 		COMMAND ${_cxx_cmd} -c -o ${BASE_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/base${BIT}.ll -O3 -fPIC -fno-ident
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 	add_custom_target(gen_base.o
 		SOURCES ${BASE_OBJ})
-	target_link_libraries(mcl PUBLIC ${BASE_OBJ})
-	add_dependencies(mcl gen_base.o)
-	target_link_libraries(mcl_st PUBLIC ${BASE_OBJ})
-	add_dependencies(mcl_st gen_base.o)
-	target_sources(mcl_st PRIVATE ${BASE_OBJ})
+	mcl_add_object(gen_base.o ${BASE_OBJ})
 endif()
 
 # use src/msm_avx.cpp on x64
+# The object is PRIVATE to mcl/mcl_st: it is compiled with AVX-512 enabled, so the
+# inline functions from the headers in it also contain AVX-512 code. If it were linked
+# into the executables (PUBLIC), those copies would take over the library's ones and
+# run on CPUs without AVX-512 before the CPU check in getCpuType().
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64") # Win64
 	set(MSM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/msm_avx.obj")
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
-		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc /MT /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
+		COMMAND ${CMAKE_CXX_COMPILER} /c /Fo:${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp -I ${CMAKE_CURRENT_SOURCE_DIR}/include /arch:AVX512 /O2 /Oy /Gm- /EHsc ${MCL_MSVC_RUNTIME_FLAG} /GS- /DCYBOZU_DONT_USE_STRING /DCYBOZU_DONT_USE_EXCEPTION  /DNDEBUG /DMCL_NO_AUTOLINK /DMCLBN_NO_AUTOLINK /DNOMINMAX
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(msm_avx.o
+	add_custom_target(gen_msm_avx.obj
 		SOURCES ${MSM_OBJ})
-	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
-	add_dependencies(mcl msm_avx.o)
-	target_link_libraries(mcl_st PUBLIC ${MSM_OBJ})
-	add_dependencies(mcl_st msm_avx.o)
-	target_sources(mcl_st PRIVATE ${MSM_OBJ})
+	mcl_add_object(gen_msm_avx.obj ${MSM_OBJ})
 
 elseif(MCL_WIN_ARM64)
 	# ARM64 doesn't use AVX instructions, so skip MSM optimization
@@ -379,12 +418,12 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND NOT APPLE)
 
 	add_custom_command(OUTPUT ${MSM_OBJ}
 		COMMAND ${_cxx_cmd} -c -o ${MSM_OBJ} ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp ${MCL_COMPILE_OPTIONS} -I ${CMAKE_CURRENT_SOURCE_DIR}/include -mavx512f -mavx512ifma -std=c++11 -fno-rtti -DCYBOZU_DONT_USE_STRING -DCYBOZU_DONT_USE_EXCEPTION -DNDEBUG
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/msm_avx.cpp
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-	add_custom_target(msm_avx.o
+	# the target name must differ from the output file name for Ninja
+	add_custom_target(gen_msm_avx.o
 		SOURCES ${MSM_OBJ})
-	target_link_libraries(mcl PUBLIC ${MSM_OBJ})
-	add_dependencies(mcl msm_avx.o)
-	target_sources(mcl_st PRIVATE ${MSM_OBJ})
+	mcl_add_object(gen_msm_avx.o ${MSM_OBJ})
 endif()
 
 if(MCL_USE_GMP OR (MCL_BUILD_TESTING AND MCL_TEST_WITH_GMP))
@@ -432,12 +471,19 @@ if(MCL_WIN_ARM64)
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/mcl.lib DESTINATION lib)
 	endif()
 	if(TARGET mcl_dll)
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll DESTINATION bin)
-		# Also install the import library if produced next to the DLL
-		if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.lib)
-			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.lib DESTINATION lib)
-		endif()
+		# the DLL and its import library (made by clang-cl /LD next to the DLL) go to bin/
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.dll ${CMAKE_CURRENT_BINARY_DIR}/bin/mcl.lib DESTINATION bin)
 	endif()
+elseif(MSVC)
+	# static library: lib/mcl.lib, DLL and its import library: bin/{mcl.dll,mcl.lib} (as mklib.bat does);
+	# both ARCHIVE outputs are named mcl.lib, so they must not go to the same directory
+	install(TARGETS mcl
+		EXPORT mclTargets
+		RUNTIME DESTINATION bin
+		ARCHIVE DESTINATION bin)
+	install(TARGETS mcl_st
+		EXPORT mclTargets
+		ARCHIVE DESTINATION lib)
 else()
 	install(TARGETS mcl mcl_st
 		EXPORT mclTargets

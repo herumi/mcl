@@ -7,6 +7,10 @@
 	http://opensource.org/licenses/BSD-3-Clause
 */
 #include <mcl/config.hpp>
+#if defined(__clang__) && defined(_MSC_VER) && !defined(MCL_DLL_EXPORT) && !defined(MCL_DLL_IMPORT_STATIC)
+	// clang-cl: FpT::op_ is defined only in the library (see the comment at the definition below)
+	#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
 #ifndef CYBOZU_DONT_USE_STRING
 #include <iosfwd>
 #endif
@@ -799,6 +803,17 @@ public:
 // op_ refers to the instance in mcl.dll
 template<int tag, size_t maxBitSize>
 fp::Op& FpT<tag, maxBitSize>::op_ = *fp::getOpPtr(tag, maxBitSize);
+#elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
+/*
+	op_ must be constructed before the static objects of the user that call initPairing() etc.
+	in their constructors (test/static_init_test.cpp). gcc/clang use init_priority (below).
+	MSVC has no such attribute and runs the initializers in link order, and the linker keeps
+	the first copy of a template static data member it meets (usually the user's one).
+	So on MSVC op_ is not defined in the user's TU (extern template does not stop MSVC from
+	defining it) but only in the library sources (MCL_DLL_EXPORT: src/fp.cpp, src/msm_avx.cpp)
+	under #pragma init_seg(lib), which runs before the user's static objects.
+	A TU that uses FpT<tag, maxBitSize> other than Fp and Fr must define op_ itself.
+*/
 #else
 // Declare op_ as an external variable
 template<int tag, size_t maxBitSize>

@@ -1828,6 +1828,7 @@ public:
 		L : bitsize (=256 for Fr)
 		w : withdow size (=5 for L=256)
 		S : splitSize (=2 for G1, =4 for G2)
+		b : bucket size
 		#DBL = L/S, #ADD = ((2^(w-2) + (L/(Sw)S)) * n
 		mulVecLong
 		c = 5 (for n <= 256), c = 6 for n = 512
@@ -1840,12 +1841,21 @@ public:
 	*/
 	static inline void mulVec(EcT& z, EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
 	{
-		if (n == 0) {
-			z.clear();
-			return;
-		}
 		if (mulVecOpti && n >= 128) {
 			mulVecOpti(z, xVec, yVec, n, b);
+			return;
+		}
+		mulVecConstRef(z, xVec, yVec, n, b);
+	}
+	/*
+		z = sum_{i<n} xVec[i] yVec[i]
+		xVec is not modified (mulVec may normalize xVec in place by mulVecOpti)
+		mulVecOpti (AVX-512 MSM) is not used, so mulVec is faster for large n
+	*/
+	static inline void mulVecConstRef(EcT& z, const EcT *xVec, const Fr *yVec, size_t n, size_t b = 0)
+	{
+		if (n == 0) {
+			z.clear();
 			return;
 		}
 		if (mulVecGLV && mulVecGLV(z, xVec, yVec, n, false, b)) {
@@ -1979,6 +1989,14 @@ MCL_EC_STATIC_REF(typename EcT<Fp>::IsValidOrderFastFunc, isValidOrderFast, isVa
 MCL_EC_STATIC_REF(int, mode_, mode)
 MCL_EC_STATIC_REF(typename EcT<Fp>::MulEachOptiFunc, mulEachOpti, mulEachOpti)
 #undef MCL_EC_STATIC_REF
+#elif defined(_MSC_VER) && !defined(MCL_DLL_EXPORT)
+/*
+	The static data members are defined only in the library (src/fp.cpp, MCL_EC_STATIC_INST)
+	under #pragma init_seg(lib) for the same reason as FpT::op_ (see fp.hpp):
+	order_ (mpz_class) has a dynamic initializer, which would run after the static objects
+	of the user that call initPairing() in their constructors and reset order_ to 0.
+	A TU that uses EcT<Fp> other than G1 and G2 must define the static data members itself.
+*/
 #else
 template<class Fp> Fp EcT<Fp>::a_;
 template<class Fp> Fp EcT<Fp>::b_;
@@ -1987,7 +2005,7 @@ template<class Fp> int EcT<Fp>::specialA_;
 template<class Fp> int EcT<Fp>::specialB_;
 template<class Fp> int EcT<Fp>::ioMode_;
 template<class Fp> bool EcT<Fp>::verifyOrder_;
-template<class Fp> mpz_class EcT<Fp>::order_;
+template<class Fp> mpz_class EcT<Fp>::order_ MCL_INIT_PRIORITY(200); // order_ has a dynamic initializer (see FpT::op_ in fp.hpp)
 template<class Fp> typename EcT<Fp>::MulVecGLVFunc EcT<Fp>::mulVecGLV;
 template<class Fp> typename EcT<Fp>::MulVecOptiFunc EcT<Fp>::mulVecOpti;
 template<class Fp> typename EcT<Fp>::IsValidOrderFastFunc EcT<Fp>::isValidOrderFast;

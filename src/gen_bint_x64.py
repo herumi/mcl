@@ -8,6 +8,9 @@ C_p='p'# with broadcast
 C_ap='ap' # 8-duplicated
 C_apA='apA' # 16-duplicated
 C_rp='rp' # scalar
+# byte in .data of the bint asm: 1 if the mulx/adx (fast) bodies are selected by the mclb_* stubs
+# (set by mclb_enable_fast(), called from mcl::bint::getCpuType())
+FLAG='mclb_fast_flag'
 
 def gen_vaddPre(mont, vN=1):
   SUF = 'A' if vN == 2 else ''
@@ -814,9 +817,58 @@ def gen_sub(N, NF=False):
       setc(al)
       movzx(eax, al)
 
-def gen_mulUnit(N):
+# [rax:z[N]] = x[N] * y with plain mul (rdx:rax); the partial products are spilled to
+# [rsp, rsp + (N-1)*2*8); y is a register; clobbers rax, rdx
+def mulUnit_slow_body(z, x, y, N):
+  if N == 1:
+    mov(rax, ptr(x))
+    mul(y)
+    mov(ptr(z), rax)
+    mov(rax, rdx)
+    return
+  posH = (N - 1) * 8
+  for i in range(N):
+    mov(rax, ptr(x + i * 8))
+    mul(y)
+    if i == 0: # bypass
+      mov(ptr(z), rax)
+    else:
+      mov(ptr(rsp + (i - 1) * 8), rax)
+    if i < N-1:
+      mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
+  for i in range(N - 1):
+    mov(rax, ptr(rsp + posH + i * 8))
+    add_ex(rax, ptr(rsp + i * 8), i == 0)
+    mov(ptr(z + (i + 1) * 8), rax)
+  adc(rdx, 0)
+  mov(rax, rdx)
+
+# [rax:z[N]] = z[N] + x[N] * y with plain mul; stack [rsp, rsp + (N*2-1)*8)
+def mulUnitAdd_slow_body(z, x, y, N):
+  posH = N * 8
+  for i in range(N):
+    mov(rax, ptr(x + i * 8))
+    mul(y)
+    mov(ptr(rsp + i * 8), rax)
+    if i < N-1:
+      mov(ptr(rsp + posH + i * 8), rdx) # don't write the last rdx
+  for i in range(N - 1):
+    mov(rax, ptr(rsp + (i + 1) * 8))
+    add_ex(rax, ptr(rsp + posH + i * 8), i == 0)
+    mov(ptr(rsp + (i + 1) * 8), rax)
+  if N > 1:
+    adc(rdx, 0)
+  for i in range(N):
+    mov(rax, ptr(rsp + i * 8))
+    add_ex(ptr(z + i * 8), rax, i == 0)
+  adc(rdx, 0)
+  mov(rax, rdx)
+
+# mode = 'fast' (mulx/adox/adcx) or 'slow' (mul/adc); the plain mclb_* names are the stubs (gen_stub)
+# [ret:z[N]] = x[N] * y
+def gen_mulUnit(N, mode):
   align(16)
-  with FuncProc(f'mclb_mulUnit{N}'):
+  with FuncProc(f'mclb_mulUnit_{mode}{N}'):
     if N == 0:
       raise Exception('N = 0')
     if N == 1:
@@ -846,6 +898,9 @@ def gen_mulUnit(N):
         mov(ptr(z + 8), rax)
         mov(rax, rdx)
         return
+    elif mode == 'slow':
+      with StackFrame(3, 0, useRDX=True, stackSizeByte=(N - 1) * 2 * 8) as sf:
+        mulUnit_slow_body(sf.p[0], sf.p[1], sf.p[2], N)
     else:
       with StackFrame(3, 2, useRDX=True) as sf:
         z = sf.p[0]
@@ -867,11 +922,15 @@ def gen_mulUnit(N):
         adc(rax, 0)
 
 # [ret:z[N]] = z[N] + x[N] * y
-def gen_mulUnitAdd(N):
+def gen_mulUnitAdd(N, mode):
   align(16)
-  with FuncProc(f'mclb_mulUnitAdd{N}'):
+  with FuncProc(f'mclb_mulUnitAdd_{mode}{N}'):
     if N == 0:
       raise Exception('N = 0')
+    if mode == 'slow':
+      with StackFrame(3, 0, useRDX=True, stackSizeByte=(N * 2 - 1) * 8) as sf:
+        mulUnitAdd_slow_body(sf.p[0], sf.p[1], sf.p[2], N)
+      return
     with StackFrame(3, 2, useRDX=True) as sf:
       z = sf.p[0]
       x = sf.p[1]
@@ -932,10 +991,11 @@ def gen_mulPreN(pz, px, py, pk, t, N):
     t = s
   store_mp(pz + 8 * N, pk)
 
+# z[2N] = x[N] * y[N]
 # optimize this later
-def gen_mul(N):
+def gen_mul(N, mode):
   align(16)
-  with FuncProc(f'mclb_mul{N}'):
+  with FuncProc(f'mclb_mul_{mode}{N}'):
     if N == 1:
       with StackFrame(3, 0, useRDX=True) as sf:
         mov(rax, ptr(sf.p[1]))
@@ -943,6 +1003,38 @@ def gen_mul(N):
         mul(rdx)
         store_mp(sf.p[0], Pack(rdx, rax))
         return
+    if mode == 'slow':
+      # column-wise (comba) with plain mul: z[k] = low 64 bits of sum_{i+j=k} x[i] y[j] + carry,
+      # accumulated in the 3-unit register [c2:c1:c0]; mul takes y[j] from memory, so no spill
+      with StackFrame(3, 3, useRDX=True) as sf:
+        pz = sf.p[0]
+        px = sf.p[1]
+        py = sf.p[2]
+        c0 = sf.t[0]
+        c1 = sf.t[1]
+        c2 = sf.t[2]
+        first = True
+        for k in range(2 * N - 1):
+          for i in range(max(0, k - (N - 1)), min(k, N - 1) + 1):
+            j = k - i
+            mov(rax, ptr(px + i * 8))
+            mul(qword(py + j * 8)) # [rdx:rax] = x[i] * y[j]
+            if first:
+              mov(c0, rax)
+              mov(c1, rdx)
+              xor_(c2, c2)
+              first = False
+            else:
+              add(c0, rax)
+              adc(c1, rdx)
+              adc(c2, 0)
+          mov(ptr(pz + k * 8), c0)
+          # the next column starts from [0:c2:c1]
+          c0, c1, c2 = c1, c2, c0
+          if k < 2 * N - 2:
+            xor_(c2, c2)
+        mov(ptr(pz + (2 * N - 1) * 8), c0)
+      return
     if N > 9:
       raise Exception(f'N = {N} is too large')
     with StackFrame(3, N+1, useRDX=True) as sf:
@@ -952,10 +1044,11 @@ def gen_mul(N):
       pk = sf.t[0:N]
       gen_mulPreN(pz, px, py, pk, sf.t[N], N)
 
+# y[2N] = x[N]^2
 # optimize this later
-def gen_sqr(N):
+def gen_sqr(N, mode):
   align(16)
-  with FuncProc(f'mclb_sqr{N}'):
+  with FuncProc(f'mclb_sqr_{mode}{N}'):
     if N == 1:
       with StackFrame(2, 0, useRDX=True) as sf:
         py = sf.p[0]
@@ -968,7 +1061,28 @@ def gen_sqr(N):
       mov(r8, rdx)
     else:
       mov(rdx, rsi)
-    jmp(addPRE(f'mclb_mul{N}'))
+    jmp(addPRE(f'mclb_mul_{mode}{N}'))
+
+# the plain mclb_* names stay real functions (src/asm/x86-64.S calls mclb_mul3 / mclb_sqr3 and
+# src/bint64.ll defines the same names on the other targets): test the flag and jump to the body.
+# The C++ side (get_mul(n) etc. in src/bint_switch.hpp) selects the body directly.
+def gen_stub(name, N):
+  align(16)
+  with FuncProc(f'{name}{N}'):
+    cmp(byte(rip + FLAG), 0)
+    jne(addPRE(f'{name}_fast{N}'))
+    jmp(addPRE(f'{name}_slow{N}'))
+
+# void mclb_enable_fast(): select the mulx/adx bodies in the mclb_* stubs
+def gen_enable_fast():
+  align(16)
+  with FuncProc('mclb_enable_fast'):
+    mov(byte(rip + FLAG), 1)
+    ret()
+
+def bint_data():
+  makeLabel(FLAG)
+  db_(0)
 
 def gen_udiv128():
   align(16)
@@ -1127,6 +1241,7 @@ def main():
   mont = Montgomery(curve.p)
   segment('data')
   msm_data(mont)
+  bint_data()
   segment('text')
   msm_code(mont)
 
@@ -1142,17 +1257,28 @@ def main():
   for i in range(1,addN+1):
     gen_sub(i, True)
 
+  # the mulx/adox/adcx (fast) and mul/adc (slow) bodies, selected at runtime by the CPU type
+  for mode in ['fast', 'slow']:
+    for i in range(1,addN+1):
+      gen_mulUnit(i, mode)
+
+    for i in range(1,addN+1):
+      gen_mulUnitAdd(i, mode)
+
+    for i in range(1,N+1):
+      gen_mul(i, mode)
+
+    for i in range(1,N+1):
+      gen_sqr(i, mode)
+
+  # the dispatch stubs with the plain names and the setter of the flag
   for i in range(1,addN+1):
-    gen_mulUnit(i)
-
-  for i in range(1,addN+1):
-    gen_mulUnitAdd(i)
-
+    gen_stub('mclb_mulUnit', i)
+    gen_stub('mclb_mulUnitAdd', i)
   for i in range(1,N+1):
-    gen_mul(i)
-
-  for i in range(1,N+1):
-    gen_sqr(i)
+    gen_stub('mclb_mul', i)
+    gen_stub('mclb_sqr', i)
+  gen_enable_fast()
 
   # dst[N] = src[srcN] mod p with the parameter block of struct mcl::Modp
   # (see common.modp_param), N = 4, 6 (256, 384 bit); selected by Modp::init
