@@ -82,8 +82,8 @@ endif
 ##################################################################
 MCL_LIB=$(LIB_DIR)/lib$(MCL_SNAME).a
 MCL_SLIB=$(LIB_DIR)/lib$(MCL_SNAME).$(LIB_SUF)
-SHE_LIB=$(LIB_DIR)/lishe$(MCL_SUF).a
-SHE_SLIB=$(LIB_DIR)/lishe$(MCL_SUF).$(LIB_SUF)
+SHE_LIB=$(LIB_DIR)/libmclshe$(MCL_SUF).a
+SHE_SLIB=$(LIB_DIR)/libmclshe$(MCL_SUF).$(LIB_SUF)
 # BBS signature is defined only for BLS12-381 (MCL_SUF=384_256)
 BBS_LIB=$(LIB_DIR)/libmclbbs$(MCL_SUF).a
 BBS_SLIB=$(LIB_DIR)/libmclbbs$(MCL_SUF).$(LIB_SUF)
@@ -326,7 +326,7 @@ test_go: $(MCL_LIB) $(BN384_256_LIB)
 	$(RM) $(BLS384_256_SLIB) $(MCL_SLIB)
 	cd ffi/go/mcl && go test -v -count=1 .
 
-test_python_she: $(SHE256_SLIB)
+test_python_she: $(SHE_SLIB)
 	cd ffi/python && env LD_LIBRARY_PATH="../../lib" DYLD_LIBRARY_PATH="../../lib" PATH=$$PATH:"../../lib" python3 she.py
 test_python:
 	$(MAKE) test_python_she
