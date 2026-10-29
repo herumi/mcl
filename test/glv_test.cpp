@@ -156,6 +156,67 @@ void testMulVec(const G& P, const char *name)
 	}
 }
 
+/*
+	special inputs for the batch affine addition of mulVec (src/glv.hpp)
+	all scalars are equal, scalars in {0, 1}, zero points, P + P and P + (-P) in the same bucket
+*/
+template<class G>
+void testMulVecSpecial(const G& P, const char *name)
+{
+	printf("testMulVecSpecial %s\n", name);
+	const size_t N = 3000; // > MCL_MSM_BATCH_MIN_N / 2
+	std::vector<G> xVec(N);
+	std::vector<Fr> yVec(N);
+	for (size_t i = 0; i < N; i++) {
+		G::mul(xVec[i], P, i + 3);
+	}
+	G Q1, Q2;
+	// all scalars are equal
+	{
+		Fr y;
+		y.setByCSPRNG();
+		for (size_t i = 0; i < N; i++) yVec[i] = y;
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+	// scalars in {0, 1}
+	{
+		cybozu::XorShift rg;
+		for (size_t i = 0; i < N; i++) yVec[i] = rg.get32() & 1;
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+	// small scalars (many equal digits), zero points and equal points
+	{
+		cybozu::XorShift rg;
+		for (size_t i = 0; i < N; i++) {
+			yVec[i] = rg.get32() % 7;
+			if (i % 5 == 1) xVec[i].clear();
+			if (i % 5 == 2) xVec[i] = xVec[i - 1];
+			if (i % 5 == 3) xVec[i] = xVec[0];
+		}
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+	// P + P (doubling) and P + (-P) (zero) in a bucket : the same point with y and -y
+	{
+		for (size_t i = 0; i < N; i++) {
+			G::mul(xVec[i], P, i / 3 + 3);
+			yVec[i].setByCSPRNG();
+		}
+		for (size_t i = 0; i + 2 < N; i += 3) {
+			yVec[i + 1] = yVec[i]; // xVec[i] + xVec[i+1] = 2 xVec[i]
+			Fr::neg(yVec[i + 2], yVec[i]); // xVec[i] - xVec[i+2] = 0
+		}
+		naiveMulVec(Q1, xVec.data(), yVec.data(), N);
+		G::mulVec(Q2, xVec.data(), yVec.data(), N);
+		CYBOZU_TEST_EQUAL(Q1, Q2);
+	}
+}
+
 void naivePowVec(GT& out, const GT *xVec, const Fr *yVec, size_t n)
 {
 	if (n == 1) {
@@ -252,6 +313,8 @@ CYBOZU_TEST_AUTO(glv)
 		testGT(e);
 		testMulVec(P, "G1");
 		testMulVec(Q, "G2");
+		testMulVecSpecial(P, "G1");
+		testMulVecSpecial(Q, "G2");
 		testPowVec(e);
 	}
 }

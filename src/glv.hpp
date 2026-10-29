@@ -26,9 +26,12 @@ inline size_t estimateBucketSize(size_t n)
 /*
 	return heuristic backet size which is faster than glvGetTheoreticBucketSize
 	n : the number of (split) scalars (= 2 * the number of G1 points of BN / BLS12 by GLV)
-	measured on Xeon w9-3495X with BN254 / BLS12-381 G1 (signed digits, 2^(b-1) buckets);
-	for n in [2^18, 2^21) the differences are small and b = 13 (2^12 buckets fit in L2) is preferred,
-	for n >= 2^21 b = 16 (8 windows for the 128-bit split scalars) is the best for BLS12-381
+	measured on Xeon w9-3495X with BN254 / BLS12-381 G1 (signed digits, 2^(b-1) buckets,
+	batch affine addition for n >= MCL_MSM_BATCH_MIN_N);
+	the batch affine addition makes the bucket addition cheaper, so the bucket reduction (2^b additions per window)
+	is relatively expensive and b is smaller than before for n < 2^16.
+	for n in [2^16, 2^19) b = 13 (2^12 buckets fit in L2) is the best, b = 15 for n in [2^19, 2^20),
+	for n >= 2^20 b = 16 (8 windows for the 128-bit split scalars) is the best
 */
 inline size_t glvGetBucketSize(size_t n)
 {
@@ -39,7 +42,7 @@ inline size_t glvGetBucketSize(size_t n)
 	// n >= 2^tblMin
 	static const size_t tbl[] = {
 	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
-		3, 6, 8, 8, 9, 10, 11, 12, 13, 13, 13, 13, 13, 16, 16
+		3, 6, 7, 8, 8, 10, 10, 11, 12, 13, 13, 13, 15, 16, 16
 	};
 	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl) + tblMin) return 16;
 	size_t ret = tbl[log2n - tblMin];
@@ -144,27 +147,35 @@ inline void optimizedSplitForBLS12_377(Unit *a, Unit *b, const Unit *x)
 	isTop : the top window has no carry out, so d = v + c in [0, 2^rem] is used as is
 	(rem = the bit size of the window <= b) and the caller passes tblN = 2^rem.
 */
-template<class G>
-void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop)
+namespace local {
+
+const uint32_t msmSign = uint32_t(1) << 31; // the sign bit of a digit or an index
+const uint32_t msmIdxMask = msmSign - 1;
+const uint32_t msmNone = uint32_t(-1); // d = 0 (no bucket) or no point
+
+/*
+	return (|d| - 1) | (d < 0 ? msmSign : 0), or msmNone if d = 0
+	see mulVecUpdateTable for the signed digit d
+*/
+inline uint32_t getSignedDigit(const Unit *y, size_t yUnitSize, size_t pos, size_t b, bool isTop)
 {
-	for (size_t i = 0; i < tblN; i++) {
-		tbl[i].clear();
-	}
 	const size_t full = size_t(1) << b;
 	const Unit mask = Unit(full - 1);
-	for (size_t i = 0; i < n; i++) {
-		const Unit *y = yVec + next * i;
-		const size_t v = size_t(fp::getUnitAt(y, yUnitSize, pos) & mask);
-		const size_t c = pos > 0 ? size_t(fp::getUnitAt(y, yUnitSize, pos - 1) & 1) : 0;
-		if (isTop || v < full / 2) {
-			const size_t d = v + c; // d <= 2^(b-1) (<= 2^rem if isTop)
-			assert(d <= tblN);
-			if (d) tbl[d - 1] += xVec[i];
-		} else {
-			const size_t d = full - v - c; // d <= 2^(b-1)
-			if (d) G::sub(tbl[d - 1], tbl[d - 1], xVec[i]);
-		}
+	const size_t v = size_t(fp::getUnitAt(y, yUnitSize, pos) & mask);
+	const size_t c = pos > 0 ? size_t(fp::getUnitAt(y, yUnitSize, pos - 1) & 1) : 0;
+	if (isTop || v < full / 2) {
+		const size_t d = v + c; // d <= 2^(b-1) (<= 2^rem if isTop)
+		return d ? uint32_t(d - 1) : msmNone;
+	} else {
+		const size_t d = full - v - c; // d <= 2^(b-1)
+		return d ? uint32_t(d - 1) | msmSign : msmNone;
 	}
+}
+
+// win (+)= tbl[0] + 2 tbl[1] + 3 tbl[2] + ... + tblN tbl[tblN-1]
+template<class G>
+void mulVecReduceTable(G& win, const G *tbl, size_t tblN, bool first)
+{
 	G sum = tbl[tblN - 1];
 	if (first) {
 		win = sum;
@@ -176,6 +187,425 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, con
 		win += sum;
 	}
 }
+
+} // mcl::ec::local
+
+template<class G>
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop)
+{
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	for (size_t i = 0; i < n; i++) {
+		const uint32_t d = local::getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
+		if (d == local::msmNone) continue;
+		const size_t k = d & local::msmIdxMask;
+		assert(k < tblN);
+		if (d & local::msmSign) {
+			tbl[k] -= xVec[i];
+		} else {
+			tbl[k] += xVec[i];
+		}
+	}
+	local::mulVecReduceTable(win, tbl, tblN, first);
+}
+
+/*
+	batch affine addition for the bucket method (see mulVecUpdateTableBatch)
+*/
+#ifndef MCL_MSM_BATCH_MIN_N
+	// use the batch affine addition if the number of (split) scalars >= MCL_MSM_BATCH_MIN_N
+	#define MCL_MSM_BATCH_MIN_N 256
+#endif
+#ifndef MCL_MSM_BATCH_CHUNK
+	// the number of entries folded at once (the work array S has this number of points)
+	#define MCL_MSM_BATCH_CHUNK 8192
+#endif
+#ifndef MCL_MSM_BATCH_SUB
+	// the number of pairs sharing one inversion
+	#define MCL_MSM_BATCH_SUB 512
+#endif
+
+namespace local {
+
+/*
+	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m)
+	where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask] and P(msmNone) = 0
+	base[*] must be affine (z = 1) or zero (z = 0), then R[j] is affine or zero
+	R may overlap base if &R[j] <= &base[ia[j] & msmIdxMask], &base[ib[j] & msmIdxMask] for all j
+	(the inputs of the j-th pair are read before R[j] is written and R[0], R[1], ... are written in this order)
+	work : Fp[3 * MCL_MSM_BATCH_SUB]
+	cost : 5M + 1S + inv/MCL_MSM_BATCH_SUB per pair
+*/
+/*
+	d[j] = 1/d[j] for j in [0, m) by the Montgomery trick (d[j] != 0), prod : F[m]
+	K independent product chains are interleaved to hide the latency of mul
+*/
+template<class F>
+void invBatch(F *d, F *prod, size_t m)
+{
+	const size_t K = 4;
+	if (m < 2 * K) {
+		prod[0] = d[0];
+		for (size_t j = 1; j < m; j++) {
+			F::mul(prod[j], prod[j - 1], d[j]);
+		}
+		F inv;
+		F::inv(inv, prod[m - 1]);
+		for (size_t j = m - 1; j > 0; j--) {
+			F t;
+			F::mul(t, inv, prod[j - 1]);
+			F::mul(inv, inv, d[j]);
+			d[j] = t;
+		}
+		d[0] = inv;
+		return;
+	}
+	// chain c = d[c] d[c+K] d[c+2K] ...
+	for (size_t c = 0; c < K; c++) prod[c] = d[c];
+	for (size_t j = K; j < m; j++) {
+		F::mul(prod[j], prod[j - K], d[j]);
+	}
+	// invert the K products of the chains
+	size_t last[K];
+	F q[K];
+	for (size_t c = 0; c < K; c++) {
+		last[c] = (m - 1 - c) / K * K + c;
+		if (c == 0) {
+			q[0] = prod[last[0]];
+		} else {
+			F::mul(q[c], q[c - 1], prod[last[c]]);
+		}
+	}
+	F inv;
+	F::inv(inv, q[K - 1]);
+	F ic[K]; // ic[c] = the inverse of the product of chain c
+	for (size_t c = K - 1; c > 0; c--) {
+		F::mul(ic[c], inv, q[c - 1]);
+		F::mul(inv, inv, prod[last[c]]);
+	}
+	ic[0] = inv;
+	for (size_t j = m - 1; j >= K; j--) {
+		const size_t c = j % K;
+		F t;
+		F::mul(t, ic[c], prod[j - K]);
+		F::mul(ic[c], ic[c], d[j]);
+		d[j] = t;
+	}
+	for (size_t c = 0; c < K; c++) d[c] = ic[c];
+}
+
+template<class G>
+void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib, size_t m, typename G::Fp *work)
+{
+	typedef typename G::Fp F;
+	const size_t SUB = MCL_MSM_BATCH_SUB;
+	F *d = work; // the denominator of lambda, then its inverse
+	F *num = work + SUB; // the numerator of lambda
+	F *prod = work + 2 * SUB;
+	uint8_t st[SUB]; // 0 : R = lambda formula, 1 : R = P(ia), 2 : R = P(ib), 3 : R = 0
+	const F one(1);
+	for (size_t j0 = 0; j0 < m; j0 += SUB) {
+		const size_t mm = (m - j0 < SUB) ? m - j0 : SUB;
+		// classify the pairs and compute d and num
+		for (size_t j = 0; j < mm; j++) {
+			const uint32_t a = ia[j0 + j];
+			const uint32_t bb = ib[j0 + j];
+			if (bb == msmNone || base[bb & msmIdxMask].z.isZero()) {
+				st[j] = 1;
+				d[j] = one;
+				continue;
+			}
+			if (a == msmNone || base[a & msmIdxMask].z.isZero()) {
+				st[j] = 2;
+				d[j] = one;
+				continue;
+			}
+			const G& A = base[a & msmIdxMask];
+			const G& B = base[bb & msmIdxMask];
+			F::sub(d[j], B.x, A.x);
+			F ya, yb;
+			if (a & msmSign) F::neg(ya, A.y); else ya = A.y;
+			if (bb & msmSign) F::neg(yb, B.y); else yb = B.y;
+			if (!d[j].isZero()) {
+				F::sub(num[j], yb, ya);
+				st[j] = 0;
+				continue;
+			}
+			if (ya == yb) {
+				// doubling : lambda = (3x^2 + a) / (2y)
+				F::mul2(d[j], ya);
+				if (d[j].isZero()) {
+					st[j] = 3; // the point of order 2
+					d[j] = one;
+					continue;
+				}
+				F t;
+				F::sqr(t, A.x);
+				F::mul2(num[j], t);
+				num[j] += t;
+				if (G::specialA_ != Zero) num[j] += G::a_;
+				st[j] = 0;
+			} else {
+				st[j] = 3; // A = -B
+				d[j] = one;
+			}
+		}
+		invBatch(d, prod, mm);
+		// compute R
+		for (size_t j = 0; j < mm; j++) {
+			const uint32_t a = ia[j0 + j];
+			const uint32_t bb = ib[j0 + j];
+			G& r = R[j0 + j];
+			if (st[j] == 0) {
+				const G& A = base[a & msmIdxMask];
+				const G& B = base[bb & msmIdxMask];
+				F lambda, x3, t;
+				F::mul(lambda, num[j], d[j]);
+				F::sqr(x3, lambda);
+				x3 -= A.x;
+				x3 -= B.x; // = lambda^2 - 2 A.x if doubling
+				F::sub(t, A.x, x3);
+				t *= lambda;
+				if (a & msmSign) t += A.y; else t -= A.y; // y3 = lambda (x1 - x3) - y1
+				r.x = x3;
+				r.y = t;
+				r.z = one;
+				continue;
+			}
+			const uint32_t src = (st[j] == 1) ? a : (st[j] == 2) ? bb : msmNone;
+			if (src == msmNone || base[src & msmIdxMask].z.isZero()) {
+				r.clear();
+				continue;
+			}
+			const G& A = base[src & msmIdxMask];
+			if (src & msmSign) {
+				F::neg(r.y, A.y);
+			} else {
+				r.y = A.y;
+			}
+			r.x = A.x;
+			r.z = one;
+		}
+	}
+}
+
+struct MsmPart {
+	uint32_t k; // bucket index
+	uint32_t start; // the position of the first point
+	uint32_t cnt; // the number of points
+};
+
+// work buffers for mulVecUpdateTableBatch
+template<class G>
+struct MsmBatchWork {
+	typedef typename G::Fp F;
+	static const size_t CHUNK = MCL_MSM_BATCH_CHUNK;
+	uint32_t *D; // [n] (bucket | sign) of each scalar
+	uint32_t *idx; // [n] the indexes of the scalars sorted by bucket
+	uint32_t *off; // [tblN + 1] the offset of each bucket in idx
+	uint32_t *ia; // [CHUNK] the pairs of the current level
+	uint32_t *ib; // [CHUNK]
+	MsmPart *part[2]; // [CHUNK + 1] the parts (a bucket in the chunk) of the current and next level
+	G *S; // [CHUNK] the work array of the points
+	F *fwork; // [3 * MCL_MSM_BATCH_SUB]
+	void *buf_;
+	MsmBatchWork() : buf_(0) {}
+	~MsmBatchWork() { if (buf_) free(buf_); }
+	bool init(size_t n, size_t tblN)
+	{
+		if (n >= msmIdxMask) return false;
+		const size_t fwSize = 3 * MCL_MSM_BATCH_SUB;
+		size_t size = sizeof(G) * CHUNK + sizeof(F) * fwSize;
+		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * CHUNK) + sizeof(MsmPart) * 2 * (CHUNK + 1);
+		buf_ = malloc(size);
+		if (buf_ == 0) return false;
+		char *p = (char*)buf_;
+		S = (G*)p; p += sizeof(G) * CHUNK;
+		fwork = (F*)p; p += sizeof(F) * fwSize;
+		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
+		idx = (uint32_t*)p; p += sizeof(uint32_t) * n;
+		off = (uint32_t*)p; p += sizeof(uint32_t) * (tblN + 1);
+		ia = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
+		ib = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
+		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (CHUNK + 1);
+		part[1] = (MsmPart*)p;
+		return true;
+	}
+};
+
+// tbl (+)= P(i) where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask]
+template<class G>
+void msmAddToBucket(G& tbl, const G *base, uint32_t i)
+{
+	const G& P = base[i & msmIdxMask];
+	if (tbl.isZero()) {
+		tbl = P;
+		if (i & msmSign) G::neg(tbl, tbl);
+	} else if (i & msmSign) {
+		tbl -= P;
+	} else {
+		tbl += P;
+	}
+}
+
+// the batch affine addition is available only for EcT (not for GroupMtoA)
+template<class G>
+struct MsmBatch {
+	static const bool enabled = false;
+	struct Work {
+		bool init(size_t, size_t) { return false; }
+	};
+};
+template<class Fp>
+struct MsmBatch<EcT<Fp> > {
+	static const bool enabled = true;
+	typedef MsmBatchWork<EcT<Fp> > Work;
+};
+
+} // mcl::ec::local
+
+/*
+	the batch affine version of mulVecUpdateTable
+	xVec[i] must be affine (z = 1) or zero
+	1. D[i] = (bucket, sign) of the digit of yVec[i], off[k] = the offset of the bucket k (counting sort)
+	2. idx[off[k] ...] = the indexes of the scalars whose bucket is k (with the sign bit)
+	3. for each chunk of CHUNK entries of idx : fold the points of each bucket by a binary tree
+	   level 0 : pairs of xVec[idx[]] -> S, level >= 1 : pairs of S -> S (in place),
+	   a bucket with one point is added to tbl[k] (a bucket may be split by the chunk boundary)
+	   all the additions of a level are done by addAffineBatch (sharing one inversion per MCL_MSM_BATCH_SUB pairs)
+	4. win (+)= tbl[0] + 2 tbl[1] + ... (tbl[k] is affine or zero, so addJacobi uses the Q.z = 1 formula)
+	The number of additions is the same as mulVecUpdateTable (n - the number of non-empty buckets)
+	and the batches do not degenerate even if all scalars are equal.
+*/
+template<class G>
+void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
+{
+	using namespace local;
+	const size_t CHUNK = MsmBatchWork<G>::CHUNK;
+	for (size_t i = 0; i < tblN; i++) {
+		tbl[i].clear();
+	}
+	uint32_t *off = wk.off;
+	for (size_t k = 0; k <= tblN; k++) off[k] = 0;
+	// off[k + 1] = the number of the scalars in the bucket k
+	for (size_t i = 0; i < n; i++) {
+		const uint32_t d = getSignedDigit(yVec + next * i, yUnitSize, pos, b, isTop);
+		wk.D[i] = d;
+		if (d == msmNone) continue;
+		const size_t k = d & msmIdxMask;
+		assert(k < tblN);
+		off[k + 1]++;
+	}
+	for (size_t k = 0; k < tblN; k++) off[k + 1] += off[k];
+	const size_t total = off[tblN];
+	// scatter : idx[off[k] + j] = the j-th scalar of the bucket k
+	// use off[k] as the write position, then restore it
+	for (size_t i = 0; i < n; i++) {
+		const uint32_t d = wk.D[i];
+		if (d == msmNone) continue;
+		const size_t k = d & msmIdxMask;
+		wk.idx[off[k]++] = uint32_t(i) | (d & msmSign);
+	}
+	for (size_t k = tblN; k > 0; k--) off[k] = off[k - 1];
+	off[0] = 0;
+	// fold each chunk
+	size_t k = 0; // the current bucket
+	for (size_t e0 = 0; e0 < total; e0 += CHUNK) {
+		const size_t e1 = (total - e0 < CHUNK) ? total : e0 + CHUNK;
+		// level 0 : the parts of this chunk are read from xVec via idx and written to S
+		MsmPart *cur = wk.part[0];
+		size_t partN = 0;
+		size_t m = 0; // the number of pairs
+		size_t outPos = 0;
+		while (k < tblN && off[k] < e1) {
+			const size_t start = off[k] > e0 ? off[k] : e0;
+			const size_t end = off[k + 1] < e1 ? off[k + 1] : e1;
+			if (end > start) {
+				const size_t cnt = end - start;
+				if (cnt == 1) {
+					msmAddToBucket(tbl[k], xVec, wk.idx[start]);
+				} else {
+					for (size_t j = 0; j + 1 < cnt; j += 2) {
+						wk.ia[m] = wk.idx[start + j];
+						wk.ib[m] = wk.idx[start + j + 1];
+						m++;
+					}
+					if (cnt & 1) {
+						wk.ia[m] = wk.idx[end - 1];
+						wk.ib[m] = msmNone;
+						m++;
+					}
+					cur[partN].k = uint32_t(k);
+					cur[partN].start = uint32_t(outPos);
+					cur[partN].cnt = uint32_t((cnt + 1) / 2);
+					partN++;
+					outPos += (cnt + 1) / 2;
+				}
+			}
+			if (off[k + 1] <= e1) {
+				k++;
+			} else {
+				break;
+			}
+		}
+		if (m == 0) continue;
+		addAffineBatch(wk.S, xVec, wk.ia, wk.ib, m, wk.fwork);
+		// level >= 1 : fold S in place
+		MsmPart *nxt = wk.part[1];
+		while (partN > 0) {
+			size_t nxtN = 0;
+			m = 0;
+			outPos = 0;
+			for (size_t p = 0; p < partN; p++) {
+				const size_t cnt = cur[p].cnt;
+				const size_t start = cur[p].start;
+				if (cnt == 1) {
+					msmAddToBucket(tbl[cur[p].k], wk.S, uint32_t(start));
+					continue;
+				}
+				for (size_t j = 0; j + 1 < cnt; j += 2) {
+					wk.ia[m] = uint32_t(start + j);
+					wk.ib[m] = uint32_t(start + j + 1);
+					m++;
+				}
+				if (cnt & 1) {
+					wk.ia[m] = uint32_t(start + cnt - 1);
+					wk.ib[m] = msmNone;
+					m++;
+				}
+				nxt[nxtN].k = cur[p].k;
+				nxt[nxtN].start = uint32_t(outPos);
+				nxt[nxtN].cnt = uint32_t((cnt + 1) / 2);
+				nxtN++;
+				outPos += (cnt + 1) / 2;
+			}
+			if (m > 0) addAffineBatch(wk.S, wk.S, wk.ia, wk.ib, m, wk.fwork);
+			MsmPart *t = cur; cur = nxt; nxt = t;
+			partN = nxtN;
+		}
+	}
+	local::mulVecReduceTable(win, tbl, tblN, first);
+}
+
+namespace local {
+
+template<class G>
+struct mulVecUpdateTableBatchT {
+	template<class W>
+	static void call(G&, G *, size_t, size_t, const G *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
+};
+template<class Fp>
+struct mulVecUpdateTableBatchT<EcT<Fp> > {
+	typedef EcT<Fp> G;
+	static void call(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
+	{
+		mulVecUpdateTableBatch(win, tbl, tblN, b, xVec, yVec, yUnitSize, next, pos, n, first, isTop, wk);
+	}
+};
+
+} // mcl::ec::local
+
 /*
 	z = sum_{i=0}^{n-1} xVec[i] * yVec[i]
 	yVec[i] means yVec[i*next:(i+1)*next+yUnitSize]
@@ -228,12 +658,23 @@ main:
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	mulVecUpdateTable(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true);
+	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
+	typename local::MsmBatch<G>::Work wk;
+	const bool useBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N && wk.init(n, tblN);
+	if (useBatch) {
+		local::mulVecUpdateTableBatchT<G>::call(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true, wk);
+	} else {
+		mulVecUpdateTable(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true);
+	}
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < b; i++) {
 			G::dbl(z, z);
 		}
-		mulVecUpdateTable(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false);
+		if (useBatch) {
+			local::mulVecUpdateTableBatchT<G>::call(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false, wk);
+		} else {
+			mulVecUpdateTable(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false);
+		}
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
