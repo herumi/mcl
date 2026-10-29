@@ -23,7 +23,13 @@ inline size_t estimateBucketSize(size_t n)
 	return log2n - ilog2(log2n);
 }
 
-//	return heuristic backet size which is faster than glvGetTheoreticBucketSize
+/*
+	return heuristic backet size which is faster than glvGetTheoreticBucketSize
+	n : the number of (split) scalars (= 2 * the number of G1 points of BN / BLS12 by GLV)
+	measured on Xeon w9-3495X with BN254 / BLS12-381 G1 (signed digits, 2^(b-1) buckets);
+	for n in [2^18, 2^21) the differences are small and b = 13 (2^12 buckets fit in L2) is preferred,
+	for n >= 2^21 b = 16 (8 windows for the 128-bit split scalars) is the best for BLS12-381
+*/
 inline size_t glvGetBucketSize(size_t n)
 {
 	if (n <= 2) return 2;
@@ -32,9 +38,10 @@ inline size_t glvGetBucketSize(size_t n)
 	if (log2n < tblMin) return 3;
 	// n >= 2^tblMin
 	static const size_t tbl[] = {
-		3, 4, 5, 5, 8, 8, 9, 10, 11, 12, 13, 13, 13, 16, 16, 16, 18, 19, 19, 19, 19, 19
+	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
+		3, 6, 8, 8, 9, 10, 11, 12, 13, 13, 13, 13, 13, 16, 16
 	};
-	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl)) return 19;
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl) + tblMin) return 16;
 	size_t ret = tbl[log2n - tblMin];
 	return ret;
 }
@@ -120,26 +127,42 @@ inline void optimizedSplitForBLS12_377(Unit *a, Unit *b, const Unit *x)
 
 #ifndef MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC
 	// use (1 << glvGetBucketSize(n)) * sizeof(G) bytes stack + alpha
-	// about 18KiB (G1) or 36KiB (G2) for n = 1024
+	// (1 << b) * sizeof(G) bytes with b = glvGetBucketSize(n) <= 8 : about 24KiB (G1) or 48KiB (G2) for n = 1024
 	// you can decrease this value but this algorithm is slow if n < 256
 	#define MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC 1024
 #endif
 
 /*
-	Extract w bits from yVec[i] starting at the pos-th bit, assign this value to v.
-	tbl[v-1] += xVec[i]
-	win = xVec[0] + 2 xVec[1] + 3 xVec[2] + ... + tblN xVec[tblN-1]
+	Extract b bits from yVec[i] starting at the pos-th bit as a signed digit d:
+	d = v + c where v is the b-bit value and c is the (pos-1)-th bit (the carry from the lower window),
+	and d -= 2^b if the top bit of v is set (= the carry into the upper window),
+	so |d| <= 2^(b-1) and tbl needs tblN = 2^(b-1) entries.
+	(The lower pos bits are represented in [-2^(pos-1), 2^(pos-1)] by the lower windows, so
+	the carry into this window is 1 iff the (pos-1)-th bit is set.)
+	tbl[|d|-1] += sign(d) xVec[i]
+	win (+)= tbl[0] + 2 tbl[1] + 3 tbl[2] + ... + tblN tbl[tblN-1]
+	isTop : the top window has no carry out, so d = v + c in [0, 2^rem] is used as is
+	(rem = the bit size of the window <= b) and the caller passes tblN = 2^rem.
 */
 template<class G>
-void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first)
+void mulVecUpdateTable(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop)
 {
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
 	}
+	const size_t full = size_t(1) << b;
+	const Unit mask = Unit(full - 1);
 	for (size_t i = 0; i < n; i++) {
-		Unit v = fp::getUnitAt(yVec + next * i, yUnitSize, pos) & tblN;
-		if (v) {
-			tbl[v - 1] += xVec[i];
+		const Unit *y = yVec + next * i;
+		const size_t v = size_t(fp::getUnitAt(y, yUnitSize, pos) & mask);
+		const size_t c = pos > 0 ? size_t(fp::getUnitAt(y, yUnitSize, pos - 1) & 1) : 0;
+		if (isTop || v < full / 2) {
+			const size_t d = v + c; // d <= 2^(b-1) (<= 2^rem if isTop)
+			assert(d <= tblN);
+			if (d) tbl[d - 1] += xVec[i];
+		} else {
+			const size_t d = full - v - c; // d <= 2^(b-1)
+			if (d) G::sub(tbl[d - 1], tbl[d - 1], xVec[i]);
 		}
 	}
 	G sum = tbl[tblN - 1];
@@ -159,9 +182,10 @@ void mulVecUpdateTable(G& win, G *tbl, size_t tblN, const G *xVec, const Unit *y
 	return numbers of done, which may be smaller than n if malloc fails
 	@note xVec may be normlized
 	fast for n >= 256
+	maxBitSize : the max bit size of yVec[i] (yUnitSize * UnitBitSize if 0)
 */
 template<class G>
-size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
+size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, size_t maxBitSize = 0)
 {
 	if (n == 0) {
 		z.clear();
@@ -171,8 +195,9 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 		G::mulArray(z, xVec[0], yVec, yUnitSize);
 		return 1;
 	}
+	if (maxBitSize == 0) maxBitSize = sizeof(Unit) * yUnitSize * 8;
 
-	size_t tblN;
+	size_t tblN; // 2^b for the top window (see mulVecUpdateTable), the others use 2^(b-1)
 	G *tbl = 0;
 
 #ifndef MCL_DONT_USE_MALLOC
@@ -180,7 +205,7 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	// if n is large then try to use malloc
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) {
 		if (b == 0) b = glvGetBucketSize(n);
-		tblN = (1 << b) - 1;
+		tblN = size_t(1) << b;
 		tbl_ = (G*)malloc(sizeof(G) * tblN);
 		if (tbl_) {
 			tbl = tbl_;
@@ -191,24 +216,24 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 	// n is small or malloc fails so use stack
 	if (n > MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC) n = MCL_MAX_N_TO_USE_STACK_FOR_MUL_VEC;
 	if (b == 0) b = glvGetBucketSize(n);
-	tblN = (1 << b) - 1;
+	tblN = size_t(1) << b;
 	tbl = (G*)CYBOZU_ALLOCA(sizeof(G) * tblN);
 	// keep tbl_ = 0
 #ifndef MCL_DONT_USE_MALLOC
 main:
 #endif
-	const size_t maxBitSize = sizeof(Unit) * yUnitSize * 8;
 	const size_t winN = (maxBitSize + b-1) / b;
+	const size_t rem = maxBitSize - b * (winN-1); // the bit size of the top window in [1, b]
 
 	// about 10% faster
 	if (doNormalize) G::normalizeVec(xVec, xVec, n);
 
-	mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1), n, true);
+	mulVecUpdateTable(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true);
 	for (size_t w = 1; w < winN; w++) {
 		for (size_t i = 0; i < b; i++) {
 			G::dbl(z, z);
 		}
-		mulVecUpdateTable(z, tbl, tblN, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false);
+		mulVecUpdateTable(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false);
 	}
 #ifndef MCL_DONT_USE_MALLOC
 	if (tbl_) free(tbl_);
@@ -216,16 +241,16 @@ main:
 	return n;
 }
 template<class G>
-void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize)
+void mulVecLong(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t n, size_t b, bool doNormalize, size_t maxBitSize = 0)
 {
-	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize);
+	size_t done = mulVecCore(z, xVec, yVec, yUnitSize, next, n, b, doNormalize, maxBitSize);
 	if (done == n) return;
 	do {
 		xVec += done;
 		yVec += next * done;
 		n -= done;
 		G t;
-		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize);
+		done = mulVecCore(t, xVec, yVec, yUnitSize, next, n, b, doNormalize, maxBitSize);
 		z += t;
 	} while (done < n);
 }
@@ -256,6 +281,7 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 			GLV::mulLambda(tbl[i * n + j], tbl[(i - 1) * n + j]);
 		}
 	}
+	size_t maxBitSize = 0; // of the split scalars (about 128 bits for G1 of BN / BLS12)
 	for (size_t i = 0; i < n; i++) {
 		getUnitAt(y, yVec, i);
 		GLV::split(u, y);
@@ -268,9 +294,16 @@ bool mulVecGLVlarge(G& z, const G *xVec, const void *yVec, size_t n, size_t buck
 			bool b;
 			mcl::gmp::getArray(&b, &yp[idx * next], next, u[j]);
 			assert(b); (void)b;
+			size_t bitSize = fp::getBitSize(&yp[idx * next], next);
+			if (bitSize > maxBitSize) maxBitSize = bitSize;
 		}
 	}
-	mulVecLong(z, tbl, yp, next, next, n * splitN, false, bucket);
+	if (maxBitSize == 0) {
+		z.clear();
+	} else {
+		const size_t yUnitSize = (maxBitSize + UnitBitSize - 1) / UnitBitSize;
+		mulVecLong(z, tbl, yp, yUnitSize, next, n * splitN, bucket, false, maxBitSize);
+	}
 	free(tbl);
 	return true;
 }
