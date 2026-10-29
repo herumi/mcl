@@ -139,6 +139,13 @@ endif
 ifeq ($(MCL_USE_LLVM),1)
   CFLAGS+=-DMCL_USE_LLVM=1
   LIB_OBJ+=$(BASE_OBJ)
+  # the Fp2 functions of src/base{32,64}.ll (and src/asm/x86-64.S) have sizeof(Fp) fixed to
+  # the MCL_FP_BIT of their generation, recorded as MCL_FP_BIT_LLVM in src/llvm_proto.hpp.
+  # x64 with Xbyak does not use them (fp.cpp checks it by #error where it matters).
+  MCL_FP_BIT_LLVM=$(shell sed -n 's/^\#define MCL_FP_BIT_LLVM //p' src/llvm_proto.hpp)
+  ifneq ($(MCL_FP_BIT),$(MCL_FP_BIT_LLVM))
+    $(warning MCL_FP_BIT=$(MCL_FP_BIT) but src/base{32,64}.ll were generated with MCL_FP_BIT=$(MCL_FP_BIT_LLVM); non-x64 or MCL_USE_XBYAK=0 builds need: make update_all_asm MCL_FP_BIT=$(MCL_FP_BIT) && make header)
+  endif
 endif
 # for debug
 asm: $(BASE_LL)
