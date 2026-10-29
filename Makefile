@@ -199,6 +199,10 @@ ifeq ($(ARCH),x86_64)
     MCL_MSM?=1
   endif
 endif
+# msm_avx.cpp is for BLS12-381 / BLS12-377 (MCL_FP_BIT=384 only)
+ifneq ($(MCL_FP_BIT),384)
+  override MCL_MSM=0
+endif
 MCL_MSM_CURVE_BIT?=381
 ifeq ($(MCL_MSM),1)
   ifeq ($(ARCH),x86_64)
