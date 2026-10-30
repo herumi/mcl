@@ -237,64 +237,6 @@ namespace local {
 	work : Fp[3 * MCL_MSM_BATCH_SUB]
 	cost : 5M + 1S + inv/MCL_MSM_BATCH_SUB per pair
 */
-/*
-	d[j] = 1/d[j] for j in [0, m) by the Montgomery trick (d[j] != 0), prod : F[m]
-	K independent product chains are interleaved to hide the latency of mul
-*/
-template<class F>
-void invBatch(F *d, F *prod, size_t m)
-{
-	const size_t K = 4;
-	if (m < 2 * K) {
-		prod[0] = d[0];
-		for (size_t j = 1; j < m; j++) {
-			F::mul(prod[j], prod[j - 1], d[j]);
-		}
-		F inv;
-		F::inv(inv, prod[m - 1]);
-		for (size_t j = m - 1; j > 0; j--) {
-			F t;
-			F::mul(t, inv, prod[j - 1]);
-			F::mul(inv, inv, d[j]);
-			d[j] = t;
-		}
-		d[0] = inv;
-		return;
-	}
-	// chain c = d[c] d[c+K] d[c+2K] ...
-	for (size_t c = 0; c < K; c++) prod[c] = d[c];
-	for (size_t j = K; j < m; j++) {
-		F::mul(prod[j], prod[j - K], d[j]);
-	}
-	// invert the K products of the chains
-	size_t last[K];
-	F q[K];
-	for (size_t c = 0; c < K; c++) {
-		last[c] = (m - 1 - c) / K * K + c;
-		if (c == 0) {
-			q[0] = prod[last[0]];
-		} else {
-			F::mul(q[c], q[c - 1], prod[last[c]]);
-		}
-	}
-	F inv;
-	F::inv(inv, q[K - 1]);
-	F ic[K]; // ic[c] = the inverse of the product of chain c
-	for (size_t c = K - 1; c > 0; c--) {
-		F::mul(ic[c], inv, q[c - 1]);
-		F::mul(inv, inv, prod[last[c]]);
-	}
-	ic[0] = inv;
-	for (size_t j = m - 1; j >= K; j--) {
-		const size_t c = j % K;
-		F t;
-		F::mul(t, ic[c], prod[j - K]);
-		F::mul(ic[c], ic[c], d[j]);
-		d[j] = t;
-	}
-	for (size_t c = 0; c < K; c++) d[c] = ic[c];
-}
-
 template<class G>
 void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib, size_t m, typename G::Fp *work)
 {
@@ -351,7 +293,7 @@ void addAffineBatch(G *R, const G *base, const uint32_t *ia, const uint32_t *ib,
 				d[j] = one;
 			}
 		}
-		invBatch(d, prod, mm);
+		mcl::local::invVecWork<false>(d, d, mm, prod); // d[j] = 1/d[j] (d[j] != 0)
 		// compute R
 		for (size_t j = 0; j < mm; j++) {
 			const uint32_t a = ia[j0 + j];
