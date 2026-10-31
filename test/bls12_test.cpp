@@ -14,8 +14,6 @@ cybozu::CpuClock clk;
 using namespace mcl::bls12;
 
 #include "common_test.hpp"
-#define MCL_GLV_ONLY_FUNC
-#include "../src/glv.hpp"
 
 const struct TestSet {
 	mcl::CurveParam cp;
@@ -700,17 +698,15 @@ CYBOZU_TEST_AUTO(verifyG2)
 	CYBOZU_TEST_ASSERT(n == 0);
 }
 
-void splitTest(const mpz_class& mx, const mpz_class& L)
+// the GLV split x = a + b L (GLV1T::splitRawBLS12) is used by G1::mul
+void splitTest(const G1& P, const mpz_class& mx)
 {
-	const size_t n = 32 / sizeof(mcl::Unit);
-	mcl::Unit x[n], a[n/2], b[n/2];
-	mcl::gmp::getArray(x, n, mx);
-	mcl::ec::optimizedSplitForBLS12_381(a, b, x);
-	mpz_class ma, mb;
-	mcl::gmp::setArray(ma, a, n/2);
-	mcl::gmp::setArray(mb, b, n/2);
-	CYBOZU_TEST_EQUAL(mb, mx / L);
-	CYBOZU_TEST_EQUAL(ma, mx % L);
+	Fr x;
+	x.setMpz(mx);
+	G1 P1, P2;
+	G1::mul(P1, P, x);
+	G1::mulGeneric(P2, P, x.getMpz());
+	CYBOZU_TEST_EQUAL(P1, P2);
 }
 
 CYBOZU_TEST_AUTO(split)
@@ -719,17 +715,19 @@ CYBOZU_TEST_AUTO(split)
 	mpz_class L;
 	mcl::gmp::setStr(L, Ls, 16);
 	cybozu::XorShift rg;
+	G1 P;
+	mapToG1(P, 1);
 	Fr x;
 	for (int i = 0; i < 100; i++) {
 		x.setByCSPRNG(rg);
-		splitTest(x.getMpz(), L);
+		splitTest(P, x.getMpz());
 	}
 	const mpz_class LL = L*L;
 	const mpz_class tbl[] = {
 		0, 1, 2, 3, L-1, L, L+1, L*2, L*2-1, L*2+1, LL-L, LL-1, LL+1, LL+L-2, LL+L-1, LL+L,
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		splitTest(tbl[i], L);
+		splitTest(P, tbl[i]);
 	}
 }
 

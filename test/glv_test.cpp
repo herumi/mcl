@@ -99,6 +99,22 @@ void testGLV(const G& P, const char *name)
 		G::mul(P2, P, ss);
 		CYBOZU_TEST_EQUAL(P1, P2);
 	}
+	// the edge values of the GLV split : 2^k, r - 2^k, (r - 1) >> k
+	{
+		const mpz_class& r = Fr::getOp().mp;
+		const size_t bitSize = Fr::getBitSize();
+		for (size_t k = 0; k < bitSize; k++) {
+			const mpz_class pk = mpz_class(1) << k;
+			const mpz_class tbl[] = { pk, r - pk, (r - 1) >> k, pk - 1 };
+			for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+				Fr s;
+				s.setMpz(tbl[j]);
+				G::mulGeneric(P1, P, s.getMpz());
+				G::mul(P2, P, s);
+				CYBOZU_TEST_EQUAL(P1, P2);
+			}
+		}
+	}
 }
 
 template<class G>
@@ -297,6 +313,7 @@ CYBOZU_TEST_AUTO(glv)
 		{ mcl::BLS12_377, "BLS12_377" },
 		{ mcl::BLS12_381, "BLS12_381" },
 		{ mcl::BN254, "BN254" },
+		{ mcl::BN_SNARK1, "BN_SNARK1" },
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
 		printf("name=%s\n", tbl[i].name);

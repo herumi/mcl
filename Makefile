@@ -221,6 +221,11 @@ src/$(MSM)_bls12_381.h: src/gen_msm_para.py
 else
   CFLAGS+=-DMCL_MSM=0
 endif
+# the parameters of the GLV method for G1 (included by src/glv.hpp)
+src/glv_param.hpp: src/gen_glv.py src/primetbl.py
+	python3 src/gen_glv.py > $@
+update_glv_param:
+	python3 src/gen_glv.py > src/glv_param.hpp
 src/bint_switch.hpp: src/gen_bint_header.py
 	python3 $< > $@ switch -n $(BINT_MUL_N)
 src/llvm_proto.hpp: src/gen_llvm_proto.py src/primetbl.py
