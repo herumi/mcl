@@ -61,6 +61,9 @@ def putCode(curve, mont):
   m52to64 = toArray(mont.toMont(pow(2**32, -1, curve.p)))
   expand('g_m64to52u', m64to52)
   expand('g_m52to64u', m52to64)
+  # the Montgomery form (R = 2^384, 64-bit x 6 limbs) of 2^-32 to convert one coordinate of the kernel layout to Fp by Fp::mul
+  mont64 = Montgomery(curve.p, 64)
+  expand('g_m52to64s', mont64.toArray(mont64.toMont(pow(2**32, -1, curve.p))))
 
   # for FpM/FpMA
   expand('g_offset', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])

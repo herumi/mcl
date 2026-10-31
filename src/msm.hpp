@@ -13,9 +13,15 @@ namespace mcl {
 #if MCL_MSM == 1
 namespace msm {
 
-bool initMsm(const mcl::CurveParam& cp);
-void mulVecAVX512(G1& P, G1 *x, const Fr *y, size_t n, size_t b);
+// splitRaw : the fixed-width GLV split of G1 (GLV1::splitRaw, used by mulEachAVX512)
+bool initMsm(const mcl::CurveParam& cp, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x));
+// the SIMD kernel of the batch affine addition of G1::mulVec (see src/glv.hpp), set by G1::setMsmKernel
+const ec::MsmKernel* getMsmKernelAVX512();
 void mulEachAVX512(G1 *x, const Fr *y, size_t n);
+#ifdef MCL_MSM_TEST
+// the old MSM (each SIMD lane has its own buckets), only for comparison
+void mulVecAVX512(G1& P, G1 *x, const Fr *y, size_t n, size_t b);
+#endif
 
 } // mcl::msm
 #endif

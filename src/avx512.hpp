@@ -158,6 +158,22 @@ inline Vec vmovdqu64(const Vmask& v, const void *base)
 	return _mm512_maskz_loadu_epi64(v, base);
 }
 
+inline void vmovdqu64(void *base, const Vec& v)
+{
+	_mm512_storeu_epi64(base, v);
+}
+
+// base must be 64-byte aligned
+inline Vec vmovdqa64(const void *base)
+{
+	return _mm512_load_epi64(base);
+}
+
+inline void vmovdqa64(void *base, const Vec& v)
+{
+	_mm512_store_epi64(base, v);
+}
+
 inline void vpscatterqq(void *base, const Vec& idx, const Vec& v)
 {
 	const int scale = 8;
@@ -188,6 +204,27 @@ inline Vmask vpcmpgtq(const Vec& a, const Vec& b)
 inline Vmask kandb(const Vmask& a, const Vmask& b)
 {
 	return (Vmask)_mm512_kand(a, b);
+}
+
+inline Vmask korb(const Vmask& a, const Vmask& b)
+{
+	return (Vmask)_mm512_kor(a, b);
+}
+
+// return !a & b
+inline Vmask kandnb(const Vmask& a, const Vmask& b)
+{
+	return (Vmask)_mm512_kandn(a, b);
+}
+
+inline Vmask knotb(const Vmask& a)
+{
+	return (Vmask)_mm512_knot(a);
+}
+
+inline Vmask kxorb(const Vmask& a, const Vmask& b)
+{
+	return (Vmask)_mm512_kxor(a, b);
 }
 
 inline Vec vpbroadcastq(int64_t a)
@@ -442,6 +479,13 @@ inline VmaskA kandb(const VmaskA& a, const VmaskA& b)
 {
 	VmaskA r;
 	for (size_t i = 0; i < vN; i++) r.v[i] = kandb(a.v[i], b.v[i]);
+	return r;
+}
+
+inline VmaskA kxorb(const VmaskA& a, const VmaskA& b)
+{
+	VmaskA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = kxorb(a.v[i], b.v[i]);
 	return r;
 }
 

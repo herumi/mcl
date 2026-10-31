@@ -55,6 +55,10 @@ namespace {
 
 using namespace mcl;
 
+// the fixed-width GLV split of G1 (set by initMsm, see GLV1T::splitRaw in src/glv.hpp)
+typedef uint32_t (*SplitRawFunc)(Unit *a, Unit *b, const Unit *x);
+static SplitRawFunc g_splitRaw;
+
 // only for BLS12-381
 struct FrA {
 	uint64_t v[4];
@@ -700,7 +704,7 @@ struct FpMT {
 	VM isEqualAll(const T& rhs) const
 	{
 		V t = vpxorq(v[0], rhs.v[0]);
-		for (size_t i = 1; i < M; i++) {
+		for (size_t i = 1; i < N; i++) {
 			t = vporq(t, vpxorq(v[i], rhs.v[i]));
 		}
 		return vpcmpeqq(t, vzero());
@@ -708,10 +712,20 @@ struct FpMT {
 	VM isZero() const
 	{
 		V t = v[0];
-		for (size_t i = 1; i < M; i++) {
+		for (size_t i = 1; i < N; i++) {
 			t = vporq(t, v[i]);
 		}
 		return vpcmpeqq(t, vzero());
+	}
+	VM isOne() const
+	{
+		return isEqualAll(T::one());
+	}
+	T& operator*=(const T& rhs)
+	{
+		T& self = static_cast<T&>(*this);
+		mul(self, self, rhs);
+		return self;
 	}
 	static void pow(T& z, const T& x, const V *y, size_t yn)
 	{
@@ -807,6 +821,256 @@ struct FpM : FpMT<FpM, Vmask, Vec> {
 	mpz_class get(size_t i) const;
 #endif
 };
+
+/*
+	the SIMD kernel of the batch affine addition of G1::mulVec (ec::MsmKernel, see mulVecUpdateTableBatch in src/glv.hpp)
+	AffM : a point in the layout of the kernel. x and y are N limbs of W bits in the Montgomery form of FpM (R = 2^(W N)).
+	The zero point is represented by y = 0 (the group has a prime order, so no point has y = 0).
+	addPairs processes 8 pairs at once : the points of the 8 lanes are loaded as 8 Vec (one point per Vec),
+	transposed to FpM (one limb per Vec) by trans8x8, the formula is computed by FpM with the masks of the lanes
+	(zero, doubling, A = -B) and the result is transposed back. The denominators of lambda of all the pairs
+	are inverted at once by the Montgomery trick over FpM (one FpM::inv per MCL_MSM_KERNEL_SUB groups).
+	cost : 5M + 2S + 1 inv/(8 MCL_MSM_KERNEL_SUB) per 8 pairs (+ the transposes)
+*/
+struct AffM {
+	Unit x[N];
+	Unit y[N];
+};
+
+#ifndef MCL_MSM_KERNEL_SUB
+	// the number of groups (8 pairs each) sharing one FpM::inv
+	#define MCL_MSM_KERNEL_SUB 256
+#endif
+
+// the work area of addPairsAffM
+struct AffMWork {
+	static const size_t SUB = MCL_MSM_KERNEL_SUB;
+	FpM d[SUB]; // the denominator of lambda, then its inverse
+	FpM num[SUB]; // the numerator of lambda
+	FpM ax[SUB]; // A.x (the x of the output if the lane is skipped)
+	FpM ay[SUB]; // A.y (the y of the output if the lane is skipped, 0 if the output is zero)
+	FpM bx[SUB]; // B.x
+	FpM prod[SUB]; // the work of the Montgomery trick
+	uint8_t skip[SUB]; // the lanes whose output is (ax, ay)
+};
+
+static CYBOZU_ALIGN(64) const AffM g_zeroAffM = { { 0 }, { 0 } };
+
+// return the point of the index i (the zero point if i == msmNone)
+inline const AffM* getAffM(const AffM *base, uint32_t i)
+{
+	return i == mcl::ec::local::msmNone ? &g_zeroAffM : base + (i & mcl::ec::local::msmIdxMask);
+}
+
+// (x, y) = the 8 points base[idx[j]] transposed to FpM (requires N == 8)
+inline void loadAffM(FpM& x, FpM& y, const AffM *base, const uint32_t idx[8])
+{
+	const AffM *P[8];
+	Vec s[8];
+	for (size_t j = 0; j < 8; j++) P[j] = getAffM(base, idx[j]);
+	for (size_t j = 0; j < 8; j++) s[j] = vmovdqa64(P[j]->x);
+	trans8x8(x.v, s);
+	for (size_t j = 0; j < 8; j++) s[j] = vmovdqa64(P[j]->y);
+	trans8x8(y.v, s);
+}
+
+// R[j] = (x, y) of the lane j for j in [0, m) (m <= 8)
+inline void storeAffM(AffM *R, const FpM& x, const FpM& y, size_t m)
+{
+	Vec s[8], d[8];
+	for (size_t i = 0; i < N; i++) s[i] = x.v[i];
+	trans8x8(d, s);
+	for (size_t j = 0; j < m; j++) vmovdqa64(R[j].x, d[j]);
+	for (size_t i = 0; i < N; i++) s[i] = y.v[i];
+	trans8x8(d, s);
+	for (size_t j = 0; j < m; j++) vmovdqa64(R[j].y, d[j]);
+}
+
+// dst[i] = xVec[i] (affine or zero) for i in [0, n)
+void cvtBaseAffM(void *dst, const void *xVec, size_t n)
+{
+	AffM *d = (AffM*)dst;
+	const G1 *x = (const G1*)xVec;
+	for (size_t i = 0; i < n; i += 8) {
+		const size_t m = (n - i < 8) ? n - i : 8;
+		G1 tmp[8];
+		const G1 *src = x + i;
+		if (m < 8) {
+			for (size_t j = 0; j < 8; j++) {
+				if (j < m) tmp[j] = src[j]; else tmp[j].clear();
+			}
+			src = tmp;
+		}
+		const Unit *p = (const Unit*)src;
+		FpM X, Y;
+		cvtFromG1Ax(X.v, p);
+		cvtFromG1Ax(Y.v, p + 6);
+		FpM::mul(X, X, g_m64to52u_);
+		FpM::mul(Y, Y, g_m64to52u_);
+		uint8_t nz = 0; // the lanes of the non-zero points
+		for (size_t j = 0; j < 8; j++) {
+			if (!src[j].z.isZero()) nz |= uint8_t(1 << j);
+		}
+		Y = FpM::select(Vmask(nz), Y, FpM::zero());
+		storeAffM(d + i, X, Y, m);
+	}
+}
+
+/*
+	R[j] = P(ia[j]) + P(ib[j]) for j in [0, m), see addAffineBatch in src/glv.hpp
+	all the inputs of a sub-block of 8 MCL_MSM_KERNEL_SUB pairs are read before its outputs are written
+*/
+void addPairsAffM(void *_R, const void *_base, const uint32_t *ia, const uint32_t *ib, size_t m, void *_work)
+{
+	using namespace mcl::ec::local;
+	AffM *R = (AffM*)_R;
+	const AffM *base = (const AffM*)_base;
+	AffMWork& wk = *(AffMWork*)_work;
+	const size_t SUB = AffMWork::SUB;
+	const FpM& one = FpM::one();
+	const FpM& zero = FpM::zero();
+	for (size_t j0 = 0; j0 < m; j0 += SUB * 8) {
+		const size_t mm = (m - j0 < SUB * 8) ? m - j0 : SUB * 8; // the number of pairs of this sub-block
+		const size_t gn = (mm + 7) / 8; // the number of groups
+		// pass 1 : classify the lanes and compute d and num
+		for (size_t g = 0; g < gn; g++) {
+			const size_t j = j0 + g * 8;
+			const uint32_t *pa = ia + j;
+			const uint32_t *pb = ib + j;
+			uint32_t ta[8], tb[8];
+			if (j + 8 > m) {
+				// the last group has less than 8 pairs
+				for (size_t k = 0; k < 8; k++) {
+					ta[k] = (j + k < m) ? ia[j + k] : msmNone;
+					tb[k] = (j + k < m) ? ib[j + k] : msmNone;
+				}
+				pa = ta;
+				pb = tb;
+			}
+			FpM Ax, Ay, Bx, By;
+			loadAffM(Ax, Ay, base, pa);
+			loadAffM(Bx, By, base, pb);
+			// negate y of the lanes with the sign bit (-0 = 0 for the zero point)
+			uint8_t sa = 0, sb = 0;
+			for (size_t k = 0; k < 8; k++) {
+				sa |= uint8_t((pa[k] >> 31) << k);
+				sb |= uint8_t((pb[k] >> 31) << k);
+			}
+			Ay = FpM::select(Vmask(sa), Ay.neg(), Ay);
+			By = FpM::select(Vmask(sb), By.neg(), By);
+			const Vmask zA = Ay.isZero();
+			const Vmask zB = By.isZero();
+			const Vmask eqX = Ax.isEqualAll(Bx);
+			const Vmask eqY = Ay.isEqualAll(By);
+			const Vmask nz = knotb(korb(zA, zB));
+			const Vmask dbl = kandb(kandb(eqX, eqY), nz); // A = B
+			const Vmask out0 = kandb(kandnb(eqY, eqX), nz); // A = -B
+			const Vmask skip = korb(korb(zA, zB), out0);
+			FpM d, num, t;
+			FpM::sub(d, Bx, Ax);
+			FpM::sub(num, By, Ay);
+			if (cvtToInt(dbl)) {
+				// doubling : lambda = 3 x^2 / (2 y) (a = 0), rare for random inputs so skip it if no lane needs it
+				FpM t3;
+				FpM::mul2(t, Ay);
+				d = FpM::select(dbl, t, d);
+				FpM::sqr(t, Ax);
+				FpM::mul2(t3, t);
+				FpM::add(t3, t3, t);
+				num = FpM::select(dbl, t3, num);
+			}
+			d = FpM::select(skip, one, d);
+			// the output of the skipped lanes : B if A = 0, A otherwise (y = 0 if A + B = 0)
+			wk.ax[g] = FpM::select(zA, Bx, Ax);
+			t = FpM::select(zA, By, Ay);
+			wk.ay[g] = FpM::select(out0, zero, t);
+			wk.bx[g] = Bx;
+			wk.d[g] = d;
+			wk.num[g] = num;
+			wk.skip[g] = cvtToInt(skip);
+		}
+		// d[g] = 1/d[g] (d[g] != 0)
+		mcl::local::invVecWork<false>(wk.d, wk.d, gn, wk.prod);
+		// pass 2 : R = A + B
+		for (size_t g = 0; g < gn; g++) {
+			const size_t j = j0 + g * 8;
+			const FpM& Ax = wk.ax[g];
+			const FpM& Ay = wk.ay[g];
+			FpM lambda, x3, y3;
+			FpM::mul(lambda, wk.num[g], wk.d[g]);
+			FpM::sqr(x3, lambda);
+			FpM::sub(x3, x3, Ax);
+			FpM::sub(x3, x3, wk.bx[g]); // = lambda^2 - 2 A.x if doubling
+			FpM::sub(y3, Ax, x3);
+			FpM::mul(y3, y3, lambda);
+			FpM::sub(y3, y3, Ay); // y3 = lambda (x1 - x3) - y1
+			const Vmask skip = Vmask(wk.skip[g]);
+			x3 = FpM::select(skip, Ax, x3);
+			y3 = FpM::select(skip, Ay, y3);
+			storeAffM(R + j, x3, y3, (m - j < 8) ? m - j : 8);
+		}
+	}
+}
+
+/*
+	convert a coordinate of AffM (the Montgomery form of FpM, a 2^(W N) mod p < p) to Fp (a 2^384 mod p)
+	by Fp::mul with 2^-32 (whose Montgomery form 2^352 is g_m52to64s_)
+*/
+inline void cvtAffMtoFp(Fp& y, const Unit x[N])
+{
+	// concat52bit for one point
+	Unit t[6];
+	t[0] = x[0] | (x[1] << 52);
+	t[1] = (x[1] >> 12) | (x[2] << 40);
+	t[2] = (x[2] >> 24) | (x[3] << 28);
+	t[3] = (x[3] >> 36) | (x[4] << 16);
+	t[4] = (x[4] >> 48) | (x[5] << 4) | (x[6] << 56);
+	t[5] = (x[6] >> 8) | (x[7] << 44);
+	const mcl::fp::Op& op = Fp::getOp();
+	op.fp_mul((Unit*)&y, t, g_m52to64s_, op.p);
+}
+
+/*
+	the window size for n (split) scalars of mulVec with the kernel (see glvGetBucketSize in src/glv.hpp)
+	measured on Xeon w9-3495X with BLS12-381 G1 : the pair addition is cheaper than the generic one,
+	so the bucket reduction is relatively more expensive and b is smaller for 2^9 <= n < 2^17
+*/
+size_t getBucketSizeAffM(size_t n)
+{
+	if (n <= 2) return 2;
+	const size_t log2n = mcl::ec::ilog2(n);
+	const size_t tblMin = 8;
+	if (log2n < tblMin) return 3;
+	static const size_t tbl[] = {
+	//  log2n = 8  9  10 11 12 13  14  15  16  17  18  19  20  21  22
+		5, 6, 6, 8, 8, 8, 10, 11, 11, 13, 13, 13, 15, 15, 16
+	};
+	if (log2n >= CYBOZU_NUM_OF_ARRAY(tbl) + tblMin) return 16;
+	return tbl[log2n - tblMin];
+}
+
+// tbl (+)= P(i), see msmAddToBucket in src/glv.hpp
+void addToBucketAffM(void *_tbl, const void *_base, uint32_t i)
+{
+	using namespace mcl::ec::local;
+	G1& tbl = *(G1*)_tbl;
+	const AffM& P = ((const AffM*)_base)[i & msmIdxMask];
+	Unit y = 0;
+	for (size_t k = 0; k < N; k++) y |= P.y[k];
+	if (y == 0) return; // the zero point
+	G1 Q;
+	cvtAffMtoFp(Q.x, P.x);
+	cvtAffMtoFp(Q.y, P.y);
+	Q.z = 1;
+	if (tbl.isZero()) {
+		tbl = Q;
+		if (i & msmSign) G1::neg(tbl, tbl);
+	} else if (i & msmSign) {
+		tbl -= Q;
+	} else {
+		tbl += Q;
+	}
+}
 
 // set y = 1 if isProj
 template<class E>
@@ -1145,17 +1409,18 @@ struct EcMT {
 			V a[2], b[2];
 			Unit *pa = (Unit*)a;
 			Unit *pb = (Unit*)b;
+			V negA, negB; // 1 if a (b) of the lane is negative
+			Unit *pna = (Unit*)&negA;
+			Unit *pnb = (Unit*)&negB;
 			for (size_t i = 0; i < m; i++) {
 				Unit buf[4];
 				fr.fromMont(buf, y[k*m+i].v);
 				Unit aa[2], bb[2];
-#ifdef MCL_MSM_BLS12_377
-				mcl::ec::optimizedSplitForBLS12_377(aa, bb, buf);
-#else
-				mcl::ec::optimizedSplitForBLS12_381(aa, bb, buf);
-#endif
+				const uint32_t neg = g_splitRaw(aa, bb, buf); // y = a + b lambda, |a|, |b| < 2^128
 				pa[i+m*0] = aa[0]; pa[i+m*1] = aa[1];
 				pb[i+m*0] = bb[0]; pb[i+m*1] = bb[1];
+				pna[i] = neg & 1;
+				pnb[i] = (neg >> 1) & 1;
 			}
 			const size_t bitLen = 128;
 			const size_t nw = (bitLen + w-1)/w;
@@ -1163,6 +1428,13 @@ struct EcMT {
 			VM aNegTbl[nw], bNegTbl[nw];
 			makeNAFtbl<bitLen, w>(aTbl, aNegTbl, a);
 			makeNAFtbl<bitLen, w>(bTbl, bNegTbl, b);
+			// negate all the digits of the lanes whose a (b) is negative
+			const VM laneNegA = vpcmpneqq(negA, vzero<V>());
+			const VM laneNegB = vpcmpneqq(negB, vzero<V>());
+			for (size_t i = 0; i < nw; i++) {
+				aNegTbl[i] = kxorb(aNegTbl[i], laneNegA);
+				bNegTbl[i] = kxorb(bNegTbl[i], laneNegB);
+			}
 
 			for (size_t i = 0; i < nw; i++) {
 				if (i > 0) for (size_t j = 0; j < w; j++) T::template dbl<isProj>(Q[k], Q[k]);
@@ -1500,7 +1772,12 @@ const FpMA& EcMA::b3_ = *(const FpMA*)g_b3A_;
 const EcMA& EcMA::zeroProj_ = *(const EcMA*)g_zeroProjA_;
 const EcMA& EcMA::zeroJacobi_ = *(const EcMA*)g_zeroJacobiA_;
 
-#define USE_GLV
+#ifdef MCL_MSM_TEST
+/*
+	the old MSM where each SIMD lane has its own buckets (replaced by the kernel of the batch affine addition)
+	USE_GLV is disabled because the split of the scalar (GLV1T::splitRaw) is not visible in this file
+*/
+//#define USE_GLV
 
 template<class G=EcM, class V=Vec>
 void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
@@ -1574,16 +1851,25 @@ void mulVecAVX512T(G1& _P, G1 *_x, const Fr *_y, size_t n, size_t bucket = 0)
 		mcl::G1::add((mcl::G1&)P, (const mcl::G1&)P, (const mcl::G1&)Q);
 	}
 }
+#endif // MCL_MSM_TEST
 
 } // namespace
 
 namespace mcl { namespace msm {
 
+const ec::MsmKernel* getMsmKernelAVX512()
+{
+	static const ec::MsmKernel kn = { sizeof(AffM), sizeof(AffMWork), cvtBaseAffM, addPairsAffM, addToBucketAffM, getBucketSizeAffM };
+	return &kn;
+}
+
+#ifdef MCL_MSM_TEST
 void mulVecAVX512(G1& P, G1 *x, const Fr *y, size_t n, size_t b = 0)
 {
 	mulVecAVX512T<EcM, Vec>(P, x, y, n, b);
 //	mulVecAVX512T<EcMA, VecA>(P, x, y, n, b); // slower
 }
+#endif
 
 void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 {
@@ -1626,8 +1912,10 @@ void mulEachAVX512(G1 *_x, const Fr *_y, size_t n)
 }
 
 // AVX-512 IFMA is required
-bool initMsm(const mcl::CurveParam& cp)
+bool initMsm(const mcl::CurveParam& cp, uint32_t (*splitRaw)(Unit *a, Unit *b, const Unit *x))
 {
+	if (splitRaw == 0) return false;
+	g_splitRaw = splitRaw;
 	assert(EcM::a_ == 0);
 #ifdef MCL_MSM_BLS12_377
 	assert(EcM::b_ == 1);
@@ -2536,6 +2824,126 @@ CYBOZU_TEST_AUTO(mulVec)
 #endif
 }
 
+void naiveMulVec(G1& Q, const G1 *P, const Fr *x, size_t n)
+{
+	Q.clear();
+	for (size_t i = 0; i < n; i++) {
+		G1 T;
+		G1::mul(T, P[i], x[i]);
+		Q += T;
+	}
+}
+
+// G1::mulVec with the kernel of the batch affine addition (getMsmKernelAVX512)
+CYBOZU_TEST_AUTO(kernel)
+{
+	CYBOZU_TEST_EQUAL(G1::msmKernel, getMsmKernelAVX512());
+	const size_t N = 8203; // > MCL_MSM_BATCH_MIN_N / 2, not a multiple of 8
+	std::vector<G1> P(N), P2(N);
+	std::vector<Fr> x(N);
+	cybozu::XorShift rg;
+	setParam(P.data(), x.data(), N, rg);
+	G1 Q, R;
+	const size_t nTbl[] = { 128, 129, 255, 256, 257, 1000, 4096, N };
+	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(nTbl); i++) {
+		const size_t n = nTbl[i];
+		mcl::bint::copyN(P2.data(), P.data(), n);
+		if (n > 32) P2[32].clear(); // zero points
+		P2[n/2].clear();
+		naiveMulVec(Q, P2.data(), x.data(), n);
+		G1::mulVec(R, P2.data(), x.data(), n);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// all scalars are equal
+	{
+		for (size_t i = 0; i < N; i++) x[i] = x[0];
+		mcl::bint::copyN(P2.data(), P.data(), N);
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// scalars in {0, 1}
+	{
+		for (size_t i = 0; i < N; i++) x[i] = rg.get32() & 1;
+		mcl::bint::copyN(P2.data(), P.data(), N);
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// small scalars (many equal digits), zero points and equal points
+	{
+		for (size_t i = 0; i < N; i++) {
+			x[i] = rg.get32() % 7;
+			P2[i] = P[i];
+			if (i % 5 == 1) P2[i].clear();
+			if (i % 5 == 2) P2[i] = P2[i - 1];
+			if (i % 5 == 3) P2[i] = P2[0];
+		}
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+	// P + P (doubling) and P + (-P) (zero) in a bucket
+	{
+		for (size_t i = 0; i < N; i++) {
+			G1::mul(P2[i], P[0], i / 3 + 3);
+			x[i].setByCSPRNG();
+		}
+		for (size_t i = 0; i + 2 < N; i += 3) {
+			x[i + 1] = x[i]; // P2[i] + P2[i+1] = 2 P2[i]
+			Fr::neg(x[i + 2], x[i]); // P2[i] - P2[i+2] = 0
+		}
+		naiveMulVec(Q, P2.data(), x.data(), N);
+		G1::mulVec(R, P2.data(), x.data(), N);
+		CYBOZU_TEST_EQUAL(Q, R);
+	}
+}
+
+// the cost of addPairsAffM per pair
+CYBOZU_TEST_AUTO(kernelBench)
+{
+#ifdef NDEBUG
+	const size_t n = 8192;
+	std::vector<G1> P(n);
+	cybozu::XorShift rg;
+	hashAndMapToG1(P[0], "abc", 3);
+	for (size_t i = 1; i < n; i++) {
+		G1::add(P[i], P[i-1], P[0]);
+	}
+	G1::normalizeVec(P.data(), P.data(), n);
+	const size_t m = n / 2;
+	std::vector<uint32_t> ia(m), ib(m);
+	for (size_t j = 0; j < m; j++) {
+		ia[j] = uint32_t(2 * j);
+		ib[j] = uint32_t(2 * j + 1) | ((rg.get32() & 1) ? mcl::ec::local::msmSign : 0);
+	}
+	const ec::MsmKernel& kn = *getMsmKernelAVX512();
+	void *base = Xbyak::AlignedMalloc(kn.pointSize * n, 64);
+	void *R = Xbyak::AlignedMalloc(kn.pointSize * m, 64);
+	void *work = Xbyak::AlignedMalloc(kn.workSize, 64);
+	CYBOZU_BENCH_C("cvtBase", 100, kn.cvtBase, base, P.data(), n);
+	CYBOZU_BENCH_C("addPairs(4096)", 100, kn.addPairs, R, base, ia.data(), ib.data(), m, work);
+	CYBOZU_BENCH_C("addPairs(256)", 1000, kn.addPairs, R, base, ia.data(), ib.data(), 256, work);
+	// check the result
+	for (size_t j = 0; j < m; j++) {
+		G1 Q;
+		Q.clear();
+		kn.addToBucket(&Q, R, uint32_t(j));
+		G1 T = P[2 * j];
+		if (ib[j] & mcl::ec::local::msmSign) T -= P[2 * j + 1]; else T += P[2 * j + 1];
+		CYBOZU_TEST_EQUAL(Q, T);
+	}
+	Xbyak::AlignedFree(work);
+	Xbyak::AlignedFree(R);
+	Xbyak::AlignedFree(base);
+#endif
+}
+
+void mulVecKernel(G1& Q, G1 *P, const Fr *x, size_t n, size_t b)
+{
+	G1::mulVec(Q, P, x, n, b);
+}
+
 void msmBench(int C, size_t db, size_t de, size_t b)
 {
 	printf("d = [%zd, %zd], b = %zd\n", db, de, b);
@@ -2551,12 +2959,12 @@ void msmBench(int C, size_t db, size_t de, size_t b)
 	G1 P1;
 	for (size_t d = db; d <= de; d++) {
 		size_t n = size_t(1) << d;
-		size_t b1 = glvGetBucketSizeAVX512(n/4);
-		printf("% 8zd % 2zd", n, b1);
+		size_t b1 = glvGetBucketSizeAVX512(n/8);
+		printf("old % 8zd % 2zd", n, b1);
 		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b1);
-		size_t b2 = b ? b : mcl::ec::glvGetTheoreticBucketSize(n/4);
-		printf("% 8zd % 2zd", n, size_t(b2));
-		CYBOZU_BENCH_C(" ", C, mulVecAVX512, P1, Pvec.data(), xVec.data(), n, b2);
+		size_t b2 = b ? b : mcl::ec::glvGetBucketSize(n * 2);
+		printf("new % 8zd % 2zd", n, b2);
+		CYBOZU_BENCH_C(" ", C, mulVecKernel, P1, Pvec.data(), xVec.data(), n, b2);
 	}
 }
 

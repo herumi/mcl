@@ -89,9 +89,7 @@ inline size_t glvGetTheoreticBucketSize(size_t n)
 */
 namespace local {
 
-const uint32_t msmSign = uint32_t(1) << 31; // the sign bit of a digit or an index
-const uint32_t msmIdxMask = msmSign - 1;
-const uint32_t msmNone = uint32_t(-1); // d = 0 (no bucket) or no point
+// msmSign, msmIdxMask and msmNone are defined in ec.hpp (used by ec::MsmKernel)
 
 /*
 	return (|d| - 1) | (d < 0 ? msmSign : 0), or msmNone if d = 0
@@ -278,44 +276,6 @@ struct MsmPart {
 	uint32_t cnt; // the number of points
 };
 
-// work buffers for mulVecUpdateTableBatch
-template<class G>
-struct MsmBatchWork {
-	typedef typename G::Fp F;
-	static const size_t CHUNK = MCL_MSM_BATCH_CHUNK;
-	uint32_t *D; // [n] (bucket | sign) of each scalar
-	uint32_t *idx; // [n] the indexes of the scalars sorted by bucket
-	uint32_t *off; // [tblN + 1] the offset of each bucket in idx
-	uint32_t *ia; // [CHUNK] the pairs of the current level
-	uint32_t *ib; // [CHUNK]
-	MsmPart *part[2]; // [CHUNK + 1] the parts (a bucket in the chunk) of the current and next level
-	G *S; // [CHUNK] the work array of the points
-	F *fwork; // [3 * MCL_MSM_BATCH_SUB]
-	void *buf_;
-	MsmBatchWork() : buf_(0) {}
-	~MsmBatchWork() { if (buf_) free(buf_); }
-	bool init(size_t n, size_t tblN)
-	{
-		if (n >= msmIdxMask) return false;
-		const size_t fwSize = 3 * MCL_MSM_BATCH_SUB;
-		size_t size = sizeof(G) * CHUNK + sizeof(F) * fwSize;
-		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * CHUNK) + sizeof(MsmPart) * 2 * (CHUNK + 1);
-		buf_ = malloc(size);
-		if (buf_ == 0) return false;
-		char *p = (char*)buf_;
-		S = (G*)p; p += sizeof(G) * CHUNK;
-		fwork = (F*)p; p += sizeof(F) * fwSize;
-		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
-		idx = (uint32_t*)p; p += sizeof(uint32_t) * n;
-		off = (uint32_t*)p; p += sizeof(uint32_t) * (tblN + 1);
-		ia = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
-		ib = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
-		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (CHUNK + 1);
-		part[1] = (MsmPart*)p;
-		return true;
-	}
-};
-
 // tbl (+)= P(i) where P(i) = (i & msmSign) ? -base[i & msmIdxMask] : base[i & msmIdxMask]
 template<class G>
 void msmAddToBucket(G& tbl, const G *base, uint32_t i)
@@ -331,18 +291,96 @@ void msmAddToBucket(G& tbl, const G *base, uint32_t i)
 	}
 }
 
+/*
+	the generic kernel (ec::MsmKernel) of the batch affine addition :
+	the layout of a point is G (affine or zero) and the additions are done by addAffineBatch and msmAddToBucket
+*/
+template<class G>
+struct MsmGenericKernel {
+	static void addPairs(void *R, const void *base, const uint32_t *ia, const uint32_t *ib, size_t m, void *work)
+	{
+		addAffineBatch((G*)R, (const G*)base, ia, ib, m, (typename G::Fp*)work);
+	}
+	static void addToBucket(void *tbl, const void *base, uint32_t i)
+	{
+		msmAddToBucket(*(G*)tbl, (const G*)base, i);
+	}
+	static void set(ec::MsmKernel& kn)
+	{
+		kn.pointSize = sizeof(G);
+		kn.workSize = sizeof(typename G::Fp) * 3 * MCL_MSM_BATCH_SUB;
+		kn.cvtBase = 0;
+		kn.addPairs = addPairs;
+		kn.addToBucket = addToBucket;
+		kn.getBucketSize = 0;
+	}
+};
+
+// work buffers for mulVecUpdateTableBatch
+template<class G>
+struct MsmBatchWork {
+	static const size_t CHUNK = MCL_MSM_BATCH_CHUNK;
+	ec::MsmKernel kn; // the kernel of the batch affine addition
+	uint32_t *D; // [n] (bucket | sign) of each scalar
+	uint32_t *idx; // [n] the indexes of the scalars sorted by bucket
+	uint32_t *off; // [tblN + 1] the offset of each bucket in idx
+	uint32_t *ia; // [CHUNK] the pairs of the current level
+	uint32_t *ib; // [CHUNK]
+	MsmPart *part[2]; // [CHUNK + 1] the parts (a bucket in the chunk) of the current and next level
+	void *S; // [CHUNK * kn.pointSize] the work array of the points (64-byte aligned)
+	void *work; // [kn.workSize] the work area of kn.addPairs (64-byte aligned)
+	void *base; // [n * kn.pointSize] xVec converted by kn.cvtBase (0 if kn.cvtBase == 0)
+	void *buf_;
+	MsmBatchWork() : buf_(0) {}
+	~MsmBatchWork() { if (buf_) free(buf_); }
+	// kernel : the SIMD kernel (0 : the generic one)
+	bool init(size_t n, size_t tblN, const ec::MsmKernel *kernel)
+	{
+		if (n >= msmIdxMask) return false;
+		if (kernel) {
+			kn = *kernel;
+		} else {
+			MsmGenericKernel<G>::set(kn);
+		}
+		const size_t align = 64;
+		const size_t sSize = (kn.pointSize * CHUNK + align - 1) / align * align;
+		const size_t wSize = (kn.workSize + align - 1) / align * align;
+		const size_t bSize = kn.cvtBase ? (kn.pointSize * n + align - 1) / align * align : 0;
+		size_t size = align + sSize + wSize + bSize;
+		size += sizeof(uint32_t) * (2 * n + (tblN + 1) + 2 * CHUNK) + sizeof(MsmPart) * 2 * (CHUNK + 1);
+		buf_ = malloc(size);
+		if (buf_ == 0) return false;
+		char *p = (char*)(((uintptr_t)buf_ + align - 1) & ~(uintptr_t)(align - 1));
+		S = p; p += sSize;
+		work = p; p += wSize;
+		base = kn.cvtBase ? p : 0; p += bSize;
+		D = (uint32_t*)p; p += sizeof(uint32_t) * n;
+		idx = (uint32_t*)p; p += sizeof(uint32_t) * n;
+		off = (uint32_t*)p; p += sizeof(uint32_t) * (tblN + 1);
+		ia = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
+		ib = (uint32_t*)p; p += sizeof(uint32_t) * CHUNK;
+		part[0] = (MsmPart*)p; p += sizeof(MsmPart) * (CHUNK + 1);
+		part[1] = (MsmPart*)p;
+		return true;
+	}
+};
+
 // the batch affine addition is available only for EcT (not for GroupMtoA)
 template<class G>
 struct MsmBatch {
 	static const bool enabled = false;
 	struct Work {
-		bool init(size_t, size_t) { return false; }
+		ec::MsmKernel kn;
+		void *base;
+		bool init(size_t, size_t, const ec::MsmKernel *) { return false; }
 	};
+	static const ec::MsmKernel* getKernel() { return 0; }
 };
 template<class Fp>
 struct MsmBatch<EcT<Fp> > {
 	static const bool enabled = true;
 	typedef MsmBatchWork<EcT<Fp> > Work;
+	static const ec::MsmKernel* getKernel() { return EcT<Fp>::msmKernel; }
 };
 
 } // mcl::ec::local
@@ -359,12 +397,14 @@ struct MsmBatch<EcT<Fp> > {
 	4. win (+)= tbl[0] + 2 tbl[1] + ... (tbl[k] is affine or zero, so addJacobi uses the Q.z = 1 formula)
 	The number of additions is the same as mulVecUpdateTable (n - the number of non-empty buckets)
 	and the batches do not degenerate even if all scalars are equal.
+	base : xVec in the layout of the kernel wk.kn (xVec itself for the generic kernel)
 */
 template<class G>
-void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
+void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, local::MsmBatchWork<G>& wk)
 {
 	using namespace local;
 	const size_t CHUNK = MsmBatchWork<G>::CHUNK;
+	const ec::MsmKernel& kn = wk.kn;
 	for (size_t i = 0; i < tblN; i++) {
 		tbl[i].clear();
 	}
@@ -406,7 +446,7 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const G *xVec
 			if (end > start) {
 				const size_t cnt = end - start;
 				if (cnt == 1) {
-					msmAddToBucket(tbl[k], xVec, wk.idx[start]);
+					kn.addToBucket(&tbl[k], base, wk.idx[start]);
 				} else {
 					for (size_t j = 0; j + 1 < cnt; j += 2) {
 						wk.ia[m] = wk.idx[start + j];
@@ -432,7 +472,7 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const G *xVec
 			}
 		}
 		if (m == 0) continue;
-		addAffineBatch(wk.S, xVec, wk.ia, wk.ib, m, wk.fwork);
+		kn.addPairs(wk.S, base, wk.ia, wk.ib, m, wk.work);
 		// level >= 1 : fold S in place
 		MsmPart *nxt = wk.part[1];
 		while (partN > 0) {
@@ -443,7 +483,7 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const G *xVec
 				const size_t cnt = cur[p].cnt;
 				const size_t start = cur[p].start;
 				if (cnt == 1) {
-					msmAddToBucket(tbl[cur[p].k], wk.S, uint32_t(start));
+					kn.addToBucket(&tbl[cur[p].k], wk.S, uint32_t(start));
 					continue;
 				}
 				for (size_t j = 0; j + 1 < cnt; j += 2) {
@@ -462,7 +502,7 @@ void mulVecUpdateTableBatch(G& win, G *tbl, size_t tblN, size_t b, const G *xVec
 				nxtN++;
 				outPos += (cnt + 1) / 2;
 			}
-			if (m > 0) addAffineBatch(wk.S, wk.S, wk.ia, wk.ib, m, wk.fwork);
+			if (m > 0) kn.addPairs(wk.S, wk.S, wk.ia, wk.ib, m, wk.work);
 			MsmPart *t = cur; cur = nxt; nxt = t;
 			partN = nxtN;
 		}
@@ -475,14 +515,14 @@ namespace local {
 template<class G>
 struct mulVecUpdateTableBatchT {
 	template<class W>
-	static void call(G&, G *, size_t, size_t, const G *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
+	static void call(G&, G *, size_t, size_t, const void *, const Unit *, size_t, size_t, size_t, size_t, bool, bool, W&) {}
 };
 template<class Fp>
 struct mulVecUpdateTableBatchT<EcT<Fp> > {
 	typedef EcT<Fp> G;
-	static void call(G& win, G *tbl, size_t tblN, size_t b, const G *xVec, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
+	static void call(G& win, G *tbl, size_t tblN, size_t b, const void *base, const Unit *yVec, size_t yUnitSize, size_t next, size_t pos, size_t n, bool first, bool isTop, MsmBatchWork<G>& wk)
 	{
-		mulVecUpdateTableBatch(win, tbl, tblN, b, xVec, yVec, yUnitSize, next, pos, n, first, isTop, wk);
+		mulVecUpdateTableBatch(win, tbl, tblN, b, base, yVec, yUnitSize, next, pos, n, first, isTop, wk);
 	}
 };
 
@@ -511,6 +551,11 @@ size_t mulVecCore(G& z, G *xVec, const Unit *yVec, size_t yUnitSize, size_t next
 
 	size_t tblN; // 2^b for the top window (see mulVecUpdateTable), the others use 2^(b-1)
 	G *tbl = 0;
+	// the SIMD kernel of the batch affine addition (0 : the generic one), which may have its own window size table
+	const ec::MsmKernel *kernel = local::MsmBatch<G>::getKernel();
+	if (b == 0 && kernel && kernel->getBucketSize && local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N) {
+		b = kernel->getBucketSize(n);
+	}
 
 #ifndef MCL_DONT_USE_MALLOC
 	G *tbl_ = 0; // malloc is used if tbl_ != 0
@@ -542,9 +587,14 @@ main:
 
 	// the batch affine addition requires affine (or zero) xVec, which is guaranteed by normalizeVec of the caller
 	typename local::MsmBatch<G>::Work wk;
-	const bool useBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N && wk.init(n, tblN);
+	const bool useBatch = local::MsmBatch<G>::enabled && n >= MCL_MSM_BATCH_MIN_N && wk.init(n, tblN, kernel);
+	const void *base = xVec; // xVec in the layout of the kernel (converted once and shared by all the windows)
+	if (useBatch && wk.base) {
+		wk.kn.cvtBase(wk.base, xVec, n);
+		base = wk.base;
+	}
 	if (useBatch) {
-		local::mulVecUpdateTableBatchT<G>::call(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true, wk);
+		local::mulVecUpdateTableBatchT<G>::call(z, tbl, size_t(1) << rem, b, base, yVec, yUnitSize, next, b * (winN-1), n, true, true, wk);
 	} else {
 		mulVecUpdateTable(z, tbl, size_t(1) << rem, b, xVec, yVec, yUnitSize, next, b * (winN-1), n, true, true);
 	}
@@ -553,7 +603,7 @@ main:
 			G::dbl(z, z);
 		}
 		if (useBatch) {
-			local::mulVecUpdateTableBatchT<G>::call(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false, wk);
+			local::mulVecUpdateTableBatchT<G>::call(z, tbl, tblN / 2, b, base, yVec, yUnitSize, next, b * (winN-1-w), n, false, false, wk);
 		} else {
 			mulVecUpdateTable(z, tbl, tblN / 2, b, xVec, yVec, yUnitSize, next, b * (winN-1-w), n, false, false);
 		}

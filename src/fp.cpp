@@ -132,7 +132,8 @@ namespace mcl {
 	template Ec::MulVecOptiFunc Ec::mulVecOpti; \
 	template Ec::IsValidOrderFastFunc Ec::isValidOrderFast; \
 	template int Ec::mode_; \
-	template Ec::MulEachOptiFunc Ec::mulEachOpti;
+	template Ec::MulEachOptiFunc Ec::mulEachOpti; \
+	template Ec::MsmKernelPtr Ec::msmKernel;
 MCL_EC_STATIC_INST(EcT<Fp>, Fp)
 MCL_EC_STATIC_INST(EcT<Fp2>, Fp2)
 #undef MCL_EC_STATIC_INST
