@@ -10,12 +10,13 @@ import sys
 import random
 from primetbl import curveTbl
 
-# z, b of y^2 = x^3 + b, isBLS12 : the same values as include/mcl/curve_type.hpp
+# (name, kind, z, b of y^2 = x^3 + b) : the same values as include/mcl/curve_type.hpp
 glvCurves = [
-  ('BN254', -0x4080000000000001, 2, False),
-  ('BN-SNARK', 4965661367192848881, 3, False),
-  ('BLS12-381', -0xd201000000010000, 4, True),
-  ('BLS12-377', 0x8508c00000000001, 1, True),
+  ('BN254', 'BN', -0x4080000000000001, 2),
+  ('BN-SNARK', 'BN', 4965661367192848881, 3),
+  ('BLS12-381', 'BLS12', -0xd201000000010000, 4),
+  ('BLS12-377', 'BLS12', 0x8508c00000000001, 1),
+  ('secp256k1', 'secp', None, 7),
 ]
 
 def sqrtMod(a, p):
@@ -90,13 +91,31 @@ def hexArray(v):
 class Param:
   pass
 
-def makeParam(name, z, b, isBLS12):
+def glvBasis(r, lam):
+  # a basis of the lattice { (a, b) : a + b lam = 0 mod r } with short vectors
+  # by the extended Euclidean algorithm (Hankerson-Menezes-Vanstone, Algorithm 3.74)
+  # r_i = s_i r + t_i lam, so (r_i, -t_i) is in the lattice
+  rs = [r, lam]
+  ts = [0, 1]
+  while rs[-1] != 0:
+    q = rs[-2] // rs[-1]
+    rs.append(rs[-2] - q * rs[-1])
+    ts.append(ts[-2] - q * ts[-1])
+  l = max(i for i in range(len(rs)) if rs[i] * rs[i] >= r)
+  v1 = (rs[l + 1], -ts[l + 1])
+  v2a = (rs[l], -ts[l])
+  v2b = (rs[l + 2], -ts[l + 2])
+  v2 = v2a if v2a[0]**2 + v2a[1]**2 <= v2b[0]**2 + v2b[1]**2 else v2b
+  return [list(v1), list(v2)]
+
+def makeParam(name, kind, z, b):
   cv = curveTbl[name]
   p, r = cv.p, cv.r
   prm = Param()
   prm.name = name
   prm.curveType = cv.c
-  prm.isBLS12 = isBLS12
+  prm.isBLS12 = kind == 'BLS12'
+  isBLS12 = prm.isBLS12
   if isBLS12:
     assert r == z**4 - z**2 + 1
     assert p == (z - 1)**2 * r // 3 + z
@@ -110,23 +129,52 @@ def makeParam(name, z, b, isBLS12):
     v1 = 0
     cofactor = (z - 1)**2 // 3
   else:
-    assert p == 36 * z**4 + 36 * z**3 + 24 * z**2 + 6 * z + 1
-    assert r == 36 * z**4 + 36 * z**3 + 18 * z**2 + 6 * z + 1
-    # (6z^2+2z) - (2z+1) L = 0, (-2z-1) - (6z^2+4z+1) L = 0 (see GLV1T::init)
-    B = [[6 * z * z + 2 * z, -2 * z - 1], [-2 * z - 1, -6 * z * z - 4 * z - 1]]
-    lam = B[0][0] * pow(-B[0][1], -1, r) % r
-    s = 256
-    v0 = ((-B[1][1]) << s) // r
-    v1 = (B[1][0] << s) // r
+    if kind == 'BN':
+      assert p == 36 * z**4 + 36 * z**3 + 24 * z**2 + 6 * z + 1
+      assert r == 36 * z**4 + 36 * z**3 + 18 * z**2 + 6 * z + 1
+      # (6z^2+2z) - (2z+1) L = 0, (-2z-1) - (6z^2+4z+1) L = 0 (see GLV1T::init)
+      B = [[6 * z * z + 2 * z, -2 * z - 1], [-2 * z - 1, -6 * z * z - 4 * z - 1]]
+      lam = B[0][0] * pow(-B[0][1], -1, r) % r
+    else:
+      # lam = a primitive cube root of unity mod r, B by the extended Euclidean algorithm
+      # the two roots lam, lam^2 give different lattices : take the one with c0, c1 < 2^128 (see below)
+      assert (r - 1) % 3 == 0
+      g = 2
+      while True:
+        lam = pow(g, (r - 1) // 3, r)
+        if lam != 1:
+          break
+        g += 1
+      for lam in [lam, lam * lam % r]:
+        B = glvBasis(r, lam)
+        det = B[0][0] * B[1][1] - B[0][1] * B[1][0]
+        sgn = 1 if det > 0 else -1
+        if abs(B[1][1]) < (1 << 128) and abs(B[0][1]) < (1 << 128):
+          break
+      else:
+        raise Exception(f'{name}: no basis with c0, c1 < 2^128')
+    det = B[0][0] * B[1][1] - B[0][1] * B[1][0]
+    assert abs(det) == r
+    # (t, b0) = x (1, 0) B^{-1} = x (B11, -B01) / det : t = (x c0) / r, b0 = (x c1) / r
+    sgn = 1 if det > 0 else -1
+    c0, c1 = B[1][1] * sgn, -B[0][1] * sgn
+    # the fixed-width split uses c0, c1 >= 0 : negating row 0 flips both c0 and c1, negating row 1 flips c1
+    if c0 < 0:
+      B[0] = [-B[0][0], -B[0][1]]
+      c0, c1 = -c0, -c1
+    if c1 < 0:
+      B[1] = [-B[1][0], -B[1][1]]
+      c1 = -c1
+    assert abs(B[0][0] * B[1][1] - B[0][1] * B[1][0]) == r
+    # t = (x v0 + 2^(s-1)) >> s with v0 = floor(c0 2^s / r) : s = 256 + 64 (the error of the rounding < 2^-64, aligned to the Unit)
+    s = 256 + 64
+    v0 = (c0 << s) // r
+    v1 = (c1 << s) // r
     cofactor = 1
   assert (lam * lam + lam + 1) % r == 0
   for i in range(2):
     assert (B[i][0] + B[i][1] * lam) % r == 0
-  # the fixed-width split uses v1 >= 0 : negate the second row if v1 < 0
-  if v1 < 0:
-    v1 = -v1
-    B[1] = [-B[1][0], -B[1][1]]
-  assert v0 >= 0
+  assert v0 >= 0 and v1 >= 0
   # rw : (x, y) -> (rw x, y) is the multiplication by lam on G1
   ec = Ec(p, b)
   P = ec.mul(ec.findPoint(), cofactor)
@@ -149,9 +197,11 @@ def split(prm, x):
   # the same formula as GLV1T::splitRawTbl (BN) / GLV1T::splitRawBLS12 (BLS12)
   if prm.isBLS12:
     t = ((x >> (prm.s - 128)) * prm.v0) >> 128
+    b0 = 0
   else:
-    t = (x * prm.v0) >> prm.s
-  b0 = (x * prm.v1) >> prm.s
+    half = 1 << (prm.s - 1)
+    t = (x * prm.v0 + half) >> prm.s
+    b0 = (x * prm.v1 + half) >> prm.s
   B = prm.B
   a = x - (t * B[0][0] + b0 * B[1][0])
   b = -(t * B[0][1] + b0 * B[1][1])
@@ -181,14 +231,23 @@ def verify(prm):
     assert aMax < 2 * L * H, prm.name
     assert r // L + 2 < H, prm.name
   else:
-    assert 2 * (abs(B[0][0]) + abs(B[1][0])) < H, prm.name
-    assert 2 * (abs(B[0][1]) + abs(B[1][1])) < H, prm.name
-    # the intermediate values fit in 256-bit two's complement
-    tMax = ((r - 1) * prm.v0) >> prm.s
-    b0Max = ((r - 1) * prm.v1) >> prm.s
+    # t = t* - e0, b0 = b0* - e1 with the exact t* = x c0 / r, b0* = x c1 / r and the errors
+    # e0, e1 in [-1/2, 1/2 + d), d = (r - 1) / 2^s, so a = e0 B00 + e1 B10, b = -(e0 B01 + e1 B11)
+    # (the computation is mod 2^256 and only the final a, b must fit in 255-bit two's complement)
+    s = prm.s
+    assert r < (1 << (s - 64)), prm.name
+    assert prm.v0 < (1 << 256) and prm.v1 < (1 << 256), prm.name
+    # |B| < 2^(128 + 32) : the top (bits >= 128) of B is one Unit (see GLV1T::splitRawTbl)
+    for i in range(2):
+      for j in range(2):
+        assert abs(B[i][j]) < (1 << 160), prm.name
+    e = (1 << (s - 1)) + r - 1 # 2^s (1/2 + d)
+    assert (abs(B[0][0]) + abs(B[1][0])) * e < (H << s), prm.name
+    assert (abs(B[0][1]) + abs(B[1][1])) * e < (H << s), prm.name
+    # t <= t* + 1/2 < c0 + 1/2, so t, b0 < 2^128
+    tMax = (((r - 1) * prm.v0 + (1 << (s - 1))) >> s)
+    b0Max = (((r - 1) * prm.v1 + (1 << (s - 1))) >> s)
     assert tMax < H and b0Max < H, prm.name
-    assert r + tMax * abs(B[0][0]) + b0Max * abs(B[1][0]) < (1 << 255), prm.name
-    assert tMax * abs(B[0][1]) + b0Max * abs(B[1][1]) < (1 << 255), prm.name
   xs = [0, 1, 2, r - 1, r - 2] + [1 << k for k in range(1, 254)] + [(r - 1) >> k for k in range(1, 254)]
   rng = random.Random(1)
   xs += [rng.randrange(r) for _ in range(100000)]
@@ -210,12 +269,12 @@ def putParamBN(prm):
         neg |= 1 << (i * 2 + j)
   print('\t{')
   print(f'\t\t// {prm.name}')
-  print(f'\t\t{prm.curveType}, "{prm.rw:x}",')
-  print(f'\t\t{hexArray(toArray(prm.v0, 3))},')
-  print(f'\t\t{hexArray(toArray(prm.v1, 2))},')
+  print(f'\t\t{prm.curveType}, "{prm.rw:x}", {prm.s},')
+  print(f'\t\t{hexArray(toArray(prm.v0, 4))},')
+  print(f'\t\t{hexArray(toArray(prm.v1, 4))},')
   print('\t\t{')
   for i in range(2):
-    print(f'\t\t\t{{ {hexArray(toArray(abs(B[i][0]), 2))}, {hexArray(toArray(abs(B[i][1]), 2))} }},')
+    print(f'\t\t\t{{ {hexArray(toArray(abs(B[i][0]), 3))}, {hexArray(toArray(abs(B[i][1]), 3))} }},')
   print('\t\t},')
   print(f'\t\t{neg},')
   print('\t},')
@@ -235,17 +294,18 @@ def main():
   print('''// generated by src/gen_glv.py (do not edit)
 /*
 	the parameters of the GLV method for G1 : x = a + b lambda mod r, (x, y) -> (rw x, y) = lambda (x, y)
-	BN (GLV1T::splitRawTbl) : t = (x v0) >> 256, b0 = (x v1) >> 256
-	a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11)
-	B[i][j] is the absolute value and the bit (i * 2 + j) of Bneg is set if B[i][j] < 0
+	BN, secp256k1 (GLV1T::splitRawTbl) : t = (x v0 + 2^(shift-1)) >> shift, b0 = (x v1 + 2^(shift-1)) >> shift (rounding, shift = 256 + 64)
+	a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11) (mod 2^256)
+	B[i][j] is the absolute value (< 2^160) and the bit (i * 2 + j) of Bneg is set if B[i][j] < 0
 	|a|, |b| < 2^128 for all x in [0, r)
 */
 struct GLV1ParamBN {
 	int curveType;
 	const char *rw; // hex
-	uint64_t v0[3];
-	uint64_t v1[2];
-	uint64_t B[2][2][2];
+	uint32_t shift;
+	uint64_t v0[4];
+	uint64_t v1[4];
+	uint64_t B[2][2][3];
 	uint32_t Bneg;
 };
 static const GLV1ParamBN glv1ParamBNTbl[] = {''')

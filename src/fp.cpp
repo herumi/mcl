@@ -712,7 +712,9 @@ namespace mcl {
 void initForSecp256k1()
 {
 	typedef GLV1T<G1> GLV1;
-	GLV1::initForSecp256k1();
+	bool b = GLV1::useParamTbl(MCL_SECP256K1);
+	assert(b);
+	(void)b;
 	G1::setMulVecGLV(mcl::ec::mulVecGLVT<GLV1, G1>);
 }
 

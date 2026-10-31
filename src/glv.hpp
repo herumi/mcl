@@ -850,9 +850,11 @@ struct GLV1T {
 	static SplitRawFunc splitRaw;
 	static const size_t rawN = 128 / UnitBitSize;
 	// the parameters of splitRawTbl (see src/glv_param.hpp)
-	static Unit v0U[192 / UnitBitSize];
-	static Unit v1U[rawN];
-	static Unit BU[2][2][rawN]; // |B[i][j]|
+	static const size_t xn = 256 / UnitBitSize; // the size of x of splitRaw
+	static const size_t bn = 192 / UnitBitSize; // the size of BU
+	static Unit v0U[xn];
+	static Unit v1U[xn];
+	static Unit BU[2][2][bn]; // |B[i][j]| < 2^(128 + UnitBitSize) : BU[i][j][rawN] is the top Unit, BU[i][j][k] = 0 for k > rawN
 	static uint32_t Bneg; // the bit (i * 2 + j) is set if B[i][j] < 0
 	static Unit LU[rawN]; // L = z^2 - 1 for BLS12
 	static Unit qU[rawN]; // floor(2^rBitSize / L) for BLS12
@@ -962,7 +964,6 @@ public:
 	// y[rawN] = |x[xn]| (x is two's complement and |x| < 2^128), return 1 if x < 0
 	static uint32_t absRaw(Unit *y, Unit *x)
 	{
-		const size_t xn = 256 / UnitBitSize;
 		const uint32_t neg = uint32_t(x[xn - 1] >> (UnitBitSize - 1));
 		if (neg) {
 			Unit zero[xn];
@@ -977,40 +978,57 @@ public:
 		return neg;
 	}
 	/*
-		the fixed-width version of split for BN in glv1ParamBNTbl
-		t = (x v0) >> rBitSize, b0 = (x v1) >> rBitSize
-		a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11)
-		the same formula as the mpz version, and |a|, |b| < 2^128 is verified in src/gen_glv.py
+		the fixed-width version of split for BN and secp256k1 in glv1ParamBNTbl
+		t = (x v0 + 2^(rBitSize-1)) >> rBitSize, b0 = (x v1 + 2^(rBitSize-1)) >> rBitSize (rounding, rBitSize = 256 + 64)
+		a = x - (t B00 + b0 B10), b = -(t B01 + b0 B11) (mod 2^256)
+		|a|, |b| < 2^128 is verified in src/gen_glv.py (the intermediate values may wrap mod 2^256)
 	*/
 	static uint32_t splitRawTbl(Unit *a, Unit *b, const Unit *x)
 	{
-		const size_t xn = 256 / UnitBitSize;
-		const size_t v0n = 192 / UnitBitSize;
 		Unit t[rawN], b0[rawN];
 		{
-			Unit z[xn + v0n];
-			bint::mulNM(z, x, xn, v0U, v0n);
-			shrRaw(t, z, rBitSize);
-			bint::clearT<xn + v0n>(z);
-			bint::mulNM(z, x, xn, v1U, rawN);
-			shrRaw(b0, z, rBitSize);
+			Unit z[xn * 2];
+			bint::mulT<xn>(z, x, v0U);
+			roundShrRaw(t, z, rBitSize);
+			bint::mulT<xn>(z, x, v1U);
+			roundShrRaw(b0, z, rBitSize);
 		}
 		Unit p0[xn], p1[xn], acc[xn];
 		// a = x - (B00 t + B10 b0)
-		bint::mulT<rawN>(p0, t, BU[0][0]);
-		bint::mulT<rawN>(p1, b0, BU[1][0]);
+		mulB(p0, t, BU[0][0]);
+		mulB(p1, b0, BU[1][0]);
 		bint::copyT<xn>(acc, x);
 		if (Bneg & 1) bint::addT<xn>(acc, acc, p0); else bint::subT<xn>(acc, acc, p0);
 		if (Bneg & 4) bint::addT<xn>(acc, acc, p1); else bint::subT<xn>(acc, acc, p1);
 		uint32_t neg = absRaw(a, acc);
 		// b = -(B01 t + B11 b0)
-		bint::mulT<rawN>(p0, t, BU[0][1]);
-		bint::mulT<rawN>(p1, b0, BU[1][1]);
+		mulB(p0, t, BU[0][1]);
+		mulB(p1, b0, BU[1][1]);
 		bint::clearT<xn>(acc);
 		if (Bneg & 2) bint::addT<xn>(acc, acc, p0); else bint::subT<xn>(acc, acc, p0);
 		if (Bneg & 8) bint::addT<xn>(acc, acc, p1); else bint::subT<xn>(acc, acc, p1);
 		neg |= absRaw(b, acc) << 1;
 		return neg;
+	}
+	// y[xn] = (t[rawN] * B) mod 2^256 where B = B[rawN] 2^128 + B[0..rawN)
+	static void mulB(Unit *y, const Unit *t, const Unit *B)
+	{
+		bint::mulT<rawN>(y, t, B);
+		const Unit top = B[rawN];
+		if (top) {
+			Unit q[rawN + 1];
+			bint::mulUnitT<rawN>(q, t, top);
+			bint::addT<rawN>(y + rawN, y + rawN, q);
+		}
+	}
+	// y[rawN] = ((x[xn * 2] + 2^(s-1)) >> s) mod 2^128 ; x is broken
+	static void roundShrRaw(Unit *y, Unit *x, size_t s)
+	{
+		const size_t q = (s - 1) / UnitBitSize;
+		const Unit half = Unit(1) << ((s - 1) % UnitBitSize);
+		assert(q < xn * 2);
+		bint::addUnit(x + q, xn * 2 - q, half);
+		shrRaw(y, x, s);
 	}
 	// Unit y[yn] = uint64_t x[xn]
 	static void cvtU64ToUnit(Unit *y, size_t yn, const uint64_t *x, size_t xn)
@@ -1027,8 +1045,8 @@ public:
 	static void setMpz(mpz_class& z, const uint64_t *x, size_t xn, bool neg)
 	{
 		const size_t m = 64 / UnitBitSize;
-		Unit u[3 * m];
-		assert(xn <= 3);
+		Unit u[4 * m];
+		assert(xn <= 4);
 		cvtU64ToUnit(u, xn * m, x, xn);
 		bool b;
 		gmp::setArray(&b, z, u, xn * m);
@@ -1050,17 +1068,22 @@ public:
 			if (prm.curveType != curveType) continue;
 			rw.setStr(&b, prm.rw, 16);
 			if (!b) return false;
-			rBitSize = 256;
-			setMpz(v0, prm.v0, 3, false);
-			setMpz(v1, prm.v1, 2, false);
+			isBLS12 = false;
+			rBitSize = prm.shift;
+			setMpz(v0, prm.v0, 4, false);
+			setMpz(v1, prm.v1, 4, false);
 			for (int j = 0; j < 2; j++) {
 				for (int k = 0; k < 2; k++) {
-					setMpz(B[j][k], prm.B[j][k], 2, (prm.Bneg & (1 << (j * 2 + k))) != 0);
-					cvtU64ToUnit(BU[j][k], rawN, prm.B[j][k], 2);
+					setMpz(B[j][k], prm.B[j][k], 3, (prm.Bneg & (1 << (j * 2 + k))) != 0);
+					cvtU64ToUnit(BU[j][k], bn, prm.B[j][k], 3);
+					for (size_t m = rawN + 1; m < bn; m++) {
+						assert(BU[j][k][m] == 0);
+						(void)m;
+					}
 				}
 			}
-			cvtU64ToUnit(v0U, 192 / UnitBitSize, prm.v0, 3);
-			cvtU64ToUnit(v1U, rawN, prm.v1, 2);
+			cvtU64ToUnit(v0U, xn, prm.v0, 4);
+			cvtU64ToUnit(v1U, xn, prm.v1, 4);
 			Bneg = prm.Bneg;
 			splitRaw = splitRawTbl;
 			return true;
@@ -1070,6 +1093,7 @@ public:
 			if (prm.curveType != curveType) continue;
 			rw.setStr(&b, prm.rw, 16);
 			if (!b) return false;
+			isBLS12 = true;
 			rBitSize = prm.rBitSize;
 			setMpz(B[0][0], prm.L, 2, false); // for dump
 			cvtU64ToUnit(LU, rawN, prm.L, 2);
@@ -1078,30 +1102,6 @@ public:
 			return true;
 		}
 		return false;
-	}
-	/*
-		init() is defined in bn.hpp
-	*/
-	static void initForSecp256k1()
-	{
-		bool b = Fp::squareRoot(rw, -3);
-		assert(b);
-		(void)b;
-		rw = -(rw + 1) / 2;
-		rBitSize = Fr::getOp().bitSize;
-		rBitSize = (rBitSize + UnitBitSize - 1) & ~(UnitBitSize - 1);
-		gmp::setStr(&b, B[0][0], "0x3086d221a7d46bcde86c90e49284eb15");
-		assert(b); (void)b;
-		gmp::setStr(&b, B[0][1], "-0xe4437ed6010e88286f547fa90abfe4c3");
-		assert(b); (void)b;
-		gmp::setStr(&b, B[1][0], "0x114ca50f7a8e2f3f657c1108d9d44cfd8");
-		assert(b); (void)b;
-		B[1][1] = B[0][0];
-		const mpz_class& r = Fr::getOp().mp;
-		v0 = ((B[1][1]) << rBitSize) / r;
-		v1 = ((-B[0][1]) << rBitSize) / r;
-		isBLS12 = false;
-		splitRaw = 0;
 	}
 };
 
@@ -1113,9 +1113,9 @@ template<class Ec> mpz_class GLV1T<Ec>::v1;
 template<class Ec> mpz_class GLV1T<Ec>::B[2][2];
 template<class Ec> bool GLV1T<Ec>::isBLS12;
 template<class Ec> typename GLV1T<Ec>::SplitRawFunc GLV1T<Ec>::splitRaw;
-template<class Ec> Unit GLV1T<Ec>::v0U[192 / UnitBitSize];
-template<class Ec> Unit GLV1T<Ec>::v1U[GLV1T<Ec>::rawN];
-template<class Ec> Unit GLV1T<Ec>::BU[2][2][GLV1T<Ec>::rawN];
+template<class Ec> Unit GLV1T<Ec>::v0U[GLV1T<Ec>::xn];
+template<class Ec> Unit GLV1T<Ec>::v1U[GLV1T<Ec>::xn];
+template<class Ec> Unit GLV1T<Ec>::BU[2][2][GLV1T<Ec>::bn];
 template<class Ec> uint32_t GLV1T<Ec>::Bneg;
 template<class Ec> Unit GLV1T<Ec>::LU[GLV1T<Ec>::rawN];
 template<class Ec> Unit GLV1T<Ec>::qU[GLV1T<Ec>::rawN];

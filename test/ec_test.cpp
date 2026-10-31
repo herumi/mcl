@@ -605,6 +605,35 @@ struct Test {
 		}
 		Fp::setIoMode(mcl::IoAuto);
 	}
+	// mul (the GLV method on secp256k1) and mulGeneric must agree for the edge scalars of the GLV split
+	void glv() const
+	{
+		Fp x(para.gx);
+		Fp y(para.gy);
+		Ec P(x, y);
+		const mpz_class& r = Zn::getOp().mp;
+		const size_t bitSize = Zn::getBitSize();
+		cybozu::XorShift rg;
+		Ec P1, P2;
+		for (size_t k = 0; k < bitSize; k++) {
+			const mpz_class pk = mpz_class(1) << k;
+			const mpz_class tbl[] = { pk, r - pk, (r - 1) >> k, pk - 1 };
+			for (size_t j = 0; j < CYBOZU_NUM_OF_ARRAY(tbl); j++) {
+				Zn s;
+				s.setMpz(tbl[j]);
+				Ec::mulGeneric(P1, P, s.getMpz());
+				Ec::mul(P2, P, s);
+				CYBOZU_TEST_EQUAL(P1, P2);
+			}
+		}
+		for (int i = 0; i < 100; i++) {
+			Zn s;
+			s.setByCSPRNG(rg);
+			Ec::mulGeneric(P1, P, s.getMpz());
+			Ec::mul(P2, P, s);
+			CYBOZU_TEST_EQUAL(P1, P2);
+		}
+	}
 	void mulCT() const
 	{
 		Fp x(para.gx);
@@ -744,6 +773,7 @@ mul 499.00usec
 		str();
 		ioMode();
 		mulCT();
+		glv();
 		compare();
 		addCT();
 		ProjJacobi();
