@@ -116,6 +116,13 @@ inline uint8_t cvtToInt(const Vmask& v)
 	return r;
 }
 
+inline uint16_t cvtToInt(const VmaskA& v)
+{
+	uint16_t r = 0;
+	for (size_t i = 0; i < vN; i++) r |= uint16_t(cvtToInt(v.v[i])) << (8 * i);
+	return r;
+}
+
 inline bool isEqual(const Vec& a, const Vec& b)
 {
 	return memcmp(&a, &b, sizeof(a)) == 0;
@@ -1114,10 +1121,9 @@ inline void normalizeJacobiVec(E *P, size_t n, bool isProj = false)
 }
 
 // 8M+3S+7A
-// assume P.x != Q.x, P != Q
-// asseume all Q are normalized
+// assume all Q are normalized; return the lanes requiring doubling
 template<class E>
-inline void addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
+inline typename E::VM addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
 	F r, U1, S1, H, H3;
@@ -1141,12 +1147,13 @@ inline void addJacobiMixedNoCheck(E& R, const E& P, const E& Q)
 	F::mul(U1, U1, r);
 	F::mul(H3, H3, S1);
 	F::sub(R.y, U1, H3);
+	return kandb(H.isZero(), r.isZero());
 }
 
 // 12M+4S+7A
-// P == Q or P == -Q then R = 0, so assume P != Q.
+// return the lanes requiring doubling
 template<class E>
-inline void addJacobiNoCheck(E& R, const E& P, const E& Q)
+inline typename E::VM addJacobiNoCheck(E& R, const E& P, const E& Q)
 {
 	typedef typename E::Fp F;
 	F r, U1, S1, H, H3;
@@ -1173,6 +1180,7 @@ inline void addJacobiNoCheck(E& R, const E& P, const E& Q)
 	F::mul(U1, U1, r);
 	F::mul(H3, H3, S1);
 	F::sub(R.y, U1, H3);
+	return kandb(H.isZero(), r.isZero());
 }
 
 // assume a = 0
@@ -1232,10 +1240,17 @@ struct EcMT {
 			}
 		} else {
 			T t;
+			VM same;
 			if (mixed) {
-				addJacobiMixedNoCheck(t, x, y);
+				same = addJacobiMixedNoCheck(t, x, y);
 			} else {
-				addJacobiNoCheck(t, x, y);
+				same = addJacobiNoCheck(t, x, y);
+			}
+			same = kandnb(korb(x.isZero(), y.isZero()), same);
+			if (cvtToInt(same)) {
+				T doubled;
+				dblJacobiNoCheck(doubled, x);
+				t = select(same, doubled, t);
 			}
 			t = select(x.isZero(), y, t);
 			z = select(y.isZero(), x, t);
@@ -2430,6 +2445,50 @@ void lpN(void f(T&, const T&, const T&), T *z, const T *x, const T *y, size_t n)
 	for (size_t i = 0; i < n; i++) f(z[i], x[i], y[i]);
 }
 
+template<class E, bool mixed>
+void testJacobiAdd()
+{
+	const size_t n = sizeof(E) / (sizeof(FpM) * 3) * M;
+	CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n], actual[n];
+	Fr x[n];
+	cybozu::XorShift rg;
+	setParam(P, x, n, rg);
+	setParam(Q, x, n, rg);
+	for (size_t i = 0; i < n; i++) {
+		switch (i % 6) {
+		case 0: Q[i] = P[i]; break;
+		case 1: G1::neg(Q[i], P[i]); break;
+		case 2: P[i].clear(); break;
+		case 3: Q[i].clear(); break;
+		case 4: P[i].clear(); Q[i].clear(); break;
+		}
+		if (mixed) Q[i].normalize();
+		G1::add(R[i], P[i], Q[i]);
+	}
+	E p, q, out;
+	p.setG1A((G1A*)P, false);
+	q.setG1A((G1A*)Q, false);
+	E::template add<false, mixed>(out, p, q);
+	out.getG1A((G1A*)actual, false);
+	CYBOZU_TEST_EQUAL_ARRAY(actual, R, n);
+	out = p;
+	E::template add<false, mixed>(out, out, q);
+	out.getG1A((G1A*)actual, false);
+	CYBOZU_TEST_EQUAL_ARRAY(actual, R, n);
+	out = q;
+	E::template add<false, mixed>(out, p, out);
+	out.getG1A((G1A*)actual, false);
+	CYBOZU_TEST_EQUAL_ARRAY(actual, R, n);
+}
+
+CYBOZU_TEST_AUTO(jacobiAdd)
+{
+	testJacobiAdd<EcM, false>();
+	testJacobiAdd<EcM, true>();
+	testJacobiAdd<EcMA, false>();
+	testJacobiAdd<EcMA, true>();
+}
+
 CYBOZU_TEST_AUTO(op)
 {
 	const size_t n = 8; // fixed
@@ -2650,16 +2709,20 @@ CYBOZU_TEST_AUTO(normalizeJacobiVec)
 
 CYBOZU_TEST_AUTO(mulEach_special)
 {
-	const size_t n = 8;
+	const size_t n = 32;
 	CYBOZU_ALIGN(64) G1 P[n], Q[n], R[n];
 	Fr x[n];
-	for (size_t i = 0; i < n; i++) P[i].clear();
+	for (size_t i = 0; i < n; i++) {
+		P[i].clear();
+		R[i].clear();
+		x[i] = 0;
+	}
 	mcl::hashAndMapToG1(P[0], "abc");
 	x[0].setHashOf("abc", 3);
 	for (size_t i = 0; i < n; i++) Q[i] = P[i];
 	G1::mul(R[0], P[0], x[0]);
-	G1::mulEach(Q, x, 8);
-	CYBOZU_TEST_EQUAL(R[0], Q[0]);
+	G1::mulEach(Q, x, n);
+	CYBOZU_TEST_EQUAL_ARRAY(R, Q, n);
 	// the edge cases of the GLV split : x = a + b lambda
 	const mpz_class& r = Fr::getOp().mp;
 	const mpz_class L = mpz_class(1) << 128; // |a|, |b| < L
@@ -2938,6 +3001,27 @@ void showParams()
 	}
 }
 
+// lambda of the GLV method on Fr (lambda^2 + lambda + 1 = 0 and splitRaw(lambda) = (0, 1))
+mpz_class getGLVLambda()
+{
+	Fr s;
+	CYBOZU_TEST_ASSERT(Fr::squareRoot(s, Fr(-3)));
+	Fr lambda = (s - 1) / 2;
+	for (int i = 0; i < 2; i++) {
+		Unit a[2] = {}, b[2] = {}, x[4] = {};
+		Fr::getOp().fromMont(x, lambda.getUnit());
+		const uint32_t neg = g_splitRaw(a, b, x);
+		if (neg == 0 && a[0] == 0 && a[1] == 0 && b[0] == 1 && b[1] == 0) {
+			mpz_class ret;
+			lambda.getMpz(ret);
+			return ret;
+		}
+		lambda = -1 - lambda; // the other root
+	}
+	CYBOZU_TEST_ASSERT(false);
+	return 0;
+}
+
 // G1::mulEach (mulEachAVX512) vs G1::mul on every curve of g_msmCurveTbl
 CYBOZU_TEST_AUTO(mulEachCurves)
 {
@@ -2977,10 +3061,14 @@ CYBOZU_TEST_AUTO(mulEachCurves)
 		CYBOZU_TEST_EQUAL(g_rt.curveType, curveType);
 		P[5].clear();
 		P[20].clear();
-		x[1] = 0;
-		x[2] = 1;
-		x[3] = -1;
-		x[4].setMpz(mpz_class(1) << 128);
+		const mpz_class& r = Fr::getOp().mp;
+		const mpz_class L = mpz_class(1) << 128;
+		const mpz_class lambda = getGLVLambda();
+		const mpz_class scalarTbl[] = {
+			0, 1, 2, L - 1, L, L + 1, (r - 1) / 2, (r + 1) / 2, r - 2, r - 1,
+			2 * lambda - 1, // the GLV split is (lambda - 1, 1) on BLS12 ; P == Q occurs in adding the lambda part on BLS12-377
+		};
+		for (size_t i = 0; i < 32; i++) x[i].setMpz(scalarTbl[i % CYBOZU_NUM_OF_ARRAY(scalarTbl)]);
 		for (size_t i = 0; i < n; i++) {
 			Q[i] = P[i];
 			G1::mul(R[i], P[i], x[i]);

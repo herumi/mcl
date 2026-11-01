@@ -488,6 +488,20 @@ inline VmaskA kandb(const VmaskA& a, const VmaskA& b)
 	return r;
 }
 
+inline VmaskA korb(const VmaskA& a, const VmaskA& b)
+{
+	VmaskA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = korb(a.v[i], b.v[i]);
+	return r;
+}
+
+inline VmaskA kandnb(const VmaskA& a, const VmaskA& b)
+{
+	VmaskA r;
+	for (size_t i = 0; i < vN; i++) r.v[i] = kandnb(a.v[i], b.v[i]);
+	return r;
+}
+
 inline VmaskA kxorb(const VmaskA& a, const VmaskA& b)
 {
 	VmaskA r;
@@ -545,4 +559,3 @@ inline VecA vpternlogq(const VecA& a, const VecA& b, const Vec& c)
 #if defined(__GNUC__)
 	#pragma GCC diagnostic pop
 #endif
-
