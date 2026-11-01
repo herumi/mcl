@@ -3142,7 +3142,8 @@ int main(int argc, char *argv[])
 	if (G1::msmKernel == 0) {
 		if (!(mcl::bint::getCpuType() & mcl::bint::tAVX512_IFMA)) {
 			puts("skip : the CPU does not support AVX-512 IFMA");
-			return 0; // make test passes without the tests
+			puts("ctest:name=msm_test, module=0, total=0, ok=0, ng=0, exception=0, skipped=1");
+			return 0;
 		}
 		puts("ERR the AVX-512 MSM is not available");
 		return 1;
